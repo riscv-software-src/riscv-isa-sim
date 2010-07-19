@@ -1,0 +1,12 @@
+libopc=`dirname \`which riscv-gcc\``/../`$ac_config_guess`/riscv/lib/libopcodes.a
+AC_CHECK_FILES([$libopc],[have_libopcodes="yes"],[have_libopcodes="no"])
+
+AC_SEARCH_LIBS([bfd_init],[bfd],[],[have_libopcodes="no"])
+
+AS_IF([test "$have_libopcodes" = "no"],[
+  AC_MSG_WARN([Could not find opcodes library])
+  AC_MSG_WARN([Build will not include disassembly support])
+],[
+  LIBS="$libopc $LIBS"
+  AC_DEFINE([RISCV_HAVE_LIBOPCODES],,[Define if libopcodes exists])
+])

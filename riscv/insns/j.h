@@ -1,0 +1,1 @@
+npc = JUMP_TARGET;

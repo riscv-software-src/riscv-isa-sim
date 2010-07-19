@@ -1,0 +1,23 @@
+riscv_subproject_deps =
+
+riscv_hdrs = \
+	common.h \
+	decode.h \
+	execute.h \
+	load_elf.h \
+	mmu.h \
+	processor.h \
+	sim.h \
+	trap.h \
+	insns/*.h \
+
+riscv_srcs = \
+	load_elf.cc \
+	processor.cc \
+	sim.cc \
+	trap.cc \
+
+riscv_test_srcs =
+
+riscv_install_prog_srcs = \
+	riscv-isa-run.cc \
