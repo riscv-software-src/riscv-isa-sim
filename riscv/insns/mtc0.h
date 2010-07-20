@@ -12,7 +12,12 @@ switch(insn.rtype.rs)
     ebase = sext32(RT & ~0xFFF);
     break;
   case 8:
+  {
     char ch = RT;
     demand(1 == write(1,&ch,1),"wtf");
     break;
+  }
+  case 9:
+    printf("%ld insns retired\n",counters[0]);
+    exit(0);
 }
