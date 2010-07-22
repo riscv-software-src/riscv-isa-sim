@@ -6,13 +6,18 @@
 #include "trap.h"
 #include "mmu.h"
 
+class sim_t;
+
 class processor_t
 {
 public:
-  processor_t(int _id, char* _mem, size_t _memsz);
+  processor_t(sim_t* _sim, char* _mem, size_t _memsz);
+  void init(uint32_t _id);
   void step(size_t n, bool noisy);
 
 private:
+  sim_t* sim;
+
   // architected state
   reg_t R[NGPR];
   reg_t pc;

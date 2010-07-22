@@ -1,4 +1,5 @@
 #include "sim.h"
+#include "applink.h"
 #include "common.h"
 #include "load_elf.h"
 #include <sys/mman.h>
@@ -24,20 +25,20 @@ private:
   size_t size;
 };
 
-sim_t::sim_t(int _nprocs, size_t _memsz)
-  : nprocs(_nprocs), memsz(_memsz)
+sim_t::sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink)
+  : applink(_applink),
+    memsz(_memsz),
+    mem((char*)mmap64(NULL, memsz, PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0)),
+    procs(std::vector<processor_t>(_nprocs,processor_t(this,mem,memsz)))
 {
-  mem = (char*)mmap(NULL, memsz, PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0);
   demand(mem != MAP_FAILED, "couldn't allocate target machine's memory");
 
-  procs = (processor_t*)malloc(sizeof(*procs)*nprocs);
-  for(int i = 0; i < nprocs; i++)
-    new(&procs[i]) processor_t(i,mem,memsz);
+  for(int i = 0; i < (int)procs.size(); i++)
+    procs[i].init(i);
 }
 
 sim_t::~sim_t()
 {
-  free(procs);
 }
 
 void sim_t::load_elf(const char* fn)
@@ -45,9 +46,23 @@ void sim_t::load_elf(const char* fn)
   memory_t loader(mem, memsz);
   ::load_elf(fn,&loader);
 }
+void sim_t::set_tohost(reg_t val)
+{
+  fromhost = 0;
+  tohost = val;
+}
+
+reg_t sim_t::get_fromhost()
+{
+  while(fromhost == 0)
+    applink->wait_for_packet();
+  return fromhost;
+}
 
 void sim_t::run(bool debug)
 {
+  applink->wait_for_start();
+
   while(1)
   {
     if(!debug)
@@ -96,7 +111,7 @@ void sim_t::run(bool debug)
 void sim_t::step_all(size_t n, size_t interleave, bool noisy)
 {
   for(size_t j = 0; j < n; j+=interleave)
-    for(int i = 0; i < nprocs; i++)
+    for(int i = 0; i < (int)procs.size(); i++)
       procs[i].step(interleave,noisy);
 }
 
@@ -134,7 +149,7 @@ void sim_t::interactive_run_proc(const std::vector<std::string>& a, bool noisy)
     return;
 
   int p = atoi(a[0].c_str());
-  if(p >= nprocs)
+  if(p >= (int)procs.size())
     return;
 
   if(a.size() == 2)
@@ -154,7 +169,7 @@ reg_t sim_t::get_pc(const std::vector<std::string>& args)
     throw trap_illegal_instruction;
 
   int p = atoi(args[0].c_str());
-  if(p >= nprocs)
+  if(p >= (int)procs.size())
     throw trap_illegal_instruction;
 
   return procs[p].pc;
@@ -167,7 +182,7 @@ reg_t sim_t::get_reg(const std::vector<std::string>& args)
 
   int p = atoi(args[0].c_str());
   int r = atoi(args[1].c_str());
-  if(p >= nprocs || r >= NGPR)
+  if(p >= (int)procs.size() || r >= NGPR)
     throw trap_illegal_instruction;
 
   return procs[p].R[r];

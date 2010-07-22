@@ -5,22 +5,31 @@
 #include <string>
 #include "processor.h"
 
-const int MEMSIZE = 0x7D000000;
+const long MEMSIZE = 0x100000000;
+
+class appserver_link_t;
 
 class sim_t
 {
 public:
-  sim_t(int _nprocs, size_t _memsz);
+  sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink);
   ~sim_t();
   void load_elf(const char* fn);
   void run(bool debug);
 
-private:
-  processor_t* procs;
-  int nprocs;
+  void set_tohost(reg_t val);
+  reg_t get_fromhost();
 
-  char* mem;
+private:
+  // global architected state
+  reg_t tohost;
+  reg_t fromhost;
+
+  appserver_link_t* applink;
+
   size_t memsz;
+  char* mem;
+  std::vector<processor_t> procs;
 
   void step_all(size_t n, size_t interleave, bool noisy);
 
@@ -41,6 +50,8 @@ private:
   reg_t get_reg(const std::vector<std::string>& args);
   reg_t get_mem(const std::vector<std::string>& args);
   reg_t get_pc(const std::vector<std::string>& args);
+
+  friend class appserver_link_t;
 };
 
 #endif

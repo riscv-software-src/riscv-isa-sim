@@ -20,4 +20,8 @@ switch(insn.rtype.rs)
   case 9:
     printf("%ld insns retired\n",counters[0]);
     exit(0);
+
+  case 16:
+    sim->set_tohost(sext32(RT));
+    break;
 }

@@ -1,6 +1,7 @@
 riscv_subproject_deps =
 
 riscv_hdrs = \
+    applink.h \
 	common.h \
 	decode.h \
 	execute.h \
@@ -12,6 +13,7 @@ riscv_hdrs = \
 	insns/*.h \
 
 riscv_srcs = \
+    applink.cc \
 	load_elf.cc \
 	processor.cc \
 	sim.cc \

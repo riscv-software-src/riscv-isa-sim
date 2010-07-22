@@ -12,4 +12,8 @@ switch(insn.rtype.rs)
   case 3:
     ebase = RT & ~0xFFF;
     break;
+
+  case 16:
+    sim->set_tohost(RT);
+    break;
 }

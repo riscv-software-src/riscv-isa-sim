@@ -5,9 +5,10 @@
 #include "processor.h"
 #include "common.h"
 #include "config.h"
+#include "sim.h"
 
-processor_t::processor_t(int _id, char* _mem, size_t _memsz)
-  : id(_id), mmu(_mem,_memsz)
+processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
+  : sim(_sim), mmu(_mem,_memsz)
 {
   memset(R,0,sizeof(R));
   pc = 0;
@@ -17,6 +18,11 @@ processor_t::processor_t(int _id, char* _mem, size_t _memsz)
   set_sr(SR_S);
 
   memset(counters,0,sizeof(counters));
+}
+
+void processor_t::init(uint32_t _id)
+{
+  id = _id;
 }
 
 void processor_t::set_sr(uint32_t val)
