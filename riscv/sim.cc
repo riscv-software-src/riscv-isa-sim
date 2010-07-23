@@ -35,6 +35,8 @@ sim_t::sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink)
 
   for(int i = 0; i < (int)procs.size(); i++)
     procs[i].init(i);
+
+  applink->init(this);
 }
 
 sim_t::~sim_t()

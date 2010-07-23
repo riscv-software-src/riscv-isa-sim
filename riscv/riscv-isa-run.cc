@@ -32,7 +32,7 @@ int main(int argc, char** argv)
   demand(fcntl(fromhost_fd,F_GETFD) >= 0, "fromhost file not open");
   demand(fcntl(tohost_fd,F_GETFD) >= 0, "tohost file not open");
 
-  appserver_link_t applink(fromhost_fd,tohost_fd);
+  appserver_link_t applink(tohost_fd,fromhost_fd);
 
   sim_t s(nprocs,MEMSIZE,&applink);
   s.run(debug);

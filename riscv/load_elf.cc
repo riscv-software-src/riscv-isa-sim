@@ -25,6 +25,8 @@ void load_elf(const char* buf, size_t size, loader_t* loader)
 
       loader->write(ph->p_vaddr, ph->p_filesz, buf + ph->p_offset);
       loader->write(ph->p_vaddr + ph->p_filesz, ph->p_memsz - ph->p_filesz);
+
+      printf("%d\n", ph->p_vaddr);
     }
   }
 }

@@ -39,7 +39,7 @@ public:
 };
 
 appserver_link_t::appserver_link_t(int _tohost_fd, int _fromhost_fd)
-  : sim(NULL), tohost_fd(_tohost_fd), fromhost_fd(_fromhost_fd)
+  : sim(NULL), tohost_fd(_tohost_fd), fromhost_fd(_fromhost_fd), seqno(1)
 {
 }
 
@@ -57,9 +57,10 @@ void appserver_link_t::send_packet(packet* p)
 {
   while(1) try
   {
-    int bytes = write(fromhost_fd,p,offsetof(packet,data)+p->data_size);
+    int bytes = write(tohost_fd,p,offsetof(packet,data)+p->data_size);
     if(bytes == -1 || (size_t)bytes != offsetof(packet,data)+p->data_size)
       throw io_error("write failed");
+    return;
   }
   catch(io_error e)
   {
@@ -79,7 +80,7 @@ int appserver_link_t::wait_for_packet()
   {
     packet p;
     int bytes = read(fromhost_fd,&p,sizeof(p));
-    if(bytes != offsetof(packet,data))
+    if(bytes < offsetof(packet,data))
       throw io_error("read failed");
   
     if(p.seqno != seqno)
@@ -95,6 +96,7 @@ int appserver_link_t::wait_for_packet()
       case APP_CMD_START:
         break;
       case APP_CMD_STOP:
+        send_packet(&ackpacket);
         exit(0);
       case APP_CMD_READ_MEM:
         demand(p.addr % APP_DATA_ALIGN == 0, "misaligned address");
@@ -121,7 +123,7 @@ int appserver_link_t::wait_for_packet()
         demand(p.addr == 17,"bad control reg");
         demand(p.data_size == sizeof(reg_t),"bad control reg size");
         sim->tohost = 0;
-        memcpy(&sim->fromhost,ackpacket.data,sizeof(reg_t));
+        memcpy(&sim->fromhost,p.data,sizeof(reg_t));
         break;
     }
 
