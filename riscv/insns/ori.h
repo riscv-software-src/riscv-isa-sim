@@ -1,1 +1,1 @@
-RT = RS | IMM;
+RA = IMM | RB;

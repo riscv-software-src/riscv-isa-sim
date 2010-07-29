@@ -4,7 +4,7 @@
 class mmu_t
 {
 public:
-  mmu_t(char* _mem, size_t _memsz) : mem(_mem), memsz(_memsz) {}
+  mmu_t(char* _mem, size_t _memsz) : mem(_mem), memsz(_memsz), badvaddr(0) {}
 
   #define load_func(type) \
     type##_t load_##type(reg_t addr) { \

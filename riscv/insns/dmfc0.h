@@ -1,29 +1,29 @@
 require_supervisor;
 require64;
 
-switch(insn.rtype.rs)
+switch(insn.rtype.rb)
 {
   case 0:
-    RT = sr;
+    RA = sr;
     break;
   case 1:
-    RT = epc;
+    RA = epc;
     break;
   case 2:
-    RT = badvaddr;
+    RA = badvaddr;
     break;
   case 3:
-    RT = ebase;
+    RA = ebase;
     break;
 
   case 8:
-    RT = MEMSIZE >> 12;
+    RA = MEMSIZE >> 12;
     break;
 
   case 17:
-    RT = sim->get_fromhost();
+    RA = sim->get_fromhost();
     break;
 
   default:
-    RT = -1;
+    RA = -1;
 }

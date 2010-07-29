@@ -1,1 +1,1 @@
-if(!RT) RD = RS;
+if(!RB) RC = RA;

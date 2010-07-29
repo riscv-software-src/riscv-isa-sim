@@ -1,2 +1,2 @@
 require64;
-RD = RT >> (32+SHAMT);
+RC = RB >> (32+SHAMT);

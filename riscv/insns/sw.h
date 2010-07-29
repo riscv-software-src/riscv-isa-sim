@@ -1,1 +1,1 @@
-mmu.store_uint32(RS+SIMM, RT);
+mmu.store_uint32(RB+SIMM, RA);

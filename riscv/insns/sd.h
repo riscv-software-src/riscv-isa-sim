@@ -1,2 +1,2 @@
 require64;
-mmu.store_uint64(RS+SIMM, RT);
+mmu.store_uint64(RB+SIMM, RA);

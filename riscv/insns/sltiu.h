@@ -1,1 +1,1 @@
-RT = cmp_trunc(RS) < cmp_trunc(SIMM);
+RA = cmp_trunc(RB) < cmp_trunc(SIMM);

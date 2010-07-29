@@ -1,2 +1,2 @@
 require64;
-RD = RS - RT;
+RC = RA - RB;

@@ -20,4 +20,6 @@
       print_and_die(__str); \
     } } while(0)
 
+#define static_assert(x)	switch (x) case 0: case (x):
+
 #endif

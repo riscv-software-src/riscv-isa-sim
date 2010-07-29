@@ -18,6 +18,9 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   set_sr(SR_S);
 
   memset(counters,0,sizeof(counters));
+
+  static_assert(sizeof(insn_t) == 4);
+  static_assert(sizeof(uint128_t) == 16 && sizeof(int128_t) == 16);
 }
 
 void processor_t::init(uint32_t _id)
@@ -45,8 +48,6 @@ void processor_t::step(size_t n, bool noisy)
     {
       insn_t insn = mmu.load_insn(pc);
   
-      int opcode = insn.rtype.opcode;
-      int funct = insn.rtype.funct;
       reg_t npc = pc+sizeof(insn);
 
       if(noisy)

@@ -1,1 +1,1 @@
-RT = mmu.load_uint16(RS+SIMM);
+RA = mmu.load_uint16(RB+SIMM);

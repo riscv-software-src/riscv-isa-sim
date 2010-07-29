@@ -1,1 +1,1 @@
-RD = RS | RT;
+RC = RA | RB;

@@ -1,19 +1,19 @@
 require_supervisor;
 require64;
 
-switch(insn.rtype.rs)
+switch(insn.rtype.rb)
 {
   case 0:
-    set_sr(RT);
+    set_sr(RA);
     break;
   case 1:
-    epc = RT;
+    epc = RA;
     break;
   case 3:
-    ebase = RT & ~0xFFF;
+    ebase = RA & ~0xFFF;
     break;
 
   case 16:
-    sim->set_tohost(RT);
+    sim->set_tohost(RA);
     break;
 }

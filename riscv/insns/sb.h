@@ -1,1 +1,1 @@
-mmu.store_uint8(RS+SIMM, RT);
+mmu.store_uint8(RB+SIMM, RA);

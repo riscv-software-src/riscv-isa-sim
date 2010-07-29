@@ -80,7 +80,7 @@ int appserver_link_t::wait_for_packet()
   {
     packet p;
     int bytes = read(fromhost_fd,&p,sizeof(p));
-    if(bytes < offsetof(packet,data))
+    if(bytes < (signed)offsetof(packet,data))
       throw io_error("read failed");
   
     if(p.seqno != seqno)

@@ -1,1 +1,1 @@
-RT = IMM << 16;
+RA = sext32(BIGIMM << IMM_BITS);

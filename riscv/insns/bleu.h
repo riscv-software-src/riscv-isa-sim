@@ -1,2 +1,2 @@
-if(cmp_trunc(RS) <= cmp_trunc(RT))
+if(cmp_trunc(RA) <= cmp_trunc(RB))
   npc = BRANCH_TARGET;
