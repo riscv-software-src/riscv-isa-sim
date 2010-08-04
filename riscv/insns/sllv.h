@@ -1,1 +1,2 @@
-RC = sext32(RB << (RA & 0x1F));
+require64;
+RC = RB << (RA & 0x3F);

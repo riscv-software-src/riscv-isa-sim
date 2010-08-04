@@ -1,1 +1,2 @@
-RC = sext32(sreg_t(RB) >> SHAMT);
+require64;
+RC = sreg_t(RB) >> SHAMT;

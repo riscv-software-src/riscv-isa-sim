@@ -1,1 +1,2 @@
-RC = sext32(RB << SHAMT);
+require64;
+RC = RB << SHAMT;

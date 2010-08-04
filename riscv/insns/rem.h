@@ -1,2 +1,2 @@
-RC = sext32(int32_t(RA) % int32_t(RB));
-
+require64;
+RC = sreg_t(RA) % sreg_t(RB);

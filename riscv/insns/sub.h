@@ -1,2 +1,2 @@
-RC = sext32(RA - RB);
-
+require64;
+RC = RA - RB;

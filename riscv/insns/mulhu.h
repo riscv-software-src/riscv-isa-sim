@@ -1,2 +1,2 @@
-RC = sext32((RA * RB) >> 32);
-
+require64;
+RC = (uint128_t(RA) * uint128_t(RB)) >> 64;

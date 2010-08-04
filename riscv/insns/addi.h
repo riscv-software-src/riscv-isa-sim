@@ -1,1 +1,2 @@
-RA = sext32(SIMM + RB);
+require64;
+RA = SIMM + RB;
