@@ -9,6 +9,13 @@ typedef unsigned int uint128_t __attribute__((mode(TI)));
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
 
+union freg_t
+{
+  float sp;
+  double dp;
+  uint64_t bits;
+};
+
 const int OPCODE_BITS = 7;
 const int JTYPE_OPCODE_BITS = 5;
 
@@ -24,6 +31,7 @@ const int IMM_BITS = 12;
 const int TARGET_BITS = 27;
 const int SHAMT_BITS = 6;
 const int FUNCT_BITS = 3;
+const int FFUNCT_BITS = 5;
 const int BIGIMM_BITS = 20;
 
 #define SR_ET    0x0000000000000001ULL
@@ -69,12 +77,23 @@ struct btype_t
   unsigned opcode : OPCODE_BITS;
 };
 
+struct ftype_t
+{
+  unsigned rc : FPRID_BITS;
+  unsigned rd : FPRID_BITS;
+  unsigned ffunct : FFUNCT_BITS;
+  unsigned rb : FPRID_BITS;
+  unsigned ra : FPRID_BITS;
+  unsigned opcode : OPCODE_BITS;
+};
+
 union insn_t
 {
   itype_t itype;
   jtype_t jtype;
   rtype_t rtype;
   btype_t btype;
+  ftype_t ftype;
   uint32_t bits;
 };
 
@@ -82,6 +101,10 @@ union insn_t
 #define RA R[insn.rtype.ra]
 #define RB R[insn.rtype.rb]
 #define RC R[insn.rtype.rc]
+#define FRA FR[insn.ftype.ra]
+#define FRB FR[insn.ftype.rb]
+#define FRC FR[insn.ftype.rc]
+#define FRD FR[insn.ftype.rd]
 #define BIGIMM insn.btype.bigimm
 #define IMM insn.itype.imm
 #define SIMM ((int32_t)((uint32_t)insn.itype.imm<<(32-IMM_BITS))>>(32-IMM_BITS))
@@ -92,6 +115,7 @@ union insn_t
 
 #define require_supervisor if(!(sr & SR_S)) throw trap_privileged_instruction
 #define require64 if(gprlen != 64) throw trap_illegal_instruction
+#define require_fp if(!(sr & SR_EF)) throw trap_fp_disabled
 #define cmp_trunc(reg) (reg_t(reg) << (64-gprlen))
 
 static inline sreg_t sext32(int32_t arg)

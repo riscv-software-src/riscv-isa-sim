@@ -11,6 +11,7 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   : sim(_sim), mmu(_mem,_memsz)
 {
   memset(R,0,sizeof(R));
+  memset(FR,0,sizeof(FR));
   pc = 0;
   ebase = 0;
   epc = 0;
@@ -18,6 +19,11 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   set_sr(SR_S);
 
   memset(counters,0,sizeof(counters));
+
+  // a few assumptions about endianness, including freg_t union
+  static_assert(BYTE_ORDER == LITTLE_ENDIAN);
+  static_assert(sizeof(freg_t) == 8);
+  static_assert(sizeof(reg_t) == 8);
 
   static_assert(sizeof(insn_t) == 4);
   static_assert(sizeof(uint128_t) == 16 && sizeof(int128_t) == 16);

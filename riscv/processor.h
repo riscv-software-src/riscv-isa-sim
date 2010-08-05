@@ -20,6 +20,7 @@ private:
 
   // architected state
   reg_t R[NGPR];
+  freg_t FR[NFPR];
   reg_t pc;
   reg_t epc;
   reg_t badvaddr;
