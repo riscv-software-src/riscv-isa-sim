@@ -249,15 +249,6 @@ switch((insn.bits >> 0x19) & 0x7f)
         }
         #include "insns/unimp.h"
       }
-      case 0x2:
-      {
-        if((insn.bits & 0xfe007fff) == 0xd4002000)
-        {
-          #include "insns/cfc1.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
       case 0x4:
       {
         if((insn.bits & 0xfe007fff) == 0xd4004000)
@@ -272,15 +263,6 @@ switch((insn.bits >> 0x19) & 0x7f)
         if((insn.bits & 0xfe007fff) == 0xd4005000)
         {
           #include "insns/mtf_d.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x6:
-      {
-        if((insn.bits & 0xfe007fff) == 0xd4006000)
-        {
-          #include "insns/ctc1.h"
           break;
         }
         #include "insns/unimp.h"
