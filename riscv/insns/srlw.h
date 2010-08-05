@@ -1,1 +1,1 @@
-RC = sext32(RB >> SHAMT);
+RC = sext32((uint32_t)RB >> SHAMT);
