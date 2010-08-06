@@ -1,6 +1,7 @@
 #ifndef _RISCV_DECODE_H
 #define _RISCV_DECODE_H
 
+#define __STDC_LIMIT_MACROS
 #include <stdint.h>
 typedef int int128_t __attribute__((mode(TI)));
 typedef unsigned int uint128_t __attribute__((mode(TI)));

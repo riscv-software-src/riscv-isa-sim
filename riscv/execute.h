@@ -67,72 +67,84 @@ switch((insn.bits >> 0x19) & 0x7f)
     {
       case 0x0:
       {
-        if((insn.bits & 0xfe007c00) == 0xd0000000)
+        if((insn.bits & 0xfe007fe0) == 0xd0000ca0)
         {
-          #include "insns/add_fmt.h"
+          #include "insns/sgninj_d.h"
           break;
         }
-        #include "insns/unimp.h"
-      }
-      case 0x1:
-      {
-        if((insn.bits & 0xfe007c00) == 0xd0001000)
+        if((insn.bits & 0xfe007fe0) == 0xd00000a0)
         {
-          #include "insns/sub_fmt.h"
+          #include "insns/sgninj_s.h"
           break;
         }
-        #include "insns/unimp.h"
-      }
-      case 0x2:
-      {
-        if((insn.bits & 0xfe007c00) == 0xd0002000)
+        if((insn.bits & 0xfe007fe0) == 0xd0000000)
         {
-          #include "insns/mul_fmt.h"
+          #include "insns/add_s.h"
           break;
         }
-        #include "insns/unimp.h"
-      }
-      case 0x3:
-      {
-        if((insn.bits & 0xfe007c00) == 0xd0003000)
+        if((insn.bits & 0xfe007fe0) == 0xd0000c00)
         {
-          #include "insns/div_fmt.h"
+          #include "insns/add_d.h"
           break;
         }
-        #include "insns/unimp.h"
-      }
-      case 0x4:
-      {
-        if((insn.bits & 0xfe0ffc00) == 0xd0004000)
+        if((insn.bits & 0xfe007fe0) == 0xd0000ce0)
         {
-          #include "insns/sqrt_fmt.h"
+          #include "insns/sgnmul_d.h"
           break;
         }
-        #include "insns/unimp.h"
-      }
-      case 0x5:
-      {
-        if((insn.bits & 0xfe0ffc00) == 0xd0005000)
+        if((insn.bits & 0xfe007fe0) == 0xd0000cc0)
         {
-          #include "insns/abs_fmt.h"
+          #include "insns/sgninjn_d.h"
           break;
         }
-        #include "insns/unimp.h"
-      }
-      case 0x6:
-      {
-        if((insn.bits & 0xfe0ffc00) == 0xd0006000)
+        if((insn.bits & 0xfe007fe0) == 0xd00000c0)
         {
-          #include "insns/mov_fmt.h"
+          #include "insns/sgninjn_s.h"
           break;
         }
-        #include "insns/unimp.h"
-      }
-      case 0x7:
-      {
-        if((insn.bits & 0xfe0ffc00) == 0xd0007000)
+        if((insn.bits & 0xfe007fe0) == 0xd0000c40)
         {
-          #include "insns/neg_fmt.h"
+          #include "insns/mul_d.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xd0000020)
+        {
+          #include "insns/sub_s.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xd0000c20)
+        {
+          #include "insns/sub_d.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0000080)
+        {
+          #include "insns/sqrt_s.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0000c80)
+        {
+          #include "insns/sqrt_d.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xd00000e0)
+        {
+          #include "insns/sgnmul_s.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xd0000c60)
+        {
+          #include "insns/div_d.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xd0000060)
+        {
+          #include "insns/div_s.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xd0000040)
+        {
+          #include "insns/mul_s.h"
           break;
         }
         #include "insns/unimp.h"
