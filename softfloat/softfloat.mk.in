@@ -1,0 +1,14 @@
+softfloat_subproject_deps =
+
+softfloat_hdrs = \
+    softfloat.h \
+    softfloat-macros \
+    milieu.h \
+    softfloat-specialize \
+
+softfloat_srcs = \
+	softfloat.cc \
+
+softfloat_test_srcs =
+
+softfloat_install_prog_srcs =
