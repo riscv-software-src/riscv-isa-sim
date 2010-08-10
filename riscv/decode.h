@@ -9,13 +9,7 @@ typedef unsigned int uint128_t __attribute__((mode(TI)));
 #define support_64bit 1
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
-
-union freg_t
-{
-  float sp;
-  double dp;
-  uint64_t bits;
-};
+typedef uint64_t freg_t;
 
 const int OPCODE_BITS = 7;
 const int JTYPE_OPCODE_BITS = 5;
@@ -42,7 +36,38 @@ const int BIGIMM_BITS = 20;
 #define SR_UX    0x0000000000000020ULL
 #define SR_KX    0x0000000000000040ULL
 #define SR_IM    0x000000000000FF00ULL
-#define SR_ZERO  0xFFFFFFFFFFFF0082ULL
+#define SR_ZERO  ~(SR_ET | SR_PS | SR_S | SR_EF | SR_UX | SR_KX | SR_IM)
+
+#define FP_RD_NE 0
+#define FP_RD_0  1
+#define FP_RD_UP 2
+#define FP_RD_DN 3
+#define FSR_RD_SHIFT 10
+#define FSR_RD   (0x3 << FSR_RD_SHIFT)
+
+#define FPEXC_NV 0x10
+#define FPEXC_OF 0x08
+#define FPEXC_UF 0x04
+#define FPEXC_DZ 0x02
+#define FPEXC_NX 0x01
+
+#define FSR_AEXC_SHIFT 5
+#define FSR_NVA  (FPEXC_NV << FSR_AEXC_SHIFT)
+#define FSR_OFA  (FPEXC_OF << FSR_AEXC_SHIFT)
+#define FSR_UFA  (FPEXC_UF << FSR_AEXC_SHIFT)
+#define FSR_DZA  (FPEXC_DZ << FSR_AEXC_SHIFT)
+#define FSR_NXA  (FPEXC_NX << FSR_AEXC_SHIFT)
+#define FSR_AEXC (FSR_NVA | FSR_OFA | FSR_UFA | FSR_DZA | FSR_NXA)
+
+#define FSR_CEXC_SHIFT 0
+#define FSR_NVC  (FPEXC_NV << FSR_AEXC_SHIFT)
+#define FSR_OFC  (FPEXC_OF << FSR_AEXC_SHIFT)
+#define FSR_UFC  (FPEXC_UF << FSR_AEXC_SHIFT)
+#define FSR_DZC  (FPEXC_DZ << FSR_AEXC_SHIFT)
+#define FSR_NXC  (FPEXC_NX << FSR_AEXC_SHIFT)
+#define FSR_CEXC (FSR_NVC | FSR_OFC | FSR_UFC | FSR_DZC | FSR_NXC)
+
+#define FSR_ZERO ~(FSR_RD | FSR_AEXC | FSR_CEXC)
 
 // note: bit fields are in little-endian order
 struct itype_t
@@ -118,6 +143,10 @@ union insn_t
 #define require64 if(gprlen != 64) throw trap_illegal_instruction
 #define require_fp if(!(sr & SR_EF)) throw trap_fp_disabled
 #define cmp_trunc(reg) (reg_t(reg) << (64-gprlen))
+#define set_fp_exceptions ({ set_fsr((fsr & ~FSR_CEXC) | \
+                                (float_exception_flags << FSR_AEXC_SHIFT) | \
+                                (float_exception_flags << FSR_CEXC_SHIFT)); \
+                             float_exception_flags = 0; })
 
 static inline sreg_t sext32(int32_t arg)
 {

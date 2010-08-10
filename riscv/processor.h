@@ -27,6 +27,7 @@ private:
   reg_t ebase;
   uint32_t id;
   uint32_t sr;
+  uint32_t fsr;
   int gprlen;
 
   // shared memory
@@ -37,6 +38,7 @@ private:
 
   // functions
   void set_sr(uint32_t val);
+  void set_fsr(uint32_t val);
   void take_trap(trap_t t);
   void disasm(insn_t insn, reg_t pc);
 

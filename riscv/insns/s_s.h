@@ -1,2 +1,2 @@
 require_fp;
-mmu.store_uint32(RB+SIMM, FRA.bits);
+mmu.store_uint32(RB+SIMM, FRA);

@@ -1,4 +1,4 @@
-riscv_subproject_deps =
+riscv_subproject_deps = softfloat \
 
 riscv_hdrs = \
     applink.h \

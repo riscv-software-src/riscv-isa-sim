@@ -149,85 +149,130 @@ switch((insn.bits >> 0x19) & 0x7f)
         }
         #include "insns/unimp.h"
       }
-      default:
-      {
-        #include "insns/unimp.h"
-      }
-    }
-    break;
-  }
-  case 0x69:
-  {
-    switch((insn.bits >> 0xc) & 0x7)
-    {
-      case 0x0:
-      {
-        if((insn.bits & 0xfe0ffc00) == 0xd2000000)
-        {
-          #include "insns/round_l_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
       case 0x1:
       {
-        if((insn.bits & 0xfe0ffc00) == 0xd2001000)
+        if((insn.bits & 0xfe0fffe0) == 0xd00010c0)
         {
-          #include "insns/trunc_l_fmt.h"
+          #include "insns/cvt_s_w.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001ca0)
+        {
+          #include "insns/cvtu_d_l.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001c40)
+        {
+          #include "insns/trunc_w_d.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001040)
+        {
+          #include "insns/trunc_w_s.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001ce0)
+        {
+          #include "insns/cvtu_d_w.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001e00)
+        {
+          #include "insns/cvt_d_s.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001000)
+        {
+          #include "insns/trunc_l_s.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001c00)
+        {
+          #include "insns/trunc_l_d.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd00010e0)
+        {
+          #include "insns/cvtu_s_w.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001020)
+        {
+          #include "insns/truncu_l_s.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001c20)
+        {
+          #include "insns/truncu_l_d.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd00010a0)
+        {
+          #include "insns/cvtu_s_l.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001080)
+        {
+          #include "insns/cvt_s_l.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001260)
+        {
+          #include "insns/cvt_s_d.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001060)
+        {
+          #include "insns/truncu_w_s.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001cc0)
+        {
+          #include "insns/cvt_d_w.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001c80)
+        {
+          #include "insns/cvt_d_l.h"
+          break;
+        }
+        if((insn.bits & 0xfe0fffe0) == 0xd0001c60)
+        {
+          #include "insns/truncu_w_d.h"
           break;
         }
         #include "insns/unimp.h"
       }
       case 0x2:
       {
-        if((insn.bits & 0xfe0ffc00) == 0xd2002000)
+        if((insn.bits & 0xfe007fe0) == 0xd0002c20)
         {
-          #include "insns/ceil_l_fmt.h"
+          #include "insns/c_eq_d.h"
           break;
         }
-        #include "insns/unimp.h"
-      }
-      case 0x3:
-      {
-        if((insn.bits & 0xfe0ffc00) == 0xd2003000)
+        if((insn.bits & 0xfe007fe0) == 0xd0002020)
         {
-          #include "insns/floor_l_fmt.h"
+          #include "insns/c_eq_s.h"
           break;
         }
-        #include "insns/unimp.h"
-      }
-      case 0x4:
-      {
-        if((insn.bits & 0xfe0ffc00) == 0xd2004000)
+        if((insn.bits & 0xfe007fe0) == 0xd0002c60)
         {
-          #include "insns/round_w_fmt.h"
+          #include "insns/c_le_d.h"
           break;
         }
-        #include "insns/unimp.h"
-      }
-      case 0x5:
-      {
-        if((insn.bits & 0xfe0ffc00) == 0xd2005000)
+        if((insn.bits & 0xfe007fe0) == 0xd0002040)
         {
-          #include "insns/trunc_w_fmt.h"
+          #include "insns/c_lt_s.h"
           break;
         }
-        #include "insns/unimp.h"
-      }
-      case 0x6:
-      {
-        if((insn.bits & 0xfe0ffc00) == 0xd2006000)
+        if((insn.bits & 0xfe007fe0) == 0xd0002060)
         {
-          #include "insns/ceil_w_fmt.h"
+          #include "insns/c_le_s.h"
           break;
         }
-        #include "insns/unimp.h"
-      }
-      case 0x7:
-      {
-        if((insn.bits & 0xfe0ffc00) == 0xd2007000)
+        if((insn.bits & 0xfe007fe0) == 0xd0002c40)
         {
-          #include "insns/floor_w_fmt.h"
+          #include "insns/c_lt_d.h"
           break;
         }
         #include "insns/unimp.h"
@@ -275,219 +320,6 @@ switch((insn.bits >> 0x19) & 0x7f)
         if((insn.bits & 0xfe007fff) == 0xd4005000)
         {
           #include "insns/mtf_d.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      default:
-      {
-        #include "insns/unimp.h"
-      }
-    }
-    break;
-  }
-  case 0x6b:
-  {
-    switch((insn.bits >> 0xc) & 0x7)
-    {
-      case 0x0:
-      {
-        if((insn.bits & 0xfe0ffc00) == 0xd6000000)
-        {
-          #include "insns/cvt_s_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x1:
-      {
-        if((insn.bits & 0xfe0ffc00) == 0xd6001000)
-        {
-          #include "insns/cvt_d_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x4:
-      {
-        if((insn.bits & 0xfe0ffc00) == 0xd6004000)
-        {
-          #include "insns/cvt_w_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x5:
-      {
-        if((insn.bits & 0xfe0ffc00) == 0xd6005000)
-        {
-          #include "insns/cvt_l_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      default:
-      {
-        #include "insns/unimp.h"
-      }
-    }
-    break;
-  }
-  case 0x6c:
-  {
-    switch((insn.bits >> 0xc) & 0x7)
-    {
-      case 0x0:
-      {
-        if((insn.bits & 0xfe007c00) == 0xd8000000)
-        {
-          #include "insns/c_f_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x1:
-      {
-        if((insn.bits & 0xfe007c00) == 0xd8001000)
-        {
-          #include "insns/c_un_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x2:
-      {
-        if((insn.bits & 0xfe007c00) == 0xd8002000)
-        {
-          #include "insns/c_eq_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x3:
-      {
-        if((insn.bits & 0xfe007c00) == 0xd8003000)
-        {
-          #include "insns/c_ueq_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x4:
-      {
-        if((insn.bits & 0xfe007c00) == 0xd8004000)
-        {
-          #include "insns/c_olt_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x5:
-      {
-        if((insn.bits & 0xfe007c00) == 0xd8005000)
-        {
-          #include "insns/c_ult_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x6:
-      {
-        if((insn.bits & 0xfe007c00) == 0xd8006000)
-        {
-          #include "insns/c_ole_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x7:
-      {
-        if((insn.bits & 0xfe007c00) == 0xd8007000)
-        {
-          #include "insns/c_ule_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      default:
-      {
-        #include "insns/unimp.h"
-      }
-    }
-    break;
-  }
-  case 0x6d:
-  {
-    switch((insn.bits >> 0xc) & 0x7)
-    {
-      case 0x0:
-      {
-        if((insn.bits & 0xfe007c00) == 0xda000000)
-        {
-          #include "insns/c_sf_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x1:
-      {
-        if((insn.bits & 0xfe007c00) == 0xda001000)
-        {
-          #include "insns/c_ngle_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x2:
-      {
-        if((insn.bits & 0xfe007c00) == 0xda002000)
-        {
-          #include "insns/c_seq_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x3:
-      {
-        if((insn.bits & 0xfe007c00) == 0xda003000)
-        {
-          #include "insns/c_ngl_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x4:
-      {
-        if((insn.bits & 0xfe007c00) == 0xda004000)
-        {
-          #include "insns/c_lt_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x5:
-      {
-        if((insn.bits & 0xfe007c00) == 0xda005000)
-        {
-          #include "insns/c_nge_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x6:
-      {
-        if((insn.bits & 0xfe007c00) == 0xda006000)
-        {
-          #include "insns/c_le_fmt.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x7:
-      {
-        if((insn.bits & 0xfe007c00) == 0xda007000)
-        {
-          #include "insns/c_ngt_fmt.h"
           break;
         }
         #include "insns/unimp.h"

@@ -1,2 +1,2 @@
 require_fp;
-FRC.bits = FRA.bits ^ (FRB.bits & INT64_MIN);
+FRC = FRA ^ (FRB & INT64_MIN);

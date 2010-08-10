@@ -1,2 +1,2 @@
 require_fp;
-FRA.bits = RB;
+FRA = sext32(RB);

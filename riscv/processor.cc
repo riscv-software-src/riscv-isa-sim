@@ -1,11 +1,13 @@
 #include <bfd.h>
 #include <dis-asm.h>
+#include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include "processor.h"
 #include "common.h"
 #include "config.h"
 #include "sim.h"
+#include "softfloat.h"
 
 processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   : sim(_sim), mmu(_mem,_memsz)
@@ -17,6 +19,7 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   epc = 0;
   badvaddr = 0;
   set_sr(SR_S);
+  set_fsr(0);
 
   memset(counters,0,sizeof(counters));
 
@@ -43,6 +46,11 @@ void processor_t::set_sr(uint32_t val)
     sr &= ~(SR_KX | SR_UX);
 
   gprlen = ((sr & SR_S) ? (sr & SR_KX) : (sr & SR_UX)) ? 64 : 32;
+}
+
+void processor_t::set_fsr(uint32_t val)
+{
+  fsr = val & ~FSR_ZERO;
 }
 
 void processor_t::step(size_t n, bool noisy)

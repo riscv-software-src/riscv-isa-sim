@@ -1,3 +1,3 @@
 require_fp;
-FRC = float64_div(FRA, FRB);
+FRC = int64_to_float64(FRA);
 set_fp_exceptions;
