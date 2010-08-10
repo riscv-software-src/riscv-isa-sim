@@ -5,7 +5,6 @@ riscv_hdrs = \
 	common.h \
 	decode.h \
 	execute.h \
-	load_elf.h \
 	mmu.h \
 	processor.h \
 	sim.h \
@@ -14,7 +13,6 @@ riscv_hdrs = \
 
 riscv_srcs = \
     applink.cc \
-	load_elf.cc \
 	processor.cc \
 	sim.cc \
 	trap.cc \

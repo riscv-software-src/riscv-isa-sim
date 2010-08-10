@@ -14,7 +14,6 @@ class sim_t
 public:
   sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink);
   ~sim_t();
-  void load_elf(const char* fn);
   void run(bool debug);
 
   void set_tohost(reg_t val);

@@ -1,29 +1,9 @@
 #include "sim.h"
 #include "applink.h"
 #include "common.h"
-#include "load_elf.h"
 #include <sys/mman.h>
 #include <map>
 #include <iostream>
-
-class memory_t : public loader_t
-{
-public:
-  memory_t(char* _mem, size_t _size) : mem(_mem), size(_size) {}
-
-  void write(size_t addr, size_t bytes, const void* src = NULL)
-  {
-    demand(addr < size && addr + bytes <= size, "out of bounds!");
-    if(src)
-      memcpy(mem+addr, src, bytes);
-    else
-      memset(mem+addr, 0, bytes);
-  }
-
-private:
-  char* mem;
-  size_t size;
-};
 
 sim_t::sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink)
   : applink(_applink),
@@ -43,11 +23,6 @@ sim_t::~sim_t()
 {
 }
 
-void sim_t::load_elf(const char* fn)
-{
-  memory_t loader(mem, memsz);
-  ::load_elf(fn,&loader);
-}
 void sim_t::set_tohost(reg_t val)
 {
   fromhost = 0;
