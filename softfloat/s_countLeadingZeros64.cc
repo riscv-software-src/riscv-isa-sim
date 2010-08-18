@@ -1,6 +1,7 @@
 
 #include <stdint.h>
 #include "primitives.h"
+#include "platform.h"
 
 int softfloat_countLeadingZeros64( uint64_t a )
 {

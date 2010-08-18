@@ -83,8 +83,8 @@ int_fast64_t
 | significand are stored at the locations pointed to by `zExpPtr' and
 | `zSigPtr', respectively.
 *----------------------------------------------------------------------------*/
-struct exp16_sig32 { int_fast16_t exp; uint_fast32_t sig; }
- softfloat_normSubnormalF32Sig( uint_fast32_t );
+struct exp16_sig32 { int_fast16_t exp; uint_fast32_t sig; };
+struct exp16_sig32 softfloat_normSubnormalF32Sig( uint_fast32_t );
 
 /*----------------------------------------------------------------------------
 | Takes an abstract floating-point value having sign `zSign', exponent `zExp',
@@ -174,8 +174,8 @@ float32_t
 | significand are stored at the locations pointed to by `zExpPtr' and
 | `zSigPtr', respectively.
 *----------------------------------------------------------------------------*/
-struct exp16_sig64 { int_fast16_t exp; uint_fast64_t sig; }
- softfloat_normSubnormalF64Sig( uint_fast64_t );
+struct exp16_sig64 { int_fast16_t exp; uint_fast64_t sig; };
+struct exp16_sig64 softfloat_normSubnormalF64Sig( uint_fast64_t );
 
 /*----------------------------------------------------------------------------
 | Takes an abstract floating-point value having sign `zSign', exponent `zExp',

@@ -1,0 +1,21 @@
+softfloat_riscv_subproject_deps = \
+
+softfloat_riscv_hdrs = \
+	softfloat_types.h \
+	platform.h        \
+	specialize.h      \
+
+softfloat_riscv_srcs = \
+	softfloat_raiseFlags.cc \
+	s_commonNaNToF32UI.cc   \
+	s_commonNaNToF64UI.cc   \
+	s_f32UIToCommonNaN.cc   \
+	s_f64UIToCommonNaN.cc   \
+	s_isSigNaNF32UI.cc      \
+	s_isSigNaNF64UI.cc      \
+	s_propagateNaNF32UI.cc  \
+	s_propagateNaNF64UI.cc  \
+
+softfloat_riscv_test_srcs =
+
+softfloat_riscv_install_prog_srcs =

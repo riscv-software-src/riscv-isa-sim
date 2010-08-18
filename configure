@@ -4169,6 +4169,51 @@ $as_echo "#define SOFTFLOAT_ENABLED /**/" >>confdefs.h
 
 
 
+    # Determine if this is a required or an optional subproject
+
+
+
+    # Determine if there is a group with the same name
+
+
+
+    # Create variations of the subproject name suitable for use as a CPP
+    # enabled define, a shell enabled variable, and a shell function
+
+
+
+
+
+
+
+
+
+
+
+    # Add subproject to our running list
+
+    subprojects="$subprojects softfloat_riscv"
+
+    # Process the subproject appropriately. If enabled add it to the
+    # $enabled_subprojects running shell variable, set a
+    # SUBPROJECT_ENABLED C define, and include the appropriate
+    # 'subproject.ac'.
+
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: configuring default subproject : softfloat_riscv" >&5
+$as_echo "$as_me: configuring default subproject : softfloat_riscv" >&6;}
+      ac_config_files="$ac_config_files softfloat_riscv.mk:softfloat_riscv/softfloat_riscv.mk.in"
+
+      enable_softfloat_riscv_sproj="yes"
+      subprojects_enabled="$subprojects_enabled softfloat_riscv"
+
+$as_echo "#define SOFTFLOAT_RISCV_ENABLED /**/" >>confdefs.h
+
+
+
+
+
+
   # Output make variables
 
 
@@ -4876,6 +4921,7 @@ do
   case $ac_config_target in
     "riscv.mk") CONFIG_FILES="$CONFIG_FILES riscv.mk:riscv/riscv.mk.in" ;;
     "softfloat.mk") CONFIG_FILES="$CONFIG_FILES softfloat.mk:softfloat/softfloat.mk.in" ;;
+    "softfloat_riscv.mk") CONFIG_FILES="$CONFIG_FILES softfloat_riscv.mk:softfloat_riscv/softfloat_riscv.mk.in" ;;
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
 

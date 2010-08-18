@@ -1,3 +1,3 @@
 require_fp;
-FRC = float64_to_int32_round_to_zero(FRA);
+FRC = f64_to_ui32_r_minMag(FRA,true);
 set_fp_exceptions;
