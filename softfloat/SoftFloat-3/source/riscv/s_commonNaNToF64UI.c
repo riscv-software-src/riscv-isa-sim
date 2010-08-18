@@ -12,8 +12,7 @@ uint_fast64_t softfloat_commonNaNToF64UI( struct commonNaN a )
 {
 
     return
-        (uint_fast64_t) a.sign<<63 | UINT64_C( 0x7FF8000000000000 )
-            | a.v64>>12;
+        (uint_fast64_t) a.sign<<63 | UINT64_C( 0x7FFFFFFFFFFFFFFF );
 
 }
 

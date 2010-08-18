@@ -37,7 +37,7 @@ these four paragraphs for those parts of this code that are retained.
 
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
-#define init_detectTininess softfloat_tininess_afterRounding;
+#define init_detectTininess softfloat_tininess_beforeRounding;
 
 /*----------------------------------------------------------------------------
 | Structure used to transfer NaN representations from one format to another.
@@ -50,7 +50,7 @@ struct commonNaN {
 /*----------------------------------------------------------------------------
 | The pattern for a default generated single-precision NaN.
 *----------------------------------------------------------------------------*/
-#define defaultNaNF32UI 0xFFC00000
+#define defaultNaNF32UI 0xFFFFFFFF
 
 /*----------------------------------------------------------------------------
 | Returns 1 if the single-precision floating-point value `a' is a signaling
@@ -68,7 +68,7 @@ bool softfloat_isSigNaNF32UI( uint_fast32_t );
 struct commonNaN softfloat_f32UIToCommonNaN( uint_fast32_t );
 #if defined INLINE_LEVEL && ( 1 <= INLINE_LEVEL )
 INLINE uint_fast32_t softfloat_commonNaNToF32UI( struct commonNaN a )
-    { return (uint_fast32_t) a.sign<<31 | 0x7FC00000 | a.v64>>41; }
+    { return (uint_fast32_t) a.sign<<31 | 0x7FFFFFFF; }
 #else
 uint_fast32_t softfloat_commonNaNToF32UI( struct commonNaN );
 #endif

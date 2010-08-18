@@ -17,7 +17,7 @@ struct commonNaN softfloat_f64UIToCommonNaN( uint_fast64_t uiA )
         softfloat_raiseFlags( softfloat_flag_invalid );
     }
     z.sign = uiA>>63;
-    z.v64 = uiA<<12;
+    z.v64 = (uint_fast64_t) 0xFFFFFFFFFFFFF <<12;
     z.v0 = 0;
     return z;
 
