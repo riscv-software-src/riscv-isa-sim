@@ -277,6 +277,62 @@ switch((insn.bits >> 0x19) & 0x7f)
         }
         #include "insns/unimp.h"
       }
+      case 0x4:
+      {
+        if((insn.bits & 0xfe007c00) == 0xd0004000)
+        {
+          #include "insns/madd_s.h"
+          break;
+        }
+        if((insn.bits & 0xfe007c00) == 0xd0004c00)
+        {
+          #include "insns/madd_d.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x5:
+      {
+        if((insn.bits & 0xfe007c00) == 0xd0005000)
+        {
+          #include "insns/msub_s.h"
+          break;
+        }
+        if((insn.bits & 0xfe007c00) == 0xd0005c00)
+        {
+          #include "insns/msub_d.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x6:
+      {
+        if((insn.bits & 0xfe007c00) == 0xd0006000)
+        {
+          #include "insns/nmadd_s.h"
+          break;
+        }
+        if((insn.bits & 0xfe007c00) == 0xd0006c00)
+        {
+          #include "insns/nmadd_d.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x7:
+      {
+        if((insn.bits & 0xfe007c00) == 0xd0007c00)
+        {
+          #include "insns/nmsub_d.h"
+          break;
+        }
+        if((insn.bits & 0xfe007c00) == 0xd0007000)
+        {
+          #include "insns/nmsub_s.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
       default:
       {
         #include "insns/unimp.h"
