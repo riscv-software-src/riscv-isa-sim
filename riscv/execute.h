@@ -336,11 +336,6 @@ switch((insn.bits >> 0x19) & 0x7f)
     #include "insns/lui.h"
     break;
   }
-  case 0x72:
-  {
-    #include "insns/slori.h"
-    break;
-  }
   case 0x73:
   {
     switch((insn.bits >> 0xc) & 0x7)
