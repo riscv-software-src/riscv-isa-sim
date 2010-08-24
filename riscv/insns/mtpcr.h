@@ -1,19 +1,20 @@
 require_supervisor;
-require64;
+
+reg_t val = gprlen == 64 ? RA : sext32(RA);
 
 switch(insn.rtype.rb)
 {
   case 0:
-    set_sr(RA);
+    set_sr(val);
     break;
   case 1:
-    epc = RA;
+    epc = val;
     break;
   case 3:
-    ebase = RA & ~0xFFF;
+    ebase = val & ~0xFFF;
     break;
 
   case 16:
-    sim->set_tohost(RA);
+    sim->set_tohost(val);
     break;
 }

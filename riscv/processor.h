@@ -39,7 +39,7 @@ private:
   // functions
   void set_sr(uint32_t val);
   void set_fsr(uint32_t val);
-  void take_trap(trap_t t);
+  void take_trap(trap_t t, bool noisy);
   void disasm(insn_t insn, reg_t pc);
 
   friend class sim_t;

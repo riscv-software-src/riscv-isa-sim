@@ -18,7 +18,7 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   ebase = 0;
   epc = 0;
   badvaddr = 0;
-  set_sr(SR_S);
+  set_sr(SR_S | (support_64bit ? SR_KX : 0));
   set_fsr(0);
 
   memset(counters,0,sizeof(counters));
@@ -40,10 +40,9 @@ void processor_t::init(uint32_t _id)
 void processor_t::set_sr(uint32_t val)
 {
   sr = val & ~SR_ZERO;
-  if(support_64bit)
-    sr |= SR_KX;
-  else
+  if(!support_64bit)
     sr &= ~(SR_KX | SR_UX);
+printf("kx,ux now %d,%d %llx\n",!!(sr & SR_KX),!!(sr & SR_UX),pc);
 
   gprlen = ((sr & SR_S) ? (sr & SR_KX) : (sr & SR_UX)) ? 64 : 32;
 }
@@ -79,15 +78,18 @@ void processor_t::step(size_t n, bool noisy)
   catch(trap_t t)
   {
     i++;
-    take_trap(t);
+    take_trap(t,noisy);
   }
 }
 
-void processor_t::take_trap(trap_t t)
+void processor_t::take_trap(trap_t t, bool noisy)
 {
   demand(t < NUM_TRAPS, "internal error: bad trap number %d", int(t));
   demand(sr & SR_ET, "error mode on core %d!\ntrap %s, pc 0x%016llx",
          id, trap_name(t), (unsigned long long)pc);
+  if(noisy)
+    printf("core %3d: trap %s, pc 0x%016llx\n",
+           id, trap_name(t), (unsigned long long)pc);
 
   set_sr((((sr & ~SR_ET) | SR_S) & ~SR_PS) | ((sr & SR_S) ? SR_PS : 0));
   epc = pc;

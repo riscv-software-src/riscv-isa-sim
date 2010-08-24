@@ -1,29 +1,32 @@
 require_supervisor;
-require64;
+
+reg_t val;
 
 switch(insn.rtype.rb)
 {
   case 0:
-    RA = sr;
+    val = sr;
     break;
   case 1:
-    RA = epc;
+    val = epc;
     break;
   case 2:
-    RA = badvaddr;
+    val = badvaddr;
     break;
   case 3:
-    RA = ebase;
+    val = ebase;
     break;
 
   case 8:
-    RA = MEMSIZE >> 12;
+    val = MEMSIZE >> 12;
     break;
 
   case 17:
-    RA = sim->get_fromhost();
+    val = sim->get_fromhost();
     break;
 
   default:
-    RA = -1;
+    val = -1;
 }
+
+RA = gprlen == 64 ? val : sext32(val);
