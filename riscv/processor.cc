@@ -42,7 +42,6 @@ void processor_t::set_sr(uint32_t val)
   sr = val & ~SR_ZERO;
   if(!support_64bit)
     sr &= ~(SR_KX | SR_UX);
-printf("kx,ux now %d,%d %llx\n",!!(sr & SR_KX),!!(sr & SR_UX),pc);
 
   gprlen = ((sr & SR_S) ? (sr & SR_KX) : (sr & SR_UX)) ? 64 : 32;
 }
