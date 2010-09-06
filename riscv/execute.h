@@ -245,14 +245,14 @@ switch((insn.bits >> 0x19) & 0x7f)
       }
       case 0x2:
       {
-        if((insn.bits & 0xfe007fe0) == 0xd0002c20)
-        {
-          #include "insns/c_eq_d.h"
-          break;
-        }
         if((insn.bits & 0xfe007fe0) == 0xd0002020)
         {
           #include "insns/c_eq_s.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xd0002c20)
+        {
+          #include "insns/c_eq_d.h"
           break;
         }
         if((insn.bits & 0xfe007fe0) == 0xd0002c60)
@@ -332,6 +332,37 @@ switch((insn.bits >> 0x19) & 0x7f)
           break;
         }
         #include "insns/unimp.h"
+      }
+      default:
+      {
+        #include "insns/unimp.h"
+      }
+    }
+    break;
+  }
+  case 0x69:
+  {
+    switch((insn.bits >> 0xc) & 0x7)
+    {
+      case 0x2:
+      {
+        #include "insns/l_s.h"
+        break;
+      }
+      case 0x3:
+      {
+        #include "insns/l_d.h"
+        break;
+      }
+      case 0x6:
+      {
+        #include "insns/s_s.h"
+        break;
+      }
+      case 0x7:
+      {
+        #include "insns/s_d.h"
+        break;
       }
       default:
       {
@@ -808,25 +839,104 @@ switch((insn.bits >> 0x19) & 0x7f)
         #include "insns/sd.h"
         break;
       }
-      case 0x4:
+      default:
       {
-        #include "insns/l_s.h"
-        break;
+        #include "insns/unimp.h"
       }
-      case 0x5:
+    }
+    break;
+  }
+  case 0x7a:
+  {
+    switch((insn.bits >> 0xc) & 0x7)
+    {
+      case 0x2:
       {
-        #include "insns/l_d.h"
-        break;
+        if((insn.bits & 0xfe007fe0) == 0xf4002040)
+        {
+          #include "insns/amow_and.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xf4002080)
+        {
+          #include "insns/amow_min.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xf4002060)
+        {
+          #include "insns/amow_or.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xf40020a0)
+        {
+          #include "insns/amow_max.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xf40020c0)
+        {
+          #include "insns/amow_minu.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xf4002000)
+        {
+          #include "insns/amow_add.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xf4002020)
+        {
+          #include "insns/amow_swap.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xf40020e0)
+        {
+          #include "insns/amow_maxu.h"
+          break;
+        }
+        #include "insns/unimp.h"
       }
-      case 0x6:
+      case 0x3:
       {
-        #include "insns/s_s.h"
-        break;
-      }
-      case 0x7:
-      {
-        #include "insns/s_d.h"
-        break;
+        if((insn.bits & 0xfe007fe0) == 0xf4003000)
+        {
+          #include "insns/amo_add.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xf4003020)
+        {
+          #include "insns/amo_swap.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xf4003060)
+        {
+          #include "insns/amo_or.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xf40030a0)
+        {
+          #include "insns/amo_max.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xf4003080)
+        {
+          #include "insns/amo_min.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xf40030c0)
+        {
+          #include "insns/amo_minu.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xf4003040)
+        {
+          #include "insns/amo_and.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xf40030e0)
+        {
+          #include "insns/amo_maxu.h"
+          break;
+        }
+        #include "insns/unimp.h"
       }
       default:
       {
