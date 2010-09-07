@@ -1,8 +1,8 @@
 #ifndef _RISCV_PROCESSOR_H
 #define _RISCV_PROCESSOR_H
 
-#include <cstring>
 #include "decode.h"
+#include <cstring>
 #include "trap.h"
 #include "mmu.h"
 
