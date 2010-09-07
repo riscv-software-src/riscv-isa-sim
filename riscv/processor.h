@@ -27,6 +27,8 @@ private:
   reg_t epc;
   reg_t badvaddr;
   reg_t ebase;
+  reg_t pcr_k0;
+  reg_t pcr_k1;
   uint32_t id;
   uint32_t sr;
 

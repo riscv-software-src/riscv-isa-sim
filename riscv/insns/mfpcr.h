@@ -25,6 +25,13 @@ switch(insn.rtype.rb)
     val = sim->get_fromhost();
     break;
 
+  case 24:
+    val = pcr_k0;
+    break;
+  case 25:
+    val = pcr_k1;
+    break;
+
   default:
     val = -1;
 }

@@ -17,4 +17,11 @@ switch(insn.rtype.rb)
   case 16:
     sim->set_tohost(val);
     break;
+
+  case 24:
+    pcr_k0 = val;
+    break;
+  case 25:
+    pcr_k1 = val;
+    break;
 }
