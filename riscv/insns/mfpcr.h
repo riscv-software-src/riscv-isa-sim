@@ -29,4 +29,4 @@ switch(insn.rtype.rb)
     val = -1;
 }
 
-RA = gprlen == 64 ? val : sext32(val);
+RC = gprlen == 64 ? val : sext32(val);

@@ -377,7 +377,7 @@ switch((insn.bits >> 0x19) & 0x7f)
     {
       case 0x0:
       {
-        if((insn.bits & 0xfe007fff) == 0xd4000000)
+        if((insn.bits & 0xfe0fffe0) == 0xd4000000)
         {
           #include "insns/mff_s.h"
           break;
@@ -386,7 +386,7 @@ switch((insn.bits >> 0x19) & 0x7f)
       }
       case 0x1:
       {
-        if((insn.bits & 0xfe007fff) == 0xd4001000)
+        if((insn.bits & 0xfe0fffe0) == 0xd4001000)
         {
           #include "insns/mff_d.h"
           break;
@@ -395,7 +395,7 @@ switch((insn.bits >> 0x19) & 0x7f)
       }
       case 0x4:
       {
-        if((insn.bits & 0xfe007fff) == 0xd4004000)
+        if((insn.bits & 0xfe0fffe0) == 0xd4004000)
         {
           #include "insns/mtf_s.h"
           break;
@@ -404,7 +404,7 @@ switch((insn.bits >> 0x19) & 0x7f)
       }
       case 0x5:
       {
-        if((insn.bits & 0xfe007fff) == 0xd4005000)
+        if((insn.bits & 0xfe0fffe0) == 0xd4005000)
         {
           #include "insns/mtf_d.h"
           break;
@@ -979,18 +979,18 @@ switch((insn.bits >> 0x19) & 0x7f)
       }
       case 0x2:
       {
-        if((insn.bits & 0xfe0fffe0) == 0xf6002000)
+        if((insn.bits & 0xfff07fe0) == 0xf6002000)
         {
-          #include "insns/rdhwr.h"
+          #include "insns/mfcr.h"
           break;
         }
         #include "insns/unimp.h"
       }
       case 0x3:
       {
-        if((insn.bits & 0xffffffff) == 0xf6003000)
+        if((insn.bits & 0xfe007fff) == 0xf6003000)
         {
-          #include "insns/sync.h"
+          #include "insns/mtcr.h"
           break;
         }
         #include "insns/unimp.h"
@@ -999,7 +999,7 @@ switch((insn.bits >> 0x19) & 0x7f)
       {
         if((insn.bits & 0xffffffff) == 0xf6004000)
         {
-          #include "insns/syscall.h"
+          #include "insns/sync.h"
           break;
         }
         #include "insns/unimp.h"
@@ -1007,6 +1007,15 @@ switch((insn.bits >> 0x19) & 0x7f)
       case 0x5:
       {
         if((insn.bits & 0xffffffff) == 0xf6005000)
+        {
+          #include "insns/syscall.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x6:
+      {
+        if((insn.bits & 0xffffffff) == 0xf6006000)
         {
           #include "insns/break.h"
           break;
@@ -1026,7 +1035,7 @@ switch((insn.bits >> 0x19) & 0x7f)
     {
       case 0x0:
       {
-        if((insn.bits & 0xfe0fffff) == 0xfc000000)
+        if((insn.bits & 0xffffffe0) == 0xfc000000)
         {
           #include "insns/ei.h"
           break;
@@ -1035,7 +1044,7 @@ switch((insn.bits >> 0x19) & 0x7f)
       }
       case 0x1:
       {
-        if((insn.bits & 0xfe0fffff) == 0xfc001000)
+        if((insn.bits & 0xffffffe0) == 0xfc001000)
         {
           #include "insns/di.h"
           break;
@@ -1053,7 +1062,7 @@ switch((insn.bits >> 0x19) & 0x7f)
       }
       case 0x4:
       {
-        if((insn.bits & 0xfe007fff) == 0xfc004000)
+        if((insn.bits & 0xfff07fe0) == 0xfc004000)
         {
           #include "insns/mfpcr.h"
           break;
@@ -1064,25 +1073,7 @@ switch((insn.bits >> 0x19) & 0x7f)
       {
         if((insn.bits & 0xfe007fff) == 0xfc005000)
         {
-          #include "insns/mwfpcr.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x6:
-      {
-        if((insn.bits & 0xfe007fff) == 0xfc006000)
-        {
           #include "insns/mtpcr.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x7:
-      {
-        if((insn.bits & 0xfe007fff) == 0xfc007000)
-        {
-          #include "insns/mwtpcr.h"
           break;
         }
         #include "insns/unimp.h"

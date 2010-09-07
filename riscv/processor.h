@@ -21,13 +21,20 @@ private:
   // architected state
   reg_t R[NGPR];
   freg_t FR[NFPR];
+
+  // privileged control registers
   reg_t pc;
   reg_t epc;
   reg_t badvaddr;
   reg_t ebase;
   uint32_t id;
   uint32_t sr;
+
+  // unprivileged control registers
+  uint32_t tid;
   uint32_t fsr;
+
+  // 32-bit or 64-bit mode (redundant with sr)
   int gprlen;
 
   // shared memory
