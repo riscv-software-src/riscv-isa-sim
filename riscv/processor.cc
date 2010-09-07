@@ -1,9 +1,9 @@
+#include "processor.h"
 #include <bfd.h>
 #include <dis-asm.h>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
-#include "processor.h"
 #include "common.h"
 #include "config.h"
 #include "sim.h"
