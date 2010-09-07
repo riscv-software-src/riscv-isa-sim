@@ -71,6 +71,8 @@ void sim_t::run(bool debug)
       funcs["rp"] = &sim_t::interactive_run_proc_noisy;
       funcs["rps"] = &sim_t::interactive_run_proc_silent;
       funcs["reg"] = &sim_t::interactive_reg;
+      funcs["fregs"] = &sim_t::interactive_fregs;
+      funcs["fregd"] = &sim_t::interactive_fregd;
       funcs["mem"] = &sim_t::interactive_mem;
       funcs["until"] = &sim_t::interactive_until;
       funcs["q"] = &sim_t::interactive_quit;
@@ -165,9 +167,43 @@ reg_t sim_t::get_reg(const std::vector<std::string>& args)
   return procs[p].R[r];
 }
 
+reg_t sim_t::get_freg(const std::vector<std::string>& args)
+{
+  if(args.size() != 2)
+    throw trap_illegal_instruction;
+
+  int p = atoi(args[0].c_str());
+  int r = atoi(args[1].c_str());
+  if(p >= (int)procs.size() || r >= NFPR)
+    throw trap_illegal_instruction;
+
+  return procs[p].FR[r];
+}
+
 void sim_t::interactive_reg(const std::vector<std::string>& args)
 {
   printf("0x%016llx\n",(unsigned long long)get_reg(args));
+}
+
+union fpr
+{
+  reg_t r;
+  float s;
+  double d;
+};
+
+void sim_t::interactive_fregs(const std::vector<std::string>& args)
+{
+  fpr f;
+  f.r = get_freg(args);
+  printf("%g\n",f.s);
+}
+
+void sim_t::interactive_fregd(const std::vector<std::string>& args)
+{
+  fpr f;
+  f.r = get_freg(args);
+  printf("%g\n",f.d);
 }
 
 reg_t sim_t::get_mem(const std::vector<std::string>& args)
