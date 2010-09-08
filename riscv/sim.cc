@@ -27,12 +27,12 @@ void sim_t::set_tohost(reg_t val)
 {
   fromhost = 0;
   tohost = val;
+  applink->wait_for_tohost();
 }
 
 reg_t sim_t::get_fromhost()
 {
-  while(fromhost == 0)
-    applink->wait_for_packet();
+  applink->wait_for_fromhost();
   return fromhost;
 }
 

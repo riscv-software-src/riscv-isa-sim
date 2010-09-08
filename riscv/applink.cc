@@ -53,6 +53,16 @@ void appserver_link_t::wait_for_start()
   while(wait_for_packet() != APP_CMD_START);
 }
 
+void appserver_link_t::wait_for_tohost()
+{
+  while(wait_for_packet() != APP_CMD_READ_CONTROL_REG);
+}
+
+void appserver_link_t::wait_for_fromhost()
+{
+  while(wait_for_packet() != APP_CMD_WRITE_CONTROL_REG);
+}
+
 void appserver_link_t::send_packet(packet* p)
 {
   while(1) try
