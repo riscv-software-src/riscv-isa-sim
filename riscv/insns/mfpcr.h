@@ -22,7 +22,7 @@ switch(insn.rtype.rb)
     break;
 
   case 17:
-    val = sim->get_fromhost();
+    fromhost = val = sim->get_fromhost();
     break;
 
   case 24:
