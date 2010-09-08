@@ -11,6 +11,8 @@ public:
   appserver_link_t(int _tohost_fd, int _fromhost_fd);
   void init(sim_t* _sim);
   void wait_for_start();
+  void wait_for_tohost();
+  void wait_for_fromhost();
   int wait_for_packet();
 
 private:
