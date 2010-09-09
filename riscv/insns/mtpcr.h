@@ -20,6 +20,7 @@ switch(insn.rtype.rb)
     break;
 
   case 16:
+    tohost = RA;
     sim->set_tohost(RA);
     break;
 

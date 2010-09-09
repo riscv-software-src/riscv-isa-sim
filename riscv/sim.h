@@ -32,26 +32,27 @@ private:
 
   void step_all(size_t n, size_t interleave, bool noisy);
 
-  void interactive_quit(const std::vector<std::string>& args);
+  void interactive_quit(const std::string& cmd, const std::vector<std::string>& args);
 
-  void interactive_run(const std::vector<std::string>& args, bool noisy);
-  void interactive_run_noisy(const std::vector<std::string>& args);
-  void interactive_run_silent(const std::vector<std::string>& args);
+  void interactive_run(const std::string& cmd, const std::vector<std::string>& args, bool noisy);
+  void interactive_run_noisy(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_run_silent(const std::string& cmd, const std::vector<std::string>& args);
 
-  void interactive_run_proc(const std::vector<std::string>& args, bool noisy);
-  void interactive_run_proc_noisy(const std::vector<std::string>& args);
-  void interactive_run_proc_silent(const std::vector<std::string>& args);
+  void interactive_run_proc(const std::string& cmd, const std::vector<std::string>& args, bool noisy);
+  void interactive_run_proc_noisy(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_run_proc_silent(const std::string& cmd, const std::vector<std::string>& args);
 
-  void interactive_reg(const std::vector<std::string>& args);
-  void interactive_fregs(const std::vector<std::string>& args);
-  void interactive_fregd(const std::vector<std::string>& args);
-  void interactive_mem(const std::vector<std::string>& args);
-  void interactive_until(const std::vector<std::string>& args);
+  void interactive_reg(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_fregs(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_fregd(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_mem(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_until(const std::string& cmd, const std::vector<std::string>& args);
 
   reg_t get_reg(const std::vector<std::string>& args);
   reg_t get_freg(const std::vector<std::string>& args);
   reg_t get_mem(const std::vector<std::string>& args);
   reg_t get_pc(const std::vector<std::string>& args);
+  reg_t get_tohost(const std::vector<std::string>& args);
 
   friend class appserver_link_t;
 };

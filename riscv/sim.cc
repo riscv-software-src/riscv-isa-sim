@@ -53,7 +53,7 @@ void sim_t::run(bool debug)
       char* p = strtok(s," ");
       if(!p)
       {
-        interactive_run_noisy(std::vector<std::string>(1,"1"));
+        interactive_run_noisy(std::string("r"), std::vector<std::string>(1,"1"));
         continue;
       }
       std::string cmd = p;
@@ -63,7 +63,7 @@ void sim_t::run(bool debug)
         args.push_back(p);
 
 
-      typedef void (sim_t::*interactive_func)(const std::vector<std::string>&);
+      typedef void (sim_t::*interactive_func)(const std::string&, const std::vector<std::string>&);
       std::map<std::string,interactive_func> funcs;
 
       funcs["r"] = &sim_t::interactive_run_noisy;
@@ -75,12 +75,13 @@ void sim_t::run(bool debug)
       funcs["fregd"] = &sim_t::interactive_fregd;
       funcs["mem"] = &sim_t::interactive_mem;
       funcs["until"] = &sim_t::interactive_until;
+      funcs["while"] = &sim_t::interactive_until;
       funcs["q"] = &sim_t::interactive_quit;
 
       try
       {
         if(funcs.count(cmd))
-          (this->*funcs[cmd])(args);
+          (this->*funcs[cmd])(cmd, args);
       }
       catch(trap_t t) {}
     }
@@ -94,17 +95,17 @@ void sim_t::step_all(size_t n, size_t interleave, bool noisy)
       procs[i].step(interleave,noisy);
 }
 
-void sim_t::interactive_run_noisy(const std::vector<std::string>& args)
+void sim_t::interactive_run_noisy(const std::string& cmd, const std::vector<std::string>& args)
 {
-  interactive_run(args,true);
+  interactive_run(cmd,args,true);
 }
 
-void sim_t::interactive_run_silent(const std::vector<std::string>& args)
+void sim_t::interactive_run_silent(const std::string& cmd, const std::vector<std::string>& args)
 {
-  interactive_run(args,false);
+  interactive_run(cmd,args,false);
 }
 
-void sim_t::interactive_run(const std::vector<std::string>& args, bool noisy)
+void sim_t::interactive_run(const std::string& cmd, const std::vector<std::string>& args, bool noisy)
 {
   if(args.size())
     step_all(atoi(args[0].c_str()),1,noisy);
@@ -112,17 +113,17 @@ void sim_t::interactive_run(const std::vector<std::string>& args, bool noisy)
     while(1) step_all(1,1,noisy);
 }
 
-void sim_t::interactive_run_proc_noisy(const std::vector<std::string>& args)
+void sim_t::interactive_run_proc_noisy(const std::string& cmd, const std::vector<std::string>& args)
 {
-  interactive_run_proc(args,true);
+  interactive_run_proc(cmd,args,true);
 }
 
-void sim_t::interactive_run_proc_silent(const std::vector<std::string>& args)
+void sim_t::interactive_run_proc_silent(const std::string& cmd, const std::vector<std::string>& args)
 {
-  interactive_run_proc(args,false);
+  interactive_run_proc(cmd,args,false);
 }
 
-void sim_t::interactive_run_proc(const std::vector<std::string>& a, bool noisy)
+void sim_t::interactive_run_proc(const std::string& cmd, const std::vector<std::string>& a, bool noisy)
 {
   if(a.size() == 0)
     return;
@@ -137,7 +138,7 @@ void sim_t::interactive_run_proc(const std::vector<std::string>& a, bool noisy)
     while(1) procs[p].step(1,noisy);
 }
 
-void sim_t::interactive_quit(const std::vector<std::string>& args)
+void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::string>& args)
 {
   exit(0);
 }
@@ -180,7 +181,19 @@ reg_t sim_t::get_freg(const std::vector<std::string>& args)
   return procs[p].FR[r];
 }
 
-void sim_t::interactive_reg(const std::vector<std::string>& args)
+reg_t sim_t::get_tohost(const std::vector<std::string>& args)
+{
+  if(args.size() != 1)
+    throw trap_illegal_instruction;
+
+  int p = atoi(args[0].c_str());
+  if(p >= (int)procs.size())
+    throw trap_illegal_instruction;
+
+  return procs[p].tohost;
+}
+
+void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
 {
   printf("0x%016llx\n",(unsigned long long)get_reg(args));
 }
@@ -192,14 +205,14 @@ union fpr
   double d;
 };
 
-void sim_t::interactive_fregs(const std::vector<std::string>& args)
+void sim_t::interactive_fregs(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = get_freg(args);
   printf("%g\n",f.s);
 }
 
-void sim_t::interactive_fregd(const std::vector<std::string>& args)
+void sim_t::interactive_fregd(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = get_freg(args);
@@ -232,17 +245,17 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
   return val;
 }
 
-void sim_t::interactive_mem(const std::vector<std::string>& args)
+void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::string>& args)
 {
   printf("0x%016llx\n",(unsigned long long)get_mem(args));
 }
 
-void sim_t::interactive_until(const std::vector<std::string>& args)
+void sim_t::interactive_until(const std::string& cmd, const std::vector<std::string>& args)
 {
   if(args.size() < 3)
     return;
 
-  std::string cmd = args[0];
+  std::string scmd = args[0];
   reg_t val = strtol(args[args.size()-1].c_str(),NULL,16);
   
   std::vector<std::string> args2;
@@ -251,16 +264,20 @@ void sim_t::interactive_until(const std::vector<std::string>& args)
   while(1)
   {
     reg_t current;
-    if(args[0] == "reg")
+    if(scmd == "reg")
       current = get_reg(args2);
-    else if(args[0] == "pc")
+    else if(scmd == "pc")
       current = get_pc(args2);
-    else if(args[0] == "mem")
+    else if(scmd == "mem")
       current = get_mem(args2);
+    else if(scmd == "tohost")
+      current = get_tohost(args2);
     else
       return;
 
-    if(current == val)
+    if(cmd == "until" && current == val)
+      break;
+    if(cmd == "while" && current != val)
       break;
 
     step_all(1,1,false);

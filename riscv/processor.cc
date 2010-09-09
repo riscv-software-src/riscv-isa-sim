@@ -21,6 +21,8 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   tid = 0;
   pcr_k0 = 0;
   pcr_k1 = 0;
+  tohost = 0;
+  fromhost = 0;
   count = 0;
   compare = 0;
   interrupts_pending = 0;
