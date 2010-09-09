@@ -36,9 +36,11 @@ const int JUMP_ALIGN_BITS = 1;
 #define SR_S     0x0000000000000008ULL
 #define SR_EF    0x0000000000000010ULL
 #define SR_UX    0x0000000000000020ULL
-#define SR_KX    0x0000000000000040ULL
+#define SR_SX    0x0000000000000040ULL
 #define SR_IM    0x000000000000FF00ULL
-#define SR_ZERO  ~(SR_ET | SR_PS | SR_S | SR_EF | SR_UX | SR_KX | SR_IM)
+#define SR_ZERO  ~(SR_ET | SR_PS | SR_S | SR_EF | SR_UX | SR_SX | SR_IM)
+#define SR_IM_SHIFT 8
+#define TIMER_IRQ 7
 
 #define FP_RD_NE  0
 #define FP_RD_0   1

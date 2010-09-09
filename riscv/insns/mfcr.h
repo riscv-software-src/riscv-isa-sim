@@ -2,6 +2,10 @@ reg_t val;
 
 switch(insn.rtype.rb)
 {
+  case 0:
+    val = fsr;
+    break;
+
   case 1:
     val = 32; // synci_step
     break;

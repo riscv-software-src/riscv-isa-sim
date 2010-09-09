@@ -21,7 +21,10 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   tid = 0;
   pcr_k0 = 0;
   pcr_k1 = 0;
-  set_sr(SR_S | (support_64bit ? SR_KX : 0));
+  count = 0;
+  compare = 0;
+  interrupts_pending = 0;
+  set_sr(SR_S | (support_64bit ? SR_SX : 0));
   set_fsr(0);
 
   memset(counters,0,sizeof(counters));
@@ -44,14 +47,15 @@ void processor_t::set_sr(uint32_t val)
 {
   sr = val & ~SR_ZERO;
   if(!support_64bit)
-    sr &= ~(SR_KX | SR_UX);
+    sr &= ~(SR_SX | SR_UX);
 
-  gprlen = ((sr & SR_S) ? (sr & SR_KX) : (sr & SR_UX)) ? 64 : 32;
+  gprlen = ((sr & SR_S) ? (sr & SR_SX) : (sr & SR_UX)) ? 64 : 32;
 }
 
 void processor_t::set_fsr(uint32_t val)
 {
   fsr = val & ~FSR_ZERO;
+  softfloat_roundingMode = (fsr & FSR_RD) >> FSR_RD_SHIFT;
 }
 
 void processor_t::step(size_t n, bool noisy)
@@ -61,6 +65,14 @@ void processor_t::step(size_t n, bool noisy)
   {
     for( ; i < n; i++)
     {
+      uint32_t interrupts = interrupts_pending & ((sr & SR_IM) >> SR_IM_SHIFT);
+      if((sr & SR_ET) && interrupts)
+      {
+        for(int i = 0; interrupts; i++, interrupts >>= 1)
+          if(interrupts & 1)
+            throw trap_t(16+i);
+      }
+
       insn_t insn = mmu.load_insn(pc);
   
       reg_t npc = pc+sizeof(insn);
@@ -73,7 +85,8 @@ void processor_t::step(size_t n, bool noisy)
       pc = npc;
       R[0] = 0;
 
-      counters[0]++;
+      if(count++ == compare)
+        interrupts_pending |= 1 << TIMER_IRQ;
     }
     return;
   }

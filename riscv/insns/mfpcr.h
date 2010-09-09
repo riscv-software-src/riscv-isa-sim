@@ -16,6 +16,12 @@ switch(insn.rtype.rb)
   case 3:
     val = ebase;
     break;
+  case 4:
+    val = count;
+    break;
+  case 5:
+    val = compare;
+    break;
 
   case 8:
     val = MEMSIZE >> 12;
