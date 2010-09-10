@@ -480,12 +480,12 @@ switch((insn.bits >> 0x19) & 0x7f)
       }
       case 0x2:
       {
-        #include "insns/slei.h"
+        #include "insns/slti.h"
         break;
       }
       case 0x3:
       {
-        #include "insns/sleiu.h"
+        #include "insns/sltiu.h"
         break;
       }
       case 0x4:
