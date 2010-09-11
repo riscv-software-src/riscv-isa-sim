@@ -56,6 +56,14 @@ const int JUMP_ALIGN_BITS = 1;
 #define FPEXC_DZ 0x02
 #define FPEXC_NV 0x10
 
+#define FSR_CEXC_SHIFT 5
+#define FSR_NVC  (FPEXC_NV << FSR_CEXC_SHIFT)
+#define FSR_OFC  (FPEXC_OF << FSR_CEXC_SHIFT)
+#define FSR_UFC  (FPEXC_UF << FSR_CEXC_SHIFT)
+#define FSR_DZC  (FPEXC_DZ << FSR_CEXC_SHIFT)
+#define FSR_NXC  (FPEXC_NX << FSR_CEXC_SHIFT)
+#define FSR_CEXC (FSR_NVC | FSR_OFC | FSR_UFC | FSR_DZC | FSR_NXC)
+
 #define FSR_AEXC_SHIFT 0
 #define FSR_NVA  (FPEXC_NV << FSR_AEXC_SHIFT)
 #define FSR_OFA  (FPEXC_OF << FSR_AEXC_SHIFT)
@@ -64,7 +72,7 @@ const int JUMP_ALIGN_BITS = 1;
 #define FSR_NXA  (FPEXC_NX << FSR_AEXC_SHIFT)
 #define FSR_AEXC (FSR_NVA | FSR_OFA | FSR_UFA | FSR_DZA | FSR_NXA)
 
-#define FSR_ZERO ~(FSR_RD | FSR_AEXC)
+#define FSR_ZERO ~(FSR_RD | FSR_AEXC | FSR_CEXC)
 
 // note: bit fields are in little-endian order
 struct itype_t
@@ -140,8 +148,9 @@ union insn_t
 #define require64 if(gprlen != 64) throw trap_illegal_instruction
 #define require_fp if(!(sr & SR_EF)) throw trap_fp_disabled
 #define cmp_trunc(reg) (reg_t(reg) << (64-gprlen))
-#define set_fp_exceptions ({ set_fsr(fsr | \
-                                (softfloat_exceptionFlags << FSR_AEXC_SHIFT)); \
+#define set_fp_exceptions ({ set_fsr((fsr & ~FSR_CEXC) | \
+                                (softfloat_exceptionFlags << FSR_AEXC_SHIFT) | \
+                                (softfloat_exceptionFlags << FSR_CEXC_SHIFT)); \
                              softfloat_exceptionFlags = 0; })
 
 static inline sreg_t sext32(int32_t arg)

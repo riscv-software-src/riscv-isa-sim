@@ -8,19 +8,19 @@ public:
 
   #define load_func(type) \
     type##_t load_##type(reg_t addr) { \
-      check_align_and_bounds(addr, sizeof(type##_t), false); \
+      check_align_and_bounds(addr, sizeof(type##_t), false, false); \
       return *(type##_t*)(mem+addr); \
     }
 
   #define store_func(type) \
     void store_##type(reg_t addr, type##_t val) { \
-      check_align_and_bounds(addr, sizeof(type##_t), false); \
+      check_align_and_bounds(addr, sizeof(type##_t), true, false); \
       *(type##_t*)(mem+addr) = val; \
     }
 
   insn_t load_insn(reg_t addr)
   {
-    check_align_and_bounds(addr, sizeof(insn_t), true);
+    check_align_and_bounds(addr, sizeof(insn_t), false, true);
     return *(insn_t*)(mem+addr);
   }
 
@@ -57,20 +57,20 @@ private:
     }
   }
 
-  void check_bounds(reg_t addr, int size, bool fetch)
+  void check_bounds(reg_t addr, int size, bool store, bool fetch)
   {
     if(addr >= memsz || addr + size > memsz)
     {
       if(fetch)
         throw trap_instruction_access_fault;
       badvaddr = addr;
-      throw trap_data_access_fault;
+      throw store ? trap_store_access_fault : trap_load_access_fault;
     }
   }
 
-  void check_align_and_bounds(reg_t addr, int size, bool fetch)
+  void check_align_and_bounds(reg_t addr, int size, bool store, bool fetch)
   {
     check_align(addr, size, fetch);
-    check_bounds(addr, size, fetch);
+    check_bounds(addr, size, store, fetch);
   }
 };
