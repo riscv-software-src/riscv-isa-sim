@@ -336,14 +336,14 @@ switch((insn.bits >> 0x19) & 0x7f)
           #include "insns/mff_d.h"
           break;
         }
-        if((insn.bits & 0xfe0fffe0) == 0xd4006c00)
-        {
-          #include "insns/mtfh_d.h"
-          break;
-        }
         if((insn.bits & 0xfe0fffe0) == 0xd4006400)
         {
           #include "insns/mffh_d.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xd4006c00)
+        {
+          #include "insns/mtflh_d.h"
           break;
         }
         if((insn.bits & 0xfe0fffe0) == 0xd4006800)
