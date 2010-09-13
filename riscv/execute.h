@@ -176,6 +176,11 @@ switch((insn.bits >> 0x19) & 0x7f)
           #include "insns/sgninj_d.h"
           break;
         }
+        if((insn.bits & 0xfe007fe0) == 0xd0006060)
+        {
+          #include "insns/div_d.h"
+          break;
+        }
         if((insn.bits & 0xfe007fe0) == 0xd0006820)
         {
           #include "insns/c_eq_d.h"
@@ -244,11 +249,6 @@ switch((insn.bits >> 0x19) & 0x7f)
         if((insn.bits & 0xfe0fffe0) == 0xd0006080)
         {
           #include "insns/sqrt_d.h"
-          break;
-        }
-        if((insn.bits & 0xfe007fe0) == 0xd0006060)
-        {
-          #include "insns/div_d.h"
           break;
         }
         if((insn.bits & 0xfe0fffe0) == 0xd00064c0)
@@ -984,7 +984,7 @@ switch((insn.bits >> 0x19) & 0x7f)
       {
         if((insn.bits & 0xffffffe0) == 0xf6001000)
         {
-          #include "insns/rdpc.h"
+          #include "insns/rdnpc.h"
           break;
         }
         #include "insns/unimp.h"

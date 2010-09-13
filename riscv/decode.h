@@ -141,8 +141,8 @@ union insn_t
 #define SIMM ((int32_t)((uint32_t)insn.itype.imm<<(32-IMM_BITS))>>(32-IMM_BITS))
 #define SHAMT insn.rtype.shamt
 #define TARGET insn.jtype.target
-#define BRANCH_TARGET (pc + (SIMM << BRANCH_ALIGN_BITS))
-#define JUMP_TARGET ((pc & ~((1<<(TARGET_BITS+JUMP_ALIGN_BITS))-1)) + (TARGET << JUMP_ALIGN_BITS))
+#define BRANCH_TARGET (npc + (SIMM << BRANCH_ALIGN_BITS))
+#define JUMP_TARGET ((npc & ~((1<<(TARGET_BITS+JUMP_ALIGN_BITS))-1)) + (TARGET << JUMP_ALIGN_BITS))
 
 #define require_supervisor if(!(sr & SR_S)) throw trap_privileged_instruction
 #define require64 if(gprlen != 64) throw trap_illegal_instruction
