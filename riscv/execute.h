@@ -474,30 +474,49 @@ switch((insn.bits >> 0x19) & 0x7f)
         #include "insns/addi.h"
         break;
       }
-      case 0x1:
+      case 0x2:
       {
         #include "insns/slti.h"
         break;
       }
-      case 0x2:
+      case 0x3:
       {
         #include "insns/sltiu.h"
         break;
       }
-      case 0x3:
+      case 0x4:
       {
         #include "insns/andi.h"
         break;
       }
-      case 0x4:
+      case 0x5:
       {
         #include "insns/ori.h"
         break;
       }
-      case 0x5:
+      case 0x6:
       {
         #include "insns/xori.h"
         break;
+      }
+      case 0x7:
+      {
+        if((insn.bits & 0xfe007fc0) == 0xe8007080)
+        {
+          #include "insns/srli.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fc0) == 0xe80070c0)
+        {
+          #include "insns/srai.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fc0) == 0xe8007040)
+        {
+          #include "insns/slli.h"
+          break;
+        }
+        #include "insns/unimp.h"
       }
       default:
       {
@@ -512,14 +531,14 @@ switch((insn.bits >> 0x19) & 0x7f)
     {
       case 0x0:
       {
+        if((insn.bits & 0xfe007fe0) == 0xea000000)
+        {
+          #include "insns/add.h"
+          break;
+        }
         if((insn.bits & 0xfe007fe0) == 0xea0000e0)
         {
           #include "insns/nor.h"
-          break;
-        }
-        if((insn.bits & 0xfe007fe0) == 0xea000060)
-        {
-          #include "insns/sltu.h"
           break;
         }
         if((insn.bits & 0xfe007fe0) == 0xea0000c0)
@@ -537,14 +556,14 @@ switch((insn.bits >> 0x19) & 0x7f)
           #include "insns/or.h"
           break;
         }
-        if((insn.bits & 0xfe007fe0) == 0xea000000)
-        {
-          #include "insns/add.h"
-          break;
-        }
         if((insn.bits & 0xfe007fe0) == 0xea000040)
         {
           #include "insns/slt.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xea000060)
+        {
+          #include "insns/sltu.h"
           break;
         }
         if((insn.bits & 0xfe007fe0) == 0xea000080)
@@ -593,48 +612,21 @@ switch((insn.bits >> 0x19) & 0x7f)
         }
         #include "insns/unimp.h"
       }
-      case 0x4:
+      case 0x7:
       {
-        if((insn.bits & 0xfe007fe0) == 0xea004040)
+        if((insn.bits & 0xfe007fe0) == 0xea007080)
         {
           #include "insns/srlv.h"
           break;
         }
-        if((insn.bits & 0xfe007fe0) == 0xea004060)
+        if((insn.bits & 0xfe007fe0) == 0xea0070c0)
         {
           #include "insns/srav.h"
           break;
         }
-        if((insn.bits & 0xfe007fe0) == 0xea004020)
+        if((insn.bits & 0xfe007fe0) == 0xea007040)
         {
           #include "insns/sllv.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x5:
-      {
-        if((insn.bits & 0xfff07800) == 0xea005000)
-        {
-          #include "insns/sll.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x6:
-      {
-        if((insn.bits & 0xfff07800) == 0xea006000)
-        {
-          #include "insns/srl.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x7:
-      {
-        if((insn.bits & 0xfff07800) == 0xea007000)
-        {
-          #include "insns/sra.h"
           break;
         }
         #include "insns/unimp.h"
@@ -654,6 +646,25 @@ switch((insn.bits >> 0x19) & 0x7f)
       {
         #include "insns/addiw.h"
         break;
+      }
+      case 0x7:
+      {
+        if((insn.bits & 0xfe007fe0) == 0xec007040)
+        {
+          #include "insns/slliw.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xec007080)
+        {
+          #include "insns/srliw.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xec0070c0)
+        {
+          #include "insns/sraiw.h"
+          break;
+        }
+        #include "insns/unimp.h"
       }
       default:
       {
@@ -719,48 +730,21 @@ switch((insn.bits >> 0x19) & 0x7f)
         }
         #include "insns/unimp.h"
       }
-      case 0x4:
+      case 0x7:
       {
-        if((insn.bits & 0xfe007fe0) == 0xee004060)
+        if((insn.bits & 0xfe007fe0) == 0xee0070c0)
         {
           #include "insns/sravw.h"
           break;
         }
-        if((insn.bits & 0xfe007fe0) == 0xee004020)
+        if((insn.bits & 0xfe007fe0) == 0xee007040)
         {
           #include "insns/sllvw.h"
           break;
         }
-        if((insn.bits & 0xfe007fe0) == 0xee004040)
+        if((insn.bits & 0xfe007fe0) == 0xee007080)
         {
           #include "insns/srlvw.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x5:
-      {
-        if((insn.bits & 0xfff07c00) == 0xee005000)
-        {
-          #include "insns/sllw.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x6:
-      {
-        if((insn.bits & 0xfff07c00) == 0xee006000)
-        {
-          #include "insns/srlw.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x7:
-      {
-        if((insn.bits & 0xfff07c00) == 0xee007000)
-        {
-          #include "insns/sraw.h"
           break;
         }
         #include "insns/unimp.h"

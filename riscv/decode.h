@@ -26,6 +26,7 @@ const int IMM_BITS = 12;
 const int TARGET_BITS = 27;
 const int SHAMT_BITS = 6;
 const int FUNCT_BITS = 3;
+const int FUNCTR_BITS = 7;
 const int FFUNCT_BITS = 5;
 const int BIGIMM_BITS = 20;
 const int BRANCH_ALIGN_BITS = 1;
@@ -93,8 +94,7 @@ struct jtype_t
 struct rtype_t
 {
   unsigned rc : GPRID_BITS;
-  unsigned shamt : SHAMT_BITS;
-  unsigned unused : 1;
+  unsigned functr : FUNCTR_BITS;
   unsigned funct : FUNCT_BITS;
   unsigned rb : GPRID_BITS;
   unsigned ra : GPRID_BITS;
@@ -139,7 +139,8 @@ union insn_t
 #define BIGIMM insn.btype.bigimm
 #define IMM insn.itype.imm
 #define SIMM ((int32_t)((uint32_t)insn.itype.imm<<(32-IMM_BITS))>>(32-IMM_BITS))
-#define SHAMT insn.rtype.shamt
+#define SHAMT (insn.itype.imm & 0x3F)
+#define SHAMTW (insn.itype.imm & 0x1F)
 #define TARGET insn.jtype.target
 #define BRANCH_TARGET (npc + (SIMM << BRANCH_ALIGN_BITS))
 #define JUMP_TARGET ((npc & ~((1<<(TARGET_BITS+JUMP_ALIGN_BITS))-1)) + (TARGET << JUMP_ALIGN_BITS))
