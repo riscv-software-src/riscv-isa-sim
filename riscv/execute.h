@@ -438,24 +438,24 @@ switch((insn.bits >> 0x19) & 0x7f)
         #include "insns/bne.h"
         break;
       }
-      case 0x2:
+      case 0x4:
       {
         #include "insns/blt.h"
         break;
       }
-      case 0x3:
+      case 0x5:
+      {
+        #include "insns/bge.h"
+        break;
+      }
+      case 0x6:
       {
         #include "insns/bltu.h"
         break;
       }
-      case 0x4:
+      case 0x7:
       {
-        #include "insns/ble.h"
-        break;
-      }
-      case 0x5:
-      {
-        #include "insns/bleu.h"
+        #include "insns/bgeu.h"
         break;
       }
       default:
