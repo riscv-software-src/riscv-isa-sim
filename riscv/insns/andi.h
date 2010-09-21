@@ -1,1 +1,1 @@
-RA = IMM & RB;
+RDI = IMM & RS1;

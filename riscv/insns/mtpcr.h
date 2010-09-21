@@ -1,33 +1,33 @@
 require_supervisor;
 
-switch(insn.rtype.rb)
+switch(insn.rtype.rs2)
 {
   case 0:
-    set_sr(RA);
+    set_sr(RS1);
     break;
   case 1:
-    epc = RA;
+    epc = RS1;
     break;
   case 3:
-    ebase = RA & ~0xFFF;
+    ebase = RS1 & ~0xFFF;
     break;
   case 4:
-    count = RA;
+    count = RS1;
     break;
   case 5:
     interrupts_pending &= ~(1 << TIMER_IRQ);
-    compare = RA;
+    compare = RS1;
     break;
 
   case 16:
-    tohost = RA;
-    sim->set_tohost(RA);
+    tohost = RS1;
+    sim->set_tohost(RS1);
     break;
 
   case 24:
-    pcr_k0 = RA;
+    pcr_k0 = RS1;
     break;
   case 25:
-    pcr_k1 = RA;
+    pcr_k1 = RS1;
     break;
 }

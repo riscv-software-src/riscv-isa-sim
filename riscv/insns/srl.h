@@ -1,2 +1,2 @@
 require64;
-RC = RB >> (RA & 0x3F);
+RDR = RS2 >> (RS1 & 0x3F);

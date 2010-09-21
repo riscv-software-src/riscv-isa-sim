@@ -1,1 +1,1 @@
-RA = mmu.load_int8(RB+SIMM);
+RDI = mmu.load_int8(RS1+SIMM);

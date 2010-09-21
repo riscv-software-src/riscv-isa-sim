@@ -78,10 +78,10 @@ const int JUMP_ALIGN_BITS = 1;
 // note: bit fields are in little-endian order
 struct itype_t
 {
-  unsigned imm : IMM_BITS;
+  unsigned imm12 : IMM_BITS;
   unsigned funct : FUNCT_BITS;
-  unsigned rb : GPRID_BITS;
-  unsigned ra : GPRID_BITS;
+  unsigned rs1 : GPRID_BITS;
+  unsigned rdi : GPRID_BITS;
   unsigned opcode : OPCODE_BITS;
 };
 
@@ -93,28 +93,28 @@ struct jtype_t
 
 struct rtype_t
 {
-  unsigned rc : GPRID_BITS;
+  unsigned rdr : GPRID_BITS;
   unsigned functr : FUNCTR_BITS;
   unsigned funct : FUNCT_BITS;
-  unsigned rb : GPRID_BITS;
-  unsigned ra : GPRID_BITS;
+  unsigned rs1 : GPRID_BITS;
+  unsigned rs2 : GPRID_BITS;
   unsigned opcode : OPCODE_BITS;
 };
 
 struct btype_t
 {
   unsigned bigimm : BIGIMM_BITS;
-  unsigned rt : GPRID_BITS;
+  unsigned rdi : GPRID_BITS;
   unsigned opcode : OPCODE_BITS;
 };
 
 struct ftype_t
 {
-  unsigned rc : FPRID_BITS;
-  unsigned rd : FPRID_BITS;
+  unsigned rdr : FPRID_BITS;
+  unsigned rs3 : FPRID_BITS;
   unsigned ffunct : FFUNCT_BITS;
-  unsigned rb : FPRID_BITS;
-  unsigned ra : FPRID_BITS;
+  unsigned rs1 : FPRID_BITS;
+  unsigned rs2 : FPRID_BITS;
   unsigned opcode : OPCODE_BITS;
 };
 
@@ -129,18 +129,20 @@ union insn_t
 };
 
 // helpful macros, etc
-#define RA R[insn.rtype.ra]
-#define RB R[insn.rtype.rb]
-#define RC R[insn.rtype.rc]
-#define FRA FR[insn.ftype.ra]
-#define FRB FR[insn.ftype.rb]
-#define FRC FR[insn.ftype.rc]
-#define FRD FR[insn.ftype.rd]
+#define RS1 R[insn.rtype.rs1]
+#define RS2 R[insn.rtype.rs2]
+#define RDR R[insn.rtype.rdr]
+#define RDI R[insn.itype.rdi]
+#define FRS1 FR[insn.ftype.rs1]
+#define FRS2 FR[insn.ftype.rs2]
+#define FRS3 FR[insn.ftype.rs3]
+#define FRDR FR[insn.ftype.rdr]
+#define FRDI FR[insn.itype.rdi]
 #define BIGIMM insn.btype.bigimm
-#define IMM insn.itype.imm
-#define SIMM ((int32_t)((uint32_t)insn.itype.imm<<(32-IMM_BITS))>>(32-IMM_BITS))
-#define SHAMT (insn.itype.imm & 0x3F)
-#define SHAMTW (insn.itype.imm & 0x1F)
+#define IMM insn.itype.imm12
+#define SIMM ((int32_t)((uint32_t)insn.itype.imm12<<(32-IMM_BITS))>>(32-IMM_BITS))
+#define SHAMT (insn.itype.imm12 & 0x3F)
+#define SHAMTW (insn.itype.imm12 & 0x1F)
 #define TARGET insn.jtype.target
 #define BRANCH_TARGET (npc + (SIMM << BRANCH_ALIGN_BITS))
 #define JUMP_TARGET ((npc & ~((1<<(TARGET_BITS+JUMP_ALIGN_BITS))-1)) + (TARGET << JUMP_ALIGN_BITS))

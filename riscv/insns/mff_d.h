@@ -1,3 +1,3 @@
 require64;
 require_fp;
-RC = FRA;
+RDR = FRS1;

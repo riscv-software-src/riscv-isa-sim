@@ -1,2 +1,2 @@
 require64;
-RA = SIMM + RB;
+RDI = SIMM + RS1;

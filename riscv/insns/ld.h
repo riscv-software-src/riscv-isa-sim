@@ -1,2 +1,2 @@
 require64;
-RA = mmu.load_int64(RB+SIMM);
+RDI = mmu.load_int64(RS1+SIMM);

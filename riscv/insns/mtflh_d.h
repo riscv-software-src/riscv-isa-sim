@@ -1,2 +1,2 @@
 require_fp;
-FRC = (RA & 0x00000000FFFFFFFF) | (RB << 32);
+FRDR = (RS1 & 0x00000000FFFFFFFF) | (RS2 << 32);

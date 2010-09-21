@@ -1,6 +1,6 @@
 reg_t val;
 
-switch(insn.rtype.rb)
+switch(insn.rtype.rs2)
 {
   case 0:
     val = fsr;
@@ -18,4 +18,4 @@ switch(insn.rtype.rb)
     val = -1;
 }
 
-RC = gprlen == 64 ? val : sext32(val);
+RDR = gprlen == 64 ? val : sext32(val);

@@ -1,1 +1,1 @@
-RA = sext32(SIMM + RB);
+RDI = sext32(SIMM + RS1);

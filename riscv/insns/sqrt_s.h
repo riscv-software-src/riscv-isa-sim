@@ -1,3 +1,3 @@
 require_fp;
-FRC = f32_sqrt(FRA);
+FRDR = f32_sqrt(FRS1);
 set_fp_exceptions;

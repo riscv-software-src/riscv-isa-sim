@@ -1,10 +1,10 @@
-switch(insn.rtype.rb)
+switch(insn.rtype.rs2)
 {
   case 0:
-    set_fsr(RA);
+    set_fsr(RS1);
     break;
 
   case 29:
-    tid = RA;
+    tid = RS1;
     break;
 }

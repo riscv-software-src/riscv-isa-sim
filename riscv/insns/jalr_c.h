@@ -1,3 +1,3 @@
 uint32_t temp = npc;
-npc = RA;
-RC = temp;
+npc = RS1;
+RDR = temp;

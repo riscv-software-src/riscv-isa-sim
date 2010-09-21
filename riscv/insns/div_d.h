@@ -1,3 +1,3 @@
 require_fp;
-FRC = f64_div(FRA, FRB);
+FRDR = f64_div(FRS1, FRS2);
 set_fp_exceptions;

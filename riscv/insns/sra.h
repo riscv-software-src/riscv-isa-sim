@@ -1,2 +1,2 @@
 require64;
-RC = sreg_t(RB) >> (RA & 0x3F);
+RDR = sreg_t(RS2) >> (RS1 & 0x3F);

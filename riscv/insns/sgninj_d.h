@@ -1,2 +1,2 @@
 require_fp;
-FRC = (FRA &~ INT64_MIN) | (FRB & INT64_MIN);
+FRDR = (FRS1 &~ INT64_MIN) | (FRS2 & INT64_MIN);

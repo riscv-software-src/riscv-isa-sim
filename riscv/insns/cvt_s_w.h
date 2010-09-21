@@ -1,3 +1,3 @@
 require_fp;
-FRC = i32_to_f32(FRA);
+FRDR = i32_to_f32(FRS1);
 set_fp_exceptions;

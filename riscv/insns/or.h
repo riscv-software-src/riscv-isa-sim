@@ -1,1 +1,1 @@
-RC = RA | RB;
+RDR = RS1 | RS2;

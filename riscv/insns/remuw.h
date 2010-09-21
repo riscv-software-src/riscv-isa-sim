@@ -1,2 +1,2 @@
-RC = sext32(uint32_t(RA) % uint32_t(RB));
+RDR = sext32(uint32_t(RS1) % uint32_t(RS2));
 

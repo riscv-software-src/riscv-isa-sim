@@ -1,2 +1,2 @@
-RC = sext32((sreg_t(RA) * sreg_t(RB)) >> 32);
+RDR = sext32((sreg_t(RS1) * sreg_t(RS2)) >> 32);
 

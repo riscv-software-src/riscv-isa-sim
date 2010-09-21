@@ -1,2 +1,2 @@
-RC = sext32(RA + RB);
+RDR = sext32(RS1 + RS2);
 

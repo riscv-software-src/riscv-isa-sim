@@ -1,3 +1,3 @@
 require_fp;
-RC = f32_lt(FRA, FRB);
+RDR = f32_lt(FRS1, FRS2);
 set_fp_exceptions;

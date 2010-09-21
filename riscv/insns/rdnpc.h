@@ -1,1 +1,1 @@
-RC = npc;
+RDR = npc;

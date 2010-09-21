@@ -1,2 +1,2 @@
 require64;
-RC = (uint128_t(RA) * uint128_t(RB)) >> 64;
+RDR = (uint128_t(RS1) * uint128_t(RS2)) >> 64;

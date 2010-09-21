@@ -1,2 +1,2 @@
 require64;
-RA = sreg_t(RB) >> SHAMT;
+RDI = sreg_t(RS1) >> SHAMT;

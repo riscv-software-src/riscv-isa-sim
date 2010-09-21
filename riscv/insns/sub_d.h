@@ -1,3 +1,3 @@
 require_fp;
-FRC = f64_sub(FRA, FRB);
+FRDR = f64_sub(FRS1, FRS2);
 set_fp_exceptions;

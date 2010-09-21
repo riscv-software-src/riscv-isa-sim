@@ -1,2 +1,2 @@
 require_fp;
-FRA = mmu.load_int32(RB+SIMM);
+FRDI = mmu.load_int32(RS1+SIMM);

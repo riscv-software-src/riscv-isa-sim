@@ -1,2 +1,2 @@
 require64;
-RC = sreg_t(RA) / sreg_t(RB);
+RDR = sreg_t(RS1) / sreg_t(RS2);

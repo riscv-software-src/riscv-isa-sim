@@ -1,3 +1,3 @@
 require_fp;
-FRC = f64_mulAdd(FRA, FRB, FRD);
+FRDR = f64_mulAdd(FRS1, FRS2, FRS3);
 set_fp_exceptions;
