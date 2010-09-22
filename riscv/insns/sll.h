@@ -1,2 +1,2 @@
 require64;
-RDR = RS2 << (RS1 & 0x3F);
+RDR = RS1 << (RS2 & 0x3F);
