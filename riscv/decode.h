@@ -78,7 +78,7 @@ const int JUMP_ALIGN_BITS = 1;
 // note: bit fields are in little-endian order
 struct itype_t
 {
-  unsigned imm12 : IMM_BITS;
+  signed imm12 : IMM_BITS;
   unsigned funct : FUNCT_BITS;
   unsigned rs1 : GPRID_BITS;
   unsigned rdi : GPRID_BITS;
@@ -139,8 +139,7 @@ union insn_t
 #define FRDR FR[insn.ftype.rdr]
 #define FRDI FR[insn.itype.rdi]
 #define BIGIMM insn.btype.bigimm
-#define IMM insn.itype.imm12
-#define SIMM ((int32_t)((uint32_t)insn.itype.imm12<<(32-IMM_BITS))>>(32-IMM_BITS))
+#define SIMM insn.itype.imm12
 #define SHAMT (insn.itype.imm12 & 0x3F)
 #define SHAMTW (insn.itype.imm12 & 0x1F)
 #define TARGET insn.jtype.target

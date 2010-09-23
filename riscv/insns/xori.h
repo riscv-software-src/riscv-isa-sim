@@ -1,1 +1,1 @@
-RDI = IMM ^ RS1;
+RDI = SIMM ^ RS1;
