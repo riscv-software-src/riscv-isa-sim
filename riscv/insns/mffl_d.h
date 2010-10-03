@@ -1,2 +1,2 @@
 require_fp;
-RDR = sext32(FRS1);
+RDR = sext32(FRS2);
