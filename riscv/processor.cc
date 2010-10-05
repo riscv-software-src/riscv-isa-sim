@@ -15,9 +15,10 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   memset(R,0,sizeof(R));
   memset(FR,0,sizeof(FR));
   pc = 0;
-  ebase = 0;
+  evec = 0;
   epc = 0;
   badvaddr = 0;
+  cause = 0;
   tid = 0;
   pcr_k0 = 0;
   pcr_k1 = 0;
@@ -109,8 +110,9 @@ void processor_t::take_trap(trap_t t, bool noisy)
            id, trap_name(t), (unsigned long long)pc);
 
   set_sr((((sr & ~SR_ET) | SR_S) & ~SR_PS) | ((sr & SR_S) ? SR_PS : 0));
+  cause = t;
   epc = pc;
-  pc = ebase + t*128;
+  pc = evec;
   badvaddr = mmu.get_badvaddr();
 }
 

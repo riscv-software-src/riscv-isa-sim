@@ -50,9 +50,9 @@ private:
   {
     if(addr & (size-1))
     {
+      badvaddr = addr;
       if(fetch)
         throw trap_instruction_address_misaligned;
-      badvaddr = addr;
       throw trap_data_address_misaligned;
     }
   }
@@ -61,9 +61,9 @@ private:
   {
     if(addr >= memsz || addr + size > memsz)
     {
+      badvaddr = addr;
       if(fetch)
         throw trap_instruction_access_fault;
-      badvaddr = addr;
       throw store ? trap_store_access_fault : trap_load_access_fault;
     }
   }

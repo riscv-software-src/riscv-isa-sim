@@ -26,7 +26,8 @@ private:
   reg_t pc;
   reg_t epc;
   reg_t badvaddr;
-  reg_t ebase;
+  reg_t cause;
+  reg_t evec;
   reg_t tohost;
   reg_t fromhost;
   reg_t pcr_k0;

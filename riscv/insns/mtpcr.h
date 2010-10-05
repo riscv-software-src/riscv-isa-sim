@@ -9,7 +9,7 @@ switch(insn.rtype.rs2)
     epc = RS1;
     break;
   case 3:
-    ebase = RS1 & ~0xFFF;
+    evec = RS1;
     break;
   case 4:
     count = RS1;

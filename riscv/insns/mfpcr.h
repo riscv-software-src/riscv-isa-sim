@@ -14,13 +14,16 @@ switch(insn.rtype.rs2)
     val = badvaddr;
     break;
   case 3:
-    val = ebase;
+    val = evec;
     break;
   case 4:
     val = count;
     break;
   case 5:
     val = compare;
+    break;
+  case 6:
+    val = cause;
     break;
 
   case 8:
