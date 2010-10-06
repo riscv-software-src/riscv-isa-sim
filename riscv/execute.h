@@ -1007,7 +1007,7 @@ switch((insn.bits >> 0x19) & 0x7f)
       }
       case 0x5:
       {
-        if((insn.bits & 0xffffffff) == 0xf6005000)
+        if((insn.bits & 0xfffff000) == 0xf6005000)
         {
           #include "insns/syscall.h"
           break;
@@ -1016,7 +1016,7 @@ switch((insn.bits >> 0x19) & 0x7f)
       }
       case 0x6:
       {
-        if((insn.bits & 0xffffffff) == 0xf6006000)
+        if((insn.bits & 0xfffff000) == 0xf6006000)
         {
           #include "insns/break.h"
           break;
