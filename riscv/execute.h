@@ -134,9 +134,14 @@ switch((insn.bits >> 0x19) & 0x7f)
           #include "insns/add_s.h"
           break;
         }
-        if((insn.bits & 0xfe0fffe0) == 0xd4000f00)
+        if((insn.bits & 0xfe0fffe0) == 0xd4000b00)
         {
           #include "insns/mff_s.h"
+          break;
+        }
+        if((insn.bits & 0xfff07fe0) == 0xd4000b80)
+        {
+          #include "insns/mtf_s.h"
           break;
         }
         if((insn.bits & 0xfe007fe0) == 0xd40000c0)
@@ -216,18 +221,9 @@ switch((insn.bits >> 0x19) & 0x7f)
         }
         #include "insns/unimp.h"
       }
-      case 0x1:
-      {
-        if((insn.bits & 0xfff07fe0) == 0xd4001720)
-        {
-          #include "insns/mtf_s.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
       case 0x6:
       {
-        if((insn.bits & 0xfe0fffe0) == 0xd4006f00)
+        if((insn.bits & 0xfe0fffe0) == 0xd4006b00)
         {
           #include "insns/mff_d.h"
           break;
@@ -262,7 +258,7 @@ switch((insn.bits >> 0x19) & 0x7f)
           #include "insns/cvtu_d_w.h"
           break;
         }
-        if((insn.bits & 0xfe0fffe0) == 0xd4006700)
+        if((insn.bits & 0xfe0fffe0) == 0xd4006b20)
         {
           #include "insns/mffl_d.h"
           break;
@@ -272,7 +268,7 @@ switch((insn.bits >> 0x19) & 0x7f)
           #include "insns/add_d.h"
           break;
         }
-        if((insn.bits & 0xfe0fffe0) == 0xd4006b00)
+        if((insn.bits & 0xfe0fffe0) == 0xd4006b40)
         {
           #include "insns/mffh_d.h"
           break;
@@ -290,6 +286,11 @@ switch((insn.bits >> 0x19) & 0x7f)
         if((insn.bits & 0xfe007fe0) == 0xd40060c0)
         {
           #include "insns/sgninjn_d.h"
+          break;
+        }
+        if((insn.bits & 0xfe007fe0) == 0xd4006ba0)
+        {
+          #include "insns/mtflh_d.h"
           break;
         }
         if((insn.bits & 0xfff07fe0) == 0xd4006600)
@@ -310,6 +311,11 @@ switch((insn.bits >> 0x19) & 0x7f)
         if((insn.bits & 0xfe007fe0) == 0xd4006020)
         {
           #include "insns/sub_d.h"
+          break;
+        }
+        if((insn.bits & 0xfff07fe0) == 0xd4006b80)
+        {
+          #include "insns/mtf_d.h"
           break;
         }
         if((insn.bits & 0xfff07fe0) == 0xd4006080)
@@ -340,20 +346,6 @@ switch((insn.bits >> 0x19) & 0x7f)
         if((insn.bits & 0xfe007fe0) == 0xd40062c0)
         {
           #include "insns/c_lt_d.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x7:
-      {
-        if((insn.bits & 0xfe007fe0) == 0xd4007320)
-        {
-          #include "insns/mtflh_d.h"
-          break;
-        }
-        if((insn.bits & 0xfff07fe0) == 0xd4007720)
-        {
-          #include "insns/mtf_d.h"
           break;
         }
         #include "insns/unimp.h"
