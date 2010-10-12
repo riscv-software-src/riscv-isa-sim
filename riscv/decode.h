@@ -119,11 +119,35 @@ union insn_t
   uint32_t bits;
 };
 
+#if 0
+#include <stdio.h>
+class trace_writeback
+{
+public:
+  trace_writeback(reg_t* _rf, int _rd) : rf(_rf), rd(_rd) {}
+
+  reg_t operator = (reg_t rhs)
+  {
+    printf("R[%x] <= %llx\n",rd,(long long)rhs);
+    rf[rd] = rhs;
+    return rhs;
+  }
+
+private:
+  reg_t* rf;
+  int rd;
+};
+
+#define do_writeback(rf,rd) trace_writeback(rf,rd)
+#else
+#define do_writeback(rf,rd) rf[rd]
+#endif
+
 // helpful macros, etc
 #define RS1 R[insn.rtype.rs1]
 #define RS2 R[insn.rtype.rs2]
-#define RDR R[insn.rtype.rdr]
-#define RDI R[insn.itype.rdi]
+#define RDR do_writeback(R,insn.rtype.rdr)
+#define RDI do_writeback(R,insn.itype.rdi)
 #define FRS1 FR[insn.ftype.rs1]
 #define FRS2 FR[insn.ftype.rs2]
 #define FRS3 FR[insn.ftype.rs3]
