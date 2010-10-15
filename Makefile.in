@@ -82,10 +82,13 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 #  - CPPFLAGS : flags for the preprocessor (eg. -I,-D)
 #  - CXXFLAGS : flags for C++ compiler (eg. -Wall,-g,-O3)
 
+CC            := @CC@
 CXX           := @CXX@
 CPPFLAGS      := @CPPFLAGS@
 CXXFLAGS      := @CXXFLAGS@
 COMPILE       := $(CXX) -MMD -MP $(CPPFLAGS) $(CXXFLAGS) \
+                 $(sprojs_include)
+COMPILE_C     := $(CC)  -MMD -MP $(CPPFLAGS) $(CXXFLAGS) \
                  $(sprojs_include)
 # Linker
 #  - LDFLAGS : Flags for the linker (eg. -L)
@@ -169,7 +172,7 @@ define subproject_template
 # system will create a library for this subproject with just the
 # corresponding dummy object file.
 
-ifeq ($$(strip $$($(2)_srcs)),)
+ifeq ($$(strip $$($(2)_srcs) $$($(2)_c_srcs)),)
 $(2)_srcs += _$(1).cc
 $(2)_junk += _$(1).cc
 endif
@@ -180,15 +183,19 @@ _$(1).cc :
 # Build the object files for this subproject
 
 $(2)_objs := $$(patsubst %.cc, %.o, $$($(2)_srcs))
+$(2)_c_objs := $$(patsubst %.c, %.o, $$($(2)_c_srcs))
 $(2)_deps := $$(patsubst %.o, %.d, $$($(2)_objs))
+$(2)_c_deps := $$(patsubst %.o, %.d, $$($(2)_c_objs))
 $$($(2)_objs) : %.o : %.cc
 	$(COMPILE) -c $$<
+$$($(2)_c_objs) : %.o : %.c
+	$(COMPILE_C) -c $$<
 
-$(2)_junk += $$($(2)_objs) $$($(2)_deps)
+$(2)_junk += $$($(2)_objs) $$($(2)_c_objs) $$($(2)_deps) $$($(2)_c_deps)
 
 # Build a library for this subproject
 
-lib$(1).a : $$($(2)_objs)
+lib$(1).a : $$($(2)_objs) $$($(2)_c_objs)
 	$(AR) rcv $$@ $$^
 	$(RANLIB) $$@
 

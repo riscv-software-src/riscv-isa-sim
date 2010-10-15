@@ -2,6 +2,10 @@
 #ifndef softfloat_h
 #define softfloat_h
 
+#ifdef __cplusplus
+extern "C" {
+#endif
+
 /*** UPDATE COMMENTS. ***/
 
 /*============================================================================
@@ -220,6 +224,10 @@ bool f128_eq_signaling( float128_t, float128_t );
 bool f128_le_quiet( float128_t, float128_t );
 bool f128_lt_quiet( float128_t, float128_t );
 bool f128_isSignalingNaN( float128_t );
+
+#ifdef __cplusplus
+}
+#endif
 
 #endif
 

@@ -5,16 +5,16 @@ softfloat_riscv_hdrs = \
 	platform.h        \
 	specialize.h      \
 
-softfloat_riscv_srcs = \
-	softfloat_raiseFlags.cc \
-	s_commonNaNToF32UI.cc   \
-	s_commonNaNToF64UI.cc   \
-	s_f32UIToCommonNaN.cc   \
-	s_f64UIToCommonNaN.cc   \
-	s_isSigNaNF32UI.cc      \
-	s_isSigNaNF64UI.cc      \
-	s_propagateNaNF32UI.cc  \
-	s_propagateNaNF64UI.cc  \
+softfloat_riscv_c_srcs = \
+	softfloat_raiseFlags.c \
+	s_commonNaNToF32UI.c   \
+	s_commonNaNToF64UI.c   \
+	s_f32UIToCommonNaN.c   \
+	s_f64UIToCommonNaN.c   \
+	s_isSigNaNF32UI.c      \
+	s_isSigNaNF64UI.c      \
+	s_propagateNaNF32UI.c  \
+	s_propagateNaNF64UI.c  \
 
 softfloat_riscv_test_srcs =
 
