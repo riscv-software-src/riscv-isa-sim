@@ -635,6 +635,8 @@ ac_user_opts='
 enable_option_checking
 enable_stow
 enable_optional_subprojects
+enable_fpu
+enable_64bit
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1267,6 +1269,8 @@ Optional Features:
   --enable-stow           Enable stow-based install
   --enable-optional-subprojects
                           Enable all optional subprojects
+  --disable-fpu           Disable floating-point
+  --disable-64bit         Disable 64-bit mode
 
 Some influential environment variables:
   CC          C compiler command
@@ -4015,7 +4019,33 @@ $as_echo "$as_me: configuring default subproject : riscv" >&6;}
 
 $as_echo "#define RISCV_ENABLED /**/" >>confdefs.h
 
-      libopc=`dirname \`which riscv-gcc\``/../`$ac_config_guess`/riscv/lib/libopcodes.a
+      # Check whether --enable-fpu was given.
+if test "${enable_fpu+set}" = set; then :
+  enableval=$enable_fpu;
+fi
+
+if test "x$enable_fpu" != "xno"; then :
+
+
+$as_echo "#define RISCV_ENABLE_FPU /**/" >>confdefs.h
+
+
+fi
+
+# Check whether --enable-64bit was given.
+if test "${enable_64bit+set}" = set; then :
+  enableval=$enable_64bit;
+fi
+
+if test "x$enable_64bit" != "xno"; then :
+
+
+$as_echo "#define RISCV_ENABLE_64BIT /**/" >>confdefs.h
+
+
+fi
+
+libopc=`dirname \`which riscv-gcc\``/../`$ac_config_guess`/riscv/lib/libopcodes.a
 as_ac_File=`$as_echo "ac_cv_file_$libopc" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $libopc" >&5
 $as_echo_n "checking for $libopc... " >&6; }

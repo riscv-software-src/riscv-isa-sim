@@ -21,6 +21,12 @@
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef RISCV_ENABLED
 
+/* Define if 64-bit mode is supported */
+#undef RISCV_ENABLE_64BIT
+
+/* Define if floating-point instructions are supported */
+#undef RISCV_ENABLE_FPU
+
 /* Define if libopcodes exists */
 #undef RISCV_HAVE_LIBOPCODES
 

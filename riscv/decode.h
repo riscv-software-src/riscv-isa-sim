@@ -3,10 +3,25 @@
 
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
+
+#include "config.h"
+
+#ifdef RISCV_ENABLE_64BIT
+# define support_64bit 1
+#else
+# define support_64bit 0
+#endif
+
+#ifdef RISCV_ENABLE_FPU
+# define support_fp 1
+#else
+# define support_fp 0
+#endif
+
+
 typedef int int128_t __attribute__((mode(TI)));
 typedef unsigned int uint128_t __attribute__((mode(TI)));
 
-#define support_64bit 1
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
 typedef uint64_t freg_t;

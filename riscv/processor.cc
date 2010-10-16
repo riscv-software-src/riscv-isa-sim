@@ -51,6 +51,8 @@ void processor_t::set_sr(uint32_t val)
   sr = val & ~SR_ZERO;
   if(!support_64bit)
     sr &= ~(SR_SX | SR_UX);
+  if(!support_fp)
+    sr &= ~SR_EF;
 
   gprlen = ((sr & SR_S) ? (sr & SR_SX) : (sr & SR_UX)) ? 64 : 32;
 }

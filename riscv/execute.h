@@ -288,7 +288,7 @@ switch((insn.bits >> 0x19) & 0x7f)
           #include "insns/sgninjn_d.h"
           break;
         }
-        if((insn.bits & 0xfe007fe0) == 0xd4006ba0)
+        if((insn.bits & 0xfe007fe0) == 0xd4006f80)
         {
           #include "insns/mtflh_d.h"
           break;
