@@ -10,9 +10,6 @@ switch(insn.rtype.rs2)
     val = 32; // synci_step
     break;
 
-  case 29:
-    throw trap_illegal_instruction;
-
   default:
     val = -1;
 }
