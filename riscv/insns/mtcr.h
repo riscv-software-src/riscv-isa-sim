@@ -5,6 +5,5 @@ switch(insn.rtype.rs2)
     break;
 
   case 29:
-    tid = RS1;
-    break;
+    throw trap_illegal_instruction;
 }

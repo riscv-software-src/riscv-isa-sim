@@ -11,8 +11,7 @@ switch(insn.rtype.rs2)
     break;
 
   case 29:
-    val = tid;
-    break;
+    throw trap_illegal_instruction;
 
   default:
     val = -1;

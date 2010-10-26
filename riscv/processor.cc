@@ -19,7 +19,6 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   epc = 0;
   badvaddr = 0;
   cause = 0;
-  tid = 0;
   pcr_k0 = 0;
   pcr_k1 = 0;
   tohost = 0;

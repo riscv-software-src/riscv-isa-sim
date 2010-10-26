@@ -39,7 +39,6 @@ private:
   uint32_t interrupts_pending;
 
   // unprivileged control registers
-  uint32_t tid;
   uint32_t fsr;
 
   // 32-bit or 64-bit mode (redundant with sr)
