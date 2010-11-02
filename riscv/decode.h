@@ -27,7 +27,6 @@ typedef uint64_t reg_t;
 typedef uint64_t freg_t;
 
 const int OPCODE_BITS = 7;
-const int JTYPE_OPCODE_BITS = 5;
 
 const int GPR_BITS = 8*sizeof(reg_t);
 const int GPRID_BITS = 5;
@@ -38,7 +37,7 @@ const int FPRID_BITS = 5;
 const int NFPR = 1 << FPRID_BITS;
 
 const int IMM_BITS = 12;
-const int TARGET_BITS = 27;
+const int TARGET_BITS = 25;
 const int SHAMT_BITS = 6;
 const int FUNCT_BITS = 3;
 const int FUNCTR_BITS = 7;
@@ -93,8 +92,8 @@ struct itype_t
 
 struct jtype_t
 {
-  unsigned target : TARGET_BITS;
-  unsigned jump_opcode : JTYPE_OPCODE_BITS;
+  signed target : TARGET_BITS;
+  unsigned jump_opcode : OPCODE_BITS;
 };
 
 struct rtype_t
@@ -174,7 +173,7 @@ private:
 #define SHAMTW (insn.itype.imm12 & 0x1F)
 #define TARGET insn.jtype.target
 #define BRANCH_TARGET (npc + (SIMM << BRANCH_ALIGN_BITS))
-#define JUMP_TARGET ((npc & ~((1<<(TARGET_BITS+JUMP_ALIGN_BITS))-1)) + (TARGET << JUMP_ALIGN_BITS))
+#define JUMP_TARGET (npc + (TARGET << JUMP_ALIGN_BITS))
 #define RM ((insn.ftype.ffunct >> 1) & 3)
 
 #define require_supervisor if(!(sr & SR_S)) throw trap_privileged_instruction

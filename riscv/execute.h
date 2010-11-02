@@ -28,36 +28,6 @@ switch((insn.bits >> 0x19) & 0x7f)
   }
   case 0x61:
   {
-    #include "insns/j.h"
-    break;
-  }
-  case 0x62:
-  {
-    #include "insns/j.h"
-    break;
-  }
-  case 0x63:
-  {
-    #include "insns/j.h"
-    break;
-  }
-  case 0x64:
-  {
-    #include "insns/jal.h"
-    break;
-  }
-  case 0x65:
-  {
-    #include "insns/jal.h"
-    break;
-  }
-  case 0x66:
-  {
-    #include "insns/jal.h"
-    break;
-  }
-  case 0x67:
-  {
     #include "insns/jal.h"
     break;
   }
