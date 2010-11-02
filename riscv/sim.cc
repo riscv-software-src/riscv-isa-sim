@@ -225,6 +225,9 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
     throw trap_illegal_instruction;
 
   reg_t addr = strtol(args[0].c_str(),NULL,16), val;
+  if(addr == LONG_MAX)
+    addr = strtoul(args[0].c_str(),NULL,16);
+
   mmu_t mmu(mem,memsz);
   switch(addr % 8)
   {
@@ -257,6 +260,8 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
 
   std::string scmd = args[0];
   reg_t val = strtol(args[args.size()-1].c_str(),NULL,16);
+  if(val == LONG_MAX)
+    val = strtoul(args[args.size()-1].c_str(),NULL,16);
   
   std::vector<std::string> args2;
   args2 = std::vector<std::string>(args.begin()+1,args.end()-1);

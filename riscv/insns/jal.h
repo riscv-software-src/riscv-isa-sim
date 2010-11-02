@@ -1,2 +1,2 @@
-R[31] = npc;
+R[1] = npc;
 npc = JUMP_TARGET;
