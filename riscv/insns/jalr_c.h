@@ -1,3 +1,3 @@
-uint32_t temp = npc;
+uint32_t temp = npc + SIMM;
 npc = RS1;
-RDR = temp;
+RD = temp;

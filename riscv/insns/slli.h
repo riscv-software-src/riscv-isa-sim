@@ -1,2 +1,2 @@
 require64;
-RDI = RS1 << SHAMT;
+RD = RS1 << SHAMT;

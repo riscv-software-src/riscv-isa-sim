@@ -1,1 +1,1 @@
-RDR = sreg_t(cmp_trunc(RS1)) < sreg_t(cmp_trunc(RS2));
+RD = sreg_t(cmp_trunc(RS1)) < sreg_t(cmp_trunc(RS2));

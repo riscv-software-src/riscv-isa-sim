@@ -1,1 +1,1 @@
-RDI = mmu.load_int32(RS1+SIMM);
+RD = mmu.load_int32(RS1+SIMM);

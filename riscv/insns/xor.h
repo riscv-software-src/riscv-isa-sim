@@ -1,1 +1,1 @@
-RDR = RS1 ^ RS2;
+RD = RS1 ^ RS2;

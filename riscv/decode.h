@@ -37,6 +37,7 @@ const int FPRID_BITS = 5;
 const int NFPR = 1 << FPRID_BITS;
 
 const int IMM_BITS = 12;
+const int IMMLO_BITS = 5;
 const int TARGET_BITS = 25;
 const int SHAMT_BITS = 6;
 const int FUNCT_BITS = 3;
@@ -83,10 +84,20 @@ const int JUMP_ALIGN_BITS = 1;
 // note: bit fields are in little-endian order
 struct itype_t
 {
+  unsigned rd : GPRID_BITS;
+  unsigned rs1 : GPRID_BITS;
   signed imm12 : IMM_BITS;
   unsigned funct : FUNCT_BITS;
+  unsigned opcode : OPCODE_BITS;
+};
+
+struct btype_t
+{
+  unsigned immlo : IMMLO_BITS;
   unsigned rs1 : GPRID_BITS;
-  unsigned rdi : GPRID_BITS;
+  unsigned rs2 : GPRID_BITS;
+  signed immhi : IMM_BITS-IMMLO_BITS;
+  unsigned funct : FUNCT_BITS;
   unsigned opcode : OPCODE_BITS;
 };
 
@@ -98,28 +109,28 @@ struct jtype_t
 
 struct rtype_t
 {
-  unsigned rdr : GPRID_BITS;
-  unsigned functr : FUNCTR_BITS;
-  unsigned funct : FUNCT_BITS;
+  unsigned rd : GPRID_BITS;
   unsigned rs1 : GPRID_BITS;
   unsigned rs2 : GPRID_BITS;
+  unsigned functr : FUNCTR_BITS;
+  unsigned funct : FUNCT_BITS;
   unsigned opcode : OPCODE_BITS;
 };
 
-struct btype_t
+struct ltype_t
 {
+  unsigned rd : GPRID_BITS;
   unsigned bigimm : BIGIMM_BITS;
-  unsigned rdi : GPRID_BITS;
   unsigned opcode : OPCODE_BITS;
 };
 
 struct ftype_t
 {
-  unsigned rdr : FPRID_BITS;
-  unsigned rs3 : FPRID_BITS;
-  unsigned ffunct : FFUNCT_BITS;
+  unsigned rd  : FPRID_BITS;
   unsigned rs1 : FPRID_BITS;
   unsigned rs2 : FPRID_BITS;
+  unsigned rs3 : FPRID_BITS;
+  unsigned ffunct : FFUNCT_BITS;
   unsigned opcode : OPCODE_BITS;
 };
 
@@ -129,6 +140,7 @@ union insn_t
   jtype_t jtype;
   rtype_t rtype;
   btype_t btype;
+  ltype_t ltype;
   ftype_t ftype;
   uint32_t bits;
 };
@@ -160,21 +172,20 @@ private:
 // helpful macros, etc
 #define RS1 R[insn.rtype.rs1]
 #define RS2 R[insn.rtype.rs2]
-#define RDR do_writeback(R,insn.rtype.rdr)
-#define RDI do_writeback(R,insn.itype.rdi)
+#define RD do_writeback(R,insn.rtype.rd)
 #define FRS1 FR[insn.ftype.rs1]
 #define FRS2 FR[insn.ftype.rs2]
 #define FRS3 FR[insn.ftype.rs3]
-#define FRDR FR[insn.ftype.rdr]
-#define FRDI FR[insn.itype.rdi]
-#define BIGIMM insn.btype.bigimm
+#define FRD FR[insn.ftype.rd]
+#define BIGIMM insn.ltype.bigimm
 #define SIMM insn.itype.imm12
+#define BIMM ((signed)insn.btype.immlo | (insn.btype.immhi << IMMLO_BITS))
 #define SHAMT (insn.itype.imm12 & 0x3F)
 #define SHAMTW (insn.itype.imm12 & 0x1F)
 #define TARGET insn.jtype.target
-#define BRANCH_TARGET (npc + (SIMM << BRANCH_ALIGN_BITS))
+#define BRANCH_TARGET (npc + (BIMM << BRANCH_ALIGN_BITS))
 #define JUMP_TARGET (npc + (TARGET << JUMP_ALIGN_BITS))
-#define RM ((insn.ftype.ffunct >> 1) & 3)
+#define RM (insn.ftype.ffunct & 3)
 
 #define require_supervisor if(!(sr & SR_S)) throw trap_privileged_instruction
 #define require64 if(gprlen != 64) throw trap_illegal_instruction

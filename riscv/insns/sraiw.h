@@ -1,1 +1,1 @@
-RDI = sext32(sreg_t(RS1) >> SHAMTW);
+RD = sext32(sreg_t(RS1) >> SHAMTW);

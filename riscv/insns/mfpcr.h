@@ -45,4 +45,4 @@ switch(insn.rtype.rs2)
     val = -1;
 }
 
-RDR = gprlen == 64 ? val : sext32(val);
+RD = gprlen == 64 ? val : sext32(val);

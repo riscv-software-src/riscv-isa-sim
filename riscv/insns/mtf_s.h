@@ -1,2 +1,2 @@
 require_fp;
-FRDR = RS1;
+FRD = RS1;

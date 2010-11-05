@@ -1,4 +1,4 @@
 require_fp;
 softfloat_roundingMode = RM;
-RDR = f64_to_i32_r_minMag(FRS1,true);
+RD = f64_to_i32_r_minMag(FRS1,true);
 set_fp_exceptions;
