@@ -31,6 +31,73 @@ switch((insn.bits >> 0x19) & 0x7f)
     #include "insns/jal.h"
     break;
   }
+  case 0x62:
+  {
+    switch((insn.bits >> 0x16) & 0x7)
+    {
+      case 0x0:
+      {
+        #include "insns/jalr_c.h"
+        break;
+      }
+      case 0x1:
+      {
+        #include "insns/jalr_r.h"
+        break;
+      }
+      case 0x2:
+      {
+        #include "insns/jalr_j.h"
+        break;
+      }
+      default:
+      {
+        #include "insns/unimp.h"
+      }
+    }
+    break;
+  }
+  case 0x63:
+  {
+    switch((insn.bits >> 0x16) & 0x7)
+    {
+      case 0x0:
+      {
+        #include "insns/beq.h"
+        break;
+      }
+      case 0x1:
+      {
+        #include "insns/bne.h"
+        break;
+      }
+      case 0x4:
+      {
+        #include "insns/blt.h"
+        break;
+      }
+      case 0x5:
+      {
+        #include "insns/bge.h"
+        break;
+      }
+      case 0x6:
+      {
+        #include "insns/bltu.h"
+        break;
+      }
+      case 0x7:
+      {
+        #include "insns/bgeu.h"
+        break;
+      }
+      default:
+      {
+        #include "insns/unimp.h"
+      }
+    }
+    break;
+  }
   case 0x68:
   {
     switch((insn.bits >> 0x16) & 0x7)
@@ -627,73 +694,6 @@ switch((insn.bits >> 0x19) & 0x7f)
   case 0x71:
   {
     #include "insns/lui.h"
-    break;
-  }
-  case 0x72:
-  {
-    switch((insn.bits >> 0x16) & 0x7)
-    {
-      case 0x0:
-      {
-        #include "insns/jalr_c.h"
-        break;
-      }
-      case 0x1:
-      {
-        #include "insns/jalr_r.h"
-        break;
-      }
-      case 0x2:
-      {
-        #include "insns/jalr_j.h"
-        break;
-      }
-      default:
-      {
-        #include "insns/unimp.h"
-      }
-    }
-    break;
-  }
-  case 0x73:
-  {
-    switch((insn.bits >> 0x16) & 0x7)
-    {
-      case 0x0:
-      {
-        #include "insns/beq.h"
-        break;
-      }
-      case 0x1:
-      {
-        #include "insns/bne.h"
-        break;
-      }
-      case 0x4:
-      {
-        #include "insns/blt.h"
-        break;
-      }
-      case 0x5:
-      {
-        #include "insns/bge.h"
-        break;
-      }
-      case 0x6:
-      {
-        #include "insns/bltu.h"
-        break;
-      }
-      case 0x7:
-      {
-        #include "insns/bgeu.h"
-        break;
-      }
-      default:
-      {
-        #include "insns/unimp.h"
-      }
-    }
     break;
   }
   case 0x74:
