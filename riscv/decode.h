@@ -185,7 +185,8 @@ private:
 #define TARGET insn.jtype.target
 #define BRANCH_TARGET (npc + (BIMM << BRANCH_ALIGN_BITS))
 #define JUMP_TARGET (npc + (TARGET << JUMP_ALIGN_BITS))
-#define RM (insn.ftype.ffunct & 3)
+#define RM ((insn.ftype.ffunct & 4) ? (insn.ftype.ffunct & 3) : \
+            ((fsr & FSR_RD) >> FSR_RD_SHIFT))
 
 #define require_supervisor if(!(sr & SR_S)) throw trap_privileged_instruction
 #define require64 if(gprlen != 64) throw trap_illegal_instruction

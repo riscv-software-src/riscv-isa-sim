@@ -59,7 +59,6 @@ void processor_t::set_sr(uint32_t val)
 void processor_t::set_fsr(uint32_t val)
 {
   fsr = val & ~FSR_ZERO;
-  softfloat_roundingMode = (fsr & FSR_RD) >> FSR_RD_SHIFT;
 }
 
 void processor_t::step(size_t n, bool noisy)
