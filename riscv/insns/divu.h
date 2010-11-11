@@ -1,2 +1,5 @@
 require64;
-RD = RS1 / RS2;
+if(RS2 == 0)
+  RD = UINT64_MAX;
+else
+  RD = RS1 / RS2;
