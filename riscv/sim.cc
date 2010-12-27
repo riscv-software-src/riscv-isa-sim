@@ -4,6 +4,7 @@
 #include <sys/mman.h>
 #include <map>
 #include <iostream>
+#include <climits>
 
 sim_t::sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink)
   : applink(_applink),
