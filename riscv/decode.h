@@ -173,6 +173,7 @@ private:
 #define RS1 R[insn.rtype.rs1]
 #define RS2 R[insn.rtype.rs2]
 #define RD do_writeback(R,insn.rtype.rd)
+#define RA do_writeback(R,1)
 #define FRS1 FR[insn.ftype.rs1]
 #define FRS2 FR[insn.ftype.rs2]
 #define FRS3 FR[insn.ftype.rs3]
