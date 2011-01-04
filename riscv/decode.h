@@ -37,7 +37,7 @@ const int FPRID_BITS = 5;
 const int NFPR = 1 << FPRID_BITS;
 
 const int IMM_BITS = 12;
-const int IMMLO_BITS = 5;
+const int IMMLO_BITS = 7;
 const int TARGET_BITS = 25;
 const int SHAMT_BITS = 6;
 const int FUNCT_BITS = 3;
@@ -84,54 +84,54 @@ const int JUMP_ALIGN_BITS = 1;
 // note: bit fields are in little-endian order
 struct itype_t
 {
-  unsigned rd : GPRID_BITS;
-  unsigned rs1 : GPRID_BITS;
-  signed imm12 : IMM_BITS;
-  unsigned funct : FUNCT_BITS;
   unsigned opcode : OPCODE_BITS;
+  unsigned funct : FUNCT_BITS;
+  signed imm12 : IMM_BITS;
+  unsigned rs1 : GPRID_BITS;
+  unsigned rd : GPRID_BITS;
 };
 
 struct btype_t
 {
-  unsigned immlo : IMMLO_BITS;
-  unsigned rs1 : GPRID_BITS;
-  unsigned rs2 : GPRID_BITS;
-  signed immhi : IMM_BITS-IMMLO_BITS;
-  unsigned funct : FUNCT_BITS;
   unsigned opcode : OPCODE_BITS;
+  unsigned funct : FUNCT_BITS;
+  unsigned immlo : IMMLO_BITS;
+  unsigned rs2 : GPRID_BITS;
+  unsigned rs1 : GPRID_BITS;
+  signed immhi : IMM_BITS-IMMLO_BITS;
 };
 
 struct jtype_t
 {
-  signed target : TARGET_BITS;
   unsigned jump_opcode : OPCODE_BITS;
+  signed target : TARGET_BITS;
 };
 
 struct rtype_t
 {
-  unsigned rd : GPRID_BITS;
-  unsigned rs1 : GPRID_BITS;
-  unsigned rs2 : GPRID_BITS;
-  unsigned functr : FUNCTR_BITS;
-  unsigned funct : FUNCT_BITS;
   unsigned opcode : OPCODE_BITS;
+  unsigned funct : FUNCT_BITS;
+  unsigned functr : FUNCTR_BITS;
+  unsigned rs2 : GPRID_BITS;
+  unsigned rs1 : GPRID_BITS;
+  unsigned rd : GPRID_BITS;
 };
 
 struct ltype_t
 {
-  unsigned rd : GPRID_BITS;
-  unsigned bigimm : BIGIMM_BITS;
   unsigned opcode : OPCODE_BITS;
+  unsigned bigimm : BIGIMM_BITS;
+  unsigned rd : GPRID_BITS;
 };
 
 struct ftype_t
 {
-  unsigned rd  : FPRID_BITS;
-  unsigned rs1 : FPRID_BITS;
-  unsigned rs2 : FPRID_BITS;
-  unsigned rs3 : FPRID_BITS;
-  unsigned ffunct : FFUNCT_BITS;
   unsigned opcode : OPCODE_BITS;
+  unsigned ffunct : FFUNCT_BITS;
+  unsigned rs3 : FPRID_BITS;
+  unsigned rs2 : FPRID_BITS;
+  unsigned rs1 : FPRID_BITS;
+  unsigned rd  : FPRID_BITS;
 };
 
 union insn_t
@@ -181,8 +181,8 @@ private:
 #define BIGIMM insn.ltype.bigimm
 #define SIMM insn.itype.imm12
 #define BIMM ((signed)insn.btype.immlo | (insn.btype.immhi << IMMLO_BITS))
-#define SHAMT (insn.itype.imm12 & 0x3F)
-#define SHAMTW (insn.itype.imm12 & 0x1F)
+#define SHAMT ((insn.itype.imm12 >> (IMM_BITS-6)) & 0x3F)
+#define SHAMTW ((insn.itype.imm12 >> (IMM_BITS-6)) & 0x1F)
 #define TARGET insn.jtype.target
 #define BRANCH_TARGET (npc + (BIMM << BRANCH_ALIGN_BITS))
 #define JUMP_TARGET (npc + (TARGET << JUMP_ALIGN_BITS))
