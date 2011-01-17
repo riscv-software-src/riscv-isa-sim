@@ -606,11 +606,6 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/add.h"
           break;
         }
-        if((insn.bits & 0x1ffff) == 0x1c75)
-        {
-          #include "insns/nor.h"
-          break;
-        }
         if((insn.bits & 0x1ffff) == 0xc75)
         {
           #include "insns/sltu.h"
