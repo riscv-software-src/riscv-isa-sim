@@ -1,2 +1,1 @@
-require64;
-RD = SIMM + RS1;
+RD = sext_xprlen(RS1 + SIMM);

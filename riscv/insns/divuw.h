@@ -1,4 +1,5 @@
-if(uint32_t(RS2) == 0)
-  RD = sext32(UINT32_MAX);
+require_xpr64;
+if(RS2 == 0)
+  RD = UINT64_MAX;
 else
-  RD = sext32(uint32_t(RS1)/uint32_t(RS2));
+  RD = sext32(RS1 / RS2);

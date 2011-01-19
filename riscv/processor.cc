@@ -12,8 +12,8 @@
 processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   : sim(_sim), mmu(_mem,_memsz)
 {
-  memset(R,0,sizeof(R));
-  memset(FR,0,sizeof(FR));
+  memset(XPR,0,sizeof(XPR));
+  memset(FPR,0,sizeof(FPR));
   pc = 0;
   evec = 0;
   epc = 0;
@@ -26,7 +26,7 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   count = 0;
   compare = 0;
   interrupts_pending = 0;
-  set_sr(SR_S | (support_64bit ? SR_SX : 0));
+  set_sr(SR_S | SR_SX);  // SX ignored if 64b mode not supported
   set_fsr(0);
 
   memset(counters,0,sizeof(counters));
@@ -48,12 +48,14 @@ void processor_t::init(uint32_t _id)
 void processor_t::set_sr(uint32_t val)
 {
   sr = val & ~SR_ZERO;
-  if(!support_64bit)
-    sr &= ~(SR_SX | SR_UX);
-  if(!support_fp)
-    sr &= ~SR_EF;
+#ifndef RISCV_ENABLE_64BIT
+  sr &= ~(SR_SX | SR_UX);
+#endif
+#ifndef RISCV_ENABLE_64BIT
+  sr &= ~SR_EF;
+#endif
 
-  gprlen = ((sr & SR_S) ? (sr & SR_SX) : (sr & SR_UX)) ? 64 : 32;
+  xprlen = ((sr & SR_S) ? (sr & SR_SX) : (sr & SR_UX)) ? 64 : 32;
 }
 
 void processor_t::set_fsr(uint32_t val)
@@ -86,7 +88,7 @@ void processor_t::step(size_t n, bool noisy)
       #include "execute.h"
   
       pc = npc;
-      R[0] = 0;
+      XPR[0] = 0;
 
       if(count++ == compare)
         interrupts_pending |= 1 << TIMER_IRQ;

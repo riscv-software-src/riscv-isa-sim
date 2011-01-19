@@ -163,10 +163,10 @@ reg_t sim_t::get_reg(const std::vector<std::string>& args)
 
   int p = atoi(args[0].c_str());
   int r = atoi(args[1].c_str());
-  if(p >= (int)procs.size() || r >= NGPR)
+  if(p >= (int)procs.size() || r >= NXPR)
     throw trap_illegal_instruction;
 
-  return procs[p].R[r];
+  return procs[p].XPR[r];
 }
 
 reg_t sim_t::get_freg(const std::vector<std::string>& args)
@@ -179,7 +179,7 @@ reg_t sim_t::get_freg(const std::vector<std::string>& args)
   if(p >= (int)procs.size() || r >= NFPR)
     throw trap_illegal_instruction;
 
-  return procs[p].FR[r];
+  return procs[p].FPR[r];
 }
 
 reg_t sim_t::get_tohost(const std::vector<std::string>& args)

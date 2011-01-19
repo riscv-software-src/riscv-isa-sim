@@ -6,19 +6,6 @@
 
 #include "config.h"
 
-#ifdef RISCV_ENABLE_64BIT
-# define support_64bit 1
-#else
-# define support_64bit 0
-#endif
-
-#ifdef RISCV_ENABLE_FPU
-# define support_fp 1
-#else
-# define support_fp 0
-#endif
-
-
 typedef int int128_t __attribute__((mode(TI)));
 typedef unsigned int uint128_t __attribute__((mode(TI)));
 
@@ -28,9 +15,8 @@ typedef uint64_t freg_t;
 
 const int OPCODE_BITS = 7;
 
-const int GPR_BITS = 8*sizeof(reg_t);
-const int GPRID_BITS = 5;
-const int NGPR = 1 << GPRID_BITS;
+const int XPRID_BITS = 5;
+const int NXPR = 1 << XPRID_BITS;
 
 const int FPR_BITS = 64;
 const int FPRID_BITS = 5;
@@ -87,8 +73,8 @@ struct itype_t
   unsigned opcode : OPCODE_BITS;
   unsigned funct : FUNCT_BITS;
   signed imm12 : IMM_BITS;
-  unsigned rs1 : GPRID_BITS;
-  unsigned rd : GPRID_BITS;
+  unsigned rs1 : XPRID_BITS;
+  unsigned rd : XPRID_BITS;
 };
 
 struct btype_t
@@ -96,8 +82,8 @@ struct btype_t
   unsigned opcode : OPCODE_BITS;
   unsigned funct : FUNCT_BITS;
   unsigned immlo : IMMLO_BITS;
-  unsigned rs2 : GPRID_BITS;
-  unsigned rs1 : GPRID_BITS;
+  unsigned rs2 : XPRID_BITS;
+  unsigned rs1 : XPRID_BITS;
   signed immhi : IMM_BITS-IMMLO_BITS;
 };
 
@@ -112,16 +98,16 @@ struct rtype_t
   unsigned opcode : OPCODE_BITS;
   unsigned funct : FUNCT_BITS;
   unsigned functr : FUNCTR_BITS;
-  unsigned rs2 : GPRID_BITS;
-  unsigned rs1 : GPRID_BITS;
-  unsigned rd : GPRID_BITS;
+  unsigned rs2 : XPRID_BITS;
+  unsigned rs1 : XPRID_BITS;
+  unsigned rd : XPRID_BITS;
 };
 
 struct ltype_t
 {
   unsigned opcode : OPCODE_BITS;
   unsigned bigimm : BIGIMM_BITS;
-  unsigned rd : GPRID_BITS;
+  unsigned rd : XPRID_BITS;
 };
 
 struct ftype_t
@@ -170,14 +156,14 @@ private:
 #endif
 
 // helpful macros, etc
-#define RS1 R[insn.rtype.rs1]
-#define RS2 R[insn.rtype.rs2]
-#define RD do_writeback(R,insn.rtype.rd)
-#define RA do_writeback(R,1)
-#define FRS1 FR[insn.ftype.rs1]
-#define FRS2 FR[insn.ftype.rs2]
-#define FRS3 FR[insn.ftype.rs3]
-#define FRD FR[insn.ftype.rd]
+#define RS1 XPR[insn.rtype.rs1]
+#define RS2 XPR[insn.rtype.rs2]
+#define RD do_writeback(XPR,insn.rtype.rd)
+#define RA do_writeback(XPR,1)
+#define FRS1 FPR[insn.ftype.rs1]
+#define FRS2 FPR[insn.ftype.rs2]
+#define FRS3 FPR[insn.ftype.rs3]
+#define FRD FPR[insn.ftype.rd]
 #define BIGIMM insn.ltype.bigimm
 #define SIMM insn.itype.imm12
 #define BIMM ((signed)insn.btype.immlo | (insn.btype.immhi << IMMLO_BITS))
@@ -190,9 +176,10 @@ private:
             ((fsr & FSR_RD) >> FSR_RD_SHIFT))
 
 #define require_supervisor if(!(sr & SR_S)) throw trap_privileged_instruction
-#define require64 if(gprlen != 64) throw trap_illegal_instruction
+#define xpr64 (xprlen == 64)
+#define require_xpr64 if(!xpr64) throw trap_illegal_instruction
 #define require_fp if(!(sr & SR_EF)) throw trap_fp_disabled
-#define cmp_trunc(reg) (reg_t(reg) << (64-gprlen))
+#define cmp_trunc(reg) (reg_t(reg) << (64-xprlen))
 #define set_fp_exceptions ({ set_fsr(fsr | \
                                (softfloat_exceptionFlags << FSR_AEXC_SHIFT)); \
                              softfloat_exceptionFlags = 0; })
@@ -201,5 +188,7 @@ static inline sreg_t sext32(int32_t arg)
 {
   return arg;
 }
+
+#define sext_xprlen(x) ((sreg_t(x) << (64-xprlen)) >> (64-xprlen))
 
 #endif

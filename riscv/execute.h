@@ -768,11 +768,6 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/divuw.h"
           break;
         }
-        if((insn.bits & 0x1ffff) == 0xcf7)
-        {
-          #include "insns/mulhuw.h"
-          break;
-        }
         if((insn.bits & 0x1ffff) == 0xf7)
         {
           #include "insns/mulw.h"
@@ -781,11 +776,6 @@ switch((insn.bits >> 0x0) & 0x7f)
         if((insn.bits & 0x1ffff) == 0x18f7)
         {
           #include "insns/remw.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x8f7)
-        {
-          #include "insns/mulhw.h"
           break;
         }
         if((insn.bits & 0x1ffff) == 0x10f7)

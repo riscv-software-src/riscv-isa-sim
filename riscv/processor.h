@@ -19,8 +19,8 @@ private:
   sim_t* sim;
 
   // architected state
-  reg_t R[NGPR];
-  freg_t FR[NFPR];
+  reg_t XPR[NXPR];
+  freg_t FPR[NFPR];
 
   // privileged control registers
   reg_t pc;
@@ -41,8 +41,8 @@ private:
   // unprivileged control registers
   uint32_t fsr;
 
-  // 32-bit or 64-bit mode (redundant with sr)
-  int gprlen;
+  // # of bits in an XPR (32 or 64). (redundant with sr)
+  int xprlen;
 
   // shared memory
   mmu_t mmu;

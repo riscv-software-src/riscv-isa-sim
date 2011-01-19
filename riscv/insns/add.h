@@ -1,2 +1,1 @@
-require64;
-RD = RS1 + RS2;
+RD = sext_xprlen(RS1 + RS2);
