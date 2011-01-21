@@ -98,18 +98,47 @@ switch((insn.bits >> 0x0) & 0x7f)
     }
     break;
   }
+  case 0x67:
+  {
+    switch((insn.bits >> 0x7) & 0x7)
+    {
+      case 0x0:
+      {
+        if((insn.bits & 0xfff) == 0x67)
+        {
+          #include "insns/fsel_s.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x3:
+      {
+        if((insn.bits & 0xfff) == 0x1e7)
+        {
+          #include "insns/fsel_d.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      default:
+      {
+        #include "insns/unimp.h"
+      }
+    }
+    break;
+  }
   case 0x68:
   {
     switch((insn.bits >> 0x7) & 0x7)
     {
       case 0x2:
       {
-        #include "insns/l_s.h"
+        #include "insns/lf_w.h"
         break;
       }
       case 0x3:
       {
-        #include "insns/l_d.h"
+        #include "insns/lf_d.h"
         break;
       }
       default:
@@ -125,12 +154,12 @@ switch((insn.bits >> 0x0) & 0x7f)
     {
       case 0x2:
       {
-        #include "insns/s_s.h"
+        #include "insns/sf_w.h"
         break;
       }
       case 0x3:
       {
-        #include "insns/s_d.h"
+        #include "insns/sf_d.h"
         break;
       }
       default:
@@ -146,34 +175,9 @@ switch((insn.bits >> 0x0) & 0x7f)
     {
       case 0x0:
       {
-        if((insn.bits & 0x1ffff) == 0x1506a)
+        if((insn.bits & 0x1ffff) == 0x606a)
         {
-          #include "insns/c_eq_s.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x506a)
-        {
-          #include "insns/sgninj_s.h"
-          break;
-        }
-        if((insn.bits & 0x3ff1ff) == 0xa06a)
-        {
-          #include "insns/cvt_w_s.h"
-          break;
-        }
-        if((insn.bits & 0x3ff1ff) == 0xe06a)
-        {
-          #include "insns/cvt_s_w.h"
-          break;
-        }
-        if((insn.bits & 0x1f1ff) == 0x6a)
-        {
-          #include "insns/add_s.h"
-          break;
-        }
-        if((insn.bits & 0x3ff1ff) == 0x906a)
-        {
-          #include "insns/cvtu_l_s.h"
+          #include "insns/fsinjn_s.h"
           break;
         }
         if((insn.bits & 0x7c1ffff) == 0x1846a)
@@ -181,123 +185,133 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/mff_s.h"
           break;
         }
+        if((insn.bits & 0x3ff1ff) == 0x1306a)
+        {
+          #include "insns/fcvt_s_d.h"
+          break;
+        }
+        if((insn.bits & 0x1f1ff) == 0x6a)
+        {
+          #include "insns/fadd_s.h"
+          break;
+        }
+        if((insn.bits & 0x3ff1ff) == 0xe06a)
+        {
+          #include "insns/fcvt_s_w.h"
+          break;
+        }
+        if((insn.bits & 0x3ff1ff) == 0xb06a)
+        {
+          #include "insns/fcvtu_w_s.h"
+          break;
+        }
+        if((insn.bits & 0x3ff1ff) == 0x806a)
+        {
+          #include "insns/fcvt_l_s.h"
+          break;
+        }
         if((insn.bits & 0x3fffff) == 0x1c46a)
         {
           #include "insns/mtf_s.h"
           break;
         }
-        if((insn.bits & 0x1ffff) == 0x606a)
+        if((insn.bits & 0x1f1ff) == 0x306a)
         {
-          #include "insns/sgninjn_s.h"
-          break;
-        }
-        if((insn.bits & 0x3ff1ff) == 0x806a)
-        {
-          #include "insns/cvt_l_s.h"
-          break;
-        }
-        if((insn.bits & 0x3ff1ff) == 0xf06a)
-        {
-          #include "insns/cvtu_s_w.h"
-          break;
-        }
-        if((insn.bits & 0x3ff1ff) == 0xd06a)
-        {
-          #include "insns/cvtu_s_l.h"
-          break;
-        }
-        if((insn.bits & 0x1f1ff) == 0x106a)
-        {
-          #include "insns/sub_s.h"
-          break;
-        }
-        if((insn.bits & 0x3ff1ff) == 0x406a)
-        {
-          #include "insns/sqrt_s.h"
+          #include "insns/fdiv_s.h"
           break;
         }
         if((insn.bits & 0x1ffff) == 0x1606a)
         {
-          #include "insns/c_lt_s.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x706a)
-        {
-          #include "insns/sgnmul_s.h"
-          break;
-        }
-        if((insn.bits & 0x3ff1ff) == 0xc06a)
-        {
-          #include "insns/cvt_s_l.h"
-          break;
-        }
-        if((insn.bits & 0x1f1ff) == 0x306a)
-        {
-          #include "insns/div_s.h"
-          break;
-        }
-        if((insn.bits & 0x3ff1ff) == 0x1306a)
-        {
-          #include "insns/cvt_s_d.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x1706a)
-        {
-          #include "insns/c_le_s.h"
+          #include "insns/fc_lt_s.h"
           break;
         }
         if((insn.bits & 0x1f1ff) == 0x206a)
         {
-          #include "insns/mul_s.h"
+          #include "insns/fmul_s.h"
           break;
         }
-        if((insn.bits & 0x3ff1ff) == 0xb06a)
+        if((insn.bits & 0x1ffff) == 0x706a)
         {
-          #include "insns/cvtu_w_s.h"
+          #include "insns/fsmul_s.h"
+          break;
+        }
+        if((insn.bits & 0x3ff1ff) == 0xa06a)
+        {
+          #include "insns/fcvt_w_s.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x506a)
+        {
+          #include "insns/fsinj_s.h"
+          break;
+        }
+        if((insn.bits & 0x1f1ff) == 0x106a)
+        {
+          #include "insns/fsub_s.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x1706a)
+        {
+          #include "insns/fc_le_s.h"
+          break;
+        }
+        if((insn.bits & 0x3ff1ff) == 0xf06a)
+        {
+          #include "insns/fcvtu_s_w.h"
+          break;
+        }
+        if((insn.bits & 0x3ff1ff) == 0xd06a)
+        {
+          #include "insns/fcvtu_s_l.h"
+          break;
+        }
+        if((insn.bits & 0x3ff1ff) == 0x906a)
+        {
+          #include "insns/fcvtu_l_s.h"
+          break;
+        }
+        if((insn.bits & 0x3ff1ff) == 0xc06a)
+        {
+          #include "insns/fcvt_s_l.h"
+          break;
+        }
+        if((insn.bits & 0x3ff1ff) == 0x406a)
+        {
+          #include "insns/fsqrt_s.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x1506a)
+        {
+          #include "insns/fc_eq_s.h"
           break;
         }
         #include "insns/unimp.h"
       }
       case 0x3:
       {
-        if((insn.bits & 0x3ff1ff) == 0xa1ea)
-        {
-          #include "insns/cvt_w_d.h"
-          break;
-        }
         if((insn.bits & 0x7c1ffff) == 0x185ea)
         {
           #include "insns/mff_d.h"
           break;
         }
-        if((insn.bits & 0x1ffff) == 0x51ea)
+        if((insn.bits & 0x1ffff) == 0x61ea)
         {
-          #include "insns/sgninj_d.h"
+          #include "insns/fsinjn_d.h"
           break;
         }
-        if((insn.bits & 0x1f1ff) == 0x31ea)
+        if((insn.bits & 0x3ff1ff) == 0xc1ea)
         {
-          #include "insns/div_d.h"
+          #include "insns/fcvt_d_l.h"
           break;
         }
-        if((insn.bits & 0x1ffff) == 0x151ea)
+        if((insn.bits & 0x3fffff) == 0xe1ea)
         {
-          #include "insns/c_eq_d.h"
+          #include "insns/fcvt_d_w.h"
           break;
         }
-        if((insn.bits & 0x3ff1ff) == 0xd1ea)
+        if((insn.bits & 0x3fffff) == 0x101ea)
         {
-          #include "insns/cvtu_d_l.h"
-          break;
-        }
-        if((insn.bits & 0x3fffff) == 0xf1ea)
-        {
-          #include "insns/cvtu_d_w.h"
-          break;
-        }
-        if((insn.bits & 0x3ff1ff) == 0x91ea)
-        {
-          #include "insns/cvtu_l_d.h"
+          #include "insns/fcvt_d_s.h"
           break;
         }
         if((insn.bits & 0x7c1ffff) == 0x195ea)
@@ -305,39 +319,49 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/mffl_d.h"
           break;
         }
-        if((insn.bits & 0x1ffff) == 0x71ea)
-        {
-          #include "insns/sgnmul_d.h"
-          break;
-        }
-        if((insn.bits & 0x1f1ff) == 0x1ea)
-        {
-          #include "insns/add_d.h"
-          break;
-        }
         if((insn.bits & 0x7c1ffff) == 0x1a5ea)
         {
           #include "insns/mffh_d.h"
           break;
         }
-        if((insn.bits & 0x1ffff) == 0x171ea)
-        {
-          #include "insns/c_le_d.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x61ea)
-        {
-          #include "insns/sgninjn_d.h"
-          break;
-        }
         if((insn.bits & 0x3ff1ff) == 0x81ea)
         {
-          #include "insns/cvt_l_d.h"
+          #include "insns/fcvt_l_d.h"
           break;
         }
-        if((insn.bits & 0x1f1ff) == 0x11ea)
+        if((insn.bits & 0x3fffff) == 0xf1ea)
         {
-          #include "insns/sub_d.h"
+          #include "insns/fcvtu_d_w.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x161ea)
+        {
+          #include "insns/fc_lt_d.h"
+          break;
+        }
+        if((insn.bits & 0x1f1ff) == 0x21ea)
+        {
+          #include "insns/fmul_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x151ea)
+        {
+          #include "insns/fc_eq_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x71ea)
+        {
+          #include "insns/fsmul_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x51ea)
+        {
+          #include "insns/fsinj_d.h"
+          break;
+        }
+        if((insn.bits & 0x3ff1ff) == 0xa1ea)
+        {
+          #include "insns/fcvt_w_d.h"
           break;
         }
         if((insn.bits & 0x3fffff) == 0x1c5ea)
@@ -345,39 +369,44 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/mtf_d.h"
           break;
         }
-        if((insn.bits & 0x3ff1ff) == 0x41ea)
+        if((insn.bits & 0x1ffff) == 0x171ea)
         {
-          #include "insns/sqrt_d.h"
-          break;
-        }
-        if((insn.bits & 0x3fffff) == 0x101ea)
-        {
-          #include "insns/cvt_d_s.h"
-          break;
-        }
-        if((insn.bits & 0x3fffff) == 0xe1ea)
-        {
-          #include "insns/cvt_d_w.h"
-          break;
-        }
-        if((insn.bits & 0x3ff1ff) == 0xc1ea)
-        {
-          #include "insns/cvt_d_l.h"
-          break;
-        }
-        if((insn.bits & 0x1f1ff) == 0x21ea)
-        {
-          #include "insns/mul_d.h"
+          #include "insns/fc_le_d.h"
           break;
         }
         if((insn.bits & 0x3ff1ff) == 0xb1ea)
         {
-          #include "insns/cvtu_w_d.h"
+          #include "insns/fcvtu_w_d.h"
           break;
         }
-        if((insn.bits & 0x1ffff) == 0x161ea)
+        if((insn.bits & 0x1f1ff) == 0x1ea)
         {
-          #include "insns/c_lt_d.h"
+          #include "insns/fadd_d.h"
+          break;
+        }
+        if((insn.bits & 0x3ff1ff) == 0x91ea)
+        {
+          #include "insns/fcvtu_l_d.h"
+          break;
+        }
+        if((insn.bits & 0x1f1ff) == 0x11ea)
+        {
+          #include "insns/fsub_d.h"
+          break;
+        }
+        if((insn.bits & 0x3ff1ff) == 0x41ea)
+        {
+          #include "insns/fsqrt_d.h"
+          break;
+        }
+        if((insn.bits & 0x1f1ff) == 0x31ea)
+        {
+          #include "insns/fdiv_d.h"
+          break;
+        }
+        if((insn.bits & 0x3ff1ff) == 0xd1ea)
+        {
+          #include "insns/fcvtu_d_l.h"
           break;
         }
         #include "insns/unimp.h"
@@ -452,12 +481,12 @@ switch((insn.bits >> 0x0) & 0x7f)
     {
       case 0x0:
       {
-        #include "insns/madd_s.h"
+        #include "insns/fmadd_s.h"
         break;
       }
       case 0x3:
       {
-        #include "insns/madd_d.h"
+        #include "insns/fmadd_d.h"
         break;
       }
       default:
@@ -473,12 +502,12 @@ switch((insn.bits >> 0x0) & 0x7f)
     {
       case 0x0:
       {
-        #include "insns/msub_s.h"
+        #include "insns/fmsub_s.h"
         break;
       }
       case 0x3:
       {
-        #include "insns/msub_d.h"
+        #include "insns/fmsub_d.h"
         break;
       }
       default:
@@ -494,12 +523,12 @@ switch((insn.bits >> 0x0) & 0x7f)
     {
       case 0x0:
       {
-        #include "insns/nmsub_s.h"
+        #include "insns/fnmsub_s.h"
         break;
       }
       case 0x3:
       {
-        #include "insns/nmsub_d.h"
+        #include "insns/fnmsub_d.h"
         break;
       }
       default:
@@ -515,12 +544,12 @@ switch((insn.bits >> 0x0) & 0x7f)
     {
       case 0x0:
       {
-        #include "insns/nmadd_s.h"
+        #include "insns/fnmadd_s.h"
         break;
       }
       case 0x3:
       {
-        #include "insns/nmadd_d.h"
+        #include "insns/fnmadd_d.h"
         break;
       }
       default:
@@ -817,37 +846,37 @@ switch((insn.bits >> 0x0) & 0x7f)
     {
       case 0x0:
       {
-        #include "insns/lb.h"
+        #include "insns/l_b.h"
         break;
       }
       case 0x1:
       {
-        #include "insns/lh.h"
+        #include "insns/l_h.h"
         break;
       }
       case 0x2:
       {
-        #include "insns/lw.h"
+        #include "insns/l_w.h"
         break;
       }
       case 0x3:
       {
-        #include "insns/ld.h"
+        #include "insns/l_d.h"
         break;
       }
       case 0x4:
       {
-        #include "insns/lbu.h"
+        #include "insns/l_bu.h"
         break;
       }
       case 0x5:
       {
-        #include "insns/lhu.h"
+        #include "insns/l_hu.h"
         break;
       }
       case 0x6:
       {
-        #include "insns/lwu.h"
+        #include "insns/l_wu.h"
         break;
       }
       case 0x7:
@@ -872,22 +901,22 @@ switch((insn.bits >> 0x0) & 0x7f)
     {
       case 0x0:
       {
-        #include "insns/sb.h"
+        #include "insns/s_b.h"
         break;
       }
       case 0x1:
       {
-        #include "insns/sh.h"
+        #include "insns/s_h.h"
         break;
       }
       case 0x2:
       {
-        #include "insns/sw.h"
+        #include "insns/s_w.h"
         break;
       }
       case 0x3:
       {
-        #include "insns/sd.h"
+        #include "insns/s_d.h"
         break;
       }
       default:
@@ -903,88 +932,88 @@ switch((insn.bits >> 0x0) & 0x7f)
     {
       case 0x2:
       {
-        if((insn.bits & 0x1ffff) == 0x157a)
+        if((insn.bits & 0x1ffff) == 0x197a)
         {
-          #include "insns/amow_max.h"
+          #include "insns/amominu_w.h"
           break;
         }
         if((insn.bits & 0x1ffff) == 0x97a)
         {
-          #include "insns/amow_and.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x117a)
-        {
-          #include "insns/amow_min.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0xd7a)
-        {
-          #include "insns/amow_or.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x197a)
-        {
-          #include "insns/amow_minu.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x17a)
-        {
-          #include "insns/amow_add.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x57a)
-        {
-          #include "insns/amow_swap.h"
+          #include "insns/amoand_w.h"
           break;
         }
         if((insn.bits & 0x1ffff) == 0x1d7a)
         {
-          #include "insns/amow_maxu.h"
+          #include "insns/amomaxu_w.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x157a)
+        {
+          #include "insns/amomax_w.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x17a)
+        {
+          #include "insns/amoadd_w.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0xd7a)
+        {
+          #include "insns/amoor_w.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x117a)
+        {
+          #include "insns/amomin_w.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x57a)
+        {
+          #include "insns/amoswap_w.h"
           break;
         }
         #include "insns/unimp.h"
       }
       case 0x3:
       {
-        if((insn.bits & 0x1ffff) == 0x1fa)
-        {
-          #include "insns/amo_add.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x5fa)
-        {
-          #include "insns/amo_swap.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0xdfa)
-        {
-          #include "insns/amo_or.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x15fa)
-        {
-          #include "insns/amo_max.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x11fa)
-        {
-          #include "insns/amo_min.h"
-          break;
-        }
         if((insn.bits & 0x1ffff) == 0x19fa)
         {
-          #include "insns/amo_minu.h"
+          #include "insns/amominu_d.h"
           break;
         }
         if((insn.bits & 0x1ffff) == 0x9fa)
         {
-          #include "insns/amo_and.h"
+          #include "insns/amoand_d.h"
           break;
         }
         if((insn.bits & 0x1ffff) == 0x1dfa)
         {
-          #include "insns/amo_maxu.h"
+          #include "insns/amomaxu_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x11fa)
+        {
+          #include "insns/amomin_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x1fa)
+        {
+          #include "insns/amoadd_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x15fa)
+        {
+          #include "insns/amomax_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0xdfa)
+        {
+          #include "insns/amoor_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x5fa)
+        {
+          #include "insns/amoswap_d.h"
           break;
         }
         #include "insns/unimp.h"
