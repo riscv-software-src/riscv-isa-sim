@@ -334,13 +334,18 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/sll.h"
           break;
         }
+        if((insn.bits & 0x1ffff) == 0x4b3)
+        {
+          #include "insns/mulh.h"
+          break;
+        }
         #include "insns/unimp.h"
       }
       case 0x2:
       {
         if((insn.bits & 0x1ffff) == 0x533)
         {
-          #include "insns/mulh.h"
+          #include "insns/mulhsu.h"
           break;
         }
         if((insn.bits & 0x1ffff) == 0x133)
