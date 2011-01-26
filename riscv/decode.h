@@ -25,7 +25,6 @@ const int NFPR = 1 << FPRID_BITS;
 const int IMM_BITS = 12;
 const int IMMLO_BITS = 7;
 const int TARGET_BITS = 25;
-const int SHAMT_BITS = 6;
 const int FUNCT_BITS = 3;
 const int FUNCTR_BITS = 7;
 const int FFUNCT_BITS = 5;
@@ -167,8 +166,8 @@ private:
 #define BIGIMM insn.ltype.bigimm
 #define SIMM insn.itype.imm12
 #define BIMM ((signed)insn.btype.immlo | (insn.btype.immhi << IMMLO_BITS))
-#define SHAMT ((insn.itype.imm12 >> (IMM_BITS-6)) & 0x3F)
-#define SHAMTW ((insn.itype.imm12 >> (IMM_BITS-6)) & 0x1F)
+#define SHAMT (insn.itype.imm12 & 0x3F)
+#define SHAMTW (insn.itype.imm12 & 0x1F)
 #define TARGET insn.jtype.target
 #define BRANCH_TARGET (npc + (BIMM << BRANCH_ALIGN_BITS))
 #define JUMP_TARGET (npc + (TARGET << JUMP_ALIGN_BITS))
