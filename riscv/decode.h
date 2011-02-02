@@ -27,7 +27,8 @@ const int IMMLO_BITS = 7;
 const int TARGET_BITS = 25;
 const int FUNCT_BITS = 3;
 const int FUNCTR_BITS = 7;
-const int FFUNCT_BITS = 5;
+const int FFUNCT_BITS = 2;
+const int RM_BITS = 3;
 const int BIGIMM_BITS = 20;
 const int BRANCH_ALIGN_BITS = 1;
 const int JUMP_ALIGN_BITS = 1;
@@ -47,8 +48,10 @@ const int JUMP_ALIGN_BITS = 1;
 #define FP_RD_0   1
 #define FP_RD_DN  2
 #define FP_RD_UP  3
+#define FP_RD_NMM 4
+
 #define FSR_RD_SHIFT 5
-#define FSR_RD   (0x3 << FSR_RD_SHIFT)
+#define FSR_RD   (0x7 << FSR_RD_SHIFT)
 
 #define FPEXC_NX 0x01
 #define FPEXC_UF 0x02
@@ -113,6 +116,7 @@ struct ftype_t
 {
   unsigned opcode : OPCODE_BITS;
   unsigned ffunct : FFUNCT_BITS;
+  unsigned rm : RM_BITS;
   unsigned rs3 : FPRID_BITS;
   unsigned rs2 : FPRID_BITS;
   unsigned rs1 : FPRID_BITS;
@@ -171,7 +175,7 @@ private:
 #define TARGET insn.jtype.target
 #define BRANCH_TARGET (npc + (BIMM << BRANCH_ALIGN_BITS))
 #define JUMP_TARGET (npc + (TARGET << JUMP_ALIGN_BITS))
-#define RM ((insn.ftype.ffunct & 4) ? (insn.ftype.ffunct & 3) : \
+#define RM ((insn.ftype.rm != 7) ? insn.ftype.rm : \
             ((fsr & FSR_RD) >> FSR_RD_SHIFT))
 
 #define require_supervisor if(!(sr & SR_S)) throw trap_privileged_instruction
