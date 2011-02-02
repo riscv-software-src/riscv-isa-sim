@@ -181,6 +181,7 @@ private:
 #define require_supervisor if(!(sr & SR_S)) throw trap_privileged_instruction
 #define xpr64 (xprlen == 64)
 #define require_xpr64 if(!xpr64) throw trap_illegal_instruction
+#define require_xpr32 if(xpr64) throw trap_illegal_instruction
 #define require_fp if(!(sr & SR_EF)) throw trap_fp_disabled
 #define cmp_trunc(reg) (reg_t(reg) << (64-xprlen))
 #define set_fp_exceptions ({ set_fsr(fsr | \
