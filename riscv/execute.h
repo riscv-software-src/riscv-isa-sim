@@ -908,7 +908,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/mffh_d.h"
           break;
         }
-        if((insn.bits & 0x1ffff) == 0x1ced3)
+        if((insn.bits & 0x3fffff) == 0x1ced3)
         {
           #include "insns/mtf_d.h"
           break;
@@ -921,6 +921,11 @@ switch((insn.bits >> 0x0) & 0x7f)
         if((insn.bits & 0x1ffff) == 0x16ed3)
         {
           #include "insns/fc_lt_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x1eed3)
+        {
+          #include "insns/mtflh_d.h"
           break;
         }
         if((insn.bits & 0x1ffff) == 0x15ed3)
