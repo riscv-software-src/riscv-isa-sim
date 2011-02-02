@@ -60,15 +60,6 @@ switch((insn.bits >> 0x0) & 0x7f)
         #include "insns/l_wu.h"
         break;
       }
-      case 0x7:
-      {
-        if((insn.bits & 0xf80003ff) == 0x383)
-        {
-          #include "insns/synci.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
       default:
       {
         #include "insns/unimp.h"
@@ -170,6 +161,15 @@ switch((insn.bits >> 0x0) & 0x7f)
         if((insn.bits & 0x7ffffff) == 0x17)
         {
           #include "insns/rdnpc.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x1:
+      {
+        if((insn.bits & 0xffffffff) == 0x97)
+        {
+          #include "insns/synci.h"
           break;
         }
         #include "insns/unimp.h"
