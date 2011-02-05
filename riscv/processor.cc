@@ -25,7 +25,6 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   fromhost = 0;
   count = 0;
   compare = 0;
-  interrupts_pending = 0;
   set_sr(SR_S | SR_SX);  // SX ignored if 64b mode not supported
   set_fsr(0);
 
@@ -70,13 +69,10 @@ void processor_t::step(size_t n, bool noisy)
   {
     for( ; i < n; i++)
     {
-      uint32_t interrupts = interrupts_pending & ((sr & SR_IM) >> SR_IM_SHIFT);
-      if((sr & SR_ET) && interrupts)
-      {
-        for(int i = 0; interrupts; i++, interrupts >>= 1)
-          if(interrupts & 1)
-            throw trap_t(16+i);
-      }
+      uint32_t interrupts = (cause & CAUSE_IP) >> CAUSE_IP_SHIFT;
+      interrupts &= (sr & SR_IM) >> SR_IM_SHIFT;
+      if(interrupts && (sr & SR_ET))
+        take_trap(trap_interrupt,noisy);
 
       insn_t insn = mmu.load_insn(pc);
   
@@ -91,7 +87,7 @@ void processor_t::step(size_t n, bool noisy)
       XPR[0] = 0;
 
       if(count++ == compare)
-        interrupts_pending |= 1 << TIMER_IRQ;
+        cause |= 1 << (TIMER_IRQ+CAUSE_IP_SHIFT);
     }
     return;
   }
@@ -112,7 +108,7 @@ void processor_t::take_trap(trap_t t, bool noisy)
            id, trap_name(t), (unsigned long long)pc);
 
   set_sr((((sr & ~SR_ET) | SR_S) & ~SR_PS) | ((sr & SR_S) ? SR_PS : 0));
-  cause = t;
+  cause = (cause & ~CAUSE_EXCCODE) | (t << CAUSE_EXCCODE_SHIFT);
   epc = pc;
   pc = evec;
   badvaddr = mmu.get_badvaddr();

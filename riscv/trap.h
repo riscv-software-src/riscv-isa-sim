@@ -8,7 +8,7 @@
   DECLARE_TRAP(privileged_instruction), \
   DECLARE_TRAP(fp_disabled), \
   DECLARE_TRAP(syscall), \
-  DECLARE_TRAP(breakpoint), \
+  DECLARE_TRAP(interrupt), \
   DECLARE_TRAP(data_address_misaligned), \
   DECLARE_TRAP(load_access_fault), \
   DECLARE_TRAP(store_access_fault), \

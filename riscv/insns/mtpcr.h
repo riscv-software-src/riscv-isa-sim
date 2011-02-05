@@ -15,7 +15,7 @@ switch(insn.rtype.rs2)
     count = RS1;
     break;
   case 5:
-    interrupts_pending &= ~(1 << TIMER_IRQ);
+    cause &= ~(1 << (TIMER_IRQ+CAUSE_IP_SHIFT));
     compare = RS1;
     break;
 
