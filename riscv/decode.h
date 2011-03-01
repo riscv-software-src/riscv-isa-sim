@@ -178,8 +178,8 @@ private:
 #define SHAMT (insn.itype.imm12 & 0x3F)
 #define SHAMTW (insn.itype.imm12 & 0x1F)
 #define TARGET insn.jtype.target
-#define BRANCH_TARGET (npc + (BIMM << BRANCH_ALIGN_BITS))
-#define JUMP_TARGET (npc + (TARGET << JUMP_ALIGN_BITS))
+#define BRANCH_TARGET (pc + (BIMM << BRANCH_ALIGN_BITS))
+#define JUMP_TARGET (pc + (TARGET << JUMP_ALIGN_BITS))
 #define RM ((insn.ftype.rm != 7) ? insn.ftype.rm : \
             ((fsr & FSR_RD) >> FSR_RD_SHIFT))
 
