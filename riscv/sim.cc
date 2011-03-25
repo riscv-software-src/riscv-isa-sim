@@ -109,7 +109,7 @@ void sim_t::interactive_run_silent(const std::string& cmd, const std::vector<std
 void sim_t::interactive_run(const std::string& cmd, const std::vector<std::string>& args, bool noisy)
 {
   if(args.size())
-    step_all(atoi(args[0].c_str()),1,noisy);
+    step_all(atoll(args[0].c_str()),1,noisy);
   else
     while(1) step_all(1,1,noisy);
 }

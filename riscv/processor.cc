@@ -8,6 +8,8 @@
 #include "config.h"
 #include "sim.h"
 #include "softfloat.h"
+#include "platform.h" // softfloat isNaNF32UI, etc.
+#include "internals.h" // ditto
 
 processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   : sim(_sim), mmu(_mem,_memsz)
