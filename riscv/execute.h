@@ -243,6 +243,105 @@ switch((insn.bits >> 0x0) & 0x7f)
     }
     break;
   }
+  case 0x2b:
+  {
+    switch((insn.bits >> 0x7) & 0x7)
+    {
+      case 0x2:
+      {
+        if((insn.bits & 0x1ffff) == 0x192b)
+        {
+          #include "insns/amominu_w.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x92b)
+        {
+          #include "insns/amoand_w.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x1d2b)
+        {
+          #include "insns/amomaxu_w.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x152b)
+        {
+          #include "insns/amomax_w.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x12b)
+        {
+          #include "insns/amoadd_w.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0xd2b)
+        {
+          #include "insns/amoor_w.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x112b)
+        {
+          #include "insns/amomin_w.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x52b)
+        {
+          #include "insns/amoswap_w.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x3:
+      {
+        if((insn.bits & 0x1ffff) == 0x19ab)
+        {
+          #include "insns/amominu_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x9ab)
+        {
+          #include "insns/amoand_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x1dab)
+        {
+          #include "insns/amomaxu_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x1ab)
+        {
+          #include "insns/amoadd_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x15ab)
+        {
+          #include "insns/amomax_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0xdab)
+        {
+          #include "insns/amoor_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x5ab)
+        {
+          #include "insns/amoswap_d.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x11ab)
+        {
+          #include "insns/amomin_d.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      default:
+      {
+        #include "insns/unimp.h"
+      }
+    }
+    break;
+  }
   case 0x2f:
   {
     switch((insn.bits >> 0x7) & 0x7)
@@ -501,94 +600,6 @@ switch((insn.bits >> 0x0) & 0x7f)
         #include "insns/fmadd_d.h"
         break;
       }
-      case 0x2:
-      {
-        if((insn.bits & 0x1ffff) == 0x1943)
-        {
-          #include "insns/amominu_w.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x943)
-        {
-          #include "insns/amoand_w.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x1d43)
-        {
-          #include "insns/amomaxu_w.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x1543)
-        {
-          #include "insns/amomax_w.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x143)
-        {
-          #include "insns/amoadd_w.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0xd43)
-        {
-          #include "insns/amoor_w.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x1143)
-        {
-          #include "insns/amomin_w.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x543)
-        {
-          #include "insns/amoswap_w.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      case 0x3:
-      {
-        if((insn.bits & 0x1ffff) == 0x19c3)
-        {
-          #include "insns/amominu_d.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x9c3)
-        {
-          #include "insns/amoand_d.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x1dc3)
-        {
-          #include "insns/amomaxu_d.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x1c3)
-        {
-          #include "insns/amoadd_d.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x15c3)
-        {
-          #include "insns/amomax_d.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0xdc3)
-        {
-          #include "insns/amoor_d.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x5c3)
-        {
-          #include "insns/amoswap_d.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x11c3)
-        {
-          #include "insns/amomin_d.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
       default:
       {
         #include "insns/unimp.h"
@@ -814,7 +825,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fcvt_d_w.h"
           break;
         }
-        if((insn.bits & 0x3ff1ff) == 0x100d3)
+        if((insn.bits & 0x3fffff) == 0x100d3)
         {
           #include "insns/fcvt_d_s.h"
           break;
