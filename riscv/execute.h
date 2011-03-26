@@ -790,19 +790,9 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fsgnjn_s.h"
           break;
         }
-        if((insn.bits & 0x1ffff) == 0x1b053)
-        {
-          #include "insns/fmaxmag_s.h"
-          break;
-        }
         if((insn.bits & 0x1f1ff) == 0x53)
         {
           #include "insns/fadd_s.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x1a053)
-        {
-          #include "insns/fminmag_s.h"
           break;
         }
         #include "insns/unimp.h"
@@ -842,11 +832,6 @@ switch((insn.bits >> 0x0) & 0x7f)
         if((insn.bits & 0x1ffff) == 0x170d3)
         {
           #include "insns/fle_d.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x1b0d3)
-        {
-          #include "insns/fmaxmag_d.h"
           break;
         }
         if((insn.bits & 0x1ffff) == 0x160d3)
@@ -897,11 +882,6 @@ switch((insn.bits >> 0x0) & 0x7f)
         if((insn.bits & 0x3fffff) == 0x1e0d3)
         {
           #include "insns/mxtf_d.h"
-          break;
-        }
-        if((insn.bits & 0x1ffff) == 0x1a0d3)
-        {
-          #include "insns/fminmag_d.h"
           break;
         }
         if((insn.bits & 0x1ffff) == 0x50d3)
