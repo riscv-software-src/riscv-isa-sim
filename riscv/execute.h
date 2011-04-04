@@ -356,6 +356,26 @@ switch((insn.bits >> 0x0) & 0x7f)
         #include "insns/fence.h"
         break;
       }
+      case 0x4:
+      {
+        #include "insns/fence_l_v.h"
+        break;
+      }
+      case 0x5:
+      {
+        #include "insns/fence_g_v.h"
+        break;
+      }
+      case 0x6:
+      {
+        #include "insns/fence_l_cv.h"
+        break;
+      }
+      case 0x7:
+      {
+        #include "insns/fence_g_cv.h"
+        break;
+      }
       default:
       {
         #include "insns/unimp.h"
