@@ -88,6 +88,214 @@ switch((insn.bits >> 0x0) & 0x7f)
     }
     break;
   }
+  case 0xb:
+  {
+    switch((insn.bits >> 0x7) & 0x7)
+    {
+      case 0x0:
+      {
+        if((insn.bits & 0x1ffff) == 0x80b)
+        {
+          #include "insns/lbst_v.h"
+          break;
+        }
+        if((insn.bits & 0xf8000fff) == 0xc0b)
+        {
+          #include "insns/sbst_v.h"
+          break;
+        }
+        if((insn.bits & 0x3fffff) == 0xb)
+        {
+          #include "insns/lb_v.h"
+          break;
+        }
+        if((insn.bits & 0xf83e0fff) == 0x40b)
+        {
+          #include "insns/sb_v.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x1:
+      {
+        if((insn.bits & 0x1ffff) == 0x88b)
+        {
+          #include "insns/lhst_v.h"
+          break;
+        }
+        if((insn.bits & 0x3fffff) == 0x8b)
+        {
+          #include "insns/lh_v.h"
+          break;
+        }
+        if((insn.bits & 0xf83e0fff) == 0x48b)
+        {
+          #include "insns/sh_v.h"
+          break;
+        }
+        if((insn.bits & 0xf8000fff) == 0xc8b)
+        {
+          #include "insns/shst_v.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x2:
+      {
+        if((insn.bits & 0x3fffff) == 0x10b)
+        {
+          #include "insns/lw_v.h"
+          break;
+        }
+        if((insn.bits & 0xf8000fff) == 0xd0b)
+        {
+          #include "insns/swst_v.h"
+          break;
+        }
+        if((insn.bits & 0xf83e0fff) == 0x50b)
+        {
+          #include "insns/sw_v.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x90b)
+        {
+          #include "insns/lwst_v.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x3:
+      {
+        if((insn.bits & 0x3fffff) == 0x18b)
+        {
+          #include "insns/ld_v.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x98b)
+        {
+          #include "insns/ldst_v.h"
+          break;
+        }
+        if((insn.bits & 0xf83e0fff) == 0x58b)
+        {
+          #include "insns/sd_v.h"
+          break;
+        }
+        if((insn.bits & 0xf8000fff) == 0xd8b)
+        {
+          #include "insns/sdst_v.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x4:
+      {
+        if((insn.bits & 0x3fffff) == 0x20b)
+        {
+          #include "insns/lbu_v.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0xa0b)
+        {
+          #include "insns/lbust_v.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x5:
+      {
+        if((insn.bits & 0x1ffff) == 0xa8b)
+        {
+          #include "insns/lhust_v.h"
+          break;
+        }
+        if((insn.bits & 0x3fffff) == 0x28b)
+        {
+          #include "insns/lhu_v.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x6:
+      {
+        if((insn.bits & 0x3fffff) == 0x30b)
+        {
+          #include "insns/lwu_v.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0xb0b)
+        {
+          #include "insns/lwust_v.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      default:
+      {
+        #include "insns/unimp.h"
+      }
+    }
+    break;
+  }
+  case 0xf:
+  {
+    switch((insn.bits >> 0x7) & 0x7)
+    {
+      case 0x2:
+      {
+        if((insn.bits & 0xf8000fff) == 0xd0f)
+        {
+          #include "insns/fswst_v.h"
+          break;
+        }
+        if((insn.bits & 0xf83e0fff) == 0x50f)
+        {
+          #include "insns/fsw_v.h"
+          break;
+        }
+        if((insn.bits & 0x3fffff) == 0x10f)
+        {
+          #include "insns/flw_v.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x90f)
+        {
+          #include "insns/flwst_v.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x3:
+      {
+        if((insn.bits & 0x3fffff) == 0x18f)
+        {
+          #include "insns/fld_v.h"
+          break;
+        }
+        if((insn.bits & 0xf83e0fff) == 0x58f)
+        {
+          #include "insns/fsd_v.h"
+          break;
+        }
+        if((insn.bits & 0xf8000fff) == 0xd8f)
+        {
+          #include "insns/fsdst_v.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0x98f)
+        {
+          #include "insns/fldst_v.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      default:
+      {
+        #include "insns/unimp.h"
+      }
+    }
+    break;
+  }
   case 0x13:
   {
     switch((insn.bits >> 0x7) & 0x7)
