@@ -1253,6 +1253,58 @@ switch((insn.bits >> 0x0) & 0x7f)
     #include "insns/jal.h"
     break;
   }
+  case 0x73:
+  {
+    switch((insn.bits >> 0x7) & 0x7)
+    {
+      case 0x0:
+      {
+        #include "insns/vcfgivl.h"
+        break;
+      }
+      case 0x1:
+      {
+        if((insn.bits & 0x3fffff) == 0xf3)
+        {
+          #include "insns/setvl.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x2:
+      {
+        if((insn.bits & 0xffc003ff) == 0x173)
+        {
+          #include "insns/vf.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x3:
+      {
+        if((insn.bits & 0x3fffff) == 0x1f3)
+        {
+          #include "insns/mov_vv.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x4:
+      {
+        if((insn.bits & 0x3fffff) == 0x273)
+        {
+          #include "insns/fmov_vv.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      default:
+      {
+        #include "insns/unimp.h"
+      }
+    }
+    break;
+  }
   case 0x77:
   {
     switch((insn.bits >> 0x7) & 0x7)
