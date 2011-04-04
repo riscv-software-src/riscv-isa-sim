@@ -1067,6 +1067,24 @@ switch((insn.bits >> 0x0) & 0x7f)
         }
         #include "insns/unimp.h"
       }
+      case 0x2:
+      {
+        if((insn.bits & 0xffffffff) == 0x177)
+        {
+          #include "insns/stop.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
+      case 0x3:
+      {
+        if((insn.bits & 0xffffffff) == 0x1f7)
+        {
+          #include "insns/utidx.h"
+          break;
+        }
+        #include "insns/unimp.h"
+      }
       default:
       {
         #include "insns/unimp.h"
