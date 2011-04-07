@@ -1530,7 +1530,7 @@ switch((insn.bits >> 0x0) & 0x7f)
       }
       case 0x3:
       {
-        if((insn.bits & 0xffffffff) == 0x1f7)
+        if((insn.bits & 0x7ffffff) == 0x1f7)
         {
           #include "insns/utidx.h"
           break;
