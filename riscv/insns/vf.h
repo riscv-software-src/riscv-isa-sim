@@ -1,3 +1,4 @@
+require_vector;
 for (int i=0; i<VL; i++)
 {
   uts[i]->pc = RS1+SIMM;
