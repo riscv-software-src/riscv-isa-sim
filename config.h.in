@@ -27,6 +27,9 @@
 /* Define if floating-point instructions are supported */
 #undef RISCV_ENABLE_FPU
 
+/* Define if instruction compression is supported */
+#undef RISCV_ENABLE_RVC
+
 /* Define if libopcodes exists */
 #undef RISCV_HAVE_LIBOPCODES
 

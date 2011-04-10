@@ -13,7 +13,7 @@
   DECLARE_TRAP(data_address_misaligned), \
   DECLARE_TRAP(load_access_fault), \
   DECLARE_TRAP(store_access_fault), \
-  DECLARE_TRAP(reserved1), \
+  DECLARE_TRAP(trap_vector_disabled), \
   DECLARE_TRAP(reserved2), \
   DECLARE_TRAP(reserved3), \
   DECLARE_TRAP(reserved4), \

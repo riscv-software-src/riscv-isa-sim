@@ -35,14 +35,14 @@ const int JUMP_ALIGN_BITS = 1;
 
 #define SR_ET    0x0000000000000001ULL
 #define SR_EF    0x0000000000000002ULL
-#define SR_PS    0x0000000000000004ULL
-#define SR_S     0x0000000000000008ULL
-#define SR_UX    0x0000000000000010ULL
-#define SR_SX    0x0000000000000020ULL
-#define SR_UC    0x0000000000000040ULL
-#define SR_SC    0x0000000000000080ULL
+#define SR_EV    0x0000000000000004ULL
+#define SR_EC    0x0000000000000008ULL
+#define SR_PS    0x0000000000000010ULL
+#define SR_S     0x0000000000000020ULL
+#define SR_UX    0x0000000000000040ULL
+#define SR_SX    0x0000000000000080ULL
 #define SR_IM    0x000000000000FF00ULL
-#define SR_ZERO  ~(SR_ET|SR_EF|SR_PS|SR_S|SR_UX|SR_SX|SR_UC|SR_SC|SR_IM)
+#define SR_ZERO  ~(SR_ET|SR_EF|SR_EV|SR_EC|SR_PS|SR_S|SR_UX|SR_SX|SR_IM)
 #define SR_IM_SHIFT 8
 #define TIMER_IRQ 7
 
@@ -190,13 +190,13 @@ private:
 #define require_xpr64 if(!xpr64) throw trap_illegal_instruction
 #define require_xpr32 if(xpr64) throw trap_illegal_instruction
 #define require_fp if(!(sr & SR_EF)) throw trap_fp_disabled
+#define require_vector if(!(sr & SR_EV)) throw trap_vector_disabled
 #define cmp_trunc(reg) (reg_t(reg) << (64-xprlen))
 #define set_fp_exceptions ({ set_fsr(fsr | \
                                (softfloat_exceptionFlags << FSR_AEXC_SHIFT)); \
                              softfloat_exceptionFlags = 0; })
 
-#define rvc_mode ((sr & SR_S) ? (sr & SR_SC) : (sr & SR_UC))
-#define require_rvc if(!rvc_mode) throw trap_illegal_instruction
+#define require_rvc if(!(sr & SR_EC)) throw trap_illegal_instruction
 
 #define sext32(x) ((sreg_t)(int32_t)(x))
 #define insn_length(x) (((x).bits & 0x3) < 0x3 ? 2 : 4)
