@@ -32,6 +32,17 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
 
   memset(counters,0,sizeof(counters));
 
+  // vector stuff
+  utidx = -1;
+  vlmax = 8;
+  vl = 0;
+  nxpr_all = 256;
+  nfpr_all = 256;
+  nxpr_use = 0;
+  nfpr_use = 0;
+  for (int i=0; i<MAX_UTS; i++)
+    uts[i] = NULL;
+
   // a few assumptions about endianness, including freg_t union
   static_assert(BYTE_ORDER == LITTLE_ENDIAN);
   static_assert(sizeof(freg_t) == 8);
@@ -41,9 +52,16 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   static_assert(sizeof(uint128_t) == 16 && sizeof(int128_t) == 16);
 }
 
-void processor_t::init(uint32_t _id)
+void processor_t::init(uint32_t _id, char* _mem, size_t _memsz)
 {
   id = _id;
+
+  for (int i=0; i<MAX_UTS; i++)
+  {
+    uts[i] = new processor_t(sim, _mem, _memsz);
+    uts[i]->set_sr(uts[i]->sr | SR_EF);
+    uts[i]->utidx = i;
+  }
 }
 
 void processor_t::set_sr(uint32_t val)
@@ -65,6 +83,25 @@ void processor_t::set_sr(uint32_t val)
 void processor_t::set_fsr(uint32_t val)
 {
   fsr = val & ~FSR_ZERO;
+}
+
+void processor_t::vcfg()
+{
+  if (nxpr_use == 0 && nfpr_use == 0)
+    vlmax = 8;
+  else if (nfpr_use == 0)
+    vlmax = (nxpr_all-1) / (nxpr_use-1);
+  else if (nxpr_use == 0)
+    vlmax = (nfpr_all-1) / (nfpr_use-1);
+  else
+    vlmax = std::min((nxpr_all-1) / (nxpr_use-1), (nfpr_all-1) / (nfpr_use-1));
+
+  vlmax = std::min(vlmax, MAX_UTS);
+}
+
+void processor_t::setvl(int vlapp)
+{
+  vl = std::min(vlmax, vlapp);
 }
 
 void processor_t::step(size_t n, bool noisy)
@@ -100,6 +137,11 @@ void processor_t::step(size_t n, bool noisy)
   {
     i++;
     take_trap(t,noisy);
+  }
+  catch(vt_command_t cmd)
+  {
+    if (cmd == vt_command_stop)
+      return;
   }
 }
 

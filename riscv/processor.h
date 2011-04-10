@@ -6,13 +6,15 @@
 #include "trap.h"
 #include "mmu.h"
 
+#define MAX_UTS 32
+
 class sim_t;
 
 class processor_t
 {
 public:
   processor_t(sim_t* _sim, char* _mem, size_t _memsz);
-  void init(uint32_t _id);
+  void init(uint32_t _id, char* _mem, size_t _memsz);
   void step(size_t n, bool noisy);
 
 private:
@@ -54,6 +56,20 @@ private:
   void set_fsr(uint32_t val);
   void take_trap(trap_t t, bool noisy);
   void disasm(insn_t insn, reg_t pc);
+
+  // vector stuff
+  void vcfg();
+  void setvl(int vlapp);
+
+  bool utmode;
+  int utidx;
+  int vlmax;
+  int vl;
+  int nxpr_all;
+  int nfpr_all;
+  int nxpr_use;
+  int nfpr_use;
+  processor_t* uts[MAX_UTS];
 
   friend class sim_t;
 };

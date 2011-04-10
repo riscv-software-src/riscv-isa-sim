@@ -15,7 +15,7 @@ sim_t::sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink)
   demand(mem != MAP_FAILED, "couldn't allocate target machine's memory");
 
   for(int i = 0; i < (int)procs.size(); i++)
-    procs[i].init(i);
+    procs[i].init(i, mem, memsz);
 
   applink->init(this);
 }
