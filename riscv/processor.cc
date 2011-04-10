@@ -60,6 +60,7 @@ void processor_t::init(uint32_t _id, char* _mem, size_t _memsz)
   {
     uts[i] = new processor_t(sim, _mem, _memsz);
     uts[i]->set_sr(uts[i]->sr | SR_EF);
+    uts[i]->set_sr(uts[i]->sr | SR_EV);
     uts[i]->utidx = i;
   }
 }
