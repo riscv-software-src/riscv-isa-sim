@@ -77,6 +77,9 @@ void processor_t::set_sr(uint32_t val)
 #ifndef RISCV_ENABLE_RVC
   sr &= ~SR_EC;
 #endif
+#ifndef RISCV_ENABLE_VEC
+  sr &= ~SR_EV;
+#endif
 
   xprlen = ((sr & SR_S) ? (sr & SR_SX) : (sr & SR_UX)) ? 64 : 32;
 }

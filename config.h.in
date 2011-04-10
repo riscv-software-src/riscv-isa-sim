@@ -30,6 +30,9 @@
 /* Define if instruction compression is supported */
 #undef RISCV_ENABLE_RVC
 
+/* Define if vector processor is supported */
+#undef RISCV_ENABLE_VEC
+
 /* Define if libopcodes exists */
 #undef RISCV_HAVE_LIBOPCODES
 

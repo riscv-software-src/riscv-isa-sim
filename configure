@@ -638,6 +638,7 @@ enable_optional_subprojects
 enable_fpu
 enable_64bit
 enable_rvc
+enable_vec
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1273,6 +1274,7 @@ Optional Features:
   --disable-fpu           Disable floating-point
   --disable-64bit         Disable 64-bit mode
   --disable-rvc           Disable instruction compression
+  --disable-vec           Disable vector processor
 
 Some influential environment variables:
   CC          C compiler command
@@ -4056,6 +4058,19 @@ if test "x$enable_rvc" != "xno"; then :
 
 
 $as_echo "#define RISCV_ENABLE_RVC /**/" >>confdefs.h
+
+
+fi
+
+# Check whether --enable-vec was given.
+if test "${enable_vec+set}" = set; then :
+  enableval=$enable_vec;
+fi
+
+if test "x$enable_vec" != "xno"; then :
+
+
+$as_echo "#define RISCV_ENABLE_VEC /**/" >>confdefs.h
 
 
 fi
