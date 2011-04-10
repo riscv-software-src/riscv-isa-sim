@@ -6,6 +6,11 @@ switch((insn.bits >> 0x0) & 0x7f)
     #include "insns/c_addi.h"
     break;
   }
+  case 0x1:
+  {
+    #include "insns/c_li.h"
+    break;
+  }
   case 0x3:
   {
     switch((insn.bits >> 0x7) & 0x7)
@@ -599,6 +604,11 @@ switch((insn.bits >> 0x0) & 0x7f)
     #include "insns/c_addi.h"
     break;
   }
+  case 0x21:
+  {
+    #include "insns/c_li.h"
+    break;
+  }
   case 0x23:
   {
     switch((insn.bits >> 0x7) & 0x7)
@@ -1017,6 +1027,11 @@ switch((insn.bits >> 0x0) & 0x7f)
   case 0x40:
   {
     #include "insns/c_addi.h"
+    break;
+  }
+  case 0x41:
+  {
+    #include "insns/c_li.h"
     break;
   }
   case 0x43:
@@ -1548,6 +1563,11 @@ switch((insn.bits >> 0x0) & 0x7f)
   case 0x60:
   {
     #include "insns/c_addi.h"
+    break;
+  }
+  case 0x61:
+  {
+    #include "insns/c_li.h"
     break;
   }
   case 0x63:
