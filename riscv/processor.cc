@@ -52,8 +52,11 @@ void processor_t::set_sr(uint32_t val)
 #ifndef RISCV_ENABLE_64BIT
   sr &= ~(SR_SX | SR_UX);
 #endif
-#ifndef RISCV_ENABLE_64BIT
+#ifndef RISCV_ENABLE_FPU
   sr &= ~SR_EF;
+#endif
+#ifdef RISCV_ENABLE_RVC
+  sr &= ~SR_C;
 #endif
 
   xprlen = ((sr & SR_S) ? (sr & SR_SX) : (sr & SR_UX)) ? 64 : 32;
@@ -76,9 +79,9 @@ void processor_t::step(size_t n, bool noisy)
       if(interrupts && (sr & SR_ET))
         take_trap(trap_interrupt,noisy);
 
-      insn_t insn = mmu.load_insn(pc);
+      insn_t insn = mmu.load_insn(pc, rvc_mode);
   
-      reg_t npc = pc+sizeof(insn);
+      reg_t npc = pc + insn_length(insn);
 
       if(noisy)
         disasm(insn,pc);

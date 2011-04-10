@@ -3,22 +3,7 @@ switch((insn.bits >> 0x0) & 0x7f)
 {
   case 0x0:
   {
-    switch((insn.bits >> 0x7) & 0x7)
-    {
-      case 0x0:
-      {
-        if((insn.bits & 0xffffffff) == 0x0)
-        {
-          #include "insns/unimp.h"
-          break;
-        }
-        #include "insns/unimp.h"
-      }
-      default:
-      {
-        #include "insns/unimp.h"
-      }
-    }
+    #include "insns/c_addi.h"
     break;
   }
   case 0x3:
@@ -62,7 +47,7 @@ switch((insn.bits >> 0x0) & 0x7f)
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -83,7 +68,7 @@ switch((insn.bits >> 0x0) & 0x7f)
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -134,7 +119,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/sb_v.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x1:
       {
@@ -178,7 +163,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/shst_v.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x2:
       {
@@ -252,7 +237,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/lwst_v.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x3:
       {
@@ -326,7 +311,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/sdst_v.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x4:
       {
@@ -345,15 +330,10 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/lbust_v.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x5:
       {
-        if((insn.bits & 0x1ffff) == 0x228b)
-        {
-          #include "insns/lhuseg_v.h"
-          break;
-        }
         if((insn.bits & 0x1ffff) == 0x128b)
         {
           #include "insns/lhust_v.h"
@@ -364,7 +344,12 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/lhu_v.h"
           break;
         }
-        #include "insns/unimp.h"
+        if((insn.bits & 0x1ffff) == 0x228b)
+        {
+          #include "insns/lhuseg_v.h"
+          break;
+        }
+        throw trap_illegal_instruction;
       }
       case 0x6:
       {
@@ -383,11 +368,11 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/lwust_v.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -408,7 +393,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/lbsegst_v.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x1:
       {
@@ -422,7 +407,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/lhsegst_v.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x2:
       {
@@ -446,7 +431,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/swsegst_v.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x3:
       {
@@ -470,7 +455,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fsdsegst_v.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x4:
       {
@@ -479,7 +464,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/lbusegst_v.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x5:
       {
@@ -488,7 +473,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/lhusegst_v.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x6:
       {
@@ -497,11 +482,11 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/lwusegst_v.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -522,7 +507,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/slli.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x2:
       {
@@ -551,7 +536,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/srai.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x6:
       {
@@ -565,7 +550,7 @@ switch((insn.bits >> 0x0) & 0x7f)
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -586,7 +571,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/slliw.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x5:
       {
@@ -600,13 +585,18 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/sraiw.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
+    break;
+  }
+  case 0x20:
+  {
+    #include "insns/c_addi.h"
     break;
   }
   case 0x23:
@@ -635,7 +625,7 @@ switch((insn.bits >> 0x0) & 0x7f)
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -656,7 +646,7 @@ switch((insn.bits >> 0x0) & 0x7f)
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -707,7 +697,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/amoswap_w.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x3:
       {
@@ -751,11 +741,11 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/amomin_d.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -796,7 +786,7 @@ switch((insn.bits >> 0x0) & 0x7f)
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -822,7 +812,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/sub.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x1:
       {
@@ -836,7 +826,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/mulh.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x2:
       {
@@ -850,7 +840,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/slt.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x3:
       {
@@ -864,7 +854,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/mulhu.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x4:
       {
@@ -878,7 +868,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/xor.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x5:
       {
@@ -897,7 +887,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/divu.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x6:
       {
@@ -911,7 +901,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/or.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x7:
       {
@@ -925,11 +915,11 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/and.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -960,7 +950,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/subw.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x1:
       {
@@ -969,7 +959,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/sllw.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x4:
       {
@@ -978,7 +968,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/divw.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x5:
       {
@@ -997,7 +987,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/sraw.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x6:
       {
@@ -1006,7 +996,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/remw.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x7:
       {
@@ -1015,13 +1005,18 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/remuw.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
+    break;
+  }
+  case 0x40:
+  {
+    #include "insns/c_addi.h"
     break;
   }
   case 0x43:
@@ -1050,7 +1045,7 @@ switch((insn.bits >> 0x0) & 0x7f)
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -1081,7 +1076,7 @@ switch((insn.bits >> 0x0) & 0x7f)
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -1112,7 +1107,7 @@ switch((insn.bits >> 0x0) & 0x7f)
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -1143,7 +1138,7 @@ switch((insn.bits >> 0x0) & 0x7f)
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -1284,7 +1279,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fadd_s.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x1:
       {
@@ -1408,7 +1403,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fdiv_d.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x4:
       {
@@ -1482,7 +1477,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fadd_s.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x5:
       {
@@ -1541,13 +1536,18 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fdiv_d.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
+    break;
+  }
+  case 0x60:
+  {
+    #include "insns/c_addi.h"
     break;
   }
   case 0x63:
@@ -1586,7 +1586,7 @@ switch((insn.bits >> 0x0) & 0x7f)
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -1622,11 +1622,11 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/rdnpc.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -1652,7 +1652,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/setvl.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x2:
       {
@@ -1661,11 +1661,11 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/vf.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -1681,7 +1681,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/syscall.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x1:
       {
@@ -1690,7 +1690,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/break.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x2:
       {
@@ -1699,7 +1699,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/stop.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x3:
       {
@@ -1708,11 +1708,11 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/utidx.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
@@ -1728,7 +1728,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/ei.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x1:
       {
@@ -1737,7 +1737,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/di.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x2:
       {
@@ -1746,7 +1746,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/mfpcr.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x3:
       {
@@ -1755,7 +1755,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/mtpcr.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       case 0x4:
       {
@@ -1764,17 +1764,17 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/eret.h"
           break;
         }
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
       default:
       {
-        #include "insns/unimp.h"
+        throw trap_illegal_instruction;
       }
     }
     break;
   }
   default:
   {
-    #include "insns/unimp.h"
+    throw trap_illegal_instruction;
   }
 }

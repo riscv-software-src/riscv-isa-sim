@@ -18,10 +18,15 @@ public:
       *(type##_t*)(mem+addr) = val; \
     }
 
-  insn_t load_insn(reg_t addr)
+  insn_t load_insn(reg_t addr, bool rvc)
   {
-    check_align_and_bounds(addr, sizeof(insn_t), false, true);
-    return *(insn_t*)(mem+addr);
+    check_align_and_bounds(addr, rvc ? 2 : 4, false, true);
+    uint16_t lo = *(uint16_t*)(mem+addr);
+    uint16_t hi = *(uint16_t*)(mem+addr+2);
+
+    insn_t insn; 
+    insn.bits = ((uint32_t)hi << 16) | lo;
+    return insn;
   }
 
   load_func(uint8)
