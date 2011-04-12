@@ -52,14 +52,16 @@ private:
   size_t memsz;
   reg_t badvaddr;
 
-  void check_align(reg_t addr, int size, bool fetch)
+  void check_align(reg_t addr, int size, bool store, bool fetch)
   {
     if(addr & (size-1))
     {
       badvaddr = addr;
       if(fetch)
         throw trap_instruction_address_misaligned;
-      throw trap_data_address_misaligned;
+      if(store)
+        throw trap_store_address_misaligned;
+      throw trap_load_address_misaligned;
     }
   }
 
@@ -76,7 +78,7 @@ private:
 
   void check_align_and_bounds(reg_t addr, int size, bool store, bool fetch)
   {
-    check_align(addr, size, fetch);
+    check_align(addr, size, store, fetch);
     check_bounds(addr, size, store, fetch);
   }
 };
