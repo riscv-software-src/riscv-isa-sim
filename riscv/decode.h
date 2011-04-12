@@ -63,7 +63,7 @@ const int JUMP_ALIGN_BITS = 1;
 #define FPEXC_NX 0x01
 #define FPEXC_UF 0x02
 #define FPEXC_OF 0x04
-#define FPEXC_DZ 0x02
+#define FPEXC_DZ 0x08
 #define FPEXC_NV 0x10
 
 #define FSR_AEXC_SHIFT 0
