@@ -11,6 +11,129 @@ switch((insn.bits >> 0x0) & 0x7f)
     #include "insns/c_li.h"
     break;
   }
+  case 0x2:
+  {
+    switch((insn.bits >> 0x7) & 0x7)
+    {
+      case 0x0:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x1:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x2:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x3:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x4:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x5:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x6:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x7:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      default:
+      {
+        throw trap_illegal_instruction;
+      }
+    }
+    break;
+  }
   case 0x3:
   {
     switch((insn.bits >> 0x7) & 0x7)
@@ -609,6 +732,129 @@ switch((insn.bits >> 0x0) & 0x7f)
     #include "insns/c_li.h"
     break;
   }
+  case 0x22:
+  {
+    switch((insn.bits >> 0x7) & 0x7)
+    {
+      case 0x0:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x1:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x2:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x3:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x4:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x5:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x6:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x7:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      default:
+      {
+        throw trap_illegal_instruction;
+      }
+    }
+    break;
+  }
   case 0x23:
   {
     switch((insn.bits >> 0x7) & 0x7)
@@ -1032,6 +1278,129 @@ switch((insn.bits >> 0x0) & 0x7f)
   case 0x41:
   {
     #include "insns/c_li.h"
+    break;
+  }
+  case 0x42:
+  {
+    switch((insn.bits >> 0x7) & 0x7)
+    {
+      case 0x0:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x1:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x2:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x3:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x4:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x5:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x6:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x7:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      default:
+      {
+        throw trap_illegal_instruction;
+      }
+    }
     break;
   }
   case 0x43:
@@ -1568,6 +1937,129 @@ switch((insn.bits >> 0x0) & 0x7f)
   case 0x61:
   {
     #include "insns/c_li.h"
+    break;
+  }
+  case 0x62:
+  {
+    switch((insn.bits >> 0x7) & 0x7)
+    {
+      case 0x0:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x1:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x2:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x3:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x4:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x5:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x6:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      case 0x7:
+      {
+        if((insn.bits & 0x801f) == 0x2)
+        {
+          #include "insns/c_move.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x8002)
+        {
+          #include "insns/c_j.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
+      default:
+      {
+        throw trap_illegal_instruction;
+      }
+    }
     break;
   }
   case 0x63:

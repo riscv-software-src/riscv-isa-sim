@@ -204,8 +204,14 @@ private:
 
 // RVC stuff
 
+#define INSN_IS_RVC(x) (((x) & 0x3) < 0x3)
+
 #define CRD do_writeback(XPR,(insn.bits >> 5) & 0x1f)
+#define CRS1 XPR[(insn.bits >> 10) & 0x1f]
+#define CRS2 XPR[(insn.bits >> 5) & 0x1f]
 #define CIMM6 ((int32_t)((insn.bits >> 10) & 0x3f) << 26 >> 26)
+#define CIMM10 ((int32_t)((insn.bits >> 5) & 0x3ff) << 22 >> 22)
+#define CJUMP_TARGET (pc + (CIMM10 << JUMP_ALIGN_BITS))
 
 // vector stuff
 #define VL vl

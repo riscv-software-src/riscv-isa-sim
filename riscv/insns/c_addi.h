@@ -1,2 +1,2 @@
 require_rvc;
-CRD = sext_xprlen(CRD + SIMM);
+CRD = sext_xprlen(CRS2 + CIMM6);

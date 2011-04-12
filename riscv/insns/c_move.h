@@ -1,2 +1,2 @@
 require_rvc;
-CRD = CIMM6;
+CRD = CRS1;

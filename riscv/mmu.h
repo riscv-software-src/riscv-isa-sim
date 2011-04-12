@@ -25,9 +25,7 @@ public:
     uint16_t hi = *(uint16_t*)(mem+addr+2);
 
     insn_t insn; 
-    insn.bits = lo;
-    if((lo & 0x3) == 0x3)
-      insn.bits |= (uint32_t)hi << 16;
+    insn.bits = lo | ((uint32_t)hi << 16);
 
     return insn;
   }

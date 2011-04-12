@@ -180,7 +180,8 @@ void processor_t::disasm(insn_t insn, reg_t pc)
   info.buffer_length = sizeof(insn);
   info.buffer_vma = pc;
 
-  demand(print_insn_little_mips(pc, &info) == sizeof(insn), "disasm bug!");
+  int ret = print_insn_little_mips(pc, &info);
+  demand(ret == (INSN_IS_RVC(insn.bits) ? 2 : 4), "disasm bug!");
   #else
   printf("unknown");
   #endif
