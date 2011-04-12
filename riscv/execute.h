@@ -180,6 +180,21 @@ switch((insn.bits >> 0x0) & 0x7f)
     }
     break;
   }
+  case 0x4:
+  {
+    #include "insns/c_ldsp.h"
+    break;
+  }
+  case 0x5:
+  {
+    #include "insns/c_lwsp.h"
+    break;
+  }
+  case 0x6:
+  {
+    #include "insns/c_sdsp.h"
+    break;
+  }
   case 0x7:
   {
     switch((insn.bits >> 0x7) & 0x7)
@@ -199,6 +214,21 @@ switch((insn.bits >> 0x0) & 0x7f)
         throw trap_illegal_instruction;
       }
     }
+    break;
+  }
+  case 0x8:
+  {
+    #include "insns/c_swsp.h"
+    break;
+  }
+  case 0x9:
+  {
+    #include "insns/c_ld.h"
+    break;
+  }
+  case 0xa:
+  {
+    #include "insns/c_lw.h"
     break;
   }
   case 0xb:
@@ -503,6 +533,16 @@ switch((insn.bits >> 0x0) & 0x7f)
         throw trap_illegal_instruction;
       }
     }
+    break;
+  }
+  case 0xc:
+  {
+    #include "insns/c_sd.h"
+    break;
+  }
+  case 0xd:
+  {
+    #include "insns/c_sw.h"
     break;
   }
   case 0xf:
@@ -886,6 +926,21 @@ switch((insn.bits >> 0x0) & 0x7f)
     }
     break;
   }
+  case 0x24:
+  {
+    #include "insns/c_ldsp.h"
+    break;
+  }
+  case 0x25:
+  {
+    #include "insns/c_lwsp.h"
+    break;
+  }
+  case 0x26:
+  {
+    #include "insns/c_sdsp.h"
+    break;
+  }
   case 0x27:
   {
     switch((insn.bits >> 0x7) & 0x7)
@@ -905,6 +960,21 @@ switch((insn.bits >> 0x0) & 0x7f)
         throw trap_illegal_instruction;
       }
     }
+    break;
+  }
+  case 0x28:
+  {
+    #include "insns/c_swsp.h"
+    break;
+  }
+  case 0x29:
+  {
+    #include "insns/c_ld.h"
+    break;
+  }
+  case 0x2a:
+  {
+    #include "insns/c_lw.h"
     break;
   }
   case 0x2b:
@@ -1004,6 +1074,16 @@ switch((insn.bits >> 0x0) & 0x7f)
         throw trap_illegal_instruction;
       }
     }
+    break;
+  }
+  case 0x2c:
+  {
+    #include "insns/c_sd.h"
+    break;
+  }
+  case 0x2d:
+  {
+    #include "insns/c_sw.h"
     break;
   }
   case 0x2f:
@@ -1434,6 +1514,21 @@ switch((insn.bits >> 0x0) & 0x7f)
     }
     break;
   }
+  case 0x44:
+  {
+    #include "insns/c_ldsp.h"
+    break;
+  }
+  case 0x45:
+  {
+    #include "insns/c_lwsp.h"
+    break;
+  }
+  case 0x46:
+  {
+    #include "insns/c_sdsp.h"
+    break;
+  }
   case 0x47:
   {
     switch((insn.bits >> 0x7) & 0x7)
@@ -1465,6 +1560,21 @@ switch((insn.bits >> 0x0) & 0x7f)
     }
     break;
   }
+  case 0x48:
+  {
+    #include "insns/c_swsp.h"
+    break;
+  }
+  case 0x49:
+  {
+    #include "insns/c_ld.h"
+    break;
+  }
+  case 0x4a:
+  {
+    #include "insns/c_lw.h"
+    break;
+  }
   case 0x4b:
   {
     switch((insn.bits >> 0x7) & 0x7)
@@ -1494,6 +1604,16 @@ switch((insn.bits >> 0x0) & 0x7f)
         throw trap_illegal_instruction;
       }
     }
+    break;
+  }
+  case 0x4c:
+  {
+    #include "insns/c_sd.h"
+    break;
+  }
+  case 0x4d:
+  {
+    #include "insns/c_sw.h"
     break;
   }
   case 0x4f:
@@ -2103,9 +2223,39 @@ switch((insn.bits >> 0x0) & 0x7f)
     }
     break;
   }
+  case 0x64:
+  {
+    #include "insns/c_ldsp.h"
+    break;
+  }
+  case 0x65:
+  {
+    #include "insns/c_lwsp.h"
+    break;
+  }
+  case 0x66:
+  {
+    #include "insns/c_sdsp.h"
+    break;
+  }
   case 0x67:
   {
     #include "insns/j.h"
+    break;
+  }
+  case 0x68:
+  {
+    #include "insns/c_swsp.h"
+    break;
+  }
+  case 0x69:
+  {
+    #include "insns/c_ld.h"
+    break;
+  }
+  case 0x6a:
+  {
+    #include "insns/c_lw.h"
     break;
   }
   case 0x6b:
@@ -2141,6 +2291,16 @@ switch((insn.bits >> 0x0) & 0x7f)
         throw trap_illegal_instruction;
       }
     }
+    break;
+  }
+  case 0x6c:
+  {
+    #include "insns/c_sd.h"
+    break;
+  }
+  case 0x6d:
+  {
+    #include "insns/c_sw.h"
     break;
   }
   case 0x6f:

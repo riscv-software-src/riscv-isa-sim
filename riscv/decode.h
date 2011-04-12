@@ -206,12 +206,18 @@ private:
 
 #define INSN_IS_RVC(x) (((x) & 0x3) < 0x3)
 
-#define CRD do_writeback(XPR,(insn.bits >> 5) & 0x1f)
+#define CRD do_writeback(XPR, (insn.bits >> 5) & 0x1f)
 #define CRS1 XPR[(insn.bits >> 10) & 0x1f]
 #define CRS2 XPR[(insn.bits >> 5) & 0x1f]
 #define CIMM6 ((int32_t)((insn.bits >> 10) & 0x3f) << 26 >> 26)
+#define CIMM5 ((int32_t)((insn.bits >> 5) & 0x1f) << 27 >> 27)
 #define CIMM10 ((int32_t)((insn.bits >> 5) & 0x3ff) << 22 >> 22)
 #define CJUMP_TARGET (pc + (CIMM10 << JUMP_ALIGN_BITS))
+
+static const uint8_t rvc_regmap[8] = { 20, 21, 2, 3, 4, 5, 6, 7 };
+#define CRDS do_writeback(XPR, rvc_regmap[(insn.bits >> 13) & 0x7])
+#define CRS1S XPR[rvc_regmap[(insn.bits >> 10) & 0x7]]
+#define CRS2S XPR[rvc_regmap[(insn.bits >> 13) & 0x7]]
 
 // vector stuff
 #define VL vl
