@@ -182,8 +182,10 @@ private:
 #define TARGET insn.jtype.target
 #define BRANCH_TARGET (pc + (BIMM << BRANCH_ALIGN_BITS))
 #define JUMP_TARGET (pc + (TARGET << JUMP_ALIGN_BITS))
-#define RM ((insn.ftype.rm != 7) ? insn.ftype.rm : \
-            ((fsr & FSR_RD) >> FSR_RD_SHIFT))
+#define RM ({ int rm = insn.ftype.rm; \
+              if(rm == 7) rm = (fsr & FSR_RD) >> FSR_RD_SHIFT; \
+              if(rm > 4) throw trap_illegal_instruction; \
+              rm; })
 
 #define require_supervisor if(!(sr & SR_S)) throw trap_privileged_instruction
 #define xpr64 (xprlen == 64)
