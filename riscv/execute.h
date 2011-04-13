@@ -2438,6 +2438,15 @@ switch((insn.bits >> 0x0) & 0x7f)
         }
         throw trap_illegal_instruction;
       }
+      case 0x5:
+      {
+        if((insn.bits & 0xffffffff) == 0x2fb)
+        {
+          #include "insns/cflush.h"
+          break;
+        }
+        throw trap_illegal_instruction;
+      }
       default:
       {
         throw trap_illegal_instruction;
