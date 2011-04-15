@@ -35,5 +35,11 @@ int main(int argc, char** argv)
   appserver_link_t applink(tohost_fd,fromhost_fd);
 
   sim_t s(nprocs,MEMSIZE,&applink);
-  s.run(debug);
+  try
+  {
+    s.run(debug);
+  }
+  catch(quit_sim&)
+  {
+  }
 }

@@ -27,6 +27,9 @@
 /* Define if floating-point instructions are supported */
 #undef RISCV_ENABLE_FPU
 
+/* Define if instruction cache simulator is enabled */
+#undef RISCV_ENABLE_ICSIM
+
 /* Define if instruction compression is supported */
 #undef RISCV_ENABLE_RVC
 

@@ -7,6 +7,7 @@
 #include "common.h"
 #include "config.h"
 #include "sim.h"
+#include "icsim.h"
 #include "softfloat.h"
 #include "platform.h" // softfloat isNaNF32UI, etc.
 #include "internals.h" // ditto
@@ -50,19 +51,31 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
 
   static_assert(sizeof(insn_t) == 4);
   static_assert(sizeof(uint128_t) == 16 && sizeof(int128_t) == 16);
+
+  icsim = NULL;
 }
 
-void processor_t::init(uint32_t _id, char* _mem, size_t _memsz)
+processor_t::~processor_t()
+{
+  delete icsim;
+}
+
+void processor_t::init(uint32_t _id)
 {
   id = _id;
 
   for (int i=0; i<MAX_UTS; i++)
   {
-    uts[i] = new processor_t(sim, _mem, _memsz);
+    uts[i] = new processor_t(sim, mmu.mem, mmu.memsz);
+    uts[i]->id = id;
     uts[i]->set_sr(uts[i]->sr | SR_EF);
     uts[i]->set_sr(uts[i]->sr | SR_EV);
     uts[i]->utidx = i;
   }
+
+  #ifdef RISCV_ENABLE_ICSIM
+  icsim = new icsim_t(1024, 1, 32);
+  #endif
 }
 
 void processor_t::set_sr(uint32_t val)
@@ -121,6 +134,9 @@ void processor_t::step(size_t n, bool noisy)
         take_trap(trap_interrupt,noisy);
 
       insn_t insn = mmu.load_insn(pc, sr & SR_EC);
+      #ifdef RISCV_ENABLE_ICSIM
+      icsim->tick(pc, insn_length(insn));
+      #endif
   
       reg_t npc = pc + insn_length(insn);
 

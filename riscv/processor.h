@@ -5,6 +5,7 @@
 #include <cstring>
 #include "trap.h"
 #include "mmu.h"
+#include "icsim.h"
 
 #define MAX_UTS 32
 
@@ -14,7 +15,8 @@ class processor_t
 {
 public:
   processor_t(sim_t* _sim, char* _mem, size_t _memsz);
-  void init(uint32_t _id, char* _mem, size_t _memsz);
+  ~processor_t();
+  void init(uint32_t _id);
   void step(size_t n, bool noisy);
 
 private:
@@ -70,6 +72,9 @@ private:
   int nxpr_use;
   int nfpr_use;
   processor_t* uts[MAX_UTS];
+
+  // icache sim
+  icsim_t* icsim;
 
   friend class sim_t;
 };

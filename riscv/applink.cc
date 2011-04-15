@@ -107,7 +107,7 @@ int appserver_link_t::wait_for_packet()
         break;
       case APP_CMD_STOP:
         send_packet(&ackpacket);
-        exit(0);
+        throw quit_sim();
       case APP_CMD_READ_MEM:
         demand(p.addr % APP_DATA_ALIGN == 0, "misaligned address");
         demand(p.data_size % APP_DATA_ALIGN == 0, "misaligned data");

@@ -15,7 +15,7 @@ sim_t::sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink)
   demand(mem != MAP_FAILED, "couldn't allocate target machine's memory");
 
   for(int i = 0; i < (int)procs.size(); i++)
-    procs[i].init(i, mem, memsz);
+    procs[i].init(i);
 
   applink->init(this);
 }
@@ -141,7 +141,7 @@ void sim_t::interactive_run_proc(const std::string& cmd, const std::vector<std::
 
 void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::string>& args)
 {
-  exit(0);
+  throw quit_sim();
 }
 
 reg_t sim_t::get_pc(const std::vector<std::string>& args)

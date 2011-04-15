@@ -18,6 +18,7 @@ riscv_srcs = \
 	processor.cc \
 	sim.cc \
 	trap.cc \
+	icsim.cc \
 
 riscv_test_srcs =
 

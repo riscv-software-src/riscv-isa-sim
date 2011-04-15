@@ -57,4 +57,6 @@ private:
   friend class appserver_link_t;
 };
 
+struct quit_sim {};
+
 #endif

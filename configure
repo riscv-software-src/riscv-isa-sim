@@ -639,6 +639,7 @@ enable_fpu
 enable_64bit
 enable_rvc
 enable_vec
+enable_icsim
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1275,6 +1276,7 @@ Optional Features:
   --disable-64bit         Disable 64-bit mode
   --disable-rvc           Disable instruction compression
   --disable-vec           Disable vector processor
+  --disable-icsim         Enable instruction cache simulator
 
 Some influential environment variables:
   CC          C compiler command
@@ -4071,6 +4073,19 @@ if test "x$enable_vec" != "xno"; then :
 
 
 $as_echo "#define RISCV_ENABLE_VEC /**/" >>confdefs.h
+
+
+fi
+
+# Check whether --enable-icsim was given.
+if test "${enable_icsim+set}" = set; then :
+  enableval=$enable_icsim;
+fi
+
+if test "x$enable_icsim" = "xyes"; then :
+
+
+$as_echo "#define RISCV_ENABLE_ICSIM /**/" >>confdefs.h
 
 
 fi

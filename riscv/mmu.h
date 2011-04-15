@@ -1,6 +1,8 @@
 #include "decode.h"
 #include "trap.h"
 
+class processor_t;
+
 class mmu_t
 {
 public:
@@ -20,6 +22,7 @@ public:
 
   insn_t load_insn(reg_t addr, bool rvc)
   {
+    #ifdef RISCV_ENABLE_RVC
     check_align_and_bounds(addr, rvc ? 2 : 4, false, true);
     uint16_t lo = *(uint16_t*)(mem+addr);
     uint16_t hi = *(uint16_t*)(mem+addr+2);
@@ -28,6 +31,10 @@ public:
     insn.bits = lo | ((uint32_t)hi << 16);
 
     return insn;
+    #else
+    check_align_and_bounds(addr, 4, false, true);
+    return *(insn_t*)(mem+addr);
+    #endif
   }
 
   load_func(uint8)
@@ -81,4 +88,6 @@ private:
     check_align(addr, size, store, fetch);
     check_bounds(addr, size, store, fetch);
   }
+  
+  friend class processor_t;
 };
