@@ -1,3 +1,3 @@
-reg_t temp = npc + SIMM;
-npc = RS1;
+reg_t temp = npc;
+npc = RS1 + SIMM;
 RD = temp;
