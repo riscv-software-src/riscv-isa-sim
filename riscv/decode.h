@@ -199,10 +199,12 @@ private:
                              softfloat_exceptionFlags = 0; })
 
 #define require_rvc if(!(sr & SR_EC)) throw trap_illegal_instruction
+#define insn_length(x) (((x).bits & 0x3) < 0x3 ? 2 : 4)
 
 #define sext32(x) ((sreg_t)(int32_t)(x))
-#define insn_length(x) (((x).bits & 0x3) < 0x3 ? 2 : 4)
+#define zext32(x) ((reg_t)(uint32_t)(x))
 #define sext_xprlen(x) ((sreg_t(x) << (64-xprlen)) >> (64-xprlen))
+#define zext_xprlen(x) ((reg_t(x) << (64-xprlen)) >> (64-xprlen))
 
 // RVC stuff
 

@@ -5,4 +5,4 @@ if(xpr64)
   RD = (int128_t(a) * int128_t(b)) >> 64;
 }
 else
-  RD = sext32((sreg_t(RS1) * sreg_t(RS2)) >> 32);
+  RD = sext32((sext32(RS1) * sext32(RS2)) >> 32);

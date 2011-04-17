@@ -1,1 +1,1 @@
-RD = sext_xprlen(sreg_t(RS1) >> (RS2 & (xprlen-1)));
+RD = sext_xprlen(sext_xprlen(RS1) >> (RS2 & (xprlen-1)));
