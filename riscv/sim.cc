@@ -75,6 +75,7 @@ void sim_t::run(bool debug)
       funcs["fregs"] = &sim_t::interactive_fregs;
       funcs["fregd"] = &sim_t::interactive_fregd;
       funcs["mem"] = &sim_t::interactive_mem;
+      funcs["str"] = &sim_t::interactive_str;
       funcs["until"] = &sim_t::interactive_until;
       funcs["while"] = &sim_t::interactive_until;
       funcs["q"] = &sim_t::interactive_quit;
@@ -252,6 +253,22 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
 void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::string>& args)
 {
   printf("0x%016llx\n",(unsigned long long)get_mem(args));
+}
+
+void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)
+{
+  if(args.size() != 1)
+    throw trap_illegal_instruction;
+
+  reg_t addr = strtol(args[0].c_str(),NULL,16);
+
+  mmu_t mmu(mem,memsz);
+  char ch;
+
+  while((ch = mmu.load_uint8(addr++)))
+    putchar(ch);
+
+  putchar('\n');
 }
 
 void sim_t::interactive_until(const std::string& cmd, const std::vector<std::string>& args)
