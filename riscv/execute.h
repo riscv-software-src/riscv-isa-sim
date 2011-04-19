@@ -659,6 +659,16 @@ switch((insn.bits >> 0x0) & 0x7f)
     }
     break;
   }
+  case 0x10:
+  {
+    #include "insns/c_beq.h"
+    break;
+  }
+  case 0x11:
+  {
+    #include "insns/c_bne.h"
+    break;
+  }
   case 0x13:
   {
     switch((insn.bits >> 0x7) & 0x7)
@@ -1125,6 +1135,16 @@ switch((insn.bits >> 0x0) & 0x7f)
         throw trap_illegal_instruction;
       }
     }
+    break;
+  }
+  case 0x30:
+  {
+    #include "insns/c_beq.h"
+    break;
+  }
+  case 0x31:
+  {
+    #include "insns/c_bne.h"
     break;
   }
   case 0x33:
@@ -1645,6 +1665,16 @@ switch((insn.bits >> 0x0) & 0x7f)
         throw trap_illegal_instruction;
       }
     }
+    break;
+  }
+  case 0x50:
+  {
+    #include "insns/c_beq.h"
+    break;
+  }
+  case 0x51:
+  {
+    #include "insns/c_bne.h"
     break;
   }
   case 0x53:
@@ -2306,6 +2336,16 @@ switch((insn.bits >> 0x0) & 0x7f)
   case 0x6f:
   {
     #include "insns/jal.h"
+    break;
+  }
+  case 0x70:
+  {
+    #include "insns/c_beq.h"
+    break;
+  }
+  case 0x71:
+  {
+    #include "insns/c_bne.h"
     break;
   }
   case 0x73:

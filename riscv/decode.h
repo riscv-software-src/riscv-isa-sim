@@ -216,12 +216,15 @@ private:
 #define CIMM6 ((int32_t)((insn.bits >> 10) & 0x3f) << 26 >> 26)
 #define CIMM5 ((int32_t)((insn.bits >> 5) & 0x1f) << 27 >> 27)
 #define CIMM10 ((int32_t)((insn.bits >> 5) & 0x3ff) << 22 >> 22)
+#define CBRANCH_TARGET (pc + (CIMM5 << BRANCH_ALIGN_BITS))
 #define CJUMP_TARGET (pc + (CIMM10 << JUMP_ALIGN_BITS))
 
-static const uint8_t rvc_regmap[8] = { 20, 21, 2, 3, 4, 5, 6, 7 };
-#define CRDS do_writeback(XPR, rvc_regmap[(insn.bits >> 13) & 0x7])
-#define CRS1S XPR[rvc_regmap[(insn.bits >> 10) & 0x7]]
-#define CRS2S XPR[rvc_regmap[(insn.bits >> 13) & 0x7]]
+static const int rvc_rs1_regmap[8] = { 20, 21, 2, 3, 4, 5, 6, 7 };
+#define rvc_rd_regmap rvc_rs1_regmap
+static const int rvc_rs2_regmap[8] = { 20, 21, 2, 3, 4, 5, 6, 0 };
+#define CRDS do_writeback(XPR, rvc_rd_regmap[(insn.bits >> 13) & 0x7])
+#define CRS1S XPR[rvc_rs1_regmap[(insn.bits >> 10) & 0x7]]
+#define CRS2S XPR[rvc_rs2_regmap[(insn.bits >> 13) & 0x7]]
 
 // vector stuff
 #define VL vl
