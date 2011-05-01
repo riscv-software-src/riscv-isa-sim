@@ -53,14 +53,32 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   static_assert(sizeof(uint128_t) == 16 && sizeof(int128_t) == 16);
 
   icsim = NULL;
+  dcsim = NULL;
+  itlbsim = NULL;
+  dtlbsim = NULL;
 }
 
 processor_t::~processor_t()
 {
+  if(icsim)
+    icsim->print_stats();
   delete icsim;
+
+  if(itlbsim)
+    itlbsim->print_stats();
+  delete itlbsim;
+
+  if(dcsim)
+    dcsim->print_stats();
+  delete dcsim;
+
+  if(dtlbsim)
+    dtlbsim->print_stats();
+  delete dtlbsim;
 }
 
-void processor_t::init(uint32_t _id)
+void processor_t::init(uint32_t _id, icsim_t* default_icache,
+                       icsim_t* default_dcache)
 {
   id = _id;
 
@@ -74,7 +92,16 @@ void processor_t::init(uint32_t _id)
   }
 
   #ifdef RISCV_ENABLE_ICSIM
-  icsim = new icsim_t(1024, 1, 32);
+  icsim = new icsim_t(*default_icache);
+  mmu.set_icsim(icsim);
+  itlbsim = new icsim_t(1, 8, 4096, "ITLB");
+  mmu.set_itlbsim(itlbsim);
+  #endif
+  #ifdef RISCV_ENABLE_ICSIM
+  dcsim = new icsim_t(*default_dcache);
+  mmu.set_dcsim(dcsim);
+  dtlbsim = new icsim_t(1, 8, 4096, "DTLB");
+  mmu.set_dtlbsim(dtlbsim);
   #endif
 }
 
@@ -134,9 +161,6 @@ void processor_t::step(size_t n, bool noisy)
         take_trap(trap_interrupt,noisy);
 
       insn_t insn = mmu.load_insn(pc, sr & SR_EC);
-      #ifdef RISCV_ENABLE_ICSIM
-      icsim->tick(pc, insn_length(insn));
-      #endif
   
       reg_t npc = pc + insn_length(insn);
 

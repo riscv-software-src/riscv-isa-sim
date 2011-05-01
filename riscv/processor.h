@@ -16,7 +16,7 @@ class processor_t
 public:
   processor_t(sim_t* _sim, char* _mem, size_t _memsz);
   ~processor_t();
-  void init(uint32_t _id);
+  void init(uint32_t _id, icsim_t* defualt_icache, icsim_t* default_dcache);
   void step(size_t n, bool noisy);
 
 private:
@@ -73,8 +73,11 @@ private:
   int nfpr_use;
   processor_t* uts[MAX_UTS];
 
-  // icache sim
+  // cache sim
   icsim_t* icsim;
+  icsim_t* dcsim;
+  icsim_t* itlbsim;
+  icsim_t* dtlbsim;
 
   friend class sim_t;
 };

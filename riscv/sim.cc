@@ -6,7 +6,7 @@
 #include <iostream>
 #include <climits>
 
-sim_t::sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink)
+sim_t::sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink, icsim_t* default_icache, icsim_t* default_dcache)
   : applink(_applink),
     memsz(_memsz),
     mem((char*)mmap64(NULL, memsz, PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0)),
@@ -15,7 +15,7 @@ sim_t::sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink)
   demand(mem != MAP_FAILED, "couldn't allocate target machine's memory");
 
   for(int i = 0; i < (int)procs.size(); i++)
-    procs[i].init(i);
+    procs[i].init(i, default_icache, default_dcache);
 
   applink->init(this);
 }

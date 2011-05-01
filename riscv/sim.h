@@ -12,7 +12,7 @@ class appserver_link_t;
 class sim_t
 {
 public:
-  sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink);
+  sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink, icsim_t* _default_icache, icsim_t* default_dcache);
   ~sim_t();
   void run(bool debug);
 

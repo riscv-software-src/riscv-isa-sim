@@ -1,22 +1,42 @@
 #include "decode.h"
 #include "trap.h"
+#include "icsim.h"
 
 class processor_t;
 
 class mmu_t
 {
 public:
-  mmu_t(char* _mem, size_t _memsz) : mem(_mem), memsz(_memsz), badvaddr(0) {}
+  mmu_t(char* _mem, size_t _memsz)
+   : mem(_mem), memsz(_memsz), badvaddr(0),
+     icsim(NULL), dcsim(NULL), itlbsim(NULL), dtlbsim(NULL)
+  {
+  }
+
+  void set_icsim(icsim_t* _icsim) { icsim = _icsim; }
+  void set_dcsim(icsim_t* _dcsim) { dcsim = _dcsim; }
+  void set_itlbsim(icsim_t* _itlbsim) { itlbsim = _itlbsim; }
+  void set_dtlbsim(icsim_t* _dtlbsim) { dtlbsim = _dtlbsim; }
+
+  #ifdef RISCV_ENABLE_ICSIM
+  # define dcsim_tick(dcsim, dtlbsim, addr, size, st) \
+      do { if(dcsim) (dcsim)->tick(addr, size, st); \
+           if(dtlbsim) (dtlbsim)->tick(addr, sizeof(reg_t), false); } while(0)
+  #else
+  # define dcsim_tick(dcsim, addr, size)
+  #endif
 
   #define load_func(type) \
     type##_t load_##type(reg_t addr) { \
       check_align_and_bounds(addr, sizeof(type##_t), false, false); \
+      dcsim_tick(dcsim, dtlbsim, addr, sizeof(type##_t), false); \
       return *(type##_t*)(mem+addr); \
     }
 
   #define store_func(type) \
     void store_##type(reg_t addr, type##_t val) { \
       check_align_and_bounds(addr, sizeof(type##_t), true, false); \
+      dcsim_tick(dcsim, dtlbsim, addr, sizeof(type##_t), true); \
       *(type##_t*)(mem+addr) = val; \
     }
 
@@ -29,6 +49,13 @@ public:
 
     insn_t insn; 
     insn.bits = lo | ((uint32_t)hi << 16);
+
+    #ifdef RISCV_ENABLE_ICSIM
+    if(icsim)
+      icsim->tick(addr, insn_length(insn), false);
+    if(itlbsim)
+      itlbsim->tick(addr, sizeof(reg_t), false);
+    #endif
 
     return insn;
     #else
@@ -58,6 +85,11 @@ private:
   char* mem;
   size_t memsz;
   reg_t badvaddr;
+
+  icsim_t* icsim;
+  icsim_t* dcsim;
+  icsim_t* itlbsim;
+  icsim_t* dtlbsim;
 
   void check_align(reg_t addr, int size, bool store, bool fetch)
   {
