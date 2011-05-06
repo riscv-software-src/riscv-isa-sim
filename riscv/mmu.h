@@ -23,7 +23,7 @@ public:
       do { if(dcsim) (dcsim)->tick(addr, size, st); \
            if(dtlbsim) (dtlbsim)->tick(addr, sizeof(reg_t), false); } while(0)
   #else
-  # define dcsim_tick(dcsim, addr, size)
+  # define dcsim_tick(dcsim, dtlbsim, addr, size, st)
   #endif
 
   #define load_func(type) \
