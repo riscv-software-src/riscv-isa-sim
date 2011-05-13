@@ -608,14 +608,14 @@ switch((insn.bits >> 0x0) & 0x7f)
   }
   case 0x1a:
   {
-        if((insn.bits & 0x801f) == 0x1a)
-        {
-          #include "insns/c_add.h"
-          break;
-        }
         if((insn.bits & 0x801f) == 0x801a)
         {
           #include "insns/c_sub.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x1a)
+        {
+          #include "insns/c_add.h"
           break;
         }
         throw trap_illegal_instruction;
@@ -1088,14 +1088,14 @@ switch((insn.bits >> 0x0) & 0x7f)
   }
   case 0x3a:
   {
-        if((insn.bits & 0x801f) == 0x1a)
-        {
-          #include "insns/c_add.h"
-          break;
-        }
         if((insn.bits & 0x801f) == 0x801a)
         {
           #include "insns/c_sub.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x1a)
+        {
+          #include "insns/c_add.h"
           break;
         }
         throw trap_illegal_instruction;
@@ -1358,12 +1358,12 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fcvt_d_l.h"
           break;
         }
-        if((insn.bits & 0x3fffff) == 0xe0d3)
+        if((insn.bits & 0x3ff1ff) == 0xe0d3)
         {
           #include "insns/fcvt_d_w.h"
           break;
         }
-        if((insn.bits & 0x3fffff) == 0x100d3)
+        if((insn.bits & 0x3ff1ff) == 0x100d3)
         {
           #include "insns/fcvt_d_s.h"
           break;
@@ -1468,7 +1468,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/feq_d.h"
           break;
         }
-        if((insn.bits & 0x3fffff) == 0xf0d3)
+        if((insn.bits & 0x3ff1ff) == 0xf0d3)
         {
           #include "insns/fcvt_d_wu.h"
           break;
@@ -1653,14 +1653,14 @@ switch((insn.bits >> 0x0) & 0x7f)
   }
   case 0x5a:
   {
-        if((insn.bits & 0x801f) == 0x1a)
-        {
-          #include "insns/c_add.h"
-          break;
-        }
         if((insn.bits & 0x801f) == 0x801a)
         {
           #include "insns/c_sub.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x1a)
+        {
+          #include "insns/c_add.h"
           break;
         }
         throw trap_illegal_instruction;
@@ -1893,6 +1893,11 @@ switch((insn.bits >> 0x0) & 0x7f)
   }
   case 0x77:
   {
+        if((insn.bits & 0x7ffffff) == 0x277)
+        {
+          #include "insns/rdcycle.h"
+          break;
+        }
         if((insn.bits & 0xffffffff) == 0x177)
         {
           #include "insns/stop.h"
@@ -1906,6 +1911,16 @@ switch((insn.bits >> 0x0) & 0x7f)
         if((insn.bits & 0x7ffffff) == 0x1f7)
         {
           #include "insns/utidx.h"
+          break;
+        }
+        if((insn.bits & 0x7ffffff) == 0xa77)
+        {
+          #include "insns/rdinstret.h"
+          break;
+        }
+        if((insn.bits & 0x7ffffff) == 0x677)
+        {
+          #include "insns/rdtime.h"
           break;
         }
         if((insn.bits & 0xffffffff) == 0x77)
@@ -1963,14 +1978,14 @@ switch((insn.bits >> 0x0) & 0x7f)
   }
   case 0x7a:
   {
-        if((insn.bits & 0x801f) == 0x1a)
-        {
-          #include "insns/c_add.h"
-          break;
-        }
         if((insn.bits & 0x801f) == 0x801a)
         {
           #include "insns/c_sub.h"
+          break;
+        }
+        if((insn.bits & 0x801f) == 0x1a)
+        {
+          #include "insns/c_add.h"
           break;
         }
         throw trap_illegal_instruction;
@@ -1983,14 +1998,14 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/mfpcr.h"
           break;
         }
-        if((insn.bits & 0xf801ffff) == 0x1fb)
-        {
-          #include "insns/mtpcr.h"
-          break;
-        }
         if((insn.bits & 0x7ffffff) == 0xfb)
         {
           #include "insns/di.h"
+          break;
+        }
+        if((insn.bits & 0xf801ffff) == 0x1fb)
+        {
+          #include "insns/mtpcr.h"
           break;
         }
         if((insn.bits & 0xffffffff) == 0x2fb)
