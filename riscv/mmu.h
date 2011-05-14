@@ -1,14 +1,37 @@
 #include "decode.h"
 #include "trap.h"
 #include "icsim.h"
+#include <assert.h>
 
 class processor_t;
+
+const reg_t LEVELS = 4;
+const reg_t PGSHIFT = 12;
+const reg_t PGSIZE = 1 << PGSHIFT;
+const reg_t PPN_BITS = 8*sizeof(reg_t) - PGSHIFT;
+
+struct pte_t
+{
+  reg_t v  : 1;
+  reg_t e  : 1;
+  reg_t r  : 1;
+  reg_t d  : 1;
+  reg_t ux : 1;
+  reg_t ur : 1;
+  reg_t uw : 1;
+  reg_t sx : 1;
+  reg_t sr : 1;
+  reg_t sw : 1;
+  reg_t unused1 : 2;
+  reg_t ppn : PPN_BITS;
+};
 
 class mmu_t
 {
 public:
   mmu_t(char* _mem, size_t _memsz)
    : mem(_mem), memsz(_memsz), badvaddr(0),
+     ptbr(0), supervisor(true), vm_enabled(false),
      icsim(NULL), dcsim(NULL), itlbsim(NULL), dtlbsim(NULL)
   {
   }
@@ -28,27 +51,40 @@ public:
 
   #define load_func(type) \
     type##_t load_##type(reg_t addr) { \
-      check_align_and_bounds(addr, sizeof(type##_t), false, false); \
+      check_align(addr, sizeof(type##_t), false, false); \
+      addr = translate(addr, false, false); \
       dcsim_tick(dcsim, dtlbsim, addr, sizeof(type##_t), false); \
       return *(type##_t*)(mem+addr); \
     }
 
   #define store_func(type) \
     void store_##type(reg_t addr, type##_t val) { \
-      check_align_and_bounds(addr, sizeof(type##_t), true, false); \
+      check_align(addr, sizeof(type##_t), true, false); \
+      addr = translate(addr, true, false); \
       dcsim_tick(dcsim, dtlbsim, addr, sizeof(type##_t), true); \
       *(type##_t*)(mem+addr) = val; \
     }
 
   insn_t load_insn(reg_t addr, bool rvc)
   {
-    #ifdef RISCV_ENABLE_RVC
-    check_align_and_bounds(addr, rvc ? 2 : 4, false, true);
-    uint16_t lo = *(uint16_t*)(mem+addr);
-    uint16_t hi = *(uint16_t*)(mem+addr+2);
+    insn_t insn;
 
-    insn_t insn; 
-    insn.bits = lo | ((uint32_t)hi << 16);
+    #ifdef RISCV_ENABLE_RVC
+    check_align(addr, rvc ? 2 : 4, false, true);
+
+    reg_t paddr_lo = translate(addr, false, true);
+    insn.bits = *(uint16_t*)(mem+paddr_lo);
+
+    if(!INSN_IS_RVC(insn.bits))
+    {
+      reg_t paddr_hi = translate(addr+2, false, true);
+      insn.bits |= (uint32_t)*(uint16_t*)(mem+paddr_hi) << 16;
+    }
+    #else
+    check_align(addr, 4, false, true);
+    reg_t paddr = translate(addr, false, true);
+    insn = *(insn_t*)(mem+paddr);
+    #endif
 
     #ifdef RISCV_ENABLE_ICSIM
     if(icsim)
@@ -58,10 +94,6 @@ public:
     #endif
 
     return insn;
-    #else
-    check_align_and_bounds(addr, 4, false, true);
-    return *(insn_t*)(mem+addr);
-    #endif
   }
 
   load_func(uint8)
@@ -80,11 +112,22 @@ public:
   store_func(uint64)
 
   reg_t get_badvaddr() { return badvaddr; }
+  void set_supervisor(bool sup) { supervisor = sup; }
+  void set_vm_enabled(bool en) { vm_enabled = en; }
+  void set_ptbr(reg_t addr) { ptbr = addr & ~(PGSIZE-1); }
 
 private:
   char* mem;
   size_t memsz;
   reg_t badvaddr;
+
+  reg_t ptbr;
+  bool supervisor;
+  bool vm_enabled;
+
+  static const reg_t TLB_ENTRIES = 32;
+  pte_t tlb_data[TLB_ENTRIES];
+  reg_t tlb_tag[TLB_ENTRIES];
 
   icsim_t* icsim;
   icsim_t* dcsim;
@@ -104,6 +147,78 @@ private:
     }
   }
 
+  reg_t translate(reg_t addr, bool store, bool fetch)
+  {
+    reg_t idx = (addr >> PGSHIFT) % TLB_ENTRIES;
+    pte_t pte = tlb_data[idx];
+    reg_t tag = tlb_tag[idx];
+
+    trap_t trap = store ? trap_store_access_fault
+                : fetch ? trap_instruction_access_fault
+                :         trap_load_access_fault;
+
+    if(!pte.v || tag != (addr >> PGSHIFT))
+    {
+      pte = walk(addr);
+      if(!pte.v)
+        throw trap;
+
+      tlb_data[idx] = pte;
+      tlb_tag[idx] = addr >> PGSHIFT;
+    }
+
+    if(store && !(supervisor ? pte.sw : pte.uw) ||
+       !store && !fetch && !(supervisor ? pte.sr : pte.ur) ||
+       !store && !fetch && !(supervisor ? pte.sr : pte.ur))
+      throw trap;
+
+    return (addr % PGSIZE) | (pte.ppn << PGSHIFT);
+  }
+
+  pte_t walk(reg_t addr)
+  {
+    pte_t pte;
+
+    if(!vm_enabled)
+    {
+      pte.v = addr < memsz;
+      pte.e = 1;
+      pte.r = pte.d = 0;
+      pte.ur = pte.uw = pte.ux = pte.sr = pte.sw = pte.sx = 1;
+      pte.ppn = addr >> PGSHIFT;
+    }
+    else
+    {
+      pte.v = 0;
+
+      int lg_ptesz = sizeof(pte_t) == 4 ? 2
+                   : sizeof(pte_t) == 8 ? 3
+                   : 0;
+      assert(lg_ptesz);
+
+      reg_t base = ptbr;
+
+      for(int i = LEVELS-1; i >= 0; i++)
+      {
+        reg_t idx = addr >> (PGSHIFT + i*(PGSHIFT - lg_ptesz));
+        idx &= (1<<(PGSHIFT - lg_ptesz)) - 1;
+
+        reg_t pte_addr = base + idx*sizeof(pte_t);
+        if(pte_addr >= memsz)
+          break;
+
+        pte = *(pte_t*)(mem+pte_addr);
+        if(!pte.v || pte.e)
+          break;
+
+        base = pte.ppn << PGSHIFT;
+      }
+      pte.v &= pte.e;
+    }
+
+    return pte;
+  }
+
   void check_bounds(reg_t addr, int size, bool store, bool fetch)
   {
     if(addr >= memsz || addr + size > memsz)
@@ -113,12 +228,6 @@ private:
         throw trap_instruction_access_fault;
       throw store ? trap_store_access_fault : trap_load_access_fault;
     }
-  }
-
-  void check_align_and_bounds(reg_t addr, int size, bool store, bool fetch)
-  {
-    check_align(addr, size, store, fetch);
-    check_bounds(addr, size, store, fetch);
   }
   
   friend class processor_t;
