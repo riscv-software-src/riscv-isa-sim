@@ -1898,14 +1898,19 @@ switch((insn.bits >> 0x0) & 0x7f)
   }
   case 0x77:
   {
-        if((insn.bits & 0x1ffff) == 0x2f7)
+        if((insn.bits & 0x1ffff) == 0x6f7)
         {
           #include "insns/movn.h"
           break;
         }
-        if((insn.bits & 0x1ffff) == 0x277)
+        if((insn.bits & 0x1ffff) == 0x2f7)
         {
           #include "insns/movz.h"
+          break;
+        }
+        if((insn.bits & 0x7ffffff) == 0x277)
+        {
+          #include "insns/rdcycle.h"
           break;
         }
         if((insn.bits & 0xffffffff) == 0x177)
@@ -1923,12 +1928,22 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/utidx.h"
           break;
         }
-        if((insn.bits & 0x1ffff) == 0x3f7)
+        if((insn.bits & 0x7ffffff) == 0xa77)
+        {
+          #include "insns/rdinstret.h"
+          break;
+        }
+        if((insn.bits & 0x7ffffff) == 0x677)
+        {
+          #include "insns/rdtime.h"
+          break;
+        }
+        if((insn.bits & 0x1ffff) == 0xef7)
         {
           #include "insns/fmovn.h"
           break;
         }
-        if((insn.bits & 0x1ffff) == 0x377)
+        if((insn.bits & 0x1ffff) == 0xaf7)
         {
           #include "insns/fmovz.h"
           break;
