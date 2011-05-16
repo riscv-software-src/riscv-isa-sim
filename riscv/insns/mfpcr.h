@@ -27,7 +27,11 @@ switch(insn.rtype.rs2)
     break;
 
   case 8:
-    val = MEMSIZE >> 12;
+    val = MEMSIZE >> PGSHIFT;
+    break;
+
+  case 9:
+    val = mmu.get_ptbr();
     break;
 
   case 17:

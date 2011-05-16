@@ -19,6 +19,7 @@ riscv_srcs = \
 	sim.cc \
 	trap.cc \
 	icsim.cc \
+	mmu.cc \
 
 riscv_test_srcs =
 

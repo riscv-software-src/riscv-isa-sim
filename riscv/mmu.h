@@ -36,11 +36,6 @@ public:
   {
   }
 
-  void set_icsim(icsim_t* _icsim) { icsim = _icsim; }
-  void set_dcsim(icsim_t* _dcsim) { dcsim = _dcsim; }
-  void set_itlbsim(icsim_t* _itlbsim) { itlbsim = _itlbsim; }
-  void set_dtlbsim(icsim_t* _dtlbsim) { dtlbsim = _dtlbsim; }
-
   #ifdef RISCV_ENABLE_ICSIM
   # define dcsim_tick(dcsim, dtlbsim, addr, size, st) \
       do { if(dcsim) (dcsim)->tick(addr, size, st); \
@@ -69,22 +64,32 @@ public:
   {
     insn_t insn;
 
+    reg_t idx = (addr/sizeof(insn_t)) % ICACHE_ENTRIES;
+    if(addr % 4 == 0 && icache_tag[idx] == (addr | 1))
+      return icache_data[idx];
+
     #ifdef RISCV_ENABLE_RVC
-    check_align(addr, rvc ? 2 : 4, false, true);
-
-    reg_t paddr_lo = translate(addr, false, true);
-    insn.bits = *(uint16_t*)(mem+paddr_lo);
-
-    if(!INSN_IS_RVC(insn.bits))
+    if(addr % 4 == 2 && rvc)
     {
-      reg_t paddr_hi = translate(addr+2, false, true);
-      insn.bits |= (uint32_t)*(uint16_t*)(mem+paddr_hi) << 16;
+      reg_t paddr_lo = translate(addr, false, true);
+      insn.bits = *(uint16_t*)(mem+paddr_lo);
+
+      if(!INSN_IS_RVC(insn.bits))
+      {
+        reg_t paddr_hi = translate(addr+2, false, true);
+        insn.bits |= (uint32_t)*(uint16_t*)(mem+paddr_hi) << 16;
+      }
     }
-    #else
-    check_align(addr, 4, false, true);
-    reg_t paddr = translate(addr, false, true);
-    insn = *(insn_t*)(mem+paddr);
+    else
     #endif
+    {
+      check_align(addr, 4, false, true);
+      reg_t paddr = translate(addr, false, true);
+      insn = *(insn_t*)(mem+paddr);
+
+      icache_tag[idx] = addr | 1;
+      icache_data[idx] = insn;
+    }
 
     #ifdef RISCV_ENABLE_ICSIM
     if(icsim)
@@ -112,9 +117,19 @@ public:
   store_func(uint64)
 
   reg_t get_badvaddr() { return badvaddr; }
+  reg_t get_ptbr() { return ptbr; }
+
   void set_supervisor(bool sup) { supervisor = sup; }
   void set_vm_enabled(bool en) { vm_enabled = en; }
-  void set_ptbr(reg_t addr) { ptbr = addr & ~(PGSIZE-1); }
+  void set_ptbr(reg_t addr) { ptbr = addr & ~(PGSIZE-1); flush_tlb(); }
+
+  void set_icsim(icsim_t* _icsim) { icsim = _icsim; }
+  void set_dcsim(icsim_t* _dcsim) { dcsim = _dcsim; }
+  void set_itlbsim(icsim_t* _itlbsim) { itlbsim = _itlbsim; }
+  void set_dtlbsim(icsim_t* _dtlbsim) { dtlbsim = _dtlbsim; }
+
+  void flush_tlb();
+  void flush_icache();
 
 private:
   char* mem;
@@ -128,6 +143,10 @@ private:
   static const reg_t TLB_ENTRIES = 32;
   pte_t tlb_data[TLB_ENTRIES];
   reg_t tlb_tag[TLB_ENTRIES];
+
+  static const reg_t ICACHE_ENTRIES = 32;
+  insn_t icache_data[ICACHE_ENTRIES];
+  reg_t icache_tag[ICACHE_ENTRIES];
 
   icsim_t* icsim;
   icsim_t* dcsim;
@@ -172,13 +191,13 @@ private:
        !store && !fetch && !(supervisor ? pte.sr : pte.ur))
       throw trap;
 
-    return (addr % PGSIZE) | (pte.ppn << PGSHIFT);
+    return (addr & (PGSIZE-1)) | (pte.ppn << PGSHIFT);
   }
 
   pte_t walk(reg_t addr)
   {
     pte_t pte;
-
+  
     if(!vm_enabled)
     {
       pte.v = addr < memsz;
@@ -190,44 +209,33 @@ private:
     else
     {
       pte.v = 0;
-
+  
       int lg_ptesz = sizeof(pte_t) == 4 ? 2
                    : sizeof(pte_t) == 8 ? 3
                    : 0;
       assert(lg_ptesz);
-
+  
       reg_t base = ptbr;
-
+  
       for(int i = LEVELS-1; i >= 0; i++)
       {
         reg_t idx = addr >> (PGSHIFT + i*(PGSHIFT - lg_ptesz));
         idx &= (1<<(PGSHIFT - lg_ptesz)) - 1;
-
+  
         reg_t pte_addr = base + idx*sizeof(pte_t);
         if(pte_addr >= memsz)
           break;
-
+  
         pte = *(pte_t*)(mem+pte_addr);
         if(!pte.v || pte.e)
           break;
-
+  
         base = pte.ppn << PGSHIFT;
       }
       pte.v &= pte.e;
     }
-
+  
     return pte;
-  }
-
-  void check_bounds(reg_t addr, int size, bool store, bool fetch)
-  {
-    if(addr >= memsz || addr + size > memsz)
-    {
-      badvaddr = addr;
-      if(fetch)
-        throw trap_instruction_access_fault;
-      throw store ? trap_store_access_fault : trap_load_access_fault;
-    }
   }
   
   friend class processor_t;

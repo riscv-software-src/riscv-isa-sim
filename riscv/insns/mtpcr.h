@@ -19,6 +19,10 @@ switch(insn.rtype.rs2)
     compare = RS1;
     break;
 
+  case 9:
+    mmu.set_ptbr(RS1);
+    break;
+
   case 16:
     tohost = RS1;
     sim->set_tohost(RS1);

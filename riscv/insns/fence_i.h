@@ -1,0 +1,1 @@
+mmu.flush_icache();

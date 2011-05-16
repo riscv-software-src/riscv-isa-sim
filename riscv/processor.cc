@@ -123,6 +123,7 @@ void processor_t::set_sr(uint32_t val)
 
   mmu.set_vm_enabled(sr & SR_VM);
   mmu.set_supervisor(sr & SR_S);
+  mmu.flush_tlb();
 
   xprlen = ((sr & SR_S) ? (sr & SR_SX) : (sr & SR_UX)) ? 64 : 32;
 }
