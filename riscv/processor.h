@@ -34,12 +34,14 @@ private:
   reg_t evec;
   reg_t tohost;
   reg_t fromhost;
+  reg_t vecbanks;
   reg_t pcr_k0;
   reg_t pcr_k1;
   uint32_t id;
   uint32_t sr;
   uint32_t count;
   uint32_t compare;
+  uint32_t vecbanks_count;
 
   // unprivileged control registers
   uint32_t fsr;

@@ -23,6 +23,11 @@ switch(insn.rtype.rs2)
     mmu.set_ptbr(RS1);
     break;
 
+  case 11:
+    vecbanks = RS1 & 0xff;
+    vecbanks_count = __builtin_popcountll(vecbanks);
+    break;
+
   case 16:
     tohost = RS1;
     sim->set_tohost(RS1);

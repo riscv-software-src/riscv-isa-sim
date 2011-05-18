@@ -34,6 +34,10 @@ switch(insn.rtype.rs2)
     val = mmu.get_ptbr();
     break;
 
+  case 11:
+    val = vecbanks;
+    break;
+
   case 17:
     fromhost = val = sim->get_fromhost();
     break;

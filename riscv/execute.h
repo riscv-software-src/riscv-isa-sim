@@ -23,7 +23,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_j.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x3:
@@ -63,7 +63,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/lhu.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x4:
@@ -93,7 +93,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fld.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x8:
@@ -293,7 +293,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/vlseghu.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0xc:
@@ -428,7 +428,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/vfssegd.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x10:
@@ -453,7 +453,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_ld0.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x13:
@@ -503,7 +503,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/slli.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x14:
@@ -563,7 +563,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_slli32.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x1a:
@@ -578,7 +578,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_add.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x1b:
@@ -603,7 +603,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/sraiw.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x1c:
@@ -628,7 +628,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_sub3.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x1d:
@@ -658,7 +658,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_j.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x23:
@@ -683,7 +683,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/sd.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x24:
@@ -713,7 +713,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fsw.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x28:
@@ -813,7 +813,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/amoswap_w.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x2c:
@@ -858,7 +858,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fence_l_v.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x30:
@@ -883,7 +883,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_ld0.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x33:
@@ -978,7 +978,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/divu.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x34:
@@ -1043,7 +1043,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_slli32.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x3a:
@@ -1058,7 +1058,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_add.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x3b:
@@ -1113,7 +1113,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/divw.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x3c:
@@ -1138,7 +1138,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_sub3.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x3d:
@@ -1168,7 +1168,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_j.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x43:
@@ -1183,7 +1183,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fmadd_d.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x44:
@@ -1213,7 +1213,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fmsub_d.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x48:
@@ -1243,7 +1243,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fnmsub_d.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x4c:
@@ -1268,7 +1268,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fnmadd_d.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x50:
@@ -1293,7 +1293,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_ld0.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x53:
@@ -1548,7 +1548,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/fadd_s.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x54:
@@ -1608,7 +1608,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_slli32.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x5a:
@@ -1623,7 +1623,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_add.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x5c:
@@ -1648,7 +1648,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_sub3.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x5d:
@@ -1678,7 +1678,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_j.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x63:
@@ -1713,7 +1713,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/beq.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x64:
@@ -1773,7 +1773,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/rdnpc.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x6c:
@@ -1813,7 +1813,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_ld0.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x73:
@@ -1878,7 +1878,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/vmst.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x74:
@@ -1953,7 +1953,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/syscall.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x78:
@@ -1998,7 +1998,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_slli32.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x7a:
@@ -2013,7 +2013,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_add.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x7b:
@@ -2048,7 +2048,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/eret.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x7c:
@@ -2073,7 +2073,7 @@ switch((insn.bits >> 0x0) & 0x7f)
           #include "insns/c_sub3.h"
           break;
         }
-        throw trap_illegal_instruction;
+        throw_illegal_instruction;
     break;
   }
   case 0x7d:
@@ -2083,6 +2083,6 @@ switch((insn.bits >> 0x0) & 0x7f)
   }
   default:
   {
-    throw trap_illegal_instruction;
+    throw_illegal_instruction;
   }
 }

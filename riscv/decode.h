@@ -166,6 +166,10 @@ private:
 #define do_writeback(rf,rd) rf[rd]
 #endif
 
+#define throw_illegal_instruction \
+  ({ if (utmode) throw trap_vector_illegal_instruction; \
+     else throw trap_illegal_instruction; })
+
 // helpful macros, etc
 #define RS1 XPR[insn.rtype.rs1]
 #define RS2 XPR[insn.rtype.rs2]
@@ -185,21 +189,24 @@ private:
 #define JUMP_TARGET (pc + (TARGET << JUMP_ALIGN_BITS))
 #define RM ({ int rm = insn.ftype.rm; \
               if(rm == 7) rm = (fsr & FSR_RD) >> FSR_RD_SHIFT; \
-              if(rm > 4) throw trap_illegal_instruction; \
+              if(rm > 4) throw_illegal_instruction; \
               rm; })
 
 #define require_supervisor if(!(sr & SR_S)) throw trap_privileged_instruction
 #define xpr64 (xprlen == 64)
-#define require_xpr64 if(!xpr64) throw trap_illegal_instruction
-#define require_xpr32 if(xpr64) throw trap_illegal_instruction
+#define require_xpr64 if(!xpr64) throw_illegal_instruction
+#define require_xpr32 if(xpr64) throw_illegal_instruction
 #define require_fp if(!(sr & SR_EF)) throw trap_fp_disabled
-#define require_vector if(!(sr & SR_EV)) throw trap_vector_disabled
+#define require_vector \
+  ({ if(!(sr & SR_EV)) throw trap_vector_disabled; \
+    else if (!utmode && (vecbanks_count < 3)) throw trap_vector_bank; \
+  })
 #define cmp_trunc(reg) (reg_t(reg) << (64-xprlen))
 #define set_fp_exceptions ({ set_fsr(fsr | \
                                (softfloat_exceptionFlags << FSR_AEXC_SHIFT)); \
                              softfloat_exceptionFlags = 0; })
 
-#define require_rvc if(!(sr & SR_EC)) throw trap_illegal_instruction
+#define require_rvc if(!(sr & SR_EC)) throw_illegal_instruction
 #define insn_length(x) (((x).bits & 0x3) < 0x3 ? 2 : 4)
 
 #define sext32(x) ((sreg_t)(int32_t)(x))

@@ -15,11 +15,11 @@
   DECLARE_TRAP(load_access_fault), \
   DECLARE_TRAP(store_access_fault), \
   DECLARE_TRAP(vector_disabled), \
+  DECLARE_TRAP(vector_bank), \
+  DECLARE_TRAP(vector_illegal_instruction), \
+  DECLARE_TRAP(reserved1), \
   DECLARE_TRAP(reserved2), \
   DECLARE_TRAP(reserved3), \
-  DECLARE_TRAP(reserved4), \
-  DECLARE_TRAP(reserved5), \
-  DECLARE_TRAP(reserved6), \
   DECLARE_TRAP(int0), \
   DECLARE_TRAP(int1), \
   DECLARE_TRAP(int2), \
