@@ -34,11 +34,12 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   memset(counters,0,sizeof(counters));
 
   // vector stuff
+  vecbanks = 0xff;
+  vecbanks_count = 8;
   utidx = -1;
   vlmax = 8;
   vl = 0;
-  nxpr_all = 256;
-  nfpr_all = 256;
+  nxfpr_bank = 256;
   nxpr_use = 0;
   nfpr_use = 0;
   for (int i=0; i<MAX_UTS; i++)
@@ -135,14 +136,10 @@ void processor_t::set_fsr(uint32_t val)
 
 void processor_t::vcfg()
 {
-  if (nxpr_use == 0 && nfpr_use == 0)
-    vlmax = 8;
-  else if (nfpr_use == 0)
-    vlmax = (nxpr_all-1) / (nxpr_use-1);
-  else if (nxpr_use == 0)
-    vlmax = (nfpr_all-1) / (nfpr_use-1);
+  if (nxpr_use + nfpr_use < 2)
+    vlmax = nxfpr_bank * vecbanks_count;
   else
-    vlmax = std::min((nxpr_all-1) / (nxpr_use-1), (nfpr_all-1) / (nfpr_use-1));
+    vlmax = (nxfpr_bank / (nxpr_use + nfpr_use - 1)) * vecbanks_count;
 
   vlmax = std::min(vlmax, MAX_UTS);
 }
