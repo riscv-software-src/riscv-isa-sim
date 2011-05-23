@@ -28,10 +28,9 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   fromhost = 0;
   count = 0;
   compare = 0;
+  cycle = 0;
   set_sr(SR_S | SR_SX);  // SX ignored if 64b mode not supported
   set_fsr(0);
-
-  memset(counters,0,sizeof(counters));
 
   // vector stuff
   vecbanks = 0xff;
@@ -175,6 +174,7 @@ void processor_t::step(size_t n, bool noisy)
 
       if(count++ == compare)
         cause |= 1 << (TIMER_IRQ+CAUSE_IP_SHIFT);
+      cycle++;
     }
     return;
   }

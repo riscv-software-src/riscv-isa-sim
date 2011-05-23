@@ -1,1 +1,1 @@
-throw trap_illegal_instruction;
+RD = cycle;

@@ -51,7 +51,7 @@ private:
   mmu_t mmu;
 
   // counters
-  reg_t counters[32];
+  reg_t cycle;
 
   // functions
   void set_sr(uint32_t val);
