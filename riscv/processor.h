@@ -18,6 +18,7 @@ public:
   ~processor_t();
   void init(uint32_t _id, icsim_t* defualt_icache, icsim_t* default_dcache);
   void step(size_t n, bool noisy);
+  void deliver_ipi();
 
 private:
   sim_t* sim;
@@ -41,6 +42,8 @@ private:
   uint32_t count;
   uint32_t compare;
 
+  bool run;
+
   // unprivileged control registers
   uint32_t fsr;
 
@@ -54,6 +57,7 @@ private:
   reg_t cycle;
 
   // functions
+  void reset();
   void set_sr(uint32_t val);
   void set_fsr(uint32_t val);
   void take_trap(trap_t t, bool noisy);

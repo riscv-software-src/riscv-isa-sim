@@ -36,6 +36,8 @@ enum trap_t
   NUM_TRAPS
 };
 
+struct halt_t {}; // thrown to stop the processor from running
+
 extern "C" const char* trap_name(trap_t t);
 
 #endif

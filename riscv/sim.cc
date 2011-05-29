@@ -14,7 +14,7 @@ sim_t::sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink, icsim_t* de
 {
   demand(mem != MAP_FAILED, "couldn't allocate target machine's memory");
 
-  for(int i = 0; i < (int)procs.size(); i++)
+  for(int i = 0; i < (int)num_cores(); i++)
     procs[i].init(i, default_icache, default_dcache);
 
   applink->init(this);
@@ -37,9 +37,18 @@ reg_t sim_t::get_fromhost()
   return fromhost;
 }
 
+void sim_t::send_ipi(reg_t who)
+{
+  if(who < num_cores())
+    procs[who].deliver_ipi();
+}
+
 void sim_t::run(bool debug)
 {
   applink->wait_for_start();
+
+  // start core 0
+  send_ipi(0);
 
   while(1)
   {
@@ -93,7 +102,7 @@ void sim_t::run(bool debug)
 void sim_t::step_all(size_t n, size_t interleave, bool noisy)
 {
   for(size_t j = 0; j < n; j+=interleave)
-    for(int i = 0; i < (int)procs.size(); i++)
+    for(int i = 0; i < (int)num_cores(); i++)
       procs[i].step(interleave,noisy);
 }
 
@@ -131,7 +140,7 @@ void sim_t::interactive_run_proc(const std::string& cmd, const std::vector<std::
     return;
 
   int p = atoi(a[0].c_str());
-  if(p >= (int)procs.size())
+  if(p >= (int)num_cores())
     return;
 
   if(a.size() == 2)
@@ -151,7 +160,7 @@ reg_t sim_t::get_pc(const std::vector<std::string>& args)
     throw trap_illegal_instruction;
 
   int p = atoi(args[0].c_str());
-  if(p >= (int)procs.size())
+  if(p >= (int)num_cores())
     throw trap_illegal_instruction;
 
   return procs[p].pc;
@@ -164,7 +173,7 @@ reg_t sim_t::get_reg(const std::vector<std::string>& args)
 
   int p = atoi(args[0].c_str());
   int r = atoi(args[1].c_str());
-  if(p >= (int)procs.size() || r >= NXPR)
+  if(p >= (int)num_cores() || r >= NXPR)
     throw trap_illegal_instruction;
 
   return procs[p].XPR[r];
@@ -177,7 +186,7 @@ reg_t sim_t::get_freg(const std::vector<std::string>& args)
 
   int p = atoi(args[0].c_str());
   int r = atoi(args[1].c_str());
-  if(p >= (int)procs.size() || r >= NFPR)
+  if(p >= (int)num_cores() || r >= NFPR)
     throw trap_illegal_instruction;
 
   return procs[p].FPR[r];
@@ -189,7 +198,7 @@ reg_t sim_t::get_tohost(const std::vector<std::string>& args)
     throw trap_illegal_instruction;
 
   int p = atoi(args[0].c_str());
-  if(p >= (int)procs.size())
+  if(p >= (int)num_cores())
     throw trap_illegal_instruction;
 
   return procs[p].tohost;
@@ -223,14 +232,26 @@ void sim_t::interactive_fregd(const std::string& cmd, const std::vector<std::str
 
 reg_t sim_t::get_mem(const std::vector<std::string>& args)
 {
-  if(args.size() != 1)
+  if(args.size() != 1 && args.size() != 2)
     throw trap_illegal_instruction;
 
-  reg_t addr = strtol(args[0].c_str(),NULL,16), val;
-  if(addr == LONG_MAX)
-    addr = strtoul(args[0].c_str(),NULL,16);
+  std::string addr_str = args[0];
+  mmu_t mmu(mem, memsz);
+  mmu.set_supervisor(true);
+  if(args.size() == 2)
+  {
+    int p = atoi(args[0].c_str());
+    if(p >= (int)num_cores())
+      throw trap_illegal_instruction;
+    mmu.set_vm_enabled(!!(procs[p].sr & SR_VM));
+    mmu.set_ptbr(procs[p].mmu.get_ptbr());
+    addr_str = args[1];
+  }
 
-  mmu_t mmu(mem,memsz);
+  reg_t addr = strtol(addr_str.c_str(),NULL,16), val;
+  if(addr == LONG_MAX)
+    addr = strtoul(addr_str.c_str(),NULL,16);
+
   switch(addr % 8)
   {
     case 0:

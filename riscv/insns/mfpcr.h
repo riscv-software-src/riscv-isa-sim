@@ -34,8 +34,16 @@ switch(insn.rtype.rs2)
     val = mmu.get_ptbr();
     break;
 
+  case 10:
+    val = id;
+    break;
+
   case 11:
     val = vecbanks;
+    break;
+
+  case 12:
+    val = sim->num_cores();
     break;
 
   case 17:

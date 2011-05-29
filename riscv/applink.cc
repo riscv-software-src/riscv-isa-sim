@@ -112,7 +112,7 @@ int appserver_link_t::wait_for_packet()
         demand(p.addr % APP_DATA_ALIGN == 0, "misaligned address");
         demand(p.data_size % APP_DATA_ALIGN == 0, "misaligned data");
         demand(p.data_size <= APP_MAX_DATA_SIZE, "long read data");
-        demand(p.addr <= sim->memsz && p.addr+p.data_size <= sim->memsz, "out of bounds");
+        demand(p.addr <= sim->memsz && p.addr+p.data_size <= sim->memsz, "out of bounds: 0x%llx",(unsigned long long)p.addr);
         memcpy(ackpacket.data,sim->mem+p.addr,p.data_size);
         ackpacket.data_size = p.data_size;
         break;
@@ -120,7 +120,7 @@ int appserver_link_t::wait_for_packet()
         demand(p.addr % APP_DATA_ALIGN == 0, "misaligned address");
         demand(p.data_size % APP_DATA_ALIGN == 0, "misaligned data");
         demand(p.data_size <= bytes - offsetof(packet,data), "short packet");
-        demand(p.addr <= sim->memsz && p.addr+p.data_size <= sim->memsz, "out of bounds");
+        demand(p.addr <= sim->memsz && p.addr+p.data_size <= sim->memsz, "out of bounds: 0x%llx",(unsigned long long)p.addr);
         memcpy(sim->mem+p.addr,p.data,p.data_size);
         break;
       case APP_CMD_READ_CONTROL_REG:

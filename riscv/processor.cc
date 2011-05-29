@@ -15,35 +15,6 @@
 processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   : sim(_sim), mmu(_mem,_memsz)
 {
-  memset(XPR,0,sizeof(XPR));
-  memset(FPR,0,sizeof(FPR));
-  pc = 0;
-  evec = 0;
-  epc = 0;
-  badvaddr = 0;
-  cause = 0;
-  pcr_k0 = 0;
-  pcr_k1 = 0;
-  tohost = 0;
-  fromhost = 0;
-  count = 0;
-  compare = 0;
-  cycle = 0;
-  set_sr(SR_S | SR_SX);  // SX ignored if 64b mode not supported
-  set_fsr(0);
-
-  // vector stuff
-  vecbanks = 0xff;
-  vecbanks_count = 8;
-  utidx = -1;
-  vlmax = 32;
-  vl = 0;
-  nxfpr_bank = 256;
-  nxpr_use = 32;
-  nfpr_use = 32;
-  for (int i=0; i<MAX_UTS; i++)
-    uts[i] = NULL;
-
   // a few assumptions about endianness, including freg_t union
   static_assert(BYTE_ORDER == LITTLE_ENDIAN);
   static_assert(sizeof(freg_t) == 8);
@@ -56,6 +27,8 @@ processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   dcsim = NULL;
   itlbsim = NULL;
   dtlbsim = NULL;
+
+  reset();
 }
 
 processor_t::~processor_t()
@@ -105,6 +78,41 @@ void processor_t::init(uint32_t _id, icsim_t* default_icache,
   #endif
 }
 
+void processor_t::reset()
+{
+  run = false;
+
+  memset(XPR,0,sizeof(XPR));
+  memset(FPR,0,sizeof(FPR));
+
+  pc = 0;
+  evec = 0;
+  epc = 0;
+  badvaddr = 0;
+  cause = 0;
+  pcr_k0 = 0;
+  pcr_k1 = 0;
+  tohost = 0;
+  fromhost = 0;
+  count = 0;
+  compare = 0;
+  cycle = 0;
+  set_sr(SR_S | SR_SX);  // SX ignored if 64b mode not supported
+  set_fsr(0);
+
+  // vector stuff
+  vecbanks = 0xff;
+  vecbanks_count = 8;
+  utidx = -1;
+  vlmax = 32;
+  vl = 0;
+  nxfpr_bank = 256;
+  nxpr_use = 32;
+  nfpr_use = 32;
+  for (int i=0; i<MAX_UTS; i++)
+    uts[i] = NULL;
+}
+
 void processor_t::set_sr(uint32_t val)
 {
   sr = val & ~SR_ZERO;
@@ -151,7 +159,7 @@ void processor_t::setvl(int vlapp)
 void processor_t::step(size_t n, bool noisy)
 {
   size_t i = 0;
-  while(1) try
+  while(run) try
   {
     for( ; i < n; i++)
     {
@@ -188,6 +196,10 @@ void processor_t::step(size_t n, bool noisy)
     if (cmd == vt_command_stop)
       return;
   }
+  catch(halt_t t)
+  {
+    reset();
+  }
 }
 
 void processor_t::take_trap(trap_t t, bool noisy)
@@ -204,6 +216,12 @@ void processor_t::take_trap(trap_t t, bool noisy)
   epc = pc;
   pc = evec;
   badvaddr = mmu.get_badvaddr();
+}
+
+void processor_t::deliver_ipi()
+{
+  cause |= 1 << (IPI_IRQ+CAUSE_IP_SHIFT);
+  run = true;
 }
 
 void processor_t::disasm(insn_t insn, reg_t pc)

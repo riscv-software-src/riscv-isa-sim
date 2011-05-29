@@ -19,6 +19,10 @@ switch(insn.rtype.rs2)
     compare = RS1;
     break;
 
+  case 7:
+    sim->send_ipi(RS1);
+    break;
+
   case 9:
     mmu.set_ptbr(RS1);
     break;

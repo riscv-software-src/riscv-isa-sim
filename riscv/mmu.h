@@ -12,16 +12,16 @@ const reg_t PPN_BITS = 8*sizeof(reg_t) - PGSHIFT;
 
 struct pte_t
 {
-  reg_t v  : 1;
+  reg_t t  : 1;
   reg_t e  : 1;
   reg_t r  : 1;
   reg_t d  : 1;
   reg_t ux : 1;
-  reg_t ur : 1;
   reg_t uw : 1;
+  reg_t ur : 1;
   reg_t sx : 1;
-  reg_t sr : 1;
   reg_t sw : 1;
+  reg_t sr : 1;
   reg_t unused1 : 2;
   reg_t ppn : PPN_BITS;
 };
@@ -176,10 +176,10 @@ private:
                 : fetch ? trap_instruction_access_fault
                 :         trap_load_access_fault;
 
-    if(!pte.v || tag != (addr >> PGSHIFT))
+    if(!pte.e || tag != (addr >> PGSHIFT))
     {
       pte = walk(addr);
-      if(!pte.v)
+      if(!pte.e)
         throw trap;
 
       tlb_data[idx] = pte;
@@ -200,16 +200,16 @@ private:
   
     if(!vm_enabled)
     {
-      pte.v = addr < memsz;
-      pte.e = 1;
+      pte.t = 0;
+      pte.e = addr < memsz;
       pte.r = pte.d = 0;
       pte.ur = pte.uw = pte.ux = pte.sr = pte.sw = pte.sx = 1;
       pte.ppn = addr >> PGSHIFT;
     }
     else
     {
-      pte.v = 0;
-  
+      pte.t = pte.e = 0;
+
       int lg_ptesz = sizeof(pte_t) == 4 ? 2
                    : sizeof(pte_t) == 8 ? 3
                    : 0;
@@ -217,22 +217,31 @@ private:
   
       reg_t base = ptbr;
   
-      for(int i = LEVELS-1; i >= 0; i++)
+      for(int i = LEVELS-1; i >= 0; i--)
       {
-        reg_t idx = addr >> (PGSHIFT + i*(PGSHIFT - lg_ptesz));
-        idx &= (1<<(PGSHIFT - lg_ptesz)) - 1;
+        int idxbits = PGSHIFT - lg_ptesz;
+        int shift = PGSHIFT + i*idxbits;
+        reg_t idx = addr >> shift;
+        idx &= (1 << idxbits) - 1;
   
         reg_t pte_addr = base + idx*sizeof(pte_t);
         if(pte_addr >= memsz)
           break;
   
         pte = *(pte_t*)(mem+pte_addr);
-        if(!pte.v || pte.e)
+        if(pte.e)
+        {
+          // if this PTE is from a larger PT, fake a leaf
+          // PTE so the TLB will work right
+          reg_t vpn = addr >> PGSHIFT;
+          pte.ppn += vpn & ((1<<(i*idxbits))-1);
+          break;
+        }
+        if(!pte.t)
           break;
   
         base = pte.ppn << PGSHIFT;
       }
-      pte.v &= pte.e;
     }
   
     return pte;

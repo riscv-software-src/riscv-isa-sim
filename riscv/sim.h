@@ -18,6 +18,9 @@ public:
 
   void set_tohost(reg_t val);
   reg_t get_fromhost();
+  void send_ipi(reg_t who);
+
+  size_t num_cores() { return procs.size(); }
 
 private:
   // global architected state
