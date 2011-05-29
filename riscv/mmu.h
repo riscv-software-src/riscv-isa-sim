@@ -1,30 +1,32 @@
 #include "decode.h"
 #include "trap.h"
 #include "icsim.h"
+#include "common.h"
 #include <assert.h>
 
 class processor_t;
 
+typedef reg_t pte_t;
+
 const reg_t LEVELS = 4;
 const reg_t PGSHIFT = 12;
 const reg_t PGSIZE = 1 << PGSHIFT;
+const reg_t PTIDXBITS = PGSHIFT - (sizeof(pte_t) == 8 ? 3 : 2);
 const reg_t PPN_BITS = 8*sizeof(reg_t) - PGSHIFT;
 
-struct pte_t
-{
-  reg_t t  : 1;
-  reg_t e  : 1;
-  reg_t r  : 1;
-  reg_t d  : 1;
-  reg_t ux : 1;
-  reg_t uw : 1;
-  reg_t ur : 1;
-  reg_t sx : 1;
-  reg_t sw : 1;
-  reg_t sr : 1;
-  reg_t unused1 : 2;
-  reg_t ppn : PPN_BITS;
-};
+#define PTE_T    0x001 // Entry is a page Table descriptor
+#define PTE_E    0x002 // Entry is a page table Entry
+#define PTE_R    0x004 // Referenced
+#define PTE_D    0x008 // Dirty
+#define PTE_UX   0x010 // User eXecute permission
+#define PTE_UW   0x020 // User Read permission
+#define PTE_UR   0x040 // User Write permission
+#define PTE_SX   0x080 // Supervisor eXecute permission
+#define PTE_SW   0x100 // Supervisor Read permission
+#define PTE_SR   0x200 // Supervisor Write permission
+#define PTE_PERM (PTE_SR | PTE_SW | PTE_SX | PTE_UR | PTE_UW | PTE_UX)
+#define PTE_PERM_SHIFT 4
+#define PTE_PPN_SHIFT  12
 
 class mmu_t
 {
@@ -60,12 +62,13 @@ public:
       *(type##_t*)(mem+addr) = val; \
     }
 
-  insn_t load_insn(reg_t addr, bool rvc)
+  insn_t __attribute__((always_inline)) load_insn(reg_t addr, bool rvc)
   {
     insn_t insn;
 
     reg_t idx = (addr/sizeof(insn_t)) % ICACHE_ENTRIES;
-    if(addr % 4 == 0 && icache_tag[idx] == (addr | 1))
+    bool hit = addr % 4 == 0 && icache_tag[idx] == (addr | 1);
+    if(likely(hit))
       return icache_data[idx];
 
     #ifdef RISCV_ENABLE_RVC
@@ -93,7 +96,7 @@ public:
 
     #ifdef RISCV_ENABLE_ICSIM
     if(icsim)
-      icsim->tick(addr, insn_length(insn), false);
+      icsim->tick(addr, insn_length(insn.bits), false);
     if(itlbsim)
       itlbsim->tick(addr, sizeof(reg_t), false);
     #endif
@@ -140,11 +143,11 @@ private:
   bool supervisor;
   bool vm_enabled;
 
-  static const reg_t TLB_ENTRIES = 32;
+  static const reg_t TLB_ENTRIES = 256;
   pte_t tlb_data[TLB_ENTRIES];
   reg_t tlb_tag[TLB_ENTRIES];
 
-  static const reg_t ICACHE_ENTRIES = 32;
+  static const reg_t ICACHE_ENTRIES = 256;
   insn_t icache_data[ICACHE_ENTRIES];
   reg_t icache_tag[ICACHE_ENTRIES];
 
@@ -155,7 +158,7 @@ private:
 
   void check_align(reg_t addr, int size, bool store, bool fetch)
   {
-    if(addr & (size-1))
+    if(unlikely(addr & (size-1)))
     {
       badvaddr = addr;
       if(fetch)
@@ -176,71 +179,62 @@ private:
                 : fetch ? trap_instruction_access_fault
                 :         trap_load_access_fault;
 
-    if(!pte.e || tag != (addr >> PGSHIFT))
+    bool hit = (pte & PTE_E) && tag == (addr >> PGSHIFT);
+    if(unlikely(!hit))
     {
       pte = walk(addr);
-      if(!pte.e)
+      if(!(pte & PTE_E))
         throw trap;
 
       tlb_data[idx] = pte;
       tlb_tag[idx] = addr >> PGSHIFT;
     }
 
-    if(store && !(supervisor ? pte.sw : pte.uw) ||
-       !store && !fetch && !(supervisor ? pte.sr : pte.ur) ||
-       !store && !fetch && !(supervisor ? pte.sr : pte.ur))
+    reg_t access_type = store ? PTE_UW : fetch ? PTE_UX : PTE_UR;
+    if(supervisor)
+      access_type <<= 3;
+    if(unlikely(!(access_type & pte & PTE_PERM)))
       throw trap;
 
-    return (addr & (PGSIZE-1)) | (pte.ppn << PGSHIFT);
+    return (addr & (PGSIZE-1)) | ((pte >> PTE_PPN_SHIFT) << PGSHIFT);
   }
 
   pte_t walk(reg_t addr)
   {
-    pte_t pte;
+    pte_t pte = 0;
   
     if(!vm_enabled)
     {
-      pte.t = 0;
-      pte.e = addr < memsz;
-      pte.r = pte.d = 0;
-      pte.ur = pte.uw = pte.ux = pte.sr = pte.sw = pte.sx = 1;
-      pte.ppn = addr >> PGSHIFT;
+      if(addr < memsz)
+        pte = PTE_E | PTE_PERM | ((addr >> PGSHIFT) << PTE_PPN_SHIFT);
     }
     else
     {
-      pte.t = pte.e = 0;
-
-      int lg_ptesz = sizeof(pte_t) == 4 ? 2
-                   : sizeof(pte_t) == 8 ? 3
-                   : 0;
-      assert(lg_ptesz);
-  
       reg_t base = ptbr;
+      reg_t ptd;
   
-      for(int i = LEVELS-1; i >= 0; i--)
+      int ptshift = (LEVELS-1)*PTIDXBITS;
+      for(reg_t i = 0; i < LEVELS; i++, ptshift -= PTIDXBITS)
       {
-        int idxbits = PGSHIFT - lg_ptesz;
-        int shift = PGSHIFT + i*idxbits;
-        reg_t idx = addr >> shift;
-        idx &= (1 << idxbits) - 1;
+        reg_t idx = (addr >> (PGSHIFT+ptshift)) & ((1<<PTIDXBITS)-1);
   
         reg_t pte_addr = base + idx*sizeof(pte_t);
         if(pte_addr >= memsz)
           break;
   
-        pte = *(pte_t*)(mem+pte_addr);
-        if(pte.e)
+        ptd = *(pte_t*)(mem+pte_addr);
+        if(ptd & PTE_E)
         {
           // if this PTE is from a larger PT, fake a leaf
           // PTE so the TLB will work right
           reg_t vpn = addr >> PGSHIFT;
-          pte.ppn += vpn & ((1<<(i*idxbits))-1);
+          pte |= ptd | (vpn & ((1<<(ptshift))-1)) << PTE_PPN_SHIFT;
           break;
         }
-        if(!pte.t)
+        else if(!(ptd & PTE_T))
           break;
   
-        base = pte.ppn << PGSHIFT;
+        base = (ptd >> PTE_PPN_SHIFT) << PGSHIFT;
       }
     }
   

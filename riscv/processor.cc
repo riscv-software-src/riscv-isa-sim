@@ -8,9 +8,6 @@
 #include "config.h"
 #include "sim.h"
 #include "icsim.h"
-#include "softfloat.h"
-#include "platform.h" // softfloat isNaNF32UI, etc.
-#include "internals.h" // ditto
 
 processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   : sim(_sim), mmu(_mem,_memsz)
@@ -156,34 +153,48 @@ void processor_t::setvl(int vlapp)
   vl = std::min(vlmax, vlapp);
 }
 
+void processor_t::take_interrupt()
+{
+  uint32_t interrupts = (cause & CAUSE_IP) >> CAUSE_IP_SHIFT;
+  interrupts &= (sr & SR_IM) >> SR_IM_SHIFT;
+
+  if(interrupts && (sr & SR_ET))
+    throw trap_interrupt;
+}
+
 void processor_t::step(size_t n, bool noisy)
 {
+  if(!run)
+    return;
+
   size_t i = 0;
-  while(run) try
+  while(1) try
   {
-    for( ; i < n; i++)
+    take_interrupt();
+
+    #include "dispatch.h"
+
+    #define execute_insn(noisy) \
+      do { insn_t insn = mmu.load_insn(pc, sr & SR_EC); \
+      if(noisy) disasm(insn,pc); \
+      pc = dispatch_table[dispatch_index(insn)](this, insn, pc); \
+      XPR[0] = 0; } while(0)
+
+    if(noisy) for( ; i < n; i++)
+      execute_insn(true);
+    else 
     {
-      uint32_t interrupts = (cause & CAUSE_IP) >> CAUSE_IP_SHIFT;
-      interrupts &= (sr & SR_IM) >> SR_IM_SHIFT;
-      if(interrupts && (sr & SR_ET))
-        take_trap(trap_interrupt,noisy);
-
-      insn_t insn = mmu.load_insn(pc, sr & SR_EC);
-  
-      reg_t npc = pc + insn_length(insn);
-
-      if(noisy)
-        disasm(insn,pc);
-
-      #include "execute.h"
-  
-      pc = npc;
-      XPR[0] = 0;
-
-      if(count++ == compare)
-        cause |= 1 << (TIMER_IRQ+CAUSE_IP_SHIFT);
-      cycle++;
+      for( ; i < n-3; i+=4)
+      {
+        execute_insn(false);
+        execute_insn(false);
+        execute_insn(false);
+        execute_insn(false);
+      }
+      for( ; i < n; i++)
+        execute_insn(false);
     }
+
     return;
   }
   catch(trap_t t)
@@ -193,13 +204,23 @@ void processor_t::step(size_t n, bool noisy)
   }
   catch(vt_command_t cmd)
   {
+    i++;
     if (cmd == vt_command_stop)
-      return;
+      break;
   }
   catch(halt_t t)
   {
     reset();
+    return;
   }
+
+  cycle += i;
+
+  typeof(count) old_count = count;
+  typeof(count) max_count = -1;
+  count += i;
+  if(old_count < compare && (count >= compare || old_count > max_count-i))
+    cause |= 1 << (TIMER_IRQ+CAUSE_IP_SHIFT);
 }
 
 void processor_t::take_trap(trap_t t, bool noisy)
@@ -240,7 +261,7 @@ void processor_t::disasm(insn_t insn, reg_t pc)
   info.buffer_vma = pc;
 
   int ret = print_insn_little_mips(pc, &info);
-  demand(ret == (INSN_IS_RVC(insn.bits) ? 2 : 4), "disasm bug!");
+  demand(ret == insn_length(insn.bits), "disasm bug!");
   #else
   printf("unknown");
   #endif

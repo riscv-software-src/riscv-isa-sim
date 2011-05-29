@@ -72,7 +72,7 @@ AC_HEADER_STDC
 #-------------------------------------------------------------------------
 
 AC_SUBST([CFLAGS],  ["-Wall -O2"])
-AC_SUBST([CXXFLAGS],["-Wall -O2"])
+AC_SUBST([CXXFLAGS],["-Wall -O2 -Wno-pmf-conversions"])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject list

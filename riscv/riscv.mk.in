@@ -3,10 +3,10 @@ riscv_subproject_deps = \
 	softfloat \
 
 riscv_hdrs = \
-    applink.h \
+	applink.h \
 	common.h \
 	decode.h \
-	execute.h \
+	dispatch.h \
 	mmu.h \
 	processor.h \
 	sim.h \
@@ -14,12 +14,22 @@ riscv_hdrs = \
 	insns/*.h \
 
 riscv_srcs = \
-    applink.cc \
+	applink.cc \
 	processor.cc \
 	sim.cc \
 	trap.cc \
 	icsim.cc \
 	mmu.cc \
+	dispatch_0.cc \
+	dispatch_1.cc \
+	dispatch_2.cc \
+	dispatch_3.cc \
+	dispatch_4.cc \
+	dispatch_5.cc \
+	dispatch_6.cc \
+	dispatch_7.cc \
+	dispatch_8.cc \
+	dispatch_9.cc \
 
 riscv_test_srcs =
 

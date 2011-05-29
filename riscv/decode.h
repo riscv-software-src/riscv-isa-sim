@@ -193,11 +193,11 @@ private:
               if(rm > 4) throw_illegal_instruction; \
               rm; })
 
-#define require_supervisor if(!(sr & SR_S)) throw trap_privileged_instruction
+#define require_supervisor if(unlikely(!(sr & SR_S))) throw trap_privileged_instruction
 #define xpr64 (xprlen == 64)
-#define require_xpr64 if(!xpr64) throw_illegal_instruction
-#define require_xpr32 if(xpr64) throw_illegal_instruction
-#define require_fp if(!(sr & SR_EF)) throw trap_fp_disabled
+#define require_xpr64 if(unlikely(!xpr64)) throw_illegal_instruction
+#define require_xpr32 if(unlikely(xpr64)) throw_illegal_instruction
+#define require_fp if(unlikely(!(sr & SR_EF))) throw trap_fp_disabled
 #define require_vector \
   ({ if(!(sr & SR_EV)) throw trap_vector_disabled; \
     else if (!utmode && (vecbanks_count < 3)) throw trap_vector_bank; \
@@ -207,9 +207,6 @@ private:
                                (softfloat_exceptionFlags << FSR_AEXC_SHIFT)); \
                              softfloat_exceptionFlags = 0; })
 
-#define require_rvc if(!(sr & SR_EC)) throw_illegal_instruction
-#define insn_length(x) (((x).bits & 0x3) < 0x3 ? 2 : 4)
-
 #define sext32(x) ((sreg_t)(int32_t)(x))
 #define zext32(x) ((reg_t)(uint32_t)(x))
 #define sext_xprlen(x) ((sreg_t(x) << (64-xprlen)) >> (64-xprlen))
@@ -218,6 +215,8 @@ private:
 // RVC stuff
 
 #define INSN_IS_RVC(x) (((x) & 0x3) < 0x3)
+#define insn_length(x) (INSN_IS_RVC(x) ? 2 : 4)
+#define require_rvc if(!(sr & SR_EC)) throw_illegal_instruction
 
 #define CRD_REGNUM ((insn.bits >> 5) & 0x1f)
 #define CRD do_writeback(XPR, CRD_REGNUM)

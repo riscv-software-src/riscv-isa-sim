@@ -58,6 +58,7 @@ private:
 
   // functions
   void reset();
+  void take_interrupt();
   void set_sr(uint32_t val);
   void set_fsr(uint32_t val);
   void take_trap(trap_t t, bool noisy);
@@ -86,6 +87,8 @@ private:
   icsim_t* dtlbsim;
 
   friend class sim_t;
+  
+  #include "dispatch_decl.h"
 };
 
 #endif

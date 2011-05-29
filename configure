@@ -3961,7 +3961,7 @@ fi
 
 CFLAGS="-Wall -O2"
 
-CXXFLAGS="-Wall -O2"
+CXXFLAGS="-Wall -O2 -Wno-pmf-conversions"
 
 
 #-------------------------------------------------------------------------
