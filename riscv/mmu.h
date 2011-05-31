@@ -48,7 +48,8 @@ public:
 
   #define load_func(type) \
     type##_t load_##type(reg_t addr) { \
-      check_align(addr, sizeof(type##_t), false, false); \
+      if(unlikely(addr % sizeof(type##_t))) \
+        throw trap_load_address_misaligned; \
       addr = translate(addr, false, false); \
       dcsim_tick(dcsim, dtlbsim, addr, sizeof(type##_t), false); \
       return *(type##_t*)(mem+addr); \
@@ -56,7 +57,8 @@ public:
 
   #define store_func(type) \
     void store_##type(reg_t addr, type##_t val) { \
-      check_align(addr, sizeof(type##_t), true, false); \
+      if(unlikely(addr % sizeof(type##_t))) \
+        throw trap_store_address_misaligned; \
       addr = translate(addr, true, false); \
       dcsim_tick(dcsim, dtlbsim, addr, sizeof(type##_t), true); \
       *(type##_t*)(mem+addr) = val; \
@@ -86,7 +88,8 @@ public:
     else
     #endif
     {
-      check_align(addr, 4, false, true);
+      if(unlikely(addr % 4))
+        throw trap_instruction_address_misaligned;
       reg_t paddr = translate(addr, false, true);
       insn = *(insn_t*)(mem+paddr);
 
@@ -155,19 +158,6 @@ private:
   icsim_t* dcsim;
   icsim_t* itlbsim;
   icsim_t* dtlbsim;
-
-  void check_align(reg_t addr, int size, bool store, bool fetch)
-  {
-    if(unlikely(addr & (size-1)))
-    {
-      badvaddr = addr;
-      if(fetch)
-        throw trap_instruction_address_misaligned;
-      if(store)
-        throw trap_store_address_misaligned;
-      throw trap_load_address_misaligned;
-    }
-  }
 
   reg_t translate(reg_t addr, bool store, bool fetch)
   {

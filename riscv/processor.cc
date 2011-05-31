@@ -184,7 +184,7 @@ void processor_t::step(size_t n, bool noisy)
       execute_insn(true);
     else 
     {
-      for( ; i < n-3; i+=4)
+      for( ; n > 3 && i < n-3; i+=4)
       {
         execute_insn(false);
         execute_insn(false);
@@ -195,7 +195,7 @@ void processor_t::step(size_t n, bool noisy)
         execute_insn(false);
     }
 
-    return;
+    break;
   }
   catch(trap_t t)
   {
