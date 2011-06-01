@@ -49,7 +49,10 @@ public:
   #define load_func(type) \
     type##_t load_##type(reg_t addr) { \
       if(unlikely(addr % sizeof(type##_t))) \
+      { \
+        badvaddr = addr; \
         throw trap_load_address_misaligned; \
+      } \
       addr = translate(addr, false, false); \
       dcsim_tick(dcsim, dtlbsim, addr, sizeof(type##_t), false); \
       return *(type##_t*)(mem+addr); \
@@ -58,7 +61,10 @@ public:
   #define store_func(type) \
     void store_##type(reg_t addr, type##_t val) { \
       if(unlikely(addr % sizeof(type##_t))) \
+      { \
+        badvaddr = addr; \
         throw trap_store_address_misaligned; \
+      } \
       addr = translate(addr, true, false); \
       dcsim_tick(dcsim, dtlbsim, addr, sizeof(type##_t), true); \
       *(type##_t*)(mem+addr) = val; \
@@ -89,7 +95,10 @@ public:
     #endif
     {
       if(unlikely(addr % 4))
+      {
+        badvaddr = addr;
         throw trap_instruction_address_misaligned;
+      }
       reg_t paddr = translate(addr, false, true);
       insn = *(insn_t*)(mem+paddr);
 
@@ -174,7 +183,10 @@ private:
     {
       pte = walk(addr);
       if(!(pte & PTE_E))
+      {
+        badvaddr = addr;
         throw trap;
+      }
 
       tlb_data[idx] = pte;
       tlb_tag[idx] = addr >> PGSHIFT;
@@ -184,7 +196,10 @@ private:
     if(supervisor)
       access_type <<= 3;
     if(unlikely(!(access_type & pte & PTE_PERM)))
+    {
+      badvaddr = addr;
       throw trap;
+    }
 
     return (addr & (PGSIZE-1)) | ((pte >> PTE_PPN_SHIFT) << PGSHIFT);
   }
@@ -218,7 +233,12 @@ private:
           // if this PTE is from a larger PT, fake a leaf
           // PTE so the TLB will work right
           reg_t vpn = addr >> PGSHIFT;
-          pte |= ptd | (vpn & ((1<<(ptshift))-1)) << PTE_PPN_SHIFT;
+          ptd |= (vpn & ((1<<(ptshift))-1)) << PTE_PPN_SHIFT;
+
+          // fault if physical addr is invalid
+          reg_t ppn = ptd >> PTE_PPN_SHIFT;
+          if((ppn << PGSHIFT) + (addr & (PGSIZE-1)) < memsz)
+            pte = ptd;
           break;
         }
         else if(!(ptd & PTE_T))
