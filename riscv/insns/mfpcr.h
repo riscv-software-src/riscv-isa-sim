@@ -25,6 +25,9 @@ switch(insn.rtype.rs2)
   case 6:
     val = cause;
     break;
+  case 7:
+    cause &= ~(1 << (IPI_IRQ+CAUSE_IP_SHIFT));
+    break;
 
   case 8:
     val = MEMSIZE >> PGSHIFT;
