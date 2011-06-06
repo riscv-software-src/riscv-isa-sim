@@ -26,6 +26,7 @@ switch(insn.rtype.rs2)
     val = cause;
     break;
   case 7:
+    val = 0;
     cause &= ~(1 << (IPI_IRQ+CAUSE_IP_SHIFT));
     break;
 
