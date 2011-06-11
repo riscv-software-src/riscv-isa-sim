@@ -31,7 +31,7 @@ switch(insn.rtype.rs2)
     break;
 
   case 8:
-    val = MEMSIZE >> PGSHIFT;
+    val = mmu.memsz >> PGSHIFT;
     break;
 
   case 9:

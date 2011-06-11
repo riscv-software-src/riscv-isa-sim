@@ -52,7 +52,7 @@ int main(int argc, char** argv)
 
   appserver_link_t applink(tohost_fd, fromhost_fd);
 
-  sim_t s(nprocs, MEMSIZE, &applink, &icache, &dcache);
+  sim_t s(nprocs, &applink, &icache, &dcache);
   try
   {
     s.run(debug);

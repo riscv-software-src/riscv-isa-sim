@@ -1,8 +1,10 @@
+#ifndef _RISCV_MMU_H
+#define _RISCV_MMU_H
+
 #include "decode.h"
 #include "trap.h"
 #include "icsim.h"
 #include "common.h"
-#include <assert.h>
 
 class processor_t;
 
@@ -31,12 +33,8 @@ const reg_t PPN_BITS = 8*sizeof(reg_t) - PGSHIFT;
 class mmu_t
 {
 public:
-  mmu_t(char* _mem, size_t _memsz)
-   : mem(_mem), memsz(_memsz), badvaddr(0),
-     ptbr(0), supervisor(true), vm_enabled(false),
-     icsim(NULL), dcsim(NULL), itlbsim(NULL), dtlbsim(NULL)
-  {
-  }
+  mmu_t(char* _mem, size_t _memsz);
+  ~mmu_t();
 
   #ifdef RISCV_ENABLE_ICSIM
   # define dcsim_tick(dcsim, dtlbsim, addr, size, st) \
@@ -74,13 +72,8 @@ public:
   {
     insn_t insn;
 
-    reg_t idx = (addr/sizeof(insn_t)) % ICACHE_ENTRIES;
-    bool hit = addr % 4 == 0 && icache_tag[idx] == (addr | 1);
-    if(likely(hit))
-      return icache_data[idx];
-
     #ifdef RISCV_ENABLE_RVC
-    if(addr % 4 == 2 && rvc)
+    if(addr % 4 == 2 && rvc) // fetch across word boundary
     {
       reg_t paddr_lo = translate(addr, false, true);
       insn.bits = *(uint16_t*)(mem+paddr_lo);
@@ -94,15 +87,16 @@ public:
     else
     #endif
     {
-      if(unlikely(addr % 4))
-      {
-        badvaddr = addr;
-        throw trap_instruction_address_misaligned;
-      }
+      reg_t idx = (addr/sizeof(insn_t)) % ICACHE_ENTRIES;
+      bool hit = icache_tag[idx] == addr;
+      if(likely(hit))
+        return icache_data[idx];
+
+      // the processor guarantees alignment based upon rvc mode
       reg_t paddr = translate(addr, false, true);
       insn = *(insn_t*)(mem+paddr);
 
-      icache_tag[idx] = addr | 1;
+      icache_tag[idx] = addr;
       icache_data[idx] = insn;
     }
 
@@ -157,7 +151,9 @@ private:
 
   static const reg_t TLB_ENTRIES = 256;
   pte_t tlb_data[TLB_ENTRIES];
-  reg_t tlb_tag[TLB_ENTRIES];
+  reg_t tlb_insn_tag[TLB_ENTRIES];
+  reg_t tlb_load_tag[TLB_ENTRIES];
+  reg_t tlb_store_tag[TLB_ENTRIES];
 
   static const reg_t ICACHE_ENTRIES = 256;
   insn_t icache_data[ICACHE_ENTRIES];
@@ -168,88 +164,22 @@ private:
   icsim_t* itlbsim;
   icsim_t* dtlbsim;
 
+  reg_t refill(reg_t addr, bool store, bool fetch);
+  pte_t walk(reg_t addr);
+
   reg_t translate(reg_t addr, bool store, bool fetch)
   {
     reg_t idx = (addr >> PGSHIFT) % TLB_ENTRIES;
-    pte_t pte = tlb_data[idx];
-    reg_t tag = tlb_tag[idx];
 
-    trap_t trap = store ? trap_store_access_fault
-                : fetch ? trap_instruction_access_fault
-                :         trap_load_access_fault;
+    reg_t* tlb_tag = fetch ? tlb_insn_tag : store ? tlb_store_tag :tlb_load_tag;
+    reg_t expected_tag = addr & ~(PGSIZE-1);
+    if(likely(tlb_tag[idx] == expected_tag))
+      return (addr & (PGSIZE-1)) | tlb_data[idx];
 
-    bool hit = (pte & PTE_E) && tag == (addr >> PGSHIFT);
-    if(unlikely(!hit))
-    {
-      pte = walk(addr);
-      if(!(pte & PTE_E))
-      {
-        badvaddr = addr;
-        throw trap;
-      }
-
-      tlb_data[idx] = pte;
-      tlb_tag[idx] = addr >> PGSHIFT;
-    }
-
-    reg_t access_type = store ? PTE_UW : fetch ? PTE_UX : PTE_UR;
-    if(supervisor)
-      access_type <<= 3;
-    if(unlikely(!(access_type & pte & PTE_PERM)))
-    {
-      badvaddr = addr;
-      throw trap;
-    }
-
-    return (addr & (PGSIZE-1)) | ((pte >> PTE_PPN_SHIFT) << PGSHIFT);
-  }
-
-  pte_t walk(reg_t addr)
-  {
-    pte_t pte = 0;
-  
-    if(!vm_enabled)
-    {
-      if(addr < memsz)
-        pte = PTE_E | PTE_PERM | ((addr >> PGSHIFT) << PTE_PPN_SHIFT);
-    }
-    else
-    {
-      reg_t base = ptbr;
-      reg_t ptd;
-  
-      int ptshift = (LEVELS-1)*PTIDXBITS;
-      for(reg_t i = 0; i < LEVELS; i++, ptshift -= PTIDXBITS)
-      {
-        reg_t idx = (addr >> (PGSHIFT+ptshift)) & ((1<<PTIDXBITS)-1);
-  
-        reg_t pte_addr = base + idx*sizeof(pte_t);
-        if(pte_addr >= memsz)
-          break;
-  
-        ptd = *(pte_t*)(mem+pte_addr);
-        if(ptd & PTE_E)
-        {
-          // if this PTE is from a larger PT, fake a leaf
-          // PTE so the TLB will work right
-          reg_t vpn = addr >> PGSHIFT;
-          ptd |= (vpn & ((1<<(ptshift))-1)) << PTE_PPN_SHIFT;
-
-          // fault if physical addr is invalid
-          reg_t ppn = ptd >> PTE_PPN_SHIFT;
-          if((ppn << PGSHIFT) + (addr & (PGSIZE-1)) < memsz)
-            pte = ptd;
-          break;
-        }
-        else if(!(ptd & PTE_T))
-          break;
-  
-        base = (ptd >> PTE_PPN_SHIFT) << PGSHIFT;
-      }
-    }
-  
-    return pte;
+    return refill(addr, store, fetch);
   }
   
   friend class processor_t;
 };
+
+#endif

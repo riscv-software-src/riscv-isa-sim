@@ -5,23 +5,49 @@
 #include <map>
 #include <iostream>
 #include <climits>
+#include <assert.h>
 
-sim_t::sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink, icsim_t* default_icache, icsim_t* default_dcache)
+sim_t::sim_t(int _nprocs, appserver_link_t* _applink, icsim_t* default_icache, icsim_t* default_dcache)
   : applink(_applink),
-    memsz(_memsz),
-    mem((char*)mmap64(NULL, memsz, PROT_WRITE, MAP_PRIVATE | MAP_ANON, -1, 0)),
-    procs(std::vector<processor_t>(_nprocs,processor_t(this,mem,memsz)))
+    procs(_nprocs)
 {
-  demand(mem != MAP_FAILED, "couldn't allocate target machine's memory");
+  size_t memsz0 = sizeof(size_t) == 8 ? 0x100000000ULL : 0x70000000UL;
+  size_t quantum = std::max(PGSIZE, (reg_t)sysconf(_SC_PAGESIZE));
+  memsz0 = memsz0/quantum*quantum;
 
-  for(int i = 0; i < (int)num_cores(); i++)
-    procs[i].init(i, default_icache, default_dcache);
+  memsz = memsz0;
+  mem = (char*)mmap64(NULL, memsz, PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+
+  if(mem == MAP_FAILED)
+  {
+    while(mem == MAP_FAILED && (memsz = memsz*10/11/quantum*quantum))
+      mem = (char*)mmap64(NULL, memsz, PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+    assert(mem != MAP_FAILED);
+    fprintf(stderr, "warning: only got %lu bytes of target mem (wanted %lu)\n",
+            (unsigned long)memsz, (unsigned long)memsz0);
+  }
+
+  mmu = new mmu_t(mem, memsz);
+
+  for(size_t i = 0; i < num_cores(); i++)
+  {
+    procs[i] = new processor_t(this, new mmu_t(mem, memsz));
+    procs[i]->init(i, default_icache, default_dcache);
+  }
 
   applink->init(this);
 }
 
 sim_t::~sim_t()
 {
+  for(size_t i = 0; i < num_cores(); i++)
+  {
+    mmu_t* pmmu = &procs[i]->mmu;
+    delete procs[i];
+    delete pmmu;
+  }
+  delete mmu;
+  munmap(mem, memsz);
 }
 
 void sim_t::set_tohost(reg_t val)
@@ -40,7 +66,7 @@ reg_t sim_t::get_fromhost()
 void sim_t::send_ipi(reg_t who)
 {
   if(who < num_cores())
-    procs[who].deliver_ipi();
+    procs[who]->deliver_ipi();
 }
 
 void sim_t::run(bool debug)
@@ -103,7 +129,7 @@ void sim_t::step_all(size_t n, size_t interleave, bool noisy)
 {
   for(size_t j = 0; j < n; j+=interleave)
     for(int i = 0; i < (int)num_cores(); i++)
-      procs[i].step(interleave,noisy);
+      procs[i]->step(interleave,noisy);
 }
 
 void sim_t::interactive_run_noisy(const std::string& cmd, const std::vector<std::string>& args)
@@ -144,9 +170,9 @@ void sim_t::interactive_run_proc(const std::string& cmd, const std::vector<std::
     return;
 
   if(a.size() == 2)
-    procs[p].step(atoi(a[1].c_str()),noisy);
+    procs[p]->step(atoi(a[1].c_str()),noisy);
   else
-    while(1) procs[p].step(1,noisy);
+    while(1) procs[p]->step(1,noisy);
 }
 
 void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::string>& args)
@@ -163,7 +189,7 @@ reg_t sim_t::get_pc(const std::vector<std::string>& args)
   if(p >= (int)num_cores())
     throw trap_illegal_instruction;
 
-  return procs[p].pc;
+  return procs[p]->pc;
 }
 
 reg_t sim_t::get_reg(const std::vector<std::string>& args)
@@ -176,7 +202,7 @@ reg_t sim_t::get_reg(const std::vector<std::string>& args)
   if(p >= (int)num_cores() || r >= NXPR)
     throw trap_illegal_instruction;
 
-  return procs[p].XPR[r];
+  return procs[p]->XPR[r];
 }
 
 reg_t sim_t::get_freg(const std::vector<std::string>& args)
@@ -189,7 +215,7 @@ reg_t sim_t::get_freg(const std::vector<std::string>& args)
   if(p >= (int)num_cores() || r >= NFPR)
     throw trap_illegal_instruction;
 
-  return procs[p].FPR[r];
+  return procs[p]->FPR[r];
 }
 
 reg_t sim_t::get_tohost(const std::vector<std::string>& args)
@@ -201,7 +227,7 @@ reg_t sim_t::get_tohost(const std::vector<std::string>& args)
   if(p >= (int)num_cores())
     throw trap_illegal_instruction;
 
-  return procs[p].tohost;
+  return procs[p]->tohost;
 }
 
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
@@ -236,15 +262,13 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
     throw trap_illegal_instruction;
 
   std::string addr_str = args[0];
-  mmu_t mmu(mem, memsz);
-  mmu.set_supervisor(true);
   if(args.size() == 2)
   {
     int p = atoi(args[0].c_str());
     if(p >= (int)num_cores())
       throw trap_illegal_instruction;
-    mmu.set_vm_enabled(!!(procs[p].sr & SR_VM));
-    mmu.set_ptbr(procs[p].mmu.get_ptbr());
+    mmu->set_vm_enabled(!!(procs[p]->sr & SR_VM));
+    mmu->set_ptbr(procs[p]->mmu.get_ptbr());
     addr_str = args[1];
   }
 
@@ -255,17 +279,17 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
   switch(addr % 8)
   {
     case 0:
-      val = mmu.load_uint64(addr);
+      val = mmu->load_uint64(addr);
       break;
     case 4:
-      val = mmu.load_uint32(addr);
+      val = mmu->load_uint32(addr);
       break;
     case 2:
     case 6:
-      val = mmu.load_uint16(addr);
+      val = mmu->load_uint16(addr);
       break;
     default:
-      val = mmu.load_uint8(addr);
+      val = mmu->load_uint8(addr);
       break;
   }
   return val;
@@ -283,10 +307,8 @@ void sim_t::interactive_str(const std::string& cmd, const std::vector<std::strin
 
   reg_t addr = strtol(args[0].c_str(),NULL,16);
 
-  mmu_t mmu(mem,memsz);
   char ch;
-
-  while((ch = mmu.load_uint8(addr++)))
+  while((ch = mmu->load_uint8(addr++)))
     putchar(ch);
 
   putchar('\n');

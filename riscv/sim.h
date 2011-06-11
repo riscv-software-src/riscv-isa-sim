@@ -5,14 +5,12 @@
 #include <string>
 #include "processor.h"
 
-const long MEMSIZE = 0x100000000;
-
 class appserver_link_t;
 
 class sim_t
 {
 public:
-  sim_t(int _nprocs, size_t _memsz, appserver_link_t* _applink, icsim_t* _default_icache, icsim_t* default_dcache);
+  sim_t(int _nprocs, appserver_link_t* _applink, icsim_t* _default_icache, icsim_t* default_dcache);
   ~sim_t();
   void run(bool debug);
 
@@ -31,7 +29,8 @@ private:
 
   size_t memsz;
   char* mem;
-  std::vector<processor_t> procs;
+  mmu_t* mmu;
+  std::vector<processor_t*> procs;
 
   void step_all(size_t n, size_t interleave, bool noisy);
 

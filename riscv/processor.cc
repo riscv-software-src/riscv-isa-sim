@@ -9,8 +9,8 @@
 #include "sim.h"
 #include "icsim.h"
 
-processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
-  : sim(_sim), mmu(_mem,_memsz)
+processor_t::processor_t(sim_t* _sim, mmu_t* _mmu)
+  : sim(_sim), mmu(*_mmu)
 {
   initialize_dispatch_table();
   // a few assumptions about endianness, including freg_t union
@@ -55,7 +55,7 @@ void processor_t::init(uint32_t _id, icsim_t* default_icache,
 
   for (int i=0; i<MAX_UTS; i++)
   {
-    uts[i] = new processor_t(sim, mmu.mem, mmu.memsz);
+    uts[i] = new processor_t(sim, &mmu);
     uts[i]->id = id;
     uts[i]->set_sr(uts[i]->sr | SR_EF);
     uts[i]->set_sr(uts[i]->sr | SR_EV);

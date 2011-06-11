@@ -18,7 +18,7 @@ class sim_t;
 class processor_t
 {
 public:
-  processor_t(sim_t* _sim, char* _mem, size_t _memsz);
+  processor_t(sim_t* _sim, mmu_t* _mmu);
   ~processor_t();
   void init(uint32_t _id, icsim_t* defualt_icache, icsim_t* default_dcache);
   void step(size_t n, bool noisy);
@@ -55,7 +55,7 @@ private:
   int xprlen;
 
   // shared memory
-  mmu_t mmu;
+  mmu_t& mmu;
 
   // counters
   reg_t cycle;
