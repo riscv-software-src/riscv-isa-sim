@@ -212,6 +212,20 @@ private:
 #define sext_xprlen(x) ((sreg_t(x) << (64-xprlen)) >> (64-xprlen))
 #define zext_xprlen(x) ((reg_t(x) << (64-xprlen)) >> (64-xprlen))
 
+#ifndef RISCV_ENABLE_RVC
+# define set_pc(x) \
+  do { if((x) & (sizeof(insn_t)-1)) \
+       { badvaddr = (x); throw trap_instruction_address_misaligned; } \
+       npc = (x); \
+     } while(0)
+#else
+# define set_pc(x) \
+  do { if((x) & ((sr & SR_EC) ? 1 : 3)) \
+       { badvaddr = (x); throw trap_instruction_address_misaligned; } \
+       npc = (x); \
+     } while(0)
+#endif
+
 // RVC stuff
 
 #define INSN_IS_RVC(x) (((x) & 0x3) < 0x3)

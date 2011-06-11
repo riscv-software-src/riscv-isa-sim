@@ -1,2 +1,2 @@
 require_rvc;
-npc = CJUMP_TARGET;
+set_pc(CJUMP_TARGET);

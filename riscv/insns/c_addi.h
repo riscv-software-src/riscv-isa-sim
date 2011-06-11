@@ -1,10 +1,10 @@
 require_rvc;
 if(CRD_REGNUM == 0)
 {
-  reg_t temp = npc;
-  npc = CRS1;
+  reg_t temp = CRS1;
   if(CIMM6 & 0x20)
-    RA = temp;
+    RA = npc;
+  set_pc(temp);
 }
 else
   CRD = sext_xprlen(CRS2 + CIMM6);
