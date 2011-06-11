@@ -12,6 +12,7 @@
 processor_t::processor_t(sim_t* _sim, char* _mem, size_t _memsz)
   : sim(_sim), mmu(_mem,_memsz)
 {
+  initialize_dispatch_table();
   // a few assumptions about endianness, including freg_t union
   static_assert(BYTE_ORDER == LITTLE_ENDIAN);
   static_assert(sizeof(freg_t) == 8);
@@ -172,12 +173,10 @@ void processor_t::step(size_t n, bool noisy)
   {
     take_interrupt();
 
-    #include "dispatch.h"
-
     #define execute_insn(noisy) \
       do { insn_t insn = mmu.load_insn(pc, sr & SR_EC); \
       if(noisy) disasm(insn,pc); \
-      pc = dispatch_table[dispatch_index(insn)](this, insn, pc); \
+      pc = dispatch_table[insn.bits % DISPATCH_TABLE_SIZE](this, insn, pc); \
       XPR[0] = 0; } while(0)
 
     if(noisy) for( ; i < n; i++)
@@ -266,4 +265,55 @@ void processor_t::disasm(insn_t insn, reg_t pc)
   printf("unknown");
   #endif
   printf("\n");
+}
+
+// if the lower log2(DISPATCH_TABLE_SIZE) bits of an instruction
+// uniquely identify that instruction, the dispatch table points
+// directly to that insn_func.  otherwise, we search the short
+// list of instructions that match.
+
+insn_func_t processor_t::dispatch_table[DISPATCH_TABLE_SIZE];
+
+struct insn_chain_t
+{
+  insn_func_t func;
+  uint32_t opcode;
+  uint32_t mask;
+};
+static std::vector<insn_chain_t> dispatch_chain[DISPATCH_TABLE_SIZE];
+
+reg_t processor_t::dispatch(insn_t insn, reg_t pc)
+{
+  size_t idx = insn.bits % DISPATCH_TABLE_SIZE;
+  for(size_t i = 0; i < dispatch_chain[idx].size(); i++)
+  {
+    insn_chain_t& c = dispatch_chain[idx][i];
+    if((insn.bits & c.mask) == c.opcode)
+      return c.func(this, insn, pc);
+  }
+  throw trap_illegal_instruction;
+}
+
+void processor_t::initialize_dispatch_table()
+{
+  if(dispatch_table[0] != NULL)
+    return;
+
+  for(size_t i = 0; i < DISPATCH_TABLE_SIZE; i++)
+  {
+    #define DECLARE_INSN(name, opcode, mask) \
+      if((i & (mask)) == ((opcode) & (mask) & (DISPATCH_TABLE_SIZE-1))) \
+        dispatch_chain[i].push_back( \
+          (insn_chain_t){&processor_t::insn_func_ ## name, opcode, mask});
+    #include "opcodes.h"
+    #undef DECLARE_INSN
+  }
+
+  for(size_t i = 0; i < DISPATCH_TABLE_SIZE; i++)
+  {
+    if(dispatch_chain[i].size() == 1)
+      dispatch_table[i] = dispatch_chain[i][0].func;
+    else
+      dispatch_table[i] = &processor_t::dispatch;
+  }
 }
