@@ -1274,9 +1274,9 @@ Optional Features:
                           Enable all optional subprojects
   --disable-fpu           Disable floating-point
   --disable-64bit         Disable 64-bit mode
-  --disable-rvc           Disable instruction compression
+  --enable-rvc            Enable instruction compression
   --disable-vec           Disable vector processor
-  --disable-icsim         Enable instruction cache simulator
+  --enable-icsim          Enable instruction cache simulator
 
 Some influential environment variables:
   CC          C compiler command
@@ -4056,7 +4056,7 @@ if test "${enable_rvc+set}" = set; then :
   enableval=$enable_rvc;
 fi
 
-if test "x$enable_rvc" != "xno"; then :
+if test "x$enable_rvc" = "xyes"; then :
 
 
 $as_echo "#define RISCV_ENABLE_RVC /**/" >>confdefs.h
