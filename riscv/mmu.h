@@ -51,9 +51,9 @@ public:
         badvaddr = addr; \
         throw trap_load_address_misaligned; \
       } \
-      addr = translate(addr, false, false); \
-      dcsim_tick(dcsim, dtlbsim, addr, sizeof(type##_t), false); \
-      return *(type##_t*)(mem+addr); \
+      void* paddr = translate(addr, false, false); \
+      dcsim_tick(dcsim, dtlbsim, paddr-mem, sizeof(type##_t), false); \
+      return *(type##_t*)paddr; \
     }
 
   #define store_func(type) \
@@ -63,9 +63,9 @@ public:
         badvaddr = addr; \
         throw trap_store_address_misaligned; \
       } \
-      addr = translate(addr, true, false); \
-      dcsim_tick(dcsim, dtlbsim, addr, sizeof(type##_t), true); \
-      *(type##_t*)(mem+addr) = val; \
+      void* paddr = translate(addr, true, false); \
+      dcsim_tick(dcsim, dtlbsim, paddr-mem, sizeof(type##_t), true); \
+      *(type##_t*)paddr = val; \
     }
 
   insn_t __attribute__((always_inline)) load_insn(reg_t addr, bool rvc)
@@ -75,13 +75,13 @@ public:
     #ifdef RISCV_ENABLE_RVC
     if(addr % 4 == 2 && rvc) // fetch across word boundary
     {
-      reg_t paddr_lo = translate(addr, false, true);
-      insn.bits = *(uint16_t*)(mem+paddr_lo);
+      void* addr_lo = translate(addr, false, true);
+      insn.bits = *(uint16_t*)addr_lo;
 
       if(!INSN_IS_RVC(insn.bits))
       {
-        reg_t paddr_hi = translate(addr+2, false, true);
-        insn.bits |= (uint32_t)*(uint16_t*)(mem+paddr_hi) << 16;
+        void* addr_hi = translate(addr+2, false, true);
+        insn.bits |= (uint32_t)*(uint16_t*)addr_hi << 16;
       }
     }
     else
@@ -93,8 +93,8 @@ public:
         return icache_data[idx];
 
       // the processor guarantees alignment based upon rvc mode
-      reg_t paddr = translate(addr, false, true);
-      insn = *(insn_t*)(mem+paddr);
+      void* paddr = translate(addr, false, true);
+      insn = *(insn_t*)paddr;
 
       icache_tag[idx] = addr;
       icache_data[idx] = insn;
@@ -150,7 +150,7 @@ private:
   bool vm_enabled;
 
   static const reg_t TLB_ENTRIES = 256;
-  pte_t tlb_data[TLB_ENTRIES];
+  long tlb_data[TLB_ENTRIES];
   reg_t tlb_insn_tag[TLB_ENTRIES];
   reg_t tlb_load_tag[TLB_ENTRIES];
   reg_t tlb_store_tag[TLB_ENTRIES];
@@ -164,17 +164,17 @@ private:
   icsim_t* itlbsim;
   icsim_t* dtlbsim;
 
-  reg_t refill(reg_t addr, bool store, bool fetch);
+  void* refill(reg_t addr, bool store, bool fetch);
   pte_t walk(reg_t addr);
 
-  reg_t translate(reg_t addr, bool store, bool fetch)
+  void* translate(reg_t addr, bool store, bool fetch)
   {
     reg_t idx = (addr >> PGSHIFT) % TLB_ENTRIES;
 
     reg_t* tlb_tag = fetch ? tlb_insn_tag : store ? tlb_store_tag :tlb_load_tag;
     reg_t expected_tag = addr & ~(PGSIZE-1);
     if(likely(tlb_tag[idx] == expected_tag))
-      return (addr & (PGSIZE-1)) | tlb_data[idx];
+      return (void*)(((long)addr & (PGSIZE-1)) | tlb_data[idx]);
 
     return refill(addr, store, fetch);
   }
