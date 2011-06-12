@@ -9,10 +9,8 @@
 
 #define MAX_UTS 2048
 
-#define DISPATCH_TABLE_SIZE 1024
 class processor_t;
 typedef reg_t (*insn_func_t)(processor_t*, insn_t, reg_t);
-
 class sim_t;
 
 class processor_t
@@ -92,13 +90,7 @@ private:
 
   friend class sim_t;
 
-  static insn_func_t dispatch_table[DISPATCH_TABLE_SIZE];
-  reg_t dispatch(insn_t insn, reg_t pc);
-  static void initialize_dispatch_table();
-
-  #define DECLARE_INSN(name, m, o) reg_t insn_func_ ## name (insn_t, reg_t);
-  #include "opcodes.h"
-  #undef DECLARE_INSN
+  #include "dispatch.h"
 };
 
 #endif
