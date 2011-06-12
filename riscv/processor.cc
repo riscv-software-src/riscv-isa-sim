@@ -172,11 +172,17 @@ void processor_t::step(size_t n, bool noisy)
   {
     take_interrupt();
 
+    mmu_t& _mmu = mmu;
+    insn_t insn;
+    insn_func_t func;
+    reg_t npc = pc;
     #define execute_insn(noisy) \
-      do { insn_t insn = mmu.load_insn(pc, sr & SR_EC); \
-      if(noisy) disasm(insn,pc); \
-      pc = dispatch_table[insn.bits % DISPATCH_TABLE_SIZE](this, insn, pc); \
-      XPR[0] = 0; } while(0)
+      do { \
+        insn = _mmu.load_insn(npc, sr & SR_EC, &func); \
+        if(noisy) disasm(insn,pc); \
+        npc = func(this, insn, npc); \
+        pc = npc; \
+      } while(0)
 
     if(noisy) for( ; i < n; i++)
       execute_insn(true);

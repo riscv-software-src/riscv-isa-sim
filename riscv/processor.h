@@ -4,12 +4,12 @@
 #include "decode.h"
 #include <cstring>
 #include "trap.h"
-#include "mmu.h"
 #include "icsim.h"
 
 #define MAX_UTS 2048
 
 class processor_t;
+class mmu_t;
 typedef reg_t (*insn_func_t)(processor_t*, insn_t, reg_t);
 class sim_t;
 
@@ -89,6 +89,7 @@ private:
   icsim_t* dtlbsim;
 
   friend class sim_t;
+  friend class mmu_t;
 
   #include "dispatch.h"
 };

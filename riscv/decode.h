@@ -143,29 +143,28 @@ union insn_t
   uint32_t bits;
 };
 
-#if 0
 #include <stdio.h>
-class trace_writeback
+class do_writeback
 {
 public:
-  trace_writeback(reg_t* _rf, int _rd) : rf(_rf), rd(_rd) {}
+  do_writeback(reg_t* _rf, int _rd) : rf(_rf), rd(_rd) {}
 
-  reg_t operator = (reg_t rhs)
+  const do_writeback& operator = (reg_t rhs)
   {
+#if 0
     printf("R[%x] <= %llx\n",rd,(long long)rhs);
+#endif
     rf[rd] = rhs;
-    return rhs;
+    rf[0] = 0;
+    return *this;
   }
+
+  operator reg_t() { return rf[rd]; }
 
 private:
   reg_t* rf;
   int rd;
 };
-
-#define do_writeback(rf,rd) trace_writeback(rf,rd)
-#else
-#define do_writeback(rf,rd) rf[rd]
-#endif
 
 #define throw_illegal_instruction \
   ({ if (utmode) throw trap_vector_illegal_instruction; \

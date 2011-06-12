@@ -4,6 +4,7 @@
 #include <vector>
 #include <string>
 #include "processor.h"
+#include "mmu.h"
 
 class appserver_link_t;
 

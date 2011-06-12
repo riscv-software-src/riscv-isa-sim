@@ -5,6 +5,7 @@
 #include "trap.h"
 #include "icsim.h"
 #include "common.h"
+#include "processor.h"
 
 class processor_t;
 
@@ -68,7 +69,8 @@ public:
       *(type##_t*)paddr = val; \
     }
 
-  insn_t __attribute__((always_inline)) load_insn(reg_t addr, bool rvc)
+  insn_t __attribute__((always_inline)) load_insn(reg_t addr, bool rvc,
+                                                  insn_func_t* func)
   {
     insn_t insn;
 
@@ -77,6 +79,9 @@ public:
     {
       void* addr_lo = translate(addr, false, true);
       insn.bits = *(uint16_t*)addr_lo;
+
+      *func = processor_t::dispatch_table
+               [insn.bits % processor_t::DISPATCH_TABLE_SIZE];
 
       if(!INSN_IS_RVC(insn.bits))
       {
@@ -88,9 +93,10 @@ public:
     #endif
     {
       reg_t idx = (addr/sizeof(insn_t)) % ICACHE_ENTRIES;
-      bool hit = icache_tag[idx] == addr;
-      if(likely(hit))
-        return icache_data[idx];
+      insn_t data = icache_data[idx];
+      *func = icache_func[idx];
+      if(likely(icache_tag[idx] == addr))
+        return data;
 
       // the processor guarantees alignment based upon rvc mode
       void* paddr = translate(addr, false, true);
@@ -98,6 +104,8 @@ public:
 
       icache_tag[idx] = addr;
       icache_data[idx] = insn;
+      icache_func[idx] = *func = processor_t::dispatch_table
+                                 [insn.bits % processor_t::DISPATCH_TABLE_SIZE];
     }
 
     #ifdef RISCV_ENABLE_ICSIM
@@ -157,6 +165,7 @@ private:
 
   static const reg_t ICACHE_ENTRIES = 256;
   insn_t icache_data[ICACHE_ENTRIES];
+  insn_func_t icache_func[ICACHE_ENTRIES];
   reg_t icache_tag[ICACHE_ENTRIES];
 
   icsim_t* icsim;
