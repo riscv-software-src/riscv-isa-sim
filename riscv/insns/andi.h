@@ -1,1 +1,0 @@
-RD = SIMM & RS1;
