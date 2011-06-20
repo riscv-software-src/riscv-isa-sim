@@ -1,0 +1,50 @@
+riscv_subproject_deps = \
+	softfloat_riscv \
+	softfloat \
+
+riscv_hdrs = \
+	htif.h \
+	common.h \
+	decode.h \
+	mmu.h \
+	processor.h \
+	sim.h \
+	trap.h \
+	opcodes.h \
+	insn_header.h \
+	dispatch.h \
+
+NDISPATCH := 10
+DISPATCH_SRCS := \
+	dispatch0.cc \
+	dispatch1.cc \
+	dispatch2.cc \
+	dispatch3.cc \
+	dispatch4.cc \
+	dispatch5.cc \
+	dispatch6.cc \
+	dispatch7.cc \
+	dispatch8.cc \
+	dispatch9.cc \
+	dispatch10.cc \
+
+$(DISPATCH_SRCS): %.cc: dispatch $(wildcard insns/*.h) $(riscv_hdrs)
+	$< $(subst dispatch,,$(subst .cc,,$@)) $(NDISPATCH) 1024 < $(src_dir)/riscv/opcodes.h > $@
+
+$(src_dir)/riscv/dispatch.h: %.h: dispatch
+	$< $(NDISPATCH) 1024 < $(src_dir)/riscv/opcodes.h > $@
+
+riscv_srcs = \
+	htif.cc \
+	processor.cc \
+	sim.cc \
+	interactive.cc \
+	trap.cc \
+	icsim.cc \
+	mmu.cc \
+	$(DISPATCH_SRCS) \
+
+riscv_test_srcs =
+
+riscv_install_prog_srcs = \
+	riscv-isa-run.cc \

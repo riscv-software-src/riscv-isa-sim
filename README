@@ -1,0 +1,61 @@
+==========================================================================
+RISC-V ISA Simulator
+==========================================================================
+# Author  : Andrew Waterman
+# Date    : June 19, 2011
+# Version : (under version control)
+
+The RISC-V ISA Simulator implements a functional model of one or more
+RISC-V processors.
+
+--------------------------------------------------------------------------
+Build Steps
+--------------------------------------------------------------------------
+
+ % mkdir build
+ % cd build
+ % ../configure
+ % make
+ % [sudo] make install
+
+--------------------------------------------------------------------------
+Usage
+--------------------------------------------------------------------------
+
+The riscv-isa-run program is not usually invoked directly; rather, fesvr, the
+Front-End Server, invokes riscv-isa-run.  fesvr and riscv-pk must be installed
+to simulate a RISC-V user program using riscv-isa-run.
+
+--------------------------------------------------------------------------
+Compiling and Running a Simple C Program
+--------------------------------------------------------------------------
+
+Install riscv-isa-run (see Build Steps), then install the following additional
+packages: riscv-fesvr, riscv-gcc, riscv-pk.
+
+Write a short C program and name it hello.c.  Then, compile it into a RISC-V
+ELF binary named hello:
+
+ % riscv-gcc -o hello hello.c
+
+Now you can simulate the program:
+
+ % riscv-fesvr hello
+
+--------------------------------------------------------------------------
+Simulating a New Instruction
+--------------------------------------------------------------------------
+
+Adding an instruction to the simulator requires two steps:
+
+  1. Describe the instruction's functional behavior in the file
+     riscv/insns/<new_instruction_name>.h.  Examine other instructions
+     in that directory as a starting point.
+
+  2. Add the instruction to the riscv-opcodes package:
+
+      % cd ../riscv-opcodes
+      % vi opcodes       // add a line for the new instruction
+      % make install
+
+  3. Rebuild the simulator.
