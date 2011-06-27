@@ -6,6 +6,10 @@
 #include <climits>
 #include <assert.h>
 
+#ifdef __linux__
+# define mmap mmap64
+#endif
+
 sim_t::sim_t(int _nprocs, htif_t* _htif)
   : htif(_htif),
     procs(_nprocs),
@@ -19,12 +23,12 @@ sim_t::sim_t(int _nprocs, htif_t* _htif)
   memsz0 = memsz0/quantum*quantum;
 
   memsz = memsz0;
-  mem = (char*)mmap64(NULL, memsz, PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+  mem = (char*)mmap(NULL, memsz, PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
 
   if(mem == MAP_FAILED)
   {
     while(mem == MAP_FAILED && (memsz = memsz*10/11/quantum*quantum))
-      mem = (char*)mmap64(NULL, memsz, PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
+      mem = (char*)mmap(NULL, memsz, PROT_WRITE, MAP_PRIVATE|MAP_ANON, -1, 0);
     assert(mem != MAP_FAILED);
     fprintf(stderr, "warning: only got %lu bytes of target mem (wanted %lu)\n",
             (unsigned long)memsz, (unsigned long)memsz0);
