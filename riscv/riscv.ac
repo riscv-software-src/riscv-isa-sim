@@ -23,7 +23,7 @@ AC_CHECK_FILES([$libopc],[have_libopcodes="yes"],[have_libopcodes="no"])
 
 libbfd="/opt/local/lib/libbfd.dylib"
 AC_SEARCH_LIBS([bfd_init],[bfd],[],[
-    AC_CHECK_FILES([$libbfd], [libopc="$libopc $libbfd" incopc="/opt/local/include"], [have_libopcodes="no"])
+    AC_CHECK_FILES([$libbfd], [libopc="$libopc $libbfd" incopc="-I/opt/local/include"], [have_libopcodes="no"])
 ])
 
 AS_IF([test "$have_libopcodes" = "no"],[
@@ -31,7 +31,7 @@ AS_IF([test "$have_libopcodes" = "no"],[
   AC_MSG_WARN([Build will not include disassembly support])
 ],[
   LIBS="$libopc $LIBS"
-  INCDIRS="-I$incopc"
+  INCDIRS="$incopc"
   AC_DEFINE([RISCV_HAVE_LIBOPCODES],,[Define if libopcodes exists])
 ])
 AC_SUBST(INCDIRS)
