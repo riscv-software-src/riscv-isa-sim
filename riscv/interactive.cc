@@ -5,6 +5,7 @@
 #include <iostream>
 #include <climits>
 #include <assert.h>
+#include <stdlib.h>
 
 void sim_t::interactive()
 {
