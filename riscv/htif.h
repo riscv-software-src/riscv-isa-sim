@@ -19,6 +19,7 @@ public:
 
   // we block on the host if the target machine reads the fromhost register,
   // which provides determinism in tohost/fromhost communication.
+  void wait_for_tohost_write();
   void wait_for_fromhost_write();
 
 private:

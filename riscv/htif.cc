@@ -51,6 +51,11 @@ void htif_t::wait_for_start()
   while(wait_for_packet() != APP_CMD_START);
 }
 
+void htif_t::wait_for_tohost_write()
+{
+  while(wait_for_packet() != APP_CMD_READ_CONTROL_REG);
+}
+
 void htif_t::wait_for_fromhost_write()
 {
   while(wait_for_packet() != APP_CMD_WRITE_CONTROL_REG);
