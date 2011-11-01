@@ -179,7 +179,7 @@ private:
     reg_t* tlb_tag = fetch ? tlb_insn_tag : store ? tlb_store_tag :tlb_load_tag;
     reg_t expected_tag = addr & ~(PGSIZE-1);
     if(likely(tlb_tag[idx] == expected_tag))
-      return (void*)(((long)addr & (PGSIZE-1)) | tlb_data[idx]);
+      return (void*)(((long)addr & (PGSIZE-1)) + tlb_data[idx]);
 
     return refill(addr, store, fetch);
   }

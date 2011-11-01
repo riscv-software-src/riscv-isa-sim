@@ -53,7 +53,7 @@ void* mmu_t::refill(reg_t addr, bool store, bool fetch)
   tlb_insn_tag[idx] = (pte_perm & PTE_UX) ? expected_tag : -1;
   tlb_data[idx] = (long)(pte >> PTE_PPN_SHIFT << PGSHIFT) + (long)mem;
 
-  return (void*)(((long)addr & (PGSIZE-1)) | tlb_data[idx]);
+  return (void*)(((long)addr & (PGSIZE-1)) + tlb_data[idx]);
 }
 
 pte_t mmu_t::walk(reg_t addr)
