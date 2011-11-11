@@ -48,11 +48,6 @@ const int JUMP_ALIGN_BITS = 1;
 #define IPI_IRQ 5
 #define TIMER_IRQ 7
 
-#define CAUSE_EXCCODE 0x000000FF
-#define CAUSE_IP      0x0000FF00
-#define CAUSE_EXCCODE_SHIFT 0
-#define CAUSE_IP_SHIFT      8
-
 #define FP_RD_NE  0
 #define FP_RD_0   1
 #define FP_RD_DN  2

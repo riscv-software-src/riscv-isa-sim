@@ -7,7 +7,7 @@
   DECLARE_TRAP(illegal_instruction), \
   DECLARE_TRAP(privileged_instruction), \
   DECLARE_TRAP(fp_disabled), \
-  DECLARE_TRAP(interrupt), \
+  DECLARE_TRAP(reserved0), \
   DECLARE_TRAP(syscall), \
   DECLARE_TRAP(breakpoint), \
   DECLARE_TRAP(load_address_misaligned), \
@@ -18,16 +18,14 @@
   DECLARE_TRAP(vector_bank), \
   DECLARE_TRAP(vector_illegal_instruction), \
   DECLARE_TRAP(reserved1), \
-  DECLARE_TRAP(reserved2), \
-  DECLARE_TRAP(reserved3), \
-  DECLARE_TRAP(int0), \
-  DECLARE_TRAP(int1), \
-  DECLARE_TRAP(int2), \
-  DECLARE_TRAP(int3), \
-  DECLARE_TRAP(int4), \
-  DECLARE_TRAP(int5), \
-  DECLARE_TRAP(int6), \
-  DECLARE_TRAP(int7), \
+  DECLARE_TRAP(irq0), \
+  DECLARE_TRAP(irq1), \
+  DECLARE_TRAP(irq2), \
+  DECLARE_TRAP(irq3), \
+  DECLARE_TRAP(irq4), \
+  DECLARE_TRAP(irq5), \
+  DECLARE_TRAP(irq6), \
+  DECLARE_TRAP(irq7), \
 
 #define DECLARE_TRAP(x) trap_##x
 enum trap_t

@@ -30,7 +30,6 @@ private:
   reg_t XPR[NXPR];
   freg_t FPR[NFPR];
   reg_t pc;
-  uint32_t fsr;
 
   // counters
   reg_t cycle;
@@ -38,12 +37,14 @@ private:
   // privileged control registers
   reg_t epc;
   reg_t badvaddr;
-  reg_t cause;
   reg_t evec;
   reg_t pcr_k0;
   reg_t pcr_k1;
+  uint32_t cause;
+  uint32_t interrupts_pending;
   uint32_t id;
   uint32_t sr; // only modify the status register using set_sr()
+  uint32_t fsr;
   uint32_t count;
   uint32_t compare;
 

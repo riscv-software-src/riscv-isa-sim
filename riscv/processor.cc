@@ -39,16 +39,19 @@ void processor_t::reset()
 {
   run = false;
 
-  // the ISA guarantees the following initial state
-  set_sr(SR_S | SR_SX);
-  pc = 0;
+  // the ISA guarantees on boot that the PC is 0x2000 and the the processor
+  // is in supervisor mode, and in 64-bit mode, if supported, with traps
+  // and virtual memory disabled.  we accomplish this by setting EVEC to
+  // 0x2000 and *enabling* traps, then sending the core an IPI.
+  set_sr(SR_S | SR_SX | SR_ET | SR_IM);
+  evec = 0x2000;
 
   // the following state is undefined upon boot-up,
   // but we zero it for determinism
   memset(XPR,0,sizeof(XPR));
   memset(FPR,0,sizeof(FPR));
 
-  evec = 0;
+  pc = 0;
   epc = 0;
   badvaddr = 0;
   cause = 0;
@@ -118,11 +121,13 @@ void processor_t::setvl(int vlapp)
 
 void processor_t::take_interrupt()
 {
-  uint32_t interrupts = (cause & CAUSE_IP) >> CAUSE_IP_SHIFT;
+  uint32_t interrupts = interrupts_pending;
   interrupts &= (sr & SR_IM) >> SR_IM_SHIFT;
 
   if(interrupts && (sr & SR_ET))
-    throw trap_interrupt;
+    for(int i = 0; ; i++, interrupts >>= 1)
+      if(interrupts & 1)
+        throw (trap_t)(trap_irq0 + i);
 }
 
 void processor_t::step(size_t n, bool noisy)
@@ -193,7 +198,7 @@ void processor_t::step(size_t n, bool noisy)
   uint32_t old_count = count;
   count += i;
   if(old_count < compare && uint64_t(old_count) + i >= compare)
-    cause |= 1 << (TIMER_IRQ+CAUSE_IP_SHIFT);
+    interrupts_pending |= 1 << TIMER_IRQ;
 }
 
 void processor_t::take_trap(trap_t t, bool noisy)
@@ -204,7 +209,7 @@ void processor_t::take_trap(trap_t t, bool noisy)
 
   // switch to supervisor, set previous supervisor bit, disable traps
   set_sr((((sr & ~SR_ET) | SR_S) & ~SR_PS) | ((sr & SR_S) ? SR_PS : 0));
-  cause = (cause & ~CAUSE_EXCCODE) | (t << CAUSE_EXCCODE_SHIFT);
+  cause = t;
   epc = pc;
   pc = evec;
   badvaddr = mmu.get_badvaddr();
@@ -212,7 +217,7 @@ void processor_t::take_trap(trap_t t, bool noisy)
 
 void processor_t::deliver_ipi()
 {
-  cause |= 1 << (IPI_IRQ+CAUSE_IP_SHIFT);
+  interrupts_pending |= 1 << IPI_IRQ;
   run = true;
 }
 

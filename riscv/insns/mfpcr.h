@@ -26,15 +26,6 @@ switch(insn.rtype.rs2)
     val = cause;
     break;
   case 7:
-    val = 0;
-    cause &= ~(1 << (IPI_IRQ+CAUSE_IP_SHIFT));
-    break;
-
-  case 8:
-    val = mmu.memsz >> PGSHIFT;
-    break;
-
-  case 9:
     val = mmu.get_ptbr();
     break;
 
@@ -42,23 +33,19 @@ switch(insn.rtype.rs2)
     val = id;
     break;
 
-  case 11:
-    val = vecbanks;
-    break;
-
   case 12:
-    val = sim.num_cores();
+    val = pcr_k0;
+    break;
+  case 13:
+    val = pcr_k1;
     break;
 
   case 17:
     val = sim.get_fromhost();
     break;
 
-  case 24:
-    val = pcr_k0;
-    break;
-  case 25:
-    val = pcr_k1;
+  case 18:
+    val = vecbanks;
     break;
 
   default:

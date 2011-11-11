@@ -77,6 +77,11 @@ void sim_t::run(bool debug)
 {
   htif->wait_for_start();
 
+  // word 0 of memory contains the memory capacity in MB
+  mmu->store_uint32(0, memsz >> 20);
+  // word 1 of memory contains the core count
+  mmu->store_uint32(4, num_cores());
+
   // start core 0
   send_ipi(0);
 
