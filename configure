@@ -4076,7 +4076,7 @@ $as_echo "#define RISCV_ENABLE_VEC /**/" >>confdefs.h
 
 fi
 
-libopc=`dirname \`which riscv-gcc\``/../`$ac_config_guess`/riscv/lib/libopcodes.a
+libopc=`dirname \`which riscv-gcc\``/../`$ac_config_guess`/riscv-elf/lib/libopcodes.a
 as_ac_File=`$as_echo "ac_cv_file_$libopc" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for $libopc" >&5
 $as_echo_n "checking for $libopc... " >&6; }
