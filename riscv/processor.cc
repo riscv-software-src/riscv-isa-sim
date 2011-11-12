@@ -2,8 +2,7 @@
 #include "common.h"
 #include "config.h"
 #include "sim.h"
-#include <bfd.h>
-#include <dis-asm.h>
+#include "disasm.h"
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
@@ -221,27 +220,10 @@ void processor_t::deliver_ipi()
   run = true;
 }
 
-extern "C" int print_insn_little_riscv(bfd_vma, disassemble_info*);
-
 void processor_t::disasm(insn_t insn, reg_t pc)
 {
-  printf("core %3d: 0x%016llx (0x%08x) ",id,(unsigned long long)pc,insn.bits);
-
-  #ifdef RISCV_HAVE_LIBOPCODES
-  disassemble_info info;
-  INIT_DISASSEMBLE_INFO(info, stdout, fprintf);
-  info.flavour = bfd_target_unknown_flavour;
-  info.arch = bfd_architecture(25); // bfd_arch_riscv
-  info.mach = 164; // bfd_mach_riscv_rocket64
-  info.endian = BFD_ENDIAN_LITTLE;
-  info.buffer = (bfd_byte*)&insn;
-  info.buffer_length = sizeof(insn);
-  info.buffer_vma = pc;
-
-  int ret = print_insn_little_riscv(pc, &info);
-  assert(ret == insn_length(insn.bits));
-  #else
-  printf("unknown");
-  #endif
-  printf("\n");
+  // the disassembler is stateless, so we share it
+  static disassembler disasm;
+  printf("core %3d: 0x%016llx (0x%08x) %s\n", id, (unsigned long long)pc,
+         insn.bits, disasm.disassemble(insn).c_str());
 }

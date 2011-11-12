@@ -42,6 +42,7 @@ riscv_srcs = \
 	trap.cc \
 	icsim.cc \
 	mmu.cc \
+	disasm.cc \
 	$(DISPATCH_SRCS) \
 
 riscv_test_srcs =
