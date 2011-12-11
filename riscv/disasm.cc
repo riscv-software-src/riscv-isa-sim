@@ -20,8 +20,8 @@ static const char* xpr_to_string[] = {
 
 static const char* fpr_to_string[] = {
   "ft0", "ft1", "fv0", "fv1", "fa0", "fa1", "fa2", "fa3",
-  "fa4", "fa5", "fa6", "fa7", "ft0", "ft1", "ft2", "ft3",
-  "ft4", "ft5", "ft6", "ft7", "fs0", "fs1", "fs2", "fs3",
+  "fa4", "fa5", "fa6", "fa7", "ft2", "ft3", "ft4", "ft5",
+  "ft6", "ft7", "ft8", "ft9", "fs0", "fs1", "fs2", "fs3",
   "fs4", "fs5", "fs6", "fs7", "fs8", "fs9", "ft10", "ft11"
 };
 
