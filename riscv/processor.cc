@@ -20,10 +20,11 @@ processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
 
 processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id,
                          uint32_t _utidx)
-  : sim(*_sim), mmu(*_mmu), id(_id), utidx(_utidx)
+  : sim(*_sim), mmu(*_mmu), id(_id)
 {
   reset();
   set_sr(sr | SR_EF | SR_EV);
+  utidx = _utidx;
 
   // microthreads don't possess their own microthreads
   for (int i=0; i<MAX_UTS; i++)
