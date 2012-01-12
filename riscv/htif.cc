@@ -6,6 +6,7 @@
 #include <stdlib.h>
 #include <errno.h>
 #include <assert.h>
+#include <stddef.h>
 
 enum
 {

@@ -3,6 +3,7 @@
 #include <vector>
 #include <cstdarg>
 #include <sstream>
+#include <stdlib.h>
 
 class arg_t
 {
@@ -28,6 +29,7 @@ static const char* fpr_to_string[] = {
 class load_address_t : public arg_t
 {
  public:
+  load_address_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     std::stringstream s;
@@ -39,6 +41,7 @@ class load_address_t : public arg_t
 class store_address_t : public arg_t
 {
  public:
+  store_address_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     std::stringstream s;
@@ -52,6 +55,7 @@ class store_address_t : public arg_t
 class amo_address_t : public arg_t
 {
  public:
+  amo_address_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     std::stringstream s;
@@ -63,6 +67,7 @@ class amo_address_t : public arg_t
 class xrd_reg_t : public arg_t
 {
  public:
+  xrd_reg_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     return xpr_to_string[insn.itype.rd];
@@ -72,6 +77,7 @@ class xrd_reg_t : public arg_t
 class xrs1_reg_t : public arg_t
 {
  public:
+  xrs1_reg_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     return xpr_to_string[insn.itype.rs1];
@@ -81,6 +87,7 @@ class xrs1_reg_t : public arg_t
 class xrs2_reg_t : public arg_t
 {
  public:
+  xrs2_reg_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     return xpr_to_string[insn.rtype.rs2];
@@ -90,6 +97,7 @@ class xrs2_reg_t : public arg_t
 class frd_reg_t : public arg_t
 {
  public:
+  frd_reg_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     return fpr_to_string[insn.ftype.rd];
@@ -99,6 +107,7 @@ class frd_reg_t : public arg_t
 class frs1_reg_t : public arg_t
 {
  public:
+  frs1_reg_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     return fpr_to_string[insn.ftype.rs1];
@@ -108,6 +117,7 @@ class frs1_reg_t : public arg_t
 class frs2_reg_t : public arg_t
 {
  public:
+  frs2_reg_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     return fpr_to_string[insn.ftype.rs2];
@@ -117,6 +127,7 @@ class frs2_reg_t : public arg_t
 class frs3_reg_t : public arg_t
 {
  public:
+  frs3_reg_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     return fpr_to_string[insn.ftype.rs3];
@@ -126,6 +137,7 @@ class frs3_reg_t : public arg_t
 class pcr_reg_t : public arg_t
 {
  public:
+  pcr_reg_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     std::stringstream s;
@@ -137,6 +149,7 @@ class pcr_reg_t : public arg_t
 class imm_t : public arg_t
 {
  public:
+  imm_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     std::stringstream s;
@@ -148,6 +161,7 @@ class imm_t : public arg_t
 class bigimm_t : public arg_t
 {
  public:
+  bigimm_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     std::stringstream s;
@@ -159,6 +173,7 @@ class bigimm_t : public arg_t
 class branch_target_t : public arg_t
 {
  public:
+  branch_target_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     std::stringstream s;
@@ -174,6 +189,7 @@ class branch_target_t : public arg_t
 class jump_target_t : public arg_t
 {
  public:
+  jump_target_t() {}
   virtual std::string to_string(insn_t insn) const
   {
     std::stringstream s;
