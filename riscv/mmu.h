@@ -4,6 +4,7 @@
 #include "decode.h"
 #include "trap.h"
 #include "common.h"
+#include "config.h"
 #include "processor.h"
 
 class processor_t;

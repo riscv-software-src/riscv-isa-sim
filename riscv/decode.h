@@ -3,8 +3,6 @@
 
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
-#include "common.h"
-#include "config.h"
 
 typedef int int128_t __attribute__((mode(TI)));
 typedef unsigned int uint128_t __attribute__((mode(TI)));
@@ -205,20 +203,6 @@ private:
 #define zext32(x) ((reg_t)(uint32_t)(x))
 #define sext_xprlen(x) (((sreg_t)(x) << (64-xprlen)) >> (64-xprlen))
 #define zext_xprlen(x) (((reg_t)(x) << (64-xprlen)) >> (64-xprlen))
-
-#ifndef RISCV_ENABLE_RVC
-# define set_pc(x) \
-  do { if((x) & (sizeof(insn_t)-1)) \
-       { badvaddr = (x); throw trap_instruction_address_misaligned; } \
-       npc = (x); \
-     } while(0)
-#else
-# define set_pc(x) \
-  do { if((x) & ((sr & SR_EC) ? 1 : 3)) \
-       { badvaddr = (x); throw trap_instruction_address_misaligned; } \
-       npc = (x); \
-     } while(0)
-#endif
 
 // RVC stuff
 

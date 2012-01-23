@@ -4,6 +4,7 @@
 #include "decode.h"
 #include <cstring>
 #include "trap.h"
+#include "config.h"
 
 #define MAX_UTS 2048
 
@@ -86,5 +87,19 @@ private:
 
   #include "dispatch.h"
 };
+
+#ifndef RISCV_ENABLE_RVC
+# define set_pc(x) \
+  do { if((x) & (sizeof(insn_t)-1)) \
+       { badvaddr = (x); throw trap_instruction_address_misaligned; } \
+       npc = (x); \
+     } while(0)
+#else
+# define set_pc(x) \
+  do { if((x) & ((sr & SR_EC) ? 1 : 3)) \
+       { badvaddr = (x); throw trap_instruction_address_misaligned; } \
+       npc = (x); \
+     } while(0)
+#endif
 
 #endif
