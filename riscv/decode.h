@@ -203,8 +203,8 @@ private:
 
 #define sext32(x) ((sreg_t)(int32_t)(x))
 #define zext32(x) ((reg_t)(uint32_t)(x))
-#define sext_xprlen(x) ((sreg_t(x) << (64-xprlen)) >> (64-xprlen))
-#define zext_xprlen(x) ((reg_t(x) << (64-xprlen)) >> (64-xprlen))
+#define sext_xprlen(x) (((sreg_t)(x) << (64-xprlen)) >> (64-xprlen))
+#define zext_xprlen(x) (((reg_t)(x) << (64-xprlen)) >> (64-xprlen))
 
 #ifndef RISCV_ENABLE_RVC
 # define set_pc(x) \
