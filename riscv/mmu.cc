@@ -60,7 +60,11 @@ pte_t mmu_t::walk(reg_t addr)
 {
   pte_t pte = 0;
 
-  if(!vm_enabled)
+  // the address must be a canonical sign-extended VA_BITS-bit number
+  int shift = 8*sizeof(reg_t) - VA_BITS;
+  if (((sreg_t)addr << shift >> shift) != addr)
+    ;
+  else if(!vm_enabled)
   {
     if(addr < memsz)
       pte = PTE_E | PTE_PERM | ((addr >> PGSHIFT) << PTE_PPN_SHIFT);

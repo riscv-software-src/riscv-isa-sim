@@ -15,7 +15,9 @@ const reg_t LEVELS = sizeof(pte_t) == sizeof(uint64_t) ? 3 : 2;
 const reg_t PGSHIFT = 13;
 const reg_t PGSIZE = 1 << PGSHIFT;
 const reg_t PTIDXBITS = PGSHIFT - (sizeof(pte_t) == 8 ? 3 : 2);
+const reg_t VPN_BITS = PTIDXBITS * LEVELS;
 const reg_t PPN_BITS = 8*sizeof(reg_t) - PGSHIFT;
+const reg_t VA_BITS = VPN_BITS + PGSHIFT;
 
 // page table entry (PTE) fields
 #define PTE_T    0x001 // Entry is a page Table descriptor
