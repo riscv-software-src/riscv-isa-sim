@@ -42,10 +42,11 @@ void* mmu_t::refill(reg_t addr, bool store, bool fetch)
   reg_t perm = (fetch ? PTE_UX : store ? PTE_UW : PTE_UR) | PTE_E;
   if(unlikely((pte_perm & perm) != perm))
   {
+    if (fetch)
+      throw trap_instruction_access_fault;
+
     badvaddr = addr;
-    throw store ? trap_store_access_fault
-        : fetch ? trap_instruction_access_fault
-        :         trap_load_access_fault;
+    throw store ? trap_store_access_fault : trap_load_access_fault;
   }
 
   tlb_load_tag[idx] = (pte_perm & PTE_UR) ? expected_tag : -1;
