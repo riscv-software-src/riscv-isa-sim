@@ -87,10 +87,15 @@ void sim_t::run(bool debug)
 
   for(running = true; running; )
   {
-    if(!debug)
-      step_all(100,100,false);
-    else
-      interactive();
+    for (int i = 0; i < 1000; i++)
+    {
+      if(!debug)
+        step_all(100,100,false);
+      else
+        interactive();
+    }
+
+    htif->poll();
   }
 }
 

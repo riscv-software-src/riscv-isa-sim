@@ -22,6 +22,9 @@ public:
   void wait_for_tohost_write();
   void wait_for_fromhost_write();
 
+  // check to see if there's a pending packet and process it if so
+  void poll();
+
 private:
   sim_t* sim;
   int tohost_fd;

@@ -54,4 +54,5 @@ int main(int argc, char** argv)
   // initalize simulator and run to completion
   sim_t s(nprocs, &htif);
   s.run(debug);
+  printf("graceful\n");
 }

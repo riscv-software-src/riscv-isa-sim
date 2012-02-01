@@ -7,6 +7,7 @@
 #include <errno.h>
 #include <assert.h>
 #include <stddef.h>
+#include <poll.h>
 
 enum
 {
@@ -77,6 +78,17 @@ void htif_t::nack(uint16_t nack_seqno)
 {
   packet p = {APP_CMD_NACK,nack_seqno,0,0};
   send_packet(&p);
+}
+
+void htif_t::poll()
+{
+  struct pollfd pfd;
+  pfd.fd = fromhost_fd;
+  pfd.events = POLLIN;
+  pfd.revents = 0;
+
+  if (::poll(&pfd, 1, 0) > 0)
+    wait_for_packet();
 }
 
 int htif_t::wait_for_packet()
