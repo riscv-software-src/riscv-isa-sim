@@ -12,6 +12,8 @@
 
 sim_t::sim_t(int _nprocs, htif_t* _htif)
   : htif(_htif),
+    tohost(0),
+    fromhost(0),
     procs(_nprocs),
     running(false)
 {
