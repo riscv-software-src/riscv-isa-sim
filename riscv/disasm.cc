@@ -439,7 +439,7 @@ disassembler::disassembler()
   DEFINE_RTYPE(sub);
   DEFINE_RTYPE(sll);
   DEFINE_RTYPE(slt);
-  DEFINE_RTYPE(sltiu);
+  DEFINE_RTYPE(sltu);
   DEFINE_RTYPE(xor);
   DEFINE_RTYPE(srl);
   DEFINE_RTYPE(sra);
