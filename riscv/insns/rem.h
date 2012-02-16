@@ -1,6 +1,8 @@
-if(RS2 == 0)
-  RD = RS1;
-else if(sreg_t(RS1) == INT64_MIN && sreg_t(RS2) == -1)
+sreg_t lhs = sext_xprlen(RS1);
+sreg_t rhs = sext_xprlen(RS2);
+if(rhs == 0)
+  RD = lhs;
+else if(lhs == INT64_MIN && rhs == -1)
   RD = 0;
 else
-  RD = sext_xprlen(sext_xprlen(RS1) % sext_xprlen(RS2));
+  RD = sext_xprlen(lhs % rhs);

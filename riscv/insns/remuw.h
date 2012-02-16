@@ -1,5 +1,7 @@
 require_xpr64;
-if(zext_xprlen(RS2) == 0)
-  RD = RS1;
+reg_t lhs = zext32(RS1);
+reg_t rhs = zext32(RS2);
+if(rhs == 0)
+  RD = lhs;
 else
-  RD = sext32(zext_xprlen(RS1) % zext_xprlen(RS2));
+  RD = sext32(lhs % rhs);
