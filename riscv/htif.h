@@ -29,9 +29,9 @@ private:
   sim_t* sim;
   int tohost_fd;
   int fromhost_fd;
-  uint16_t seqno;
+  uint8_t seqno;
 
-  void nack(uint16_t seqno);
+  void nack(uint8_t seqno);
   void send_packet(packet* p);
   int wait_for_packet();
 };
