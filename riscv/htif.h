@@ -29,6 +29,7 @@ private:
   sim_t* sim;
   int tohost_fd;
   int fromhost_fd;
+  bool reset;
   uint8_t seqno;
 
   void nack(uint8_t seqno);

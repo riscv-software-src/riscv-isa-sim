@@ -15,14 +15,12 @@ enum
   APP_CMD_WRITE_MEM,
   APP_CMD_READ_CONTROL_REG,
   APP_CMD_WRITE_CONTROL_REG,
-  APP_CMD_START,
-  APP_CMD_STOP,
   APP_CMD_ACK,
   APP_CMD_NACK
 };
 
-#define APP_MAX_DATA_SIZE 1024
-#define HTIF_DATA_ALIGN 8
+#define APP_MAX_DATA_SIZE 1024U
+#define HTIF_DATA_ALIGN 8U
 struct packet
 {
   reg_t cmd       :  4;
@@ -30,11 +28,12 @@ struct packet
   reg_t seqno     :  8;
   reg_t addr      : 40;
 
-  uint8_t  data[APP_MAX_DATA_SIZE];
+  uint64_t  data[APP_MAX_DATA_SIZE/8];
 };
 
 htif_t::htif_t(int _tohost_fd, int _fromhost_fd)
-  : sim(NULL), tohost_fd(_tohost_fd), fromhost_fd(_fromhost_fd), seqno(1)
+  : sim(NULL), tohost_fd(_tohost_fd), fromhost_fd(_fromhost_fd), seqno(1),
+    reset(true)
 {
 }
 
@@ -51,7 +50,8 @@ void htif_t::init(sim_t* _sim)
 
 void htif_t::wait_for_start()
 {
-  while(wait_for_packet() != APP_CMD_START);
+  while (reset)
+    wait_for_packet();
 }
 
 void htif_t::wait_for_tohost_write()
@@ -98,8 +98,8 @@ int htif_t::wait_for_packet()
   while(1)
   {
     packet p;
-    int bytes = read(fromhost_fd,&p,sizeof(p));
-    if(bytes < (int)offsetof(packet,data))
+    ssize_t bytes = read(fromhost_fd,&p,sizeof(p));
+    if(bytes < (ssize_t)offsetof(packet,data))
     {
       const char* error = bytes == -1 ? strerror(errno) : "too few bytes read";
       fprintf(stderr,"HTIF error: %s\n", error);
@@ -116,11 +116,6 @@ int htif_t::wait_for_packet()
 
     switch(p.cmd)
     {
-      case APP_CMD_START:
-        break;
-      case APP_CMD_STOP:
-        sim->stop();
-        break;
       case APP_CMD_READ_MEM:
         assert(p.data_size <= APP_MAX_DATA_SIZE/HTIF_DATA_ALIGN);
         assert(p.addr < sim->memsz/HTIF_DATA_ALIGN);
@@ -129,7 +124,7 @@ int htif_t::wait_for_packet()
 
         assert(HTIF_DATA_ALIGN == sizeof(uint64_t));
         for(size_t i = 0; i < p.data_size; i++)
-          ((uint64_t*)ackpacket.data)[i] = sim->mmu->load_uint64((p.addr+i)*HTIF_DATA_ALIGN);
+          ackpacket.data[i] = sim->mmu->load_uint64((p.addr+i)*HTIF_DATA_ALIGN);
         break;
       case APP_CMD_WRITE_MEM:
         assert(p.data_size*HTIF_DATA_ALIGN <= bytes - offsetof(packet,data));
@@ -137,19 +132,27 @@ int htif_t::wait_for_packet()
         assert(p.addr+p.data_size <= sim->memsz/HTIF_DATA_ALIGN);
 
         for(size_t i = 0; i < p.data_size; i++)
-          sim->mmu->store_uint64((p.addr+i)*HTIF_DATA_ALIGN, ((uint64_t*)p.data)[i]);
+          sim->mmu->store_uint64((p.addr+i)*HTIF_DATA_ALIGN, p.data[i]);
         break;
       case APP_CMD_READ_CONTROL_REG:
         assert(p.addr == 16);
         assert(p.data_size == 1);
         ackpacket.data_size = 1;
-        memcpy(ackpacket.data,&sim->tohost,sizeof(reg_t));
+        memcpy(ackpacket.data, &sim->tohost, sizeof(reg_t));
         break;
       case APP_CMD_WRITE_CONTROL_REG:
-        assert(p.addr == 17);
+        assert(p.addr == 17 || p.addr == 15);
         assert(p.data_size == 1);
         sim->tohost = 0;
-        memcpy(&sim->fromhost,p.data,sizeof(reg_t));
+        if (p.addr == 17)
+          memcpy(&sim->fromhost, p.data, sizeof(reg_t));
+        else if (p.addr == 15)
+        {
+          bool next_reset = p.data[0] & 1;
+          if (!reset && next_reset)
+            sim->stop();
+          reset = next_reset;
+        }
         break;
     }
 
