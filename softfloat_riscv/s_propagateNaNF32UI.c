@@ -17,39 +17,9 @@
 uint_fast32_t
  softfloat_propagateNaNF32UI( uint_fast32_t uiA, uint_fast32_t uiB )
 {
-    bool isNaNA, isSigNaNA, isNaNB, isSigNaNB;
-    uint_fast32_t uiMagA, uiMagB;
-
-    /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
-    isNaNA = isNaNF32UI( uiA );
-    isSigNaNA = softfloat_isSigNaNF32UI( uiA );
-    isNaNB = isNaNF32UI( uiB );
-    isSigNaNB = softfloat_isSigNaNF32UI( uiB );
-    /*------------------------------------------------------------------------
-    | Make NaNs non-signaling.
-    *------------------------------------------------------------------------*/
-    uiA |= 0x00400000;
-    uiB |= 0x00400000;
-    /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
-    if ( isSigNaNA | isSigNaNB ) {
+    if ( softfloat_isSigNaNF32UI( uiA ) | softfloat_isSigNaNF32UI( uiB ) ) {
         softfloat_raiseFlags( softfloat_flag_invalid );
     }
-    if ( isSigNaNA ) {
-        if ( isSigNaNB ) goto returnLargerSignificand;
-        return isNaNB ? uiB : uiA;
-    } else if ( isNaNA ) {
-        if ( isSigNaNB || ! isNaNB ) return uiA;
- returnLargerSignificand:
-        uiMagA = uiA<<1;
-        uiMagB = uiB<<1;
-        if ( uiMagA < uiMagB ) return uiB;
-        if ( uiMagB < uiMagA ) return uiA;
-        return ( uiA < uiB ) ? uiA : uiB;
-    } else {
-        return uiB;
-    }
-
+    return defaultNaNF32UI;
 }
 
