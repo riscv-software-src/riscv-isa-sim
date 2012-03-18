@@ -231,6 +231,7 @@ reg_t insn_func_867(insn_t insn, reg_t reg);
 reg_t insn_func_882(insn_t insn, reg_t reg);
 reg_t insn_func_889(insn_t insn, reg_t reg);
 reg_t insn_func_890(insn_t insn, reg_t reg);
+reg_t insn_func_891(insn_t insn, reg_t reg);
 reg_t insn_func_898(insn_t insn, reg_t reg);
 reg_t insn_func_914(insn_t insn, reg_t reg);
 reg_t insn_func_915(insn_t insn, reg_t reg);
