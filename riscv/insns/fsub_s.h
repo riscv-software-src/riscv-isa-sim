@@ -1,4 +1,4 @@
 require_fp;
 softfloat_roundingMode = RM;
-FRD = f32_sub(FRS1, FRS2);
+FRD = f32_mulAdd(FRS1, 0x3f800000, FRS2 ^ (uint32_t)INT32_MIN);
 set_fp_exceptions;
