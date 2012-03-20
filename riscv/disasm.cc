@@ -26,6 +26,20 @@ static const char* fpr_to_string[] = {
   "fs4", "fs5", "fs6", "fs7", "fs8", "fs9", "ft10", "ft11"
 };
 
+static const char* vxpr_to_string[] = {
+  "vx0",  "vx1",  "vx2",  "vx3",  "vx4",  "vx5",  "vx6",  "vx7",
+  "vx8",  "vx9",  "vx10", "vx11", "vx12", "vx13", "vx14", "vx15",
+  "vx16", "vx17", "vx18", "vx19", "vx20", "vx21", "vx22", "vx23",
+  "vx24", "vx25", "vx26", "vx27", "vx28", "vx29", "vx30", "vx31"
+};
+
+static const char* vfpr_to_string[] = {
+  "vf0",  "vf1",  "vf2",  "vf3",  "vf4",  "vf5",  "vf6",  "vf7",
+  "vf8",  "vf9",  "vf10", "vf11", "vf12", "vf13", "vf14", "vf15",
+  "vf16", "vf17", "vf18", "vf19", "vf20", "vf21", "vf22", "vf23",
+  "vf24", "vf25", "vf26", "vf27", "vf28", "vf29", "vf30", "vf31"
+};
+
 class load_address_t : public arg_t
 {
  public:
@@ -131,6 +145,70 @@ class frs3_reg_t : public arg_t
   virtual std::string to_string(insn_t insn) const
   {
     return fpr_to_string[insn.ftype.rs3];
+  }
+};
+
+class vxrd_reg_t : public arg_t
+{
+ public:
+  vxrd_reg_t() {}
+  virtual std::string to_string(insn_t insn) const
+  {
+    return vxpr_to_string[insn.itype.rd];
+  }
+};
+
+class vxrs1_reg_t : public arg_t
+{
+ public:
+  vxrs1_reg_t() {}
+  virtual std::string to_string(insn_t insn) const
+  {
+    return vxpr_to_string[insn.itype.rs1];
+  }
+};
+
+class vfrd_reg_t : public arg_t
+{
+ public:
+  vfrd_reg_t() {}
+  virtual std::string to_string(insn_t insn) const
+  {
+    return vfpr_to_string[insn.itype.rd];
+  }
+};
+
+class vfrs1_reg_t : public arg_t
+{
+ public:
+  vfrs1_reg_t() {}
+  virtual std::string to_string(insn_t insn) const
+  {
+    return vfpr_to_string[insn.itype.rs1];
+  }
+};
+
+class nxregs_reg_t : public arg_t
+{
+ public:
+  nxregs_reg_t() {}
+  virtual std::string to_string(insn_t insn) const
+  {
+    std::stringstream s;
+    s << (insn.itype.imm12 & 0x3f);
+    return s.str();
+  }
+};
+
+class nfregs_reg_t : public arg_t
+{
+ public:
+  nfregs_reg_t() {}
+  virtual std::string to_string(insn_t insn) const
+  {
+    std::stringstream s;
+    s << ((insn.itype.imm12 >> 6) & 0x3f);
+    return s.str();
   }
 };
 
@@ -304,6 +382,12 @@ disassembler::disassembler()
   static const bigimm_t _bigimm, *bigimm = &_bigimm;
   static const branch_target_t _branch_target, *branch_target = &_branch_target;
   static const jump_target_t _jump_target, *jump_target = &_jump_target;
+  static const vxrd_reg_t _vxrd_reg, *vxrd_reg = &_vxrd_reg;
+  static const vxrs1_reg_t _vxrs1_reg, *vxrs1_reg = &_vxrs1_reg;
+  static const vfrd_reg_t _vfrd_reg, *vfrd_reg = &_vfrd_reg;
+  static const vfrs1_reg_t _vfrs1_reg, *vfrs1_reg = &_vfrs1_reg;
+  static const nxregs_reg_t _nxregs_reg, *nxregs_reg = &_nxregs_reg;
+  static const nfregs_reg_t _nfregs_reg, *nfregs_reg = &_nfregs_reg;
 
   insn_t dummy;
   dummy.bits = 0;
@@ -357,6 +441,13 @@ disassembler::disassembler()
   #define DEFINE_FR3TYPE(code) DISASM_INSN(#code, code, 0, frd_reg, frs1_reg, frs2_reg, frs3_reg)
   #define DEFINE_FXTYPE(code) DISASM_INSN(#code, code, 0, xrd_reg, frs1_reg)
   #define DEFINE_XFTYPE(code) DISASM_INSN(#code, code, 0, frd_reg, xrs1_reg)
+
+  #define DEFINE_RS1(code) DISASM_INSN(#code, code, 0, xrs1_reg)
+  #define DEFINE_RS1_RS2(code) DISASM_INSN(#code, code, 0, xrs1_reg, xrs2_reg)
+  #define DEFINE_VEC_XMEM(code) DISASM_INSN(#code, code, 0, vxrd_reg, xrs1_reg)
+  #define DEFINE_VEC_XMEMST(code) DISASM_INSN(#code, code, 0, vxrd_reg, xrs1_reg, xrs2_reg)
+  #define DEFINE_VEC_FMEM(code) DISASM_INSN(#code, code, 0, vfrd_reg, xrs1_reg)
+  #define DEFINE_VEC_FMEMST(code) DISASM_INSN(#code, code, 0, vfrd_reg, xrs1_reg, xrs2_reg)
 
   DEFINE_XLOAD(lb)
   DEFINE_XLOAD(lbu)
@@ -419,6 +510,7 @@ disassembler::disassembler()
   DEFINE_ITYPE(jalr_r);
   DEFINE_ITYPE(jalr_j);
 
+  add_insn(new disasm_insn_t("nop", match_addi, mask_addi | mask_rd | mask_rs1 | mask_imm));
   DEFINE_I0TYPE("li", addi);
   DEFINE_I1TYPE("move", addi);
   DEFINE_ITYPE(addi);
@@ -479,6 +571,18 @@ disassembler::disassembler()
   DEFINE_NOARG(eret)
   DEFINE_DTYPE(ei)
   DEFINE_DTYPE(di)
+
+  DEFINE_RS1(vxcptsave);
+  DEFINE_RS1(vxcptrestore);
+  DEFINE_NOARG(vxcptkill);
+
+  DEFINE_RS1(vxcptevac);
+  DEFINE_NOARG(vxcptwait);
+  DEFINE_NOARG(vxcpthold);
+  DEFINE_RS1_RS2(venqcmd);
+  DEFINE_RS1_RS2(venqimm1);
+  DEFINE_RS1_RS2(venqimm2);
+  DEFINE_RS1_RS2(venqcnt);
 
   DEFINE_FRTYPE(fadd_s);
   DEFINE_FRTYPE(fsub_s);
@@ -543,6 +647,58 @@ disassembler::disassembler()
   add_insn(new disasm_insn_t("mtfsr", match_mtfsr, mask_mtfsr | mask_rd, xrs1_reg));
   add_insn(new disasm_insn_t("mtfsr", match_mtfsr, mask_mtfsr, xrd_reg, xrs1_reg));
   DEFINE_DTYPE(mffsr);
+
+  DEFINE_VEC_XMEM(vld);
+  DEFINE_VEC_XMEM(vlw);
+  DEFINE_VEC_XMEM(vlwu);
+  DEFINE_VEC_XMEM(vlh);
+  DEFINE_VEC_XMEM(vlhu);
+  DEFINE_VEC_XMEM(vlb);
+  DEFINE_VEC_XMEM(vlbu);
+  DEFINE_VEC_FMEM(vfld);
+  DEFINE_VEC_FMEM(vflw);
+  DEFINE_VEC_XMEMST(vlstd);
+  DEFINE_VEC_XMEMST(vlstw);
+  DEFINE_VEC_XMEMST(vlstwu);
+  DEFINE_VEC_XMEMST(vlsth);
+  DEFINE_VEC_XMEMST(vlsthu);
+  DEFINE_VEC_XMEMST(vlstb);
+  DEFINE_VEC_XMEMST(vlstbu);
+  DEFINE_VEC_FMEMST(vflstd);
+  DEFINE_VEC_FMEMST(vflstw);
+
+  DEFINE_VEC_XMEM(vsd);
+  DEFINE_VEC_XMEM(vsw);
+  DEFINE_VEC_XMEM(vsh);
+  DEFINE_VEC_XMEM(vsb);
+  DEFINE_VEC_FMEM(vfsd);
+  DEFINE_VEC_FMEM(vfsw);
+  DEFINE_VEC_XMEMST(vsstd);
+  DEFINE_VEC_XMEMST(vsstw);
+  DEFINE_VEC_XMEMST(vssth);
+  DEFINE_VEC_XMEMST(vsstb);
+  DEFINE_VEC_FMEMST(vfsstd);
+  DEFINE_VEC_FMEMST(vfsstw);
+
+  DISASM_INSN("vmvv", vmvv, 0, vxrd_reg, vxrs1_reg);
+  DISASM_INSN("vmsv", vmsv, 0, vxrd_reg, xrs1_reg);
+  DISASM_INSN("vmst", vmst, 0, vxrd_reg, xrs1_reg, xrs2_reg);
+  DISASM_INSN("vmts", vmts, 0, xrd_reg, vxrs1_reg, xrs2_reg);
+  DISASM_INSN("vfmvv", vfmvv, 0, vfrd_reg, vfrs1_reg);
+  DISASM_INSN("vfmsv", vfmsv, 0, vfrd_reg, frs1_reg);
+  DISASM_INSN("vfmst", vfmst, 0, vfrd_reg, frs1_reg, frs2_reg);
+  DISASM_INSN("vfmts", vfmts, 0, frd_reg, vfrs1_reg, frs2_reg);
+
+  DEFINE_RS1_RS2(vvcfg);
+  DEFINE_RS1_RS2(vtcfg);
+
+  DISASM_INSN("vvcfgivl", vvcfgivl, 0, xrd_reg, xrs1_reg, nxregs_reg, nfregs_reg);
+  DISASM_INSN("vtcfgivl", vtcfgivl, 0, xrd_reg, xrs1_reg, nxregs_reg, nfregs_reg);
+  DISASM_INSN("vsetvl", vsetvl, 0, xrd_reg, xrs1_reg);
+  DISASM_INSN("vf", vf, 0, xrs1_reg, imm);
+
+  DEFINE_NOARG(fence_v_l);
+  DEFINE_NOARG(fence_v_g);
 
   // provide a default disassembly for all instructions as a fallback
   #define DECLARE_INSN(code, match, mask) \
