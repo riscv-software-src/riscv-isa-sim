@@ -83,7 +83,7 @@ uint_fast32_t softfloat_propagateNaNF32UI( uint_fast32_t, uint_fast32_t );
 /*----------------------------------------------------------------------------
 | The pattern for a default generated double-precision NaN.
 *----------------------------------------------------------------------------*/
-#define defaultNaNF64UI UINT64_C(0xFFF8000000000000)
+#define defaultNaNF64UI UINT64_C(0xFFFFFFFFFFFFFFFF)
 
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
