@@ -137,6 +137,22 @@ union insn_t
 };
 
 #include <stdio.h>
+template <class T>
+class write_port_t
+{
+public:
+  write_port_t(T& _t) : t(_t) {}
+  T& operator = (const T& rhs)
+  {
+    return t = rhs;
+  }
+  operator T()
+  {
+    return t;
+  }
+private:
+  T& t;
+};
 template <class T, size_t N, bool zero_reg>
 class regfile_t
 {
@@ -145,15 +161,15 @@ public:
   {
     memset(data, 0, sizeof(data));
   }
-  T& operator [] (size_t i)
+  write_port_t<T> write_port(size_t i)
   {
-    if (zero_reg)
-      data[0] = 0;
-    return data[i];
+    return write_port_t<T>(data[i]);
   }
   const T& operator [] (size_t i) const
   {
-    return const_cast<regfile_t<T,N,zero_reg>&>(*this)[i];
+    if (zero_reg)
+      const_cast<T&>(data[0]) = 0;
+    return data[i];
   }
 private:
   T data[N];
@@ -166,12 +182,12 @@ private:
 // helpful macros, etc
 #define RS1 XPR[insn.rtype.rs1]
 #define RS2 XPR[insn.rtype.rs2]
-#define RD XPR[insn.rtype.rd]
-#define RA XPR[1]
+#define RD XPR.write_port(insn.rtype.rd)
+#define RA XPR.write_port(1)
 #define FRS1 FPR[insn.ftype.rs1]
 #define FRS2 FPR[insn.ftype.rs2]
 #define FRS3 FPR[insn.ftype.rs3]
-#define FRD FPR[insn.ftype.rd]
+#define FRD FPR.write_port(insn.ftype.rd)
 #define BIGIMM insn.ltype.bigimm
 #define SIMM insn.itype.imm12
 #define BIMM ((signed)insn.btype.immlo | (insn.btype.immhi << IMMLO_BITS))
@@ -211,7 +227,7 @@ private:
 #define require_rvc if(!(sr & SR_EC)) throw_illegal_instruction
 
 #define CRD_REGNUM ((insn.bits >> 5) & 0x1f)
-#define CRD XPR[CRD_REGNUM]
+#define CRD XPR.write_port(CRD_REGNUM)
 #define CRS1 XPR[(insn.bits >> 10) & 0x1f]
 #define CRS2 XPR[(insn.bits >> 5) & 0x1f]
 #define CIMM6 ((int32_t)((insn.bits >> 10) & 0x3f) << 26 >> 26)
@@ -225,8 +241,8 @@ static const int rvc_rs1_regmap[8] = { 20, 21, 2, 3, 4, 5, 6, 7 };
 #define rvc_rd_regmap rvc_rs1_regmap
 #define rvc_rs2b_regmap rvc_rs1_regmap
 static const int rvc_rs2_regmap[8] = { 20, 21, 2, 3, 4, 5, 6, 0 };
-#define CRDS XPR[rvc_rd_regmap[(insn.bits >> 13) & 0x7]]
-#define FCRDS FPR[rvc_rd_regmap[(insn.bits >> 13) & 0x7]]
+#define CRDS XPR.write_port(rvc_rd_regmap[(insn.bits >> 13) & 0x7])
+#define FCRDS FPR.write_port(rvc_rd_regmap[(insn.bits >> 13) & 0x7])
 #define CRS1S XPR[rvc_rs1_regmap[(insn.bits >> 10) & 0x7]]
 #define CRS2S XPR[rvc_rs2_regmap[(insn.bits >> 13) & 0x7]]
 #define CRS2BS XPR[rvc_rs2b_regmap[(insn.bits >> 5) & 0x7]]
@@ -237,12 +253,12 @@ static const int rvc_rs2_regmap[8] = { 20, 21, 2, 3, 4, 5, 6, 0 };
 
 #define UT_RS1(idx) uts[idx]->XPR[insn.rtype.rs1]
 #define UT_RS2(idx) uts[idx]->XPR[insn.rtype.rs2]
-#define UT_RD(idx) uts[idx]->XPR[insn.rtype.rd]
-#define UT_RA(idx) uts[idx]->XPR[1]
+#define UT_RD(idx) uts[idx]->XPR.write_port(insn.rtype.rd)
+#define UT_RA(idx) uts[idx]->XPR.write_port(1)
 #define UT_FRS1(idx) uts[idx]->FPR[insn.ftype.rs1]
 #define UT_FRS2(idx) uts[idx]->FPR[insn.ftype.rs2]
 #define UT_FRS3(idx) uts[idx]->FPR[insn.ftype.rs3]
-#define UT_FRD(idx) uts[idx]->FPR[insn.ftype.rd]
+#define UT_FRD(idx) uts[idx]->FPR.write_port(insn.ftype.rd)
 #define UT_RM(idx) ((insn.ftype.rm != 7) ? insn.ftype.rm : \
               ((uts[idx]->fsr & FSR_RD) >> FSR_RD_SHIFT))
 
