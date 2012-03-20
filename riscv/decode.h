@@ -137,26 +137,26 @@ union insn_t
 };
 
 #include <stdio.h>
-class do_writeback
+template <class T, size_t N, bool zero_reg>
+class regfile_t
 {
 public:
-  do_writeback(reg_t* _rf, int _rd) : rf(_rf), rd(_rd) {}
-
-  const do_writeback& operator = (reg_t rhs)
+  void reset()
   {
-#if 0
-    printf("R[%x] <= %llx\n",rd,(long long)rhs);
-#endif
-    rf[rd] = rhs;
-    rf[0] = 0;
-    return *this;
+    memset(data, 0, sizeof(data));
   }
-
-  operator reg_t() { return rf[rd]; }
-
+  T& operator [] (size_t i)
+  {
+    if (zero_reg)
+      data[0] = 0;
+    return data[i];
+  }
+  const T& operator [] (size_t i) const
+  {
+    return const_cast<regfile_t<T,N,zero_reg>&>(*this)[i];
+  }
 private:
-  reg_t* rf;
-  int rd;
+  T data[N];
 };
 
 #define throw_illegal_instruction \
@@ -166,8 +166,8 @@ private:
 // helpful macros, etc
 #define RS1 XPR[insn.rtype.rs1]
 #define RS2 XPR[insn.rtype.rs2]
-#define RD do_writeback(XPR,insn.rtype.rd)
-#define RA do_writeback(XPR,1)
+#define RD XPR[insn.rtype.rd]
+#define RA XPR[1]
 #define FRS1 FPR[insn.ftype.rs1]
 #define FRS2 FPR[insn.ftype.rs2]
 #define FRS3 FPR[insn.ftype.rs3]
@@ -211,7 +211,7 @@ private:
 #define require_rvc if(!(sr & SR_EC)) throw_illegal_instruction
 
 #define CRD_REGNUM ((insn.bits >> 5) & 0x1f)
-#define CRD do_writeback(XPR, CRD_REGNUM)
+#define CRD XPR[CRD_REGNUM]
 #define CRS1 XPR[(insn.bits >> 10) & 0x1f]
 #define CRS2 XPR[(insn.bits >> 5) & 0x1f]
 #define CIMM6 ((int32_t)((insn.bits >> 10) & 0x3f) << 26 >> 26)
@@ -237,8 +237,8 @@ static const int rvc_rs2_regmap[8] = { 20, 21, 2, 3, 4, 5, 6, 0 };
 
 #define UT_RS1(idx) uts[idx]->XPR[insn.rtype.rs1]
 #define UT_RS2(idx) uts[idx]->XPR[insn.rtype.rs2]
-#define UT_RD(idx) do_writeback(uts[idx]->XPR,insn.rtype.rd)
-#define UT_RA(idx) do_writeback(uts[idx]->XPR,1)
+#define UT_RD(idx) uts[idx]->XPR[insn.rtype.rd]
+#define UT_RA(idx) uts[idx]->XPR[1]
 #define UT_FRS1(idx) uts[idx]->FPR[insn.ftype.rs1]
 #define UT_FRS2(idx) uts[idx]->FPR[insn.ftype.rs2]
 #define UT_FRS3(idx) uts[idx]->FPR[insn.ftype.rs3]

@@ -28,8 +28,8 @@ private:
   mmu_t& mmu; // main memory is always accessed via the mmu
 
   // user-visible architected state
-  reg_t XPR[NXPR];
-  freg_t FPR[NFPR];
+  regfile_t<reg_t, NXPR, true> XPR;
+  regfile_t<freg_t, NFPR, false> FPR;
   reg_t pc;
 
   // counters

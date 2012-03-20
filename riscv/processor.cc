@@ -48,8 +48,8 @@ void processor_t::reset()
 
   // the following state is undefined upon boot-up,
   // but we zero it for determinism
-  memset(XPR,0,sizeof(XPR));
-  memset(FPR,0,sizeof(FPR));
+  XPR.reset();
+  FPR.reset();
 
   pc = 0;
   epc = 0;

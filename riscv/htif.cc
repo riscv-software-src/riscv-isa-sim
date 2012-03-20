@@ -32,8 +32,8 @@ struct packet
 };
 
 htif_t::htif_t(int _tohost_fd, int _fromhost_fd)
-  : sim(NULL), tohost_fd(_tohost_fd), fromhost_fd(_fromhost_fd), seqno(1),
-    reset(true)
+  : sim(NULL), tohost_fd(_tohost_fd), fromhost_fd(_fromhost_fd),
+    reset(true), seqno(1)
 {
 }
 
