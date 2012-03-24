@@ -63,6 +63,11 @@ void sim_t::set_tohost(reg_t val)
   htif->wait_for_tohost_write();
 }
 
+reg_t sim_t::get_tohost()
+{
+  return tohost;
+}
+
 reg_t sim_t::get_fromhost()
 {
   htif->wait_for_fromhost_write();

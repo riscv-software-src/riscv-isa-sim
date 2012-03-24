@@ -23,7 +23,7 @@ processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id,
   : sim(*_sim), mmu(*_mmu), id(_id)
 {
   reset();
-  set_sr(sr | SR_EF | SR_EV);
+  set_pcr(PCR_SR, sr | SR_EF | SR_EV);
   utidx = _utidx;
 
   // microthreads don't possess their own microthreads
@@ -43,7 +43,7 @@ void processor_t::reset()
   // is in supervisor mode, and in 64-bit mode, if supported, with traps
   // and virtual memory disabled.  we accomplish this by setting EVEC to
   // 0x2000 and *enabling* traps, then sending the core an IPI.
-  set_sr(SR_S | SR_SX | SR_ET | SR_IM);
+  set_pcr(PCR_SR, SR_S | SR_S64 | SR_ET | SR_IM);
   evec = 0x2000;
 
   // the following state is undefined upon boot-up,
@@ -71,32 +71,6 @@ void processor_t::reset()
   nxfpr_bank = 256;
   nxpr_use = 32;
   nfpr_use = 32;
-}
-
-void processor_t::set_sr(uint32_t val)
-{
-  sr = val & ~SR_ZERO; // clear SR bits that read as zero
-
-#ifndef RISCV_ENABLE_64BIT
-  sr &= ~(SR_SX | SR_UX); // SX=UX=0 for RV32 implementations
-#endif
-#ifndef RISCV_ENABLE_FPU
-  sr &= ~SR_EF;
-#endif
-#ifndef RISCV_ENABLE_RVC
-  sr &= ~SR_EC;
-#endif
-#ifndef RISCV_ENABLE_VEC
-  sr &= ~SR_EV;
-#endif
-
-  // update MMU state and flush TLB
-  mmu.set_vm_enabled(sr & SR_VM);
-  mmu.set_supervisor(sr & SR_S);
-  mmu.flush_tlb();
-
-  // set the fixed-point register length
-  xprlen = ((sr & SR_S) ? (sr & SR_SX) : (sr & SR_UX)) ? 64 : 32;
 }
 
 void processor_t::set_fsr(uint32_t val)
@@ -127,7 +101,7 @@ void processor_t::take_interrupt()
   if(interrupts && (sr & SR_ET))
     for(int i = 0; ; i++, interrupts >>= 1)
       if(interrupts & 1)
-        throw (trap_t)(trap_irq0 + i);
+        throw interrupt_t(i);
 }
 
 void processor_t::step(size_t n, bool noisy)
@@ -178,6 +152,11 @@ void processor_t::step(size_t n, bool noisy)
     i++;
     take_trap(t,noisy);
   }
+  catch(interrupt_t t)
+  {
+    i++;
+    take_trap((1ULL << (8*sizeof(reg_t)-1)) + t.i, noisy);
+  }
   catch(vt_command_t cmd)
   {
     // this microthread has finished
@@ -198,17 +177,17 @@ void processor_t::step(size_t n, bool noisy)
   uint32_t old_count = count;
   count += i;
   if(old_count < compare && uint64_t(old_count) + i >= compare)
-    interrupts_pending |= 1 << TIMER_IRQ;
+    interrupts_pending |= 1 << IRQ_TIMER;
 }
 
-void processor_t::take_trap(trap_t t, bool noisy)
+void processor_t::take_trap(reg_t t, bool noisy)
 {
   if(noisy)
     printf("core %3d: trap %s, pc 0x%016llx\n",
-           id, trap_name(t), (unsigned long long)pc);
+           id, trap_name(trap_t(t)), (unsigned long long)pc);
 
   // switch to supervisor, set previous supervisor bit, disable traps
-  set_sr((((sr & ~SR_ET) | SR_S) & ~SR_PS) | ((sr & SR_S) ? SR_PS : 0));
+  set_pcr(PCR_SR, (((sr & ~SR_ET) | SR_S) & ~SR_PS) | ((sr & SR_S) ? SR_PS : 0));
   cause = t;
   epc = pc;
   pc = evec;
@@ -217,7 +196,7 @@ void processor_t::take_trap(trap_t t, bool noisy)
 
 void processor_t::deliver_ipi()
 {
-  interrupts_pending |= 1 << IPI_IRQ;
+  interrupts_pending |= 1 << IRQ_IPI;
   run = true;
 }
 
@@ -227,4 +206,105 @@ void processor_t::disasm(insn_t insn, reg_t pc)
   static disassembler disasm;
   printf("core %3d: 0x%016llx (0x%08x) %s\n", id, (unsigned long long)pc,
          insn.bits, disasm.disassemble(insn).c_str());
+}
+
+void processor_t::set_pcr(int which, reg_t val)
+{
+  switch (which)
+  {
+    case PCR_SR:
+      sr = val & ~SR_ZERO; // clear SR bits that read as zero
+#ifndef RISCV_ENABLE_64BIT
+      sr &= ~(SR_S64 | SR_U64);
+#endif
+#ifndef RISCV_ENABLE_FPU
+      sr &= ~SR_EF;
+#endif
+#ifndef RISCV_ENABLE_RVC
+      sr &= ~SR_EC;
+#endif
+#ifndef RISCV_ENABLE_VEC
+      sr &= ~SR_EV;
+#endif
+      // update MMU state and flush TLB
+      mmu.set_vm_enabled(sr & SR_VM);
+      mmu.set_supervisor(sr & SR_S);
+      mmu.flush_tlb();
+      // set the fixed-point register length
+      xprlen = ((sr & SR_S) ? (sr & SR_S64) : (sr & SR_U64)) ? 64 : 32;
+      break;
+    case PCR_EPC:
+      epc = val;
+      break;
+    case PCR_EVEC: 
+      evec = val;
+      break;
+    case PCR_COUNT:
+      count = val;
+      break;
+    case PCR_COMPARE:
+      interrupts_pending &= ~(1 << IRQ_TIMER);
+      compare = val;
+      break;
+    case PCR_PTBR:
+      mmu.set_ptbr(val);
+      break;
+    case PCR_SEND_IPI:
+      sim.send_ipi(val);
+      break;
+    case PCR_CLR_IPI:
+      interrupts_pending &= ~(1 << IRQ_IPI);
+      break;
+    case PCR_K0:
+      pcr_k0 = val;
+      break;
+    case PCR_K1:
+      pcr_k1 = val;
+      break;
+    case PCR_VECBANK:
+      vecbanks = val & 0xff;
+      vecbanks_count = __builtin_popcountll(vecbanks);
+      break;
+    case PCR_TOHOST:
+      sim.set_tohost(val);
+      break;
+  }
+}
+
+reg_t processor_t::get_pcr(int which)
+{
+  switch (which)
+  {
+    case PCR_SR:
+      return sr;
+    case PCR_EPC:
+      return epc;
+    case PCR_BADVADDR:
+      return badvaddr;
+    case PCR_EVEC:
+      return evec;
+    case PCR_COUNT:
+      return count;
+    case PCR_COMPARE:
+      return compare;
+    case PCR_CAUSE:
+      return cause;
+    case PCR_PTBR:
+      return mmu.get_ptbr();
+    case PCR_COREID:
+      return id;
+    case PCR_IMPL:
+      return 1;
+    case PCR_K0:
+      return pcr_k0;
+    case PCR_K1:
+      return pcr_k1;
+    case PCR_VECBANK:
+      return vecbanks;
+    case PCR_TOHOST:
+      return sim.get_tohost();
+    case PCR_FROMHOST:
+      return sim.get_fromhost();
+  }
+  return -1;
 }

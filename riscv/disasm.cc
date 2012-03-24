@@ -219,7 +219,7 @@ class pcr_reg_t : public arg_t
   virtual std::string to_string(insn_t insn) const
   {
     std::stringstream s;
-    s << "pcr" << insn.rtype.rs2;
+    s << "pcr" << insn.rtype.rs1;
     return s.str();
   }
 };
@@ -565,19 +565,19 @@ disassembler::disassembler()
   DEFINE_DTYPE(rdtime);
   DEFINE_DTYPE(rdinstret);
 
-  add_insn(new disasm_insn_t("mtpcr", match_mtpcr, mask_mtpcr, xrs1_reg, pcr_reg));
+  add_insn(new disasm_insn_t("mtpcr", match_mtpcr, mask_mtpcr | mask_rd, xrs2_reg, pcr_reg));
+  add_insn(new disasm_insn_t("mtpcr", match_mtpcr, mask_mtpcr, xrd_reg, xrs2_reg, pcr_reg));
   add_insn(new disasm_insn_t("mfpcr", match_mfpcr, mask_mfpcr, xrd_reg, pcr_reg));
-  DEFINE_NOARG(cflush)
+  add_insn(new disasm_insn_t("setpcr", match_setpcr, mask_setpcr, xrd_reg, pcr_reg, imm));
+  add_insn(new disasm_insn_t("clearpcr", match_clearpcr, mask_clearpcr, xrd_reg, pcr_reg, imm));
   DEFINE_NOARG(eret)
-  DEFINE_DTYPE(ei)
-  DEFINE_DTYPE(di)
+  DEFINE_NOARG(cflush)
 
   DEFINE_RS1(vxcptsave);
   DEFINE_RS1(vxcptrestore);
   DEFINE_NOARG(vxcptkill);
 
   DEFINE_RS1(vxcptevac);
-  DEFINE_NOARG(vxcptwait);
   DEFINE_NOARG(vxcpthold);
   DEFINE_RS1_RS2(venqcmd);
   DEFINE_RS1_RS2(venqimm1);

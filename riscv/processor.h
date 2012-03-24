@@ -41,10 +41,10 @@ private:
   reg_t evec;
   reg_t pcr_k0;
   reg_t pcr_k1;
-  uint32_t cause;
+  reg_t cause;
   uint32_t interrupts_pending;
   uint32_t id;
-  uint32_t sr; // only modify the status register using set_sr()
+  uint32_t sr; // only modify the status register using set_pcr()
   uint32_t fsr;
   uint32_t count;
   uint32_t compare;
@@ -58,9 +58,10 @@ private:
   // functions
   void reset(); // resets architected state; halts processor if it was running
   void take_interrupt(); // take a trap if any interrupts are pending
-  void set_sr(uint32_t val); // set the status register
+  void set_pcr(int which, reg_t val);
+  reg_t get_pcr(int which);
   void set_fsr(uint32_t val); // set the floating-point status register
-  void take_trap(trap_t t, bool noisy); // take an exception
+  void take_trap(reg_t t, bool noisy); // take an exception
   void disasm(insn_t insn, reg_t pc); // disassemble and print an instruction
 
   // vector stuff

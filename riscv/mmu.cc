@@ -63,7 +63,7 @@ pte_t mmu_t::walk(reg_t addr)
 
   // the address must be a canonical sign-extended VA_BITS-bit number
   int shift = 8*sizeof(reg_t) - VA_BITS;
-  if (((sreg_t)addr << shift >> shift) != addr)
+  if (((sreg_t)addr << shift >> shift) != (sreg_t)addr)
     ;
   else if(!vm_enabled)
   {

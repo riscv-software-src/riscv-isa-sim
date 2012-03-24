@@ -3,6 +3,7 @@
 
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
+#include "pcr.h"
 
 typedef int int128_t __attribute__((mode(TI)));
 typedef unsigned int uint128_t __attribute__((mode(TI)));
@@ -30,21 +31,6 @@ const int RM_BITS = 3;
 const int BIGIMM_BITS = 20;
 const int BRANCH_ALIGN_BITS = 1;
 const int JUMP_ALIGN_BITS = 1;
-
-#define SR_ET    0x0000000000000001ULL
-#define SR_EF    0x0000000000000002ULL
-#define SR_EV    0x0000000000000004ULL
-#define SR_EC    0x0000000000000008ULL
-#define SR_PS    0x0000000000000010ULL
-#define SR_S     0x0000000000000020ULL
-#define SR_UX    0x0000000000000040ULL
-#define SR_SX    0x0000000000000080ULL
-#define SR_IM    0x000000000000FF00ULL
-#define SR_VM    0x0000000000010000ULL
-#define SR_ZERO  ~(SR_ET|SR_EF|SR_EV|SR_EC|SR_PS|SR_S|SR_UX|SR_SX|SR_IM|SR_VM)
-#define SR_IM_SHIFT 8
-#define IPI_IRQ 5
-#define TIMER_IRQ 7
 
 #define FP_RD_NE  0
 #define FP_RD_0   1

@@ -135,18 +135,18 @@ int htif_t::wait_for_packet()
           sim->mmu->store_uint64((p.addr+i)*HTIF_DATA_ALIGN, p.data[i]);
         break;
       case APP_CMD_READ_CONTROL_REG:
-        assert(p.addr == 16);
+        assert(p.addr == PCR_TOHOST);
         assert(p.data_size == 1);
         ackpacket.data_size = 1;
         memcpy(ackpacket.data, &sim->tohost, sizeof(reg_t));
         break;
       case APP_CMD_WRITE_CONTROL_REG:
-        assert(p.addr == 17 || p.addr == 15);
+        assert(p.addr == PCR_FROMHOST || p.addr == PCR_RESET);
         assert(p.data_size == 1);
         sim->tohost = 0;
-        if (p.addr == 17)
+        if (p.addr == PCR_FROMHOST)
           memcpy(&sim->fromhost, p.data, sizeof(reg_t));
-        else if (p.addr == 15)
+        else if (p.addr == PCR_RESET)
         {
           bool next_reset = p.data[0] & 1;
           if (!reset && next_reset)

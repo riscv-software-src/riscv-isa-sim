@@ -18,14 +18,6 @@
   DECLARE_TRAP(vector_bank), \
   DECLARE_TRAP(vector_illegal_instruction), \
   DECLARE_TRAP(reserved1), \
-  DECLARE_TRAP(irq0), \
-  DECLARE_TRAP(irq1), \
-  DECLARE_TRAP(irq2), \
-  DECLARE_TRAP(irq3), \
-  DECLARE_TRAP(irq4), \
-  DECLARE_TRAP(irq5), \
-  DECLARE_TRAP(irq6), \
-  DECLARE_TRAP(irq7), \
 
 #define DECLARE_TRAP(x) trap_##x
 enum trap_t
@@ -35,6 +27,7 @@ enum trap_t
 };
 #undef DECLARE_TRAP
 
+struct interrupt_t { interrupt_t(int which) : i(which) {} int i; };
 struct halt_t {}; // thrown to stop the processor from running
 
 extern "C" const char* trap_name(trap_t t);
