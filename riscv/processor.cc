@@ -3,6 +3,7 @@
 #include "config.h"
 #include "sim.h"
 #include "disasm.h"
+#include <inttypes.h>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
@@ -183,8 +184,14 @@ void processor_t::step(size_t n, bool noisy)
 void processor_t::take_trap(reg_t t, bool noisy)
 {
   if(noisy)
-    printf("core %3d: trap %s, pc 0x%016llx\n",
-           id, trap_name(trap_t(t)), (unsigned long long)pc);
+  {
+    if ((sreg_t)t < 0)
+      printf("core %3d: interrupt %lld, pc 0x%016llx\n",
+             id, (long long)(t << 1 >> 1), (unsigned long long)pc);
+    else
+      printf("core %3d: trap %s, pc 0x%016llx\n",
+             id, trap_name(trap_t(t)), (unsigned long long)pc);
+  }
 
   // switch to supervisor, set previous supervisor bit, disable traps
   set_pcr(PCR_SR, (((sr & ~SR_ET) | SR_S) & ~SR_PS) | ((sr & SR_S) ? SR_PS : 0));
@@ -196,7 +203,7 @@ void processor_t::take_trap(reg_t t, bool noisy)
 
 void processor_t::deliver_ipi()
 {
-  interrupts_pending |= 1 << IRQ_IPI;
+  set_pcr(PCR_CLR_IPI, 1);
   run = true;
 }
 
@@ -253,7 +260,10 @@ void processor_t::set_pcr(int which, reg_t val)
       sim.send_ipi(val);
       break;
     case PCR_CLR_IPI:
-      interrupts_pending &= ~(1 << IRQ_IPI);
+      if (val & 1)
+        interrupts_pending |= (1 << IRQ_IPI);
+      else
+        interrupts_pending &= ~(1 << IRQ_IPI);
       break;
     case PCR_K0:
       pcr_k0 = val;
@@ -266,7 +276,12 @@ void processor_t::set_pcr(int which, reg_t val)
       vecbanks_count = __builtin_popcountll(vecbanks);
       break;
     case PCR_TOHOST:
-      sim.set_tohost(val);
+      fromhost = 0;
+      tohost = val;
+      break;
+    case PCR_FROMHOST:
+      fromhost = val;
+      tohost = 0;
       break;
   }
 }
@@ -302,9 +317,9 @@ reg_t processor_t::get_pcr(int which)
     case PCR_VECBANK:
       return vecbanks;
     case PCR_TOHOST:
-      return sim.get_tohost();
+      return tohost;
     case PCR_FROMHOST:
-      return sim.get_fromhost();
+      return fromhost;
   }
   return -1;
 }

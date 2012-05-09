@@ -18,11 +18,6 @@ public:
   // run the simulation to completion
   void run(bool debug);
 
-  // communicate with the host machine
-  void set_tohost(reg_t val);
-  reg_t get_tohost();
-  reg_t get_fromhost();
-
   // deliver an IPI to a specific processor
   void send_ipi(reg_t who);
 

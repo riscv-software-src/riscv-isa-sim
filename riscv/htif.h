@@ -14,16 +14,8 @@ public:
   ~htif_t();
   void init(sim_t* _sim);
 
-  // wait for host to send start command
   void wait_for_start();
-
-  // we block on the host if the target machine reads the fromhost register,
-  // which provides determinism in tohost/fromhost communication.
-  void wait_for_tohost_write();
-  void wait_for_fromhost_write();
-
-  // check to see if there's a pending packet and process it if so
-  void poll();
+  int wait_for_packet();
 
 private:
   sim_t* sim;
@@ -34,7 +26,6 @@ private:
 
   void nack(uint8_t seqno);
   void send_packet(packet* p);
-  int wait_for_packet();
 };
 
 #endif

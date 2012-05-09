@@ -54,16 +54,6 @@ void htif_t::wait_for_start()
     wait_for_packet();
 }
 
-void htif_t::wait_for_tohost_write()
-{
-  while(wait_for_packet() != APP_CMD_READ_CONTROL_REG);
-}
-
-void htif_t::wait_for_fromhost_write()
-{
-  while(wait_for_packet() != APP_CMD_WRITE_CONTROL_REG);
-}
-
 void htif_t::send_packet(packet* p)
 {
   size_t data_size = p->data_size*HTIF_DATA_ALIGN;
@@ -80,17 +70,6 @@ void htif_t::nack(uint8_t nack_seqno)
 {
   packet p = {APP_CMD_NACK,0,nack_seqno,0};
   send_packet(&p);
-}
-
-void htif_t::poll()
-{
-  struct pollfd pfd;
-  pfd.fd = fromhost_fd;
-  pfd.events = POLLIN;
-  pfd.revents = 0;
-
-  if (::poll(&pfd, 1, 0) > 0)
-    wait_for_packet();
 }
 
 int htif_t::wait_for_packet()
@@ -113,6 +92,8 @@ int htif_t::wait_for_packet()
     }
 
     packet ackpacket = {APP_CMD_ACK,0,seqno,0};
+    reg_t pcr_coreid = p.addr >> 20;
+    reg_t pcr_reg = p.addr & ((1<<20)-1);
 
     switch(p.cmd)
     {
@@ -135,23 +116,36 @@ int htif_t::wait_for_packet()
           sim->mmu->store_uint64((p.addr+i)*HTIF_DATA_ALIGN, p.data[i]);
         break;
       case APP_CMD_READ_CONTROL_REG:
-        assert(p.addr == PCR_TOHOST);
+      {
+        assert(pcr_coreid < sim->num_cores());
         assert(p.data_size == 1);
         ackpacket.data_size = 1;
-        memcpy(ackpacket.data, &sim->tohost, sizeof(reg_t));
+        reg_t pcr = sim->procs[pcr_coreid]->get_pcr(pcr_reg);
+        memcpy(ackpacket.data, &pcr, sizeof(pcr));
         break;
+      }
       case APP_CMD_WRITE_CONTROL_REG:
-        assert(p.addr == PCR_FROMHOST || p.addr == PCR_RESET);
+        assert(pcr_coreid < sim->num_cores());
         assert(p.data_size == 1);
-        sim->tohost = 0;
-        if (p.addr == PCR_FROMHOST)
-          memcpy(&sim->fromhost, p.data, sizeof(reg_t));
-        else if (p.addr == PCR_RESET)
+        if (pcr_reg == PCR_RESET)
         {
-          bool next_reset = p.data[0] & 1;
-          if (!reset && next_reset)
-            sim->stop();
-          reset = next_reset;
+          if (p.data[0] & 1)
+          {
+            sim->procs[pcr_coreid]->reset();
+            if (pcr_coreid == 0 && sim->procs[0]->running())
+              sim->stop();
+          }
+          else if (!sim->procs[pcr_coreid]->running())
+          {
+            reset = false;
+            sim->procs[pcr_coreid]->deliver_ipi();
+          }
+        }
+        else
+        {
+          reg_t pcr;
+          memcpy(&pcr, p.data, sizeof(pcr));
+          sim->procs[pcr_coreid]->set_pcr(pcr_reg, pcr);
         }
         break;
     }

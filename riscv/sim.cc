@@ -56,24 +56,6 @@ sim_t::~sim_t()
   munmap(mem, memsz);
 }
 
-void sim_t::set_tohost(reg_t val)
-{
-  fromhost = 0;
-  tohost = val;
-  htif->wait_for_tohost_write();
-}
-
-reg_t sim_t::get_tohost()
-{
-  return tohost;
-}
-
-reg_t sim_t::get_fromhost()
-{
-  htif->wait_for_fromhost_write();
-  return fromhost;
-}
-
 void sim_t::send_ipi(reg_t who)
 {
   if(who < num_cores())
@@ -82,32 +64,25 @@ void sim_t::send_ipi(reg_t who)
 
 void sim_t::run(bool debug)
 {
-  htif->wait_for_start();
-
   // word 0 of memory contains the memory capacity in MB
   mmu->store_uint32(0, memsz >> 20);
   // word 1 of memory contains the core count
   mmu->store_uint32(4, num_cores());
 
-  // start core 0
-  send_ipi(0);
+  //htif->wait_for_start();
 
   for(running = true; running; )
   {
-    for (int i = 0; i < 1000; i++)
-    {
-      if(!debug)
-        step_all(100,100,false);
-      else
-        interactive();
-    }
-
-    htif->poll();
+    if(!debug)
+      step_all(10000, 100, false);
+    else
+      interactive();
   }
 }
 
 void sim_t::step_all(size_t n, size_t interleave, bool noisy)
 {
+  htif->wait_for_packet();
   for(size_t j = 0; j < n; j+=interleave)
     for(int i = 0; i < (int)num_cores(); i++)
       procs[i]->step(interleave,noisy);
