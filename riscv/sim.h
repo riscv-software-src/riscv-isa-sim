@@ -27,10 +27,6 @@ public:
 private:
   htif_t* htif;
 
-  // global registers for communication with host machine
-  reg_t tohost;
-  reg_t fromhost;
-
   // main memory, shared between processors
   char* mem;
   size_t memsz; // memory size in bytes
@@ -42,6 +38,7 @@ private:
   // terminate the simulation loop after the current iteration
   void stop() { running = false; }
   bool running;
+  size_t steps;
 
   // run each processor for n instructions; interleave instructions are
   // run on a processor before moving on to the next processor.

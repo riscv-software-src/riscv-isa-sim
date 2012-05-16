@@ -242,8 +242,6 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
       current = get_pc(args2);
     else if(scmd == "mem")
       current = get_mem(args2);
-    else if(scmd == "tohost")
-      current = tohost;
     else
       return;
 

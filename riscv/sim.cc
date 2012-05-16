@@ -12,10 +12,9 @@
 
 sim_t::sim_t(int _nprocs, htif_t* _htif)
   : htif(_htif),
-    tohost(0),
-    fromhost(0),
     procs(_nprocs),
-    running(false)
+    running(false),
+    steps(0)
 {
   // allocate target machine's memory, shrinking it as necessary
   // until the allocation succeeds
@@ -69,7 +68,7 @@ void sim_t::run(bool debug)
   // word 1 of memory contains the core count
   mmu->store_uint32(4, num_cores());
 
-  //htif->wait_for_start();
+  htif->wait_for_start();
 
   for(running = true; running; )
   {
@@ -82,8 +81,12 @@ void sim_t::run(bool debug)
 
 void sim_t::step_all(size_t n, size_t interleave, bool noisy)
 {
-  htif->wait_for_packet();
   for(size_t j = 0; j < n; j+=interleave)
+  {
+    if (steps % 16384 + interleave >= 16384)
+      htif->wait_for_packet();
+    steps += interleave;
     for(int i = 0; i < (int)num_cores(); i++)
       procs[i]->step(interleave,noisy);
+  }
 }
