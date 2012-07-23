@@ -129,17 +129,8 @@ int htif_t::wait_for_packet()
         assert(p.data_size == 1);
         if (pcr_reg == PCR_RESET)
         {
-          if (p.data[0] & 1)
-          {
-            sim->procs[pcr_coreid]->reset();
-            if (pcr_coreid == 0 && sim->procs[0]->running())
-              sim->stop();
-          }
-          else if (!sim->procs[pcr_coreid]->running())
-          {
-            reset = false;
-            sim->procs[pcr_coreid]->deliver_ipi();
-          }
+          reset = p.data[0] & 1;
+          sim->procs[pcr_coreid]->reset(reset);
         }
         else
         {

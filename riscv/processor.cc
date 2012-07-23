@@ -12,7 +12,7 @@
 processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
   : sim(*_sim), mmu(*_mmu), id(_id), utidx(0)
 {
-  reset();
+  reset(true);
 
   // create microthreads
   for (int i=0; i<MAX_UTS; i++)
@@ -23,7 +23,7 @@ processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id,
                          uint32_t _utidx)
   : sim(*_sim), mmu(*_mmu), id(_id)
 {
-  reset();
+  reset(true);
   set_pcr(PCR_SR, sr | SR_EF | SR_EV);
   utidx = _utidx;
 
@@ -36,23 +36,24 @@ processor_t::~processor_t()
 {
 }
 
-void processor_t::reset()
+void processor_t::reset(bool value)
 {
-  run = false;
+  if (run == !value)
+    return;
+  run = !value;
 
   // the ISA guarantees on boot that the PC is 0x2000 and the the processor
   // is in supervisor mode, and in 64-bit mode, if supported, with traps
-  // and virtual memory disabled.  we accomplish this by setting EVEC to
-  // 0x2000 and *enabling* traps, then sending the core an IPI.
-  set_pcr(PCR_SR, SR_S | SR_S64 | SR_ET | SR_IM);
-  evec = 0x2000;
+  // and virtual memory disabled.
+  set_pcr(PCR_SR, SR_S | SR_S64 | SR_IM);
+  pc = 0x2000;
 
   // the following state is undefined upon boot-up,
   // but we zero it for determinism
   XPR.reset();
   FPR.reset();
 
-  pc = 0;
+  evec = 0;
   epc = 0;
   badvaddr = 0;
   cause = 0;
@@ -165,12 +166,6 @@ void processor_t::step(size_t n, bool noisy)
     assert(cmd == vt_command_stop);
     break;
   }
-  catch(halt_t t)
-  {
-    // sleep until IPI
-    reset();
-    return;
-  }
 
   cycle += i;
 
@@ -203,8 +198,8 @@ void processor_t::take_trap(reg_t t, bool noisy)
 
 void processor_t::deliver_ipi()
 {
-  set_pcr(PCR_CLR_IPI, 1);
-  run = true;
+  if (run)
+    set_pcr(PCR_CLR_IPI, 1);
 }
 
 void processor_t::disasm(insn_t insn, reg_t pc)

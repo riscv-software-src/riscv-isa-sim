@@ -20,7 +20,7 @@ public:
   processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id);
   ~processor_t();
 
-  void reset();
+  void reset(bool value);
   void step(size_t n, bool noisy); // run for n cycles
   void deliver_ipi(); // register an interprocessor interrupt
   bool running() { return run; }
@@ -58,8 +58,7 @@ private:
   // # of bits in an XPR (32 or 64). (redundant with sr)
   int xprlen;
 
-  // is this processor running? (deliver_ipi() sets this)
-  bool run;
+  bool run; // !reset
 
   // functions
   void take_interrupt(); // take a trap if any interrupts are pending
