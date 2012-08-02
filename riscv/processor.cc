@@ -271,12 +271,10 @@ void processor_t::set_pcr(int which, reg_t val)
       vecbanks_count = __builtin_popcountll(vecbanks);
       break;
     case PCR_TOHOST:
-      fromhost = 0;
       tohost = val;
       break;
     case PCR_FROMHOST:
       fromhost = val;
-      tohost = 0;
       break;
   }
 }
