@@ -116,17 +116,19 @@ int htif_t::wait_for_packet()
           sim->mmu->store_uint64((p.addr+i)*HTIF_DATA_ALIGN, p.data[i]);
         break;
       case APP_CMD_READ_CONTROL_REG:
+      case APP_CMD_WRITE_CONTROL_REG:
       {
         assert(pcr_coreid < sim->num_cores());
         assert(p.data_size == 1);
         ackpacket.data_size = 1;
         reg_t pcr = sim->procs[pcr_coreid]->get_pcr(pcr_reg);
+        if (pcr_reg == PCR_TOHOST)
+          sim->procs[pcr_coreid]->tohost = 0;
         memcpy(ackpacket.data, &pcr, sizeof(pcr));
-        break;
-      }
-      case APP_CMD_WRITE_CONTROL_REG:
-        assert(pcr_coreid < sim->num_cores());
-        assert(p.data_size == 1);
+
+        if (p.cmd == APP_CMD_READ_CONTROL_REG)
+          break;
+
         if (pcr_reg == PCR_RESET)
         {
           reset = p.data[0] & 1;
@@ -139,6 +141,7 @@ int htif_t::wait_for_packet()
           sim->procs[pcr_coreid]->set_pcr(pcr_reg, pcr);
         }
         break;
+      }
     }
 
     send_packet(&ackpacket);
