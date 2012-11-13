@@ -24,7 +24,7 @@ processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id,
   : sim(*_sim), mmu(*_mmu), id(_id)
 {
   reset(true);
-  set_pcr(PCR_SR, sr | SR_EF | SR_EV);
+  set_pcr(PCR_SR, SR_U64 | SR_EF | SR_EV);
   utidx = _utidx;
 
   // microthreads don't possess their own microthreads
