@@ -81,16 +81,15 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 # C++ compiler
 #  - CPPFLAGS : flags for the preprocessor (eg. -I,-D)
 #  - CXXFLAGS : flags for C++ compiler (eg. -Wall,-g,-O3)
-#  - INCDIRS : extra include directories (eg. -I/foo/bar)
 
 CC            := @CC@
 CXX           := @CXX@
-CPPFLAGS      := @CPPFLAGS@
-CXXFLAGS      := @CXXFLAGS@
-INCDIRS       := @INCDIRS@
-COMPILE       := $(CXX) -MMD -MP $(CPPFLAGS) $(CXXFLAGS) $(INCDIRS) \
+CFLAGS        += @CFLAGS@
+CPPFLAGS      += @CPPFLAGS@
+CXXFLAGS      += @CXXFLAGS@
+COMPILE       := $(CXX) -MMD -MP $(CPPFLAGS) $(CFLAGS) $(CXXFLAGS) \
                  $(sprojs_include)
-COMPILE_C     := $(CC)  -MMD -MP $(CPPFLAGS) $(CXXFLAGS) $(INCDIRS) \
+COMPILE_C     := $(CC)  -MMD -MP $(CPPFLAGS) $(CFLAGS) \
                  $(sprojs_include)
 # Linker
 #  - LDFLAGS : Flags for the linker (eg. -L)

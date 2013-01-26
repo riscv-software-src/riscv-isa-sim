@@ -4,6 +4,7 @@
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 #include "pcr.h"
+#include "config.h"
 
 typedef int int128_t __attribute__((mode(TI)));
 typedef unsigned int uint128_t __attribute__((mode(TI)));
@@ -187,15 +188,25 @@ private:
               if(rm > 4) throw_illegal_instruction; \
               rm; })
 
-#define require_supervisor if(unlikely(!(sr & SR_S))) throw trap_privileged_instruction
 #define xpr64 (xprlen == 64)
+
+#define require_supervisor if(unlikely(!(sr & SR_S))) throw trap_privileged_instruction
 #define require_xpr64 if(unlikely(!xpr64)) throw_illegal_instruction
 #define require_xpr32 if(unlikely(xpr64)) throw_illegal_instruction
-#define require_fp if(unlikely(!(sr & SR_EF))) throw trap_fp_disabled
-#define require_vector \
+#ifndef RISCV_ENABLE_FPU
+# define require_fp throw trap_illegal_instruction
+#else
+# define require_fp if(unlikely(!(sr & SR_EF))) throw trap_fp_disabled
+#endif
+#ifndef RISCV_ENABLE_VEC
+# define require_vector throw trap_illegal_instruction
+#else
+# define require_vector \
   ({ if(!(sr & SR_EV)) throw trap_vector_disabled; \
     else if (!utmode && (vecbanks_count < 3)) throw trap_vector_bank; \
   })
+#endif
+
 #define cmp_trunc(reg) (reg_t(reg) << (64-xprlen))
 #define set_fp_exceptions ({ set_fsr(fsr | \
                                (softfloat_exceptionFlags << FSR_AEXC_SHIFT)); \

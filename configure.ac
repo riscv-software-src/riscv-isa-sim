@@ -71,7 +71,7 @@ AC_HEADER_STDC
 # Default compiler flags
 #-------------------------------------------------------------------------
 
-AC_SUBST([CFLAGS],  ["-Wall -O2"])
+AC_SUBST([CFLAGS],  ["-Wall -O2 -Wno-unused"])
 AC_SUBST([CXXFLAGS],["-Wall -O2 -Wno-pmf-conversions"])
 
 #-------------------------------------------------------------------------

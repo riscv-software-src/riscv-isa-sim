@@ -390,23 +390,17 @@ disassembler::disassembler()
   static const nfregs_reg_t _nfregs_reg, *nfregs_reg = &_nfregs_reg;
 
   insn_t dummy;
-  dummy.bits = 0;
-  dummy.rtype.rs1 = -1;
-  uint32_t mask_rs1 = dummy.bits;
-  dummy.bits = 0;
-  dummy.rtype.rs2 = -1;
-  uint32_t mask_rs2 = dummy.bits;
-  dummy.bits = 0;
-  dummy.rtype.rd = -1;
-  uint32_t mask_rd = dummy.bits;
-  dummy.bits = 0;
-  dummy.itype.imm12 = -1;
-  uint32_t mask_imm = dummy.bits;
-  dummy.bits = 0;
-  dummy.itype.rd = 1;
+  dummy.bits = -1, dummy.rtype.rs1 = 0;
+  uint32_t mask_rs1 = ~dummy.bits;
+  dummy.bits = -1, dummy.rtype.rs2 = 0;
+  uint32_t mask_rs2 = ~dummy.bits;
+  dummy.bits = -1, dummy.rtype.rd = 0;
+  uint32_t mask_rd = ~dummy.bits;
+  dummy.bits = -1, dummy.itype.imm12 = 0;
+  uint32_t mask_imm = ~dummy.bits;
+  dummy.bits = 0, dummy.itype.rd = 1;
   uint32_t match_rd_ra = dummy.bits;
-  dummy.bits = 0;
-  dummy.itype.rs1 = 1;
+  dummy.bits = 0, dummy.itype.rs1 = 1;
   uint32_t match_rs1_ra = dummy.bits;
 
   #define DECLARE_INSN(code, match, mask) \

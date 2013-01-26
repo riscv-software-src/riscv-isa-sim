@@ -87,7 +87,7 @@ private:
 
   friend class sim_t;
   friend class mmu_t;
-  friend class htif_t;
+  friend class htif_isasim_t;
 
   #include "dispatch.h"
 };

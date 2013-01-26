@@ -6,13 +6,13 @@
 #include "processor.h"
 #include "mmu.h"
 
-class htif_t;
+class htif_isasim_t;
 
 // this class encapsulates the processors and memory in a RISC-V machine.
 class sim_t
 {
 public:
-  sim_t(int _nprocs, htif_t* _htif);
+  sim_t(int _nprocs, int mem_mb, const std::vector<std::string>& htif_args);
   ~sim_t();
 
   // run the simulation to completion
@@ -24,8 +24,11 @@ public:
   // returns the number of processors in this simulator
   size_t num_cores() { return procs.size(); }
 
+  // read one of the system control registers
+  reg_t get_scr(int which);
+
 private:
-  htif_t* htif;
+  htif_isasim_t* htif;
 
   // main memory, shared between processors
   char* mem;
@@ -34,11 +37,6 @@ private:
 
   // processors
   std::vector<processor_t*> procs;
-
-  // terminate the simulation loop after the current iteration
-  void stop() { running = false; }
-  bool running;
-  size_t steps;
 
   // run each processor for n instructions; interleave instructions are
   // run on a processor before moving on to the next processor.
@@ -69,7 +67,7 @@ private:
   reg_t get_pc(const std::vector<std::string>& args);
   reg_t get_tohost(const std::vector<std::string>& args);
 
-  friend class htif_t;
+  friend class htif_isasim_t;
 };
 
 #endif

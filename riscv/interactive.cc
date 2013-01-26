@@ -62,10 +62,10 @@ void sim_t::interactive_run_silent(const std::string& cmd, const std::vector<std
 
 void sim_t::interactive_run(const std::string& cmd, const std::vector<std::string>& args, bool noisy)
 {
-  if(args.size())
-    step_all(atoll(args[0].c_str()),1,noisy);
+  if (args.size())
+    step_all(atoll(args[0].c_str()), 1, noisy);
   else
-    while(1) step_all(1,1,noisy);
+    while (1) step_all(1, 1, noisy);
 }
 
 void sim_t::interactive_run_proc_noisy(const std::string& cmd, const std::vector<std::string>& args)
@@ -90,12 +90,12 @@ void sim_t::interactive_run_proc(const std::string& cmd, const std::vector<std::
   if(a.size() == 2)
     procs[p]->step(atoi(a[1].c_str()),noisy);
   else
-    while(1) procs[p]->step(1,noisy);
+    while (1) procs[p]->step(1, noisy);
 }
 
 void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::string>& args)
 {
-  stop();
+  exit(0);
 }
 
 reg_t sim_t::get_pc(const std::vector<std::string>& args)
@@ -233,7 +233,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
   std::vector<std::string> args2;
   args2 = std::vector<std::string>(args.begin()+1,args.end()-1);
 
-  while(1)
+  while (1)
   {
     reg_t current;
     if(scmd == "reg")

@@ -1,6 +1,7 @@
 #include "htif.h"
 #include "common.h"
 #include "sim.h"
+#include <fesvr/htif-packet.h>
 #include <unistd.h>
 #include <stdexcept>
 #include <stdlib.h>
@@ -9,144 +10,99 @@
 #include <stddef.h>
 #include <poll.h>
 
-enum
-{
-  APP_CMD_READ_MEM,
-  APP_CMD_WRITE_MEM,
-  APP_CMD_READ_CONTROL_REG,
-  APP_CMD_WRITE_CONTROL_REG,
-  APP_CMD_ACK,
-  APP_CMD_NACK
-};
-
-#define APP_MAX_DATA_SIZE 1024U
-#define HTIF_DATA_ALIGN 8U
-struct packet
-{
-  reg_t cmd       :  4;
-  reg_t data_size : 12;
-  reg_t seqno     :  8;
-  reg_t addr      : 40;
-
-  uint64_t  data[APP_MAX_DATA_SIZE/8];
-};
-
-htif_t::htif_t(int _tohost_fd, int _fromhost_fd)
-  : sim(NULL), tohost_fd(_tohost_fd), fromhost_fd(_fromhost_fd),
-    reset(true), seqno(1)
+htif_isasim_t::htif_isasim_t(sim_t* _sim, const std::vector<std::string>& args)
+  : htif_pthread_t(args), sim(_sim), reset(true), seqno(1)
 {
 }
 
-htif_t::~htif_t()
+void htif_isasim_t::tick()
 {
-  close(tohost_fd);
-  close(fromhost_fd);
+  do tick_once(); while (reset);
 }
 
-void htif_t::init(sim_t* _sim)
+void htif_isasim_t::tick_once()
 {
-  sim = _sim;
-}
+  packet_header_t hdr;
+  recv(&hdr, sizeof(hdr));
 
-void htif_t::wait_for_start()
-{
-  while (reset)
-    wait_for_packet();
-}
+  char buf[hdr.get_packet_size()];
+  memcpy(buf, &hdr, sizeof(hdr));
+  recv(buf + sizeof(hdr), hdr.get_payload_size());
+  packet_t p(buf);
 
-void htif_t::send_packet(packet* p)
-{
-  size_t data_size = p->data_size*HTIF_DATA_ALIGN;
-  size_t bytes = write(tohost_fd, p, offsetof(packet,data) + data_size);
-  if(bytes != offsetof(packet,data) + data_size)
+  assert(hdr.seqno == seqno);
+
+  switch (hdr.cmd)
   {
-    const char* error = (ssize_t)bytes == -1 ? strerror(errno) : "not all bytes sent";
-    fprintf(stderr,"HTIF error: %s\n", error);
-    exit(-1);
-  }
-}
-
-void htif_t::nack(uint8_t nack_seqno)
-{
-  packet p = {APP_CMD_NACK,0,nack_seqno,0};
-  send_packet(&p);
-}
-
-int htif_t::wait_for_packet()
-{
-  while(1)
-  {
-    packet p;
-    ssize_t bytes = read(fromhost_fd,&p,sizeof(p));
-    if(bytes < (ssize_t)offsetof(packet,data))
+    case HTIF_CMD_READ_MEM:
     {
-      const char* error = bytes == -1 ? strerror(errno) : "too few bytes read";
-      fprintf(stderr,"HTIF error: %s\n", error);
-      exit(-1);
+      packet_header_t ack(HTIF_CMD_ACK, seqno, hdr.data_size, 0);
+      send(&ack, sizeof(ack));
+
+      uint64_t buf[hdr.data_size];
+      for (size_t i = 0; i < hdr.data_size; i++)
+        buf[i] = sim->mmu->load_uint64((hdr.addr+i)*HTIF_DATA_ALIGN);
+      send(buf, hdr.data_size * sizeof(buf[0]));
+      break;
     }
-  
-    if(p.seqno != seqno)
+    case HTIF_CMD_WRITE_MEM:
     {
-      nack(p.seqno);
-      continue;
+      const uint64_t* buf = (const uint64_t*)p.get_payload();
+      for (size_t i = 0; i < hdr.data_size; i++)
+        sim->mmu->store_uint64((hdr.addr+i)*HTIF_DATA_ALIGN, buf[i]);
+
+      packet_header_t ack(HTIF_CMD_ACK, seqno, 0, 0);
+      send(&ack, sizeof(ack));
+      break;
     }
-
-    packet ackpacket = {APP_CMD_ACK,0,seqno,0};
-    reg_t pcr_coreid = p.addr >> 20;
-    reg_t pcr_reg = p.addr & ((1<<20)-1);
-
-    switch(p.cmd)
+    case HTIF_CMD_READ_CONTROL_REG:
+    case HTIF_CMD_WRITE_CONTROL_REG:
     {
-      case APP_CMD_READ_MEM:
-        assert(p.data_size <= APP_MAX_DATA_SIZE/HTIF_DATA_ALIGN);
-        assert(p.addr < sim->memsz/HTIF_DATA_ALIGN);
-        assert(p.addr+p.data_size <= sim->memsz/HTIF_DATA_ALIGN);
-        ackpacket.data_size = p.data_size;
+      reg_t coreid = hdr.addr >> 20;
+      reg_t regno = hdr.addr & ((1<<20)-1);
+      assert(hdr.data_size == 1);
 
-        assert(HTIF_DATA_ALIGN == sizeof(uint64_t));
-        for(size_t i = 0; i < p.data_size; i++)
-          ackpacket.data[i] = sim->mmu->load_uint64((p.addr+i)*HTIF_DATA_ALIGN);
-        break;
-      case APP_CMD_WRITE_MEM:
-        assert(p.data_size*HTIF_DATA_ALIGN <= bytes - offsetof(packet,data));
-        assert(p.addr < sim->memsz/HTIF_DATA_ALIGN);
-        assert(p.addr+p.data_size <= sim->memsz/HTIF_DATA_ALIGN);
+      packet_header_t ack(HTIF_CMD_ACK, seqno, 1, 0);
+      send(&ack, sizeof(ack));
 
-        for(size_t i = 0; i < p.data_size; i++)
-          sim->mmu->store_uint64((p.addr+i)*HTIF_DATA_ALIGN, p.data[i]);
-        break;
-      case APP_CMD_READ_CONTROL_REG:
-      case APP_CMD_WRITE_CONTROL_REG:
+      if (coreid == 0xFFFFF) // system control register space
       {
-        assert(pcr_coreid < sim->num_cores());
-        assert(p.data_size == 1);
-        ackpacket.data_size = 1;
-        reg_t pcr = sim->procs[pcr_coreid]->get_pcr(pcr_reg);
-        if (pcr_reg == PCR_TOHOST)
-          sim->procs[pcr_coreid]->tohost = 0;
-        memcpy(ackpacket.data, &pcr, sizeof(pcr));
+        uint64_t pcr = sim->get_scr(regno);
+        send(&pcr, sizeof(pcr));
+        break;
+      }
 
-        if (p.cmd == APP_CMD_READ_CONTROL_REG)
-          break;
+      assert(coreid < sim->num_cores());
+      uint64_t pcr = sim->procs[coreid]->get_pcr(regno);
+      send(&pcr, sizeof(pcr));
 
-        if (pcr_reg == PCR_RESET)
+      if (regno == PCR_TOHOST)
+          sim->procs[coreid]->tohost = 0;
+
+      if (hdr.cmd == HTIF_CMD_WRITE_CONTROL_REG)
+      {
+        uint64_t val;
+        memcpy(&val, p.get_payload(), sizeof(val));
+        if (regno == PCR_RESET)
         {
-          reset = p.data[0] & 1;
-          sim->procs[pcr_coreid]->reset(reset);
+          reset = val & 1;
+          sim->procs[coreid]->reset(reset);
         }
         else
         {
-          reg_t pcr;
-          memcpy(&pcr, p.data, sizeof(pcr));
-          sim->procs[pcr_coreid]->set_pcr(pcr_reg, pcr);
+          sim->procs[coreid]->set_pcr(regno, val);
         }
-        break;
       }
+      break;
     }
-
-    send_packet(&ackpacket);
-    seqno++;
-    return p.cmd;
+    default:
+      abort();
   }
+  seqno++;
 }
 
+void htif_isasim_t::stop()
+{
+  htif_t::stop();
+  exit(exit_code());
+}
