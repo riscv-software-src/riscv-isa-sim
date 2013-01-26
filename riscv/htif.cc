@@ -1,7 +1,6 @@
 #include "htif.h"
 #include "common.h"
 #include "sim.h"
-#include <fesvr/htif-packet.h>
 #include <unistd.h>
 #include <stdexcept>
 #include <stdlib.h>
