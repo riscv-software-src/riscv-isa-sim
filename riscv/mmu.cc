@@ -27,7 +27,7 @@ void mmu_t::flush_icache()
   memset(icache_tag, -1, sizeof(icache_tag));
 }
 
-void* mmu_t::refill(reg_t addr, bool store, bool fetch)
+void* mmu_t::refill(reg_t addr, reg_t bytes, bool store, bool fetch)
 {
   reg_t idx = (addr >> PGSHIFT) % TLB_ENTRIES;
   reg_t expected_tag = addr & ~(PGSIZE-1);
@@ -49,12 +49,21 @@ void* mmu_t::refill(reg_t addr, bool store, bool fetch)
     throw store ? trap_store_access_fault : trap_load_access_fault;
   }
 
-  tlb_load_tag[idx] = (pte_perm & PTE_UR) ? expected_tag : -1;
-  tlb_store_tag[idx] = (pte_perm & PTE_UW) ? expected_tag : -1;
-  tlb_insn_tag[idx] = (pte_perm & PTE_UX) ? expected_tag : -1;
-  tlb_data[idx] = (long)(pte >> PTE_PPN_SHIFT << PGSHIFT) + (long)mem;
+  reg_t pgoff = addr & (PGSIZE-1);
+  reg_t pgbase = pte >> PTE_PPN_SHIFT << PGSHIFT;
+  reg_t paddr = pgbase + pgoff;
 
-  return (void*)(((long)addr & (PGSIZE-1)) + tlb_data[idx]);
+  if (unlikely(tracer.interested_in_range(pgbase, pgbase + PGSIZE, store, fetch)))
+    tracer.trace(paddr, bytes, store, fetch);
+  else
+  {
+    tlb_load_tag[idx] = (pte_perm & PTE_UR) ? expected_tag : -1;
+    tlb_store_tag[idx] = (pte_perm & PTE_UW) ? expected_tag : -1;
+    tlb_insn_tag[idx] = (pte_perm & PTE_UX) ? expected_tag : -1;
+    tlb_data[idx] = (char*)mem + pgbase;
+  }
+
+  return (char*)mem + paddr;
 }
 
 pte_t mmu_t::walk(reg_t addr)
@@ -106,4 +115,10 @@ pte_t mmu_t::walk(reg_t addr)
   }
 
   return pte;
+}
+
+void mmu_t::register_memtracer(memtracer_t* t)
+{
+  flush_tlb();
+  tracer.hook(t);
 }

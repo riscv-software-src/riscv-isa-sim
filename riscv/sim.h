@@ -23,6 +23,7 @@ public:
 
   // returns the number of processors in this simulator
   size_t num_cores() { return procs.size(); }
+  processor_t* get_core(size_t i) { return procs[i]; }
 
   // read one of the system control registers
   reg_t get_scr(int which);

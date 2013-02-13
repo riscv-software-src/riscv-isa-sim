@@ -6,6 +6,8 @@
 #include "common.h"
 #include "config.h"
 #include "processor.h"
+#include "memtracer.h"
+#include <vector>
 
 class processor_t;
 
@@ -49,7 +51,7 @@ public:
         badvaddr = addr; \
         throw trap_load_address_misaligned; \
       } \
-      void* paddr = translate(addr, false, false); \
+      void* paddr = translate(addr, sizeof(type##_t), false, false); \
       return *(type##_t*)paddr; \
     }
 
@@ -73,7 +75,7 @@ public:
         badvaddr = addr; \
         throw trap_store_address_misaligned; \
       } \
-      void* paddr = translate(addr, true, false); \
+      void* paddr = translate(addr, sizeof(type##_t), true, false); \
       *(type##_t*)paddr = val; \
     }
 
@@ -97,7 +99,7 @@ public:
     #ifdef RISCV_ENABLE_RVC
     if(addr % 4 == 2 && rvc) // fetch across word boundary
     {
-      void* addr_lo = translate(addr, false, true);
+      void* addr_lo = translate(addr, 2, false, true);
       insn.bits = *(uint16_t*)addr_lo;
 
       *func = processor_t::dispatch_table
@@ -105,7 +107,7 @@ public:
 
       if(!INSN_IS_RVC(insn.bits))
       {
-        void* addr_hi = translate(addr+2, false, true);
+        void* addr_hi = translate(addr+2, 2, false, true);
         insn.bits |= (uint32_t)*(uint16_t*)addr_hi << 16;
       }
     }
@@ -119,13 +121,17 @@ public:
         return data;
 
       // the processor guarantees alignment based upon rvc mode
-      void* paddr = translate(addr, false, true);
+      void* paddr = translate(addr, sizeof(insn_t), false, true);
       insn = *(insn_t*)paddr;
+      *func = processor_t::dispatch_table
+               [insn.bits % processor_t::DISPATCH_TABLE_SIZE];
 
-      icache_tag[idx] = addr;
-      icache_data[idx] = insn;
-      icache_func[idx] = *func = processor_t::dispatch_table
-                                 [insn.bits % processor_t::DISPATCH_TABLE_SIZE];
+      if (!tracer.interested_in_range(addr, addr + sizeof(insn_t), false, true))
+      {
+        icache_tag[idx] = addr;
+        icache_data[idx] = insn;
+        icache_func[idx] = *func;
+      }
     }
 
     return insn;
@@ -146,18 +152,20 @@ public:
   void flush_tlb();
   void flush_icache();
 
+  void register_memtracer(memtracer_t*);
+
 private:
   char* mem;
   size_t memsz;
   reg_t badvaddr;
-
   reg_t ptbr;
   bool supervisor;
   bool vm_enabled;
+  memtracer_list_t tracer;
 
   // implement a TLB for simulator performance
   static const reg_t TLB_ENTRIES = 256;
-  long tlb_data[TLB_ENTRIES];
+  char* tlb_data[TLB_ENTRIES];
   reg_t tlb_insn_tag[TLB_ENTRIES];
   reg_t tlb_load_tag[TLB_ENTRIES];
   reg_t tlb_store_tag[TLB_ENTRIES];
@@ -169,22 +177,22 @@ private:
   reg_t icache_tag[ICACHE_ENTRIES];
 
   // finish translation on a TLB miss and upate the TLB
-  void* refill(reg_t addr, bool store, bool fetch);
+  void* refill(reg_t addr, reg_t bytes, bool store, bool fetch);
 
   // perform a page table walk for a given virtual address
   pte_t walk(reg_t addr);
 
   // translate a virtual address to a physical address
-  void* translate(reg_t addr, bool store, bool fetch)
+  void* translate(reg_t addr, reg_t bytes, bool store, bool fetch)
   {
     reg_t idx = (addr >> PGSHIFT) % TLB_ENTRIES;
 
     reg_t* tlb_tag = fetch ? tlb_insn_tag : store ? tlb_store_tag :tlb_load_tag;
     reg_t expected_tag = addr & ~(PGSIZE-1);
     if(likely(tlb_tag[idx] == expected_tag))
-      return (void*)(((long)addr & (PGSIZE-1)) + tlb_data[idx]);
+      return ((uintptr_t)addr & (PGSIZE-1)) + tlb_data[idx];
 
-    return refill(addr, store, fetch);
+    return refill(addr, bytes, store, fetch);
   }
   
   friend class processor_t;

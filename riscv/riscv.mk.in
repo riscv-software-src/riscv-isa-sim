@@ -13,6 +13,8 @@ riscv_hdrs = \
 	opcodes.h \
 	insn_header.h \
 	dispatch.h \
+	cachesim.h \
+	memtracer.h \
 
 NDISPATCH := 10
 DISPATCH_SRCS := \
@@ -40,7 +42,7 @@ riscv_srcs = \
 	sim.cc \
 	interactive.cc \
 	trap.cc \
-	icsim.cc \
+	cachesim.cc \
 	mmu.cc \
 	disasm.cc \
 	$(DISPATCH_SRCS) \

@@ -26,6 +26,7 @@ public:
   bool running() { return run; }
   void set_pcr(int which, reg_t val);
   reg_t get_pcr(int which);
+  mmu_t* get_mmu() { return &mmu; }
 
 private:
   sim_t& sim;
