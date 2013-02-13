@@ -112,21 +112,19 @@ void processor_t::step(size_t n, bool noisy)
     return;
 
   size_t i = 0;
-  while(1) try
+  try
   {
     take_interrupt();
 
     mmu_t& _mmu = mmu;
-    insn_t insn;
-    insn_func_t func;
     reg_t npc = pc;
 
     // execute_insn fetches and executes one instruction
     #define execute_insn(noisy) \
       do { \
-        insn = _mmu.load_insn(npc, sr & SR_EC, &func); \
-        if(noisy) disasm(insn,pc); \
-        npc = func(this, insn, npc); \
+        mmu_t::insn_fetch_t fetch = _mmu.load_insn(npc, sr & SR_EC); \
+        if(noisy) disasm(fetch.insn, npc); \
+        npc = fetch.func(this, fetch.insn, npc); \
         pc = npc; \
       } while(0)
 
@@ -145,26 +143,20 @@ void processor_t::step(size_t n, bool noisy)
       for( ; i < n; i++)
         execute_insn(false);
     }
-
-    break;
   }
   catch(trap_t t)
   {
     // an exception occurred in the target processor
-    i++;
     take_trap(t,noisy);
   }
   catch(interrupt_t t)
   {
-    i++;
     take_trap((1ULL << (8*sizeof(reg_t)-1)) + t.i, noisy);
   }
   catch(vt_command_t cmd)
   {
     // this microthread has finished
-    i++;
     assert(cmd == vt_command_stop);
-    break;
   }
 
   cycle += i;

@@ -85,56 +85,60 @@ public:
   store_func(uint32)
   store_func(uint64)
 
+  struct insn_fetch_t
+  {
+    insn_t insn;
+    insn_func_t func;
+  };
+
   // load instruction from memory at aligned address.
   // (needed because instruction alignment requirement is variable
   // if RVC is supported)
   // returns the instruction at the specified address, given the current
   // RVC mode.  func is set to a pointer to a function that knows how to
   // execute the returned instruction.
-  insn_t __attribute__((always_inline)) load_insn(reg_t addr, bool rvc,
-                                                  insn_func_t* func)
+  inline insn_fetch_t load_insn(reg_t addr, bool rvc)
   {
-    insn_t insn;
-
     #ifdef RISCV_ENABLE_RVC
     if(addr % 4 == 2 && rvc) // fetch across word boundary
     {
       void* addr_lo = translate(addr, 2, false, true);
-      insn.bits = *(uint16_t*)addr_lo;
+      insn_fetch_t fetch;
+      fetch.insn.bits = *(uint16_t*)addr_lo;
+      size_t dispatch_idx = fetch.insn.bits % processor_t::DISPATCH_TABLE_SIZE;
+      fetch.func = processor_t::dispatch_table[dispatch_idx];
 
-      *func = processor_t::dispatch_table
-               [insn.bits % processor_t::DISPATCH_TABLE_SIZE];
-
-      if(!INSN_IS_RVC(insn.bits))
+      if(!INSN_IS_RVC(fetch.insn.bits))
       {
         void* addr_hi = translate(addr+2, 2, false, true);
-        insn.bits |= (uint32_t)*(uint16_t*)addr_hi << 16;
+        fetch.insn.bits |= (uint32_t)*(uint16_t*)addr_hi << 16;
       }
+      return fetch;
     }
     else
     #endif
     {
       reg_t idx = (addr/sizeof(insn_t)) % ICACHE_ENTRIES;
-      insn_t data = icache_data[idx];
-      *func = icache_func[idx];
-      if(likely(icache_tag[idx] == addr))
-        return data;
-
-      // the processor guarantees alignment based upon rvc mode
-      void* paddr = translate(addr, sizeof(insn_t), false, true);
-      insn = *(insn_t*)paddr;
-      *func = processor_t::dispatch_table
-               [insn.bits % processor_t::DISPATCH_TABLE_SIZE];
-
-      if (!tracer.interested_in_range(addr, addr + sizeof(insn_t), false, true))
+      insn_fetch_t fetch;
+      if (unlikely(icache_tag[idx] != addr))
       {
-        icache_tag[idx] = addr;
-        icache_data[idx] = insn;
-        icache_func[idx] = *func;
-      }
-    }
+        void* paddr = translate(addr, sizeof(insn_t), false, true);
+        fetch.insn = *(insn_t*)paddr;
+        size_t dispatch_idx = fetch.insn.bits % processor_t::DISPATCH_TABLE_SIZE;
+        fetch.func = processor_t::dispatch_table[dispatch_idx];
 
-    return insn;
+        reg_t idx = ((uintptr_t)paddr/sizeof(insn_t)) % ICACHE_ENTRIES;
+        icache_tag[idx] = addr;
+        icache_data[idx] = fetch.insn;
+        icache_func[idx] = fetch.func;
+
+        if (tracer.interested_in_range(addr, addr + sizeof(insn_t), false, true))
+          icache_tag[idx] = -1;
+      }
+      fetch.insn = icache_data[idx];;
+      fetch.func = icache_func[idx];
+      return fetch;
+    }
   }
 
   // get the virtual address that caused a fault
@@ -177,7 +181,7 @@ private:
   reg_t icache_tag[ICACHE_ENTRIES];
 
   // finish translation on a TLB miss and upate the TLB
-  void* refill(reg_t addr, reg_t bytes, bool store, bool fetch);
+  void* refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch);
 
   // perform a page table walk for a given virtual address
   pte_t walk(reg_t addr);
@@ -192,7 +196,7 @@ private:
     if(likely(tlb_tag[idx] == expected_tag))
       return ((uintptr_t)addr & (PGSIZE-1)) + tlb_data[idx];
 
-    return refill(addr, bytes, store, fetch);
+    return refill_tlb(addr, bytes, store, fetch);
   }
   
   friend class processor_t;
