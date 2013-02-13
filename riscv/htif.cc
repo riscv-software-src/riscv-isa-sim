@@ -1,5 +1,4 @@
 #include "htif.h"
-#include "common.h"
 #include "sim.h"
 #include <unistd.h>
 #include <stdexcept>
@@ -84,8 +83,9 @@ void htif_isasim_t::tick_once()
         memcpy(&val, p.get_payload(), sizeof(val));
         if (regno == PCR_RESET)
         {
-          reset = val & 1;
-          sim->procs[coreid]->reset(reset);
+          if (reset && !(val & 1))
+            reset = false;
+          sim->procs[coreid]->reset(val & 1);
         }
         else
         {
@@ -100,8 +100,12 @@ void htif_isasim_t::tick_once()
   seqno++;
 }
 
-void htif_isasim_t::stop()
+bool htif_isasim_t::done()
 {
-  htif_t::stop();
-  exit(exit_code());
+  if (reset)
+    return false;
+  for (size_t i = 0; i < sim->num_cores(); i++)
+    if (sim->procs[i]->running())
+      return false;
+  return true;
 }

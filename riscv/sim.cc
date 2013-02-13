@@ -49,7 +49,6 @@ sim_t::~sim_t()
     delete procs[i];
     delete pmmu;
   }
-  delete htif;
   delete mmu;
   munmap(mem, memsz);
 }
@@ -72,10 +71,10 @@ reg_t sim_t::get_scr(int which)
 
 void sim_t::run(bool debug)
 {
-  while (1)
+  while (!htif->done())
   {
     if(!debug)
-      step_all(1000, 1000, false);
+      step_all(10000, 1000, false);
     else
       interactive();
   }

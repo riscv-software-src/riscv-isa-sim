@@ -16,7 +16,7 @@ class htif_isasim_t : public htif_pthread_t
 public:
   htif_isasim_t(sim_t* _sim, const std::vector<std::string>& args);
   void tick();
-  void stop();
+  bool done();
 
 private:
   sim_t* sim;
