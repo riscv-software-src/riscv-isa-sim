@@ -4,6 +4,7 @@
 #include "memtracer.h"
 #include <cstring>
 #include <string>
+#include <map>
 #include <stdint.h>
 
 class lfsr_t
@@ -19,7 +20,6 @@ class lfsr_t
 class cache_sim_t
 {
  public:
-  cache_sim_t(const char* config, const char* name);
   cache_sim_t(size_t sets, size_t ways, size_t linesz, const char* name);
   cache_sim_t(const cache_sim_t& rhs);
   ~cache_sim_t();
@@ -28,7 +28,15 @@ class cache_sim_t
   void print_stats();
   void set_miss_handler(cache_sim_t* mh) { miss_handler = mh; }
 
- private:
+  static cache_sim_t* construct(const char* config, const char* name);
+
+ protected:
+  static const uint64_t VALID = 1ULL << 63;
+  static const uint64_t DIRTY = 1ULL << 62;
+
+  virtual uint64_t* check_tag(uint64_t addr);
+  virtual uint64_t victimize(uint64_t addr);
+
   lfsr_t lfsr;
   cache_sim_t* miss_handler;
 
@@ -49,53 +57,65 @@ class cache_sim_t
 
   std::string name;
 
-  static const uint64_t VALID = 1ULL << 63;
-  static const uint64_t DIRTY = 1ULL << 62;
-
   void init();
 };
 
-class unified_cache_sim_t : public memtracer_t
+class fa_cache_sim_t : public cache_sim_t
 {
  public:
-  unified_cache_sim_t(const char* config) : cache(config, "U$") {}
-  bool interested_in_range(size_t begin, size_t end, bool store, bool fetch)
-  {
-    return true;
-  }
-  void trace(uint64_t addr, size_t bytes, bool store, bool fetch)
-  {
-    cache.access(addr, bytes, store);
-  }
+  fa_cache_sim_t(size_t ways, size_t linesz, const char* name);
+  uint64_t* check_tag(uint64_t addr);
+  uint64_t victimize(uint64_t addr);
  private:
-  cache_sim_t cache;
+  static bool cmp(uint64_t a, uint64_t b);
+  std::map<uint64_t, uint64_t> tags;
 };
 
-class icache_sim_t : public memtracer_t, public cache_sim_t
+class cache_memtracer_t : public memtracer_t
 {
  public:
-  icache_sim_t(const char* config) : cache_sim_t(config, "I$") {}
-  bool interested_in_range(size_t begin, size_t end, bool store, bool fetch)
+  cache_memtracer_t(const char* config, const char* name)
+  {
+    cache = cache_sim_t::construct(config, name);
+  }
+  ~cache_memtracer_t()
+  {
+    delete cache;
+  }
+  void set_miss_handler(cache_sim_t* mh)
+  {
+    cache->set_miss_handler(mh);
+  }
+
+ protected:
+  cache_sim_t* cache;
+};
+
+class icache_sim_t : public cache_memtracer_t
+{
+ public:
+  icache_sim_t(const char* config) : cache_memtracer_t(config, "I$") {}
+  bool interested_in_range(uint64_t begin, uint64_t end, bool store, bool fetch)
   {
     return fetch;
   }
   void trace(uint64_t addr, size_t bytes, bool store, bool fetch)
   {
-    if (fetch) access(addr, bytes, false);
+    if (fetch) cache->access(addr, bytes, false);
   }
 };
 
-class dcache_sim_t : public memtracer_t, public cache_sim_t
+class dcache_sim_t : public cache_memtracer_t
 {
  public:
-  dcache_sim_t(const char* config) : cache_sim_t(config, "D$") {}
-  bool interested_in_range(size_t begin, size_t end, bool store, bool fetch)
+  dcache_sim_t(const char* config) : cache_memtracer_t(config, "D$") {}
+  bool interested_in_range(uint64_t begin, uint64_t end, bool store, bool fetch)
   {
     return !fetch;
   }
   void trace(uint64_t addr, size_t bytes, bool store, bool fetch)
   {
-    if (!fetch) access(addr, bytes, store);
+    if (!fetch) cache->access(addr, bytes, false);
   }
 };
 

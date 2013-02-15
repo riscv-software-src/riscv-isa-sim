@@ -8,16 +8,11 @@
 class memtracer_t
 {
  public:
-  memtracer_t() : link(NULL) {}
+  memtracer_t() {}
   virtual ~memtracer_t() {}
 
   virtual bool interested_in_range(uint64_t begin, uint64_t end, bool store, bool fetch) = 0;
   virtual void trace(uint64_t addr, size_t bytes, bool store, bool fetch) = 0;
-
- protected:
-
- private:
-  memtracer_t* link;
 };
 
 class memtracer_list_t : public memtracer_t

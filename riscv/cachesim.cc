@@ -1,4 +1,5 @@
 #include "cachesim.h"
+#include "common.h"
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>
@@ -18,19 +19,20 @@ static void help()
   exit(1);
 }
 
-cache_sim_t::cache_sim_t(const char* config, const char* _name)
- : name(_name)
+cache_sim_t* cache_sim_t::construct(const char* config, const char* name)
 {
   const char* wp = strchr(config, ':');
   if (!wp++) help();
   const char* bp = strchr(wp, ':');
   if (!bp++) help();
 
-  sets = atoi(std::string(config, wp).c_str());
-  ways = atoi(std::string(wp, bp).c_str());
-  linesz = atoi(bp);
+  size_t sets = atoi(std::string(config, wp).c_str());
+  size_t ways = atoi(std::string(wp, bp).c_str());
+  size_t linesz = atoi(bp);
 
-  init();
+  if (ways > 4 /* empirical */ && sets == 1)
+    return new fa_cache_sim_t(ways, linesz, name);
+  return new cache_sim_t(sets, ways, linesz, name);
 }
 
 void cache_sim_t::init()
@@ -96,34 +98,80 @@ void cache_sim_t::print_stats()
   std::cout << "Miss Rate:             " << mr << '%' << std::endl;
 }
 
+uint64_t* cache_sim_t::check_tag(uint64_t addr)
+{
+  size_t idx = (addr >> idx_shift) & (sets-1);
+  size_t tag = (addr >> idx_shift) | VALID;
+
+  for (size_t i = 0; i < ways; i++)
+    if (tag == (tags[idx*ways + i] & ~DIRTY))
+      return &tags[idx*ways + i];
+
+  return NULL;
+}
+
+uint64_t cache_sim_t::victimize(uint64_t addr)
+{
+  size_t idx = (addr >> idx_shift) & (sets-1);
+  size_t way = lfsr.next() % ways;
+  uint64_t victim = tags[idx*ways + way];
+  tags[idx*ways + way] = (addr >> idx_shift) | VALID;
+  return victim;
+}
+
 void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
 {
   store ? write_accesses++ : read_accesses++;
   (store ? bytes_written : bytes_read) += bytes;
 
-  size_t idx = (addr >> idx_shift) & (sets-1);
-  size_t tag = (addr >> idx_shift) | VALID;
-  size_t* set_tags = &tags[idx*ways];
-
-  for(size_t i = 0; i < ways; i++)
+  uint64_t* hit_way = check_tag(addr);
+  if (likely(hit_way != NULL))
   {
-    if(tag == (set_tags[i] & ~DIRTY)) // hit
-    {
-      if(store)
-        set_tags[i] |= DIRTY;
-      return;
-    }
+    if (store)
+      *hit_way |= DIRTY;
+    return;
   }
 
   store ? write_misses++ : read_misses++;
 
-  size_t way = lfsr.next() % ways;
-  if((set_tags[way] & (VALID | DIRTY)) == (VALID | DIRTY))
+  uint64_t victim = victimize(addr);
+
+  if ((victim & (VALID | DIRTY)) == (VALID | DIRTY))
   {
-    uint64_t dirty_addr = (set_tags[way] & ~(VALID | DIRTY)) << idx_shift;
-    if (miss_handler) miss_handler->access(dirty_addr, linesz, true);
+    uint64_t dirty_addr = (victim & ~(VALID | DIRTY)) << idx_shift;
+    if (miss_handler)
+      miss_handler->access(dirty_addr, linesz, true);
     writebacks++;
   }
-  if (miss_handler) miss_handler->access(addr & ~(linesz-1), linesz, false);
-  set_tags[way] = tag | (store ? DIRTY : 0);
+
+  if (miss_handler)
+    miss_handler->access(addr & ~(linesz-1), linesz, false);
+
+  if (store)
+    *check_tag(addr) |= DIRTY;
+}
+
+fa_cache_sim_t::fa_cache_sim_t(size_t ways, size_t linesz, const char* name)
+  : cache_sim_t(1, ways, linesz, name)
+{
+}
+
+uint64_t* fa_cache_sim_t::check_tag(uint64_t addr)
+{
+  auto it = tags.find(addr >> idx_shift);
+  return it == tags.end() ? NULL : &it->second;
+}
+
+uint64_t fa_cache_sim_t::victimize(uint64_t addr)
+{
+  uint64_t old_tag = 0;
+  if (tags.size() == ways)
+  {
+    auto it = tags.begin();
+    std::advance(it, lfsr.next() % ways);
+    old_tag = it->second;
+    tags.erase(it);
+  }
+  tags[addr >> idx_shift] = (addr >> idx_shift) | VALID;
+  return old_tag;
 }

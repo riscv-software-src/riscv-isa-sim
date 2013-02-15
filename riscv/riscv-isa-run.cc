@@ -40,7 +40,7 @@ int main(int argc, char** argv)
   parser.option('m', 0, 1, [&](const char* s){mem_mb = atoi(s);});
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
-  parser.option(0, "l2", 1, [&](const char* s){l2.reset(new cache_sim_t(s, "L2$"));});
+  parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
 
   auto argv1 = parser.parse(argv);
   if (!*argv1)
