@@ -51,8 +51,8 @@ public:
         badvaddr = addr; \
         throw trap_load_address_misaligned; \
       } \
-      void* paddr = translate(addr, sizeof(type##_t), false, false); \
-      return *(type##_t*)paddr; \
+      reg_t paddr = translate(addr, sizeof(type##_t), false, false); \
+      return *(type##_t*)(mem + paddr); \
     }
 
   // load value from memory at aligned address; zero extend to register width
@@ -75,8 +75,8 @@ public:
         badvaddr = addr; \
         throw trap_store_address_misaligned; \
       } \
-      void* paddr = translate(addr, sizeof(type##_t), true, false); \
-      *(type##_t*)paddr = val; \
+      reg_t paddr = translate(addr, sizeof(type##_t), true, false); \
+      *(type##_t*)(mem + paddr) = val; \
     }
 
   // store value to memory at aligned address
@@ -102,16 +102,16 @@ public:
     #ifdef RISCV_ENABLE_RVC
     if(addr % 4 == 2 && rvc) // fetch across word boundary
     {
-      void* addr_lo = translate(addr, 2, false, true);
+      reg_t addr_lo = translate(addr, 2, false, true);
       insn_fetch_t fetch;
-      fetch.insn.bits = *(uint16_t*)addr_lo;
+      fetch.insn.bits = *(uint16_t*)(mem + addr_lo);
       size_t dispatch_idx = fetch.insn.bits % processor_t::DISPATCH_TABLE_SIZE;
       fetch.func = processor_t::dispatch_table[dispatch_idx];
 
       if(!INSN_IS_RVC(fetch.insn.bits))
       {
-        void* addr_hi = translate(addr+2, 2, false, true);
-        fetch.insn.bits |= (uint32_t)*(uint16_t*)addr_hi << 16;
+        reg_t addr_hi = translate(addr+2, 2, false, true);
+        fetch.insn.bits |= (uint32_t)*(uint16_t*)(mem + addr_hi) << 16;
       }
       return fetch;
     }
@@ -122,18 +122,21 @@ public:
       insn_fetch_t fetch;
       if (unlikely(icache_tag[idx] != addr))
       {
-        void* paddr = translate(addr, sizeof(insn_t), false, true);
-        fetch.insn = *(insn_t*)paddr;
+        reg_t paddr = translate(addr, sizeof(insn_t), false, true);
+        fetch.insn = *(insn_t*)(mem + paddr);
         size_t dispatch_idx = fetch.insn.bits % processor_t::DISPATCH_TABLE_SIZE;
         fetch.func = processor_t::dispatch_table[dispatch_idx];
 
-        reg_t idx = ((uintptr_t)paddr/sizeof(insn_t)) % ICACHE_ENTRIES;
+        reg_t idx = (paddr/sizeof(insn_t)) % ICACHE_ENTRIES;
         icache_tag[idx] = addr;
         icache_data[idx] = fetch.insn;
         icache_func[idx] = fetch.func;
 
-        if (tracer.interested_in_range(addr, addr + sizeof(insn_t), false, true))
+        if (tracer.interested_in_range(paddr, paddr + sizeof(insn_t), false, true))
+        {
           icache_tag[idx] = -1;
+          tracer.trace(paddr, sizeof(insn_t), false, true);
+        }
       }
       fetch.insn = icache_data[idx];;
       fetch.func = icache_func[idx];
@@ -169,7 +172,7 @@ private:
 
   // implement a TLB for simulator performance
   static const reg_t TLB_ENTRIES = 256;
-  char* tlb_data[TLB_ENTRIES];
+  reg_t tlb_data[TLB_ENTRIES];
   reg_t tlb_insn_tag[TLB_ENTRIES];
   reg_t tlb_load_tag[TLB_ENTRIES];
   reg_t tlb_store_tag[TLB_ENTRIES];
@@ -181,13 +184,13 @@ private:
   reg_t icache_tag[ICACHE_ENTRIES];
 
   // finish translation on a TLB miss and upate the TLB
-  void* refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch);
+  reg_t refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch);
 
   // perform a page table walk for a given virtual address
   pte_t walk(reg_t addr);
 
   // translate a virtual address to a physical address
-  void* translate(reg_t addr, reg_t bytes, bool store, bool fetch)
+  reg_t translate(reg_t addr, reg_t bytes, bool store, bool fetch)
   {
     reg_t idx = (addr >> PGSHIFT) % TLB_ENTRIES;
 
