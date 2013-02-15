@@ -115,7 +115,7 @@ class dcache_sim_t : public cache_memtracer_t
   }
   void trace(uint64_t addr, size_t bytes, bool store, bool fetch)
   {
-    if (!fetch) cache->access(addr, bytes, false);
+    if (!fetch) cache->access(addr, bytes, store);
   }
 };
 
