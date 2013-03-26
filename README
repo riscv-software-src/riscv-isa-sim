@@ -12,35 +12,29 @@ RISC-V processors.
 Build Steps
 --------------------------------------------------------------------------
 
+We assume that the RISCV environment variable is set to the RISC-V tools
+install path, and that the riscv-fesvr package is installed there.
+
  % mkdir build
  % cd build
- % ../configure
+ % ../configure --prefix=$RISCV --with-fesvr=$RISCV
  % make
  % [sudo] make install
-
---------------------------------------------------------------------------
-Usage
---------------------------------------------------------------------------
-
-The riscv-isa-run program is not usually invoked directly; rather, fesvr, the
-Front-End Server, invokes riscv-isa-run.  fesvr and riscv-pk must be installed
-to simulate a RISC-V user program using riscv-isa-run.
 
 --------------------------------------------------------------------------
 Compiling and Running a Simple C Program
 --------------------------------------------------------------------------
 
-Install riscv-isa-run (see Build Steps), then install the following additional
-packages: riscv-fesvr, riscv-gcc, riscv-pk.
+Install riscv-isa-run (see Build Steps), riscv-gcc, and riscv-pk.
 
 Write a short C program and name it hello.c.  Then, compile it into a RISC-V
 ELF binary named hello:
 
  % riscv-gcc -o hello hello.c
 
-Now you can simulate the program:
+Now you can simulate the program atop the proxy kernel:
 
- % riscv-fesvr hello
+ % riscv-isa-run pk hello
 
 --------------------------------------------------------------------------
 Simulating a New Instruction
@@ -52,7 +46,8 @@ Adding an instruction to the simulator requires two steps:
      riscv/insns/<new_instruction_name>.h.  Examine other instructions
      in that directory as a starting point.
 
-  2. Add the instruction to the riscv-opcodes package:
+  2. Add the opcode and opcode mask to riscv/opcodes.h.  Alternatively,
+     add it to the riscv-opcodes package, and it will do so for you:
 
       % cd ../riscv-opcodes
       % vi opcodes       // add a line for the new instruction
