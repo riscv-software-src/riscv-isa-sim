@@ -65,32 +65,32 @@ void htif_isasim_t::tick_once()
 
       if (coreid == 0xFFFFF) // system control register space
       {
-        uint64_t pcr = sim->get_scr(regno);
-        send(&pcr, sizeof(pcr));
+        uint64_t scr = sim->get_scr(regno);
+        send(&scr, sizeof(scr));
         break;
       }
 
       assert(coreid < sim->num_cores());
-      uint64_t pcr = sim->procs[coreid]->get_pcr(regno);
-      send(&pcr, sizeof(pcr));
+      uint64_t old_val = sim->procs[coreid]->get_pcr(regno);
+      send(&old_val, sizeof(old_val));
 
       if (regno == PCR_TOHOST)
           sim->procs[coreid]->tohost = 0;
 
       if (hdr.cmd == HTIF_CMD_WRITE_CONTROL_REG)
       {
-        uint64_t val;
-        memcpy(&val, p.get_payload(), sizeof(val));
+        uint64_t new_val;
+        memcpy(&new_val, p.get_payload(), sizeof(new_val));
         if (regno == PCR_RESET)
         {
-          if (reset && !(val & 1))
+          if (reset && !(new_val & 1))
             reset = false;
-          sim->procs[coreid]->reset(val & 1);
+          sim->procs[coreid]->reset(new_val & 1);
         }
+        else if (regno == PCR_FROMHOST && old_val != 0)
+          ; // ignore host writes to fromhost if target hasn't yet consumed
         else
-        {
-          sim->procs[coreid]->set_pcr(regno, val);
-        }
+          sim->procs[coreid]->set_pcr(regno, new_val);
       }
       break;
     }
