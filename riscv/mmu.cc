@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "mmu.h"
 #include "sim.h"
 #include "processor.h"

@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "processor.h"
 #include "config.h"
 #include "sim.h"

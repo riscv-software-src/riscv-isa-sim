@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef _RISCV_PROCESSOR_H
 #define _RISCV_PROCESSOR_H
 

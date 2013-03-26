@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef _RISCV_DISASM_H
 #define _RISCV_DISASM_H
 

@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "trap.h"
 
 const char* trap_name(trap_t t)

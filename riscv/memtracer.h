@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef _MEMTRACER_H
 #define _MEMTRACER_H
 

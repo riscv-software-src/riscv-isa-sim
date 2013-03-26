@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "sim.h"
 #include "htif.h"
 #include <sys/mman.h>

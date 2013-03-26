@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "disasm.h"
 #include <string>
 #include <vector>

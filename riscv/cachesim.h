@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef _RISCV_CACHE_SIM_H
 #define _RISCV_CACHE_SIM_H
 

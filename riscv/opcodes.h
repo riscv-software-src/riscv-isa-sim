@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 DECLARE_INSN(movn, 0x6f7, 0x1ffff)
 DECLARE_INSN(vfsstw, 0x150f, 0x1ffff)
 DECLARE_INSN(remuw, 0x7bb, 0x1ffff)

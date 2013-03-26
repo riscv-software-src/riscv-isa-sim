@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "cachesim.h"
 #include "common.h"
 #include <cstdlib>

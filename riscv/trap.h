@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #ifndef _RISCV_TRAP_H
 #define _RISCV_TRAP_H
 
