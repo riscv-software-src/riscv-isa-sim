@@ -9,8 +9,6 @@
 #include "memtracer.h"
 #include <vector>
 
-class processor_t;
-
 // virtual memory configuration
 typedef reg_t pte_t;
 const reg_t LEVELS = sizeof(pte_t) == sizeof(uint64_t) ? 3 : 2;
@@ -105,8 +103,7 @@ public:
       reg_t addr_lo = translate(addr, 2, false, true);
       insn_fetch_t fetch;
       fetch.insn.bits = *(uint16_t*)(mem + addr_lo);
-      size_t dispatch_idx = fetch.insn.bits % processor_t::DISPATCH_TABLE_SIZE;
-      fetch.func = processor_t::dispatch_table[dispatch_idx];
+      fetch.func = get_insn_func(fetch.insn, sr);
 
       if(!INSN_IS_RVC(fetch.insn.bits))
       {
@@ -124,8 +121,7 @@ public:
       {
         reg_t paddr = translate(addr, sizeof(insn_t), false, true);
         fetch.insn = *(insn_t*)(mem + paddr);
-        size_t dispatch_idx = fetch.insn.bits % processor_t::DISPATCH_TABLE_SIZE;
-        fetch.func = processor_t::dispatch_table[dispatch_idx];
+        fetch.func = get_insn_func(fetch.insn, sr);
 
         reg_t idx = (paddr/sizeof(insn_t)) % ICACHE_ENTRIES;
         icache_tag[idx] = addr;
@@ -150,10 +146,8 @@ public:
   // get/set the page table base register
   reg_t get_ptbr() { return ptbr; }
   void set_ptbr(reg_t addr) { ptbr = addr & ~(PGSIZE-1); flush_tlb(); }
-
   // keep the MMU in sync with processor mode
-  void set_supervisor(bool sup) { supervisor = sup; }
-  void set_vm_enabled(bool en) { vm_enabled = en; }
+  void set_sr(uint32_t _sr) { sr = _sr; }
 
   // flush the TLB and instruction cache
   void flush_tlb();
@@ -166,8 +160,7 @@ private:
   size_t memsz;
   reg_t badvaddr;
   reg_t ptbr;
-  bool supervisor;
-  bool vm_enabled;
+  uint32_t sr;
   memtracer_list_t tracer;
 
   // implement a TLB for simulator performance

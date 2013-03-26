@@ -124,7 +124,6 @@ union insn_t
   uint32_t bits;
 };
 
-#include <stdio.h>
 template <class T>
 class write_port_t
 {
@@ -184,6 +183,8 @@ private:
 #define TARGET insn.jtype.target
 #define BRANCH_TARGET (pc + (BIMM << BRANCH_ALIGN_BITS))
 #define JUMP_TARGET (pc + (TARGET << JUMP_ALIGN_BITS))
+#define ITYPE_EADDR sext_xprlen(RS1 + SIMM)
+#define BTYPE_EADDR sext_xprlen(RS1 + BIMM)
 #define RM ({ int rm = insn.ftype.rm; \
               if(rm == 7) rm = (fsr & FSR_RD) >> FSR_RD_SHIFT; \
               if(rm > 4) throw_illegal_instruction; \

@@ -173,7 +173,7 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
     int p = atoi(args[0].c_str());
     if(p >= (int)num_cores())
       throw trap_illegal_instruction;
-    mmu->set_vm_enabled(!!(procs[p]->sr & SR_VM));
+    mmu->set_sr(procs[p]->sr);
     mmu->set_ptbr(procs[p]->mmu.get_ptbr());
     addr_str = args[1];
   }

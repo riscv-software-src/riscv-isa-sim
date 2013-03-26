@@ -1,1 +1,1 @@
-mmu.store_uint16(RS1+BIMM, RS2);
+mmu.store_uint16(BTYPE_EADDR, RS2);

@@ -4,7 +4,7 @@
 
 mmu_t::mmu_t(char* _mem, size_t _memsz)
  : mem(_mem), memsz(_memsz), badvaddr(0),
-   ptbr(0), supervisor(true), vm_enabled(false)
+   ptbr(0), sr(SR_S)
 {
   flush_tlb();
 }
@@ -35,7 +35,7 @@ reg_t mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
   reg_t pte = walk(addr);
 
   reg_t pte_perm = pte & PTE_PERM;
-  if(supervisor) // shift supervisor permission bits into user perm bits
+  if (sr & SR_S) // shift supervisor permission bits into user perm bits
     pte_perm = (pte_perm/(PTE_SX/PTE_UX)) & PTE_PERM;
   pte_perm |= pte & PTE_E;
 
@@ -74,7 +74,7 @@ pte_t mmu_t::walk(reg_t addr)
   int shift = 8*sizeof(reg_t) - VA_BITS;
   if (((sreg_t)addr << shift >> shift) != (sreg_t)addr)
     ;
-  else if(!vm_enabled)
+  else if (!(sr & SR_VM))
   {
     if(addr < memsz)
       pte = PTE_E | PTE_PERM | ((addr >> PGSHIFT) << PTE_PPN_SHIFT);

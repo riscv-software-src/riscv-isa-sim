@@ -1,1 +1,1 @@
-RD = mmu.load_int8(RS1+SIMM);
+RD = mmu.load_int8(ITYPE_EADDR);
