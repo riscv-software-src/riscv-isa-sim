@@ -3,6 +3,7 @@
 
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
+#include <string.h>
 #include "pcr.h"
 #include "config.h"
 

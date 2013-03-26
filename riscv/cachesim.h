@@ -22,7 +22,7 @@ class cache_sim_t
  public:
   cache_sim_t(size_t sets, size_t ways, size_t linesz, const char* name);
   cache_sim_t(const cache_sim_t& rhs);
-  ~cache_sim_t();
+  virtual ~cache_sim_t();
 
   void access(uint64_t addr, size_t bytes, bool store);
   void print_stats();
