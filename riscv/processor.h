@@ -25,6 +25,7 @@ public:
   void deliver_ipi(); // register an interprocessor interrupt
   bool running() { return run; }
   void set_pcr(int which, reg_t val);
+  void set_interrupt(int which, bool on);
   reg_t get_pcr(int which);
   mmu_t* get_mmu() { return &mmu; }
 
@@ -49,7 +50,6 @@ private:
   reg_t cause;
   reg_t tohost;
   reg_t fromhost;
-  uint32_t interrupts_pending;
   uint32_t id;
   uint32_t sr; // only modify the status register using set_pcr()
   uint32_t fsr;

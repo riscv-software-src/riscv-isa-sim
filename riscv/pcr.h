@@ -11,8 +11,10 @@
 #define SR_S64   0x00000080
 #define SR_VM    0x00000100
 #define SR_IM    0x00FF0000
-#define SR_ZERO  ~(SR_ET|SR_EF|SR_EV|SR_EC|SR_PS|SR_S|SR_U64|SR_S64|SR_VM|SR_IM)
+#define SR_IP    0xFF000000
+#define SR_ZERO  ~(SR_ET|SR_EF|SR_EV|SR_EC|SR_PS|SR_S|SR_U64|SR_S64|SR_VM|SR_IM|SR_IP)
 #define SR_IM_SHIFT 16
+#define SR_IP_SHIFT 24
 
 #define PCR_SR       0
 #define PCR_EPC      1
@@ -35,6 +37,7 @@
 #define PCR_FROMHOST 31
 
 #define IRQ_IPI   5
+#define IRQ_HOST  6
 #define IRQ_TIMER 7
 
 #define CAUSE_MISALIGNED_FETCH 0

@@ -97,7 +97,7 @@ void processor_t::setvl(int vlapp)
 
 void processor_t::take_interrupt()
 {
-  uint32_t interrupts = interrupts_pending;
+  uint32_t interrupts = (sr & SR_IP) >> SR_IP_SHIFT;
   interrupts &= (sr & SR_IM) >> SR_IM_SHIFT;
 
   if(interrupts && (sr & SR_ET))
@@ -165,7 +165,7 @@ void processor_t::step(size_t n, bool noisy)
   uint32_t old_count = count;
   count += i;
   if(old_count < compare && uint64_t(old_count) + i >= compare)
-    interrupts_pending |= 1 << IRQ_TIMER;
+    set_interrupt(IRQ_TIMER, true);
 }
 
 void processor_t::take_trap(reg_t t, bool noisy)
@@ -237,7 +237,7 @@ void processor_t::set_pcr(int which, reg_t val)
       count = val;
       break;
     case PCR_COMPARE:
-      interrupts_pending &= ~(1 << IRQ_TIMER);
+      set_interrupt(IRQ_TIMER, false);
       compare = val;
       break;
     case PCR_PTBR:
@@ -247,10 +247,7 @@ void processor_t::set_pcr(int which, reg_t val)
       sim.send_ipi(val);
       break;
     case PCR_CLR_IPI:
-      if (val & 1)
-        interrupts_pending |= (1 << IRQ_IPI);
-      else
-        interrupts_pending &= ~(1 << IRQ_IPI);
+      set_interrupt(IRQ_IPI, val & 1);
       break;
     case PCR_K0:
       pcr_k0 = val;
@@ -267,6 +264,7 @@ void processor_t::set_pcr(int which, reg_t val)
         tohost = val;
       break;
     case PCR_FROMHOST:
+      set_interrupt(IRQ_HOST, val != 0);
       fromhost = val;
       break;
   }
@@ -308,4 +306,13 @@ reg_t processor_t::get_pcr(int which)
       return fromhost;
   }
   return -1;
+}
+
+void processor_t::set_interrupt(int which, bool on)
+{
+  uint32_t mask = (1 << (which + SR_IP_SHIFT)) & SR_IP;
+  if (on)
+    sr |= mask;
+  else
+    sr &= ~mask;
 }
