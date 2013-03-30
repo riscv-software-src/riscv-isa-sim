@@ -47,6 +47,7 @@ void processor_t::reset(bool value)
   // the ISA guarantees on boot that the PC is 0x2000 and the the processor
   // is in supervisor mode, and in 64-bit mode, if supported, with traps
   // and virtual memory disabled.
+  sr = 0;
   set_pcr(PCR_SR, SR_S | SR_S64 | SR_IM);
   pc = 0x2000;
 
@@ -209,7 +210,7 @@ void processor_t::set_pcr(int which, reg_t val)
   switch (which)
   {
     case PCR_SR:
-      sr = val & ~SR_ZERO; // clear SR bits that read as zero
+      sr = (val & ~SR_IP) | (sr & SR_IP);
 #ifndef RISCV_ENABLE_64BIT
       sr &= ~(SR_S64 | SR_U64);
 #endif
@@ -222,7 +223,7 @@ void processor_t::set_pcr(int which, reg_t val)
 #ifndef RISCV_ENABLE_VEC
       sr &= ~SR_EV;
 #endif
-      // update MMU state and flush TLB
+      sr &= ~SR_ZERO;
       mmu.set_sr(sr);
       mmu.flush_tlb();
       // set the fixed-point register length
