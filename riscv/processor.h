@@ -39,8 +39,6 @@ private:
   regfile_t<reg_t, NXPR, true> XPR;
   regfile_t<freg_t, NFPR, false> FPR;
   reg_t pc;
-
-  // counters
   reg_t cycle;
 
   // privileged control registers
@@ -57,9 +55,6 @@ private:
   uint32_t fsr;
   uint32_t count;
   uint32_t compare;
-
-  // # of bits in an XPR (32 or 64). (redundant with sr)
-  int xprlen;
 
   bool run; // !reset
 

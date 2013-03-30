@@ -225,9 +225,6 @@ void processor_t::set_pcr(int which, reg_t val)
 #endif
       sr &= ~SR_ZERO;
       mmu.set_sr(sr);
-      mmu.flush_tlb();
-      // set the fixed-point register length
-      xprlen = ((sr & SR_S) ? (sr & SR_S64) : (sr & SR_U64)) ? 64 : 32;
       break;
     case PCR_EPC:
       epc = val;

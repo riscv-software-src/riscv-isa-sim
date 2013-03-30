@@ -53,6 +53,10 @@ public:
       } \
       reg_t paddr = translate(addr, sizeof(type##_t), false, false); \
       return *(type##_t*)(mem + paddr); \
+    } \
+    type##_t load_reserved_##type(reg_t addr) { \
+      load_reservation = addr; \
+      return load_##type(addr); \
     }
 
   // load value from memory at aligned address; zero extend to register width
@@ -77,6 +81,12 @@ public:
       } \
       reg_t paddr = translate(addr, sizeof(type##_t), true, false); \
       *(type##_t*)(mem + paddr) = val; \
+    } \
+    reg_t store_conditional_##type(reg_t addr, type##_t val) { \
+      if (addr == load_reservation) { \
+        store_##type(addr, val); \
+        return 0; \
+      } else return 1; \
     }
 
   // store value to memory at aligned address
@@ -148,8 +158,8 @@ public:
   // get/set the page table base register
   reg_t get_ptbr() { return ptbr; }
   void set_ptbr(reg_t addr) { ptbr = addr & ~(PGSIZE-1); flush_tlb(); }
-  // keep the MMU in sync with processor mode
-  void set_sr(uint32_t _sr) { sr = _sr; }
+  void yield_load_reservation() { load_reservation = -1; }
+  void set_sr(uint32_t sr); // keep the MMU in sync with the processor mode
 
   // flush the TLB and instruction cache
   void flush_tlb();
@@ -160,6 +170,7 @@ public:
 private:
   char* mem;
   size_t memsz;
+  reg_t load_reservation;
   reg_t badvaddr;
   reg_t ptbr;
   uint32_t sr;

@@ -64,10 +64,8 @@ void sim_t::interactive_run_silent(const std::string& cmd, const std::vector<std
 
 void sim_t::interactive_run(const std::string& cmd, const std::vector<std::string>& args, bool noisy)
 {
-  if (args.size())
-    step_all(atoll(args[0].c_str()), 1, noisy);
-  else
-    while (1) step_all(1, 1, noisy);
+  size_t steps = args.size() ? atoll(args[0].c_str()) : -1;
+  step(steps, noisy);
 }
 
 void sim_t::interactive_run_proc_noisy(const std::string& cmd, const std::vector<std::string>& args)
@@ -89,10 +87,8 @@ void sim_t::interactive_run_proc(const std::string& cmd, const std::vector<std::
   if(p >= (int)num_cores())
     return;
 
-  if(a.size() == 2)
-    procs[p]->step(atoi(a[1].c_str()),noisy);
-  else
-    while (1) procs[p]->step(1, noisy);
+  size_t steps = a.size() > 1 ? atoll(a[1].c_str()) : -1;
+  procs[p]->step(steps, noisy);
 }
 
 void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::string>& args)
@@ -252,6 +248,6 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
     if(cmd == "while" && current != val)
       break;
 
-    step_all(1,1,false);
+    step(1, false);
   }
 }

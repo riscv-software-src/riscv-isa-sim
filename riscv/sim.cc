@@ -15,7 +15,7 @@
 
 sim_t::sim_t(int _nprocs, int mem_mb, const std::vector<std::string>& args)
   : htif(new htif_isasim_t(this, args)),
-    procs(_nprocs)
+    procs(_nprocs), current_step(0), current_proc(0)
 {
   // allocate target machine's memory, shrinking it as necessary
   // until the allocation succeeds
@@ -77,18 +77,28 @@ void sim_t::run(bool debug)
   while (!htif->done())
   {
     if(!debug)
-      step_all(10000, 1000, false);
+      step(INTERLEAVE, false);
     else
       interactive();
   }
 }
 
-void sim_t::step_all(size_t n, size_t interleave, bool noisy)
+void sim_t::step(size_t n, bool noisy)
 {
-  htif->tick();
-  for(size_t j = 0; j < n; j+=interleave)
+  for (size_t i = 0, steps = 0; i < n; i += steps)
   {
-    for(int i = 0; i < (int)num_cores(); i++)
-      procs[i]->step(interleave,noisy);
+    htif->tick();
+
+    steps = std::min(n - i, INTERLEAVE - current_step);
+    procs[current_proc]->step(steps, noisy);
+
+    current_step += steps;
+    if (current_step == INTERLEAVE)
+    {
+      current_step = 0;
+      procs[current_proc]->mmu.yield_load_reservation();
+      if (++current_proc == num_cores())
+        current_proc = 0;
+    }
   }
 }

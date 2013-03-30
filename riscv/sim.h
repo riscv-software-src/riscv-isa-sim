@@ -32,20 +32,15 @@ public:
 
 private:
   htif_isasim_t* htif;
-
-  // main memory, shared between processors
-  char* mem;
+  char* mem; // main memory
   size_t memsz; // memory size in bytes
   mmu_t* mmu; // debug port into main memory
-
-  // processors
   std::vector<processor_t*> procs;
 
-  // run each processor for n instructions; interleave instructions are
-  // run on a processor before moving on to the next processor.
-  // interleave must divide n.
-  // if noisy, print out the instructions as they execute.
-  void step_all(size_t n, size_t interleave, bool noisy);
+  void step(size_t n, bool noisy); // step through simulation
+  static const size_t INTERLEAVE = 5000;
+  size_t current_step;
+  size_t current_proc;
 
   // presents a prompt for introspection into the simulation
   void interactive();

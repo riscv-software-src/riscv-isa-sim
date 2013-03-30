@@ -475,6 +475,11 @@ disassembler::disassembler()
   DEFINE_XAMO(amominu_d)
   DEFINE_XAMO(amomaxu_d)
 
+  DEFINE_XAMO(lr_w)
+  DEFINE_XAMO(sc_w)
+  DEFINE_XAMO(lr_d)
+  DEFINE_XAMO(sc_d)
+
   DEFINE_FLOAD(flw)
   DEFINE_FLOAD(fld)
 

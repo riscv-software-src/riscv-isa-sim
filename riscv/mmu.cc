@@ -6,9 +6,9 @@
 
 mmu_t::mmu_t(char* _mem, size_t _memsz)
  : mem(_mem), memsz(_memsz), badvaddr(0),
-   ptbr(0), sr(SR_S)
+   ptbr(0)
 {
-  flush_tlb();
+  set_sr(SR_S);
 }
 
 mmu_t::~mmu_t()
@@ -27,6 +27,13 @@ void mmu_t::flush_tlb()
   memset(tlb_store_tag, -1, sizeof(tlb_store_tag));
 
   flush_icache();
+}
+
+void mmu_t::set_sr(uint32_t _sr)
+{
+  sr = _sr;
+  flush_tlb();
+  yield_load_reservation();
 }
 
 reg_t mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
