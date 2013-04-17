@@ -33,7 +33,7 @@ DISPATCH_SRCS := \
 $(DISPATCH_SRCS): %.cc: dispatch $(wildcard insns/*.h) $(riscv_hdrs)
 	$< $(subst dispatch,,$(subst .cc,,$@)) $(NDISPATCH) 1024 < $(src_dir)/riscv/opcodes.h > $@
 
-$(src_dir)/riscv/dispatch.h: %.h: dispatch
+dispatch.h: %.h: dispatch $(riscv_hdrs)
 	$< $(NDISPATCH) 1024 < $(src_dir)/riscv/opcodes.h > $@
 
 riscv_srcs = \

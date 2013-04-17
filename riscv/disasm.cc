@@ -502,11 +502,11 @@ disassembler::disassembler()
   DEFINE_BTYPE(bgeu)
 
   DEFINE_LTYPE(lui);
+  DEFINE_LTYPE(auipc);
 
   DEFINE_I2TYPE("jr", jalr_j);
   add_insn(new disasm_insn_t("jalr", match_jalr_c | match_rd_ra, mask_jalr_c | mask_rd | mask_imm, xrs1_reg));
   add_insn(new disasm_insn_t("ret", match_jalr_r | match_rs1_ra, mask_jalr_r | mask_rd | mask_rs1 | mask_imm));
-  DEFINE_DTYPE(rdnpc);
   DEFINE_ITYPE(jalr_c);
   DEFINE_ITYPE(jalr_r);
   DEFINE_ITYPE(jalr_j);
