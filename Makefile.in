@@ -294,7 +294,9 @@ deps += $$($(2)_deps)
 
 test_outs += $$($(2)_test_outs)
 
-install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs))
+vpath %.h $$(src_dir)/$$(1)
+
+install_hdrs += $$($(2)_hdrs)
 install_libs += lib$(1).a
 install_exes += $$($(2)_install_prog_exes)
 
@@ -329,7 +331,7 @@ check : $(test_outs)
 
 install-hdrs : $(install_hdrs)
 	$(MKINSTALLDIRS) $(install_hdrs_dir)
-	for file in $(install_hdrs); \
+	for file in $^; \
   do \
     $(INSTALL_HDR) $$file $(install_hdrs_dir); \
   done

@@ -2,7 +2,7 @@ riscv_subproject_deps = \
 	softfloat_riscv \
 	softfloat \
 
-riscv_hdrs = \
+repo_hdrs := \
 	htif.h \
 	common.h \
 	decode.h \
@@ -12,9 +12,13 @@ riscv_hdrs = \
 	trap.h \
 	opcodes.h \
 	insn_header.h \
-	dispatch.h \
 	cachesim.h \
 	memtracer.h \
+
+riscv_hdrs := \
+	$(repo_hdrs) \
+	dispatch.h
+
 
 NDISPATCH := 10
 DISPATCH_SRCS := \
@@ -30,10 +34,10 @@ DISPATCH_SRCS := \
 	dispatch9.cc \
 	dispatch10.cc \
 
-$(DISPATCH_SRCS): %.cc: dispatch $(wildcard insns/*.h) $(riscv_hdrs)
+$(DISPATCH_SRCS): %.cc: dispatch $(wildcard insns/*.h) $(riscv_hdrs) 
 	$< $(subst dispatch,,$(subst .cc,,$@)) $(NDISPATCH) 1024 < $(src_dir)/riscv/opcodes.h > $@
 
-dispatch.h: %.h: dispatch $(riscv_hdrs)
+dispatch.h: %.h: dispatch $(repo_hdrs)
 	$< $(NDISPATCH) 1024 < $(src_dir)/riscv/opcodes.h > $@
 
 riscv_srcs = \
