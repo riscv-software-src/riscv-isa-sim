@@ -5,6 +5,7 @@
 
 #include <vector>
 #include <string>
+#include <memory>
 #include "processor.h"
 #include "mmu.h"
 
@@ -31,7 +32,7 @@ public:
   reg_t get_scr(int which);
 
 private:
-  htif_isasim_t* htif;
+  std::auto_ptr<htif_isasim_t> htif;
   char* mem; // main memory
   size_t memsz; // memory size in bytes
   mmu_t* mmu; // debug port into main memory
