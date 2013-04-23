@@ -8,25 +8,49 @@
 #include <climits>
 #include <assert.h>
 #include <stdlib.h>
+#include <unistd.h>
+#include <sstream>
+#include <string>
+#include <vector>
+
+static std::string readline()
+{
+  std::string s;
+  while (1)
+  {
+    char ch;
+    assert(read(1, &ch, 1) == 1);
+
+    if (ch == '\x7f')
+    {
+      if (s.empty())
+        continue;
+      s.erase(s.end()-1);
+    }
+
+    assert(write(1, &ch, 1) == 1);
+    if (ch == '\n')
+      return s;
+    if (ch != '\x7f')
+      s += ch;
+  }
+}
 
 void sim_t::interactive()
 {
-  putchar(':');
-  char s[128];
-  std::cin.getline(s,sizeof(s)-1);
+  std::cout << ": " << std::flush;
+  std::string s = readline();
 
-  char* p = strtok(s," ");
-  if(!p)
+  std::stringstream ss(s);
+  std::string cmd, tmp;
+  std::vector<std::string> args;
+  if (!(ss >> cmd))
   {
     interactive_run_noisy(std::string("r"), std::vector<std::string>(1,"1"));
     return;
   }
-  std::string cmd = p;
-
-  std::vector<std::string> args;
-  while((p = strtok(NULL," ")))
-    args.push_back(p);
-
+  while (ss >> tmp)
+    args.push_back(tmp);
 
   typedef void (sim_t::*interactive_func)(const std::string&, const std::vector<std::string>&);
   std::map<std::string,interactive_func> funcs;
