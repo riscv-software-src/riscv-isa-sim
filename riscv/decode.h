@@ -152,6 +152,8 @@ public:
   }
   write_port_t<T> write_port(size_t i)
   {
+    if (zero_reg)
+      const_cast<T&>(data[0]) = 0;
     return write_port_t<T>(data[i]);
   }
   const T& operator [] (size_t i) const

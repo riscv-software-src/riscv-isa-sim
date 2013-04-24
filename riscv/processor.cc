@@ -299,6 +299,8 @@ reg_t processor_t::get_pcr(int which)
       return pcr_k1;
     case PCR_VECBANK:
       return vecbanks;
+    case PCR_VECCFG:
+      return nfpr_use << 18 | nxpr_use << 12 | vl;
     case PCR_TOHOST:
       return tohost;
     case PCR_FROMHOST:
