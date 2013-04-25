@@ -197,7 +197,7 @@ $(2)_objs := $$(patsubst %.cc, %.o, $$($(2)_srcs))
 $(2)_c_objs := $$(patsubst %.c, %.o, $$($(2)_c_srcs))
 $(2)_deps := $$(patsubst %.o, %.d, $$($(2)_objs))
 $(2)_c_deps := $$(patsubst %.o, %.d, $$($(2)_c_objs))
-$$($(2)_objs) : %.o : %.cc
+$$($(2)_objs) : %.o : %.cc $(2)_gen_hdrs
 	$(COMPILE) -c $$<
 $$($(2)_c_objs) : %.o : %.c
 	$(COMPILE_C) -c $$<
@@ -298,13 +298,13 @@ clean-$(1) :
 libs += lib$(1).a
 objs += $$($(2)_objs)
 srcs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_srcs)) 
-hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs))
+hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs) $$($(2)_gen_hdrs))
 junk += $$($(2)_junk)
 deps += $$($(2)_deps)
 
 test_outs += $$($(2)_test_outs)
 
-install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs))
+install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs) $$($(2)_gen_hdrs))
 install_libs += lib$(1).a
 install_exes += $$($(2)_install_prog_exes)
 

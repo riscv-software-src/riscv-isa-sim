@@ -2,6 +2,9 @@ riscv_subproject_deps = \
 	softfloat_riscv \
 	softfloat \
 
+riscv_install_prog_srcs = \
+	riscv-isa-run.cc \
+
 riscv_hdrs := \
 	htif.h \
 	common.h \
@@ -14,26 +17,6 @@ riscv_hdrs := \
 	insn_header.h \
 	cachesim.h \
 	memtracer.h \
-	dispatch.h \
-
-NDISPATCH := 9
-DISPATCH_SRCS := \
-	dispatch0.cc \
-	dispatch1.cc \
-	dispatch2.cc \
-	dispatch3.cc \
-	dispatch4.cc \
-	dispatch5.cc \
-	dispatch6.cc \
-	dispatch7.cc \
-	dispatch8.cc \
-	dispatch9.cc \
-
-$(DISPATCH_SRCS): %.cc: dispatch $(wildcard insns/*.h) opcodes.h
-	$< $(subst dispatch,,$(subst .cc,,$@)) $(NDISPATCH) 1024 < $(src_dir)/riscv/opcodes.h > $@
-
-$(src_dir)/riscv/dispatch.h: %.h: dispatch opcodes.h
-	$< $(NDISPATCH) 1024 < $(src_dir)/riscv/opcodes.h > $@
 
 riscv_srcs = \
 	htif.cc \
@@ -48,5 +31,19 @@ riscv_srcs = \
 
 riscv_test_srcs =
 
-riscv_install_prog_srcs = \
-	riscv-isa-run.cc \
+riscv_gen_hdrs: \
+	dispatch.h \
+
+NDISPATCH := 9
+DISPATCH_SRCS = $(addsuffix .cc,$(addprefix dispatch,$(call range,0,$(NDISPATCH)+1)))
+
+$(DISPATCH_SRCS): %.cc: dispatch $(wildcard insns/*.h) opcodes.h
+	$< $(subst dispatch,,$(subst .cc,,$@)) $(NDISPATCH) 1024 < $(src_dir)/riscv/opcodes.h > $@
+
+dispatch.h: %.h: dispatch opcodes.h
+	echo $(riscv_srcs)
+	$< $(NDISPATCH) 1024 < $(src_dir)/riscv/opcodes.h > $@
+
+riscv_junk = \
+  dispatch.h \
+  $(DISPATCH_SRCS) \
