@@ -6,6 +6,7 @@
 #include <map>
 #include <iostream>
 #include <climits>
+#include <cinttypes>
 #include <assert.h>
 #include <stdlib.h>
 #include <unistd.h>
@@ -160,7 +161,7 @@ reg_t sim_t::get_freg(const std::vector<std::string>& args)
 
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
 {
-  printf("0x%016llx\n",(unsigned long long)get_reg(args));
+  printf("0x%016" PRIx64 "\n", get_reg(args));
 }
 
 union fpr
@@ -225,7 +226,7 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
 
 void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::string>& args)
 {
-  printf("0x%016llx\n",(unsigned long long)get_mem(args));
+  printf("0x%016" PRIx64 "\n", get_mem(args));
 }
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)

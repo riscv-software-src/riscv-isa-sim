@@ -5,11 +5,12 @@
 #include "config.h"
 #include "sim.h"
 #include "disasm.h"
-#include <inttypes.h>
+#include <cinttypes>
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
 #include <assert.h>
+#include <limits.h>
 
 processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
   : sim(*_sim), mmu(*_mmu), id(_id), utidx(0)
@@ -176,11 +177,11 @@ void processor_t::take_trap(reg_t t, bool noisy)
   if(noisy)
   {
     if ((sreg_t)t < 0)
-      printf("core %3d: interrupt %lld, pc 0x%016llx\n",
-             id, (long long)(t << 1 >> 1), (unsigned long long)pc);
+      printf("core %3d: interrupt %d, epc 0x%016" PRIx64 "\n",
+             id, uint8_t(t), pc);
     else
-      printf("core %3d: trap %s, pc 0x%016llx\n",
-             id, trap_name(trap_t(t)), (unsigned long long)pc);
+      printf("core %3d: trap %s, epc 0x%016" PRIx64 "\n",
+             id, trap_name(trap_t(t)), pc);
   }
 
   // switch to supervisor, set previous supervisor bit, disable traps
@@ -201,8 +202,8 @@ void processor_t::disasm(insn_t insn, reg_t pc)
 {
   // the disassembler is stateless, so we share it
   static disassembler disasm;
-  printf("core %3d: 0x%016llx (0x%08x) %s\n", id, (unsigned long long)pc,
-         insn.bits, disasm.disassemble(insn).c_str());
+  printf("core %3d: 0x%016" PRIx64 " (0x%08" PRIx32 ") %s\n",
+         id, pc, insn.bits, disasm.disassemble(insn).c_str());
 }
 
 void processor_t::set_pcr(int which, reg_t val)
