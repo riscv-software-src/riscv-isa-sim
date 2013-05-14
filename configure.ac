@@ -17,7 +17,7 @@
 
 m4_define( proj_name,         [RISC-V ISA Simulator])
 m4_define( proj_maintainer,   [Andrew Waterman])
-m4_define( proj_abbreviation, [riscv-isa-run])
+m4_define( proj_abbreviation, [spike])
 
 #-------------------------------------------------------------------------
 # Project version information

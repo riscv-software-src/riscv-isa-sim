@@ -3,7 +3,7 @@ riscv_subproject_deps = \
 	softfloat \
 
 riscv_install_prog_srcs = \
-	riscv-isa-run.cc \
+	spike.cc \
 
 riscv_hdrs := \
 	htif.h \

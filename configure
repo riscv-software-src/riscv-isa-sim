@@ -559,7 +559,7 @@ MAKEFLAGS=
 
 # Identity of this package.
 PACKAGE_NAME='RISC-V ISA Simulator'
-PACKAGE_TARNAME='riscv-isa-run'
+PACKAGE_TARNAME='spike'
 PACKAGE_VERSION='?'
 PACKAGE_STRING='RISC-V ISA Simulator ?'
 PACKAGE_BUGREPORT='Andrew Waterman'
@@ -1256,7 +1256,7 @@ Fine tuning of the installation directories:
   --infodir=DIR           info documentation [DATAROOTDIR/info]
   --localedir=DIR         locale-dependent data [DATAROOTDIR/locale]
   --mandir=DIR            man documentation [DATAROOTDIR/man]
-  --docdir=DIR            documentation root [DATAROOTDIR/doc/riscv-isa-run]
+  --docdir=DIR            documentation root [DATAROOTDIR/doc/spike]
   --htmldir=DIR           html documentation [DOCDIR]
   --dvidir=DIR            dvi documentation [DOCDIR]
   --pdfdir=DIR            pdf documentation [DOCDIR]
