@@ -25,7 +25,7 @@ install path, and that the riscv-fesvr package is installed there.
 Compiling and Running a Simple C Program
 --------------------------------------------------------------------------
 
-Install riscv-isa-run (see Build Steps), riscv-gcc, and riscv-pk.
+Install spike (see Build Steps), riscv-gcc, and riscv-pk.
 
 Write a short C program and name it hello.c.  Then, compile it into a RISC-V
 ELF binary named hello:
@@ -34,7 +34,7 @@ ELF binary named hello:
 
 Now you can simulate the program atop the proxy kernel:
 
- % riscv-isa-run pk hello
+ % spike pk hello
 
 --------------------------------------------------------------------------
 Simulating a New Instruction

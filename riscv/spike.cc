@@ -13,7 +13,7 @@
 
 static void help()
 {
-  fprintf(stderr, "usage: riscv-isa-run [host options] <target program> [target options]\n");
+  fprintf(stderr, "usage: spike [host options] <target program> [target options]\n");
   fprintf(stderr, "Host Options:\n");
   fprintf(stderr, "  -p <n>             Simulate <n> processors\n");
   fprintf(stderr, "  -m <n>             Provide <n> MB of target memory\n");
