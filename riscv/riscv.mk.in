@@ -5,7 +5,7 @@ riscv_subproject_deps = \
 riscv_install_prog_srcs = \
 	spike.cc \
 
-riscv_hdrs := \
+riscv_hdrs = \
 	htif.h \
 	common.h \
 	decode.h \
@@ -31,10 +31,10 @@ riscv_srcs = \
 
 riscv_test_srcs =
 
-riscv_gen_hdrs: \
+riscv_gen_hdrs = \
 	dispatch.h \
 
-NDISPATCH := 9
+NDISPATCH = 9
 DISPATCH_SRCS = $(addsuffix .cc,$(addprefix dispatch,$(call range,0,$(NDISPATCH))))
 
 $(DISPATCH_SRCS): %.cc: dispatch $(wildcard insns/*.h) opcodes.h
