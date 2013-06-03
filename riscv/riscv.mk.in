@@ -35,7 +35,7 @@ riscv_gen_hdrs = \
 	dispatch.h \
 
 NDISPATCH = 9
-DISPATCH_SRCS = $(addsuffix .cc,$(addprefix dispatch,$(call range,0,$(NDISPATCH))))
+DISPATCH_SRCS = $(addsuffix .cc,$(addprefix dispatch,$(shell seq 0 $(NDISPATCH))))
 
 $(DISPATCH_SRCS): %.cc: dispatch $(wildcard insns/*.h) opcodes.h
 	$< $(subst dispatch,,$(subst .cc,,$@)) $(NDISPATCH) 1024 < $(src_dir)/riscv/opcodes.h > $@
