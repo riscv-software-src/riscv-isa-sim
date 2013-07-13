@@ -15,11 +15,13 @@ class htif_isasim_t;
 class sim_t
 {
 public:
-  sim_t(int _nprocs, int mem_mb, const std::vector<std::string>& htif_args);
+  sim_t(size_t _nprocs, size_t mem_mb, const std::vector<std::string>& htif_args);
   ~sim_t();
 
   // run the simulation to completion
-  void run(bool debug);
+  void run();
+  void stop();
+  void set_debug(bool value) { debug = value; }
 
   // deliver an IPI to a specific processor
   void send_ipi(reg_t who);
@@ -39,9 +41,10 @@ private:
   std::vector<processor_t*> procs;
 
   void step(size_t n, bool noisy); // step through simulation
-  static const size_t INTERLEAVE = 5000;
+  static const size_t INTERLEAVE = 1000;
   size_t current_step;
   size_t current_proc;
+  bool debug;
 
   // presents a prompt for introspection into the simulation
   void interactive();
@@ -51,9 +54,6 @@ private:
   void interactive_run(const std::string& cmd, const std::vector<std::string>& args, bool noisy);
   void interactive_run_noisy(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_run_silent(const std::string& cmd, const std::vector<std::string>& args);
-  void interactive_run_proc(const std::string& cmd, const std::vector<std::string>& args, bool noisy);
-  void interactive_run_proc_noisy(const std::string& cmd, const std::vector<std::string>& args);
-  void interactive_run_proc_silent(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_reg(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_fregs(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_fregd(const std::string& cmd, const std::vector<std::string>& args);

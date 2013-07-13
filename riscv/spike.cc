@@ -58,5 +58,6 @@ int main(int argc, char** argv)
     if (dc) s.get_core(i)->get_mmu()->register_memtracer(&*dc);
   }
 
-  s.run(debug);
+  s.set_debug(debug);
+  s.run();
 }

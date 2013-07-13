@@ -58,8 +58,6 @@ void sim_t::interactive()
 
   funcs["r"] = &sim_t::interactive_run_noisy;
   funcs["rs"] = &sim_t::interactive_run_silent;
-  funcs["rp"] = &sim_t::interactive_run_proc_noisy;
-  funcs["rps"] = &sim_t::interactive_run_proc_silent;
   funcs["reg"] = &sim_t::interactive_reg;
   funcs["fregs"] = &sim_t::interactive_fregs;
   funcs["fregd"] = &sim_t::interactive_fregd;
@@ -93,32 +91,9 @@ void sim_t::interactive_run(const std::string& cmd, const std::vector<std::strin
   step(steps, noisy);
 }
 
-void sim_t::interactive_run_proc_noisy(const std::string& cmd, const std::vector<std::string>& args)
-{
-  interactive_run_proc(cmd,args,true);
-}
-
-void sim_t::interactive_run_proc_silent(const std::string& cmd, const std::vector<std::string>& args)
-{
-  interactive_run_proc(cmd,args,false);
-}
-
-void sim_t::interactive_run_proc(const std::string& cmd, const std::vector<std::string>& a, bool noisy)
-{
-  if(a.size() == 0)
-    return;
-
-  int p = atoi(a[0].c_str());
-  if(p >= (int)num_cores())
-    return;
-
-  size_t steps = a.size() > 1 ? atoll(a[1].c_str()) : -1;
-  procs[p]->step(steps, noisy);
-}
-
 void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::string>& args)
 {
-  exit(0);
+  stop();
 }
 
 reg_t sim_t::get_pc(const std::vector<std::string>& args)

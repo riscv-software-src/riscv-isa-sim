@@ -13,9 +13,9 @@
 # define mmap mmap64
 #endif
 
-sim_t::sim_t(int _nprocs, int mem_mb, const std::vector<std::string>& args)
+sim_t::sim_t(size_t _nprocs, size_t mem_mb, const std::vector<std::string>& args)
   : htif(new htif_isasim_t(this, args)),
-    procs(_nprocs), current_step(0), current_proc(0)
+    procs(_nprocs), current_step(0), current_proc(0), debug(false)
 {
   // allocate target machine's memory, shrinking it as necessary
   // until the allocation succeeds
@@ -68,20 +68,20 @@ reg_t sim_t::get_scr(int which)
 {
   switch (which)
   {
-    case 0: return num_cores();
+    case 0: return procs.size();
     case 1: return memsz >> 20;
     default: return -1;
   }
 }
 
-void sim_t::run(bool debug)
+void sim_t::run()
 {
   while (!htif->done())
   {
-    if(!debug)
-      step(INTERLEAVE, false);
-    else
+    if (debug)
       interactive();
+    else
+      step(INTERLEAVE, false);
   }
 }
 
@@ -99,8 +99,15 @@ void sim_t::step(size_t n, bool noisy)
     {
       current_step = 0;
       procs[current_proc]->mmu.yield_load_reservation();
-      if (++current_proc == num_cores())
+      if (++current_proc == procs.size())
         current_proc = 0;
     }
   }
+}
+
+void sim_t::stop()
+{
+  procs[0]->tohost = 1;
+  while (!htif->done())
+    htif->tick();
 }
