@@ -49,7 +49,7 @@ if filenum == numfiles:
 
 if filenum == numfiles+1:
   print '#define get_insn_func(insn, sr) \\'
-  print '  processor_t::dispatch_table[((((sr) & SR_S) ? (sr & SR_S64) : (SR_U64)) ? %d : 0) + ((insn).bits %% %d)]' % (tablesz, tablesz)
+  print '  processor_t::dispatch_table[((((sr) & SR_S) ? (sr & SR_S64) : (sr & SR_U64)) ? %d : 0) + ((insn).bits %% %d)]' % (tablesz, tablesz)
   
   print 'static const insn_func_t dispatch_table[%d];' % (2*tablesz)
   for i in range(0, tablesz):
