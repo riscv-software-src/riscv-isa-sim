@@ -106,8 +106,5 @@ bool htif_isasim_t::done()
 {
   if (reset)
     return false;
-  for (size_t i = 0; i < sim->num_cores(); i++)
-    if (sim->procs[i]->running())
-      return false;
-  return true;
+  return !sim->running();
 }

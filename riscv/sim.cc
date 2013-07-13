@@ -90,6 +90,8 @@ void sim_t::step(size_t n, bool noisy)
   for (size_t i = 0, steps = 0; i < n; i += steps)
   {
     htif->tick();
+    if (!running())
+      break;
 
     steps = std::min(n - i, INTERLEAVE - current_step);
     procs[current_proc]->step(steps, noisy);
@@ -103,6 +105,14 @@ void sim_t::step(size_t n, bool noisy)
         current_proc = 0;
     }
   }
+}
+
+bool sim_t::running()
+{
+  for (size_t i = 0; i < procs.size(); i++)
+    if (procs[i]->running())
+      return true;
+  return false;
 }
 
 void sim_t::stop()

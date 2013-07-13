@@ -20,6 +20,7 @@ public:
 
   // run the simulation to completion
   void run();
+  bool running();
   void stop();
   void set_debug(bool value) { debug = value; }
 
