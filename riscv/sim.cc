@@ -40,13 +40,15 @@ sim_t::sim_t(int _nprocs, int mem_mb, const std::vector<std::string>& args)
 
   mmu = new mmu_t(mem, memsz);
 
-  for(size_t i = 0; i < num_cores(); i++)
+  if (_nprocs == 0)
+    _nprocs = 1;
+  for (size_t i = 0; i < _nprocs; i++)
     procs[i] = new processor_t(this, new mmu_t(mem, memsz), i);
 }
 
 sim_t::~sim_t()
 {
-  for(size_t i = 0; i < num_cores(); i++)
+  for (size_t i = 0; i < procs.size(); i++)
   {
     mmu_t* pmmu = &procs[i]->mmu;
     delete procs[i];
@@ -58,7 +60,7 @@ sim_t::~sim_t()
 
 void sim_t::send_ipi(reg_t who)
 {
-  if(who < num_cores())
+  if (who < procs.size())
     procs[who]->deliver_ipi();
 }
 
