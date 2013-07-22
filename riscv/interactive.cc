@@ -3,6 +3,7 @@
 #include "sim.h"
 #include "htif.h"
 #include <sys/mman.h>
+#include <termios.h>
 #include <map>
 #include <iostream>
 #include <climits>
@@ -14,65 +15,76 @@
 #include <string>
 #include <vector>
 
-static std::string readline()
+static std::string readline(int fd)
 {
-  std::string s;
-  while (1)
-  {
-    char ch;
-    assert(read(1, &ch, 1) == 1);
+  struct termios tios;
+  bool noncanonical = tcgetattr(fd, &tios) == 0 && (tios.c_lflag & ICANON) == 0;
 
+  std::string s;
+  for (char ch; read(fd, &ch, 1) == 1; )
+  {
     if (ch == '\x7f')
     {
       if (s.empty())
         continue;
       s.erase(s.end()-1);
-    }
 
-    assert(write(1, &ch, 1) == 1);
+      if (noncanonical && write(fd, "\b \b", 3) != 3)
+        ; // shut up gcc
+    }
+    else if (noncanonical && write(fd, &ch, 1) != 1)
+      ; // shut up gcc
+
     if (ch == '\n')
-      return s;
+      break;
     if (ch != '\x7f')
       s += ch;
   }
+  return s;
 }
 
 void sim_t::interactive()
 {
-  std::cout << ": " << std::flush;
-  std::string s = readline();
-
-  std::stringstream ss(s);
-  std::string cmd, tmp;
-  std::vector<std::string> args;
-  if (!(ss >> cmd))
+  while (true)
   {
-    interactive_run_noisy(std::string("r"), std::vector<std::string>(1,"1"));
-    return;
+    std::cerr << ": " << std::flush;
+    std::string s = readline(2);
+
+    std::stringstream ss(s);
+    std::string cmd, tmp;
+    std::vector<std::string> args;
+
+    if (!(ss >> cmd))
+    {
+      step(1, true);
+      continue;
+    }
+
+    while (ss >> tmp)
+      args.push_back(tmp);
+
+    typedef void (sim_t::*interactive_func)(const std::string&, const std::vector<std::string>&);
+    std::map<std::string,interactive_func> funcs;
+
+    funcs["r"] = &sim_t::interactive_run_noisy;
+    funcs["rs"] = &sim_t::interactive_run_silent;
+    funcs["reg"] = &sim_t::interactive_reg;
+    funcs["fregs"] = &sim_t::interactive_fregs;
+    funcs["fregd"] = &sim_t::interactive_fregd;
+    funcs["mem"] = &sim_t::interactive_mem;
+    funcs["str"] = &sim_t::interactive_str;
+    funcs["until"] = &sim_t::interactive_until;
+    funcs["while"] = &sim_t::interactive_until;
+    funcs["q"] = &sim_t::interactive_quit;
+
+    try
+    {
+      if(funcs.count(cmd))
+        (this->*funcs[cmd])(cmd, args);
+    }
+    catch(trap_t t) {}
   }
-  while (ss >> tmp)
-    args.push_back(tmp);
-
-  typedef void (sim_t::*interactive_func)(const std::string&, const std::vector<std::string>&);
-  std::map<std::string,interactive_func> funcs;
-
-  funcs["r"] = &sim_t::interactive_run_noisy;
-  funcs["rs"] = &sim_t::interactive_run_silent;
-  funcs["reg"] = &sim_t::interactive_reg;
-  funcs["fregs"] = &sim_t::interactive_fregs;
-  funcs["fregd"] = &sim_t::interactive_fregd;
-  funcs["mem"] = &sim_t::interactive_mem;
-  funcs["str"] = &sim_t::interactive_str;
-  funcs["until"] = &sim_t::interactive_until;
-  funcs["while"] = &sim_t::interactive_until;
-  funcs["q"] = &sim_t::interactive_quit;
-
-  try
-  {
-    if(funcs.count(cmd))
-      (this->*funcs[cmd])(cmd, args);
-  }
-  catch(trap_t t) {}
+  ctrlc_pressed = false;
 }
 
 void sim_t::interactive_run_noisy(const std::string& cmd, const std::vector<std::string>& args)
@@ -88,12 +100,14 @@ void sim_t::interactive_run_silent(const std::string& cmd, const std::vector<std
 void sim_t::interactive_run(const std::string& cmd, const std::vector<std::string>& args, bool noisy)
 {
   size_t steps = args.size() ? atoll(args[0].c_str()) : -1;
-  step(steps, noisy);
+  ctrlc_pressed = false;
+  for (size_t i = 0; i < steps && !ctrlc_pressed; i++)
+    step(1, noisy);
 }
 
 void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::string>& args)
 {
-  stop();
+  exit(0);
 }
 
 reg_t sim_t::get_pc(const std::vector<std::string>& args)
@@ -220,10 +234,11 @@ void sim_t::interactive_str(const std::string& cmd, const std::vector<std::strin
 
 void sim_t::interactive_until(const std::string& cmd, const std::vector<std::string>& args)
 {
+  bool cmd_until = cmd == "until";
+
   if(args.size() < 3)
     return;
 
-  std::string scmd = args[0];
   reg_t val = strtol(args[args.size()-1].c_str(),NULL,16);
   if(val == LONG_MAX)
     val = strtoul(args[args.size()-1].c_str(),NULL,16);
@@ -231,21 +246,23 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
   std::vector<std::string> args2;
   args2 = std::vector<std::string>(args.begin()+1,args.end()-1);
 
+  auto func = args[0] == "reg" ? &sim_t::get_reg :
+              args[0] == "pc"  ? &sim_t::get_pc :
+              args[0] == "mem" ? &sim_t::get_mem :
+              NULL;
+
+  if (func == NULL)
+    return;
+
+  ctrlc_pressed = false;
+
   while (1)
   {
-    reg_t current;
-    if(scmd == "reg")
-      current = get_reg(args2);
-    else if(scmd == "pc")
-      current = get_pc(args2);
-    else if(scmd == "mem")
-      current = get_mem(args2);
-    else
-      return;
+    reg_t current = (this->*func)(args2);
 
-    if(cmd == "until" && current == val)
+    if (cmd_until == (current == val))
       break;
-    if(cmd == "while" && current != val)
+    if (ctrlc_pressed)
       break;
 
     step(1, false);

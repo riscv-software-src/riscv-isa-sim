@@ -177,11 +177,11 @@ void processor_t::take_trap(reg_t t, bool noisy)
   if(noisy)
   {
     if ((sreg_t)t < 0)
-      printf("core %3d: interrupt %d, epc 0x%016" PRIx64 "\n",
-             id, uint8_t(t), pc);
+      fprintf(stderr, "core %3d: interrupt %d, epc 0x%016" PRIx64 "\n",
+              id, uint8_t(t), pc);
     else
-      printf("core %3d: trap %s, epc 0x%016" PRIx64 "\n",
-             id, trap_name(trap_t(t)), pc);
+      fprintf(stderr, "core %3d: trap %s, epc 0x%016" PRIx64 "\n",
+              id, trap_name(trap_t(t)), pc);
   }
 
   // switch to supervisor, set previous supervisor bit, disable traps
@@ -202,8 +202,8 @@ void processor_t::disasm(insn_t insn, reg_t pc)
 {
   // the disassembler is stateless, so we share it
   static disassembler disasm;
-  printf("core %3d: 0x%016" PRIx64 " (0x%08" PRIx32 ") %s\n",
-         id, pc, insn.bits, disasm.disassemble(insn).c_str());
+  fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx32 ") %s\n",
+          id, pc, insn.bits, disasm.disassemble(insn).c_str());
 }
 
 void processor_t::set_pcr(int which, reg_t val)

@@ -4,6 +4,8 @@ riscv_subproject_deps = \
 
 riscv_install_prog_srcs = \
 	spike.cc \
+	xspike.cc \
+	termios-xspike.cc \
 
 riscv_hdrs = \
 	htif.h \

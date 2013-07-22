@@ -70,4 +70,6 @@ private:
   friend class htif_isasim_t;
 };
 
+extern volatile bool ctrlc_pressed;
+
 #endif

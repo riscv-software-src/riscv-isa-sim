@@ -7,11 +7,22 @@
 #include <climits>
 #include <cstdlib>
 #include <cassert>
+#include <signal.h>
+
+volatile bool ctrlc_pressed = false;
+static void handle_signal(int sig)
+{
+  if (ctrlc_pressed)
+    exit(-1);
+  ctrlc_pressed = true;
+  signal(sig, &handle_signal);
+}
 
 sim_t::sim_t(size_t _nprocs, size_t mem_mb, const std::vector<std::string>& args)
   : htif(new htif_isasim_t(this, args)),
     procs(_nprocs), current_step(0), current_proc(0), debug(false)
 {
+  signal(SIGINT, &handle_signal);
   // allocate target machine's memory, shrinking it as necessary
   // until the allocation succeeds
   size_t memsz0 = (size_t)mem_mb << 20;
@@ -67,7 +78,7 @@ void sim_t::run()
 {
   while (!htif->done())
   {
-    if (debug)
+    if (debug || ctrlc_pressed)
       interactive();
     else
       step(INTERLEAVE, false);
