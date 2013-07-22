@@ -150,7 +150,7 @@ reg_t sim_t::get_freg(const std::vector<std::string>& args)
 
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
 {
-  printf("0x%016" PRIx64 "\n", get_reg(args));
+  fprintf(stderr, "0x%016" PRIx64 "\n", get_reg(args));
 }
 
 union fpr
@@ -164,14 +164,14 @@ void sim_t::interactive_fregs(const std::string& cmd, const std::vector<std::str
 {
   fpr f;
   f.r = get_freg(args);
-  printf("%g\n",f.s);
+  fprintf(stderr, "%g\n",f.s);
 }
 
 void sim_t::interactive_fregd(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = get_freg(args);
-  printf("%g\n",f.d);
+  fprintf(stderr, "%g\n",f.d);
 }
 
 reg_t sim_t::get_mem(const std::vector<std::string>& args)
@@ -215,7 +215,7 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
 
 void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::string>& args)
 {
-  printf("0x%016" PRIx64 "\n", get_mem(args));
+  fprintf(stderr, "0x%016" PRIx64 "\n", get_mem(args));
 }
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)
