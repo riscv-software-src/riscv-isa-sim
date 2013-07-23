@@ -22,7 +22,6 @@ int main(int argc, char** argv)
 
   static bool signal_exit = false;
   auto handle_signal = [](int) { signal_exit = true; };
-  signal(SIGINT, handle_signal);
 
   if ((xterm = fork_xterm(&tty_fd)) < 0)
   {
@@ -30,15 +29,22 @@ int main(int argc, char** argv)
     goto out;
   }
 
+  signal(SIGINT, handle_signal);
+
   if ((spike = fork_spike(tty_fd, argc, argv)) < 0)
   {
     fprintf(stderr, "could not open spike\n");
     goto close_xterm;
   }
 
-  while (waitpid(spike, &wait_status, 0) < 0 && !signal_exit)
-    ;
-  ret = !signal_exit && WIFEXITED(wait_status) ? WEXITSTATUS(wait_status) : -1;
+  while ((ret = waitpid(spike, &wait_status, 0)) < 0)
+    if (signal_exit)
+      break;
+
+  if (ret < 0) // signal_exit
+    kill(spike, SIGTERM);
+  else
+    ret = WIFEXITED(wait_status) ? WEXITSTATUS(wait_status) : -1;
 
 close_xterm:
   kill(-xterm, SIGTERM);
