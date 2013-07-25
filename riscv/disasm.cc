@@ -504,12 +504,10 @@ disassembler::disassembler()
   DEFINE_LTYPE(lui);
   DEFINE_LTYPE(auipc);
 
-  DEFINE_I2TYPE("jr", jalr_j);
-  add_insn(new disasm_insn_t("jalr", match_jalr_c | match_rd_ra, mask_jalr_c | mask_rd | mask_imm, xrs1_reg));
-  add_insn(new disasm_insn_t("ret", match_jalr_r | match_rs1_ra, mask_jalr_r | mask_rd | mask_rs1 | mask_imm));
-  DEFINE_ITYPE(jalr_c);
-  DEFINE_ITYPE(jalr_r);
-  DEFINE_ITYPE(jalr_j);
+  DEFINE_I2TYPE("jr", jalr);
+  add_insn(new disasm_insn_t("jalr", match_jalr | match_rd_ra, mask_jalr | mask_rd | mask_imm, xrs1_reg));
+  add_insn(new disasm_insn_t("ret", match_jalr | match_rs1_ra, mask_jalr | mask_rd | mask_rs1 | mask_imm));
+  DEFINE_ITYPE(jalr);
 
   add_insn(new disasm_insn_t("nop", match_addi, mask_addi | mask_rd | mask_rs1 | mask_imm));
   DEFINE_I0TYPE("li", addi);
@@ -572,7 +570,6 @@ disassembler::disassembler()
   add_insn(new disasm_insn_t("setpcr", match_setpcr, mask_setpcr, xrd_reg, pcr_reg, imm));
   add_insn(new disasm_insn_t("clearpcr", match_clearpcr, mask_clearpcr, xrd_reg, pcr_reg, imm));
   DEFINE_NOARG(eret)
-  DEFINE_NOARG(cflush)
 
   DEFINE_RS1(vxcptsave);
   DEFINE_RS1(vxcptrestore);
