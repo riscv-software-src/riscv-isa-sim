@@ -132,7 +132,7 @@ void processor_t::step(size_t n, bool noisy)
     // execute_insn fetches and executes one instruction
     #define execute_insn(noisy) \
       do { \
-        mmu_t::insn_fetch_t fetch = _mmu.load_insn(npc, sr & SR_EC); \
+        mmu_t::insn_fetch_t fetch = _mmu.load_insn(npc); \
         if(noisy) disasm(fetch.insn, npc); \
         npc = fetch.func(this, fetch.insn, npc); \
         pc = npc; \

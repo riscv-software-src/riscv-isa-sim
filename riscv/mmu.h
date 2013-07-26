@@ -102,54 +102,30 @@ public:
   };
 
   // load instruction from memory at aligned address.
-  // (needed because instruction alignment requirement is variable
-  // if RVC is supported)
-  // returns the instruction at the specified address, given the current
-  // RVC mode.  func is set to a pointer to a function that knows how to
-  // execute the returned instruction.
-  inline insn_fetch_t load_insn(reg_t addr, bool rvc)
+  inline insn_fetch_t load_insn(reg_t addr)
   {
-    #ifdef RISCV_ENABLE_RVC
-    if(addr % 4 == 2 && rvc) // fetch across word boundary
+#ifdef RISCV_ENABLE_RVC
+# error TODO: Make MMU instruction cache support 2-byte alignment
+#endif
+    reg_t idx = (addr/sizeof(insn_t::itype)) % ICACHE_ENTRIES;
+    if (unlikely(icache_tag[idx] != addr))
     {
-      reg_t addr_lo = translate(addr, 2, false, true);
+      reg_t paddr = translate(addr, sizeof(insn_t::itype), false, true);
       insn_fetch_t fetch;
-      fetch.insn.bits = *(uint16_t*)(mem + addr_lo);
+      fetch.insn.itype = *(decltype(insn_t::itype)*)(mem + paddr);
       fetch.func = proc->decode_insn(fetch.insn);
 
-      if(!INSN_IS_RVC(fetch.insn.bits))
-      {
-        reg_t addr_hi = translate(addr+2, 2, false, true);
-        fetch.insn.bits |= (uint32_t)*(uint16_t*)(mem + addr_hi) << 16;
-      }
-      return fetch;
-    }
-    else
-    #endif
-    {
-      reg_t idx = (addr/sizeof(insn_t::itype)) % ICACHE_ENTRIES;
-      insn_fetch_t fetch;
-      if (unlikely(icache_tag[idx] != addr))
-      {
-        reg_t paddr = translate(addr, sizeof(insn_t::itype), false, true);
-        fetch.insn.itype = *(decltype(insn_t::itype)*)(mem + paddr);
-        fetch.func = proc->decode_insn(fetch.insn);
+      reg_t idx = (paddr/sizeof(insn_t::itype)) % ICACHE_ENTRIES;
+      icache_tag[idx] = addr;
+      icache_data[idx] = fetch;
 
-        reg_t idx = (paddr/sizeof(insn_t::itype)) % ICACHE_ENTRIES;
-        icache_tag[idx] = addr;
-        icache_data[idx] = fetch.insn;
-        icache_func[idx] = fetch.func;
-
-        if (tracer.interested_in_range(paddr, paddr + sizeof(insn_t::itype), false, true))
-        {
-          icache_tag[idx] = -1;
-          tracer.trace(paddr, sizeof(insn_t::itype), false, true);
-        }
+      if (tracer.interested_in_range(paddr, paddr + sizeof(insn_t::itype), false, true))
+      {
+        icache_tag[idx] = -1;
+        tracer.trace(paddr, sizeof(insn_t::itype), false, true);
       }
-      fetch.insn = icache_data[idx];
-      fetch.func = icache_func[idx];
-      return fetch;
     }
+    return icache_data[idx];
   }
 
   reg_t get_badvaddr() { return badvaddr; }
@@ -174,8 +150,7 @@ private:
 
   // implement an instruction cache for simulator performance
   static const reg_t ICACHE_ENTRIES = 256;
-  insn_t icache_data[ICACHE_ENTRIES];
-  insn_func_t icache_func[ICACHE_ENTRIES];
+  insn_fetch_t icache_data[ICACHE_ENTRIES];
 
   // implement a TLB for simulator performance
   static const reg_t TLB_ENTRIES = 256;

@@ -109,18 +109,4 @@ private:
   reg_t illegal_instruction(insn_t insn, reg_t pc);
 };
 
-#ifndef RISCV_ENABLE_RVC
-# define set_pc(x) \
-  do { if ((x) & 3) \
-         throw trap_instruction_address_misaligned; \
-       npc = (x); \
-     } while(0)
-#else
-# define set_pc(x) \
-  do { if ((x) & ((sr & SR_EC) ? 1 : 3)) \
-         throw trap_instruction_address_misaligned; \
-       npc = (x); \
-     } while(0)
-#endif
-
 #endif
