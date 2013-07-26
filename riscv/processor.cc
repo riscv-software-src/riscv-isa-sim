@@ -13,9 +13,15 @@
 #include <limits.h>
 
 processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
-  : sim(*_sim), mmu(*_mmu), id(_id), utidx(0)
+  : sim(*_sim), mmu(*_mmu), id(_id), opcode_bits(0), utidx(0)
 {
   reset(true);
+  mmu.set_processor(this);
+
+  #define DECLARE_INSN(name, match, mask) \
+    register_insn(match, mask, (insn_func_t)&processor_t::rv32_##name, (insn_func_t)&processor_t::rv64_##name);
+  #include "opcodes.h"
+  #undef DECLARE_INSN
 
   // create microthreads
   for (int i=0; i<MAX_UTS; i++)
@@ -202,7 +208,7 @@ void processor_t::disasm(insn_t insn, reg_t pc)
 {
   // the disassembler is stateless, so we share it
   static disassembler disasm;
-  fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx32 ") %s\n",
+  fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIxFAST32 ") %s\n",
           id, pc, insn.bits, disasm.disassemble(insn).c_str());
 }
 
@@ -225,7 +231,7 @@ void processor_t::set_pcr(int which, reg_t val)
       sr &= ~SR_EV;
 #endif
       sr &= ~SR_ZERO;
-      mmu.set_sr(sr);
+      mmu.flush_tlb();
       break;
     case PCR_EPC:
       epc = val;
@@ -317,4 +323,43 @@ void processor_t::set_interrupt(int which, bool on)
     sr |= mask;
   else
     sr &= ~mask;
+}
+
+insn_func_t processor_t::decode_insn(insn_t insn)
+{
+  bool rv64 = (sr & SR_S) ? (sr & SR_S64) : (sr & SR_U64);
+
+  auto key = insn.bits & ((1L << opcode_bits)-1);
+  auto it = opcode_map.find(key);
+  for (auto it = opcode_map.find(key); it != opcode_map.end() && it->first == key; ++it)
+    if ((insn.bits & it->second.mask) == it->second.match)
+      return rv64 ? it->second.rv64 : it->second.rv32;
+
+  return &processor_t::illegal_instruction;
+}
+
+reg_t processor_t::illegal_instruction(insn_t insn, reg_t pc)
+{
+  throw trap_illegal_instruction;
+}
+
+void processor_t::register_insn(uint32_t match, uint32_t mask, insn_func_t rv32, insn_func_t rv64)
+{
+  assert(mask & 1);
+  if (opcode_bits == 0 || (mask & ((1L << opcode_bits)-1)) != ((1L << opcode_bits)-1))
+  {
+    unsigned x = 0;
+    while ((mask & ((1L << (x+1))-1)) == ((1L << (x+1))-1) &&
+           (opcode_bits == 0 || x <= opcode_bits))
+      x++;
+    opcode_bits = x;
+
+    decltype(opcode_map) new_map;
+    for (auto it = opcode_map.begin(); it != opcode_map.end(); ++it)
+      new_map.insert(std::make_pair(it->second.match & ((1L<<x)-1), it->second));
+    opcode_map = new_map;
+  }
+
+  opcode_map.insert(std::make_pair(match & ((1L<<opcode_bits)-1),
+    (opcode_map_entry_t){match, mask, rv32, rv64}));
 }

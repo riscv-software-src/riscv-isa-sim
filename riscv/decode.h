@@ -123,7 +123,7 @@ union insn_t
   btype_t btype;
   ltype_t ltype;
   ftype_t ftype;
-  uint32_t bits;
+  uint_fast32_t bits;
 };
 
 template <class T>

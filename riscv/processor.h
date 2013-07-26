@@ -7,6 +7,7 @@
 #include <cstring>
 #include "trap.h"
 #include "config.h"
+#include <map>
 
 #define MAX_UTS 2048
 
@@ -31,14 +32,16 @@ public:
   reg_t get_pcr(int which);
   mmu_t* get_mmu() { return &mmu; }
 
+  void register_insn(uint32_t match, uint32_t mask, insn_func_t rv32, insn_func_t rv64);
+
 private:
   sim_t& sim;
   mmu_t& mmu; // main memory is always accessed via the mmu
 
   // user-visible architected state
+  reg_t pc;
   regfile_t<reg_t, NXPR, true> XPR;
   regfile_t<freg_t, NFPR, false> FPR;
-  reg_t pc;
   reg_t cycle;
 
   // privileged control registers
@@ -58,7 +61,16 @@ private:
 
   bool run; // !reset
 
-  // functions
+  struct opcode_map_entry_t
+  {
+    uint32_t match;
+    uint32_t mask;
+    insn_func_t rv32;
+    insn_func_t rv64;
+  };
+  unsigned opcode_bits;
+  std::multimap<uint32_t, opcode_map_entry_t> opcode_map;
+
   void take_interrupt(); // take a trap if any interrupts are pending
   void set_fsr(uint32_t val); // set the floating-point status register
   void take_trap(reg_t t, bool noisy); // take an exception
@@ -87,19 +99,26 @@ private:
   friend class mmu_t;
   friend class htif_isasim_t;
 
-  #include "dispatch.h"
+  #define DECLARE_INSN(name, match, mask) \
+    reg_t rv32_ ## name(insn_t insn, reg_t pc); \
+    reg_t rv64_ ## name(insn_t insn, reg_t pc);
+  #include "opcodes.h"
+  #undef DECLARE_INSN
+
+  insn_func_t decode_insn(insn_t insn);
+  reg_t illegal_instruction(insn_t insn, reg_t pc);
 };
 
 #ifndef RISCV_ENABLE_RVC
 # define set_pc(x) \
-  do { if((x) & (sizeof(insn_t)-1)) \
-       { badvaddr = (x); throw trap_instruction_address_misaligned; } \
+  do { if ((x) & 3) \
+         throw trap_instruction_address_misaligned; \
        npc = (x); \
      } while(0)
 #else
 # define set_pc(x) \
-  do { if((x) & ((sr & SR_EC) ? 1 : 3)) \
-       { badvaddr = (x); throw trap_instruction_address_misaligned; } \
+  do { if ((x) & ((sr & SR_EC) ? 1 : 3)) \
+         throw trap_instruction_address_misaligned; \
        npc = (x); \
      } while(0)
 #endif

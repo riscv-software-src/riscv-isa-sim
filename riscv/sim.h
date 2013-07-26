@@ -42,7 +42,7 @@ private:
   std::vector<processor_t*> procs;
 
   void step(size_t n, bool noisy); // step through simulation
-  static const size_t INTERLEAVE = 1000;
+  static const size_t INTERLEAVE = 5000;
   size_t current_step;
   size_t current_proc;
   bool debug;

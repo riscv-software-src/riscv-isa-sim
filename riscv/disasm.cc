@@ -406,8 +406,8 @@ disassembler::disassembler()
   uint32_t match_rs1_ra = dummy.bits;
 
   #define DECLARE_INSN(code, match, mask) \
-   const uint32_t __attribute__((unused)) match_##code = match; \
-   const uint32_t __attribute__((unused)) mask_##code = mask;
+   const uint32_t match_##code = match; \
+   const uint32_t mask_##code = mask;
   #include "opcodes.h"
   #undef DECLARE_INSN
 

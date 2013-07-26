@@ -97,8 +97,8 @@ public:
 
   struct insn_fetch_t
   {
-    insn_t insn;
     insn_func_t func;
+    insn_t insn;
   };
 
   // load instruction from memory at aligned address.
@@ -115,7 +115,7 @@ public:
       reg_t addr_lo = translate(addr, 2, false, true);
       insn_fetch_t fetch;
       fetch.insn.bits = *(uint16_t*)(mem + addr_lo);
-      fetch.func = get_insn_func(fetch.insn, sr);
+      fetch.func = proc->decode_insn(fetch.insn);
 
       if(!INSN_IS_RVC(fetch.insn.bits))
       {
@@ -127,43 +127,39 @@ public:
     else
     #endif
     {
-      reg_t idx = (addr/sizeof(insn_t)) % ICACHE_ENTRIES;
+      reg_t idx = (addr/sizeof(insn_t::itype)) % ICACHE_ENTRIES;
       insn_fetch_t fetch;
       if (unlikely(icache_tag[idx] != addr))
       {
-        reg_t paddr = translate(addr, sizeof(insn_t), false, true);
-        fetch.insn = *(insn_t*)(mem + paddr);
-        fetch.func = get_insn_func(fetch.insn, sr);
+        reg_t paddr = translate(addr, sizeof(insn_t::itype), false, true);
+        fetch.insn.itype = *(decltype(insn_t::itype)*)(mem + paddr);
+        fetch.func = proc->decode_insn(fetch.insn);
 
-        reg_t idx = (paddr/sizeof(insn_t)) % ICACHE_ENTRIES;
+        reg_t idx = (paddr/sizeof(insn_t::itype)) % ICACHE_ENTRIES;
         icache_tag[idx] = addr;
         icache_data[idx] = fetch.insn;
         icache_func[idx] = fetch.func;
 
-        if (tracer.interested_in_range(paddr, paddr + sizeof(insn_t), false, true))
+        if (tracer.interested_in_range(paddr, paddr + sizeof(insn_t::itype), false, true))
         {
           icache_tag[idx] = -1;
-          tracer.trace(paddr, sizeof(insn_t), false, true);
+          tracer.trace(paddr, sizeof(insn_t::itype), false, true);
         }
       }
-      fetch.insn = icache_data[idx];;
+      fetch.insn = icache_data[idx];
       fetch.func = icache_func[idx];
       return fetch;
     }
   }
 
-  // get the virtual address that caused a fault
   reg_t get_badvaddr() { return badvaddr; }
-
-  // get/set the page table base register
   reg_t get_ptbr() { return ptbr; }
   void set_ptbr(reg_t addr) { ptbr = addr & ~(PGSIZE-1); flush_tlb(); }
-  void yield_load_reservation() { load_reservation = -1; }
-  void set_sr(uint32_t sr); // keep the MMU in sync with the processor mode
+  void set_processor(processor_t* p) { proc = p; flush_tlb(); }
 
-  // flush the TLB and instruction cache
   void flush_tlb();
   void flush_icache();
+  void yield_load_reservation() { load_reservation = -1; }
 
   void register_memtracer(memtracer_t*);
 
@@ -173,8 +169,13 @@ private:
   reg_t load_reservation;
   reg_t badvaddr;
   reg_t ptbr;
-  uint32_t sr;
+  processor_t* proc;
   memtracer_list_t tracer;
+
+  // implement an instruction cache for simulator performance
+  static const reg_t ICACHE_ENTRIES = 256;
+  insn_t icache_data[ICACHE_ENTRIES];
+  insn_func_t icache_func[ICACHE_ENTRIES];
 
   // implement a TLB for simulator performance
   static const reg_t TLB_ENTRIES = 256;
@@ -182,11 +183,6 @@ private:
   reg_t tlb_insn_tag[TLB_ENTRIES];
   reg_t tlb_load_tag[TLB_ENTRIES];
   reg_t tlb_store_tag[TLB_ENTRIES];
-
-  // implement an instruction cache for simulator performance
-  static const reg_t ICACHE_ENTRIES = 256;
-  insn_t icache_data[ICACHE_ENTRIES];
-  insn_func_t icache_func[ICACHE_ENTRIES];
   reg_t icache_tag[ICACHE_ENTRIES];
 
   // finish translation on a TLB miss and upate the TLB

@@ -1,3 +1,6 @@
+get_insn_list = $(shell cat $(1) | sed 's/DECLARE_INSN(\(.*\),.*,.*)/\1/')
+get_opcode = $(shell grep \\\<$(2)\\\> $(1) | sed 's/DECLARE_INSN(.*,\(.*\),.*)/\1/')
+
 riscv_subproject_deps = \
 	softfloat_riscv \
 	softfloat \
@@ -16,7 +19,6 @@ riscv_hdrs = \
 	sim.h \
 	trap.h \
 	opcodes.h \
-	insn_header.h \
 	cachesim.h \
 	memtracer.h \
 
@@ -29,23 +31,17 @@ riscv_srcs = \
 	cachesim.cc \
 	mmu.cc \
 	disasm.cc \
-	$(DISPATCH_SRCS) \
+	$(riscv_gen_srcs) \
 
 riscv_test_srcs =
 
 riscv_gen_hdrs = \
-	dispatch.h \
 
-NDISPATCH = 9
-DISPATCH_SRCS = $(addsuffix .cc,$(addprefix dispatch,$(shell seq 0 $(NDISPATCH))))
+riscv_gen_srcs = \
+	$(addsuffix .cc, $(call get_insn_list,$(src_dir)/riscv/opcodes.h))
 
-$(DISPATCH_SRCS): %.cc: dispatch $(wildcard insns/*.h) opcodes.h
-	$< $(subst dispatch,,$(subst .cc,,$@)) $(NDISPATCH) 1024 < $(src_dir)/riscv/opcodes.h > $@
-
-dispatch.h: %.h: dispatch opcodes.h
-	echo $(riscv_srcs)
-	$< $(NDISPATCH) 1024 < $(src_dir)/riscv/opcodes.h > $@
+$(riscv_gen_srcs): %.cc: insns/%.h insn_template.cc
+	sed 's/NAME/$(subst .cc,,$@)/' $(src_dir)/riscv/insn_template.cc | sed 's/OPCODE/$(call get_opcode,$(src_dir)/riscv/opcodes.h,$(subst .cc,,$@))/' > $@
 
 riscv_junk = \
-  dispatch.h \
-  $(DISPATCH_SRCS) \
+	$(riscv_gen_srcs) \
