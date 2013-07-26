@@ -261,10 +261,6 @@ void processor_t::set_pcr(int which, reg_t val)
     case PCR_K1:
       pcr_k1 = val;
       break;
-    case PCR_VECBANK:
-      vecbanks = val & 0xff;
-      vecbanks_count = __builtin_popcountll(vecbanks);
-      break;
     case PCR_TOHOST:
       if (tohost == 0)
         tohost = val;
@@ -304,10 +300,6 @@ reg_t processor_t::get_pcr(int which)
       return pcr_k0;
     case PCR_K1:
       return pcr_k1;
-    case PCR_VECBANK:
-      return vecbanks;
-    case PCR_VECCFG:
-      return nfpr_use << 18 | nxpr_use << 12 | vl;
     case PCR_TOHOST:
       return tohost;
     case PCR_FROMHOST:
