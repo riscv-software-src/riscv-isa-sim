@@ -1,5 +1,5 @@
 require_supervisor;
-if(sr & SR_ET)
-  throw trap_illegal_instruction;
-set_pcr(PCR_SR, ((sr & SR_PS) ? sr : (sr & ~SR_S)) | SR_ET);
+set_pcr(PCR_SR, ((sr & ~(SR_PS | SR_EI)) |
+                ((sr & SR_PS) ? 0 : SR_S)) |
+                ((sr & SR_PEI) ? SR_EI : 0));
 set_pc(epc);

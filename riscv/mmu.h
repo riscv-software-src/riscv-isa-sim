@@ -13,27 +13,13 @@
 
 // virtual memory configuration
 typedef reg_t pte_t;
-const reg_t LEVELS = sizeof(pte_t) == sizeof(uint64_t) ? 3 : 2;
-const reg_t PGSHIFT = 13;
+const reg_t LEVELS = sizeof(pte_t) == 8 ? 3 : 2;
+const reg_t PTIDXBITS = 10;
+const reg_t PGSHIFT = PTIDXBITS + (sizeof(pte_t) == 8 ? 3 : 2);
 const reg_t PGSIZE = 1 << PGSHIFT;
-const reg_t PTIDXBITS = PGSHIFT - (sizeof(pte_t) == 8 ? 3 : 2);
 const reg_t VPN_BITS = PTIDXBITS * LEVELS;
 const reg_t PPN_BITS = 8*sizeof(reg_t) - PGSHIFT;
 const reg_t VA_BITS = VPN_BITS + PGSHIFT;
-
-// page table entry (PTE) fields
-#define PTE_T    0x001 // Entry is a page Table descriptor
-#define PTE_E    0x002 // Entry is a page table Entry
-#define PTE_R    0x004 // Referenced
-#define PTE_D    0x008 // Dirty
-#define PTE_UX   0x010 // User eXecute permission
-#define PTE_UW   0x020 // User Read permission
-#define PTE_UR   0x040 // User Write permission
-#define PTE_SX   0x080 // Supervisor eXecute permission
-#define PTE_SW   0x100 // Supervisor Read permission
-#define PTE_SR   0x200 // Supervisor Write permission
-#define PTE_PERM (PTE_SR | PTE_SW | PTE_SX | PTE_UR | PTE_UW | PTE_UX)
-#define PTE_PPN_SHIFT  13 // LSB of physical page number in the PTE
 
 // this class implements a processor's port into the virtual memory system.
 // an MMU and instruction cache are maintained for simulator performance.

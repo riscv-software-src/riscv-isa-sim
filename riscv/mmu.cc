@@ -40,9 +40,9 @@ reg_t mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
   reg_t pte_perm = pte & PTE_PERM;
   if (proc == NULL || (proc->sr & SR_S))
     pte_perm = (pte_perm/(PTE_SX/PTE_UX)) & PTE_PERM;
-  pte_perm |= pte & PTE_E;
+  pte_perm |= pte & PTE_V;
 
-  reg_t perm = (fetch ? PTE_UX : store ? PTE_UW : PTE_UR) | PTE_E;
+  reg_t perm = (fetch ? PTE_UX : store ? PTE_UW : PTE_UR) | PTE_V;
   if(unlikely((pte_perm & perm) != perm))
   {
     if (fetch)
@@ -53,7 +53,7 @@ reg_t mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
   }
 
   reg_t pgoff = addr & (PGSIZE-1);
-  reg_t pgbase = pte >> PTE_PPN_SHIFT << PGSHIFT;
+  reg_t pgbase = pte >> PGSHIFT << PGSHIFT;
   reg_t paddr = pgbase + pgoff;
 
   if (unlikely(tracer.interested_in_range(pgbase, pgbase + PGSIZE, store, fetch)))
@@ -80,7 +80,7 @@ pte_t mmu_t::walk(reg_t addr)
   else if (proc == NULL || !(proc->sr & SR_VM))
   {
     if(addr < memsz)
-      pte = PTE_E | PTE_PERM | ((addr >> PGSHIFT) << PTE_PPN_SHIFT);
+      pte = PTE_V | PTE_PERM | ((addr >> PGSHIFT) << PGSHIFT);
   }
   else
   {
@@ -97,23 +97,23 @@ pte_t mmu_t::walk(reg_t addr)
         break;
 
       ptd = *(pte_t*)(mem+pte_addr);
-      if(ptd & PTE_E)
+
+      if (!(ptd & PTE_V)) // invalid mapping
+        break;
+      else if (ptd & PTE_T) // next level of page table
+        base = (ptd >> PGSHIFT) << PGSHIFT;
+      else // the actual PTE
       {
         // if this PTE is from a larger PT, fake a leaf
         // PTE so the TLB will work right
         reg_t vpn = addr >> PGSHIFT;
-        ptd |= (vpn & ((1<<(ptshift))-1)) << PTE_PPN_SHIFT;
+        ptd |= (vpn & ((1<<(ptshift))-1)) << PGSHIFT;
 
-        // fault if physical addr is invalid
-        reg_t ppn = ptd >> PTE_PPN_SHIFT;
-        if((ppn << PGSHIFT) + (addr & (PGSIZE-1)) < memsz)
+        // fault if physical addr is out of range
+        if (((ptd >> PGSHIFT) << PGSHIFT) < memsz)
           pte = ptd;
         break;
       }
-      else if(!(ptd & PTE_T))
-        break;
-
-      base = (ptd >> PTE_PPN_SHIFT) << PGSHIFT;
     }
   }
 

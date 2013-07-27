@@ -68,7 +68,7 @@ void processor_t::take_interrupt()
   uint32_t interrupts = (sr & SR_IP) >> SR_IP_SHIFT;
   interrupts &= (sr & SR_IM) >> SR_IM_SHIFT;
 
-  if(interrupts && (sr & SR_ET))
+  if(interrupts && (sr & SR_EI))
     for(int i = 0; ; i++, interrupts >>= 1)
       if(interrupts & 1)
         throw interrupt_t(i);
@@ -144,7 +144,9 @@ void processor_t::take_trap(reg_t t, bool noisy)
   }
 
   // switch to supervisor, set previous supervisor bit, disable traps
-  set_pcr(PCR_SR, (((sr & ~SR_ET) | SR_S) & ~SR_PS) | ((sr & SR_S) ? SR_PS : 0));
+  set_pcr(PCR_SR, (((sr & ~SR_EI) | SR_S) & ~SR_PS & ~SR_PEI) |
+                  ((sr & SR_S) ? SR_PS : 0) |
+                  ((sr & SR_EI) ? SR_PEI : 0));
   cause = t;
   epc = pc;
   pc = evec;
@@ -176,9 +178,6 @@ void processor_t::set_pcr(int which, reg_t val)
 #endif
 #ifndef RISCV_ENABLE_FPU
       sr &= ~SR_EF;
-#endif
-#ifndef RISCV_ENABLE_RVC
-      sr &= ~SR_EC;
 #endif
 #ifndef RISCV_ENABLE_VEC
       sr &= ~SR_EV;
@@ -245,7 +244,11 @@ reg_t processor_t::get_pcr(int which)
       return cause;
     case PCR_PTBR:
       return mmu.get_ptbr();
-    case PCR_COREID:
+    case PCR_ASID:
+      return 0;
+    case PCR_FATC:
+      mmu.flush_tlb();
+    case PCR_HARTID:
       return id;
     case PCR_IMPL:
       return 1;
