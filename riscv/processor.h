@@ -9,8 +9,6 @@
 #include "config.h"
 #include <map>
 
-#define MAX_UTS 2048
-
 class processor_t;
 class mmu_t;
 typedef reg_t (*insn_func_t)(processor_t*, insn_t, reg_t);
@@ -75,25 +73,6 @@ private:
   void set_fsr(uint32_t val); // set the floating-point status register
   void take_trap(reg_t t, bool noisy); // take an exception
   void disasm(insn_t insn, reg_t pc); // disassemble and print an instruction
-
-  // vector stuff
-  void vcfg();
-  void setvl(int vlapp);
-
-  reg_t vecbanks;
-  uint32_t vecbanks_count;
-
-  bool utmode;
-  uint32_t utidx;
-  int vlmax;
-  int vl;
-  int nxfpr_bank;
-  int nxpr_use;
-  int nfpr_use;
-  processor_t* uts[MAX_UTS];
-
-  // this constructor is used for each of the uts
-  processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id, uint32_t _utidx);
 
   friend class sim_t;
   friend class mmu_t;

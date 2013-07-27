@@ -33,12 +33,6 @@
 /* Define if floating-point instructions are supported */
 #undef RISCV_ENABLE_FPU
 
-/* Define if instruction compression is supported */
-#undef RISCV_ENABLE_RVC
-
-/* Define if vector processor is supported */
-#undef RISCV_ENABLE_VEC
-
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SOFTFLOAT_ENABLED
 

@@ -104,9 +104,6 @@ public:
   // load instruction from memory at aligned address.
   inline insn_fetch_t load_insn(reg_t addr)
   {
-#ifdef RISCV_ENABLE_RVC
-# error TODO: Make MMU instruction cache support 2-byte alignment
-#endif
     reg_t idx = (addr/sizeof(insn_t::itype)) % ICACHE_ENTRIES;
     if (unlikely(icache_tag[idx] != addr))
     {

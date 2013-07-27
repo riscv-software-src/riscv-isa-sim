@@ -13,7 +13,7 @@
 #include <limits.h>
 
 processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
-  : sim(*_sim), mmu(*_mmu), id(_id), opcode_bits(0), utidx(0)
+  : sim(*_sim), mmu(*_mmu), id(_id), opcode_bits(0)
 {
   reset(true);
   mmu.set_processor(this);
@@ -22,23 +22,6 @@ processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
     register_insn(match, mask, (insn_func_t)&processor_t::rv32_##name, (insn_func_t)&processor_t::rv64_##name);
   #include "opcodes.h"
   #undef DECLARE_INSN
-
-  // create microthreads
-  for (int i=0; i<MAX_UTS; i++)
-    uts[i] = new processor_t(&sim, &mmu, id, i);
-}
-
-processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id,
-                         uint32_t _utidx)
-  : sim(*_sim), mmu(*_mmu), id(_id)
-{
-  reset(true);
-  set_pcr(PCR_SR, SR_U64 | SR_EF | SR_EV);
-  utidx = _utidx;
-
-  // microthreads don't possess their own microthreads
-  for (int i=0; i<MAX_UTS; i++)
-    uts[i] = NULL;
 }
 
 processor_t::~processor_t()
@@ -73,36 +56,11 @@ void processor_t::reset(bool value)
   compare = 0;
   cycle = 0;
   set_fsr(0);
-
-  // vector stuff
-  vecbanks = 0xff;
-  vecbanks_count = 8;
-  utidx = -1;
-  vlmax = 32;
-  vl = 0;
-  nxfpr_bank = 256;
-  nxpr_use = 32;
-  nfpr_use = 32;
 }
 
 void processor_t::set_fsr(uint32_t val)
 {
   fsr = val & ~FSR_ZERO; // clear FSR bits that read as zero
-}
-
-void processor_t::vcfg()
-{
-  if (nxpr_use + nfpr_use < 2)
-    vlmax = nxfpr_bank * vecbanks_count;
-  else
-    vlmax = (nxfpr_bank / (nxpr_use + nfpr_use - 1)) * vecbanks_count;
-
-  vlmax = std::min(vlmax, MAX_UTS);
-}
-
-void processor_t::setvl(int vlapp)
-{
-  vl = std::min(vlmax, vlapp);
 }
 
 void processor_t::take_interrupt()
@@ -161,12 +119,7 @@ void processor_t::step(size_t n, bool noisy)
   }
   catch(interrupt_t t)
   {
-    take_trap((1ULL << (8*sizeof(reg_t)-1)) + t.i, noisy);
-  }
-  catch(vt_command_t cmd)
-  {
-    // this microthread has finished
-    assert(cmd == vt_command_stop);
+    take_trap((1ULL << ((sr & SR_S64) ? 63 : 31)) + t.i, noisy);
   }
 
   cycle += i;
