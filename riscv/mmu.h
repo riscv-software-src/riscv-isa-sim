@@ -113,7 +113,7 @@ public:
 
   reg_t get_badvaddr() { return badvaddr; }
   reg_t get_ptbr() { return ptbr; }
-  void set_ptbr(reg_t addr) { ptbr = addr & ~(PGSIZE-1); flush_tlb(); }
+  void set_ptbr(reg_t addr) { ptbr = addr & ~(PGSIZE-1); }
   void set_processor(processor_t* p) { proc = p; flush_tlb(); }
 
   void flush_tlb();
