@@ -624,9 +624,9 @@ disassembler::disassembler()
   DEFINE_FXTYPE(flt_d);
   DEFINE_FXTYPE(fle_d);
 
-  add_insn(new disasm_insn_t("mtfsr", match_mtfsr, mask_mtfsr | mask_rd, xrs1_reg));
-  add_insn(new disasm_insn_t("mtfsr", match_mtfsr, mask_mtfsr, xrd_reg, xrs1_reg));
-  DEFINE_DTYPE(mffsr);
+  add_insn(new disasm_insn_t("fssr", match_fssr, mask_fssr | mask_rd, xrs1_reg));
+  add_insn(new disasm_insn_t("fssr", match_fssr, mask_fssr, xrd_reg, xrs1_reg));
+  DEFINE_DTYPE(frsr);
 
   // provide a default disassembly for all instructions as a fallback
   #define DECLARE_INSN(code, match, mask) \
