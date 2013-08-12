@@ -1,1 +1,1 @@
-RD = cycle;
+#include "insns/rdcycle.h"

@@ -8,7 +8,7 @@
 #include "internals.h" // ditto
 #include <assert.h>
 
-reg_t processor_t::rv32_NAME(insn_t insn, reg_t pc)
+reg_t rv32_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   int xprlen = 32;
   reg_t npc = sext_xprlen(pc + insn_length(OPCODE));
@@ -16,7 +16,7 @@ reg_t processor_t::rv32_NAME(insn_t insn, reg_t pc)
   return npc;
 }
 
-reg_t processor_t::rv64_NAME(insn_t insn, reg_t pc)
+reg_t rv64_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   int xprlen = 64;
   reg_t npc = sext_xprlen(pc + insn_length(OPCODE));

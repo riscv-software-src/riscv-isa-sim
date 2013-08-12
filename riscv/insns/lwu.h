@@ -1,2 +1,2 @@
 require_xpr64;
-RD = mmu.load_uint32(ITYPE_EADDR);
+RD = MMU.load_uint32(ITYPE_EADDR);

@@ -19,7 +19,9 @@ processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
   mmu.set_processor(this);
 
   #define DECLARE_INSN(name, match, mask) \
-    register_insn(match, mask, (insn_func_t)&processor_t::rv32_##name, (insn_func_t)&processor_t::rv64_##name);
+    extern reg_t rv32_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t rv64_##name(processor_t*, insn_t, reg_t); \
+    register_insn(match, mask, rv32_##name, rv64_##name);
   #include "opcodes.h"
   #undef DECLARE_INSN
 }
@@ -28,17 +30,15 @@ processor_t::~processor_t()
 {
 }
 
-void processor_t::reset(bool value)
+void state_t::reset()
 {
-  if (run == !value)
-    return;
-  run = !value;
-
   // the ISA guarantees on boot that the PC is 0x2000 and the the processor
   // is in supervisor mode, and in 64-bit mode, if supported, with traps
   // and virtual memory disabled.
-  sr = 0;
-  set_pcr(PCR_SR, SR_S | SR_S64 | SR_IM);
+  sr = SR_S;
+#ifdef RISCV_ENABLE_64BIT
+  sr |= SR_S64;
+#endif
   pc = 0x2000;
 
   // the following state is undefined upon boot-up,
@@ -55,23 +55,36 @@ void processor_t::reset(bool value)
   count = 0;
   compare = 0;
   cycle = 0;
-  set_fsr(0);
+  fsr = 0;
+
+  load_reservation = -1;
 }
 
-void processor_t::set_fsr(uint32_t val)
+void processor_t::reset(bool value)
 {
-  fsr = val & ~FSR_ZERO; // clear FSR bits that read as zero
+  if (run == !value)
+    return;
+  run = !value;
+
+  state.reset();
+}
+
+uint32_t processor_t::set_fsr(uint32_t val)
+{
+  uint32_t old_fsr = state.fsr;
+  state.fsr = val & ~FSR_ZERO; // clear FSR bits that read as zero
+  return old_fsr;
 }
 
 void processor_t::take_interrupt()
 {
-  uint32_t interrupts = (sr & SR_IP) >> SR_IP_SHIFT;
-  interrupts &= (sr & SR_IM) >> SR_IM_SHIFT;
+  uint32_t interrupts = (state.sr & SR_IP) >> SR_IP_SHIFT;
+  interrupts &= (state.sr & SR_IM) >> SR_IM_SHIFT;
 
-  if(interrupts && (sr & SR_EI))
-    for(int i = 0; ; i++, interrupts >>= 1)
-      if(interrupts & 1)
-        throw interrupt_t(i);
+  if (interrupts && (state.sr & SR_EI))
+    for (int i = 0; ; i++, interrupts >>= 1)
+      if (interrupts & 1)
+        throw trap_t((1ULL << ((state.sr & SR_S64) ? 63 : 31)) + i);
 }
 
 void processor_t::step(size_t n, bool noisy)
@@ -80,12 +93,12 @@ void processor_t::step(size_t n, bool noisy)
     return;
 
   size_t i = 0;
+  reg_t npc = state.pc;
+  mmu_t& _mmu = mmu;
+
   try
   {
     take_interrupt();
-
-    mmu_t& _mmu = mmu;
-    reg_t npc = pc;
 
     // execute_insn fetches and executes one instruction
     #define execute_insn(noisy) \
@@ -93,7 +106,6 @@ void processor_t::step(size_t n, bool noisy)
         mmu_t::insn_fetch_t fetch = _mmu.load_insn(npc); \
         if(noisy) disasm(fetch.insn, npc); \
         npc = fetch.func(this, fetch.insn, npc); \
-        pc = npc; \
       } while(0)
 
     if(noisy) for( ; i < n; i++) // print out instructions as we go
@@ -111,46 +123,45 @@ void processor_t::step(size_t n, bool noisy)
       for( ; i < n; i++)
         execute_insn(false);
     }
+
+    state.pc = npc;
   }
-  catch(trap_t t)
+  catch(trap_t& t)
   {
-    // an exception occurred in the target processor
-    take_trap(t,noisy);
-  }
-  catch(interrupt_t t)
-  {
-    take_trap((1ULL << ((sr & SR_S64) ? 63 : 31)) + t.i, noisy);
+    take_trap(npc, t, noisy);
   }
 
-  cycle += i;
+  state.cycle += i;
 
   // update timer and possibly register a timer interrupt
-  uint32_t old_count = count;
-  count += i;
-  if(old_count < compare && uint64_t(old_count) + i >= compare)
+  uint32_t old_count = state.count;
+  state.count += i;
+  if(old_count < state.compare && uint64_t(old_count) + i >= state.compare)
     set_interrupt(IRQ_TIMER, true);
 }
 
-void processor_t::take_trap(reg_t t, bool noisy)
+void processor_t::take_trap(reg_t pc, trap_t& t, bool noisy)
 {
   if(noisy)
   {
-    if ((sreg_t)t < 0)
+    if ((sreg_t)t.cause() < 0)
       fprintf(stderr, "core %3d: interrupt %d, epc 0x%016" PRIx64 "\n",
-              id, uint8_t(t), pc);
+              id, uint8_t(t.cause()), pc);
     else
       fprintf(stderr, "core %3d: trap %s, epc 0x%016" PRIx64 "\n",
-              id, trap_name(trap_t(t)), pc);
+              id, t.name(), pc);
   }
 
-  // switch to supervisor, set previous supervisor bit, disable traps
-  set_pcr(PCR_SR, (((sr & ~SR_EI) | SR_S) & ~SR_PS & ~SR_PEI) |
-                  ((sr & SR_S) ? SR_PS : 0) |
-                  ((sr & SR_EI) ? SR_PEI : 0));
-  cause = t;
-  epc = pc;
-  pc = evec;
-  badvaddr = mmu.get_badvaddr();
+  // switch to supervisor, set previous supervisor bit, disable interrupts
+  set_pcr(PCR_SR, (((state.sr & ~SR_EI) | SR_S) & ~SR_PS & ~SR_PEI) |
+                  ((state.sr & SR_S) ? SR_PS : 0) |
+                  ((state.sr & SR_EI) ? SR_PEI : 0));
+  yield_load_reservation();
+  state.cause = t.cause();
+  state.epc = pc;
+  state.pc = state.evec;
+
+  t.side_effects(&state); // might set badvaddr etc.
 }
 
 void processor_t::deliver_ipi()
@@ -164,42 +175,44 @@ void processor_t::disasm(insn_t insn, reg_t pc)
   // the disassembler is stateless, so we share it
   static disassembler disasm;
   fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIxFAST32 ") %s\n",
-          id, pc, insn.bits, disasm.disassemble(insn).c_str());
+          id, state.pc, insn.bits, disasm.disassemble(insn).c_str());
 }
 
-void processor_t::set_pcr(int which, reg_t val)
+reg_t processor_t::set_pcr(int which, reg_t val)
 {
+  reg_t old_pcr = get_pcr(which);
+
   switch (which)
   {
     case PCR_SR:
-      sr = (val & ~SR_IP) | (sr & SR_IP);
+      state.sr = (val & ~SR_IP) | (state.sr & SR_IP);
 #ifndef RISCV_ENABLE_64BIT
-      sr &= ~(SR_S64 | SR_U64);
+      state.sr &= ~(SR_S64 | SR_U64);
 #endif
 #ifndef RISCV_ENABLE_FPU
-      sr &= ~SR_EF;
+      state.sr &= ~SR_EF;
 #endif
 #ifndef RISCV_ENABLE_VEC
-      sr &= ~SR_EV;
+      state.sr &= ~SR_EV;
 #endif
-      sr &= ~SR_ZERO;
+      state.sr &= ~SR_ZERO;
       mmu.flush_tlb();
       break;
     case PCR_EPC:
-      epc = val;
+      state.epc = val;
       break;
     case PCR_EVEC: 
-      evec = val;
+      state.evec = val;
       break;
     case PCR_COUNT:
-      count = val;
+      state.count = val;
       break;
     case PCR_COMPARE:
       set_interrupt(IRQ_TIMER, false);
-      compare = val;
+      state.compare = val;
       break;
     case PCR_PTBR:
-      mmu.set_ptbr(val);
+      state.ptbr = val & ~(PGSIZE-1);
       break;
     case PCR_SEND_IPI:
       sim.send_ipi(val);
@@ -208,20 +221,22 @@ void processor_t::set_pcr(int which, reg_t val)
       set_interrupt(IRQ_IPI, val & 1);
       break;
     case PCR_K0:
-      pcr_k0 = val;
+      state.pcr_k0 = val;
       break;
     case PCR_K1:
-      pcr_k1 = val;
+      state.pcr_k1 = val;
       break;
     case PCR_TOHOST:
-      if (tohost == 0)
-        tohost = val;
+      if (state.tohost == 0)
+        state.tohost = val;
       break;
     case PCR_FROMHOST:
       set_interrupt(IRQ_HOST, val != 0);
-      fromhost = val;
+      state.fromhost = val;
       break;
   }
+
+  return old_pcr;
 }
 
 reg_t processor_t::get_pcr(int which)
@@ -229,37 +244,38 @@ reg_t processor_t::get_pcr(int which)
   switch (which)
   {
     case PCR_SR:
-      return sr;
+      return state.sr;
     case PCR_EPC:
-      return epc;
+      return state.epc;
     case PCR_BADVADDR:
-      return badvaddr;
+      return state.badvaddr;
     case PCR_EVEC:
-      return evec;
+      return state.evec;
     case PCR_COUNT:
-      return count;
+      return state.count;
     case PCR_COMPARE:
-      return compare;
+      return state.compare;
     case PCR_CAUSE:
-      return cause;
+      return state.cause;
     case PCR_PTBR:
-      return mmu.get_ptbr();
+      return state.ptbr;
     case PCR_ASID:
       return 0;
     case PCR_FATC:
       mmu.flush_tlb();
+      return 0;
     case PCR_HARTID:
       return id;
     case PCR_IMPL:
       return 1;
     case PCR_K0:
-      return pcr_k0;
+      return state.pcr_k0;
     case PCR_K1:
-      return pcr_k1;
+      return state.pcr_k1;
     case PCR_TOHOST:
-      return tohost;
+      return state.tohost;
     case PCR_FROMHOST:
-      return fromhost;
+      return state.fromhost;
   }
   return -1;
 }
@@ -268,27 +284,26 @@ void processor_t::set_interrupt(int which, bool on)
 {
   uint32_t mask = (1 << (which + SR_IP_SHIFT)) & SR_IP;
   if (on)
-    sr |= mask;
+    state.sr |= mask;
   else
-    sr &= ~mask;
+    state.sr &= ~mask;
+}
+
+static reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)
+{
+  throw trap_illegal_instruction();
 }
 
 insn_func_t processor_t::decode_insn(insn_t insn)
 {
-  bool rv64 = (sr & SR_S) ? (sr & SR_S64) : (sr & SR_U64);
+  bool rv64 = (state.sr & SR_S) ? (state.sr & SR_S64) : (state.sr & SR_U64);
 
   auto key = insn.bits & ((1L << opcode_bits)-1);
-  auto it = opcode_map.find(key);
   for (auto it = opcode_map.find(key); it != opcode_map.end() && it->first == key; ++it)
     if ((insn.bits & it->second.mask) == it->second.match)
       return rv64 ? it->second.rv64 : it->second.rv32;
 
-  return &processor_t::illegal_instruction;
-}
-
-reg_t processor_t::illegal_instruction(insn_t insn, reg_t pc)
-{
-  throw trap_illegal_instruction;
+  return &illegal_instruction;
 }
 
 void processor_t::register_insn(uint32_t match, uint32_t mask, insn_func_t rv32, insn_func_t rv64)

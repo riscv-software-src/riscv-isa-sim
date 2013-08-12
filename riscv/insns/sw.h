@@ -1,1 +1,1 @@
-mmu.store_uint32(BTYPE_EADDR, RS2);
+MMU.store_uint32(BTYPE_EADDR, RS2);

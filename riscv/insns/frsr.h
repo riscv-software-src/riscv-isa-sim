@@ -1,2 +1,2 @@
 require_fp;
-RD = fsr;
+RD = p->get_fsr();

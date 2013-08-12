@@ -38,7 +38,7 @@ private:
   std::auto_ptr<htif_isasim_t> htif;
   char* mem; // main memory
   size_t memsz; // memory size in bytes
-  mmu_t* mmu; // debug port into main memory
+  mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
 
   void step(size_t n, bool noisy); // step through simulation

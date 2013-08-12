@@ -1,3 +1,3 @@
-reg_t v = mmu.load_int32(RS1);
-mmu.store_uint32(RS1, RS2 + v);
+reg_t v = MMU.load_int32(RS1);
+MMU.store_uint32(RS1, RS2 + v);
 RD = v;

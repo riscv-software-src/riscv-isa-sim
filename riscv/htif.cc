@@ -41,7 +41,7 @@ void htif_isasim_t::tick_once()
 
       uint64_t buf[hdr.data_size];
       for (size_t i = 0; i < hdr.data_size; i++)
-        buf[i] = sim->mmu->load_uint64((hdr.addr+i)*HTIF_DATA_ALIGN);
+        buf[i] = sim->debug_mmu->load_uint64((hdr.addr+i)*HTIF_DATA_ALIGN);
       send(buf, hdr.data_size * sizeof(buf[0]));
       break;
     }
@@ -49,7 +49,7 @@ void htif_isasim_t::tick_once()
     {
       const uint64_t* buf = (const uint64_t*)p.get_payload();
       for (size_t i = 0; i < hdr.data_size; i++)
-        sim->mmu->store_uint64((hdr.addr+i)*HTIF_DATA_ALIGN, buf[i]);
+        sim->debug_mmu->store_uint64((hdr.addr+i)*HTIF_DATA_ALIGN, buf[i]);
 
       packet_header_t ack(HTIF_CMD_ACK, seqno, 0, 0);
       send(&ack, sizeof(ack));
@@ -77,7 +77,7 @@ void htif_isasim_t::tick_once()
       send(&old_val, sizeof(old_val));
 
       if (regno == PCR_TOHOST)
-          sim->procs[coreid]->tohost = 0;
+          sim->procs[coreid]->state.tohost = 0;
 
       if (hdr.cmd == HTIF_CMD_WRITE_CONTROL_REG)
       {

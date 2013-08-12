@@ -1,1 +1,2 @@
-RD = mmu.load_reserved_int32(RS1);
+p->get_state()->load_reservation = RS1;
+RD = MMU.load_int32(RS1);

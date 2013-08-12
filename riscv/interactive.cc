@@ -113,39 +113,39 @@ void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::stri
 reg_t sim_t::get_pc(const std::vector<std::string>& args)
 {
   if(args.size() != 1)
-    throw trap_illegal_instruction;
+    throw trap_illegal_instruction();
 
   int p = atoi(args[0].c_str());
   if(p >= (int)num_cores())
-    throw trap_illegal_instruction;
+    throw trap_illegal_instruction();
 
-  return procs[p]->pc;
+  return procs[p]->state.pc;
 }
 
 reg_t sim_t::get_reg(const std::vector<std::string>& args)
 {
   if(args.size() != 2)
-    throw trap_illegal_instruction;
+    throw trap_illegal_instruction();
 
   int p = atoi(args[0].c_str());
   int r = atoi(args[1].c_str());
   if(p >= (int)num_cores() || r >= NXPR)
-    throw trap_illegal_instruction;
+    throw trap_illegal_instruction();
 
-  return procs[p]->XPR[r];
+  return procs[p]->state.XPR[r];
 }
 
 reg_t sim_t::get_freg(const std::vector<std::string>& args)
 {
   if(args.size() != 2)
-    throw trap_illegal_instruction;
+    throw trap_illegal_instruction();
 
   int p = atoi(args[0].c_str());
   int r = atoi(args[1].c_str());
   if(p >= (int)num_cores() || r >= NFPR)
-    throw trap_illegal_instruction;
+    throw trap_illegal_instruction();
 
-  return procs[p]->FPR[r];
+  return procs[p]->state.FPR[r];
 }
 
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
@@ -177,15 +177,16 @@ void sim_t::interactive_fregd(const std::string& cmd, const std::vector<std::str
 reg_t sim_t::get_mem(const std::vector<std::string>& args)
 {
   if(args.size() != 1 && args.size() != 2)
-    throw trap_illegal_instruction;
+    throw trap_illegal_instruction();
 
   std::string addr_str = args[0];
+  mmu_t* mmu = debug_mmu;
   if(args.size() == 2)
   {
     int p = atoi(args[0].c_str());
     if(p >= (int)num_cores())
-      throw trap_illegal_instruction;
-    mmu->set_ptbr(procs[p]->mmu.get_ptbr());
+      throw trap_illegal_instruction();
+    mmu = procs[p]->get_mmu();
     addr_str = args[1];
   }
 
@@ -220,12 +221,12 @@ void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::strin
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)
 {
   if(args.size() != 1)
-    throw trap_illegal_instruction;
+    throw trap_illegal_instruction();
 
   reg_t addr = strtol(args[0].c_str(),NULL,16);
 
   char ch;
-  while((ch = mmu->load_uint8(addr++)))
+  while((ch = debug_mmu->load_uint8(addr++)))
     putchar(ch);
 
   putchar('\n');

@@ -1,12 +1,15 @@
-// See LICENSE for license details.
-
 #include "trap.h"
+#include "processor.h"
+#include <cstdio>
 
-const char* trap_name(trap_t t)
+const char* trap_t::name()
 {
-  #define DECLARE_TRAP(x) "trap_"#x
-  static const char* names[] = { TRAP_LIST };
-  #undef DECLARE_TRAP
+  const char* fmt = uint8_t(which) == which ? "trap #%u" : "interrupt #%u";
+  sprintf(_name, fmt, uint8_t(which));
+  return _name;
+}
 
-  return (unsigned)t >= sizeof(names)/sizeof(names[0]) ? "unknown" : names[t];
+void mem_trap_t::side_effects(state_t* state)
+{
+  state->badvaddr = badvaddr;
 }

@@ -18,9 +18,9 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-sim_t::sim_t(size_t _nprocs, size_t mem_mb, const std::vector<std::string>& args)
-  : htif(new htif_isasim_t(this, args)),
-    procs(_nprocs), current_step(0), current_proc(0), debug(false)
+sim_t::sim_t(size_t nprocs, size_t mem_mb, const std::vector<std::string>& args)
+  : htif(new htif_isasim_t(this, args)), procs(std::max(nprocs, size_t(1))),
+    current_step(0), current_proc(0), debug(false)
 {
   signal(SIGINT, &handle_signal);
   // allocate target machine's memory, shrinking it as necessary
@@ -38,11 +38,9 @@ sim_t::sim_t(size_t _nprocs, size_t mem_mb, const std::vector<std::string>& args
     fprintf(stderr, "warning: only got %lu bytes of target mem (wanted %lu)\n",
             (unsigned long)memsz, (unsigned long)memsz0);
 
-  mmu = new mmu_t(mem, memsz);
+  debug_mmu = new mmu_t(mem, memsz);
 
-  if (_nprocs == 0)
-    _nprocs = 1;
-  for (size_t i = 0; i < _nprocs; i++)
+  for (size_t i = 0; i < procs.size(); i++)
     procs[i] = new processor_t(this, new mmu_t(mem, memsz), i);
 }
 
@@ -54,7 +52,7 @@ sim_t::~sim_t()
     delete procs[i];
     delete pmmu;
   }
-  delete mmu;
+  delete debug_mmu;
   free(mem);
 }
 
@@ -100,7 +98,7 @@ void sim_t::step(size_t n, bool noisy)
     if (current_step == INTERLEAVE)
     {
       current_step = 0;
-      procs[current_proc]->mmu.yield_load_reservation();
+      procs[current_proc]->yield_load_reservation();
       if (++current_proc == procs.size())
         current_proc = 0;
     }
@@ -117,7 +115,7 @@ bool sim_t::running()
 
 void sim_t::stop()
 {
-  procs[0]->tohost = 1;
+  procs[0]->state.tohost = 1;
   while (!htif->done())
     htif->tick();
 }

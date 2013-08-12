@@ -5,8 +5,7 @@
 #include "processor.h"
 
 mmu_t::mmu_t(char* _mem, size_t _memsz)
- : mem(_mem), memsz(_memsz), badvaddr(0),
-   ptbr(0), proc(NULL)
+ : mem(_mem), memsz(_memsz), proc(NULL)
 {
   flush_tlb();
 }
@@ -27,7 +26,6 @@ void mmu_t::flush_tlb()
   memset(tlb_store_tag, -1, sizeof(tlb_store_tag));
 
   flush_icache();
-  yield_load_reservation();
 }
 
 reg_t mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
@@ -38,7 +36,7 @@ reg_t mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
   reg_t pte = walk(addr);
 
   reg_t pte_perm = pte & PTE_PERM;
-  if (proc == NULL || (proc->sr & SR_S))
+  if (proc == NULL || (proc->state.sr & SR_S))
     pte_perm = (pte_perm/(PTE_SX/PTE_UX)) & PTE_PERM;
   pte_perm |= pte & PTE_V;
 
@@ -46,10 +44,11 @@ reg_t mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
   if(unlikely((pte_perm & perm) != perm))
   {
     if (fetch)
-      throw trap_instruction_access_fault;
+      throw trap_instruction_access_fault();
 
-    badvaddr = addr;
-    throw store ? trap_store_access_fault : trap_load_access_fault;
+    if (store)
+      throw trap_store_access_fault(addr);
+    throw trap_load_access_fault(addr);
   }
 
   reg_t pgoff = addr & (PGSIZE-1);
@@ -77,14 +76,14 @@ pte_t mmu_t::walk(reg_t addr)
   int shift = 8*sizeof(reg_t) - VA_BITS;
   if (((sreg_t)addr << shift >> shift) != (sreg_t)addr)
     ;
-  else if (proc == NULL || !(proc->sr & SR_VM))
+  else if (proc == NULL || !(proc->state.sr & SR_VM))
   {
     if(addr < memsz)
       pte = PTE_V | PTE_PERM | ((addr >> PGSHIFT) << PGSHIFT);
   }
   else
   {
-    reg_t base = ptbr;
+    reg_t base = proc->get_state()->ptbr;
     reg_t ptd;
 
     int ptshift = (LEVELS-1)*PTIDXBITS;

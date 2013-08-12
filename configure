@@ -4004,7 +4004,7 @@ fi
 
 CFLAGS="-Wall -O2 -Wno-unused"
 
-CXXFLAGS="-Wall -O2 -std=c++0x -Wno-pmf-conversions"
+CXXFLAGS="-Wall -O2 -std=c++0x"
 
 
 #-------------------------------------------------------------------------

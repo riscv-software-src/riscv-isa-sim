@@ -1,1 +1,1 @@
-RD = mmu.load_uint16(ITYPE_EADDR);
+RD = MMU.load_uint16(ITYPE_EADDR);

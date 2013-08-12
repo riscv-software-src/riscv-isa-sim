@@ -1,2 +1,2 @@
 require_fp;
-FRD = mmu.load_int64(ITYPE_EADDR);
+FRD = MMU.load_int64(ITYPE_EADDR);

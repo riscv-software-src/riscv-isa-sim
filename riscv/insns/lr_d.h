@@ -1,2 +1,3 @@
 require_xpr64;
-RD = mmu.load_reserved_int64(RS1);
+p->get_state()->load_reservation = RS1;
+RD = MMU.load_int64(RS1);

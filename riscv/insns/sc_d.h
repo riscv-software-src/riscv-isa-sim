@@ -1,2 +1,8 @@
 require_xpr64;
-RD = mmu.store_conditional_uint64(RS1, RS2);
+if (RS1 == p->get_state()->load_reservation)
+{
+  MMU.store_uint64(RS1, RS2);
+  RD = 0;
+}
+else
+  RD = 1;

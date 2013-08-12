@@ -33,16 +33,9 @@ public:
   #define load_func(type) \
     type##_t load_##type(reg_t addr) { \
       if(unlikely(addr % sizeof(type##_t))) \
-      { \
-        badvaddr = addr; \
-        throw trap_load_address_misaligned; \
-      } \
+        throw trap_load_address_misaligned(addr); \
       reg_t paddr = translate(addr, sizeof(type##_t), false, false); \
       return *(type##_t*)(mem + paddr); \
-    } \
-    type##_t load_reserved_##type(reg_t addr) { \
-      load_reservation = addr; \
-      return load_##type(addr); \
     }
 
   // load value from memory at aligned address; zero extend to register width
@@ -61,18 +54,9 @@ public:
   #define store_func(type) \
     void store_##type(reg_t addr, type##_t val) { \
       if(unlikely(addr % sizeof(type##_t))) \
-      { \
-        badvaddr = addr; \
-        throw trap_store_address_misaligned; \
-      } \
+        throw trap_store_address_misaligned(addr); \
       reg_t paddr = translate(addr, sizeof(type##_t), true, false); \
       *(type##_t*)(mem + paddr) = val; \
-    } \
-    reg_t store_conditional_##type(reg_t addr, type##_t val) { \
-      if (addr == load_reservation) { \
-        store_##type(addr, val); \
-        return 0; \
-      } else return 1; \
     }
 
   // store value to memory at aligned address
@@ -111,23 +95,16 @@ public:
     return icache_data[idx];
   }
 
-  reg_t get_badvaddr() { return badvaddr; }
-  reg_t get_ptbr() { return ptbr; }
-  void set_ptbr(reg_t addr) { ptbr = addr & ~(PGSIZE-1); }
   void set_processor(processor_t* p) { proc = p; flush_tlb(); }
 
   void flush_tlb();
   void flush_icache();
-  void yield_load_reservation() { load_reservation = -1; }
 
   void register_memtracer(memtracer_t*);
 
 private:
   char* mem;
   size_t memsz;
-  reg_t load_reservation;
-  reg_t badvaddr;
-  reg_t ptbr;
   processor_t* proc;
   memtracer_list_t tracer;
 

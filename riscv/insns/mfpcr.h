@@ -1,2 +1,2 @@
 require_supervisor;
-RD = get_pcr(insn.rtype.rs1);
+RD = p->get_pcr(insn.rtype.rs1);

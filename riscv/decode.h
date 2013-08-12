@@ -168,14 +168,15 @@ private:
 };
 
 // helpful macros, etc
-#define RS1 XPR[insn.rtype.rs1]
-#define RS2 XPR[insn.rtype.rs2]
-#define RD XPR.write_port(insn.rtype.rd)
-#define RA XPR.write_port(1)
-#define FRS1 FPR[insn.ftype.rs1]
-#define FRS2 FPR[insn.ftype.rs2]
-#define FRS3 FPR[insn.ftype.rs3]
-#define FRD FPR.write_port(insn.ftype.rd)
+#define MMU (*p->get_mmu())
+#define RS1 p->get_state()->XPR[insn.rtype.rs1]
+#define RS2 p->get_state()->XPR[insn.rtype.rs2]
+#define RD p->get_state()->XPR.write_port(insn.rtype.rd)
+#define RA p->get_state()->XPR.write_port(1)
+#define FRS1 p->get_state()->FPR[insn.ftype.rs1]
+#define FRS2 p->get_state()->FPR[insn.ftype.rs2]
+#define FRS3 p->get_state()->FPR[insn.ftype.rs3]
+#define FRD p->get_state()->FPR.write_port(insn.ftype.rd)
 #define BIGIMM insn.ltype.bigimm
 #define SIMM insn.itype.imm12
 #define BIMM ((signed)insn.btype.immlo | (insn.btype.immhi << IMMLO_BITS))
@@ -187,23 +188,23 @@ private:
 #define ITYPE_EADDR sext_xprlen(RS1 + SIMM)
 #define BTYPE_EADDR sext_xprlen(RS1 + BIMM)
 #define RM ({ int rm = insn.ftype.rm; \
-              if(rm == 7) rm = (fsr & FSR_RD) >> FSR_RD_SHIFT; \
-              if(rm > 4) throw trap_illegal_instruction; \
+              if(rm == 7) rm = (p->get_state()->fsr & FSR_RD) >> FSR_RD_SHIFT; \
+              if(rm > 4) throw trap_illegal_instruction(); \
               rm; })
 
 #define xpr64 (xprlen == 64)
 
-#define require_supervisor if(unlikely(!(sr & SR_S))) throw trap_privileged_instruction
-#define require_xpr64 if(unlikely(!xpr64)) throw trap_illegal_instruction
-#define require_xpr32 if(unlikely(xpr64)) throw trap_illegal_instruction
+#define require_supervisor if(unlikely(!(p->get_state()->sr & SR_S))) throw trap_privileged_instruction()
+#define require_xpr64 if(unlikely(!xpr64)) throw trap_illegal_instruction()
+#define require_xpr32 if(unlikely(xpr64)) throw trap_illegal_instruction()
 #ifndef RISCV_ENABLE_FPU
-# define require_fp throw trap_illegal_instruction
+# define require_fp throw trap_illegal_instruction()
 #else
-# define require_fp if(unlikely(!(sr & SR_EF))) throw trap_fp_disabled
+# define require_fp if(unlikely(!(p->get_state()->sr & SR_EF))) throw trap_fp_disabled()
 #endif
 
 #define cmp_trunc(reg) (reg_t(reg) << (64-xprlen))
-#define set_fp_exceptions ({ set_fsr(fsr | \
+#define set_fp_exceptions ({ p->set_fsr(p->get_state()->fsr | \
                                (softfloat_exceptionFlags << FSR_AEXC_SHIFT)); \
                              softfloat_exceptionFlags = 0; })
 
@@ -220,7 +221,7 @@ private:
 
 #define set_pc(x) \
   do { if ((x) & 3 /* For now... */) \
-         throw trap_instruction_address_misaligned; \
+         throw trap_instruction_address_misaligned(); \
        npc = (x); \
      } while(0)
 
