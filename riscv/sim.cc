@@ -48,7 +48,7 @@ sim_t::~sim_t()
 {
   for (size_t i = 0; i < procs.size(); i++)
   {
-    mmu_t* pmmu = &procs[i]->mmu;
+    mmu_t* pmmu = procs[i]->get_mmu();
     delete procs[i];
     delete pmmu;
   }

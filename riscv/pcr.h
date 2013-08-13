@@ -40,6 +40,7 @@
 #define PCR_TOHOST   30
 #define PCR_FROMHOST 31
 
+#define IRQ_COP   2
 #define IRQ_IPI   5
 #define IRQ_HOST  6
 #define IRQ_TIMER 7

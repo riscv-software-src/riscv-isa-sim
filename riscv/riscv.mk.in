@@ -21,6 +21,9 @@ riscv_hdrs = \
 	opcodes.h \
 	cachesim.h \
 	memtracer.h \
+	extension.h \
+	rocc.h \
+	dummy-rocc.h \
 
 riscv_srcs = \
 	htif.cc \
@@ -31,6 +34,8 @@ riscv_srcs = \
 	cachesim.cc \
 	mmu.cc \
 	disasm.cc \
+  extension.cc \
+  rocc.cc \
 	$(riscv_gen_srcs) \
 
 riscv_test_srcs =

@@ -3,6 +3,7 @@
 #include "sim.h"
 #include "htif.h"
 #include "cachesim.h"
+#include "extension.h"
 #include <fesvr/option_parser.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -33,6 +34,7 @@ int main(int argc, char** argv)
   std::unique_ptr<icache_sim_t> ic;
   std::unique_ptr<dcache_sim_t> dc;
   std::unique_ptr<cache_sim_t> l2;
+  std::function<extension_t*()> extension;
 
   option_parser_t parser;
   parser.help(&help);
@@ -43,6 +45,11 @@ int main(int argc, char** argv)
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
+  parser.option(0, "extension", 1, [&](const char* s){
+    if (!extensions().count(s))
+      fprintf(stderr, "unknown extension %s!\n", s), exit(-1);
+    extension = extensions()[s];
+  });
 
   auto argv1 = parser.parse(argv);
   if (!*argv1)
@@ -56,6 +63,7 @@ int main(int argc, char** argv)
   {
     if (ic) s.get_core(i)->get_mmu()->register_memtracer(&*ic);
     if (dc) s.get_core(i)->get_mmu()->register_memtracer(&*dc);
+    if (extension) s.get_core(i)->register_extension(extension());
   }
 
   s.set_debug(debug);

@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "processor.h"
+#include "extension.h"
 #include "common.h"
 #include "config.h"
 #include "sim.h"
@@ -13,15 +14,12 @@
 #include <limits.h>
 
 processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
-  : sim(*_sim), mmu(*_mmu), id(_id), opcode_bits(0)
+  : sim(_sim), mmu(_mmu), ext(NULL), id(_id), opcode_bits(0)
 {
   reset(true);
-  mmu.set_processor(this);
+  mmu->set_processor(this);
 
-  #define DECLARE_INSN(name, match, mask) \
-    extern reg_t rv32_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t rv64_##name(processor_t*, insn_t, reg_t); \
-    register_insn(match, mask, rv32_##name, rv64_##name);
+  #define DECLARE_INSN(name, match, mask) REGISTER_INSN(this, name, match, mask)
   #include "opcodes.h"
   #undef DECLARE_INSN
 }
@@ -94,7 +92,7 @@ void processor_t::step(size_t n, bool noisy)
 
   size_t i = 0;
   reg_t npc = state.pc;
-  mmu_t& _mmu = mmu;
+  mmu_t* _mmu = mmu;
 
   try
   {
@@ -103,7 +101,7 @@ void processor_t::step(size_t n, bool noisy)
     // execute_insn fetches and executes one instruction
     #define execute_insn(noisy) \
       do { \
-        mmu_t::insn_fetch_t fetch = _mmu.load_insn(npc); \
+        mmu_t::insn_fetch_t fetch = _mmu->load_insn(npc); \
         if(noisy) disasm(fetch.insn, npc); \
         npc = fetch.func(this, fetch.insn, npc); \
       } while(0)
@@ -142,20 +140,15 @@ void processor_t::step(size_t n, bool noisy)
 
 void processor_t::take_trap(reg_t pc, trap_t& t, bool noisy)
 {
-  if(noisy)
-  {
-    if ((sreg_t)t.cause() < 0)
-      fprintf(stderr, "core %3d: interrupt %d, epc 0x%016" PRIx64 "\n",
-              id, uint8_t(t.cause()), pc);
-    else
-      fprintf(stderr, "core %3d: trap %s, epc 0x%016" PRIx64 "\n",
-              id, t.name(), pc);
-  }
+  if (noisy)
+    fprintf(stderr, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
+            id, t.name(), pc);
 
   // switch to supervisor, set previous supervisor bit, disable interrupts
   set_pcr(PCR_SR, (((state.sr & ~SR_EI) | SR_S) & ~SR_PS & ~SR_PEI) |
                   ((state.sr & SR_S) ? SR_PS : 0) |
                   ((state.sr & SR_EI) ? SR_PEI : 0));
+
   yield_load_reservation();
   state.cause = t.cause();
   state.epc = pc;
@@ -196,7 +189,7 @@ reg_t processor_t::set_pcr(int which, reg_t val)
       state.sr &= ~SR_EV;
 #endif
       state.sr &= ~SR_ZERO;
-      mmu.flush_tlb();
+      mmu->flush_tlb();
       break;
     case PCR_EPC:
       state.epc = val;
@@ -215,7 +208,7 @@ reg_t processor_t::set_pcr(int which, reg_t val)
       state.ptbr = val & ~(PGSIZE-1);
       break;
     case PCR_SEND_IPI:
-      sim.send_ipi(val);
+      sim->send_ipi(val);
       break;
     case PCR_CLR_IPI:
       set_interrupt(IRQ_IPI, val & 1);
@@ -262,7 +255,7 @@ reg_t processor_t::get_pcr(int which)
     case PCR_ASID:
       return 0;
     case PCR_FATC:
-      mmu.flush_tlb();
+      mmu->flush_tlb();
       return 0;
     case PCR_HARTID:
       return id;
@@ -289,7 +282,7 @@ void processor_t::set_interrupt(int which, bool on)
     state.sr &= ~mask;
 }
 
-static reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)
+reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)
 {
   throw trap_illegal_instruction();
 }
@@ -306,13 +299,13 @@ insn_func_t processor_t::decode_insn(insn_t insn)
   return &illegal_instruction;
 }
 
-void processor_t::register_insn(uint32_t match, uint32_t mask, insn_func_t rv32, insn_func_t rv64)
+void processor_t::register_insn(insn_desc_t desc)
 {
-  assert(mask & 1);
-  if (opcode_bits == 0 || (mask & ((1L << opcode_bits)-1)) != ((1L << opcode_bits)-1))
+  assert(desc.mask & 1);
+  if (opcode_bits == 0 || (desc.mask & ((1L << opcode_bits)-1)) != ((1L << opcode_bits)-1))
   {
     unsigned x = 0;
-    while ((mask & ((1L << (x+1))-1)) == ((1L << (x+1))-1) &&
+    while ((desc.mask & ((1L << (x+1))-1)) == ((1L << (x+1))-1) &&
            (opcode_bits == 0 || x <= opcode_bits))
       x++;
     opcode_bits = x;
@@ -323,6 +316,15 @@ void processor_t::register_insn(uint32_t match, uint32_t mask, insn_func_t rv32,
     opcode_map = new_map;
   }
 
-  opcode_map.insert(std::make_pair(match & ((1L<<opcode_bits)-1),
-    (opcode_map_entry_t){match, mask, rv32, rv64}));
+  opcode_map.insert(std::make_pair(desc.match & ((1L<<opcode_bits)-1), desc));
+}
+
+void processor_t::register_extension(extension_t* x)
+{
+  for (auto insn : x->get_instructions())
+    register_insn(insn);
+  if (ext != NULL)
+    throw std::logic_error("only one extension may be registered");
+  ext = x;
+  x->set_processor(this);
 }
