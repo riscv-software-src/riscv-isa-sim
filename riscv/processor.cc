@@ -213,10 +213,10 @@ reg_t processor_t::set_pcr(int which, reg_t val)
     case PCR_CLR_IPI:
       set_interrupt(IRQ_IPI, val & 1);
       break;
-    case PCR_K0:
+    case PCR_SUP0:
       state.pcr_k0 = val;
       break;
-    case PCR_K1:
+    case PCR_SUP1:
       state.pcr_k1 = val;
       break;
     case PCR_TOHOST:
@@ -261,9 +261,9 @@ reg_t processor_t::get_pcr(int which)
       return id;
     case PCR_IMPL:
       return 1;
-    case PCR_K0:
+    case PCR_SUP0:
       return state.pcr_k0;
-    case PCR_K1:
+    case PCR_SUP1:
       return state.pcr_k1;
     case PCR_TOHOST:
       return state.tohost;

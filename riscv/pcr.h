@@ -18,22 +18,22 @@
 #define SR_IM_SHIFT 16
 #define SR_IP_SHIFT 24
 
-#define PCR_SR       0
-#define PCR_EPC      1
-#define PCR_BADVADDR 2
-#define PCR_EVEC     3
-#define PCR_CAUSE    4
-#define PCR_PTBR     5
-#define PCR_ASID     6
-#define PCR_FATC     7
-#define PCR_COUNT    8
-#define PCR_COMPARE  9
-#define PCR_SEND_IPI 10
-#define PCR_CLR_IPI  11
-#define PCR_HARTID   12
-#define PCR_IMPL     13
-#define PCR_K0       14
-#define PCR_K1       15
+#define PCR_SUP0     0
+#define PCR_SUP1     1
+#define PCR_EPC      2
+#define PCR_BADVADDR 3
+#define PCR_PTBR     4
+#define PCR_ASID     5
+#define PCR_COUNT    6
+#define PCR_COMPARE  7
+#define PCR_EVEC     8
+#define PCR_CAUSE    9
+#define PCR_SR       10
+#define PCR_HARTID   11
+#define PCR_IMPL     12
+#define PCR_FATC     13
+#define PCR_SEND_IPI 14
+#define PCR_CLR_IPI  15
 #define PCR_VECBANK  18
 #define PCR_VECCFG   19
 #define PCR_RESET    29
@@ -91,9 +91,6 @@
 #endif
 #define RISCV_PGLEVEL_BITS 10
 #define RISCV_PGSIZE (1 << RISCV_PGSHIFT)
-
-#define ASM_CR(r)   _ASM_CR(r)
-#define _ASM_CR(r)  cr##r
 
 #ifndef __ASSEMBLER__
 
