@@ -45,6 +45,9 @@
 #define IRQ_HOST  6
 #define IRQ_TIMER 7
 
+#define IMPL_SPIKE  1
+#define IMPL_ROCKET 2
+
 #define CAUSE_MISALIGNED_FETCH 0
 #define CAUSE_FAULT_FETCH 1
 #define CAUSE_ILLEGAL_INSTRUCTION 2

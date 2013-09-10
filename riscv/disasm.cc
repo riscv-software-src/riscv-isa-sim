@@ -273,7 +273,7 @@ class jump_target_t : public arg_t
   virtual std::string to_string(insn_t insn) const
   {
     std::stringstream s;
-    int32_t target = (int32_t)insn.jtype.target;
+    int32_t target = (int32_t)insn.ltype.bigimm;
     target <<= JUMP_ALIGN_BITS;
     char sign = target >= 0 ? '+' : '-';
     s << "pc " << sign << std::hex << " 0x" << abs(target);
@@ -426,7 +426,7 @@ disassembler::disassembler()
   #define DEFINE_BTYPE(code) DISASM_INSN(#code, code, 0, xrs1_reg, xrs2_reg, branch_target)
   #define DEFINE_B0TYPE(name, code) DISASM_INSN(name, code, mask_rs1 | mask_rs2, branch_target)
   #define DEFINE_B1TYPE(name, code) DISASM_INSN(name, code, mask_rs2, xrs1_reg, branch_target)
-  #define DEFINE_JTYPE(code) DISASM_INSN(#code, code, 0, jump_target)
+  #define DEFINE_JTYPE(code) DISASM_INSN(#code, code, 0, xrd_reg, jump_target)
   #define DEFINE_XLOAD(code) DISASM_INSN(#code, code, 0, xrd_reg, load_address)
   #define DEFINE_XSTORE(code) DISASM_INSN(#code, code, 0, xrs2_reg, store_address)
   #define DEFINE_XAMO(code) DISASM_INSN(#code, code, 0, xrd_reg, xrs2_reg, amo_address)
@@ -479,7 +479,6 @@ disassembler::disassembler()
   DEFINE_FSTORE(fsw)
   DEFINE_FSTORE(fsd)
 
-  DEFINE_JTYPE(j);
   DEFINE_JTYPE(jal);
 
   DEFINE_B0TYPE("b",    beq);

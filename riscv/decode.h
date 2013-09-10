@@ -82,12 +82,6 @@ struct btype_t
   signed immhi : IMM_BITS-IMMLO_BITS;
 };
 
-struct jtype_t
-{
-  unsigned jump_opcode : OPCODE_BITS;
-  signed target : TARGET_BITS;
-};
-
 struct rtype_t
 {
   unsigned opcode : OPCODE_BITS;
@@ -101,7 +95,7 @@ struct rtype_t
 struct ltype_t
 {
   unsigned opcode : OPCODE_BITS;
-  unsigned bigimm : BIGIMM_BITS;
+  signed bigimm : BIGIMM_BITS;
   unsigned rd : XPRID_BITS;
 };
 
@@ -119,7 +113,6 @@ struct ftype_t
 union insn_t
 {
   itype_t itype;
-  jtype_t jtype;
   rtype_t rtype;
   btype_t btype;
   ltype_t ltype;
@@ -172,7 +165,6 @@ private:
 #define RS1 p->get_state()->XPR[insn.rtype.rs1]
 #define RS2 p->get_state()->XPR[insn.rtype.rs2]
 #define RD p->get_state()->XPR.write_port(insn.rtype.rd)
-#define RA p->get_state()->XPR.write_port(1)
 #define FRS1 p->get_state()->FPR[insn.ftype.rs1]
 #define FRS2 p->get_state()->FPR[insn.ftype.rs2]
 #define FRS3 p->get_state()->FPR[insn.ftype.rs3]
@@ -182,9 +174,8 @@ private:
 #define BIMM ((signed)insn.btype.immlo | (insn.btype.immhi << IMMLO_BITS))
 #define SHAMT (insn.itype.imm12 & 0x3F)
 #define SHAMTW (insn.itype.imm12 & 0x1F)
-#define TARGET insn.jtype.target
 #define BRANCH_TARGET (pc + (BIMM << BRANCH_ALIGN_BITS))
-#define JUMP_TARGET (pc + (TARGET << JUMP_ALIGN_BITS))
+#define JUMP_TARGET (pc + (BIGIMM << JUMP_ALIGN_BITS))
 #define ITYPE_EADDR sext_xprlen(RS1 + SIMM)
 #define BTYPE_EADDR sext_xprlen(RS1 + BIMM)
 #define RM ({ int rm = insn.ftype.rm; \
