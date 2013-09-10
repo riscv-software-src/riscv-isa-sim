@@ -87,10 +87,6 @@ void sim_t::step(size_t n, bool noisy)
 {
   for (size_t i = 0, steps = 0; i < n; i += steps)
   {
-    htif->tick();
-    if (!running())
-      break;
-
     steps = std::min(n - i, INTERLEAVE - current_step);
     procs[current_proc]->step(steps, noisy);
 
@@ -101,6 +97,10 @@ void sim_t::step(size_t n, bool noisy)
       procs[current_proc]->yield_load_reservation();
       if (++current_proc == procs.size())
         current_proc = 0;
+
+      htif->tick();
+      if (!running())
+        break;
     }
   }
 }
