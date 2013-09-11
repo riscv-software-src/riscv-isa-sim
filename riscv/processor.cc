@@ -102,8 +102,8 @@ void processor_t::step(size_t n, bool noisy)
     #define execute_insn(noisy) \
       do { \
         mmu_t::insn_fetch_t fetch = _mmu->load_insn(npc); \
-        if(noisy) disasm(fetch.insn, npc); \
-        npc = fetch.func(this, fetch.insn, npc); \
+        if(noisy) disasm(fetch.insn.insn, npc); \
+        npc = fetch.func(this, fetch.insn.insn, npc); \
       } while(0)
 
     if(noisy) for( ; i < n; i++) // print out instructions as we go
@@ -167,8 +167,8 @@ void processor_t::disasm(insn_t insn, reg_t pc)
 {
   // the disassembler is stateless, so we share it
   static disassembler disasm;
-  fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIxFAST32 ") %s\n",
-          id, state.pc, insn.bits, disasm.disassemble(insn).c_str());
+  fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx32 ") %s\n",
+          id, state.pc, insn.bits(), disasm.disassemble(insn).c_str());
 }
 
 reg_t processor_t::set_pcr(int which, reg_t val)
@@ -291,9 +291,9 @@ insn_func_t processor_t::decode_insn(insn_t insn)
 {
   bool rv64 = (state.sr & SR_S) ? (state.sr & SR_S64) : (state.sr & SR_U64);
 
-  auto key = insn.bits & ((1L << opcode_bits)-1);
+  auto key = insn.bits() & ((1L << opcode_bits)-1);
   for (auto it = opcode_map.find(key); it != opcode_map.end() && it->first == key; ++it)
-    if ((insn.bits & it->second.mask) == it->second.match)
+    if ((insn.bits() & it->second.mask) == it->second.match)
       return rv64 ? it->second.rv64 : it->second.rv32;
 
   return &illegal_instruction;

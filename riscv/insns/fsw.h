@@ -1,2 +1,2 @@
 require_fp;
-MMU.store_uint32(BTYPE_EADDR, FRS2);
+MMU.store_uint32(RS1 + insn.s_imm(), FRS2);

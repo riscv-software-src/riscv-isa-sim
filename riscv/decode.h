@@ -17,25 +17,8 @@ typedef int64_t sreg_t;
 typedef uint64_t reg_t;
 typedef uint64_t freg_t;
 
-const int OPCODE_BITS = 7;
-
-const int XPRID_BITS = 5;
-const int NXPR = 1 << XPRID_BITS;
-
-const int FPR_BITS = 64;
-const int FPRID_BITS = 5;
-const int NFPR = 1 << FPRID_BITS;
-
-const int IMM_BITS = 12;
-const int IMMLO_BITS = 7;
-const int TARGET_BITS = 25;
-const int FUNCT_BITS = 3;
-const int FUNCTR_BITS = 7;
-const int FFUNCT_BITS = 2;
-const int RM_BITS = 3;
-const int BIGIMM_BITS = 20;
-const int BRANCH_ALIGN_BITS = 1;
-const int JUMP_ALIGN_BITS = 1;
+const int NXPR = 32;
+const int NFPR = 32;
 
 #define FP_RD_NE  0
 #define FP_RD_0   1
@@ -62,62 +45,24 @@ const int JUMP_ALIGN_BITS = 1;
 
 #define FSR_ZERO ~(FSR_RD | FSR_AEXC)
 
-// note: bit fields are in little-endian order
-struct itype_t
+class insn_t
 {
-  unsigned opcode : OPCODE_BITS;
-  unsigned funct : FUNCT_BITS;
-  signed imm12 : IMM_BITS;
-  unsigned rs1 : XPRID_BITS;
-  unsigned rd : XPRID_BITS;
-};
-
-struct btype_t
-{
-  unsigned opcode : OPCODE_BITS;
-  unsigned funct : FUNCT_BITS;
-  unsigned immlo : IMMLO_BITS;
-  unsigned rs2 : XPRID_BITS;
-  unsigned rs1 : XPRID_BITS;
-  signed immhi : IMM_BITS-IMMLO_BITS;
-};
-
-struct rtype_t
-{
-  unsigned opcode : OPCODE_BITS;
-  unsigned funct : FUNCT_BITS;
-  unsigned functr : FUNCTR_BITS;
-  unsigned rs2 : XPRID_BITS;
-  unsigned rs1 : XPRID_BITS;
-  unsigned rd : XPRID_BITS;
-};
-
-struct ltype_t
-{
-  unsigned opcode : OPCODE_BITS;
-  signed bigimm : BIGIMM_BITS;
-  unsigned rd : XPRID_BITS;
-};
-
-struct ftype_t
-{
-  unsigned opcode : OPCODE_BITS;
-  unsigned ffunct : FFUNCT_BITS;
-  unsigned rm : RM_BITS;
-  unsigned rs3 : FPRID_BITS;
-  unsigned rs2 : FPRID_BITS;
-  unsigned rs1 : FPRID_BITS;
-  unsigned rd  : FPRID_BITS;
-};
-
-union insn_t
-{
-  itype_t itype;
-  rtype_t rtype;
-  btype_t btype;
-  ltype_t ltype;
-  ftype_t ftype;
-  uint_fast32_t bits;
+public:
+  uint32_t bits() { return b; }
+  reg_t i_imm() { return x(11, 11) | (imm_sign() << 11); }
+  reg_t s_imm() { return x(11, 6) | (x(27, 5) << 6) | (imm_sign() << 11); }
+  reg_t sb_imm() { return (x(12, 5) << 1) | (x(27, 5) << 6) | (x(11, 1) << 11) | (imm_sign() << 12); }
+  reg_t u_imm() { return (x(22, 5) << 12) | (x(7, 3) << 17) | (x(11, 11) << 20) | (imm_sign() << 31); }
+  reg_t uj_imm() { return (x(12, 10) << 1) | (x(11, 1) << 11) | (x(22, 5) << 12) | (x(7, 3) << 17) | (imm_sign() << 20); }
+  uint32_t rd() { return x(27, 5); }
+  uint32_t rs1() { return x(22, 5); }
+  uint32_t rs2() { return x(17, 5); }
+  uint32_t rs3() { return x(12, 5); }
+  uint32_t rm() { return x(9, 3); }
+private:
+  uint32_t b;
+  reg_t x(int lo, int len) { return b << (32-lo-len) >> (32-len); }
+  reg_t imm_sign() { return -x(10, 1); }
 };
 
 template <class T>
@@ -162,23 +107,17 @@ private:
 
 // helpful macros, etc
 #define MMU (*p->get_mmu())
-#define RS1 p->get_state()->XPR[insn.rtype.rs1]
-#define RS2 p->get_state()->XPR[insn.rtype.rs2]
-#define RD p->get_state()->XPR.write_port(insn.rtype.rd)
-#define FRS1 p->get_state()->FPR[insn.ftype.rs1]
-#define FRS2 p->get_state()->FPR[insn.ftype.rs2]
-#define FRS3 p->get_state()->FPR[insn.ftype.rs3]
-#define FRD p->get_state()->FPR.write_port(insn.ftype.rd)
-#define BIGIMM insn.ltype.bigimm
-#define SIMM insn.itype.imm12
-#define BIMM ((signed)insn.btype.immlo | (insn.btype.immhi << IMMLO_BITS))
-#define SHAMT (insn.itype.imm12 & 0x3F)
-#define SHAMTW (insn.itype.imm12 & 0x1F)
-#define BRANCH_TARGET (pc + (BIMM << BRANCH_ALIGN_BITS))
-#define JUMP_TARGET (pc + (BIGIMM << JUMP_ALIGN_BITS))
-#define ITYPE_EADDR sext_xprlen(RS1 + SIMM)
-#define BTYPE_EADDR sext_xprlen(RS1 + BIMM)
-#define RM ({ int rm = insn.ftype.rm; \
+#define RS1 p->get_state()->XPR[insn.rs1()]
+#define RS2 p->get_state()->XPR[insn.rs2()]
+#define RD p->get_state()->XPR.write_port(insn.rd())
+#define FRS1 p->get_state()->FPR[insn.rs1()]
+#define FRS2 p->get_state()->FPR[insn.rs2()]
+#define FRS3 p->get_state()->FPR[insn.rs3()]
+#define FRD p->get_state()->FPR.write_port(insn.rd())
+#define SHAMT (insn.i_imm() & 0x3F)
+#define BRANCH_TARGET (pc + insn.sb_imm())
+#define JUMP_TARGET (pc + insn.uj_imm())
+#define RM ({ int rm = insn.rm(); \
               if(rm == 7) rm = (p->get_state()->fsr & FSR_RD) >> FSR_RD_SHIFT; \
               if(rm > 4) throw trap_illegal_instruction(); \
               rm; })

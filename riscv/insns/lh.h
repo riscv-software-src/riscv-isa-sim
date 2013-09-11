@@ -1,1 +1,1 @@
-RD = MMU.load_int16(ITYPE_EADDR);
+RD = MMU.load_int16(RS1 + insn.i_imm());

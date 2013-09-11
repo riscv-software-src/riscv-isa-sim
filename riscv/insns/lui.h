@@ -1,1 +1,1 @@
-RD = sext32(BIGIMM << IMM_BITS);
+RD = insn.u_imm();

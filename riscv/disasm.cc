@@ -6,320 +6,189 @@
 #include <cstdarg>
 #include <sstream>
 #include <stdlib.h>
+using namespace std;
 
 class arg_t
 {
  public:
-  virtual std::string to_string(insn_t val) const = 0;
+  virtual string to_string(insn_t val) const = 0;
   virtual ~arg_t() {}
 };
 
-static const char* xpr_to_string[] = {
+static const char* xpr[] = {
   "zero", "ra", "s0", "s1",  "s2",  "s3",  "s4",  "s5",
   "s6",   "s7", "s8", "s9", "s10", "s11",  "sp",  "tp",
   "v0",   "v1", "a0", "a1",  "a2",  "a3",  "a4",  "a5",
-  "a6",   "a7", "a8", "a9", "a10", "a11", "a12", "a13"
+  "a6",   "a7", "t0", "t1",  "t2",  "t3",  "t4",  "gp"
 };
 
-static const char* fpr_to_string[] = {
+static const char* fpr[] = {
   "fs0", "fs1",  "fs2",  "fs3",  "fs4",  "fs5",  "fs6",  "fs7",
   "fs8", "fs9", "fs10", "fs11", "fs12", "fs13", "fs14", "fs15",
   "fv0", "fv1", "fa0",   "fa1",  "fa2",  "fa3",  "fa4",  "fa5",
-  "fa6", "fa7", "fa8",   "fa9", "fa10", "fa11", "fa12", "fa13"
+  "fa6", "fa7", "ft0",   "ft1",  "ft2",  "ft3",  "ft4",  "ft5"
 };
 
-static const char* vxpr_to_string[] = {
+static const char* vxpr[] = {
   "vx0",  "vx1",  "vx2",  "vx3",  "vx4",  "vx5",  "vx6",  "vx7",
   "vx8",  "vx9",  "vx10", "vx11", "vx12", "vx13", "vx14", "vx15",
   "vx16", "vx17", "vx18", "vx19", "vx20", "vx21", "vx22", "vx23",
   "vx24", "vx25", "vx26", "vx27", "vx28", "vx29", "vx30", "vx31"
 };
 
-static const char* vfpr_to_string[] = {
+static const char* vfpr[] = {
   "vf0",  "vf1",  "vf2",  "vf3",  "vf4",  "vf5",  "vf6",  "vf7",
   "vf8",  "vf9",  "vf10", "vf11", "vf12", "vf13", "vf14", "vf15",
   "vf16", "vf17", "vf18", "vf19", "vf20", "vf21", "vf22", "vf23",
   "vf24", "vf25", "vf26", "vf27", "vf28", "vf29", "vf30", "vf31"
 };
 
-class load_address_t : public arg_t
-{
- public:
-  load_address_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
+struct : public arg_t {
+  string to_string(insn_t insn) const {
+    return ::to_string((int)insn.i_imm()) + '(' + xpr[insn.rs1()] + ')';
+  }
+} load_address;
+
+struct : public arg_t {
+  string to_string(insn_t insn) const {
+    return ::to_string((int)insn.s_imm()) + '(' + xpr[insn.rs1()] + ')';
+  }
+} store_address;
+
+struct : public arg_t {
+  string to_string(insn_t insn) const {
+    return string("0(") + xpr[insn.rs1()] + ')';
+  }
+} amo_address;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return xpr[insn.rd()];
+  }
+} xrd;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return xpr[insn.rs1()];
+  }
+} xrs1;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return xpr[insn.rs2()];
+  }
+} xrs2;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return fpr[insn.rd()];
+  }
+} frd;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return fpr[insn.rs1()];
+  }
+} frs1;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return fpr[insn.rs2()];
+  }
+} frs2;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return fpr[insn.rs3()];
+  }
+} frs3;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return vxpr[insn.rd()];
+  }
+} vxrd;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return vxpr[insn.rs1()];
+  }
+} vxrs1;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return vfpr[insn.rd()];
+  }
+} vfrd;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return vfpr[insn.rs1()];
+  }
+} vfrs1;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return ::to_string(insn.i_imm() & 0x3f);
+  }
+} nxregs;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return ::to_string((insn.i_imm() >> 6) & 0x3f);
+  }
+} nfregs;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return string("pcr") + xpr[insn.rs1()];
+  }
+} pcr;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return ::to_string((int)insn.i_imm());
+  }
+} imm;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     std::stringstream s;
-    s << insn.itype.imm12 << '(' << xpr_to_string[insn.itype.rs1] << ')';
+    s << std::hex << "0x" << ((uint32_t)insn.u_imm() >> 12);
     return s.str();
   }
-};
+} bigimm;
 
-class store_address_t : public arg_t
-{
- public:
-  store_address_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     std::stringstream s;
-    int32_t imm = (int32_t)insn.btype.immlo;
-    imm |= insn.btype.immhi << IMMLO_BITS;
-    s << imm << '(' << xpr_to_string[insn.itype.rs1] << ')';
+    int32_t target = insn.sb_imm();
+    char sign = target >= 0 ? '+' : '-';
+    s << "pc " << sign << ' ' << abs(target);
     return s.str();
   }
-};
+} branch_target;
 
-class amo_address_t : public arg_t
-{
- public:
-  amo_address_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     std::stringstream s;
-    s << "0(" << xpr_to_string[insn.itype.rs1] << ')';
-    return s.str();
-  }
-};
-
-class xrd_reg_t : public arg_t
-{
- public:
-  xrd_reg_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    return xpr_to_string[insn.itype.rd];
-  }
-};
-
-class xrs1_reg_t : public arg_t
-{
- public:
-  xrs1_reg_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    return xpr_to_string[insn.itype.rs1];
-  }
-};
-
-class xrs2_reg_t : public arg_t
-{
- public:
-  xrs2_reg_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    return xpr_to_string[insn.rtype.rs2];
-  }
-};
-
-class frd_reg_t : public arg_t
-{
- public:
-  frd_reg_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    return fpr_to_string[insn.ftype.rd];
-  }
-};
-
-class frs1_reg_t : public arg_t
-{
- public:
-  frs1_reg_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    return fpr_to_string[insn.ftype.rs1];
-  }
-};
-
-class frs2_reg_t : public arg_t
-{
- public:
-  frs2_reg_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    return fpr_to_string[insn.ftype.rs2];
-  }
-};
-
-class frs3_reg_t : public arg_t
-{
- public:
-  frs3_reg_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    return fpr_to_string[insn.ftype.rs3];
-  }
-};
-
-class vxrd_reg_t : public arg_t
-{
- public:
-  vxrd_reg_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    return vxpr_to_string[insn.itype.rd];
-  }
-};
-
-class vxrs1_reg_t : public arg_t
-{
- public:
-  vxrs1_reg_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    return vxpr_to_string[insn.itype.rs1];
-  }
-};
-
-class vfrd_reg_t : public arg_t
-{
- public:
-  vfrd_reg_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    return vfpr_to_string[insn.itype.rd];
-  }
-};
-
-class vfrs1_reg_t : public arg_t
-{
- public:
-  vfrs1_reg_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    return vfpr_to_string[insn.itype.rs1];
-  }
-};
-
-class nxregs_reg_t : public arg_t
-{
- public:
-  nxregs_reg_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    std::stringstream s;
-    s << (insn.itype.imm12 & 0x3f);
-    return s.str();
-  }
-};
-
-class nfregs_reg_t : public arg_t
-{
- public:
-  nfregs_reg_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    std::stringstream s;
-    s << ((insn.itype.imm12 >> 6) & 0x3f);
-    return s.str();
-  }
-};
-
-class pcr_reg_t : public arg_t
-{
- public:
-  pcr_reg_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    std::stringstream s;
-    s << "pcr" << insn.rtype.rs1;
-    return s.str();
-  }
-};
-
-class imm_t : public arg_t
-{
- public:
-  imm_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    std::stringstream s;
-    s << insn.itype.imm12;
-    return s.str();
-  }
-};
-
-class bigimm_t : public arg_t
-{
- public:
-  bigimm_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    std::stringstream s;
-    s << std::hex << "0x" << insn.ltype.bigimm;
-    return s.str();
-  }
-};
-
-class branch_target_t : public arg_t
-{
- public:
-  branch_target_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    std::stringstream s;
-    int32_t target = (int32_t)insn.btype.immlo;
-    target |= insn.btype.immhi << IMMLO_BITS;
-    target <<= BRANCH_ALIGN_BITS;
+    int32_t target = insn.sb_imm();
     char sign = target >= 0 ? '+' : '-';
     s << "pc " << sign << std::hex << " 0x" << abs(target);
     return s.str();
   }
-};
+} jump_target;
 
-class jump_target_t : public arg_t
-{
- public:
-  jump_target_t() {}
-  virtual std::string to_string(insn_t insn) const
-  {
-    std::stringstream s;
-    int32_t target = (int32_t)insn.ltype.bigimm;
-    target <<= JUMP_ALIGN_BITS;
-    char sign = target >= 0 ? '+' : '-';
-    s << "pc " << sign << std::hex << " 0x" << abs(target);
-    return s.str();
-  }
-};
-
-// workaround for lack of initializer_list in gcc-4.1
 class disasm_insn_t
 {
  public:
-  disasm_insn_t(const char* name, uint32_t match, uint32_t mask)
-  {
-    init(name, match, mask, 0);
-  }
   disasm_insn_t(const char* name, uint32_t match, uint32_t mask,
-                const arg_t* a0)
-  {
-    init(name, match, mask, 1, a0);
-  }
-  disasm_insn_t(const char* name, uint32_t match, uint32_t mask,
-                const arg_t* a0, const arg_t* a1)
-  {
-    init(name, match, mask, 2, a0, a1);
-  }
-  disasm_insn_t(const char* name, uint32_t match, uint32_t mask,
-                const arg_t* a0, const arg_t* a1, const arg_t* a2)
-  {
-    init(name, match, mask, 3, a0, a1, a2);
-  }
-  disasm_insn_t(const char* name, uint32_t match, uint32_t mask,
-                const arg_t* a0, const arg_t* a1, const arg_t* a2,
-                const arg_t* a3)
-  {
-    init(name, match, mask, 4, a0, a1, a2, a3);
-  }
-  disasm_insn_t(const char* name, uint32_t match, uint32_t mask,
-                const arg_t* a0, const arg_t* a1, const arg_t* a2,
-                const arg_t* a3, const arg_t* a4)
-  {
-    init(name, match, mask, 5, a0, a1, a2, a3, a4);
-  }
+                const std::vector<const arg_t*>& args)
+    : match(match), mask(mask), args(args), name(name) {}
 
   bool operator == (insn_t insn) const
   {
-    return (insn.bits & mask) == match;
+    return (insn.bits() & mask) == match;
   }
 
   std::string to_string(insn_t insn) const
@@ -347,18 +216,6 @@ class disasm_insn_t
   uint32_t mask;
   std::vector<const arg_t*> args;
   const char* name;
-
-  void init(const char* name, uint32_t match, uint32_t mask, int n, ...)
-  {
-    va_list vl;
-    va_start(vl, n);
-    for (int i = 0; i < n; i++)
-      args.push_back(va_arg(vl, const arg_t*));
-    va_end(vl);
-    this->match = match;
-    this->mask = mask;
-    this->name = name;
-  }
 };
 
 std::string disassembler::disassemble(insn_t insn)
@@ -369,41 +226,12 @@ std::string disassembler::disassemble(insn_t insn)
 
 disassembler::disassembler()
 {
-  static const xrd_reg_t _xrd_reg, *xrd_reg = &_xrd_reg;
-  static const xrs1_reg_t _xrs1_reg, *xrs1_reg = &_xrs1_reg;
-  static const load_address_t _load_address, *load_address = &_load_address;
-  static const store_address_t _store_address, *store_address = &_store_address;
-  static const amo_address_t _amo_address, *amo_address = &_amo_address;
-  static const xrs2_reg_t _xrs2_reg, *xrs2_reg = &_xrs2_reg;
-  static const frd_reg_t _frd_reg, *frd_reg = &_frd_reg;
-  static const frs1_reg_t _frs1_reg, *frs1_reg = &_frs1_reg;
-  static const frs2_reg_t _frs2_reg, *frs2_reg = &_frs2_reg;
-  static const frs3_reg_t _frs3_reg, *frs3_reg = &_frs3_reg;
-  static const pcr_reg_t _pcr_reg, *pcr_reg = &_pcr_reg;
-  static const imm_t _imm, *imm = &_imm;
-  static const bigimm_t _bigimm, *bigimm = &_bigimm;
-  static const branch_target_t _branch_target, *branch_target = &_branch_target;
-  static const jump_target_t _jump_target, *jump_target = &_jump_target;
-  static const vxrd_reg_t _vxrd_reg, *vxrd_reg = &_vxrd_reg;
-  static const vxrs1_reg_t _vxrs1_reg, *vxrs1_reg = &_vxrs1_reg;
-  static const vfrd_reg_t _vfrd_reg, *vfrd_reg = &_vfrd_reg;
-  static const vfrs1_reg_t _vfrs1_reg, *vfrs1_reg = &_vfrs1_reg;
-  static const nxregs_reg_t _nxregs_reg, *nxregs_reg = &_nxregs_reg;
-  static const nfregs_reg_t _nfregs_reg, *nfregs_reg = &_nfregs_reg;
-
-  insn_t dummy;
-  dummy.bits = -1, dummy.rtype.rs1 = 0;
-  uint32_t mask_rs1 = ~dummy.bits;
-  dummy.bits = -1, dummy.rtype.rs2 = 0;
-  uint32_t mask_rs2 = ~dummy.bits;
-  dummy.bits = -1, dummy.rtype.rd = 0;
-  uint32_t mask_rd = ~dummy.bits;
-  dummy.bits = -1, dummy.itype.imm12 = 0;
-  uint32_t mask_imm = ~dummy.bits;
-  dummy.bits = 0, dummy.itype.rd = 1;
-  uint32_t match_rd_ra = dummy.bits;
-  dummy.bits = 0, dummy.itype.rs1 = 1;
-  uint32_t match_rs1_ra = dummy.bits;
+  const uint32_t mask_rd = 0x1fUL << 27;
+  const uint32_t match_rd_ra = 1UL << 27;
+  const uint32_t mask_rs1 = 0x1fUL << 22;
+  const uint32_t match_rs1_ra = 1UL << 22;
+  const uint32_t mask_rs2 = 0x1fUL << 17;
+  const uint32_t mask_imm = 0xfffUL << 10;
 
   #define DECLARE_INSN(code, match, mask) \
    const uint32_t match_##code = match; \
@@ -415,28 +243,27 @@ disassembler::disassembler()
   #define DISASM_INSN(name, code, extra, ...) \
     add_insn(new disasm_insn_t(name, match_##code, mask_##code | (extra), __VA_ARGS__));
   #define DEFINE_NOARG(code) \
-    add_insn(new disasm_insn_t(#code, match_##code, mask_##code));
-  #define DEFINE_DTYPE(code) DISASM_INSN(#code, code, 0, xrd_reg)
-  #define DEFINE_RTYPE(code) DISASM_INSN(#code, code, 0, xrd_reg, xrs1_reg, xrs2_reg)
-  #define DEFINE_ITYPE(code) DISASM_INSN(#code, code, 0, xrd_reg, xrs1_reg, imm)
-  #define DEFINE_I0TYPE(name, code) DISASM_INSN(name, code, mask_rs1, xrd_reg, imm)
-  #define DEFINE_I1TYPE(name, code) DISASM_INSN(name, code, mask_imm, xrd_reg, xrs1_reg)
-  #define DEFINE_I2TYPE(name, code) DISASM_INSN(name, code, mask_rd | mask_imm, xrs1_reg)
-  #define DEFINE_LTYPE(code) DISASM_INSN(#code, code, 0, xrd_reg, bigimm)
-  #define DEFINE_BTYPE(code) DISASM_INSN(#code, code, 0, xrs1_reg, xrs2_reg, branch_target)
-  #define DEFINE_B0TYPE(name, code) DISASM_INSN(name, code, mask_rs1 | mask_rs2, branch_target)
-  #define DEFINE_B1TYPE(name, code) DISASM_INSN(name, code, mask_rs2, xrs1_reg, branch_target)
-  #define DEFINE_JTYPE(code) DISASM_INSN(#code, code, 0, xrd_reg, jump_target)
-  #define DEFINE_XLOAD(code) DISASM_INSN(#code, code, 0, xrd_reg, load_address)
-  #define DEFINE_XSTORE(code) DISASM_INSN(#code, code, 0, xrs2_reg, store_address)
-  #define DEFINE_XAMO(code) DISASM_INSN(#code, code, 0, xrd_reg, xrs2_reg, amo_address)
-  #define DEFINE_FLOAD(code) DISASM_INSN(#code, code, 0, frd_reg, load_address)
-  #define DEFINE_FSTORE(code) DISASM_INSN(#code, code, 0, frs2_reg, store_address)
-  #define DEFINE_FRTYPE(code) DISASM_INSN(#code, code, 0, frd_reg, frs1_reg, frs2_reg)
-  #define DEFINE_FR1TYPE(code) DISASM_INSN(#code, code, 0, frd_reg, frs1_reg)
-  #define DEFINE_FR3TYPE(code) DISASM_INSN(#code, code, 0, frd_reg, frs1_reg, frs2_reg, frs3_reg)
-  #define DEFINE_FXTYPE(code) DISASM_INSN(#code, code, 0, xrd_reg, frs1_reg)
-  #define DEFINE_XFTYPE(code) DISASM_INSN(#code, code, 0, frd_reg, xrs1_reg)
+    add_insn(new disasm_insn_t(#code, match_##code, mask_##code, {}));
+  #define DEFINE_DTYPE(code) DISASM_INSN(#code, code, 0, {&xrd})
+  #define DEFINE_RTYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs1, &xrs2})
+  #define DEFINE_ITYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs1, &imm})
+  #define DEFINE_I0TYPE(name, code) DISASM_INSN(name, code, mask_rs1, {&xrd, &imm})
+  #define DEFINE_I1TYPE(name, code) DISASM_INSN(name, code, mask_imm, {&xrd, &xrs1})
+  #define DEFINE_I2TYPE(name, code) DISASM_INSN(name, code, mask_rd | mask_imm, {&xrs1})
+  #define DEFINE_LTYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &bigimm})
+  #define DEFINE_BTYPE(code) DISASM_INSN(#code, code, 0, {&xrs1, &xrs2, &branch_target})
+  #define DEFINE_B0TYPE(name, code) DISASM_INSN(name, code, mask_rs1 | mask_rs2, {&branch_target})
+  #define DEFINE_B1TYPE(name, code) DISASM_INSN(name, code, mask_rs2, {&xrs1, &branch_target})
+  #define DEFINE_XLOAD(code) DISASM_INSN(#code, code, 0, {&xrd, &load_address})
+  #define DEFINE_XSTORE(code) DISASM_INSN(#code, code, 0, {&xrs2, &store_address})
+  #define DEFINE_XAMO(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs2, &amo_address})
+  #define DEFINE_FLOAD(code) DISASM_INSN(#code, code, 0, {&frd, &load_address})
+  #define DEFINE_FSTORE(code) DISASM_INSN(#code, code, 0, {&frs2, &store_address})
+  #define DEFINE_FRTYPE(code) DISASM_INSN(#code, code, 0, {&frd, &frs1, &frs2})
+  #define DEFINE_FR1TYPE(code) DISASM_INSN(#code, code, 0, {&frd, &frs1})
+  #define DEFINE_FR3TYPE(code) DISASM_INSN(#code, code, 0, {&frd, &frs1, &frs2, &frs3})
+  #define DEFINE_FXTYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &frs1})
+  #define DEFINE_XFTYPE(code) DISASM_INSN(#code, code, 0, {&frd, &xrs1})
 
   DEFINE_XLOAD(lb)
   DEFINE_XLOAD(lbu)
@@ -479,7 +306,9 @@ disassembler::disassembler()
   DEFINE_FSTORE(fsw)
   DEFINE_FSTORE(fsd)
 
-  DEFINE_JTYPE(jal);
+  add_insn(new disasm_insn_t("j", match_jal, mask_jal | mask_rd, {&jump_target}));
+  add_insn(new disasm_insn_t("jal", match_jal | match_rd_ra, mask_jal | mask_rd, {&jump_target}));
+  add_insn(new disasm_insn_t("jal", match_jal, mask_jal, {&xrd, &jump_target}));
 
   DEFINE_B0TYPE("b",    beq);
   DEFINE_B1TYPE("beqz", beq);
@@ -497,11 +326,11 @@ disassembler::disassembler()
   DEFINE_LTYPE(auipc);
 
   DEFINE_I2TYPE("jr", jalr);
-  add_insn(new disasm_insn_t("jalr", match_jalr | match_rd_ra, mask_jalr | mask_rd | mask_imm, xrs1_reg));
-  add_insn(new disasm_insn_t("ret", match_jalr | match_rs1_ra, mask_jalr | mask_rd | mask_rs1 | mask_imm));
+  add_insn(new disasm_insn_t("jalr", match_jalr | match_rd_ra, mask_jalr | mask_rd | mask_imm, {&xrs1}));
+  add_insn(new disasm_insn_t("ret", match_jalr | match_rs1_ra, mask_jalr | mask_rd | mask_rs1 | mask_imm, {}));
   DEFINE_ITYPE(jalr);
 
-  add_insn(new disasm_insn_t("nop", match_addi, mask_addi | mask_rd | mask_rs1 | mask_imm));
+  add_insn(new disasm_insn_t("nop", match_addi, mask_addi | mask_rd | mask_rs1 | mask_imm, {}));
   DEFINE_I0TYPE("li", addi);
   DEFINE_I1TYPE("move", addi);
   DEFINE_ITYPE(addi);
@@ -556,11 +385,11 @@ disassembler::disassembler()
   DEFINE_DTYPE(rdtime);
   DEFINE_DTYPE(rdinstret);
 
-  add_insn(new disasm_insn_t("mtpcr", match_mtpcr, mask_mtpcr | mask_rd, xrs2_reg, pcr_reg));
-  add_insn(new disasm_insn_t("mtpcr", match_mtpcr, mask_mtpcr, xrd_reg, xrs2_reg, pcr_reg));
-  add_insn(new disasm_insn_t("mfpcr", match_mfpcr, mask_mfpcr, xrd_reg, pcr_reg));
-  add_insn(new disasm_insn_t("setpcr", match_setpcr, mask_setpcr, xrd_reg, pcr_reg, imm));
-  add_insn(new disasm_insn_t("clearpcr", match_clearpcr, mask_clearpcr, xrd_reg, pcr_reg, imm));
+  add_insn(new disasm_insn_t("mtpcr", match_mtpcr, mask_mtpcr | mask_rd, {&xrs2, &pcr}));
+  add_insn(new disasm_insn_t("mtpcr", match_mtpcr, mask_mtpcr, {&xrd, &xrs2, &pcr}));
+  add_insn(new disasm_insn_t("mfpcr", match_mfpcr, mask_mfpcr, {&xrd, &pcr}));
+  add_insn(new disasm_insn_t("setpcr", match_setpcr, mask_setpcr, {&xrd, &pcr, &imm}));
+  add_insn(new disasm_insn_t("clearpcr", match_clearpcr, mask_clearpcr, {&xrd, &pcr, &imm}));
   DEFINE_NOARG(eret)
 
   DEFINE_FRTYPE(fadd_s);
@@ -623,20 +452,20 @@ disassembler::disassembler()
   DEFINE_FXTYPE(flt_d);
   DEFINE_FXTYPE(fle_d);
 
-  add_insn(new disasm_insn_t("fssr", match_fssr, mask_fssr | mask_rd, xrs1_reg));
-  add_insn(new disasm_insn_t("fssr", match_fssr, mask_fssr, xrd_reg, xrs1_reg));
+  add_insn(new disasm_insn_t("fssr", match_fssr, mask_fssr | mask_rd, {&xrs1}));
+  add_insn(new disasm_insn_t("fssr", match_fssr, mask_fssr, {&xrd, &xrs1}));
   DEFINE_DTYPE(frsr);
 
   // provide a default disassembly for all instructions as a fallback
   #define DECLARE_INSN(code, match, mask) \
-   add_insn(new disasm_insn_t(#code " (args unknown)", match, mask));
+   add_insn(new disasm_insn_t(#code " (args unknown)", match, mask, {}));
   #include "opcodes.h"
   #undef DECLARE_INSN
 }
 
 const disasm_insn_t* disassembler::lookup(insn_t insn)
 {
-  size_t idx = insn.bits % HASH_SIZE;
+  size_t idx = insn.bits() % HASH_SIZE;
   for (size_t j = 0; j < chain[idx].size(); j++)
     if(*chain[idx][j] == insn)
       return chain[idx][j];

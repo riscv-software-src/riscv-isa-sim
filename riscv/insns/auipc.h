@@ -1,1 +1,1 @@
-RD = sext_xprlen(sext32(BIGIMM << IMM_BITS) + pc);
+RD = sext_xprlen(insn.u_imm() + pc);

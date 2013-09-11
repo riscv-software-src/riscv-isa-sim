@@ -258,12 +258,16 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
 
   while (1)
   {
-    reg_t current = (this->*func)(args2);
+    try
+    {
+      reg_t current = (this->*func)(args2);
 
-    if (cmd_until == (current == val))
-      break;
-    if (ctrlc_pressed)
-      break;
+      if (cmd_until == (current == val))
+        break;
+      if (ctrlc_pressed)
+        break;
+    }
+    catch (trap_t t) {}
 
     step(1, false);
   }

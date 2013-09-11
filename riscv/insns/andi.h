@@ -1,1 +1,1 @@
-RD = SIMM & RS1;
+RD = insn.i_imm() & RS1;

@@ -68,28 +68,31 @@ public:
   struct insn_fetch_t
   {
     insn_func_t func;
-    insn_t insn;
+    union {
+      insn_t insn;
+      uint_fast32_t pad;
+    } insn;
   };
 
   // load instruction from memory at aligned address.
   inline insn_fetch_t load_insn(reg_t addr)
   {
-    reg_t idx = (addr/sizeof(insn_t::itype)) % ICACHE_ENTRIES;
+    reg_t idx = (addr/sizeof(insn_t)) % ICACHE_ENTRIES;
     if (unlikely(icache_tag[idx] != addr))
     {
-      reg_t paddr = translate(addr, sizeof(insn_t::itype), false, true);
+      reg_t paddr = translate(addr, sizeof(insn_t), false, true);
       insn_fetch_t fetch;
-      fetch.insn.itype = *(decltype(insn_t::itype)*)(mem + paddr);
-      fetch.func = proc->decode_insn(fetch.insn);
+      fetch.insn.insn = *(insn_t*)(mem + paddr);
+      fetch.func = proc->decode_insn(fetch.insn.insn);
 
-      reg_t idx = (paddr/sizeof(insn_t::itype)) % ICACHE_ENTRIES;
+      reg_t idx = (paddr/sizeof(insn_t)) % ICACHE_ENTRIES;
       icache_tag[idx] = addr;
       icache_data[idx] = fetch;
 
-      if (tracer.interested_in_range(paddr, paddr + sizeof(insn_t::itype), false, true))
+      if (tracer.interested_in_range(paddr, paddr + sizeof(insn_t), false, true))
       {
         icache_tag[idx] = -1;
-        tracer.trace(paddr, sizeof(insn_t::itype), false, true);
+        tracer.trace(paddr, sizeof(insn_t), false, true);
       }
     }
     return icache_data[idx];

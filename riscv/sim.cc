@@ -76,6 +76,7 @@ void sim_t::run()
 {
   while (!htif->done())
   {
+    htif->tick();
     if (debug || ctrlc_pressed)
       interactive();
     else
@@ -99,8 +100,6 @@ void sim_t::step(size_t n, bool noisy)
         current_proc = 0;
 
       htif->tick();
-      if (!running())
-        break;
     }
   }
 }
