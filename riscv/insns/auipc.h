@@ -1,1 +1,1 @@
-RD = sext_xprlen(insn.u_imm() + pc);
+RD = sext_xprlen(insn.u_imm() + (pc >> 12 << 12));

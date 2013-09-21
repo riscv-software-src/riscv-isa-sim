@@ -3,6 +3,10 @@
 #ifndef _RISCV_DECODE_H
 #define _RISCV_DECODE_H
 
+#if (-1 != ~0) || ((-1 >> 1) != -1)
+# error spike requires a two''s-complement c++ implementation
+#endif
+
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 #include <string.h>
@@ -49,20 +53,20 @@ class insn_t
 {
 public:
   uint32_t bits() { return b; }
-  reg_t i_imm() { return x(11, 11) | (imm_sign() << 11); }
-  reg_t s_imm() { return x(11, 6) | (x(27, 5) << 6) | (imm_sign() << 11); }
-  reg_t sb_imm() { return (x(12, 5) << 1) | (x(27, 5) << 6) | (x(11, 1) << 11) | (imm_sign() << 12); }
-  reg_t u_imm() { return (x(22, 5) << 12) | (x(7, 3) << 17) | (x(11, 11) << 20) | (imm_sign() << 31); }
-  reg_t uj_imm() { return (x(12, 10) << 1) | (x(11, 1) << 11) | (x(22, 5) << 12) | (x(7, 3) << 17) | (imm_sign() << 20); }
-  uint32_t rd() { return x(27, 5); }
-  uint32_t rs1() { return x(22, 5); }
-  uint32_t rs2() { return x(17, 5); }
-  uint32_t rs3() { return x(12, 5); }
-  uint32_t rm() { return x(9, 3); }
+  reg_t i_imm() { return int64_t(int32_t(b) >> 20); }
+  reg_t s_imm() { return x(7, 5) | (x(25, 7) << 5) | (imm_sign() << 12); }
+  reg_t sb_imm() { return (x(8, 4) << 1) | (x(25,6) << 5) | (x(7,1) << 11) | (imm_sign() << 12); }
+  reg_t u_imm() { return int64_t(int32_t(b) >> 12 << 12); }
+  reg_t uj_imm() { return (x(21, 10) << 1) | (x(20, 1) << 11) | (x(12, 8) << 12) | (imm_sign() << 20); }
+  uint32_t rd() { return x(7, 5); }
+  uint32_t rs1() { return x(15, 5); }
+  uint32_t rs2() { return x(20, 5); }
+  uint32_t rs3() { return x(27, 5); }
+  uint32_t rm() { return x(12, 3); }
 private:
   uint32_t b;
   reg_t x(int lo, int len) { return b << (32-lo-len) >> (32-len); }
-  reg_t imm_sign() { return -x(10, 1); }
+  reg_t imm_sign() { return int64_t(int32_t(b) >> 31); }
 };
 
 template <class T>
