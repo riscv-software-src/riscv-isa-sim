@@ -6,13 +6,13 @@
 struct rocc_insn_t
 {
   unsigned opcode : 7;
+  unsigned rd : 5;
   unsigned xs2 : 1;
   unsigned xs1 : 1;
   unsigned xd : 1;
-  unsigned funct : 7;
-  unsigned rs2 : 5;
   unsigned rs1 : 5;
-  unsigned rd : 5;
+  unsigned rs2 : 5;
+  unsigned funct : 7;
 };
 
 class rocc_t : public extension_t
