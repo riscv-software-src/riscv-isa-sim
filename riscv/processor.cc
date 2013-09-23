@@ -12,6 +12,7 @@
 #include <iostream>
 #include <assert.h>
 #include <limits.h>
+#include <stdexcept>
 
 processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
   : sim(_sim), mmu(_mmu), ext(NULL), id(_id), opcode_bits(0)
