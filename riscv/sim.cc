@@ -74,9 +74,8 @@ reg_t sim_t::get_scr(int which)
 
 void sim_t::run()
 {
-  while (!htif->done())
+  while (htif->tick())
   {
-    htif->tick();
     if (debug || ctrlc_pressed)
       interactive();
     else
@@ -115,6 +114,6 @@ bool sim_t::running()
 void sim_t::stop()
 {
   procs[0]->state.tohost = 1;
-  while (!htif->done())
-    htif->tick();
+  while (htif->tick())
+    ;
 }

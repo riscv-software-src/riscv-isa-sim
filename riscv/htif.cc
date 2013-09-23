@@ -15,9 +15,14 @@ htif_isasim_t::htif_isasim_t(sim_t* _sim, const std::vector<std::string>& args)
 {
 }
 
-void htif_isasim_t::tick()
+bool htif_isasim_t::tick()
 {
+  if (done())
+    return false;
+
   do tick_once(); while (reset);
+
+  return true;
 }
 
 void htif_isasim_t::tick_once()

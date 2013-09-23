@@ -17,8 +17,7 @@ class htif_isasim_t : public htif_pthread_t
 {
 public:
   htif_isasim_t(sim_t* _sim, const std::vector<std::string>& args);
-  void tick();
-  bool done();
+  bool tick();
 
 private:
   sim_t* sim;
@@ -26,6 +25,7 @@ private:
   uint8_t seqno;
 
   void tick_once();
+  bool done();
 };
 
 #endif
