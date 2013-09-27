@@ -69,22 +69,6 @@ private:
   reg_t imm_sign() { return int64_t(int32_t(b) >> 31); }
 };
 
-template <class T>
-class write_port_t
-{
-public:
-  write_port_t(T& _t) : t(_t) {}
-  T& operator = (const T& rhs)
-  {
-    return t = rhs;
-  }
-  operator T()
-  {
-    return t;
-  }
-private:
-  T& t;
-};
 template <class T, size_t N, bool zero_reg>
 class regfile_t
 {
@@ -93,11 +77,9 @@ public:
   {
     memset(data, 0, sizeof(data));
   }
-  write_port_t<T> write_port(size_t i)
+  void write(size_t i, T value)
   {
-    if (zero_reg)
-      const_cast<T&>(data[0]) = 0;
-    return write_port_t<T>(data[i]);
+    data[i] = value;
   }
   const T& operator [] (size_t i) const
   {
@@ -113,11 +95,11 @@ private:
 #define MMU (*p->get_mmu())
 #define RS1 p->get_state()->XPR[insn.rs1()]
 #define RS2 p->get_state()->XPR[insn.rs2()]
-#define RD p->get_state()->XPR.write_port(insn.rd())
+#define WRITE_RD(value) p->get_state()->XPR.write(insn.rd(), value)
 #define FRS1 p->get_state()->FPR[insn.rs1()]
 #define FRS2 p->get_state()->FPR[insn.rs2()]
 #define FRS3 p->get_state()->FPR[insn.rs3()]
-#define FRD p->get_state()->FPR.write_port(insn.rd())
+#define WRITE_FRD(value) p->get_state()->FPR.write(insn.rd(), value)
 #define SHAMT (insn.i_imm() & 0x3F)
 #define BRANCH_TARGET (pc + insn.sb_imm())
 #define JUMP_TARGET (pc + insn.uj_imm())

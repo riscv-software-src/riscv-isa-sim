@@ -1,2 +1,2 @@
 require_fp;
-FRD = RS1;
+WRITE_FRD(RS1);

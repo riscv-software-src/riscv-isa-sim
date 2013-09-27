@@ -1,2 +1,2 @@
 require_fp;
-RD = p->set_fsr(RS1);
+WRITE_RD(p->set_fsr(RS1));

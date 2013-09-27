@@ -1,3 +1,3 @@
 require_xpr64;
 require_fp;
-FRD = RS1;
+WRITE_FRD(RS1);

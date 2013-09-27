@@ -1,2 +1,2 @@
 require_supervisor;
-RD = p->get_pcr(insn.rs1());
+WRITE_RD(p->get_pcr(insn.rs1()));

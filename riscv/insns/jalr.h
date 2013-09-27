@@ -1,3 +1,3 @@
 reg_t temp = RS1;
-RD = npc;
+WRITE_RD(npc);
 set_pc((temp + insn.i_imm()) & ~1);

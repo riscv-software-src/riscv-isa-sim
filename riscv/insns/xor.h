@@ -1,1 +1,1 @@
-RD = RS1 ^ RS2;
+WRITE_RD(RS1 ^ RS2);
