@@ -107,6 +107,22 @@ void processor_t::step(size_t n, bool noisy)
         npc = fetch.func(this, fetch.insn.insn, npc); \
       } while(0)
 
+    
+    // special execute_insn  for commit log dumping
+#ifdef RISCV_ENABLE_COMMITLOG
+    //static disassembler disasmblr; 
+    #undef execute_insn 
+    #define execute_insn(noisy) \
+      do { \
+        mmu_t::insn_fetch_t fetch = _mmu->load_insn(npc); \
+        if(noisy) disasm(fetch.insn.insn, npc); \
+        bool in_spvr = state.sr & SR_S; \
+        if (!in_spvr) fprintf(stderr, "\n0x%016" PRIx64 " (0x%08" PRIx32 ") ", npc, fetch.insn.insn.bits()); \
+        /*if (!in_spvr) fprintf(stderr, "\n0x%016" PRIx64 " (0x%08" PRIx32 ") %s  ", npc, fetch.insn.insn.bits(), disasmblr.disassemble(fetch.insn.insn).c_str());*/ \
+        npc = fetch.func(this, fetch.insn.insn, npc); \
+      } while(0)
+#endif
+
     if(noisy) for( ; i < n; i++) // print out instructions as we go
       execute_insn(true);
     else 

@@ -13,6 +13,7 @@
 #include "pcr.h"
 #include "config.h"
 #include "common.h"
+#include <cinttypes>
 
 typedef int int128_t __attribute__((mode(TI)));
 typedef unsigned int uint128_t __attribute__((mode(TI)));
@@ -96,10 +97,36 @@ private:
 #define RS1 p->get_state()->XPR[insn.rs1()]
 #define RS2 p->get_state()->XPR[insn.rs2()]
 #define WRITE_RD(value) p->get_state()->XPR.write(insn.rd(), value)
+
+#ifdef RISCV_ENABLE_COMMITLOG
+  #undef WRITE_RD 
+  #define WRITE_RD(value) ({ \
+        bool in_spvr = p->get_state()->sr & SR_S; \
+        reg_t wdata = value; /* value is a func with side-effects */ \
+        if (!in_spvr) \
+          fprintf(stderr, "x%u 0x%016" PRIx64, insn.rd(), ((uint64_t) wdata)); \
+        p->get_state()->XPR.write(insn.rd(), wdata); \
+      })
+#endif
+
 #define FRS1 p->get_state()->FPR[insn.rs1()]
 #define FRS2 p->get_state()->FPR[insn.rs2()]
 #define FRS3 p->get_state()->FPR[insn.rs3()]
 #define WRITE_FRD(value) p->get_state()->FPR.write(insn.rd(), value)
+ 
+#ifdef RISCV_ENABLE_COMMITLOG
+  #undef WRITE_FRD 
+  #define WRITE_FRD(value) ({ \
+        bool in_spvr = p->get_state()->sr & SR_S; \
+        freg_t wdata = value; /* value is a func with side-effects */ \
+        if (!in_spvr) \
+          fprintf(stderr, "f%u 0x%016" PRIx64, insn.rd(), ((uint64_t) wdata)); \
+        p->get_state()->FPR.write(insn.rd(), wdata); \
+      })
+#endif
+ 
+
+
 #define SHAMT (insn.i_imm() & 0x3F)
 #define BRANCH_TARGET (pc + insn.sb_imm())
 #define JUMP_TARGET (pc + insn.uj_imm())

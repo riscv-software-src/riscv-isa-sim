@@ -226,12 +226,12 @@ std::string disassembler::disassemble(insn_t insn)
 
 disassembler::disassembler()
 {
-  const uint32_t mask_rd = 0x1fUL << 27;
-  const uint32_t match_rd_ra = 1UL << 27;
-  const uint32_t mask_rs1 = 0x1fUL << 22;
-  const uint32_t match_rs1_ra = 1UL << 22;
-  const uint32_t mask_rs2 = 0x1fUL << 17;
-  const uint32_t mask_imm = 0xfffUL << 10;
+  const uint32_t mask_rd = 0x1fUL << 7;
+  const uint32_t match_rd_ra = 1UL << 7;
+  const uint32_t mask_rs1 = 0x1fUL << 15;
+  const uint32_t match_rs1_ra = 1UL << 15;
+  const uint32_t mask_rs2 = 0x1fUL << 15;
+  const uint32_t mask_imm = 0xfffUL << 20;
 
   #define DECLARE_INSN(code, match, mask) \
    const uint32_t match_##code = match; \
