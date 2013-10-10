@@ -30,6 +30,9 @@
 /* Define if 64-bit mode is supported */
 #undef RISCV_ENABLE_64BIT
 
+/* Enable commit log generation */
+#undef RISCV_ENABLE_COMMITLOG
+
 /* Define if floating-point instructions are supported */
 #undef RISCV_ENABLE_FPU
 
