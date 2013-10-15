@@ -65,7 +65,8 @@ void processor_t::reset(bool value)
     return;
   run = !value;
 
-  state.reset();
+  state.reset(); // reset the core
+  ext->reset(); // reset the extension
 }
 
 uint32_t processor_t::set_fsr(uint32_t val)

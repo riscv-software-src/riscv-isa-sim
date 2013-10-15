@@ -35,6 +35,11 @@ class dummy_rocc_t : public rocc_t
 
     return prev_acc; // in all cases, xd <- previous value of acc[rs2]
   }
+  
+  void reset()
+  {
+    for(int i = 0; i < num_acc; i++) acc[i] = 0;
+  }
 
  private:
   static const int num_acc = 4;

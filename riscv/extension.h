@@ -15,6 +15,7 @@ class extension_t
   virtual ~extension_t();
 
   void set_processor(processor_t* _p) { p = _p; }
+  virtual void reset() {};
  protected:
   processor_t* p;
 
