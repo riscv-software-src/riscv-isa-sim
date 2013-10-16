@@ -37,7 +37,7 @@ std::vector<insn_desc_t> hwacha_t::get_instructions()
 
 bool hwacha_t::vf_active()
 {
-  for (int i=0; i<get_ct_state()->vl; i++) {
+  for (uint32_t i=0; i<get_ct_state()->vl; i++) {
     if (get_ut_state(i)->run)
       return true;
   }
