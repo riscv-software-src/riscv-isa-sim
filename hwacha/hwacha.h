@@ -27,9 +27,10 @@ struct ut_state_t
 class hwacha_t : public extension_t
 {
 public:
-  hwacha_t();
-  const char* name() { return "hwacha"; }
   std::vector<insn_desc_t> get_instructions();
+  const char* name() { return "hwacha"; }
+  void reset();
+
   ct_state_t* get_ct_state() { return &ct_state; }
   ut_state_t* get_ut_state(int idx) { return &ut_state[idx]; }
   bool vf_active();

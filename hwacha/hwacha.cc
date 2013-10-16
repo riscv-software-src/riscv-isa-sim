@@ -17,7 +17,7 @@ void ut_state_t::reset()
   FPR.reset();
 }
 
-hwacha_t::hwacha_t()
+void hwacha_t::reset()
 {
   ct_state.reset();
   for (int i=0; i<max_uts; i++)

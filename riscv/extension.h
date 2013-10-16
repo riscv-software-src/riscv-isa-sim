@@ -12,10 +12,10 @@ class extension_t
  public:
   virtual std::vector<insn_desc_t> get_instructions() = 0;
   virtual const char* name() = 0;
+  virtual void reset() {};
   virtual ~extension_t();
 
   void set_processor(processor_t* _p) { p = _p; }
-  virtual void reset() {};
  protected:
   processor_t* p;
 
