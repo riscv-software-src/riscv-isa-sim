@@ -2,12 +2,6 @@
 #include "trap.h"
 #include <cstdlib>
 
-union rocc_insn_union_t
-{
-  rocc_insn_t r;
-  insn_t i;
-};
-
 #define customX(n) \
   static reg_t c##n(processor_t* p, insn_t insn, reg_t pc) \
   { \

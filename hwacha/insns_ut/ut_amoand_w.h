@@ -1,0 +1,1 @@
+../../riscv/insns/amoand_w.h

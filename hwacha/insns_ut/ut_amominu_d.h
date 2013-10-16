@@ -1,0 +1,1 @@
+../../riscv/insns/amominu_d.h

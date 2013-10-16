@@ -15,6 +15,12 @@ struct rocc_insn_t
   unsigned funct : 7;
 };
 
+union rocc_insn_union_t
+{
+  rocc_insn_t r;
+  insn_t i;
+};
+
 class rocc_t : public extension_t
 {
  public:

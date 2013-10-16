@@ -1,0 +1,1 @@
+if (RS1 & 0x1) WRITE_FRD(FRS2);

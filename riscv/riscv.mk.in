@@ -4,6 +4,7 @@ get_opcode = $(shell grep \\\<$(2)\\\> $(1) | sed 's/DECLARE_INSN(.*,\(.*\),.*)/
 riscv_subproject_deps = \
 	softfloat_riscv \
 	softfloat \
+	hwacha \
 
 riscv_install_prog_srcs = \
 	spike.cc \

@@ -1,0 +1,1 @@
+../../riscv/insns/amoswap_w.h

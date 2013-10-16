@@ -1,4 +1,2 @@
-require_vector;
-UT_LOOP_START
-  UT_LOOP_RD = RS1;
-UT_LOOP_END
+for (uint32_t i=0; i<VL; i++)
+  UT_WRITE_RD(i, XS1);

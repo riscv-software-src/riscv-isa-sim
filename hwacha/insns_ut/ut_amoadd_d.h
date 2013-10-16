@@ -1,0 +1,1 @@
+../../riscv/insns/amoadd_d.h
