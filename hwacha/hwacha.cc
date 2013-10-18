@@ -50,6 +50,10 @@ static reg_t custom(processor_t* p, insn_t insn, reg_t pc)
   {
     h->take_exception(HWACHA_CAUSE_VF_FAULT_FETCH, h->get_ct_state()->vf_pc);
   }
+  catch (trap_illegal_instruction& t)
+  {
+    h->take_exception(HWACHA_CAUSE_VF_ILLEGAL_INSTRUCTION, h->get_ct_state()->vf_pc);
+  }
   catch (trap_load_address_misaligned& t)
   {
     h->take_exception(HWACHA_CAUSE_MISALIGNED_LOAD, t.get_badvaddr());
