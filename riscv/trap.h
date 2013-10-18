@@ -25,6 +25,7 @@ class mem_trap_t : public trap_t
   mem_trap_t(reg_t which, reg_t badvaddr)
     : trap_t(which), badvaddr(badvaddr) {}
   void side_effects(state_t* state);
+  reg_t get_badvaddr() { return badvaddr; }
  private:
   reg_t badvaddr;
 };
@@ -53,8 +54,5 @@ DECLARE_MEM_TRAP(8, load_address_misaligned)
 DECLARE_MEM_TRAP(9, store_address_misaligned)
 DECLARE_MEM_TRAP(10, load_access_fault)
 DECLARE_MEM_TRAP(11, store_access_fault)
-DECLARE_TRAP(12, vector_disabled)
-DECLARE_TRAP(13, vector_bank)
-DECLARE_TRAP(14, vector_illegal_instruction)
 
 #endif

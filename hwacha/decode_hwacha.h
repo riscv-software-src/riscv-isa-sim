@@ -1,6 +1,9 @@
 #ifndef _DECODE_HWACHA_H
 #define _DECODE_HWACHA_H
 
+#include "hwacha.h"
+#include "hwacha_xcpt.h"
+
 #define XS1 (xs1)
 #define XS2 (xs2)
 #define WRITE_XRD(value) (xd = value)
@@ -9,10 +12,12 @@
 #define NFPR (h->get_ct_state()->nfpr)
 #define MAXVL (h->get_ct_state()->maxvl)
 #define VL (h->get_ct_state()->vl)
+#define VF_PC (h->get_ct_state()->vf_pc)
 #define WRITE_NXPR(nxprnext) (h->get_ct_state()->nxpr = (nxprnext))
 #define WRITE_NFPR(nfprnext) (h->get_ct_state()->nfpr = (nfprnext))
 #define WRITE_MAXVL(maxvlnext) (h->get_ct_state()->maxvl = (maxvlnext))
 #define WRITE_VL(vlnext) (h->get_ct_state()->vl = (vlnext))
+#define WRITE_VF_PC(pcnext) (h->get_ct_state()->vf_pc = (pcnext))
 
 #define INSN_RS1 (insn.rs1())
 #define INSN_RS2 (insn.rs2())
@@ -20,14 +25,42 @@
 #define INSN_RD (insn.rd())
 #define INSN_SEG ((insn.i_imm() >> 9)+1)
 
-#define UT_READ_XPR(idx, src) (h->get_ut_state(idx)->XPR[src])
-#define UT_WRITE_XPR(idx, dst, value) (h->get_ut_state(idx)->XPR.write(dst, value))
+static inline reg_t read_xpr(hwacha_t* h, insn_t insn, uint32_t idx, size_t src)
+{
+  if (src >= h->get_ct_state()->nxpr)
+    h->take_exception(HWACHA_CAUSE_TVEC_ILLEGAL_REGID, insn.bits());
+  return (h->get_ut_state(idx)->XPR[src]);
+}
+
+static inline void write_xpr(hwacha_t* h, insn_t insn, uint32_t idx, size_t dst, reg_t value)
+{
+  if (dst >= h->get_ct_state()->nxpr)
+    h->take_exception(HWACHA_CAUSE_TVEC_ILLEGAL_REGID, insn.bits());
+  h->get_ut_state(idx)->XPR.write(dst, value);
+}
+
+#define UT_READ_XPR(idx, src) read_xpr(h, insn, idx, src)
+#define UT_WRITE_XPR(idx, dst, value) write_xpr(h, insn, idx, dst, value)
 #define UT_RS1(idx) (UT_READ_XPR(idx, INSN_RS1))
 #define UT_RS2(idx) (UT_READ_XPR(idx, INSN_RS2))
 #define UT_WRITE_RD(idx, value) (UT_WRITE_XPR(idx, INSN_RD, value))
 
-#define UT_READ_FPR(idx, src) (h->get_ut_state(idx)->FPR[src])
-#define UT_WRITE_FPR(idx, dst, value) (h->get_ut_state(idx)->FPR.write(dst, value))
+static inline reg_t read_fpr(hwacha_t* h, insn_t insn, uint32_t idx, size_t src)
+{
+  if (src >= h->get_ct_state()->nfpr)
+    h->take_exception(HWACHA_CAUSE_TVEC_ILLEGAL_REGID, insn.bits());
+  return (h->get_ut_state(idx)->FPR[src]);
+}
+
+static inline void write_fpr(hwacha_t* h, insn_t insn, uint32_t idx, size_t dst, reg_t value)
+{
+  if (dst >= h->get_ct_state()->nfpr)
+    h->take_exception(HWACHA_CAUSE_TVEC_ILLEGAL_REGID, insn.bits());
+  h->get_ut_state(idx)->FPR.write(dst, value);
+}
+
+#define UT_READ_FPR(idx, src) read_fpr(h, insn, idx, src)
+#define UT_WRITE_FPR(idx, dst, value) write_fpr(h, insn, idx, dst, value)
 #define UT_FRS1(idx) (UT_READ_FPR(idx, INSN_RS1))
 #define UT_FRS2(idx) (UT_READ_FPR(idx, INSN_RS2))
 #define UT_FRS3(idx) (UT_READ_FPR(idx, INSN_RS3))
@@ -60,5 +93,9 @@
       addr += inc; \
     } \
   }
+
+#define require_supervisor_hwacha \
+  if (unlikely(!(p->get_state()->sr & SR_S))) \
+    h->take_exception(HWACHA_CAUSE_PRIVILEGED_INSTRUCTION, insn.bits());
 
 #endif

@@ -13,6 +13,9 @@ struct ct_state_t
   uint32_t vl;
 
   reg_t vf_pc;
+
+  reg_t cause;
+  reg_t aux;
 };
 
 struct ut_state_t
@@ -34,6 +37,8 @@ public:
   ct_state_t* get_ct_state() { return &ct_state; }
   ut_state_t* get_ut_state(int idx) { return &ut_state[idx]; }
   bool vf_active();
+  void take_exception(reg_t, reg_t);
+  void clear_exception() { clear_interrupt(); }
 
 private:
   static const int max_uts = 2048;

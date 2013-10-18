@@ -6,6 +6,9 @@
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
 
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef HWACHA_ENABLED
+
 /* Define to the address where bug reports for this package should be sent. */
 #undef PACKAGE_BUGREPORT
 
