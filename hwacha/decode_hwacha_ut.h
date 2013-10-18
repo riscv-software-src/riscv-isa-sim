@@ -79,8 +79,4 @@ static inline void write_frd(hwacha_t* h, insn_t insn, uint32_t idx, reg_t value
 #undef require_fp
 #define require_fp
 
-// YUNSUP FIXME
-#undef set_fp_exceptions
-#define set_fp_exceptions
-
 #endif
