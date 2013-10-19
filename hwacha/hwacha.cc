@@ -5,15 +5,13 @@
 
 void ct_state_t::reset()
 {
-  vl = 0;
-  maxvl = 32;
   nxpr = 32;
   nfpr = 32;
+  maxvl = 32;
+  vl = 0;
+  count = 0;
 
   vf_pc = -1;
-
-  cause = 0;
-  aux = 0;
 }
 
 void ut_state_t::reset()
@@ -97,10 +95,10 @@ bool hwacha_t::vf_active()
   return false;
 }
 
-void hwacha_t::take_exception(reg_t cause, reg_t aux)
+void hwacha_t::take_exception(reg_t c, reg_t a)
 {
-  get_ct_state()->cause = cause;
-  get_ct_state()->aux = aux;
+  cause = c;
+  aux = a;
   raise_interrupt();
   if (!(p->get_state()->sr & SR_EI))
     throw std::logic_error("hwacha exception posted, but SR_EI bit not set!");

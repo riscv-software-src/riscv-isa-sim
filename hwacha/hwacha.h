@@ -11,11 +11,9 @@ struct ct_state_t
   uint32_t nfpr;
   uint32_t maxvl;
   uint32_t vl;
+  uint32_t count;
 
   reg_t vf_pc;
-
-  reg_t cause;
-  reg_t aux;
 };
 
 struct ut_state_t
@@ -30,7 +28,7 @@ struct ut_state_t
 class hwacha_t : public extension_t
 {
 public:
-  hwacha_t() : debug(false) {}
+  hwacha_t() : cause(0), aux(0), debug(false) {}
   std::vector<insn_desc_t> get_instructions();
   std::vector<disasm_insn_t*> get_disasms();
   const char* name() { return "hwacha"; }
@@ -40,6 +38,8 @@ public:
   ct_state_t* get_ct_state() { return &ct_state; }
   ut_state_t* get_ut_state(int idx) { return &ut_state[idx]; }
   bool vf_active();
+  reg_t get_cause() { return cause; }
+  reg_t get_aux() { return aux; }
   void take_exception(reg_t, reg_t);
   void clear_exception() { clear_interrupt(); }
 
@@ -50,6 +50,9 @@ private:
   static const int max_uts = 2048;
   ct_state_t ct_state;
   ut_state_t ut_state[max_uts];
+  reg_t cause;
+  reg_t aux;
+
   disassembler_t ut_disassembler;
   bool debug;
 };
