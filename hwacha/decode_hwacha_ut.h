@@ -6,9 +6,6 @@
 #include "hwacha.h"
 #include "hwacha_xcpt.h"
 
-#define UTIDX (h->get_ct_state()->count)
-#define WRITE_UTIDX(value) (h->get_ct_state()->count = (value))
-
 #undef RS1
 #undef RS2
 #undef WRITE_RD
