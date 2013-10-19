@@ -1,5 +1,6 @@
 #include "hwacha.h"
 #include "hwacha_xcpt.h"
+#include "mmu.h"
 #include "trap.h"
 
 void ct_state_t::reset()

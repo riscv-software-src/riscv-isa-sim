@@ -79,16 +79,16 @@ void sim_t::run()
     if (debug || ctrlc_pressed)
       interactive();
     else
-      step(INTERLEAVE, false);
+      step(INTERLEAVE);
   }
 }
 
-void sim_t::step(size_t n, bool noisy)
+void sim_t::step(size_t n)
 {
   for (size_t i = 0, steps = 0; i < n; i += steps)
   {
     steps = std::min(n - i, INTERLEAVE - current_step);
-    procs[current_proc]->step(steps, noisy);
+    procs[current_proc]->step(steps);
 
     current_step += steps;
     if (current_step == INTERLEAVE)
@@ -116,4 +116,15 @@ void sim_t::stop()
   procs[0]->state.tohost = 1;
   while (htif->tick())
     ;
+}
+
+void sim_t::set_debug(bool value)
+{
+  debug = value;
+}
+
+void sim_t::set_procs_debug(bool value)
+{
+  for (size_t i=0; i< procs.size(); i++)
+    procs[i]->set_debug(value);
 }

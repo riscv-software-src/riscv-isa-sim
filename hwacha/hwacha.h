@@ -30,9 +30,12 @@ struct ut_state_t
 class hwacha_t : public extension_t
 {
 public:
+  hwacha_t() : debug(false) {}
   std::vector<insn_desc_t> get_instructions();
+  std::vector<disasm_insn_t*> get_disasms();
   const char* name() { return "hwacha"; }
   void reset();
+  void set_debug(bool value) { debug = value; }
 
   ct_state_t* get_ct_state() { return &ct_state; }
   ut_state_t* get_ut_state(int idx) { return &ut_state[idx]; }
@@ -40,10 +43,15 @@ public:
   void take_exception(reg_t, reg_t);
   void clear_exception() { clear_interrupt(); }
 
+  bool get_debug() { return debug; }
+  disassembler_t* get_ut_disassembler() { return &ut_disassembler; }
+
 private:
   static const int max_uts = 2048;
   ct_state_t ct_state;
   ut_state_t ut_state[max_uts];
+  disassembler_t ut_disassembler;
+  bool debug;
 };
 
 REGISTER_EXTENSION(hwacha, []() { return new hwacha_t; })

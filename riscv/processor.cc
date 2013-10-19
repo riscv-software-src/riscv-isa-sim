@@ -15,7 +15,7 @@
 #include <stdexcept>
 
 processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
-  : sim(_sim), mmu(_mmu), ext(NULL), id(_id), opcode_bits(0)
+  : sim(_sim), mmu(_mmu), ext(NULL), id(_id), debug(false), opcode_bits(0)
 {
   reset(true);
   mmu->set_processor(this);
@@ -59,6 +59,13 @@ void state_t::reset()
   load_reservation = -1;
 }
 
+void processor_t::set_debug(bool value)
+{
+  debug = value;
+  if (ext)
+    ext->set_debug(value);
+}
+
 void processor_t::reset(bool value)
 {
   if (run == !value)
@@ -88,7 +95,7 @@ void processor_t::take_interrupt()
         throw trap_t((1ULL << ((state.sr & SR_S64) ? 63 : 31)) + i);
 }
 
-void processor_t::step(size_t n, bool noisy)
+void processor_t::step(size_t n)
 {
   if(!run)
     return;
@@ -105,7 +112,7 @@ void processor_t::step(size_t n, bool noisy)
     #define execute_insn(noisy) \
       do { \
         mmu_t::insn_fetch_t fetch = _mmu->load_insn(npc); \
-        if(noisy) disasm(fetch.insn.insn, npc); \
+        if(noisy) disasm(fetch.insn.insn); \
         npc = fetch.func(this, fetch.insn.insn, npc); \
       } while(0)
 
@@ -117,7 +124,7 @@ void processor_t::step(size_t n, bool noisy)
     #define execute_insn(noisy) \
       do { \
         mmu_t::insn_fetch_t fetch = _mmu->load_insn(npc); \
-        if(noisy) disasm(fetch.insn.insn, npc); \
+        if(noisy) disasm(fetch.insn.insn); \
         bool in_spvr = state.sr & SR_S; \
         if (!in_spvr) fprintf(stderr, "\n0x%016" PRIx64 " (0x%08" PRIx32 ") ", npc, fetch.insn.insn.bits()); \
         /*if (!in_spvr) fprintf(stderr, "\n0x%016" PRIx64 " (0x%08" PRIx32 ") %s  ", npc, fetch.insn.insn.bits(), disasmblr.disassemble(fetch.insn.insn).c_str());*/ \
@@ -125,7 +132,7 @@ void processor_t::step(size_t n, bool noisy)
       } while(0)
 #endif
 
-    if(noisy) for( ; i < n; i++) // print out instructions as we go
+    if(debug) for( ; i < n; i++) // print out instructions as we go
       execute_insn(true);
     else 
     {
@@ -145,7 +152,7 @@ void processor_t::step(size_t n, bool noisy)
   }
   catch(trap_t& t)
   {
-    take_trap(npc, t, noisy);
+    take_trap(npc, t);
   }
 
   state.cycle += i;
@@ -157,9 +164,9 @@ void processor_t::step(size_t n, bool noisy)
     set_interrupt(IRQ_TIMER, true);
 }
 
-void processor_t::take_trap(reg_t pc, trap_t& t, bool noisy)
+void processor_t::take_trap(reg_t pc, trap_t& t)
 {
-  if (noisy)
+  if (debug)
     fprintf(stderr, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
             id, t.name(), pc);
 
@@ -182,12 +189,11 @@ void processor_t::deliver_ipi()
     set_pcr(PCR_CLR_IPI, 1);
 }
 
-void processor_t::disasm(insn_t insn, reg_t pc)
+void processor_t::disasm(insn_t insn)
 {
   // the disassembler is stateless, so we share it
-  static disassembler disasm;
   fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx32 ") %s\n",
-          id, state.pc, insn.bits(), disasm.disassemble(insn).c_str());
+          id, state.pc, insn.bits(), disassembler.disassemble(insn).c_str());
 }
 
 reg_t processor_t::set_pcr(int which, reg_t val)
@@ -342,6 +348,8 @@ void processor_t::register_extension(extension_t* x)
 {
   for (auto insn : x->get_instructions())
     register_insn(insn);
+  for (auto disasm_insn : x->get_disasms())
+    disassembler.add_insn(disasm_insn);
   if (ext != NULL)
     throw std::logic_error("only one extension may be registered");
   ext = x;
