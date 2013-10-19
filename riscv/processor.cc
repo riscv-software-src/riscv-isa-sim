@@ -210,9 +210,8 @@ reg_t processor_t::set_pcr(int which, reg_t val)
 #ifndef RISCV_ENABLE_FPU
       state.sr &= ~SR_EF;
 #endif
-#ifndef RISCV_ENABLE_VEC
-      state.sr &= ~SR_EV;
-#endif
+      if (!ext)
+        state.sr &= ~SR_EA;
       state.sr &= ~SR_ZERO;
       mmu->flush_tlb();
       break;
