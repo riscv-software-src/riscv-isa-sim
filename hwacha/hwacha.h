@@ -46,8 +46,9 @@ public:
   bool get_debug() { return debug; }
   disassembler_t* get_ut_disassembler() { return &ut_disassembler; }
 
-private:
   static const int max_uts = 2048;
+
+private:
   ct_state_t ct_state;
   ut_state_t ut_state[max_uts];
   reg_t cause;

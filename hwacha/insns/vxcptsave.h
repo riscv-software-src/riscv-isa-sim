@@ -40,3 +40,5 @@ for (uint32_t i=0; i<VL; i++) {
 #undef STORE_B
 #undef STORE_W
 #undef STORE_D
+
+#include "insns/vxcptkill.h"
