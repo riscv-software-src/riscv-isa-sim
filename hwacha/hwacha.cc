@@ -2,6 +2,7 @@
 #include "hwacha_xcpt.h"
 #include "mmu.h"
 #include "trap.h"
+#include <stdexcept>
 
 void ct_state_t::reset()
 {
