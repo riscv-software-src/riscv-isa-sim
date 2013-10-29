@@ -19,7 +19,7 @@ public:
   ~sim_t();
 
   // run the simulation to completion
-  void run();
+  int run();
   bool running();
   void stop();
   void set_debug(bool value);

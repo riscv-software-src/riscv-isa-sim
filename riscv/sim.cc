@@ -72,7 +72,7 @@ reg_t sim_t::get_scr(int which)
   }
 }
 
-void sim_t::run()
+int sim_t::run()
 {
   while (htif->tick())
   {
@@ -81,6 +81,7 @@ void sim_t::run()
     else
       step(INTERLEAVE);
   }
+  return htif->exit_code();
 }
 
 void sim_t::step(size_t n)
