@@ -56,7 +56,8 @@ void sim_t::interactive()
 
     if (!(ss >> cmd))
     {
-      step(1, true);
+      set_procs_debug(true);
+      step(1);
       continue;
     }
 
@@ -101,8 +102,9 @@ void sim_t::interactive_run(const std::string& cmd, const std::vector<std::strin
 {
   size_t steps = args.size() ? atoll(args[0].c_str()) : -1;
   ctrlc_pressed = false;
+  set_procs_debug(noisy);
   for (size_t i = 0; i < steps && !ctrlc_pressed; i++)
-    step(1, noisy);
+    step(1);
 }
 
 void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::string>& args)
@@ -269,6 +271,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
     }
     catch (trap_t t) {}
 
-    step(1, false);
+    set_procs_debug(false);
+    step(1);
   }
 }

@@ -29,6 +29,7 @@ class rocc_t : public extension_t
   virtual reg_t custom2(rocc_insn_t insn, reg_t xs1, reg_t xs2);
   virtual reg_t custom3(rocc_insn_t insn, reg_t xs1, reg_t xs2);
   std::vector<insn_desc_t> get_instructions();
+  std::vector<disasm_insn_t*> get_disasms();
 };
 
 #endif

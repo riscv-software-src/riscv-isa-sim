@@ -68,5 +68,5 @@ int main(int argc, char** argv)
   }
 
   s.set_debug(debug);
-  s.run();
+  return s.run();
 }

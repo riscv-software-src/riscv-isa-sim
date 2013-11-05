@@ -1,2 +1,2 @@
 require_supervisor_hwacha;
-xd = h->get_ct_state()->aux;
+xd = h->get_aux();

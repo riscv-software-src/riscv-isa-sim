@@ -1,9 +1,9 @@
 // See LICENSE for license details.
-
 #ifndef _RISCV_PROCESSOR_H
 #define _RISCV_PROCESSOR_H
 
 #include "decode.h"
+#include "disasm.h"
 #include <cstring>
 #include "config.h"
 #include <map>
@@ -59,8 +59,9 @@ public:
   processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id);
   ~processor_t();
 
+  void set_debug(bool value);
   void reset(bool value);
-  void step(size_t n, bool noisy); // run for n cycles
+  void step(size_t n); // run for n cycles
   void deliver_ipi(); // register an interprocessor interrupt
   bool running() { return run; }
   reg_t set_pcr(int which, reg_t val);
@@ -80,16 +81,18 @@ private:
   sim_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
   extension_t* ext;
+  disassembler_t disassembler;
   state_t state;
   uint32_t id;
   bool run; // !reset
+  bool debug;
 
   unsigned opcode_bits;
   std::multimap<uint32_t, insn_desc_t> opcode_map;
 
   void take_interrupt(); // take a trap if any interrupts are pending
-  void take_trap(reg_t pc, trap_t& t, bool noisy); // take an exception
-  void disasm(insn_t insn, reg_t pc); // disassemble and print an instruction
+  void take_trap(reg_t pc, trap_t& t); // take an exception
+  void disasm(insn_t insn); // disassemble and print an instruction
 
   friend class sim_t;
   friend class mmu_t;

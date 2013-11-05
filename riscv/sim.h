@@ -19,10 +19,11 @@ public:
   ~sim_t();
 
   // run the simulation to completion
-  void run();
+  int run();
   bool running();
   void stop();
-  void set_debug(bool value) { debug = value; }
+  void set_debug(bool value);
+  void set_procs_debug(bool value);
 
   // deliver an IPI to a specific processor
   void send_ipi(reg_t who);
@@ -41,7 +42,7 @@ private:
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
 
-  void step(size_t n, bool noisy); // step through simulation
+  void step(size_t n); // step through simulation
   static const size_t INTERLEAVE = 5000;
   size_t current_step;
   size_t current_proc;

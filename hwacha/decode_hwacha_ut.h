@@ -6,8 +6,6 @@
 #include "hwacha.h"
 #include "hwacha_xcpt.h"
 
-#define UTIDX (i)
-
 #undef RS1
 #undef RS2
 #undef WRITE_RD
@@ -78,9 +76,5 @@ static inline void write_frd(hwacha_t* h, insn_t insn, uint32_t idx, reg_t value
 // we assume the vector unit has floating-point alus
 #undef require_fp
 #define require_fp
-
-// YUNSUP FIXME
-#undef set_fp_exceptions
-#define set_fp_exceptions
 
 #endif

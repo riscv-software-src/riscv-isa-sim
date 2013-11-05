@@ -36,3 +36,9 @@ std::vector<insn_desc_t> rocc_t::get_instructions()
   insns.push_back((insn_desc_t){0x7b, 0x7f, &::illegal_instruction, c3});
   return insns;
 }
+
+std::vector<disasm_insn_t*> rocc_t::get_disasms()
+{
+  std::vector<disasm_insn_t*> insns;
+  return insns;
+}

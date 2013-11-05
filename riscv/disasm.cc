@@ -6,14 +6,6 @@
 #include <cstdarg>
 #include <sstream>
 #include <stdlib.h>
-using namespace std;
-
-class arg_t
-{
- public:
-  virtual string to_string(insn_t val) const = 0;
-  virtual ~arg_t() {}
-};
 
 static const char* xpr[] = {
   "zero", "ra", "s0", "s1",  "s2",  "s3",  "s4",  "s5",
@@ -29,35 +21,21 @@ static const char* fpr[] = {
   "fa6", "fa7", "ft0",   "ft1",  "ft2",  "ft3",  "ft4",  "ft5"
 };
 
-static const char* vxpr[] = {
-  "vx0",  "vx1",  "vx2",  "vx3",  "vx4",  "vx5",  "vx6",  "vx7",
-  "vx8",  "vx9",  "vx10", "vx11", "vx12", "vx13", "vx14", "vx15",
-  "vx16", "vx17", "vx18", "vx19", "vx20", "vx21", "vx22", "vx23",
-  "vx24", "vx25", "vx26", "vx27", "vx28", "vx29", "vx30", "vx31"
-};
-
-static const char* vfpr[] = {
-  "vf0",  "vf1",  "vf2",  "vf3",  "vf4",  "vf5",  "vf6",  "vf7",
-  "vf8",  "vf9",  "vf10", "vf11", "vf12", "vf13", "vf14", "vf15",
-  "vf16", "vf17", "vf18", "vf19", "vf20", "vf21", "vf22", "vf23",
-  "vf24", "vf25", "vf26", "vf27", "vf28", "vf29", "vf30", "vf31"
-};
-
 struct : public arg_t {
-  string to_string(insn_t insn) const {
-    return ::to_string((int)insn.i_imm()) + '(' + xpr[insn.rs1()] + ')';
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.i_imm()) + '(' + xpr[insn.rs1()] + ')';
   }
 } load_address;
 
 struct : public arg_t {
-  string to_string(insn_t insn) const {
-    return ::to_string((int)insn.s_imm()) + '(' + xpr[insn.rs1()] + ')';
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.s_imm()) + '(' + xpr[insn.rs1()] + ')';
   }
 } store_address;
 
 struct : public arg_t {
-  string to_string(insn_t insn) const {
-    return string("0(") + xpr[insn.rs1()] + ')';
+  std::string to_string(insn_t insn) const {
+    return std::string("0(") + xpr[insn.rs1()] + ')';
   }
 } amo_address;
 
@@ -105,49 +83,13 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return vxpr[insn.rd()];
-  }
-} vxrd;
-
-struct : public arg_t {
-  std::string to_string(insn_t insn) const {
-    return vxpr[insn.rs1()];
-  }
-} vxrs1;
-
-struct : public arg_t {
-  std::string to_string(insn_t insn) const {
-    return vfpr[insn.rd()];
-  }
-} vfrd;
-
-struct : public arg_t {
-  std::string to_string(insn_t insn) const {
-    return vfpr[insn.rs1()];
-  }
-} vfrs1;
-
-struct : public arg_t {
-  std::string to_string(insn_t insn) const {
-    return ::to_string(insn.i_imm() & 0x3f);
-  }
-} nxregs;
-
-struct : public arg_t {
-  std::string to_string(insn_t insn) const {
-    return ::to_string((insn.i_imm() >> 6) & 0x3f);
-  }
-} nfregs;
-
-struct : public arg_t {
-  std::string to_string(insn_t insn) const {
-    return string("pcr") + xpr[insn.rs1()];
+    return std::string("pcr") + xpr[insn.rs1()];
   }
 } pcr;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return ::to_string((int)insn.i_imm());
+    return std::to_string((int)insn.i_imm());
   }
 } imm;
 
@@ -179,52 +121,13 @@ struct : public arg_t {
   }
 } jump_target;
 
-class disasm_insn_t
-{
- public:
-  disasm_insn_t(const char* name, uint32_t match, uint32_t mask,
-                const std::vector<const arg_t*>& args)
-    : match(match), mask(mask), args(args), name(name) {}
-
-  bool operator == (insn_t insn) const
-  {
-    return (insn.bits() & mask) == match;
-  }
-
-  std::string to_string(insn_t insn) const
-  {
-    std::stringstream s;
-    int len;
-    for (len = 0; name[len]; len++)
-      s << (name[len] == '_' ? '.' : name[len]);
-
-    if (args.size())
-    {
-      s << std::string(std::max(1, 8 - len), ' ');
-      for (size_t i = 0; i < args.size()-1; i++)
-        s << args[i]->to_string(insn) << ", ";
-      s << args[args.size()-1]->to_string(insn);
-    }
-    return s.str();
-  }
-
-  uint32_t get_match() const { return match; }
-  uint32_t get_mask() const { return mask; }
-
- private:
-  uint32_t match;
-  uint32_t mask;
-  std::vector<const arg_t*> args;
-  const char* name;
-};
-
-std::string disassembler::disassemble(insn_t insn)
+std::string disassembler_t::disassemble(insn_t insn)
 {
   const disasm_insn_t* disasm_insn = lookup(insn);
   return disasm_insn ? disasm_insn->to_string(insn) : "unknown";
 }
 
-disassembler::disassembler()
+disassembler_t::disassembler_t()
 {
   const uint32_t mask_rd = 0x1fUL << 7;
   const uint32_t match_rd_ra = 1UL << 7;
@@ -463,7 +366,7 @@ disassembler::disassembler()
   #undef DECLARE_INSN
 }
 
-const disasm_insn_t* disassembler::lookup(insn_t insn)
+const disasm_insn_t* disassembler_t::lookup(insn_t insn)
 {
   size_t idx = insn.bits() % HASH_SIZE;
   for (size_t j = 0; j < chain[idx].size(); j++)
@@ -478,7 +381,7 @@ const disasm_insn_t* disassembler::lookup(insn_t insn)
   return NULL;
 }
 
-void disassembler::add_insn(disasm_insn_t* insn)
+void disassembler_t::add_insn(disasm_insn_t* insn)
 {
   size_t idx = HASH_SIZE;
   if (insn->get_mask() % HASH_SIZE == HASH_SIZE - 1)
@@ -486,7 +389,7 @@ void disassembler::add_insn(disasm_insn_t* insn)
   chain[idx].push_back(insn);
 }
 
-disassembler::~disassembler()
+disassembler_t::~disassembler_t()
 {
   for (size_t i = 0; i < HASH_SIZE+1; i++)
     for (size_t j = 0; j < chain[i].size(); j++)

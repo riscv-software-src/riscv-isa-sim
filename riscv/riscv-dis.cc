@@ -15,7 +15,7 @@ using namespace std;
 int main()
 {
   string s;
-  disassembler d;
+  disassembler_t d;
 
   while (getline(cin, s))
   {

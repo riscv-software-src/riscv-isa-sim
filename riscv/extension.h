@@ -2,6 +2,7 @@
 #define _RISCV_COPROCESSOR_H
 
 #include "processor.h"
+#include "disasm.h"
 #include <map>
 #include <string>
 #include <vector>
@@ -11,8 +12,10 @@ class extension_t
 {
  public:
   virtual std::vector<insn_desc_t> get_instructions() = 0;
+  virtual std::vector<disasm_insn_t*> get_disasms() = 0;
   virtual const char* name() = 0;
   virtual void reset() {};
+  virtual void set_debug(bool value) {};
   virtual ~extension_t();
 
   void set_processor(processor_t* _p) { p = _p; }

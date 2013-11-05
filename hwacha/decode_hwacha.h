@@ -12,11 +12,13 @@
 #define NFPR (h->get_ct_state()->nfpr)
 #define MAXVL (h->get_ct_state()->maxvl)
 #define VL (h->get_ct_state()->vl)
+#define UTIDX (h->get_ct_state()->count)
 #define VF_PC (h->get_ct_state()->vf_pc)
 #define WRITE_NXPR(nxprnext) (h->get_ct_state()->nxpr = (nxprnext))
 #define WRITE_NFPR(nfprnext) (h->get_ct_state()->nfpr = (nfprnext))
 #define WRITE_MAXVL(maxvlnext) (h->get_ct_state()->maxvl = (maxvlnext))
 #define WRITE_VL(vlnext) (h->get_ct_state()->vl = (vlnext))
+#define WRITE_UTIDX(value) (h->get_ct_state()->count = (value))
 #define WRITE_VF_PC(pcnext) (h->get_ct_state()->vf_pc = (pcnext))
 
 #define INSN_RS1 (insn.rs1())
