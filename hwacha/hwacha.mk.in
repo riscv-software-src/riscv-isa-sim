@@ -20,6 +20,7 @@ hwacha_hdrs = \
 hwacha_srcs = \
 	hwacha.cc \
 	hwacha_disasm.cc \
+	cvt16.cc \
 	$(hwacha_gen_srcs) \
 	$(hwacha_ut_gen_srcs) \
 	$(hwacha_ut_half_gen_srcs) \

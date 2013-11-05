@@ -21,6 +21,7 @@ vf_loop:
       matched = true; \
     }
   #include "opcodes_hwacha_ut.h"
+  #include "opcodes_hwacha_ut_half.h"
   #undef DECLARE_INSN
 
   if (!matched)
