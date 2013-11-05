@@ -9,6 +9,7 @@ hwacha_install_prog_srcs = \
 
 hwacha_hdrs = \
 	hwacha.h \
+	hwacha_xcpt.h \
 	decode_hwacha.h \
 	decode_hwacha_ut.h \
 	decode_hwacha_ut_half.h \
