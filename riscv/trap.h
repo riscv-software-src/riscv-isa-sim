@@ -54,5 +54,6 @@ DECLARE_MEM_TRAP(8, load_address_misaligned)
 DECLARE_MEM_TRAP(9, store_address_misaligned)
 DECLARE_MEM_TRAP(10, load_access_fault)
 DECLARE_MEM_TRAP(11, store_access_fault)
+DECLARE_TRAP(12, accelerator_disabled)
 
 #endif
