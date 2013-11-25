@@ -10,7 +10,7 @@
 #define __STDC_LIMIT_MACROS
 #include <stdint.h>
 #include <string.h>
-#include "pcr.h"
+#include "encoding.h"
 #include "config.h"
 #include "common.h"
 #include <cinttypes>
@@ -47,8 +47,6 @@ const int NFPR = 32;
 #define FSR_DZA  (FPEXC_DZ << FSR_AEXC_SHIFT)
 #define FSR_NXA  (FPEXC_NX << FSR_AEXC_SHIFT)
 #define FSR_AEXC (FSR_NVA | FSR_OFA | FSR_UFA | FSR_DZA | FSR_NXA)
-
-#define FSR_ZERO ~(FSR_RD | FSR_AEXC)
 
 class insn_t
 {
@@ -131,7 +129,7 @@ private:
 #define BRANCH_TARGET (pc + insn.sb_imm())
 #define JUMP_TARGET (pc + insn.uj_imm())
 #define RM ({ int rm = insn.rm(); \
-              if(rm == 7) rm = (p->get_state()->fsr & FSR_RD) >> FSR_RD_SHIFT; \
+              if(rm == 7) rm = p->get_state()->frm; \
               if(rm > 4) throw trap_illegal_instruction(); \
               rm; })
 
@@ -148,8 +146,7 @@ private:
 #define require_accelerator if(unlikely(!(p->get_state()->sr & SR_EA))) throw trap_accelerator_disabled()
 
 #define cmp_trunc(reg) (reg_t(reg) << (64-xprlen))
-#define set_fp_exceptions ({ p->set_fsr(p->get_state()->fsr | \
-                               (softfloat_exceptionFlags << FSR_AEXC_SHIFT)); \
+#define set_fp_exceptions ({ p->get_state()->fflags |= softfloat_exceptionFlags; \
                              softfloat_exceptionFlags = 0; })
 
 #define sext32(x) ((sreg_t)(int32_t)(x))
@@ -168,5 +165,11 @@ private:
          throw trap_instruction_address_misaligned(); \
        npc = (x); \
      } while(0)
+
+#define validate_csr(which, write) ({ \
+  int read_priv = ((which) >> 10) & 3; \
+  int write_priv = ((which) >> 8) & 3; \
+  if (read_priv > 0 || (write_priv > 0 && (write))) require_supervisor; \
+  (which); })
 
 #endif

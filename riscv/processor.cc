@@ -15,13 +15,14 @@
 #include <stdexcept>
 
 processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
-  : sim(_sim), mmu(_mmu), ext(NULL), id(_id), debug(false), opcode_bits(0)
+  : sim(_sim), mmu(_mmu), ext(NULL), id(_id), run(false), debug(false),
+    opcode_bits(0)
 {
   reset(true);
   mmu->set_processor(this);
 
   #define DECLARE_INSN(name, match, mask) REGISTER_INSN(this, name, match, mask)
-  #include "opcodes.h"
+  #include "encoding.h"
   #undef DECLARE_INSN
 }
 
@@ -53,8 +54,8 @@ void state_t::reset()
   pcr_k1 = 0;
   count = 0;
   compare = 0;
-  cycle = 0;
-  fsr = 0;
+  fflags = 0;
+  frm = 0;
 
   load_reservation = -1;
 }
@@ -75,13 +76,6 @@ void processor_t::reset(bool value)
   state.reset(); // reset the core
   if (ext)
     ext->reset(); // reset the extension
-}
-
-uint32_t processor_t::set_fsr(uint32_t val)
-{
-  uint32_t old_fsr = state.fsr;
-  state.fsr = val & ~FSR_ZERO; // clear FSR bits that read as zero
-  return old_fsr;
 }
 
 void processor_t::take_interrupt()
@@ -155,8 +149,6 @@ void processor_t::step(size_t n)
     take_trap(npc, t);
   }
 
-  state.cycle += i;
-
   // update timer and possibly register a timer interrupt
   uint32_t old_count = state.count;
   state.count += i;
@@ -171,9 +163,9 @@ void processor_t::take_trap(reg_t pc, trap_t& t)
             id, t.name(), pc);
 
   // switch to supervisor, set previous supervisor bit, disable interrupts
-  set_pcr(PCR_SR, (((state.sr & ~SR_EI) | SR_S) & ~SR_PS & ~SR_PEI) |
-                  ((state.sr & SR_S) ? SR_PS : 0) |
-                  ((state.sr & SR_EI) ? SR_PEI : 0));
+  set_pcr(CSR_STATUS, (((state.sr & ~SR_EI) | SR_S) & ~SR_PS & ~SR_PEI) |
+                      ((state.sr & SR_S) ? SR_PS : 0) |
+                      ((state.sr & SR_EI) ? SR_PEI : 0));
 
   yield_load_reservation();
   state.cause = t.cause();
@@ -186,7 +178,7 @@ void processor_t::take_trap(reg_t pc, trap_t& t)
 void processor_t::deliver_ipi()
 {
   if (run)
-    set_pcr(PCR_CLR_IPI, 1);
+    set_pcr(CSR_CLEAR_IPI, 1);
 }
 
 void processor_t::disasm(insn_t insn)
@@ -202,7 +194,17 @@ reg_t processor_t::set_pcr(int which, reg_t val)
 
   switch (which)
   {
-    case PCR_SR:
+    case CSR_FFLAGS:
+      state.fflags = val & (FSR_AEXC >> FSR_AEXC_SHIFT);
+      break;
+    case CSR_FRM:
+      state.frm = val & (FSR_RD >> FSR_RD_SHIFT);
+      break;
+    case CSR_FCSR:
+      state.fflags = (val & FSR_AEXC) >> FSR_AEXC_SHIFT;
+      state.frm = (val & FSR_RD) >> FSR_RD_SHIFT;
+      break;
+    case CSR_STATUS:
       state.sr = (val & ~SR_IP) | (state.sr & SR_IP);
 #ifndef RISCV_ENABLE_64BIT
       state.sr &= ~(SR_S64 | SR_U64);
@@ -215,39 +217,42 @@ reg_t processor_t::set_pcr(int which, reg_t val)
       state.sr &= ~SR_ZERO;
       mmu->flush_tlb();
       break;
-    case PCR_EPC:
+    case CSR_EPC:
       state.epc = val;
       break;
-    case PCR_EVEC: 
+    case CSR_EVEC: 
       state.evec = val;
       break;
-    case PCR_COUNT:
+    case CSR_CYCLE:
+    case CSR_TIME:
+    case CSR_INSTRET:
+    case CSR_COUNT:
       state.count = val;
       break;
-    case PCR_COMPARE:
+    case CSR_COMPARE:
       set_interrupt(IRQ_TIMER, false);
       state.compare = val;
       break;
-    case PCR_PTBR:
+    case CSR_PTBR:
       state.ptbr = val & ~(PGSIZE-1);
       break;
-    case PCR_SEND_IPI:
+    case CSR_SEND_IPI:
       sim->send_ipi(val);
       break;
-    case PCR_CLR_IPI:
+    case CSR_CLEAR_IPI:
       set_interrupt(IRQ_IPI, val & 1);
       break;
-    case PCR_SUP0:
+    case CSR_SUP0:
       state.pcr_k0 = val;
       break;
-    case PCR_SUP1:
+    case CSR_SUP1:
       state.pcr_k1 = val;
       break;
-    case PCR_TOHOST:
+    case CSR_TOHOST:
       if (state.tohost == 0)
         state.tohost = val;
       break;
-    case PCR_FROMHOST:
+    case CSR_FROMHOST:
       set_interrupt(IRQ_HOST, val != 0);
       state.fromhost = val;
       break;
@@ -260,41 +265,51 @@ reg_t processor_t::get_pcr(int which)
 {
   switch (which)
   {
-    case PCR_SR:
+    case CSR_FFLAGS:
+      return state.fflags;
+    case CSR_FRM:
+      return state.frm;
+    case CSR_FCSR:
+      return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
+    case CSR_STATUS:
       return state.sr;
-    case PCR_EPC:
+    case CSR_EPC:
       return state.epc;
-    case PCR_BADVADDR:
+    case CSR_BADVADDR:
       return state.badvaddr;
-    case PCR_EVEC:
+    case CSR_EVEC:
       return state.evec;
-    case PCR_COUNT:
+    case CSR_CYCLE:
+    case CSR_TIME:
+    case CSR_INSTRET:
+    case CSR_COUNT:
       return state.count;
-    case PCR_COMPARE:
+    case CSR_COMPARE:
       return state.compare;
-    case PCR_CAUSE:
+    case CSR_CAUSE:
       return state.cause;
-    case PCR_PTBR:
+    case CSR_PTBR:
       return state.ptbr;
-    case PCR_ASID:
+    case CSR_ASID:
       return 0;
-    case PCR_FATC:
+    case CSR_FATC:
       mmu->flush_tlb();
       return 0;
-    case PCR_HARTID:
+    case CSR_HARTID:
       return id;
-    case PCR_IMPL:
+    case CSR_IMPL:
       return 1;
-    case PCR_SUP0:
+    case CSR_SUP0:
       return state.pcr_k0;
-    case PCR_SUP1:
+    case CSR_SUP1:
       return state.pcr_k1;
-    case PCR_TOHOST:
+    case CSR_TOHOST:
       return state.tohost;
-    case PCR_FROMHOST:
+    case CSR_FROMHOST:
       return state.fromhost;
+    default:
+      return -1;
   }
-  return -1;
 }
 
 void processor_t::set_interrupt(int which, bool on)

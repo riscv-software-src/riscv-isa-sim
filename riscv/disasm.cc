@@ -83,9 +83,15 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return std::string("pcr") + xpr[insn.rs1()];
+    switch (insn.i_imm())
+    {
+      #define DECLARE_CSR(name, num) case num: return #name;
+      #include "encoding.h"
+      #undef DECLARE_CSR
+      default: return "unknown";
+    }
   }
-} pcr;
+} csr;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
@@ -100,6 +106,12 @@ struct : public arg_t {
     return s.str();
   }
 } bigimm;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string(insn.rs1());
+  }
+} zimm5;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
@@ -139,7 +151,7 @@ disassembler_t::disassembler_t()
   #define DECLARE_INSN(code, match, mask) \
    const uint32_t match_##code = match; \
    const uint32_t mask_##code = mask;
-  #include "opcodes.h"
+  #include "encoding.h"
   #undef DECLARE_INSN
 
   // explicit per-instruction disassembly
@@ -147,7 +159,6 @@ disassembler_t::disassembler_t()
     add_insn(new disasm_insn_t(name, match_##code, mask_##code | (extra), __VA_ARGS__));
   #define DEFINE_NOARG(code) \
     add_insn(new disasm_insn_t(#code, match_##code, mask_##code, {}));
-  #define DEFINE_DTYPE(code) DISASM_INSN(#code, code, 0, {&xrd})
   #define DEFINE_RTYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs1, &xrs2})
   #define DEFINE_ITYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs1, &imm})
   #define DEFINE_I0TYPE(name, code) DISASM_INSN(name, code, mask_rs1, {&xrd, &imm})
@@ -279,21 +290,20 @@ disassembler_t::disassembler_t()
   DEFINE_RTYPE(remw);
   DEFINE_RTYPE(remuw);
 
-  DEFINE_NOARG(syscall);
-  DEFINE_NOARG(break);
+  DEFINE_NOARG(scall);
+  DEFINE_NOARG(sbreak);
   DEFINE_NOARG(fence);
   DEFINE_NOARG(fence_i);
 
-  DEFINE_DTYPE(rdcycle);
-  DEFINE_DTYPE(rdtime);
-  DEFINE_DTYPE(rdinstret);
-
-  add_insn(new disasm_insn_t("mtpcr", match_mtpcr, mask_mtpcr | mask_rd, {&xrs2, &pcr}));
-  add_insn(new disasm_insn_t("mtpcr", match_mtpcr, mask_mtpcr, {&xrd, &xrs2, &pcr}));
-  add_insn(new disasm_insn_t("mfpcr", match_mfpcr, mask_mfpcr, {&xrd, &pcr}));
-  add_insn(new disasm_insn_t("setpcr", match_setpcr, mask_setpcr, {&xrd, &pcr, &imm}));
-  add_insn(new disasm_insn_t("clearpcr", match_clearpcr, mask_clearpcr, {&xrd, &pcr, &imm}));
-  DEFINE_NOARG(eret)
+  add_insn(new disasm_insn_t("csrr", match_csrrs, mask_csrrs | mask_rs1, {&xrd, &csr}));
+  add_insn(new disasm_insn_t("csrw", match_csrrw, mask_csrrw | mask_rd, {&xrs1, &csr}));
+  add_insn(new disasm_insn_t("csrrw", match_csrrw, mask_csrrw, {&xrd, &xrs1, &csr}));
+  add_insn(new disasm_insn_t("csrrs", match_csrrs, mask_csrrs, {&xrd, &xrs1, &csr}));
+  add_insn(new disasm_insn_t("csrrc", match_csrrc, mask_csrrc, {&xrd, &xrs1, &csr}));
+  add_insn(new disasm_insn_t("csrrwi", match_csrrwi, mask_csrrwi, {&xrd, &zimm5, &csr}));
+  add_insn(new disasm_insn_t("csrrsi", match_csrrsi, mask_csrrsi, {&xrd, &zimm5, &csr}));
+  add_insn(new disasm_insn_t("csrrci", match_csrrci, mask_csrrci, {&xrd, &zimm5, &csr}));
+  DEFINE_NOARG(sret)
 
   DEFINE_FRTYPE(fadd_s);
   DEFINE_FRTYPE(fsub_s);
@@ -355,14 +365,10 @@ disassembler_t::disassembler_t()
   DEFINE_FXTYPE(flt_d);
   DEFINE_FXTYPE(fle_d);
 
-  add_insn(new disasm_insn_t("fssr", match_fssr, mask_fssr | mask_rd, {&xrs1}));
-  add_insn(new disasm_insn_t("fssr", match_fssr, mask_fssr, {&xrd, &xrs1}));
-  DEFINE_DTYPE(frsr);
-
   // provide a default disassembly for all instructions as a fallback
   #define DECLARE_INSN(code, match, mask) \
    add_insn(new disasm_insn_t(#code " (args unknown)", match, mask, {}));
-  #include "opcodes.h"
+  #include "encoding.h"
   #undef DECLARE_INSN
 }
 

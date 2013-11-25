@@ -1,5 +1,5 @@
-get_insn_list = $(shell cat $(1) | sed 's/DECLARE_INSN(\(.*\),.*,.*)/\1/')
-get_opcode = $(shell grep \\\<$(2)\\\> $(1) | sed 's/DECLARE_INSN(.*,\(.*\),.*)/\1/')
+get_insn_list = $(shell grep ^DECLARE_INSN $(1) | sed 's/DECLARE_INSN(\(.*\),.*,.*)/\1/')
+get_opcode = $(shell grep ^DECLARE_INSN.*\\\<$(2)\\\> $(1) | sed 's/DECLARE_INSN(.*,\(.*\),.*)/\1/')
 
 riscv_subproject_deps = \
 	softfloat_riscv \
@@ -20,7 +20,7 @@ riscv_hdrs = \
 	processor.h \
 	sim.h \
 	trap.h \
-	opcodes.h \
+	encoding.h \
 	cachesim.h \
 	memtracer.h \
 	extension.h \
@@ -45,10 +45,10 @@ riscv_test_srcs =
 riscv_gen_hdrs = \
 
 riscv_gen_srcs = \
-	$(addsuffix .cc, $(call get_insn_list,$(src_dir)/riscv/opcodes.h))
+	$(addsuffix .cc, $(call get_insn_list,$(src_dir)/riscv/encoding.h))
 
 $(riscv_gen_srcs): %.cc: insns/%.h insn_template.cc
-	sed 's/NAME/$(subst .cc,,$@)/' $(src_dir)/riscv/insn_template.cc | sed 's/OPCODE/$(call get_opcode,$(src_dir)/riscv/opcodes.h,$(subst .cc,,$@))/' > $@
+	sed 's/NAME/$(subst .cc,,$@)/' $(src_dir)/riscv/insn_template.cc | sed 's/OPCODE/$(call get_opcode,$(src_dir)/riscv/encoding.h,$(subst .cc,,$@))/' > $@
 
 riscv_junk = \
 	$(riscv_gen_srcs) \

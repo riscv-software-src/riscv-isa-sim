@@ -2,6 +2,7 @@
 
 #include "htif.h"
 #include "sim.h"
+#include "encoding.h"
 #include <unistd.h>
 #include <stdexcept>
 #include <stdlib.h>
@@ -63,9 +64,10 @@ void htif_isasim_t::tick_once()
     case HTIF_CMD_READ_CONTROL_REG:
     case HTIF_CMD_WRITE_CONTROL_REG:
     {
+      assert(hdr.data_size == 1);
       reg_t coreid = hdr.addr >> 20;
       reg_t regno = hdr.addr & ((1<<20)-1);
-      assert(hdr.data_size == 1);
+      uint64_t old_val, new_val = 0 /* shut up gcc */;
 
       packet_header_t ack(HTIF_CMD_ACK, seqno, 1, 0);
       send(&ack, sizeof(ack));
@@ -77,28 +79,40 @@ void htif_isasim_t::tick_once()
         break;
       }
 
-      assert(coreid < sim->num_cores());
-      uint64_t old_val = sim->procs[coreid]->get_pcr(regno);
-      send(&old_val, sizeof(old_val));
-
-      if (regno == PCR_TOHOST)
-          sim->procs[coreid]->state.tohost = 0;
-
-      if (hdr.cmd == HTIF_CMD_WRITE_CONTROL_REG)
-      {
-        uint64_t new_val;
+      processor_t* proc = sim->get_core(coreid);
+      bool write = hdr.cmd == HTIF_CMD_WRITE_CONTROL_REG;
+      if (write)
         memcpy(&new_val, p.get_payload(), sizeof(new_val));
-        if (regno == PCR_RESET)
-        {
-          if (reset && !(new_val & 1))
-            reset = false;
-          sim->procs[coreid]->reset(new_val & 1);
-        }
-        else if (regno == PCR_FROMHOST && old_val != 0)
-          ; // ignore host writes to fromhost if target hasn't yet consumed
-        else
-          sim->procs[coreid]->set_pcr(regno, new_val);
+
+      // TODO mapping HTIF regno to CSR[4:0] is arbitrary; consider alternative
+      switch (regno)
+      {
+        case CSR_HARTID & 0x1f:
+          old_val = coreid;
+          break;
+        case CSR_TOHOST & 0x1f:
+          old_val = proc->state.tohost;
+          if (write)
+            proc->state.tohost = new_val;
+          break;
+        case CSR_FROMHOST & 0x1f:
+          old_val = proc->state.fromhost;
+          if (write && old_val == 0)
+            proc->state.fromhost = new_val;
+          break;
+        case CSR_RESET & 0x1f:
+          old_val = !proc->running();
+          if (write)
+          {
+            reset = reset & (new_val & 1);
+            proc->reset(new_val & 1);
+          }
+          break;
+        default:
+          abort();
       }
+
+      send(&old_val, sizeof(old_val));
       break;
     }
     default:

@@ -28,13 +28,11 @@ struct state_t
 {
   void reset();
 
-  // user-visible state
   reg_t pc;
   regfile_t<reg_t, NXPR, true> XPR;
   regfile_t<freg_t, NFPR, false> FPR;
-  reg_t cycle;
 
-  // privileged control registers
+  // control and status registers
   reg_t epc;
   reg_t badvaddr;
   reg_t evec;
@@ -44,10 +42,11 @@ struct state_t
   reg_t cause;
   reg_t tohost;
   reg_t fromhost;
-  uint32_t sr; // only modify the status register using set_pcr()
-  uint32_t fsr;
-  uint32_t count;
+  reg_t count;
   uint32_t compare;
+  uint32_t sr; // only modify the status register using set_pcr()
+  uint32_t fflags;
+  uint32_t frm;
 
   reg_t load_reservation;
 };
@@ -65,10 +64,8 @@ public:
   void deliver_ipi(); // register an interprocessor interrupt
   bool running() { return run; }
   reg_t set_pcr(int which, reg_t val);
-  uint32_t set_fsr(uint32_t val); // set the floating-point status register
   void set_interrupt(int which, bool on);
   reg_t get_pcr(int which);
-  uint32_t get_fsr() { return state.fsr; }
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
   extension_t* get_extension() { return ext; }
