@@ -59,6 +59,7 @@
 #define CAUSE_MISALIGNED_STORE 9
 #define CAUSE_FAULT_LOAD 10
 #define CAUSE_FAULT_STORE 11
+#define CAUSE_ACCELERATOR_DISABLED 12
 
 // page table entry (PTE) fields
 #define PTE_V    0x001 // Entry is a page Table descriptor

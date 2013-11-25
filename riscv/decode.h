@@ -145,6 +145,7 @@ private:
 #else
 # define require_fp if(unlikely(!(p->get_state()->sr & SR_EF))) throw trap_fp_disabled()
 #endif
+#define require_accelerator if(unlikely(!(p->get_state()->sr & SR_EA))) throw trap_accelerator_disabled()
 
 #define cmp_trunc(reg) (reg_t(reg) << (64-xprlen))
 #define set_fp_exceptions ({ p->set_fsr(p->get_state()->fsr | \

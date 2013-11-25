@@ -31,6 +31,7 @@ void hwacha_t::reset()
 
 static reg_t custom(processor_t* p, insn_t insn, reg_t pc)
 {
+  require_accelerator;
   hwacha_t* h = static_cast<hwacha_t*>(p->get_extension());
   bool matched = false;
   reg_t npc = -1;
