@@ -3,7 +3,6 @@ switch (prec) {
   case 16:
   case 32:
   case 64:
-    printf("Precision set to %d bits\n", prec);
     WRITE_PREC(prec);
     break;
 
