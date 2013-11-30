@@ -20,6 +20,7 @@
 #define WRITE_VL(vlnext) (h->get_ct_state()->vl = (vlnext))
 #define WRITE_UTIDX(value) (h->get_ct_state()->count = (value))
 #define WRITE_VF_PC(pcnext) (h->get_ct_state()->vf_pc = (pcnext))
+#define WRITE_PREC(precision) (h->get_ct_state()->prec = (precision))
 
 #define INSN_RS1 (insn.rs1())
 #define INSN_RS2 (insn.rs2())

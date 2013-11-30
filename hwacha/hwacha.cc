@@ -11,6 +11,7 @@ void ct_state_t::reset()
   maxvl = 32;
   vl = 0;
   count = 0;
+  prec = 64;
 
   vf_pc = -1;
 }

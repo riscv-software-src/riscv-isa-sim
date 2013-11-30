@@ -12,6 +12,7 @@ struct ct_state_t
   uint32_t maxvl;
   uint32_t vl;
   uint32_t count;
+  uint32_t prec;
 
   reg_t vf_pc;
 };
