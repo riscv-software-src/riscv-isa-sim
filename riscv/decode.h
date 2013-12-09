@@ -62,6 +62,7 @@ public:
   uint32_t rs2() { return x(20, 5); }
   uint32_t rs3() { return x(27, 5); }
   uint32_t rm() { return x(12, 3); }
+  reg_t csr() { return x(20, 12); }
 private:
   uint32_t b;
   reg_t x(int lo, int len) { return b << (32-lo-len) >> (32-len); }
@@ -167,8 +168,8 @@ private:
      } while(0)
 
 #define validate_csr(which, write) ({ \
-  int read_priv = ((which) >> 10) & 3; \
-  int write_priv = ((which) >> 8) & 3; \
+  int write_priv = ((which) >> 10) & 3; \
+  int read_priv = ((which) >> 8) & 3; \
   if (read_priv > 0 || (write_priv > 0 && (write))) require_supervisor; \
   (which); })
 

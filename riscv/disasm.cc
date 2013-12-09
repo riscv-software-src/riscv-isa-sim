@@ -83,7 +83,7 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    switch (insn.i_imm())
+    switch (insn.csr())
     {
       #define DECLARE_CSR(name, num) case num: return #name;
       #include "encoding.h"
@@ -296,13 +296,13 @@ disassembler_t::disassembler_t()
   DEFINE_NOARG(fence_i);
 
   add_insn(new disasm_insn_t("csrr", match_csrrs, mask_csrrs | mask_rs1, {&xrd, &csr}));
-  add_insn(new disasm_insn_t("csrw", match_csrrw, mask_csrrw | mask_rd, {&xrs1, &csr}));
-  add_insn(new disasm_insn_t("csrrw", match_csrrw, mask_csrrw, {&xrd, &xrs1, &csr}));
-  add_insn(new disasm_insn_t("csrrs", match_csrrs, mask_csrrs, {&xrd, &xrs1, &csr}));
-  add_insn(new disasm_insn_t("csrrc", match_csrrc, mask_csrrc, {&xrd, &xrs1, &csr}));
-  add_insn(new disasm_insn_t("csrrwi", match_csrrwi, mask_csrrwi, {&xrd, &zimm5, &csr}));
-  add_insn(new disasm_insn_t("csrrsi", match_csrrsi, mask_csrrsi, {&xrd, &zimm5, &csr}));
-  add_insn(new disasm_insn_t("csrrci", match_csrrci, mask_csrrci, {&xrd, &zimm5, &csr}));
+  add_insn(new disasm_insn_t("csrw", match_csrrw, mask_csrrw | mask_rd, {&csr, &xrs1}));
+  add_insn(new disasm_insn_t("csrrw", match_csrrw, mask_csrrw, {&xrd, &csr, &xrs1}));
+  add_insn(new disasm_insn_t("csrrs", match_csrrs, mask_csrrs, {&xrd, &csr, &xrs1}));
+  add_insn(new disasm_insn_t("csrrc", match_csrrc, mask_csrrc, {&xrd, &csr, &xrs1}));
+  add_insn(new disasm_insn_t("csrrwi", match_csrrwi, mask_csrrwi, {&xrd, &csr, &zimm5}));
+  add_insn(new disasm_insn_t("csrrsi", match_csrrsi, mask_csrrsi, {&xrd, &csr, &zimm5}));
+  add_insn(new disasm_insn_t("csrrci", match_csrrci, mask_csrrci, {&xrd, &csr, &zimm5}));
   DEFINE_NOARG(sret)
 
   DEFINE_FRTYPE(fadd_s);
