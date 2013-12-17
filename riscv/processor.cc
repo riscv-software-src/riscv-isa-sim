@@ -13,10 +13,11 @@
 #include <assert.h>
 #include <limits.h>
 #include <stdexcept>
+#include <algorithm>
 
 processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
-  : sim(_sim), mmu(_mmu), ext(NULL), id(_id), run(false), debug(false),
-    opcode_bits(0)
+  : sim(_sim), mmu(_mmu), ext(NULL), disassembler(new disassembler_t),
+    id(_id), run(false), debug(false)
 {
   reset(true);
   mmu->set_processor(this);
@@ -24,6 +25,7 @@ processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
   #define DECLARE_INSN(name, match, mask) REGISTER_INSN(this, name, match, mask)
   #include "encoding.h"
   #undef DECLARE_INSN
+  build_opcode_map();
 }
 
 processor_t::~processor_t()
@@ -35,10 +37,7 @@ void state_t::reset()
   // the ISA guarantees on boot that the PC is 0x2000 and the the processor
   // is in supervisor mode, and in 64-bit mode, if supported, with traps
   // and virtual memory disabled.
-  sr = SR_S;
-#ifdef RISCV_ENABLE_64BIT
-  sr |= SR_S64;
-#endif
+  sr = SR_S | SR_S64;
   pc = 0x2000;
 
   // the following state is undefined upon boot-up,
@@ -74,6 +73,8 @@ void processor_t::reset(bool value)
   run = !value;
 
   state.reset(); // reset the core
+  set_pcr(CSR_STATUS, state.sr);
+
   if (ext)
     ext->reset(); // reset the extension
 }
@@ -185,7 +186,7 @@ void processor_t::disasm(insn_t insn)
 {
   // the disassembler is stateless, so we share it
   fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx32 ") %s\n",
-          id, state.pc, insn.bits(), disassembler.disassemble(insn).c_str());
+          id, state.pc, insn.bits(), disassembler->disassemble(insn).c_str());
 }
 
 reg_t processor_t::set_pcr(int which, reg_t val)
@@ -215,6 +216,7 @@ reg_t processor_t::set_pcr(int which, reg_t val)
       if (!ext)
         state.sr &= ~SR_EA;
       state.sr &= ~SR_ZERO;
+      rv64 = (state.sr & SR_S) ? (state.sr & SR_S64) : (state.sr & SR_U64);
       mmu->flush_tlb();
       break;
     case CSR_EPC:
@@ -328,42 +330,64 @@ reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)
 
 insn_func_t processor_t::decode_insn(insn_t insn)
 {
-  bool rv64 = (state.sr & SR_S) ? (state.sr & SR_S64) : (state.sr & SR_U64);
+  size_t mask = opcode_map.size()-1;
+  insn_desc_t* desc = opcode_map[insn.bits() & mask]; 
 
-  auto key = insn.bits() & ((1L << opcode_bits)-1);
-  for (auto it = opcode_map.find(key); it != opcode_map.end() && it->first == key; ++it)
-    if ((insn.bits() & it->second.mask) == it->second.match)
-      return rv64 ? it->second.rv64 : it->second.rv32;
+  while ((insn.bits() & desc->mask) != desc->match)
+    desc++;
 
-  return &illegal_instruction;
+  return rv64 ? desc->rv64 : desc->rv32;
 }
 
 void processor_t::register_insn(insn_desc_t desc)
 {
   assert(desc.mask & 1);
-  if (opcode_bits == 0 || (desc.mask & ((1L << opcode_bits)-1)) != ((1L << opcode_bits)-1))
-  {
-    unsigned x = 0;
-    while ((desc.mask & ((1L << (x+1))-1)) == ((1L << (x+1))-1) &&
-           (opcode_bits == 0 || x <= opcode_bits))
-      x++;
-    opcode_bits = x;
+  instructions.push_back(desc);
+}
 
-    decltype(opcode_map) new_map;
-    for (auto it = opcode_map.begin(); it != opcode_map.end(); ++it)
-      new_map.insert(std::make_pair(it->second.match & ((1L<<x)-1), it->second));
-    opcode_map = new_map;
+void processor_t::build_opcode_map()
+{
+  size_t buckets = -1;
+  for (auto& inst : instructions)
+    while ((inst.mask & buckets) != buckets)
+      buckets /= 2;
+  buckets++;
+
+  struct cmp {
+    decltype(insn_desc_t::match) mask;
+    cmp(decltype(mask) mask) : mask(mask) {}
+    bool operator()(const insn_desc_t& lhs, const insn_desc_t& rhs) {
+      if ((lhs.match & mask) != (rhs.match & mask))
+        return (lhs.match & mask) < (rhs.match & mask);
+      return lhs.match < rhs.match;
+    }
+  };
+  std::sort(instructions.begin(), instructions.end(), cmp(buckets-1));
+
+  opcode_map.resize(buckets);
+  opcode_store.resize(instructions.size() + 1);
+
+  size_t j = 0;
+  for (size_t b = 0, i = 0; b < buckets; b++)
+  {
+    opcode_map[b] = &opcode_store[j];
+    while (i < instructions.size() && b == (instructions[i].match & (buckets-1)))
+      opcode_store[j++] = instructions[i++];
   }
 
-  opcode_map.insert(std::make_pair(desc.match & ((1L<<opcode_bits)-1), desc));
+  assert(j == opcode_store.size()-1);
+  opcode_store[j].match = opcode_store[j].mask = 0;
+  opcode_store[j].rv32 = &illegal_instruction;
+  opcode_store[j].rv64 = &illegal_instruction;
 }
 
 void processor_t::register_extension(extension_t* x)
 {
   for (auto insn : x->get_instructions())
     register_insn(insn);
+  build_opcode_map();
   for (auto disasm_insn : x->get_disasms())
-    disassembler.add_insn(disasm_insn);
+    disassembler->add_insn(disasm_insn);
   if (ext != NULL)
     throw std::logic_error("only one extension may be registered");
   ext = x;

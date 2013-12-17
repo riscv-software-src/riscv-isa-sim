@@ -25,7 +25,7 @@
 #define INSN_RS2 (insn.rs2())
 #define INSN_RS3 (insn.rs3())
 #define INSN_RD (insn.rd())
-#define INSN_SEG ((insn.i_imm() >> 9)+1)
+#define INSN_SEG (((reg_t)insn.i_imm() >> 9)+1)
 
 static inline reg_t read_xpr(hwacha_t* h, insn_t insn, uint32_t idx, size_t src)
 {

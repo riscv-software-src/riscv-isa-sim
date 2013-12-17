@@ -3,10 +3,10 @@
 #define _RISCV_PROCESSOR_H
 
 #include "decode.h"
-#include "disasm.h"
-#include <cstring>
 #include "config.h"
-#include <map>
+#include <cstring>
+#include <memory>
+#include <vector>
 
 class processor_t;
 class mmu_t;
@@ -14,6 +14,7 @@ typedef reg_t (*insn_func_t)(processor_t*, insn_t, reg_t);
 class sim_t;
 class trap_t;
 class extension_t;
+class disassembler_t;
 
 struct insn_desc_t
 {
@@ -78,14 +79,16 @@ private:
   sim_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
   extension_t* ext;
-  disassembler_t disassembler;
+  std::unique_ptr<disassembler_t> disassembler;
   state_t state;
   uint32_t id;
   bool run; // !reset
   bool debug;
+  bool rv64;
 
-  unsigned opcode_bits;
-  std::multimap<uint32_t, insn_desc_t> opcode_map;
+  std::vector<insn_desc_t> instructions;
+  std::vector<insn_desc_t*> opcode_map;
+  std::vector<insn_desc_t> opcode_store;
 
   void take_interrupt(); // take a trap if any interrupts are pending
   void take_trap(reg_t pc, trap_t& t); // take an exception
@@ -96,6 +99,7 @@ private:
   friend class extension_t;
   friend class htif_isasim_t;
 
+  void build_opcode_map();
   insn_func_t decode_insn(insn_t insn);
 };
 
