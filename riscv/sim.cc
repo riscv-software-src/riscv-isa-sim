@@ -34,7 +34,7 @@ sim_t::sim_t(size_t nprocs, size_t mem_mb, const std::vector<std::string>& args)
   while ((mem = (char*)calloc(1, memsz)) == NULL)
     memsz = memsz*10/11/quantum*quantum;
 
-  if (memsz != memsz)
+  if (memsz != memsz0)
     fprintf(stderr, "warning: only got %lu bytes of target mem (wanted %lu)\n",
             (unsigned long)memsz, (unsigned long)memsz0);
 

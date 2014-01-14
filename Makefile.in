@@ -192,7 +192,7 @@ $$($(2)_objs) : %.o : %.cc $$($(2)_gen_hdrs)
 $$($(2)_c_objs) : %.o : %.c $$($(2)_gen_hdrs)
 	$(COMPILE_C) -c $$<
 
-$(2)_junk += $$($(2)_objs) $$($(2)_c_objs) $$($(2)_deps) $$($(2)_c_deps)
+$(2)_junk += $$($(2)_objs) $$($(2)_c_objs) $$($(2)_deps) $$($(2)_c_deps) $$($(2)_gen_hdrs)
 
 # Build a library for this subproject
 

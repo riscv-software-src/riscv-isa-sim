@@ -24,6 +24,7 @@ public:
   void stop();
   void set_debug(bool value);
   void set_procs_debug(bool value);
+  htif_isasim_t* get_htif() { return htif.get(); }
 
   // deliver an IPI to a specific processor
   void send_ipi(reg_t who);
@@ -36,7 +37,7 @@ public:
   reg_t get_scr(int which);
 
 private:
-  std::auto_ptr<htif_isasim_t> htif;
+  std::unique_ptr<htif_isasim_t> htif;
   char* mem; // main memory
   size_t memsz; // memory size in bytes
   mmu_t* debug_mmu;  // debug port into main memory

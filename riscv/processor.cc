@@ -5,7 +5,9 @@
 #include "common.h"
 #include "config.h"
 #include "sim.h"
+#include "htif.h"
 #include "disasm.h"
+#include "icache.h"
 #include <cinttypes>
 #include <cmath>
 #include <cstdlib>
@@ -95,9 +97,10 @@ void processor_t::step(size_t n)
   if(!run)
     return;
 
-  size_t i = 0;
-  reg_t npc = state.pc;
   mmu_t* _mmu = mmu;
+  auto count32 = decltype(state.compare)(state.count);
+  bool count_le_compare = count32 <= state.compare;
+  n = std::min(n, size_t(state.compare - count32) | 1);
 
   try
   {
@@ -106,9 +109,9 @@ void processor_t::step(size_t n)
     // execute_insn fetches and executes one instruction
     #define execute_insn(noisy) \
       do { \
-        mmu_t::insn_fetch_t fetch = _mmu->load_insn(npc); \
+        insn_fetch_t fetch = mmu->load_insn(state.pc); \
         if(noisy) disasm(fetch.insn.insn); \
-        npc = fetch.func(this, fetch.insn.insn, npc); \
+        state.pc = fetch.func(this, fetch.insn.insn, state.pc); \
       } while(0)
 
     
@@ -118,50 +121,65 @@ void processor_t::step(size_t n)
     #undef execute_insn 
     #define execute_insn(noisy) \
       do { \
-        mmu_t::insn_fetch_t fetch = _mmu->load_insn(npc); \
+        insn_fetch_t fetch = _mmu->load_insn(state.pc); \
         if(noisy) disasm(fetch.insn.insn); \
         bool in_spvr = state.sr & SR_S; \
-        if (!in_spvr) fprintf(stderr, "\n0x%016" PRIx64 " (0x%08" PRIx32 ") ", npc, fetch.insn.insn.bits()); \
-        /*if (!in_spvr) fprintf(stderr, "\n0x%016" PRIx64 " (0x%08" PRIx32 ") %s  ", npc, fetch.insn.insn.bits(), disasmblr.disassemble(fetch.insn.insn).c_str());*/ \
-        npc = fetch.func(this, fetch.insn.insn, npc); \
+        if (!in_spvr) fprintf(stderr, "\n0x%016" PRIx64 " (0x%08" PRIx32 ") ", state.pc, fetch.insn.insn.bits()); \
+        /*if (!in_spvr) fprintf(stderr, "\n0x%016" PRIx64 " (0x%08" PRIx32 ") %s  ", state.pc, fetch.insn.insn.bits(), disasmblr.disassemble(fetch.insn.insn).c_str());*/ \
+        state.pc = fetch.func(this, fetch.insn.insn, state.pc); \
       } while(0)
 #endif
 
-    if(debug) for( ; i < n; i++) // print out instructions as we go
-      execute_insn(true);
-    else 
+    if (debug) // print out instructions as we go
     {
-      // unrolled for speed
-      for( ; n > 3 && i < n-3; i+=4)
-      {
-        execute_insn(false);
-        execute_insn(false);
-        execute_insn(false);
-        execute_insn(false);
-      }
-      for( ; i < n; i++)
-        execute_insn(false);
+      for (size_t i = 0; i < n; state.count++, i++)
+        execute_insn(true);
     }
+    else while (n > 0)
+    {
+      size_t idx = (state.pc / sizeof(insn_t)) % ICACHE_SIZE;
+      auto ic_entry_init = &_mmu->icache[idx], ic_entry = ic_entry_init;
 
-    state.pc = npc;
+      #define update_count() { \
+        size_t i = ic_entry - ic_entry_init; \
+        state.count += i; \
+        if (i >= n) break; \
+        n -= i; }
+
+      #define ICACHE_ACCESS(idx) { \
+        insn_t insn = ic_entry->data.insn.insn; \
+        insn_func_t func = ic_entry->data.func; \
+        if (unlikely(ic_entry->tag != state.pc)) break; \
+        ic_entry++; \
+        state.pc = func(this, insn, state.pc); }
+
+      switch (idx) while (true)
+      {
+        ICACHE_SWITCH;
+        update_count();
+        ic_entry_init = ic_entry = &_mmu->icache[0];
+      }
+
+      _mmu->access_icache(state.pc);
+      update_count();
+    }
   }
   catch(trap_t& t)
   {
-    take_trap(npc, t);
+    take_trap(t);
   }
 
-  // update timer and possibly register a timer interrupt
-  uint32_t old_count = state.count;
-  state.count += i;
-  if(old_count < state.compare && uint64_t(old_count) + i >= state.compare)
+  bool count_ge_compare =
+    uint64_t(n) + decltype(state.compare)(state.count) >= state.compare;
+  if (count_le_compare && count_ge_compare)
     set_interrupt(IRQ_TIMER, true);
 }
 
-void processor_t::take_trap(reg_t pc, trap_t& t)
+void processor_t::take_trap(trap_t& t)
 {
   if (debug)
     fprintf(stderr, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
-            id, t.name(), pc);
+            id, t.name(), state.pc);
 
   // switch to supervisor, set previous supervisor bit, disable interrupts
   set_pcr(CSR_STATUS, (((state.sr & ~SR_EI) | SR_S) & ~SR_PS & ~SR_PEI) |
@@ -170,7 +188,7 @@ void processor_t::take_trap(reg_t pc, trap_t& t)
 
   yield_load_reservation();
   state.cause = t.cause();
-  state.epc = pc;
+  state.epc = state.pc;
   state.pc = state.evec;
 
   t.side_effects(&state); // might set badvaddr etc.
@@ -255,12 +273,17 @@ reg_t processor_t::set_pcr(int which, reg_t val)
         state.tohost = val;
       break;
     case CSR_FROMHOST:
-      set_interrupt(IRQ_HOST, val != 0);
-      state.fromhost = val;
+      set_fromhost(val);
       break;
   }
 
   return old_pcr;
+}
+
+void processor_t::set_fromhost(reg_t val)
+{
+  set_interrupt(IRQ_HOST, val != 0);
+  state.fromhost = val;
 }
 
 reg_t processor_t::get_pcr(int which)
@@ -306,8 +329,10 @@ reg_t processor_t::get_pcr(int which)
     case CSR_SUP1:
       return state.pcr_k1;
     case CSR_TOHOST:
+      sim->get_htif()->tick(); // not necessary, but faster
       return state.tohost;
     case CSR_FROMHOST:
+      sim->get_htif()->tick(); // not necessary, but faster
       return state.fromhost;
     default:
       return -1;

@@ -91,14 +91,14 @@ void htif_isasim_t::tick_once()
           old_val = coreid;
           break;
         case CSR_TOHOST & 0x1f:
-          old_val = proc->state.tohost;
+          old_val = proc->get_state()->tohost;
           if (write)
-            proc->state.tohost = new_val;
+            proc->get_state()->tohost = new_val;
           break;
         case CSR_FROMHOST & 0x1f:
-          old_val = proc->state.fromhost;
+          old_val = proc->get_state()->fromhost;
           if (write && old_val == 0)
-            proc->state.fromhost = new_val;
+            proc->set_fromhost(new_val);
           break;
         case CSR_RESET & 0x1f:
           old_val = !proc->running();

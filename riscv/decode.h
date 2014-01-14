@@ -80,8 +80,9 @@ public:
   }
   void write(size_t i, T value)
   {
-    if (!(zero_reg && i == 0))
-      data[i] = value;
+    data[i] = value;
+    if (zero_reg)
+      data[0] = 0;
   }
   const T& operator [] (size_t i) const
   {
@@ -164,12 +165,14 @@ private:
 #define set_pc(x) \
   do { if ((x) & 3 /* For now... */) \
          throw trap_instruction_address_misaligned(); \
-       npc = (x); \
+       npc = sext_xprlen(x); \
      } while(0)
 
 #define validate_csr(which, write) ({ \
   int write_priv = ((which) >> 10) & 3; \
   int read_priv = ((which) >> 8) & 3; \
+  if ((which) == CSR_FCSR || (which) == CSR_FFLAGS || (which) == CSR_FRM) \
+    require_fp; \
   if (read_priv > 0 || (write_priv > 0 && (write))) require_supervisor; \
   (which); })
 

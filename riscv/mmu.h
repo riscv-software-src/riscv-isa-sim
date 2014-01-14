@@ -4,6 +4,7 @@
 #define _RISCV_MMU_H
 
 #include "decode.h"
+#include "icache.h"
 #include "trap.h"
 #include "common.h"
 #include "config.h"
@@ -21,6 +22,21 @@ const reg_t VPN_BITS = PTIDXBITS * LEVELS;
 const reg_t PPN_BITS = 8*sizeof(reg_t) - PGSHIFT;
 const reg_t VA_BITS = VPN_BITS + PGSHIFT;
 
+struct insn_fetch_t
+{
+  insn_func_t func;
+  union {
+    insn_t insn;
+    uint_fast32_t pad;
+  } insn;
+};
+
+struct icache_entry_t {
+  reg_t tag;
+  reg_t pad;
+  insn_fetch_t data;
+};
+
 // this class implements a processor's port into the virtual memory system.
 // an MMU and instruction cache are maintained for simulator performance.
 class mmu_t
@@ -32,8 +48,6 @@ public:
   // template for functions that load an aligned value from memory
   #define load_func(type) \
     type##_t load_##type(reg_t addr) __attribute__((always_inline)) { \
-      if(unlikely(addr % sizeof(type##_t))) \
-        throw trap_load_address_misaligned(addr); \
       void* paddr = translate(addr, sizeof(type##_t), false, false); \
       return *(type##_t*)paddr; \
     }
@@ -53,8 +67,6 @@ public:
   // template for functions that store an aligned value to memory
   #define store_func(type) \
     void store_##type(reg_t addr, type##_t val) { \
-      if(unlikely(addr % sizeof(type##_t))) \
-        throw trap_store_address_misaligned(addr); \
       void* paddr = translate(addr, sizeof(type##_t), true, false); \
       *(type##_t*)paddr = val; \
     }
@@ -65,40 +77,34 @@ public:
   store_func(uint32)
   store_func(uint64)
 
-  struct insn_fetch_t
-  {
-    insn_func_t func;
-    union {
-      insn_t insn;
-      uint_fast32_t pad;
-    } insn;
-  };
-
   // load instruction from memory at aligned address.
-  inline insn_fetch_t load_insn(reg_t addr)
+  inline icache_entry_t access_icache(reg_t addr)
   {
-    reg_t offset = addr & (sizeof(insn_t) * (ICACHE_ENTRIES-1));
-    offset *= sizeof(icache_entry_t) / sizeof(insn_t);
-    icache_entry_t* entry = (icache_entry_t*)((char*)icache + offset);
-    insn_fetch_t data = entry->data;
-    if (likely(entry->tag == addr))
-      return data;
+    reg_t idx = (addr / sizeof(insn_t)) % ICACHE_SIZE;
+    icache_entry_t entry = icache[idx];
+    if (likely(entry.tag == addr))
+      return entry;
 
     void* iaddr = translate(addr, sizeof(insn_t), false, true);
     insn_fetch_t fetch;
     fetch.insn.pad = *(decltype(fetch.insn.insn.bits())*)iaddr;
     fetch.func = proc->decode_insn(fetch.insn.insn);
 
-    entry->tag = addr;
-    entry->data = fetch;
+    icache[idx].tag = addr;
+    icache[idx].data = fetch;
 
     reg_t paddr = (char*)iaddr - mem;
     if (!tracer.empty() && tracer.interested_in_range(paddr, paddr + sizeof(insn_t), false, true))
     {
-      entry->tag = -1;
+      icache[idx].tag = -1;
       tracer.trace(paddr, sizeof(insn_t), false, true);
     }
-    return entry->data;
+    return icache[idx];
+  }
+
+  inline insn_fetch_t load_insn(reg_t addr)
+  {
+    return access_icache(addr).data;
   }
 
   void set_processor(processor_t* p) { proc = p; flush_tlb(); }
@@ -115,13 +121,7 @@ private:
   memtracer_list_t tracer;
 
   // implement an instruction cache for simulator performance
-  static const reg_t ICACHE_ENTRIES = 2048;
-  struct icache_entry_t {
-    reg_t tag;
-    reg_t pad;
-    insn_fetch_t data;
-  };
-  icache_entry_t icache[ICACHE_ENTRIES];
+  icache_entry_t icache[ICACHE_SIZE];
 
   // implement a TLB for simulator performance
   static const reg_t TLB_ENTRIES = 256;
@@ -141,11 +141,15 @@ private:
     __attribute__((always_inline))
   {
     reg_t idx = (addr >> PGSHIFT) % TLB_ENTRIES;
-    reg_t expected_tag = addr & ~(PGSIZE-1);
-
-    reg_t* tlb_tag = fetch ? tlb_insn_tag : store ? tlb_store_tag :tlb_load_tag;
+    reg_t expected_tag = addr >> PGSHIFT;
+    reg_t* tags = fetch ? tlb_insn_tag : store ? tlb_store_tag :tlb_load_tag;
+    reg_t tag = tags[idx];
     void* data = tlb_data[idx] + addr;
-    if (likely(tlb_tag[idx] == expected_tag))
+
+    if (unlikely(addr & (bytes-1)))
+      store ? throw trap_store_address_misaligned(addr) : throw trap_load_address_misaligned(addr);
+
+    if (likely(tag == expected_tag))
       return data;
 
     return refill_tlb(addr, bytes, store, fetch);

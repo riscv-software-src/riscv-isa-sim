@@ -16,7 +16,7 @@ mmu_t::~mmu_t()
 
 void mmu_t::flush_icache()
 {
-  for (size_t i = 0; i < ICACHE_ENTRIES; i++)
+  for (size_t i = 0; i < ICACHE_SIZE; i++)
     icache[i].tag = -1;
 }
 
@@ -32,7 +32,7 @@ void mmu_t::flush_tlb()
 void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
 {
   reg_t idx = (addr >> PGSHIFT) % TLB_ENTRIES;
-  reg_t expected_tag = addr & ~(PGSIZE-1);
+  reg_t expected_tag = addr >> PGSHIFT;
 
   reg_t pte = walk(addr);
 

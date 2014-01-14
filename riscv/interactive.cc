@@ -45,7 +45,7 @@ static std::string readline(int fd)
 
 void sim_t::interactive()
 {
-  while (true)
+  while (!htif->done())
   {
     std::cerr << ": " << std::flush;
     std::string s = readline(2);
@@ -103,7 +103,7 @@ void sim_t::interactive_run(const std::string& cmd, const std::vector<std::strin
   size_t steps = args.size() ? atoll(args[0].c_str()) : -1;
   ctrlc_pressed = false;
   set_procs_debug(noisy);
-  for (size_t i = 0; i < steps && !ctrlc_pressed; i++)
+  for (size_t i = 0; i < steps && !ctrlc_pressed && !htif->done(); i++)
     step(1);
 }
 
