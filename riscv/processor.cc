@@ -47,12 +47,15 @@ void state_t::reset()
   XPR.reset();
   FPR.reset();
 
-  evec = 0;
   epc = 0;
   badvaddr = 0;
-  cause = 0;
+  evec = 0;
+  ptbr = 0;
   pcr_k0 = 0;
   pcr_k1 = 0;
+  cause = 0;
+  tohost = 0;
+  fromhost = 0;
   count = 0;
   compare = 0;
   fflags = 0;
