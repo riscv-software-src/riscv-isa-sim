@@ -42,18 +42,17 @@ class mem_trap_t : public trap_t
   const char* name() { return "trap_"#x; } \
 };
 
-DECLARE_TRAP(0, instruction_address_misaligned)
-DECLARE_TRAP(1, instruction_access_fault)
-DECLARE_TRAP(2, illegal_instruction)
-DECLARE_TRAP(3, privileged_instruction)
-DECLARE_TRAP(4, fp_disabled)
-DECLARE_TRAP(5, reserved0)
-DECLARE_TRAP(6, syscall)
-DECLARE_TRAP(7, breakpoint)
-DECLARE_MEM_TRAP(8, load_address_misaligned)
-DECLARE_MEM_TRAP(9, store_address_misaligned)
-DECLARE_MEM_TRAP(10, load_access_fault)
-DECLARE_MEM_TRAP(11, store_access_fault)
-DECLARE_TRAP(12, accelerator_disabled)
+DECLARE_TRAP(CAUSE_MISALIGNED_FETCH, instruction_address_misaligned)
+DECLARE_TRAP(CAUSE_FAULT_FETCH, instruction_access_fault)
+DECLARE_TRAP(CAUSE_ILLEGAL_INSTRUCTION, illegal_instruction)
+DECLARE_TRAP(CAUSE_PRIVILEGED_INSTRUCTION, privileged_instruction)
+DECLARE_TRAP(CAUSE_FP_DISABLED, fp_disabled)
+DECLARE_TRAP(CAUSE_SYSCALL, syscall)
+DECLARE_TRAP(CAUSE_BREAKPOINT, breakpoint)
+DECLARE_MEM_TRAP(CAUSE_MISALIGNED_LOAD, load_address_misaligned)
+DECLARE_MEM_TRAP(CAUSE_MISALIGNED_STORE, store_address_misaligned)
+DECLARE_MEM_TRAP(CAUSE_FAULT_LOAD, load_access_fault)
+DECLARE_MEM_TRAP(CAUSE_FAULT_STORE, store_access_fault)
+DECLARE_TRAP(CAUSE_ACCELERATOR_DISABLED, accelerator_disabled)
 
 #endif
