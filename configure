@@ -4006,7 +4006,7 @@ fi
 
 CFLAGS="-Wall -O2 -Wno-unused"
 
-CXXFLAGS="-Wall -O2 -std=c++0x"
+CXXFLAGS="-Wall -O2 -std=c++11"
 
 
 #-------------------------------------------------------------------------
@@ -4087,7 +4087,7 @@ if ${ac_cv_lib_pthread_pthread_create+:} false; then :
   $as_echo_n "(cached) " >&6
 else
   ac_check_lib_save_LIBS=$LIBS
-LIBS="-lpthread  $LIBS"
+LIBS="-lfesvr -pthread $LIBS"
 cat confdefs.h - <<_ACEOF >conftest.$ac_ext
 /* end confdefs.h.  */
 

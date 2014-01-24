@@ -36,6 +36,7 @@ m4_define( proj_version, [?])
 # Setup
 #-------------------------------------------------------------------------
 
+AC_LANG_CPLUSPLUS
 AC_INIT(proj_name,proj_version,proj_maintainer,proj_abbreviation)
 AC_CONFIG_SRCDIR([riscv/common.h])
 AC_CONFIG_AUX_DIR([scripts])
@@ -72,7 +73,7 @@ AC_HEADER_STDC
 #-------------------------------------------------------------------------
 
 AC_SUBST([CFLAGS],  ["-Wall -O2 -Wno-unused"])
-AC_SUBST([CXXFLAGS],["-Wall -O2 -std=c++0x"])
+AC_SUBST([CXXFLAGS],["-Wall -O2 -std=c++11"])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject list
