@@ -61,7 +61,7 @@ else
 endif
 
 install_hdrs_dir := $(DESTDIR)/include/$(project_name)
-install_libs_dir := $(DESTDIR)/lib/$(project_name)
+install_libs_dir := $(DESTDIR)/lib
 install_exes_dir := $(DESTDIR)/bin
 
 #-------------------------------------------------------------------------
@@ -84,21 +84,22 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 
 CC            := @CC@
 CXX           := @CXX@
-CFLAGS        += @CFLAGS@
+CFLAGS        += @CFLAGS@ -DPREFIX=\"$(prefix)\"
 CPPFLAGS      += @CPPFLAGS@
-CXXFLAGS      += @CXXFLAGS@
-COMPILE       := $(CXX) -MMD -MP $(CPPFLAGS) $(CFLAGS) $(CXXFLAGS) \
+CXXFLAGS      += @CXXFLAGS@ -DPREFIX=\"$(prefix)\"
+COMPILE       := $(CXX) -fPIC -MMD -MP $(CPPFLAGS) $(CFLAGS) $(CXXFLAGS) \
                  $(sprojs_include)
-COMPILE_C     := $(CC)  -MMD -MP $(CPPFLAGS) $(CFLAGS) \
+COMPILE_C     := $(CC) -fPIC -MMD -MP $(CPPFLAGS) $(CFLAGS) \
                  $(sprojs_include)
 # Linker
 #  - LDFLAGS : Flags for the linker (eg. -L)
 #  - LIBS    : Library flags (eg. -l)
 
+comma := ,
 LD            := $(CXX)
 LDFLAGS       := @LDFLAGS@
 LIBS          := @LIBS@
-LINK          := $(LD) $(LDFLAGS) 
+LINK          := $(LD) $(LDFLAGS) -Wl,-rpath,$(install_libs_dir) $(patsubst -L%,-Wl$(comma)-rpath$(comma)%,$(filter -L%,$(LDFLAGS)))
 
 # Library creation
 
@@ -196,11 +197,10 @@ $(2)_junk += $$($(2)_objs) $$($(2)_c_objs) $$($(2)_deps) $$($(2)_c_deps) $$($(2)
 
 # Build a library for this subproject
 
-lib$(1).a : $$($(2)_objs) $$($(2)_c_objs)
-	$(AR) rcv $$@ $$^
-	$(RANLIB) $$@
+lib$(1).so : $$($(2)_objs) $$($(2)_c_objs)
+	$(CXX) -shared -o $$@ $$^
 
-$(2)_junk += lib$(1).a
+$(2)_junk += lib$(1).so
 
 # Reverse the dependency list so that a given subproject only depends on
 # subprojects listed to its right. This is the correct order for linking
@@ -215,7 +215,7 @@ $(2)_test_deps      := $$(patsubst %.o, %.d, $$($(2)_test_objs))
 $(2)_test_exes      := $$(patsubst %.t.cc, %-utst, $$($(2)_test_srcs))
 $(2)_test_outs      := $$(patsubst %, %.out, $$($(2)_test_exes))
 $(2)_test_libs      := $(1) $$($(2)_reverse_deps) utst
-$(2)_test_libnames  := $$(patsubst %, lib%.a, $$($(2)_test_libs))
+$(2)_test_libnames  := $$(patsubst %, lib%.so, $$($(2)_test_libs))
 $(2)_test_libarg    := -L. $$(patsubst %, -l%, $$($(2)_test_libs))
 
 $$($(2)_test_objs) : %.o : %.cc
@@ -242,7 +242,7 @@ $(2)_prog_objs      := $$(patsubst %.cc, %.o, $$($(2)_prog_srcs))
 $(2)_prog_deps      := $$(patsubst %.o, %.d, $$($(2)_prog_objs))
 $(2)_prog_exes      := $$(patsubst %.cc, %, $$($(2)_prog_srcs))
 $(2)_prog_libs      := $(1) $$($(2)_reverse_deps)
-$(2)_prog_libnames  := $$(patsubst %, lib%.a, $$($(2)_prog_libs))
+$(2)_prog_libnames  := $$(patsubst %, lib%.so, $$($(2)_prog_libs))
 $(2)_prog_libarg    := -L. $$(patsubst %, -l%, $$($(2)_prog_libs))
 
 $$($(2)_prog_objs) : %.o : %.cc
@@ -273,7 +273,7 @@ $(2)_junk += \
 
 # Subproject specific targets
 
-all-$(1) : lib$(1).a $$($(2)_install_prog_exes)
+all-$(1) : lib$(1).so $$($(2)_install_prog_exes)
 
 check-$(1) : $$($(2)_test_outs)
 	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segementation' $$^; echo
@@ -285,7 +285,7 @@ clean-$(1) :
 
 # Update running variables
 
-libs += lib$(1).a
+libs += lib$(1).so
 objs += $$($(2)_objs)
 srcs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_srcs)) 
 hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs)) $$($(2)_gen_hdrs)
@@ -295,7 +295,7 @@ deps += $$($(2)_deps)
 test_outs += $$($(2)_test_outs)
 
 install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs)) $$($(2)_gen_hdrs)
-install_libs += lib$(1).a
+install_libs += lib$(1).so
 install_exes += $$($(2)_install_prog_exes)
 
 endef

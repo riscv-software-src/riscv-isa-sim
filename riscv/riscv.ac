@@ -7,9 +7,9 @@ AC_ARG_WITH([fesvr],
   ]
 )
 
-AC_CHECK_LIB(fesvr, libfesvr_is_present, [], [AC_MSG_ERROR([libfesvr is required])])
-
 AC_CHECK_LIB(pthread, pthread_create, [], [AC_MSG_ERROR([libpthread is required])])
+
+AC_CHECK_LIB(fesvr, libfesvr_is_present, [], [AC_MSG_ERROR([libfesvr is required])])
 
 AC_ARG_ENABLE([fpu], AS_HELP_STRING([--disable-fpu], [Disable floating-point]))
 AS_IF([test "x$enable_fpu" != "xno"], [
