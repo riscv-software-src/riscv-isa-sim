@@ -169,11 +169,12 @@ private:
      } while(0)
 
 #define validate_csr(which, write) ({ \
-  int write_priv = ((which) >> 10) & 3; \
-  int read_priv = ((which) >> 8) & 3; \
-  if ((which) == CSR_FCSR || (which) == CSR_FFLAGS || (which) == CSR_FRM) \
-    require_fp; \
-  if (read_priv > 0 || (write_priv > 0 && (write))) require_supervisor; \
+  unsigned my_priv = (p->get_state()->sr & SR_S) ? 1 : 0; \
+  unsigned read_priv = ((which) >> 10) & 3; \
+  unsigned write_priv = (((which) >> 8) & 3); \
+  if (read_priv == 3) read_priv = write_priv, write_priv = -1; \
+  if (my_priv < ((write) ? write_priv : read_priv)) \
+    throw trap_privileged_instruction(); \
   (which); })
 
 #endif

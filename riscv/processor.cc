@@ -318,6 +318,9 @@ reg_t processor_t::get_pcr(int which)
       return state.cause;
     case CSR_PTBR:
       return state.ptbr;
+    case CSR_SEND_IPI:
+    case CSR_CLEAR_IPI:
+      return 0;
     case CSR_ASID:
       return 0;
     case CSR_FATC:
@@ -338,7 +341,7 @@ reg_t processor_t::get_pcr(int which)
       sim->get_htif()->tick(); // not necessary, but faster
       return state.fromhost;
     default:
-      return -1;
+      throw trap_illegal_instruction();
   }
 }
 
