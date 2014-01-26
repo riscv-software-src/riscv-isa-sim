@@ -82,7 +82,7 @@ AC_SUBST([CXXFLAGS],["-Wall -O2 -std=c++11"])
 # The '*' suffix indicates an optional subproject. The '**' suffix
 # indicates an optional subproject which is also the name of a group.
 
-MCPPBS_SUBPROJECTS([ riscv, hwacha, softfloat, softfloat_riscv ])
+MCPPBS_SUBPROJECTS([ riscv, hwacha, softfloat ])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject groups
