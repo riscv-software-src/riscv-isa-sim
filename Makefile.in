@@ -99,7 +99,7 @@ comma := ,
 LD            := $(CXX)
 LDFLAGS       := @LDFLAGS@
 LIBS          := @LIBS@
-LINK          := $(LD) $(LDFLAGS) -Wl,-rpath,$(install_libs_dir) $(patsubst -L%,-Wl$(comma)-rpath$(comma)%,$(filter -L%,$(LDFLAGS)))
+LINK          := $(LD) -L. $(LDFLAGS) -Wl,-rpath,$(install_libs_dir) $(patsubst -L%,-Wl$(comma)-rpath$(comma)%,$(filter -L%,$(LDFLAGS)))
 
 # Library creation
 
@@ -205,7 +205,7 @@ $(2)_reverse_deps   := $$(call reverse_list,$$($(2)_subproject_deps))
 
 $(2)_lib_libs       := $$($(2)_reverse_deps)
 $(2)_lib_libnames   := $$(patsubst %, lib%.so, $$($(2)_lib_libs))
-$(2)_lib_libarg     := -L. $$(patsubst %, -l%, $$($(2)_lib_libs))
+$(2)_lib_libarg     := $$(patsubst %, -l%, $$($(2)_lib_libs))
 
 lib$(1).so : $$($(2)_objs) $$($(2)_c_objs) $$($(2)_lib_libnames)
 	$(LINK) -shared -o $$@ $(if $(filter Darwin,$(shell uname -s)),-install_name $(install_libs_dir)/$$@) $$^ $$($(2)_lib_libarg) $(LIBS)
@@ -220,7 +220,7 @@ $(2)_test_exes      := $$(patsubst %.t.cc, %-utst, $$($(2)_test_srcs))
 $(2)_test_outs      := $$(patsubst %, %.out, $$($(2)_test_exes))
 $(2)_test_libs      := $(1) $$($(2)_reverse_deps) utst
 $(2)_test_libnames  := $$(patsubst %, lib%.so, $$($(2)_test_libs))
-$(2)_test_libarg    := -L. $$(patsubst %, -l%, $$($(2)_test_libs))
+$(2)_test_libarg    := $$(patsubst %, -l%, $$($(2)_test_libs))
 
 $$($(2)_test_objs) : %.o : %.cc
 	$(COMPILE) -c $$<
@@ -247,7 +247,7 @@ $(2)_prog_deps      := $$(patsubst %.o, %.d, $$($(2)_prog_objs))
 $(2)_prog_exes      := $$(patsubst %.cc, %, $$($(2)_prog_srcs))
 $(2)_prog_libs      := $(1) $$($(2)_reverse_deps)
 $(2)_prog_libnames  := $$(patsubst %, lib%.so, $$($(2)_prog_libs))
-$(2)_prog_libarg    := -L. $$(patsubst %, -l%, $$($(2)_prog_libs))
+$(2)_prog_libarg    := $$(patsubst %, -l%, $$($(2)_prog_libs))
 
 $$($(2)_prog_objs) : %.o : %.cc
 	$(COMPILE) -c $$<
