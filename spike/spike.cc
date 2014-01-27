@@ -4,6 +4,7 @@
 #include "htif.h"
 #include "cachesim.h"
 #include "extension.h"
+#include <dlfcn.h>
 #include <fesvr/option_parser.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -24,6 +25,7 @@ static void help()
   fprintf(stderr, "  --dc=<S>:<W>:<B>     W ways, and B-byte blocks (with S and\n");
   fprintf(stderr, "  --l2=<S>:<W>:<B>     B both powers of 2).\n");
   fprintf(stderr, "  --extension=<name> Specify RoCC Extension\n");
+  fprintf(stderr, "  --extlib=<name>    Shared library to load\n");
   exit(1);
 }
 
@@ -50,6 +52,13 @@ int main(int argc, char** argv)
     if (!extensions().count(s))
       fprintf(stderr, "unknown extension %s!\n", s), exit(-1);
     extension = extensions()[s];
+  });
+  parser.option(0, "extlib", 1, [&](const char *s){
+    void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
+    if (lib == NULL) {
+      fprintf(stderr, "Unable to load extlib '%s': %s\n", s, dlerror());
+      exit(-1);
+    }
   });
 
   auto argv1 = parser.parse(argv);

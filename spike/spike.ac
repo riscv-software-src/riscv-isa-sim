@@ -1,0 +1,1 @@
+AC_CHECK_LIB(dl, dlopen, [], [AC_MSG_ERROR([libdl is required])])
