@@ -195,18 +195,22 @@ $$($(2)_c_objs) : %.o : %.c $$($(2)_gen_hdrs)
 
 $(2)_junk += $$($(2)_objs) $$($(2)_c_objs) $$($(2)_deps) $$($(2)_c_deps) $$($(2)_gen_hdrs)
 
-# Build a library for this subproject
-
-lib$(1).so : $$($(2)_objs) $$($(2)_c_objs)
-	$(CXX) -shared -o $$@ $$^
-
-$(2)_junk += lib$(1).so
-
 # Reverse the dependency list so that a given subproject only depends on
 # subprojects listed to its right. This is the correct order for linking
 # the list of subproject libraries.
 
 $(2)_reverse_deps   := $$(call reverse_list,$$($(2)_subproject_deps))
+
+# Build a library for this subproject
+
+$(2)_lib_libs       := $$($(2)_reverse_deps)
+$(2)_lib_libnames   := $$(patsubst %, lib%.so, $$($(2)_lib_libs))
+$(2)_lib_libarg     := -L. $$(patsubst %, -l%, $$($(2)_lib_libs))
+
+lib$(1).so : $$($(2)_objs) $$($(2)_c_objs) $$($(2)_lib_libnames)
+	$(LINK) -shared -o $$@ $(if $(filter Darwin,$(shell uname -s)),-install_name $(install_libs_dir)/$$@) $$^ $$($(2)_lib_libarg) $(LIBS)
+
+$(2)_junk += lib$(1).so
 
 # Build unit tests
 
