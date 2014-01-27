@@ -5,6 +5,7 @@
 #include <iostream>
 #include <climits>
 #include <assert.h>
+#include <unistd.h>
 
 #ifdef __linux__
 # define mmap mmap64
