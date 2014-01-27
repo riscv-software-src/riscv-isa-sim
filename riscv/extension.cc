@@ -1,7 +1,5 @@
 #include "extension.h"
 #include "trap.h"
-#include "dummy-rocc.h"
-#include "hwacha.h"
 
 std::map<std::string, std::function<extension_t*()>>& extensions()
 {

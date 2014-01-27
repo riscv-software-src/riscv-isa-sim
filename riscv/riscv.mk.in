@@ -3,13 +3,8 @@ get_opcode = $(shell grep ^DECLARE_INSN.*\\\<$(2)\\\> $(1) | sed 's/DECLARE_INSN
 
 riscv_subproject_deps = \
 	softfloat \
-	hwacha \
 
 riscv_install_prog_srcs = \
-	spike.cc \
-	riscv-dis.cc \
-	xspike.cc \
-	termios-xspike.cc \
 
 riscv_hdrs = \
 	htif.h \

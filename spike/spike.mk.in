@@ -1,0 +1,15 @@
+spike_subproject_deps = \
+	softfloat \
+	riscv \
+	hwacha \
+
+spike_install_prog_srcs = \
+	spike.cc \
+	riscv-dis.cc \
+	xspike.cc \
+	termios-xspike.cc \
+
+spike_hdrs = \
+
+spike_srcs = \
+  extensions.cc \
