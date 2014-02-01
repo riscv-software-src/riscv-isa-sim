@@ -59,6 +59,4 @@ private:
   bool debug;
 };
 
-REGISTER_EXTENSION(hwacha, []() { return new hwacha_t; })
-
 #endif
