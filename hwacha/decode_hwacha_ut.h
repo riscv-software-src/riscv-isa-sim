@@ -77,4 +77,14 @@ static inline void write_frd(hwacha_t* h, insn_t insn, uint32_t idx, reg_t value
 #undef require_fp
 #define require_fp
 
+#include "cvt16.h"
+
+#define HFRS1 cvt_hs(FRS1)
+#define HFRS2 cvt_hs(FRS2)
+#define HFRS3 cvt_hs(FRS3)
+
+#define WRITE_HFRD(value) write_frd(h, insn, UTIDX, cvt_sh(value, RM))
+
+#define sext16(x) ((sreg_t)(int16_t)(x))
+
 #endif
