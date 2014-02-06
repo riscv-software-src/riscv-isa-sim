@@ -126,7 +126,7 @@ struct : public arg_t {
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
     std::stringstream s;
-    int32_t target = insn.sb_imm();
+    int32_t target = insn.uj_imm();
     char sign = target >= 0 ? '+' : '-';
     s << "pc " << sign << std::hex << " 0x" << abs(target);
     return s.str();
