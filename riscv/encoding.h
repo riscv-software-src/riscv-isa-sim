@@ -77,8 +77,16 @@
     asm volatile ("csrrc %0, " #reg ", %1" : "=r"(__tmp) : "r"(bit)); \
   __tmp; })
 
+#define rdtime() ({ unsigned long __tmp; \
+  asm volatile ("rdtime %0" : "=r"(__tmp)); \
+  __tmp; })
+
 #define rdcycle() ({ unsigned long __tmp; \
   asm volatile ("rdcycle %0" : "=r"(__tmp)); \
+  __tmp; })
+
+#define rdinstret() ({ unsigned long __tmp; \
+  asm volatile ("rdinstret %0" : "=r"(__tmp)); \
   __tmp; })
 
 #endif
@@ -425,6 +433,22 @@
 #define CSR_CYCLE 0xc00
 #define CSR_TIME 0xc01
 #define CSR_INSTRET 0xc02
+#define CSR_UARCH0 0xc10
+#define CSR_UARCH1 0xc11
+#define CSR_UARCH2 0xc12
+#define CSR_UARCH3 0xc13
+#define CSR_UARCH4 0xc14
+#define CSR_UARCH5 0xc15
+#define CSR_UARCH6 0xc16
+#define CSR_UARCH7 0xc17
+#define CSR_UARCH8 0xc18
+#define CSR_UARCH9 0xc19
+#define CSR_UARCH10 0xc1a
+#define CSR_UARCH11 0xc1b
+#define CSR_UARCH12 0xc1c
+#define CSR_UARCH13 0xc1d
+#define CSR_UARCH14 0xc1e
+#define CSR_UARCH15 0xc1f
 #define CAUSE_MISALIGNED_FETCH 0x0
 #define CAUSE_FAULT_FETCH 0x1
 #define CAUSE_ILLEGAL_INSTRUCTION 0x2
@@ -622,6 +646,22 @@ DECLARE_CSR(fromhost, CSR_FROMHOST)
 DECLARE_CSR(cycle, CSR_CYCLE)
 DECLARE_CSR(time, CSR_TIME)
 DECLARE_CSR(instret, CSR_INSTRET)
+DECLARE_CSR(uarch0, CSR_UARCH0)
+DECLARE_CSR(uarch1, CSR_UARCH1)
+DECLARE_CSR(uarch2, CSR_UARCH2)
+DECLARE_CSR(uarch3, CSR_UARCH3)
+DECLARE_CSR(uarch4, CSR_UARCH4)
+DECLARE_CSR(uarch5, CSR_UARCH5)
+DECLARE_CSR(uarch6, CSR_UARCH6)
+DECLARE_CSR(uarch7, CSR_UARCH7)
+DECLARE_CSR(uarch8, CSR_UARCH8)
+DECLARE_CSR(uarch9, CSR_UARCH9)
+DECLARE_CSR(uarch10, CSR_UARCH10)
+DECLARE_CSR(uarch11, CSR_UARCH11)
+DECLARE_CSR(uarch12, CSR_UARCH12)
+DECLARE_CSR(uarch13, CSR_UARCH13)
+DECLARE_CSR(uarch14, CSR_UARCH14)
+DECLARE_CSR(uarch15, CSR_UARCH15)
 #endif
 #ifdef DECLARE_CAUSE
 DECLARE_CAUSE("fflags", CAUSE_FFLAGS)
@@ -650,4 +690,20 @@ DECLARE_CAUSE("fromhost", CAUSE_FROMHOST)
 DECLARE_CAUSE("cycle", CAUSE_CYCLE)
 DECLARE_CAUSE("time", CAUSE_TIME)
 DECLARE_CAUSE("instret", CAUSE_INSTRET)
+DECLARE_CAUSE("uarch0", CAUSE_UARCH0)
+DECLARE_CAUSE("uarch1", CAUSE_UARCH1)
+DECLARE_CAUSE("uarch2", CAUSE_UARCH2)
+DECLARE_CAUSE("uarch3", CAUSE_UARCH3)
+DECLARE_CAUSE("uarch4", CAUSE_UARCH4)
+DECLARE_CAUSE("uarch5", CAUSE_UARCH5)
+DECLARE_CAUSE("uarch6", CAUSE_UARCH6)
+DECLARE_CAUSE("uarch7", CAUSE_UARCH7)
+DECLARE_CAUSE("uarch8", CAUSE_UARCH8)
+DECLARE_CAUSE("uarch9", CAUSE_UARCH9)
+DECLARE_CAUSE("uarch10", CAUSE_UARCH10)
+DECLARE_CAUSE("uarch11", CAUSE_UARCH11)
+DECLARE_CAUSE("uarch12", CAUSE_UARCH12)
+DECLARE_CAUSE("uarch13", CAUSE_UARCH13)
+DECLARE_CAUSE("uarch14", CAUSE_UARCH14)
+DECLARE_CAUSE("uarch15", CAUSE_UARCH15)
 #endif
