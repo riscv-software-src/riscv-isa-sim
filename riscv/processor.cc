@@ -243,8 +243,8 @@ reg_t processor_t::set_pcr(int which, reg_t val)
     case CSR_EPC:
       state.epc = val;
       break;
-    case CSR_EVEC: 
-      state.evec = val;
+    case CSR_EVEC:
+      state.evec = val & ~3;
       break;
     case CSR_CYCLE:
     case CSR_TIME:
