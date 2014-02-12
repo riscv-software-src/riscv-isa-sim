@@ -95,6 +95,14 @@ void processor_t::take_interrupt()
         throw trap_t((1ULL << ((state.sr & SR_S64) ? 63 : 31)) + i);
 }
 
+static void commit_log(state_t* state, insn_t insn)
+{
+#ifdef RISCV_ENABLE_COMMITLOG
+  if (!(state->sr & SR_S))
+    fprintf(stderr, "\n0x%016" PRIx64 " (0x%08" PRIx32 ") ", state->pc, insn.bits());
+#endif
+}
+
 void processor_t::step(size_t n)
 {
   if(!run)
@@ -109,34 +117,15 @@ void processor_t::step(size_t n)
   {
     take_interrupt();
 
-    // execute_insn fetches and executes one instruction
-    #define execute_insn(noisy) \
-      do { \
-        insn_fetch_t fetch = mmu->load_insn(state.pc); \
-        if(noisy) disasm(fetch.insn.insn); \
-        state.pc = fetch.func(this, fetch.insn.insn, state.pc); \
-      } while(0)
-
-    
-    // special execute_insn  for commit log dumping
-#ifdef RISCV_ENABLE_COMMITLOG
-    //static disassembler disasmblr; 
-    #undef execute_insn 
-    #define execute_insn(noisy) \
-      do { \
-        insn_fetch_t fetch = _mmu->load_insn(state.pc); \
-        if(noisy) disasm(fetch.insn.insn); \
-        bool in_spvr = state.sr & SR_S; \
-        if (!in_spvr) fprintf(stderr, "\n0x%016" PRIx64 " (0x%08" PRIx32 ") ", state.pc, fetch.insn.insn.bits()); \
-        /*if (!in_spvr) fprintf(stderr, "\n0x%016" PRIx64 " (0x%08" PRIx32 ") %s  ", state.pc, fetch.insn.insn.bits(), disasmblr.disassemble(fetch.insn.insn).c_str());*/ \
-        state.pc = fetch.func(this, fetch.insn.insn, state.pc); \
-      } while(0)
-#endif
-
     if (debug) // print out instructions as we go
     {
       for (size_t i = 0; i < n; state.count++, i++)
-        execute_insn(true);
+      {
+        insn_fetch_t fetch = mmu->load_insn(state.pc);
+        disasm(fetch.insn.insn);
+        commit_log(&state, fetch.insn.insn);
+        state.pc = fetch.func(this, fetch.insn.insn, state.pc);
+      }
     }
     else while (n > 0)
     {
@@ -154,6 +143,7 @@ void processor_t::step(size_t n)
         insn_func_t func = ic_entry->data.func; \
         if (unlikely(ic_entry->tag != state.pc)) break; \
         ic_entry++; \
+        commit_log(&state, insn); \
         state.pc = func(this, insn, state.pc); }
 
       switch (idx) while (true)
