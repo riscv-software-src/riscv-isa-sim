@@ -130,31 +130,27 @@ void processor_t::step(size_t n)
     else while (n > 0)
     {
       size_t idx = (state.pc / sizeof(insn_t)) % ICACHE_SIZE;
-      auto ic_entry_init = &_mmu->icache[idx], ic_entry = ic_entry_init;
-
-      #define update_count() { \
-        size_t i = ic_entry - ic_entry_init; \
-        state.count += i; \
-        if (i >= n) break; \
-        n -= i; }
+      auto ic_entry = _mmu->access_icache(state.pc), ic_entry_init = ic_entry;
 
       #define ICACHE_ACCESS(idx) { \
         insn_t insn = ic_entry->data.insn.insn; \
         insn_func_t func = ic_entry->data.func; \
-        if (unlikely(ic_entry->tag != state.pc)) break; \
-        ic_entry++; \
         commit_log(&state, insn); \
-        state.pc = func(this, insn, state.pc); }
-
-      switch (idx) while (true)
-      {
-        ICACHE_SWITCH;
-        update_count();
-        ic_entry_init = ic_entry = &_mmu->icache[0];
+        ic_entry++; \
+        state.pc = func(this, insn, state.pc); \
+        if (idx < ICACHE_SIZE-1 && unlikely(ic_entry->tag != state.pc)) break; \
       }
 
-      _mmu->access_icache(state.pc);
-      update_count();
+      switch (idx)
+      {
+        ICACHE_SWITCH; // auto-generated into icache.h
+      }
+
+      size_t i = ic_entry - ic_entry_init;
+      state.count += i;
+      if (i >= n)
+        break;
+      n -= i;
     }
   }
   catch(trap_t& t)

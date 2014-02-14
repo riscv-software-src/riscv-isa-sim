@@ -78,11 +78,11 @@ public:
   store_func(uint64)
 
   // load instruction from memory at aligned address.
-  inline icache_entry_t access_icache(reg_t addr)
+  inline icache_entry_t* access_icache(reg_t addr)
   {
     reg_t idx = (addr / sizeof(insn_t)) % ICACHE_SIZE;
-    icache_entry_t entry = icache[idx];
-    if (likely(entry.tag == addr))
+    icache_entry_t* entry = &icache[idx];
+    if (likely(entry->tag == addr))
       return entry;
 
     void* iaddr = translate(addr, sizeof(insn_t), false, true);
@@ -99,12 +99,12 @@ public:
       icache[idx].tag = -1;
       tracer.trace(paddr, sizeof(insn_t), false, true);
     }
-    return icache[idx];
+    return &icache[idx];
   }
 
   inline insn_fetch_t load_insn(reg_t addr)
   {
-    return access_icache(addr).data;
+    return access_icache(addr)->data;
   }
 
   void set_processor(processor_t* p) { proc = p; flush_tlb(); }
