@@ -7,15 +7,30 @@
 // instruction.
 
 #include "disasm.h"
+#include "extension.h"
 #include <iostream>
 #include <string>
 #include <cstdint>
+#include <fesvr/option_parser.h>
 using namespace std;
 
-int main()
+int main(int argc, char** argv)
 {
   string s;
   disassembler_t d;
+
+  std::function<extension_t*()> extension;
+  option_parser_t parser;
+  parser.option(0, "extension", 1, [&](const char* s){
+    if (!extensions().count(s))
+      fprintf(stderr, "unknown extension %s!\n", s), exit(-1);
+    extension = extensions()[s];
+
+    for (auto disasm_insn : extension()->get_disasms())
+      d.add_insn(disasm_insn);
+  });
+
+  auto argv1 = parser.parse(argv);
 
   while (getline(cin, s))
   {
