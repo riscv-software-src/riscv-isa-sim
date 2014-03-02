@@ -133,7 +133,8 @@ std::vector<disasm_insn_t*> hwacha_t::get_disasms()
   DISASM_INSN("vmvv", vmvv, 0, {&vxrd, &vxrs1});
   DISASM_INSN("vmsv", vmsv, 0, {&vxrd, &xrs1});
   DISASM_INSN("vfmvv", vfmvv, 0, {&vfrd, &vfrs1});
-  DISASM_INSN("vfmsv", vfmsv, 0, {&vfrd, &xrs1});
+  DISASM_INSN("vfmsv.s", vfmsv_s, 0, {&vfrd, &xrs1});
+  DISASM_INSN("vfmsv.d", vfmsv_d, 0, {&vfrd, &xrs1});
   DISASM_INSN("vf", vf, 0, {&vf_addr});
 
   DISASM_INSN("vxcptcause", vxcptcause, 0, {&xrd});
