@@ -333,6 +333,7 @@ disassembler_t::disassembler_t()
   DEFINE_FXTYPE(fcvt_lu_s);
   DEFINE_FXTYPE(fcvt_w_s);
   DEFINE_FXTYPE(fcvt_wu_s);
+  DEFINE_FXTYPE(fclass_s);
   DEFINE_FXTYPE(fmv_x_s);
   DEFINE_FXTYPE(feq_s);
   DEFINE_FXTYPE(flt_s);
@@ -363,6 +364,7 @@ disassembler_t::disassembler_t()
   DEFINE_FXTYPE(fcvt_lu_d);
   DEFINE_FXTYPE(fcvt_w_d);
   DEFINE_FXTYPE(fcvt_wu_d);
+  DEFINE_FXTYPE(fclass_d);
   DEFINE_FXTYPE(fmv_x_d);
   DEFINE_FXTYPE(feq_d);
   DEFINE_FXTYPE(flt_d);
