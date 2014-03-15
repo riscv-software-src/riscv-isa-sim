@@ -5,7 +5,6 @@
 #include "decode.h"
 #include "config.h"
 #include <cstring>
-#include <memory>
 #include <vector>
 
 class processor_t;
@@ -80,7 +79,7 @@ private:
   sim_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
   extension_t* ext;
-  std::unique_ptr<disassembler_t> disassembler;
+  disassembler_t* disassembler;
   state_t state;
   uint32_t id;
   bool run; // !reset

@@ -32,6 +32,7 @@ processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
 
 processor_t::~processor_t()
 {
+  delete disassembler;
 }
 
 void state_t::reset()
