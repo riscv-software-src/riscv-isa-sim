@@ -1,2 +1,2 @@
 int csr = validate_csr(insn.csr(), true);
-WRITE_RD(p->set_pcr(csr, RS1));
+WRITE_RD(sext_xprlen(p->set_pcr(csr, RS1)));

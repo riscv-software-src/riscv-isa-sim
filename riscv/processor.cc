@@ -233,11 +233,11 @@ reg_t processor_t::set_pcr(int which, reg_t val)
     case CSR_EVEC:
       state.evec = val & ~3;
       break;
-    case CSR_CYCLE:
-    case CSR_TIME:
-    case CSR_INSTRET:
     case CSR_COUNT:
       state.count = val;
+      break;
+    case CSR_COUNTH:
+      state.count = (val << 32) | (uint32_t)state.count;
       break;
     case CSR_COMPARE:
       set_interrupt(IRQ_TIMER, false);
@@ -299,6 +299,13 @@ reg_t processor_t::get_pcr(int which)
     case CSR_INSTRET:
     case CSR_COUNT:
       return state.count;
+    case CSR_CYCLEH:
+    case CSR_TIMEH:
+    case CSR_INSTRETH:
+    case CSR_COUNTH:
+      if (rv64)
+        break;
+      return state.count >> 32;
     case CSR_COMPARE:
       return state.compare;
     case CSR_CAUSE:
@@ -327,9 +334,8 @@ reg_t processor_t::get_pcr(int which)
     case CSR_FROMHOST:
       sim->get_htif()->tick(); // not necessary, but faster
       return state.fromhost;
-    default:
-      throw trap_illegal_instruction();
   }
+  throw trap_illegal_instruction();
 }
 
 void processor_t::set_interrupt(int which, bool on)
