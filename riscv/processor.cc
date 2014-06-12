@@ -40,7 +40,7 @@ void state_t::reset()
   // the ISA guarantees on boot that the PC is 0x2000 and the the processor
   // is in supervisor mode, and in 64-bit mode, if supported, with traps
   // and virtual memory disabled.
-  sr = SR_S | SR_S64;
+  sr = SR_S | SR_S64 | SR_U64;
   pc = 0x2000;
 
   // the following state is undefined upon boot-up,
