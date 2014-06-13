@@ -23,6 +23,12 @@ struct insn_desc_t
   insn_func_t rv64;
 };
 
+struct commit_log_reg_t
+{
+  uint32_t addr;
+  reg_t data;
+};
+
 // architectural state of a RISC-V hart
 struct state_t
 {
@@ -49,6 +55,10 @@ struct state_t
   uint32_t frm;
 
   reg_t load_reservation;
+
+#ifdef RISCV_ENABLE_COMMITLOG
+  commit_log_reg_t log_reg_write;
+#endif
 };
 
 // this class represents one processor in a RISC-V machine.

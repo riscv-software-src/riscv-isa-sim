@@ -99,8 +99,13 @@ void processor_t::take_interrupt()
 static void commit_log(state_t* state, insn_t insn)
 {
 #ifdef RISCV_ENABLE_COMMITLOG
-  if (!(state->sr & SR_S))
+  if (!(state->sr & SR_S)) {
     fprintf(stderr, "\n0x%016" PRIx64 " (0x%08" PRIx32 ") ", state->pc, insn.bits());
+    if (state->log_reg_write.addr)
+      fprintf(stderr, "%c%02u 0x%016" PRIx64, state->log_reg_write.addr & 1 ? 'f' : 'x',
+              state->log_reg_write.addr >> 1, state->log_reg_write.data);
+    state->log_reg_write.addr = 0;
+  }
 #endif
 }
 
@@ -136,9 +141,10 @@ void processor_t::step(size_t n)
       #define ICACHE_ACCESS(idx) { \
         insn_t insn = ic_entry->data.insn.insn; \
         insn_func_t func = ic_entry->data.func; \
-        commit_log(&state, insn); \
         ic_entry++; \
-        state.pc = func(this, insn, state.pc); \
+        reg_t pc = func(this, insn, state.pc); \
+        commit_log(&state, insn); \
+        state.pc = pc; \
         if (idx < ICACHE_SIZE-1 && unlikely(ic_entry->tag != state.pc)) break; \
       }
 
