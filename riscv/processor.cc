@@ -99,13 +99,19 @@ void processor_t::take_interrupt()
 static void commit_log(state_t* state, insn_t insn)
 {
 #ifdef RISCV_ENABLE_COMMITLOG
-  if (!(state->sr & SR_S)) {
-    fprintf(stderr, "\n0x%016" PRIx64 " (0x%08" PRIx32 ") ", state->pc, insn.bits());
-    if (state->log_reg_write.addr)
-      fprintf(stderr, "%c%02u 0x%016" PRIx64, state->log_reg_write.addr & 1 ? 'f' : 'x',
+  if (state->sr & SR_EI) {
+    if (state->log_reg_write.addr) {
+      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx32 ") %c%2u 0x%016" PRIx64 "\n",
+              state->pc, insn.bits(),
+              state->log_reg_write.addr & 1 ? 'f' : 'x',
               state->log_reg_write.addr >> 1, state->log_reg_write.data);
-    state->log_reg_write.addr = 0;
+    }
+    else {
+      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx32 ")\n",
+              state->pc, insn.bits());
+    }
   }
+  state->log_reg_write.addr = 0;
 #endif
 }
 
@@ -129,8 +135,9 @@ void processor_t::step(size_t n)
       {
         insn_fetch_t fetch = mmu->load_insn(state.pc);
         disasm(fetch.insn.insn);
+        reg_t npc = fetch.func(this, fetch.insn.insn, state.pc);
         commit_log(&state, fetch.insn.insn);
-        state.pc = fetch.func(this, fetch.insn.insn, state.pc);
+        state.pc = npc;
       }
     }
     else while (n > 0)
@@ -142,9 +149,9 @@ void processor_t::step(size_t n)
         insn_t insn = ic_entry->data.insn.insn; \
         insn_func_t func = ic_entry->data.func; \
         ic_entry++; \
-        reg_t pc = func(this, insn, state.pc); \
+        reg_t npc = func(this, insn, state.pc); \
         commit_log(&state, insn); \
-        state.pc = pc; \
+        state.pc = npc; \
         if (idx < ICACHE_SIZE-1 && unlikely(ic_entry->tag != state.pc)) break; \
       }
 

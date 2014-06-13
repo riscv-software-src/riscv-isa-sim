@@ -101,10 +101,8 @@ private:
 #ifdef RISCV_ENABLE_COMMITLOG
   #undef WRITE_RD 
   #define WRITE_RD(value) ({ \
-        bool in_spvr = p->get_state()->sr & SR_S; \
         reg_t wdata = value; /* value is a func with side-effects */ \
-        if (!in_spvr) \
-          p->get_state()->log_reg_write = (commit_log_reg_t){insn.rd() << 1, wdata}; \
+        p->get_state()->log_reg_write = (commit_log_reg_t){insn.rd() << 1, wdata}; \
         p->get_state()->XPR.write(insn.rd(), wdata); \
       })
 #endif
@@ -117,10 +115,8 @@ private:
 #ifdef RISCV_ENABLE_COMMITLOG
   #undef WRITE_FRD 
   #define WRITE_FRD(value) ({ \
-        bool in_spvr = p->get_state()->sr & SR_S; \
         freg_t wdata = value; /* value is a func with side-effects */ \
-        if (!in_spvr) \
-          p->get_state()->log_reg_write = (commit_log_reg_t){(insn.rd() << 1) | 1, wdata}; \
+        p->get_state()->log_reg_write = (commit_log_reg_t){(insn.rd() << 1) | 1, wdata}; \
         p->get_state()->FPR.write(insn.rd(), wdata); \
       })
 #endif
