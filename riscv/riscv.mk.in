@@ -20,6 +20,10 @@ riscv_hdrs = \
 	extension.h \
 	rocc.h \
 	dummy-rocc.h \
+	insn_template.h \
+
+riscv_precompiled_hdrs = \
+	insn_template.h \
 
 riscv_srcs = \
 	htif.cc \

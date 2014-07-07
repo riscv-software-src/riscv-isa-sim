@@ -1,12 +1,6 @@
 // See LICENSE for license details.
 
-#include "processor.h"
-#include "config.h"
-#include "mmu.h"
-#include "softfloat.h"
-#include "platform.h" // softfloat isNaNF32UI, etc.
-#include "internals.h" // ditto
-#include <assert.h>
+#include "insn_template.h"
 
 reg_t rv32_NAME(processor_t* p, insn_t insn, reg_t pc)
 {

@@ -1,13 +1,5 @@
 // See LICENSE for license details.
-
-#include "config.h"
-#include "processor.h"
-#include "mmu.h"
-#include "hwacha.h"
-#include "decode_hwacha.h"
-#include "encodings_hwacha.h"
-#include "rocc.h"
-#include <assert.h>
+#include "insn_template_hwacha.h"
 
 reg_t hwacha_NAME(processor_t* p, insn_t insn, reg_t pc)
 {

@@ -1,14 +1,5 @@
 // See LICENSE for license details.
-
-#include "config.h"
-#include "processor.h"
-#include "mmu.h"
-#include "softfloat.h"
-#include "platform.h" // softfloat isNaNF32UI, etc.
-#include "internals.h" // ditto
-#include "hwacha.h"
-#include "decode_hwacha_ut.h"
-#include <assert.h>
+#include "insn_template_hwacha_ut.h"
 
 reg_t hwacha_NAME(processor_t* p, insn_t insn, reg_t pc)
 {

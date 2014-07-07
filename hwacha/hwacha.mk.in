@@ -11,6 +11,12 @@ hwacha_hdrs = \
 	decode_hwacha_ut.h \
 	opcodes_hwacha.h \
 	opcodes_hwacha_ut.h \
+	insn_template_hwacha.h \
+	insn_template_hwacha_ut.h \
+
+hwacha_precompiled_hdrs = \
+	insn_template_hwacha.h \
+	insn_template_hwacha_ut.h \
 
 hwacha_srcs = \
 	hwacha.cc \

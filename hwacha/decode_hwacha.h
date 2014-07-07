@@ -3,6 +3,7 @@
 
 #include "hwacha.h"
 #include "hwacha_xcpt.h"
+#include "mmu.h"
 
 #define XS1 (xs1)
 #define XS2 (xs2)

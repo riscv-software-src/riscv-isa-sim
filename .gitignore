@@ -1,3 +1,4 @@
 build/
+*.gch
 autom4te.cache/
 .*.swp
