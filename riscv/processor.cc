@@ -115,7 +115,14 @@ static void commit_log(state_t* state, insn_t insn)
 #endif
 }
 
-void processor_t::step(size_t n)
+static inline void execute_insn(processor_t* p, state_t* st, insn_fetch_t fetch)
+{
+  reg_t npc = fetch.func(p, fetch.insn.insn, st->pc);
+  commit_log(st, fetch.insn.insn);
+  st->pc = npc;
+}
+
+void processor_t::step(size_t n0)
 {
   if(!run)
     return;
@@ -123,7 +130,7 @@ void processor_t::step(size_t n)
   mmu_t* _mmu = mmu;
   auto count32 = decltype(state.compare)(state.count);
   bool count_le_compare = count32 <= state.compare;
-  n = std::min(n, size_t(state.compare - count32) | 1);
+  ssize_t n = std::min(ssize_t(n0), ssize_t((state.compare - count32) | 1));
 
   try
   {
@@ -131,13 +138,11 @@ void processor_t::step(size_t n)
 
     if (debug) // print out instructions as we go
     {
-      for (size_t i = 0; i < n; state.count++, i++)
+      for (ssize_t i = 0; i < n; state.count++, i++)
       {
         insn_fetch_t fetch = mmu->load_insn(state.pc);
         disasm(fetch.insn.insn);
-        reg_t npc = fetch.func(this, fetch.insn.insn, state.pc);
-        commit_log(&state, fetch.insn.insn);
-        state.pc = npc;
+        execute_insn(this, &state, fetch);
       }
     }
     else while (n > 0)
@@ -146,12 +151,9 @@ void processor_t::step(size_t n)
       auto ic_entry = _mmu->access_icache(state.pc), ic_entry_init = ic_entry;
 
       #define ICACHE_ACCESS(idx) { \
-        insn_t insn = ic_entry->data.insn.insn; \
-        insn_func_t func = ic_entry->data.func; \
+        insn_fetch_t fetch = ic_entry->data; \
         ic_entry++; \
-        reg_t npc = func(this, insn, state.pc); \
-        commit_log(&state, insn); \
-        state.pc = npc; \
+        execute_insn(this, &state, fetch); \
         if (idx < ICACHE_SIZE-1 && unlikely(ic_entry->tag != state.pc)) break; \
       }
 
@@ -162,8 +164,6 @@ void processor_t::step(size_t n)
 
       size_t i = ic_entry - ic_entry_init;
       state.count += i;
-      if (i >= n)
-        break;
       n -= i;
     }
   }
