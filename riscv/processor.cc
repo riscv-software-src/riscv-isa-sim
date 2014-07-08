@@ -17,6 +17,9 @@
 #include <stdexcept>
 #include <algorithm>
 
+#undef STATE
+#define STATE state
+
 processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
   : sim(_sim), mmu(_mmu), ext(NULL), disassembler(new disassembler_t),
     id(_id), run(false), debug(false)
@@ -294,10 +297,13 @@ reg_t processor_t::get_pcr(int which)
   switch (which)
   {
     case CSR_FFLAGS:
+      require_fp;
       return state.fflags;
     case CSR_FRM:
+      require_fp;
       return state.frm;
     case CSR_FCSR:
+      require_fp;
       return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
     case CSR_STATUS:
       return state.sr;

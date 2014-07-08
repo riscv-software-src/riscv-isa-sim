@@ -94,30 +94,31 @@ private:
 
 // helpful macros, etc
 #define MMU (*p->get_mmu())
-#define RS1 p->get_state()->XPR[insn.rs1()]
-#define RS2 p->get_state()->XPR[insn.rs2()]
-#define WRITE_RD(value) p->get_state()->XPR.write(insn.rd(), value)
+#define STATE (*p->get_state())
+#define RS1 STATE.XPR[insn.rs1()]
+#define RS2 STATE.XPR[insn.rs2()]
+#define WRITE_RD(value) STATE.XPR.write(insn.rd(), value)
 
 #ifdef RISCV_ENABLE_COMMITLOG
   #undef WRITE_RD 
   #define WRITE_RD(value) ({ \
         reg_t wdata = value; /* value is a func with side-effects */ \
-        p->get_state()->log_reg_write = (commit_log_reg_t){insn.rd() << 1, wdata}; \
-        p->get_state()->XPR.write(insn.rd(), wdata); \
+        STATE.log_reg_write = (commit_log_reg_t){insn.rd() << 1, wdata}; \
+        STATE.XPR.write(insn.rd(), wdata); \
       })
 #endif
 
-#define FRS1 p->get_state()->FPR[insn.rs1()]
-#define FRS2 p->get_state()->FPR[insn.rs2()]
-#define FRS3 p->get_state()->FPR[insn.rs3()]
-#define WRITE_FRD(value) p->get_state()->FPR.write(insn.rd(), value)
+#define FRS1 STATE.FPR[insn.rs1()]
+#define FRS2 STATE.FPR[insn.rs2()]
+#define FRS3 STATE.FPR[insn.rs3()]
+#define WRITE_FRD(value) STATE.FPR.write(insn.rd(), value)
  
 #ifdef RISCV_ENABLE_COMMITLOG
   #undef WRITE_FRD 
   #define WRITE_FRD(value) ({ \
         freg_t wdata = value; /* value is a func with side-effects */ \
-        p->get_state()->log_reg_write = (commit_log_reg_t){(insn.rd() << 1) | 1, wdata}; \
-        p->get_state()->FPR.write(insn.rd(), wdata); \
+        STATE.log_reg_write = (commit_log_reg_t){(insn.rd() << 1) | 1, wdata}; \
+        STATE.FPR.write(insn.rd(), wdata); \
       })
 #endif
  
@@ -127,24 +128,24 @@ private:
 #define BRANCH_TARGET (pc + insn.sb_imm())
 #define JUMP_TARGET (pc + insn.uj_imm())
 #define RM ({ int rm = insn.rm(); \
-              if(rm == 7) rm = p->get_state()->frm; \
+              if(rm == 7) rm = STATE.frm; \
               if(rm > 4) throw trap_illegal_instruction(); \
               rm; })
 
 #define xpr64 (xprlen == 64)
 
-#define require_supervisor if(unlikely(!(p->get_state()->sr & SR_S))) throw trap_privileged_instruction()
+#define require_supervisor if(unlikely(!(STATE.sr & SR_S))) throw trap_privileged_instruction()
 #define require_xpr64 if(unlikely(!xpr64)) throw trap_illegal_instruction()
 #define require_xpr32 if(unlikely(xpr64)) throw trap_illegal_instruction()
 #ifndef RISCV_ENABLE_FPU
 # define require_fp throw trap_illegal_instruction()
 #else
-# define require_fp if(unlikely(!(p->get_state()->sr & SR_EF))) throw trap_fp_disabled()
+# define require_fp if(unlikely(!(STATE.sr & SR_EF))) throw trap_fp_disabled()
 #endif
-#define require_accelerator if(unlikely(!(p->get_state()->sr & SR_EA))) throw trap_accelerator_disabled()
+#define require_accelerator if(unlikely(!(STATE.sr & SR_EA))) throw trap_accelerator_disabled()
 
 #define cmp_trunc(reg) (reg_t(reg) << (64-xprlen))
-#define set_fp_exceptions ({ p->get_state()->fflags |= softfloat_exceptionFlags; \
+#define set_fp_exceptions ({ STATE.fflags |= softfloat_exceptionFlags; \
                              softfloat_exceptionFlags = 0; })
 
 #define sext32(x) ((sreg_t)(int32_t)(x))
@@ -165,7 +166,7 @@ private:
      } while(0)
 
 #define validate_csr(which, write) ({ \
-  unsigned my_priv = (p->get_state()->sr & SR_S) ? 1 : 0; \
+  unsigned my_priv = (STATE.sr & SR_S) ? 1 : 0; \
   unsigned read_priv = ((which) >> 10) & 3; \
   unsigned write_priv = (((which) >> 8) & 3); \
   if (read_priv == 3) read_priv = write_priv, write_priv = -1; \
