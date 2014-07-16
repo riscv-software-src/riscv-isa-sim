@@ -84,3 +84,14 @@ execute until a desired equality is reached:
 Alternatively, you can execute as long as an equality is true:
 
  : while mem 2020 50a9907311096993
+
+You can continue execution indefinitely by:
+
+ : r
+
+At any point during execution (even without -d), you can enter the
+interactive debug mode with <control>-<c>.
+
+To end the simulation from the debug prompt, press <control>-<c> or:
+
+ : q
