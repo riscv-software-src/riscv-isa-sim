@@ -65,7 +65,7 @@ To invoke interactive debug mode, launch spike with -d:
 
 To see the contents of a register (0 is for core 0):
 
- : reg 0 14
+ : reg 0 a0
 
 To see the contents of a memory location (physical address in hex):
 

@@ -7,77 +7,64 @@
 #include <sstream>
 #include <stdlib.h>
 
-static const char* xpr[] = {
-  "zero", "ra", "s0", "s1",  "s2",  "s3",  "s4",  "s5",
-  "s6",   "s7", "s8", "s9", "s10", "s11",  "sp",  "tp",
-  "v0",   "v1", "a0", "a1",  "a2",  "a3",  "a4",  "a5",
-  "a6",   "a7", "t0", "t1",  "t2",  "t3",  "t4",  "gp"
-};
-
-static const char* fpr[] = {
-  "fs0", "fs1",  "fs2",  "fs3",  "fs4",  "fs5",  "fs6",  "fs7",
-  "fs8", "fs9", "fs10", "fs11", "fs12", "fs13", "fs14", "fs15",
-  "fv0", "fv1", "fa0",   "fa1",  "fa2",  "fa3",  "fa4",  "fa5",
-  "fa6", "fa7", "ft0",   "ft1",  "ft2",  "ft3",  "ft4",  "ft5"
-};
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return std::to_string((int)insn.i_imm()) + '(' + xpr[insn.rs1()] + ')';
+    return std::to_string((int)insn.i_imm()) + '(' + xpr_name[insn.rs1()] + ')';
   }
 } load_address;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return std::to_string((int)insn.s_imm()) + '(' + xpr[insn.rs1()] + ')';
+    return std::to_string((int)insn.s_imm()) + '(' + xpr_name[insn.rs1()] + ')';
   }
 } store_address;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return std::string("0(") + xpr[insn.rs1()] + ')';
+    return std::string("0(") + xpr_name[insn.rs1()] + ')';
   }
 } amo_address;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return xpr[insn.rd()];
+    return xpr_name[insn.rd()];
   }
 } xrd;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return xpr[insn.rs1()];
+    return xpr_name[insn.rs1()];
   }
 } xrs1;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return xpr[insn.rs2()];
+    return xpr_name[insn.rs2()];
   }
 } xrs2;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return fpr[insn.rd()];
+    return fpr_name[insn.rd()];
   }
 } frd;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return fpr[insn.rs1()];
+    return fpr_name[insn.rs1()];
   }
 } frs1;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return fpr[insn.rs2()];
+    return fpr_name[insn.rs2()];
   }
 } frs2;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return fpr[insn.rs3()];
+    return fpr_name[insn.rs3()];
   }
 } frs3;
 
