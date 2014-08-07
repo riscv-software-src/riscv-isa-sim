@@ -93,6 +93,6 @@ You can continue execution indefinitely by:
 At any point during execution (even without -d), you can enter the
 interactive debug mode with `<control>-<c>`.
 
-To end the simulation from the debug prompt, press `<control>-<c> or:
+To end the simulation from the debug prompt, press `<control>-<c>` or:
 
     : q
