@@ -40,8 +40,10 @@ sim_t::sim_t(size_t nprocs, size_t mem_mb, const std::vector<std::string>& args)
 
   debug_mmu = new mmu_t(mem, memsz);
 
-  for (size_t i = 0; i < procs.size(); i++)
+  for (size_t i = 0; i < procs.size(); i++) {
     procs[i] = new processor_t(this, new mmu_t(mem, memsz), i);
+  }
+
 }
 
 sim_t::~sim_t()
@@ -124,8 +126,17 @@ void sim_t::set_debug(bool value)
   debug = value;
 }
 
+void sim_t::set_histogram(bool value)
+{
+  histogram_enabled = value;
+  for (size_t i = 0; i < procs.size(); i++) {
+    procs[i]->set_histogram(histogram_enabled);
+  }
+}
+
 void sim_t::set_procs_debug(bool value)
 {
   for (size_t i=0; i< procs.size(); i++)
     procs[i]->set_debug(value);
 }
+

@@ -23,6 +23,7 @@ public:
   bool running();
   void stop();
   void set_debug(bool value);
+  void set_histogram(bool value);
   void set_procs_debug(bool value);
   htif_isasim_t* get_htif() { return htif.get(); }
 
@@ -48,6 +49,7 @@ private:
   size_t current_step;
   size_t current_proc;
   bool debug;
+  bool histogram_enabled; // provide a histogram of PCs
 
   // presents a prompt for introspection into the simulation
   void interactive();

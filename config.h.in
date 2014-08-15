@@ -42,6 +42,9 @@
 /* Define if floating-point instructions are supported */
 #undef RISCV_ENABLE_FPU
 
+/* Enable PC histogram generation */
+#undef RISCV_ENABLE_HISTOGRAM
+
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SOFTFLOAT_ENABLED
 

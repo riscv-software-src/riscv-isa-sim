@@ -35,6 +35,16 @@ processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
 
 processor_t::~processor_t()
 {
+#ifdef RISCV_ENABLE_HISTOGRAM
+  if (histogram_enabled)
+  {
+    fprintf(stderr, "PC Histogram size:%lu\n", pc_histogram.size());
+    for(auto iterator = pc_histogram.begin(); iterator != pc_histogram.end(); ++iterator) {
+      fprintf(stderr, "%0lx %lu\n", (iterator->first << 2), iterator->second);
+    }
+  }
+#endif
+
   delete disassembler;
 }
 
@@ -73,6 +83,11 @@ void processor_t::set_debug(bool value)
   debug = value;
   if (ext)
     ext->set_debug(value);
+}
+
+void processor_t::set_histogram(bool value)
+{
+  histogram_enabled = value;
 }
 
 void processor_t::reset(bool value)
@@ -118,10 +133,19 @@ static void commit_log(state_t* state, insn_t insn)
 #endif
 }
 
+inline void processor_t::update_histogram(size_t pc)
+{
+#ifdef RISCV_ENABLE_HISTOGRAM
+  size_t idx = pc >> 2;
+  pc_histogram[idx]++;
+#endif
+}
+
 static inline void execute_insn(processor_t* p, state_t* st, insn_fetch_t fetch)
 {
   reg_t npc = fetch.func(p, fetch.insn.insn, st->pc);
   commit_log(st, fetch.insn.insn);
+  p->update_histogram(st->pc);
   st->pc = npc;
 }
 

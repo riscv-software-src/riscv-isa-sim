@@ -20,6 +20,7 @@ static void help()
   fprintf(stderr, "  -p <n>             Simulate <n> processors\n");
   fprintf(stderr, "  -m <n>             Provide <n> MB of target memory\n");
   fprintf(stderr, "  -d                 Interactive debug mode\n");
+  fprintf(stderr, "  -g                 Track histogram of PCs\n");
   fprintf(stderr, "  -h                 Print this help message\n");
   fprintf(stderr, "  --ic=<S>:<W>:<B>   Instantiate a cache model with S sets,\n");
   fprintf(stderr, "  --dc=<S>:<W>:<B>     W ways, and B-byte blocks (with S and\n");
@@ -32,6 +33,7 @@ static void help()
 int main(int argc, char** argv)
 {
   bool debug = false;
+  bool histogram = false;
   size_t nprocs = 1;
   size_t mem_mb = 0;
   std::unique_ptr<icache_sim_t> ic;
@@ -43,6 +45,7 @@ int main(int argc, char** argv)
   parser.help(&help);
   parser.option('h', 0, 0, [&](const char* s){help();});
   parser.option('d', 0, 0, [&](const char* s){debug = true;});
+  parser.option('g', 0, 0, [&](const char* s){histogram = true;});
   parser.option('p', 0, 1, [&](const char* s){nprocs = atoi(s);});
   parser.option('m', 0, 1, [&](const char* s){mem_mb = atoi(s);});
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
@@ -77,5 +80,6 @@ int main(int argc, char** argv)
   }
 
   s.set_debug(debug);
+  s.set_histogram(histogram);
   return s.run();
 }

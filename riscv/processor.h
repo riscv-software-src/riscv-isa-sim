@@ -6,6 +6,7 @@
 #include "config.h"
 #include <cstring>
 #include <vector>
+#include <map>
 
 class processor_t;
 class mmu_t;
@@ -69,6 +70,7 @@ public:
   ~processor_t();
 
   void set_debug(bool value);
+  void set_histogram(bool value);
   void reset(bool value);
   void step(size_t n); // run for n cycles
   void deliver_ipi(); // register an interprocessor interrupt
@@ -81,6 +83,7 @@ public:
   state_t* get_state() { return &state; }
   extension_t* get_extension() { return ext; }
   void yield_load_reservation() { state.load_reservation = (reg_t)-1; }
+  void update_histogram(size_t pc);
 
   void register_insn(insn_desc_t);
   void register_extension(extension_t*);
@@ -94,11 +97,13 @@ private:
   uint32_t id;
   bool run; // !reset
   bool debug;
+  bool histogram_enabled;
   bool rv64;
 
   std::vector<insn_desc_t> instructions;
   std::vector<insn_desc_t*> opcode_map;
   std::vector<insn_desc_t> opcode_store;
+  std::map<size_t,size_t> pc_histogram;
 
   void take_interrupt(); // take a trap if any interrupts are pending
   void take_trap(trap_t& t); // take an exception
