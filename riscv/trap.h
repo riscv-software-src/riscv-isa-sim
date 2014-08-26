@@ -5,7 +5,7 @@
 
 #include "decode.h"
 
-class state_t;
+struct state_t;
 
 class trap_t
 {

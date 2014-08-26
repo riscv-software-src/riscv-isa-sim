@@ -30,8 +30,6 @@ int main(int argc, char** argv)
       d.add_insn(disasm_insn);
   });
 
-  auto argv1 = parser.parse(argv);
-
   while (getline(cin, s))
   {
     for (size_t start = 0; (start = s.find("DASM(", start)) != string::npos; )
