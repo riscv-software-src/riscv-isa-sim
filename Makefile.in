@@ -87,7 +87,7 @@ CXX           := @CXX@
 CFLAGS        += @CFLAGS@ -DPREFIX=\"$(prefix)\"
 CPPFLAGS      += @CPPFLAGS@
 CXXFLAGS      += @CXXFLAGS@ -DPREFIX=\"$(prefix)\"
-COMPILE       := $(CXX) -fPIC -MMD -MP $(CPPFLAGS) $(CFLAGS) $(CXXFLAGS) \
+COMPILE       := $(CXX) -fPIC -MMD -MP $(CPPFLAGS) $(CXXFLAGS) \
                  $(sprojs_include)
 COMPILE_C     := $(CC) -fPIC -MMD -MP $(CPPFLAGS) $(CFLAGS) \
                  $(sprojs_include)
