@@ -4077,7 +4077,7 @@ $as_echo "#define RISCV_ENABLED /**/" >>confdefs.h
 if test "${with_fesvr+set}" = set; then :
   withval=$with_fesvr;
     LDFLAGS="-L$withval/lib $LDFLAGS"
-    CFLAGS="-I$withval/include $CFLAGS"
+    CPPFLAGS="-I$withval/include $CPPFLAGS"
 
 
 fi
