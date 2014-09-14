@@ -191,7 +191,8 @@ $(2)_deps := $$(patsubst %.o, %.d, $$($(2)_objs))
 $(2)_c_deps := $$(patsubst %.o, %.d, $$($(2)_c_objs))
 $$($(2)_pch) : %.h.gch : %.h
 	$(COMPILE) $$<
-$$($(2)_objs) : %.o : %.cc $$($(2)_gen_hdrs) $$($(2)_pch)
+# If using clang, don't depend (and thus don't build) precompiled headers
+$$($(2)_objs) : %.o : %.cc $$($(2)_gen_hdrs) $(if $(filter-out clang,$(CC)),$$($(2)_pch))
 	$(COMPILE) -c $$<
 $$($(2)_c_objs) : %.o : %.c $$($(2)_gen_hdrs)
 	$(COMPILE_C) -c $$<
