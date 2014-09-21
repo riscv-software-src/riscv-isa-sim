@@ -3,7 +3,7 @@ AC_ARG_WITH([fesvr],
     [path to your fesvr installation if not in a standard location])],
   [
     LDFLAGS="-L$withval/lib $LDFLAGS"
-    CFLAGS="-I$withval/include $CFLAGS"
+    CPPFLAGS="-I$withval/include $CPPFLAGS"
   ]
 )
 
