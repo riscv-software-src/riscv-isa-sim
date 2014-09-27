@@ -5,7 +5,7 @@
 
 #include <assert.h>
 #include <stdio.h>
-#include <stdint.h>
+#include <cstdint>
 
 int main() {
   uint64_t x = 123, y = 456, z = 0;

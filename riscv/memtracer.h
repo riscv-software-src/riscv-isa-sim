@@ -3,7 +3,7 @@
 #ifndef _MEMTRACER_H
 #define _MEMTRACER_H
 
-#include <stdint.h>
+#include <cstdint>
 #include <string.h>
 #include <vector>
 

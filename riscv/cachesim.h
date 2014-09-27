@@ -7,7 +7,7 @@
 #include <cstring>
 #include <string>
 #include <map>
-#include <stdint.h>
+#include <cstdint>
 
 class lfsr_t
 {

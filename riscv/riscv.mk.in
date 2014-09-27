@@ -21,6 +21,7 @@ riscv_hdrs = \
 	rocc.h \
 	dummy-rocc.h \
 	insn_template.h \
+	mulhi.h \
 
 riscv_precompiled_hdrs = \
 	insn_template.h \

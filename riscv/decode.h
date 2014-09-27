@@ -7,16 +7,12 @@
 # error spike requires a two''s-complement c++ implementation
 #endif
 
-#define __STDC_LIMIT_MACROS
-#include <stdint.h>
+#include <cstdint>
 #include <string.h>
 #include "encoding.h"
 #include "config.h"
 #include "common.h"
 #include <cinttypes>
-
-typedef int int128_t __attribute__((mode(TI)));
-typedef unsigned int uint128_t __attribute__((mode(TI)));
 
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
