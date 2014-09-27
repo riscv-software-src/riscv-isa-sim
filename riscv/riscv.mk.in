@@ -35,8 +35,9 @@ riscv_srcs = \
 	cachesim.cc \
 	mmu.cc \
 	disasm.cc \
-  extension.cc \
-  rocc.cc \
+	extension.cc \
+	rocc.cc \
+	regnames.cc \
 	$(riscv_gen_srcs) \
 
 riscv_test_srcs =
