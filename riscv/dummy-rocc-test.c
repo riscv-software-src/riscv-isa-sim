@@ -1,11 +1,11 @@
 // The following is a RISC-V program to test the functionality of the
 // dummy RoCC accelerator.
-// Compile with riscv-gcc dummy.c
+// Compile with riscv-gcc dummy-rocc-test.c
 // Run with spike --extension=dummy pk a.out
 
 #include <assert.h>
 #include <stdio.h>
-#include <cstdint>
+#include <stdint.h>
 
 int main() {
   uint64_t x = 123, y = 456, z = 0;
