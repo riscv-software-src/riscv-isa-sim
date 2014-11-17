@@ -44,6 +44,9 @@ sim_t::sim_t(size_t nprocs, size_t mem_mb, const std::vector<std::string>& args)
     procs[i] = new processor_t(this, new mmu_t(mem, memsz), i);
   }
 
+  #ifdef RISCV_ENABLE_PICOC
+  picoc_init(this);
+  #endif
 }
 
 sim_t::~sim_t()

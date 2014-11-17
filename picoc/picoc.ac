@@ -1,0 +1,7 @@
+AS_IF([test "x$enable_picoc" = "xyes"], [
+    AC_CHECK_LIB(readline, readline, [], [AC_MSG_ERROR([libreadline is required])])
+    AC_DEFINE([RISCV_ENABLE_PICOC],,[Define if picoc is supported])
+    AC_SUBST(enable_picoc, $enable_picoc)
+    LDFLAGS="-lreadline -lm $LDFLAGS"
+    CFLAGS="-DUNIX_HOST $CFLAGS"
+])

@@ -37,6 +37,20 @@ public:
   // read one of the system control registers
   reg_t get_scr(int which);
 
+  // picoc support
+  inline int picoc_get_pc(int p);
+  inline int picoc_get_reg(int p, int r);
+  inline int picoc_get_mem(char* addr);
+
+  #ifdef RISCV_ENABLE_PICOC
+  void picoc_init(sim_t* sim);
+  void picoc_shutdown();
+  void picoc_eval(std::string& cmd);
+  void picoc_compile_conditional(std::string& cond);
+  bool picoc_eval_conditional(void);
+  void picoc_eval_always(void);
+  #endif
+
 private:
   std::unique_ptr<htif_isasim_t> htif;
   char* mem; // main memory
@@ -70,6 +84,13 @@ private:
   reg_t get_mem(const std::vector<std::string>& args);
   reg_t get_pc(const std::vector<std::string>& args);
   reg_t get_tohost(const std::vector<std::string>& args);
+
+  #ifdef RISCV_ENABLE_PICOC
+  void interactive_evalc(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_alwaysc(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_untilc(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_whilec(const std::string& cmd, const std::vector<std::string>& args);
+  #endif
 
   friend class htif_isasim_t;
 };

@@ -81,6 +81,13 @@ void sim_t::interactive()
     funcs["while"] = &sim_t::interactive_until;
     funcs["q"] = &sim_t::interactive_quit;
 
+    #ifdef RISCV_ENABLE_PICOC
+    funcs["evalc"] = &sim_t::interactive_evalc;
+    funcs["alwaysc"] = &sim_t::interactive_alwaysc;
+    funcs["untilc"] = &sim_t::interactive_untilc;
+    funcs["whilec"] = &sim_t::interactive_untilc;
+    #endif
+
     try
     {
       if(funcs.count(cmd))
@@ -278,7 +285,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
     }
     catch (trap_t t) {}
 
-    set_procs_debug(false);
+    //set_procs_debug(false);
     step(1);
   }
 }

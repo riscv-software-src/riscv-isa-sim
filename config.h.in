@@ -9,6 +9,9 @@
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
 
+/* Define to 1 if you have the `readline' library (-lreadline). */
+#undef HAVE_LIBREADLINE
+
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef HWACHA_ENABLED
 
@@ -31,6 +34,9 @@
 #undef PACKAGE_VERSION
 
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef PICOC_ENABLED
+
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef RISCV_ENABLED
 
 /* Define if 64-bit mode is supported */
@@ -44,6 +50,9 @@
 
 /* Enable PC histogram generation */
 #undef RISCV_ENABLE_HISTOGRAM
+
+/* Define if picoc is supported */
+#undef RISCV_ENABLE_PICOC
 
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SOFTFLOAT_ENABLED

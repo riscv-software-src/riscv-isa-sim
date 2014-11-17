@@ -1,0 +1,19 @@
+enable_picoc := @enable_picoc@
+
+ifeq ($(enable_picoc),yes)
+  picoc_cppflags = -DHOST_UNIX
+
+  picoc_hdrs = \
+	interpreter.h \
+	picoc.h \
+	platform.h
+
+  picoc_c_srcs = \
+	library_spike.c table.c lex.c parse.c expression.c heap.c type.c \
+	variable.c clibrary.c platform.c include.c \
+	platform_unix.c library_unix.c \
+	stdio.c math.c string.c stdlib.c \
+	time.c errno.c ctype.c stdbool.c \
+	unistd.c
+else
+endif
