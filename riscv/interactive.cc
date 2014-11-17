@@ -285,7 +285,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
     }
     catch (trap_t t) {}
 
-    //set_procs_debug(false);
+    set_procs_debug(false);
     step(1);
   }
 }
