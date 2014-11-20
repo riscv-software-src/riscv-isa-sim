@@ -49,7 +49,8 @@ riscv_gen_srcs = \
 	$(addsuffix .cc, $(call get_insn_list,$(src_dir)/riscv/encoding.h))
 
 icache.h:
-	$(src_dir)/riscv/gen_icache 1024 > $@
+	$(src_dir)/riscv/gen_icache 1024 > $@.tmp
+	mv $@.tmp $@
 
 $(riscv_gen_srcs): %.cc: insns/%.h insn_template.cc
 	sed 's/NAME/$(subst .cc,,$@)/' $(src_dir)/riscv/insn_template.cc | sed 's/OPCODE/$(call get_opcode,$(src_dir)/riscv/encoding.h,$(subst .cc,,$@))/' > $@
