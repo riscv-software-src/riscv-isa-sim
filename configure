@@ -4006,9 +4006,9 @@ fi
 # Default compiler flags
 #-------------------------------------------------------------------------
 
-CFLAGS="-Wall -O2 -Wno-unused"
+CFLAGS="-Wall -Wno-unused -O2"
 
-CXXFLAGS="-Wall -O2 -std=c++11"
+CXXFLAGS="-Wall -Wno-unused -O2 -std=c++11"
 
 
 #-------------------------------------------------------------------------
