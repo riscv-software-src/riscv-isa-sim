@@ -21,14 +21,7 @@ int main(int argc, char** argv)
 
   std::function<extension_t*()> extension;
   option_parser_t parser;
-  parser.option(0, "extension", 1, [&](const char* s){
-    if (!extensions().count(s))
-      fprintf(stderr, "unknown extension %s!\n", s), exit(-1);
-    extension = extensions()[s];
-
-    for (auto disasm_insn : extension()->get_disasms())
-      d.add_insn(disasm_insn);
-  });
+  parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
 
   while (getline(cin, s))
   {

@@ -1,5 +1,8 @@
 /* config.h.in.  Generated from configure.ac by autoheader.  */
 
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef DUMMY_ROCC_ENABLED
+
 /* Define to 1 if you have the `dl' library (-ldl). */
 #undef HAVE_LIBDL
 

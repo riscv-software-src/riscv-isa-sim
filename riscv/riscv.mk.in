@@ -19,7 +19,6 @@ riscv_hdrs = \
 	memtracer.h \
 	extension.h \
 	rocc.h \
-	dummy-rocc.h \
 	insn_template.h \
 	mulhi.h \
 

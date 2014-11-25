@@ -4,6 +4,8 @@
 #include "trap.h"
 #include <stdexcept>
 
+REGISTER_EXTENSION(hwacha, []() { return new hwacha_t; })
+
 void ct_state_t::reset()
 {
   nxpr = 32;

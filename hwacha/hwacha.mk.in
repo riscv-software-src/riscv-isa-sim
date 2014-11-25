@@ -1,4 +1,5 @@
 hwacha_subproject_deps = \
+	spike \
 	riscv \
 	softfloat \
 

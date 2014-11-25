@@ -51,11 +51,7 @@ int main(int argc, char** argv)
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
-  parser.option(0, "extension", 1, [&](const char* s){
-    if (!extensions().count(s))
-      fprintf(stderr, "unknown extension %s!\n", s), exit(-1);
-    extension = extensions()[s];
-  });
+  parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
     if (lib == NULL) {

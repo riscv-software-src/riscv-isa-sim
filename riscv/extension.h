@@ -3,8 +3,6 @@
 
 #include "processor.h"
 #include "disasm.h"
-#include <map>
-#include <string>
 #include <vector>
 #include <functional>
 
@@ -27,11 +25,12 @@ class extension_t
   void clear_interrupt();
 };
 
-std::map<std::string, std::function<extension_t*()>>& extensions();
+std::function<extension_t*()> find_extension(const char* name);
+void register_extension(const char* name, std::function<extension_t*()> f);
 
 #define REGISTER_EXTENSION(name, constructor) \
   class register_##name { \
-    public: register_##name() { extensions()[#name] = constructor; } \
+    public: register_##name() { register_extension(#name, constructor); } \
   }; static register_##name dummy_##name;
 
 #endif

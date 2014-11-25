@@ -1,19 +1,17 @@
-#ifndef _RISCV_DUMMY_ROCC_H
-#define _RISCV_DUMMY_ROCC_H
-
 #include "rocc.h"
 #include "mmu.h"
+#include <cstring>
 
 class dummy_rocc_t : public rocc_t
 {
  public:
-  const char* name() { return "dummy"; }
+  const char* name() { return "dummy_rocc"; }
 
   reg_t custom0(rocc_insn_t insn, reg_t xs1, reg_t xs2)
   {
     reg_t prev_acc = acc[insn.rs2];
 
-    if (insn.rs2 > num_acc)
+    if (insn.rs2 >= num_acc)
       illegal_instruction();
 
     switch (insn.funct)
@@ -35,10 +33,10 @@ class dummy_rocc_t : public rocc_t
 
     return prev_acc; // in all cases, xd <- previous value of acc[rs2]
   }
-  
-  void reset()
+
+  dummy_rocc_t()
   {
-    for(int i = 0; i < num_acc; i++) acc[i] = 0;
+    memset(acc, 0, sizeof(acc));
   }
 
  private:
@@ -46,4 +44,4 @@ class dummy_rocc_t : public rocc_t
   reg_t acc[num_acc];
 };
 
-#endif
+REGISTER_EXTENSION(dummy_rocc, []() { return new dummy_rocc_t; })
