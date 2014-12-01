@@ -22,7 +22,7 @@
 
 processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
   : sim(_sim), mmu(_mmu), ext(NULL), disassembler(new disassembler_t),
-    id(_id), run(false), debug(false)
+    id(_id), run(false), debug(false), serialized(false)
 {
   reset(true);
   mmu->set_processor(this);
@@ -103,15 +103,25 @@ void processor_t::reset(bool value)
     ext->reset(); // reset the extension
 }
 
+struct serialize_t {};
+
+void processor_t::serialize()
+{
+  if (serialized)
+    serialized = false;
+  else
+    serialized = true, throw serialize_t();
+}
+
 void processor_t::take_interrupt()
 {
-  uint32_t interrupts = (state.sr & SR_IP) >> SR_IP_SHIFT;
-  interrupts &= (state.sr & SR_IM) >> SR_IM_SHIFT;
+  int irqs = ((state.sr & SR_IP) >> SR_IP_SHIFT) & (state.sr >> SR_IM_SHIFT);
+  if (likely(!irqs) || likely(!(state.sr & SR_EI)))
+    return;
 
-  if (interrupts && (state.sr & SR_EI))
-    for (int i = 0; ; i++, interrupts >>= 1)
-      if (interrupts & 1)
-        throw trap_t((1ULL << ((state.sr & SR_S64) ? 63 : 31)) + i);
+  for (int i = 0; ; i++)
+    if ((irqs >> i) & 1)
+      throw trap_t((1ULL << ((state.sr & SR_S64) ? 63 : 31)) + i);
 }
 
 static void commit_log(state_t* state, insn_t insn)
@@ -141,75 +151,85 @@ inline void processor_t::update_histogram(size_t pc)
 #endif
 }
 
-static inline void execute_insn(processor_t* p, state_t* st, insn_fetch_t fetch)
+static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
-  reg_t npc = fetch.func(p, fetch.insn.insn, st->pc);
-  commit_log(st, fetch.insn.insn);
-  p->update_histogram(st->pc);
-  st->pc = npc;
+  reg_t npc = fetch.func(p, fetch.insn.insn, pc);
+  commit_log(p->get_state(), fetch.insn.insn);
+  p->update_histogram(pc);
+  return npc;
 }
 
-void processor_t::step(size_t n0)
+static void update_timer(state_t* state, size_t instret)
 {
-  if(!run)
-    return;
+  uint64_t count0 = (uint64_t)(uint32_t)state->count;
+  state->count += instret;
+  uint64_t before = count0 - state->compare;
+  if (int64_t(before ^ (before + instret)) < 0)
+    state->sr |= (1 << (IRQ_TIMER + SR_IP_SHIFT));
+}
 
+static size_t next_timer(state_t* state)
+{
+  return state->compare - (uint32_t)state->count;
+}
+
+void processor_t::step(size_t n)
+{
+  size_t instret = 0;
+  reg_t pc = state.pc;
   mmu_t* _mmu = mmu;
-  auto count32 = decltype(state.compare)(state.count);
-  bool count_le_compare = count32 <= state.compare;
-  ssize_t n = std::min(ssize_t(n0), ssize_t((state.compare - count32) | 1));
+
+  if (unlikely(!run || !n))
+    return;
+  n = std::min(n, next_timer(&state) | 1U);
 
   try
   {
     take_interrupt();
 
-    if (debug) // print out instructions as we go
+    if (unlikely(debug))
     {
-      for (ssize_t i = 0; i < n; state.count++, i++)
+      while (instret++ < n)
       {
-        insn_fetch_t fetch = mmu->load_insn(state.pc);
+        insn_fetch_t fetch = mmu->load_insn(pc);
         disasm(fetch.insn.insn);
-        execute_insn(this, &state, fetch);
+        pc = execute_insn(this, pc, fetch);
       }
     }
-    else while (n > 0)
+    else while (instret < n)
     {
-      size_t idx = (state.pc / sizeof(insn_t)) % ICACHE_SIZE;
-      auto ic_entry = _mmu->access_icache(state.pc), ic_entry_init = ic_entry;
+      size_t idx = (pc / sizeof(insn_t)) % ICACHE_SIZE;
+      auto ic_entry = _mmu->access_icache(pc);
 
       #define ICACHE_ACCESS(idx) { \
         insn_fetch_t fetch = ic_entry->data; \
         ic_entry++; \
-        execute_insn(this, &state, fetch); \
-        if (idx < ICACHE_SIZE-1 && unlikely(ic_entry->tag != state.pc)) break; \
+        pc = execute_insn(this, pc, fetch); \
+        instret++; \
+        if (idx < ICACHE_SIZE-1 && unlikely(ic_entry->tag != pc)) break; \
       }
 
       switch (idx)
       {
         ICACHE_SWITCH; // auto-generated into icache.h
       }
-
-      size_t i = ic_entry - ic_entry_init;
-      state.count += i;
-      n -= i;
     }
   }
   catch(trap_t& t)
   {
-    take_trap(t);
+    pc = take_trap(t, pc);
   }
+  catch(serialize_t& s) {}
 
-  bool count_ge_compare =
-    uint64_t(n) + decltype(state.compare)(state.count) >= state.compare;
-  if (count_le_compare && count_ge_compare)
-    set_interrupt(IRQ_TIMER, true);
+  state.pc = pc;
+  update_timer(&state, instret);
 }
 
-void processor_t::take_trap(trap_t& t)
+reg_t processor_t::take_trap(trap_t& t, reg_t epc)
 {
   if (debug)
     fprintf(stderr, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
-            id, t.name(), state.pc);
+            id, t.name(), epc);
 
   // switch to supervisor, set previous supervisor bit, disable interrupts
   set_pcr(CSR_STATUS, (((state.sr & ~SR_EI) | SR_S) & ~SR_PS & ~SR_PEI) |
@@ -218,10 +238,9 @@ void processor_t::take_trap(trap_t& t)
 
   yield_load_reservation();
   state.cause = t.cause();
-  state.epc = state.pc;
-  state.pc = state.evec;
-
+  state.epc = epc;
   t.side_effects(&state); // might set badvaddr etc.
+  return state.evec;
 }
 
 void processor_t::deliver_ipi()
@@ -237,10 +256,8 @@ void processor_t::disasm(insn_t insn)
           id, state.pc, insn.bits(), disassembler->disassemble(insn).c_str());
 }
 
-reg_t processor_t::set_pcr(int which, reg_t val)
+void processor_t::set_pcr(int which, reg_t val)
 {
-  reg_t old_pcr = get_pcr(which);
-
   switch (which)
   {
     case CSR_FFLAGS:
@@ -280,6 +297,7 @@ reg_t processor_t::set_pcr(int which, reg_t val)
       state.count = (val << 32) | (uint32_t)state.count;
       break;
     case CSR_COMPARE:
+      serialize();
       set_interrupt(IRQ_TIMER, false);
       state.compare = val;
       break;
@@ -306,8 +324,6 @@ reg_t processor_t::set_pcr(int which, reg_t val)
       set_fromhost(val);
       break;
   }
-
-  return old_pcr;
 }
 
 void processor_t::set_fromhost(reg_t val)
@@ -341,6 +357,7 @@ reg_t processor_t::get_pcr(int which)
     case CSR_TIME:
     case CSR_INSTRET:
     case CSR_COUNT:
+      serialize();
       return state.count;
     case CSR_CYCLEH:
     case CSR_TIMEH:
@@ -348,6 +365,7 @@ reg_t processor_t::get_pcr(int which)
     case CSR_COUNTH:
       if (rv64)
         break;
+      serialize();
       return state.count >> 32;
     case CSR_COMPARE:
       return state.compare;
