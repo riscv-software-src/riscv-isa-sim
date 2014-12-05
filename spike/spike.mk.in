@@ -1,4 +1,13 @@
+enable_picoc := @enable_picoc@
+
+ifeq ($(enable_picoc),yes)
+  picoc_dep = picoc
+else
+  picoc_dep =
+endif
+
 spike_subproject_deps = \
+	$(picoc_dep) \
 	softfloat \
 	riscv \
 	hwacha \

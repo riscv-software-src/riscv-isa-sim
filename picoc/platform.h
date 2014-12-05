@@ -47,7 +47,7 @@
 # ifndef NO_FP
 #  include <math.h>
 #  define PICOC_MATH_LIBRARY
-#  define USE_READLINE
+//#  define USE_READLINE
 #  undef BIG_ENDIAN
 #  if defined(__powerpc__) || defined(__hppa__) || defined(__sparc__)
 #   define BIG_ENDIAN
