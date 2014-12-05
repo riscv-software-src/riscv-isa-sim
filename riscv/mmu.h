@@ -25,10 +25,7 @@ const reg_t VA_BITS = VPN_BITS + PGSHIFT;
 struct insn_fetch_t
 {
   insn_func_t func;
-  union {
-    insn_t insn;
-    uint_fast32_t pad;
-  } insn;
+  insn_t insn;
 };
 
 struct icache_entry_t {
@@ -77,27 +74,49 @@ public:
   store_func(uint32)
   store_func(uint64)
 
-  // load instruction from memory at aligned address.
-  inline icache_entry_t* access_icache(reg_t addr)
+  inline size_t icache_index(reg_t addr)
   {
-    reg_t idx = (addr / sizeof(insn_t)) % ICACHE_SIZE;
+    // for instruction sizes != 4, this hash still works but is suboptimal
+    return (addr / 4) % ICACHE_SIZE;
+  }
+
+  // load instruction from memory at aligned address.
+  icache_entry_t* access_icache(reg_t addr) __attribute__((always_inline))
+  {
+    reg_t idx = icache_index(addr);
     icache_entry_t* entry = &icache[idx];
     if (likely(entry->tag == addr))
       return entry;
 
-    void* iaddr = translate(addr, sizeof(insn_t), false, true);
-    insn_fetch_t fetch;
-    fetch.insn.pad = *(decltype(fetch.insn.insn.bits())*)iaddr;
-    fetch.func = proc->decode_insn(fetch.insn.insn);
+    char* iaddr = (char*)translate(addr, 2, false, true);
+    insn_bits_t insn = *(uint16_t*)iaddr;
 
+    if (unlikely(insn_length(insn) == 2)) {
+      insn = (int16_t)insn;
+    } else if (likely(insn_length(insn) == 4)) {
+      if (likely((addr & (PGSIZE-1)) < PGSIZE-2))
+        insn |= (insn_bits_t)*(int16_t*)(iaddr + 2) << 16;
+      else
+        insn |= (insn_bits_t)*(int16_t*)translate(addr + 2, 2, false, true) << 16;
+    } else if (insn_length(insn) == 6) {
+      insn |= (insn_bits_t)*(int16_t*)translate(addr + 4, 2, false, true) << 32;
+      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 2, 2, false, true) << 16;
+    } else {
+      static_assert(sizeof(insn_bits_t) == 8, "insn_bits_t must be uint64_t");
+      insn |= (insn_bits_t)*(int16_t*)translate(addr + 6, 2, false, true) << 48;
+      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 4, 2, false, true) << 32;
+      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 2, 2, false, true) << 16;
+    }
+
+    insn_fetch_t fetch = {proc->decode_insn(insn), insn};
     icache[idx].tag = addr;
     icache[idx].data = fetch;
 
-    reg_t paddr = (char*)iaddr - mem;
-    if (!tracer.empty() && tracer.interested_in_range(paddr, paddr + sizeof(insn_t), false, true))
+    reg_t paddr = iaddr - mem;
+    if (!tracer.empty() && tracer.interested_in_range(paddr, paddr + 1, false, true))
     {
       icache[idx].tag = -1;
-      tracer.trace(paddr, sizeof(insn_t), false, true);
+      tracer.trace(paddr, 1, false, true);
     }
     return &icache[idx];
   }

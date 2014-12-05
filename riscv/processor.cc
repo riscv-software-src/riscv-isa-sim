@@ -129,13 +129,13 @@ static void commit_log(state_t* state, insn_t insn)
 #ifdef RISCV_ENABLE_COMMITLOG
   if (state->sr & SR_EI) {
     if (state->log_reg_write.addr) {
-      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx32 ") %c%2u 0x%016" PRIx64 "\n",
+      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx64 ") %c%2u 0x%016" PRIx64 "\n",
               state->pc, insn.bits(),
               state->log_reg_write.addr & 1 ? 'f' : 'x',
               state->log_reg_write.addr >> 1, state->log_reg_write.data);
     }
     else {
-      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx32 ")\n",
+      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx64 ")\n",
               state->pc, insn.bits());
     }
   }
@@ -153,8 +153,8 @@ inline void processor_t::update_histogram(size_t pc)
 
 static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
-  reg_t npc = fetch.func(p, fetch.insn.insn, pc);
-  commit_log(p->get_state(), fetch.insn.insn);
+  reg_t npc = fetch.func(p, fetch.insn, pc);
+  commit_log(p->get_state(), fetch.insn);
   p->update_histogram(pc);
   return npc;
 }
@@ -192,13 +192,13 @@ void processor_t::step(size_t n)
       while (instret++ < n)
       {
         insn_fetch_t fetch = mmu->load_insn(pc);
-        disasm(fetch.insn.insn);
+        disasm(fetch.insn);
         pc = execute_insn(this, pc, fetch);
       }
     }
     else while (instret < n)
     {
-      size_t idx = (pc / sizeof(insn_t)) % ICACHE_SIZE;
+      size_t idx = _mmu->icache_index(pc);
       auto ic_entry = _mmu->access_icache(pc);
 
       #define ICACHE_ACCESS(idx) { \
@@ -251,9 +251,9 @@ void processor_t::deliver_ipi()
 
 void processor_t::disasm(insn_t insn)
 {
-  // the disassembler is stateless, so we share it
-  fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx32 ") %s\n",
-          id, state.pc, insn.bits(), disassembler->disassemble(insn).c_str());
+  uint64_t bits = insn.bits() & ((1ULL << (8 * insn_length(insn.bits()))) - 1);
+  fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx64 ") %s\n",
+          id, state.pc, bits, disassembler->disassemble(insn).c_str());
 }
 
 void processor_t::set_pcr(int which, reg_t val)

@@ -32,10 +32,8 @@ int main(int argc, char** argv)
         break;
 
       size_t numstart = start + strlen("DASM(");
-      uint32_t n = strtoul(&s[numstart], NULL, 16);
-
-      string dis = d.disassemble(*(insn_t*)&n);
-
+      insn_bits_t bits = strtoull(&s[numstart], NULL, 16);
+      string dis = d.disassemble(bits);
       s = s.substr(0, start) + dis + s.substr(end+1);
       start += dis.length();
     }
