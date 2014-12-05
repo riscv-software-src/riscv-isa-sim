@@ -42,8 +42,8 @@ class mem_trap_t : public trap_t
   const char* name() { return "trap_"#x; } \
 };
 
-DECLARE_TRAP(CAUSE_MISALIGNED_FETCH, instruction_address_misaligned)
-DECLARE_TRAP(CAUSE_FAULT_FETCH, instruction_access_fault)
+DECLARE_MEM_TRAP(CAUSE_MISALIGNED_FETCH, instruction_address_misaligned)
+DECLARE_MEM_TRAP(CAUSE_FAULT_FETCH, instruction_access_fault)
 DECLARE_TRAP(CAUSE_ILLEGAL_INSTRUCTION, illegal_instruction)
 DECLARE_TRAP(CAUSE_PRIVILEGED_INSTRUCTION, privileged_instruction)
 DECLARE_TRAP(CAUSE_FP_DISABLED, fp_disabled)

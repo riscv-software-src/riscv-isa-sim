@@ -155,7 +155,7 @@ private:
 
 #define set_pc(x) \
   do { if ((x) & 3 /* For now... */) \
-         throw trap_instruction_address_misaligned(); \
+         throw trap_instruction_address_misaligned(x); \
        npc = sext_xprlen(x); \
      } while(0)
 

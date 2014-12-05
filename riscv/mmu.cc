@@ -45,8 +45,7 @@ void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
   if(unlikely((pte_perm & perm) != perm))
   {
     if (fetch)
-      throw trap_instruction_access_fault();
-
+      throw trap_instruction_access_fault(addr);
     if (store)
       throw trap_store_access_fault(addr);
     throw trap_load_access_fault(addr);
