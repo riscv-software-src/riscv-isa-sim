@@ -32,14 +32,14 @@
 static inline reg_t read_xpr(hwacha_t* h, insn_t insn, uint32_t idx, size_t src)
 {
   if (src >= h->get_ct_state()->nxpr)
-    h->take_exception(HWACHA_CAUSE_TVEC_ILLEGAL_REGID, insn.bits());
+    h->take_exception(HWACHA_CAUSE_TVEC_ILLEGAL_REGID, uint32_t(insn.bits()));
   return (h->get_ut_state(idx)->XPR[src]);
 }
 
 static inline void write_xpr(hwacha_t* h, insn_t insn, uint32_t idx, size_t dst, reg_t value)
 {
   if (dst >= h->get_ct_state()->nxpr)
-    h->take_exception(HWACHA_CAUSE_TVEC_ILLEGAL_REGID, insn.bits());
+    h->take_exception(HWACHA_CAUSE_TVEC_ILLEGAL_REGID, uint32_t(insn.bits()));
   h->get_ut_state(idx)->XPR.write(dst, value);
 }
 
@@ -52,14 +52,14 @@ static inline void write_xpr(hwacha_t* h, insn_t insn, uint32_t idx, size_t dst,
 static inline reg_t read_fpr(hwacha_t* h, insn_t insn, uint32_t idx, size_t src)
 {
   if (src >= h->get_ct_state()->nfpr)
-    h->take_exception(HWACHA_CAUSE_TVEC_ILLEGAL_REGID, insn.bits());
+    h->take_exception(HWACHA_CAUSE_TVEC_ILLEGAL_REGID, uint32_t(insn.bits()));
   return (h->get_ut_state(idx)->FPR[src]);
 }
 
 static inline void write_fpr(hwacha_t* h, insn_t insn, uint32_t idx, size_t dst, reg_t value)
 {
   if (dst >= h->get_ct_state()->nfpr)
-    h->take_exception(HWACHA_CAUSE_TVEC_ILLEGAL_REGID, insn.bits());
+    h->take_exception(HWACHA_CAUSE_TVEC_ILLEGAL_REGID, uint32_t(insn.bits()));
   h->get_ut_state(idx)->FPR.write(dst, value);
 }
 
@@ -100,6 +100,6 @@ static inline void write_fpr(hwacha_t* h, insn_t insn, uint32_t idx, size_t dst,
 
 #define require_supervisor_hwacha \
   if (unlikely(!(p->get_state()->sr & SR_S))) \
-    h->take_exception(HWACHA_CAUSE_PRIVILEGED_INSTRUCTION, insn.bits());
+    h->take_exception(HWACHA_CAUSE_PRIVILEGED_INSTRUCTION, uint32_t(insn.bits()));
 
 #endif
