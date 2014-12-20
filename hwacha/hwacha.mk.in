@@ -40,3 +40,6 @@ hwacha_ut_gen_srcs = \
 $(hwacha_ut_gen_srcs): %.cc: insns_ut/%.h insn_template_hwacha_ut.cc
 	sed 's/NAME/$(subst .cc,,$@)/' $(src_dir)/hwacha/insn_template_hwacha_ut.cc | sed 's/OPCODE/$(call get_opcode,$(src_dir)/hwacha/opcodes_hwacha_ut.h,$(subst .cc,,$@))/' > $@
 
+hwacha_junk = \
+	$(hwacha_gen_srcs) \
+	$(hwacha_ut_gen_srcs) \
