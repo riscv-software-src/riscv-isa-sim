@@ -4,7 +4,6 @@
 #define _RISCV_MMU_H
 
 #include "decode.h"
-#include "icache.h"
 #include "trap.h"
 #include "common.h"
 #include "config.h"
@@ -74,10 +73,12 @@ public:
   store_func(uint32)
   store_func(uint64)
 
+  static const reg_t ICACHE_ENTRIES = 1024;
+
   inline size_t icache_index(reg_t addr)
   {
     // for instruction sizes != 4, this hash still works but is suboptimal
-    return (addr / 4) % ICACHE_SIZE;
+    return (addr / 4) % ICACHE_ENTRIES;
   }
 
   // load instruction from memory at aligned address.
@@ -140,7 +141,7 @@ private:
   memtracer_list_t tracer;
 
   // implement an instruction cache for simulator performance
-  icache_entry_t icache[ICACHE_SIZE];
+  icache_entry_t icache[ICACHE_ENTRIES];
 
   // implement a TLB for simulator performance
   static const reg_t TLB_ENTRIES = 256;

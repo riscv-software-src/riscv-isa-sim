@@ -47,8 +47,10 @@ riscv_gen_hdrs = \
 riscv_gen_srcs = \
 	$(addsuffix .cc, $(call get_insn_list,$(src_dir)/riscv/encoding.h))
 
-icache.h:
-	$(src_dir)/riscv/gen_icache 1024 > $@.tmp
+icache_entries := `grep "ICACHE_ENTRIES =" $(src_dir)/riscv/mmu.h | sed 's/.* = \(.*\);/\1/'`
+
+icache.h: mmu.h
+	$(src_dir)/riscv/gen_icache $(icache_entries) > $@.tmp
 	mv $@.tmp $@
 
 $(riscv_gen_srcs): %.cc: insns/%.h insn_template.cc

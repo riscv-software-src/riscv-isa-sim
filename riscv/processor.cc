@@ -7,7 +7,6 @@
 #include "sim.h"
 #include "htif.h"
 #include "disasm.h"
-#include "icache.h"
 #include <cinttypes>
 #include <cmath>
 #include <cstdlib>
@@ -206,12 +205,12 @@ void processor_t::step(size_t n)
         ic_entry++; \
         pc = execute_insn(this, pc, fetch); \
         instret++; \
-        if (idx < ICACHE_SIZE-1 && unlikely(ic_entry->tag != pc)) break; \
+        if (idx == mmu_t::ICACHE_ENTRIES-1) break; \
+        if (unlikely(ic_entry->tag != pc)) break; \
       }
 
-      switch (idx)
-      {
-        ICACHE_SWITCH; // auto-generated into icache.h
+      switch (idx) {
+        #include "icache.h"
       }
     }
   }

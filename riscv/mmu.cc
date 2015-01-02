@@ -16,7 +16,7 @@ mmu_t::~mmu_t()
 
 void mmu_t::flush_icache()
 {
-  for (size_t i = 0; i < ICACHE_SIZE; i++)
+  for (size_t i = 0; i < ICACHE_ENTRIES; i++)
     icache[i].tag = -1;
 }
 

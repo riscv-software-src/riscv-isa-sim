@@ -1,9 +1,7 @@
 #!/bin/sh
-echo \#define ICACHE_SIZE $1
 n=$(($1-1))
-echo \#define ICACHE_SWITCH \\
 for i in `seq 0 $n`
 do
-  echo case $i: ICACHE_ACCESS\($i\)\; \\
+  echo case $i: ICACHE_ACCESS\($i\)\;
 done
 echo
