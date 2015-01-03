@@ -89,7 +89,8 @@ public:
     if (likely(entry->tag == addr))
       return entry;
 
-    char* iaddr = (char*)translate(addr, 2, false, true);
+    bool rvc = false; // set this dynamically once RVC is re-implemented
+    char* iaddr = (char*)translate(addr, rvc ? 2 : 4, false, true);
     insn_bits_t insn = *(uint16_t*)iaddr;
 
     if (unlikely(insn_length(insn) == 2)) {
