@@ -155,11 +155,7 @@ private:
    ((x) & 0x3f) < 0x3f ? 6 : \
    8)
 
-#define set_pc(x) \
-  do { if ((x) & 3 /* For now... */) \
-         throw trap_instruction_address_misaligned(x); \
-       npc = sext_xprlen(x); \
-     } while(0)
+#define set_pc(x) (npc = sext_xprlen(x))
 
 #define validate_csr(which, write) ({ \
   unsigned my_priv = (STATE.sr & SR_S) ? 1 : 0; \

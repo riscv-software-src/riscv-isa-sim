@@ -167,7 +167,9 @@ private:
     void* data = tlb_data[idx] + addr;
 
     if (unlikely(addr & (bytes-1)))
-      store ? throw trap_store_address_misaligned(addr) : throw trap_load_address_misaligned(addr);
+      store ? throw trap_store_address_misaligned(addr) :
+      fetch ? throw trap_instruction_address_misaligned(addr) :
+      throw trap_load_address_misaligned(addr);
 
     if (likely(tag == expected_tag))
       return data;
