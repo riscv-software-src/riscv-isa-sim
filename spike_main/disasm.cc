@@ -134,6 +134,7 @@ disassembler_t::disassembler_t()
   const uint32_t match_rs1_ra = 1UL << 15;
   const uint32_t mask_rs2 = 0x1fUL << 20;
   const uint32_t mask_imm = 0xfffUL << 20;
+  const uint32_t match_imm_1 = 1UL << 20;
 
   #define DECLARE_INSN(code, match, mask) \
    const uint32_t match_##code = match; \
@@ -213,7 +214,6 @@ disassembler_t::disassembler_t()
   add_insn(new disasm_insn_t("jal", match_jal | match_rd_ra, mask_jal | mask_rd, {&jump_target}));
   add_insn(new disasm_insn_t("jal", match_jal, mask_jal, {&xrd, &jump_target}));
 
-  DEFINE_B0TYPE("b",    beq);
   DEFINE_B1TYPE("beqz", beq);
   DEFINE_B1TYPE("bnez", bne);
   DEFINE_B1TYPE("bltz", blt);
@@ -236,16 +236,19 @@ disassembler_t::disassembler_t()
   add_insn(new disasm_insn_t("nop", match_addi, mask_addi | mask_rd | mask_rs1 | mask_imm, {}));
   add_insn(new disasm_insn_t(" - ", match_xor, mask_xor | mask_rd | mask_rs1 | mask_rs2, {})); // for machine-generated bubbles
   DEFINE_I0TYPE("li", addi);
-  DEFINE_I1TYPE("move", addi);
+  DEFINE_I1TYPE("mv", addi);
   DEFINE_ITYPE(addi);
   DEFINE_ITYPE(slli);
   DEFINE_ITYPE(slti);
+  add_insn(new disasm_insn_t("seqz", match_sltiu | match_imm_1, mask_sltiu | mask_imm, {&xrd, &xrs1}));
   DEFINE_ITYPE(sltiu);
+  add_insn(new disasm_insn_t("not", match_xori | mask_imm, mask_xori | mask_imm, {&xrd, &xrs1}));
   DEFINE_ITYPE(xori);
   DEFINE_ITYPE(srli);
   DEFINE_ITYPE(srai);
   DEFINE_ITYPE(ori);
   DEFINE_ITYPE(andi);
+  DEFINE_I1TYPE("sext.w", addiw);
   DEFINE_ITYPE(addiw);
   DEFINE_ITYPE(slliw);
   DEFINE_ITYPE(srliw);
@@ -255,6 +258,7 @@ disassembler_t::disassembler_t()
   DEFINE_RTYPE(sub);
   DEFINE_RTYPE(sll);
   DEFINE_RTYPE(slt);
+  add_insn(new disasm_insn_t("snez", match_sltu, mask_sltu | mask_rs1, {&xrd, &xrs2}));
   DEFINE_RTYPE(sltu);
   DEFINE_RTYPE(xor);
   DEFINE_RTYPE(srl);
@@ -287,6 +291,11 @@ disassembler_t::disassembler_t()
 
   add_insn(new disasm_insn_t("csrr", match_csrrs, mask_csrrs | mask_rs1, {&xrd, &csr}));
   add_insn(new disasm_insn_t("csrw", match_csrrw, mask_csrrw | mask_rd, {&csr, &xrs1}));
+  add_insn(new disasm_insn_t("csrs", match_csrrs, mask_csrrs | mask_rd, {&csr, &xrs1}));
+  add_insn(new disasm_insn_t("csrc", match_csrrc, mask_csrrc | mask_rd, {&csr, &xrs1}));
+  add_insn(new disasm_insn_t("csrwi", match_csrrwi, mask_csrrwi | mask_rd, {&csr, &zimm5}));
+  add_insn(new disasm_insn_t("csrsi", match_csrrsi, mask_csrrsi | mask_rd, {&csr, &zimm5}));
+  add_insn(new disasm_insn_t("csrci", match_csrrci, mask_csrrci | mask_rd, {&csr, &zimm5}));
   add_insn(new disasm_insn_t("csrrw", match_csrrw, mask_csrrw, {&xrd, &csr, &xrs1}));
   add_insn(new disasm_insn_t("csrrs", match_csrrs, mask_csrrs, {&xrd, &csr, &xrs1}));
   add_insn(new disasm_insn_t("csrrc", match_csrrc, mask_csrrc, {&xrd, &csr, &xrs1}));
