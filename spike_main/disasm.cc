@@ -228,9 +228,9 @@ disassembler_t::disassembler_t()
   DEFINE_LTYPE(lui);
   DEFINE_LTYPE(auipc);
 
+  add_insn(new disasm_insn_t("ret", match_jalr | match_rs1_ra, mask_jalr | mask_rd | mask_rs1 | mask_imm, {}));
   DEFINE_I2TYPE("jr", jalr);
   add_insn(new disasm_insn_t("jalr", match_jalr | match_rd_ra, mask_jalr | mask_rd | mask_imm, {&xrs1}));
-  add_insn(new disasm_insn_t("ret", match_jalr | match_rs1_ra, mask_jalr | mask_rd | mask_rs1 | mask_imm, {}));
   DEFINE_ITYPE(jalr);
 
   add_insn(new disasm_insn_t("nop", match_addi, mask_addi | mask_rd | mask_rs1 | mask_imm, {}));
