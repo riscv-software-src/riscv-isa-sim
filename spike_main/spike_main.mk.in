@@ -4,7 +4,7 @@ spike_main_subproject_deps = \
 
 spike_main_install_prog_srcs = \
 	spike.cc \
-	riscv-dis.cc \
+	spike-dasm.cc \
 	xspike.cc \
 	termios-xspike.cc \
 
