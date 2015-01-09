@@ -1,3 +1,5 @@
+AC_LANG_CPLUSPLUS
+
 AC_ARG_WITH([fesvr],
   [AS_HELP_STRING([--with-fesvr],
     [path to your fesvr installation if not in a standard location])],
