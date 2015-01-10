@@ -90,7 +90,7 @@ static pid_t fork_xterm(int* tty_fd)
     return -1;
   }
 
-  char tty[NAME_MAX];
+  char tty[PATH_MAX];
   ssize_t ttylen = read(fds[0], tty, sizeof(tty));
   if (ttylen <= 1 || tty[ttylen-1] != '\n')
     return -1;
