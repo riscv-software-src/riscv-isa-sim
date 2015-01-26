@@ -123,19 +123,18 @@ void processor_t::take_interrupt()
       throw trap_t((1ULL << ((state.sr & SR_S64) ? 63 : 31)) + i);
 }
 
-static void commit_log(state_t* state, insn_t insn)
+static void commit_log(state_t* state, reg_t pc, insn_t insn)
 {
 #ifdef RISCV_ENABLE_COMMITLOG
   if (state->sr & SR_EI) {
     if (state->log_reg_write.addr) {
-      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx64 ") %c%2u 0x%016" PRIx64 "\n",
-              state->pc, insn.bits(),
+      uint64_t mask = (insn.length() == 8 ? uint64_t(0) : (uint64_t(1) << (insn.length() * 8))) - 1;
+      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx64 ") %c%2" PRIx64 " 0x%016" PRIx64 "\n",
+              pc, insn.bits() & mask,
               state->log_reg_write.addr & 1 ? 'f' : 'x',
               state->log_reg_write.addr >> 1, state->log_reg_write.data);
-    }
-    else {
-      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx64 ")\n",
-              state->pc, insn.bits());
+    } else {
+      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx64 ")\n", pc, insn.bits());
     }
   }
   state->log_reg_write.addr = 0;
@@ -153,7 +152,7 @@ inline void processor_t::update_histogram(size_t pc)
 static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
   reg_t npc = fetch.func(p, fetch.insn, pc);
-  commit_log(p->get_state(), fetch.insn);
+  commit_log(p->get_state(), pc, fetch.insn);
   p->update_histogram(pc);
   return npc;
 }

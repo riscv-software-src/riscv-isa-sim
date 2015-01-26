@@ -44,6 +44,12 @@ const int NFPR = 32;
 #define FSR_NXA  (FPEXC_NX << FSR_AEXC_SHIFT)
 #define FSR_AEXC (FSR_NVA | FSR_OFA | FSR_UFA | FSR_DZA | FSR_NXA)
 
+#define insn_length(x) \
+  (((x) & 0x03) < 0x03 ? 2 : \
+   ((x) & 0x1f) < 0x1f ? 4 : \
+   ((x) & 0x3f) < 0x3f ? 6 : \
+   8)
+
 typedef uint64_t insn_bits_t;
 class insn_t
 {
@@ -51,6 +57,7 @@ public:
   insn_t() = default;
   insn_t(insn_bits_t bits) : b(bits) {}
   insn_bits_t bits() { return b; }
+  int length() { return insn_length(b); }
   int64_t i_imm() { return int64_t(b) >> 20; }
   int64_t s_imm() { return x(7, 5) + (xs(25, 7) << 5); }
   int64_t sb_imm() { return (x(8, 4) << 1) + (x(25,6) << 5) + (x(7,1) << 11) + (imm_sign() << 12); }
@@ -148,12 +155,6 @@ private:
 #define zext32(x) ((reg_t)(uint32_t)(x))
 #define sext_xprlen(x) (((sreg_t)(x) << (64-xprlen)) >> (64-xprlen))
 #define zext_xprlen(x) (((reg_t)(x) << (64-xprlen)) >> (64-xprlen))
-
-#define insn_length(x) \
-  (((x) & 0x03) < 0x03 ? 2 : \
-   ((x) & 0x1f) < 0x1f ? 4 : \
-   ((x) & 0x3f) < 0x3f ? 6 : \
-   8)
 
 #define set_pc(x) (npc = sext_xprlen(x))
 

@@ -26,7 +26,7 @@ struct insn_desc_t
 
 struct commit_log_reg_t
 {
-  uint32_t addr;
+  reg_t addr;
   reg_t data;
 };
 
