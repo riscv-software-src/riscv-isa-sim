@@ -127,14 +127,16 @@ static void commit_log(state_t* state, reg_t pc, insn_t insn)
 {
 #ifdef RISCV_ENABLE_COMMITLOG
   if (state->sr & SR_EI) {
+    uint64_t mask = (insn.length() == 8 ? uint64_t(0) : (uint64_t(1) << (insn.length() * 8))) - 1;
     if (state->log_reg_write.addr) {
-      uint64_t mask = (insn.length() == 8 ? uint64_t(0) : (uint64_t(1) << (insn.length() * 8))) - 1;
-      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx64 ") %c%2" PRIx64 " 0x%016" PRIx64 "\n",
-              pc, insn.bits() & mask,
+      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx64 ") %c%2" PRIu64 " 0x%016" PRIx64 "\n",
+              pc,
+              insn.bits() & mask,
               state->log_reg_write.addr & 1 ? 'f' : 'x',
-              state->log_reg_write.addr >> 1, state->log_reg_write.data);
+              state->log_reg_write.addr >> 1,
+              state->log_reg_write.data);
     } else {
-      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx64 ")\n", pc, insn.bits());
+      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx64 ")\n", pc, insn.bits() & mask);
     }
   }
   state->log_reg_write.addr = 0;
