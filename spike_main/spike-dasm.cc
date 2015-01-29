@@ -31,8 +31,13 @@ int main(int argc, char** argv)
       if (end == string::npos)
         break;
 
+      char* endp;
       size_t numstart = start + strlen("DASM(");
-      insn_bits_t bits = strtoull(&s[numstart], NULL, 16);
+      int64_t bits = strtoull(&s[numstart], &endp, 16);
+      size_t nbits = 4 * (endp - &s[numstart]);
+      if (nbits < 64)
+        bits = bits << (64 - nbits) >> (64 - nbits);
+
       string dis = d.disassemble(bits);
       s = s.substr(0, start) + dis + s.substr(end+1);
       start += dis.length();
