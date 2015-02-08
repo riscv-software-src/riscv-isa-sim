@@ -3,8 +3,8 @@
 
 reg_t hwacha_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
-  int xprlen = 64;
-  reg_t npc = sext_xprlen(pc + insn_length(OPCODE));
+  int xlen = 64;
+  reg_t npc = sext_xlen(pc + insn_length(OPCODE));
   hwacha_t* h = static_cast<hwacha_t*>(p->get_extension());
   rocc_insn_union_t u;
   u.i = insn;

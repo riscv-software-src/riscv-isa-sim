@@ -1,1 +1,1 @@
-WRITE_RD(sext_xprlen(insn.u_imm() + pc));
+WRITE_RD(sext_xlen(insn.u_imm() + pc));

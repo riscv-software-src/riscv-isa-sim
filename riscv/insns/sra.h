@@ -1,1 +1,1 @@
-WRITE_RD(sext_xprlen(sext_xprlen(RS1) >> (RS2 & (xprlen-1))));
+WRITE_RD(sext_xlen(sext_xlen(RS1) >> (RS2 & (xlen-1))));

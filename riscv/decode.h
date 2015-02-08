@@ -135,7 +135,7 @@ private:
               if(rm > 4) throw trap_illegal_instruction(); \
               rm; })
 
-#define xpr64 (xprlen == 64)
+#define xpr64 (xlen == 64)
 
 #define require_supervisor if(unlikely(!(STATE.sr & SR_S))) throw trap_privileged_instruction()
 #define require_xpr64 if(unlikely(!xpr64)) throw trap_illegal_instruction()
@@ -147,16 +147,16 @@ private:
 #endif
 #define require_accelerator if(unlikely(!(STATE.sr & SR_EA))) throw trap_accelerator_disabled()
 
-#define cmp_trunc(reg) (reg_t(reg) << (64-xprlen))
+#define cmp_trunc(reg) (reg_t(reg) << (64-xlen))
 #define set_fp_exceptions ({ STATE.fflags |= softfloat_exceptionFlags; \
                              softfloat_exceptionFlags = 0; })
 
 #define sext32(x) ((sreg_t)(int32_t)(x))
 #define zext32(x) ((reg_t)(uint32_t)(x))
-#define sext_xprlen(x) (((sreg_t)(x) << (64-xprlen)) >> (64-xprlen))
-#define zext_xprlen(x) (((reg_t)(x) << (64-xprlen)) >> (64-xprlen))
+#define sext_xlen(x) (((sreg_t)(x) << (64-xlen)) >> (64-xlen))
+#define zext_xlen(x) (((reg_t)(x) << (64-xlen)) >> (64-xlen))
 
-#define set_pc(x) (npc = sext_xprlen(x))
+#define set_pc(x) (npc = sext_xlen(x))
 
 #define validate_csr(which, write) ({ \
   unsigned my_priv = (STATE.sr & SR_S) ? 1 : 0; \
