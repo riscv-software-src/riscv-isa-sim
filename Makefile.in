@@ -337,7 +337,7 @@ check : $(test_outs)
 # Installation
 #-------------------------------------------------------------------------
 
-install-hdrs : $(install_hdrs)
+install-hdrs : $(install_hdrs) config.h
 	$(MKINSTALLDIRS) $(install_hdrs_dir)
 	for file in $^; \
   do \
