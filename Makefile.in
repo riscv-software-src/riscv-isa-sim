@@ -188,10 +188,10 @@ $(2)_pch := $$(patsubst %.h, %.h.gch, $$($(2)_precompiled_hdrs))
 $(2)_objs := $$(patsubst %.cc, %.o, $$($(2)_srcs))
 $(2)_c_objs := $$(patsubst %.c, %.o, $$($(2)_c_srcs))
 $(2)_deps := $$(patsubst %.o, %.d, $$($(2)_objs))
-$(2)_c_deps := $$(patsubst %.o, %.d, $$($(2)_c_objs))
-$(2)_pch_deps := $$(patsubst %.h, %.d, $$($(2)_precompiled_hdrs))
+$(2)_deps += $$(patsubst %.o, %.d, $$($(2)_c_objs))
+$(2)_deps += $$(patsubst %.h, %.h.d, $$($(2)_precompiled_hdrs))
 $$($(2)_pch) : %.h.gch : %.h
-	$(COMPILE) $$<
+	$(COMPILE) $$< -o $$@
 # If using clang, don't depend (and thus don't build) precompiled headers
 $$($(2)_objs) : %.o : %.cc $$($(2)_gen_hdrs) $(if $(filter-out clang,$(CC)),$$($(2)_pch))
 	$(COMPILE) -c $$<
@@ -199,7 +199,7 @@ $$($(2)_c_objs) : %.o : %.c $$($(2)_gen_hdrs)
 	$(COMPILE_C) -c $$<
 
 $(2)_junk += $$(addprefix $(src_dir)/$(1)/, $$($(2)_pch)) \
-  $$($(2)_objs) $$($(2)_c_objs) $$($(2)_deps) $$($(2)_c_deps) $$($(2)_gen_hdrs) $$($(2)_pch_deps)
+  $$($(2)_objs) $$($(2)_c_objs) $$($(2)_deps) $$($(2)_gen_hdrs)
 
 # Reverse the dependency list so that a given subproject only depends on
 # subprojects listed to its right. This is the correct order for linking
