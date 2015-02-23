@@ -25,7 +25,7 @@ int_fast64_t f32_to_i64( float32_t a, int_fast8_t roundingMode, bool exact )
     shiftCount = 0xBE - exp;
     if ( shiftCount < 0 ) {
         softfloat_raiseFlags( softfloat_flag_invalid );
-        if ( ! sign || ( ( exp == 0xFF ) && sig ) ) {
+        if ( ! sign ) {
             return INT64_C( 0x7FFFFFFFFFFFFFFF );
         }
         return - INT64_C( 0x7FFFFFFFFFFFFFFF ) - 1;

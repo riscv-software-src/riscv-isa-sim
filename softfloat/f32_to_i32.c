@@ -21,7 +21,6 @@ int_fast32_t f32_to_i32( float32_t a, int_fast8_t roundingMode, bool exact )
     sign = signF32UI( uiA );
     exp = expF32UI( uiA );
     sig = fracF32UI( uiA );
-    if ( ( exp == 0xFF ) && sig ) sign = 0;
     if ( exp ) sig |= 0x00800000;
     sig64 = (uint_fast64_t) sig<<32;
     shiftCount = 0xAF - exp;
