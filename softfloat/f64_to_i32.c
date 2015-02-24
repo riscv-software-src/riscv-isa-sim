@@ -20,7 +20,6 @@ int_fast32_t f64_to_i32( float64_t a, int_fast8_t roundingMode, bool exact )
     sign = signF64UI( uiA );
     exp = expF64UI( uiA );
     sig = fracF64UI( uiA );
-    if ( ( exp == 0x7FF ) && sig ) sign = 0;
     if ( exp ) sig |= UINT64_C( 0x0010000000000000 );
     shiftCount = 0x42C - exp;
     if ( 0 < shiftCount ) sig = softfloat_shift64RightJam( sig, shiftCount );

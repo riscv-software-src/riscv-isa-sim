@@ -28,8 +28,6 @@ int_fast64_t f64_to_i64( float64_t a, int_fast8_t roundingMode, bool exact )
             softfloat_raiseFlags( softfloat_flag_invalid );
             return
                 ! sign
-                    || ( ( exp == 0x7FF )
-                             && fracF64UI( uiA ) )
                     ? INT64_C( 0x7FFFFFFFFFFFFFFF )
                     : - INT64_C( 0x7FFFFFFFFFFFFFFF ) - 1;
         }
