@@ -22,6 +22,12 @@ int main(int argc, char** argv)
   std::function<extension_t*()> extension;
   option_parser_t parser;
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
+  parser.parse(argv);
+
+  if (extension) {
+    for (auto disasm_insn : extension()->get_disasms())
+      d.add_insn(disasm_insn);
+  }
 
   while (getline(cin, s))
   {
