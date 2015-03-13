@@ -52,7 +52,7 @@ void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
         pte |= PTE_UR | PTE_SR | PTE_UW | PTE_SW;
     }
   } else {
-    pte = walk(addr);
+    pte = walk(addr, store);
   }
 
   reg_t pte_perm = pte & PTE_PERM;
@@ -79,7 +79,7 @@ void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
   else
   {
     tlb_load_tag[idx] = (pte_perm & PTE_UR) ? expected_tag : -1;
-    tlb_store_tag[idx] = (pte_perm & PTE_UW) ? expected_tag : -1;
+    tlb_store_tag[idx] = (pte_perm & PTE_UW) && store ? expected_tag : -1;
     tlb_insn_tag[idx] = (pte_perm & PTE_UX) ? expected_tag : -1;
     tlb_data[idx] = mem + pgbase - (addr & ~(PGSIZE-1));
   }
@@ -87,14 +87,13 @@ void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
   return mem + paddr;
 }
 
-pte_t mmu_t::walk(reg_t addr)
+pte_t mmu_t::walk(reg_t addr, bool store)
 {
   reg_t msb_mask = -(reg_t(1) << (VA_BITS-1));
   if ((addr & msb_mask) != 0 && (addr & msb_mask) != msb_mask)
     return 0; // address isn't properly sign-extended
 
   reg_t base = proc->get_state()->sptbr;
-  reg_t ptd;
 
   int ptshift = (LEVELS-1)*PTIDXBITS;
   for (reg_t i = 0; i < LEVELS; i++, ptshift -= PTIDXBITS) {
@@ -105,23 +104,24 @@ pte_t mmu_t::walk(reg_t addr)
     if (pte_addr >= memsz)
       return 0;
 
-    ptd = *(pte_t*)(mem+pte_addr);
+    pte_t* ppte = (pte_t*)(mem+pte_addr);
 
-    if (!(ptd & PTE_V)) { // invalid mapping
+    if (!(*ppte & PTE_V)) { // invalid mapping
       return 0;
-    } else if (ptd & PTE_T) { // next level of page table
-      base = (ptd >> PGSHIFT) << PGSHIFT;
+    } else if (*ppte & PTE_T) { // next level of page table
+      base = (*ppte >> PGSHIFT) << PGSHIFT;
     } else {
-      // we've found the PTE.
+      // we've found the PTE.  set referenced and possibly dirty bits.
+      *ppte |= PTE_R | (store ? PTE_D : 0);
       // for superpage mappings, make a fake leaf PTE for the TLB's benefit.
       reg_t vpn = addr >> PGSHIFT;
-      ptd |= (vpn & ((1<<(ptshift))-1)) << PGSHIFT;
+      reg_t pte = *ppte | ((vpn & ((1<<(ptshift))-1)) << PGSHIFT);
 
       // check that physical address is legal
-      if (((ptd >> PGSHIFT) << PGSHIFT) >= memsz)
+      if (((pte >> PGSHIFT) << PGSHIFT) >= memsz)
         return 0;
 
-      return ptd;
+      return pte;
     }
   }
   return 0;

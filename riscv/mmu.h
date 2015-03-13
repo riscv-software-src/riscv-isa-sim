@@ -154,8 +154,8 @@ private:
   // finish translation on a TLB miss and upate the TLB
   void* refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch);
 
-  // perform a page table walk for a given virtual address
-  pte_t walk(reg_t addr);
+  // perform a page table walk for a given VA; set referenced/dirty bits
+  pte_t walk(reg_t addr, bool store);
 
   // translate a virtual address to a physical address
   void* translate(reg_t addr, reg_t bytes, bool store, bool fetch)

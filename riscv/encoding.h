@@ -72,6 +72,8 @@
 #define PTE_SR   0x040 // Supervisor Read permission
 #define PTE_SW   0x080 // Supervisor Write permission
 #define PTE_SX   0x100 // Supervisor eXecute permission
+#define PTE_R    0x200 // Referenced
+#define PTE_D    0x400 // Dirty
 #define PTE_PERM (PTE_SR | PTE_SW | PTE_SX | PTE_UR | PTE_UW | PTE_UX)
 
 #ifdef __riscv
