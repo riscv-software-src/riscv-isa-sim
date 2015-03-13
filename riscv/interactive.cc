@@ -132,11 +132,24 @@ reg_t sim_t::get_reg(const std::vector<std::string>& args)
   if(args.size() != 2)
     throw trap_illegal_instruction();
 
-  int p = atoi(args[0].c_str());
-  int r = std::find(xpr_name, xpr_name + NXPR, args[1]) - xpr_name;
-  if (r == NXPR)
-    r = atoi(args[1].c_str());
-  if(p >= (int)num_cores() || r >= NXPR)
+  char* ptr;
+  unsigned long p = strtoul(args[0].c_str(), &ptr, 10);
+  if (*ptr || p >= num_cores())
+    throw trap_illegal_instruction();
+
+  unsigned long r = std::find(xpr_name, xpr_name + NXPR, args[1]) - xpr_name;
+  if (r == NXPR) {
+    r = strtoul(args[1].c_str(), &ptr, 10);
+    if (*ptr) {
+      #define DECLARE_CSR(name, number) if (args[1] == #name) return procs[p]->get_csr(number);
+      if (0) ;
+      #include "encoding.h"
+      else r = NXPR;
+      #undef DECLARE_CSR
+    }
+  }
+
+  if (r >= NXPR)
     throw trap_illegal_instruction();
 
   return procs[p]->state.XPR[r];

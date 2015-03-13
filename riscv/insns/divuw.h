@@ -1,4 +1,4 @@
-require_xpr64;
+require_rv64;
 reg_t lhs = zext32(RS1);
 reg_t rhs = zext32(RS2);
 if(rhs == 0)

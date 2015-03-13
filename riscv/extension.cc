@@ -12,11 +12,9 @@ void extension_t::illegal_instruction()
 
 void extension_t::raise_interrupt()
 {
-  p->set_interrupt(IRQ_COP, true);
-  p->take_interrupt();
+  p->raise_interrupt(IRQ_COP);
 }
 
 void extension_t::clear_interrupt()
 {
-  p->set_interrupt(IRQ_COP, false);
 }

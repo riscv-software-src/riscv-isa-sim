@@ -9,6 +9,7 @@
 
 #include <cstdint>
 #include <string.h>
+#include <strings.h>
 #include "encoding.h"
 #include "config.h"
 #include "common.h"
@@ -80,10 +81,6 @@ template <class T, size_t N, bool zero_reg>
 class regfile_t
 {
 public:
-  void reset()
-  {
-    memset(data, 0, sizeof(data));
-  }
   void write(size_t i, T value)
   {
     if (!zero_reg || i != 0)
@@ -116,14 +113,17 @@ private:
 #define FRS1 STATE.FPR[insn.rs1()]
 #define FRS2 STATE.FPR[insn.rs2()]
 #define FRS3 STATE.FPR[insn.rs3()]
-#define WRITE_FRD(value) STATE.FPR.write(insn.rd(), value)
+#define dirty_fp_state (STATE.mstatus |= MSTATUS_FS | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD))
+#define dirty_ext_state (STATE.mstatus |= MSTATUS_XS | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD))
+#define do_write_frd(value) (STATE.FPR.write(insn.rd(), value), dirty_fp_state)
  
-#ifdef RISCV_ENABLE_COMMITLOG
-  #undef WRITE_FRD 
-  #define WRITE_FRD(value) ({ \
-        freg_t wdata = value; /* value is a func with side-effects */ \
+#ifndef RISCV_ENABLE_COMMITLOG
+# define WRITE_FRD(value) do_write_frd(value)
+#else
+# define WRITE_FRD(value) ({ \
+        freg_t wdata = (value); /* value may have side effects */ \
         STATE.log_reg_write = (commit_log_reg_t){(insn.rd() << 1) | 1, wdata}; \
-        STATE.FPR.write(insn.rd(), wdata); \
+        do_write_frd(wdata); \
       })
 #endif
  
@@ -135,17 +135,14 @@ private:
               if(rm > 4) throw trap_illegal_instruction(); \
               rm; })
 
-#define xpr64 (xlen == 64)
+#define get_field(reg, mask) (((reg) & (decltype(reg))(mask)) / ((mask) & ~((mask) << 1)))
+#define set_field(reg, mask, val) (((reg) & ~(decltype(reg))(mask)) | (((decltype(reg))(val) * ((mask) & ~((mask) << 1))) & (decltype(reg))(mask)))
 
-#define require_supervisor if(unlikely(!(STATE.sr & SR_S))) throw trap_privileged_instruction()
-#define require_xpr64 if(unlikely(!xpr64)) throw trap_illegal_instruction()
-#define require_xpr32 if(unlikely(xpr64)) throw trap_illegal_instruction()
-#ifndef RISCV_ENABLE_FPU
-# define require_fp throw trap_illegal_instruction()
-#else
-# define require_fp if(unlikely(!(STATE.sr & SR_EF))) throw trap_fp_disabled()
-#endif
-#define require_accelerator if(unlikely(!(STATE.sr & SR_EA))) throw trap_accelerator_disabled()
+#define require_privilege(p) if (get_field(STATE.mstatus, MSTATUS_PRV) < (p)) throw trap_illegal_instruction()
+#define require_rv64 if(unlikely(xlen != 64)) throw trap_illegal_instruction()
+#define require_rv32 if(unlikely(xlen != 32)) throw trap_illegal_instruction()
+#define require_fp if (unlikely((STATE.mstatus & MSTATUS_FS) == 0)) throw trap_illegal_instruction()
+#define require_accelerator if (unlikely((STATE.mstatus & MSTATUS_XS) == 0)) throw trap_illegal_instruction()
 
 #define cmp_trunc(reg) (reg_t(reg) << (64-xlen))
 #define set_fp_exceptions ({ STATE.fflags |= softfloat_exceptionFlags; \
@@ -159,12 +156,11 @@ private:
 #define set_pc(x) (npc = sext_xlen(x))
 
 #define validate_csr(which, write) ({ \
-  unsigned my_priv = (STATE.sr & SR_S) ? 1 : 0; \
-  unsigned read_priv = ((which) >> 10) & 3; \
-  unsigned write_priv = (((which) >> 8) & 3); \
-  if (read_priv == 3) read_priv = write_priv, write_priv = -1; \
-  if (my_priv < ((write) ? write_priv : read_priv)) \
-    throw trap_privileged_instruction(); \
+  unsigned my_priv = get_field(STATE.mstatus, MSTATUS_PRV); \
+  unsigned csr_priv = get_field((which), 0x300); \
+  unsigned csr_read_only = get_field((which), 0xC00) == 3; \
+  if (((write) && csr_read_only) || my_priv < csr_priv) \
+    throw trap_illegal_instruction(); \
   (which); })
 
 #endif

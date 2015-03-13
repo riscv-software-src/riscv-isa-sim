@@ -84,23 +84,19 @@ void htif_isasim_t::tick_once()
       if (write)
         memcpy(&new_val, p.get_payload(), sizeof(new_val));
 
-      // TODO mapping HTIF regno to CSR[4:0] is arbitrary; consider alternative
       switch (regno)
       {
-        case CSR_HARTID & 0x1f:
-          old_val = coreid;
-          break;
-        case CSR_TOHOST & 0x1f:
+        case CSR_TOHOST:
           old_val = proc->get_state()->tohost;
           if (write)
             proc->get_state()->tohost = new_val;
           break;
-        case CSR_FROMHOST & 0x1f:
+        case CSR_FROMHOST:
           old_val = proc->get_state()->fromhost;
           if (write && old_val == 0)
-            proc->set_fromhost(new_val);
+            proc->get_state()->fromhost = new_val;
           break;
-        case CSR_RESET & 0x1f:
+        case CSR_RESET:
           old_val = !proc->running();
           if (write)
           {

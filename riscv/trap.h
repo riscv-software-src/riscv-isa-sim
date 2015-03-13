@@ -45,14 +45,12 @@ class mem_trap_t : public trap_t
 DECLARE_MEM_TRAP(CAUSE_MISALIGNED_FETCH, instruction_address_misaligned)
 DECLARE_MEM_TRAP(CAUSE_FAULT_FETCH, instruction_access_fault)
 DECLARE_TRAP(CAUSE_ILLEGAL_INSTRUCTION, illegal_instruction)
-DECLARE_TRAP(CAUSE_PRIVILEGED_INSTRUCTION, privileged_instruction)
-DECLARE_TRAP(CAUSE_FP_DISABLED, fp_disabled)
-DECLARE_TRAP(CAUSE_SYSCALL, syscall)
+DECLARE_TRAP(CAUSE_SCALL, scall)
+DECLARE_TRAP(CAUSE_MCALL, mcall)
 DECLARE_TRAP(CAUSE_BREAKPOINT, breakpoint)
 DECLARE_MEM_TRAP(CAUSE_MISALIGNED_LOAD, load_address_misaligned)
 DECLARE_MEM_TRAP(CAUSE_MISALIGNED_STORE, store_address_misaligned)
 DECLARE_MEM_TRAP(CAUSE_FAULT_LOAD, load_access_fault)
 DECLARE_MEM_TRAP(CAUSE_FAULT_STORE, store_access_fault)
-DECLARE_TRAP(CAUSE_ACCELERATOR_DISABLED, accelerator_disabled)
 
 #endif

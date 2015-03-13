@@ -1,4 +1,4 @@
-require_xpr64;
+require_rv64;
 sreg_t lhs = sext32(RS1);
 sreg_t rhs = sext32(RS2);
 if(rhs == 0)

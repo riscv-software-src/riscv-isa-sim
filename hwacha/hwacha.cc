@@ -20,9 +20,7 @@ void ct_state_t::reset()
 
 void ut_state_t::reset()
 {
-  run = false;
-  XPR.reset();
-  FPR.reset();
+  memset(this, 0, sizeof(*this));
 }
 
 void hwacha_t::reset()
@@ -105,7 +103,5 @@ void hwacha_t::take_exception(reg_t c, reg_t a)
   cause = c;
   aux = a;
   raise_interrupt();
-  if (!(p->get_state()->sr & SR_EI))
-    throw std::logic_error("hwacha exception posted, but SR_EI bit not set!");
-  throw std::logic_error("hwacha exception posted, but IM[COP] bit not set!");
+  throw std::logic_error("a hwacha exception was posted, but interrupts are disabled!");
 }

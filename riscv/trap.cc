@@ -11,5 +11,5 @@ const char* trap_t::name()
 
 void mem_trap_t::side_effects(state_t* state)
 {
-  state->badvaddr = badvaddr;
+  state->mbadaddr = badvaddr;
 }

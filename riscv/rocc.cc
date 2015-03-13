@@ -5,7 +5,6 @@
 #define customX(n) \
   static reg_t c##n(processor_t* p, insn_t insn, reg_t pc) \
   { \
-    require_accelerator; \
     rocc_t* rocc = static_cast<rocc_t*>(p->get_extension()); \
     rocc_insn_union_t u; \
     u.i = insn; \

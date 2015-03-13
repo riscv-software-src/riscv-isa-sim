@@ -1,1 +1,1 @@
-throw trap_syscall();
+throw trap_scall();

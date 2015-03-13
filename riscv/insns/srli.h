@@ -1,4 +1,4 @@
-if(xpr64)
+if (xlen == 64)
   WRITE_RD(RS1 >> SHAMT);
 else
 {

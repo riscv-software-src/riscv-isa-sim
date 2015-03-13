@@ -99,7 +99,7 @@ static inline void write_fpr(hwacha_t* h, insn_t insn, uint32_t idx, size_t dst,
   }
 
 #define require_supervisor_hwacha \
-  if (unlikely(!(p->get_state()->sr & SR_S))) \
+  if (get_field(p->get_state()->mstatus, MSTATUS_PRV) < PRV_S) \
     h->take_exception(HWACHA_CAUSE_PRIVILEGED_INSTRUCTION, uint32_t(insn.bits()));
 
 #endif

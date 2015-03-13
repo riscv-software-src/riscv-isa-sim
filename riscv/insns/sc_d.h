@@ -1,4 +1,4 @@
-require_xpr64;
+require_rv64;
 if (RS1 == p->get_state()->load_reservation)
 {
   MMU.store_uint64(RS1, RS2);
