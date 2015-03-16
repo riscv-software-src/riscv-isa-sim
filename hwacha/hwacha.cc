@@ -103,5 +103,5 @@ void hwacha_t::take_exception(reg_t c, reg_t a)
   cause = c;
   aux = a;
   raise_interrupt();
-  throw std::logic_error("a hwacha exception was posted, but interrupts are disabled!");
+  throw std::logic_error("unreachable!");
 }
