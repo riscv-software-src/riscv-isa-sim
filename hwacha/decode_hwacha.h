@@ -14,6 +14,7 @@
 #define MAXVL (h->get_ct_state()->maxvl)
 #define VL (h->get_ct_state()->vl)
 #define UTIDX (h->get_ct_state()->count)
+#define PREC (h->get_ct_state()->prec)
 #define VF_PC (h->get_ct_state()->vf_pc)
 #define WRITE_NXPR(nxprnext) (h->get_ct_state()->nxpr = (nxprnext))
 #define WRITE_NFPR(nfprnext) (h->get_ct_state()->nfpr = (nfprnext))

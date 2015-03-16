@@ -111,7 +111,7 @@
 #define MASK_VXCPTAUX  0xfffff07f
 #define MASK_VXCPTCAUSE  0xfffff07f
 #define MASK_VXCPTEVAC  0xfff07fff
-#define MASK_VXCPTHOLD  0xffffffff
+#define MASK_VXCPTHOLD  0xfff07fff
 #define MASK_VXCPTKILL  0xffffffff
 #define MASK_VXCPTRESTORE  0xfff07fff
 #define MASK_VXCPTSAVE  0xfff07fff

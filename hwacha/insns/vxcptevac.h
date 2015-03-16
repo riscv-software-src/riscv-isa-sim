@@ -13,12 +13,16 @@ reg_t addr = XS1;
   p->get_mmu()->store_uint64(addr, value); \
   addr += 8; \
 
+// to be compliant with the evac structure
+STORE_D(addr, (uint64_t)-1);
+
 STORE_W(addr, NXPR);
 STORE_W(addr, NFPR);
 STORE_W(addr, MAXVL);
 STORE_W(addr, VL);
 STORE_W(addr, UTIDX);
-addr += 4;
+STORE_W(addr, PREC);
+
 STORE_D(addr, VF_PC);
 
 for (uint32_t x=1; x<NXPR; x++) {

@@ -10,13 +10,15 @@ reg_t addr = XS1;
 #define LOAD_D(addr) \
   (addr += 8, p->get_mmu()->load_uint64(addr-8))
 
+// to be compliant with the evac structure
+addr += 8;
 
 WRITE_NXPR(LOAD_W(addr));
 WRITE_NFPR(LOAD_W(addr));
 WRITE_MAXVL(LOAD_W(addr));
 WRITE_VL(LOAD_W(addr));
 WRITE_UTIDX(LOAD_W(addr));
-addr += 4;
+WRITE_PREC(LOAD_W(addr));
 WRITE_VF_PC(LOAD_D(addr));
 
 for (uint32_t x=1; x<NXPR; x++) {
