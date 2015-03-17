@@ -1,1 +1,1 @@
-throw trap_scall();
+throw trap_ecall();
