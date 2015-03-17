@@ -398,6 +398,7 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MEPC: state.mepc = val; break;
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
+    case CSR_MBADADDR: state.mbadaddr = val; break;
     case CSR_SEND_IPI: sim->send_ipi(val); break;
     case CSR_TOHOST:
       if (state.tohost == 0)
