@@ -63,18 +63,39 @@
 #define IMPL_ROCKET 2
 
 // page table entry (PTE) fields
-#define PTE_V    0x001 // Entry is a page Table descriptor
-#define PTE_T    0x002 // Entry is a page Table, not a terminal node
-#define PTE_G    0x004 // Global
-#define PTE_UR   0x008 // User Write permission
-#define PTE_UW   0x010 // User Read permission
-#define PTE_UX   0x020 // User eXecute permission
-#define PTE_SR   0x040 // Supervisor Read permission
-#define PTE_SW   0x080 // Supervisor Write permission
-#define PTE_SX   0x100 // Supervisor eXecute permission
-#define PTE_R    0x200 // Referenced
-#define PTE_D    0x400 // Dirty
-#define PTE_PERM (PTE_SR | PTE_SW | PTE_SX | PTE_UR | PTE_UW | PTE_UX)
+#define PTE_TYPE   0x007
+#define PTE_PERM   0x018
+#define PTE_G      0x020 // Global
+#define PTE_R      0x040 // Referenced
+#define PTE_D      0x080 // Dirty
+#define PTE_SOFT   0x300 // Reserved for Software
+#define PTE_PPN_SHIFT 10
+#define PTE_TYPE_INVALID 0
+#define PTE_TYPE_TABLE   1
+#define PTE_TYPE_U       2
+#define PTE_TYPE_S       3
+#define PTE_TYPE_US      4
+#define PTE_TYPE_US_SR   4
+#define PTE_TYPE_US_SRW  5
+#define PTE_TYPE_US_SRX  6
+#define PTE_TYPE_US_SRWX 7
+
+#define PROT_TO_PERM(PROT) ((((PROT) & PROT_EXEC) ? 2 : 0) | (((PROT) & PROT_WRITE) ? 1 : 0))
+#define PTE_CREATE(PPN, PERM_U, PERM_S) \
+  (((PPN) << PTE_PPN_SHIFT) | (PROT_TO_PERM(PERM_U) << 3) | \
+   ((PERM_U) && (PERM_S) ? (PTE_TYPE_US | PROT_TO_PERM(PERM_S)) : \
+   (PERM_S) ? (PTE_TYPE_S | (PROT_TO_PERM(PERM_S) << 3)) : \
+   (PERM_U) ? PTE_TYPE_U : 0))
+
+#define PTE_UR(PTE) ((0xF4F4F4F4U >> ((PTE) & 0x1f)) & 1)
+#define PTE_UW(PTE) ((0xF400F400U >> ((PTE) & 0x1f)) & 1)
+#define PTE_UX(PTE) ((0xF4F40000U >> ((PTE) & 0x1f)) & 1)
+#define PTE_SR(PTE) ((0xF8F8F8F8U >> ((PTE) & 0x1f)) & 1)
+#define PTE_SW(PTE) ((0xA8A0A8A0U >> ((PTE) & 0x1f)) & 1)
+#define PTE_SX(PTE) ((0xC8C8C0C0U >> ((PTE) & 0x1f)) & 1)
+#define PTE_CHECK_PERM(PTE, SUPERVISOR, WRITE, EXEC) \
+  ((SUPERVISOR) ? ((WRITE) ? PTE_SW(PTE) : (EXEC) ? PTE_SX(PTE) : PTE_SR(PTE)) \
+                : ((WRITE) ? PTE_UW(PTE) : (EXEC) ? PTE_UX(PTE) : PTE_UR(PTE)))
 
 #ifdef __riscv
 
@@ -84,15 +105,15 @@
 # define MSTATUS_HA MSTATUS64_HA
 # define MSTATUS_SD MSTATUS64_SD
 # define SSTATUS_SD SSTATUS64_SD
-# define RISCV_PGLEVELS 3
-# define RISCV_PGSHIFT 13
+# define RISCV_PGLEVELS 3 /* Sv39 */
+# define RISCV_PGLEVEL_BITS 9
 #else
 # define MSTATUS_SD MSTATUS32_SD
 # define SSTATUS_SD SSTATUS32_SD
-# define RISCV_PGLEVELS 2
-# define RISCV_PGSHIFT 12
+# define RISCV_PGLEVELS 2 /* Sv32 */
+# define RISCV_PGLEVEL_BITS 10
 #endif
-#define RISCV_PGLEVEL_BITS 10
+#define RISCV_PGSHIFT 12
 #define RISCV_PGSIZE (1 << RISCV_PGSHIFT)
 
 #ifndef __ASSEMBLER__

@@ -14,11 +14,10 @@
 // virtual memory configuration
 typedef reg_t pte_t;
 const reg_t LEVELS = sizeof(pte_t) == 8 ? 3 : 2;
-const reg_t PTIDXBITS = 10;
-const reg_t PGSHIFT = PTIDXBITS + (sizeof(pte_t) == 8 ? 3 : 2);
+const reg_t PGSHIFT = 12;
+const reg_t PTIDXBITS = PGSHIFT - (sizeof(pte_t) == 8 ? 3 : 2);
 const reg_t PGSIZE = 1 << PGSHIFT;
 const reg_t VPN_BITS = PTIDXBITS * LEVELS;
-const reg_t PPN_BITS = 8*sizeof(reg_t) - PGSHIFT;
 const reg_t VA_BITS = VPN_BITS + PGSHIFT;
 
 struct insn_fetch_t
@@ -155,7 +154,7 @@ private:
   void* refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch);
 
   // perform a page table walk for a given VA; set referenced/dirty bits
-  pte_t walk(reg_t addr, reg_t perm);
+  pte_t walk(reg_t addr, bool supervisor, bool store, bool fetch);
 
   // translate a virtual address to a physical address
   void* translate(reg_t addr, reg_t bytes, bool store, bool fetch)
