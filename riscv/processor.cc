@@ -193,7 +193,7 @@ void processor_t::step(size_t n)
       {
         insn_fetch_t fetch = mmu->load_insn(pc);
         disasm(fetch.insn);
-        pc = execute_insn(this, pc, fetch);
+        state.pc = pc = execute_insn(this, pc, fetch);
       }
     }
     else while (instret < n)
@@ -204,7 +204,7 @@ void processor_t::step(size_t n)
       #define ICACHE_ACCESS(idx) { \
         insn_fetch_t fetch = ic_entry->data; \
         ic_entry++; \
-        pc = execute_insn(this, pc, fetch); \
+        state.pc = pc = execute_insn(this, pc, fetch); \
         instret++; \
         if (idx == mmu_t::ICACHE_ENTRIES-1) break; \
         if (unlikely(ic_entry->tag != pc)) break; \
@@ -217,11 +217,10 @@ void processor_t::step(size_t n)
   }
   catch(trap_t& t)
   {
-    pc = take_trap(t, pc);
+    state.pc = take_trap(t, pc);
   }
   catch(serialize_t& s) {}
 
-  state.pc = pc;
   update_timer(&state, instret);
 }
 
