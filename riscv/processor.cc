@@ -21,7 +21,7 @@
 
 processor_t::processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id)
   : sim(_sim), mmu(_mmu), ext(NULL), disassembler(new disassembler_t),
-    id(_id), run(false), debug(false), serialized(false)
+    id(_id), run(false), debug(false)
 {
   reset(true);
   mmu->set_processor(this);
@@ -84,16 +84,6 @@ void processor_t::reset(bool value)
 
   if (ext)
     ext->reset(); // reset the extension
-}
-
-struct serialize_t {};
-
-void processor_t::serialize()
-{
-  if (serialized)
-    serialized = false;
-  else
-    serialized = true, throw serialize_t();
 }
 
 void processor_t::raise_interrupt(reg_t which)
@@ -183,17 +173,28 @@ void processor_t::step(size_t n)
     return;
   n = std::min(n, next_timer(&state) | 1U);
 
+  #define maybe_serialize() \
+   if (unlikely(pc == PC_SERIALIZE)) { \
+     pc = state.pc; \
+     state.serialized = true; \
+     continue; \
+   }
+
   try
   {
     take_interrupt();
 
     if (unlikely(debug))
     {
-      while (instret++ < n)
+      while (instret < n)
       {
         insn_fetch_t fetch = mmu->load_insn(pc);
-        disasm(fetch.insn);
-        state.pc = pc = execute_insn(this, pc, fetch);
+        if (!state.serialized)
+          disasm(fetch.insn);
+        pc = execute_insn(this, pc, fetch);
+        maybe_serialize();
+        instret++;
+        state.pc = pc;
       }
     }
     else while (instret < n)
@@ -204,22 +205,26 @@ void processor_t::step(size_t n)
       #define ICACHE_ACCESS(idx) { \
         insn_fetch_t fetch = ic_entry->data; \
         ic_entry++; \
-        state.pc = pc = execute_insn(this, pc, fetch); \
-        instret++; \
+        pc = execute_insn(this, pc, fetch); \
         if (idx == mmu_t::ICACHE_ENTRIES-1) break; \
         if (unlikely(ic_entry->tag != pc)) break; \
+        instret++; \
+        state.pc = pc; \
       }
 
       switch (idx) {
         #include "icache.h"
       }
+
+      maybe_serialize();
+      instret++;
+      state.pc = pc;
     }
   }
   catch(trap_t& t)
   {
     state.pc = take_trap(t, pc);
   }
-  catch(serialize_t& s) {}
 
   update_timer(&state, instret);
 }
@@ -388,7 +393,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SEPC: state.sepc = val; break;
     case CSR_STVEC: state.stvec = val & ~3; break;
     case CSR_STIMECMP:
-      serialize();
       state.stip = false;
       state.stimecmp = val;
       break;
@@ -426,7 +430,6 @@ reg_t processor_t::get_csr(int which)
     case CSR_SCYCLE:
     case CSR_STIME:
     case CSR_SINSTRET:
-      serialize();
       return state.scount;
     case CSR_CYCLEH:
     case CSR_TIMEH:
@@ -436,7 +439,6 @@ reg_t processor_t::get_csr(int which)
     case CSR_SINSTRETH:
       if (xlen == 64)
         break;
-      serialize();
       return state.scount >> 32;
     case CSR_SSTATUS:
     {
