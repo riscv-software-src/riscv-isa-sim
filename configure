@@ -665,6 +665,7 @@ enable_stow
 enable_optional_subprojects
 with_fesvr
 enable_fpu
+enable_rvc
 enable_64bit
 enable_commitlog
 enable_histogram
@@ -1300,6 +1301,7 @@ Optional Features:
   --enable-optional-subprojects
                           Enable all optional subprojects
   --disable-fpu           Disable floating-point
+  --disable-rvc           Disable RISC-V Compressed
   --disable-64bit         Disable 64-bit mode
   --enable-commitlog      Enable commit log generation
   --enable-histogram      Enable PC histogram generation
@@ -4093,6 +4095,19 @@ if test "x$enable_fpu" != "xno"; then :
 
 
 $as_echo "#define RISCV_ENABLE_FPU /**/" >>confdefs.h
+
+
+fi
+
+# Check whether --enable-rvc was given.
+if test "${enable_rvc+set}" = set; then :
+  enableval=$enable_rvc;
+fi
+
+if test "x$enable_rvc" != "xno"; then :
+
+
+$as_echo "#define RISCV_ENABLE_RVC /**/" >>confdefs.h
 
 
 fi

@@ -1,8 +1,3 @@
-if (xlen == 64)
-  WRITE_RD(RS1 << SHAMT);
-else
-{
-  if(SHAMT & 0x20)
-    throw trap_illegal_instruction();
-  WRITE_RD(sext32(RS1 << SHAMT));
-}
+if (SHAMT >= xlen)
+  throw trap_illegal_instruction();
+WRITE_RD(sext_xlen(RS1 << SHAMT));

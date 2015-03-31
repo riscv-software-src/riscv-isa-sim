@@ -88,25 +88,24 @@ public:
     if (likely(entry->tag == addr))
       return entry;
 
-    bool rvc = false; // set this dynamically once RVC is re-implemented
-    char* iaddr = (char*)translate(addr, rvc ? 2 : 4, false, true);
+    char* iaddr = (char*)translate(addr, 1, false, true);
     insn_bits_t insn = *(uint16_t*)iaddr;
 
-    if (unlikely(insn_length(insn) == 2)) {
-      insn = (int16_t)insn;
-    } else if (likely(insn_length(insn) == 4)) {
-      if (likely((addr & (PGSIZE-1)) < PGSIZE-2))
+    if (likely(insn_length(insn) == 4)) {
+      if (likely(addr % PGSIZE < PGSIZE-2))
         insn |= (insn_bits_t)*(int16_t*)(iaddr + 2) << 16;
       else
-        insn |= (insn_bits_t)*(int16_t*)translate(addr + 2, 2, false, true) << 16;
+        insn |= (insn_bits_t)*(int16_t*)translate(addr + 2, 1, false, true) << 16;
+    } else if (insn_length(insn) == 2) {
+      insn = (int16_t)insn;
     } else if (insn_length(insn) == 6) {
-      insn |= (insn_bits_t)*(int16_t*)translate(addr + 4, 2, false, true) << 32;
-      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 2, 2, false, true) << 16;
+      insn |= (insn_bits_t)*(int16_t*)translate(addr + 4, 1, false, true) << 32;
+      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 2, 1, false, true) << 16;
     } else {
       static_assert(sizeof(insn_bits_t) == 8, "insn_bits_t must be uint64_t");
-      insn |= (insn_bits_t)*(int16_t*)translate(addr + 6, 2, false, true) << 48;
-      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 4, 2, false, true) << 32;
-      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 2, 2, false, true) << 16;
+      insn |= (insn_bits_t)*(int16_t*)translate(addr + 6, 1, false, true) << 48;
+      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 4, 1, false, true) << 32;
+      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 2, 1, false, true) << 16;
     }
 
     insn_fetch_t fetch = {proc->decode_insn(insn), insn};

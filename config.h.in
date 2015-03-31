@@ -45,6 +45,9 @@
 /* Enable PC histogram generation */
 #undef RISCV_ENABLE_HISTOGRAM
 
+/* Define if RISC-V Compressed is supported */
+#undef RISCV_ENABLE_RVC
+
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SOFTFLOAT_ENABLED
 
