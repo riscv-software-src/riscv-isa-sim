@@ -173,7 +173,11 @@ private:
 #define require_privilege(p) if (get_field(STATE.mstatus, MSTATUS_PRV) < (p)) throw trap_illegal_instruction()
 #define require_rv64 if(unlikely(xlen != 64)) throw trap_illegal_instruction()
 #define require_rv32 if(unlikely(xlen != 32)) throw trap_illegal_instruction()
-#define require_fp if (unlikely((STATE.mstatus & MSTATUS_FS) == 0)) throw trap_illegal_instruction()
+#ifdef RISCV_ENABLE_FPU
+# define require_fp if (unlikely((STATE.mstatus & MSTATUS_FS) == 0)) throw trap_illegal_instruction()
+#else
+# define require_fp throw trap_illegal_instruction()
+#endif
 #define require_accelerator if (unlikely((STATE.mstatus & MSTATUS_XS) == 0)) throw trap_illegal_instruction()
 
 #define cmp_trunc(reg) (reg_t(reg) << (64-xlen))

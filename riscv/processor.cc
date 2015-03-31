@@ -335,10 +335,7 @@ void processor_t::set_csr(int which, reg_t val)
         mmu->flush_tlb();
 
       reg_t mask = MSTATUS_SSIP | MSTATUS_MSIP | MSTATUS_IE | MSTATUS_IE1
-                   | MSTATUS_IE2 | MSTATUS_IE3 | MSTATUS_STIE;
-#ifdef RISCV_ENABLE_FPU
-      mask |= MSTATUS_FS;
-#endif
+                   | MSTATUS_IE2 | MSTATUS_IE3 | MSTATUS_STIE | MSTATUS_FS;
       if (ext)
         mask |= MSTATUS_XS;
       state.mstatus = (state.mstatus & ~mask) | (val & mask);
