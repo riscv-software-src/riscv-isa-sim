@@ -1,1 +1,1 @@
-WRITE_RD(cmp_trunc(RS1) < cmp_trunc(RS2));
+WRITE_RD(RS1 < RS2);

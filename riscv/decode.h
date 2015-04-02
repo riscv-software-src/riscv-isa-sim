@@ -180,7 +180,6 @@ private:
 #endif
 #define require_accelerator if (unlikely((STATE.mstatus & MSTATUS_XS) == 0)) throw trap_illegal_instruction()
 
-#define cmp_trunc(reg) (reg_t(reg) << (64-xlen))
 #define set_fp_exceptions ({ STATE.fflags |= softfloat_exceptionFlags; \
                              softfloat_exceptionFlags = 0; })
 

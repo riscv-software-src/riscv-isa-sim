@@ -1,1 +1,1 @@
-WRITE_RD(sreg_t(cmp_trunc(RS1)) < sreg_t(cmp_trunc(insn.i_imm())));
+WRITE_RD(sreg_t(RS1) < sreg_t(insn.i_imm()));
