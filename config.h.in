@@ -33,20 +33,11 @@
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef RISCV_ENABLED
 
-/* Define if 64-bit mode is supported */
-#undef RISCV_ENABLE_64BIT
-
 /* Enable commit log generation */
 #undef RISCV_ENABLE_COMMITLOG
 
-/* Define if floating-point instructions are supported */
-#undef RISCV_ENABLE_FPU
-
 /* Enable PC histogram generation */
 #undef RISCV_ENABLE_HISTOGRAM
-
-/* Define if RISC-V Compressed is supported */
-#undef RISCV_ENABLE_RVC
 
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SOFTFLOAT_ENABLED

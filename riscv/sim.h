@@ -15,7 +15,8 @@ class htif_isasim_t;
 class sim_t
 {
 public:
-  sim_t(size_t _nprocs, size_t mem_mb, const std::vector<std::string>& htif_args);
+  sim_t(const char* isa, size_t _nprocs, size_t mem_mb,
+        const std::vector<std::string>& htif_args);
   ~sim_t();
 
   // run the simulation to completion
@@ -72,6 +73,7 @@ private:
   reg_t get_tohost(const std::vector<std::string>& args);
 
   friend class htif_isasim_t;
+  friend class processor_t;
 };
 
 extern volatile bool ctrlc_pressed;

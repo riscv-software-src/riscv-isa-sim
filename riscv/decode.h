@@ -45,14 +45,6 @@ const int NFPR = 32;
 #define FSR_NXA  (FPEXC_NX << FSR_AEXC_SHIFT)
 #define FSR_AEXC (FSR_NVA | FSR_OFA | FSR_UFA | FSR_DZA | FSR_NXA)
 
-#ifdef RISCV_ENABLE_RVC
-# define INSN_ALIGNMENT 2
-# define require_rvc
-#else
-# define INSN_ALIGNMENT 4
-# define require_rvc throw trap_illegal_instruction()
-#endif
-
 #define insn_length(x) \
   (((x) & 0x03) < 0x03 ? 2 : \
    ((x) & 0x1f) < 0x1f ? 4 : \
@@ -173,11 +165,8 @@ private:
 #define require_privilege(p) if (get_field(STATE.mstatus, MSTATUS_PRV) < (p)) throw trap_illegal_instruction()
 #define require_rv64 if(unlikely(xlen != 64)) throw trap_illegal_instruction()
 #define require_rv32 if(unlikely(xlen != 32)) throw trap_illegal_instruction()
-#ifdef RISCV_ENABLE_FPU
-# define require_fp if (unlikely((STATE.mstatus & MSTATUS_FS) == 0)) throw trap_illegal_instruction()
-#else
-# define require_fp throw trap_illegal_instruction()
-#endif
+#define require_extension(s) if (!p->supports_extension(s)) throw trap_illegal_instruction()
+#define require_fp if (unlikely((STATE.mstatus & MSTATUS_FS) == 0)) throw trap_illegal_instruction()
 #define require_accelerator if (unlikely((STATE.mstatus & MSTATUS_XS) == 0)) throw trap_illegal_instruction()
 
 #define set_fp_exceptions ({ STATE.fflags |= softfloat_exceptionFlags; \
@@ -189,7 +178,7 @@ private:
 #define zext_xlen(x) (((reg_t)(x) << (64-xlen)) >> (64-xlen))
 
 #define set_pc(x) \
-  do { if ((x) & (INSN_ALIGNMENT-1)) \
+  do { if (unlikely(((x) & 2)) && !p->supports_extension('C')) \
          throw trap_instruction_address_misaligned(x); \
        npc = sext_xlen(x); \
      } while(0)

@@ -664,9 +664,6 @@ enable_option_checking
 enable_stow
 enable_optional_subprojects
 with_fesvr
-enable_fpu
-enable_rvc
-enable_64bit
 enable_commitlog
 enable_histogram
 '
@@ -1300,9 +1297,6 @@ Optional Features:
   --enable-stow           Enable stow-based install
   --enable-optional-subprojects
                           Enable all optional subprojects
-  --disable-fpu           Disable floating-point
-  --disable-rvc           Disable RISC-V Compressed
-  --disable-64bit         Disable 64-bit mode
   --enable-commitlog      Enable commit log generation
   --enable-histogram      Enable PC histogram generation
 
@@ -3979,6 +3973,67 @@ ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ex
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dlopen" >&5
+$as_echo_n "checking for library containing dlopen... " >&6; }
+if ${ac_cv_search_dlopen+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_func_search_save_LIBS=$LIBS
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+/* Override any GCC internal prototype to avoid an error.
+   Use char because int might match the return type of a GCC
+   builtin and then its argument prototype would still apply.  */
+#ifdef __cplusplus
+extern "C"
+#endif
+char dlopen ();
+int
+main ()
+{
+return dlopen ();
+  ;
+  return 0;
+}
+_ACEOF
+for ac_lib in '' dl dld; do
+  if test -z "$ac_lib"; then
+    ac_res="none required"
+  else
+    ac_res=-l$ac_lib
+    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
+  fi
+  if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_search_dlopen=$ac_res
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext
+  if ${ac_cv_search_dlopen+:} false; then :
+  break
+fi
+done
+if ${ac_cv_search_dlopen+:} false; then :
+
+else
+  ac_cv_search_dlopen=no
+fi
+rm conftest.$ac_ext
+LIBS=$ac_func_search_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_dlopen" >&5
+$as_echo "$ac_cv_search_dlopen" >&6; }
+ac_res=$ac_cv_search_dlopen
+if test "$ac_res" != no; then :
+  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
+
+else
+
+  as_fn_error $? "unable to find the dlopen() function" "$LINENO" 5
+
+fi
+
+
 
 # Check whether --with-fesvr was given.
 if test "${with_fesvr+set}" = set; then :
@@ -4085,45 +4140,6 @@ else
   as_fn_error $? "libpthread is required" "$LINENO" 5
 fi
 
-
-# Check whether --enable-fpu was given.
-if test "${enable_fpu+set}" = set; then :
-  enableval=$enable_fpu;
-fi
-
-if test "x$enable_fpu" != "xno"; then :
-
-
-$as_echo "#define RISCV_ENABLE_FPU /**/" >>confdefs.h
-
-
-fi
-
-# Check whether --enable-rvc was given.
-if test "${enable_rvc+set}" = set; then :
-  enableval=$enable_rvc;
-fi
-
-if test "x$enable_rvc" != "xno"; then :
-
-
-$as_echo "#define RISCV_ENABLE_RVC /**/" >>confdefs.h
-
-
-fi
-
-# Check whether --enable-64bit was given.
-if test "${enable_64bit+set}" = set; then :
-  enableval=$enable_64bit;
-fi
-
-if test "x$enable_64bit" != "xno"; then :
-
-
-$as_echo "#define RISCV_ENABLE_64BIT /**/" >>confdefs.h
-
-
-fi
 
 # Check whether --enable-commitlog was given.
 if test "${enable_commitlog+set}" = set; then :
@@ -4329,66 +4345,6 @@ $as_echo "$as_me: configuring default subproject : spike_main" >&6;}
       subprojects_enabled="$subprojects_enabled spike_main"
 
 $as_echo "#define SPIKE_MAIN_ENABLED /**/" >>confdefs.h
-
-      { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dlopen" >&5
-$as_echo_n "checking for library containing dlopen... " >&6; }
-if ${ac_cv_search_dlopen+:} false; then :
-  $as_echo_n "(cached) " >&6
-else
-  ac_func_search_save_LIBS=$LIBS
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
-
-/* Override any GCC internal prototype to avoid an error.
-   Use char because int might match the return type of a GCC
-   builtin and then its argument prototype would still apply.  */
-#ifdef __cplusplus
-extern "C"
-#endif
-char dlopen ();
-int
-main ()
-{
-return dlopen ();
-  ;
-  return 0;
-}
-_ACEOF
-for ac_lib in '' dl dld; do
-  if test -z "$ac_lib"; then
-    ac_res="none required"
-  else
-    ac_res=-l$ac_lib
-    LIBS="-l$ac_lib  $ac_func_search_save_LIBS"
-  fi
-  if ac_fn_cxx_try_link "$LINENO"; then :
-  ac_cv_search_dlopen=$ac_res
-fi
-rm -f core conftest.err conftest.$ac_objext \
-    conftest$ac_exeext
-  if ${ac_cv_search_dlopen+:} false; then :
-  break
-fi
-done
-if ${ac_cv_search_dlopen+:} false; then :
-
-else
-  ac_cv_search_dlopen=no
-fi
-rm conftest.$ac_ext
-LIBS=$ac_func_search_save_LIBS
-fi
-{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_search_dlopen" >&5
-$as_echo "$ac_cv_search_dlopen" >&6; }
-ac_res=$ac_cv_search_dlopen
-if test "$ac_res" != no; then :
-  test "$ac_res" = "none required" || LIBS="$ac_res $LIBS"
-
-else
-
-  as_fn_error $? "unable to find the dlopen() function" "$LINENO" 5
-
-fi
 
 
 

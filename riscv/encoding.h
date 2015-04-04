@@ -48,7 +48,8 @@
 #define VM_MBB   1
 #define VM_MBBID 2
 #define VM_SV32  4
-#define VM_SV43  5
+#define VM_SV39  5
+#define VM_SV48  6
 
 #define UA_RV32  0
 #define UA_RV64  4
@@ -69,7 +70,8 @@
 #define PTE_R      0x040 // Referenced
 #define PTE_D      0x080 // Dirty
 #define PTE_SOFT   0x300 // Reserved for Software
-#define PTE_PPN_SHIFT 10
+#define RV64_PTE_PPN_SHIFT 26
+#define RV32_PTE_PPN_SHIFT 10
 #define PTE_TYPE_INVALID 0
 #define PTE_TYPE_TABLE   1
 #define PTE_TYPE_U       2
@@ -105,13 +107,13 @@
 # define MSTATUS_HA MSTATUS64_HA
 # define MSTATUS_SD MSTATUS64_SD
 # define SSTATUS_SD SSTATUS64_SD
-# define RISCV_PGLEVELS 3 /* Sv39 */
 # define RISCV_PGLEVEL_BITS 9
+# define PTE_PPN_SHIFT RV64_PTE_PPN_SHIFT
 #else
 # define MSTATUS_SD MSTATUS32_SD
 # define SSTATUS_SD SSTATUS32_SD
-# define RISCV_PGLEVELS 2 /* Sv32 */
 # define RISCV_PGLEVEL_BITS 10
+# define PTE_PPN_SHIFT RV32_PTE_PPN_SHIFT
 #endif
 #define RISCV_PGSHIFT 12
 #define RISCV_PGSIZE (1 << RISCV_PGSHIFT)

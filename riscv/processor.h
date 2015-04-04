@@ -71,7 +71,7 @@ struct state_t
 class processor_t
 {
 public:
-  processor_t(sim_t* _sim, mmu_t* _mmu, uint32_t _id);
+  processor_t(const char* isa, sim_t* sim, uint32_t id);
   ~processor_t();
 
   void set_debug(bool value);
@@ -86,6 +86,7 @@ public:
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
   extension_t* get_extension() { return ext; }
+  bool supports_extension(unsigned char ext) { return subsets[ext]; }
   void push_privilege_stack();
   void pop_privilege_stack();
   void yield_load_reservation() { state.load_reservation = (reg_t)-1; }
@@ -100,7 +101,9 @@ private:
   extension_t* ext;
   disassembler_t* disassembler;
   state_t state;
+  bool subsets[256];
   uint32_t id;
+  int max_xlen;
   int xlen;
   bool run; // !reset
   bool debug;
@@ -119,6 +122,7 @@ private:
   friend class mmu_t;
   friend class extension_t;
 
+  void parse_isa_string(const char* isa);
   void build_opcode_map();
   insn_func_t decode_insn(insn_t insn);
 };

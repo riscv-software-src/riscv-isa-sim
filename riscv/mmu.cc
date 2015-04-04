@@ -4,6 +4,12 @@
 #include "sim.h"
 #include "processor.h"
 
+#define LEVELS(xlen) ((xlen) == 32 ? 2 : 3)
+#define PPN_SHIFT(xlen) ((xlen) == 32 ? 10 : 26)
+#define PTIDXBITS(xlen) ((xlen) == 32 ? 10 : 9)
+#define VPN_BITS(xlen) (PTIDXBITS(xlen) * LEVELS(xlen))
+#define VA_BITS(xlen) (VPN_BITS(xlen) + PGSHIFT)
+
 mmu_t::mmu_t(char* _mem, size_t _memsz)
  : mem(_mem), memsz(_memsz), proc(NULL)
 {
@@ -79,25 +85,26 @@ void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
   return mem + paddr;
 }
 
-pte_t mmu_t::walk(reg_t addr, bool supervisor, bool store, bool fetch)
+reg_t mmu_t::walk(reg_t addr, bool supervisor, bool store, bool fetch)
 {
-  reg_t msb_mask = -(reg_t(1) << (VA_BITS-1));
+  reg_t msb_mask = -(reg_t(1) << (VA_BITS(proc->xlen) - 1));
   if ((addr & msb_mask) != 0 && (addr & msb_mask) != msb_mask)
     return -1; // address isn't properly sign-extended
 
   reg_t base = proc->get_state()->sptbr;
 
-  int ptshift = (LEVELS-1)*PTIDXBITS;
-  for (reg_t i = 0; i < LEVELS; i++, ptshift -= PTIDXBITS) {
-    reg_t idx = (addr >> (PGSHIFT+ptshift)) & ((1<<PTIDXBITS)-1);
+  int xlen = proc->max_xlen;
+  int ptshift = (LEVELS(xlen) - 1) * PTIDXBITS(xlen);
+  for (reg_t i = 0; i < LEVELS(xlen); i++, ptshift -= PTIDXBITS(xlen)) {
+    reg_t idx = (addr >> (PGSHIFT+ptshift)) & ((1<<PTIDXBITS(xlen))-1);
 
     // check that physical address of PTE is legal
-    reg_t pte_addr = base + idx*sizeof(pte_t);
+    reg_t pte_addr = base + idx*sizeof(reg_t);
     if (pte_addr >= memsz)
       return -1;
 
-    pte_t* ppte = (pte_t*)(mem+pte_addr);
-    reg_t ppn = *ppte >> PTE_PPN_SHIFT;
+    reg_t* ppte = (reg_t*)(mem+pte_addr);
+    reg_t ppn = *ppte >> PPN_SHIFT(xlen);
 
     if ((*ppte & PTE_TYPE) == PTE_TYPE_TABLE) { // next level of page table
       base = ppn << PGSHIFT;

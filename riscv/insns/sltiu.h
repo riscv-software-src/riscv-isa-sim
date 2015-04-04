@@ -1,1 +1,1 @@
-WRITE_RD(RS1 < insn.i_imm());
+WRITE_RD(RS1 < reg_t(insn.i_imm()));

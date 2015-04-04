@@ -11,4 +11,3 @@ spike_main_install_prog_srcs = \
 spike_main_hdrs = \
 
 spike_main_srcs = \
-  extensions.cc \

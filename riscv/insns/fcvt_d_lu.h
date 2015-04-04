@@ -1,3 +1,4 @@
+require_extension('D');
 require_rv64;
 require_fp;
 softfloat_roundingMode = RM;

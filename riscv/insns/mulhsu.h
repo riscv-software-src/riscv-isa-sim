@@ -1,3 +1,4 @@
+require_extension('M');
 if (xlen == 64)
   WRITE_RD(mulhsu(RS1, RS2));
 else

@@ -35,6 +35,7 @@ riscv_srcs = \
 	mmu.cc \
 	disasm.cc \
 	extension.cc \
+	extensions.cc \
 	rocc.cc \
 	regnames.cc \
 	$(riscv_gen_srcs) \
@@ -42,7 +43,7 @@ riscv_srcs = \
 riscv_test_srcs =
 
 riscv_gen_hdrs = \
-  icache.h \
+	icache.h \
 
 riscv_gen_srcs = \
 	$(addsuffix .cc, $(call get_insn_list,$(src_dir)/riscv/encoding.h))

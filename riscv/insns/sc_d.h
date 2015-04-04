@@ -1,3 +1,4 @@
+require_extension('A');
 require_rv64;
 if (RS1 == p->get_state()->load_reservation)
 {
