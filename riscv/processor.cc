@@ -460,12 +460,18 @@ reg_t processor_t::get_csr(int which)
   {
     case CSR_FFLAGS:
       require_fp;
+      if (!supports_extension('F'))
+        break;
       return state.fflags;
     case CSR_FRM:
       require_fp;
+      if (!supports_extension('F'))
+        break;
       return state.frm;
     case CSR_FCSR:
       require_fp;
+      if (!supports_extension('F'))
+        break;
       return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
     case CSR_CYCLE:
     case CSR_TIME:
