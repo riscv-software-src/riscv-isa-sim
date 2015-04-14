@@ -45,7 +45,7 @@ void cache_sim_t::init()
     help();
 
   idx_shift = 0;
-  for (size_t x = linesz; x; x >>= 1)
+  for (size_t x = linesz; x>1; x >>= 1)
     idx_shift++;
 
   tags = new uint64_t[sets*ways]();
