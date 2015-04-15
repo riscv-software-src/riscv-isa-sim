@@ -25,6 +25,14 @@ install path, and that the riscv-fesvr package is installed there.
     $ make
     $ [sudo] make install
 
+
+If you want to build spike with basic block vector generation support for 
+simpoint creation, pass --enable-simpoint to configure:
+
+    $ ../configure --prefix=$RISCV --with-fesvr=$RISCV --enable-simpoint
+    $ make
+    $ [sudo] make install
+
 Compiling and Running a Simple C Program
 -------------------------------------------
 
@@ -96,3 +104,20 @@ interactive debug mode with `<control>-<c>`.
 To end the simulation from the debug prompt, press `<control>-<c>` or:
 
     : q
+
+
+Generating Basic Block Vector for Simpoint tool
+-----------------------------------------------
+
+If you compiled spike with basic block tracking support, running an executable in spike
+will also generate a bbv_proc_0.bb.gz in the run directory. If you are running spike in 
+multiprocessor mode, one basic block vector file will be created for each processor.
+Unzip this file and use the Simpoint tool to obtain simpoints:
+
+    $ gunzip bbv_proc_0.bb.gz
+    $ <path to SimPoint.3.2>/bin/simpoint -loadFVFile bbv_proc_0.bb -maxK 10 -saveSimpoints <benchmark>.simpoints -saveSimpointWeights <benchmark>.weights
+
+The above command will generate the simpoints and their corresponding weights for the benchmark of 
+interest (whose basic block vector you created using Spike). For more information on Simpoint
+visit http://cseweb.ucsd.edu/~calder/simpoint/ 
+
