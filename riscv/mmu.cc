@@ -67,7 +67,8 @@ void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
     else throw trap_load_access_fault(addr);
   }
 
-  if (unlikely(tracer.interested_in_range(pgbase, pgbase + PGSIZE, store, fetch)))
+  bool trace = tracer.interested_in_range(pgbase, pgbase + PGSIZE, store, fetch);
+  if (unlikely(!fetch && trace))
     tracer.trace(paddr, bytes, store, fetch);
   else
   {

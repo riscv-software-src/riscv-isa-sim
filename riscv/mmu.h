@@ -85,15 +85,16 @@ public:
 
     char* iaddr = (char*)translate(addr, 1, false, true);
     insn_bits_t insn = *(uint16_t*)iaddr;
+    int length = insn_length(insn);
 
-    if (likely(insn_length(insn) == 4)) {
+    if (likely(length == 4)) {
       if (likely(addr % PGSIZE < PGSIZE-2))
         insn |= (insn_bits_t)*(int16_t*)(iaddr + 2) << 16;
       else
         insn |= (insn_bits_t)*(int16_t*)translate(addr + 2, 1, false, true) << 16;
-    } else if (insn_length(insn) == 2) {
+    } else if (length == 2) {
       insn = (int16_t)insn;
-    } else if (insn_length(insn) == 6) {
+    } else if (length == 6) {
       insn |= (insn_bits_t)*(int16_t*)translate(addr + 4, 1, false, true) << 32;
       insn |= (insn_bits_t)*(uint16_t*)translate(addr + 2, 1, false, true) << 16;
     } else {
@@ -111,7 +112,7 @@ public:
     if (!tracer.empty() && tracer.interested_in_range(paddr, paddr + 1, false, true))
     {
       icache[idx].tag = -1;
-      tracer.trace(paddr, 1, false, true);
+      tracer.trace(paddr, length, false, true);
     }
     return &icache[idx];
   }
