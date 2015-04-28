@@ -21,6 +21,7 @@ riscv_hdrs = \
 	rocc.h \
 	insn_template.h \
 	mulhi.h \
+	bbtracker.h	\
 
 riscv_precompiled_hdrs = \
 	insn_template.h \
@@ -38,6 +39,7 @@ riscv_srcs = \
 	extensions.cc \
 	rocc.cc \
 	regnames.cc \
+	bbtracker.cc	\
 	$(riscv_gen_srcs) \
 
 riscv_test_srcs =

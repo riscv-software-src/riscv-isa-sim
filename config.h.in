@@ -39,6 +39,9 @@
 /* Enable PC histogram generation */
 #undef RISCV_ENABLE_HISTOGRAM
 
+/* Enable Basic Block Vector generation for simpoint tool */
+#undef RISCV_ENABLE_SIMPOINT
+
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SOFTFLOAT_ENABLED
 

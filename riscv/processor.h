@@ -15,6 +15,7 @@ class sim_t;
 class trap_t;
 class extension_t;
 class disassembler_t;
+class bb_tracker_t;
 
 struct insn_desc_t
 {
@@ -94,12 +95,19 @@ public:
 
   void register_insn(insn_desc_t);
   void register_extension(extension_t*);
+#ifdef RISCV_ENABLE_SIMPOINT
+  uint64_t num_bb_inst;
+  bb_tracker_t* get_bbt() { return bbt; }
+#endif
 
 private:
   sim_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
   extension_t* ext;
   disassembler_t* disassembler;
+#ifdef RISCV_ENABLE_SIMPOINT
+  bb_tracker_t* bbt;
+#endif
   state_t state;
   bool subsets[256];
   uint32_t id;
