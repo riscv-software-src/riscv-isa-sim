@@ -191,8 +191,10 @@ inline void processor_t::update_histogram(size_t pc)
 static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
   reg_t npc = fetch.func(p, fetch.insn, pc);
-  commit_log(p->get_state(), pc, fetch.insn);
-  p->update_histogram(pc);
+  if (npc != PC_SERIALIZE) {
+    commit_log(p->get_state(), pc, fetch.insn);
+    p->update_histogram(pc);
+  }
   return npc;
 }
 
