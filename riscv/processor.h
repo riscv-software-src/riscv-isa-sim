@@ -45,16 +45,18 @@ struct state_t
   reg_t mbadaddr;
   reg_t mscratch;
   reg_t mcause;
+  reg_t mtime;
+  reg_t mie;
+  reg_t mip;
   reg_t sepc;
   reg_t sbadaddr;
   reg_t sscratch;
   reg_t stvec;
   reg_t sptbr;
   reg_t scause;
+  reg_t sutime_delta;
   reg_t tohost;
   reg_t fromhost;
-  reg_t scount;
-  bool stip;
   bool serialized; // whether timer CSRs are in a well-defined state
   uint32_t stimecmp;
   uint32_t fflags;
@@ -86,7 +88,9 @@ public:
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
   extension_t* get_extension() { return ext; }
-  bool supports_extension(unsigned char ext) { return subsets[ext]; }
+  bool supports_extension(unsigned char ext) {
+    return ext >= 'A' && ext <= 'Z' && ((cpuid >> (ext - 'A')) & 1);
+  }
   void push_privilege_stack();
   void pop_privilege_stack();
   void yield_load_reservation() { state.load_reservation = (reg_t)-1; }
@@ -101,7 +105,7 @@ private:
   extension_t* ext;
   disassembler_t* disassembler;
   state_t state;
-  bool subsets[256];
+  reg_t cpuid;
   uint32_t id;
   int max_xlen;
   int xlen;

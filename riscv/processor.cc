@@ -64,23 +64,26 @@ void processor_t::parse_isa_string(const char* isa)
   const char* all_subsets = "IMAFDC";
 
   max_xlen = 64;
+  cpuid = reg_t(2) << 62;
+
   if (strncmp(p, "RV32", 4) == 0)
-    max_xlen = 32, p += 4;
+    max_xlen = 32, cpuid = 0, p += 4;
   else if (strncmp(p, "RV64", 4) == 0)
     p += 4;
   else if (strncmp(p, "RV", 2) == 0)
     p += 2;
+
+  cpuid |= 1L << ('S' - 'A'); // advertise support for supervisor mode
 
   if (!*p)
     p = all_subsets;
   else if (*p != 'I')
     bad_isa_string(isa);
 
-  memset(subsets, 0, sizeof(subsets));
-
   while (*p) {
+    cpuid |= 1L << (*p - 'A');
+
     if (auto next = strchr(all_subsets, *p)) {
-      subsets[(int)*p] = true;
       all_subsets = next + 1;
       p++;
     } else if (*p == 'X') {
@@ -104,7 +107,7 @@ void state_t::reset()
   mstatus = set_field(mstatus, MSTATUS_PRV, PRV_M);
   mstatus = set_field(mstatus, MSTATUS_PRV1, PRV_S);
   mstatus = set_field(mstatus, MSTATUS_PRV2, PRV_S);
-  pc = 0x100;
+  pc = DEFAULT_MTVEC + 0x100;
   load_reservation = -1;
 }
 
@@ -142,20 +145,21 @@ void processor_t::take_interrupt()
 {
   int priv = get_field(state.mstatus, MSTATUS_PRV);
   int ie = get_field(state.mstatus, MSTATUS_IE);
+  reg_t interrupts = state.mie & state.mip;
 
   if (priv < PRV_M || (priv == PRV_M && ie)) {
-    if (get_field(state.mstatus, MSTATUS_MSIP))
-      raise_interrupt(IRQ_IPI);
+    if (interrupts & MIP_MSIP)
+      raise_interrupt(IRQ_SOFT);
 
     if (state.fromhost != 0)
       raise_interrupt(IRQ_HOST);
   }
 
   if (priv < PRV_S || (priv == PRV_S && ie)) {
-    if (get_field(state.mstatus, MSTATUS_SSIP))
-      raise_interrupt(IRQ_IPI);
+    if (interrupts & MIP_SSIP)
+      raise_interrupt(IRQ_SOFT);
 
-    if (state.stip && get_field(state.mstatus, MSTATUS_STIE))
+    if (interrupts & MIP_STIP)
       raise_interrupt(IRQ_TIMER);
   }
 }
@@ -200,16 +204,16 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 
 static void update_timer(state_t* state, size_t instret)
 {
-  uint64_t count0 = (uint64_t)(uint32_t)state->scount;
-  state->scount += instret;
+  uint64_t count0 = (uint64_t)(uint32_t)state->mtime;
+  state->mtime += instret;
   uint64_t before = count0 - state->stimecmp;
   if (int64_t(before ^ (before + instret)) < 0)
-    state->stip = true;
+    state->mip |= MIP_STIP;
 }
 
 static size_t next_timer(state_t* state)
 {
-  return state->stimecmp - (uint32_t)state->scount;
+  return state->stimecmp - (uint32_t)state->mtime;
 }
 
 void processor_t::step(size_t n)
@@ -286,7 +290,7 @@ void processor_t::push_privilege_stack()
   s = set_field(s, MSTATUS_PRV1, get_field(state.mstatus, MSTATUS_PRV));
   s = set_field(s, MSTATUS_IE1, get_field(state.mstatus, MSTATUS_IE));
   s = set_field(s, MSTATUS_PRV, PRV_M);
-  s = set_field(s, MSTATUS_MPRV, PRV_M);
+  s = set_field(s, MSTATUS_MPRV, 0);
   s = set_field(s, MSTATUS_IE, 0);
   set_csr(CSR_MSTATUS, s);
 }
@@ -309,7 +313,7 @@ reg_t processor_t::take_trap(trap_t& t, reg_t epc)
     fprintf(stderr, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
             id, t.name(), epc);
 
-  reg_t tvec = 0x40 * get_field(state.mstatus, MSTATUS_PRV);
+  reg_t tvec = DEFAULT_MTVEC + 0x40 * get_field(state.mstatus, MSTATUS_PRV);
   push_privilege_stack();
   yield_load_reservation();
   state.mcause = t.cause();
@@ -320,7 +324,7 @@ reg_t processor_t::take_trap(trap_t& t, reg_t epc)
 
 void processor_t::deliver_ipi()
 {
-  state.mstatus |= MSTATUS_MSIP;
+  state.mip |= MIP_MSIP;
 }
 
 void processor_t::disasm(insn_t insn)
@@ -335,16 +339,9 @@ static bool validate_priv(reg_t priv)
   return priv == PRV_U || priv == PRV_S || priv == PRV_M;
 }
 
-static bool validate_arch(int max_xlen, reg_t arch)
-{
-  if (max_xlen == 64 && arch == UA_RV64)
-    return true;
-  return arch == UA_RV32;
-}
-
 static bool validate_vm(int max_xlen, reg_t vm)
 {
-  if (max_xlen == 64 && vm == VM_SV39)
+  if (max_xlen == 64 && (vm == VM_SV39 || vm == VM_SV48))
     return true;
   if (max_xlen == 32 && vm == VM_SV32)
     return true;
@@ -368,91 +365,110 @@ void processor_t::set_csr(int which, reg_t val)
       state.fflags = (val & FSR_AEXC) >> FSR_AEXC_SHIFT;
       state.frm = (val & FSR_RD) >> FSR_RD_SHIFT;
       break;
-    case CSR_SCYCLE:
-    case CSR_STIME:
-    case CSR_SINSTRET:
-      state.scount = val; break;
-    case CSR_SCYCLEH:
-    case CSR_STIMEH:
-    case CSR_SINSTRETH:
-      state.scount = (val << 32) | (uint32_t)state.scount;
+    case CSR_MTIME:
+    case CSR_STIMEW:
+      state.mtime = val;
       break;
-    case CSR_MSTATUS:
-    {
-      if ((val ^ state.mstatus) & (MSTATUS_VM | MSTATUS_PRV | MSTATUS_MPRV))
+    case CSR_MTIMEH:
+    case CSR_STIMEHW:
+      if (xlen == 32)
+        state.mtime = (uint32_t)val | (state.mtime >> 32 << 32);
+      else
+        state.mtime = val;
+      break;
+    case CSR_CYCLEW:
+    case CSR_TIMEW:
+    case CSR_INSTRETW:
+      val -= state.mtime;
+      if (xlen == 32)
+        state.sutime_delta = (uint32_t)val | (state.sutime_delta >> 32 << 32);
+      else
+        state.sutime_delta = val;
+      break;
+    case CSR_CYCLEHW:
+    case CSR_TIMEHW:
+    case CSR_INSTRETHW:
+      val -= state.mtime;
+      state.sutime_delta = (val << 32) | (uint32_t)state.sutime_delta;
+      break;
+    case CSR_MSTATUS: {
+      if ((val ^ state.mstatus) & (MSTATUS_VM | MSTATUS_PRV | MSTATUS_PRV1 | MSTATUS_MPRV))
         mmu->flush_tlb();
 
-      reg_t mask = MSTATUS_SSIP | MSTATUS_MSIP | MSTATUS_IE | MSTATUS_IE1
-                   | MSTATUS_IE2 | MSTATUS_IE3 | MSTATUS_STIE | MSTATUS_FS;
-      if (ext)
-        mask |= MSTATUS_XS;
-      state.mstatus = (state.mstatus & ~mask) | (val & mask);
+      reg_t mask = MSTATUS_IE | MSTATUS_IE1 | MSTATUS_IE2 | MSTATUS_MPRV
+                   | MSTATUS_FS | (ext ? MSTATUS_XS : 0);
 
       if (validate_vm(max_xlen, get_field(val, MSTATUS_VM)))
-        state.mstatus = (state.mstatus & ~MSTATUS_VM) | (val & MSTATUS_VM);
-      if (validate_priv(get_field(val, MSTATUS_MPRV)))
-        state.mstatus = (state.mstatus & ~MSTATUS_MPRV) | (val & MSTATUS_MPRV);
+        mask |= MSTATUS_VM;
       if (validate_priv(get_field(val, MSTATUS_PRV)))
-        state.mstatus = (state.mstatus & ~MSTATUS_PRV) | (val & MSTATUS_PRV);
+        mask |= MSTATUS_PRV;
       if (validate_priv(get_field(val, MSTATUS_PRV1)))
-        state.mstatus = (state.mstatus & ~MSTATUS_PRV1) | (val & MSTATUS_PRV1);
+        mask |= MSTATUS_PRV1;
       if (validate_priv(get_field(val, MSTATUS_PRV2)))
-        state.mstatus = (state.mstatus & ~MSTATUS_PRV2) | (val & MSTATUS_PRV2);
-      if (validate_priv(get_field(val, MSTATUS_PRV3)))
-        state.mstatus = (state.mstatus & ~MSTATUS_PRV3) | (val & MSTATUS_PRV3);
+        mask |= MSTATUS_PRV2;
+
+      state.mstatus = (state.mstatus & ~mask) | (val & mask);
 
       bool dirty = (state.mstatus & MSTATUS_FS) == MSTATUS_FS;
       dirty |= (state.mstatus & MSTATUS_XS) == MSTATUS_XS;
-      xlen = 32;
-      if (max_xlen == 32) {
+      if (max_xlen == 32)
         state.mstatus = set_field(state.mstatus, MSTATUS32_SD, dirty);
-      } else {
+      else
         state.mstatus = set_field(state.mstatus, MSTATUS64_SD, dirty);
 
-        if (validate_arch(max_xlen, get_field(val, MSTATUS64_UA)))
-          state.mstatus = (state.mstatus & ~MSTATUS64_UA) | (val & MSTATUS64_UA);
-        if (validate_arch(max_xlen, get_field(val, MSTATUS64_SA)))
-          state.mstatus = (state.mstatus & ~MSTATUS64_SA) | (val & MSTATUS64_SA);
-        switch (get_field(state.mstatus, MSTATUS_PRV)) {
-          case PRV_U: if (get_field(state.mstatus, MSTATUS64_UA)) xlen = 64; break;
-          case PRV_S: if (get_field(state.mstatus, MSTATUS64_SA)) xlen = 64; break;
-          case PRV_M: xlen = 64; break;
-          default: abort();
-        }
-      }
+      // spike supports the notion of xlen < max_xlen, but current priv spec
+      // doesn't provide a mechanism to run RV32 software on an RV64 machine
+      xlen = max_xlen;
       break;
     }
-    case CSR_SSTATUS:
-    {
+    case CSR_MIP: {
+      reg_t mask = MIP_SSIP | MIP_MSIP;
+      state.mip = (state.mip & ~mask) | (val & mask);
+      break;
+    }
+    case CSR_MIE: {
+      reg_t mask = MIP_SSIP | MIP_MSIP | MIP_STIP;
+      state.mie = (state.mie & ~mask) | (val & mask);
+      break;
+    }
+    case CSR_SSTATUS: {
       reg_t ms = state.mstatus;
-      ms = set_field(ms, MSTATUS_SSIP, get_field(val, SSTATUS_SIP));
       ms = set_field(ms, MSTATUS_IE, get_field(val, SSTATUS_IE));
       ms = set_field(ms, MSTATUS_IE1, get_field(val, SSTATUS_PIE));
       ms = set_field(ms, MSTATUS_PRV1, get_field(val, SSTATUS_PS));
-      ms = set_field(ms, MSTATUS64_UA, get_field(val, SSTATUS_UA));
-      ms = set_field(ms, MSTATUS_STIE, get_field(val, SSTATUS_TIE));
       ms = set_field(ms, MSTATUS_FS, get_field(val, SSTATUS_FS));
       ms = set_field(ms, MSTATUS_XS, get_field(val, SSTATUS_XS));
+      ms = set_field(ms, MSTATUS_MPRV, get_field(val, SSTATUS_MPRV));
       return set_csr(CSR_MSTATUS, ms);
+    }
+    case CSR_SIP: {
+      reg_t mask = MIP_SSIP;
+      state.mip = (state.mip & ~mask) | (val & mask);
+      break;
+    }
+    case CSR_SIE: {
+      reg_t mask = MIP_SSIP | MIP_STIP;
+      state.mie = (state.mie & ~mask) | (val & mask);
+      break;
     }
     case CSR_SEPC: state.sepc = val; break;
     case CSR_STVEC: state.stvec = val & ~3; break;
     case CSR_STIMECMP:
-      state.stip = false;
+      state.mip &= ~MIP_STIP;
       state.stimecmp = val;
       break;
-    case CSR_SPTBR: state.sptbr = val & ~(PGSIZE-1); break;
+    case CSR_SPTBR: state.sptbr = zext_xlen(val & -PGSIZE); break;
     case CSR_SSCRATCH: state.sscratch = val; break;
     case CSR_MEPC: state.mepc = val; break;
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
     case CSR_SEND_IPI: sim->send_ipi(val); break;
-    case CSR_TOHOST:
+    case CSR_MTOHOST:
       if (state.tohost == 0)
         state.tohost = val;
       break;
-    case CSR_FROMHOST: state.fromhost = val; break;
+    case CSR_MFROMHOST: state.fromhost = val; break;
   }
 }
 
@@ -475,38 +491,44 @@ reg_t processor_t::get_csr(int which)
       if (!supports_extension('F'))
         break;
       return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
+    case CSR_MTIME:
+    case CSR_STIMEW:
+      return state.mtime;
+    case CSR_MTIMEH:
+    case CSR_STIMEHW:
+      return state.mtime >> 32;
     case CSR_CYCLE:
     case CSR_TIME:
     case CSR_INSTRET:
-    case CSR_SCYCLE:
     case CSR_STIME:
-    case CSR_SINSTRET:
-      return state.scount;
+    case CSR_CYCLEW:
+    case CSR_TIMEW:
+    case CSR_INSTRETW:
+      return state.mtime + state.sutime_delta;
     case CSR_CYCLEH:
     case CSR_TIMEH:
     case CSR_INSTRETH:
-    case CSR_SCYCLEH:
     case CSR_STIMEH:
-    case CSR_SINSTRETH:
+    case CSR_CYCLEHW:
+    case CSR_TIMEHW:
+    case CSR_INSTRETHW:
       if (xlen == 64)
         break;
-      return state.scount >> 32;
-    case CSR_SSTATUS:
-    {
+      return (state.mtime + state.sutime_delta) >> 32;
+    case CSR_SSTATUS: {
       reg_t ss = 0;
-      ss = set_field(ss, SSTATUS_SIP, get_field(state.mstatus, MSTATUS_SSIP));
       ss = set_field(ss, SSTATUS_IE, get_field(state.mstatus, MSTATUS_IE));
       ss = set_field(ss, SSTATUS_PIE, get_field(state.mstatus, MSTATUS_IE1));
       ss = set_field(ss, SSTATUS_PS, get_field(state.mstatus, MSTATUS_PRV1));
-      ss = set_field(ss, SSTATUS_UA, get_field(state.mstatus, MSTATUS64_UA));
-      ss = set_field(ss, SSTATUS_TIE, get_field(state.mstatus, MSTATUS_STIE));
-      ss = set_field(ss, SSTATUS_TIP, state.stip);
       ss = set_field(ss, SSTATUS_FS, get_field(state.mstatus, MSTATUS_FS));
       ss = set_field(ss, SSTATUS_XS, get_field(state.mstatus, MSTATUS_XS));
+      ss = set_field(ss, SSTATUS_MPRV, get_field(state.mstatus, MSTATUS_MPRV));
       if (get_field(state.mstatus, MSTATUS64_SD))
         ss = set_field(ss, (xlen == 32 ? SSTATUS32_SD : SSTATUS64_SD), 1);
       return ss;
     }
+    case CSR_SIP: return state.mip & (MIP_SSIP | MIP_STIP);
+    case CSR_SIE: return state.mie & (MIP_SSIP | MIP_STIP);
     case CSR_SEPC: return state.sepc;
     case CSR_SBADADDR: return state.sbadaddr;
     case CSR_STVEC: return state.stvec;
@@ -519,18 +541,24 @@ reg_t processor_t::get_csr(int which)
     case CSR_SASID: return 0;
     case CSR_SSCRATCH: return state.sscratch;
     case CSR_MSTATUS: return state.mstatus;
+    case CSR_MIP: return state.mip;
+    case CSR_MIE: return state.mie;
     case CSR_MEPC: return state.mepc;
     case CSR_MSCRATCH: return state.mscratch;
     case CSR_MCAUSE: return state.mcause;
     case CSR_MBADADDR: return state.mbadaddr;
-    case CSR_TOHOST:
+    case CSR_MCPUID: return cpuid;
+    case CSR_MIMPID: return IMPL_ROCKET;
+    case CSR_MHARTID: return id;
+    case CSR_MTVEC: return DEFAULT_MTVEC;
+    case CSR_MTDELEG: return 0;
+    case CSR_MTOHOST:
       sim->get_htif()->tick(); // not necessary, but faster
       return state.tohost;
-    case CSR_FROMHOST:
+    case CSR_MFROMHOST:
       sim->get_htif()->tick(); // not necessary, but faster
       return state.fromhost;
     case CSR_SEND_IPI: return 0;
-    case CSR_HARTID: return id;
     case CSR_UARCH0:
     case CSR_UARCH1:
     case CSR_UARCH2:

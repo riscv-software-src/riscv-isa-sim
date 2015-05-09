@@ -4,12 +4,6 @@
 #include "sim.h"
 #include "processor.h"
 
-#define LEVELS(xlen) ((xlen) == 32 ? 2 : 3)
-#define PPN_SHIFT(xlen) ((xlen) == 32 ? 10 : 26)
-#define PTIDXBITS(xlen) ((xlen) == 32 ? 10 : 9)
-#define VPN_BITS(xlen) (PTIDXBITS(xlen) * LEVELS(xlen))
-#define VA_BITS(xlen) (VPN_BITS(xlen) + PGSHIFT)
-
 mmu_t::mmu_t(char* _mem, size_t _memsz)
  : mem(_mem), memsz(_memsz), proc(NULL)
 {
@@ -40,28 +34,28 @@ void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
   reg_t idx = (addr >> PGSHIFT) % TLB_ENTRIES;
   reg_t expected_tag = addr >> PGSHIFT;
 
-  reg_t mstatus = proc ? proc->state.mstatus : 0;
-  
-  bool vm_disabled = get_field(mstatus, MSTATUS_VM) == VM_MBARE;
-  bool mode_m = get_field(mstatus, MSTATUS_PRV) == PRV_M;
-  bool mode_s = get_field(mstatus, MSTATUS_PRV) == PRV_S;
-  bool mprv_m = get_field(mstatus, MSTATUS_MPRV) == PRV_M;
-  bool mprv_s = get_field(mstatus, MSTATUS_MPRV) == PRV_S;
-
   reg_t pgbase;
-  if (vm_disabled || (mode_m && (mprv_m || fetch))) {
+  if (unlikely(!proc)) {
     pgbase = addr & -PGSIZE;
-    // virtual memory is disabled.  merely check legality of physical address.
-    if (addr >= memsz)
-      pgbase = -1;
   } else {
-    pgbase = walk(addr, mode_s || (mode_m && mprv_s), store, fetch);
+    reg_t mode = get_field(proc->state.mstatus, MSTATUS_PRV);
+    if (!fetch && get_field(proc->state.mstatus, MSTATUS_MPRV))
+      mode = get_field(proc->state.mstatus, MSTATUS_PRV1);
+    if (get_field(proc->state.mstatus, MSTATUS_VM) == VM_MBARE)
+      mode = PRV_M;
+  
+    if (mode == PRV_M) {
+      reg_t msb_mask = (reg_t(2) << (proc->xlen-1))-1; // zero-extend from xlen
+      pgbase = addr & -PGSIZE & msb_mask;
+    } else {
+      pgbase = walk(addr, mode > PRV_U, store, fetch);
+    }
   }
 
   reg_t pgoff = addr & (PGSIZE-1);
   reg_t paddr = pgbase + pgoff;
 
-  if (pgbase == reg_t(-1)) {
+  if (pgbase >= memsz) {
     if (fetch) throw trap_instruction_access_fault(addr);
     else if (store) throw trap_store_access_fault(addr);
     else throw trap_load_access_fault(addr);
@@ -80,7 +74,7 @@ void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
     else if (store) tlb_store_tag[idx] = expected_tag;
     else tlb_load_tag[idx] = expected_tag;
 
-    tlb_data[idx] = mem + pgbase - (addr & ~(PGSIZE-1));
+    tlb_data[idx] = mem + pgbase - (addr & -PGSIZE);
   }
 
   return mem + paddr;
@@ -88,42 +82,50 @@ void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
 
 reg_t mmu_t::walk(reg_t addr, bool supervisor, bool store, bool fetch)
 {
-  reg_t msb_mask = -(reg_t(1) << (VA_BITS(proc->xlen) - 1));
-  if ((addr & msb_mask) != 0 && (addr & msb_mask) != msb_mask)
-    return -1; // address isn't properly sign-extended
+  int levels, ptidxbits, ptesize;
+  switch (get_field(proc->get_state()->mstatus, MSTATUS_VM))
+  {
+    case VM_SV32: levels = 2; ptidxbits = 10; ptesize = 4; break;
+    case VM_SV39: levels = 3; ptidxbits = 9; ptesize = 8; break;
+    case VM_SV48: levels = 4; ptidxbits = 9; ptesize = 8; break;
+    default: abort();
+  }
+
+  // verify bits xlen-1:va_bits-1 are all equal
+  int va_bits = PGSHIFT + levels * ptidxbits;
+  reg_t mask = (reg_t(1) << (proc->xlen - (va_bits-1))) - 1;
+  reg_t masked_msbs = (addr >> (va_bits-1)) & mask;
+  if (masked_msbs != 0 && masked_msbs != mask)
+    return -1;
 
   reg_t base = proc->get_state()->sptbr;
-
-  int xlen = proc->max_xlen;
-  int ptshift = (LEVELS(xlen) - 1) * PTIDXBITS(xlen);
-  for (reg_t i = 0; i < LEVELS(xlen); i++, ptshift -= PTIDXBITS(xlen)) {
-    reg_t idx = (addr >> (PGSHIFT+ptshift)) & ((1<<PTIDXBITS(xlen))-1);
+  int ptshift = (levels - 1) * ptidxbits;
+  for (int i = 0; i < levels; i++, ptshift -= ptidxbits) {
+    reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << ptidxbits) - 1);
 
     // check that physical address of PTE is legal
-    reg_t pte_addr = base + idx*sizeof(reg_t);
+    reg_t pte_addr = base + idx * ptesize;
     if (pte_addr >= memsz)
-      return -1;
+      break;
 
-    reg_t* ppte = (reg_t*)(mem+pte_addr);
-    reg_t ppn = *ppte >> PPN_SHIFT(xlen);
+    void* ppte = mem + pte_addr;
+    reg_t pte = ptesize == 4 ? *(uint32_t*)ppte : *(uint64_t*)ppte;
+    reg_t ppn = pte >> PTE_PPN_SHIFT;
 
-    if ((*ppte & PTE_TYPE) == PTE_TYPE_TABLE) { // next level of page table
+    if (PTE_TABLE(pte)) { // next level of page table
       base = ppn << PGSHIFT;
+    } else if (!PTE_CHECK_PERM(pte, supervisor, store, fetch)) {
+      break;
     } else {
-      // we've found the PTE. check the permissions.
-      if (!PTE_CHECK_PERM(*ppte, supervisor, store, fetch))
-        return -1;
       // set referenced and possibly dirty bits.
-      *ppte |= PTE_R;
-      if (store)
-        *ppte |= PTE_D;
+      *(uint32_t*)ppte |= PTE_R | (store * PTE_D);
       // for superpage mappings, make a fake leaf PTE for the TLB's benefit.
       reg_t vpn = addr >> PGSHIFT;
       reg_t addr = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
 
       // check that physical address is legal
       if (addr >= memsz)
-        return -1;
+        break;
 
       return addr;
     }
