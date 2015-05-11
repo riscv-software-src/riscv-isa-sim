@@ -31,9 +31,9 @@
 #define MIP_SSIP            0x00000002
 #define MIP_HSIP            0x00000004
 #define MIP_MSIP            0x00000008
-#define MIP_STIP            0x00000200
-#define MIP_HTIP            0x00000400
-#define MIP_MTIP            0x00000800
+#define MIP_STIP            0x00000020
+#define MIP_HTIP            0x00000040
+#define MIP_MTIP            0x00000080
 
 #define SIP_SSIP MIP_SSIP
 #define SIP_STIP MIP_STIP
@@ -46,9 +46,9 @@
 #define VM_MBARE 0
 #define VM_MBB   1
 #define VM_MBBID 2
-#define VM_SV32  4
-#define VM_SV39  5
-#define VM_SV48  6
+#define VM_SV32  8
+#define VM_SV39  9
+#define VM_SV48  10
 
 #define UA_RV32  0
 #define UA_RV64  4
