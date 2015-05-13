@@ -55,14 +55,14 @@ enable_stow  := @enable_stow@
 
 ifeq ($(enable_stow),yes)
   stow_pkg_dir := $(prefix)/pkgs
-  DESTDIR ?= $(stow_pkg_dir)/$(project_name)-$(project_ver)
+  INSTALLDIR ?= $(DESTDIR)/$(stow_pkg_dir)/$(project_name)-$(project_ver)
 else
-  DESTDIR ?= $(prefix)
+  INSTALLDIR ?= $(DESTDIR)/$(prefix)
 endif
 
-install_hdrs_dir := $(DESTDIR)/include/$(project_name)
-install_libs_dir := $(DESTDIR)/lib
-install_exes_dir := $(DESTDIR)/bin
+install_hdrs_dir := $(INSTALLDIR)/include/$(project_name)
+install_libs_dir := $(INSTALLDIR)/lib
+install_exes_dir := $(INSTALLDIR)/bin
 
 #-------------------------------------------------------------------------
 # List of subprojects
