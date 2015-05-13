@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@prefix@
+libdir=${prefix}/@libdir@
+includedir=${prefix}/@includedir@
+
+Name: riscv-softfloat
+Description: RISC-V softfloat library
+Version: git
+Libs: -Wl,-rpath,${libdir} -L${libdir} -lsoftfloat
+Cflags: -I${includedir}
+URL: http://riscv.org/download.html#tab_spike
