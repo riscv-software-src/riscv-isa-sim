@@ -55,14 +55,14 @@ enable_stow  := @enable_stow@
 
 ifeq ($(enable_stow),yes)
   stow_pkg_dir := $(prefix)/pkgs
-  DESTDIR ?= $(stow_pkg_dir)/$(project_name)-$(project_ver)
+  INSTALLDIR ?= $(DESTDIR)/$(stow_pkg_dir)/$(project_name)-$(project_ver)
 else
-  DESTDIR ?= $(prefix)
+  INSTALLDIR ?= $(DESTDIR)/$(prefix)
 endif
 
-install_hdrs_dir := $(DESTDIR)/include/$(project_name)
-install_libs_dir := $(DESTDIR)/lib
-install_exes_dir := $(DESTDIR)/bin
+install_hdrs_dir := $(INSTALLDIR)/include/$(project_name)
+install_libs_dir := $(INSTALLDIR)/lib
+install_exes_dir := $(INSTALLDIR)/bin
 
 #-------------------------------------------------------------------------
 # List of subprojects
@@ -307,6 +307,7 @@ test_outs += $$($(2)_test_outs)
 install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs)) $$($(2)_gen_hdrs)
 install_libs += lib$(1).so
 install_exes += $$($(2)_install_prog_exes)
+install_pcs  += riscv-$(1).pc
 
 endef
 
@@ -358,7 +359,14 @@ install-exes : $(install_exes)
     $(INSTALL_EXE) $$file $(install_exes_dir); \
   done
 
-install : install-hdrs install-libs install-exes
+install-pc : $(install_pcs)
+	$(MKINSTALLDIRS) $(install_libs_dir)/pkgconfig/
+	for file in $^; \
+  do \
+    $(INSTALL_HDR) $$file $(install_libs_dir)/pkgconfig/; \
+  done
+
+install : install-hdrs install-libs install-exes install-pc
 ifeq ($(enable_stow),yes)
 	$(MKINSTALLDIRS) $(stow_pkg_dir)
 	cd $(stow_pkg_dir) && \

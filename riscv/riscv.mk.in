@@ -10,6 +10,7 @@ riscv_hdrs = \
 	htif.h \
 	common.h \
 	decode.h \
+	disasm.h \
 	mmu.h \
 	processor.h \
 	sim.h \

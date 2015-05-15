@@ -100,4 +100,10 @@ MCPPBS_SUBPROJECTS([ riscv, hwacha, dummy_rocc, softfloat, spike_main ])
 
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
+AC_CONFIG_FILES([riscv-spike.pc])
+AC_CONFIG_FILES([riscv-riscv.pc])
+AC_CONFIG_FILES([riscv-hwacha.pc])
+AC_CONFIG_FILES([riscv-softfloat.pc])
+AC_CONFIG_FILES([riscv-dummy_rocc.pc])
+AC_CONFIG_FILES([riscv-spike_main.pc])
 AC_OUTPUT
