@@ -230,7 +230,7 @@ void processor_t::step(size_t n)
    if (unlikely(pc == PC_SERIALIZE)) { \
      pc = state.pc; \
      state.serialized = true; \
-     continue; \
+     break; \
    }
 
   try
@@ -276,7 +276,7 @@ void processor_t::step(size_t n)
   }
   catch(trap_t& t)
   {
-    state.pc = take_trap(t, pc);
+    take_trap(t, pc);
   }
 
   update_timer(&state, instret);
@@ -307,19 +307,18 @@ void processor_t::pop_privilege_stack()
   set_csr(CSR_MSTATUS, s);
 }
 
-reg_t processor_t::take_trap(trap_t& t, reg_t epc)
+void processor_t::take_trap(trap_t& t, reg_t epc)
 {
   if (debug)
     fprintf(stderr, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
             id, t.name(), epc);
 
-  reg_t tvec = DEFAULT_MTVEC + 0x40 * get_field(state.mstatus, MSTATUS_PRV);
+  state.pc = DEFAULT_MTVEC + 0x40 * get_field(state.mstatus, MSTATUS_PRV);
   push_privilege_stack();
   yield_load_reservation();
   state.mcause = t.cause();
   state.mepc = epc;
   t.side_effects(&state); // might set badvaddr etc.
-  return tvec;
 }
 
 void processor_t::deliver_ipi()

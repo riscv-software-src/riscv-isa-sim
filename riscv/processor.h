@@ -119,7 +119,7 @@ private:
   std::map<size_t,size_t> pc_histogram;
 
   void take_interrupt(); // take a trap if any interrupts are pending
-  reg_t take_trap(trap_t& t, reg_t epc); // take an exception
+  void take_trap(trap_t& t, reg_t epc); // take an exception
   void disasm(insn_t insn); // disassemble and print an instruction
 
   friend class sim_t;
