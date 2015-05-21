@@ -1,7 +1,7 @@
 require_extension('C');
-if (insn.rvc_rd() == 0) {
-  if (insn.rvc_imm() == -32) // c.sbreak
-    throw trap_breakpoint();
-  throw trap_illegal_instruction();
-} else // c.li
+require(insn.rvc_rd() != 0);
+if (insn.rvc_imm() == 0) { // c.jr
+  set_pc(RVC_RS1 & ~reg_t(1));
+} else {
   WRITE_RD(insn.rvc_imm());
+}

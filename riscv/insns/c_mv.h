@@ -1,2 +1,3 @@
 require_extension('C');
-WRITE_RD(RVC_RS1);
+require(insn.rvc_rd() != 0);
+WRITE_RD(RVC_RS2);
