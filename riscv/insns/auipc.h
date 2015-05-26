@@ -1,1 +1,4 @@
-WRITE_RD(sext_xlen(insn.u_imm() + pc));
+if(xlen == 32)
+  WRITE_RD((uint32_t) ((int32_t)sext_xlen(insn.u_imm() + (int32_t) pc)));
+else
+  WRITE_RD(sext_xlen(insn.u_imm() + pc));
