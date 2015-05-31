@@ -280,6 +280,10 @@ void processor_t::step(size_t n)
   }
 
   update_timer(&state, instret);
+
+  // tail-recurse if we didn't execute as many instructions as we'd hoped
+  if (instret < n)
+    step(n - instret);
 }
 
 void processor_t::push_privilege_stack()
