@@ -266,7 +266,7 @@
 #define MATCH_C_SLLI 0x1
 #define MASK_C_SLLI  0xe003
 #define MATCH_C_SLLIW 0x8001
-#define MASK_C_SLLIW  0xf003
+#define MASK_C_SLLIW  0xe003
 #define MATCH_C_SRAI 0x2000
 #define MASK_C_SRAI  0xe003
 #define MATCH_C_SRLI 0x2001

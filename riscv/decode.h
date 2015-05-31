@@ -85,6 +85,7 @@ public:
   int64_t rvc_ld_imm() { return (x(10, 3) << 3) + (x(5, 2) << 6); }
   int64_t rvc_j_imm() { return (x(3, 4) << 1) + (x(2, 1) << 5) + (xs(7, 6) << 6); }
   int64_t rvc_b_imm() { return (x(3, 4) << 1) + (x(2, 1) << 5) + (xs(10, 3) << 6); }
+  int64_t rvc_simm3() { return x(10, 3); }
   uint64_t rvc_rd() { return rd(); }
   uint64_t rvc_rs1() { return rd(); }
   uint64_t rvc_rs2() { return x(2, 5); }
