@@ -261,6 +261,7 @@ void processor_t::step(size_t n)
         pc = execute_insn(this, pc, fetch); \
         if (idx == mmu_t::ICACHE_ENTRIES-1) break; \
         if (unlikely(ic_entry->tag != pc)) break; \
+        if (unlikely(instret+1 == n)) break; \
         instret++; \
         state.pc = pc; \
       }
