@@ -21,7 +21,7 @@ static void handle_signal(int sig)
 sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb,
              const std::vector<std::string>& args)
   : htif(new htif_isasim_t(this, args)), procs(std::max(nprocs, size_t(1))),
-    current_step(0), current_proc(0), debug(false)
+    rtc(0), current_step(0), current_proc(0), debug(false)
 {
   signal(SIGINT, &handle_signal);
   // allocate target machine's memory, shrinking it as necessary
@@ -93,8 +93,10 @@ void sim_t::step(size_t n)
     {
       current_step = 0;
       procs[current_proc]->yield_load_reservation();
-      if (++current_proc == procs.size())
+      if (++current_proc == procs.size()) {
         current_proc = 0;
+        rtc += INTERLEAVE / INSNS_PER_RTC_TICK;
+      }
 
       htif->tick();
     }

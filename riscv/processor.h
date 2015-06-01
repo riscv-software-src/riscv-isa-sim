@@ -45,7 +45,7 @@ struct state_t
   reg_t mbadaddr;
   reg_t mscratch;
   reg_t mcause;
-  reg_t mtime;
+  reg_t minstret;
   reg_t mie;
   reg_t mip;
   reg_t sepc;
@@ -55,12 +55,14 @@ struct state_t
   reg_t sptbr;
   reg_t scause;
   reg_t sutime_delta;
+  reg_t suinstret_delta;
   reg_t tohost;
   reg_t fromhost;
-  bool serialized; // whether timer CSRs are in a well-defined state
+  reg_t prev_rtc;
   uint32_t stimecmp;
   uint32_t fflags;
   uint32_t frm;
+  bool serialized; // whether timer CSRs are in a well-defined state
 
   reg_t load_reservation;
 
@@ -118,6 +120,7 @@ private:
   std::vector<insn_desc_t> opcode_store;
   std::map<size_t,size_t> pc_histogram;
 
+  void check_timer();
   void take_interrupt(); // take a trap if any interrupts are pending
   void take_trap(trap_t& t, reg_t epc); // take an exception
   void disasm(insn_t insn); // disassemble and print an instruction

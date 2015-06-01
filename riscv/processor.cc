@@ -202,18 +202,13 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
   return npc;
 }
 
-static void update_timer(state_t* state, size_t instret)
+void processor_t::check_timer()
 {
-  uint64_t count0 = (uint64_t)(uint32_t)state->mtime;
-  state->mtime += instret;
-  uint64_t before = count0 - state->stimecmp;
-  if (int64_t(before ^ (before + instret)) < 0)
-    state->mip |= MIP_STIP;
-}
-
-static size_t next_timer(state_t* state)
-{
-  return state->stimecmp - (uint32_t)state->mtime;
+  // this assumes the rtc doesn't change asynchronously during step(),
+  if (state.stimecmp >= (uint32_t)state.prev_rtc
+      && state.stimecmp < (uint32_t)sim->rtc)
+    state.mip |= MIP_STIP;
+  state.prev_rtc = sim->rtc;
 }
 
 void processor_t::step(size_t n)
@@ -224,7 +219,6 @@ void processor_t::step(size_t n)
 
   if (unlikely(!run || !n))
     return;
-  n = std::min(n, next_timer(&state) | 1U);
 
   #define maybe_serialize() \
    if (unlikely(pc == PC_SERIALIZE)) { \
@@ -235,6 +229,7 @@ void processor_t::step(size_t n)
 
   try
   {
+    check_timer();
     take_interrupt();
 
     if (unlikely(debug))
@@ -280,7 +275,7 @@ void processor_t::step(size_t n)
     take_trap(t, pc);
   }
 
-  update_timer(&state, instret);
+  state.minstret += instret;
 
   // tail-recurse if we didn't execute as many instructions as we'd hoped
   if (instret < n)
@@ -371,29 +366,35 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_MTIME:
     case CSR_STIMEW:
-      state.mtime = val;
+      // this implementation ignores writes to MTIME
       break;
     case CSR_MTIMEH:
     case CSR_STIMEHW:
-      if (xlen == 32)
-        state.mtime = (uint32_t)val | (state.mtime >> 32 << 32);
-      else
-        state.mtime = val;
+      // this implementation ignores writes to MTIME
       break;
-    case CSR_CYCLEW:
     case CSR_TIMEW:
-    case CSR_INSTRETW:
-      val -= state.mtime;
+      val -= sim->rtc;
       if (xlen == 32)
         state.sutime_delta = (uint32_t)val | (state.sutime_delta >> 32 << 32);
       else
         state.sutime_delta = val;
       break;
-    case CSR_CYCLEHW:
     case CSR_TIMEHW:
-    case CSR_INSTRETHW:
-      val -= state.mtime;
+      val = ((val << 32) - sim->rtc) >> 32;
       state.sutime_delta = (val << 32) | (uint32_t)state.sutime_delta;
+      break;
+    case CSR_CYCLEW:
+    case CSR_INSTRETW:
+      val -= state.minstret;
+      if (xlen == 32)
+        state.suinstret_delta = (uint32_t)val | (state.suinstret_delta >> 32 << 32);
+      else
+        state.suinstret_delta = val;
+      break;
+    case CSR_CYCLEHW:
+    case CSR_INSTRETHW:
+      val = ((val << 32) - state.minstret) >> 32;
+      state.suinstret_delta = (val << 32) | (uint32_t)state.suinstret_delta;
       break;
     case CSR_MSTATUS: {
       if ((val ^ state.mstatus) & (MSTATUS_VM | MSTATUS_PRV | MSTATUS_PRV1 | MSTATUS_MPRV))
@@ -496,29 +497,33 @@ reg_t processor_t::get_csr(int which)
         break;
       return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
     case CSR_MTIME:
-    case CSR_STIMEW:
-      return state.mtime;
-    case CSR_MTIMEH:
-    case CSR_STIMEHW:
-      return state.mtime >> 32;
-    case CSR_CYCLE:
-    case CSR_TIME:
-    case CSR_INSTRET:
     case CSR_STIME:
-    case CSR_CYCLEW:
-    case CSR_TIMEW:
-    case CSR_INSTRETW:
-      return state.mtime + state.sutime_delta;
-    case CSR_CYCLEH:
-    case CSR_TIMEH:
-    case CSR_INSTRETH:
+    case CSR_STIMEW:
+      return sim->rtc;
+    case CSR_MTIMEH:
     case CSR_STIMEH:
-    case CSR_CYCLEHW:
+    case CSR_STIMEHW:
+      return sim->rtc >> 32;
+    case CSR_TIME:
+    case CSR_TIMEW:
+      return sim->rtc + state.sutime_delta;
+    case CSR_CYCLE:
+    case CSR_CYCLEW:
+    case CSR_INSTRET:
+    case CSR_INSTRETW:
+      return state.minstret + state.suinstret_delta;
+    case CSR_TIMEH:
     case CSR_TIMEHW:
+      if (xlen == 64)
+        break;
+      return (sim->rtc + state.sutime_delta) >> 32;
+    case CSR_CYCLEH:
+    case CSR_INSTRETH:
+    case CSR_CYCLEHW:
     case CSR_INSTRETHW:
       if (xlen == 64)
         break;
-      return (state.mtime + state.sutime_delta) >> 32;
+      return (state.minstret + state.suinstret_delta) >> 32;
     case CSR_SSTATUS: {
       reg_t ss = 0;
       ss = set_field(ss, SSTATUS_IE, get_field(state.mstatus, MSTATUS_IE));
