@@ -48,6 +48,20 @@ static std::string readline(int fd)
 
 void sim_t::interactive()
 {
+  typedef void (sim_t::*interactive_func)(const std::string&, const std::vector<std::string>&);
+  std::map<std::string,interactive_func> funcs;
+
+  funcs["r"] = &sim_t::interactive_run_noisy;
+  funcs["rs"] = &sim_t::interactive_run_silent;
+  funcs["reg"] = &sim_t::interactive_reg;
+  funcs["fregs"] = &sim_t::interactive_fregs;
+  funcs["fregd"] = &sim_t::interactive_fregd;
+  funcs["mem"] = &sim_t::interactive_mem;
+  funcs["str"] = &sim_t::interactive_str;
+  funcs["until"] = &sim_t::interactive_until;
+  funcs["while"] = &sim_t::interactive_until;
+  funcs["q"] = &sim_t::interactive_quit;
+
   while (!htif->done())
   {
     std::cerr << ": " << std::flush;
@@ -66,20 +80,6 @@ void sim_t::interactive()
 
     while (ss >> tmp)
       args.push_back(tmp);
-
-    typedef void (sim_t::*interactive_func)(const std::string&, const std::vector<std::string>&);
-    std::map<std::string,interactive_func> funcs;
-
-    funcs["r"] = &sim_t::interactive_run_noisy;
-    funcs["rs"] = &sim_t::interactive_run_silent;
-    funcs["reg"] = &sim_t::interactive_reg;
-    funcs["fregs"] = &sim_t::interactive_fregs;
-    funcs["fregd"] = &sim_t::interactive_fregd;
-    funcs["mem"] = &sim_t::interactive_mem;
-    funcs["str"] = &sim_t::interactive_str;
-    funcs["until"] = &sim_t::interactive_until;
-    funcs["while"] = &sim_t::interactive_until;
-    funcs["q"] = &sim_t::interactive_quit;
 
     try
     {
