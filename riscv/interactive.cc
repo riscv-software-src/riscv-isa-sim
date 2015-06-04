@@ -51,7 +51,8 @@ void sim_t::interactive()
   typedef void (sim_t::*interactive_func)(const std::string&, const std::vector<std::string>&);
   std::map<std::string,interactive_func> funcs;
 
-  funcs["r"] = &sim_t::interactive_run_noisy;
+  funcs["run"] = &sim_t::interactive_run_noisy;
+  funcs["r"] = funcs["run"];
   funcs["rs"] = &sim_t::interactive_run_silent;
   funcs["reg"] = &sim_t::interactive_reg;
   funcs["fregs"] = &sim_t::interactive_fregs;
@@ -60,7 +61,10 @@ void sim_t::interactive()
   funcs["str"] = &sim_t::interactive_str;
   funcs["until"] = &sim_t::interactive_until;
   funcs["while"] = &sim_t::interactive_until;
-  funcs["q"] = &sim_t::interactive_quit;
+  funcs["quit"] = &sim_t::interactive_quit;
+  funcs["q"] = funcs["quit"];
+  funcs["help"] = &sim_t::interactive_help;
+  funcs["h"] = funcs["help"];
 
   while (!htif->done())
   {
@@ -89,6 +93,32 @@ void sim_t::interactive()
     catch(trap_t t) {}
   }
   ctrlc_pressed = false;
+}
+
+void sim_t::interactive_help(const std::string& cmd, const std::vector<std::string>& args)
+{
+  std::cerr <<
+    "Interactive commands:\n"
+    "reg <core> <reg>                # Display <reg> in <core>\n"
+    "fregs <core> <reg>              # Display single precision <reg> in <core>\n"
+    "fregd <core> <reg>              # Display double precision <reg> in <core>\n"
+    "mem <hex addr>                  # Show contents of physical memory\n"
+    "str <hex addr>                  # Show NUL-terminated C string\n"
+    "until reg <core> <reg> <val>    # Stop when <reg> in <core> hits <val>\n"
+    "until pc <core> <val>           # Stop when PC in <core> hits <val>\n"
+    "until mem <addr> <val>          # Stop when memory <addr> becomes <val>\n"
+    "while reg <core> <reg> <val>    # Run while <reg> in <core> is <val>\n"
+    "while pc <core> <val>           # Run while PC in <core> is <val>\n"
+    "while mem <addr> <val>          # Run while memory <addr> is <val>\n"
+    "run [count]                     # Resume noisy execution (until CTRL+C, or [count] insns)\n"
+    "r [count]                         Alias for run\n"
+    "rs [count]                      # Resume silent execution (until CTRL+C, or [count] insns)\n"
+    "quit                            # End the simulation\n"
+    "q                                 Alias for quit\n"
+    "help                            # This screen!\n"
+    "h                                 Alias for help\n"
+    "Note: Hitting enter is the same as: run 1\n"
+    << std::flush;
 }
 
 void sim_t::interactive_run_noisy(const std::string& cmd, const std::vector<std::string>& args)

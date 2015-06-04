@@ -58,6 +58,7 @@ private:
   void interactive();
 
   // functions that help implement interactive()
+  void interactive_help(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_quit(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_run(const std::string& cmd, const std::vector<std::string>& args, bool noisy);
   void interactive_run_noisy(const std::string& cmd, const std::vector<std::string>& args);
