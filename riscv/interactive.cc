@@ -51,7 +51,8 @@ void sim_t::interactive()
   typedef void (sim_t::*interactive_func)(const std::string&, const std::vector<std::string>&);
   std::map<std::string,interactive_func> funcs;
 
-  funcs["r"] = &sim_t::interactive_run_noisy;
+  funcs["run"] = &sim_t::interactive_run_noisy;
+  funcs["r"] = funcs["run"];
   funcs["rs"] = &sim_t::interactive_run_silent;
   funcs["reg"] = &sim_t::interactive_reg;
   funcs["fregs"] = &sim_t::interactive_fregs;
@@ -60,8 +61,10 @@ void sim_t::interactive()
   funcs["str"] = &sim_t::interactive_str;
   funcs["until"] = &sim_t::interactive_until;
   funcs["while"] = &sim_t::interactive_until;
-  funcs["q"] = &sim_t::interactive_quit;
-  funcs["h"] = &sim_t::interactive_help;
+  funcs["quit"] = &sim_t::interactive_quit;
+  funcs["q"] = funcs["quit"];
+  funcs["help"] = &sim_t::interactive_help;
+  funcs["h"] = funcs["help"];
 
   while (!htif->done())
   {
@@ -107,10 +110,13 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "while reg <core> <reg> <val>    # Run while <reg> in <core> is <val>\n"
     "while pc <core> <val>           # Run while PC in <core> is <val>\n"
     "while mem <addr> <val>          # Run while memory <addr> is <val>\n"
-    "r [count]                       # Resume noisy execution (until CTRL+C, or [count] insns)\n"
+    "run [count]                     # Resume noisy execution (until CTRL+C, or [count] insns)\n"
+    "r [count]                         Alias for run\n"
     "rs [count]                      # Resume silent execution (until CTRL+C, or [count] insns)\n"
-    "q                               # End the simulation\n"
-    "h                               # This screen!\n"
+    "quit                            # End the simulation\n"
+    "q                                 Alias for quit\n"
+    "help                            # This screen!\n"
+    "h                                 Alias for help\n"
     "Note: Hitting enter is the same as: run 1\n"
     << std::flush;
 }
