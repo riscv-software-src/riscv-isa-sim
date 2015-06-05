@@ -66,6 +66,7 @@ void sim_t::interactive()
   funcs["reg"] = &sim_t::interactive_reg;
   funcs["fregs"] = &sim_t::interactive_fregs;
   funcs["fregd"] = &sim_t::interactive_fregd;
+  funcs["pc"] = &sim_t::interactive_pc;
   funcs["mem"] = &sim_t::interactive_mem;
   funcs["str"] = &sim_t::interactive_str;
   funcs["until"] = &sim_t::interactive_until;
@@ -111,6 +112,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "reg <core> <reg>                # Display <reg> in <core>\n"
     "fregs <core> <reg>              # Display single precision <reg> in <core>\n"
     "fregd <core> <reg>              # Display double precision <reg> in <core>\n"
+    "pc <core>                       # Show current PC in <core>\n"
     "mem <hex addr>                  # Show contents of physical memory\n"
     "str <hex addr>                  # Show NUL-terminated C string\n"
     "until reg <core> <reg> <val>    # Stop when <reg> in <core> hits <val>\n"
@@ -161,6 +163,11 @@ reg_t sim_t::get_pc(const std::vector<std::string>& args)
 
   processor_t *p = get_core(args[0]);
   return p->state.pc;
+}
+
+void sim_t::interactive_pc(const std::string& cmd, const std::vector<std::string>& args)
+{
+  fprintf(stderr, "0x%016" PRIx64 "\n", get_pc(args));
 }
 
 reg_t sim_t::get_reg(const std::vector<std::string>& args)
