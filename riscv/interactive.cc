@@ -18,6 +18,15 @@
 #include <vector>
 #include <algorithm>
 
+processor_t *sim_t::get_core(const std::string& i)
+{
+  char *ptr;
+  unsigned long p = strtoul(i.c_str(), &ptr, 10);
+  if (*ptr || p >= num_cores())
+    throw trap_illegal_instruction();
+  return get_core(p);
+}
+
 static std::string readline(int fd)
 {
   struct termios tios;
@@ -150,11 +159,8 @@ reg_t sim_t::get_pc(const std::vector<std::string>& args)
   if(args.size() != 1)
     throw trap_illegal_instruction();
 
-  int p = atoi(args[0].c_str());
-  if(p >= (int)num_cores())
-    throw trap_illegal_instruction();
-
-  return procs[p]->state.pc;
+  processor_t *p = get_core(args[0]);
+  return p->state.pc;
 }
 
 reg_t sim_t::get_reg(const std::vector<std::string>& args)
@@ -162,16 +168,14 @@ reg_t sim_t::get_reg(const std::vector<std::string>& args)
   if(args.size() != 2)
     throw trap_illegal_instruction();
 
-  char* ptr;
-  unsigned long p = strtoul(args[0].c_str(), &ptr, 10);
-  if (*ptr || p >= num_cores())
-    throw trap_illegal_instruction();
+  processor_t *p = get_core(args[0]);
 
   unsigned long r = std::find(xpr_name, xpr_name + NXPR, args[1]) - xpr_name;
   if (r == NXPR) {
+    char *ptr;
     r = strtoul(args[1].c_str(), &ptr, 10);
     if (*ptr) {
-      #define DECLARE_CSR(name, number) if (args[1] == #name) return procs[p]->get_csr(number);
+      #define DECLARE_CSR(name, number) if (args[1] == #name) return p->get_csr(number);
       if (0) ;
       #include "encoding.h"
       else r = NXPR;
@@ -182,7 +186,7 @@ reg_t sim_t::get_reg(const std::vector<std::string>& args)
   if (r >= NXPR)
     throw trap_illegal_instruction();
 
-  return procs[p]->state.XPR[r];
+  return p->state.XPR[r];
 }
 
 reg_t sim_t::get_freg(const std::vector<std::string>& args)
@@ -190,14 +194,14 @@ reg_t sim_t::get_freg(const std::vector<std::string>& args)
   if(args.size() != 2)
     throw trap_illegal_instruction();
 
-  int p = atoi(args[0].c_str());
+  processor_t *p = get_core(args[0]);
   int r = std::find(fpr_name, fpr_name + NFPR, args[1]) - fpr_name;
   if (r == NFPR)
     r = atoi(args[1].c_str());
-  if(p >= (int)num_cores() || r >= NFPR)
+  if (r >= NFPR)
     throw trap_illegal_instruction();
 
-  return procs[p]->state.FPR[r];
+  return p->state.FPR[r];
 }
 
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
@@ -235,10 +239,8 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
   mmu_t* mmu = debug_mmu;
   if(args.size() == 2)
   {
-    int p = atoi(args[0].c_str());
-    if(p >= (int)num_cores())
-      throw trap_illegal_instruction();
-    mmu = procs[p]->get_mmu();
+    processor_t *p = get_core(args[0]);
+    mmu = p->get_mmu();
     addr_str = args[1];
   }
 
