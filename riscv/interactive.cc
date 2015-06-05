@@ -109,7 +109,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
 {
   std::cerr <<
     "Interactive commands:\n"
-    "reg <core> <reg>                # Display <reg> in <core>\n"
+    "reg <core> [reg]                # Display [reg] (all if omitted) in <core>\n"
     "fregs <core> <reg>              # Display single precision <reg> in <core>\n"
     "fregd <core> <reg>              # Display double precision <reg> in <core>\n"
     "pc <core>                       # Show current PC in <core>\n"
@@ -213,7 +213,17 @@ reg_t sim_t::get_freg(const std::vector<std::string>& args)
 
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
 {
-  fprintf(stderr, "0x%016" PRIx64 "\n", get_reg(args));
+  if (args.size() == 1) {
+    // Show all the regs!
+    processor_t *p = get_core(args[0]);
+
+    for (int r = 0; r < NFPR; ++r) {
+      fprintf(stderr, "%-4s: 0x%016" PRIx64 "  ", xpr_name[r], p->state.XPR[r]);
+      if ((r + 1) % 4 == 0)
+        fprintf(stderr, "\n");
+    }
+  } else
+    fprintf(stderr, "0x%016" PRIx64 "\n", get_reg(args));
 }
 
 union fpr
