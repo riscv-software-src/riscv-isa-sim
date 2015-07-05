@@ -151,6 +151,9 @@ void processor_t::take_interrupt()
     if (interrupts & MIP_MSIP)
       raise_interrupt(IRQ_SOFT);
 
+    if (interrupts & MIP_MTIP)
+      raise_interrupt(IRQ_TIMER);
+
     if (state.fromhost != 0)
       raise_interrupt(IRQ_HOST);
   }
@@ -204,11 +207,8 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 
 void processor_t::check_timer()
 {
-  // this assumes the rtc doesn't change asynchronously during step(),
-  if (state.stimecmp >= (uint32_t)state.prev_rtc
-      && state.stimecmp < (uint32_t)sim->rtc)
-    state.mip |= MIP_STIP;
-  state.prev_rtc = sim->rtc;
+  if (sim->rtc >= state.mtimecmp)
+    state.mip |= MIP_MTIP;
 }
 
 void processor_t::step(size_t n)
@@ -427,12 +427,12 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_MIP: {
-      reg_t mask = MIP_SSIP | MIP_MSIP;
+      reg_t mask = MIP_SSIP | MIP_MSIP | MIP_STIP;
       state.mip = (state.mip & ~mask) | (val & mask);
       break;
     }
     case CSR_MIE: {
-      reg_t mask = MIP_SSIP | MIP_MSIP | MIP_STIP;
+      reg_t mask = MIP_SSIP | MIP_MSIP | MIP_STIP | MIP_MTIP;
       state.mie = (state.mie & ~mask) | (val & mask);
       break;
     }
@@ -458,16 +458,16 @@ void processor_t::set_csr(int which, reg_t val)
     }
     case CSR_SEPC: state.sepc = val; break;
     case CSR_STVEC: state.stvec = val & ~3; break;
-    case CSR_STIMECMP:
-      state.mip &= ~MIP_STIP;
-      state.stimecmp = val;
-      break;
     case CSR_SPTBR: state.sptbr = zext_xlen(val & -PGSIZE); break;
     case CSR_SSCRATCH: state.sscratch = val; break;
     case CSR_MEPC: state.mepc = val; break;
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
+    case CSR_MTIMECMP:
+      state.mip &= ~MIP_MTIP;
+      state.mtimecmp = val;
+      break;
     case CSR_SEND_IPI: sim->send_ipi(val); break;
     case CSR_MTOHOST:
       if (state.tohost == 0)
@@ -541,7 +541,6 @@ reg_t processor_t::get_csr(int which)
     case CSR_SEPC: return state.sepc;
     case CSR_SBADADDR: return state.sbadaddr;
     case CSR_STVEC: return state.stvec;
-    case CSR_STIMECMP: return state.stimecmp;
     case CSR_SCAUSE:
       if (max_xlen > xlen)
         return state.scause | ((state.scause >> (max_xlen-1)) << (xlen-1));
@@ -556,6 +555,7 @@ reg_t processor_t::get_csr(int which)
     case CSR_MSCRATCH: return state.mscratch;
     case CSR_MCAUSE: return state.mcause;
     case CSR_MBADADDR: return state.mbadaddr;
+    case CSR_MTIMECMP: return state.mtimecmp;
     case CSR_MCPUID: return cpuid;
     case CSR_MIMPID: return IMPL_ROCKET;
     case CSR_MHARTID: return id;
