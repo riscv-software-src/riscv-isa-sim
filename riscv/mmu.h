@@ -9,6 +9,7 @@
 #include "config.h"
 #include "processor.h"
 #include "memtracer.h"
+#include <stdlib.h>
 #include <vector>
 
 // virtual memory configuration
