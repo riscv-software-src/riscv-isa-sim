@@ -183,9 +183,8 @@ reg_t sim_t::get_reg(const std::vector<std::string>& args)
     r = strtoul(args[1].c_str(), &ptr, 10);
     if (*ptr) {
       #define DECLARE_CSR(name, number) if (args[1] == #name) return p->get_csr(number);
-      if (0) ;
-      #include "encoding.h"
-      else r = NXPR;
+      #include "encoding.h"              // generates if's for all csrs
+      r = NXPR;                          // else case (csr name not found)
       #undef DECLARE_CSR
     }
   }
