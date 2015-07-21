@@ -64,9 +64,19 @@ To invoke interactive debug mode, launch spike with -d:
 
     $ spike -d pk hello
 
-To see the contents of a register (0 is for core 0):
+To see the contents of an integer register (0 is for core 0):
 
     : reg 0 a0
+    
+To see the contents of a floating point register:
+
+    : fregs 0 ft0
+    
+or:
+  
+    : fregd 0 ft0
+    
+depending upon whether you wish to print the register as single- or double-precision.
 
 To see the contents of a memory location (physical address in hex):
 
