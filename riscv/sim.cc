@@ -71,6 +71,8 @@ reg_t sim_t::get_scr(int which)
 
 int sim_t::run()
 {
+  if (!debug && log)
+    set_procs_debug(true);
   while (htif->tick())
   {
     if (debug || ctrlc_pressed)
@@ -121,6 +123,11 @@ void sim_t::stop()
 void sim_t::set_debug(bool value)
 {
   debug = value;
+}
+
+void sim_t::set_log(bool value)
+{
+  log = value;
 }
 
 void sim_t::set_histogram(bool value)

@@ -21,6 +21,7 @@ static void help()
   fprintf(stderr, "  -m <n>             Provide <n> MiB of target memory [default 4096]\n");
   fprintf(stderr, "  -d                 Interactive debug mode\n");
   fprintf(stderr, "  -g                 Track histogram of PCs\n");
+  fprintf(stderr, "  -l                 Generate a log of execution\n");
   fprintf(stderr, "  -h                 Print this help message\n");
   fprintf(stderr, "  --isa=<name>       RISC-V ISA string [default RV64IMAFDC]\n");
   fprintf(stderr, "  --ic=<S>:<W>:<B>   Instantiate a cache model with S sets,\n");
@@ -35,6 +36,7 @@ int main(int argc, char** argv)
 {
   bool debug = false;
   bool histogram = false;
+  bool log = false;
   size_t nprocs = 1;
   size_t mem_mb = 0;
   std::unique_ptr<icache_sim_t> ic;
@@ -48,6 +50,7 @@ int main(int argc, char** argv)
   parser.option('h', 0, 0, [&](const char* s){help();});
   parser.option('d', 0, 0, [&](const char* s){debug = true;});
   parser.option('g', 0, 0, [&](const char* s){histogram = true;});
+  parser.option('l', 0, 0, [&](const char* s){log = true;});
   parser.option('p', 0, 1, [&](const char* s){nprocs = atoi(s);});
   parser.option('m', 0, 1, [&](const char* s){mem_mb = atoi(s);});
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
@@ -79,6 +82,7 @@ int main(int argc, char** argv)
   }
 
   s.set_debug(debug);
+  s.set_log(log);
   s.set_histogram(histogram);
   return s.run();
 }
