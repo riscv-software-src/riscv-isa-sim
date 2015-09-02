@@ -380,15 +380,6 @@ endif
 # Regenerate configure information
 #-------------------------------------------------------------------------
 
-configure_prereq = \
-  $(src_dir)/configure.ac \
-  $(src_dir)/aclocal.m4 \
-  $(join $(addprefix $(src_dir)/, $(sprojs_enabled)), \
-         $(patsubst  %, /%.ac, $(sprojs_enabled)))
-
-$(src_dir)/configure : $(configure_prereq)
-	cd $(src_dir) && autoconf && autoheader
-
 config.status : $(src_dir)/configure
 	./config.status --recheck
 
