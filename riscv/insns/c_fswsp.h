@@ -1,7 +1,8 @@
 require_extension('C');
 if (xlen == 32) {
-  if (sreg_t(RVC_RS1S) < 0) // c.bltz
-    set_pc(pc + insn.rvc_b_imm());
+  require_extension('F');
+  require_fp;
+  MMU.store_uint32(RVC_SP + insn.rvc_swsp_imm(), RVC_FRS2);
 } else {
   MMU.store_uint64(RVC_SP + insn.rvc_sdsp_imm(), RVC_RS2);
 }
