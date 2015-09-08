@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "extension.h"
 #include <string>
 #include <map>

@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "trap.h"
 #include "processor.h"
 #include <cstdio>

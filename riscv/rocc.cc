@@ -1,3 +1,5 @@
+// See LICENSE for license details.
+
 #include "rocc.h"
 #include "trap.h"
 #include <cstdlib>
