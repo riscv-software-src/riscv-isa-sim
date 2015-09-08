@@ -29,6 +29,7 @@ riscv_precompiled_hdrs = \
 riscv_srcs = \
 	htif.cc \
 	processor.cc \
+	execute.cc \
 	sim.cc \
 	interactive.cc \
 	trap.cc \
@@ -45,14 +46,212 @@ riscv_test_srcs =
 
 riscv_gen_hdrs = \
 	icache.h \
+	insn_list.h \
+
+riscv_insn_list = \
+	add \
+	addi \
+	addiw \
+	addw \
+	amoadd_d \
+	amoadd_w \
+	amoand_d \
+	amoand_w \
+	amomax_d \
+	amomaxu_d \
+	amomaxu_w \
+	amomax_w \
+	amomin_d \
+	amominu_d \
+	amominu_w \
+	amomin_w \
+	amoor_d \
+	amoor_w \
+	amoswap_d \
+	amoswap_w \
+	amoxor_d \
+	amoxor_w \
+	and \
+	andi \
+	auipc \
+	beq \
+	bge \
+	bgeu \
+	blt \
+	bltu \
+	bne \
+	c_add \
+	c_addi16sp \
+	c_addi4spn \
+	c_addi \
+	c_addiw \
+	c_addw \
+	c_beqz \
+	c_bnez \
+	c_ebreak \
+	c_fld \
+	c_fldsp \
+	c_flw \
+	c_flwsp \
+	c_fsd \
+	c_fsdsp \
+	c_fsw \
+	c_fswsp \
+	c_jal \
+	c_jalr \
+	c_j \
+	c_jr \
+	c_li \
+	c_lui \
+	c_lw \
+	c_lwsp \
+	c_mv \
+	c_slli \
+	csrrc \
+	csrrci \
+	csrrs \
+	csrrsi \
+	csrrw \
+	csrrwi \
+	c_sw \
+	c_swsp \
+	div \
+	divu \
+	divuw \
+	divw \
+	fadd_d \
+	fadd_s \
+	fclass_d \
+	fclass_s \
+	fcvt_d_l \
+	fcvt_d_lu \
+	fcvt_d_s \
+	fcvt_d_w \
+	fcvt_d_wu \
+	fcvt_l_d \
+	fcvt_l_s \
+	fcvt_lu_d \
+	fcvt_lu_s \
+	fcvt_s_d \
+	fcvt_s_l \
+	fcvt_s_lu \
+	fcvt_s_w \
+	fcvt_s_wu \
+	fcvt_w_d \
+	fcvt_w_s \
+	fcvt_wu_d \
+	fcvt_wu_s \
+	fdiv_d \
+	fdiv_s \
+	fence \
+	fence_i \
+	feq_d \
+	feq_s \
+	fld \
+	fle_d \
+	fle_s \
+	flt_d \
+	flt_s \
+	flw \
+	fmadd_d \
+	fmadd_s \
+	fmax_d \
+	fmax_s \
+	fmin_d \
+	fmin_s \
+	fmsub_d \
+	fmsub_s \
+	fmul_d \
+	fmul_s \
+	fmv_d_x \
+	fmv_s_x \
+	fmv_x_d \
+	fmv_x_s \
+	fnmadd_d \
+	fnmadd_s \
+	fnmsub_d \
+	fnmsub_s \
+	fsd \
+	fsgnj_d \
+	fsgnjn_d \
+	fsgnjn_s \
+	fsgnj_s \
+	fsgnjx_d \
+	fsgnjx_s \
+	fsqrt_d \
+	fsqrt_s \
+	fsub_d \
+	fsub_s \
+	fsw \
+	hrts \
+	jal \
+	jalr \
+	lb \
+	lbu \
+	ld \
+	lh \
+	lhu \
+	lr_d \
+	lr_w \
+	lui \
+	lw \
+	lwu \
+	mrth \
+	mrts \
+	mul \
+	mulh \
+	mulhsu \
+	mulhu \
+	mulw \
+	or \
+	ori \
+	rem \
+	remu \
+	remuw \
+	remw \
+	sb \
+	sbreak \
+	scall \
+	sc_d \
+	sc_w \
+	sd \
+	sfence_vm \
+	sh \
+	sll \
+	slli \
+	slliw \
+	sllw \
+	slt \
+	slti \
+	sltiu \
+	sltu \
+	sra \
+	srai \
+	sraiw \
+	sraw \
+	sret \
+	srl \
+	srli \
+	srliw \
+	srlw \
+	sub \
+	subw \
+	sw \
+	wfi \
+	xor \
+	xori \
 
 riscv_gen_srcs = \
-	$(addsuffix .cc, $(call get_insn_list,$(src_dir)/riscv/encoding.h))
+	$(addsuffix .cc,$(riscv_insn_list))
 
 icache_entries := `grep "ICACHE_ENTRIES =" $(src_dir)/riscv/mmu.h | sed 's/.* = \(.*\);/\1/'`
 
 icache.h: mmu.h
 	$(src_dir)/riscv/gen_icache $(icache_entries) > $@.tmp
+	mv $@.tmp $@
+
+insn_list.h: $(src_dir)/riscv/riscv.mk.in
+	echo $(riscv_insn_list) | sed 's/\s\+\|$$/\n/g' | sed '/^$$/d' | sed 's/\./_/g' | sed 's/\(.*\)/DEFINE_INSN(\1)/' > $@.tmp
 	mv $@.tmp $@
 
 $(riscv_gen_srcs): %.cc: insns/%.h insn_template.cc

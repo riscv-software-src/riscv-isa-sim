@@ -18,8 +18,8 @@ class disassembler_t;
 
 struct insn_desc_t
 {
-  uint32_t match;
-  uint32_t mask;
+  insn_bits_t match;
+  insn_bits_t mask;
   insn_func_t rv32;
   insn_func_t rv64;
 };
@@ -115,9 +115,10 @@ private:
   bool histogram_enabled;
 
   std::vector<insn_desc_t> instructions;
-  std::vector<insn_desc_t*> opcode_map;
-  std::vector<insn_desc_t> opcode_store;
   std::map<size_t,size_t> pc_histogram;
+
+  static const size_t OPCODE_CACHE_SIZE = 8191;
+  insn_desc_t opcode_cache[OPCODE_CACHE_SIZE];
 
   void check_timer();
   void take_interrupt(); // take a trap if any interrupts are pending
@@ -130,6 +131,7 @@ private:
 
   void parse_isa_string(const char* isa);
   void build_opcode_map();
+  void register_base_instructions();
   insn_func_t decode_insn(insn_t insn);
 };
 

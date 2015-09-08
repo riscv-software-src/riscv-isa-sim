@@ -30,10 +30,7 @@ processor_t::processor_t(const char* isa, sim_t* sim, uint32_t id)
 
   reset(true);
 
-  #define DECLARE_INSN(name, match, mask) REGISTER_INSN(this, name, match, mask)
-  #include "encoding.h"
-  #undef DECLARE_INSN
-  build_opcode_map();
+  register_base_instructions();
 }
 
 processor_t::~processor_t()
@@ -173,119 +170,10 @@ void processor_t::take_interrupt()
   }
 }
 
-static void commit_log(state_t* state, reg_t pc, insn_t insn)
-{
-#ifdef RISCV_ENABLE_COMMITLOG
-  if (get_field(state->mstatus, MSTATUS_IE)) {
-    uint64_t mask = (insn.length() == 8 ? uint64_t(0) : (uint64_t(1) << (insn.length() * 8))) - 1;
-    if (state->log_reg_write.addr) {
-      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx64 ") %c%2" PRIu64 " 0x%016" PRIx64 "\n",
-              pc,
-              insn.bits() & mask,
-              state->log_reg_write.addr & 1 ? 'f' : 'x',
-              state->log_reg_write.addr >> 1,
-              state->log_reg_write.data);
-    } else {
-      fprintf(stderr, "0x%016" PRIx64 " (0x%08" PRIx64 ")\n", pc, insn.bits() & mask);
-    }
-  }
-  state->log_reg_write.addr = 0;
-#endif
-}
-
-inline void processor_t::update_histogram(size_t pc)
-{
-#ifdef RISCV_ENABLE_HISTOGRAM
-  size_t idx = pc >> 2;
-  pc_histogram[idx]++;
-#endif
-}
-
-static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
-{
-  reg_t npc = fetch.func(p, fetch.insn, pc);
-  if (npc != PC_SERIALIZE) {
-    commit_log(p->get_state(), pc, fetch.insn);
-    p->update_histogram(pc);
-  }
-  return npc;
-}
-
 void processor_t::check_timer()
 {
   if (sim->rtc >= state.mtimecmp)
     state.mip |= MIP_MTIP;
-}
-
-void processor_t::step(size_t n)
-{
-  size_t instret = 0;
-  reg_t pc = state.pc;
-  mmu_t* _mmu = mmu;
-
-  if (unlikely(!run || !n))
-    return;
-
-  #define maybe_serialize() \
-   if (unlikely(pc == PC_SERIALIZE)) { \
-     pc = state.pc; \
-     state.serialized = true; \
-     break; \
-   }
-
-  try
-  {
-    check_timer();
-    take_interrupt();
-
-    if (unlikely(debug))
-    {
-      while (instret < n)
-      {
-        insn_fetch_t fetch = mmu->load_insn(pc);
-        if (!state.serialized)
-          disasm(fetch.insn);
-        pc = execute_insn(this, pc, fetch);
-        maybe_serialize();
-        instret++;
-        state.pc = pc;
-      }
-    }
-    else while (instret < n)
-    {
-      size_t idx = _mmu->icache_index(pc);
-      auto ic_entry = _mmu->access_icache(pc);
-
-      #define ICACHE_ACCESS(idx) { \
-        insn_fetch_t fetch = ic_entry->data; \
-        ic_entry++; \
-        pc = execute_insn(this, pc, fetch); \
-        if (idx == mmu_t::ICACHE_ENTRIES-1) break; \
-        if (unlikely(ic_entry->tag != pc)) break; \
-        if (unlikely(instret+1 == n)) break; \
-        instret++; \
-        state.pc = pc; \
-      }
-
-      switch (idx) {
-        #include "icache.h"
-      }
-
-      maybe_serialize();
-      instret++;
-      state.pc = pc;
-    }
-  }
-  catch(trap_t& t)
-  {
-    take_trap(t, pc);
-  }
-
-  state.minstret += instret;
-
-  // tail-recurse if we didn't execute as many instructions as we'd hoped
-  if (instret < n)
-    step(n - instret);
 }
 
 void processor_t::push_privilege_stack()
@@ -463,7 +351,7 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_SEPC: state.sepc = val; break;
-    case CSR_STVEC: state.stvec = val & ~3; break;
+    case CSR_STVEC: state.stvec = val >> 2 << 2; break;
     case CSR_SPTBR: state.sptbr = zext_xlen(val & -PGSIZE); break;
     case CSR_SSCRATCH: state.sscratch = val; break;
     case CSR_MEPC: state.mepc = val; break;
@@ -602,55 +490,51 @@ reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)
 
 insn_func_t processor_t::decode_insn(insn_t insn)
 {
-  size_t mask = opcode_map.size()-1;
-  insn_desc_t* desc = opcode_map[insn.bits() & mask]; 
+  // look up opcode in hash table
+  size_t idx = insn.bits() % OPCODE_CACHE_SIZE;
+  insn_desc_t desc = opcode_cache[idx];
 
-  while ((insn.bits() & desc->mask) != desc->match)
-    desc++;
+  if (unlikely(insn.bits() != desc.match)) {
+    // fall back to linear search
+    insn_desc_t* p = &instructions[0];
+    while ((insn.bits() & p->mask) != p->match)
+      p++;
+    desc = *p;
 
-  return xlen == 64 ? desc->rv64 : desc->rv32;
+    if (p->mask != 0 && p > &instructions[0]) {
+      if (p->match != (p-1)->match && p->match != (p+1)->match) {
+        // move to front of opcode list to reduce miss penalty
+        while (--p >= &instructions[0])
+          *(p+1) = *p;
+        instructions[0] = desc;
+      }
+    }
+
+    opcode_cache[idx] = desc;
+    opcode_cache[idx].match = insn.bits();
+  }
+
+  return xlen == 64 ? desc.rv64 : desc.rv32;
 }
 
 void processor_t::register_insn(insn_desc_t desc)
 {
-  assert(desc.mask & 1);
   instructions.push_back(desc);
 }
 
 void processor_t::build_opcode_map()
 {
-  size_t buckets = -1;
-  for (auto& inst : instructions)
-    while ((inst.mask & buckets) != buckets)
-      buckets /= 2;
-  buckets++;
-
   struct cmp {
-    decltype(insn_desc_t::match) mask;
-    cmp(decltype(mask) mask) : mask(mask) {}
     bool operator()(const insn_desc_t& lhs, const insn_desc_t& rhs) {
-      if ((lhs.match & mask) != (rhs.match & mask))
-        return (lhs.match & mask) < (rhs.match & mask);
-      return lhs.match < rhs.match;
+      if (lhs.match == rhs.match)
+        return lhs.mask > rhs.mask;
+      return lhs.match > rhs.match;
     }
   };
-  std::sort(instructions.begin(), instructions.end(), cmp(buckets-1));
+  std::sort(instructions.begin(), instructions.end(), cmp());
 
-  opcode_map.resize(buckets);
-  opcode_store.resize(instructions.size() + 1);
-
-  size_t j = 0;
-  for (size_t b = 0, i = 0; b < buckets; b++)
-  {
-    opcode_map[b] = &opcode_store[j];
-    while (i < instructions.size() && b == (instructions[i].match & (buckets-1)))
-      opcode_store[j++] = instructions[i++];
-  }
-
-  assert(j == opcode_store.size()-1);
-  opcode_store[j].match = opcode_store[j].mask = 0;
-  opcode_store[j].rv32 = &illegal_instruction;
-  opcode_store[j].rv64 = &illegal_instruction;
+  for (size_t i = 0; i < OPCODE_CACHE_SIZE; i++)
+    opcode_cache[i] = {1, 0, &illegal_instruction, &illegal_instruction};
 }
 
 void processor_t::register_extension(extension_t* x)
@@ -664,4 +548,24 @@ void processor_t::register_extension(extension_t* x)
     throw std::logic_error("only one extension may be registered");
   ext = x;
   x->set_processor(this);
+}
+
+void processor_t::register_base_instructions()
+{
+  std::map<std::string, std::pair<insn_bits_t, insn_bits_t>> opcodes;
+
+  #define DECLARE_INSN(name, match, mask) \
+    opcodes[#name] = std::make_pair(match, mask);
+  #include "encoding.h"
+  #undef DECLARE_INSN
+
+  #define DEFINE_INSN(name) \
+    if (!opcodes.count(#name)) \
+      throw std::logic_error("opcode for " #name " not found"); \
+    REGISTER_INSN(this, name, opcodes[#name].first, opcodes[#name].second)
+  #include "insn_list.h"
+  #undef DEFINE_INSN
+
+  register_insn({0, 0, &illegal_instruction, &illegal_instruction});
+  build_opcode_map();
 }

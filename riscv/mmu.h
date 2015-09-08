@@ -72,18 +72,11 @@ public:
 
   inline size_t icache_index(reg_t addr)
   {
-    // for instruction sizes != 4, this hash still works but is suboptimal
-    return (addr / 4) % ICACHE_ENTRIES;
+    return (addr / PC_ALIGN) % ICACHE_ENTRIES;
   }
 
-  // load instruction from memory at aligned address.
-  icache_entry_t* access_icache(reg_t addr) __attribute__((always_inline))
+  inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
   {
-    reg_t idx = icache_index(addr);
-    icache_entry_t* entry = &icache[idx];
-    if (likely(entry->tag == addr))
-      return entry;
-
     char* iaddr = (char*)translate(addr, 1, false, true);
     insn_bits_t insn = *(uint16_t*)iaddr;
     int length = insn_length(insn);
@@ -106,16 +99,23 @@ public:
     }
 
     insn_fetch_t fetch = {proc->decode_insn(insn), insn};
-    icache[idx].tag = addr;
-    icache[idx].data = fetch;
+    entry->tag = addr;
+    entry->data = fetch;
 
     reg_t paddr = iaddr - mem;
-    if (!tracer.empty() && tracer.interested_in_range(paddr, paddr + 1, false, true))
-    {
-      icache[idx].tag = -1;
+    if (tracer.interested_in_range(paddr, paddr + 1, false, true)) {
+      entry->tag = -1;
       tracer.trace(paddr, length, false, true);
     }
-    return &icache[idx];
+    return entry;
+  }
+
+  inline icache_entry_t* access_icache(reg_t addr)
+  {
+    icache_entry_t* entry = &icache[icache_index(addr)];
+    if (likely(entry->tag == addr))
+      return entry;
+    return refill_icache(addr, entry);
   }
 
   inline insn_fetch_t load_insn(reg_t addr)

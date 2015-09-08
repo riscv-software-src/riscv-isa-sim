@@ -53,6 +53,8 @@ const int NFPR = 32;
    ((x) & 0x1f) < 0x1f ? 4 : \
    ((x) & 0x3f) < 0x3f ? 6 : \
    8)
+#define MAX_INSN_LENGTH 8
+#define PC_ALIGN 2
 
 typedef uint64_t insn_bits_t;
 class insn_t
