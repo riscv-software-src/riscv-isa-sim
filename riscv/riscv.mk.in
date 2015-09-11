@@ -251,7 +251,7 @@ icache.h: mmu.h
 	mv $@.tmp $@
 
 insn_list.h: $(src_dir)/riscv/riscv.mk.in
-	echo $(riscv_insn_list) | sed 's/\s\+\|$$/\n/g' | sed '/^$$/d' | sed 's/\./_/g' | sed 's/\(.*\)/DEFINE_INSN(\1)/' > $@.tmp
+	echo $(riscv_insn_list) |  tr ' ' '\n' | awk '{print "DEFINE_INSN(" $$0 ")"}' > $@.tmp
 	mv $@.tmp $@
 
 $(riscv_gen_srcs): %.cc: insns/%.h insn_template.cc
