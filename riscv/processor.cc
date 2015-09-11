@@ -557,17 +557,13 @@ void processor_t::register_extension(extension_t* x)
 
 void processor_t::register_base_instructions()
 {
-  std::map<std::string, std::pair<insn_bits_t, insn_bits_t>> opcodes;
-
   #define DECLARE_INSN(name, match, mask) \
-    opcodes[#name] = std::make_pair(match, mask);
+    insn_bits_t name##_match = (match), name##_mask = (mask);
   #include "encoding.h"
   #undef DECLARE_INSN
 
   #define DEFINE_INSN(name) \
-    if (!opcodes.count(#name)) \
-      throw std::logic_error("opcode for " #name " not found"); \
-    REGISTER_INSN(this, name, opcodes[#name].first, opcodes[#name].second)
+    REGISTER_INSN(this, name, name##_match, name##_mask)
   #include "insn_list.h"
   #undef DEFINE_INSN
 
