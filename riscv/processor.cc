@@ -107,8 +107,8 @@ void state_t::reset()
 {
   memset(this, 0, sizeof(*this));
   mstatus = set_field(mstatus, MSTATUS_PRV, PRV_M);
-  mstatus = set_field(mstatus, MSTATUS_PRV1, PRV_S);
-  mstatus = set_field(mstatus, MSTATUS_PRV2, PRV_S);
+  mstatus = set_field(mstatus, MSTATUS_PRV1, PRV_U);
+  mstatus = set_field(mstatus, MSTATUS_PRV2, PRV_U);
   pc = DEFAULT_MTVEC + 0x100;
   load_reservation = -1;
 }
