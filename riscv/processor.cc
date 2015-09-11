@@ -59,6 +59,7 @@ void processor_t::parse_isa_string(const char* isa)
 {
   const char* p = isa;
   const char* all_subsets = "IMAFDC";
+  std::string tmp;
 
   max_xlen = 64;
   cpuid = reg_t(2) << 62;
@@ -70,12 +71,16 @@ void processor_t::parse_isa_string(const char* isa)
   else if (strncmp(p, "RV", 2) == 0)
     p += 2;
 
-  cpuid |= 1L << ('S' - 'A'); // advertise support for supervisor mode
-
-  if (!*p)
+  if (!*p) {
     p = all_subsets;
-  else if (*p != 'I')
+  } else if (*p == 'G') { // treat "G" as "IMAFD"
+    tmp = std::string("IMAFD") + (p+1);
+    p = &tmp[0];
+  } else if (*p != 'I') {
     bad_isa_string(isa);
+  }
+
+  cpuid |= 1L << ('S' - 'A'); // advertise support for supervisor mode
 
   while (*p) {
     cpuid |= 1L << (*p - 'A');
