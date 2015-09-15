@@ -1,3 +1,3 @@
 require_extension('F');
 require_fp;
-WRITE_FRD(RS1);
+WRITE_FRD(zext32(RS1));
