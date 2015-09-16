@@ -67,6 +67,7 @@ struct state_t
 
 #ifdef RISCV_ENABLE_COMMITLOG
   commit_log_reg_t log_reg_write;
+  reg_t last_inst_priv;
 #endif
 };
 

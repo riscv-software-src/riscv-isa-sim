@@ -4,10 +4,18 @@
 #include "mmu.h"
 #include <cassert>
 
-static void commit_log(state_t* state, reg_t pc, insn_t insn)
+
+static void commit_log_stash_privilege(state_t* state)
 {
 #ifdef RISCV_ENABLE_COMMITLOG
-  int32_t priv = get_field(state->mstatus, MSTATUS_PRV);
+  state->last_inst_priv = get_field(state->mstatus, MSTATUS_PRV);
+#endif
+}
+
+static void commit_log_print_insn(state_t* state, reg_t pc, insn_t insn)
+{
+#ifdef RISCV_ENABLE_COMMITLOG
+  int32_t priv = state->last_inst_priv;
   uint64_t mask = (insn.length() == 8 ? uint64_t(0) : (uint64_t(1) << (insn.length() * 8))) - 1;
   if (state->log_reg_write.addr) {
     fprintf(stderr, "%1d 0x%016" PRIx64 " (0x%08" PRIx64 ") %c%2" PRIu64 " 0x%016" PRIx64 "\n",
@@ -34,9 +42,10 @@ inline void processor_t::update_histogram(size_t pc)
 
 static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
+  commit_log_stash_privilege(p->get_state());
   reg_t npc = fetch.func(p, fetch.insn, pc);
   if (npc != PC_SERIALIZE) {
-    commit_log(p->get_state(), pc, fetch.insn);
+    commit_log_print_insn(p->get_state(), pc, fetch.insn);
     p->update_histogram(pc);
   }
   return npc;
