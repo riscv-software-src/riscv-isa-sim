@@ -29,7 +29,7 @@ void mmu_t::flush_tlb()
   flush_icache();
 }
 
-void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
+void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, access_type type)
 {
   reg_t idx = (addr >> PGSHIFT) % TLB_ENTRIES;
   reg_t expected_tag = addr >> PGSHIFT;
@@ -39,7 +39,7 @@ void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
     pgbase = addr & -PGSIZE;
   } else {
     reg_t mode = get_field(proc->state.mstatus, MSTATUS_PRV);
-    if (!fetch && get_field(proc->state.mstatus, MSTATUS_MPRV))
+    if (type != FETCH && get_field(proc->state.mstatus, MSTATUS_MPRV))
       mode = get_field(proc->state.mstatus, MSTATUS_PRV1);
     if (get_field(proc->state.mstatus, MSTATUS_VM) == VM_MBARE)
       mode = PRV_M;
@@ -48,7 +48,7 @@ void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
       reg_t msb_mask = (reg_t(2) << (proc->xlen-1))-1; // zero-extend from xlen
       pgbase = addr & -PGSIZE & msb_mask;
     } else {
-      pgbase = walk(addr, mode > PRV_U, store, fetch);
+      pgbase = walk(addr, mode > PRV_U, type);
     }
   }
 
@@ -56,22 +56,22 @@ void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
   reg_t paddr = pgbase + pgoff;
 
   if (pgbase >= memsz) {
-    if (fetch) throw trap_instruction_access_fault(addr);
-    else if (store) throw trap_store_access_fault(addr);
+    if (type == FETCH) throw trap_instruction_access_fault(addr);
+    else if (type == STORE) throw trap_store_access_fault(addr);
     else throw trap_load_access_fault(addr);
   }
 
-  bool trace = tracer.interested_in_range(pgbase, pgbase + PGSIZE, store, fetch);
-  if (unlikely(!fetch && trace))
-    tracer.trace(paddr, bytes, store, fetch);
+  bool trace = tracer.interested_in_range(pgbase, pgbase + PGSIZE, type);
+  if (unlikely(type != FETCH && trace))
+    tracer.trace(paddr, bytes, type);
   else
   {
     if (tlb_load_tag[idx] != expected_tag) tlb_load_tag[idx] = -1;
     if (tlb_store_tag[idx] != expected_tag) tlb_store_tag[idx] = -1;
     if (tlb_insn_tag[idx] != expected_tag) tlb_insn_tag[idx] = -1;
 
-    if (fetch) tlb_insn_tag[idx] = expected_tag;
-    else if (store) tlb_store_tag[idx] = expected_tag;
+    if (type == FETCH) tlb_insn_tag[idx] = expected_tag;
+    else if (type == STORE) tlb_store_tag[idx] = expected_tag;
     else tlb_load_tag[idx] = expected_tag;
 
     tlb_data[idx] = mem + pgbase - (addr & -PGSIZE);
@@ -80,7 +80,7 @@ void* mmu_t::refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch)
   return mem + paddr;
 }
 
-reg_t mmu_t::walk(reg_t addr, bool supervisor, bool store, bool fetch)
+reg_t mmu_t::walk(reg_t addr, bool supervisor, access_type type)
 {
   int levels, ptidxbits, ptesize;
   switch (get_field(proc->get_state()->mstatus, MSTATUS_VM))
@@ -114,11 +114,11 @@ reg_t mmu_t::walk(reg_t addr, bool supervisor, bool store, bool fetch)
 
     if (PTE_TABLE(pte)) { // next level of page table
       base = ppn << PGSHIFT;
-    } else if (!PTE_CHECK_PERM(pte, supervisor, store, fetch)) {
+    } else if (!PTE_CHECK_PERM(pte, supervisor, type == STORE, type == FETCH)) {
       break;
     } else {
       // set referenced and possibly dirty bits.
-      *(uint32_t*)ppte |= PTE_R | (store * PTE_D);
+      *(uint32_t*)ppte |= PTE_R | ((type == STORE) * PTE_D);
       // for superpage mappings, make a fake leaf PTE for the TLB's benefit.
       reg_t vpn = addr >> PGSHIFT;
       reg_t addr = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;

@@ -39,7 +39,7 @@ public:
   // template for functions that load an aligned value from memory
   #define load_func(type) \
     type##_t load_##type(reg_t addr) __attribute__((always_inline)) { \
-      void* paddr = translate(addr, sizeof(type##_t), false, false); \
+      void* paddr = translate(addr, sizeof(type##_t), LOAD); \
       return *(type##_t*)paddr; \
     }
 
@@ -58,7 +58,7 @@ public:
   // template for functions that store an aligned value to memory
   #define store_func(type) \
     void store_##type(reg_t addr, type##_t val) { \
-      void* paddr = translate(addr, sizeof(type##_t), true, false); \
+      void* paddr = translate(addr, sizeof(type##_t), STORE); \
       *(type##_t*)paddr = val; \
     }
 
@@ -77,7 +77,7 @@ public:
 
   inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
   {
-    char* iaddr = (char*)translate(addr, 1, false, true);
+    char* iaddr = (char*)translate(addr, 1, FETCH);
     insn_bits_t insn = *(uint16_t*)iaddr;
     int length = insn_length(insn);
 
@@ -85,17 +85,17 @@ public:
       if (likely(addr % PGSIZE < PGSIZE-2))
         insn |= (insn_bits_t)*(int16_t*)(iaddr + 2) << 16;
       else
-        insn |= (insn_bits_t)*(int16_t*)translate(addr + 2, 1, false, true) << 16;
+        insn |= (insn_bits_t)*(int16_t*)translate(addr + 2, 1, FETCH) << 16;
     } else if (length == 2) {
       insn = (int16_t)insn;
     } else if (length == 6) {
-      insn |= (insn_bits_t)*(int16_t*)translate(addr + 4, 1, false, true) << 32;
-      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 2, 1, false, true) << 16;
+      insn |= (insn_bits_t)*(int16_t*)translate(addr + 4, 1, FETCH) << 32;
+      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 2, 1, FETCH) << 16;
     } else {
       static_assert(sizeof(insn_bits_t) == 8, "insn_bits_t must be uint64_t");
-      insn |= (insn_bits_t)*(int16_t*)translate(addr + 6, 1, false, true) << 48;
-      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 4, 1, false, true) << 32;
-      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 2, 1, false, true) << 16;
+      insn |= (insn_bits_t)*(int16_t*)translate(addr + 6, 1, FETCH) << 48;
+      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 4, 1, FETCH) << 32;
+      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 2, 1, FETCH) << 16;
     }
 
     insn_fetch_t fetch = {proc->decode_insn(insn), insn};
@@ -103,9 +103,9 @@ public:
     entry->data = fetch;
 
     reg_t paddr = iaddr - mem;
-    if (tracer.interested_in_range(paddr, paddr + 1, false, true)) {
+    if (tracer.interested_in_range(paddr, paddr + 1, FETCH)) {
       entry->tag = -1;
-      tracer.trace(paddr, length, false, true);
+      tracer.trace(paddr, length, FETCH);
     }
     return entry;
   }
@@ -147,30 +147,32 @@ private:
   reg_t tlb_store_tag[TLB_ENTRIES];
 
   // finish translation on a TLB miss and upate the TLB
-  void* refill_tlb(reg_t addr, reg_t bytes, bool store, bool fetch);
+  void* refill_tlb(reg_t addr, reg_t bytes, access_type type);
 
   // perform a page table walk for a given VA; set referenced/dirty bits
-  reg_t walk(reg_t addr, bool supervisor, bool store, bool fetch);
+  reg_t walk(reg_t addr, bool supervisor, access_type type);
 
   // translate a virtual address to a physical address
-  void* translate(reg_t addr, reg_t bytes, bool store, bool fetch)
+  void* translate(reg_t addr, reg_t bytes, access_type type)
     __attribute__((always_inline))
   {
     reg_t idx = (addr >> PGSHIFT) % TLB_ENTRIES;
     reg_t expected_tag = addr >> PGSHIFT;
-    reg_t* tags = fetch ? tlb_insn_tag : store ? tlb_store_tag :tlb_load_tag;
+    reg_t* tags = type == FETCH ? tlb_insn_tag :
+                  type == STORE ? tlb_store_tag :
+                                  tlb_load_tag;
     reg_t tag = tags[idx];
     void* data = tlb_data[idx] + addr;
 
     if (unlikely(addr & (bytes-1)))
-      store ? throw trap_store_address_misaligned(addr) :
-      fetch ? throw trap_instruction_address_misaligned(addr) :
-      throw trap_load_address_misaligned(addr);
+      type == FETCH ? throw trap_instruction_address_misaligned(addr) :
+      type == STORE ? throw trap_store_address_misaligned(addr) :
+      /* LOAD */      throw trap_load_address_misaligned(addr);
 
     if (likely(tag == expected_tag))
       return data;
 
-    return refill_tlb(addr, bytes, store, fetch);
+    return refill_tlb(addr, bytes, type);
   }
   
   friend class processor_t;
