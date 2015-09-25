@@ -39,8 +39,14 @@ public:
   // template for functions that load an aligned value from memory
   #define load_func(type) \
     type##_t load_##type(reg_t addr) __attribute__((always_inline)) { \
-      void* paddr = translate(addr, sizeof(type##_t), LOAD); \
-      return *(type##_t*)paddr; \
+      if (addr & (sizeof(type##_t)-1)) \
+        throw trap_load_address_misaligned(addr); \
+      reg_t vpn = addr >> PGSHIFT; \
+      if (likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) \
+        return *(type##_t*)(tlb_data[vpn % TLB_ENTRIES] + addr); \
+      type##_t res; \
+      load_slow_path(addr, sizeof(type##_t), (uint8_t*)&res); \
+      return res; \
     }
 
   // load value from memory at aligned address; zero extend to register width
@@ -58,8 +64,13 @@ public:
   // template for functions that store an aligned value to memory
   #define store_func(type) \
     void store_##type(reg_t addr, type##_t val) { \
-      void* paddr = translate(addr, sizeof(type##_t), STORE); \
-      *(type##_t*)paddr = val; \
+      if (addr & (sizeof(type##_t)-1)) \
+        throw trap_store_address_misaligned(addr); \
+      reg_t vpn = addr >> PGSHIFT; \
+      if (likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) \
+        *(type##_t*)(tlb_data[vpn % TLB_ENTRIES] + addr) = val; \
+      else \
+        store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&val); \
     }
 
   // store value to memory at aligned address
@@ -77,32 +88,32 @@ public:
 
   inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
   {
-    char* iaddr = (char*)translate(addr, 1, FETCH);
-    insn_bits_t insn = *(uint16_t*)iaddr;
+    const uint16_t* iaddr = translate_insn_addr(addr);
+    insn_bits_t insn = *iaddr;
     int length = insn_length(insn);
 
     if (likely(length == 4)) {
       if (likely(addr % PGSIZE < PGSIZE-2))
-        insn |= (insn_bits_t)*(int16_t*)(iaddr + 2) << 16;
+        insn |= (insn_bits_t)*(const int16_t*)(iaddr + 1) << 16;
       else
-        insn |= (insn_bits_t)*(int16_t*)translate(addr + 2, 1, FETCH) << 16;
+        insn |= (insn_bits_t)*(const int16_t*)translate_insn_addr(addr + 2) << 16;
     } else if (length == 2) {
       insn = (int16_t)insn;
     } else if (length == 6) {
-      insn |= (insn_bits_t)*(int16_t*)translate(addr + 4, 1, FETCH) << 32;
-      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 2, 1, FETCH) << 16;
+      insn |= (insn_bits_t)*(const int16_t*)translate_insn_addr(addr + 4) << 32;
+      insn |= (insn_bits_t)*(const uint16_t*)translate_insn_addr(addr + 2) << 16;
     } else {
       static_assert(sizeof(insn_bits_t) == 8, "insn_bits_t must be uint64_t");
-      insn |= (insn_bits_t)*(int16_t*)translate(addr + 6, 1, FETCH) << 48;
-      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 4, 1, FETCH) << 32;
-      insn |= (insn_bits_t)*(uint16_t*)translate(addr + 2, 1, FETCH) << 16;
+      insn |= (insn_bits_t)*(const int16_t*)translate_insn_addr(addr + 6) << 48;
+      insn |= (insn_bits_t)*(const uint16_t*)translate_insn_addr(addr + 4) << 32;
+      insn |= (insn_bits_t)*(const uint16_t*)translate_insn_addr(addr + 2) << 16;
     }
 
     insn_fetch_t fetch = {proc->decode_insn(insn), insn};
     entry->tag = addr;
     entry->data = fetch;
 
-    reg_t paddr = iaddr - mem;
+    reg_t paddr = (const char*)iaddr - mem;
     if (tracer.interested_in_range(paddr, paddr + 1, FETCH)) {
       entry->tag = -1;
       tracer.trace(paddr, length, FETCH);
@@ -147,32 +158,23 @@ private:
   reg_t tlb_store_tag[TLB_ENTRIES];
 
   // finish translation on a TLB miss and upate the TLB
-  void* refill_tlb(reg_t addr, reg_t bytes, access_type type);
+  void refill_tlb(reg_t vaddr, reg_t paddr, access_type type);
 
   // perform a page table walk for a given VA; set referenced/dirty bits
   reg_t walk(reg_t addr, bool supervisor, access_type type);
 
-  // translate a virtual address to a physical address
-  void* translate(reg_t addr, reg_t bytes, access_type type)
-    __attribute__((always_inline))
-  {
-    reg_t idx = (addr >> PGSHIFT) % TLB_ENTRIES;
-    reg_t expected_tag = addr >> PGSHIFT;
-    reg_t* tags = type == FETCH ? tlb_insn_tag :
-                  type == STORE ? tlb_store_tag :
-                                  tlb_load_tag;
-    reg_t tag = tags[idx];
-    void* data = tlb_data[idx] + addr;
+  // handle uncommon cases: TLB misses, page faults, MMIO
+  const uint16_t* fetch_slow_path(reg_t addr);
+  void load_slow_path(reg_t addr, reg_t len, uint8_t* bytes);
+  void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes);
+  reg_t translate(reg_t addr, access_type type);
 
-    if (unlikely(addr & (bytes-1)))
-      type == FETCH ? throw trap_instruction_address_misaligned(addr) :
-      type == STORE ? throw trap_store_address_misaligned(addr) :
-      /* LOAD */      throw trap_load_address_misaligned(addr);
-
-    if (likely(tag == expected_tag))
-      return data;
-
-    return refill_tlb(addr, bytes, type);
+  // ITLB lookup
+  const uint16_t* translate_insn_addr(reg_t addr) __attribute__((always_inline)) {
+    reg_t vpn = addr >> PGSHIFT;
+    if (likely(tlb_insn_tag[vpn % TLB_ENTRIES] == vpn))
+      return (uint16_t*)(tlb_data[vpn % TLB_ENTRIES] + addr);
+    return fetch_slow_path(addr);
   }
   
   friend class processor_t;

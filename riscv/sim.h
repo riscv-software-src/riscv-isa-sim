@@ -57,6 +57,10 @@ private:
   bool log;
   bool histogram_enabled; // provide a histogram of PCs
 
+  // memory-mapped I/O routines
+  bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
+  bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
+
   // presents a prompt for introspection into the simulation
   void interactive();
 
@@ -81,6 +85,7 @@ private:
 
   friend class htif_isasim_t;
   friend class processor_t;
+  friend class mmu_t;
 };
 
 extern volatile bool ctrlc_pressed;
