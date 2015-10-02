@@ -1,4 +1,1 @@
-if (xlen == 64)
-  WRITE_RD(RS1 >> (RS2 & 0x3F));
-else
-  WRITE_RD(sext32((uint32_t)RS1 >> (RS2 & 0x1F)));
+WRITE_RD(sext_xlen(zext_xlen(RS1) >> (RS2 & (xlen-1))));
