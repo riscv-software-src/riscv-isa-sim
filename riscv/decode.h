@@ -77,6 +77,7 @@ public:
   uint64_t csr() { return x(20, 12); }
 
   int64_t rvc_imm() { return x(2, 5) + (xs(12, 1) << 5); }
+  int64_t rvc_zimm() { return x(2, 5) + (x(12, 1) << 5); }
   int64_t rvc_addi4spn_imm() { return (x(6, 1) << 2) + (x(5, 1) << 3) + (x(11, 2) << 4) + (x(7, 4) << 6); }
   int64_t rvc_addi16sp_imm() { return (x(6, 1) << 4) + (x(5, 1) << 5) + (x(2, 3) << 6) + (xs(12, 1) << 9); }
   int64_t rvc_lwsp_imm() { return (x(4, 3) << 2) + (x(12, 1) << 5) + (x(2, 2) << 6); }
@@ -84,6 +85,7 @@ public:
   int64_t rvc_swsp_imm() { return (x(9, 4) << 2) + (x(7, 2) << 6); }
   int64_t rvc_sdsp_imm() { return (x(10, 3) << 3) + (x(7, 3) << 6); }
   int64_t rvc_lw_imm() { return (x(6, 1) << 2) + (x(10, 3) << 3) + (x(5, 1) << 6); }
+  int64_t rvc_lb_imm() { return (x(12, 1) + (x(5, 2) << 1) + (x(10, 2) << 3)); }
   int64_t rvc_ld_imm() { return (x(10, 3) << 3) + (x(5, 2) << 6); }
   int64_t rvc_j_imm() { return (x(3, 4) << 1) + (x(2, 1) << 5) + (xs(7, 6) << 6); }
   int64_t rvc_b_imm() { return (x(3, 4) << 1) + (x(2, 1) << 5) + (xs(10, 3) << 6); }
@@ -142,6 +144,7 @@ private:
 #endif
 
 // RVC macros
+#define WRITE_RVC_RS1S(value) WRITE_REG(insn.rvc_rs1s(), value)
 #define WRITE_RVC_RS2S(value) WRITE_REG(insn.rvc_rs2s(), value)
 #define WRITE_RVC_FRS2S(value) WRITE_FREG(insn.rvc_rs2s(), value)
 #define RVC_RS1 READ_REG(insn.rvc_rs1())

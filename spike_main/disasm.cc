@@ -214,6 +214,12 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.rvc_lb_imm()) + '(' + xpr_name[insn.rvc_rs1s()] + ')';
+  }
+} rvc_lb_address;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     return std::to_string((int)insn.rvc_lw_imm()) + '(' + xpr_name[insn.rvc_rs1s()] + ')';
   }
 } rvc_lw_address;
@@ -504,13 +510,21 @@ disassembler_t::disassembler_t()
   DISASM_INSN("addi", c_addi, 0, {&xrd, &xrd, &rvc_imm});
   DISASM_INSN("addiw", c_addiw, 0, {&xrd, &xrd, &rvc_imm});
   DISASM_INSN("slli", c_slli, 0, {&xrd, &rvc_shamt});
-  DISASM_INSN("mv", c_mv, 0, {&xrd, &rvc_rs1});
-  DISASM_INSN("add", c_add, 0, {&xrd, &xrd, &rvc_rs1});
-  DISASM_INSN("addw", c_addw, 0, {&xrd, &xrd, &rvc_rs1});
+  DISASM_INSN("mv", c_mv, 0, {&xrd, &rvc_rs2});
+  DISASM_INSN("add", c_add, 0, {&xrd, &xrd, &rvc_rs2});
+  DISASM_INSN("addw", c_addw, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
+  DISASM_INSN("sub", c_sub, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
+  DISASM_INSN("subw", c_subw, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
+  DISASM_INSN("and", c_and, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
+  DISASM_INSN("or", c_or, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
+  DISASM_INSN("xor", c_xor, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
+  DISASM_INSN("sll", c_sll, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
+  DISASM_INSN("srl", c_srl, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
   DISASM_INSN("lw", c_lwsp, 0, {&xrd, &rvc_lwsp_address});
   DISASM_INSN("flw", c_flwsp, 0, {&xrd, &rvc_lwsp_address});
   DISASM_INSN("sw", c_swsp, 0, {&rvc_rs2, &rvc_swsp_address});
   DISASM_INSN("fsw", c_fswsp, 0, {&rvc_rs2, &rvc_swsp_address});
+  DISASM_INSN("lbu", c_lbu, 0, {&rvc_rs2s, &rvc_lb_address});
   DISASM_INSN("lw", c_lw, 0, {&rvc_rs2s, &rvc_lw_address});
   DISASM_INSN("flw", c_flw, 0, {&rvc_rs2s, &rvc_lw_address});
   DISASM_INSN("sw", c_sw, 0, {&rvc_rs2s, &rvc_lw_address});
