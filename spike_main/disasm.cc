@@ -22,7 +22,7 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return std::string("0(") + xpr_name[insn.rs1()] + ')';
+    return std::string("(") + xpr_name[insn.rs1()] + ')';
   }
 } amo_address;
 
@@ -211,12 +211,6 @@ struct : public arg_t {
     return std::to_string((int)insn.rvc_sdsp_imm()) + '(' + xpr_name[X_SP] + ')';
   }
 } rvc_sdsp_address;
-
-struct : public arg_t {
-  std::string to_string(insn_t insn) const {
-    return std::to_string((int)insn.rvc_lb_imm()) + '(' + xpr_name[insn.rvc_rs1s()] + ')';
-  }
-} rvc_lb_address;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
@@ -503,7 +497,7 @@ disassembler_t::disassembler_t()
   DISASM_INSN("jr", c_li, mask_rvc_imm, {&rvc_rs1});
   DISASM_INSN("jalr", c_lui, mask_rvc_imm, {&rvc_rs1});
   DISASM_INSN("nop", c_addi, mask_rd | mask_rvc_imm, {});
-  DISASM_INSN("addi", c_addi, mask_rd, {&rvc_sp, &rvc_sp, &rvc_addi16sp_imm});
+  DISASM_INSN("addi", c_addi16sp, mask_rd, {&rvc_sp, &rvc_sp, &rvc_addi16sp_imm});
   DISASM_INSN("addi", c_addi4spn, 0, {&rvc_rs1s, &rvc_sp, &rvc_addi4spn_imm});
   DISASM_INSN("li", c_li, 0, {&xrd, &rvc_imm});
   DISASM_INSN("lui", c_lui, 0, {&xrd, &rvc_uimm});
@@ -524,7 +518,6 @@ disassembler_t::disassembler_t()
   DISASM_INSN("flw", c_flwsp, 0, {&xrd, &rvc_lwsp_address});
   DISASM_INSN("sw", c_swsp, 0, {&rvc_rs2, &rvc_swsp_address});
   DISASM_INSN("fsw", c_fswsp, 0, {&rvc_rs2, &rvc_swsp_address});
-  DISASM_INSN("lbu", c_lbu, 0, {&rvc_rs2s, &rvc_lb_address});
   DISASM_INSN("lw", c_lw, 0, {&rvc_rs2s, &rvc_lw_address});
   DISASM_INSN("flw", c_flw, 0, {&rvc_rs2s, &rvc_lw_address});
   DISASM_INSN("sw", c_sw, 0, {&rvc_rs2s, &rvc_lw_address});

@@ -81,7 +81,6 @@ riscv_insn_list = \
 	bltu \
 	bne \
 	c_add \
-	c_addi16sp \
 	c_addi4spn \
 	c_addi \
 	c_addw \
@@ -104,7 +103,6 @@ riscv_insn_list = \
 	c_jr \
 	c_li \
 	c_lui \
-	c_lbu \
 	c_lw \
 	c_lwsp \
 	c_mv \
