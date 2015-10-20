@@ -512,8 +512,6 @@ disassembler_t::disassembler_t()
   DISASM_INSN("and", c_and, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
   DISASM_INSN("or", c_or, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
   DISASM_INSN("xor", c_xor, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
-  DISASM_INSN("sll", c_sll, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
-  DISASM_INSN("srl", c_srl, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
   DISASM_INSN("lw", c_lwsp, 0, {&xrd, &rvc_lwsp_address});
   DISASM_INSN("flw", c_flwsp, 0, {&xrd, &rvc_lwsp_address});
   DISASM_INSN("sw", c_swsp, 0, {&rvc_rs2, &rvc_swsp_address});

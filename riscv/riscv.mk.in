@@ -107,10 +107,8 @@ riscv_insn_list = \
 	c_lwsp \
 	c_mv \
 	c_or \
-	c_sll \
 	c_slli \
 	c_srai \
-	c_srl \
 	c_srli \
 	c_sub \
 	c_subw \
