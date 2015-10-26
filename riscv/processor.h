@@ -96,7 +96,7 @@ public:
   void push_privilege_stack();
   void pop_privilege_stack();
   void yield_load_reservation() { state.load_reservation = (reg_t)-1; }
-  void update_histogram(size_t pc);
+  void update_histogram(reg_t pc);
 
   void register_insn(insn_desc_t);
   void register_extension(extension_t*);
@@ -116,7 +116,7 @@ private:
   bool histogram_enabled;
 
   std::vector<insn_desc_t> instructions;
-  std::map<size_t,size_t> pc_histogram;
+  std::map<reg_t,uint64_t> pc_histogram;
 
   static const size_t OPCODE_CACHE_SIZE = 8191;
   insn_desc_t opcode_cache[OPCODE_CACHE_SIZE];

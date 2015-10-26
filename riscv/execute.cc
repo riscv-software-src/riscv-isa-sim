@@ -32,11 +32,10 @@ static void commit_log_print_insn(state_t* state, reg_t pc, insn_t insn)
 #endif
 }
 
-inline void processor_t::update_histogram(size_t pc)
+inline void processor_t::update_histogram(reg_t pc)
 {
 #ifdef RISCV_ENABLE_HISTOGRAM
-  size_t idx = pc >> 2;
-  pc_histogram[idx]++;
+  pc_histogram[pc]++;
 #endif
 }
 

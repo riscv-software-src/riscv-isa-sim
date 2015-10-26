@@ -38,10 +38,9 @@ processor_t::~processor_t()
 #ifdef RISCV_ENABLE_HISTOGRAM
   if (histogram_enabled)
   {
-    fprintf(stderr, "PC Histogram size:%lu\n", pc_histogram.size());
-    for(auto iterator = pc_histogram.begin(); iterator != pc_histogram.end(); ++iterator) {
-      fprintf(stderr, "%0lx %lu\n", (iterator->first << 2), iterator->second);
-    }
+    fprintf(stderr, "PC Histogram size:%zu\n", pc_histogram.size());
+    for (auto it : pc_histogram)
+      fprintf(stderr, "%0" PRIx64 " %" PRIu64 "\n", it.first, it.second);
   }
 #endif
 
