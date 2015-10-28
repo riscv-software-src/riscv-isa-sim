@@ -216,7 +216,7 @@ void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::strin
     // Show all the regs!
     processor_t *p = get_core(args[0]);
 
-    for (int r = 0; r < NFPR; ++r) {
+    for (int r = 0; r < NXPR; ++r) {
       fprintf(stderr, "%-4s: 0x%016" PRIx64 "  ", xpr_name[r], p->state.XPR[r]);
       if ((r + 1) % 4 == 0)
         fprintf(stderr, "\n");
