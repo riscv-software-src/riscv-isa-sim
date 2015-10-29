@@ -122,6 +122,7 @@ private:
 #define MMU (*p->get_mmu())
 #define STATE (*p->get_state())
 #define READ_REG(reg) STATE.XPR[reg]
+#define READ_FREG(reg) STATE.FPR[reg]
 #define RS1 READ_REG(insn.rs1())
 #define RS2 READ_REG(insn.rs2())
 #define WRITE_RD(value) WRITE_REG(insn.rd(), value)
@@ -150,14 +151,14 @@ private:
 #define RVC_RS2 READ_REG(insn.rvc_rs2())
 #define RVC_RS1S READ_REG(insn.rvc_rs1s())
 #define RVC_RS2S READ_REG(insn.rvc_rs2s())
-#define RVC_FRS2 STATE.FPR[insn.rvc_rs2()]
-#define RVC_FRS2S STATE.FPR[insn.rvc_rs2s()]
+#define RVC_FRS2 READ_FREG(insn.rvc_rs2())
+#define RVC_FRS2S READ_FREG(insn.rvc_rs2s())
 #define RVC_SP READ_REG(X_SP)
 
 // FPU macros
-#define FRS1 STATE.FPR[insn.rs1()]
-#define FRS2 STATE.FPR[insn.rs2()]
-#define FRS3 STATE.FPR[insn.rs3()]
+#define FRS1 READ_FREG(insn.rs1())
+#define FRS2 READ_FREG(insn.rs2())
+#define FRS3 READ_FREG(insn.rs3())
 #define dirty_fp_state (STATE.mstatus |= MSTATUS_FS | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD))
 #define dirty_ext_state (STATE.mstatus |= MSTATUS_XS | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD))
 #define DO_WRITE_FREG(reg, value) (STATE.FPR.write(reg, value), dirty_fp_state)
