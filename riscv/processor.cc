@@ -54,52 +54,56 @@ static void bad_isa_string(const char* isa)
   abort();
 }
 
-void processor_t::parse_isa_string(const char* isa)
+void processor_t::parse_isa_string(const char* str)
 {
-  const char* p = isa;
-  const char* all_subsets = "IMAFDC";
-  std::string tmp;
+  std::string lowercase, tmp;
+  for (const char *r = str; *r; r++)
+    lowercase += std::tolower(*r);
+
+  const char* p = lowercase.c_str();
+  const char* all_subsets = "imafdc";
 
   max_xlen = 64;
   cpuid = reg_t(2) << 62;
 
-  if (strncmp(p, "RV32", 4) == 0)
+  if (strncmp(p, "rv32", 4) == 0)
     max_xlen = 32, cpuid = 0, p += 4;
-  else if (strncmp(p, "RV64", 4) == 0)
+  else if (strncmp(p, "rv64", 4) == 0)
     p += 4;
-  else if (strncmp(p, "RV", 2) == 0)
+  else if (strncmp(p, "rv", 2) == 0)
     p += 2;
 
   if (!*p) {
     p = all_subsets;
-  } else if (*p == 'G') { // treat "G" as "IMAFD"
-    tmp = std::string("IMAFD") + (p+1);
+  } else if (*p == 'g') { // treat "G" as "IMAFD"
+    tmp = std::string("imafd") + (p+1);
     p = &tmp[0];
-  } else if (*p != 'I') {
-    bad_isa_string(isa);
+  } else if (*p != 'i') {
+    bad_isa_string(str);
   }
 
-  cpuid |= 1L << ('S' - 'A'); // advertise support for supervisor mode
+  isa = "rv" + std::to_string(max_xlen) + p;
+  cpuid |= 1L << ('s' - 'a'); // advertise support for supervisor mode
 
   while (*p) {
-    cpuid |= 1L << (*p - 'A');
+    cpuid |= 1L << (*p - 'a');
 
     if (auto next = strchr(all_subsets, *p)) {
       all_subsets = next + 1;
       p++;
-    } else if (*p == 'X') {
+    } else if (*p == 'x') {
       const char* ext = p+1, *end = ext;
       while (islower(*end))
         end++;
       register_extension(find_extension(std::string(ext, end - ext).c_str())());
       p = end;
     } else {
-      bad_isa_string(isa);
+      bad_isa_string(str);
     }
   }
 
   if (supports_extension('D') && !supports_extension('F'))
-    bad_isa_string(isa);
+    bad_isa_string(str);
 }
 
 void state_t::reset()
@@ -219,11 +223,6 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   t.side_effects(&state); // might set badvaddr etc.
 }
 
-void processor_t::deliver_ipi()
-{
-  state.mip |= MIP_MSIP;
-}
-
 void processor_t::disasm(insn_t insn)
 {
   uint64_t bits = insn.bits() & ((1ULL << (8 * insn_length(insn.bits()))) - 1);
@@ -329,6 +328,10 @@ void processor_t::set_csr(int which, reg_t val)
       state.mip = (state.mip & ~mask) | (val & mask);
       break;
     }
+    case CSR_MIPI: {
+      state.mip |= MIP_MSIP;
+      break;
+    }
     case CSR_MIE: {
       reg_t mask = MIP_SSIP | MIP_MSIP | MIP_STIP | MIP_MTIP;
       state.mie = (state.mie & ~mask) | (val & mask);
@@ -366,7 +369,6 @@ void processor_t::set_csr(int which, reg_t val)
       state.mip &= ~MIP_MTIP;
       state.mtimecmp = val;
       break;
-    case CSR_SEND_IPI: sim->send_ipi(val); break;
     case CSR_MTOHOST:
       if (state.tohost == 0)
         state.tohost = val;
@@ -448,6 +450,7 @@ reg_t processor_t::get_csr(int which)
     case CSR_SSCRATCH: return state.sscratch;
     case CSR_MSTATUS: return state.mstatus;
     case CSR_MIP: return state.mip;
+    case CSR_MIPI: return 0;
     case CSR_MIE: return state.mie;
     case CSR_MEPC: return state.mepc;
     case CSR_MSCRATCH: return state.mscratch;
@@ -465,7 +468,7 @@ reg_t processor_t::get_csr(int which)
     case CSR_MFROMHOST:
       sim->get_htif()->tick(); // not necessary, but faster
       return state.fromhost;
-    case CSR_SEND_IPI: return 0;
+    case CSR_MIOBASE: return sim->memsz;
     case CSR_UARCH0:
     case CSR_UARCH1:
     case CSR_UARCH2:
@@ -568,4 +571,27 @@ void processor_t::register_base_instructions()
 
   register_insn({0, 0, &illegal_instruction, &illegal_instruction});
   build_opcode_map();
+}
+
+bool processor_t::load(reg_t addr, size_t len, uint8_t* bytes)
+{
+  try {
+    auto res = get_csr(addr / (max_xlen / 8));
+    memcpy(bytes, &res, len);
+    return true;
+  } catch (trap_illegal_instruction& t) {
+    return false;
+  }
+}
+
+bool processor_t::store(reg_t addr, size_t len, const uint8_t* bytes)
+{
+  try {
+    reg_t value = 0;
+    memcpy(&value, bytes, len);
+    set_csr(addr / (max_xlen / 8), value);
+    return true;
+  } catch (trap_illegal_instruction& t) {
+    return false;
+  }
 }

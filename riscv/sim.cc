@@ -2,6 +2,7 @@
 
 #include "sim.h"
 #include "htif.h"
+#include "devicetree.h"
 #include <map>
 #include <iostream>
 #include <climits>
@@ -43,6 +44,8 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb,
 
   for (size_t i = 0; i < procs.size(); i++)
     procs[i] = new processor_t(isa, this, i);
+
+  make_device_tree();
 }
 
 sim_t::~sim_t()
@@ -51,12 +54,6 @@ sim_t::~sim_t()
     delete procs[i];
   delete debug_mmu;
   free(mem);
-}
-
-void sim_t::send_ipi(reg_t who)
-{
-  if (who < procs.size())
-    procs[who]->deliver_ipi();
 }
 
 reg_t sim_t::get_scr(int which)
@@ -146,10 +143,52 @@ void sim_t::set_procs_debug(bool value)
 
 bool sim_t::mmio_load(reg_t addr, size_t len, uint8_t* bytes)
 {
-  return false;
+  if (addr + len < addr)
+    return false;
+  return bus.load(addr, len, bytes);
 }
 
 bool sim_t::mmio_store(reg_t addr, size_t len, const uint8_t* bytes)
 {
-  return false;
+  if (addr + len < addr)
+    return false;
+  return bus.store(addr, len, bytes);
+}
+
+void sim_t::make_device_tree()
+{
+  char buf[32];
+  size_t max_devtree_size = procs.size() * 4096; // sloppy upper bound
+  size_t cpu_size = NCSR * procs[0]->max_xlen / 8;
+  reg_t cpu_addr = memsz + max_devtree_size;
+
+  device_tree dt;
+  dt.begin_node("");
+  dt.add_prop("#address-cells", 2);
+  dt.add_prop("#size-cells", 2);
+  dt.add_prop("model", "Spike");
+    dt.begin_node("memory@0");
+      dt.add_prop("device_type", "memory");
+      dt.add_reg({0, memsz});
+    dt.end_node();
+    dt.begin_node("cpus");
+      dt.add_prop("#address-cells", 2);
+      dt.add_prop("#size-cells", 2);
+      for (size_t i = 0; i < procs.size(); i++) {
+        sprintf(buf, "cpu@%" PRIx64, cpu_addr);
+        dt.begin_node(buf);
+          dt.add_prop("device_type", "cpu");
+          dt.add_prop("compatible", "riscv");
+          dt.add_prop("isa", procs[i]->isa);
+          dt.add_reg({cpu_addr});
+        dt.end_node();
+
+        bus.add_device(cpu_addr, procs[i]);
+        cpu_addr += cpu_size;
+      }
+    dt.end_node();
+  dt.end_node();
+
+  devicetree.reset(new rom_device_t(dt.finalize()));
+  bus.add_device(memsz, devicetree.get());
 }

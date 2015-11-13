@@ -8,6 +8,7 @@
 #include <memory>
 #include "processor.h"
 #include "mmu.h"
+#include "devices.h"
 
 class htif_isasim_t;
 
@@ -29,9 +30,6 @@ public:
   void set_procs_debug(bool value);
   htif_isasim_t* get_htif() { return htif.get(); }
 
-  // deliver an IPI to a specific processor
-  void send_ipi(reg_t who);
-
   // returns the number of processors in this simulator
   size_t num_cores() { return procs.size(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
@@ -45,6 +43,8 @@ private:
   size_t memsz; // memory size in bytes
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
+  std::unique_ptr<rom_device_t> devicetree;
+  bus_t bus;
 
   processor_t* get_core(const std::string& i);
   void step(size_t n); // step through simulation
@@ -60,6 +60,7 @@ private:
   // memory-mapped I/O routines
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
+  void make_device_tree();
 
   // presents a prompt for introspection into the simulation
   void interactive();

@@ -21,6 +21,7 @@ typedef uint64_t freg_t;
 
 const int NXPR = 32;
 const int NFPR = 32;
+const int NCSR = 4096;
 
 #define X_RA 1
 #define X_SP 2
