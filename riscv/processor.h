@@ -5,7 +5,7 @@
 #include "decode.h"
 #include "config.h"
 #include "devices.h"
-#include <cstring>
+#include <string>
 #include <vector>
 #include <map>
 
