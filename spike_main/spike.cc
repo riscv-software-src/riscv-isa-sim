@@ -17,8 +17,8 @@ static void help()
 {
   fprintf(stderr, "usage: spike [host options] <target program> [target options]\n");
   fprintf(stderr, "Host Options:\n");
-  fprintf(stderr, "  -p <n>             Simulate <n> processors [default 1]\n");
-  fprintf(stderr, "  -m <n>             Provide <n> MiB of target memory [default 4096]\n");
+  fprintf(stderr, "  -p<n>              Simulate <n> processors [default 1]\n");
+  fprintf(stderr, "  -m<n>              Provide <n> MiB of target memory [default 4096]\n");
   fprintf(stderr, "  -d                 Interactive debug mode\n");
   fprintf(stderr, "  -g                 Track histogram of PCs\n");
   fprintf(stderr, "  -l                 Generate a log of execution\n");
