@@ -329,7 +329,7 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_MIPI: {
-      state.mip |= MIP_MSIP;
+      state.mip = set_field(state.mip, MIP_MSIP, val & 1);
       break;
     }
     case CSR_MIE: {
