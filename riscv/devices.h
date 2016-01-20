@@ -4,6 +4,7 @@
 #include "decode.h"
 #include <map>
 #include <vector>
+#include <functional>
 
 class abstract_device_t {
  public:
@@ -30,5 +31,14 @@ class rom_device_t : public abstract_device_t {
  private:
   std::vector<char> data;
 };
+
+std::map<reg_t, std::function<abstract_device_t*()>>& devices();
+void register_device(reg_t addr, std::function<abstract_device_t*()> f);
+
+#define REGISTER_DEVICE(name, addr, constructor) \
+  class register_##name { \
+    public: register_##name() { register_device(addr, constructor); } \
+  }; static register_##name dummy_##name;
+
 
 #endif

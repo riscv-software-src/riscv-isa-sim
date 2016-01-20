@@ -38,3 +38,14 @@ bool rom_device_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
   return false;
 }
+
+std::map<reg_t, std::function<abstract_device_t*()>>& devices()
+{
+  static std::map<reg_t, std::function<abstract_device_t*()>> v;
+  return v;
+}
+
+void register_device(reg_t addr, std::function<abstract_device_t*()> f)
+{
+  devices()[addr] = f;
+}

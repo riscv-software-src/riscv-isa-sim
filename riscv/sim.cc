@@ -9,6 +9,7 @@
 #include <cstdlib>
 #include <cassert>
 #include <signal.h>
+#include <functional>
 
 volatile bool ctrlc_pressed = false;
 static void handle_signal(int sig)
@@ -188,6 +189,10 @@ void sim_t::make_device_tree()
       }
     dt.end_node();
   dt.end_node();
+
+  for (auto &kv: devices()) {
+    bus.add_device(kv.first, kv.second());
+  }
 
   devicetree.reset(new rom_device_t(dt.finalize()));
   bus.add_device(memsz, devicetree.get());
