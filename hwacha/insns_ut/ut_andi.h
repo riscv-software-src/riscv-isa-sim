@@ -1,1 +1,0 @@
-../../riscv/insns/andi.h

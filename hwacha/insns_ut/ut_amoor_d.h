@@ -1,1 +1,0 @@
-../../riscv/insns/amoor_d.h

@@ -1,1 +1,0 @@
-../../riscv/insns/amomaxu_d.h

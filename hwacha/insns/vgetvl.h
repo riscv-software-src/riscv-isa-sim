@@ -1,1 +1,0 @@
-WRITE_XRD(VL);

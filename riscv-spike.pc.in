@@ -6,5 +6,5 @@ includedir=${prefix}/@includedir@
 Name: riscv-spike
 Description: RISC-V spike meta library
 Version: git
-Depends: riscv-spike_main riscv-riscv riscv-hwacha riscv-softfloat
+Depends: riscv-spike_main riscv-riscv riscv-softfloat
 URL: http://riscv.org/download.html#tab_spike

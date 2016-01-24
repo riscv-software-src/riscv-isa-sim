@@ -6,7 +6,7 @@ includedir=${prefix}/@includedir@
 Name: riscv-spike_main
 Description: RISC-V ISA simulator library
 Version: git
-Depends: riscv-riscv riscv-hwacha riscv-softfloat
+Depends: riscv-riscv riscv-softfloat
 Libs: -Wl,-rpath,${libdir} -L${libdir} -lspike_main
 Cflags: -I${includedir}
 URL: http://riscv.org/download.html#tab_spike

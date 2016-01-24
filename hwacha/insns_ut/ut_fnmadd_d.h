@@ -1,1 +1,0 @@
-../../riscv/insns/fnmadd_d.h

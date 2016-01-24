@@ -1,1 +1,0 @@
-WRITE_RD(UTIDX);

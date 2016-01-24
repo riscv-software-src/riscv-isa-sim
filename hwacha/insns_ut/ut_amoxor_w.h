@@ -1,1 +1,0 @@
-../../riscv/insns/amoxor_w.h

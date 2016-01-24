@@ -1,1 +1,0 @@
-../../riscv/insns/amomin_d.h

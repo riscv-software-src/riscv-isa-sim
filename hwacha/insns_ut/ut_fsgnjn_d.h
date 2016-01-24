@@ -1,1 +1,0 @@
-../../riscv/insns/fsgnjn_d.h
