@@ -68,7 +68,7 @@ bool softfloat_isSigNaNF32UI( uint_fast32_t );
 struct commonNaN softfloat_f32UIToCommonNaN( uint_fast32_t );
 #if defined INLINE_LEVEL && ( 1 <= INLINE_LEVEL )
 INLINE uint_fast32_t softfloat_commonNaNToF32UI( struct commonNaN a )
-    { return (uint_fast32_t) a.sign<<31 | 0x7FFFFFFF; }
+    { return defaultNaNF32UI; }
 #else
 uint_fast32_t softfloat_commonNaNToF32UI( struct commonNaN );
 #endif
