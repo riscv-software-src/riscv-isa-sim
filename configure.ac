@@ -71,8 +71,8 @@ AC_HEADER_STDC
 # Default compiler flags
 #-------------------------------------------------------------------------
 
-AC_SUBST([CFLAGS],  ["-Wall -Wno-unused -O2"])
-AC_SUBST([CXXFLAGS],["-Wall -Wno-unused -O2 -std=c++11"])
+AC_SUBST([CFLAGS],  ["-Wall -Wno-unused -g -O2"])
+AC_SUBST([CXXFLAGS],["-Wall -Wno-unused -g -O2 -std=c++11"])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject list
