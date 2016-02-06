@@ -4,6 +4,7 @@
 #define _RISCV_TRAP_H
 
 #include "decode.h"
+#include <stdlib.h>
 
 struct state_t;
 
@@ -12,7 +13,8 @@ class trap_t
  public:
   trap_t(reg_t which) : which(which) {}
   virtual const char* name();
-  virtual void side_effects(state_t* state) {}
+  virtual bool has_badaddr() { return false; }
+  virtual reg_t get_badaddr() { abort(); }
   reg_t cause() { return which; }
  private:
   char _name[16];
@@ -22,12 +24,12 @@ class trap_t
 class mem_trap_t : public trap_t
 {
  public:
-  mem_trap_t(reg_t which, reg_t badvaddr)
-    : trap_t(which), badvaddr(badvaddr) {}
-  void side_effects(state_t* state);
-  reg_t get_badvaddr() { return badvaddr; }
+  mem_trap_t(reg_t which, reg_t badaddr)
+    : trap_t(which), badaddr(badaddr) {}
+  bool has_badaddr() override { return true; }
+  reg_t get_badaddr() override { return badaddr; }
  private:
-  reg_t badvaddr;
+  reg_t badaddr;
 };
 
 #define DECLARE_TRAP(n, x) class trap_##x : public trap_t { \
@@ -38,7 +40,7 @@ class mem_trap_t : public trap_t
 
 #define DECLARE_MEM_TRAP(n, x) class trap_##x : public mem_trap_t { \
  public: \
-  trap_##x(reg_t badvaddr) : mem_trap_t(n, badvaddr) {} \
+  trap_##x(reg_t badaddr) : mem_trap_t(n, badaddr) {} \
   const char* name() { return "trap_"#x; } \
 };
 

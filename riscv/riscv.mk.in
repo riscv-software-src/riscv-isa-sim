@@ -190,7 +190,6 @@ riscv_insn_list = \
 	fsub_d \
 	fsub_s \
 	fsw \
-	hrts \
 	jal \
 	jalr \
 	lb \
@@ -203,8 +202,6 @@ riscv_insn_list = \
 	lui \
 	lw \
 	lwu \
-	mrth \
-	mrts \
 	mul \
 	mulh \
 	mulhsu \

@@ -3,37 +3,41 @@
 #ifndef RISCV_CSR_ENCODING_H
 #define RISCV_CSR_ENCODING_H
 
-#define MSTATUS_IE          0x00000001
-#define MSTATUS_PRV         0x00000006
-#define MSTATUS_IE1         0x00000008
-#define MSTATUS_PRV1        0x00000030
-#define MSTATUS_IE2         0x00000040
-#define MSTATUS_PRV2        0x00000180
-#define MSTATUS_IE3         0x00000200
-#define MSTATUS_PRV3        0x00000C00
-#define MSTATUS_FS          0x00003000
-#define MSTATUS_XS          0x0000C000
-#define MSTATUS_MPRV        0x00010000
-#define MSTATUS_VM          0x003E0000
+#define MSTATUS_UIE         0x00000001
+#define MSTATUS_SIE         0x00000002
+#define MSTATUS_HIE         0x00000004
+#define MSTATUS_MIE         0x00000008
+#define MSTATUS_UPIE        0x00000010
+#define MSTATUS_SPIE        0x00000020
+#define MSTATUS_HPIE        0x00000040
+#define MSTATUS_MPIE        0x00000080
+#define MSTATUS_SPP         0x00000100
+#define MSTATUS_HPP         0x00000600
+#define MSTATUS_MPP         0x00001800
+#define MSTATUS_FS          0x00006000
+#define MSTATUS_XS          0x00018000
+#define MSTATUS_MPRV        0x00020000
+#define MSTATUS_VM          0x007C0000
 #define MSTATUS32_SD        0x80000000
 #define MSTATUS64_SD        0x8000000000000000
 
-#define SSTATUS_IE          0x00000001
-#define SSTATUS_PIE         0x00000008
-#define SSTATUS_PS          0x00000010
-#define SSTATUS_FS          0x00003000
-#define SSTATUS_XS          0x0000C000
-#define SSTATUS_MPRV        0x00010000
-#define SSTATUS_TIE         0x01000000
+#define SSTATUS_UIE         0x00000001
+#define SSTATUS_SIE         0x00000002
+#define SSTATUS_UPIE        0x00000010
+#define SSTATUS_SPIE        0x00000020
+#define SSTATUS_SPP         0x00000100
+#define SSTATUS_FS          0x00006000
+#define SSTATUS_XS          0x00018000
+#define SSTATUS_VM          0x007C0000
 #define SSTATUS32_SD        0x80000000
 #define SSTATUS64_SD        0x8000000000000000
 
-#define MIP_SSIP            0x00000002
-#define MIP_HSIP            0x00000004
-#define MIP_MSIP            0x00000008
-#define MIP_STIP            0x00000020
-#define MIP_HTIP            0x00000040
-#define MIP_MTIP            0x00000080
+#define MIP_SSIP            (1 << IRQ_S_SOFT)
+#define MIP_HSIP            (1 << IRQ_H_SOFT)
+#define MIP_MSIP            (1 << IRQ_M_SOFT)
+#define MIP_STIP            (1 << IRQ_S_TIMER)
+#define MIP_HTIP            (1 << IRQ_H_TIMER)
+#define MIP_MTIP            (1 << IRQ_M_TIMER)
 
 #define SIP_SSIP MIP_SSIP
 #define SIP_STIP MIP_STIP
@@ -50,14 +54,14 @@
 #define VM_SV39  9
 #define VM_SV48  10
 
-#define UA_RV32  0
-#define UA_RV64  4
-#define UA_RV128 8
-
-#define IRQ_SOFT   0
-#define IRQ_TIMER  1
-#define IRQ_HOST   2
-#define IRQ_COP    3
+#define IRQ_S_SOFT   1
+#define IRQ_H_SOFT   2
+#define IRQ_M_SOFT   3
+#define IRQ_S_TIMER  5
+#define IRQ_H_TIMER  6
+#define IRQ_M_TIMER  7
+#define IRQ_COP      8
+#define IRQ_HOST     9
 
 #define IMPL_ROCKET 1
 
@@ -335,18 +339,12 @@
 #define MASK_SCALL  0xffffffff
 #define MATCH_SBREAK 0x100073
 #define MASK_SBREAK  0xffffffff
-#define MATCH_SRET 0x10000073
+#define MATCH_SRET 0x10200073
 #define MASK_SRET  0xffffffff
-#define MATCH_SFENCE_VM 0x10100073
+#define MATCH_SFENCE_VM 0x10400073
 #define MASK_SFENCE_VM  0xfff07fff
-#define MATCH_WFI 0x10200073
+#define MATCH_WFI 0x10500073
 #define MASK_WFI  0xffffffff
-#define MATCH_MRTH 0x30600073
-#define MASK_MRTH  0xffffffff
-#define MATCH_MRTS 0x30500073
-#define MASK_MRTS  0xffffffff
-#define MATCH_HRTS 0x20500073
-#define MASK_HRTS  0xffffffff
 #define MATCH_CSRRW 0x1073
 #define MASK_CSRRW  0x707f
 #define MATCH_CSRRS 0x2073
@@ -643,6 +641,8 @@
 #define CSR_SIE 0x104
 #define CSR_SSCRATCH 0x140
 #define CSR_SEPC 0x141
+#define CSR_SCAUSE 0x142
+#define CSR_SBADADDR 0x143
 #define CSR_SIP 0x144
 #define CSR_SPTBR 0x180
 #define CSR_SASID 0x181
@@ -650,12 +650,11 @@
 #define CSR_TIMEW 0x901
 #define CSR_INSTRETW 0x902
 #define CSR_STIME 0xd01
-#define CSR_SCAUSE 0xd42
-#define CSR_SBADADDR 0xd43
 #define CSR_STIMEW 0xa01
 #define CSR_MSTATUS 0x300
 #define CSR_MTVEC 0x301
-#define CSR_MTDELEG 0x302
+#define CSR_MEDELEG 0x302
+#define CSR_MIDELEG 0x303
 #define CSR_MIE 0x304
 #define CSR_MTIMECMP 0x321
 #define CSR_MSCRATCH 0x340
@@ -787,9 +786,6 @@ DECLARE_INSN(sbreak, MATCH_SBREAK, MASK_SBREAK)
 DECLARE_INSN(sret, MATCH_SRET, MASK_SRET)
 DECLARE_INSN(sfence_vm, MATCH_SFENCE_VM, MASK_SFENCE_VM)
 DECLARE_INSN(wfi, MATCH_WFI, MASK_WFI)
-DECLARE_INSN(mrth, MATCH_MRTH, MASK_MRTH)
-DECLARE_INSN(mrts, MATCH_MRTS, MASK_MRTS)
-DECLARE_INSN(hrts, MATCH_HRTS, MASK_HRTS)
 DECLARE_INSN(csrrw, MATCH_CSRRW, MASK_CSRRW)
 DECLARE_INSN(csrrs, MATCH_CSRRS, MASK_CSRRS)
 DECLARE_INSN(csrrc, MATCH_CSRRC, MASK_CSRRC)
@@ -954,6 +950,8 @@ DECLARE_CSR(stvec, CSR_STVEC)
 DECLARE_CSR(sie, CSR_SIE)
 DECLARE_CSR(sscratch, CSR_SSCRATCH)
 DECLARE_CSR(sepc, CSR_SEPC)
+DECLARE_CSR(scause, CSR_SCAUSE)
+DECLARE_CSR(sbadaddr, CSR_SBADADDR)
 DECLARE_CSR(sip, CSR_SIP)
 DECLARE_CSR(sptbr, CSR_SPTBR)
 DECLARE_CSR(sasid, CSR_SASID)
@@ -961,12 +959,11 @@ DECLARE_CSR(cyclew, CSR_CYCLEW)
 DECLARE_CSR(timew, CSR_TIMEW)
 DECLARE_CSR(instretw, CSR_INSTRETW)
 DECLARE_CSR(stime, CSR_STIME)
-DECLARE_CSR(scause, CSR_SCAUSE)
-DECLARE_CSR(sbadaddr, CSR_SBADADDR)
 DECLARE_CSR(stimew, CSR_STIMEW)
 DECLARE_CSR(mstatus, CSR_MSTATUS)
 DECLARE_CSR(mtvec, CSR_MTVEC)
-DECLARE_CSR(mtdeleg, CSR_MTDELEG)
+DECLARE_CSR(medeleg, CSR_MEDELEG)
+DECLARE_CSR(mideleg, CSR_MIDELEG)
 DECLARE_CSR(mie, CSR_MIE)
 DECLARE_CSR(mtimecmp, CSR_MTIMECMP)
 DECLARE_CSR(mscratch, CSR_MSCRATCH)

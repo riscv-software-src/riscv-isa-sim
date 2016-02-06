@@ -1,4 +1,4 @@
-switch (get_field(STATE.mstatus, MSTATUS_PRV))
+switch (STATE.prv)
 {
   case PRV_U: throw trap_user_ecall();
   case PRV_S: throw trap_supervisor_ecall();

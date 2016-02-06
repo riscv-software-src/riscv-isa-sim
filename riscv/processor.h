@@ -41,6 +41,7 @@ struct state_t
   regfile_t<freg_t, NFPR, false> FPR;
 
   // control and status registers
+  reg_t prv;
   reg_t mstatus;
   reg_t mepc;
   reg_t mbadaddr;
@@ -50,6 +51,8 @@ struct state_t
   reg_t minstret;
   reg_t mie;
   reg_t mip;
+  reg_t medeleg;
+  reg_t mideleg;
   reg_t sepc;
   reg_t sbadaddr;
   reg_t sscratch;
@@ -94,8 +97,7 @@ public:
     if (ext >= 'a' && ext <= 'z') ext += 'A' - 'a';
     return ext >= 'A' && ext <= 'Z' && ((cpuid >> (ext - 'A')) & 1);
   }
-  void push_privilege_stack();
-  void pop_privilege_stack();
+  void set_privilege(reg_t);
   void yield_load_reservation() { state.load_reservation = (reg_t)-1; }
   void update_histogram(reg_t pc);
 
@@ -114,8 +116,8 @@ private:
   state_t state;
   reg_t cpuid;
   uint32_t id;
-  int max_xlen;
-  int xlen;
+  unsigned max_xlen;
+  unsigned xlen;
   std::string isa;
   bool run; // !reset
   bool debug;

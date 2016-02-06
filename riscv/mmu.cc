@@ -34,9 +34,10 @@ reg_t mmu_t::translate(reg_t addr, access_type type)
   if (!proc)
     return addr;
 
-  reg_t mode = get_field(proc->state.mstatus, MSTATUS_PRV);
-  if (type != FETCH && get_field(proc->state.mstatus, MSTATUS_MPRV))
-    mode = get_field(proc->state.mstatus, MSTATUS_PRV1);
+  reg_t mode = proc->state.prv;
+  if (type != FETCH && proc->state.prv == PRV_M &&
+      get_field(proc->state.mstatus, MSTATUS_MPRV))
+    mode = get_field(proc->state.mstatus, MSTATUS_MPP);
   if (get_field(proc->state.mstatus, MSTATUS_VM) == VM_MBARE)
     mode = PRV_M;
 

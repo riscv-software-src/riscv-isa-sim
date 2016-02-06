@@ -94,7 +94,7 @@ void htif_isasim_t::tick_once()
         case CSR_MFROMHOST:
           old_val = proc->get_state()->fromhost;
           if (write && old_val == 0)
-            proc->get_state()->fromhost = new_val;
+            proc->set_csr(CSR_MFROMHOST, new_val);
           break;
         case CSR_MRESET:
           old_val = !proc->running();

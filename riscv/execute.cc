@@ -8,7 +8,7 @@
 static void commit_log_stash_privilege(state_t* state)
 {
 #ifdef RISCV_ENABLE_COMMITLOG
-  state->last_inst_priv = get_field(state->mstatus, MSTATUS_PRV);
+  state->last_inst_priv = state->prv;
 #endif
 }
 
