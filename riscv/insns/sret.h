@@ -1,8 +1,8 @@
 require_privilege(PRV_S);
 switch (STATE.prv)
 {
-  case PRV_S: set_pc(p->get_state()->sepc); break;
-  case PRV_M: set_pc(p->get_state()->mepc); break;
+  case PRV_S: set_pc_and_serialize(p->get_state()->sepc); break;
+  case PRV_M: set_pc_and_serialize(p->get_state()->mepc); break;
   default: abort();
 }
 

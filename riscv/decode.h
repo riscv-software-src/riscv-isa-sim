@@ -198,6 +198,12 @@ private:
        npc = sext_xlen(x); \
      } while(0)
 
+#define set_pc_and_serialize(x) \
+  do { set_pc(x); /* check alignment */ \
+       npc = PC_SERIALIZE; \
+       STATE.pc = (x); \
+     } while(0)
+
 #define PC_SERIALIZE 3 /* sentinel value indicating simulator pipeline flush */
 
 /* Convenience wrappers to simplify softfloat code sequences */
