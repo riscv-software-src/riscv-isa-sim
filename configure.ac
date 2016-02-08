@@ -52,6 +52,8 @@ AC_PROG_CXX
 AC_CHECK_TOOL([AR],[ar])
 AC_CHECK_TOOL([RANLIB],[ranlib])
 
+AC_C_BIGENDIAN(AC_MSG_ERROR([Spike requires a little-endian host]))
+
 #-------------------------------------------------------------------------
 # MCPPBS specific program checks
 #-------------------------------------------------------------------------
