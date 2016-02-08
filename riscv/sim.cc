@@ -30,11 +30,11 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb,
   size_t memsz0 = (size_t)mem_mb << 20;
   size_t quantum = 1L << 20;
   if (memsz0 == 0)
-    memsz0 = 1L << (sizeof(size_t) == 8 ? 32 : 30);
+    memsz0 = (size_t)((sizeof(size_t) == 8 ? 4096 : 2048) - 256) << 20;
 
   memsz = memsz0;
   while ((mem = (char*)calloc(1, memsz)) == NULL)
-    memsz = memsz*10/11/quantum*quantum;
+    memsz = (size_t)(memsz*0.9)/quantum*quantum;
 
   if (memsz != memsz0)
     fprintf(stderr, "warning: only got %lu bytes of target mem (wanted %lu)\n",
