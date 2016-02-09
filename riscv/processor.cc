@@ -255,6 +255,7 @@ static bool validate_vm(int max_xlen, reg_t vm)
 
 void processor_t::set_csr(int which, reg_t val)
 {
+  val = zext_xlen(val);
   reg_t all_ints = MIP_SSIP | MIP_MSIP | MIP_STIP | MIP_MTIP | (1UL << IRQ_HOST);
   reg_t s_ints = MIP_SSIP | MIP_STIP;
   switch (which)
@@ -283,7 +284,7 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_TIMEW:
       val -= sim->rtc;
       if (xlen == 32)
-        state.sutime_delta = (uint32_t)val | (state.sutime_delta >> 32 << 32);
+        state.sutime_delta = val | (state.sutime_delta >> 32 << 32);
       else
         state.sutime_delta = val;
       break;
@@ -295,7 +296,7 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_INSTRETW:
       val -= state.minstret;
       if (xlen == 32)
-        state.suinstret_delta = (uint32_t)val | (state.suinstret_delta >> 32 << 32);
+        state.suinstret_delta = val | (state.suinstret_delta >> 32 << 32);
       else
         state.suinstret_delta = val;
       break;
@@ -371,7 +372,7 @@ void processor_t::set_csr(int which, reg_t val)
     }
     case CSR_SEPC: state.sepc = val; break;
     case CSR_STVEC: state.stvec = val >> 2 << 2; break;
-    case CSR_SPTBR: state.sptbr = zext_xlen(val & -PGSIZE); break;
+    case CSR_SPTBR: state.sptbr = val & -PGSIZE; break;
     case CSR_SSCRATCH: state.sscratch = val; break;
     case CSR_SCAUSE: state.scause = val; break;
     case CSR_SBADADDR: state.sbadaddr = val; break;
