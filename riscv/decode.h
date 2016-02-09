@@ -200,18 +200,21 @@ private:
 
 #define set_pc_and_serialize(x) \
   do { set_pc(x); /* check alignment */ \
-       npc = PC_SERIALIZE; \
+       npc = PC_SERIALIZE_AFTER; \
        STATE.pc = (x); \
      } while(0)
 
-#define PC_SERIALIZE 3 /* sentinel value indicating simulator pipeline flush */
+/* Sentinel PC values to serialize simulator pipeline */
+#define PC_SERIALIZE_BEFORE 3
+#define PC_SERIALIZE_AFTER 5
+#define invalid_pc(pc) ((pc) & 1)
 
 /* Convenience wrappers to simplify softfloat code sequences */
 #define f32(x) ((float32_t){(uint32_t)x})
 #define f64(x) ((float64_t){(uint64_t)x})
 
 #define validate_csr(which, write) ({ \
-  if (!STATE.serialized) return PC_SERIALIZE; \
+  if (!STATE.serialized) return PC_SERIALIZE_BEFORE; \
   STATE.serialized = false; \
   unsigned csr_priv = get_field((which), 0x300); \
   unsigned csr_read_only = get_field((which), 0xC00) == 3; \

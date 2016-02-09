@@ -161,6 +161,8 @@ static int ctz(reg_t val)
 
 void processor_t::take_interrupt()
 {
+  check_timer();
+
   reg_t interrupts = state.mip & state.mie;
 
   reg_t m_interrupts = interrupts & ~state.mideleg;
