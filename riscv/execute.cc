@@ -120,6 +120,7 @@ miss:
     catch(trap_t& t)
     {
       take_trap(t, pc);
+      n = instret;
     }
 
     state.minstret += instret;
