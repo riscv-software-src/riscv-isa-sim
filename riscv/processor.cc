@@ -110,7 +110,7 @@ void state_t::reset()
 {
   memset(this, 0, sizeof(*this));
   prv = PRV_M;
-  pc = DEFAULT_MTVEC + 0x100;
+  pc = DEFAULT_RSTVEC;
   load_reservation = -1;
 }
 
@@ -220,7 +220,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     set_csr(CSR_MSTATUS, s);
     set_privilege(PRV_S);
   } else {
-    state.pc = DEFAULT_MTVEC + 0x40 * state.prv;
+    state.pc = DEFAULT_MTVEC;
     state.mcause = t.cause();
     state.mepc = epc;
     if (t.has_badaddr())
