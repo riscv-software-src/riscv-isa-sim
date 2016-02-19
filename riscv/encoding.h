@@ -17,7 +17,8 @@
 #define MSTATUS_FS          0x00006000
 #define MSTATUS_XS          0x00018000
 #define MSTATUS_MPRV        0x00020000
-#define MSTATUS_VM          0x007C0000
+#define MSTATUS_PUM         0x00040000
+#define MSTATUS_VM          0x1F000000
 #define MSTATUS32_SD        0x80000000
 #define MSTATUS64_SD        0x8000000000000000
 
@@ -28,7 +29,7 @@
 #define SSTATUS_SPP         0x00000100
 #define SSTATUS_FS          0x00006000
 #define SSTATUS_XS          0x00018000
-#define SSTATUS_VM          0x007C0000
+#define SSTATUS_PUM         0x00040000
 #define SSTATUS32_SD        0x80000000
 #define SSTATUS64_SD        0x8000000000000000
 
@@ -669,10 +670,10 @@
 #define CSR_MCPUID 0xf00
 #define CSR_MIMPID 0xf01
 #define CSR_MHARTID 0xf10
-#define CSR_MTOHOST 0x780
-#define CSR_MFROMHOST 0x781
-#define CSR_MRESET 0x782
-#define CSR_MIOBASE 0x784
+#define CSR_MTOHOST 0x7c0
+#define CSR_MFROMHOST 0x7c1
+#define CSR_MRESET 0x7c2
+#define CSR_MIOBASE 0x7c4
 #define CSR_CYCLEH 0xc80
 #define CSR_TIMEH 0xc81
 #define CSR_INSTRETH 0xc82
@@ -682,7 +683,7 @@
 #define CSR_STIMEH 0xd81
 #define CSR_STIMEHW 0xa81
 #define CSR_MTIMECMPH 0x361
-#define CSR_MTIMEH 0x741
+#define CSR_MTIMEH 0x781
 #define CAUSE_MISALIGNED_FETCH 0x0
 #define CAUSE_FAULT_FETCH 0x1
 #define CAUSE_ILLEGAL_INSTRUCTION 0x2

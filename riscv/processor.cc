@@ -306,11 +306,12 @@ void processor_t::set_csr(int which, reg_t val)
       state.suinstret_delta = (val << 32) | (uint32_t)state.suinstret_delta;
       break;
     case CSR_MSTATUS: {
-      if ((val ^ state.mstatus) & (MSTATUS_VM | MSTATUS_MPP | MSTATUS_MPRV))
+      if ((val ^ state.mstatus) &
+          (MSTATUS_VM | MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_PUM))
         mmu->flush_tlb();
 
       reg_t mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE
-                 | MSTATUS_SPP | MSTATUS_MPRV | MSTATUS_FS
+                 | MSTATUS_SPP | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_PUM
                  | (ext ? MSTATUS_XS : 0);
 
       if (validate_vm(max_xlen, get_field(val, MSTATUS_VM)))
@@ -356,7 +357,7 @@ void processor_t::set_csr(int which, reg_t val)
     }
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-                 | SSTATUS_XS;
+                 | SSTATUS_XS | SSTATUS_PUM;
       set_csr(CSR_MSTATUS, (state.mstatus & ~mask) | (val & mask));
       break;
     }
@@ -443,8 +444,9 @@ reg_t processor_t::get_csr(int which)
         break;
       return (state.minstret + state.suinstret_delta) >> 32;
     case CSR_SSTATUS: {
-      reg_t sstatus = state.mstatus &
-        (SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS | SSTATUS_XS);
+      reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
+                 | SSTATUS_XS | SSTATUS_PUM;
+      reg_t sstatus = state.mstatus & mask;
       if ((sstatus & SSTATUS_FS) == SSTATUS_FS ||
           (sstatus & SSTATUS_XS) == SSTATUS_XS)
         sstatus |= (xlen == 32 ? SSTATUS32_SD : SSTATUS64_SD);
