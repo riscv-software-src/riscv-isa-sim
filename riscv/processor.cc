@@ -372,7 +372,7 @@ void processor_t::set_csr(int which, reg_t val)
     }
     case CSR_SEPC: state.sepc = val; break;
     case CSR_STVEC: state.stvec = val >> 2 << 2; break;
-    case CSR_SPTBR: state.sptbr = val & -PGSIZE; break;
+    case CSR_SPTBR: state.sptbr = val; break;
     case CSR_SSCRATCH: state.sscratch = val; break;
     case CSR_SCAUSE: state.scause = val; break;
     case CSR_SBADADDR: state.sbadaddr = val; break;

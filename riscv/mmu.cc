@@ -120,7 +120,7 @@ reg_t mmu_t::walk(reg_t addr, bool supervisor, access_type type)
   if (masked_msbs != 0 && masked_msbs != mask)
     return -1;
 
-  reg_t base = proc->get_state()->sptbr;
+  reg_t base = proc->get_state()->sptbr << PGSHIFT;
   int ptshift = (levels - 1) * ptidxbits;
   for (int i = 0; i < levels; i++, ptshift -= ptidxbits) {
     reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << ptidxbits) - 1);
