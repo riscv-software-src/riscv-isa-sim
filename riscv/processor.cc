@@ -64,10 +64,10 @@ void processor_t::parse_isa_string(const char* str)
   const char* all_subsets = "imafdc";
 
   max_xlen = 64;
-  cpuid = reg_t(2) << 62;
+  isa = reg_t(2) << 62;
 
   if (strncmp(p, "rv32", 4) == 0)
-    max_xlen = 32, cpuid = 0, p += 4;
+    max_xlen = 32, isa = 0, p += 4;
   else if (strncmp(p, "rv64", 4) == 0)
     p += 4;
   else if (strncmp(p, "rv", 2) == 0)
@@ -82,11 +82,11 @@ void processor_t::parse_isa_string(const char* str)
     bad_isa_string(str);
   }
 
-  isa = "rv" + std::to_string(max_xlen) + p;
-  cpuid |= 1L << ('s' - 'a'); // advertise support for supervisor mode
+  isa_string = "rv" + std::to_string(max_xlen) + p;
+  isa |= 1L << ('s' - 'a'); // advertise support for supervisor mode
 
   while (*p) {
-    cpuid |= 1L << (*p - 'a');
+    isa |= 1L << (*p - 'a');
 
     if (auto next = strchr(all_subsets, *p)) {
       all_subsets = next + 1;
@@ -104,6 +104,15 @@ void processor_t::parse_isa_string(const char* str)
 
   if (supports_extension('D') && !supports_extension('F'))
     bad_isa_string(str);
+
+  // if we have IMAFD, advertise G, too
+  if (supports_extension('I') && supports_extension('M') &&
+      supports_extension('A') && supports_extension('D'))
+    isa |= 1L << ('g' - 'a');
+
+  // advertise support for supervisor and user modes
+  isa |= 1L << ('s' - 'a');
+  isa |= 1L << ('u' - 'a');
 }
 
 void state_t::reset()
@@ -473,8 +482,10 @@ reg_t processor_t::get_csr(int which)
     case CSR_MCAUSE: return state.mcause;
     case CSR_MBADADDR: return state.mbadaddr;
     case CSR_MTIMECMP: return state.mtimecmp;
-    case CSR_MCPUID: return cpuid;
-    case CSR_MIMPID: return IMPL_ROCKET;
+    case CSR_MISA: return isa;
+    case CSR_MARCHID: return 0;
+    case CSR_MIMPID: return 0;
+    case CSR_MVENDORID: return 0;
     case CSR_MHARTID: return id;
     case CSR_MTVEC: return DEFAULT_MTVEC;
     case CSR_MEDELEG: return state.medeleg;
@@ -485,7 +496,7 @@ reg_t processor_t::get_csr(int which)
     case CSR_MFROMHOST:
       sim->get_htif()->tick(); // not necessary, but faster
       return state.fromhost;
-    case CSR_MIOBASE: return sim->memsz;
+    case CSR_MCFGADDR: return sim->memsz;
     case CSR_UARCH0:
     case CSR_UARCH1:
     case CSR_UARCH2:

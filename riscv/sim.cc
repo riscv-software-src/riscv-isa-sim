@@ -179,7 +179,7 @@ void sim_t::make_device_tree()
         dt.begin_node(buf);
           dt.add_prop("device_type", "cpu");
           dt.add_prop("compatible", "riscv");
-          dt.add_prop("isa", procs[i]->isa);
+          dt.add_prop("isa", procs[i]->isa_string);
           dt.add_reg({cpu_addr});
         dt.end_node();
 

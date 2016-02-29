@@ -95,7 +95,7 @@ public:
   extension_t* get_extension() { return ext; }
   bool supports_extension(unsigned char ext) {
     if (ext >= 'a' && ext <= 'z') ext += 'A' - 'a';
-    return ext >= 'A' && ext <= 'Z' && ((cpuid >> (ext - 'A')) & 1);
+    return ext >= 'A' && ext <= 'Z' && ((isa >> (ext - 'A')) & 1);
   }
   void set_privilege(reg_t);
   void yield_load_reservation() { state.load_reservation = (reg_t)-1; }
@@ -114,11 +114,11 @@ private:
   extension_t* ext;
   disassembler_t* disassembler;
   state_t state;
-  reg_t cpuid;
   uint32_t id;
   unsigned max_xlen;
   unsigned xlen;
-  std::string isa;
+  reg_t isa;
+  std::string isa_string;
   bool run; // !reset
   bool debug;
   bool histogram_enabled;
