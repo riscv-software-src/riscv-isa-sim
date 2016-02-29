@@ -59,8 +59,6 @@ struct state_t
   reg_t stvec;
   reg_t sptbr;
   reg_t scause;
-  reg_t sutime_delta;
-  reg_t suinstret_delta;
   reg_t tohost;
   reg_t fromhost;
   uint32_t fflags;

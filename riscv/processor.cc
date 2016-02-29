@@ -282,38 +282,6 @@ void processor_t::set_csr(int which, reg_t val)
       state.fflags = (val & FSR_AEXC) >> FSR_AEXC_SHIFT;
       state.frm = (val & FSR_RD) >> FSR_RD_SHIFT;
       break;
-    case CSR_MTIME:
-    case CSR_STIMEW:
-      // this implementation ignores writes to MTIME
-      break;
-    case CSR_MTIMEH:
-    case CSR_STIMEHW:
-      // this implementation ignores writes to MTIME
-      break;
-    case CSR_TIMEW:
-      val -= sim->rtc;
-      if (xlen == 32)
-        state.sutime_delta = val | (state.sutime_delta >> 32 << 32);
-      else
-        state.sutime_delta = val;
-      break;
-    case CSR_TIMEHW:
-      val = ((val << 32) - sim->rtc) >> 32;
-      state.sutime_delta = (val << 32) | (uint32_t)state.sutime_delta;
-      break;
-    case CSR_CYCLEW:
-    case CSR_INSTRETW:
-      val -= state.minstret;
-      if (xlen == 32)
-        state.suinstret_delta = val | (state.suinstret_delta >> 32 << 32);
-      else
-        state.suinstret_delta = val;
-      break;
-    case CSR_CYCLEHW:
-    case CSR_INSTRETHW:
-      val = ((val << 32) - state.minstret) >> 32;
-      state.suinstret_delta = (val << 32) | (uint32_t)state.suinstret_delta;
-      break;
     case CSR_MSTATUS: {
       if ((val ^ state.mstatus) &
           (MSTATUS_VM | MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_PUM))
@@ -424,34 +392,12 @@ reg_t processor_t::get_csr(int which)
       if (!supports_extension('F'))
         break;
       return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
-    case CSR_MTIME:
-    case CSR_STIME:
-    case CSR_STIMEW:
-      return sim->rtc;
-    case CSR_MTIMEH:
-    case CSR_STIMEH:
-    case CSR_STIMEHW:
-      return sim->rtc >> 32;
-    case CSR_TIME:
-    case CSR_TIMEW:
-      return sim->rtc + state.sutime_delta;
-    case CSR_CYCLE:
-    case CSR_CYCLEW:
-    case CSR_INSTRET:
-    case CSR_INSTRETW:
-      return state.minstret + state.suinstret_delta;
-    case CSR_TIMEH:
-    case CSR_TIMEHW:
-      if (xlen == 64)
-        break;
-      return (sim->rtc + state.sutime_delta) >> 32;
-    case CSR_CYCLEH:
-    case CSR_INSTRETH:
-    case CSR_CYCLEHW:
-    case CSR_INSTRETHW:
-      if (xlen == 64)
-        break;
-      return (state.minstret + state.suinstret_delta) >> 32;
+    case CSR_MTIME: return sim->rtc;
+    case CSR_MCYCLE: return state.minstret;
+    case CSR_MINSTRET: return state.minstret;
+    case CSR_MTIMEH: if (xlen > 32) break; else return sim->rtc >> 32;
+    case CSR_MCYCLEH: if (xlen > 32) break; else return state.minstret >> 32;
+    case CSR_MINSTRETH: if (xlen > 32) break; else return state.minstret >> 32;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
                  | SSTATUS_XS | SSTATUS_PUM;
