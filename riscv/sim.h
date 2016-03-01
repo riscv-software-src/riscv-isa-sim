@@ -43,7 +43,7 @@ private:
   size_t memsz; // memory size in bytes
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
-  std::unique_ptr<rom_device_t> devicetree;
+  std::unique_ptr<rom_device_t> config_string;
   bus_t bus;
 
   processor_t* get_core(const std::string& i);
@@ -60,7 +60,7 @@ private:
   // memory-mapped I/O routines
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
-  void make_device_tree();
+  void make_config_string();
 
   // presents a prompt for introspection into the simulation
   void interactive();

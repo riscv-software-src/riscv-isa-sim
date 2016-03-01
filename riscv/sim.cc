@@ -2,9 +2,9 @@
 
 #include "sim.h"
 #include "htif.h"
-#include "devicetree.h"
 #include <map>
 #include <iostream>
+#include <sstream>
 #include <climits>
 #include <cstdlib>
 #include <cassert>
@@ -45,7 +45,7 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb,
   for (size_t i = 0; i < procs.size(); i++)
     procs[i] = new processor_t(isa, this, i);
 
-  make_device_tree();
+  make_config_string();
 }
 
 sim_t::~sim_t()
@@ -155,40 +155,42 @@ bool sim_t::mmio_store(reg_t addr, size_t len, const uint8_t* bytes)
   return bus.store(addr, len, bytes);
 }
 
-void sim_t::make_device_tree()
+void sim_t::make_config_string()
 {
-  char buf[32];
-  size_t max_devtree_size = procs.size() * 4096; // sloppy upper bound
-  size_t cpu_size = NCSR * procs[0]->max_xlen / 8;
-  reg_t cpu_addr = memsz + max_devtree_size;
+  size_t csr_size = NCSR * 16 /* RV128 */;
+  size_t device_tree_addr = memsz;
+  size_t cpu_addr = memsz + csr_size;
 
-  device_tree dt;
-  dt.begin_node("");
-  dt.add_prop("#address-cells", 2);
-  dt.add_prop("#size-cells", 2);
-  dt.add_prop("model", "Spike");
-    dt.begin_node("memory@0");
-      dt.add_prop("device_type", "memory");
-      dt.add_reg({0, memsz});
-    dt.end_node();
-    dt.begin_node("cpus");
-      dt.add_prop("#address-cells", 2);
-      dt.add_prop("#size-cells", 2);
-      for (size_t i = 0; i < procs.size(); i++) {
-        sprintf(buf, "cpu@%" PRIx64, cpu_addr);
-        dt.begin_node(buf);
-          dt.add_prop("device_type", "cpu");
-          dt.add_prop("compatible", "riscv");
-          dt.add_prop("isa", procs[i]->isa_string);
-          dt.add_reg({cpu_addr});
-        dt.end_node();
+  std::stringstream s;
+  s << std::hex <<
+        "platform {\n"
+        "  vendor ucb;\n"
+        "  arch spike;\n"
+        "};\n"
+        "ram {\n"
+        "  0 {\n"
+        "    addr 0;\n"
+        "    size 0x" << memsz << ";\n"
+        "  };\n"
+        "};\n"
+        "core {\n";
+  for (size_t i = 0; i < procs.size(); i++) {
+    s <<
+        "  " << i << " {\n"
+        "    " << "0 {\n" << // hart 0 on core i
+        "      isa " << procs[i]->isa_string << ";\n"
+        "      addr 0x" << cpu_addr << ";\n"
+        "    };\n"
+        "  };\n";
+    bus.add_device(cpu_addr, procs[i]);
+    cpu_addr += csr_size;
+  }
+  s <<  "};\n";
 
-        bus.add_device(cpu_addr, procs[i]);
-        cpu_addr += cpu_size;
-      }
-    dt.end_node();
-  dt.end_node();
-
-  devicetree.reset(new rom_device_t(dt.finalize()));
-  bus.add_device(memsz, devicetree.get());
+  std::string str = s.str();
+  std::vector<char> vec(str.begin(), str.end());
+  vec.push_back(0);
+  assert(vec.size() <= csr_size);
+  config_string.reset(new rom_device_t(vec));
+  bus.add_device(memsz, config_string.get());
 }
