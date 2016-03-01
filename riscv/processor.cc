@@ -332,6 +332,12 @@ void processor_t::set_csr(int which, reg_t val)
       state.medeleg = (state.medeleg & ~mask) | (val & mask);
       break;
     }
+    case CSR_MUCOUNTEREN:
+      state.mucounteren = val & 7;
+      break;
+    case CSR_MSCOUNTEREN:
+      state.mscounteren = val & 7;
+      break;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
                  | SSTATUS_XS | SSTATUS_PUM;
@@ -392,6 +398,32 @@ reg_t processor_t::get_csr(int which)
       if (!supports_extension('F'))
         break;
       return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
+    case CSR_TIME:
+    case CSR_INSTRET:
+    case CSR_CYCLE:
+      if ((state.mucounteren >> (which & (xlen-1))) & 1)
+        return get_csr(which + (CSR_MCYCLE - CSR_CYCLE));
+      break;
+    case CSR_STIME:
+    case CSR_SINSTRET:
+    case CSR_SCYCLE:
+      if ((state.mscounteren >> (which & (xlen-1))) & 1)
+        return get_csr(which + (CSR_MCYCLE - CSR_SCYCLE));
+      break;
+    case CSR_MUCOUNTEREN: return state.mucounteren;
+    case CSR_MSCOUNTEREN: return state.mscounteren;
+    case CSR_MUCYCLE_DELTA: return 0;
+    case CSR_MUTIME_DELTA: return 0;
+    case CSR_MUINSTRET_DELTA: return 0;
+    case CSR_MSCYCLE_DELTA: return 0;
+    case CSR_MSTIME_DELTA: return 0;
+    case CSR_MSINSTRET_DELTA: return 0;
+    case CSR_MUCYCLE_DELTAH: if (xlen > 32) break; else return 0;
+    case CSR_MUTIME_DELTAH: if (xlen > 32) break; else return 0;
+    case CSR_MUINSTRET_DELTAH: if (xlen > 32) break; else return 0;
+    case CSR_MSCYCLE_DELTAH: if (xlen > 32) break; else return 0;
+    case CSR_MSTIME_DELTAH: if (xlen > 32) break; else return 0;
+    case CSR_MSINSTRET_DELTAH: if (xlen > 32) break; else return 0;
     case CSR_MTIME: return sim->rtc;
     case CSR_MCYCLE: return state.minstret;
     case CSR_MINSTRET: return state.minstret;

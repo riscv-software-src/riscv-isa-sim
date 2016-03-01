@@ -53,6 +53,8 @@ struct state_t
   reg_t mip;
   reg_t medeleg;
   reg_t mideleg;
+  reg_t mucounteren;
+  reg_t mscounteren;
   reg_t sepc;
   reg_t sbadaddr;
   reg_t sscratch;
