@@ -200,6 +200,10 @@ private:
 
 #define PC_SERIALIZE 3 /* sentinel value indicating simulator pipeline flush */
 
+/* Convenience wrappers to simplify softfloat code sequences */
+#define f32(x) ((float32_t){(uint32_t)x})
+#define f64(x) ((float64_t){(uint64_t)x})
+
 #define validate_csr(which, write) ({ \
   if (!STATE.serialized) return PC_SERIALIZE; \
   STATE.serialized = false; \

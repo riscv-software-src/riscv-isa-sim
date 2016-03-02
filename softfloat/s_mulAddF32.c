@@ -1,15 +1,49 @@
 
+/*============================================================================
+
+This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
+Package, Release 3a, by John R. Hauser.
+
+Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
+All rights reserved.
+
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
+
+ 1. Redistributions of source code must retain the above copyright notice,
+    this list of conditions, and the following disclaimer.
+
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions, and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. Neither the name of the University nor the names of its contributors may
+    be used to endorse or promote products derived from this software without
+    specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS "AS IS", AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ARE
+DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
+
+=============================================================================*/
+
 #include <stdbool.h>
 #include <stdint.h>
 #include "platform.h"
-#include "primitives.h"
 #include "internals.h"
 #include "specialize.h"
 #include "softfloat.h"
 
 float32_t
  softfloat_mulAddF32(
-     int op, uint_fast32_t uiA, uint_fast32_t uiB, uint_fast32_t uiC )
+     uint_fast32_t uiA, uint_fast32_t uiB, uint_fast32_t uiC, uint_fast8_t op )
 {
     bool signA;
     int_fast16_t expA;
@@ -29,22 +63,22 @@ float32_t
     int_fast16_t expZ;
     uint_fast32_t sigZ;
     int_fast16_t expDiff;
-    uint_fast64_t sigZ64, sigC64;
-    int shiftCount;
+    uint_fast64_t sig64Z, sig64C;
+    int_fast8_t shiftCount;
     union ui32_f32 uZ;
 
     signA = signF32UI( uiA );
-    expA = expF32UI( uiA );
-    sigA = fracF32UI( uiA );
+    expA  = expF32UI( uiA );
+    sigA  = fracF32UI( uiA );
     signB = signF32UI( uiB );
-    expB = expF32UI( uiB );
-    sigB = fracF32UI( uiB );
-    signC = signF32UI( uiC ) ^ ( op == softfloat_mulAdd_subC );
-    expC = expF32UI( uiC );
-    sigC = fracF32UI( uiC );
-    signProd = signA ^ signB ^ ( op == softfloat_mulAdd_subProd );
+    expB  = expF32UI( uiB );
+    sigB  = fracF32UI( uiB );
+    signC = signF32UI( uiC ) ^ (op == softfloat_mulAdd_subC);
+    expC  = expF32UI( uiC );
+    sigC  = fracF32UI( uiC );
+    signProd = signA ^ signB ^ (op == softfloat_mulAdd_subProd);
     if ( expA == 0xFF ) {
-        if ( sigA || ( ( expB == 0xFF ) && sigB ) ) goto propagateNaN_ABC;
+        if ( sigA || ((expB == 0xFF) && sigB) ) goto propagateNaN_ABC;
         magBits = expB | sigB;
         goto infProdArg;
     }
@@ -74,8 +108,8 @@ float32_t
         sigB = normExpSig.sig;
     }
     expProd = expA + expB - 0x7E;
-    sigA = ( sigA | 0x00800000 )<<7;
-    sigB = ( sigB | 0x00800000 )<<7;
+    sigA = (sigA | 0x00800000)<<7;
+    sigB = (sigB | 0x00800000)<<7;
     sigProd = (uint_fast64_t) sigA * sigB;
     if ( sigProd < UINT64_C( 0x2000000000000000 ) ) {
         --expProd;
@@ -85,57 +119,56 @@ float32_t
     if ( ! expC ) {
         if ( ! sigC ) {
             expZ = expProd - 1;
-            sigZ = softfloat_shortShift64RightJam( sigProd, 31 );
+            sigZ = softfloat_shortShiftRightJam64( sigProd, 31 );
             goto roundPack;
         }
         normExpSig = softfloat_normSubnormalF32Sig( sigC );
         expC = normExpSig.exp;
         sigC = normExpSig.sig;
     }
-    sigC = ( sigC | 0x00800000 )<<6;
+    sigC = (sigC | 0x00800000)<<6;
     expDiff = expProd - expC;
     if ( signProd == signC ) {
         if ( expDiff <= 0 ) {
             expZ = expC;
-            sigZ = sigC + softfloat_shift64RightJam( sigProd, 32 - expDiff );
+            sigZ = sigC + softfloat_shiftRightJam64( sigProd, 32 - expDiff );
         } else {
             expZ = expProd;
-            sigZ64 =
+            sig64Z =
                 sigProd
-                    + softfloat_shift64RightJam(
+                    + softfloat_shiftRightJam64(
                           (uint_fast64_t) sigC<<32, expDiff );
-            sigZ = softfloat_shortShift64RightJam( sigZ64, 32 );
+            sigZ = softfloat_shortShiftRightJam64( sig64Z, 32 );
         }
         if ( sigZ < 0x40000000 ) {
             --expZ;
             sigZ <<= 1;
         }
     } else {
-/*** OPTIMIZE BETTER? ***/
-        sigC64 = (uint_fast64_t) sigC<<32;
+        sig64C = (uint_fast64_t) sigC<<32;
         if ( expDiff < 0 ) {
             signZ = signC;
             expZ = expC;
-            sigZ64 = sigC64 - softfloat_shift64RightJam( sigProd, - expDiff );
+            sig64Z = sig64C - softfloat_shiftRightJam64( sigProd, -expDiff );
         } else if ( ! expDiff ) {
             expZ = expProd;
-            sigZ64 = sigProd - sigC64;
-            if ( ! sigZ64 ) goto completeCancellation;
-            if ( sigZ64 & UINT64_C( 0x8000000000000000 ) ) {
+            sig64Z = sigProd - sig64C;
+            if ( ! sig64Z ) goto completeCancellation;
+            if ( sig64Z & UINT64_C( 0x8000000000000000 ) ) {
                 signZ ^= 1;
-                sigZ64 = - sigZ64;
+                sig64Z = -sig64Z;
             }
         } else {
             expZ = expProd;
-            sigZ64 = sigProd - softfloat_shift64RightJam( sigC64, expDiff );
+            sig64Z = sigProd - softfloat_shiftRightJam64( sig64C, expDiff );
         }
-        shiftCount = softfloat_countLeadingZeros64( sigZ64 ) - 1;
+        shiftCount = softfloat_countLeadingZeros64( sig64Z ) - 1;
         expZ -= shiftCount;
         shiftCount -= 32;
         if ( shiftCount < 0 ) {
-            sigZ = softfloat_shortShift64RightJam( sigZ64, - shiftCount );
+            sigZ = softfloat_shortShiftRightJam64( sig64Z, -shiftCount );
         } else {
-            sigZ = (uint_fast32_t) sigZ64<<shiftCount;
+            sigZ = (uint_fast32_t) sig64Z<<shiftCount;
         }
     }
  roundPack:
@@ -158,7 +191,7 @@ float32_t
     goto uiZ;
  zeroProd:
     uiZ = uiC;
-    if ( ! ( expC | sigC ) && ( signProd != signC ) ) {
+    if ( ! (expC | sigC) && (signProd != signC) ) {
  completeCancellation:
         uiZ =
             packToF32UI( softfloat_roundingMode == softfloat_round_min, 0, 0 );

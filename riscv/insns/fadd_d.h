@@ -1,5 +1,5 @@
 require_extension('D');
 require_fp;
 softfloat_roundingMode = RM;
-WRITE_FRD(f64_mulAdd(FRS1, 0x3ff0000000000000ULL, FRS2));
+WRITE_FRD(f64_add(f64(FRS1), f64(FRS2)).v);
 set_fp_exceptions;

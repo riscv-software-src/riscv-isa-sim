@@ -1,34 +1,36 @@
 
 /*============================================================================
 
-*** FIX.
+This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
+Package, Release 3a, by John R. Hauser.
 
-This C source fragment is part of the SoftFloat IEC/IEEE Floating-point
-Arithmetic Package, Release 2b.
+Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
+All rights reserved.
 
-Written by John R. Hauser.  This work was made possible in part by the
-International Computer Science Institute, located at Suite 600, 1947 Center
-Street, Berkeley, California 94704.  Funding was partially provided by the
-National Science Foundation under grant MIP-9311980.  The original version
-of this code was written as part of a project to build a fixed-point vector
-processor in collaboration with the University of California at Berkeley,
-overseen by Profs. Nelson Morgan and John Wawrzynek.  More information
-is available through the Web page `http://www.cs.berkeley.edu/~jhauser/
-arithmetic/SoftFloat.html'.
+Redistribution and use in source and binary forms, with or without
+modification, are permitted provided that the following conditions are met:
 
-THIS SOFTWARE IS DISTRIBUTED AS IS, FOR FREE.  Although reasonable effort has
-been made to avoid it, THIS SOFTWARE MAY CONTAIN FAULTS THAT WILL AT TIMES
-RESULT IN INCORRECT BEHAVIOR.  USE OF THIS SOFTWARE IS RESTRICTED TO PERSONS
-AND ORGANIZATIONS WHO CAN AND WILL TAKE FULL RESPONSIBILITY FOR ALL LOSSES,
-COSTS, OR OTHER PROBLEMS THEY INCUR DUE TO THE SOFTWARE, AND WHO FURTHERMORE
-EFFECTIVELY INDEMNIFY JOHN HAUSER AND THE INTERNATIONAL COMPUTER SCIENCE
-INSTITUTE (possibly via similar legal warning) AGAINST ALL LOSSES, COSTS, OR
-OTHER PROBLEMS INCURRED BY THEIR CUSTOMERS AND CLIENTS DUE TO THE SOFTWARE.
+ 1. Redistributions of source code must retain the above copyright notice,
+    this list of conditions, and the following disclaimer.
 
-Derivative works are acceptable, even for commercial purposes, so long as
-(1) the source code for the derivative work includes prominent notice that
-the work is derivative, and (2) the source code includes prominent notice with
-these four paragraphs for those parts of this code that are retained.
+ 2. Redistributions in binary form must reproduce the above copyright notice,
+    this list of conditions, and the following disclaimer in the documentation
+    and/or other materials provided with the distribution.
+
+ 3. Neither the name of the University nor the names of its contributors may
+    be used to endorse or promote products derived from this software without
+    specific prior written permission.
+
+THIS SOFTWARE IS PROVIDED BY THE REGENTS AND CONTRIBUTORS "AS IS", AND ANY
+EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE IMPLIED
+WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE, ARE
+DISCLAIMED.  IN NO EVENT SHALL THE REGENTS OR CONTRIBUTORS BE LIABLE FOR ANY
+DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR CONSEQUENTIAL DAMAGES
+(INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF SUBSTITUTE GOODS OR SERVICES;
+LOSS OF USE, DATA, OR PROFITS; OR BUSINESS INTERRUPTION) HOWEVER CAUSED AND
+ON ANY THEORY OF LIABILITY, WHETHER IN CONTRACT, STRICT LIABILITY, OR TORT
+(INCLUDING NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
+SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
@@ -39,10 +41,9 @@ these four paragraphs for those parts of this code that are retained.
 | Raises the exceptions specified by `flags'.  Floating-point traps can be
 | defined here if desired.  It is currently not possible for such a trap
 | to substitute a result value.  If traps are not implemented, this routine
-| should be simply `float_exception_flags |= flags;'.
+| should be simply `softfloat_exceptionFlags |= flags;'.
 *----------------------------------------------------------------------------*/
-
-void softfloat_raiseFlags( int_fast8_t flags )
+void softfloat_raiseFlags( uint_fast8_t flags )
 {
 
     softfloat_exceptionFlags |= flags;
