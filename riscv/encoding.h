@@ -61,8 +61,11 @@
 #define IRQ_S_TIMER  5
 #define IRQ_H_TIMER  6
 #define IRQ_M_TIMER  7
-#define IRQ_COP      8
-#define IRQ_HOST     9
+#define IRQ_S_DEV    9
+#define IRQ_H_DEV    10
+#define IRQ_M_DEV    11
+#define IRQ_COP      12
+#define IRQ_HOST     13
 
 #define DEFAULT_RSTVEC 0x0
 #define DEFAULT_NMIVEC 0x4

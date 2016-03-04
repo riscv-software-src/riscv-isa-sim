@@ -172,17 +172,18 @@ void processor_t::take_interrupt()
 {
   check_timer();
 
-  reg_t interrupts = state.mip & state.mie;
+  reg_t pending_interrupts = state.mip & state.mie;
 
-  reg_t m_interrupts = interrupts & ~state.mideleg;
   reg_t mie = get_field(state.mstatus, MSTATUS_MIE);
-  if ((state.prv < PRV_M || (state.prv == PRV_M && mie)) && m_interrupts)
-    raise_interrupt(ctz(m_interrupts));
+  reg_t m_enabled = state.prv < PRV_M || (state.prv == PRV_M && mie);
+  reg_t enabled_interrupts = pending_interrupts & ~state.mideleg & -m_enabled;
 
-  reg_t s_interrupts = interrupts & state.mideleg;
   reg_t sie = get_field(state.mstatus, MSTATUS_SIE);
-  if ((state.prv < PRV_S || (state.prv == PRV_S && sie)) && s_interrupts)
-    raise_interrupt(ctz(s_interrupts));
+  reg_t s_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
+  enabled_interrupts |= pending_interrupts & state.mideleg & -s_enabled;
+
+  if (enabled_interrupts)
+    raise_interrupt(ctz(enabled_interrupts));
 }
 
 void processor_t::check_timer()
@@ -265,8 +266,8 @@ static bool validate_vm(int max_xlen, reg_t vm)
 void processor_t::set_csr(int which, reg_t val)
 {
   val = zext_xlen(val);
-  reg_t all_ints = MIP_SSIP | MIP_MSIP | MIP_STIP | MIP_MTIP | (1UL << IRQ_HOST);
-  reg_t s_ints = MIP_SSIP | MIP_STIP;
+  reg_t delegable_ints = MIP_SSIP | MIP_STIP | (1 << IRQ_HOST) | (1 << IRQ_COP);
+  reg_t all_ints = delegable_ints | MIP_MSIP | MIP_MTIP;
   switch (which)
   {
     case CSR_FFLAGS:
@@ -311,7 +312,7 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_MIP: {
-      reg_t mask = all_ints &~ MIP_MTIP;
+      reg_t mask = MIP_SSIP | MIP_STIP | MIP_MSIP;
       state.mip = (state.mip & ~mask) | (val & mask);
       break;
     }
@@ -322,7 +323,7 @@ void processor_t::set_csr(int which, reg_t val)
       state.mie = (state.mie & ~all_ints) | (val & all_ints);
       break;
     case CSR_MIDELEG:
-      state.mideleg = (state.mideleg & ~s_ints) | (val & s_ints);
+      state.mideleg = (state.mideleg & ~delegable_ints) | (val & delegable_ints);
       break;
     case CSR_MEDELEG: {
       reg_t mask = 0;
@@ -341,19 +342,14 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
                  | SSTATUS_XS | SSTATUS_PUM;
-      set_csr(CSR_MSTATUS, (state.mstatus & ~mask) | (val & mask));
-      break;
+      return set_csr(CSR_MSTATUS, (state.mstatus & ~mask) | (val & mask));
     }
-    case CSR_SIP: {
-      reg_t mask = s_ints &~ MIP_STIP;
-      state.mip = (state.mip & ~mask) | (val & mask);
-      break;
-    }
-    case CSR_SIE: {
-      reg_t mask = s_ints;
-      state.mie = (state.mie & ~mask) | (val & mask);
-      break;
-    }
+    case CSR_SIP:
+      return set_csr(CSR_MIP,
+                     (state.mip & ~state.mideleg) | (val & state.mideleg));
+    case CSR_SIE:
+      return set_csr(CSR_MIE,
+                     (state.mie & ~state.mideleg) | (val & state.mideleg));
     case CSR_SEPC: state.sepc = val; break;
     case CSR_STVEC: state.stvec = val >> 2 << 2; break;
     case CSR_SPTBR: state.sptbr = val; break;
@@ -439,8 +435,8 @@ reg_t processor_t::get_csr(int which)
         sstatus |= (xlen == 32 ? SSTATUS32_SD : SSTATUS64_SD);
       return sstatus;
     }
-    case CSR_SIP: return state.mip & (MIP_SSIP | MIP_STIP);
-    case CSR_SIE: return state.mie & (MIP_SSIP | MIP_STIP);
+    case CSR_SIP: return state.mip & state.mideleg;
+    case CSR_SIE: return state.mie & state.mideleg;
     case CSR_SEPC: return state.sepc;
     case CSR_SBADADDR: return state.sbadaddr;
     case CSR_STVEC: return state.stvec;
