@@ -68,6 +68,9 @@ int sim_t::run()
       interactive();
     else
       step(INTERLEAVE);
+    if (gdbserver) {
+        gdbserver->handle();
+    }
   }
   return htif->exit_code();
 }

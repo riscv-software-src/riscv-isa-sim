@@ -24,6 +24,7 @@ riscv_hdrs = \
 	rocc.h \
 	insn_template.h \
 	mulhi.h \
+	gdbserver.h \
 
 riscv_precompiled_hdrs = \
 	insn_template.h \
@@ -45,6 +46,7 @@ riscv_srcs = \
 	devices.cc \
 	rom.cc \
 	rtc.cc \
+	gdbserver.cc \
 	$(riscv_gen_srcs) \
 
 riscv_test_srcs =

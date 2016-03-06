@@ -8,6 +8,7 @@
 #include <memory>
 #include "processor.h"
 #include "devices.h"
+#include "gdbserver.h"
 
 class htif_isasim_t;
 class mmu_t;
@@ -27,6 +28,7 @@ public:
   void set_log(bool value);
   void set_histogram(bool value);
   void set_procs_debug(bool value);
+  void set_gdbserver(gdbserver_t* gdbserver) { this->gdbserver = gdbserver; }
   htif_isasim_t* get_htif() { return htif.get(); }
   const char* get_config_string() { return config_string.c_str(); }
 
@@ -54,6 +56,7 @@ private:
   bool debug;
   bool log;
   bool histogram_enabled; // provide a histogram of PCs
+  gdbserver_t* gdbserver;
 
   // memory-mapped I/O routines
   bool addr_is_mem(reg_t addr) {
