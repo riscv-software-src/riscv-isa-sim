@@ -3,6 +3,8 @@
 
 #include <stdint.h>
 
+class sim_t;
+
 template <typename T>
 class circular_buffer_t
 {
@@ -45,16 +47,18 @@ class gdbserver_t
 public:
   // Create a new server, listening for connections from localhost on the given
   // port.
-  gdbserver_t(uint16_t port);
+  gdbserver_t(uint16_t port, sim_t *sim);
 
   // Process all pending messages from a client.
   void handle();
 
   void handle_packet(const std::vector<uint8_t> &packet);
-  void handle_set_threadid(const std::vector<uint8_t> &packet);
   void handle_halt_reason(const std::vector<uint8_t> &packet);
+  void handle_read_general_registers(const std::vector<uint8_t> &packet);
+  void handle_read_memory(const std::vector<uint8_t> &packet);
 
 private:
+  sim_t *sim;
   int socket_fd;
   int client_fd;
   circular_buffer_t<uint8_t> recv_buf;
@@ -72,6 +76,8 @@ private:
   // Add the given message to send_buf.
   void send(const char* msg);
   void send_packet(const char* data);
+  uint8_t running_checksum;
+  void send_running_checksum();
 };
 
 #endif

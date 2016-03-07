@@ -74,7 +74,7 @@ int main(int argc, char** argv)
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
   sim_t s(isa, nprocs, mem_mb, htif_args);
-  gdbserver_t gdbserver(9824);
+  gdbserver_t gdbserver(9824, &s);
   s.set_gdbserver(&gdbserver);
 
   if (dump_config_string) {

@@ -136,6 +136,7 @@ private:
   friend class mmu_t;
   friend class rtc_t;
   friend class extension_t;
+  friend class gdbserver_t;
 
   void parse_isa_string(const char* isa);
   void build_opcode_map();

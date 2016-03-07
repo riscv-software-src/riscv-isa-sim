@@ -12,6 +12,8 @@
 #include <cstdio>
 #include <vector>
 
+#include "disasm.h"
+#include "sim.h"
 #include "gdbserver.h"
 
 template <typename T>
@@ -82,7 +84,8 @@ void circular_buffer_t<T>::append(const T *src, unsigned int count)
 
 // Code inspired by/copied from OpenOCD server/server.c.
 
-gdbserver_t::gdbserver_t(uint16_t port) :
+gdbserver_t::gdbserver_t(uint16_t port, sim_t *sim) :
+  sim(sim),
   client_fd(0),
   recv_buf(64 * 1024), send_buf(64 * 1024)
 {
@@ -222,7 +225,7 @@ uint8_t character_hex_value(uint8_t character)
     return 10 + character - 'a';
   if (character >= 'A' && character <= 'F')
     return 10 + character - 'A';
-  return 0;
+  return 0xff;
 }
 
 uint8_t extract_checksum(const std::vector<uint8_t> &packet)
@@ -274,19 +277,78 @@ void gdbserver_t::process_requests()
   }
 }
 
-void gdbserver_t::handle_set_threadid(const std::vector<uint8_t> &packet)
-{
-  if (packet[2] == 'g' && packet[3] == '0') {
-    // Use thread 0 for all operations.
-    send("OK");
-  } else {
-    send("$#00");
-  }
-}
-
 void gdbserver_t::handle_halt_reason(const std::vector<uint8_t> &packet)
 {
   send_packet("S00");
+}
+
+void gdbserver_t::handle_read_general_registers(const std::vector<uint8_t> &packet)
+{
+  // Register order that gdb expects is:
+  //   "x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",
+  //   "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
+  //   "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23",
+  //   "x24", "x25", "x26", "x27", "x28", "x29", "x30", "x31",
+  //   "pc",
+  //   "f0",  "f1",  "f2",  "f3",  "f4",  "f5",  "f6",  "f7",
+  //   "f8",  "f9",  "f10", "f11", "f12", "f13", "f14", "f15",
+  //   "f16", "f17", "f18", "f19", "f20", "f21", "f22", "f23",
+  //   "f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31",
+
+  send("$");
+  running_checksum = 0;
+  char buffer[17];
+  processor_t *p = sim->get_core(0);
+  for (int r = 0; r < 32; r++) {
+    sprintf(buffer, "%08lx", p->state.XPR[r]);
+    send(buffer);
+  }
+  send_running_checksum();
+  expect_ack = true;
+}
+
+uint64_t consume_hex_number(std::vector<uint8_t>::const_iterator &iter,
+    std::vector<uint8_t>::const_iterator end)
+{
+  uint64_t value = 0;
+
+  while (iter != end) {
+    uint8_t c = *iter;
+    uint64_t c_value = character_hex_value(c);
+    if (c_value > 15)
+      break;
+    iter++;
+    value <<= 4;
+    value += c_value;
+  }
+  return value;
+}
+
+void gdbserver_t::handle_read_memory(const std::vector<uint8_t> &packet)
+{
+  // m addr,length
+  std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
+  reg_t address = consume_hex_number(iter, packet.end());
+  printf("address=%lx %c\n", address, *iter);
+  if (*iter != ',')
+    return send_packet("E16"); // EINVAL
+  iter++;
+  reg_t length = consume_hex_number(iter, packet.end());
+  printf("length=%lx %c\n", length, *iter);
+  if (*iter != '#')
+    return send_packet("E16"); // EINVAL
+
+  send("$");
+  running_checksum = 0;
+  char buffer[3];
+  processor_t *p = sim->get_core(0);
+  mmu_t* mmu = sim->debug_mmu;
+
+  for (reg_t i = 0; i < length; i++) {
+    sprintf(buffer, "%02x", mmu->load_uint8(address + i));
+    send(buffer);
+  }
+  send_running_checksum();
 }
 
 void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
@@ -304,10 +366,12 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
   send("+");
 
   switch (packet[1]) {
-    case 'H':
-      return handle_set_threadid(packet);
     case '?':
       return handle_halt_reason(packet);
+    case 'g':
+      return handle_read_general_registers(packet);
+    case 'm':
+      return handle_read_memory(packet);
   }
 
   // Not supported.
@@ -330,21 +394,23 @@ void gdbserver_t::handle()
 void gdbserver_t::send(const char* msg)
 {
   unsigned int length = strlen(msg);
+  for (const char *c = msg; *c; c++)
+    running_checksum += *c;
   send_buf.append((const uint8_t *) msg, length);
 }
 
 void gdbserver_t::send_packet(const char* data)
 {
   send("$");
+  running_checksum = 0;
   send(data);
-  send("#");
-
-  uint8_t checksum = 0;
-  for ( ; *data; data++) {
-    checksum += *data;
-  }
-  char checksum_string[3];
-  sprintf(checksum_string, "%02x", checksum);
-  send(checksum_string);
+  send_running_checksum();
   expect_ack = true;
+}
+
+void gdbserver_t::send_running_checksum()
+{
+  char checksum_string[4];
+  sprintf(checksum_string, "#%02x", running_checksum);
+  send(checksum_string);
 }

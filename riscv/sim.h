@@ -92,6 +92,7 @@ private:
   friend class htif_isasim_t;
   friend class processor_t;
   friend class mmu_t;
+  friend class gdbserver_t;
 };
 
 extern volatile bool ctrlc_pressed;
