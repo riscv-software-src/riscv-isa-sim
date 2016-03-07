@@ -19,21 +19,25 @@ public:
   unsigned int capacity;    // Size of the buffer.
   unsigned int size() const;
   bool empty() const { return start == end; }
+  bool full() const { return ((end+1) % capacity) == start; }
+
+  // Return size and address of the block of RAM where more data can be copied
+  // to be added to the buffer.
+  unsigned int contiguous_empty_size() const;
+  T *contiguous_empty() { return data + end; }
+  void data_added(unsigned int bytes);
+
+  unsigned int contiguous_data_size() const;
+  T *contiguous_data() { return data + start; }
   // Tell the buffer that some bytes were consumed from the start of the
   // buffer.
   void consume(unsigned int bytes);
 
-  // Return size and address of the block of RAM where more data can be copied
-  // to be added to the buffer.
-  unsigned int contiguous_space() const;
-  T *contiguous_data() { return data + end; }
-  void data_added(unsigned int bytes);
-
   void reset();
 
-  T operator[](unsigned int i) {
-    return data[(start + i) % capacity];
-  }
+  T operator[](unsigned int i) const { return data[(start + i) % capacity]; }
+
+  void append(const T *src, unsigned int count);
 };
 
 class gdbserver_t
@@ -47,24 +51,27 @@ public:
   void handle();
 
   void handle_packet(const std::vector<uint8_t> &packet);
+  void handle_set_threadid(const std::vector<uint8_t> &packet);
+  void handle_halt_reason(const std::vector<uint8_t> &packet);
 
 private:
   int socket_fd;
   int client_fd;
   circular_buffer_t<uint8_t> recv_buf;
-  uint8_t send_buf[64 * 1024];          // Circular buffer.
-  unsigned int send_start, send_end;    // Data start (inclusive)/end (exclusive)pointers.
+  circular_buffer_t<uint8_t> send_buf;
 
-  bool ack_mode;
+  bool expect_ack;
 
   // Read pending data from the client.
   void read();
+  void write();
   // Accept a new client if there isn't one already connected.
   void accept();
   // Process all complete requests in recv_buf.
   void process_requests();
   // Add the given message to send_buf.
   void send(const char* msg);
+  void send_packet(const char* data);
 };
 
 #endif
