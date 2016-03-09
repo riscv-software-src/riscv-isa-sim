@@ -53,7 +53,9 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 // fetch/decode/execute loop
 void processor_t::step(size_t n)
 {
-  while (run && n > 0) {
+  // TODO: We should really not call this function at all when halted, to avoid
+  // burning CPU.
+  while (run && !halted && n > 0) {
     size_t instret = 0;
     reg_t pc = state.pc;
     mmu_t* _mmu = mmu;

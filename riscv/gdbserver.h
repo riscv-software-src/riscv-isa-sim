@@ -52,11 +52,14 @@ public:
   // Process all pending messages from a client.
   void handle();
 
-  void handle_halt_reason(const std::vector<uint8_t> &packet);
   void handle_packet(const std::vector<uint8_t> &packet);
+  void handle_interrupt();
+
+  void handle_halt_reason(const std::vector<uint8_t> &packet);
   void handle_read_general_registers(const std::vector<uint8_t> &packet);
   void handle_read_memory(const std::vector<uint8_t> &packet);
   void handle_read_register(const std::vector<uint8_t> &packet);
+  void handle_continue(const std::vector<uint8_t> &packet);
 
 private:
   sim_t *sim;

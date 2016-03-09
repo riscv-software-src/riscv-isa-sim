@@ -145,6 +145,10 @@ void gdbserver_t::accept()
     int oldopts = fcntl(client_fd, F_GETFL, 0);
     fcntl(client_fd, F_SETFL, oldopts | O_NONBLOCK);
     expect_ack = false;
+
+    // gdb wants the core to be halted when it attaches.
+    processor_t *p = sim->get_core(0);
+    p->set_halted(true);
   }
 }
 
@@ -170,6 +174,7 @@ void gdbserver_t::read()
     send_buf.reset();
   } else {
     recv_buf.data_added(bytes);
+    printf("Read %d bytes.\n", bytes);
   }
 }
 
@@ -202,7 +207,10 @@ void gdbserver_t::write()
 void print_packet(const std::vector<uint8_t> &packet)
 {
   for (uint8_t c : packet) {
-    fprintf(stderr, "%c", c);
+    if (c >= ' ' and c <= '~')
+      fprintf(stderr, "%c", c);
+    else
+      fprintf(stderr, "\\x%x", c);
   }
   fprintf(stderr, "\n");
 }
@@ -248,6 +256,13 @@ void gdbserver_t::process_requests()
         break;
       }
 
+      if (packet.empty() && b == 3) {
+        fprintf(stderr, "Received interrupt\n");
+        recv_buf.consume(1);
+        handle_interrupt();
+        break;
+      }
+
       if (b == '$') {
         // Start of new packet.
         if (!packet.empty()) {
@@ -271,8 +286,11 @@ void gdbserver_t::process_requests()
     }
     // There's a partial packet in the buffer. Wait until we get more data to
     // process it.
-    if (packet.size())
+    if (packet.size()) {
+      fprintf(stderr, "Partial packet: ");
+      print_packet(packet);
       break;
+    }
   }
 }
 
@@ -412,10 +430,33 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
       return handle_read_memory(packet);
     case 'p':
       return handle_read_register(packet);
+    case 'c':
+      return handle_continue(packet);
   }
 
   // Not supported.
   send_packet("");
+}
+
+void gdbserver_t::handle_interrupt()
+{
+  processor_t *p = sim->get_core(0);
+  p->set_halted(true);
+  send_packet("S02");   // Pretend program received SIGINT.
+}
+
+void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
+{
+  // c [addr]
+  processor_t *p = sim->get_core(0);
+  if (packet[2] != '#') {
+    std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
+    p->state.pc = consume_hex_number(iter, packet.end());
+    if (*iter != '#')
+      return send_packet("E16"); // EINVAL
+  }
+
+  p->set_halted(false);
 }
 
 void gdbserver_t::handle()

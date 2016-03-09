@@ -81,6 +81,7 @@ public:
   ~processor_t();
 
   void set_debug(bool value);
+  void set_halted(bool value);
   void set_histogram(bool value);
   void reset(bool value);
   void step(size_t n); // run for n cycles
@@ -118,7 +119,10 @@ private:
   reg_t isa;
   std::string isa_string;
   bool run; // !reset
+  // When true, display disassembly of each instruction that's executed.
   bool debug;
+  // TODO: Should this just be rolled into `run`?
+  bool halted;  // When true, no instructions are executed.
   bool histogram_enabled;
 
   std::vector<insn_desc_t> instructions;
