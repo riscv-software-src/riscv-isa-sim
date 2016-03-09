@@ -52,10 +52,11 @@ public:
   // Process all pending messages from a client.
   void handle();
 
-  void handle_packet(const std::vector<uint8_t> &packet);
   void handle_halt_reason(const std::vector<uint8_t> &packet);
+  void handle_packet(const std::vector<uint8_t> &packet);
   void handle_read_general_registers(const std::vector<uint8_t> &packet);
   void handle_read_memory(const std::vector<uint8_t> &packet);
+  void handle_read_register(const std::vector<uint8_t> &packet);
 
 private:
   sim_t *sim;
@@ -75,6 +76,12 @@ private:
   void process_requests();
   // Add the given message to send_buf.
   void send(const char* msg);
+  // Hex-encode a 64-bit value, and send it to gcc in target byte order (little
+  // endian).
+  void send(uint64_t value);
+  // Hex-encode a 32-bit value, and send it to gcc in target byte order (little
+  // endian).
+  void send(uint32_t value);
   void send_packet(const char* data);
   uint8_t running_checksum;
   void send_running_checksum();

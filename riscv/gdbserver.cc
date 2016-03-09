@@ -169,7 +169,6 @@ void gdbserver_t::read()
     recv_buf.reset();
     send_buf.reset();
   } else {
-    printf("read %ld bytes\n", bytes);
     recv_buf.data_added(bytes);
   }
 }
@@ -190,7 +189,7 @@ void gdbserver_t::write()
       // Client can't take any more data right now.
       break;
     } else {
-      printf("wrote %ld bytes:\n", bytes);
+      printf("wrote %ld bytes: ", bytes);
       for (unsigned int i = 0; i < bytes; i++) {
         printf("%c", send_buf[i]);
       }
@@ -252,7 +251,7 @@ void gdbserver_t::process_requests()
       if (b == '$') {
         // Start of new packet.
         if (!packet.empty()) {
-          fprintf(stderr, "Received malformed %ld-byte packet from debug client\n", packet.size());
+          fprintf(stderr, "Received malformed %ld-byte packet from debug client: ", packet.size());
           print_packet(packet);
           recv_buf.consume(i);
           break;
@@ -295,13 +294,17 @@ void gdbserver_t::handle_read_general_registers(const std::vector<uint8_t> &pack
   //   "f16", "f17", "f18", "f19", "f20", "f21", "f22", "f23",
   //   "f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31",
 
+  // Each byte of register data is described by two hex digits. The bytes with
+  // the register are transmitted in target byte order. The size of each
+  // register and their position within the ‘g’ packet are determined by the
+  // gdb internal gdbarch functions DEPRECATED_REGISTER_RAW_SIZE and
+  // gdbarch_register_name.
+
   send("$");
   running_checksum = 0;
-  char buffer[17];
   processor_t *p = sim->get_core(0);
   for (int r = 0; r < 32; r++) {
-    sprintf(buffer, "%08lx", p->state.XPR[r]);
-    send(buffer);
+    send(p->state.XPR[r]);
   }
   send_running_checksum();
   expect_ack = true;
@@ -322,6 +325,41 @@ uint64_t consume_hex_number(std::vector<uint8_t>::const_iterator &iter,
     value += c_value;
   }
   return value;
+}
+
+void gdbserver_t::handle_read_register(const std::vector<uint8_t> &packet)
+{
+  // p n
+
+  // Register order that gdb expects is:
+  //   "x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",
+  //   "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
+  //   "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23",
+  //   "x24", "x25", "x26", "x27", "x28", "x29", "x30", "x31",
+  //   "pc",
+  //   "f0",  "f1",  "f2",  "f3",  "f4",  "f5",  "f6",  "f7",
+  //   "f8",  "f9",  "f10", "f11", "f12", "f13", "f14", "f15",
+  //   "f16", "f17", "f18", "f19", "f20", "f21", "f22", "f23",
+  //   "f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31",
+
+  std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
+  unsigned int n = consume_hex_number(iter, packet.end());
+  if (*iter != '#')
+    return send_packet("E16"); // EINVAL
+
+  processor_t *p = sim->get_core(0);
+  send("$");
+  running_checksum = 0;
+  if (n < 32) {
+    send(p->state.XPR[n]);
+  } else if (n == 0x20) {
+    send(p->state.pc);
+  } else {
+    send("E16");        // EINVAL
+  }
+
+  send_running_checksum();
+  expect_ack = true;
 }
 
 void gdbserver_t::handle_read_memory(const std::vector<uint8_t> &packet)
@@ -361,7 +399,7 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
     return;
   }
 
-  fprintf(stderr, "Received %ld-byte packet from debug client\n", packet.size());
+  fprintf(stderr, "Received %ld-byte packet from debug client: ", packet.size());
   print_packet(packet);
   send("+");
 
@@ -372,6 +410,8 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
       return handle_read_general_registers(packet);
     case 'm':
       return handle_read_memory(packet);
+    case 'p':
+      return handle_read_register(packet);
   }
 
   // Not supported.
@@ -397,6 +437,26 @@ void gdbserver_t::send(const char* msg)
   for (const char *c = msg; *c; c++)
     running_checksum += *c;
   send_buf.append((const uint8_t *) msg, length);
+}
+
+void gdbserver_t::send(uint64_t value)
+{
+  char buffer[3];
+  for (unsigned int i = 0; i < 8; i++) {
+    sprintf(buffer, "%02x", value & 0xff);
+    send(buffer);
+    value >>= 8;
+  }
+}
+
+void gdbserver_t::send(uint32_t value)
+{
+  char buffer[3];
+  for (unsigned int i = 0; i < 4; i++) {
+    sprintf(buffer, "%02x", value & 0xff);
+    send(buffer);
+    value >>= 8;
+  }
 }
 
 void gdbserver_t::send_packet(const char* data)
