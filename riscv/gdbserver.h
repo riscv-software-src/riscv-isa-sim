@@ -56,10 +56,13 @@ public:
   void handle_interrupt();
 
   void handle_halt_reason(const std::vector<uint8_t> &packet);
-  void handle_read_general_registers(const std::vector<uint8_t> &packet);
-  void handle_read_memory(const std::vector<uint8_t> &packet);
-  void handle_read_register(const std::vector<uint8_t> &packet);
+  void handle_general_registers_read(const std::vector<uint8_t> &packet);
+  void handle_memory_read(const std::vector<uint8_t> &packet);
+  void handle_memory_binary_write(const std::vector<uint8_t> &packet);
+  void handle_register_read(const std::vector<uint8_t> &packet);
   void handle_continue(const std::vector<uint8_t> &packet);
+  void handle_kill(const std::vector<uint8_t> &packet);
+  void handle_extended(const std::vector<uint8_t> &packet);
 
 private:
   sim_t *sim;
@@ -69,6 +72,7 @@ private:
   circular_buffer_t<uint8_t> send_buf;
 
   bool expect_ack;
+  bool extended_mode;
 
   // Read pending data from the client.
   void read();

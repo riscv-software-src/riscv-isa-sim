@@ -145,6 +145,7 @@ void gdbserver_t::accept()
     int oldopts = fcntl(client_fd, F_GETFL, 0);
     fcntl(client_fd, F_SETFL, oldopts | O_NONBLOCK);
     expect_ack = false;
+    extended_mode = false;
 
     // gdb wants the core to be halted when it attaches.
     processor_t *p = sim->get_core(0);
@@ -170,11 +171,12 @@ void gdbserver_t::read()
   } else if (bytes == 0) {
     // The remote disconnected.
     client_fd = 0;
+    processor_t *p = sim->get_core(0);
+    p->set_halted(false);
     recv_buf.reset();
     send_buf.reset();
   } else {
     recv_buf.data_added(bytes);
-    printf("Read %d bytes.\n", bytes);
   }
 }
 
@@ -251,7 +253,6 @@ void gdbserver_t::process_requests()
       uint8_t b = recv_buf[i];
 
       if (packet.empty() && expect_ack && b == '+') {
-        fprintf(stderr, "Received ack\n");
         recv_buf.consume(1);
         break;
       }
@@ -287,8 +288,6 @@ void gdbserver_t::process_requests()
     // There's a partial packet in the buffer. Wait until we get more data to
     // process it.
     if (packet.size()) {
-      fprintf(stderr, "Partial packet: ");
-      print_packet(packet);
       break;
     }
   }
@@ -299,7 +298,7 @@ void gdbserver_t::handle_halt_reason(const std::vector<uint8_t> &packet)
   send_packet("S00");
 }
 
-void gdbserver_t::handle_read_general_registers(const std::vector<uint8_t> &packet)
+void gdbserver_t::handle_general_registers_read(const std::vector<uint8_t> &packet)
 {
   // Register order that gdb expects is:
   //   "x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",
@@ -345,7 +344,7 @@ uint64_t consume_hex_number(std::vector<uint8_t>::const_iterator &iter,
   return value;
 }
 
-void gdbserver_t::handle_read_register(const std::vector<uint8_t> &packet)
+void gdbserver_t::handle_register_read(const std::vector<uint8_t> &packet)
 {
   // p n
 
@@ -380,17 +379,15 @@ void gdbserver_t::handle_read_register(const std::vector<uint8_t> &packet)
   expect_ack = true;
 }
 
-void gdbserver_t::handle_read_memory(const std::vector<uint8_t> &packet)
+void gdbserver_t::handle_memory_read(const std::vector<uint8_t> &packet)
 {
   // m addr,length
   std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
   reg_t address = consume_hex_number(iter, packet.end());
-  printf("address=%lx %c\n", address, *iter);
   if (*iter != ',')
     return send_packet("E16"); // EINVAL
   iter++;
   reg_t length = consume_hex_number(iter, packet.end());
-  printf("length=%lx %c\n", length, *iter);
   if (*iter != '#')
     return send_packet("E16"); // EINVAL
 
@@ -405,6 +402,64 @@ void gdbserver_t::handle_read_memory(const std::vector<uint8_t> &packet)
     send(buffer);
   }
   send_running_checksum();
+}
+
+void gdbserver_t::handle_memory_binary_write(const std::vector<uint8_t> &packet)
+{
+  // X addr,length:XX...
+  std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
+  reg_t address = consume_hex_number(iter, packet.end());
+  if (*iter != ',')
+    return send_packet("E16"); // EINVAL
+  iter++;
+  reg_t length = consume_hex_number(iter, packet.end());
+  if (*iter != ':')
+    return send_packet("E16"); // EINVAL
+  iter++;
+
+  processor_t *p = sim->get_core(0);
+  mmu_t* mmu = sim->debug_mmu;
+  for (unsigned int i = 0; i < length; i++) {
+    if (iter == packet.end()) {
+      return send_packet("E16"); // EINVAL
+    }
+    mmu->store_uint8(address + i, *iter);
+    iter++;
+  }
+  if (*iter != '#')
+    return send_packet("E4b"); // EOVERFLOW
+
+  send_packet("OK");
+}
+
+void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
+{
+  // c [addr]
+  processor_t *p = sim->get_core(0);
+  if (packet[2] != '#') {
+    std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
+    p->state.pc = consume_hex_number(iter, packet.end());
+    if (*iter != '#')
+      return send_packet("E16"); // EINVAL
+  }
+
+  p->set_halted(false);
+}
+
+void gdbserver_t::handle_kill(const std::vector<uint8_t> &packet)
+{
+  // k
+  // The exact effect of this packet is not specified.
+  // Looks like OpenOCD disconnects?
+  // TODO
+}
+
+void gdbserver_t::handle_extended(const std::vector<uint8_t> &packet)
+{
+  // Enable extended mode. In extended mode, the remote server is made
+  // persistent. The ‘R’ packet is used to restart the program being debugged.
+  send_packet("OK");
+  extended_mode = true;
 }
 
 void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
@@ -422,19 +477,29 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
   send("+");
 
   switch (packet[1]) {
+    case '!':
+      return handle_extended(packet);
     case '?':
       return handle_halt_reason(packet);
     case 'g':
-      return handle_read_general_registers(packet);
+      return handle_general_registers_read(packet);
+    case 'k':
+      return handle_kill(packet);
     case 'm':
-      return handle_read_memory(packet);
+      return handle_memory_read(packet);
+//    case 'M':
+//      return handle_memory_write(packet);
+    case 'X':
+      return handle_memory_binary_write(packet);
     case 'p':
-      return handle_read_register(packet);
+      return handle_register_read(packet);
     case 'c':
       return handle_continue(packet);
   }
 
   // Not supported.
+  fprintf(stderr, "** Unsupported packet: ");
+  print_packet(packet);
   send_packet("");
 }
 
@@ -443,20 +508,6 @@ void gdbserver_t::handle_interrupt()
   processor_t *p = sim->get_core(0);
   p->set_halted(true);
   send_packet("S02");   // Pretend program received SIGINT.
-}
-
-void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
-{
-  // c [addr]
-  processor_t *p = sim->get_core(0);
-  if (packet[2] != '#') {
-    std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
-    p->state.pc = consume_hex_number(iter, packet.end());
-    if (*iter != '#')
-      return send_packet("E16"); // EINVAL
-  }
-
-  p->set_halted(false);
 }
 
 void gdbserver_t::handle()
@@ -484,7 +535,7 @@ void gdbserver_t::send(uint64_t value)
 {
   char buffer[3];
   for (unsigned int i = 0; i < 8; i++) {
-    sprintf(buffer, "%02x", value & 0xff);
+    sprintf(buffer, "%02x", (int) (value & 0xff));
     send(buffer);
     value >>= 8;
   }
@@ -494,7 +545,7 @@ void gdbserver_t::send(uint32_t value)
 {
   char buffer[3];
   for (unsigned int i = 0; i < 4; i++) {
-    sprintf(buffer, "%02x", value & 0xff);
+    sprintf(buffer, "%02x", (int) (value & 0xff));
     send(buffer);
     value >>= 8;
   }
