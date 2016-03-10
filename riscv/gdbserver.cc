@@ -83,68 +83,51 @@ void circular_buffer_t<T>::append(const T *src, unsigned int count)
   }
 }
 
-// Code inspired by/copied from OpenOCD server/server.c.
-
 gdbserver_t::gdbserver_t(uint16_t port, sim_t *sim) :
   sim(sim),
   client_fd(0),
   recv_buf(64 * 1024), send_buf(64 * 1024)
 {
+  // TODO: listen on socket
   socket_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (socket_fd == -1) {
-    fprintf(stderr, "error creating socket: %s\n", strerror(errno));
+    fprintf(stderr, "failed to make socket: %s (%d)\n", strerror(errno), errno);
     abort();
   }
 
-  int so_reuseaddr_option = 1;
-  setsockopt(socket_fd,
-      SOL_SOCKET,
-      SO_REUSEADDR,
-      (void *)&so_reuseaddr_option,
-      sizeof(int));
+  fcntl(socket_fd, F_SETFL, O_NONBLOCK);
 
-  int oldopts = fcntl(socket_fd, F_GETFL, 0);
-  fcntl(socket_fd, F_SETFL, oldopts | O_NONBLOCK);
+  struct sockaddr_in addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sin_family = AF_INET;
+  addr.sin_addr.s_addr = INADDR_ANY;
+  addr.sin_port = htons(port);
 
-  struct sockaddr_in sin;
-  memset(&sin, 0, sizeof(sin));
-  sin.sin_family = AF_INET;
-  sin.sin_addr.s_addr = INADDR_ANY;
-  sin.sin_port = htons(port);
-
-  if (bind(socket_fd, (struct sockaddr *)&sin, sizeof(sin)) == -1) {
-    fprintf(stderr, "couldn't bind to socket: %s\n", strerror(errno));
+  if (bind(socket_fd, (struct sockaddr *) &addr, sizeof(addr)) == -1) {
+    fprintf(stderr, "failed to bind socket: %s (%d)\n", strerror(errno), errno);
     abort();
   }
-
-  /* These setsockopt()s must happen before the listen() */
-  int window_size = 128 * 1024;
-  setsockopt(socket_fd, SOL_SOCKET, SO_SNDBUF,
-      (char *)&window_size, sizeof(window_size));
-  setsockopt(socket_fd, SOL_SOCKET, SO_RCVBUF,
-      (char *)&window_size, sizeof(window_size));
 
   if (listen(socket_fd, 1) == -1) {
-    fprintf(stderr, "couldn't listen on socket: %s\n", strerror(errno));
+    fprintf(stderr, "failed to listen on socket: %s (%d)\n", strerror(errno), errno);
     abort();
   }
 }
 
 void gdbserver_t::accept()
 {
-  struct sockaddr client_addr;
-  socklen_t address_size = sizeof(client_addr);
-  client_fd = ::accept(socket_fd, &client_addr, &address_size);
+  client_fd = ::accept(socket_fd, NULL, NULL);
   if (client_fd == -1) {
     if (errno == EAGAIN) {
-      // We'll try again in the next call.
+      // No client waiting to connect right now.
     } else {
-      fprintf(stderr, "failed to accept on socket: %s (%d)\n", strerror(errno), errno);
+      fprintf(stderr, "failed to accept on socket: %s (%d)\n", strerror(errno),
+          errno);
       abort();
     }
   } else {
-    int oldopts = fcntl(client_fd, F_GETFL, 0);
-    fcntl(client_fd, F_SETFL, oldopts | O_NONBLOCK);
+    fcntl(client_fd, F_SETFL, O_NONBLOCK);
+
     expect_ack = false;
     extended_mode = false;
 
