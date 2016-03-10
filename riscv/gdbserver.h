@@ -42,6 +42,18 @@ public:
   void append(const T *src, unsigned int count);
 };
 
+// Class to track software breakpoints that we set.
+class software_breakpoint_t
+{
+public:
+  reg_t address;
+  unsigned int size;
+  uint32_t instruction;
+
+  void insert(mmu_t* mmu);
+  void remove(mmu_t* mmu);
+};
+
 class gdbserver_t
 {
 public:
@@ -55,6 +67,7 @@ public:
   void handle_packet(const std::vector<uint8_t> &packet);
   void handle_interrupt();
 
+  void handle_breakpoint(const std::vector<uint8_t> &packet);
   void handle_continue(const std::vector<uint8_t> &packet);
   void handle_extended(const std::vector<uint8_t> &packet);
   void handle_general_registers_read(const std::vector<uint8_t> &packet);
@@ -77,6 +90,8 @@ private:
   // Used to track whether we think the target is running. If we think it is
   // but it isn't, we need to tell gdb about it.
   bool running;
+
+  std::map <reg_t, software_breakpoint_t> breakpoints;
 
   // Read pending data from the client.
   void read();

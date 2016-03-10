@@ -59,11 +59,8 @@ void processor_t::step(size_t n)
     halted = false;
     n = 1;
   }
-  if (halted) {
-    return;
-  }
 
-  while (run && n > 0) {
+  while (run && !halted && n > 0) {
     size_t instret = 0;
     reg_t pc = state.pc;
     mmu_t* _mmu = mmu;

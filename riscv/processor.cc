@@ -208,6 +208,12 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     fprintf(stderr, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
             id, t.name(), epc);
 
+  if (t.cause() == CAUSE_BREAKPOINT) {
+    // TODO: Only do this if there is a debugger attached.
+    halted = true;
+    return;
+  }
+
   // by default, trap to M-mode, unless delegated to S-mode
   reg_t bit = t.cause();
   reg_t deleg = state.medeleg;

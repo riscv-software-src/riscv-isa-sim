@@ -17,6 +17,9 @@
 #include "gdbserver.h"
 #include "mmu.h"
 
+#define C_EBREAK        0x9002
+#define EBREAK          0x00100073
+
 template <typename T>
 unsigned int circular_buffer_t<T>::size() const
 {
@@ -96,6 +99,12 @@ gdbserver_t::gdbserver_t(uint16_t port, sim_t *sim) :
   }
 
   fcntl(socket_fd, F_SETFL, O_NONBLOCK);
+  int reuseaddr = 1;
+  if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &reuseaddr,
+        sizeof(int)) == -1) {
+    fprintf(stderr, "failed setsockopt: %s (%d)\n", strerror(errno), errno);
+    abort();
+  }
 
   struct sockaddr_in addr;
   memset(&addr, 0, sizeof(addr));
@@ -346,7 +355,7 @@ void gdbserver_t::handle_register_read(const std::vector<uint8_t> &packet)
   std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
   unsigned int n = consume_hex_number(iter, packet.end());
   if (*iter != '#')
-    return send_packet("E16"); // EINVAL
+    return send_packet("E01");
 
   processor_t *p = sim->get_core(0);
   send("$");
@@ -356,7 +365,7 @@ void gdbserver_t::handle_register_read(const std::vector<uint8_t> &packet)
   } else if (n == 0x20) {
     send(p->state.pc);
   } else {
-    send("E16");        // EINVAL
+    send("E02");
   }
 
   send_running_checksum();
@@ -369,11 +378,11 @@ void gdbserver_t::handle_memory_read(const std::vector<uint8_t> &packet)
   std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
   reg_t address = consume_hex_number(iter, packet.end());
   if (*iter != ',')
-    return send_packet("E16"); // EINVAL
+    return send_packet("E10");
   iter++;
   reg_t length = consume_hex_number(iter, packet.end());
   if (*iter != '#')
-    return send_packet("E16"); // EINVAL
+    return send_packet("E11");
 
   send("$");
   running_checksum = 0;
@@ -394,18 +403,18 @@ void gdbserver_t::handle_memory_binary_write(const std::vector<uint8_t> &packet)
   std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
   reg_t address = consume_hex_number(iter, packet.end());
   if (*iter != ',')
-    return send_packet("E16"); // EINVAL
+    return send_packet("E20");
   iter++;
   reg_t length = consume_hex_number(iter, packet.end());
   if (*iter != ':')
-    return send_packet("E16"); // EINVAL
+    return send_packet("E21");
   iter++;
 
   processor_t *p = sim->get_core(0);
   mmu_t* mmu = sim->debug_mmu;
   for (unsigned int i = 0; i < length; i++) {
     if (iter == packet.end()) {
-      return send_packet("E16"); // EINVAL
+      return send_packet("E22");
     }
     mmu->store_uint8(address + i, *iter);
     iter++;
@@ -424,7 +433,7 @@ void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
     std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
     p->state.pc = consume_hex_number(iter, packet.end());
     if (*iter != '#')
-      return send_packet("E16"); // EINVAL
+      return send_packet("E30");
   }
 
   p->set_halted(false);
@@ -439,7 +448,7 @@ void gdbserver_t::handle_step(const std::vector<uint8_t> &packet)
     std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
     p->state.pc = consume_hex_number(iter, packet.end());
     if (*iter != '#')
-      return send_packet("E16"); // EINVAL
+      return send_packet("E40");
   }
 
   p->set_single_step(true);
@@ -460,6 +469,65 @@ void gdbserver_t::handle_extended(const std::vector<uint8_t> &packet)
   // persistent. The ‘R’ packet is used to restart the program being debugged.
   send_packet("OK");
   extended_mode = true;
+}
+
+void software_breakpoint_t::insert(mmu_t* mmu)
+{
+  if (size == 2) {
+    instruction = mmu->load_uint16(address);
+    mmu->store_uint16(address, C_EBREAK);
+  } else {
+    instruction = mmu->load_uint32(address);
+    mmu->store_uint32(address, EBREAK);
+  }
+}
+
+void software_breakpoint_t::remove(mmu_t* mmu)
+{
+  if (size == 2) {
+    mmu->store_uint16(address, instruction);
+  } else {
+    mmu->store_uint32(address, instruction);
+  }
+}
+
+void gdbserver_t::handle_breakpoint(const std::vector<uint8_t> &packet)
+{
+  // insert: Z type,addr,kind
+  // remove: z type,addr,kind
+
+  software_breakpoint_t bp;
+  bool insert = (packet[1] == 'Z');
+  std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
+  int type = consume_hex_number(iter, packet.end());
+  if (*iter != ',')
+    return send_packet("E50");
+  iter++;
+  bp.address = consume_hex_number(iter, packet.end());
+  if (*iter != ',')
+    return send_packet("E51");
+  iter++;
+  bp.size = consume_hex_number(iter, packet.end());
+  // There may be more options after a ; here, but we don't support that.
+  if (*iter != '#')
+    return send_packet("E52");
+
+  if (bp.size != 2 && bp.size != 4) {
+    return send_packet("E53");
+  }
+
+  processor_t *p = sim->get_core(0);
+  mmu_t* mmu = sim->debug_mmu;
+  if (insert) {
+    bp.insert(mmu);
+    breakpoints[bp.address] = bp;
+
+  } else {
+    bp = breakpoints[bp.address];
+    bp.remove(mmu);
+    breakpoints.erase(bp.address);
+  }
+  return send_packet("OK");
 }
 
 void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
@@ -497,6 +565,9 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
       return handle_continue(packet);
     case 's':
       return handle_step(packet);
+    case 'z':
+    case 'Z':
+      return handle_breakpoint(packet);
   }
 
   // Not supported.
