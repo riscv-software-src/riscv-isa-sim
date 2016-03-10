@@ -17,7 +17,7 @@ class mmu_t;
 class sim_t
 {
 public:
-  sim_t(const char* isa, size_t _nprocs, size_t mem_mb,
+  sim_t(const char* isa, size_t _nprocs, size_t mem_mb, bool halted,
         const std::vector<std::string>& htif_args);
   ~sim_t();
 

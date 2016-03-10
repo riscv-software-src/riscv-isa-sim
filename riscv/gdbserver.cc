@@ -15,6 +15,7 @@
 #include "disasm.h"
 #include "sim.h"
 #include "gdbserver.h"
+#include "mmu.h"
 
 template <typename T>
 unsigned int circular_buffer_t<T>::size() const

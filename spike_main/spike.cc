@@ -10,7 +10,6 @@
 #include <fesvr/option_parser.h>
 #include <stdio.h>
 #include <stdlib.h>
-#include <getopt.h>
 #include <vector>
 #include <string>
 #include <memory>
@@ -25,6 +24,7 @@ static void help()
   fprintf(stderr, "  -g                    Track histogram of PCs\n");
   fprintf(stderr, "  -l                    Generate a log of execution\n");
   fprintf(stderr, "  -h                    Print this help message\n");
+  fprintf(stderr, "  -H                 Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
   fprintf(stderr, "  --ic=<S>:<W>:<B>      Instantiate a cache model with S sets,\n");
   fprintf(stderr, "  --dc=<S>:<W>:<B>        W ways, and B-byte blocks (with S and\n");
@@ -38,6 +38,7 @@ static void help()
 int main(int argc, char** argv)
 {
   bool debug = false;
+  bool halted = false;
   bool histogram = false;
   bool log = false;
   bool dump_config_string = false;
@@ -70,10 +71,12 @@ int main(int argc, char** argv)
       exit(-1);
     }
   });
+  // I wanted to use --halted, but for some reason that doesn't work.
+  parser.option('H', 0, 0, [&](const char* s){halted = true;});
 
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
-  sim_t s(isa, nprocs, mem_mb, htif_args);
+  sim_t s(isa, nprocs, mem_mb, halted, htif_args);
   gdbserver_t gdbserver(9824, &s);
   s.set_gdbserver(&gdbserver);
 

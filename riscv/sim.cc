@@ -20,7 +20,7 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb,
+sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
              const std::vector<std::string>& args)
   : htif(new htif_isasim_t(this, args)), procs(std::max(nprocs, size_t(1))),
     current_step(0), current_proc(0), debug(false)
@@ -43,8 +43,10 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb,
 
   debug_mmu = new mmu_t(this, NULL);
 
-  for (size_t i = 0; i < procs.size(); i++)
+  for (size_t i = 0; i < procs.size(); i++) {
     procs[i] = new processor_t(isa, this, i);
+    procs[i]->set_halted(halted);
+  }
 
   rtc.reset(new rtc_t(procs));
   make_config_string();
