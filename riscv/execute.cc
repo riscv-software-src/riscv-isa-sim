@@ -55,7 +55,15 @@ void processor_t::step(size_t n)
 {
   // TODO: We should really not call this function at all when halted, to avoid
   // burning CPU.
-  while (run && !halted && n > 0) {
+  if (single_step) {
+    halted = false;
+    n = 1;
+  }
+  if (halted) {
+    return;
+  }
+
+  while (run && n > 0) {
     size_t instret = 0;
     reg_t pc = state.pc;
     mmu_t* _mmu = mmu;
@@ -127,5 +135,10 @@ miss:
 
     state.minstret += instret;
     n -= instret;
+  }
+
+  if (single_step) {
+    single_step = false;
+    halted = true;
   }
 }

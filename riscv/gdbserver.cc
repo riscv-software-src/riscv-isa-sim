@@ -445,6 +445,22 @@ void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
   }
 
   p->set_halted(false);
+  running = true;
+}
+
+void gdbserver_t::handle_step(const std::vector<uint8_t> &packet)
+{
+  // s [addr]
+  processor_t *p = sim->get_core(0);
+  if (packet[2] != '#') {
+    std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
+    p->state.pc = consume_hex_number(iter, packet.end());
+    if (*iter != '#')
+      return send_packet("E16"); // EINVAL
+  }
+
+  p->set_single_step(true);
+  running = true;
 }
 
 void gdbserver_t::handle_kill(const std::vector<uint8_t> &packet)
@@ -496,6 +512,8 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
       return handle_register_read(packet);
     case 'c':
       return handle_continue(packet);
+    case 's':
+      return handle_step(packet);
   }
 
   // Not supported.
@@ -509,10 +527,19 @@ void gdbserver_t::handle_interrupt()
   processor_t *p = sim->get_core(0);
   p->set_halted(true);
   send_packet("S02");   // Pretend program received SIGINT.
+  running = false;
 }
 
 void gdbserver_t::handle()
 {
+  processor_t *p = sim->get_core(0);
+  if (running && p->halted) {
+    // The core was running, but now it's halted. Better tell gdb.
+    send_packet("T00");
+    // TODO: Actually include register values here
+    running = false;
+  }
+
   if (client_fd > 0) {
     this->read();
     this->write();

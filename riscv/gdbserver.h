@@ -55,14 +55,15 @@ public:
   void handle_packet(const std::vector<uint8_t> &packet);
   void handle_interrupt();
 
-  void handle_halt_reason(const std::vector<uint8_t> &packet);
-  void handle_general_registers_read(const std::vector<uint8_t> &packet);
-  void handle_memory_read(const std::vector<uint8_t> &packet);
-  void handle_memory_binary_write(const std::vector<uint8_t> &packet);
-  void handle_register_read(const std::vector<uint8_t> &packet);
   void handle_continue(const std::vector<uint8_t> &packet);
-  void handle_kill(const std::vector<uint8_t> &packet);
   void handle_extended(const std::vector<uint8_t> &packet);
+  void handle_general_registers_read(const std::vector<uint8_t> &packet);
+  void handle_halt_reason(const std::vector<uint8_t> &packet);
+  void handle_kill(const std::vector<uint8_t> &packet);
+  void handle_memory_binary_write(const std::vector<uint8_t> &packet);
+  void handle_memory_read(const std::vector<uint8_t> &packet);
+  void handle_register_read(const std::vector<uint8_t> &packet);
+  void handle_step(const std::vector<uint8_t> &packet);
 
 private:
   sim_t *sim;
@@ -73,6 +74,9 @@ private:
 
   bool expect_ack;
   bool extended_mode;
+  // Used to track whether we think the target is running. If we think it is
+  // but it isn't, we need to tell gdb about it.
+  bool running;
 
   // Read pending data from the client.
   void read();

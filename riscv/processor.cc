@@ -22,7 +22,7 @@
 
 processor_t::processor_t(const char* isa, sim_t* sim, uint32_t id)
   : sim(sim), ext(NULL), disassembler(new disassembler_t),
-    id(id), run(false), debug(false), halted(false)
+    id(id), run(false), debug(false), halted(false), single_step(false)
 {
   parse_isa_string(isa);
 
@@ -129,6 +129,11 @@ void processor_t::set_debug(bool value)
 void processor_t::set_halted(bool value)
 {
   halted = value;
+}
+
+void processor_t::set_single_step(bool value)
+{
+  single_step = value;
 }
 
 void processor_t::set_histogram(bool value)

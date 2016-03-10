@@ -82,6 +82,7 @@ public:
 
   void set_debug(bool value);
   void set_halted(bool value);
+  void set_single_step(bool value);
   void set_histogram(bool value);
   void reset(bool value);
   void step(size_t n); // run for n cycles
@@ -123,6 +124,9 @@ private:
   bool debug;
   // TODO: Should this just be rolled into `run`?
   bool halted;  // When true, no instructions are executed.
+  // When true, execute exactly one instruction (even if halted is true), then
+  // set halted to true and single_step to false.
+  bool single_step;
   bool histogram_enabled;
 
   std::vector<insn_desc_t> instructions;
