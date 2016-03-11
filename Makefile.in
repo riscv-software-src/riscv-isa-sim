@@ -120,6 +120,9 @@ INSTALL_LIB   := $(INSTALL) -m 644
 INSTALL_EXE   := $(INSTALL) -m 555
 STOW          := @stow@
 
+# Tests
+bintests = 
+
 #-------------------------------------------------------------------------
 # Include subproject makefile fragments
 #-------------------------------------------------------------------------
@@ -329,8 +332,17 @@ deps : $(deps)
 # Check
 #-------------------------------------------------------------------------
 
-check : $(test_outs)
-	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segementation' $^ < /dev/null; echo
+bintest_outs = $(bintests:=.out)
+%.out: %
+	$^ < /dev/null > $@ 2>&1
+
+check-cpp : $(test_outs)
+	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segmentation' $^ < /dev/null; echo
+
+check-bin : $(bintest_outs)
+	tail -n 1 $^ < /dev/null
+
+check : check-cpp check-bin
 
 .PHONY : check
 
