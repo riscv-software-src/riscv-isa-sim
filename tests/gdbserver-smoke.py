@@ -14,7 +14,6 @@ class SmokeTest(unittest.TestCase):
         self.gdb = testlib.Gdb()
         self.gdb.command("file %s" % self.tmpf.name)
         self.gdb.command("target extended-remote localhost:9824")
-        self.gdb.command("p i");
         self.gdb.command("p i=0");
 
     def cleanUp(self):
@@ -44,6 +43,23 @@ class SmokeTest(unittest.TestCase):
         output = self.gdb.command("c")
         self.assertIn("Continuing", output)
         self.assertIn("Remote connection closed", output)
+
+    def test_registers(self):
+        output = self.gdb.command("info all-registers")
+        self.assertNotIn("Could not", output)
+        for reg in ('zero', 'ra', 'sp', 'gp', 'tp'):
+            self.assertIn(reg, output)
+        # mcpuid is one of the few registers that should have the high bit set
+        # (for rv64).
+        self.assertRegexpMatches(output, ".*mcpuid *0x80")
+
+        # The time register should always be changing.
+        last_time = None
+        for _ in range(5):
+            time = self.gdb.command("p $time").split('=')[-1]
+            self.assertNotEqual(time, last_time)
+            last_time = time
+            self.gdb.command("stepi")
 
 if __name__ == '__main__':
     unittest.main()

@@ -34,6 +34,8 @@ class Gdb(object):
         self.child = pexpect.spawn(path)
         self.child.logfile = file("gdb.log", "w")
         self.wait()
+        self.command("set width 0")
+        self.command("set height 0")
 
     def wait(self):
         """Wait for prompt."""

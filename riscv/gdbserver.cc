@@ -189,11 +189,11 @@ void gdbserver_t::write()
       // Client can't take any more data right now.
       break;
     } else {
-      printf("wrote %ld bytes: ", bytes);
+      fprintf(stderr, "wrote %ld bytes: ", bytes);
       for (unsigned int i = 0; i < bytes; i++) {
-        printf("%c", send_buf[i]);
+        fprintf(stderr, "%c", send_buf[i]);
       }
-      printf("\n");
+      fprintf(stderr, "\n");
       send_buf.consume(bytes);
     }
   }
@@ -347,36 +347,126 @@ void consume_string(std::string &str, std::vector<uint8_t>::const_iterator &iter
   }
 }
 
+typedef enum {
+  RC_XPR,
+  RC_PC,
+  RC_FPR,
+  RC_CSR
+} register_class_t;
+
+typedef struct {
+  register_class_t clss;
+  int index;
+} register_access_t;
+    
+// gdb's register list is defined in riscv_gdb_reg_names gdb/riscv-tdep.c in
+// its source tree. The definition here must match that one.
+const register_access_t register_access[] = {
+  { RC_XPR, 0 },
+  { RC_XPR, 1 },
+  { RC_XPR, 2 },
+  { RC_XPR, 3 },
+  { RC_XPR, 4 },
+  { RC_XPR, 5 },
+  { RC_XPR, 6 },
+  { RC_XPR, 7 },
+  { RC_XPR, 8 },
+  { RC_XPR, 9 },
+  { RC_XPR, 10 },
+  { RC_XPR, 11 },
+  { RC_XPR, 12 },
+  { RC_XPR, 13 },
+  { RC_XPR, 14 },
+  { RC_XPR, 15 },
+  { RC_XPR, 16 },
+  { RC_XPR, 17 },
+  { RC_XPR, 18 },
+  { RC_XPR, 19 },
+  { RC_XPR, 20 },
+  { RC_XPR, 21 },
+  { RC_XPR, 22 },
+  { RC_XPR, 23 },
+  { RC_XPR, 24 },
+  { RC_XPR, 25 },
+  { RC_XPR, 26 },
+  { RC_XPR, 27 },
+  { RC_XPR, 28 },
+  { RC_XPR, 29 },
+  { RC_XPR, 30 },
+  { RC_XPR, 31 },
+  { RC_PC, 0 },
+  { RC_FPR, 0 },
+  { RC_FPR, 1 },
+  { RC_FPR, 2 },
+  { RC_FPR, 3 },
+  { RC_FPR, 4 },
+  { RC_FPR, 5 },
+  { RC_FPR, 6 },
+  { RC_FPR, 7 },
+  { RC_FPR, 8 },
+  { RC_FPR, 9 },
+  { RC_FPR, 10 },
+  { RC_FPR, 11 },
+  { RC_FPR, 12 },
+  { RC_FPR, 13 },
+  { RC_FPR, 14 },
+  { RC_FPR, 15 },
+  { RC_FPR, 16 },
+  { RC_FPR, 17 },
+  { RC_FPR, 18 },
+  { RC_FPR, 19 },
+  { RC_FPR, 20 },
+  { RC_FPR, 21 },
+  { RC_FPR, 22 },
+  { RC_FPR, 23 },
+  { RC_FPR, 24 },
+  { RC_FPR, 25 },
+  { RC_FPR, 26 },
+  { RC_FPR, 27 },
+  { RC_FPR, 28 },
+  { RC_FPR, 29 },
+  { RC_FPR, 30 },
+  { RC_FPR, 31 },
+
+#define DECLARE_CSR(name, num) { RC_CSR, num },
+#include "encoding.h"
+#undef DECLARE_CSR
+};
 
 void gdbserver_t::handle_register_read(const std::vector<uint8_t> &packet)
 {
   // p n
-
-  // Register order that gdb expects is:
-  //   "x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",
-  //   "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
-  //   "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23",
-  //   "x24", "x25", "x26", "x27", "x28", "x29", "x30", "x31",
-  //   "pc",
-  //   "f0",  "f1",  "f2",  "f3",  "f4",  "f5",  "f6",  "f7",
-  //   "f8",  "f9",  "f10", "f11", "f12", "f13", "f14", "f15",
-  //   "f16", "f17", "f18", "f19", "f20", "f21", "f22", "f23",
-  //   "f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31",
 
   std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
   unsigned int n = consume_hex_number(iter, packet.end());
   if (*iter != '#')
     return send_packet("E01");
 
+  if (n >= sizeof(register_access) / sizeof(*register_access))
+    return send_packet("E02");
+
   processor_t *p = sim->get_core(0);
   send("$");
   running_checksum = 0;
-  if (n < 32) {
-    send(p->state.XPR[n]);
-  } else if (n == 0x20) {
-    send(p->state.pc);
-  } else {
-    send("E02");
+
+  register_access_t access = register_access[n];
+  switch (access.clss) {
+    case RC_XPR:
+      send(p->state.XPR[access.index]);
+      break;
+    case RC_PC:
+      send(p->state.pc);
+      break;
+    case RC_FPR:
+      send(p->state.FPR[access.index]);
+      break;
+    case RC_CSR:
+      try {
+        send(p->get_csr(access.index));
+      } catch(trap_t& t) {
+        send((reg_t) 0);
+      }
+      break;
   }
 
   send_running_checksum();
@@ -491,12 +581,12 @@ void software_breakpoint_t::insert(mmu_t* mmu)
     instruction = mmu->load_uint32(address);
     mmu->store_uint32(address, EBREAK);
   }
-  printf(">>> Read %x from %lx\n", instruction, address);
+  fprintf(stderr, ">>> Read %x from %lx\n", instruction, address);
 }
 
 void software_breakpoint_t::remove(mmu_t* mmu)
 {
-  printf(">>> write %x to %lx\n", instruction, address);
+  fprintf(stderr, ">>> write %x to %lx\n", instruction, address);
   if (size == 2) {
     mmu->store_uint16(address, instruction);
   } else {
@@ -561,7 +651,6 @@ void gdbserver_t::handle_query(const std::vector<uint8_t> &packet)
       consume_string(feature, iter, packet.end(), ';');
       if (iter != packet.end())
         iter++;
-      printf("is %s supported?\n", feature.c_str());
       if (feature == "swbreak+") {
         send("swbreak+;");
       }
@@ -569,7 +658,7 @@ void gdbserver_t::handle_query(const std::vector<uint8_t> &packet)
     return send_running_checksum();
   }
 
-  printf("Unsupported query %s\n", name.c_str());
+  fprintf(stderr, "Unsupported query %s\n", name.c_str());
   return send_packet("");
 }
 
