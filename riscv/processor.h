@@ -73,6 +73,15 @@ struct state_t
 #endif
 };
 
+typedef enum {
+      HR_NONE,
+      HR_STEPPED,       // A single step was completed
+      HR_SWBP,          // sbreak was executed
+      HR_INTERRUPT,     // Execution interrupted by debugger
+      HR_CMDLINE,       // Command line requested that the processor start halted
+      HR_ATTACHED       // Halted because a debugger attached
+} halt_reason_t;
+
 // this class represents one processor in a RISC-V machine.
 class processor_t : public abstract_device_t
 {
@@ -81,7 +90,7 @@ public:
   ~processor_t();
 
   void set_debug(bool value);
-  void set_halted(bool value);
+  void set_halted(bool value, halt_reason_t reason);
   void set_single_step(bool value);
   void set_histogram(bool value);
   void reset(bool value);
@@ -124,6 +133,7 @@ private:
   bool debug;
   // TODO: Should this just be rolled into `run`?
   bool halted;  // When true, no instructions are executed.
+  halt_reason_t halt_reason;        // Why is halted true?
   // When true, execute exactly one instruction (even if halted is true), then
   // set halted to true and single_step to false.
   bool single_step;

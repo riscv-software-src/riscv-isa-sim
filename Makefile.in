@@ -121,7 +121,7 @@ INSTALL_EXE   := $(INSTALL) -m 555
 STOW          := @stow@
 
 # Tests
-bintests = 
+bintests = tests/gdbserver-smoke.py
 
 #-------------------------------------------------------------------------
 # Include subproject makefile fragments
@@ -333,8 +333,9 @@ deps : $(deps)
 #-------------------------------------------------------------------------
 
 bintest_outs = $(bintests:=.out)
-%.out: %
-	$^ < /dev/null > $@ 2>&1
+junk += $(bintest_outs)
+%.out: % all
+	./$^ < /dev/null 2>&1 | tee $@
 
 check-cpp : $(test_outs)
 	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segmentation' $^ < /dev/null; echo

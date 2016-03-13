@@ -56,7 +56,7 @@ void processor_t::step(size_t n)
   // TODO: We should really not call this function at all when halted, to avoid
   // burning CPU.
   if (single_step) {
-    halted = false;
+    set_halted(false, HR_NONE);
     n = 1;
   }
 
@@ -136,6 +136,6 @@ miss:
 
   if (single_step) {
     single_step = false;
-    halted = true;
+    set_halted(true, HR_STEPPED);
   }
 }

@@ -45,7 +45,7 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
 
   for (size_t i = 0; i < procs.size(); i++) {
     procs[i] = new processor_t(isa, this, i);
-    procs[i]->set_halted(halted);
+    procs[i]->set_halted(halted, HR_CMDLINE);
   }
 
   rtc.reset(new rtc_t(procs));

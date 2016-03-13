@@ -142,7 +142,7 @@ void gdbserver_t::accept()
 
     // gdb wants the core to be halted when it attaches.
     processor_t *p = sim->get_core(0);
-    p->set_halted(true);
+    p->set_halted(true, HR_ATTACHED);
   }
 }
 
@@ -165,7 +165,7 @@ void gdbserver_t::read()
     // The remote disconnected.
     client_fd = 0;
     processor_t *p = sim->get_core(0);
-    p->set_halted(false);
+    p->set_halted(false, HR_NONE);
     recv_buf.reset();
     send_buf.reset();
   } else {
@@ -260,7 +260,8 @@ void gdbserver_t::process_requests()
       if (b == '$') {
         // Start of new packet.
         if (!packet.empty()) {
-          fprintf(stderr, "Received malformed %ld-byte packet from debug client: ", packet.size());
+          fprintf(stderr, "Received malformed %ld-byte packet from debug client: ",
+              packet.size());
           print_packet(packet);
           recv_buf.consume(i);
           break;
@@ -336,6 +337,16 @@ uint64_t consume_hex_number(std::vector<uint8_t>::const_iterator &iter,
   }
   return value;
 }
+
+void consume_string(std::string &str, std::vector<uint8_t>::const_iterator &iter,
+    std::vector<uint8_t>::const_iterator end, uint8_t separator)
+{
+  while (iter != end && *iter != separator) {
+    str.append(1, (char) *iter);
+    iter++;
+  }
+}
+
 
 void gdbserver_t::handle_register_read(const std::vector<uint8_t> &packet)
 {
@@ -436,7 +447,7 @@ void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
       return send_packet("E30");
   }
 
-  p->set_halted(false);
+  p->set_halted(false, HR_NONE);
   running = true;
 }
 
@@ -480,10 +491,12 @@ void software_breakpoint_t::insert(mmu_t* mmu)
     instruction = mmu->load_uint32(address);
     mmu->store_uint32(address, EBREAK);
   }
+  printf(">>> Read %x from %lx\n", instruction, address);
 }
 
 void software_breakpoint_t::remove(mmu_t* mmu)
 {
+  printf(">>> write %x to %lx\n", instruction, address);
   if (size == 2) {
     mmu->store_uint16(address, instruction);
   } else {
@@ -516,7 +529,6 @@ void gdbserver_t::handle_breakpoint(const std::vector<uint8_t> &packet)
     return send_packet("E53");
   }
 
-  processor_t *p = sim->get_core(0);
   mmu_t* mmu = sim->debug_mmu;
   if (insert) {
     bp.insert(mmu);
@@ -527,7 +539,38 @@ void gdbserver_t::handle_breakpoint(const std::vector<uint8_t> &packet)
     bp.remove(mmu);
     breakpoints.erase(bp.address);
   }
+  mmu->flush_icache();
+  processor_t *p = sim->get_core(0);
+  p->mmu->flush_icache();
   return send_packet("OK");
+}
+
+void gdbserver_t::handle_query(const std::vector<uint8_t> &packet)
+{
+  std::string name;
+  std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
+
+  consume_string(name, iter, packet.end(), ':');
+  if (iter != packet.end())
+    iter++;
+  if (name == "Supported") {
+    send("$");
+    running_checksum = 0;
+    while (iter != packet.end()) {
+      std::string feature;
+      consume_string(feature, iter, packet.end(), ';');
+      if (iter != packet.end())
+        iter++;
+      printf("is %s supported?\n", feature.c_str());
+      if (feature == "swbreak+") {
+        send("swbreak+;");
+      }
+    }
+    return send_running_checksum();
+  }
+
+  printf("Unsupported query %s\n", name.c_str());
+  return send_packet("");
 }
 
 void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
@@ -568,6 +611,9 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
     case 'z':
     case 'Z':
       return handle_breakpoint(packet);
+    case 'q':
+    case 'Q':
+      return handle_query(packet);
   }
 
   // Not supported.
@@ -579,7 +625,7 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
 void gdbserver_t::handle_interrupt()
 {
   processor_t *p = sim->get_core(0);
-  p->set_halted(true);
+  p->set_halted(true, HR_INTERRUPT);
   send_packet("S02");   // Pretend program received SIGINT.
   running = false;
 }
@@ -589,6 +635,21 @@ void gdbserver_t::handle()
   processor_t *p = sim->get_core(0);
   if (running && p->halted) {
     // The core was running, but now it's halted. Better tell gdb.
+    switch (p->halt_reason) {
+      case HR_NONE:
+        fprintf(stderr, "Internal error. Processor halted without reason.\n");
+        abort();
+      case HR_STEPPED:
+      case HR_INTERRUPT:
+      case HR_CMDLINE:
+      case HR_ATTACHED:
+        // There's no gdb code for this.
+        send_packet("T05");
+        break;
+      case HR_SWBP:
+        send_packet("T05swbreak:;");
+        break;
+    }
     send_packet("T00");
     // TODO: Actually include register values here
     running = false;
