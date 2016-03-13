@@ -529,7 +529,8 @@ void gdbserver_t::handle_breakpoint(const std::vector<uint8_t> &packet)
     return send_packet("E53");
   }
 
-  mmu_t* mmu = sim->debug_mmu;
+  processor_t *p = sim->get_core(0);
+  mmu_t* mmu = p->mmu;
   if (insert) {
     bp.insert(mmu);
     breakpoints[bp.address] = bp;
@@ -540,8 +541,7 @@ void gdbserver_t::handle_breakpoint(const std::vector<uint8_t> &packet)
     breakpoints.erase(bp.address);
   }
   mmu->flush_icache();
-  processor_t *p = sim->get_core(0);
-  p->mmu->flush_icache();
+  sim->debug_mmu->flush_icache();
   return send_packet("OK");
 }
 
