@@ -26,7 +26,7 @@ def spike(binary, halted=False):
         cmd.append('-H')
     cmd += ['pk', binary]
     logfile = open("spike.log", "w")
-    return subprocess.Popen(cmd, stdout=logfile, stderr=logfile)
+    return subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=logfile, stderr=logfile)
 
 class Gdb(object):
     def __init__(self):

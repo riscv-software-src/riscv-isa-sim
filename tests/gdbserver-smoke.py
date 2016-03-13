@@ -16,8 +16,9 @@ class SmokeTest(unittest.TestCase):
         self.gdb.command("target extended-remote localhost:9824")
         self.gdb.command("p i=0");
 
-    def cleanUp(self):
+    def tearDown(self):
         self.spike.kill()
+        self.spike.wait()
 
     def test_turbostep(self):
         """Single step until the program exits. TODO"""
