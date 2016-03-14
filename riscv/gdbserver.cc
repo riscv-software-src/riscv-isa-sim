@@ -299,11 +299,6 @@ void gdbserver_t::handle_general_registers_read(const std::vector<uint8_t> &pack
   //   "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
   //   "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23",
   //   "x24", "x25", "x26", "x27", "x28", "x29", "x30", "x31",
-  //   "pc",
-  //   "f0",  "f1",  "f2",  "f3",  "f4",  "f5",  "f6",  "f7",
-  //   "f8",  "f9",  "f10", "f11", "f12", "f13", "f14", "f15",
-  //   "f16", "f17", "f18", "f19", "f20", "f21", "f22", "f23",
-  //   "f24", "f25", "f26", "f27", "f28", "f29", "f30", "f31",
 
   // Each byte of register data is described by two hex digits. The bytes with
   // the register are transmitted in target byte order. The size of each
@@ -321,6 +316,8 @@ void gdbserver_t::handle_general_registers_read(const std::vector<uint8_t> &pack
   expect_ack = true;
 }
 
+// First byte is the most-significant one.
+// Eg. "08675309" becomes 0x08675309.
 uint64_t consume_hex_number(std::vector<uint8_t>::const_iterator &iter,
     std::vector<uint8_t>::const_iterator end)
 {
@@ -334,6 +331,29 @@ uint64_t consume_hex_number(std::vector<uint8_t>::const_iterator &iter,
     iter++;
     value <<= 4;
     value += c_value;
+  }
+  return value;
+}
+
+// First byte is the least-significant one.
+// Eg. "08675309" becomes 0x09536708
+uint64_t consume_hex_number_le(std::vector<uint8_t>::const_iterator &iter,
+    std::vector<uint8_t>::const_iterator end)
+{
+  uint64_t value = 0;
+  unsigned int shift = 4;
+
+  while (iter != end) {
+    uint8_t c = *iter;
+    uint64_t c_value = character_hex_value(c);
+    if (c_value > 15)
+      break;
+    iter++;
+    value |= c_value << shift;
+    if ((shift % 8) == 0)
+      shift += 12;
+    else
+      shift -= 4;
   }
   return value;
 }
@@ -471,6 +491,48 @@ void gdbserver_t::handle_register_read(const std::vector<uint8_t> &packet)
 
   send_running_checksum();
   expect_ack = true;
+}
+
+void gdbserver_t::handle_register_write(const std::vector<uint8_t> &packet)
+{
+  // P n...=r...
+
+  std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
+  unsigned int n = consume_hex_number(iter, packet.end());
+  if (*iter != '=')
+    return send_packet("E05");
+  iter++;
+
+  if (n >= sizeof(register_access) / sizeof(*register_access))
+    return send_packet("E07");
+
+  reg_t value = consume_hex_number_le(iter, packet.end());
+  if (*iter != '#')
+    return send_packet("E06");
+
+  processor_t *p = sim->get_core(0);
+
+  register_access_t access = register_access[n];
+  switch (access.clss) {
+    case RC_XPR:
+      p->state.XPR.write(access.index, value);
+      break;
+    case RC_PC:
+      p->state.pc = value;
+      break;
+    case RC_FPR:
+      p->state.FPR.write(access.index, value);
+      break;
+    case RC_CSR:
+      try {
+        p->set_csr(access.index, value);
+      } catch(trap_t& t) {
+        return send_packet("EFF");
+      }
+      break;
+  }
+
+  return send_packet("OK");
 }
 
 void gdbserver_t::handle_memory_read(const std::vector<uint8_t> &packet)
@@ -693,6 +755,8 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
       return handle_memory_binary_write(packet);
     case 'p':
       return handle_register_read(packet);
+    case 'P':
+      return handle_register_write(packet);
     case 'c':
       return handle_continue(packet);
     case 's':

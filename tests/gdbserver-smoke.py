@@ -6,13 +6,12 @@ import unittest
 import tempfile
 import time
 
-class SmokeTest(unittest.TestCase):
+class DebugTest(unittest.TestCase):
     def setUp(self):
-        self.tmpf = tempfile.NamedTemporaryFile()
-        testlib.compile("debug.c", self.tmpf.name)
-        self.spike = testlib.spike(self.tmpf.name, halted=False)
+        self.binary = testlib.compile("debug.c")
+        self.spike = testlib.spike(self.binary, halted=False)
         self.gdb = testlib.Gdb()
-        self.gdb.command("file %s" % self.tmpf.name)
+        self.gdb.command("file %s" % self.binary)
         self.gdb.command("target extended-remote localhost:9824")
         self.gdb.command("p i=0");
 
@@ -61,6 +60,38 @@ class SmokeTest(unittest.TestCase):
             self.assertNotEqual(time, last_time)
             last_time = time
             self.gdb.command("stepi")
+
+class RegsTest(unittest.TestCase):
+    def setUp(self):
+        self.binary = testlib.compile("regs.s")
+        self.spike = testlib.spike(self.binary, halted=False)
+        self.gdb = testlib.Gdb()
+        self.gdb.command("file %s" % self.binary)
+        self.gdb.command("target extended-remote localhost:9824")
+
+    def tearDown(self):
+        self.spike.kill()
+        self.spike.wait()
+
+    def test_write_gprs(self):
+        # Note a0 is missing from this list since it's used to hold the
+        # address.
+        regs = ("ra", "sp", "gp", "tp", "t0", "t1", "t2", "fp", "s1",
+                "a1", "a2", "a3", "a4", "a5", "a6", "a7", "s2", "s3", "s4",
+                "s5", "s6", "s7", "s8", "s9", "s10", "s11", "t3", "t4", "t5",
+                "t6")
+
+        self.gdb.command("p $pc=write_regs")
+        for i, r in enumerate(regs):
+            self.gdb.command("p $%s=%d" % (r, i*0xdeadbeef+17))
+        self.gdb.command("p $a0=data")
+        self.gdb.command("b all_done")
+        output = self.gdb.command("c")
+        self.assertIn("Breakpoint 1", output)
+
+        for n in range(len(regs)):
+            self.assertEqual(self.gdb.x("data+%d" % (8*n), 'g'),
+                    n*0xdeadbeef+17)
 
 if __name__ == '__main__':
     unittest.main()

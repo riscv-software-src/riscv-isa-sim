@@ -15,10 +15,15 @@ def find_file(path):
             return fullpath
     raise ValueError("Couldn't find %r." % path)
 
-def compile(src, dst):
+def compile(src):
     """Compile a single .c file into a binary."""
+    src = find_file(src)
+    dst = os.path.splitext(src)[0]
     cc = os.path.expandvars("$RISCV/bin/riscv64-unknown-elf-gcc")
-    return os.system("%s -g -o %s %s" % (cc, dst, find_file(src)))
+    cmd = "%s -g -o %s %s" % (cc, dst, src)
+    result = os.system(cmd)
+    assert result == 0, "%r failed" % cmd
+    return dst
 
 def spike(binary, halted=False):
     cmd = [find_file("spike")]
@@ -46,3 +51,8 @@ class Gdb(object):
         self.child.expect("\n")
         self.child.expect("\(gdb\)")
         return self.child.before.strip()
+
+    def x(self, address, size='w'):
+        output = self.command("x/%s %s" % (size, address))
+        value = int(output.split(':')[1].strip())
+        return value
