@@ -20,7 +20,7 @@ class DebugTest(unittest.TestCase):
         self.spike.wait()
 
     def test_turbostep(self):
-        """Single step until the program exits. TODO"""
+        """Single step a bunch of times."""
         last_pc = None
         for _ in range(100):
             self.gdb.command("stepi")

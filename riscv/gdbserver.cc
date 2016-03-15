@@ -91,7 +91,6 @@ gdbserver_t::gdbserver_t(uint16_t port, sim_t *sim) :
   client_fd(0),
   recv_buf(64 * 1024), send_buf(64 * 1024)
 {
-  // TODO: listen on socket
   socket_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (socket_fd == -1) {
     fprintf(stderr, "failed to make socket: %s (%d)\n", strerror(errno), errno);
@@ -403,8 +402,9 @@ void gdbserver_t::handle_register_read(const std::vector<uint8_t> &packet)
     try {
       send(p->get_csr(n - REG_CSR0));
     } catch(trap_t& t) {
-      // TODO, can we return error here, and update 'info reg all' to display
-      // it sensibly?
+      // It would be nicer to return an error here, but if you do that then gdb
+      // exits out of 'info registers all' as soon as it encounters a register
+      // that can't be read.
       send((reg_t) 0);
     }
   } else {
