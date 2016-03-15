@@ -56,3 +56,11 @@ class Gdb(object):
         output = self.command("x/%s %s" % (size, address))
         value = int(output.split(':')[1].strip())
         return value
+
+    def p(self, obj):
+        output = self.command("p %s" % obj)
+        value = int(output.split('=')[-1].strip())
+        return value
+
+    def stepi(self):
+        return self.command("stepi")

@@ -56,7 +56,7 @@ class DebugTest(unittest.TestCase):
         # The time register should always be changing.
         last_time = None
         for _ in range(5):
-            time = self.gdb.command("p $time").split('=')[-1]
+            time = self.gdb.p("$time")
             self.assertNotEqual(time, last_time)
             last_time = time
             self.gdb.command("stepi")
@@ -92,6 +92,15 @@ class RegsTest(unittest.TestCase):
         for n in range(len(regs)):
             self.assertEqual(self.gdb.x("data+%d" % (8*n), 'g'),
                     n*0xdeadbeef+17)
+
+    def test_write_csrs(self):
+        # As much a test of gdb as of the simulator.
+        self.gdb.p("$mscratch=0")
+        self.gdb.stepi()
+        self.assertEqual(self.gdb.p("$mscratch"), 0)
+        self.gdb.p("$mscratch=123")
+        self.gdb.stepi()
+        self.assertEqual(self.gdb.p("$mscratch"), 123)
 
 if __name__ == '__main__':
     unittest.main()

@@ -367,90 +367,17 @@ void consume_string(std::string &str, std::vector<uint8_t>::const_iterator &iter
   }
 }
 
-typedef enum {
-  RC_XPR,
-  RC_PC,
-  RC_FPR,
-  RC_CSR
-} register_class_t;
-
-typedef struct {
-  register_class_t clss;
-  int index;
-} register_access_t;
-    
 // gdb's register list is defined in riscv_gdb_reg_names gdb/riscv-tdep.c in
-// its source tree. The definition here must match that one.
-const register_access_t register_access[] = {
-  { RC_XPR, 0 },
-  { RC_XPR, 1 },
-  { RC_XPR, 2 },
-  { RC_XPR, 3 },
-  { RC_XPR, 4 },
-  { RC_XPR, 5 },
-  { RC_XPR, 6 },
-  { RC_XPR, 7 },
-  { RC_XPR, 8 },
-  { RC_XPR, 9 },
-  { RC_XPR, 10 },
-  { RC_XPR, 11 },
-  { RC_XPR, 12 },
-  { RC_XPR, 13 },
-  { RC_XPR, 14 },
-  { RC_XPR, 15 },
-  { RC_XPR, 16 },
-  { RC_XPR, 17 },
-  { RC_XPR, 18 },
-  { RC_XPR, 19 },
-  { RC_XPR, 20 },
-  { RC_XPR, 21 },
-  { RC_XPR, 22 },
-  { RC_XPR, 23 },
-  { RC_XPR, 24 },
-  { RC_XPR, 25 },
-  { RC_XPR, 26 },
-  { RC_XPR, 27 },
-  { RC_XPR, 28 },
-  { RC_XPR, 29 },
-  { RC_XPR, 30 },
-  { RC_XPR, 31 },
-  { RC_PC, 0 },
-  { RC_FPR, 0 },
-  { RC_FPR, 1 },
-  { RC_FPR, 2 },
-  { RC_FPR, 3 },
-  { RC_FPR, 4 },
-  { RC_FPR, 5 },
-  { RC_FPR, 6 },
-  { RC_FPR, 7 },
-  { RC_FPR, 8 },
-  { RC_FPR, 9 },
-  { RC_FPR, 10 },
-  { RC_FPR, 11 },
-  { RC_FPR, 12 },
-  { RC_FPR, 13 },
-  { RC_FPR, 14 },
-  { RC_FPR, 15 },
-  { RC_FPR, 16 },
-  { RC_FPR, 17 },
-  { RC_FPR, 18 },
-  { RC_FPR, 19 },
-  { RC_FPR, 20 },
-  { RC_FPR, 21 },
-  { RC_FPR, 22 },
-  { RC_FPR, 23 },
-  { RC_FPR, 24 },
-  { RC_FPR, 25 },
-  { RC_FPR, 26 },
-  { RC_FPR, 27 },
-  { RC_FPR, 28 },
-  { RC_FPR, 29 },
-  { RC_FPR, 30 },
-  { RC_FPR, 31 },
-
-#define DECLARE_CSR(name, num) { RC_CSR, num },
-#include "encoding.h"
-#undef DECLARE_CSR
+// its source tree. We must interpret the numbers the same here.
+enum {
+  REG_XPR0 = 0,
+  REG_XPR31 = 31,
+  REG_PC = 32,
+  REG_FPR0 = 33,
+  REG_FPR31 = 64,
+  REG_CSR0 = 65,
+  REG_CSR4095 = 4160,
+  REG_END = 4161
 };
 
 void gdbserver_t::handle_register_read(const std::vector<uint8_t> &packet)
@@ -462,31 +389,26 @@ void gdbserver_t::handle_register_read(const std::vector<uint8_t> &packet)
   if (*iter != '#')
     return send_packet("E01");
 
-  if (n >= sizeof(register_access) / sizeof(*register_access))
-    return send_packet("E02");
-
   processor_t *p = sim->get_core(0);
   send("$");
   running_checksum = 0;
 
-  register_access_t access = register_access[n];
-  switch (access.clss) {
-    case RC_XPR:
-      send(p->state.XPR[access.index]);
-      break;
-    case RC_PC:
-      send(p->state.pc);
-      break;
-    case RC_FPR:
-      send(p->state.FPR[access.index]);
-      break;
-    case RC_CSR:
-      try {
-        send(p->get_csr(access.index));
-      } catch(trap_t& t) {
-        send((reg_t) 0);
-      }
-      break;
+  if (n >= REG_XPR0 && n <= REG_XPR31) {
+    send(p->state.XPR[n - REG_XPR0]);
+  } else if (n == REG_PC) {
+    send(p->state.pc);
+  } else if (n >= REG_FPR0 && n <= REG_FPR31) {
+    send(p->state.FPR[n - REG_FPR0]);
+  } else if (n >= REG_CSR0 && n <= REG_CSR4095) {
+    try {
+      send(p->get_csr(n - REG_CSR0));
+    } catch(trap_t& t) {
+      // TODO, can we return error here, and update 'info reg all' to display
+      // it sensibly?
+      send((reg_t) 0);
+    }
+  } else {
+    return send_packet("E02");
   }
 
   send_running_checksum();
@@ -503,33 +425,26 @@ void gdbserver_t::handle_register_write(const std::vector<uint8_t> &packet)
     return send_packet("E05");
   iter++;
 
-  if (n >= sizeof(register_access) / sizeof(*register_access))
-    return send_packet("E07");
-
   reg_t value = consume_hex_number_le(iter, packet.end());
   if (*iter != '#')
     return send_packet("E06");
 
   processor_t *p = sim->get_core(0);
 
-  register_access_t access = register_access[n];
-  switch (access.clss) {
-    case RC_XPR:
-      p->state.XPR.write(access.index, value);
-      break;
-    case RC_PC:
-      p->state.pc = value;
-      break;
-    case RC_FPR:
-      p->state.FPR.write(access.index, value);
-      break;
-    case RC_CSR:
-      try {
-        p->set_csr(access.index, value);
-      } catch(trap_t& t) {
-        return send_packet("EFF");
-      }
-      break;
+  if (n >= REG_XPR0 && n <= REG_XPR31) {
+    p->state.XPR.write(n - REG_XPR0, value);
+  } else if (n == REG_PC) {
+    p->state.pc = value;
+  } else if (n >= REG_FPR0 && n <= REG_FPR31) {
+    p->state.FPR.write(n - REG_FPR0, value);
+  } else if (n >= REG_CSR0 && n <= REG_CSR4095) {
+    try {
+      p->set_csr(n - REG_CSR0, value);
+    } catch(trap_t& t) {
+      return send_packet("EFF");
+    }
+  } else {
+    return send_packet("E07");
   }
 
   return send_packet("OK");
