@@ -45,10 +45,12 @@ class DebugTest(unittest.TestCase):
         self.assertIn("Remote connection closed", output)
 
     def test_registers(self):
-        output = self.gdb.command("info all-registers")
-        self.assertNotIn("Could not", output)
-        for reg in ('zero', 'ra', 'sp', 'gp', 'tp'):
-            self.assertIn(reg, output)
+        # Try both forms to test gdb.
+        for cmd in ("info all-registers", "info registers all"):
+            output = self.gdb.command(cmd)
+            self.assertNotIn("Could not", output)
+            for reg in ('zero', 'ra', 'sp', 'gp', 'tp'):
+                self.assertIn(reg, output)
         # mcpuid is one of the few registers that should have the high bit set
         # (for rv64).
         self.assertRegexpMatches(output, ".*mcpuid *0x80")
