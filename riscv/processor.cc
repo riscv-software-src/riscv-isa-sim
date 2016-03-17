@@ -67,7 +67,7 @@ void processor_t::parse_isa_string(const char* str)
   isa = reg_t(2) << 62;
 
   if (strncmp(p, "rv32", 4) == 0)
-    max_xlen = 32, isa = 0, p += 4;
+    max_xlen = 32, isa = reg_t(1) << 30, p += 4;
   else if (strncmp(p, "rv64", 4) == 0)
     p += 4;
   else if (strncmp(p, "rv", 2) == 0)
@@ -104,11 +104,6 @@ void processor_t::parse_isa_string(const char* str)
 
   if (supports_extension('D') && !supports_extension('F'))
     bad_isa_string(str);
-
-  // if we have IMAFD, advertise G, too
-  if (supports_extension('I') && supports_extension('M') &&
-      supports_extension('A') && supports_extension('D'))
-    isa |= 1L << ('g' - 'a');
 
   // advertise support for supervisor and user modes
   isa |= 1L << ('s' - 'a');
