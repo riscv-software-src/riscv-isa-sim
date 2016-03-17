@@ -3,7 +3,6 @@ main:
         j       main
 
 write_regs:
-        la      a0, data
         sd      x1, 0(a0)
         sd      x2, 8(a0)
         sd      x3, 16(a0)
@@ -34,6 +33,8 @@ write_regs:
         sd      x29, 216(a0)
         sd      x30, 224(a0)
         sd      x31, 232(a0)
+
+        csrr    x1, 1   # fflags
 
 all_done:
         j       all_done
