@@ -9,10 +9,10 @@ import time
 class DebugTest(unittest.TestCase):
     def setUp(self):
         self.binary = testlib.compile("debug.c")
-        self.spike = testlib.spike(self.binary, halted=False)
+        self.spike, self.port = testlib.spike(self.binary, halted=False)
         self.gdb = testlib.Gdb()
         self.gdb.command("file %s" % self.binary)
-        self.gdb.command("target extended-remote localhost:9824")
+        self.gdb.command("target extended-remote localhost:%d" % self.port)
         self.gdb.command("p i=0");
 
     def tearDown(self):
@@ -68,10 +68,10 @@ class DebugTest(unittest.TestCase):
 class RegsTest(unittest.TestCase):
     def setUp(self):
         self.binary = testlib.compile("regs.s")
-        self.spike = testlib.spike(self.binary, halted=False)
+        self.spike, self.port = testlib.spike(self.binary, halted=False)
         self.gdb = testlib.Gdb()
         self.gdb.command("file %s" % self.binary)
-        self.gdb.command("target extended-remote localhost:9824")
+        self.gdb.command("target extended-remote localhost:%d" % self.port)
 
     def tearDown(self):
         self.spike.kill()

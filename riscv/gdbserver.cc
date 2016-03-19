@@ -700,30 +700,30 @@ void gdbserver_t::handle_interrupt()
 
 void gdbserver_t::handle()
 {
-  processor_t *p = sim->get_core(0);
-  if (running && p->halted) {
-    // The core was running, but now it's halted. Better tell gdb.
-    switch (p->halt_reason) {
-      case HR_NONE:
-        fprintf(stderr, "Internal error. Processor halted without reason.\n");
-        abort();
-      case HR_STEPPED:
-      case HR_INTERRUPT:
-      case HR_CMDLINE:
-      case HR_ATTACHED:
-        // There's no gdb code for this.
-        send_packet("T05");
-        break;
-      case HR_SWBP:
-        send_packet("T05swbreak:;");
-        break;
-    }
-    send_packet("T00");
-    // TODO: Actually include register values here
-    running = false;
-  }
-
   if (client_fd > 0) {
+    processor_t *p = sim->get_core(0);
+    if (running && p->halted) {
+      // The core was running, but now it's halted. Better tell gdb.
+      switch (p->halt_reason) {
+        case HR_NONE:
+          fprintf(stderr, "Internal error. Processor halted without reason.\n");
+          abort();
+        case HR_STEPPED:
+        case HR_INTERRUPT:
+        case HR_CMDLINE:
+        case HR_ATTACHED:
+          // There's no gdb code for this.
+          send_packet("T05");
+          break;
+        case HR_SWBP:
+          send_packet("T05swbreak:;");
+          break;
+      }
+      send_packet("T00");
+      // TODO: Actually include register values here
+      running = false;
+    }
+
     this->read();
     this->write();
 

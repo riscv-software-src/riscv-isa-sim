@@ -25,13 +25,25 @@ def compile(src):
     assert result == 0, "%r failed" % cmd
     return dst
 
+def unused_port():
+    # http://stackoverflow.com/questions/2838244/get-open-tcp-port-in-python/2838309#2838309
+    import socket
+    s = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
+    s.bind(("",0))
+    port = s.getsockname()[1]
+    s.close()
+    return port
+
 def spike(binary, halted=False):
+    """Launch spike. Return tuple of its process and the port it's running on."""
     cmd = [find_file("spike")]
     if halted:
         cmd.append('-H')
-    cmd += ['pk', binary]
+    port = unused_port()
+    cmd += ['--gdb-port', str(port), 'pk', binary]
     logfile = open("spike.log", "w")
-    return subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=logfile, stderr=logfile)
+    return subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=logfile,
+            stderr=logfile), port
 
 class Gdb(object):
     def __init__(self):

@@ -13,7 +13,7 @@ public:
   circular_buffer_t(unsigned int capacity) : data(new T[capacity]),
       start(0), end(0), capacity(capacity) {}
   circular_buffer_t() : start(0), end(0), capacity(0) {}
-  ~circular_buffer_t() { delete data; }
+  ~circular_buffer_t() { delete[] data; }
 
   T *data;
   unsigned int start;   // Data start, inclusive.
