@@ -67,15 +67,15 @@ To invoke interactive debug mode, launch spike with -d:
 To see the contents of an integer register (0 is for core 0):
 
     : reg 0 a0
-    
+
 To see the contents of a floating point register:
 
     : fregs 0 ft0
-    
+
 or:
-  
+
     : fregd 0 ft0
-    
+
 depending upon whether you wish to print the register as single- or double-precision.
 
 To see the contents of a memory location (physical address in hex):
@@ -106,3 +106,74 @@ interactive debug mode with `<control>-<c>`.
 To end the simulation from the debug prompt, press `<control>-<c>` or:
 
     : q
+
+Debugging With Gdb
+------------------
+
+An alternative to interactive debug mode is to attach using gdb. When invoked
+with '--gdb-port <port>' spike will listen on the given TCP port.  It's
+possible to attach with gdb (that has riscv support compiled in) by entering
+`target remote localhost:<port>` in gdb. For example, in one shell run:
+```
+spike --gdb-port 9824 pk tests/debug
+```
+
+Then in a second shell you may do something like:
+```
+tnewsome@compy-vm:~/SiFive/riscv-isa-sim$ $RISCV/bin/riscv64-unknown-elf-gdb tests/debug
+GNU gdb (GDB) 7.11.50.20160212-git
+Copyright (C) 2016 Free Software Foundation, Inc.
+License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
+This is free software: you are free to change and redistribute it.
+There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
+and "show warranty" for details.
+This GDB was configured as "--host=x86_64-pc-linux-gnu --target=riscv64-unknown-elf".
+Type "show configuration" for configuration details.
+For bug reporting instructions, please see:
+<http://www.gnu.org/software/gdb/bugs/>.
+Find the GDB manual and other documentation resources online at:
+<http://www.gnu.org/software/gdb/documentation/>.
+For help, type "help".
+Type "apropos word" to search for commands related to "word"...
+Reading symbols from tests/debug...done.
+(gdb) target remote localhost:9824
+Remote debugging using localhost:9824
+0x00000000000101f0 in main ()
+    at /home/tnewsome/SiFive/riscv-isa-sim/tests/debug.c:20
+20          while (i)
+(gdb) p i
+$1 = 42
+(gdb) list
+15          volatile int i = 42;
+16          const char *text = "constant\n";
+17          int threshold = 7;
+18
+19          // Wait for the debugger to get us out of this loop.
+20          while (i)
+21              ;
+22
+23          printf("%s", text);
+24          for (int y=0; y < 10; y++) {
+(gdb) p i=0
+$2 = 0
+(gdb) b print_row
+Breakpoint 1 at 0x10178: file /home/tnewsome/SiFive/riscv-isa-sim/tests/debug.c, line 7.
+(gdb) c
+Continuing.
+
+Breakpoint 1, print_row (length=0)
+    at /home/tnewsome/SiFive/riscv-isa-sim/tests/debug.c:7
+7           for (int x=0; x<length; x++) {
+(gdb) c
+Continuing.
+
+Breakpoint 1, print_row (length=1)
+    at /home/tnewsome/SiFive/riscv-isa-sim/tests/debug.c:7
+7           for (int x=0; x<length; x++) {
+(gdb) delete breakpoints
+Delete all breakpoints? (y or n) y
+(gdb) c
+Continuing.
+Remote connection closed
+(gdb)
+```
