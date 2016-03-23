@@ -34,16 +34,26 @@ def unused_port():
     s.close()
     return port
 
-def spike(binary, halted=False):
+def spike(binary, halted=False, with_gdb=True, timeout=None):
     """Launch spike. Return tuple of its process and the port it's running on."""
-    cmd = [find_file("spike")]
+    cmd = []
+    if timeout:
+        cmd += ["timeout", str(timeout)]
+
+    cmd += [find_file("spike")]
     if halted:
         cmd.append('-H')
-    port = unused_port()
-    cmd += ['--gdb-port', str(port), 'pk', binary]
+    if with_gdb:
+        port = unused_port()
+        cmd += ['--gdb-port', str(port)]
+    cmd += ['pk', binary]
     logfile = open("spike.log", "w")
-    return subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=logfile,
-            stderr=logfile), port
+    process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=logfile,
+            stderr=logfile)
+    if with_gdb:
+        return process, port
+    else:
+        return process
 
 class Gdb(object):
     def __init__(self):
