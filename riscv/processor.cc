@@ -209,8 +209,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     fprintf(stderr, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
             id, t.name(), epc);
 
-  if (t.cause() == CAUSE_BREAKPOINT) {
-    // TODO: Only do this if there is a debugger attached.
+  if (t.cause() == CAUSE_BREAKPOINT &&
+          sim->gdbserver && sim->gdbserver->connected()) {
     set_halted(true, HR_SWBP);
     return;
   }

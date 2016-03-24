@@ -80,6 +80,8 @@ public:
   void handle_register_write(const std::vector<uint8_t> &packet);
   void handle_step(const std::vector<uint8_t> &packet);
 
+  bool connected() const { return client_fd > 0; }
+
 private:
   sim_t *sim;
   int socket_fd;

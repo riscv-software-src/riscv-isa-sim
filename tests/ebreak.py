@@ -10,10 +10,15 @@ class EbreakTest(unittest.TestCase):
     def setUp(self):
         self.binary = testlib.compile("ebreak.s")
 
-    def test_ebreak(self):
-        """Make sure that we can run past ebreak without halting when a
-        debugger isn't attached."""
+    def test_noport(self):
+        """Make sure that we can run past ebreak when --gdb-port isn't used."""
         spike = testlib.spike(self.binary, with_gdb=False, timeout=10)
+        result = spike.wait()
+        self.assertEqual(result, 0)
+
+    def test_nogdb(self):
+        """Make sure that we can run past ebreak when gdb isn't attached."""
+        spike, port = testlib.spike(self.binary, timeout=10)
         result = spike.wait()
         self.assertEqual(result, 0)
 
