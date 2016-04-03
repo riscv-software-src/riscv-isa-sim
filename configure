@@ -699,6 +699,7 @@ ac_user_opts='
 enable_option_checking
 enable_stow
 enable_optional_subprojects
+with_isa
 with_fesvr
 enable_commitlog
 enable_histogram
@@ -1339,6 +1340,7 @@ Optional Features:
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
+  --with-isa=RV64IMAFDC   Sets the default RISC-V ISA
   --with-fesvr            path to your fesvr installation if not in a standard
                           location
 
@@ -4392,6 +4394,23 @@ ac_cpp='$CXXCPP $CPPFLAGS'
 ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
+
+
+
+# Check whether --with-isa was given.
+if test "${with_isa+set}" = set; then :
+  withval=$with_isa;
+cat >>confdefs.h <<_ACEOF
+#define DEFAULT_ISA "$withval"
+_ACEOF
+
+else
+
+cat >>confdefs.h <<_ACEOF
+#define DEFAULT_ISA "RV64IMAFDC"
+_ACEOF
+
+fi
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dlopen" >&5

@@ -23,7 +23,7 @@ static void help()
   fprintf(stderr, "  -g                 Track histogram of PCs\n");
   fprintf(stderr, "  -l                 Generate a log of execution\n");
   fprintf(stderr, "  -h                 Print this help message\n");
-  fprintf(stderr, "  --isa=<name>       RISC-V ISA string [default RV64IMAFDC]\n");
+  fprintf(stderr, "  --isa=<name>       RISC-V ISA string [default %s]\n", DEFAULT_ISA);
   fprintf(stderr, "  --ic=<S>:<W>:<B>   Instantiate a cache model with S sets,\n");
   fprintf(stderr, "  --dc=<S>:<W>:<B>     W ways, and B-byte blocks (with S and\n");
   fprintf(stderr, "  --l2=<S>:<W>:<B>     B both powers of 2).\n");
@@ -43,7 +43,7 @@ int main(int argc, char** argv)
   std::unique_ptr<dcache_sim_t> dc;
   std::unique_ptr<cache_sim_t> l2;
   std::function<extension_t*()> extension;
-  const char* isa = "RV64";
+  const char* isa = DEFAULT_ISA;
 
   option_parser_t parser;
   parser.help(&help);
