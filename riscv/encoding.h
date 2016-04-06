@@ -132,22 +132,28 @@
   asm volatile ("csrr %0, " #reg : "=r"(__tmp)); \
   __tmp; })
 
-#define write_csr(reg, val) \
-  asm volatile ("csrw " #reg ", %0" :: "r"(val))
+#define write_csr(reg, val) ({ \
+  if (__builtin_constant_p(val) && (unsigned long)(val) < 32) \
+    asm volatile ("csrw " #reg ", %0" :: "i"(val)); \
+  else \
+    asm volatile ("csrw " #reg ", %0" :: "r"(val)); })
 
-#define swap_csr(reg, val) ({ long __tmp; \
-  asm volatile ("csrrw %0, " #reg ", %1" : "=r"(__tmp) : "r"(val)); \
+#define swap_csr(reg, val) ({ unsigned long __tmp; \
+  if (__builtin_constant_p(val) && (unsigned long)(val) < 32) \
+    asm volatile ("csrrw %0, " #reg ", %1" : "=r"(__tmp) : "i"(val)); \
+  else \
+    asm volatile ("csrrw %0, " #reg ", %1" : "=r"(__tmp) : "r"(val)); \
   __tmp; })
 
 #define set_csr(reg, bit) ({ unsigned long __tmp; \
-  if (__builtin_constant_p(bit) && (bit) < 32) \
+  if (__builtin_constant_p(bit) && (unsigned long)(bit) < 32) \
     asm volatile ("csrrs %0, " #reg ", %1" : "=r"(__tmp) : "i"(bit)); \
   else \
     asm volatile ("csrrs %0, " #reg ", %1" : "=r"(__tmp) : "r"(bit)); \
   __tmp; })
 
 #define clear_csr(reg, bit) ({ unsigned long __tmp; \
-  if (__builtin_constant_p(bit) && (bit) < 32) \
+  if (__builtin_constant_p(bit) && (unsigned long)(bit) < 32) \
     asm volatile ("csrrc %0, " #reg ", %1" : "=r"(__tmp) : "i"(bit)); \
   else \
     asm volatile ("csrrc %0, " #reg ", %1" : "=r"(__tmp) : "r"(bit)); \
@@ -623,23 +629,6 @@
 #define CSR_CYCLE 0xc00
 #define CSR_TIME 0xc01
 #define CSR_INSTRET 0xc02
-#define CSR_STATS 0xc0
-#define CSR_UARCH0 0xcc0
-#define CSR_UARCH1 0xcc1
-#define CSR_UARCH2 0xcc2
-#define CSR_UARCH3 0xcc3
-#define CSR_UARCH4 0xcc4
-#define CSR_UARCH5 0xcc5
-#define CSR_UARCH6 0xcc6
-#define CSR_UARCH7 0xcc7
-#define CSR_UARCH8 0xcc8
-#define CSR_UARCH9 0xcc9
-#define CSR_UARCH10 0xcca
-#define CSR_UARCH11 0xccb
-#define CSR_UARCH12 0xccc
-#define CSR_UARCH13 0xccd
-#define CSR_UARCH14 0xcce
-#define CSR_UARCH15 0xccf
 #define CSR_SSTATUS 0x100
 #define CSR_SIE 0x104
 #define CSR_STVEC 0x105
@@ -945,23 +934,6 @@ DECLARE_CSR(fcsr, CSR_FCSR)
 DECLARE_CSR(cycle, CSR_CYCLE)
 DECLARE_CSR(time, CSR_TIME)
 DECLARE_CSR(instret, CSR_INSTRET)
-DECLARE_CSR(stats, CSR_STATS)
-DECLARE_CSR(uarch0, CSR_UARCH0)
-DECLARE_CSR(uarch1, CSR_UARCH1)
-DECLARE_CSR(uarch2, CSR_UARCH2)
-DECLARE_CSR(uarch3, CSR_UARCH3)
-DECLARE_CSR(uarch4, CSR_UARCH4)
-DECLARE_CSR(uarch5, CSR_UARCH5)
-DECLARE_CSR(uarch6, CSR_UARCH6)
-DECLARE_CSR(uarch7, CSR_UARCH7)
-DECLARE_CSR(uarch8, CSR_UARCH8)
-DECLARE_CSR(uarch9, CSR_UARCH9)
-DECLARE_CSR(uarch10, CSR_UARCH10)
-DECLARE_CSR(uarch11, CSR_UARCH11)
-DECLARE_CSR(uarch12, CSR_UARCH12)
-DECLARE_CSR(uarch13, CSR_UARCH13)
-DECLARE_CSR(uarch14, CSR_UARCH14)
-DECLARE_CSR(uarch15, CSR_UARCH15)
 DECLARE_CSR(sstatus, CSR_SSTATUS)
 DECLARE_CSR(sie, CSR_SIE)
 DECLARE_CSR(stvec, CSR_STVEC)

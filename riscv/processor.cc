@@ -466,23 +466,6 @@ reg_t processor_t::get_csr(int which)
       sim->get_htif()->tick(); // not necessary, but faster
       return state.fromhost;
     case CSR_MCFGADDR: return sim->memsz;
-    case CSR_UARCH0:
-    case CSR_UARCH1:
-    case CSR_UARCH2:
-    case CSR_UARCH3:
-    case CSR_UARCH4:
-    case CSR_UARCH5:
-    case CSR_UARCH6:
-    case CSR_UARCH7:
-    case CSR_UARCH8:
-    case CSR_UARCH9:
-    case CSR_UARCH10:
-    case CSR_UARCH11:
-    case CSR_UARCH12:
-    case CSR_UARCH13:
-    case CSR_UARCH14:
-    case CSR_UARCH15:
-      return 0;
   }
   throw trap_illegal_instruction();
 }
