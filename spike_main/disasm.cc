@@ -410,8 +410,12 @@ disassembler_t::disassembler_t()
   DEFINE_RTYPE(remw);
   DEFINE_RTYPE(remuw);
 
-  DEFINE_NOARG(scall);
-  DEFINE_NOARG(sbreak);
+  DEFINE_NOARG(ecall);
+  DEFINE_NOARG(ebreak);
+  DEFINE_NOARG(uret);
+  DEFINE_NOARG(sret);
+  DEFINE_NOARG(hret);
+  DEFINE_NOARG(mret);
   DEFINE_NOARG(fence);
   DEFINE_NOARG(fence_i);
 
@@ -428,7 +432,6 @@ disassembler_t::disassembler_t()
   add_insn(new disasm_insn_t("csrrwi", match_csrrwi, mask_csrrwi, {&xrd, &csr, &zimm5}));
   add_insn(new disasm_insn_t("csrrsi", match_csrrsi, mask_csrrsi, {&xrd, &csr, &zimm5}));
   add_insn(new disasm_insn_t("csrrci", match_csrrci, mask_csrrci, {&xrd, &csr, &zimm5}));
-  DEFINE_NOARG(sret)
 
   DEFINE_FRTYPE(fadd_s);
   DEFINE_FRTYPE(fsub_s);

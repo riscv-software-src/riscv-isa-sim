@@ -126,6 +126,8 @@ riscv_insn_list = \
 	divu \
 	divuw \
 	divw \
+	ebreak \
+	ecall \
 	fadd_d \
 	fadd_s \
 	fclass_d \
@@ -202,6 +204,7 @@ riscv_insn_list = \
 	lui \
 	lw \
 	lwu \
+	mret \
 	mul \
 	mulh \
 	mulhsu \
@@ -214,8 +217,6 @@ riscv_insn_list = \
 	remuw \
 	remw \
 	sb \
-	sbreak \
-	scall \
 	sc_d \
 	sc_w \
 	sd \
