@@ -31,6 +31,19 @@ struct commit_log_reg_t
   reg_t data;
 };
 
+typedef struct
+{
+  uint8_t prv;
+  bool step;
+  bool debugint;
+  bool ebreakm;
+  bool ebreakh;
+  bool ebreaks;
+  bool ebreaku;
+  bool halt;
+  uint8_t cause;
+} dcsr_t;
+
 // architectural state of a RISC-V hart
 struct state_t
 {
@@ -61,6 +74,10 @@ struct state_t
   reg_t stvec;
   reg_t sptbr;
   reg_t scause;
+  reg_t dpc;
+  reg_t dscratch;
+  dcsr_t dcsr;
+
   uint32_t fflags;
   uint32_t frm;
   bool serialized; // whether timer CSRs are in a well-defined state

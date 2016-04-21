@@ -225,4 +225,9 @@ private:
     throw trap_illegal_instruction(); \
   (which); })
 
+/* Debug CSRs. These should probably be in encoding.h, but that file is
+ * automatically generated. */
+/* TODO */
+#include "/media/sf_tnewsome/Synced/SiFive/debug-spec/core_registers.tex.h"
+
 #endif

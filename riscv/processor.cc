@@ -363,6 +363,22 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
+    case DCSR_ADDRESS:
+      state.dcsr.prv = (val & DCSR_PRV_MASK) >> DCSR_PRV_OFFSET;
+      state.dcsr.step = (val & DCSR_STEP_MASK) >> DCSR_STEP_OFFSET;
+      // TODO: ndreset and fullreset
+      state.dcsr.ebreakm = (val & DCSR_EBREAKM_MASK) >> DCSR_EBREAKM_OFFSET;
+      state.dcsr.ebreakh = (val & DCSR_EBREAKH_MASK) >> DCSR_EBREAKH_OFFSET;
+      state.dcsr.ebreaks = (val & DCSR_EBREAKS_MASK) >> DCSR_EBREAKS_OFFSET;
+      state.dcsr.ebreaku = (val & DCSR_EBREAKU_MASK) >> DCSR_EBREAKU_OFFSET;
+      state.dcsr.halt = (val & DCSR_HALT_MASK) >> DCSR_HALT_OFFSET;
+      break;
+    case DPC_ADDRESS:
+      state.dpc = val;
+      break;
+    case DSCRATCH_ADDRESS:
+      state.dscratch = val;
+      break;
   }
 }
 
@@ -451,6 +467,27 @@ reg_t processor_t::get_csr(int which)
     case CSR_MTVEC: return state.mtvec;
     case CSR_MEDELEG: return state.medeleg;
     case CSR_MIDELEG: return state.mideleg;
+    case DCSR_ADDRESS:
+      return
+          (1 << DCSR_XDEBUGVER_OFFSET) |
+          (0 << DCSR_HWBPCOUNT_OFFSET) |
+          (0 << DCSR_NDRESET_OFFSET) |
+          (0 << DCSR_FULLRESET_OFFSET) |
+          (state.dcsr.prv << DCSR_PRV_OFFSET) |
+          (state.dcsr.step << DCSR_STEP_OFFSET) |
+          (state.dcsr.debugint << DCSR_DEBUGINT_OFFSET) |
+          (0 << DCSR_STOPCYCLE_OFFSET) |
+          (0 << DCSR_STOPTIME_OFFSET) |
+          (state.dcsr.ebreakm << DCSR_EBREAKM_OFFSET) |
+          (state.dcsr.ebreakh << DCSR_EBREAKH_OFFSET) |
+          (state.dcsr.ebreaks << DCSR_EBREAKS_OFFSET) |
+          (state.dcsr.ebreaku << DCSR_EBREAKU_OFFSET) |
+          (state.dcsr.halt << DCSR_HALT_OFFSET) |
+          (state.dcsr.cause << DCSR_CAUSE_OFFSET);
+    case DPC_ADDRESS:
+      return state.dpc;
+    case DSCRATCH_ADDRESS:
+      return state.dscratch;
   }
   throw trap_illegal_instruction();
 }
