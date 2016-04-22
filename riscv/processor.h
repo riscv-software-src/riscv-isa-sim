@@ -107,8 +107,6 @@ public:
   ~processor_t();
 
   void set_debug(bool value);
-  void set_halted(bool value, halt_reason_t reason);
-  void set_single_step(bool value);
   void set_histogram(bool value);
   void reset(bool value);
   void step(size_t n); // run for n cycles
@@ -148,12 +146,6 @@ private:
   bool run; // !reset
   // When true, display disassembly of each instruction that's executed.
   bool debug;
-  // TODO: Should this just be rolled into `run`?
-  bool halted;  // When true, no instructions are executed.
-  halt_reason_t halt_reason;        // Why is halted true?
-  // When true, execute exactly one instruction (even if halted is true), then
-  // set halted to true and single_step to false.
-  bool single_step;
   bool histogram_enabled;
 
   std::vector<insn_desc_t> instructions;
@@ -166,6 +158,8 @@ private:
   void take_interrupt(); // take a trap if any interrupts are pending
   void take_trap(trap_t& t, reg_t epc); // take an exception
   void disasm(insn_t insn); // disassemble and print an instruction
+
+  void enter_debug_mode(uint8_t cause);
 
   friend class sim_t;
   friend class mmu_t;

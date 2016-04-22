@@ -141,7 +141,7 @@ void gdbserver_t::accept()
 
     // gdb wants the core to be halted when it attaches.
     processor_t *p = sim->get_core(0);
-    p->set_halted(true, HR_ATTACHED);
+    // TODO p->set_halted(true, HR_ATTACHED);
   }
 }
 
@@ -164,7 +164,7 @@ void gdbserver_t::read()
     // The remote disconnected.
     client_fd = 0;
     processor_t *p = sim->get_core(0);
-    p->set_halted(false, HR_NONE);
+    // TODO p->set_halted(false, HR_NONE);
     recv_buf.reset();
     send_buf.reset();
   } else {
@@ -514,7 +514,7 @@ void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
       return send_packet("E30");
   }
 
-  p->set_halted(false, HR_NONE);
+  // TODO p->set_halted(false, HR_NONE);
   running = true;
 }
 
@@ -529,7 +529,7 @@ void gdbserver_t::handle_step(const std::vector<uint8_t> &packet)
       return send_packet("E40");
   }
 
-  p->set_single_step(true);
+  // TODO: p->set_single_step(true);
   running = true;
 }
 
@@ -693,7 +693,7 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
 void gdbserver_t::handle_interrupt()
 {
   processor_t *p = sim->get_core(0);
-  p->set_halted(true, HR_INTERRUPT);
+  // TODO p->set_halted(true, HR_INTERRUPT);
   send_packet("S02");   // Pretend program received SIGINT.
   running = false;
 }
@@ -702,6 +702,7 @@ void gdbserver_t::handle()
 {
   if (client_fd > 0) {
     processor_t *p = sim->get_core(0);
+    /* TODO
     if (running && p->halted) {
       // The core was running, but now it's halted. Better tell gdb.
       switch (p->halt_reason) {
@@ -723,6 +724,7 @@ void gdbserver_t::handle()
       // TODO: Actually include register values here
       running = false;
     }
+      */
 
     this->read();
     this->write();

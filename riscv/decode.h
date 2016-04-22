@@ -229,5 +229,9 @@ private:
  * automatically generated. */
 /* TODO */
 #include "/media/sf_tnewsome/Synced/SiFive/debug-spec/core_registers.tex.h"
+#define DCSR_CAUSE_SWBP         1
+#define DCSR_CAUSE_HALT         5
+
+#define DEBUG_ROM_ENTRY         0x800
 
 #endif

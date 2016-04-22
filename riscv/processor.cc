@@ -22,7 +22,7 @@
 
 processor_t::processor_t(const char* isa, sim_t* sim, uint32_t id)
   : sim(sim), ext(NULL), disassembler(new disassembler_t),
-    id(id), run(false), debug(false), halted(false), single_step(false)
+    id(id), run(false), debug(false)
 {
   parse_isa_string(isa);
 
@@ -126,17 +126,6 @@ void processor_t::set_debug(bool value)
     ext->set_debug(value);
 }
 
-void processor_t::set_halted(bool value, halt_reason_t reason)
-{
-  halted = value;
-  halt_reason = reason;
-}
-
-void processor_t::set_single_step(bool value)
-{
-  single_step = value;
-}
-
 void processor_t::set_histogram(bool value)
 {
   histogram_enabled = value;
@@ -203,6 +192,13 @@ void processor_t::set_privilege(reg_t prv)
   state.prv = prv;
 }
 
+void processor_t::enter_debug_mode(uint8_t cause)
+{
+  state.dcsr.cause = cause;
+  state.dpc = state.pc;
+  state.pc = DEBUG_ROM_ENTRY;
+}
+
 void processor_t::take_trap(trap_t& t, reg_t epc)
 {
   if (debug)
@@ -211,7 +207,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
 
   if (t.cause() == CAUSE_BREAKPOINT &&
           sim->gdbserver && sim->gdbserver->connected()) {
-    set_halted(true, HR_SWBP);
+    enter_debug_mode(DCSR_CAUSE_SWBP);
     return;
   }
 
