@@ -90,15 +90,6 @@ struct state_t
 #endif
 };
 
-typedef enum {
-      HR_NONE,
-      HR_STEPPED,       // A single step was completed
-      HR_SWBP,          // sbreak was executed
-      HR_INTERRUPT,     // Execution interrupted by debugger
-      HR_CMDLINE,       // Command line requested that the processor start halted
-      HR_ATTACHED       // Halted because a debugger attached
-} halt_reason_t;
-
 // this class represents one processor in a RISC-V machine.
 class processor_t : public abstract_device_t
 {
@@ -106,6 +97,7 @@ public:
   processor_t(const char* isa, sim_t* sim, uint32_t id);
   ~processor_t();
 
+  void set_debug_int();
   void set_debug(bool value);
   void set_histogram(bool value);
   void reset(bool value);

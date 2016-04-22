@@ -141,7 +141,7 @@ void gdbserver_t::accept()
 
     // gdb wants the core to be halted when it attaches.
     processor_t *p = sim->get_core(0);
-    // TODO p->set_halted(true, HR_ATTACHED);
+    p->set_debug_int();
   }
 }
 

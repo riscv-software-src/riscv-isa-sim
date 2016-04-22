@@ -53,6 +53,10 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 // fetch/decode/execute loop
 void processor_t::step(size_t n)
 {
+  if (state.dcsr.debugint && state.dcsr.cause == DCSR_CAUSE_NONE) {
+    enter_debug_mode(DCSR_CAUSE_DEBUGINT);
+  }
+
   while (n > 0) {
     size_t instret = 0;
     reg_t pc = state.pc;

@@ -119,6 +119,11 @@ void state_t::reset()
   load_reservation = -1;
 }
 
+void processor_t::set_debug_int()
+{
+  state.dcsr.debugint = true;
+}
+
 void processor_t::set_debug(bool value)
 {
   debug = value;

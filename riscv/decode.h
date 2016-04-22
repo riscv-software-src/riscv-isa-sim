@@ -229,9 +229,14 @@ private:
  * automatically generated. */
 /* TODO */
 #include "/media/sf_tnewsome/Synced/SiFive/debug-spec/core_registers.tex.h"
+#define DCSR_CAUSE_NONE         0
 #define DCSR_CAUSE_SWBP         1
+#define DCSR_CAUSE_HWBP         2
+#define DCSR_CAUSE_DEBUGINT     3
+#define DCSR_CAUSE_STEPPED      4
 #define DCSR_CAUSE_HALT         5
 
-#define DEBUG_ROM_ENTRY         0x800
+#define DEBUG_RAM               0xfffffc00       // TODO: 0x400
+#define DEBUG_ROM_ENTRY         0xfffff800       // TODO: 0x800
 
 #endif
