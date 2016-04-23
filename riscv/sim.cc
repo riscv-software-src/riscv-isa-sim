@@ -42,10 +42,11 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
             (unsigned long)memsz, (unsigned long)memsz0);
 
   /* Copy Debug ROM into the end of the allocated block, because we surely
-   * didn't succeed in allocation 0xfffffffff800 bytes. */
+   * didn't succeed in allocating 0xfffffffff800 bytes. */
   /* TODO: Once everything uses the new memory map, just put this at the
    * address that it actually belongs at. */
-  memcpy(mem + memsz - debug_rom_raw_len, debug_rom_raw, debug_rom_raw_len);
+  memcpy(mem + memsz - DEBUG_SIZE + DEBUG_ROM_START - DEBUG_START,
+          debug_rom_raw, debug_rom_raw_len);
 
   debug_mmu = new mmu_t(this, NULL);
 
