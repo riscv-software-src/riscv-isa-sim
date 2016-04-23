@@ -89,6 +89,11 @@ private:
   reg_t get_mem(const std::vector<std::string>& args);
   reg_t get_pc(const std::vector<std::string>& args);
 
+  // Return a pointer to Debug RAM in spike address space.
+  char *debug_ram() const {
+      return mem + memsz - DEBUG_SIZE + DEBUG_RAM_START - DEBUG_START;
+  }
+
   friend class htif_isasim_t;
   friend class processor_t;
   friend class mmu_t;

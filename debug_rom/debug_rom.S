@@ -36,7 +36,7 @@ clear_debint:
 clear_debint_loop:
         csrr    s1, DCSR
         andi    s1, s1, (1<<DCSR_DEBUGINT_OFFSET)
-        bnez    s1, wait_for_interrupt
+        bnez    s1, clear_debint_loop
 
         # Restore s1.
         csrr    s1, MCPUID

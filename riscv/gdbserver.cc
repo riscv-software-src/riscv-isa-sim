@@ -20,6 +20,25 @@
 #define C_EBREAK        0x9002
 #define EBREAK          0x00100073
 
+// Functions to generate RISC-V opcodes.
+// TODO: Does this already exist somewhere?
+
+static uint32_t bits(uint32_t value, unsigned int hi, unsigned int lo) {
+  return (value >> lo) & ((1 << (hi+1-lo)) - 1);
+}
+static uint32_t bit(uint32_t value, unsigned int b) {
+  return (value >> b) & 1;
+}
+
+static uint32_t jal(unsigned int rd, uint32_t imm) {
+  return (bit(imm, 20) << 31) |
+    (bits(imm, 10, 1) << 21) |
+    (bit(imm, 11) << 20) |
+    (bits(imm, 19, 12) << 12) |
+    (rd << 7) |
+    0x6f;
+}
+
 template <typename T>
 unsigned int circular_buffer_t<T>::size() const
 {
@@ -122,6 +141,15 @@ gdbserver_t::gdbserver_t(uint16_t port, sim_t *sim) :
   }
 }
 
+void gdbserver_t::write_debug_ram(unsigned int index, uint32_t value)
+{
+  char *ram = sim->debug_ram() + 4 * index;
+  ram[0] = value & 0xff;
+  ram[1] = (value >> 8) & 0xff;
+  ram[2] = (value >> 16) & 0xff;
+  ram[3] = (value >> 24) & 0xff;
+}
+
 void gdbserver_t::accept()
 {
   client_fd = ::accept(socket_fd, NULL, NULL);
@@ -141,6 +169,7 @@ void gdbserver_t::accept()
 
     // gdb wants the core to be halted when it attaches.
     processor_t *p = sim->get_core(0);
+    write_debug_ram(0, jal(0, (uint32_t) (DEBUG_ROM_START + 4 - DEBUG_RAM_START)));
     p->set_debug_int();
   }
 }

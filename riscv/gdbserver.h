@@ -115,6 +115,9 @@ private:
   void send_packet(const char* data);
   uint8_t running_checksum;
   void send_running_checksum();
+
+  // Write value to the index'th word in Debug RAM.
+  void write_debug_ram(unsigned int index, uint32_t value);
 };
 
 #endif
