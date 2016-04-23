@@ -13,7 +13,8 @@
 #define MCPUID                  0xf00
 #define MHARTID                 0xf10
 
-#define DEBUG_RAM               0x400
+# TODO: Should be 0x400
+#define DEBUG_RAM               (-0x400)
 #define DEBUG_RAM_SIZE          64
 
 #define SETHALTNOT              0x100
