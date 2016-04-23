@@ -14,7 +14,7 @@
 #include "config.h"
 #include "common.h"
 #include <cinttypes>
-#include "debug_rom.h"
+#include "debug_rom/debug_rom.h"
 
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
