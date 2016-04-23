@@ -54,6 +54,7 @@ reg_t mmu_t::translate(reg_t addr, access_type type)
 const uint16_t* mmu_t::fetch_slow_path(reg_t addr)
 {
   reg_t paddr = translate(addr, FETCH);
+
   if (sim->addr_is_mem(paddr)) {
     refill_tlb(addr, paddr, FETCH);
     return (const uint16_t*)sim->addr_to_mem(paddr);

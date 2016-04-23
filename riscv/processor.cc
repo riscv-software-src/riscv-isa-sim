@@ -199,9 +199,13 @@ void processor_t::set_privilege(reg_t prv)
 
 void processor_t::enter_debug_mode(uint8_t cause)
 {
+  fprintf(stderr, "enter_debug_mode(%d)\n", cause);
   state.dcsr.cause = cause;
+  state.dcsr.prv = state.prv;
+  state.prv = PRV_M;
   state.dpc = state.pc;
-  state.pc = DEBUG_ROM_ENTRY;
+  state.pc = DEBUG_ROM_START;
+  debug = true; // TODO
 }
 
 void processor_t::take_trap(trap_t& t, reg_t epc)
@@ -365,6 +369,7 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
     case DCSR_ADDRESS:
+      // TODO: Use get_field style
       state.dcsr.prv = (val & DCSR_PRV_MASK) >> DCSR_PRV_OFFSET;
       state.dcsr.step = (val & DCSR_STEP_MASK) >> DCSR_STEP_OFFSET;
       // TODO: ndreset and fullreset

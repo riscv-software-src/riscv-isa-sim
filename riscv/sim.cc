@@ -41,11 +41,18 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
     fprintf(stderr, "warning: only got %lu bytes of target mem (wanted %lu)\n",
             (unsigned long)memsz, (unsigned long)memsz0);
 
+  /* Copy Debug ROM into the end of the allocated block, because we surely
+   * didn't succeed in allocation 0xfffffffff800 bytes. */
+  /* TODO: Once everything uses the new memory map, just put this at the
+   * address that it actually belongs at. */
+  memcpy(mem + memsz - debug_rom_raw_len, debug_rom_raw, debug_rom_raw_len);
+
   debug_mmu = new mmu_t(this, NULL);
 
   for (size_t i = 0; i < procs.size(); i++) {
     procs[i] = new processor_t(isa, this, i);
-    procs[i]->enter_debug_mode(DCSR_CAUSE_HALT);
+    if (halted)
+      procs[i]->enter_debug_mode(DCSR_CAUSE_HALT);
   }
 
   rtc.reset(new rtc_t(procs));

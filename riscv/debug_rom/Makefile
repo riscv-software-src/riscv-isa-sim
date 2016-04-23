@@ -7,7 +7,7 @@ OBJCOPY = $(RISCV)/bin/riscv64-unknown-elf-objcopy
 %.o:	%.S
 	$(CC) -c $<
 
-debug_rom.c:	debug_rom.raw
+debug_rom.cc:	debug_rom.raw
 	xxd -i $^ > $@
 
 debug_rom.raw:	debug_rom
