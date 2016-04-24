@@ -82,6 +82,8 @@ public:
 
   bool connected() const { return client_fd > 0; }
 
+  void halt();
+
 private:
   sim_t *sim;
   int socket_fd;
@@ -94,6 +96,12 @@ private:
   // Used to track whether we think the target is running. If we think it is
   // but it isn't, we need to tell gdb about it.
   bool running;
+  enum {
+    STATE_UNKNOWN,
+    STATE_RUNNING,
+    STATE_HALTING,
+    STATE_HALTED
+  } state;
 
   std::map <reg_t, software_breakpoint_t> breakpoints;
 

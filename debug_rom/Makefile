@@ -5,7 +5,7 @@ CC = $(RISCV)/bin/riscv64-unknown-elf-gcc
 OBJCOPY = $(RISCV)/bin/riscv64-unknown-elf-objcopy
 
 %.o:	%.S
-	$(CC) -c $<
+	$(CC) -I.. -c $<
 
 debug_rom.h:	debug_rom.raw
 	xxd -i $^ | sed "s/^unsigned/static const unsigned/" > $@

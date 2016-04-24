@@ -16,6 +16,7 @@
 // virtual memory configuration
 #define PGSHIFT 12
 const reg_t PGSIZE = 1 << PGSHIFT;
+const reg_t PGMASK = ~(PGSIZE-1);
 
 struct insn_fetch_t
 {
@@ -153,8 +154,9 @@ private:
   reg_t tlb_load_tag[TLB_ENTRIES];
   reg_t tlb_store_tag[TLB_ENTRIES];
 
-  // finish translation on a TLB miss and upate the TLB
+  // finish translation on a TLB miss and update the TLB
   void refill_tlb(reg_t vaddr, reg_t paddr, access_type type);
+  const char* fill_from_mmio(reg_t vaddr, reg_t paddr);
 
   // perform a page table walk for a given VA; set referenced/dirty bits
   reg_t walk(reg_t addr, access_type type, bool supervisor, bool pum);
@@ -172,7 +174,7 @@ private:
       return (uint16_t*)(tlb_data[vpn % TLB_ENTRIES] + addr);
     return fetch_slow_path(addr);
   }
-  
+
   friend class processor_t;
 };
 

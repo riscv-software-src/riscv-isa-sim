@@ -20,3 +20,11 @@ bool bus_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     return false;
   return it->second->store(addr - -it->first, len, bytes);
 }
+
+char* bus_t::page(reg_t paddr)
+{
+  auto it = devices.lower_bound(-paddr);
+  if (it == devices.end())
+    return NULL;
+  return it->second->page(paddr);
+}

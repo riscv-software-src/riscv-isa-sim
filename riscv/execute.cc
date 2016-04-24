@@ -2,6 +2,7 @@
 
 #include "processor.h"
 #include "mmu.h"
+#include "sim.h"
 #include <cassert>
 
 
@@ -53,8 +54,16 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 // fetch/decode/execute loop
 void processor_t::step(size_t n)
 {
-  if (state.dcsr.debugint && state.dcsr.cause == DCSR_CAUSE_NONE) {
+  // TODO: get_interrupt() isn't super fast. Does that matter?
+  if (state.dcsr.cause == DCSR_CAUSE_NONE &&
+      sim->debug_module.get_interrupt(id)) {
     enter_debug_mode(DCSR_CAUSE_DEBUGINT);
+  }
+
+  if (state.dcsr.cause != DCSR_CAUSE_NONE) {
+    // In Debug Mode, just do 100 steps at a time. Otherwise we're going to be
+    // spinning the rest of the time anyway.
+    n = std::max(n, (size_t) 100);
   }
 
   while (n > 0) {

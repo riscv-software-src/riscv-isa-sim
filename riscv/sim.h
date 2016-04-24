@@ -8,10 +8,11 @@
 #include <memory>
 #include "processor.h"
 #include "devices.h"
-#include "gdbserver.h"
+#include "debug_module.h"
 
 class htif_isasim_t;
 class mmu_t;
+class gdbserver_t;
 
 // this class encapsulates the processors and memory in a RISC-V machine.
 class sim_t
@@ -46,6 +47,7 @@ private:
   std::unique_ptr<rom_device_t> boot_rom;
   std::unique_ptr<rtc_t> rtc;
   bus_t bus;
+  debug_module_t debug_module;
 
   processor_t* get_core(const std::string& i);
   void step(size_t n); // step through simulation
@@ -66,6 +68,9 @@ private:
   reg_t mem_to_addr(char* x) { return x - mem + DRAM_BASE; }
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
+  // Return a pointer to the start of the page that addr falls in, or NULL if
+  // there is no IO device at that address.
+  char* mmio_page(reg_t addr);
   void make_config_string();
 
   // presents a prompt for introspection into the simulation
@@ -88,11 +93,6 @@ private:
   reg_t get_freg(const std::vector<std::string>& args);
   reg_t get_mem(const std::vector<std::string>& args);
   reg_t get_pc(const std::vector<std::string>& args);
-
-  // Return a pointer to Debug RAM in spike address space.
-  char *debug_ram() const {
-      return mem + memsz - DEBUG_SIZE + DEBUG_RAM_START - DEBUG_START;
-  }
 
   friend class htif_isasim_t;
   friend class processor_t;

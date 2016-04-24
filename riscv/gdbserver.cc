@@ -23,9 +23,11 @@
 // Functions to generate RISC-V opcodes.
 // TODO: Does this already exist somewhere?
 
+#define S1      3
 static uint32_t bits(uint32_t value, unsigned int hi, unsigned int lo) {
   return (value >> lo) & ((1 << (hi+1-lo)) - 1);
 }
+
 static uint32_t bit(uint32_t value, unsigned int b) {
   return (value >> b) & 1;
 }
@@ -36,7 +38,26 @@ static uint32_t jal(unsigned int rd, uint32_t imm) {
     (bit(imm, 11) << 20) |
     (bits(imm, 19, 12) << 12) |
     (rd << 7) |
-    0x6f;
+    MATCH_JAL;
+}
+
+static uint32_t csrsi(unsigned int csr, uint8_t imm) {
+  return (csr << 20) |
+    (bits(imm, 4, 0) << 15) |
+    MATCH_CSRRSI;
+}
+
+static uint32_t csrr(unsigned int rd, unsigned int csr) {
+  return (csr << 20) | (rd << 15) | MATCH_CSRRS;
+}
+
+static uint32_t sw(unsigned int src, unsigned int base, uint16_t offset)
+{
+  return (bits(offset, 11, 5) << 25) |
+    (src << 20) |
+    (base << 15) |
+    (bits(offset, 4, 0) << 7) |
+    MATCH_SW;
 }
 
 template <typename T>
@@ -143,11 +164,20 @@ gdbserver_t::gdbserver_t(uint16_t port, sim_t *sim) :
 
 void gdbserver_t::write_debug_ram(unsigned int index, uint32_t value)
 {
-  char *ram = sim->debug_ram() + 4 * index;
-  ram[0] = value & 0xff;
-  ram[1] = (value >> 8) & 0xff;
-  ram[2] = (value >> 16) & 0xff;
-  ram[3] = (value >> 24) & 0xff;
+  sim->debug_module.ram_write32(index, value);
+}
+
+void gdbserver_t::halt()
+{
+  processor_t *p = sim->get_core(0);
+  write_debug_ram(0, csrsi(DCSR_ADDRESS, DCSR_HALT_OFFSET));
+  write_debug_ram(1, csrr(S1, DPC_ADDRESS));
+  write_debug_ram(2, sw(S1, 0, (uint16_t) DEBUG_RAM_START));
+  write_debug_ram(3, csrr(S1, DCSR_ADDRESS));
+  write_debug_ram(4, sw(S1, 0, (uint16_t) DEBUG_RAM_START + 8));
+  write_debug_ram(5, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*5))));
+  sim->debug_module.set_interrupt(p->id);
+  state = STATE_HALTING;
 }
 
 void gdbserver_t::accept()
@@ -168,9 +198,7 @@ void gdbserver_t::accept()
     extended_mode = false;
 
     // gdb wants the core to be halted when it attaches.
-    processor_t *p = sim->get_core(0);
-    write_debug_ram(0, jal(0, (uint32_t) (DEBUG_ROM_START + 4 - DEBUG_RAM_START)));
-    p->set_debug_int();
+    halt();
   }
 }
 
@@ -544,7 +572,7 @@ void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
   }
 
   // TODO p->set_halted(false, HR_NONE);
-  running = true;
+  // TODO running = true;
 }
 
 void gdbserver_t::handle_step(const std::vector<uint8_t> &packet)
@@ -559,7 +587,7 @@ void gdbserver_t::handle_step(const std::vector<uint8_t> &packet)
   }
 
   // TODO: p->set_single_step(true);
-  running = true;
+  // TODO running = true;
 }
 
 void gdbserver_t::handle_kill(const std::vector<uint8_t> &packet)
@@ -724,13 +752,20 @@ void gdbserver_t::handle_interrupt()
   processor_t *p = sim->get_core(0);
   // TODO p->set_halted(true, HR_INTERRUPT);
   send_packet("S02");   // Pretend program received SIGINT.
-  running = false;
+  // TODO running = false;
 }
 
 void gdbserver_t::handle()
 {
   if (client_fd > 0) {
     processor_t *p = sim->get_core(0);
+
+    if (state == STATE_HALTING && sim->debug_module.get_interrupt(p->id) == 0) {
+      // gdb requested a halt and now it's done.
+      send_packet("T05");
+      state = STATE_HALTED;
+    }
+
     /* TODO
     if (running && p->halted) {
       // The core was running, but now it's halted. Better tell gdb.

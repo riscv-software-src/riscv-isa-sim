@@ -8,6 +8,7 @@
 #include "mmu.h"
 #include "htif.h"
 #include "disasm.h"
+#include "gdbserver.h"
 #include <cinttypes>
 #include <cmath>
 #include <cstdlib>
@@ -117,11 +118,6 @@ void state_t::reset()
   pc = DEFAULT_RSTVEC;
   mtvec = DEFAULT_MTVEC;
   load_reservation = -1;
-}
-
-void processor_t::set_debug_int()
-{
-  state.dcsr.debugint = true;
 }
 
 void processor_t::set_debug(bool value)
@@ -481,7 +477,7 @@ reg_t processor_t::get_csr(int which)
           (0 << DCSR_FULLRESET_OFFSET) |
           (state.dcsr.prv << DCSR_PRV_OFFSET) |
           (state.dcsr.step << DCSR_STEP_OFFSET) |
-          (state.dcsr.debugint << DCSR_DEBUGINT_OFFSET) |
+          (sim->debug_module.get_interrupt(id) << DCSR_DEBUGINT_OFFSET) |
           (0 << DCSR_STOPCYCLE_OFFSET) |
           (0 << DCSR_STOPTIME_OFFSET) |
           (state.dcsr.ebreakm << DCSR_EBREAKM_OFFSET) |

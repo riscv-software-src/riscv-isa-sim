@@ -35,7 +35,6 @@ typedef struct
 {
   uint8_t prv;
   bool step;
-  bool debugint;
   bool ebreakm;
   bool ebreakh;
   bool ebreaks;
@@ -97,7 +96,6 @@ public:
   processor_t(const char* isa, sim_t* sim, uint32_t id);
   ~processor_t();
 
-  void set_debug_int();
   void set_debug(bool value);
   void set_histogram(bool value);
   void reset(bool value);

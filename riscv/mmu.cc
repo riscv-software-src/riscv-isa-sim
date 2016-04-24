@@ -51,16 +51,44 @@ reg_t mmu_t::translate(reg_t addr, access_type type)
   return walk(addr, type, mode > PRV_U, pum) | (addr & (PGSIZE-1));
 }
 
-const uint16_t* mmu_t::fetch_slow_path(reg_t addr)
+const char* mmu_t::fill_from_mmio(reg_t vaddr, reg_t paddr)
 {
-  reg_t paddr = translate(addr, FETCH);
+  reg_t rv_start = paddr & PGMASK;
+  char* spike_start = proc->sim->mmio_page(rv_start);
+
+  if (!spike_start)
+    return NULL;
+
+  // TODO: refactor with refill_tlb()
+  reg_t idx = (vaddr >> PGSHIFT) % TLB_ENTRIES;
+  reg_t expected_tag = vaddr >> PGSHIFT;
+
+  if (tlb_load_tag[idx] != expected_tag) tlb_load_tag[idx] = -1;
+  if (tlb_store_tag[idx] != expected_tag) tlb_store_tag[idx] = -1;
+  if (tlb_insn_tag[idx] != expected_tag) tlb_insn_tag[idx] = -1;
+
+  tlb_insn_tag[idx] = expected_tag;
+  tlb_data[idx] = spike_start - DEBUG_START;
+
+  return spike_start + (paddr & ~PGMASK);
+}
+
+const uint16_t* mmu_t::fetch_slow_path(reg_t vaddr)
+{
+  reg_t paddr = translate(vaddr, FETCH);
+
+  // mmu_t::walk() returns -1 if it can't find a match. Of course -1 could also
+  // be a valid address.
+  if (paddr == ~(reg_t) 0 && vaddr != ~(reg_t) 0) {
+    throw trap_instruction_access_fault(vaddr);
+  }
 
   if (sim->addr_is_mem(paddr)) {
-    refill_tlb(addr, paddr, FETCH);
+    refill_tlb(vaddr, paddr, FETCH);
     return (const uint16_t*)sim->addr_to_mem(paddr);
   } else {
     if (!sim->mmio_load(paddr, sizeof fetch_temp, (uint8_t*)&fetch_temp))
-      throw trap_instruction_access_fault(addr);
+      throw trap_instruction_access_fault(vaddr);
     return &fetch_temp;
   }
 }

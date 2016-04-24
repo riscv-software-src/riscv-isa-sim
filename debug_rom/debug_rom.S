@@ -1,6 +1,8 @@
 # This code should be functional. Doesn't have to be optimal.
 # I'm writing it to prove that it can be done.
 
+#include "riscv/encoding.h"
+
 # TODO: Update these constants once they're finalized in the doc.
 
 #define DCSR                    0x790
@@ -10,16 +12,13 @@
 
 #define DSCRATCH                0x792
 
-#define MCPUID                  0xf00
-#define MHARTID                 0xf10
-
 # TODO: Should be 0x400
 #define DEBUG_RAM               (-0x400)
 #define DEBUG_RAM_SIZE          64
 
-#define SETHALTNOT              0x100
-#define CLEARHALTNOT            0x104
-#define CLEARDEBINT             0x108
+# TODO: Should be 0x100, 0x108
+#define SETHALTNOT              (-0x100)
+#define CLEARDEBINT             (-0x108)
 
         .global entry
         .global resume
@@ -31,7 +30,7 @@ entry:  j       _entry
 resume:
         # Clear debug interrupt.
 clear_debint:
-        csrr    s1, MHARTID
+        csrr    s1, CSR_MHARTID
         sw      s1, CLEARDEBINT(zero)
 clear_debint_loop:
         csrr    s1, DCSR
@@ -39,7 +38,7 @@ clear_debint_loop:
         bnez    s1, clear_debint_loop
 
         # Restore s1.
-        csrr    s1, MCPUID
+        csrr    s1, CSR_MISA
         bltz    s1, restore_not_32
 restore_32:
         lw      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 4)(zero)
@@ -78,7 +77,7 @@ _entry:
 
 jdebugram:
         # Save s1 so that the debug program can use two registers.
-        csrr    s0, MCPUID
+        csrr    s0, CSR_MISA
         bltz    s0, save_not_32
 save_32:
         sw      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 4)(zero)
@@ -94,7 +93,7 @@ save_128:
         jr      zero, DEBUG_RAM
 
 spontaneous_halt:
-        csrr    s0, MHARTID
+        csrr    s0, CSR_MHARTID
         sw      s0, SETHALTNOT(zero)
         csrsi   DCSR, DCSR_HALT_OFFSET
 
