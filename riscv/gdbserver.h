@@ -71,12 +71,14 @@ public:
   void handle_continue(const std::vector<uint8_t> &packet);
   void handle_extended(const std::vector<uint8_t> &packet);
   void handle_general_registers_read(const std::vector<uint8_t> &packet);
+  void continue_general_registers_read();
   void handle_halt_reason(const std::vector<uint8_t> &packet);
   void handle_kill(const std::vector<uint8_t> &packet);
   void handle_memory_binary_write(const std::vector<uint8_t> &packet);
   void handle_memory_read(const std::vector<uint8_t> &packet);
   void handle_query(const std::vector<uint8_t> &packet);
   void handle_register_read(const std::vector<uint8_t> &packet);
+  void continue_register_read();
   void handle_register_write(const std::vector<uint8_t> &packet);
   void handle_step(const std::vector<uint8_t> &packet);
 
@@ -100,8 +102,11 @@ private:
     STATE_UNKNOWN,
     STATE_RUNNING,
     STATE_HALTING,
-    STATE_HALTED
+    STATE_HALTED,
+    STATE_CONT_GENERAL_REGISTERS,
+    STATE_CONT_REGISTER_READ,
   } state;
+  uint32_t state_argument;
 
   std::map <reg_t, software_breakpoint_t> breakpoints;
 
