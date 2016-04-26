@@ -16,6 +16,7 @@ class debug_module_t : public abstract_device_t
     char* page(reg_t paddr);
 
     void ram_write32(unsigned int index, uint32_t value);
+    uint32_t ram_read32(unsigned int index);
 
     void set_interrupt(uint32_t hartid) {
       interrupt.insert(hartid);

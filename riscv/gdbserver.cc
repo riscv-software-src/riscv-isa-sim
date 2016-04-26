@@ -167,6 +167,11 @@ void gdbserver_t::write_debug_ram(unsigned int index, uint32_t value)
   sim->debug_module.ram_write32(index, value);
 }
 
+uint32_t gdbserver_t::read_debug_ram(unsigned int index)
+{
+  return sim->debug_module.ram_read32(index);
+}
+
 void gdbserver_t::halt()
 {
   processor_t *p = sim->get_core(0);
@@ -763,6 +768,8 @@ void gdbserver_t::handle()
     if (state == STATE_HALTING && sim->debug_module.get_interrupt(p->id) == 0) {
       // gdb requested a halt and now it's done.
       send_packet("T05");
+      fprintf(stderr, "DPC: 0x%x\n", read_debug_ram(0));
+      fprintf(stderr, "DCSR: 0x%x\n", read_debug_ram(2));
       state = STATE_HALTED;
     }
 

@@ -126,6 +126,7 @@ private:
 
   // Write value to the index'th word in Debug RAM.
   void write_debug_ram(unsigned int index, uint32_t value);
+  uint32_t read_debug_ram(unsigned int index);
 };
 
 #endif

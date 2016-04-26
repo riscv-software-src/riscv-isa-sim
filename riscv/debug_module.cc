@@ -35,8 +35,8 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     memcpy(raw_page + addr - DEBUG_START, bytes, len);
     return true;
   } else if (len == 4 && addr == DEBUG_CLEARDEBINT) {
-    clear_interrupt(bytes[4] | (bytes[5] << 8) |
-        (bytes[6] << 16) | (bytes[7] << 24));
+    clear_interrupt(bytes[0] | (bytes[1] << 8) |
+        (bytes[2] << 16) | (bytes[3] << 24));
     return true;
   }
 
@@ -52,6 +52,15 @@ void debug_module_t::ram_write32(unsigned int index, uint32_t value)
   base[1] = (value >> 8) & 0xff;
   base[2] = (value >> 16) & 0xff;
   base[3] = (value >> 24) & 0xff;
+}
+
+uint32_t debug_module_t::ram_read32(unsigned int index)
+{
+  char* base = raw_page + DEBUG_RAM_START - DEBUG_START + index * 4;
+  return base[0] |
+    (base[1] << 8) |
+    (base[2] << 16) |
+    (base[3] << 24);
 }
 
 char* debug_module_t::page(reg_t paddr)
