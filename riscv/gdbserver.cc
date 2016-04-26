@@ -23,7 +23,10 @@
 // Functions to generate RISC-V opcodes.
 // TODO: Does this already exist somewhere?
 
-#define S1      3
+// Using regnames.cc as source. The RVG Calling Convention of the 2.0 RISC-V
+// spec says it should be 2 and 3.
+#define S0      8
+#define S1      9
 static uint32_t bits(uint32_t value, unsigned int hi, unsigned int lo) {
   return (value >> lo) & ((1 << (hi+1-lo)) - 1);
 }
@@ -48,7 +51,7 @@ static uint32_t csrsi(unsigned int csr, uint8_t imm) {
 }
 
 static uint32_t csrr(unsigned int rd, unsigned int csr) {
-  return (csr << 20) | (rd << 15) | MATCH_CSRRS;
+  return (csr << 20) | (rd << 7) | MATCH_CSRRS;
 }
 
 static uint32_t sw(unsigned int src, unsigned int base, uint16_t offset)
@@ -176,10 +179,10 @@ void gdbserver_t::halt()
 {
   processor_t *p = sim->get_core(0);
   write_debug_ram(0, csrsi(DCSR_ADDRESS, DCSR_HALT_OFFSET));
-  write_debug_ram(1, csrr(S1, DPC_ADDRESS));
-  write_debug_ram(2, sw(S1, 0, (uint16_t) DEBUG_RAM_START));
-  write_debug_ram(3, csrr(S1, DCSR_ADDRESS));
-  write_debug_ram(4, sw(S1, 0, (uint16_t) DEBUG_RAM_START + 8));
+  write_debug_ram(1, csrr(S0, DPC_ADDRESS));
+  write_debug_ram(2, sw(S0, 0, (uint16_t) DEBUG_RAM_START));
+  write_debug_ram(3, csrr(S0, DCSR_ADDRESS));
+  write_debug_ram(4, sw(S0, 0, (uint16_t) DEBUG_RAM_START + 8));
   write_debug_ram(5, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*5))));
   sim->debug_module.set_interrupt(p->id);
   state = STATE_HALTING;

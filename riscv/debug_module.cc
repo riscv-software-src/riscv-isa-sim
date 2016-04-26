@@ -16,6 +16,11 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
   addr = DEBUG_START + addr;
 
+  if (addr >= DEBUG_RAM_START && addr + len <= DEBUG_RAM_END) {
+    memcpy(bytes, raw_page + addr - DEBUG_START, len);
+    return true;
+  }
+
   fprintf(stderr, "ERROR: invalid load from debug module: %ld bytes at 0x%lx\n",
       len, addr);
   return false;
@@ -56,11 +61,15 @@ void debug_module_t::ram_write32(unsigned int index, uint32_t value)
 
 uint32_t debug_module_t::ram_read32(unsigned int index)
 {
-  char* base = raw_page + DEBUG_RAM_START - DEBUG_START + index * 4;
-  return base[0] |
-    (base[1] << 8) |
-    (base[2] << 16) |
-    (base[3] << 24);
+  // It'd be better for raw_page (and all memory) to be unsigned chars, but mem
+  // in sim_t is just chars, so I'm following that convention.
+  unsigned char* base = (unsigned char*)
+    (raw_page + DEBUG_RAM_START - DEBUG_START + index * 4);
+  uint32_t value = ((uint32_t) base[0]) |
+    (((uint32_t) base[1]) << 8) |
+    (((uint32_t) base[2]) << 16) |
+    (((uint32_t) base[3]) << 24);
+  return value;
 }
 
 char* debug_module_t::page(reg_t paddr)
