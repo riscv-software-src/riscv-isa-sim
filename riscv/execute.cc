@@ -61,9 +61,9 @@ void processor_t::step(size_t n)
   }
 
   if (state.dcsr.cause != DCSR_CAUSE_NONE) {
-    // In Debug Mode, just do 100 steps at a time. Otherwise we're going to be
+    // In Debug Mode, just do 10 steps at a time. Otherwise we're going to be
     // spinning the rest of the time anyway.
-    n = std::max(n, (size_t) 100);
+    n = std::max(n, (size_t) 10);
   }
 
   while (n > 0) {

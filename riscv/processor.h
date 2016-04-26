@@ -122,6 +122,9 @@ public:
   bool load(reg_t addr, size_t len, uint8_t* bytes);
   bool store(reg_t addr, size_t len, const uint8_t* bytes);
 
+  // When true, display disassembly of each instruction that's executed.
+  bool debug;
+
 private:
   sim_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
@@ -134,8 +137,6 @@ private:
   reg_t isa;
   std::string isa_string;
   bool run; // !reset
-  // When true, display disassembly of each instruction that's executed.
-  bool debug;
   bool histogram_enabled;
 
   std::vector<insn_desc_t> instructions;
@@ -155,7 +156,6 @@ private:
   friend class mmu_t;
   friend class rtc_t;
   friend class extension_t;
-  friend class gdbserver_t;
 
   void parse_isa_string(const char* isa);
   void build_opcode_map();

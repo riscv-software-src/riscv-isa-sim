@@ -178,13 +178,13 @@ uint32_t gdbserver_t::read_debug_ram(unsigned int index)
 void gdbserver_t::halt()
 {
   processor_t *p = sim->get_core(0);
-  write_debug_ram(0, csrsi(DCSR_ADDRESS, DCSR_HALT_OFFSET));
+  write_debug_ram(0, csrsi(DCSR_ADDRESS, DCSR_HALT_MASK));
   write_debug_ram(1, csrr(S0, DPC_ADDRESS));
   write_debug_ram(2, sw(S0, 0, (uint16_t) DEBUG_RAM_START));
   write_debug_ram(3, csrr(S0, DCSR_ADDRESS));
   write_debug_ram(4, sw(S0, 0, (uint16_t) DEBUG_RAM_START + 8));
   write_debug_ram(5, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*5))));
-  sim->debug_module.set_interrupt(p->id);
+  sim->debug_module.set_interrupt(0);
   state = STATE_HALTING;
 }
 
@@ -356,6 +356,12 @@ void gdbserver_t::handle_halt_reason(const std::vector<uint8_t> &packet)
   send_packet("S00");
 }
 
+void die(const char* msg)
+{
+  fprintf(stderr, "%s\n", msg);
+  abort();
+}
+
 void gdbserver_t::handle_general_registers_read(const std::vector<uint8_t> &packet)
 {
   // Register order that gdb expects is:
@@ -374,7 +380,8 @@ void gdbserver_t::handle_general_registers_read(const std::vector<uint8_t> &pack
   running_checksum = 0;
   processor_t *p = sim->get_core(0);
   for (int r = 0; r < 32; r++) {
-    send(p->state.XPR[r]);
+    die("handle_general_registers_read");
+    // send(p->state.XPR[r]);
   }
   send_running_checksum();
   expect_ack = true;
@@ -457,6 +464,8 @@ void gdbserver_t::handle_register_read(const std::vector<uint8_t> &packet)
   send("$");
   running_checksum = 0;
 
+  die("handle_register_read");
+  /*
   if (n >= REG_XPR0 && n <= REG_XPR31) {
     send(p->state.XPR[n - REG_XPR0]);
   } else if (n == REG_PC) {
@@ -475,6 +484,7 @@ void gdbserver_t::handle_register_read(const std::vector<uint8_t> &packet)
   } else {
     return send_packet("E02");
   }
+  */
 
   send_running_checksum();
   expect_ack = true;
@@ -496,6 +506,8 @@ void gdbserver_t::handle_register_write(const std::vector<uint8_t> &packet)
 
   processor_t *p = sim->get_core(0);
 
+  die("handle_register_write");
+  /*
   if (n >= REG_XPR0 && n <= REG_XPR31) {
     p->state.XPR.write(n - REG_XPR0, value);
   } else if (n == REG_PC) {
@@ -511,6 +523,7 @@ void gdbserver_t::handle_register_write(const std::vector<uint8_t> &packet)
   } else {
     return send_packet("E07");
   }
+  */
 
   return send_packet("OK");
 }
@@ -574,7 +587,8 @@ void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
   processor_t *p = sim->get_core(0);
   if (packet[2] != '#') {
     std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
-    p->state.pc = consume_hex_number(iter, packet.end());
+    die("handle_continue");
+    // p->state.pc = consume_hex_number(iter, packet.end());
     if (*iter != '#')
       return send_packet("E30");
   }
@@ -589,7 +603,8 @@ void gdbserver_t::handle_step(const std::vector<uint8_t> &packet)
   processor_t *p = sim->get_core(0);
   if (packet[2] != '#') {
     std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
-    p->state.pc = consume_hex_number(iter, packet.end());
+    die("handle_step");
+    //p->state.pc = consume_hex_number(iter, packet.end());
     if (*iter != '#')
       return send_packet("E40");
   }
@@ -662,6 +677,8 @@ void gdbserver_t::handle_breakpoint(const std::vector<uint8_t> &packet)
   }
 
   processor_t *p = sim->get_core(0);
+  die("handle_breakpoint");
+  /*
   mmu_t* mmu = p->mmu;
   if (insert) {
     bp.insert(mmu);
@@ -674,6 +691,7 @@ void gdbserver_t::handle_breakpoint(const std::vector<uint8_t> &packet)
   }
   mmu->flush_icache();
   sim->debug_mmu->flush_icache();
+  */
   return send_packet("OK");
 }
 
@@ -768,12 +786,13 @@ void gdbserver_t::handle()
   if (client_fd > 0) {
     processor_t *p = sim->get_core(0);
 
-    if (state == STATE_HALTING && sim->debug_module.get_interrupt(p->id) == 0) {
+    if (state == STATE_HALTING && sim->debug_module.get_interrupt(0) == 0) {
       // gdb requested a halt and now it's done.
       send_packet("T05");
       fprintf(stderr, "DPC: 0x%x\n", read_debug_ram(0));
       fprintf(stderr, "DCSR: 0x%x\n", read_debug_ram(2));
       state = STATE_HALTED;
+      p->debug = false;
     }
 
     /* TODO

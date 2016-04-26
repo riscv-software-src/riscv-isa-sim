@@ -22,8 +22,8 @@
 #define STATE state
 
 processor_t::processor_t(const char* isa, sim_t* sim, uint32_t id)
-  : sim(sim), ext(NULL), disassembler(new disassembler_t),
-    id(id), run(false), debug(false)
+  : debug(false), sim(sim), ext(NULL), disassembler(new disassembler_t),
+    id(id), run(false)
 {
   parse_isa_string(isa);
 

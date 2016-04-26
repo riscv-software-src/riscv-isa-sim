@@ -95,7 +95,7 @@ save_128:
 spontaneous_halt:
         csrr    s0, CSR_MHARTID
         sw      s0, SETHALTNOT(zero)
-        csrsi   DCSR, DCSR_HALT_OFFSET
+        csrsi   DCSR, (1<<DCSR_HALT_OFFSET)
 
 wait_for_interrupt:
         csrr    s0, DCSR
