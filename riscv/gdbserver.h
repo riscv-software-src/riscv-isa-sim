@@ -54,6 +54,32 @@ public:
   void remove(mmu_t* mmu);
 };
 
+class gdbserver_t;
+
+class operation_t
+{
+  public:
+    operation_t(gdbserver_t& gdbserver) : gs(gdbserver) {}
+    virtual ~operation_t() {}
+
+    // Called when the operation is first set as the current one.
+    // Return true if this operation is complete. In that case the object will
+    // be deleted.
+    // Return false if more steps are required the next time the debug
+    // interrupt is clear.
+    virtual bool start() { return true; }
+
+    // Perform the next step of this operation (which is probably to write to
+    // Debug RAM and assert the debug interrupt).
+    // Return true if this operation is complete. In that case the object will
+    // be deleted.
+    // Return false if more steps are required the next time the debug
+    // interrupt is clear.
+    virtual bool step() = 0;
+
+    gdbserver_t& gs;
+};
+
 class gdbserver_t
 {
 public:
@@ -84,7 +110,27 @@ public:
 
   bool connected() const { return client_fd > 0; }
 
-  void halt();
+  // TODO: Move this into its own packet sending class?
+  // Add the given message to send_buf.
+  void send(const char* msg);
+  // Hex-encode a 64-bit value, and send it to gcc in target byte order (little
+  // endian).
+  void send(uint64_t value);
+  // Hex-encode a 32-bit value, and send it to gcc in target byte order (little
+  // endian).
+  void send(uint32_t value);
+  void send_packet(const char* data);
+  uint8_t running_checksum;
+  // Send "$" and clear running checksum.
+  void start_packet();
+  // Send "#" and checksum.
+  void end_packet(const char* data=NULL);
+
+  // Write value to the index'th word in Debug RAM.
+  void write_debug_ram(unsigned int index, uint32_t value);
+  uint32_t read_debug_ram(unsigned int index);
+
+  void set_interrupt(uint32_t hartid);
 
 private:
   sim_t *sim;
@@ -98,15 +144,6 @@ private:
   // Used to track whether we think the target is running. If we think it is
   // but it isn't, we need to tell gdb about it.
   bool running;
-  enum {
-    STATE_UNKNOWN,
-    STATE_RUNNING,
-    STATE_HALTING,
-    STATE_HALTED,
-    STATE_CONT_GENERAL_REGISTERS,
-    STATE_CONT_REGISTER_READ,
-  } state;
-  uint32_t state_argument;
 
   std::map <reg_t, software_breakpoint_t> breakpoints;
 
@@ -117,21 +154,9 @@ private:
   void accept();
   // Process all complete requests in recv_buf.
   void process_requests();
-  // Add the given message to send_buf.
-  void send(const char* msg);
-  // Hex-encode a 64-bit value, and send it to gcc in target byte order (little
-  // endian).
-  void send(uint64_t value);
-  // Hex-encode a 32-bit value, and send it to gcc in target byte order (little
-  // endian).
-  void send(uint32_t value);
-  void send_packet(const char* data);
-  uint8_t running_checksum;
-  void send_running_checksum();
 
-  // Write value to the index'th word in Debug RAM.
-  void write_debug_ram(unsigned int index, uint32_t value);
-  uint32_t read_debug_ram(unsigned int index);
+  operation_t* operation;
+  void set_operation(operation_t* operation);
 };
 
 #endif

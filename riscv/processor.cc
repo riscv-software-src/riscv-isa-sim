@@ -470,7 +470,8 @@ reg_t processor_t::get_csr(int which)
     case CSR_MEDELEG: return state.medeleg;
     case CSR_MIDELEG: return state.mideleg;
     case DCSR_ADDRESS:
-      return
+      {
+        uint32_t value =
           (1 << DCSR_XDEBUGVER_OFFSET) |
           (0 << DCSR_HWBPCOUNT_OFFSET) |
           (0 << DCSR_NDRESET_OFFSET) |
@@ -486,6 +487,9 @@ reg_t processor_t::get_csr(int which)
           (state.dcsr.ebreaku << DCSR_EBREAKU_OFFSET) |
           (state.dcsr.halt << DCSR_HALT_OFFSET) |
           (state.dcsr.cause << DCSR_CAUSE_OFFSET);
+        fprintf(stderr, "DCSR: 0x%x\n", value);
+        return value;
+      }
     case DPC_ADDRESS:
       return state.dpc;
     case DSCRATCH_ADDRESS:

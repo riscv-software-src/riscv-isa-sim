@@ -20,7 +20,29 @@
 #define C_EBREAK        0x9002
 #define EBREAK          0x00100073
 
-// Functions to generate RISC-V opcodes.
+//////////////////////////////////////// Utility Functions
+
+void die(const char* msg)
+{
+  fprintf(stderr, "gdbserver code died: %s\n", msg);
+  abort();
+}
+
+// gdb's register list is defined in riscv_gdb_reg_names gdb/riscv-tdep.c in
+// its source tree. We must interpret the numbers the same here.
+enum {
+  REG_XPR0 = 0,
+  REG_XPR31 = 31,
+  REG_PC = 32,
+  REG_FPR0 = 33,
+  REG_FPR31 = 64,
+  REG_CSR0 = 65,
+  REG_CSR4095 = 4160,
+  REG_END = 4161
+};
+
+//////////////////////////////////////// Functions to generate RISC-V opcodes.
+
 // TODO: Does this already exist somewhere?
 
 // Using regnames.cc as source. The RVG Calling Convention of the 2.0 RISC-V
@@ -66,7 +88,7 @@ static uint32_t sw(unsigned int src, unsigned int base, uint16_t offset)
 static uint32_t sd(unsigned int src, unsigned int base, uint16_t offset)
 {
   return (bits(offset, 11, 5) << 25) |
-    (src << 20) |
+    (bits(src, 4, 0) << 20) |
     (base << 15) |
     (bits(offset, 4, 0) << 7) |
     MATCH_SD;
@@ -138,10 +160,148 @@ void circular_buffer_t<T>::append(const T *src, unsigned int count)
   }
 }
 
+////////////////////////////// Debug Operations
+
+class halt_op_t : public operation_t
+{
+  public:
+    halt_op_t(gdbserver_t& gdbserver) : operation_t(gdbserver) {};
+
+    bool start()
+    {
+      // TODO: For now we just assume the target is 64-bit.
+      gs.write_debug_ram(0, csrsi(DCSR_ADDRESS, DCSR_HALT_MASK));
+      gs.write_debug_ram(1, csrr(S0, DPC_ADDRESS));
+      gs.write_debug_ram(2, sd(S0, 0, (uint16_t) DEBUG_RAM_START));
+      gs.write_debug_ram(3, csrr(S0, DCSR_ADDRESS));
+      gs.write_debug_ram(4, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 8));
+      gs.write_debug_ram(5, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*5))));
+      gs.set_interrupt(0);
+      return false;
+    }
+
+    bool step()
+    {
+      return true;
+    }
+};
+
+class general_registers_read_op_t : public operation_t
+{
+  // Register order that gdb expects is:
+  //   "x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",
+  //   "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
+  //   "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23",
+  //   "x24", "x25", "x26", "x27", "x28", "x29", "x30", "x31",
+
+  // Each byte of register data is described by two hex digits. The bytes with
+  // the register are transmitted in target byte order. The size of each
+  // register and their position within the ‘g’ packet are determined by the
+  // gdb internal gdbarch functions DEPRECATED_REGISTER_RAW_SIZE and
+  // gdbarch_register_name.
+
+  public:
+    general_registers_read_op_t(gdbserver_t& gdbserver) :
+      operation_t(gdbserver), current_reg(0) {};
+
+    bool start()
+    {
+      gs.start_packet();
+
+      // x0 is always zero.
+      gs.send((reg_t) 0);
+
+      gs.write_debug_ram(0, sd(1, 0, (uint16_t) DEBUG_RAM_START + 16));
+      gs.write_debug_ram(1, sd(2, 0, (uint16_t) DEBUG_RAM_START + 0));
+      gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+      gs.set_interrupt(0);
+      current_reg = 1;
+      return false;
+    }
+
+    bool step()
+    {
+      fprintf(stderr, "step %d\n", current_reg);
+      gs.send(((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4));
+      if (current_reg >= 31) {
+        gs.end_packet();
+        return true;
+      }
+
+      gs.send(((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0));
+
+      current_reg += 2;
+      // TODO properly read s0 and s1
+      gs.write_debug_ram(0, sd(current_reg, 0, (uint16_t) DEBUG_RAM_START + 16));
+      gs.write_debug_ram(1, sd(current_reg+1, 0, (uint16_t) DEBUG_RAM_START + 0));
+      gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+      gs.set_interrupt(0);
+
+      return false;
+    }
+
+  private:
+    unsigned int current_reg;
+};
+
+class register_read_op_t : public operation_t
+{
+  public:
+    register_read_op_t(gdbserver_t& gdbserver, unsigned int reg) :
+      operation_t(gdbserver), reg(reg) {};
+
+    bool start()
+    {
+      if (reg >= REG_XPR0 && reg <= REG_XPR31) {
+        die("handle_register_read");
+        // send(p->state.XPR[reg - REG_XPR0]);
+      } else if (reg == REG_PC) {
+        gs.write_debug_ram(0, csrr(S0, DPC_ADDRESS));
+        gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START));
+        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.set_interrupt(0);
+      } else if (reg >= REG_FPR0 && reg <= REG_FPR31) {
+        die("handle_register_read");
+        // send(p->state.FPR[reg - REG_FPR0]);
+      } else if (reg >= REG_CSR0 && reg <= REG_CSR4095) {
+        try {
+          die("handle_register_read");
+          // send(p->get_csr(reg - REG_CSR0));
+        } catch(trap_t& t) {
+          // It would be nicer to return an error here, but if you do that then gdb
+          // exits out of 'info registers all' as soon as it encounters a register
+          // that can't be read.
+          gs.start_packet();
+          gs.send((reg_t) 0);
+          gs.end_packet();
+        }
+      } else {
+        gs.send_packet("E02");
+        return true;
+      }
+
+      return false;
+    }
+
+    bool step()
+    {
+      gs.start_packet();
+      gs.send(((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0));
+      gs.end_packet();
+      return true;
+    }
+
+  private:
+    unsigned int reg;
+};
+
+////////////////////////////// gdbserver itself
+
 gdbserver_t::gdbserver_t(uint16_t port, sim_t *sim) :
   sim(sim),
   client_fd(0),
-  recv_buf(64 * 1024), send_buf(64 * 1024)
+  recv_buf(64 * 1024), send_buf(64 * 1024),
+  operation(NULL)
 {
   socket_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (socket_fd == -1) {
@@ -184,17 +344,14 @@ uint32_t gdbserver_t::read_debug_ram(unsigned int index)
   return sim->debug_module.ram_read32(index);
 }
 
-void gdbserver_t::halt()
+void gdbserver_t::set_operation(operation_t* operation)
 {
-  // TODO: For now we just assume the target is 64-bit.
-  write_debug_ram(0, csrsi(DCSR_ADDRESS, DCSR_HALT_MASK));
-  write_debug_ram(1, csrr(S0, DPC_ADDRESS));
-  write_debug_ram(2, sd(S0, 0, (uint16_t) DEBUG_RAM_START));
-  write_debug_ram(3, csrr(S0, DCSR_ADDRESS));
-  write_debug_ram(4, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 8));
-  write_debug_ram(5, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*5))));
-  sim->debug_module.set_interrupt(0);
-  state = STATE_HALTING;
+  assert(this->operation == NULL || operation == NULL);
+  if (operation && operation->start()) {
+    delete operation;
+  } else {
+    this->operation = operation;
+  }
 }
 
 void gdbserver_t::accept()
@@ -215,7 +372,7 @@ void gdbserver_t::accept()
     extended_mode = false;
 
     // gdb wants the core to be halted when it attaches.
-    halt();
+    set_operation(new halt_op_t(*this));
   }
 }
 
@@ -365,59 +522,13 @@ void gdbserver_t::handle_halt_reason(const std::vector<uint8_t> &packet)
   send_packet("S00");
 }
 
-void die(const char* msg)
-{
-  fprintf(stderr, "gdbserver code died: %s\n", msg);
-  abort();
-}
-
 void gdbserver_t::handle_general_registers_read(const std::vector<uint8_t> &packet)
 {
-  // Register order that gdb expects is:
-  //   "x0",  "x1",  "x2",  "x3",  "x4",  "x5",  "x6",  "x7",
-  //   "x8",  "x9",  "x10", "x11", "x12", "x13", "x14", "x15",
-  //   "x16", "x17", "x18", "x19", "x20", "x21", "x22", "x23",
-  //   "x24", "x25", "x26", "x27", "x28", "x29", "x30", "x31",
-
-  // Each byte of register data is described by two hex digits. The bytes with
-  // the register are transmitted in target byte order. The size of each
-  // register and their position within the ‘g’ packet are determined by the
-  // gdb internal gdbarch functions DEPRECATED_REGISTER_RAW_SIZE and
-  // gdbarch_register_name.
-
-  send("$");
-  running_checksum = 0;
-  processor_t *p = sim->get_core(0);
-
-  // x0 is always zero.
-  send((reg_t) 0);
-
-  write_debug_ram(0, sd(1, 0, (uint16_t) DEBUG_RAM_START + 16));
-  write_debug_ram(1, sd(2, 0, (uint16_t) DEBUG_RAM_START + 0));
-  write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
-  sim->debug_module.set_interrupt(0);
-  state = STATE_CONT_GENERAL_REGISTERS;
-  state_argument = 1;
+  set_operation(new general_registers_read_op_t(*this));
 }
 
-void gdbserver_t::continue_general_registers_read()
-{
-  send(((uint64_t) read_debug_ram(5) << 32) | read_debug_ram(4));
-  if (state_argument >= 31) {
-    send_running_checksum();
-    expect_ack = true;
-    state = STATE_HALTED;
-  } else {
-    send(((uint64_t) read_debug_ram(1) << 32) | read_debug_ram(0));
-
-    state_argument += 2;
-    // TODO properly read s0 and s1
-    write_debug_ram(0, sd(state_argument, 0, (uint16_t) DEBUG_RAM_START + 16));
-    write_debug_ram(1, sd(state_argument+1, 0, (uint16_t) DEBUG_RAM_START + 0));
-    write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
-    sim->debug_module.set_interrupt(0);
-    state = STATE_CONT_GENERAL_REGISTERS;
-  }
+void gdbserver_t::set_interrupt(uint32_t hartid) {
+  sim->debug_module.set_interrupt(hartid);
 }
 
 // First byte is the most-significant one.
@@ -471,19 +582,6 @@ void consume_string(std::string &str, std::vector<uint8_t>::const_iterator &iter
   }
 }
 
-// gdb's register list is defined in riscv_gdb_reg_names gdb/riscv-tdep.c in
-// its source tree. We must interpret the numbers the same here.
-enum {
-  REG_XPR0 = 0,
-  REG_XPR31 = 31,
-  REG_PC = 32,
-  REG_FPR0 = 33,
-  REG_FPR31 = 64,
-  REG_CSR0 = 65,
-  REG_CSR4095 = 4160,
-  REG_END = 4161
-};
-
 void gdbserver_t::handle_register_read(const std::vector<uint8_t> &packet)
 {
   // p n
@@ -493,46 +591,7 @@ void gdbserver_t::handle_register_read(const std::vector<uint8_t> &packet)
   if (*iter != '#')
     return send_packet("E01");
 
-  state = STATE_CONT_REGISTER_READ;
-  state_argument = n;
-
-  if (n >= REG_XPR0 && n <= REG_XPR31) {
-    die("handle_register_read");
-    // send(p->state.XPR[n - REG_XPR0]);
-  } else if (n == REG_PC) {
-    write_debug_ram(0, csrr(S0, DPC_ADDRESS));
-    write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START));
-    write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
-    sim->debug_module.set_interrupt(0);
-  } else if (n >= REG_FPR0 && n <= REG_FPR31) {
-    die("handle_register_read");
-    // send(p->state.FPR[n - REG_FPR0]);
-  } else if (n >= REG_CSR0 && n <= REG_CSR4095) {
-    try {
-      die("handle_register_read");
-      // send(p->get_csr(n - REG_CSR0));
-    } catch(trap_t& t) {
-      // It would be nicer to return an error here, but if you do that then gdb
-      // exits out of 'info registers all' as soon as it encounters a register
-      // that can't be read.
-      send((reg_t) 0);
-    }
-  } else {
-    state = STATE_HALTED;
-    return send_packet("E02");
-  }
-}
-
-void gdbserver_t::continue_register_read()
-{
-  send("$");
-  running_checksum = 0;
-
-  send(((uint64_t) read_debug_ram(1) << 32) | read_debug_ram(0));
-
-  send_running_checksum();
-  expect_ack = true;
-  state = STATE_HALTED;
+  set_operation(new register_read_op_t(*this, n));
 }
 
 void gdbserver_t::handle_register_write(const std::vector<uint8_t> &packet)
@@ -585,8 +644,7 @@ void gdbserver_t::handle_memory_read(const std::vector<uint8_t> &packet)
   if (*iter != '#')
     return send_packet("E11");
 
-  send("$");
-  running_checksum = 0;
+  start_packet();
   char buffer[3];
   processor_t *p = sim->get_core(0);
   mmu_t* mmu = sim->debug_mmu;
@@ -595,7 +653,7 @@ void gdbserver_t::handle_memory_read(const std::vector<uint8_t> &packet)
     sprintf(buffer, "%02x", mmu->load_uint8(address + i));
     send(buffer);
   }
-  send_running_checksum();
+  end_packet();
 }
 
 void gdbserver_t::handle_memory_binary_write(const std::vector<uint8_t> &packet)
@@ -749,8 +807,7 @@ void gdbserver_t::handle_query(const std::vector<uint8_t> &packet)
   if (iter != packet.end())
     iter++;
   if (name == "Supported") {
-    send("$");
-    running_checksum = 0;
+    start_packet();
     while (iter != packet.end()) {
       std::string feature;
       consume_string(feature, iter, packet.end(), ';');
@@ -760,7 +817,7 @@ void gdbserver_t::handle_query(const std::vector<uint8_t> &packet)
         send("swbreak+;");
       }
     }
-    return send_running_checksum();
+    return end_packet();
   }
 
   fprintf(stderr, "Unsupported query %s\n", name.c_str());
@@ -833,25 +890,23 @@ void gdbserver_t::handle()
 
     bool interrupt = sim->debug_module.get_interrupt(0);
 
-    if (state == STATE_HALTING && !interrupt) {
-      // gdb requested a halt and now it's done.
-      send_packet("T05");
-      fprintf(stderr, "DPC: 0x%x\n", read_debug_ram(0));
-      fprintf(stderr, "DCSR: 0x%x\n", read_debug_ram(2));
-      state = STATE_HALTED;
-    }
-
     if (!interrupt) {
+      if (operation && operation->step()) {
+        delete operation;
+        set_operation(NULL);
+      }
+
+      /*
       switch (state) {
-        case STATE_CONT_GENERAL_REGISTERS:
-          continue_general_registers_read();
-          break;
-        case STATE_CONT_REGISTER_READ:
-          continue_register_read();
-          break;
-        default:
+        case STATE_HALTING:
+          // gdb requested a halt and now it's done.
+          send_packet("T05");
+          fprintf(stderr, "DPC: 0x%x\n", read_debug_ram(0));
+          fprintf(stderr, "DCSR: 0x%x\n", read_debug_ram(2));
+          state = STATE_HALTED;
           break;
       }
+      */
     }
 
     /* TODO
@@ -878,20 +933,16 @@ void gdbserver_t::handle()
     }
       */
 
-    if (state == STATE_HALTED) {
-      this->read();
-      //p->debug = false;
-    } else {
-      //p->debug = true;
-    }
-
+    this->read();
     this->write();
 
   } else {
     this->accept();
   }
 
-  this->process_requests();
+  if (!operation) {
+    this->process_requests();
+  }
 }
 
 void gdbserver_t::send(const char* msg)
@@ -924,16 +975,26 @@ void gdbserver_t::send(uint32_t value)
 
 void gdbserver_t::send_packet(const char* data)
 {
-  send("$");
-  running_checksum = 0;
+  start_packet();
   send(data);
-  send_running_checksum();
+  end_packet();
   expect_ack = true;
 }
 
-void gdbserver_t::send_running_checksum()
+void gdbserver_t::start_packet()
 {
+  send("$");
+  running_checksum = 0;
+}
+
+void gdbserver_t::end_packet(const char* data)
+{
+  if (data) {
+    send(data);
+  }
+
   char checksum_string[4];
   sprintf(checksum_string, "#%02x", running_checksum);
   send(checksum_string);
+  expect_ack = true;
 }
