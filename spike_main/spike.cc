@@ -17,18 +17,19 @@ static void help()
 {
   fprintf(stderr, "usage: spike [host options] <target program> [target options]\n");
   fprintf(stderr, "Host Options:\n");
-  fprintf(stderr, "  -p<n>              Simulate <n> processors [default 1]\n");
-  fprintf(stderr, "  -m<n>              Provide <n> MiB of target memory [default 4096]\n");
-  fprintf(stderr, "  -d                 Interactive debug mode\n");
-  fprintf(stderr, "  -g                 Track histogram of PCs\n");
-  fprintf(stderr, "  -l                 Generate a log of execution\n");
-  fprintf(stderr, "  -h                 Print this help message\n");
-  fprintf(stderr, "  --isa=<name>       RISC-V ISA string [default %s]\n", DEFAULT_ISA);
-  fprintf(stderr, "  --ic=<S>:<W>:<B>   Instantiate a cache model with S sets,\n");
-  fprintf(stderr, "  --dc=<S>:<W>:<B>     W ways, and B-byte blocks (with S and\n");
-  fprintf(stderr, "  --l2=<S>:<W>:<B>     B both powers of 2).\n");
-  fprintf(stderr, "  --extension=<name> Specify RoCC Extension\n");
-  fprintf(stderr, "  --extlib=<name>    Shared library to load\n");
+  fprintf(stderr, "  -p<n>                 Simulate <n> processors [default 1]\n");
+  fprintf(stderr, "  -m<n>                 Provide <n> MiB of target memory [default 4096]\n");
+  fprintf(stderr, "  -d                    Interactive debug mode\n");
+  fprintf(stderr, "  -g                    Track histogram of PCs\n");
+  fprintf(stderr, "  -l                    Generate a log of execution\n");
+  fprintf(stderr, "  -h                    Print this help message\n");
+  fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
+  fprintf(stderr, "  --ic=<S>:<W>:<B>      Instantiate a cache model with S sets,\n");
+  fprintf(stderr, "  --dc=<S>:<W>:<B>        W ways, and B-byte blocks (with S and\n");
+  fprintf(stderr, "  --l2=<S>:<W>:<B>        B both powers of 2).\n");
+  fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
+  fprintf(stderr, "  --extlib=<name>       Shared library to load\n");
+  fprintf(stderr, "  --dump-config-string  Print platform configuration string and exit\n");
   exit(1);
 }
 
@@ -37,6 +38,7 @@ int main(int argc, char** argv)
   bool debug = false;
   bool histogram = false;
   bool log = false;
+  bool dump_config_string = false;
   size_t nprocs = 1;
   size_t mem_mb = 0;
   std::unique_ptr<icache_sim_t> ic;
@@ -58,6 +60,7 @@ int main(int argc, char** argv)
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
   parser.option(0, "isa", 1, [&](const char* s){isa = s;});
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
+  parser.option(0, "dump-config-string", 0, [&](const char *s){dump_config_string = true;});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
     if (lib == NULL) {
@@ -67,10 +70,16 @@ int main(int argc, char** argv)
   });
 
   auto argv1 = parser.parse(argv);
-  if (!*argv1)
-    help();
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
   sim_t s(isa, nprocs, mem_mb, htif_args);
+
+  if (dump_config_string) {
+    printf("%s", s.get_config_string());
+    return 0;
+  }
+
+  if (!*argv1)
+    help();
 
   if (ic && l2) ic->set_miss_handler(&*l2);
   if (dc && l2) dc->set_miss_handler(&*l2);

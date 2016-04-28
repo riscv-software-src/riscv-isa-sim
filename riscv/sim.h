@@ -29,6 +29,7 @@ public:
   void set_histogram(bool value);
   void set_procs_debug(bool value);
   htif_isasim_t* get_htif() { return htif.get(); }
+  const char* get_config_string() { return &config_string->contents()[0]; }
 
   // returns the number of processors in this simulator
   size_t num_cores() { return procs.size(); }
