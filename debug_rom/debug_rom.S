@@ -32,11 +32,7 @@ resume:
 clear_debint:
         csrr    s1, CSR_MHARTID
         sw      s1, CLEARDEBINT(zero)
-        # TODO: race: what if the debugger sets debug int at this point?
-clear_debint_loop:
-        csrr    s1, DCSR
-        andi    s1, s1, (1<<DCSR_DEBUGINT_OFFSET)
-        bnez    s1, clear_debint_loop
+        fence
 
         # Restore s1.
         csrr    s1, CSR_MISA
