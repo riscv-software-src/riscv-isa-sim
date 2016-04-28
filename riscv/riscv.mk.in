@@ -41,6 +41,8 @@ riscv_srcs = \
 	rocc.cc \
 	regnames.cc \
 	devices.cc \
+	rom.cc \
+	rtc.cc \
 	$(riscv_gen_srcs) \
 
 riscv_test_srcs =

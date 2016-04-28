@@ -5,6 +5,8 @@
 #include <map>
 #include <vector>
 
+class processor_t;
+
 class abstract_device_t {
  public:
   virtual bool load(reg_t addr, size_t len, uint8_t* bytes) = 0;
@@ -27,8 +29,22 @@ class rom_device_t : public abstract_device_t {
   rom_device_t(std::vector<char> data);
   bool load(reg_t addr, size_t len, uint8_t* bytes);
   bool store(reg_t addr, size_t len, const uint8_t* bytes);
+  const std::vector<char>& contents() { return data; }
  private:
   std::vector<char> data;
+};
+
+class rtc_t : public abstract_device_t {
+ public:
+  rtc_t(std::vector<processor_t*>&);
+  bool load(reg_t addr, size_t len, uint8_t* bytes);
+  bool store(reg_t addr, size_t len, const uint8_t* bytes);
+  size_t size() { return regs.size() * sizeof(regs[0]); }
+  void increment(reg_t inc);
+ private:
+  std::vector<processor_t*>& procs;
+  std::vector<uint64_t> regs;
+  uint64_t time() { return regs[0]; }
 };
 
 #endif

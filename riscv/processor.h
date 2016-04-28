@@ -45,7 +45,6 @@ struct state_t
   reg_t mstatus;
   reg_t mepc;
   reg_t mbadaddr;
-  reg_t mtimecmp;
   reg_t mscratch;
   reg_t mcause;
   reg_t minstret;
@@ -136,6 +135,7 @@ private:
 
   friend class sim_t;
   friend class mmu_t;
+  friend class rtc_t;
   friend class extension_t;
 
   void parse_isa_string(const char* isa);

@@ -22,7 +22,7 @@ static void handle_signal(int sig)
 sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb,
              const std::vector<std::string>& args)
   : htif(new htif_isasim_t(this, args)), procs(std::max(nprocs, size_t(1))),
-    rtc(0), current_step(0), current_proc(0), debug(false)
+    current_step(0), current_proc(0), debug(false)
 {
   signal(SIGINT, &handle_signal);
   // allocate target machine's memory, shrinking it as necessary
@@ -45,6 +45,7 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb,
   for (size_t i = 0; i < procs.size(); i++)
     procs[i] = new processor_t(isa, this, i);
 
+  rtc.reset(new rtc_t(procs));
   make_config_string();
 }
 
@@ -94,7 +95,7 @@ void sim_t::step(size_t n)
       procs[current_proc]->yield_load_reservation();
       if (++current_proc == procs.size()) {
         current_proc = 0;
-        rtc += INTERLEAVE / INSNS_PER_RTC_TICK;
+        rtc->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
       }
 
       htif->tick();
@@ -161,11 +162,18 @@ void sim_t::make_config_string()
   size_t device_tree_addr = memsz;
   size_t cpu_addr = memsz + csr_size;
 
+  reg_t rtc_addr = memsz;
+  bus.add_device(rtc_addr, rtc.get());
+  config_string_addr = rtc_addr + rtc->size();
+
   std::stringstream s;
   s << std::hex <<
         "platform {\n"
         "  vendor ucb;\n"
         "  arch spike;\n"
+        "};\n"
+        "rtc {\n"
+        "  addr 0x" << rtc_addr << ";\n"
         "};\n"
         "ram {\n"
         "  0 {\n"
@@ -180,6 +188,7 @@ void sim_t::make_config_string()
         "    " << "0 {\n" << // hart 0 on core i
         "      isa " << procs[i]->isa_string << ";\n"
         "      addr 0x" << cpu_addr << ";\n"
+        "      timecmp 0x" << (rtc_addr + 8*(1+i)) << ";\n"
         "    };\n"
         "  };\n";
     bus.add_device(cpu_addr, procs[i]);
@@ -192,5 +201,5 @@ void sim_t::make_config_string()
   vec.push_back(0);
   assert(vec.size() <= csr_size);
   config_string.reset(new rom_device_t(vec));
-  bus.add_device(memsz, config_string.get());
+  bus.add_device(config_string_addr, config_string.get());
 }

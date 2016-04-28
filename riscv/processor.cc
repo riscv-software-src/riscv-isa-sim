@@ -165,8 +165,6 @@ static int ctz(reg_t val)
 
 void processor_t::take_interrupt()
 {
-  check_timer();
-
   reg_t pending_interrupts = state.mip & state.mie;
 
   reg_t mie = get_field(state.mstatus, MSTATUS_MIE);
@@ -179,12 +177,6 @@ void processor_t::take_interrupt()
 
   if (enabled_interrupts)
     raise_interrupt(ctz(enabled_interrupts));
-}
-
-void processor_t::check_timer()
-{
-  if (sim->rtc >= state.mtimecmp)
-    state.mip |= MIP_MTIP;
 }
 
 static bool validate_priv(reg_t priv)
@@ -355,10 +347,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
-    case CSR_MTIMECMP:
-      state.mip &= ~MIP_MTIP;
-      state.mtimecmp = val;
-      break;
     case CSR_MTOHOST:
       if (state.tohost == 0)
         state.tohost = val;
@@ -415,10 +403,8 @@ reg_t processor_t::get_csr(int which)
     case CSR_MSCYCLE_DELTAH: if (xlen > 32) break; else return 0;
     case CSR_MSTIME_DELTAH: if (xlen > 32) break; else return 0;
     case CSR_MSINSTRET_DELTAH: if (xlen > 32) break; else return 0;
-    case CSR_MTIME: return sim->rtc;
     case CSR_MCYCLE: return state.minstret;
     case CSR_MINSTRET: return state.minstret;
-    case CSR_MTIMEH: if (xlen > 32) break; else return sim->rtc >> 32;
     case CSR_MCYCLEH: if (xlen > 32) break; else return state.minstret >> 32;
     case CSR_MINSTRETH: if (xlen > 32) break; else return state.minstret >> 32;
     case CSR_SSTATUS: {
@@ -450,7 +436,6 @@ reg_t processor_t::get_csr(int which)
     case CSR_MSCRATCH: return state.mscratch;
     case CSR_MCAUSE: return state.mcause;
     case CSR_MBADADDR: return state.mbadaddr;
-    case CSR_MTIMECMP: return state.mtimecmp;
     case CSR_MISA: return isa;
     case CSR_MARCHID: return 0;
     case CSR_MIMPID: return 0;
@@ -465,7 +450,7 @@ reg_t processor_t::get_csr(int which)
     case CSR_MFROMHOST:
       sim->get_htif()->tick(); // not necessary, but faster
       return state.fromhost;
-    case CSR_MCFGADDR: return sim->memsz;
+    case CSR_MCFGADDR: return sim->config_string_addr;
   }
   throw trap_illegal_instruction();
 }

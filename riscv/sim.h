@@ -44,13 +44,14 @@ private:
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
   std::unique_ptr<rom_device_t> config_string;
+  std::unique_ptr<rtc_t> rtc;
+  reg_t config_string_addr;
   bus_t bus;
 
   processor_t* get_core(const std::string& i);
   void step(size_t n); // step through simulation
   static const size_t INTERLEAVE = 5000;
   static const size_t INSNS_PER_RTC_TICK = 100; // 10 MHz clock for 1 BIPS core
-  reg_t rtc;
   size_t current_step;
   size_t current_proc;
   bool debug;
