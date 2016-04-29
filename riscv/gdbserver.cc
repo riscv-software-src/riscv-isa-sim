@@ -100,6 +100,28 @@ static uint32_t sd(unsigned int src, unsigned int base, uint16_t offset)
     MATCH_SD;
 }
 
+static uint32_t fsd(unsigned int src, unsigned int base, uint16_t offset)
+{
+  return (bits(offset, 11, 5) << 25) |
+    (bits(src, 4, 0) << 20) |
+    (base << 15) |
+    (bits(offset, 4, 0) << 7) |
+    MATCH_FSD;
+}
+
+static uint32_t addi(unsigned int dest, unsigned int src, uint16_t imm)
+{
+  return (bits(imm, 11, 0) << 20) |
+    (src << 15) |
+    (dest << 7) |
+    MATCH_ADDI;
+}
+
+static uint32_t nop()
+{
+  return addi(0, 0, 0);
+}
+
 template <typename T>
 unsigned int circular_buffer_t<T>::size() const
 {
@@ -263,28 +285,22 @@ class register_read_op_t : public operation_t
         // send(p->state.XPR[reg - REG_XPR0]);
       } else if (reg == REG_PC) {
         gs.write_debug_ram(0, csrr(S0, DPC_ADDRESS));
-        gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START));
+        gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
         gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
-        gs.set_interrupt(0);
       } else if (reg >= REG_FPR0 && reg <= REG_FPR31) {
-        die("handle_register_read");
         // send(p->state.FPR[reg - REG_FPR0]);
+        gs.write_debug_ram(0, fsd(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+        gs.write_debug_ram(1, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*1))));
       } else if (reg >= REG_CSR0 && reg <= REG_CSR4095) {
-        try {
-          die("handle_register_read");
-          // send(p->get_csr(reg - REG_CSR0));
-        } catch(trap_t& t) {
-          // It would be nicer to return an error here, but if you do that then gdb
-          // exits out of 'info registers all' as soon as it encounters a register
-          // that can't be read.
-          gs.start_packet();
-          gs.send((reg_t) 0);
-          gs.end_packet();
-        }
+        gs.write_debug_ram(0, csrr(S0, reg - REG_CSR0));
+        gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
       } else {
         gs.send_packet("E02");
         return true;
       }
+
+      gs.set_interrupt(0);
 
       return false;
     }
@@ -292,7 +308,7 @@ class register_read_op_t : public operation_t
     bool step()
     {
       gs.start_packet();
-      gs.send(((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0));
+      gs.send(((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4));
       gs.end_packet();
       return true;
     }
