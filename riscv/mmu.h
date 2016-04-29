@@ -7,6 +7,7 @@
 #include "trap.h"
 #include "common.h"
 #include "config.h"
+#include "sim.h"
 #include "processor.h"
 #include "memtracer.h"
 #include <stdlib.h>
@@ -33,7 +34,7 @@ struct icache_entry_t {
 class mmu_t
 {
 public:
-  mmu_t(char* _mem, size_t _memsz);
+  mmu_t(sim_t* sim, processor_t* proc);
   ~mmu_t();
 
   // template for functions that load an aligned value from memory
@@ -93,10 +94,7 @@ public:
     int length = insn_length(insn);
 
     if (likely(length == 4)) {
-      if (likely(addr % PGSIZE < PGSIZE-2))
-        insn |= (insn_bits_t)*(const int16_t*)(iaddr + 1) << 16;
-      else
-        insn |= (insn_bits_t)*(const int16_t*)translate_insn_addr(addr + 2) << 16;
+      insn |= (insn_bits_t)*(const int16_t*)translate_insn_addr(addr + 2) << 16;
     } else if (length == 2) {
       insn = (int16_t)insn;
     } else if (length == 6) {
@@ -113,7 +111,7 @@ public:
     entry->tag = addr;
     entry->data = fetch;
 
-    reg_t paddr = (const char*)iaddr - mem;
+    reg_t paddr = sim->mem_to_addr((char*)iaddr);
     if (tracer.interested_in_range(paddr, paddr + 1, FETCH)) {
       entry->tag = -1;
       tracer.trace(paddr, length, FETCH);
@@ -134,18 +132,16 @@ public:
     return access_icache(addr)->data;
   }
 
-  void set_processor(processor_t* p) { proc = p; flush_tlb(); }
-
   void flush_tlb();
   void flush_icache();
 
   void register_memtracer(memtracer_t*);
 
 private:
-  char* mem;
-  size_t memsz;
+  sim_t* sim;
   processor_t* proc;
   memtracer_list_t tracer;
+  uint16_t fetch_temp;
 
   // implement an instruction cache for simulator performance
   icache_entry_t icache[ICACHE_ENTRIES];

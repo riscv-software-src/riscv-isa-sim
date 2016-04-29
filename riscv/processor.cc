@@ -5,6 +5,7 @@
 #include "common.h"
 #include "config.h"
 #include "sim.h"
+#include "mmu.h"
 #include "htif.h"
 #include "disasm.h"
 #include <cinttypes>
@@ -25,8 +26,7 @@ processor_t::processor_t(const char* isa, sim_t* sim, uint32_t id)
 {
   parse_isa_string(isa);
 
-  mmu = new mmu_t(sim->mem, sim->memsz);
-  mmu->set_processor(this);
+  mmu = new mmu_t(sim, this);
 
   reset(true);
 
@@ -217,7 +217,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     set_csr(CSR_MSTATUS, s);
     set_privilege(PRV_S);
   } else {
-    state.pc = DEFAULT_MTVEC;
+    state.pc = state.mtvec;
     state.mcause = t.cause();
     state.mepc = epc;
     if (t.has_badaddr())
@@ -344,6 +344,7 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SCAUSE: state.scause = val; break;
     case CSR_SBADADDR: state.sbadaddr = val; break;
     case CSR_MEPC: state.mepc = val; break;
+    case CSR_MTVEC: state.mtvec = val >> 2 << 2; break;
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
@@ -441,7 +442,7 @@ reg_t processor_t::get_csr(int which)
     case CSR_MIMPID: return 0;
     case CSR_MVENDORID: return 0;
     case CSR_MHARTID: return id;
-    case CSR_MTVEC: return DEFAULT_MTVEC;
+    case CSR_MTVEC: return state.mtvec;
     case CSR_MEDELEG: return state.medeleg;
     case CSR_MIDELEG: return state.mideleg;
     case CSR_MTOHOST:

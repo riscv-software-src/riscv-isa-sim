@@ -67,9 +67,12 @@
 #define IRQ_COP      12
 #define IRQ_HOST     13
 
-#define DEFAULT_RSTVEC 0x0
-#define DEFAULT_NMIVEC 0x4
-#define DEFAULT_MTVEC  0x8
+#define DEFAULT_RSTVEC 0x1000
+#define DEFAULT_NMIVEC 0x1004
+#define CFGSTRING_ADDR 0x100C
+#define DEFAULT_MTVEC  0x1010
+#define IO_BASE  0x40000000
+#define MEM_BASE 0x80000000
 
 // page table entry (PTE) fields
 #define PTE_V     0x001 // Valid

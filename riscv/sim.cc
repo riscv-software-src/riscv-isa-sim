@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "sim.h"
+#include "mmu.h"
 #include "htif.h"
 #include <map>
 #include <iostream>
@@ -40,7 +41,7 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb,
     fprintf(stderr, "warning: only got %lu bytes of target mem (wanted %lu)\n",
             (unsigned long)memsz, (unsigned long)memsz0);
 
-  debug_mmu = new mmu_t(mem, memsz);
+  debug_mmu = new mmu_t(this, NULL);
 
   for (size_t i = 0; i < procs.size(); i++)
     procs[i] = new processor_t(isa, this, i);
@@ -158,13 +159,20 @@ bool sim_t::mmio_store(reg_t addr, size_t len, const uint8_t* bytes)
 
 void sim_t::make_config_string()
 {
-  size_t csr_size = NCSR * 16 /* RV128 */;
-  size_t device_tree_addr = memsz;
-  size_t cpu_addr = memsz + csr_size;
-
-  reg_t rtc_addr = memsz;
+  reg_t rtc_addr = IO_BASE;
   bus.add_device(rtc_addr, rtc.get());
-  config_string_addr = rtc_addr + rtc->size();
+
+  uint32_t reset_vec[8] = {
+    0x297 + MEM_BASE - DEFAULT_RSTVEC, // reset vector
+    0x00028067,                        //   jump straight to MEM_BASE
+    0x00000000,                        // reserved
+    0,                                 // pointer to configuration string
+    0, 0, 0, 0                         // trap vector
+  };
+  config_string_addr = DEFAULT_RSTVEC + sizeof(reset_vec);
+  reset_vec[3] = config_string_addr;
+
+  std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
 
   std::stringstream s;
   s << std::hex <<
@@ -177,8 +185,8 @@ void sim_t::make_config_string()
         "};\n"
         "ram {\n"
         "  0 {\n"
-        "    addr 0;\n"
-        "    size 0x" << memsz << ";\n"
+        "    addr 0x" << MEM_BASE << ";\n"
+        "    size 0x" << (MEM_BASE + memsz) << ";\n"
         "  };\n"
         "};\n"
         "core {\n";
@@ -187,19 +195,15 @@ void sim_t::make_config_string()
         "  " << i << " {\n"
         "    " << "0 {\n" << // hart 0 on core i
         "      isa " << procs[i]->isa_string << ";\n"
-        "      addr 0x" << cpu_addr << ";\n"
         "      timecmp 0x" << (rtc_addr + 8*(1+i)) << ";\n"
         "    };\n"
         "  };\n";
-    bus.add_device(cpu_addr, procs[i]);
-    cpu_addr += csr_size;
   }
   s <<  "};\n";
 
-  std::string str = s.str();
-  std::vector<char> vec(str.begin(), str.end());
-  vec.push_back(0);
-  assert(vec.size() <= csr_size);
-  config_string.reset(new rom_device_t(vec));
-  bus.add_device(config_string_addr, config_string.get());
+  config_string = s.str();
+  rom.insert(rom.end(), config_string.begin(), config_string.end());
+  rom.push_back(0);
+  boot_rom.reset(new rom_device_t(rom));
+  bus.add_device(DEFAULT_RSTVEC, boot_rom.get());
 }

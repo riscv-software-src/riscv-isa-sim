@@ -3,6 +3,7 @@
 #include "decode.h"
 #include "disasm.h"
 #include "sim.h"
+#include "mmu.h"
 #include "htif.h"
 #include <sys/mman.h>
 #include <termios.h>

@@ -7,10 +7,10 @@
 #include <string>
 #include <memory>
 #include "processor.h"
-#include "mmu.h"
 #include "devices.h"
 
 class htif_isasim_t;
+class mmu_t;
 
 // this class encapsulates the processors and memory in a RISC-V machine.
 class sim_t
@@ -29,7 +29,7 @@ public:
   void set_histogram(bool value);
   void set_procs_debug(bool value);
   htif_isasim_t* get_htif() { return htif.get(); }
-  const char* get_config_string() { return &config_string->contents()[0]; }
+  const char* get_config_string() { return config_string.c_str(); }
 
   // returns the number of processors in this simulator
   size_t num_cores() { return procs.size(); }
@@ -44,7 +44,8 @@ private:
   size_t memsz; // memory size in bytes
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
-  std::unique_ptr<rom_device_t> config_string;
+  std::string config_string;
+  std::unique_ptr<rom_device_t> boot_rom;
   std::unique_ptr<rtc_t> rtc;
   reg_t config_string_addr;
   bus_t bus;
@@ -60,6 +61,11 @@ private:
   bool histogram_enabled; // provide a histogram of PCs
 
   // memory-mapped I/O routines
+  bool addr_is_mem(reg_t addr) {
+    return addr >= MEM_BASE && addr < MEM_BASE + memsz;
+  }
+  char* addr_to_mem(reg_t addr) { return mem + addr - MEM_BASE; }
+  reg_t mem_to_addr(char* x) { return x - mem + MEM_BASE; }
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
   void make_config_string();

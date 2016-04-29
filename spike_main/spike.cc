@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "sim.h"
+#include "mmu.h"
 #include "htif.h"
 #include "cachesim.h"
 #include "extension.h"

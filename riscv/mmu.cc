@@ -4,8 +4,8 @@
 #include "sim.h"
 #include "processor.h"
 
-mmu_t::mmu_t(char* _mem, size_t _memsz)
- : mem(_mem), memsz(_memsz), proc(NULL)
+mmu_t::mmu_t(sim_t* sim, processor_t* proc)
+ : sim(sim), proc(proc)
 {
   flush_tlb();
 }
@@ -54,23 +54,26 @@ reg_t mmu_t::translate(reg_t addr, access_type type)
 const uint16_t* mmu_t::fetch_slow_path(reg_t addr)
 {
   reg_t paddr = translate(addr, FETCH);
-  if (paddr < memsz)
+  if (sim->addr_is_mem(paddr)) {
     refill_tlb(addr, paddr, FETCH);
-  else
-    throw trap_instruction_access_fault(addr);
-  return (const uint16_t*)(mem + paddr);
+    return (const uint16_t*)sim->addr_to_mem(paddr);
+  } else {
+    if (!sim->mmio_load(paddr, sizeof fetch_temp, (uint8_t*)&fetch_temp))
+      throw trap_instruction_access_fault(addr);
+    return &fetch_temp;
+  }
 }
 
 void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes)
 {
   reg_t paddr = translate(addr, LOAD);
-  if (paddr < memsz) {
-    memcpy(bytes, mem + paddr, len);
+  if (sim->addr_is_mem(paddr)) {
+    memcpy(bytes, sim->addr_to_mem(paddr), len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
       tracer.trace(paddr, len, LOAD);
     else
       refill_tlb(addr, paddr, LOAD);
-  } else if (!proc || !proc->sim->mmio_load(paddr, len, bytes)) {
+  } else if (!sim->mmio_load(paddr, len, bytes)) {
     throw trap_load_access_fault(addr);
   }
 }
@@ -78,13 +81,13 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes)
 void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes)
 {
   reg_t paddr = translate(addr, STORE);
-  if (paddr < memsz) {
-    memcpy(mem + paddr, bytes, len);
+  if (sim->addr_is_mem(paddr)) {
+    memcpy(sim->addr_to_mem(paddr), bytes, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
       tracer.trace(paddr, len, STORE);
     else
       refill_tlb(addr, paddr, STORE);
-  } else if (!proc || !proc->sim->mmio_store(paddr, len, bytes)) {
+  } else if (!sim->mmio_store(paddr, len, bytes)) {
     throw trap_store_access_fault(addr);
   }
 }
@@ -102,7 +105,7 @@ void mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, access_type type)
   else if (type == STORE) tlb_store_tag[idx] = expected_tag;
   else tlb_load_tag[idx] = expected_tag;
 
-  tlb_data[idx] = mem + paddr - vaddr;
+  tlb_data[idx] = sim->addr_to_mem(paddr) - vaddr;
 }
 
 reg_t mmu_t::walk(reg_t addr, access_type type, bool supervisor, bool pum)
@@ -130,10 +133,10 @@ reg_t mmu_t::walk(reg_t addr, access_type type, bool supervisor, bool pum)
 
     // check that physical address of PTE is legal
     reg_t pte_addr = base + idx * ptesize;
-    if (pte_addr >= memsz)
+    if (!sim->addr_is_mem(pte_addr))
       break;
 
-    void* ppte = mem + pte_addr;
+    void* ppte = sim->addr_to_mem(pte_addr);
     reg_t pte = ptesize == 4 ? *(uint32_t*)ppte : *(uint64_t*)ppte;
     reg_t ppn = pte >> PTE_PPN_SHIFT;
 
