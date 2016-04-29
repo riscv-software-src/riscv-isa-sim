@@ -72,6 +72,12 @@ static uint32_t csrsi(unsigned int csr, uint8_t imm) {
     MATCH_CSRRSI;
 }
 
+static uint32_t csrci(unsigned int csr, uint8_t imm) {
+  return (csr << 20) |
+    (bits(imm, 4, 0) << 15) |
+    MATCH_CSRRCI;
+}
+
 static uint32_t csrr(unsigned int rd, unsigned int csr) {
   return (csr << 20) | (rd << 7) | MATCH_CSRRS;
 }
@@ -695,6 +701,10 @@ void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
     if (*iter != '#')
       return send_packet("E30");
   }
+
+  write_debug_ram(0, csrci(DCSR_ADDRESS, DCSR_HALT_MASK));
+  write_debug_ram(1, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 1*5))));
+  set_interrupt(0);
 
   // TODO p->set_halted(false, HR_NONE);
   // TODO running = true;
