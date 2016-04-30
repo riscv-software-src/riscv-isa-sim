@@ -239,6 +239,7 @@ private:
 #define DEBUG_START             0x100
 #define DEBUG_ROM_START         0x800
 #define DEBUG_ROM_RESUME        (DEBUG_ROM_START + 4)
+#define DEBUG_ROM_EXCEPTION     (DEBUG_ROM_START + 8)
 #define DEBUG_ROM_END           (DEBUG_ROM_START + debug_rom_raw_len)
 #define DEBUG_RAM_START         0x400
 #define DEBUG_RAM_SIZE          64

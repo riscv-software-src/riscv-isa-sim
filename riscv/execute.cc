@@ -61,9 +61,9 @@ void processor_t::step(size_t n)
   }
 
   if (state.dcsr.cause != DCSR_CAUSE_NONE) {
-    // In Debug Mode, just do 10 steps at a time. Otherwise we're going to be
+    // In Debug Mode, just do 11 steps at a time. Otherwise we're going to be
     // spinning the rest of the time anyway.
-    n = std::min(n, (size_t) 10);
+    n = std::min(n, (size_t) 11);
   }
 
   while (n > 0) {

@@ -20,14 +20,25 @@
 
         .global entry
         .global resume
+        .global exception
 
         # Automatically called when Debug Mode is first entered.
 entry:  j       _entry
         # Should be called by Debug RAM code that has finished execution and
         # wants to return to Debug Mode.
 resume:
+        j       _resume
+exception:
+        # Flip the LSB of the first word in Debug RAM so the debugger can know
+        # that we hit an exception.
+        lw      s1, (DEBUG_RAM)(zero)
+        xori    s1, s1, 1
+        sw      s1, (DEBUG_RAM)(zero)
+
+        # Fall through to resume.
+
+_resume:
         # Clear debug interrupt.
-clear_debint:
         csrr    s1, CSR_MHARTID
         sw      s1, CLEARDEBINT(zero)
         fence

@@ -295,6 +295,10 @@ class register_read_op_t : public operation_t
         gs.write_debug_ram(0, csrr(S0, reg - REG_CSR0));
         gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
         gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        // If we hit an exception reading the CSR, we'll end up returning ~0 as
+        // the register's value, which is what we want. (Right?)
+        gs.write_debug_ram(4, 0xffffffff);
+        gs.write_debug_ram(5, 0xffffffff);
       } else {
         gs.send_packet("E02");
         return true;

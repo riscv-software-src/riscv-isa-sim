@@ -236,7 +236,11 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     set_csr(CSR_MSTATUS, s);
     set_privilege(PRV_S);
   } else {
-    state.pc = state.mtvec;
+    if (state.dcsr.cause) {
+      state.pc = DEBUG_ROM_EXCEPTION;
+    } else {
+      state.pc = state.mtvec;
+    }
     state.mcause = t.cause();
     state.mepc = epc;
     if (t.has_badaddr())
