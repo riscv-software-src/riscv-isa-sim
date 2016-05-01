@@ -58,16 +58,6 @@ sim_t::~sim_t()
   free(mem);
 }
 
-reg_t sim_t::get_scr(int which)
-{
-  switch (which)
-  {
-    case 0: return procs.size();
-    case 1: return memsz >> 20;
-    default: return -1;
-  }
-}
-
 int sim_t::run()
 {
   if (!debug && log)
@@ -159,18 +149,19 @@ bool sim_t::mmio_store(reg_t addr, size_t len, const uint8_t* bytes)
 
 void sim_t::make_config_string()
 {
-  reg_t rtc_addr = IO_BASE;
+  reg_t boot_rom_addr = DEFAULT_RSTVEC;
+  reg_t boot_rom_size = 0x2000;
+  reg_t rtc_addr = boot_rom_addr + boot_rom_size;
   bus.add_device(rtc_addr, rtc.get());
 
   uint32_t reset_vec[8] = {
-    0x297 + MEM_BASE - DEFAULT_RSTVEC, // reset vector
-    0x00028067,                        //   jump straight to MEM_BASE
-    0x00000000,                        // reserved
-    0,                                 // pointer to configuration string
-    0, 0, 0, 0                         // trap vector
+    0x297 + DRAM_BASE - DEFAULT_RSTVEC, // reset vector
+    0x00028067,                         //   jump straight to DRAM_BASE
+    0x00000000,                         // reserved
+    0,                                  // config string pointer
+    0, 0, 0, 0                          // trap vector
   };
-  config_string_addr = DEFAULT_RSTVEC + sizeof(reset_vec);
-  reset_vec[3] = config_string_addr;
+  reset_vec[3] = boot_rom_addr + sizeof(reset_vec); // config string pointer
 
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
 
@@ -185,8 +176,8 @@ void sim_t::make_config_string()
         "};\n"
         "ram {\n"
         "  0 {\n"
-        "    addr 0x" << MEM_BASE << ";\n"
-        "    size 0x" << (MEM_BASE + memsz) << ";\n"
+        "    addr 0x" << DRAM_BASE << ";\n"
+        "    size 0x" << memsz << ";\n"
         "  };\n"
         "};\n"
         "core {\n";
@@ -203,7 +194,9 @@ void sim_t::make_config_string()
 
   config_string = s.str();
   rom.insert(rom.end(), config_string.begin(), config_string.end());
-  rom.push_back(0);
+  assert(rom.size() < boot_rom_size);
+  rom.resize(boot_rom_size);
+
   boot_rom.reset(new rom_device_t(rom));
-  bus.add_device(DEFAULT_RSTVEC, boot_rom.get());
+  bus.add_device(boot_rom_addr, boot_rom.get());
 }

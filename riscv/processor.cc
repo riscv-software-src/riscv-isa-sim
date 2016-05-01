@@ -451,7 +451,6 @@ reg_t processor_t::get_csr(int which)
     case CSR_MFROMHOST:
       sim->get_htif()->tick(); // not necessary, but faster
       return state.fromhost;
-    case CSR_MCFGADDR: return sim->config_string_addr;
   }
   throw trap_illegal_instruction();
 }

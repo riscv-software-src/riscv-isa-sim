@@ -35,9 +35,6 @@ public:
   size_t num_cores() { return procs.size(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
 
-  // read one of the system control registers
-  reg_t get_scr(int which);
-
 private:
   std::unique_ptr<htif_isasim_t> htif;
   char* mem; // main memory
@@ -47,7 +44,6 @@ private:
   std::string config_string;
   std::unique_ptr<rom_device_t> boot_rom;
   std::unique_ptr<rtc_t> rtc;
-  reg_t config_string_addr;
   bus_t bus;
 
   processor_t* get_core(const std::string& i);
@@ -62,10 +58,10 @@ private:
 
   // memory-mapped I/O routines
   bool addr_is_mem(reg_t addr) {
-    return addr >= MEM_BASE && addr < MEM_BASE + memsz;
+    return addr >= DRAM_BASE && addr < DRAM_BASE + memsz;
   }
-  char* addr_to_mem(reg_t addr) { return mem + addr - MEM_BASE; }
-  reg_t mem_to_addr(char* x) { return x - mem + MEM_BASE; }
+  char* addr_to_mem(reg_t addr) { return mem + addr - DRAM_BASE; }
+  reg_t mem_to_addr(char* x) { return x - mem + DRAM_BASE; }
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
   void make_config_string();

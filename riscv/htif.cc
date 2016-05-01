@@ -86,13 +86,6 @@ void htif_isasim_t::tick_once()
       packet_header_t ack(HTIF_CMD_ACK, seqno, 1, 0);
       send(&ack, sizeof(ack));
 
-      if (coreid == 0xFFFFF) // system control register space
-      {
-        uint64_t scr = sim->get_scr(regno);
-        send(&scr, sizeof(scr));
-        break;
-      }
-
       processor_t* proc = sim->get_core(coreid);
       bool write = hdr.cmd == HTIF_CMD_WRITE_CONTROL_REG;
       if (write)
