@@ -206,9 +206,13 @@ void processor_t::enter_debug_mode(uint8_t cause)
 
 void processor_t::take_trap(trap_t& t, reg_t epc)
 {
-  if (debug)
+  if (debug) {
     fprintf(stderr, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
             id, t.name(), epc);
+    if (t.has_badaddr())
+      fprintf(stderr, "core %3d:           badaddr 0x%016" PRIx64 "\n", id,
+          t.get_badaddr());
+  }
 
   if (t.cause() == CAUSE_BREAKPOINT &&
           sim->gdbserver && sim->gdbserver->connected()) {

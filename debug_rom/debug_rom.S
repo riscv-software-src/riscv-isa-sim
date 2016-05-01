@@ -29,15 +29,14 @@ entry:  j       _entry
 resume:
         j       _resume
 exception:
-        # Flip the LSB of the first word in Debug RAM so the debugger can know
-        # that we hit an exception.
-        lw      s1, (DEBUG_RAM)(zero)
-        xori    s1, s1, 1
-        sw      s1, (DEBUG_RAM)(zero)
-
-        # Fall through to resume.
+        # Set the last word of Debug RAM to all ones, to indicate that we hit
+        # an exception.
+        li      s0, ~0
+        j       _resume2
 
 _resume:
+        li      s0, 0
+_resume2:
         # Clear debug interrupt.
         csrr    s1, CSR_MHARTID
         sw      s1, CLEARDEBINT(zero)
@@ -58,6 +57,11 @@ restore_64:
 restore_128:
         nop     #lq      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 16)(zero)
 
+        # s0 contains ~0 if we got here through an exception, and 0 otherwise.
+        # Store this to the last word in Debug RAM so the debugger can tell if
+        # an exception occurred.
+        sw      s0, (DEBUG_RAM + DEBUG_RAM_SIZE - 4)(zero)
+
 check_halt:
         csrr    s0, DCSR
         andi    s0, s0, (1<<DCSR_HALT_OFFSET)
@@ -68,7 +72,7 @@ exit:
         # Restore s0.
         csrr    s0, DSCRATCH
         # TODO: dret?
-        mret
+        sret
 
 
 _entry:

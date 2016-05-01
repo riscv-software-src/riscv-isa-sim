@@ -104,13 +104,36 @@ static uint32_t sd(unsigned int src, unsigned int base, uint16_t offset)
     MATCH_SD;
 }
 
-static uint32_t ld(unsigned int src, unsigned int base, uint16_t offset)
+static uint32_t ld(unsigned int rd, unsigned int base, uint16_t offset)
 {
-  return (bits(offset, 11, 5) << 25) |
-    (bits(src, 4, 0) << 20) |
+  return (bits(offset, 11, 0) << 20) |
     (base << 15) |
-    (bits(offset, 4, 0) << 7) |
+    (bits(rd, 4, 0) << 7) |
     MATCH_LD;
+}
+
+static uint32_t lw(unsigned int rd, unsigned int base, uint16_t offset)
+{
+  return (bits(offset, 11, 0) << 20) |
+    (base << 15) |
+    (bits(rd, 4, 0) << 7) |
+    MATCH_LW;
+}
+
+static uint32_t lh(unsigned int rd, unsigned int base, uint16_t offset)
+{
+  return (bits(offset, 11, 0) << 20) |
+    (base << 15) |
+    (bits(rd, 4, 0) << 7) |
+    MATCH_LH;
+}
+
+static uint32_t lb(unsigned int rd, unsigned int base, uint16_t offset)
+{
+  return (bits(offset, 11, 0) << 20) |
+    (base << 15) |
+    (bits(rd, 4, 0) << 7) |
+    MATCH_LB;
 }
 
 static uint32_t fsd(unsigned int src, unsigned int base, uint16_t offset)
@@ -413,6 +436,77 @@ class register_read_op_t : public operation_t
 
   private:
     unsigned int reg;
+};
+
+class memory_read_op_t : public operation_t
+{
+  public:
+    memory_read_op_t(gdbserver_t& gdbserver, reg_t addr, unsigned int length) :
+      operation_t(gdbserver), addr(addr), length(length) {};
+
+    bool start()
+    {
+      // address goes in S0
+      access_size = (addr % length);
+      if (access_size == 0)
+        access_size = length;
+
+      gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+      switch (access_size) {
+        case 1:
+          gs.write_debug_ram(1, lb(S1, S0, 0));
+          break;
+        case 2:
+          gs.write_debug_ram(1, lh(S1, S0, 0));
+          break;
+        case 4:
+          gs.write_debug_ram(1, lw(S1, S0, 0));
+          break;
+        case 8:
+          gs.write_debug_ram(1, ld(S1, S0, 0));
+          break;
+        default:
+          gs.send_packet("E12");
+          return true;
+      }
+      gs.write_debug_ram(2, sd(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+      gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
+      gs.write_debug_ram(4, addr);
+      gs.write_debug_ram(5, addr >> 32);
+      gs.set_interrupt(0);
+
+      gs.start_packet();
+
+      return false;
+    }
+
+    bool step()
+    {
+      char buffer[3];
+      reg_t value = ((uint64_t) gs.read_debug_ram(7) << 32) | gs.read_debug_ram(6);
+      for (unsigned int i = 0; i < access_size; i++) {
+        sprintf(buffer, "%02x", (unsigned int) (value & 0xff));
+        gs.send(buffer);
+        value >>= 8;
+      }
+      length -= access_size;
+      addr += access_size;
+
+      if (length == 0) {
+        gs.end_packet();
+        return true;
+      } else {
+        gs.write_debug_ram(4, addr);
+        gs.write_debug_ram(5, addr >> 32);
+        gs.set_interrupt(0);
+        return false;
+      }
+    }
+
+  private:
+    reg_t addr;
+    unsigned int length;
+    unsigned int access_size;
 };
 
 ////////////////////////////// gdbserver itself
@@ -764,16 +858,7 @@ void gdbserver_t::handle_memory_read(const std::vector<uint8_t> &packet)
   if (*iter != '#')
     return send_packet("E11");
 
-  start_packet();
-  char buffer[3];
-  processor_t *p = sim->get_core(0);
-  mmu_t* mmu = sim->debug_mmu;
-
-  for (reg_t i = 0; i < length; i++) {
-    sprintf(buffer, "%02x", mmu->load_uint8(address + i));
-    send(buffer);
-  }
-  end_packet();
+  set_operation(new memory_read_op_t(*this, address, length));
 }
 
 void gdbserver_t::handle_memory_binary_write(const std::vector<uint8_t> &packet)
