@@ -7,12 +7,9 @@ void bus_t::add_device(reg_t addr, abstract_device_t* dev)
 
 bool bus_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
-  fprintf(stderr, "bus load(0x%lx, %ld)\n", addr, len);
   auto it = devices.lower_bound(-addr);
-  if (it == devices.end()) {
-      fprintf(stderr, "  -> false\n");
+  if (it == devices.end())
     return false;
-  }
   return it->second->load(addr - -it->first, len, bytes);
 }
 
