@@ -115,6 +115,7 @@ void state_t::reset()
   memset(this, 0, sizeof(*this));
   prv = PRV_M;
   pc = DEFAULT_RSTVEC;
+  mtvec = DEFAULT_MTVEC;
   load_reservation = -1;
 }
 
