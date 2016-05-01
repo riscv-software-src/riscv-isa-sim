@@ -7,9 +7,12 @@ void bus_t::add_device(reg_t addr, abstract_device_t* dev)
 
 bool bus_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
+  fprintf(stderr, "bus load(0x%lx, %ld)\n", addr, len);
   auto it = devices.lower_bound(-addr);
-  if (it == devices.end())
+  if (it == devices.end()) {
+      fprintf(stderr, "  -> false\n");
     return false;
+  }
   return it->second->load(addr - -it->first, len, bytes);
 }
 
@@ -19,12 +22,4 @@ bool bus_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   if (it == devices.end())
     return false;
   return it->second->store(addr - -it->first, len, bytes);
-}
-
-char* bus_t::page(reg_t paddr)
-{
-  auto it = devices.lower_bound(-paddr);
-  if (it == devices.end())
-    return NULL;
-  return it->second->page(paddr);
 }

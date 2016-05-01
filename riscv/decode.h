@@ -236,16 +236,16 @@ private:
 #define DCSR_CAUSE_STEPPED      4
 #define DCSR_CAUSE_HALT         5
 
-#define DEBUG_START             0xfffffffffffff000
-#define DEBUG_ROM_START         0xfffffffffffff800       // TODO: 0x800
+#define DEBUG_START             0x100
+#define DEBUG_ROM_START         0x800
 #define DEBUG_ROM_RESUME        (DEBUG_ROM_START + 4)
 #define DEBUG_ROM_END           (DEBUG_ROM_START + debug_rom_raw_len)
-#define DEBUG_RAM_START         0xfffffffffffffc00       // TODO: 0x400
+#define DEBUG_RAM_START         0x400
 #define DEBUG_RAM_SIZE          64
 #define DEBUG_RAM_END           (DEBUG_RAM_START + DEBUG_RAM_SIZE)
-#define DEBUG_END               0xffffffffffffffff
-#define DEBUG_CLEARDEBINT       0xfffffffffffffef8
-#define DEBUG_SETHALTNOT        0xffffffffffffff00
+#define DEBUG_END               0xfff
+#define DEBUG_CLEARDEBINT       0x108
+#define DEBUG_SETHALTNOT        0x100
 #define DEBUG_SIZE              (DEBUG_END - DEBUG_START + 1)
 
 #endif

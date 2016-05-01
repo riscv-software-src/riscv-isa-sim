@@ -42,6 +42,8 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
     fprintf(stderr, "warning: only got %lu bytes of target mem (wanted %lu)\n",
             (unsigned long)memsz, (unsigned long)memsz0);
 
+  bus.add_device(DEBUG_START, &debug_module);
+
   debug_mmu = new mmu_t(this, NULL);
 
   for (size_t i = 0; i < procs.size(); i++) {
@@ -52,8 +54,6 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
 
   rtc.reset(new rtc_t(procs));
   make_config_string();
-
-  bus.add_device(DEBUG_START, &debug_module);
 }
 
 sim_t::~sim_t()
@@ -147,11 +147,6 @@ bool sim_t::mmio_store(reg_t addr, size_t len, const uint8_t* bytes)
   if (addr + len < addr)
     return false;
   return bus.store(addr, len, bytes);
-}
-
-char* sim_t::mmio_page(reg_t addr)
-{
-  return bus.page(addr);
 }
 
 void sim_t::make_config_string()

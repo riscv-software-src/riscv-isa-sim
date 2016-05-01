@@ -12,13 +12,11 @@
 
 #define DSCRATCH                0x792
 
-# TODO: Should be 0x400
-#define DEBUG_RAM               (-0x400)
+#define DEBUG_RAM               0x400
 #define DEBUG_RAM_SIZE          64
 
-# TODO: Should be 0x100, 0x108
-#define SETHALTNOT              (-0x100)
-#define CLEARDEBINT             (-0x108)
+#define SETHALTNOT              0x100
+#define CLEARDEBINT             0x108
 
         .global entry
         .global resume
@@ -58,7 +56,8 @@ check_halt:
 exit:
         # Restore s0.
         csrr    s0, DSCRATCH
-        eret
+        # TODO: dret?
+        mret
 
 
 _entry:

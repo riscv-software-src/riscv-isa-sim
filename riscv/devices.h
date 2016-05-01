@@ -11,9 +11,6 @@ class abstract_device_t {
  public:
   virtual bool load(reg_t addr, size_t len, uint8_t* bytes) = 0;
   virtual bool store(reg_t addr, size_t len, const uint8_t* bytes) = 0;
-  // Return a pointer to the start of the page that addr falls in, or NULL if
-  // there is no IO device at that address.
-  virtual char* page(reg_t addr) { return NULL; }
   virtual ~abstract_device_t() {}
 };
 
@@ -21,9 +18,6 @@ class bus_t : public abstract_device_t {
  public:
   bool load(reg_t addr, size_t len, uint8_t* bytes);
   bool store(reg_t addr, size_t len, const uint8_t* bytes);
-  // Return a pointer to the start of the page that addr falls in, or NULL if
-  // there is no IO device at that address.
-  char* page(reg_t paddr);
   void add_device(reg_t addr, abstract_device_t* dev);
 
  private:

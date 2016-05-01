@@ -9,11 +9,8 @@
 class debug_module_t : public abstract_device_t
 {
   public:
-    debug_module_t();
-
     bool load(reg_t addr, size_t len, uint8_t* bytes);
     bool store(reg_t addr, size_t len, const uint8_t* bytes);
-    char* page(reg_t paddr);
 
     void ram_write32(unsigned int index, uint32_t value);
     uint32_t ram_read32(unsigned int index);
@@ -33,8 +30,7 @@ class debug_module_t : public abstract_device_t
   private:
     // Track which interrupts from module to debugger are set.
     std::set<uint32_t> interrupt;
-    // TODO: use PGSIZE, which requires solving some circular include dependencies.
-    char raw_page[4096];
+    char debug_ram[DEBUG_RAM_SIZE];
 };
 
 #endif

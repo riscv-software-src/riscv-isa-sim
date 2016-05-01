@@ -68,9 +68,6 @@ private:
   reg_t mem_to_addr(char* x) { return x - mem + DRAM_BASE; }
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
-  // Return a pointer to the start of the page that addr falls in, or NULL if
-  // there is no IO device at that address.
-  char* mmio_page(reg_t addr);
   void make_config_string();
 
   // presents a prompt for introspection into the simulation

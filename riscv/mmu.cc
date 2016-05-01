@@ -51,28 +51,6 @@ reg_t mmu_t::translate(reg_t addr, access_type type)
   return walk(addr, type, mode > PRV_U, pum) | (addr & (PGSIZE-1));
 }
 
-const char* mmu_t::fill_from_mmio(reg_t vaddr, reg_t paddr)
-{
-  reg_t rv_start = paddr & PGMASK;
-  char* spike_start = proc->sim->mmio_page(rv_start);
-
-  if (!spike_start)
-    return NULL;
-
-  // TODO: refactor with refill_tlb()
-  reg_t idx = (vaddr >> PGSHIFT) % TLB_ENTRIES;
-  reg_t expected_tag = vaddr >> PGSHIFT;
-
-  if (tlb_load_tag[idx] != expected_tag) tlb_load_tag[idx] = -1;
-  if (tlb_store_tag[idx] != expected_tag) tlb_store_tag[idx] = -1;
-  if (tlb_insn_tag[idx] != expected_tag) tlb_insn_tag[idx] = -1;
-
-  tlb_insn_tag[idx] = expected_tag;
-  tlb_data[idx] = spike_start - DEBUG_START;
-
-  return spike_start + (paddr & ~PGMASK);
-}
-
 const uint16_t* mmu_t::fetch_slow_path(reg_t vaddr)
 {
   reg_t paddr = translate(vaddr, FETCH);
