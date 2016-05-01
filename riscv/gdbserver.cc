@@ -82,6 +82,10 @@ static uint32_t csrr(unsigned int rd, unsigned int csr) {
   return (csr << 20) | (rd << 7) | MATCH_CSRRS;
 }
 
+static uint32_t csrw(unsigned int source, unsigned int csr) {
+  return (csr << 20) | (source << 15) | MATCH_CSRRW;
+}
+
 static uint32_t sw(unsigned int src, unsigned int base, uint16_t offset)
 {
   return (bits(offset, 11, 5) << 25) |
@@ -98,6 +102,15 @@ static uint32_t sd(unsigned int src, unsigned int base, uint16_t offset)
     (base << 15) |
     (bits(offset, 4, 0) << 7) |
     MATCH_SD;
+}
+
+static uint32_t ld(unsigned int src, unsigned int base, uint16_t offset)
+{
+  return (bits(offset, 11, 5) << 25) |
+    (bits(src, 4, 0) << 20) |
+    (base << 15) |
+    (bits(offset, 4, 0) << 7) |
+    MATCH_LD;
 }
 
 static uint32_t fsd(unsigned int src, unsigned int base, uint16_t offset)
@@ -201,17 +214,87 @@ class halt_op_t : public operation_t
       gs.write_debug_ram(0, csrsi(DCSR_ADDRESS, DCSR_HALT_MASK));
       gs.write_debug_ram(1, csrr(S0, DPC_ADDRESS));
       gs.write_debug_ram(2, sd(S0, 0, (uint16_t) DEBUG_RAM_START));
-      gs.write_debug_ram(3, csrr(S0, DCSR_ADDRESS));
+      gs.write_debug_ram(3, csrr(S0, CSR_MBADADDR));
       gs.write_debug_ram(4, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 8));
       gs.write_debug_ram(5, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*5))));
       gs.set_interrupt(0);
+      // We could read mcause here as well, but only on 64-bit targets. I'm
+      // trying to keep The patterns here usable for 32-bit ISAs as well. (On a
+      // 32-bit ISA 8 words are required, while the minimum Debug RAM size is 7
+      // words.)
+      state = READ_DPC;
       return false;
     }
 
     bool step()
     {
-      return true;
+      if (state == READ_DPC) {
+        gs.saved_dpc = ((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0);
+        gs.saved_mbadaddr = ((uint64_t) gs.read_debug_ram(3) << 32) | gs.read_debug_ram(2);
+        gs.write_debug_ram(0, csrr(S0, CSR_MCAUSE));
+        gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.set_interrupt(0);
+        state = READ_CAUSE;
+        return false;
+      } else {
+        gs.saved_mcause = ((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0);
+        return true;
+      }
     }
+
+  private:
+    enum {
+      READ_DPC,
+      READ_CAUSE
+    } state;
+};
+
+class continue_op_t : public operation_t
+{
+  public:
+    continue_op_t(gdbserver_t& gdbserver) : operation_t(gdbserver) {};
+
+    bool start()
+    {
+      gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
+      gs.write_debug_ram(1, csrw(S0, DPC_ADDRESS));
+      gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+      gs.write_debug_ram(4, gs.saved_dpc);
+      gs.write_debug_ram(5, gs.saved_dpc >> 32);
+      gs.set_interrupt(0);
+      state = WRITE_DPC;
+      return false;
+    }
+
+    bool step()
+    {
+      if (state == WRITE_DPC) {
+        gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
+        gs.write_debug_ram(1, csrw(S0, CSR_MBADADDR));
+        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.write_debug_ram(4, gs.saved_mbadaddr);
+        gs.write_debug_ram(5, gs.saved_mbadaddr >> 32);
+        gs.set_interrupt(0);
+        state = WRITE_MBADADDR;
+        return false;
+      } else {
+        gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
+        gs.write_debug_ram(1, csrw(S0, CSR_MCAUSE));
+        gs.write_debug_ram(2, csrci(DCSR_ADDRESS, DCSR_HALT_MASK));
+        gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
+        gs.write_debug_ram(4, gs.saved_mcause);
+        gs.write_debug_ram(5, gs.saved_mcause >> 32);
+        gs.set_interrupt(0);
+        return true;
+      }
+    }
+
+  private:
+    enum {
+      WRITE_DPC,
+      WRITE_MBADADDR
+    } state;
 };
 
 class general_registers_read_op_t : public operation_t
@@ -284,13 +367,24 @@ class register_read_op_t : public operation_t
         die("handle_register_read");
         // send(p->state.XPR[reg - REG_XPR0]);
       } else if (reg == REG_PC) {
-        gs.write_debug_ram(0, csrr(S0, DPC_ADDRESS));
-        gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.start_packet();
+        gs.send(gs.saved_dpc);
+        gs.end_packet();
+        return true;
       } else if (reg >= REG_FPR0 && reg <= REG_FPR31) {
         // send(p->state.FPR[reg - REG_FPR0]);
         gs.write_debug_ram(0, fsd(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
         gs.write_debug_ram(1, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*1))));
+      } else if (reg == REG_CSR0 + CSR_MBADADDR) {
+        gs.start_packet();
+        gs.send(gs.saved_mbadaddr);
+        gs.end_packet();
+        return true;
+      } else if (reg == REG_CSR0 + CSR_MCAUSE) {
+        gs.start_packet();
+        gs.send(gs.saved_mcause);
+        gs.end_packet();
+        return true;
       } else if (reg >= REG_CSR0 && reg <= REG_CSR4095) {
         gs.write_debug_ram(0, csrr(S0, reg - REG_CSR0));
         gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
@@ -716,24 +810,17 @@ void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
   processor_t *p = sim->get_core(0);
   if (packet[2] != '#') {
     std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
-    die("handle_continue");
-    // p->state.pc = consume_hex_number(iter, packet.end());
+    saved_dpc = consume_hex_number(iter, packet.end());
     if (*iter != '#')
       return send_packet("E30");
   }
 
-  write_debug_ram(0, csrci(DCSR_ADDRESS, DCSR_HALT_MASK));
-  write_debug_ram(1, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 1*5))));
-  set_interrupt(0);
-
-  // TODO p->set_halted(false, HR_NONE);
-  // TODO running = true;
+  set_operation(new continue_op_t(*this));
 }
 
 void gdbserver_t::handle_step(const std::vector<uint8_t> &packet)
 {
   // s [addr]
-  processor_t *p = sim->get_core(0);
   if (packet[2] != '#') {
     std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
     die("handle_step");

@@ -7,3 +7,6 @@ s = set_field(s, MSTATUS_SPIE, 0);
 s = set_field(s, MSTATUS_SPP, PRV_U);
 p->set_privilege(prev_prv);
 p->set_csr(CSR_MSTATUS, s);
+
+/* We're not in Debug Mode anymore. */
+STATE.dcsr.cause = 0;

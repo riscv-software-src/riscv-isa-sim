@@ -132,6 +132,12 @@ public:
 
   void set_interrupt(uint32_t hartid);
 
+  // Members that ought to be privated, but that we'd really like to access
+  // from operation classes.
+  reg_t saved_dpc;
+  reg_t saved_mbadaddr;
+  reg_t saved_mcause;
+
 private:
   sim_t *sim;
   int socket_fd;
