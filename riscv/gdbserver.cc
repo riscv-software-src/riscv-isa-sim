@@ -86,6 +86,24 @@ static uint32_t csrw(unsigned int source, unsigned int csr) {
   return (csr << 20) | (source << 15) | MATCH_CSRRW;
 }
 
+static uint32_t sb(unsigned int src, unsigned int base, uint16_t offset)
+{
+  return (bits(offset, 11, 5) << 25) |
+    (src << 20) |
+    (base << 15) |
+    (bits(offset, 4, 0) << 7) |
+    MATCH_SB;
+}
+
+static uint32_t sh(unsigned int src, unsigned int base, uint16_t offset)
+{
+  return (bits(offset, 11, 5) << 25) |
+    (src << 20) |
+    (base << 15) |
+    (bits(offset, 4, 0) << 7) |
+    MATCH_SH;
+}
+
 static uint32_t sw(unsigned int src, unsigned int base, uint16_t offset)
 {
   return (bits(offset, 11, 5) << 25) |
@@ -509,6 +527,106 @@ class memory_read_op_t : public operation_t
     unsigned int access_size;
 };
 
+class memory_write_op_t : public operation_t
+{
+  public:
+    memory_write_op_t(gdbserver_t& gdbserver, reg_t addr, unsigned int length,
+        unsigned char *data) :
+      operation_t(gdbserver), addr(addr), offset(0), length(length), data(data) {};
+
+    ~memory_write_op_t() {
+      delete[] data;
+    }
+
+    bool start()
+    {
+      // address goes in S0
+      access_size = (addr % length);
+      if (access_size == 0)
+        access_size = length;
+
+      gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+      switch (access_size) {
+        case 1:
+          gs.write_debug_ram(1, lb(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+          gs.write_debug_ram(2, sb(S1, S0, 0));
+          gs.write_debug_ram(6, data[0]);
+          break;
+        case 2:
+          gs.write_debug_ram(1, lh(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+          gs.write_debug_ram(2, sh(S1, S0, 0));
+          gs.write_debug_ram(6, data[0] | (data[1] << 8));
+          break;
+        case 4:
+          gs.write_debug_ram(1, lw(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+          gs.write_debug_ram(2, sw(S1, S0, 0));
+          gs.write_debug_ram(6, data[0] | (data[1] << 8) |
+              (data[2] << 16) | (data[3] << 24));
+          break;
+        case 8:
+          gs.write_debug_ram(1, ld(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+          gs.write_debug_ram(2, sd(S1, S0, 0));
+          gs.write_debug_ram(6, data[0] | (data[1] << 8) |
+              (data[2] << 16) | (data[3] << 24));
+          gs.write_debug_ram(7, data[4] | (data[5] << 8) |
+              (data[6] << 16) | (data[7] << 24));
+          break;
+        default:
+          gs.send_packet("E12");
+          return true;
+      }
+      gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
+      gs.write_debug_ram(4, addr);
+      gs.write_debug_ram(5, addr >> 32);
+      gs.set_interrupt(0);
+
+      return false;
+    }
+
+    bool step()
+    {
+      offset += access_size;
+      if (offset >= length) {
+        gs.send_packet("OK");
+        return true;
+      } else {
+      const unsigned char *d = data + offset;
+      switch (access_size) {
+        case 1:
+          gs.write_debug_ram(6, d[0]);
+          break;
+        case 2:
+          gs.write_debug_ram(6, d[0] | (d[1] << 8));
+          break;
+        case 4:
+          gs.write_debug_ram(6, d[0] | (d[1] << 8) |
+              (d[2] << 16) | (d[3] << 24));
+          break;
+        case 8:
+          gs.write_debug_ram(6, d[0] | (d[1] << 8) |
+              (d[2] << 16) | (d[3] << 24));
+          gs.write_debug_ram(7, d[4] | (d[5] << 8) |
+              (d[6] << 16) | (d[7] << 24));
+          break;
+        default:
+          gs.send_packet("E12");
+          return true;
+      }
+        gs.write_debug_ram(4, addr + offset);
+        gs.write_debug_ram(5, (addr + offset) >> 32);
+        gs.set_interrupt(0);
+        return false;
+      }
+    }
+
+  private:
+    reg_t addr;
+    unsigned int offset;
+    unsigned int length;
+    unsigned int access_size;
+    unsigned char *data;
+};
+
 ////////////////////////////// gdbserver itself
 
 gdbserver_t::gdbserver_t(uint16_t port, sim_t *sim) :
@@ -874,19 +992,22 @@ void gdbserver_t::handle_memory_binary_write(const std::vector<uint8_t> &packet)
     return send_packet("E21");
   iter++;
 
-  processor_t *p = sim->get_core(0);
-  mmu_t* mmu = sim->debug_mmu;
+  if (length == 0) {
+    return send_packet("OK");
+  }
+
+  unsigned char *data = new unsigned char[length];
   for (unsigned int i = 0; i < length; i++) {
     if (iter == packet.end()) {
       return send_packet("E22");
     }
-    mmu->store_uint8(address + i, *iter);
+    data[i] = *iter;
     iter++;
   }
   if (*iter != '#')
     return send_packet("E4b"); // EOVERFLOW
 
-  send_packet("OK");
+  set_operation(new memory_write_op_t(*this, address, length, data));
 }
 
 void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
