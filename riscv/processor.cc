@@ -523,23 +523,20 @@ void processor_t::register_base_instructions()
 
 bool processor_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
-  try {
-    auto res = get_csr(addr / (max_xlen / 8));
-    memcpy(bytes, &res, len);
-    return true;
-  } catch (trap_illegal_instruction& t) {
-    return false;
-  }
+  return false;
 }
 
 bool processor_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
-  try {
-    reg_t value = 0;
-    memcpy(&value, bytes, len);
-    set_csr(addr / (max_xlen / 8), value);
-    return true;
-  } catch (trap_illegal_instruction& t) {
-    return false;
+  switch (addr)
+  {
+    case 0:
+      state.mip &= ~MIP_MSIP;
+      if (bytes[0] & 1)
+        state.mip |= MIP_MSIP;
+      return true;
+
+    default:
+      return false;
   }
 }

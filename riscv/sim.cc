@@ -142,10 +142,12 @@ bool sim_t::mmio_store(reg_t addr, size_t len, const uint8_t* bytes)
 
 void sim_t::make_config_string()
 {
-  reg_t boot_rom_addr = DEFAULT_RSTVEC;
-  reg_t boot_rom_size = 0x2000;
-  reg_t rtc_addr = boot_rom_addr + boot_rom_size;
+  reg_t rtc_addr = EXT_IO_BASE;
   bus.add_device(rtc_addr, rtc.get());
+
+  const int align = 0x1000;
+  reg_t cpu_addr = rtc_addr + ((rtc->size() - 1) / align + 1) * align;
+  reg_t cpu_size = align;
 
   uint32_t reset_vec[8] = {
     0x297 + DRAM_BASE - DEFAULT_RSTVEC, // reset vector
@@ -154,7 +156,7 @@ void sim_t::make_config_string()
     0,                                  // config string pointer
     0, 0, 0, 0                          // trap vector
   };
-  reset_vec[3] = boot_rom_addr + sizeof(reset_vec); // config string pointer
+  reset_vec[3] = DEFAULT_RSTVEC + sizeof(reset_vec); // config string pointer
 
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
 
@@ -180,16 +182,18 @@ void sim_t::make_config_string()
         "    " << "0 {\n" << // hart 0 on core i
         "      isa " << procs[i]->isa_string << ";\n"
         "      timecmp 0x" << (rtc_addr + 8*(1+i)) << ";\n"
+        "      ipi 0x" << cpu_addr << ";\n"
         "    };\n"
         "  };\n";
+    bus.add_device(cpu_addr, procs[i]);
+    cpu_addr += cpu_size;
   }
   s <<  "};\n";
 
   config_string = s.str();
   rom.insert(rom.end(), config_string.begin(), config_string.end());
-  assert(rom.size() < boot_rom_size);
-  rom.resize(boot_rom_size);
+  rom.resize((rom.size() / align + 1) * align);
 
   boot_rom.reset(new rom_device_t(rom));
-  bus.add_device(boot_rom_addr, boot_rom.get());
+  bus.add_device(DEFAULT_RSTVEC, boot_rom.get());
 }
