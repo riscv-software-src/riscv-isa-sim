@@ -254,7 +254,7 @@ static bool validate_vm(int max_xlen, reg_t vm)
 void processor_t::set_csr(int which, reg_t val)
 {
   val = zext_xlen(val);
-  reg_t delegable_ints = MIP_SSIP | MIP_STIP | (1 << IRQ_HOST) | (1 << IRQ_COP);
+  reg_t delegable_ints = MIP_SSIP | MIP_STIP | (1 << IRQ_COP);
   reg_t all_ints = delegable_ints | MIP_MSIP | MIP_MTIP;
   switch (which)
   {
@@ -300,13 +300,10 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_MIP: {
-      reg_t mask = MIP_SSIP | MIP_STIP | MIP_MSIP;
+      reg_t mask = MIP_SSIP | MIP_STIP;
       state.mip = (state.mip & ~mask) | (val & mask);
       break;
     }
-    case CSR_MIPI:
-      state.mip = set_field(state.mip, MIP_MSIP, val & 1);
-      break;
     case CSR_MIE:
       state.mie = (state.mie & ~all_ints) | (val & all_ints);
       break;
@@ -424,7 +421,6 @@ reg_t processor_t::get_csr(int which)
     case CSR_SSCRATCH: return state.sscratch;
     case CSR_MSTATUS: return state.mstatus;
     case CSR_MIP: return state.mip;
-    case CSR_MIPI: return 0;
     case CSR_MIE: return state.mie;
     case CSR_MEPC: return state.mepc;
     case CSR_MSCRATCH: return state.mscratch;
