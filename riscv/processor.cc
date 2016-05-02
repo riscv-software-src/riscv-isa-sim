@@ -349,14 +349,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
-    case CSR_MTOHOST:
-      if (state.tohost == 0)
-        state.tohost = val;
-      break;
-    case CSR_MFROMHOST:
-      state.mip = (state.mip & ~(1 << IRQ_HOST)) | (val ? (1 << IRQ_HOST) : 0);
-      state.fromhost = val;
-      break;
   }
 }
 
@@ -446,12 +438,6 @@ reg_t processor_t::get_csr(int which)
     case CSR_MTVEC: return state.mtvec;
     case CSR_MEDELEG: return state.medeleg;
     case CSR_MIDELEG: return state.mideleg;
-    case CSR_MTOHOST:
-      sim->get_htif()->tick(); // not necessary, but faster
-      return state.tohost;
-    case CSR_MFROMHOST:
-      sim->get_htif()->tick(); // not necessary, but faster
-      return state.fromhost;
   }
   throw trap_illegal_instruction();
 }

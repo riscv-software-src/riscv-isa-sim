@@ -93,16 +93,6 @@ void htif_isasim_t::tick_once()
 
       switch (regno)
       {
-        case CSR_MTOHOST:
-          old_val = proc->get_state()->tohost;
-          if (write)
-            proc->get_state()->tohost = new_val;
-          break;
-        case CSR_MFROMHOST:
-          old_val = proc->get_state()->fromhost;
-          if (write && old_val == 0)
-            proc->set_csr(CSR_MFROMHOST, new_val);
-          break;
         case CSR_MRESET:
           old_val = !proc->running();
           if (write)

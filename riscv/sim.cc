@@ -102,13 +102,6 @@ bool sim_t::running()
   return false;
 }
 
-void sim_t::stop()
-{
-  procs[0]->state.tohost = 1;
-  while (htif->tick())
-    ;
-}
-
 void sim_t::set_debug(bool value)
 {
   debug = value;

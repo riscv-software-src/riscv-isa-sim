@@ -23,7 +23,6 @@ public:
   // run the simulation to completion
   int run();
   bool running();
-  void stop();
   void set_debug(bool value);
   void set_log(bool value);
   void set_histogram(bool value);
@@ -86,7 +85,6 @@ private:
   reg_t get_freg(const std::vector<std::string>& args);
   reg_t get_mem(const std::vector<std::string>& args);
   reg_t get_pc(const std::vector<std::string>& args);
-  reg_t get_tohost(const std::vector<std::string>& args);
 
   friend class htif_isasim_t;
   friend class processor_t;
