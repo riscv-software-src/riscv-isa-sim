@@ -272,14 +272,43 @@ class halt_op_t : public operation_t
       if (state == READ_DPC) {
         gs.saved_dpc = ((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0);
         gs.saved_mbadaddr = ((uint64_t) gs.read_debug_ram(3) << 32) | gs.read_debug_ram(2);
+
         gs.write_debug_ram(0, csrr(S0, CSR_MCAUSE));
-        gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 0));
+        gs.write_debug_ram(2, csrr(S0, CSR_MSTATUS));
+        gs.write_debug_ram(3, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 8));
+        gs.write_debug_ram(4, csrr(S0, CSR_DCSR));
+        gs.write_debug_ram(5, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+        gs.write_debug_ram(6, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*6))));
         gs.set_interrupt(0);
-        state = READ_CAUSE;
+        state = READ_MCAUSE;
         return false;
+
       } else {
         gs.saved_mcause = ((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0);
+        gs.saved_mstatus = ((uint64_t) gs.read_debug_ram(3) << 32) | gs.read_debug_ram(2);
+        gs.dcsr = ((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4);
+
+#if 0
+        // TODO: This scheme doesn't work, because we're unable to write to eg.
+        // 0x108 to clear debug int with mstatus configured this way.
+
+        // Set mstatus.mprv, and mstatus.mpp to dcsr.prv.
+        // This ensures that memory accesses act as they would in whatever mode
+        // the processor was in when we interrupted it. A fancier debugger
+        // might walk page tables itself and perform its own address
+        // translation.
+        reg_t mstatus = gs.saved_mstatus;
+        mstatus = set_field(mstatus, MSTATUS_MPRV, 1);
+        mstatus = set_field(mstatus, MSTATUS_MPP, get_field(gs.dcsr, DCSR_PRV));
+        gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+        gs.write_debug_ram(1, csrw(S0, CSR_MSTATUS));
+        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.write_debug_ram(4, mstatus);
+        gs.write_debug_ram(5, mstatus >> 32);
+        gs.set_interrupt(0);
+        state = WRITE_MSTATUS;
+#endif
         return true;
       }
     }
@@ -287,7 +316,8 @@ class halt_op_t : public operation_t
   private:
     enum {
       READ_DPC,
-      READ_CAUSE
+      READ_MCAUSE,
+      WRITE_MSTATUS
     } state;
 };
 
@@ -319,6 +349,17 @@ class continue_op_t : public operation_t
         gs.set_interrupt(0);
         state = WRITE_MBADADDR;
         return false;
+
+      } else if (state == WRITE_MBADADDR) {
+        gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
+        gs.write_debug_ram(1, csrw(S0, CSR_MSTATUS));
+        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.write_debug_ram(4, gs.saved_mstatus);
+        gs.write_debug_ram(5, gs.saved_mstatus >> 32);
+        gs.set_interrupt(0);
+        state = WRITE_MSTATUS;
+        return false;
+
       } else {
         gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
         gs.write_debug_ram(1, csrw(S0, CSR_MCAUSE));
@@ -334,7 +375,8 @@ class continue_op_t : public operation_t
   private:
     enum {
       WRITE_DPC,
-      WRITE_MBADADDR
+      WRITE_MBADADDR,
+      WRITE_MSTATUS
     } state;
 };
 

@@ -137,6 +137,8 @@ public:
   reg_t saved_dpc;
   reg_t saved_mbadaddr;
   reg_t saved_mcause;
+  reg_t saved_mstatus;
+  reg_t dcsr;
 
 private:
   sim_t *sim;
