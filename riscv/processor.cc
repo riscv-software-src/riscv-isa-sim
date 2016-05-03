@@ -198,7 +198,7 @@ void processor_t::enter_debug_mode(uint8_t cause)
   fprintf(stderr, "enter_debug_mode(%d)\n", cause);
   state.dcsr.cause = cause;
   state.dcsr.prv = state.prv;
-  state.prv = PRV_M;
+  set_privilege(PRV_M);
   state.dpc = state.pc;
   state.pc = DEBUG_ROM_START;
   debug = true; // TODO

@@ -71,8 +71,7 @@ check_halt:
 exit:
         # Restore s0.
         csrr    s0, DSCRATCH
-        # TODO: dret?
-        sret
+        dret
 
 
 _entry:

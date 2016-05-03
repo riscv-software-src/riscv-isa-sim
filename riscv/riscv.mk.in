@@ -134,6 +134,7 @@ riscv_insn_list = \
 	divu \
 	divuw \
 	divw \
+	dret \
 	ebreak \
 	ecall \
 	fadd_d \
