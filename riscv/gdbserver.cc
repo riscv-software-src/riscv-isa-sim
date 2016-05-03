@@ -288,27 +288,6 @@ class halt_op_t : public operation_t
         gs.saved_mcause = ((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0);
         gs.saved_mstatus = ((uint64_t) gs.read_debug_ram(3) << 32) | gs.read_debug_ram(2);
         gs.dcsr = ((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4);
-
-#if 0
-        // TODO: This scheme doesn't work, because we're unable to write to eg.
-        // 0x108 to clear debug int with mstatus configured this way.
-
-        // Set mstatus.mprv, and mstatus.mpp to dcsr.prv.
-        // This ensures that memory accesses act as they would in whatever mode
-        // the processor was in when we interrupted it. A fancier debugger
-        // might walk page tables itself and perform its own address
-        // translation.
-        reg_t mstatus = gs.saved_mstatus;
-        mstatus = set_field(mstatus, MSTATUS_MPRV, 1);
-        mstatus = set_field(mstatus, MSTATUS_MPP, get_field(gs.dcsr, DCSR_PRV));
-        gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-        gs.write_debug_ram(1, csrw(S0, CSR_MSTATUS));
-        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
-        gs.write_debug_ram(4, mstatus);
-        gs.write_debug_ram(5, mstatus >> 32);
-        gs.set_interrupt(0);
-        state = WRITE_MSTATUS;
-#endif
         return true;
       }
     }

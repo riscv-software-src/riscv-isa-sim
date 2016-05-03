@@ -195,7 +195,7 @@ void processor_t::set_privilege(reg_t prv)
 
 void processor_t::enter_debug_mode(uint8_t cause)
 {
-  fprintf(stderr, "enter_debug_mode(%d)\n", cause);
+  fprintf(stderr, "enter_debug_mode(%d), mstatus=0x%lx, prv=0x%lx\n", cause, state.mstatus, state.prv);
   state.dcsr.cause = cause;
   state.dcsr.prv = state.prv;
   set_privilege(PRV_M);
@@ -279,6 +279,7 @@ static bool validate_vm(int max_xlen, reg_t vm)
 
 void processor_t::set_csr(int which, reg_t val)
 {
+  fprintf(stderr, "set_csr(0x%x, 0x%lx)\n", which, val);
   val = zext_xlen(val);
   reg_t delegable_ints = MIP_SSIP | MIP_STIP | MIP_SEIP | (1 << IRQ_COP);
   reg_t all_ints = delegable_ints | MIP_MSIP | MIP_MTIP;

@@ -44,6 +44,8 @@ reg_t mmu_t::translate(reg_t addr, access_type type)
   if (get_field(proc->state.mstatus, MSTATUS_VM) == VM_MBARE)
     mode = PRV_M;
 
+  fprintf(stderr, "translate(0x%lx, %d), mstatus=0x%lx, prv=%ld, mode=%ld, pum=%d\n",
+      addr, type, proc->state.mstatus, proc->state.prv, mode, pum);
   if (mode == PRV_M) {
     reg_t msb_mask = (reg_t(2) << (proc->xlen-1))-1; // zero-extend from xlen
     return addr & msb_mask;
@@ -74,6 +76,7 @@ const uint16_t* mmu_t::fetch_slow_path(reg_t vaddr)
 void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes)
 {
   reg_t paddr = translate(addr, LOAD);
+  fprintf(stderr, "load_slow_path 0x%lx -> 0x%lx\n", addr, paddr);
   if (sim->addr_is_mem(paddr)) {
     memcpy(bytes, sim->addr_to_mem(paddr), len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
@@ -88,6 +91,7 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes)
 void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes)
 {
   reg_t paddr = translate(addr, STORE);
+  fprintf(stderr, "store_slow_path 0x%lx -> 0x%lx\n", addr, paddr);
   if (sim->addr_is_mem(paddr)) {
     memcpy(sim->addr_to_mem(paddr), bytes, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
