@@ -383,10 +383,16 @@ class general_registers_read_op_t : public operation_t
       gs.send(((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0));
 
       current_reg += 2;
-      // TODO properly read s0 and s1
-      gs.write_debug_ram(0, sd(current_reg, 0, (uint16_t) DEBUG_RAM_START + 16));
-      gs.write_debug_ram(1, sd(current_reg+1, 0, (uint16_t) DEBUG_RAM_START + 0));
-      gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+      unsigned int i = 0;
+      if (current_reg == S1) {
+        gs.write_debug_ram(i++, ld(S1, 0, (uint16_t) DEBUG_RAM_END - 8));
+      }
+      gs.write_debug_ram(i++, sd(current_reg, 0, (uint16_t) DEBUG_RAM_START + 16));
+      if (current_reg + 1 == S0) {
+        gs.write_debug_ram(i++, csrr(S0, CSR_DSCRATCH));
+      }
+      gs.write_debug_ram(i++, sd(current_reg+1, 0, (uint16_t) DEBUG_RAM_START + 0));
+      gs.write_debug_ram(i, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*i))));
       gs.set_interrupt(0);
 
       return false;
