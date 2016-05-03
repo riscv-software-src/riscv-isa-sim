@@ -1,6 +1,8 @@
 #ifndef _RISCV_GDBSERVER_H
 #define _RISCV_GDBSERVER_H
 
+#include <queue>
+
 #include <stdint.h>
 
 class sim_t;
@@ -59,15 +61,14 @@ class gdbserver_t;
 class operation_t
 {
   public:
-    operation_t(gdbserver_t& gdbserver) : gs(gdbserver) {}
+    operation_t(gdbserver_t& gdbserver) : gs(gdbserver), current_step(0) {}
     virtual ~operation_t() {}
 
-    // Called when the operation is first set as the current one.
-    // Return true if this operation is complete. In that case the object will
-    // be deleted.
-    // Return false if more steps are required the next time the debug
-    // interrupt is clear.
-    virtual bool start() { return true; }
+    bool step() {
+      bool result = perform_step(current_step);
+      current_step++;
+      return result;
+    }
 
     // Perform the next step of this operation (which is probably to write to
     // Debug RAM and assert the debug interrupt).
@@ -75,9 +76,11 @@ class operation_t
     // be deleted.
     // Return false if more steps are required the next time the debug
     // interrupt is clear.
-    virtual bool step() = 0;
+    virtual bool perform_step(unsigned int step) = 0;
 
+  protected:
     gdbserver_t& gs;
+    unsigned int current_step;
 };
 
 class gdbserver_t
@@ -163,8 +166,8 @@ private:
   // Process all complete requests in recv_buf.
   void process_requests();
 
-  operation_t* operation;
-  void set_operation(operation_t* operation);
+  std::queue<operation_t*> operation_queue;
+  void add_operation(operation_t* operation);
 };
 
 #endif

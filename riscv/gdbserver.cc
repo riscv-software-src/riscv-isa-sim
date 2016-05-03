@@ -249,55 +249,44 @@ class halt_op_t : public operation_t
   public:
     halt_op_t(gdbserver_t& gdbserver) : operation_t(gdbserver) {};
 
-    bool start()
-    {
-      // TODO: For now we just assume the target is 64-bit.
-      gs.write_debug_ram(0, csrsi(DCSR_ADDRESS, DCSR_HALT_MASK));
-      gs.write_debug_ram(1, csrr(S0, DPC_ADDRESS));
-      gs.write_debug_ram(2, sd(S0, 0, (uint16_t) DEBUG_RAM_START));
-      gs.write_debug_ram(3, csrr(S0, CSR_MBADADDR));
-      gs.write_debug_ram(4, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 8));
-      gs.write_debug_ram(5, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*5))));
-      gs.set_interrupt(0);
-      // We could read mcause here as well, but only on 64-bit targets. I'm
-      // trying to keep The patterns here usable for 32-bit ISAs as well. (On a
-      // 32-bit ISA 8 words are required, while the minimum Debug RAM size is 7
-      // words.)
-      state = READ_DPC;
+    bool perform_step(unsigned int step) {
+      switch (step) {
+        case 0:
+          // TODO: For now we just assume the target is 64-bit.
+          gs.write_debug_ram(0, csrsi(DCSR_ADDRESS, DCSR_HALT_MASK));
+          gs.write_debug_ram(1, csrr(S0, DPC_ADDRESS));
+          gs.write_debug_ram(2, sd(S0, 0, (uint16_t) DEBUG_RAM_START));
+          gs.write_debug_ram(3, csrr(S0, CSR_MBADADDR));
+          gs.write_debug_ram(4, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 8));
+          gs.write_debug_ram(5, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*5))));
+          gs.set_interrupt(0);
+          // We could read mcause here as well, but only on 64-bit targets. I'm
+          // trying to keep The patterns here usable for 32-bit ISAs as well. (On a
+          // 32-bit ISA 8 words are required, while the minimum Debug RAM size is 7
+          // words.)
+
+        case 1:
+          gs.saved_dpc = ((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0);
+          gs.saved_mbadaddr = ((uint64_t) gs.read_debug_ram(3) << 32) | gs.read_debug_ram(2);
+
+          gs.write_debug_ram(0, csrr(S0, CSR_MCAUSE));
+          gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 0));
+          gs.write_debug_ram(2, csrr(S0, CSR_MSTATUS));
+          gs.write_debug_ram(3, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 8));
+          gs.write_debug_ram(4, csrr(S0, CSR_DCSR));
+          gs.write_debug_ram(5, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+          gs.write_debug_ram(6, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*6))));
+          gs.set_interrupt(0);
+
+        case 2:
+          gs.saved_mcause = ((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0);
+          gs.saved_mstatus = ((uint64_t) gs.read_debug_ram(3) << 32) | gs.read_debug_ram(2);
+          gs.dcsr = ((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4);
+          return true;
+      }
+
       return false;
     }
-
-    bool step()
-    {
-      if (state == READ_DPC) {
-        gs.saved_dpc = ((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0);
-        gs.saved_mbadaddr = ((uint64_t) gs.read_debug_ram(3) << 32) | gs.read_debug_ram(2);
-
-        gs.write_debug_ram(0, csrr(S0, CSR_MCAUSE));
-        gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 0));
-        gs.write_debug_ram(2, csrr(S0, CSR_MSTATUS));
-        gs.write_debug_ram(3, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 8));
-        gs.write_debug_ram(4, csrr(S0, CSR_DCSR));
-        gs.write_debug_ram(5, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-        gs.write_debug_ram(6, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*6))));
-        gs.set_interrupt(0);
-        state = READ_MCAUSE;
-        return false;
-
-      } else {
-        gs.saved_mcause = ((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0);
-        gs.saved_mstatus = ((uint64_t) gs.read_debug_ram(3) << 32) | gs.read_debug_ram(2);
-        gs.dcsr = ((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4);
-        return true;
-      }
-    }
-
-  private:
-    enum {
-      READ_DPC,
-      READ_MCAUSE,
-      WRITE_MSTATUS
-    } state;
 };
 
 class continue_op_t : public operation_t
@@ -305,58 +294,44 @@ class continue_op_t : public operation_t
   public:
     continue_op_t(gdbserver_t& gdbserver) : operation_t(gdbserver) {};
 
-    bool start()
-    {
-      gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
-      gs.write_debug_ram(1, csrw(S0, DPC_ADDRESS));
-      gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
-      gs.write_debug_ram(4, gs.saved_dpc);
-      gs.write_debug_ram(5, gs.saved_dpc >> 32);
-      gs.set_interrupt(0);
-      state = WRITE_DPC;
+    bool perform_step(unsigned int step) {
+      switch (step) {
+        case 0:
+          gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
+          gs.write_debug_ram(1, csrw(S0, DPC_ADDRESS));
+          gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+          gs.write_debug_ram(4, gs.saved_dpc);
+          gs.write_debug_ram(5, gs.saved_dpc >> 32);
+          gs.set_interrupt(0);
+
+        case 1:
+          gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
+          gs.write_debug_ram(1, csrw(S0, CSR_MBADADDR));
+          gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+          gs.write_debug_ram(4, gs.saved_mbadaddr);
+          gs.write_debug_ram(5, gs.saved_mbadaddr >> 32);
+          gs.set_interrupt(0);
+
+        case 2:
+          gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
+          gs.write_debug_ram(1, csrw(S0, CSR_MSTATUS));
+          gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+          gs.write_debug_ram(4, gs.saved_mstatus);
+          gs.write_debug_ram(5, gs.saved_mstatus >> 32);
+          gs.set_interrupt(0);
+
+        case 3:
+          gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
+          gs.write_debug_ram(1, csrw(S0, CSR_MCAUSE));
+          gs.write_debug_ram(2, csrci(DCSR_ADDRESS, DCSR_HALT_MASK));
+          gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
+          gs.write_debug_ram(4, gs.saved_mcause);
+          gs.write_debug_ram(5, gs.saved_mcause >> 32);
+          gs.set_interrupt(0);
+          return true;
+      }
       return false;
     }
-
-    bool step()
-    {
-      if (state == WRITE_DPC) {
-        gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
-        gs.write_debug_ram(1, csrw(S0, CSR_MBADADDR));
-        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
-        gs.write_debug_ram(4, gs.saved_mbadaddr);
-        gs.write_debug_ram(5, gs.saved_mbadaddr >> 32);
-        gs.set_interrupt(0);
-        state = WRITE_MBADADDR;
-        return false;
-
-      } else if (state == WRITE_MBADADDR) {
-        gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
-        gs.write_debug_ram(1, csrw(S0, CSR_MSTATUS));
-        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
-        gs.write_debug_ram(4, gs.saved_mstatus);
-        gs.write_debug_ram(5, gs.saved_mstatus >> 32);
-        gs.set_interrupt(0);
-        state = WRITE_MSTATUS;
-        return false;
-
-      } else {
-        gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
-        gs.write_debug_ram(1, csrw(S0, CSR_MCAUSE));
-        gs.write_debug_ram(2, csrci(DCSR_ADDRESS, DCSR_HALT_MASK));
-        gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
-        gs.write_debug_ram(4, gs.saved_mcause);
-        gs.write_debug_ram(5, gs.saved_mcause >> 32);
-        gs.set_interrupt(0);
-        return true;
-      }
-    }
-
-  private:
-    enum {
-      WRITE_DPC,
-      WRITE_MBADADDR,
-      WRITE_MSTATUS
-    } state;
 };
 
 class general_registers_read_op_t : public operation_t
@@ -375,35 +350,32 @@ class general_registers_read_op_t : public operation_t
 
   public:
     general_registers_read_op_t(gdbserver_t& gdbserver) :
-      operation_t(gdbserver), current_reg(0) {};
+      operation_t(gdbserver) {};
 
-    bool start()
+    bool perform_step(unsigned int step)
     {
-      gs.start_packet();
+      if (step == 0) {
+        gs.start_packet();
 
-      // x0 is always zero.
-      gs.send((reg_t) 0);
+        // x0 is always zero.
+        gs.send((reg_t) 0);
 
-      gs.write_debug_ram(0, sd(1, 0, (uint16_t) DEBUG_RAM_START + 16));
-      gs.write_debug_ram(1, sd(2, 0, (uint16_t) DEBUG_RAM_START + 0));
-      gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
-      gs.set_interrupt(0);
-      current_reg = 1;
-      return false;
-    }
+        gs.write_debug_ram(0, sd(1, 0, (uint16_t) DEBUG_RAM_START + 16));
+        gs.write_debug_ram(1, sd(2, 0, (uint16_t) DEBUG_RAM_START + 0));
+        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.set_interrupt(0);
+        return false;
+      }
 
-    bool step()
-    {
-      fprintf(stderr, "step %d\n", current_reg);
       gs.send(((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4));
-      if (current_reg >= 31) {
+      if (step >= 16) {
         gs.end_packet();
         return true;
       }
 
       gs.send(((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0));
 
-      current_reg += 2;
+      unsigned int current_reg = 2 * step - 1;
       unsigned int i = 0;
       if (current_reg == S1) {
         gs.write_debug_ram(i++, ld(S1, 0, (uint16_t) DEBUG_RAM_END - 8));
@@ -418,9 +390,6 @@ class general_registers_read_op_t : public operation_t
 
       return false;
     }
-
-  private:
-    unsigned int current_reg;
 };
 
 class register_read_op_t : public operation_t
@@ -429,54 +398,53 @@ class register_read_op_t : public operation_t
     register_read_op_t(gdbserver_t& gdbserver, unsigned int reg) :
       operation_t(gdbserver), reg(reg) {};
 
-    bool start()
+    bool perform_step(unsigned int step)
     {
-      if (reg >= REG_XPR0 && reg <= REG_XPR31) {
-        die("handle_register_read");
-        // send(p->state.XPR[reg - REG_XPR0]);
-      } else if (reg == REG_PC) {
-        gs.start_packet();
-        gs.send(gs.saved_dpc);
-        gs.end_packet();
-        return true;
-      } else if (reg >= REG_FPR0 && reg <= REG_FPR31) {
-        // send(p->state.FPR[reg - REG_FPR0]);
-        gs.write_debug_ram(0, fsd(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
-        gs.write_debug_ram(1, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*1))));
-      } else if (reg == REG_CSR0 + CSR_MBADADDR) {
-        gs.start_packet();
-        gs.send(gs.saved_mbadaddr);
-        gs.end_packet();
-        return true;
-      } else if (reg == REG_CSR0 + CSR_MCAUSE) {
-        gs.start_packet();
-        gs.send(gs.saved_mcause);
-        gs.end_packet();
-        return true;
-      } else if (reg >= REG_CSR0 && reg <= REG_CSR4095) {
-        gs.write_debug_ram(0, csrr(S0, reg - REG_CSR0));
-        gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
-        // If we hit an exception reading the CSR, we'll end up returning ~0 as
-        // the register's value, which is what we want. (Right?)
-        gs.write_debug_ram(4, 0xffffffff);
-        gs.write_debug_ram(5, 0xffffffff);
-      } else {
-        gs.send_packet("E02");
-        return true;
+      switch (step) {
+        case 0:
+          if (reg >= REG_XPR0 && reg <= REG_XPR31) {
+            die("handle_register_read");
+            // send(p->state.XPR[reg - REG_XPR0]);
+          } else if (reg == REG_PC) {
+            gs.start_packet();
+            gs.send(gs.saved_dpc);
+            gs.end_packet();
+            return true;
+          } else if (reg >= REG_FPR0 && reg <= REG_FPR31) {
+            // send(p->state.FPR[reg - REG_FPR0]);
+            gs.write_debug_ram(0, fsd(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            gs.write_debug_ram(1, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*1))));
+          } else if (reg == REG_CSR0 + CSR_MBADADDR) {
+            gs.start_packet();
+            gs.send(gs.saved_mbadaddr);
+            gs.end_packet();
+            return true;
+          } else if (reg == REG_CSR0 + CSR_MCAUSE) {
+            gs.start_packet();
+            gs.send(gs.saved_mcause);
+            gs.end_packet();
+            return true;
+          } else if (reg >= REG_CSR0 && reg <= REG_CSR4095) {
+            gs.write_debug_ram(0, csrr(S0, reg - REG_CSR0));
+            gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+            // If we hit an exception reading the CSR, we'll end up returning ~0 as
+            // the register's value, which is what we want. (Right?)
+            gs.write_debug_ram(4, 0xffffffff);
+            gs.write_debug_ram(5, 0xffffffff);
+          } else {
+            gs.send_packet("E02");
+            return true;
+          }
+          gs.set_interrupt(0);
+
+        case 1:
+          gs.start_packet();
+          gs.send(((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4));
+          gs.end_packet();
+          return true;
       }
-
-      gs.set_interrupt(0);
-
       return false;
-    }
-
-    bool step()
-    {
-      gs.start_packet();
-      gs.send(((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4));
-      gs.end_packet();
-      return true;
     }
 
   private:
@@ -489,44 +457,42 @@ class memory_read_op_t : public operation_t
     memory_read_op_t(gdbserver_t& gdbserver, reg_t addr, unsigned int length) :
       operation_t(gdbserver), addr(addr), length(length) {};
 
-    bool start()
+    bool perform_step(unsigned int step)
     {
-      // address goes in S0
-      access_size = (addr % length);
-      if (access_size == 0)
-        access_size = length;
+      if (step == 0) {
+        // address goes in S0
+        access_size = (addr % length);
+        if (access_size == 0)
+          access_size = length;
 
-      gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-      switch (access_size) {
-        case 1:
-          gs.write_debug_ram(1, lb(S1, S0, 0));
-          break;
-        case 2:
-          gs.write_debug_ram(1, lh(S1, S0, 0));
-          break;
-        case 4:
-          gs.write_debug_ram(1, lw(S1, S0, 0));
-          break;
-        case 8:
-          gs.write_debug_ram(1, ld(S1, S0, 0));
-          break;
-        default:
-          gs.send_packet("E12");
-          return true;
+        gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+        switch (access_size) {
+          case 1:
+            gs.write_debug_ram(1, lb(S1, S0, 0));
+            break;
+          case 2:
+            gs.write_debug_ram(1, lh(S1, S0, 0));
+            break;
+          case 4:
+            gs.write_debug_ram(1, lw(S1, S0, 0));
+            break;
+          case 8:
+            gs.write_debug_ram(1, ld(S1, S0, 0));
+            break;
+          default:
+            gs.send_packet("E12");
+            return true;
+        }
+        gs.write_debug_ram(2, sd(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+        gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
+        gs.write_debug_ram(4, addr);
+        gs.write_debug_ram(5, addr >> 32);
+        gs.set_interrupt(0);
+
+        gs.start_packet();
+        return false;
       }
-      gs.write_debug_ram(2, sd(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
-      gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
-      gs.write_debug_ram(4, addr);
-      gs.write_debug_ram(5, addr >> 32);
-      gs.set_interrupt(0);
 
-      gs.start_packet();
-
-      return false;
-    }
-
-    bool step()
-    {
       char buffer[3];
       reg_t value = ((uint64_t) gs.read_debug_ram(7) << 32) | gs.read_debug_ram(6);
       for (unsigned int i = 0; i < access_size; i++) {
@@ -565,53 +531,52 @@ class memory_write_op_t : public operation_t
       delete[] data;
     }
 
-    bool start()
+    bool perform_step(unsigned int step)
     {
-      // address goes in S0
-      access_size = (addr % length);
-      if (access_size == 0)
-        access_size = length;
+      if (step == 0) {
+        // address goes in S0
+        access_size = (addr % length);
+        if (access_size == 0)
+          access_size = length;
 
-      gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-      switch (access_size) {
-        case 1:
-          gs.write_debug_ram(1, lb(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
-          gs.write_debug_ram(2, sb(S1, S0, 0));
-          gs.write_debug_ram(6, data[0]);
-          break;
-        case 2:
-          gs.write_debug_ram(1, lh(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
-          gs.write_debug_ram(2, sh(S1, S0, 0));
-          gs.write_debug_ram(6, data[0] | (data[1] << 8));
-          break;
-        case 4:
-          gs.write_debug_ram(1, lw(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
-          gs.write_debug_ram(2, sw(S1, S0, 0));
-          gs.write_debug_ram(6, data[0] | (data[1] << 8) |
-              (data[2] << 16) | (data[3] << 24));
-          break;
-        case 8:
-          gs.write_debug_ram(1, ld(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
-          gs.write_debug_ram(2, sd(S1, S0, 0));
-          gs.write_debug_ram(6, data[0] | (data[1] << 8) |
-              (data[2] << 16) | (data[3] << 24));
-          gs.write_debug_ram(7, data[4] | (data[5] << 8) |
-              (data[6] << 16) | (data[7] << 24));
-          break;
-        default:
-          gs.send_packet("E12");
-          return true;
+        gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+        switch (access_size) {
+          case 1:
+            gs.write_debug_ram(1, lb(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+            gs.write_debug_ram(2, sb(S1, S0, 0));
+            gs.write_debug_ram(6, data[0]);
+            break;
+          case 2:
+            gs.write_debug_ram(1, lh(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+            gs.write_debug_ram(2, sh(S1, S0, 0));
+            gs.write_debug_ram(6, data[0] | (data[1] << 8));
+            break;
+          case 4:
+            gs.write_debug_ram(1, lw(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+            gs.write_debug_ram(2, sw(S1, S0, 0));
+            gs.write_debug_ram(6, data[0] | (data[1] << 8) |
+                (data[2] << 16) | (data[3] << 24));
+            break;
+          case 8:
+            gs.write_debug_ram(1, ld(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+            gs.write_debug_ram(2, sd(S1, S0, 0));
+            gs.write_debug_ram(6, data[0] | (data[1] << 8) |
+                (data[2] << 16) | (data[3] << 24));
+            gs.write_debug_ram(7, data[4] | (data[5] << 8) |
+                (data[6] << 16) | (data[7] << 24));
+            break;
+          default:
+            gs.send_packet("E12");
+            return true;
+        }
+        gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
+        gs.write_debug_ram(4, addr);
+        gs.write_debug_ram(5, addr >> 32);
+        gs.set_interrupt(0);
+
+        return false;
       }
-      gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
-      gs.write_debug_ram(4, addr);
-      gs.write_debug_ram(5, addr >> 32);
-      gs.set_interrupt(0);
 
-      return false;
-    }
-
-    bool step()
-    {
       offset += access_size;
       if (offset >= length) {
         gs.send_packet("OK");
@@ -654,13 +619,48 @@ class memory_write_op_t : public operation_t
     unsigned char *data;
 };
 
+class collect_translation_info_op_t : public operation_t
+{
+  public:
+    // Read sufficient information from the target into gdbserver structures so
+    // that it's possible to translate vaddr, vaddr+length, and all addresses
+    // in between to physical addresses.
+    collect_translation_info_op_t(gdbserver_t& gdbserver, reg_t vaddr, size_t length) :
+      operation_t(gdbserver), vaddr(vaddr), length(length) {};
+
+    bool perform_step(unsigned int step)
+    {
+      unsigned int vm = get_field(gs.saved_mstatus, MSTATUS_VM);
+
+      if (step == 0) {
+        switch (vm) {
+          case VM_MBARE:
+            // Nothing to be done.
+            return true;
+
+          default:
+            {
+              char buf[100];
+              sprintf(buf, "VM mode %d is not supported by gdbserver.cc.", vm);
+              die(buf);
+              return true;        // die doesn't return, but gcc doesn't know that.
+            }
+        }
+      }
+      return true;
+    }
+
+  private:
+    reg_t vaddr;
+    size_t length;
+};
+
 ////////////////////////////// gdbserver itself
 
 gdbserver_t::gdbserver_t(uint16_t port, sim_t *sim) :
   sim(sim),
   client_fd(0),
-  recv_buf(64 * 1024), send_buf(64 * 1024),
-  operation(NULL)
+  recv_buf(64 * 1024), send_buf(64 * 1024)
 {
   socket_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (socket_fd == -1) {
@@ -703,14 +703,9 @@ uint32_t gdbserver_t::read_debug_ram(unsigned int index)
   return sim->debug_module.ram_read32(index);
 }
 
-void gdbserver_t::set_operation(operation_t* operation)
+void gdbserver_t::add_operation(operation_t* operation)
 {
-  assert(this->operation == NULL || operation == NULL);
-  if (operation && operation->start()) {
-    delete operation;
-  } else {
-    this->operation = operation;
-  }
+  operation_queue.push(operation);
 }
 
 void gdbserver_t::accept()
@@ -731,7 +726,7 @@ void gdbserver_t::accept()
     extended_mode = false;
 
     // gdb wants the core to be halted when it attaches.
-    set_operation(new halt_op_t(*this));
+    add_operation(new halt_op_t(*this));
   }
 }
 
@@ -883,7 +878,7 @@ void gdbserver_t::handle_halt_reason(const std::vector<uint8_t> &packet)
 
 void gdbserver_t::handle_general_registers_read(const std::vector<uint8_t> &packet)
 {
-  set_operation(new general_registers_read_op_t(*this));
+  add_operation(new general_registers_read_op_t(*this));
 }
 
 void gdbserver_t::set_interrupt(uint32_t hartid) {
@@ -950,7 +945,7 @@ void gdbserver_t::handle_register_read(const std::vector<uint8_t> &packet)
   if (*iter != '#')
     return send_packet("E01");
 
-  set_operation(new register_read_op_t(*this, n));
+  add_operation(new register_read_op_t(*this, n));
 }
 
 void gdbserver_t::handle_register_write(const std::vector<uint8_t> &packet)
@@ -1003,7 +998,7 @@ void gdbserver_t::handle_memory_read(const std::vector<uint8_t> &packet)
   if (*iter != '#')
     return send_packet("E11");
 
-  set_operation(new memory_read_op_t(*this, address, length));
+  add_operation(new memory_read_op_t(*this, address, length));
 }
 
 void gdbserver_t::handle_memory_binary_write(const std::vector<uint8_t> &packet)
@@ -1034,7 +1029,7 @@ void gdbserver_t::handle_memory_binary_write(const std::vector<uint8_t> &packet)
   if (*iter != '#')
     return send_packet("E4b"); // EOVERFLOW
 
-  set_operation(new memory_write_op_t(*this, address, length, data));
+  add_operation(new memory_write_op_t(*this, address, length, data));
 }
 
 void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
@@ -1048,7 +1043,7 @@ void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
       return send_packet("E30");
   }
 
-  set_operation(new continue_op_t(*this));
+  add_operation(new continue_op_t(*this));
 }
 
 void gdbserver_t::handle_step(const std::vector<uint8_t> &packet)
@@ -1240,23 +1235,12 @@ void gdbserver_t::handle()
 
     bool interrupt = sim->debug_module.get_interrupt(0);
 
-    if (!interrupt) {
-      if (operation && operation->step()) {
+    if (!interrupt && !operation_queue.empty()) {
+      operation_t *operation = operation_queue.front();
+      if (operation->step()) {
+        operation_queue.pop();
         delete operation;
-        set_operation(NULL);
       }
-
-      /*
-      switch (state) {
-        case STATE_HALTING:
-          // gdb requested a halt and now it's done.
-          send_packet("T05");
-          fprintf(stderr, "DPC: 0x%x\n", read_debug_ram(0));
-          fprintf(stderr, "DCSR: 0x%x\n", read_debug_ram(2));
-          state = STATE_HALTED;
-          break;
-      }
-      */
     }
 
     /* TODO
@@ -1290,7 +1274,7 @@ void gdbserver_t::handle()
     this->accept();
   }
 
-  if (!operation) {
+  if (operation_queue.empty()) {
     this->process_requests();
   }
 }
