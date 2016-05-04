@@ -264,6 +264,7 @@ class halt_op_t : public operation_t
           // trying to keep The patterns here usable for 32-bit ISAs as well. (On a
           // 32-bit ISA 8 words are required, while the minimum Debug RAM size is 7
           // words.)
+          return false;
 
         case 1:
           gs.saved_dpc = ((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0);
@@ -277,14 +278,17 @@ class halt_op_t : public operation_t
           gs.write_debug_ram(5, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
           gs.write_debug_ram(6, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*6))));
           gs.set_interrupt(0);
+          return false;
 
         case 2:
           gs.saved_mcause = ((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0);
           gs.saved_mstatus = ((uint64_t) gs.read_debug_ram(3) << 32) | gs.read_debug_ram(2);
           gs.dcsr = ((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4);
+
+          gs.sptbr_valid = false;
+          gs.pte_cache.clear();
           return true;
       }
-
       return false;
     }
 };
@@ -303,6 +307,7 @@ class continue_op_t : public operation_t
           gs.write_debug_ram(4, gs.saved_dpc);
           gs.write_debug_ram(5, gs.saved_dpc >> 32);
           gs.set_interrupt(0);
+          return false;
 
         case 1:
           gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
@@ -311,6 +316,7 @@ class continue_op_t : public operation_t
           gs.write_debug_ram(4, gs.saved_mbadaddr);
           gs.write_debug_ram(5, gs.saved_mbadaddr >> 32);
           gs.set_interrupt(0);
+          return false;
 
         case 2:
           gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
@@ -319,6 +325,7 @@ class continue_op_t : public operation_t
           gs.write_debug_ram(4, gs.saved_mstatus);
           gs.write_debug_ram(5, gs.saved_mstatus >> 32);
           gs.set_interrupt(0);
+          return false;
 
         case 3:
           gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
@@ -454,14 +461,15 @@ class register_read_op_t : public operation_t
 class memory_read_op_t : public operation_t
 {
   public:
-    memory_read_op_t(gdbserver_t& gdbserver, reg_t addr, unsigned int length) :
-      operation_t(gdbserver), addr(addr), length(length) {};
+    memory_read_op_t(gdbserver_t& gdbserver, reg_t vaddr, unsigned int length) :
+      operation_t(gdbserver), vaddr(vaddr), length(length) {};
 
     bool perform_step(unsigned int step)
     {
       if (step == 0) {
         // address goes in S0
-        access_size = (addr % length);
+        paddr = gs.translate(vaddr);
+        access_size = (paddr % length);
         if (access_size == 0)
           access_size = length;
 
@@ -485,8 +493,8 @@ class memory_read_op_t : public operation_t
         }
         gs.write_debug_ram(2, sd(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
         gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
-        gs.write_debug_ram(4, addr);
-        gs.write_debug_ram(5, addr >> 32);
+        gs.write_debug_ram(4, paddr);
+        gs.write_debug_ram(5, paddr >> 32);
         gs.set_interrupt(0);
 
         gs.start_packet();
@@ -501,21 +509,21 @@ class memory_read_op_t : public operation_t
         value >>= 8;
       }
       length -= access_size;
-      addr += access_size;
+      paddr += access_size;
 
       if (length == 0) {
         gs.end_packet();
         return true;
       } else {
-        gs.write_debug_ram(4, addr);
-        gs.write_debug_ram(5, addr >> 32);
+        gs.write_debug_ram(4, paddr);
+        gs.write_debug_ram(5, paddr >> 32);
         gs.set_interrupt(0);
         return false;
       }
     }
 
   private:
-    reg_t addr;
+    reg_t vaddr, paddr;
     unsigned int length;
     unsigned int access_size;
 };
@@ -523,9 +531,9 @@ class memory_read_op_t : public operation_t
 class memory_write_op_t : public operation_t
 {
   public:
-    memory_write_op_t(gdbserver_t& gdbserver, reg_t addr, unsigned int length,
+    memory_write_op_t(gdbserver_t& gdbserver, reg_t vaddr, unsigned int length,
         unsigned char *data) :
-      operation_t(gdbserver), addr(addr), offset(0), length(length), data(data) {};
+      operation_t(gdbserver), vaddr(vaddr), offset(0), length(length), data(data) {};
 
     ~memory_write_op_t() {
       delete[] data;
@@ -533,9 +541,10 @@ class memory_write_op_t : public operation_t
 
     bool perform_step(unsigned int step)
     {
+      reg_t paddr = gs.translate(vaddr);
       if (step == 0) {
         // address goes in S0
-        access_size = (addr % length);
+        access_size = (paddr % length);
         if (access_size == 0)
           access_size = length;
 
@@ -570,8 +579,8 @@ class memory_write_op_t : public operation_t
             return true;
         }
         gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
-        gs.write_debug_ram(4, addr);
-        gs.write_debug_ram(5, addr >> 32);
+        gs.write_debug_ram(4, paddr);
+        gs.write_debug_ram(5, paddr >> 32);
         gs.set_interrupt(0);
 
         return false;
@@ -582,37 +591,37 @@ class memory_write_op_t : public operation_t
         gs.send_packet("OK");
         return true;
       } else {
-      const unsigned char *d = data + offset;
-      switch (access_size) {
-        case 1:
-          gs.write_debug_ram(6, d[0]);
-          break;
-        case 2:
-          gs.write_debug_ram(6, d[0] | (d[1] << 8));
-          break;
-        case 4:
-          gs.write_debug_ram(6, d[0] | (d[1] << 8) |
-              (d[2] << 16) | (d[3] << 24));
-          break;
-        case 8:
-          gs.write_debug_ram(6, d[0] | (d[1] << 8) |
-              (d[2] << 16) | (d[3] << 24));
-          gs.write_debug_ram(7, d[4] | (d[5] << 8) |
-              (d[6] << 16) | (d[7] << 24));
-          break;
-        default:
-          gs.send_packet("E12");
-          return true;
-      }
-        gs.write_debug_ram(4, addr + offset);
-        gs.write_debug_ram(5, (addr + offset) >> 32);
+        const unsigned char *d = data + offset;
+        switch (access_size) {
+          case 1:
+            gs.write_debug_ram(6, d[0]);
+            break;
+          case 2:
+            gs.write_debug_ram(6, d[0] | (d[1] << 8));
+            break;
+          case 4:
+            gs.write_debug_ram(6, d[0] | (d[1] << 8) |
+                (d[2] << 16) | (d[3] << 24));
+            break;
+          case 8:
+            gs.write_debug_ram(6, d[0] | (d[1] << 8) |
+                (d[2] << 16) | (d[3] << 24));
+            gs.write_debug_ram(7, d[4] | (d[5] << 8) |
+                (d[6] << 16) | (d[7] << 24));
+            break;
+          default:
+            gs.send_packet("E12");
+            return true;
+        }
+        gs.write_debug_ram(4, paddr + offset);
+        gs.write_debug_ram(5, (paddr + offset) >> 32);
         gs.set_interrupt(0);
         return false;
       }
     }
 
   private:
-    reg_t addr;
+    reg_t vaddr;
     unsigned int offset;
     unsigned int length;
     unsigned int access_size;
@@ -626,17 +635,33 @@ class collect_translation_info_op_t : public operation_t
     // that it's possible to translate vaddr, vaddr+length, and all addresses
     // in between to physical addresses.
     collect_translation_info_op_t(gdbserver_t& gdbserver, reg_t vaddr, size_t length) :
-      operation_t(gdbserver), vaddr(vaddr), length(length) {};
+      operation_t(gdbserver), state(STATE_START), vaddr(vaddr), length(length) {};
 
     bool perform_step(unsigned int step)
     {
-      unsigned int vm = get_field(gs.saved_mstatus, MSTATUS_VM);
+      unsigned int vm = gs.virtual_memory();
 
       if (step == 0) {
         switch (vm) {
           case VM_MBARE:
             // Nothing to be done.
             return true;
+
+          case VM_SV32:
+            levels = 2;
+            ptidxbits = 10;
+            ptesize = 4;
+            break;
+          case VM_SV39:
+            levels = 3;
+            ptidxbits = 9;
+            ptesize = 8;
+            break;
+          case VM_SV48:
+            levels = 4;
+            ptidxbits = 9;
+            ptesize = 8;
+            break;
 
           default:
             {
@@ -647,12 +672,87 @@ class collect_translation_info_op_t : public operation_t
             }
         }
       }
+
+      // Perform any reads from the just-completed action.
+      switch (state) {
+        case STATE_START:
+          break;
+        case STATE_READ_SPTBR:
+          gs.sptbr = ((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4);
+          gs.sptbr_valid = true;
+          break;
+        case STATE_READ_PTE:
+          gs.pte_cache[pte_addr] = ((uint64_t) gs.read_debug_ram(5) << 32) |
+            gs.read_debug_ram(4);
+          fprintf(stderr, "pte_cache[0x%lx] = 0x%lx\n", pte_addr, gs.pte_cache[pte_addr]);
+          break;
+      }
+
+      // Set up the next action.
+      // We only get here for VM_SV32/39/38.
+
+      if (!gs.sptbr_valid) {
+        state = STATE_READ_SPTBR;
+        gs.write_debug_ram(0, csrr(S0, CSR_SPTBR));
+        gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.set_interrupt(0);
+        return false;
+      }
+
+      reg_t base = gs.sptbr << PGSHIFT;
+      int ptshift = (levels - 1) * ptidxbits;
+      for (unsigned int i = 0; i < levels; i++, ptshift -= ptidxbits) {
+        reg_t idx = (vaddr >> (PGSHIFT + ptshift)) & ((1 << ptidxbits) - 1);
+
+        pte_addr = base + idx * ptesize;
+        auto it = gs.pte_cache.find(pte_addr);
+        if (it == gs.pte_cache.end()) {
+          state = STATE_READ_PTE;
+          if (ptesize == 4) {
+            gs.write_debug_ram(0, lw(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            gs.write_debug_ram(1, lw(S1, S0, 0));
+            gs.write_debug_ram(2, sd(S1, 0, (uint16_t) DEBUG_RAM_START + 16));
+          } else {
+            gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            gs.write_debug_ram(1, ld(S1, S0, 0));
+            gs.write_debug_ram(2, sd(S1, 0, (uint16_t) DEBUG_RAM_START + 16));
+          }
+          gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
+          gs.write_debug_ram(4, pte_addr);
+          gs.write_debug_ram(5, pte_addr >> 32);
+          gs.set_interrupt(0);
+          return false;
+        }
+
+        reg_t pte = gs.pte_cache[pte_addr];
+        reg_t ppn = pte >> PTE_PPN_SHIFT;
+
+        if (PTE_TABLE(pte)) { // next level of page table
+          base = ppn << PGSHIFT;
+        } else {
+          // We've collected all the data required for the translation.
+          return true;
+        }
+      }
+      fprintf(stderr,
+          "ERROR: gdbserver couldn't find appropriate PTEs to translate 0x%lx\n",
+          vaddr);
       return true;
     }
 
   private:
+    enum {
+      STATE_START,
+      STATE_READ_SPTBR,
+      STATE_READ_PTE
+    } state;
     reg_t vaddr;
     size_t length;
+    unsigned int levels;
+    unsigned int ptidxbits;
+    unsigned int ptesize;
+    reg_t pte_addr;
 };
 
 ////////////////////////////// gdbserver itself
@@ -691,6 +791,92 @@ gdbserver_t::gdbserver_t(uint16_t port, sim_t *sim) :
     fprintf(stderr, "failed to listen on socket: %s (%d)\n", strerror(errno), errno);
     abort();
   }
+}
+
+reg_t gdbserver_t::translate(reg_t vaddr)
+{
+  unsigned int vm = virtual_memory();
+  unsigned int levels, ptidxbits, ptesize;
+
+  switch (vm) {
+    case VM_MBARE:
+      return vaddr;
+
+    case VM_SV32:
+      levels = 2;
+      ptidxbits = 10;
+      ptesize = 4;
+      break;
+    case VM_SV39:
+      levels = 3;
+      ptidxbits = 9;
+      ptesize = 8;
+      break;
+    case VM_SV48:
+      levels = 4;
+      ptidxbits = 9;
+      ptesize = 8;
+      break;
+
+    default:
+      {
+        char buf[100];
+        sprintf(buf, "VM mode %d is not supported by gdbserver.cc.", vm);
+        die(buf);
+        return true;        // die doesn't return, but gcc doesn't know that.
+      }
+  }
+
+  // Handle page tables here. There's a bunch of duplicated code with
+  // collect_translation_info_op_t. :-(
+  reg_t base = sptbr << PGSHIFT;
+  int ptshift = (levels - 1) * ptidxbits;
+  for (unsigned int i = 0; i < levels; i++, ptshift -= ptidxbits) {
+    reg_t idx = (vaddr >> (PGSHIFT + ptshift)) & ((1 << ptidxbits) - 1);
+
+    reg_t pte_addr = base + idx * ptesize;
+    auto it = pte_cache.find(pte_addr);
+    if (it == pte_cache.end()) {
+      fprintf(stderr, "ERROR: gdbserver tried to translate 0x%lx without first "
+          "collecting the relevant PTEs.\n", vaddr);
+      die("gdbserver_t::translate()");
+    }
+
+    reg_t pte = pte_cache[pte_addr];
+    reg_t ppn = pte >> PTE_PPN_SHIFT;
+
+    if (PTE_TABLE(pte)) { // next level of page table
+      base = ppn << PGSHIFT;
+    } else {
+      // We've collected all the data required for the translation.
+      reg_t vpn = vaddr >> PGSHIFT;
+      reg_t paddr = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
+      paddr += vaddr & (PGSIZE-1);
+      fprintf(stderr, "gdbserver translate 0x%lx -> 0x%lx\n", vaddr, paddr);
+      return paddr;
+    }
+  }
+
+  fprintf(stderr, "ERROR: gdbserver tried to translate 0x%lx but the relevant "
+      "PTEs are invalid.\n", vaddr);
+  // TODO: Is it better to throw an exception here?
+  return -1;
+}
+
+unsigned int gdbserver_t::privilege_mode()
+{
+  unsigned int mode = get_field(dcsr, DCSR_PRV);
+  if (get_field(saved_mstatus, MSTATUS_MPRV))
+    mode = get_field(saved_mstatus, MSTATUS_MPP);
+  return mode;
+}
+
+unsigned int gdbserver_t::virtual_memory()
+{
+  unsigned int mode = privilege_mode();
+  if (mode == PRV_M)
+    return VM_MBARE;
+  return get_field(saved_mstatus, MSTATUS_VM);
 }
 
 void gdbserver_t::write_debug_ram(unsigned int index, uint32_t value)
@@ -998,6 +1184,7 @@ void gdbserver_t::handle_memory_read(const std::vector<uint8_t> &packet)
   if (*iter != '#')
     return send_packet("E11");
 
+  add_operation(new collect_translation_info_op_t(*this, address, length));
   add_operation(new memory_read_op_t(*this, address, length));
 }
 
@@ -1029,6 +1216,7 @@ void gdbserver_t::handle_memory_binary_write(const std::vector<uint8_t> &packet)
   if (*iter != '#')
     return send_packet("E4b"); // EOVERFLOW
 
+  add_operation(new collect_translation_info_op_t(*this, address, length));
   add_operation(new memory_write_op_t(*this, address, length, data));
 }
 

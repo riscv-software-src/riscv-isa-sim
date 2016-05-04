@@ -1,6 +1,7 @@
 #ifndef _RISCV_GDBSERVER_H
 #define _RISCV_GDBSERVER_H
 
+#include <map>
 #include <queue>
 
 #include <stdint.h>
@@ -142,6 +143,18 @@ public:
   reg_t saved_mcause;
   reg_t saved_mstatus;
   reg_t dcsr;
+  reg_t sptbr;
+  bool sptbr_valid;
+
+  std::map<reg_t, reg_t> pte_cache;
+
+  reg_t translate(reg_t vaddr);
+  // Return the PRV_x that is used when the code under debug performs a memory
+  // access.
+  unsigned int privilege_mode();
+  // Return the VM_x that is used when the code under debug performs a memory
+  // access.
+  unsigned int virtual_memory();
 
 private:
   sim_t *sim;

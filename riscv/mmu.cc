@@ -44,8 +44,6 @@ reg_t mmu_t::translate(reg_t addr, access_type type)
   if (get_field(proc->state.mstatus, MSTATUS_VM) == VM_MBARE)
     mode = PRV_M;
 
-  fprintf(stderr, "translate(0x%lx, %d), mstatus=0x%lx, prv=%ld, mode=%ld, pum=%d\n",
-      addr, type, proc->state.mstatus, proc->state.prv, mode, pum);
   if (mode == PRV_M) {
     reg_t msb_mask = (reg_t(2) << (proc->xlen-1))-1; // zero-extend from xlen
     return addr & msb_mask;
@@ -149,6 +147,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, bool supervisor, bool pum)
 
     void* ppte = sim->addr_to_mem(pte_addr);
     reg_t pte = ptesize == 4 ? *(uint32_t*)ppte : *(uint64_t*)ppte;
+    fprintf(stderr, "walk pte entry 0x%lx = 0x%lx\n", pte_addr, pte);
     reg_t ppn = pte >> PTE_PPN_SHIFT;
 
     if (PTE_TABLE(pte)) { // next level of page table
@@ -162,7 +161,9 @@ reg_t mmu_t::walk(reg_t addr, access_type type, bool supervisor, bool pum)
       *(uint32_t*)ppte |= PTE_R | ((type == STORE) * PTE_D);
       // for superpage mappings, make a fake leaf PTE for the TLB's benefit.
       reg_t vpn = addr >> PGSHIFT;
-      return (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
+      reg_t value = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
+      fprintf(stderr, "walk 0x%lx -> 0x%lx\n", addr, value);
+      return value;
     }
   }
 
