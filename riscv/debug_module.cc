@@ -41,6 +41,10 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     clear_interrupt(bytes[0] | (bytes[1] << 8) |
         (bytes[2] << 16) | (bytes[3] << 24));
     return true;
+  } else if (len == 4 && addr == DEBUG_SETHALTNOT) {
+    set_halt_notification(bytes[0] | (bytes[1] << 8) |
+        (bytes[2] << 16) | (bytes[3] << 24));
+    return true;
   }
 
   fprintf(stderr, "ERROR: invalid store to debug module: %ld bytes at 0x%lx\n",

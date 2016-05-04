@@ -27,9 +27,23 @@ class debug_module_t : public abstract_device_t
       return interrupt.find(hartid) != interrupt.end();
     }
 
+    void set_halt_notification(uint32_t hartid) {
+      fprintf(stderr, "set debug halt_notification 0x%x\n", hartid);
+      halt_notification.insert(hartid);
+    }
+    void clear_halt_notification(uint32_t hartid) {
+      fprintf(stderr, "clear debug halt_notification 0x%x\n", hartid);
+      halt_notification.erase(hartid);
+    }
+    bool get_halt_notification(uint32_t hartid) const {
+      return halt_notification.find(hartid) != halt_notification.end();
+    }
+
   private:
     // Track which interrupts from module to debugger are set.
     std::set<uint32_t> interrupt;
+    // Track which halt notifications from debugger to module are set.
+    std::set<uint32_t> halt_notification;
     char debug_ram[DEBUG_RAM_SIZE];
 };
 

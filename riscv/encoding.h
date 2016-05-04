@@ -34,6 +34,14 @@
 #define SSTATUS64_SD        0x8000000000000000
 
 #define DCSR_PRV            (3<<14)
+#define DCSR_CAUSE          7
+
+#define DCSR_CAUSE_NONE     0
+#define DCSR_CAUSE_SWBP     1
+#define DCSR_CAUSE_HWBP     2
+#define DCSR_CAUSE_DEBUGINT 3
+#define DCSR_CAUSE_STEP     4
+#define DCSR_CAUSE_HALT     5
 
 #define MIP_SSIP            (1 << IRQ_S_SOFT)
 #define MIP_HSIP            (1 << IRQ_H_SOFT)

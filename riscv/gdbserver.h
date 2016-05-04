@@ -51,10 +51,7 @@ class software_breakpoint_t
 public:
   reg_t address;
   unsigned int size;
-  uint32_t instruction;
-
-  void insert(mmu_t* mmu);
-  void remove(mmu_t* mmu);
+  unsigned char instruction[4];
 };
 
 class gdbserver_t;

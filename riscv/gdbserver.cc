@@ -247,7 +247,8 @@ void circular_buffer_t<T>::append(const T *src, unsigned int count)
 class halt_op_t : public operation_t
 {
   public:
-    halt_op_t(gdbserver_t& gdbserver) : operation_t(gdbserver) {};
+    halt_op_t(gdbserver_t& gdbserver, bool send_status=false) :
+      operation_t(gdbserver), send_status(send_status) {};
 
     bool perform_step(unsigned int step) {
       switch (step) {
@@ -287,10 +288,33 @@ class halt_op_t : public operation_t
 
           gs.sptbr_valid = false;
           gs.pte_cache.clear();
+
+          if (send_status) {
+            switch (get_field(gs.dcsr, DCSR_CAUSE)) {
+              case DCSR_CAUSE_NONE:
+                fprintf(stderr, "Internal error. Processor halted without reason.\n");
+                abort();
+
+              case DCSR_CAUSE_HWBP:
+              case DCSR_CAUSE_DEBUGINT:
+              case DCSR_CAUSE_STEP:
+              case DCSR_CAUSE_HALT:
+                // There's no gdb code for this.
+                gs.send_packet("T05");
+                break;
+              case DCSR_CAUSE_SWBP:
+                gs.send_packet("T05swbreak:;");
+                break;
+            }
+          }
+
           return true;
       }
       return false;
     }
+
+  private:
+    bool send_status;
 };
 
 class continue_op_t : public operation_t
@@ -461,8 +485,11 @@ class register_read_op_t : public operation_t
 class memory_read_op_t : public operation_t
 {
   public:
-    memory_read_op_t(gdbserver_t& gdbserver, reg_t vaddr, unsigned int length) :
-      operation_t(gdbserver), vaddr(vaddr), length(length) {};
+    // Read length bytes from vaddr, storing the result into data.
+    // If data is NULL, send the result straight to gdb.
+    memory_read_op_t(gdbserver_t& gdbserver, reg_t vaddr, unsigned int length,
+        unsigned char *data=NULL) :
+      operation_t(gdbserver), vaddr(vaddr), length(length), data(data) {};
 
     bool perform_step(unsigned int step)
     {
@@ -472,6 +499,8 @@ class memory_read_op_t : public operation_t
         access_size = (paddr % length);
         if (access_size == 0)
           access_size = length;
+        if (access_size > 8)
+          access_size = 8;
 
         gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
         switch (access_size) {
@@ -487,9 +516,6 @@ class memory_read_op_t : public operation_t
           case 8:
             gs.write_debug_ram(1, ld(S1, S0, 0));
             break;
-          default:
-            gs.send_packet("E12");
-            return true;
         }
         gs.write_debug_ram(2, sd(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
         gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
@@ -497,22 +523,30 @@ class memory_read_op_t : public operation_t
         gs.write_debug_ram(5, paddr >> 32);
         gs.set_interrupt(0);
 
-        gs.start_packet();
+        if (!data) {
+          gs.start_packet();
+        }
         return false;
       }
 
       char buffer[3];
       reg_t value = ((uint64_t) gs.read_debug_ram(7) << 32) | gs.read_debug_ram(6);
       for (unsigned int i = 0; i < access_size; i++) {
-        sprintf(buffer, "%02x", (unsigned int) (value & 0xff));
-        gs.send(buffer);
+        if (data) {
+          *(data++) = value & 0xff;
+        } else {
+          sprintf(buffer, "%02x", (unsigned int) (value & 0xff));
+          gs.send(buffer);
+        }
         value >>= 8;
       }
       length -= access_size;
       paddr += access_size;
 
       if (length == 0) {
-        gs.end_packet();
+        if (!data) {
+          gs.end_packet();
+        }
         return true;
       } else {
         gs.write_debug_ram(4, paddr);
@@ -523,8 +557,10 @@ class memory_read_op_t : public operation_t
     }
 
   private:
-    reg_t vaddr, paddr;
+    reg_t vaddr;
     unsigned int length;
+    unsigned char* data;
+    reg_t paddr;
     unsigned int access_size;
 };
 
@@ -1265,28 +1301,6 @@ void gdbserver_t::handle_extended(const std::vector<uint8_t> &packet)
   extended_mode = true;
 }
 
-void software_breakpoint_t::insert(mmu_t* mmu)
-{
-  if (size == 2) {
-    instruction = mmu->load_uint16(address);
-    mmu->store_uint16(address, C_EBREAK);
-  } else {
-    instruction = mmu->load_uint32(address);
-    mmu->store_uint32(address, EBREAK);
-  }
-  fprintf(stderr, ">>> Read %x from %lx\n", instruction, address);
-}
-
-void software_breakpoint_t::remove(mmu_t* mmu)
-{
-  fprintf(stderr, ">>> write %x to %lx\n", instruction, address);
-  if (size == 2) {
-    mmu->store_uint16(address, instruction);
-  } else {
-    mmu->store_uint32(address, instruction);
-  }
-}
-
 void gdbserver_t::handle_breakpoint(const std::vector<uint8_t> &packet)
 {
   // insert: Z type,addr,kind
@@ -1312,22 +1326,35 @@ void gdbserver_t::handle_breakpoint(const std::vector<uint8_t> &packet)
     return send_packet("E53");
   }
 
-  processor_t *p = sim->get_core(0);
-  die("handle_breakpoint");
-  /*
-  mmu_t* mmu = p->mmu;
+  add_operation(new collect_translation_info_op_t(*this, bp.address, bp.size));
   if (insert) {
-    bp.insert(mmu);
+    // TODO: this only works on little-endian hosts.
+    unsigned char* swbp = new unsigned char[4];
+    if (bp.size == 2) {
+      swbp[0] = C_EBREAK & 0xff;
+      swbp[1] = (C_EBREAK >> 8) & 0xff;
+    } else {
+      swbp[0] = EBREAK & 0xff;
+      swbp[1] = (EBREAK >> 8) & 0xff;
+      swbp[2] = (EBREAK >> 16) & 0xff;
+      swbp[3] = (EBREAK >> 24) & 0xff;
+    }
+
+    add_operation(new memory_read_op_t(*this, bp.address, bp.size, bp.instruction));
+    add_operation(new memory_write_op_t(*this, bp.address, bp.size, swbp));
     breakpoints[bp.address] = bp;
 
   } else {
     bp = breakpoints[bp.address];
-    bp.remove(mmu);
+    unsigned char* instruction = new unsigned char[4];
+    memcpy(instruction, bp.instruction, 4);
+    add_operation(new memory_write_op_t(*this, bp.address, bp.size, instruction));
     breakpoints.erase(bp.address);
   }
-  mmu->flush_icache();
-  sim->debug_mmu->flush_icache();
-  */
+
+  // TODO mmu->flush_icache();
+  // TODO sim->debug_mmu->flush_icache();
+
   return send_packet("OK");
 }
 
@@ -1431,29 +1458,11 @@ void gdbserver_t::handle()
       }
     }
 
-    /* TODO
-    if (running && p->halted) {
-      // The core was running, but now it's halted. Better tell gdb.
-      switch (p->halt_reason) {
-        case HR_NONE:
-          fprintf(stderr, "Internal error. Processor halted without reason.\n");
-          abort();
-        case HR_STEPPED:
-        case HR_INTERRUPT:
-        case HR_CMDLINE:
-        case HR_ATTACHED:
-          // There's no gdb code for this.
-          send_packet("T05");
-          break;
-        case HR_SWBP:
-          send_packet("T05swbreak:;");
-          break;
-      }
-      send_packet("T00");
-      // TODO: Actually include register values here
-      running = false;
+    bool halt_notification = sim->debug_module.get_halt_notification(0);
+    if (halt_notification) {
+      sim->debug_module.clear_halt_notification(0);
+      add_operation(new halt_op_t(*this, true));
     }
-      */
 
     this->read();
     this->write();
