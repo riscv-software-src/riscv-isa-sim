@@ -382,7 +382,7 @@ class general_registers_read_op_t : public operation_t
 
       gs.send(((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0));
 
-      unsigned int current_reg = 2 * step - 1;
+      unsigned int current_reg = 2 * step + 1;
       unsigned int i = 0;
       if (current_reg == S1) {
         gs.write_debug_ram(i++, ld(S1, 0, (uint16_t) DEBUG_RAM_END - 8));

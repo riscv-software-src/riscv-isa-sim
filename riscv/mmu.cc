@@ -74,7 +74,6 @@ const uint16_t* mmu_t::fetch_slow_path(reg_t vaddr)
 void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes)
 {
   reg_t paddr = translate(addr, LOAD);
-  fprintf(stderr, "load_slow_path 0x%lx -> 0x%lx\n", addr, paddr);
   if (sim->addr_is_mem(paddr)) {
     memcpy(bytes, sim->addr_to_mem(paddr), len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
@@ -89,7 +88,6 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes)
 void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes)
 {
   reg_t paddr = translate(addr, STORE);
-  fprintf(stderr, "store_slow_path 0x%lx -> 0x%lx\n", addr, paddr);
   if (sim->addr_is_mem(paddr)) {
     memcpy(sim->addr_to_mem(paddr), bytes, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
@@ -147,7 +145,6 @@ reg_t mmu_t::walk(reg_t addr, access_type type, bool supervisor, bool pum)
 
     void* ppte = sim->addr_to_mem(pte_addr);
     reg_t pte = ptesize == 4 ? *(uint32_t*)ppte : *(uint64_t*)ppte;
-    fprintf(stderr, "walk pte entry 0x%lx = 0x%lx\n", pte_addr, pte);
     reg_t ppn = pte >> PTE_PPN_SHIFT;
 
     if (PTE_TABLE(pte)) { // next level of page table
@@ -162,7 +159,6 @@ reg_t mmu_t::walk(reg_t addr, access_type type, bool supervisor, bool pum)
       // for superpage mappings, make a fake leaf PTE for the TLB's benefit.
       reg_t vpn = addr >> PGSHIFT;
       reg_t value = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
-      fprintf(stderr, "walk 0x%lx -> 0x%lx\n", addr, value);
       return value;
     }
   }
