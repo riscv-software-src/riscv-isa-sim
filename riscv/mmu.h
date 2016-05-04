@@ -117,7 +117,6 @@ public:
       entry->tag = -1;
       tracer.trace(paddr, length, FETCH);
     }
-    entry->tag = -1;    // TODO: this is hack to work around Debug RAM code being cached
     return entry;
   }
 
