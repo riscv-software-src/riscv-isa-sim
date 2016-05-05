@@ -163,6 +163,15 @@ static uint32_t fsd(unsigned int src, unsigned int base, uint16_t offset)
     MATCH_FSD;
 }
 
+static uint32_t fld(unsigned int src, unsigned int base, uint16_t offset)
+{
+  return (bits(offset, 11, 5) << 25) |
+    (bits(src, 4, 0) << 20) |
+    (base << 15) |
+    (bits(offset, 4, 0) << 7) |
+    MATCH_FLD;
+}
+
 static uint32_t addi(unsigned int dest, unsigned int src, uint16_t imm)
 {
   return (bits(imm, 11, 0) << 20) |
@@ -494,6 +503,56 @@ class register_read_op_t : public operation_t
 
   private:
     unsigned int reg;
+};
+
+class register_write_op_t : public operation_t
+{
+  public:
+    register_write_op_t(gdbserver_t& gdbserver, unsigned int reg, reg_t value) :
+      operation_t(gdbserver), reg(reg), value(value) {};
+
+    bool perform_step(unsigned int step)
+    {
+      gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+      gs.write_debug_ram(4, value);
+      gs.write_debug_ram(5, value >> 32);
+      if (reg == S0) {
+        gs.write_debug_ram(1, csrw(S0, CSR_DSCRATCH));
+        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+      } else if (reg == S1) {
+        gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_END - 8));
+        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+      } else if (reg >= REG_XPR0 && reg <= REG_XPR31) {
+        gs.write_debug_ram(1, addi(reg, S0, 0));
+        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+      } else if (reg == REG_PC) {
+        gs.saved_dpc = value;
+        return true;
+      } else if (reg >= REG_FPR0 && reg <= REG_FPR31) {
+        // send(p->state.FPR[reg - REG_FPR0]);
+        gs.write_debug_ram(0, fld(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+        gs.write_debug_ram(1, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*1))));
+      } else if (reg == REG_CSR0 + CSR_MBADADDR) {
+        gs.saved_mbadaddr = value;
+        return true;
+      } else if (reg == REG_CSR0 + CSR_MCAUSE) {
+        gs.saved_mcause = value;
+        return true;
+      } else if (reg >= REG_CSR0 && reg <= REG_CSR4095) {
+        gs.write_debug_ram(1, csrw(S0, reg - REG_CSR0));
+        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+      } else {
+        gs.send_packet("E02");
+        return true;
+      }
+      gs.set_interrupt(0);
+      gs.send_packet("OK");
+      return true;
+    }
+
+  private:
+    unsigned int reg;
+    reg_t value;
 };
 
 class memory_read_op_t : public operation_t
@@ -1208,24 +1267,7 @@ void gdbserver_t::handle_register_write(const std::vector<uint8_t> &packet)
 
   processor_t *p = sim->get_core(0);
 
-  die("handle_register_write");
-  /*
-  if (n >= REG_XPR0 && n <= REG_XPR31) {
-    p->state.XPR.write(n - REG_XPR0, value);
-  } else if (n == REG_PC) {
-    p->state.pc = value;
-  } else if (n >= REG_FPR0 && n <= REG_FPR31) {
-    p->state.FPR.write(n - REG_FPR0, value);
-  } else if (n >= REG_CSR0 && n <= REG_CSR4095) {
-    try {
-      p->set_csr(n - REG_CSR0, value);
-    } catch(trap_t& t) {
-      return send_packet("EFF");
-    }
-  } else {
-    return send_packet("E07");
-  }
-  */
+  add_operation(new register_write_op_t(*this, n, value));
 
   return send_packet("OK");
 }
