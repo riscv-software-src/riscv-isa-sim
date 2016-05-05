@@ -86,6 +86,11 @@ static uint32_t csrw(unsigned int source, unsigned int csr) {
   return (csr << 20) | (source << 15) | MATCH_CSRRW;
 }
 
+static uint32_t fence_i()
+{
+  return MATCH_FENCE_I;
+}
+
 static uint32_t sb(unsigned int src, unsigned int base, uint16_t offset)
 {
   return (bits(offset, 11, 5) << 25) |
@@ -337,7 +342,13 @@ class continue_op_t : public operation_t
         case 0:
           gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
           gs.write_debug_ram(1, csrw(S0, DPC_ADDRESS));
-          gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+          if (gs.fence_i_required) {
+            gs.write_debug_ram(2, fence_i());
+            gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
+            gs.fence_i_required = false;
+          } else {
+            gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+          }
           gs.write_debug_ram(4, gs.saved_dpc);
           gs.write_debug_ram(5, gs.saved_dpc >> 32);
           gs.set_interrupt(0);
@@ -1389,9 +1400,9 @@ void gdbserver_t::handle_breakpoint(const std::vector<uint8_t> &packet)
     return send_packet("E53");
   }
 
+  fence_i_required = true;
   add_operation(new collect_translation_info_op_t(*this, bp.address, bp.size));
   if (insert) {
-    // TODO: this only works on little-endian hosts.
     unsigned char* swbp = new unsigned char[4];
     if (bp.size == 2) {
       swbp[0] = C_EBREAK & 0xff;
@@ -1418,9 +1429,6 @@ void gdbserver_t::handle_breakpoint(const std::vector<uint8_t> &packet)
     breakpoints.erase(bp.address);
     delete found_bp;
   }
-
-  // TODO mmu->flush_icache();
-  // TODO sim->debug_mmu->flush_icache();
 
   return send_packet("OK");
 }

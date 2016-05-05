@@ -142,6 +142,7 @@ public:
   reg_t dcsr;
   reg_t sptbr;
   bool sptbr_valid;
+  bool fence_i_required;
 
   std::map<reg_t, reg_t> pte_cache;
 
