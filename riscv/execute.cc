@@ -66,10 +66,6 @@ void processor_t::step(size_t n)
     n = std::min(n, (size_t) 11);
   }
 
-  if (debug) {
-    fprintf(stderr, "step(%ld)\n", n);
-  }
-
   while (n > 0) {
     size_t instret = 0;
     reg_t pc = state.pc;

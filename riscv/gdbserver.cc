@@ -481,6 +481,7 @@ class register_read_op_t : public operation_t
             return true;
           }
           gs.set_interrupt(0);
+          return false;
 
         case 1:
           gs.start_packet();

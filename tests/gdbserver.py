@@ -58,12 +58,12 @@ class DebugTest(unittest.TestCase):
         # mcpuid (which is going to be renamed to misa in any case).
         #self.assertRegexpMatches(output, ".*mcpuid *0x80")
 
-        # The time register should always be changing.
-        last_time = None
+        # The instret register should always be changing.
+        last_instret = None
         for _ in range(5):
-            time = self.gdb.p("$time")
-            self.assertNotEqual(time, last_time)
-            last_time = time
+            instret = self.gdb.p("$instret")
+            self.assertNotEqual(instret, last_instret)
+            last_instret = instret
             self.gdb.command("stepi")
 
 class RegsTest(unittest.TestCase):
