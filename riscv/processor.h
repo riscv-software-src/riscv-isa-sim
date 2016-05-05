@@ -81,6 +81,14 @@ struct state_t
   uint32_t frm;
   bool serialized; // whether timer CSRs are in a well-defined state
 
+  // When true, execute a single instruction and then enter debug mode.  This
+  // can only be set by executing dret.
+  enum {
+      STEP_NONE,
+      STEP_STEPPING,
+      STEP_STEPPED
+  } single_step;
+
   reg_t load_reservation;
 
 #ifdef RISCV_ENABLE_COMMITLOG

@@ -166,7 +166,7 @@ private:
   // but it isn't, we need to tell gdb about it.
   bool running;
 
-  std::map <reg_t, software_breakpoint_t> breakpoints;
+  std::map <reg_t, software_breakpoint_t*> breakpoints;
 
   // Read pending data from the client.
   void read();

@@ -36,9 +36,10 @@ class DebugTest(unittest.TestCase):
     def test_breakpoint(self):
         self.gdb.command("b print_row")
         # The breakpoint should be hit exactly 10 times.
-        for _ in range(10):
+        for i in range(10):
             output = self.gdb.command("c")
             self.assertIn("Continuing", output)
+            self.assertIn("length=%d" % i, output)
             self.assertIn("Breakpoint 1", output)
         output = self.gdb.command("c")
         self.assertIn("Continuing", output)

@@ -66,6 +66,10 @@ void processor_t::step(size_t n)
     n = std::min(n, (size_t) 11);
   }
 
+  if (debug) {
+    fprintf(stderr, "step(%ld)\n", n);
+  }
+
   while (n > 0) {
     size_t instret = 0;
     reg_t pc = state.pc;
@@ -89,12 +93,25 @@ void processor_t::step(size_t n)
     {
       take_interrupt();
 
-      if (unlikely(debug))
+      // When we might single step, use the slow loop instead of the fast one.
+      if (unlikely(debug || state.single_step != state.STEP_NONE || state.dcsr.cause))
       {
         while (instret < n)
         {
+          // TODO: implement this for the main loop also.  To keep
+          // performance good, probably go into this version when entering
+          // debug mode or something.
+          if (unlikely(state.single_step == state.STEP_STEPPING)) {
+            state.single_step = state.STEP_STEPPED;
+          } else if (unlikely(state.single_step == state.STEP_STEPPED)) {
+            state.single_step = state.STEP_NONE;
+            enter_debug_mode(DCSR_CAUSE_STEP);
+            // enter_debug_mode changed state.pc, so we can't just continue.
+            break;
+          }
+
           insn_fetch_t fetch = mmu->load_insn(pc);
-          if (!state.serialized)
+          if (debug && !state.serialized)
             disasm(fetch.insn);
           pc = execute_insn(this, pc, fetch);
           advance_pc();

@@ -66,13 +66,13 @@ static uint32_t jal(unsigned int rd, uint32_t imm) {
     MATCH_JAL;
 }
 
-static uint32_t csrsi(unsigned int csr, uint8_t imm) {
+static uint32_t csrsi(unsigned int csr, uint16_t imm) {
   return (csr << 20) |
     (bits(imm, 4, 0) << 15) |
     MATCH_CSRRSI;
 }
 
-static uint32_t csrci(unsigned int csr, uint8_t imm) {
+static uint32_t csrci(unsigned int csr, uint16_t imm) {
   return (csr << 20) |
     (bits(imm, 4, 0) << 15) |
     MATCH_CSRRCI;
@@ -320,7 +320,8 @@ class halt_op_t : public operation_t
 class continue_op_t : public operation_t
 {
   public:
-    continue_op_t(gdbserver_t& gdbserver) : operation_t(gdbserver) {};
+    continue_op_t(gdbserver_t& gdbserver, bool single_step) :
+      operation_t(gdbserver), single_step(single_step) {};
 
     bool perform_step(unsigned int step) {
       switch (step) {
@@ -352,17 +353,29 @@ class continue_op_t : public operation_t
           return false;
 
         case 3:
-          gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
+          gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+24));
           gs.write_debug_ram(1, csrw(S0, CSR_MCAUSE));
-          gs.write_debug_ram(2, csrci(DCSR_ADDRESS, DCSR_HALT_MASK));
-          gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
-          gs.write_debug_ram(4, gs.saved_mcause);
-          gs.write_debug_ram(5, gs.saved_mcause >> 32);
+          gs.write_debug_ram(2, lw(S0, 0, (uint16_t) DEBUG_RAM_START+20));
+          gs.write_debug_ram(3, csrw(S0, CSR_DCSR));
+          gs.write_debug_ram(4, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*4))));
+
+          reg_t dcsr = gs.dcsr & ~DCSR_HALT_MASK;
+          if (single_step)
+            dcsr |= DCSR_STEP_MASK;
+          else
+            dcsr &= ~DCSR_STEP_MASK;
+          gs.write_debug_ram(5, dcsr);
+
+          gs.write_debug_ram(6, gs.saved_mcause);
+          gs.write_debug_ram(7, gs.saved_mcause >> 32);
           gs.set_interrupt(0);
           return true;
       }
       return false;
     }
+
+  private:
+    bool single_step;
 };
 
 class general_registers_read_op_t : public operation_t
@@ -534,12 +547,15 @@ class memory_read_op_t : public operation_t
       for (unsigned int i = 0; i < access_size; i++) {
         if (data) {
           *(data++) = value & 0xff;
+          fprintf(stderr, "%02x", (unsigned int) (value & 0xff));
         } else {
           sprintf(buffer, "%02x", (unsigned int) (value & 0xff));
           gs.send(buffer);
         }
         value >>= 8;
       }
+      if (data)
+        fprintf(stderr, "\n");
       length -= access_size;
       paddr += access_size;
 
@@ -568,7 +584,7 @@ class memory_write_op_t : public operation_t
 {
   public:
     memory_write_op_t(gdbserver_t& gdbserver, reg_t vaddr, unsigned int length,
-        unsigned char *data) :
+        const unsigned char *data) :
       operation_t(gdbserver), vaddr(vaddr), offset(0), length(length), data(data) {};
 
     ~memory_write_op_t() {
@@ -583,6 +599,11 @@ class memory_write_op_t : public operation_t
         access_size = (paddr % length);
         if (access_size == 0)
           access_size = length;
+
+        fprintf(stderr, "write to 0x%lx -> 0x%lx: ", vaddr, paddr);
+        for (unsigned int i = 0; i < length; i++)
+          fprintf(stderr, "%02x", data[i]);
+        fprintf(stderr, "\n");
 
         gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
         switch (access_size) {
@@ -661,7 +682,7 @@ class memory_write_op_t : public operation_t
     unsigned int offset;
     unsigned int length;
     unsigned int access_size;
-    unsigned char *data;
+    const unsigned char *data;
 };
 
 class collect_translation_info_op_t : public operation_t
@@ -1267,7 +1288,7 @@ void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
       return send_packet("E30");
   }
 
-  add_operation(new continue_op_t(*this));
+  add_operation(new continue_op_t(*this, false));
 }
 
 void gdbserver_t::handle_step(const std::vector<uint8_t> &packet)
@@ -1281,8 +1302,7 @@ void gdbserver_t::handle_step(const std::vector<uint8_t> &packet)
       return send_packet("E40");
   }
 
-  // TODO: p->set_single_step(true);
-  // TODO running = true;
+  add_operation(new continue_op_t(*this, true));
 }
 
 void gdbserver_t::handle_kill(const std::vector<uint8_t> &packet)
@@ -1340,16 +1360,20 @@ void gdbserver_t::handle_breakpoint(const std::vector<uint8_t> &packet)
       swbp[3] = (EBREAK >> 24) & 0xff;
     }
 
-    add_operation(new memory_read_op_t(*this, bp.address, bp.size, bp.instruction));
+    breakpoints[bp.address] = new software_breakpoint_t(bp);
+    add_operation(new memory_read_op_t(*this, bp.address, bp.size,
+          breakpoints[bp.address]->instruction));
     add_operation(new memory_write_op_t(*this, bp.address, bp.size, swbp));
-    breakpoints[bp.address] = bp;
 
   } else {
-    bp = breakpoints[bp.address];
+    software_breakpoint_t *found_bp;
+    found_bp = breakpoints[bp.address];
     unsigned char* instruction = new unsigned char[4];
-    memcpy(instruction, bp.instruction, 4);
-    add_operation(new memory_write_op_t(*this, bp.address, bp.size, instruction));
+    memcpy(instruction, found_bp->instruction, 4);
+    add_operation(new memory_write_op_t(*this, found_bp->address,
+          found_bp->size, instruction));
     breakpoints.erase(bp.address);
+    delete found_bp;
   }
 
   // TODO mmu->flush_icache();
