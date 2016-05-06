@@ -74,6 +74,17 @@ class Gdb(object):
         self.child.expect("\(gdb\)")
         return self.child.before.strip()
 
+    def c(self, wait=True):
+        if wait:
+            return self.command("c")
+        else:
+            self.child.sendline("c")
+            self.child.expect("Continuing")
+
+    def interrupt(self):
+        self.child.send("\003");
+        self.child.expect("\(gdb\)")
+
     def x(self, address, size='w'):
         output = self.command("x/%s %s" % (size, address))
         value = int(output.split(':')[1].strip(), 0)

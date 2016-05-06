@@ -13,7 +13,6 @@ class DebugTest(unittest.TestCase):
         self.gdb = testlib.Gdb()
         self.gdb.command("file %s" % self.binary)
         self.gdb.command("target extended-remote localhost:%d" % self.port)
-        self.gdb.command("p i=0");
 
     def tearDown(self):
         self.spike.kill()
@@ -21,6 +20,7 @@ class DebugTest(unittest.TestCase):
 
     def test_turbostep(self):
         """Single step a bunch of times."""
+        self.gdb.command("p i=0");
         last_pc = None
         for _ in range(100):
             self.gdb.command("stepi")
@@ -29,11 +29,13 @@ class DebugTest(unittest.TestCase):
             last_pc = pc
 
     def test_exit(self):
+        self.gdb.command("p i=0");
         output = self.gdb.command("c")
         self.assertIn("Continuing", output)
         self.assertIn("Remote connection closed", output)
 
     def test_breakpoint(self):
+        self.gdb.command("p i=0");
         self.gdb.command("b print_row")
         # The breakpoint should be hit exactly 10 times.
         for i in range(10):
@@ -46,6 +48,7 @@ class DebugTest(unittest.TestCase):
         self.assertIn("Remote connection closed", output)
 
     def test_registers(self):
+        self.gdb.command("p i=0");
         # Try both forms to test gdb.
         for cmd in ("info all-registers", "info registers all"):
             output = self.gdb.command(cmd)
@@ -65,6 +68,20 @@ class DebugTest(unittest.TestCase):
             self.assertNotEqual(instret, last_instret)
             last_instret = instret
             self.gdb.command("stepi")
+
+    def test_interrupt(self):
+        """Sending gdb ^C while the program is running should cause it to halt."""
+        self.gdb.c(wait=False)
+        time.sleep(0.1)
+        self.gdb.interrupt()
+        self.gdb.command("p i=123");
+        self.gdb.c(wait=False)
+        time.sleep(0.1)
+        self.gdb.interrupt()
+        self.gdb.command("p i=0");
+        output = self.gdb.c()
+        self.assertIn("Continuing", output)
+        self.assertIn("Remote connection closed", output)
 
 class RegsTest(unittest.TestCase):
     def setUp(self):

@@ -309,8 +309,11 @@ class halt_op_t : public operation_t
                 fprintf(stderr, "Internal error. Processor halted without reason.\n");
                 abort();
 
-              case DCSR_CAUSE_HWBP:
               case DCSR_CAUSE_DEBUGINT:
+                gs.send_packet("S02");   // Pretend program received SIGINT.
+                break;
+
+              case DCSR_CAUSE_HWBP:
               case DCSR_CAUSE_STEP:
               case DCSR_CAUSE_HALT:
                 // There's no gdb code for this.
@@ -1513,9 +1516,7 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
 void gdbserver_t::handle_interrupt()
 {
   processor_t *p = sim->get_core(0);
-  // TODO p->set_halted(true, HR_INTERRUPT);
-  send_packet("S02");   // Pretend program received SIGINT.
-  // TODO running = false;
+  add_operation(new halt_op_t(*this, true));
 }
 
 void gdbserver_t::handle()
