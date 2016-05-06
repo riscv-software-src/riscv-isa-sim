@@ -673,6 +673,8 @@ class memory_write_op_t : public operation_t
         access_size = (paddr % length);
         if (access_size == 0)
           access_size = length;
+        if (access_size > 8)
+          access_size = 8;
 
         fprintf(stderr, "write to 0x%lx -> 0x%lx: ", vaddr, paddr);
         for (unsigned int i = 0; i < length; i++)
@@ -1106,7 +1108,7 @@ void print_packet(const std::vector<uint8_t> &packet)
     if (c >= ' ' and c <= '~')
       fprintf(stderr, "%c", c);
     else
-      fprintf(stderr, "\\x%x", c);
+      fprintf(stderr, "\\x%02x", c);
   }
   fprintf(stderr, "\n");
 }
@@ -1324,8 +1326,22 @@ void gdbserver_t::handle_memory_binary_write(const std::vector<uint8_t> &packet)
     if (iter == packet.end()) {
       return send_packet("E22");
     }
-    data[i] = *iter;
+    uint8_t c = *iter;
     iter++;
+    if (c == '}') {
+      // The binary data representation uses 7d (ascii ‘}’) as an escape
+      // character. Any escaped byte is transmitted as the escape character
+      // followed by the original character XORed with 0x20. For example, the
+      // byte 0x7d would be transmitted as the two bytes 0x7d 0x5d. The bytes
+      // 0x23 (ascii ‘#’), 0x24 (ascii ‘$’), and 0x7d (ascii ‘}’) must always
+      // be escaped.
+      if (iter == packet.end()) {
+        return send_packet("E23");
+      }
+      c = (*iter) ^ 0x20;
+      iter++;
+    }
+    data[i] = c;
   }
   if (*iter != '#')
     return send_packet("E4b"); // EOVERFLOW
