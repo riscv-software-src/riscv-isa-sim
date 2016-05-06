@@ -21,9 +21,10 @@
 #undef STATE
 #define STATE state
 
-processor_t::processor_t(const char* isa, sim_t* sim, uint32_t id)
+processor_t::processor_t(const char* isa, sim_t* sim, uint32_t id,
+        bool halt_on_reset)
   : debug(false), sim(sim), ext(NULL), disassembler(new disassembler_t),
-    id(id), run(false)
+    id(id), run(false), halt_on_reset(halt_on_reset)
 {
   parse_isa_string(isa);
 
@@ -145,6 +146,8 @@ void processor_t::reset(bool value)
   run = !value;
 
   state.reset();
+  state.dcsr.halt = halt_on_reset;
+  halt_on_reset = false;
   set_csr(CSR_MSTATUS, state.mstatus);
 
   if (ext)

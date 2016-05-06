@@ -47,9 +47,7 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
   debug_mmu = new mmu_t(this, NULL);
 
   for (size_t i = 0; i < procs.size(); i++) {
-    procs[i] = new processor_t(isa, this, i);
-    if (halted)
-      procs[i]->enter_debug_mode(DCSR_CAUSE_HALT);
+    procs[i] = new processor_t(isa, this, i, halted);
   }
 
   rtc.reset(new rtc_t(procs));

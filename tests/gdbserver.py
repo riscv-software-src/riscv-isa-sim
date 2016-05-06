@@ -6,6 +6,25 @@ import unittest
 import tempfile
 import time
 
+class InstantHaltTest(unittest.TestCase):
+    def setUp(self):
+        self.binary = testlib.compile("debug.c")
+        self.spike, self.port = testlib.spike(self.binary, halted=True)
+        self.gdb = testlib.Gdb()
+        self.gdb.command("file %s" % self.binary)
+        self.gdb.command("target extended-remote localhost:%d" % self.port)
+
+    def tearDown(self):
+        self.spike.kill()
+        self.spike.wait()
+
+    def test_instant_halt(self):
+        self.assertEqual(0x1000, self.gdb.p("$pc"))
+        # For some reason instret resets to 0.
+        self.assertLess(self.gdb.p("$instret"), 8)
+        self.gdb.command("stepi")
+        self.assertNotEqual(0x1000, self.gdb.p("$pc"))
+
 class DebugTest(unittest.TestCase):
     def setUp(self):
         self.binary = testlib.compile("debug.c")
@@ -136,6 +155,23 @@ class RegsTest(unittest.TestCase):
         self.assertEqual(9, self.gdb.p("$fflags"))
         self.assertEqual(9, self.gdb.p("$x1"))
         self.assertEqual(9, self.gdb.p("$csr1"))
+
+#class MprvTest(unittest.TestCase):
+#    def setUp(self):
+#        self.binary = testlib.compile("mprv.S")
+#        self.spike, self.port = testlib.spike(self.binary, halted=False)
+#        self.gdb = testlib.Gdb()
+#        self.gdb.command("file %s" % self.binary)
+#        self.gdb.command("target extended-remote localhost:%d" % self.port)
+#
+#    def tearDown(self):
+#        self.spike.kill()
+#        self.spike.wait()
+#
+#    def test_mprv(self):
+#        """Test that the debugger can access memory when MPRV is set."""
+#        output = self.gdb.command("p/x data");
+#        self.assertIn("0xbead", output)
 
 if __name__ == '__main__':
     unittest.main()

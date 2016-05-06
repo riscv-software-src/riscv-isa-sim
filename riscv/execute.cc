@@ -54,13 +54,14 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 // fetch/decode/execute loop
 void processor_t::step(size_t n)
 {
-  // TODO: get_interrupt() isn't super fast. Does that matter?
-  if (state.dcsr.cause == DCSR_CAUSE_NONE &&
-      sim->debug_module.get_interrupt(id)) {
-    enter_debug_mode(DCSR_CAUSE_DEBUGINT);
-  }
-
-  if (state.dcsr.cause != DCSR_CAUSE_NONE) {
+  if (state.dcsr.cause == DCSR_CAUSE_NONE) {
+    // TODO: get_interrupt() isn't super fast. Does that matter?
+    if (sim->debug_module.get_interrupt(id)) {
+      enter_debug_mode(DCSR_CAUSE_DEBUGINT);
+    } else if (state.dcsr.halt) {
+      enter_debug_mode(DCSR_CAUSE_HALT);
+    }
+  } else {
     // In Debug Mode, just do 11 steps at a time. Otherwise we're going to be
     // spinning the rest of the time anyway.
     n = std::min(n, (size_t) 11);
