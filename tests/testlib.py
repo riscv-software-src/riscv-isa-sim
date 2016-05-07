@@ -13,14 +13,20 @@ def find_file(path):
         fullpath = os.path.join(directory, path)
         if os.path.exists(fullpath):
             return fullpath
-    raise ValueError("Couldn't find %r." % path)
+    return None
 
-def compile(src):
+def compile(*args):
     """Compile a single .c file into a binary."""
-    src = find_file(src)
-    dst = os.path.splitext(src)[0]
+    dst = os.path.splitext(args[0])[0]
     cc = os.path.expandvars("$RISCV/bin/riscv64-unknown-elf-gcc")
-    cmd = "%s -g -o %s %s" % (cc, dst, src)
+    cmd = [cc, "-g", "-O", "-o", dst]
+    for arg in args:
+        found = find_file(arg)
+        if found:
+            cmd.append(found)
+        else:
+            cmd.append(arg)
+    cmd = " ".join(cmd)
     result = os.system(cmd)
     assert result == 0, "%r failed" % cmd
     return dst
@@ -46,7 +52,9 @@ def spike(binary, halted=False, with_gdb=True, timeout=None):
     if with_gdb:
         port = unused_port()
         cmd += ['--gdb-port', str(port)]
-    cmd += ['pk', binary]
+    cmd.append('pk')
+    if binary:
+        cmd.append(binary)
     logfile = open("spike.log", "w")
     process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=logfile,
             stderr=logfile)

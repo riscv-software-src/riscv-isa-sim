@@ -25,6 +25,18 @@ class InstantHaltTest(unittest.TestCase):
         self.gdb.command("stepi")
         self.assertNotEqual(0x1000, self.gdb.p("$pc"))
 
+    def test_change_pc(self):
+        """Change the PC right as we come out of reset."""
+        # 0x13 is nop
+        self.gdb.command("p *((int*) 0x80000000)=0x13")
+        self.gdb.command("p *((int*) 0x80000004)=0x13")
+        self.gdb.command("p *((int*) 0x80000008)=0x13")
+        self.gdb.command("p $pc=0x80000000")
+        self.gdb.command("stepi")
+        self.assertEqual(0x80000004, self.gdb.p("$pc"))
+        self.gdb.command("stepi")
+        self.assertEqual(0x80000008, self.gdb.p("$pc"))
+
 class DebugTest(unittest.TestCase):
     def setUp(self):
         self.binary = testlib.compile("debug.c")
@@ -156,22 +168,30 @@ class RegsTest(unittest.TestCase):
         self.assertEqual(9, self.gdb.p("$x1"))
         self.assertEqual(9, self.gdb.p("$csr1"))
 
-#class MprvTest(unittest.TestCase):
-#    def setUp(self):
-#        self.binary = testlib.compile("mprv.S")
-#        self.spike, self.port = testlib.spike(self.binary, halted=False)
-#        self.gdb = testlib.Gdb()
-#        self.gdb.command("file %s" % self.binary)
-#        self.gdb.command("target extended-remote localhost:%d" % self.port)
-#
-#    def tearDown(self):
-#        self.spike.kill()
-#        self.spike.wait()
-#
-#    def test_mprv(self):
-#        """Test that the debugger can access memory when MPRV is set."""
-#        output = self.gdb.command("p/x data");
-#        self.assertIn("0xbead", output)
+class MprvTest(unittest.TestCase):
+    def setUp(self):
+        self.binary = testlib.compile("mprv.S", "-T", "standalone.lds",
+                "-nostartfiles")
+        self.spike, self.port = testlib.spike(None, halted=True)
+        self.gdb = testlib.Gdb()
+        self.gdb.command("file %s" % self.binary)
+        self.gdb.command("target extended-remote localhost:%d" % self.port)
+        self.gdb.command("load")
+
+    def tearDown(self):
+        self.spike.kill()
+        self.spike.wait()
+
+    def test_mprv(self):
+        """Test that the debugger can access memory when MPRV is set."""
+        self.gdb.c(wait=False)
+        self.gdb.interrupt()
+        output = self.gdb.command("p/x *(int*)(((char*)&data)-0x80000000)")
+        self.assertIn("0xbead", output)
 
 if __name__ == '__main__':
+    # TROUBLESHOOTING TIPS
+    # If a particular test fails, run just that one test, eg.:
+    # ./tests/gdbserver.py MprvTest.test_mprv
+    # Then inspect gdb.log and spike.log to see what happened in more detail.
     unittest.main()

@@ -117,6 +117,7 @@ void mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, access_type type)
 
 reg_t mmu_t::walk(reg_t addr, access_type type, bool supervisor, bool pum)
 {
+  fprintf(stderr, "walk 0x%lx\n", addr);
   int levels, ptidxbits, ptesize;
   switch (get_field(proc->get_state()->mstatus, MSTATUS_VM))
   {
@@ -130,6 +131,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, bool supervisor, bool pum)
   int va_bits = PGSHIFT + levels * ptidxbits;
   reg_t mask = (reg_t(1) << (proc->xlen - (va_bits-1))) - 1;
   reg_t masked_msbs = (addr >> (va_bits-1)) & mask;
+  fprintf(stderr, "walk masked_msbs=0x%lx, mask=0x%lx\n", masked_msbs, mask);
   if (masked_msbs != 0 && masked_msbs != mask)
     return -1;
 
@@ -140,6 +142,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, bool supervisor, bool pum)
 
     // check that physical address of PTE is legal
     reg_t pte_addr = base + idx * ptesize;
+    fprintf(stderr, "pte_addr=0x%lx\n", pte_addr);
     if (!sim->addr_is_mem(pte_addr))
       break;
 
@@ -147,11 +150,16 @@ reg_t mmu_t::walk(reg_t addr, access_type type, bool supervisor, bool pum)
     reg_t pte = ptesize == 4 ? *(uint32_t*)ppte : *(uint64_t*)ppte;
     reg_t ppn = pte >> PTE_PPN_SHIFT;
 
+    fprintf(stderr, "pte=0x%lx\n", pte);
+
     if (PTE_TABLE(pte)) { // next level of page table
       base = ppn << PGSHIFT;
     } else if (pum && PTE_CHECK_PERM(pte, 0, type == STORE, type == FETCH)) {
+      fprintf(stderr, "pum fail\n");
       break;
     } else if (!PTE_CHECK_PERM(pte, supervisor, type == STORE, type == FETCH)) {
+      fprintf(stderr, "perm(0x%lx, %d, %d, %d)\n",
+          pte, supervisor, type==STORE, type==FETCH);
       break;
     } else {
       // set referenced and possibly dirty bits.
@@ -159,6 +167,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, bool supervisor, bool pum)
       // for superpage mappings, make a fake leaf PTE for the TLB's benefit.
       reg_t vpn = addr >> PGSHIFT;
       reg_t value = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
+      fprintf(stderr, "  -> 0x%lx\n", value);
       return value;
     }
   }
