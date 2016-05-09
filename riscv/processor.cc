@@ -380,7 +380,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
     case CSR_DCSR:
-      // TODO: Use get_field style
       state.dcsr.prv = get_field(val, DCSR_PRV);
       state.dcsr.step = get_field(val, DCSR_STEP);
       // TODO: ndreset and fullreset
