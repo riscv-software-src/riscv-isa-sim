@@ -33,7 +33,20 @@
 #define SSTATUS32_SD        0x80000000
 #define SSTATUS64_SD        0x8000000000000000
 
+#define DCSR_XDEBUGVER      (3<<29)
+#define DCSR_HWBPCOUNT      (0xfff<<17)
 #define DCSR_PRV            (3<<14)
+#define DCSR_NDRESET        (1<<13)
+#define DCSR_FULLRESET      (1<<12)
+#define DCSR_STEP           (1<<11)
+#define DCSR_DEBUGINT       (1<<10)
+#define DCSR_STOPCYCLE      (1<<9)
+#define DCSR_STOPTIME       (1<<8)
+#define DCSR_EBREAKM        (1<<7)
+#define DCSR_EBREAKH        (1<<6)
+#define DCSR_EBREAKS        (1<<5)
+#define DCSR_EBREAKU        (1<<4)
+#define DCSR_HALT           (1<<3)
 #define DCSR_CAUSE          7
 
 #define DCSR_CAUSE_NONE     0

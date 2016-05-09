@@ -225,11 +225,6 @@ private:
     throw trap_illegal_instruction(); \
   (which); })
 
-/* Debug CSRs. These should probably be in encoding.h, but that file is
- * automatically generated. */
-/* TODO */
-#include "/media/sf_tnewsome/Synced/SiFive/debug-spec/core_registers.tex.h"
-
 #define DEBUG_START             0x100
 #define DEBUG_ROM_START         0x800
 #define DEBUG_ROM_RESUME        (DEBUG_ROM_START + 4)

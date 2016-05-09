@@ -245,11 +245,12 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   } else {
     if (state.dcsr.cause) {
       state.pc = DEBUG_ROM_EXCEPTION;
+      state.dpc = epc;
     } else {
       state.pc = state.mtvec;
+      state.mepc = epc;
     }
     state.mcause = t.cause();
-    state.mepc = epc;
     if (t.has_badaddr())
       state.mbadaddr = t.get_badaddr();
 
@@ -375,21 +376,21 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
-    case DCSR_ADDRESS:
+    case CSR_DCSR:
       // TODO: Use get_field style
-      state.dcsr.prv = (val & DCSR_PRV_MASK) >> DCSR_PRV_OFFSET;
-      state.dcsr.step = (val & DCSR_STEP_MASK) >> DCSR_STEP_OFFSET;
+      state.dcsr.prv = get_field(val, DCSR_PRV);
+      state.dcsr.step = get_field(val, DCSR_STEP);
       // TODO: ndreset and fullreset
-      state.dcsr.ebreakm = (val & DCSR_EBREAKM_MASK) >> DCSR_EBREAKM_OFFSET;
-      state.dcsr.ebreakh = (val & DCSR_EBREAKH_MASK) >> DCSR_EBREAKH_OFFSET;
-      state.dcsr.ebreaks = (val & DCSR_EBREAKS_MASK) >> DCSR_EBREAKS_OFFSET;
-      state.dcsr.ebreaku = (val & DCSR_EBREAKU_MASK) >> DCSR_EBREAKU_OFFSET;
-      state.dcsr.halt = (val & DCSR_HALT_MASK) >> DCSR_HALT_OFFSET;
+      state.dcsr.ebreakm = get_field(val, DCSR_EBREAKM);
+      state.dcsr.ebreakh = get_field(val, DCSR_EBREAKH);
+      state.dcsr.ebreaks = get_field(val, DCSR_EBREAKS);
+      state.dcsr.ebreaku = get_field(val, DCSR_EBREAKU);
+      state.dcsr.halt = get_field(val, DCSR_HALT);
       break;
-    case DPC_ADDRESS:
+    case CSR_DPC:
       state.dpc = val;
       break;
-    case DSCRATCH_ADDRESS:
+    case CSR_DSCRATCH:
       state.dscratch = val;
       break;
   }
@@ -480,29 +481,29 @@ reg_t processor_t::get_csr(int which)
     case CSR_MTVEC: return state.mtvec;
     case CSR_MEDELEG: return state.medeleg;
     case CSR_MIDELEG: return state.mideleg;
-    case DCSR_ADDRESS:
+    case CSR_DCSR:
       {
-        uint32_t value =
-          (1 << DCSR_XDEBUGVER_OFFSET) |
-          (0 << DCSR_HWBPCOUNT_OFFSET) |
-          (0 << DCSR_NDRESET_OFFSET) |
-          (0 << DCSR_FULLRESET_OFFSET) |
-          (state.dcsr.prv << DCSR_PRV_OFFSET) |
-          (state.dcsr.step << DCSR_STEP_OFFSET) |
-          (sim->debug_module.get_interrupt(id) << DCSR_DEBUGINT_OFFSET) |
-          (0 << DCSR_STOPCYCLE_OFFSET) |
-          (0 << DCSR_STOPTIME_OFFSET) |
-          (state.dcsr.ebreakm << DCSR_EBREAKM_OFFSET) |
-          (state.dcsr.ebreakh << DCSR_EBREAKH_OFFSET) |
-          (state.dcsr.ebreaks << DCSR_EBREAKS_OFFSET) |
-          (state.dcsr.ebreaku << DCSR_EBREAKU_OFFSET) |
-          (state.dcsr.halt << DCSR_HALT_OFFSET) |
-          (state.dcsr.cause << DCSR_CAUSE_OFFSET);
-        return value;
+        uint32_t v = 0;
+        v = set_field(v, DCSR_XDEBUGVER, 1);
+        v = set_field(v, DCSR_HWBPCOUNT, 0);
+        v = set_field(v, DCSR_NDRESET, 0);
+        v = set_field(v, DCSR_FULLRESET, 0);
+        v = set_field(v, DCSR_PRV, state.dcsr.prv);
+        v = set_field(v, DCSR_STEP, state.dcsr.step);
+        v = set_field(v, DCSR_DEBUGINT, sim->debug_module.get_interrupt(id));
+        v = set_field(v, DCSR_STOPCYCLE, 0);
+        v = set_field(v, DCSR_STOPTIME, 0);
+        v = set_field(v, DCSR_EBREAKM, state.dcsr.ebreakm);
+        v = set_field(v, DCSR_EBREAKH, state.dcsr.ebreakh);
+        v = set_field(v, DCSR_EBREAKS, state.dcsr.ebreaks);
+        v = set_field(v, DCSR_EBREAKU, state.dcsr.ebreaku);
+        v = set_field(v, DCSR_HALT, state.dcsr.halt);
+        v = set_field(v, DCSR_CAUSE, state.dcsr.cause);
+        return v;
       }
-    case DPC_ADDRESS:
+    case CSR_DPC:
       return state.dpc;
-    case DSCRATCH_ADDRESS:
+    case CSR_DSCRATCH:
       return state.dscratch;
   }
   throw trap_illegal_instruction();

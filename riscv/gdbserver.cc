@@ -268,8 +268,8 @@ class halt_op_t : public operation_t
       switch (step) {
         case 0:
           // TODO: For now we just assume the target is 64-bit.
-          gs.write_debug_ram(0, csrsi(DCSR_ADDRESS, DCSR_HALT_MASK));
-          gs.write_debug_ram(1, csrr(S0, DPC_ADDRESS));
+          gs.write_debug_ram(0, csrsi(CSR_DCSR, DCSR_HALT));
+          gs.write_debug_ram(1, csrr(S0, CSR_DPC));
           gs.write_debug_ram(2, sd(S0, 0, (uint16_t) DEBUG_RAM_START));
           gs.write_debug_ram(3, csrr(S0, CSR_MBADADDR));
           gs.write_debug_ram(4, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 8));
@@ -344,7 +344,7 @@ class continue_op_t : public operation_t
       switch (step) {
         case 0:
           gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
-          gs.write_debug_ram(1, csrw(S0, DPC_ADDRESS));
+          gs.write_debug_ram(1, csrw(S0, CSR_DPC));
           if (gs.fence_i_required) {
             gs.write_debug_ram(2, fence_i());
             gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
@@ -382,11 +382,8 @@ class continue_op_t : public operation_t
           gs.write_debug_ram(3, csrw(S0, CSR_DCSR));
           gs.write_debug_ram(4, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*4))));
 
-          reg_t dcsr = gs.dcsr & ~DCSR_HALT_MASK;
-          if (single_step)
-            dcsr |= DCSR_STEP_MASK;
-          else
-            dcsr &= ~DCSR_STEP_MASK;
+          reg_t dcsr = set_field(gs.dcsr, DCSR_HALT, 0);
+          dcsr = set_field(dcsr, DCSR_STEP, single_step);
           gs.write_debug_ram(5, dcsr);
 
           gs.write_debug_ram(6, gs.saved_mcause);
