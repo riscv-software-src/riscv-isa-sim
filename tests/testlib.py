@@ -71,6 +71,8 @@ class Gdb(object):
         self.wait()
         self.command("set width 0")
         self.command("set height 0")
+        # Force consistency.
+        self.command("set print entry-values no")
 
     def wait(self):
         """Wait for prompt."""
