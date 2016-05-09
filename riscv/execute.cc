@@ -95,9 +95,6 @@ void processor_t::step(size_t n)
       {
         while (instret < n)
         {
-          // TODO: implement this for the main loop also.  To keep
-          // performance good, probably go into this version when entering
-          // debug mode or something.
           if (unlikely(state.single_step == state.STEP_STEPPING)) {
             state.single_step = state.STEP_STEPPED;
           } else if (unlikely(state.single_step == state.STEP_STEPPED)) {
