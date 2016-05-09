@@ -217,8 +217,11 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
           t.get_badaddr());
   }
 
-  if (t.cause() == CAUSE_BREAKPOINT &&
-          sim->gdbserver && sim->gdbserver->connected()) {
+  if (t.cause() == CAUSE_BREAKPOINT && (
+              (state.prv == PRV_M && state.dcsr.ebreakm) ||
+              (state.prv == PRV_H && state.dcsr.ebreakh) ||
+              (state.prv == PRV_S && state.dcsr.ebreaks) ||
+              (state.prv == PRV_U && state.dcsr.ebreaku))) {
     enter_debug_mode(DCSR_CAUSE_SWBP);
     return;
   }

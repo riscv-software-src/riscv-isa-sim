@@ -185,6 +185,14 @@ static uint32_t addi(unsigned int dest, unsigned int src, uint16_t imm)
     MATCH_ADDI;
 }
 
+static uint32_t ori(unsigned int dest, unsigned int src, uint16_t imm)
+{
+  return (bits(imm, 11, 0) << 20) |
+    (src << 15) |
+    (dest << 7) |
+    MATCH_ORI;
+}
+
 static uint32_t nop()
 {
   return addi(0, 0, 0);
@@ -384,6 +392,11 @@ class continue_op_t : public operation_t
 
           reg_t dcsr = set_field(gs.dcsr, DCSR_HALT, 0);
           dcsr = set_field(dcsr, DCSR_STEP, single_step);
+          // Software breakpoints should go here.
+          dcsr = set_field(dcsr, DCSR_EBREAKM, 1);
+          dcsr = set_field(dcsr, DCSR_EBREAKH, 1);
+          dcsr = set_field(dcsr, DCSR_EBREAKS, 1);
+          dcsr = set_field(dcsr, DCSR_EBREAKU, 1);
           gs.write_debug_ram(5, dcsr);
 
           gs.write_debug_ram(6, gs.saved_mcause);
