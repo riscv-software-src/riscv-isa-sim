@@ -226,6 +226,11 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     return;
   }
 
+  if (state.dcsr.cause) {
+    state.pc = DEBUG_ROM_EXCEPTION;
+    return;
+  }
+
   // by default, trap to M-mode, unless delegated to S-mode
   reg_t bit = t.cause();
   reg_t deleg = state.medeleg;
@@ -246,13 +251,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     set_csr(CSR_MSTATUS, s);
     set_privilege(PRV_S);
   } else {
-    if (state.dcsr.cause) {
-      state.pc = DEBUG_ROM_EXCEPTION;
-      state.dpc = epc;
-    } else {
-      state.pc = state.mtvec;
-      state.mepc = epc;
-    }
+    state.pc = state.mtvec;
+    state.mepc = epc;
     state.mcause = t.cause();
     if (t.has_badaddr())
       state.mbadaddr = t.get_badaddr();

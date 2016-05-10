@@ -135,11 +135,9 @@ public:
 
   // Members that ought to be privated, but that we'd really like to access
   // from operation classes.
-  reg_t saved_dpc;
-  reg_t saved_mbadaddr;
-  reg_t saved_mcause;
-  reg_t saved_mstatus;
+  reg_t dpc;
   reg_t dcsr;
+  reg_t mstatus;
   reg_t sptbr;
   bool sptbr_valid;
   bool fence_i_required;
