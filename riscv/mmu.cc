@@ -37,7 +37,7 @@ reg_t mmu_t::translate(reg_t addr, access_type type)
   reg_t mode = proc->state.prv;
   bool pum = false;
   if (type != FETCH) {
-    if (get_field(proc->state.mstatus, MSTATUS_MPRV))
+    if (!proc->state.dcsr.cause && get_field(proc->state.mstatus, MSTATUS_MPRV))
       mode = get_field(proc->state.mstatus, MSTATUS_MPP);
     pum = (mode == PRV_S && get_field(proc->state.mstatus, MSTATUS_PUM));
   }
