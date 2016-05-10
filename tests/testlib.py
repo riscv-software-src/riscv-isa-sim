@@ -40,28 +40,35 @@ def unused_port():
     s.close()
     return port
 
-def spike(binary, halted=False, with_gdb=True, timeout=None):
-    """Launch spike. Return tuple of its process and the port it's running on."""
-    cmd = []
-    if timeout:
-        cmd += ["timeout", str(timeout)]
+class Spike(object):
+    def __init__(self, binary, halted=False, with_gdb=True, timeout=None):
+        """Launch spike. Return tuple of its process and the port it's running on."""
+        cmd = []
+        if timeout:
+            cmd += ["timeout", str(timeout)]
 
-    cmd += [find_file("spike")]
-    if halted:
-        cmd.append('-H')
-    if with_gdb:
-        port = unused_port()
-        cmd += ['--gdb-port', str(port)]
-    cmd.append('pk')
-    if binary:
-        cmd.append(binary)
-    logfile = open("spike.log", "w")
-    process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=logfile,
-            stderr=logfile)
-    if with_gdb:
-        return process, port
-    else:
-        return process
+        cmd += [find_file("spike")]
+        if halted:
+            cmd.append('-H')
+        if with_gdb:
+            self.port = unused_port()
+            cmd += ['--gdb-port', str(self.port)]
+        cmd.append('pk')
+        if binary:
+            cmd.append(binary)
+        logfile = open("spike.log", "w")
+        self.process = subprocess.Popen(cmd, stdin=subprocess.PIPE, stdout=logfile,
+                stderr=logfile)
+
+    def __del__(self):
+        try:
+            self.process.kill()
+            self.process.wait()
+        except OSError:
+            pass
+
+    def wait(self, *args, **kwargs):
+        return self.process.wait(*args, **kwargs)
 
 class Gdb(object):
     def __init__(self):
@@ -78,10 +85,10 @@ class Gdb(object):
         """Wait for prompt."""
         self.child.expect("\(gdb\)")
 
-    def command(self, command):
+    def command(self, command, timeout=-1):
         self.child.sendline(command)
-        self.child.expect("\n")
-        self.child.expect("\(gdb\)")
+        self.child.expect("\n", timeout=timeout)
+        self.child.expect("\(gdb\)", timeout=timeout)
         return self.child.before.strip()
 
     def c(self, wait=True):

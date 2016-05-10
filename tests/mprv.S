@@ -1,10 +1,10 @@
 #include "../riscv/encoding.h"
 #define PGSHIFT         12
 
-        .global         main
+        .global         _start
 
         .section        .text
-main:
+_start:
         # Set up a page table entry that maps 0x0... to 0x8...
         la      t0, page_table
         srli    t0, t0, PGSHIFT

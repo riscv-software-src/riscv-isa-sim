@@ -729,6 +729,11 @@ class memory_write_op_t : public operation_t
         return false;
       }
 
+      if (gs.read_debug_ram(DEBUG_RAM_SIZE / 4 - 1)) {
+        fprintf(stderr, "Exception happened while writing to 0x%lx -> 0x%lx\n",
+            vaddr, paddr);
+      }
+
       offset += access_size;
       if (offset >= length) {
         gs.send_packet("OK");
@@ -1509,8 +1514,8 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
       return handle_halt_reason(packet);
     case 'g':
       return handle_general_registers_read(packet);
-    case 'k':
-      return handle_kill(packet);
+//    case 'k':
+//      return handle_kill(packet);
     case 'm':
       return handle_memory_read(packet);
 //    case 'M':

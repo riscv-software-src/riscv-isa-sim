@@ -5,18 +5,16 @@ import testlib
 import unittest
 import tempfile
 import time
+import random
+import binascii
 
 class InstantHaltTest(unittest.TestCase):
     def setUp(self):
         self.binary = testlib.compile("debug.c")
-        self.spike, self.port = testlib.spike(self.binary, halted=True)
+        self.spike = testlib.Spike(self.binary, halted=True)
         self.gdb = testlib.Gdb()
         self.gdb.command("file %s" % self.binary)
-        self.gdb.command("target extended-remote localhost:%d" % self.port)
-
-    def tearDown(self):
-        self.spike.kill()
-        self.spike.wait()
+        self.gdb.command("target extended-remote localhost:%d" % self.spike.port)
 
     def test_instant_halt(self):
         self.assertEqual(0x1000, self.gdb.p("$pc"))
@@ -40,14 +38,10 @@ class InstantHaltTest(unittest.TestCase):
 class DebugTest(unittest.TestCase):
     def setUp(self):
         self.binary = testlib.compile("debug.c")
-        self.spike, self.port = testlib.spike(self.binary, halted=False)
+        self.spike = testlib.Spike(self.binary, halted=False)
         self.gdb = testlib.Gdb()
         self.gdb.command("file %s" % self.binary)
-        self.gdb.command("target extended-remote localhost:%d" % self.port)
-
-    def tearDown(self):
-        self.spike.kill()
-        self.spike.wait()
+        self.gdb.command("target extended-remote localhost:%d" % self.spike.port)
 
     def test_turbostep(self):
         """Single step a bunch of times."""
@@ -117,14 +111,10 @@ class DebugTest(unittest.TestCase):
 class RegsTest(unittest.TestCase):
     def setUp(self):
         self.binary = testlib.compile("regs.s")
-        self.spike, self.port = testlib.spike(self.binary, halted=False)
+        self.spike = testlib.Spike(self.binary, halted=False)
         self.gdb = testlib.Gdb()
         self.gdb.command("file %s" % self.binary)
-        self.gdb.command("target extended-remote localhost:%d" % self.port)
-
-    def tearDown(self):
-        self.spike.kill()
-        self.spike.wait()
+        self.gdb.command("target extended-remote localhost:%d" % self.spike.port)
 
     def test_write_gprs(self):
         # Note a0 is missing from this list since it's used to hold the
@@ -168,19 +158,53 @@ class RegsTest(unittest.TestCase):
         self.assertEqual(9, self.gdb.p("$x1"))
         self.assertEqual(9, self.gdb.p("$csr1"))
 
+class DownloadTest(unittest.TestCase):
+    def setUp(self):
+        length = 2**16
+        fd = file("data.c", "w")
+        fd.write("#include <stdint.h>\n")
+        fd.write("uint32_t length = %d;\n" % length)
+        fd.write("uint8_t d[%d] = {\n" % length)
+        self.crc = 0
+        for _ in range(length / 16):
+            fd.write("  ");
+            for _ in range(16):
+                value = random.randrange(1<<8)
+                fd.write("%d, " % value)
+                self.crc = binascii.crc32("%c" % value, self.crc)
+            fd.write("\n");
+        fd.write("};\n");
+        fd.write("uint8_t *data = &d[0];\n");
+        fd.close()
+
+        self.binary = testlib.compile("checksum.c", "data.c", "start.S",
+                "-mcmodel=medany",
+                "-T", "standalone.lds",
+                "-nostartfiles"
+                )
+        self.spike = testlib.Spike(None, halted=True)
+        self.gdb = testlib.Gdb()
+        self.gdb.command("file %s" % self.binary)
+        self.gdb.command("target extended-remote localhost:%d" % self.spike.port)
+
+    def test_download(self):
+        output = self.gdb.command("load")
+        self.assertNotIn("failed", output)
+        self.assertIn("Transfer rate", output)
+        self.gdb.command("b done")
+        self.gdb.c()
+        result = self.gdb.p("$a0")
+        self.assertEqual(self.crc, result)
+
 class MprvTest(unittest.TestCase):
     def setUp(self):
         self.binary = testlib.compile("mprv.S", "-T", "standalone.lds",
                 "-nostartfiles")
-        self.spike, self.port = testlib.spike(None, halted=True)
+        self.spike = testlib.Spike(None, halted=True)
         self.gdb = testlib.Gdb()
         self.gdb.command("file %s" % self.binary)
-        self.gdb.command("target extended-remote localhost:%d" % self.port)
+        self.gdb.command("target extended-remote localhost:%d" % self.spike.port)
         self.gdb.command("load")
-
-    def tearDown(self):
-        self.spike.kill()
-        self.spike.wait()
 
     def test_mprv(self):
         """Test that the debugger can access memory when MPRV is set."""
