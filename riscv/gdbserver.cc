@@ -41,6 +41,18 @@ enum {
   REG_END = 4161
 };
 
+// Return access size to use when writing length bytes to address, so that
+// every write will be aligned.
+unsigned int find_access_size(reg_t address, int length)
+{
+  reg_t composite = address | length;
+  if ((composite & 0x7) == 0)
+    return 8;
+  if ((composite & 0x3) == 0)
+    return 4;
+  return 1;
+}
+
 //////////////////////////////////////// Functions to generate RISC-V opcodes.
 
 // TODO: Does this already exist somewhere?
@@ -559,11 +571,7 @@ class memory_read_op_t : public operation_t
       if (step == 0) {
         // address goes in S0
         paddr = gs.translate(vaddr);
-        access_size = (paddr % length);
-        if (access_size == 0)
-          access_size = length;
-        if (access_size > 8)
-          access_size = 8;
+        access_size = find_access_size(paddr, length);
 
         gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
         switch (access_size) {
@@ -645,18 +653,15 @@ class memory_write_op_t : public operation_t
     {
       reg_t paddr = gs.translate(vaddr);
       if (step == 0) {
-        // address goes in S0
-        access_size = (paddr % length);
-        if (access_size == 0)
-          access_size = length;
-        if (access_size > 8)
-          access_size = 8;
+        access_size = find_access_size(paddr, length);
 
-        fprintf(stderr, "write to 0x%lx -> 0x%lx: ", vaddr, paddr);
+        fprintf(stderr, "write to 0x%lx -> 0x%lx (access=%d): ", vaddr, paddr,
+            access_size);
         for (unsigned int i = 0; i < length; i++)
           fprintf(stderr, "%02x", data[i]);
         fprintf(stderr, "\n");
 
+        // address goes in S0
         gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
         switch (access_size) {
           case 1:
@@ -684,6 +689,8 @@ class memory_write_op_t : public operation_t
                 (data[6] << 16) | (data[7] << 24));
             break;
           default:
+            fprintf(stderr, "gdbserver error: write %d bytes to 0x%lx -> 0x%lx; "
+                "access_size=%d\n", length, vaddr, paddr, access_size);
             gs.send_packet("E12");
             return true;
         }
@@ -724,7 +731,7 @@ class memory_write_op_t : public operation_t
                 (d[6] << 16) | (d[7] << 24));
             break;
           default:
-            gs.send_packet("E12");
+            gs.send_packet("E13");
             return true;
         }
         gs.write_debug_ram(4, paddr + offset);
