@@ -22,6 +22,15 @@
 
 //////////////////////////////////////// Utility Functions
 
+#undef DEBUG
+#ifdef DEBUG
+#  define D(x) x
+#else
+#  define D(x)
+#endif // DEBUG
+
+const int debug_gdbserver = 0;
+
 void die(const char* msg)
 {
   fprintf(stderr, "gdbserver code died: %s\n", msg);
@@ -304,7 +313,7 @@ class halt_op_t : public operation_t
           gs.mstatus = ((uint64_t) gs.read_debug_ram(3) << 32) | gs.read_debug_ram(2);
           gs.write_debug_ram(0, csrr(S0, CSR_DCSR));
           gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-          gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*6))));
+          gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
           gs.set_interrupt(0);
           return false;
 
@@ -605,15 +614,16 @@ class memory_read_op_t : public operation_t
       for (unsigned int i = 0; i < access_size; i++) {
         if (data) {
           *(data++) = value & 0xff;
-          fprintf(stderr, "%02x", (unsigned int) (value & 0xff));
+          D(fprintf(stderr, "%02x", (unsigned int) (value & 0xff)));
         } else {
           sprintf(buffer, "%02x", (unsigned int) (value & 0xff));
           gs.send(buffer);
         }
         value >>= 8;
       }
-      if (data)
-        fprintf(stderr, "\n");
+      if (data && debug_gdbserver) {
+        D(fprintf(stderr, "\n"));
+      }
       length -= access_size;
       paddr += access_size;
 
@@ -655,11 +665,12 @@ class memory_write_op_t : public operation_t
       if (step == 0) {
         access_size = find_access_size(paddr, length);
 
-        fprintf(stderr, "write to 0x%lx -> 0x%lx (access=%d): ", vaddr, paddr,
-            access_size);
-        for (unsigned int i = 0; i < length; i++)
-          fprintf(stderr, "%02x", data[i]);
-        fprintf(stderr, "\n");
+        D(fprintf(stderr, "write to 0x%lx -> 0x%lx (access=%d): ", vaddr, paddr,
+            access_size));
+        for (unsigned int i = 0; i < length; i++) {
+          D(fprintf(stderr, "%02x", data[i]));
+        }
+        D(fprintf(stderr, "\n"));
 
         // address goes in S0
         gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
@@ -805,7 +816,7 @@ class collect_translation_info_op_t : public operation_t
         case STATE_READ_PTE:
           gs.pte_cache[pte_addr] = ((uint64_t) gs.read_debug_ram(5) << 32) |
             gs.read_debug_ram(4);
-          fprintf(stderr, "pte_cache[0x%lx] = 0x%lx\n", pte_addr, gs.pte_cache[pte_addr]);
+          D(fprintf(stderr, "pte_cache[0x%lx] = 0x%lx\n", pte_addr, gs.pte_cache[pte_addr]));
           break;
       }
 
@@ -973,7 +984,7 @@ reg_t gdbserver_t::translate(reg_t vaddr)
       reg_t vpn = vaddr >> PGSHIFT;
       reg_t paddr = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
       paddr += vaddr & (PGSIZE-1);
-      fprintf(stderr, "gdbserver translate 0x%lx -> 0x%lx\n", vaddr, paddr);
+      D(fprintf(stderr, "gdbserver translate 0x%lx -> 0x%lx\n", vaddr, paddr));
       return paddr;
     }
   }
@@ -1080,11 +1091,11 @@ void gdbserver_t::write()
       // Client can't take any more data right now.
       break;
     } else {
-      fprintf(stderr, "wrote %ld bytes: ", bytes);
+      D(fprintf(stderr, "wrote %ld bytes: ", bytes));
       for (unsigned int i = 0; i < bytes; i++) {
-        fprintf(stderr, "%c", send_buf[i]);
+        D(fprintf(stderr, "%c", send_buf[i]));
       }
-      fprintf(stderr, "\n");
+      D(fprintf(stderr, "\n"));
       send_buf.consume(bytes);
     }
   }
@@ -1142,7 +1153,7 @@ void gdbserver_t::process_requests()
       }
 
       if (packet.empty() && b == 3) {
-        fprintf(stderr, "Received interrupt\n");
+        D(fprintf(stderr, "Received interrupt\n"));
         recv_buf.consume(1);
         handle_interrupt();
         break;
@@ -1463,7 +1474,7 @@ void gdbserver_t::handle_query(const std::vector<uint8_t> &packet)
     return end_packet();
   }
 
-  fprintf(stderr, "Unsupported query %s\n", name.c_str());
+  D(fprintf(stderr, "Unsupported query %s\n", name.c_str()));
   return send_packet("");
 }
 
@@ -1477,8 +1488,8 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
     return;
   }
 
-  fprintf(stderr, "Received %ld-byte packet from debug client: ", packet.size());
-  print_packet(packet);
+  D(fprintf(stderr, "Received %ld-byte packet from debug client: ", packet.size()));
+  D(print_packet(packet));
   send("+");
 
   switch (packet[1]) {
@@ -1513,8 +1524,8 @@ void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
   }
 
   // Not supported.
-  fprintf(stderr, "** Unsupported packet: ");
-  print_packet(packet);
+  D(fprintf(stderr, "** Unsupported packet: "));
+  D(print_packet(packet));
   send_packet("");
 }
 

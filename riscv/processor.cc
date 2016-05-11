@@ -198,7 +198,6 @@ void processor_t::set_privilege(reg_t prv)
 
 void processor_t::enter_debug_mode(uint8_t cause)
 {
-  fprintf(stderr, "enter_debug_mode(%d), mstatus=0x%lx, prv=0x%lx\n", cause, state.mstatus, state.prv);
   state.dcsr.cause = cause;
   state.dcsr.prv = state.prv;
   set_privilege(PRV_M);

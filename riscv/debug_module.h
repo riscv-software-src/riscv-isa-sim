@@ -16,11 +16,9 @@ class debug_module_t : public abstract_device_t
     uint32_t ram_read32(unsigned int index);
 
     void set_interrupt(uint32_t hartid) {
-      fprintf(stderr, "set debug interrupt 0x%x\n", hartid);
       interrupt.insert(hartid);
     }
     void clear_interrupt(uint32_t hartid) {
-      fprintf(stderr, "clear debug interrupt 0x%x\n", hartid);
       interrupt.erase(hartid);
     }
     bool get_interrupt(uint32_t hartid) const {
@@ -28,11 +26,9 @@ class debug_module_t : public abstract_device_t
     }
 
     void set_halt_notification(uint32_t hartid) {
-      fprintf(stderr, "set debug halt_notification 0x%x\n", hartid);
       halt_notification.insert(hartid);
     }
     void clear_halt_notification(uint32_t hartid) {
-      fprintf(stderr, "clear debug halt_notification 0x%x\n", hartid);
       halt_notification.erase(hartid);
     }
     bool get_halt_notification(uint32_t hartid) const {
