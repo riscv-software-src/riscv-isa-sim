@@ -204,7 +204,7 @@ void processor_t::enter_debug_mode(uint8_t cause)
   set_privilege(PRV_M);
   state.dpc = state.pc;
   state.pc = DEBUG_ROM_START;
-  debug = true; // TODO
+  //debug = true; // TODO
 }
 
 void processor_t::take_trap(trap_t& t, reg_t epc)

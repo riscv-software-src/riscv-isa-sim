@@ -160,7 +160,7 @@ class RegsTest(unittest.TestCase):
 
 class DownloadTest(unittest.TestCase):
     def setUp(self):
-        length = 2**16
+        length = 2**20
         fd = file("data.c", "w")
         fd.write("#include <stdint.h>\n")
         fd.write("uint32_t length = %d;\n" % length)

@@ -1459,6 +1459,7 @@ void gdbserver_t::handle_query(const std::vector<uint8_t> &packet)
         send("swbreak+;");
       }
     }
+    send("PacketSize=131072;");
     return end_packet();
   }
 
