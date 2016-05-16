@@ -10,6 +10,8 @@ riscv_hdrs = \
 	htif.h \
 	common.h \
 	decode.h \
+	devices.h \
+	devicetree.h \
 	disasm.h \
 	mmu.h \
 	processor.h \
@@ -18,6 +20,7 @@ riscv_hdrs = \
 	encoding.h \
 	cachesim.h \
 	memtracer.h \
+	tracer.h \
 	extension.h \
 	rocc.h \
 	insn_template.h \
