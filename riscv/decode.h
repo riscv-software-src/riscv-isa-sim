@@ -184,7 +184,10 @@ private:
 #define require_fp require((STATE.mstatus & MSTATUS_FS) != 0)
 #define require_accelerator require((STATE.mstatus & MSTATUS_XS) != 0)
 
-#define set_fp_exceptions ({ STATE.fflags |= softfloat_exceptionFlags; \
+#define set_fp_exceptions ({ if (softfloat_exceptionFlags & ~(STATE.fflags)) { \
+                               dirty_fp_state; \
+                               STATE.fflags |= softfloat_exceptionFlags; \
+                             } \
                              softfloat_exceptionFlags = 0; })
 
 #define sext32(x) ((sreg_t)(int32_t)(x))
