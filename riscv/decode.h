@@ -184,7 +184,7 @@ private:
 #define require_fp require((STATE.mstatus & MSTATUS_FS) != 0)
 #define require_accelerator require((STATE.mstatus & MSTATUS_XS) != 0)
 
-#define set_fp_exceptions ({ if (softfloat_exceptionFlags & ~(STATE.fflags)) { \
+#define set_fp_exceptions ({ if (softfloat_exceptionFlags) { \
                                dirty_fp_state; \
                                STATE.fflags |= softfloat_exceptionFlags; \
                              } \
