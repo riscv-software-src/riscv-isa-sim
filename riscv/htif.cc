@@ -66,7 +66,7 @@ void htif_isasim_t::tick_once()
         reg_t addr = (hdr.addr + i) * HTIF_DATA_ALIGN;
         try {
           sim->debug_mmu->store_uint64(addr, buf[i]);
-        } catch (trap_load_access_fault& e) {
+        } catch (trap_store_access_fault& e) {
           fprintf(stderr, "HTIF: attempt to write to illegal address 0x%" PRIx64 "\n", addr);
           exit(-1);
         }
