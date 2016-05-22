@@ -166,8 +166,8 @@ class DownloadTest(unittest.TestCase):
         fd.write("uint32_t length = %d;\n" % length)
         fd.write("uint8_t d[%d] = {\n" % length)
         self.crc = 0
-        for _ in range(length / 16):
-            fd.write("  ");
+        for i in range(length / 16):
+            fd.write("  /* 0x%04x */ " % (i * 16));
             for _ in range(16):
                 value = random.randrange(1<<8)
                 fd.write("%d, " % value)

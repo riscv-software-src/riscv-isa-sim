@@ -10,7 +10,9 @@ SECTIONS
   /*--------------------------------------------------------------------*/
 
   /* Begining of code and text segment */
-  . = 0x80000000;
+  /* Leave some space for pk's data structures, which includes tohost/fromhost
+   * which are special addresses we ought to leave alone.  */
+  . = 0x80010000;
   _ftext = .;
   PROVIDE( eprol = . );
 
