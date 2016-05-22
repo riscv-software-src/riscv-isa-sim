@@ -39,6 +39,9 @@
 #define MIP_STIP            (1 << IRQ_S_TIMER)
 #define MIP_HTIP            (1 << IRQ_H_TIMER)
 #define MIP_MTIP            (1 << IRQ_M_TIMER)
+#define MIP_SEIP            (1 << IRQ_S_EXT)
+#define MIP_HEIP            (1 << IRQ_H_EXT)
+#define MIP_MEIP            (1 << IRQ_M_EXT)
 
 #define SIP_SSIP MIP_SSIP
 #define SIP_STIP MIP_STIP
@@ -61,9 +64,9 @@
 #define IRQ_S_TIMER  5
 #define IRQ_H_TIMER  6
 #define IRQ_M_TIMER  7
-#define IRQ_S_DEV    9
-#define IRQ_H_DEV    10
-#define IRQ_M_DEV    11
+#define IRQ_S_EXT    9
+#define IRQ_H_EXT    10
+#define IRQ_M_EXT    11
 #define IRQ_COP      12
 #define IRQ_HOST     13
 

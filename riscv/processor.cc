@@ -254,7 +254,7 @@ static bool validate_vm(int max_xlen, reg_t vm)
 void processor_t::set_csr(int which, reg_t val)
 {
   val = zext_xlen(val);
-  reg_t delegable_ints = MIP_SSIP | MIP_STIP | (1 << IRQ_COP);
+  reg_t delegable_ints = MIP_SSIP | MIP_STIP | MIP_SEIP | (1 << IRQ_COP);
   reg_t all_ints = delegable_ints | MIP_MSIP | MIP_MTIP;
   switch (which)
   {
