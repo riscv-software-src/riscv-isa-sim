@@ -5,13 +5,6 @@
 
 # TODO: Update these constants once they're finalized in the doc.
 
-#define DCSR                    0x790
-#define DCSR_CAUSE_DEBINT       3
-#define DCSR_HALT_OFFSET        3
-#define DCSR_DEBUGINT_OFFSET    10
-
-#define DSCRATCH                0x792
-
 #define DEBUG_RAM               0x400
 #define DEBUG_RAM_SIZE          64
 
@@ -63,26 +56,25 @@ restore_128:
         sw      s0, (DEBUG_RAM + DEBUG_RAM_SIZE - 4)(zero)
 
 check_halt:
-        csrr    s0, DCSR
-        andi    s0, s0, (1<<DCSR_HALT_OFFSET)
+        csrr    s0, CSR_DCSR
+        andi    s0, s0, DCSR_HALT
         beqz    s0, exit
         j       wait_for_interrupt
 
 exit:
         # Restore s0.
-        csrr    s0, DSCRATCH
-        dret
-
+        csrr    s0, CSR_DSCRATCH
+        .word   0x79200073      # TODO: dret
 
 _entry:
         # Save s0 in DSCRATCH
-        csrw    DSCRATCH, s0
+        csrw    CSR_DSCRATCH, s0
 
         # Check why we're here
-        csrr    s0, DCSR
+        csrr    s0, CSR_DCSR
         # cause is in bits 2:0 of dcsr
-        andi    s0, s0, 7
-        addi    s0, s0, -DCSR_CAUSE_DEBINT
+        andi    s0, s0, DCSR_CAUSE
+        addi    s0, s0, -DCSR_CAUSE_DEBUGINT
         bnez    s0, spontaneous_halt
 
 jdebugram:
@@ -106,11 +98,11 @@ save_128:
 spontaneous_halt:
         csrr    s0, CSR_MHARTID
         sw      s0, SETHALTNOT(zero)
-        csrsi   DCSR, (1<<DCSR_HALT_OFFSET)
+        csrsi   CSR_DCSR, DCSR_HALT
 
 wait_for_interrupt:
-        csrr    s0, DCSR
-        andi    s0, s0, (1<<DCSR_DEBUGINT_OFFSET)
+        csrr    s0, CSR_DCSR
+        andi    s0, s0, DCSR_DEBUGINT
         beqz    s0, wait_for_interrupt
 
         j       jdebugram
