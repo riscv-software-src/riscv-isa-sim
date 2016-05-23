@@ -21,7 +21,7 @@ _start:
         csrw    CSR_MEPC, t0
 
         # Exit supervisor mode, entering user mode at loop.
-        mret
+        .word   0x30200073      # TODO: mret
 
 loop:
         la      t0, data
