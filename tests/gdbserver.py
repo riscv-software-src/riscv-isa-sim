@@ -8,7 +8,11 @@ import time
 import random
 import binascii
 
-class InstantHaltTest(unittest.TestCase):
+class DeleteSpike(unittest.TestCase):
+    def tearDown(self):
+        del self.spike
+
+class InstantHaltTest(DeleteSpike):
     def setUp(self):
         self.binary = testlib.compile("debug.c")
         self.spike = testlib.Spike(self.binary, halted=True)
@@ -35,7 +39,7 @@ class InstantHaltTest(unittest.TestCase):
         self.gdb.command("stepi")
         self.assertEqual(0x80000008, self.gdb.p("$pc"))
 
-class DebugTest(unittest.TestCase):
+class DebugTest(DeleteSpike):
     def setUp(self):
         self.binary = testlib.compile("debug.c")
         self.spike = testlib.Spike(self.binary, halted=False)
@@ -108,7 +112,7 @@ class DebugTest(unittest.TestCase):
         self.assertIn("Continuing", output)
         self.assertIn("Remote connection closed", output)
 
-class RegsTest(unittest.TestCase):
+class RegsTest(DeleteSpike):
     def setUp(self):
         self.binary = testlib.compile("regs.s")
         self.spike = testlib.Spike(self.binary, halted=False)
@@ -158,7 +162,7 @@ class RegsTest(unittest.TestCase):
         self.assertEqual(9, self.gdb.p("$x1"))
         self.assertEqual(9, self.gdb.p("$csr1"))
 
-class DownloadTest(unittest.TestCase):
+class DownloadTest(DeleteSpike):
     def setUp(self):
         length = 2**20
         fd = file("data.c", "w")
@@ -196,7 +200,7 @@ class DownloadTest(unittest.TestCase):
         result = self.gdb.p("$a0")
         self.assertEqual(self.crc, result)
 
-class MprvTest(unittest.TestCase):
+class MprvTest(DeleteSpike):
     def setUp(self):
         self.binary = testlib.compile("mprv.S", "-T", "standalone.lds",
                 "-nostartfiles")
