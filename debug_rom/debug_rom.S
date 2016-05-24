@@ -64,7 +64,7 @@ check_halt:
 exit:
         # Restore s0.
         csrr    s0, CSR_DSCRATCH
-        .word   0x79200073      # TODO: dret
+        dret
 
 _entry:
         # Save s0 in DSCRATCH

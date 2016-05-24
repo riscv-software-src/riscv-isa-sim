@@ -386,7 +386,7 @@
 #define MASK_HRET  0xffffffff
 #define MATCH_MRET 0x30200073
 #define MASK_MRET  0xffffffff
-#define MATCH_DRET 0x79200073
+#define MATCH_DRET 0x7b200073
 #define MASK_DRET  0xffffffff
 #define MATCH_SFENCE_VM 0x10400073
 #define MASK_SFENCE_VM  0xfff07fff
@@ -697,9 +697,9 @@
 #define CSR_MSCYCLE_DELTA 0x704
 #define CSR_MSTIME_DELTA 0x705
 #define CSR_MSINSTRET_DELTA 0x706
-#define CSR_DCSR 0x790
-#define CSR_DPC 0x791
-#define CSR_DSCRATCH 0x792
+#define CSR_DCSR 0x7b0
+#define CSR_DPC 0x7b1
+#define CSR_DSCRATCH 0x7b2
 #define CSR_MCYCLE 0xf00
 #define CSR_MTIME 0xf01
 #define CSR_MINSTRET 0xf02
