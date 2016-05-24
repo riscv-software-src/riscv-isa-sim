@@ -234,7 +234,7 @@ private:
 #define DEBUG_RAM_SIZE          64
 #define DEBUG_RAM_END           (DEBUG_RAM_START + DEBUG_RAM_SIZE)
 #define DEBUG_END               0xfff
-#define DEBUG_CLEARDEBINT       0x108
+#define DEBUG_CLEARDEBINT       0x104
 #define DEBUG_SETHALTNOT        0x100
 #define DEBUG_SIZE              (DEBUG_END - DEBUG_START + 1)
 

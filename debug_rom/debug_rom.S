@@ -9,7 +9,7 @@
 #define DEBUG_RAM_SIZE          64
 
 #define SETHALTNOT              0x100
-#define CLEARDEBINT             0x108
+#define CLEARDEBINT             0x104
 
         .global entry
         .global resume
