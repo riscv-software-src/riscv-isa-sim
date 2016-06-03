@@ -100,6 +100,8 @@ void sim_t::interactive()
     {
       if(funcs.count(cmd))
         (this->*funcs[cmd])(cmd, args);
+      else
+        fprintf(stderr, "Unknown command %s\n", cmd.c_str());
     }
     catch(trap_t t) {}
   }
