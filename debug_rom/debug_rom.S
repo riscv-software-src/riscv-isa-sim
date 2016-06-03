@@ -72,9 +72,9 @@ _entry:
 
         # Check why we're here
         csrr    s0, CSR_DCSR
-        # cause is in bits 2:0 of dcsr
+        # cause is in bits 8:6 of dcsr
         andi    s0, s0, DCSR_CAUSE
-        addi    s0, s0, -DCSR_CAUSE_DEBUGINT
+        addi    s0, s0, -(DCSR_CAUSE_DEBUGINT<<6)
         bnez    s0, spontaneous_halt
 
 jdebugram:
