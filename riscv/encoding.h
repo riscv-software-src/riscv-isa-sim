@@ -33,7 +33,7 @@
 #define SSTATUS32_SD        0x80000000
 #define SSTATUS64_SD        0x8000000000000000
 
-#define DCSR_XDEBUGVER      (3<<30)
+#define DCSR_XDEBUGVER      (3U<<30)
 #define DCSR_NDRESET        (1<<29)
 #define DCSR_FULLRESET      (1<<28)
 #define DCSR_HWBPCOUNT      (0xfff<<16)
