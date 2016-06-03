@@ -74,7 +74,12 @@ struct : public arg_t {
       #define DECLARE_CSR(name, num) case num: return #name;
       #include "encoding.h"
       #undef DECLARE_CSR
-      default: return "unknown";
+      default:
+      {
+        char buf[16];
+        snprintf(buf, sizeof buf, "unknown_%03" PRIx64, insn.csr());
+        return std::string(buf);
+      }
     }
   }
 } csr;
