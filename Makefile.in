@@ -339,10 +339,12 @@ junk += $(bintest_outs)
 	./$* < /dev/null 2>&1 | tee $@
 
 check-cpp : $(test_outs)
-	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segmentation' $^ < /dev/null; echo
+	@echo
+	! grep -h -e'Unit Tests' -e'FAILED' -e'Segmentation' $^ < /dev/null
+	@echo
 
 check-bin : $(bintest_outs)
-	tail -n 1 $^ < /dev/null
+	! tail -n 1 $^ < /dev/null 2>&1 | grep FAILED
 
 check : check-cpp check-bin
 
