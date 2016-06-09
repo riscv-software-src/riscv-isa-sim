@@ -30,9 +30,6 @@ exception:
 _resume:
         li      s0, 0
 _resume2:
-        # Clear debug interrupt.
-        csrr    s1, CSR_MHARTID
-        sw      s1, CLEARDEBINT(zero)
         fence
 
         # Restore s1.
@@ -40,20 +37,25 @@ _resume2:
         bltz    s1, restore_not_32
 restore_32:
         lw      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 4)(zero)
-        j       check_halt
+        j       finish_restore
 restore_not_32:
         slli    s1, s1, 1
         bltz    s1, restore_128
 restore_64:
         ld      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 8)(zero)
-        j       check_halt
+        j       finish_restore
 restore_128:
         nop     #lq      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 16)(zero)
 
+finish_restore:
         # s0 contains ~0 if we got here through an exception, and 0 otherwise.
         # Store this to the last word in Debug RAM so the debugger can tell if
         # an exception occurred.
         sw      s0, (DEBUG_RAM + DEBUG_RAM_SIZE - 4)(zero)
+
+        # Clear debug interrupt.
+        csrr    s0, CSR_MHARTID
+        sw      s0, CLEARDEBINT(zero)
 
 check_halt:
         csrr    s0, CSR_DCSR
