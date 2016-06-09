@@ -482,6 +482,10 @@ reg_t processor_t::get_csr(int which)
     case CSR_MTVEC: return state.mtvec;
     case CSR_MEDELEG: return state.medeleg;
     case CSR_MIDELEG: return state.mideleg;
+    case CSR_TDRSELECT: return 0;
+    case CSR_TDRDATA1: return 0;
+    case CSR_TDRDATA2: return 0;
+    case CSR_TDRDATA3: return 0;
     case CSR_DCSR:
       {
         uint32_t v = 0;

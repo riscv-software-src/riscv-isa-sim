@@ -100,6 +100,16 @@
 #define EXT_IO_BASE        0x40000000
 #define DRAM_BASE          0x80000000
 
+// breakpoint control fields
+#define BPCONTROL_X         0x00000001
+#define BPCONTROL_W         0x00000002
+#define BPCONTROL_R         0x00000004
+#define BPCONTROL_U         0x00000008
+#define BPCONTROL_S         0x00000010
+#define BPCONTROL_H         0x00000020
+#define BPCONTROL_M         0x00000040
+#define BPCONTROL_MATCHCOND 0x00000180
+
 // page table entry (PTE) fields
 #define PTE_V     0x001 // Valid
 #define PTE_TYPE  0x01E // Type
@@ -697,6 +707,10 @@
 #define CSR_MSCYCLE_DELTA 0x704
 #define CSR_MSTIME_DELTA 0x705
 #define CSR_MSINSTRET_DELTA 0x706
+#define CSR_TDRSELECT 0x7a0
+#define CSR_TDRDATA1 0x7a1
+#define CSR_TDRDATA2 0x7a2
+#define CSR_TDRDATA3 0x7a3
 #define CSR_DCSR 0x7b0
 #define CSR_DPC 0x7b1
 #define CSR_DSCRATCH 0x7b2
@@ -1003,6 +1017,10 @@ DECLARE_CSR(muinstret_delta, CSR_MUINSTRET_DELTA)
 DECLARE_CSR(mscycle_delta, CSR_MSCYCLE_DELTA)
 DECLARE_CSR(mstime_delta, CSR_MSTIME_DELTA)
 DECLARE_CSR(msinstret_delta, CSR_MSINSTRET_DELTA)
+DECLARE_CSR(tdrselect, CSR_TDRSELECT)
+DECLARE_CSR(tdrdata1, CSR_TDRDATA1)
+DECLARE_CSR(tdrdata2, CSR_TDRDATA2)
+DECLARE_CSR(tdrdata3, CSR_TDRDATA3)
 DECLARE_CSR(dcsr, CSR_DCSR)
 DECLARE_CSR(dpc, CSR_DPC)
 DECLARE_CSR(dscratch, CSR_DSCRATCH)
