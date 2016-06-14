@@ -50,22 +50,11 @@ enum {
   REG_END = 4161
 };
 
-// Return access size to use when writing length bytes to address, so that
-// every write will be aligned.
-unsigned int find_access_size(reg_t address, int length)
-{
-  reg_t composite = address | length;
-  if ((composite & 0x7) == 0)
-    return 8;
-  if ((composite & 0x3) == 0)
-    return 4;
-  return 1;
-}
-
 //////////////////////////////////////// Functions to generate RISC-V opcodes.
 
 // TODO: Does this already exist somewhere?
 
+#define ZERO    0
 // Using regnames.cc as source. The RVG Calling Convention of the 2.0 RISC-V
 // spec says it should be 2 and 3.
 #define S0      8
@@ -148,6 +137,31 @@ static uint32_t sd(unsigned int src, unsigned int base, uint16_t offset)
     MATCH_SD;
 }
 
+static uint32_t sq(unsigned int src, unsigned int base, uint16_t offset)
+{
+#if 0
+  return (bits(offset, 11, 5) << 25) |
+    (bits(src, 4, 0) << 20) |
+    (base << 15) |
+    (bits(offset, 4, 0) << 7) |
+    MATCH_SQ;
+#else
+  abort();
+#endif
+}
+
+static uint32_t lq(unsigned int rd, unsigned int base, uint16_t offset)
+{
+#if 0
+  return (bits(offset, 11, 0) << 20) |
+    (base << 15) |
+    (bits(rd, 4, 0) << 7) |
+    MATCH_LQ;
+#else
+  abort();
+#endif
+}
+
 static uint32_t ld(unsigned int rd, unsigned int base, uint16_t offset)
 {
   return (bits(offset, 11, 0) << 20) |
@@ -180,6 +194,15 @@ static uint32_t lb(unsigned int rd, unsigned int base, uint16_t offset)
     MATCH_LB;
 }
 
+static uint32_t fsw(unsigned int src, unsigned int base, uint16_t offset)
+{
+  return (bits(offset, 11, 5) << 25) |
+    (bits(src, 4, 0) << 20) |
+    (base << 15) |
+    (bits(offset, 4, 0) << 7) |
+    MATCH_FSW;
+}
+
 static uint32_t fsd(unsigned int src, unsigned int base, uint16_t offset)
 {
   return (bits(offset, 11, 5) << 25) |
@@ -187,6 +210,15 @@ static uint32_t fsd(unsigned int src, unsigned int base, uint16_t offset)
     (base << 15) |
     (bits(offset, 4, 0) << 7) |
     MATCH_FSD;
+}
+
+static uint32_t flw(unsigned int src, unsigned int base, uint16_t offset)
+{
+  return (bits(offset, 11, 5) << 25) |
+    (bits(src, 4, 0) << 20) |
+    (base << 15) |
+    (bits(offset, 4, 0) << 7) |
+    MATCH_FLW;
 }
 
 static uint32_t fld(unsigned int src, unsigned int base, uint16_t offset)
@@ -213,6 +245,23 @@ static uint32_t ori(unsigned int dest, unsigned int src, uint16_t imm)
     (dest << 7) |
     MATCH_ORI;
 }
+
+static uint32_t xori(unsigned int dest, unsigned int src, uint16_t imm)
+{
+  return (bits(imm, 11, 0) << 20) |
+    (src << 15) |
+    (dest << 7) |
+    MATCH_XORI;
+}
+
+static uint32_t srli(unsigned int dest, unsigned int src, uint8_t shamt)
+{
+  return (bits(shamt, 4, 0) << 20) |
+    (src << 15) |
+    (dest << 7) |
+    MATCH_SRLI;
+}
+
 
 static uint32_t nop()
 {
@@ -291,34 +340,77 @@ class halt_op_t : public operation_t
 {
   public:
     halt_op_t(gdbserver_t& gdbserver, bool send_status=false) :
-      operation_t(gdbserver), send_status(send_status) {};
+      operation_t(gdbserver), send_status(send_status),
+      state(ST_ENTER) {};
+
+    void write_dpc_program() {
+      gs.dr_write32(0, csrsi(CSR_DCSR, DCSR_HALT));
+      gs.dr_write32(1, csrr(S0, CSR_DPC));
+      gs.dr_write_store(2, S0, SLOT_DATA0);
+      gs.dr_write_jump(3);
+      gs.set_interrupt(0);
+    }
 
     bool perform_step(unsigned int step) {
-      switch (step) {
-        case 0:
-          // TODO: For now we just assume the target is 64-bit.
-          gs.write_debug_ram(0, csrsi(CSR_DCSR, DCSR_HALT));
-          gs.write_debug_ram(1, csrr(S0, CSR_DPC));
-          gs.write_debug_ram(2, sd(S0, 0, (uint16_t) DEBUG_RAM_START));
-          gs.write_debug_ram(3, csrr(S0, CSR_MSTATUS));
-          gs.write_debug_ram(4, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 8));
-          gs.write_debug_ram(5, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*5))));
-          gs.set_interrupt(0);
-          // We could read more registers here, but only on 64-bit targets. I'm
-          // trying to keep The patterns here usable for 32-bit ISAs as well.
+      switch (state) {
+        case ST_ENTER:
+          if (gs.xlen == 0) {
+            gs.dr_write32(0, xori(S1, ZERO, -1));
+            gs.dr_write32(1, srli(S1, S1, 31));
+            // 0x00000001  0x00000001:ffffffff  0x00000001:ffffffff:ffffffff:ffffffff
+            gs.dr_write32(2, sw(S1, ZERO, DEBUG_RAM_START));
+            gs.dr_write32(3, srli(S1, S1, 31));
+            // 0x00000000  0x00000000:00000003  0x00000000:00000003:ffffffff:ffffffff
+            gs.dr_write32(4, sw(S1, ZERO, DEBUG_RAM_START + 4));
+            gs.dr_write_jump(5);
+            gs.set_interrupt(0);
+            state = ST_XLEN;
+
+          } else {
+            write_dpc_program();
+            state = ST_DPC;
+          }
           return false;
 
-        case 1:
-          gs.dpc = ((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0);
-          gs.mstatus = ((uint64_t) gs.read_debug_ram(3) << 32) | gs.read_debug_ram(2);
-          gs.write_debug_ram(0, csrr(S0, CSR_DCSR));
-          gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-          gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        case ST_XLEN:
+          {
+            uint32_t word0 = gs.dr_read32(0);
+            uint32_t word1 = gs.dr_read32(1);
+
+            if (word0 == 1 && word1 == 0) {
+              gs.xlen = 32;
+            } else if (word0 == 0xffffffff && word1 == 3) {
+              gs.xlen = 64;
+            } else if (word0 == 0xffffffff && word1 == 0xffffffff) {
+              gs.xlen = 128;
+            }
+
+            write_dpc_program();
+            state = ST_DPC;
+            return false;
+          }
+
+        case ST_DPC:
+          gs.dpc = gs.dr_read(SLOT_DATA0);
+          fprintf(stderr, "dpc=0x%lx\n", gs.dpc);
+          gs.dr_write32(0, csrr(S0, CSR_MSTATUS));
+          gs.dr_write_store(1, S0, SLOT_DATA0);
+          gs.dr_write_jump(2);
           gs.set_interrupt(0);
+          state = ST_MSTATUS;
           return false;
 
-        case 2:
-          gs.dcsr = ((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4);
+        case ST_MSTATUS:
+          gs.mstatus = gs.dr_read(SLOT_DATA0);
+          gs.dr_write32(0, csrr(S0, CSR_DCSR));
+          gs.dr_write32(1, sw(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+          gs.dr_write_jump(2);
+          gs.set_interrupt(0);
+          state = ST_DCSR;
+          return false;
+
+        case ST_DCSR:
+          gs.dcsr = gs.dr_read32(4);
 
           gs.sptbr_valid = false;
           gs.pte_cache.clear();
@@ -344,14 +436,22 @@ class halt_op_t : public operation_t
                 break;
             }
           }
-
           return true;
+
+        default:
+          assert(0);
       }
-      return false;
     }
 
   private:
     bool send_status;
+    enum {
+      ST_ENTER,
+      ST_XLEN,
+      ST_DPC,
+      ST_MSTATUS,
+      ST_DCSR
+    } state;
 };
 
 class continue_op_t : public operation_t
@@ -363,33 +463,32 @@ class continue_op_t : public operation_t
     bool perform_step(unsigned int step) {
       switch (step) {
         case 0:
-          gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
-          gs.write_debug_ram(1, csrw(S0, CSR_DPC));
+          gs.dr_write_load(0, S0, SLOT_DATA0);
+          gs.dr_write32(1, csrw(S0, CSR_DPC));
+          // TODO: Isn't there a fence.i in Debug ROM already?
           if (gs.fence_i_required) {
-            gs.write_debug_ram(2, fence_i());
-            gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
+            gs.dr_write32(2, fence_i());
+            gs.dr_write_jump(3);
             gs.fence_i_required = false;
           } else {
-            gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+            gs.dr_write_jump(2);
           }
-          gs.write_debug_ram(4, gs.dpc);
-          gs.write_debug_ram(5, gs.dpc >> 32);
+          gs.dr_write(SLOT_DATA0, gs.dpc);
           gs.set_interrupt(0);
           return false;
 
         case 1:
-          gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START+16));
-          gs.write_debug_ram(1, csrw(S0, CSR_MSTATUS));
-          gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
-          gs.write_debug_ram(4, gs.mstatus);
-          gs.write_debug_ram(5, gs.mstatus >> 32);
+          gs.dr_write_load(0, S0, SLOT_DATA0);
+          gs.dr_write32(1, csrw(S0, CSR_MSTATUS));
+          gs.dr_write_jump(2);
+          gs.dr_write(SLOT_DATA0, gs.mstatus);
           gs.set_interrupt(0);
           return false;
 
         case 2:
-          gs.write_debug_ram(0, lw(S0, 0, (uint16_t) DEBUG_RAM_START+16));
-          gs.write_debug_ram(1, csrw(S0, CSR_DCSR));
-          gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+          gs.dr_write32(0, lw(S0, 0, (uint16_t) DEBUG_RAM_START+16));
+          gs.dr_write32(1, csrw(S0, CSR_DCSR));
+          gs.dr_write_jump(2);
 
           reg_t dcsr = set_field(gs.dcsr, DCSR_HALT, 0);
           dcsr = set_field(dcsr, DCSR_STEP, single_step);
@@ -398,7 +497,7 @@ class continue_op_t : public operation_t
           dcsr = set_field(dcsr, DCSR_EBREAKH, 1);
           dcsr = set_field(dcsr, DCSR_EBREAKS, 1);
           dcsr = set_field(dcsr, DCSR_EBREAKU, 1);
-          gs.write_debug_ram(4, dcsr);
+          gs.dr_write32(4, dcsr);
 
           gs.set_interrupt(0);
           return true;
@@ -434,34 +533,46 @@ class general_registers_read_op_t : public operation_t
         gs.start_packet();
 
         // x0 is always zero.
-        gs.send((reg_t) 0);
+        if (gs.xlen == 32) {
+          gs.send((uint32_t) 0);
+        } else {
+          gs.send((uint64_t) 0);
+        }
 
-        gs.write_debug_ram(0, sd(1, 0, (uint16_t) DEBUG_RAM_START + 16));
-        gs.write_debug_ram(1, sd(2, 0, (uint16_t) DEBUG_RAM_START + 0));
-        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.dr_write_store(0, 1, SLOT_DATA0);
+        gs.dr_write_store(1, 2, SLOT_DATA1);
+        gs.dr_write_jump(2);
         gs.set_interrupt(0);
         return false;
       }
 
-      gs.send(((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4));
+      if (gs.xlen == 32) {
+        gs.send((uint32_t) gs.dr_read(SLOT_DATA0));
+      } else {
+        gs.send((uint64_t) gs.dr_read(SLOT_DATA0));
+      }
       if (step >= 16) {
         gs.end_packet();
         return true;
       }
 
-      gs.send(((uint64_t) gs.read_debug_ram(1) << 32) | gs.read_debug_ram(0));
+      if (gs.xlen == 32) {
+        gs.send((uint32_t) gs.dr_read(SLOT_DATA1));
+      } else {
+        gs.send((uint64_t) gs.dr_read(SLOT_DATA1));
+      }
 
       unsigned int current_reg = 2 * step + 1;
       unsigned int i = 0;
       if (current_reg == S1) {
-        gs.write_debug_ram(i++, ld(S1, 0, (uint16_t) DEBUG_RAM_END - 8));
+        gs.dr_write_load(i++, S1, SLOT_DATA_LAST);
       }
-      gs.write_debug_ram(i++, sd(current_reg, 0, (uint16_t) DEBUG_RAM_START + 16));
+      gs.dr_write_store(i++, current_reg, SLOT_DATA0);
       if (current_reg + 1 == S0) {
-        gs.write_debug_ram(i++, csrr(S0, CSR_DSCRATCH));
+        gs.dr_write32(i++, csrr(S0, CSR_DSCRATCH));
       }
-      gs.write_debug_ram(i++, sd(current_reg+1, 0, (uint16_t) DEBUG_RAM_START + 0));
-      gs.write_debug_ram(i, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*i))));
+      gs.dr_write_store(i++, current_reg+1, SLOT_DATA1);
+      gs.dr_write_jump(i);
       gs.set_interrupt(0);
 
       return false;
@@ -483,21 +594,28 @@ class register_read_op_t : public operation_t
             // send(p->state.XPR[reg - REG_XPR0]);
           } else if (reg == REG_PC) {
             gs.start_packet();
-            gs.send(gs.dpc);
+            if (gs.xlen == 32) {
+              gs.send((uint32_t) gs.dpc);
+            } else {
+              gs.send(gs.dpc);
+            }
             gs.end_packet();
             return true;
           } else if (reg >= REG_FPR0 && reg <= REG_FPR31) {
             // send(p->state.FPR[reg - REG_FPR0]);
-            gs.write_debug_ram(0, fsd(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
-            gs.write_debug_ram(1, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*1))));
+            if (gs.xlen == 32) {
+              gs.dr_write32(0, fsw(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            } else {
+              gs.dr_write32(0, fsd(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            }
+            gs.dr_write_jump(1);
           } else if (reg >= REG_CSR0 && reg <= REG_CSR4095) {
-            gs.write_debug_ram(0, csrr(S0, reg - REG_CSR0));
-            gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-            gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+            gs.dr_write32(0, csrr(S0, reg - REG_CSR0));
+            gs.dr_write_store(1, S0, SLOT_DATA0);
+            gs.dr_write_jump(2);
             // If we hit an exception reading the CSR, we'll end up returning ~0 as
             // the register's value, which is what we want. (Right?)
-            gs.write_debug_ram(4, 0xffffffff);
-            gs.write_debug_ram(5, 0xffffffff);
+            gs.dr_write(SLOT_DATA0, ~(uint64_t) 0);
           } else {
             gs.send_packet("E02");
             return true;
@@ -507,7 +625,11 @@ class register_read_op_t : public operation_t
 
         case 1:
           gs.start_packet();
-          gs.send(((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4));
+          if (gs.xlen == 32) {
+            gs.send(gs.dr_read32(4));
+          } else {
+            gs.send(gs.dr_read(SLOT_DATA0));
+          }
           gs.end_packet();
           return true;
       }
@@ -526,28 +648,30 @@ class register_write_op_t : public operation_t
 
     bool perform_step(unsigned int step)
     {
-      gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-      gs.write_debug_ram(4, value);
-      gs.write_debug_ram(5, value >> 32);
+      gs.dr_write_load(0, S0, SLOT_DATA0);
+      gs.dr_write(SLOT_DATA0, value);
       if (reg == S0) {
-        gs.write_debug_ram(1, csrw(S0, CSR_DSCRATCH));
-        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.dr_write32(1, csrw(S0, CSR_DSCRATCH));
+        gs.dr_write_jump(2);
       } else if (reg == S1) {
-        gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_END - 8));
-        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.dr_write_store(1, S0, SLOT_DATA_LAST);
+        gs.dr_write_jump(2);
       } else if (reg >= REG_XPR0 && reg <= REG_XPR31) {
-        gs.write_debug_ram(1, addi(reg, S0, 0));
-        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.dr_write32(1, addi(reg, S0, 0));
+        gs.dr_write_jump(2);
       } else if (reg == REG_PC) {
         gs.dpc = value;
         return true;
       } else if (reg >= REG_FPR0 && reg <= REG_FPR31) {
-        // send(p->state.FPR[reg - REG_FPR0]);
-        gs.write_debug_ram(0, fld(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
-        gs.write_debug_ram(1, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*1))));
+        if (gs.xlen == 32) {
+          gs.dr_write32(0, flw(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+        } else {
+          gs.dr_write32(0, fld(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+        }
+        gs.dr_write_jump(1);
       } else if (reg >= REG_CSR0 && reg <= REG_CSR4095) {
-        gs.write_debug_ram(1, csrw(S0, reg - REG_CSR0));
-        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.dr_write32(1, csrw(S0, reg - REG_CSR0));
+        gs.dr_write_jump(2);
         if (reg == REG_CSR0 + CSR_SPTBR) {
           gs.sptbr = value;
           gs.sptbr_valid = true;
@@ -580,27 +704,26 @@ class memory_read_op_t : public operation_t
       if (step == 0) {
         // address goes in S0
         paddr = gs.translate(vaddr);
-        access_size = find_access_size(paddr, length);
+        access_size = gs.find_access_size(paddr, length);
 
-        gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+        gs.dr_write_load(0, S0, SLOT_DATA0);
         switch (access_size) {
           case 1:
-            gs.write_debug_ram(1, lb(S1, S0, 0));
+            gs.dr_write32(1, lb(S1, S0, 0));
             break;
           case 2:
-            gs.write_debug_ram(1, lh(S1, S0, 0));
+            gs.dr_write32(1, lh(S1, S0, 0));
             break;
           case 4:
-            gs.write_debug_ram(1, lw(S1, S0, 0));
+            gs.dr_write32(1, lw(S1, S0, 0));
             break;
           case 8:
-            gs.write_debug_ram(1, ld(S1, S0, 0));
+            gs.dr_write32(1, ld(S1, S0, 0));
             break;
         }
-        gs.write_debug_ram(2, sd(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
-        gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
-        gs.write_debug_ram(4, paddr);
-        gs.write_debug_ram(5, paddr >> 32);
+        gs.dr_write_store(2, S1, SLOT_DATA1);
+        gs.dr_write_jump(3);
+        gs.dr_write(SLOT_DATA0, paddr);
         gs.set_interrupt(0);
 
         if (!data) {
@@ -610,7 +733,7 @@ class memory_read_op_t : public operation_t
       }
 
       char buffer[3];
-      reg_t value = ((uint64_t) gs.read_debug_ram(7) << 32) | gs.read_debug_ram(6);
+      reg_t value = gs.dr_read(SLOT_DATA1);
       for (unsigned int i = 0; i < access_size; i++) {
         if (data) {
           *(data++) = value & 0xff;
@@ -633,8 +756,7 @@ class memory_read_op_t : public operation_t
         }
         return true;
       } else {
-        gs.write_debug_ram(4, paddr);
-        gs.write_debug_ram(5, paddr >> 32);
+        gs.dr_write(SLOT_DATA0, paddr);
         gs.set_interrupt(0);
         return false;
       }
@@ -663,7 +785,7 @@ class memory_write_op_t : public operation_t
     {
       reg_t paddr = gs.translate(vaddr);
       if (step == 0) {
-        access_size = find_access_size(paddr, length);
+        access_size = gs.find_access_size(paddr, length);
 
         D(fprintf(stderr, "write to 0x%lx -> 0x%lx (access=%d): ", vaddr, paddr,
             access_size));
@@ -673,30 +795,30 @@ class memory_write_op_t : public operation_t
         D(fprintf(stderr, "\n"));
 
         // address goes in S0
-        gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+        gs.dr_write_load(0, S0, SLOT_DATA0);
         switch (access_size) {
           case 1:
-            gs.write_debug_ram(1, lb(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
-            gs.write_debug_ram(2, sb(S1, S0, 0));
-            gs.write_debug_ram(6, data[0]);
+            gs.dr_write32(1, lb(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+            gs.dr_write32(2, sb(S1, S0, 0));
+            gs.dr_write32(6, data[0]);
             break;
           case 2:
-            gs.write_debug_ram(1, lh(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
-            gs.write_debug_ram(2, sh(S1, S0, 0));
-            gs.write_debug_ram(6, data[0] | (data[1] << 8));
+            gs.dr_write32(1, lh(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+            gs.dr_write32(2, sh(S1, S0, 0));
+            gs.dr_write32(6, data[0] | (data[1] << 8));
             break;
           case 4:
-            gs.write_debug_ram(1, lw(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
-            gs.write_debug_ram(2, sw(S1, S0, 0));
-            gs.write_debug_ram(6, data[0] | (data[1] << 8) |
+            gs.dr_write32(1, lw(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+            gs.dr_write32(2, sw(S1, S0, 0));
+            gs.dr_write32(6, data[0] | (data[1] << 8) |
                 (data[2] << 16) | (data[3] << 24));
             break;
           case 8:
-            gs.write_debug_ram(1, ld(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
-            gs.write_debug_ram(2, sd(S1, S0, 0));
-            gs.write_debug_ram(6, data[0] | (data[1] << 8) |
+            gs.dr_write32(1, ld(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+            gs.dr_write32(2, sd(S1, S0, 0));
+            gs.dr_write32(6, data[0] | (data[1] << 8) |
                 (data[2] << 16) | (data[3] << 24));
-            gs.write_debug_ram(7, data[4] | (data[5] << 8) |
+            gs.dr_write32(7, data[4] | (data[5] << 8) |
                 (data[6] << 16) | (data[7] << 24));
             break;
           default:
@@ -705,15 +827,14 @@ class memory_write_op_t : public operation_t
             gs.send_packet("E12");
             return true;
         }
-        gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
-        gs.write_debug_ram(4, paddr);
-        gs.write_debug_ram(5, paddr >> 32);
+        gs.dr_write_jump(3);
+        gs.dr_write(SLOT_DATA0, paddr);
         gs.set_interrupt(0);
 
         return false;
       }
 
-      if (gs.read_debug_ram(DEBUG_RAM_SIZE / 4 - 1)) {
+      if (gs.dr_read32(DEBUG_RAM_SIZE / 4 - 1)) {
         fprintf(stderr, "Exception happened while writing to 0x%lx -> 0x%lx\n",
             vaddr, paddr);
       }
@@ -726,27 +847,26 @@ class memory_write_op_t : public operation_t
         const unsigned char *d = data + offset;
         switch (access_size) {
           case 1:
-            gs.write_debug_ram(6, d[0]);
+            gs.dr_write32(6, d[0]);
             break;
           case 2:
-            gs.write_debug_ram(6, d[0] | (d[1] << 8));
+            gs.dr_write32(6, d[0] | (d[1] << 8));
             break;
           case 4:
-            gs.write_debug_ram(6, d[0] | (d[1] << 8) |
+            gs.dr_write32(6, d[0] | (d[1] << 8) |
                 (d[2] << 16) | (d[3] << 24));
             break;
           case 8:
-            gs.write_debug_ram(6, d[0] | (d[1] << 8) |
+            gs.dr_write32(6, d[0] | (d[1] << 8) |
                 (d[2] << 16) | (d[3] << 24));
-            gs.write_debug_ram(7, d[4] | (d[5] << 8) |
+            gs.dr_write32(7, d[4] | (d[5] << 8) |
                 (d[6] << 16) | (d[7] << 24));
             break;
           default:
             gs.send_packet("E13");
             return true;
         }
-        gs.write_debug_ram(4, paddr + offset);
-        gs.write_debug_ram(5, (paddr + offset) >> 32);
+        gs.dr_write(SLOT_DATA0, paddr + offset);
         gs.set_interrupt(0);
         return false;
       }
@@ -810,12 +930,12 @@ class collect_translation_info_op_t : public operation_t
         case STATE_START:
           break;
         case STATE_READ_SPTBR:
-          gs.sptbr = ((uint64_t) gs.read_debug_ram(5) << 32) | gs.read_debug_ram(4);
+          gs.sptbr = ((uint64_t) gs.dr_read32(5) << 32) | gs.dr_read32(4);
           gs.sptbr_valid = true;
           break;
         case STATE_READ_PTE:
-          gs.pte_cache[pte_addr] = ((uint64_t) gs.read_debug_ram(5) << 32) |
-            gs.read_debug_ram(4);
+          gs.pte_cache[pte_addr] = ((uint64_t) gs.dr_read32(5) << 32) |
+            gs.dr_read32(4);
           D(fprintf(stderr, "pte_cache[0x%lx] = 0x%lx\n", pte_addr, gs.pte_cache[pte_addr]));
           break;
       }
@@ -825,9 +945,9 @@ class collect_translation_info_op_t : public operation_t
 
       if (!gs.sptbr_valid) {
         state = STATE_READ_SPTBR;
-        gs.write_debug_ram(0, csrr(S0, CSR_SPTBR));
-        gs.write_debug_ram(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-        gs.write_debug_ram(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.dr_write32(0, csrr(S0, CSR_SPTBR));
+        gs.dr_write32(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+        gs.dr_write32(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
         gs.set_interrupt(0);
         return false;
       }
@@ -842,17 +962,18 @@ class collect_translation_info_op_t : public operation_t
         if (it == gs.pte_cache.end()) {
           state = STATE_READ_PTE;
           if (ptesize == 4) {
-            gs.write_debug_ram(0, lw(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-            gs.write_debug_ram(1, lw(S1, S0, 0));
-            gs.write_debug_ram(2, sd(S1, 0, (uint16_t) DEBUG_RAM_START + 16));
+            gs.dr_write32(0, lw(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            gs.dr_write32(1, lw(S1, S0, 0));
+            gs.dr_write32(2, sw(S1, 0, (uint16_t) DEBUG_RAM_START + 16));
           } else {
-            gs.write_debug_ram(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-            gs.write_debug_ram(1, ld(S1, S0, 0));
-            gs.write_debug_ram(2, sd(S1, 0, (uint16_t) DEBUG_RAM_START + 16));
+            assert(gs.xlen >= 64);
+            gs.dr_write32(0, ld(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            gs.dr_write32(1, ld(S1, S0, 0));
+            gs.dr_write32(2, sd(S1, 0, (uint16_t) DEBUG_RAM_START + 16));
           }
-          gs.write_debug_ram(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
-          gs.write_debug_ram(4, pte_addr);
-          gs.write_debug_ram(5, pte_addr >> 32);
+          gs.dr_write32(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
+          gs.dr_write32(4, pte_addr);
+          gs.dr_write32(5, pte_addr >> 32);
           gs.set_interrupt(0);
           return false;
         }
@@ -890,6 +1011,7 @@ class collect_translation_info_op_t : public operation_t
 ////////////////////////////// gdbserver itself
 
 gdbserver_t::gdbserver_t(uint16_t port, sim_t *sim) :
+  xlen(0),
   sim(sim),
   client_fd(0),
   recv_buf(64 * 1024), send_buf(64 * 1024)
@@ -923,6 +1045,16 @@ gdbserver_t::gdbserver_t(uint16_t port, sim_t *sim) :
     fprintf(stderr, "failed to listen on socket: %s (%d)\n", strerror(errno), errno);
     abort();
   }
+}
+
+unsigned int gdbserver_t::find_access_size(reg_t address, int length)
+{
+  reg_t composite = address | length;
+  if ((composite & 0x7) == 0 && xlen >= 64)
+    return 8;
+  if ((composite & 0x3) == 0)
+    return 4;
+  return 1;
 }
 
 reg_t gdbserver_t::translate(reg_t vaddr)
@@ -1011,14 +1143,102 @@ unsigned int gdbserver_t::virtual_memory()
   return get_field(mstatus, MSTATUS_VM);
 }
 
-void gdbserver_t::write_debug_ram(unsigned int index, uint32_t value)
+void gdbserver_t::dr_write32(unsigned int index, uint32_t value)
 {
   sim->debug_module.ram_write32(index, value);
 }
 
-uint32_t gdbserver_t::read_debug_ram(unsigned int index)
+void gdbserver_t::dr_write64(unsigned int index, uint64_t value)
 {
-  return sim->debug_module.ram_read32(index);
+  dr_write32(index, value);
+  dr_write32(index+1, value >> 32);
+}
+
+void gdbserver_t::dr_write(enum slot slot, uint64_t value)
+{
+  switch (xlen) {
+    case 32:
+      dr_write32(slot_offset32[slot], value);
+      break;
+    case 64:
+      dr_write64(slot_offset64[slot], value);
+      break;
+    case 128:
+    default:
+      abort();
+  }
+}
+
+void gdbserver_t::dr_write_jump(unsigned int index)
+{
+  dr_write32(index, jal(0,
+        (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*index))));
+}
+
+void gdbserver_t::dr_write_store(unsigned int index, unsigned int reg, enum slot slot)
+{
+  assert(slot != SLOT_INST0 || index > 2);
+  assert(slot != SLOT_DATA0 || index < 4 || index > 6);
+  assert(slot != SLOT_DATA1 || index < 5 || index > 10);
+  assert(slot != SLOT_DATA_LAST || index < 6 || index > 14);
+  switch (xlen) {
+    case 32:
+      return dr_write32(index,
+          sw(reg, 0, (uint16_t) DEBUG_RAM_START + 4 * slot_offset32[slot]));
+    case 64:
+      return dr_write32(index,
+          sd(reg, 0, (uint16_t) DEBUG_RAM_START + 4 * slot_offset64[slot]));
+    case 128:
+      return dr_write32(index,
+          sq(reg, 0, (uint16_t) DEBUG_RAM_START + 4 * slot_offset128[slot]));
+    default:
+      fprintf(stderr, "xlen is %d!\n", xlen);
+      abort();
+  }
+}
+
+void gdbserver_t::dr_write_load(unsigned int index, unsigned int reg, enum slot slot)
+{
+  switch (xlen) {
+    case 32:
+      return dr_write32(index,
+          lw(reg, 0, (uint16_t) DEBUG_RAM_START + 4 * slot_offset32[slot]));
+    case 64:
+      return dr_write32(index,
+          ld(reg, 0, (uint16_t) DEBUG_RAM_START + 4 * slot_offset64[slot]));
+    case 128:
+      return dr_write32(index,
+          lq(reg, 0, (uint16_t) DEBUG_RAM_START + 4 * slot_offset128[slot]));
+    default:
+      fprintf(stderr, "xlen is %d!\n", xlen);
+      abort();
+  }
+}
+
+uint32_t gdbserver_t::dr_read32(unsigned int index)
+{
+  uint32_t value = sim->debug_module.ram_read32(index);
+  D(fprintf(stderr, "read32(%d) -> 0x%x\n", index, value));
+  return value;
+}
+
+uint64_t gdbserver_t::dr_read64(unsigned int index)
+{
+  return ((uint64_t) dr_read32(index+1) << 32) | dr_read32(index);
+}
+
+uint64_t gdbserver_t::dr_read(enum slot slot)
+{
+  switch (xlen) {
+    case 32:
+      return dr_read32(slot_offset32[slot]);
+    case 64:
+      return dr_read64(slot_offset64[slot]);
+    case 128:
+      abort();
+    default:
+      abort();
+  }
 }
 
 void gdbserver_t::add_operation(operation_t* operation)
@@ -1413,6 +1633,11 @@ void gdbserver_t::handle_breakpoint(const std::vector<uint8_t> &packet)
   // There may be more options after a ; here, but we don't support that.
   if (*iter != '#')
     return send_packet("E52");
+
+  if (type != 0) {
+    // Only software breakpoints are supported.
+    return send_packet("");
+  }
 
   if (bp.size != 2 && bp.size != 4) {
     return send_packet("E53");
