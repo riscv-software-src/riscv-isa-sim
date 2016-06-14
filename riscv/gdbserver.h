@@ -107,11 +107,9 @@ enum slot {
   SLOT_DATA_LAST,
 };
 
-// We know that this code just talks to a simulator with 64 bytes of debug RAM,
-// so can hardcode the offset to the last word.
-static const unsigned int slot_offset32[] = {0, 4, 5, 15};
-static const unsigned int slot_offset64[] = {0, 4, 6, 14};
-static const unsigned int slot_offset128[] = {0, 4, 8, 12};
+static const unsigned int slot_offset32[] = {0, 4, 5, DEBUG_RAM_SIZE/4 - 1};
+static const unsigned int slot_offset64[] = {0, 4, 6, DEBUG_RAM_SIZE/4 - 2};
+static const unsigned int slot_offset128[] = {0, 4, 8, DEBUG_RAM_SIZE/4 - 4};
 
 class gdbserver_t
 {

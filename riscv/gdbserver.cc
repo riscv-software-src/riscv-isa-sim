@@ -529,6 +529,7 @@ class general_registers_read_op_t : public operation_t
 
     bool perform_step(unsigned int step)
     {
+      D(fprintf(stderr, "register_read step %d\n", step));
       if (step == 0) {
         gs.start_packet();
 
@@ -571,7 +572,9 @@ class general_registers_read_op_t : public operation_t
       if (current_reg + 1 == S0) {
         gs.dr_write32(i++, csrr(S0, CSR_DSCRATCH));
       }
-      gs.dr_write_store(i++, current_reg+1, SLOT_DATA1);
+      if (step < 15) {
+        gs.dr_write_store(i++, current_reg+1, SLOT_DATA1);
+      }
       gs.dr_write_jump(i);
       gs.set_interrupt(0);
 
@@ -784,6 +787,22 @@ class memory_write_op_t : public operation_t
     bool perform_step(unsigned int step)
     {
       reg_t paddr = gs.translate(vaddr);
+
+      unsigned int data_offset;
+      switch (gs.xlen) {
+        case 32:
+          data_offset = slot_offset32[SLOT_DATA1];
+          break;
+        case 64:
+          data_offset = slot_offset64[SLOT_DATA1];
+          break;
+        case 128:
+          data_offset = slot_offset128[SLOT_DATA1];
+          break;
+        default:
+          abort();
+      }
+
       if (step == 0) {
         access_size = gs.find_access_size(paddr, length);
 
@@ -798,27 +817,27 @@ class memory_write_op_t : public operation_t
         gs.dr_write_load(0, S0, SLOT_DATA0);
         switch (access_size) {
           case 1:
-            gs.dr_write32(1, lb(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+            gs.dr_write32(1, lb(S1, 0, (uint16_t) DEBUG_RAM_START + 4*data_offset));
             gs.dr_write32(2, sb(S1, S0, 0));
-            gs.dr_write32(6, data[0]);
+            gs.dr_write32(data_offset, data[0]);
             break;
           case 2:
-            gs.dr_write32(1, lh(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+            gs.dr_write32(1, lh(S1, 0, (uint16_t) DEBUG_RAM_START + 4*data_offset));
             gs.dr_write32(2, sh(S1, S0, 0));
-            gs.dr_write32(6, data[0] | (data[1] << 8));
+            gs.dr_write32(data_offset, data[0] | (data[1] << 8));
             break;
           case 4:
-            gs.dr_write32(1, lw(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+            gs.dr_write32(1, lw(S1, 0, (uint16_t) DEBUG_RAM_START + 4*data_offset));
             gs.dr_write32(2, sw(S1, S0, 0));
-            gs.dr_write32(6, data[0] | (data[1] << 8) |
+            gs.dr_write32(data_offset, data[0] | (data[1] << 8) |
                 (data[2] << 16) | (data[3] << 24));
             break;
           case 8:
-            gs.dr_write32(1, ld(S1, 0, (uint16_t) DEBUG_RAM_START + 24));
+            gs.dr_write32(1, ld(S1, 0, (uint16_t) DEBUG_RAM_START + 4*data_offset));
             gs.dr_write32(2, sd(S1, S0, 0));
-            gs.dr_write32(6, data[0] | (data[1] << 8) |
+            gs.dr_write32(data_offset, data[0] | (data[1] << 8) |
                 (data[2] << 16) | (data[3] << 24));
-            gs.dr_write32(7, data[4] | (data[5] << 8) |
+            gs.dr_write32(data_offset+1, data[4] | (data[5] << 8) |
                 (data[6] << 16) | (data[7] << 24));
             break;
           default:
@@ -847,19 +866,19 @@ class memory_write_op_t : public operation_t
         const unsigned char *d = data + offset;
         switch (access_size) {
           case 1:
-            gs.dr_write32(6, d[0]);
+            gs.dr_write32(data_offset, d[0]);
             break;
           case 2:
-            gs.dr_write32(6, d[0] | (d[1] << 8));
+            gs.dr_write32(data_offset, d[0] | (d[1] << 8));
             break;
           case 4:
-            gs.dr_write32(6, d[0] | (d[1] << 8) |
+            gs.dr_write32(data_offset, d[0] | (d[1] << 8) |
                 (d[2] << 16) | (d[3] << 24));
             break;
           case 8:
-            gs.dr_write32(6, d[0] | (d[1] << 8) |
+            gs.dr_write32(data_offset, d[0] | (d[1] << 8) |
                 (d[2] << 16) | (d[3] << 24));
-            gs.dr_write32(7, d[4] | (d[5] << 8) |
+            gs.dr_write32(data_offset+1, d[4] | (d[5] << 8) |
                 (d[6] << 16) | (d[7] << 24));
             break;
           default:
