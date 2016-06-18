@@ -283,6 +283,16 @@ static bool validate_vm(int max_xlen, reg_t vm)
   return vm == VM_MBARE;
 }
 
+static int paddr_bits(reg_t vm)
+{
+  switch (vm) {
+    case VM_SV32: return 34;
+    case VM_SV39: return 50;
+    case VM_SV48: return 50;
+    default: abort();
+  }
+}
+
 void processor_t::set_csr(int which, reg_t val)
 {
   val = zext_xlen(val);
@@ -367,9 +377,14 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SIE:
       return set_csr(CSR_MIE,
                      (state.mie & ~state.mideleg) | (val & state.mideleg));
+    case CSR_SPTBR: {
+      // upper bits of sptbr are the ASID; we only support ASID = 0
+      reg_t vm = get_field(state.mstatus, MSTATUS_VM);
+      state.sptbr = val & (((reg_t)1 << (paddr_bits(vm) - PGSHIFT)) - 1);
+      break;
+    }
     case CSR_SEPC: state.sepc = val; break;
     case CSR_STVEC: state.stvec = val >> 2 << 2; break;
-    case CSR_SPTBR: state.sptbr = val; break;
     case CSR_SSCRATCH: state.sscratch = val; break;
     case CSR_SCAUSE: state.scause = val; break;
     case CSR_SBADADDR: state.sbadaddr = val; break;
@@ -465,7 +480,6 @@ reg_t processor_t::get_csr(int which)
         return state.scause | ((state.scause >> (max_xlen-1)) << (xlen-1));
       return state.scause;
     case CSR_SPTBR: return state.sptbr;
-    case CSR_SASID: return 0;
     case CSR_SSCRATCH: return state.sscratch;
     case CSR_MSTATUS: return state.mstatus;
     case CSR_MIP: return state.mip;

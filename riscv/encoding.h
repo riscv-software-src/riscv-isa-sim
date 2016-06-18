@@ -101,14 +101,21 @@
 #define DRAM_BASE          0x80000000
 
 // breakpoint control fields
-#define BPCONTROL_X         0x00000001
-#define BPCONTROL_W         0x00000002
-#define BPCONTROL_R         0x00000004
-#define BPCONTROL_U         0x00000008
-#define BPCONTROL_S         0x00000010
-#define BPCONTROL_H         0x00000020
-#define BPCONTROL_M         0x00000040
-#define BPCONTROL_MATCHCOND 0x00000180
+#define BPCONTROL_X           0x00000001
+#define BPCONTROL_W           0x00000002
+#define BPCONTROL_R           0x00000004
+#define BPCONTROL_U           0x00000008
+#define BPCONTROL_S           0x00000010
+#define BPCONTROL_H           0x00000020
+#define BPCONTROL_M           0x00000040
+#define BPCONTROL_BPMATCH     0x00000780
+#ifdef __riscv64
+# define BPCONTROL_BPAMASKMAX 0x0F80000000000000
+# define BPCONTROL_TDRTYPE    0xF000000000000000
+#else
+# define BPCONTROL_BPAMASKMAX 0x0F800000
+# define BPCONTROL_TDRTYPE    0xF0000000
+#endif
 
 // page table entry (PTE) fields
 #define PTE_V     0x001 // Valid
@@ -685,7 +692,6 @@
 #define CSR_SBADADDR 0x143
 #define CSR_SIP 0x144
 #define CSR_SPTBR 0x180
-#define CSR_SASID 0x181
 #define CSR_SCYCLE 0xd00
 #define CSR_STIME 0xd01
 #define CSR_SINSTRET 0xd02
@@ -995,7 +1001,6 @@ DECLARE_CSR(scause, CSR_SCAUSE)
 DECLARE_CSR(sbadaddr, CSR_SBADADDR)
 DECLARE_CSR(sip, CSR_SIP)
 DECLARE_CSR(sptbr, CSR_SPTBR)
-DECLARE_CSR(sasid, CSR_SASID)
 DECLARE_CSR(scycle, CSR_SCYCLE)
 DECLARE_CSR(stime, CSR_STIME)
 DECLARE_CSR(sinstret, CSR_SINSTRET)
