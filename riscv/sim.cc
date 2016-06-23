@@ -2,7 +2,6 @@
 
 #include "sim.h"
 #include "mmu.h"
-#include "htif.h"
 #include "gdbserver.h"
 #include <map>
 #include <iostream>
@@ -23,7 +22,7 @@ static void handle_signal(int sig)
 
 sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
              const std::vector<std::string>& args)
-  : htif(new htif_isasim_t(this, args)), procs(std::max(nprocs, size_t(1))),
+  : htif_t(args), procs(std::max(nprocs, size_t(1))),
     current_step(0), current_proc(0), debug(false), gdbserver(NULL)
 {
   signal(SIGINT, &handle_signal);
@@ -62,11 +61,17 @@ sim_t::~sim_t()
   free(mem);
 }
 
-int sim_t::run()
+void sim_thread_main(void* arg)
+{
+  ((sim_t*)arg)->main();
+}
+
+void sim_t::main()
 {
   if (!debug && log)
     set_procs_debug(true);
-  while (htif->tick())
+
+  while (!done())
   {
     if (debug || ctrlc_pressed)
       interactive();
@@ -76,7 +81,13 @@ int sim_t::run()
         gdbserver->handle();
     }
   }
-  return htif->exit_code();
+}
+
+int sim_t::run()
+{
+  host = context_t::current();
+  target.init(sim_thread_main, this);
+  return htif_t::run();
 }
 
 void sim_t::step(size_t n)
@@ -96,17 +107,9 @@ void sim_t::step(size_t n)
         rtc->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
       }
 
-      htif->tick();
+      host->switch_to();
     }
   }
-}
-
-bool sim_t::running()
-{
-  for (size_t i = 0; i < procs.size(); i++)
-    if (procs[i]->running())
-      return true;
-  return false;
 }
 
 void sim_t::set_debug(bool value)
@@ -203,4 +206,26 @@ void sim_t::make_config_string()
 
   boot_rom.reset(new rom_device_t(rom));
   bus.add_device(DEFAULT_RSTVEC, boot_rom.get());
+}
+
+// htif
+
+void sim_t::idle()
+{
+  target.switch_to();
+}
+
+void sim_t::read_chunk(addr_t taddr, size_t len, void* dst)
+{
+  assert(len == 8);
+  auto data = debug_mmu->load_uint64(taddr);
+  memcpy(dst, &data, sizeof data);
+}
+
+void sim_t::write_chunk(addr_t taddr, size_t len, const void* src)
+{
+  assert(len == 8);
+  uint64_t data;
+  memcpy(&data, src, sizeof data);
+  debug_mmu->store_uint64(taddr, data);
 }

@@ -3,42 +3,37 @@
 #ifndef _RISCV_SIM_H
 #define _RISCV_SIM_H
 
-#include <vector>
-#include <string>
-#include <memory>
 #include "processor.h"
 #include "devices.h"
 #include "debug_module.h"
+#include <fesvr/htif.h>
+#include <fesvr/context.h>
+#include <vector>
+#include <string>
+#include <memory>
 
-class htif_isasim_t;
 class mmu_t;
 class gdbserver_t;
 
 // this class encapsulates the processors and memory in a RISC-V machine.
-class sim_t
+class sim_t : public htif_t
 {
 public:
   sim_t(const char* isa, size_t _nprocs, size_t mem_mb, bool halted,
-        const std::vector<std::string>& htif_args);
+        const std::vector<std::string>& args);
   ~sim_t();
 
   // run the simulation to completion
   int run();
-  bool running();
   void set_debug(bool value);
   void set_log(bool value);
   void set_histogram(bool value);
   void set_procs_debug(bool value);
   void set_gdbserver(gdbserver_t* gdbserver) { this->gdbserver = gdbserver; }
-  htif_isasim_t* get_htif() { return htif.get(); }
   const char* get_config_string() { return config_string.c_str(); }
-
-  // returns the number of processors in this simulator
-  size_t num_cores() { return procs.size(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
 
 private:
-  std::unique_ptr<htif_isasim_t> htif;
   char* mem; // main memory
   size_t memsz; // memory size in bytes
   mmu_t* debug_mmu;  // debug port into main memory
@@ -91,10 +86,22 @@ private:
   reg_t get_mem(const std::vector<std::string>& args);
   reg_t get_pc(const std::vector<std::string>& args);
 
-  friend class htif_isasim_t;
   friend class processor_t;
   friend class mmu_t;
   friend class gdbserver_t;
+
+  // htif
+  friend void sim_thread_main(void*);
+  void main();
+
+  context_t* host;
+  context_t target;
+  void reset() { }
+  void idle();
+  void read_chunk(addr_t taddr, size_t len, void* dst);
+  void write_chunk(addr_t taddr, size_t len, const void* src);
+  size_t chunk_align() { return 8; }
+  size_t chunk_max_size() { return 8; }
 };
 
 extern volatile bool ctrlc_pressed;

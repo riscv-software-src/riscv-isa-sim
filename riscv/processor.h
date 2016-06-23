@@ -106,9 +106,8 @@ public:
 
   void set_debug(bool value);
   void set_histogram(bool value);
-  void reset(bool value);
+  void reset();
   void step(size_t n); // run for n cycles
-  bool running() { return run; }
   void set_csr(int which, reg_t val);
   void raise_interrupt(reg_t which);
   reg_t get_csr(int which);
@@ -144,7 +143,6 @@ private:
   unsigned xlen;
   reg_t isa;
   std::string isa_string;
-  bool run; // !reset
   bool histogram_enabled;
   bool halt_on_reset;
 

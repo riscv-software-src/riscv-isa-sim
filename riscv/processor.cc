@@ -6,7 +6,6 @@
 #include "config.h"
 #include "sim.h"
 #include "mmu.h"
-#include "htif.h"
 #include "disasm.h"
 #include "gdbserver.h"
 #include <cinttypes>
@@ -24,13 +23,13 @@
 processor_t::processor_t(const char* isa, sim_t* sim, uint32_t id,
         bool halt_on_reset)
   : debug(false), sim(sim), ext(NULL), disassembler(new disassembler_t),
-    id(id), run(false), halt_on_reset(halt_on_reset)
+    id(id), halt_on_reset(halt_on_reset)
 {
   parse_isa_string(isa);
 
   mmu = new mmu_t(sim, this);
 
-  reset(true);
+  reset();
 
   register_base_instructions();
 }
@@ -139,12 +138,8 @@ void processor_t::set_histogram(bool value)
 #endif
 }
 
-void processor_t::reset(bool value)
+void processor_t::reset()
 {
-  if (run == !value)
-    return;
-  run = !value;
-
   state.reset();
   state.dcsr.halt = halt_on_reset;
   halt_on_reset = false;

@@ -3,7 +3,6 @@
 #include "sim.h"
 #include "mmu.h"
 #include "gdbserver.h"
-#include "htif.h"
 #include "cachesim.h"
 #include "extension.h"
 #include <dlfcn.h>
