@@ -6,10 +6,18 @@
 # TODO: Update these constants once they're finalized in the doc.
 
 #define DEBUG_RAM               0x400
-#define DEBUG_RAM_SIZE          64
+#ifndef DEBUG_RAM_SIZE
+# define DEBUG_RAM_SIZE          64
+#endif
 
 #define CLEARDEBINT             0x100
 #define SETHALTNOT              0x10c
+
+#if (defined(RV32) + defined(RV64) + defined(RV128)) > 1
+# define MULTI_XLEN
+#elif (defined(RV32) + defined(RV64) + defined(RV128)) == 0
+# error define one or more of RV32, RV64, RV128
+#endif
 
         .global entry
         .global resume
@@ -33,19 +41,39 @@ _resume2:
         fence
 
         # Restore s1.
+#ifdef MULTI_XLEN
         csrr    s1, CSR_MISA
+#endif
+
+#ifdef RV32
+# ifdef MULTI_XLEN
         bltz    s1, restore_not_32
+# endif
+
 restore_32:
         lw      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 4)(zero)
+# if defined(RV64) || defined(RV128)
         j       finish_restore
+# endif
+#endif
+
 restore_not_32:
+#if defined(RV64) && defined(RV128)
         slli    s1, s1, 1
         bltz    s1, restore_128
+#endif
+
+#ifdef RV64
 restore_64:
         ld      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 8)(zero)
+#endif
+#if defined(RV64) && defined(RV128)
         j       finish_restore
+#endif
+#ifdef RV128
 restore_128:
-        nop     #lq      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 16)(zero)
+        lq      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 16)(zero)
+#endif
 
 finish_restore:
         # s0 contains ~0 if we got here through an exception, and 0 otherwise.
@@ -60,8 +88,7 @@ finish_restore:
 check_halt:
         csrr    s0, CSR_DCSR
         andi    s0, s0, DCSR_HALT
-        beqz    s0, exit
-        j       wait_for_interrupt
+        bnez    s0, wait_for_interrupt
 
 exit:
         # Restore s0.
@@ -81,20 +108,36 @@ _entry:
 
 jdebugram:
         # Save s1 so that the debug program can use two registers.
+#ifdef MULTI_XLEN
         csrr    s0, CSR_MISA
+#endif
+
+#ifdef RV32
+# ifdef MULTI_XLEN
         bltz    s0, save_not_32
+# endif
 save_32:
         sw      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 4)(zero)
         jr      zero, DEBUG_RAM
+#endif
+
 save_not_32:
+#if defined(RV64) && defined(RV128)
         slli    s0, s0, 1
         bltz    s0, save_128
+#endif
+
+#ifdef RV64
 save_64:
         sd      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 8)(zero)
         jr      zero, DEBUG_RAM
+#endif
+
+#ifdef RV128
 save_128:
-        nop     #sq      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 16)(zero)
+        sq      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 16)(zero)
         jr      zero, DEBUG_RAM
+#endif
 
 spontaneous_halt:
         csrr    s0, CSR_MHARTID

@@ -4,17 +4,27 @@
 CC = $(RISCV)/bin/riscv64-unknown-elf-gcc
 OBJCOPY = $(RISCV)/bin/riscv64-unknown-elf-objcopy
 
-%.o:	%.S
-	$(CC) -I.. -c $<
+COMPILE = $(CC) -nostdlib -nostartfiles -I.. -Tlink.ld
 
-debug_rom.h:	debug_rom.raw
+ELFS = debug_rom debug_rom32 debug_rom64
+DEPS = debug_rom.S link.ld
+
+all: $(patsubst %,%.h,$(ELFS))
+
+%.h:	%.raw
 	xxd -i $^ | sed "s/^unsigned/static const unsigned/" > $@
 
-debug_rom.raw:	debug_rom
-	$(OBJCOPY) -O binary --only-section .text debug_rom debug_rom.raw
+%.raw:	%
+	$(OBJCOPY) -O binary --only-section .text $^ $@
 
-debug_rom:	debug_rom.o link.ld
-	$(CC) -nostdlib -nostartfiles -Tlink.ld -o $@ $^
+debug_rom:	$(DEPS)
+	$(COMPILE) -DRV32 -DRV64 -o $@ $^
+
+debug_rom32:	$(DEPS)
+	$(COMPILE) -DRV32 -DDEBUG_RAM_SIZE=28 -o $@ $^
+
+debug_rom64:	$(DEPS)
+	$(COMPILE) -DRV64 -o $@ $^
 
 clean:
-	rm -f debug_rom debug_rom.o debug_rom.raw debug_rom.h
+	rm -f $(ELFS) debug_rom*.raw debug_rom*.h
