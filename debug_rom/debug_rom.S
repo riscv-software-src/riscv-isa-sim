@@ -81,7 +81,6 @@ _entry:
 
 jdebugram:
         # Save s1 so that the debug program can use two registers.
-        fence.i
         csrr    s0, CSR_MISA
         bltz    s0, save_not_32
 save_32:
