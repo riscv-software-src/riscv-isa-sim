@@ -283,14 +283,10 @@ static bool validate_vm(int max_xlen, reg_t vm)
   return vm == VM_MBARE;
 }
 
-static int paddr_bits(reg_t vm)
+int processor_t::paddr_bits()
 {
-  switch (vm) {
-    case VM_SV32: return 34;
-    case VM_SV39: return 50;
-    case VM_SV48: return 50;
-    default: abort();
-  }
+  assert(xlen == max_xlen);
+  return max_xlen == 64 ? 50 : 34;
 }
 
 void processor_t::set_csr(int which, reg_t val)
@@ -379,8 +375,7 @@ void processor_t::set_csr(int which, reg_t val)
                      (state.mie & ~state.mideleg) | (val & state.mideleg));
     case CSR_SPTBR: {
       // upper bits of sptbr are the ASID; we only support ASID = 0
-      reg_t vm = get_field(state.mstatus, MSTATUS_VM);
-      state.sptbr = val & (((reg_t)1 << (paddr_bits(vm) - PGSHIFT)) - 1);
+      state.sptbr = val & (((reg_t)1 << (paddr_bits() - PGSHIFT)) - 1);
       break;
     }
     case CSR_SEPC: state.sepc = val; break;

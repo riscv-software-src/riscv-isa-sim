@@ -158,6 +158,7 @@ private:
   void take_interrupt(); // take a trap if any interrupts are pending
   void take_trap(trap_t& t, reg_t epc); // take an exception
   void disasm(insn_t insn); // disassemble and print an instruction
+  int paddr_bits();
 
   void enter_debug_mode(uint8_t cause);
 
