@@ -22,16 +22,15 @@
 
 processor_t::processor_t(const char* isa, sim_t* sim, uint32_t id,
         bool halt_on_reset)
-  : debug(false), sim(sim), ext(NULL), disassembler(new disassembler_t),
-    id(id), halt_on_reset(halt_on_reset)
+  : debug(false), sim(sim), ext(NULL), id(id), halt_on_reset(halt_on_reset)
 {
   parse_isa_string(isa);
+  register_base_instructions();
 
   mmu = new mmu_t(sim, this);
+  disassembler = new disassembler_t(max_xlen);
 
   reset();
-
-  register_base_instructions();
 }
 
 processor_t::~processor_t()

@@ -121,6 +121,7 @@ public:
   void set_privilege(reg_t);
   void yield_load_reservation() { state.load_reservation = (reg_t)-1; }
   void update_histogram(reg_t pc);
+  const disassembler_t* get_disassembler() { return disassembler; }
 
   void register_insn(insn_desc_t);
   void register_extension(extension_t*);

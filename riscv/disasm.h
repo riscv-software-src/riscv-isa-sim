@@ -60,14 +60,14 @@ class disasm_insn_t
 class disassembler_t
 {
  public:
-  disassembler_t();
+  disassembler_t(int xlen);
   ~disassembler_t();
-  std::string disassemble(insn_t insn);
+  std::string disassemble(insn_t insn) const;
   void add_insn(disasm_insn_t* insn);
  private:
   static const int HASH_SIZE = 256;
   std::vector<const disasm_insn_t*> chain[HASH_SIZE+1];
-  const disasm_insn_t* lookup(insn_t insn);
+  const disasm_insn_t* lookup(insn_t insn) const;
 };
 
 #endif

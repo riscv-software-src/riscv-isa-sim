@@ -248,13 +248,13 @@ struct : public arg_t {
   }
 } rvc_jump_target;
 
-std::string disassembler_t::disassemble(insn_t insn)
+std::string disassembler_t::disassemble(insn_t insn) const
 {
   const disasm_insn_t* disasm_insn = lookup(insn);
   return disasm_insn ? disasm_insn->to_string(insn) : "unknown";
 }
 
-disassembler_t::disassembler_t()
+disassembler_t::disassembler_t(int xlen)
 {
   const uint32_t mask_rd = 0x1fUL << 7;
   const uint32_t match_rd_ra = 1UL << 7;
@@ -509,7 +509,6 @@ disassembler_t::disassembler_t()
   DISASM_INSN("li", c_li, 0, {&xrd, &rvc_imm});
   DISASM_INSN("lui", c_lui, 0, {&xrd, &rvc_uimm});
   DISASM_INSN("addi", c_addi, 0, {&xrd, &xrd, &rvc_imm});
-  DISASM_INSN("addiw", c_addiw, 0, {&xrd, &xrd, &rvc_imm});
   DISASM_INSN("slli", c_slli, 0, {&xrd, &rvc_shamt});
   DISASM_INSN("mv", c_mv, 0, {&xrd, &rvc_rs2});
   DISASM_INSN("add", c_add, 0, {&xrd, &xrd, &rvc_rs2});
@@ -520,16 +519,27 @@ disassembler_t::disassembler_t()
   DISASM_INSN("or", c_or, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
   DISASM_INSN("xor", c_xor, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
   DISASM_INSN("lw", c_lwsp, 0, {&xrd, &rvc_lwsp_address});
-  DISASM_INSN("flw", c_flwsp, 0, {&xrd, &rvc_lwsp_address});
+  DISASM_INSN("fld", c_fld, 0, {&rvc_rs2s, &rvc_ld_address});
   DISASM_INSN("sw", c_swsp, 0, {&rvc_rs2, &rvc_swsp_address});
-  DISASM_INSN("fsw", c_fswsp, 0, {&rvc_rs2, &rvc_swsp_address});
   DISASM_INSN("lw", c_lw, 0, {&rvc_rs2s, &rvc_lw_address});
-  DISASM_INSN("flw", c_flw, 0, {&rvc_rs2s, &rvc_lw_address});
   DISASM_INSN("sw", c_sw, 0, {&rvc_rs2s, &rvc_lw_address});
-  DISASM_INSN("fsw", c_fsw, 0, {&rvc_rs2s, &rvc_lw_address});
   DISASM_INSN("beqz", c_beqz, 0, {&rvc_rs1s, &rvc_branch_target});
   DISASM_INSN("bnez", c_bnez, 0, {&rvc_rs1s, &rvc_branch_target});
   DISASM_INSN("j", c_j, 0, {&rvc_jump_target});
+
+  if (xlen == 32) {
+    DISASM_INSN("flw", c_flw, 0, {&rvc_rs2s, &rvc_lw_address});
+    DISASM_INSN("flw", c_flwsp, 0, {&xrd, &rvc_lwsp_address});
+    DISASM_INSN("fsw", c_fsw, 0, {&rvc_rs2s, &rvc_lw_address});
+    DISASM_INSN("fsw", c_fswsp, 0, {&rvc_rs2, &rvc_swsp_address});
+    DISASM_INSN("jal", c_jal, 0, {&rvc_jump_target});
+  } else {
+    DISASM_INSN("ld", c_ld, 0, {&rvc_rs2s, &rvc_ld_address});
+    DISASM_INSN("ld", c_ldsp, 0, {&xrd, &rvc_ldsp_address});
+    DISASM_INSN("sd", c_sd, 0, {&rvc_rs2s, &rvc_ld_address});
+    DISASM_INSN("sd", c_sdsp, 0, {&rvc_rs2, &rvc_sdsp_address});
+    DISASM_INSN("addiw", c_addiw, 0, {&xrd, &xrd, &rvc_imm});
+  }
 
   // provide a default disassembly for all instructions as a fallback
   #define DECLARE_INSN(code, match, mask) \
@@ -538,7 +548,7 @@ disassembler_t::disassembler_t()
   #undef DECLARE_INSN
 }
 
-const disasm_insn_t* disassembler_t::lookup(insn_t insn)
+const disasm_insn_t* disassembler_t::lookup(insn_t insn) const
 {
   size_t idx = insn.bits() % HASH_SIZE;
   for (size_t j = 0; j < chain[idx].size(); j++)
