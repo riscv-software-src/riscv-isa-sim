@@ -392,7 +392,6 @@ class halt_op_t : public operation_t
 
         case ST_DPC:
           gs.dpc = gs.dr_read(SLOT_DATA0);
-          fprintf(stderr, "dpc=0x%lx\n", gs.dpc);
           gs.dr_write32(0, csrr(S0, CSR_MSTATUS));
           gs.dr_write_store(1, S0, SLOT_DATA0);
           gs.dr_write_jump(2);
