@@ -305,12 +305,12 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_MSTATUS: {
       if ((val ^ state.mstatus) &
-          (MSTATUS_VM | MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_PUM))
+          (MSTATUS_VM | MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_PUM | MSTATUS_MXR))
         mmu->flush_tlb();
 
       reg_t mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE
                  | MSTATUS_SPP | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_PUM
-                 | (ext ? MSTATUS_XS : 0);
+                 | MSTATUS_MXR | (ext ? MSTATUS_XS : 0);
 
       if (validate_vm(max_xlen, get_field(val, MSTATUS_VM)))
         mask |= MSTATUS_VM;

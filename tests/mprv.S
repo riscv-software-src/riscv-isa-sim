@@ -34,5 +34,5 @@ data:
 
         .balign 0x1000
 page_table:
-        .word   ((0x80000000 >> 2) | PTE_V | PTE_TYPE_URWX_SRWX)
+        .word   ((0x80000000 >> 2) | PTE_V | PTE_U | PTE_R | PTE_W | PTE_X)
         .word   0

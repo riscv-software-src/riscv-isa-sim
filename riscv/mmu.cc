@@ -35,11 +35,9 @@ reg_t mmu_t::translate(reg_t addr, access_type type)
     return addr;
 
   reg_t mode = proc->state.prv;
-  bool pum = false;
   if (type != FETCH) {
     if (!proc->state.dcsr.cause && get_field(proc->state.mstatus, MSTATUS_MPRV))
       mode = get_field(proc->state.mstatus, MSTATUS_MPP);
-    pum = (mode == PRV_S && get_field(proc->state.mstatus, MSTATUS_PUM));
   }
   if (get_field(proc->state.mstatus, MSTATUS_VM) == VM_MBARE)
     mode = PRV_M;
@@ -48,7 +46,7 @@ reg_t mmu_t::translate(reg_t addr, access_type type)
     reg_t msb_mask = (reg_t(2) << (proc->xlen-1))-1; // zero-extend from xlen
     return addr & msb_mask;
   }
-  return walk(addr, type, mode > PRV_U, pum) | (addr & (PGSIZE-1));
+  return walk(addr, type, mode) | (addr & (PGSIZE-1));
 }
 
 const uint16_t* mmu_t::fetch_slow_path(reg_t vaddr)
@@ -115,7 +113,7 @@ void mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, access_type type)
   tlb_data[idx] = sim->addr_to_mem(paddr) - vaddr;
 }
 
-reg_t mmu_t::walk(reg_t addr, access_type type, bool supervisor, bool pum)
+reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
 {
   int levels, ptidxbits, ptesize;
   switch (get_field(proc->get_state()->mstatus, MSTATUS_VM))
@@ -125,6 +123,10 @@ reg_t mmu_t::walk(reg_t addr, access_type type, bool supervisor, bool pum)
     case VM_SV48: levels = 4; ptidxbits = 9; ptesize = 8; break;
     default: abort();
   }
+
+  bool supervisor = mode == PRV_S;
+  bool pum = get_field(proc->state.mstatus, MSTATUS_PUM);
+  bool mxr = get_field(proc->state.mstatus, MSTATUS_MXR);
 
   // verify bits xlen-1:va_bits-1 are all equal
   int va_bits = PGSHIFT + levels * ptidxbits;
@@ -149,13 +151,17 @@ reg_t mmu_t::walk(reg_t addr, access_type type, bool supervisor, bool pum)
 
     if (PTE_TABLE(pte)) { // next level of page table
       base = ppn << PGSHIFT;
-    } else if (pum && PTE_CHECK_PERM(pte, 0, type == STORE, type == FETCH)) {
+    } else if ((pte & PTE_U) ? supervisor && pum : !supervisor) {
       break;
-    } else if (!PTE_CHECK_PERM(pte, supervisor, type == STORE, type == FETCH)) {
+    } else if (!(pte & PTE_R) && (pte & PTE_W)) { // reserved
+      break;
+    } else if (type == FETCH ? !(pte & PTE_X) :
+               type == LOAD ?  !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
+                               !((pte & PTE_R) && (pte & PTE_W))) {
       break;
     } else {
-      // set referenced and possibly dirty bits.
-      *(uint32_t*)ppte |= PTE_R | ((type == STORE) * PTE_D);
+      // set accessed and possibly dirty bits.
+      *(uint32_t*)ppte |= PTE_A | ((type == STORE) * PTE_D);
       // for superpage mappings, make a fake leaf PTE for the TLB's benefit.
       reg_t vpn = addr >> PGSHIFT;
       reg_t value = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
