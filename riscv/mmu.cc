@@ -153,7 +153,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
       base = ppn << PGSHIFT;
     } else if ((pte & PTE_U) ? supervisor && pum : !supervisor) {
       break;
-    } else if (!(pte & PTE_R) && (pte & PTE_W)) { // reserved
+    } else if (!(pte & PTE_V) || (!(pte & PTE_R) && (pte & PTE_W))) {
       break;
     } else if (type == FETCH ? !(pte & PTE_X) :
                type == LOAD ?  !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
