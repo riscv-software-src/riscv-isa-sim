@@ -565,7 +565,7 @@ void processor_t::build_opcode_map()
   std::sort(instructions.begin(), instructions.end(), cmp());
 
   for (size_t i = 0; i < OPCODE_CACHE_SIZE; i++)
-    opcode_cache[i] = {1, 0, &illegal_instruction, &illegal_instruction};
+    opcode_cache[i] = {0, 0, &illegal_instruction, &illegal_instruction};
 }
 
 void processor_t::register_extension(extension_t* x)
