@@ -97,18 +97,22 @@ void processor_t::step(size_t n)
         {
           if (unlikely(state.single_step == state.STEP_STEPPING)) {
             state.single_step = state.STEP_STEPPED;
-          } else if (unlikely(state.single_step == state.STEP_STEPPED)) {
-            state.single_step = state.STEP_NONE;
-            enter_debug_mode(DCSR_CAUSE_STEP);
-            // enter_debug_mode changed state.pc, so we can't just continue.
-            break;
           }
 
           insn_fetch_t fetch = mmu->load_insn(pc);
           if (debug && !state.serialized)
             disasm(fetch.insn);
           pc = execute_insn(this, pc, fetch);
+          bool serialize_before = (pc == PC_SERIALIZE_BEFORE);
+
           advance_pc();
+
+          if (unlikely(state.single_step == state.STEP_STEPPED) && !serialize_before) {
+            state.single_step = state.STEP_NONE;
+            enter_debug_mode(DCSR_CAUSE_STEP);
+            // enter_debug_mode changed state.pc, so we can't just continue.
+            break;
+          }
         }
       }
       else while (instret < n)
