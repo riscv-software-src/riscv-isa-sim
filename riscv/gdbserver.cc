@@ -948,12 +948,16 @@ class collect_translation_info_op_t : public operation_t
         case STATE_START:
           break;
         case STATE_READ_SPTBR:
-          gs.sptbr = ((uint64_t) gs.dr_read32(5) << 32) | gs.dr_read32(4);
+          gs.sptbr = gs.dr_read(SLOT_DATA0);
           gs.sptbr_valid = true;
           break;
         case STATE_READ_PTE:
-          gs.pte_cache[pte_addr] = ((uint64_t) gs.dr_read32(5) << 32) |
-            gs.dr_read32(4);
+          if (ptesize == 4) {
+              gs.pte_cache[pte_addr] = gs.dr_read32(4);
+          } else {
+              gs.pte_cache[pte_addr] = ((uint64_t) gs.dr_read32(5) << 32) |
+                  gs.dr_read32(4);
+          }
           D(fprintf(stderr, "pte_cache[0x%lx] = 0x%lx\n", pte_addr, gs.pte_cache[pte_addr]));
           break;
       }
@@ -964,8 +968,8 @@ class collect_translation_info_op_t : public operation_t
       if (!gs.sptbr_valid) {
         state = STATE_READ_SPTBR;
         gs.dr_write32(0, csrr(S0, CSR_SPTBR));
-        gs.dr_write32(1, sd(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
-        gs.dr_write32(2, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*2))));
+        gs.dr_write_store(1, S0, SLOT_DATA0);
+        gs.dr_write_jump(2);
         gs.set_interrupt(0);
         return false;
       }
