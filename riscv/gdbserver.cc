@@ -29,8 +29,6 @@
 #  define D(x)
 #endif // DEBUG
 
-const int debug_gdbserver = 0;
-
 void die(const char* msg)
 {
   fprintf(stderr, "gdbserver code died: %s\n", msg);
@@ -47,7 +45,7 @@ enum {
   REG_FPR31 = 64,
   REG_CSR0 = 65,
   REG_CSR4095 = 4160,
-  REG_END = 4161
+  REG_PRIV = 4161
 };
 
 //////////////////////////////////////// Functions to generate RISC-V opcodes.
@@ -618,6 +616,11 @@ class register_read_op_t : public operation_t
             // If we hit an exception reading the CSR, we'll end up returning ~0 as
             // the register's value, which is what we want. (Right?)
             gs.dr_write(SLOT_DATA0, ~(uint64_t) 0);
+          } else if (reg == REG_PRIV) {
+            gs.start_packet();
+            gs.send((uint8_t) get_field(gs.dcsr, DCSR_PRV));
+            gs.end_packet();
+            return true;
           } else {
             gs.send_packet("E02");
             return true;
@@ -678,6 +681,9 @@ class register_write_op_t : public operation_t
           gs.sptbr = value;
           gs.sptbr_valid = true;
         }
+      } else if (reg == REG_PRIV) {
+        gs.dcsr = set_field(gs.dcsr, DCSR_PRV, value);
+        return true;
       } else {
         gs.send_packet("E02");
         return true;
@@ -746,7 +752,7 @@ class memory_read_op_t : public operation_t
         }
         value >>= 8;
       }
-      if (data && debug_gdbserver) {
+      if (data) {
         D(fprintf(stderr, "\n"));
       }
       length -= access_size;
@@ -1841,6 +1847,13 @@ void gdbserver_t::send(uint32_t value)
     send(buffer);
     value >>= 8;
   }
+}
+
+void gdbserver_t::send(uint8_t value)
+{
+  char buffer[3];
+  sprintf(buffer, "%02x", (int) value);
+  send(buffer);
 }
 
 void gdbserver_t::send_packet(const char* data)
