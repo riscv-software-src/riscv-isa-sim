@@ -179,7 +179,7 @@ void processor_t::take_interrupt()
     raise_interrupt(ctz(enabled_interrupts));
 }
 
-static bool validate_priv(reg_t priv)
+bool processor_t::validate_priv(reg_t priv)
 {
   return priv == PRV_U || priv == PRV_S || priv == PRV_M;
 }

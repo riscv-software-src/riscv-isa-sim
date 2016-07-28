@@ -150,6 +150,8 @@ public:
   // Hex-encode a 32-bit value, and send it to gcc in target byte order (little
   // endian).
   void send(uint32_t value);
+  // Hex-encode an 8-bit value, and send it to gcc.
+  void send(uint8_t value);
   void send_packet(const char* data);
   uint8_t running_checksum;
   // Send "$" and clear running checksum.
