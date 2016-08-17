@@ -179,14 +179,11 @@ void processor_t::take_interrupt()
     raise_interrupt(ctz(enabled_interrupts));
 }
 
-bool processor_t::validate_priv(reg_t priv)
-{
-  return priv == PRV_U || priv == PRV_S || priv == PRV_M;
-}
-
 void processor_t::set_privilege(reg_t prv)
 {
-  assert(validate_priv(prv));
+  assert(prv <= PRV_M);
+  if (prv == PRV_H)
+    prv = PRV_U;
   mmu->flush_tlb();
   state.prv = prv;
 }
@@ -311,12 +308,10 @@ void processor_t::set_csr(int which, reg_t val)
 
       reg_t mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE
                  | MSTATUS_SPP | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_PUM
-                 | MSTATUS_MXR | (ext ? MSTATUS_XS : 0);
+                 | MSTATUS_MPP | MSTATUS_MXR | (ext ? MSTATUS_XS : 0);
 
       if (validate_vm(max_xlen, get_field(val, MSTATUS_VM)))
         mask |= MSTATUS_VM;
-      if (validate_priv(get_field(val, MSTATUS_MPP)))
-        mask |= MSTATUS_MPP;
 
       state.mstatus = (state.mstatus & ~mask) | (val & mask);
 
