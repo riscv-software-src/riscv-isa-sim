@@ -43,17 +43,56 @@ typedef struct
   uint8_t cause;
 } dcsr_t;
 
+typedef enum
+{
+  ACTION_NONE = MCONTROL_ACTION_NONE,
+  ACTION_DEBUG_EXCEPTION = MCONTROL_ACTION_DEBUG_EXCEPTION,
+  ACTION_DEBUG_MODE = MCONTROL_ACTION_DEBUG_MODE,
+  ACTION_TRACE_START = MCONTROL_ACTION_TRACE_START,
+  ACTION_TRACE_STOP = MCONTROL_ACTION_TRACE_STOP,
+  ACTION_TRACE_EMIT = MCONTROL_ACTION_TRACE_EMIT
+} mcontrol_action_t;
+
+typedef enum
+{
+  MATCH_EQUAL = MCONTROL_MATCH_EQUAL,
+  MATCH_NAPOT = MCONTROL_MATCH_NAPOT,
+  MATCH_GE = MCONTROL_MATCH_GE,
+  MATCH_LT = MCONTROL_MATCH_LT,
+  MATCH_MASK_LOW = MCONTROL_MATCH_MASK_LOW,
+  MATCH_MASK_HIGH = MCONTROL_MATCH_MASK_HIGH
+} mcontrol_match_t;
+
+typedef struct
+{
+  uint8_t type;
+  uint8_t maskmax;
+  bool select;
+  mcontrol_action_t action;
+  bool chain;
+  mcontrol_match_t match;
+  bool m;
+  bool h;
+  bool s;
+  bool u;
+  bool execute;
+  bool store;
+  bool load;
+} mcontrol_t;
+
 // architectural state of a RISC-V hart
 struct state_t
 {
   void reset();
+
+  static const int num_triggers = 4;
 
   reg_t pc;
   regfile_t<reg_t, NXPR, true> XPR;
   regfile_t<freg_t, NFPR, false> FPR;
 
   // control and status registers
-  reg_t prv;
+  reg_t prv;    // TODO: Can this be an enum instead?
   reg_t mstatus;
   reg_t mepc;
   reg_t mbadaddr;
@@ -76,6 +115,9 @@ struct state_t
   reg_t dpc;
   reg_t dscratch;
   dcsr_t dcsr;
+  reg_t tselect;
+  mcontrol_t mcontrol[num_triggers];
+  reg_t tdata1[num_triggers];
 
   uint32_t fflags;
   uint32_t frm;
@@ -96,6 +138,21 @@ struct state_t
   reg_t last_inst_priv;
 #endif
 };
+
+typedef enum {
+  OPERATION_EXECUTE,
+  OPERATION_STORE,
+  OPERATION_LOAD,
+} trigger_operation_t;
+
+// Count number of contiguous 1 bits starting from the LSB.
+static int cto(reg_t val)
+{
+  int res = 0;
+  while ((val & 1) == 1)
+    val >>= 1, res++;
+  return res;
+}
 
 // this class represents one processor in a RISC-V machine.
 class processor_t : public abstract_device_t
@@ -132,6 +189,97 @@ public:
 
   // When true, display disassembly of each instruction that's executed.
   bool debug;
+  void update_slow_path();
+
+  // Return the index of a trigger that matched, or -1.
+  inline int trigger_match(trigger_operation_t operation, reg_t address, reg_t data)
+  {
+    if (state.dcsr.cause)
+      return -1;
+
+    bool chain_ok = false;
+
+    for (unsigned int i = 0; i < state.num_triggers; i++) {
+      if (state.mcontrol[i].action == ACTION_NONE ||
+          (operation == OPERATION_EXECUTE && !state.mcontrol[i].execute) ||
+          (operation == OPERATION_STORE && !state.mcontrol[i].store) ||
+          (operation == OPERATION_LOAD && !state.mcontrol[i].load) ||
+          (state.prv == PRV_M && !state.mcontrol[i].m) ||
+          (state.prv == PRV_H && !state.mcontrol[i].h) ||
+          (state.prv == PRV_S && !state.mcontrol[i].s) ||
+          (state.prv == PRV_U && !state.mcontrol[i].u)) {
+        goto next;
+      }
+
+      reg_t value;
+      if (state.mcontrol[i].select) {
+        value = data;
+      } else {
+        value = address;
+      }
+
+      // We need this because in 32-bit mode sometimes the PC bits get sign
+      // extended.
+      if (xlen == 32) {
+        value &= 0xffffffff;
+      }
+
+      switch (state.mcontrol[i].match) {
+        case MATCH_EQUAL:
+          if (value != state.tdata1[i])
+            goto next;
+          break;
+        case MATCH_NAPOT:
+          {
+            reg_t mask = ~((1 << cto(state.tdata1[i])) - 1);
+            if ((value & mask) != (state.tdata1[i] & mask))
+              goto next;
+          }
+          break;
+        case MATCH_GE:
+          if (value < state.tdata1[i])
+            goto next;
+          break;
+        case MATCH_LT:
+          if (value >= state.tdata1[i])
+            goto next;
+          break;
+        case MATCH_MASK_LOW:
+          {
+            reg_t mask = state.tdata1[i] >> (xlen/2);
+            if ((value & mask) != (state.tdata1[i] & mask))
+              goto next;
+          }
+          break;
+        case MATCH_MASK_HIGH:
+          {
+            reg_t mask = state.tdata1[i] >> (xlen/2);
+            if (((value >> (xlen/2)) & mask) != (state.tdata1[i] & mask))
+              goto next;
+          }
+          break;
+      }
+
+      if (state.mcontrol[i].chain && !chain_ok) {
+        goto next;
+      }
+
+      // We got here, so this trigger matches. But if the next trigger has
+      // chain set, then we can't perform the action.
+      if (i+1 < state.num_triggers && state.mcontrol[i+1].chain) {
+        chain_ok = true;
+        continue;
+      } else {
+        return i;
+      }
+
+next:
+      chain_ok = false;
+    }
+    return -1;
+  }
+
+  void trigger_updated();
 
 private:
   sim_t* sim;
@@ -146,6 +294,8 @@ private:
   std::string isa_string;
   bool histogram_enabled;
   bool halt_on_reset;
+  // When true, take the slow simulation path.
+  bool slow_path;
 
   std::vector<insn_desc_t> instructions;
   std::map<reg_t,uint64_t> pc_histogram;

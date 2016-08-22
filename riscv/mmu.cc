@@ -5,7 +5,11 @@
 #include "processor.h"
 
 mmu_t::mmu_t(sim_t* sim, processor_t* proc)
- : sim(sim), proc(proc)
+ : sim(sim), proc(proc),
+  check_triggers_fetch(false),
+  check_triggers_load(false),
+  check_triggers_store(false),
+  matched_trigger(NULL)
 {
   flush_tlb();
 }
@@ -102,9 +106,17 @@ void mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, access_type type)
   reg_t idx = (vaddr >> PGSHIFT) % TLB_ENTRIES;
   reg_t expected_tag = vaddr >> PGSHIFT;
 
-  if (tlb_load_tag[idx] != expected_tag) tlb_load_tag[idx] = -1;
-  if (tlb_store_tag[idx] != expected_tag) tlb_store_tag[idx] = -1;
-  if (tlb_insn_tag[idx] != expected_tag) tlb_insn_tag[idx] = -1;
+  if ((tlb_load_tag[idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)
+    tlb_load_tag[idx] = -1;
+  if ((tlb_store_tag[idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)
+    tlb_store_tag[idx] = -1;
+  if ((tlb_insn_tag[idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)
+    tlb_insn_tag[idx] = -1;
+
+  if ((check_triggers_fetch && type == FETCH) ||
+      (check_triggers_load && type == LOAD) ||
+      (check_triggers_store && type == STORE))
+    expected_tag |= TLB_CHECK_TRIGGERS;
 
   if (type == FETCH) tlb_insn_tag[idx] = expected_tag;
   else if (type == STORE) tlb_store_tag[idx] = expected_tag;

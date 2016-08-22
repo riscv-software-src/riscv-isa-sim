@@ -51,6 +51,13 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
   return npc;
 }
 
+void processor_t::update_slow_path()
+{
+  slow_path = debug || state.single_step != state.STEP_NONE || state.dcsr.cause;
+  if (slow_path)
+    return;
+}
+
 // fetch/decode/execute loop
 void processor_t::step(size_t n)
 {
@@ -90,8 +97,7 @@ void processor_t::step(size_t n)
     {
       take_interrupt();
 
-      // When we might single step, use the slow loop instead of the fast one.
-      if (unlikely(debug || state.single_step != state.STEP_NONE || state.dcsr.cause))
+      if (unlikely(slow_path))
       {
         while (instret < n)
         {
@@ -149,6 +155,30 @@ miss:
     {
       take_trap(t, pc);
       n = instret;
+    }
+    catch (trigger_matched_t& t)
+    {
+      if (mmu->matched_trigger) {
+        // This exception came from the MMU. That means the instruction hasn't
+        // fully executed yet. We start it again, but this time it won't throw
+        // an exception because matched_trigger is already set. (All memory
+        // instructions are idempotent so restarting is safe.)
+
+        insn_fetch_t fetch = mmu->load_insn(pc);
+        pc = execute_insn(this, pc, fetch);
+        advance_pc();
+
+        delete mmu->matched_trigger;
+        mmu->matched_trigger = NULL;
+      }
+      assert(state.mcontrol[t.index].action != ACTION_NONE);
+      switch (state.mcontrol[t.index].action) {
+        case ACTION_DEBUG_MODE:
+          enter_debug_mode(DCSR_CAUSE_HWBP);
+          break;
+        default:
+          assert(0);
+      }
     }
 
     state.minstret += instret;

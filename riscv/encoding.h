@@ -57,6 +57,32 @@
 #define DCSR_CAUSE_STEP     4
 #define DCSR_CAUSE_HALT     5
 
+#define MCONTROL_SELECT     (1<<19)
+#define MCONTROL_ACTION     (0x7f<<12)
+#define MCONTROL_CHAIN      (1<<11)
+#define MCONTROL_MATCH      (0xf<<7)
+#define MCONTROL_M          (1<<6)
+#define MCONTROL_H          (1<<5)
+#define MCONTROL_S          (1<<4)
+#define MCONTROL_U          (1<<3)
+#define MCONTROL_EXECUTE    (1<<2)
+#define MCONTROL_STORE      (1<<1)
+#define MCONTROL_LOAD       (1<<0)
+
+#define MCONTROL_ACTION_NONE	        0
+#define MCONTROL_ACTION_DEBUG_EXCEPTION	1
+#define MCONTROL_ACTION_DEBUG_MODE	2
+#define MCONTROL_ACTION_TRACE_START	3
+#define MCONTROL_ACTION_TRACE_STOP	4
+#define MCONTROL_ACTION_TRACE_EMIT	5
+
+#define MCONTROL_MATCH_EQUAL	        0
+#define MCONTROL_MATCH_NAPOT	        1
+#define MCONTROL_MATCH_GE	        2
+#define MCONTROL_MATCH_LT	        3
+#define MCONTROL_MATCH_MASK_LOW	        4
+#define MCONTROL_MATCH_MASK_HIGH	5
+
 #define MIP_SSIP            (1 << IRQ_S_SOFT)
 #define MIP_HSIP            (1 << IRQ_H_SOFT)
 #define MIP_MSIP            (1 << IRQ_M_SOFT)
@@ -690,10 +716,10 @@
 #define CSR_MSCYCLE_DELTA 0x704
 #define CSR_MSTIME_DELTA 0x705
 #define CSR_MSINSTRET_DELTA 0x706
-#define CSR_TDRSELECT 0x7a0
-#define CSR_TDRDATA1 0x7a1
-#define CSR_TDRDATA2 0x7a2
-#define CSR_TDRDATA3 0x7a3
+#define CSR_TSELECT 0x7a0
+#define CSR_TDATA0 0x7a1
+#define CSR_TDATA1 0x7a2
+#define CSR_TDATA2 0x7a3
 #define CSR_DCSR 0x7b0
 #define CSR_DPC 0x7b1
 #define CSR_DSCRATCH 0x7b2
@@ -999,10 +1025,10 @@ DECLARE_CSR(muinstret_delta, CSR_MUINSTRET_DELTA)
 DECLARE_CSR(mscycle_delta, CSR_MSCYCLE_DELTA)
 DECLARE_CSR(mstime_delta, CSR_MSTIME_DELTA)
 DECLARE_CSR(msinstret_delta, CSR_MSINSTRET_DELTA)
-DECLARE_CSR(tdrselect, CSR_TDRSELECT)
-DECLARE_CSR(tdrdata1, CSR_TDRDATA1)
-DECLARE_CSR(tdrdata2, CSR_TDRDATA2)
-DECLARE_CSR(tdrdata3, CSR_TDRDATA3)
+DECLARE_CSR(tselect, CSR_TSELECT)
+DECLARE_CSR(tdata0, CSR_TDATA0)
+DECLARE_CSR(tdata1, CSR_TDATA1)
+DECLARE_CSR(tdata2, CSR_TDATA2)
 DECLARE_CSR(dcsr, CSR_DCSR)
 DECLARE_CSR(dpc, CSR_DPC)
 DECLARE_CSR(dscratch, CSR_DSCRATCH)
