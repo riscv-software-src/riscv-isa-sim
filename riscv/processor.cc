@@ -547,7 +547,6 @@ reg_t processor_t::get_csr(int which)
       {
         uint32_t v = 0;
         v = set_field(v, DCSR_XDEBUGVER, 1);
-        v = set_field(v, DCSR_HWBPCOUNT, 0);
         v = set_field(v, DCSR_NDRESET, 0);
         v = set_field(v, DCSR_FULLRESET, 0);
         v = set_field(v, DCSR_PRV, state.dcsr.prv);
