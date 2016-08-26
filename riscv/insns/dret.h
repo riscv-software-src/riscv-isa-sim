@@ -7,5 +7,3 @@ STATE.dcsr.cause = 0;
 
 if (STATE.dcsr.step)
   STATE.single_step = STATE.STEP_STEPPING;
-
-p->update_slow_path();

@@ -189,7 +189,8 @@ public:
 
   // When true, display disassembly of each instruction that's executed.
   bool debug;
-  void update_slow_path();
+  // When true, take the slow simulation path.
+  bool slow_path();
 
   // Return the index of a trigger that matched, or -1.
   inline int trigger_match(trigger_operation_t operation, reg_t address, reg_t data)
@@ -294,8 +295,6 @@ private:
   std::string isa_string;
   bool histogram_enabled;
   bool halt_on_reset;
-  // When true, take the slow simulation path.
-  bool slow_path;
 
   std::vector<insn_desc_t> instructions;
   std::map<reg_t,uint64_t> pc_histogram;

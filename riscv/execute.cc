@@ -51,11 +51,9 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
   return npc;
 }
 
-void processor_t::update_slow_path()
+bool processor_t::slow_path()
 {
-  slow_path = debug || state.single_step != state.STEP_NONE || state.dcsr.cause;
-  if (slow_path)
-    return;
+  return debug || state.single_step != state.STEP_NONE || state.dcsr.cause;
 }
 
 // fetch/decode/execute loop
@@ -97,7 +95,7 @@ void processor_t::step(size_t n)
     {
       take_interrupt();
 
-      if (unlikely(slow_path))
+      if (unlikely(slow_path()))
       {
         while (instret < n)
         {
