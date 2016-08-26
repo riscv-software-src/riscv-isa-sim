@@ -1086,7 +1086,9 @@ class hardware_breakpoint_insert_op_t : public operation_t
             }
 
             if (type == 2 &&
-                get_field(mcontrol, MCONTROL_ACTION) == MCONTROL_ACTION_NONE) {
+                !get_field(mcontrol, MCONTROL_EXECUTE) &&
+                !get_field(mcontrol, MCONTROL_LOAD) &&
+                !get_field(mcontrol, MCONTROL_STORE)) {
               // Found an unused trigger.
               gs.dr_write_load(0, S0, SLOT_DATA1);
               gs.dr_write32(1, csrw(S0, CSR_TDATA0));

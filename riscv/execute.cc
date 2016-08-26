@@ -169,13 +169,17 @@ miss:
         delete mmu->matched_trigger;
         mmu->matched_trigger = NULL;
       }
-      assert(state.mcontrol[t.index].action != ACTION_NONE);
       switch (state.mcontrol[t.index].action) {
         case ACTION_DEBUG_MODE:
           enter_debug_mode(DCSR_CAUSE_HWBP);
           break;
+        case ACTION_DEBUG_EXCEPTION: {
+          mem_trap_t trap(CAUSE_BREAKPOINT, t.address);
+          take_trap(trap, pc);
+          break;
+        }
         default:
-          assert(0);
+          abort();
       }
     }
 

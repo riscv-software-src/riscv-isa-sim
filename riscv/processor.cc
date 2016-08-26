@@ -119,11 +119,8 @@ void state_t::reset()
   mtvec = DEFAULT_MTVEC;
   load_reservation = -1;
   tselect = 0;
-  for (unsigned int i = 0; i < num_triggers; i++) {
+  for (unsigned int i = 0; i < num_triggers; i++)
     mcontrol[i].type = 2;
-    mcontrol[i].action = ACTION_NONE;
-    tdata1[i] = 0;
-  }
 }
 
 void processor_t::set_debug(bool value)
@@ -516,8 +513,8 @@ reg_t processor_t::get_csr(int which)
       if (state.tselect < state.num_triggers) {
         reg_t v = 0;
         mcontrol_t *mc = &state.mcontrol[state.tselect];
-        v = set_field(v, 0xfL << (xlen-4), mc->type);
-        v = set_field(v, 0x3fL << (xlen-10), mc->maskmax);
+        v = set_field(v, MCONTROL_TYPE(xlen), mc->type);
+        v = set_field(v, MCONTROL_MASKMAX(xlen), mc->maskmax);
         v = set_field(v, MCONTROL_SELECT, mc->select);
         v = set_field(v, MCONTROL_ACTION, mc->action);
         v = set_field(v, MCONTROL_CHAIN, mc->chain);
@@ -679,8 +676,6 @@ void processor_t::trigger_updated()
   mmu->check_triggers_store = false;
 
   for (unsigned i = 0; i < state.num_triggers; i++) {
-    if (state.mcontrol[i].action == ACTION_NONE)
-      continue;
     if (state.mcontrol[i].execute) {
       mmu->check_triggers_fetch = true;
     }

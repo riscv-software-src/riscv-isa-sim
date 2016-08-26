@@ -45,7 +45,6 @@ typedef struct
 
 typedef enum
 {
-  ACTION_NONE = MCONTROL_ACTION_NONE,
   ACTION_DEBUG_EXCEPTION = MCONTROL_ACTION_DEBUG_EXCEPTION,
   ACTION_DEBUG_MODE = MCONTROL_ACTION_DEBUG_MODE,
   ACTION_TRACE_START = MCONTROL_ACTION_TRACE_START,
@@ -198,18 +197,22 @@ public:
     if (state.dcsr.cause)
       return -1;
 
-    bool chain_ok = false;
+    bool chain_ok = true;
 
     for (unsigned int i = 0; i < state.num_triggers; i++) {
-      if (state.mcontrol[i].action == ACTION_NONE ||
-          (operation == OPERATION_EXECUTE && !state.mcontrol[i].execute) ||
+      if (!chain_ok) {
+        chain_ok |= !state.mcontrol[i].chain;
+        continue;
+      }
+
+      if ((operation == OPERATION_EXECUTE && !state.mcontrol[i].execute) ||
           (operation == OPERATION_STORE && !state.mcontrol[i].store) ||
           (operation == OPERATION_LOAD && !state.mcontrol[i].load) ||
           (state.prv == PRV_M && !state.mcontrol[i].m) ||
           (state.prv == PRV_H && !state.mcontrol[i].h) ||
           (state.prv == PRV_S && !state.mcontrol[i].s) ||
           (state.prv == PRV_U && !state.mcontrol[i].u)) {
-        goto next;
+        continue;
       }
 
       reg_t value;
@@ -228,54 +231,42 @@ public:
       switch (state.mcontrol[i].match) {
         case MATCH_EQUAL:
           if (value != state.tdata1[i])
-            goto next;
+            continue;
           break;
         case MATCH_NAPOT:
           {
             reg_t mask = ~((1 << cto(state.tdata1[i])) - 1);
             if ((value & mask) != (state.tdata1[i] & mask))
-              goto next;
+              continue;
           }
           break;
         case MATCH_GE:
           if (value < state.tdata1[i])
-            goto next;
+            continue;
           break;
         case MATCH_LT:
           if (value >= state.tdata1[i])
-            goto next;
+            continue;
           break;
         case MATCH_MASK_LOW:
           {
             reg_t mask = state.tdata1[i] >> (xlen/2);
             if ((value & mask) != (state.tdata1[i] & mask))
-              goto next;
+              continue;
           }
           break;
         case MATCH_MASK_HIGH:
           {
             reg_t mask = state.tdata1[i] >> (xlen/2);
             if (((value >> (xlen/2)) & mask) != (state.tdata1[i] & mask))
-              goto next;
+              continue;
           }
           break;
       }
 
-      if (state.mcontrol[i].chain && !chain_ok) {
-        goto next;
-      }
-
-      // We got here, so this trigger matches. But if the next trigger has
-      // chain set, then we can't perform the action.
-      if (i+1 < state.num_triggers && state.mcontrol[i+1].chain) {
-        chain_ok = true;
-        continue;
-      } else {
+      if (!state.mcontrol[i].chain)
         return i;
-      }
-
-next:
-      chain_ok = false;
+      chain_ok = true;
     }
     return -1;
   }
