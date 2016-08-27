@@ -346,11 +346,22 @@ void processor_t::set_csr(int which, reg_t val)
       state.medeleg = (state.medeleg & ~mask) | (val & mask);
       break;
     }
+    case CSR_MINSTRET:
+    case CSR_MCYCLE:
+      if (xlen == 32)
+        state.minstret = (state.minstret >> 32 << 32) | (val & 0xffffffffU);
+      else
+        state.minstret = val;
+      break;
+    case CSR_MINSTRETH:
+    case CSR_MCYCLEH:
+      state.minstret = (val << 32) | (state.minstret << 32 >> 32);
+      break;
     case CSR_MUCOUNTEREN:
-      state.mucounteren = val & 7;
+      state.mucounteren = val;
       break;
     case CSR_MSCOUNTEREN:
-      state.mscounteren = val & 7;
+      state.mscounteren = val;
       break;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
@@ -399,6 +410,23 @@ void processor_t::set_csr(int which, reg_t val)
 
 reg_t processor_t::get_csr(int which)
 {
+  reg_t ctr_en = state.prv == PRV_U ? state.mucounteren :
+                 state.prv == PRV_S ? state.mscounteren : -1U;
+  bool ctr_ok = (ctr_en >> (which & 31)) & 1;
+
+  if (ctr_ok) {
+    if (which >= CSR_HPMCOUNTER3 && which <= CSR_HPMCOUNTER31)
+      return 0;
+    if (xlen == 32 && which >= CSR_HPMCOUNTER3H && which <= CSR_HPMCOUNTER31H)
+      return 0;
+  }
+  if (which >= CSR_MHPMCOUNTER3 && which <= CSR_MHPMCOUNTER31)
+    return 0;
+  if (xlen == 32 && which >= CSR_MHPMCOUNTER3 && which <= CSR_MHPMCOUNTER31)
+    return 0;
+  if (which >= CSR_MHPMEVENT3 && which <= CSR_MHPMEVENT31)
+    return 0;
+
   switch (which)
   {
     case CSR_FFLAGS:
@@ -416,36 +444,21 @@ reg_t processor_t::get_csr(int which)
       if (!supports_extension('F'))
         break;
       return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
-    case CSR_TIME:
     case CSR_INSTRET:
     case CSR_CYCLE:
-      if ((state.mucounteren >> (which & (xlen-1))) & 1)
-        return get_csr(which + (CSR_MCYCLE - CSR_CYCLE));
+      if (ctr_ok)
+        return state.minstret;
       break;
-    case CSR_STIME:
-    case CSR_SINSTRET:
-    case CSR_SCYCLE:
-      if ((state.mscounteren >> (which & (xlen-1))) & 1)
-        return get_csr(which + (CSR_MCYCLE - CSR_SCYCLE));
+    case CSR_MINSTRET:
+    case CSR_MCYCLE:
+      return state.minstret;
+    case CSR_MINSTRETH:
+    case CSR_MCYCLEH:
+      if (xlen == 32)
+        return state.minstret >> 32;
       break;
     case CSR_MUCOUNTEREN: return state.mucounteren;
     case CSR_MSCOUNTEREN: return state.mscounteren;
-    case CSR_MUCYCLE_DELTA: return 0;
-    case CSR_MUTIME_DELTA: return 0;
-    case CSR_MUINSTRET_DELTA: return 0;
-    case CSR_MSCYCLE_DELTA: return 0;
-    case CSR_MSTIME_DELTA: return 0;
-    case CSR_MSINSTRET_DELTA: return 0;
-    case CSR_MUCYCLE_DELTAH: if (xlen > 32) break; else return 0;
-    case CSR_MUTIME_DELTAH: if (xlen > 32) break; else return 0;
-    case CSR_MUINSTRET_DELTAH: if (xlen > 32) break; else return 0;
-    case CSR_MSCYCLE_DELTAH: if (xlen > 32) break; else return 0;
-    case CSR_MSTIME_DELTAH: if (xlen > 32) break; else return 0;
-    case CSR_MSINSTRET_DELTAH: if (xlen > 32) break; else return 0;
-    case CSR_MCYCLE: return state.minstret;
-    case CSR_MINSTRET: return state.minstret;
-    case CSR_MCYCLEH: if (xlen > 32) break; else return state.minstret >> 32;
-    case CSR_MINSTRETH: if (xlen > 32) break; else return state.minstret >> 32;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
                  | SSTATUS_XS | SSTATUS_PUM;
@@ -481,15 +494,14 @@ reg_t processor_t::get_csr(int which)
     case CSR_MTVEC: return state.mtvec;
     case CSR_MEDELEG: return state.medeleg;
     case CSR_MIDELEG: return state.mideleg;
-    case CSR_TDRSELECT: return 0;
-    case CSR_TDRDATA1: return 0;
-    case CSR_TDRDATA2: return 0;
-    case CSR_TDRDATA3: return 0;
+    case CSR_TSELECT: return 0;
+    case CSR_TDATA1: return 0;
+    case CSR_TDATA2: return 0;
+    case CSR_TDATA3: return 0;
     case CSR_DCSR:
       {
         uint32_t v = 0;
         v = set_field(v, DCSR_XDEBUGVER, 1);
-        v = set_field(v, DCSR_HWBPCOUNT, 0);
         v = set_field(v, DCSR_NDRESET, 0);
         v = set_field(v, DCSR_FULLRESET, 0);
         v = set_field(v, DCSR_PRV, state.dcsr.prv);
