@@ -78,7 +78,7 @@ void sim_t::main()
     else
       step(INTERLEAVE);
     if (gdbserver) {
-        gdbserver->handle();
+      gdbserver->handle();
     }
   }
 }
