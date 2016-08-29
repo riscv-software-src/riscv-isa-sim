@@ -67,6 +67,7 @@ typedef struct
   uint8_t type;
   uint8_t maskmax;
   bool select;
+  bool dmode;
   mcontrol_action_t action;
   bool chain;
   mcontrol_match_t match;

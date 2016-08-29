@@ -1069,7 +1069,7 @@ class hardware_breakpoint_insert_op_t : public operation_t
             return true;
           }
 
-          gs.dr_write32(0, csrr(S0, CSR_TDATA0));
+          gs.dr_write32(0, csrr(S0, CSR_TDATA1));
           gs.dr_write_store(1, S0, SLOT_DATA0);
           gs.dr_write_jump(2);
           state = STATE_CHECK_MCONTROL;
@@ -1091,7 +1091,7 @@ class hardware_breakpoint_insert_op_t : public operation_t
                 !get_field(mcontrol, MCONTROL_STORE)) {
               // Found an unused trigger.
               gs.dr_write_load(0, S0, SLOT_DATA1);
-              gs.dr_write32(1, csrw(S0, CSR_TDATA0));
+              gs.dr_write32(1, csrw(S0, CSR_TDATA1));
               gs.dr_write_jump(2);
               mcontrol = set_field(0, MCONTROL_ACTION, MCONTROL_ACTION_DEBUG_MODE);
               mcontrol = set_field(mcontrol, MCONTROL_MATCH, MCONTROL_MATCH_EQUAL);
@@ -1115,7 +1115,7 @@ class hardware_breakpoint_insert_op_t : public operation_t
         case STATE_WRITE_ADDRESS:
           {
             gs.dr_write_load(0, S0, SLOT_DATA1);
-            gs.dr_write32(1, csrw(S0, CSR_TDATA1));
+            gs.dr_write32(1, csrw(S0, CSR_TDATA2));
             gs.dr_write_jump(2);
             gs.dr_write(SLOT_DATA1, bp.vaddr);
             gs.set_interrupt(0);
@@ -1151,7 +1151,7 @@ class hardware_breakpoint_remove_op_t : public operation_t
     bool perform_step(unsigned int step) {
       gs.dr_write32(0, addi(S0, ZERO, bp.index));
       gs.dr_write32(1, csrw(S0, CSR_TSELECT));
-      gs.dr_write32(2, csrw(ZERO, CSR_TDATA0));
+      gs.dr_write32(2, csrw(ZERO, CSR_TDATA1));
       gs.dr_write_jump(3);
       gs.set_interrupt(0);
       return true;

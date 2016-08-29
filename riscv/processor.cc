@@ -382,9 +382,10 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
     case CSR_TSELECT: state.tselect = val; break;
-    case CSR_TDATA0:
+    case CSR_TDATA1:
       if (state.tselect < state.num_triggers) {
         mcontrol_t *mc = &state.mcontrol[state.tselect];
+        mc->dmode = get_field(val, MCONTROL_DMODE(xlen));
         mc->select = get_field(val, MCONTROL_SELECT);
         mc->action = (mcontrol_action_t) get_field(val, MCONTROL_ACTION);
         mc->chain = get_field(val, MCONTROL_CHAIN);
@@ -400,7 +401,7 @@ void processor_t::set_csr(int which, reg_t val)
         trigger_updated();
       }
       break;
-    case CSR_TDATA1:
+    case CSR_TDATA2:
       if (state.tselect < state.num_triggers) {
         state.tdata1[state.tselect] = val;
       }
@@ -509,11 +510,12 @@ reg_t processor_t::get_csr(int which)
     case CSR_MEDELEG: return state.medeleg;
     case CSR_MIDELEG: return state.mideleg;
     case CSR_TSELECT: return state.tselect;
-    case CSR_TDATA0:
+    case CSR_TDATA1:
       if (state.tselect < state.num_triggers) {
         reg_t v = 0;
         mcontrol_t *mc = &state.mcontrol[state.tselect];
         v = set_field(v, MCONTROL_TYPE(xlen), mc->type);
+        v = set_field(v, MCONTROL_DMODE(xlen), mc->dmode);
         v = set_field(v, MCONTROL_MASKMAX(xlen), mc->maskmax);
         v = set_field(v, MCONTROL_SELECT, mc->select);
         v = set_field(v, MCONTROL_ACTION, mc->action);
@@ -531,7 +533,7 @@ reg_t processor_t::get_csr(int which)
         return 0;
       }
       break;
-    case CSR_TDATA1:
+    case CSR_TDATA2:
       if (state.tselect < state.num_triggers) {
         return state.tdata1[state.tselect];
       } else {
