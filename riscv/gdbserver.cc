@@ -351,6 +351,7 @@ class halt_op_t : public operation_t
 
     bool perform_step(unsigned int step) {
       switch (state) {
+        gs.tselect_valid = false;
         case ST_ENTER:
           if (gs.xlen == 0) {
             gs.dr_write32(0, xori(S1, ZERO, -1));
@@ -1094,6 +1095,7 @@ class hardware_breakpoint_insert_op_t : public operation_t
               gs.dr_write32(1, csrw(S0, CSR_TDATA1));
               gs.dr_write_jump(2);
               mcontrol = set_field(0, MCONTROL_ACTION, MCONTROL_ACTION_DEBUG_MODE);
+              mcontrol = set_field(mcontrol, MCONTROL_DMODE(gs.xlen), 1);
               mcontrol = set_field(mcontrol, MCONTROL_MATCH, MCONTROL_MATCH_EQUAL);
               mcontrol = set_field(mcontrol, MCONTROL_M, 1);
               mcontrol = set_field(mcontrol, MCONTROL_H, 1);
@@ -1139,6 +1141,45 @@ class hardware_breakpoint_insert_op_t : public operation_t
       STATE_WRITE_ADDRESS
     } state;
     hardware_breakpoint_t bp;
+};
+
+class maybe_save_tselect_op_t : public operation_t
+{
+  public:
+    maybe_save_tselect_op_t(gdbserver_t& gdbserver) : operation_t(gdbserver) {};
+    bool perform_step(unsigned int step) {
+      if (gs.tselect_valid)
+        return true;
+
+      switch (step) {
+        case 0:
+          gs.dr_write32(0, csrr(S0, CSR_TDATA1));
+          gs.dr_write_store(1, S0, SLOT_DATA0);
+          gs.dr_write_jump(2);
+          gs.set_interrupt(0);
+          return false;
+        case 1:
+          gs.tselect = gs.dr_read(SLOT_DATA0);
+          gs.tselect_valid = true;
+          break;
+      }
+      return true;
+    }
+};
+
+class maybe_restore_tselect_op_t : public operation_t
+{
+  public:
+    maybe_restore_tselect_op_t(gdbserver_t& gdbserver) : operation_t(gdbserver) {};
+    bool perform_step(unsigned int step) {
+      if (gs.tselect_valid) {
+        gs.dr_write_load(0, S0, SLOT_DATA1);
+        gs.dr_write32(1, csrw(S0, CSR_TSELECT));
+        gs.dr_write_jump(2);
+        gs.dr_write(SLOT_DATA1, gs.tselect);
+      }
+      return true;
+    }
 };
 
 class hardware_breakpoint_remove_op_t : public operation_t
@@ -1733,6 +1774,7 @@ void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
       return send_packet("E30");
   }
 
+  add_operation(new maybe_restore_tselect_op_t(*this));
   add_operation(new continue_op_t(*this, false));
 }
 
@@ -1747,6 +1789,7 @@ void gdbserver_t::handle_step(const std::vector<uint8_t> &packet)
       return send_packet("E40");
   }
 
+  add_operation(new maybe_restore_tselect_op_t(*this));
   add_operation(new continue_op_t(*this, true));
 }
 
@@ -1806,11 +1849,13 @@ void gdbserver_t::software_breakpoint_remove(reg_t vaddr, unsigned int size)
 
 void gdbserver_t::hardware_breakpoint_insert(const hardware_breakpoint_t &bp)
 {
+  add_operation(new maybe_save_tselect_op_t(*this));
   add_operation(new hardware_breakpoint_insert_op_t(*this, bp));
 }
 
 void gdbserver_t::hardware_breakpoint_remove(const hardware_breakpoint_t &bp)
 {
+  add_operation(new maybe_save_tselect_op_t(*this));
   hardware_breakpoint_t found = *hardware_breakpoints.find(bp);
   add_operation(new hardware_breakpoint_remove_op_t(*this, found));
 }
