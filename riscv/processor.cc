@@ -381,12 +381,20 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
-    case CSR_TSELECT: state.tselect = val; break;
+    case CSR_TSELECT:
+      if (val < state.num_triggers) {
+        state.tselect = val;
+      }
+      break;
     case CSR_TDATA1:
-      if (state.tselect < state.num_triggers) {
+      {
         mcontrol_t *mc = &state.mcontrol[state.tselect];
+        if (mc->dmode && !state.dcsr.cause) {
+          throw trap_illegal_instruction();
+        }
         mc->dmode = get_field(val, MCONTROL_DMODE(xlen));
         mc->select = get_field(val, MCONTROL_SELECT);
+        mc->timing = get_field(val, MCONTROL_TIMING);
         mc->action = (mcontrol_action_t) get_field(val, MCONTROL_ACTION);
         mc->chain = get_field(val, MCONTROL_CHAIN);
         mc->match = (mcontrol_match_t) get_field(val, MCONTROL_MATCH);
@@ -403,7 +411,7 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_TDATA2:
       if (state.tselect < state.num_triggers) {
-        state.tdata1[state.tselect] = val;
+        state.tdata2[state.tselect] = val;
       }
       break;
     case CSR_DCSR:
@@ -518,6 +526,7 @@ reg_t processor_t::get_csr(int which)
         v = set_field(v, MCONTROL_DMODE(xlen), mc->dmode);
         v = set_field(v, MCONTROL_MASKMAX(xlen), mc->maskmax);
         v = set_field(v, MCONTROL_SELECT, mc->select);
+        v = set_field(v, MCONTROL_TIMING, mc->timing);
         v = set_field(v, MCONTROL_ACTION, mc->action);
         v = set_field(v, MCONTROL_CHAIN, mc->chain);
         v = set_field(v, MCONTROL_MATCH, mc->match);
@@ -535,7 +544,7 @@ reg_t processor_t::get_csr(int which)
       break;
     case CSR_TDATA2:
       if (state.tselect < state.num_triggers) {
-        return state.tdata1[state.tselect];
+        return state.tdata2[state.tselect];
       } else {
         return 0;
       }

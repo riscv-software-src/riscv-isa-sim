@@ -65,9 +65,10 @@ typedef enum
 typedef struct
 {
   uint8_t type;
+  bool dmode;
   uint8_t maskmax;
   bool select;
-  bool dmode;
+  bool timing;
   mcontrol_action_t action;
   bool chain;
   mcontrol_match_t match;
@@ -117,7 +118,7 @@ struct state_t
   dcsr_t dcsr;
   reg_t tselect;
   mcontrol_t mcontrol[num_triggers];
-  reg_t tdata1[num_triggers];
+  reg_t tdata2[num_triggers];
 
   uint32_t fflags;
   uint32_t frm;
@@ -231,42 +232,43 @@ public:
 
       switch (state.mcontrol[i].match) {
         case MATCH_EQUAL:
-          if (value != state.tdata1[i])
+          if (value != state.tdata2[i])
             continue;
           break;
         case MATCH_NAPOT:
           {
-            reg_t mask = ~((1 << cto(state.tdata1[i])) - 1);
-            if ((value & mask) != (state.tdata1[i] & mask))
+            reg_t mask = ~((1 << cto(state.tdata2[i])) - 1);
+            if ((value & mask) != (state.tdata2[i] & mask))
               continue;
           }
           break;
         case MATCH_GE:
-          if (value < state.tdata1[i])
+          if (value < state.tdata2[i])
             continue;
           break;
         case MATCH_LT:
-          if (value >= state.tdata1[i])
+          if (value >= state.tdata2[i])
             continue;
           break;
         case MATCH_MASK_LOW:
           {
-            reg_t mask = state.tdata1[i] >> (xlen/2);
-            if ((value & mask) != (state.tdata1[i] & mask))
+            reg_t mask = state.tdata2[i] >> (xlen/2);
+            if ((value & mask) != (state.tdata2[i] & mask))
               continue;
           }
           break;
         case MATCH_MASK_HIGH:
           {
-            reg_t mask = state.tdata1[i] >> (xlen/2);
-            if (((value >> (xlen/2)) & mask) != (state.tdata1[i] & mask))
+            reg_t mask = state.tdata2[i] >> (xlen/2);
+            if (((value >> (xlen/2)) & mask) != (state.tdata2[i] & mask))
               continue;
           }
           break;
       }
 
-      if (!state.mcontrol[i].chain)
+      if (!state.mcontrol[i].chain) {
         return i;
+      }
       chain_ok = true;
     }
     return -1;
