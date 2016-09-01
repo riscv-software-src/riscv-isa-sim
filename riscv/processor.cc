@@ -406,6 +406,10 @@ void processor_t::set_csr(int which, reg_t val)
         mc->store = get_field(val, MCONTROL_STORE);
         mc->load = get_field(val, MCONTROL_LOAD);
         // Assume we're here because of csrw.
+        if (mc->execute)
+          mc->timing = 0;
+        if (mc->load)
+          mc->timing = 1;
         trigger_updated();
       }
       break;

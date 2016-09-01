@@ -1104,6 +1104,9 @@ class hardware_breakpoint_insert_op_t : public operation_t
               mcontrol = set_field(mcontrol, MCONTROL_EXECUTE, bp.execute);
               mcontrol = set_field(mcontrol, MCONTROL_LOAD, bp.load);
               mcontrol = set_field(mcontrol, MCONTROL_STORE, bp.store);
+              if (bp.load)
+                mcontrol = set_field(mcontrol, MCONTROL_TIMING, 1);
+
               gs.dr_write(SLOT_DATA1, mcontrol);
               state = STATE_WRITE_ADDRESS;
             } else {
