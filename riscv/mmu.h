@@ -219,6 +219,9 @@ private:
   inline trigger_matched_t *trigger_exception(trigger_operation_t operation,
       reg_t address, reg_t data)
   {
+    if (!proc) {
+      return NULL;
+    }
     int match = proc->trigger_match(operation, address, data);
     if (match == -1)
       return NULL;

@@ -459,6 +459,7 @@ class continue_op_t : public operation_t
       operation_t(gdbserver), single_step(single_step) {};
 
     bool perform_step(unsigned int step) {
+      D(fprintf(stderr, "continue step %d\n", step));
       switch (step) {
         case 0:
           gs.dr_write_load(0, S0, SLOT_DATA0);
@@ -1104,7 +1105,14 @@ class hardware_breakpoint_insert_op_t : public operation_t
               mcontrol = set_field(mcontrol, MCONTROL_EXECUTE, bp.execute);
               mcontrol = set_field(mcontrol, MCONTROL_LOAD, bp.load);
               mcontrol = set_field(mcontrol, MCONTROL_STORE, bp.store);
-              if (bp.load)
+              // For store triggers it's nicer to fire just before the
+              // instruction than just after. However, gdb doesn't clear the
+              // breakpoints and step before resuming from a store trigger.
+              // That means that without extra code, you'll keep hitting the
+              // same watchpoint over and over again. That's not useful at all.
+              // Instead of fixing this the right way, just set timing=1 for
+              // those triggers.
+              if (bp.load || bp.store)
                 mcontrol = set_field(mcontrol, MCONTROL_TIMING, 1);
 
               gs.dr_write(SLOT_DATA1, mcontrol);
