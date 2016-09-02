@@ -118,6 +118,9 @@ void state_t::reset()
   pc = DEFAULT_RSTVEC;
   mtvec = DEFAULT_MTVEC;
   load_reservation = -1;
+  tselect = 0;
+  for (unsigned int i = 0; i < num_triggers; i++)
+    mcontrol[i].type = 2;
 }
 
 void processor_t::set_debug(bool value)
@@ -154,6 +157,7 @@ void processor_t::raise_interrupt(reg_t which)
   throw trap_t(((reg_t)1 << (max_xlen-1)) | which);
 }
 
+// Count number of contiguous 0 bits starting from the LSB.
 static int ctz(reg_t val)
 {
   int res = 0;
@@ -195,7 +199,6 @@ void processor_t::enter_debug_mode(uint8_t cause)
   set_privilege(PRV_M);
   state.dpc = state.pc;
   state.pc = DEBUG_ROM_START;
-  //debug = true; // TODO
 }
 
 void processor_t::take_trap(trap_t& t, reg_t epc)
@@ -389,6 +392,43 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
+    case CSR_TSELECT:
+      if (val < state.num_triggers) {
+        state.tselect = val;
+      }
+      break;
+    case CSR_TDATA1:
+      {
+        mcontrol_t *mc = &state.mcontrol[state.tselect];
+        if (mc->dmode && !state.dcsr.cause) {
+          throw trap_illegal_instruction();
+        }
+        mc->dmode = get_field(val, MCONTROL_DMODE(xlen));
+        mc->select = get_field(val, MCONTROL_SELECT);
+        mc->timing = get_field(val, MCONTROL_TIMING);
+        mc->action = (mcontrol_action_t) get_field(val, MCONTROL_ACTION);
+        mc->chain = get_field(val, MCONTROL_CHAIN);
+        mc->match = (mcontrol_match_t) get_field(val, MCONTROL_MATCH);
+        mc->m = get_field(val, MCONTROL_M);
+        mc->h = get_field(val, MCONTROL_H);
+        mc->s = get_field(val, MCONTROL_S);
+        mc->u = get_field(val, MCONTROL_U);
+        mc->execute = get_field(val, MCONTROL_EXECUTE);
+        mc->store = get_field(val, MCONTROL_STORE);
+        mc->load = get_field(val, MCONTROL_LOAD);
+        // Assume we're here because of csrw.
+        if (mc->execute)
+          mc->timing = 0;
+        if (mc->load)
+          mc->timing = 1;
+        trigger_updated();
+      }
+      break;
+    case CSR_TDATA2:
+      if (state.tselect < state.num_triggers) {
+        state.tdata2[state.tselect] = val;
+      }
+      break;
     case CSR_DCSR:
       state.dcsr.prv = get_field(val, DCSR_PRV);
       state.dcsr.step = get_field(val, DCSR_STEP);
@@ -494,9 +534,38 @@ reg_t processor_t::get_csr(int which)
     case CSR_MTVEC: return state.mtvec;
     case CSR_MEDELEG: return state.medeleg;
     case CSR_MIDELEG: return state.mideleg;
-    case CSR_TSELECT: return 0;
-    case CSR_TDATA1: return 0;
-    case CSR_TDATA2: return 0;
+    case CSR_TSELECT: return state.tselect;
+    case CSR_TDATA1:
+      if (state.tselect < state.num_triggers) {
+        reg_t v = 0;
+        mcontrol_t *mc = &state.mcontrol[state.tselect];
+        v = set_field(v, MCONTROL_TYPE(xlen), mc->type);
+        v = set_field(v, MCONTROL_DMODE(xlen), mc->dmode);
+        v = set_field(v, MCONTROL_MASKMAX(xlen), mc->maskmax);
+        v = set_field(v, MCONTROL_SELECT, mc->select);
+        v = set_field(v, MCONTROL_TIMING, mc->timing);
+        v = set_field(v, MCONTROL_ACTION, mc->action);
+        v = set_field(v, MCONTROL_CHAIN, mc->chain);
+        v = set_field(v, MCONTROL_MATCH, mc->match);
+        v = set_field(v, MCONTROL_M, mc->m);
+        v = set_field(v, MCONTROL_H, mc->h);
+        v = set_field(v, MCONTROL_S, mc->s);
+        v = set_field(v, MCONTROL_U, mc->u);
+        v = set_field(v, MCONTROL_EXECUTE, mc->execute);
+        v = set_field(v, MCONTROL_STORE, mc->store);
+        v = set_field(v, MCONTROL_LOAD, mc->load);
+        return v;
+      } else {
+        return 0;
+      }
+      break;
+    case CSR_TDATA2:
+      if (state.tselect < state.num_triggers) {
+        return state.tdata2[state.tselect];
+      } else {
+        return 0;
+      }
+      break;
     case CSR_TDATA3: return 0;
     case CSR_DCSR:
       {
@@ -625,5 +694,25 @@ bool processor_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 
     default:
       return false;
+  }
+}
+
+void processor_t::trigger_updated()
+{
+  mmu->flush_tlb();
+  mmu->check_triggers_fetch = false;
+  mmu->check_triggers_load = false;
+  mmu->check_triggers_store = false;
+
+  for (unsigned i = 0; i < state.num_triggers; i++) {
+    if (state.mcontrol[i].execute) {
+      mmu->check_triggers_fetch = true;
+    }
+    if (state.mcontrol[i].load) {
+      mmu->check_triggers_load = true;
+    }
+    if (state.mcontrol[i].store) {
+      mmu->check_triggers_store = true;
+    }
   }
 }

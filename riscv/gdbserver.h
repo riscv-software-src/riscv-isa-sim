@@ -48,10 +48,27 @@ public:
 // Class to track software breakpoints that we set.
 class software_breakpoint_t
 {
-public:
-  reg_t address;
-  unsigned int size;
-  unsigned char instruction[4];
+  public:
+    reg_t vaddr;
+    unsigned int size;
+    unsigned char instruction[4];
+};
+
+class hardware_breakpoint_t
+{
+  public:
+    reg_t vaddr;
+    unsigned int size;
+    unsigned int index;
+    bool load, store, execute;
+};
+
+struct hardware_breakpoint_compare_t {
+  bool operator()(const hardware_breakpoint_t& a, const hardware_breakpoint_t& b) const {
+    if (a.vaddr != b.vaddr)
+      return a.vaddr < b.vaddr;
+    return a.size < b.size;
+  }
 };
 
 class gdbserver_t;
@@ -111,6 +128,14 @@ static const unsigned int slot_offset32[] = {0, 4, 5, DEBUG_RAM_SIZE/4 - 1};
 static const unsigned int slot_offset64[] = {0, 4, 6, DEBUG_RAM_SIZE/4 - 2};
 static const unsigned int slot_offset128[] = {0, 4, 8, DEBUG_RAM_SIZE/4 - 4};
 
+typedef enum {
+  GB_SOFTWARE = 0,
+  GB_HARDWARE = 1,
+  GB_WRITE = 2,
+  GB_READ = 3,
+  GB_ACCESS = 4,
+} gdb_breakpoint_type_t;
+
 class gdbserver_t
 {
 public:
@@ -123,6 +148,11 @@ public:
 
   void handle_packet(const std::vector<uint8_t> &packet);
   void handle_interrupt();
+
+  void software_breakpoint_remove(reg_t vaddr, unsigned int size);
+  void software_breakpoint_insert(reg_t vaddr, unsigned int size);
+  void hardware_breakpoint_remove(const hardware_breakpoint_t &bp);
+  void hardware_breakpoint_insert(const hardware_breakpoint_t &bp);
 
   void handle_breakpoint(const std::vector<uint8_t> &packet);
   void handle_continue(const std::vector<uint8_t> &packet);
@@ -185,6 +215,8 @@ public:
   reg_t mstatus;
   reg_t sptbr;
   bool sptbr_valid;
+  reg_t tselect;
+  bool tselect_valid;
   bool fence_i_required;
 
   std::map<reg_t, reg_t> pte_cache;
@@ -199,6 +231,9 @@ public:
 
   unsigned int xlen;
 
+  std::set<hardware_breakpoint_t, hardware_breakpoint_compare_t>
+    hardware_breakpoints;
+
 private:
   sim_t *sim;
   int socket_fd;
@@ -212,7 +247,7 @@ private:
   // but it isn't, we need to tell gdb about it.
   bool running;
 
-  std::map <reg_t, software_breakpoint_t*> breakpoints;
+  std::map<reg_t, software_breakpoint_t> software_breakpoints;
 
   // Read pending data from the client.
   void read();

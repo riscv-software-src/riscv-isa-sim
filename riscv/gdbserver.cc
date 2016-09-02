@@ -351,6 +351,7 @@ class halt_op_t : public operation_t
 
     bool perform_step(unsigned int step) {
       switch (state) {
+        gs.tselect_valid = false;
         case ST_ENTER:
           if (gs.xlen == 0) {
             gs.dr_write32(0, xori(S1, ZERO, -1));
@@ -458,6 +459,7 @@ class continue_op_t : public operation_t
       operation_t(gdbserver), single_step(single_step) {};
 
     bool perform_step(unsigned int step) {
+      D(fprintf(stderr, "continue step %d\n", step));
       switch (step) {
         case 0:
           gs.dr_write_load(0, S0, SLOT_DATA0);
@@ -1036,6 +1038,181 @@ class collect_translation_info_op_t : public operation_t
     reg_t pte_addr;
 };
 
+class hardware_breakpoint_insert_op_t : public operation_t
+{
+  public:
+    hardware_breakpoint_insert_op_t(gdbserver_t& gdbserver,
+        hardware_breakpoint_t bp) :
+      operation_t(gdbserver), state(STATE_START), bp(bp) {};
+
+    void write_new_index_program()
+    {
+      gs.dr_write_load(0, S0, SLOT_DATA1);
+      gs.dr_write32(1, csrw(S0, CSR_TSELECT));
+      gs.dr_write32(2, csrr(S0, CSR_TSELECT));
+      gs.dr_write_store(3, S0, SLOT_DATA1);
+      gs.dr_write_jump(4);
+      gs.dr_write(SLOT_DATA1, bp.index);
+    }
+
+    bool perform_step(unsigned int step)
+    {
+      switch (state) {
+        case STATE_START:
+          bp.index = 0;
+          write_new_index_program();
+          state = STATE_CHECK_INDEX;
+          break;
+
+        case STATE_CHECK_INDEX:
+          if (gs.dr_read(SLOT_DATA1) != bp.index) {
+            // We've exhausted breakpoints without finding an appropriate one.
+            gs.send_packet("E58");
+            return true;
+          }
+
+          gs.dr_write32(0, csrr(S0, CSR_TDATA1));
+          gs.dr_write_store(1, S0, SLOT_DATA0);
+          gs.dr_write_jump(2);
+          state = STATE_CHECK_MCONTROL;
+          break;
+
+        case STATE_CHECK_MCONTROL:
+          {
+            reg_t mcontrol = gs.dr_read(SLOT_DATA0);
+            unsigned int type = mcontrol >> (gs.xlen - 4);
+            if (type == 0) {
+              // We've exhausted breakpoints without finding an appropriate one.
+              gs.send_packet("E58");
+              return true;
+            }
+
+            if (type == 2 &&
+                !get_field(mcontrol, MCONTROL_EXECUTE) &&
+                !get_field(mcontrol, MCONTROL_LOAD) &&
+                !get_field(mcontrol, MCONTROL_STORE)) {
+              // Found an unused trigger.
+              gs.dr_write_load(0, S0, SLOT_DATA1);
+              gs.dr_write32(1, csrw(S0, CSR_TDATA1));
+              gs.dr_write_jump(2);
+              mcontrol = set_field(0, MCONTROL_ACTION, MCONTROL_ACTION_DEBUG_MODE);
+              mcontrol = set_field(mcontrol, MCONTROL_DMODE(gs.xlen), 1);
+              mcontrol = set_field(mcontrol, MCONTROL_MATCH, MCONTROL_MATCH_EQUAL);
+              mcontrol = set_field(mcontrol, MCONTROL_M, 1);
+              mcontrol = set_field(mcontrol, MCONTROL_H, 1);
+              mcontrol = set_field(mcontrol, MCONTROL_S, 1);
+              mcontrol = set_field(mcontrol, MCONTROL_U, 1);
+              mcontrol = set_field(mcontrol, MCONTROL_EXECUTE, bp.execute);
+              mcontrol = set_field(mcontrol, MCONTROL_LOAD, bp.load);
+              mcontrol = set_field(mcontrol, MCONTROL_STORE, bp.store);
+              // For store triggers it's nicer to fire just before the
+              // instruction than just after. However, gdb doesn't clear the
+              // breakpoints and step before resuming from a store trigger.
+              // That means that without extra code, you'll keep hitting the
+              // same watchpoint over and over again. That's not useful at all.
+              // Instead of fixing this the right way, just set timing=1 for
+              // those triggers.
+              if (bp.load || bp.store)
+                mcontrol = set_field(mcontrol, MCONTROL_TIMING, 1);
+
+              gs.dr_write(SLOT_DATA1, mcontrol);
+              state = STATE_WRITE_ADDRESS;
+            } else {
+              bp.index++;
+              write_new_index_program();
+              state = STATE_CHECK_INDEX;
+            }
+          }
+          break;
+
+        case STATE_WRITE_ADDRESS:
+          {
+            gs.dr_write_load(0, S0, SLOT_DATA1);
+            gs.dr_write32(1, csrw(S0, CSR_TDATA2));
+            gs.dr_write_jump(2);
+            gs.dr_write(SLOT_DATA1, bp.vaddr);
+            gs.set_interrupt(0);
+            gs.send_packet("OK");
+
+            gs.hardware_breakpoints.insert(bp);
+
+            return true;
+          }
+      }
+
+      gs.set_interrupt(0);
+      return false;
+    }
+
+  private:
+    enum {
+      STATE_START,
+      STATE_CHECK_INDEX,
+      STATE_CHECK_MCONTROL,
+      STATE_WRITE_ADDRESS
+    } state;
+    hardware_breakpoint_t bp;
+};
+
+class maybe_save_tselect_op_t : public operation_t
+{
+  public:
+    maybe_save_tselect_op_t(gdbserver_t& gdbserver) : operation_t(gdbserver) {};
+    bool perform_step(unsigned int step) {
+      if (gs.tselect_valid)
+        return true;
+
+      switch (step) {
+        case 0:
+          gs.dr_write32(0, csrr(S0, CSR_TDATA1));
+          gs.dr_write_store(1, S0, SLOT_DATA0);
+          gs.dr_write_jump(2);
+          gs.set_interrupt(0);
+          return false;
+        case 1:
+          gs.tselect = gs.dr_read(SLOT_DATA0);
+          gs.tselect_valid = true;
+          break;
+      }
+      return true;
+    }
+};
+
+class maybe_restore_tselect_op_t : public operation_t
+{
+  public:
+    maybe_restore_tselect_op_t(gdbserver_t& gdbserver) : operation_t(gdbserver) {};
+    bool perform_step(unsigned int step) {
+      if (gs.tselect_valid) {
+        gs.dr_write_load(0, S0, SLOT_DATA1);
+        gs.dr_write32(1, csrw(S0, CSR_TSELECT));
+        gs.dr_write_jump(2);
+        gs.dr_write(SLOT_DATA1, gs.tselect);
+      }
+      return true;
+    }
+};
+
+class hardware_breakpoint_remove_op_t : public operation_t
+{
+  public:
+    hardware_breakpoint_remove_op_t(gdbserver_t& gdbserver,
+        hardware_breakpoint_t bp) :
+      operation_t(gdbserver), bp(bp) {};
+
+    bool perform_step(unsigned int step) {
+      gs.dr_write32(0, addi(S0, ZERO, bp.index));
+      gs.dr_write32(1, csrw(S0, CSR_TSELECT));
+      gs.dr_write32(2, csrw(ZERO, CSR_TDATA1));
+      gs.dr_write_jump(3);
+      gs.set_interrupt(0);
+      return true;
+    }
+
+  private:
+    hardware_breakpoint_t bp;
+};
+
 ////////////////////////////// gdbserver itself
 
 gdbserver_t::gdbserver_t(uint16_t port, sim_t *sim) :
@@ -1608,6 +1785,7 @@ void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
       return send_packet("E30");
   }
 
+  add_operation(new maybe_restore_tselect_op_t(*this));
   add_operation(new continue_op_t(*this, false));
 }
 
@@ -1622,6 +1800,7 @@ void gdbserver_t::handle_step(const std::vector<uint8_t> &packet)
       return send_packet("E40");
   }
 
+  add_operation(new maybe_restore_tselect_op_t(*this));
   add_operation(new continue_op_t(*this, true));
 }
 
@@ -1641,64 +1820,123 @@ void gdbserver_t::handle_extended(const std::vector<uint8_t> &packet)
   extended_mode = true;
 }
 
+void gdbserver_t::software_breakpoint_insert(reg_t vaddr, unsigned int size)
+{
+  fence_i_required = true;
+  add_operation(new collect_translation_info_op_t(*this, vaddr, size));
+  unsigned char* inst = new unsigned char[4];
+  if (size == 2) {
+    inst[0] = C_EBREAK & 0xff;
+    inst[1] = (C_EBREAK >> 8) & 0xff;
+  } else {
+    inst[0] = EBREAK & 0xff;
+    inst[1] = (EBREAK >> 8) & 0xff;
+    inst[2] = (EBREAK >> 16) & 0xff;
+    inst[3] = (EBREAK >> 24) & 0xff;
+  }
+
+  software_breakpoint_t bp = {
+    .vaddr = vaddr,
+    .size = size
+  };
+  software_breakpoints[vaddr] = bp;
+  add_operation(new memory_read_op_t(*this, bp.vaddr, bp.size,
+        software_breakpoints[bp.vaddr].instruction));
+  add_operation(new memory_write_op_t(*this, bp.vaddr, bp.size, inst));
+}
+
+void gdbserver_t::software_breakpoint_remove(reg_t vaddr, unsigned int size)
+{
+  fence_i_required = true;
+  add_operation(new collect_translation_info_op_t(*this, vaddr, size));
+
+  software_breakpoint_t found_bp = software_breakpoints[vaddr];
+  unsigned char* instruction = new unsigned char[4];
+  memcpy(instruction, found_bp.instruction, 4);
+  add_operation(new memory_write_op_t(*this, found_bp.vaddr,
+        found_bp.size, instruction));
+  software_breakpoints.erase(vaddr);
+}
+
+void gdbserver_t::hardware_breakpoint_insert(const hardware_breakpoint_t &bp)
+{
+  add_operation(new maybe_save_tselect_op_t(*this));
+  add_operation(new hardware_breakpoint_insert_op_t(*this, bp));
+}
+
+void gdbserver_t::hardware_breakpoint_remove(const hardware_breakpoint_t &bp)
+{
+  add_operation(new maybe_save_tselect_op_t(*this));
+  hardware_breakpoint_t found = *hardware_breakpoints.find(bp);
+  add_operation(new hardware_breakpoint_remove_op_t(*this, found));
+}
+
 void gdbserver_t::handle_breakpoint(const std::vector<uint8_t> &packet)
 {
-  // insert: Z type,addr,kind
-  // remove: z type,addr,kind
+  // insert: Z type,addr,length
+  // remove: z type,addr,length
 
-  software_breakpoint_t bp;
+  // type: 0 - software breakpoint, 1 - hardware breakpoint, 2 - write
+  // watchpoint, 3 - read watchpoint, 4 - access watchpoint; addr is address;
+  // length is in bytes. For a software breakpoint, length specifies the size
+  // of the instruction to be patched. For hardware breakpoints and watchpoints
+  // length specifies the memory region to be monitored. To avoid potential
+  // problems with duplicate packets, the operations should be implemented in
+  // an idempotent way.
+
   bool insert = (packet[1] == 'Z');
   std::vector<uint8_t>::const_iterator iter = packet.begin() + 2;
-  int type = consume_hex_number(iter, packet.end());
+  gdb_breakpoint_type_t type = static_cast<gdb_breakpoint_type_t>(
+      consume_hex_number(iter, packet.end()));
   if (*iter != ',')
     return send_packet("E50");
   iter++;
-  bp.address = consume_hex_number(iter, packet.end());
+  reg_t address = consume_hex_number(iter, packet.end());
   if (*iter != ',')
     return send_packet("E51");
   iter++;
-  bp.size = consume_hex_number(iter, packet.end());
+  unsigned int size = consume_hex_number(iter, packet.end());
   // There may be more options after a ; here, but we don't support that.
   if (*iter != '#')
     return send_packet("E52");
 
-  if (type != 0) {
-    // Only software breakpoints are supported.
-    return send_packet("");
-  }
+  switch (type) {
+    case GB_SOFTWARE:
+      if (size != 2 && size != 4) {
+        return send_packet("E53");
+      }
+      if (insert) {
+        software_breakpoint_insert(address, size);
+      } else {
+        software_breakpoint_remove(address, size);
+      }
+      break;
 
-  if (bp.size != 2 && bp.size != 4) {
-    return send_packet("E53");
-  }
+    case GB_HARDWARE:
+    case GB_WRITE:
+    case GB_READ:
+    case GB_ACCESS:
+      {
+        hardware_breakpoint_t bp = {
+          .vaddr = address,
+          .size = size
+        };
+        bp.load = (type == GB_READ || type == GB_ACCESS);
+        bp.store = (type == GB_WRITE || type == GB_ACCESS);
+        bp.execute = (type == GB_HARDWARE || type == GB_ACCESS);
+        if (insert) {
+          hardware_breakpoint_insert(bp);
+          // Insert might fail if there's no space, so the insert operation will
+          // send its own OK (or not).
+          return;
+        } else {
+          hardware_breakpoint_remove(bp);
+        }
+      }
+      break;
 
-  fence_i_required = true;
-  add_operation(new collect_translation_info_op_t(*this, bp.address, bp.size));
-  if (insert) {
-    unsigned char* swbp = new unsigned char[4];
-    if (bp.size == 2) {
-      swbp[0] = C_EBREAK & 0xff;
-      swbp[1] = (C_EBREAK >> 8) & 0xff;
-    } else {
-      swbp[0] = EBREAK & 0xff;
-      swbp[1] = (EBREAK >> 8) & 0xff;
-      swbp[2] = (EBREAK >> 16) & 0xff;
-      swbp[3] = (EBREAK >> 24) & 0xff;
-    }
-
-    breakpoints[bp.address] = new software_breakpoint_t(bp);
-    add_operation(new memory_read_op_t(*this, bp.address, bp.size,
-          breakpoints[bp.address]->instruction));
-    add_operation(new memory_write_op_t(*this, bp.address, bp.size, swbp));
-
-  } else {
-    software_breakpoint_t *found_bp;
-    found_bp = breakpoints[bp.address];
-    unsigned char* instruction = new unsigned char[4];
-    memcpy(instruction, found_bp->instruction, 4);
-    add_operation(new memory_write_op_t(*this, found_bp->address,
-          found_bp->size, instruction));
-    breakpoints.erase(bp.address);
-    delete found_bp;
+    default:
+      return send_packet("E56");
   }
 
   return send_packet("OK");

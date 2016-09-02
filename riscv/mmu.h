@@ -30,6 +30,19 @@ struct icache_entry_t {
   insn_fetch_t data;
 };
 
+class trigger_matched_t
+{
+  public:
+    trigger_matched_t(int index,
+        trigger_operation_t operation, reg_t address, reg_t data) :
+      index(index), operation(operation), address(address), data(data) {}
+
+    int index;
+    trigger_operation_t operation;
+    reg_t address;
+    reg_t data;
+};
+
 // this class implements a processor's port into the virtual memory system.
 // an MMU and instruction cache are maintained for simulator performance.
 class mmu_t
@@ -46,6 +59,15 @@ public:
       reg_t vpn = addr >> PGSHIFT; \
       if (likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) \
         return *(type##_t*)(tlb_data[vpn % TLB_ENTRIES] + addr); \
+      if (unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
+        type##_t data = *(type##_t*)(tlb_data[vpn % TLB_ENTRIES] + addr); \
+        if (!matched_trigger) { \
+          matched_trigger = trigger_exception(OPERATION_LOAD, addr, data); \
+          if (matched_trigger) \
+            throw *matched_trigger; \
+        } \
+        return data; \
+      } \
       type##_t res; \
       load_slow_path(addr, sizeof(type##_t), (uint8_t*)&res); \
       return res; \
@@ -71,6 +93,14 @@ public:
       reg_t vpn = addr >> PGSHIFT; \
       if (likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) \
         *(type##_t*)(tlb_data[vpn % TLB_ENTRIES] + addr) = val; \
+      else if (unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
+        if (!matched_trigger) { \
+          matched_trigger = trigger_exception(OPERATION_STORE, addr, val); \
+          if (matched_trigger) \
+            throw *matched_trigger; \
+        } \
+        *(type##_t*)(tlb_data[vpn % TLB_ENTRIES] + addr) = val; \
+      } \
       else \
         store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&val); \
     }
@@ -150,6 +180,9 @@ private:
 
   // implement a TLB for simulator performance
   static const reg_t TLB_ENTRIES = 256;
+  // If a TLB tag has TLB_CHECK_TRIGGERS set, then the MMU must check for a
+  // trigger match before completing an access.
+  static const reg_t TLB_CHECK_TRIGGERS = 1L<<63;
   char* tlb_data[TLB_ENTRIES];
   reg_t tlb_insn_tag[TLB_ENTRIES];
   reg_t tlb_load_tag[TLB_ENTRIES];
@@ -173,8 +206,36 @@ private:
     reg_t vpn = addr >> PGSHIFT;
     if (likely(tlb_insn_tag[vpn % TLB_ENTRIES] == vpn))
       return (uint16_t*)(tlb_data[vpn % TLB_ENTRIES] + addr);
+    if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
+      uint16_t* ptr = (uint16_t*)(tlb_data[vpn % TLB_ENTRIES] + addr);
+      int match = proc->trigger_match(OPERATION_EXECUTE, addr, *ptr);
+      if (match >= 0)
+        throw trigger_matched_t(match, OPERATION_EXECUTE, addr, *ptr);
+      return ptr;
+    }
     return fetch_slow_path(addr);
   }
+
+  inline trigger_matched_t *trigger_exception(trigger_operation_t operation,
+      reg_t address, reg_t data)
+  {
+    if (!proc) {
+      return NULL;
+    }
+    int match = proc->trigger_match(operation, address, data);
+    if (match == -1)
+      return NULL;
+    if (proc->state.mcontrol[match].timing == 0) {
+      throw trigger_matched_t(match, operation, address, data);
+    }
+    return new trigger_matched_t(match, operation, address, data);
+  }
+
+  bool check_triggers_fetch;
+  bool check_triggers_load;
+  bool check_triggers_store;
+  // The exception describing a matched trigger, or NULL.
+  trigger_matched_t *matched_trigger;
 
   friend class processor_t;
 };

@@ -5,7 +5,11 @@
 #include "processor.h"
 
 mmu_t::mmu_t(sim_t* sim, processor_t* proc)
- : sim(sim), proc(proc)
+ : sim(sim), proc(proc),
+  check_triggers_fetch(false),
+  check_triggers_load(false),
+  check_triggers_store(false),
+  matched_trigger(NULL)
 {
   flush_tlb();
 }
@@ -69,9 +73,36 @@ const uint16_t* mmu_t::fetch_slow_path(reg_t vaddr)
   }
 }
 
+reg_t reg_from_bytes(size_t len, const uint8_t* bytes)
+{
+  switch (len) {
+    case 1:
+      return bytes[0];
+    case 2:
+      return bytes[0] |
+        (((reg_t) bytes[1]) << 8);
+    case 4:
+      return bytes[0] |
+        (((reg_t) bytes[1]) << 8) |
+        (((reg_t) bytes[2]) << 16) |
+        (((reg_t) bytes[3]) << 24);
+    case 8:
+      return bytes[0] |
+        (((reg_t) bytes[1]) << 8) |
+        (((reg_t) bytes[2]) << 16) |
+        (((reg_t) bytes[3]) << 24) |
+        (((reg_t) bytes[4]) << 32) |
+        (((reg_t) bytes[5]) << 40) |
+        (((reg_t) bytes[6]) << 48) |
+        (((reg_t) bytes[7]) << 56);
+  }
+  abort();
+}
+
 void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes)
 {
   reg_t paddr = translate(addr, LOAD);
+
   if (sim->addr_is_mem(paddr)) {
     memcpy(bytes, sim->addr_to_mem(paddr), len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
@@ -81,11 +112,26 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes)
   } else if (!sim->mmio_load(paddr, len, bytes)) {
     throw trap_load_access_fault(addr);
   }
+
+  if (!matched_trigger) {
+    reg_t data = reg_from_bytes(len, bytes);
+    matched_trigger = trigger_exception(OPERATION_LOAD, addr, data);
+    if (matched_trigger)
+      throw *matched_trigger;
+  }
 }
 
 void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes)
 {
   reg_t paddr = translate(addr, STORE);
+
+  if (!matched_trigger) {
+    reg_t data = reg_from_bytes(len, bytes);
+    matched_trigger = trigger_exception(OPERATION_STORE, addr, data);
+    if (matched_trigger)
+      throw *matched_trigger;
+  }
+
   if (sim->addr_is_mem(paddr)) {
     memcpy(sim->addr_to_mem(paddr), bytes, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
@@ -102,9 +148,17 @@ void mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, access_type type)
   reg_t idx = (vaddr >> PGSHIFT) % TLB_ENTRIES;
   reg_t expected_tag = vaddr >> PGSHIFT;
 
-  if (tlb_load_tag[idx] != expected_tag) tlb_load_tag[idx] = -1;
-  if (tlb_store_tag[idx] != expected_tag) tlb_store_tag[idx] = -1;
-  if (tlb_insn_tag[idx] != expected_tag) tlb_insn_tag[idx] = -1;
+  if ((tlb_load_tag[idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)
+    tlb_load_tag[idx] = -1;
+  if ((tlb_store_tag[idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)
+    tlb_store_tag[idx] = -1;
+  if ((tlb_insn_tag[idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)
+    tlb_insn_tag[idx] = -1;
+
+  if ((check_triggers_fetch && type == FETCH) ||
+      (check_triggers_load && type == LOAD) ||
+      (check_triggers_store && type == STORE))
+    expected_tag |= TLB_CHECK_TRIGGERS;
 
   if (type == FETCH) tlb_insn_tag[idx] = expected_tag;
   else if (type == STORE) tlb_store_tag[idx] = expected_tag;
