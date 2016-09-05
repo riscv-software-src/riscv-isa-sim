@@ -121,8 +121,7 @@ INSTALL_EXE   := $(INSTALL) -m 555
 STOW          := @stow@
 
 # Tests
-bintests = $(src_dir)/tests/gdbserver.py \
-	   $(src_dir)/tests/ebreak.py
+bintests = $(src_dir)/tests/ebreak.py
 
 #-------------------------------------------------------------------------
 # Include subproject makefile fragments
