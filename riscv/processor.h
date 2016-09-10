@@ -286,6 +286,7 @@ private:
   unsigned max_xlen;
   unsigned xlen;
   reg_t isa;
+  reg_t max_isa;
   std::string isa_string;
   bool histogram_enabled;
   bool halt_on_reset;

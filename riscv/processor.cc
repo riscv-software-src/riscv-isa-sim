@@ -109,6 +109,8 @@ void processor_t::parse_isa_string(const char* str)
   // advertise support for supervisor and user modes
   isa |= 1L << ('s' - 'a');
   isa |= 1L << ('u' - 'a');
+
+  max_isa = isa;
 }
 
 void state_t::reset()
@@ -392,6 +394,22 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
+    case CSR_MISA: {
+      if (!(val & (1L << ('F' - 'A'))))
+        val &= ~(1L << ('D' - 'A'));
+
+      // allow MAFDC bits in MISA to be modified
+      reg_t mask = 0;
+      mask |= 1L << ('M' - 'A');
+      mask |= 1L << ('A' - 'A');
+      mask |= 1L << ('F' - 'A');
+      mask |= 1L << ('D' - 'A');
+      mask |= 1L << ('C' - 'A');
+      mask &= max_isa;
+
+      isa = (val & mask) | (isa & ~mask);
+      break;
+    }
     case CSR_TSELECT:
       if (val < state.num_triggers) {
         state.tselect = val;
