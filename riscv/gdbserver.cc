@@ -9,6 +9,7 @@
 
 #include <algorithm>
 #include <cassert>
+#include <cinttypes>
 #include <cstdio>
 #include <vector>
 
@@ -848,8 +849,9 @@ class memory_write_op_t : public operation_t
                 (data[6] << 16) | (data[7] << 24));
             break;
           default:
-            fprintf(stderr, "gdbserver error: write %d bytes to 0x%lx -> 0x%lx; "
-                "access_size=%d\n", length, vaddr, paddr, access_size);
+            fprintf(stderr, "gdbserver error: write %d bytes to 0x%016" PRIx64
+                    " -> 0x%016" PRIx64 "; access_size=%d\n",
+                    length, vaddr, paddr, access_size);
             gs.send_packet("E12");
             return true;
         }
@@ -861,8 +863,8 @@ class memory_write_op_t : public operation_t
       }
 
       if (gs.dr_read32(DEBUG_RAM_SIZE / 4 - 1)) {
-        fprintf(stderr, "Exception happened while writing to 0x%lx -> 0x%lx\n",
-            vaddr, paddr);
+        fprintf(stderr, "Exception happened while writing to 0x%016" PRIx64
+                " -> 0x%016" PRIx64 "\n", vaddr, paddr);
       }
 
       offset += access_size;
@@ -1019,7 +1021,7 @@ class collect_translation_info_op_t : public operation_t
         }
       }
       fprintf(stderr,
-          "ERROR: gdbserver couldn't find appropriate PTEs to translate 0x%lx\n",
+          "ERROR: gdbserver couldn't find appropriate PTEs to translate 0x%016" PRIx64 "\n",
           vaddr);
       return true;
     }
@@ -1306,8 +1308,8 @@ reg_t gdbserver_t::translate(reg_t vaddr)
     reg_t pte_addr = base + idx * ptesize;
     auto it = pte_cache.find(pte_addr);
     if (it == pte_cache.end()) {
-      fprintf(stderr, "ERROR: gdbserver tried to translate 0x%lx without first "
-          "collecting the relevant PTEs.\n", vaddr);
+      fprintf(stderr, "ERROR: gdbserver tried to translate 0x%016" PRIx64
+          " without first collecting the relevant PTEs.\n", vaddr);
       die("gdbserver_t::translate()");
     }
 
@@ -1326,8 +1328,8 @@ reg_t gdbserver_t::translate(reg_t vaddr)
     }
   }
 
-  fprintf(stderr, "ERROR: gdbserver tried to translate 0x%lx but the relevant "
-      "PTEs are invalid.\n", vaddr);
+  fprintf(stderr, "ERROR: gdbserver tried to translate 0x%016" PRIx64
+          " but the relevant PTEs are invalid.\n", vaddr);
   // TODO: Is it better to throw an exception here?
   return -1;
 }

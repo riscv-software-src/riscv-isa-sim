@@ -19,8 +19,8 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
     return true;
   }
 
-  fprintf(stderr, "ERROR: invalid load from debug module: %ld bytes at 0x%lx\n",
-      len, addr);
+  fprintf(stderr, "ERROR: invalid load from debug module: %ld bytes at 0x%016"
+          PRIx64 "\n", len, addr);
   return false;
 }
 
@@ -29,8 +29,8 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   addr = DEBUG_START + addr;
 
   if (addr & (len-1)) {
-    fprintf(stderr, "ERROR: unaligned store to debug module: %ld bytes at 0x%lx\n",
-        len, addr);
+    fprintf(stderr, "ERROR: unaligned store to debug module: %ld bytes at 0x%016"
+            PRIx64 "\n", len, addr);
     return false;
   }
 
@@ -47,8 +47,8 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     return true;
   }
 
-  fprintf(stderr, "ERROR: invalid store to debug module: %ld bytes at 0x%lx\n",
-      len, addr);
+  fprintf(stderr, "ERROR: invalid store to debug module: %ld bytes at 0x%016"
+          PRIx64 "\n", len, addr);
   return false;
 }
 
