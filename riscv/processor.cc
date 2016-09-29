@@ -419,7 +419,7 @@ void processor_t::set_csr(int which, reg_t val)
       {
         mcontrol_t *mc = &state.mcontrol[state.tselect];
         if (mc->dmode && !state.dcsr.cause) {
-          throw trap_illegal_instruction();
+          break;
         }
         mc->dmode = get_field(val, MCONTROL_DMODE(xlen));
         mc->select = get_field(val, MCONTROL_SELECT);
@@ -443,6 +443,9 @@ void processor_t::set_csr(int which, reg_t val)
       }
       break;
     case CSR_TDATA2:
+      if (state.mcontrol[state.tselect].dmode && !state.dcsr.cause) {
+        break;
+      }
       if (state.tselect < state.num_triggers) {
         state.tdata2[state.tselect] = val;
       }
