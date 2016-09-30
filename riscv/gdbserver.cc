@@ -708,7 +708,15 @@ class memory_read_op_t : public operation_t
     // If data is NULL, send the result straight to gdb.
     memory_read_op_t(gdbserver_t& gdbserver, reg_t vaddr, unsigned int length,
         unsigned char *data=NULL) :
-      operation_t(gdbserver), vaddr(vaddr), length(length), data(data) {};
+      operation_t(gdbserver), vaddr(vaddr), length(length), data(data), index(0)
+    {
+      buf = new uint8_t[length];
+    };
+
+    ~memory_read_op_t()
+    {
+      delete[] buf;
+    }
 
     bool perform_step(unsigned int step)
     {
@@ -737,21 +745,24 @@ class memory_read_op_t : public operation_t
         gs.dr_write(SLOT_DATA0, paddr);
         gs.set_interrupt(0);
 
-        if (!data) {
-          gs.start_packet();
-        }
         return false;
       }
 
-      char buffer[3];
+      if (gs.dr_read32(DEBUG_RAM_SIZE / 4 - 1)) {
+        // Note that OpenOCD doesn't report this error to gdb by default. They
+        // think it can mess up stack tracing. So far I haven't seen any
+        // problems.
+        gs.send_packet("E99");
+        return true;
+      }
+
       reg_t value = gs.dr_read(SLOT_DATA1);
       for (unsigned int i = 0; i < access_size; i++) {
         if (data) {
           *(data++) = value & 0xff;
           D(fprintf(stderr, "%02x", (unsigned int) (value & 0xff)));
         } else {
-          sprintf(buffer, "%02x", (unsigned int) (value & 0xff));
-          gs.send(buffer);
+          buf[index++] = value & 0xff;
         }
         value >>= 8;
       }
@@ -763,6 +774,12 @@ class memory_read_op_t : public operation_t
 
       if (length == 0) {
         if (!data) {
+          gs.start_packet();
+          char buffer[3];
+          for (unsigned int i = 0; i < index; i++) {
+            sprintf(buffer, "%02x", (unsigned int) buf[i]);
+            gs.send(buffer);
+          }
           gs.end_packet();
         }
         return true;
@@ -779,6 +796,8 @@ class memory_read_op_t : public operation_t
     unsigned char* data;
     reg_t paddr;
     unsigned int access_size;
+    unsigned int index;
+    uint8_t *buf;
 };
 
 class memory_write_op_t : public operation_t
