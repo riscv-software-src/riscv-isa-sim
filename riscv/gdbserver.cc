@@ -593,8 +593,12 @@ class register_read_op_t : public operation_t
       switch (step) {
         case 0:
           if (reg >= REG_XPR0 && reg <= REG_XPR31) {
-            die("handle_register_read");
-            // send(p->state.XPR[reg - REG_XPR0]);
+            if (gs.xlen == 32) {
+              gs.dr_write32(0, sw(reg - REG_XPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            } else {
+              gs.dr_write32(0, sd(reg - REG_XPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            }
+            gs.dr_write_jump(1);
           } else if (reg == REG_PC) {
             gs.start_packet();
             if (gs.xlen == 32) {
@@ -882,8 +886,8 @@ class memory_write_op_t : public operation_t
       }
 
       if (gs.dr_read32(DEBUG_RAM_SIZE / 4 - 1)) {
-        fprintf(stderr, "Exception happened while writing to 0x%016" PRIx64
-                " -> 0x%016" PRIx64 "\n", vaddr, paddr);
+        gs.send_packet("E98");
+        return true;
       }
 
       offset += access_size;
@@ -1670,7 +1674,8 @@ uint64_t consume_hex_number(std::vector<uint8_t>::const_iterator &iter,
 
 // First byte is the least-significant one.
 // Eg. "08675309" becomes 0x09536708
-uint64_t consume_hex_number_le(std::vector<uint8_t>::const_iterator &iter,
+uint64_t gdbserver_t::consume_hex_number_le(
+    std::vector<uint8_t>::const_iterator &iter,
     std::vector<uint8_t>::const_iterator end)
 {
   uint64_t value = 0;
@@ -1687,6 +1692,12 @@ uint64_t consume_hex_number_le(std::vector<uint8_t>::const_iterator &iter,
       shift += 12;
     else
       shift -= 4;
+  }
+  if (shift >= xlen) {
+    fprintf(stderr,
+        "gdb sent too many data bytes. That means it thinks XLEN is greater than %d.\n"
+        "To fix that, tell gdb: set arch riscv:rv%d\n",
+        xlen, xlen);
   }
   return value;
 }

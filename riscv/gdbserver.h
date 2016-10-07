@@ -202,6 +202,9 @@ public:
   uint64_t dr_read64(unsigned int index);
   uint64_t dr_read(enum slot slot);
 
+  uint64_t consume_hex_number_le(std::vector<uint8_t>::const_iterator &iter,
+      std::vector<uint8_t>::const_iterator end);
+
   // Return access size to use when writing length bytes to address, so that
   // every write will be aligned.
   unsigned int find_access_size(reg_t address, int length);
