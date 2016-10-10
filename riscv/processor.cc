@@ -437,8 +437,6 @@ void processor_t::set_csr(int which, reg_t val)
         // Assume we're here because of csrw.
         if (mc->execute)
           mc->timing = 0;
-        if (mc->load)
-          mc->timing = 1;
         trigger_updated();
       }
       break;
