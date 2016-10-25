@@ -25,6 +25,7 @@ public:
   unsigned int size() const;
   bool empty() const { return start == end; }
   bool full() const { return ((end+1) % capacity) == start; }
+  T entry(unsigned index) { return data[(start + index) % capacity]; }
 
   // Return size and address of the block of RAM where more data can be copied
   // to be added to the buffer.

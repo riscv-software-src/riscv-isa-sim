@@ -1244,7 +1244,8 @@ gdbserver_t::gdbserver_t(uint16_t port, sim_t *sim) :
   xlen(0),
   sim(sim),
   client_fd(0),
-  recv_buf(64 * 1024), send_buf(64 * 1024)
+  // gdb likes to send 0x100000 bytes at once when downloading.
+  recv_buf(0x180000), send_buf(64 * 1024)
 {
   socket_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (socket_fd == -1) {
@@ -1504,7 +1505,6 @@ void gdbserver_t::read()
   // available.
 
   size_t count = recv_buf.contiguous_empty_size();
-  assert(count > 0);
   ssize_t bytes = ::read(client_fd, recv_buf.contiguous_empty(), count);
   if (bytes == -1) {
     if (errno == EAGAIN) {
@@ -1636,6 +1636,25 @@ void gdbserver_t::process_requests()
     if (packet.size()) {
       break;
     }
+  }
+
+  if (recv_buf.full()) {
+    fprintf(stderr,
+        "Receive buffer is full, but no complete packet was found!\n");
+    for (unsigned line = 0; line < 8; line++) {
+      for (unsigned i = 0; i < 16; i++) {
+        fprintf(stderr, "%02x ", recv_buf.entry(line * 16 + i));
+      }
+      for (unsigned i = 0; i < 16; i++) {
+        uint8_t e = recv_buf.entry(line * 16 + i);
+        if (e >= ' ' && e <= '~')
+          fprintf(stderr, "%c", e);
+        else
+          fprintf(stderr, ".");
+      }
+      fprintf(stderr, "\n");
+    }
+    assert(!recv_buf.full());
   }
 }
 
