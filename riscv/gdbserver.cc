@@ -636,14 +636,21 @@ class register_read_op_t : public operation_t
           return false;
 
         case 1:
-          gs.start_packet();
-          if (gs.xlen == 32) {
-            gs.send(gs.dr_read32(4));
-          } else {
-            gs.send(gs.dr_read(SLOT_DATA0));
+          {
+            unsigned result = gs.dr_read(SLOT_DATA_LAST);
+            if (result) {
+              gs.send_packet("E03");
+              return true;
+            }
+            gs.start_packet();
+            if (gs.xlen == 32) {
+              gs.send(gs.dr_read32(4));
+            } else {
+              gs.send(gs.dr_read(SLOT_DATA0));
+            }
+            gs.end_packet();
+            return true;
           }
-          gs.end_packet();
-          return true;
       }
       return false;
     }
