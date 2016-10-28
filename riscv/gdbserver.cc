@@ -1712,10 +1712,10 @@ uint64_t gdbserver_t::consume_hex_number_le(
     else
       shift -= 4;
   }
-  if (shift >= xlen) {
+  if (shift > (xlen+4)) {
     fprintf(stderr,
-        "gdb sent too many data bytes. That means it thinks XLEN is greater than %d.\n"
-        "To fix that, tell gdb: set arch riscv:rv%d\n",
+        "gdb sent too many data bytes. That means it thinks XLEN is greater "
+        "than %d.\nTo fix that, tell gdb: set arch riscv:rv%d\n",
         xlen, xlen);
   }
   return value;
