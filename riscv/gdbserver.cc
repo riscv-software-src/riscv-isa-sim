@@ -667,44 +667,59 @@ class register_write_op_t : public operation_t
 
     bool perform_step(unsigned int step)
     {
-      gs.dr_write_load(0, S0, SLOT_DATA0);
-      gs.dr_write(SLOT_DATA0, value);
-      if (reg == S0) {
-        gs.dr_write32(1, csrw(S0, CSR_DSCRATCH));
-        gs.dr_write_jump(2);
-      } else if (reg == S1) {
-        gs.dr_write_store(1, S0, SLOT_DATA_LAST);
-        gs.dr_write_jump(2);
-      } else if (reg >= REG_XPR0 && reg <= REG_XPR31) {
-        gs.dr_write32(1, addi(reg, S0, 0));
-        gs.dr_write_jump(2);
-      } else if (reg == REG_PC) {
-        gs.dpc = value;
-        return true;
-      } else if (reg >= REG_FPR0 && reg <= REG_FPR31) {
-        if (gs.xlen == 32) {
-          gs.dr_write32(0, flw(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
-        } else {
-          gs.dr_write32(0, fld(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
-        }
-        gs.dr_write_jump(1);
-      } else if (reg >= REG_CSR0 && reg <= REG_CSR4095) {
-        gs.dr_write32(1, csrw(S0, reg - REG_CSR0));
-        gs.dr_write_jump(2);
-        if (reg == REG_CSR0 + CSR_SPTBR) {
-          gs.sptbr = value;
-          gs.sptbr_valid = true;
-        }
-      } else if (reg == REG_PRIV) {
-        gs.dcsr = set_field(gs.dcsr, DCSR_PRV, value);
-        return true;
-      } else {
-        gs.send_packet("E02");
-        return true;
+      switch (step) {
+        case 0:
+          gs.dr_write_load(0, S0, SLOT_DATA0);
+          gs.dr_write(SLOT_DATA0, value);
+          if (reg == S0) {
+            gs.dr_write32(1, csrw(S0, CSR_DSCRATCH));
+            gs.dr_write_jump(2);
+          } else if (reg == S1) {
+            gs.dr_write_store(1, S0, SLOT_DATA_LAST);
+            gs.dr_write_jump(2);
+          } else if (reg >= REG_XPR0 && reg <= REG_XPR31) {
+            gs.dr_write32(1, addi(reg, S0, 0));
+            gs.dr_write_jump(2);
+          } else if (reg == REG_PC) {
+            gs.dpc = value;
+            return true;
+          } else if (reg >= REG_FPR0 && reg <= REG_FPR31) {
+            if (gs.xlen == 32) {
+              gs.dr_write32(0, flw(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            } else {
+              gs.dr_write32(0, fld(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            }
+            gs.dr_write_jump(1);
+          } else if (reg >= REG_CSR0 && reg <= REG_CSR4095) {
+            gs.dr_write32(1, csrw(S0, reg - REG_CSR0));
+            gs.dr_write_jump(2);
+            if (reg == REG_CSR0 + CSR_SPTBR) {
+              gs.sptbr = value;
+              gs.sptbr_valid = true;
+            }
+          } else if (reg == REG_PRIV) {
+            gs.dcsr = set_field(gs.dcsr, DCSR_PRV, value);
+            return true;
+          } else {
+            gs.send_packet("E02");
+            return true;
+          }
+          gs.set_interrupt(0);
+          return false;
+
+        case 1:
+          {
+            unsigned result = gs.dr_read(SLOT_DATA_LAST);
+            if (result) {
+              gs.send_packet("E03");
+              return true;
+            }
+            gs.send_packet("OK");
+            return true;
+          }
       }
-      gs.set_interrupt(0);
-      gs.send_packet("OK");
-      return true;
+
+      assert(0);
     }
 
   private:
@@ -720,9 +735,9 @@ class memory_read_op_t : public operation_t
     memory_read_op_t(gdbserver_t& gdbserver, reg_t vaddr, unsigned int length,
         unsigned char *data=NULL) :
       operation_t(gdbserver), vaddr(vaddr), length(length), data(data), index(0)
-    {
-      buf = new uint8_t[length];
-    };
+  {
+    buf = new uint8_t[length];
+  };
 
     ~memory_read_op_t()
     {
@@ -845,7 +860,7 @@ class memory_write_op_t : public operation_t
         access_size = gs.find_access_size(paddr, length);
 
         D(fprintf(stderr, "write to 0x%lx -> 0x%lx (access=%d): ", vaddr, paddr,
-            access_size));
+              access_size));
         for (unsigned int i = 0; i < length; i++) {
           D(fprintf(stderr, "%02x", data[i]));
         }
