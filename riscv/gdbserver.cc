@@ -45,6 +45,7 @@ enum {
   REG_FPR0 = 33,
   REG_FPR31 = 64,
   REG_CSR0 = 65,
+  REG_MSTATUS = CSR_MSTATUS + REG_CSR0,
   REG_CSR4095 = 4160,
   REG_PRIV = 4161
 };
@@ -211,21 +212,19 @@ static uint32_t fsd(unsigned int src, unsigned int base, uint16_t offset)
     MATCH_FSD;
 }
 
-static uint32_t flw(unsigned int src, unsigned int base, uint16_t offset)
+static uint32_t flw(unsigned int dest, unsigned int base, uint16_t offset)
 {
-  return (bits(offset, 11, 5) << 25) |
-    (bits(src, 4, 0) << 20) |
+  return (bits(offset, 11, 0) << 20) |
     (base << 15) |
-    (bits(offset, 4, 0) << 7) |
+    (bits(dest, 4, 0) << 7) |
     MATCH_FLW;
 }
 
-static uint32_t fld(unsigned int src, unsigned int base, uint16_t offset)
+static uint32_t fld(unsigned int dest, unsigned int base, uint16_t offset)
 {
-  return (bits(offset, 11, 5) << 25) |
-    (bits(src, 4, 0) << 20) |
+  return (bits(offset, 11, 0) << 20) |
     (base << 15) |
-    (bits(offset, 4, 0) << 7) |
+    (bits(dest, 4, 0) << 7) |
     MATCH_FLD;
 }
 
@@ -401,6 +400,7 @@ class halt_op_t : public operation_t
 
         case ST_MSTATUS:
           gs.mstatus = gs.dr_read(SLOT_DATA0);
+          gs.mstatus_dirty = false;
           gs.dr_write32(0, csrr(S0, CSR_DCSR));
           gs.dr_write32(1, sw(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
           gs.dr_write_jump(2);
@@ -435,6 +435,7 @@ class halt_op_t : public operation_t
                 break;
             }
           }
+
           return true;
 
         default:
@@ -609,13 +610,25 @@ class register_read_op_t : public operation_t
             gs.end_packet();
             return true;
           } else if (reg >= REG_FPR0 && reg <= REG_FPR31) {
-            // send(p->state.FPR[reg - REG_FPR0]);
+            gs.dr_write_load(0, S0, SLOT_DATA1);
+            gs.dr_write(SLOT_DATA1, set_field(gs.mstatus, MSTATUS_FS, 1));
+            gs.dr_write32(1, csrw(S0, CSR_MSTATUS));
+            gs.mstatus_dirty = true;
             if (gs.xlen == 32) {
-              gs.dr_write32(0, fsw(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+              gs.dr_write32(2, fsw(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
             } else {
-              gs.dr_write32(0, fsd(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+              gs.dr_write32(2, fsd(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
             }
-            gs.dr_write_jump(1);
+            gs.dr_write_jump(3);
+          } else if (reg == REG_MSTATUS) {
+            gs.start_packet();
+            if (gs.xlen == 32) {
+              gs.send((uint32_t) gs.mstatus);
+            } else {
+              gs.send(gs.mstatus);
+            }
+            gs.end_packet();
+            return true;
           } else if (reg >= REG_CSR0 && reg <= REG_CSR4095) {
             gs.dr_write32(0, csrr(S0, reg - REG_CSR0));
             gs.dr_write_store(1, S0, SLOT_DATA0);
@@ -684,12 +697,20 @@ class register_write_op_t : public operation_t
             gs.dpc = value;
             return true;
           } else if (reg >= REG_FPR0 && reg <= REG_FPR31) {
+            gs.dr_write_load(0, S0, SLOT_DATA1);
+            gs.dr_write(SLOT_DATA1, set_field(gs.mstatus, MSTATUS_FS, 1));
+            gs.dr_write32(1, csrw(S0, CSR_MSTATUS));
+            gs.mstatus_dirty = true;
             if (gs.xlen == 32) {
-              gs.dr_write32(0, flw(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+              gs.dr_write32(2, flw(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
             } else {
-              gs.dr_write32(0, fld(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+              gs.dr_write32(2, fld(reg - REG_FPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
             }
-            gs.dr_write_jump(1);
+            gs.dr_write_jump(3);
+          } else if (reg == REG_MSTATUS) {
+            gs.mstatus = value;
+            gs.mstatus_dirty = true;
+            return true;
           } else if (reg >= REG_CSR0 && reg <= REG_CSR4095) {
             gs.dr_write32(1, csrw(S0, reg - REG_CSR0));
             gs.dr_write_jump(2);
@@ -1235,6 +1256,21 @@ class maybe_restore_tselect_op_t : public operation_t
         gs.dr_write32(1, csrw(S0, CSR_TSELECT));
         gs.dr_write_jump(2);
         gs.dr_write(SLOT_DATA1, gs.tselect);
+      }
+      return true;
+    }
+};
+
+class maybe_restore_mstatus_op_t : public operation_t
+{
+  public:
+    maybe_restore_mstatus_op_t(gdbserver_t& gdbserver) : operation_t(gdbserver) {};
+    bool perform_step(unsigned int step) {
+      if (gs.mstatus_dirty) {
+        gs.dr_write_load(0, S0, SLOT_DATA1);
+        gs.dr_write32(1, csrw(S0, CSR_MSTATUS));
+        gs.dr_write_jump(2);
+        gs.dr_write(SLOT_DATA1, gs.mstatus);
       }
       return true;
     }
@@ -1859,6 +1895,7 @@ void gdbserver_t::handle_continue(const std::vector<uint8_t> &packet)
   }
 
   add_operation(new maybe_restore_tselect_op_t(*this));
+  add_operation(new maybe_restore_mstatus_op_t(*this));
   add_operation(new continue_op_t(*this, false));
 }
 
