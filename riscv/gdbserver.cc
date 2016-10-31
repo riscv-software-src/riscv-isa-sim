@@ -1048,7 +1048,7 @@ class collect_translation_info_op_t : public operation_t
             gs.dr_write32(1, ld(S1, S0, 0));
             gs.dr_write32(2, sd(S1, 0, (uint16_t) DEBUG_RAM_START + 16));
           }
-          gs.dr_write32(3, jal(0, (uint32_t) (DEBUG_ROM_RESUME - (DEBUG_RAM_START + 4*3))));
+          gs.dr_write_jump(3);
           gs.dr_write32(4, pte_addr);
           gs.dr_write32(5, pte_addr >> 32);
           gs.set_interrupt(0);
