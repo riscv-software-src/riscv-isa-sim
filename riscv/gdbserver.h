@@ -217,6 +217,7 @@ public:
   reg_t dpc;
   reg_t dcsr;
   reg_t mstatus;
+  bool mstatus_dirty;
   reg_t sptbr;
   bool sptbr_valid;
   reg_t tselect;
