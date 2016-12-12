@@ -17,9 +17,7 @@
 #include "sim.h"
 #include "gdbserver.h"
 #include "mmu.h"
-
-#define C_EBREAK        0x9002
-#define EBREAK          0x00100073
+#include "encoding.h"
 
 //////////////////////////////////////// Utility Functions
 
@@ -1936,13 +1934,13 @@ void gdbserver_t::software_breakpoint_insert(reg_t vaddr, unsigned int size)
   add_operation(new collect_translation_info_op_t(*this, vaddr, size));
   unsigned char* inst = new unsigned char[4];
   if (size == 2) {
-    inst[0] = C_EBREAK & 0xff;
-    inst[1] = (C_EBREAK >> 8) & 0xff;
+    inst[0] = MATCH_C_EBREAK & 0xff;
+    inst[1] = (MATCH_C_EBREAK >> 8) & 0xff;
   } else {
-    inst[0] = EBREAK & 0xff;
-    inst[1] = (EBREAK >> 8) & 0xff;
-    inst[2] = (EBREAK >> 16) & 0xff;
-    inst[3] = (EBREAK >> 24) & 0xff;
+    inst[0] = MATCH_EBREAK & 0xff;
+    inst[1] = (MATCH_EBREAK >> 8) & 0xff;
+    inst[2] = (MATCH_EBREAK >> 16) & 0xff;
+    inst[3] = (MATCH_EBREAK >> 24) & 0xff;
   }
 
   software_breakpoint_t bp = {
