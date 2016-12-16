@@ -190,6 +190,11 @@ miss:
     {
       take_trap(t, pc);
       n = instret;
+
+      if (unlikely(state.single_step == state.STEP_STEPPED)) {
+        state.single_step = state.STEP_NONE;
+        enter_debug_mode(DCSR_CAUSE_STEP);
+      }
     }
     catch (trigger_matched_t& t)
     {
