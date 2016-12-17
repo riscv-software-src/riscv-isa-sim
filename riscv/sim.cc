@@ -38,8 +38,8 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
     memsz = (size_t)(memsz*0.9)/quantum*quantum;
 
   if (memsz != memsz0)
-    fprintf(stderr, "warning: only got %lu bytes of target mem (wanted %lu)\n",
-            (unsigned long)memsz, (unsigned long)memsz0);
+    fprintf(stderr, "warning: only got %zu bytes of target mem (wanted %zu)\n",
+            memsz, memsz0);
 
   bus.add_device(DEBUG_START, &debug_module);
 
