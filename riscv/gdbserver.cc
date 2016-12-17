@@ -878,8 +878,8 @@ class memory_write_op_t : public operation_t
       if (step == 0) {
         access_size = gs.find_access_size(paddr, length);
 
-        D(fprintf(stderr, "write to 0x%lx -> 0x%lx (access=%d): ", vaddr, paddr,
-              access_size));
+        D(fprintf(stderr, "write to 0x%" PRIx64 " -> 0x%" PRIx64 " (access=%d): ",
+              vaddr, paddr, access_size));
         for (unsigned int i = 0; i < length; i++) {
           D(fprintf(stderr, "%02x", data[i]));
         }
@@ -1032,7 +1032,8 @@ class collect_translation_info_op_t : public operation_t
               gs.pte_cache[pte_addr] = ((uint64_t) gs.dr_read32(5) << 32) |
                   gs.dr_read32(4);
           }
-          D(fprintf(stderr, "pte_cache[0x%lx] = 0x%lx\n", pte_addr, gs.pte_cache[pte_addr]));
+          D(fprintf(stderr, "pte_cache[0x%" PRIx64 "] = 0x%" PRIx64 "\n", pte_addr,
+                    gs.pte_cache[pte_addr]));
           break;
       }
 
@@ -1403,7 +1404,7 @@ reg_t gdbserver_t::translate(reg_t vaddr)
       reg_t vpn = vaddr >> PGSHIFT;
       reg_t paddr = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
       paddr += vaddr & (PGSIZE-1);
-      D(fprintf(stderr, "gdbserver translate 0x%lx -> 0x%lx\n", vaddr, paddr));
+      D(fprintf(stderr, "gdbserver translate 0x%" PRIx64 " -> 0x%" PRIx64 "\n", vaddr, paddr));
       return paddr;
     }
   }
@@ -1597,8 +1598,8 @@ void gdbserver_t::write()
       // Client can't take any more data right now.
       break;
     } else {
-      D(fprintf(stderr, "wrote %ld bytes: ", bytes));
-      for (unsigned int i = 0; i < bytes; i++) {
+      D(fprintf(stderr, "wrote %zd bytes: ", bytes));
+      for (int i = 0; i < bytes; i++) {
         D(fprintf(stderr, "%c", send_buf[i]));
       }
       D(fprintf(stderr, "\n"));
@@ -1668,7 +1669,7 @@ void gdbserver_t::process_requests()
       if (b == '$') {
         // Start of new packet.
         if (!packet.empty()) {
-          fprintf(stderr, "Received malformed %ld-byte packet from debug client: ",
+          fprintf(stderr, "Received malformed %zd-byte packet from debug client: ",
               packet.size());
           print_packet(packet);
           recv_buf.consume(i);
@@ -2080,14 +2081,14 @@ void gdbserver_t::handle_query(const std::vector<uint8_t> &packet)
 void gdbserver_t::handle_packet(const std::vector<uint8_t> &packet)
 {
   if (compute_checksum(packet) != extract_checksum(packet)) {
-    fprintf(stderr, "Received %ld-byte packet with invalid checksum\n", packet.size());
+    fprintf(stderr, "Received %zd-byte packet with invalid checksum\n", packet.size());
     fprintf(stderr, "Computed checksum: %x\n", compute_checksum(packet));
     print_packet(packet);
     send("-");
     return;
   }
 
-  D(fprintf(stderr, "Received %ld-byte packet from debug client: ", packet.size()));
+  D(fprintf(stderr, "Received %zd-byte packet from debug client: ", packet.size()));
   D(print_packet(packet));
   send("+");
 
