@@ -1820,8 +1820,6 @@ void gdbserver_t::handle_register_write(const std::vector<uint8_t> &packet)
   processor_t *p = sim->get_core(0);
 
   add_operation(new register_write_op_t(*this, n, value));
-
-  return send_packet("OK");
 }
 
 void gdbserver_t::handle_memory_read(const std::vector<uint8_t> &packet)
