@@ -325,7 +325,7 @@ void circular_buffer_t<T>::append(const T *src, unsigned int count)
   count -= copy;
   if (count > 0) {
     assert(count < contiguous_empty_size());
-    memcpy(contiguous_empty(), src, count * sizeof(T));
+    memcpy(contiguous_empty(), src+copy, count * sizeof(T));
     data_added(count);
   }
 }
