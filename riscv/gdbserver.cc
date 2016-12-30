@@ -648,7 +648,7 @@ class register_read_op_t : public operation_t
 
         case 1:
           {
-            unsigned result = gs.dr_read(SLOT_DATA_LAST);
+            unsigned result = gs.dr_read32(DEBUG_RAM_SIZE / 4 - 1);
             if (result) {
               gs.send_packet("E03");
               return true;
@@ -728,7 +728,7 @@ class register_write_op_t : public operation_t
 
         case 1:
           {
-            unsigned result = gs.dr_read(SLOT_DATA_LAST);
+            unsigned result = gs.dr_read32(DEBUG_RAM_SIZE / 4 - 1);
             if (result) {
               gs.send_packet("E03");
               return true;
