@@ -374,7 +374,7 @@ void processor_t::set_csr(int which, reg_t val)
       return set_csr(CSR_MSTATUS, (state.mstatus & ~mask) | (val & mask));
     }
     case CSR_SIP: {
-      reg_t mask = MIP_SSIP;
+      reg_t mask = MIP_SSIP & state.mideleg;
       return set_csr(CSR_MIP, (state.mip & ~mask) | (val & mask));
     }
     case CSR_SIE:
