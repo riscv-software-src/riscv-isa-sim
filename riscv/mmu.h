@@ -105,11 +105,31 @@ public:
         store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&val); \
     }
 
+  // template for functions that perform an atomic memory operation
+  #define amo_func(type) \
+    template<typename op> \
+    type##_t amo_##type(reg_t addr, op f) { \
+      if (addr & (sizeof(type##_t)-1)) \
+        throw trap_store_address_misaligned(addr); \
+      try { \
+        auto lhs = load_##type(addr); \
+        store_##type(addr, f(lhs)); \
+        return lhs; \
+      } catch (trap_load_access_fault& t) { \
+        /* AMO faults should be reported as store faults */ \
+        throw trap_store_access_fault(t.get_badaddr()); \
+      } \
+    }
+
   // store value to memory at aligned address
   store_func(uint8)
   store_func(uint16)
   store_func(uint32)
   store_func(uint64)
+
+  // perform an atomic memory operation at an aligned address
+  amo_func(uint32)
+  amo_func(uint64)
 
   static const reg_t ICACHE_ENTRIES = 1024;
 
@@ -182,7 +202,7 @@ private:
   static const reg_t TLB_ENTRIES = 256;
   // If a TLB tag has TLB_CHECK_TRIGGERS set, then the MMU must check for a
   // trigger match before completing an access.
-  static const reg_t TLB_CHECK_TRIGGERS = 1L<<63;
+  static const reg_t TLB_CHECK_TRIGGERS = reg_t(1) << 63;
   char* tlb_data[TLB_ENTRIES];
   reg_t tlb_insn_tag[TLB_ENTRIES];
   reg_t tlb_load_tag[TLB_ENTRIES];

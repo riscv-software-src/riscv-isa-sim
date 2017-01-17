@@ -25,6 +25,7 @@ public:
   unsigned int size() const;
   bool empty() const { return start == end; }
   bool full() const { return ((end+1) % capacity) == start; }
+  T entry(unsigned index) { return data[(start + index) % capacity]; }
 
   // Return size and address of the block of RAM where more data can be copied
   // to be added to the buffer.
@@ -202,6 +203,9 @@ public:
   uint64_t dr_read64(unsigned int index);
   uint64_t dr_read(enum slot slot);
 
+  uint64_t consume_hex_number_le(std::vector<uint8_t>::const_iterator &iter,
+      std::vector<uint8_t>::const_iterator end);
+
   // Return access size to use when writing length bytes to address, so that
   // every write will be aligned.
   unsigned int find_access_size(reg_t address, int length);
@@ -213,6 +217,7 @@ public:
   reg_t dpc;
   reg_t dcsr;
   reg_t mstatus;
+  bool mstatus_dirty;
   reg_t sptbr;
   bool sptbr_valid;
   reg_t tselect;
