@@ -11,13 +11,6 @@
 
 #include "remote_bitbang.h"
 
-#define DEBUG
-#ifdef DEBUG
-#  define D(x) x
-#else
-#  define D(x)
-#endif // DEBUG
-
 /////////// Circular buffer
 
 template <typename T>
@@ -84,6 +77,12 @@ void circular_buffer_t<T>::append(const T *src, unsigned int count)
     memcpy(contiguous_empty(), src+copy, count * sizeof(T));
     data_added(count);
   }
+}
+
+template <typename T>
+void circular_buffer_t<T>::append(T value)
+{
+  append(&value, 1);
 }
 
 /////////// remote_bitbang_t
@@ -204,8 +203,34 @@ void remote_bitbang_t::tick()
 {
   if (client_fd > 0) {
     this->read();
+    process_input();
     this->write();
   } else {
     this->accept();
   }
+}
+
+void remote_bitbang_t::process_input()
+{
+  for (unsigned i = 0; i < recv_buf.size(); i++) {
+    uint8_t command = recv_buf[i];
+
+    switch (command) {
+      case 'B': fprintf(stderr, "*BLINK*\n"); break;
+      case 'b': fprintf(stderr, "_______\n"); break;
+      case 'r': tap.reset(); break;
+      case '0': tap.set_pins(0, 0, 0); break;
+      case '1': tap.set_pins(0, 0, 1); break;
+      case '2': tap.set_pins(0, 1, 0); break;
+      case '3': tap.set_pins(0, 1, 1); break;
+      case '4': tap.set_pins(1, 0, 0); break;
+      case '5': tap.set_pins(1, 0, 1); break;
+      case '6': tap.set_pins(1, 1, 0); break;
+      case '7': tap.set_pins(1, 1, 1); break;
+      case 'R': send_buf.append(tap.tdo() ? '1' : '0'); break;
+      default:
+        fprintf(stderr, "remote_bitbang got unsupported command '%c'\n", command);
+    }
+  }
+  recv_buf.reset();
 }
