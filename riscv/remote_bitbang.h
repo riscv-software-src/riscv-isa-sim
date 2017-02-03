@@ -72,6 +72,10 @@ typedef enum {
 
 class jtag_tap_t
 {
+  static const unsigned idcode_ir = 1;
+  static const unsigned idcode_dr = 0xdeadbeef;
+  static const unsigned dtmcontrol_ir = 0x10;
+
   public:
     jtag_tap_t() :
       state(TEST_LOGIC_RESET) {}
@@ -84,22 +88,39 @@ class jtag_tap_t
       if (!_tck && tck) {
         // Positive clock edge.
 
-        D(fprintf(stderr, "Next state: %d\n", state));
-
+        switch (state) {
+          case SHIFT_DR:
+            dr >>= 1;
+            dr |= (uint64_t) _tdi << (dr_length-1);
+            break;
+          case SHIFT_IR:
+            ir >>= 1;
+            ir |= _tdi << (ir_length-1);
+            break;
+          default:
+            break;
+        }
         state = next[state][_tms];
-
         switch (state) {
           case TEST_LOGIC_RESET:
-            ir = 1;
+            ir = idcode_ir;
             break;
           case CAPTURE_DR:
-            dr = 0xdeadbeef;
-            dr_length = 32;
+            switch (ir) {
+              case idcode_ir:
+                dr = 0xdeadbeef;
+                dr_length = 32;
+                break;
+              case dtmcontrol_ir:
+                dr = dtmcontrol;
+                dr_length = 32;
+              default:
+                D(fprintf(stderr, "Unsupported IR: 0x%x\n", ir));
+                break;
+            }
             break;
           case SHIFT_DR:
             _tdo = dr & 1;
-            dr >>= 1;
-            dr |= (uint64_t) _tdi << (dr_length-1);
             break;
           case UPDATE_DR:
             break;
@@ -107,8 +128,6 @@ class jtag_tap_t
             break;
           case SHIFT_IR:
             _tdo = ir & 1;
-            ir >>= 1;
-            ir = ir | (_tdi << (ir_length-1));
             break;
           case UPDATE_IR:
             break;
@@ -116,12 +135,13 @@ class jtag_tap_t
             break;
         }
       }
+
       _tck = tck;
       _tms = tms;
       _tdi = tdi;
 
-      D(fprintf(stderr, "tck=%d tms=%d tdi=%d tdo=%d ir=0x%x dr=0x%lx\n",
-            _tck, _tms, _tdi, _tdo, ir, dr));
+      D(fprintf(stderr, "state=%2d tck=%d tms=%d tdi=%d tdo=%d ir=0x%x dr=0x%lx\n",
+            state, _tck, _tms, _tdi, _tdo, ir, dr));
     }
 
     bool tdo() const { return _tdo; }
@@ -129,9 +149,11 @@ class jtag_tap_t
   private:
     bool _tck, _tms, _tdi, _tdo;
     uint32_t ir;
-    unsigned ir_length;
+    const unsigned ir_length = 5;
     uint64_t dr;
     unsigned dr_length;
+
+    uint32_t dtmcontrol = 1;
 
     jtag_state_t state;
     const jtag_state_t next[16][2] = {
