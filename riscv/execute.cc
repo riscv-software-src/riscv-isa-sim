@@ -96,7 +96,7 @@ void processor_t::step(size_t n)
 
     try
     {
-      take_interrupt();
+      take_pending_interrupt();
 
       if (unlikely(slow_path()))
       {

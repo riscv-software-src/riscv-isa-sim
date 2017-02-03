@@ -154,11 +154,6 @@ void processor_t::reset()
     ext->reset(); // reset the extension
 }
 
-void processor_t::raise_interrupt(reg_t which)
-{
-  throw trap_t(((reg_t)1 << (max_xlen-1)) | which);
-}
-
 // Count number of contiguous 0 bits starting from the LSB.
 static int ctz(reg_t val)
 {
@@ -169,10 +164,8 @@ static int ctz(reg_t val)
   return res;
 }
 
-void processor_t::take_interrupt()
+void processor_t::take_interrupt(reg_t pending_interrupts)
 {
-  reg_t pending_interrupts = state.mip & state.mie;
-
   reg_t mie = get_field(state.mstatus, MSTATUS_MIE);
   reg_t m_enabled = state.prv < PRV_M || (state.prv == PRV_M && mie);
   reg_t enabled_interrupts = pending_interrupts & ~state.mideleg & -m_enabled;
@@ -182,7 +175,7 @@ void processor_t::take_interrupt()
   enabled_interrupts |= pending_interrupts & state.mideleg & -s_enabled;
 
   if (enabled_interrupts)
-    raise_interrupt(ctz(enabled_interrupts));
+    throw trap_t(((reg_t)1 << (max_xlen-1)) | ctz(enabled_interrupts));
 }
 
 void processor_t::set_privilege(reg_t prv)
