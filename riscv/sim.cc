@@ -2,7 +2,7 @@
 
 #include "sim.h"
 #include "mmu.h"
-#include "gdbserver.h"
+#include "remote_bitbang.h"
 #include <map>
 #include <iostream>
 #include <sstream>
@@ -23,7 +23,7 @@ static void handle_signal(int sig)
 sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
              const std::vector<std::string>& args)
   : htif_t(args), procs(std::max(nprocs, size_t(1))),
-    current_step(0), current_proc(0), debug(false), gdbserver(NULL)
+    current_step(0), current_proc(0), debug(false), remote_bitbang(NULL)
 {
   signal(SIGINT, &handle_signal);
   // allocate target machine's memory, shrinking it as necessary
@@ -77,8 +77,8 @@ void sim_t::main()
       interactive();
     else
       step(INTERLEAVE);
-    if (gdbserver) {
-      gdbserver->handle();
+    if (remote_bitbang) {
+      remote_bitbang->tick();
     }
   }
 }

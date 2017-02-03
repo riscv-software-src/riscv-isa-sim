@@ -2,7 +2,7 @@
 
 #include "sim.h"
 #include "mmu.h"
-#include "gdbserver.h"
+#include "remote_bitbang.h"
 #include "cachesim.h"
 #include "extension.h"
 #include <dlfcn.h>
@@ -30,7 +30,7 @@ static void help()
   fprintf(stderr, "  --l2=<S>:<W>:<B>        B both powers of 2).\n");
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
   fprintf(stderr, "  --extlib=<name>       Shared library to load\n");
-  fprintf(stderr, "  --gdb-port=<port>  Listen on <port> for gdb to connect\n");
+  fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
   fprintf(stderr, "  --dump-config-string  Print platform configuration string and exit\n");
   exit(1);
 }
@@ -49,7 +49,7 @@ int main(int argc, char** argv)
   std::unique_ptr<cache_sim_t> l2;
   std::function<extension_t*()> extension;
   const char* isa = DEFAULT_ISA;
-  uint16_t gdb_port = 0;
+  uint16_t rbb_port = 0;
 
   option_parser_t parser;
   parser.help(&help);
@@ -61,7 +61,7 @@ int main(int argc, char** argv)
   parser.option('m', 0, 1, [&](const char* s){mem_mb = atoi(s);});
   // I wanted to use --halted, but for some reason that doesn't work.
   parser.option('H', 0, 0, [&](const char* s){halted = true;});
-  parser.option(0, "gdb-port", 1, [&](const char* s){gdb_port = atoi(s);});
+  parser.option(0, "rbb-port", 1, [&](const char* s){rbb_port = atoi(s);});
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
@@ -79,10 +79,10 @@ int main(int argc, char** argv)
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
   sim_t s(isa, nprocs, mem_mb, halted, htif_args);
-  std::unique_ptr<gdbserver_t> gdbserver;
-  if (gdb_port) {
-    gdbserver = std::unique_ptr<gdbserver_t>(new gdbserver_t(gdb_port, &s));
-    s.set_gdbserver(&(*gdbserver));
+  std::unique_ptr<remote_bitbang_t> remote_bitbang;
+  if (rbb_port) {
+    remote_bitbang = std::unique_ptr<remote_bitbang_t>(new remote_bitbang_t(rbb_port, &s));
+    s.set_remote_bitbang(&(*remote_bitbang));
   }
 
   if (dump_config_string) {

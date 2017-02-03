@@ -13,7 +13,7 @@
 #include <memory>
 
 class mmu_t;
-class gdbserver_t;
+class remote_bitbang_t;
 
 // this class encapsulates the processors and memory in a RISC-V machine.
 class sim_t : public htif_t
@@ -29,7 +29,9 @@ public:
   void set_log(bool value);
   void set_histogram(bool value);
   void set_procs_debug(bool value);
-  void set_gdbserver(gdbserver_t* gdbserver) { this->gdbserver = gdbserver; }
+  void set_remote_bitbang(remote_bitbang_t* remote_bitbang) {
+    this->remote_bitbang = remote_bitbang;
+  }
   const char* get_config_string() { return config_string.c_str(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
 
@@ -53,7 +55,7 @@ private:
   bool debug;
   bool log;
   bool histogram_enabled; // provide a histogram of PCs
-  gdbserver_t* gdbserver;
+  remote_bitbang_t* remote_bitbang;
 
   // memory-mapped I/O routines
   bool addr_is_mem(reg_t addr) {
@@ -88,7 +90,6 @@ private:
 
   friend class processor_t;
   friend class mmu_t;
-  friend class gdbserver_t;
 
   // htif
   friend void sim_thread_main(void*);
