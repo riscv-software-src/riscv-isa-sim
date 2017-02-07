@@ -5,6 +5,12 @@
 
 #include "debug_rom/debug_rom.h"
 
+#if 1
+#  define D(x) x
+#else
+#  define D(x)
+#endif
+
 bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
   addr = DEBUG_START + addr;
@@ -71,4 +77,15 @@ uint32_t debug_module_t::ram_read32(unsigned int index)
     (((uint32_t) base[2]) << 16) |
     (((uint32_t) base[3]) << 24);
   return value;
+}
+
+uint32_t debug_module_t::dmi_read(unsigned address)
+{
+  D(fprintf(stderr, "dmi_read(0x%x)\n", address));
+  return 0xfeed;
+}
+
+void debug_module_t::dmi_write(unsigned address, uint32_t value)
+{
+  D(fprintf(stderr, "dmi_write(0x%x, 0x%x)\n", address, value));
 }

@@ -35,6 +35,8 @@ public:
   const char* get_config_string() { return config_string.c_str(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
 
+  debug_module_t debug_module;
+
 private:
   char* mem; // main memory
   size_t memsz; // memory size in bytes
@@ -44,7 +46,6 @@ private:
   std::unique_ptr<rom_device_t> boot_rom;
   std::unique_ptr<rtc_t> rtc;
   bus_t bus;
-  debug_module_t debug_module;
 
   processor_t* get_core(const std::string& i);
   void step(size_t n); // step through simulation

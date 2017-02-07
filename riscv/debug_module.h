@@ -35,6 +35,11 @@ class debug_module_t : public abstract_device_t
       return halt_notification.find(hartid) != halt_notification.end();
     }
 
+    // Debug Module Interface that the debugger (in our case through JTAG DTM)
+    // uses to access the DM.
+    uint32_t dmi_read(unsigned address);
+    void dmi_write(unsigned address, uint32_t value);
+
   private:
     // Track which interrupts from module to debugger are set.
     std::set<uint32_t> interrupt;

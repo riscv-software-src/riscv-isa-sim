@@ -91,6 +91,7 @@ void remote_bitbang_t::execute_commands()
   char send_buf[buf_size];
   unsigned total_received = 0;
   ssize_t bytes = read(client_fd, recv_buf, buf_size);
+  bool quit = false;
   while (bytes > 0) {
     total_received += bytes;
     unsigned send_offset = 0;
@@ -98,8 +99,8 @@ void remote_bitbang_t::execute_commands()
       uint8_t command = recv_buf[i];
 
       switch (command) {
-        case 'B': fprintf(stderr, "*BLINK*\n"); break;
-        case 'b': fprintf(stderr, "_______\n"); break;
+        case 'B': /* fprintf(stderr, "*BLINK*\n"); */ break;
+        case 'b': /* fprintf(stderr, "_______\n"); */ break;
         case 'r': tap->reset(); break;
         case '0': tap->set_pins(0, 0, 0); break;
         case '1': tap->set_pins(0, 0, 1); break;
@@ -110,6 +111,7 @@ void remote_bitbang_t::execute_commands()
         case '6': tap->set_pins(1, 1, 0); break;
         case '7': tap->set_pins(1, 1, 1); break;
         case 'R': send_buf[send_offset++] = tap->tdo() ? '1' : '0'; break;
+        case 'Q': quit = true; break;
         default:
                   fprintf(stderr, "remote_bitbang got unsupported command '%c'\n",
                       command);
@@ -125,7 +127,7 @@ void remote_bitbang_t::execute_commands()
       sent += bytes;
     }
 
-    if (total_received > buf_size) {
+    if (total_received > buf_size || quit) {
       // Don't go forever, because that could starve the main simulation.
       break;
     }
@@ -140,7 +142,8 @@ void remote_bitbang_t::execute_commands()
           strerror(errno), errno);
       abort();
     }
-  } else if (bytes == 0) {
+  }
+  if (bytes == 0 || quit) {
     // The remote disconnected.
     close(client_fd);
     client_fd = 0;
