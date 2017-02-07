@@ -592,12 +592,16 @@ class register_read_op_t : public operation_t
       switch (step) {
         case 0:
           if (reg >= REG_XPR0 && reg <= REG_XPR31) {
-            if (gs.xlen == 32) {
-              gs.dr_write32(0, sw(reg - REG_XPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
-            } else {
-              gs.dr_write32(0, sd(reg - REG_XPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            unsigned int i = 0;
+            if (reg == S0) {
+                gs.dr_write32(i++, csrr(S0, CSR_DSCRATCH));
             }
-            gs.dr_write_jump(1);
+            if (gs.xlen == 32) {
+              gs.dr_write32(i++, sw(reg - REG_XPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            } else {
+              gs.dr_write32(i++, sd(reg - REG_XPR0, 0, (uint16_t) DEBUG_RAM_START + 16));
+            }
+            gs.dr_write_jump(i);
           } else if (reg == REG_PC) {
             gs.start_packet();
             if (gs.xlen == 32) {
@@ -1816,8 +1820,6 @@ void gdbserver_t::handle_register_write(const std::vector<uint8_t> &packet)
   processor_t *p = sim->get_core(0);
 
   add_operation(new register_write_op_t(*this, n, value));
-
-  return send_packet("OK");
 }
 
 void gdbserver_t::handle_memory_read(const std::vector<uint8_t> &packet)
