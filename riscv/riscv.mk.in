@@ -25,6 +25,7 @@ riscv_hdrs = \
 	mulhi.h \
 	debug_module.h \
 	remote_bitbang.h \
+	jtag_dtm.h \
 
 riscv_precompiled_hdrs = \
 	insn_template.h \
@@ -47,6 +48,7 @@ riscv_srcs = \
 	rtc.cc \
 	debug_module.cc \
 	remote_bitbang.cc \
+	jtag_dtm.cc \
 	$(riscv_gen_srcs) \
 
 riscv_test_srcs =

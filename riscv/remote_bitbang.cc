@@ -11,6 +11,12 @@
 
 #include "remote_bitbang.h"
 
+#if 1
+#  define D(x) x
+#else
+#  define D(x)
+#endif
+
 /////////// Circular buffer
 
 template <typename T>
@@ -87,7 +93,8 @@ void circular_buffer_t<T>::append(T value)
 
 /////////// remote_bitbang_t
 
-remote_bitbang_t::remote_bitbang_t(uint16_t port, sim_t *sim) :
+remote_bitbang_t::remote_bitbang_t(uint16_t port, jtag_dtm_t *tap) :
+  tap(tap),
   socket_fd(0),
   client_fd(0),
   recv_buf(64 * 1024),
@@ -212,22 +219,27 @@ void remote_bitbang_t::tick()
 
 void remote_bitbang_t::process_input()
 {
+  // TODO: get rid of the circular buffers, and just read/write here with
+  // simple local buffers.
+  // Each message is a single character, so there's never any need to keep a
+  // partially transmitted message around.
+
   for (unsigned i = 0; i < recv_buf.size(); i++) {
     uint8_t command = recv_buf[i];
 
     switch (command) {
       case 'B': fprintf(stderr, "*BLINK*\n"); break;
       case 'b': fprintf(stderr, "_______\n"); break;
-      case 'r': tap.reset(); break;
-      case '0': tap.set_pins(0, 0, 0); break;
-      case '1': tap.set_pins(0, 0, 1); break;
-      case '2': tap.set_pins(0, 1, 0); break;
-      case '3': tap.set_pins(0, 1, 1); break;
-      case '4': tap.set_pins(1, 0, 0); break;
-      case '5': tap.set_pins(1, 0, 1); break;
-      case '6': tap.set_pins(1, 1, 0); break;
-      case '7': tap.set_pins(1, 1, 1); break;
-      case 'R': send_buf.append(tap.tdo() ? '1' : '0'); break;
+      case 'r': tap->reset(); break;
+      case '0': tap->set_pins(0, 0, 0); break;
+      case '1': tap->set_pins(0, 0, 1); break;
+      case '2': tap->set_pins(0, 1, 0); break;
+      case '3': tap->set_pins(0, 1, 1); break;
+      case '4': tap->set_pins(1, 0, 0); break;
+      case '5': tap->set_pins(1, 0, 1); break;
+      case '6': tap->set_pins(1, 1, 0); break;
+      case '7': tap->set_pins(1, 1, 1); break;
+      case 'R': send_buf.append(tap->tdo() ? '1' : '0'); break;
       default:
         fprintf(stderr, "remote_bitbang got unsupported command '%c'\n", command);
     }

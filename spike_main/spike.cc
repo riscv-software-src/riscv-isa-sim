@@ -79,9 +79,10 @@ int main(int argc, char** argv)
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
   sim_t s(isa, nprocs, mem_mb, halted, htif_args);
+  std::unique_ptr<jtag_dtm_t> jtag_dtm(new jtag_dtm_t());
   std::unique_ptr<remote_bitbang_t> remote_bitbang;
   if (rbb_port) {
-    remote_bitbang = std::unique_ptr<remote_bitbang_t>(new remote_bitbang_t(rbb_port, &s));
+    remote_bitbang.reset(new remote_bitbang_t(rbb_port, &(*jtag_dtm)));
     s.set_remote_bitbang(&(*remote_bitbang));
   }
 
