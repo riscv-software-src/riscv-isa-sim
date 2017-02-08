@@ -987,40 +987,6 @@ class collect_translation_info_op_t : public operation_t
 
     bool perform_step(unsigned int step)
     {
-      unsigned int vm = gs.virtual_memory();
-
-      if (step == 0) {
-        switch (vm) {
-          case VM_MBARE:
-            // Nothing to be done.
-            return true;
-
-          case VM_SV32:
-            levels = 2;
-            ptidxbits = 10;
-            ptesize = 4;
-            break;
-          case VM_SV39:
-            levels = 3;
-            ptidxbits = 9;
-            ptesize = 8;
-            break;
-          case VM_SV48:
-            levels = 4;
-            ptidxbits = 9;
-            ptesize = 8;
-            break;
-
-          default:
-            {
-              char buf[100];
-              sprintf(buf, "VM mode %d is not supported by gdbserver.cc.", vm);
-              die(buf);
-              return true;        // die doesn't return, but gcc doesn't know that.
-            }
-        }
-      }
-
       // Perform any reads from the just-completed action.
       switch (state) {
         case STATE_START:
@@ -1028,9 +994,12 @@ class collect_translation_info_op_t : public operation_t
         case STATE_READ_SPTBR:
           gs.sptbr = gs.dr_read(SLOT_DATA0);
           gs.sptbr_valid = true;
+          vm = decode_vm_info(gs.xlen, gs.privilege_mode(), gs.sptbr);
+          if (vm.levels == 0)
+            return true;
           break;
         case STATE_READ_PTE:
-          if (ptesize == 4) {
+          if (vm.ptesize == 4) {
               gs.pte_cache[pte_addr] = gs.dr_read32(4);
           } else {
               gs.pte_cache[pte_addr] = ((uint64_t) gs.dr_read32(5) << 32) |
@@ -1053,16 +1022,16 @@ class collect_translation_info_op_t : public operation_t
         return false;
       }
 
-      reg_t base = gs.sptbr << PGSHIFT;
-      int ptshift = (levels - 1) * ptidxbits;
-      for (unsigned int i = 0; i < levels; i++, ptshift -= ptidxbits) {
-        reg_t idx = (vaddr >> (PGSHIFT + ptshift)) & ((1 << ptidxbits) - 1);
+      reg_t base = vm.ptbase;
+      for (int i = vm.levels - 1; i >= 0; i--) {
+        int ptshift = i * vm.idxbits;
+        reg_t idx = (vaddr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
 
-        pte_addr = base + idx * ptesize;
+        pte_addr = base + idx * vm.ptesize;
         auto it = gs.pte_cache.find(pte_addr);
         if (it == gs.pte_cache.end()) {
           state = STATE_READ_PTE;
-          if (ptesize == 4) {
+          if (vm.ptesize == 4) {
             gs.dr_write32(0, lw(S0, 0, (uint16_t) DEBUG_RAM_START + 16));
             gs.dr_write32(1, lw(S1, S0, 0));
             gs.dr_write32(2, sw(S1, 0, (uint16_t) DEBUG_RAM_START + 16));
@@ -1103,9 +1072,7 @@ class collect_translation_info_op_t : public operation_t
     } state;
     reg_t vaddr;
     size_t length;
-    unsigned int levels;
-    unsigned int ptidxbits;
-    unsigned int ptesize;
+    vm_info vm;
     reg_t pte_addr;
 };
 
@@ -1351,46 +1318,18 @@ unsigned int gdbserver_t::find_access_size(reg_t address, int length)
 
 reg_t gdbserver_t::translate(reg_t vaddr)
 {
-  unsigned int vm = virtual_memory();
-  unsigned int levels, ptidxbits, ptesize;
-
-  switch (vm) {
-    case VM_MBARE:
-      return vaddr;
-
-    case VM_SV32:
-      levels = 2;
-      ptidxbits = 10;
-      ptesize = 4;
-      break;
-    case VM_SV39:
-      levels = 3;
-      ptidxbits = 9;
-      ptesize = 8;
-      break;
-    case VM_SV48:
-      levels = 4;
-      ptidxbits = 9;
-      ptesize = 8;
-      break;
-
-    default:
-      {
-        char buf[100];
-        sprintf(buf, "VM mode %d is not supported by gdbserver.cc.", vm);
-        die(buf);
-        return true;        // die doesn't return, but gcc doesn't know that.
-      }
-  }
+  vm_info vm = decode_vm_info(xlen, privilege_mode(), sptbr);
+  if (vm.levels == 0)
+    return vaddr;
 
   // Handle page tables here. There's a bunch of duplicated code with
   // collect_translation_info_op_t. :-(
-  reg_t base = sptbr << PGSHIFT;
-  int ptshift = (levels - 1) * ptidxbits;
-  for (unsigned int i = 0; i < levels; i++, ptshift -= ptidxbits) {
-    reg_t idx = (vaddr >> (PGSHIFT + ptshift)) & ((1 << ptidxbits) - 1);
+  reg_t base = vm.ptbase;
+  for (int i = vm.levels - 1; i >= 0; i--) {
+    int ptshift = i * vm.idxbits;
+    reg_t idx = (vaddr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
 
-    reg_t pte_addr = base + idx * ptesize;
+    reg_t pte_addr = base + idx * vm.ptesize;
     auto it = pte_cache.find(pte_addr);
     if (it == pte_cache.end()) {
       fprintf(stderr, "ERROR: gdbserver tried to translate 0x%016" PRIx64
@@ -1425,14 +1364,6 @@ unsigned int gdbserver_t::privilege_mode()
   if (get_field(mstatus, MSTATUS_MPRV))
     mode = get_field(mstatus, MSTATUS_MPP);
   return mode;
-}
-
-unsigned int gdbserver_t::virtual_memory()
-{
-  unsigned int mode = privilege_mode();
-  if (mode == PRV_M)
-    return VM_MBARE;
-  return get_field(mstatus, MSTATUS_VM);
 }
 
 void gdbserver_t::dr_write32(unsigned int index, uint32_t value)

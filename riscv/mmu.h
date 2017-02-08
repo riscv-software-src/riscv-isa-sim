@@ -260,4 +260,35 @@ private:
   friend class processor_t;
 };
 
+struct vm_info {
+  int levels;
+  int idxbits;
+  int ptesize;
+  reg_t ptbase;
+};
+
+inline vm_info decode_vm_info(int xlen, reg_t prv, reg_t sptbr)
+{
+  if (prv == PRV_M) {
+    return {0, 0, 0, 0};
+  } else if (prv <= PRV_S && xlen == 32) {
+    switch (get_field(sptbr, SPTBR32_MODE)) {
+      case SPTBR_MODE_OFF: return {0, 0, 0, 0};
+      case SPTBR_MODE_SV32: return {2, 10, 4, (sptbr & SPTBR32_PPN) << PGSHIFT};
+      default: abort();
+    }
+  } else if (prv <= PRV_S && xlen == 64) {
+    switch (get_field(sptbr, SPTBR64_MODE)) {
+      case SPTBR_MODE_OFF: return {0, 0, 0, 0};
+      case SPTBR_MODE_SV39: return {3, 9, 8, (sptbr & SPTBR64_PPN) << PGSHIFT};
+      case SPTBR_MODE_SV48: return {4, 9, 8, (sptbr & SPTBR64_PPN) << PGSHIFT};
+      case SPTBR_MODE_SV57: return {5, 9, 8, (sptbr & SPTBR64_PPN) << PGSHIFT};
+      case SPTBR_MODE_SV64: return {6, 9, 8, (sptbr & SPTBR64_PPN) << PGSHIFT};
+      default: abort();
+    }
+  } else {
+    abort();
+  }
+}
+
 #endif

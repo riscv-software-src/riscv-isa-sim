@@ -264,15 +264,6 @@ void processor_t::disasm(insn_t insn)
           id, state.pc, bits, disassembler->disassemble(insn).c_str());
 }
 
-static bool validate_vm(int max_xlen, reg_t vm)
-{
-  if (max_xlen == 64 && (vm == VM_SV39 || vm == VM_SV48))
-    return true;
-  if (max_xlen == 32 && vm == VM_SV32)
-    return true;
-  return vm == VM_MBARE;
-}
-
 int processor_t::paddr_bits()
 {
   assert(xlen == max_xlen);
@@ -301,15 +292,12 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_MSTATUS: {
       if ((val ^ state.mstatus) &
-          (MSTATUS_VM | MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_PUM | MSTATUS_MXR))
+          (MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_PUM | MSTATUS_MXR))
         mmu->flush_tlb();
 
       reg_t mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE
                  | MSTATUS_SPP | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_PUM
                  | MSTATUS_MPP | MSTATUS_MXR | (ext ? MSTATUS_XS : 0);
-
-      if (validate_vm(max_xlen, get_field(val, MSTATUS_VM)))
-        mask |= MSTATUS_VM;
 
       state.mstatus = (state.mstatus & ~mask) | (val & mask);
 
@@ -374,8 +362,11 @@ void processor_t::set_csr(int which, reg_t val)
       return set_csr(CSR_MIE,
                      (state.mie & ~state.mideleg) | (val & state.mideleg));
     case CSR_SPTBR: {
-      // upper bits of sptbr are the ASID; we only support ASID = 0
-      state.sptbr = val & (((reg_t)1 << (paddr_bits() - PGSHIFT)) - 1);
+      if (max_xlen == 32)
+        state.sptbr = val & (SPTBR32_PPN | SPTBR32_MODE);
+      if (max_xlen == 64 && (get_field(val, SPTBR64_MODE) == SPTBR_MODE_OFF ||
+                             get_field(val, SPTBR64_MODE) >= SPTBR_MODE_SV39))
+        state.sptbr = val & (SPTBR64_PPN | SPTBR64_MODE);
       break;
     }
     case CSR_SEPC: state.sepc = val; break;

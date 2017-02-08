@@ -230,9 +230,6 @@ public:
   // Return the PRV_x that is used when the code under debug performs a memory
   // access.
   unsigned int privilege_mode();
-  // Return the VM_x that is used when the code under debug performs a memory
-  // access.
-  unsigned int virtual_memory();
 
   unsigned int xlen;
 

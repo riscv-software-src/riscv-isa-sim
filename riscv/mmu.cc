@@ -43,25 +43,13 @@ reg_t mmu_t::translate(reg_t addr, access_type type)
     if (!proc->state.dcsr.cause && get_field(proc->state.mstatus, MSTATUS_MPRV))
       mode = get_field(proc->state.mstatus, MSTATUS_MPP);
   }
-  if (get_field(proc->state.mstatus, MSTATUS_VM) == VM_MBARE)
-    mode = PRV_M;
 
-  if (mode == PRV_M) {
-    reg_t msb_mask = (reg_t(2) << (proc->xlen-1))-1; // zero-extend from xlen
-    return addr & msb_mask;
-  }
   return walk(addr, type, mode) | (addr & (PGSIZE-1));
 }
 
 const uint16_t* mmu_t::fetch_slow_path(reg_t vaddr)
 {
   reg_t paddr = translate(vaddr, FETCH);
-
-  // mmu_t::walk() returns -1 if it can't find a match. Of course -1 could also
-  // be a valid address.
-  if (paddr == ~(reg_t) 0 && vaddr != ~(reg_t) 0) {
-    throw trap_instruction_access_fault(vaddr);
-  }
 
   if (sim->addr_is_mem(paddr)) {
     refill_tlb(vaddr, paddr, FETCH);
@@ -169,38 +157,33 @@ void mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, access_type type)
 
 reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
 {
-  int levels, ptidxbits, ptesize;
-  switch (get_field(proc->get_state()->mstatus, MSTATUS_VM))
-  {
-    case VM_SV32: levels = 2; ptidxbits = 10; ptesize = 4; break;
-    case VM_SV39: levels = 3; ptidxbits = 9; ptesize = 8; break;
-    case VM_SV48: levels = 4; ptidxbits = 9; ptesize = 8; break;
-    default: abort();
-  }
+  vm_info vm = decode_vm_info(proc->max_xlen, mode, proc->get_state()->sptbr);
+  if (vm.levels == 0)
+    return addr & ((reg_t(2) << (proc->xlen-1))-1); // zero-extend from xlen
 
   bool supervisor = mode == PRV_S;
   bool pum = get_field(proc->state.mstatus, MSTATUS_PUM);
   bool mxr = get_field(proc->state.mstatus, MSTATUS_MXR);
 
   // verify bits xlen-1:va_bits-1 are all equal
-  int va_bits = PGSHIFT + levels * ptidxbits;
+  int va_bits = PGSHIFT + vm.levels * vm.idxbits;
   reg_t mask = (reg_t(1) << (proc->xlen - (va_bits-1))) - 1;
   reg_t masked_msbs = (addr >> (va_bits-1)) & mask;
   if (masked_msbs != 0 && masked_msbs != mask)
-    return -1;
+    vm.levels = 0;
 
-  reg_t base = proc->get_state()->sptbr << PGSHIFT;
-  int ptshift = (levels - 1) * ptidxbits;
-  for (int i = 0; i < levels; i++, ptshift -= ptidxbits) {
-    reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << ptidxbits) - 1);
+  reg_t base = vm.ptbase;
+  for (int i = vm.levels - 1; i >= 0; i--) {
+    int ptshift = i * vm.idxbits;
+    reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
 
     // check that physical address of PTE is legal
-    reg_t pte_addr = base + idx * ptesize;
+    reg_t pte_addr = base + idx * vm.ptesize;
     if (!sim->addr_is_mem(pte_addr))
       break;
 
     void* ppte = sim->addr_to_mem(pte_addr);
-    reg_t pte = ptesize == 4 ? *(uint32_t*)ppte : *(uint64_t*)ppte;
+    reg_t pte = vm.ptesize == 4 ? *(uint32_t*)ppte : *(uint64_t*)ppte;
     reg_t ppn = pte >> PTE_PPN_SHIFT;
 
     if (PTE_TABLE(pte)) { // next level of page table
@@ -223,7 +206,13 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
     }
   }
 
-  return -1;
+fail:
+  switch (type) {
+    case FETCH: throw trap_instruction_access_fault(addr);
+    case LOAD: throw trap_load_access_fault(addr);
+    case STORE: throw trap_store_access_fault(addr);
+    default: abort();
+  }
 }
 
 void mmu_t::register_memtracer(memtracer_t* t)
