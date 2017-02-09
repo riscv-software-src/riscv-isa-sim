@@ -1,6 +1,7 @@
 #include <cassert>
 
 #include "debug_module.h"
+#include "debug_defines.h"
 #include "mmu.h"
 
 #include "debug_rom/debug_rom.h"
@@ -10,6 +11,12 @@
 #else
 #  define D(x)
 #endif
+
+debug_module_t::debug_module_t() :
+  dmcontrol(1 << DMI_DMCONTROL_VERSION_OFFSET |
+      1 << DMI_DMCONTROL_AUTHENTICATED_OFFSET)
+{
+}
 
 bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
@@ -79,13 +86,23 @@ uint32_t debug_module_t::ram_read32(unsigned int index)
   return value;
 }
 
-uint32_t debug_module_t::dmi_read(unsigned address)
+bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 {
-  D(fprintf(stderr, "dmi_read(0x%x)\n", address));
-  return 0xfeed;
+  D(fprintf(stderr, "dmi_read(0x%x) -> ", address));
+  switch (address) {
+    case DMI_DMCONTROL:
+      *value = dmcontrol;
+      break;
+    default:
+      D(fprintf(stderr, "error\n"));
+      return false;
+  }
+  D(fprintf(stderr, "0x%x\n", *value));
+  return true;
 }
 
-void debug_module_t::dmi_write(unsigned address, uint32_t value)
+bool debug_module_t::dmi_write(unsigned address, uint32_t value)
 {
   D(fprintf(stderr, "dmi_write(0x%x, 0x%x)\n", address, value));
+  return false;
 }

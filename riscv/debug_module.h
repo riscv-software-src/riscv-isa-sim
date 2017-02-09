@@ -9,6 +9,8 @@
 class debug_module_t : public abstract_device_t
 {
   public:
+    debug_module_t();
+
     bool load(reg_t addr, size_t len, uint8_t* bytes);
     bool store(reg_t addr, size_t len, const uint8_t* bytes);
 
@@ -37,8 +39,9 @@ class debug_module_t : public abstract_device_t
 
     // Debug Module Interface that the debugger (in our case through JTAG DTM)
     // uses to access the DM.
-    uint32_t dmi_read(unsigned address);
-    void dmi_write(unsigned address, uint32_t value);
+    // Return true for success, false for failure.
+    bool dmi_read(unsigned address, uint32_t *value);
+    bool dmi_write(unsigned address, uint32_t value);
 
   private:
     // Track which interrupts from module to debugger are set.
@@ -46,6 +49,8 @@ class debug_module_t : public abstract_device_t
     // Track which halt notifications from debugger to module are set.
     std::set<uint32_t> halt_notification;
     char debug_ram[DEBUG_RAM_SIZE];
+
+    uint32_t dmcontrol;
 };
 
 #endif

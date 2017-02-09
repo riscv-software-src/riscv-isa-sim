@@ -48,7 +48,7 @@ class jtag_dtm_t
     // constructor.
     const unsigned abits = 6;
     uint32_t dtmcontrol;
-    uint32_t dbus;
+    uint64_t dbus;
 
     jtag_state_t state;
 

@@ -3,6 +3,7 @@
 #include "decode.h"
 #include "jtag_dtm.h"
 #include "debug_module.h"
+#include "debug_defines.h"
 
 #if 1
 #  define D(x) x
@@ -38,8 +39,8 @@ enum {
 
 jtag_dtm_t::jtag_dtm_t(debug_module_t *dm) :
   dm(dm),
-  dtmcontrol((abits << 4) | 1),
-  dbus(0),
+  dtmcontrol((abits << DTM_DTMCONTROL_ABITS_OFFSET) | 1),
+  dbus(DBUS_OP_STATUS_FAILED << DTM_DBUS_OP_OFFSET),
   state(TEST_LOGIC_RESET)
 {
 }
@@ -109,8 +110,11 @@ void jtag_dtm_t::set_pins(bool tck, bool tms, bool tdi) {
     }
   }
 
-  D(fprintf(stderr, "state=%2d, tdi=%d, tdo=%d, tms=%d, tck=%d, ir=0x%02x, dr=0x%lx\n",
+  /*
+  D(fprintf(stderr, "state=%2d, tdi=%d, tdo=%d, tms=%d, tck=%d, ir=0x%02x, "
+        "dr=0x%lx\n",
         state, _tdi, _tdo, _tms, _tck, ir, dr));
+        */
 
   _tck = tck;
   _tms = tms;
@@ -153,14 +157,25 @@ void jtag_dtm_t::update_dr()
 
         dbus = dr;
 
+        bool success = true;
         if (op == DBUS_OP_READ || op == DBUS_OP_READ_WRITE) {
-          dbus = set_field(dbus, DBUS_DATA, dm->dmi_read(address));
+          uint32_t value;
+          if (dm->dmi_read(address, &value)) {
+            dbus = set_field(dbus, DBUS_DATA, value);
+          } else {
+            success = false;
+          }
         }
-        if (op == DBUS_OP_READ_WRITE) {
-          dm->dmi_write(address, data);
+        if (success && op == DBUS_OP_READ_WRITE) {
+          success = dm->dmi_write(address, data);
         }
 
-        dbus = set_field(dbus, DBUS_OP, DBUS_OP_STATUS_SUCCESS);
+        if (success) {
+          dbus = set_field(dbus, DBUS_OP, DBUS_OP_STATUS_SUCCESS);
+        } else {
+          dbus = set_field(dbus, DBUS_OP, DBUS_OP_STATUS_FAILED);
+        }
+        D(fprintf(stderr, "dbus=0x%lx\n", dbus));
       }
       break;
   }
