@@ -14,7 +14,8 @@
 
 debug_module_t::debug_module_t() :
   dmcontrol(1 << DMI_DMCONTROL_VERSION_OFFSET |
-      1 << DMI_DMCONTROL_AUTHENTICATED_OFFSET)
+      1 << DMI_DMCONTROL_AUTHENTICATED_OFFSET),
+  abstractcs(datacount << DMI_ABSTRACTCS_DATACOUNT_OFFSET)
 {
 }
 
@@ -89,13 +90,25 @@ uint32_t debug_module_t::ram_read32(unsigned int index)
 bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 {
   D(fprintf(stderr, "dmi_read(0x%x) -> ", address));
-  switch (address) {
-    case DMI_DMCONTROL:
-      *value = dmcontrol;
-      break;
-    default:
-      D(fprintf(stderr, "error\n"));
-      return false;
+  if (address >= DMI_DATA0 && address < DMI_DATA0 + datacount) {
+    *value = data[address - DMI_DATA0];
+  } else if (address >= DMI_IBUF0 && address < DMI_IBUF0 + progsize) {
+    *value = ibuf[address - DMI_IBUF0];
+  } else {
+    switch (address) {
+      case DMI_DMCONTROL:
+        *value = dmcontrol;
+        break;
+      case DMI_ABSTRACTCS:
+        *value = abstractcs;
+        break;
+      case DMI_ACCESSCS:
+        *value = progsize << DMI_ACCESSCS_PROGSIZE_OFFSET;
+        break;
+      default:
+        D(fprintf(stderr, "error\n"));
+        return false;
+    }
   }
   D(fprintf(stderr, "0x%x\n", *value));
   return true;
@@ -104,5 +117,12 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 bool debug_module_t::dmi_write(unsigned address, uint32_t value)
 {
   D(fprintf(stderr, "dmi_write(0x%x, 0x%x)\n", address, value));
+  if (address >= DMI_DATA0 && address < DMI_DATA0 + datacount) {
+    data[address - DMI_DATA0] = value;
+    return true;
+  } else if (address >= DMI_IBUF0 && address < DMI_IBUF0 + progsize) {
+    ibuf[address - DMI_IBUF0] = value;
+    return true;
+  }
   return false;
 }

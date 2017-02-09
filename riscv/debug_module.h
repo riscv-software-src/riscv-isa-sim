@@ -50,7 +50,13 @@ class debug_module_t : public abstract_device_t
     std::set<uint32_t> halt_notification;
     char debug_ram[DEBUG_RAM_SIZE];
 
+    static const unsigned datacount = 8;
+    static const unsigned progsize = 8;
+
     uint32_t dmcontrol;
+    uint32_t abstractcs;
+    uint32_t data[datacount];
+    uint32_t ibuf[progsize];
 };
 
 #endif
