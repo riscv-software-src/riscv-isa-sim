@@ -1,25 +1,25 @@
-#define ACCESS_REGISTER                     None
-#define ACCESS_REGISTER_PREHALT_OFFSET      23
-#define ACCESS_REGISTER_PREHALT_LENGTH      1
-#define ACCESS_REGISTER_PREHALT             (0x1 << ACCESS_REGISTER_PREHALT_OFFSET)
-#define ACCESS_REGISTER_POSTRESUME_OFFSET   22
-#define ACCESS_REGISTER_POSTRESUME_LENGTH   1
-#define ACCESS_REGISTER_POSTRESUME          (0x1 << ACCESS_REGISTER_POSTRESUME_OFFSET)
-#define ACCESS_REGISTER_SIZE_OFFSET         19
-#define ACCESS_REGISTER_SIZE_LENGTH         3
-#define ACCESS_REGISTER_SIZE                (0x7 << ACCESS_REGISTER_SIZE_OFFSET)
-#define ACCESS_REGISTER_PREEXEC_OFFSET      18
-#define ACCESS_REGISTER_PREEXEC_LENGTH      1
-#define ACCESS_REGISTER_PREEXEC             (0x1 << ACCESS_REGISTER_PREEXEC_OFFSET)
-#define ACCESS_REGISTER_POSTEXEC_OFFSET     17
-#define ACCESS_REGISTER_POSTEXEC_LENGTH     1
-#define ACCESS_REGISTER_POSTEXEC            (0x1 << ACCESS_REGISTER_POSTEXEC_OFFSET)
-#define ACCESS_REGISTER_WRITE_OFFSET        16
-#define ACCESS_REGISTER_WRITE_LENGTH        1
-#define ACCESS_REGISTER_WRITE               (0x1 << ACCESS_REGISTER_WRITE_OFFSET)
-#define ACCESS_REGISTER_REGNO_OFFSET        0
-#define ACCESS_REGISTER_REGNO_LENGTH        16
-#define ACCESS_REGISTER_REGNO               (0xffff << ACCESS_REGISTER_REGNO_OFFSET)
+#define AC_ACCESS_REGISTER                  None
+#define AC_ACCESS_REGISTER_PREHALT_OFFSET   23
+#define AC_ACCESS_REGISTER_PREHALT_LENGTH   1
+#define AC_ACCESS_REGISTER_PREHALT          (0x1 << AC_ACCESS_REGISTER_PREHALT_OFFSET)
+#define AC_ACCESS_REGISTER_POSTRESUME_OFFSET 22
+#define AC_ACCESS_REGISTER_POSTRESUME_LENGTH 1
+#define AC_ACCESS_REGISTER_POSTRESUME       (0x1 << AC_ACCESS_REGISTER_POSTRESUME_OFFSET)
+#define AC_ACCESS_REGISTER_SIZE_OFFSET      19
+#define AC_ACCESS_REGISTER_SIZE_LENGTH      3
+#define AC_ACCESS_REGISTER_SIZE             (0x7 << AC_ACCESS_REGISTER_SIZE_OFFSET)
+#define AC_ACCESS_REGISTER_PREEXEC_OFFSET   18
+#define AC_ACCESS_REGISTER_PREEXEC_LENGTH   1
+#define AC_ACCESS_REGISTER_PREEXEC          (0x1 << AC_ACCESS_REGISTER_PREEXEC_OFFSET)
+#define AC_ACCESS_REGISTER_POSTEXEC_OFFSET  17
+#define AC_ACCESS_REGISTER_POSTEXEC_LENGTH  1
+#define AC_ACCESS_REGISTER_POSTEXEC         (0x1 << AC_ACCESS_REGISTER_POSTEXEC_OFFSET)
+#define AC_ACCESS_REGISTER_WRITE_OFFSET     16
+#define AC_ACCESS_REGISTER_WRITE_LENGTH     1
+#define AC_ACCESS_REGISTER_WRITE            (0x1 << AC_ACCESS_REGISTER_WRITE_OFFSET)
+#define AC_ACCESS_REGISTER_REGNO_OFFSET     0
+#define AC_ACCESS_REGISTER_REGNO_LENGTH     16
+#define AC_ACCESS_REGISTER_REGNO            (0xffff << AC_ACCESS_REGISTER_REGNO_OFFSET)
 #define CSR_DCSR                            0x7b0
 #define CSR_DCSR_XDEBUGVER_OFFSET           30
 #define CSR_DCSR_XDEBUGVER_LENGTH           2
@@ -54,7 +54,7 @@
 #define CSR_DPC                             0x7b1
 #define CSR_DPC_DPC_OFFSET                  0
 #define CSR_DPC_DPC_LENGTH                  XLEN
-#define CSR_DPC_DPC                         (((1<<XLEN)-1) << CSR_DPC_DPC_OFFSET)
+#define CSR_DPC_DPC                         (((1L<<XLEN)-1) << CSR_DPC_DPC_OFFSET)
 #define CSR_DSCRATCH0                       0x7b2
 #define CSR_DSCRATCH1                       0x7b3
 #define CSR_PRIV                            virtual
@@ -62,21 +62,21 @@
 #define CSR_PRIV_PRV_LENGTH                 2
 #define CSR_PRIV_PRV                        (0x3 << CSR_PRIV_PRV_OFFSET)
 #define DMI_DMCONTROL                       0x00
-#define DMI_DMCONTROL_HALT_OFFSET           31
-#define DMI_DMCONTROL_HALT_LENGTH           1
-#define DMI_DMCONTROL_HALT                  (0x1 << DMI_DMCONTROL_HALT_OFFSET)
+#define DMI_DMCONTROL_HALTREQ_OFFSET        31
+#define DMI_DMCONTROL_HALTREQ_LENGTH        1
+#define DMI_DMCONTROL_HALTREQ               (0x1 << DMI_DMCONTROL_HALTREQ_OFFSET)
 #define DMI_DMCONTROL_RESET_OFFSET          30
 #define DMI_DMCONTROL_RESET_LENGTH          1
 #define DMI_DMCONTROL_RESET                 (0x1 << DMI_DMCONTROL_RESET_OFFSET)
 #define DMI_DMCONTROL_DMACTIVE_OFFSET       29
 #define DMI_DMCONTROL_DMACTIVE_LENGTH       1
 #define DMI_DMCONTROL_DMACTIVE              (0x1 << DMI_DMCONTROL_DMACTIVE_OFFSET)
-#define DMI_DMCONTROL_HARTID_OFFSET         16
-#define DMI_DMCONTROL_HARTID_LENGTH         10
-#define DMI_DMCONTROL_HARTID                (0x3ff << DMI_DMCONTROL_HARTID_OFFSET)
-#define DMI_DMCONTROL_HALTSUM_OFFSET        8
-#define DMI_DMCONTROL_HALTSUM_LENGTH        1
-#define DMI_DMCONTROL_HALTSUM               (0x1 << DMI_DMCONTROL_HALTSUM_OFFSET)
+#define DMI_DMCONTROL_HARTSTATUS_OFFSET     26
+#define DMI_DMCONTROL_HARTSTATUS_LENGTH     2
+#define DMI_DMCONTROL_HARTSTATUS            (0x3 << DMI_DMCONTROL_HARTSTATUS_OFFSET)
+#define DMI_DMCONTROL_HARTSEL_OFFSET        16
+#define DMI_DMCONTROL_HARTSEL_LENGTH        10
+#define DMI_DMCONTROL_HARTSEL               (0x3ff << DMI_DMCONTROL_HARTSEL_OFFSET)
 #define DMI_DMCONTROL_AUTHENTICATED_OFFSET  7
 #define DMI_DMCONTROL_AUTHENTICATED_LENGTH  1
 #define DMI_DMCONTROL_AUTHENTICATED         (0x1 << DMI_DMCONTROL_AUTHENTICATED_OFFSET)
@@ -440,7 +440,7 @@
 #define CSR_TSELECT                         0x7a0
 #define CSR_TSELECT_INDEX_OFFSET            0
 #define CSR_TSELECT_INDEX_LENGTH            XLEN
-#define CSR_TSELECT_INDEX                   (((1<<XLEN)-1) << CSR_TSELECT_INDEX_OFFSET)
+#define CSR_TSELECT_INDEX                   (((1L<<XLEN)-1) << CSR_TSELECT_INDEX_OFFSET)
 #define CSR_TDATA1                          0x7a1
 #define CSR_TDATA1_TYPE_OFFSET              XLEN-4
 #define CSR_TDATA1_TYPE_LENGTH              4
@@ -450,15 +450,15 @@
 #define CSR_TDATA1_DMODE                    (0x1 << CSR_TDATA1_DMODE_OFFSET)
 #define CSR_TDATA1_DATA_OFFSET              0
 #define CSR_TDATA1_DATA_LENGTH              XLEN - 5
-#define CSR_TDATA1_DATA                     (((1<<XLEN - 5)-1) << CSR_TDATA1_DATA_OFFSET)
+#define CSR_TDATA1_DATA                     (((1L<<XLEN - 5)-1) << CSR_TDATA1_DATA_OFFSET)
 #define CSR_TDATA2                          0x7a2
 #define CSR_TDATA2_DATA_OFFSET              0
 #define CSR_TDATA2_DATA_LENGTH              XLEN
-#define CSR_TDATA2_DATA                     (((1<<XLEN)-1) << CSR_TDATA2_DATA_OFFSET)
+#define CSR_TDATA2_DATA                     (((1L<<XLEN)-1) << CSR_TDATA2_DATA_OFFSET)
 #define CSR_TDATA3                          0x7a3
 #define CSR_TDATA3_DATA_OFFSET              0
 #define CSR_TDATA3_DATA_LENGTH              XLEN
-#define CSR_TDATA3_DATA                     (((1<<XLEN)-1) << CSR_TDATA3_DATA_OFFSET)
+#define CSR_TDATA3_DATA                     (((1L<<XLEN)-1) << CSR_TDATA3_DATA_OFFSET)
 #define CSR_MCONTROL                        0x7a1
 #define CSR_MCONTROL_TYPE_OFFSET            XLEN-4
 #define CSR_MCONTROL_TYPE_LENGTH            4
@@ -574,7 +574,7 @@
 #define DTM_DBUS                            0x11
 #define DTM_DBUS_ADDRESS_OFFSET             34
 #define DTM_DBUS_ADDRESS_LENGTH             abits
-#define DTM_DBUS_ADDRESS                    (((1<<abits)-1) << DTM_DBUS_ADDRESS_OFFSET)
+#define DTM_DBUS_ADDRESS                    (((1L<<abits)-1) << DTM_DBUS_ADDRESS_OFFSET)
 #define DTM_DBUS_DATA_OFFSET                2
 #define DTM_DBUS_DATA_LENGTH                32
 #define DTM_DBUS_DATA                       (0xffffffff << DTM_DBUS_DATA_OFFSET)

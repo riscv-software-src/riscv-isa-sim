@@ -7,7 +7,6 @@
 #include "sim.h"
 #include "mmu.h"
 #include "disasm.h"
-#include "gdbserver.h"
 #include <cinttypes>
 #include <cmath>
 #include <cstdlib>
