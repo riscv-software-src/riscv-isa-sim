@@ -22,7 +22,7 @@ static void handle_signal(int sig)
 
 sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
              const std::vector<std::string>& args)
-  : htif_t(args), procs(std::max(nprocs, size_t(1))),
+  : htif_t(args), debug_module(this), procs(std::max(nprocs, size_t(1))),
     current_step(0), current_proc(0), debug(false), remote_bitbang(NULL)
 {
   signal(SIGINT, &handle_signal);

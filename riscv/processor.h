@@ -192,6 +192,7 @@ public:
   bool debug;
   // When true, take the slow simulation path.
   bool slow_path();
+  bool halted() { return state.dcsr.cause ? true : false; }
 
   // Return the index of a trigger that matched, or -1.
   inline int trigger_match(trigger_operation_t operation, reg_t address, reg_t data)

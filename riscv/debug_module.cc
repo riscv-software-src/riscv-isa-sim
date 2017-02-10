@@ -12,7 +12,8 @@
 #  define D(x)
 #endif
 
-debug_module_t::debug_module_t() :
+debug_module_t::debug_module_t(sim_t *sim) :
+  sim(sim),
   dmcontrol(1 << DMI_DMCONTROL_VERSION_OFFSET |
       1 << DMI_DMCONTROL_AUTHENTICATED_OFFSET),
   abstractcs(datacount << DMI_ABSTRACTCS_DATACOUNT_OFFSET)
@@ -97,7 +98,21 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
   } else {
     switch (address) {
       case DMI_DMCONTROL:
-        *value = dmcontrol;
+        {
+          processor_t *proc = sim->get_core(get_field(dmcontrol,
+                DMI_DMCONTROL_HARTSEL));
+          if (proc) {
+            D(fprintf(stderr, "(halted=%d) ", proc->halted()));
+            if (proc->halted()) {
+              dmcontrol = set_field(dmcontrol, DMI_DMCONTROL_HARTSTATUS, 0);
+            } else {
+              dmcontrol = set_field(dmcontrol, DMI_DMCONTROL_HARTSTATUS, 1);
+            }
+          } else {
+            dmcontrol = set_field(dmcontrol, DMI_DMCONTROL_HARTSTATUS, 3);
+          }
+          *value = dmcontrol;
+        }
         break;
       case DMI_ABSTRACTCS:
         *value = abstractcs;

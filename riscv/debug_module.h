@@ -6,10 +6,12 @@
 
 #include "devices.h"
 
+class sim_t;
+
 class debug_module_t : public abstract_device_t
 {
   public:
-    debug_module_t();
+    debug_module_t(sim_t *sim);
 
     bool load(reg_t addr, size_t len, uint8_t* bytes);
     bool store(reg_t addr, size_t len, const uint8_t* bytes);
@@ -44,6 +46,7 @@ class debug_module_t : public abstract_device_t
     bool dmi_write(unsigned address, uint32_t value);
 
   private:
+    sim_t *sim;
     // Track which interrupts from module to debugger are set.
     std::set<uint32_t> interrupt;
     // Track which halt notifications from debugger to module are set.
