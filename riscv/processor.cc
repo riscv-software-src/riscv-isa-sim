@@ -21,7 +21,8 @@
 
 processor_t::processor_t(const char* isa, sim_t* sim, uint32_t id,
         bool halt_on_reset)
-  : debug(false), sim(sim), ext(NULL), id(id), halt_on_reset(halt_on_reset)
+  : debug(false), halt_request(false), sim(sim), ext(NULL), id(id),
+  halt_on_reset(halt_on_reset)
 {
   parse_isa_string(isa);
   register_base_instructions();
@@ -199,7 +200,7 @@ void processor_t::enter_debug_mode(uint8_t cause)
   state.dcsr.prv = state.prv;
   set_privilege(PRV_M);
   state.dpc = state.pc;
-  state.pc = DEBUG_ROM_START;
+  state.pc = debug_rom_entry();
 }
 
 void processor_t::take_trap(trap_t& t, reg_t epc)

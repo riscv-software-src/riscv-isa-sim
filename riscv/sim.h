@@ -34,6 +34,7 @@ public:
   }
   const char* get_config_string() { return config_string.c_str(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
+  unsigned nprocs() const { return procs.size(); }
 
   debug_module_t debug_module;
 

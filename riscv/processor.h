@@ -193,6 +193,12 @@ public:
   // When true, take the slow simulation path.
   bool slow_path();
   bool halted() { return state.dcsr.cause ? true : false; }
+  bool halt_request;
+  // The unique debug rom address that this hart jumps to when entering debug
+  // mode. Rely on the fact that spike hart IDs start at 0 and are consecutive.
+  uint32_t debug_rom_entry() {
+    return DEBUG_ROM_ENTRY + 4 * id;
+  }
 
   // Return the index of a trigger that matched, or -1.
   inline int trigger_match(trigger_operation_t operation, reg_t address, reg_t data)

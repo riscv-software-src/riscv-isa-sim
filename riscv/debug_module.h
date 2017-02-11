@@ -8,6 +8,27 @@
 
 class sim_t;
 
+typedef struct {
+  bool haltreq;
+  bool reset;
+  bool dmactive;
+  enum {
+    HARTSTATUS_HALTED,
+    HARTSTATUS_RUNNING,
+    HARTSTATUS_UNAVAILABLE,
+    HARTSTATUS_NOTEXIST
+  } hartstatus;
+  unsigned hartsel;
+  bool authenticated;
+  bool authbusy;
+  enum {
+    AUTHTYPE_NOAUTH,
+    AUTHTYPE_PASSWORD,
+    AUTHTYPE_CHALLENGE
+  } authtype;
+  unsigned version;
+} dmcontrol_t;
+
 class debug_module_t : public abstract_device_t
 {
   public:
@@ -15,9 +36,6 @@ class debug_module_t : public abstract_device_t
 
     bool load(reg_t addr, size_t len, uint8_t* bytes);
     bool store(reg_t addr, size_t len, const uint8_t* bytes);
-
-    void ram_write32(unsigned int index, uint32_t value);
-    uint32_t ram_read32(unsigned int index);
 
     void set_interrupt(uint32_t hartid) {
       interrupt.insert(hartid);
@@ -51,15 +69,22 @@ class debug_module_t : public abstract_device_t
     std::set<uint32_t> interrupt;
     // Track which halt notifications from debugger to module are set.
     std::set<uint32_t> halt_notification;
-    char debug_ram[DEBUG_RAM_SIZE];
+    uint8_t debug_rom_entry[1024 * 4];
+
+    void write32(uint8_t *rom, unsigned int index, uint32_t value);
+    uint32_t read32(uint8_t *rom, unsigned int index);
 
     static const unsigned datacount = 8;
     static const unsigned progsize = 8;
 
-    uint32_t dmcontrol;
+    dmcontrol_t dmcontrol;
     uint32_t abstractcs;
     uint32_t data[datacount];
     uint32_t ibuf[progsize];
+
+    processor_t *current_proc() const;
+    void reset();
+    bool perform_abstract_command(uint32_t command);
 };
 
 #endif
