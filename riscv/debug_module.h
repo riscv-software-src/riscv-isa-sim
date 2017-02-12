@@ -70,6 +70,7 @@ class debug_module_t : public abstract_device_t
     // Track which halt notifications from debugger to module are set.
     std::set<uint32_t> halt_notification;
     uint8_t debug_rom_entry[1024 * 4];
+    bool halted[1024];
 
     void write32(uint8_t *rom, unsigned int index, uint32_t value);
     uint32_t read32(uint8_t *rom, unsigned int index);

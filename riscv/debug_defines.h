@@ -1,10 +1,4 @@
 #define AC_ACCESS_REGISTER                  None
-#define AC_ACCESS_REGISTER_PREHALT_OFFSET   23
-#define AC_ACCESS_REGISTER_PREHALT_LENGTH   1
-#define AC_ACCESS_REGISTER_PREHALT          (0x1 << AC_ACCESS_REGISTER_PREHALT_OFFSET)
-#define AC_ACCESS_REGISTER_POSTRESUME_OFFSET 22
-#define AC_ACCESS_REGISTER_POSTRESUME_LENGTH 1
-#define AC_ACCESS_REGISTER_POSTRESUME       (0x1 << AC_ACCESS_REGISTER_POSTRESUME_OFFSET)
 #define AC_ACCESS_REGISTER_SIZE_OFFSET      19
 #define AC_ACCESS_REGISTER_SIZE_LENGTH      3
 #define AC_ACCESS_REGISTER_SIZE             (0x7 << AC_ACCESS_REGISTER_SIZE_OFFSET)
@@ -20,6 +14,10 @@
 #define AC_ACCESS_REGISTER_REGNO_OFFSET     0
 #define AC_ACCESS_REGISTER_REGNO_LENGTH     16
 #define AC_ACCESS_REGISTER_REGNO            (0xffff << AC_ACCESS_REGISTER_REGNO_OFFSET)
+#define AC_QUICK_ACCESS                     None
+#define AC_QUICK_ACCESS_1_OFFSET            24
+#define AC_QUICK_ACCESS_1_LENGTH            8
+#define AC_QUICK_ACCESS_1                   (0xff << AC_QUICK_ACCESS_1_OFFSET)
 #define CSR_DCSR                            0x7b0
 #define CSR_DCSR_XDEBUGVER_OFFSET           30
 #define CSR_DCSR_XDEBUGVER_LENGTH           2
@@ -89,6 +87,16 @@
 #define DMI_DMCONTROL_VERSION_OFFSET        0
 #define DMI_DMCONTROL_VERSION_LENGTH        4
 #define DMI_DMCONTROL_VERSION               (0xf << DMI_DMCONTROL_VERSION_OFFSET)
+#define DMI_HARTINFO                        0x01
+#define DMI_HARTINFO_DATAACCESS_OFFSET      16
+#define DMI_HARTINFO_DATAACCESS_LENGTH      1
+#define DMI_HARTINFO_DATAACCESS             (0x1 << DMI_HARTINFO_DATAACCESS_OFFSET)
+#define DMI_HARTINFO_DATASIZE_OFFSET        12
+#define DMI_HARTINFO_DATASIZE_LENGTH        4
+#define DMI_HARTINFO_DATASIZE               (0xf << DMI_HARTINFO_DATASIZE_OFFSET)
+#define DMI_HARTINFO_DATAADDR_OFFSET        0
+#define DMI_HARTINFO_DATAADDR_LENGTH        12
+#define DMI_HARTINFO_DATAADDR               (0xfff << DMI_HARTINFO_DATAADDR_OFFSET)
 #define DMI_HALTSUM                         0x02
 #define DMI_HALTSUM_HALT1023_992_OFFSET     31
 #define DMI_HALTSUM_HALT1023_992_LENGTH     1
@@ -251,7 +259,15 @@
 #define DMI_SBDATA3_DATA_OFFSET             0
 #define DMI_SBDATA3_DATA_LENGTH             32
 #define DMI_SBDATA3_DATA                    (0xffffffff << DMI_SBDATA3_DATA_OFFSET)
-#define DMI_ABSTRACTCS                      0x0b
+#define DMI_AUTHDATA0                       0x0b
+#define DMI_AUTHDATA0_DATA_OFFSET           0
+#define DMI_AUTHDATA0_DATA_LENGTH           32
+#define DMI_AUTHDATA0_DATA                  (0xffffffff << DMI_AUTHDATA0_DATA_OFFSET)
+#define DMI_AUTHDATA1                       0x0c
+#define DMI_AUTHDATA1_DATA_OFFSET           0
+#define DMI_AUTHDATA1_DATA_LENGTH           32
+#define DMI_AUTHDATA1_DATA                  (0xffffffff << DMI_AUTHDATA1_DATA_OFFSET)
+#define DMI_ABSTRACTCS                      0x0e
 #define DMI_ABSTRACTCS_AUTOEXEC7_OFFSET     15
 #define DMI_ABSTRACTCS_AUTOEXEC7_LENGTH     1
 #define DMI_ABSTRACTCS_AUTOEXEC7            (0x1 << DMI_ABSTRACTCS_AUTOEXEC7_OFFSET)
@@ -285,49 +301,30 @@
 #define DMI_ABSTRACTCS_DATACOUNT_OFFSET     0
 #define DMI_ABSTRACTCS_DATACOUNT_LENGTH     4
 #define DMI_ABSTRACTCS_DATACOUNT            (0xf << DMI_ABSTRACTCS_DATACOUNT_OFFSET)
-#define DMI_COMMAND                         0x0c
+#define DMI_COMMAND                         0x0f
 #define DMI_COMMAND_COMMAND_OFFSET          0
 #define DMI_COMMAND_COMMAND_LENGTH          32
 #define DMI_COMMAND_COMMAND                 (0xffffffff << DMI_COMMAND_COMMAND_OFFSET)
-#define DMI_DATA0                           0x0d
+#define DMI_DATA0                           0x10
 #define DMI_DATA0_DATA_OFFSET               0
 #define DMI_DATA0_DATA_LENGTH               32
 #define DMI_DATA0_DATA                      (0xffffffff << DMI_DATA0_DATA_OFFSET)
-#define DMI_DATA1                           0x0e
-#define DMI_DATA2                           0x0f
-#define DMI_DATA3                           0x10
-#define DMI_DATA4                           0x11
-#define DMI_DATA5                           0x12
-#define DMI_DATA6                           0x13
-#define DMI_DATA7                           0x14
-#define DMI_ACCESSCS                        0x15
-#define DMI_ACCESSCS_PROGSIZE_OFFSET        0
-#define DMI_ACCESSCS_PROGSIZE_LENGTH        4
-#define DMI_ACCESSCS_PROGSIZE               (0xf << DMI_ACCESSCS_PROGSIZE_OFFSET)
-#define DMI_IBUF0                           0x18
-#define DMI_IBUF0_DATA_OFFSET               0
-#define DMI_IBUF0_DATA_LENGTH               32
-#define DMI_IBUF0_DATA                      (0xffffffff << DMI_IBUF0_DATA_OFFSET)
-#define DMI_IBUF1                           0x19
-#define DMI_IBUF2                           0x1a
-#define DMI_IBUF3                           0x1b
-#define DMI_IBUF4                           0x1c
-#define DMI_IBUF5                           0x1d
-#define DMI_IBUF6                           0x1e
-#define DMI_IBUF7                           0x1f
-#define DMI_AUTHDATA0                       0x20
-#define DMI_AUTHDATA0_DATA_OFFSET           0
-#define DMI_AUTHDATA0_DATA_LENGTH           32
-#define DMI_AUTHDATA0_DATA                  (0xffffffff << DMI_AUTHDATA0_DATA_OFFSET)
-#define DMI_AUTHDATA1                       0x21
-#define DMI_AUTHDATA1_DATA_OFFSET           0
-#define DMI_AUTHDATA1_DATA_LENGTH           32
-#define DMI_AUTHDATA1_DATA                  (0xffffffff << DMI_AUTHDATA1_DATA_OFFSET)
-#define DMI_SERDATA                         0x22
+#define DMI_DATA1                           0x11
+#define DMI_DATA2                           0x12
+#define DMI_DATA3                           0x13
+#define DMI_DATA4                           0x14
+#define DMI_DATA5                           0x15
+#define DMI_DATA6                           0x16
+#define DMI_DATA7                           0x17
+#define DMI_DATA8                           0x18
+#define DMI_DATA9                           0x19
+#define DMI_DATA10                          0x1a
+#define DMI_DATA11                          0x1b
+#define DMI_SERDATA                         0x1c
 #define DMI_SERDATA_DATA_OFFSET             0
 #define DMI_SERDATA_DATA_LENGTH             32
 #define DMI_SERDATA_DATA                    (0xffffffff << DMI_SERDATA_DATA_OFFSET)
-#define DMI_SERSTATUS                       0x23
+#define DMI_SERSTATUS                       0x1d
 #define DMI_SERSTATUS_SERIALCOUNT_OFFSET    28
 #define DMI_SERSTATUS_SERIALCOUNT_LENGTH    4
 #define DMI_SERSTATUS_SERIALCOUNT           (0xf << DMI_SERSTATUS_SERIALCOUNT_OFFSET)
@@ -382,6 +379,25 @@
 #define DMI_SERSTATUS_FULL_OVERFLOW0_OFFSET 0
 #define DMI_SERSTATUS_FULL_OVERFLOW0_LENGTH 1
 #define DMI_SERSTATUS_FULL_OVERFLOW0        (0x1 << DMI_SERSTATUS_FULL_OVERFLOW0_OFFSET)
+#define DMI_ACCESSCS                        0x1f
+#define DMI_ACCESSCS_PROGSIZE_OFFSET        0
+#define DMI_ACCESSCS_PROGSIZE_LENGTH        4
+#define DMI_ACCESSCS_PROGSIZE               (0xf << DMI_ACCESSCS_PROGSIZE_OFFSET)
+#define DMI_IBUF0                           0x20
+#define DMI_IBUF0_DATA_OFFSET               0
+#define DMI_IBUF0_DATA_LENGTH               32
+#define DMI_IBUF0_DATA                      (0xffffffff << DMI_IBUF0_DATA_OFFSET)
+#define DMI_IBUF1                           0x21
+#define DMI_IBUF2                           0x22
+#define DMI_IBUF3                           0x23
+#define DMI_IBUF4                           0x24
+#define DMI_IBUF5                           0x25
+#define DMI_IBUF6                           0x26
+#define DMI_IBUF7                           0x27
+#define DMI_IBUF8                           0x28
+#define DMI_IBUF9                           0x29
+#define DMI_IBUF10                          0x2a
+#define DMI_IBUF11                          0x2b
 #define SERINFO                             0x110
 #define SERINFO_SERIAL7_OFFSET              7
 #define SERINFO_SERIAL7_LENGTH              1

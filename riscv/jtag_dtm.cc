@@ -39,6 +39,7 @@ enum {
 
 jtag_dtm_t::jtag_dtm_t(debug_module_t *dm) :
   dm(dm),
+  _tck(false), _tms(false), _tdi(false), _tdo(false),
   dtmcontrol((abits << DTM_DTMCONTROL_ABITS_OFFSET) | 1),
   dbus(DBUS_OP_STATUS_FAILED << DTM_DBUS_OP_OFFSET),
   state(TEST_LOGIC_RESET)

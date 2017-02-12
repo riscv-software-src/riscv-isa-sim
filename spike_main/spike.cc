@@ -50,6 +50,7 @@ int main(int argc, char** argv)
   std::function<extension_t*()> extension;
   const char* isa = DEFAULT_ISA;
   uint16_t rbb_port = 0;
+  bool use_rbb = false;
 
   option_parser_t parser;
   parser.help(&help);
@@ -61,7 +62,7 @@ int main(int argc, char** argv)
   parser.option('m', 0, 1, [&](const char* s){mem_mb = atoi(s);});
   // I wanted to use --halted, but for some reason that doesn't work.
   parser.option('H', 0, 0, [&](const char* s){halted = true;});
-  parser.option(0, "rbb-port", 1, [&](const char* s){rbb_port = atoi(s);});
+  parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoi(s);});
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
@@ -80,8 +81,8 @@ int main(int argc, char** argv)
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
   sim_t s(isa, nprocs, mem_mb, halted, htif_args);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(new jtag_dtm_t(&s.debug_module));
-  std::unique_ptr<remote_bitbang_t> remote_bitbang;
-  if (rbb_port) {
+  std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
+  if (use_rbb) {
     remote_bitbang.reset(new remote_bitbang_t(rbb_port, &(*jtag_dtm)));
     s.set_remote_bitbang(&(*remote_bitbang));
   }

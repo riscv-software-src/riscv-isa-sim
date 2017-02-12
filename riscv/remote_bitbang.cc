@@ -57,6 +57,17 @@ remote_bitbang_t::remote_bitbang_t(uint16_t port, jtag_dtm_t *tap) :
         strerror(errno), errno);
     abort();
   }
+
+  socklen_t addrlen = sizeof(addr);
+  if (getsockname(socket_fd, (struct sockaddr *) &addr, &addrlen) == -1) {
+    fprintf(stderr, "remote_bitbang getsockname failed: %s (%d)\n",
+        strerror(errno), errno);
+    abort();
+  }
+
+  printf("Listening for remote bitbang connection on port %d.\n",
+      ntohs(addr.sin_port));
+  fflush(stdout);
 }
 
 void remote_bitbang_t::accept()
@@ -87,8 +98,8 @@ void remote_bitbang_t::tick()
 void remote_bitbang_t::execute_commands()
 {
   const unsigned buf_size = 64 * 1024;
-  char recv_buf[buf_size];
-  char send_buf[buf_size];
+  static char recv_buf[buf_size];
+  static char send_buf[buf_size];
   unsigned total_received = 0;
   ssize_t bytes = read(client_fd, recv_buf, buf_size);
   bool quit = false;

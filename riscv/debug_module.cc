@@ -15,9 +15,22 @@
 
 debug_module_t::debug_module_t(sim_t *sim) : sim(sim)
 {
+  dmcontrol = {0};
   dmcontrol.version = 1;
 
-  write32(debug_rom_entry, 0, jal(0, 0));
+  for (unsigned i = 0; i < 1024; i++) {
+    write32(debug_rom_entry, i, jal(0, 0));
+    halted[i] = false;
+  }
+
+  for (unsigned i = 0; i < datacount; i++) {
+    data[i] = 0;
+  }
+
+  for (unsigned i = 0; i < progsize; i++) {
+    ibuf[i] = 0;
+  }
+
 }
 
 void debug_module_t::reset()
@@ -44,6 +57,7 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
   addr = DEBUG_START + addr;
 
   if (addr >= DEBUG_ROM_ENTRY && addr <= DEBUG_ROM_CODE) {
+    halted[(addr - DEBUG_ROM_ENTRY) / 4] = true;
     memcpy(bytes, debug_rom_entry + addr - DEBUG_ROM_ENTRY, len);
     return true;
   }
@@ -114,7 +128,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
         {
           processor_t *proc = current_proc();
           if (proc) {
-            if (proc->halted()) {
+            if (halted[dmcontrol.hartsel]) {
               dmcontrol.hartstatus = dmcontrol.HARTSTATUS_HALTED;
             } else {
               dmcontrol.hartstatus = dmcontrol.HARTSTATUS_RUNNING;
