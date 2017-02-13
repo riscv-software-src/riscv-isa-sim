@@ -572,31 +572,31 @@
 #define DTM_INIT__SETUP__CLAMP              0x0c
 #define DTM_INIT__RUN                       0x0d
 #define DTM_DTMCONTROL                      0x10
-#define DTM_DTMCONTROL_DBUSRESET_OFFSET     16
-#define DTM_DTMCONTROL_DBUSRESET_LENGTH     1
-#define DTM_DTMCONTROL_DBUSRESET            (0x1 << DTM_DTMCONTROL_DBUSRESET_OFFSET)
+#define DTM_DTMCONTROL_DMIRESET_OFFSET      16
+#define DTM_DTMCONTROL_DMIRESET_LENGTH      1
+#define DTM_DTMCONTROL_DMIRESET             (0x1 << DTM_DTMCONTROL_DMIRESET_OFFSET)
 #define DTM_DTMCONTROL_IDLE_OFFSET          12
 #define DTM_DTMCONTROL_IDLE_LENGTH          3
 #define DTM_DTMCONTROL_IDLE                 (0x7 << DTM_DTMCONTROL_IDLE_OFFSET)
-#define DTM_DTMCONTROL_DBUSSTAT_OFFSET      10
-#define DTM_DTMCONTROL_DBUSSTAT_LENGTH      2
-#define DTM_DTMCONTROL_DBUSSTAT             (0x3 << DTM_DTMCONTROL_DBUSSTAT_OFFSET)
+#define DTM_DTMCONTROL_DMISTAT_OFFSET       10
+#define DTM_DTMCONTROL_DMISTAT_LENGTH       2
+#define DTM_DTMCONTROL_DMISTAT              (0x3 << DTM_DTMCONTROL_DMISTAT_OFFSET)
 #define DTM_DTMCONTROL_ABITS_OFFSET         4
 #define DTM_DTMCONTROL_ABITS_LENGTH         6
 #define DTM_DTMCONTROL_ABITS                (0x3f << DTM_DTMCONTROL_ABITS_OFFSET)
 #define DTM_DTMCONTROL_VERSION_OFFSET       0
 #define DTM_DTMCONTROL_VERSION_LENGTH       4
 #define DTM_DTMCONTROL_VERSION              (0xf << DTM_DTMCONTROL_VERSION_OFFSET)
-#define DTM_DBUS                            0x11
-#define DTM_DBUS_ADDRESS_OFFSET             34
-#define DTM_DBUS_ADDRESS_LENGTH             abits
-#define DTM_DBUS_ADDRESS                    (((1L<<abits)-1) << DTM_DBUS_ADDRESS_OFFSET)
-#define DTM_DBUS_DATA_OFFSET                2
-#define DTM_DBUS_DATA_LENGTH                32
-#define DTM_DBUS_DATA                       (0xffffffff << DTM_DBUS_DATA_OFFSET)
-#define DTM_DBUS_OP_OFFSET                  0
-#define DTM_DBUS_OP_LENGTH                  2
-#define DTM_DBUS_OP                         (0x3 << DTM_DBUS_OP_OFFSET)
+#define DTM_DMI                             0x11
+#define DTM_DMI_ADDRESS_OFFSET              34
+#define DTM_DMI_ADDRESS_LENGTH              abits
+#define DTM_DMI_ADDRESS                     (((1L<<abits)-1) << DTM_DMI_ADDRESS_OFFSET)
+#define DTM_DMI_DATA_OFFSET                 2
+#define DTM_DMI_DATA_LENGTH                 32
+#define DTM_DMI_DATA                        (0xffffffff << DTM_DMI_DATA_OFFSET)
+#define DTM_DMI_OP_OFFSET                   0
+#define DTM_DMI_OP_LENGTH                   2
+#define DTM_DMI_OP                          (0x3 << DTM_DMI_OP_OFFSET)
 #define SHORTNAME                           0x123
 #define SHORTNAME_FIELD_OFFSET              0
 #define SHORTNAME_FIELD_LENGTH              8

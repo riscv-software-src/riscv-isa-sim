@@ -362,7 +362,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         if (get_field(value, DMI_ABSTRACTCS_CMDERR) == abstractcs.CMDERR_NONE) {
           abstractcs.cmderr = abstractcs.CMDERR_NONE;
         }
-        break;
+        return true;
     }
   }
   return false;

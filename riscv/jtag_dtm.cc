@@ -23,25 +23,25 @@ enum {
 #define DTMCONTROL_IDLE         (7<<12)
 #define DTMCONTROL_DBUSRESET    (1<<16)
 
-#define DBUS_OP                 3
-#define DBUS_DATA               (0xffffffffL<<2)
-#define DBUS_ADDRESS            ((1L<<(abits+34)) - (1L<<34))
+#define DMI_OP                 3
+#define DMI_DATA               (0xffffffffL<<2)
+#define DMI_ADDRESS            ((1L<<(abits+34)) - (1L<<34))
 
-#define DBUS_OP_STATUS_SUCCESS	0
-#define DBUS_OP_STATUS_RESERVED	1
-#define DBUS_OP_STATUS_FAILED	2
-#define DBUS_OP_STATUS_BUSY	3
+#define DMI_OP_STATUS_SUCCESS	0
+#define DMI_OP_STATUS_RESERVED	1
+#define DMI_OP_STATUS_FAILED	2
+#define DMI_OP_STATUS_BUSY	3
 
-#define DBUS_OP_NOP	        0
-#define DBUS_OP_READ	        1
-#define DBUS_OP_READ_WRITE	2
-#define DBUS_OP_RESERVED	3
+#define DMI_OP_NOP	        0
+#define DMI_OP_READ	        1
+#define DMI_OP_READ_WRITE	2
+#define DMI_OP_RESERVED	3
 
 jtag_dtm_t::jtag_dtm_t(debug_module_t *dm) :
   dm(dm),
   _tck(false), _tms(false), _tdi(false), _tdo(false),
   dtmcontrol((abits << DTM_DTMCONTROL_ABITS_OFFSET) | 1),
-  dbus(DBUS_OP_STATUS_FAILED << DTM_DBUS_OP_OFFSET),
+  dmi(DMI_OP_STATUS_FAILED << DTM_DMI_OP_OFFSET),
   state(TEST_LOGIC_RESET)
 {
 }
@@ -134,7 +134,7 @@ void jtag_dtm_t::capture_dr()
       dr_length = 32;
       break;
     case IR_DBUS:
-      dr = dbus;
+      dr = dmi;
       dr_length = abits + 34;
       break;
     default:
@@ -152,31 +152,31 @@ void jtag_dtm_t::update_dr()
   switch (ir) {
     case IR_DBUS:
       {
-        unsigned op = get_field(dr, DBUS_OP);
-        uint32_t data = get_field(dr, DBUS_DATA);
-        unsigned address = get_field(dr, DBUS_ADDRESS);
+        unsigned op = get_field(dr, DMI_OP);
+        uint32_t data = get_field(dr, DMI_DATA);
+        unsigned address = get_field(dr, DMI_ADDRESS);
 
-        dbus = dr;
+        dmi = dr;
 
         bool success = true;
-        if (op == DBUS_OP_READ || op == DBUS_OP_READ_WRITE) {
+        if (op == DMI_OP_READ || op == DMI_OP_READ_WRITE) {
           uint32_t value;
           if (dm->dmi_read(address, &value)) {
-            dbus = set_field(dbus, DBUS_DATA, value);
+            dmi = set_field(dmi, DMI_DATA, value);
           } else {
             success = false;
           }
         }
-        if (success && op == DBUS_OP_READ_WRITE) {
+        if (success && op == DMI_OP_READ_WRITE) {
           success = dm->dmi_write(address, data);
         }
 
         if (success) {
-          dbus = set_field(dbus, DBUS_OP, DBUS_OP_STATUS_SUCCESS);
+          dmi = set_field(dmi, DMI_OP, DMI_OP_STATUS_SUCCESS);
         } else {
-          dbus = set_field(dbus, DBUS_OP, DBUS_OP_STATUS_FAILED);
+          dmi = set_field(dmi, DMI_OP, DMI_OP_STATUS_FAILED);
         }
-        D(fprintf(stderr, "dbus=0x%lx\n", dbus));
+        D(fprintf(stderr, "dmi=0x%lx\n", dmi));
       }
       break;
   }
