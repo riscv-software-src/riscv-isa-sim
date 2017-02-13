@@ -5,7 +5,7 @@
 #include "debug_module.h"
 #include "debug_defines.h"
 
-#if 1
+#if 0
 #  define D(x) x
 #else
 #  define D(x)

@@ -13,18 +13,73 @@
 #  define D(x)
 #endif
 
+///////////////////////// debug_module_data_t
+
+debug_module_data_t::debug_module_data_t()
+{
+  memset(data, 0, sizeof(data));
+}
+
+bool debug_module_data_t::load(reg_t addr, size_t len, uint8_t* bytes)
+{
+  D(fprintf(stderr, "debug_module_data_t load 0x%lx bytes at 0x%lx\n", len,
+        addr));
+
+  if (addr + len < sizeof(data)) {
+    memcpy(bytes, data + addr, len);
+    return true;
+  }
+
+  fprintf(stderr, "ERROR: invalid load from debug_module_data_t: %zd bytes at 0x%016"
+          PRIx64 "\n", len, addr);
+
+  return false;
+}
+
+bool debug_module_data_t::store(reg_t addr, size_t len, const uint8_t* bytes)
+{
+  D(fprintf(stderr, "debug_module_data_t store 0x%lx bytes at 0x%lx\n", len,
+        addr));
+
+  if (addr + len < sizeof(data)) {
+    memcpy(data + addr, bytes, len);
+    return true;
+  }
+
+  fprintf(stderr, "ERROR: invalid store to debug_module_data_t: %zd bytes at 0x%016"
+          PRIx64 "\n", len, addr);
+  return false;
+}
+
+uint32_t debug_module_data_t::read32(reg_t addr) const
+{
+  assert(addr + 4 <= sizeof(data));
+  return data[addr] |
+    (data[addr + 1] << 8) |
+    (data[addr + 2] << 16) |
+    (data[addr + 3] << 24);
+}
+
+void debug_module_data_t::write32(reg_t addr, uint32_t value)
+{
+  fprintf(stderr, "debug_module_data_t::write32(0x%lx, 0x%x)\n", addr, value);
+  assert(addr + 4 <= sizeof(data));
+  data[addr] = value & 0xff;
+  data[addr + 1] = (value >> 8) & 0xff;
+  data[addr + 2] = (value >> 16) & 0xff;
+  data[addr + 3] = (value >> 24) & 0xff;
+}
+
+///////////////////////// debug_module_t
+
 debug_module_t::debug_module_t(sim_t *sim) : sim(sim)
 {
   dmcontrol = {0};
   dmcontrol.version = 1;
 
-  for (unsigned i = 0; i < 1024; i++) {
-    write32(debug_rom_entry, i, jal(0, 0));
+  for (unsigned i = 0; i < DEBUG_ROM_ENTRY_SIZE / 4; i++) {
+    write32(debug_rom_entry, i, jal(ZERO, 0));
     halted[i] = false;
-  }
-
-  for (unsigned i = 0; i < datacount; i++) {
-    data[i] = 0;
   }
 
   for (unsigned i = 0; i < progsize; i++) {
@@ -41,24 +96,54 @@ void debug_module_t::reset()
       proc->halt_request = false;
   }
 
-  dmcontrol.haltreq = 0;
-  dmcontrol.reset = 0;
-  dmcontrol.dmactive = 0;
-  dmcontrol.hartsel = 0;
+  dmcontrol = {0};
   dmcontrol.authenticated = 1;
   dmcontrol.version = 1;
-  dmcontrol.authbusy = 0;
   dmcontrol.authtype = dmcontrol.AUTHTYPE_NOAUTH;
-  abstractcs = datacount << DMI_ABSTRACTCS_DATACOUNT_OFFSET;
+
+  abstractcs = {0};
+  abstractcs.datacount = sizeof(dmdata.data) / 4;
+}
+
+void debug_module_t::add_device(bus_t *bus) {
+  bus->add_device(DEBUG_START, this);
+  bus->add_device(DEBUG_EXCHANGE, &dmdata);
 }
 
 bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
+  D(fprintf(stderr, "load 0x%lx bytes at 0x%lx\n",
+        len, addr));
   addr = DEBUG_START + addr;
 
-  if (addr >= DEBUG_ROM_ENTRY && addr <= DEBUG_ROM_CODE) {
+  if (addr >= DEBUG_ROM_ENTRY &&
+      addr < DEBUG_ROM_ENTRY + DEBUG_ROM_ENTRY_SIZE) {
     halted[(addr - DEBUG_ROM_ENTRY) / 4] = true;
     memcpy(bytes, debug_rom_entry + addr - DEBUG_ROM_ENTRY, len);
+
+    if (read32(debug_rom_entry, dmcontrol.hartsel) == jal(ZERO, 0)) {
+      // We're here in an infinite loop. That means that whatever abstract
+      // command has complete.
+      abstractcs.busy = false;
+    }
+    return true;
+  }
+
+  // Restore the jump-to-self loop.
+  write32(debug_rom_entry, dmcontrol.hartsel, jal(ZERO, 0));
+
+  if (addr >= DEBUG_ROM_CODE &&
+      addr < DEBUG_ROM_CODE + DEBUG_ROM_CODE_SIZE) {
+    memcpy(bytes, debug_rom_code + addr - DEBUG_ROM_CODE, len);
+    return true;
+  }
+
+  if (addr >= DEBUG_ROM_EXCEPTION &&
+      addr < DEBUG_ROM_EXCEPTION + DEBUG_ROM_EXCEPTION_SIZE) {
+    memcpy(bytes, debug_rom_exception + addr - DEBUG_ROM_EXCEPTION, len);
+    if (abstractcs.cmderr == abstractcs.CMDERR_NONE) {
+      abstractcs.cmderr = abstractcs.CMDERR_EXCEPTION;
+    }
     return true;
   }
 
@@ -71,14 +156,6 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
   addr = DEBUG_START + addr;
-
-  if (addr & (len-1)) {
-    fprintf(stderr, "ERROR: unaligned store to debug module: %zd bytes at 0x%016"
-            PRIx64 "\n", len, addr);
-    return false;
-  }
-
-  // memcpy(debug_ram + addr - DEBUG_RAM_START, bytes, len);
 
   fprintf(stderr, "ERROR: invalid store to debug module: %zd bytes at 0x%016"
           PRIx64 "\n", len, addr);
@@ -118,8 +195,8 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 {
   uint32_t result = 0;
   D(fprintf(stderr, "dmi_read(0x%x) -> ", address));
-  if (address >= DMI_DATA0 && address < DMI_DATA0 + datacount) {
-    result = data[address - DMI_DATA0];
+  if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
+    result = dmdata.read32(4 * (address - DMI_DATA0));
   } else if (address >= DMI_IBUF0 && address < DMI_IBUF0 + progsize) {
     result = ibuf[address - DMI_IBUF0];
   } else {
@@ -149,10 +226,23 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
         }
         break;
       case DMI_ABSTRACTCS:
-        result = abstractcs;
+        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC7, abstractcs.autoexec7);
+        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC6, abstractcs.autoexec6);
+        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC5, abstractcs.autoexec5);
+        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC4, abstractcs.autoexec4);
+        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC3, abstractcs.autoexec3);
+        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC2, abstractcs.autoexec2);
+        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC1, abstractcs.autoexec1);
+        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC0, abstractcs.autoexec0);
+        result = set_field(result, DMI_ABSTRACTCS_CMDERR, abstractcs.cmderr);
+        result = set_field(result, DMI_ABSTRACTCS_BUSY, abstractcs.busy);
+        result = set_field(result, DMI_ABSTRACTCS_DATACOUNT, abstractcs.datacount);
         break;
       case DMI_ACCESSCS:
         result = progsize << DMI_ACCESSCS_PROGSIZE_OFFSET;
+        break;
+      case DMI_COMMAND:
+        result = 0;
         break;
       default:
         D(fprintf(stderr, "error\n"));
@@ -166,14 +256,74 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 
 bool debug_module_t::perform_abstract_command(uint32_t command)
 {
-  return false;
+  if (abstractcs.cmderr != abstractcs.CMDERR_NONE)
+    return true;
+  if (abstractcs.busy) {
+    abstractcs.cmderr = abstractcs.CMDERR_BUSY;
+    return true;
+  }
+
+  if ((command >> 24) == 0) {
+    // register access
+    unsigned size = get_field(command, AC_ACCESS_REGISTER_SIZE);
+    bool write = get_field(command, AC_ACCESS_REGISTER_WRITE);
+    unsigned regno = get_field(command, AC_ACCESS_REGISTER_REGNO);
+
+    if (regno < 0x1000 || regno >= 0x1020) {
+      abstractcs.cmderr = abstractcs.CMDERR_NOTSUP;
+      return true;
+    }
+
+    unsigned regnum = regno - 0x1000;
+
+    if (!halted[dmcontrol.hartsel]) {
+      abstractcs.cmderr = abstractcs.CMDERR_HALTRESUME;
+      return true;
+    }
+
+    switch (size) {
+      case 2:
+        if (write)
+          write32(debug_rom_code, 0, lw(regnum, ZERO, DEBUG_EXCHANGE));
+        else
+          write32(debug_rom_code, 0, sw(regnum, ZERO, DEBUG_EXCHANGE));
+        break;
+      case 3:
+        if (write)
+          write32(debug_rom_code, 0, ld(regnum, ZERO, DEBUG_EXCHANGE));
+        else
+          write32(debug_rom_code, 0, sd(regnum, ZERO, DEBUG_EXCHANGE));
+        break;
+      /*
+      case 4:
+        if (write)
+          write32(debug_rom_code, 0, lq(regnum, ZERO, DEBUG_EXCHANGE));
+        else
+          write32(debug_rom_code, 0, sq(regnum, ZERO, DEBUG_EXCHANGE));
+        break;
+        */
+      default:
+        abstractcs.cmderr = abstractcs.CMDERR_NOTSUP;
+        return true;
+    }
+    write32(debug_rom_code, 1, ebreak());
+
+    write32(debug_rom_entry, dmcontrol.hartsel,
+        jal(ZERO, DEBUG_ROM_CODE - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel)));
+    write32(debug_rom_exception, dmcontrol.hartsel,
+        jal(ZERO, (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel) - DEBUG_ROM_EXCEPTION));
+    abstractcs.busy = true;
+  } else {
+    abstractcs.cmderr = abstractcs.CMDERR_NOTSUP;
+  }
+  return true;
 }
 
 bool debug_module_t::dmi_write(unsigned address, uint32_t value)
 {
   D(fprintf(stderr, "dmi_write(0x%x, 0x%x)\n", address, value));
-  if (address >= DMI_DATA0 && address < DMI_DATA0 + datacount) {
-    data[address - DMI_DATA0] = value;
+  if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
+    dmdata.write32(4 * (address - DMI_DATA0), value);
     return true;
   } else if (address >= DMI_IBUF0 && address < DMI_IBUF0 + progsize) {
     ibuf[address - DMI_IBUF0] = value;
@@ -197,8 +347,22 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         }
         return true;
 
-      case DMI_ABSTRACTCS:
+      case DMI_COMMAND:
         return perform_abstract_command(value);
+
+      case DMI_ABSTRACTCS:
+        abstractcs.autoexec7 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC7);
+        abstractcs.autoexec6 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC6);
+        abstractcs.autoexec5 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC5);
+        abstractcs.autoexec4 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC4);
+        abstractcs.autoexec3 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC3);
+        abstractcs.autoexec2 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC2);
+        abstractcs.autoexec1 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC1);
+        abstractcs.autoexec0 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC0);
+        if (get_field(value, DMI_ABSTRACTCS_CMDERR) == abstractcs.CMDERR_NONE) {
+          abstractcs.cmderr = abstractcs.CMDERR_NONE;
+        }
+        break;
     }
   }
   return false;

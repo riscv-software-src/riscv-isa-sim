@@ -41,7 +41,7 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
     fprintf(stderr, "warning: only got %zu bytes of target mem (wanted %zu)\n",
             memsz, memsz0);
 
-  bus.add_device(DEBUG_START, &debug_module);
+  debug_module.add_device(&bus);
 
   debug_mmu = new mmu_t(this, NULL);
 

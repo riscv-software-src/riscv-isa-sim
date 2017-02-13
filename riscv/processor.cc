@@ -213,17 +213,21 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
           t.get_badaddr());
   }
 
+  if (state.dcsr.cause) {
+    if (t.cause() == CAUSE_BREAKPOINT) {
+      state.pc = debug_rom_entry();
+    } else {
+      state.pc = DEBUG_ROM_EXCEPTION;
+    }
+    return;
+  }
+
   if (t.cause() == CAUSE_BREAKPOINT && (
               (state.prv == PRV_M && state.dcsr.ebreakm) ||
               (state.prv == PRV_H && state.dcsr.ebreakh) ||
               (state.prv == PRV_S && state.dcsr.ebreaks) ||
               (state.prv == PRV_U && state.dcsr.ebreaku))) {
     enter_debug_mode(DCSR_CAUSE_SWBP);
-    return;
-  }
-
-  if (state.dcsr.cause) {
-    state.pc = DEBUG_ROM_EXCEPTION;
     return;
   }
 
