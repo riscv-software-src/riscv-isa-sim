@@ -101,25 +101,30 @@ class debug_module_t : public abstract_device_t
     bool dmi_write(unsigned address, uint32_t value);
 
   private:
+    static const unsigned progsize = 8;
+
     sim_t *sim;
     // Track which interrupts from module to debugger are set.
     std::set<uint32_t> interrupt;
     // Track which halt notifications from debugger to module are set.
     std::set<uint32_t> halt_notification;
+
     uint8_t debug_rom_entry[DEBUG_ROM_ENTRY_SIZE];
     uint8_t debug_rom_code[DEBUG_ROM_CODE_SIZE];
     uint8_t debug_rom_exception[DEBUG_ROM_EXCEPTION_SIZE];
+    uint8_t program_buffer[progsize * 4];
     bool halted[1024];
     debug_module_data_t dmdata;
+    // Instruction that will be placed at the current hart's ROM entry address
+    // after the current action has completed.
+    uint32_t next_action;
+    bool action_executed;
 
     void write32(uint8_t *rom, unsigned int index, uint32_t value);
     uint32_t read32(uint8_t *rom, unsigned int index);
 
-    static const unsigned progsize = 8;
-
     dmcontrol_t dmcontrol;
     abstractcs_t abstractcs;
-    uint32_t ibuf[progsize];
 
     processor_t *current_proc() const;
     void reset();

@@ -72,7 +72,9 @@ void debug_module_data_t::write32(reg_t addr, uint32_t value)
 
 ///////////////////////// debug_module_t
 
-debug_module_t::debug_module_t(sim_t *sim) : sim(sim)
+debug_module_t::debug_module_t(sim_t *sim) : sim(sim),
+  next_action(jal(ZERO, 0)),
+  action_executed(false)
 {
   dmcontrol = {0};
   dmcontrol.version = 1;
@@ -82,10 +84,7 @@ debug_module_t::debug_module_t(sim_t *sim) : sim(sim)
     halted[i] = false;
   }
 
-  for (unsigned i = 0; i < progsize; i++) {
-    ibuf[i] = 0;
-  }
-
+  memset(program_buffer, 0, sizeof(program_buffer));
 }
 
 void debug_module_t::reset()
@@ -118,23 +117,35 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 
   if (addr >= DEBUG_ROM_ENTRY &&
       addr < DEBUG_ROM_ENTRY + DEBUG_ROM_ENTRY_SIZE) {
-    halted[(addr - DEBUG_ROM_ENTRY) / 4] = true;
-    memcpy(bytes, debug_rom_entry + addr - DEBUG_ROM_ENTRY, len);
 
     if (read32(debug_rom_entry, dmcontrol.hartsel) == jal(ZERO, 0)) {
       // We're here in an infinite loop. That means that whatever abstract
       // command has complete.
       abstractcs.busy = false;
     }
+
+    action_executed = true;
+
+    halted[(addr - DEBUG_ROM_ENTRY) / 4] = true;
+    memcpy(bytes, debug_rom_entry + addr - DEBUG_ROM_ENTRY, len);
     return true;
   }
 
-  // Restore the jump-to-self loop.
-  write32(debug_rom_entry, dmcontrol.hartsel, jal(ZERO, 0));
+  if (action_executed) {
+    // Restore the jump-to-self loop.
+    write32(debug_rom_entry, dmcontrol.hartsel, next_action);
+    next_action = jal(ZERO, 0);
+    action_executed = false;
+  }
 
   if (addr >= DEBUG_ROM_CODE &&
       addr < DEBUG_ROM_CODE + DEBUG_ROM_CODE_SIZE) {
     memcpy(bytes, debug_rom_code + addr - DEBUG_ROM_CODE, len);
+    return true;
+  }
+
+  if (addr >= DEBUG_RAM_START && addr < DEBUG_RAM_END) {
+    memcpy(bytes, program_buffer + addr - DEBUG_RAM_START, len);
     return true;
   }
 
@@ -156,6 +167,11 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
   addr = DEBUG_START + addr;
+
+  if (addr >= DEBUG_RAM_START && addr < DEBUG_RAM_END) {
+    memcpy(program_buffer + addr - DEBUG_RAM_START, bytes, len);
+    return true;
+  }
 
   fprintf(stderr, "ERROR: invalid store to debug module: %zd bytes at 0x%016"
           PRIx64 "\n", len, addr);
@@ -198,7 +214,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
   if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
     result = dmdata.read32(4 * (address - DMI_DATA0));
   } else if (address >= DMI_IBUF0 && address < DMI_IBUF0 + progsize) {
-    result = ibuf[address - DMI_IBUF0];
+    result = read32(program_buffer, address - DMI_IBUF0);
   } else {
     switch (address) {
       case DMI_DMCONTROL:
@@ -306,10 +322,22 @@ bool debug_module_t::perform_abstract_command(uint32_t command)
         abstractcs.cmderr = abstractcs.CMDERR_NOTSUP;
         return true;
     }
-    write32(debug_rom_code, 1, ebreak());
+    if (get_field(command, AC_ACCESS_REGISTER_POSTEXEC)) {
+      write32(debug_rom_code, 1, jal(ZERO, DEBUG_RAM_START - DEBUG_ROM_CODE - 4));
+    } else {
+      write32(debug_rom_code, 1, ebreak());
+    }
 
-    write32(debug_rom_entry, dmcontrol.hartsel,
-        jal(ZERO, DEBUG_ROM_CODE - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel)));
+    if (get_field(command, AC_ACCESS_REGISTER_PREEXEC)) {
+      write32(debug_rom_entry, dmcontrol.hartsel,
+          jal(ZERO, DEBUG_RAM_START - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel)));
+      next_action =
+        jal(ZERO, DEBUG_ROM_CODE - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel));
+    } else {
+      write32(debug_rom_entry, dmcontrol.hartsel,
+          jal(ZERO, DEBUG_ROM_CODE - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel)));
+    }
+
     write32(debug_rom_exception, dmcontrol.hartsel,
         jal(ZERO, (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel) - DEBUG_ROM_EXCEPTION));
     abstractcs.busy = true;
@@ -326,7 +354,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
     dmdata.write32(4 * (address - DMI_DATA0), value);
     return true;
   } else if (address >= DMI_IBUF0 && address < DMI_IBUF0 + progsize) {
-    ibuf[address - DMI_IBUF0] = value;
+    write32(program_buffer, address - DMI_IBUF0, value);
     return true;
   } else {
     switch (address) {
