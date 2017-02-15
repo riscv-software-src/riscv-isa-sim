@@ -227,7 +227,7 @@ riscv_insn_list = \
 	sc_d \
 	sc_w \
 	sd \
-	sfence_vm \
+	sfence_vma \
 	sh \
 	sll \
 	slli \
