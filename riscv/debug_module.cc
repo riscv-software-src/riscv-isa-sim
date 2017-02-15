@@ -111,7 +111,7 @@ void debug_module_t::add_device(bus_t *bus) {
 
 bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
-  D(fprintf(stderr, "load 0x%lx bytes at 0x%lx\n",
+  D(fprintf(stderr, "debug_module_t load 0x%lx bytes at 0x%lx\n",
         len, addr));
   addr = DEBUG_START + addr;
 
@@ -140,6 +140,12 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 
   if (addr >= DEBUG_ROM_CODE &&
       addr < DEBUG_ROM_CODE + DEBUG_ROM_CODE_SIZE) {
+
+    if (read32(debug_rom_code, 0) == dret()) {
+      abstractcs.busy = false;
+      halted[dmcontrol.hartsel] = false;
+    }
+
     memcpy(bytes, debug_rom_code + addr - DEBUG_ROM_CODE, len);
     return true;
   }
@@ -363,6 +369,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           dmcontrol.dmactive = get_field(value, DMI_DMCONTROL_DMACTIVE);
           if (dmcontrol.dmactive) {
             dmcontrol.haltreq = get_field(value, DMI_DMCONTROL_HALTREQ);
+            dmcontrol.resumereq = get_field(value, DMI_DMCONTROL_RESUMEREQ);
             dmcontrol.reset = get_field(value, DMI_DMCONTROL_RESET);
             dmcontrol.hartsel = get_field(value, DMI_DMCONTROL_HARTSEL);
           } else {
@@ -371,6 +378,12 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           processor_t *proc = current_proc();
           if (proc) {
             proc->halt_request = dmcontrol.haltreq;
+            if (dmcontrol.resumereq) {
+              write32(debug_rom_code, 0, dret());
+              write32(debug_rom_entry, dmcontrol.hartsel,
+                  jal(ZERO, DEBUG_ROM_CODE - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel)));
+              abstractcs.busy = true;
+            }
           }
         }
         return true;

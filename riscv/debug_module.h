@@ -10,6 +10,7 @@ class sim_t;
 
 typedef struct {
   bool haltreq;
+  bool resumereq;
   bool reset;
   bool dmactive;
   enum {

@@ -168,6 +168,9 @@ static uint32_t ebreak(void) { return MATCH_EBREAK; }
 static uint32_t ebreak_c(void) __attribute__ ((unused));
 static uint32_t ebreak_c(void) { return MATCH_C_EBREAK; }
 
+static uint32_t dret(void) __attribute__ ((unused));
+static uint32_t dret(void) { return MATCH_DRET; }
+
 static uint32_t fence_i(void) __attribute__ ((unused));
 static uint32_t fence_i(void)
 {

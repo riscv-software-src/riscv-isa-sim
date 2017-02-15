@@ -28,11 +28,11 @@
 #define AC_ACCESS_REGISTER_POSTEXEC_LENGTH  1
 #define AC_ACCESS_REGISTER_POSTEXEC         (0x1 << AC_ACCESS_REGISTER_POSTEXEC_OFFSET)
 /*
-* 0: Copy data from \Rdatazero into the specified register.
+* 0: Copy data from {\tt arg0} portion of {\tt data} into the
+* specified register.
 *
-* 1: Copy data from the specified register into \Rdatazero.
-*
-* (If XLEN is greater than 32, more {\tt data} registers are involved.)
+* 1: Copy data from the specified register into {\tt arg0} portion
+* of {\tt data}.
  */
 #define AC_ACCESS_REGISTER_WRITE_OFFSET     16
 #define AC_ACCESS_REGISTER_WRITE_LENGTH     1
@@ -169,37 +169,25 @@
 #define CSR_PRIV_PRV                        (0x3 << CSR_PRIV_PRV_OFFSET)
 #define DMI_DMCONTROL                       0x00
 /*
-* Halt request signal for the hart selected by \Fhartsel.  Writes
-* apply to the new value of \Fhartsel.
+* Halt request signal for the hart selected by \Fhartsel. When 1, the
+* hart will halt if it's not currently halted.
+* Setting both \Fhaltreq and \Fresumereq leads to undefined behavior.
+*
+* Writes apply to the new value of \Fhartsel.
  */
 #define DMI_DMCONTROL_HALTREQ_OFFSET        31
 #define DMI_DMCONTROL_HALTREQ_LENGTH        1
 #define DMI_DMCONTROL_HALTREQ               (0x1 << DMI_DMCONTROL_HALTREQ_OFFSET)
 /*
-* This bit controls the reset signal from the DM to the rest of the
-* system. To perform a reset the debugger writes 1, and then writes 0
-* to deassert the reset.
- */
-#define DMI_DMCONTROL_RESET_OFFSET          30
-#define DMI_DMCONTROL_RESET_LENGTH          1
-#define DMI_DMCONTROL_RESET                 (0x1 << DMI_DMCONTROL_RESET_OFFSET)
-/*
-* This bit serves as a reset signal for the Debug Module itself.
-* When 0, the module is held in reset. When 1, it functions normally.
-* No other mechanism should exist that may result in resetting the
-* Debug Module after power up, including the platform's system reset
-* or Debug Transport reset signals.
+* Resume request signal for the hart selected by \Fhartsel. When 1,
+* the hart will resume if it's currently halted.
+* Setting both \Fhaltreq and \Fresumereq leads to undefined behavior.
 *
-* A debugger should pulse this bit low to ensure that the Debug
-* Module is fully reset and ready to use.
-*
-* Implementations may use this bit to aid debugging, for example by
-* preventing the Debug Module from being power gated while debugging
-* is active.
+* Writes apply to the new value of \Fhartsel.
  */
-#define DMI_DMCONTROL_DMACTIVE_OFFSET       29
-#define DMI_DMCONTROL_DMACTIVE_LENGTH       1
-#define DMI_DMCONTROL_DMACTIVE              (0x1 << DMI_DMCONTROL_DMACTIVE_OFFSET)
+#define DMI_DMCONTROL_RESUMEREQ_OFFSET      30
+#define DMI_DMCONTROL_RESUMEREQ_LENGTH      1
+#define DMI_DMCONTROL_RESUMEREQ             (0x1 << DMI_DMCONTROL_RESUMEREQ_OFFSET)
 /*
 * The status of the currently selected hart.
 *
@@ -220,6 +208,31 @@
 #define DMI_DMCONTROL_HARTSEL_OFFSET        16
 #define DMI_DMCONTROL_HARTSEL_LENGTH        10
 #define DMI_DMCONTROL_HARTSEL               (0x3ff << DMI_DMCONTROL_HARTSEL_OFFSET)
+/*
+* This bit serves as a reset signal for the Debug Module itself.
+* When 0, the module is held in reset. When 1, it functions normally.
+* No other mechanism should exist that may result in resetting the
+* Debug Module after power up, including the platform's system reset
+* or Debug Transport reset signals.
+*
+* A debugger should pulse this bit low to ensure that the Debug
+* Module is fully reset and ready to use.
+*
+* Implementations may use this bit to aid debugging, for example by
+* preventing the Debug Module from being power gated while debugging
+* is active.
+ */
+#define DMI_DMCONTROL_DMACTIVE_OFFSET       9
+#define DMI_DMCONTROL_DMACTIVE_LENGTH       1
+#define DMI_DMCONTROL_DMACTIVE              (0x1 << DMI_DMCONTROL_DMACTIVE_OFFSET)
+/*
+* This bit controls the reset signal from the DM to the rest of the
+* system. To perform a reset the debugger writes 1, and then writes 0
+* to deassert the reset.
+ */
+#define DMI_DMCONTROL_RESET_OFFSET          8
+#define DMI_DMCONTROL_RESET_LENGTH          1
+#define DMI_DMCONTROL_RESET                 (0x1 << DMI_DMCONTROL_RESET_OFFSET)
 /*
 * 0 when authentication is required before using the DM.  1 when the
 * authentication check has passed. On components that don't implement
@@ -450,8 +463,10 @@
 *
 * 3: There was some other error (eg. alignment).
 *
-* 4: The system bus master was busy when a one of the {\tt sbaddress} or
-* {\tt sbdata} registers was written.
+* 4: The system bus master was busy when a one of the
+* {\tt sbaddress} or {\tt sbdata} registers was written,
+* or the {\tt sbdata} register was read when it had
+* stale data.
  */
 #define DMI_SBCS_SBERROR_OFFSET             12
 #define DMI_SBCS_SBERROR_LENGTH             3
