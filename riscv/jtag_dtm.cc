@@ -34,8 +34,8 @@ enum {
 
 #define DMI_OP_NOP	        0
 #define DMI_OP_READ	        1
-#define DMI_OP_READ_WRITE	2
-#define DMI_OP_RESERVED	3
+#define DMI_OP_WRITE	        2
+#define DMI_OP_RESERVED	        3
 
 jtag_dtm_t::jtag_dtm_t(debug_module_t *dm) :
   dm(dm),
@@ -159,15 +159,14 @@ void jtag_dtm_t::update_dr()
         dmi = dr;
 
         bool success = true;
-        if (op == DMI_OP_READ || op == DMI_OP_READ_WRITE) {
+        if (op == DMI_OP_READ) {
           uint32_t value;
           if (dm->dmi_read(address, &value)) {
             dmi = set_field(dmi, DMI_DATA, value);
           } else {
             success = false;
           }
-        }
-        if (success && op == DMI_OP_READ_WRITE) {
+        } else if (op == DMI_OP_WRITE) {
           success = dm->dmi_write(address, data);
         }
 

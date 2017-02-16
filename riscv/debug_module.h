@@ -126,10 +126,11 @@ class debug_module_t : public abstract_device_t
 
     dmcontrol_t dmcontrol;
     abstractcs_t abstractcs;
+    uint32_t command;
 
     processor_t *current_proc() const;
     void reset();
-    bool perform_abstract_command(uint32_t command);
+    bool perform_abstract_command();
 };
 
 #endif

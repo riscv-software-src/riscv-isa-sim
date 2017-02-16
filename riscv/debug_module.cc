@@ -218,7 +218,23 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
   uint32_t result = 0;
   D(fprintf(stderr, "dmi_read(0x%x) -> ", address));
   if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
-    result = dmdata.read32(4 * (address - DMI_DATA0));
+    unsigned i = address - DMI_DATA0;
+    result = dmdata.read32(4 * i);
+
+    bool autoexec = false;
+    switch (i) {
+      case 0:   autoexec = abstractcs.autoexec0; break;
+      case 1:   autoexec = abstractcs.autoexec1; break;
+      case 2:   autoexec = abstractcs.autoexec2; break;
+      case 3:   autoexec = abstractcs.autoexec3; break;
+      case 4:   autoexec = abstractcs.autoexec4; break;
+      case 5:   autoexec = abstractcs.autoexec5; break;
+      case 6:   autoexec = abstractcs.autoexec6; break;
+      case 7:   autoexec = abstractcs.autoexec7; break;
+    }
+    if (autoexec) {
+      perform_abstract_command();
+    }
   } else if (address >= DMI_IBUF0 && address < DMI_IBUF0 + progsize) {
     result = read32(program_buffer, address - DMI_IBUF0);
   } else {
@@ -276,7 +292,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
   return true;
 }
 
-bool debug_module_t::perform_abstract_command(uint32_t command)
+bool debug_module_t::perform_abstract_command()
 {
   if (abstractcs.cmderr != abstractcs.CMDERR_NONE)
     return true;
@@ -357,8 +373,25 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
 {
   D(fprintf(stderr, "dmi_write(0x%x, 0x%x)\n", address, value));
   if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
-    dmdata.write32(4 * (address - DMI_DATA0), value);
+    unsigned i = address - DMI_DATA0;
+    dmdata.write32(4 * i, value);
+
+    bool autoexec = false;
+    switch (i) {
+      case 0:   autoexec = abstractcs.autoexec0; break;
+      case 1:   autoexec = abstractcs.autoexec1; break;
+      case 2:   autoexec = abstractcs.autoexec2; break;
+      case 3:   autoexec = abstractcs.autoexec3; break;
+      case 4:   autoexec = abstractcs.autoexec4; break;
+      case 5:   autoexec = abstractcs.autoexec5; break;
+      case 6:   autoexec = abstractcs.autoexec6; break;
+      case 7:   autoexec = abstractcs.autoexec7; break;
+    }
+    if (autoexec) {
+      perform_abstract_command();
+    }
     return true;
+
   } else if (address >= DMI_IBUF0 && address < DMI_IBUF0 + progsize) {
     write32(program_buffer, address - DMI_IBUF0, value);
     return true;
@@ -389,7 +422,8 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         return true;
 
       case DMI_COMMAND:
-        return perform_abstract_command(value);
+        command = value;
+        return perform_abstract_command();
 
       case DMI_ABSTRACTCS:
         abstractcs.autoexec7 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC7);
