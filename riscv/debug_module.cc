@@ -221,6 +221,10 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
     unsigned i = address - DMI_DATA0;
     result = dmdata.read32(4 * i);
 
+    if (abstractcs.busy && abstractcs.cmderr == abstractcs.CMDERR_NONE) {
+      abstractcs.cmderr = abstractcs.CMDERR_BUSY;
+    }
+
     bool autoexec = false;
     switch (i) {
       case 0:   autoexec = abstractcs.autoexec0; break;
@@ -375,6 +379,10 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
   if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
     unsigned i = address - DMI_DATA0;
     dmdata.write32(4 * i, value);
+
+    if (abstractcs.busy && abstractcs.cmderr == abstractcs.CMDERR_NONE) {
+      abstractcs.cmderr = abstractcs.CMDERR_BUSY;
+    }
 
     bool autoexec = false;
     switch (i) {
