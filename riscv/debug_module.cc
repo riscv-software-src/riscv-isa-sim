@@ -22,9 +22,6 @@ debug_module_data_t::debug_module_data_t()
 
 bool debug_module_data_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
-  D(fprintf(stderr, "debug_module_data_t load 0x%lx bytes at 0x%lx\n", len,
-        addr));
-
   if (addr + len < sizeof(data)) {
     memcpy(bytes, data + addr, len);
     return true;
@@ -111,8 +108,6 @@ void debug_module_t::add_device(bus_t *bus) {
 
 bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
-  D(fprintf(stderr, "debug_module_t load 0x%lx bytes at 0x%lx\n",
-        len, addr));
   addr = DEBUG_START + addr;
 
   if (addr >= DEBUG_ROM_ENTRY &&
