@@ -362,6 +362,7 @@ void processor_t::set_csr(int which, reg_t val)
       return set_csr(CSR_MIE,
                      (state.mie & ~state.mideleg) | (val & state.mideleg));
     case CSR_SPTBR: {
+      mmu->flush_tlb();
       if (max_xlen == 32)
         state.sptbr = val & (SPTBR32_PPN | SPTBR32_MODE);
       if (max_xlen == 64 && (get_field(val, SPTBR64_MODE) == SPTBR_MODE_OFF ||
