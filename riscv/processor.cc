@@ -270,9 +270,23 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
 
 void processor_t::disasm(insn_t insn)
 {
+  static uint64_t last_pc = 1, last_bits;
+  static uint64_t executions = 1;
+
   uint64_t bits = insn.bits() & ((1ULL << (8 * insn_length(insn.bits()))) - 1);
-  fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx64 ") %s\n",
-          id, state.pc, bits, disassembler->disassemble(insn).c_str());
+  if (last_pc != state.pc || last_bits != bits) {
+    if (executions != 1) {
+      fprintf(stderr, "core %3d: Executed %" PRIx64 " times\n", id, executions);
+    }
+
+    fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx64 ") %s\n",
+            id, state.pc, bits, disassembler->disassemble(insn).c_str());
+    last_pc = state.pc;
+    last_bits = bits;
+    executions = 1;
+  } else {
+    executions++;
+  }
 }
 
 static bool validate_vm(int max_xlen, reg_t vm)
