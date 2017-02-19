@@ -675,6 +675,7 @@ infodir
 docdir
 oldincludedir
 includedir
+runstatedir
 localstatedir
 sharedstatedir
 sysconfdir
@@ -703,6 +704,7 @@ with_isa
 with_fesvr
 enable_commitlog
 enable_histogram
+enable_dirty
 '
       ac_precious_vars='build_alias
 host_alias
@@ -756,6 +758,7 @@ datadir='${datarootdir}'
 sysconfdir='${prefix}/etc'
 sharedstatedir='${prefix}/com'
 localstatedir='${prefix}/var'
+runstatedir='${localstatedir}/run'
 includedir='${prefix}/include'
 oldincludedir='/usr/include'
 docdir='${datarootdir}/doc/${PACKAGE_TARNAME}'
@@ -1008,6 +1011,15 @@ do
   | -silent | --silent | --silen | --sile | --sil)
     silent=yes ;;
 
+  -runstatedir | --runstatedir | --runstatedi | --runstated \
+  | --runstate | --runstat | --runsta | --runst | --runs \
+  | --run | --ru | --r)
+    ac_prev=runstatedir ;;
+  -runstatedir=* | --runstatedir=* | --runstatedi=* | --runstated=* \
+  | --runstate=* | --runstat=* | --runsta=* | --runst=* | --runs=* \
+  | --run=* | --ru=* | --r=*)
+    runstatedir=$ac_optarg ;;
+
   -sbindir | --sbindir | --sbindi | --sbind | --sbin | --sbi | --sb)
     ac_prev=sbindir ;;
   -sbindir=* | --sbindir=* | --sbindi=* | --sbind=* | --sbin=* \
@@ -1145,7 +1157,7 @@ fi
 for ac_var in	exec_prefix prefix bindir sbindir libexecdir datarootdir \
 		datadir sysconfdir sharedstatedir localstatedir includedir \
 		oldincludedir docdir infodir htmldir dvidir pdfdir psdir \
-		libdir localedir mandir
+		libdir localedir mandir runstatedir
 do
   eval ac_val=\$$ac_var
   # Remove trailing slashes.
@@ -1298,6 +1310,7 @@ Fine tuning of the installation directories:
   --sysconfdir=DIR        read-only single-machine data [PREFIX/etc]
   --sharedstatedir=DIR    modifiable architecture-independent data [PREFIX/com]
   --localstatedir=DIR     modifiable single-machine data [PREFIX/var]
+  --runstatedir=DIR       modifiable per-process data [LOCALSTATEDIR/run]
   --libdir=DIR            object code libraries [EPREFIX/lib]
   --includedir=DIR        C header files [PREFIX/include]
   --oldincludedir=DIR     C header files for non-gcc [/usr/include]
@@ -1336,6 +1349,8 @@ Optional Features:
                           Enable all optional subprojects
   --enable-commitlog      Enable commit log generation
   --enable-histogram      Enable PC histogram generation
+  --enable-dirty          Enable hardware management of PTE accessed and dirty
+                          bits
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -4603,6 +4618,19 @@ if test "x$enable_histogram" = "xyes"; then :
 
 
 $as_echo "#define RISCV_ENABLE_HISTOGRAM /**/" >>confdefs.h
+
+
+fi
+
+# Check whether --enable-dirty was given.
+if test "${enable_dirty+set}" = set; then :
+  enableval=$enable_dirty;
+fi
+
+if test "x$enable_dirty" = "xyes"; then :
+
+
+$as_echo "#define RISCV_ENABLE_DIRTY /**/" >>confdefs.h
 
 
 fi

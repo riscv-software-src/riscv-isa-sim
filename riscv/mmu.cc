@@ -197,8 +197,15 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
                                !((pte & PTE_R) && (pte & PTE_W))) {
       break;
     } else {
+      reg_t ad = PTE_A | ((type == STORE) * PTE_D);
+#ifdef RISCV_ENABLE_DIRTY
       // set accessed and possibly dirty bits.
-      *(uint32_t*)ppte |= PTE_A | ((type == STORE) * PTE_D);
+      *(uint32_t*)ppte |= ad;
+#else
+      // take exception if access or possibly dirty bit is not set.
+      if ((pte & ad) != ad)
+        break;
+#endif
       // for superpage mappings, make a fake leaf PTE for the TLB's benefit.
       reg_t vpn = addr >> PGSHIFT;
       reg_t value = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;

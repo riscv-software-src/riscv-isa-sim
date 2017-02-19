@@ -66,6 +66,9 @@
 /* Enable commit log generation */
 #undef RISCV_ENABLE_COMMITLOG
 
+/* Enable hardware management of PTE accessed and dirty bits */
+#undef RISCV_ENABLE_DIRTY
+
 /* Enable PC histogram generation */
 #undef RISCV_ENABLE_HISTOGRAM
 
