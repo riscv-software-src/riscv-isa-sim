@@ -172,7 +172,8 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
 
   reg_t sie = get_field(state.mstatus, MSTATUS_SIE);
   reg_t s_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
-  enabled_interrupts |= pending_interrupts & state.mideleg & -s_enabled;
+  if (enabled_interrupts == 0)
+    enabled_interrupts = pending_interrupts & state.mideleg & -s_enabled;
 
   if (enabled_interrupts)
     throw trap_t(((reg_t)1 << (max_xlen-1)) | ctz(enabled_interrupts));
