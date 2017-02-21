@@ -84,7 +84,7 @@ void processor_t::step(size_t n)
      if (unlikely(invalid_pc(pc))) { \
        switch (pc) { \
          case PC_SERIALIZE_BEFORE: state.serialized = true; break; \
-         case PC_SERIALIZE_AFTER: instret++; break; \
+         case PC_SERIALIZE_AFTER: n = ++instret; break; \
          default: abort(); \
        } \
        pc = state.pc; \

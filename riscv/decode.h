@@ -202,9 +202,10 @@ private:
      } while(0)
 
 #define set_pc_and_serialize(x) \
-  do { set_pc(x); /* check alignment */ \
+  do { reg_t __npc = (x); \
+       set_pc(__npc); /* check alignment */ \
        npc = PC_SERIALIZE_AFTER; \
-       STATE.pc = (x); \
+       STATE.pc = __npc; \
      } while(0)
 
 /* Sentinel PC values to serialize simulator pipeline */
