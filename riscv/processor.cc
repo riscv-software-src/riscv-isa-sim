@@ -684,6 +684,17 @@ void processor_t::register_base_instructions()
 
 bool processor_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
+  switch (addr)
+  {
+    case 0:
+      if (len <= 4) {
+        memset(bytes, 0, len);
+        bytes[0] = get_field(state.mip, MIP_MSIP);
+        return true;
+      }
+      break;
+  }
+
   return false;
 }
 
@@ -692,14 +703,14 @@ bool processor_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   switch (addr)
   {
     case 0:
-      state.mip &= ~MIP_MSIP;
-      if (bytes[0] & 1)
-        state.mip |= MIP_MSIP;
-      return true;
-
-    default:
-      return false;
+      if (len <= 4) {
+        state.mip = set_field(state.mip, MIP_MSIP, bytes[0]);
+        return true;
+      }
+      break;
   }
+
+  return false;
 }
 
 void processor_t::trigger_updated()
