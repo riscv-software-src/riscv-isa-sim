@@ -69,10 +69,6 @@ void processor_t::step(size_t n)
     } else if (state.dcsr.halt) {
       enter_debug_mode(DCSR_CAUSE_HALT);
     }
-  } else {
-    // In Debug Mode, just do 11 steps at a time. Otherwise we're going to be
-    // spinning the rest of the time anyway.
-    n = std::min(n, (size_t) 11);
   }
 
   while (n > 0) {
@@ -119,6 +115,13 @@ void processor_t::step(size_t n)
             enter_debug_mode(DCSR_CAUSE_STEP);
             // enter_debug_mode changed state.pc, so we can't just continue.
             break;
+          }
+
+          if (unlikely(state.pc >= DEBUG_ROM_ENTRY &&
+                state.pc < DEBUG_ROM_ENTRY + DEBUG_ROM_ENTRY_SIZE)) {
+            // We're spinning waiting for the debugger to tell us something.
+            // Let's go talk to the debugger.
+            return;
           }
         }
       }
