@@ -22,7 +22,9 @@
 remote_bitbang_t::remote_bitbang_t(uint16_t port, jtag_dtm_t *tap) :
   tap(tap),
   socket_fd(0),
-  client_fd(0)
+  client_fd(0),
+  recv_start(0),
+  recv_end(0)
 {
   socket_fd = socket(AF_INET, SOCK_STREAM, 0);
   if (socket_fd == -1) {
@@ -97,66 +99,76 @@ void remote_bitbang_t::tick()
 
 void remote_bitbang_t::execute_commands()
 {
-  const unsigned buf_size = 64 * 1024;
-  static char recv_buf[buf_size];
   static char send_buf[buf_size];
-  unsigned total_received = 0;
-  ssize_t bytes = read(client_fd, recv_buf, buf_size);
+  unsigned total_processed = 0;
   bool quit = false;
-  while (bytes > 0) {
-    total_received += bytes;
-    unsigned send_offset = 0;
-    for (unsigned i = 0; i < bytes; i++) {
-      uint8_t command = recv_buf[i];
+  bool in_rti = tap->state() == RUN_TEST_IDLE;
+  bool entered_rti = false;
+  while (1) {
+    if (recv_start < recv_end) {
+      unsigned send_offset = 0;
+      while (recv_start < recv_end) {
+        uint8_t command = recv_buf[recv_start];
 
-      switch (command) {
-        case 'B': /* fprintf(stderr, "*BLINK*\n"); */ break;
-        case 'b': /* fprintf(stderr, "_______\n"); */ break;
-        case 'r': tap->reset(); break;
-        case '0': tap->set_pins(0, 0, 0); break;
-        case '1': tap->set_pins(0, 0, 1); break;
-        case '2': tap->set_pins(0, 1, 0); break;
-        case '3': tap->set_pins(0, 1, 1); break;
-        case '4': tap->set_pins(1, 0, 0); break;
-        case '5': tap->set_pins(1, 0, 1); break;
-        case '6': tap->set_pins(1, 1, 0); break;
-        case '7': tap->set_pins(1, 1, 1); break;
-        case 'R': send_buf[send_offset++] = tap->tdo() ? '1' : '0'; break;
-        case 'Q': quit = true; break;
-        default:
-                  fprintf(stderr, "remote_bitbang got unsupported command '%c'\n",
-                      command);
+        switch (command) {
+          case 'B': /* fprintf(stderr, "*BLINK*\n"); */ break;
+          case 'b': /* fprintf(stderr, "_______\n"); */ break;
+          case 'r': tap->reset(); break;
+          case '0': tap->set_pins(0, 0, 0); break;
+          case '1': tap->set_pins(0, 0, 1); break;
+          case '2': tap->set_pins(0, 1, 0); break;
+          case '3': tap->set_pins(0, 1, 1); break;
+          case '4': tap->set_pins(1, 0, 0); break;
+          case '5': tap->set_pins(1, 0, 1); break;
+          case '6': tap->set_pins(1, 1, 0); break;
+          case '7': tap->set_pins(1, 1, 1); break;
+          case 'R': send_buf[send_offset++] = tap->tdo() ? '1' : '0'; break;
+          case 'Q': quit = true; break;
+          default:
+                    fprintf(stderr, "remote_bitbang got unsupported command '%c'\n",
+                        command);
+        }
+        recv_start++;
+        total_processed++;
+        if (!in_rti && tap->state() == RUN_TEST_IDLE) {
+          entered_rti = true;
+          break;
+        }
+        in_rti = false;
+      }
+      unsigned sent = 0;
+      while (sent < send_offset) {
+        ssize_t bytes = write(client_fd, send_buf + sent, send_offset);
+        if (bytes == -1) {
+          fprintf(stderr, "failed to write to socket: %s (%d)\n", strerror(errno), errno);
+          abort();
+        }
+        sent += bytes;
       }
     }
-    unsigned sent = 0;
-    while (sent < send_offset) {
-      bytes = write(client_fd, send_buf + sent, send_offset);
-      if (bytes == -1) {
-        fprintf(stderr, "failed to write to socket: %s (%d)\n", strerror(errno), errno);
-        abort();
-      }
-      sent += bytes;
-    }
 
-    if (total_received > buf_size || quit) {
+    if (total_processed > buf_size || quit || entered_rti) {
       // Don't go forever, because that could starve the main simulation.
       break;
     }
-    bytes = read(client_fd, recv_buf, buf_size);
-  }
 
-  if (bytes == -1) {
-    if (errno == EAGAIN) {
-      // We'll try again the next call.
-    } else {
-      fprintf(stderr, "remote_bitbang failed to read on socket: %s (%d)\n",
-          strerror(errno), errno);
-      abort();
+    recv_start = 0;
+    recv_end = read(client_fd, recv_buf, buf_size);
+
+    if (recv_end == -1) {
+      if (errno == EAGAIN) {
+        // We'll try again the next call.
+      } else {
+        fprintf(stderr, "remote_bitbang failed to read on socket: %s (%d)\n",
+            strerror(errno), errno);
+        abort();
+      }
     }
-  }
-  if (bytes == 0 || quit) {
-    // The remote disconnected.
-    close(client_fd);
-    client_fd = 0;
+    if (recv_end == 0 || quit) {
+      // The remote disconnected.
+      close(client_fd);
+      client_fd = 0;
+      break;
+    }
   }
 }

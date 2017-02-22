@@ -36,6 +36,8 @@ class jtag_dtm_t
 
     bool tdo() const { return _tdo; }
 
+    jtag_state_t state() const { return _state; }
+
   private:
     debug_module_t *dm;
     bool _tck, _tms, _tdi, _tdo;
@@ -50,7 +52,7 @@ class jtag_dtm_t
     uint32_t dtmcontrol;
     uint64_t dmi;
 
-    jtag_state_t state;
+    jtag_state_t _state;
 
     void capture_dr();
     void update_dr();

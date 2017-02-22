@@ -42,12 +42,12 @@ jtag_dtm_t::jtag_dtm_t(debug_module_t *dm) :
   _tck(false), _tms(false), _tdi(false), _tdo(false),
   dtmcontrol((abits << DTM_DTMCONTROL_ABITS_OFFSET) | 1),
   dmi(DMI_OP_STATUS_FAILED << DTM_DMI_OP_OFFSET),
-  state(TEST_LOGIC_RESET)
+  _state(TEST_LOGIC_RESET)
 {
 }
 
 void jtag_dtm_t::reset() {
-  state = TEST_LOGIC_RESET;
+  _state = TEST_LOGIC_RESET;
 }
 
 void jtag_dtm_t::set_pins(bool tck, bool tms, bool tdi) {
@@ -73,7 +73,7 @@ void jtag_dtm_t::set_pins(bool tck, bool tms, bool tdi) {
   if (!_tck && tck) {
     // Positive clock edge.
 
-    switch (state) {
+    switch (_state) {
       case SHIFT_DR:
         dr >>= 1;
         dr |= (uint64_t) _tdi << (dr_length-1);
@@ -85,8 +85,8 @@ void jtag_dtm_t::set_pins(bool tck, bool tms, bool tdi) {
       default:
         break;
     }
-    state = next[state][_tms];
-    switch (state) {
+    _state = next[_state][_tms];
+    switch (_state) {
       case TEST_LOGIC_RESET:
         ir = IR_IDCODE;
         break;
@@ -111,11 +111,9 @@ void jtag_dtm_t::set_pins(bool tck, bool tms, bool tdi) {
     }
   }
 
-  /*
   D(fprintf(stderr, "state=%2d, tdi=%d, tdo=%d, tms=%d, tck=%d, ir=0x%02x, "
         "dr=0x%lx\n",
-        state, _tdi, _tdo, _tms, _tck, ir, dr));
-        */
+        _state, _tdi, _tdo, _tms, _tck, ir, dr));
 
   _tck = tck;
   _tms = tms;
