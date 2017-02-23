@@ -75,26 +75,6 @@ class debug_module_t : public abstract_device_t
     bool load(reg_t addr, size_t len, uint8_t* bytes);
     bool store(reg_t addr, size_t len, const uint8_t* bytes);
 
-    void set_interrupt(uint32_t hartid) {
-      interrupt.insert(hartid);
-    }
-    void clear_interrupt(uint32_t hartid) {
-      interrupt.erase(hartid);
-    }
-    bool get_interrupt(uint32_t hartid) const {
-      return interrupt.find(hartid) != interrupt.end();
-    }
-
-    void set_halt_notification(uint32_t hartid) {
-      halt_notification.insert(hartid);
-    }
-    void clear_halt_notification(uint32_t hartid) {
-      halt_notification.erase(hartid);
-    }
-    bool get_halt_notification(uint32_t hartid) const {
-      return halt_notification.find(hartid) != halt_notification.end();
-    }
-
     // Debug Module Interface that the debugger (in our case through JTAG DTM)
     // uses to access the DM.
     // Return true for success, false for failure.
@@ -105,10 +85,6 @@ class debug_module_t : public abstract_device_t
     static const unsigned progsize = 8;
 
     sim_t *sim;
-    // Track which interrupts from module to debugger are set.
-    std::set<uint32_t> interrupt;
-    // Track which halt notifications from debugger to module are set.
-    std::set<uint32_t> halt_notification;
 
     uint8_t debug_rom_entry[DEBUG_ROM_ENTRY_SIZE];
     uint8_t debug_rom_code[DEBUG_ROM_CODE_SIZE];

@@ -609,19 +609,15 @@ reg_t processor_t::get_csr(int which)
       {
         uint32_t v = 0;
         v = set_field(v, DCSR_XDEBUGVER, 1);
-        v = set_field(v, DCSR_NDRESET, 0);
-        v = set_field(v, DCSR_FULLRESET, 0);
-        v = set_field(v, DCSR_PRV, state.dcsr.prv);
-        v = set_field(v, DCSR_STEP, state.dcsr.step);
-        v = set_field(v, DCSR_DEBUGINT, sim->debug_module.get_interrupt(id));
-        v = set_field(v, DCSR_STOPCYCLE, 0);
-        v = set_field(v, DCSR_STOPTIME, 0);
         v = set_field(v, DCSR_EBREAKM, state.dcsr.ebreakm);
         v = set_field(v, DCSR_EBREAKH, state.dcsr.ebreakh);
         v = set_field(v, DCSR_EBREAKS, state.dcsr.ebreaks);
         v = set_field(v, DCSR_EBREAKU, state.dcsr.ebreaku);
-        v = set_field(v, DCSR_HALT, state.dcsr.halt);
+        v = set_field(v, DCSR_STOPCYCLE, 0);
+        v = set_field(v, DCSR_STOPTIME, 0);
         v = set_field(v, DCSR_CAUSE, state.dcsr.cause);
+        v = set_field(v, DCSR_STEP, state.dcsr.step);
+        v = set_field(v, DCSR_PRV, state.dcsr.prv);
         return v;
       }
     case CSR_DPC:

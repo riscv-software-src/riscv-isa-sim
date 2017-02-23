@@ -63,8 +63,7 @@ bool processor_t::slow_path()
 void processor_t::step(size_t n)
 {
   if (state.dcsr.cause == DCSR_CAUSE_NONE) {
-    // TODO: get_interrupt() isn't super fast. Does that matter?
-    if (sim->debug_module.get_interrupt(id)) {
+    if (halt_request) {
       enter_debug_mode(DCSR_CAUSE_DEBUGINT);
     } else if (state.dcsr.halt) {
       enter_debug_mode(DCSR_CAUSE_HALT);
