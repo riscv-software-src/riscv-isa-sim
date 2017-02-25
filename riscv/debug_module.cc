@@ -95,7 +95,6 @@ void debug_module_t::reset()
   dmcontrol = {0};
   dmcontrol.authenticated = 1;
   dmcontrol.version = 1;
-  dmcontrol.authtype = dmcontrol.AUTHTYPE_NOAUTH;
 
   abstractcs = {0};
   abstractcs.datacount = sizeof(dmdata.data) / 4;
@@ -234,8 +233,8 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
     if (autoexec) {
       perform_abstract_command();
     }
-  } else if (address >= DMI_IBUF0 && address < DMI_IBUF0 + progsize) {
-    result = read32(program_buffer, address - DMI_IBUF0);
+  } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progsize) {
+    result = read32(program_buffer, address - DMI_PROGBUF0);
   } else {
     switch (address) {
       case DMI_DMCONTROL:
@@ -252,13 +251,14 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
             dmcontrol.hartstatus = dmcontrol.HARTSTATUS_NOTEXIST;
           }
           result = set_field(result, DMI_DMCONTROL_HALTREQ, dmcontrol.haltreq);
-          result = set_field(result, DMI_DMCONTROL_RESET, dmcontrol.reset);
-          result = set_field(result, DMI_DMCONTROL_DMACTIVE, dmcontrol.dmactive);
+          result = set_field(result, DMI_DMCONTROL_RESUMEREQ, dmcontrol.resumereq);
           result = set_field(result, DMI_DMCONTROL_HARTSTATUS, dmcontrol.hartstatus);
           result = set_field(result, DMI_DMCONTROL_HARTSEL, dmcontrol.hartsel);
+          result = set_field(result, DMI_DMCONTROL_HARTRESET, dmcontrol.hartreset);
+          result = set_field(result, DMI_DMCONTROL_DMACTIVE, dmcontrol.dmactive);
+          result = set_field(result, DMI_DMCONTROL_RESET, dmcontrol.reset);
           result = set_field(result, DMI_DMCONTROL_AUTHENTICATED, dmcontrol.authenticated);
           result = set_field(result, DMI_DMCONTROL_AUTHBUSY, dmcontrol.authbusy);
-          result = set_field(result, DMI_DMCONTROL_AUTHTYPE, dmcontrol.authtype);
           result = set_field(result, DMI_DMCONTROL_VERSION, dmcontrol.version);
         }
         break;
@@ -275,8 +275,8 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
         result = set_field(result, DMI_ABSTRACTCS_BUSY, abstractcs.busy);
         result = set_field(result, DMI_ABSTRACTCS_DATACOUNT, abstractcs.datacount);
         break;
-      case DMI_ACCESSCS:
-        result = progsize << DMI_ACCESSCS_PROGSIZE_OFFSET;
+      case DMI_PROGBUFCS:
+        result = progsize << DMI_PROGBUFCS_PROGSIZE_OFFSET;
         break;
       case DMI_COMMAND:
         result = 0;
@@ -395,8 +395,8 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
     }
     return true;
 
-  } else if (address >= DMI_IBUF0 && address < DMI_IBUF0 + progsize) {
-    write32(program_buffer, address - DMI_IBUF0, value);
+  } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progsize) {
+    write32(program_buffer, address - DMI_PROGBUF0, value);
     return true;
   } else {
     switch (address) {

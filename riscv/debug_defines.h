@@ -1,52 +1,139 @@
-#define AC_ACCESS_REGISTER                  None
+#define DTM_IDCODE                          0x01
 /*
-* 2: Access the lowest 32 bits of the register.
+* Identifies the release version of this part.
+ */
+#define DTM_IDCODE_VERSION_OFFSET           28
+#define DTM_IDCODE_VERSION_LENGTH           4
+#define DTM_IDCODE_VERSION                  (0xf << DTM_IDCODE_VERSION_OFFSET)
+/*
+* Identifies the designer's part number of this part.
+ */
+#define DTM_IDCODE_PARTNUMBER_OFFSET        12
+#define DTM_IDCODE_PARTNUMBER_LENGTH        16
+#define DTM_IDCODE_PARTNUMBER               (0xffff << DTM_IDCODE_PARTNUMBER_OFFSET)
+/*
+* Identifies the designer/manufacturer of this part. Bits 6:0 must be
+* bits 6:0 of the designer/manufacturer's Identification Code as
+* assigned by JEDEC Standard JEP106. Bits 10:7 contain the modulo-16
+* count of the number of continuation characters (0x7f) in that same
+* Identification Code.
+ */
+#define DTM_IDCODE_MANUFID_OFFSET           1
+#define DTM_IDCODE_MANUFID_LENGTH           11
+#define DTM_IDCODE_MANUFID                  (0x7ff << DTM_IDCODE_MANUFID_OFFSET)
+#define DTM_IDCODE_1_OFFSET                 0
+#define DTM_IDCODE_1_LENGTH                 1
+#define DTM_IDCODE_1                        (0x1 << DTM_IDCODE_1_OFFSET)
+#define DTM_DTMCONTROL                      0x10
+/*
+* Writing 1 to this bit resets the DMI controller, clearing any
+* sticky error state.
+ */
+#define DTM_DTMCONTROL_DMIRESET_OFFSET      16
+#define DTM_DTMCONTROL_DMIRESET_LENGTH      1
+#define DTM_DTMCONTROL_DMIRESET             (0x1 << DTM_DTMCONTROL_DMIRESET_OFFSET)
+/*
+* This is the minimum number of cycles a debugger should spend in
+* Run-Test/Idle after every DMI scan to avoid a 'busy'
+* return code (\Fdmistat of 3). A debugger must still
+* check \Fdmistat when necessary.
 *
-* 3: Access the lowest 64 bits of the register.
+* 0: It is not necessary to enter Run-Test/Idle at all.
 *
-* 4: Access the lowest 128 bits of the register.
+* 1: Enter Run-Test/Idle and leave it immediately.
 *
-* If \Fsize specifies a size larger than the register is, then the
-* access must fail. If a register is accessible, then \Fsize matching
-* the register's actual size must be supported.
- */
-#define AC_ACCESS_REGISTER_SIZE_OFFSET      19
-#define AC_ACCESS_REGISTER_SIZE_LENGTH      3
-#define AC_ACCESS_REGISTER_SIZE             (0x7 << AC_ACCESS_REGISTER_SIZE_OFFSET)
-/*
-* When 1, execute the program in the Program Buffer exactly once
-* before performing the read/write.
- */
-#define AC_ACCESS_REGISTER_PREEXEC_OFFSET   18
-#define AC_ACCESS_REGISTER_PREEXEC_LENGTH   1
-#define AC_ACCESS_REGISTER_PREEXEC          (0x1 << AC_ACCESS_REGISTER_PREEXEC_OFFSET)
-/*
-* When 1, execute the program in the Program Buffer exactly once
-* after performing the read/write.
- */
-#define AC_ACCESS_REGISTER_POSTEXEC_OFFSET  17
-#define AC_ACCESS_REGISTER_POSTEXEC_LENGTH  1
-#define AC_ACCESS_REGISTER_POSTEXEC         (0x1 << AC_ACCESS_REGISTER_POSTEXEC_OFFSET)
-/*
-* 0: Copy data from {\tt arg0} portion of {\tt data} into the
-* specified register.
+* 2: Enter Run-Test/Idle and stay there for 1 cycle before leaving.
 *
-* 1: Copy data from the specified register into {\tt arg0} portion
-* of {\tt data}.
+* And so on.
  */
-#define AC_ACCESS_REGISTER_WRITE_OFFSET     16
-#define AC_ACCESS_REGISTER_WRITE_LENGTH     1
-#define AC_ACCESS_REGISTER_WRITE            (0x1 << AC_ACCESS_REGISTER_WRITE_OFFSET)
+#define DTM_DTMCONTROL_IDLE_OFFSET          12
+#define DTM_DTMCONTROL_IDLE_LENGTH          3
+#define DTM_DTMCONTROL_IDLE                 (0x7 << DTM_DTMCONTROL_IDLE_OFFSET)
 /*
-* Number of the register to access, as described in Table~\ref{tab:regno}.
+* 0: No error.
+*
+* 1: Reserved. Interpret the same as 2.
+*
+* 2: An operation failed (resulted in \Fop of 2).
+*
+* 3: An operation was attempted while a DMI access was still in
+* progress (resulted in \Fop of 3).
  */
-#define AC_ACCESS_REGISTER_REGNO_OFFSET     0
-#define AC_ACCESS_REGISTER_REGNO_LENGTH     16
-#define AC_ACCESS_REGISTER_REGNO            (0xffff << AC_ACCESS_REGISTER_REGNO_OFFSET)
-#define AC_QUICK_ACCESS                     None
-#define AC_QUICK_ACCESS_1_OFFSET            24
-#define AC_QUICK_ACCESS_1_LENGTH            8
-#define AC_QUICK_ACCESS_1                   (0xff << AC_QUICK_ACCESS_1_OFFSET)
+#define DTM_DTMCONTROL_DMISTAT_OFFSET       10
+#define DTM_DTMCONTROL_DMISTAT_LENGTH       2
+#define DTM_DTMCONTROL_DMISTAT              (0x3 << DTM_DTMCONTROL_DMISTAT_OFFSET)
+/*
+* The size of \Faddress in \Rdmi.
+ */
+#define DTM_DTMCONTROL_ABITS_OFFSET         4
+#define DTM_DTMCONTROL_ABITS_LENGTH         6
+#define DTM_DTMCONTROL_ABITS                (0x3f << DTM_DTMCONTROL_ABITS_OFFSET)
+/*
+* 0: Version described in spec version 0.11.
+*
+* 1: Version described in spec version 0.12 (and later?), which
+* reduces the DMI data width to 32 bits.
+*
+* Other values are reserved for future use.
+ */
+#define DTM_DTMCONTROL_VERSION_OFFSET       0
+#define DTM_DTMCONTROL_VERSION_LENGTH       4
+#define DTM_DTMCONTROL_VERSION              (0xf << DTM_DTMCONTROL_VERSION_OFFSET)
+#define DTM_DMI                             0x11
+/*
+* Address used for DMI access. In Update-DR this value is used
+* to access the DM over the DMI.
+ */
+#define DTM_DMI_ADDRESS_OFFSET              34
+#define DTM_DMI_ADDRESS_LENGTH              abits
+#define DTM_DMI_ADDRESS                     (((1L<<abits)-1) << DTM_DMI_ADDRESS_OFFSET)
+/*
+* The data to send to the DM over the DMI during Update-DR, and
+* the data returned from the DM as a result of the previous operation.
+ */
+#define DTM_DMI_DATA_OFFSET                 2
+#define DTM_DMI_DATA_LENGTH                 32
+#define DTM_DMI_DATA                        (0xffffffffL << DTM_DMI_DATA_OFFSET)
+/*
+* When the debugger writes this field, it has the following meaning:
+*
+* 0: Ignore \Fdata. (nop)
+*
+* 1: Read from \Faddress. (read)
+*
+* 2: Write \Fdata to \Faddress. (write)
+*
+* 3: Reserved.
+*
+* When the debugger reads this field, it means the following:
+*
+* 0: The previous operation completed successfully.
+*
+* 1: Reserved.
+*
+* 2: A previous operation failed.  The data scanned into \Rdmi in
+* this access will be ignored.  This status is sticky and can be
+* cleared by writing \Fdmireset in \Rdtmcontrol.
+*
+* This indicates that the DM itself responded with an error, e.g.
+* in the System Bus and Serial Port overflow/underflow cases.
+*
+* 3: An operation was attempted while a DMI request is still in
+* progress. The data scanned into \Rdmi in this access will be
+* ignored. This status is sticky and can be cleared by writing
+* \Fdmireset in \Rdtmcontrol. If a debugger sees this status, it
+* needs to give the target more TCK edges between Update-DR and
+* Capture-DR. The simplest way to do that is to add extra transitions
+* in Run-Test/Idle.
+*
+* (The DTM, DM, and/or component may be in different clock domains,
+* so synchronization may be required. Some relatively fixed number of
+* TCK ticks may be needed for the request to reach the DM, complete,
+* and for the response to be synchronized back into the TCK domain.)
+ */
+#define DTM_DMI_OP_OFFSET                   0
+#define DTM_DMI_OP_LENGTH                   2
+#define DTM_DMI_OP                          (0x3L << DTM_DMI_OP_OFFSET)
 #define CSR_DCSR                            0x7b0
 /*
 * 0: There is no external debug support.
@@ -167,6 +254,274 @@
 #define CSR_PRIV_PRV_OFFSET                 0
 #define CSR_PRIV_PRV_LENGTH                 2
 #define CSR_PRIV_PRV                        (0x3 << CSR_PRIV_PRV_OFFSET)
+#define CSR_TSELECT                         0x7a0
+#define CSR_TSELECT_INDEX_OFFSET            0
+#define CSR_TSELECT_INDEX_LENGTH            XLEN
+#define CSR_TSELECT_INDEX                   (((1L<<XLEN)-1) << CSR_TSELECT_INDEX_OFFSET)
+#define CSR_TDATA1                          0x7a1
+/*
+* 0: There is no trigger at this \Rtselect.
+*
+* 1: The trigger is a legacy SiFive address match trigger. These
+* should not be implemented and aren't further documented here.
+*
+* 2: The trigger is an address/data match trigger. The remaining bits
+* in this register act as described in \Rmcontrol.
+*
+* 3: The trigger is an instruction count trigger. The remaining bits
+* in this register act as described in \Ricount.
+*
+* 15: This trigger exists (so enumeration shouldn't terminate), but
+* is not currently available.
+*
+* Other values are reserved for future use.
+ */
+#define CSR_TDATA1_TYPE_OFFSET              XLEN-4
+#define CSR_TDATA1_TYPE_LENGTH              4
+#define CSR_TDATA1_TYPE                     (0xfL << CSR_TDATA1_TYPE_OFFSET)
+/*
+* 0: Both Debug and M Mode can write the {\tt tdata} registers at the
+* selected \Rtselect.
+*
+* 1: Only Halt Mode can write the {\tt tdata} registers at the
+* selected \Rtselect.  Writes from other modes are ignored.
+*
+* This bit is only writable from Halt Mode.
+ */
+#define CSR_TDATA1_HMODE_OFFSET             XLEN-5
+#define CSR_TDATA1_HMODE_LENGTH             1
+#define CSR_TDATA1_HMODE                    (0x1L << CSR_TDATA1_HMODE_OFFSET)
+/*
+* Trigger-specific data.
+ */
+#define CSR_TDATA1_DATA_OFFSET              0
+#define CSR_TDATA1_DATA_LENGTH              XLEN - 5
+#define CSR_TDATA1_DATA                     (((1L<<XLEN - 5)-1) << CSR_TDATA1_DATA_OFFSET)
+#define CSR_TDATA2                          0x7a2
+#define CSR_TDATA2_DATA_OFFSET              0
+#define CSR_TDATA2_DATA_LENGTH              XLEN
+#define CSR_TDATA2_DATA                     (((1L<<XLEN)-1) << CSR_TDATA2_DATA_OFFSET)
+#define CSR_TDATA3                          0x7a3
+#define CSR_TDATA3_DATA_OFFSET              0
+#define CSR_TDATA3_DATA_LENGTH              XLEN
+#define CSR_TDATA3_DATA                     (((1L<<XLEN)-1) << CSR_TDATA3_DATA_OFFSET)
+#define CSR_MCONTROL                        0x7a1
+#define CSR_MCONTROL_TYPE_OFFSET            XLEN-4
+#define CSR_MCONTROL_TYPE_LENGTH            4
+#define CSR_MCONTROL_TYPE                   (0xfL << CSR_MCONTROL_TYPE_OFFSET)
+#define CSR_MCONTROL_DMODE_OFFSET           XLEN-5
+#define CSR_MCONTROL_DMODE_LENGTH           1
+#define CSR_MCONTROL_DMODE                  (0x1L << CSR_MCONTROL_DMODE_OFFSET)
+/*
+* Specifies the largest naturally aligned powers-of-two (NAPOT) range
+* supported by the hardware. The value is the logarithm base 2 of the
+* number of bytes in that range.  A value of 0 indicates that only
+* exact value matches are supported (one byte range). A value of 63
+* corresponds to the maximum NAPOT range, which is $2^{63}$ bytes in
+* size.
+ */
+#define CSR_MCONTROL_MASKMAX_OFFSET         XLEN-11
+#define CSR_MCONTROL_MASKMAX_LENGTH         6
+#define CSR_MCONTROL_MASKMAX                (0x3fL << CSR_MCONTROL_MASKMAX_OFFSET)
+/*
+* 0: Perform a match on the address.
+*
+* 1: Perform a match on the data value loaded/stored, or the
+* instruction executed.
+ */
+#define CSR_MCONTROL_SELECT_OFFSET          19
+#define CSR_MCONTROL_SELECT_LENGTH          1
+#define CSR_MCONTROL_SELECT                 (0x1L << CSR_MCONTROL_SELECT_OFFSET)
+/*
+* 0: The action for this trigger will be taken just before the
+* instruction that triggered it is executed, but after all preceding
+* instructions are are committed.
+*
+* 1: The action for this trigger will be taken after the instruction
+* that triggered it is executed. It should be taken before the next
+* instruction is executed, but it is better to implement triggers and
+* not implement that suggestion than to not implement them at all.
+*
+* Most hardware will only implement one timing or the other, possibly
+* dependent on \Fselect, \Fexecute, \Fload, and \Fstore. This bit
+* primarily exists for the hardware to communicate to the debugger
+* what will happen. Hardware may implement the bit fully writable, in
+* which case the debugger has a little more control.
+*
+* Data load triggers with \Ftiming of 0 will result in the same load
+* happening again when the debugger lets the core run. For data load
+* triggers debuggers must first attempt to set the breakpoint with
+* \Ftiming of 1.
+*
+* A chain of triggers that don't all have the same \Ftiming value
+* will never fire (unless consecutive instructions match the
+* appropriate triggers).
+ */
+#define CSR_MCONTROL_TIMING_OFFSET          18
+#define CSR_MCONTROL_TIMING_LENGTH          1
+#define CSR_MCONTROL_TIMING                 (0x1L << CSR_MCONTROL_TIMING_OFFSET)
+/*
+* Determines what happens when this trigger matches.
+*
+* 0: Raise a breakpoint exception. (Used when software wants to use
+* the trigger module without an external debugger attached.)
+*
+* 1: Enter Halt Mode. (Only supported when \Fhmode is 1.)
+*
+* 2: Start tracing.
+*
+* 3: Stop tracing.
+*
+* 4: Emit trace data for this match. If it is a data access match,
+* emit appropriate Load/Store Address/Data. If it is an instruction
+* execution, emit its PC.
+*
+* Other values are reserved for future use.
+ */
+#define CSR_MCONTROL_ACTION_OFFSET          12
+#define CSR_MCONTROL_ACTION_LENGTH          6
+#define CSR_MCONTROL_ACTION                 (0x3fL << CSR_MCONTROL_ACTION_OFFSET)
+/*
+* 0: When this trigger matches, the configured action is taken.
+*
+* 1: While this trigger does not match, it prevents the trigger with
+* the next index from matching.
+ */
+#define CSR_MCONTROL_CHAIN_OFFSET           11
+#define CSR_MCONTROL_CHAIN_LENGTH           1
+#define CSR_MCONTROL_CHAIN                  (0x1L << CSR_MCONTROL_CHAIN_OFFSET)
+/*
+* 0: Matches when the value equals \Rtdatatwo.
+*
+* 1: Matches when the top M bits of the value match the top M bits of
+* \Rtdatatwo. M is XLEN-1 minus the index of the least-significant
+* bit containing 0 in \Rtdatatwo.
+*
+* 2: Matches when the value is greater than or equal to \Rtdatatwo.
+*
+* 3: Matches when the value is less than \Rtdatatwo.
+*
+* 4: Matches when the lower half of the value equals the lower half
+* of \Rtdatatwo after the lower half of the value is ANDed with the
+* upper half of \Rtdatatwo.
+*
+* 5: Matches when the upper half of the value equals the lower half
+* of \Rtdatatwo after the upper half of the value is ANDed with the
+* upper half of \Rtdatatwo.
+*
+* Other values are reserved for future use.
+ */
+#define CSR_MCONTROL_MATCH_OFFSET           7
+#define CSR_MCONTROL_MATCH_LENGTH           4
+#define CSR_MCONTROL_MATCH                  (0xfL << CSR_MCONTROL_MATCH_OFFSET)
+/*
+* When set, enable this trigger in M mode.
+ */
+#define CSR_MCONTROL_M_OFFSET               6
+#define CSR_MCONTROL_M_LENGTH               1
+#define CSR_MCONTROL_M                      (0x1L << CSR_MCONTROL_M_OFFSET)
+/*
+* When set, enable this trigger in H mode.
+ */
+#define CSR_MCONTROL_H_OFFSET               5
+#define CSR_MCONTROL_H_LENGTH               1
+#define CSR_MCONTROL_H                      (0x1L << CSR_MCONTROL_H_OFFSET)
+/*
+* When set, enable this trigger in S mode.
+ */
+#define CSR_MCONTROL_S_OFFSET               4
+#define CSR_MCONTROL_S_LENGTH               1
+#define CSR_MCONTROL_S                      (0x1L << CSR_MCONTROL_S_OFFSET)
+/*
+* When set, enable this trigger in U mode.
+ */
+#define CSR_MCONTROL_U_OFFSET               3
+#define CSR_MCONTROL_U_LENGTH               1
+#define CSR_MCONTROL_U                      (0x1L << CSR_MCONTROL_U_OFFSET)
+/*
+* When set, the trigger fires on the address or opcode of an
+* instruction that is executed.
+ */
+#define CSR_MCONTROL_EXECUTE_OFFSET         2
+#define CSR_MCONTROL_EXECUTE_LENGTH         1
+#define CSR_MCONTROL_EXECUTE                (0x1L << CSR_MCONTROL_EXECUTE_OFFSET)
+/*
+* When set, the trigger fires on the address or data of a store.
+ */
+#define CSR_MCONTROL_STORE_OFFSET           1
+#define CSR_MCONTROL_STORE_LENGTH           1
+#define CSR_MCONTROL_STORE                  (0x1L << CSR_MCONTROL_STORE_OFFSET)
+/*
+* When set, the trigger fires on the address or data of a load.
+ */
+#define CSR_MCONTROL_LOAD_OFFSET            0
+#define CSR_MCONTROL_LOAD_LENGTH            1
+#define CSR_MCONTROL_LOAD                   (0x1L << CSR_MCONTROL_LOAD_OFFSET)
+#define CSR_ICOUNT                          0x7a1
+#define CSR_ICOUNT_TYPE_OFFSET              XLEN-4
+#define CSR_ICOUNT_TYPE_LENGTH              4
+#define CSR_ICOUNT_TYPE                     (0xfL << CSR_ICOUNT_TYPE_OFFSET)
+#define CSR_ICOUNT_DMODE_OFFSET             XLEN-5
+#define CSR_ICOUNT_DMODE_LENGTH             1
+#define CSR_ICOUNT_DMODE                    (0x1L << CSR_ICOUNT_DMODE_OFFSET)
+/*
+* When count is decremented to 0, the trigger fires. Instead of
+* changing \Fcount from 1 to 0, it is also acceptable for hardware to
+* clear \Fm, \Fh, \Fs, and \Fu. This allows \Fcount to be hard-wired
+* to 1 if this register just exists for single step.
+ */
+#define CSR_ICOUNT_COUNT_OFFSET             10
+#define CSR_ICOUNT_COUNT_LENGTH             14
+#define CSR_ICOUNT_COUNT                    (0x3fffL << CSR_ICOUNT_COUNT_OFFSET)
+/*
+* When set, every instruction completed in M mode decrements \Fcount
+* by 1.
+ */
+#define CSR_ICOUNT_M_OFFSET                 9
+#define CSR_ICOUNT_M_LENGTH                 1
+#define CSR_ICOUNT_M                        (0x1L << CSR_ICOUNT_M_OFFSET)
+/*
+* When set, every instruction completed in H mode decrements \Fcount
+* by 1.
+ */
+#define CSR_ICOUNT_H_OFFSET                 8
+#define CSR_ICOUNT_H_LENGTH                 1
+#define CSR_ICOUNT_H                        (0x1L << CSR_ICOUNT_H_OFFSET)
+/*
+* When set, every instruction completed in S mode decrements \Fcount
+* by 1.
+ */
+#define CSR_ICOUNT_S_OFFSET                 7
+#define CSR_ICOUNT_S_LENGTH                 1
+#define CSR_ICOUNT_S                        (0x1L << CSR_ICOUNT_S_OFFSET)
+/*
+* When set, every instruction completed in U mode decrements \Fcount
+* by 1.
+ */
+#define CSR_ICOUNT_U_OFFSET                 6
+#define CSR_ICOUNT_U_LENGTH                 1
+#define CSR_ICOUNT_U                        (0x1L << CSR_ICOUNT_U_OFFSET)
+/*
+* Determines what happens when this trigger matches.
+*
+* 0: Raise a debug exception. (Used when software wants to use the
+* trigger module without an external debugger attached.)
+*
+* 1: Enter Halt Mode. (Only supported when \Fhmode is 1.)
+*
+* 2: Start tracing.
+*
+* 3: Stop tracing.
+*
+* 4: Emit trace data for this match. If it is a data access match,
+* emit appropriate Load/Store Address/Data. If it is an instruction
+* execution, emit its PC.
+*
+* Other values are reserved for future use.
+ */
+#define CSR_ICOUNT_ACTION_OFFSET            0
+#define CSR_ICOUNT_ACTION_LENGTH            6
+#define CSR_ICOUNT_ACTION                   (0x3fL << CSR_ICOUNT_ACTION_OFFSET)
 #define DMI_DMCONTROL                       0x00
 /*
 * Halt request signal for the hart selected by \Fhartsel. When 1, the
@@ -209,8 +564,25 @@
 #define DMI_DMCONTROL_HARTSEL_LENGTH        10
 #define DMI_DMCONTROL_HARTSEL               (0x3ff << DMI_DMCONTROL_HARTSEL_OFFSET)
 /*
+* This optional bit controls reset to the currently selected hart. To
+* perform a reset the debugger writes 1, and then writes 0 to
+* deassert the reset signal.
+*
+* If this feature is not implemented, the bit always stays 0, so
+* after writing 1 the debugger can read the register back to see if
+* the feature is supported.
+ */
+#define DMI_DMCONTROL_HARTRESET_OFFSET      10
+#define DMI_DMCONTROL_HARTRESET_LENGTH      1
+#define DMI_DMCONTROL_HARTRESET             (0x1 << DMI_DMCONTROL_HARTRESET_OFFSET)
+/*
 * This bit serves as a reset signal for the Debug Module itself.
-* When 0, the module is held in reset. When 1, it functions normally.
+*
+* 0: The module, including authentication mechanism, is held in
+* reset.
+*
+* 1: The module functions normally.
+*
 * No other mechanism should exist that may result in resetting the
 * Debug Module after power up, including the platform's system reset
 * or Debug Transport reset signals.
@@ -242,28 +614,18 @@
 #define DMI_DMCONTROL_AUTHENTICATED_LENGTH  1
 #define DMI_DMCONTROL_AUTHENTICATED         (0x1 << DMI_DMCONTROL_AUTHENTICATED_OFFSET)
 /*
-* While 1, writes to \Rauthdatazero and \Rauthdataone may be ignored
-* or may result in authentication failing.  Authentication mechanisms
-* that are slow (or intentionally delayed) must set this bit when
-* they're not ready to process another write.
+* 0: The authentication module is ready to process the next
+* read/write to \Rauthdata.
+*
+* 1: The authentication module is busy. Accessing \Rauthdata results
+* in unspecified behavior.
+*
+* \Fauthbusy only becomes set in immediate response to an access to
+* \Rauthdata.
  */
 #define DMI_DMCONTROL_AUTHBUSY_OFFSET       6
 #define DMI_DMCONTROL_AUTHBUSY_LENGTH       1
 #define DMI_DMCONTROL_AUTHBUSY              (0x1 << DMI_DMCONTROL_AUTHBUSY_OFFSET)
-/*
-* Defines the kind of authentication required to use this DM.
-*
-* 0: No authentication is required.
-*
-* 1: A password is required.
-*
-* 2: A challenge-response mechanism is in place.
-*
-* 3: Reserved for future use.
- */
-#define DMI_DMCONTROL_AUTHTYPE_OFFSET       4
-#define DMI_DMCONTROL_AUTHTYPE_LENGTH       2
-#define DMI_DMCONTROL_AUTHTYPE              (0x3 << DMI_DMCONTROL_AUTHTYPE_OFFSET)
 /*
 * 0: There is no Debug Module present.
 *
@@ -525,18 +887,12 @@
 #define DMI_SBADDRESS1_ADDRESS              (0xffffffff << DMI_SBADDRESS1_ADDRESS_OFFSET)
 #define DMI_SBADDRESS2                      0x06
 /*
-* The same as \Fbusy in \Rsbaddresszero.
- */
-#define DMI_SBADDRESS2_BUSY_OFFSET          31
-#define DMI_SBADDRESS2_BUSY_LENGTH          1
-#define DMI_SBADDRESS2_BUSY                 (0x1 << DMI_SBADDRESS2_BUSY_OFFSET)
-/*
-* Accesses bits 91:61 of the internal address (if the system address
+* Accesses bits 95:64 of the internal address (if the system address
 * bus is that wide).
  */
 #define DMI_SBADDRESS2_ADDRESS_OFFSET       0
-#define DMI_SBADDRESS2_ADDRESS_LENGTH       31
-#define DMI_SBADDRESS2_ADDRESS              (0x7fffffff << DMI_SBADDRESS2_ADDRESS_OFFSET)
+#define DMI_SBADDRESS2_ADDRESS_LENGTH       32
+#define DMI_SBADDRESS2_ADDRESS              (0xffffffff << DMI_SBADDRESS2_ADDRESS_OFFSET)
 #define DMI_SBDATA0                         0x07
 /*
 * Accesses bits 31:0 of the internal data.
@@ -568,14 +924,10 @@
 #define DMI_SBDATA3_DATA_OFFSET             0
 #define DMI_SBDATA3_DATA_LENGTH             32
 #define DMI_SBDATA3_DATA                    (0xffffffff << DMI_SBDATA3_DATA_OFFSET)
-#define DMI_AUTHDATA0                       0x0b
-#define DMI_AUTHDATA0_DATA_OFFSET           0
-#define DMI_AUTHDATA0_DATA_LENGTH           32
-#define DMI_AUTHDATA0_DATA                  (0xffffffff << DMI_AUTHDATA0_DATA_OFFSET)
-#define DMI_AUTHDATA1                       0x0c
-#define DMI_AUTHDATA1_DATA_OFFSET           0
-#define DMI_AUTHDATA1_DATA_LENGTH           32
-#define DMI_AUTHDATA1_DATA                  (0xffffffff << DMI_AUTHDATA1_DATA_OFFSET)
+#define DMI_AUTHDATA                        0x0b
+#define DMI_AUTHDATA_DATA_OFFSET            0
+#define DMI_AUTHDATA_DATA_LENGTH            32
+#define DMI_AUTHDATA_DATA                   (0xffffffff << DMI_AUTHDATA_DATA_OFFSET)
 #define DMI_ABSTRACTCS                      0x0e
 #define DMI_ABSTRACTCS_AUTOEXEC7_OFFSET     15
 #define DMI_ABSTRACTCS_AUTOEXEC7_LENGTH     1
@@ -650,9 +1002,20 @@
 #define DMI_ABSTRACTCS_DATACOUNT_LENGTH     4
 #define DMI_ABSTRACTCS_DATACOUNT            (0xf << DMI_ABSTRACTCS_DATACOUNT_OFFSET)
 #define DMI_COMMAND                         0x0f
-#define DMI_COMMAND_COMMAND_OFFSET          0
-#define DMI_COMMAND_COMMAND_LENGTH          32
-#define DMI_COMMAND_COMMAND                 (0xffffffff << DMI_COMMAND_COMMAND_OFFSET)
+/*
+* The type determines the overall functionality of this
+* abstract command.
+ */
+#define DMI_COMMAND_TYPE_OFFSET             24
+#define DMI_COMMAND_TYPE_LENGTH             8
+#define DMI_COMMAND_TYPE                    (0xff << DMI_COMMAND_TYPE_OFFSET)
+/*
+* This field is interpreted in a command-specific manner,
+* described for each abstract command.
+ */
+#define DMI_COMMAND_CONTROL_OFFSET          0
+#define DMI_COMMAND_CONTROL_LENGTH          24
+#define DMI_COMMAND_CONTROL                 (0xffffff << DMI_COMMAND_CONTROL_OFFSET)
 #define DMI_DATA0                           0x10
 #define DMI_DATA0_DATA_OFFSET               0
 #define DMI_DATA0_DATA_LENGTH               32
@@ -672,103 +1035,103 @@
 #define DMI_SERDATA_DATA_OFFSET             0
 #define DMI_SERDATA_DATA_LENGTH             32
 #define DMI_SERDATA_DATA                    (0xffffffff << DMI_SERDATA_DATA_OFFSET)
-#define DMI_SERSTATUS                       0x1d
+#define DMI_SERCS                           0x1d
 /*
 * Number of supported serial ports.
  */
-#define DMI_SERSTATUS_SERIALCOUNT_OFFSET    28
-#define DMI_SERSTATUS_SERIALCOUNT_LENGTH    4
-#define DMI_SERSTATUS_SERIALCOUNT           (0xf << DMI_SERSTATUS_SERIALCOUNT_OFFSET)
+#define DMI_SERCS_SERIALCOUNT_OFFSET        28
+#define DMI_SERCS_SERIALCOUNT_LENGTH        4
+#define DMI_SERCS_SERIALCOUNT               (0xf << DMI_SERCS_SERIALCOUNT_OFFSET)
 /*
 * Select which serial port is accessed by \Rserdata.
  */
-#define DMI_SERSTATUS_SERIAL_OFFSET         16
-#define DMI_SERSTATUS_SERIAL_LENGTH         3
-#define DMI_SERSTATUS_SERIAL                (0x7 << DMI_SERSTATUS_SERIAL_OFFSET)
-#define DMI_SERSTATUS_VALID7_OFFSET         15
-#define DMI_SERSTATUS_VALID7_LENGTH         1
-#define DMI_SERSTATUS_VALID7                (0x1 << DMI_SERSTATUS_VALID7_OFFSET)
-#define DMI_SERSTATUS_FULL_OVERFLOW7_OFFSET 14
-#define DMI_SERSTATUS_FULL_OVERFLOW7_LENGTH 1
-#define DMI_SERSTATUS_FULL_OVERFLOW7        (0x1 << DMI_SERSTATUS_FULL_OVERFLOW7_OFFSET)
-#define DMI_SERSTATUS_VALID6_OFFSET         13
-#define DMI_SERSTATUS_VALID6_LENGTH         1
-#define DMI_SERSTATUS_VALID6                (0x1 << DMI_SERSTATUS_VALID6_OFFSET)
-#define DMI_SERSTATUS_FULL_OVERFLOW6_OFFSET 12
-#define DMI_SERSTATUS_FULL_OVERFLOW6_LENGTH 1
-#define DMI_SERSTATUS_FULL_OVERFLOW6        (0x1 << DMI_SERSTATUS_FULL_OVERFLOW6_OFFSET)
-#define DMI_SERSTATUS_VALID5_OFFSET         11
-#define DMI_SERSTATUS_VALID5_LENGTH         1
-#define DMI_SERSTATUS_VALID5                (0x1 << DMI_SERSTATUS_VALID5_OFFSET)
-#define DMI_SERSTATUS_FULL_OVERFLOW5_OFFSET 10
-#define DMI_SERSTATUS_FULL_OVERFLOW5_LENGTH 1
-#define DMI_SERSTATUS_FULL_OVERFLOW5        (0x1 << DMI_SERSTATUS_FULL_OVERFLOW5_OFFSET)
-#define DMI_SERSTATUS_VALID4_OFFSET         9
-#define DMI_SERSTATUS_VALID4_LENGTH         1
-#define DMI_SERSTATUS_VALID4                (0x1 << DMI_SERSTATUS_VALID4_OFFSET)
-#define DMI_SERSTATUS_FULL_OVERFLOW4_OFFSET 8
-#define DMI_SERSTATUS_FULL_OVERFLOW4_LENGTH 1
-#define DMI_SERSTATUS_FULL_OVERFLOW4        (0x1 << DMI_SERSTATUS_FULL_OVERFLOW4_OFFSET)
-#define DMI_SERSTATUS_VALID3_OFFSET         7
-#define DMI_SERSTATUS_VALID3_LENGTH         1
-#define DMI_SERSTATUS_VALID3                (0x1 << DMI_SERSTATUS_VALID3_OFFSET)
-#define DMI_SERSTATUS_FULL_OVERFLOW3_OFFSET 6
-#define DMI_SERSTATUS_FULL_OVERFLOW3_LENGTH 1
-#define DMI_SERSTATUS_FULL_OVERFLOW3        (0x1 << DMI_SERSTATUS_FULL_OVERFLOW3_OFFSET)
-#define DMI_SERSTATUS_VALID2_OFFSET         5
-#define DMI_SERSTATUS_VALID2_LENGTH         1
-#define DMI_SERSTATUS_VALID2                (0x1 << DMI_SERSTATUS_VALID2_OFFSET)
-#define DMI_SERSTATUS_FULL_OVERFLOW2_OFFSET 4
-#define DMI_SERSTATUS_FULL_OVERFLOW2_LENGTH 1
-#define DMI_SERSTATUS_FULL_OVERFLOW2        (0x1 << DMI_SERSTATUS_FULL_OVERFLOW2_OFFSET)
-#define DMI_SERSTATUS_VALID1_OFFSET         3
-#define DMI_SERSTATUS_VALID1_LENGTH         1
-#define DMI_SERSTATUS_VALID1                (0x1 << DMI_SERSTATUS_VALID1_OFFSET)
-#define DMI_SERSTATUS_FULL_OVERFLOW1_OFFSET 2
-#define DMI_SERSTATUS_FULL_OVERFLOW1_LENGTH 1
-#define DMI_SERSTATUS_FULL_OVERFLOW1        (0x1 << DMI_SERSTATUS_FULL_OVERFLOW1_OFFSET)
+#define DMI_SERCS_SERIAL_OFFSET             16
+#define DMI_SERCS_SERIAL_LENGTH             3
+#define DMI_SERCS_SERIAL                    (0x7 << DMI_SERCS_SERIAL_OFFSET)
+#define DMI_SERCS_VALID7_OFFSET             15
+#define DMI_SERCS_VALID7_LENGTH             1
+#define DMI_SERCS_VALID7                    (0x1 << DMI_SERCS_VALID7_OFFSET)
+#define DMI_SERCS_FULL_OVERFLOW7_OFFSET     14
+#define DMI_SERCS_FULL_OVERFLOW7_LENGTH     1
+#define DMI_SERCS_FULL_OVERFLOW7            (0x1 << DMI_SERCS_FULL_OVERFLOW7_OFFSET)
+#define DMI_SERCS_VALID6_OFFSET             13
+#define DMI_SERCS_VALID6_LENGTH             1
+#define DMI_SERCS_VALID6                    (0x1 << DMI_SERCS_VALID6_OFFSET)
+#define DMI_SERCS_FULL_OVERFLOW6_OFFSET     12
+#define DMI_SERCS_FULL_OVERFLOW6_LENGTH     1
+#define DMI_SERCS_FULL_OVERFLOW6            (0x1 << DMI_SERCS_FULL_OVERFLOW6_OFFSET)
+#define DMI_SERCS_VALID5_OFFSET             11
+#define DMI_SERCS_VALID5_LENGTH             1
+#define DMI_SERCS_VALID5                    (0x1 << DMI_SERCS_VALID5_OFFSET)
+#define DMI_SERCS_FULL_OVERFLOW5_OFFSET     10
+#define DMI_SERCS_FULL_OVERFLOW5_LENGTH     1
+#define DMI_SERCS_FULL_OVERFLOW5            (0x1 << DMI_SERCS_FULL_OVERFLOW5_OFFSET)
+#define DMI_SERCS_VALID4_OFFSET             9
+#define DMI_SERCS_VALID4_LENGTH             1
+#define DMI_SERCS_VALID4                    (0x1 << DMI_SERCS_VALID4_OFFSET)
+#define DMI_SERCS_FULL_OVERFLOW4_OFFSET     8
+#define DMI_SERCS_FULL_OVERFLOW4_LENGTH     1
+#define DMI_SERCS_FULL_OVERFLOW4            (0x1 << DMI_SERCS_FULL_OVERFLOW4_OFFSET)
+#define DMI_SERCS_VALID3_OFFSET             7
+#define DMI_SERCS_VALID3_LENGTH             1
+#define DMI_SERCS_VALID3                    (0x1 << DMI_SERCS_VALID3_OFFSET)
+#define DMI_SERCS_FULL_OVERFLOW3_OFFSET     6
+#define DMI_SERCS_FULL_OVERFLOW3_LENGTH     1
+#define DMI_SERCS_FULL_OVERFLOW3            (0x1 << DMI_SERCS_FULL_OVERFLOW3_OFFSET)
+#define DMI_SERCS_VALID2_OFFSET             5
+#define DMI_SERCS_VALID2_LENGTH             1
+#define DMI_SERCS_VALID2                    (0x1 << DMI_SERCS_VALID2_OFFSET)
+#define DMI_SERCS_FULL_OVERFLOW2_OFFSET     4
+#define DMI_SERCS_FULL_OVERFLOW2_LENGTH     1
+#define DMI_SERCS_FULL_OVERFLOW2            (0x1 << DMI_SERCS_FULL_OVERFLOW2_OFFSET)
+#define DMI_SERCS_VALID1_OFFSET             3
+#define DMI_SERCS_VALID1_LENGTH             1
+#define DMI_SERCS_VALID1                    (0x1 << DMI_SERCS_VALID1_OFFSET)
+#define DMI_SERCS_FULL_OVERFLOW1_OFFSET     2
+#define DMI_SERCS_FULL_OVERFLOW1_LENGTH     1
+#define DMI_SERCS_FULL_OVERFLOW1            (0x1 << DMI_SERCS_FULL_OVERFLOW1_OFFSET)
 /*
 * 1 when the core-to-debugger queue for serial port 0 is not empty.
  */
-#define DMI_SERSTATUS_VALID0_OFFSET         1
-#define DMI_SERSTATUS_VALID0_LENGTH         1
-#define DMI_SERSTATUS_VALID0                (0x1 << DMI_SERSTATUS_VALID0_OFFSET)
+#define DMI_SERCS_VALID0_OFFSET             1
+#define DMI_SERCS_VALID0_LENGTH             1
+#define DMI_SERCS_VALID0                    (0x1 << DMI_SERCS_VALID0_OFFSET)
 /*
 * 1 when the debugger-to-core queue for serial port 0 is either full,
 * or has overflowed. Overflow state is sticky, and can be reset by
 * writing 0 to this bit.
  */
-#define DMI_SERSTATUS_FULL_OVERFLOW0_OFFSET 0
-#define DMI_SERSTATUS_FULL_OVERFLOW0_LENGTH 1
-#define DMI_SERSTATUS_FULL_OVERFLOW0        (0x1 << DMI_SERSTATUS_FULL_OVERFLOW0_OFFSET)
-#define DMI_ACCESSCS                        0x1f
+#define DMI_SERCS_FULL_OVERFLOW0_OFFSET     0
+#define DMI_SERCS_FULL_OVERFLOW0_LENGTH     1
+#define DMI_SERCS_FULL_OVERFLOW0            (0x1 << DMI_SERCS_FULL_OVERFLOW0_OFFSET)
+#define DMI_PROGBUFCS                       0x1f
 /*
 * Size of the Program Buffer, in 32-bit words. Valid sizes are 0 - 12.
 *
-* A debugger must not access any Instruction Buffer locations that
+* A debugger must not access any Program Buffer locations that
 * fall outside the range specified here.
 *
 * TODO: Explain what can be done with each size of the buffer, to suggest
 * why you would want more or less words.
  */
-#define DMI_ACCESSCS_PROGSIZE_OFFSET        0
-#define DMI_ACCESSCS_PROGSIZE_LENGTH        4
-#define DMI_ACCESSCS_PROGSIZE               (0xf << DMI_ACCESSCS_PROGSIZE_OFFSET)
-#define DMI_IBUF0                           0x20
-#define DMI_IBUF0_DATA_OFFSET               0
-#define DMI_IBUF0_DATA_LENGTH               32
-#define DMI_IBUF0_DATA                      (0xffffffff << DMI_IBUF0_DATA_OFFSET)
-#define DMI_IBUF1                           0x21
-#define DMI_IBUF2                           0x22
-#define DMI_IBUF3                           0x23
-#define DMI_IBUF4                           0x24
-#define DMI_IBUF5                           0x25
-#define DMI_IBUF6                           0x26
-#define DMI_IBUF7                           0x27
-#define DMI_IBUF8                           0x28
-#define DMI_IBUF9                           0x29
-#define DMI_IBUF10                          0x2a
-#define DMI_IBUF11                          0x2b
+#define DMI_PROGBUFCS_PROGSIZE_OFFSET       0
+#define DMI_PROGBUFCS_PROGSIZE_LENGTH       4
+#define DMI_PROGBUFCS_PROGSIZE              (0xf << DMI_PROGBUFCS_PROGSIZE_OFFSET)
+#define DMI_PROGBUF0                        0x20
+#define DMI_PROGBUF0_DATA_OFFSET            0
+#define DMI_PROGBUF0_DATA_LENGTH            32
+#define DMI_PROGBUF0_DATA                   (0xffffffff << DMI_PROGBUF0_DATA_OFFSET)
+#define DMI_PROGBUF1                        0x21
+#define DMI_PROGBUF2                        0x22
+#define DMI_PROGBUF3                        0x23
+#define DMI_PROGBUF4                        0x24
+#define DMI_PROGBUF5                        0x25
+#define DMI_PROGBUF6                        0x26
+#define DMI_PROGBUF7                        0x27
+#define DMI_PROGBUF8                        0x28
+#define DMI_PROGBUF9                        0x29
+#define DMI_PROGBUF10                       0x2a
+#define DMI_PROGBUF11                       0x2b
 #define SERINFO                             0x110
 /*
 * Like \Fserialzero.
@@ -856,433 +1219,6 @@
 #define SERSEND7                            0x254
 #define SERRECV7                            0x258
 #define SERSTAT7                            0x25c
-#define CSR_TSELECT                         0x7a0
-#define CSR_TSELECT_INDEX_OFFSET            0
-#define CSR_TSELECT_INDEX_LENGTH            XLEN
-#define CSR_TSELECT_INDEX                   (((1L<<XLEN)-1) << CSR_TSELECT_INDEX_OFFSET)
-#define CSR_TDATA1                          0x7a1
-/*
-* 0: There is no trigger at this \Rtselect.
-*
-* 1: The trigger is a legacy SiFive address match trigger. These
-* should not be implemented and aren't further documented here.
-*
-* 2: The trigger is an address/data match trigger.
-*
-* 3: The trigger is an instruction count trigger.
-*
-* 15: This trigger exists (so enumeration shouldn't terminate), but
-* is not currently available.
-*
-* Other values are reserved for future use.
- */
-#define CSR_TDATA1_TYPE_OFFSET              XLEN-4
-#define CSR_TDATA1_TYPE_LENGTH              4
-#define CSR_TDATA1_TYPE                     (0xfL << CSR_TDATA1_TYPE_OFFSET)
-/*
-* 0: Both Debug and M Mode can write the {\tt tdata} registers at the
-* selected \Rtselect.
-*
-* 1: Only Debug Mode can write the {\tt tdata} registers at the
-* selected \Rtselect.  Writes from other modes are ignored.
-*
-* This bit is only writable from Debug Mode.
- */
-#define CSR_TDATA1_DMODE_OFFSET             XLEN-5
-#define CSR_TDATA1_DMODE_LENGTH             1
-#define CSR_TDATA1_DMODE                    (0x1L << CSR_TDATA1_DMODE_OFFSET)
-/*
-* Trigger-specific data.
- */
-#define CSR_TDATA1_DATA_OFFSET              0
-#define CSR_TDATA1_DATA_LENGTH              XLEN - 5
-#define CSR_TDATA1_DATA                     (((1L<<XLEN - 5)-1) << CSR_TDATA1_DATA_OFFSET)
-#define CSR_TDATA2                          0x7a2
-#define CSR_TDATA2_DATA_OFFSET              0
-#define CSR_TDATA2_DATA_LENGTH              XLEN
-#define CSR_TDATA2_DATA                     (((1L<<XLEN)-1) << CSR_TDATA2_DATA_OFFSET)
-#define CSR_TDATA3                          0x7a3
-#define CSR_TDATA3_DATA_OFFSET              0
-#define CSR_TDATA3_DATA_LENGTH              XLEN
-#define CSR_TDATA3_DATA                     (((1L<<XLEN)-1) << CSR_TDATA3_DATA_OFFSET)
-#define CSR_MCONTROL                        0x7a1
-#define CSR_MCONTROL_TYPE_OFFSET            XLEN-4
-#define CSR_MCONTROL_TYPE_LENGTH            4
-#define CSR_MCONTROL_TYPE                   (0xfL << CSR_MCONTROL_TYPE_OFFSET)
-#define CSR_MCONTROL_DMODE_OFFSET           XLEN-5
-#define CSR_MCONTROL_DMODE_LENGTH           1
-#define CSR_MCONTROL_DMODE                  (0x1L << CSR_MCONTROL_DMODE_OFFSET)
-/*
-* Specifies the largest naturally aligned powers-of-two (NAPOT) range
-* supported by the hardware. The value is the logarithm base 2 of the
-* number of bytes in that range.  A value of 0 indicates that only
-* exact value matches are supported (one byte range). A value of 63
-* corresponds to the maximum NAPOT range, which is $2^{63}$ bytes in
-* size.
- */
-#define CSR_MCONTROL_MASKMAX_OFFSET         XLEN-11
-#define CSR_MCONTROL_MASKMAX_LENGTH         6
-#define CSR_MCONTROL_MASKMAX                (0x3fL << CSR_MCONTROL_MASKMAX_OFFSET)
-/*
-* 0: Perform a match on the address.
-*
-* 1: Perform a match on the data value loaded/stored, or the
-* instruction executed.
- */
-#define CSR_MCONTROL_SELECT_OFFSET          19
-#define CSR_MCONTROL_SELECT_LENGTH          1
-#define CSR_MCONTROL_SELECT                 (0x1L << CSR_MCONTROL_SELECT_OFFSET)
-/*
-* 0: The action for this trigger will be taken just before the
-* instruction that triggered it is executed, but after all preceding
-* instructions are are committed.
-*
-* 1: The action for this trigger will be taken after the instruction
-* that triggered it is executed. It should be taken before the next
-* instruction is executed, but it is better to implement triggers and
-* not implement that suggestion than to not implement them at all.
-*
-* Most hardware will only implement one timing or the other, possibly
-* dependent on \Fselect, \Fexecute, \Fload, and \Fstore. This bit
-* primarily exists for the hardware to communicate to the debugger
-* what will happen. Hardware may implement the bit fully writable, in
-* which case the debugger has a little more control.
-*
-* Data load triggers with \Ftiming of 0 will result in the same load
-* happening again when the debugger lets the core run. For data load
-* triggers debuggers must first attempt to set the breakpoint with
-* \Ftiming of 1.
-*
-* A chain of triggers that don't all have the same \Ftiming value
-* will never fire (unless consecutive instructions match the
-* appropriate triggers).
- */
-#define CSR_MCONTROL_TIMING_OFFSET          18
-#define CSR_MCONTROL_TIMING_LENGTH          1
-#define CSR_MCONTROL_TIMING                 (0x1L << CSR_MCONTROL_TIMING_OFFSET)
-/*
-* Determines what happens when this trigger matches.
-*
-* 0: Raise a breakpoint exception. (Used when software wants to use
-* the trigger module without an external debugger attached.)
-*
-* 1: Enter Debug Mode. (Only supported when \Fdmode is 1.)
-*
-* 2: Start tracing.
-*
-* 3: Stop tracing.
-*
-* 4: Emit trace data for this match. If it is a data access match,
-* emit appropriate Load/Store Address/Data. If it is an instruction
-* execution, emit its PC.
-*
-* Other values are reserved for future use.
- */
-#define CSR_MCONTROL_ACTION_OFFSET          12
-#define CSR_MCONTROL_ACTION_LENGTH          6
-#define CSR_MCONTROL_ACTION                 (0x3fL << CSR_MCONTROL_ACTION_OFFSET)
-/*
-* 0: When this trigger matches, the configured action is taken.
-*
-* 1: While this trigger does not match, it prevents the trigger with
-* the next index from matching.
- */
-#define CSR_MCONTROL_CHAIN_OFFSET           11
-#define CSR_MCONTROL_CHAIN_LENGTH           1
-#define CSR_MCONTROL_CHAIN                  (0x1L << CSR_MCONTROL_CHAIN_OFFSET)
-/*
-* 0: Matches when the value equals \Rtdatatwo.
-*
-* 1: Matches when the top M bits of the value match the top M bits of
-* \Rtdatatwo. M is XLEN-1 minus the index of the least-significant
-* bit containing 0 in \Rtdatatwo.
-*
-* 2: Matches when the value is greater than or equal to \Rtdatatwo.
-*
-* 3: Matches when the value is less than \Rtdatatwo.
-*
-* 4: Matches when the lower half of the value equals the lower half
-* of \Rtdatatwo after the lower half of the value is ANDed with the
-* upper half of \Rtdatatwo.
-*
-* 5: Matches when the upper half of the value equals the lower half
-* of \Rtdatatwo after the upper half of the value is ANDed with the
-* upper half of \Rtdatatwo.
-*
-* Other values are reserved for future use.
- */
-#define CSR_MCONTROL_MATCH_OFFSET           7
-#define CSR_MCONTROL_MATCH_LENGTH           4
-#define CSR_MCONTROL_MATCH                  (0xfL << CSR_MCONTROL_MATCH_OFFSET)
-/*
-* When set, enable this trigger in M mode.
- */
-#define CSR_MCONTROL_M_OFFSET               6
-#define CSR_MCONTROL_M_LENGTH               1
-#define CSR_MCONTROL_M                      (0x1L << CSR_MCONTROL_M_OFFSET)
-/*
-* When set, enable this trigger in H mode.
- */
-#define CSR_MCONTROL_H_OFFSET               5
-#define CSR_MCONTROL_H_LENGTH               1
-#define CSR_MCONTROL_H                      (0x1L << CSR_MCONTROL_H_OFFSET)
-/*
-* When set, enable this trigger in S mode.
- */
-#define CSR_MCONTROL_S_OFFSET               4
-#define CSR_MCONTROL_S_LENGTH               1
-#define CSR_MCONTROL_S                      (0x1L << CSR_MCONTROL_S_OFFSET)
-/*
-* When set, enable this trigger in U mode.
- */
-#define CSR_MCONTROL_U_OFFSET               3
-#define CSR_MCONTROL_U_LENGTH               1
-#define CSR_MCONTROL_U                      (0x1L << CSR_MCONTROL_U_OFFSET)
-/*
-* When set, the trigger fires on the address or opcode of an
-* instruction that is executed.
- */
-#define CSR_MCONTROL_EXECUTE_OFFSET         2
-#define CSR_MCONTROL_EXECUTE_LENGTH         1
-#define CSR_MCONTROL_EXECUTE                (0x1L << CSR_MCONTROL_EXECUTE_OFFSET)
-/*
-* When set, the trigger fires on the address or data of a store.
- */
-#define CSR_MCONTROL_STORE_OFFSET           1
-#define CSR_MCONTROL_STORE_LENGTH           1
-#define CSR_MCONTROL_STORE                  (0x1L << CSR_MCONTROL_STORE_OFFSET)
-/*
-* When set, the trigger fires on the address or data of a load.
- */
-#define CSR_MCONTROL_LOAD_OFFSET            0
-#define CSR_MCONTROL_LOAD_LENGTH            1
-#define CSR_MCONTROL_LOAD                   (0x1L << CSR_MCONTROL_LOAD_OFFSET)
-#define CSR_ICOUNT                          0x7a1
-#define CSR_ICOUNT_TYPE_OFFSET              XLEN-4
-#define CSR_ICOUNT_TYPE_LENGTH              4
-#define CSR_ICOUNT_TYPE                     (0xfL << CSR_ICOUNT_TYPE_OFFSET)
-#define CSR_ICOUNT_DMODE_OFFSET             XLEN-5
-#define CSR_ICOUNT_DMODE_LENGTH             1
-#define CSR_ICOUNT_DMODE                    (0x1L << CSR_ICOUNT_DMODE_OFFSET)
-/*
-* When count is decremented to 0, the trigger fires. Instead of
-* changing \Fcount from 1 to 0, it is also acceptable for hardware to
-* clear \Fm, \Fh, \Fs, and \Fu. This allows \Fcount to be hard-wired
-* to 1 if this register just exists for single step.
- */
-#define CSR_ICOUNT_COUNT_OFFSET             10
-#define CSR_ICOUNT_COUNT_LENGTH             14
-#define CSR_ICOUNT_COUNT                    (0x3fffL << CSR_ICOUNT_COUNT_OFFSET)
-/*
-* When set, every instruction completed in M mode decrements \Fcount
-* by 1.
- */
-#define CSR_ICOUNT_M_OFFSET                 9
-#define CSR_ICOUNT_M_LENGTH                 1
-#define CSR_ICOUNT_M                        (0x1L << CSR_ICOUNT_M_OFFSET)
-/*
-* When set, every instruction completed in H mode decrements \Fcount
-* by 1.
- */
-#define CSR_ICOUNT_H_OFFSET                 8
-#define CSR_ICOUNT_H_LENGTH                 1
-#define CSR_ICOUNT_H                        (0x1L << CSR_ICOUNT_H_OFFSET)
-/*
-* When set, every instruction completed in S mode decrements \Fcount
-* by 1.
- */
-#define CSR_ICOUNT_S_OFFSET                 7
-#define CSR_ICOUNT_S_LENGTH                 1
-#define CSR_ICOUNT_S                        (0x1L << CSR_ICOUNT_S_OFFSET)
-/*
-* When set, every instruction completed in U mode decrements \Fcount
-* by 1.
- */
-#define CSR_ICOUNT_U_OFFSET                 6
-#define CSR_ICOUNT_U_LENGTH                 1
-#define CSR_ICOUNT_U                        (0x1L << CSR_ICOUNT_U_OFFSET)
-/*
-* Determines what happens when this trigger matches.
-*
-* 0: Raise a debug exception. (Used when software wants to use the
-* trigger module without an external debugger attached.)
-*
-* 1: Enter Debug Mode. (Only supported when \Fdmode is 1.)
-*
-* 2: Start tracing.
-*
-* 3: Stop tracing.
-*
-* 4: Emit trace data for this match. If it is a data access match,
-* emit appropriate Load/Store Address/Data. If it is an instruction
-* execution, emit its PC.
-*
-* Other values are reserved for future use.
- */
-#define CSR_ICOUNT_ACTION_OFFSET            0
-#define CSR_ICOUNT_ACTION_LENGTH            6
-#define CSR_ICOUNT_ACTION                   (0x3fL << CSR_ICOUNT_ACTION_OFFSET)
-#define DTM_IDCODE                          0x01
-/*
-* Identifies the release version of this part.
- */
-#define DTM_IDCODE_VERSION_OFFSET           28
-#define DTM_IDCODE_VERSION_LENGTH           4
-#define DTM_IDCODE_VERSION                  (0xf << DTM_IDCODE_VERSION_OFFSET)
-/*
-* Identifies the designer's part number of this part.
- */
-#define DTM_IDCODE_PARTNUMBER_OFFSET        12
-#define DTM_IDCODE_PARTNUMBER_LENGTH        16
-#define DTM_IDCODE_PARTNUMBER               (0xffff << DTM_IDCODE_PARTNUMBER_OFFSET)
-/*
-* Identifies the designer/manufacturer of this part. Bits 6:0 must be
-* bits 6:0 of the designer/manufacturer's Identification Code as
-* assigned by JEDEC Standard JEP106. Bits 10:7 contain the modulo-16
-* count of the number of continuation characters (0x7f) in that same
-* Identification Code.
- */
-#define DTM_IDCODE_MANUFID_OFFSET           1
-#define DTM_IDCODE_MANUFID_LENGTH           11
-#define DTM_IDCODE_MANUFID                  (0x7ff << DTM_IDCODE_MANUFID_OFFSET)
-#define DTM_IDCODE_1_OFFSET                 0
-#define DTM_IDCODE_1_LENGTH                 1
-#define DTM_IDCODE_1                        (0x1 << DTM_IDCODE_1_OFFSET)
-#define DTM_SAMPLE                          0x02
-#define DTM_PRELOAD                         0x03
-#define DTM_EXTEST                          0x04
-#define DTM_CLAMP                           0x05
-#define DTM_CLAMP__HOLD                     0x06
-#define DTM_CLAMP__RELEASE                  0x07
-#define DTM_HIGHZ                           0x08
-#define DTM_IC__RESET                       0x09
-#define DTM_TMP__STATUS                     0x0a
-#define DTM_INIT__SETUP                     0x0b
-#define DTM_INIT__SETUP__CLAMP              0x0c
-#define DTM_INIT__RUN                       0x0d
-#define DTM_DTMCONTROL                      0x10
-/*
-* Writing 1 to this bit resets the DMI controller, clearing any
-* sticky error state.
- */
-#define DTM_DTMCONTROL_DMIRESET_OFFSET      16
-#define DTM_DTMCONTROL_DMIRESET_LENGTH      1
-#define DTM_DTMCONTROL_DMIRESET             (0x1 << DTM_DTMCONTROL_DMIRESET_OFFSET)
-/*
-* This is the minimum number of cycles a debugger should spend in
-* Run-Test/Idle after every DMI scan to avoid a 'busy'
-* return code (\Fdmistat of 3). A debugger must still
-* check \Fdmistat when necessary.
-*
-* 0: It is not necessary to enter Run-Test/Idle at all.
-*
-* 1: Enter Run-Test/Idle and leave it immediately.
-*
-* 2: Enter Run-Test/Idle and stay there for 1 cycle before leaving.
-*
-* And so on.
- */
-#define DTM_DTMCONTROL_IDLE_OFFSET          12
-#define DTM_DTMCONTROL_IDLE_LENGTH          3
-#define DTM_DTMCONTROL_IDLE                 (0x7 << DTM_DTMCONTROL_IDLE_OFFSET)
-/*
-* 0: No error.
-*
-* 1: Reserved. Interpret the same as 2.
-*
-* 2: An operation failed (resulted in \Fop of 2).
-*
-* 3: An operation was attempted while a DMI access was still in
-* progress (resulted in \Fop of 3).
- */
-#define DTM_DTMCONTROL_DMISTAT_OFFSET       10
-#define DTM_DTMCONTROL_DMISTAT_LENGTH       2
-#define DTM_DTMCONTROL_DMISTAT              (0x3 << DTM_DTMCONTROL_DMISTAT_OFFSET)
-/*
-* The size of \Faddress in \Rdmi.
- */
-#define DTM_DTMCONTROL_ABITS_OFFSET         4
-#define DTM_DTMCONTROL_ABITS_LENGTH         6
-#define DTM_DTMCONTROL_ABITS                (0x3f << DTM_DTMCONTROL_ABITS_OFFSET)
-/*
-* 0: Version described in spec version 0.11.
-*
-* 1: Version described in spec version 0.12 (and later?), which
-* reduces the DMI data width to 32 bits.
-*
-* Other values are reserved for future use.
- */
-#define DTM_DTMCONTROL_VERSION_OFFSET       0
-#define DTM_DTMCONTROL_VERSION_LENGTH       4
-#define DTM_DTMCONTROL_VERSION              (0xf << DTM_DTMCONTROL_VERSION_OFFSET)
-#define DTM_DMI                             0x11
-/*
-* Address used for DMI access. In Update-DR this value is used
-* to access the DM over the DMI.
- */
-#define DTM_DMI_ADDRESS_OFFSET              34
-#define DTM_DMI_ADDRESS_LENGTH              abits
-#define DTM_DMI_ADDRESS                     (((1L<<abits)-1) << DTM_DMI_ADDRESS_OFFSET)
-/*
-* The data to send to the DM over the DMI during Update-DR, and
-* the data returned from the DM as a result of the previous operation.
- */
-#define DTM_DMI_DATA_OFFSET                 2
-#define DTM_DMI_DATA_LENGTH                 32
-#define DTM_DMI_DATA                        (0xffffffffL << DTM_DMI_DATA_OFFSET)
-/*
-* When the debugger writes this field, it has the following meaning:
-*
-* 0: Ignore \Fdata. (nop)
-*
-* 1: Read from \Faddress. (read)
-*
-* 2: Write \Fdata to \Faddress. (write)
-*
-* 3: Reserved.
-*
-* When the debugger reads this field, it means the following:
-*
-* 0: The previous operation completed successfully.
-*
-* 1: Reserved.
-*
-* 2: The previous operation returned a non-zero value in \Fop.
-* The data scanned into \Rdmi in this access will be ignored.
-* This status is sticky and can be cleared by writing \Fdmireset
-* in \Rdtmcontrol.
-*
-* (This indicates that the DM itself responded with an error, e.g.
-* in the System Bus and Serial Port overflow/underflow cases.
-* Generally this means that for this type of DM access, the DTM should
-* allow more time between Update-DR and Capture-DR. The most portable way
-* to achieve this is to spend more TCK ticks in Run-Test/Idle state
-* for similar operations.)
-*
-* 3: The previous DMI request is still in progress. The data scanned
-* into \Rdmi in this access will be ignored. This status is sticky
-* and can be cleared by writing \Fdmireset in \Rdtmcontrol. If a
-* debugger sees this status, it needs to give the target more TCK
-* edges between Update-DR and Capture-DR. The simplest way
-* to do that is to add extra transitions in Run-Test/Idle.
-*
-* (The DTM, DM, and/or component may be in different clock domains,
-* so synchronization may be required. Some relatively fixed number of
-* TCK ticks may be needed for the request to reach the DM, complete,
-* and for the response to be synchronized back into the TCK domain.
-* This status is intended to cover these cases, and is orthogonal to
-* the causes for case 2.)
- */
-#define DTM_DMI_OP_OFFSET                   0
-#define DTM_DMI_OP_LENGTH                   2
-#define DTM_DMI_OP                          (0x3L << DTM_DMI_OP_OFFSET)
-#define SHORTNAME                           0x123
-/*
-* Description of what this field is used for.
- */
-#define SHORTNAME_FIELD_OFFSET              0
-#define SHORTNAME_FIELD_LENGTH              8
-#define SHORTNAME_FIELD                     (0xff << SHORTNAME_FIELD_OFFSET)
 #define TRACE                               0x728
 /*
 * 1 if the trace buffer has wrapped since the last time \Fdiscard was
@@ -1387,3 +1323,68 @@
 #define TBUFSTART                           0x729
 #define TBUFEND                             0x72a
 #define TBUFWRITE                           0x72b
+#define SHORTNAME                           0x123
+/*
+* Description of what this field is used for.
+ */
+#define SHORTNAME_FIELD_OFFSET              0
+#define SHORTNAME_FIELD_LENGTH              8
+#define SHORTNAME_FIELD                     (0xff << SHORTNAME_FIELD_OFFSET)
+#define AC_ACCESS_REGISTER                  None
+/*
+* This is 0 to indicate Access Register Command.
+ */
+#define AC_ACCESS_REGISTER_TYPE_OFFSET      24
+#define AC_ACCESS_REGISTER_TYPE_LENGTH      8
+#define AC_ACCESS_REGISTER_TYPE             (0xff << AC_ACCESS_REGISTER_TYPE_OFFSET)
+/*
+* 2: Access the lowest 32 bits of the register.
+*
+* 3: Access the lowest 64 bits of the register.
+*
+* 4: Access the lowest 128 bits of the register.
+*
+* If \Fsize specifies a size larger than the register is, then the
+* access must fail. If a register is accessible, then \Fsize matching
+* the register's actual size must be supported.
+ */
+#define AC_ACCESS_REGISTER_SIZE_OFFSET      19
+#define AC_ACCESS_REGISTER_SIZE_LENGTH      3
+#define AC_ACCESS_REGISTER_SIZE             (0x7 << AC_ACCESS_REGISTER_SIZE_OFFSET)
+/*
+* When 1, execute the program in the Program Buffer exactly once
+* before performing the read/write.
+ */
+#define AC_ACCESS_REGISTER_PREEXEC_OFFSET   18
+#define AC_ACCESS_REGISTER_PREEXEC_LENGTH   1
+#define AC_ACCESS_REGISTER_PREEXEC          (0x1 << AC_ACCESS_REGISTER_PREEXEC_OFFSET)
+/*
+* When 1, execute the program in the Program Buffer exactly once
+* after performing the read/write.
+ */
+#define AC_ACCESS_REGISTER_POSTEXEC_OFFSET  17
+#define AC_ACCESS_REGISTER_POSTEXEC_LENGTH  1
+#define AC_ACCESS_REGISTER_POSTEXEC         (0x1 << AC_ACCESS_REGISTER_POSTEXEC_OFFSET)
+/*
+* 0: Copy data from the specified register into {\tt arg0} portion
+* of {\tt data}.
+*
+* 1: Copy data from {\tt arg0} portion of {\tt data} into the
+* specified register.
+ */
+#define AC_ACCESS_REGISTER_WRITE_OFFSET     16
+#define AC_ACCESS_REGISTER_WRITE_LENGTH     1
+#define AC_ACCESS_REGISTER_WRITE            (0x1 << AC_ACCESS_REGISTER_WRITE_OFFSET)
+/*
+* Number of the register to access, as described in Table~\ref{tab:regno}.
+ */
+#define AC_ACCESS_REGISTER_REGNO_OFFSET     0
+#define AC_ACCESS_REGISTER_REGNO_LENGTH     16
+#define AC_ACCESS_REGISTER_REGNO            (0xffff << AC_ACCESS_REGISTER_REGNO_OFFSET)
+#define AC_QUICK_ACCESS                     None
+/*
+* This is 1 to indicate Quick Access command.
+ */
+#define AC_QUICK_ACCESS_TYPE_OFFSET         24
+#define AC_QUICK_ACCESS_TYPE_LENGTH         8
+#define AC_QUICK_ACCESS_TYPE                (0xff << AC_QUICK_ACCESS_TYPE_OFFSET)

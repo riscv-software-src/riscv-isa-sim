@@ -11,8 +11,6 @@ class sim_t;
 typedef struct {
   bool haltreq;
   bool resumereq;
-  bool reset;
-  bool dmactive;
   enum {
     HARTSTATUS_HALTED,
     HARTSTATUS_RUNNING,
@@ -20,13 +18,11 @@ typedef struct {
     HARTSTATUS_NOTEXIST
   } hartstatus;
   unsigned hartsel;
+  bool hartreset;
+  bool dmactive;
+  bool reset;
   bool authenticated;
   bool authbusy;
-  enum {
-    AUTHTYPE_NOAUTH,
-    AUTHTYPE_PASSWORD,
-    AUTHTYPE_CHALLENGE
-  } authtype;
   unsigned version;
 } dmcontrol_t;
 
