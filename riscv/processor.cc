@@ -344,11 +344,11 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MCYCLEH:
       state.minstret = (val << 32) | (state.minstret << 32 >> 32);
       break;
-    case CSR_MUCOUNTEREN:
-      state.mucounteren = val;
+    case CSR_SCOUNTEREN:
+      state.scounteren = val;
       break;
-    case CSR_MSCOUNTEREN:
-      state.mscounteren = val;
+    case CSR_MCOUNTEREN:
+      state.mcounteren = val;
       break;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
@@ -456,8 +456,11 @@ void processor_t::set_csr(int which, reg_t val)
 
 reg_t processor_t::get_csr(int which)
 {
-  reg_t ctr_en = state.prv == PRV_U ? state.mucounteren :
-                 state.prv == PRV_S ? state.mscounteren : -1U;
+  uint32_t ctr_en = -1;
+  if (state.prv < PRV_M)
+    ctr_en &= state.mcounteren;
+  if (state.prv < PRV_S)
+    ctr_en &= state.scounteren;
   bool ctr_ok = (ctr_en >> (which & 31)) & 1;
 
   if (ctr_ok) {
@@ -468,7 +471,7 @@ reg_t processor_t::get_csr(int which)
   }
   if (which >= CSR_MHPMCOUNTER3 && which <= CSR_MHPMCOUNTER31)
     return 0;
-  if (xlen == 32 && which >= CSR_MHPMCOUNTER3 && which <= CSR_MHPMCOUNTER31)
+  if (xlen == 32 && which >= CSR_MHPMCOUNTER3H && which <= CSR_MHPMCOUNTER31H)
     return 0;
   if (which >= CSR_MHPMEVENT3 && which <= CSR_MHPMEVENT31)
     return 0;
@@ -503,8 +506,8 @@ reg_t processor_t::get_csr(int which)
       if (xlen == 32)
         return state.minstret >> 32;
       break;
-    case CSR_MUCOUNTEREN: return state.mucounteren;
-    case CSR_MSCOUNTEREN: return state.mscounteren;
+    case CSR_SCOUNTEREN: return state.scounteren;
+    case CSR_MCOUNTEREN: return state.mcounteren;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
                  | SSTATUS_XS | SSTATUS_PUM;

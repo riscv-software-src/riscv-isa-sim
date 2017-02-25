@@ -184,30 +184,18 @@
   __tmp; })
 
 #define write_csr(reg, val) ({ \
-  if (__builtin_constant_p(val) && (unsigned long)(val) < 32) \
-    asm volatile ("csrw " #reg ", %0" :: "i"(val)); \
-  else \
-    asm volatile ("csrw " #reg ", %0" :: "r"(val)); })
+  asm volatile ("csrw " #reg ", %0" :: "rK"(val)); })
 
 #define swap_csr(reg, val) ({ unsigned long __tmp; \
-  if (__builtin_constant_p(val) && (unsigned long)(val) < 32) \
-    asm volatile ("csrrw %0, " #reg ", %1" : "=r"(__tmp) : "i"(val)); \
-  else \
-    asm volatile ("csrrw %0, " #reg ", %1" : "=r"(__tmp) : "r"(val)); \
+  asm volatile ("csrrw %0, " #reg ", %1" : "=r"(__tmp) : "rK"(val)); \
   __tmp; })
 
 #define set_csr(reg, bit) ({ unsigned long __tmp; \
-  if (__builtin_constant_p(bit) && (unsigned long)(bit) < 32) \
-    asm volatile ("csrrs %0, " #reg ", %1" : "=r"(__tmp) : "i"(bit)); \
-  else \
-    asm volatile ("csrrs %0, " #reg ", %1" : "=r"(__tmp) : "r"(bit)); \
+  asm volatile ("csrrs %0, " #reg ", %1" : "=r"(__tmp) : "rK"(bit)); \
   __tmp; })
 
 #define clear_csr(reg, bit) ({ unsigned long __tmp; \
-  if (__builtin_constant_p(bit) && (unsigned long)(bit) < 32) \
-    asm volatile ("csrrc %0, " #reg ", %1" : "=r"(__tmp) : "i"(bit)); \
-  else \
-    asm volatile ("csrrc %0, " #reg ", %1" : "=r"(__tmp) : "r"(bit)); \
+  asm volatile ("csrrc %0, " #reg ", %1" : "=r"(__tmp) : "rK"(bit)); \
   __tmp; })
 
 #define rdtime() read_csr(time)
@@ -788,6 +776,7 @@
 #define CSR_SSTATUS 0x100
 #define CSR_SIE 0x104
 #define CSR_STVEC 0x105
+#define CSR_SCOUNTEREN 0x106
 #define CSR_SSCRATCH 0x140
 #define CSR_SEPC 0x141
 #define CSR_SCAUSE 0x142
@@ -800,6 +789,7 @@
 #define CSR_MIDELEG 0x303
 #define CSR_MIE 0x304
 #define CSR_MTVEC 0x305
+#define CSR_MCOUNTEREN 0x306
 #define CSR_MSCRATCH 0x340
 #define CSR_MEPC 0x341
 #define CSR_MCAUSE 0x342
@@ -843,8 +833,6 @@
 #define CSR_MHPMCOUNTER29 0xb1d
 #define CSR_MHPMCOUNTER30 0xb1e
 #define CSR_MHPMCOUNTER31 0xb1f
-#define CSR_MUCOUNTEREN 0x320
-#define CSR_MSCOUNTEREN 0x321
 #define CSR_MHPMEVENT3 0x323
 #define CSR_MHPMEVENT4 0x324
 #define CSR_MHPMEVENT5 0x325
@@ -1258,6 +1246,7 @@ DECLARE_CSR(hpmcounter31, CSR_HPMCOUNTER31)
 DECLARE_CSR(sstatus, CSR_SSTATUS)
 DECLARE_CSR(sie, CSR_SIE)
 DECLARE_CSR(stvec, CSR_STVEC)
+DECLARE_CSR(scounteren, CSR_SCOUNTEREN)
 DECLARE_CSR(sscratch, CSR_SSCRATCH)
 DECLARE_CSR(sepc, CSR_SEPC)
 DECLARE_CSR(scause, CSR_SCAUSE)
@@ -1270,6 +1259,7 @@ DECLARE_CSR(medeleg, CSR_MEDELEG)
 DECLARE_CSR(mideleg, CSR_MIDELEG)
 DECLARE_CSR(mie, CSR_MIE)
 DECLARE_CSR(mtvec, CSR_MTVEC)
+DECLARE_CSR(mcounteren, CSR_MCOUNTEREN)
 DECLARE_CSR(mscratch, CSR_MSCRATCH)
 DECLARE_CSR(mepc, CSR_MEPC)
 DECLARE_CSR(mcause, CSR_MCAUSE)
@@ -1313,8 +1303,6 @@ DECLARE_CSR(mhpmcounter28, CSR_MHPMCOUNTER28)
 DECLARE_CSR(mhpmcounter29, CSR_MHPMCOUNTER29)
 DECLARE_CSR(mhpmcounter30, CSR_MHPMCOUNTER30)
 DECLARE_CSR(mhpmcounter31, CSR_MHPMCOUNTER31)
-DECLARE_CSR(mucounteren, CSR_MUCOUNTEREN)
-DECLARE_CSR(mscounteren, CSR_MSCOUNTEREN)
 DECLARE_CSR(mhpmevent3, CSR_MHPMEVENT3)
 DECLARE_CSR(mhpmevent4, CSR_MHPMEVENT4)
 DECLARE_CSR(mhpmevent5, CSR_MHPMEVENT5)
