@@ -367,7 +367,8 @@ void processor_t::set_csr(int which, reg_t val)
       if (max_xlen == 32)
         state.sptbr = val & (SPTBR32_PPN | SPTBR32_MODE);
       if (max_xlen == 64 && (get_field(val, SPTBR64_MODE) == SPTBR_MODE_OFF ||
-                             get_field(val, SPTBR64_MODE) >= SPTBR_MODE_SV39))
+                             get_field(val, SPTBR64_MODE) == SPTBR_MODE_SV39 ||
+                             get_field(val, SPTBR64_MODE) == SPTBR_MODE_SV48))
         state.sptbr = val & (SPTBR64_PPN | SPTBR64_MODE);
       break;
     }
