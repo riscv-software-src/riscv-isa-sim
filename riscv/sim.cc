@@ -171,34 +171,53 @@ void sim_t::make_config_string()
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
 
   std::stringstream s;
-  s << std::hex <<
-        "platform {\n"
-        "  vendor ucb;\n"
-        "  arch spike;\n"
-        "};\n"
-        "rtc {\n"
-        "  addr 0x" << rtc_addr << ";\n"
-        "};\n"
-        "ram {\n"
-        "  0 {\n"
-        "    addr 0x" << DRAM_BASE << ";\n"
-        "    size 0x" << memsz << ";\n"
-        "  };\n"
-        "};\n"
-        "core {\n";
+  s << std::dec <<
+         "/dts-v1/;\n"
+         "\n"
+         "/ {\n"
+         "  #address-cells = <2>;\n"
+         "  #size-cells = <2>;\n"
+         "  compatible = \"ucbbar,spike-bare-dev\";\n"
+         "  model = \"ucbbar,spike-bare\";\n"
+         "  cpus {\n"
+         "    #address-cells = <1>;\n"
+         "    #size-cells = <0>;\n"
+         "    timebase-frequency = <" << (CPU_HZ/INSNS_PER_RTC_TICK) << ">;\n";
   for (size_t i = 0; i < procs.size(); i++) {
-    s <<
-        "  " << i << " {\n"
-        "    " << "0 {\n" << // hart 0 on core i
-        "      isa " << procs[i]->isa_string << ";\n"
-        "      timecmp 0x" << (rtc_addr + 8*(1+i)) << ";\n"
-        "      ipi 0x" << cpu_addr << ";\n"
-        "    };\n"
-        "  };\n";
-    bus.add_device(cpu_addr, procs[i]);
-    cpu_addr += cpu_size;
+    s << "    CPU" << i << ": cpu@" << i << " {\n"
+         "      device_type = \"cpu\";\n"
+         "      reg = <" << i << ">;\n"
+         "      status = \"okay\";\n"
+         "      compatible = \"riscv\";\n"
+         "      riscv,isa = \"" << procs[i]->isa_string << "\";\n"
+         "      mmu-type = \"riscv," << (procs[i]->max_xlen <= 32 ? "sv32" : "sv48") << "\";\n"
+         "      clock-frequency = <" << CPU_HZ << ">;\n"
+         "    };\n";
   }
-  s <<  "};\n";
+  reg_t membs = DRAM_BASE;
+  s << std::hex <<
+         "  };\n"
+         "  memory@" << DRAM_BASE << " {\n"
+         "    device_type = \"memory\";\n"
+         "    reg = <0x" << (membs >> 32) << " 0x" << (membs & (uint32_t)-1) <<
+                   " 0x" << (memsz >> 32) << " 0x" << (memsz & (uint32_t)-1) << ">;\n"
+         "  };\n"
+         "  soc {\n"
+         "    #address-cells = <2>;\n"
+         "    #size-cells = <2>;\n"
+         "    compatible = \"ucbbar,spike-bare-soc\";\n"
+         "    ranges;\n"
+         "    clint@" << rtc_addr << " {\n"
+         "      compatible = \"riscv,clint0\";\n"
+         "      interrupts-extended = <" << std::dec;
+  for (size_t i = 0; i < procs.size(); i++)
+    s << "&CPU" << i << " 3 &CPU" << i << " 7 ";
+  s << std::hex << ">;\n"
+         "      reg = <0x" << (rtc_addr >> 32) << " 0x" << (rtc_addr & (uint32_t)-1) <<
+                     " 0x0 0x10000>;\n"
+         "    };\n"
+         "  };\n"
+         "};\n";
 
   config_string = s.str();
   rom.insert(rom.end(), config_string.begin(), config_string.end());
