@@ -51,6 +51,8 @@ AC_PROG_CC
 AC_PROG_CXX
 AC_CHECK_TOOL([AR],[ar])
 AC_CHECK_TOOL([RANLIB],[ranlib])
+AC_PATH_PROG([DTC],[dtc])
+AC_DEFINE_UNQUOTED(DTC, ["$DTC"], [Path to the device-tree-compiler])
 
 AC_C_BIGENDIAN(AC_MSG_ERROR([Spike requires a little-endian host]))
 

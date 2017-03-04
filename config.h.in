@@ -6,6 +6,9 @@
 /* Default value for --isa switch */
 #undef DEFAULT_ISA
 
+/* Path to the device-tree-compiler */
+#undef DTC
+
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef DUMMY_ROCC_ENABLED
 

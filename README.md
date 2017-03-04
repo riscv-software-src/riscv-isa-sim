@@ -19,6 +19,7 @@ Build Steps
 We assume that the RISCV environment variable is set to the RISC-V tools
 install path, and that the riscv-fesvr package is installed there.
 
+    $ apt-get install device-tree-compiler
     $ mkdir build
     $ cd build
     $ ../configure --prefix=$RISCV --with-fesvr=$RISCV
