@@ -298,7 +298,8 @@ void processor_t::set_csr(int which, reg_t val)
 
       reg_t mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE
                  | MSTATUS_SPP | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_PUM
-                 | MSTATUS_MPP | MSTATUS_MXR | (ext ? MSTATUS_XS : 0);
+                 | MSTATUS_MPP | MSTATUS_MXR | MSTATUS_TW | MSTATUS_TVM
+                 | MSTATUS_TSR | (ext ? MSTATUS_XS : 0);
 
       state.mstatus = (state.mstatus & ~mask) | (val & mask);
 
@@ -527,7 +528,10 @@ reg_t processor_t::get_csr(int which)
       if (max_xlen > xlen)
         return state.scause | ((state.scause >> (max_xlen-1)) << (xlen-1));
       return state.scause;
-    case CSR_SPTBR: return state.sptbr;
+    case CSR_SPTBR:
+      if (get_field(state.mstatus, MSTATUS_TVM))
+        require_privilege(PRV_M);
+      return state.sptbr;
     case CSR_SSCRATCH: return state.sscratch;
     case CSR_MSTATUS: return state.mstatus;
     case CSR_MIP: return state.mip;

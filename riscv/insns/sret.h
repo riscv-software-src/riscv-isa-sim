@@ -1,4 +1,4 @@
-require_privilege(PRV_S);
+require_privilege(get_field(STATE.mstatus, MSTATUS_TSR) ? PRV_M : PRV_S);
 set_pc_and_serialize(p->get_state()->sepc);
 reg_t s = STATE.mstatus;
 reg_t prev_prv = get_field(s, MSTATUS_SPP);
