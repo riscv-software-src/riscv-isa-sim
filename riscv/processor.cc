@@ -235,7 +235,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
       state.sbadaddr = t.get_badaddr();
 
     reg_t s = state.mstatus;
-    s = set_field(s, MSTATUS_SPIE, get_field(s, MSTATUS_UIE << state.prv));
+    s = set_field(s, MSTATUS_SPIE, get_field(s, MSTATUS_SIE));
     s = set_field(s, MSTATUS_SPP, state.prv);
     s = set_field(s, MSTATUS_SIE, 0);
     set_csr(CSR_MSTATUS, s);
@@ -248,7 +248,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
       state.mbadaddr = t.get_badaddr();
 
     reg_t s = state.mstatus;
-    s = set_field(s, MSTATUS_MPIE, get_field(s, MSTATUS_UIE << state.prv));
+    s = set_field(s, MSTATUS_MPIE, get_field(s, MSTATUS_MIE));
     s = set_field(s, MSTATUS_MPP, state.prv);
     s = set_field(s, MSTATUS_MIE, 0);
     set_csr(CSR_MSTATUS, s);
