@@ -293,11 +293,11 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_MSTATUS: {
       if ((val ^ state.mstatus) &
-          (MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_PUM | MSTATUS_MXR))
+          (MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_SUM | MSTATUS_MXR))
         mmu->flush_tlb();
 
       reg_t mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE
-                 | MSTATUS_SPP | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_PUM
+                 | MSTATUS_SPP | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_SUM
                  | MSTATUS_MPP | MSTATUS_MXR | MSTATUS_TW | MSTATUS_TVM
                  | MSTATUS_TSR | (ext ? MSTATUS_XS : 0);
 
@@ -353,7 +353,7 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-                 | SSTATUS_XS | SSTATUS_PUM;
+                 | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR;
       return set_csr(CSR_MSTATUS, (state.mstatus & ~mask) | (val & mask));
     }
     case CSR_SIP: {
@@ -512,7 +512,7 @@ reg_t processor_t::get_csr(int which)
     case CSR_MCOUNTEREN: return state.mcounteren;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-                 | SSTATUS_XS | SSTATUS_PUM;
+                 | SSTATUS_XS | SSTATUS_SUM;
       reg_t sstatus = state.mstatus & mask;
       if ((sstatus & SSTATUS_FS) == SSTATUS_FS ||
           (sstatus & SSTATUS_XS) == SSTATUS_XS)

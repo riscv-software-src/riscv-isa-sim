@@ -162,7 +162,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
     return addr & ((reg_t(2) << (proc->xlen-1))-1); // zero-extend from xlen
 
   bool supervisor = mode == PRV_S;
-  bool pum = get_field(proc->state.mstatus, MSTATUS_PUM);
+  bool sum = get_field(proc->state.mstatus, MSTATUS_SUM);
   bool mxr = get_field(proc->state.mstatus, MSTATUS_MXR);
 
   // verify bits xlen-1:va_bits-1 are all equal
@@ -188,7 +188,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
 
     if (PTE_TABLE(pte)) { // next level of page table
       base = ppn << PGSHIFT;
-    } else if ((pte & PTE_U) ? supervisor && pum : !supervisor) {
+    } else if ((pte & PTE_U) ? supervisor && !sum : !supervisor) {
       break;
     } else if (!(pte & PTE_V) || (!(pte & PTE_R) && (pte & PTE_W))) {
       break;
