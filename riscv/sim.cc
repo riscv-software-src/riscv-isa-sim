@@ -53,7 +53,7 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
   }
 
   rtc.reset(new rtc_t(procs));
-  make_config_string();
+  make_dtb();
 }
 
 sim_t::~sim_t()
@@ -234,7 +234,7 @@ static std::string dts_compile(const std::string& dts)
   return dtb.str();
 }
 
-void sim_t::make_config_string()
+void sim_t::make_dtb()
 {
   reg_t rtc_addr = EXT_IO_BASE;
   bus.add_device(rtc_addr, rtc.get());
@@ -303,8 +303,8 @@ void sim_t::make_config_string()
          "  };\n"
          "};\n";
 
-  config_string = s.str();
-  std::string dtb = dts_compile(config_string);
+  dts = s.str();
+  std::string dtb = dts_compile(dts);
 
   rom.insert(rom.end(), dtb.begin(), dtb.end());
   rom.resize((rom.size() / align + 1) * align);

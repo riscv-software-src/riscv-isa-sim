@@ -30,7 +30,7 @@ public:
   void set_histogram(bool value);
   void set_procs_debug(bool value);
   void set_gdbserver(gdbserver_t* gdbserver) { this->gdbserver = gdbserver; }
-  const char* get_config_string() { return config_string.c_str(); }
+  const char* get_dts() { return dts.c_str(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
 
 private:
@@ -38,7 +38,7 @@ private:
   size_t memsz; // memory size in bytes
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
-  std::string config_string;
+  std::string dts;
   std::unique_ptr<rom_device_t> boot_rom;
   std::unique_ptr<rtc_t> rtc;
   bus_t bus;
@@ -64,7 +64,7 @@ private:
   reg_t mem_to_addr(char* x) { return x - mem + DRAM_BASE; }
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
-  void make_config_string();
+  void make_dtb();
 
   // presents a prompt for introspection into the simulation
   void interactive();
