@@ -243,14 +243,14 @@ void sim_t::make_dtb()
   reg_t cpu_addr = rtc_addr + ((rtc->size() - 1) / align + 1) * align;
   reg_t cpu_size = align;
 
-  uint32_t reset_vec[8] = {
-    0x297 + DRAM_BASE - DEFAULT_RSTVEC, // reset vector
-    0x00028067,                         //   jump straight to DRAM_BASE
-    0x00000000,                         // reserved
-    0,                                  // config string pointer
-    0, 0, 0, 0                          // trap vector
+  uint32_t reset_vec[] = {
+    0x297 + DRAM_BASE - DEFAULT_RSTVEC, // auipc t0, DRAM_BASE
+    0x597,                              // auipc a1, 0
+    0x58593,                            // addi a1, a1, 0
+    0xf1402573,				// csrr a0,mhartid
+    0x00028067                          // jalr zero, t0, 0 (jump straight to DRAM_BASE)
   };
-  reset_vec[3] = DEFAULT_RSTVEC + sizeof(reset_vec); // config string pointer
+  reset_vec[2] += (sizeof(reset_vec) - 4) << 20; // addi a1, a1, sizeof(reset_vec) - 4 = DTB start
 
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
 
