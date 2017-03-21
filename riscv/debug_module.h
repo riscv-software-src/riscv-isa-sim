@@ -11,30 +11,32 @@ class sim_t;
 typedef struct {
   bool haltreq;
   bool resumereq;
-  enum {
-    HARTSTATUS_HALTED,
-    HARTSTATUS_RUNNING,
-    HARTSTATUS_UNAVAILABLE,
-    HARTSTATUS_NOTEXIST
-  } hartstatus;
   unsigned hartsel;
   bool hartreset;
   bool dmactive;
-  bool reset;
-  bool authenticated;
-  bool authbusy;
-  unsigned version;
+  bool ndmreset;
 } dmcontrol_t;
 
 typedef struct {
-  bool autoexec7;
-  bool autoexec6;
-  bool autoexec5;
-  bool autoexec4;
-  bool autoexec3;
-  bool autoexec2;
-  bool autoexec1;
-  bool autoexec0;
+  bool allnonexistant;
+  bool anynonexistant;
+  bool allunavail;
+  bool anyunavail;
+  bool allrunning;
+  bool anyrunning;
+  bool allhalted;
+  bool anyhalted;
+  bool authenticated;
+  bool authbusy;
+  bool cfgstrvalid;
+  unsigned versionhi;
+  unsigned versionlo;
+} dmstatus_t;
+
+typedef struct {
+  bool busy;
+  unsigned datacount;
+  unsigned progsize;
   enum {
     CMDERR_NONE = 0,
     CMDERR_BUSY = 1,
@@ -43,9 +45,12 @@ typedef struct {
     CMDERR_HALTRESUME = 4,
     CMDERR_OTHER = 7
   } cmderr;
-  bool busy;
-  unsigned datacount;
 } abstractcs_t;
+
+typedef struct {
+  unsigned autoexecprogbuf;
+  unsigned autoexecdata;
+} abstractauto_t;
 
 class debug_module_data_t : public abstract_device_t
 {
@@ -97,7 +102,9 @@ class debug_module_t : public abstract_device_t
     uint32_t read32(uint8_t *rom, unsigned int index);
 
     dmcontrol_t dmcontrol;
+    dmstatus_t dmstatus;
     abstractcs_t abstractcs;
+    abstractauto_t abstractauto;
     uint32_t command;
 
     processor_t *current_proc() const;

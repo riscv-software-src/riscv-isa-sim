@@ -74,7 +74,15 @@ debug_module_t::debug_module_t(sim_t *sim) : sim(sim),
   action_executed(false)
 {
   dmcontrol = {0};
-  dmcontrol.version = 1;
+
+  dmstatus = {0};
+  dmstatus.authenticated = 1;
+  dmstatus.versionlo = 2;
+
+  abstractcs = {0};
+  abstractcs.progsize = progsize;
+
+  abstractauto = {0};
 
   for (unsigned i = 0; i < DEBUG_ROM_ENTRY_SIZE / 4; i++) {
     write32(debug_rom_entry, i, jal(ZERO, 0));
@@ -93,11 +101,16 @@ void debug_module_t::reset()
   }
 
   dmcontrol = {0};
-  dmcontrol.authenticated = 1;
-  dmcontrol.version = 1;
+
+  dmstatus = {0};
+  dmstatus.authenticated = 1;
+  dmstatus.versionlo = 2;
 
   abstractcs = {0};
   abstractcs.datacount = sizeof(dmdata.data) / 4;
+  abstractcs.progsize = progsize;
+
+  abstractauto = {0};
 }
 
 void debug_module_t::add_device(bus_t *bus) {
@@ -219,20 +232,8 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
       abstractcs.cmderr = abstractcs.CMDERR_BUSY;
     }
 
-    bool autoexec = false;
-    switch (i) {
-      case 0:   autoexec = abstractcs.autoexec0; break;
-      case 1:   autoexec = abstractcs.autoexec1; break;
-      case 2:   autoexec = abstractcs.autoexec2; break;
-      case 3:   autoexec = abstractcs.autoexec3; break;
-      case 4:   autoexec = abstractcs.autoexec4; break;
-      case 5:   autoexec = abstractcs.autoexec5; break;
-      case 6:   autoexec = abstractcs.autoexec6; break;
-      case 7:   autoexec = abstractcs.autoexec7; break;
-    }
-    if (autoexec) {
+    if ((abstractauto.autoexecdata >> i) & 1)
       perform_abstract_command();
-    }
   } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progsize) {
     result = read32(program_buffer, address - DMI_PROGBUF0);
   } else {
@@ -240,43 +241,62 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
       case DMI_DMCONTROL:
         {
           processor_t *proc = current_proc();
-          if (proc) {
-            if (halted[dmcontrol.hartsel]) {
-              dmcontrol.hartstatus = dmcontrol.HARTSTATUS_HALTED;
-            } else {
-              dmcontrol.hartstatus = dmcontrol.HARTSTATUS_RUNNING;
-            }
+          if (proc)
             dmcontrol.haltreq = proc->halt_request;
-          } else {
-            dmcontrol.hartstatus = dmcontrol.HARTSTATUS_NOTEXIST;
-          }
+
           result = set_field(result, DMI_DMCONTROL_HALTREQ, dmcontrol.haltreq);
           result = set_field(result, DMI_DMCONTROL_RESUMEREQ, dmcontrol.resumereq);
-          result = set_field(result, DMI_DMCONTROL_HARTSTATUS, dmcontrol.hartstatus);
           result = set_field(result, DMI_DMCONTROL_HARTSEL, dmcontrol.hartsel);
           result = set_field(result, DMI_DMCONTROL_HARTRESET, dmcontrol.hartreset);
+	  result = set_field(result, DMI_DMCONTROL_NDMRESET, dmcontrol.ndmreset);
           result = set_field(result, DMI_DMCONTROL_DMACTIVE, dmcontrol.dmactive);
-          result = set_field(result, DMI_DMCONTROL_RESET, dmcontrol.reset);
-          result = set_field(result, DMI_DMCONTROL_AUTHENTICATED, dmcontrol.authenticated);
-          result = set_field(result, DMI_DMCONTROL_AUTHBUSY, dmcontrol.authbusy);
-          result = set_field(result, DMI_DMCONTROL_VERSION, dmcontrol.version);
         }
         break;
+      case DMI_DMSTATUS:
+        {
+          processor_t *proc = current_proc();
+
+	  dmstatus.allnonexistant = false;
+	  dmstatus.allunavail = false;
+	  dmstatus.allrunning = false;
+	  dmstatus.allhalted = false;
+          if (proc) {
+            if (halted[dmcontrol.hartsel]) {
+              dmstatus.allhalted = true;
+            } else {
+              dmstatus.allrunning = true;
+            }
+          } else {
+	    dmstatus.allnonexistant = true;
+          }
+	  dmstatus.anynonexistant = dmstatus.allnonexistant;
+	  dmstatus.anyunavail = dmstatus.allunavail;
+	  dmstatus.anyrunning = dmstatus.allrunning;
+	  dmstatus.anyhalted = dmstatus.allhalted;
+
+	  result = set_field(result, DMI_DMSTATUS_ALLNONEXISTENT, dmstatus.allnonexistant);
+	  result = set_field(result, DMI_DMSTATUS_ALLUNAVAIL, dmstatus.allunavail);
+	  result = set_field(result, DMI_DMSTATUS_ALLRUNNING, dmstatus.allrunning);
+	  result = set_field(result, DMI_DMSTATUS_ALLHALTED, dmstatus.allhalted);
+	  result = set_field(result, DMI_DMSTATUS_ANYNONEXISTENT, dmstatus.anynonexistant);
+	  result = set_field(result, DMI_DMSTATUS_ANYUNAVAIL, dmstatus.anyunavail);
+	  result = set_field(result, DMI_DMSTATUS_ANYRUNNING, dmstatus.anyrunning);
+	  result = set_field(result, DMI_DMSTATUS_ANYHALTED, dmstatus.anyhalted);
+          result = set_field(result, DMI_DMSTATUS_AUTHENTICATED, dmstatus.authenticated);
+          result = set_field(result, DMI_DMSTATUS_AUTHBUSY, dmstatus.authbusy);
+          result = set_field(result, DMI_DMSTATUS_VERSIONHI, dmstatus.versionhi);
+          result = set_field(result, DMI_DMSTATUS_VERSIONLO, dmstatus.versionlo);
+        }
+      	break;
       case DMI_ABSTRACTCS:
-        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC7, abstractcs.autoexec7);
-        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC6, abstractcs.autoexec6);
-        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC5, abstractcs.autoexec5);
-        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC4, abstractcs.autoexec4);
-        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC3, abstractcs.autoexec3);
-        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC2, abstractcs.autoexec2);
-        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC1, abstractcs.autoexec1);
-        result = set_field(result, DMI_ABSTRACTCS_AUTOEXEC0, abstractcs.autoexec0);
         result = set_field(result, DMI_ABSTRACTCS_CMDERR, abstractcs.cmderr);
         result = set_field(result, DMI_ABSTRACTCS_BUSY, abstractcs.busy);
         result = set_field(result, DMI_ABSTRACTCS_DATACOUNT, abstractcs.datacount);
+        result = set_field(result, DMI_ABSTRACTCS_PROGSIZE, abstractcs.progsize);
         break;
-      case DMI_PROGBUFCS:
-        result = progsize << DMI_PROGBUFCS_PROGSIZE_OFFSET;
+      case DMI_ABSTRACTAUTO:
+        result = set_field(result, DMI_ABSTRACTAUTO_AUTOEXECPROGBUF, abstractauto.autoexecprogbuf);
+        result = set_field(result, DMI_ABSTRACTAUTO_AUTOEXECDATA, abstractauto.autoexecdata);
         break;
       case DMI_COMMAND:
         result = 0;
@@ -379,20 +399,8 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
       abstractcs.cmderr = abstractcs.CMDERR_BUSY;
     }
 
-    bool autoexec = false;
-    switch (i) {
-      case 0:   autoexec = abstractcs.autoexec0; break;
-      case 1:   autoexec = abstractcs.autoexec1; break;
-      case 2:   autoexec = abstractcs.autoexec2; break;
-      case 3:   autoexec = abstractcs.autoexec3; break;
-      case 4:   autoexec = abstractcs.autoexec4; break;
-      case 5:   autoexec = abstractcs.autoexec5; break;
-      case 6:   autoexec = abstractcs.autoexec6; break;
-      case 7:   autoexec = abstractcs.autoexec7; break;
-    }
-    if (autoexec) {
+    if ((abstractauto.autoexecdata >> i) & 1)
       perform_abstract_command();
-    }
     return true;
 
   } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progsize) {
@@ -406,7 +414,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           if (dmcontrol.dmactive) {
             dmcontrol.haltreq = get_field(value, DMI_DMCONTROL_HALTREQ);
             dmcontrol.resumereq = get_field(value, DMI_DMCONTROL_RESUMEREQ);
-            dmcontrol.reset = get_field(value, DMI_DMCONTROL_RESET);
+            dmcontrol.ndmreset = get_field(value, DMI_DMCONTROL_NDMRESET);
             dmcontrol.hartsel = get_field(value, DMI_DMCONTROL_HARTSEL);
           } else {
             reset();
@@ -429,18 +437,15 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         return perform_abstract_command();
 
       case DMI_ABSTRACTCS:
-        abstractcs.autoexec7 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC7);
-        abstractcs.autoexec6 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC6);
-        abstractcs.autoexec5 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC5);
-        abstractcs.autoexec4 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC4);
-        abstractcs.autoexec3 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC3);
-        abstractcs.autoexec2 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC2);
-        abstractcs.autoexec1 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC1);
-        abstractcs.autoexec0 = get_field(value, DMI_ABSTRACTCS_AUTOEXEC0);
         if (get_field(value, DMI_ABSTRACTCS_CMDERR) == abstractcs.CMDERR_NONE) {
           abstractcs.cmderr = abstractcs.CMDERR_NONE;
         }
         return true;
+
+      case DMI_ABSTRACTAUTO:
+        abstractauto.autoexecprogbuf = get_field(value, DMI_ABSTRACTAUTO_AUTOEXECPROGBUF);
+        abstractauto.autoexecdata = get_field(value, DMI_ABSTRACTAUTO_AUTOEXECDATA);
+        break;
     }
   }
   return false;
