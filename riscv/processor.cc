@@ -118,7 +118,6 @@ void state_t::reset()
   memset(this, 0, sizeof(*this));
   prv = PRV_M;
   pc = DEFAULT_RSTVEC;
-  mtvec = DEFAULT_MTVEC;
   load_reservation = -1;
   tselect = 0;
   for (unsigned int i = 0; i < num_triggers; i++)

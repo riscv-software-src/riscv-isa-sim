@@ -24,7 +24,7 @@ processor_t *sim_t::get_core(const std::string& i)
 {
   char *ptr;
   unsigned long p = strtoul(i.c_str(), &ptr, 10);
-  if (*ptr || p >= num_cores())
+  if (*ptr || p >= procs.size())
     throw trap_interactive();
   return get_core(p);
 }
