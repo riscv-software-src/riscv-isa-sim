@@ -40,7 +40,7 @@ private:
   std::vector<processor_t*> procs;
   std::string dts;
   std::unique_ptr<rom_device_t> boot_rom;
-  std::unique_ptr<rtc_t> rtc;
+  std::unique_ptr<clint_t> clint;
   bus_t bus;
   debug_module_t debug_module;
 

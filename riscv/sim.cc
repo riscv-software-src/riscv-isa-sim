@@ -52,7 +52,9 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
     procs[i] = new processor_t(isa, this, i, halted);
   }
 
-  rtc.reset(new rtc_t(procs));
+  clint.reset(new clint_t(procs));
+  bus.add_device(CLINT_BASE, clint.get());
+
   make_dtb();
 }
 
@@ -107,7 +109,7 @@ void sim_t::step(size_t n)
       procs[current_proc]->yield_load_reservation();
       if (++current_proc == procs.size()) {
         current_proc = 0;
-        rtc->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
+        clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
       }
 
       host->switch_to();
@@ -236,13 +238,6 @@ static std::string dts_compile(const std::string& dts)
 
 void sim_t::make_dtb()
 {
-  reg_t rtc_addr = EXT_IO_BASE;
-  bus.add_device(rtc_addr, rtc.get());
-
-  const int align = 0x1000;
-  reg_t cpu_addr = rtc_addr + ((rtc->size() - 1) / align + 1) * align;
-  reg_t cpu_size = align;
-
   uint32_t reset_vec[] = {
     0x297 + DRAM_BASE - DEFAULT_RSTVEC, // auipc t0, DRAM_BASE
     0x597,                              // auipc a1, 0
@@ -293,14 +288,16 @@ void sim_t::make_dtb()
          "    #size-cells = <2>;\n"
          "    compatible = \"ucbbar,spike-bare-soc\";\n"
          "    ranges;\n"
-         "    clint@" << rtc_addr << " {\n"
+         "    clint@" << CLINT_BASE << " {\n"
          "      compatible = \"riscv,clint0\";\n"
          "      interrupts-extended = <" << std::dec;
   for (size_t i = 0; i < procs.size(); i++)
     s << "&CPU" << i << " 3 &CPU" << i << " 7 ";
+  reg_t clintbs = CLINT_BASE;
+  reg_t clintsz = CLINT_SIZE;
   s << std::hex << ">;\n"
-         "      reg = <0x" << (rtc_addr >> 32) << " 0x" << (rtc_addr & (uint32_t)-1) <<
-                     " 0x0 0x10000>;\n"
+         "      reg = <0x" << (clintbs >> 32) << " 0x" << (clintbs & (uint32_t)-1) <<
+                     " 0x" << (clintsz >> 32) << " 0x" << (clintsz & (uint32_t)-1) << ">;\n"
          "    };\n"
          "  };\n"
          "};\n";
@@ -309,7 +306,8 @@ void sim_t::make_dtb()
   std::string dtb = dts_compile(dts);
 
   rom.insert(rom.end(), dtb.begin(), dtb.end());
-  rom.resize((rom.size() / align + 1) * align);
+  const int align = 0x1000;
+  rom.resize((rom.size() + align - 1) / align * align);
 
   boot_rom.reset(new rom_device_t(rom));
   bus.add_device(DEFAULT_RSTVEC, boot_rom.get());
