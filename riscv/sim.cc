@@ -276,6 +276,8 @@ void sim_t::make_dtb()
          "      riscv,isa = \"" << procs[i]->isa_string << "\";\n"
          "      mmu-type = \"riscv," << (procs[i]->max_xlen <= 32 ? "sv32" : "sv48") << "\";\n"
          "      clock-frequency = <" << CPU_HZ << ">;\n"
+         "      interrupt-controller;\n"
+         "      #interrupt-cells = <1>;\n"
          "    };\n";
   }
   reg_t membs = DRAM_BASE;
