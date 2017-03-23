@@ -7,6 +7,10 @@
 # error spike requires a two''s-complement c++ implementation
 #endif
 
+#ifdef WORDS_BIGENDIAN
+# error spike requires a little-endian host
+#endif
+
 #include <cstdint>
 #include <string.h>
 #include <strings.h>
