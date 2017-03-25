@@ -34,7 +34,7 @@ sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
   size_t memsz0 = (size_t)mem_mb << 20;
   size_t quantum = 1L << 20;
   if (memsz0 == 0)
-    memsz0 = (size_t)((sizeof(size_t) == 8 ? 4096 : 2048) - 256) << 20;
+    memsz0 = (size_t)2048 << 20;
 
   memsz = memsz0;
   while ((mem = (char*)calloc(1, memsz)) == NULL)
