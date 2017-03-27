@@ -115,6 +115,9 @@ public:
         auto lhs = load_##type(addr); \
         store_##type(addr, f(lhs)); \
         return lhs; \
+      } catch (trap_load_page_fault& t) { \
+        /* AMO faults should be reported as store faults */ \
+        throw trap_store_page_fault(t.get_badaddr()); \
       } catch (trap_load_access_fault& t) { \
         /* AMO faults should be reported as store faults */ \
         throw trap_store_access_fault(t.get_badaddr()); \
