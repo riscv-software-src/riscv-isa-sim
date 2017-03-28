@@ -604,12 +604,12 @@ reg_t processor_t::get_csr(int which)
     case CSR_DSCRATCH:
       return state.dscratch;
   }
-  throw trap_illegal_instruction();
+  throw trap_illegal_instruction(0);
 }
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)
 {
-  throw trap_illegal_instruction();
+  throw trap_illegal_instruction(0);
 }
 
 insn_func_t processor_t::decode_insn(insn_t insn)
