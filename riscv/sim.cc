@@ -271,8 +271,11 @@ void sim_t::make_dtb()
          "      riscv,isa = \"" << procs[i]->isa_string << "\";\n"
          "      mmu-type = \"riscv," << (procs[i]->max_xlen <= 32 ? "sv32" : "sv48") << "\";\n"
          "      clock-frequency = <" << CPU_HZ << ">;\n"
-         "      interrupt-controller;\n"
-         "      #interrupt-cells = <1>;\n"
+         "      CPU" << i << "_intc: interrupt-controller {\n"
+         "        #interrupt-cells = <1>;\n"
+         "        interrupt-controller;\n"
+         "        compatible = \"riscv,cpu-intc\";\n"
+         "      };\n"
          "    };\n";
   }
   reg_t membs = DRAM_BASE;
@@ -286,13 +289,13 @@ void sim_t::make_dtb()
          "  soc {\n"
          "    #address-cells = <2>;\n"
          "    #size-cells = <2>;\n"
-         "    compatible = \"ucbbar,spike-bare-soc\";\n"
+         "    compatible = \"ucbbar,spike-bare-soc\", \"simple-bus\";\n"
          "    ranges;\n"
          "    clint@" << CLINT_BASE << " {\n"
          "      compatible = \"riscv,clint0\";\n"
          "      interrupts-extended = <" << std::dec;
   for (size_t i = 0; i < procs.size(); i++)
-    s << "&CPU" << i << " 3 &CPU" << i << " 7 ";
+    s << "&CPU" << i << "_intc 3 &CPU" << i << "_intc 7 ";
   reg_t clintbs = CLINT_BASE;
   reg_t clintsz = CLINT_SIZE;
   s << std::hex << ">;\n"
