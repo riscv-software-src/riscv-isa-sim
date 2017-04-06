@@ -706,6 +706,7 @@ with_fesvr
 enable_commitlog
 enable_histogram
 enable_dirty
+enable_misaligned
 '
       ac_precious_vars='build_alias
 host_alias
@@ -1352,6 +1353,8 @@ Optional Features:
   --enable-histogram      Enable PC histogram generation
   --enable-dirty          Enable hardware management of PTE accessed and dirty
                           bits
+  --enable-misaligned     Enable hardware support for misaligned loads and
+                          stores
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -4677,6 +4680,19 @@ if test "x$enable_dirty" = "xyes"; then :
 
 
 $as_echo "#define RISCV_ENABLE_DIRTY /**/" >>confdefs.h
+
+
+fi
+
+# Check whether --enable-misaligned was given.
+if test "${enable_misaligned+set}" = set; then :
+  enableval=$enable_misaligned;
+fi
+
+if test "x$enable_misaligned" = "xyes"; then :
+
+
+$as_echo "#define RISCV_ENABLE_MISALIGNED /**/" >>confdefs.h
 
 
 fi

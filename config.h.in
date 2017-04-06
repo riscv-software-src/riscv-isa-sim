@@ -75,6 +75,9 @@
 /* Enable PC histogram generation */
 #undef RISCV_ENABLE_HISTOGRAM
 
+/* Enable hardware support for misaligned loads and stores */
+#undef RISCV_ENABLE_MISALIGNED
+
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SOFTFLOAT_ENABLED
 
