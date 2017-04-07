@@ -1,3 +1,3 @@
 require_extension('F');
 require_fp;
-WRITE_FRD((FRS1 &~ (uint32_t)INT32_MIN) | ((~FRS2) & (uint32_t)INT32_MIN));
+WRITE_FRD(fsgnj32(FRS1, FRS2, true, false));

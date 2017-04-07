@@ -17,11 +17,16 @@
 #include "encoding.h"
 #include "config.h"
 #include "common.h"
+#include "softfloat_types.h"
 #include <cinttypes>
 
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
-typedef uint64_t freg_t;
+
+struct freg_t {
+  uint64_t v;
+  operator uint64_t() const { return v; }
+};
 
 const int NXPR = 32;
 const int NFPR = 32;
@@ -134,7 +139,7 @@ private:
 
 #ifndef RISCV_ENABLE_COMMITLOG
 # define WRITE_REG(reg, value) STATE.XPR.write(reg, value)
-# define WRITE_FREG(reg, value) DO_WRITE_FREG(reg, value)
+# define WRITE_FREG(reg, value) DO_WRITE_FREG(reg, freg(value))
 #else
 # define WRITE_REG(reg, value) ({ \
     reg_t wdata = (value); /* value may have side effects */ \
@@ -142,7 +147,7 @@ private:
     STATE.XPR.write(reg, wdata); \
   })
 # define WRITE_FREG(reg, value) ({ \
-    freg_t wdata = (value); /* value may have side effects */ \
+    freg_t wdata = freg(value); /* value may have side effects */ \
     STATE.log_reg_write = (commit_log_reg_t){((reg) << 1) | 1, wdata}; \
     DO_WRITE_FREG(reg, wdata); \
   })
@@ -218,8 +223,22 @@ private:
 #define invalid_pc(pc) ((pc) & 1)
 
 /* Convenience wrappers to simplify softfloat code sequences */
-#define f32(x) ((float32_t){(uint32_t)x})
-#define f64(x) ((float64_t){(uint64_t)x})
+inline float32_t f32(uint32_t v) { return { v }; }
+inline float32_t f32(freg_t r) { return { uint32_t(r) }; }
+inline float64_t f64(uint64_t v) { return { v }; }
+inline float64_t f64(freg_t r) { return { uint64_t(r) }; }
+inline freg_t freg(float32_t f) { return { ((decltype(freg_t::v))-1 << 32) | f.v }; }
+inline freg_t freg(float64_t f) { return { f.v }; }
+inline freg_t freg(freg_t f) { return f; }
+#define F64_SIGN ((decltype(freg_t::v))1 << 63)
+#define F32_SIGN ((decltype(freg_t::v))1 << 31)
+#define isBoxedF32(r) (((r) & 0x7fffffff00000000) == 0x7fffffff00000000)
+#define unboxF32(r) (isBoxedF32(r) ? (r) : defaultNaNF32UI)
+#define unboxF64(r) (r)
+#define fsgnj32(a, b, n, x) \
+  f32((unboxF32(a) & ~F32_SIGN) | ((((x) ? unboxF32(a) : (n) ? F32_SIGN : 0) ^ unboxF32(b)) & F32_SIGN))
+#define fsgnj64(a, b, n, x) \
+  f64((unboxF64(a) & ~F64_SIGN) | ((((x) ? unboxF64(a) : (n) ? F64_SIGN : 0) ^ unboxF64(b)) & F64_SIGN))
 
 #define validate_csr(which, write) ({ \
   if (!STATE.serialized) return PC_SERIALIZE_BEFORE; \
