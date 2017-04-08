@@ -223,7 +223,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   // by default, trap to M-mode, unless delegated to S-mode
   reg_t bit = t.cause();
   reg_t deleg = state.medeleg;
-  if (bit & ((reg_t)1 << (max_xlen-1)))
+  bool interrupt = (bit & ((reg_t)1 << (max_xlen-1))) != 0;
+  if (interrupt)
     deleg = state.mideleg, bit &= ~((reg_t)1 << (max_xlen-1));
   if (state.prv <= PRV_S && bit < max_xlen && ((deleg >> bit) & 1)) {
     // handle the trap in S-mode
@@ -240,7 +241,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     set_csr(CSR_MSTATUS, s);
     set_privilege(PRV_S);
   } else {
-    state.pc = state.mtvec;
+    reg_t vector = (state.mtvec & 1) && interrupt ? 4*bit : 0;
+    state.pc = (state.mtvec & ~(reg_t)1) + vector;
     state.mepc = epc;
     state.mcause = t.cause();
     if (t.has_badaddr())
@@ -378,7 +380,7 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SCAUSE: state.scause = val; break;
     case CSR_SBADADDR: state.sbadaddr = val; break;
     case CSR_MEPC: state.mepc = val; break;
-    case CSR_MTVEC: state.mtvec = val >> 2 << 2; break;
+    case CSR_MTVEC: state.mtvec = val & ~(reg_t)2; break;
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
