@@ -66,6 +66,7 @@ void sim_t::interactive()
   funcs["r"] = funcs["run"];
   funcs["rs"] = &sim_t::interactive_run_silent;
   funcs["reg"] = &sim_t::interactive_reg;
+  funcs["freg"] = &sim_t::interactive_freg;
   funcs["fregs"] = &sim_t::interactive_fregs;
   funcs["fregd"] = &sim_t::interactive_fregd;
   funcs["pc"] = &sim_t::interactive_pc;
@@ -199,7 +200,7 @@ reg_t sim_t::get_reg(const std::vector<std::string>& args)
   return p->state.XPR[r];
 }
 
-reg_t sim_t::get_freg(const std::vector<std::string>& args)
+freg_t sim_t::get_freg(const std::vector<std::string>& args)
 {
   if(args.size() != 2)
     throw trap_interactive();
@@ -231,10 +232,15 @@ void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::strin
 
 union fpr
 {
-  reg_t r;
+  freg_t r;
   float s;
   double d;
 };
+
+void sim_t::interactive_freg(const std::string& cmd, const std::vector<std::string>& args)
+{
+  fprintf(stderr, "0x%016" PRIx64 "\n", get_freg(args).v);
+}
 
 void sim_t::interactive_fregs(const std::string& cmd, const std::vector<std::string>& args)
 {
