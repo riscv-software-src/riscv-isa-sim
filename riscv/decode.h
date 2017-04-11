@@ -18,15 +18,11 @@
 #include "config.h"
 #include "common.h"
 #include "softfloat_types.h"
+#include "specialize.h"
 #include <cinttypes>
 
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
-
-struct freg_t {
-  uint64_t v;
-  operator uint64_t() const { return v; }
-};
 
 const int NXPR = 32;
 const int NFPR = 32;
@@ -223,22 +219,23 @@ private:
 #define invalid_pc(pc) ((pc) & 1)
 
 /* Convenience wrappers to simplify softfloat code sequences */
+#define isBoxedF32(r) (((r) & 0xffffffff00000000) == 0xffffffff00000000)
+#define unboxF32(r) (isBoxedF32(r) ? (r) : defaultNaNF32UI)
+#define unboxF64(r) (r)
+struct freg_t { uint64_t v; };
 inline float32_t f32(uint32_t v) { return { v }; }
-inline float32_t f32(freg_t r) { return { uint32_t(r) }; }
 inline float64_t f64(uint64_t v) { return { v }; }
-inline float64_t f64(freg_t r) { return { uint64_t(r) }; }
+inline float32_t f32(freg_t r) { return f32(unboxF32(r.v)); }
+inline float64_t f64(freg_t r) { return f64(unboxF64(r.v)); }
 inline freg_t freg(float32_t f) { return { ((decltype(freg_t::v))-1 << 32) | f.v }; }
 inline freg_t freg(float64_t f) { return { f.v }; }
 inline freg_t freg(freg_t f) { return f; }
 #define F64_SIGN ((decltype(freg_t::v))1 << 63)
 #define F32_SIGN ((decltype(freg_t::v))1 << 31)
-#define isBoxedF32(r) (((r) & 0x7fffffff00000000) == 0x7fffffff00000000)
-#define unboxF32(r) (isBoxedF32(r) ? (r) : defaultNaNF32UI)
-#define unboxF64(r) (r)
 #define fsgnj32(a, b, n, x) \
-  f32((unboxF32(a) & ~F32_SIGN) | ((((x) ? unboxF32(a) : (n) ? F32_SIGN : 0) ^ unboxF32(b)) & F32_SIGN))
+  f32((f32(a).v & ~F32_SIGN) | ((((x) ? f32(a).v : (n) ? F32_SIGN : 0) ^ f32(b).v) & F32_SIGN))
 #define fsgnj64(a, b, n, x) \
-  f64((unboxF64(a) & ~F64_SIGN) | ((((x) ? unboxF64(a) : (n) ? F64_SIGN : 0) ^ unboxF64(b)) & F64_SIGN))
+  f64((f64(a).v & ~F64_SIGN) | ((((x) ? f64(a).v : (n) ? F64_SIGN : 0) ^ f64(b).v) & F64_SIGN))
 
 #define validate_csr(which, write) ({ \
   if (!STATE.serialized) return PC_SERIALIZE_BEFORE; \
