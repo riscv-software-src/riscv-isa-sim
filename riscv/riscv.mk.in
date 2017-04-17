@@ -46,6 +46,8 @@ riscv_srcs = \
 	devices.cc \
 	rom.cc \
 	rtc.cc \
+	clint.cc \
+	gdbserver.cc \
 	debug_module.cc \
 	remote_bitbang.cc \
 	jtag_dtm.cc \
@@ -229,7 +231,7 @@ riscv_insn_list = \
 	sc_d \
 	sc_w \
 	sd \
-	sfence_vm \
+	sfence_vma \
 	sh \
 	sll \
 	slli \

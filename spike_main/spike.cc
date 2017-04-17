@@ -31,7 +31,7 @@ static void help()
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
   fprintf(stderr, "  --extlib=<name>       Shared library to load\n");
   fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
-  fprintf(stderr, "  --dump-config-string  Print platform configuration string and exit\n");
+  fprintf(stderr, "  --dump-dts  Print device tree string and exit\n");
   exit(1);
 }
 
@@ -41,7 +41,7 @@ int main(int argc, char** argv)
   bool halted = false;
   bool histogram = false;
   bool log = false;
-  bool dump_config_string = false;
+  bool dump_dts = false;
   size_t nprocs = 1;
   size_t mem_mb = 0;
   std::unique_ptr<icache_sim_t> ic;
@@ -68,7 +68,7 @@ int main(int argc, char** argv)
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
   parser.option(0, "isa", 1, [&](const char* s){isa = s;});
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
-  parser.option(0, "dump-config-string", 0, [&](const char *s){dump_config_string = true;});
+  parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
     if (lib == NULL) {
@@ -87,8 +87,8 @@ int main(int argc, char** argv)
     s.set_remote_bitbang(&(*remote_bitbang));
   }
 
-  if (dump_config_string) {
-    printf("%s", s.get_config_string());
+  if (dump_dts) {
+    printf("%s", s.get_dts());
     return 0;
   }
 

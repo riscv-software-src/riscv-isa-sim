@@ -51,11 +51,33 @@ public:
   mmu_t(sim_t* sim, processor_t* proc);
   ~mmu_t();
 
+  inline reg_t misaligned_load(reg_t addr, size_t size)
+  {
+#ifdef RISCV_ENABLE_MISALIGNED
+    reg_t res = 0;
+    for (size_t i = 0; i < size; i++)
+      res += (reg_t)load_uint8(addr + i) << (i * 8);
+    return res;
+#else
+    throw trap_load_address_misaligned(addr);
+#endif
+  }
+
+  inline void misaligned_store(reg_t addr, reg_t data, size_t size)
+  {
+#ifdef RISCV_ENABLE_MISALIGNED
+    for (size_t i = 0; i < size; i++)
+      store_uint8(addr + i, data >> (i * 8));
+#else
+    throw trap_store_address_misaligned(addr);
+#endif
+  }
+
   // template for functions that load an aligned value from memory
   #define load_func(type) \
     inline type##_t load_##type(reg_t addr) { \
-      if (addr & (sizeof(type##_t)-1)) \
-        throw trap_load_address_misaligned(addr); \
+      if (unlikely(addr & (sizeof(type##_t)-1))) \
+        return misaligned_load(addr, sizeof(type##_t)); \
       reg_t vpn = addr >> PGSHIFT; \
       if (likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) \
         return *(type##_t*)(tlb_data[vpn % TLB_ENTRIES] + addr); \
@@ -88,8 +110,8 @@ public:
   // template for functions that store an aligned value to memory
   #define store_func(type) \
     void store_##type(reg_t addr, type##_t val) { \
-      if (addr & (sizeof(type##_t)-1)) \
-        throw trap_store_address_misaligned(addr); \
+      if (unlikely(addr & (sizeof(type##_t)-1))) \
+        return misaligned_store(addr, val, sizeof(type##_t)); \
       reg_t vpn = addr >> PGSHIFT; \
       if (likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) \
         *(type##_t*)(tlb_data[vpn % TLB_ENTRIES] + addr) = val; \
@@ -115,6 +137,9 @@ public:
         auto lhs = load_##type(addr); \
         store_##type(addr, f(lhs)); \
         return lhs; \
+      } catch (trap_load_page_fault& t) { \
+        /* AMO faults should be reported as store faults */ \
+        throw trap_store_page_fault(t.get_badaddr()); \
       } catch (trap_load_access_fault& t) { \
         /* AMO faults should be reported as store faults */ \
         throw trap_store_access_fault(t.get_badaddr()); \
@@ -259,5 +284,36 @@ private:
 
   friend class processor_t;
 };
+
+struct vm_info {
+  int levels;
+  int idxbits;
+  int ptesize;
+  reg_t ptbase;
+};
+
+inline vm_info decode_vm_info(int xlen, reg_t prv, reg_t sptbr)
+{
+  if (prv == PRV_M) {
+    return {0, 0, 0, 0};
+  } else if (prv <= PRV_S && xlen == 32) {
+    switch (get_field(sptbr, SPTBR32_MODE)) {
+      case SPTBR_MODE_OFF: return {0, 0, 0, 0};
+      case SPTBR_MODE_SV32: return {2, 10, 4, (sptbr & SPTBR32_PPN) << PGSHIFT};
+      default: abort();
+    }
+  } else if (prv <= PRV_S && xlen == 64) {
+    switch (get_field(sptbr, SPTBR64_MODE)) {
+      case SPTBR_MODE_OFF: return {0, 0, 0, 0};
+      case SPTBR_MODE_SV39: return {3, 9, 8, (sptbr & SPTBR64_PPN) << PGSHIFT};
+      case SPTBR_MODE_SV48: return {4, 9, 8, (sptbr & SPTBR64_PPN) << PGSHIFT};
+      case SPTBR_MODE_SV57: return {5, 9, 8, (sptbr & SPTBR64_PPN) << PGSHIFT};
+      case SPTBR_MODE_SV64: return {6, 9, 8, (sptbr & SPTBR64_PPN) << PGSHIFT};
+      default: abort();
+    }
+  } else {
+    abort();
+  }
+}
 
 #endif

@@ -1,4 +1,6 @@
 require_extension('D');
 require_fp;
-WRITE_FRD(isNaNF64UI(FRS2) || f64_le_quiet(f64(FRS2), f64(FRS1)) ? FRS1 : FRS2);
+WRITE_FRD(f64_le_quiet(f64(FRS2), f64(FRS1)) || isNaNF64UI(f64(FRS2).v) ? FRS1 : FRS2);
+if ((isNaNF64UI(f64(FRS1).v) && isNaNF64UI(f64(FRS2).v)) || softfloat_exceptionFlags)
+  WRITE_FRD(f64(defaultNaNF64UI));
 set_fp_exceptions;

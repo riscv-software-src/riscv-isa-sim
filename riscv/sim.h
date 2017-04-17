@@ -32,7 +32,7 @@ public:
   void set_remote_bitbang(remote_bitbang_t* remote_bitbang) {
     this->remote_bitbang = remote_bitbang;
   }
-  const char* get_config_string() { return config_string.c_str(); }
+  const char* get_dts() { return dts.c_str(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
   unsigned nprocs() const { return procs.size(); }
 
@@ -43,15 +43,16 @@ private:
   size_t memsz; // memory size in bytes
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
-  std::string config_string;
+  std::string dts;
   std::unique_ptr<rom_device_t> boot_rom;
-  std::unique_ptr<rtc_t> rtc;
+  std::unique_ptr<clint_t> clint;
   bus_t bus;
 
   processor_t* get_core(const std::string& i);
   void step(size_t n); // step through simulation
   static const size_t INTERLEAVE = 5000;
   static const size_t INSNS_PER_RTC_TICK = 100; // 10 MHz clock for 1 BIPS core
+  static const size_t CPU_HZ = 1000000000; // 1GHz CPU
   size_t current_step;
   size_t current_proc;
   bool debug;
@@ -67,7 +68,7 @@ private:
   reg_t mem_to_addr(char* x) { return x - mem + DRAM_BASE; }
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
-  void make_config_string();
+  void make_dtb();
 
   // presents a prompt for introspection into the simulation
   void interactive();
@@ -79,6 +80,7 @@ private:
   void interactive_run_noisy(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_run_silent(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_reg(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_freg(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_fregs(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_fregd(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_pc(const std::string& cmd, const std::vector<std::string>& args);
@@ -86,7 +88,7 @@ private:
   void interactive_str(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_until(const std::string& cmd, const std::vector<std::string>& args);
   reg_t get_reg(const std::vector<std::string>& args);
-  reg_t get_freg(const std::vector<std::string>& args);
+  freg_t get_freg(const std::vector<std::string>& args);
   reg_t get_mem(const std::vector<std::string>& args);
   reg_t get_pc(const std::vector<std::string>& args);
 
