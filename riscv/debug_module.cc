@@ -369,16 +369,10 @@ bool debug_module_t::perform_abstract_command()
       write32(debug_rom_code, 1, ebreak());
     }
 
-    if (get_field(command, AC_ACCESS_REGISTER_PREEXEC)) {
-      write32(debug_rom_entry, dmcontrol.hartsel,
-          jal(ZERO, DEBUG_RAM_START - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel)));
-      next_action =
-        jal(ZERO, DEBUG_ROM_CODE - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel));
-    } else {
-      write32(debug_rom_entry, dmcontrol.hartsel,
-          jal(ZERO, DEBUG_ROM_CODE - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel)));
-    }
-
+    //TODO: Consider 'transfer' bit.
+    write32(debug_rom_entry, dmcontrol.hartsel,
+            jal(ZERO, DEBUG_ROM_CODE - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel)));
+    
     write32(debug_rom_exception, dmcontrol.hartsel,
         jal(ZERO, (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel) - DEBUG_ROM_EXCEPTION));
     abstractcs.busy = true;

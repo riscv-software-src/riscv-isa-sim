@@ -45,9 +45,7 @@ riscv_srcs = \
 	regnames.cc \
 	devices.cc \
 	rom.cc \
-	rtc.cc \
 	clint.cc \
-	gdbserver.cc \
 	debug_module.cc \
 	remote_bitbang.cc \
 	jtag_dtm.cc \
