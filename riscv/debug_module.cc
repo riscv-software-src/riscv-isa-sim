@@ -235,6 +235,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
     if ((abstractauto.autoexecdata >> i) & 1)
       perform_abstract_command();
   } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progsize) {
+    // TODO : Autoexec progbuf.
     result = read32(program_buffer, address - DMI_PROGBUF0);
   } else {
     switch (address) {
@@ -301,9 +302,14 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
       case DMI_COMMAND:
         result = 0;
         break;
+      case DMI_HARTINFO:
+        result = set_field(result, DMI_HARTINFO_NSCRATCH, 1);
+        result = set_field(result, DMI_HARTINFO_DATAACCESS, 1);
+        result = set_field(result, DMI_HARTINFO_DATASIZE, abstractcs.datacount);
+        result = set_field(result, DMI_HARTINFO_DATAADDR, DEBUG_EXCHANGE);
+        break;
       default:
-        D(fprintf(stderr, "error\n"));
-        return false;
+        result = 0;
     }
   }
   D(fprintf(stderr, "0x%x\n", result));
@@ -338,7 +344,8 @@ bool debug_module_t::perform_abstract_command()
       return true;
     }
 
-    switch (size) {
+    if (get_field(command, AC_ACCESS_REGISTER_TRANSFER)) {
+      switch (size) {
       case 2:
         if (write)
           write32(debug_rom_code, 0, lw(regnum, ZERO, DEBUG_EXCHANGE));
@@ -351,25 +358,29 @@ bool debug_module_t::perform_abstract_command()
         else
           write32(debug_rom_code, 0, sd(regnum, ZERO, DEBUG_EXCHANGE));
         break;
-      /*
-      case 4:
-        if (write)
+        /*
+          case 4:
+          if (write)
           write32(debug_rom_code, 0, lq(regnum, ZERO, DEBUG_EXCHANGE));
-        else
+          else
           write32(debug_rom_code, 0, sq(regnum, ZERO, DEBUG_EXCHANGE));
-        break;
+          break;
         */
       default:
         abstractcs.cmderr = abstractcs.CMDERR_NOTSUP;
         return true;
+      }
+    } else {
+      // Should be a NOP. Store DEBUG_EXCHANGE to x0.
+      write32(debug_rom_code, 0, sw(ZERO, ZERO, DEBUG_EXCHANGE));
     }
+    
     if (get_field(command, AC_ACCESS_REGISTER_POSTEXEC)) {
       write32(debug_rom_code, 1, jal(ZERO, DEBUG_RAM_START - DEBUG_ROM_CODE - 4));
     } else {
       write32(debug_rom_code, 1, ebreak());
     }
 
-    //TODO: Consider 'transfer' bit.
     write32(debug_rom_entry, dmcontrol.hartsel,
             jal(ZERO, DEBUG_ROM_CODE - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel)));
     
