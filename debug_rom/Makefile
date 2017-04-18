@@ -9,7 +9,10 @@ COMPILE = $(CC) -nostdlib -nostartfiles -I.. -Tlink.ld
 ELFS = debug_rom
 DEPS = debug_rom.S link.ld
 
-all: $(patsubst %,%.h,$(ELFS))
+all: $(patsubst %,%.h,$(ELFS)) $(patsubst %,%_defines.h,$(ELFS))
+
+%_defines.h: %.S
+	grep define $^ > $@
 
 %.h:	%.raw
 	xxd -i $^ | sed "s/^unsigned/static const unsigned/" > $@

@@ -3,17 +3,21 @@
 #include "spike/encoding.h"
 
 // These are implementation-specific addresses in the Debug Module
-#define HALTED    0x100
-#define GOING     0x104
-#define RESUMING  0x108
-#define EXCEPTION 0x10C
+#define DEBUG_ROM_HALTED    0x100
+#define DEBUG_ROM_GOING     0x104
+#define DEBUG_ROM_RESUMING  0x108
+#define DEBUG_ROM_EXCEPTION 0x10C
 
 // Region of memory where each hart has 1
 // byte to read.
-#define FLAGS 0x400
-#define FLAG_GO     0
-#define FLAG_RESUME 1
+#define DEBUG_ROM_FLAGS 0x400
+#define DEBUG_ROM_FLAG_GO     0
+#define DEBUG_ROM_FLAG_RESUME 1
 
+// These needs to match the link.ld         
+#define DEBUG_ROM_WHERETO 0x300
+#define DEBUG_ROM_ENTRY   0x800
+        
         .option norvc
         .global entry
         .global exception
@@ -41,30 +45,30 @@ _entry:
         // us to do, or whether we should resume.
 entry_loop:
         csrr s0, CSR_MHARTID
-        sw   s0, HALTED(zero)
-        lbu  s0, FLAGS(s0) // 1 byte flag per hart. Only one hart advances here.
-        andi s0, s0, (1 << FLAG_GO)
+        sw   s0, DEBUG_ROM_HALTED(zero)
+        lbu  s0, DEBUG_ROM_FLAGS(s0) // 1 byte flag per hart. Only one hart advances here.
+        andi s0, s0, (1 << DEBUG_ROM_FLAG_GO)
         bnez s0, going
         csrr s0, CSR_MHARTID
-        lbu  s0, FLAGS(s0) // multiple harts can resume  here
-        andi s0, s0, (1 << FLAG_RESUME)
+        lbu  s0, DEBUG_ROM_FLAGS(s0) // multiple harts can resume  here
+        andi s0, s0, (1 << DEBUG_ROM_FLAG_RESUME)
         bnez s0, resume
         jal  zero, entry_loop
 
 _exception:
-        sw      zero, EXCEPTION(zero) // Let debug module know you got an exception.
+        sw      zero, DEBUG_ROM_EXCEPTION(zero) // Let debug module know you got an exception.
         ebreak
 
 going:
         csrr s0, CSR_DSCRATCH          // Restore s0 here
-        sw zero, GOING(zero)           // When debug module sees this write, the GO flag is reset.
+        sw zero, DEBUG_ROM_GOING(zero)           // When debug module sees this write, the GO flag is reset.
         jalr zero, zero, %lo(whereto)          // Rocket-Chip has a specific hack which is that jalr in
                                        // Debug Mode will flush the I-Cache. We need that so that the
                                        // remainder of the variable instructions will be what Debug Module
                                        // intends.
 _resume:
         csrr s0, CSR_MHARTID
-        sw   s0, RESUMING(zero) // When Debug Module sees this write, the RESUME flag is reset.
+        sw   s0, DEBUG_ROM_RESUMING(zero) // When Debug Module sees this write, the RESUME flag is reset.
         csrr s0, CSR_DSCRATCH   // Restore s0
         dret
 
