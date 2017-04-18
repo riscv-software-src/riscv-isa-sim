@@ -7,12 +7,9 @@ OBJCOPY = $(RISCV)/bin/riscv64-unknown-elf-objcopy
 COMPILE = $(CC) -nostdlib -nostartfiles -I.. -Tlink.ld
 
 ELFS = debug_rom
-DEPS = debug_rom.S link.ld
+DEPS = debug_rom.S link.ld debug_rom_defines.h
 
-all: $(patsubst %,%.h,$(ELFS)) $(patsubst %,%_defines.h,$(ELFS))
-
-%_defines.h: %.S
-	grep define $^ > $@
+all: $(patsubst %,%.h,$(ELFS))
 
 %.h:	%.raw
 	xxd -i $^ | sed "s/^unsigned/static const unsigned/" > $@
