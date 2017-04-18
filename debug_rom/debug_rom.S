@@ -1,22 +1,7 @@
 // See LICENSE.SiFive for license details.
 
 #include "spike/encoding.h"
-
-// These are implementation-specific addresses in the Debug Module
-#define DEBUG_ROM_HALTED    0x100
-#define DEBUG_ROM_GOING     0x104
-#define DEBUG_ROM_RESUMING  0x108
-#define DEBUG_ROM_EXCEPTION 0x10C
-
-// Region of memory where each hart has 1
-// byte to read.
-#define DEBUG_ROM_FLAGS 0x400
-#define DEBUG_ROM_FLAG_GO     0
-#define DEBUG_ROM_FLAG_RESUME 1
-
-// These needs to match the link.ld         
-#define DEBUG_ROM_WHERETO 0x300
-#define DEBUG_ROM_ENTRY   0x800
+#include "debug_rom_defines.h"
         
         .option norvc
         .global entry
@@ -60,12 +45,14 @@ _exception:
         ebreak
 
 going:
-        csrr s0, CSR_DSCRATCH          // Restore s0 here
-        sw zero, DEBUG_ROM_GOING(zero)           // When debug module sees this write, the GO flag is reset.
-        jalr zero, zero, %lo(whereto)          // Rocket-Chip has a specific hack which is that jalr in
-                                       // Debug Mode will flush the I-Cache. We need that so that the
-                                       // remainder of the variable instructions will be what Debug Module
-                                       // intends.
+        csrr s0, CSR_DSCRATCH            // Restore s0 here
+        sw zero, DEBUG_ROM_GOING(zero)   // When debug module sees this write, the GO flag is reset.
+        fence
+        fence.i
+        jalr zero, zero, %lo(whereto)    // Debug module will put different instructions and data in the RAM, 
+                                         // so we use fence and fence.i for safety. (rocket-chip doesn't have this
+                                         // because jalr is special there)
+
 _resume:
         csrr s0, CSR_MHARTID
         sw   s0, DEBUG_ROM_RESUMING(zero) // When Debug Module sees this write, the RESUME flag is reset.
