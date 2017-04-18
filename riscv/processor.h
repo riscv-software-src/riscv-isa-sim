@@ -196,6 +196,7 @@ public:
   // The unique debug rom address that this hart jumps to when entering debug
   // mode. Rely on the fact that spike hart IDs start at 0 and are consecutive.
   uint32_t debug_rom_entry() {
+    fprintf(stderr, "Debug_rom_entry called for id %d = %x\n", id, DEBUG_ROM_ENTRY + 4*id);
     return DEBUG_ROM_ENTRY + 4 * id;
   }
 

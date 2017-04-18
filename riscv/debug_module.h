@@ -26,6 +26,8 @@ typedef struct {
   bool anyrunning;
   bool allhalted;
   bool anyhalted;
+  bool allresumeack;
+  bool anyresumeack;
   bool authenticated;
   bool authbusy;
   bool cfgstrvalid;
@@ -33,38 +35,26 @@ typedef struct {
   unsigned versionlo;
 } dmstatus_t;
 
-typedef struct {
-  bool busy;
-  unsigned datacount;
-  unsigned progsize;
-  enum {
+typedef enum cmderr {
     CMDERR_NONE = 0,
     CMDERR_BUSY = 1,
     CMDERR_NOTSUP = 2,
     CMDERR_EXCEPTION = 3,
     CMDERR_HALTRESUME = 4,
-    CMDERR_OTHER = 7
-  } cmderr;
+    CMDERR_OTHER = 7  
+} cmderr_t;
+
+typedef struct {
+  bool busy;
+  unsigned datacount;
+  unsigned progsize;
+  cmderr_t cmderr;
 } abstractcs_t;
 
 typedef struct {
   unsigned autoexecprogbuf;
   unsigned autoexecdata;
 } abstractauto_t;
-
-class debug_module_data_t : public abstract_device_t
-{
-  public:
-    debug_module_data_t();
-
-    bool load(reg_t addr, size_t len, uint8_t* bytes);
-    bool store(reg_t addr, size_t len, const uint8_t* bytes);
-
-    uint32_t read32(reg_t addr) const;
-    void write32(reg_t addr, uint32_t value);
-
-    uint8_t data[DEBUG_EXCHANGE_SIZE];
-};
 
 class debug_module_t : public abstract_device_t
 {
@@ -91,8 +81,11 @@ class debug_module_t : public abstract_device_t
     uint8_t debug_rom_code[DEBUG_ROM_CODE_SIZE];
     uint8_t debug_rom_exception[DEBUG_ROM_EXCEPTION_SIZE];
     uint8_t program_buffer[progsize * 4];
+    uint8_t dmdata[DEBUG_DATA_SIZE];
+    
     bool halted[1024];
-    debug_module_data_t dmdata;
+    bool resumeack[1024];
+
     // Instruction that will be placed at the current hart's ROM entry address
     // after the current action has completed.
     uint32_t next_action;

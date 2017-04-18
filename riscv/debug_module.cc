@@ -13,60 +13,6 @@
 #  define D(x)
 #endif
 
-///////////////////////// debug_module_data_t
-
-debug_module_data_t::debug_module_data_t()
-{
-  memset(data, 0, sizeof(data));
-}
-
-bool debug_module_data_t::load(reg_t addr, size_t len, uint8_t* bytes)
-{
-  if (addr + len < sizeof(data)) {
-    memcpy(bytes, data + addr, len);
-    return true;
-  }
-
-  fprintf(stderr, "ERROR: invalid load from debug_module_data_t: %zd bytes at 0x%016"
-          PRIx64 "\n", len, addr);
-
-  return false;
-}
-
-bool debug_module_data_t::store(reg_t addr, size_t len, const uint8_t* bytes)
-{
-  D(fprintf(stderr, "debug_module_data_t store 0x%lx bytes at 0x%lx\n", len,
-        addr));
-
-  if (addr + len < sizeof(data)) {
-    memcpy(data + addr, bytes, len);
-    return true;
-  }
-
-  fprintf(stderr, "ERROR: invalid store to debug_module_data_t: %zd bytes at 0x%016"
-          PRIx64 "\n", len, addr);
-  return false;
-}
-
-uint32_t debug_module_data_t::read32(reg_t addr) const
-{
-  assert(addr + 4 <= sizeof(data));
-  return data[addr] |
-    (data[addr + 1] << 8) |
-    (data[addr + 2] << 16) |
-    (data[addr + 3] << 24);
-}
-
-void debug_module_data_t::write32(reg_t addr, uint32_t value)
-{
-  fprintf(stderr, "debug_module_data_t::write32(0x%lx, 0x%x)\n", addr, value);
-  assert(addr + 4 <= sizeof(data));
-  data[addr] = value & 0xff;
-  data[addr + 1] = (value >> 8) & 0xff;
-  data[addr + 2] = (value >> 16) & 0xff;
-  data[addr + 3] = (value >> 24) & 0xff;
-}
-
 ///////////////////////// debug_module_t
 
 debug_module_t::debug_module_t(sim_t *sim) : sim(sim),
@@ -107,7 +53,7 @@ void debug_module_t::reset()
   dmstatus.versionlo = 2;
 
   abstractcs = {0};
-  abstractcs.datacount = sizeof(dmdata.data) / 4;
+  abstractcs.datacount = sizeof(dmdata) / 4;
   abstractcs.progsize = progsize;
 
   abstractauto = {0};
@@ -115,7 +61,6 @@ void debug_module_t::reset()
 
 void debug_module_t::add_device(bus_t *bus) {
   bus->add_device(DEBUG_START, this);
-  bus->add_device(DEBUG_EXCHANGE, &dmdata);
 }
 
 bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
@@ -151,22 +96,29 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
     if (read32(debug_rom_code, 0) == dret()) {
       abstractcs.busy = false;
       halted[dmcontrol.hartsel] = false;
+      resumeack[dmcontrol.hartsel] = true;
     }
 
+    fprintf(stderr, "returning the  debug rom code.\n");
     memcpy(bytes, debug_rom_code + addr - DEBUG_ROM_CODE, len);
     return true;
   }
 
-  if (addr >= DEBUG_RAM_START && addr < DEBUG_RAM_END) {
-    memcpy(bytes, program_buffer + addr - DEBUG_RAM_START, len);
+  if (addr >= DEBUG_DATA_START && addr < DEBUG_DATA_END) {
+    memcpy(bytes, dmdata + addr - DEBUG_DATA_START, len);
+    return true;
+  }
+  
+  if (addr >= DEBUG_PROGBUF_START && addr < DEBUG_PROGBUF_END) {
+    memcpy(bytes, program_buffer + addr - DEBUG_PROGBUF_START, len);
     return true;
   }
 
   if (addr >= DEBUG_ROM_EXCEPTION &&
       addr < DEBUG_ROM_EXCEPTION + DEBUG_ROM_EXCEPTION_SIZE) {
     memcpy(bytes, debug_rom_exception + addr - DEBUG_ROM_EXCEPTION, len);
-    if (abstractcs.cmderr == abstractcs.CMDERR_NONE) {
-      abstractcs.cmderr = abstractcs.CMDERR_EXCEPTION;
+    if (abstractcs.cmderr == CMDERR_NONE) {
+      abstractcs.cmderr = CMDERR_EXCEPTION;
     }
     return true;
   }
@@ -179,10 +131,16 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 
 bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
-  addr = DEBUG_START + addr;
 
-  if (addr >= DEBUG_RAM_START && addr < DEBUG_RAM_END) {
-    memcpy(program_buffer + addr - DEBUG_RAM_START, bytes, len);
+  addr = DEBUG_START + addr;
+  
+  if (addr >= DEBUG_DATA_START && addr < DEBUG_DATA_END) {
+    memcpy(dmdata + addr - DEBUG_DATA_START, bytes, len);
+    return true;
+  }
+  
+  if (addr >= DEBUG_PROGBUF_START && addr < DEBUG_PROGBUF_END) {
+    memcpy(program_buffer + addr - DEBUG_PROGBUF_START, bytes, len);
     return true;
   }
 
@@ -226,10 +184,10 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
   D(fprintf(stderr, "dmi_read(0x%x) -> ", address));
   if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
     unsigned i = address - DMI_DATA0;
-    result = dmdata.read32(4 * i);
+    result = read32(dmdata, address - DMI_DATA0);
 
-    if (abstractcs.busy && abstractcs.cmderr == abstractcs.CMDERR_NONE) {
-      abstractcs.cmderr = abstractcs.CMDERR_BUSY;
+    if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
+      abstractcs.cmderr = CMDERR_BUSY;
     }
 
     if ((abstractauto.autoexecdata >> i) & 1)
@@ -261,6 +219,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 	  dmstatus.allunavail = false;
 	  dmstatus.allrunning = false;
 	  dmstatus.allhalted = false;
+          dmstatus.allresumeack = false;
           if (proc) {
             if (halted[dmcontrol.hartsel]) {
               dmstatus.allhalted = true;
@@ -274,15 +233,26 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 	  dmstatus.anyunavail = dmstatus.allunavail;
 	  dmstatus.anyrunning = dmstatus.allrunning;
 	  dmstatus.anyhalted = dmstatus.allhalted;
-
+          if (proc) {
+            if (resumeack[dmcontrol.hartsel]) {
+              dmstatus.allresumeack = true;
+            } else {
+              dmstatus.allresumeack = false;
+            }
+          } else {
+            dmstatus.allresumeack = false;
+          }
+          
 	  result = set_field(result, DMI_DMSTATUS_ALLNONEXISTENT, dmstatus.allnonexistant);
 	  result = set_field(result, DMI_DMSTATUS_ALLUNAVAIL, dmstatus.allunavail);
 	  result = set_field(result, DMI_DMSTATUS_ALLRUNNING, dmstatus.allrunning);
 	  result = set_field(result, DMI_DMSTATUS_ALLHALTED, dmstatus.allhalted);
+          result = set_field(result, DMI_DMSTATUS_ALLRESUMEACK, dmstatus.allresumeack);
 	  result = set_field(result, DMI_DMSTATUS_ANYNONEXISTENT, dmstatus.anynonexistant);
 	  result = set_field(result, DMI_DMSTATUS_ANYUNAVAIL, dmstatus.anyunavail);
 	  result = set_field(result, DMI_DMSTATUS_ANYRUNNING, dmstatus.anyrunning);
 	  result = set_field(result, DMI_DMSTATUS_ANYHALTED, dmstatus.anyhalted);
+          result = set_field(result, DMI_DMSTATUS_ANYRESUMEACK, dmstatus.anyresumeack);
           result = set_field(result, DMI_DMSTATUS_AUTHENTICATED, dmstatus.authenticated);
           result = set_field(result, DMI_DMSTATUS_AUTHBUSY, dmstatus.authbusy);
           result = set_field(result, DMI_DMSTATUS_VERSIONHI, dmstatus.versionhi);
@@ -306,10 +276,12 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
         result = set_field(result, DMI_HARTINFO_NSCRATCH, 1);
         result = set_field(result, DMI_HARTINFO_DATAACCESS, 1);
         result = set_field(result, DMI_HARTINFO_DATASIZE, abstractcs.datacount);
-        result = set_field(result, DMI_HARTINFO_DATAADDR, DEBUG_EXCHANGE);
+        result = set_field(result, DMI_HARTINFO_DATAADDR, DEBUG_DATA_START);
         break;
       default:
         result = 0;
+        D(fprintf(stderr, "Unexpected. Returning Error."));
+        return false;
     }
   }
   D(fprintf(stderr, "0x%x\n", result));
@@ -319,10 +291,10 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 
 bool debug_module_t::perform_abstract_command()
 {
-  if (abstractcs.cmderr != abstractcs.CMDERR_NONE)
+  if (abstractcs.cmderr != CMDERR_NONE)
     return true;
   if (abstractcs.busy) {
-    abstractcs.cmderr = abstractcs.CMDERR_BUSY;
+    abstractcs.cmderr = CMDERR_BUSY;
     return true;
   }
 
@@ -333,14 +305,14 @@ bool debug_module_t::perform_abstract_command()
     unsigned regno = get_field(command, AC_ACCESS_REGISTER_REGNO);
 
     if (regno < 0x1000 || regno >= 0x1020) {
-      abstractcs.cmderr = abstractcs.CMDERR_NOTSUP;
+      abstractcs.cmderr = CMDERR_NOTSUP;
       return true;
     }
 
     unsigned regnum = regno - 0x1000;
 
     if (!halted[dmcontrol.hartsel]) {
-      abstractcs.cmderr = abstractcs.CMDERR_HALTRESUME;
+      abstractcs.cmderr = CMDERR_HALTRESUME;
       return true;
     }
 
@@ -348,39 +320,40 @@ bool debug_module_t::perform_abstract_command()
       switch (size) {
       case 2:
         if (write)
-          write32(debug_rom_code, 0, lw(regnum, ZERO, DEBUG_EXCHANGE));
+          write32(debug_rom_code, 0, lw(regnum, ZERO, DEBUG_DATA_START));
         else
-          write32(debug_rom_code, 0, sw(regnum, ZERO, DEBUG_EXCHANGE));
+          write32(debug_rom_code, 0, sw(regnum, ZERO, DEBUG_DATA_START));
         break;
       case 3:
         if (write)
-          write32(debug_rom_code, 0, ld(regnum, ZERO, DEBUG_EXCHANGE));
+          write32(debug_rom_code, 0, ld(regnum, ZERO, DEBUG_DATA_START));
         else
-          write32(debug_rom_code, 0, sd(regnum, ZERO, DEBUG_EXCHANGE));
+          write32(debug_rom_code, 0, sd(regnum, ZERO, DEBUG_DATA_START));
         break;
         /*
           case 4:
           if (write)
-          write32(debug_rom_code, 0, lq(regnum, ZERO, DEBUG_EXCHANGE));
+          write32(debug_rom_code, 0, lq(regnum, ZERO, DEBUG_DATA_START));
           else
-          write32(debug_rom_code, 0, sq(regnum, ZERO, DEBUG_EXCHANGE));
+          write32(debug_rom_code, 0, sq(regnum, ZERO, DEBUG_DATA_START));
           break;
         */
       default:
-        abstractcs.cmderr = abstractcs.CMDERR_NOTSUP;
+        abstractcs.cmderr = CMDERR_NOTSUP;
         return true;
       }
     } else {
-      // Should be a NOP. Store DEBUG_EXCHANGE to x0.
-      write32(debug_rom_code, 0, sw(ZERO, ZERO, DEBUG_EXCHANGE));
+      // Should be a NOP. Store DEBUG_DATA to x0.
+      write32(debug_rom_code, 0, sw(ZERO, ZERO, DEBUG_DATA_START));
     }
     
     if (get_field(command, AC_ACCESS_REGISTER_POSTEXEC)) {
-      write32(debug_rom_code, 1, jal(ZERO, DEBUG_RAM_START - DEBUG_ROM_CODE - 4));
+      write32(debug_rom_code, 1, jal(ZERO, DEBUG_PROGBUF_START - DEBUG_ROM_CODE - 4));
     } else {
       write32(debug_rom_code, 1, ebreak());
     }
 
+    
     write32(debug_rom_entry, dmcontrol.hartsel,
             jal(ZERO, DEBUG_ROM_CODE - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel)));
     
@@ -388,7 +361,7 @@ bool debug_module_t::perform_abstract_command()
         jal(ZERO, (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel) - DEBUG_ROM_EXCEPTION));
     abstractcs.busy = true;
   } else {
-    abstractcs.cmderr = abstractcs.CMDERR_NOTSUP;
+    abstractcs.cmderr = CMDERR_NOTSUP;
   }
   return true;
 }
@@ -398,10 +371,10 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
   D(fprintf(stderr, "dmi_write(0x%x, 0x%x)\n", address, value));
   if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
     unsigned i = address - DMI_DATA0;
-    dmdata.write32(4 * i, value);
+    write32(dmdata, address - DMI_DATA0, value);
 
-    if (abstractcs.busy && abstractcs.cmderr == abstractcs.CMDERR_NONE) {
-      abstractcs.cmderr = abstractcs.CMDERR_BUSY;
+    if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
+      abstractcs.cmderr = CMDERR_BUSY;
     }
 
     if ((abstractauto.autoexecdata >> i) & 1)
@@ -432,6 +405,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
               write32(debug_rom_entry, dmcontrol.hartsel,
                   jal(ZERO, DEBUG_ROM_CODE - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel)));
               abstractcs.busy = true;
+              resumeack[dmcontrol.hartsel] = false;
             }
           }
         }
@@ -442,9 +416,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         return perform_abstract_command();
 
       case DMI_ABSTRACTCS:
-        if (get_field(value, DMI_ABSTRACTCS_CMDERR) == abstractcs.CMDERR_NONE) {
-          abstractcs.cmderr = abstractcs.CMDERR_NONE;
-        }
+        abstractcs.cmderr = (cmderr_t) (((uint32_t) (abstractcs.cmderr)) & (~(uint32_t)(get_field(value, DMI_ABSTRACTCS_CMDERR))));
         return true;
 
       case DMI_ABSTRACTAUTO:

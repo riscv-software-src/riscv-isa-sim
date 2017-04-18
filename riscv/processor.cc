@@ -189,6 +189,7 @@ void processor_t::set_privilege(reg_t prv)
 
 void processor_t::enter_debug_mode(uint8_t cause)
 {
+  fprintf(stderr, "Entering debug mode because of cause %d", cause);
   state.dcsr.cause = cause;
   state.dcsr.prv = state.prv;
   set_privilege(PRV_M);
@@ -209,7 +210,9 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   if (state.dcsr.cause) {
     if (t.cause() == CAUSE_BREAKPOINT) {
       state.pc = debug_rom_entry();
+      fprintf(stderr, "Breakpoint.");
     } else {
+      fprintf(stderr, "WE ARE IN DEBUG MODE, DEBUG_ROM_EXCEPTION\n");
       state.pc = DEBUG_ROM_EXCEPTION;
     }
     return;

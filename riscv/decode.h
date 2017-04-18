@@ -246,19 +246,24 @@ inline freg_t freg(freg_t f) { return f; }
     throw trap_illegal_instruction(0); \
   (which); })
 
-#define DEBUG_START             0x20000
-#define DEBUG_ROM_ENTRY         DEBUG_START
+// Seems that 0x0 doesn't work.
+#define DEBUG_START             0x100
+
+#define DEBUG_ROM_ENTRY         0x400
 #define DEBUG_ROM_ENTRY_SIZE    (1024 * 4)
 #define DEBUG_ROM_CODE          (DEBUG_ROM_ENTRY + DEBUG_ROM_ENTRY_SIZE)
 #define DEBUG_ROM_CODE_SIZE     256
 #define DEBUG_ROM_EXCEPTION     (DEBUG_ROM_CODE + DEBUG_ROM_CODE_SIZE)
 #define DEBUG_ROM_EXCEPTION_SIZE        4
-#define DEBUG_RAM_START         (DEBUG_ROM_EXCEPTION + DEBUG_ROM_EXCEPTION_SIZE)
-#define DEBUG_RAM_SIZE          64
-#define DEBUG_RAM_END           (DEBUG_RAM_START + DEBUG_RAM_SIZE)
-#define DEBUG_END               DEBUG_RAM_END
 
-#define DEBUG_EXCHANGE          0x400
-#define DEBUG_EXCHANGE_SIZE     0x20
+#define DEBUG_DATA_START          0x380
+#define DEBUG_DATA_SIZE           0x20
+#define DEBUG_DATA_END            DEBUG_DATA_START + DEBUG_DATA_SIZE
+
+#define DEBUG_PROGBUF_SIZE        32
+#define DEBUG_PROGBUF_START       DEBUG_DATA_START - DEBUG_PROGBUF_SIZE
+#define DEBUG_PROGBUF_END         DEBUG_PROGBUF_START + DEBUG_PROGBUF_SIZE
+
+#define DEBUG_END                 0x2000 - 1
 
 #endif
