@@ -126,7 +126,9 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   }
   
   if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + sizeof(program_buffer)))) {
+    fprintf(stderr, "Successful write to program buffer %d bytes at %x\n", (int) len, (int) addr);
     memcpy(program_buffer + addr - debug_progbuf_start, bytes, len);
+    
     return true;
   }
 
@@ -213,7 +215,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
       perform_abstract_command();
     }
   } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progsize) {
-    unsigned i = address = DMI_PROGBUF0;
+    unsigned i = address - DMI_PROGBUF0;
     result = read32(program_buffer, i);
     if ((abstractauto.autoexecprogbuf >> i) & 1) {
       perform_abstract_command();
