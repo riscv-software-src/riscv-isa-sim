@@ -1,152 +1,81 @@
-# This code should be functional. Doesn't have to be optimal.
-# I'm writing it to prove that it can be done.
+// See LICENSE.SiFive for license details.
 
-#include "riscv/encoding.h"
+#include "spike/encoding.h"
 
-# TODO: Update these constants once they're finalized in the doc.
+// These are implementation-specific addresses in the Debug Module
+#define HALTED    0x100
+#define GOING     0x104
+#define RESUMING  0x108
+#define EXCEPTION 0x10C
 
-#define DEBUG_RAM               0x400
-#ifndef DEBUG_RAM_SIZE
-# define DEBUG_RAM_SIZE          64
-#endif
+// Region of memory where each hart has 1
+// byte to read.
+#define FLAGS 0x400
+#define FLAG_GO     0
+#define FLAG_RESUME 1
 
-#define CLEARDEBINT             0x100
-#define SETHALTNOT              0x10c
-
-#if (defined(RV32) + defined(RV64) + defined(RV128)) > 1
-# define MULTI_XLEN
-#elif (defined(RV32) + defined(RV64) + defined(RV128)) == 0
-# error define one or more of RV32, RV64, RV128
-#endif
-
+        .option norvc
         .global entry
-        .global resume
         .global exception
 
-        # Automatically called when Debug Mode is first entered.
-entry:  j       _entry
-        # Should be called by Debug RAM code that has finished execution and
-        # wants to return to Debug Mode.
+        // Entry location on ebreak, Halt, or Breakpoint
+        // It is the same for all harts. They branch when 
+        // their GO or RESUME bit is set.
+
+entry:
+       jal zero, _entry
 resume:
-        j       _resume
+       jal zero, _resume
 exception:
-        # Set the last word of Debug RAM to all ones, to indicate that we hit
-        # an exception.
-        li      s0, ~0
-        j       _resume2
-
-_resume:
-        li      s0, 0
-_resume2:
-        fence
-
-        # Restore s1.
-#ifdef MULTI_XLEN
-        csrr    s1, CSR_MISA
-#endif
-
-#ifdef RV32
-# ifdef MULTI_XLEN
-        bltz    s1, restore_not_32
-# endif
-
-restore_32:
-        lw      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 4)(zero)
-# if defined(RV64) || defined(RV128)
-        j       finish_restore
-# endif
-#endif
-
-restore_not_32:
-#if defined(RV64) && defined(RV128)
-        slli    s1, s1, 1
-        bltz    s1, restore_128
-#endif
-
-#ifdef RV64
-restore_64:
-        ld      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 8)(zero)
-#endif
-#if defined(RV64) && defined(RV128)
-        j       finish_restore
-#endif
-#ifdef RV128
-restore_128:
-        lq      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 16)(zero)
-#endif
-
-finish_restore:
-        # s0 contains ~0 if we got here through an exception, and 0 otherwise.
-        # Store this to the last word in Debug RAM so the debugger can tell if
-        # an exception occurred.
-        sw      s0, (DEBUG_RAM + DEBUG_RAM_SIZE - 4)(zero)
-
-        # Clear debug interrupt.
-        csrr    s0, CSR_MHARTID
-        sw      s0, CLEARDEBINT(zero)
-
-check_halt:
-        csrr    s0, CSR_DCSR
-        andi    s0, s0, DCSR_HALT
-        bnez    s0, wait_for_interrupt
-
-exit:
-        # Restore s0.
-        csrr    s0, CSR_DSCRATCH
-        dret
+       jal zero, _exception
 
 _entry:
-        # Save s0 in DSCRATCH
-        csrw    CSR_DSCRATCH, s0
+        // This fence is required because the execution may have written something
+        // into the Abstract Data or Program Buffer registers.
+        fence
+        csrw CSR_DSCRATCH, s0  // Save s0 to allow signaling MHARTID
 
-        # Check why we're here
-        csrr    s0, CSR_DCSR
-        # cause is in bits 8:6 of dcsr
-        andi    s0, s0, DCSR_CAUSE
-        addi    s0, s0, -(DCSR_CAUSE_DEBUGINT<<6)
-        bnez    s0, spontaneous_halt
+        // We continue to let the hart know that we are halted in order that
+        // a DM which was reset is still made aware that a hart is halted.
+        // We keep checking both whether there is something the debugger wants
+        // us to do, or whether we should resume.
+entry_loop:
+        csrr s0, CSR_MHARTID
+        sw   s0, HALTED(zero)
+        lbu  s0, FLAGS(s0) // 1 byte flag per hart. Only one hart advances here.
+        andi s0, s0, (1 << FLAG_GO)
+        bnez s0, going
+        csrr s0, CSR_MHARTID
+        lbu  s0, FLAGS(s0) // multiple harts can resume  here
+        andi s0, s0, (1 << FLAG_RESUME)
+        bnez s0, resume
+        jal  zero, entry_loop
 
-jdebugram:
-        # Save s1 so that the debug program can use two registers.
-#ifdef MULTI_XLEN
-        csrr    s0, CSR_MISA
-#endif
+_exception:
+        sw      zero, EXCEPTION(zero) // Let debug module know you got an exception.
+        ebreak
 
-#ifdef RV32
-# ifdef MULTI_XLEN
-        bltz    s0, save_not_32
-# endif
-save_32:
-        sw      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 4)(zero)
-        jr      zero, DEBUG_RAM
-#endif
+going:
+        csrr s0, CSR_DSCRATCH          // Restore s0 here
+        sw zero, GOING(zero)           // When debug module sees this write, the GO flag is reset.
+        jalr zero, zero, %lo(whereto)          // Rocket-Chip has a specific hack which is that jalr in
+                                       // Debug Mode will flush the I-Cache. We need that so that the
+                                       // remainder of the variable instructions will be what Debug Module
+                                       // intends.
+_resume:
+        csrr s0, CSR_MHARTID
+        sw   s0, RESUMING(zero) // When Debug Module sees this write, the RESUME flag is reset.
+        csrr s0, CSR_DSCRATCH   // Restore s0
+        dret
 
-save_not_32:
-#if defined(RV64) && defined(RV128)
-        slli    s0, s0, 1
-        bltz    s0, save_128
-#endif
+        // END OF ACTUAL "ROM" CONTENTS. BELOW IS JUST FOR LINKER SCRIPT.
 
-#ifdef RV64
-save_64:
-        sd      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 8)(zero)
-        jr      zero, DEBUG_RAM
-#endif
-
-#ifdef RV128
-save_128:
-        sq      s1, (DEBUG_RAM + DEBUG_RAM_SIZE - 16)(zero)
-        jr      zero, DEBUG_RAM
-#endif
-
-spontaneous_halt:
-        csrr    s0, CSR_MHARTID
-        sw      s0, SETHALTNOT(zero)
-        csrsi   CSR_DCSR, DCSR_HALT
-
-wait_for_interrupt:
-        csrr    s0, CSR_DCSR
-        andi    s0, s0, DCSR_DEBUGINT
-        beqz    s0, wait_for_interrupt
-
-        j       jdebugram
+.section .whereto
+whereto:
+        nop
+        // Variable "ROM" This is : jal x0 abstract, jal x0 program_buffer,
+        //                or jal x0 resume, as desired.
+        //                Debug Module state machine tracks what is 'desired'.
+        //                We don't need/want to use jalr here because all of the
+        //                Variable ROM contents are set by
+        //                Debug Module before setting the OK_GO byte.
