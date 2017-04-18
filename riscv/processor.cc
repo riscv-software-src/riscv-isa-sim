@@ -210,10 +210,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   if (state.dcsr.cause) {
     if (t.cause() == CAUSE_BREAKPOINT) {
       state.pc = debug_rom_entry();
-      fprintf(stderr, "Breakpoint.");
     } else {
-      fprintf(stderr, "WE ARE IN DEBUG MODE, DEBUG_ROM_EXCEPTION\n");
-      state.pc = DEBUG_ROM_EXCEPTION;
+      state.pc = DEBUG_ROM_TVEC;
     }
     return;
   }

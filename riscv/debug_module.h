@@ -77,19 +77,14 @@ class debug_module_t : public abstract_device_t
 
     sim_t *sim;
 
-    uint8_t debug_rom_entry[DEBUG_ROM_ENTRY_SIZE];
-    uint8_t debug_rom_code[DEBUG_ROM_CODE_SIZE];
-    uint8_t debug_rom_exception[DEBUG_ROM_EXCEPTION_SIZE];
+    uint8_t debug_rom_whereto[4];
+    uint8_t debug_rom_abstract[4*2];
     uint8_t program_buffer[progsize * 4];
     uint8_t dmdata[DEBUG_DATA_SIZE];
     
     bool halted[1024];
     bool resumeack[1024];
-
-    // Instruction that will be placed at the current hart's ROM entry address
-    // after the current action has completed.
-    uint32_t next_action;
-    bool action_executed;
+    uint8_t debug_rom_flags[1024];
 
     void write32(uint8_t *rom, unsigned int index, uint32_t value);
     uint32_t read32(uint8_t *rom, unsigned int index);

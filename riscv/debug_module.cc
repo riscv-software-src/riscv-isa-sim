@@ -6,6 +6,7 @@
 #include "mmu.h"
 
 #include "debug_rom/debug_rom.h"
+#include "debug_rom/debug_rom_defines.h"
 
 #if 1
 #  define D(x) x
@@ -15,9 +16,7 @@
 
 ///////////////////////// debug_module_t
 
-debug_module_t::debug_module_t(sim_t *sim) : sim(sim),
-  next_action(jal(ZERO, 0)),
-  action_executed(false)
+debug_module_t::debug_module_t(sim_t *sim) : sim(sim)
 {
   dmcontrol = {0};
 
@@ -30,12 +29,17 @@ debug_module_t::debug_module_t(sim_t *sim) : sim(sim),
 
   abstractauto = {0};
 
-  for (unsigned i = 0; i < DEBUG_ROM_ENTRY_SIZE / 4; i++) {
-    write32(debug_rom_entry, i, jal(ZERO, 0));
-    halted[i] = false;
-  }
-
+  memset(halted, 0, sizeof(halted));
+  memset(debug_rom_flags, 0, sizeof(debug_rom_flags));
+  memset(resumeack, 0, sizeof(resumeack));
   memset(program_buffer, 0, sizeof(program_buffer));
+  memset(dmdata, 0, sizeof(dmdata));
+
+  write32(debug_rom_whereto, 0,
+          jal(ZERO, DEBUG_ABSTRACT_START - DEBUG_ROM_WHERETO));
+
+  memset(debug_rom_abstract, 0, sizeof(debug_rom_abstract));
+ 
 }
 
 void debug_module_t::reset()
@@ -68,39 +72,23 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
   addr = DEBUG_START + addr;
 
   if (addr >= DEBUG_ROM_ENTRY &&
-      addr < DEBUG_ROM_ENTRY + DEBUG_ROM_ENTRY_SIZE) {
-
-    if (read32(debug_rom_entry, dmcontrol.hartsel) == jal(ZERO, 0)) {
-      // We're here in an infinite loop. That means that whatever abstract
-      // command has complete.
-      abstractcs.busy = false;
-    }
-
-    action_executed = true;
-
-    halted[(addr - DEBUG_ROM_ENTRY) / 4] = true;
-    memcpy(bytes, debug_rom_entry + addr - DEBUG_ROM_ENTRY, len);
+      addr < DEBUG_ROM_ENTRY + debug_rom_raw_len) {
+    memcpy(bytes, debug_rom_raw + addr - DEBUG_ROM_ENTRY, len);
     return true;
   }
 
-  if (action_executed) {
-    // Restore the jump-to-self loop.
-    write32(debug_rom_entry, dmcontrol.hartsel, next_action);
-    next_action = jal(ZERO, 0);
-    action_executed = false;
+  if (addr >= DEBUG_ROM_WHERETO && addr < DEBUG_ROM_WHERETO + 4) {
+    memcpy(bytes, debug_rom_whereto + addr - DEBUG_ROM_WHERETO, len);
+    return true;
   }
 
-  if (addr >= DEBUG_ROM_CODE &&
-      addr < DEBUG_ROM_CODE + DEBUG_ROM_CODE_SIZE) {
+  if (addr >= DEBUG_ROM_FLAGS && addr < DEBUG_ROM_FLAGS + 1024) {
+    memcpy(bytes, debug_rom_flags + addr - DEBUG_ROM_FLAGS, len);
+    return true;
+  }
 
-    if (read32(debug_rom_code, 0) == dret()) {
-      abstractcs.busy = false;
-      halted[dmcontrol.hartsel] = false;
-      resumeack[dmcontrol.hartsel] = true;
-    }
-
-    fprintf(stderr, "returning the  debug rom code.\n");
-    memcpy(bytes, debug_rom_code + addr - DEBUG_ROM_CODE, len);
+  if (addr >= DEBUG_ABSTRACT_START && addr < DEBUG_ABSTRACT_END) {
+    memcpy(bytes, debug_rom_abstract + addr - DEBUG_ABSTRACT_START, len);
     return true;
   }
 
@@ -114,15 +102,6 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
     return true;
   }
 
-  if (addr >= DEBUG_ROM_EXCEPTION &&
-      addr < DEBUG_ROM_EXCEPTION + DEBUG_ROM_EXCEPTION_SIZE) {
-    memcpy(bytes, debug_rom_exception + addr - DEBUG_ROM_EXCEPTION, len);
-    if (abstractcs.cmderr == CMDERR_NONE) {
-      abstractcs.cmderr = CMDERR_EXCEPTION;
-    }
-    return true;
-  }
-
   fprintf(stderr, "ERROR: invalid load from debug module: %zd bytes at 0x%016"
           PRIx64 "\n", len, addr);
 
@@ -131,6 +110,13 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 
 bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
+
+  uint8_t id_bytes[4];
+  uint32_t id = 0;
+  if (len == 4) {
+    memcpy(id_bytes, bytes, 4);
+    id = read32(id_bytes, 0);
+  }
 
   addr = DEBUG_START + addr;
   
@@ -141,6 +127,39 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   
   if (addr >= DEBUG_PROGBUF_START && addr < DEBUG_PROGBUF_END) {
     memcpy(program_buffer + addr - DEBUG_PROGBUF_START, bytes, len);
+    return true;
+  }
+
+  if (addr == DEBUG_ROM_HALTED) {
+    assert (len == 4);
+    halted[id] = true;
+    if (dmcontrol.hartsel == id) {
+        if (0 == (debug_rom_flags[id] & (1 << DEBUG_ROM_FLAG_GO))){
+          if (dmcontrol.hartsel == id) {
+              abstractcs.busy = false;
+          }
+        }
+    }
+    return true;
+  }
+
+  if (addr == DEBUG_ROM_GOING) {
+    debug_rom_flags[dmcontrol.hartsel] &= ~(1 << DEBUG_ROM_FLAG_GO);
+    return true;
+  }
+
+  if (addr == DEBUG_ROM_RESUMING) {
+    assert (len == 4);
+    halted[id] = false;
+    resumeack[id] = true;
+    debug_rom_flags[id] &= ~(1 << DEBUG_ROM_FLAG_RESUME);
+    return true;
+  }
+
+  if (addr == DEBUG_ROM_EXCEPTION) {
+    if (abstractcs.cmderr == CMDERR_NONE) {
+      abstractcs.cmderr = CMDERR_EXCEPTION;
+    }
     return true;
   }
 
@@ -184,17 +203,22 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
   D(fprintf(stderr, "dmi_read(0x%x) -> ", address));
   if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
     unsigned i = address - DMI_DATA0;
-    result = read32(dmdata, address - DMI_DATA0);
+    result = read32(dmdata, i);
 
     if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
       abstractcs.cmderr = CMDERR_BUSY;
     }
 
-    if ((abstractauto.autoexecdata >> i) & 1)
+    if ((abstractauto.autoexecdata >> i) & 1){
       perform_abstract_command();
+    }
   } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progsize) {
-    // TODO : Autoexec progbuf.
-    result = read32(program_buffer, address - DMI_PROGBUF0);
+    unsigned i = address = DMI_PROGBUF0;
+    result = read32(program_buffer, i);
+    if ((abstractauto.autoexecprogbuf >> i) & 1) {
+      perform_abstract_command();
+    }
+
   } else {
     switch (address) {
       case DMI_DMCONTROL:
@@ -304,31 +328,32 @@ bool debug_module_t::perform_abstract_command()
     bool write = get_field(command, AC_ACCESS_REGISTER_WRITE);
     unsigned regno = get_field(command, AC_ACCESS_REGISTER_REGNO);
 
-    if (regno < 0x1000 || regno >= 0x1020) {
-      abstractcs.cmderr = CMDERR_NOTSUP;
-      return true;
-    }
-
-    unsigned regnum = regno - 0x1000;
-
     if (!halted[dmcontrol.hartsel]) {
       abstractcs.cmderr = CMDERR_HALTRESUME;
       return true;
     }
 
     if (get_field(command, AC_ACCESS_REGISTER_TRANSFER)) {
+
+      if (regno < 0x1000 || regno >= 0x1020) {
+        abstractcs.cmderr = CMDERR_NOTSUP;
+        return true;
+      }
+
+      unsigned regnum = regno - 0x1000;
+
       switch (size) {
       case 2:
         if (write)
-          write32(debug_rom_code, 0, lw(regnum, ZERO, DEBUG_DATA_START));
+          write32(debug_rom_abstract, 0, lw(regnum, ZERO, DEBUG_DATA_START));
         else
-          write32(debug_rom_code, 0, sw(regnum, ZERO, DEBUG_DATA_START));
+          write32(debug_rom_abstract, 0, sw(regnum, ZERO, DEBUG_DATA_START));
         break;
       case 3:
         if (write)
-          write32(debug_rom_code, 0, ld(regnum, ZERO, DEBUG_DATA_START));
+          write32(debug_rom_abstract, 0, ld(regnum, ZERO, DEBUG_DATA_START));
         else
-          write32(debug_rom_code, 0, sd(regnum, ZERO, DEBUG_DATA_START));
+          write32(debug_rom_abstract, 0, sd(regnum, ZERO, DEBUG_DATA_START));
         break;
         /*
           case 4:
@@ -344,21 +369,17 @@ bool debug_module_t::perform_abstract_command()
       }
     } else {
       // Should be a NOP. Store DEBUG_DATA to x0.
-      write32(debug_rom_code, 0, sw(ZERO, ZERO, DEBUG_DATA_START));
+      write32(debug_rom_abstract, 0, sw(ZERO, ZERO, DEBUG_DATA_START));
     }
     
     if (get_field(command, AC_ACCESS_REGISTER_POSTEXEC)) {
-      write32(debug_rom_code, 1, jal(ZERO, DEBUG_PROGBUF_START - DEBUG_ROM_CODE - 4));
+      write32(debug_rom_abstract, 1, jal(ZERO, DEBUG_PROGBUF_START - DEBUG_ABSTRACT_START));
     } else {
-      write32(debug_rom_code, 1, ebreak());
+      write32(debug_rom_abstract, 1, ebreak());
     }
 
+    debug_rom_flags[dmcontrol.hartsel] |= 1 << DEBUG_ROM_FLAG_GO;
     
-    write32(debug_rom_entry, dmcontrol.hartsel,
-            jal(ZERO, DEBUG_ROM_CODE - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel)));
-    
-    write32(debug_rom_exception, dmcontrol.hartsel,
-        jal(ZERO, (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel) - DEBUG_ROM_EXCEPTION));
     abstractcs.busy = true;
   } else {
     abstractcs.cmderr = CMDERR_NOTSUP;
@@ -401,10 +422,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           if (proc) {
             proc->halt_request = dmcontrol.haltreq;
             if (dmcontrol.resumereq) {
-              write32(debug_rom_code, 0, dret());
-              write32(debug_rom_entry, dmcontrol.hartsel,
-                  jal(ZERO, DEBUG_ROM_CODE - (DEBUG_ROM_ENTRY + 4 * dmcontrol.hartsel)));
-              abstractcs.busy = true;
+              debug_rom_flags[dmcontrol.hartsel] |= (1 << DEBUG_ROM_FLAG_RESUME);
               resumeack[dmcontrol.hartsel] = false;
             }
           }

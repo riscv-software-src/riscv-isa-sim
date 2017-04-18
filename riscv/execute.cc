@@ -65,7 +65,8 @@ void processor_t::step(size_t n)
   if (state.dcsr.cause == DCSR_CAUSE_NONE) {
     if (halt_request) {
       enter_debug_mode(DCSR_CAUSE_DEBUGINT);
-    } else if (state.dcsr.halt) {
+    } // !!!The halt bit in DCSR is deprecated.
+    else if (state.dcsr.halt) {
       enter_debug_mode(DCSR_CAUSE_HALT);
     }
   }
@@ -116,12 +117,14 @@ void processor_t::step(size_t n)
             break;
           }
 
-          if (unlikely(state.pc >= DEBUG_ROM_ENTRY &&
-                state.pc < DEBUG_ROM_ENTRY + DEBUG_ROM_ENTRY_SIZE)) {
-            // We're spinning waiting for the debugger to tell us something.
-            // Let's go talk to the debugger.
+          if (unlikely(state.pc >= DEBUG_START &&
+                       state.pc < DEBUG_END)) {
+            // We're waiting for the debugger to tell us something.
             return;
           }
+
+          
+          
         }
       }
       else while (instret < n)
