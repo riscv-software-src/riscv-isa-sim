@@ -36,9 +36,9 @@ debug_module_t::debug_module_t(sim_t *sim) : sim(sim)
   memset(dmdata, 0, sizeof(dmdata));
 
   write32(debug_rom_whereto, 0,
-          jal(ZERO, DEBUG_ABSTRACT_START - DEBUG_ROM_WHERETO));
+          jal(ZERO, debug_abstract_start - DEBUG_ROM_WHERETO));
 
-  memset(debug_rom_abstract, 0, sizeof(debug_rom_abstract));
+  memset(debug_abstract, 0, sizeof(debug_abstract));
  
 }
 
@@ -72,33 +72,33 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
   addr = DEBUG_START + addr;
 
   if (addr >= DEBUG_ROM_ENTRY &&
-      addr < DEBUG_ROM_ENTRY + debug_rom_raw_len) {
+      (addr + len) <= (DEBUG_ROM_ENTRY + debug_rom_raw_len)) {
     memcpy(bytes, debug_rom_raw + addr - DEBUG_ROM_ENTRY, len);
     return true;
   }
 
-  if (addr >= DEBUG_ROM_WHERETO && addr < DEBUG_ROM_WHERETO + 4) {
+  if (addr >= DEBUG_ROM_WHERETO && (addr + len) <= (DEBUG_ROM_WHERETO + 4)) {
     memcpy(bytes, debug_rom_whereto + addr - DEBUG_ROM_WHERETO, len);
     return true;
   }
 
-  if (addr >= DEBUG_ROM_FLAGS && addr < DEBUG_ROM_FLAGS + 1024) {
+  if (addr >= DEBUG_ROM_FLAGS && ((addr + len) <= DEBUG_ROM_FLAGS + 1024)) {
     memcpy(bytes, debug_rom_flags + addr - DEBUG_ROM_FLAGS, len);
     return true;
   }
 
-  if (addr >= DEBUG_ABSTRACT_START && addr < DEBUG_ABSTRACT_END) {
-    memcpy(bytes, debug_rom_abstract + addr - DEBUG_ABSTRACT_START, len);
+  if (addr >= debug_abstract_start && ((addr + len) <= (debug_abstract_start + sizeof(debug_abstract)))) {
+    memcpy(bytes, debug_abstract + addr - debug_abstract_start, len);
     return true;
   }
 
-  if (addr >= DEBUG_DATA_START && addr < DEBUG_DATA_END) {
-    memcpy(bytes, dmdata + addr - DEBUG_DATA_START, len);
+  if (addr >= debug_data_start && (addr + len) <= (debug_data_start + sizeof(dmdata))) {
+    memcpy(bytes, dmdata + addr - debug_data_start, len);
     return true;
   }
   
-  if (addr >= DEBUG_PROGBUF_START && addr < DEBUG_PROGBUF_END) {
-    memcpy(bytes, program_buffer + addr - DEBUG_PROGBUF_START, len);
+  if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + sizeof(program_buffer)))) {
+    memcpy(bytes, program_buffer + addr - debug_progbuf_start, len);
     return true;
   }
 
@@ -120,13 +120,13 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 
   addr = DEBUG_START + addr;
   
-  if (addr >= DEBUG_DATA_START && addr < DEBUG_DATA_END) {
-    memcpy(dmdata + addr - DEBUG_DATA_START, bytes, len);
+  if (addr >= debug_data_start && (addr + len) <= (debug_data_start + sizeof(dmdata))) {
+    memcpy(dmdata + addr - debug_data_start, bytes, len);
     return true;
   }
   
-  if (addr >= DEBUG_PROGBUF_START && addr < DEBUG_PROGBUF_END) {
-    memcpy(program_buffer + addr - DEBUG_PROGBUF_START, bytes, len);
+  if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + sizeof(program_buffer)))) {
+    memcpy(program_buffer + addr - debug_progbuf_start, bytes, len);
     return true;
   }
 
@@ -300,7 +300,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
         result = set_field(result, DMI_HARTINFO_NSCRATCH, 1);
         result = set_field(result, DMI_HARTINFO_DATAACCESS, 1);
         result = set_field(result, DMI_HARTINFO_DATASIZE, abstractcs.datacount);
-        result = set_field(result, DMI_HARTINFO_DATAADDR, DEBUG_DATA_START);
+        result = set_field(result, DMI_HARTINFO_DATAADDR, debug_data_start);
         break;
       default:
         result = 0;
@@ -345,22 +345,22 @@ bool debug_module_t::perform_abstract_command()
       switch (size) {
       case 2:
         if (write)
-          write32(debug_rom_abstract, 0, lw(regnum, ZERO, DEBUG_DATA_START));
+          write32(debug_abstract, 0, lw(regnum, ZERO, debug_data_start));
         else
-          write32(debug_rom_abstract, 0, sw(regnum, ZERO, DEBUG_DATA_START));
+          write32(debug_abstract, 0, sw(regnum, ZERO, debug_data_start));
         break;
       case 3:
         if (write)
-          write32(debug_rom_abstract, 0, ld(regnum, ZERO, DEBUG_DATA_START));
+          write32(debug_abstract, 0, ld(regnum, ZERO, debug_data_start));
         else
-          write32(debug_rom_abstract, 0, sd(regnum, ZERO, DEBUG_DATA_START));
+          write32(debug_abstract, 0, sd(regnum, ZERO, debug_data_start));
         break;
         /*
           case 4:
           if (write)
-          write32(debug_rom_code, 0, lq(regnum, ZERO, DEBUG_DATA_START));
+          write32(debug_rom_code, 0, lq(regnum, ZERO, debug_data_start));
           else
-          write32(debug_rom_code, 0, sq(regnum, ZERO, DEBUG_DATA_START));
+          write32(debug_rom_code, 0, sq(regnum, ZERO, debug_data_start));
           break;
         */
       default:
@@ -368,14 +368,16 @@ bool debug_module_t::perform_abstract_command()
         return true;
       }
     } else {
-      // Should be a NOP. Store DEBUG_DATA to x0.
-      write32(debug_rom_abstract, 0, sw(ZERO, ZERO, DEBUG_DATA_START));
+      //NOP
+      write32(debug_abstract, 0, addi(ZERO, ZERO, 0));
     }
     
     if (get_field(command, AC_ACCESS_REGISTER_POSTEXEC)) {
-      write32(debug_rom_abstract, 1, jal(ZERO, DEBUG_PROGBUF_START - DEBUG_ABSTRACT_START));
+      // Since the next instruction is what we will use, just use nother NOP
+      // to get there.
+      write32(debug_abstract, 1, addi(ZERO, ZERO, 0));
     } else {
-      write32(debug_rom_abstract, 1, ebreak());
+      write32(debug_abstract, 1, ebreak());
     }
 
     debug_rom_flags[dmcontrol.hartsel] |= 1 << DEBUG_ROM_FLAG_GO;
@@ -398,13 +400,21 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
       abstractcs.cmderr = CMDERR_BUSY;
     }
 
-    if ((abstractauto.autoexecdata >> i) & 1)
+    if ((abstractauto.autoexecdata >> i) & 1) {
       perform_abstract_command();
+    }
     return true;
 
   } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progsize) {
-    write32(program_buffer, address - DMI_PROGBUF0, value);
+    unsigned i = address - DMI_PROGBUF0;
+    
+    write32(program_buffer, i, value);
+
+    if ((abstractauto.autoexecprogbuf >> i) & 1) {
+      perform_abstract_command();
+    }
     return true;
+    
   } else {
     switch (address) {
       case DMI_DMCONTROL:

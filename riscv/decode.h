@@ -248,19 +248,6 @@ inline freg_t freg(freg_t f) { return f; }
 
 // Seems that 0x0 doesn't work.
 #define DEBUG_START             0x100
-
-#define DEBUG_DATA_START          0x380
-#define DEBUG_DATA_SIZE           0x20
-#define DEBUG_DATA_END            DEBUG_DATA_START + DEBUG_DATA_SIZE
-
-#define DEBUG_PROGBUF_SIZE        32
-#define DEBUG_PROGBUF_START       DEBUG_DATA_START - DEBUG_PROGBUF_SIZE
-#define DEBUG_PROGBUF_END         DEBUG_PROGBUF_START + DEBUG_PROGBUF_SIZE
-
-#define DEBUG_ABSTRACT_SIZE 2*4
-#define DEBUG_ABSTRACT_START (DEBUG_PROGBUF_START - DEBUG_ABSTRACT_SIZE)
-#define DEBUG_ABSTRACT_END   (DEBUG_ABSTRACT_START + DEBUG_ABSTRACT_SIZE)
-
 #define DEBUG_END                 (0x1000 - 1)
 
 #endif

@@ -73,14 +73,20 @@ class debug_module_t : public abstract_device_t
     bool dmi_write(unsigned address, uint32_t value);
 
   private:
-    static const unsigned progsize = 8;
+    static const unsigned datasize = 2;
+    static const unsigned progsize = 16;
+    static const unsigned debug_data_start = 0x380;
+    static const unsigned debug_progbuf_start = debug_data_start - progsize*4;
 
+    static const unsigned debug_abstract_size = 2;
+    static const unsigned debug_abstract_start = debug_progbuf_start - debug_abstract_size*4;
+        
     sim_t *sim;
 
     uint8_t debug_rom_whereto[4];
-    uint8_t debug_rom_abstract[4*2];
+    uint8_t debug_abstract[debug_abstract_size * 4];
     uint8_t program_buffer[progsize * 4];
-    uint8_t dmdata[DEBUG_DATA_SIZE];
+    uint8_t dmdata[datasize * 4];
     
     bool halted[1024];
     bool resumeack[1024];
