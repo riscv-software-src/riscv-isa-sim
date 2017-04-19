@@ -437,6 +437,9 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
               debug_rom_flags[dmcontrol.hartsel] |= (1 << DEBUG_ROM_FLAG_RESUME);
               resumeack[dmcontrol.hartsel] = false;
             }
+	    if (dmcontrol.ndmreset) {
+	      proc->reset();
+	    }
           }
         }
         return true;
