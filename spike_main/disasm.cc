@@ -418,7 +418,6 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_NOARG(ebreak);
   DEFINE_NOARG(uret);
   DEFINE_NOARG(sret);
-  DEFINE_NOARG(hret);
   DEFINE_NOARG(mret);
   DEFINE_NOARG(fence);
   DEFINE_NOARG(fence_i);
