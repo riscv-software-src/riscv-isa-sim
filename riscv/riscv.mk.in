@@ -180,9 +180,9 @@ riscv_insn_list = \
 	fmul_d \
 	fmul_s \
 	fmv_d_x \
-	fmv_s_x \
+	fmv_w_x \
 	fmv_x_d \
-	fmv_x_s \
+	fmv_x_w \
 	fnmadd_d \
 	fnmadd_s \
 	fnmsub_d \
