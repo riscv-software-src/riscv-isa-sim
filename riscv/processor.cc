@@ -189,7 +189,6 @@ void processor_t::set_privilege(reg_t prv)
 
 void processor_t::enter_debug_mode(uint8_t cause)
 {
-  fprintf(stderr, "Entering debug mode because of cause %d", cause);
   state.dcsr.cause = cause;
   state.dcsr.prv = state.prv;
   set_privilege(PRV_M);
