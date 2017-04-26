@@ -157,7 +157,7 @@ void remote_bitbang_t::execute_commands()
 
     if (recv_end == -1) {
       if (errno == EAGAIN) {
-        // We'll try again the next call.
+        break;
       } else {
         fprintf(stderr, "remote_bitbang failed to read on socket: %s (%d)\n",
             strerror(errno), errno);
