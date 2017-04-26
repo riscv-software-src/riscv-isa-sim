@@ -205,19 +205,19 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
   D(fprintf(stderr, "dmi_read(0x%x) -> ", address));
   if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
     unsigned i = address - DMI_DATA0;
-    result = read32(dmdata, i);
+    result = abstractcs.busy ? -1 : read32(dmdata, i);
 
     if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
       abstractcs.cmderr = CMDERR_BUSY;
     }
 
-    if ((abstractauto.autoexecdata >> i) & 1){
+    if (!abstractcs.busy && ((abstractauto.autoexecdata >> i) & 1)) {
       perform_abstract_command();
     }
   } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progsize) {
     unsigned i = address - DMI_PROGBUF0;
-    result = read32(program_buffer, i);
-    if ((abstractauto.autoexecprogbuf >> i) & 1) {
+    result = abstractcs.busy ? -1 : read32(program_buffer, i);
+    if (!abstractcs.busy && ((abstractauto.autoexecprogbuf >> i) & 1)) {
       perform_abstract_command();
     }
 
@@ -396,13 +396,14 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
   D(fprintf(stderr, "dmi_write(0x%x, 0x%x)\n", address, value));
   if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
     unsigned i = address - DMI_DATA0;
-    write32(dmdata, address - DMI_DATA0, value);
+    if (!abstractcs.busy)
+      write32(dmdata, address - DMI_DATA0, value);
 
     if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
       abstractcs.cmderr = CMDERR_BUSY;
     }
 
-    if ((abstractauto.autoexecdata >> i) & 1) {
+    if (!abstractcs.busy && ((abstractauto.autoexecdata >> i) & 1)) {
       perform_abstract_command();
     }
     return true;
@@ -410,9 +411,10 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
   } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progsize) {
     unsigned i = address - DMI_PROGBUF0;
     
-    write32(program_buffer, i, value);
+    if (!abstractcs.busy)
+      write32(program_buffer, i, value);
 
-    if ((abstractauto.autoexecprogbuf >> i) & 1) {
+    if (!abstractcs.busy && ((abstractauto.autoexecprogbuf >> i) & 1)) {
       perform_abstract_command();
     }
     return true;
