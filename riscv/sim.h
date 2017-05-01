@@ -19,7 +19,8 @@ class gdbserver_t;
 class sim_t : public htif_t
 {
 public:
-  sim_t(const char* isa, size_t _nprocs, size_t mem_mb, bool halted,
+  sim_t(const char* isa, size_t _nprocs,  bool halted,
+        std::vector<std::pair<reg_t, mem_t*>> mems,
         const std::vector<std::string>& args);
   ~sim_t();
 
@@ -34,8 +35,7 @@ public:
   processor_t* get_core(size_t i) { return procs.at(i); }
 
 private:
-  char* mem; // main memory
-  size_t memsz; // memory size in bytes
+  std::vector<std::pair<reg_t, mem_t*>> mems;
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
   std::string dts;
@@ -57,10 +57,7 @@ private:
   gdbserver_t* gdbserver;
 
   // memory-mapped I/O routines
-  bool addr_is_mem(reg_t addr) {
-    return addr >= DRAM_BASE && addr < DRAM_BASE + memsz;
-  }
-  char* addr_to_mem(reg_t addr) { return addr_is_mem(addr) ? mem + addr - DRAM_BASE : 0; }
+  char* addr_to_mem(reg_t addr);
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
   void make_dtb();

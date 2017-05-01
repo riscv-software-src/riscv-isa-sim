@@ -23,26 +23,16 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-sim_t::sim_t(const char* isa, size_t nprocs, size_t mem_mb, bool halted,
+sim_t::sim_t(const char* isa, size_t nprocs, bool halted,
+             std::vector<std::pair<reg_t, mem_t*>> mems,
              const std::vector<std::string>& args)
-  : htif_t(args), procs(std::max(nprocs, size_t(1))),
+  : htif_t(args), mems(mems), procs(std::max(nprocs, size_t(1))),
     current_step(0), current_proc(0), debug(false), gdbserver(NULL)
 {
   signal(SIGINT, &handle_signal);
-  // allocate target machine's memory, shrinking it as necessary
-  // until the allocation succeeds
-  size_t memsz0 = (size_t)mem_mb << 20;
-  size_t quantum = 1L << 20;
-  if (memsz0 == 0)
-    memsz0 = (size_t)2048 << 20;
 
-  memsz = memsz0;
-  while ((mem = (char*)calloc(1, memsz)) == NULL)
-    memsz = (size_t)(memsz*0.9)/quantum*quantum;
-
-  if (memsz != memsz0)
-    fprintf(stderr, "warning: only got %zu bytes of target mem (wanted %zu)\n",
-            memsz, memsz0);
+  for (auto& x : mems)
+    bus.add_device(x.first, x.second);
 
   bus.add_device(DEBUG_START, &debug_module);
 
@@ -63,7 +53,6 @@ sim_t::~sim_t()
   for (size_t i = 0; i < procs.size(); i++)
     delete procs[i];
   delete debug_mmu;
-  free(mem);
 }
 
 void sim_thread_main(void* arg)
@@ -278,15 +267,16 @@ void sim_t::make_dtb()
          "      };\n"
          "    };\n";
   }
-  reg_t membs = DRAM_BASE;
-  s << std::hex <<
-         "  };\n"
-         "  memory@" << DRAM_BASE << " {\n"
+  s <<   "  };\n";
+  for (auto& m : mems) {
+    s << std::hex <<
+         "  memory@" << m.first << " {\n"
          "    device_type = \"memory\";\n"
-         "    reg = <0x" << (membs >> 32) << " 0x" << (membs & (uint32_t)-1) <<
-                   " 0x" << (memsz >> 32) << " 0x" << (memsz & (uint32_t)-1) << ">;\n"
-         "  };\n"
-         "  soc {\n"
+         "    reg = <0x" << (m.first >> 32) << " 0x" << (m.first & (uint32_t)-1) <<
+                   " 0x" << (m.second->size() >> 32) << " 0x" << (m.second->size() & (uint32_t)-1) << ">;\n"
+         "  };\n";
+  }
+  s <<   "  soc {\n"
          "    #address-cells = <2>;\n"
          "    #size-cells = <2>;\n"
          "    compatible = \"ucbbar,spike-bare-soc\", \"simple-bus\";\n"
@@ -314,6 +304,13 @@ void sim_t::make_dtb()
 
   boot_rom.reset(new rom_device_t(rom));
   bus.add_device(DEFAULT_RSTVEC, boot_rom.get());
+}
+
+char* sim_t::addr_to_mem(reg_t addr) {
+  auto desc = bus.find_device(addr);
+  if (auto mem = dynamic_cast<mem_t*>(desc.device))
+    return mem->contents() + (addr - desc.base);
+  return NULL;
 }
 
 // htif
