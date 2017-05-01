@@ -19,7 +19,7 @@ class gdbserver_t;
 class sim_t : public htif_t
 {
 public:
-  sim_t(const char* isa, size_t _nprocs,  bool halted,
+  sim_t(const char* isa, size_t _nprocs,  bool halted, reg_t start_pc,
         std::vector<std::pair<reg_t, mem_t*>> mems,
         const std::vector<std::string>& args);
   ~sim_t();
@@ -38,6 +38,7 @@ private:
   std::vector<std::pair<reg_t, mem_t*>> mems;
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
+  reg_t start_pc;
   std::string dts;
   std::unique_ptr<rom_device_t> boot_rom;
   std::unique_ptr<clint_t> clint;

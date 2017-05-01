@@ -27,6 +27,7 @@ static void help()
   fprintf(stderr, "  -h                    Print this help message\n");
   fprintf(stderr, "  -H                 Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
+  fprintf(stderr, "  --pc=<address>        Set the initial program counter [default 0x80000000]\n");
   fprintf(stderr, "  --ic=<S>:<W>:<B>      Instantiate a cache model with S sets,\n");
   fprintf(stderr, "  --dc=<S>:<W>:<B>        W ways, and B-byte blocks (with S and\n");
   fprintf(stderr, "  --l2=<S>:<W>:<B>        B both powers of 2).\n");
@@ -64,22 +65,6 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
     arg = p + 1;
   }
   return res;
-#if 0
-  // allocate target machine's memory, shrinking it as necessary
-  // until the allocation succeeds
-  size_t memsz0 = (size_t)mem_mb << 20;
-  size_t quantum = 1L << 20;
-  if (memsz0 == 0)
-    memsz0 = (size_t)2048 << 20;
-
-  memsz = memsz0;
-  while ((mem = (char*)calloc(1, memsz)) == NULL)
-    memsz = (size_t)(memsz*0.9)/quantum*quantum;
-
-  if (memsz != memsz0)
-    fprintf(stderr, "warning: only got %zu bytes of target mem (wanted %zu)\n",
-            memsz, memsz0);
-#endif
 }
 
 int main(int argc, char** argv)
@@ -90,6 +75,7 @@ int main(int argc, char** argv)
   bool log = false;
   bool dump_dts = false;
   size_t nprocs = 1;
+  reg_t start_pc = DRAM_BASE;
   std::vector<std::pair<reg_t, mem_t*>> mems;
   std::unique_ptr<icache_sim_t> ic;
   std::unique_ptr<dcache_sim_t> dc;
@@ -109,6 +95,7 @@ int main(int argc, char** argv)
   // I wanted to use --halted, but for some reason that doesn't work.
   parser.option('H', 0, 0, [&](const char* s){halted = true;});
   parser.option(0, "gdb-port", 1, [&](const char* s){gdb_port = atoi(s);});
+  parser.option(0, "pc", 1, [&](const char* s){start_pc = strtoull(s, 0, 0);});
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
@@ -128,7 +115,7 @@ int main(int argc, char** argv)
   if (mems.empty())
     mems = make_mems("2048");
 
-  sim_t s(isa, nprocs, halted, mems, htif_args);
+  sim_t s(isa, nprocs, halted, start_pc, mems, htif_args);
   std::unique_ptr<gdbserver_t> gdbserver;
   if (gdb_port) {
     gdbserver = std::unique_ptr<gdbserver_t>(new gdbserver_t(gdb_port, &s));

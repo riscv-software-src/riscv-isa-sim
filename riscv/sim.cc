@@ -23,10 +23,11 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-sim_t::sim_t(const char* isa, size_t nprocs, bool halted,
+sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
              std::vector<std::pair<reg_t, mem_t*>> mems,
              const std::vector<std::string>& args)
   : htif_t(args), mems(mems), procs(std::max(nprocs, size_t(1))),
+    start_pc(start_pc),
     current_step(0), current_proc(0), debug(false), gdbserver(NULL)
 {
   signal(SIGINT, &handle_signal);
@@ -227,14 +228,23 @@ static std::string dts_compile(const std::string& dts)
 
 void sim_t::make_dtb()
 {
-  uint32_t reset_vec[] = {
-    0x297 + DRAM_BASE - DEFAULT_RSTVEC, // auipc t0, DRAM_BASE
-    0x597,                              // auipc a1, 0
-    0x58593,                            // addi a1, a1, 0
-    0xf1402573,				// csrr a0,mhartid
-    0x00028067                          // jalr zero, t0, 0 (jump straight to DRAM_BASE)
+  const int reset_vec_size = 8;
+
+  reg_t pc_delta = start_pc - DEFAULT_RSTVEC;
+  reg_t pc_delta_hi = (pc_delta + 0x800U) & ~reg_t(0xfffU);
+  reg_t pc_delta_lo = pc_delta - pc_delta_hi;
+  if ((pc_delta_hi >> 31) != 0 && (pc_delta_hi >> 31) != reg_t(-1) >> 31) {
+    fprintf(stderr, "initial pc %" PRIx64 " out of range\n", pc_delta);
+    abort();
+  }
+
+  uint32_t reset_vec[reset_vec_size] = {
+    0x297 + uint32_t(pc_delta_hi),              // auipc t0, &pc
+    0x597,                                      // auipc a1, &dtb
+    0x58593 + ((reset_vec_size - 1) * 4 << 20), // addi a1, a1, &dtb
+    0xf1402573,                                 // csrr a0, mhartid
+    0x28067 + uint32_t(pc_delta_lo << 20)       // jalr zero, t0, &pc
   };
-  reset_vec[2] += (sizeof(reset_vec) - 4) << 20; // addi a1, a1, sizeof(reset_vec) - 4 = DTB start
 
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
 
