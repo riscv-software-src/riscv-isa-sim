@@ -47,17 +47,17 @@ reg_t mmu_t::translate(reg_t addr, access_type type)
   return walk(addr, type, mode) | (addr & (PGSIZE-1));
 }
 
-const uint16_t* mmu_t::fetch_slow_path(reg_t vaddr)
+tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
   reg_t paddr = translate(vaddr, FETCH);
 
-  if (sim->addr_is_mem(paddr)) {
-    refill_tlb(vaddr, paddr, FETCH);
-    return (const uint16_t*)sim->addr_to_mem(paddr);
+  if (auto host_addr = sim->addr_to_mem(paddr)) {
+    return refill_tlb(vaddr, paddr, host_addr, FETCH);
   } else {
     if (!sim->mmio_load(paddr, sizeof fetch_temp, (uint8_t*)&fetch_temp))
       throw trap_instruction_access_fault(vaddr);
-    return &fetch_temp;
+    tlb_entry_t entry = {(char*)&fetch_temp - vaddr, paddr - vaddr};
+    return entry;
   }
 }
 
@@ -91,12 +91,12 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes)
 {
   reg_t paddr = translate(addr, LOAD);
 
-  if (sim->addr_is_mem(paddr)) {
-    memcpy(bytes, sim->addr_to_mem(paddr), len);
+  if (auto host_addr = sim->addr_to_mem(paddr)) {
+    memcpy(bytes, host_addr, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
       tracer.trace(paddr, len, LOAD);
     else
-      refill_tlb(addr, paddr, LOAD);
+      refill_tlb(addr, paddr, host_addr, LOAD);
   } else if (!sim->mmio_load(paddr, len, bytes)) {
     throw trap_load_access_fault(addr);
   }
@@ -120,18 +120,18 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes)
       throw *matched_trigger;
   }
 
-  if (sim->addr_is_mem(paddr)) {
-    memcpy(sim->addr_to_mem(paddr), bytes, len);
+  if (auto host_addr = sim->addr_to_mem(paddr)) {
+    memcpy(host_addr, bytes, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
       tracer.trace(paddr, len, STORE);
     else
-      refill_tlb(addr, paddr, STORE);
+      refill_tlb(addr, paddr, host_addr, STORE);
   } else if (!sim->mmio_store(paddr, len, bytes)) {
     throw trap_store_access_fault(addr);
   }
 }
 
-void mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, access_type type)
+tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type)
 {
   reg_t idx = (vaddr >> PGSHIFT) % TLB_ENTRIES;
   reg_t expected_tag = vaddr >> PGSHIFT;
@@ -152,7 +152,9 @@ void mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, access_type type)
   else if (type == STORE) tlb_store_tag[idx] = expected_tag;
   else tlb_load_tag[idx] = expected_tag;
 
-  tlb_data[idx] = sim->addr_to_mem(paddr) - vaddr;
+  tlb_entry_t entry = {host_addr - vaddr, paddr - vaddr};
+  tlb_data[idx] = entry;
+  return entry;
 }
 
 reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
@@ -178,11 +180,10 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
     reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
 
     // check that physical address of PTE is legal
-    reg_t pte_addr = base + idx * vm.ptesize;
-    if (!sim->addr_is_mem(pte_addr))
+    auto ppte = sim->addr_to_mem(base + idx * vm.ptesize);
+    if (!ppte)
       throw trap_load_access_fault(addr);
 
-    void* ppte = sim->addr_to_mem(pte_addr);
     reg_t pte = vm.ptesize == 4 ? *(uint32_t*)ppte : *(uint64_t*)ppte;
     reg_t ppn = pte >> PTE_PPN_SHIFT;
 

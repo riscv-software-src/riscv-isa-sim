@@ -30,6 +30,11 @@ struct icache_entry_t {
   insn_fetch_t data;
 };
 
+struct tlb_entry_t {
+  char* host_offset;
+  reg_t target_offset;
+};
+
 class trigger_matched_t
 {
   public:
@@ -80,9 +85,9 @@ public:
         return misaligned_load(addr, sizeof(type##_t)); \
       reg_t vpn = addr >> PGSHIFT; \
       if (likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) \
-        return *(type##_t*)(tlb_data[vpn % TLB_ENTRIES] + addr); \
+        return *(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr); \
       if (unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
-        type##_t data = *(type##_t*)(tlb_data[vpn % TLB_ENTRIES] + addr); \
+        type##_t data = *(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr); \
         if (!matched_trigger) { \
           matched_trigger = trigger_exception(OPERATION_LOAD, addr, data); \
           if (matched_trigger) \
@@ -114,14 +119,14 @@ public:
         return misaligned_store(addr, val, sizeof(type##_t)); \
       reg_t vpn = addr >> PGSHIFT; \
       if (likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) \
-        *(type##_t*)(tlb_data[vpn % TLB_ENTRIES] + addr) = val; \
+        *(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = val; \
       else if (unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
         if (!matched_trigger) { \
           matched_trigger = trigger_exception(OPERATION_STORE, addr, val); \
           if (matched_trigger) \
             throw *matched_trigger; \
         } \
-        *(type##_t*)(tlb_data[vpn % TLB_ENTRIES] + addr) = val; \
+        *(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = val; \
       } \
       else \
         store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&val); \
@@ -165,29 +170,29 @@ public:
 
   inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
   {
-    const uint16_t* iaddr = translate_insn_addr(addr);
-    insn_bits_t insn = *iaddr;
+    auto tlb_entry = translate_insn_addr(addr);
+    insn_bits_t insn = *(uint16_t*)(tlb_entry.host_offset + addr);
     int length = insn_length(insn);
 
     if (likely(length == 4)) {
-      insn |= (insn_bits_t)*(const int16_t*)translate_insn_addr(addr + 2) << 16;
+      insn |= (insn_bits_t)*(const int16_t*)translate_insn_addr_to_host(addr + 2) << 16;
     } else if (length == 2) {
       insn = (int16_t)insn;
     } else if (length == 6) {
-      insn |= (insn_bits_t)*(const int16_t*)translate_insn_addr(addr + 4) << 32;
-      insn |= (insn_bits_t)*(const uint16_t*)translate_insn_addr(addr + 2) << 16;
+      insn |= (insn_bits_t)*(const int16_t*)translate_insn_addr_to_host(addr + 4) << 32;
+      insn |= (insn_bits_t)*(const uint16_t*)translate_insn_addr_to_host(addr + 2) << 16;
     } else {
       static_assert(sizeof(insn_bits_t) == 8, "insn_bits_t must be uint64_t");
-      insn |= (insn_bits_t)*(const int16_t*)translate_insn_addr(addr + 6) << 48;
-      insn |= (insn_bits_t)*(const uint16_t*)translate_insn_addr(addr + 4) << 32;
-      insn |= (insn_bits_t)*(const uint16_t*)translate_insn_addr(addr + 2) << 16;
+      insn |= (insn_bits_t)*(const int16_t*)translate_insn_addr_to_host(addr + 6) << 48;
+      insn |= (insn_bits_t)*(const uint16_t*)translate_insn_addr_to_host(addr + 4) << 32;
+      insn |= (insn_bits_t)*(const uint16_t*)translate_insn_addr_to_host(addr + 2) << 16;
     }
 
     insn_fetch_t fetch = {proc->decode_insn(insn), insn};
     entry->tag = addr;
     entry->data = fetch;
 
-    reg_t paddr = sim->mem_to_addr((char*)iaddr);
+    reg_t paddr = tlb_entry.target_offset + addr;;
     if (tracer.interested_in_range(paddr, paddr + 1, FETCH)) {
       entry->tag = -1;
       tracer.trace(paddr, length, FETCH);
@@ -228,37 +233,41 @@ private:
   // If a TLB tag has TLB_CHECK_TRIGGERS set, then the MMU must check for a
   // trigger match before completing an access.
   static const reg_t TLB_CHECK_TRIGGERS = reg_t(1) << 63;
-  char* tlb_data[TLB_ENTRIES];
+  tlb_entry_t tlb_data[TLB_ENTRIES];
   reg_t tlb_insn_tag[TLB_ENTRIES];
   reg_t tlb_load_tag[TLB_ENTRIES];
   reg_t tlb_store_tag[TLB_ENTRIES];
 
   // finish translation on a TLB miss and update the TLB
-  void refill_tlb(reg_t vaddr, reg_t paddr, access_type type);
+  tlb_entry_t refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type);
   const char* fill_from_mmio(reg_t vaddr, reg_t paddr);
 
   // perform a page table walk for a given VA; set referenced/dirty bits
   reg_t walk(reg_t addr, access_type type, reg_t prv);
 
   // handle uncommon cases: TLB misses, page faults, MMIO
-  const uint16_t* fetch_slow_path(reg_t addr);
+  tlb_entry_t fetch_slow_path(reg_t addr);
   void load_slow_path(reg_t addr, reg_t len, uint8_t* bytes);
   void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes);
   reg_t translate(reg_t addr, access_type type);
 
   // ITLB lookup
-  inline const uint16_t* translate_insn_addr(reg_t addr) {
+  inline tlb_entry_t translate_insn_addr(reg_t addr) {
     reg_t vpn = addr >> PGSHIFT;
     if (likely(tlb_insn_tag[vpn % TLB_ENTRIES] == vpn))
-      return (uint16_t*)(tlb_data[vpn % TLB_ENTRIES] + addr);
+      return tlb_data[vpn % TLB_ENTRIES];
     if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
-      uint16_t* ptr = (uint16_t*)(tlb_data[vpn % TLB_ENTRIES] + addr);
+      uint16_t* ptr = (uint16_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
       int match = proc->trigger_match(OPERATION_EXECUTE, addr, *ptr);
       if (match >= 0)
         throw trigger_matched_t(match, OPERATION_EXECUTE, addr, *ptr);
-      return ptr;
+      return tlb_data[vpn % TLB_ENTRIES];
     }
     return fetch_slow_path(addr);
+  }
+
+  inline const uint16_t* translate_insn_addr_to_host(reg_t addr) {
+    return (uint16_t*)(translate_insn_addr(addr).host_offset + addr);
   }
 
   inline trigger_matched_t *trigger_exception(trigger_operation_t operation,

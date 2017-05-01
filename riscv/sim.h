@@ -60,8 +60,7 @@ private:
   bool addr_is_mem(reg_t addr) {
     return addr >= DRAM_BASE && addr < DRAM_BASE + memsz;
   }
-  char* addr_to_mem(reg_t addr) { return mem + addr - DRAM_BASE; }
-  reg_t mem_to_addr(char* x) { return x - mem + DRAM_BASE; }
+  char* addr_to_mem(reg_t addr) { return addr_is_mem(addr) ? mem + addr - DRAM_BASE : 0; }
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
   void make_dtb();
