@@ -27,7 +27,7 @@ static void help()
   fprintf(stderr, "  -h                    Print this help message\n");
   fprintf(stderr, "  -H                 Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
-  fprintf(stderr, "  --pc=<address>        Set the initial program counter [default 0x80000000]\n");
+  fprintf(stderr, "  --pc=<address>        Override ELF entry point\n");
   fprintf(stderr, "  --ic=<S>:<W>:<B>      Instantiate a cache model with S sets,\n");
   fprintf(stderr, "  --dc=<S>:<W>:<B>        W ways, and B-byte blocks (with S and\n");
   fprintf(stderr, "  --l2=<S>:<W>:<B>        B both powers of 2).\n");
@@ -75,7 +75,7 @@ int main(int argc, char** argv)
   bool log = false;
   bool dump_dts = false;
   size_t nprocs = 1;
-  reg_t start_pc = DRAM_BASE;
+  reg_t start_pc = reg_t(-1);
   std::vector<std::pair<reg_t, mem_t*>> mems;
   std::unique_ptr<icache_sim_t> ic;
   std::unique_ptr<dcache_sim_t> dc;

@@ -45,8 +45,6 @@ sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
 
   clint.reset(new clint_t(procs));
   bus.add_device(CLINT_BASE, clint.get());
-
-  make_dtb();
 }
 
 sim_t::~sim_t()
@@ -230,6 +228,7 @@ void sim_t::make_dtb()
 {
   const int reset_vec_size = 8;
 
+  start_pc = start_pc == reg_t(-1) ? get_entry_point() : start_pc;
   reg_t pc_delta = start_pc - DEFAULT_RSTVEC;
   reg_t pc_delta_hi = (pc_delta + 0x800U) & ~reg_t(0xfffU);
   reg_t pc_delta_lo = pc_delta - pc_delta_hi;
@@ -324,6 +323,11 @@ char* sim_t::addr_to_mem(reg_t addr) {
 }
 
 // htif
+
+void sim_t::reset()
+{
+  make_dtb();
+}
 
 void sim_t::idle()
 {

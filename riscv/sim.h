@@ -31,7 +31,7 @@ public:
   void set_histogram(bool value);
   void set_procs_debug(bool value);
   void set_gdbserver(gdbserver_t* gdbserver) { this->gdbserver = gdbserver; }
-  const char* get_dts() { return dts.c_str(); }
+  const char* get_dts() { if (dts.empty()) reset(); return dts.c_str(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
 
 private:
@@ -95,7 +95,7 @@ private:
 
   context_t* host;
   context_t target;
-  void reset() { }
+  void reset();
   void idle();
   void read_chunk(addr_t taddr, size_t len, void* dst);
   void write_chunk(addr_t taddr, size_t len, const void* src);
