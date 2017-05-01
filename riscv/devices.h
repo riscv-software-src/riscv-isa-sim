@@ -20,8 +20,7 @@ class bus_t : public abstract_device_t {
   bool store(reg_t addr, size_t len, const uint8_t* bytes);
   void add_device(reg_t addr, abstract_device_t* dev);
 
-  struct descriptor { reg_t base; abstract_device_t* device; };
-  descriptor find_device(reg_t addr);
+  std::pair<reg_t, abstract_device_t*> find_device(reg_t addr);
 
  private:
   std::map<reg_t, abstract_device_t*> devices;
