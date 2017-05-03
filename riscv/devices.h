@@ -2,6 +2,8 @@
 #define _RISCV_DEVICES_H
 
 #include "decode.h"
+#include <cstdlib>
+#include <string>
 #include <map>
 #include <vector>
 
