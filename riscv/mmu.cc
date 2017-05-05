@@ -197,6 +197,8 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
                type == LOAD ?  !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
                                !((pte & PTE_R) && (pte & PTE_W))) {
       break;
+    } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
+      break;
     } else {
       reg_t ad = PTE_A | ((type == STORE) * PTE_D);
 #ifdef RISCV_ENABLE_DIRTY
