@@ -178,6 +178,15 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     throw trap_t(((reg_t)1 << (max_xlen-1)) | ctz(enabled_interrupts));
 }
 
+static int xlen_to_uxl(int xlen)
+{
+  if (xlen == 32)
+    return 1;
+  if (xlen == 64)
+    return 2;
+  abort();
+}
+
 void processor_t::set_privilege(reg_t prv)
 {
   assert(prv <= PRV_M);
@@ -300,7 +309,8 @@ void processor_t::set_csr(int which, reg_t val)
       reg_t mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE
                  | MSTATUS_SPP | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_SUM
                  | MSTATUS_MPP | MSTATUS_MXR | MSTATUS_TW | MSTATUS_TVM
-                 | MSTATUS_TSR | (ext ? MSTATUS_XS : 0);
+                 | MSTATUS_TSR | MSTATUS_UXL | MSTATUS_SXL |
+                 (ext ? MSTATUS_XS : 0);
 
       state.mstatus = (state.mstatus & ~mask) | (val & mask);
 
@@ -311,8 +321,9 @@ void processor_t::set_csr(int which, reg_t val)
       else
         state.mstatus = set_field(state.mstatus, MSTATUS64_SD, dirty);
 
-      // spike supports the notion of xlen < max_xlen, but current priv spec
-      // doesn't provide a mechanism to run RV32 software on an RV64 machine
+      state.mstatus = set_field(state.mstatus, MSTATUS_UXL, xlen_to_uxl(max_xlen));
+      state.mstatus = set_field(state.mstatus, MSTATUS_SXL, xlen_to_uxl(max_xlen));
+      // U-XLEN == S-XLEN == M-XLEN
       xlen = max_xlen;
       break;
     }
@@ -513,7 +524,7 @@ reg_t processor_t::get_csr(int which)
     case CSR_MCOUNTEREN: return state.mcounteren;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-                 | SSTATUS_XS | SSTATUS_SUM;
+                 | SSTATUS_XS | SSTATUS_SUM | SSTATUS_UXL;
       reg_t sstatus = state.mstatus & mask;
       if ((sstatus & SSTATUS_FS) == SSTATUS_FS ||
           (sstatus & SSTATUS_XS) == SSTATUS_XS)
