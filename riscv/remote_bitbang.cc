@@ -164,8 +164,14 @@ void remote_bitbang_t::execute_commands()
         abort();
       }
     }
+    
+    if (quit) {
+      fprintf(stderr, "Remote Bitbang received 'Q'\n");
+    }
+    
     if (recv_end == 0 || quit) {
       // The remote disconnected.
+      fprintf(stderr, "Received nothing. Quitting.\n");
       close(client_fd);
       client_fd = 0;
       break;
