@@ -144,7 +144,7 @@ private:
   })
 # define WRITE_FREG(reg, value) ({ \
     freg_t wdata = freg(value); /* value may have side effects */ \
-    STATE.log_reg_write = (commit_log_reg_t){((reg) << 1) | 1, wdata}; \
+    STATE.log_reg_write = (commit_log_reg_t){((reg) << 1) | 1, wdata.v}; \
     DO_WRITE_FREG(reg, wdata); \
   })
 #endif
@@ -246,17 +246,8 @@ inline freg_t freg(freg_t f) { return f; }
     throw trap_illegal_instruction(0); \
   (which); })
 
+// Seems that 0x0 doesn't work.
 #define DEBUG_START             0x100
-#define DEBUG_ROM_START         0x800
-#define DEBUG_ROM_RESUME        (DEBUG_ROM_START + 4)
-#define DEBUG_ROM_EXCEPTION     (DEBUG_ROM_START + 8)
-#define DEBUG_ROM_END           (DEBUG_ROM_START + debug_rom_raw_len)
-#define DEBUG_RAM_START         0x400
-#define DEBUG_RAM_SIZE          64
-#define DEBUG_RAM_END           (DEBUG_RAM_START + DEBUG_RAM_SIZE)
-#define DEBUG_END               0xfff
-#define DEBUG_CLEARDEBINT       0x100
-#define DEBUG_SETHALTNOT        0x10c
-#define DEBUG_SIZE              (DEBUG_END - DEBUG_START + 1)
+#define DEBUG_END                 (0x1000 - 1)
 
 #endif

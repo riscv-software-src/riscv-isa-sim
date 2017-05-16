@@ -63,16 +63,12 @@ bool processor_t::slow_path()
 void processor_t::step(size_t n)
 {
   if (state.dcsr.cause == DCSR_CAUSE_NONE) {
-    // TODO: get_interrupt() isn't super fast. Does that matter?
-    if (sim->debug_module.get_interrupt(id)) {
+    if (halt_request) {
       enter_debug_mode(DCSR_CAUSE_DEBUGINT);
-    } else if (state.dcsr.halt) {
+    } // !!!The halt bit in DCSR is deprecated.
+    else if (state.dcsr.halt) {
       enter_debug_mode(DCSR_CAUSE_HALT);
     }
-  } else {
-    // In Debug Mode, just do 11 steps at a time. Otherwise we're going to be
-    // spinning the rest of the time anyway.
-    n = std::min(n, (size_t) 11);
   }
 
   while (n > 0) {
@@ -120,6 +116,15 @@ void processor_t::step(size_t n)
             // enter_debug_mode changed state.pc, so we can't just continue.
             break;
           }
+
+          if (unlikely(state.pc >= DEBUG_START &&
+                       state.pc < DEBUG_END)) {
+            // We're waiting for the debugger to tell us something.
+            return;
+          }
+
+          
+          
         }
       }
       else while (instret < n)

@@ -2,7 +2,7 @@
 
 #include "sim.h"
 #include "mmu.h"
-#include "gdbserver.h"
+#include "remote_bitbang.h"
 #include <map>
 #include <iostream>
 #include <sstream>
@@ -26,16 +26,16 @@ static void handle_signal(int sig)
 sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
              std::vector<std::pair<reg_t, mem_t*>> mems,
              const std::vector<std::string>& args)
-  : htif_t(args), mems(mems), procs(std::max(nprocs, size_t(1))),
+  : htif_t(args), debug_module(this), mems(mems), procs(std::max(nprocs, size_t(1))),
     start_pc(start_pc),
-    current_step(0), current_proc(0), debug(false), gdbserver(NULL)
+    current_step(0), current_proc(0), debug(false), remote_bitbang(NULL)
 {
   signal(SIGINT, &handle_signal);
 
   for (auto& x : mems)
     bus.add_device(x.first, x.second);
 
-  bus.add_device(DEBUG_START, &debug_module);
+  debug_module.add_device(&bus);
 
   debug_mmu = new mmu_t(this, NULL);
 
@@ -70,8 +70,8 @@ void sim_t::main()
       interactive();
     else
       step(INTERLEAVE);
-    if (gdbserver) {
-      gdbserver->handle();
+    if (remote_bitbang) {
+      remote_bitbang->tick();
     }
   }
 }

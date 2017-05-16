@@ -2,7 +2,7 @@
 
 #include "sim.h"
 #include "mmu.h"
-#include "gdbserver.h"
+#include "remote_bitbang.h"
 #include "cachesim.h"
 #include "extension.h"
 #include <dlfcn.h>
@@ -33,7 +33,7 @@ static void help()
   fprintf(stderr, "  --l2=<S>:<W>:<B>        B both powers of 2).\n");
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
   fprintf(stderr, "  --extlib=<name>       Shared library to load\n");
-  fprintf(stderr, "  --gdb-port=<port>  Listen on <port> for gdb to connect\n");
+  fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
   fprintf(stderr, "  --dump-dts  Print device tree string and exit\n");
   exit(1);
 }
@@ -82,7 +82,8 @@ int main(int argc, char** argv)
   std::unique_ptr<cache_sim_t> l2;
   std::function<extension_t*()> extension;
   const char* isa = DEFAULT_ISA;
-  uint16_t gdb_port = 0;
+  uint16_t rbb_port = 0;
+  bool use_rbb = false;
 
   option_parser_t parser;
   parser.help(&help);
@@ -94,7 +95,7 @@ int main(int argc, char** argv)
   parser.option('m', 0, 1, [&](const char* s){mems = make_mems(s);});
   // I wanted to use --halted, but for some reason that doesn't work.
   parser.option('H', 0, 0, [&](const char* s){halted = true;});
-  parser.option(0, "gdb-port", 1, [&](const char* s){gdb_port = atoi(s);});
+  parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoi(s);});
   parser.option(0, "pc", 1, [&](const char* s){start_pc = strtoull(s, 0, 0);});
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
@@ -116,10 +117,11 @@ int main(int argc, char** argv)
     mems = make_mems("2048");
 
   sim_t s(isa, nprocs, halted, start_pc, mems, htif_args);
-  std::unique_ptr<gdbserver_t> gdbserver;
-  if (gdb_port) {
-    gdbserver = std::unique_ptr<gdbserver_t>(new gdbserver_t(gdb_port, &s));
-    s.set_gdbserver(&(*gdbserver));
+  std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
+  std::unique_ptr<jtag_dtm_t> jtag_dtm(new jtag_dtm_t(&s.debug_module));
+  if (use_rbb) {
+    remote_bitbang.reset(new remote_bitbang_t(rbb_port, &(*jtag_dtm)));
+    s.set_remote_bitbang(&(*remote_bitbang));
   }
 
   if (dump_dts) {
