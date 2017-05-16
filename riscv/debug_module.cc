@@ -205,7 +205,11 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
   D(fprintf(stderr, "dmi_read(0x%x) -> ", address));
   if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
     unsigned i = address - DMI_DATA0;
-    result = abstractcs.busy ? -1 : read32(dmdata, i);
+    result = read32(dmdata, i);
+    if (abstractcs.busy) {
+      result = -1;
+      fprintf(stderr, "\ndmi_read(0x%02x (data[%d]) -> -1 because abstractcs.busy==true\n", address, i);
+    }
 
     if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
       abstractcs.cmderr = CMDERR_BUSY;
@@ -216,7 +220,11 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
     }
   } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progsize) {
     unsigned i = address - DMI_PROGBUF0;
-    result = abstractcs.busy ? -1 : read32(program_buffer, i);
+    result = read32(program_buffer, i);
+    if (abstractcs.busy) {
+      result = -1;
+      fprintf(stderr, "\ndmi_read(0x%02x (progbuf[%d]) -> -1 because abstractcs.busy==true\n", address, i);
+    }
     if (!abstractcs.busy && ((abstractauto.autoexecprogbuf >> i) & 1)) {
       perform_abstract_command();
     }
