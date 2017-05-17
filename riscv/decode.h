@@ -7,17 +7,22 @@
 # error spike requires a two''s-complement c++ implementation
 #endif
 
+#ifdef WORDS_BIGENDIAN
+# error spike requires a little-endian host
+#endif
+
 #include <cstdint>
 #include <string.h>
 #include <strings.h>
 #include "encoding.h"
 #include "config.h"
 #include "common.h"
+#include "softfloat_types.h"
+#include "specialize.h"
 #include <cinttypes>
 
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
-typedef uint64_t freg_t;
 
 const int NXPR = 32;
 const int NFPR = 32;
@@ -130,7 +135,7 @@ private:
 
 #ifndef RISCV_ENABLE_COMMITLOG
 # define WRITE_REG(reg, value) STATE.XPR.write(reg, value)
-# define WRITE_FREG(reg, value) DO_WRITE_FREG(reg, value)
+# define WRITE_FREG(reg, value) DO_WRITE_FREG(reg, freg(value))
 #else
 # define WRITE_REG(reg, value) ({ \
     reg_t wdata = (value); /* value may have side effects */ \
@@ -138,8 +143,8 @@ private:
     STATE.XPR.write(reg, wdata); \
   })
 # define WRITE_FREG(reg, value) ({ \
-    freg_t wdata = (value); /* value may have side effects */ \
-    STATE.log_reg_write = (commit_log_reg_t){((reg) << 1) | 1, wdata}; \
+    freg_t wdata = freg(value); /* value may have side effects */ \
+    STATE.log_reg_write = (commit_log_reg_t){((reg) << 1) | 1, wdata.v}; \
     DO_WRITE_FREG(reg, wdata); \
   })
 #endif
@@ -170,13 +175,13 @@ private:
 #define JUMP_TARGET (pc + insn.uj_imm())
 #define RM ({ int rm = insn.rm(); \
               if(rm == 7) rm = STATE.frm; \
-              if(rm > 4) throw trap_illegal_instruction(); \
+              if(rm > 4) throw trap_illegal_instruction(0); \
               rm; })
 
 #define get_field(reg, mask) (((reg) & (decltype(reg))(mask)) / ((mask) & ~((mask) << 1)))
 #define set_field(reg, mask, val) (((reg) & ~(decltype(reg))(mask)) | (((decltype(reg))(val) * ((mask) & ~((mask) << 1))) & (decltype(reg))(mask)))
 
-#define require(x) if (unlikely(!(x))) throw trap_illegal_instruction()
+#define require(x) if (unlikely(!(x))) throw trap_illegal_instruction(0)
 #define require_privilege(p) require(STATE.prv >= (p))
 #define require_rv64 require(xlen == 64)
 #define require_rv32 require(xlen == 32)
@@ -202,9 +207,10 @@ private:
      } while(0)
 
 #define set_pc_and_serialize(x) \
-  do { set_pc(x); /* check alignment */ \
+  do { reg_t __npc = (x); \
+       set_pc(__npc); /* check alignment */ \
        npc = PC_SERIALIZE_AFTER; \
-       STATE.pc = (x); \
+       STATE.pc = __npc; \
      } while(0)
 
 /* Sentinel PC values to serialize simulator pipeline */
@@ -213,8 +219,23 @@ private:
 #define invalid_pc(pc) ((pc) & 1)
 
 /* Convenience wrappers to simplify softfloat code sequences */
-#define f32(x) ((float32_t){(uint32_t)x})
-#define f64(x) ((float64_t){(uint64_t)x})
+#define isBoxedF32(r) (((r) & 0xffffffff00000000) == 0xffffffff00000000)
+#define unboxF32(r) (isBoxedF32(r) ? (r) : defaultNaNF32UI)
+#define unboxF64(r) (r)
+struct freg_t { uint64_t v; };
+inline float32_t f32(uint32_t v) { return { v }; }
+inline float64_t f64(uint64_t v) { return { v }; }
+inline float32_t f32(freg_t r) { return f32(unboxF32(r.v)); }
+inline float64_t f64(freg_t r) { return f64(unboxF64(r.v)); }
+inline freg_t freg(float32_t f) { return { ((decltype(freg_t::v))-1 << 32) | f.v }; }
+inline freg_t freg(float64_t f) { return { f.v }; }
+inline freg_t freg(freg_t f) { return f; }
+#define F64_SIGN ((decltype(freg_t::v))1 << 63)
+#define F32_SIGN ((decltype(freg_t::v))1 << 31)
+#define fsgnj32(a, b, n, x) \
+  f32((f32(a).v & ~F32_SIGN) | ((((x) ? f32(a).v : (n) ? F32_SIGN : 0) ^ f32(b).v) & F32_SIGN))
+#define fsgnj64(a, b, n, x) \
+  f64((f64(a).v & ~F64_SIGN) | ((((x) ? f64(a).v : (n) ? F64_SIGN : 0) ^ f64(b).v) & F64_SIGN))
 
 #define validate_csr(which, write) ({ \
   if (!STATE.serialized) return PC_SERIALIZE_BEFORE; \
@@ -222,20 +243,11 @@ private:
   unsigned csr_priv = get_field((which), 0x300); \
   unsigned csr_read_only = get_field((which), 0xC00) == 3; \
   if (((write) && csr_read_only) || STATE.prv < csr_priv) \
-    throw trap_illegal_instruction(); \
+    throw trap_illegal_instruction(0); \
   (which); })
 
+// Seems that 0x0 doesn't work.
 #define DEBUG_START             0x100
-#define DEBUG_ROM_START         0x800
-#define DEBUG_ROM_RESUME        (DEBUG_ROM_START + 4)
-#define DEBUG_ROM_EXCEPTION     (DEBUG_ROM_START + 8)
-#define DEBUG_ROM_END           (DEBUG_ROM_START + debug_rom_raw_len)
-#define DEBUG_RAM_START         0x400
-#define DEBUG_RAM_SIZE          64
-#define DEBUG_RAM_END           (DEBUG_RAM_START + DEBUG_RAM_SIZE)
-#define DEBUG_END               0xfff
-#define DEBUG_CLEARDEBINT       0x100
-#define DEBUG_SETHALTNOT        0x10c
-#define DEBUG_SIZE              (DEBUG_END - DEBUG_START + 1)
+#define DEBUG_END                 (0x1000 - 1)
 
 #endif

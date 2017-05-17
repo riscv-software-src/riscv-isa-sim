@@ -8,6 +8,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include "debug_rom/debug_rom_defines.h"
 
 class processor_t;
 class mmu_t;
@@ -105,8 +106,8 @@ struct state_t
   reg_t mip;
   reg_t medeleg;
   reg_t mideleg;
-  uint32_t mucounteren;
-  uint32_t mscounteren;
+  uint32_t mcounteren;
+  uint32_t scounteren;
   reg_t sepc;
   reg_t sbadaddr;
   reg_t sscratch;
@@ -191,6 +192,14 @@ public:
   bool debug;
   // When true, take the slow simulation path.
   bool slow_path();
+  bool halted() { return state.dcsr.cause ? true : false; }
+  bool halt_request;
+  // The unique debug rom address that this hart jumps to when entering debug
+  // mode. Rely on the fact that spike hart IDs start at 0 and are consecutive.
+  uint32_t debug_rom_entry() {
+    fprintf(stderr, "Debug_rom_entry called for id %d = %x\n", id, DEBUG_ROM_ENTRY + 4*id);
+    return DEBUG_ROM_ENTRY + 4 * id;
+  }
 
   // Return the index of a trigger that matched, or -1.
   inline int trigger_match(trigger_operation_t operation, reg_t address, reg_t data)
@@ -306,7 +315,7 @@ private:
 
   friend class sim_t;
   friend class mmu_t;
-  friend class rtc_t;
+  friend class clint_t;
   friend class extension_t;
 
   void parse_isa_string(const char* isa);

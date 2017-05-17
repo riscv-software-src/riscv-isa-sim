@@ -9,7 +9,7 @@ extension_t::~extension_t()
 
 void extension_t::illegal_instruction()
 {
-  throw trap_illegal_instruction();
+  throw trap_illegal_instruction(0);
 }
 
 void extension_t::raise_interrupt()

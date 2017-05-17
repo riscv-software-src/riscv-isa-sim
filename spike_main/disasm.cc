@@ -418,7 +418,6 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_NOARG(ebreak);
   DEFINE_NOARG(uret);
   DEFINE_NOARG(sret);
-  DEFINE_NOARG(hret);
   DEFINE_NOARG(mret);
   DEFINE_NOARG(fence);
   DEFINE_NOARG(fence_i);
@@ -457,13 +456,13 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_XFTYPE(fcvt_s_w);
   DEFINE_XFTYPE(fcvt_s_wu);
   DEFINE_XFTYPE(fcvt_s_wu);
-  DEFINE_XFTYPE(fmv_s_x);
+  DEFINE_XFTYPE(fmv_w_x);
   DEFINE_FXTYPE(fcvt_l_s);
   DEFINE_FXTYPE(fcvt_lu_s);
   DEFINE_FXTYPE(fcvt_w_s);
   DEFINE_FXTYPE(fcvt_wu_s);
   DEFINE_FXTYPE(fclass_s);
-  DEFINE_FXTYPE(fmv_x_s);
+  DEFINE_FXTYPE(fmv_x_w);
   DEFINE_FXTYPE(feq_s);
   DEFINE_FXTYPE(flt_s);
   DEFINE_FXTYPE(fle_s);

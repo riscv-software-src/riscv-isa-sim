@@ -13,13 +13,14 @@
 #include <memory>
 
 class mmu_t;
-class gdbserver_t;
+class remote_bitbang_t;
 
 // this class encapsulates the processors and memory in a RISC-V machine.
 class sim_t : public htif_t
 {
 public:
-  sim_t(const char* isa, size_t _nprocs, size_t mem_mb, bool halted,
+  sim_t(const char* isa, size_t _nprocs,  bool halted, reg_t start_pc,
+        std::vector<std::pair<reg_t, mem_t*>> mems,
         const std::vector<std::string>& args);
   ~sim_t();
 
@@ -29,41 +30,42 @@ public:
   void set_log(bool value);
   void set_histogram(bool value);
   void set_procs_debug(bool value);
-  void set_gdbserver(gdbserver_t* gdbserver) { this->gdbserver = gdbserver; }
-  const char* get_config_string() { return config_string.c_str(); }
+  void set_remote_bitbang(remote_bitbang_t* remote_bitbang) {
+    this->remote_bitbang = remote_bitbang;
+  }
+  const char* get_dts() { if (dts.empty()) reset(); return dts.c_str(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
+  unsigned nprocs() const { return procs.size(); }
+
+  debug_module_t debug_module;
 
 private:
-  char* mem; // main memory
-  size_t memsz; // memory size in bytes
+  std::vector<std::pair<reg_t, mem_t*>> mems;
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
-  std::string config_string;
+  reg_t start_pc;
+  std::string dts;
   std::unique_ptr<rom_device_t> boot_rom;
-  std::unique_ptr<rtc_t> rtc;
+  std::unique_ptr<clint_t> clint;
   bus_t bus;
-  debug_module_t debug_module;
 
   processor_t* get_core(const std::string& i);
   void step(size_t n); // step through simulation
   static const size_t INTERLEAVE = 5000;
   static const size_t INSNS_PER_RTC_TICK = 100; // 10 MHz clock for 1 BIPS core
+  static const size_t CPU_HZ = 1000000000; // 1GHz CPU
   size_t current_step;
   size_t current_proc;
   bool debug;
   bool log;
   bool histogram_enabled; // provide a histogram of PCs
-  gdbserver_t* gdbserver;
+  remote_bitbang_t* remote_bitbang;
 
   // memory-mapped I/O routines
-  bool addr_is_mem(reg_t addr) {
-    return addr >= DRAM_BASE && addr < DRAM_BASE + memsz;
-  }
-  char* addr_to_mem(reg_t addr) { return mem + addr - DRAM_BASE; }
-  reg_t mem_to_addr(char* x) { return x - mem + DRAM_BASE; }
+  char* addr_to_mem(reg_t addr);
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
-  void make_config_string();
+  void make_dtb();
 
   // presents a prompt for introspection into the simulation
   void interactive();
@@ -75,6 +77,7 @@ private:
   void interactive_run_noisy(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_run_silent(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_reg(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_freg(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_fregs(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_fregd(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_pc(const std::string& cmd, const std::vector<std::string>& args);
@@ -82,13 +85,12 @@ private:
   void interactive_str(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_until(const std::string& cmd, const std::vector<std::string>& args);
   reg_t get_reg(const std::vector<std::string>& args);
-  reg_t get_freg(const std::vector<std::string>& args);
+  freg_t get_freg(const std::vector<std::string>& args);
   reg_t get_mem(const std::vector<std::string>& args);
   reg_t get_pc(const std::vector<std::string>& args);
 
   friend class processor_t;
   friend class mmu_t;
-  friend class gdbserver_t;
 
   // htif
   friend void sim_thread_main(void*);
@@ -96,7 +98,7 @@ private:
 
   context_t* host;
   context_t target;
-  void reset() { }
+  void reset();
   void idle();
   void read_chunk(addr_t taddr, size_t len, void* dst);
   void write_chunk(addr_t taddr, size_t len, const void* src);

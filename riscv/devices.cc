@@ -20,3 +20,11 @@ bool bus_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     return false;
   return it->second->store(addr - -it->first, len, bytes);
 }
+
+std::pair<reg_t, abstract_device_t*> bus_t::find_device(reg_t addr)
+{
+  auto it = devices.lower_bound(-addr);
+  if (it == devices.end() || addr < -it->first)
+    return std::make_pair((reg_t)0, (abstract_device_t*)NULL);
+  return std::make_pair(-it->first, it->second);
+}

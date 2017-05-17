@@ -6,8 +6,8 @@ OBJCOPY = $(RISCV)/bin/riscv64-unknown-elf-objcopy
 
 COMPILE = $(CC) -nostdlib -nostartfiles -I.. -Tlink.ld
 
-ELFS = debug_rom debug_rom32 debug_rom64
-DEPS = debug_rom.S link.ld
+ELFS = debug_rom
+DEPS = debug_rom.S link.ld debug_rom_defines.h
 
 all: $(patsubst %,%.h,$(ELFS))
 
@@ -18,13 +18,7 @@ all: $(patsubst %,%.h,$(ELFS))
 	$(OBJCOPY) -O binary --only-section .text $^ $@
 
 debug_rom:	$(DEPS)
-	$(COMPILE) -DRV32 -DRV64 -o $@ $^
-
-debug_rom32:	$(DEPS)
-	$(COMPILE) -DRV32 -DDEBUG_RAM_SIZE=28 -o $@ $^
-
-debug_rom64:	$(DEPS)
-	$(COMPILE) -DRV64 -o $@ $^
+	$(COMPILE) -o $@ $^
 
 clean:
 	rm -f $(ELFS) debug_rom*.raw debug_rom*.h

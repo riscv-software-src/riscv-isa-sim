@@ -7,7 +7,6 @@
 #include "sim.h"
 #include "mmu.h"
 #include "disasm.h"
-#include "gdbserver.h"
 #include <cinttypes>
 #include <cmath>
 #include <cstdlib>
@@ -22,7 +21,8 @@
 
 processor_t::processor_t(const char* isa, sim_t* sim, uint32_t id,
         bool halt_on_reset)
-  : debug(false), sim(sim), ext(NULL), id(id), halt_on_reset(halt_on_reset)
+  : debug(false), halt_request(false), sim(sim), ext(NULL), id(id),
+  halt_on_reset(halt_on_reset)
 {
   parse_isa_string(isa);
   register_base_instructions();
@@ -118,7 +118,6 @@ void state_t::reset()
   memset(this, 0, sizeof(*this));
   prv = PRV_M;
   pc = DEFAULT_RSTVEC;
-  mtvec = DEFAULT_MTVEC;
   load_reservation = -1;
   tselect = 0;
   for (unsigned int i = 0; i < num_triggers; i++)
@@ -172,10 +171,20 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
 
   reg_t sie = get_field(state.mstatus, MSTATUS_SIE);
   reg_t s_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
-  enabled_interrupts |= pending_interrupts & state.mideleg & -s_enabled;
+  if (enabled_interrupts == 0)
+    enabled_interrupts = pending_interrupts & state.mideleg & -s_enabled;
 
   if (enabled_interrupts)
     throw trap_t(((reg_t)1 << (max_xlen-1)) | ctz(enabled_interrupts));
+}
+
+static int xlen_to_uxl(int xlen)
+{
+  if (xlen == 32)
+    return 1;
+  if (xlen == 64)
+    return 2;
+  abort();
 }
 
 void processor_t::set_privilege(reg_t prv)
@@ -193,7 +202,7 @@ void processor_t::enter_debug_mode(uint8_t cause)
   state.dcsr.prv = state.prv;
   set_privilege(PRV_M);
   state.dpc = state.pc;
-  state.pc = DEBUG_ROM_START;
+  state.pc = debug_rom_entry();
 }
 
 void processor_t::take_trap(trap_t& t, reg_t epc)
@@ -206,6 +215,15 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
           t.get_badaddr());
   }
 
+  if (state.dcsr.cause) {
+    if (t.cause() == CAUSE_BREAKPOINT) {
+      state.pc = debug_rom_entry();
+    } else {
+      state.pc = DEBUG_ROM_TVEC;
+    }
+    return;
+  }
+
   if (t.cause() == CAUSE_BREAKPOINT && (
               (state.prv == PRV_M && state.dcsr.ebreakm) ||
               (state.prv == PRV_H && state.dcsr.ebreakh) ||
@@ -215,15 +233,11 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     return;
   }
 
-  if (state.dcsr.cause) {
-    state.pc = DEBUG_ROM_EXCEPTION;
-    return;
-  }
-
   // by default, trap to M-mode, unless delegated to S-mode
   reg_t bit = t.cause();
   reg_t deleg = state.medeleg;
-  if (bit & ((reg_t)1 << (max_xlen-1)))
+  bool interrupt = (bit & ((reg_t)1 << (max_xlen-1))) != 0;
+  if (interrupt)
     deleg = state.mideleg, bit &= ~((reg_t)1 << (max_xlen-1));
   if (state.prv <= PRV_S && bit < max_xlen && ((deleg >> bit) & 1)) {
     // handle the trap in S-mode
@@ -234,20 +248,21 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
       state.sbadaddr = t.get_badaddr();
 
     reg_t s = state.mstatus;
-    s = set_field(s, MSTATUS_SPIE, get_field(s, MSTATUS_UIE << state.prv));
+    s = set_field(s, MSTATUS_SPIE, get_field(s, MSTATUS_SIE));
     s = set_field(s, MSTATUS_SPP, state.prv);
     s = set_field(s, MSTATUS_SIE, 0);
     set_csr(CSR_MSTATUS, s);
     set_privilege(PRV_S);
   } else {
-    state.pc = state.mtvec;
+    reg_t vector = (state.mtvec & 1) && interrupt ? 4*bit : 0;
+    state.pc = (state.mtvec & ~(reg_t)1) + vector;
     state.mepc = epc;
     state.mcause = t.cause();
     if (t.has_badaddr())
       state.mbadaddr = t.get_badaddr();
 
     reg_t s = state.mstatus;
-    s = set_field(s, MSTATUS_MPIE, get_field(s, MSTATUS_UIE << state.prv));
+    s = set_field(s, MSTATUS_MPIE, get_field(s, MSTATUS_MIE));
     s = set_field(s, MSTATUS_MPP, state.prv);
     s = set_field(s, MSTATUS_MIE, 0);
     set_csr(CSR_MSTATUS, s);
@@ -259,18 +274,23 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
 
 void processor_t::disasm(insn_t insn)
 {
-  uint64_t bits = insn.bits() & ((1ULL << (8 * insn_length(insn.bits()))) - 1);
-  fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx64 ") %s\n",
-          id, state.pc, bits, disassembler->disassemble(insn).c_str());
-}
+  static uint64_t last_pc = 1, last_bits;
+  static uint64_t executions = 1;
 
-static bool validate_vm(int max_xlen, reg_t vm)
-{
-  if (max_xlen == 64 && (vm == VM_SV39 || vm == VM_SV48))
-    return true;
-  if (max_xlen == 32 && vm == VM_SV32)
-    return true;
-  return vm == VM_MBARE;
+  uint64_t bits = insn.bits() & ((1ULL << (8 * insn_length(insn.bits()))) - 1);
+  if (last_pc != state.pc || last_bits != bits) {
+    if (executions != 1) {
+      fprintf(stderr, "core %3d: Executed %" PRIx64 " times\n", id, executions);
+    }
+
+    fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx64 ") %s\n",
+            id, state.pc, bits, disassembler->disassemble(insn).c_str());
+    last_pc = state.pc;
+    last_bits = bits;
+    executions = 1;
+  } else {
+    executions++;
+  }
 }
 
 int processor_t::paddr_bits()
@@ -301,15 +321,14 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_MSTATUS: {
       if ((val ^ state.mstatus) &
-          (MSTATUS_VM | MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_PUM | MSTATUS_MXR))
+          (MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_SUM | MSTATUS_MXR))
         mmu->flush_tlb();
 
       reg_t mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE
-                 | MSTATUS_SPP | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_PUM
-                 | MSTATUS_MPP | MSTATUS_MXR | (ext ? MSTATUS_XS : 0);
-
-      if (validate_vm(max_xlen, get_field(val, MSTATUS_VM)))
-        mask |= MSTATUS_VM;
+                 | MSTATUS_SPP | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_SUM
+                 | MSTATUS_MPP | MSTATUS_MXR | MSTATUS_TW | MSTATUS_TVM
+                 | MSTATUS_TSR | MSTATUS_UXL | MSTATUS_SXL |
+                 (ext ? MSTATUS_XS : 0);
 
       state.mstatus = (state.mstatus & ~mask) | (val & mask);
 
@@ -320,8 +339,9 @@ void processor_t::set_csr(int which, reg_t val)
       else
         state.mstatus = set_field(state.mstatus, MSTATUS64_SD, dirty);
 
-      // spike supports the notion of xlen < max_xlen, but current priv spec
-      // doesn't provide a mechanism to run RV32 software on an RV64 machine
+      state.mstatus = set_field(state.mstatus, MSTATUS_UXL, xlen_to_uxl(max_xlen));
+      state.mstatus = set_field(state.mstatus, MSTATUS_SXL, xlen_to_uxl(max_xlen));
+      // U-XLEN == S-XLEN == M-XLEN
       xlen = max_xlen;
       break;
     }
@@ -355,15 +375,15 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MCYCLEH:
       state.minstret = (val << 32) | (state.minstret << 32 >> 32);
       break;
-    case CSR_MUCOUNTEREN:
-      state.mucounteren = val;
+    case CSR_SCOUNTEREN:
+      state.scounteren = val;
       break;
-    case CSR_MSCOUNTEREN:
-      state.mscounteren = val;
+    case CSR_MCOUNTEREN:
+      state.mcounteren = val;
       break;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-                 | SSTATUS_XS | SSTATUS_PUM;
+                 | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR;
       return set_csr(CSR_MSTATUS, (state.mstatus & ~mask) | (val & mask));
     }
     case CSR_SIP: {
@@ -374,8 +394,13 @@ void processor_t::set_csr(int which, reg_t val)
       return set_csr(CSR_MIE,
                      (state.mie & ~state.mideleg) | (val & state.mideleg));
     case CSR_SPTBR: {
-      // upper bits of sptbr are the ASID; we only support ASID = 0
-      state.sptbr = val & (((reg_t)1 << (paddr_bits() - PGSHIFT)) - 1);
+      mmu->flush_tlb();
+      if (max_xlen == 32)
+        state.sptbr = val & (SPTBR32_PPN | SPTBR32_MODE);
+      if (max_xlen == 64 && (get_field(val, SPTBR64_MODE) == SPTBR_MODE_OFF ||
+                             get_field(val, SPTBR64_MODE) == SPTBR_MODE_SV39 ||
+                             get_field(val, SPTBR64_MODE) == SPTBR_MODE_SV48))
+        state.sptbr = val & (SPTBR64_PPN | SPTBR64_MODE);
       break;
     }
     case CSR_SEPC: state.sepc = val; break;
@@ -384,7 +409,7 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SCAUSE: state.scause = val; break;
     case CSR_SBADADDR: state.sbadaddr = val; break;
     case CSR_MEPC: state.mepc = val; break;
-    case CSR_MTVEC: state.mtvec = val >> 2 << 2; break;
+    case CSR_MTVEC: state.mtvec = val & ~(reg_t)2; break;
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MBADADDR: state.mbadaddr = val; break;
@@ -463,8 +488,11 @@ void processor_t::set_csr(int which, reg_t val)
 
 reg_t processor_t::get_csr(int which)
 {
-  reg_t ctr_en = state.prv == PRV_U ? state.mucounteren :
-                 state.prv == PRV_S ? state.mscounteren : -1U;
+  uint32_t ctr_en = -1;
+  if (state.prv < PRV_M)
+    ctr_en &= state.mcounteren;
+  if (state.prv < PRV_S)
+    ctr_en &= state.scounteren;
   bool ctr_ok = (ctr_en >> (which & 31)) & 1;
 
   if (ctr_ok) {
@@ -475,7 +503,7 @@ reg_t processor_t::get_csr(int which)
   }
   if (which >= CSR_MHPMCOUNTER3 && which <= CSR_MHPMCOUNTER31)
     return 0;
-  if (xlen == 32 && which >= CSR_MHPMCOUNTER3 && which <= CSR_MHPMCOUNTER31)
+  if (xlen == 32 && which >= CSR_MHPMCOUNTER3H && which <= CSR_MHPMCOUNTER31H)
     return 0;
   if (which >= CSR_MHPMEVENT3 && which <= CSR_MHPMEVENT31)
     return 0;
@@ -510,11 +538,11 @@ reg_t processor_t::get_csr(int which)
       if (xlen == 32)
         return state.minstret >> 32;
       break;
-    case CSR_MUCOUNTEREN: return state.mucounteren;
-    case CSR_MSCOUNTEREN: return state.mscounteren;
+    case CSR_SCOUNTEREN: return state.scounteren;
+    case CSR_MCOUNTEREN: return state.mcounteren;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-                 | SSTATUS_XS | SSTATUS_PUM;
+                 | SSTATUS_XS | SSTATUS_SUM | SSTATUS_UXL;
       reg_t sstatus = state.mstatus & mask;
       if ((sstatus & SSTATUS_FS) == SSTATUS_FS ||
           (sstatus & SSTATUS_XS) == SSTATUS_XS)
@@ -530,7 +558,10 @@ reg_t processor_t::get_csr(int which)
       if (max_xlen > xlen)
         return state.scause | ((state.scause >> (max_xlen-1)) << (xlen-1));
       return state.scause;
-    case CSR_SPTBR: return state.sptbr;
+    case CSR_SPTBR:
+      if (get_field(state.mstatus, MSTATUS_TVM))
+        require_privilege(PRV_M);
+      return state.sptbr;
     case CSR_SSCRATCH: return state.sscratch;
     case CSR_MSTATUS: return state.mstatus;
     case CSR_MIP: return state.mip;
@@ -584,19 +615,15 @@ reg_t processor_t::get_csr(int which)
       {
         uint32_t v = 0;
         v = set_field(v, DCSR_XDEBUGVER, 1);
-        v = set_field(v, DCSR_NDRESET, 0);
-        v = set_field(v, DCSR_FULLRESET, 0);
-        v = set_field(v, DCSR_PRV, state.dcsr.prv);
-        v = set_field(v, DCSR_STEP, state.dcsr.step);
-        v = set_field(v, DCSR_DEBUGINT, sim->debug_module.get_interrupt(id));
-        v = set_field(v, DCSR_STOPCYCLE, 0);
-        v = set_field(v, DCSR_STOPTIME, 0);
         v = set_field(v, DCSR_EBREAKM, state.dcsr.ebreakm);
         v = set_field(v, DCSR_EBREAKH, state.dcsr.ebreakh);
         v = set_field(v, DCSR_EBREAKS, state.dcsr.ebreaks);
         v = set_field(v, DCSR_EBREAKU, state.dcsr.ebreaku);
-        v = set_field(v, DCSR_HALT, state.dcsr.halt);
+        v = set_field(v, DCSR_STOPCYCLE, 0);
+        v = set_field(v, DCSR_STOPTIME, 0);
         v = set_field(v, DCSR_CAUSE, state.dcsr.cause);
+        v = set_field(v, DCSR_STEP, state.dcsr.step);
+        v = set_field(v, DCSR_PRV, state.dcsr.prv);
         return v;
       }
     case CSR_DPC:
@@ -604,12 +631,12 @@ reg_t processor_t::get_csr(int which)
     case CSR_DSCRATCH:
       return state.dscratch;
   }
-  throw trap_illegal_instruction();
+  throw trap_illegal_instruction(0);
 }
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)
 {
-  throw trap_illegal_instruction();
+  throw trap_illegal_instruction(0);
 }
 
 insn_func_t processor_t::decode_insn(insn_t insn)
@@ -692,6 +719,17 @@ void processor_t::register_base_instructions()
 
 bool processor_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
+  switch (addr)
+  {
+    case 0:
+      if (len <= 4) {
+        memset(bytes, 0, len);
+        bytes[0] = get_field(state.mip, MIP_MSIP);
+        return true;
+      }
+      break;
+  }
+
   return false;
 }
 
@@ -700,14 +738,14 @@ bool processor_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   switch (addr)
   {
     case 0:
-      state.mip &= ~MIP_MSIP;
-      if (bytes[0] & 1)
-        state.mip |= MIP_MSIP;
-      return true;
-
-    default:
-      return false;
+      if (len <= 4) {
+        state.mip = set_field(state.mip, MIP_MSIP, bytes[0]);
+        return true;
+      }
+      break;
   }
+
+  return false;
 }
 
 void processor_t::trigger_updated()

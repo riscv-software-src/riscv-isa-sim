@@ -1,3 +1,3 @@
 require_extension('F');
 require_fp;
-WRITE_FRD(zext32(RS1));
+WRITE_RD(sext32(FRS1.v));
