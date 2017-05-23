@@ -84,9 +84,9 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 
 CC            := @CC@
 CXX           := @CXX@
-CFLAGS        += @CFLAGS@ -DPREFIX=\"$(prefix)\" -Werror
+CFLAGS        += @CFLAGS@ -DPREFIX=\"$(prefix)\"
 CPPFLAGS      += @CPPFLAGS@
-CXXFLAGS      += @CXXFLAGS@ -DPREFIX=\"$(prefix)\" -Werror
+CXXFLAGS      += @CXXFLAGS@ -DPREFIX=\"$(prefix)\"
 COMPILE       := $(CXX) -fPIC -MMD -MP $(CPPFLAGS) $(CXXFLAGS) \
                  $(sprojs_include)
 COMPILE_C     := $(CC) -fPIC -MMD -MP $(CPPFLAGS) $(CFLAGS) \
