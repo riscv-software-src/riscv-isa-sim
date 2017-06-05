@@ -3409,6 +3409,7 @@ done
   done
 IFS=$as_save_IFS
 
+  test -z "$ac_cv_path_DTC" && ac_cv_path_DTC="no"
   ;;
 esac
 fi
@@ -3422,6 +3423,9 @@ $as_echo "no" >&6; }
 fi
 
 
+if test x"$DTC" == xno; then :
+  as_fn_error $? "device-tree-compiler not found" "$LINENO" 5
+fi
 
 cat >>confdefs.h <<_ACEOF
 #define DTC "$DTC"
