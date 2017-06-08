@@ -21,4 +21,4 @@ debug_rom:	$(DEPS)
 	$(COMPILE) -o $@ $^
 
 clean:
-	rm -f $(ELFS) debug_rom*.raw debug_rom*.h
+	rm -f $(ELFS) debug_rom*.raw debug_rom.h
