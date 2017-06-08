@@ -1,6 +1,6 @@
 // See LICENSE.SiFive for license details.
 
-#include "spike/encoding.h"
+#include "riscv/encoding.h"
 #include "debug_rom_defines.h"
         
         .option norvc
