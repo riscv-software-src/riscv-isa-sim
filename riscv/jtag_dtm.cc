@@ -41,7 +41,7 @@ jtag_dtm_t::jtag_dtm_t(debug_module_t *dm) :
   dm(dm),
   _tck(false), _tms(false), _tdi(false), _tdo(false),
   dtmcontrol((abits << DTM_DTMCS_ABITS_OFFSET) | 1),
-  dmi(DMI_OP_STATUS_FAILED << DTM_DMI_OP_OFFSET),
+  dmi(DMI_OP_STATUS_SUCCESS << DTM_DMI_OP_OFFSET),
   _state(TEST_LOGIC_RESET)
 {
 }
