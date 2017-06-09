@@ -463,9 +463,11 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         return true;
 
       case DMI_ABSTRACTAUTO:
-        abstractauto.autoexecprogbuf = get_field(value, DMI_ABSTRACTAUTO_AUTOEXECPROGBUF);
-        abstractauto.autoexecdata = get_field(value, DMI_ABSTRACTAUTO_AUTOEXECDATA);
-        break;
+        abstractauto.autoexecprogbuf = get_field(value,
+            DMI_ABSTRACTAUTO_AUTOEXECPROGBUF);
+        abstractauto.autoexecdata = get_field(value,
+            DMI_ABSTRACTAUTO_AUTOEXECDATA);
+        return true;
     }
   }
   return false;
