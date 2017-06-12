@@ -1,6 +1,7 @@
 #include "dtm.h"
 #include "debug_defines.h"
 #include "encoding.h"
+#include "config.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -123,6 +124,11 @@ void dtm_t::halt(int hartsel)
 
 void dtm_t::resume(int hartsel)
 {
+#ifdef FESVR_ENABLE_SODOR
+  // FIXME: Support hartsel
+  write(DMI_DMCONTROL, DMI_DMCONTROL_RESUMEREQ | DMI_DMCONTROL_DMACTIVE);
+  while (get_field(read(DMI_DMSTATUS), DMI_DMSTATUS_ALLRUNNING) == 0);
+#else
   int dmcontrol = DMI_DMCONTROL_RESUMEREQ | DMI_DMCONTROL_DMACTIVE;
   dmcontrol = set_field(dmcontrol, DMI_DMCONTROL_HARTSEL, hartsel);
   write(DMI_DMCONTROL, dmcontrol);
@@ -141,6 +147,7 @@ void dtm_t::resume(int hartsel)
     // Read dmstatus to avoid back-to-back writes to dmcontrol.
     read(DMI_DMSTATUS);
   }
+#endif
 }
 
 uint64_t dtm_t::save_reg(unsigned regno)
@@ -217,11 +224,18 @@ size_t dtm_t::chunk_align()
 
 void dtm_t::read_chunk(uint64_t taddr, size_t len, void* dst)
 {
+#ifdef FESVR_ENABLE_SODOR
+  uint32_t * curr = (uint32_t*) dst;
+  write(DMI_SBCS,DMI_SBCS_SBAUTOREAD | DMI_SBCS_SBAUTOINCREMENT);
+  write(DMI_SBADDRESS0, taddr);
+  for (size_t i = 0; i < (len * 8 / xlen); i++) {
+    curr[i] = read(DMI_SBDATA0);
+  }
+#else
   uint32_t prog[ram_words];
   uint32_t data[data_words];
 
   uint8_t * curr = (uint8_t*) dst;
-
   halt(current_hart);
 
   uint64_t s0 = save_reg(S0);
@@ -265,7 +279,7 @@ void dtm_t::read_chunk(uint64_t taddr, size_t len, void* dst)
   restore_reg(S1, s1);
 
   resume(current_hart); 
-
+#endif
 }
 
 void dtm_t::write_chunk(uint64_t taddr, size_t len, const void* src)
@@ -275,6 +289,22 @@ void dtm_t::write_chunk(uint64_t taddr, size_t len, const void* src)
 
   const uint8_t * curr = (const uint8_t*) src;
 
+#ifdef FESVR_ENABLE_SODOR
+  data[0] = 0;
+  if (curr != NULL) {
+    memcpy(data, curr, xlen/8);
+  }
+  write(DMI_SBCS, DMI_SBCS_SBAUTOINCREMENT);
+  write(DMI_SBADDRESS0, taddr-4);
+  write(DMI_SBDATA0, data[0]);
+  for (size_t i = 1; i < (len * 8 / xlen); i++) {
+    if (curr != NULL) {
+      curr += xlen/8;
+      memcpy(data, curr, xlen/8);
+    }
+    write(DMI_SBDATA0, data[0]);
+  }
+#else
   halt(current_hart);
 
   uint64_t s0 = save_reg(S0);
@@ -339,6 +369,7 @@ void dtm_t::write_chunk(uint64_t taddr, size_t len, const void* src)
   restore_reg(S0, s0);
   restore_reg(S1, s1);
   resume(current_hart);
+#endif
 }
 
 void dtm_t::die(uint32_t cmderr)
@@ -365,6 +396,9 @@ void dtm_t::die(uint32_t cmderr)
 
 void dtm_t::clear_chunk(uint64_t taddr, size_t len)
 {
+#ifdef FESVR_ENABLE_SODOR
+  write_chunk(taddr, len, 0);
+#else
   uint32_t prog[ram_words];
   uint32_t data[data_words];
   
@@ -402,6 +436,7 @@ void dtm_t::clear_chunk(uint64_t taddr, size_t len)
   restore_reg(S1, s1);
 
   resume(current_hart);
+#endif
 }
 
 uint64_t dtm_t::write_csr(unsigned which, uint64_t data)
@@ -539,7 +574,12 @@ void dtm_t::reset()
     // this command also does a halt and resume
     fence_i();
     // after this command, the hart will run from _start.
+#ifdef FESVR_ENABLE_SODOR
+#define DMI_SODOR_RESET 0x44 // custom DMI register
+    write(DMI_SODOR_RESET, 1);
+#else
     write_csr(0x7b1, get_entry_point());
+#endif
   }
   // In theory any hart can handle the memory accesses,
   // this will enforce that hart 0 handles them.
