@@ -95,7 +95,7 @@ class dtm_t : public htif_t
   
   uint32_t xlen;
 
-  static const int max_idle_cycles = 10000;
+  static const int max_idle_cycles = 10;
 
   size_t ram_words;
   size_t data_words;
