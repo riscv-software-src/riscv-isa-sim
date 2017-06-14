@@ -229,20 +229,18 @@ void sim_t::make_dtb()
   const int reset_vec_size = 8;
 
   start_pc = start_pc == reg_t(-1) ? get_entry_point() : start_pc;
-  reg_t pc_delta = start_pc - DEFAULT_RSTVEC;
-  reg_t pc_delta_hi = (pc_delta + 0x800U) & ~reg_t(0xfffU);
-  reg_t pc_delta_lo = pc_delta - pc_delta_hi;
-  if ((pc_delta_hi >> 31) != 0 && (pc_delta_hi >> 31) != reg_t(-1) >> 31) {
-    fprintf(stderr, "initial pc %" PRIx64 " out of range\n", pc_delta);
-    abort();
-  }
 
   uint32_t reset_vec[reset_vec_size] = {
-    0x297 + uint32_t(pc_delta_hi),              // auipc t0, &pc
-    0x597,                                      // auipc a1, &dtb
-    0x58593 + ((reset_vec_size - 1) * 4 << 20), // addi a1, a1, &dtb
-    0xf1402573,                                 // csrr a0, mhartid
-    0x28067 + uint32_t(pc_delta_lo << 20)       // jalr zero, t0, &pc
+    0x297,                                      // auipc  t0,0x0
+    0x28593 + (reset_vec_size * 4 << 20),       // addi   a1, t0, &dtb
+    0xf1402573,                                 // csrr   a0, mhartid
+    get_core(0)->xlen == 32 ?
+      0x0182a283u :                             // lw     t0,24(t0)
+      0x0182b283u,                              // ld     t0,24(t0)
+    0x28067,                                    // jr     t0
+    0,
+    (uint32_t) (start_pc & 0xffffffff),
+    (uint32_t) (start_pc >> 32)
   };
 
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
