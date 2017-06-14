@@ -111,18 +111,83 @@ To end the simulation from the debug prompt, press `<control>-<c>` or:
 Debugging With Gdb
 ------------------
 
-An alternative to interactive debug mode is to attach using gdb. When invoked
-with '--gdb-port <port>' spike will listen on the given TCP port.  It's
-possible to attach with gdb (that has riscv support compiled in) by entering
-`target remote localhost:<port>` in gdb. For example, in one shell run:
+An alternative to interactive debug mode is to attach using gdb. Because spike
+tries to be like real hardware, you also need OpenOCD to do that. OpenOCD
+doesn't currently know about address translation, so it's not possible to
+easily debug programs that are run under `pk`. We'll use the following test
+program:
 ```
-spike --gdb-port 9824 pk tests/debug
+$ cat rot13.c 
+char text[] = "Vafgehpgvba frgf jnag gb or serr!";
+
+// Don't use the stack, because sp isn't set up.
+volatile int wait = 1;
+
+int main()
+{
+    while (wait)
+        ;
+
+    // Doesn't actually go on the stack, because there are lots of GPRs.
+    int i = 0;
+    while (text[i]) {
+        char lower = text[i] | 32;
+        if (lower >= 'a' && lower <= 'm')
+            text[i] += 13;
+        else if (lower > 'm' && lower <= 'z')
+            text[i] -= 13;
+        i++;
+    }
+
+    while (!wait)
+        ;
+}
+$ cat spike.lds 
+OUTPUT_ARCH( "riscv" )
+
+SECTIONS
+{
+  . = 0x10010000;
+  .text : { *(.text) }
+  .data : { *(.data) }
+}
+$ riscv64-unknown-elf-gcc -g -Og -o rot13-64.o -c rot13.c
+$ riscv64-unknown-elf-gcc -g -Og -T spike.lds -nostartfiles -o rot13-64 rot13-64.o
 ```
 
-Then in a second shell you may do something like:
+To debug this program, first run spike telling it to listen for OpenOCD:
 ```
-tnewsome@compy-vm:~/SiFive/riscv-isa-sim$ $RISCV/bin/riscv64-unknown-elf-gdb tests/debug
-GNU gdb (GDB) 7.11.50.20160212-git
+$ spike --rbb-port=9824 -m0x10000000:0x20000 rot13-64
+Listening for remote bitbang connection on port 9824.
+```
+
+In a separate shell run OpenOCD with the appropriate configuration file:
+```
+$ cat spike.cfg 
+interface remote_bitbang
+remote_bitbang_host localhost
+remote_bitbang_port 9824
+
+set _CHIPNAME riscv
+jtag newtap $_CHIPNAME cpu -irlen 5 -expected-id 0x10e31913
+
+set _TARGETNAME $_CHIPNAME.cpu
+target create $_TARGETNAME riscv -chain-position $_TARGETNAME
+
+gdb_report_data_abort enable
+
+init
+halt
+$ openocd -f spike.cfg
+Open On-Chip Debugger 0.10.0-dev-00002-gc3b344d (2017-06-08-12:14)
+...
+riscv.cpu: target state: halted
+```
+
+In yet another shell, start your gdb debug session:
+```
+tnewsome@compy-vm:~/SiFive/spike-test$ riscv64-unknown-elf-gdb rot13-64
+GNU gdb (GDB) 7.12.50.20170505-git
 Copyright (C) 2016 Free Software Foundation, Inc.
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
 This is free software: you are free to change and redistribute it.
@@ -136,45 +201,26 @@ Find the GDB manual and other documentation resources online at:
 <http://www.gnu.org/software/gdb/documentation/>.
 For help, type "help".
 Type "apropos word" to search for commands related to "word"...
-Reading symbols from tests/debug...done.
-(gdb) target remote localhost:9824
-Remote debugging using localhost:9824
-0x00000000000101f0 in main ()
-    at /home/tnewsome/SiFive/riscv-isa-sim/tests/debug.c:20
-20          while (i)
-(gdb) p i
-$1 = 42
-(gdb) list
-15          volatile int i = 42;
-16          const char *text = "constant\n";
-17          int threshold = 7;
-18
-19          // Wait for the debugger to get us out of this loop.
-20          while (i)
-21              ;
-22
-23          printf("%s", text);
-24          for (int y=0; y < 10; y++) {
-(gdb) p i=0
+Reading symbols from rot13-64...done.
+(gdb) target remote localhost:3333
+Remote debugging using localhost:3333
+0x000000001001000a in main () at rot13.c:8
+8           while (wait)
+(gdb) print wait
+$1 = 1
+(gdb) print wait=0
 $2 = 0
-(gdb) b print_row
-Breakpoint 1 at 0x10178: file /home/tnewsome/SiFive/riscv-isa-sim/tests/debug.c, line 7.
+(gdb) print text
+$3 = "Vafgehpgvba frgf jnag gb or serr!"
+(gdb) b 23
+Breakpoint 1 at 0x10010064: file rot13.c, line 23.
 (gdb) c
 Continuing.
 
-Breakpoint 1, print_row (length=0)
-    at /home/tnewsome/SiFive/riscv-isa-sim/tests/debug.c:7
-7           for (int x=0; x<length; x++) {
-(gdb) c
-Continuing.
-
-Breakpoint 1, print_row (length=1)
-    at /home/tnewsome/SiFive/riscv-isa-sim/tests/debug.c:7
-7           for (int x=0; x<length; x++) {
-(gdb) delete breakpoints
-Delete all breakpoints? (y or n) y
-(gdb) c
-Continuing.
-Remote connection closed
-(gdb)
+Breakpoint 1, main () at rot13.c:23
+23          while (!wait)
+(gdb) print wait
+$4 = 0
+(gdb) print text
+...
 ```
