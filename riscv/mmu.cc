@@ -189,7 +189,8 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
 
     if (PTE_TABLE(pte)) { // next level of page table
       base = ppn << PGSHIFT;
-    } else if ((pte & PTE_U) ? supervisor && !sum : !supervisor) {
+    } else if ((pte & PTE_U) ? supervisor && (!sum | (type == FETCH)):
+                               !supervisor) {
       break;
     } else if (!(pte & PTE_V) || (!(pte & PTE_R) && (pte & PTE_W))) {
       break;
