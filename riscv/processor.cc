@@ -202,7 +202,7 @@ void processor_t::enter_debug_mode(uint8_t cause)
   state.dcsr.prv = state.prv;
   set_privilege(PRV_M);
   state.dpc = state.pc;
-  state.pc = debug_rom_entry();
+  state.pc = DEBUG_ROM_ENTRY;
 }
 
 void processor_t::take_trap(trap_t& t, reg_t epc)
@@ -217,7 +217,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
 
   if (state.dcsr.cause) {
     if (t.cause() == CAUSE_BREAKPOINT) {
-      state.pc = debug_rom_entry();
+      state.pc = DEBUG_ROM_ENTRY;
     } else {
       state.pc = DEBUG_ROM_TVEC;
     }
