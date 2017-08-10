@@ -39,7 +39,7 @@ debug_module_t::debug_module_t(sim_t *sim) : sim(sim)
           jal(ZERO, debug_abstract_start - DEBUG_ROM_WHERETO));
 
   memset(debug_abstract, 0, sizeof(debug_abstract));
- 
+
 }
 
 void debug_module_t::reset()
@@ -96,7 +96,7 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
     memcpy(bytes, dmdata + addr - debug_data_start, len);
     return true;
   }
-  
+
   if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + sizeof(program_buffer)))) {
     memcpy(bytes, program_buffer + addr - debug_progbuf_start, len);
     return true;
@@ -119,16 +119,16 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   }
 
   addr = DEBUG_START + addr;
-  
+
   if (addr >= debug_data_start && (addr + len) <= (debug_data_start + sizeof(dmdata))) {
     memcpy(dmdata + addr - debug_data_start, bytes, len);
     return true;
   }
-  
+
   if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + sizeof(program_buffer)))) {
     fprintf(stderr, "Successful write to program buffer %d bytes at %x\n", (int) len, (int) addr);
     memcpy(program_buffer + addr - debug_progbuf_start, bytes, len);
-    
+
     return true;
   }
 
@@ -276,7 +276,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
           } else {
             dmstatus.allresumeack = false;
           }
-          
+
 	  result = set_field(result, DMI_DMSTATUS_ALLNONEXISTENT, dmstatus.allnonexistant);
 	  result = set_field(result, DMI_DMSTATUS_ALLUNAVAIL, dmstatus.allunavail);
 	  result = set_field(result, DMI_DMSTATUS_ALLRUNNING, dmstatus.allrunning);
@@ -381,7 +381,7 @@ bool debug_module_t::perform_abstract_command()
       //NOP
       write32(debug_abstract, 0, addi(ZERO, ZERO, 0));
     }
-    
+
     if (get_field(command, AC_ACCESS_REGISTER_POSTEXEC)) {
       // Since the next instruction is what we will use, just use nother NOP
       // to get there.
@@ -391,7 +391,7 @@ bool debug_module_t::perform_abstract_command()
     }
 
     debug_rom_flags[dmcontrol.hartsel] |= 1 << DEBUG_ROM_FLAG_GO;
-    
+
     abstractcs.busy = true;
   } else {
     abstractcs.cmderr = CMDERR_NOTSUP;
@@ -418,7 +418,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
 
   } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progsize) {
     unsigned i = address - DMI_PROGBUF0;
-    
+
     if (!abstractcs.busy)
       write32(program_buffer, i, value);
 
@@ -426,7 +426,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
       perform_abstract_command();
     }
     return true;
-    
+
   } else {
     switch (address) {
       case DMI_DMCONTROL:
