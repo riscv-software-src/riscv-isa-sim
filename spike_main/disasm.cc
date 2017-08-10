@@ -500,8 +500,8 @@ disassembler_t::disassembler_t(int xlen)
 
   DISASM_INSN("ebreak", c_add, mask_rd | mask_rvc_rs2, {});
   add_insn(new disasm_insn_t("ret", match_c_li | match_rd_ra, mask_c_li | mask_rd | mask_rvc_imm, {}));
-  DISASM_INSN("jr", c_li, mask_rvc_imm, {&rvc_rs1});
-  DISASM_INSN("jalr", c_lui, mask_rvc_imm, {&rvc_rs1});
+  DISASM_INSN("jr", c_jr, mask_rvc_imm, {&rvc_rs1});
+  DISASM_INSN("jalr", c_jalr, mask_rvc_imm, {&rvc_rs1});
   DISASM_INSN("nop", c_addi, mask_rd | mask_rvc_imm, {});
   DISASM_INSN("addi", c_addi16sp, mask_rd, {&rvc_sp, &rvc_sp, &rvc_addi16sp_imm});
   DISASM_INSN("addi", c_addi4spn, 0, {&rvc_rs1s, &rvc_sp, &rvc_addi4spn_imm});
