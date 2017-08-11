@@ -8,7 +8,7 @@
 #include "debug_rom/debug_rom.h"
 #include "debug_rom/debug_rom_defines.h"
 
-#if 1
+#if 0
 #  define D(x) x
 #else
 #  define D(x)
@@ -126,7 +126,7 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   }
 
   if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + sizeof(program_buffer)))) {
-    fprintf(stderr, "Successful write to program buffer %d bytes at %x\n", (int) len, (int) addr);
+    D(fprintf(stderr, "Successful write to program buffer %d bytes at %x\n", (int) len, (int) addr));
     memcpy(program_buffer + addr - debug_progbuf_start, bytes, len);
 
     return true;
