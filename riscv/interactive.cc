@@ -5,7 +5,6 @@
 #include "sim.h"
 #include "mmu.h"
 #include <sys/mman.h>
-#include <termios.h>
 #include <map>
 #include <iostream>
 #include <climits>
@@ -18,6 +17,13 @@
 #include <vector>
 #include <algorithm>
 
+#ifdef HAVE_LIBREADLINE
+#include <readline/readline.h>
+#include <readline/history.h>
+#else
+#include <termios.h>
+#endif 
+
 DECLARE_TRAP(-1, interactive)
 
 processor_t *sim_t::get_core(const std::string& i)
@@ -29,8 +35,22 @@ processor_t *sim_t::get_core(const std::string& i)
   return get_core(p);
 }
 
+static const char * const prompt = ": ";
+
+#ifdef HAVE_LIBREADLINE
+static std::string readline(int)
+{
+  auto const c = readline(prompt);
+  add_history (c);
+  std::string const s = c;
+  free(c);
+  return s;
+}
+#else
 static std::string readline(int fd)
 {
+  std::cerr << prompt << std::flush;
+
   struct termios tios;
   bool noncanonical = tcgetattr(fd, &tios) == 0 && (tios.c_lflag & ICANON) == 0;
 
@@ -56,6 +76,7 @@ static std::string readline(int fd)
   }
   return s;
 }
+#endif
 
 void sim_t::interactive()
 {
@@ -81,7 +102,6 @@ void sim_t::interactive()
 
   while (!done())
   {
-    std::cerr << ": " << std::flush;
     std::string s = readline(2);
 
     std::stringstream ss(s);
