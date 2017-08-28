@@ -110,6 +110,19 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 
 bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
+  D(
+      switch (len) {
+        case 4:
+          fprintf(stderr, "store(addr=0x%lx, len=%d, bytes=0x%08x); "
+              "hartsel=0x%x\n", addr, (unsigned) len, *(uint32_t *) bytes,
+              dmcontrol.hartsel);
+          break;
+        default:
+          fprintf(stderr, "store(addr=0x%lx, len=%d, bytes=...); "
+              "hartsel=0x%x\n", addr, (unsigned) len, dmcontrol.hartsel);
+          break;
+      }
+   );
 
   uint8_t id_bytes[4];
   uint32_t id = 0;
@@ -126,7 +139,6 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   }
 
   if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + sizeof(program_buffer)))) {
-    D(fprintf(stderr, "Successful write to program buffer %d bytes at %x\n", (int) len, (int) addr));
     memcpy(program_buffer + addr - debug_progbuf_start, bytes, len);
 
     return true;
