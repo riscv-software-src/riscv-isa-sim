@@ -447,6 +447,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           if (dmcontrol.dmactive) {
             dmcontrol.haltreq = get_field(value, DMI_DMCONTROL_HALTREQ);
             dmcontrol.resumereq = get_field(value, DMI_DMCONTROL_RESUMEREQ);
+            dmcontrol.hartreset = get_field(value, DMI_DMCONTROL_HARTRESET);
             dmcontrol.ndmreset = get_field(value, DMI_DMCONTROL_NDMRESET);
             dmcontrol.hartsel = get_field(value, DMI_DMCONTROL_HARTSEL);
           } else {
