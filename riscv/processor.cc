@@ -22,7 +22,7 @@
 processor_t::processor_t(const char* isa, sim_t* sim, uint32_t id,
         bool halt_on_reset)
   : debug(false), halt_request(false), sim(sim), ext(NULL), id(id),
-  halt_on_reset(halt_on_reset)
+  halt_on_reset(halt_on_reset), last_pc(1), executions(1)
 {
   parse_isa_string(isa);
   register_base_instructions();
@@ -274,9 +274,6 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
 
 void processor_t::disasm(insn_t insn)
 {
-  static uint64_t last_pc = 1, last_bits;
-  static uint64_t executions = 1;
-
   uint64_t bits = insn.bits() & ((1ULL << (8 * insn_length(insn.bits()))) - 1);
   if (last_pc != state.pc || last_bits != bits) {
     if (executions != 1) {

@@ -316,6 +316,9 @@ private:
   void build_opcode_map();
   void register_base_instructions();
   insn_func_t decode_insn(insn_t insn);
+
+  // Track repeated executions for processor_t::disasm()
+  uint64_t last_pc, last_bits, executions;
 };
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
