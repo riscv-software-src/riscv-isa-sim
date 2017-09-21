@@ -154,7 +154,7 @@ void processor_t::step(size_t n)
         // This figures out where to jump to in the switch statement
         size_t idx = _mmu->icache_index(pc);
 
-        // This gets the cached decoded instruction form the MMU. If the MMU
+        // This gets the cached decoded instruction from the MMU. If the MMU
         // does not have the current pc cached, it will refill the MMU and
         // return the correct entry. ic_entry->data.func is the C++ function
         // corresponding to the instruction.
