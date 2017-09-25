@@ -239,21 +239,22 @@ union fpr
 
 void sim_t::interactive_freg(const std::string& cmd, const std::vector<std::string>& args)
 {
-  fprintf(stderr, "0x%016" PRIx64 "\n", get_freg(args).v);
+  freg_t r = get_freg(args);
+  fprintf(stderr, "0x%016" PRIx64 "%016" PRIx64 "\n", r.v[1], r.v[0]);
 }
 
 void sim_t::interactive_fregs(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = get_freg(args);
-  fprintf(stderr, "%g\n",f.s);
+  fprintf(stderr, "%g\n", isBoxedF32(f.r) ? (double)f.s : NAN);
 }
 
 void sim_t::interactive_fregd(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = get_freg(args);
-  fprintf(stderr, "%g\n",f.d);
+  fprintf(stderr, "%g\n", isBoxedF64(f.r) ? f.d : NAN);
 }
 
 reg_t sim_t::get_mem(const std::vector<std::string>& args)

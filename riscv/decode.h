@@ -219,23 +219,44 @@ private:
 #define invalid_pc(pc) ((pc) & 1)
 
 /* Convenience wrappers to simplify softfloat code sequences */
-#define isBoxedF32(r) (((r) & 0xffffffff00000000) == 0xffffffff00000000)
-#define unboxF32(r) (isBoxedF32(r) ? (r) : defaultNaNF32UI)
-#define unboxF64(r) (r)
-struct freg_t { uint64_t v; };
+#define isBoxedF32(r) (isBoxedF64(r) && ((uint32_t)((r.v[0] >> 32) + 1) == 0))
+#define unboxF32(r) (isBoxedF32(r) ? (uint32_t)r.v[0] : defaultNaNF32UI)
+#define isBoxedF64(r) ((r.v[1] + 1) == 0)
+#define unboxF64(r) (isBoxedF64(r) ? r.v[0] : defaultNaNF64UI)
+typedef float128_t freg_t;
 inline float32_t f32(uint32_t v) { return { v }; }
 inline float64_t f64(uint64_t v) { return { v }; }
-inline float32_t f32(freg_t r) { return f32(unboxF32(r.v)); }
-inline float64_t f64(freg_t r) { return f64(unboxF64(r.v)); }
-inline freg_t freg(float32_t f) { return { ((decltype(freg_t::v))-1 << 32) | f.v }; }
-inline freg_t freg(float64_t f) { return { f.v }; }
-inline freg_t freg(freg_t f) { return f; }
-#define F64_SIGN ((decltype(freg_t::v))1 << 63)
-#define F32_SIGN ((decltype(freg_t::v))1 << 31)
+inline float32_t f32(freg_t r) { return f32(unboxF32(r)); }
+inline float64_t f64(freg_t r) { return f64(unboxF64(r)); }
+inline float128_t f128(freg_t r) { return r; }
+inline freg_t freg(float32_t f) { return { ((uint64_t)-1 << 32) | f.v, (uint64_t)-1 }; }
+inline freg_t freg(float64_t f) { return { f.v, (uint64_t)-1 }; }
+inline freg_t freg(float128_t f) { return f; }
+#define F32_SIGN ((uint32_t)1 << 31)
+#define F64_SIGN ((uint64_t)1 << 63)
 #define fsgnj32(a, b, n, x) \
   f32((f32(a).v & ~F32_SIGN) | ((((x) ? f32(a).v : (n) ? F32_SIGN : 0) ^ f32(b).v) & F32_SIGN))
 #define fsgnj64(a, b, n, x) \
   f64((f64(a).v & ~F64_SIGN) | ((((x) ? f64(a).v : (n) ? F64_SIGN : 0) ^ f64(b).v) & F64_SIGN))
+
+#define isNaNF128(x) isNaNF128UI(x.v[1], x.v[0])
+inline float128_t defaultNaNF128()
+{
+  float128_t nan;
+  nan.v[1] = defaultNaNF128UI64;
+  nan.v[0] = defaultNaNF128UI0;
+  return nan;
+}
+inline freg_t fsgnj128(freg_t a, freg_t b, bool n, bool x)
+{
+  a.v[1] = (a.v[1] & ~F64_SIGN) | (((x ? a.v[1] : n ? F64_SIGN : 0) ^ b.v[1]) & F64_SIGN);
+  return a;
+}
+inline freg_t f128_negate(freg_t a)
+{
+  a.v[1] ^= F64_SIGN;
+  return a;
+}
 
 #define validate_csr(which, write) ({ \
   if (!STATE.serialized) return PC_SERIALIZE_BEFORE; \

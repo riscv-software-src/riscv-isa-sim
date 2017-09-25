@@ -138,67 +138,99 @@ riscv_insn_list = \
 	ebreak \
 	ecall \
 	fadd_d \
+	fadd_q \
 	fadd_s \
 	fclass_d \
+	fclass_q \
 	fclass_s \
 	fcvt_d_l \
 	fcvt_d_lu \
+	fcvt_d_q \
 	fcvt_d_s \
 	fcvt_d_w \
 	fcvt_d_wu \
 	fcvt_l_d \
+	fcvt_l_q \
 	fcvt_l_s \
 	fcvt_lu_d \
+	fcvt_lu_q \
 	fcvt_lu_s \
+	fcvt_q_d \
+	fcvt_q_l \
+	fcvt_q_lu \
+	fcvt_q_s \
+	fcvt_q_w \
+	fcvt_q_wu \
 	fcvt_s_d \
 	fcvt_s_l \
 	fcvt_s_lu \
+	fcvt_s_q \
 	fcvt_s_w \
 	fcvt_s_wu \
 	fcvt_w_d \
+	fcvt_w_q \
 	fcvt_w_s \
 	fcvt_wu_d \
+	fcvt_wu_q \
 	fcvt_wu_s \
 	fdiv_d \
+	fdiv_q \
 	fdiv_s \
 	fence \
 	fence_i \
 	feq_d \
+	feq_q \
 	feq_s \
 	fld \
 	fle_d \
+	fle_q \
 	fle_s \
+	flq \
 	flt_d \
+	flt_q \
 	flt_s \
 	flw \
 	fmadd_d \
+	fmadd_q \
 	fmadd_s \
 	fmax_d \
+	fmax_q \
 	fmax_s \
 	fmin_d \
+	fmin_q \
 	fmin_s \
 	fmsub_d \
+	fmsub_q \
 	fmsub_s \
 	fmul_d \
+	fmul_q \
 	fmul_s \
 	fmv_d_x \
 	fmv_w_x \
 	fmv_x_d \
 	fmv_x_w \
 	fnmadd_d \
+	fnmadd_q \
 	fnmadd_s \
 	fnmsub_d \
+	fnmsub_q \
 	fnmsub_s \
 	fsd \
 	fsgnj_d \
+	fsgnj_q \
 	fsgnjn_d \
+	fsgnjn_q \
 	fsgnjn_s \
 	fsgnj_s \
 	fsgnjx_d \
+	fsgnjx_q \
 	fsgnjx_s \
+	fsq \
 	fsqrt_d \
+	fsqrt_q \
 	fsqrt_s \
 	fsub_d \
+	fsub_q \
 	fsub_s \
 	fsw \
 	jal \
