@@ -447,6 +447,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           if (dmcontrol.dmactive) {
             dmcontrol.haltreq = get_field(value, DMI_DMCONTROL_HALTREQ);
             dmcontrol.resumereq = get_field(value, DMI_DMCONTROL_RESUMEREQ);
+            dmcontrol.hartreset = get_field(value, DMI_DMCONTROL_HARTRESET);
             dmcontrol.ndmreset = get_field(value, DMI_DMCONTROL_NDMRESET);
             dmcontrol.hartsel = get_field(value, DMI_DMCONTROL_HARTSEL);
           } else {
@@ -459,9 +460,15 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
               debug_rom_flags[dmcontrol.hartsel] |= (1 << DEBUG_ROM_FLAG_RESUME);
               resumeack[dmcontrol.hartsel] = false;
             }
-	    if (dmcontrol.ndmreset) {
+	    if (dmcontrol.hartreset) {
 	      proc->reset();
 	    }
+          }
+          if (dmcontrol.ndmreset) {
+            for (size_t i = 0; i < sim->nprocs(); i++) {
+              proc = sim->get_core(i);
+              proc->reset();
+            }
           }
         }
         return true;
