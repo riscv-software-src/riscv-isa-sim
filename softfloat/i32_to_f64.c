@@ -2,10 +2,10 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
-All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
+California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -45,7 +45,7 @@ float64_t i32_to_f64( int32_t a )
     uint_fast64_t uiZ;
     bool sign;
     uint_fast32_t absA;
-    int_fast8_t shiftCount;
+    int_fast8_t shiftDist;
     union ui64_f64 uZ;
 
     if ( ! a ) {
@@ -53,10 +53,10 @@ float64_t i32_to_f64( int32_t a )
     } else {
         sign = (a < 0);
         absA = sign ? -(uint_fast32_t) a : (uint_fast32_t) a;
-        shiftCount = softfloat_countLeadingZeros32( absA ) + 21;
+        shiftDist = softfloat_countLeadingZeros32( absA ) + 21;
         uiZ =
             packToF64UI(
-                sign, 0x432 - shiftCount, (uint_fast64_t) absA<<shiftCount );
+                sign, 0x432 - shiftDist, (uint_fast64_t) absA<<shiftDist );
     }
     uZ.ui = uiZ;
     return uZ.f;

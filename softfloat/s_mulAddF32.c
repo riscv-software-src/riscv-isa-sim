@@ -2,10 +2,10 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
-All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
+California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -64,9 +64,11 @@ float32_t
     uint_fast32_t sigZ;
     int_fast16_t expDiff;
     uint_fast64_t sig64Z, sig64C;
-    int_fast8_t shiftCount;
+    int_fast8_t shiftDist;
     union ui32_f32 uZ;
 
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     signA = signF32UI( uiA );
     expA  = expF32UI( uiA );
     sigA  = fracF32UI( uiA );
@@ -77,6 +79,8 @@ float32_t
     expC  = expF32UI( uiC );
     sigC  = fracF32UI( uiC );
     signProd = signA ^ signB ^ (op == softfloat_mulAdd_subProd);
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     if ( expA == 0xFF ) {
         if ( sigA || ((expB == 0xFF) && sigB) ) goto propagateNaN_ABC;
         magBits = expB | sigB;
@@ -95,6 +99,8 @@ float32_t
         uiZ = uiC;
         goto uiZ;
     }
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     if ( ! expA ) {
         if ( ! sigA ) goto zeroProd;
         normExpSig = softfloat_normSubnormalF32Sig( sigA );
@@ -107,6 +113,8 @@ float32_t
         expB = normExpSig.exp;
         sigB = normExpSig.sig;
     }
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     expProd = expA + expB - 0x7E;
     sigA = (sigA | 0x00800000)<<7;
     sigB = (sigB | 0x00800000)<<7;
@@ -127,8 +135,12 @@ float32_t
         sigC = normExpSig.sig;
     }
     sigC = (sigC | 0x00800000)<<6;
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     expDiff = expProd - expC;
     if ( signProd == signC ) {
+        /*--------------------------------------------------------------------
+        *--------------------------------------------------------------------*/
         if ( expDiff <= 0 ) {
             expZ = expC;
             sigZ = sigC + softfloat_shiftRightJam64( sigProd, 32 - expDiff );
@@ -145,6 +157,8 @@ float32_t
             sigZ <<= 1;
         }
     } else {
+        /*--------------------------------------------------------------------
+        *--------------------------------------------------------------------*/
         sig64C = (uint_fast64_t) sigC<<32;
         if ( expDiff < 0 ) {
             signZ = signC;
@@ -155,27 +169,31 @@ float32_t
             sig64Z = sigProd - sig64C;
             if ( ! sig64Z ) goto completeCancellation;
             if ( sig64Z & UINT64_C( 0x8000000000000000 ) ) {
-                signZ ^= 1;
+                signZ = ! signZ;
                 sig64Z = -sig64Z;
             }
         } else {
             expZ = expProd;
             sig64Z = sigProd - softfloat_shiftRightJam64( sig64C, expDiff );
         }
-        shiftCount = softfloat_countLeadingZeros64( sig64Z ) - 1;
-        expZ -= shiftCount;
-        shiftCount -= 32;
-        if ( shiftCount < 0 ) {
-            sigZ = softfloat_shortShiftRightJam64( sig64Z, -shiftCount );
+        shiftDist = softfloat_countLeadingZeros64( sig64Z ) - 1;
+        expZ -= shiftDist;
+        shiftDist -= 32;
+        if ( shiftDist < 0 ) {
+            sigZ = softfloat_shortShiftRightJam64( sig64Z, -shiftDist );
         } else {
-            sigZ = (uint_fast32_t) sig64Z<<shiftCount;
+            sigZ = (uint_fast32_t) sig64Z<<shiftDist;
         }
     }
  roundPack:
     return softfloat_roundPackToF32( signZ, expZ, sigZ );
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
  propagateNaN_ABC:
     uiZ = softfloat_propagateNaNF32UI( uiA, uiB );
     goto propagateNaN_ZC;
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
  infProdArg:
     if ( magBits ) {
         uiZ = packToF32UI( signProd, 0xFF, 0 );
@@ -183,18 +201,20 @@ float32_t
         if ( sigC ) goto propagateNaN_ZC;
         if ( signProd == signC ) goto uiZ;
     }
- invalid:
     softfloat_raiseFlags( softfloat_flag_invalid );
     uiZ = defaultNaNF32UI;
  propagateNaN_ZC:
     uiZ = softfloat_propagateNaNF32UI( uiZ, uiC );
     goto uiZ;
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
  zeroProd:
     uiZ = uiC;
     if ( ! (expC | sigC) && (signProd != signC) ) {
  completeCancellation:
         uiZ =
-            packToF32UI( softfloat_roundingMode == softfloat_round_min, 0, 0 );
+            packToF32UI(
+                (softfloat_roundingMode == softfloat_round_min), 0, 0 );
     }
  uiZ:
     uZ.ui = uiZ;

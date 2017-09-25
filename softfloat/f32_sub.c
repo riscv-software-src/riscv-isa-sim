@@ -2,10 +2,10 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
-All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
+California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -44,30 +44,26 @@ float32_t f32_sub( float32_t a, float32_t b )
 {
     union ui32_f32 uA;
     uint_fast32_t uiA;
-    bool signA;
     union ui32_f32 uB;
     uint_fast32_t uiB;
-    bool signB;
 #if ! defined INLINE_LEVEL || (INLINE_LEVEL < 1)
-    float32_t (*magsFuncPtr)( uint_fast32_t, uint_fast32_t, bool );
+    float32_t (*magsFuncPtr)( uint_fast32_t, uint_fast32_t );
 #endif
 
     uA.f = a;
     uiA = uA.ui;
-    signA = signF32UI( uiA );
     uB.f = b;
     uiB = uB.ui;
-    signB = signF32UI( uiB );
 #if defined INLINE_LEVEL && (1 <= INLINE_LEVEL)
-    if ( signA == signB ) {
-        return softfloat_subMagsF32( uiA, uiB, signA );
+    if ( signF32UI( uiA ^ uiB ) ) {
+        return softfloat_addMagsF32( uiA, uiB );
     } else {
-        return softfloat_addMagsF32( uiA, uiB, signA );
+        return softfloat_subMagsF32( uiA, uiB );
     }
 #else
     magsFuncPtr =
-        (signA == signB) ? softfloat_subMagsF32 : softfloat_addMagsF32;
-    return (*magsFuncPtr)( uiA, uiB, signA );
+        signF32UI( uiA ^ uiB ) ? softfloat_addMagsF32 : softfloat_subMagsF32;
+    return (*magsFuncPtr)( uiA, uiB );
 #endif
 
 }

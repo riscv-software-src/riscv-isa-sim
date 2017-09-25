@@ -2,10 +2,10 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015 The Regents of the University of
-California.  All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
+California.  All Rights Reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -36,37 +36,33 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #include <stdint.h>
 #include "platform.h"
-#include "primitiveTypes.h"
+#include "internals.h"
+#include "softfloat.h"
 
-#ifndef softfloat_shortShiftRightJamM
-
-void
- softfloat_shortShiftRightJamM(
-     uint_fast8_t size_words,
-     const uint32_t *aPtr,
-     uint_fast8_t count,
-     uint32_t *zPtr
- )
+float128_t ui64_to_f128( uint64_t a )
 {
-    uint_fast8_t negCount;
-    unsigned int index, lastIndex;
-    uint32_t partWordZ, wordA;
+    uint_fast64_t uiZ64, uiZ0;
+    int_fast8_t shiftDist;
+    struct uint128 zSig;
+    union ui128_f128 uZ;
 
-    negCount = -count;
-    index = indexWordLo( size_words );
-    lastIndex = indexWordHi( size_words );
-    wordA = aPtr[index];
-    partWordZ = wordA>>count;
-    if ( partWordZ<<count != wordA ) partWordZ |= 1;
-    while ( index != lastIndex ) {
-        wordA = aPtr[index + wordIncr];
-        zPtr[index] = wordA<<(negCount & 31) | partWordZ;
-        index += wordIncr;
-        partWordZ = wordA>>count;
+    if ( ! a ) {
+        uiZ64 = 0;
+        uiZ0  = 0;
+    } else {
+        shiftDist = softfloat_countLeadingZeros64( a ) + 49;
+        if ( 64 <= shiftDist ) {
+            zSig.v64 = a<<(shiftDist - 64);
+            zSig.v0  = 0;
+        } else {
+            zSig = softfloat_shortShiftLeft128( 0, a, shiftDist );
+        }
+        uiZ64 = packToF128UI64( 0, 0x406E - shiftDist, zSig.v64 );
+        uiZ0  = zSig.v0;
     }
-    zPtr[index] = partWordZ;
+    uZ.ui.v64 = uiZ64;
+    uZ.ui.v0  = uiZ0;
+    return uZ.f;
 
 }
-
-#endif
 

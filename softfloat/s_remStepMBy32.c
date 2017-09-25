@@ -2,9 +2,9 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015 The Regents of the University of
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
 California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -44,34 +44,33 @@ void
  softfloat_remStepMBy32(
      uint_fast8_t size_words,
      const uint32_t *remPtr,
-     uint_fast8_t count,
+     uint_fast8_t dist,
      const uint32_t *bPtr,
      uint32_t q,
      uint32_t *zPtr
  )
 {
-    uint_fast8_t negCount;
     unsigned int index, lastIndex;
     uint64_t dwordProd;
     uint32_t wordRem, wordShiftedRem, wordProd;
-    uint_fast8_t borrow;
+    uint_fast8_t uNegDist, borrow;
 
-    negCount = -count;
     index = indexWordLo( size_words );
     lastIndex = indexWordHi( size_words );
     dwordProd = (uint64_t) bPtr[index] * q;
     wordRem = remPtr[index];
-    wordShiftedRem = wordRem<<count;
+    wordShiftedRem = wordRem<<dist;
     wordProd = dwordProd;
     zPtr[index] = wordShiftedRem - wordProd;
     if ( index != lastIndex ) {
+        uNegDist = -dist;
         borrow = (wordShiftedRem < wordProd);
         for (;;) {
-            wordShiftedRem = wordRem>>(negCount & 31);
+            wordShiftedRem = wordRem>>(uNegDist & 31);
             index += wordIncr;
             dwordProd = (uint64_t) bPtr[index] * q + (dwordProd>>32);
             wordRem = remPtr[index];
-            wordShiftedRem |= wordRem<<count;
+            wordShiftedRem |= wordRem<<dist;
             wordProd = dwordProd;
             zPtr[index] = wordShiftedRem - wordProd - borrow;
             if ( index == lastIndex ) break;

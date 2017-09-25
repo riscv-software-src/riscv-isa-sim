@@ -17,17 +17,20 @@ uint_fast16_t f32_classify( float32_t a )
     uint_fast16_t infOrNaN = expF32UI( uiA ) == 0xFF;
     uint_fast16_t subnormalOrZero = expF32UI( uiA ) == 0;
     bool sign = signF32UI( uiA );
+    bool fracZero = fracF32UI( uiA ) == 0;
+    bool isNaN = isNaNF32UI( uiA );
+    bool isSNaN = softfloat_isSigNaNF32UI( uiA );
 
     return
-        (  sign && infOrNaN && fracF32UI( uiA ) == 0 )          << 0 |
-        (  sign && !infOrNaN && !subnormalOrZero )              << 1 |
-        (  sign && subnormalOrZero && fracF32UI( uiA ) )        << 2 |
-        (  sign && subnormalOrZero && fracF32UI( uiA ) == 0 )   << 3 |
-        ( !sign && infOrNaN && fracF32UI( uiA ) == 0 )          << 7 |
-        ( !sign && !infOrNaN && !subnormalOrZero )              << 6 |
-        ( !sign && subnormalOrZero && fracF32UI( uiA ) )        << 5 |
-        ( !sign && subnormalOrZero && fracF32UI( uiA ) == 0 )   << 4 |
-        ( isNaNF32UI( uiA ) &&  softfloat_isSigNaNF32UI( uiA )) << 8 |
-        ( isNaNF32UI( uiA ) && !softfloat_isSigNaNF32UI( uiA )) << 9;
+        (  sign && infOrNaN && fracZero )          << 0 |
+        (  sign && !infOrNaN && !subnormalOrZero ) << 1 |
+        (  sign && subnormalOrZero && !fracZero )  << 2 |
+        (  sign && subnormalOrZero && fracZero )   << 3 |
+        ( !sign && infOrNaN && fracZero )          << 7 |
+        ( !sign && !infOrNaN && !subnormalOrZero ) << 6 |
+        ( !sign && subnormalOrZero && !fracZero )  << 5 |
+        ( !sign && subnormalOrZero && fracZero )   << 4 |
+        ( isNaN &&  isSNaN )                       << 8 |
+        ( isNaN && !isSNaN )                       << 9;
 }
 

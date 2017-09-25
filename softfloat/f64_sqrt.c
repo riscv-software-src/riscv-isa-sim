@@ -2,10 +2,10 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
-All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2017 The Regents of the University of
+California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -109,7 +109,7 @@ float64_t f64_sqrt( float64_t a )
     sigZ = ((uint_fast64_t) sig32Z<<32 | 1<<5) + ((uint_fast64_t) q<<3);
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
-    if ( (sigZ & 0x1FF) < 1<<5 ) {
+    if ( (sigZ & 0x1FF) < 0x22 ) {
         sigZ &= ~(uint_fast64_t) 0x3F;
         shiftedSigZ = sigZ>>6;
         rem = (sigA<<52) - shiftedSigZ * shiftedSigZ;

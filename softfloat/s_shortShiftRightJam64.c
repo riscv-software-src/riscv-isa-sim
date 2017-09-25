@@ -2,9 +2,9 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015 The Regents of the University of
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
 California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -39,10 +39,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 #ifndef softfloat_shortShiftRightJam64
 
-uint64_t softfloat_shortShiftRightJam64( uint64_t a, uint_fast8_t count )
+uint64_t softfloat_shortShiftRightJam64( uint64_t a, uint_fast8_t dist )
 {
 
-    return a>>count | ((a & (((uint_fast64_t) 1<<count) - 1)) != 0);
+    return a>>dist | ((a & (((uint_fast64_t) 1<<dist) - 1)) != 0);
 
 }
 

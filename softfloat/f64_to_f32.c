@@ -2,10 +2,10 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
-All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015 The Regents of the University of
+California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -47,18 +47,22 @@ float32_t f64_to_f32( float64_t a )
     uint_fast64_t uiA;
     bool sign;
     int_fast16_t exp;
-    uint_fast64_t sig;
+    uint_fast64_t frac;
     struct commonNaN commonNaN;
-    uint_fast32_t uiZ, sig32;
+    uint_fast32_t uiZ, frac32;
     union ui32_f32 uZ;
 
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     uA.f = a;
     uiA = uA.ui;
     sign = signF64UI( uiA );
     exp  = expF64UI( uiA );
-    sig  = fracF64UI( uiA );
+    frac = fracF64UI( uiA );
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     if ( exp == 0x7FF ) {
-        if ( sig ) {
+        if ( frac ) {
             softfloat_f64UIToCommonNaN( uiA, &commonNaN );
             uiZ = softfloat_commonNaNToF32UI( &commonNaN );
         } else {
@@ -66,12 +70,16 @@ float32_t f64_to_f32( float64_t a )
         }
         goto uiZ;
     }
-    sig32 = softfloat_shortShiftRightJam64( sig, 22 );
-    if ( ! (exp | sig32) ) {
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
+    frac32 = softfloat_shortShiftRightJam64( frac, 22 );
+    if ( ! (exp | frac32) ) {
         uiZ = packToF32UI( sign, 0, 0 );
         goto uiZ;
     }
-    return softfloat_roundPackToF32( sign, exp - 0x381, sig32 | 0x40000000 );
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
+    return softfloat_roundPackToF32( sign, exp - 0x381, frac32 | 0x40000000 );
  uiZ:
     uZ.ui = uiZ;
     return uZ.f;

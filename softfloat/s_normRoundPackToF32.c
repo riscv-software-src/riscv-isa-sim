@@ -2,10 +2,10 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
-All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
+California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -42,16 +42,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 float32_t
  softfloat_normRoundPackToF32( bool sign, int_fast16_t exp, uint_fast32_t sig )
 {
-    int_fast8_t shiftCount;
+    int_fast8_t shiftDist;
     union ui32_f32 uZ;
 
-    shiftCount = softfloat_countLeadingZeros32( sig ) - 1;
-    exp -= shiftCount;
-    if ( (7 <= shiftCount) && ((uint16_t) exp < 0xFD) ) {
-        uZ.ui = packToF32UI( sign, sig ? exp : 0, sig<<(shiftCount - 7) );
+    shiftDist = softfloat_countLeadingZeros32( sig ) - 1;
+    exp -= shiftDist;
+    if ( (7 <= shiftDist) && ((unsigned int) exp < 0xFD) ) {
+        uZ.ui = packToF32UI( sign, sig ? exp : 0, sig<<(shiftDist - 7) );
         return uZ.f;
     } else {
-        return softfloat_roundPackToF32( sign, exp, sig<<shiftCount );
+        return softfloat_roundPackToF32( sign, exp, sig<<shiftDist );
     }
 
 }

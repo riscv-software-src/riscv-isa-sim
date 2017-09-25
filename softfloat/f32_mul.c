@@ -2,10 +2,10 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
-All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015 The Regents of the University of
+California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -60,6 +60,8 @@ float32_t f32_mul( float32_t a, float32_t b )
     uint_fast32_t sigZ, uiZ;
     union ui32_f32 uZ;
 
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     uA.f = a;
     uiA = uA.ui;
     signA = signF32UI( uiA );
@@ -71,6 +73,8 @@ float32_t f32_mul( float32_t a, float32_t b )
     expB  = expF32UI( uiB );
     sigB  = fracF32UI( uiB );
     signZ = signA ^ signB;
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     if ( expA == 0xFF ) {
         if ( sigA || ((expB == 0xFF) && sigB) ) goto propagateNaN;
         magBits = expB | sigB;
@@ -81,6 +85,8 @@ float32_t f32_mul( float32_t a, float32_t b )
         magBits = expA | sigA;
         goto infArg;
     }
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     if ( ! expA ) {
         if ( ! sigA ) goto zero;
         normExpSig = softfloat_normSubnormalF32Sig( sigA );
@@ -93,6 +99,8 @@ float32_t f32_mul( float32_t a, float32_t b )
         expB = normExpSig.exp;
         sigB = normExpSig.sig;
     }
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     expZ = expA + expB - 0x7F;
     sigA = (sigA | 0x00800000)<<7;
     sigB = (sigB | 0x00800000)<<8;
@@ -102,9 +110,13 @@ float32_t f32_mul( float32_t a, float32_t b )
         sigZ <<= 1;
     }
     return softfloat_roundPackToF32( signZ, expZ, sigZ );
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
  propagateNaN:
     uiZ = softfloat_propagateNaNF32UI( uiA, uiB );
     goto uiZ;
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
  infArg:
     if ( ! magBits ) {
         softfloat_raiseFlags( softfloat_flag_invalid );
@@ -113,6 +125,8 @@ float32_t f32_mul( float32_t a, float32_t b )
         uiZ = packToF32UI( signZ, 0xFF, 0 );
     }
     goto uiZ;
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
  zero:
     uiZ = packToF32UI( signZ, 0, 0 );
  uiZ:

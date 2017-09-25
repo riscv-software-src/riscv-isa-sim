@@ -2,9 +2,9 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015 The Regents of the University of
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
 California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -42,16 +42,16 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 struct uint64_extra
  softfloat_shiftRightJam64Extra(
-     uint64_t a, uint64_t extra, uint_fast32_t count )
+     uint64_t a, uint64_t extra, uint_fast32_t dist )
 {
     struct uint64_extra z;
 
-    if ( count < 64 ) {
-        z.v = a>>count;
-        z.extra = a<<(-count & 63);
+    if ( dist < 64 ) {
+        z.v = a>>dist;
+        z.extra = a<<(-dist & 63);
     } else {
         z.v = 0;
-        z.extra = (count == 64) ? a : (a != 0);
+        z.extra = (dist == 64) ? a : (a != 0);
     }
     z.extra |= (extra != 0);
     return z;

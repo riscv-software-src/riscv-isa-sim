@@ -2,9 +2,9 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015 The Regents of the University of
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
 California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -41,23 +41,23 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #ifndef softfloat_shiftRightJam128
 
 struct uint128
- softfloat_shiftRightJam128( uint64_t a64, uint64_t a0, uint_fast32_t count )
+ softfloat_shiftRightJam128( uint64_t a64, uint64_t a0, uint_fast32_t dist )
 {
-    int_fast32_t negCount;
+    uint_fast8_t u8NegDist;
     struct uint128 z;
 
-    if ( count < 64 ) {
-        negCount = -count;
-        z.v64 = a64>>count;
+    if ( dist < 64 ) {
+        u8NegDist = -dist;
+        z.v64 = a64>>dist;
         z.v0 =
-            a64<<(negCount & 63) | a0>>count
-                | ((uint64_t) (a0<<(negCount & 63)) != 0);
+            a64<<(u8NegDist & 63) | a0>>dist
+                | ((uint64_t) (a0<<(u8NegDist & 63)) != 0);
     } else {
         z.v64 = 0;
         z.v0 =
-            (count < 127)
-                ? a64>>(count & 63)
-                      | (((a64 & (((uint_fast64_t) 1<<(count & 63)) - 1)) | a0)
+            (dist < 127)
+                ? a64>>(dist & 63)
+                      | (((a64 & (((uint_fast64_t) 1<<(dist & 63)) - 1)) | a0)
                              != 0)
                 : ((a64 | a0) != 0);
     }

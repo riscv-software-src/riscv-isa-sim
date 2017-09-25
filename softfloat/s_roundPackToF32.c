@@ -2,9 +2,9 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015 The Regents of the University of
+Copyright 2011, 2012, 2013, 2014, 2015, 2017 The Regents of the University of
 California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -50,6 +50,8 @@ float32_t
     uint_fast32_t uiZ;
     union ui32_f32 uZ;
 
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     roundingMode = softfloat_roundingMode;
     roundNearEven = (roundingMode == softfloat_round_near_even);
     roundIncrement = 0x40;
@@ -61,13 +63,15 @@ float32_t
                 : 0;
     }
     roundBits = sig & 0x7F;
-    if ( 0xFD <= (uint16_t) exp ) {
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
+    if ( 0xFD <= (unsigned int) exp ) {
         if ( exp < 0 ) {
+            /*----------------------------------------------------------------
+            *----------------------------------------------------------------*/
             isTiny =
-                   (softfloat_detectTininess
-                        == softfloat_tininess_beforeRounding)
-                || (exp < -1)
-                || (sig + roundIncrement < 0x80000000);
+                (softfloat_detectTininess == softfloat_tininess_beforeRounding)
+                    || (exp < -1) || (sig + roundIncrement < 0x80000000);
             sig = softfloat_shiftRightJam32( sig, -exp );
             exp = 0;
             roundBits = sig & 0x7F;
@@ -75,16 +79,32 @@ float32_t
                 softfloat_raiseFlags( softfloat_flag_underflow );
             }
         } else if ( (0xFD < exp) || (0x80000000 <= sig + roundIncrement) ) {
+            /*----------------------------------------------------------------
+            *----------------------------------------------------------------*/
             softfloat_raiseFlags(
                 softfloat_flag_overflow | softfloat_flag_inexact );
             uiZ = packToF32UI( sign, 0xFF, 0 ) - ! roundIncrement;
             goto uiZ;
         }
     }
-    if ( roundBits ) softfloat_exceptionFlags |= softfloat_flag_inexact;
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     sig = (sig + roundIncrement)>>7;
+    if ( roundBits ) {
+        softfloat_exceptionFlags |= softfloat_flag_inexact;
+#ifdef SOFTFLOAT_ROUND_ODD
+        if ( roundingMode == softfloat_round_odd ) {
+            sig |= 1;
+            goto packReturn;
+        }
+#endif
+    }
     sig &= ~(uint_fast32_t) (! (roundBits ^ 0x40) & roundNearEven);
-    uiZ = packToF32UI( sign, sig ? exp : 0, sig );
+    if ( ! sig ) exp = 0;
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
+ packReturn:
+    uiZ = packToF32UI( sign, exp, sig );
  uiZ:
     uZ.ui = uiZ;
     return uZ.f;

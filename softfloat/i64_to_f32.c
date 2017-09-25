@@ -2,10 +2,10 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
-All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
+California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -44,26 +44,26 @@ float32_t i64_to_f32( int64_t a )
 {
     bool sign;
     uint_fast64_t absA;
-    int_fast8_t shiftCount;
+    int_fast8_t shiftDist;
     union ui32_f32 u;
     uint_fast32_t sig;
 
     sign = (a < 0);
     absA = sign ? -(uint_fast64_t) a : (uint_fast64_t) a;
-    shiftCount = softfloat_countLeadingZeros64( absA ) - 40;
-    if ( 0 <= shiftCount ) {
+    shiftDist = softfloat_countLeadingZeros64( absA ) - 40;
+    if ( 0 <= shiftDist ) {
         u.ui =
             a ? packToF32UI(
-                    sign, 0x95 - shiftCount, (uint_fast32_t) absA<<shiftCount )
+                    sign, 0x95 - shiftDist, (uint_fast32_t) absA<<shiftDist )
                 : 0;
         return u.f;
     } else {
-        shiftCount += 7;
+        shiftDist += 7;
         sig =
-            (shiftCount < 0)
-                ? softfloat_shortShiftRightJam64( absA, -shiftCount )
-                : (uint_fast32_t) absA<<shiftCount;
-        return softfloat_roundPackToF32( sign, 0x9C - shiftCount, sig );
+            (shiftDist < 0)
+                ? softfloat_shortShiftRightJam64( absA, -shiftDist )
+                : (uint_fast32_t) absA<<shiftDist;
+        return softfloat_roundPackToF32( sign, 0x9C - shiftDist, sig );
     }
 
 }

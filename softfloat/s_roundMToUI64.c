@@ -2,10 +2,10 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015 The Regents of the University of
-California.  All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
+University of California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -34,37 +34,51 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "platform.h"
-#include "primitiveTypes.h"
+#include "internals.h"
+#include "specialize.h"
+#include "softfloat.h"
 
-#ifndef softfloat_shortShiftLeftM
-
-void
- softfloat_shortShiftLeftM(
-     uint_fast8_t size_words,
-     const uint32_t *aPtr,
-     uint_fast8_t count,
-     uint32_t *zPtr
- )
+uint_fast64_t
+ softfloat_roundMToUI64(
+     bool sign, uint32_t *extSigPtr, uint_fast8_t roundingMode, bool exact )
 {
-    uint_fast8_t negCount;
-    unsigned int index, lastIndex;
-    uint32_t partWordZ, wordA;
+    bool roundNearEven;
+    uint32_t sigExtra;
+    bool doIncrement;
+    uint64_t sig;
 
-    negCount = -count;
-    index = indexWordHi( size_words );
-    lastIndex = indexWordLo( size_words );
-    partWordZ = aPtr[index]<<count;
-    while ( index != lastIndex ) {
-        wordA = aPtr[index - wordIncr];
-        zPtr[index] = partWordZ | wordA>>(negCount & 31);
-        index -= wordIncr;
-        partWordZ = wordA<<count;
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
+    roundNearEven = (roundingMode == softfloat_round_near_even);
+    sigExtra = extSigPtr[indexWordLo( 3 )];
+    doIncrement = (0x80000000 <= sigExtra);
+    if ( ! roundNearEven && (roundingMode != softfloat_round_near_maxMag) ) {
+        doIncrement =
+            (roundingMode
+                 == (sign ? softfloat_round_min : softfloat_round_max))
+                && sigExtra;
     }
-    zPtr[index] = partWordZ;
+    sig =
+        (uint64_t) extSigPtr[indexWord( 3, 2 )]<<32
+            | extSigPtr[indexWord( 3, 1 )];
+    if ( doIncrement ) {
+        ++sig;
+        if ( ! sig ) goto invalid;
+        if ( ! (sigExtra & 0x7FFFFFFF) && roundNearEven ) sig &= ~1;
+    }
+    if ( sign && sig ) goto invalid;
+    if ( exact && sigExtra ) {
+        softfloat_exceptionFlags |= softfloat_flag_inexact;
+    }
+    return sig;
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
+ invalid:
+    softfloat_raiseFlags( softfloat_flag_invalid );
+    return sign ? ui64_fromNegOverflow : ui64_fromPosOverflow;
 
 }
-
-#endif
 
