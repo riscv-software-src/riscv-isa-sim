@@ -272,6 +272,11 @@ void sim_t::make_dtb()
          "        interrupt-controller;\n"
          "        compatible = \"riscv,cpu-intc\";\n"
          "      };\n"
+         "      CPU" << i << "_timer: timer {\n"
+         "        #timer-cells = <1>;\n"
+         "        compatible = \"riscv,cpu-timer\";\n"
+         "        interrupts = <&CPU" << i << "_intc>;\n"
+         "      };\n"
          "    };\n";
   }
   s <<   "  };\n";
