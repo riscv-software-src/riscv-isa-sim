@@ -16,7 +16,12 @@
 
 ///////////////////////// debug_module_t
 
-debug_module_t::debug_module_t(sim_t *sim) : sim(sim)
+debug_module_t::debug_module_t(sim_t *sim, unsigned progsize) :
+  progsize(progsize),
+  program_buffer_bytes(4 + 4*progsize),
+  debug_progbuf_start(debug_data_start - program_buffer_bytes),
+  debug_abstract_start(debug_progbuf_start - debug_abstract_size*4),
+  sim(sim)
 {
   dmcontrol = {0};
 
@@ -29,17 +34,24 @@ debug_module_t::debug_module_t(sim_t *sim) : sim(sim)
 
   abstractauto = {0};
 
+  program_buffer = new uint8_t[program_buffer_bytes];
+
   memset(halted, 0, sizeof(halted));
   memset(debug_rom_flags, 0, sizeof(debug_rom_flags));
   memset(resumeack, 0, sizeof(resumeack));
-  memset(program_buffer, 0, sizeof(program_buffer));
+  memset(program_buffer, 0, program_buffer_bytes);
+  program_buffer[progsize] = ebreak();
   memset(dmdata, 0, sizeof(dmdata));
 
   write32(debug_rom_whereto, 0,
           jal(ZERO, debug_abstract_start - DEBUG_ROM_WHERETO));
 
   memset(debug_abstract, 0, sizeof(debug_abstract));
+}
 
+debug_module_t::~debug_module_t()
+{
+  delete[] program_buffer;
 }
 
 void debug_module_t::reset()
@@ -97,7 +109,7 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
     return true;
   }
 
-  if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + sizeof(program_buffer)))) {
+  if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + program_buffer_bytes))) {
     memcpy(bytes, program_buffer + addr - debug_progbuf_start, len);
     return true;
   }
@@ -138,7 +150,7 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     return true;
   }
 
-  if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + sizeof(program_buffer)))) {
+  if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + program_buffer_bytes))) {
     memcpy(program_buffer + addr - debug_progbuf_start, bytes, len);
 
     return true;

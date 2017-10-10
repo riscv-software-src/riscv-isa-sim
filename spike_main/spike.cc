@@ -25,7 +25,7 @@ static void help()
   fprintf(stderr, "  -g                    Track histogram of PCs\n");
   fprintf(stderr, "  -l                    Generate a log of execution\n");
   fprintf(stderr, "  -h                    Print this help message\n");
-  fprintf(stderr, "  -H                 Start halted, allowing a debugger to connect\n");
+  fprintf(stderr, "  -H                    Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
   fprintf(stderr, "  --pc=<address>        Override ELF entry point\n");
   fprintf(stderr, "  --hartids=<a,b,...>   Explicitly specify hartids, default is 0,1,...\n");
@@ -35,7 +35,8 @@ static void help()
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
   fprintf(stderr, "  --extlib=<name>       Shared library to load\n");
   fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
-  fprintf(stderr, "  --dump-dts  Print device tree string and exit\n");
+  fprintf(stderr, "  --dump-dts            Print device tree string and exit\n");
+  fprintf(stderr, "  --progsize=<words>    progsize for the debug module [default 2]\n");
   exit(1);
 }
 
@@ -85,6 +86,7 @@ int main(int argc, char** argv)
   const char* isa = DEFAULT_ISA;
   uint16_t rbb_port = 0;
   bool use_rbb = false;
+  unsigned progsize = 2;
   std::vector<int> hartids;
 
   auto const hartids_parser = [&](const char *s) {
@@ -125,13 +127,15 @@ int main(int argc, char** argv)
       exit(-1);
     }
   });
+  parser.option(0, "progsize", 1, [&](const char* s){progsize = atoi(s);});
 
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
   if (mems.empty())
     mems = make_mems("2048");
 
-  sim_t s(isa, nprocs, halted, start_pc, mems, htif_args, std::move(hartids));
+  sim_t s(isa, nprocs, halted, start_pc, mems, htif_args, std::move(hartids),
+      progsize);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(new jtag_dtm_t(&s.debug_module));
   if (use_rbb) {

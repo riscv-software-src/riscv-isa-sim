@@ -59,7 +59,8 @@ typedef struct {
 class debug_module_t : public abstract_device_t
 {
   public:
-    debug_module_t(sim_t *sim);
+    debug_module_t(sim_t *sim, unsigned progsize);
+    ~debug_module_t();
 
     void add_device(bus_t *bus);
 
@@ -74,18 +75,23 @@ class debug_module_t : public abstract_device_t
 
   private:
     static const unsigned datasize = 2;
-    static const unsigned progsize = 16;
+    // Size of program_buffer in 32-bit words, as exposed to the rest of the
+    // world.
+    unsigned progsize;
+    // Actual size of the program buffer, which is 1 word bigger than we let on
+    // to implement the implicit ebreak at the end.
+    unsigned program_buffer_bytes;
     static const unsigned debug_data_start = 0x380;
-    static const unsigned debug_progbuf_start = debug_data_start - progsize*4;
+    unsigned debug_progbuf_start;
 
     static const unsigned debug_abstract_size = 2;
-    static const unsigned debug_abstract_start = debug_progbuf_start - debug_abstract_size*4;
-        
+    unsigned debug_abstract_start;
+
     sim_t *sim;
 
     uint8_t debug_rom_whereto[4];
     uint8_t debug_abstract[debug_abstract_size * 4];
-    uint8_t program_buffer[progsize * 4];
+    uint8_t *program_buffer;
     uint8_t dmdata[datasize * 4];
     
     bool halted[1024];
