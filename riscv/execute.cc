@@ -147,14 +147,12 @@ void processor_t::step(size_t n)
             break;
           }
 
-          if (unlikely(state.pc >= DEBUG_START &&
+          if (unlikely(state.pc >= DEBUG_ROM_ENTRY &&
                        state.pc < DEBUG_END)) {
             // We're waiting for the debugger to tell us something.
             return;
           }
 
-          
-          
         }
       }
       else while (instret < n)
