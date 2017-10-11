@@ -2,9 +2,9 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015 The Regents of the University of
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
 California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -42,11 +42,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 void
  softfloat_shortShiftLeft64To96M(
-     uint64_t a, uint_fast8_t count, uint32_t *zPtr )
+     uint64_t a, uint_fast8_t dist, uint32_t *zPtr )
 {
 
-    zPtr[indexWord( 3, 0 )] = (uint32_t) a<<count;
-    a >>= 32 - count;
+    zPtr[indexWord( 3, 0 )] = (uint32_t) a<<dist;
+    a >>= 32 - dist;
     zPtr[indexWord( 3, 2 )] = a>>32;
     zPtr[indexWord( 3, 1 )] = a;
 

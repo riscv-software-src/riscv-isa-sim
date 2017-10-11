@@ -2,10 +2,10 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
-All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
+California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -50,61 +50,87 @@ float64_t
     uint_fast64_t sigB;
     int_fast16_t expDiff;
     uint_fast64_t uiZ;
+    int_fast64_t sigDiff;
+    int_fast8_t shiftDist;
     int_fast16_t expZ;
     uint_fast64_t sigZ;
     union ui64_f64 uZ;
 
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     expA = expF64UI( uiA );
     sigA = fracF64UI( uiA );
     expB = expF64UI( uiB );
     sigB = fracF64UI( uiB );
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     expDiff = expA - expB;
-    sigA <<= 10;
-    sigB <<= 10;
-    if ( 0 < expDiff ) goto expABigger;
-    if ( expDiff < 0 ) goto expBBigger;
-    if ( expA == 0x7FF ) {
-        if ( sigA | sigB ) goto propagateNaN;
-        softfloat_raiseFlags( softfloat_flag_invalid );
-        uiZ = defaultNaNF64UI;
+    if ( ! expDiff ) {
+        /*--------------------------------------------------------------------
+        *--------------------------------------------------------------------*/
+        if ( expA == 0x7FF ) {
+            if ( sigA | sigB ) goto propagateNaN;
+            softfloat_raiseFlags( softfloat_flag_invalid );
+            uiZ = defaultNaNF64UI;
+            goto uiZ;
+        }
+        sigDiff = sigA - sigB;
+        if ( ! sigDiff ) {
+            uiZ =
+                packToF64UI(
+                    (softfloat_roundingMode == softfloat_round_min), 0, 0 );
+            goto uiZ;
+        }
+        if ( expA ) --expA;
+        if ( sigDiff < 0 ) {
+            signZ = ! signZ;
+            sigDiff = -sigDiff;
+        }
+        shiftDist = softfloat_countLeadingZeros64( sigDiff ) - 11;
+        expZ = expA - shiftDist;
+        if ( expZ < 0 ) {
+            shiftDist = expA;
+            expZ = 0;
+        }
+        uiZ = packToF64UI( signZ, expZ, sigDiff<<shiftDist );
         goto uiZ;
+    } else {
+        /*--------------------------------------------------------------------
+        *--------------------------------------------------------------------*/
+        sigA <<= 10;
+        sigB <<= 10;
+        if ( expDiff < 0 ) {
+            /*----------------------------------------------------------------
+            *----------------------------------------------------------------*/
+            signZ = ! signZ;
+            if ( expB == 0x7FF ) {
+                if ( sigB ) goto propagateNaN;
+                uiZ = packToF64UI( signZ, 0x7FF, 0 );
+                goto uiZ;
+            }
+            sigA += expA ? UINT64_C( 0x4000000000000000 ) : sigA;
+            sigA = softfloat_shiftRightJam64( sigA, -expDiff );
+            sigB |= UINT64_C( 0x4000000000000000 );
+            expZ = expB;
+            sigZ = sigB - sigA;
+        } else {
+            /*----------------------------------------------------------------
+            *----------------------------------------------------------------*/
+            if ( expA == 0x7FF ) {
+                if ( sigA ) goto propagateNaN;
+                uiZ = uiA;
+                goto uiZ;
+            }
+            sigB += expB ? UINT64_C( 0x4000000000000000 ) : sigB;
+            sigB = softfloat_shiftRightJam64( sigB, expDiff );
+            sigA |= UINT64_C( 0x4000000000000000 );
+            expZ = expA;
+            sigZ = sigA - sigB;
+        }
+        return softfloat_normRoundPackToF64( signZ, expZ - 1, sigZ );
     }
-    if ( ! expA ) {
-        expA = 1;
-        expB = 1;
-    }
-    if ( sigB < sigA ) goto aBigger;
-    if ( sigA < sigB ) goto bBigger;
-    uiZ = packToF64UI( softfloat_roundingMode == softfloat_round_min, 0, 0 );
-    goto uiZ;
- expBBigger:
-    if ( expB == 0x7FF ) {
-        if ( sigB ) goto propagateNaN;
-        uiZ = packToF64UI( signZ ^ 1, 0x7FF, 0 );
-        goto uiZ;
-    }
-    sigA += expA ? UINT64_C( 0x4000000000000000 ) : sigA;
-    sigA = softfloat_shiftRightJam64( sigA, -expDiff );
-    sigB |= UINT64_C( 0x4000000000000000 );
- bBigger:
-    signZ ^= 1;
-    expZ = expB;
-    sigZ = sigB - sigA;
-    goto normRoundPack;
- expABigger:
-    if ( expA == 0x7FF ) {
-        if ( sigA ) goto propagateNaN;
-        uiZ = uiA;
-        goto uiZ;
-    }
-    sigB += expB ? UINT64_C( 0x4000000000000000 ) : sigB;
-    sigB = softfloat_shiftRightJam64( sigB, expDiff );
-    sigA |= UINT64_C( 0x4000000000000000 );
- aBigger:
-    expZ = expA;
-    sigZ = sigA - sigB;
- normRoundPack:
-    return softfloat_normRoundPackToF64( signZ, expZ - 1, sigZ );
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
  propagateNaN:
     uiZ = softfloat_propagateNaNF64UI( uiA, uiB );
  uiZ:

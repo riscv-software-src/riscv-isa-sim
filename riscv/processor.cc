@@ -61,7 +61,7 @@ void processor_t::parse_isa_string(const char* str)
     lowercase += std::tolower(*r);
 
   const char* p = lowercase.c_str();
-  const char* all_subsets = "imafdc";
+  const char* all_subsets = "imafdqc";
 
   max_xlen = 64;
   isa = reg_t(2) << 62;
@@ -74,7 +74,7 @@ void processor_t::parse_isa_string(const char* str)
     p += 2;
 
   if (!*p) {
-    p = all_subsets;
+    p = "imafdc";
   } else if (*p == 'g') { // treat "G" as "IMAFD"
     tmp = std::string("imafd") + (p+1);
     p = &tmp[0];
@@ -104,6 +104,12 @@ void processor_t::parse_isa_string(const char* str)
   }
 
   if (supports_extension('D') && !supports_extension('F'))
+    bad_isa_string(str);
+
+  if (supports_extension('Q') && !supports_extension('D'))
+    bad_isa_string(str);
+
+  if (supports_extension('Q') && max_xlen < 64)
     bad_isa_string(str);
 
   // advertise support for supervisor and user modes

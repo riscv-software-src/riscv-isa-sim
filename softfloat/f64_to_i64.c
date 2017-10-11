@@ -2,10 +2,10 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a+, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
-California.  All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
+University of California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -75,7 +75,7 @@ int_fast64_t f64_to_i64( float64_t a, uint_fast8_t roundingMode, bool exact )
         sigExtra = softfloat_shiftRightJam64Extra( sig, 0, shiftDist );
     }
     return
-        softfloat_roundPackToI64(
+        softfloat_roundToI64(
             sign, sigExtra.v, sigExtra.extra, roundingMode, exact );
 #else
     extSig[indexWord( 3, 0 )] = 0;
@@ -89,7 +89,7 @@ int_fast64_t f64_to_i64( float64_t a, uint_fast8_t roundingMode, bool exact )
         extSig[indexWord( 3, 1 )] = sig;
         softfloat_shiftRightJam96M( extSig, shiftDist, extSig );
     }
-    return softfloat_roundPackMToI64( sign, extSig, roundingMode, exact );
+    return softfloat_roundMToI64( sign, extSig, roundingMode, exact );
 #endif
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/

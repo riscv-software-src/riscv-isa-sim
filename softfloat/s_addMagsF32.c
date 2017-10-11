@@ -2,10 +2,10 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3a, by John R. Hauser.
+Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
-All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
+California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -40,8 +40,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "internals.h"
 #include "specialize.h"
 
-float32_t
- softfloat_addMagsF32( uint_fast32_t uiA, uint_fast32_t uiB, bool signZ )
+float32_t softfloat_addMagsF32( uint_fast32_t uiA, uint_fast32_t uiB )
 {
     int_fast16_t expA;
     uint_fast32_t sigA;
@@ -49,30 +48,46 @@ float32_t
     uint_fast32_t sigB;
     int_fast16_t expDiff;
     uint_fast32_t uiZ;
+    bool signZ;
     int_fast16_t expZ;
     uint_fast32_t sigZ;
     union ui32_f32 uZ;
 
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     expA = expF32UI( uiA );
     sigA = fracF32UI( uiA );
     expB = expF32UI( uiB );
     sigB = fracF32UI( uiB );
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
     expDiff = expA - expB;
-    sigA <<= 6;
-    sigB <<= 6;
     if ( ! expDiff ) {
+        /*--------------------------------------------------------------------
+        *--------------------------------------------------------------------*/
+        if ( ! expA ) {
+            uiZ = uiA + sigB;
+            goto uiZ;
+        }
         if ( expA == 0xFF ) {
             if ( sigA | sigB ) goto propagateNaN;
             uiZ = uiA;
             goto uiZ;
         }
-        if ( ! expA ) {
-            uiZ = packToF32UI( signZ, 0, (uiA + uiB) & 0x7FFFFFFF );
+        signZ = signF32UI( uiA );
+        expZ = expA;
+        sigZ = 0x01000000 + sigA + sigB;
+        if ( ! (sigZ & 1) && (expZ < 0xFE) ) {
+            uiZ = packToF32UI( signZ, expZ, sigZ>>1 );
             goto uiZ;
         }
-        expZ = expA;
-        sigZ = 0x40000000 + sigA + sigB;
+        sigZ <<= 6;
     } else {
+        /*--------------------------------------------------------------------
+        *--------------------------------------------------------------------*/
+        signZ = signF32UI( uiA );
+        sigA <<= 6;
+        sigB <<= 6;
         if ( expDiff < 0 ) {
             if ( expB == 0xFF ) {
                 if ( sigB ) goto propagateNaN;
@@ -99,6 +114,8 @@ float32_t
         }
     }
     return softfloat_roundPackToF32( signZ, expZ, sigZ );
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
  propagateNaN:
     uiZ = softfloat_propagateNaNF32UI( uiA, uiB );
  uiZ:
