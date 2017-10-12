@@ -26,6 +26,7 @@ debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize) :
   dmcontrol = {0};
 
   dmstatus = {0};
+  dmstatus.impebreak = true;
   dmstatus.authenticated = 1;
   dmstatus.version = 2;
 
@@ -40,7 +41,10 @@ debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize) :
   memset(debug_rom_flags, 0, sizeof(debug_rom_flags));
   memset(resumeack, 0, sizeof(resumeack));
   memset(program_buffer, 0, program_buffer_bytes);
-  program_buffer[progbufsize] = ebreak();
+  program_buffer[4*progbufsize] = ebreak();
+  program_buffer[4*progbufsize+1] = ebreak() >> 8;
+  program_buffer[4*progbufsize+2] = ebreak() >> 16;
+  program_buffer[4*progbufsize+3] = ebreak() >> 24;
   memset(dmdata, 0, sizeof(dmdata));
 
   write32(debug_rom_whereto, 0,
@@ -65,6 +69,7 @@ void debug_module_t::reset()
   dmcontrol = {0};
 
   dmstatus = {0};
+  dmstatus.impebreak = true;
   dmstatus.authenticated = 1;
   dmstatus.version = 2;
 
@@ -301,6 +306,8 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
             dmstatus.allresumeack = false;
           }
 
+          result = set_field(result, DMI_DMSTATUS_IMPEBREAK,
+              dmstatus.impebreak);
 	  result = set_field(result, DMI_DMSTATUS_ALLNONEXISTENT, dmstatus.allnonexistant);
 	  result = set_field(result, DMI_DMSTATUS_ALLUNAVAIL, dmstatus.allunavail);
 	  result = set_field(result, DMI_DMSTATUS_ALLRUNNING, dmstatus.allrunning);
