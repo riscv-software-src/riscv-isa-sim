@@ -18,6 +18,7 @@ typedef struct {
 } dmcontrol_t;
 
 typedef struct {
+  bool impebreak;
   bool allnonexistant;
   bool anynonexistant;
   bool allunavail;
