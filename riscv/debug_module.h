@@ -31,8 +31,7 @@ typedef struct {
   bool authenticated;
   bool authbusy;
   bool cfgstrvalid;
-  unsigned versionhi;
-  unsigned versionlo;
+  unsigned version;
 } dmstatus_t;
 
 typedef enum cmderr {
@@ -47,7 +46,7 @@ typedef enum cmderr {
 typedef struct {
   bool busy;
   unsigned datacount;
-  unsigned progsize;
+  unsigned progbufsize;
   cmderr_t cmderr;
 } abstractcs_t;
 
@@ -59,7 +58,7 @@ typedef struct {
 class debug_module_t : public abstract_device_t
 {
   public:
-    debug_module_t(sim_t *sim, unsigned progsize);
+    debug_module_t(sim_t *sim, unsigned progbufsize);
     ~debug_module_t();
 
     void add_device(bus_t *bus);
@@ -77,7 +76,7 @@ class debug_module_t : public abstract_device_t
     static const unsigned datasize = 2;
     // Size of program_buffer in 32-bit words, as exposed to the rest of the
     // world.
-    unsigned progsize;
+    unsigned progbufsize;
     // Actual size of the program buffer, which is 1 word bigger than we let on
     // to implement the implicit ebreak at the end.
     unsigned program_buffer_bytes;
