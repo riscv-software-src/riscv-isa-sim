@@ -17,6 +17,7 @@
 #include <string>
 #include <vector>
 #include <algorithm>
+#include <math.h>
 
 DECLARE_TRAP(-1, interactive)
 
