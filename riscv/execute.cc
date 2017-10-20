@@ -12,7 +12,7 @@ static void commit_log_stash_privilege(processor_t* p)
   state_t* state = p->get_state();
   state->last_inst_priv = state->prv;
   state->last_inst_xlen = p->get_xlen();
-  state->last_inst_flen = p->supports_extension('Q') ? 128 : p->supports_extension('D') ? 64 : 32;
+  state->last_inst_flen = p->get_flen();
 #endif
 }
 

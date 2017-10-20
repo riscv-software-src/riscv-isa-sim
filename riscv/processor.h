@@ -174,6 +174,11 @@ public:
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
   unsigned get_xlen() { return xlen; }
+  unsigned get_flen() {
+    return supports_extension('Q') ? 128 :
+           supports_extension('D') ? 64 :
+           supports_extension('F') ? 32 : 0;
+  }
   extension_t* get_extension() { return ext; }
   bool supports_extension(unsigned char ext) {
     if (ext >= 'a' && ext <= 'z') ext += 'A' - 'a';
