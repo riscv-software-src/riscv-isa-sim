@@ -29,7 +29,7 @@ struct insn_desc_t
 struct commit_log_reg_t
 {
   reg_t addr;
-  reg_t data;
+  freg_t data;
 };
 
 typedef struct
@@ -138,6 +138,8 @@ struct state_t
 #ifdef RISCV_ENABLE_COMMITLOG
   commit_log_reg_t log_reg_write;
   reg_t last_inst_priv;
+  int last_inst_xlen;
+  int last_inst_flen;
 #endif
 };
 
@@ -171,6 +173,12 @@ public:
   reg_t get_csr(int which);
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
+  unsigned get_xlen() { return xlen; }
+  unsigned get_flen() {
+    return supports_extension('Q') ? 128 :
+           supports_extension('D') ? 64 :
+           supports_extension('F') ? 32 : 0;
+  }
   extension_t* get_extension() { return ext; }
   bool supports_extension(unsigned char ext) {
     if (ext >= 'a' && ext <= 'z') ext += 'A' - 'a';

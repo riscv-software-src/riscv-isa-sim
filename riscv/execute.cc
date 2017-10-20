@@ -6,30 +6,57 @@
 #include <cassert>
 
 
-static void commit_log_stash_privilege(state_t* state)
+static void commit_log_stash_privilege(processor_t* p)
 {
 #ifdef RISCV_ENABLE_COMMITLOG
+  state_t* state = p->get_state();
   state->last_inst_priv = state->prv;
+  state->last_inst_xlen = p->get_xlen();
+  state->last_inst_flen = p->get_flen();
 #endif
+}
+
+static void commit_log_print_value(int width, uint64_t hi, uint64_t lo)
+{
+  switch (width) {
+    case 16:
+      fprintf(stderr, "0x%04" PRIx16, (uint16_t)lo);
+      break;
+    case 32:
+      fprintf(stderr, "0x%08" PRIx32, (uint32_t)lo);
+      break;
+    case 64:
+      fprintf(stderr, "0x%016" PRIx64, lo);
+      break;
+    case 128:
+      fprintf(stderr, "0x%016" PRIx64 "%016" PRIx64, hi, lo);
+      break;
+    default:
+      abort();
+  }
 }
 
 static void commit_log_print_insn(state_t* state, reg_t pc, insn_t insn)
 {
 #ifdef RISCV_ENABLE_COMMITLOG
-  int32_t priv = state->last_inst_priv;
-  uint64_t mask = (insn.length() == 8 ? uint64_t(0) : (uint64_t(1) << (insn.length() * 8))) - 1;
-  if (state->log_reg_write.addr) {
-    fprintf(stderr, "%1d 0x%016" PRIx64 " (0x%08" PRIx64 ") %c%2" PRIu64 " 0x%016" PRIx64 "\n",
-            priv,
-            pc,
-            insn.bits() & mask,
-            state->log_reg_write.addr & 1 ? 'f' : 'x',
-            state->log_reg_write.addr >> 1,
-            state->log_reg_write.data);
-  } else {
-    fprintf(stderr, "%1d 0x%016" PRIx64 " (0x%08" PRIx64 ")\n", priv, pc, insn.bits() & mask);
+  auto& reg = state->log_reg_write;
+  int priv = state->last_inst_priv;
+  int xlen = state->last_inst_xlen;
+  int flen = state->last_inst_flen;
+  if (reg.addr) {
+    bool fp = reg.addr & 1;
+    int rd = reg.addr >> 1;
+    int size = fp ? flen : xlen;
+
+    fprintf(stderr, "%1d ", priv);
+    commit_log_print_value(xlen, 0, pc);
+    fprintf(stderr, " (");
+    commit_log_print_value(insn.length() * 8, 0, insn.bits());
+    fprintf(stderr, ") %c%2d ", fp ? 'f' : 'x', rd);
+    commit_log_print_value(size, reg.data.v[1], reg.data.v[0]);
+    fprintf(stderr, "\n");
   }
-  state->log_reg_write.addr = 0;
+  reg.addr = 0;
 #endif
 }
 
@@ -45,7 +72,7 @@ inline void processor_t::update_histogram(reg_t pc)
 // function calls.
 static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
-  commit_log_stash_privilege(p->get_state());
+  commit_log_stash_privilege(p);
   reg_t npc = fetch.func(p, fetch.insn, pc);
   if (!invalid_pc(npc)) {
     commit_log_print_insn(p->get_state(), pc, fetch.insn);
