@@ -360,9 +360,13 @@ void processor_t::set_csr(int which, reg_t val)
       state.mideleg = (state.mideleg & ~delegable_ints) | (val & delegable_ints);
       break;
     case CSR_MEDELEG: {
-      reg_t mask = CAUSE_MISALIGNED_FETCH | CAUSE_BREAKPOINT
-                 | CAUSE_USER_ECALL | CAUSE_FETCH_PAGE_FAULT
-                 | CAUSE_LOAD_PAGE_FAULT | CAUSE_STORE_PAGE_FAULT;
+      reg_t mask =
+        (1 << CAUSE_MISALIGNED_FETCH) |
+        (1 << CAUSE_BREAKPOINT) |
+        (1 << CAUSE_USER_ECALL) |
+        (1 << CAUSE_FETCH_PAGE_FAULT) |
+        (1 << CAUSE_LOAD_PAGE_FAULT) |
+        (1 << CAUSE_STORE_PAGE_FAULT);
       state.medeleg = (state.medeleg & ~mask) | (val & mask);
       break;
     }
