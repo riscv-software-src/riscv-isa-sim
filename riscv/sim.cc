@@ -300,6 +300,9 @@ void sim_t::make_dtb()
                      " 0x" << (clintsz >> 32) << " 0x" << (clintsz & (uint32_t)-1) << ">;\n"
          "    };\n"
          "  };\n"
+         "  htif {\n"
+         "    compatible = \"ucb,htif0\";\n"
+         "  };\n"
          "};\n";
 
   dts = s.str();
