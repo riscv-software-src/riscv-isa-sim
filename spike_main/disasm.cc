@@ -499,7 +499,7 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_FXTYPE(fle_d);
 
   DISASM_INSN("ebreak", c_add, mask_rd | mask_rvc_rs2, {});
-  add_insn(new disasm_insn_t("ret", match_c_li | match_rd_ra, mask_c_li | mask_rd | mask_rvc_imm, {}));
+  add_insn(new disasm_insn_t("ret", match_c_jr | match_rd_ra, mask_c_jr | mask_rd | mask_rvc_imm, {}));
   DISASM_INSN("jr", c_jr, mask_rvc_imm, {&rvc_rs1});
   DISASM_INSN("jalr", c_jalr, mask_rvc_imm, {&rvc_rs1});
   DISASM_INSN("nop", c_addi, mask_rd | mask_rvc_imm, {});
