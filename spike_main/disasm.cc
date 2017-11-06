@@ -336,9 +336,11 @@ disassembler_t::disassembler_t(int xlen)
 
   DEFINE_FLOAD(flw)
   DEFINE_FLOAD(fld)
+  DEFINE_FLOAD(flq)
 
   DEFINE_FSTORE(fsw)
   DEFINE_FSTORE(fsd)
+  DEFINE_FSTORE(fsq)
 
   add_insn(new disasm_insn_t("j", match_jal, mask_jal | mask_rd, {&jump_target}));
   add_insn(new disasm_insn_t("jal", match_jal | match_rd_ra, mask_jal | mask_rd, {&jump_target}));
@@ -451,6 +453,7 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_FRTYPE(fsgnjn_s);
   DEFINE_FRTYPE(fsgnjx_s);
   DEFINE_FR1TYPE(fcvt_s_d);
+  DEFINE_FR1TYPE(fcvt_s_q);
   DEFINE_XFTYPE(fcvt_s_l);
   DEFINE_XFTYPE(fcvt_s_lu);
   DEFINE_XFTYPE(fcvt_s_w);
@@ -482,6 +485,7 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_FRTYPE(fsgnjn_d);
   DEFINE_FRTYPE(fsgnjx_d);
   DEFINE_FR1TYPE(fcvt_d_s);
+  DEFINE_FR1TYPE(fcvt_d_q);
   DEFINE_XFTYPE(fcvt_d_l);
   DEFINE_XFTYPE(fcvt_d_lu);
   DEFINE_XFTYPE(fcvt_d_w);
@@ -497,6 +501,38 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_FXTYPE(feq_d);
   DEFINE_FXTYPE(flt_d);
   DEFINE_FXTYPE(fle_d);
+
+  DEFINE_FRTYPE(fadd_q);
+  DEFINE_FRTYPE(fsub_q);
+  DEFINE_FRTYPE(fmul_q);
+  DEFINE_FRTYPE(fdiv_q);
+  DEFINE_FR1TYPE(fsqrt_q);
+  DEFINE_FRTYPE(fmin_q);
+  DEFINE_FRTYPE(fmax_q);
+  DEFINE_FR3TYPE(fmadd_q);
+  DEFINE_FR3TYPE(fmsub_q);
+  DEFINE_FR3TYPE(fnmadd_q);
+  DEFINE_FR3TYPE(fnmsub_q);
+  DEFINE_FRTYPE(fsgnj_q);
+  DEFINE_FRTYPE(fsgnjn_q);
+  DEFINE_FRTYPE(fsgnjx_q);
+  DEFINE_FR1TYPE(fcvt_q_s);
+  DEFINE_FR1TYPE(fcvt_q_d);
+  DEFINE_XFTYPE(fcvt_q_l);
+  DEFINE_XFTYPE(fcvt_q_lu);
+  DEFINE_XFTYPE(fcvt_q_w);
+  DEFINE_XFTYPE(fcvt_q_wu);
+  DEFINE_XFTYPE(fcvt_q_wu);
+  DEFINE_XFTYPE(fmv_q_x);
+  DEFINE_FXTYPE(fcvt_l_q);
+  DEFINE_FXTYPE(fcvt_lu_q);
+  DEFINE_FXTYPE(fcvt_w_q);
+  DEFINE_FXTYPE(fcvt_wu_q);
+  DEFINE_FXTYPE(fclass_q);
+  DEFINE_FXTYPE(fmv_x_q);
+  DEFINE_FXTYPE(feq_q);
+  DEFINE_FXTYPE(flt_q);
+  DEFINE_FXTYPE(fle_q);
 
   DISASM_INSN("ebreak", c_add, mask_rd | mask_rvc_rs2, {});
   add_insn(new disasm_insn_t("ret", match_c_jr | match_rd_ra, mask_c_jr | mask_rd | mask_rvc_imm, {}));
