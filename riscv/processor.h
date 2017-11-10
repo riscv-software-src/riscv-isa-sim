@@ -222,7 +222,6 @@ public:
           (operation == OPERATION_STORE && !state.mcontrol[i].store) ||
           (operation == OPERATION_LOAD && !state.mcontrol[i].load) ||
           (state.prv == PRV_M && !state.mcontrol[i].m) ||
-          (state.prv == PRV_H && !state.mcontrol[i].h) ||
           (state.prv == PRV_S && !state.mcontrol[i].s) ||
           (state.prv == PRV_U && !state.mcontrol[i].u)) {
         continue;
