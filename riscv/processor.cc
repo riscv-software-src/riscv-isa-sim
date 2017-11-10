@@ -112,10 +112,6 @@ void processor_t::parse_isa_string(const char* str)
   if (supports_extension('Q') && max_xlen < 64)
     bad_isa_string(str);
 
-  // advertise support for supervisor and user modes
-  isa |= 1L << ('s' - 'a');
-  isa |= 1L << ('u' - 'a');
-
   max_isa = isa;
 }
 
