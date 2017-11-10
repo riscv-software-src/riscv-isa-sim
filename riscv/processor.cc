@@ -193,13 +193,23 @@ static int xlen_to_uxl(int xlen)
   abort();
 }
 
-void processor_t::set_privilege(reg_t prv)
+reg_t processor_t::legalize_privilege(reg_t prv)
 {
   assert(prv <= PRV_M);
-  if (prv == PRV_H)
-    prv = PRV_U;
+
+  if (!supports_extension('U'))
+    return PRV_M;
+
+  if (prv == PRV_H || !supports_extension('S'))
+    return PRV_U;
+
+  return prv;
+}
+
+void processor_t::set_privilege(reg_t prv)
+{
   mmu->flush_tlb();
-  state.prv = prv;
+  state.prv = legalize_privilege(prv);
 }
 
 void processor_t::enter_debug_mode(uint8_t cause)
@@ -328,10 +338,15 @@ void processor_t::set_csr(int which, reg_t val)
         mmu->flush_tlb();
 
       reg_t mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE
-                 | MSTATUS_SPP | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_SUM
-                 | MSTATUS_MPP | MSTATUS_MXR | MSTATUS_TW | MSTATUS_TVM
+                 | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_SUM
+                 | MSTATUS_MXR | MSTATUS_TW | MSTATUS_TVM
                  | MSTATUS_TSR | MSTATUS_UXL | MSTATUS_SXL |
                  (ext ? MSTATUS_XS : 0);
+
+      reg_t requested_mpp = legalize_privilege(get_field(val, MSTATUS_MPP));
+      state.mstatus = set_field(state.mstatus, MSTATUS_MPP, requested_mpp);
+      if (supports_extension('S'))
+        mask |= MSTATUS_SPP;
 
       state.mstatus = (state.mstatus & ~mask) | (val & mask);
 
@@ -342,6 +357,7 @@ void processor_t::set_csr(int which, reg_t val)
       else
         state.mstatus = set_field(state.mstatus, MSTATUS64_SD, dirty);
 
+      state.mstatus = set_field(state.mstatus, MSTATUS_UXL, xlen_to_uxl(max_xlen));
       state.mstatus = set_field(state.mstatus, MSTATUS_UXL, xlen_to_uxl(max_xlen));
       state.mstatus = set_field(state.mstatus, MSTATUS_SXL, xlen_to_uxl(max_xlen));
       // U-XLEN == S-XLEN == M-XLEN
