@@ -28,6 +28,7 @@ static void help()
   fprintf(stderr, "  -H                 Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
   fprintf(stderr, "  --pc=<address>        Override ELF entry point\n");
+  fprintf(stderr, "  --hartids=<a,b,...>   Explicitly specify hartids, default is 0,1,...\n");
   fprintf(stderr, "  --ic=<S>:<W>:<B>      Instantiate a cache model with S sets,\n");
   fprintf(stderr, "  --dc=<S>:<W>:<B>        W ways, and B-byte blocks (with S and\n");
   fprintf(stderr, "  --l2=<S>:<W>:<B>        B both powers of 2).\n");
