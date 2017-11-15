@@ -25,7 +25,7 @@ static void handle_signal(int sig)
 
 sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
              std::vector<std::pair<reg_t, mem_t*>> mems,
-             const std::vector<std::string>& args)
+             const std::vector<std::string>& args, std::vector<int> const hartids)
   : htif_t(args), debug_module(this), mems(mems), procs(std::max(nprocs, size_t(1))),
     start_pc(start_pc),
     current_step(0), current_proc(0), debug(false), remote_bitbang(NULL)
@@ -39,8 +39,19 @@ sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
 
   debug_mmu = new mmu_t(this, NULL);
 
-  for (size_t i = 0; i < procs.size(); i++) {
-    procs[i] = new processor_t(isa, this, i, halted);
+  if (hartids.size() == 0) {
+    for (size_t i = 0; i < procs.size(); i++) {
+      procs[i] = new processor_t(isa, this, i, halted);
+    }
+  }
+  else {
+    if (hartids.size() != procs.size()) {
+      std::cerr << "Number of specified hartids doesn't match number of processors" << strerror(errno) << std::endl;
+      exit(1);
+    }
+    for (size_t i = 0; i < procs.size(); i++) {
+      procs[i] = new processor_t(isa, this, hartids[i], halted);
+    }
   }
 
   clint.reset(new clint_t(procs));
