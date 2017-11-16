@@ -21,7 +21,7 @@ class sim_t : public htif_t
 public:
   sim_t(const char* isa, size_t _nprocs,  bool halted, reg_t start_pc,
         std::vector<std::pair<reg_t, mem_t*>> mems,
-        const std::vector<std::string>& args);
+        const std::vector<std::string>& args, const std::vector<int> hartids);
   ~sim_t();
 
   // run the simulation to completion
