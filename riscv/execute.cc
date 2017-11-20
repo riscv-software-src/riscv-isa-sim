@@ -43,18 +43,21 @@ static void commit_log_print_insn(state_t* state, reg_t pc, insn_t insn)
   int priv = state->last_inst_priv;
   int xlen = state->last_inst_xlen;
   int flen = state->last_inst_flen;
+
+  fprintf(stderr, "%1d ", priv);
+  commit_log_print_value(xlen, 0, pc);
+  fprintf(stderr, " (");
+  commit_log_print_value(insn.length() * 8, 0, insn.bits());
+
   if (reg.addr) {
     bool fp = reg.addr & 1;
     int rd = reg.addr >> 1;
     int size = fp ? flen : xlen;
-
-    fprintf(stderr, "%1d ", priv);
-    commit_log_print_value(xlen, 0, pc);
-    fprintf(stderr, " (");
-    commit_log_print_value(insn.length() * 8, 0, insn.bits());
     fprintf(stderr, ") %c%2d ", fp ? 'f' : 'x', rd);
     commit_log_print_value(size, reg.data.v[1], reg.data.v[0]);
     fprintf(stderr, "\n");
+  } else {
+    fprintf(stderr, ")\n");
   }
   reg.addr = 0;
 #endif
