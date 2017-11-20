@@ -173,11 +173,28 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
 
   reg_t sie = get_field(state.mstatus, MSTATUS_SIE);
   reg_t s_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
+  // M-ints have highest priority; consider S-ints only if no M-ints pending
   if (enabled_interrupts == 0)
     enabled_interrupts = pending_interrupts & state.mideleg & -s_enabled;
 
-  if (state.dcsr.cause == 0 && enabled_interrupts)
+  if (state.dcsr.cause == 0 && enabled_interrupts) {
+    // nonstandard interrupts have highest priority
+    if (enabled_interrupts >> IRQ_M_EXT)
+      enabled_interrupts = enabled_interrupts >> IRQ_M_EXT << IRQ_M_EXT;
+    // external interrupts have next-highest priority
+    else if (enabled_interrupts & (MIP_MEIP | MIP_SEIP))
+      enabled_interrupts = enabled_interrupts & (MIP_MEIP | MIP_SEIP);
+    // software interrupts have next-highest priority
+    else if (enabled_interrupts & (MIP_MSIP | MIP_SSIP))
+      enabled_interrupts = enabled_interrupts & (MIP_MSIP | MIP_SSIP);
+    // timer interrupts have next-highest priority
+    else if (enabled_interrupts & (MIP_MTIP | MIP_STIP))
+      enabled_interrupts = enabled_interrupts & (MIP_MTIP | MIP_STIP);
+    else
+      abort();
+
     throw trap_t(((reg_t)1 << (max_xlen-1)) | ctz(enabled_interrupts));
+  }
 }
 
 static int xlen_to_uxl(int xlen)
