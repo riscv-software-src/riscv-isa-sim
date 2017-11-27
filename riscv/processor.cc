@@ -272,8 +272,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.pc = state.stvec;
     state.scause = t.cause();
     state.sepc = epc;
-    if (t.has_badaddr())
-      state.sbadaddr = t.get_badaddr();
+    state.sbadaddr = t.get_badaddr();
 
     reg_t s = state.mstatus;
     s = set_field(s, MSTATUS_SPIE, get_field(s, MSTATUS_SIE));
@@ -286,8 +285,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.pc = (state.mtvec & ~(reg_t)1) + vector;
     state.mepc = epc;
     state.mcause = t.cause();
-    if (t.has_badaddr())
-      state.mbadaddr = t.get_badaddr();
+    state.mbadaddr = t.get_badaddr();
 
     reg_t s = state.mstatus;
     s = set_field(s, MSTATUS_MPIE, get_field(s, MSTATUS_MIE));

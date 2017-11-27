@@ -14,7 +14,7 @@ class trap_t
   trap_t(reg_t which) : which(which) {}
   virtual const char* name();
   virtual bool has_badaddr() { return false; }
-  virtual reg_t get_badaddr() { abort(); }
+  virtual reg_t get_badaddr() { return 0; }
   reg_t cause() { return which; }
  private:
   char _name[16];
