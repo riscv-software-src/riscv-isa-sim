@@ -239,9 +239,9 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   if (debug) {
     fprintf(stderr, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
             id, t.name(), epc);
-    if (t.has_badaddr())
-      fprintf(stderr, "core %3d:           badaddr 0x%016" PRIx64 "\n", id,
-          t.get_badaddr());
+    if (t.has_tval())
+      fprintf(stderr, "core %3d:           tval 0x%016" PRIx64 "\n", id,
+          t.get_tval());
   }
 
   if (state.dcsr.cause) {
@@ -272,7 +272,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.pc = state.stvec;
     state.scause = t.cause();
     state.sepc = epc;
-    state.sbadaddr = t.get_badaddr();
+    state.stval = t.get_tval();
 
     reg_t s = state.mstatus;
     s = set_field(s, MSTATUS_SPIE, get_field(s, MSTATUS_SIE));
@@ -285,7 +285,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.pc = (state.mtvec & ~(reg_t)1) + vector;
     state.mepc = epc;
     state.mcause = t.cause();
-    state.mbadaddr = t.get_badaddr();
+    state.mtval = t.get_tval();
 
     reg_t s = state.mstatus;
     s = set_field(s, MSTATUS_MPIE, get_field(s, MSTATUS_MIE));
@@ -439,12 +439,12 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_STVEC: state.stvec = val >> 2 << 2; break;
     case CSR_SSCRATCH: state.sscratch = val; break;
     case CSR_SCAUSE: state.scause = val; break;
-    case CSR_SBADADDR: state.sbadaddr = val; break;
+    case CSR_STVAL: state.stval = val; break;
     case CSR_MEPC: state.mepc = val; break;
     case CSR_MTVEC: state.mtvec = val & ~(reg_t)2; break;
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
-    case CSR_MBADADDR: state.mbadaddr = val; break;
+    case CSR_MTVAL: state.mtval = val; break;
     case CSR_MISA: {
       if (!(val & (1L << ('F' - 'A'))))
         val &= ~(1L << ('D' - 'A'));
@@ -584,7 +584,7 @@ reg_t processor_t::get_csr(int which)
     case CSR_SIP: return state.mip & state.mideleg;
     case CSR_SIE: return state.mie & state.mideleg;
     case CSR_SEPC: return state.sepc;
-    case CSR_SBADADDR: return state.sbadaddr;
+    case CSR_STVAL: return state.stval;
     case CSR_STVEC: return state.stvec;
     case CSR_SCAUSE:
       if (max_xlen > xlen)
@@ -601,7 +601,7 @@ reg_t processor_t::get_csr(int which)
     case CSR_MEPC: return state.mepc;
     case CSR_MSCRATCH: return state.mscratch;
     case CSR_MCAUSE: return state.mcause;
-    case CSR_MBADADDR: return state.mbadaddr;
+    case CSR_MTVAL: return state.mtval;
     case CSR_MISA: return isa;
     case CSR_MARCHID: return 0;
     case CSR_MIMPID: return 0;
