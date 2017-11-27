@@ -159,7 +159,7 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
 
 reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
 {
-  vm_info vm = decode_vm_info(proc->max_xlen, mode, proc->get_state()->sptbr);
+  vm_info vm = decode_vm_info(proc->max_xlen, mode, proc->get_state()->satp);
   if (vm.levels == 0)
     return addr & ((reg_t(2) << (proc->xlen-1))-1); // zero-extend from xlen
 

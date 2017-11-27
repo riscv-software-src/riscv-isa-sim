@@ -320,23 +320,23 @@ struct vm_info {
   reg_t ptbase;
 };
 
-inline vm_info decode_vm_info(int xlen, reg_t prv, reg_t sptbr)
+inline vm_info decode_vm_info(int xlen, reg_t prv, reg_t satp)
 {
   if (prv == PRV_M) {
     return {0, 0, 0, 0};
   } else if (prv <= PRV_S && xlen == 32) {
-    switch (get_field(sptbr, SPTBR32_MODE)) {
-      case SPTBR_MODE_OFF: return {0, 0, 0, 0};
-      case SPTBR_MODE_SV32: return {2, 10, 4, (sptbr & SPTBR32_PPN) << PGSHIFT};
+    switch (get_field(satp, SATP32_MODE)) {
+      case SATP_MODE_OFF: return {0, 0, 0, 0};
+      case SATP_MODE_SV32: return {2, 10, 4, (satp & SATP32_PPN) << PGSHIFT};
       default: abort();
     }
   } else if (prv <= PRV_S && xlen == 64) {
-    switch (get_field(sptbr, SPTBR64_MODE)) {
-      case SPTBR_MODE_OFF: return {0, 0, 0, 0};
-      case SPTBR_MODE_SV39: return {3, 9, 8, (sptbr & SPTBR64_PPN) << PGSHIFT};
-      case SPTBR_MODE_SV48: return {4, 9, 8, (sptbr & SPTBR64_PPN) << PGSHIFT};
-      case SPTBR_MODE_SV57: return {5, 9, 8, (sptbr & SPTBR64_PPN) << PGSHIFT};
-      case SPTBR_MODE_SV64: return {6, 9, 8, (sptbr & SPTBR64_PPN) << PGSHIFT};
+    switch (get_field(satp, SATP64_MODE)) {
+      case SATP_MODE_OFF: return {0, 0, 0, 0};
+      case SATP_MODE_SV39: return {3, 9, 8, (satp & SATP64_PPN) << PGSHIFT};
+      case SATP_MODE_SV48: return {4, 9, 8, (satp & SATP64_PPN) << PGSHIFT};
+      case SATP_MODE_SV57: return {5, 9, 8, (satp & SATP64_PPN) << PGSHIFT};
+      case SATP_MODE_SV64: return {6, 9, 8, (satp & SATP64_PPN) << PGSHIFT};
       default: abort();
     }
   } else {
