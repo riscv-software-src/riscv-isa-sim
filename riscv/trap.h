@@ -13,8 +13,8 @@ class trap_t
  public:
   trap_t(reg_t which) : which(which) {}
   virtual const char* name();
-  virtual bool has_badaddr() { return false; }
-  virtual reg_t get_badaddr() { return 0; }
+  virtual bool has_tval() { return false; }
+  virtual reg_t get_tval() { return 0; }
   reg_t cause() { return which; }
  private:
   char _name[16];
@@ -24,12 +24,12 @@ class trap_t
 class mem_trap_t : public trap_t
 {
  public:
-  mem_trap_t(reg_t which, reg_t badaddr)
-    : trap_t(which), badaddr(badaddr) {}
-  bool has_badaddr() override { return true; }
-  reg_t get_badaddr() override { return badaddr; }
+  mem_trap_t(reg_t which, reg_t tval)
+    : trap_t(which), tval(tval) {}
+  bool has_tval() override { return true; }
+  reg_t get_tval() override { return tval; }
  private:
-  reg_t badaddr;
+  reg_t tval;
 };
 
 #define DECLARE_TRAP(n, x) class trap_##x : public trap_t { \
@@ -40,7 +40,7 @@ class mem_trap_t : public trap_t
 
 #define DECLARE_MEM_TRAP(n, x) class trap_##x : public mem_trap_t { \
  public: \
-  trap_##x(reg_t badaddr) : mem_trap_t(n, badaddr) {} \
+  trap_##x(reg_t tval) : mem_trap_t(n, tval) {} \
   const char* name() { return "trap_"#x; } \
 };
 

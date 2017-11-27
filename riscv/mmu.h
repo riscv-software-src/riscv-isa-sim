@@ -144,10 +144,10 @@ public:
         return lhs; \
       } catch (trap_load_page_fault& t) { \
         /* AMO faults should be reported as store faults */ \
-        throw trap_store_page_fault(t.get_badaddr()); \
+        throw trap_store_page_fault(t.get_tval()); \
       } catch (trap_load_access_fault& t) { \
         /* AMO faults should be reported as store faults */ \
-        throw trap_store_access_fault(t.get_badaddr()); \
+        throw trap_store_access_fault(t.get_tval()); \
       } \
     }
 

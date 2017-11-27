@@ -97,7 +97,7 @@ struct state_t
   reg_t prv;    // TODO: Can this be an enum instead?
   reg_t mstatus;
   reg_t mepc;
-  reg_t mbadaddr;
+  reg_t mtval;
   reg_t mscratch;
   reg_t mtvec;
   reg_t mcause;
@@ -109,7 +109,7 @@ struct state_t
   uint32_t mcounteren;
   uint32_t scounteren;
   reg_t sepc;
-  reg_t sbadaddr;
+  reg_t stval;
   reg_t sscratch;
   reg_t stvec;
   reg_t satp;
