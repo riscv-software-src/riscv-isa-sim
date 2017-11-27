@@ -112,7 +112,7 @@ struct state_t
   reg_t sbadaddr;
   reg_t sscratch;
   reg_t stvec;
-  reg_t sptbr;
+  reg_t satp;
   reg_t scause;
   reg_t dpc;
   reg_t dscratch;

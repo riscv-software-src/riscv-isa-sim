@@ -425,14 +425,14 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SIE:
       return set_csr(CSR_MIE,
                      (state.mie & ~state.mideleg) | (val & state.mideleg));
-    case CSR_SPTBR: {
+    case CSR_SATP: {
       mmu->flush_tlb();
       if (max_xlen == 32)
-        state.sptbr = val & (SPTBR32_PPN | SPTBR32_MODE);
-      if (max_xlen == 64 && (get_field(val, SPTBR64_MODE) == SPTBR_MODE_OFF ||
-                             get_field(val, SPTBR64_MODE) == SPTBR_MODE_SV39 ||
-                             get_field(val, SPTBR64_MODE) == SPTBR_MODE_SV48))
-        state.sptbr = val & (SPTBR64_PPN | SPTBR64_MODE);
+        state.satp = val & (SATP32_PPN | SATP32_MODE);
+      if (max_xlen == 64 && (get_field(val, SATP64_MODE) == SATP_MODE_OFF ||
+                             get_field(val, SATP64_MODE) == SATP_MODE_SV39 ||
+                             get_field(val, SATP64_MODE) == SATP_MODE_SV48))
+        state.satp = val & (SATP64_PPN | SATP64_MODE);
       break;
     }
     case CSR_SEPC: state.sepc = val; break;
@@ -590,10 +590,10 @@ reg_t processor_t::get_csr(int which)
       if (max_xlen > xlen)
         return state.scause | ((state.scause >> (max_xlen-1)) << (xlen-1));
       return state.scause;
-    case CSR_SPTBR:
+    case CSR_SATP:
       if (get_field(state.mstatus, MSTATUS_TVM))
         require_privilege(PRV_M);
-      return state.sptbr;
+      return state.satp;
     case CSR_SSCRATCH: return state.sscratch;
     case CSR_MSTATUS: return state.mstatus;
     case CSR_MIP: return state.mip;
