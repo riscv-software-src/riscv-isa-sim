@@ -544,6 +544,19 @@
 #define CSR_ICOUNT_ACTION                   (0x3fULL << CSR_ICOUNT_ACTION_OFFSET)
 #define DMI_DMSTATUS                        0x11
 /*
+* Gets set if the Debug Module was accessed incorrectly.
+*
+* 0 (none): No error.
+*
+* 1 (badaddr): There was an access to an unimplemented Debug Module
+* address.
+*
+* 7 (other): An access failed for another reason.
+ */
+#define DMI_DMSTATUS_DMERR_OFFSET           24
+#define DMI_DMSTATUS_DMERR_LENGTH           3
+#define DMI_DMSTATUS_DMERR                  (0x7U << DMI_DMSTATUS_DMERR_OFFSET)
+/*
 * If 1, then there is an implicit {\tt ebreak} instruction at the
 * non-existent word immediately after the Program Buffer. This saves
 * the debugger from having to write the {\tt ebreak} itself, and
@@ -555,26 +568,27 @@
 #define DMI_DMSTATUS_IMPEBREAK_LENGTH       1
 #define DMI_DMSTATUS_IMPEBREAK              (0x1U << DMI_DMSTATUS_IMPEBREAK_OFFSET)
 /*
-* Gets set if the Debug Module was accessed incorrectly.
-*
-* 0 (none): No error.
-*
-* 1 (badaddr): There was an access to an unimplemented Debug Module
-* address.
-*
-* 7 (other): An access failed for another reason.
+* This field is 1 when all currently selected harts have been reset but the reset has not been acknowledged.
  */
-#define DMI_DMSTATUS_DMERR_OFFSET           18
-#define DMI_DMSTATUS_DMERR_LENGTH           3
-#define DMI_DMSTATUS_DMERR                  (0x7U << DMI_DMSTATUS_DMERR_OFFSET)
+#define DMI_DMSTATUS_ALLHAVERESET_OFFSET    19
+#define DMI_DMSTATUS_ALLHAVERESET_LENGTH    1
+#define DMI_DMSTATUS_ALLHAVERESET           (0x1U << DMI_DMSTATUS_ALLHAVERESET_OFFSET)
 /*
-* This field is 1 when all currently selected harts have acknowledged the previous \Fresumereq.
+* This field is 1 when any currently selected hart has been reset but the reset has not been acknowledged.
+ */
+#define DMI_DMSTATUS_ANYHAVERESET_OFFSET    18
+#define DMI_DMSTATUS_ANYHAVERESET_LENGTH    1
+#define DMI_DMSTATUS_ANYHAVERESET           (0x1U << DMI_DMSTATUS_ANYHAVERESET_OFFSET)
+/*
+* This field is 1 when all currently selected harts have acknowledged
+* the previous resume request.
  */
 #define DMI_DMSTATUS_ALLRESUMEACK_OFFSET    17
 #define DMI_DMSTATUS_ALLRESUMEACK_LENGTH    1
 #define DMI_DMSTATUS_ALLRESUMEACK           (0x1U << DMI_DMSTATUS_ALLRESUMEACK_OFFSET)
 /*
-* This field is 1 when any currently selected hart has acknowledged the previous \Fresumereq.
+* This field is 1 when any currently selected hart has acknowledged
+* the previous resume request.
  */
 #define DMI_DMSTATUS_ANYRESUMEACK_OFFSET    16
 #define DMI_DMSTATUS_ANYRESUMEACK_LENGTH    1
@@ -675,11 +689,12 @@
 #define DMI_DMSTATUS_VERSION                (0xfU << DMI_DMSTATUS_VERSION_OFFSET)
 #define DMI_DMCONTROL                       0x10
 /*
-* Halt request signal for all currently selected harts. When set to
-* 1, each selected hart will halt if it is not currently halted.
+* Writes the halt request bit for all currently selected harts.
+* When set to 1, each selected hart will halt if it is not currently
+* halted.
 *
 * Writing 1 or 0 has no effect on a hart which is already halted, but
-* the bit should be cleared to 0 before the hart is resumed.
+* the bit must be cleared to 0 before the hart is resumed.
 *
 * Writes apply to the new value of \Fhartsel and \Fhasel.
  */
@@ -687,10 +702,12 @@
 #define DMI_DMCONTROL_HALTREQ_LENGTH        1
 #define DMI_DMCONTROL_HALTREQ               (0x1U << DMI_DMCONTROL_HALTREQ_OFFSET)
 /*
-* Resume request signal for all currently selected harts. When set to 1,
-* each selected hart will resume if it is currently halted.
+* Writes the resume request bit for all currently selected harts.
+* When set to 1, each selected hart will resume if it is currently
+* halted.
 *
-* This bit is ignored while \Fhaltreq is set.
+* The resume request bit is ignored while the halt request bit is
+* set.
 *
 * Writes apply to the new value of \Fhartsel and \Fhasel.
  */
@@ -698,9 +715,9 @@
 #define DMI_DMCONTROL_RESUMEREQ_LENGTH      1
 #define DMI_DMCONTROL_RESUMEREQ             (0x1U << DMI_DMCONTROL_RESUMEREQ_OFFSET)
 /*
-* This optional bit controls reset to all the currently selected harts.
-* To perform a reset the debugger writes 1, and then writes 0 to
-* deassert the reset signal.
+* This optional field writes the reset bit for all the currently
+* selected harts.  To perform a reset the debugger writes 1, and then
+* writes 0 to deassert the reset signal.
 *
 * If this feature is not implemented, the bit always stays 0, so
 * after writing 1 the debugger can read the register back to see if
@@ -711,6 +728,15 @@
 #define DMI_DMCONTROL_HARTRESET_OFFSET      29
 #define DMI_DMCONTROL_HARTRESET_LENGTH      1
 #define DMI_DMCONTROL_HARTRESET             (0x1U << DMI_DMCONTROL_HARTRESET_OFFSET)
+/*
+* Writing 1 to this bit clears the {\tt havereset} bits for
+* any selected harts.
+*
+* Writes apply to the new value of \Fhartsel and \Fhasel.
+ */
+#define DMI_DMCONTROL_ACKHAVERESET_OFFSET   28
+#define DMI_DMCONTROL_ACKHAVERESET_LENGTH   1
+#define DMI_DMCONTROL_ACKHAVERESET          (0x1U << DMI_DMCONTROL_ACKHAVERESET_OFFSET)
 /*
 * Selects the  definition of currently selected harts.
 *
