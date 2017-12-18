@@ -16,30 +16,46 @@
 
 ///////////////////////// debug_module_t
 
-debug_module_t::debug_module_t(sim_t *sim) : sim(sim)
+debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize) :
+  progbufsize(progbufsize),
+  program_buffer_bytes(4 + 4*progbufsize),
+  debug_progbuf_start(debug_data_start - program_buffer_bytes),
+  debug_abstract_start(debug_progbuf_start - debug_abstract_size*4),
+  sim(sim)
 {
   dmcontrol = {0};
 
   dmstatus = {0};
+  dmstatus.impebreak = true;
   dmstatus.authenticated = 1;
-  dmstatus.versionlo = 2;
+  dmstatus.version = 2;
 
   abstractcs = {0};
-  abstractcs.progsize = progsize;
+  abstractcs.progbufsize = progbufsize;
 
   abstractauto = {0};
+
+  program_buffer = new uint8_t[program_buffer_bytes];
 
   memset(halted, 0, sizeof(halted));
   memset(debug_rom_flags, 0, sizeof(debug_rom_flags));
   memset(resumeack, 0, sizeof(resumeack));
-  memset(program_buffer, 0, sizeof(program_buffer));
+  memset(program_buffer, 0, program_buffer_bytes);
+  program_buffer[4*progbufsize] = ebreak();
+  program_buffer[4*progbufsize+1] = ebreak() >> 8;
+  program_buffer[4*progbufsize+2] = ebreak() >> 16;
+  program_buffer[4*progbufsize+3] = ebreak() >> 24;
   memset(dmdata, 0, sizeof(dmdata));
 
   write32(debug_rom_whereto, 0,
           jal(ZERO, debug_abstract_start - DEBUG_ROM_WHERETO));
 
   memset(debug_abstract, 0, sizeof(debug_abstract));
+}
 
+debug_module_t::~debug_module_t()
+{
+  delete[] program_buffer;
 }
 
 void debug_module_t::reset()
@@ -53,12 +69,13 @@ void debug_module_t::reset()
   dmcontrol = {0};
 
   dmstatus = {0};
+  dmstatus.impebreak = true;
   dmstatus.authenticated = 1;
-  dmstatus.versionlo = 2;
+  dmstatus.version = 2;
 
   abstractcs = {0};
   abstractcs.datacount = sizeof(dmdata) / 4;
-  abstractcs.progsize = progsize;
+  abstractcs.progbufsize = progbufsize;
 
   abstractauto = {0};
 }
@@ -97,7 +114,7 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
     return true;
   }
 
-  if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + sizeof(program_buffer)))) {
+  if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + program_buffer_bytes))) {
     memcpy(bytes, program_buffer + addr - debug_progbuf_start, len);
     return true;
   }
@@ -138,7 +155,7 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     return true;
   }
 
-  if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + sizeof(program_buffer)))) {
+  if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + program_buffer_bytes))) {
     memcpy(program_buffer + addr - debug_progbuf_start, bytes, len);
 
     return true;
@@ -230,7 +247,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
     if (!abstractcs.busy && ((abstractauto.autoexecdata >> i) & 1)) {
       perform_abstract_command();
     }
-  } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progsize) {
+  } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progbufsize) {
     unsigned i = address - DMI_PROGBUF0;
     result = read32(program_buffer, i);
     if (abstractcs.busy) {
@@ -289,6 +306,8 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
             dmstatus.allresumeack = false;
           }
 
+          result = set_field(result, DMI_DMSTATUS_IMPEBREAK,
+              dmstatus.impebreak);
 	  result = set_field(result, DMI_DMSTATUS_ALLNONEXISTENT, dmstatus.allnonexistant);
 	  result = set_field(result, DMI_DMSTATUS_ALLUNAVAIL, dmstatus.allunavail);
 	  result = set_field(result, DMI_DMSTATUS_ALLRUNNING, dmstatus.allrunning);
@@ -301,15 +320,15 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
           result = set_field(result, DMI_DMSTATUS_ANYRESUMEACK, dmstatus.anyresumeack);
           result = set_field(result, DMI_DMSTATUS_AUTHENTICATED, dmstatus.authenticated);
           result = set_field(result, DMI_DMSTATUS_AUTHBUSY, dmstatus.authbusy);
-          result = set_field(result, DMI_DMSTATUS_VERSIONHI, dmstatus.versionhi);
-          result = set_field(result, DMI_DMSTATUS_VERSIONLO, dmstatus.versionlo);
+          result = set_field(result, DMI_DMSTATUS_VERSION, dmstatus.version);
         }
       	break;
       case DMI_ABSTRACTCS:
         result = set_field(result, DMI_ABSTRACTCS_CMDERR, abstractcs.cmderr);
         result = set_field(result, DMI_ABSTRACTCS_BUSY, abstractcs.busy);
         result = set_field(result, DMI_ABSTRACTCS_DATACOUNT, abstractcs.datacount);
-        result = set_field(result, DMI_ABSTRACTCS_PROGSIZE, abstractcs.progsize);
+        result = set_field(result, DMI_ABSTRACTCS_PROGBUFSIZE,
+            abstractcs.progbufsize);
         break;
       case DMI_ABSTRACTAUTO:
         result = set_field(result, DMI_ABSTRACTAUTO_AUTOEXECPROGBUF, abstractauto.autoexecprogbuf);
@@ -428,7 +447,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
     }
     return true;
 
-  } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progsize) {
+  } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + progbufsize) {
     unsigned i = address - DMI_PROGBUF0;
 
     if (!abstractcs.busy)
