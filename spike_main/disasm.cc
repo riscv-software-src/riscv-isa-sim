@@ -545,6 +545,9 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN("lui", c_lui, 0, {&xrd, &rvc_uimm});
   DISASM_INSN("addi", c_addi, 0, {&xrd, &xrd, &rvc_imm});
   DISASM_INSN("slli", c_slli, 0, {&xrd, &rvc_shamt});
+  DISASM_INSN("srli", c_srli, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_shamt});
+  DISASM_INSN("srai", c_srai, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_shamt});
+  DISASM_INSN("andi", c_andi, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_imm});
   DISASM_INSN("mv", c_mv, 0, {&xrd, &rvc_rs2});
   DISASM_INSN("add", c_add, 0, {&xrd, &xrd, &rvc_rs2});
   DISASM_INSN("addw", c_addw, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
