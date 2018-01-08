@@ -41,6 +41,8 @@ class rom_device_t : public abstract_device_t {
 class mem_t : public abstract_device_t {
  public:
   mem_t(size_t size) : len(size) {
+    if (!size)
+      throw std::runtime_error("zero bytes of target memory requested");
     data = (char*)calloc(1, size);
     if (!data)
       throw std::runtime_error("couldn't allocate " + std::to_string(size) + " bytes of target memory");
