@@ -38,8 +38,6 @@ public:
   processor_t* get_core(size_t i) { return procs.at(i); }
   unsigned nprocs() const { return procs.size(); }
 
-  debug_module_t debug_module;
-
 private:
   std::vector<std::pair<reg_t, mem_t*>> mems;
   mmu_t* debug_mmu;  // debug port into main memory
@@ -92,6 +90,7 @@ private:
 
   friend class processor_t;
   friend class mmu_t;
+  friend class debug_module_t;
 
   // htif
   friend void sim_thread_main(void*);
@@ -105,6 +104,12 @@ private:
   void write_chunk(addr_t taddr, size_t len, const void* src);
   size_t chunk_align() { return 8; }
   size_t chunk_max_size() { return 8; }
+
+public:
+  // Initialize this after procs, because in debug_module_t::reset() we
+  // enumerate processors, which segfaults if procs hasn't been initialized
+  // yet.
+  debug_module_t debug_module;
 };
 
 extern volatile bool ctrlc_pressed;

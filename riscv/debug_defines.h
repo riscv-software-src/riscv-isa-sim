@@ -1041,7 +1041,26 @@
 #define DMI_AUTHDATA_DATA_OFFSET            0
 #define DMI_AUTHDATA_DATA_LENGTH            32
 #define DMI_AUTHDATA_DATA                   (0xffffffffU << DMI_AUTHDATA_DATA_OFFSET)
+#define DMI_SBADDRESS3                      0x37
+/*
+* Accesses bits 127:96 of the physical address in {\tt sbaddress} (if
+* the system address bus is that wide).
+ */
+#define DMI_SBADDRESS3_ADDRESS_OFFSET       0
+#define DMI_SBADDRESS3_ADDRESS_LENGTH       32
+#define DMI_SBADDRESS3_ADDRESS              (0xffffffffU << DMI_SBADDRESS3_ADDRESS_OFFSET)
 #define DMI_SBCS                            0x38
+/*
+* 0: The System Bus interface conforms to mainline drafts of this
+* spec older than 1 January, 2018.
+*
+* 1: The System Bus interface conforms to this version of the spec.
+*
+* Other values are reserved for future versions.
+ */
+#define DMI_SBCS_VERSION_OFFSET             29
+#define DMI_SBCS_VERSION_LENGTH             3
+#define DMI_SBCS_VERSION                    (0x7U << DMI_SBCS_VERSION_OFFSET)
 /*
 * When a 1, every write to \Rsbaddresszero automatically triggers a
 * system bus read at the new address.

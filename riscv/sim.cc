@@ -27,10 +27,9 @@ sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
              std::vector<std::pair<reg_t, mem_t*>> mems,
              const std::vector<std::string>& args,
              std::vector<int> const hartids, unsigned progsize)
-  : htif_t(args), debug_module(this, progsize), mems(mems),
-      procs(std::max(nprocs, size_t(1))),
-    start_pc(start_pc),
-    current_step(0), current_proc(0), debug(false), remote_bitbang(NULL)
+  : htif_t(args), mems(mems), procs(std::max(nprocs, size_t(1))),
+    start_pc(start_pc), current_step(0), current_proc(0), debug(false),
+    remote_bitbang(NULL), debug_module(this, progsize)
 {
   signal(SIGINT, &handle_signal);
 
