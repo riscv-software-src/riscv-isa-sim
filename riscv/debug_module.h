@@ -56,6 +56,21 @@ typedef struct {
   unsigned autoexecdata;
 } abstractauto_t;
 
+typedef struct {
+  unsigned version;
+  bool readonaddr;
+  unsigned sbaccess;
+  bool autoincrement;
+  bool readondata;
+  unsigned error;
+  unsigned asize;
+  bool access128;
+  bool access64;
+  bool access32;
+  bool access16;
+  bool access8;
+} sbcs_t;
+
 class debug_module_t : public abstract_device_t
 {
   public:
@@ -101,11 +116,20 @@ class debug_module_t : public abstract_device_t
     void write32(uint8_t *rom, unsigned int index, uint32_t value);
     uint32_t read32(uint8_t *rom, unsigned int index);
 
+    void sb_autoincrement();
+    void sb_read();
+    void sb_write();
+    unsigned sb_access_bits();
+
     dmcontrol_t dmcontrol;
     dmstatus_t dmstatus;
     abstractcs_t abstractcs;
     abstractauto_t abstractauto;
     uint32_t command;
+
+    sbcs_t sbcs;
+    uint32_t sbaddress[4];
+    uint32_t sbdata[4];
 
     processor_t *current_proc() const;
     void reset();
