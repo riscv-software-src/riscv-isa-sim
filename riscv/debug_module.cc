@@ -347,7 +347,8 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 
           result = set_field(result, DMI_DMCONTROL_HALTREQ, dmcontrol.haltreq);
           result = set_field(result, DMI_DMCONTROL_RESUMEREQ, dmcontrol.resumereq);
-          result = set_field(result, DMI_DMCONTROL_HARTSEL, dmcontrol.hartsel);
+          result = set_field(result, ((1L<<hartsellen)-1) <<
+              DMI_DMCONTROL_HARTSEL_OFFSET, dmcontrol.hartsel);
           result = set_field(result, DMI_DMCONTROL_HARTRESET, dmcontrol.hartreset);
 	  result = set_field(result, DMI_DMCONTROL_NDMRESET, dmcontrol.ndmreset);
           result = set_field(result, DMI_DMCONTROL_DMACTIVE, dmcontrol.dmactive);
@@ -423,7 +424,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
         result = set_field(result, DMI_HARTINFO_DATAADDR, debug_data_start);
         break;
       case DMI_SBCS:
-        result = set_field(result, DMI_SBCS_VERSION, sbcs.version);
+        result = set_field(result, DMI_SBCS_SBVERSION, sbcs.version);
         result = set_field(result, DMI_SBCS_SBREADONADDR, sbcs.readonaddr);
         result = set_field(result, DMI_SBCS_SBACCESS, sbcs.sbaccess);
         result = set_field(result, DMI_SBCS_SBAUTOINCREMENT, sbcs.autoincrement);
@@ -593,7 +594,8 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
             dmcontrol.resumereq = get_field(value, DMI_DMCONTROL_RESUMEREQ);
             dmcontrol.hartreset = get_field(value, DMI_DMCONTROL_HARTRESET);
             dmcontrol.ndmreset = get_field(value, DMI_DMCONTROL_NDMRESET);
-            dmcontrol.hartsel = get_field(value, DMI_DMCONTROL_HARTSEL);
+            dmcontrol.hartsel = get_field(value, ((1L<<hartsellen)-1) <<
+                DMI_DMCONTROL_HARTSEL_OFFSET);
           }
           processor_t *proc = current_proc();
           if (proc) {

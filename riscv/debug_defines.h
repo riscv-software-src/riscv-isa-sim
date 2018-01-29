@@ -441,12 +441,6 @@
 #define CSR_MCONTROL_M_LENGTH               1
 #define CSR_MCONTROL_M                      (0x1ULL << CSR_MCONTROL_M_OFFSET)
 /*
-* When set, enable this trigger in H mode.
- */
-#define CSR_MCONTROL_H_OFFSET               5
-#define CSR_MCONTROL_H_LENGTH               1
-#define CSR_MCONTROL_H                      (0x1ULL << CSR_MCONTROL_H_OFFSET)
-/*
 * When set, enable this trigger in S mode.
  */
 #define CSR_MCONTROL_S_OFFSET               4
@@ -487,7 +481,7 @@
 /*
 * When count is decremented to 0, the trigger fires. Instead of
 * changing \Fcount from 1 to 0, it is also acceptable for hardware to
-* clear \Fm, \Fh, \Fs, and \Fu. This allows \Fcount to be hard-wired
+* clear \Fm, \Fs, and \Fu. This allows \Fcount to be hard-wired
 * to 1 if this register just exists for single step.
  */
 #define CSR_ICOUNT_COUNT_OFFSET             10
@@ -500,13 +494,6 @@
 #define CSR_ICOUNT_M_OFFSET                 9
 #define CSR_ICOUNT_M_LENGTH                 1
 #define CSR_ICOUNT_M                        (0x1ULL << CSR_ICOUNT_M_OFFSET)
-/*
-* When set, every instruction completed or exception taken in in H mode decrements \Fcount
-* by 1.
- */
-#define CSR_ICOUNT_H_OFFSET                 8
-#define CSR_ICOUNT_H_LENGTH                 1
-#define CSR_ICOUNT_H                        (0x1ULL << CSR_ICOUNT_H_OFFSET)
 /*
 * When set, every instruction completed or exception taken in S mode decrements \Fcount
 * by 1.
@@ -543,19 +530,6 @@
 #define CSR_ICOUNT_ACTION_LENGTH            6
 #define CSR_ICOUNT_ACTION                   (0x3fULL << CSR_ICOUNT_ACTION_OFFSET)
 #define DMI_DMSTATUS                        0x11
-/*
-* Gets set if the Debug Module was accessed incorrectly.
-*
-* 0 (none): No error.
-*
-* 1 (badaddr): There was an access to an unimplemented Debug Module
-* address.
-*
-* 7 (other): An access failed for another reason.
- */
-#define DMI_DMSTATUS_DMERR_OFFSET           24
-#define DMI_DMSTATUS_DMERR_LENGTH           3
-#define DMI_DMSTATUS_DMERR                  (0x7U << DMI_DMSTATUS_DMERR_OFFSET)
 /*
 * If 1, then there is an implicit {\tt ebreak} instruction at the
 * non-existent word immediately after the Program Buffer. This saves
@@ -700,7 +674,7 @@
  */
 #define DMI_DMCONTROL_HALTREQ_OFFSET        31
 #define DMI_DMCONTROL_HALTREQ_LENGTH        1
-#define DMI_DMCONTROL_HALTREQ               (0x1U << DMI_DMCONTROL_HALTREQ_OFFSET)
+#define DMI_DMCONTROL_HALTREQ               (0x1ULL << DMI_DMCONTROL_HALTREQ_OFFSET)
 /*
 * Writes the resume request bit for all currently selected harts.
 * When set to 1, each selected hart will resume if it is currently
@@ -713,7 +687,7 @@
  */
 #define DMI_DMCONTROL_RESUMEREQ_OFFSET      30
 #define DMI_DMCONTROL_RESUMEREQ_LENGTH      1
-#define DMI_DMCONTROL_RESUMEREQ             (0x1U << DMI_DMCONTROL_RESUMEREQ_OFFSET)
+#define DMI_DMCONTROL_RESUMEREQ             (0x1ULL << DMI_DMCONTROL_RESUMEREQ_OFFSET)
 /*
 * This optional field writes the reset bit for all the currently
 * selected harts.  To perform a reset the debugger writes 1, and then
@@ -727,7 +701,7 @@
  */
 #define DMI_DMCONTROL_HARTRESET_OFFSET      29
 #define DMI_DMCONTROL_HARTRESET_LENGTH      1
-#define DMI_DMCONTROL_HARTRESET             (0x1U << DMI_DMCONTROL_HARTRESET_OFFSET)
+#define DMI_DMCONTROL_HARTRESET             (0x1ULL << DMI_DMCONTROL_HARTRESET_OFFSET)
 /*
 * Writing 1 to this bit clears the {\tt havereset} bits for
 * any selected harts.
@@ -736,7 +710,7 @@
  */
 #define DMI_DMCONTROL_ACKHAVERESET_OFFSET   28
 #define DMI_DMCONTROL_ACKHAVERESET_LENGTH   1
-#define DMI_DMCONTROL_ACKHAVERESET          (0x1U << DMI_DMCONTROL_ACKHAVERESET_OFFSET)
+#define DMI_DMCONTROL_ACKHAVERESET          (0x1ULL << DMI_DMCONTROL_ACKHAVERESET_OFFSET)
 /*
 * Selects the  definition of currently selected harts.
 *
@@ -752,14 +726,14 @@
  */
 #define DMI_DMCONTROL_HASEL_OFFSET          26
 #define DMI_DMCONTROL_HASEL_LENGTH          1
-#define DMI_DMCONTROL_HASEL                 (0x1U << DMI_DMCONTROL_HASEL_OFFSET)
+#define DMI_DMCONTROL_HASEL                 (0x1ULL << DMI_DMCONTROL_HASEL_OFFSET)
 /*
 * The DM-specific index of the hart to select. This hart is always part of the
 * currently selected harts.
  */
 #define DMI_DMCONTROL_HARTSEL_OFFSET        16
-#define DMI_DMCONTROL_HARTSEL_LENGTH        10
-#define DMI_DMCONTROL_HARTSEL               (0x3ffU << DMI_DMCONTROL_HARTSEL_OFFSET)
+#define DMI_DMCONTROL_HARTSEL_LENGTH        HARTSELLEN
+#define DMI_DMCONTROL_HARTSEL               (((1L<<HARTSELLEN)-1) << DMI_DMCONTROL_HARTSEL_OFFSET)
 /*
 * This bit controls the reset signal from the DM to the rest of the
 * system. The signal should reset every part of the system, including
@@ -771,7 +745,7 @@
  */
 #define DMI_DMCONTROL_NDMRESET_OFFSET       1
 #define DMI_DMCONTROL_NDMRESET_LENGTH       1
-#define DMI_DMCONTROL_NDMRESET              (0x1U << DMI_DMCONTROL_NDMRESET_OFFSET)
+#define DMI_DMCONTROL_NDMRESET              (0x1ULL << DMI_DMCONTROL_NDMRESET_OFFSET)
 /*
 * This bit serves as a reset signal for the Debug Module itself.
 *
@@ -794,7 +768,7 @@
  */
 #define DMI_DMCONTROL_DMACTIVE_OFFSET       0
 #define DMI_DMCONTROL_DMACTIVE_LENGTH       1
-#define DMI_DMCONTROL_DMACTIVE              (0x1U << DMI_DMCONTROL_DMACTIVE_OFFSET)
+#define DMI_DMCONTROL_DMACTIVE              (0x1ULL << DMI_DMCONTROL_DMACTIVE_OFFSET)
 #define DMI_HARTINFO                        0x12
 /*
 * Number of {\tt dscratch} registers available for the debugger
@@ -822,6 +796,9 @@
 *
 * If \Fdataaccess is 1: Number of 32-bit words in the memory map
 * dedicated to shadowing the {\tt data} registers.
+*
+* Since there are at most 12 {\tt data} registers, the value in this
+* register must be 12 or smaller.
  */
 #define DMI_HARTINFO_DATASIZE_OFFSET        12
 #define DMI_HARTINFO_DATASIZE_LENGTH        4
@@ -988,8 +965,8 @@
 * abstract command interface. Valid sizes are 0 - 12.
  */
 #define DMI_ABSTRACTCS_DATACOUNT_OFFSET     0
-#define DMI_ABSTRACTCS_DATACOUNT_LENGTH     5
-#define DMI_ABSTRACTCS_DATACOUNT            (0x1fU << DMI_ABSTRACTCS_DATACOUNT_OFFSET)
+#define DMI_ABSTRACTCS_DATACOUNT_LENGTH     4
+#define DMI_ABSTRACTCS_DATACOUNT            (0xfU << DMI_ABSTRACTCS_DATACOUNT_OFFSET)
 #define DMI_COMMAND                         0x17
 /*
 * The type determines the overall functionality of this
@@ -1058,19 +1035,42 @@
 *
 * Other values are reserved for future versions.
  */
-#define DMI_SBCS_VERSION_OFFSET             29
-#define DMI_SBCS_VERSION_LENGTH             3
-#define DMI_SBCS_VERSION                    (0x7U << DMI_SBCS_VERSION_OFFSET)
+#define DMI_SBCS_SBVERSION_OFFSET           29
+#define DMI_SBCS_SBVERSION_LENGTH           3
+#define DMI_SBCS_SBVERSION                  (0x7U << DMI_SBCS_SBVERSION_OFFSET)
 /*
-* When a 1, every write to \Rsbaddresszero automatically triggers a
+* Set when the debugger attempts to read data while a read is in
+* progress, or when the debugger initiates a new access while one is
+* already in progress (while \Fsbbusy is set). It remains set until
+* it's explicitly cleared by the debugger.
+*
+* While this field is non-zero, no more system bus accesses can be
+* initiated by the debug module.
+ */
+#define DMI_SBCS_SBBUSYERROR_OFFSET         22
+#define DMI_SBCS_SBBUSYERROR_LENGTH         1
+#define DMI_SBCS_SBBUSYERROR                (0x1U << DMI_SBCS_SBBUSYERROR_OFFSET)
+/*
+* When 1, indicates the system bus master is busy. (Whether the
+* system bus itself is busy is related, but not the same thing.) This
+* bit goes high immediately when a read or write is requested for any
+* reason, and does not go low until the access is fully completed.
+*
+* To avoid race conditions, debuggers must not try to clear \Fsberror
+* until they read \Fsbbusy as 0.
+ */
+#define DMI_SBCS_SBBUSY_OFFSET              21
+#define DMI_SBCS_SBBUSY_LENGTH              1
+#define DMI_SBCS_SBBUSY                     (0x1U << DMI_SBCS_SBBUSY_OFFSET)
+/*
+* When 1, every write to \Rsbaddresszero automatically triggers a
 * system bus read at the new address.
  */
 #define DMI_SBCS_SBREADONADDR_OFFSET        20
 #define DMI_SBCS_SBREADONADDR_LENGTH        1
 #define DMI_SBCS_SBREADONADDR               (0x1U << DMI_SBCS_SBREADONADDR_OFFSET)
 /*
-* Select the access size to use for system bus accesses triggered by
-* writes to \Rsbaddresszero or \Rsbdatazero.
+* Select the access size to use for system bus accesses.
 *
 * 0: 8-bit
 *
@@ -1082,8 +1082,8 @@
 *
 * 4: 128-bit
 *
-* If an unsupported system bus access size is written here, the DM
-* does not perform the access and sberror is set to 3.
+* If \Fsbaccess has an unsupported value when the DM starts a bus
+* access, the access is not performed and \Fsberror is set to 3.
  */
 #define DMI_SBCS_SBACCESS_OFFSET            17
 #define DMI_SBCS_SBACCESS_LENGTH            3
@@ -1116,10 +1116,6 @@
 * 2: A bad address was accessed.
 *
 * 3: There was some other error (eg. alignment).
-*
-* 4: The system bus master was busy when one of the
-* {\tt sbaddress} or {\tt sbdata} registers was written,
-* or \Rsbdatazero was read when it had stale data.
  */
 #define DMI_SBCS_SBERROR_OFFSET             12
 #define DMI_SBCS_SBERROR_LENGTH             3
