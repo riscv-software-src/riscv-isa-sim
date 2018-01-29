@@ -102,6 +102,8 @@ class debug_module_t : public abstract_device_t
     static const unsigned debug_abstract_size = 2;
     unsigned debug_abstract_start;
 
+    static const unsigned hartsellen = 10;
+
     sim_t *sim;
 
     uint8_t debug_rom_whereto[4];
