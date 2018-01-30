@@ -8,7 +8,7 @@
 #include "debug_rom/debug_rom.h"
 #include "debug_rom/debug_rom_defines.h"
 
-#if 0
+#if 1
 #  define D(x) x
 #else
 #  define D(x)
@@ -24,6 +24,10 @@ debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bu
   debug_abstract_start(debug_progbuf_start - debug_abstract_size*4),
   sim(sim)
 {
+  D(fprintf(stderr, "debug_data_start=0x%x\n", debug_data_start));
+  D(fprintf(stderr, "debug_progbuf_start=0x%x\n", debug_progbuf_start));
+  D(fprintf(stderr, "debug_abstract_start=0x%x\n", debug_abstract_start));
+
   program_buffer = new uint8_t[program_buffer_bytes];
 
   memset(halted, 0, sizeof(halted));
@@ -478,6 +482,8 @@ bool debug_module_t::perform_abstract_command()
     return true;
   }
 
+  D(fprintf(stderr, ">>> perform_abstract_command(0x%x)\n", command));
+
   if ((command >> 24) == 0) {
     // register access
     unsigned size = get_field(command, AC_ACCESS_REGISTER_SIZE);
@@ -491,49 +497,39 @@ bool debug_module_t::perform_abstract_command()
 
     if (get_field(command, AC_ACCESS_REGISTER_TRANSFER)) {
 
-      if (regno < 0x1000 || regno >= 0x1020) {
+      if (regno >= 0x1000 && regno < 0x1020) {
+        unsigned regnum = regno - 0x1000;
+
+        switch (size) {
+          case 2:
+            if (write)
+              write32(debug_abstract, 0, lw(regnum, ZERO, debug_data_start));
+            else
+              write32(debug_abstract, 0, sw(regnum, ZERO, debug_data_start));
+            break;
+          case 3:
+            if (write)
+              write32(debug_abstract, 0, ld(regnum, ZERO, debug_data_start));
+            else
+              write32(debug_abstract, 0, sd(regnum, ZERO, debug_data_start));
+            break;
+          default:
+            abstractcs.cmderr = CMDERR_NOTSUP;
+            return true;
+        }
+
+      } else {
         abstractcs.cmderr = CMDERR_NOTSUP;
         return true;
       }
 
-      unsigned regnum = regno - 0x1000;
-
-      switch (size) {
-      case 2:
-        if (write)
-          write32(debug_abstract, 0, lw(regnum, ZERO, debug_data_start));
-        else
-          write32(debug_abstract, 0, sw(regnum, ZERO, debug_data_start));
-        break;
-      case 3:
-        if (write)
-          write32(debug_abstract, 0, ld(regnum, ZERO, debug_data_start));
-        else
-          write32(debug_abstract, 0, sd(regnum, ZERO, debug_data_start));
-        break;
-        /*
-          case 4:
-          if (write)
-          write32(debug_rom_code, 0, lq(regnum, ZERO, debug_data_start));
-          else
-          write32(debug_rom_code, 0, sq(regnum, ZERO, debug_data_start));
-          break;
-        */
-      default:
-        abstractcs.cmderr = CMDERR_NOTSUP;
-        return true;
+      if (get_field(command, AC_ACCESS_REGISTER_POSTEXEC)) {
+        D(fprintf(stderr, ">>> post-exec!\n"));
+        write32(debug_abstract, 1,
+            jal(ZERO, debug_progbuf_start - debug_abstract_start - 4));
+      } else {
+        write32(debug_abstract, 1, ebreak());
       }
-    } else {
-      //NOP
-      write32(debug_abstract, 0, addi(ZERO, ZERO, 0));
-    }
-
-    if (get_field(command, AC_ACCESS_REGISTER_POSTEXEC)) {
-      // Since the next instruction is what we will use, just use nother NOP
-      // to get there.
-      write32(debug_abstract, 1, addi(ZERO, ZERO, 0));
-    } else {
-      write32(debug_abstract, 1, ebreak());
     }
 
     debug_rom_flags[dmcontrol.hartsel] |= 1 << DEBUG_ROM_FLAG_GO;

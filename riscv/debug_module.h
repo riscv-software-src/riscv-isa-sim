@@ -100,7 +100,7 @@ class debug_module_t : public abstract_device_t
     static const unsigned debug_data_start = 0x380;
     unsigned debug_progbuf_start;
 
-    static const unsigned debug_abstract_size = 2;
+    static const unsigned debug_abstract_size = 5;
     unsigned debug_abstract_start;
 
     static const unsigned hartsellen = 10;
