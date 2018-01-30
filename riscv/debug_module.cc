@@ -8,7 +8,7 @@
 #include "debug_rom/debug_rom.h"
 #include "debug_rom/debug_rom_defines.h"
 
-#if 1
+#if 0
 #  define D(x) x
 #else
 #  define D(x)
@@ -491,8 +491,6 @@ bool debug_module_t::perform_abstract_command()
     return true;
   }
 
-  D(fprintf(stderr, ">>> perform_abstract_command(0x%x)\n", command));
-
   if ((command >> 24) == 0) {
     // register access
     unsigned size = get_field(command, AC_ACCESS_REGISTER_SIZE);
@@ -504,41 +502,110 @@ bool debug_module_t::perform_abstract_command()
       return true;
     }
 
+    unsigned i = 0;
     if (get_field(command, AC_ACCESS_REGISTER_TRANSFER)) {
 
-      if (regno >= 0x1000 && regno < 0x1020) {
+      if (regno < 0x1000 && progbufsize < 2) {
+        // Make the debugger use the program buffer if it's available, so it
+        // can test both use cases.
+        write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH));
+
+        if (write) {
+          switch (size) {
+            case 2:
+              write32(debug_abstract, i++, lw(S0, ZERO, debug_data_start));
+              break;
+            case 3:
+              write32(debug_abstract, i++, ld(S0, ZERO, debug_data_start));
+              break;
+            default:
+              abstractcs.cmderr = CMDERR_NOTSUP;
+              return true;
+          }
+          write32(debug_abstract, i++, csrw(S0, regno));
+
+        } else {
+          write32(debug_abstract, i++, csrr(S0, regno));
+          switch (size) {
+            case 2:
+              write32(debug_abstract, i++, sw(S0, ZERO, debug_data_start));
+              break;
+            case 3:
+              write32(debug_abstract, i++, sd(S0, ZERO, debug_data_start));
+              break;
+            default:
+              abstractcs.cmderr = CMDERR_NOTSUP;
+              return true;
+          }
+        }
+        write32(debug_abstract, i++, csrr(S0, CSR_DSCRATCH));
+
+      } else if (regno >= 0x1000 && regno < 0x1020) {
         unsigned regnum = regno - 0x1000;
 
         switch (size) {
           case 2:
             if (write)
-              write32(debug_abstract, 0, lw(regnum, ZERO, debug_data_start));
+              write32(debug_abstract, i++, lw(regnum, ZERO, debug_data_start));
             else
-              write32(debug_abstract, 0, sw(regnum, ZERO, debug_data_start));
+              write32(debug_abstract, i++, sw(regnum, ZERO, debug_data_start));
             break;
           case 3:
             if (write)
-              write32(debug_abstract, 0, ld(regnum, ZERO, debug_data_start));
+              write32(debug_abstract, i++, ld(regnum, ZERO, debug_data_start));
             else
-              write32(debug_abstract, 0, sd(regnum, ZERO, debug_data_start));
+              write32(debug_abstract, i++, sd(regnum, ZERO, debug_data_start));
             break;
           default:
             abstractcs.cmderr = CMDERR_NOTSUP;
             return true;
         }
 
+      } else if (regno >= 0x1020 && regno < 0x1040) {
+        // Don't force the debugger to use progbuf if it exists, so the
+        // debugger has to make the decision not to use abstract commands to
+        // access 64-bit FPRs on 32-bit targets.
+        unsigned fprnum = regno - 0x1020;
+
+        if (write) {
+          switch (size) {
+            case 2:
+              write32(debug_abstract, i++, flw(fprnum, ZERO, debug_data_start));
+              break;
+            case 3:
+              write32(debug_abstract, i++, fld(fprnum, ZERO, debug_data_start));
+              break;
+            default:
+              abstractcs.cmderr = CMDERR_NOTSUP;
+              return true;
+          }
+
+        } else {
+          switch (size) {
+            case 2:
+              write32(debug_abstract, i++, fsw(fprnum, ZERO, debug_data_start));
+              break;
+            case 3:
+              write32(debug_abstract, i++, fsd(fprnum, ZERO, debug_data_start));
+              break;
+            default:
+              abstractcs.cmderr = CMDERR_NOTSUP;
+              return true;
+          }
+        }
+
       } else {
         abstractcs.cmderr = CMDERR_NOTSUP;
         return true;
       }
+    }
 
-      if (get_field(command, AC_ACCESS_REGISTER_POSTEXEC)) {
-        D(fprintf(stderr, ">>> post-exec!\n"));
-        write32(debug_abstract, 1,
-            jal(ZERO, debug_progbuf_start - debug_abstract_start - 4));
-      } else {
-        write32(debug_abstract, 1, ebreak());
-      }
+    if (get_field(command, AC_ACCESS_REGISTER_POSTEXEC)) {
+      write32(debug_abstract, i,
+          jal(ZERO, debug_progbuf_start - debug_abstract_start - 4 * i));
+      i++;
+    } else {
+      write32(debug_abstract, i++, ebreak());
     }
 
     debug_rom_flags[dmcontrol.hartsel] |= 1 << DEBUG_ROM_FLAG_GO;
