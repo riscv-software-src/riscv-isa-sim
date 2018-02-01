@@ -74,7 +74,7 @@ typedef struct {
 class debug_module_t : public abstract_device_t
 {
   public:
-    debug_module_t(sim_t *sim, unsigned progbufsize);
+    debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bus_master_bits);
     ~debug_module_t();
 
     void add_device(bus_t *bus);
@@ -96,6 +96,7 @@ class debug_module_t : public abstract_device_t
     // Actual size of the program buffer, which is 1 word bigger than we let on
     // to implement the implicit ebreak at the end.
     unsigned program_buffer_bytes;
+    unsigned max_bus_master_bits ;
     static const unsigned debug_data_start = 0x380;
     unsigned debug_progbuf_start;
 

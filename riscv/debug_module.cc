@@ -16,9 +16,10 @@
 
 ///////////////////////// debug_module_t
 
-debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize) :
+debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bus_master_bits) :
   progbufsize(progbufsize),
   program_buffer_bytes(4 + 4*progbufsize),
+  max_bus_master_bits(max_bus_master_bits),
   debug_progbuf_start(debug_data_start - program_buffer_bytes),
   debug_abstract_start(debug_progbuf_start - debug_abstract_size*4),
   sim(sim)
@@ -70,12 +71,18 @@ void debug_module_t::reset()
   abstractauto = {0};
 
   sbcs = {0};
-  sbcs.version = 1;
-  sbcs.access64 = true;
-  sbcs.access32 = true;
-  sbcs.access16 = true;
-  sbcs.access8 = true;
-  sbcs.asize = sizeof(reg_t) * 8;
+  if (max_bus_master_bits > 0) {
+    sbcs.version = 1;
+    sbcs.asize = sizeof(reg_t) * 8;
+  }
+  if (max_bus_master_bits >= 64)
+    sbcs.access64 = true;
+  if (max_bus_master_bits >= 32)
+    sbcs.access32 = true;
+  if (max_bus_master_bits >= 16)
+    sbcs.access16 = true;
+  if (max_bus_master_bits >= 8)
+    sbcs.access8 = true;
 }
 
 void debug_module_t::add_device(bus_t *bus) {
@@ -233,7 +240,7 @@ unsigned debug_module_t::sb_access_bits()
 
 void debug_module_t::sb_autoincrement()
 {
-  if (!sbcs.autoincrement)
+  if (!sbcs.autoincrement || !max_bus_master_bits)
     return;
 
   uint64_t value = sbaddress[0] + sb_access_bits() / 8;
@@ -254,29 +261,19 @@ void debug_module_t::sb_autoincrement()
 void debug_module_t::sb_read()
 {
   reg_t address = ((uint64_t) sbaddress[1] << 32) | sbaddress[0];
-  D(fprintf(stderr, "sb_read() @ 0x%lx\n", address));
   try {
-    switch (sbcs.sbaccess) {
-      case 0:
-        sbdata[0] = sim->debug_mmu->load_uint8(address);
-        break;
-      case 1:
-        sbdata[0] = sim->debug_mmu->load_uint16(address);
-        break;
-      case 2:
-        sbdata[0] = sim->debug_mmu->load_uint32(address);
-        D(fprintf(stderr, "   -> 0x%x\n", sbdata[0]));
-        break;
-      case 3:
-        {
-          uint64_t value = sim->debug_mmu->load_uint32(address);
-          sbdata[0] = value;
-          sbdata[1] = value >> 32;
-          break;
-        }
-      default:
-        sbcs.error = 3;
-        break;
+    if (sbcs.sbaccess == 0 && max_bus_master_bits >= 8) {
+      sbdata[0] = sim->debug_mmu->load_uint8(address);
+    } else if (sbcs.sbaccess == 1 && max_bus_master_bits >= 16) {
+      sbdata[0] = sim->debug_mmu->load_uint16(address);
+    } else if (sbcs.sbaccess == 2 && max_bus_master_bits >= 32) {
+      sbdata[0] = sim->debug_mmu->load_uint32(address);
+    } else if (sbcs.sbaccess == 3 && max_bus_master_bits >= 64) {
+      uint64_t value = sim->debug_mmu->load_uint32(address);
+      sbdata[0] = value;
+      sbdata[1] = value >> 32;
+    } else {
+      sbcs.error = 3;
     }
   } catch (trap_load_access_fault& t) {
     sbcs.error = 2;
@@ -287,23 +284,17 @@ void debug_module_t::sb_write()
 {
   reg_t address = ((uint64_t) sbaddress[1] << 32) | sbaddress[0];
   D(fprintf(stderr, "sb_write() 0x%x @ 0x%lx\n", sbdata[0], address));
-  switch (sbcs.sbaccess) {
-    case 0:
-      sim->debug_mmu->store_uint8(address, sbdata[0]);
-      break;
-    case 1:
-      sim->debug_mmu->store_uint16(address, sbdata[0]);
-      break;
-    case 2:
-      sim->debug_mmu->store_uint32(address, sbdata[0]);
-      break;
-    case 3:
-      sim->debug_mmu->store_uint64(address,
-          (((uint64_t) sbdata[1]) << 32) | sbdata[0]);
-      break;
-    default:
-      sbcs.error = 3;
-      break;
+  if (sbcs.sbaccess == 0 && max_bus_master_bits >= 8) {
+    sim->debug_mmu->store_uint8(address, sbdata[0]);
+  } else if (sbcs.sbaccess == 1 && max_bus_master_bits >= 16) {
+    sim->debug_mmu->store_uint16(address, sbdata[0]);
+  } else if (sbcs.sbaccess == 2 && max_bus_master_bits >= 32) {
+    sim->debug_mmu->store_uint32(address, sbdata[0]);
+  } else if (sbcs.sbaccess == 3 && max_bus_master_bits >= 64) {
+    sim->debug_mmu->store_uint64(address,
+        (((uint64_t) sbdata[1]) << 32) | sbdata[0]);
+  } else {
+    sbcs.error = 3;
   }
 }
 
