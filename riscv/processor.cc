@@ -565,6 +565,11 @@ reg_t processor_t::get_csr(int which)
     case CSR_MINSTRET:
     case CSR_MCYCLE:
       return state.minstret;
+    case CSR_INSTRETH:
+    case CSR_CYCLEH:
+      if (ctr_ok && xlen == 32)
+        return state.minstret >> 32;
+      break;
     case CSR_MINSTRETH:
     case CSR_MCYCLEH:
       if (xlen == 32)
