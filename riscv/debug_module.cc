@@ -16,25 +16,14 @@
 
 ///////////////////////// debug_module_t
 
-debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize) :
+debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bus_master_bits) :
   progbufsize(progbufsize),
   program_buffer_bytes(4 + 4*progbufsize),
+  max_bus_master_bits(max_bus_master_bits),
   debug_progbuf_start(debug_data_start - program_buffer_bytes),
   debug_abstract_start(debug_progbuf_start - debug_abstract_size*4),
   sim(sim)
 {
-  dmcontrol = {0};
-
-  dmstatus = {0};
-  dmstatus.impebreak = true;
-  dmstatus.authenticated = 1;
-  dmstatus.version = 2;
-
-  abstractcs = {0};
-  abstractcs.progbufsize = progbufsize;
-
-  abstractauto = {0};
-
   program_buffer = new uint8_t[program_buffer_bytes];
 
   memset(halted, 0, sizeof(halted));
@@ -51,6 +40,8 @@ debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize) :
           jal(ZERO, debug_abstract_start - DEBUG_ROM_WHERETO));
 
   memset(debug_abstract, 0, sizeof(debug_abstract));
+
+  reset();
 }
 
 debug_module_t::~debug_module_t()
@@ -78,6 +69,20 @@ void debug_module_t::reset()
   abstractcs.progbufsize = progbufsize;
 
   abstractauto = {0};
+
+  sbcs = {0};
+  if (max_bus_master_bits > 0) {
+    sbcs.version = 1;
+    sbcs.asize = sizeof(reg_t) * 8;
+  }
+  if (max_bus_master_bits >= 64)
+    sbcs.access64 = true;
+  if (max_bus_master_bits >= 32)
+    sbcs.access32 = true;
+  if (max_bus_master_bits >= 16)
+    sbcs.access16 = true;
+  if (max_bus_master_bits >= 8)
+    sbcs.access8 = true;
 }
 
 void debug_module_t::add_device(bus_t *bus) {
@@ -228,6 +233,71 @@ processor_t *debug_module_t::current_proc() const
   return proc;
 }
 
+unsigned debug_module_t::sb_access_bits()
+{
+  return 8 << sbcs.sbaccess;
+}
+
+void debug_module_t::sb_autoincrement()
+{
+  if (!sbcs.autoincrement || !max_bus_master_bits)
+    return;
+
+  uint64_t value = sbaddress[0] + sb_access_bits() / 8;
+  sbaddress[0] = value;
+  uint32_t carry = value >> 32;
+
+  value = sbaddress[1] + carry;
+  sbaddress[1] = value;
+  carry = value >> 32;
+
+  value = sbaddress[2] + carry;
+  sbaddress[2] = value;
+  carry = value >> 32;
+
+  sbaddress[3] += carry;
+}
+
+void debug_module_t::sb_read()
+{
+  reg_t address = ((uint64_t) sbaddress[1] << 32) | sbaddress[0];
+  try {
+    if (sbcs.sbaccess == 0 && max_bus_master_bits >= 8) {
+      sbdata[0] = sim->debug_mmu->load_uint8(address);
+    } else if (sbcs.sbaccess == 1 && max_bus_master_bits >= 16) {
+      sbdata[0] = sim->debug_mmu->load_uint16(address);
+    } else if (sbcs.sbaccess == 2 && max_bus_master_bits >= 32) {
+      sbdata[0] = sim->debug_mmu->load_uint32(address);
+    } else if (sbcs.sbaccess == 3 && max_bus_master_bits >= 64) {
+      uint64_t value = sim->debug_mmu->load_uint32(address);
+      sbdata[0] = value;
+      sbdata[1] = value >> 32;
+    } else {
+      sbcs.error = 3;
+    }
+  } catch (trap_load_access_fault& t) {
+    sbcs.error = 2;
+  }
+}
+
+void debug_module_t::sb_write()
+{
+  reg_t address = ((uint64_t) sbaddress[1] << 32) | sbaddress[0];
+  D(fprintf(stderr, "sb_write() 0x%x @ 0x%lx\n", sbdata[0], address));
+  if (sbcs.sbaccess == 0 && max_bus_master_bits >= 8) {
+    sim->debug_mmu->store_uint8(address, sbdata[0]);
+  } else if (sbcs.sbaccess == 1 && max_bus_master_bits >= 16) {
+    sim->debug_mmu->store_uint16(address, sbdata[0]);
+  } else if (sbcs.sbaccess == 2 && max_bus_master_bits >= 32) {
+    sim->debug_mmu->store_uint32(address, sbdata[0]);
+  } else if (sbcs.sbaccess == 3 && max_bus_master_bits >= 64) {
+    sim->debug_mmu->store_uint64(address,
+        (((uint64_t) sbdata[1]) << 32) | sbdata[0]);
+  } else {
+    sbcs.error = 3;
+  }
+}
+
 bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 {
   uint32_t result = 0;
@@ -268,7 +338,8 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 
           result = set_field(result, DMI_DMCONTROL_HALTREQ, dmcontrol.haltreq);
           result = set_field(result, DMI_DMCONTROL_RESUMEREQ, dmcontrol.resumereq);
-          result = set_field(result, DMI_DMCONTROL_HARTSEL, dmcontrol.hartsel);
+          result = set_field(result, ((1L<<hartsellen)-1) <<
+              DMI_DMCONTROL_HARTSEL_OFFSET, dmcontrol.hartsel);
           result = set_field(result, DMI_DMCONTROL_HARTRESET, dmcontrol.hartreset);
 	  result = set_field(result, DMI_DMCONTROL_NDMRESET, dmcontrol.ndmreset);
           result = set_field(result, DMI_DMCONTROL_DMACTIVE, dmcontrol.dmactive);
@@ -342,6 +413,50 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
         result = set_field(result, DMI_HARTINFO_DATAACCESS, 1);
         result = set_field(result, DMI_HARTINFO_DATASIZE, abstractcs.datacount);
         result = set_field(result, DMI_HARTINFO_DATAADDR, debug_data_start);
+        break;
+      case DMI_SBCS:
+        result = set_field(result, DMI_SBCS_SBVERSION, sbcs.version);
+        result = set_field(result, DMI_SBCS_SBREADONADDR, sbcs.readonaddr);
+        result = set_field(result, DMI_SBCS_SBACCESS, sbcs.sbaccess);
+        result = set_field(result, DMI_SBCS_SBAUTOINCREMENT, sbcs.autoincrement);
+        result = set_field(result, DMI_SBCS_SBREADONDATA, sbcs.readondata);
+        result = set_field(result, DMI_SBCS_SBERROR, sbcs.error);
+        result = set_field(result, DMI_SBCS_SBASIZE, sbcs.asize);
+        result = set_field(result, DMI_SBCS_SBACCESS128, sbcs.access128);
+        result = set_field(result, DMI_SBCS_SBACCESS64, sbcs.access64);
+        result = set_field(result, DMI_SBCS_SBACCESS32, sbcs.access32);
+        result = set_field(result, DMI_SBCS_SBACCESS16, sbcs.access16);
+        result = set_field(result, DMI_SBCS_SBACCESS8, sbcs.access8);
+        break;
+      case DMI_SBADDRESS0:
+        result = sbaddress[0];
+        break;
+      case DMI_SBADDRESS1:
+        result = sbaddress[1];
+        break;
+      case DMI_SBADDRESS2:
+        result = sbaddress[2];
+        break;
+      case DMI_SBADDRESS3:
+        result = sbaddress[3];
+        break;
+      case DMI_SBDATA0:
+        result = sbdata[0];
+        if (sbcs.error == 0) {
+          sb_autoincrement();
+          if (sbcs.readondata) {
+            sb_read();
+          }
+        }
+        break;
+      case DMI_SBDATA1:
+        result = sbdata[1];
+        break;
+      case DMI_SBDATA2:
+        result = sbdata[2];
+        break;
+      case DMI_SBDATA3:
+        result = sbdata[3];
         break;
       default:
         result = 0;
@@ -462,15 +577,16 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
     switch (address) {
       case DMI_DMCONTROL:
         {
+          if (!dmcontrol.dmactive && get_field(value, DMI_DMCONTROL_DMACTIVE))
+            reset();
           dmcontrol.dmactive = get_field(value, DMI_DMCONTROL_DMACTIVE);
           if (dmcontrol.dmactive) {
             dmcontrol.haltreq = get_field(value, DMI_DMCONTROL_HALTREQ);
             dmcontrol.resumereq = get_field(value, DMI_DMCONTROL_RESUMEREQ);
             dmcontrol.hartreset = get_field(value, DMI_DMCONTROL_HARTRESET);
             dmcontrol.ndmreset = get_field(value, DMI_DMCONTROL_NDMRESET);
-            dmcontrol.hartsel = get_field(value, DMI_DMCONTROL_HARTSEL);
-          } else {
-            reset();
+            dmcontrol.hartsel = get_field(value, ((1L<<hartsellen)-1) <<
+                DMI_DMCONTROL_HARTSEL_OFFSET);
           }
           processor_t *proc = current_proc();
           if (proc) {
@@ -505,6 +621,46 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
             DMI_ABSTRACTAUTO_AUTOEXECPROGBUF);
         abstractauto.autoexecdata = get_field(value,
             DMI_ABSTRACTAUTO_AUTOEXECDATA);
+        return true;
+      case DMI_SBCS:
+        sbcs.readonaddr = get_field(value, DMI_SBCS_SBREADONADDR);
+        sbcs.sbaccess = get_field(value, DMI_SBCS_SBACCESS);
+        sbcs.autoincrement = get_field(value, DMI_SBCS_SBAUTOINCREMENT);
+        sbcs.readondata = get_field(value, DMI_SBCS_SBREADONDATA);
+        sbcs.error &= ~get_field(value, DMI_SBCS_SBERROR);
+        return true;
+      case DMI_SBADDRESS0:
+        sbaddress[0] = value;
+        if (sbcs.error == 0 && sbcs.readonaddr) {
+          sb_read();
+        }
+        return true;
+      case DMI_SBADDRESS1:
+        sbaddress[1] = value;
+        return true;
+      case DMI_SBADDRESS2:
+        sbaddress[2] = value;
+        return true;
+      case DMI_SBADDRESS3:
+        sbaddress[3] = value;
+        return true;
+      case DMI_SBDATA0:
+        sbdata[0] = value;
+        if (sbcs.error == 0) {
+          sb_write();
+          if (sbcs.autoincrement && sbcs.error == 0) {
+            sb_autoincrement();
+          }
+        }
+        return true;
+      case DMI_SBDATA1:
+        sbdata[1] = value;
+        return true;
+      case DMI_SBDATA2:
+        sbdata[2] = value;
+        return true;
+      case DMI_SBDATA3:
+        sbdata[3] = value;
         return true;
     }
   }
