@@ -13,7 +13,7 @@
 class processor_t;
 class mmu_t;
 typedef reg_t (*insn_func_t)(processor_t*, insn_t, reg_t);
-class sim_t;
+class simif_t;
 class trap_t;
 class extension_t;
 class disassembler_t;
@@ -162,7 +162,7 @@ static int cto(reg_t val)
 class processor_t : public abstract_device_t
 {
 public:
-  processor_t(const char* isa, sim_t* sim, uint32_t id, bool halt_on_reset=false);
+  processor_t(const char* isa, simif_t* sim, uint32_t id, bool halt_on_reset=false);
   ~processor_t();
 
   void set_debug(bool value);
@@ -174,6 +174,8 @@ public:
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
   unsigned get_xlen() { return xlen; }
+  unsigned get_max_xlen() { return max_xlen; }
+  std::string get_isa_string() { return isa_string; }
   unsigned get_flen() {
     return supports_extension('Q') ? 128 :
            supports_extension('D') ? 64 :
@@ -287,7 +289,7 @@ public:
   void trigger_updated();
 
 private:
-  sim_t* sim;
+  simif_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
   extension_t* ext;
   disassembler_t* disassembler;
@@ -315,7 +317,6 @@ private:
 
   void enter_debug_mode(uint8_t cause);
 
-  friend class sim_t;
   friend class mmu_t;
   friend class clint_t;
   friend class extension_t;

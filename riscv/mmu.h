@@ -53,7 +53,7 @@ class trigger_matched_t
 class mmu_t
 {
 public:
-  mmu_t(sim_t* sim, processor_t* proc);
+  mmu_t(simif_t* sim, processor_t* proc);
   ~mmu_t();
 
   inline reg_t misaligned_load(reg_t addr, size_t size)
@@ -239,7 +239,7 @@ public:
   void register_memtracer(memtracer_t*);
 
 private:
-  sim_t* sim;
+  simif_t* sim;
   processor_t* proc;
   memtracer_list_t tracer;
   uint16_t fetch_temp;

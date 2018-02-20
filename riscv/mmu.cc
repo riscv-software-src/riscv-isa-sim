@@ -4,7 +4,7 @@
 #include "sim.h"
 #include "processor.h"
 
-mmu_t::mmu_t(sim_t* sim, processor_t* proc)
+mmu_t::mmu_t(simif_t* sim, processor_t* proc)
  : sim(sim), proc(proc),
   check_triggers_fetch(false),
   check_triggers_load(false),
