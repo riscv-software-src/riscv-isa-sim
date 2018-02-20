@@ -247,7 +247,7 @@ void sim_t::make_dtb()
     0x297,                                      // auipc  t0,0x0
     0x28593 + (reset_vec_size * 4 << 20),       // addi   a1, t0, &dtb
     0xf1402573,                                 // csrr   a0, mhartid
-    get_core(0)->xlen == 32 ?
+    get_core(0)->get_xlen() == 32 ?
       0x0182a283u :                             // lw     t0,24(t0)
       0x0182b283u,                              // ld     t0,24(t0)
     0x28067,                                    // jr     t0
@@ -277,8 +277,8 @@ void sim_t::make_dtb()
          "      reg = <" << i << ">;\n"
          "      status = \"okay\";\n"
          "      compatible = \"riscv\";\n"
-         "      riscv,isa = \"" << procs[i]->isa_string << "\";\n"
-         "      mmu-type = \"riscv," << (procs[i]->max_xlen <= 32 ? "sv32" : "sv48") << "\";\n"
+         "      riscv,isa = \"" << procs[i]->get_isa_string() << "\";\n"
+         "      mmu-type = \"riscv," << (procs[i]->get_max_xlen() <= 32 ? "sv32" : "sv48") << "\";\n"
          "      clock-frequency = <" << CPU_HZ << ">;\n"
          "      CPU" << i << "_intc: interrupt-controller {\n"
          "        #interrupt-cells = <1>;\n"

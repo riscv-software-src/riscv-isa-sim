@@ -2,7 +2,6 @@
 
 #include "processor.h"
 #include "mmu.h"
-#include "sim.h"
 #include <cassert>
 
 
