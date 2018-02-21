@@ -171,13 +171,6 @@ void processor_t::step(size_t n)
         //
         // According to Andrew Waterman's recollection, this optimization
         // resulted in approximately a 2x performance increase.
-        //
-        // If there is support for compressed instructions, the mmu and the
-        // switch statement get more complicated. Each branch target is stored
-        // in the index corresponding to mmu->icache_index(), but consecutive
-        // non-branching instructions are stored in consecutive indices even if
-        // mmu->icache_index() specifies a different index (which is the case
-        // for 32-bit instructions in the presence of compressed instructions).
 
         // This figures out where to jump to in the switch statement
         size_t idx = _mmu->icache_index(pc);
@@ -193,10 +186,10 @@ void processor_t::step(size_t n)
         // is located within the execute_insn() function call.
         #define ICACHE_ACCESS(i) { \
           insn_fetch_t fetch = ic_entry->data; \
-          ic_entry++; \
           pc = execute_insn(this, pc, fetch); \
+          ic_entry = ic_entry->next; \
           if (i == mmu_t::ICACHE_ENTRIES-1) break; \
-          if (unlikely(ic_entry->tag != pc)) goto miss; \
+          if (unlikely(ic_entry->tag != pc)) break; \
           if (unlikely(instret+1 == n)) break; \
           instret++; \
           state.pc = pc; \
@@ -210,13 +203,6 @@ void processor_t::step(size_t n)
         }
 
         advance_pc();
-        continue;
-
-miss:
-        advance_pc();
-        // refill I$ if it looks like there wasn't a taken branch
-        if (pc > (ic_entry-1)->tag && pc <= (ic_entry-1)->tag + MAX_INSN_LENGTH)
-          _mmu->refill_icache(pc, ic_entry);
       }
     }
     catch(trap_t& t)
