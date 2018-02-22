@@ -5,6 +5,7 @@
 #include "decode.h"
 #include "config.h"
 #include "devices.h"
+#include "trap.h"
 #include <string>
 #include <vector>
 #include <map>
@@ -183,6 +184,10 @@ public:
   bool supports_extension(unsigned char ext) {
     if (ext >= 'a' && ext <= 'z') ext += 'A' - 'a';
     return ext >= 'A' && ext <= 'Z' && ((isa >> (ext - 'A')) & 1);
+  }
+  void check_pc_alignment(reg_t pc) {
+    if (unlikely(pc & 2) && !supports_extension('C'))
+      throw trap_instruction_address_misaligned(pc);
   }
   reg_t legalize_privilege(reg_t);
   void set_privilege(reg_t);

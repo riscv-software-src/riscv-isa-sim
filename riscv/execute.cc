@@ -114,6 +114,7 @@ void processor_t::step(size_t n)
          default: abort(); \
        } \
        pc = state.pc; \
+       check_pc_alignment(pc); \
        break; \
      } else { \
        state.pc = pc; \
