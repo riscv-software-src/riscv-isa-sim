@@ -435,12 +435,12 @@ void processor_t::set_csr(int which, reg_t val)
         state.satp = val & (SATP64_PPN | SATP64_MODE);
       break;
     }
-    case CSR_SEPC: state.sepc = val; break;
+    case CSR_SEPC: state.sepc = val & ~(reg_t)1; break;
     case CSR_STVEC: state.stvec = val >> 2 << 2; break;
     case CSR_SSCRATCH: state.sscratch = val; break;
     case CSR_SCAUSE: state.scause = val; break;
     case CSR_STVAL: state.stval = val; break;
-    case CSR_MEPC: state.mepc = val; break;
+    case CSR_MEPC: state.mepc = val & ~(reg_t)1; break;
     case CSR_MTVEC: state.mtvec = val & ~(reg_t)2; break;
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
@@ -510,7 +510,7 @@ void processor_t::set_csr(int which, reg_t val)
       state.dcsr.halt = get_field(val, DCSR_HALT);
       break;
     case CSR_DPC:
-      state.dpc = val;
+      state.dpc = val & ~(reg_t)1;
       break;
     case CSR_DSCRATCH:
       state.dscratch = val;
