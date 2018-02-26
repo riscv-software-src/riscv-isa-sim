@@ -9,7 +9,7 @@
 #include <string>
 #include <vector>
 #include <map>
-#include "debug_rom/debug_rom_defines.h"
+#include "debug_rom_defines.h"
 
 class processor_t;
 class mmu_t;
