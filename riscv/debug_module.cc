@@ -6,7 +6,7 @@
 #include "mmu.h"
 
 #include "debug_rom/debug_rom.h"
-#include "debug_rom/debug_rom_defines.h"
+#include "debug_rom_defines.h"
 
 #if 0
 #  define D(x) x
