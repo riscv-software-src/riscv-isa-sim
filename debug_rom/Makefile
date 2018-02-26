@@ -7,7 +7,7 @@ OBJCOPY = $(RISCV)/bin/riscv64-unknown-elf-objcopy
 COMPILE = $(CC) -nostdlib -nostartfiles -I.. -Tlink.ld
 
 ELFS = debug_rom
-DEPS = debug_rom.S link.ld debug_rom_defines.h
+DEPS = debug_rom.S link.ld ../riscv/debug_rom_defines.h ../riscv/encoding.h
 
 all: $(patsubst %,%.h,$(ELFS))
 
