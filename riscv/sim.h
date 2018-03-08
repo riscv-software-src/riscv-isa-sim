@@ -33,7 +33,7 @@ public:
   sim_t(const char* isa, size_t _nprocs,  bool halted, reg_t start_pc,
         std::vector<std::pair<reg_t, mem_t*>> mems,
         const std::vector<std::string>& args, const std::vector<int> hartids,
-        unsigned progsize, unsigned max_bus_master_bits);
+        unsigned progsize, unsigned max_bus_master_bits, bool require_authentication);
   ~sim_t();
 
   // run the simulation to completion
