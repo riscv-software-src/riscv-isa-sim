@@ -177,6 +177,7 @@ public:
   unsigned get_xlen() { return xlen; }
   unsigned get_max_xlen() { return max_xlen; }
   std::string get_isa_string() { return isa_string; }
+  reg_t get_isa() { return isa; }
   unsigned get_flen() {
     return supports_extension('Q') ? 128 :
            supports_extension('D') ? 64 :
