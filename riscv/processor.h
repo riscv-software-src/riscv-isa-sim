@@ -96,6 +96,7 @@ struct state_t
 
   // control and status registers
   reg_t prv;    // TODO: Can this be an enum instead?
+  reg_t misa;
   reg_t mstatus;
   reg_t mepc;
   reg_t mtval;
@@ -177,7 +178,6 @@ public:
   unsigned get_xlen() { return xlen; }
   unsigned get_max_xlen() { return max_xlen; }
   std::string get_isa_string() { return isa_string; }
-  reg_t get_isa() { return isa; }
   unsigned get_flen() {
     return supports_extension('Q') ? 128 :
            supports_extension('D') ? 64 :
@@ -186,7 +186,7 @@ public:
   extension_t* get_extension() { return ext; }
   bool supports_extension(unsigned char ext) {
     if (ext >= 'a' && ext <= 'z') ext += 'A' - 'a';
-    return ext >= 'A' && ext <= 'Z' && ((isa >> (ext - 'A')) & 1);
+    return ext >= 'A' && ext <= 'Z' && ((state.misa >> (ext - 'A')) & 1);
   }
   void check_pc_alignment(reg_t pc) {
     if (unlikely(pc & 2) && !supports_extension('C'))
@@ -303,7 +303,6 @@ private:
   uint32_t id;
   unsigned max_xlen;
   unsigned xlen;
-  reg_t isa;
   reg_t max_isa;
   std::string isa_string;
   bool histogram_enabled;

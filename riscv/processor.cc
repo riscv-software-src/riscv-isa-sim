@@ -64,10 +64,10 @@ void processor_t::parse_isa_string(const char* str)
   const char* all_subsets = "imafdqc";
 
   max_xlen = 64;
-  isa = reg_t(2) << 62;
+  state.misa = reg_t(2) << 62;
 
   if (strncmp(p, "rv32", 4) == 0)
-    max_xlen = 32, isa = reg_t(1) << 30, p += 4;
+    max_xlen = 32, state.misa = reg_t(1) << 30, p += 4;
   else if (strncmp(p, "rv64", 4) == 0)
     p += 4;
   else if (strncmp(p, "rv", 2) == 0)
@@ -83,11 +83,11 @@ void processor_t::parse_isa_string(const char* str)
   }
 
   isa_string = "rv" + std::to_string(max_xlen) + p;
-  isa |= 1L << ('s' - 'a'); // advertise support for supervisor mode
-  isa |= 1L << ('u' - 'a'); // advertise support for user mode
+  state.misa |= 1L << ('s' - 'a'); // advertise support for supervisor mode
+  state.misa |= 1L << ('u' - 'a'); // advertise support for user mode
 
   while (*p) {
-    isa |= 1L << (*p - 'a');
+    state.misa |= 1L << (*p - 'a');
 
     if (auto next = strchr(all_subsets, *p)) {
       all_subsets = next + 1;
@@ -112,7 +112,7 @@ void processor_t::parse_isa_string(const char* str)
   if (supports_extension('Q') && max_xlen < 64)
     bad_isa_string(str);
 
-  max_isa = isa;
+  max_isa = state.misa;
 }
 
 void state_t::reset()
@@ -458,7 +458,7 @@ void processor_t::set_csr(int which, reg_t val)
       mask |= 1L << ('C' - 'A');
       mask &= max_isa;
 
-      isa = (val & mask) | (isa & ~mask);
+      state.misa = (val & mask) | (state.misa & ~mask);
       break;
     }
     case CSR_TSELECT:
@@ -607,7 +607,7 @@ reg_t processor_t::get_csr(int which)
     case CSR_MSCRATCH: return state.mscratch;
     case CSR_MCAUSE: return state.mcause;
     case CSR_MTVAL: return state.mtval;
-    case CSR_MISA: return isa;
+    case CSR_MISA: return state.misa;
     case CSR_MARCHID: return 0;
     case CSR_MIMPID: return 0;
     case CSR_MVENDORID: return 0;
