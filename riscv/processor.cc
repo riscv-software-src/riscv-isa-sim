@@ -117,7 +117,9 @@ void processor_t::parse_isa_string(const char* str)
 
 void state_t::reset()
 {
+  reg_t misa = this->misa;
   memset(this, 0, sizeof(*this));
+  this->misa = misa;
   prv = PRV_M;
   pc = DEFAULT_RSTVEC;
   load_reservation = -1;
