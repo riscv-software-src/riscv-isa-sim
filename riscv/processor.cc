@@ -115,11 +115,10 @@ void processor_t::parse_isa_string(const char* str)
   max_isa = state.misa;
 }
 
-void state_t::reset()
+void state_t::reset(reg_t max_isa)
 {
-  reg_t misa = this->misa;
   memset(this, 0, sizeof(*this));
-  this->misa = misa;
+  this->misa = max_isa;
   prv = PRV_M;
   pc = DEFAULT_RSTVEC;
   load_reservation = -1;
@@ -148,7 +147,7 @@ void processor_t::set_histogram(bool value)
 
 void processor_t::reset()
 {
-  state.reset();
+  state.reset(max_isa);
   state.dcsr.halt = halt_on_reset;
   halt_on_reset = false;
   set_csr(CSR_MSTATUS, state.mstatus);

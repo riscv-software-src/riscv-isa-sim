@@ -86,7 +86,7 @@ typedef struct
 // architectural state of a RISC-V hart
 struct state_t
 {
-  void reset();
+  void reset(reg_t max_isa);
 
   static const int num_triggers = 4;
 
