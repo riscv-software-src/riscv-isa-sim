@@ -35,6 +35,7 @@ debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bu
   memset(halted, 0, sizeof(halted));
   memset(debug_rom_flags, 0, sizeof(debug_rom_flags));
   memset(resumeack, 0, sizeof(resumeack));
+  memset(havereset, 0, sizeof(havereset));
   memset(program_buffer, 0, program_buffer_bytes);
   program_buffer[4*progbufsize] = ebreak();
   program_buffer[4*progbufsize+1] = ebreak() >> 8;
@@ -387,6 +388,10 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 
           result = set_field(result, DMI_DMSTATUS_IMPEBREAK,
               dmstatus.impebreak);
+          result = set_field(result, DMI_DMSTATUS_ALLHAVERESET,
+              havereset[dmcontrol.hartsel]);
+          result = set_field(result, DMI_DMSTATUS_ANYHAVERESET,
+              havereset[dmcontrol.hartsel]);
 	  result = set_field(result, DMI_DMSTATUS_ALLNONEXISTENT, dmstatus.allnonexistant);
 	  result = set_field(result, DMI_DMSTATUS_ALLUNAVAIL, dmstatus.allunavail);
 	  result = set_field(result, DMI_DMSTATUS_ALLRUNNING, dmstatus.allrunning);
@@ -664,6 +669,9 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
             dmcontrol.ndmreset = get_field(value, DMI_DMCONTROL_NDMRESET);
             dmcontrol.hartsel = get_field(value, ((1L<<hartsellen)-1) <<
                 DMI_DMCONTROL_HARTSEL_OFFSET);
+            if (get_field(value, DMI_DMCONTROL_ACKHAVERESET)) {
+              havereset[dmcontrol.hartsel] = false;
+            }
           }
           processor_t *proc = current_proc();
           if (proc) {
@@ -754,4 +762,10 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
     }
   }
   return false;
+}
+
+void debug_module_t::proc_reset(unsigned id)
+{
+  havereset[id] = true;
+  halted[id] = false;
 }
