@@ -15,14 +15,25 @@
 class mmu_t;
 class remote_bitbang_t;
 
+// this is the interface to the simulator used by the processors and memory
+class simif_t
+{
+public:
+  // should return NULL for MMIO addresses
+  virtual char* addr_to_mem(reg_t addr) = 0;
+  // used for MMIO addresses
+  virtual bool mmio_load(reg_t addr, size_t len, uint8_t* bytes) = 0;
+  virtual bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes) = 0;
+};
+
 // this class encapsulates the processors and memory in a RISC-V machine.
-class sim_t : public htif_t
+class sim_t : public htif_t, public simif_t
 {
 public:
   sim_t(const char* isa, size_t _nprocs,  bool halted, reg_t start_pc,
         std::vector<std::pair<reg_t, mem_t*>> mems,
         const std::vector<std::string>& args, const std::vector<int> hartids,
-        unsigned progsize, unsigned max_bus_master_bits);
+        unsigned progsize, unsigned max_bus_master_bits, bool require_authentication);
   ~sim_t();
 
   // run the simulation to completion
