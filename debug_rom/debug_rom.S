@@ -1,8 +1,8 @@
 // See LICENSE.SiFive for license details.
 
 #include "riscv/encoding.h"
-#include "debug_rom_defines.h"
-        
+#include "riscv/debug_rom_defines.h"
+
         .option norvc
         .global entry
         .global exception

@@ -6,7 +6,7 @@
 #include "mmu.h"
 
 #include "debug_rom/debug_rom.h"
-#include "debug_rom/debug_rom_defines.h"
+#include "debug_rom_defines.h"
 
 #if 0
 #  define D(x) x
@@ -16,10 +16,12 @@
 
 ///////////////////////// debug_module_t
 
-debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bus_master_bits) :
+debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bus_master_bits,
+    bool require_authentication) :
   progbufsize(progbufsize),
   program_buffer_bytes(4 + 4*progbufsize),
   max_bus_master_bits(max_bus_master_bits),
+  require_authentication(require_authentication),
   debug_progbuf_start(debug_data_start - program_buffer_bytes),
   debug_abstract_start(debug_progbuf_start - debug_abstract_size*4),
   sim(sim)
@@ -65,7 +67,7 @@ void debug_module_t::reset()
 
   dmstatus = {0};
   dmstatus.impebreak = true;
-  dmstatus.authenticated = 1;
+  dmstatus.authenticated = !require_authentication;
   dmstatus.version = 2;
 
   abstractcs = {0};
@@ -87,6 +89,8 @@ void debug_module_t::reset()
     sbcs.access16 = true;
   if (max_bus_master_bits >= 8)
     sbcs.access8 = true;
+
+  challenge = random();
 }
 
 void debug_module_t::add_device(bus_t *bus) {
@@ -462,6 +466,9 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
       case DMI_SBDATA3:
         result = sbdata[3];
         break;
+      case DMI_AUTHDATA:
+        result = challenge;
+        break;
       default:
         result = 0;
         D(fprintf(stderr, "Unexpected. Returning Error."));
@@ -611,6 +618,11 @@ bool debug_module_t::perform_abstract_command()
 bool debug_module_t::dmi_write(unsigned address, uint32_t value)
 {
   D(fprintf(stderr, "dmi_write(0x%x, 0x%x)\n", address, value));
+
+  if (!dmstatus.authenticated && address != DMI_AUTHDATA &&
+      address != DMI_DMCONTROL)
+    return false;
+
   if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
     unsigned i = address - DMI_DATA0;
     if (!abstractcs.busy)
@@ -643,6 +655,8 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           if (!dmcontrol.dmactive && get_field(value, DMI_DMCONTROL_DMACTIVE))
             reset();
           dmcontrol.dmactive = get_field(value, DMI_DMCONTROL_DMACTIVE);
+          if (!dmstatus.authenticated)
+            return true;
           if (dmcontrol.dmactive) {
             dmcontrol.haltreq = get_field(value, DMI_DMCONTROL_HALTREQ);
             dmcontrol.resumereq = get_field(value, DMI_DMCONTROL_RESUMEREQ);
@@ -724,6 +738,18 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         return true;
       case DMI_SBDATA3:
         sbdata[3] = value;
+        return true;
+      case DMI_AUTHDATA:
+        D(fprintf(stderr, "debug authentication: got 0x%x; 0x%x unlocks\n", value,
+            challenge + secret));
+        if (require_authentication) {
+          if (value == challenge + secret) {
+            dmstatus.authenticated = true;
+          } else {
+            dmstatus.authenticated = false;
+            challenge = random();
+          }
+        }
         return true;
     }
   }

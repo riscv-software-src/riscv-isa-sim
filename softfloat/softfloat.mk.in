@@ -2,6 +2,7 @@ softfloat_subproject_deps =
 
 softfloat_hdrs = \
   internals.h \
+  platform.h \
   primitives.h \
   primitiveTypes.h \
   softfloat.h \

@@ -168,7 +168,7 @@ reg_t sim_t::get_pc(const std::vector<std::string>& args)
     throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
-  return p->state.pc;
+  return p->get_state()->pc;
 }
 
 void sim_t::interactive_pc(const std::string& cmd, const std::vector<std::string>& args)
@@ -198,7 +198,7 @@ reg_t sim_t::get_reg(const std::vector<std::string>& args)
   if (r >= NXPR)
     throw trap_interactive();
 
-  return p->state.XPR[r];
+  return p->get_state()->XPR[r];
 }
 
 freg_t sim_t::get_freg(const std::vector<std::string>& args)
@@ -213,7 +213,7 @@ freg_t sim_t::get_freg(const std::vector<std::string>& args)
   if (r >= NFPR)
     throw trap_interactive();
 
-  return p->state.FPR[r];
+  return p->get_state()->FPR[r];
 }
 
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
@@ -223,7 +223,7 @@ void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::strin
     processor_t *p = get_core(args[0]);
 
     for (int r = 0; r < NXPR; ++r) {
-      fprintf(stderr, "%-4s: 0x%016" PRIx64 "  ", xpr_name[r], p->state.XPR[r]);
+      fprintf(stderr, "%-4s: 0x%016" PRIx64 "  ", xpr_name[r], p->get_state()->XPR[r]);
       if ((r + 1) % 4 == 0)
         fprintf(stderr, "\n");
     }
