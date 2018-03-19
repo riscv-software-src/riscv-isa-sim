@@ -364,3 +364,8 @@ void sim_t::write_chunk(addr_t taddr, size_t len, const void* src)
   memcpy(&data, src, sizeof data);
   debug_mmu->store_uint64(taddr, data);
 }
+
+void sim_t::proc_reset(unsigned id)
+{
+  debug_module.proc_reset(id);
+}

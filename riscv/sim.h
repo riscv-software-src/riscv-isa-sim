@@ -24,6 +24,8 @@ public:
   // used for MMIO addresses
   virtual bool mmio_load(reg_t addr, size_t len, uint8_t* bytes) = 0;
   virtual bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes) = 0;
+  // Callback for processors to let the simulation know they were reset.
+  virtual void proc_reset(unsigned id) = 0;
 };
 
 // this class encapsulates the processors and memory in a RISC-V machine.
@@ -48,6 +50,9 @@ public:
   const char* get_dts() { if (dts.empty()) reset(); return dts.c_str(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
   unsigned nprocs() const { return procs.size(); }
+
+  // Callback for processors to let the simulation know they were reset.
+  void proc_reset(unsigned id);
 
 private:
   std::vector<std::pair<reg_t, mem_t*>> mems;
