@@ -155,7 +155,8 @@ void processor_t::reset()
   if (ext)
     ext->reset(); // reset the extension
 
-  sim->proc_reset(id);
+  if (sim)
+    sim->proc_reset(id);
 }
 
 // Count number of contiguous 0 bits starting from the LSB.
