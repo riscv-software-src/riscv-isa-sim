@@ -19,6 +19,8 @@ typedef struct {
 
 typedef struct {
   bool impebreak;
+  bool allhavereset;
+  bool anyhavereset;
   bool allnonexistant;
   bool anynonexistant;
   bool allunavail;
@@ -95,6 +97,9 @@ class debug_module_t : public abstract_device_t
     bool dmi_read(unsigned address, uint32_t *value);
     bool dmi_write(unsigned address, uint32_t value);
 
+    // Called when one of the attached harts was reset.
+    void proc_reset(unsigned id);
+
   private:
     static const unsigned datasize = 2;
     // Size of program_buffer in 32-bit words, as exposed to the rest of the
@@ -119,9 +124,10 @@ class debug_module_t : public abstract_device_t
     uint8_t debug_abstract[debug_abstract_size * 4];
     uint8_t *program_buffer;
     uint8_t dmdata[datasize * 4];
-    
+
     bool halted[1024];
     bool resumeack[1024];
+    bool havereset[1024];
     uint8_t debug_rom_flags[1024];
 
     void write32(uint8_t *rom, unsigned int index, uint32_t value);
