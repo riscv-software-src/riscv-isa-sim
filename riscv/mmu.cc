@@ -182,7 +182,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
     // check that physical address of PTE is legal
     auto ppte = sim->addr_to_mem(base + idx * vm.ptesize);
     if (!ppte)
-      throw trap_load_access_fault(addr);
+      goto fail_access;
 
     reg_t pte = vm.ptesize == 4 ? *(uint32_t*)ppte : *(uint64_t*)ppte;
     reg_t ppn = pte >> PTE_PPN_SHIFT;
@@ -221,6 +221,14 @@ fail:
     case FETCH: throw trap_instruction_page_fault(addr);
     case LOAD: throw trap_load_page_fault(addr);
     case STORE: throw trap_store_page_fault(addr);
+    default: abort();
+  }
+
+fail_access:
+  switch (type) {
+    case FETCH: throw trap_instruction_access_fault(addr);
+    case LOAD: throw trap_load_access_fault(addr);
+    case STORE: throw trap_store_access_fault(addr);
     default: abort();
   }
 }
