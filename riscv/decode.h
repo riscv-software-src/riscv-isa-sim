@@ -206,7 +206,7 @@ private:
      } while(0)
 
 #define set_pc_and_serialize(x) \
-  do { reg_t __npc = (x); \
+  do { reg_t __npc = (x) & p->pc_alignment_mask(); \
        npc = PC_SERIALIZE_AFTER; \
        STATE.pc = __npc; \
      } while(0)

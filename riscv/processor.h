@@ -188,8 +188,11 @@ public:
     if (ext >= 'a' && ext <= 'z') ext += 'A' - 'a';
     return ext >= 'A' && ext <= 'Z' && ((state.misa >> (ext - 'A')) & 1);
   }
+  reg_t pc_alignment_mask() {
+    return ~(reg_t)(supports_extension('C') ? 0 : 2);
+  }
   void check_pc_alignment(reg_t pc) {
-    if (unlikely(pc & 2) && !supports_extension('C'))
+    if (unlikely(pc & ~pc_alignment_mask()))
       throw trap_instruction_address_misaligned(pc);
   }
   reg_t legalize_privilege(reg_t);
