@@ -450,6 +450,10 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MTVAL: state.mtval = val; break;
     case CSR_MISA: {
+      // the write is ignored if increasing IALIGN would misalign the PC
+      if (!(val & (1L << ('C' - 'A'))) && (state.pc & 2))
+        break;
+
       if (!(val & (1L << ('F' - 'A'))))
         val &= ~(1L << ('D' - 'A'));
 
@@ -592,7 +596,7 @@ reg_t processor_t::get_csr(int which)
     }
     case CSR_SIP: return state.mip & state.mideleg;
     case CSR_SIE: return state.mie & state.mideleg;
-    case CSR_SEPC: return state.sepc;
+    case CSR_SEPC: return state.sepc & pc_alignment_mask();
     case CSR_STVAL: return state.stval;
     case CSR_STVEC: return state.stvec;
     case CSR_SCAUSE:
@@ -607,7 +611,7 @@ reg_t processor_t::get_csr(int which)
     case CSR_MSTATUS: return state.mstatus;
     case CSR_MIP: return state.mip;
     case CSR_MIE: return state.mie;
-    case CSR_MEPC: return state.mepc;
+    case CSR_MEPC: return state.mepc & pc_alignment_mask();
     case CSR_MSCRATCH: return state.mscratch;
     case CSR_MCAUSE: return state.mcause;
     case CSR_MTVAL: return state.mtval;
@@ -668,7 +672,7 @@ reg_t processor_t::get_csr(int which)
         return v;
       }
     case CSR_DPC:
-      return state.dpc;
+      return state.dpc & pc_alignment_mask();
     case CSR_DSCRATCH:
       return state.dscratch;
   }
