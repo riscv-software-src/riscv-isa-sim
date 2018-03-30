@@ -15,3 +15,12 @@ const char* fpr_name[] = {
   "fa6", "fa7", "fs2",  "fs3",  "fs4", "fs5", "fs6",  "fs7",
   "fs8", "fs9", "fs10", "fs11", "ft8", "ft9", "ft10", "ft11"
 };
+
+const char* csr_name(int which) {
+  switch (which) {
+    #define DECLARE_CSR(name, number)  case number: return #name;
+    #include "encoding.h"
+    #undef DECLARE_CSR
+  }
+  return "unknown-csr";
+}
