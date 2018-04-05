@@ -239,6 +239,24 @@ public:
 
   void register_memtracer(memtracer_t*);
 
+  int is_dirty_enabled()
+  {
+#ifdef RISCV_ENABLE_DIRTY
+    return 1;
+#else
+    return 0;
+#endif
+  }
+
+  int is_misaligned_enabled()
+  {
+#ifdef RISCV_ENABLE_MISALIGNED
+    return 1;
+#else
+    return 0;
+#endif
+  }
+
 private:
   simif_t* sim;
   processor_t* proc;
