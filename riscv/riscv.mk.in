@@ -11,6 +11,7 @@ riscv_hdrs = \
 	decode.h \
 	devices.h \
 	disasm.h \
+	dts.h \
 	mmu.h \
 	processor.h \
 	sim.h \
@@ -33,6 +34,7 @@ riscv_precompiled_hdrs = \
 riscv_srcs = \
 	processor.cc \
 	execute.cc \
+	dts.cc \
 	sim.cc \
 	interactive.cc \
 	trap.cc \
