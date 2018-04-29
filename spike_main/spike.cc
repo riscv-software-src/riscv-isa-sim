@@ -145,6 +145,9 @@ int main(int argc, char** argv)
   if (mems.empty())
     mems = make_mems("2048");
 
+  if (!*argv1)
+    help();
+
   sim_t s(isa, nprocs, halted, start_pc, mems, htif_args, std::move(hartids),
       progsize, max_bus_master_bits, require_authentication);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
@@ -158,9 +161,6 @@ int main(int argc, char** argv)
     printf("%s", s.get_dts());
     return 0;
   }
-
-  if (!*argv1)
-    help();
 
   if (ic && l2) ic->set_miss_handler(&*l2);
   if (dc && l2) dc->set_miss_handler(&*l2);
