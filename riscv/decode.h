@@ -211,11 +211,17 @@ private:
        STATE.pc = __npc; \
      } while(0)
 
+#define wfi() \
+  do { set_pc_and_serialize(npc); \
+       npc = PC_SERIALIZE_WFI; \
+     } while(0)
+
 #define serialize() set_pc_and_serialize(npc)
 
 /* Sentinel PC values to serialize simulator pipeline */
 #define PC_SERIALIZE_BEFORE 3
 #define PC_SERIALIZE_AFTER 5
+#define PC_SERIALIZE_WFI 7
 #define invalid_pc(pc) ((pc) & 1)
 
 /* Convenience wrappers to simplify softfloat code sequences */
