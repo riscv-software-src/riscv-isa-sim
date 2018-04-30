@@ -32,32 +32,31 @@ entry_loop:
         csrr s0, CSR_MHARTID
         sw   s0, DEBUG_ROM_HALTED(zero)
         lbu  s0, DEBUG_ROM_FLAGS(s0) // 1 byte flag per hart. Only one hart advances here.
+        andi s0, s0, (1 << DEBUG_ROM_FLAG_GO) | (1 << DEBUG_ROM_FLAG_RESUME)
+        beqz s0, entry_loop            // Loop until either GO or RESUME is set.
+
         andi s0, s0, (1 << DEBUG_ROM_FLAG_GO)
-        bnez s0, going
-        csrr s0, CSR_MHARTID
-        lbu  s0, DEBUG_ROM_FLAGS(s0) // multiple harts can resume  here
-        andi s0, s0, (1 << DEBUG_ROM_FLAG_RESUME)
-        bnez s0, resume
-        jal  zero, entry_loop
+        beqz s0, _resume               // If GO is clear at this point, RESUME must be set.
 
-_exception:
-        sw      zero, DEBUG_ROM_EXCEPTION(zero) // Let debug module know you got an exception.
-        ebreak
-
-going:
-        csrr s0, CSR_DSCRATCH            // Restore s0 here
-        sw zero, DEBUG_ROM_GOING(zero)   // When debug module sees this write, the GO flag is reset.
+        csrr s0, CSR_DSCRATCH          // Restore s0 here
+        sw zero, DEBUG_ROM_GOING(zero) // When debug module sees this write, the GO flag is reset.
         fence
         fence.i
         jalr zero, zero, %lo(whereto)    // Debug module will put different instructions and data in the RAM, 
                                          // so we use fence and fence.i for safety. (rocket-chip doesn't have this
                                          // because jalr is special there)
 
+
+
 _resume:
         csrr s0, CSR_MHARTID
         sw   s0, DEBUG_ROM_RESUMING(zero) // When Debug Module sees this write, the RESUME flag is reset.
         csrr s0, CSR_DSCRATCH   // Restore s0
         dret
+
+_exception:
+        sw      zero, DEBUG_ROM_EXCEPTION(zero) // Let debug module know you got an exception.
+        ebreak
 
         // END OF ACTUAL "ROM" CONTENTS. BELOW IS JUST FOR LINKER SCRIPT.
 
