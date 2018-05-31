@@ -6,6 +6,7 @@
 #include "processor.h"
 #include "devices.h"
 #include "debug_module.h"
+#include "simif.h"
 #include <fesvr/htif.h>
 #include <fesvr/context.h>
 #include <vector>
@@ -14,19 +15,6 @@
 
 class mmu_t;
 class remote_bitbang_t;
-
-// this is the interface to the simulator used by the processors and memory
-class simif_t
-{
-public:
-  // should return NULL for MMIO addresses
-  virtual char* addr_to_mem(reg_t addr) = 0;
-  // used for MMIO addresses
-  virtual bool mmio_load(reg_t addr, size_t len, uint8_t* bytes) = 0;
-  virtual bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes) = 0;
-  // Callback for processors to let the simulation know they were reset.
-  virtual void proc_reset(unsigned id) = 0;
-};
 
 // this class encapsulates the processors and memory in a RISC-V machine.
 class sim_t : public htif_t, public simif_t
