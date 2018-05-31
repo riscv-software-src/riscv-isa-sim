@@ -1,7 +1,7 @@
 // See LICENSE for license details.
 
 #include "mmu.h"
-#include "sim.h"
+#include "simif.h"
 #include "processor.h"
 
 mmu_t::mmu_t(simif_t* sim, processor_t* proc)

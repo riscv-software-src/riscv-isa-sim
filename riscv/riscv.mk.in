@@ -15,6 +15,7 @@ riscv_hdrs = \
 	mmu.h \
 	processor.h \
 	sim.h \
+	simif.h \
 	trap.h \
 	encoding.h \
 	cachesim.h \

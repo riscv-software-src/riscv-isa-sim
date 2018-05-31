@@ -4,7 +4,7 @@
 #include "extension.h"
 #include "common.h"
 #include "config.h"
-#include "sim.h"
+#include "simif.h"
 #include "mmu.h"
 #include "disasm.h"
 #include <cinttypes>
