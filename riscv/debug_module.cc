@@ -348,8 +348,9 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 
           result = set_field(result, DMI_DMCONTROL_HALTREQ, dmcontrol.haltreq);
           result = set_field(result, DMI_DMCONTROL_RESUMEREQ, dmcontrol.resumereq);
-          result = set_field(result, ((1L<<hartsellen)-1) <<
-              DMI_DMCONTROL_HARTSEL_OFFSET, dmcontrol.hartsel);
+          result = set_field(result, DMI_DMCONTROL_HARTSELHI,
+              dmcontrol.hartsel >> DMI_DMCONTROL_HARTSELLO_LENGTH);
+          result = set_field(result, DMI_DMCONTROL_HARTSELLO, dmcontrol.hartsel);
           result = set_field(result, DMI_DMCONTROL_HARTRESET, dmcontrol.hartreset);
 	  result = set_field(result, DMI_DMCONTROL_NDMRESET, dmcontrol.ndmreset);
           result = set_field(result, DMI_DMCONTROL_DMACTIVE, dmcontrol.dmactive);
@@ -668,8 +669,10 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
             dmcontrol.resumereq = get_field(value, DMI_DMCONTROL_RESUMEREQ);
             dmcontrol.hartreset = get_field(value, DMI_DMCONTROL_HARTRESET);
             dmcontrol.ndmreset = get_field(value, DMI_DMCONTROL_NDMRESET);
-            dmcontrol.hartsel = get_field(value, ((1L<<hartsellen)-1) <<
-                DMI_DMCONTROL_HARTSEL_OFFSET);
+            dmcontrol.hartsel = get_field(value, DMI_DMCONTROL_HARTSELHI) <<
+              DMI_DMCONTROL_HARTSELLO_LENGTH;
+            dmcontrol.hartsel |= get_field(value, DMI_DMCONTROL_HARTSELLO);
+            dmcontrol.hartsel &= (1L<<hartsellen) - 1;
             if (get_field(value, DMI_DMCONTROL_ACKHAVERESET)) {
               havereset[dmcontrol.hartsel] = false;
             }
