@@ -152,9 +152,6 @@ void processor_t::reset()
   halt_on_reset = false;
   set_csr(CSR_MSTATUS, state.mstatus);
 
-  if (ext)
-    ext->reset(); // reset the extension
-
   if (sim)
     sim->proc_reset(id);
 }
@@ -744,6 +741,9 @@ void processor_t::register_extension(extension_t* x)
     throw std::logic_error("only one extension may be registered");
   ext = x;
   x->set_processor(this);
+
+  /* Reset the extension */
+  x->reset();
 }
 
 void processor_t::register_base_instructions()
