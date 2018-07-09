@@ -121,7 +121,6 @@ void state_t::reset(reg_t max_isa)
   misa = max_isa;
   prv = PRV_M;
   pc = DEFAULT_RSTVEC;
-  load_reservation = -1;
   tselect = 0;
   for (unsigned int i = 0; i < num_triggers; i++)
     mcontrol[i].type = 2;
@@ -298,8 +297,6 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     set_csr(CSR_MSTATUS, s);
     set_privilege(PRV_M);
   }
-
-  yield_load_reservation();
 }
 
 void processor_t::disasm(insn_t insn)
