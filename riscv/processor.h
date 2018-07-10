@@ -135,8 +135,6 @@ struct state_t
       STEP_STEPPED
   } single_step;
 
-  reg_t load_reservation;
-
 #ifdef RISCV_ENABLE_COMMITLOG
   commit_log_reg_t log_reg_write;
   reg_t last_inst_priv;
@@ -197,7 +195,6 @@ public:
   }
   reg_t legalize_privilege(reg_t);
   void set_privilege(reg_t);
-  void yield_load_reservation() { state.load_reservation = (reg_t)-1; }
   void update_histogram(reg_t pc);
   const disassembler_t* get_disassembler() { return disassembler; }
 
