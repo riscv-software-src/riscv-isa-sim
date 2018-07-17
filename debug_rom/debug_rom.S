@@ -12,11 +12,10 @@
         // their GO or RESUME bit is set.
 
 entry:
-       jal zero, _entry
-resume:
-       jal zero, _resume
+        jal zero, _entry
 exception:
-       jal zero, _exception
+        sw      zero, DEBUG_ROM_EXCEPTION(zero) // Let debug module know you got an exception.
+        // fall through to _entry
 
 _entry:
         // This fence is required because the execution may have written something
@@ -40,10 +39,6 @@ entry_loop:
         bnez s0, resume
         jal  zero, entry_loop
 
-_exception:
-        sw      zero, DEBUG_ROM_EXCEPTION(zero) // Let debug module know you got an exception.
-        ebreak
-
 going:
         csrr s0, CSR_DSCRATCH            // Restore s0 here
         sw zero, DEBUG_ROM_GOING(zero)   // When debug module sees this write, the GO flag is reset.
@@ -53,7 +48,7 @@ going:
                                          // so we use fence and fence.i for safety. (rocket-chip doesn't have this
                                          // because jalr is special there)
 
-_resume:
+resume:
         csrr s0, CSR_MHARTID
         sw   s0, DEBUG_ROM_RESUMING(zero) // When Debug Module sees this write, the RESUME flag is reset.
         csrr s0, CSR_DSCRATCH   // Restore s0
