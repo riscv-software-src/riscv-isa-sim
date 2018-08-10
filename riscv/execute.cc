@@ -130,9 +130,11 @@ void processor_t::step(size_t n)
         {
           if (unlikely(!state.serialized && state.single_step == state.STEP_STEPPED)) {
             state.single_step = state.STEP_NONE;
-            enter_debug_mode(DCSR_CAUSE_STEP);
-            // enter_debug_mode changed state.pc, so we can't just continue.
-            break;
+            if (state.dcsr.cause == DCSR_CAUSE_NONE) {
+              enter_debug_mode(DCSR_CAUSE_STEP);
+              // enter_debug_mode changed state.pc, so we can't just continue.
+              break;
+            }
           }
 
           if (unlikely(state.single_step == state.STEP_STEPPING)) {
