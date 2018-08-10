@@ -318,14 +318,20 @@ private:
     reg_t vpn = addr >> PGSHIFT;
     if (likely(tlb_insn_tag[vpn % TLB_ENTRIES] == vpn))
       return tlb_data[vpn % TLB_ENTRIES];
+    tlb_entry_t result;
+    if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] != (vpn | TLB_CHECK_TRIGGERS))) {
+      result = fetch_slow_path(addr);
+    } else {
+      result = tlb_data[vpn % TLB_ENTRIES];
+    }
     if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
       uint16_t* ptr = (uint16_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
       int match = proc->trigger_match(OPERATION_EXECUTE, addr, *ptr);
-      if (match >= 0)
+      if (match >= 0) {
         throw trigger_matched_t(match, OPERATION_EXECUTE, addr, *ptr);
-      return tlb_data[vpn % TLB_ENTRIES];
+      }
     }
-    return fetch_slow_path(addr);
+    return result;
   }
 
   inline const uint16_t* translate_insn_addr_to_host(reg_t addr) {
