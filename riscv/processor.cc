@@ -403,10 +403,16 @@ void processor_t::set_csr(int which, reg_t val)
         state.minstret = (state.minstret >> 32 << 32) | (val & 0xffffffffU);
       else
         state.minstret = val;
+      // The ISA mandates that if an instruction writes instret, the write
+      // takes precedence over the increment to instret.  However, Spike
+      // unconditionally increments instret after executing an instruction.
+      // Correct for this artifact by decrementing instret here.
+      state.minstret--;
       break;
     case CSR_MINSTRETH:
     case CSR_MCYCLEH:
       state.minstret = (val << 32) | (state.minstret << 32 >> 32);
+      state.minstret--; // See comment above.
       break;
     case CSR_SCOUNTEREN:
       state.scounteren = val;
