@@ -24,11 +24,15 @@ processor_t::processor_t(const char* isa, simif_t* sim, uint32_t id,
   : debug(false), halt_request(false), sim(sim), ext(NULL), id(id),
   halt_on_reset(halt_on_reset), last_pc(1), executions(1)
 {
-  disassembler = new disassembler_t(max_xlen);
   parse_isa_string(isa);
   register_base_instructions();
 
   mmu = new mmu_t(sim, this);
+
+  disassembler = new disassembler_t(max_xlen);
+  if (ext)
+    for (auto disasm_insn : ext->get_disasms())
+      disassembler->add_insn(disasm_insn);
 
   reset();
 }
