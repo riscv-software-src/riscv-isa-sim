@@ -36,6 +36,7 @@ static void help()
   fprintf(stderr, "  --extlib=<name>       Shared library to load\n");
   fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
   fprintf(stderr, "  --dump-dts            Print device tree string and exit\n");
+  fprintf(stderr, "  --disable-dtb         Don't write the device tree blob into memory\n");
   fprintf(stderr, "  --progsize=<words>    Progsize for the debug module [default 2]\n");
   fprintf(stderr, "  --debug-sba=<bits>    Debug bus master supports up to "
       "<bits> wide accesses [default 0]\n");
@@ -81,6 +82,7 @@ int main(int argc, char** argv)
   bool histogram = false;
   bool log = false;
   bool dump_dts = false;
+  bool dtb_enabled = true;
   size_t nprocs = 1;
   reg_t start_pc = reg_t(-1);
   std::vector<std::pair<reg_t, mem_t*>> mems;
@@ -127,6 +129,7 @@ int main(int argc, char** argv)
   parser.option(0, "isa", 1, [&](const char* s){isa = s;});
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
+  parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
     if (lib == NULL) {
@@ -156,6 +159,7 @@ int main(int argc, char** argv)
     remote_bitbang.reset(new remote_bitbang_t(rbb_port, &(*jtag_dtm)));
     s.set_remote_bitbang(&(*remote_bitbang));
   }
+  s.set_dtb_enabled(dtb_enabled);
 
   if (dump_dts) {
     printf("%s", s.get_dts());
