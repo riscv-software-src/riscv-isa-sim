@@ -32,6 +32,9 @@ public:
   void set_log(bool value);
   void set_histogram(bool value);
   void set_procs_debug(bool value);
+  void set_dtb_enabled(bool value) {
+    this->dtb_enabled = value;
+  }
   void set_remote_bitbang(remote_bitbang_t* remote_bitbang) {
     this->remote_bitbang = remote_bitbang;
   }
@@ -62,6 +65,7 @@ private:
   bool debug;
   bool log;
   bool histogram_enabled; // provide a histogram of PCs
+  bool dtb_enabled;
   remote_bitbang_t* remote_bitbang;
 
   // memory-mapped I/O routines
