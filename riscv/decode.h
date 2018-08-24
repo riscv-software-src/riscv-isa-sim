@@ -71,6 +71,7 @@ public:
   insn_bits_t bits() { return b; }
   int length() { return insn_length(b); }
   int64_t i_imm() { return int64_t(b) >> 20; }
+  int64_t shamt() { return x(20, 6); }
   int64_t s_imm() { return x(7, 5) + (xs(25, 7) << 5); }
   int64_t sb_imm() { return (x(8, 4) << 1) + (x(25,6) << 5) + (x(7,1) << 11) + (imm_sign() << 12); }
   int64_t u_imm() { return int64_t(b) >> 12 << 12; }
