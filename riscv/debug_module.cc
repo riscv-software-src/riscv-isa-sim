@@ -25,6 +25,7 @@ debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bu
   require_authentication(require_authentication),
   debug_progbuf_start(debug_data_start - program_buffer_bytes),
   debug_abstract_start(debug_progbuf_start - debug_abstract_size*4),
+  custom_base(0),
   sim(sim)
 {
   D(fprintf(stderr, "debug_data_start=0x%x\n", debug_data_start));
@@ -598,6 +599,20 @@ bool debug_module_t::perform_abstract_command()
               return true;
           }
         }
+
+      } else if (regno >= 0xc000 && (regno & 1) == 1) {
+        // Support odd-numbered custom registers, to allow for debugger testing.
+        unsigned custom_number = regno - 0xc000;
+        abstractcs.cmderr = CMDERR_NONE;
+        if (write) {
+          // Writing V to custom register N will cause future reads of N to
+          // return V, reads of N-1 will return V-1, etc.
+          custom_base = read32(dmdata, 0) - custom_number;
+        } else {
+          write32(dmdata, 0, custom_number + custom_base);
+          write32(dmdata, 1, 0);
+        }
+        return true;
 
       } else {
         abstractcs.cmderr = CMDERR_NOTSUP;

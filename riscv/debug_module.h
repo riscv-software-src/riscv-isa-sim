@@ -115,6 +115,9 @@ class debug_module_t : public abstract_device_t
 
     static const unsigned debug_abstract_size = 5;
     unsigned debug_abstract_start;
+    // R/W this through custom registers, to allow debuggers to test that
+    // functionality.
+    unsigned custom_base;
 
     // We only support 1024 harts currently. More requires at least resizing
     // the arrays below, and their corresponding special memory regions.
