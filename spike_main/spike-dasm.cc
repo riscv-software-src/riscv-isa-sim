@@ -31,22 +31,30 @@ int main(int argc, char** argv)
 
   while (getline(cin, s))
   {
-    for (size_t start = 0; (start = s.find("DASM(", start)) != string::npos; )
+    for (size_t pos = 0; (pos = s.find("DASM(", pos)) != string::npos; )
     {
-      size_t end = s.find(')', start);
-      if (end == string::npos)
-        break;
+      size_t start = pos;
+
+      pos += strlen("DASM(");
+
+      if (s[pos] == '0' && (s[pos+1] == 'x' || s[pos+1] == 'X'))
+        pos += 2;
+
+      if (!isxdigit(s[pos]))
+        continue;
 
       char* endp;
-      size_t numstart = start + strlen("DASM(");
-      int64_t bits = strtoull(&s[numstart], &endp, 16);
-      size_t nbits = 4 * (endp - &s[numstart]);
+      int64_t bits = strtoull(&s[pos], &endp, 16);
+      if (*endp != ')')
+        continue;
+
+      size_t nbits = 4 * (endp - &s[pos]);
       if (nbits < 64)
         bits = bits << (64 - nbits) >> (64 - nbits);
 
       string dis = p.get_disassembler()->disassemble(bits);
-      s = s.substr(0, start) + dis + s.substr(end+1);
-      start += dis.length();
+      s = s.substr(0, start) + dis + s.substr(endp - &s[0] + 1);
+      pos = start + dis.length();
     }
 
     cout << s << '\n';
