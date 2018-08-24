@@ -92,6 +92,12 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.shamt());
+  }
+} shamt;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     std::stringstream s;
     s << std::hex << "0x" << ((uint32_t)insn.u_imm() >> 12);
     return s.str();
@@ -138,6 +144,12 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
+    return fpr_name[insn.rvc_rs2()];
+  }
+} rvc_fp_rs2;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     return xpr_name[insn.rvc_rs1s()];
   }
 } rvc_rs1s;
@@ -147,6 +159,12 @@ struct : public arg_t {
     return xpr_name[insn.rvc_rs2s()];
   }
 } rvc_rs2s;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return fpr_name[insn.rvc_rs2s()];
+  }
+} rvc_fp_rs2s;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
@@ -187,7 +205,7 @@ struct : public arg_t {
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
     std::stringstream s;
-    s << std::hex << "0x" << (uint32_t)insn.rvc_imm();
+    s << std::hex << "0x" << ((uint32_t)insn.rvc_imm() << 12 >> 12);
     return s.str();
   }
 } rvc_uimm;
@@ -279,6 +297,7 @@ disassembler_t::disassembler_t(int xlen)
     add_insn(new disasm_insn_t(#code, match_##code, mask_##code, {}));
   #define DEFINE_RTYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs1, &xrs2})
   #define DEFINE_ITYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs1, &imm})
+  #define DEFINE_ITYPE_SHIFT(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs1, &shamt})
   #define DEFINE_I0TYPE(name, code) DISASM_INSN(name, code, mask_rs1, {&xrd, &imm})
   #define DEFINE_I1TYPE(name, code) DISASM_INSN(name, code, mask_imm, {&xrd, &xrs1})
   #define DEFINE_I2TYPE(name, code) DISASM_INSN(name, code, mask_rd | mask_imm, {&xrs1})
@@ -289,13 +308,16 @@ disassembler_t::disassembler_t(int xlen)
   #define DEFINE_XLOAD(code) DISASM_INSN(#code, code, 0, {&xrd, &load_address})
   #define DEFINE_XSTORE(code) DISASM_INSN(#code, code, 0, {&xrs2, &store_address})
   #define DEFINE_XAMO(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs2, &amo_address})
+  #define DEFINE_XAMO_LR(code) DISASM_INSN(#code, code, 0, {&xrd, &amo_address})
   #define DEFINE_FLOAD(code) DISASM_INSN(#code, code, 0, {&frd, &load_address})
   #define DEFINE_FSTORE(code) DISASM_INSN(#code, code, 0, {&frs2, &store_address})
   #define DEFINE_FRTYPE(code) DISASM_INSN(#code, code, 0, {&frd, &frs1, &frs2})
   #define DEFINE_FR1TYPE(code) DISASM_INSN(#code, code, 0, {&frd, &frs1})
   #define DEFINE_FR3TYPE(code) DISASM_INSN(#code, code, 0, {&frd, &frs1, &frs2, &frs3})
   #define DEFINE_FXTYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &frs1})
+  #define DEFINE_FX2TYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &frs1, &frs2})
   #define DEFINE_XFTYPE(code) DISASM_INSN(#code, code, 0, {&frd, &xrs1})
+  #define DEFINE_SFENCE_TYPE(code) DISASM_INSN(#code, code, 0, {&xrs1, &xrs2})
 
   DEFINE_XLOAD(lb)
   DEFINE_XLOAD(lbu)
@@ -329,9 +351,9 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_XAMO(amominu_d)
   DEFINE_XAMO(amomaxu_d)
 
-  DEFINE_XAMO(lr_w)
+  DEFINE_XAMO_LR(lr_w)
   DEFINE_XAMO(sc_w)
-  DEFINE_XAMO(lr_d)
+  DEFINE_XAMO_LR(lr_d)
   DEFINE_XAMO(sc_d)
 
   DEFINE_FLOAD(flw)
@@ -370,21 +392,24 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_I0TYPE("li", addi);
   DEFINE_I1TYPE("mv", addi);
   DEFINE_ITYPE(addi);
-  DEFINE_ITYPE(slli);
   DEFINE_ITYPE(slti);
   add_insn(new disasm_insn_t("seqz", match_sltiu | match_imm_1, mask_sltiu | mask_imm, {&xrd, &xrs1}));
   DEFINE_ITYPE(sltiu);
   add_insn(new disasm_insn_t("not", match_xori | mask_imm, mask_xori | mask_imm, {&xrd, &xrs1}));
   DEFINE_ITYPE(xori);
-  DEFINE_ITYPE(srli);
-  DEFINE_ITYPE(srai);
+
+  DEFINE_ITYPE_SHIFT(slli);
+  DEFINE_ITYPE_SHIFT(srli);
+  DEFINE_ITYPE_SHIFT(srai);
+
   DEFINE_ITYPE(ori);
   DEFINE_ITYPE(andi);
   DEFINE_I1TYPE("sext.w", addiw);
   DEFINE_ITYPE(addiw);
-  DEFINE_ITYPE(slliw);
-  DEFINE_ITYPE(srliw);
-  DEFINE_ITYPE(sraiw);
+
+  DEFINE_ITYPE_SHIFT(slliw);
+  DEFINE_ITYPE_SHIFT(srliw);
+  DEFINE_ITYPE_SHIFT(sraiw);
 
   DEFINE_RTYPE(add);
   DEFINE_RTYPE(sub);
@@ -421,8 +446,11 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_NOARG(uret);
   DEFINE_NOARG(sret);
   DEFINE_NOARG(mret);
+  DEFINE_NOARG(dret);
+  DEFINE_NOARG(wfi);
   DEFINE_NOARG(fence);
   DEFINE_NOARG(fence_i);
+  DEFINE_SFENCE_TYPE(sfence_vma);
 
   add_insn(new disasm_insn_t("csrr", match_csrrs, mask_csrrs | mask_rs1, {&xrd, &csr}));
   add_insn(new disasm_insn_t("csrw", match_csrrw, mask_csrrw | mask_rd, {&csr, &xrs1}));
@@ -466,9 +494,9 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_FXTYPE(fcvt_wu_s);
   DEFINE_FXTYPE(fclass_s);
   DEFINE_FXTYPE(fmv_x_w);
-  DEFINE_FXTYPE(feq_s);
-  DEFINE_FXTYPE(flt_s);
-  DEFINE_FXTYPE(fle_s);
+  DEFINE_FX2TYPE(feq_s);
+  DEFINE_FX2TYPE(flt_s);
+  DEFINE_FX2TYPE(fle_s);
 
   DEFINE_FRTYPE(fadd_d);
   DEFINE_FRTYPE(fsub_d);
@@ -498,9 +526,9 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_FXTYPE(fcvt_wu_d);
   DEFINE_FXTYPE(fclass_d);
   DEFINE_FXTYPE(fmv_x_d);
-  DEFINE_FXTYPE(feq_d);
-  DEFINE_FXTYPE(flt_d);
-  DEFINE_FXTYPE(fle_d);
+  DEFINE_FX2TYPE(feq_d);
+  DEFINE_FX2TYPE(flt_d);
+  DEFINE_FX2TYPE(fle_d);
 
   DEFINE_FRTYPE(fadd_q);
   DEFINE_FRTYPE(fsub_q);
@@ -530,53 +558,56 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_FXTYPE(fcvt_wu_q);
   DEFINE_FXTYPE(fclass_q);
   DEFINE_FXTYPE(fmv_x_q);
-  DEFINE_FXTYPE(feq_q);
-  DEFINE_FXTYPE(flt_q);
-  DEFINE_FXTYPE(fle_q);
+  DEFINE_FX2TYPE(feq_q);
+  DEFINE_FX2TYPE(flt_q);
+  DEFINE_FX2TYPE(fle_q);
 
-  DISASM_INSN("ebreak", c_add, mask_rd | mask_rvc_rs2, {});
+  DISASM_INSN("c.ebreak", c_add, mask_rd | mask_rvc_rs2, {});
   add_insn(new disasm_insn_t("ret", match_c_jr | match_rd_ra, mask_c_jr | mask_rd | mask_rvc_imm, {}));
-  DISASM_INSN("jr", c_jr, mask_rvc_imm, {&rvc_rs1});
-  DISASM_INSN("jalr", c_jalr, mask_rvc_imm, {&rvc_rs1});
-  DISASM_INSN("nop", c_addi, mask_rd | mask_rvc_imm, {});
-  DISASM_INSN("addi", c_addi16sp, mask_rd, {&rvc_sp, &rvc_sp, &rvc_addi16sp_imm});
-  DISASM_INSN("addi", c_addi4spn, 0, {&rvc_rs1s, &rvc_sp, &rvc_addi4spn_imm});
-  DISASM_INSN("li", c_li, 0, {&xrd, &rvc_imm});
-  DISASM_INSN("lui", c_lui, 0, {&xrd, &rvc_uimm});
-  DISASM_INSN("addi", c_addi, 0, {&xrd, &xrd, &rvc_imm});
-  DISASM_INSN("slli", c_slli, 0, {&xrd, &rvc_shamt});
-  DISASM_INSN("srli", c_srli, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_shamt});
-  DISASM_INSN("srai", c_srai, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_shamt});
-  DISASM_INSN("andi", c_andi, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_imm});
-  DISASM_INSN("mv", c_mv, 0, {&xrd, &rvc_rs2});
-  DISASM_INSN("add", c_add, 0, {&xrd, &xrd, &rvc_rs2});
-  DISASM_INSN("addw", c_addw, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
-  DISASM_INSN("sub", c_sub, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
-  DISASM_INSN("subw", c_subw, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
-  DISASM_INSN("and", c_and, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
-  DISASM_INSN("or", c_or, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
-  DISASM_INSN("xor", c_xor, 0, {&rvc_rs1s, &rvc_rs1s, &rvc_rs2s});
-  DISASM_INSN("lw", c_lwsp, 0, {&xrd, &rvc_lwsp_address});
-  DISASM_INSN("fld", c_fld, 0, {&rvc_rs2s, &rvc_ld_address});
-  DISASM_INSN("sw", c_swsp, 0, {&rvc_rs2, &rvc_swsp_address});
-  DISASM_INSN("lw", c_lw, 0, {&rvc_rs2s, &rvc_lw_address});
-  DISASM_INSN("sw", c_sw, 0, {&rvc_rs2s, &rvc_lw_address});
-  DISASM_INSN("beqz", c_beqz, 0, {&rvc_rs1s, &rvc_branch_target});
-  DISASM_INSN("bnez", c_bnez, 0, {&rvc_rs1s, &rvc_branch_target});
-  DISASM_INSN("j", c_j, 0, {&rvc_jump_target});
+  DISASM_INSN("c.jr", c_jr, mask_rvc_imm, {&rvc_rs1});
+  DISASM_INSN("c.jalr", c_jalr, mask_rvc_imm, {&rvc_rs1});
+  DISASM_INSN("c.nop", c_addi, mask_rd | mask_rvc_imm, {});
+  DISASM_INSN("c.addi16sp", c_addi16sp, mask_rd, {&rvc_sp, &rvc_addi16sp_imm});
+  DISASM_INSN("c.addi4spn", c_addi4spn, 0, {&rvc_rs1s, &rvc_sp, &rvc_addi4spn_imm});
+  DISASM_INSN("c.li", c_li, 0, {&xrd, &rvc_imm});
+  DISASM_INSN("c.lui", c_lui, 0, {&xrd, &rvc_uimm});
+  DISASM_INSN("c.addi", c_addi, 0, {&xrd, &rvc_imm});
+  DISASM_INSN("c.slli", c_slli, 0, {&rvc_rs1, &rvc_shamt});
+  DISASM_INSN("c.srli", c_srli, 0, {&rvc_rs1s, &rvc_shamt});
+  DISASM_INSN("c.srai", c_srai, 0, {&rvc_rs1s, &rvc_shamt});
+  DISASM_INSN("c.andi", c_andi, 0, {&rvc_rs1s, &rvc_imm});
+  DISASM_INSN("c.mv", c_mv, 0, {&xrd, &rvc_rs2});
+  DISASM_INSN("c.add", c_add, 0, {&xrd, &rvc_rs2});
+  DISASM_INSN("c.addw", c_addw, 0, {&rvc_rs1s, &rvc_rs2s});
+  DISASM_INSN("c.sub", c_sub, 0, {&rvc_rs1s, &rvc_rs2s});
+  DISASM_INSN("c.subw", c_subw, 0, {&rvc_rs1s, &rvc_rs2s});
+  DISASM_INSN("c.and", c_and, 0, {&rvc_rs1s, &rvc_rs2s});
+  DISASM_INSN("c.or", c_or, 0, {&rvc_rs1s, &rvc_rs2s});
+  DISASM_INSN("c.xor", c_xor, 0, {&rvc_rs1s, &rvc_rs2s});
+  DISASM_INSN("c.lwsp", c_lwsp, 0, {&xrd, &rvc_lwsp_address});
+  DISASM_INSN("c.fld", c_fld, 0, {&rvc_fp_rs2s, &rvc_ld_address});
+  DISASM_INSN("c.swsp", c_swsp, 0, {&rvc_rs2, &rvc_swsp_address});
+  DISASM_INSN("c.lw", c_lw, 0, {&rvc_rs2s, &rvc_lw_address});
+  DISASM_INSN("c.sw", c_sw, 0, {&rvc_rs2s, &rvc_lw_address});
+  DISASM_INSN("c.beqz", c_beqz, 0, {&rvc_rs1s, &rvc_branch_target});
+  DISASM_INSN("c.bnez", c_bnez, 0, {&rvc_rs1s, &rvc_branch_target});
+  DISASM_INSN("c.j", c_j, 0, {&rvc_jump_target});
+  DISASM_INSN("c.fldsp", c_fldsp, 0, {&rvc_fp_rs2s, &rvc_ldsp_address});
+  DISASM_INSN("c.fsd", c_fsd, 0, {&rvc_fp_rs2s, &rvc_ld_address});
+  DISASM_INSN("c.fsdsp", c_fsdsp, 0, {&rvc_fp_rs2s, &rvc_sdsp_address});
 
   if (xlen == 32) {
-    DISASM_INSN("flw", c_flw, 0, {&rvc_rs2s, &rvc_lw_address});
-    DISASM_INSN("flw", c_flwsp, 0, {&xrd, &rvc_lwsp_address});
-    DISASM_INSN("fsw", c_fsw, 0, {&rvc_rs2s, &rvc_lw_address});
-    DISASM_INSN("fsw", c_fswsp, 0, {&rvc_rs2, &rvc_swsp_address});
-    DISASM_INSN("jal", c_jal, 0, {&rvc_jump_target});
+    DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
+    DISASM_INSN("c.flwsp", c_flwsp, 0, {&frd, &rvc_lwsp_address});
+    DISASM_INSN("c.fsw", c_fsw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
+    DISASM_INSN("c.fswsp", c_fswsp, 0, {&rvc_fp_rs2, &rvc_swsp_address});
+    DISASM_INSN("c.jal", c_jal, 0, {&rvc_jump_target});
   } else {
-    DISASM_INSN("ld", c_ld, 0, {&rvc_rs2s, &rvc_ld_address});
-    DISASM_INSN("ld", c_ldsp, 0, {&xrd, &rvc_ldsp_address});
-    DISASM_INSN("sd", c_sd, 0, {&rvc_rs2s, &rvc_ld_address});
-    DISASM_INSN("sd", c_sdsp, 0, {&rvc_rs2, &rvc_sdsp_address});
-    DISASM_INSN("addiw", c_addiw, 0, {&xrd, &xrd, &rvc_imm});
+    DISASM_INSN("c.ld", c_ld, 0, {&rvc_rs2s, &rvc_ld_address});
+    DISASM_INSN("c.ldsp", c_ldsp, 0, {&xrd, &rvc_ldsp_address});
+    DISASM_INSN("c.sd", c_sd, 0, {&rvc_rs2s, &rvc_ld_address});
+    DISASM_INSN("c.sdsp", c_sdsp, 0, {&rvc_rs2, &rvc_sdsp_address});
+    DISASM_INSN("c.addiw", c_addiw, 0, {&xrd, &rvc_imm});
   }
 
   // provide a default disassembly for all instructions as a fallback
