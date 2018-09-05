@@ -280,7 +280,7 @@ void debug_module_t::sb_read()
     } else if (sbcs.sbaccess == 2 && max_bus_master_bits >= 32) {
       sbdata[0] = sim->debug_mmu->load_uint32(address);
     } else if (sbcs.sbaccess == 3 && max_bus_master_bits >= 64) {
-      uint64_t value = sim->debug_mmu->load_uint32(address);
+      uint64_t value = sim->debug_mmu->load_uint64(address);
       sbdata[0] = value;
       sbdata[1] = value >> 32;
     } else {
