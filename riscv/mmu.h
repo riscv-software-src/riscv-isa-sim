@@ -187,7 +187,7 @@ public:
 
   inline void acquire_load_reservation(reg_t vaddr)
   {
-    reg_t paddr = translate(vaddr, LOAD);
+    reg_t paddr = translate(vaddr, 1, LOAD);
     if (auto host_addr = sim->addr_to_mem(paddr))
       load_reservation_address = refill_tlb(vaddr, paddr, host_addr, LOAD).target_offset + vaddr;
     else
@@ -196,7 +196,7 @@ public:
 
   inline bool check_load_reservation(reg_t vaddr)
   {
-    reg_t paddr = translate(vaddr, STORE);
+    reg_t paddr = translate(vaddr, 1, STORE);
     if (auto host_addr = sim->addr_to_mem(paddr))
       return load_reservation_address == refill_tlb(vaddr, paddr, host_addr, STORE).target_offset + vaddr;
     else
@@ -311,7 +311,7 @@ private:
   tlb_entry_t fetch_slow_path(reg_t addr);
   void load_slow_path(reg_t addr, reg_t len, uint8_t* bytes);
   void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes);
-  reg_t translate(reg_t addr, access_type type);
+  reg_t translate(reg_t addr, reg_t len, access_type type);
 
   // ITLB lookup
   inline tlb_entry_t translate_insn_addr(reg_t addr) {
@@ -352,6 +352,9 @@ private:
     }
     return new trigger_matched_t(match, operation, address, data);
   }
+
+  reg_t pmp_homogeneous(reg_t addr, reg_t len);
+  reg_t pmp_ok(reg_t addr, access_type type, reg_t mode);
 
   bool check_triggers_fetch;
   bool check_triggers_load;

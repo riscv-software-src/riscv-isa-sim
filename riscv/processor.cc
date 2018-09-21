@@ -333,6 +333,26 @@ void processor_t::set_csr(int which, reg_t val)
   reg_t delegable_ints = MIP_SSIP | MIP_STIP | MIP_SEIP
                        | ((ext != NULL) << IRQ_COP);
   reg_t all_ints = delegable_ints | MIP_MSIP | MIP_MTIP;
+
+  if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.n_pmp) {
+    size_t i = which - CSR_PMPADDR0;
+    bool locked = state.pmpcfg[i] & PMP_L;
+    bool next_locked = i+1 < state.n_pmp && (state.pmpcfg[i+1] & PMP_L);
+    bool next_tor = i+1 < state.n_pmp && (state.pmpcfg[i+1] & PMP_A) == PMP_TOR;
+    if (!locked && !(next_locked && next_tor))
+      state.pmpaddr[i] = val;
+
+    mmu->flush_tlb();
+  }
+
+  if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.n_pmp / 4) {
+    for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8; i++) {
+      if (!(state.pmpcfg[i] & PMP_L))
+        state.pmpcfg[i] = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
+    }
+    mmu->flush_tlb();
+  }
+
   switch (which)
   {
     case CSR_FFLAGS:
@@ -555,6 +575,18 @@ reg_t processor_t::get_csr(int which)
     return 0;
   if (which >= CSR_MHPMEVENT3 && which <= CSR_MHPMEVENT31)
     return 0;
+
+  if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.n_pmp)
+    return state.pmpaddr[which - CSR_PMPADDR0];
+
+  if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.n_pmp / 4) {
+    require((which & ((xlen / 32) - 1)) == 0);
+
+    reg_t res = 0;
+    for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8 && i < state.n_pmp; i++)
+      res |= reg_t(state.pmpcfg[i]) << (8 * (i - i0));
+    return res;
+  }
 
   switch (which)
   {
