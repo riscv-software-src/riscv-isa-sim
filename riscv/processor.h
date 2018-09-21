@@ -123,6 +123,10 @@ struct state_t
   mcontrol_t mcontrol[num_triggers];
   reg_t tdata2[num_triggers];
 
+  static const int n_pmp = 16;
+  uint8_t pmpcfg[n_pmp];
+  reg_t pmpaddr[n_pmp];
+
   uint32_t fflags;
   uint32_t frm;
   bool serialized; // whether timer CSRs are in a well-defined state
