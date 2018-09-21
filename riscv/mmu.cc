@@ -34,7 +34,17 @@ void mmu_t::flush_tlb()
   flush_icache();
 }
 
-reg_t mmu_t::translate(reg_t addr, access_type type)
+static void throw_access_exception(reg_t addr, access_type type)
+{
+  switch (type) {
+    case FETCH: throw trap_instruction_access_fault(addr);
+    case LOAD: throw trap_load_access_fault(addr);
+    case STORE: throw trap_store_access_fault(addr);
+    default: abort();
+  }
+}
+
+reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type)
 {
   if (!proc)
     return addr;
@@ -45,12 +55,15 @@ reg_t mmu_t::translate(reg_t addr, access_type type)
       mode = get_field(proc->state.mstatus, MSTATUS_MPP);
   }
 
-  return walk(addr, type, mode) | (addr & (PGSIZE-1));
+  reg_t paddr = walk(addr, type, mode) | (addr & (PGSIZE-1));
+  if (!pmp_ok(paddr, type, mode) || !pmp_homogeneous(paddr, len))
+    throw_access_exception(addr, type);
+  return paddr;
 }
 
 tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
-  reg_t paddr = translate(vaddr, FETCH);
+  reg_t paddr = translate(vaddr, sizeof(fetch_temp), FETCH);
 
   if (auto host_addr = sim->addr_to_mem(paddr)) {
     return refill_tlb(vaddr, paddr, host_addr, FETCH);
@@ -90,7 +103,7 @@ reg_t reg_from_bytes(size_t len, const uint8_t* bytes)
 
 void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes)
 {
-  reg_t paddr = translate(addr, LOAD);
+  reg_t paddr = translate(addr, len, LOAD);
 
   if (auto host_addr = sim->addr_to_mem(paddr)) {
     memcpy(bytes, host_addr, len);
@@ -112,7 +125,7 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes)
 
 void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes)
 {
-  reg_t paddr = translate(addr, STORE);
+  reg_t paddr = translate(addr, len, STORE);
 
   if (!matched_trigger) {
     reg_t data = reg_from_bytes(len, bytes);
@@ -149,13 +162,88 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
       (check_triggers_store && type == STORE))
     expected_tag |= TLB_CHECK_TRIGGERS;
 
-  if (type == FETCH) tlb_insn_tag[idx] = expected_tag;
-  else if (type == STORE) tlb_store_tag[idx] = expected_tag;
-  else tlb_load_tag[idx] = expected_tag;
+  if (pmp_homogeneous(paddr & ~reg_t(PGSIZE - 1), PGSIZE)) {
+    if (type == FETCH) tlb_insn_tag[idx] = expected_tag;
+    else if (type == STORE) tlb_store_tag[idx] = expected_tag;
+    else tlb_load_tag[idx] = expected_tag;
+  }
 
   tlb_entry_t entry = {host_addr - vaddr, paddr - vaddr};
   tlb_data[idx] = entry;
   return entry;
+}
+
+reg_t mmu_t::pmp_ok(reg_t addr, access_type type, reg_t mode)
+{
+  if (!proc)
+    return true;
+
+  reg_t base = 0;
+  for (size_t i = 0; i < proc->state.n_pmp; i++) {
+    reg_t tor = proc->state.pmpaddr[i] << PMP_SHIFT;
+    uint8_t cfg = proc->state.pmpcfg[i];
+
+    if (cfg & PMP_A) {
+      bool is_tor = (cfg & PMP_A) == PMP_TOR;
+      bool is_na4 = (cfg & PMP_A) == PMP_NA4;
+
+      reg_t mask = (proc->state.pmpaddr[i] << 1) | (!is_na4);
+      mask = ~(mask & ~(mask + 1)) << PMP_SHIFT;
+      bool napot_match = ((addr ^ tor) & mask) == 0;
+      bool tor_match = base <= addr && addr < tor;
+
+      if (is_tor ? tor_match : napot_match) {
+        return
+          (mode == PRV_M && !(cfg & PMP_L)) ||
+          (type == LOAD && (cfg & PMP_R)) ||
+          (type == STORE && (cfg & PMP_W)) ||
+          (type == FETCH && (cfg & PMP_X));
+      }
+    }
+
+    base = tor;
+  }
+
+  return mode == PRV_M;
+}
+
+reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
+{
+  if ((addr | len) & (len - 1))
+    abort();
+
+  if (!proc)
+    return true;
+
+  reg_t base = 0;
+  for (size_t i = 0; i < proc->state.n_pmp; i++) {
+    reg_t tor = proc->state.pmpaddr[i] << PMP_SHIFT;
+    uint8_t cfg = proc->state.pmpcfg[i];
+
+    if (cfg & PMP_A) {
+      bool is_tor = (cfg & PMP_A) == PMP_TOR;
+      bool is_na4 = (cfg & PMP_A) == PMP_NA4;
+
+      bool begins_after_lower = addr >= base;
+      bool begins_after_upper = addr >= tor;
+      bool ends_before_lower = (addr & -len) < (base & -len);
+      bool ends_before_upper = (addr & -len) < (tor & -len);
+      bool tor_homogeneous = ends_before_lower || begins_after_upper ||
+        (begins_after_lower && ends_before_upper);
+
+      reg_t mask = (proc->state.pmpaddr[i] << 1) | (!is_na4);
+      mask = ~(mask & ~(mask + 1)) << PMP_SHIFT;
+      bool mask_homogeneous = ~(mask << 1) & len;
+      bool napot_homogeneous = mask_homogeneous || ((addr ^ tor) / len) != 0;
+
+      if (!(is_tor ? tor_homogeneous : napot_homogeneous))
+        return false;
+    }
+
+    base = tor;
+  }
+
+  return true;
 }
 
 reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
@@ -181,9 +269,10 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
     reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
 
     // check that physical address of PTE is legal
-    auto ppte = sim->addr_to_mem(base + idx * vm.ptesize);
-    if (!ppte)
-      goto fail_access;
+    auto pte_paddr = base + idx * vm.ptesize;
+    auto ppte = sim->addr_to_mem(pte_paddr);
+    if (!ppte || !pmp_ok(pte_paddr, LOAD, PRV_S))
+      throw_access_exception(addr, type);
 
     reg_t pte = vm.ptesize == 4 ? *(uint32_t*)ppte : *(uint64_t*)ppte;
     reg_t ppn = pte >> PTE_PPN_SHIFT;
@@ -204,7 +293,11 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
       reg_t ad = PTE_A | ((type == STORE) * PTE_D);
 #ifdef RISCV_ENABLE_DIRTY
       // set accessed and possibly dirty bits.
-      *(uint32_t*)ppte |= ad;
+      if ((pte & ad) != ad) {
+        if (!pmp_ok(pte_paddr, STORE, PRV_S))
+          throw_access_exception(addr, type);
+        *(uint32_t*)ppte |= ad;
+      }
 #else
       // take exception if access or possibly dirty bit is not set.
       if ((pte & ad) != ad)
@@ -217,19 +310,10 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
     }
   }
 
-fail:
   switch (type) {
     case FETCH: throw trap_instruction_page_fault(addr);
     case LOAD: throw trap_load_page_fault(addr);
     case STORE: throw trap_store_page_fault(addr);
-    default: abort();
-  }
-
-fail_access:
-  switch (type) {
-    case FETCH: throw trap_instruction_access_fault(addr);
-    case LOAD: throw trap_load_access_fault(addr);
-    case STORE: throw trap_store_access_fault(addr);
     default: abort();
   }
 }
