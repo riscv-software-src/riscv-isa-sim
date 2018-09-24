@@ -139,8 +139,7 @@ void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
   {
     std::cerr << name << " "
               << (store ? "write" : "read") << " miss 0x"
-              << std::hex << addr << " ("
-              << std::hex << bytes << " bytes)" << std::endl;
+              << std::hex << addr << std::endl;
   }
 
   uint64_t victim = victimize(addr);
