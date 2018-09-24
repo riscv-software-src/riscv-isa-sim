@@ -7,7 +7,7 @@
 #include <iomanip>
 
 cache_sim_t::cache_sim_t(size_t _sets, size_t _ways, size_t _linesz, const char* _name)
- : sets(_sets), ways(_ways), linesz(_linesz), name(_name)
+: sets(_sets), ways(_ways), linesz(_linesz), name(_name), log(false)
 {
   init();
 }
@@ -62,7 +62,7 @@ void cache_sim_t::init()
 
 cache_sim_t::cache_sim_t(const cache_sim_t& rhs)
  : sets(rhs.sets), ways(rhs.ways), linesz(rhs.linesz),
-   idx_shift(rhs.idx_shift), name(rhs.name)
+   idx_shift(rhs.idx_shift), name(rhs.name), log(false)
 {
   tags = new uint64_t[sets*ways];
   memcpy(tags, rhs.tags, sets*ways*sizeof(uint64_t));
@@ -135,6 +135,12 @@ void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
   }
 
   store ? write_misses++ : read_misses++;
+  if (log)
+  {
+    std::cerr << name << " "
+              << (store ? "write" : "read") << " miss 0x"
+              << std::hex << addr << std::endl;
+  }
 
   uint64_t victim = victimize(addr);
 
