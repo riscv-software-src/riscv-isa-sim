@@ -65,6 +65,18 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
   s << std::hex << ">;\n"
          "      reg = <0x" << (clintbs >> 32) << " 0x" << (clintbs & (uint32_t)-1) <<
                      " 0x" << (clintsz >> 32) << " 0x" << (clintsz & (uint32_t)-1) << ">;\n"
+         "    };\n";
+
+  reg_t uartbs = UART_BASE;
+  reg_t uartsz = UART_SIZE;
+  s << std::hex <<
+         "    uart@" << UART_BASE << " {\n"
+         "      compatible = \"serial\";\n"
+         "      reg = <0x" << (uartbs >> 32) << " 0x" << (uartbs & (uint32_t)-1) <<
+                     " 0x" << (uartsz >> 32) << " 0x" << (uartsz & (uint32_t)-1) << ">;\n"
+         "      reg-shift = <0>;\n"
+         // TODO: interrupts = <...>;
+         // TODO: clock-frequency or clocks
          "    };\n"
          "  };\n"
          "  htif {\n"
