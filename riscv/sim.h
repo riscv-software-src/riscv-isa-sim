@@ -45,6 +45,17 @@ public:
   // Callback for processors to let the simulation know they were reset.
   void proc_reset(unsigned id);
 
+  /**
+   * Add a device onto the system bus.
+   * @param baseAddress Base address of the device.
+   * @param pDevice Pointer to the device to add to the bus.
+   * @note The bus_t will not free this device. You should not free
+   * the device until the sim_t object has been deleted.
+   */
+  void add_bus_device(reg_t baseAddress, abstract_device_t *pDevice) {
+    bus.add_device(baseAddress, pDevice);
+  }
+
 private:
   std::vector<std::pair<reg_t, mem_t*>> mems;
   mmu_t* debug_mmu;  // debug port into main memory
