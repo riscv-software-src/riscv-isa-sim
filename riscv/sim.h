@@ -52,7 +52,7 @@ public:
    * @note The bus_t will not free this device. You should not free
    * the device until the sim_t object has been deleted.
    */
-  void add_bus_device(reg_t baseAddress, abstract_device_t *pDevice) {
+  void add_device(reg_t baseAddress, abstract_device_t *pDevice) {
     bus.add_device(baseAddress, pDevice);
   }
 
