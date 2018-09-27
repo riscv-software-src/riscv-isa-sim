@@ -557,6 +557,9 @@ void processor_t::set_csr(int which, reg_t val)
   }
 }
 
+// Note that get_csr is sometimes called when read side-effects should not
+// be actioned.  In other words, Spike cannot currently support CSRs with
+// side effects on reads.
 reg_t processor_t::get_csr(int which)
 {
   uint32_t ctr_en = -1;
