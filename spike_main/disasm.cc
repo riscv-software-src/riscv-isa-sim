@@ -568,7 +568,7 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN("c.jalr", c_jalr, mask_rvc_imm, {&rvc_rs1});
   DISASM_INSN("c.nop", c_addi, mask_rd | mask_rvc_imm, {});
   DISASM_INSN("c.addi16sp", c_addi16sp, mask_rd, {&rvc_sp, &rvc_addi16sp_imm});
-  DISASM_INSN("c.addi4spn", c_addi4spn, 0, {&rvc_rs1s, &rvc_sp, &rvc_addi4spn_imm});
+  DISASM_INSN("c.addi4spn", c_addi4spn, 0, {&rvc_rs2s, &rvc_sp, &rvc_addi4spn_imm});
   DISASM_INSN("c.li", c_li, 0, {&xrd, &rvc_imm});
   DISASM_INSN("c.lui", c_lui, 0, {&xrd, &rvc_uimm});
   DISASM_INSN("c.addi", c_addi, 0, {&xrd, &rvc_imm});
