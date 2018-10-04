@@ -662,7 +662,7 @@ reg_t processor_t::get_csr(int which)
     case CSR_MCAUSE: return state.mcause;
     case CSR_MTVAL: return state.mtval;
     case CSR_MISA: return state.misa;
-    case CSR_MARCHID: return 0;
+    case CSR_MARCHID: return 5;
     case CSR_MIMPID: return 0;
     case CSR_MVENDORID: return 0;
     case CSR_MHARTID: return id;
