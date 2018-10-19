@@ -90,7 +90,9 @@ private:
   void interactive_pc(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_mem(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_str(const std::string& cmd, const std::vector<std::string>& args);
-  void interactive_until(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_until(const std::string& cmd, const std::vector<std::string>& args, bool noisy);
+  void interactive_until_silent(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_until_noisy(const std::string& cmd, const std::vector<std::string>& args);
   reg_t get_reg(const std::vector<std::string>& args);
   freg_t get_freg(const std::vector<std::string>& args);
   reg_t get_mem(const std::vector<std::string>& args);
