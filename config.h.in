@@ -69,6 +69,12 @@
 /* Enable commit log generation */
 #undef RISCV_ENABLE_COMMITLOG
 
+/* Enable memory log generation */
+#undef RISCV_ENABLE_MEMORYLOG
+
+/* Enable memory hazards tracking and analysis */
+#undef RISCV_ENABLE_MEMORY_HAZARDS
+
 /* Enable hardware management of PTE accessed and dirty bits */
 #undef RISCV_ENABLE_DIRTY
 

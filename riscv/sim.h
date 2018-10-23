@@ -31,6 +31,7 @@ public:
   void set_debug(bool value);
   void set_log(bool value);
   void set_histogram(bool value);
+  void set_memhaz(bool value);
   void set_procs_debug(bool value);
   void set_dtb_enabled(bool value) {
     this->dtb_enabled = value;
@@ -65,6 +66,7 @@ private:
   bool debug;
   bool log;
   bool histogram_enabled; // provide a histogram of PCs
+  bool memhaz_enabled; // track and analyze memory hazards
   bool dtb_enabled;
   remote_bitbang_t* remote_bitbang;
 

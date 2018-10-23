@@ -56,9 +56,19 @@ public:
   mmu_t(simif_t* sim, processor_t* proc);
   ~mmu_t();
 
+  void memory_log_hazard(reg_t addr, size_t size, bool store_not_load);
+
+  void memory_log_misaligned(reg_t addr, size_t size, bool store_not_load);
+
   inline reg_t misaligned_load(reg_t addr, size_t size)
   {
+    #ifdef RISCV_ENABLE_MEMORY_HAZARDS
+      memory_log_misaligned(addr, size, false);
+    #endif
 #ifdef RISCV_ENABLE_MISALIGNED
+    #ifdef RISCV_ENABLE_MEMORYLOG
+      fprintf(stderr, "misaligned ");
+    #endif
     reg_t res = 0;
     for (size_t i = 0; i < size; i++)
       res += (reg_t)load_uint8(addr + i) << (i * 8);
@@ -70,12 +80,92 @@ public:
 
   inline void misaligned_store(reg_t addr, reg_t data, size_t size)
   {
+    #ifdef RISCV_ENABLE_MEMORY_HAZARDS
+      memory_log_misaligned(addr, size, true);
+    #endif
 #ifdef RISCV_ENABLE_MISALIGNED
+    #ifdef RISCV_ENABLE_MEMORYLOG
+      fprintf(stderr, "misaligned ");
+    #endif
     for (size_t i = 0; i < size; i++)
       store_uint8(addr + i, data >> (i * 8));
 #else
     throw trap_store_address_misaligned(addr);
 #endif
+  }
+
+  inline void memory_log_load(reg_t addr, reg_t data, size_t size)
+  {
+    memory_log_hazard(addr, size, false);
+    #ifdef RISCV_ENABLE_MEMORYLOG
+      switch (size) {
+        case 1:
+          fprintf(stderr, "lb[");
+          fprintf(stderr, "0x%016" PRIx64, addr);
+          fprintf(stderr, "]:");
+          fprintf(stderr, "0x%02" PRIx8, (uint8_t)data);
+          break;
+        case 2:
+          fprintf(stderr, "lh[");
+          fprintf(stderr, "0x%016" PRIx64, addr);
+          fprintf(stderr, "]:");
+          fprintf(stderr, "0x%04" PRIx16, (uint16_t)data);
+          break;
+        case 4:
+          fprintf(stderr, "lw[");
+          fprintf(stderr, "0x%016" PRIx64, addr);
+          fprintf(stderr, "]:");
+          fprintf(stderr, "0x%08" PRIx32, (uint32_t)data);
+          break;
+        case 8:
+          fprintf(stderr, "ld[");
+          fprintf(stderr, "0x%016" PRIx64, addr);
+          fprintf(stderr, "]:");
+          fprintf(stderr, "0x%016" PRIx64, data);
+          break;
+        default:
+          fprintf(stderr, "memory log unexpected load size %0d\n", (int)size);
+          abort();
+      }
+      fprintf(stderr, "\n");
+    #endif
+  }
+
+  inline void memory_log_store(reg_t addr, reg_t data, size_t size)
+  {
+    memory_log_hazard(addr, size, true);
+    #ifdef RISCV_ENABLE_MEMORYLOG
+      switch (size) {
+        case 1:
+          fprintf(stderr, "sb[");
+          fprintf(stderr, "0x%016" PRIx64, addr);
+          fprintf(stderr, "]=");
+          fprintf(stderr, "0x%02" PRIx8, (uint8_t)data);
+          break;
+        case 2:
+          fprintf(stderr, "sh[");
+          fprintf(stderr, "0x%016" PRIx64, addr);
+          fprintf(stderr, "]=");
+          fprintf(stderr, "0x%04" PRIx16, (uint16_t)data);
+          break;
+        case 4:
+          fprintf(stderr, "sw[");
+          fprintf(stderr, "0x%016" PRIx64, addr);
+          fprintf(stderr, "]=");
+          fprintf(stderr, "0x%08" PRIx32, (uint32_t)data);
+          break;
+        case 8:
+          fprintf(stderr, "sd[");
+          fprintf(stderr, "0x%016" PRIx64, addr);
+          fprintf(stderr, "]=");
+          fprintf(stderr, "0x%016" PRIx64, data);
+          break;
+        default:
+          fprintf(stderr, "memory log unexpected store size %0d\n", (int)size);
+          abort();
+      }
+      fprintf(stderr, "\n");
+    #endif
   }
 
   // template for functions that load an aligned value from memory
@@ -84,8 +174,11 @@ public:
       if (unlikely(addr & (sizeof(type##_t)-1))) \
         return misaligned_load(addr, sizeof(type##_t)); \
       reg_t vpn = addr >> PGSHIFT; \
-      if (likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) \
-        return *(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr); \
+      if (likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) { \
+        type##_t data = *(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr); \
+        memory_log_load(addr, data, sizeof(type##_t)); \
+        return data; \
+      } \
       if (unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
         type##_t data = *(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr); \
         if (!matched_trigger) { \
@@ -93,10 +186,12 @@ public:
           if (matched_trigger) \
             throw *matched_trigger; \
         } \
+        memory_log_load(addr, data, sizeof(type##_t)); \
         return data; \
       } \
       type##_t res; \
       load_slow_path(addr, sizeof(type##_t), (uint8_t*)&res); \
+      memory_log_load(addr, res, sizeof(type##_t)); \
       return res; \
     }
 
@@ -118,18 +213,23 @@ public:
       if (unlikely(addr & (sizeof(type##_t)-1))) \
         return misaligned_store(addr, val, sizeof(type##_t)); \
       reg_t vpn = addr >> PGSHIFT; \
-      if (likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) \
+      if (likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \
+        memory_log_store(addr, val, sizeof(type##_t)); \
         *(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = val; \
+      } \
       else if (unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
         if (!matched_trigger) { \
           matched_trigger = trigger_exception(OPERATION_STORE, addr, val); \
           if (matched_trigger) \
             throw *matched_trigger; \
         } \
+        memory_log_store(addr, val, sizeof(type##_t)); \
         *(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = val; \
       } \
-      else \
+      else { \
+        memory_log_store(addr, val, sizeof(type##_t)); \
         store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&val); \
+      } \
     }
 
   // template for functions that perform an atomic memory operation
@@ -280,12 +380,48 @@ public:
 #endif
   }
 
+  void set_memhaz(bool value);
+
 private:
   simif_t* sim;
   processor_t* proc;
   memtracer_list_t tracer;
   reg_t load_reservation_address;
   uint16_t fetch_temp;
+
+  bool memhaz_enabled;
+  reg_t minstret_load;
+  reg_t minstret_store;
+  reg_t minstret_load_misaligned;
+  reg_t minstret_store_misaligned;
+  reg_t minstret_load_rar_hazard;
+  reg_t minstret_load_rar_multi_hazard;
+  reg_t minstret_load_raw_hazard;
+  reg_t minstret_load_raw_multi_hazard;
+  reg_t minstret_load_war_hazard;
+  reg_t minstret_load_war_multi_hazard;
+  reg_t minstret_load_waw_hazard;
+  reg_t minstret_load_waw_multi_hazard;
+  std::map<reg_t,uint64_t> rar_addrmap;
+  std::map<reg_t,uint64_t> rar_addr_histogram;
+  std::map<reg_t,uint64_t> rar_pc_histogram;
+  std::map<reg_t,uint64_t> rar_multi_addr_histogram;
+  std::map<reg_t,uint64_t> rar_multi_pc_histogram;
+  std::map<reg_t,uint64_t> raw_addrmap;
+  std::map<reg_t,uint64_t> raw_addr_histogram;
+  std::map<reg_t,uint64_t> raw_pc_histogram;
+  std::map<reg_t,uint64_t> raw_multi_addr_histogram;
+  std::map<reg_t,uint64_t> raw_multi_pc_histogram;
+  std::map<reg_t,uint64_t> war_addrmap;
+  std::map<reg_t,uint64_t> war_addr_histogram;
+  std::map<reg_t,uint64_t> war_pc_histogram;
+  std::map<reg_t,uint64_t> war_multi_addr_histogram;
+  std::map<reg_t,uint64_t> war_multi_pc_histogram;
+  std::map<reg_t,uint64_t> waw_addrmap;
+  std::map<reg_t,uint64_t> waw_addr_histogram;
+  std::map<reg_t,uint64_t> waw_pc_histogram;
+  std::map<reg_t,uint64_t> waw_multi_addr_histogram;
+  std::map<reg_t,uint64_t> waw_multi_pc_histogram;
 
   // implement an instruction cache for simulator performance
   icache_entry_t icache[ICACHE_ENTRIES];
