@@ -148,6 +148,11 @@ void processor_t::set_histogram(bool value)
 #endif
 }
 
+void processor_t::set_memhaz(bool value)
+{
+  mmu->set_memhaz(value);
+}
+
 void processor_t::reset()
 {
   state.reset(max_isa);

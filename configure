@@ -705,6 +705,7 @@ with_isa
 with_fesvr
 enable_commitlog
 enable_memorylog
+enable_memoryhazards
 enable_histogram
 enable_dirty
 enable_misaligned
@@ -1352,6 +1353,7 @@ Optional Features:
                           Enable all optional subprojects
   --enable-commitlog      Enable commit log generation
   --enable-memorylog      Enable memory log generation
+  --enable-memoryhazards  Enable memory hazards tracking and analysis
   --enable-histogram      Enable PC histogram generation
   --enable-dirty          Enable hardware management of PTE accessed and dirty
                           bits
@@ -4673,6 +4675,19 @@ if test "x$enable_memorylog" = "xyes"; then :
 
 
 $as_echo "#define RISCV_ENABLE_MEMORYLOG /**/" >>confdefs.h
+
+
+fi
+
+# Check whether --enable-memoryhazards was given.
+if test "${enable_memoryhazards+set}" = set; then :
+  enableval=$enable_memoryhazards;
+fi
+
+if test "x$enable_memoryhazards" = "xyes"; then :
+
+
+$as_echo "#define RISCV_ENABLE_MEMORY_HAZARDS /**/" >>confdefs.h
 
 
 fi

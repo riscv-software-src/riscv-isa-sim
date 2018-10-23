@@ -167,6 +167,7 @@ public:
 
   void set_debug(bool value);
   void set_histogram(bool value);
+  void set_memhaz(bool value);
   void reset();
   void step(size_t n); // run for n cycles
   void set_csr(int which, reg_t val);

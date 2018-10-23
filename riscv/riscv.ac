@@ -33,6 +33,11 @@ AS_IF([test "x$enable_memorylog" = "xyes"], [
   AC_DEFINE([RISCV_ENABLE_MEMORYLOG],,[Enable memory log generation])
 ])
 
+AC_ARG_ENABLE([memoryhazards], AS_HELP_STRING([--enable-memoryhazards], [Enable memory hazards tracking and analysis]))
+AS_IF([test "x$enable_memoryhazards" = "xyes"], [
+  AC_DEFINE([RISCV_ENABLE_MEMORY_HAZARDS],,[Enable memory hazards tracking and analysis])
+])
+
 AC_ARG_ENABLE([histogram], AS_HELP_STRING([--enable-histogram], [Enable PC histogram generation]))
 AS_IF([test "x$enable_histogram" = "xyes"], [
   AC_DEFINE([RISCV_ENABLE_HISTOGRAM],,[Enable PC histogram generation])
