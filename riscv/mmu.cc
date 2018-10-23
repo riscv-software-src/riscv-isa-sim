@@ -232,7 +232,8 @@ void mmu_t::memory_log_hazard(reg_t addr, size_t size, bool store_not_load)
   bool war_multi_hazard_found = false;
   bool waw_hazard_found = false;
   bool waw_multi_hazard_found = false;
-  reg_t minstret, pc = 0;
+  reg_t minstret = 0;
+  reg_t pc = 0;
   if (proc) {
     minstret = proc->state.minstret;
     pc = proc->state.pc;
@@ -240,26 +241,26 @@ void mmu_t::memory_log_hazard(reg_t addr, size_t size, bool store_not_load)
   for (reg_t offset=addr; offset<(addr+size); offset++) {  // for each byte addressed
     if (store_not_load) {
       if (war_addrmap.count(offset)) {  // if WAR hazard address map key exists
-        if ((minstret - war_addrmap[offset]) < 100) {
+        if ((minstret - war_addrmap[offset]) < 441) {
           if (war_hazard_found && (war_addrmap[offset]!=war_addrmap[offset-1])) war_multi_hazard_found = true;
           war_hazard_found = true;
         }
       }
       if (waw_addrmap.count(offset)) {  // if WAW hazard address map key exists
-        if ((minstret - waw_addrmap[offset]) < 100) {
+        if ((minstret - waw_addrmap[offset]) < 441) {
           if (waw_hazard_found && (waw_addrmap[offset]!=waw_addrmap[offset-1])) waw_multi_hazard_found = true;
           waw_hazard_found = true;
         }
       }
     } else {
       if (rar_addrmap.count(offset)) {  // if RAR hazard address map key exists
-        if ((minstret - rar_addrmap[offset]) < 100) {
+        if ((minstret - rar_addrmap[offset]) < 441) {
           if (rar_hazard_found && (rar_addrmap[offset]!=rar_addrmap[offset-1])) rar_multi_hazard_found = true;
           rar_hazard_found = true;
         }
       }
       if (raw_addrmap.count(offset)) {  // if RAW hazard address map key exists
-        if ((minstret - raw_addrmap[offset]) < 100) {
+        if ((minstret - raw_addrmap[offset]) < 441) {
           if (raw_hazard_found && (raw_addrmap[offset]!=raw_addrmap[offset-1])) raw_multi_hazard_found = true;
           raw_hazard_found = true;
         }
