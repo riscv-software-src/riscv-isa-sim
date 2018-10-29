@@ -20,9 +20,12 @@ int main(int argc, char** argv)
   const char* isa = DEFAULT_ISA;
 
   std::function<extension_t*()> extension;
-  option_parser_t parser;
-  parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
-  parser.option(0, "isa", 1, [&](const char* s){isa = s;});
+  option_parser_t parser {
+    {
+      { 0, "extension", 1, [&](const char* s){extension = find_extension(s);} },
+      { 0, "isa", 1, [&](const char* s){isa = s;} }
+    }
+  };
   parser.parse(argv);
 
   processor_t p(isa, 0, 0);
