@@ -73,8 +73,9 @@ void sim_t::interactive()
   funcs["pc"] = &sim_t::interactive_pc;
   funcs["mem"] = &sim_t::interactive_mem;
   funcs["str"] = &sim_t::interactive_str;
-  funcs["until"] = &sim_t::interactive_until;
-  funcs["while"] = &sim_t::interactive_until;
+  funcs["until"] = &sim_t::interactive_until_silent;
+  funcs["untiln"] = &sim_t::interactive_until_noisy;
+  funcs["while"] = &sim_t::interactive_until_silent;
   funcs["quit"] = &sim_t::interactive_quit;
   funcs["q"] = funcs["quit"];
   funcs["help"] = &sim_t::interactive_help;
@@ -123,6 +124,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "str <hex addr>                  # Show NUL-terminated C string\n"
     "until reg <core> <reg> <val>    # Stop when <reg> in <core> hits <val>\n"
     "until pc <core> <val>           # Stop when PC in <core> hits <val>\n"
+    "untiln pc <core> <val>          # Run noisy and stop when PC in <core> hits <val>\n"
     "until mem <addr> <val>          # Stop when memory <addr> becomes <val>\n"
     "while reg <core> <reg> <val>    # Run while <reg> in <core> is <val>\n"
     "while pc <core> <val>           # Run while PC in <core> is <val>\n"
@@ -314,9 +316,19 @@ void sim_t::interactive_str(const std::string& cmd, const std::vector<std::strin
   putchar('\n');
 }
 
-void sim_t::interactive_until(const std::string& cmd, const std::vector<std::string>& args)
+void sim_t::interactive_until_silent(const std::string& cmd, const std::vector<std::string>& args)
 {
-  bool cmd_until = cmd == "until";
+  interactive_until(cmd, args, false);
+}
+
+void sim_t::interactive_until_noisy(const std::string& cmd, const std::vector<std::string>& args)
+{
+  interactive_until(cmd, args, true);
+}
+
+void sim_t::interactive_until(const std::string& cmd, const std::vector<std::string>& args, bool noisy)
+{
+  bool cmd_until = cmd == "until" || cmd == "untiln";
 
   if(args.size() < 3)
     return;
@@ -351,7 +363,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
     }
     catch (trap_t t) {}
 
-    set_procs_debug(false);
+    set_procs_debug(noisy);
     step(1);
   }
 }
