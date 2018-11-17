@@ -48,10 +48,11 @@ Adding an instruction to the simulator requires two steps:
 
   2.  Add the opcode and opcode mask to riscv/opcodes.h.  Alternatively,
       add it to the riscv-opcodes package, and it will do so for you:
-
+        ```
          $ cd ../riscv-opcodes
          $ vi opcodes       // add a line for the new instruction
          $ make install
+        ```
 
   3.  Rebuild the simulator.
 
