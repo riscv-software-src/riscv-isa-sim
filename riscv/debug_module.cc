@@ -459,9 +459,11 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
       case DMI_SBDATA0:
         result = sbdata[0];
         if (sbcs.error == 0) {
-          sb_autoincrement();
           if (sbcs.readondata) {
             sb_read();
+          }
+          if (sbcs.error == 0) {
+            sb_autoincrement();
           }
         }
         break;
@@ -737,6 +739,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         sbaddress[0] = value;
         if (sbcs.error == 0 && sbcs.readonaddr) {
           sb_read();
+          sb_autoincrement();
         }
         return true;
       case DMI_SBADDRESS1:
@@ -752,7 +755,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         sbdata[0] = value;
         if (sbcs.error == 0) {
           sb_write();
-          if (sbcs.autoincrement && sbcs.error == 0) {
+          if (sbcs.error == 0) {
             sb_autoincrement();
           }
         }
