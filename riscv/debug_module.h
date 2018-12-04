@@ -81,9 +81,13 @@ class debug_module_t : public abstract_device_t
      * follows:
      * 1. Read a 32-bit value from authdata:
      * 2. Write the value that was read back, plus one, to authdata.
+     *
+     * abstract_rti is extra run-test/idle cycles that each abstract command
+     * takes to execute. Useful for testing OpenOCD.
      */
-    debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bus_master_bits,
-        bool require_authentication);
+    debug_module_t(sim_t *sim, unsigned progbufsize,
+        unsigned max_bus_master_bits, bool require_authentication,
+        unsigned abstract_rti);
     ~debug_module_t();
 
     void add_device(bus_t *bus);
@@ -96,6 +100,9 @@ class debug_module_t : public abstract_device_t
     // Return true for success, false for failure.
     bool dmi_read(unsigned address, uint32_t *value);
     bool dmi_write(unsigned address, uint32_t value);
+
+    // Called for every cycle the JTAG TAP spends in Run-Test/Idle.
+    void run_test_idle();
 
     // Called when one of the attached harts was reset.
     void proc_reset(unsigned id);
@@ -110,6 +117,7 @@ class debug_module_t : public abstract_device_t
     unsigned program_buffer_bytes;
     unsigned max_bus_master_bits;
     bool require_authentication;
+    unsigned abstract_rti;
     static const unsigned debug_data_start = 0x380;
     unsigned debug_progbuf_start;
 
@@ -159,6 +167,9 @@ class debug_module_t : public abstract_device_t
     processor_t *current_proc() const;
     void reset();
     bool perform_abstract_command();
+
+    bool abstract_command_completed;
+    unsigned rti_remaining;
 };
 
 #endif
