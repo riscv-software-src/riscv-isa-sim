@@ -112,47 +112,50 @@ int main(int argc, char** argv)
     }
   };
 
-  option_parser_t parser;
-  parser.help(&help);
-  parser.option('h', 0, 0, [&](const char* s){help();});
-  parser.option('d', 0, 0, [&](const char* s){debug = true;});
-  parser.option('g', 0, 0, [&](const char* s){histogram = true;});
-  parser.option('l', 0, 0, [&](const char* s){log = true;});
-  parser.option('p', 0, 1, [&](const char* s){nprocs = atoi(s);});
-  parser.option('m', 0, 1, [&](const char* s){mems = make_mems(s);});
-  // I wanted to use --halted, but for some reason that doesn't work.
-  parser.option('H', 0, 0, [&](const char* s){halted = true;});
-  parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoi(s);});
-  parser.option(0, "pc", 1, [&](const char* s){start_pc = strtoull(s, 0, 0);});
-  parser.option(0, "hartids", 1, hartids_parser);
-  parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
-  parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
-  parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
-  parser.option(0, "log-cache-miss", 0, [&](const char* s){log_cache = true;});
-  parser.option(0, "isa", 1, [&](const char* s){isa = s;});
-  parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
-  parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
-  parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
-  parser.option(0, "extlib", 1, [&](const char *s){
-    void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
-    if (lib == NULL) {
-      fprintf(stderr, "Unable to load extlib '%s': %s\n", s, dlerror());
-      exit(-1);
-    }
-  });
-  parser.option(0, "progsize", 1, [&](const char* s){progsize = atoi(s);});
-  parser.option(0, "debug-sba", 1,
-      [&](const char* s){max_bus_master_bits = atoi(s);});
-  parser.option(0, "debug-auth", 0,
-      [&](const char* s){require_authentication = true;});
+  option_parser_t parser {
+    {
+      { 'h', "", 0, [&](const char* s){help();} },
+      { 'd', "", 0, [&](const char* s){debug = true;} },
+      { 'g', "", 0, [&](const char* s){histogram = true;} },
+      { 'l', "", 0, [&](const char* s){log = true;} },
+      { 'p', "", 1, [&](const char* s){nprocs = atoi(s);} },
+      { 'm', "", 1, [&](const char* s){mems = make_mems(s);} },
+      // I wanted to use --halted, but for some reason that doesn't work.
+      { 'H', "", 0, [&](const char* s){halted = true;} },
+      { 0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoi(s);} },
+      { 0, "pc", 1, [&](const char* s){start_pc = strtoull(s, 0, 0);} },
+      { 0, "hartids", 1, hartids_parser },
+      { 0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));} },
+      { 0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));} },
+      { 0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));} },
+      { 0, "log-cache-miss", 0, [&](const char* s){log_cache = true;} },
+      { 0, "isa", 1, [&](const char* s){isa = s;} },
+      { 0, "extension", 1, [&](const char* s){extension = find_extension(s);} },
+      { 0, "dump-dts", 0, [&](const char *s){dump_dts = true;} },
+      { 0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;} },
+      { 0, "extlib", 1, [&](const char *s)
+                          {
+                            void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
+                            if (lib == NULL) {
+                              fprintf(stderr, "Unable to load extlib '%s': %s\n", s, dlerror());
+                              exit(-1);
+                            }
+                          }
+      },
+      { 0, "progsize", 1, [&](const char* s){progsize = atoi(s);} },
+      { 0, "debug-sba", 1, [&](const char* s){max_bus_master_bits = atoi(s);} },
+      { 0, "debug-auth", 0, [&](const char* s){require_authentication = true;} },
+    },
+    &help
+  };
 
   auto argv1 = parser.parse(argv);
+  if (!*argv1)
+    help();
+
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
   if (mems.empty())
     mems = make_mems("2048");
-
-  if (!*argv1)
-    help();
 
   sim_t s(isa, nprocs, halted, start_pc, mems, htif_args, std::move(hartids),
       progsize, max_bus_master_bits, require_authentication);
