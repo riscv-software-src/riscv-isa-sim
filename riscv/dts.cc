@@ -80,6 +80,7 @@ std::string dts_compile(const std::string& dts)
   int dts_pipe[2];
   pid_t dts_pid;
 
+  fflush(NULL); // flush stdout/stderr before forking
   if (pipe(dts_pipe) != 0 || (dts_pid = fork()) < 0) {
     std::cerr << "Failed to fork dts child: " << strerror(errno) << std::endl;
     exit(1);
