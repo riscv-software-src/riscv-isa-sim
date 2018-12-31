@@ -32,13 +32,15 @@ static unsigned field_width(unsigned n)
 ///////////////////////// debug_module_t
 
 debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bus_master_bits,
-    bool require_authentication, unsigned abstract_rti, bool support_hasel) :
+    bool require_authentication, unsigned abstract_rti, bool support_hasel,
+    bool support_abstract_csr_access) :
   nprocs(sim->nprocs()),
   progbufsize(progbufsize),
   program_buffer_bytes(4 + 4*progbufsize),
   max_bus_master_bits(max_bus_master_bits),
   require_authentication(require_authentication),
   abstract_rti(abstract_rti),
+  support_abstract_csr_access(support_abstract_csr_access),
   debug_progbuf_start(debug_data_start - program_buffer_bytes),
   debug_abstract_start(debug_progbuf_start - debug_abstract_size*4),
   custom_base(0),
@@ -585,9 +587,7 @@ bool debug_module_t::perform_abstract_command()
     unsigned i = 0;
     if (get_field(command, AC_ACCESS_REGISTER_TRANSFER)) {
 
-      if (regno < 0x1000 && progbufsize < 2) {
-        // Make the debugger use the program buffer if it's available, so it
-        // can test both use cases.
+      if (regno < 0x1000 && support_abstract_csr_access) {
         write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH));
 
         if (write) {
@@ -642,9 +642,6 @@ bool debug_module_t::perform_abstract_command()
         }
 
       } else if (regno >= 0x1020 && regno < 0x1040) {
-        // Don't force the debugger to use progbuf if it exists, so the
-        // debugger has to make the decision not to use abstract commands to
-        // access 64-bit FPRs on 32-bit targets.
         unsigned fprnum = regno - 0x1020;
 
         if (write) {
