@@ -146,7 +146,7 @@ void processor_t::set_histogram(bool value)
 #ifndef RISCV_ENABLE_HISTOGRAM
   if (value) {
     fprintf(stderr, "PC Histogram support has not been properly enabled;");
-    fprintf(stderr, " please re-build the riscv-isa-run project using \"configure --enable-histogram\".\n");
+    fprintf(stderr, " please re-build the riscv-isa-sim project using \"configure --enable-histogram\".\n");
   }
 #endif
 }
