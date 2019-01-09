@@ -38,8 +38,8 @@ enum {
 #define DMI_OP_WRITE	        2
 #define DMI_OP_RESERVED	        3
 
-jtag_dtm_t::jtag_dtm_t(debug_module_t *dm) :
-  dm(dm),
+jtag_dtm_t::jtag_dtm_t(debug_module_t *dm, unsigned required_rti_cycles) :
+  dm(dm), required_rti_cycles(required_rti_cycles),
   _tck(false), _tms(false), _tdi(false), _tdo(false),
   dtmcontrol((abits << DTM_DTMCS_ABITS_OFFSET) | 1),
   dmi(DMI_OP_STATUS_SUCCESS << DTM_DMI_OP_OFFSET),
@@ -49,6 +49,9 @@ jtag_dtm_t::jtag_dtm_t(debug_module_t *dm) :
 
 void jtag_dtm_t::reset() {
   _state = TEST_LOGIC_RESET;
+  busy_stuck = false;
+  rti_remaining = 0;
+  dmi = 0;
 }
 
 void jtag_dtm_t::set_pins(bool tck, bool tms, bool tdi) {
@@ -88,6 +91,11 @@ void jtag_dtm_t::set_pins(bool tck, bool tms, bool tdi) {
     }
     _state = next[_state][_tms];
     switch (_state) {
+      case RUN_TEST_IDLE:
+        if (rti_remaining > 0)
+          rti_remaining--;
+        dm->run_test_idle();
+        break;
       case TEST_LOGIC_RESET:
         ir = IR_IDCODE;
         break;
@@ -151,34 +159,40 @@ void jtag_dtm_t::update_dr()
 {
   D(fprintf(stderr, "Update DR; IR=0x%x, DR=0x%lx (%d bits)\n",
         ir, dr, dr_length));
-  switch (ir) {
-    case IR_DBUS:
-      {
-        unsigned op = get_field(dr, DMI_OP);
-        uint32_t data = get_field(dr, DMI_DATA);
-        unsigned address = get_field(dr, DMI_ADDRESS);
+  if (ir == IR_DTMCONTROL) {
+    if (dr & DTMCONTROL_DBUSRESET)
+      reset();
+  } else if (ir == IR_DBUS) {
+    if (rti_remaining > 0 || busy_stuck) {
+        dmi = DMI_OP_STATUS_BUSY;
+        busy_stuck = true;
+    } else {
+      unsigned op = get_field(dr, DMI_OP);
+      uint32_t data = get_field(dr, DMI_DATA);
+      unsigned address = get_field(dr, DMI_ADDRESS);
 
-        dmi = dr;
+      dmi = dr;
 
-        bool success = true;
-        if (op == DMI_OP_READ) {
-          uint32_t value;
-          if (dm->dmi_read(address, &value)) {
-            dmi = set_field(dmi, DMI_DATA, value);
-          } else {
-            success = false;
-          }
-        } else if (op == DMI_OP_WRITE) {
-          success = dm->dmi_write(address, data);
-        }
-
-        if (success) {
-          dmi = set_field(dmi, DMI_OP, DMI_OP_STATUS_SUCCESS);
+      bool success = true;
+      if (op == DMI_OP_READ) {
+        uint32_t value;
+        if (dm->dmi_read(address, &value)) {
+          dmi = set_field(dmi, DMI_DATA, value);
         } else {
-          dmi = set_field(dmi, DMI_OP, DMI_OP_STATUS_FAILED);
+          success = false;
         }
-        D(fprintf(stderr, "dmi=0x%lx\n", dmi));
+      } else if (op == DMI_OP_WRITE) {
+        success = dm->dmi_write(address, data);
       }
-      break;
+
+      if (success) {
+        dmi = set_field(dmi, DMI_OP, DMI_OP_STATUS_SUCCESS);
+      } else {
+        dmi = set_field(dmi, DMI_OP, DMI_OP_STATUS_FAILED);
+      }
+      D(fprintf(stderr, "dmi=0x%lx\n", dmi));
+
+      rti_remaining = required_rti_cycles;
+    }
   }
 }
