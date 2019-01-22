@@ -135,6 +135,16 @@ static uint32_t fsw(unsigned int src, unsigned int base, uint16_t offset)
     MATCH_FSW;
 }
 
+static uint32_t fsh(unsigned int src, unsigned int base, uint16_t offset) __attribute__ ((unused));
+static uint32_t fsh(unsigned int src, unsigned int base, uint16_t offset)
+{
+  return (bits(offset, 11, 5) << 25) |
+    (bits(src, 4, 0) << 20) |
+    (base << 15) |
+    (bits(offset, 4, 0) << 7) |
+    MATCH_FSH;
+}
+
 static uint32_t fsd(unsigned int src, unsigned int base, uint16_t offset) __attribute__ ((unused));
 static uint32_t fsd(unsigned int src, unsigned int base, uint16_t offset)
 {
@@ -143,6 +153,15 @@ static uint32_t fsd(unsigned int src, unsigned int base, uint16_t offset)
     (base << 15) |
     (bits(offset, 4, 0) << 7) |
     MATCH_FSD;
+}
+
+static uint32_t flh(unsigned int dest, unsigned int base, uint16_t offset) __attribute__ ((unused));
+static uint32_t flh(unsigned int dest, unsigned int base, uint16_t offset)
+{
+  return (bits(offset, 11, 0) << 20) |
+    (base << 15) |
+    (bits(dest, 4, 0) << 7) |
+    MATCH_FLH;
 }
 
 static uint32_t flw(unsigned int dest, unsigned int base, uint16_t offset) __attribute__ ((unused));

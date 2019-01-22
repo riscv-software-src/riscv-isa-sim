@@ -231,6 +231,7 @@ private:
 #define isBoxedF64(r) ((r.v[1] + 1) == 0)
 #define unboxF64(r) (isBoxedF64(r) ? r.v[0] : defaultNaNF64UI)
 typedef float128_t freg_t;
+inline float16_t f16(uint16_t v) { return { v }; }
 inline float32_t f32(uint32_t v) { return { v }; }
 inline float64_t f64(uint64_t v) { return { v }; }
 inline float32_t f32(freg_t r) { return f32(unboxF32(r)); }

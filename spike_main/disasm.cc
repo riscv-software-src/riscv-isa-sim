@@ -356,10 +356,12 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_XAMO_LR(lr_d)
   DEFINE_XAMO(sc_d)
 
+  DEFINE_FLOAD(flh)
   DEFINE_FLOAD(flw)
   DEFINE_FLOAD(fld)
   DEFINE_FLOAD(flq)
 
+  DEFINE_FSTORE(fsh)
   DEFINE_FSTORE(fsw)
   DEFINE_FSTORE(fsd)
   DEFINE_FSTORE(fsq)
