@@ -354,7 +354,7 @@ private:
   }
 
   reg_t pmp_homogeneous(reg_t addr, reg_t len);
-  reg_t pmp_ok(reg_t addr, access_type type, reg_t mode);
+  reg_t pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode);
 
   bool check_triggers_fetch;
   bool check_triggers_load;
