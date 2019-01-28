@@ -18,11 +18,12 @@
 ///////////////////////// debug_module_t
 
 debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bus_master_bits,
-    bool require_authentication) :
+    bool require_authentication, unsigned abstract_rti) :
   progbufsize(progbufsize),
   program_buffer_bytes(4 + 4*progbufsize),
   max_bus_master_bits(max_bus_master_bits),
   require_authentication(require_authentication),
+  abstract_rti(abstract_rti),
   debug_progbuf_start(debug_data_start - program_buffer_bytes),
   debug_abstract_start(debug_progbuf_start - debug_abstract_size*4),
   custom_base(0),
@@ -183,7 +184,7 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     if (dmcontrol.hartsel == id) {
         if (0 == (debug_rom_flags[id] & (1 << DEBUG_ROM_FLAG_GO))){
           if (dmcontrol.hartsel == id) {
-              abstractcs.busy = false;
+              abstract_command_completed = true;
           }
         }
     }
@@ -459,9 +460,11 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
       case DMI_SBDATA0:
         result = sbdata[0];
         if (sbcs.error == 0) {
-          sb_autoincrement();
           if (sbcs.readondata) {
             sb_read();
+          }
+          if (sbcs.error == 0) {
+            sb_autoincrement();
           }
         }
         break;
@@ -486,6 +489,16 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
   D(fprintf(stderr, "0x%x\n", result));
   *value = result;
   return true;
+}
+
+void debug_module_t::run_test_idle()
+{
+  if (rti_remaining > 0) {
+    rti_remaining--;
+  }
+  if (rti_remaining == 0 && abstractcs.busy && abstract_command_completed) {
+    abstractcs.busy = false;
+  }
 }
 
 bool debug_module_t::perform_abstract_command()
@@ -629,6 +642,8 @@ bool debug_module_t::perform_abstract_command()
     }
 
     debug_rom_flags[dmcontrol.hartsel] |= 1 << DEBUG_ROM_FLAG_GO;
+    rti_remaining = abstract_rti;
+    abstract_command_completed = false;
 
     abstractcs.busy = true;
   } else {
@@ -737,6 +752,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         sbaddress[0] = value;
         if (sbcs.error == 0 && sbcs.readonaddr) {
           sb_read();
+          sb_autoincrement();
         }
         return true;
       case DMI_SBADDRESS1:
@@ -752,7 +768,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         sbdata[0] = value;
         if (sbcs.error == 0) {
           sb_write();
-          if (sbcs.autoincrement && sbcs.error == 0) {
+          if (sbcs.error == 0) {
             sb_autoincrement();
           }
         }

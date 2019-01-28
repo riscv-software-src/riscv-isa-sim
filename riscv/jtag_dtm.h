@@ -29,7 +29,7 @@ class jtag_dtm_t
   static const unsigned idcode = 0xdeadbeef;
 
   public:
-    jtag_dtm_t(debug_module_t *dm);
+    jtag_dtm_t(debug_module_t *dm, unsigned required_rti_cycles);
     void reset();
 
     void set_pins(bool tck, bool tms, bool tdi);
@@ -40,6 +40,9 @@ class jtag_dtm_t
 
   private:
     debug_module_t *dm;
+    // The number of Run-Test/Idle cycles required before a DMI access is
+    // complete.
+    unsigned required_rti_cycles;
     bool _tck, _tms, _tdi, _tdo;
     uint32_t ir;
     const unsigned ir_length = 5;
@@ -51,6 +54,10 @@ class jtag_dtm_t
     const unsigned abits = 6;
     uint32_t dtmcontrol;
     uint64_t dmi;
+    // Number of Run-Test/Idle cycles needed before we call this access
+    // complete.
+    unsigned rti_remaining;
+    bool busy_stuck;
 
     jtag_state_t _state;
 

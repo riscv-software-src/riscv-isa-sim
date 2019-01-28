@@ -350,8 +350,11 @@ void processor_t::set_csr(int which, reg_t val)
 
   if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.n_pmp / 4) {
     for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8; i++) {
-      if (!(state.pmpcfg[i] & PMP_L))
-        state.pmpcfg[i] = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
+      if (!(state.pmpcfg[i] & PMP_L)) {
+        uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
+        cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1
+        state.pmpcfg[i] = cfg;
+      }
     }
     mmu->flush_tlb();
   }
