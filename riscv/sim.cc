@@ -60,6 +60,9 @@ sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
 
   clint.reset(new clint_t(procs));
   bus.add_device(CLINT_BASE, clint.get());
+
+  mu500.reset(new mu500_t(procs));
+  bus.add_device(0x04000000, mu500.get());
 }
 
 sim_t::~sim_t()

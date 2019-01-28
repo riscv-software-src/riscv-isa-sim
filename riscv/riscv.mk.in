@@ -50,6 +50,7 @@ riscv_srcs = \
 	devices.cc \
 	rom.cc \
 	clint.cc \
+    mu500.cc \
 	debug_module.cc \
 	remote_bitbang.cc \
 	jtag_dtm.cc \
