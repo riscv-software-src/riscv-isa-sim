@@ -26,9 +26,9 @@ install path, and that the riscv-fesvr package is installed there.
 Build Steps on OpenBSD
 ----------------------
 
-Install bash and gmake, and use clang.
+Install bash, gmake, dtc, and use clang.
 
-    $ pkg_add bash gmake
+    $ pkg_add bash gmake dtc
     $ exec bash
     $ export CC=cc; export CXX=c++
     $ mkdir build
