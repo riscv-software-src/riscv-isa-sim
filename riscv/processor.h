@@ -83,6 +83,60 @@ typedef struct
   bool load;
 } mcontrol_t;
 
+inline reg_t BITS(reg_t v, int hi, int lo){
+  return (v >> lo) & ((2 << (hi - lo)) - 1);
+}
+
+struct vectorUnit_t {
+  void *bytes;
+  reg_t vstart, vl, vlmax, vtype;
+  char vxrm, vxsat, vsew, vlmul;
+  reg_t ELEN, VLEN, SLEN;
+
+  reg_t setVL(reg_t reqVL, reg_t newType){
+    if (vtype != newType){
+      vtype = newType;
+      vsew = 1 << (BITS(newType, 8, 2) + 3);
+      vlmul = 1 << BITS(newType, 1, 0);
+      vlmax = VLEN/vsew * vlmul;
+    }
+    vl = reqVL <= vlmax ? reqVL : vlmax;
+    vstart = 0;
+    #if 0
+    printf("setVL(%lu,%lu) vsew=%d vlmul=%d vlmax=%lu vl=%lu\n",
+           reqVL, newType, vsew, vlmul, vlmax, vl);
+    #endif
+    return vl;
+  };
+
+  template<class T>
+  T& elt(reg_t vReg, reg_t n){
+    if ((vReg > 31) || ((vReg & (vlmul-1)) != 0) || (n >= vlmax)){
+      throw trap_illegal_instruction(0);
+    }
+    char *regStart = (char*)bytes + vReg * (VLEN/8);
+    char *eltPtr = regStart + n * (vsew/8);
+    return *(T*)eltPtr;
+  }
+
+  void reset(){
+    ELEN = 32;
+    VLEN = 512;
+    SLEN = VLEN; // registers are simply concatenated
+    bytes = malloc(32 * (VLEN/8));
+    vtype = -1;
+    setVL(0, 0); // bytes, lmul=1
+  }
+
+  vectorUnit_t(){
+    bytes = 0;
+  }
+  ~vectorUnit_t(){
+    free(bytes);
+    bytes = 0;
+  }
+};
+
 // architectural state of a RISC-V hart
 struct state_t
 {
@@ -93,6 +147,7 @@ struct state_t
   reg_t pc;
   regfile_t<reg_t, NXPR, true> XPR;
   regfile_t<freg_t, NFPR, false> FPR;
+  vectorUnit_t VU;
 
   // control and status registers
   reg_t prv;    // TODO: Can this be an enum instead?

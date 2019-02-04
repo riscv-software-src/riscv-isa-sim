@@ -289,6 +289,10 @@ riscv_insn_list = \
 	sub \
 	subw \
 	sw \
+	vsetvli \
+	vfmacc_vs \
+	vlw_v \
+	vsw_v \
 	wfi \
 	xor \
 	xori \
