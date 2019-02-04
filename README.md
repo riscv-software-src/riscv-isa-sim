@@ -23,6 +23,20 @@ install path, and that the riscv-fesvr package is installed there.
     $ make
     $ [sudo] make install
 
+Build Steps on OpenBSD
+----------------------
+
+Install bash, gmake, dtc, and use clang.
+
+    $ pkg_add bash gmake dtc
+    $ exec bash
+    $ export CC=cc; export CXX=c++
+    $ mkdir build
+    $ cd build
+    $ ../configure --prefix=$RISCV --with-fesvr=$RISCV
+    $ gmake
+    $ [doas] make install
+
 Compiling and Running a Simple C Program
 -------------------------------------------
 

@@ -5,6 +5,13 @@
 #include <string.h>
 #include <unistd.h>
 
+#ifndef AF_INET
+#include <sys/socket.h>
+#endif
+#ifndef INADDR_ANY
+#include <netinet/in.h>
+#endif
+
 #include <algorithm>
 #include <cassert>
 #include <cstdio>
