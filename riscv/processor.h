@@ -89,9 +89,9 @@ inline reg_t BITS(reg_t v, int hi, int lo){
 
 struct vectorUnit_t {
   void *reg_file;
-  reg_t vstart, vl, vlmax, vtype;
-  char vxrm, vxsat, vsew, vlmul;
-  reg_t ELEN, VLEN, SLEN;
+  reg_t reg_mask, vstart, vl, vlmax, vsew;
+  char vxrm, vxsat, vlmul;
+  reg_t ELEN, VLEN, SLEN, vtype;
 
   reg_t setVL(reg_t reqVL, reg_t newType){
     if (vtype != newType){
@@ -99,19 +99,20 @@ struct vectorUnit_t {
       vsew = 1 << (BITS(newType, 8, 2) + 3);
       vlmul = 1 << BITS(newType, 1, 0);
       vlmax = VLEN/vsew * vlmul;
+      reg_mask = (NVPR-1) & ~(vlmul-1);
     }
     vl = reqVL <= vlmax ? reqVL : vlmax;
     vstart = 0;
-    #if 0
-    printf("setVL(%lu,%lu) vsew=%d vlmul=%d vlmax=%lu vl=%lu\n",
-           reqVL, newType, vsew, vlmul, vlmax, vl);
+    #if 1
+    printf("setVL(%lu,%lu) vsew=%lu vlmul=%d vlmax=%lu vl=%lu reg_mask=%lx\n",
+           reqVL, newType, vsew, vlmul, vlmax, vl, reg_mask);
     #endif
     return vl;
   };
 
   template<class T>
   T& elt(reg_t vReg, reg_t n){
-    if ((vReg >= NVPR) || ((vReg & (vlmul-1)) != 0) || (n >= vlmax)){
+    if (((vReg & reg_mask) != vReg) || (n >= vlmax)){
       throw trap_illegal_instruction(0);
     }
     char *regStart = (char*)reg_file + vReg * (VLEN/8);
