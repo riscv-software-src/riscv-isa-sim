@@ -88,7 +88,7 @@ inline reg_t BITS(reg_t v, int hi, int lo){
 }
 
 struct vectorUnit_t {
-  void *bytes;
+  void *reg_file;
   reg_t vstart, vl, vlmax, vtype;
   char vxrm, vxsat, vsew, vlmul;
   reg_t ELEN, VLEN, SLEN;
@@ -114,7 +114,7 @@ struct vectorUnit_t {
     if ((vReg >= NVPR) || ((vReg & (vlmul-1)) != 0) || (n >= vlmax)){
       throw trap_illegal_instruction(0);
     }
-    char *regStart = (char*)bytes + vReg * (VLEN/8);
+    char *regStart = (char*)reg_file + vReg * (VLEN/8);
     char *eltPtr = regStart + n * (vsew/8);
     return *(T*)eltPtr;
   }
@@ -123,17 +123,17 @@ struct vectorUnit_t {
     ELEN = 32;
     VLEN = 512;
     SLEN = VLEN; // registers are simply concatenated
-    bytes = malloc(NVPR * (VLEN/8));
+    reg_file = malloc(NVPR * (VLEN/8));
     vtype = -1;
-    setVL(0, 0); // bytes, lmul=1
+    setVL(0, 0); // vsew8, vlmul1
   }
 
   vectorUnit_t(){
-    bytes = 0;
+    reg_file = 0;
   }
   ~vectorUnit_t(){
-    free(bytes);
-    bytes = 0;
+    free(reg_file);
+    reg_file = 0;
   }
 };
 

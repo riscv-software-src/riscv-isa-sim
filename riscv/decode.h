@@ -134,8 +134,10 @@ private:
 #define STATE (*p->get_state())
 #define READ_REG(reg) STATE.XPR[reg]
 #define READ_FREG(reg) STATE.FPR[reg]
+#define RD READ_REG(insn.rd())
 #define RS1 READ_REG(insn.rs1())
 #define RS2 READ_REG(insn.rs2())
+#define RS3 READ_REG(insn.rs3())
 #define WRITE_RD(value) WRITE_REG(insn.rd(), value)
 
 #ifndef RISCV_ENABLE_COMMITLOG
