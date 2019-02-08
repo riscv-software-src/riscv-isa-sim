@@ -111,7 +111,7 @@ struct vectorUnit_t {
 
   template<class T>
   T& elt(reg_t vReg, reg_t n){
-    if ((vReg > 31) || ((vReg & (vlmul-1)) != 0) || (n >= vlmax)){
+    if ((vReg >= NVPR) || ((vReg & (vlmul-1)) != 0) || (n >= vlmax)){
       throw trap_illegal_instruction(0);
     }
     char *regStart = (char*)bytes + vReg * (VLEN/8);
@@ -123,7 +123,7 @@ struct vectorUnit_t {
     ELEN = 32;
     VLEN = 512;
     SLEN = VLEN; // registers are simply concatenated
-    bytes = malloc(32 * (VLEN/8));
+    bytes = malloc(NVPR * (VLEN/8));
     vtype = -1;
     setVL(0, 0); // bytes, lmul=1
   }
