@@ -135,6 +135,32 @@ void state_t::reset(reg_t max_isa)
   pmpaddr[0] = ~reg_t(0);
 }
 
+void vectorUnit_t::reset(){
+  ELEN = 32;
+  VLEN = 512;
+  SLEN = VLEN; // registers are simply concatenated
+  reg_file = malloc(NVPR * (VLEN/8));
+  vtype = -1;
+  setVL(0, 0); // vsew8, vlmul1
+}
+
+reg_t vectorUnit_t::setVL(reg_t reqVL, reg_t newType){
+  if (vtype != newType){
+    vtype = newType;
+    vsew = 1 << (BITS(newType, 8, 2) + 3);
+    vlmul = 1 << BITS(newType, 1, 0);
+    vlmax = VLEN/vsew * vlmul;
+    reg_mask = (NVPR-1) & ~(vlmul-1);
+  }
+  vl = reqVL <= vlmax ? reqVL : vlmax;
+  vstart = 0;
+  #if 0
+  printf("setVL(%lu,%lu) vsew=%lu vlmul=%d vlmax=%lu vl=%lu reg_mask=%lx\n",
+         reqVL, newType, vsew, vlmul, vlmax, vl, reg_mask);
+  #endif
+  return vl;
+}
+
 void processor_t::set_debug(bool value)
 {
   debug = value;
