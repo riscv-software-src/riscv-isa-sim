@@ -13,3 +13,4 @@ for (reg_t i=STATE.VU.vstart; i<vl; ++i){
   #endif
 }
 STATE.VU.vstart = 0;
+set_fp_exceptions;
