@@ -281,6 +281,11 @@ inline freg_t f128_negate(freg_t a)
     throw trap_illegal_instruction(0); \
   (which); })
 
+/* For debug only. This will fail if the native machine's float types are not IEEE */
+inline float to_f(float32_t f){float r; memcpy(&r, &f, sizeof(r)); return r;}
+inline double to_f(float64_t f){double r; memcpy(&r, &f, sizeof(r)); return r;}
+inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); return r;}
+
 // Seems that 0x0 doesn't work.
 #define DEBUG_START             0x100
 #define DEBUG_END                 (0x1000 - 1)
