@@ -103,7 +103,8 @@ public:
   uint64_t rvc_rs1s() { return 8 + x(7, 3); }
   uint64_t rvc_rs2s() { return 8 + x(2, 3); }
 
-  uint64_t v_off() { return x(31, 29); }
+  uint64_t v_off() { return x(29, 3); }
+  uint64_t v_zimm11() { return x(20, 11); }
 
 private:
   insn_bits_t b;

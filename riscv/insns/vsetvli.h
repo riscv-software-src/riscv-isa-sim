@@ -1,1 +1,1 @@
-WRITE_RD(STATE.VU.setVL(RS1, insn.rs2()));
+WRITE_RD(STATE.VU.setVL(RS1, insn.v_zimm11()));
