@@ -1,3 +1,6 @@
+require_extension('F');
+require_fp;
+require(STATE.VU.vsew == 32);
 reg_t vl = STATE.VU.vl;
 reg_t accVReg = insn.rd();
 reg_t srcVReg = insn.rs2();
