@@ -287,6 +287,43 @@ inline float to_f(float32_t f){float r; memcpy(&r, &f, sizeof(r)); return r;}
 inline double to_f(float64_t f){double r; memcpy(&r, &f, sizeof(r)); return r;}
 inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); return r;}
 
+// Vector macros
+#define DEBUG_RVV 0
+
+#if DEBUG_RVV
+#define DEBUG_RVV_FMA \
+  printf("vfma(%lu) vd=%f vs1=%f vs2=%f vd_old=%f\n", i, to_f(rd), to_f(rs1), to_f(rs2), to_f(rd_old));
+#else
+#define DEBUG_RVV_FMA 0
+#endif
+
+#define VF_LOOP_BASE \
+require_extension('F'); \
+require_fp; \
+require(STATE.VU.vsew == 32); \
+reg_t vl = STATE.VU.vl; \
+reg_t rd_num = insn.rd(); \
+reg_t rs1_num = insn.rs1(); \
+reg_t rs2_num = insn.rs2(); \
+softfloat_roundingMode = STATE.frm; \
+for (reg_t i=STATE.VU.vstart; i<vl; ++i){
+
+#define VF_LOOP_END \
+} \
+STATE.VU.vstart = 0; \
+set_fp_exceptions;
+
+#define VFMA_VF_LOOP(BODY) \
+  VF_LOOP_BASE \
+  float32_t &rd = STATE.VU.elt<float32_t>(rd_num, i); \
+  float32_t rs1 = f32(READ_FREG(rs1_num)); \
+  float32_t &rs2 = STATE.VU.elt<float32_t>(rs2_num, i); \
+  float32_t rd_old = rd; \
+  BODY; \
+  DEBUG_RVV_FMA; \
+  VF_LOOP_END
+
+
 // Seems that 0x0 doesn't work.
 #define DEBUG_START             0x100
 #define DEBUG_END                 (0x1000 - 1)
