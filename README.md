@@ -151,6 +151,7 @@ int main()
         i++;
     }
 
+done:
     while (!wait)
         ;
 }
@@ -199,8 +200,8 @@ riscv.cpu: target state: halted
 In yet another shell, start your gdb debug session:
 ```
 tnewsome@compy-vm:~/SiFive/spike-test$ riscv64-unknown-elf-gdb rot13-64
-GNU gdb (GDB) 7.12.50.20170505-git
-Copyright (C) 2016 Free Software Foundation, Inc.
+GNU gdb (GDB) 8.0.50.20170724-git
+Copyright (C) 2017 Free Software Foundation, Inc.
 License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
 This is free software: you are free to change and redistribute it.
 There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
@@ -216,21 +217,22 @@ Type "apropos word" to search for commands related to "word"...
 Reading symbols from rot13-64...done.
 (gdb) target remote localhost:3333
 Remote debugging using localhost:3333
-0x000000001001000a in main () at rot13.c:8
-8           while (wait)
+0x0000000010010004 in main () at rot13.c:8
+8	    while (wait)
 (gdb) print wait
 $1 = 1
 (gdb) print wait=0
 $2 = 0
 (gdb) print text
 $3 = "Vafgehpgvba frgf jnag gb or serr!"
-(gdb) b 23
-Breakpoint 1 at 0x10010064: file rot13.c, line 23.
+(gdb) b done 
+Breakpoint 1 at 0x10010064: file rot13.c, line 22.
 (gdb) c
 Continuing.
+Disabling abstract command writes to CSRs.
 
 Breakpoint 1, main () at rot13.c:23
-23          while (!wait)
+23	    while (!wait)
 (gdb) print wait
 $4 = 0
 (gdb) print text
