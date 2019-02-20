@@ -512,7 +512,7 @@ bool debug_module_t::perform_abstract_command()
 
   if ((command >> 24) == 0) {
     // register access
-    unsigned size = get_field(command, AC_ACCESS_REGISTER_SIZE);
+    unsigned size = get_field(command, AC_ACCESS_REGISTER_AARSIZE);
     bool write = get_field(command, AC_ACCESS_REGISTER_WRITE);
     unsigned regno = get_field(command, AC_ACCESS_REGISTER_REGNO);
 
