@@ -758,7 +758,7 @@
 #define MASK_VLW_V  0x1ff0707f
 #define MATCH_VSW_V 0x2006027
 #define MASK_VSW_V  0x1ff0707f
-#define MATCH_VFMACC_VF 0xd2005057
+#define MATCH_VFMACC_VF 0xb2005057
 #define MASK_VFMACC_VF  0xfe00707f
 #define CSR_FFLAGS 0x1
 #define CSR_FRM 0x2
