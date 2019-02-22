@@ -131,7 +131,7 @@ kr233:
 
     bnez n, .Lstrip
 
-.Lexit
+.Lexit:
     ret
 
 /*
