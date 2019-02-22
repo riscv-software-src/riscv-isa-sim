@@ -28,13 +28,15 @@
 #define deta   v30
 #define ideta  v31
 
+#define FLOATONE 0x3f800000
+
     .text
     .global k33inv
 kr33inv:
     li mstride, 3*3*4   # Stride between matrices
     li mfour, 4*4       # Step across four elements 
     li t0, FLOATONE     # floating-point 1.0f
-    fmv t0, fone        # Set fone to 1.0f
+    fmv.w.x fone, t0        # Set fone to 1.0f
 
     vsetvli x0, n, e32
     add arp, ap, mfour

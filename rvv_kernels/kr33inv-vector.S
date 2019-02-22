@@ -25,7 +25,7 @@
 #define	ia21   v16
 #define	ia22   v17
 #define deta   v18
-#define ca00   v19
+#define cia00  v19
 #define	cia01  v20
 #define	cia02  v21
 #define	cia10  v22
@@ -36,13 +36,15 @@
 #define	cia22  v27
 #define ideta  v28
 
+#define FLOATONE 0x3f800000
+
     .text
     .global k33inv
 kr33inv:
     li mstride, 3*3*4   # Stride between matrices
     li mfour, 4*4       # Step across four elements 
     li t0, FLOATONE     # floating-point 1.0f
-    fmv t0, fone        # Set fone to 1.0f
+    fmv.w.x fone, t0        # Set fone to 1.0f
 
 .Lloop:
     vsetvli nstrip, n, e32

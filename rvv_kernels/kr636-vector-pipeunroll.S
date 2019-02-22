@@ -34,10 +34,10 @@
 #define astride a5
 #define bstride a6
 #define cstride a7
-#define arp t7
-#define brp t6
-#define crp t5
-#define niter t4
+#define arp t6
+#define brp t5
+#define crp t4
+#define niter t3
 
 #define ac0  v18
 #define ac1  v19
@@ -137,7 +137,7 @@ kr636:
     vlsseg6w.v b20, (brp), bstride
 .LskipB2:
 
-    vmv.v     ac5, ac8        # Move out of way of C segment accumulate
+    vmv.v.v   ac5, ac8        # Move out of way of C segment accumulate
     vfmul.vv  ac8, ac6, b00
     vfmacc.vv ac11, ac7, b13
     vfmacc.vv  ac8, ac7, b10

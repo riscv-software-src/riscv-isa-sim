@@ -34,10 +34,10 @@
 #define astride a5
 #define bstride a6
 #define cstride a7
-#define arp t7
-#define brp t6
-#define crp t5
-#define nrows t4
+#define arp t6
+#define brp t5
+#define crp t4
+#define nrows t3
 
 #define aa0 v24
 #define aa1 v25
