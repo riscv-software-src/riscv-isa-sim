@@ -36,12 +36,12 @@ kr33inv:
     li t0, FLOATONE     # floating-point 1.0f
     fmv t0, fone        # Set fone to 1.0f
 
-    vsetlvi x0, n, e32
+    vsetvli x0, n, e32
     add arp, ap, mfour
     vlsseg5w.v v4, (arp), mstride
 
 .Lloop:
-    vsetlvi nstrip, n, e32
+    vsetvli nstrip, n, e32
     
     vlsseg4w.v v0, (ap), mstride
     mul stripstride, nstrip, mstride

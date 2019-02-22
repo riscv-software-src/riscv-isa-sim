@@ -45,7 +45,7 @@ kr33inv:
     fmv t0, fone        # Set fone to 1.0f
 
 .Lloop:
-    vsetlvi nstrip, n, e32
+    vsetvli nstrip, n, e32
     
     add arp, ap, mfour
     vlsseg5w.v v4, (arp), mstride

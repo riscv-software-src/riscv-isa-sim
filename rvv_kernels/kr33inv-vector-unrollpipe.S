@@ -51,7 +51,7 @@ kr33inv:
     li t0, FLOATONE     # floating-point 1.0f
     fmv t0, fone        # Set fone to 1.0f
 
-    vsetlvi nstrip, n, e32
+    vsetvli nstrip, n, e32
     add arp, ap, mfour
     vlsseg5w.v v4, (arp), mstride
 
@@ -60,7 +60,7 @@ kr33inv:
     add ap, ap, stripstride
 
 .Lloop:
-    vsetlvi nstrip, n, e32
+    vsetvli nstrip, n, e32
 
     vfmul.vv ia00, v4, v8
 	vfmul.vv ia10, v6, v5
@@ -121,7 +121,7 @@ kr33inv:
     vssseg5w.v ia11, (crp), mstride # Save remaining five values
     add cp, cp, stripstride
 
-    vsetlvi nstrip, n, e32    # Second vector length in loop.
+    vsetvli nstrip, n, e32    # Second vector length in loop.
 
     vfmul.vv ia00, nv4, nv8
 	vfmul.vv ia10, nv6, nv5
