@@ -119,7 +119,7 @@ kr636:
 .Lrow_loop:
     beqz niter, .LskipB1            # Bring in B[1][*] on first iteration
     vlsseg6w.v b10, (brp), bstride
-.LskipB1
+.LskipB1:
     addi brp, brp, 6*4
 
     # Accumulate C[0/3][*] in ac8-ac13
@@ -135,7 +135,7 @@ kr636:
 
     beqz niter, .LskipB2            # Bring in B[2][*] on first iteration
     vlsseg6w.v b20, (brp), bstride
-.LskipB2
+.LskipB2:
 
     vmv.v     ac5, ac8        # Move out of way of C segment accumulate
     vfmul.vv  ac8, ac6, b00
@@ -207,7 +207,7 @@ kr636:
 
     beqz niter, .LA3skip
     vlsseg3w.v ac6, (arp), astride  # Bring in A[3][*] to ac6-8
-.LA3skip
+.LA3skip:
     addi arp, arp, 3*4
 
     # Pushed ac4-ac5 accumulates down to avoid WAR conflicts with C[1/4] segment store
