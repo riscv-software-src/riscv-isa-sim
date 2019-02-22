@@ -103,6 +103,7 @@ public:
   uint64_t rvc_rs1s() { return 8 + x(7, 3); }
   uint64_t rvc_rs2s() { return 8 + x(2, 3); }
 
+  uint64_t v_vm() { return x(25, 1); }
   uint64_t v_nf() { return x(29, 3); }
   uint64_t v_zimm11() { return x(20, 11); }
 
@@ -291,36 +292,99 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 #define DEBUG_RVV 0
 
 #if DEBUG_RVV
-#define DEBUG_RVV_FMA \
-  printf("vfma(%lu) vd=%f vs1=%f vs2=%f vd_old=%f\n", i, to_f(rd), to_f(rs1), to_f(rs2), to_f(rd_old));
+#define DEBUG_RVV_FP_VV \
+  printf("vfp(%lu) vd=%f vs1=%f vs2=%f\n", i, to_f(vd), to_f(vs1), to_f(vs2));
+#define DEBUG_RVV_FP_VF \
+  printf("vfp(%lu) vd=%f vs1=%f vs2=%f\n", i, to_f(vd), to_f(rs1), to_f(vs2));
+#define DEBUG_RVV_FMA_VV \
+  printf("vfma(%lu) vd=%f vs1=%f vs2=%f vd_old=%f\n", i, to_f(vd), to_f(vs1), to_f(vs2), to_f(vd_old));
+#define DEBUG_RVV_FMA_VF \
+  printf("vfma(%lu) vd=%f vs1=%f vs2=%f vd_old=%f\n", i, to_f(vd), to_f(rs1), to_f(vs2), to_f(vd_old));
 #else
-#define DEBUG_RVV_FMA 0
+#define DEBUG_RVV_FP_VV 0
+#define DEBUG_RVV_FP_VF 0
+#define DEBUG_RVV_FMA_VV 0
+#define DEBUG_RVV_FMA_VF 0
 #endif
 
+#define VI_LOOP_BASE \
+  require(STATE.VU.vsew == 32); \
+  require(insn.v_vm() == 1); \
+  reg_t vl = STATE.VU.vl; \
+  reg_t rd_num = insn.rd(); \
+  reg_t rs1_num = insn.rs1(); \
+  reg_t rs2_num = insn.rs2(); \
+  for (reg_t i=STATE.VU.vstart; i<vl; ++i){
+
+#define VI_LOOP_END \
+  } \
+  STATE.VU.vstart = 0;
+
+#define VI_VV_LOOP(BODY) \
+  VI_LOOP_BASE \
+  int32_t &vd = STATE.VU.elt<int32_t>(rd_num, i); \
+  int32_t vs1 = STATE.VU.elt<int32_t>(rs1_num, i); \
+  int32_t vs2 = STATE.VU.elt<int32_t>(rs2_num, i); \
+  BODY; \
+  VI_LOOP_END
+
+
+
 #define VF_LOOP_BASE \
-require_extension('F'); \
-require_fp; \
-require(STATE.VU.vsew == 32); \
-reg_t vl = STATE.VU.vl; \
-reg_t rd_num = insn.rd(); \
-reg_t rs1_num = insn.rs1(); \
-reg_t rs2_num = insn.rs2(); \
-softfloat_roundingMode = STATE.frm; \
-for (reg_t i=STATE.VU.vstart; i<vl; ++i){
+  require_extension('F'); \
+  require_fp; \
+  require(STATE.VU.vsew == 32); \
+  require(insn.v_vm() == 1); \
+  reg_t vl = STATE.VU.vl; \
+  reg_t rd_num = insn.rd(); \
+  reg_t rs1_num = insn.rs1(); \
+  reg_t rs2_num = insn.rs2(); \
+  softfloat_roundingMode = STATE.frm; \
+  for (reg_t i=STATE.VU.vstart; i<vl; ++i){
 
 #define VF_LOOP_END \
-} \
-STATE.VU.vstart = 0; \
-set_fp_exceptions;
+  } \
+  STATE.VU.vstart = 0; \
+  set_fp_exceptions;
+
+
+#define VFMA_VV_LOOP(BODY)                      \
+  VF_LOOP_BASE \
+  float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
+  float32_t vs1 = STATE.VU.elt<float32_t>(rs1_num, i); \
+  float32_t vs2 = STATE.VU.elt<float32_t>(rs2_num, i); \
+  float32_t vd_old = vd; \
+  BODY; \
+  DEBUG_RVV_FMA_VV; \
+  VF_LOOP_END
 
 #define VFMA_VF_LOOP(BODY) \
   VF_LOOP_BASE \
-  float32_t &rd = STATE.VU.elt<float32_t>(rd_num, i); \
+  float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
   float32_t rs1 = f32(READ_FREG(rs1_num)); \
-  float32_t &rs2 = STATE.VU.elt<float32_t>(rs2_num, i); \
-  float32_t rd_old = rd; \
+  float32_t vs2 = STATE.VU.elt<float32_t>(rs2_num, i); \
+  float32_t vd_old = vd; \
   BODY; \
-  DEBUG_RVV_FMA; \
+  DEBUG_RVV_FMA_VF; \
+  VF_LOOP_END
+
+
+#define VFP_VV_LOOP(BODY) \
+  VF_LOOP_BASE \
+  float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
+  float32_t vs1 = STATE.VU.elt<float32_t>(rs1_num, i); \
+  float32_t vs2 = STATE.VU.elt<float32_t>(rs2_num, i); \
+  BODY; \
+  DEBUG_RVV_FP_VV; \
+  VF_LOOP_END
+
+#define VFP_VF_LOOP(BODY) \
+  VF_LOOP_BASE \
+  float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
+  float32_t rs1 = f32(READ_FREG(rs1_num)); \
+  float32_t vs2 = STATE.VU.elt<float32_t>(rs2_num, i); \
+  BODY; \
+  DEBUG_RVV_FP_VF; \
   VF_LOOP_END
 
 

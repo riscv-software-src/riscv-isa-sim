@@ -290,9 +290,24 @@ riscv_insn_list = \
 	subw \
 	sw \
 	vsetvli \
+	vfmul_vv \
+	vfrdiv_vf \
+	vfmacc_vv \
 	vfmacc_vf \
+	vfnmsac_vv \
+	vmerge_vv \
 	vlw_v \
+	vlseg6w_v \
+	vlsseg3w_v \
+	vlsseg4w_v \
+	vlsseg5w_v \
+	vlsseg6w_v \
 	vsw_v \
+	vsseg6w_v \
+	vssseg3w_v \
+	vssseg4w_v \
+	vssseg5w_v \
+	vssseg6w_v \
 	wfi \
 	xor \
 	xori \
