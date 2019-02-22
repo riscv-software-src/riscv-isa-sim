@@ -11,7 +11,7 @@
 #     a2      y
 
 vec_saxpy_asm:
-    vsetvli a3, a0, vsew32,vlmul8
+    vsetvli a3, a0, e32,m8
     vlw.v v0, (a1)
     sub a0, a0, a3
     slli a3, a3, 2
@@ -22,7 +22,3 @@ vec_saxpy_asm:
     add a2, a2, a3
     bnez a0, vec_saxpy_asm
     ret
-
-junk:
-    vsetvli x0, x0, vsew8, vlmul1
-    ret    
