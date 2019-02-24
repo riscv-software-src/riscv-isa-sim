@@ -89,6 +89,8 @@ inline reg_t BITS(reg_t v, int hi, int lo){
 
 struct vectorUnit_t {
   void *reg_file;
+  char reg_referenced[NVPR];
+  int setvl_count;
   reg_t reg_mask, vstart, vl, vlmax, vsew;
   char vxrm, vxsat, vlmul;
   reg_t ELEN, VLEN, SLEN, vtype;
@@ -97,12 +99,18 @@ struct vectorUnit_t {
 
   template<class T>
   T& elt(reg_t vReg, reg_t n){
+    // this still needs to be adjusted for SLEN != VLEN
+    reg_t elts_per_reg = (VLEN>>3)/sizeof(T);
+    vReg += n/elts_per_reg;
+    n = n%elts_per_reg;
+    reg_referenced[vReg] = 1;
+    #if 0
     if (((vReg & reg_mask) != vReg) || (n >= vlmax)){
       throw trap_illegal_instruction(0);
     }
-    char *regStart = (char*)reg_file + vReg * (VLEN/8);
-    char *eltPtr = regStart + n * (vsew/8);
-    return *(T*)eltPtr;
+    #endif
+    T *regStart = (T*)((char*)reg_file + vReg * (VLEN/8));
+    return regStart[n];
   }
 
   void reset();
@@ -116,6 +124,12 @@ struct vectorUnit_t {
   }
 };
 
+struct prev_reg_state_t {
+  regfile_t<reg_t, NXPR, false> XPR;
+  regfile_t<freg_t, NFPR, false> FPR;
+  vectorUnit_t VU;
+};
+
 // architectural state of a RISC-V hart
 struct state_t
 {
@@ -127,6 +141,9 @@ struct state_t
   regfile_t<reg_t, NXPR, true> XPR;
   regfile_t<freg_t, NFPR, false> FPR;
   vectorUnit_t VU;
+
+  // Used when tracing
+  prev_reg_state_t *prev_state;
 
   // control and status registers
   reg_t prv;    // TODO: Can this be an enum instead?

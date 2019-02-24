@@ -88,6 +88,10 @@ bool processor_t::slow_path()
   return debug || state.single_step != state.STEP_NONE || state.dcsr.cause;
 }
 
+extern const char* xpr_name[NXPR];
+extern const char* fpr_name[NFPR];
+extern const char* vr_name[NVPR];
+
 // fetch/decode/execute loop
 void processor_t::step(size_t n)
 {
@@ -141,10 +145,69 @@ void processor_t::step(size_t n)
             state.single_step = state.STEP_STEPPED;
           }
 
+          if (debug && !state.prev_state) { // lazy init
+            prev_reg_state_t *saved = new prev_reg_state_t;
+            memcpy(&saved->VU, &state.VU, sizeof(vectorUnit_t));
+            int v_regfile_sz = NVPR * (state.VU.VLEN/8);
+            saved->VU.reg_file = malloc(v_regfile_sz);
+            for (int i=0; i<NXPR; ++i) (reg_t&)saved->XPR[i] = 0xdeadbeefcafebabe;
+            for (int i=0; i<NFPR; ++i) saved->FPR.write(i, freg(f64(161803398875)));
+            for (int i=0; i<NVPR; ++i) {
+              for (reg_t j=0; j<state.VU.VLEN/32; ++j) {
+                saved->VU.elt<uint32_t>(i, j) = f32(0xdeadbeef).v;
+              }
+            }
+            state.prev_state = saved;
+          }
+
           insn_fetch_t fetch = mmu->load_insn(pc);
           if (debug && !state.serialized)
             disasm(fetch.insn);
           pc = execute_insn(this, pc, fetch);
+
+          if (debug && !state.serialized) {
+            prev_reg_state_t *saved = state.prev_state;
+            if (saved->VU.setvl_count != state.VU.setvl_count) {
+              fprintf(stderr, "vconfig <- sew=%lu vlmul=%d vlmax=%lu vl=%lu\n",
+                      state.VU.vsew, state.VU.vlmul, state.VU.vlmax, state.VU.vl);
+              saved->VU.setvl_count = state.VU.setvl_count;
+            }
+            for (int i=0; i<NXPR; ++i) {
+              reg_t &old = (reg_t&)saved->XPR[i];
+              reg_t now = state.XPR[i];
+              if (now != old) {
+                fprintf(stderr, "x%d %s <- 0x%016lx %ld\n", i, xpr_name[i], now, now);
+                old = now;
+              }
+            }
+            for (int i=0; i<NFPR; ++i) {
+              freg_t &old = (freg_t&)saved->FPR[i];
+              freg_t now = state.FPR[i];
+              if (f64(now).v != f64(old).v) {
+                uint64_t v = f64(now).v;
+                double dv;
+                float fv;
+                memcpy(&dv, &v, sizeof(dv));
+                memcpy(&fv, &v, sizeof(fv));
+                fprintf(stderr, "f%d %s <- 0x%016lx %f %f\n", i, fpr_name[i], v, dv, fv);
+                old = now;
+              }
+            }
+            for (reg_t i=0; i<NVPR; ++i) {
+              if (!state.VU.reg_referenced[i]) continue;
+              for (reg_t j=0; j<state.VU.VLEN/32; ++j) {
+                uint32_t &old = saved->VU.elt<uint32_t>(i, j);
+                uint32_t now = state.VU.elt<uint32_t>(i, j);
+                if (now != old) {
+                  float fv;
+                  memcpy(&fv, &now, sizeof(fv));
+                  fprintf(stderr, "v%ld[%ld] <- 0x%08x %f\n", i, j, now, fv);
+                  old = now;
+                }
+              }
+              state.VU.reg_referenced[i] = 0;
+            }
+          }
 
           advance_pc();
 

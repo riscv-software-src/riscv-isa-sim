@@ -154,10 +154,7 @@ reg_t vectorUnit_t::setVL(reg_t reqVL, reg_t newType){
   }
   vl = reqVL <= vlmax ? reqVL : vlmax;
   vstart = 0;
-  #if 0
-  printf("setVL(%lu,%lu) vsew=%lu vlmul=%d vlmax=%lu vl=%lu reg_mask=%lx\n",
-         reqVL, newType, vsew, vlmul, vlmax, vl, reg_mask);
-  #endif
+  setvl_count++;
   return vl;
 }
 
