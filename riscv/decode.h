@@ -105,7 +105,10 @@ public:
 
   uint64_t v_vm() { return x(25, 1); }
   uint64_t v_nf() { return x(29, 3); }
+  uint64_t v_simm5() { return xs(15, 5); }
   uint64_t v_zimm11() { return x(20, 11); }
+  uint64_t v_lmul() { return 1 << x(20, 2); }
+  uint64_t v_sew() { return 1 << (x(22, 3) + 3); }
 
 private:
   insn_bits_t b;

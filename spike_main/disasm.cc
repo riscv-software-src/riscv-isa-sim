@@ -266,6 +266,61 @@ struct : public arg_t {
   }
 } rvc_jump_target;
 
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::string("(") + xpr_name[insn.rs1()] + ')';
+  }
+} v_address;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return vr_name[insn.rd()];
+  }
+} vd;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return vr_name[insn.rs1()];
+  }
+} vs1;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return vr_name[insn.rs2()];
+  }
+} vs2;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return vr_name[insn.rd()];
+  }
+} vs3;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return insn.v_vm() ? "" : "v0.t";
+  }
+} vm;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.v_simm5());
+  }
+} v_simm5;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    std::stringstream s;
+    int sew = insn.v_sew();
+    int lmul = insn.v_lmul();
+    s << "e" << sew;
+    if (lmul != 1)
+      s << ",m" << lmul;
+    return s.str();
+  }
+} v_vtype;
+
+
 std::string disassembler_t::disassemble(insn_t insn) const
 {
   const disasm_insn_t* disasm_insn = lookup(insn);
@@ -597,6 +652,27 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN("c.fldsp", c_fldsp, 0, {&rvc_fp_rs2s, &rvc_ldsp_address});
   DISASM_INSN("c.fsd", c_fsd, 0, {&rvc_fp_rs2s, &rvc_ld_address});
   DISASM_INSN("c.fsdsp", c_fsdsp, 0, {&rvc_fp_rs2s, &rvc_sdsp_address});
+
+  DISASM_INSN("vsetvli", vsetvli, 0, {&xrd, &xrs1, &v_vtype});
+  DISASM_INSN("vlw.v", vlw_v, 0, {&vd, &v_address, &opt, &vm});
+  DISASM_INSN("vsw.v", vsw_v, 0, {&vs3, &v_address, &opt, &vm});
+  DISASM_INSN("vlseg6w.v", vlseg6w_v, 0, {&vd, &v_address, &opt, &vm});
+  DISASM_INSN("vsseg6w.v", vsseg6w_v, 0, {&vs3, &v_address, &opt, &vm});
+  DISASM_INSN("vlsseg3w.v", vlseg3w_v, 0, {&vd, &v_address, &xrs2, &opt, &vm});
+  DISASM_INSN("vlsseg4w.v", vlseg4w_v, 0, {&vd, &v_address, &xrs2, &opt, &vm});
+  DISASM_INSN("vlsseg5w.v", vlseg5w_v, 0, {&vd, &v_address, &xrs2, &opt, &vm});
+  DISASM_INSN("vlsseg6w.v", vlseg6w_v, 0, {&vd, &v_address, &xrs2, &opt, &vm});
+  DISASM_INSN("vssseg3w.v", vsseg3w_v, 0, {&vs3, &v_address, &xrs2, &opt, &vm});
+  DISASM_INSN("vssseg4w.v", vsseg4w_v, 0, {&vs3, &v_address, &xrs2, &opt, &vm});
+  DISASM_INSN("vssseg5w.v", vsseg5w_v, 0, {&vs3, &v_address, &xrs2, &opt, &vm});
+  DISASM_INSN("vssseg6w.v", vsseg6w_v, 0, {&vs3, &v_address, &xrs2, &opt, &vm});
+
+  DISASM_INSN("vfmacc.vf", vfmacc_vf, 0, {&vd, &frs1, &vs2, &opt, &vm});
+  DISASM_INSN("vfmacc.vv", vfmacc_vv, 0, {&vd, &vs1, &vs2, &opt, &vm});
+  DISASM_INSN("vfnmsac.vv", vfnmsac_vv, 0, {&vd, &vs1, &vs2, &opt, &vm});
+
+  DISASM_INSN("vfrdiv.vf", vfrdiv_vf, 0, {&vd, &vs2, &frs1, &opt, &vm});
+  DISASM_INSN("vmerge.vv", vmerge_vv, 0, {&vd, &vs2, &vs1, &opt, &vm});
 
   if (xlen == 32) {
     DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
