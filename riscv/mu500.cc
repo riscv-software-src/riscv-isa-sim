@@ -21,11 +21,11 @@ bool mu500_t::load(reg_t addr, size_t len, uint8_t* bytes) {
 }
 
 bool mu500_t::store(reg_t offset, size_t len, const uint8_t* bytes) {
-    char content[2+1+1+1];
+    char content[2+2+1+1];
     if (0x0 <= offset && offset <= 0x47) {
-        snprintf(content, sizeof(content), "%2x%1x;", (unsigned int)offset, *bytes);
+        snprintf(content, sizeof(content), "%2x%2x;", (unsigned int)offset, *bytes);
         std::cerr << "mu500: " << content << std::endl;
-        sendto(sock, content, 4, 0, (struct sockaddr *)&addr, sizeof(addr));
+        sendto(sock, content, 5, 0, (struct sockaddr *)&addr, sizeof(addr));
         return true;
     }else{
         return false;
