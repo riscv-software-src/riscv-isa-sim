@@ -1,23 +1,61 @@
 #include <iostream>
 #include "devices.h"
 #include "processor.h"
+#include <stdlib.h>
 
 #include <sys/types.h>
 #include <sys/socket.h>
 #include <netinet/in.h>
+#include <sys/ioctl.h>
+#include <unistd.h>
 
-static int sock;
-static struct sockaddr_in addr;
+static int sock, sock_recv;
+static struct sockaddr_in addr, addr_recv;
+static unsigned char button[2] = {0};
 
 mu500_t::mu500_t(std::vector<processor_t*>&) {
- sock = socket(AF_INET, SOCK_DGRAM, 0);
- addr.sin_family = AF_INET;
- addr.sin_port = htons(65007);
- addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    // setup socket for sending
+    sock = socket(AF_INET, SOCK_DGRAM, 0);
+    addr.sin_family = AF_INET;
+    addr.sin_port = htons(65007);
+    addr.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+
+    // setup socket for receiving
+    sock_recv = socket(AF_INET, SOCK_DGRAM, 0);
+    addr_recv.sin_family = AF_INET;
+    addr_recv.sin_port = htons(65008);
+    addr_recv.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
+    bind(sock_recv, (struct sockaddr *)&addr_recv, sizeof(addr));
+    u_long val = 1;
+    ioctl(sock_recv, FIONBIO, &val); // make the socket non-blocking
 }
 
-bool mu500_t::load(reg_t addr, size_t len, uint8_t* bytes) {
-    return true;
+void mu500_t::tick(void)
+{
+    int size;
+    char buf[2 + 2 + 1 + 1 + 10];
+    size = recv(sock, buf, sizeof(buf), 0);
+    
+    if (size > 0) {
+        buf[2 + 2 + 1] = '\0';
+        unsigned int offset, data;
+        std::cerr << "mu500: received: " << buf << std::endl;
+        sscanf(buf, "%2x%2x", &offset, &data);
+        if (0x48 <= offset && offset <= 0x49) {
+            button[offset-0x48] = (unsigned char)data;
+            std::cerr << "mu500: wrote: " << offset-0x48 << ":" << data << std::endl;
+        }
+    }
+}
+
+bool mu500_t::load(reg_t offset, size_t len, uint8_t *bytes)
+{
+    if (0x48 <= offset && offset <= 0x49) {
+        *bytes = button[offset-0x48];
+        return true;
+    }else{
+        return false;
+    }
 }
 
 bool mu500_t::store(reg_t offset, size_t len, const uint8_t* bytes) {

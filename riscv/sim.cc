@@ -120,6 +120,8 @@ void sim_t::step(size_t n)
         clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
       }
 
+      mu500->tick();
+
       host->switch_to();
     }
   }
