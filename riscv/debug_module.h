@@ -73,6 +73,13 @@ typedef struct {
   bool access8;
 } sbcs_t;
 
+typedef struct {
+  bool halted;
+  bool resumeack;
+  bool havereset;
+  uint8_t haltgroup;
+} hart_debug_state_t;
+
 class debug_module_t : public abstract_device_t
 {
   public:
@@ -109,6 +116,7 @@ class debug_module_t : public abstract_device_t
 
   private:
     static const unsigned datasize = 2;
+    unsigned nprocs;
     // Size of program_buffer in 32-bit words, as exposed to the rest of the
     // world.
     unsigned progbufsize;
@@ -129,7 +137,7 @@ class debug_module_t : public abstract_device_t
 
     // We only support 1024 harts currently. More requires at least resizing
     // the arrays below, and their corresponding special memory regions.
-    static const unsigned hartsellen = 10;
+    unsigned hartsellen = 10;
 
     sim_t *sim;
 
@@ -138,9 +146,7 @@ class debug_module_t : public abstract_device_t
     uint8_t *program_buffer;
     uint8_t dmdata[datasize * 4];
 
-    bool halted[1024];
-    bool resumeack[1024];
-    bool havereset[1024];
+    std::vector<hart_debug_state_t> hart_state;
     uint8_t debug_rom_flags[1024];
 
     void write32(uint8_t *rom, unsigned int index, uint32_t value);
