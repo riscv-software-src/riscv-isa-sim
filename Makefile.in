@@ -87,9 +87,9 @@ CXX           := @CXX@
 CFLAGS        += @CFLAGS@ -DPREFIX=\"$(prefix)\"
 CPPFLAGS      += @CPPFLAGS@
 CXXFLAGS      += @CXXFLAGS@ -DPREFIX=\"$(prefix)\"
-COMPILE       := $(CXX) -fPIC -MMD -MP $(CPPFLAGS) $(CXXFLAGS) \
+COMPILE       := $(CXX) -MMD -MP $(CPPFLAGS) $(CXXFLAGS) \
                  $(sprojs_include)
-COMPILE_C     := $(CC) -fPIC -MMD -MP $(CPPFLAGS) $(CFLAGS) \
+COMPILE_C     := $(CC) -MMD -MP $(CPPFLAGS) $(CFLAGS) \
                  $(sprojs_include)
 # Linker
 #  - LDFLAGS : Flags for the linker (eg. -L)
@@ -213,13 +213,13 @@ $(2)_reverse_deps   := $$(call reverse_list,$$($(2)_subproject_deps))
 # Build a library for this subproject
 
 $(2)_lib_libs       := $$($(2)_reverse_deps)
-$(2)_lib_libnames   := $$(patsubst %, lib%.so, $$($(2)_lib_libs))
+$(2)_lib_libnames   := $$(patsubst %, lib%.a, $$($(2)_lib_libs))
 $(2)_lib_libarg     := $$(patsubst %, -l%, $$($(2)_lib_libs))
 
-lib$(1).so : $$($(2)_objs) $$($(2)_c_objs) $$($(2)_lib_libnames)
-	$(LINK) -shared -o $$@ $(if $(filter Darwin,$(shell uname -s)),-install_name $(install_libs_dir)/$$@) $$^ $$($(2)_lib_libarg) $(LIBS)
+lib$(1).a : $$($(2)_objs) $$($(2)_c_objs) $$($(2)_lib_libnames)
+	$(AR) rcs -o $$@ $$^
 
-$(2)_junk += lib$(1).so
+$(2)_junk += lib$(1).a
 
 # Build unit tests
 
@@ -228,7 +228,7 @@ $(2)_test_deps      := $$(patsubst %.o, %.d, $$($(2)_test_objs))
 $(2)_test_exes      := $$(patsubst %.t.cc, %-utst, $$($(2)_test_srcs))
 $(2)_test_outs      := $$(patsubst %, %.out, $$($(2)_test_exes))
 $(2)_test_libs      := $(1) $$($(2)_reverse_deps) utst
-$(2)_test_libnames  := $$(patsubst %, lib%.so, $$($(2)_test_libs))
+$(2)_test_libnames  := $$(patsubst %, lib%.a, $$($(2)_test_libs))
 $(2)_test_libarg    := $$(patsubst %, -l%, $$($(2)_test_libs))
 
 $$($(2)_test_objs) : %.o : %.cc
@@ -255,7 +255,7 @@ $(2)_prog_objs      := $$(patsubst %.cc, %.o, $$($(2)_prog_srcs))
 $(2)_prog_deps      := $$(patsubst %.o, %.d, $$($(2)_prog_objs))
 $(2)_prog_exes      := $$(patsubst %.cc, %, $$($(2)_prog_srcs))
 $(2)_prog_libs      := $(1) $$($(2)_reverse_deps)
-$(2)_prog_libnames  := $$(patsubst %, lib%.so, $$($(2)_prog_libs))
+$(2)_prog_libnames  := $$(patsubst %, lib%.a, $$($(2)_prog_libs))
 $(2)_prog_libarg    := $$(patsubst %, -l%, $$($(2)_prog_libs))
 
 $$($(2)_prog_objs) : %.o : %.cc
@@ -286,7 +286,7 @@ $(2)_junk += \
 
 # Subproject specific targets
 
-all-$(1) : lib$(1).so $$($(2)_install_prog_exes)
+all-$(1) : lib$(1).a $$($(2)_install_prog_exes)
 
 check-$(1) : $$($(2)_test_outs)
 	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segementation' $$^; echo
@@ -298,7 +298,7 @@ clean-$(1) :
 
 # Update running variables
 
-libs += lib$(1).so
+libs += lib$(1).a
 objs += $$($(2)_objs)
 srcs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_srcs)) 
 hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs)) $$($(2)_gen_hdrs)
@@ -308,7 +308,6 @@ deps += $$($(2)_deps)
 test_outs += $$($(2)_test_outs)
 
 install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs)) $$($(2)_gen_hdrs)
-install_libs += lib$(1).so
 install_exes += $$($(2)_install_prog_exes)
 install_pcs  += riscv-$(1).pc
 
