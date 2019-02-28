@@ -193,9 +193,10 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
       // Check each 4-byte sector of the access
       bool any_match = false;
       bool all_match = true;
-      for (reg_t i = 0; i < len; i += (1 << PMP_SHIFT)) {
-        bool napot_match = ((addr ^ tor) & mask) == 0;
-        bool tor_match = base <= addr && addr < tor;
+      for (reg_t offset = 0; offset < len; offset += 1 << PMP_SHIFT) {
+        reg_t cur_addr = addr + offset;
+        bool napot_match = ((cur_addr ^ tor) & mask) == 0;
+        bool tor_match = base <= cur_addr && cur_addr < tor;
         bool match = is_tor ? tor_match : napot_match;
         any_match |= match;
         all_match &= match;
