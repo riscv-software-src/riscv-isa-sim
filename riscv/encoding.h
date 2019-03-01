@@ -1,4 +1,4 @@
-/* See LICENSE for license details. */
+// See LICENSE for license details.
 
 #ifndef RISCV_CSR_ENCODING_H
 #define RISCV_CSR_ENCODING_H
@@ -156,16 +156,16 @@
 #define EXT_IO_BASE        0x40000000
 #define DRAM_BASE          0x80000000
 
-/* page table entry (PTE) fields */
-#define PTE_V     0x001 /* Valid */
-#define PTE_R     0x002 /* Read */
-#define PTE_W     0x004 /* Write */
-#define PTE_X     0x008 /* Execute */
-#define PTE_U     0x010 /* User */
-#define PTE_G     0x020 /* Global */
-#define PTE_A     0x040 /* Accessed */
-#define PTE_D     0x080 /* Dirty */
-#define PTE_SOFT  0x300 /* Reserved for Software */
+// page table entry (PTE) fields
+#define PTE_V     0x001 // Valid
+#define PTE_R     0x002 // Read
+#define PTE_W     0x004 // Write
+#define PTE_X     0x008 // Execute
+#define PTE_U     0x010 // User
+#define PTE_G     0x020 // Global
+#define PTE_A     0x040 // Accessed
+#define PTE_D     0x080 // Dirty
+#define PTE_SOFT  0x300 // Reserved for Software
 
 #define PTE_PPN_SHIFT 10
 
@@ -424,10 +424,6 @@
 #define MASK_CSRRSI  0x707f
 #define MATCH_CSRRCI 0x7073
 #define MASK_CSRRCI  0x707f
-#define MATCH_HFENCE_BVMA 0x22000073
-#define MASK_HFENCE_BVMA  0xfe007fff
-#define MATCH_HFENCE_GVMA 0xa2000073
-#define MASK_HFENCE_GVMA  0xfe007fff
 #define MATCH_FADD_S 0x53
 #define MASK_FADD_S  0xfe00007f
 #define MATCH_FSUB_S 0x8000053
@@ -797,34 +793,6 @@
 #define CSR_STVAL 0x143
 #define CSR_SIP 0x144
 #define CSR_SATP 0x180
-#define CSR_BSSTATUS 0x200
-#define CSR_BSIE 0x204
-#define CSR_BSTVEC 0x205
-#define CSR_BSSCRATCH 0x240
-#define CSR_BSEPC 0x241
-#define CSR_BSCAUSE 0x242
-#define CSR_BSTVAL 0x243
-#define CSR_BSIP 0x244
-#define CSR_BSATP 0x280
-#define CSR_HSTATUS 0xa00
-#define CSR_HEDELEG 0xa02
-#define CSR_HIDELEG 0xa03
-#define CSR_HGATP 0xa80
-#define CSR_UTVT 0x7
-#define CSR_UNXTI 0x45
-#define CSR_UINTSTATUS 0x46
-#define CSR_USCRATCHCSW 0x48
-#define CSR_USCRATCHCSWL 0x49
-#define CSR_STVT 0x107
-#define CSR_SNXTI 0x145
-#define CSR_SINTSTATUS 0x146
-#define CSR_SSCRATCHCSW 0x148
-#define CSR_SSCRATCHCSWL 0x149
-#define CSR_MTVT 0x307
-#define CSR_MNXTI 0x345
-#define CSR_MINTSTATUS 0x346
-#define CSR_MSCRATCHCSW 0x348
-#define CSR_MSCRATCHCSWL 0x349
 #define CSR_MSTATUS 0x300
 #define CSR_MISA 0x301
 #define CSR_MEDELEG 0x302
@@ -1108,8 +1076,6 @@ DECLARE_INSN(csrrc, MATCH_CSRRC, MASK_CSRRC)
 DECLARE_INSN(csrrwi, MATCH_CSRRWI, MASK_CSRRWI)
 DECLARE_INSN(csrrsi, MATCH_CSRRSI, MASK_CSRRSI)
 DECLARE_INSN(csrrci, MATCH_CSRRCI, MASK_CSRRCI)
-DECLARE_INSN(hfence_bvma, MATCH_HFENCE_BVMA, MASK_HFENCE_BVMA)
-DECLARE_INSN(hfence_gvma, MATCH_HFENCE_GVMA, MASK_HFENCE_GVMA)
 DECLARE_INSN(fadd_s, MATCH_FADD_S, MASK_FADD_S)
 DECLARE_INSN(fsub_s, MATCH_FSUB_S, MASK_FSUB_S)
 DECLARE_INSN(fmul_s, MATCH_FMUL_S, MASK_FMUL_S)
@@ -1319,34 +1285,6 @@ DECLARE_CSR(scause, CSR_SCAUSE)
 DECLARE_CSR(stval, CSR_STVAL)
 DECLARE_CSR(sip, CSR_SIP)
 DECLARE_CSR(satp, CSR_SATP)
-DECLARE_CSR(bsstatus, CSR_BSSTATUS)
-DECLARE_CSR(bsie, CSR_BSIE)
-DECLARE_CSR(bstvec, CSR_BSTVEC)
-DECLARE_CSR(bsscratch, CSR_BSSCRATCH)
-DECLARE_CSR(bsepc, CSR_BSEPC)
-DECLARE_CSR(bscause, CSR_BSCAUSE)
-DECLARE_CSR(bstval, CSR_BSTVAL)
-DECLARE_CSR(bsip, CSR_BSIP)
-DECLARE_CSR(bsatp, CSR_BSATP)
-DECLARE_CSR(hstatus, CSR_HSTATUS)
-DECLARE_CSR(hedeleg, CSR_HEDELEG)
-DECLARE_CSR(hideleg, CSR_HIDELEG)
-DECLARE_CSR(hgatp, CSR_HGATP)
-DECLARE_CSR(utvt, CSR_UTVT)
-DECLARE_CSR(unxti, CSR_UNXTI)
-DECLARE_CSR(uintstatus, CSR_UINTSTATUS)
-DECLARE_CSR(uscratchcsw, CSR_USCRATCHCSW)
-DECLARE_CSR(uscratchcswl, CSR_USCRATCHCSWL)
-DECLARE_CSR(stvt, CSR_STVT)
-DECLARE_CSR(snxti, CSR_SNXTI)
-DECLARE_CSR(sintstatus, CSR_SINTSTATUS)
-DECLARE_CSR(sscratchcsw, CSR_SSCRATCHCSW)
-DECLARE_CSR(sscratchcswl, CSR_SSCRATCHCSWL)
-DECLARE_CSR(mtvt, CSR_MTVT)
-DECLARE_CSR(mnxti, CSR_MNXTI)
-DECLARE_CSR(mintstatus, CSR_MINTSTATUS)
-DECLARE_CSR(mscratchcsw, CSR_MSCRATCHCSW)
-DECLARE_CSR(mscratchcswl, CSR_MSCRATCHCSWL)
 DECLARE_CSR(mstatus, CSR_MSTATUS)
 DECLARE_CSR(misa, CSR_MISA)
 DECLARE_CSR(medeleg, CSR_MEDELEG)
