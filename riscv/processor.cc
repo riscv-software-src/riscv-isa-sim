@@ -137,7 +137,7 @@ void state_t::reset(reg_t max_isa)
 
 void vectorUnit_t::reset(){
   ELEN = 32;
-  VLEN = 512;
+  VLEN = 128;
   SLEN = VLEN; // registers are simply concatenated
   reg_file = malloc(NVPR * (VLEN/8));
   vtype = -1;
