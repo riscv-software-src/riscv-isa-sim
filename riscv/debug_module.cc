@@ -15,10 +15,25 @@
 #  define D(x)
 #endif
 
+// Return the number of bits wide that a field has to be to encode up to n
+// different values.
+// 1->0, 2->1, 3->2, 4->2
+static unsigned field_width(unsigned n)
+{
+  unsigned i = 0;
+  n -= 1;
+  while (n) {
+    i++;
+    n >>= 1;
+  }
+  return i;
+}
+
 ///////////////////////// debug_module_t
 
 debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bus_master_bits,
     bool require_authentication, unsigned abstract_rti) :
+  nprocs(sim->nprocs()),
   progbufsize(progbufsize),
   program_buffer_bytes(4 + 4*progbufsize),
   max_bus_master_bits(max_bus_master_bits),
@@ -27,18 +42,21 @@ debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bu
   debug_progbuf_start(debug_data_start - program_buffer_bytes),
   debug_abstract_start(debug_progbuf_start - debug_abstract_size*4),
   custom_base(0),
-  sim(sim)
+  hartsellen(field_width(sim->nprocs())),
+  sim(sim),
+  // The spec lets a debugger select nonexistent harts. Create hart_state for
+  // them because I'm too lazy to add the code to just ignore accesses.
+  hart_state(1 << field_width(sim->nprocs()))
 {
   D(fprintf(stderr, "debug_data_start=0x%x\n", debug_data_start));
   D(fprintf(stderr, "debug_progbuf_start=0x%x\n", debug_progbuf_start));
   D(fprintf(stderr, "debug_abstract_start=0x%x\n", debug_abstract_start));
 
+  assert(nprocs <= 1024);
+
   program_buffer = new uint8_t[program_buffer_bytes];
 
-  memset(halted, 0, sizeof(halted));
   memset(debug_rom_flags, 0, sizeof(debug_rom_flags));
-  memset(resumeack, 0, sizeof(resumeack));
-  memset(havereset, 0, sizeof(havereset));
   memset(program_buffer, 0, program_buffer_bytes);
   program_buffer[4*progbufsize] = ebreak();
   program_buffer[4*progbufsize+1] = ebreak() >> 8;
@@ -180,7 +198,20 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 
   if (addr == DEBUG_ROM_HALTED) {
     assert (len == 4);
-    halted[id] = true;
+    if (!hart_state[id].halted) {
+      hart_state[id].halted = true;
+      if (hart_state[id].haltgroup) {
+        for (unsigned i = 0; i < nprocs; i++) {
+          if (!hart_state[i].halted &&
+              hart_state[i].haltgroup == hart_state[id].haltgroup) {
+            processor_t *proc = sim->get_core(i);
+            proc->halt_request = true;
+            // TODO: What if the debugger comes and writes dmcontrol before the
+            // halt occurs?
+          }
+        }
+      }
+    }
     if (dmcontrol.hartsel == id) {
         if (0 == (debug_rom_flags[id] & (1 << DEBUG_ROM_FLAG_GO))){
           if (dmcontrol.hartsel == id) {
@@ -198,8 +229,8 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 
   if (addr == DEBUG_ROM_RESUMING) {
     assert (len == 4);
-    halted[id] = false;
-    resumeack[id] = true;
+    hart_state[id].halted = false;
+    hart_state[id].resumeack = true;
     debug_rom_flags[id] &= ~(1 << DEBUG_ROM_FLAG_RESUME);
     return true;
   }
@@ -368,7 +399,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 	  dmstatus.allhalted = false;
           dmstatus.allresumeack = false;
           if (proc) {
-            if (halted[dmcontrol.hartsel]) {
+            if (hart_state[dmcontrol.hartsel].halted) {
               dmstatus.allhalted = true;
             } else {
               dmstatus.allrunning = true;
@@ -381,7 +412,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 	  dmstatus.anyrunning = dmstatus.allrunning;
 	  dmstatus.anyhalted = dmstatus.allhalted;
           if (proc) {
-            if (resumeack[dmcontrol.hartsel]) {
+            if (hart_state[dmcontrol.hartsel].resumeack) {
               dmstatus.allresumeack = true;
             } else {
               dmstatus.allresumeack = false;
@@ -393,9 +424,9 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
           result = set_field(result, DMI_DMSTATUS_IMPEBREAK,
               dmstatus.impebreak);
           result = set_field(result, DMI_DMSTATUS_ALLHAVERESET,
-              havereset[dmcontrol.hartsel]);
+              hart_state[dmcontrol.hartsel].havereset);
           result = set_field(result, DMI_DMSTATUS_ANYHAVERESET,
-              havereset[dmcontrol.hartsel]);
+              hart_state[dmcontrol.hartsel].havereset);
 	  result = set_field(result, DMI_DMSTATUS_ALLNONEXISTENT, dmstatus.allnonexistant);
 	  result = set_field(result, DMI_DMSTATUS_ALLUNAVAIL, dmstatus.allunavail);
 	  result = set_field(result, DMI_DMSTATUS_ALLRUNNING, dmstatus.allrunning);
@@ -480,6 +511,10 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
       case DMI_AUTHDATA:
         result = challenge;
         break;
+      case DMI_DMCS2:
+        result = set_field(result, DMI_DMCS2_HALTGROUP,
+            hart_state[dmcontrol.hartsel].haltgroup);
+        break;
       default:
         result = 0;
         D(fprintf(stderr, "Unexpected. Returning Error."));
@@ -512,11 +547,11 @@ bool debug_module_t::perform_abstract_command()
 
   if ((command >> 24) == 0) {
     // register access
-    unsigned size = get_field(command, AC_ACCESS_REGISTER_SIZE);
+    unsigned size = get_field(command, AC_ACCESS_REGISTER_AARSIZE);
     bool write = get_field(command, AC_ACCESS_REGISTER_WRITE);
     unsigned regno = get_field(command, AC_ACCESS_REGISTER_REGNO);
 
-    if (!halted[dmcontrol.hartsel]) {
+    if (!hart_state[dmcontrol.hartsel].halted) {
       abstractcs.cmderr = CMDERR_HALTRESUME;
       return true;
     }
@@ -704,7 +739,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
             dmcontrol.hartsel |= get_field(value, DMI_DMCONTROL_HARTSELLO);
             dmcontrol.hartsel &= (1L<<hartsellen) - 1;
             if (get_field(value, DMI_DMCONTROL_ACKHAVERESET)) {
-              havereset[dmcontrol.hartsel] = false;
+              hart_state[dmcontrol.hartsel].havereset = false;
             }
           }
           processor_t *proc = current_proc();
@@ -712,7 +747,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
             proc->halt_request = dmcontrol.haltreq;
             if (dmcontrol.resumereq) {
               debug_rom_flags[dmcontrol.hartsel] |= (1 << DEBUG_ROM_FLAG_RESUME);
-              resumeack[dmcontrol.hartsel] = false;
+              hart_state[dmcontrol.hartsel].resumeack = false;
             }
 	    if (dmcontrol.hartreset) {
 	      proc->reset();
@@ -794,6 +829,12 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           }
         }
         return true;
+      case DMI_DMCS2:
+        if (get_field(value, DMI_DMCS2_HGWRITE)) {
+          hart_state[dmcontrol.hartsel].haltgroup = get_field(value,
+              DMI_DMCS2_HALTGROUP);
+        }
+        return true;
     }
   }
   return false;
@@ -801,6 +842,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
 
 void debug_module_t::proc_reset(unsigned id)
 {
-  havereset[id] = true;
-  halted[id] = false;
+  hart_state[id].havereset = true;
+  hart_state[id].halted = false;
+  hart_state[id].haltgroup = 0;
 }
