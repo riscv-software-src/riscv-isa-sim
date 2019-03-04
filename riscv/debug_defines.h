@@ -84,8 +84,7 @@
 /*
 * 0: Version described in spec version 0.11.
 *
-* 1: Version described in spec version 0.13 (and later?), which
-* reduces the DMI data width to 32 bits.
+* 1: Version described in spec version 0.13.
 *
 * 15: Version not described in any available version of this spec.
  */
@@ -134,7 +133,7 @@
 * cleared by writing \Fdmireset in \Rdtmcs.
 *
 * This indicates that the DM itself responded with an error.
-* Note: there are no specified cases in which the DM would
+* There are no specified cases in which the DM would
 * respond with an error, and DMI is not required to support
 * returning errors.
 *
@@ -145,11 +144,6 @@
 * needs to give the target more TCK edges between Update-DR and
 * Capture-DR. The simplest way to do that is to add extra transitions
 * in Run-Test/Idle.
-*
-* (The DTM, DM, and/or component may be in different clock domains,
-* so synchronization may be required. Some relatively fixed number of
-* TCK ticks may be needed for the request to reach the DM, complete,
-* and for the response to be synchronized back into the TCK domain.)
  */
 #define DTM_DMI_OP_OFFSET                   0
 #define DTM_DMI_OP_LENGTH                   2
@@ -167,20 +161,28 @@
 #define CSR_DCSR_XDEBUGVER_LENGTH           4
 #define CSR_DCSR_XDEBUGVER                  (0xfU << CSR_DCSR_XDEBUGVER_OFFSET)
 /*
-* When 1, {\tt ebreak} instructions in Machine Mode enter Debug Mode.
+* 0: {\tt ebreak} instructions in M-mode behave as described in the
+* Privileged Spec.
+*
+* 1: {\tt ebreak} instructions in M-mode enter Debug Mode.
  */
 #define CSR_DCSR_EBREAKM_OFFSET             15
 #define CSR_DCSR_EBREAKM_LENGTH             1
 #define CSR_DCSR_EBREAKM                    (0x1U << CSR_DCSR_EBREAKM_OFFSET)
 /*
-* When 1, {\tt ebreak} instructions in Supervisor Mode enter Debug Mode.
+* 0: {\tt ebreak} instructions in S-mode behave as described in the
+* Privileged Spec.
+*
+* 1: {\tt ebreak} instructions in S-mode enter Debug Mode.
  */
 #define CSR_DCSR_EBREAKS_OFFSET             13
 #define CSR_DCSR_EBREAKS_LENGTH             1
 #define CSR_DCSR_EBREAKS                    (0x1U << CSR_DCSR_EBREAKS_OFFSET)
 /*
-* When 1, {\tt ebreak} instructions in User/Application Mode enter
-* Debug Mode.
+* 0: {\tt ebreak} instructions in U-mode behave as described in the
+* Privileged Spec.
+*
+* 1: {\tt ebreak} instructions in U-mode enter Debug Mode.
  */
 #define CSR_DCSR_EBREAKU_OFFSET             12
 #define CSR_DCSR_EBREAKU_LENGTH             1
@@ -191,9 +193,10 @@
 * 1: Interrupts are enabled during single stepping.
 *
 * Implementations may hard wire this bit to 0.
-* The debugger must read back the value it
-* writes to check whether the feature is supported. If not
-* supported, interrupt behavior can be emulated by the debugger.
+* In that case interrupt behavior can be emulated by the debugger.
+*
+* The debugger must not change the value of this bit while the hart
+* is running.
  */
 #define CSR_DCSR_STEPIE_OFFSET              11
 #define CSR_DCSR_STEPIE_LENGTH              1
@@ -201,14 +204,13 @@
 /*
 * 0: Increment counters as usual.
 *
-* 1: Don't increment any counters while in Debug Mode or on {\tt
-* ebreak} instructions that cause entry into Debug Mode.  These
-* counters include the {\tt cycle} and {\tt instret} CSRs. This is
-* preferred for most debugging scenarios.
+* 1: Don't increment any hart-local counters while in Debug Mode or
+* on {\tt ebreak} instructions that cause entry into Debug Mode.
+* These counters include the {\tt instret} CSR. On single-hart cores
+* {\tt cycle} should be stopped, but on multi-hart cores it must keep
+* incrementing.
 *
-* An implementation may choose not to support writing to this bit.
-* The debugger must read back the value it writes to check whether
-* the feature is supported.
+* An implementation may hardwire this bit to 0 or 1.
  */
 #define CSR_DCSR_STOPCOUNT_OFFSET           10
 #define CSR_DCSR_STOPCOUNT_LENGTH           1
@@ -218,9 +220,7 @@
 *
 * 1: Don't increment any hart-local timers while in Debug Mode.
 *
-* An implementation may choose not to support writing to this bit.
-* The debugger must read back the value it writes to check whether
-* the feature is supported.
+* An implementation may hardwire this bit to 0 or 1.
  */
 #define CSR_DCSR_STOPTIME_OFFSET            9
 #define CSR_DCSR_STOPTIME_LENGTH            1
@@ -236,9 +236,16 @@
 *
 * 2: The Trigger Module caused a breakpoint exception. (priority 4)
 *
-* 3: The debugger requested entry to Debug Mode. (priority 2)
+* 3: The debugger requested entry to Debug Mode using \Fhaltreq.
+* (priority 1)
 *
-* 4: The hart single stepped because \Fstep was set. (priority 1)
+* 4: The hart single stepped because \Fstep was set. (priority 0, lowest)
+*
+* 5: The hart halted directly out of reset due to \Fresethaltreq. It
+* is also acceptable to report 3 when this happens. (priority 2)
+*
+* 6: The hart halted because it's part of a halt group. (priority 5,
+* highest) Harts may report 3 for this cause instead.
 *
 * Other values are reserved for future use.
  */
@@ -246,10 +253,11 @@
 #define CSR_DCSR_CAUSE_LENGTH               3
 #define CSR_DCSR_CAUSE                      (0x7U << CSR_DCSR_CAUSE_OFFSET)
 /*
-* When 1, \Fmprv in \Rmstatus takes effect during debug mode.
-* When 0, it is ignored during debug mode.
-* Implementing this bit is optional.
-* If not implemented it should be tied to 0.
+* 0: \Fmprv in \Rmstatus is ignored in Debug Mode.
+*
+* 1: \Fmprv in \Rmstatus takes effect in Debug Mode.
+*
+* Implementing this bit is optional. It may be tied to either 0 or 1.
  */
 #define CSR_DCSR_MPRVEN_OFFSET              4
 #define CSR_DCSR_MPRVEN_LENGTH              1
@@ -270,6 +278,9 @@
 * If the instruction does not complete due to an exception,
 * the hart will immediately enter Debug Mode before executing
 * the trap handler, with appropriate exception registers set.
+*
+* The debugger must not change the value of this bit while the hart
+* is running.
  */
 #define CSR_DCSR_STEP_OFFSET                2
 #define CSR_DCSR_STEP_LENGTH                1
@@ -289,14 +300,14 @@
 #define CSR_DCSR_PRV                        (0x3U << CSR_DCSR_PRV_OFFSET)
 #define CSR_DPC                             0x7b1
 #define CSR_DPC_DPC_OFFSET                  0
-#define CSR_DPC_DPC_LENGTH                  MXLEN
-#define CSR_DPC_DPC                         (((1L<<MXLEN)-1) << CSR_DPC_DPC_OFFSET)
+#define CSR_DPC_DPC_LENGTH                  DXLEN
+#define CSR_DPC_DPC                         (((1L<<DXLEN)-1) << CSR_DPC_DPC_OFFSET)
 #define CSR_DSCRATCH0                       0x7b2
 #define CSR_DSCRATCH1                       0x7b3
 #define CSR_TSELECT                         0x7a0
 #define CSR_TSELECT_INDEX_OFFSET            0
-#define CSR_TSELECT_INDEX_LENGTH            MXLEN
-#define CSR_TSELECT_INDEX                   (((1L<<MXLEN)-1) << CSR_TSELECT_INDEX_OFFSET)
+#define CSR_TSELECT_INDEX_LENGTH            XLEN
+#define CSR_TSELECT_INDEX                   (((1L<<XLEN)-1) << CSR_TSELECT_INDEX_OFFSET)
 #define CSR_TDATA1                          0x7a1
 /*
 * 0: There is no trigger at this \Rtselect.
@@ -316,20 +327,18 @@
 * 5: The trigger is an exception trigger. The remaining bits
 * in this register act as described in \Retrigger.
 *
+* 12--14: These trigger types are available for non-standard use.
+*
 * 15: This trigger exists (so enumeration shouldn't terminate), but
 * is not currently available.
 *
 * Other values are reserved for future use.
-*
-* When this field is written to an unsupported value, it takes on its
-* reset value instead. The reset value is any one of the types
-* supported by the trigger selected by \Rtselect.
  */
-#define CSR_TDATA1_TYPE_OFFSET              (MXLEN-4)
+#define CSR_TDATA1_TYPE_OFFSET              (XLEN-4)
 #define CSR_TDATA1_TYPE_LENGTH              4
 #define CSR_TDATA1_TYPE                     (0xfULL << CSR_TDATA1_TYPE_OFFSET)
 /*
-* 0: Both Debug and M Mode can write the {\tt tdata} registers at the
+* 0: Both Debug and M-mode can write the {\tt tdata} registers at the
 * selected \Rtselect.
 *
 * 1: Only Debug Mode can write the {\tt tdata} registers at the
@@ -337,23 +346,23 @@
 *
 * This bit is only writable from Debug Mode.
  */
-#define CSR_TDATA1_DMODE_OFFSET             (MXLEN-5)
+#define CSR_TDATA1_DMODE_OFFSET             (XLEN-5)
 #define CSR_TDATA1_DMODE_LENGTH             1
 #define CSR_TDATA1_DMODE                    (0x1ULL << CSR_TDATA1_DMODE_OFFSET)
 /*
 * Trigger-specific data.
  */
 #define CSR_TDATA1_DATA_OFFSET              0
-#define CSR_TDATA1_DATA_LENGTH              (MXLEN - 5)
-#define CSR_TDATA1_DATA                     (((1L<<MXLEN - 5)-1) << CSR_TDATA1_DATA_OFFSET)
+#define CSR_TDATA1_DATA_LENGTH              (XLEN - 5)
+#define CSR_TDATA1_DATA                     (((1L<<XLEN - 5)-1) << CSR_TDATA1_DATA_OFFSET)
 #define CSR_TDATA2                          0x7a2
 #define CSR_TDATA2_DATA_OFFSET              0
-#define CSR_TDATA2_DATA_LENGTH              MXLEN
-#define CSR_TDATA2_DATA                     (((1L<<MXLEN)-1) << CSR_TDATA2_DATA_OFFSET)
+#define CSR_TDATA2_DATA_LENGTH              XLEN
+#define CSR_TDATA2_DATA                     (((1L<<XLEN)-1) << CSR_TDATA2_DATA_OFFSET)
 #define CSR_TDATA3                          0x7a3
 #define CSR_TDATA3_DATA_OFFSET              0
-#define CSR_TDATA3_DATA_LENGTH              MXLEN
-#define CSR_TDATA3_DATA                     (((1L<<MXLEN)-1) << CSR_TDATA3_DATA_OFFSET)
+#define CSR_TDATA3_DATA_LENGTH              XLEN
+#define CSR_TDATA3_DATA                     (((1L<<XLEN)-1) << CSR_TDATA3_DATA_OFFSET)
 #define CSR_TINFO                           0x7a4
 /*
 * One bit for each possible \Ftype enumerated in \Rtdataone. Bit N
@@ -371,11 +380,60 @@
 #define CSR_TINFO_INFO_OFFSET               0
 #define CSR_TINFO_INFO_LENGTH               16
 #define CSR_TINFO_INFO                      (0xffffULL << CSR_TINFO_INFO_OFFSET)
+#define CSR_TCONTROL                        0x7a5
+/*
+* M-mode previous trigger enable field.
+*
+* When a trap into M-mode is taken, \Fmpte is set to the value of
+* \Fmte.
+ */
+#define CSR_TCONTROL_MPTE_OFFSET            7
+#define CSR_TCONTROL_MPTE_LENGTH            1
+#define CSR_TCONTROL_MPTE                   (0x1ULL << CSR_TCONTROL_MPTE_OFFSET)
+/*
+* M-mode trigger enable field.
+*
+* 0: Triggers with action=0 do not match/fire while the hart is in M-mode.
+*
+* 1: Triggers do match/fire while the hart is in M-mode.
+*
+* When a trap into M-mode is taken, \Fmte is set to 0. When {\tt
+* mret} is executed, \Fmte is set to the value of \Fmpte.
+ */
+#define CSR_TCONTROL_MTE_OFFSET             3
+#define CSR_TCONTROL_MTE_LENGTH             1
+#define CSR_TCONTROL_MTE                    (0x1ULL << CSR_TCONTROL_MTE_OFFSET)
+#define CSR_MCONTEXT                        0x7a8
+/*
+* Machine mode software can write a context number to this register,
+* which can be used to set triggers that only fire in that specific
+* context.
+*
+* An implementation may tie any number of upper bits in this field to
+* 0. It's recommended to implement no more than 6 bits on RV32, and
+* 13 on RV64.
+ */
+#define CSR_MCONTEXT_MCONTEXT_OFFSET        0
+#define CSR_MCONTEXT_MCONTEXT_LENGTH        XLEN
+#define CSR_MCONTEXT_MCONTEXT               (((1L<<XLEN)-1) << CSR_MCONTEXT_MCONTEXT_OFFSET)
+#define CSR_SCONTEXT                        0x7aa
+/*
+* Supervisor mode software can write a context number to this
+* register, which can be used to set triggers that only fire in that
+* specific context.
+*
+* An implementation may tie any number of high bits in this field to
+* 0. It's recommended to implement no more than 16 bits on RV32, and
+* 34 on RV64.
+ */
+#define CSR_SCONTEXT_DATA_OFFSET            0
+#define CSR_SCONTEXT_DATA_LENGTH            XLEN
+#define CSR_SCONTEXT_DATA                   (((1L<<XLEN)-1) << CSR_SCONTEXT_DATA_OFFSET)
 #define CSR_MCONTROL                        0x7a1
-#define CSR_MCONTROL_TYPE_OFFSET            (MXLEN-4)
+#define CSR_MCONTROL_TYPE_OFFSET            (XLEN-4)
 #define CSR_MCONTROL_TYPE_LENGTH            4
 #define CSR_MCONTROL_TYPE                   (0xfULL << CSR_MCONTROL_TYPE_OFFSET)
-#define CSR_MCONTROL_DMODE_OFFSET           (MXLEN-5)
+#define CSR_MCONTROL_DMODE_OFFSET           (XLEN-5)
 #define CSR_MCONTROL_DMODE_LENGTH           1
 #define CSR_MCONTROL_DMODE                  (0x1ULL << CSR_MCONTROL_DMODE_OFFSET)
 /*
@@ -387,13 +445,21 @@
 * corresponds to the maximum NAPOT range, which is $2^{63}$ bytes in
 * size.
  */
-#define CSR_MCONTROL_MASKMAX_OFFSET         (MXLEN-11)
+#define CSR_MCONTROL_MASKMAX_OFFSET         (XLEN-11)
 #define CSR_MCONTROL_MASKMAX_LENGTH         6
 #define CSR_MCONTROL_MASKMAX                (0x3fULL << CSR_MCONTROL_MASKMAX_OFFSET)
 /*
+* This field only exists if XLEN is greater than 32. In that case it
+* extends \Fsize. If it does not exist then hardware operates as if
+* the field contains 0.
+ */
+#define CSR_MCONTROL_SIZEHI_OFFSET          21
+#define CSR_MCONTROL_SIZEHI_LENGTH          2
+#define CSR_MCONTROL_SIZEHI                 (0x3ULL << CSR_MCONTROL_SIZEHI_OFFSET)
+/*
 * If this optional bit is implemented, the hardware sets it when this
 * trigger matches. The trigger's user can set or clear it at any
-* time. The trigger's user can use this bit to determine which
+* time. It is used to determine which
 * trigger(s) matched.  If the bit is not implemented, it is always 0
 * and writing it has no effect.
  */
@@ -401,9 +467,10 @@
 #define CSR_MCONTROL_HIT_LENGTH             1
 #define CSR_MCONTROL_HIT                    (0x1ULL << CSR_MCONTROL_HIT_OFFSET)
 /*
-* 0: Perform a match on the virtual address.
+* 0: Perform a match on the virtual base address of the access.
+* (E.g. on a 32-bit read from 0x4000, the base address is 0x4000.)
 *
-* 1: Perform a match on the data value loaded/stored, or the
+* 1: Perform a match on the data value loaded or stored, or the
 * instruction executed.
  */
 #define CSR_MCONTROL_SELECT_OFFSET          19
@@ -412,7 +479,7 @@
 /*
 * 0: The action for this trigger will be taken just before the
 * instruction that triggered it is executed, but after all preceding
-* instructions are are committed.
+* instructions are committed.
 *
 * 1: The action for this trigger will be taken after the instruction
 * that triggered it is executed. It should be taken before the next
@@ -433,22 +500,67 @@
 * A chain of triggers that don't all have the same \Ftiming value
 * will never fire (unless consecutive instructions match the
 * appropriate triggers).
+*
+* If a trigger with \Ftiming of 0 matches, it is
+* implementation-dependent whether that prevents a trigger with
+* \Ftiming of 1 matching as well.
  */
 #define CSR_MCONTROL_TIMING_OFFSET          18
 #define CSR_MCONTROL_TIMING_LENGTH          1
 #define CSR_MCONTROL_TIMING                 (0x1ULL << CSR_MCONTROL_TIMING_OFFSET)
 /*
+* This field contains the 2 low bits of \Fsize. The high bits come
+* from \Fsizehi. The combined value is interpreted as follows:
+*
+* 0: The trigger will attempt to match against an access of any size.
+* The behavior is only well-defined if $|select|=0$, or if the access
+* size is XLEN.
+*
+* 1: The trigger will only match against 8-bit memory accesses.
+*
+* 2: The trigger will only match against 16-bit memory accesses or
+* execution of 16-bit instructions.
+*
+* 3: The trigger will only match against 32-bit memory accesses or
+* execution of 32-bit instructions.
+*
+* 4: The trigger will only match against execution of 48-bit instructions.
+*
+* 5: The trigger will only match against 64-bit memory accesses or
+* execution of 64-bit instructions.
+*
+* 6: The trigger will only match against execution of 80-bit instructions.
+*
+* 7: The trigger will only match against execution of 96-bit instructions.
+*
+* 8: The trigger will only match against execution of 112-bit instructions.
+*
+* 9: The trigger will only match against 128-bit memory accesses or
+* execution of 128-bit instructions.
+ */
+#define CSR_MCONTROL_SIZELO_OFFSET          16
+#define CSR_MCONTROL_SIZELO_LENGTH          2
+#define CSR_MCONTROL_SIZELO                 (0x3ULL << CSR_MCONTROL_SIZELO_OFFSET)
+/*
 * The action to take when the trigger fires. The values are explained
 * in Table~\ref{tab:action}.
  */
 #define CSR_MCONTROL_ACTION_OFFSET          12
-#define CSR_MCONTROL_ACTION_LENGTH          6
-#define CSR_MCONTROL_ACTION                 (0x3fULL << CSR_MCONTROL_ACTION_OFFSET)
+#define CSR_MCONTROL_ACTION_LENGTH          4
+#define CSR_MCONTROL_ACTION                 (0xfULL << CSR_MCONTROL_ACTION_OFFSET)
 /*
 * 0: When this trigger matches, the configured action is taken.
 *
 * 1: While this trigger does not match, it prevents the trigger with
 * the next index from matching.
+*
+* A trigger chain starts on the first trigger with $|chain|=1$ after
+* a trigger with $|chain|=0$, or simply on the first trigger if that
+* has $|chain|=1$. It ends on the first trigger after that which has
+* $|chain|=0$. This final trigger is part of the chain. The action
+* on all but the final trigger is ignored.  The action on that final
+* trigger will be taken if and only if all the triggers in the chain
+* match at the same time.
 *
 * Because \Fchain affects the next trigger, hardware must zero it in
 * writes to \Rmcontrol that set \Fdmode to 0 if the next trigger has
@@ -466,10 +578,14 @@
 #define CSR_MCONTROL_CHAIN_LENGTH           1
 #define CSR_MCONTROL_CHAIN                  (0x1ULL << CSR_MCONTROL_CHAIN_OFFSET)
 /*
-* 0: Matches when the value equals \Rtdatatwo.
+* 0: Matches when the value equals \Rtdatatwo. Additionally, if
+* \Fselect=0 then it is recommended that the trigger also matches if
+* any of the accessed addresses equal \Rtdatatwo. (E.g. on a 32-bit
+* read from 0x4000, the following addresses are accessed: 0x4000,
+* 0x4001, 0x4002, and 0x4003.)
 *
 * 1: Matches when the top M bits of the value match the top M bits of
-* \Rtdatatwo. M is MXLEN-1 minus the index of the least-significant
+* \Rtdatatwo. M is XLEN-1 minus the index of the least-significant
 * bit containing 0 in \Rtdatatwo.
 *
 * 2: Matches when the value is greater than (unsigned) or equal to
@@ -491,19 +607,19 @@
 #define CSR_MCONTROL_MATCH_LENGTH           4
 #define CSR_MCONTROL_MATCH                  (0xfULL << CSR_MCONTROL_MATCH_OFFSET)
 /*
-* When set, enable this trigger in M mode.
+* When set, enable this trigger in M-mode.
  */
 #define CSR_MCONTROL_M_OFFSET               6
 #define CSR_MCONTROL_M_LENGTH               1
 #define CSR_MCONTROL_M                      (0x1ULL << CSR_MCONTROL_M_OFFSET)
 /*
-* When set, enable this trigger in S mode.
+* When set, enable this trigger in S-mode.
  */
 #define CSR_MCONTROL_S_OFFSET               4
 #define CSR_MCONTROL_S_LENGTH               1
 #define CSR_MCONTROL_S                      (0x1ULL << CSR_MCONTROL_S_OFFSET)
 /*
-* When set, enable this trigger in U mode.
+* When set, enable this trigger in U-mode.
  */
 #define CSR_MCONTROL_U_OFFSET               3
 #define CSR_MCONTROL_U_LENGTH               1
@@ -528,16 +644,16 @@
 #define CSR_MCONTROL_LOAD_LENGTH            1
 #define CSR_MCONTROL_LOAD                   (0x1ULL << CSR_MCONTROL_LOAD_OFFSET)
 #define CSR_ICOUNT                          0x7a1
-#define CSR_ICOUNT_TYPE_OFFSET              (MXLEN-4)
+#define CSR_ICOUNT_TYPE_OFFSET              (XLEN-4)
 #define CSR_ICOUNT_TYPE_LENGTH              4
 #define CSR_ICOUNT_TYPE                     (0xfULL << CSR_ICOUNT_TYPE_OFFSET)
-#define CSR_ICOUNT_DMODE_OFFSET             (MXLEN-5)
+#define CSR_ICOUNT_DMODE_OFFSET             (XLEN-5)
 #define CSR_ICOUNT_DMODE_LENGTH             1
 #define CSR_ICOUNT_DMODE                    (0x1ULL << CSR_ICOUNT_DMODE_OFFSET)
 /*
 * If this optional bit is implemented, the hardware sets it when this
 * trigger matches. The trigger's user can set or clear it at any
-* time. The trigger's user can use this bit to determine which
+* time. It is used to determine which
 * trigger(s) matched.  If the bit is not implemented, it is always 0
 * and writing it has no effect.
  */
@@ -554,21 +670,21 @@
 #define CSR_ICOUNT_COUNT_LENGTH             14
 #define CSR_ICOUNT_COUNT                    (0x3fffULL << CSR_ICOUNT_COUNT_OFFSET)
 /*
-* When set, every instruction completed or exception taken in M mode decrements \Fcount
+* When set, every instruction completed or exception taken in M-mode decrements \Fcount
 * by 1.
  */
 #define CSR_ICOUNT_M_OFFSET                 9
 #define CSR_ICOUNT_M_LENGTH                 1
 #define CSR_ICOUNT_M                        (0x1ULL << CSR_ICOUNT_M_OFFSET)
 /*
-* When set, every instruction completed or exception taken in S mode decrements \Fcount
+* When set, every instruction completed or exception taken in S-mode decrements \Fcount
 * by 1.
  */
 #define CSR_ICOUNT_S_OFFSET                 7
 #define CSR_ICOUNT_S_LENGTH                 1
 #define CSR_ICOUNT_S                        (0x1ULL << CSR_ICOUNT_S_OFFSET)
 /*
-* When set, every instruction completed or exception taken in U mode decrements \Fcount
+* When set, every instruction completed or exception taken in U-mode decrements \Fcount
 * by 1.
  */
 #define CSR_ICOUNT_U_OFFSET                 6
@@ -582,20 +698,20 @@
 #define CSR_ICOUNT_ACTION_LENGTH            6
 #define CSR_ICOUNT_ACTION                   (0x3fULL << CSR_ICOUNT_ACTION_OFFSET)
 #define CSR_ITRIGGER                        0x7a1
-#define CSR_ITRIGGER_TYPE_OFFSET            (MXLEN-4)
+#define CSR_ITRIGGER_TYPE_OFFSET            (XLEN-4)
 #define CSR_ITRIGGER_TYPE_LENGTH            4
 #define CSR_ITRIGGER_TYPE                   (0xfULL << CSR_ITRIGGER_TYPE_OFFSET)
-#define CSR_ITRIGGER_DMODE_OFFSET           (MXLEN-5)
+#define CSR_ITRIGGER_DMODE_OFFSET           (XLEN-5)
 #define CSR_ITRIGGER_DMODE_LENGTH           1
 #define CSR_ITRIGGER_DMODE                  (0x1ULL << CSR_ITRIGGER_DMODE_OFFSET)
 /*
 * If this optional bit is implemented, the hardware sets it when this
 * trigger matches. The trigger's user can set or clear it at any
-* time. The trigger's user can use this bit to determine which
+* time. It is used to determine which
 * trigger(s) matched.  If the bit is not implemented, it is always 0
 * and writing it has no effect.
  */
-#define CSR_ITRIGGER_HIT_OFFSET             (MXLEN-6)
+#define CSR_ITRIGGER_HIT_OFFSET             (XLEN-6)
 #define CSR_ITRIGGER_HIT_LENGTH             1
 #define CSR_ITRIGGER_HIT                    (0x1ULL << CSR_ITRIGGER_HIT_OFFSET)
 /*
@@ -627,22 +743,29 @@
 #define CSR_ITRIGGER_ACTION_LENGTH          6
 #define CSR_ITRIGGER_ACTION                 (0x3fULL << CSR_ITRIGGER_ACTION_OFFSET)
 #define CSR_ETRIGGER                        0x7a1
-#define CSR_ETRIGGER_TYPE_OFFSET            (MXLEN-4)
+#define CSR_ETRIGGER_TYPE_OFFSET            (XLEN-4)
 #define CSR_ETRIGGER_TYPE_LENGTH            4
 #define CSR_ETRIGGER_TYPE                   (0xfULL << CSR_ETRIGGER_TYPE_OFFSET)
-#define CSR_ETRIGGER_DMODE_OFFSET           (MXLEN-5)
+#define CSR_ETRIGGER_DMODE_OFFSET           (XLEN-5)
 #define CSR_ETRIGGER_DMODE_LENGTH           1
 #define CSR_ETRIGGER_DMODE                  (0x1ULL << CSR_ETRIGGER_DMODE_OFFSET)
 /*
 * If this optional bit is implemented, the hardware sets it when this
 * trigger matches. The trigger's user can set or clear it at any
-* time. The trigger's user can use this bit to determine which
+* time. It is used to determine which
 * trigger(s) matched.  If the bit is not implemented, it is always 0
 * and writing it has no effect.
  */
-#define CSR_ETRIGGER_HIT_OFFSET             (MXLEN-6)
+#define CSR_ETRIGGER_HIT_OFFSET             (XLEN-6)
 #define CSR_ETRIGGER_HIT_LENGTH             1
 #define CSR_ETRIGGER_HIT                    (0x1ULL << CSR_ETRIGGER_HIT_OFFSET)
+/*
+* When this optional bit is set, non-maskable interrupts cause this
+* trigger to fire, regardless of the values of \Fm, \Fs, and \Fu.
+ */
+#define CSR_ETRIGGER_NMI_OFFSET             10
+#define CSR_ETRIGGER_NMI_LENGTH             1
+#define CSR_ETRIGGER_NMI                    (0x1ULL << CSR_ETRIGGER_NMI_OFFSET)
 /*
 * When set, enable this trigger for exceptions that are taken from M
 * mode.
@@ -671,6 +794,54 @@
 #define CSR_ETRIGGER_ACTION_OFFSET          0
 #define CSR_ETRIGGER_ACTION_LENGTH          6
 #define CSR_ETRIGGER_ACTION                 (0x3fULL << CSR_ETRIGGER_ACTION_OFFSET)
+#define CSR_TEXTRA32                        0x7a3
+/*
+* Data used together with \Fmselect.
+ */
+#define CSR_TEXTRA32_MVALUE_OFFSET          26
+#define CSR_TEXTRA32_MVALUE_LENGTH          6
+#define CSR_TEXTRA32_MVALUE                 (0x3fU << CSR_TEXTRA32_MVALUE_OFFSET)
+/*
+* 0: Ignore \Fmvalue.
+*
+* 1: This trigger will only match if the low bits of
+* \Rmcontext equal \Fmvalue.
+ */
+#define CSR_TEXTRA32_MSELECT_OFFSET         25
+#define CSR_TEXTRA32_MSELECT_LENGTH         1
+#define CSR_TEXTRA32_MSELECT                (0x1U << CSR_TEXTRA32_MSELECT_OFFSET)
+/*
+* Data used together with \Fsselect.
+ */
+#define CSR_TEXTRA32_SVALUE_OFFSET          2
+#define CSR_TEXTRA32_SVALUE_LENGTH          16
+#define CSR_TEXTRA32_SVALUE                 (0xffffU << CSR_TEXTRA32_SVALUE_OFFSET)
+/*
+* 0: Ignore \Fsvalue.
+*
+* 1: This trigger will only match if the low bits of
+* \Rscontext equal \Fsvalue.
+*
+* 2: This trigger will only match if \Fasid in \Rsatp
+* equals the lower ASIDMAX (defined in the Privileged Spec) bits of
+* \Fsvalue.
+ */
+#define CSR_TEXTRA32_SSELECT_OFFSET         0
+#define CSR_TEXTRA32_SSELECT_LENGTH         2
+#define CSR_TEXTRA32_SSELECT                (0x3U << CSR_TEXTRA32_SSELECT_OFFSET)
+#define CSR_TEXTRA64                        0x7a3
+#define CSR_TEXTRA64_MVALUE_OFFSET          51
+#define CSR_TEXTRA64_MVALUE_LENGTH          13
+#define CSR_TEXTRA64_MVALUE                 (0x1fffULL << CSR_TEXTRA64_MVALUE_OFFSET)
+#define CSR_TEXTRA64_MSELECT_OFFSET         50
+#define CSR_TEXTRA64_MSELECT_LENGTH         1
+#define CSR_TEXTRA64_MSELECT                (0x1ULL << CSR_TEXTRA64_MSELECT_OFFSET)
+#define CSR_TEXTRA64_SVALUE_OFFSET          2
+#define CSR_TEXTRA64_SVALUE_LENGTH          34
+#define CSR_TEXTRA64_SVALUE                 (0x3ffffffffULL << CSR_TEXTRA64_SVALUE_OFFSET)
+#define CSR_TEXTRA64_SSELECT_OFFSET         0
+#define CSR_TEXTRA64_SSELECT_LENGTH         2
+#define CSR_TEXTRA64_SSELECT                (0x3ULL << CSR_TEXTRA64_SSELECT_OFFSET)
 #define DMI_DMSTATUS                        0x11
 /*
 * If 1, then there is an implicit {\tt ebreak} instruction at the
@@ -684,39 +855,43 @@
 #define DMI_DMSTATUS_IMPEBREAK_LENGTH       1
 #define DMI_DMSTATUS_IMPEBREAK              (0x1U << DMI_DMSTATUS_IMPEBREAK_OFFSET)
 /*
-* This field is 1 when all currently selected harts have been reset but the reset has not been acknowledged.
+* This field is 1 when all currently selected harts have been reset
+* and reset has not been acknowledged for any of them.
  */
 #define DMI_DMSTATUS_ALLHAVERESET_OFFSET    19
 #define DMI_DMSTATUS_ALLHAVERESET_LENGTH    1
 #define DMI_DMSTATUS_ALLHAVERESET           (0x1U << DMI_DMSTATUS_ALLHAVERESET_OFFSET)
 /*
-* This field is 1 when any currently selected hart has been reset but the reset has not been acknowledged.
+* This field is 1 when at least one currently selected hart has been
+* reset and reset has not been acknowledged for that hart.
  */
 #define DMI_DMSTATUS_ANYHAVERESET_OFFSET    18
 #define DMI_DMSTATUS_ANYHAVERESET_LENGTH    1
 #define DMI_DMSTATUS_ANYHAVERESET           (0x1U << DMI_DMSTATUS_ANYHAVERESET_OFFSET)
 /*
 * This field is 1 when all currently selected harts have acknowledged
-* the previous resume request.
+* their last resume request.
  */
 #define DMI_DMSTATUS_ALLRESUMEACK_OFFSET    17
 #define DMI_DMSTATUS_ALLRESUMEACK_LENGTH    1
 #define DMI_DMSTATUS_ALLRESUMEACK           (0x1U << DMI_DMSTATUS_ALLRESUMEACK_OFFSET)
 /*
 * This field is 1 when any currently selected hart has acknowledged
-* the previous resume request.
+* its last resume request.
  */
 #define DMI_DMSTATUS_ANYRESUMEACK_OFFSET    16
 #define DMI_DMSTATUS_ANYRESUMEACK_LENGTH    1
 #define DMI_DMSTATUS_ANYRESUMEACK           (0x1U << DMI_DMSTATUS_ANYRESUMEACK_OFFSET)
 /*
-* This field is 1 when all currently selected harts do not exist in this system.
+* This field is 1 when all currently selected harts do not exist in
+* this platform.
  */
 #define DMI_DMSTATUS_ALLNONEXISTENT_OFFSET  15
 #define DMI_DMSTATUS_ALLNONEXISTENT_LENGTH  1
 #define DMI_DMSTATUS_ALLNONEXISTENT         (0x1U << DMI_DMSTATUS_ALLNONEXISTENT_OFFSET)
 /*
-* This field is 1 when any currently selected hart does not exist in this system.
+* This field is 1 when any currently selected hart does not exist in
+* this platform.
  */
 #define DMI_DMSTATUS_ANYNONEXISTENT_OFFSET  14
 #define DMI_DMSTATUS_ANYNONEXISTENT_LENGTH  1
@@ -758,9 +933,12 @@
 #define DMI_DMSTATUS_ANYHALTED_LENGTH       1
 #define DMI_DMSTATUS_ANYHALTED              (0x1U << DMI_DMSTATUS_ANYHALTED_OFFSET)
 /*
-* 0 when authentication is required before using the DM.  1 when the
-* authentication check has passed. On components that don't implement
-* authentication, this bit must be preset as 1.
+* 0: Authentication is required before using the DM.
+*
+* 1: The authentication check has passed.
+*
+* On components that don't implement authentication, this bit must be
+* preset as 1.
  */
 #define DMI_DMSTATUS_AUTHENTICATED_OFFSET   7
 #define DMI_DMSTATUS_AUTHENTICATED_LENGTH   1
@@ -787,15 +965,15 @@
 #define DMI_DMSTATUS_HASRESETHALTREQ_LENGTH 1
 #define DMI_DMSTATUS_HASRESETHALTREQ        (0x1U << DMI_DMSTATUS_HASRESETHALTREQ_OFFSET)
 /*
-* 0: \Rdevtreeaddrzero--\Rdevtreeaddrthree hold information which
-* is not relevant to the Device Tree.
+* 0: \Rconfstrptrzero--\Rconfstrptrthree hold information which
+* is not relevant to the configuration string.
 *
-* 1: \Rdevtreeaddrzero--\Rdevtreeaddrthree registers hold the address of the
-* Device Tree.
+* 1: \Rconfstrptrzero--\Rconfstrptrthree hold the address of the
+* configuration string.
  */
-#define DMI_DMSTATUS_DEVTREEVALID_OFFSET    4
-#define DMI_DMSTATUS_DEVTREEVALID_LENGTH    1
-#define DMI_DMSTATUS_DEVTREEVALID           (0x1U << DMI_DMSTATUS_DEVTREEVALID_OFFSET)
+#define DMI_DMSTATUS_CONFSTRPTRVALID_OFFSET 4
+#define DMI_DMSTATUS_CONFSTRPTRVALID_LENGTH 1
+#define DMI_DMSTATUS_CONFSTRPTRVALID        (0x1U << DMI_DMSTATUS_CONFSTRPTRVALID_OFFSET)
 /*
 * 0: There is no Debug Module present.
 *
@@ -813,12 +991,12 @@
 #define DMI_DMSTATUS_VERSION                (0xfU << DMI_DMSTATUS_VERSION_OFFSET)
 #define DMI_DMCONTROL                       0x10
 /*
-* Writes the halt request bit for all currently selected harts.
-* When set to 1, each selected hart will halt if it is not currently
-* halted.
+* Writing 0 clears the halt request bit for all currently selected
+* harts. This may cancel outstanding halt requests for those harts.
 *
-* Writing 1 or 0 has no effect on a hart which is already halted, but
-* the bit must be cleared to 0 before the hart is resumed.
+* Writing 1 sets the halt request bit for all currently selected
+* harts. Running harts will halt whenever their halt request bit is
+* set.
 *
 * Writes apply to the new value of \Fhartsel and \Fhasel.
  */
@@ -826,12 +1004,11 @@
 #define DMI_DMCONTROL_HALTREQ_LENGTH        1
 #define DMI_DMCONTROL_HALTREQ               (0x1U << DMI_DMCONTROL_HALTREQ_OFFSET)
 /*
-* Writes the resume request bit for all currently selected harts.
-* When set to 1, each selected hart will resume if it is currently
-* halted.
+* Writing 1 causes the currently selected harts to resume once, if
+* they are halted when the write occurs. It also clears the resume
+* ack bit for those harts.
 *
-* The resume request bit is ignored while the halt request bit is
-* set.
+* \Fresumereq is ignored if \Fhaltreq is set.
 *
 * Writes apply to the new value of \Fhartsel and \Fhasel.
  */
@@ -843,6 +1020,9 @@
 * selected harts.  To perform a reset the debugger writes 1, and then
 * writes 0 to deassert the reset signal.
 *
+* While this bit is 1, the debugger must not change which harts are
+* selected.
+*
 * If this feature is not implemented, the bit always stays 0, so
 * after writing 1 the debugger can read the register back to see if
 * the feature is supported.
@@ -853,8 +1033,9 @@
 #define DMI_DMCONTROL_HARTRESET_LENGTH      1
 #define DMI_DMCONTROL_HARTRESET             (0x1U << DMI_DMCONTROL_HARTRESET_OFFSET)
 /*
-* Writing 1 to this bit clears the {\tt havereset} bits for
-* any selected harts.
+* 0: No effect.
+*
+* 1: Clears {\tt havereset} for any selected harts.
 *
 * Writes apply to the new value of \Fhartsel and \Fhasel.
  */
@@ -862,12 +1043,13 @@
 #define DMI_DMCONTROL_ACKHAVERESET_LENGTH   1
 #define DMI_DMCONTROL_ACKHAVERESET          (0x1U << DMI_DMCONTROL_ACKHAVERESET_OFFSET)
 /*
-* Selects the  definition of currently selected harts.
+* Selects the definition of currently selected harts.
 *
-* 0: There is a single currently selected hart, that selected by \Fhartsel.
+* 0: There is a single currently selected hart, that is selected by \Fhartsel.
 *
-* 1: There may be multiple currently selected harts -- that selected by \Fhartsel,
-* plus those selected by the hart array mask register.
+* 1: There may be multiple currently selected harts -- the hart
+* selected by \Fhartsel, plus those selected by the hart array mask
+* register.
 *
 * An implementation which does not implement the hart array mask register
 * must tie this field to 0. A debugger which wishes to use the hart array
@@ -893,7 +1075,8 @@
 #define DMI_DMCONTROL_HARTSELHI             (0x3ffU << DMI_DMCONTROL_HARTSELHI_OFFSET)
 /*
 * This optional field writes the halt-on-reset request bit for all
-* currently selected harts.
+* currently selected harts, unless \Fclrresethaltreq is
+* simultaneously set to 1.
 * When set to 1, each selected hart will halt upon the next deassertion
 * of its reset. The halt-on-reset request bit is not automatically
 * cleared. The debugger must write to \Fclrresethaltreq to clear it.
@@ -931,20 +1114,26 @@
 *
 * 0: The module's state, including authentication mechanism,
 * takes its reset values (the \Fdmactive bit is the only bit which can
-* be written to something other than its reset value).
+* be written to something other than its reset value). Any accesses
+* to the module may fail. Specifically, \Fversion may not return
+* correct data.
 *
 * 1: The module functions normally.
 *
 * No other mechanism should exist that may result in resetting the
-* Debug Module after power up, including the platform's system reset
-* or Debug Transport reset signals.
+* Debug Module after power up, with the possible (but not
+* recommended) exception of a global reset signal that resets the
+* entire platform.
 *
 * A debugger may pulse this bit low to get the Debug Module into a
 * known state.
 *
-* Implementations may use this bit to aid debugging, for example by
-* preventing the Debug Module from being power gated while debugging
-* is active.
+* Implementations may pay attention to this bit to further aid
+* debugging, for example by preventing the Debug Module from being
+* power gated while debugging is active.
+*
+* For forward compatibility, \Fversion will always be readable when
+* \Fdmactive is 1.
  */
 #define DMI_DMCONTROL_DMACTIVE_OFFSET       0
 #define DMI_DMCONTROL_DMACTIVE_LENGTH       1
@@ -960,8 +1149,8 @@
 #define DMI_HARTINFO_NSCRATCH_LENGTH        4
 #define DMI_HARTINFO_NSCRATCH               (0xfU << DMI_HARTINFO_NSCRATCH_OFFSET)
 /*
-* 0: The {\tt data} registers are shadowed in the hart by CSR
-* registers. Each CSR register is MXLEN bits in size, and corresponds
+* 0: The {\tt data} registers are shadowed in the hart by CSRs.
+* Each CSR is DXLEN bits in size, and corresponds
 * to a single argument, per Table~\ref{tab:datareg}.
 *
 * 1: The {\tt data} registers are shadowed in the hart's memory map.
@@ -971,7 +1160,7 @@
 #define DMI_HARTINFO_DATAACCESS_LENGTH      1
 #define DMI_HARTINFO_DATAACCESS             (0x1U << DMI_HARTINFO_DATAACCESS_OFFSET)
 /*
-* If \Fdataaccess is 0: Number of CSR registers dedicated to
+* If \Fdataaccess is 0: Number of CSRs dedicated to
 * shadowing the {\tt data} registers.
 *
 * If \Fdataaccess is 1: Number of 32-bit words in the memory map
@@ -996,7 +1185,7 @@
 #define DMI_HAWINDOWSEL                     0x14
 /*
 * The high bits of this field may be tied to 0, depending on how large
-* the array mask register is.  Eg. on a system with 48 harts only bit 0
+* the array mask register is.  E.g.\ on a system with 48 harts only bit 0
 * of this field may actually be writable.
  */
 #define DMI_HAWINDOWSEL_HAWINDOWSEL_OFFSET  0
@@ -1027,20 +1216,26 @@
 * they are cleared by writing 1 to them. No abstract command is
 * started until the value is reset to 0.
 *
+* This field only contains a valid value if \Fbusy is 0.
+*
 * 0 (none): No error.
 *
 * 1 (busy): An abstract command was executing while \Rcommand,
-* \Rabstractcs, \Rabstractauto was written, or when one
+* \Rabstractcs, or \Rabstractauto was written, or when one
 * of the {\tt data} or {\tt progbuf} registers was read or written.
+* This status is only written if \Fcmderr contains 0.
 *
 * 2 (not supported): The requested command is not supported,
 * regardless of whether the hart is running or not.
 *
 * 3 (exception): An exception occurred while executing the command
-* (eg. while executing the Program Buffer).
+* (e.g.\ while executing the Program Buffer).
 *
 * 4 (halt/resume): The abstract command couldn't execute because the
-* hart wasn't in the required state (running/halted).
+* hart wasn't in the required state (running/halted), or unavailable.
+*
+* 5 (bus): The abstract command failed due to a bus error (e.g.\
+* alignment, access size, or timeout).
 *
 * 7 (other): The command failed for another reason.
  */
@@ -1049,7 +1244,7 @@
 #define DMI_ABSTRACTCS_CMDERR               (0x7U << DMI_ABSTRACTCS_CMDERR_OFFSET)
 /*
 * Number of {\tt data} registers that are implemented as part of the
-* abstract command interface. Valid sizes are 0 - 12.
+* abstract command interface. Valid sizes are 1 -- 12.
  */
 #define DMI_ABSTRACTCS_DATACOUNT_OFFSET     0
 #define DMI_ABSTRACTCS_DATACOUNT_LENGTH     4
@@ -1071,26 +1266,28 @@
 #define DMI_COMMAND_CONTROL                 (0xffffffU << DMI_COMMAND_CONTROL_OFFSET)
 #define DMI_ABSTRACTAUTO                    0x18
 /*
-* When a bit in this field is 1, read or write accesses to the corresponding {\tt progbuf} word
-* cause the command in \Rcommand to be executed again.
+* When a bit in this field is 1, read or write accesses to the
+* corresponding {\tt progbuf} word cause the command in \Rcommand to
+* be executed again.
  */
 #define DMI_ABSTRACTAUTO_AUTOEXECPROGBUF_OFFSET 16
 #define DMI_ABSTRACTAUTO_AUTOEXECPROGBUF_LENGTH 16
 #define DMI_ABSTRACTAUTO_AUTOEXECPROGBUF    (0xffffU << DMI_ABSTRACTAUTO_AUTOEXECPROGBUF_OFFSET)
 /*
-* When a bit in this field is 1, read or write accesses to the corresponding {\tt data} word
-* cause the command in \Rcommand to be executed again.
+* When a bit in this field is 1, read or write accesses to the
+* corresponding {\tt data} word cause the command in \Rcommand to be
+* executed again.
  */
 #define DMI_ABSTRACTAUTO_AUTOEXECDATA_OFFSET 0
 #define DMI_ABSTRACTAUTO_AUTOEXECDATA_LENGTH 12
 #define DMI_ABSTRACTAUTO_AUTOEXECDATA       (0xfffU << DMI_ABSTRACTAUTO_AUTOEXECDATA_OFFSET)
-#define DMI_DEVTREEADDR0                    0x19
-#define DMI_DEVTREEADDR0_ADDR_OFFSET        0
-#define DMI_DEVTREEADDR0_ADDR_LENGTH        32
-#define DMI_DEVTREEADDR0_ADDR               (0xffffffffU << DMI_DEVTREEADDR0_ADDR_OFFSET)
-#define DMI_DEVTREEADDR1                    0x1a
-#define DMI_DEVTREEADDR2                    0x1b
-#define DMI_DEVTREEADDR3                    0x1c
+#define DMI_CONFSTRPTR0                     0x19
+#define DMI_CONFSTRPTR0_ADDR_OFFSET         0
+#define DMI_CONFSTRPTR0_ADDR_LENGTH         32
+#define DMI_CONFSTRPTR0_ADDR                (0xffffffffU << DMI_CONFSTRPTR0_ADDR_OFFSET)
+#define DMI_CONFSTRPTR1                     0x1a
+#define DMI_CONFSTRPTR2                     0x1b
+#define DMI_CONFSTRPTR3                     0x1c
 #define DMI_NEXTDM                          0x1d
 #define DMI_NEXTDM_ADDR_OFFSET              0
 #define DMI_NEXTDM_ADDR_LENGTH              32
@@ -1109,6 +1306,55 @@
 #define DMI_AUTHDATA_DATA_OFFSET            0
 #define DMI_AUTHDATA_DATA_LENGTH            32
 #define DMI_AUTHDATA_DATA                   (0xffffffffU << DMI_AUTHDATA_DATA_OFFSET)
+#define DMI_DMCS2                           0x32
+/*
+* This field contains the currently selected external trigger.
+*
+* If a non-existent trigger value is written here, the hardware will
+* change it to a valid one or 0 if no external triggers exist.
+ */
+#define DMI_DMCS2_EXTTRIGGER_OFFSET         7
+#define DMI_DMCS2_EXTTRIGGER_LENGTH         4
+#define DMI_DMCS2_EXTTRIGGER                (0xfU << DMI_DMCS2_EXTTRIGGER_OFFSET)
+/*
+* When \Fhgselect is 0, contains the halt group of the hart
+* specified by \Fhartsel.
+*
+* When \Fhgselect is 1, contains the halt group of the external
+* trigger selected by \Fexttrigger.
+*
+* Writes only have an effect if \Fhgwrite is also written 1.
+*
+* An implementation may tie any number of upper bits in this field to
+* 0. If halt groups aren't implemented, then this entire field
+* is 0.
+ */
+#define DMI_DMCS2_HALTGROUP_OFFSET          2
+#define DMI_DMCS2_HALTGROUP_LENGTH          5
+#define DMI_DMCS2_HALTGROUP                 (0x1fU << DMI_DMCS2_HALTGROUP_OFFSET)
+/*
+* When \Fhgselect is 0, writing 1 changes the halt group of all
+* selected harts to the value written to \Fhaltgroup.
+*
+* When \Fhgselect is 1, writing 1 changes the halt group of the
+* external trigger selected by \Fexttrigger to the value written to
+* \Fhaltgroup.
+*
+* Writing 0 has no effect.
+ */
+#define DMI_DMCS2_HGWRITE_OFFSET            1
+#define DMI_DMCS2_HGWRITE_LENGTH            1
+#define DMI_DMCS2_HGWRITE                   (0x1U << DMI_DMCS2_HGWRITE_OFFSET)
+/*
+* 0: Operate on harts.
+*
+* 1: Operate on external triggers.
+*
+* If there are no external triggers, this field must be tied to 0.
+ */
+#define DMI_DMCS2_HGSELECT_OFFSET           0
+#define DMI_DMCS2_HGSELECT_LENGTH           1
+#define DMI_DMCS2_HGSELECT                  (0x1U << DMI_DMCS2_HGSELECT_OFFSET)
 #define DMI_HALTSUM0                        0x40
 #define DMI_HALTSUM0_HALTSUM0_OFFSET        0
 #define DMI_HALTSUM0_HALTSUM0_LENGTH        32
@@ -1125,14 +1371,6 @@
 #define DMI_HALTSUM3_HALTSUM3_OFFSET        0
 #define DMI_HALTSUM3_HALTSUM3_LENGTH        32
 #define DMI_HALTSUM3_HALTSUM3               (0xffffffffU << DMI_HALTSUM3_HALTSUM3_OFFSET)
-#define DMI_SBADDRESS3                      0x37
-/*
-* Accesses bits 127:96 of the physical address in {\tt sbaddress} (if
-* the system address bus is that wide).
- */
-#define DMI_SBADDRESS3_ADDRESS_OFFSET       0
-#define DMI_SBADDRESS3_ADDRESS_LENGTH       32
-#define DMI_SBADDRESS3_ADDRESS              (0xffffffffU << DMI_SBADDRESS3_ADDRESS_OFFSET)
 #define DMI_SBCS                            0x38
 /*
 * 0: The System Bus interface conforms to mainline drafts of this
@@ -1151,7 +1389,7 @@
 * already in progress (while \Fsbbusy is set). It remains set until
 * it's explicitly cleared by the debugger.
 *
-* While this field is non-zero, no more system bus accesses can be
+* While this field is set, no more system bus accesses can be
 * initiated by the Debug Module.
  */
 #define DMI_SBCS_SBBUSYERROR_OFFSET         22
@@ -1191,7 +1429,7 @@
 * 4: 128-bit
 *
 * If \Fsbaccess has an unsupported value when the DM starts a bus
-* access, the access is not performed and \Fsberror is set to 3.
+* access, the access is not performed and \Fsberror is set to 4.
  */
 #define DMI_SBCS_SBACCESS_OFFSET            17
 #define DMI_SBCS_SBACCESS_LENGTH            3
@@ -1212,12 +1450,12 @@
 #define DMI_SBCS_SBREADONDATA               (0x1U << DMI_SBCS_SBREADONDATA_OFFSET)
 /*
 * When the Debug Module's system bus
-* master causes a bus error, this field gets set. The bits in this
+* master encounters an error, this field gets set. The bits in this
 * field remain set until they are cleared by writing 1 to them.
 * While this field is non-zero, no more system bus accesses can be
 * initiated by the Debug Module.
 *
-* An implementation may report "Other" (7) for any error condition.
+* An implementation may report ``Other'' (7) for any error condition.
 *
 * 0: There was no bus error.
 *
@@ -1294,6 +1532,14 @@
 #define DMI_SBADDRESS2_ADDRESS_OFFSET       0
 #define DMI_SBADDRESS2_ADDRESS_LENGTH       32
 #define DMI_SBADDRESS2_ADDRESS              (0xffffffffU << DMI_SBADDRESS2_ADDRESS_OFFSET)
+#define DMI_SBADDRESS3                      0x37
+/*
+* Accesses bits 127:96 of the physical address in {\tt sbaddress} (if
+* the system address bus is that wide).
+ */
+#define DMI_SBADDRESS3_ADDRESS_OFFSET       0
+#define DMI_SBADDRESS3_ADDRESS_LENGTH       32
+#define DMI_SBADDRESS3_ADDRESS              (0xffffffffU << DMI_SBADDRESS3_ADDRESS_OFFSET)
 #define DMI_SBDATA0                         0x3c
 /*
 * Accesses bits 31:0 of {\tt sbdata}.
@@ -1325,6 +1571,9 @@
 #define DMI_SBDATA3_DATA_OFFSET             0
 #define DMI_SBDATA3_DATA_LENGTH             32
 #define DMI_SBDATA3_DATA                    (0xffffffffU << DMI_SBDATA3_DATA_OFFSET)
+#define DMI_CUSTOM                          0x1f
+#define DMI_CUSTOM0                         0x70
+#define DMI_CUSTOM15                        0x7f
 #define SHORTNAME                           0x123
 /*
 * Description of what this field is used for.
@@ -1346,19 +1595,32 @@
 *
 * 4: Access the lowest 128 bits of the register.
 *
-* If \Fsize specifies a size larger than the register's actual size,
-* then the access must fail. If a register is accessible, then reads of \Fsize
+* If \Faarsize specifies a size larger than the register's actual size,
+* then the access must fail. If a register is accessible, then reads of \Faarsize
 * less than or equal to the register's actual size must be supported.
 *
 * This field controls the Argument Width as referenced in
 * Table~\ref{tab:datareg}.
  */
-#define AC_ACCESS_REGISTER_SIZE_OFFSET      20
-#define AC_ACCESS_REGISTER_SIZE_LENGTH      3
-#define AC_ACCESS_REGISTER_SIZE             (0x7U << AC_ACCESS_REGISTER_SIZE_OFFSET)
+#define AC_ACCESS_REGISTER_AARSIZE_OFFSET   20
+#define AC_ACCESS_REGISTER_AARSIZE_LENGTH   3
+#define AC_ACCESS_REGISTER_AARSIZE          (0x7U << AC_ACCESS_REGISTER_AARSIZE_OFFSET)
 /*
-* When 1, execute the program in the Program Buffer exactly once
-* after performing the transfer, if any.
+* 0: No effect. This variant must be supported.
+*
+* 1: After a successful register access, \Fregno is incremented
+* (wrapping around to 0). Supporting this variant is optional.
+ */
+#define AC_ACCESS_REGISTER_AARPOSTINCREMENT_OFFSET 19
+#define AC_ACCESS_REGISTER_AARPOSTINCREMENT_LENGTH 1
+#define AC_ACCESS_REGISTER_AARPOSTINCREMENT (0x1U << AC_ACCESS_REGISTER_AARPOSTINCREMENT_OFFSET)
+/*
+* 0: No effect. This variant must be supported, and is the only
+* supported one if \Fprogbufsize is 0.
+*
+* 1: Execute the program in the Program Buffer exactly once after
+* performing the transfer, if any. Supporting this variant is
+* optional.
  */
 #define AC_ACCESS_REGISTER_POSTEXEC_OFFSET  18
 #define AC_ACCESS_REGISTER_POSTEXEC_LENGTH  1
@@ -1369,7 +1631,7 @@
 * 1: Do the operation specified by \Fwrite.
 *
 * This bit can be used to just execute the Program Buffer without
-* having to worry about placing valid values into \Fsize or \Fregno.
+* having to worry about placing valid values into \Faarsize or \Fregno.
  */
 #define AC_ACCESS_REGISTER_TRANSFER_OFFSET  17
 #define AC_ACCESS_REGISTER_TRANSFER_LENGTH  1
@@ -1401,14 +1663,177 @@
 #define AC_QUICK_ACCESS_CMDTYPE_OFFSET      24
 #define AC_QUICK_ACCESS_CMDTYPE_LENGTH      8
 #define AC_QUICK_ACCESS_CMDTYPE             (0xffU << AC_QUICK_ACCESS_CMDTYPE_OFFSET)
+#define AC_ACCESS_MEMORY                    None
+/*
+* This is 2 to indicate Access Memory Command.
+ */
+#define AC_ACCESS_MEMORY_CMDTYPE_OFFSET     24
+#define AC_ACCESS_MEMORY_CMDTYPE_LENGTH     8
+#define AC_ACCESS_MEMORY_CMDTYPE            (0xffU << AC_ACCESS_MEMORY_CMDTYPE_OFFSET)
+/*
+* An implementation does not have to implement both virtual and
+* physical accesses, but it must fail accesses that it doesn't
+* support.
+*
+* 0: Addresses are physical (to the hart they are performed on).
+*
+* 1: Addresses are virtual, and translated the way they would be from
+* M-mode, with \Fmprv set.
+ */
+#define AC_ACCESS_MEMORY_AAMVIRTUAL_OFFSET  23
+#define AC_ACCESS_MEMORY_AAMVIRTUAL_LENGTH  1
+#define AC_ACCESS_MEMORY_AAMVIRTUAL         (0x1U << AC_ACCESS_MEMORY_AAMVIRTUAL_OFFSET)
+/*
+* 0: Access the lowest 8 bits of the memory location.
+*
+* 1: Access the lowest 16 bits of the memory location.
+*
+* 2: Access the lowest 32 bits of the memory location.
+*
+* 3: Access the lowest 64 bits of the memory location.
+*
+* 4: Access the lowest 128 bits of the memory location.
+ */
+#define AC_ACCESS_MEMORY_AAMSIZE_OFFSET     20
+#define AC_ACCESS_MEMORY_AAMSIZE_LENGTH     3
+#define AC_ACCESS_MEMORY_AAMSIZE            (0x7U << AC_ACCESS_MEMORY_AAMSIZE_OFFSET)
+/*
+* After a memory access has completed, if this bit is 1, increment
+* {\tt arg1} (which contains the address used) by the number of bytes
+* encoded in \Faamsize.
+ */
+#define AC_ACCESS_MEMORY_AAMPOSTINCREMENT_OFFSET 19
+#define AC_ACCESS_MEMORY_AAMPOSTINCREMENT_LENGTH 1
+#define AC_ACCESS_MEMORY_AAMPOSTINCREMENT   (0x1U << AC_ACCESS_MEMORY_AAMPOSTINCREMENT_OFFSET)
+/*
+* 0: Copy data from the memory location specified in {\tt arg1} into
+* the low bits of {\tt arg0}. Any remaining bits of {\tt arg0} now
+* have an undefined value.
+*
+* 1: Copy data from the low bits of {\tt arg0} into the memory
+* location specified in {\tt arg1}.
+ */
+#define AC_ACCESS_MEMORY_WRITE_OFFSET       16
+#define AC_ACCESS_MEMORY_WRITE_LENGTH       1
+#define AC_ACCESS_MEMORY_WRITE              (0x1U << AC_ACCESS_MEMORY_WRITE_OFFSET)
+/*
+* These bits are reserved for target-specific uses.
+ */
+#define AC_ACCESS_MEMORY_TARGET_SPECIFIC_OFFSET 14
+#define AC_ACCESS_MEMORY_TARGET_SPECIFIC_LENGTH 2
+#define AC_ACCESS_MEMORY_TARGET_SPECIFIC    (0x3U << AC_ACCESS_MEMORY_TARGET_SPECIFIC_OFFSET)
 #define VIRT_PRIV                           virtual
 /*
 * Contains the privilege level the hart was operating in when Debug
 * Mode was entered. The encoding is described in Table
 * \ref{tab:privlevel}, and matches the privilege level encoding from
-* the RISC-V Privileged ISA Specification. A user can write this
+* the Privileged Spec. A user can write this
 * value to change the hart's privilege level when exiting Debug Mode.
  */
 #define VIRT_PRIV_PRV_OFFSET                0
 #define VIRT_PRIV_PRV_LENGTH                2
 #define VIRT_PRIV_PRV                       (0x3U << VIRT_PRIV_PRV_OFFSET)
+#define DMI_SERCS                           0x34
+/*
+* Number of supported serial ports.
+ */
+#define DMI_SERCS_SERIALCOUNT_OFFSET        28
+#define DMI_SERCS_SERIALCOUNT_LENGTH        4
+#define DMI_SERCS_SERIALCOUNT               (0xfU << DMI_SERCS_SERIALCOUNT_OFFSET)
+/*
+* Select which serial port is accessed by \Rserrx and \Rsertx.
+ */
+#define DMI_SERCS_SERIAL_OFFSET             24
+#define DMI_SERCS_SERIAL_LENGTH             3
+#define DMI_SERCS_SERIAL                    (0x7U << DMI_SERCS_SERIAL_OFFSET)
+#define DMI_SERCS_ERROR7_OFFSET             23
+#define DMI_SERCS_ERROR7_LENGTH             1
+#define DMI_SERCS_ERROR7                    (0x1U << DMI_SERCS_ERROR7_OFFSET)
+#define DMI_SERCS_VALID7_OFFSET             22
+#define DMI_SERCS_VALID7_LENGTH             1
+#define DMI_SERCS_VALID7                    (0x1U << DMI_SERCS_VALID7_OFFSET)
+#define DMI_SERCS_FULL7_OFFSET              21
+#define DMI_SERCS_FULL7_LENGTH              1
+#define DMI_SERCS_FULL7                     (0x1U << DMI_SERCS_FULL7_OFFSET)
+#define DMI_SERCS_ERROR6_OFFSET             20
+#define DMI_SERCS_ERROR6_LENGTH             1
+#define DMI_SERCS_ERROR6                    (0x1U << DMI_SERCS_ERROR6_OFFSET)
+#define DMI_SERCS_VALID6_OFFSET             19
+#define DMI_SERCS_VALID6_LENGTH             1
+#define DMI_SERCS_VALID6                    (0x1U << DMI_SERCS_VALID6_OFFSET)
+#define DMI_SERCS_FULL6_OFFSET              18
+#define DMI_SERCS_FULL6_LENGTH              1
+#define DMI_SERCS_FULL6                     (0x1U << DMI_SERCS_FULL6_OFFSET)
+#define DMI_SERCS_ERROR5_OFFSET             17
+#define DMI_SERCS_ERROR5_LENGTH             1
+#define DMI_SERCS_ERROR5                    (0x1U << DMI_SERCS_ERROR5_OFFSET)
+#define DMI_SERCS_VALID5_OFFSET             16
+#define DMI_SERCS_VALID5_LENGTH             1
+#define DMI_SERCS_VALID5                    (0x1U << DMI_SERCS_VALID5_OFFSET)
+#define DMI_SERCS_FULL5_OFFSET              15
+#define DMI_SERCS_FULL5_LENGTH              1
+#define DMI_SERCS_FULL5                     (0x1U << DMI_SERCS_FULL5_OFFSET)
+#define DMI_SERCS_ERROR4_OFFSET             14
+#define DMI_SERCS_ERROR4_LENGTH             1
+#define DMI_SERCS_ERROR4                    (0x1U << DMI_SERCS_ERROR4_OFFSET)
+#define DMI_SERCS_VALID4_OFFSET             13
+#define DMI_SERCS_VALID4_LENGTH             1
+#define DMI_SERCS_VALID4                    (0x1U << DMI_SERCS_VALID4_OFFSET)
+#define DMI_SERCS_FULL4_OFFSET              12
+#define DMI_SERCS_FULL4_LENGTH              1
+#define DMI_SERCS_FULL4                     (0x1U << DMI_SERCS_FULL4_OFFSET)
+#define DMI_SERCS_ERROR3_OFFSET             11
+#define DMI_SERCS_ERROR3_LENGTH             1
+#define DMI_SERCS_ERROR3                    (0x1U << DMI_SERCS_ERROR3_OFFSET)
+#define DMI_SERCS_VALID3_OFFSET             10
+#define DMI_SERCS_VALID3_LENGTH             1
+#define DMI_SERCS_VALID3                    (0x1U << DMI_SERCS_VALID3_OFFSET)
+#define DMI_SERCS_FULL3_OFFSET              9
+#define DMI_SERCS_FULL3_LENGTH              1
+#define DMI_SERCS_FULL3                     (0x1U << DMI_SERCS_FULL3_OFFSET)
+#define DMI_SERCS_ERROR2_OFFSET             8
+#define DMI_SERCS_ERROR2_LENGTH             1
+#define DMI_SERCS_ERROR2                    (0x1U << DMI_SERCS_ERROR2_OFFSET)
+#define DMI_SERCS_VALID2_OFFSET             7
+#define DMI_SERCS_VALID2_LENGTH             1
+#define DMI_SERCS_VALID2                    (0x1U << DMI_SERCS_VALID2_OFFSET)
+#define DMI_SERCS_FULL2_OFFSET              6
+#define DMI_SERCS_FULL2_LENGTH              1
+#define DMI_SERCS_FULL2                     (0x1U << DMI_SERCS_FULL2_OFFSET)
+#define DMI_SERCS_ERROR1_OFFSET             5
+#define DMI_SERCS_ERROR1_LENGTH             1
+#define DMI_SERCS_ERROR1                    (0x1U << DMI_SERCS_ERROR1_OFFSET)
+#define DMI_SERCS_VALID1_OFFSET             4
+#define DMI_SERCS_VALID1_LENGTH             1
+#define DMI_SERCS_VALID1                    (0x1U << DMI_SERCS_VALID1_OFFSET)
+#define DMI_SERCS_FULL1_OFFSET              3
+#define DMI_SERCS_FULL1_LENGTH              1
+#define DMI_SERCS_FULL1                     (0x1U << DMI_SERCS_FULL1_OFFSET)
+/*
+* 1 when the debugger-to-core queue for serial port 0 has
+* over or underflowed. This bit will remain set until it is reset by
+* writing 1 to this bit.
+ */
+#define DMI_SERCS_ERROR0_OFFSET             2
+#define DMI_SERCS_ERROR0_LENGTH             1
+#define DMI_SERCS_ERROR0                    (0x1U << DMI_SERCS_ERROR0_OFFSET)
+/*
+* 1 when the core-to-debugger queue for serial port 0 is not empty.
+ */
+#define DMI_SERCS_VALID0_OFFSET             1
+#define DMI_SERCS_VALID0_LENGTH             1
+#define DMI_SERCS_VALID0                    (0x1U << DMI_SERCS_VALID0_OFFSET)
+/*
+* 1 when the debugger-to-core queue for serial port 0 is full.
+ */
+#define DMI_SERCS_FULL0_OFFSET              0
+#define DMI_SERCS_FULL0_LENGTH              1
+#define DMI_SERCS_FULL0                     (0x1U << DMI_SERCS_FULL0_OFFSET)
+#define DMI_SERTX                           0x35
+#define DMI_SERTX_DATA_OFFSET               0
+#define DMI_SERTX_DATA_LENGTH               32
+#define DMI_SERTX_DATA                      (0xffffffffU << DMI_SERTX_DATA_OFFSET)
+#define DMI_SERRX                           0x36
+#define DMI_SERRX_DATA_OFFSET               0
+#define DMI_SERRX_DATA_LENGTH               32
+#define DMI_SERRX_DATA                      (0xffffffffU << DMI_SERRX_DATA_OFFSET)
