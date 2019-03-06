@@ -333,9 +333,10 @@ int processor_t::paddr_bits()
 void processor_t::set_csr(int which, reg_t val)
 {
   val = zext_xlen(val);
-  reg_t delegable_ints = MIP_SSIP | MIP_STIP | MIP_SEIP
+  reg_t all_ints = MIP_SSIP | MIP_STIP | MIP_SEIP
+                       | MIP_MSIP | MIP_MTIP
                        | ((ext != NULL) << IRQ_COP);
-  reg_t all_ints = delegable_ints | MIP_MSIP | MIP_MTIP;
+  reg_t delegable_ints = all_ints;
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.n_pmp) {
     size_t i = which - CSR_PMPADDR0;
