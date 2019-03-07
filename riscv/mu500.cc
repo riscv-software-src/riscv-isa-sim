@@ -25,7 +25,7 @@ mu500_t::mu500_t(std::vector<processor_t*>&) {
     addr_recv.sin_family = AF_INET;
     addr_recv.sin_port = htons(65008);
     addr_recv.sin_addr.s_addr = htonl(INADDR_LOOPBACK);
-    bind(sock_recv, (struct sockaddr *)&addr_recv, sizeof(addr));
+    bind(sock_recv, (struct sockaddr *)&addr_recv, sizeof(addr_recv));
     u_long val = 1;
     ioctl(sock_recv, FIONBIO, &val); // make the socket non-blocking
 }
@@ -34,8 +34,9 @@ void mu500_t::tick(void)
 {
     int size;
     char buf[2 + 2 + 1 + 1 + 10];
-    size = recv(sock, buf, sizeof(buf), 0);
-    
+
+    size = recv(sock_recv, buf, sizeof(buf), 0);
+
     if (size > 0) {
         buf[2 + 2 + 1] = '\0';
         unsigned int offset, data;
