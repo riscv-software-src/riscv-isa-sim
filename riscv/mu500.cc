@@ -44,7 +44,9 @@ void mu500_t::tick(void)
         sscanf(buf, "%2x%2x", &offset, &data);
         if (0x48 <= offset && offset <= 0x49) {
             button[offset-0x48] = (unsigned char)data;
+#ifdef DEBUG
             std::cerr << "mu500: wrote: " << offset-0x48 << ":" << data << std::endl;
+#endif /* DEBUG */
         }
     }
 }
@@ -63,7 +65,9 @@ bool mu500_t::store(reg_t offset, size_t len, const uint8_t* bytes) {
     char content[2+2+1+1];
     if (0x0 <= offset && offset <= 0x47) {
         snprintf(content, sizeof(content), "%2x%2x;", (unsigned int)offset, *bytes);
+#ifdef DEBUG
         std::cerr << "mu500: " << content << std::endl;
+#endif  /* DEBUG */
         sendto(sock, content, 5, 0, (struct sockaddr *)&addr, sizeof(addr));
         return true;
     }else{
