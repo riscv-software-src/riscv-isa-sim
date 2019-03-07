@@ -40,7 +40,9 @@ void mu500_t::tick(void)
     if (size > 0) {
         buf[2 + 2 + 1] = '\0';
         unsigned int offset, data;
+#ifdef DEBUG
         std::cerr << "mu500: received: " << buf << std::endl;
+#endif /* DEBUG */
         sscanf(buf, "%2x%2x", &offset, &data);
         if (0x48 <= offset && offset <= 0x49) {
             button[offset-0x48] = (unsigned char)data;
