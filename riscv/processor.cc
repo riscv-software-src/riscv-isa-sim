@@ -20,9 +20,10 @@
 #define STATE state
 
 processor_t::processor_t(const char* isa, simif_t* sim, uint32_t id,
-        bool halt_on_reset)
+        bool halt_on_reset, bool mideleg_all)
   : debug(false), halt_request(false), sim(sim), ext(NULL), id(id),
-  halt_on_reset(halt_on_reset), last_pc(1), executions(1)
+  halt_on_reset(halt_on_reset), mideleg_all(mideleg_all),
+  last_pc(1), executions(1)
 {
   parse_isa_string(isa);
   register_base_instructions();
@@ -333,10 +334,10 @@ int processor_t::paddr_bits()
 void processor_t::set_csr(int which, reg_t val)
 {
   val = zext_xlen(val);
-  reg_t all_ints = MIP_SSIP | MIP_STIP | MIP_SEIP
-                       | MIP_MSIP | MIP_MTIP
+  reg_t delegable_ints = MIP_SSIP | MIP_STIP | MIP_SEIP
                        | ((ext != NULL) << IRQ_COP);
-  reg_t delegable_ints = all_ints;
+  reg_t all_ints = delegable_ints | MIP_MSIP | MIP_MTIP;
+  if(mideleg_all) delegable_ints = all_ints;
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.n_pmp) {
     size_t i = which - CSR_PMPADDR0;

@@ -166,7 +166,8 @@ static int cto(reg_t val)
 class processor_t : public abstract_device_t
 {
 public:
-  processor_t(const char* isa, simif_t* sim, uint32_t id, bool halt_on_reset=false);
+  processor_t(const char* isa, simif_t* sim, uint32_t id,
+			  bool halt_on_reset=false, bool mideleg_all=false);
   ~processor_t();
 
   void set_debug(bool value);
@@ -311,6 +312,7 @@ private:
   std::string isa_string;
   bool histogram_enabled;
   bool halt_on_reset;
+  bool mideleg_all; // whether all interrupts can be delegated
 
   std::vector<insn_desc_t> instructions;
   std::map<reg_t,uint64_t> pc_histogram;

@@ -46,6 +46,7 @@ static void help()
       "required for a DMI access [default 0]\n");
   fprintf(stderr, "  --abstract-rti=<n>    Number of Run-Test/Idle cycles "
       "required for an abstract command to execute [default 0]\n");
+  fprintf(stderr, "  --mideleg-all         Allow delegation of M-mode interrupts\n");
   exit(1);
 }
 
@@ -104,6 +105,7 @@ int main(int argc, char** argv)
   bool require_authentication = false;
   unsigned dmi_rti = 0;
   unsigned abstract_rti = 0;
+  bool mideleg_all = false;
   std::vector<int> hartids;
 
   auto const hartids_parser = [&](const char *s) {
@@ -155,6 +157,7 @@ int main(int argc, char** argv)
       [&](const char* s){dmi_rti = atoi(s);});
   parser.option(0, "abstract-rti", 1,
       [&](const char* s){abstract_rti = atoi(s);});
+  parser.option(0, "mideleg-all", 0, [&](const char* s){mideleg_all=true;});
 
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
@@ -166,7 +169,7 @@ int main(int argc, char** argv)
 
   sim_t s(isa, nprocs, halted, start_pc, mems, htif_args, std::move(hartids),
       progsize, max_bus_master_bits, require_authentication,
-      abstract_rti);
+      abstract_rti, mideleg_all);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));
