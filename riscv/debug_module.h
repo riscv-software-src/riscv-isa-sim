@@ -11,6 +11,7 @@ class sim_t;
 typedef struct {
   bool haltreq;
   bool resumereq;
+  bool hasel;
   unsigned hartsel;
   bool hartreset;
   bool dmactive;
@@ -162,6 +163,8 @@ class debug_module_t : public abstract_device_t
     abstractcs_t abstractcs;
     abstractauto_t abstractauto;
     uint32_t command;
+    uint16_t hawindowsel;
+    std::vector<bool> hart_array_mask;
 
     sbcs_t sbcs;
     uint32_t sbaddress[4];
@@ -170,7 +173,8 @@ class debug_module_t : public abstract_device_t
     uint32_t challenge;
     const uint32_t secret = 1;
 
-    processor_t *current_proc() const;
+    processor_t *processor(unsigned hartid) const;
+    bool hart_selected(unsigned hartid) const;
     void reset();
     bool perform_abstract_command();
 
