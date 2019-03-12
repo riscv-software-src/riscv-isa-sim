@@ -12,6 +12,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <sys/types.h>
 
 class mmu_t;
 class remote_bitbang_t;
