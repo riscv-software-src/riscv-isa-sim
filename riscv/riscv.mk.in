@@ -302,7 +302,6 @@ riscv_insn_list = \
 	vlsseg5w_v \
 	vlsseg6w_v \
 	vsw_v \
-	vsseg6w_v \
 	vssseg3w_v \
 	vssseg4w_v \
 	vssseg5w_v \

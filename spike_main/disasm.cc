@@ -657,7 +657,7 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN("vlw.v", vlw_v, 0, {&vd, &v_address, &opt, &vm});
   DISASM_INSN("vsw.v", vsw_v, 0, {&vs3, &v_address, &opt, &vm});
   DISASM_INSN("vlseg6w.v", vlw_v | (0x5 << 29), 0, {&vd, &v_address, &opt, &vm});
-  DISASM_INSN("vsseg6w.v", vsseg6w_v, 0, {&vs3, &v_address, &opt, &vm});
+  DISASM_INSN("vsseg6w.v", vsw_v | (0x5 << 29), 0, {&vs3, &v_address, &opt, &vm});
   DISASM_INSN("vlsseg3w.v", vlsseg3w_v, 0, {&vd, &v_address, &xrs2, &opt, &vm});
   DISASM_INSN("vlsseg4w.v", vlsseg4w_v, 0, {&vd, &v_address, &xrs2, &opt, &vm});
   DISASM_INSN("vlsseg5w.v", vlsseg5w_v, 0, {&vd, &v_address, &xrs2, &opt, &vm});
