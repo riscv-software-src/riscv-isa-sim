@@ -95,7 +95,7 @@ class debug_module_t : public abstract_device_t
      */
     debug_module_t(sim_t *sim, unsigned progbufsize,
         unsigned max_bus_master_bits, bool require_authentication,
-        unsigned abstract_rti);
+        unsigned abstract_rti, bool support_hasel);
     ~debug_module_t();
 
     void add_device(bus_t *bus);
@@ -180,6 +180,7 @@ class debug_module_t : public abstract_device_t
 
     bool abstract_command_completed;
     unsigned rti_remaining;
+    bool support_hasel;
 };
 
 #endif

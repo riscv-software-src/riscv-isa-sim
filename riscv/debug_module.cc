@@ -32,7 +32,7 @@ static unsigned field_width(unsigned n)
 ///////////////////////// debug_module_t
 
 debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bus_master_bits,
-    bool require_authentication, unsigned abstract_rti) :
+    bool require_authentication, unsigned abstract_rti, bool support_hasel) :
   nprocs(sim->nprocs()),
   progbufsize(progbufsize),
   program_buffer_bytes(4 + 4*progbufsize),
@@ -47,7 +47,8 @@ debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bu
   // The spec lets a debugger select nonexistent harts. Create hart_state for
   // them because I'm too lazy to add the code to just ignore accesses.
   hart_state(1 << field_width(sim->nprocs())),
-  hart_array_mask(sim->nprocs())
+  hart_array_mask(sim->nprocs()),
+  support_hasel(support_hasel)
 {
   D(fprintf(stderr, "debug_data_start=0x%x\n", debug_data_start));
   D(fprintf(stderr, "debug_progbuf_start=0x%x\n", debug_progbuf_start));
@@ -758,7 +759,10 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           dmcontrol.resumereq = get_field(value, DMI_DMCONTROL_RESUMEREQ);
           dmcontrol.hartreset = get_field(value, DMI_DMCONTROL_HARTRESET);
           dmcontrol.ndmreset = get_field(value, DMI_DMCONTROL_NDMRESET);
-          dmcontrol.hasel = get_field(value, DMI_DMCONTROL_HASEL);
+          if (support_hasel)
+            dmcontrol.hasel = get_field(value, DMI_DMCONTROL_HASEL);
+          else
+            dmcontrol.hasel = 0;
           dmcontrol.hartsel = get_field(value, DMI_DMCONTROL_HARTSELHI) <<
             DMI_DMCONTROL_HARTSELLO_LENGTH;
           dmcontrol.hartsel |= get_field(value, DMI_DMCONTROL_HARTSELLO);

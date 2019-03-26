@@ -29,12 +29,12 @@ sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
              const std::vector<std::string>& args,
              std::vector<int> const hartids, unsigned progsize,
              unsigned max_bus_master_bits, bool require_authentication,
-             suseconds_t abstract_delay_usec)
+             suseconds_t abstract_delay_usec, bool support_hasel)
   : htif_t(args), mems(mems), procs(std::max(nprocs, size_t(1))),
     start_pc(start_pc), current_step(0), current_proc(0), debug(false),
     histogram_enabled(false), dtb_enabled(true), remote_bitbang(NULL),
     debug_module(this, progsize, max_bus_master_bits, require_authentication,
-        abstract_delay_usec)
+        abstract_delay_usec, support_hasel)
 {
   signal(SIGINT, &handle_signal);
 
