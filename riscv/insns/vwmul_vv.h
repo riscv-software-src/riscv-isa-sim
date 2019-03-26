@@ -1,4 +1,4 @@
- // COMMENT HERE
+// vwmul
 VI_VV_LOOP
 ({
     // NOT IMPLEMENTED YET

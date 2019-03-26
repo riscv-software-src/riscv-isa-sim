@@ -1,5 +1,6 @@
- // COMMENT HERE
+// vsaddu: Saturating adds of unsigned integers
 VI_VV_LOOP
 ({
-    // NOT IMPLEMENTED YET
+    //unsigned sum = 
+    // update vxsat
 })

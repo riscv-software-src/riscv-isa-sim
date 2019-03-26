@@ -1,4 +1,4 @@
- // COMMENT HERE
+// vfwnmacc
 VFP_VV_LOOP
 ({
     // NOT IMPLEMENTED YET

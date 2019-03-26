@@ -1,5 +1,5 @@
- // COMMENT HERE
+// vxor
 VI_VV_LOOP
 ({
-    // NOT IMPLEMENTED YET
+    vd = sext_xlen(vs1 ^ vs2);
 })

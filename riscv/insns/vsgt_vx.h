@@ -1,5 +1,5 @@
- // COMMENT HERE
+// vsgt
 VI_VX_LOOP
 ({
-    // NOT IMPLEMENTED YET
+    WRITE_RD(sreg_t(rs1) > sreg_t(vs2));
 })

@@ -1,4 +1,4 @@
- // COMMENT HERE
+// vmnor
 VI_VV_LOOP
 ({
     // NOT IMPLEMENTED YET

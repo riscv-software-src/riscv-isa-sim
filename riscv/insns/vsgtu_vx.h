@@ -1,5 +1,5 @@
- // COMMENT HERE
+// vsgtu
 VI_VX_LOOP
 ({
-    // NOT IMPLEMENTED YET
+    WRITE_RD(reg_t(rs1) > reg_t(vs2));
 })

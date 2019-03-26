@@ -1,4 +1,4 @@
- // COMMENT HERE
+// vnclip
 VI_VV_LOOP
 ({
     // NOT IMPLEMENTED YET

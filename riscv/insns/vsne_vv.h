@@ -1,5 +1,5 @@
- // COMMENT HERE
+// vsne
 VI_VV_LOOP
 ({
-    // NOT IMPLEMENTED YET
+    vd = (vs1 != vs2) ? 1 : 0;
 })

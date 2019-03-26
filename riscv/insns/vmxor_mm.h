@@ -1,4 +1,4 @@
- // COMMENT HERE
+// vmxor
 VI_VV_LOOP
 ({
     // NOT IMPLEMENTED YET

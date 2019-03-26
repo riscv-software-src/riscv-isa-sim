@@ -1,4 +1,4 @@
- // COMMENT HERE
+// vmor
 VI_VV_LOOP
 ({
     // NOT IMPLEMENTED YET

@@ -1,5 +1,5 @@
- // COMMENT HERE
+// vseq: Set if equal
 VI_VV_LOOP
 ({
-    // NOT IMPLEMENTED YET
+    WRITE_RD(sreg_t(vs1) == sreg_t(vs2));
 })

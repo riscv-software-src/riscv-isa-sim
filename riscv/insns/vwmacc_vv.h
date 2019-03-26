@@ -1,4 +1,4 @@
- // COMMENT HERE
+// vwmacc
 VI_VV_LOOP
 ({
     // NOT IMPLEMENTED YET

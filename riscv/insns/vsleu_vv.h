@@ -1,5 +1,5 @@
- // COMMENT HERE
+// vsleu: Set if less than or equal, unsigned
 VI_VV_LOOP
 ({
-    // NOT IMPLEMENTED YET
+    WRITE_RD(reg_t(vs1) <= reg_t(vs2));
 })

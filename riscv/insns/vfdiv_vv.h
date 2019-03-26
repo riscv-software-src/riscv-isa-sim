@@ -1,4 +1,4 @@
- // COMMENT HERE
+// vfdiv
 VFP_VV_LOOP
 ({
     // NOT IMPLEMENTED YET
