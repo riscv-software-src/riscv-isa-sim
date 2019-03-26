@@ -292,6 +292,21 @@ inline double to_f(float64_t f){double r; memcpy(&r, &f, sizeof(r)); return r;}
 inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); return r;}
 
 // Vector macros
+#define e8 8   //   8b elements
+#define e16 16  //  16b elements
+#define e32 32  //  32b elements
+#define e64 64  //  64b elements
+#define e128 128 // 128b elements
+#define m1 1   // Vlmul x1, assumed if m setting absent
+#define m2 2   // Vlmul x2
+#define m4 4   // Vlmul x4
+#define m8 8   // Vlmul x8
+#define d1 1   // EDIV 1, assumed if d setting absent
+#define d2 2   // EDIV 2
+#define d4 4   // EDIV 4
+#define d8 8   // EDIV 8
+
+
 #define DEBUG_RVV 0
 
 #if DEBUG_RVV
@@ -311,7 +326,7 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 #endif
 
 #define VI_LOOP_BASE \
-  require(STATE.VU.vsew == 32); \
+  require(STATE.VU.vsew == e8 || STATE.VU.vsew == e16 || STATE.VU.vsew == e32 || STATE.VU.vsew == e64); \
   require(insn.v_vm() == 1); \
   reg_t vl = STATE.VU.vl; \
   reg_t rd_num = insn.rd(); \
@@ -331,7 +346,21 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
   BODY; \
   VI_LOOP_END
 
+#define VI_VI_LOOP(BODY) \
+  VI_LOOP_BASE \
+  uint64_t &vd = STATE.VU.elt<uint64_t>(rd_num, i); \
+  uint64_t simm5 = (uint64_t)rs1_num; \
+  uint64_t vs2 = STATE.VU.elt<uint64_t>(rs2_num, i); \
+  BODY; \
+  VI_LOOP_END
 
+#define VI_VX_LOOP(BODY) \
+  VI_LOOP_BASE \
+  uint64_t &vd = STATE.VU.elt<uint64_t>(rd_num, i); \
+  uint64_t rs1 = RS1; \
+  uint64_t vs2 = STATE.VU.elt<uint64_t>(rs2_num, i); \
+  BODY; \
+  VI_LOOP_END
 
 #define VF_LOOP_BASE \
   require_extension('F'); \
