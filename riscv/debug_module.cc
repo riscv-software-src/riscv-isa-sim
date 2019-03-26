@@ -415,10 +415,10 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
               }
               if (hart_state[i].halted) {
                 dmstatus.allrunning = false;
-                dmstatus.anyrunning = true;
+                dmstatus.anyhalted = true;
               } else {
                 dmstatus.allhalted = false;
-                dmstatus.anyhalted = true;
+                dmstatus.anyrunning = true;
               }
             }
           }
