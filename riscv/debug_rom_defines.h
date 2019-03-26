@@ -18,6 +18,6 @@
 // These needs to match the link.ld         
 #define DEBUG_ROM_WHERETO 0x300
 #define DEBUG_ROM_ENTRY   0x800
-#define DEBUG_ROM_TVEC    0x808
+#define DEBUG_ROM_TVEC    0x804
 
 #endif

@@ -225,7 +225,8 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   }
 
   if (addr == DEBUG_ROM_GOING) {
-    debug_rom_flags[dmcontrol.hartsel] &= ~(1 << DEBUG_ROM_FLAG_GO);
+    assert(len == 4);
+    debug_rom_flags[id] &= ~(1 << DEBUG_ROM_FLAG_GO);
     return true;
   }
 
@@ -775,7 +776,11 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
               processor_t *proc = processor(i);
               if (proc) {
                 proc->halt_request = dmcontrol.haltreq;
+                if (dmcontrol.haltreq) {
+                  D(fprintf(stderr, "halt hart %d\n", i));
+                }
                 if (dmcontrol.resumereq) {
+                  D(fprintf(stderr, "resume hart %d\n", i));
                   debug_rom_flags[i] |= (1 << DEBUG_ROM_FLAG_RESUME);
                   hart_state[i].resumeack = false;
                 }
