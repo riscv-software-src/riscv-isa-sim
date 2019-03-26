@@ -1,7 +1,7 @@
-// vlsseg4w.v vd, (rs1), rs2, vm
+// vlsw.v and vlsseg[2-8]w.v
 require(STATE.VU.vsew == 32);
 require(insn.v_vm() == 1);
-reg_t nf = 4;
+reg_t nf = insn.v_nf() + 1;
 reg_t vl = STATE.VU.vl;
 reg_t baseAddr = RS1;
 reg_t stride = RS2;
