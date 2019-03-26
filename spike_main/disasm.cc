@@ -654,22 +654,133 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN("c.fsdsp", c_fsdsp, 0, {&rvc_fp_rs2s, &rvc_sdsp_address});
 
   DISASM_INSN("vsetvli", vsetvli, 0, {&xrd, &xrs1, &v_vtype});
-  DISASM_INSN("vlw.v", vlw_v, 0, {&vd, &v_address, &opt, &vm});
-  DISASM_INSN("vlh.v", vlh_v, 0, {&vd, &v_address, &opt, &vm});
-  DISASM_INSN("vlb.v", vlb_v, 0, {&vd, &v_address, &opt, &vm});
-  DISASM_INSN("vsw.v", vsw_v, 0, {&vs3, &v_address, &opt, &vm});
-  DISASM_INSN("vlseg6w.v", vlw_v | (0x5 << 29), 0, {&vd, &v_address, &opt, &vm});
-  DISASM_INSN("vsseg6w.v", vsw_v | (0x5 << 29), 0, {&vs3, &v_address, &opt, &vm});
-  DISASM_INSN("vlsw.v", vlsw_v, 0, {&vd, &v_address, &xrs2, &opt, &vm});
-  DISASM_INSN("vlsseg3w.v", vlsw_v | (0x2 << 29), 0, {&vd, &v_address, &xrs2, &opt, &vm});
-  DISASM_INSN("vlsseg4w.v", vlsw_v | (0x3 << 29), 0, {&vd, &v_address, &xrs2, &opt, &vm});
-  DISASM_INSN("vlsseg5w.v", vlsw_v | (0x4 << 29), 0, {&vd, &v_address, &xrs2, &opt, &vm});
-  DISASM_INSN("vlsseg6w.v", vlsw_v | (0x5 << 29), 0, {&vd, &v_address, &xrs2, &opt, &vm});
-  DISASM_INSN("vssw.v", vssw_v, 0, {&vs3, &v_address, &xrs2, &opt, &vm});
-  DISASM_INSN("vssseg3w.v", vssw_v | (0x2 << 29), 0, {&vs3, &v_address, &xrs2, &opt, &vm});
-  DISASM_INSN("vssseg4w.v", vssw_v | (0x3 << 29), 0, {&vs3, &v_address, &xrs2, &opt, &vm});
-  DISASM_INSN("vssseg5w.v", vssw_v | (0x4 << 29), 0, {&vs3, &v_address, &xrs2, &opt, &vm});
-  DISASM_INSN("vssseg6w.v", vssw_v | (0x5 << 29), 0, {&vs3, &v_address, &xrs2, &opt, &vm});
+
+  #define DEFINE_VMEM_LD_TYPE(name, fmt) \
+    add_insn(new disasm_insn_t("vl" #name "b.v",  match_vl##name##b_v,  mask_vl##name##b_v, fmt)); \
+    add_insn(new disasm_insn_t("vl" #name "h.v",  match_vl##name##h_v,  mask_vl##name##h_v, fmt)); \
+    add_insn(new disasm_insn_t("vl" #name "w.v",  match_vl##name##w_v,  mask_vl##name##w_v, fmt)); \
+    add_insn(new disasm_insn_t("vl" #name "e.v",  match_vl##name##e_v,  mask_vl##name##e_v, fmt)); \
+    add_insn(new disasm_insn_t("vl" #name "bu.v", match_vl##name##bu_v, mask_vl##name##bu_v, fmt)); \
+    add_insn(new disasm_insn_t("vl" #name "hu.v", match_vl##name##hu_v, mask_vl##name##hu_v, fmt)); \
+    add_insn(new disasm_insn_t("vl" #name "wu.v", match_vl##name##wu_v, mask_vl##name##wu_v, fmt));
+
+  #define DEFINE_VMEM_ST_TYPE(name, fmt) \
+    add_insn(new disasm_insn_t("vs" #name "b.v", match_vs##name##b_v, mask_vs##name##b_v, fmt)); \
+    add_insn(new disasm_insn_t("vs" #name "h.v", match_vs##name##h_v, mask_vs##name##h_v, fmt)); \
+    add_insn(new disasm_insn_t("vs" #name "w.v", match_vs##name##w_v, mask_vs##name##w_v, fmt)); \
+    add_insn(new disasm_insn_t("vs" #name "e.v", match_vs##name##e_v, mask_vs##name##e_v, fmt));
+
+  const std::vector<const arg_t *> v_ld_unit = {&vd, &v_address, &opt, &vm};
+  const std::vector<const arg_t *> v_st_unit = {&vs3, &v_address, &opt, &vm};
+  const std::vector<const arg_t *> v_ld_stride = {&vd, &v_address, &xrs2, &opt, &vm};
+  const std::vector<const arg_t *> v_st_stride = {&vs3, &v_address, &xrs2, &opt, &vm};
+  const std::vector<const arg_t *> v_ld_index = {&vd, &v_address, &vs2, &opt, &vm};
+  const std::vector<const arg_t *> v_st_index = {&vs3, &v_address, &vs2, &opt, &vm};
+
+  DEFINE_VMEM_LD_TYPE(, v_ld_unit);
+  DEFINE_VMEM_ST_TYPE(, v_st_unit);
+  DEFINE_VMEM_LD_TYPE(s, v_ld_stride);
+  DEFINE_VMEM_ST_TYPE(s, v_st_stride);
+  DEFINE_VMEM_LD_TYPE(x, v_ld_index);
+  DEFINE_VMEM_ST_TYPE(x, v_st_index);
+
+  #undef DEFINE_VMEM_LD_TYPE
+  #undef DEFINE_VMEM_ST_TYPE
+
+  // handle vector segment load/store
+  for (size_t nf = 1; nf <= 7; ++nf) {
+    std::pair<reg_t, reg_t> insn_code[] = {
+      {mask_vlb_v,  mask_vlb_v},
+      {mask_vlh_v,  mask_vlh_v},
+      {mask_vlw_v,  mask_vlw_v},
+      {mask_vle_v,  mask_vle_v},
+      {mask_vlbu_v, mask_vlbu_v},
+      {mask_vlhu_v, mask_vlhu_v},
+      {mask_vlwu_v, mask_vlwu_v},
+      {mask_vsb_v,  mask_vsb_v},
+      {mask_vsh_v,  mask_vsh_v},
+      {mask_vsw_v,  mask_vsw_v},
+      {mask_vse_v,  mask_vse_v},
+
+      {mask_vlsb_v,  mask_vlsb_v},
+      {mask_vlsh_v,  mask_vlsh_v},
+      {mask_vlsw_v,  mask_vlsw_v},
+      {mask_vlse_v,  mask_vlse_v},
+      {mask_vlsbu_v, mask_vlsbu_v},
+      {mask_vlshu_v, mask_vlshu_v},
+      {mask_vlswu_v, mask_vlswu_v},
+      {mask_vssb_v,  mask_vssb_v},
+      {mask_vssh_v,  mask_vssh_v},
+      {mask_vssw_v,  mask_vssw_v},
+      {mask_vsse_v,  mask_vssw_v},
+
+      {mask_vlxb_v,  mask_vlxb_v},
+      {mask_vlxh_v,  mask_vlxh_v},
+      {mask_vlxw_v,  mask_vlxw_v},
+      {mask_vlxe_v,  mask_vlxe_v},
+      {mask_vlxbu_v, mask_vlxbu_v},
+      {mask_vlxhu_v, mask_vlxhu_v},
+      {mask_vlxwu_v, mask_vlxwu_v},
+      {mask_vsxb_v,  mask_vsxb_v},
+      {mask_vsxh_v,  mask_vsxh_v},
+      {mask_vsxw_v,  mask_vsxw_v},
+      {mask_vsxe_v,  mask_vsxw_v},
+
+    };
+
+    std::pair<const char *, std::vector<const arg_t*>> fmts[] = { 
+      {"vlseg%db_v", {&vd, &v_address, &opt, &vm}},
+      {"vlseg%dh_v", {&vd, &v_address, &opt, &vm}},
+      {"vlseg%dw_v", {&vd, &v_address, &opt, &vm}},
+      {"vlseg%de_v", {&vd, &v_address, &opt, &vm}},
+      {"vlseg%dwu_v", {&vd, &v_address, &opt, &vm}},
+      {"vlseg%dhu_v", {&vd, &v_address, &opt, &vm}},
+      {"vlseg%dbu_v", {&vd, &v_address, &opt, &vm}},
+      {"vsseg%db_v", {&vs3, &v_address, &opt, &vm}},
+      {"vsseg%dh_v", {&vs3, &v_address, &opt, &vm}},
+      {"vsseg%dw_v", {&vs3, &v_address, &opt, &vm}},
+      {"vsseg%de_v", {&vs3, &v_address, &opt, &vm}},
+
+      {"vlsseg%db_v", {&vd, &v_address, &xrs2, &opt, &vm}},
+      {"vlsseg%dh_v", {&vd, &v_address, &xrs2, &opt, &vm}},
+      {"vlsseg%dw_v", {&vd, &v_address, &xrs2, &opt, &vm}},
+      {"vlsseg%de_v", {&vd, &v_address, &xrs2, &opt, &vm}},
+      {"vlsseg%dbu_v",{&vd, &v_address, &xrs2, &opt, &vm}},
+      {"vlsseg%dhu_v",{&vd, &v_address, &xrs2, &opt, &vm}},
+      {"vlsseg%dwu_v",{&vd, &v_address, &xrs2, &opt, &vm}},
+      {"vssseg%db_v", {&vs3, &v_address, &xrs2, &opt, &vm}},
+      {"vssseg%dh_v", {&vs3, &v_address, &xrs2, &opt, &vm}},
+      {"vssseg%dw_v", {&vs3, &v_address, &xrs2, &opt, &vm}},
+      {"vssseg%de_v", {&vs3, &v_address, &xrs2, &opt, &vm}},
+
+      {"vlseg%db_v", {&vd, &v_address, &vs2, &opt, &vm}},
+      {"vlseg%dh_v", {&vd, &v_address, &vs2, &opt, &vm}},
+      {"vlseg%dw_v", {&vd, &v_address, &vs2, &opt, &vm}},
+      {"vlseg%de_v", {&vd, &v_address, &vs2, &opt, &vm}},
+      {"vlseg%dwu_v",{&vd, &v_address, &vs2, &opt, &vm}},
+      {"vlseg%dhu_v",{&vd, &v_address, &vs2, &opt, &vm}},
+      {"vlseg%dbu_v",{&vd, &v_address, &vs2, &opt, &vm}},
+      {"vsseg%db_v", {&vs3, &v_address, &vs2, &opt, &vm}},
+      {"vsseg%dh_v", {&vs3, &v_address, &vs2, &opt, &vm}},
+      {"vsseg%dw_v", {&vs3, &v_address, &vs2, &opt, &vm}},
+      {"vsseg%de_v", {&vs3, &v_address, &vs2, &opt, &vm}},
+    };
+
+    for (size_t idx_insn = 0; idx_insn < sizeof(insn_code) / sizeof(insn_code[0]); ++idx_insn) {
+      const reg_t code_nf = nf << 29;
+      char buf[128];
+      sprintf(buf, fmts[idx_insn].first,
+                   insn_code[idx_insn].first | code_nf,
+                   insn_code[idx_insn].second);
+      add_insn(new disasm_insn_t(buf,
+                                 insn_code[idx_insn].first | nf,
+                                 insn_code[idx_insn].second,
+                                 fmts[idx_insn].second
+                                 ));
+    }
+  }
+
+
 
   DISASM_INSN("vadd.vv", vadd_vv, 0, {&vd, &vs1, &vs2, &opt, &vm});
   DISASM_INSN("vadd.vx", vadd_vx, 0, {&vd, &xrs1, &vs2, &opt, &vm});
