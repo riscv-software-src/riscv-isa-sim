@@ -1,7 +1,7 @@
-// vssseg6w.v vs3, (rs1), rs2, vm
+// vssseg3w.v vs3, (rs1), rs2, vm
 require(STATE.VU.vsew == 32);
 require(insn.v_vm() == 1);
-reg_t nf = 6;
+reg_t nf = insn.v_nf() + 1;
 reg_t vl = STATE.VU.vl;
 reg_t baseAddr = RS1;
 reg_t stride = RS2;

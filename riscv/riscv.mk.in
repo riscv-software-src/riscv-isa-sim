@@ -299,10 +299,7 @@ riscv_insn_list = \
 	vlw_v \
 	vlsw_v \
 	vsw_v \
-	vssseg3w_v \
-	vssseg4w_v \
-	vssseg5w_v \
-	vssseg6w_v \
+	vssw_v \
 	wfi \
 	xor \
 	xori \
