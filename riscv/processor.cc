@@ -151,6 +151,7 @@ reg_t vectorUnit_t::setVL(reg_t reqVL, reg_t newType){
     vsew = 1 << (BITS(newType, 8, 2) + 3);
     vlmul = 1 << BITS(newType, 1, 0);
     vlmax = VLEN/vsew * vlmul;
+    vmlen = vsew / vlmul;
     reg_mask = (NVPR-1) & ~(vlmul-1);
   }
   vl = reqVL <= vlmax ? reqVL : vlmax;

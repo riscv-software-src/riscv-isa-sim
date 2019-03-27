@@ -93,7 +93,7 @@ struct vectorUnit_t {
   char reg_referenced[NVPR];  
   int setvl_count;
   reg_t reg_mask, vstart, vl, vlmax, vsew;
-  reg_t vxrm, vxsat, vlmul;
+  reg_t vxrm, vxsat, vlmul, vmlen;
   reg_t ELEN, VLEN, SLEN, LMUL, vtype;
 
   reg_t setVL(reg_t reqVL, reg_t newType);
