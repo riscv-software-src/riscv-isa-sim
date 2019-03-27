@@ -291,8 +291,15 @@ riscv_insn_list = \
 	sw \
 	vsetvli \
 	vfmacc_vf \
+	vlb_v \
+	vlh_v \
 	vlw_v \
+	vlbu_v \
+	vlhu_v \
+	vlwu_v \
 	vlsw_v \
+	vsb_v \
+	vsh_v \
 	vsw_v \
 	vssw_v \
 	vadd_vv \
