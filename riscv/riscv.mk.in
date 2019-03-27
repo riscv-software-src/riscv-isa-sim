@@ -290,12 +290,7 @@ riscv_insn_list = \
 	subw \
 	sw \
 	vsetvli \
-	vfmul_vv \
-	vfrdiv_vf \
-	vfmacc_vv \
 	vfmacc_vf \
-	vfnmsac_vv \
-	vmerge_vv \
 	vlw_v \
 	vlsw_v \
 	vsw_v \
