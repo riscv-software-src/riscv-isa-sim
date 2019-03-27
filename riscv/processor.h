@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <cassert>
 #include "debug_rom_defines.h"
 
 class processor_t;
@@ -89,7 +90,7 @@ inline reg_t BITS(reg_t v, int hi, int lo){
 
 struct vectorUnit_t {
   void *reg_file;
-  char reg_referenced[NVPR];
+  char reg_referenced[NVPR];  
   int setvl_count;
   reg_t reg_mask, vstart, vl, vlmax, vsew;
   reg_t vxrm, vxsat, vlmul;
@@ -97,19 +98,21 @@ struct vectorUnit_t {
 
   reg_t setVL(reg_t reqVL, reg_t newType);
 
+  // vector element for varies SEW
   template<class T>
   T& elt(reg_t vReg, reg_t n){
     // this still needs to be adjusted for SLEN != VLEN
-    reg_t elts_per_reg = (VLEN>>3)/sizeof(T);
-    vReg += n/elts_per_reg;
-    n = n%elts_per_reg;
+    assert(vsew!=0);
+    reg_t elts_per_reg = (VLEN >> 3) / (vsew >> 3);
+    vReg += n / elts_per_reg; // for grouping purpose
+    n = n % elts_per_reg;
     reg_referenced[vReg] = 1;
     #if 0
     if (((vReg & reg_mask) != vReg) || (n >= vlmax)){
       throw trap_illegal_instruction(0);
     }
     #endif
-    T *regStart = (T*)((char*)reg_file + vReg * (VLEN/8));
+    T *regStart = (T*)((char*)reg_file + vReg * (VLEN >> 3));
     return regStart[n];
   }
 
