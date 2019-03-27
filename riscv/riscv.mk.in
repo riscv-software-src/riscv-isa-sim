@@ -297,10 +297,17 @@ riscv_insn_list = \
 	vlbu_v \
 	vlhu_v \
 	vlwu_v \
+	vlsb_v \
+	vlsh_v \
 	vlsw_v \
+	vlsbu_v \
+	vlshu_v \
+	vlswu_v \
 	vsb_v \
 	vsh_v \
 	vsw_v \
+	vssb_v \
+	vssh_v \
 	vssw_v \
 	vadd_vv \
 	vredand_vv \
