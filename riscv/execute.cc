@@ -168,7 +168,7 @@ void processor_t::step(size_t n)
           if (debug && !state.serialized) {
             prev_reg_state_t *saved = state.prev_state;
             if (saved->VU.setvl_count != state.VU.setvl_count) {
-              fprintf(stderr, "vconfig <- sew=%lu vlmul=%d vlmax=%lu vl=%lu\n",
+              fprintf(stderr, "vconfig <- sew=%lu vlmul=%ld vlmax=%lu vl=%lu\n",
                       state.VU.vsew, state.VU.vlmul, state.VU.vlmax, state.VU.vl);
               saved->VU.setvl_count = state.VU.setvl_count;
             }
