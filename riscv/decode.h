@@ -362,6 +362,24 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
   BODY; \
   VI_LOOP_END
 
+#define VI_LD_LOOP(BODY) \
+  VI_LOOP_BASE \
+  uint64_t &vd = STATE.VU.elt<uint64_t>(rd_num, i); \
+  uint64_t rs1 = RS1; \
+  uint64_t vs2 = STATE.VU.elt<uint64_t>(rs2_num, i); \
+  BODY; \
+  VI_LOOP_END
+
+#define VI_ST_LOOP(BODY) \
+  VI_LOOP_BASE \
+  uint64_t &vd = STATE.VU.elt<uint64_t>(rd_num, i); \
+  uint64_t rs1 = RS1; \
+  uint64_t vs2 = STATE.VU.elt<uint64_t>(rs2_num, i); \
+  BODY; \
+  VI_LOOP_END
+
+
+
 #define VF_LOOP_BASE \
   require_extension('F'); \
   require_fp; \

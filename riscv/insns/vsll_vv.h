@@ -1,5 +1,5 @@
 // vsll
 VI_VV_LOOP
 ({
-    // NOT IMPLEMENTED YET
+    WRITE_RD(sext_xlen(vs1 << (vs2 & (xlen-1))));
 })

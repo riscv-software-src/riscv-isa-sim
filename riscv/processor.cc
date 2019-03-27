@@ -139,6 +139,7 @@ void vectorUnit_t::reset(){
   ELEN = 32;
   VLEN = 128;
   SLEN = VLEN; // registers are simply concatenated
+  LMUL = 1;
   reg_file = malloc(NVPR * (VLEN/8));
   vtype = -1;
   setVL(0, 0); // vsew8, vlmul1
