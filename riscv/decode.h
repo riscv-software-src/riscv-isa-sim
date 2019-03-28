@@ -358,7 +358,7 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 #define VI_VI_LOOP(BODY) \
   VI_LOOP_BASE \
   uint64_t &vd = STATE.VU.elt<uint64_t>(rd_num, i); \
-  uint64_t simm5 = (uint64_t)rs1_num; \
+  uint64_t simm5 = (((int8_t)rs1_num) << 3) >> 3; \
   uint64_t vs2 = STATE.VU.elt<uint64_t>(rs2_num, i); \
   BODY; \
   VI_LOOP_END
