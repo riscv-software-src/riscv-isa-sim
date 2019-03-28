@@ -1,5 +1,17 @@
 // vfmacc.vf vd, rs1, vs2, vm    # vd[i] = +(vs2[i] * x[rs1]) + vd[i]
-VFMA_VF_LOOP
+require_fp;
+softfloat_roundingMode = STATE.VU.vxrm;
+
+VFP_VF_LOOP
 ({
-  vd = f32_mulAdd(rs1, vs2, vd);
- })
+ switch(STATE.VU.vsew){
+ case e32:
+    vd = f32_mulAdd(rs1, vs2, vd);
+    break;
+ case e16:
+ case e8:
+ default:
+     softfloat_exceptionFlags = 1;
+ };
+})
+set_fp_exceptions;
