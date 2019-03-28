@@ -300,15 +300,24 @@ riscv_insn_list = \
 	vlsb_v \
 	vlsh_v \
 	vlsw_v \
+	vlxb_v \
+	vlxh_v \
+	vlxw_v \
 	vlsbu_v \
 	vlshu_v \
 	vlswu_v \
+	vlxbu_v \
+	vlxhu_v \
+	vlxwu_v \
 	vsb_v \
 	vsh_v \
 	vsw_v \
 	vssb_v \
 	vssh_v \
 	vssw_v \
+	vsxb_v \
+	vsxh_v \
+	vsxw_v \
 	vadd_vv \
 	vredand_vv \
 	vsub_vv \
