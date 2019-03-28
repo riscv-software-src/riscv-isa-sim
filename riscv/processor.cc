@@ -191,15 +191,19 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     // nonstandard interrupts have highest priority
     if (enabled_interrupts >> IRQ_M_EXT)
       enabled_interrupts = enabled_interrupts >> IRQ_M_EXT << IRQ_M_EXT;
-    // external interrupts have next-highest priority
-    else if (enabled_interrupts & (MIP_MEIP | MIP_SEIP))
-      enabled_interrupts = enabled_interrupts & (MIP_MEIP | MIP_SEIP);
-    // software interrupts have next-highest priority
-    else if (enabled_interrupts & (MIP_MSIP | MIP_SSIP))
-      enabled_interrupts = enabled_interrupts & (MIP_MSIP | MIP_SSIP);
-    // timer interrupts have next-highest priority
-    else if (enabled_interrupts & (MIP_MTIP | MIP_STIP))
-      enabled_interrupts = enabled_interrupts & (MIP_MTIP | MIP_STIP);
+    // standard interrupt priority is MEI, MSI, MTI, SEI, SSI, STI
+    else if (enabled_interrupts & MIP_MEIP)
+      enabled_interrupts = MIP_MEIP;
+    else if (enabled_interrupts & MIP_MSIP)
+      enabled_interrupts = MIP_MSIP;
+    else if (enabled_interrupts & MIP_MTIP)
+      enabled_interrupts = MIP_MTIP;
+    else if (enabled_interrupts & MIP_SEIP)
+      enabled_interrupts = MIP_SEIP;
+    else if (enabled_interrupts & MIP_SSIP)
+      enabled_interrupts = MIP_SSIP;
+    else if (enabled_interrupts & MIP_STIP)
+      enabled_interrupts = MIP_STIP;
     else
       abort();
 
