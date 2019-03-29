@@ -326,11 +326,18 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 #define DEBUG_RVV_FMA_VF 0
 #endif
 
+#define V_CHECK_MASK(do_mask) \
+  if (insn.v_vm() == 0) { \
+    int midx = (STATE.VU.vmlen * i) / 32; \
+    int mpos = (STATE.VU.vmlen * i) % 32; \
+    do_mask = (STATE.VU.elt<uint32_t>(0, midx) >> mpos) & 0x1; \
+  }
+
 #define V_LOOP_ELEMENT_SKIP \
   if (insn.v_vm() == 0) { \
     int midx = (STATE.VU.vmlen * i) / 32; \
     int mpos = (STATE.VU.vmlen * i) % 32; \
-    reg_t do_mask = (STATE.VU.elt<uint32_t>(0, midx) >> mpos) & 0x1; \
+    bool do_mask = (STATE.VU.elt<uint32_t>(0, midx) >> mpos) & 0x1; \
     if (do_mask) \
       continue; \
   }
