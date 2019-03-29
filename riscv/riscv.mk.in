@@ -421,8 +421,11 @@ riscv_insn_list = \
 	vfredmin_vs \
 	vfmax_vv \
 	vfredmax_vs \
+	vfsgnj_vf \
 	vfsgnj_vv \
+	vfsgnn_vf \
 	vfsgnn_vv \
+	vfsgnx_vf \
 	vfsgnx_vv \
 	vfmv_f_s \
 	vfmv_s_f \
