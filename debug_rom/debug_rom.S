@@ -13,6 +13,9 @@
 
 entry:
        jal zero, _entry
+resume:
+       // Not used.
+       jal zero, _resume
 exception:
        jal zero, _exception
 
