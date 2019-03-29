@@ -137,6 +137,7 @@ private:
 // helpful macros, etc
 #define MMU (*p->get_mmu())
 #define STATE (*p->get_state())
+#define FLEN (p->get_flen())
 #define READ_REG(reg) STATE.XPR[reg]
 #define READ_FREG(reg) STATE.FPR[reg]
 #define RD READ_REG(insn.rd())
@@ -387,8 +388,6 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
   BODY; \
   VI_LOOP_END
 
-
-
 #define VF_LOOP_BASE \
   require_extension('F'); \
   require_fp; \
@@ -405,7 +404,6 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
   } \
   STATE.VU.vstart = 0; \
   set_fp_exceptions;
-
 
 #define VFMA_VV_LOOP(BODY)                      \
   VF_LOOP_BASE \
@@ -426,7 +424,6 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
   BODY; \
   DEBUG_RVV_FMA_VF; \
   VF_LOOP_END
-
 
 #define VFP_VV_LOOP(BODY) \
   VF_LOOP_BASE \
