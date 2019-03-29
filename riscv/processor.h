@@ -96,7 +96,7 @@ struct vectorUnit_t {
   reg_t vxrm, vxsat, vlmul, vmlen;
   reg_t ELEN, VLEN, SLEN, LMUL, vtype;
 
-  reg_t setVL(reg_t reqVL, reg_t newType);
+  reg_t setVL(uint64_t regId, reg_t reqVL, reg_t newType);
 
   // vector element for varies SEW
   template<class T>

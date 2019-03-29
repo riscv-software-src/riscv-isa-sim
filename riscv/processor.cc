@@ -142,10 +142,10 @@ void vectorUnit_t::reset(){
   LMUL = 1;
   reg_file = malloc(NVPR * (VLEN/8));
   vtype = -1;
-  setVL(0, 0); // vsew8, vlmul1
+  setVL(-1, 0, 0); // vsew8, vlmul1
 }
 
-reg_t vectorUnit_t::setVL(reg_t reqVL, reg_t newType){
+reg_t vectorUnit_t::setVL(uint64_t regId, reg_t reqVL, reg_t newType){
   if (vtype != newType){
     vtype = newType;
     vsew = 1 << (BITS(newType, 8, 2) + 3);
@@ -154,7 +154,7 @@ reg_t vectorUnit_t::setVL(reg_t reqVL, reg_t newType){
     vmlen = vsew / vlmul;
     reg_mask = (NVPR-1) & ~(vlmul-1);
   }
-  vl = reqVL <= vlmax ? reqVL : vlmax;
+  vl = reqVL <= vlmax ? (regId == 0)? vlmax: reqVL : vlmax;
   vstart = 0;
   setvl_count++;
   return vl;
