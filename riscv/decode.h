@@ -345,6 +345,27 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
       continue; \
   }
 
+#define V_WIDE_CHECK \
+  require(STATE.VU.vlmul <= 4); \
+  require(STATE.VU.vsew * 2 < STATE.VU.ELEN); \
+  require(insn.rd() + STATE.VU.vlmul <= 32);
+
+#define V_WIDE_OP_AND_ASSIGN(var0, var1, var2, op0, op1, sign) \
+  switch(STATE.VU.vsew) { \
+  case e8: \
+    STATE.VU.elt<uint16_t>(rd_num, i) = \
+      op1((sign##16_t)(sign##8_t)var0 op0 (sign##16_t)(sign##8_t)var1) + (sign##16_t)var2; \
+    break; \
+  case e16: \
+    STATE.VU.elt<uint32_t>(rd_num, i) = \
+      op1((sign##32_t)(sign##16_t)var0 op0 (sign##32_t)(sign##16_t)var1) + (sign##32_t)var2; \
+    break; \
+  default: \
+    STATE.VU.elt<uint64_t>(rd_num, i) = \
+      op1((sign##64_t)(sign##32_t)var0 op0 (sign##64_t)(sign##32_t)var1) + (sign##64_t)var2; \
+    break; \
+  }
+
 #define VI_LOOP_BASE \
   require(STATE.VU.vsew == e8 || STATE.VU.vsew == e16 || STATE.VU.vsew == e32 || STATE.VU.vsew == e64); \
   require(insn.v_vm() == 1); \
