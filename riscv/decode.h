@@ -307,6 +307,9 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 #define d4 4   // EDIV 4
 #define d8 8   // EDIV 8
 
+#define vsext(x, sew) (((sreg_t)(x) << (64-sew)) >> (64-sew))
+#define vzext(x, sew) (((reg_t)(x) << (64-sew)) >> (64-sew))
+
 
 #define DEBUG_RVV 0
 
@@ -346,6 +349,7 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
   require(STATE.VU.vsew == e8 || STATE.VU.vsew == e16 || STATE.VU.vsew == e32 || STATE.VU.vsew == e64); \
   require(insn.v_vm() == 1); \
   reg_t vl = STATE.VU.vl; \
+  reg_t sew = STATE.VU.vsew; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
