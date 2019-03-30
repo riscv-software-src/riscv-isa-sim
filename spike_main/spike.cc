@@ -13,7 +13,7 @@
 #include <string>
 #include <memory>
 
-static void help()
+static void help(int exit_code = 1)
 {
   fprintf(stderr, "usage: spike [host options] <target program> [target options]\n");
   fprintf(stderr, "Host Options:\n");
@@ -24,7 +24,7 @@ static void help()
   fprintf(stderr, "  -d                    Interactive debug mode\n");
   fprintf(stderr, "  -g                    Track histogram of PCs\n");
   fprintf(stderr, "  -l                    Generate a log of execution\n");
-  fprintf(stderr, "  -h                    Print this help message\n");
+  fprintf(stderr, "  -h, --help            Print this help message\n");
   fprintf(stderr, "  -H                    Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
   fprintf(stderr, "  --pc=<address>        Override ELF entry point\n");
@@ -46,6 +46,13 @@ static void help()
       "required for a DMI access [default 0]\n");
   fprintf(stderr, "  --abstract-rti=<n>    Number of Run-Test/Idle cycles "
       "required for an abstract command to execute [default 0]\n");
+
+  exit(exit_code);
+}
+
+static void suggest_help()
+{
+  fprintf(stderr, "Try 'spike --help' for more information.\n");
   exit(1);
 }
 
@@ -119,8 +126,8 @@ int main(int argc, char** argv)
   };
 
   option_parser_t parser;
-  parser.help(&help);
-  parser.option('h', 0, 0, [&](const char* s){help();});
+  parser.help(&suggest_help);
+  parser.option('h', "help", 0, [&](const char* s){help(0);});
   parser.option('d', 0, 0, [&](const char* s){debug = true;});
   parser.option('g', 0, 0, [&](const char* s){histogram = true;});
   parser.option('l', 0, 0, [&](const char* s){log = true;});
