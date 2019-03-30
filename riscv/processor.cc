@@ -113,9 +113,6 @@ void processor_t::parse_isa_string(const char* str)
   if (supports_extension('Q') && !supports_extension('D'))
     bad_isa_string(str);
 
-  if (supports_extension('Q') && max_xlen < 64)
-    bad_isa_string(str);
-
   max_isa = state.misa;
 }
 
