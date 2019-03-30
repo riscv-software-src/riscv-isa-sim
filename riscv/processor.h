@@ -88,6 +88,14 @@ inline reg_t BITS(reg_t v, int hi, int lo){
   return (v >> lo) & ((2 << (hi - lo)) - 1);
 }
 
+enum VRM{
+	RUN = 0,
+	RNE,
+	RDN,
+	ROD,
+	INVALID_RM
+};
+
 struct vectorUnit_t {
   void *reg_file;
   char reg_referenced[NVPR];  
@@ -124,6 +132,19 @@ struct vectorUnit_t {
   ~vectorUnit_t(){
     free(reg_file);
     reg_file = 0;
+  }
+
+  void set_vcsr(int which, reg_t val);
+  reg_t get_vcsr(int which);
+
+  reg_t get_vlen() { return VLEN; }
+  reg_t get_elen() { return ELEN; }
+  reg_t get_slen() { return SLEN; }
+
+  VRM get_vround_mode() {
+	  uint32_t rm = BITS(vxrm, 0, 2);
+	  assert( rm < VRM::INVALID_RM );
+	  return (VRM)rm;
   }
 };
 

@@ -160,6 +160,14 @@ reg_t vectorUnit_t::setVL(uint64_t regId, reg_t reqVL, reg_t newType){
   return vl;
 }
 
+void vectorUnit_t::set_vcsr(int which, reg_t val){
+
+}
+
+reg_t vectorUnit_t::get_vcsr(int which){
+	return 0;
+}
+
 void processor_t::set_debug(bool value)
 {
   debug = value;
