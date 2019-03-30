@@ -5,21 +5,49 @@ About
 -------------
 
 Spike, the RISC-V ISA Simulator, implements a functional model of one or more
-RISC-V processors.
+RISC-V harts.  It is named after the golden spike used to celebrate the
+completion of the US transcontinental railway.
 
-Spike is named after the golden spike used to celebrate the completion of the
-US transcontinental railway.
+Spike supports the following RISC-V ISA features:
+  - RV32I and RV64I base ISAs, v2.1
+  - Zifencei extension, v2.0
+  - Zicsr extension, v2.0
+  - M extension, v2.0
+  - A extension, v2.0
+  - F extension, v2.2
+  - D extension, v2.2
+  - Q extension, v2.2
+  - C extension, v2.0
+  - Conformance to both RVWMO and RVTSO (Spike is sequentially consistent)
+  - Machine, Supervisor, and User modes, v1.11
+  - Debug v0.14
+
+Versioning and APIs
+-------------------
+
+Projects are versioned primarily to indicate when the API has been extended or
+rendered incompatible.  In that spirit, Spike aims to follow the
+[SemVer](https://semver.org/spec/v2.0.0.html) versioning scheme, in which
+major version numbers are incremented when backwards-incompatible API changes
+are made; minor version numbers are incremented when new APIs are added; and
+patch version numbers are incremented when bugs are fixed in
+a backwards-compatible manner.
+
+Spike's principal public API is the RISC-V ISA.  _The C++ interface to Spike's
+internals is **not** considered a public API at this time_, and
+backwards-incompatible changes to this interface _will_ be made without
+incrementing the major version number.
 
 Build Steps
 ---------------
 
 We assume that the RISCV environment variable is set to the RISC-V tools
-install path, and that the riscv-fesvr package is installed there.
+install path.
 
     $ apt-get install device-tree-compiler
     $ mkdir build
     $ cd build
-    $ ../configure --prefix=$RISCV --with-fesvr=$RISCV
+    $ ../configure --prefix=$RISCV
     $ make
     $ [sudo] make install
 
@@ -33,7 +61,7 @@ Install bash, gmake, dtc, and use clang.
     $ export CC=cc; export CXX=c++
     $ mkdir build
     $ cd build
-    $ ../configure --prefix=$RISCV --with-fesvr=$RISCV
+    $ ../configure --prefix=$RISCV
     $ gmake
     $ [doas] make install
 
