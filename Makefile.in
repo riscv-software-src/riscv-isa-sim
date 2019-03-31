@@ -191,9 +191,9 @@ $$($(2)_pch) : %.h.gch : %.h
 	$(COMPILE) -x c++-header $$< -o $$@
 # If using clang, don't depend (and thus don't build) precompiled headers
 $$($(2)_objs) : %.o : %.cc $$($(2)_gen_hdrs) $(if $(filter-out clang,$(CC)),$$($(2)_pch))
-	$(COMPILE) -c $$<
+	$(COMPILE) $$($(2)_CFLAGS) -c $$<
 $$($(2)_c_objs) : %.o : %.c $$($(2)_gen_hdrs)
-	$(COMPILE_C) -c $$<
+	$(COMPILE_C) $$($(2)_CFLAGS) -c $$<
 
 $(2)_junk += $$($(2)_pch) $$($(2)_objs) $$($(2)_c_objs) $$($(2)_deps) \
   $$($(2)_gen_hdrs)
