@@ -307,7 +307,7 @@ deps += $$($(2)_deps)
 
 test_outs += $$($(2)_test_outs)
 
-install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs)) $$($(2)_gen_hdrs)
+install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs))
 install_exes += $$($(2)_install_prog_exes)
 install_pcs  += riscv-$(1).pc
 
