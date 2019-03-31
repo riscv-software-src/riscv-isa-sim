@@ -96,6 +96,33 @@ enum VRM{
 	INVALID_RM
 };
 
+template<uint64_t N>
+struct type_sew_t;
+
+template<>
+struct type_sew_t<8>
+{
+    using type=int8_t;
+};
+
+template<>
+struct type_sew_t<16>
+{
+    using type=int16_t;
+};
+
+template<>
+struct type_sew_t<32>
+{
+    using type=int32_t;
+};
+
+template<>
+struct type_sew_t<64>
+{
+    using type=int64_t;
+};
+
 struct vectorUnit_t {
   void *reg_file;
   char reg_referenced[NVPR];  

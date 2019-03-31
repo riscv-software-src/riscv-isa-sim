@@ -380,12 +380,36 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
   } \
   STATE.VU.vstart = 0;
 
+#define VV_PARAMS(x) \
+    type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
+    type_sew_t<x>::type vs1 = STATE.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
+    type_sew_t<x>::type vs2 = STATE.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
+
+#define VX_PARAMS(x) \
+    type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
+    type_sew_t<x>::type rs1 = RS1; \
+    type_sew_t<x>::type vs2 = STATE.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
+
+#define VI_PARAMS(x) \
+    type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
+    type_sew_t<x>::type simm5 = (((int8_t)rs1_num) << 3) >> 3; \
+    type_sew_t<x>::type vs2 = STATE.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
+
 #define VI_VV_LOOP(BODY) \
   VI_LOOP_BASE \
-  int32_t &vd = STATE.VU.elt<int32_t>(rd_num, i); \
-  int32_t vs1 = STATE.VU.elt<int32_t>(rs1_num, i); \
-  int32_t vs2 = STATE.VU.elt<int32_t>(rs2_num, i); \
-  BODY; \
+  if (sew == 8){ \
+            VV_PARAMS(8); \
+            BODY; \
+  }else if(sew == 16){ \
+            VV_PARAMS(16); \
+            BODY; \
+  }else if(sew == 32){ \
+            VV_PARAMS(32); \
+            BODY; \
+  }else if(sew == 64){ \
+            VV_PARAMS(64); \
+            BODY; \
+  } \
   VI_LOOP_END
 
 #define VI_VI_LOOP(BODY) \
