@@ -1,0 +1,11 @@
+prefix=@prefix@
+exec_prefix=@prefix@
+libdir=${prefix}/@libdir@
+includedir=${prefix}/@includedir@
+
+Name: riscv-fesvr
+Description: RISC-V front-end server
+Version: git
+Libs: -Wl,-rpath,${libdir} -L${libdir} -lfesvr
+Cflags: -I${includedir} 
+URL: http://riscv.org/download.html#tab_fesvr

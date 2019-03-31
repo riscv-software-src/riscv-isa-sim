@@ -10,17 +10,6 @@ AC_SEARCH_LIBS([dlopen], [dl dld], [], [
   AC_MSG_ERROR([unable to find the dlopen() function])
 ])
 
-AC_ARG_WITH([fesvr],
-  [AS_HELP_STRING([--with-fesvr],
-    [path to your fesvr installation if not in a standard location])],
-  [
-    LDFLAGS="-L$withval/lib $LDFLAGS"
-    CPPFLAGS="-I$withval/include $CPPFLAGS"
-  ]
-)
-
-AC_CHECK_LIB(fesvr, libfesvr_is_present, [], [AC_MSG_ERROR([libfesvr is required])], [-pthread])
-
 AC_CHECK_LIB(pthread, pthread_create, [], [AC_MSG_ERROR([libpthread is required])])
 
 AC_ARG_ENABLE([commitlog], AS_HELP_STRING([--enable-commitlog], [Enable commit log generation]))

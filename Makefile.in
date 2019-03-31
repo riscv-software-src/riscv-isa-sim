@@ -51,16 +51,10 @@ endif
 # Installation directories
 
 prefix       := @prefix@
-enable_stow  := @enable_stow@
 
-ifeq ($(enable_stow),yes)
-  stow_pkg_dir := $(prefix)/pkgs
-  INSTALLDIR ?= $(DESTDIR)$(stow_pkg_dir)/$(project_name)-$(project_ver)
-else
-  INSTALLDIR ?= $(DESTDIR)$(prefix)
-endif
+INSTALLDIR ?= $(DESTDIR)$(prefix)
 
-install_hdrs_dir := $(INSTALLDIR)/include/$(project_name)
+install_hdrs_dir := $(INSTALLDIR)/include
 install_libs_dir := $(INSTALLDIR)/lib
 install_exes_dir := $(INSTALLDIR)/bin
 
@@ -307,7 +301,8 @@ deps += $$($(2)_deps)
 
 test_outs += $$($(2)_test_outs)
 
-install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs))
+install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_install_hdrs))
+install_libs += $$(if $$($(2)_install_lib),lib$(1).a,)
 install_exes += $$($(2)_install_prog_exes)
 install_pcs  += riscv-$(1).pc
 
@@ -352,11 +347,12 @@ check : check-cpp check-bin
 # Installation
 #-------------------------------------------------------------------------
 
-install-hdrs : $(install_hdrs) config.h
+install-hdrs : $(install_hdrs)
 	$(MKINSTALLDIRS) $(install_hdrs_dir)
-	for file in $^; \
+	for file in $(subst $(src_dir)/,,$^); \
   do \
-    $(INSTALL_HDR) $$file $(install_hdrs_dir); \
+		$(MKINSTALLDIRS) $(install_hdrs_dir)/`dirname $$file`; \
+    $(INSTALL_HDR) $(src_dir)/$$file $(install_hdrs_dir)/`dirname $$file`; \
   done
 
 install-libs : $(install_libs)
@@ -381,12 +377,6 @@ install-pc : $(install_pcs)
   done
 
 install : install-hdrs install-libs install-exes install-pc
-ifeq ($(enable_stow),yes)
-	$(MKINSTALLDIRS) $(stow_pkg_dir)
-	cd $(stow_pkg_dir) && \
-    $(STOW) --delete $(project_name)-* && \
-    $(STOW) $(project_name)-$(project_ver)
-endif
 
 .PHONY : install install-hdrs install-libs install-exes
 
