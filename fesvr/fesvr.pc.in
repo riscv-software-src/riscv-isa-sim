@@ -1,0 +1,26 @@
+#=========================================================================
+# Modular C++ Build System Subproject Package Config
+#=========================================================================
+# Please read the documenation in 'mcppbs-uguide.txt' for more details
+# on how the Modular C++ Build System works.
+
+#-------------------------------------------------------------------------
+# Generic variables 
+#-------------------------------------------------------------------------
+
+prefix=@prefix@
+include_dir=${prefix}/include/fesvr
+lib_dir=${prefix}/lib
+
+#-------------------------------------------------------------------------
+# Keywords
+#-------------------------------------------------------------------------
+
+Name        : fesvr
+Version     : @PACKAGE_VERSION@
+Description : Frontend Server C/C++ API
+Requires    : @fesvr_pkcdeps@
+Cflags      : -I${include_dir} @CPPFLAGS@ @fesvr_extra_cppflags@
+Libs        : -L${lib_dir} @LDFLAGS@ @fesvr_extra_ldflags@ \
+              -lfesvr @fesvr_extra_libs@
+

@@ -59,49 +59,6 @@ AC_DEFUN([MCPPBS_PROG_INSTALL],
   # Check for install script
 
   AC_PROG_INSTALL
-
-  # Deterimine if native build and set prefix appropriately
-  
-  AS_IF([ test ${enable_stow} = "yes" ],
-  [
-    AC_CHECK_PROGS([stow],[stow],[no])  
-    AS_IF([ test ${stow} = "no" ],
-    [
-      AC_MSG_ERROR([Cannot use --enable-stow since stow is not available])
-    ])
-
-    # Check if native or non-native build
-
-    AS_IF([ test "${build}" = "${host}" ],
-    [
-
-      # build == host so this is a native build. Make sure --prefix not
-      # set and $STOW_PREFIX is set, then set prefix=$STOW_PREFIX.
-
-      AS_IF([ test "${prefix}" = "NONE" && test -n "${STOW_PREFIX}" ],
-      [
-        prefix="${STOW_PREFIX}"
-        AC_MSG_NOTICE([Using \$STOW_PREFIX from environment])
-        AC_MSG_NOTICE([prefix=${prefix}])
-      ])
-
-    ],[
-
-      # build != host so this is a non-native build. Make sure --prefix
-      # not set and $STOW_ROOT is set, then set
-      # prefix=$STOW_ROOT/${host_alias}.
-
-      AS_IF([ test "${prefix}" = "NONE" && test -n "${STOW_ROOT}" ],
-      [
-        prefix="${STOW_ROOT}/${host_alias}"
-        AC_MSG_NOTICE([Using \$STOW_ROOT from environment])
-        AC_MSG_NOTICE([prefix=${prefix}])
-      ])
-
-    ])
-      
-  ])
-
 ])
 
 #-------------------------------------------------------------------------
