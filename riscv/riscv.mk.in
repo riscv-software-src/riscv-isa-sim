@@ -397,14 +397,24 @@ riscv_insn_list = \
 	vwmulu_vv \
 	vdot_vv \
 	vwmulsu_vv \
+	vwmulsu_vx \
 	vwmul_vv \
+	vwmul_vx \
 	vwsmaccu_vv \
+	vwsmaccu_vx \
 	vwmaccu_vv \
+	vwmaccu_vx \
 	vwsmacc_vv \
+	vwsmacc_vx \
 	vwmacc_vv \
+	vwmacc_vx \
 	vwsmsacu_vv \
+	vwsmsacu_vx \
+	vwmsacu_vv \
 	vwmsacu_vx \
 	vwsmsac_vv \
+	vwsmsac_vx \
+	vwmsac_vv \
 	vwmsac_vx \
 	vredand_vv \
 	vredsum_vv \
