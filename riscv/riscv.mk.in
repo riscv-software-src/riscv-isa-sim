@@ -319,19 +319,12 @@ riscv_insn_list = \
 	vsxh_v \
 	vsxw_v \
 	vadd_vv \
-	vredand_vv \
 	vsub_vv \
-	vredor_vv \
 	vrsub_vx \
-	vredxor_vv \
 	vminu_vv \
-	vredminu_vv \
 	vmin_vv \
-	vredmin_vv \
 	vmaxu_vv \
-	vredmaxu_vv \
 	vmax_vv \
-	vredmax_vv \
 	vand_vv \
 	vor_vv \
 	vxor_vv \
@@ -413,6 +406,14 @@ riscv_insn_list = \
 	vwmsacu_vx \
 	vwsmsac_vv \
 	vwmsac_vx \
+	vredand_vv \
+	vredsum_vv \
+	vredor_vv \
+	vredxor_vv \
+	vredminu_vv \
+	vredmin_vv \
+	vredmaxu_vv \
+	vredmax_vv \
 	vfadd_vv \
 	vfredsum_vs \
 	vfsub_vv \
