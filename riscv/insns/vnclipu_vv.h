@@ -1,7 +1,7 @@
 // vnclipu: vd[i] = clip(round(vs2[i] + rnd) >> vs1[i])
 int64_t round = 0;
 VRM vrm = STATE.VU.get_vround_mode();
-reg_t sew_lo;
+reg_t sew_lo = 0;
 VI_VV_LOOP
 ({
     if (i % 2 == 0){
@@ -36,4 +36,5 @@ VI_VV_LOOP
     if (result >= (uint64_t)(2^(sew - 1)))
         result = (2^(sew - 1)) - 1;
     
+    vd = result; 
 })
