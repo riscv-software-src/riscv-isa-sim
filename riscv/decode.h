@@ -570,6 +570,18 @@ enum VMUNARY0{
   DEBUG_RVV_FP_VV; \
   VF_LOOP_END
 
+#define VFP_VV_REDUCTION_LOOP(BODY) \
+  VF_LOOP_BASE \
+  float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
+  float32_t vs1 = STATE.VU.elt<float32_t>(rs1_num, i); \
+  float32_t vs2 = STATE.VU.elt<float32_t>(rs2_num, i); \
+  float32_t &vd_0 = STATE.VU.elt<float32_t>(rd_num, 0); \
+  float32_t vs1_0 = STATE.VU.elt<float32_t>(rs1_num, 0); \
+  vd_0 = vs1_0; \
+  BODY; \
+  DEBUG_RVV_FP_VV; \
+  VF_LOOP_END
+
 #define VFP_VF_LOOP(BODY) \
   VF_LOOP_BASE \
   float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
