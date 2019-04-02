@@ -1,5 +1,5 @@
 // vfredsum
-VFP_VV_LOOP
+VFP_VV_REDUCTION_LOOP
 ({
-    // NOT IMPLEMENTED YET
+    vd_0 = f32_add(vs2, vd_0);
 })
