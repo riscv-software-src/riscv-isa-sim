@@ -1,5 +1,5 @@
 // vredand
-VI_VV_LOOP
+VI_VV_REDUCTION_LOOP
 ({
-    // NOT IMPLEMENTED YET
+    vd_0 &= vs2;
 })
