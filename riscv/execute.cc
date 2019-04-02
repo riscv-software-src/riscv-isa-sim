@@ -211,13 +211,6 @@ void processor_t::step(size_t n)
           }
 
           advance_pc();
-
-          if (unlikely(state.pc >= DEBUG_ROM_ENTRY &&
-                       state.pc < DEBUG_END)) {
-            // We're waiting for the debugger to tell us something.
-            return;
-          }
-
         }
       }
       else while (instret < n)
@@ -307,6 +300,16 @@ void processor_t::step(size_t n)
         default:
           abort();
       }
+    }
+    catch (wait_for_interrupt_t &t)
+    {
+      // Return to the outer simulation loop, which gives other devices/harts a
+      // chance to generate interrupts.
+      //
+      // In the debug ROM this prevents us from wasting time looping, but also
+      // allows us to switch to other threads only once per idle loop in case
+      // there is activity.
+      n = instret;
     }
 
     state.minstret += instret;

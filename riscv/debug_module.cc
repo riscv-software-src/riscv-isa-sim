@@ -32,7 +32,7 @@ static unsigned field_width(unsigned n)
 ///////////////////////// debug_module_t
 
 debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bus_master_bits,
-    bool require_authentication, unsigned abstract_rti) :
+    bool require_authentication, unsigned abstract_rti, bool support_hasel) :
   nprocs(sim->nprocs()),
   progbufsize(progbufsize),
   program_buffer_bytes(4 + 4*progbufsize),
@@ -46,7 +46,9 @@ debug_module_t::debug_module_t(sim_t *sim, unsigned progbufsize, unsigned max_bu
   sim(sim),
   // The spec lets a debugger select nonexistent harts. Create hart_state for
   // them because I'm too lazy to add the code to just ignore accesses.
-  hart_state(1 << field_width(sim->nprocs()))
+  hart_state(1 << field_width(sim->nprocs())),
+  hart_array_mask(sim->nprocs()),
+  support_hasel(support_hasel)
 {
   D(fprintf(stderr, "debug_data_start=0x%x\n", debug_data_start));
   D(fprintf(stderr, "debug_progbuf_start=0x%x\n", debug_progbuf_start));
@@ -223,7 +225,8 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   }
 
   if (addr == DEBUG_ROM_GOING) {
-    debug_rom_flags[dmcontrol.hartsel] &= ~(1 << DEBUG_ROM_FLAG_GO);
+    assert(len == 4);
+    debug_rom_flags[id] &= ~(1 << DEBUG_ROM_FLAG_GO);
     return true;
   }
 
@@ -266,14 +269,23 @@ uint32_t debug_module_t::read32(uint8_t *memory, unsigned int index)
   return value;
 }
 
-processor_t *debug_module_t::current_proc() const
+processor_t *debug_module_t::processor(unsigned hartid) const
 {
   processor_t *proc = NULL;
   try {
-    proc = sim->get_core(dmcontrol.hartsel);
+    proc = sim->get_core(hartid);
   } catch (const std::out_of_range&) {
   }
   return proc;
+}
+
+bool debug_module_t::hart_selected(unsigned hartid) const
+{
+  if (dmcontrol.hasel) {
+    return hartid == dmcontrol.hartsel || hart_array_mask[hartid];
+  } else {
+    return hartid == dmcontrol.hartsel;
+  }
 }
 
 unsigned debug_module_t::sb_access_bits()
@@ -375,14 +387,11 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
     switch (address) {
       case DMI_DMCONTROL:
         {
-          processor_t *proc = current_proc();
-          if (proc)
-            dmcontrol.haltreq = proc->halt_request;
-
           result = set_field(result, DMI_DMCONTROL_HALTREQ, dmcontrol.haltreq);
           result = set_field(result, DMI_DMCONTROL_RESUMEREQ, dmcontrol.resumereq);
           result = set_field(result, DMI_DMCONTROL_HARTSELHI,
               dmcontrol.hartsel >> DMI_DMCONTROL_HARTSELLO_LENGTH);
+          result = set_field(result, DMI_DMCONTROL_HASEL, dmcontrol.hasel);
           result = set_field(result, DMI_DMCONTROL_HARTSELLO, dmcontrol.hartsel);
           result = set_field(result, DMI_DMCONTROL_HARTRESET, dmcontrol.hartreset);
 	  result = set_field(result, DMI_DMCONTROL_NDMRESET, dmcontrol.ndmreset);
@@ -391,35 +400,38 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
         break;
       case DMI_DMSTATUS:
         {
-          processor_t *proc = current_proc();
+	  dmstatus.allhalted = true;
+          dmstatus.anyhalted = false;
+	  dmstatus.allrunning = true;
+          dmstatus.anyrunning = false;
+          dmstatus.allnonexistant = true;
+          dmstatus.allresumeack = true;
+          dmstatus.anyresumeack = false;
+          for (unsigned i = 0; i < nprocs; i++) {
+            if (hart_selected(i)) {
+              dmstatus.allnonexistant = false;
+              if (hart_state[i].resumeack) {
+                dmstatus.anyresumeack = true;
+              } else {
+                dmstatus.allresumeack = false;
+              }
+              if (hart_state[i].halted) {
+                dmstatus.allrunning = false;
+                dmstatus.anyhalted = true;
+              } else {
+                dmstatus.allhalted = false;
+                dmstatus.anyrunning = true;
+              }
+            }
+          }
 
-	  dmstatus.allnonexistant = false;
+          // We don't allow selecting non-existant harts through
+          // hart_array_mask, so the only way it's possible is by writing a
+          // non-existant hartsel.
+          dmstatus.anynonexistant = (dmcontrol.hartsel >= nprocs);
+
 	  dmstatus.allunavail = false;
-	  dmstatus.allrunning = false;
-	  dmstatus.allhalted = false;
-          dmstatus.allresumeack = false;
-          if (proc) {
-            if (hart_state[dmcontrol.hartsel].halted) {
-              dmstatus.allhalted = true;
-            } else {
-              dmstatus.allrunning = true;
-            }
-          } else {
-	    dmstatus.allnonexistant = true;
-          }
-	  dmstatus.anynonexistant = dmstatus.allnonexistant;
-	  dmstatus.anyunavail = dmstatus.allunavail;
-	  dmstatus.anyrunning = dmstatus.allrunning;
-	  dmstatus.anyhalted = dmstatus.allhalted;
-          if (proc) {
-            if (hart_state[dmcontrol.hartsel].resumeack) {
-              dmstatus.allresumeack = true;
-            } else {
-              dmstatus.allresumeack = false;
-            }
-          } else {
-            dmstatus.allresumeack = false;
-          }
+	  dmstatus.anyunavail = false;
 
           result = set_field(result, DMI_DMSTATUS_IMPEBREAK,
               dmstatus.impebreak);
@@ -461,6 +473,20 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
         result = set_field(result, DMI_HARTINFO_DATAACCESS, 1);
         result = set_field(result, DMI_HARTINFO_DATASIZE, abstractcs.datacount);
         result = set_field(result, DMI_HARTINFO_DATAADDR, debug_data_start);
+        break;
+      case DMI_HAWINDOWSEL:
+        result = hawindowsel;
+        break;
+      case DMI_HAWINDOW:
+        {
+          unsigned base = hawindowsel * 32;
+          for (unsigned i = 0; i < 32; i++) {
+            unsigned n = base + i;
+            if (n < nprocs && hart_array_mask[n]) {
+              result |= 1 << i;
+            }
+          }
+        }
         break;
       case DMI_SBCS:
         result = set_field(result, DMI_SBCS_SBVERSION, sbcs.version);
@@ -727,35 +753,47 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           if (!dmcontrol.dmactive && get_field(value, DMI_DMCONTROL_DMACTIVE))
             reset();
           dmcontrol.dmactive = get_field(value, DMI_DMCONTROL_DMACTIVE);
-          if (!dmstatus.authenticated)
+          if (!dmstatus.authenticated || !dmcontrol.dmactive)
             return true;
-          if (dmcontrol.dmactive) {
-            dmcontrol.haltreq = get_field(value, DMI_DMCONTROL_HALTREQ);
-            dmcontrol.resumereq = get_field(value, DMI_DMCONTROL_RESUMEREQ);
-            dmcontrol.hartreset = get_field(value, DMI_DMCONTROL_HARTRESET);
-            dmcontrol.ndmreset = get_field(value, DMI_DMCONTROL_NDMRESET);
-            dmcontrol.hartsel = get_field(value, DMI_DMCONTROL_HARTSELHI) <<
-              DMI_DMCONTROL_HARTSELLO_LENGTH;
-            dmcontrol.hartsel |= get_field(value, DMI_DMCONTROL_HARTSELLO);
-            dmcontrol.hartsel &= (1L<<hartsellen) - 1;
-            if (get_field(value, DMI_DMCONTROL_ACKHAVERESET)) {
-              hart_state[dmcontrol.hartsel].havereset = false;
+
+          dmcontrol.haltreq = get_field(value, DMI_DMCONTROL_HALTREQ);
+          dmcontrol.resumereq = get_field(value, DMI_DMCONTROL_RESUMEREQ);
+          dmcontrol.hartreset = get_field(value, DMI_DMCONTROL_HARTRESET);
+          dmcontrol.ndmreset = get_field(value, DMI_DMCONTROL_NDMRESET);
+          if (support_hasel)
+            dmcontrol.hasel = get_field(value, DMI_DMCONTROL_HASEL);
+          else
+            dmcontrol.hasel = 0;
+          dmcontrol.hartsel = get_field(value, DMI_DMCONTROL_HARTSELHI) <<
+            DMI_DMCONTROL_HARTSELLO_LENGTH;
+          dmcontrol.hartsel |= get_field(value, DMI_DMCONTROL_HARTSELLO);
+          dmcontrol.hartsel &= (1L<<hartsellen) - 1;
+          for (unsigned i = 0; i < nprocs; i++) {
+            if (hart_selected(i)) {
+              if (get_field(value, DMI_DMCONTROL_ACKHAVERESET)) {
+                hart_state[i].havereset = false;
+              }
+              processor_t *proc = processor(i);
+              if (proc) {
+                proc->halt_request = dmcontrol.haltreq;
+                if (dmcontrol.haltreq) {
+                  D(fprintf(stderr, "halt hart %d\n", i));
+                }
+                if (dmcontrol.resumereq) {
+                  D(fprintf(stderr, "resume hart %d\n", i));
+                  debug_rom_flags[i] |= (1 << DEBUG_ROM_FLAG_RESUME);
+                  hart_state[i].resumeack = false;
+                }
+                if (dmcontrol.hartreset) {
+                  proc->reset();
+                }
+              }
             }
           }
-          processor_t *proc = current_proc();
-          if (proc) {
-            proc->halt_request = dmcontrol.haltreq;
-            if (dmcontrol.resumereq) {
-              debug_rom_flags[dmcontrol.hartsel] |= (1 << DEBUG_ROM_FLAG_RESUME);
-              hart_state[dmcontrol.hartsel].resumeack = false;
-            }
-	    if (dmcontrol.hartreset) {
-	      proc->reset();
-	    }
-          }
+
           if (dmcontrol.ndmreset) {
             for (size_t i = 0; i < sim->nprocs(); i++) {
-              proc = sim->get_core(i);
+              processor_t *proc = sim->get_core(i);
               proc->reset();
             }
           }
@@ -765,6 +803,22 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
       case DMI_COMMAND:
         command = value;
         return perform_abstract_command();
+
+      case DMI_HAWINDOWSEL:
+        hawindowsel = value & ((1U<<field_width(nprocs))-1);
+        return true;
+
+      case DMI_HAWINDOW:
+        {
+          unsigned base = hawindowsel * 32;
+          for (unsigned i = 0; i < 32; i++) {
+            unsigned n = base + i;
+            if (n < nprocs) {
+              hart_array_mask[n] = (value >> i) & 1;
+            }
+          }
+        }
+        return true;
 
       case DMI_ABSTRACTCS:
         abstractcs.cmderr = (cmderr_t) (((uint32_t) (abstractcs.cmderr)) & (~(uint32_t)(get_field(value, DMI_ABSTRACTCS_CMDERR))));
