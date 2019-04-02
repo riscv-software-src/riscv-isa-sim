@@ -655,6 +655,8 @@ disassembler_t::disassembler_t(int xlen)
 
   DISASM_INSN("vsetvli", vsetvli, 0, {&xrd, &xrs1, &v_vtype});
   DISASM_INSN("vlw.v", vlw_v, 0, {&vd, &v_address, &opt, &vm});
+  DISASM_INSN("vlh.v", vlh_v, 0, {&vd, &v_address, &opt, &vm});
+  DISASM_INSN("vlb.v", vlb_v, 0, {&vd, &v_address, &opt, &vm});
   DISASM_INSN("vsw.v", vsw_v, 0, {&vs3, &v_address, &opt, &vm});
   DISASM_INSN("vlseg6w.v", vlw_v | (0x5 << 29), 0, {&vd, &v_address, &opt, &vm});
   DISASM_INSN("vsseg6w.v", vsw_v | (0x5 << 29), 0, {&vs3, &v_address, &opt, &vm});
@@ -668,6 +670,8 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN("vssseg4w.v", vssw_v | (0x3 << 29), 0, {&vs3, &v_address, &xrs2, &opt, &vm});
   DISASM_INSN("vssseg5w.v", vssw_v | (0x4 << 29), 0, {&vs3, &v_address, &xrs2, &opt, &vm});
   DISASM_INSN("vssseg6w.v", vssw_v | (0x5 << 29), 0, {&vs3, &v_address, &xrs2, &opt, &vm});
+
+  DISASM_INSN("vsub.vv", vsub_vv, 0, {&vd, &vs1, &vs2, &opt, &vm});
 
   DISASM_INSN("vfmacc.vf", vfmacc_vf, 0, {&vd, &frs1, &vs2, &opt, &vm});
   DISASM_INSN("vfmacc.vv", vfmacc_vv, 0, {&vd, &vs1, &vs2, &opt, &vm});
