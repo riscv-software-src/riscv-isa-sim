@@ -25,7 +25,8 @@ public:
         std::vector<std::pair<reg_t, mem_t*>> mems,
         const std::vector<std::string>& args, const std::vector<int> hartids,
         unsigned progsize, unsigned max_bus_master_bits,
-        bool require_authentication, suseconds_t abstract_delay_usec);
+        bool require_authentication, suseconds_t abstract_delay_usec,
+        bool support_hasel);
   ~sim_t();
 
   // run the simulation to completion
