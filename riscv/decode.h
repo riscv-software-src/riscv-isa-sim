@@ -292,6 +292,37 @@ inline float to_f(float32_t f){float r; memcpy(&r, &f, sizeof(r)); return r;}
 inline double to_f(float64_t f){double r; memcpy(&r, &f, sizeof(r)); return r;}
 inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); return r;}
 
+// Vector enums
+enum VFUNARY0{
+    VFCVT_XU_F_V  =0x00000,
+    VFCVT_X_F_V   =0x00001,
+    VFCVT_F_XU_V  =0x00010,
+    VFCVT_F_X_V   =0x00011,
+    VFWCVT_XU_F_V =0x01000,
+    VFWCVT_X_F_V  =0x01001,
+    VFWCVT_F_XU_V =0x01010,
+    VFWCVT_F_X_V  =0x01011,
+    VFWCVT_F_F_V  =0x01100,
+    VFNCVT_XU_F_V =0x10000,
+    VFNCVT_X_F_V  =0x10001,
+    VFNCVT_F_XU_V =0x10010,
+    VFNCVT_F_X_V  =0x10011,
+    VFNCVT_F_F_V  =0x10100
+};
+
+enum VFUNARY1{
+    VFSQRT_V = 0x0,
+    VFCLASS_V = 0x10000
+};
+
+enum VMUNARY0{
+    VMSBF  =0x00001,
+    VMSOF  =0x00010,
+    VMSIF  =0x00011,
+    VMIOTA =0x10000,
+    VID    =0x10001
+};
+
 // Vector macros
 #define e8 8   //   8b elements
 #define e16 16  //  16b elements
@@ -410,53 +441,72 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
             VV_PARAMS(64); \
             BODY; \
   } \
-  VI_LOOP_END
+  VI_LOOP_END 
 
-enum VFUNARY0{
-	VFCVT_XU_F_V  =0x00000,
-	VFCVT_X_F_V   =0x00001, 
-	VFCVT_F_XU_V  =0x00010, 
-	VFCVT_F_X_V   =0x00011, 
-	VFWCVT_XU_F_V =0x01000, 
-	VFWCVT_X_F_V  =0x01001, 
-	VFWCVT_F_XU_V =0x01010, 
-	VFWCVT_F_X_V  =0x01011, 
-	VFWCVT_F_F_V  =0x01100, 
-	VFNCVT_XU_F_V =0x10000, 
-	VFNCVT_X_F_V  =0x10001, 
-	VFNCVT_F_XU_V =0x10010, 
-	VFNCVT_F_X_V  =0x10011, 
-	VFNCVT_F_F_V  =0x10100
-};
+#define VI_REDUCTION_LOOP_BASE(x) \
+  require(x == e8 || x == e16 || x == e32 || x == e64); \
+  require(insn.v_vm() == 1); \
+  reg_t vl = STATE.VU.vl; \
+  reg_t rd_num = insn.rd(); \
+  reg_t rs1_num = insn.rs1(); \
+  reg_t rs2_num = insn.rs2(); \
+  type_sew_t<x>::type &vd_0 = STATE.VU.elt<type_sew_t<x>::type>(rd_num, 0); \
+  type_sew_t<x>::type vs1_0 = STATE.VU.elt<type_sew_t<x>::type>(rs1_num, 0); \
+  vd_0 = vs1_0; \
+  for (reg_t i=STATE.VU.vstart; i<vl; ++i){
 
-enum VFUNARY1{
-	VFSQRT_V = 0x0,
-	VFCLASS_V = 0x10000
-};
+#define REDUCTION_LOOP(x, BODY) \
+    VI_REDUCTION_LOOP_BASE(x) \
+    VV_PARAMS(x); \
+    BODY; \
+    VI_LOOP_END \
 
-enum VMUNARY0{
-	VMSBF  =0x00001, 
-	VMSOF  =0x00010, 
-	VMSIF  =0x00011, 
-	VMIOTA =0x10000, 
-	VID    =0x10001 
-};
-
-#define VI_VI_LOOP(BODY) \
-  VI_LOOP_BASE \
-  uint64_t &vd = STATE.VU.elt<uint64_t>(rd_num, i); \
-  uint64_t simm5 = (((int8_t)rs1_num) << 3) >> 3; \
-  uint64_t vs2 = STATE.VU.elt<uint64_t>(rs2_num, i); \
-  BODY; \
-  VI_LOOP_END
+#define VI_VV_REDUCTION_LOOP(BODY) \
+    reg_t sew = STATE.VU.vsew; \
+    if (sew == 8){ \
+        REDUCTION_LOOP(8, BODY) \
+    }else if(sew == 16){ \
+        REDUCTION_LOOP(16, BODY) \
+    }else if(sew == 32){ \
+        REDUCTION_LOOP(32, BODY) \
+    }else if(sew == 64){ \
+        REDUCTION_LOOP(64, BODY) \
+    }
 
 #define VI_VX_LOOP(BODY) \
   VI_LOOP_BASE \
-  uint64_t &vd = STATE.VU.elt<uint64_t>(rd_num, i); \
-  uint64_t rs1 = RS1; \
-  uint64_t vs2 = STATE.VU.elt<uint64_t>(rs2_num, i); \
-  BODY; \
-  VI_LOOP_END
+  if (sew == 8){ \
+            VX_PARAMS(8); \
+            BODY; \
+  }else if(sew == 16){ \
+            VX_PARAMS(16); \
+            BODY; \
+  }else if(sew == 32){ \
+            VX_PARAMS(32); \
+            BODY; \
+  }else if(sew == 64){ \
+            VX_PARAMS(64); \
+            BODY; \
+  } \
+  VI_LOOP_END 
+
+#define VI_VI_LOOP(BODY) \
+  VI_LOOP_BASE \
+  if (sew == 8){ \
+            VI_PARAMS(8); \
+            BODY; \
+  }else if(sew == 16){ \
+            VI_PARAMS(16); \
+            BODY; \
+  }else if(sew == 32){ \
+            VI_PARAMS(32); \
+            BODY; \
+  }else if(sew == 64){ \
+            VI_PARAMS(64); \
+            BODY; \
+  } \
+  VI_LOOP_END 
+
 
 #define VI_LD_LOOP(BODY) \
   VI_LOOP_BASE \
