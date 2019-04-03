@@ -4,8 +4,8 @@ reg_t vsew = STATE.VU.vsew;
 uint64_t sew_result_bits = vsew * 2;
 uint64_t upper_mask = 1 - ((1 << vsew) - 1);
 
-VI_VV_LOOP
+VI_VX_LOOP
 ({
     int64_t result = RS1 * vs2;
-    rd = (result>>(sew_result_bits - vsew)) & upper_mask;
+    vd = (result>>(sew_result_bits - vsew)) & upper_mask;
 })
