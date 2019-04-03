@@ -6,7 +6,7 @@ VFP_VF_LOOP
  bool &vd = STATE.VU.elt<bool>(rd_num, i); \
  switch(STATE.VU.vsew){
  case e32:
-    vd = f32_eq(f32(rs1), vs2);
+    vd = f32_eq(rs1, vs2);
     break;
  case e16:
  case e8:

@@ -3,7 +3,7 @@ require_fp;
 softfloat_roundingMode = STATE.VU.vxrm;
 float32_t mul_result;
 
-VFP_VV_LOOP
+VFP_VF_LOOP
 ({
  switch(STATE.VU.vsew){
  case e32:
