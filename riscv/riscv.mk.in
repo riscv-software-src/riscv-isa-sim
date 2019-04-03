@@ -318,83 +318,167 @@ riscv_insn_list = \
 	vsxb_v \
 	vsxh_v \
 	vsxw_v \
+	vadd_vi \
 	vadd_vv \
+	vadd_vx \
 	vsub_vv \
+	vsub_vx \
+	vrsub_vi \
 	vrsub_vx \
 	vminu_vv \
+	vminu_vx \
 	vmin_vv \
+	vmin_vx \
 	vmaxu_vv \
+	vmaxu_vx \
 	vmax_vv \
+	vmax_vx \
+	vand_vi \
 	vand_vv \
+	vand_vx \
+	vor_vi \
 	vor_vv \
+	vor_vx \
+	vxor_vi \
 	vxor_vv \
+	vxor_vx \
+	vrgather_vi \
 	vrgather_vv \
+	vrgather_vx \
 	vext_x_v \
 	vmv_s_x \
+	vslideup_vi \
 	vslideup_vx \
 	vslide1up_vx \
+	vslidedown_vi \
 	vslidedown_vx \
 	vslide1down_vx \
+	vadc_vi \
 	vadc_vv \
+	vadc_vx \
 	vsbc_vv \
+	vsbc_vx \
 	vmpopc_m \
 	vmfirst_m \
+	vmerge_vi \
 	vmerge_vv \
+	vmerge_vx \
 	vcompress_vm \
+	vseq_vi \
 	vseq_vv \
+	vseq_vx \
 	vmandnot_mm \
+	vsne_vi \
 	vsne_vv \
+	vsne_vx \
 	vmand_mm \
 	vsltu_vv \
+	vsltu_vx \
 	vmor_mm \
 	vslt_vv \
+	vslt_vx \
 	vmxor_mm \
+	vsleu_vi \
 	vsleu_vv \
+	vsleu_vx \
 	vmornot_mm \
+	vsle_vi \
 	vsle_vv \
+	vsle_vx \
 	vmnand_mm \
+	vsgtu_vi \
 	vsgtu_vx \
 	vmnor_mm \
+	vsgt_vi \
 	vsgt_vx \
 	vmxnor_mm \
+	vsaddu_vi \
 	vsaddu_vv \
+	vsaddu_vx \
 	vdivu_vv \
+	vdivu_vx \
+	vsadd_vi \
 	vsadd_vv \
+	vsadd_vx \
 	vdiv_vv \
+	vdiv_vx \
 	vssubu_vv \
+	vssubu_vx \
 	vremu_vv \
+	vremu_vx \
 	vssub_vv \
+	vssub_vx \
 	vrem_vv \
+	vrem_vx \
+	vaadd_vi \
 	vaadd_vv \
+	vaadd_vx \
 	vmulhu_vv \
+	vmulhu_vx \
+	vsll_vi \
 	vsll_vv \
+	vsll_vx \
 	vmul_vv \
+	vmul_vx \
 	vasub_vv \
+	vasub_vx \
 	vmulhsu_vv \
+	vmulhsu_vx \
 	vsmul_vv \
+	vsmul_vx \
 	vmulh_vv \
+	vmulh_vx \
+	vsrl_vi \
 	vsrl_vv \
+	vsrl_vx \
+	vsra_vi \
 	vsra_vv \
+	vsra_vx \
 	vmadd_vv \
+	vmadd_vx \
+	vssrl_vi \
 	vssrl_vv \
+	vssrl_vx \
+	vssra_vi \
 	vssra_vv \
+	vssra_vx \
 	vmsub_vv \
+	vmsub_vx \
+	vnsrl_vi \
 	vnsrl_vv \
+	vnsrl_vx \
+	vnsra_vi \
 	vnsra_vv \
+	vnsra_vx \
 	vmacc_vv \
+	vmacc_vx \
+	vnclipu_vi \
 	vnclipu_vv \
+	vnclipu_vx \
+	vnclip_vi \
 	vnclip_vv \
+	vnclip_vx \
 	vmsac_vv \
+	vmsac_vx \
 	vwaddu_vv \
+	vwaddu_vx \
 	vwadd_vv \
+	vwadd_vx \
 	vwsubu_vv \
+	vwsubu_vx \
 	vwsub_vv \
+	vwsub_vx \
 	vwaddu_wv \
+	vwaddu_wx \
 	vwadd_wv \
+	vwadd_wx \
 	vwsubu_wv \
+	vwsubu_wx \
 	vwsub_wv \
+	vwsub_wx \
 	vdotu_vv \
 	vwmulu_vv \
+	vwmulu_vx \
 	vdot_vv \
 	vwmulsu_vv \
 	vwmulsu_vx \
@@ -424,12 +508,16 @@ riscv_insn_list = \
 	vredmin_vv \
 	vredmaxu_vv \
 	vredmax_vv \
+	vfadd_vf \
 	vfadd_vv \
 	vfredsum_vs \
+	vfsub_vf \
 	vfsub_vv \
 	vfredosum_vs \
+	vfmin_vf \
 	vfmin_vv \
 	vfredmin_vs \
+	vfmax_vf \
 	vfmax_vv \
 	vfredmax_vs \
 	vfsgnj_vf \
@@ -441,23 +529,38 @@ riscv_insn_list = \
 	vfmv_f_s \
 	vfmv_s_f \
 	vfmerge_vf \
+	vfeq_vf \
 	vfeq_vv \
+	vfle_vf \
 	vfle_vv \
+	vford_vf \
 	vford_vv \
+	vflt_vf \
 	vflt_vv \
+	vfne_vf \
 	vfne_vv \
 	vfgt_vf \
 	vfge_vf \
+	vfdiv_vf \
 	vfdiv_vv \
 	vfrdiv_vf \
+	vfmul_vf \
 	vfmul_vv \
+	vfmadd_vf \
 	vfmadd_vv \
+	vfnmadd_vf \
 	vfnmadd_vv \
+	vfmsub_vf \
 	vfmsub_vv \
+	vfnmsub_vf \
 	vfnmsub_vv \
+	vfmacc_vf \
 	vfmacc_vv \
+	vfnmacc_vf \
 	vfnmacc_vv \
+	vfmsac_vf \
 	vfmsac_vv \
+	vfnmsac_vf \
 	vfnmsac_vv \
 	vfwadd_vv \
 	vfwredsum_vs \
@@ -465,11 +568,16 @@ riscv_insn_list = \
 	vfwredosum_vs \
 	vfwadd_wv \
 	vfwsub_wv \
+	vfwmul_vf \
 	vfwmul_vv \
 	vfdot_vv \
+	vfwmacc_vf \
 	vfwmacc_vv \
+	vfwnmacc_vf \
 	vfwnmacc_vv \
+	vfwmsac_vf \
 	vfwmsac_vv \
+	vfwnmsac_vf \
 	vfwnmsac_vv \
 	wfi \
 	xor \
