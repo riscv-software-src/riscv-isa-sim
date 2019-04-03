@@ -66,6 +66,7 @@ void sim_t::interactive()
   funcs["run"] = &sim_t::interactive_run_noisy;
   funcs["r"] = funcs["run"];
   funcs["rs"] = &sim_t::interactive_run_silent;
+  funcs["vreg"] = &sim_t::interactive_vreg;
   funcs["reg"] = &sim_t::interactive_reg;
   funcs["freg"] = &sim_t::interactive_freg;
   funcs["fregs"] = &sim_t::interactive_fregs;
@@ -119,6 +120,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "reg <core> [reg]                # Display [reg] (all if omitted) in <core>\n"
     "fregs <core> <reg>              # Display single precision <reg> in <core>\n"
     "fregd <core> <reg>              # Display double precision <reg> in <core>\n"
+    "vreg <core> [reg]               # Display vector [reg] (all if omitted) in <core>\n"
     "pc <core>                       # Show current PC in <core>\n"
     "mem <hex addr>                  # Show contents of physical memory\n"
     "str <hex addr>                  # Show NUL-terminated C string\n"
@@ -217,6 +219,46 @@ freg_t sim_t::get_freg(const std::vector<std::string>& args)
 
   return p->get_state()->FPR[r];
 }
+
+void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::string>& args)
+{
+  if (args.size() == 1) {
+    // Show all the regs!
+    processor_t *p = get_core(args[0]);
+    int vlen = (int)(p->get_state()->VU.get_vlen()) >> 3;
+    int elen = (int)(p->get_state()->VU.get_elen()) >> 3;
+    int num_elem = vlen/elen;
+    fprintf(stderr, "VLEN=%d bits; ELEN=%d bits\n", vlen << 3, elen << 3);
+
+    for (int r = 0; r < NVPR; ++r) {
+        fprintf(stderr, "%-4s: ", vr_name[r]);
+        for (int e = num_elem-1; e >= 0; --e){
+            long unsigned val;
+            switch(elen){
+                case 8:
+                    val = ((long unsigned*)p->get_state()->VU.reg_file + r*vlen)[e];
+                    fprintf(stderr, "%-4s[%d]: 0x%016" PRIx64 "  ", \
+                            vr_name[r], e, val);
+                    break;
+                case 4:
+                    val = ((unsigned*)p->get_state()->VU.reg_file + r*vlen)[e];
+                    fprintf(stderr, "[%d]0x%08x  ", e, (unsigned)val);
+                    break;
+                case 2:
+                    val = ((unsigned short*)p->get_state()->VU.reg_file + r*vlen)[e];
+                    fprintf(stderr, "[%d]0x%08x  ", e, (unsigned short)val);
+                    break;
+                case 1:
+                    val = ((unsigned char*)p->get_state()->VU.reg_file + r*vlen)[e];
+                    fprintf(stderr, "[%d]0x%08x  ", e, (unsigned char)val);
+                    break;
+            };
+        }
+        fprintf(stderr, "\n");
+    }
+  } // specify register
+}
+
 
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
 {
