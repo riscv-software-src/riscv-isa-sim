@@ -236,20 +236,20 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
             long unsigned val;
             switch(elen){
                 case 8:
-                    val = ((long unsigned*)p->get_state()->VU.reg_file + r*vlen)[e];
+                    val = ((long unsigned*)p->get_state()->VU.reg_file + r*num_elem)[e];
                     fprintf(stderr, "%-4s[%d]: 0x%016" PRIx64 "  ", \
                             vr_name[r], e, val);
                     break;
                 case 4:
-                    val = ((unsigned*)p->get_state()->VU.reg_file + r*vlen)[e];
+                    val = ((unsigned*)p->get_state()->VU.reg_file + r*num_elem)[e];
                     fprintf(stderr, "[%d]0x%08x  ", e, (unsigned)val);
                     break;
                 case 2:
-                    val = ((unsigned short*)p->get_state()->VU.reg_file + r*vlen)[e];
+                    val = ((unsigned short*)p->get_state()->VU.reg_file + r*num_elem)[e];
                     fprintf(stderr, "[%d]0x%08x  ", e, (unsigned short)val);
                     break;
                 case 1:
-                    val = ((unsigned char*)p->get_state()->VU.reg_file + r*vlen)[e];
+                    val = ((unsigned char*)p->get_state()->VU.reg_file + r*num_elem)[e];
                     fprintf(stderr, "[%d]0x%08x  ", e, (unsigned char)val);
                     break;
             };
