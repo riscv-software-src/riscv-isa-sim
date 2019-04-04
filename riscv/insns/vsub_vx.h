@@ -1,5 +1,5 @@
 // vsub
 VI_VX_LOOP
 ({
-    // NOT IMPLEMENTED YET
+    vd = vsext(vs2 - rs1, sew);
 })
