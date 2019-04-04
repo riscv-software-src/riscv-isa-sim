@@ -1,5 +1,5 @@
 // vand.vv vd, vs1, vs2, vm
 VI_VV_LOOP
 ({
-    vd = sext_xlen(vs1 & vs2);
+    vd = vsext(vs1 & vs2, sew);
  })

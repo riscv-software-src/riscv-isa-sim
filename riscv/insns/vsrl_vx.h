@@ -1,5 +1,5 @@
 // vsrl
 VI_VX_LOOP
 ({
-    // NOT IMPLEMENTED YET
+    vd = vzext(vs2 >> (rs1 & (sew - 1)), sew);
 })

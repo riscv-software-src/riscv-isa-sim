@@ -1,5 +1,5 @@
 // vsrl
 VI_VV_LOOP
 ({
-    WRITE_RD(sext_xlen(zext_xlen(vs1) >> (vs2 & (xlen-1))));
+    vd = vzext(vs2 >> (vs1 & (sew - 1)), sew);
 })

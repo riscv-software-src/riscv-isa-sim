@@ -1,5 +1,5 @@
 // vsra
 VI_VV_LOOP
 ({
-    WRITE_RD(sext_xlen(sext_xlen(vs1) >> (vs2 & (xlen-1))));
+    vd = vsext(vs2 >> (vs1 & (sew - 1)), sew);
 })
