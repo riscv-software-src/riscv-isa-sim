@@ -418,27 +418,27 @@ enum VMUNARY0{
 
 #define VX_PARAMS(x) \
     type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
-    type_sew_t<x>::type rs1 = RS1; \
+    type_sew_t<x>::type rs1 = (type_sew_t<x>::type)RS1; \
     type_sew_t<x>::type vs2 = STATE.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
 
 #define VI_PARAMS(x) \
     type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
-    type_sew_t<x>::type simm5 = (((int8_t)rs1_num) << 3) >> 3; \
+    type_sew_t<x>::type simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
     type_sew_t<x>::type vs2 = STATE.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
 
 #define VI_VV_LOOP(BODY) \
   VI_LOOP_BASE \
-  if (sew == 8){ \
-            VV_PARAMS(8); \
+  if (sew == e8){ \
+            VV_PARAMS(e8); \
             BODY; \
-  }else if(sew == 16){ \
-            VV_PARAMS(16); \
+  }else if(sew == e16){ \
+            VV_PARAMS(e16); \
             BODY; \
-  }else if(sew == 32){ \
-            VV_PARAMS(32); \
+  }else if(sew == e32){ \
+            VV_PARAMS(e32); \
             BODY; \
-  }else if(sew == 64){ \
-            VV_PARAMS(64); \
+  }else if(sew == e64){ \
+            VV_PARAMS(e64); \
             BODY; \
   } \
   VI_LOOP_END 
@@ -463,46 +463,46 @@ enum VMUNARY0{
 
 #define VI_VV_REDUCTION_LOOP(BODY) \
     reg_t sew = STATE.VU.vsew; \
-    if (sew == 8){ \
-        REDUCTION_LOOP(8, BODY) \
-    }else if(sew == 16){ \
-        REDUCTION_LOOP(16, BODY) \
-    }else if(sew == 32){ \
-        REDUCTION_LOOP(32, BODY) \
-    }else if(sew == 64){ \
-        REDUCTION_LOOP(64, BODY) \
+    if (sew == e8){ \
+        REDUCTION_LOOP(e8, BODY) \
+    }else if(sew == e16){ \
+        REDUCTION_LOOP(e16, BODY) \
+    }else if(sew == e32){ \
+        REDUCTION_LOOP(e32, BODY) \
+    }else if(sew == e64){ \
+        REDUCTION_LOOP(e64, BODY) \
     }
 
 #define VI_VX_LOOP(BODY) \
   VI_LOOP_BASE \
-  if (sew == 8){ \
-            VX_PARAMS(8); \
+  if (sew == e8){ \
+            VX_PARAMS(e8); \
             BODY; \
-  }else if(sew == 16){ \
-            VX_PARAMS(16); \
+  }else if(sew == e16){ \
+            VX_PARAMS(e16); \
             BODY; \
-  }else if(sew == 32){ \
-            VX_PARAMS(32); \
+  }else if(sew == e32){ \
+            VX_PARAMS(e32); \
             BODY; \
-  }else if(sew == 64){ \
-            VX_PARAMS(64); \
+  }else if(sew == e64){ \
+            VX_PARAMS(e64); \
             BODY; \
   } \
   VI_LOOP_END 
 
 #define VI_VI_LOOP(BODY) \
   VI_LOOP_BASE \
-  if (sew == 8){ \
-            VI_PARAMS(8); \
+  if (sew == e8){ \
+            VI_PARAMS(e8); \
             BODY; \
-  }else if(sew == 16){ \
-            VI_PARAMS(16); \
+  }else if(sew == e16){ \
+            VI_PARAMS(e16); \
             BODY; \
-  }else if(sew == 32){ \
-            VI_PARAMS(32); \
+  }else if(sew == e32){ \
+            VI_PARAMS(e32); \
             BODY; \
-  }else if(sew == 64){ \
-            VI_PARAMS(64); \
+  }else if(sew == e64){ \
+            VI_PARAMS(e64); \
             BODY; \
   } \
   VI_LOOP_END 
