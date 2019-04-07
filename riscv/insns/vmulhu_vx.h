@@ -6,6 +6,6 @@ uint64_t upper_mask = 1 - ((1 << vsew) - 1);
 
 VI_VX_LOOP
 ({
-    uint64_t result = RS1 * vs2;
-    vd = (result>>(sew_result_bits - vsew)) & upper_mask;
+    uint64_t result = rs1 * vs2;
+    vd = (result >> (sew_result_bits - sew)) & upper_mask;
 })

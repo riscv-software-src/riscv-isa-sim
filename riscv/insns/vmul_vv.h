@@ -1,5 +1,9 @@
 // vmul
+reg_t vsew = STATE.VU.vsew;
+uint64_t lo_mask = 1 - ((1 << vsew) - 1);
+
 VI_VV_LOOP
 ({
-    WRITE_RD(sext_xlen(vs1 * vs2));
+    uint64_t result = vs1 * vs2;
+	vd = vsext(result & lo_mask, sew);
 })
