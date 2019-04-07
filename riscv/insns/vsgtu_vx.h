@@ -1,5 +1,5 @@
 // vsgtu
-VI_VX_LOOP
+VI_VX_ULOOP
 ({
-    vd = reg_t(rs1) > reg_t(vs2);
+    vd = vs2 > rs1;
 })

@@ -1,5 +1,5 @@
 // vsne
 VI_VI_LOOP
 ({
-    vd = (simm5 != vs2) ? 1 : 0;
+    vd = !(simm5 == sreg_t(vs2));
 })

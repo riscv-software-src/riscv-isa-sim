@@ -1,5 +1,5 @@
 // vsleu
-VI_VI_LOOP
+VI_VI_ULOOP
 ({
-    WRITE_RD(reg_t(simm5) <= reg_t(vs2));
+	vd = (vs2 <= simm5);
 })

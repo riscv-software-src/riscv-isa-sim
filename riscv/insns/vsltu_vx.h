@@ -1,5 +1,5 @@
 // vsltu
-VI_VX_LOOP
+VI_VX_ULOOP
 ({
-    WRITE_RD(reg_t(rs1) < reg_t(vs2));
-})
+	vd = vs2 < rs1;
+ })

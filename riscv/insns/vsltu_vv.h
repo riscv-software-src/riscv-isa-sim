@@ -1,5 +1,5 @@
 // vsltu: Set if less than, unsigned
-VI_VV_LOOP
+VI_VV_ULOOP
 ({
-    WRITE_RD(reg_t(vs1) < reg_t(vs2));
+	vd = (vs2 < vs1);
 })
