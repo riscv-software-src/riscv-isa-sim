@@ -106,6 +106,7 @@ public:
   uint64_t v_vm() { return x(25, 1); }
   uint64_t v_nf() { return x(29, 3); }
   uint64_t v_simm5() { return xs(15, 5); }
+  uint64_t v_zimm5() { return x(15, 5); }
   uint64_t v_zimm11() { return x(20, 11); }
   uint64_t v_lmul() { return 1 << x(20, 2); }
   uint64_t v_sew() { return 1 << (x(22, 3) + 3); }
@@ -411,6 +412,22 @@ enum VMUNARY0{
   } \
   STATE.VU.vstart = 0;
 
+#define VV_U_PARAMS(x) \
+    type_usew_t<x>::type &vd = STATE.VU.elt<type_usew_t<x>::type>(rd_num, i); \
+    type_usew_t<x>::type vs1 = STATE.VU.elt<type_usew_t<x>::type>(rs1_num, i); \
+    type_usew_t<x>::type vs2 = STATE.VU.elt<type_usew_t<x>::type>(rs2_num, i); \
+
+#define VX_U_PARAMS(x) \
+    type_usew_t<x>::type &vd = STATE.VU.elt<type_usew_t<x>::type>(rd_num, i); \
+    type_usew_t<x>::type rs1 = (type_usew_t<x>::type)RS1; \
+    type_usew_t<x>::type vs2 = STATE.VU.elt<type_usew_t<x>::type>(rs2_num, i); \
+
+#define VI_U_PARAMS(x) \
+    type_usew_t<x>::type &vd = STATE.VU.elt<type_usew_t<x>::type>(rd_num, i); \
+    type_usew_t<x>::type simm5 = (type_usew_t<x>::type)insn.v_zimm5(); \
+    type_usew_t<x>::type vs2 = STATE.VU.elt<type_usew_t<x>::type>(rs2_num, i); \
+
+
 #define VV_PARAMS(x) \
     type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
     type_sew_t<x>::type vs1 = STATE.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
@@ -425,6 +442,24 @@ enum VMUNARY0{
     type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
     type_sew_t<x>::type simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
     type_sew_t<x>::type vs2 = STATE.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
+
+#define VI_VV_ULOOP(BODY) \
+  VI_LOOP_BASE \
+  if (sew == e8){ \
+            VV_U_PARAMS(e8); \
+            BODY; \
+  }else if(sew == e16){ \
+            VV_U_PARAMS(e16); \
+            BODY; \
+  }else if(sew == e32){ \
+            VV_U_PARAMS(e32); \
+            BODY; \
+  }else if(sew == e64){ \
+            VV_U_PARAMS(e64); \
+            BODY; \
+  } \
+  VI_LOOP_END 
+
 
 #define VI_VV_LOOP(BODY) \
   VI_LOOP_BASE \
@@ -473,6 +508,24 @@ enum VMUNARY0{
         REDUCTION_LOOP(e64, BODY) \
     }
 
+#define VI_VX_ULOOP(BODY) \
+  VI_LOOP_BASE \
+  if (sew == e8){ \
+            VX_U_PARAMS(e8); \
+            BODY; \
+  }else if(sew == e16){ \
+            VX_U_PARAMS(e16); \
+            BODY; \
+  }else if(sew == e32){ \
+            VX_U_PARAMS(e32); \
+            BODY; \
+  }else if(sew == e64){ \
+            VX_U_PARAMS(e64); \
+            BODY; \
+  } \
+  VI_LOOP_END 
+
+
 #define VI_VX_LOOP(BODY) \
   VI_LOOP_BASE \
   if (sew == e8){ \
@@ -489,6 +542,24 @@ enum VMUNARY0{
             BODY; \
   } \
   VI_LOOP_END 
+
+#define VI_VI_ULOOP(BODY) \
+  VI_LOOP_BASE \
+  if (sew == e8){ \
+            VI_U_PARAMS(e8); \
+            BODY; \
+  }else if(sew == e16){ \
+            VI_U_PARAMS(e16); \
+            BODY; \
+  }else if(sew == e32){ \
+            VI_U_PARAMS(e32); \
+            BODY; \
+  }else if(sew == e64){ \
+            VI_U_PARAMS(e64); \
+            BODY; \
+  } \
+  VI_LOOP_END 
+
 
 #define VI_VI_LOOP(BODY) \
   VI_LOOP_BASE \

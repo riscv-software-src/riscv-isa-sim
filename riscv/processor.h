@@ -97,6 +97,34 @@ enum VRM{
 };
 
 template<uint64_t N>
+struct type_usew_t;
+
+template<>
+struct type_usew_t<8>
+{
+    using type=uint8_t;
+};
+
+template<>
+struct type_usew_t<16>
+{
+    using type=uint16_t;
+};
+
+template<>
+struct type_usew_t<32>
+{
+    using type=uint32_t;
+};
+
+template<>
+struct type_usew_t<64>
+{
+    using type=uint64_t;
+};
+
+
+template<uint64_t N>
 struct type_sew_t;
 
 template<>
