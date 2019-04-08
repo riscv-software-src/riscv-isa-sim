@@ -11,7 +11,19 @@ for (reg_t i = STATE.VU.vstart; i < vl; ++i) {
 
   reg_t index = STATE.VU.elt<int16_t>(stride, i);
   for (reg_t fn = 0; fn < nf; ++fn) {
-    MMU.store_uint16(baseAddr + i * index + fn * 2, STATE.VU.elt<uint16_t>(vs3 + fn, i));
+    uint16_t val = 0;
+    switch (STATE.VU.vsew) {
+    case e16:
+      val = STATE.VU.elt<uint16_t>(vs3 + fn, i);
+      break;
+    case e32:
+      val = STATE.VU.elt<uint32_t>(vs3 + fn, i);
+      break;
+    defaualt:
+      val = STATE.VU.elt<uint64_t>(vs3 + fn, i);
+      break;
+    }
+    MMU.store_uint16(baseAddr + i * index + fn * 2, val);
   }
 }
 STATE.VU.vstart = 0;
