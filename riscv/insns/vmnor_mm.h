@@ -1,5 +1,2 @@
-// vmnor
-VI_VV_LOOP
-({
-    // NOT IMPLEMENTED YET
-})
+// vmnor.mm vd, vs2, vs1
+VI_LOOP_MASK(~(vs2 | vs1));

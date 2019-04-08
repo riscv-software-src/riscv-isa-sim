@@ -412,6 +412,30 @@ enum VMUNARY0{
   } \
   STATE.VU.vstart = 0;
 
+#define VI_LOOP_MASK(op) \
+  require(STATE.VU.vsew <= e64); \
+  for (reg_t i = STATE.VU.vstart; i < vl; ++i) { \
+    int mlen = STATE>VU.vmlen; \
+    int midx = (mlen * i) / 32; \
+    int mpos = (mlen * i) % 32; \
+    uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
+    uint32_t vs2 = STATE.VU.elt<uint32_t>(insn.rs2(), midx); \
+    uint32_t vs1 = STATE.VU.elt<uint32_t>(insn.rs1(), midx); \
+    \
+    uint32_t res = (res & ~mmask) | ((op) & mmask); \
+    STATE.VU.elt<uint32_t>(insn.rd(), midx) = res; \
+  } \
+  \
+  for (reg_t i = vl; i < STATE.VU.vlmax; ++i) { \
+    int mlen = STATE.VU.vmlen; \
+    int midx = (mlen * i) / 32; \
+    int mpos = (mlen * i) % 32; \
+    uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
+    uint32_t res = (res & ~mmask); \
+    STATE.VU.elt<uint32_t>(insn.rd(), midx) = res; \
+  } \
+  STATE.VU.vstart = 0;
+
 #define VV_U_PARAMS(x) \
     type_usew_t<x>::type &vd = STATE.VU.elt<type_usew_t<x>::type>(rd_num, i); \
     type_usew_t<x>::type vs1 = STATE.VU.elt<type_usew_t<x>::type>(rs1_num, i); \
