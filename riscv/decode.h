@@ -414,16 +414,16 @@ enum VMUNARY0{
 
 #define VI_LOOP_MASK(op) \
   require(STATE.VU.vsew <= e64); \
+  reg_t vl = STATE.VU.vl; \
   for (reg_t i = STATE.VU.vstart; i < vl; ++i) { \
-    int mlen = STATE>VU.vmlen; \
+    int mlen = STATE.VU.vmlen; \
     int midx = (mlen * i) / 32; \
     int mpos = (mlen * i) % 32; \
     uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
     uint32_t vs2 = STATE.VU.elt<uint32_t>(insn.rs2(), midx); \
     uint32_t vs1 = STATE.VU.elt<uint32_t>(insn.rs1(), midx); \
-    \
-    uint32_t res = (res & ~mmask) | ((op) & mmask); \
-    STATE.VU.elt<uint32_t>(insn.rd(), midx) = res; \
+    uint32_t &res = STATE.VU.elt<uint32_t>(insn.rd(), midx); \
+    res = (res & ~mmask) | ((op) & mmask); \
   } \
   \
   for (reg_t i = vl; i < STATE.VU.vlmax; ++i) { \
@@ -431,8 +431,8 @@ enum VMUNARY0{
     int midx = (mlen * i) / 32; \
     int mpos = (mlen * i) % 32; \
     uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
-    uint32_t res = (res & ~mmask); \
-    STATE.VU.elt<uint32_t>(insn.rd(), midx) = res; \
+    uint32_t &res = STATE.VU.elt<uint32_t>(insn.rd(), midx); \
+    res = (res & ~mmask); \
   } \
   STATE.VU.vstart = 0;
 
