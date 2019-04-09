@@ -453,7 +453,7 @@ enum VMUNARY0{
 
 
 #define VV_PARAMS(x) \
-    type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
+type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
     type_sew_t<x>::type vs1 = STATE.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
     type_sew_t<x>::type vs2 = STATE.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
 
@@ -466,6 +466,11 @@ enum VMUNARY0{
     type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
     type_sew_t<x>::type simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
     type_sew_t<x>::type vs2 = STATE.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
+
+#define XV_PARAMS(x) \
+    type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
+    type_usew_t<x>::type vs2 = STATE.VU.elt<type_usew_t<x>::type>(rs2_num, RS1);
+
 
 #define VI_VV_ULOOP(BODY) \
   VI_LOOP_BASE \
@@ -601,6 +606,24 @@ enum VMUNARY0{
             BODY; \
   } \
   VI_LOOP_END 
+
+#define VI_XV_LOOP(BODY) \
+  VI_LOOP_BASE \
+  if (sew == e8){ \
+            XV_PARAMS(e8); \
+            BODY; \
+  }else if(sew == e16){ \
+            XV_PARAMS(e16); \
+            BODY; \
+  }else if(sew == e32){ \
+            XV_PARAMS(e32); \
+            BODY; \
+  }else if(sew == e64){ \
+            XV_PARAMS(e64); \
+            BODY; \
+  } \
+  VI_LOOP_END 
+
 
 
 #define VI_LD_LOOP(BODY) \
