@@ -51,16 +51,10 @@ endif
 # Installation directories
 
 prefix       := @prefix@
-enable_stow  := @enable_stow@
 
-ifeq ($(enable_stow),yes)
-  stow_pkg_dir := $(prefix)/pkgs
-  INSTALLDIR ?= $(DESTDIR)$(stow_pkg_dir)/$(project_name)-$(project_ver)
-else
-  INSTALLDIR ?= $(DESTDIR)$(prefix)
-endif
+INSTALLDIR ?= $(DESTDIR)$(prefix)
 
-install_hdrs_dir := $(INSTALLDIR)/include/$(project_name)
+install_hdrs_dir := $(INSTALLDIR)/include
 install_libs_dir := $(INSTALLDIR)/lib
 install_exes_dir := $(INSTALLDIR)/bin
 
@@ -87,9 +81,9 @@ CXX           := @CXX@
 CFLAGS        += @CFLAGS@ -DPREFIX=\"$(prefix)\"
 CPPFLAGS      += @CPPFLAGS@
 CXXFLAGS      += @CXXFLAGS@ -DPREFIX=\"$(prefix)\"
-COMPILE       := $(CXX) -fPIC -MMD -MP $(CPPFLAGS) $(CXXFLAGS) \
+COMPILE       := $(CXX) -MMD -MP $(CPPFLAGS) $(CXXFLAGS) \
                  $(sprojs_include)
-COMPILE_C     := $(CC) -fPIC -MMD -MP $(CPPFLAGS) $(CFLAGS) \
+COMPILE_C     := $(CC) -MMD -MP $(CPPFLAGS) $(CFLAGS) \
                  $(sprojs_include)
 # Linker
 #  - LDFLAGS : Flags for the linker (eg. -L)
@@ -197,9 +191,9 @@ $$($(2)_pch) : %.h.gch : %.h
 	$(COMPILE) -x c++-header $$< -o $$@
 # If using clang, don't depend (and thus don't build) precompiled headers
 $$($(2)_objs) : %.o : %.cc $$($(2)_gen_hdrs) $(if $(filter-out clang,$(CC)),$$($(2)_pch))
-	$(COMPILE) -c $$<
+	$(COMPILE) $$($(2)_CFLAGS) -c $$<
 $$($(2)_c_objs) : %.o : %.c $$($(2)_gen_hdrs)
-	$(COMPILE_C) -c $$<
+	$(COMPILE_C) $$($(2)_CFLAGS) -c $$<
 
 $(2)_junk += $$($(2)_pch) $$($(2)_objs) $$($(2)_c_objs) $$($(2)_deps) \
   $$($(2)_gen_hdrs)
@@ -213,13 +207,13 @@ $(2)_reverse_deps   := $$(call reverse_list,$$($(2)_subproject_deps))
 # Build a library for this subproject
 
 $(2)_lib_libs       := $$($(2)_reverse_deps)
-$(2)_lib_libnames   := $$(patsubst %, lib%.so, $$($(2)_lib_libs))
+$(2)_lib_libnames   := $$(patsubst %, lib%.a, $$($(2)_lib_libs))
 $(2)_lib_libarg     := $$(patsubst %, -l%, $$($(2)_lib_libs))
 
-lib$(1).so : $$($(2)_objs) $$($(2)_c_objs) $$($(2)_lib_libnames)
-	$(LINK) -shared -o $$@ $(if $(filter Darwin,$(shell uname -s)),-install_name $(install_libs_dir)/$$@) $$^ $$($(2)_lib_libarg) $(LIBS)
+lib$(1).a : $$($(2)_objs) $$($(2)_c_objs) $$($(2)_lib_libnames)
+	$(AR) rcs -o $$@ $$^
 
-$(2)_junk += lib$(1).so
+$(2)_junk += lib$(1).a
 
 # Build unit tests
 
@@ -228,7 +222,7 @@ $(2)_test_deps      := $$(patsubst %.o, %.d, $$($(2)_test_objs))
 $(2)_test_exes      := $$(patsubst %.t.cc, %-utst, $$($(2)_test_srcs))
 $(2)_test_outs      := $$(patsubst %, %.out, $$($(2)_test_exes))
 $(2)_test_libs      := $(1) $$($(2)_reverse_deps) utst
-$(2)_test_libnames  := $$(patsubst %, lib%.so, $$($(2)_test_libs))
+$(2)_test_libnames  := $$(patsubst %, lib%.a, $$($(2)_test_libs))
 $(2)_test_libarg    := $$(patsubst %, -l%, $$($(2)_test_libs))
 
 $$($(2)_test_objs) : %.o : %.cc
@@ -255,7 +249,7 @@ $(2)_prog_objs      := $$(patsubst %.cc, %.o, $$($(2)_prog_srcs))
 $(2)_prog_deps      := $$(patsubst %.o, %.d, $$($(2)_prog_objs))
 $(2)_prog_exes      := $$(patsubst %.cc, %, $$($(2)_prog_srcs))
 $(2)_prog_libs      := $(1) $$($(2)_reverse_deps)
-$(2)_prog_libnames  := $$(patsubst %, lib%.so, $$($(2)_prog_libs))
+$(2)_prog_libnames  := $$(patsubst %, lib%.a, $$($(2)_prog_libs))
 $(2)_prog_libarg    := $$(patsubst %, -l%, $$($(2)_prog_libs))
 
 $$($(2)_prog_objs) : %.o : %.cc
@@ -286,7 +280,7 @@ $(2)_junk += \
 
 # Subproject specific targets
 
-all-$(1) : lib$(1).so $$($(2)_install_prog_exes)
+all-$(1) : lib$(1).a $$($(2)_install_prog_exes)
 
 check-$(1) : $$($(2)_test_outs)
 	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segementation' $$^; echo
@@ -298,7 +292,7 @@ clean-$(1) :
 
 # Update running variables
 
-libs += lib$(1).so
+libs += lib$(1).a
 objs += $$($(2)_objs)
 srcs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_srcs)) 
 hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs)) $$($(2)_gen_hdrs)
@@ -307,8 +301,8 @@ deps += $$($(2)_deps)
 
 test_outs += $$($(2)_test_outs)
 
-install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs)) $$($(2)_gen_hdrs)
-install_libs += lib$(1).so
+install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_install_hdrs))
+install_libs += $$(if $$($(2)_install_lib),lib$(1).a,)
 install_exes += $$($(2)_install_prog_exes)
 install_pcs  += riscv-$(1).pc
 
@@ -353,11 +347,12 @@ check : check-cpp check-bin
 # Installation
 #-------------------------------------------------------------------------
 
-install-hdrs : $(install_hdrs) config.h
+install-hdrs : $(install_hdrs)
 	$(MKINSTALLDIRS) $(install_hdrs_dir)
-	for file in $^; \
+	for file in $(subst $(src_dir)/,,$^); \
   do \
-    $(INSTALL_HDR) $$file $(install_hdrs_dir); \
+		$(MKINSTALLDIRS) $(install_hdrs_dir)/`dirname $$file`; \
+    $(INSTALL_HDR) $(src_dir)/$$file $(install_hdrs_dir)/`dirname $$file`; \
   done
 
 install-libs : $(install_libs)
@@ -382,12 +377,6 @@ install-pc : $(install_pcs)
   done
 
 install : install-hdrs install-libs install-exes install-pc
-ifeq ($(enable_stow),yes)
-	$(MKINSTALLDIRS) $(stow_pkg_dir)
-	cd $(stow_pkg_dir) && \
-    $(STOW) --delete $(project_name)-* && \
-    $(STOW) $(project_name)-$(project_ver)
-endif
 
 .PHONY : install install-hdrs install-libs install-exes
 

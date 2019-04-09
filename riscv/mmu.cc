@@ -56,7 +56,7 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type)
   }
 
   reg_t paddr = walk(addr, type, mode) | (addr & (PGSIZE-1));
-  if (!pmp_ok(paddr, type, mode) || !pmp_homogeneous(paddr, len))
+  if (!pmp_ok(paddr, len, type, mode))
     throw_access_exception(addr, type);
   return paddr;
 }
@@ -173,7 +173,7 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
   return entry;
 }
 
-reg_t mmu_t::pmp_ok(reg_t addr, access_type type, reg_t mode)
+reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
 {
   if (!proc)
     return true;
@@ -189,10 +189,24 @@ reg_t mmu_t::pmp_ok(reg_t addr, access_type type, reg_t mode)
 
       reg_t mask = (proc->state.pmpaddr[i] << 1) | (!is_na4);
       mask = ~(mask & ~(mask + 1)) << PMP_SHIFT;
-      bool napot_match = ((addr ^ tor) & mask) == 0;
-      bool tor_match = base <= addr && addr < tor;
 
-      if (is_tor ? tor_match : napot_match) {
+      // Check each 4-byte sector of the access
+      bool any_match = false;
+      bool all_match = true;
+      for (reg_t offset = 0; offset < len; offset += 1 << PMP_SHIFT) {
+        reg_t cur_addr = addr + offset;
+        bool napot_match = ((cur_addr ^ tor) & mask) == 0;
+        bool tor_match = base <= cur_addr && cur_addr < tor;
+        bool match = is_tor ? tor_match : napot_match;
+        any_match |= match;
+        all_match &= match;
+      }
+
+      if (any_match) {
+        // If the PMP matches only a strict subset of the access, fail it
+        if (!all_match)
+          return false;
+
         return
           (mode == PRV_M && !(cfg & PMP_L)) ||
           (type == LOAD && (cfg & PMP_R)) ||
@@ -271,7 +285,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
     // check that physical address of PTE is legal
     auto pte_paddr = base + idx * vm.ptesize;
     auto ppte = sim->addr_to_mem(pte_paddr);
-    if (!ppte || !pmp_ok(pte_paddr, LOAD, PRV_S))
+    if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S))
       throw_access_exception(addr, type);
 
     reg_t pte = vm.ptesize == 4 ? *(uint32_t*)ppte : *(uint64_t*)ppte;
@@ -294,7 +308,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
 #ifdef RISCV_ENABLE_DIRTY
       // set accessed and possibly dirty bits.
       if ((pte & ad) != ad) {
-        if (!pmp_ok(pte_paddr, STORE, PRV_S))
+        if (!pmp_ok(pte_paddr, vm.ptesize, STORE, PRV_S))
           throw_access_exception(addr, type);
         *(uint32_t*)ppte |= ad;
       }

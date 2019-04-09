@@ -1,4 +1,5 @@
 spike_main_subproject_deps = \
+	fesvr \
 	softfloat \
 	riscv \
 
