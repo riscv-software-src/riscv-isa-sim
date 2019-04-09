@@ -3,6 +3,13 @@ Spike RISC-V ISA Simulator
 
 About
 -------------
+This is an extension of Spike, the RISC-V ISA Sim, for MU500-7seg platform.
+https://www.mms.co.jp/powermedusa/products/rx_rk.html
+
+
+
+About
+-------------
 
 Spike, the RISC-V ISA Simulator, implements a functional model of one or more
 RISC-V harts.  It is named after the golden spike used to celebrate the
