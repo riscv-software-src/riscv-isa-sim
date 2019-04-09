@@ -1353,7 +1353,7 @@ Optional Features:
   --enable-histogram      Enable PC histogram generation
   --enable-dirty          Enable hardware management of PTE accessed and dirty
                           bits
-  --enable-misaligned     Enable hardware support for misaligned loads and
+  --disable-misaligned    disble hardware support for misaligned loads and
                           stores
 
 Optional Packages:
@@ -4693,7 +4693,7 @@ if test "${enable_misaligned+set}" = set; then :
   enableval=$enable_misaligned;
 fi
 
-if test "x$enable_misaligned" = "xyes"; then :
+if test "x$enable_misaligned" != "xno"; then :
 
 
 $as_echo "#define RISCV_ENABLE_MISALIGNED /**/" >>confdefs.h
