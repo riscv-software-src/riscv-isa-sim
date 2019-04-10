@@ -2,6 +2,7 @@
 V_WIDE_CHECK;
 VI_VV_LOOP
 ({
+  V_LOOP_ELEMENT_SKIP;
   switch(STATE.VU.vsew) {
   case e8:
     STATE.VU.elt<uint16_t>(rd_num, i) = (int16_t)(int8_t)vs2 * (int16_t)(uint8_t)vs1;
