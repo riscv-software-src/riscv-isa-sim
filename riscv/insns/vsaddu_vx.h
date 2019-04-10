@@ -1,8 +1,10 @@
 // vsaddu: Saturating adds of unsigned integers
-VI_VX_LOOP
+VI_VX_ULOOP
 ({
-    uint64_t result = rs1 + vs2;
-    if (result >= (uint64_t)(2^(sew - 1)))
-        result = (2^(sew - 1)) - 1;
-    vd = result;
+	if (rs1 > (((1 << sew) - 1) - vs2)){
+        vd = (1 << sew) - 1;
+	}else{
+    	vd = rs1 + vs2;
+	}
+
 })

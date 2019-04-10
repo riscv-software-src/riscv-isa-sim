@@ -1,9 +1,7 @@
 // vmsac: vd[i] = -(vs1[i] * vs2[i]) + vd[i]
-uint64_t lower_half_mask = (1 << STATE.VU.vsew) - 1 ;
 VI_VV_LOOP
 ({
-    uint64_t result = vs1 * vs2;
-    result &= lower_half_mask;
-    vd -= sext_xlen(result + vd);
-
- })
+    int64_t result = vsext(vd - ((int32_t)vd * (int32_t)vs1), sew);
+    result &= ((1 << sew) - 1);
+    vd = result;
+})
