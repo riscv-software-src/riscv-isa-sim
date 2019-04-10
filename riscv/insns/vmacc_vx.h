@@ -1,5 +1,8 @@
 // vmacc: vd[i] = +(x[rs1] * vs2[i]) + vd[i]
+uint64_t lower_half_mask = (1 << STATE.VU.vsew) - 1 ;
 VI_VX_LOOP
 ({
-    vd += sext_xlen((RS1 * vs2) + vd);
+    uint64_t result = rs1 * vs2;
+    result &= lower_half_mask;
+    vd += vsext(result + vd, sew);
 })
