@@ -166,9 +166,6 @@ struct vectorUnit_t {
   T& elt(reg_t vReg, reg_t n){
     // this still needs to be adjusted for SLEN != VLEN
     assert(vsew!=0);
-    reg_t elts_per_reg = (VLEN >> 3) / (vsew >> 3);
-    vReg += n / elts_per_reg; // for grouping purpose
-    n = n % elts_per_reg;
     reg_referenced[vReg] = 1;
     #if 0
     if (((vReg & reg_mask) != vReg) || (n >= vlmax)){
