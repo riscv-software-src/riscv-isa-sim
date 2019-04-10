@@ -1,5 +1,7 @@
-// vdot
+// vdot vd, vs2, vs1
 VI_VV_LOOP
 ({
-    // NOT IMPLEMENTED YET
+  V_LOOP_ELEMENT_SKIP;
+
+  vd += vs2 * vs1;
 })

@@ -1,5 +1,7 @@
-// vdotu
-VI_VV_LOOP
+// vdotu vd, vs2, vs1
+VI_VV_ULOOP
 ({
-    // NOT IMPLEMENTED YET
+  V_LOOP_ELEMENT_SKIP;
+
+  vd += vs2 * vs1;
 })
