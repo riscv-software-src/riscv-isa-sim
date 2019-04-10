@@ -379,7 +379,7 @@ enum VMUNARY0{
 
 #define V_WIDE_CHECK \
   require(STATE.VU.vlmul <= 4); \
-  require(STATE.VU.vsew * 2 < STATE.VU.ELEN); \
+  require(STATE.VU.vsew * 2 <= STATE.VU.ELEN); \
   require(insn.rd() + STATE.VU.vlmul <= 32);
 
 #define V_WIDE_OP_AND_ASSIGN(var0, var1, var2, op0, op1, sign) \
