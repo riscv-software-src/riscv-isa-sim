@@ -33,10 +33,20 @@ T sat_addu(T x, T y, bool &sat)
   T res = x + y;
   sat = false;
 
-  if (res < x) {
-    res |= -(res < x);
-    sat = true;
-  }
+  sat = res < x;
+  res |= -(res < x);
+
+  return res;
+}
+
+template<typename T>
+T sat_subu(T x, T y, bool &sat)
+{
+  T res = x - y;
+  sat = false;
+
+  sat = !(res <= x);
+  res &= -(res <= x);
 
   return res;
 }
