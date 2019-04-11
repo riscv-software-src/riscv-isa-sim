@@ -3,5 +3,5 @@ V_WIDE_CHECK;
 VI_VX_LOOP
 ({
   V_LOOP_ELEMENT_SKIP;
-  V_WIDE_OP_AND_ASSIGN(vs2, rs1, vd, *, -, uint);
+  V_WIDE_OP_AND_ASSIGN(vs2, rs1, vd_w, *, -, uint);
 })

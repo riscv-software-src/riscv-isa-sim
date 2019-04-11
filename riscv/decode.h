@@ -384,17 +384,23 @@ enum VMUNARY0{
 
 #define V_WIDE_OP_AND_ASSIGN(var0, var1, var2, op0, op1, sign) \
   switch(STATE.VU.vsew) { \
-  case e8: \
+  case e8: { \
+    sign##16_t vd_w = STATE.VU.elt<sign##16_t>(rd_num, i); \
     STATE.VU.elt<uint16_t>(rd_num, i) = \
-      op1((sign##16_t)(sign##8_t)var0 op0 (sign##16_t)(sign##8_t)var1) + (sign##16_t)var2; \
+      op1((sign##16_t)(sign##8_t)var0 op0 (sign##16_t)(sign##8_t)var1) + var2; \
+    } \
     break; \
-  case e16: \
+  case e16: { \
+    sign##32_t vd_w = STATE.VU.elt<sign##32_t>(rd_num, i); \
     STATE.VU.elt<uint32_t>(rd_num, i) = \
-      op1((sign##32_t)(sign##16_t)var0 op0 (sign##32_t)(sign##16_t)var1) + (sign##32_t)var2; \
+      op1((sign##32_t)(sign##16_t)var0 op0 (sign##32_t)(sign##16_t)var1) + var2; \
+    } \
     break; \
-  default: \
+  default: { \
+    sign##64_t vd_w = STATE.VU.elt<sign##64_t>(rd_num, i); \
     STATE.VU.elt<uint64_t>(rd_num, i) = \
-      op1((sign##64_t)(sign##32_t)var0 op0 (sign##64_t)(sign##32_t)var1) + (sign##64_t)var2; \
+      op1((sign##64_t)(sign##32_t)var0 op0 (sign##64_t)(sign##32_t)var1) + var2; \
+    } \
     break; \
   }
 
