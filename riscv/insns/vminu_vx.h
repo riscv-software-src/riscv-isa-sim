@@ -1,5 +1,10 @@
 // vminu.vx vd, vs2, rs1, vm   # vector-scalar
-VI_VX_LOOP
+VI_VX_ULOOP
 ({
-    vd = zext_xlen(std::min(rs1, vs2));
- })
+ if (rs1 <= vs2){
+  vd = rs1;
+  }else{
+  vd = vs2;
+  }
+
+})
