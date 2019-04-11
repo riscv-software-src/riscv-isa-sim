@@ -1,8 +1,30 @@
-// vssubu: Saturating subs of unsigned integers
-VI_VX_LOOP
-({
-    uint64_t result = rs1 - vs2;
-    if (result >= (uint64_t)(2^(sew - 1)))
-        result = (2^(sew - 1)) - 1;
-    vd = result;
-})
+// vssubu.vx vd, vs2, rs1
+VI_LOOP_BASE
+
+  V_LOOP_ELEMENT_SKIP;
+  bool sat = false;
+
+  switch (sew) {
+  case e8: {
+    VX_U_PARAMS(e8);
+    vd = sat_subu<uint8_t>(vs2, rs1, sat);
+    break;
+    }
+  case e16: {
+    VX_U_PARAMS(e16);
+    vd = sat_subu<uint16_t>(vs2, rs1, sat);
+    break;
+    }
+  case e32: {
+    VX_U_PARAMS(e32);
+    vd = sat_subu<uint32_t>(vs2, rs1, sat);
+    break;
+    }
+  default: {
+    VX_U_PARAMS(e64);
+    vd = sat_subu<uint64_t>(vs2, rs1, sat);
+    break;
+    }
+  }
+  STATE.VU.vxsat |= sat;
+VI_LOOP_END
