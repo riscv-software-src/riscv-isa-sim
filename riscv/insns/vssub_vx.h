@@ -1,8 +1,6 @@
 // vssub: Saturating subs of signed integers
 VI_VX_LOOP
 ({
-    int64_t result = rs1 - vs2;
-    if (result >= (int64_t)(2^(sew - 1)))
-        result = (2^(sew - 1)) - 1;
-    vd = result;
-})
+	vd =  (rs1 < 0) ? -(1 << (sew - 1)) : (1 << (sew -1)) - 1;
+	if ((rs1 < 0) == (vs2 > (vd - rs1))) vd = rs1 - vs2;
+ })
