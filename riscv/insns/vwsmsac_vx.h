@@ -12,7 +12,7 @@ const int gb = STATE.VU.vsew / 2;
     int##sew2##_t res; \
     bool sat = false; \
     res = ((((int##sew2##_t)(int##sew1##_t)vs2 * (int##sew2##_t)(int##sew1##_t)rs1) + round) >> gb); \
-    vd = sat_add<int##sew2##_t, uint##sew2##_t>(vd, -res, sat); \
+    vd = sat_sub<int##sew2##_t, uint##sew2##_t>(vd, res, sat); \
     STATE.VU.vxsat |= sat; \
   }
   
