@@ -1,9 +1,11 @@
-// vsaddu: Saturating adds of unsigned integers
+// vsaddu vd, vs2, vs1
 VI_VV_ULOOP
 ({
-    if (vs1 > (((1 << sew) - 1) - vs2)){
-        vd = (1 << sew) - 1;
-	}else{
-    	vd = vs1 + vs2;
-	}
+  bool sat = false;
+  vd = vs2 + vs1;
+
+  sat = vd < vs2;
+  vd |= -(vd < vs2);
+
+  STATE.VU.vxsat |= sat;
 })
