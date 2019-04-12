@@ -522,12 +522,16 @@ type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
   reg_t rs2_num = insn.rs2(); \
   type_sew_t<x>::type &vd_0 = STATE.VU.elt<type_sew_t<x>::type>(rd_num, 0); \
   type_sew_t<x>::type vs1_0 = STATE.VU.elt<type_sew_t<x>::type>(rs1_num, 0); \
+  type_usew_t<x>::type &vdu_0 = STATE.VU.elt<type_usew_t<x>::type>(rd_num, 0); \
+  type_usew_t<x>::type vs1u_0 = STATE.VU.elt<type_usew_t<x>::type>(rs1_num, 0); \
   vd_0 = vs1_0; \
+  vdu_0 = vs1u_0; \
   for (reg_t i=STATE.VU.vstart; i<vl; ++i){
 
 #define REDUCTION_LOOP(x, BODY) \
     VI_REDUCTION_LOOP_BASE(x) \
     VV_PARAMS(x); \
+    type_usew_t<x>::type vs2u = STATE.VU.elt<type_usew_t<x>::type>(rs2_num, i); \
     BODY; \
     VI_LOOP_END \
 
