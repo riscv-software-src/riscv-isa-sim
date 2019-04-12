@@ -1,5 +1,7 @@
-// vsrl
-VI_VX_LOOP
+// vsrl vd, vs2, rs1
+VI_VX_ULOOP
 ({
-    vd = vzext(vs2 >> (rs1 & (sew - 1)), sew);
+  V_LOOP_ELEMENT_SKIP;
+
+  vd = vs2 >> (rs1 & ((1u << log2(sew)) - 1));
 })
