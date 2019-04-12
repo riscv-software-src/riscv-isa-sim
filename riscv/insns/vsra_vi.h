@@ -1,5 +1,7 @@
-// vsra
+// vsra.vi vd, vs2, zimm5
 VI_VI_LOOP
 ({
-    vd = vsext(vs2 >> (simm5 & (sew - 1)), sew);
+  V_LOOP_ELEMENT_SKIP;
+
+  vd = vs2 >> simm5;
 })

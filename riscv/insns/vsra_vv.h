@@ -1,5 +1,7 @@
-// vsra
+// vsra.vv  vd, vs2, vs1
 VI_VV_LOOP
 ({
-    vd = vsext(vs2 >> (vs1 & (sew - 1)), sew);
+  V_LOOP_ELEMENT_SKIP;
+
+  vd = vs2 >> (vs1 & ((1u << log2(sew)) - 1));
 })

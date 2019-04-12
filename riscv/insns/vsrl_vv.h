@@ -1,4 +1,4 @@
-// vsrl  vd, vs2, vs1
+// vsrl.vv  vd, vs2, vs1
 VI_VV_ULOOP
 ({
   V_LOOP_ELEMENT_SKIP;
