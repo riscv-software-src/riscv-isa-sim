@@ -1,11 +1,11 @@
 // vfadd
 require_fp;
 softfloat_roundingMode = STATE.VU.vxrm;
-VFP_VV_LOOP
+VFP_VF_LOOP
 ({
  switch(STATE.VU.vsew){
  case e32:
-    vd = f32_add(f32(RS1), vs2);
+    vd = f32_add(rs1, vs2);
     break;
  case e16:
  case e8:
