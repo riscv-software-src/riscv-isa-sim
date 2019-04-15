@@ -1,7 +1,7 @@
 // vmsac: vd[i] = -(x[rs1] * vs2[i]) + vd[i]
 VI_VX_LOOP
 ({
-    int64_t result = vsext(vd - ((int32_t)rs1 * (int32_t)vs2), sew);
-    result &= ((1 << sew) - 1);
-    vd = result;
+  V_LOOP_ELEMENT_SKIP;
+
+  vd = -(rs1 * vs2) + vd;
 })

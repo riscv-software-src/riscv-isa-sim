@@ -1,6 +1,7 @@
-// vmsub: vd[i] = (vd[i] * x[rs1]) - vs2[i]
+// vmsub.vx: vd[i] = (vd[i] * x[rs1]) - vs2[i]
 VI_VX_LOOP
 ({
-    int64_t result = (vd * rs1) - vs2;
-	vd = vsext(result, sew) & ((1 << sew) - 1);
- })
+  V_LOOP_ELEMENT_SKIP;
+
+  vd = (vd * rs1) - vs2;
+})
