@@ -1,5 +1,5 @@
 // vwredsum
 VI_VV_LOOP
 ({
-    // NOT IMPLEMENTED YET
+    throw trap_unimplemented_instruction(0);
 })
