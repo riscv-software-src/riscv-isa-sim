@@ -201,7 +201,8 @@ void processor_t::step(size_t n)
                 if (now != old) {
                   float fv;
                   memcpy(&fv, &now, sizeof(fv));
-                  fprintf(stderr, "v%ld[%ld] <- 0x%08x %f\n", i, j, now, fv);
+                  fprintf(stderr, "v%ld[%3ld:%3ld] <- 0x%08x %f\n",
+                          i, (j + 1) * 32 - 1, j * 32, now, fv);
                   old = now;
                 }
               }
