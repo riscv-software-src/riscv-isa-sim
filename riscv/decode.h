@@ -342,7 +342,6 @@ enum VMUNARY0{
 #define vsext(x, sew) (((sreg_t)(x) << (64-sew)) >> (64-sew))
 #define vzext(x, sew) (((reg_t)(x) << (64-sew)) >> (64-sew))
 
-
 #define DEBUG_RVV 0
 
 #if DEBUG_RVV
@@ -404,6 +403,21 @@ enum VMUNARY0{
     break; \
   }
 
+#define VI_COMP_LOOP_BASE \
+  require(STATE.VU.vsew == e8 || STATE.VU.vsew == e16 || STATE.VU.vsew == e32 || STATE.VU.vsew == e64); \
+  require(insn.v_vm() == 1); \
+  reg_t vl = STATE.VU.vl; \
+  reg_t sew = STATE.VU.vsew; \
+  reg_t rd_num = insn.rd(); \
+  reg_t rs1_num = insn.rs1(); \
+  reg_t rs2_num = insn.rs2(); \
+  reg_t lmul = insn.v_lmul(); \
+  int bytes_for_elem = (sew >> 3) / lmul; \
+  assert(bytes_for_elem != 0); \
+  for (reg_t i=STATE.VU.vstart; i<vl; ++i){ \
+	assert(bytes_for_elem * i <= STATE.VU.get_vlen()); \
+	uint8_t &vdi = STATE.VU.elt<uint8_t>(rd_num, bytes_for_elem * i);
+
 #define VI_LOOP_BASE \
   require(STATE.VU.vsew == e8 || STATE.VU.vsew == e16 || STATE.VU.vsew == e32 || STATE.VU.vsew == e64); \
   require(insn.v_vm() == 1); \
@@ -457,9 +471,8 @@ enum VMUNARY0{
     type_usew_t<x>::type simm5 = (type_usew_t<x>::type)insn.v_zimm5(); \
     type_usew_t<x>::type vs2 = STATE.VU.elt<type_usew_t<x>::type>(rs2_num, i); \
 
-
 #define VV_PARAMS(x) \
-type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
+    type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
     type_sew_t<x>::type vs1 = STATE.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
     type_sew_t<x>::type vs2 = STATE.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
 
@@ -491,6 +504,57 @@ type_sew_t<x>::type &vd = STATE.VU.elt<type_sew_t<x>::type>(rd_num, i); \
             BODY; \
   }else if(sew == e64){ \
             VV_U_PARAMS(e64); \
+            BODY; \
+  } \
+  VI_LOOP_END 
+
+#define VI_VX_COMP_LOOP(BODY) \
+  VI_COMP_LOOP_BASE \
+  if (sew == e8){ \
+            VX_PARAMS(e8); \
+            BODY; \
+  }else if(sew == e16){ \
+            VX_PARAMS(e16); \
+            BODY; \
+  }else if(sew == e32){ \
+            VX_PARAMS(e32); \
+            BODY; \
+  }else if(sew == e64){ \
+            VX_PARAMS(e64); \
+            BODY; \
+  } \
+  VI_LOOP_END 
+
+#define VI_VV_COMP_LOOP(BODY) \
+  VI_COMP_LOOP_BASE \
+  if (sew == e8){ \
+            VV_PARAMS(e8); \
+            BODY; \
+  }else if(sew == e16){ \
+            VV_PARAMS(e16); \
+            BODY; \
+  }else if(sew == e32){ \
+            VV_PARAMS(e32); \
+            BODY; \
+  }else if(sew == e64){ \
+            VV_PARAMS(e64); \
+            BODY; \
+  } \
+  VI_LOOP_END 
+
+#define VI_VI_COMP_LOOP(BODY) \
+  VI_COMP_LOOP_BASE \
+  if (sew == e8){ \
+            VI_PARAMS(e8); \
+            BODY; \
+  }else if(sew == e16){ \
+            VI_PARAMS(e16); \
+            BODY; \
+  }else if(sew == e32){ \
+            VI_PARAMS(e32); \
+            BODY; \
+  }else if(sew == e64){ \
+            VI_PARAMS(e64); \
             BODY; \
   } \
   VI_LOOP_END 
