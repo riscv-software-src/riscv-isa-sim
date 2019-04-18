@@ -790,7 +790,48 @@ enum VMUNARY0{
   softfloat_roundingMode = STATE.frm; \
   for (reg_t i=STATE.VU.vstart; i<vl; ++i){
 
+#define VF_LOOP_CMP_BASE \
+  require_extension('F'); \
+  require_fp; \
+  require(STATE.VU.vsew == 32); \
+  reg_t vl = STATE.VU.vl; \
+  reg_t rd_num = insn.rd(); \
+  reg_t rs1_num = insn.rs1(); \
+  reg_t rs2_num = insn.rs2(); \
+  softfloat_roundingMode = STATE.frm; \
+  for (reg_t i = STATE.VU.vstart; i < vl; ++i) { \
+    float32_t vs2 = STATE.VU.elt<float32_t>(rs2_num, i); \
+    float32_t vs1 = STATE.VU.elt<float32_t>(rs1_num, i); \
+    float32_t rs1 = f32(READ_FREG(rs1_num)); \
+    const int mlen = STATE.VU.vmlen; \
+    const int midx = (mlen * i) / 32; \
+    const int mpos = (mlen * i) % 32; \
+    if (insn.v_vm() == 0) { \
+      bool do_mask = (STATE.VU.elt<uint32_t>(0, midx) >> mpos) & 0x1; \
+      if (do_mask) \
+        continue; \
+    } \
+    uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
+    uint32_t &vdi = STATE.VU.elt<uint32_t>(rd_num, midx); \
+    bool res = false;
+
 #define VF_LOOP_END \
+  } \
+  STATE.VU.vstart = 0; \
+  set_fp_exceptions;
+
+#define VF_LOOP_CMP_END \
+    switch(STATE.VU.vsew) { \
+    case 32: { \
+      vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
+      break; \
+    } \
+    case 16: \
+    case 8: \
+    default: \
+      softfloat_exceptionFlags = 1; \
+      break; \
+    }; \
   } \
   STATE.VU.vstart = 0; \
   set_fp_exceptions;
@@ -845,35 +886,11 @@ enum VMUNARY0{
   DEBUG_RVV_FP_VF; \
   VF_LOOP_END
 
-#define VFP_LOOP_CMP(cmp) \
-  VF_LOOP_BASE \
-    float32_t vs1 = STATE.VU.elt<float32_t>(rs1_num, i); \
-    float32_t vs2 = STATE.VU.elt<float32_t>(rs2_num, i); \
-    float32_t rs1 = f32(READ_FREG(rs1_num)); \
-    int mlen = STATE.VU.vmlen; \
-    int midx = (mlen * i) / 32; \
-    int mpos = (mlen * i) % 32; \
-    uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
-    \
-    switch(STATE.VU.vsew) { \
-    case 32: { \
-        uint32_t &res = STATE.VU.elt<uint32_t>(insn.rd(), midx); \
-        if (insn.v_vm() == 1) { \
-          res = (res & ~mmask) | ((cmp) & mmask); \
-        } else { \
-          res = (res & ~mmask); \
-        } \
-        break; \
-      } \
-    case 16: \
-    case 8: \
-    default: \
-        softfloat_exceptionFlags = 1; \
-        break; \
-    }; \
-  VF_LOOP_END \
-  set_fp_exceptions;
-
+#define VFP_LOOP_CMP(BODY) \
+  VF_LOOP_CMP_BASE \
+  BODY; \
+  DEBUG_RVV_FP_VV; \
+  VF_LOOP_CMP_END \
 
 // Seems that 0x0 doesn't work.
 #define DEBUG_START             0x100

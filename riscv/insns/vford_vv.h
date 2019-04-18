@@ -1,2 +1,5 @@
 // vford.vv vd, vs2, vs1, vm
-VFP_LOOP_CMP(!(f32_isSignalingNaN(vs2) || f32_isSignalingNaN(vs1)));
+VFP_LOOP_CMP
+({
+  res = !(f32_isSignalingNaN(vs2) || f32_isSignalingNaN(vs1));
+})

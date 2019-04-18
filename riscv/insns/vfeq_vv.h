@@ -1,17 +1,5 @@
-// vfeq:
-require_fp;
-softfloat_roundingMode = STATE.VU.vxrm;
-VFP_VV_LOOP
+// vfeq.vv vd, vs2, vs1
+VFP_LOOP_CMP
 ({
- bool &vd = STATE.VU.elt<bool>(rd_num, i); \
- switch(STATE.VU.vsew){
- case e32:
-    vd = f32_eq(vs1, vs2);
-    break;
- case e16:
- case e8:
- default:
-     softfloat_exceptionFlags = 1;
- };
+  res = f32_eq(vs2, vs1);
 })
-set_fp_exceptions;
