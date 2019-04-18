@@ -1,11 +1,9 @@
-// vfdiv
-require_fp;
-softfloat_roundingMode = STATE.VU.vxrm;
+// vfdiv.vf vd, vs2, rs1
 VFP_VF_LOOP
 ({
  switch(STATE.VU.vsew){
  case e32:
-    vd = f32_div(rs1, vs2);
+    vd = f32_div(vs2, rs1);
     break;
  case e16:
  case e8:
