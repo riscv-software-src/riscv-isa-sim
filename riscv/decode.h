@@ -412,12 +412,15 @@ enum VMUNARY0{
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   for (reg_t i=STATE.VU.vstart; i<vl; ++i){ \
-    int mlen = STATE.VU.vmlen; \
-    int midx = (mlen * i) / 32; \
-    int mpos = (mlen * i) % 32; \
-    uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
-    uint32_t vs2 = STATE.VU.elt<uint32_t>(insn.rs2(), midx); \
-    uint32_t vs1 = STATE.VU.elt<uint32_t>(insn.rs1(), midx); \
+    const int mlen = STATE.VU.vmlen; \
+    const int midx = (mlen * i) / 32; \
+    const int mpos = (mlen * i) % 32; \
+    if (insn.v_vm() == 0) { \
+      bool do_mask = (STATE.VU.elt<uint32_t>(0, midx) >> mpos) & 0x1; \
+      if (do_mask) \
+        continue; \
+    } \
+    const uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
     uint32_t &vdi = STATE.VU.elt<uint32_t>(insn.rd(), midx); \
     bool res = false;
 
