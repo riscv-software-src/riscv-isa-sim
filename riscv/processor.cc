@@ -148,7 +148,7 @@ void vectorUnit_t::reset(){
 reg_t vectorUnit_t::setVL(uint64_t regId, reg_t reqVL, reg_t newType){
   if (vtype != newType){
     vtype = newType;
-    vsew = 1 << (BITS(newType, 8, 2) + 3);
+    vsew = 1 << (BITS(newType, 4, 2) + 3);
     vlmul = 1 << BITS(newType, 1, 0);
     vlmax = VLEN/vsew * vlmul;
     vmlen = vsew / vlmul;
