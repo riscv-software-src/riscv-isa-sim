@@ -655,6 +655,7 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN("c.fsdsp", c_fsdsp, 0, {&rvc_fp_rs2s, &rvc_sdsp_address});
 
   DISASM_INSN("vsetvli", vsetvli, 0, {&xrd, &xrs1, &v_vtype});
+  DISASM_INSN("vsetvl", vsetvl, 0, {&xrd, &xrs1, &xrs2});
 
   #define DEFINE_VMEM_LD_TYPE(name, fmt) \
     add_insn(new disasm_insn_t("vl" #name "b.v",  match_vl##name##b_v,  mask_vl##name##b_v, fmt)); \
