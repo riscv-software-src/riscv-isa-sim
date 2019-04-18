@@ -1,11 +1,9 @@
-// vfsub
-require_fp;
-softfloat_roundingMode = STATE.VU.vxrm;
-VFP_VV_LOOP
+// vfsub.vf vd, vs2, rs1
+VFP_VF_LOOP
 ({
  switch(STATE.VU.vsew){
  case e32:
-    vd = f32_sub(f32(RS1), vs2);
+    vd = f32_sub(vs2, rs1);
     break;
  case e16:
  case e8:
