@@ -161,11 +161,36 @@ reg_t vectorUnit_t::setVL(uint64_t regId, reg_t reqVL, reg_t newType){
 }
 
 void vectorUnit_t::set_vcsr(int which, reg_t val){
-
+	switch(which){
+		case CSR_VSTART:
+			vstart = val; 
+		case CSR_VXSAT:
+			vxsat = val;
+		case CSR_VXRM:
+			vxrm = val;
+		case CSR_VL:
+			vl = val;
+		case CSR_VTYPE:
+			vtype = val;
+	}
+	throw trap_illegal_instruction(0);
 }
 
 reg_t vectorUnit_t::get_vcsr(int which){
-	return 0;
+
+	switch(which){
+		case CSR_VSTART:
+			return vstart; 
+		case CSR_VXSAT:
+			return vxsat;
+		case CSR_VXRM:
+			return vxrm;
+		case CSR_VL:
+			return vl;
+		case CSR_VTYPE:
+			return vtype;
+	}
+	throw trap_illegal_instruction(0);
 }
 
 void processor_t::set_debug(bool value)

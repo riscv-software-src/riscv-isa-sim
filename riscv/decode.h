@@ -279,6 +279,11 @@ inline freg_t f128_negate(freg_t a)
   return a;
 }
 
+#define check_vcsr(csr_num) ({ \
+  csr_num == CSR_VSTART or csr_num == CSR_VXSAT or csr_num == CSR_VXRM or \
+  csr_num == CSR_VL or csr_num == CSR_VTYPE; \
+})
+
 #define validate_csr(which, write) ({ \
   if (!STATE.serialized) return PC_SERIALIZE_BEFORE; \
   STATE.serialized = false; \
