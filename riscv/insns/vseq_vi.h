@@ -1,5 +1,5 @@
 // vseq
-VI_VI_LOOP
+VI_VI_COMP_LOOP
 ({
-    vd = (simm5 == sreg_t(vs2));
+    vd = simm5 == vs2;
 })
