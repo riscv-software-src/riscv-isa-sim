@@ -290,6 +290,7 @@ riscv_insn_list = \
 	subw \
 	sw \
 	vsetvli \
+	vsetvl \
 	vlb_v \
 	vlh_v \
 	vlw_v \
