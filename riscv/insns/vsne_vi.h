@@ -1,5 +1,5 @@
-// vsne
-VI_VI_LOOP
+// vsne.vi  vd, vs2, simm5
+VI_VI_COMP_LOOP
 ({
-    vd = (simm5 != vs2) ? 1 : 0;
+  res = vs2 != simm5;
 })

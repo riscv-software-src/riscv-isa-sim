@@ -1,5 +1,5 @@
-// vsne
-VI_VV_LOOP
+// vneq.vv  vd, vs2, vs1
+VI_VV_COMP_LOOP
 ({
-    vd = (vs1 != vs2) ? 1 : 0;
+  res = vs2 != vs1;
 })

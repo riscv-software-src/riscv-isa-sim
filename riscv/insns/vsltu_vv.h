@@ -1,5 +1,5 @@
-// vsltu: Set if less than, unsigned
-VI_VV_ULOOP
+// vsltu.vv  vd, vs2, vs1
+VI_VV_COMP_ULOOP
 ({
-	vd = (vs2 < vs1);
+  res = vs2 < vs1;
 })

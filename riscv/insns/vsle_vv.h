@@ -1,5 +1,5 @@
-// vsle: Set if less than or equal, signed
-VI_VV_LOOP
+// vsle.vv vd, vs2, vs1
+VI_VV_COMP_LOOP
 ({
-    vd = (vs2 <= vs1);
+  res = vs2 <= vs1;
 })

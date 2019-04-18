@@ -1,5 +1,5 @@
-// vsgtu
-VI_VI_ULOOP
+// vsgtu.vi  vd, vd2, zimm5
+VI_VI_COMP_ULOOP
 ({
-    vd = vs2 > simm5;
+  res = vs2 > simm5;
 })

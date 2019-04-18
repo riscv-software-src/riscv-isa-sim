@@ -411,12 +411,15 @@ enum VMUNARY0{
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  reg_t lmul = insn.v_lmul(); \
-  int bytes_for_elem = (sew >> 3) / lmul; \
-  assert(bytes_for_elem != 0); \
   for (reg_t i=STATE.VU.vstart; i<vl; ++i){ \
-	assert(bytes_for_elem * i <= STATE.VU.get_vlen()); \
-	uint8_t &vdi = STATE.VU.elt<uint8_t>(rd_num, bytes_for_elem * i);
+    int mlen = STATE.VU.vmlen; \
+    int midx = (mlen * i) / 32; \
+    int mpos = (mlen * i) % 32; \
+    uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
+    uint32_t vs2 = STATE.VU.elt<uint32_t>(insn.rs2(), midx); \
+    uint32_t vs1 = STATE.VU.elt<uint32_t>(insn.rs1(), midx); \
+    uint32_t &vdi = STATE.VU.elt<uint32_t>(insn.rd(), midx); \
+    bool res = false;
 
 #define VI_LOOP_BASE \
   require(STATE.VU.vsew == e8 || STATE.VU.vsew == e16 || STATE.VU.vsew == e32 || STATE.VU.vsew == e64); \
@@ -429,6 +432,11 @@ enum VMUNARY0{
   for (reg_t i=STATE.VU.vstart; i<vl; ++i){
 
 #define VI_LOOP_END \
+  } \
+  STATE.VU.vstart = 0;
+
+#define VI_LOOP_COMP_END \
+    vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
   } \
   STATE.VU.vstart = 0;
 
@@ -508,23 +516,7 @@ enum VMUNARY0{
   } \
   VI_LOOP_END 
 
-#define VI_VX_COMP_LOOP(BODY) \
-  VI_COMP_LOOP_BASE \
-  if (sew == e8){ \
-            VX_PARAMS(e8); \
-            BODY; \
-  }else if(sew == e16){ \
-            VX_PARAMS(e16); \
-            BODY; \
-  }else if(sew == e32){ \
-            VX_PARAMS(e32); \
-            BODY; \
-  }else if(sew == e64){ \
-            VX_PARAMS(e64); \
-            BODY; \
-  } \
-  VI_LOOP_END 
-
+// comparision result to masking register
 #define VI_VV_COMP_LOOP(BODY) \
   VI_COMP_LOOP_BASE \
   if (sew == e8){ \
@@ -540,7 +532,24 @@ enum VMUNARY0{
             VV_PARAMS(e64); \
             BODY; \
   } \
-  VI_LOOP_END 
+  VI_LOOP_COMP_END
+
+#define VI_VX_COMP_LOOP(BODY) \
+  VI_COMP_LOOP_BASE \
+  if (sew == e8){ \
+            VX_PARAMS(e8); \
+            BODY; \
+  }else if(sew == e16){ \
+            VX_PARAMS(e16); \
+            BODY; \
+  }else if(sew == e32){ \
+            VX_PARAMS(e32); \
+            BODY; \
+  }else if(sew == e64){ \
+            VX_PARAMS(e64); \
+            BODY; \
+  } \
+  VI_LOOP_COMP_END
 
 #define VI_VI_COMP_LOOP(BODY) \
   VI_COMP_LOOP_BASE \
@@ -557,8 +566,58 @@ enum VMUNARY0{
             VI_PARAMS(e64); \
             BODY; \
   } \
-  VI_LOOP_END 
+  VI_LOOP_COMP_END
 
+#define VI_VV_COMP_ULOOP(BODY) \
+  VI_COMP_LOOP_BASE \
+  if (sew == e8){ \
+            VV_U_PARAMS(e8); \
+            BODY; \
+  }else if(sew == e16){ \
+            VV_U_PARAMS(e16); \
+            BODY; \
+  }else if(sew == e32){ \
+            VV_U_PARAMS(e32); \
+            BODY; \
+  }else if(sew == e64){ \
+            VV_U_PARAMS(e64); \
+            BODY; \
+  } \
+  VI_LOOP_COMP_END
+
+#define VI_VX_COMP_ULOOP(BODY) \
+  VI_COMP_LOOP_BASE \
+  if (sew == e8){ \
+            VX_U_PARAMS(e8); \
+            BODY; \
+  }else if(sew == e16){ \
+            VX_U_PARAMS(e16); \
+            BODY; \
+  }else if(sew == e32){ \
+            VX_U_PARAMS(e32); \
+            BODY; \
+  }else if(sew == e64){ \
+            VX_U_PARAMS(e64); \
+            BODY; \
+  } \
+  VI_LOOP_COMP_END
+
+#define VI_VI_COMP_ULOOP(BODY) \
+  VI_COMP_LOOP_BASE \
+  if (sew == e8){ \
+            VI_U_PARAMS(e8); \
+            BODY; \
+  }else if(sew == e16){ \
+            VI_U_PARAMS(e16); \
+            BODY; \
+  }else if(sew == e32){ \
+            VI_U_PARAMS(e32); \
+            BODY; \
+  }else if(sew == e64){ \
+            VI_U_PARAMS(e64); \
+            BODY; \
+  } \
+  VI_LOOP_COMP_END
 
 #define VI_VV_LOOP(BODY) \
   VI_LOOP_BASE \

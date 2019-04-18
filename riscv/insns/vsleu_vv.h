@@ -1,5 +1,5 @@
-// vsleu: Set if less than or equal, unsigned
-VI_VV_ULOOP
+// vsleu.vv vd, vs2, vs1
+VI_VV_COMP_ULOOP
 ({
-	vd = (vs2 <= vs1);
+  res = vs2 <= vs1;
 })

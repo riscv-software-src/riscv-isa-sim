@@ -1,6 +1,6 @@
-// vseq: Set if equal
+// vseq.vv vd, vs2, vs1
 VI_VV_COMP_LOOP
 ({
-    vdi = (sreg_t(vs1) == sreg_t(vs2));
+  res = vs2 == vs1;
 })
 

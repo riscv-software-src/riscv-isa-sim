@@ -1,5 +1,5 @@
-// vsgtu
-VI_VX_ULOOP
+// vsgtu.vx  vd, vs2, rs1
+VI_VX_COMP_ULOOP
 ({
-    vd = vs2 > rs1;
+  res = vs2 > rs1;
 })

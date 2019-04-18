@@ -1,5 +1,5 @@
-// vsne
-VI_VX_LOOP
+// vsne.vx  vd, vs2, rs1
+VI_VX_COMP_LOOP
 ({
-    vd = (rs1 != vs2) ? 1 : 0;
+  res = vs2 != rs1;
 })

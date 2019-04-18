@@ -1,5 +1,5 @@
-// vslt
-VI_VX_LOOP
+// vslt.vx  vd, vs2, vs1
+VI_VX_COMP_LOOP
 ({
-    vd = (vs2 < rs1);
+  res = vs2 < rs1;
 })
