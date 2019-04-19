@@ -1,6 +1,4 @@
 // vmv_s_x: vd[0] = rs1
-// this is wordaround implementation. The spec uses rs1
-//
 require(STATE.VU.vsew == e8 || STATE.VU.vsew == e16 ||
         STATE.VU.vsew == e32 || STATE.VU.vsew == e64);
 reg_t vl = STATE.VU.vl;
@@ -12,16 +10,16 @@ if (vl == 0) {
 } else {
   switch(sew) {
   case e8:
-    STATE.VU.elt<uint8_t>(rd_num, 0) = RS2;
+    STATE.VU.elt<uint8_t>(rd_num, 0) = RS1;
     break;
   case e16:
-    STATE.VU.elt<uint16_t>(rd_num, 0) = RS2;
+    STATE.VU.elt<uint16_t>(rd_num, 0) = RS1;
     break;
   case e32:
-    STATE.VU.elt<uint32_t>(rd_num, 0) = RS2;
+    STATE.VU.elt<uint32_t>(rd_num, 0) = RS1;
     break;
   default:
-    STATE.VU.elt<uint64_t>(rd_num, 0) = RS2;
+    STATE.VU.elt<uint64_t>(rd_num, 0) = RS1;
     break;
   }
 
