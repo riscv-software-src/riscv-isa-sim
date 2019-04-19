@@ -967,13 +967,13 @@ disassembler_t::disassembler_t(int xlen)
       add_insn(new disasm_insn_t(#name ".vv", match_##name##_vv, mask_##name##_vv, \
                   {&vd, &vs2, &vs1, &opt, &vm})); \
       add_insn(new disasm_insn_t(#name ".vf", match_##name##_vf, mask_##name##_vf, \
-                  {&vd, &vs2, &xrs1, &opt, &vm})); \
+                  {&vd, &vs2, &frs1, &opt, &vm})); \
 
   #define DEFINE_OPIV_WF_TYPE(name) \
       add_insn(new disasm_insn_t(#name ".wv", match_##name##_wv, mask_##name##_wv, \
                   {&vd, &vs2, &vs1, &opt, &vm})); \
       add_insn(new disasm_insn_t(#name ".wf", match_##name##_wf, mask_##name##_wf, \
-                  {&vd, &vs2, &xrs1, &opt, &vm})); \
+                  {&vd, &vs2, &frs1, &opt, &vm})); \
 
   #define DEFINE_OPIV_V__TYPE(name) \
       add_insn(new disasm_insn_t(#name ".vv", match_##name##_vv, mask_##name##_vv, \
@@ -985,7 +985,7 @@ disassembler_t::disassembler_t(int xlen)
 
   #define DEFINE_OPIV__F_TYPE(name) \
     add_insn(new disasm_insn_t(#name ".vf", match_##name##_vf, mask_##name##_vf, \
-                {&vd, &vs2, &xrs1, &opt, &vm})); \
+                {&vd, &vs2, &frs1, &opt, &vm})); \
 
   //OPFVV/OPFVF
   //0b01_0000
@@ -1001,9 +1001,9 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_OPIV_VF_TYPE(vfsgnn);
   DEFINE_OPIV_VF_TYPE(vfsgnx);
   add_insn(new disasm_insn_t("vfmv.f.s", match_vfmv_f_s, mask_vfmv_f_s,
-              {&vd, &vs2}));
+              {&frd, &vs2}));
   add_insn(new disasm_insn_t("vfmv.s.f", match_vfmv_s_f, mask_vfmv_s_f,
-              {&vd, &xrs1}));
+              {&vd, &frs1}));
 
   //0b01_0000
   DEFINE_OPIV__F_TYPE(vfmerge);
