@@ -4,6 +4,8 @@ require(STATE.VU.vsew == e8 || STATE.VU.vsew == e16 || STATE.VU.vsew == e32 || S
 
 reg_t rs2_num = insn.rs2(); 
 
-int32_t vs2 = STATE.VU.elt<int32_t>(rs2_num, 0); 
-uint64_t sew_mask = (1 << STATE.VU.vsew) - 1;
-WRITE_RD(vs2 & sew_mask);
+int64_t vs2 = STATE.VU.elt<int32_t>(rs2_num, 0);
+if (xlen == 64)
+  WRITE_FRD(f64(vs2));
+else
+  WRITE_FRD(f32(vs2));
