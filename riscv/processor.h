@@ -152,14 +152,17 @@ struct type_sew_t<64>
 };
 
 struct vectorUnit_t {
+  processor_t* p; 
   void *reg_file;
-  char reg_referenced[NVPR];  
+  char reg_referenced[NVPR];
   int setvl_count;
-  reg_t reg_mask, vstart, vl, vlmax, vsew;
-  reg_t vxrm, vxsat, vlmul, vmlen;
-  reg_t ELEN, VLEN, SLEN, LMUL, vtype;
+  reg_t reg_mask, vlmax, vmlen;
+  reg_t vstart, vxrm, vxsat, vl, vtype;
+  reg_t vediv, vsew, vlmul;
+  reg_t ELEN, VLEN, SLEN, LMUL;
+  bool vill;
 
-  reg_t setVL(uint64_t regId, reg_t reqVL, reg_t newType);
+  reg_t set_vl(uint64_t regId, reg_t reqVL, reg_t newType);
 
   // vector element for varies SEW
   template<class T>

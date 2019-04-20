@@ -26,7 +26,7 @@ processor_t::processor_t(const char* isa, simif_t* sim, uint32_t id,
 {
   parse_isa_string(isa);
   register_base_instructions();
-
+  STATE.VU.p = this;
   mmu = new mmu_t(sim, this);
 
   disassembler = new disassembler_t(max_xlen);
@@ -142,15 +142,16 @@ void vectorUnit_t::reset(){
   LMUL = 1;
   reg_file = malloc(NVPR * (VLEN/8));
   vtype = -1;
-  setVL(-1, 0, 0); // vsew8, vlmul1
+  set_vl(-1, 0, 0); // vsew8, vlmul1
 }
 
-reg_t vectorUnit_t::setVL(uint64_t regId, reg_t reqVL, reg_t newType){
+reg_t vectorUnit_t::set_vl(uint64_t regId, reg_t reqVL, reg_t newType){
   if (vtype != newType){
     vtype = newType;
     vsew = 1 << (BITS(newType, 4, 2) + 3);
     vlmul = 1 << BITS(newType, 1, 0);
-    vlmax = VLEN/vsew * vlmul;
+    vediv = 1 << BITS(newType, 6, 5); 
+	vlmax = VLEN/vsew * vlmul;
     vmlen = vsew / vlmul;
     reg_mask = (NVPR-1) & ~(vlmul-1);
   }
@@ -172,6 +173,12 @@ void vectorUnit_t::set_vcsr(int which, reg_t val){
 			vl = val;
 		case CSR_VTYPE:
 			vtype = val;
+			// check vill bit
+			if (BITS(vtype, p->get_xlen(), p->get_xlen() - 1) == 1){
+				vill = true;
+			}else{
+				vill = false;
+			}
 	}
 	throw trap_illegal_instruction(0);
 }
