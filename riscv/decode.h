@@ -508,6 +508,7 @@ enum VMUNARY0{
 
 
 #define VI_VV_ULOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_LOOP_BASE \
   if (sew == e8){ \
             VV_U_PARAMS(e8); \
@@ -526,6 +527,7 @@ enum VMUNARY0{
 
 // comparision result to masking register
 #define VI_VV_COMP_LOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_COMP_LOOP_BASE \
   if (sew == e8){ \
             VV_PARAMS(e8); \
@@ -543,6 +545,7 @@ enum VMUNARY0{
   VI_LOOP_COMP_END
 
 #define VI_VX_COMP_LOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_COMP_LOOP_BASE \
   if (sew == e8){ \
             VX_PARAMS(e8); \
@@ -560,6 +563,7 @@ enum VMUNARY0{
   VI_LOOP_COMP_END
 
 #define VI_VI_COMP_LOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_COMP_LOOP_BASE \
   if (sew == e8){ \
             VI_PARAMS(e8); \
@@ -577,6 +581,7 @@ enum VMUNARY0{
   VI_LOOP_COMP_END
 
 #define VI_VV_COMP_ULOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_COMP_LOOP_BASE \
   if (sew == e8){ \
             VV_U_PARAMS(e8); \
@@ -594,6 +599,7 @@ enum VMUNARY0{
   VI_LOOP_COMP_END
 
 #define VI_VX_COMP_ULOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_COMP_LOOP_BASE \
   if (sew == e8){ \
             VX_U_PARAMS(e8); \
@@ -611,6 +617,7 @@ enum VMUNARY0{
   VI_LOOP_COMP_END
 
 #define VI_VI_COMP_ULOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_COMP_LOOP_BASE \
   if (sew == e8){ \
             VI_U_PARAMS(e8); \
@@ -628,6 +635,7 @@ enum VMUNARY0{
   VI_LOOP_COMP_END
 
 #define VI_VV_LOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_LOOP_BASE \
   if (sew == e8){ \
             VV_PARAMS(e8); \
@@ -660,25 +668,27 @@ enum VMUNARY0{
   for (reg_t i=STATE.VU.vstart; i<vl; ++i){
 
 #define REDUCTION_LOOP(x, BODY) \
-    VI_REDUCTION_LOOP_BASE(x) \
-    VV_PARAMS(x); \
-    type_usew_t<x>::type vs2u = STATE.VU.elt<type_usew_t<x>::type>(rs2_num, i); \
-    BODY; \
-    VI_LOOP_END \
+  VI_REDUCTION_LOOP_BASE(x) \
+  VV_PARAMS(x); \
+  type_usew_t<x>::type vs2u = STATE.VU.elt<type_usew_t<x>::type>(rs2_num, i); \
+  BODY; \
+  VI_LOOP_END \
 
 #define VI_VV_REDUCTION_LOOP(BODY) \
-    reg_t sew = STATE.VU.vsew; \
-    if (sew == e8){ \
-        REDUCTION_LOOP(e8, BODY) \
-    }else if(sew == e16){ \
-        REDUCTION_LOOP(e16, BODY) \
-    }else if(sew == e32){ \
-        REDUCTION_LOOP(e32, BODY) \
-    }else if(sew == e64){ \
-        REDUCTION_LOOP(e64, BODY) \
-    }
+  require(!STATE.VU.vill);\
+  reg_t sew = STATE.VU.vsew; \
+  if (sew == e8){ \
+      REDUCTION_LOOP(e8, BODY) \
+  }else if(sew == e16){ \
+      REDUCTION_LOOP(e16, BODY) \
+  }else if(sew == e32){ \
+      REDUCTION_LOOP(e32, BODY) \
+  }else if(sew == e64){ \
+      REDUCTION_LOOP(e64, BODY) \
+  }
 
 #define VI_VX_ULOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_LOOP_BASE \
   if (sew == e8){ \
             VX_U_PARAMS(e8); \
@@ -697,6 +707,7 @@ enum VMUNARY0{
 
 
 #define VI_VX_LOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_LOOP_BASE \
   if (sew == e8){ \
             VX_PARAMS(e8); \
@@ -714,6 +725,7 @@ enum VMUNARY0{
   VI_LOOP_END 
 
 #define VI_VI_ULOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_LOOP_BASE \
   if (sew == e8){ \
             VI_U_PARAMS(e8); \
@@ -732,6 +744,7 @@ enum VMUNARY0{
 
 
 #define VI_VI_LOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_LOOP_BASE \
   if (sew == e8){ \
             VI_PARAMS(e8); \
@@ -749,6 +762,7 @@ enum VMUNARY0{
   VI_LOOP_END 
 
 #define VI_XV_LOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_LOOP_BASE \
   if (sew == e8){ \
             XV_PARAMS(e8); \
@@ -768,6 +782,7 @@ enum VMUNARY0{
 
 
 #define VI_LD_LOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_LOOP_BASE \
   uint64_t &vd = STATE.VU.elt<uint64_t>(rd_num, i); \
   uint64_t rs1 = RS1; \
@@ -776,6 +791,7 @@ enum VMUNARY0{
   VI_LOOP_END
 
 #define VI_ST_LOOP(BODY) \
+  require(!STATE.VU.vill);\
   VI_LOOP_BASE \
   uint64_t &vd = STATE.VU.elt<uint64_t>(rd_num, i); \
   uint64_t rs1 = RS1; \
@@ -842,6 +858,7 @@ enum VMUNARY0{
   set_fp_exceptions;
 
 #define VFMA_VV_LOOP(BODY)                      \
+  require(!STATE.VU.vill);\
   VF_LOOP_BASE \
   float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
   float32_t vs1 = STATE.VU.elt<float32_t>(rs1_num, i); \
@@ -852,6 +869,7 @@ enum VMUNARY0{
   VF_LOOP_END
 
 #define VFMA_VF_LOOP(BODY) \
+  require(!STATE.VU.vill);\
   VF_LOOP_BASE \
   float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
   float32_t rs1 = f32(READ_FREG(rs1_num)); \
@@ -862,6 +880,7 @@ enum VMUNARY0{
   VF_LOOP_END
 
 #define VFP_VV_LOOP(BODY) \
+  require(!STATE.VU.vill);\
   VF_LOOP_BASE \
   float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
   float32_t vs1 = STATE.VU.elt<float32_t>(rs1_num, i); \
@@ -871,6 +890,7 @@ enum VMUNARY0{
   VF_LOOP_END
 
 #define VFP_VV_REDUCTION_LOOP(BODY) \
+  require(!STATE.VU.vill);\
   VF_LOOP_BASE \
   float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
   float32_t vs1 = STATE.VU.elt<float32_t>(rs1_num, i); \
@@ -883,6 +903,7 @@ enum VMUNARY0{
   VF_LOOP_END
 
 #define VFP_VF_LOOP(BODY) \
+  require(!STATE.VU.vill);\
   VF_LOOP_BASE \
   float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
   float32_t rs1 = f32(READ_FREG(rs1_num)); \
@@ -892,6 +913,7 @@ enum VMUNARY0{
   VF_LOOP_END
 
 #define VFP_LOOP_CMP(BODY) \
+  require(!STATE.VU.vill);\
   VF_LOOP_CMP_BASE \
   BODY; \
   DEBUG_RVV_FP_VV; \
