@@ -919,6 +919,25 @@ enum VMUNARY0{
   DEBUG_RVV_FP_VV; \
   VF_LOOP_CMP_END \
 
+#define INT_ROUNDING(result, xrm, sew) \
+  switch(xrm){\
+    case VRM::RNU:\
+      result += (1 << (sew - 2));\
+        break;\
+    case VRM::RNE:\
+      assert(true);\
+      break;\
+    case VRM::RDN:\
+      result = (result >> (sew - 1)) << (sew - 1);\
+      break;\
+    case VRM::ROD:\
+      if ((result & (1 << ((sew -1) - 1 ))) > 0){\
+         result = ((result >> (sew - 1)) + 1) << (sew - 1);\
+      }\
+      break;\
+      case VRM::INVALID_RM:\
+      assert(true);\
+  }
 // Seems that 0x0 doesn't work.
 #define DEBUG_START             0x100
 #define DEBUG_END                 (0x1000 - 1)
