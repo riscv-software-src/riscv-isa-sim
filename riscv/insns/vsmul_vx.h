@@ -6,7 +6,7 @@ VI_VX_LOOP
     int64_t result = vsext(rs1 * vs2, sew * 2);
     // rounding
     switch(vrm){
-        case VRM::RUN:
+        case VRM::RNU:
             result += (1 << (sew - 1) );
             break;
         case VRM::RNE:

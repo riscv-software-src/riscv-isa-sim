@@ -89,7 +89,7 @@ inline reg_t BITS(reg_t v, int hi, int lo){
 }
 
 enum VRM{
-	RUN = 0,
+	RNU = 0,
 	RNE,
 	RDN,
 	ROD,

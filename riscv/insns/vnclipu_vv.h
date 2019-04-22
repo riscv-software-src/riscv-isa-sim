@@ -12,7 +12,7 @@ VI_VV_LOOP
     uint64_t result = (vs2<<sew) | sew_lo;
     // rounding
     switch(vrm){
-        case VRM::RUN:
+        case VRM::RNU:
             result += (1 << (sew - 1) );
             break;
         case VRM::RNE:

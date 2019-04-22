@@ -6,7 +6,7 @@ VI_VI_LOOP
     int64_t result = simm5 + vs2; 
     // rounding
     switch(vrm){
-        case VRM::RUN:
+        case VRM::RNU:
             result += (1 << (sew - 1) );
             break;
         case VRM::RNE:

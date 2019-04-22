@@ -8,7 +8,7 @@ const int gb = STATE.VU.vsew / 2;
     type_sew_t<sew2>::type &vd = STATE.VU.elt<type_sew_t<sew2>::type>(rd_num, i); \
     type_sew_t<sew1>::type vs1 = STATE.VU.elt<type_sew_t<sew1>::type>(rs1_num, i); \
     type_sew_t<sew1>::type vs2 = STATE.VU.elt<type_sew_t<sew1>::type>(rs2_num, i); \
-    uint##sew2##_t round = (vrm == VRM::RUN) ? 1 << (gb - 1) : 0; \
+    uint##sew2##_t round = (vrm == VRM::RNU) ? 1 << (gb - 1) : 0; \
     uint##sew2##_t res; \
     bool sat = false; \
     res = ((((uint##sew2##_t)(uint##sew1##_t)vs2 * (uint##sew2##_t)(uint##sew1##_t)vs1) + round) >> gb); \
