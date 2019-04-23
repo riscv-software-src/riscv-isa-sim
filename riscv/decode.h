@@ -652,27 +652,23 @@ enum VMUNARY0{
   } \
   VI_LOOP_END 
 
+// reduction loop
 #define VI_REDUCTION_LOOP_BASE(x) \
   require(x == e8 || x == e16 || x == e32 || x == e64); \
-  require(insn.v_vm() == 1); \
   reg_t vl = STATE.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  type_sew_t<x>::type &vd_0 = STATE.VU.elt<type_sew_t<x>::type>(rd_num, 0); \
-  type_sew_t<x>::type vs1_0 = STATE.VU.elt<type_sew_t<x>::type>(rs1_num, 0); \
-  type_usew_t<x>::type &vdu_0 = STATE.VU.elt<type_usew_t<x>::type>(rd_num, 0); \
-  type_usew_t<x>::type vs1u_0 = STATE.VU.elt<type_usew_t<x>::type>(rs1_num, 0); \
-  vd_0 = vs1_0; \
-  vdu_0 = vs1u_0; \
-  for (reg_t i=STATE.VU.vstart; i<vl; ++i){
+  type_sew_t<x>::type &vd_0_des = STATE.VU.elt<type_sew_t<x>::type>(rd_num, 0); \
+  type_sew_t<x>::type vd_0_res = STATE.VU.elt<type_sew_t<x>::type>(rs1_num, 0); \
+  for (reg_t i=STATE.VU.vstart; i<vl; ++i){ \
+    type_sew_t<x>::type vs2 = STATE.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
 
 #define REDUCTION_LOOP(x, BODY) \
   VI_REDUCTION_LOOP_BASE(x) \
-  VV_PARAMS(x); \
-  type_usew_t<x>::type vs2u = STATE.VU.elt<type_usew_t<x>::type>(rs2_num, i); \
   BODY; \
   VI_LOOP_END \
+  vd_0_des = vd_0_res;
 
 #define VI_VV_REDUCTION_LOOP(BODY) \
   require(!STATE.VU.vill);\
@@ -685,6 +681,37 @@ enum VMUNARY0{
       REDUCTION_LOOP(e32, BODY) \
   }else if(sew == e64){ \
       REDUCTION_LOOP(e64, BODY) \
+  }
+
+// reduction unsiged loop
+#define VI_REDUCTION_ULOOP_BASE(x) \
+  require(x == e8 || x == e16 || x == e32 || x == e64); \
+  reg_t vl = STATE.VU.vl; \
+  reg_t rd_num = insn.rd(); \
+  reg_t rs1_num = insn.rs1(); \
+  reg_t rs2_num = insn.rs2(); \
+  type_usew_t<x>::type &vdu_0_des = STATE.VU.elt<type_usew_t<x>::type>(rd_num, 0); \
+  type_usew_t<x>::type vdu_0_res = STATE.VU.elt<type_usew_t<x>::type>(rs1_num, 0); \
+  for (reg_t i=STATE.VU.vstart; i<vl; ++i){ \
+    type_usew_t<x>::type vs2u = STATE.VU.elt<type_usew_t<x>::type>(rs2_num, i); \
+
+#define REDUCTION_ULOOP(x, BODY) \
+  VI_REDUCTION_ULOOP_BASE(x) \
+  BODY; \
+  VI_LOOP_END \
+  vdu_0_des = vdu_0_res;
+
+#define VI_VV_REDUCTION_ULOOP(BODY) \
+  require(!STATE.VU.vill);\
+  reg_t sew = STATE.VU.vsew; \
+  if (sew == e8){ \
+      REDUCTION_ULOOP(e8, BODY) \
+  }else if(sew == e16){ \
+      REDUCTION_ULOOP(e16, BODY) \
+  }else if(sew == e32){ \
+      REDUCTION_ULOOP(e32, BODY) \
+  }else if(sew == e64){ \
+      REDUCTION_ULOOP(e64, BODY) \
   }
 
 #define VI_VX_ULOOP(BODY) \
