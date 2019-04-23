@@ -813,6 +813,7 @@ enum VMUNARY0{
   require_extension('F'); \
   require_fp; \
   require(STATE.VU.vsew == 32); \
+  require(!STATE.VU.vill);\
   reg_t vl = STATE.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -825,6 +826,7 @@ enum VMUNARY0{
   require_extension('F'); \
   require_fp; \
   require(STATE.VU.vsew == 32); \
+  require(!STATE.VU.vill);\
   reg_t vl = STATE.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -861,7 +863,6 @@ enum VMUNARY0{
   set_fp_exceptions;
 
 #define VFMA_VV_LOOP(BODY)                      \
-  require(!STATE.VU.vill);\
   VF_LOOP_BASE \
   float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
   float32_t vs1 = STATE.VU.elt<float32_t>(rs1_num, i); \
@@ -872,7 +873,6 @@ enum VMUNARY0{
   VF_LOOP_END
 
 #define VFMA_VF_LOOP(BODY) \
-  require(!STATE.VU.vill);\
   VF_LOOP_BASE \
   float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
   float32_t rs1 = f32(READ_FREG(rs1_num)); \
@@ -883,7 +883,6 @@ enum VMUNARY0{
   VF_LOOP_END
 
 #define VFP_VV_LOOP(BODY) \
-  require(!STATE.VU.vill);\
   VF_LOOP_BASE \
   float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
   float32_t vs1 = STATE.VU.elt<float32_t>(rs1_num, i); \
@@ -893,7 +892,6 @@ enum VMUNARY0{
   VF_LOOP_END
 
 #define VFP_VV_REDUCTION_LOOP(BODY) \
-  require(!STATE.VU.vill);\
   VF_LOOP_BASE \
   float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
   float32_t vs1 = STATE.VU.elt<float32_t>(rs1_num, i); \
@@ -906,7 +904,6 @@ enum VMUNARY0{
   VF_LOOP_END
 
 #define VFP_VF_LOOP(BODY) \
-  require(!STATE.VU.vill);\
   VF_LOOP_BASE \
   float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
   float32_t rs1 = f32(READ_FREG(rs1_num)); \
@@ -916,7 +913,6 @@ enum VMUNARY0{
   VF_LOOP_END
 
 #define VFP_LOOP_CMP(BODY) \
-  require(!STATE.VU.vill);\
   VF_LOOP_CMP_BASE \
   BODY; \
   DEBUG_RVV_FP_VV; \
