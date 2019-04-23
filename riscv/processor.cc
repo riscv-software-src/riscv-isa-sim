@@ -151,7 +151,7 @@ reg_t vectorUnit_t::set_vl(uint64_t regId, reg_t reqVL, reg_t newType){
     vsew = 1 << (BITS(newType, 4, 2) + 3);
     vlmul = 1 << BITS(newType, 1, 0);
     vediv = 1 << BITS(newType, 6, 5); 
-	vlmax = VLEN/vsew * vlmul;
+  vlmax = VLEN/vsew * vlmul;
     vmlen = vsew / vlmul;
     reg_mask = (NVPR-1) & ~(vlmul-1);
   }
@@ -162,42 +162,48 @@ reg_t vectorUnit_t::set_vl(uint64_t regId, reg_t reqVL, reg_t newType){
 }
 
 void vectorUnit_t::set_vcsr(int which, reg_t val){
-	switch(which){
-		case CSR_VSTART:
-			vstart = val; 
-		case CSR_VXSAT:
-			vxsat = val;
-		case CSR_VXRM:
-			vxrm = val;
-		case CSR_VL:
-			vl = val;
-		case CSR_VTYPE:
-			vtype = val;
-			// check vill bit
-			if (BITS(vtype, p->get_xlen(), p->get_xlen() - 1) == 1){
-				vill = true;
-			}else{
-				vill = false;
-			}
-	}
-	throw trap_illegal_instruction(0);
+  switch(which){
+    case CSR_VSTART:
+      vstart = val;
+      break;
+    case CSR_VXSAT:
+      vxsat = val;
+      break;
+    case CSR_VXRM:
+      vxrm = val;
+      break;
+    case CSR_VL:
+      vl = val;
+      break;
+    case CSR_VTYPE:
+      vtype = val;
+      // check vill bit
+      if (BITS(vtype, p->get_xlen(), p->get_xlen() - 1) == 1){
+        vill = true;
+      }else{
+        vill = false;
+      }
+      break;
+    default:
+      throw trap_illegal_instruction(0);
+  }
 }
 
 reg_t vectorUnit_t::get_vcsr(int which){
 
-	switch(which){
-		case CSR_VSTART:
-			return vstart; 
-		case CSR_VXSAT:
-			return vxsat;
-		case CSR_VXRM:
-			return vxrm;
-		case CSR_VL:
-			return vl;
-		case CSR_VTYPE:
-			return vtype;
-	}
-	throw trap_illegal_instruction(0);
+  switch(which){
+    case CSR_VSTART:
+      return vstart; 
+    case CSR_VXSAT:
+      return vxsat;
+    case CSR_VXRM:
+      return vxrm;
+    case CSR_VL:
+      return vl;
+    case CSR_VTYPE:
+      return vtype;
+  }
+  throw trap_illegal_instruction(0);
 }
 
 void processor_t::set_debug(bool value)
