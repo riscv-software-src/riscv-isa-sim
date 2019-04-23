@@ -373,13 +373,14 @@ enum VMUNARY0{
   }
 
 #define V_LOOP_ELEMENT_SKIP \
+  const int mlen = STATE.VU.vmlen; \
+  const int midx = (mlen * i) / 32; \
+  const int mpos = (mlen * i) % 32; \
   if (insn.v_vm() == 0) { \
-    int midx = (STATE.VU.vmlen * i) / 32; \
-    int mpos = (STATE.VU.vmlen * i) % 32; \
     bool skip = ((STATE.VU.elt<uint32_t>(0, midx) >> mpos) & 0x1) == 0; \
     if (skip) \
       continue; \
-  }
+  } \
 
 #define V_WIDE_CHECK \
   require(STATE.VU.vlmul <= 4); \
@@ -851,14 +852,7 @@ enum VMUNARY0{
     float32_t vs2 = STATE.VU.elt<float32_t>(rs2_num, i); \
     float32_t vs1 = STATE.VU.elt<float32_t>(rs1_num, i); \
     float32_t rs1 = f32(READ_FREG(rs1_num)); \
-    const int mlen = STATE.VU.vmlen; \
-    const int midx = (mlen * i) / 32; \
-    const int mpos = (mlen * i) % 32; \
-    if (insn.v_vm() == 0) { \
-      bool skip = ((STATE.VU.elt<uint32_t>(0, midx) >> mpos) & 0x1) == 0; \
-      if (skip) \
-        continue; \
-    } \
+    V_LOOP_ELEMENT_SKIP; \
     uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
     uint32_t &vdi = STATE.VU.elt<uint32_t>(rd_num, midx); \
     bool res = false;
