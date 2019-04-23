@@ -663,7 +663,8 @@ enum VMUNARY0{
   type_sew_t<x>::type &vd_0_des = STATE.VU.elt<type_sew_t<x>::type>(rd_num, 0); \
   type_sew_t<x>::type vd_0_res = STATE.VU.elt<type_sew_t<x>::type>(rs1_num, 0); \
   for (reg_t i=STATE.VU.vstart; i<vl; ++i){ \
-    type_sew_t<x>::type vs2 = STATE.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
+    V_LOOP_ELEMENT_SKIP; \
+    type_sew_t<x>::type vs2 = STATE.VU.elt<type_sew_t<x>::type>(rs2_num, i);
 
 #define REDUCTION_LOOP(x, BODY) \
   VI_REDUCTION_LOOP_BASE(x) \
@@ -694,7 +695,8 @@ enum VMUNARY0{
   type_usew_t<x>::type &vdu_0_des = STATE.VU.elt<type_usew_t<x>::type>(rd_num, 0); \
   type_usew_t<x>::type vdu_0_res = STATE.VU.elt<type_usew_t<x>::type>(rs1_num, 0); \
   for (reg_t i=STATE.VU.vstart; i<vl; ++i){ \
-    type_usew_t<x>::type vs2u = STATE.VU.elt<type_usew_t<x>::type>(rs2_num, i); \
+    V_LOOP_ELEMENT_SKIP; \
+    type_usew_t<x>::type vs2u = STATE.VU.elt<type_usew_t<x>::type>(rs2_num, i);
 
 #define REDUCTION_ULOOP(x, BODY) \
   VI_REDUCTION_ULOOP_BASE(x) \
