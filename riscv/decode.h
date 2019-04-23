@@ -813,13 +813,13 @@ enum VMUNARY0{
   require_extension('F'); \
   require_fp; \
   require(STATE.VU.vsew == 32); \
-  require(insn.v_vm() == 1); \
   reg_t vl = STATE.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   softfloat_roundingMode = STATE.frm; \
-  for (reg_t i=STATE.VU.vstart; i<vl; ++i){
+  for (reg_t i=STATE.VU.vstart; i<vl; ++i){ \
+    V_LOOP_ELEMENT_SKIP;
 
 #define VF_LOOP_CMP_BASE \
   require_extension('F'); \
