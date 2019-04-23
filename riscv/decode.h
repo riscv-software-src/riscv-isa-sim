@@ -376,8 +376,8 @@ enum VMUNARY0{
   if (insn.v_vm() == 0) { \
     int midx = (STATE.VU.vmlen * i) / 32; \
     int mpos = (STATE.VU.vmlen * i) % 32; \
-    bool do_mask = (STATE.VU.elt<uint32_t>(0, midx) >> mpos) & 0x1; \
-    if (do_mask) \
+    bool skip = ((STATE.VU.elt<uint32_t>(0, midx) >> mpos) & 0x1) == 0; \
+    if (skip) \
       continue; \
   }
 
@@ -855,8 +855,8 @@ enum VMUNARY0{
     const int midx = (mlen * i) / 32; \
     const int mpos = (mlen * i) % 32; \
     if (insn.v_vm() == 0) { \
-      bool do_mask = (STATE.VU.elt<uint32_t>(0, midx) >> mpos) & 0x1; \
-      if (do_mask) \
+      bool skip = ((STATE.VU.elt<uint32_t>(0, midx) >> mpos) & 0x1) == 0; \
+      if (skip) \
         continue; \
     } \
     uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
