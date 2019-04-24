@@ -6,5 +6,5 @@ VFP_VF_LOOP
   V_CHECK_MASK(do_mask);
 
   bool use_first = (insn.v_vm() == 1) || do_mask;
-  vd = use_first ? vs2 : rs1;
+  vd = use_first ? rs1 : vs2;
 })
