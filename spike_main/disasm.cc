@@ -981,6 +981,19 @@ disassembler_t::disassembler_t(int xlen)
     add_insn(new disasm_insn_t(#name ".vf", match_##name##_vf, mask_##name##_vf, \
                 {&vd, &vs2, &frs1, &opt, &vm})); \
 
+  #define DISASM_VFUNARY0_INSN(name, pre, extra) \
+    add_insn(new disasm_insn_t(#name "cvt.xu.f.v", match_vfunary0_vv | ((pre << 3) | 0x0ul) << 15, \
+                mask_vfunary0_vv, {&vd, &vs2, &opt, &vm})); \
+    add_insn(new disasm_insn_t(#name "cvt.x.f.v", match_vfunary0_vv | ((pre << 3) | 0x1ul) << 15, \
+                mask_vfunary0_vv, {&vd, &vs2, &opt, &vm})); \
+    add_insn(new disasm_insn_t(#name "cvt.f.xu.v", match_vfunary0_vv | ((pre << 3) | 0x2ul) << 15, \
+                mask_vfunary0_vv, {&vd, &vs2, &opt, &vm})); \
+    add_insn(new disasm_insn_t(#name "cvt.f.x.v", match_vfunary0_vv | ((pre << 3) | 0x3ul) << 15, \
+                mask_vfunary0_vv, {&vd, &vs2, &opt, &vm})); \
+    if (extra) \
+      add_insn(new disasm_insn_t(#name "cvt.f.f.v", match_vfunary0_vv | ((pre << 3) | 0x4ul) << 15, \
+                  mask_vfunary0_vv, {&vd, &vs2, &opt, &vm}));
+
   //OPFVV/OPFVF
   //0b01_0000
   DISASM_OPIV_VF_INSN(vfadd);
@@ -1010,8 +1023,18 @@ disassembler_t::disassembler_t(int xlen)
   //0b10_0000
   DISASM_OPIV_VF_INSN(vfdiv);
   DISASM_OPIV__F_INSN(vfrdiv);
-  DISASM_OPIV_V__INSN(vfunary0);
-  DISASM_OPIV_V__INSN(vfunary1);
+
+  //vfunary0
+  DISASM_VFUNARY0_INSN(vf, 0x0, 0);
+  DISASM_VFUNARY0_INSN(vfw, 0x1, 1);
+  DISASM_VFUNARY0_INSN(vfn, 0x2, 1);
+
+  //vfunary1
+  add_insn(new disasm_insn_t("vfsqrt.v", match_vfunary1_vv, mask_vfunary1_vv, \
+                  {&vd, &vs2, &opt, &vm}));
+  add_insn(new disasm_insn_t("vfclass.v", match_vfunary1_vv, mask_vfunary1_vv, \
+                  {&vd, &vs2, &opt, &vm}));
+
   DISASM_OPIV_VF_INSN(vfmul);
   DISASM_OPIV_VF_INSN(vfmadd);
   DISASM_OPIV_VF_INSN(vfnmadd);
@@ -1041,6 +1064,7 @@ disassembler_t::disassembler_t(int xlen)
   #undef DISASM_OPIV__F_INSN
   #undef DISASM_OPIV_S__INSN
   #undef DISASM_OPIV_W__INSN
+  #undef DISASM_VFUNARY0_INSN
 
   if (xlen == 32) {
     DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
