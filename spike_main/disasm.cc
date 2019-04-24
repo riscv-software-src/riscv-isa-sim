@@ -906,6 +906,16 @@ disassembler_t::disassembler_t(int xlen)
   //0b01_0000
   DISASM_INSN("vmpopc.m", vmpopc_m, 0, {&xrd, &vs2, &opt, &vm});
   DISASM_INSN("vmfirst.m", vmfirst_m, 0, {&xrd, &vs2, &opt, &vm});
+  add_insn(new disasm_insn_t("vmsbf.m", match_vmunary0_vv | (0x01ul << 15), mask_vmunary0_vv, \
+                  {&vd, &vs2, &opt, &vm}));
+  add_insn(new disasm_insn_t("vmsof.m", match_vmunary0_vv | (0x02ul << 15), mask_vmunary0_vv, \
+                  {&vd, &vs2, &opt, &vm}));
+  add_insn(new disasm_insn_t("vmsif.m", match_vmunary0_vv | (0x03ul << 15), mask_vmunary0_vv, \
+                  {&vd, &vs2, &opt, &vm}));
+  add_insn(new disasm_insn_t("vmiota.m", match_vmunary0_vv | (0x10ul << 15), mask_vmunary0_vv, \
+                  {&vd, &vs2, &opt, &vm}));
+  add_insn(new disasm_insn_t("vid.m", match_vmunary0_vv | (0x11ul << 15), mask_vmunary0_vv, \
+                  {&vd, &opt, &vm}));
   DISASM_INSN("vcompress.vm", vcompress_vm, 0, {&vd, &vs2, &opt, &vm});
 
   DISASM_OPIV_M___INSN(vmandnot,  1);
