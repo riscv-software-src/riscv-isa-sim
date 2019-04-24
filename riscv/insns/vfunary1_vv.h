@@ -1,11 +1,9 @@
 // VFUNARY1 encoding space
-
-reg_t softfloat_roundingMode = RM;
 VFP_VV_LOOP
 ({
  switch(STATE.VU.vsew){
  case e32:
-    if (RS1 == VFUNARY1::VFSQRT_V){ 
+    if (RS1 == VFUNARY1::VFSQRT_V){
         vd = f32_sqrt(vs2);
     }else if (RS1 == VFUNARY1::VFCLASS_V){
         class_vd = f32_classify(vs2);
