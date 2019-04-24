@@ -657,7 +657,7 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN("vsetvli", vsetvli, 0, {&xrd, &xrs1, &v_vtype});
   DISASM_INSN("vsetvl", vsetvl, 0, {&xrd, &xrs1, &xrs2});
 
-  #define DEFINE_VMEM_LD_TYPE(name, fmt) \
+  #define DISASM_VMEM_LD_INSN(name, fmt) \
     add_insn(new disasm_insn_t("vl" #name "b.v",  match_vl##name##b_v,  mask_vl##name##b_v, fmt)); \
     add_insn(new disasm_insn_t("vl" #name "h.v",  match_vl##name##h_v,  mask_vl##name##h_v, fmt)); \
     add_insn(new disasm_insn_t("vl" #name "w.v",  match_vl##name##w_v,  mask_vl##name##w_v, fmt)); \
@@ -666,7 +666,7 @@ disassembler_t::disassembler_t(int xlen)
     add_insn(new disasm_insn_t("vl" #name "hu.v", match_vl##name##hu_v, mask_vl##name##hu_v, fmt)); \
     add_insn(new disasm_insn_t("vl" #name "wu.v", match_vl##name##wu_v, mask_vl##name##wu_v, fmt));
 
-  #define DEFINE_VMEM_ST_TYPE(name, fmt) \
+  #define DISASM_VMEM_ST_INSN(name, fmt) \
     add_insn(new disasm_insn_t("vs" #name "b.v", match_vs##name##b_v, mask_vs##name##b_v, fmt)); \
     add_insn(new disasm_insn_t("vs" #name "h.v", match_vs##name##h_v, mask_vs##name##h_v, fmt)); \
     add_insn(new disasm_insn_t("vs" #name "w.v", match_vs##name##w_v, mask_vs##name##w_v, fmt)); \
@@ -679,15 +679,15 @@ disassembler_t::disassembler_t(int xlen)
   const std::vector<const arg_t *> v_ld_index = {&vd, &v_address, &vs2, &opt, &vm};
   const std::vector<const arg_t *> v_st_index = {&vs3, &v_address, &vs2, &opt, &vm};
 
-  DEFINE_VMEM_LD_TYPE(, v_ld_unit);
-  DEFINE_VMEM_ST_TYPE(, v_st_unit);
-  DEFINE_VMEM_LD_TYPE(s, v_ld_stride);
-  DEFINE_VMEM_ST_TYPE(s, v_st_stride);
-  DEFINE_VMEM_LD_TYPE(x, v_ld_index);
-  DEFINE_VMEM_ST_TYPE(x, v_st_index);
+  DISASM_VMEM_LD_INSN(, v_ld_unit);
+  DISASM_VMEM_ST_INSN(, v_st_unit);
+  DISASM_VMEM_LD_INSN(s, v_ld_stride);
+  DISASM_VMEM_ST_INSN(s, v_st_stride);
+  DISASM_VMEM_LD_INSN(x, v_ld_index);
+  DISASM_VMEM_ST_INSN(x, v_st_index);
 
-  #undef DEFINE_VMEM_LD_TYPE
-  #undef DEFINE_VMEM_ST_TYPE
+  #undef DISASM_VMEM_LD_INSN
+  #undef DISASM_VMEM_ST_INSN
 
   // handle vector segment load/store
   for (size_t nf = 1; nf <= 7; ++nf) {
@@ -783,7 +783,7 @@ disassembler_t::disassembler_t(int xlen)
   }
 
 
-  #define DEFINE_OPIV_VXI_TYPE(name, sign) \
+  #define DISASM_OPIV_VXI_INSN(name, sign) \
     add_insn(new disasm_insn_t(#name ".vv", match_##name##_vv, mask_##name##_vv, \
                 {&vd, &vs2, &vs1, &opt, &vm})); \
     add_insn(new disasm_insn_t(#name ".vx", match_##name##_vx, mask_##name##_vx, \
@@ -795,13 +795,13 @@ disassembler_t::disassembler_t(int xlen)
     add_insn(new disasm_insn_t(#name ".vi", match_##name##_vi, mask_##name##_vi, \
                   {&vd, &vs2, &zimm5, &opt, &vm}));
 
-  #define DEFINE_OPIV_VX__TYPE(name, sign) \
+  #define DISASM_OPIV_VX__INSN(name, sign) \
     add_insn(new disasm_insn_t(#name ".vv", match_##name##_vv, mask_##name##_vv, \
                 {&vd, &vs2, &vs1, &opt, &vm})); \
     add_insn(new disasm_insn_t(#name ".vx", match_##name##_vx, mask_##name##_vx, \
                 {&vd, &vs2, &xrs1, &opt, &vm})); \
 
-  #define DEFINE_OPIV__XI_TYPE(name, sign) \
+  #define DISASM_OPIV__XI_INSN(name, sign) \
     add_insn(new disasm_insn_t(#name ".vx", match_##name##_vx, mask_##name##_vx, \
                 {&vd, &vs2, &xrs1, &opt, &vm})); \
     if (sign) \
@@ -811,238 +811,238 @@ disassembler_t::disassembler_t(int xlen)
     add_insn(new disasm_insn_t(#name ".vi", match_##name##_vi, mask_##name##_vi, \
                 {&vd, &vs2, &zimm5, &opt, &vm}));
 
-  #define DEFINE_OPIV_V___TYPE(name, sign) \
+  #define DISASM_OPIV_V___INSN(name, sign) \
     add_insn(new disasm_insn_t(#name ".vv", match_##name##_vv, mask_##name##_vv, \
                 {&vd, &vs2, &vs1, &opt, &vm}));
 
-  #define DEFINE_OPIV_S___TYPE(name, sign) \
+  #define DISASM_OPIV_S___INSN(name, sign) \
     add_insn(new disasm_insn_t(#name ".vs", match_##name##_vs, mask_##name##_vs, \
                 {&vd, &vs2, &vs1, &opt, &vm}));
 
-  #define DEFINE_OPIV_W___TYPE(name, sign) \
+  #define DISASM_OPIV_W___INSN(name, sign) \
     add_insn(new disasm_insn_t(#name ".wv", match_##name##_wv, mask_##name##_wv, \
                 {&vd, &vs2, &vs1, &opt, &vm}));
 
-  #define DEFINE_OPIV_M___TYPE(name, sign) \
+  #define DISASM_OPIV_M___INSN(name, sign) \
     add_insn(new disasm_insn_t(#name ".mm", match_##name##_mm, mask_##name##_mm, \
                 {&vd, &vs2, &vs1}));
 
-  #define DEFINE_OPIV__X__TYPE(name, sign) \
+  #define DISASM_OPIV__X__INSN(name, sign) \
     add_insn(new disasm_insn_t(#name ".vx", match_##name##_vx, mask_##name##_vx, \
                 {&vd, &vs2, &xrs1, &opt, &vm}));
 
   //OPFVV/OPFVF
   //0b00_0000
-  DEFINE_OPIV_VXI_TYPE(vadd,      1);
-  DEFINE_OPIV_VX__TYPE(vsub,      1);
-  DEFINE_OPIV__XI_TYPE(vrsub,     1);
-  DEFINE_OPIV_VX__TYPE(vminu,     0);
-  DEFINE_OPIV_VX__TYPE(vmin,      1);
-  DEFINE_OPIV_VX__TYPE(vmaxu,     1);
-  DEFINE_OPIV_VX__TYPE(vmax,      0);
-  DEFINE_OPIV_VXI_TYPE(vand,      1);
-  DEFINE_OPIV_VXI_TYPE(vor,       1);
-  DEFINE_OPIV_VXI_TYPE(vxor,      1);
-  DEFINE_OPIV_VXI_TYPE(vrgather,  1);
-  DEFINE_OPIV__XI_TYPE(vslideup,  1);
-  DEFINE_OPIV__XI_TYPE(vslidedown,1);
+  DISASM_OPIV_VXI_INSN(vadd,      1);
+  DISASM_OPIV_VX__INSN(vsub,      1);
+  DISASM_OPIV__XI_INSN(vrsub,     1);
+  DISASM_OPIV_VX__INSN(vminu,     0);
+  DISASM_OPIV_VX__INSN(vmin,      1);
+  DISASM_OPIV_VX__INSN(vmaxu,     1);
+  DISASM_OPIV_VX__INSN(vmax,      0);
+  DISASM_OPIV_VXI_INSN(vand,      1);
+  DISASM_OPIV_VXI_INSN(vor,       1);
+  DISASM_OPIV_VXI_INSN(vxor,      1);
+  DISASM_OPIV_VXI_INSN(vrgather,  1);
+  DISASM_OPIV__XI_INSN(vslideup,  1);
+  DISASM_OPIV__XI_INSN(vslidedown,1);
 
   //0b01_0000
-  DEFINE_OPIV_VXI_TYPE(vadc,      1);
-  DEFINE_OPIV_VX__TYPE(vsbc,      1);
-  DEFINE_OPIV_VXI_TYPE(vmerge,    1);
-  DEFINE_OPIV_VXI_TYPE(vseq,      1);
-  DEFINE_OPIV_VXI_TYPE(vsne,      1);
-  DEFINE_OPIV_VX__TYPE(vsltu,     0);
-  DEFINE_OPIV_VX__TYPE(vslt,      1);
-  DEFINE_OPIV_VXI_TYPE(vsleu,     0);
-  DEFINE_OPIV_VXI_TYPE(vsle,      1);
-  DEFINE_OPIV__XI_TYPE(vsgtu,     0);
-  DEFINE_OPIV__XI_TYPE(vsgt,      1);
+  DISASM_OPIV_VXI_INSN(vadc,      1);
+  DISASM_OPIV_VX__INSN(vsbc,      1);
+  DISASM_OPIV_VXI_INSN(vmerge,    1);
+  DISASM_OPIV_VXI_INSN(vseq,      1);
+  DISASM_OPIV_VXI_INSN(vsne,      1);
+  DISASM_OPIV_VX__INSN(vsltu,     0);
+  DISASM_OPIV_VX__INSN(vslt,      1);
+  DISASM_OPIV_VXI_INSN(vsleu,     0);
+  DISASM_OPIV_VXI_INSN(vsle,      1);
+  DISASM_OPIV__XI_INSN(vsgtu,     0);
+  DISASM_OPIV__XI_INSN(vsgt,      1);
 
   //0b10_0000
-  DEFINE_OPIV_VXI_TYPE(vsaddu,    0);
-  DEFINE_OPIV_VXI_TYPE(vsadd,     1);
-  DEFINE_OPIV_VX__TYPE(vssubu,    0);
-  DEFINE_OPIV_VX__TYPE(vssub,     1);
-  DEFINE_OPIV_VXI_TYPE(vaadd,     1);
-  DEFINE_OPIV_VXI_TYPE(vsll,      1);
-  DEFINE_OPIV_VX__TYPE(vasub,     1);
-  DEFINE_OPIV_VX__TYPE(vsmul,     1);
-  DEFINE_OPIV_VXI_TYPE(vsrl,      1);
-  DEFINE_OPIV_VXI_TYPE(vsra,      1);
-  DEFINE_OPIV_VXI_TYPE(vssrl,     1);
-  DEFINE_OPIV_VXI_TYPE(vssra,     1);
-  DEFINE_OPIV_VXI_TYPE(vnsrl,     1);
-  DEFINE_OPIV_VXI_TYPE(vnsra,     1);
-  DEFINE_OPIV_VXI_TYPE(vnclipu,   0);
-  DEFINE_OPIV_VXI_TYPE(vnclip,    1);
+  DISASM_OPIV_VXI_INSN(vsaddu,    0);
+  DISASM_OPIV_VXI_INSN(vsadd,     1);
+  DISASM_OPIV_VX__INSN(vssubu,    0);
+  DISASM_OPIV_VX__INSN(vssub,     1);
+  DISASM_OPIV_VXI_INSN(vaadd,     1);
+  DISASM_OPIV_VXI_INSN(vsll,      1);
+  DISASM_OPIV_VX__INSN(vasub,     1);
+  DISASM_OPIV_VX__INSN(vsmul,     1);
+  DISASM_OPIV_VXI_INSN(vsrl,      1);
+  DISASM_OPIV_VXI_INSN(vsra,      1);
+  DISASM_OPIV_VXI_INSN(vssrl,     1);
+  DISASM_OPIV_VXI_INSN(vssra,     1);
+  DISASM_OPIV_VXI_INSN(vnsrl,     1);
+  DISASM_OPIV_VXI_INSN(vnsra,     1);
+  DISASM_OPIV_VXI_INSN(vnclipu,   0);
+  DISASM_OPIV_VXI_INSN(vnclip,    1);
 
   //0b11_0000
-  DEFINE_OPIV_S___TYPE(vwredsumu, 0);
-  DEFINE_OPIV_S___TYPE(vwredsum,  1);
-  DEFINE_OPIV_V___TYPE(vdotu,     0);
-  DEFINE_OPIV_V___TYPE(vdot,      1);
-  DEFINE_OPIV_VX__TYPE(vwsmaccu,  0);
-  DEFINE_OPIV_VX__TYPE(vwsmacc,   1);
-  DEFINE_OPIV_VX__TYPE(vwsmsacu,  0);
-  DEFINE_OPIV_VX__TYPE(vwsmsac,   1);
+  DISASM_OPIV_S___INSN(vwredsumu, 0);
+  DISASM_OPIV_S___INSN(vwredsum,  1);
+  DISASM_OPIV_V___INSN(vdotu,     0);
+  DISASM_OPIV_V___INSN(vdot,      1);
+  DISASM_OPIV_VX__INSN(vwsmaccu,  0);
+  DISASM_OPIV_VX__INSN(vwsmacc,   1);
+  DISASM_OPIV_VX__INSN(vwsmsacu,  0);
+  DISASM_OPIV_VX__INSN(vwsmsac,   1);
 
   //OPMVV/OPMVX
   //0b00_0000
-  DEFINE_OPIV_V___TYPE(vredsum,   1);
-  DEFINE_OPIV_V___TYPE(vredand,   1);
-  DEFINE_OPIV_V___TYPE(vredor,    1);
-  DEFINE_OPIV_V___TYPE(vredxor,   1);
-  DEFINE_OPIV_V___TYPE(vredminu,  0);
-  DEFINE_OPIV_V___TYPE(vredmin,   1);
-  DEFINE_OPIV_V___TYPE(vredmaxu,  0);
-  DEFINE_OPIV_V___TYPE(vredmax,   1);
+  DISASM_OPIV_V___INSN(vredsum,   1);
+  DISASM_OPIV_V___INSN(vredand,   1);
+  DISASM_OPIV_V___INSN(vredor,    1);
+  DISASM_OPIV_V___INSN(vredxor,   1);
+  DISASM_OPIV_V___INSN(vredminu,  0);
+  DISASM_OPIV_V___INSN(vredmin,   1);
+  DISASM_OPIV_V___INSN(vredmaxu,  0);
+  DISASM_OPIV_V___INSN(vredmax,   1);
   DISASM_INSN("vext.x.v", vext_x_v, 0, {&xrd, &vs2, &xrs1});
   DISASM_INSN("vmv.s.x", vmv_s_x, 0, {&vd, &xrs1});
-  DEFINE_OPIV__X__TYPE(vslide1up,  1);
-  DEFINE_OPIV__X__TYPE(vslide1down,1);
+  DISASM_OPIV__X__INSN(vslide1up,  1);
+  DISASM_OPIV__X__INSN(vslide1down,1);
 
   //0b01_0000
   DISASM_INSN("vmpopc.m", vmpopc_m, 0, {&xrd, &vs2, &opt, &vm});
   DISASM_INSN("vmfirst.m", vmfirst_m, 0, {&xrd, &vs2, &opt, &vm});
   DISASM_INSN("vcompress.vm", vcompress_vm, 0, {&vd, &vs2, &opt, &vm});
 
-  DEFINE_OPIV_M___TYPE(vmandnot,  1);
-  DEFINE_OPIV_M___TYPE(vmand,     1);
-  DEFINE_OPIV_M___TYPE(vmor,      1);
-  DEFINE_OPIV_M___TYPE(vmxor,     1);
-  DEFINE_OPIV_M___TYPE(vmornot,   1);
-  DEFINE_OPIV_M___TYPE(vmnand,    1);
-  DEFINE_OPIV_M___TYPE(vmnor,     1);
-  DEFINE_OPIV_M___TYPE(vmxnor,    1);
+  DISASM_OPIV_M___INSN(vmandnot,  1);
+  DISASM_OPIV_M___INSN(vmand,     1);
+  DISASM_OPIV_M___INSN(vmor,      1);
+  DISASM_OPIV_M___INSN(vmxor,     1);
+  DISASM_OPIV_M___INSN(vmornot,   1);
+  DISASM_OPIV_M___INSN(vmnand,    1);
+  DISASM_OPIV_M___INSN(vmnor,     1);
+  DISASM_OPIV_M___INSN(vmxnor,    1);
 
   //0b10_0000
-  DEFINE_OPIV_VX__TYPE(vdivu,     0);
-  DEFINE_OPIV_VX__TYPE(vdiv,      1);
-  DEFINE_OPIV_VX__TYPE(vremu,     0);
-  DEFINE_OPIV_VX__TYPE(vrem,      1);
-  DEFINE_OPIV_VX__TYPE(vmulhu,    0);
-  DEFINE_OPIV_VX__TYPE(vmul,      1);
-  DEFINE_OPIV_VX__TYPE(vmulhsu,   0);
-  DEFINE_OPIV_VX__TYPE(vmulh,     1);
-  DEFINE_OPIV_VX__TYPE(vmadd,     1);
-  DEFINE_OPIV_VX__TYPE(vmsub,     1);
-  DEFINE_OPIV_VX__TYPE(vmacc,     1);
-  DEFINE_OPIV_VX__TYPE(vmsac,     1);
+  DISASM_OPIV_VX__INSN(vdivu,     0);
+  DISASM_OPIV_VX__INSN(vdiv,      1);
+  DISASM_OPIV_VX__INSN(vremu,     0);
+  DISASM_OPIV_VX__INSN(vrem,      1);
+  DISASM_OPIV_VX__INSN(vmulhu,    0);
+  DISASM_OPIV_VX__INSN(vmul,      1);
+  DISASM_OPIV_VX__INSN(vmulhsu,   0);
+  DISASM_OPIV_VX__INSN(vmulh,     1);
+  DISASM_OPIV_VX__INSN(vmadd,     1);
+  DISASM_OPIV_VX__INSN(vmsub,     1);
+  DISASM_OPIV_VX__INSN(vmacc,     1);
+  DISASM_OPIV_VX__INSN(vmsac,     1);
 
   //0b11_0000
-  DEFINE_OPIV_VX__TYPE(vwaddu,    0);
-  DEFINE_OPIV_VX__TYPE(vwadd,     1);
-  DEFINE_OPIV_VX__TYPE(vwsubu,    0);
-  DEFINE_OPIV_VX__TYPE(vwsub,     1);
-  DEFINE_OPIV_W___TYPE(vwaddu,    0);
-  DEFINE_OPIV_W___TYPE(vwadd,     1);
-  DEFINE_OPIV_W___TYPE(vwsubu,    0);
-  DEFINE_OPIV_W___TYPE(vwsub,     1);
-  DEFINE_OPIV_VX__TYPE(vwmulu,    0);
-  DEFINE_OPIV_VX__TYPE(vwmulsu,   0);
-  DEFINE_OPIV_VX__TYPE(vwmul,     1);
-  DEFINE_OPIV_VX__TYPE(vwmaccu,   0);
-  DEFINE_OPIV_VX__TYPE(vwmacc,    1);
-  DEFINE_OPIV_VX__TYPE(vwmsacu,   0);
-  DEFINE_OPIV_VX__TYPE(vwmsac,    1);
+  DISASM_OPIV_VX__INSN(vwaddu,    0);
+  DISASM_OPIV_VX__INSN(vwadd,     1);
+  DISASM_OPIV_VX__INSN(vwsubu,    0);
+  DISASM_OPIV_VX__INSN(vwsub,     1);
+  DISASM_OPIV_W___INSN(vwaddu,    0);
+  DISASM_OPIV_W___INSN(vwadd,     1);
+  DISASM_OPIV_W___INSN(vwsubu,    0);
+  DISASM_OPIV_W___INSN(vwsub,     1);
+  DISASM_OPIV_VX__INSN(vwmulu,    0);
+  DISASM_OPIV_VX__INSN(vwmulsu,   0);
+  DISASM_OPIV_VX__INSN(vwmul,     1);
+  DISASM_OPIV_VX__INSN(vwmaccu,   0);
+  DISASM_OPIV_VX__INSN(vwmacc,    1);
+  DISASM_OPIV_VX__INSN(vwmsacu,   0);
+  DISASM_OPIV_VX__INSN(vwmsac,    1);
 
-  #undef DEFINE_OPIV_VXI_TYPE
-  #undef DEFINE_OPIV_VX__TYPE
-  #undef DEFINE_OPIV__XI_TYPE
-  #undef DEFINE_OPIV_V___TYPE
-  #undef DEFINE_OPIV_S___TYPE
-  #undef DEFINE_OPIV_W___TYPE
-  #undef DEFINE_OPIV_M___TYPE
-  #undef DEFINE_OPIV__X__TYPE
+  #undef DISASM_OPIV_VXI_INSN
+  #undef DISASM_OPIV_VX__INSN
+  #undef DISASM_OPIV__XI_INSN
+  #undef DISASM_OPIV_V___INSN
+  #undef DISASM_OPIV_S___INSN
+  #undef DISASM_OPIV_W___INSN
+  #undef DISASM_OPIV_M___INSN
+  #undef DISASM_OPIV__X__INSN
 
-  #define DEFINE_OPIV_VF_TYPE(name) \
+  #define DISASM_OPIV_VF_INSN(name) \
       add_insn(new disasm_insn_t(#name ".vv", match_##name##_vv, mask_##name##_vv, \
                   {&vd, &vs2, &vs1, &opt, &vm})); \
       add_insn(new disasm_insn_t(#name ".vf", match_##name##_vf, mask_##name##_vf, \
                   {&vd, &vs2, &frs1, &opt, &vm})); \
 
-  #define DEFINE_OPIV_WF_TYPE(name) \
+  #define DISASM_OPIV_WF_INSN(name) \
       add_insn(new disasm_insn_t(#name ".wv", match_##name##_wv, mask_##name##_wv, \
                   {&vd, &vs2, &vs1, &opt, &vm})); \
       add_insn(new disasm_insn_t(#name ".wf", match_##name##_wf, mask_##name##_wf, \
                   {&vd, &vs2, &frs1, &opt, &vm})); \
 
-  #define DEFINE_OPIV_V__TYPE(name) \
+  #define DISASM_OPIV_V__INSN(name) \
       add_insn(new disasm_insn_t(#name ".vv", match_##name##_vv, mask_##name##_vv, \
                   {&vd, &vs2, &vs1, &opt, &vm}));
 
-  #define DEFINE_OPIV_S__TYPE(name) \
+  #define DISASM_OPIV_S__INSN(name) \
       add_insn(new disasm_insn_t(#name ".vs", match_##name##_vs, mask_##name##_vs, \
                   {&vd, &vs2, &vs1, &opt, &vm}));
 
-  #define DEFINE_OPIV__F_TYPE(name) \
+  #define DISASM_OPIV__F_INSN(name) \
     add_insn(new disasm_insn_t(#name ".vf", match_##name##_vf, mask_##name##_vf, \
                 {&vd, &vs2, &frs1, &opt, &vm})); \
 
   //OPFVV/OPFVF
   //0b01_0000
-  DEFINE_OPIV_VF_TYPE(vfadd);
-  DEFINE_OPIV_S__TYPE(vfredsum);
-  DEFINE_OPIV_VF_TYPE(vfsub);
-  DEFINE_OPIV_S__TYPE(vfredosum);
-  DEFINE_OPIV_VF_TYPE(vfmin);
-  DEFINE_OPIV_S__TYPE(vfredmin);
-  DEFINE_OPIV_VF_TYPE(vfmax);
-  DEFINE_OPIV_S__TYPE(vfredmax);
-  DEFINE_OPIV_VF_TYPE(vfsgnj);
-  DEFINE_OPIV_VF_TYPE(vfsgnn);
-  DEFINE_OPIV_VF_TYPE(vfsgnx);
+  DISASM_OPIV_VF_INSN(vfadd);
+  DISASM_OPIV_S__INSN(vfredsum);
+  DISASM_OPIV_VF_INSN(vfsub);
+  DISASM_OPIV_S__INSN(vfredosum);
+  DISASM_OPIV_VF_INSN(vfmin);
+  DISASM_OPIV_S__INSN(vfredmin);
+  DISASM_OPIV_VF_INSN(vfmax);
+  DISASM_OPIV_S__INSN(vfredmax);
+  DISASM_OPIV_VF_INSN(vfsgnj);
+  DISASM_OPIV_VF_INSN(vfsgnn);
+  DISASM_OPIV_VF_INSN(vfsgnx);
   add_insn(new disasm_insn_t("vfmv.f.s", match_vfmv_f_s, mask_vfmv_f_s,
               {&frd, &vs2}));
   add_insn(new disasm_insn_t("vfmv.s.f", match_vfmv_s_f, mask_vfmv_s_f,
               {&vd, &frs1}));
 
   //0b01_0000
-  DEFINE_OPIV__F_TYPE(vfmerge);
-  DEFINE_OPIV_VF_TYPE(vfeq);
-  DEFINE_OPIV_VF_TYPE(vfle);
-  DEFINE_OPIV_VF_TYPE(vford);
-  DEFINE_OPIV_VF_TYPE(vflt);
-  DEFINE_OPIV_VF_TYPE(vfne);
-  DEFINE_OPIV__F_TYPE(vfgt);
-  DEFINE_OPIV__F_TYPE(vfge);
+  DISASM_OPIV__F_INSN(vfmerge);
+  DISASM_OPIV_VF_INSN(vfeq);
+  DISASM_OPIV_VF_INSN(vfle);
+  DISASM_OPIV_VF_INSN(vford);
+  DISASM_OPIV_VF_INSN(vflt);
+  DISASM_OPIV_VF_INSN(vfne);
+  DISASM_OPIV__F_INSN(vfgt);
+  DISASM_OPIV__F_INSN(vfge);
 
   //0b10_0000
-  DEFINE_OPIV_VF_TYPE(vfdiv);
-  DEFINE_OPIV__F_TYPE(vfrdiv);
-  DEFINE_OPIV_V__TYPE(vfunary0);
-  DEFINE_OPIV_V__TYPE(vfunary1);
-  DEFINE_OPIV_VF_TYPE(vfmul);
-  DEFINE_OPIV_VF_TYPE(vfmadd);
-  DEFINE_OPIV_VF_TYPE(vfnmadd);
-  DEFINE_OPIV_VF_TYPE(vfmsub);
-  DEFINE_OPIV_VF_TYPE(vfnmsub);
-  DEFINE_OPIV_VF_TYPE(vfmacc);
-  DEFINE_OPIV_VF_TYPE(vfnmacc);
-  DEFINE_OPIV_VF_TYPE(vfmsac);
-  DEFINE_OPIV_VF_TYPE(vfnmsac);
+  DISASM_OPIV_VF_INSN(vfdiv);
+  DISASM_OPIV__F_INSN(vfrdiv);
+  DISASM_OPIV_V__INSN(vfunary0);
+  DISASM_OPIV_V__INSN(vfunary1);
+  DISASM_OPIV_VF_INSN(vfmul);
+  DISASM_OPIV_VF_INSN(vfmadd);
+  DISASM_OPIV_VF_INSN(vfnmadd);
+  DISASM_OPIV_VF_INSN(vfmsub);
+  DISASM_OPIV_VF_INSN(vfnmsub);
+  DISASM_OPIV_VF_INSN(vfmacc);
+  DISASM_OPIV_VF_INSN(vfnmacc);
+  DISASM_OPIV_VF_INSN(vfmsac);
+  DISASM_OPIV_VF_INSN(vfnmsac);
 
   //0b11_0000
-  DEFINE_OPIV_VF_TYPE(vfwadd);
-  DEFINE_OPIV_S__TYPE(vfwredsum);
-  DEFINE_OPIV_VF_TYPE(vfwsub);
-  DEFINE_OPIV_S__TYPE(vfwredosum);
-  DEFINE_OPIV_WF_TYPE(vfwadd);
-  DEFINE_OPIV_WF_TYPE(vfwsub);
-  DEFINE_OPIV_VF_TYPE(vfwmul);
-  DEFINE_OPIV_V__TYPE(vfdot);
-  DEFINE_OPIV_VF_TYPE(vfwmacc);
-  DEFINE_OPIV_VF_TYPE(vfwnmacc);
-  DEFINE_OPIV_VF_TYPE(vfwmsac);
-  DEFINE_OPIV_VF_TYPE(vfwnmsac);
+  DISASM_OPIV_VF_INSN(vfwadd);
+  DISASM_OPIV_S__INSN(vfwredsum);
+  DISASM_OPIV_VF_INSN(vfwsub);
+  DISASM_OPIV_S__INSN(vfwredosum);
+  DISASM_OPIV_WF_INSN(vfwadd);
+  DISASM_OPIV_WF_INSN(vfwsub);
+  DISASM_OPIV_VF_INSN(vfwmul);
+  DISASM_OPIV_V__INSN(vfdot);
+  DISASM_OPIV_VF_INSN(vfwmacc);
+  DISASM_OPIV_VF_INSN(vfwnmacc);
+  DISASM_OPIV_VF_INSN(vfwmsac);
+  DISASM_OPIV_VF_INSN(vfwnmsac);
 
-  #undef DEFINE_OPIV_VF_TYPE
-  #undef DEFINE_OPIV_V__TYPE
-  #undef DEFINE_OPIV__F_TYPE
-  #undef DEFINE_OPIV_S__TYPE
-  #undef DEFINE_OPIV_W__TYPE
+  #undef DISASM_OPIV_VF_INSN
+  #undef DISASM_OPIV_V__INSN
+  #undef DISASM_OPIV__F_INSN
+  #undef DISASM_OPIV_S__INSN
+  #undef DISASM_OPIV_W__INSN
 
   if (xlen == 32) {
     DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
