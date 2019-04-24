@@ -874,6 +874,7 @@ enum VMUNARY0{
 #define VFP_VV_LOOP(BODY) \
   VF_LOOP_BASE \
   float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
+  int16_t &class_vd = STATE.VU.elt<int16_t>(rd_num, i); \
   float32_t vs1 = STATE.VU.elt<float32_t>(rs1_num, i); \
   float32_t vs2 = STATE.VU.elt<float32_t>(rs2_num, i); \
   BODY; \
