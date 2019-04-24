@@ -830,6 +830,20 @@ enum VMUNARY0{
     uint32_t &vdi = STATE.VU.elt<uint32_t>(rd_num, midx); \
     bool res = false;
 
+#define VF_LOOP_REDUCTION_BASE \
+  require_extension('F'); \
+  require_fp; \
+  require(STATE.VU.vsew == 32); \
+  require(!STATE.VU.vill);\
+  reg_t vl = STATE.VU.vl; \
+  reg_t rd_num = insn.rd(); \
+  reg_t rs1_num = insn.rs1(); \
+  reg_t rs2_num = insn.rs2(); \
+  softfloat_roundingMode = STATE.frm; \
+  float32_t vd_0 = STATE.VU.elt<float32_t>(rs1_num, 0); \
+  for (reg_t i=STATE.VU.vstart; i<vl; ++i){ \
+    V_LOOP_ELEMENT_SKIP;
+
 #define VF_LOOP_END \
   } \
   STATE.VU.vstart = 0; \
@@ -882,16 +896,12 @@ enum VMUNARY0{
   VF_LOOP_END
 
 #define VFP_VV_REDUCTION_LOOP(BODY) \
-  VF_LOOP_BASE \
-  float32_t &vd = STATE.VU.elt<float32_t>(rd_num, i); \
-  float32_t vs1 = STATE.VU.elt<float32_t>(rs1_num, i); \
+  VF_LOOP_REDUCTION_BASE \
   float32_t vs2 = STATE.VU.elt<float32_t>(rs2_num, i); \
-  float32_t &vd_0 = STATE.VU.elt<float32_t>(rd_num, 0); \
-  float32_t vs1_0 = STATE.VU.elt<float32_t>(rs1_num, 0); \
-  vd_0 = vs1_0; \
   BODY; \
   DEBUG_RVV_FP_VV; \
-  VF_LOOP_END
+  VF_LOOP_END  \
+  STATE.VU.elt<float32_t>(rd_num, 0) = vd_0;
 
 #define VFP_VF_LOOP(BODY) \
   VF_LOOP_BASE \
