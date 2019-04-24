@@ -898,21 +898,15 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_OPIV_V___TYPE(vredmin,   1);
   DEFINE_OPIV_V___TYPE(vredmaxu,  0);
   DEFINE_OPIV_V___TYPE(vredmax,   1);
-
-  add_insn(new disasm_insn_t("vext.x.v", match_vext_x_v, mask_vext_x_v,
-              {&xrd, &vs2, &xrs1}));
-  add_insn(new disasm_insn_t("vmv.s.x", match_vmv_s_x, mask_vmv_s_x,
-              {&vd, &xrs1}));
+  DISASM_INSN("vext.x.v", vext_x_v, 0, {&xrd, &vs2, &xrs1});
+  DISASM_INSN("vmv.s.x", vmv_s_x, 0, {&vd, &xrs1});
   DEFINE_OPIV__X__TYPE(vslide1up,  1);
   DEFINE_OPIV__X__TYPE(vslide1down,1);
 
   //0b01_0000
-  add_insn(new disasm_insn_t("vmpopc.m", match_vmpopc_m, mask_vmpopc_m,
-              {&xrd, &vs2, &opt, &vm}));
-  add_insn(new disasm_insn_t("vmfirst.m", match_vmfirst_m, mask_vmfirst_m,
-              {&xrd, &vs2, &opt, &vm}));
-  add_insn(new disasm_insn_t("vcompress.vm", match_vcompress_vm, mask_vcompress_vm,
-              {&vd, &vs2, &opt, &vm}));
+  DISASM_INSN("vmpopc.m", vmpopc_m, 0, {&xrd, &vs2, &opt, &vm});
+  DISASM_INSN("vmfirst.m", vmfirst_m, 0, {&xrd, &vs2, &opt, &vm});
+  DISASM_INSN("vcompress.vm", vcompress_vm, 0, {&vd, &vs2, &opt, &vm});
 
   DEFINE_OPIV_M___TYPE(vmandnot,  1);
   DEFINE_OPIV_M___TYPE(vmand,     1);
