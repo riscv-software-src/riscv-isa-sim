@@ -409,7 +409,7 @@ enum VMUNARY0{
     break; \
   }
 
-#define VI_COMP_LOOP_BASE \
+#define VI_LOOP_CMP_BASE \
   require(STATE.VU.vsew == e8 || STATE.VU.vsew == e16 || STATE.VU.vsew == e32 || STATE.VU.vsew == e64); \
   require(insn.v_vm() == 1); \
   require(!STATE.VU.vill);\
@@ -446,7 +446,7 @@ enum VMUNARY0{
   } \
   STATE.VU.vstart = 0;
 
-#define VI_LOOP_COMP_END \
+#define VI_LOOP_CMP_END \
     vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
   } \
   STATE.VU.vstart = 0;
@@ -528,8 +528,8 @@ enum VMUNARY0{
   VI_LOOP_END 
 
 // comparision result to masking register
-#define VI_VV_COMP_LOOP(BODY) \
-  VI_COMP_LOOP_BASE \
+#define VI_VV_LOOP_CMP(BODY) \
+  VI_LOOP_CMP_BASE \
   if (sew == e8){ \
             VV_PARAMS(e8); \
             BODY; \
@@ -543,10 +543,10 @@ enum VMUNARY0{
             VV_PARAMS(e64); \
             BODY; \
   } \
-  VI_LOOP_COMP_END
+  VI_LOOP_CMP_END
 
-#define VI_VX_COMP_LOOP(BODY) \
-  VI_COMP_LOOP_BASE \
+#define VI_VX_LOOP_CMP(BODY) \
+  VI_LOOP_CMP_BASE \
   if (sew == e8){ \
             VX_PARAMS(e8); \
             BODY; \
@@ -560,10 +560,10 @@ enum VMUNARY0{
             VX_PARAMS(e64); \
             BODY; \
   } \
-  VI_LOOP_COMP_END
+  VI_LOOP_CMP_END
 
-#define VI_VI_COMP_LOOP(BODY) \
-  VI_COMP_LOOP_BASE \
+#define VI_VI_LOOP_CMP(BODY) \
+  VI_LOOP_CMP_BASE \
   if (sew == e8){ \
             VI_PARAMS(e8); \
             BODY; \
@@ -577,10 +577,10 @@ enum VMUNARY0{
             VI_PARAMS(e64); \
             BODY; \
   } \
-  VI_LOOP_COMP_END
+  VI_LOOP_CMP_END
 
-#define VI_VV_COMP_ULOOP(BODY) \
-  VI_COMP_LOOP_BASE \
+#define VI_VV_ULOOP_CMP(BODY) \
+  VI_LOOP_CMP_BASE \
   if (sew == e8){ \
             VV_U_PARAMS(e8); \
             BODY; \
@@ -594,10 +594,10 @@ enum VMUNARY0{
             VV_U_PARAMS(e64); \
             BODY; \
   } \
-  VI_LOOP_COMP_END
+  VI_LOOP_CMP_END
 
-#define VI_VX_COMP_ULOOP(BODY) \
-  VI_COMP_LOOP_BASE \
+#define VI_VX_ULOOP_CMP(BODY) \
+  VI_LOOP_CMP_BASE \
   if (sew == e8){ \
             VX_U_PARAMS(e8); \
             BODY; \
@@ -611,10 +611,10 @@ enum VMUNARY0{
             VX_U_PARAMS(e64); \
             BODY; \
   } \
-  VI_LOOP_COMP_END
+  VI_LOOP_CMP_END
 
-#define VI_VI_COMP_ULOOP(BODY) \
-  VI_COMP_LOOP_BASE \
+#define VI_VI_ULOOP_CMP(BODY) \
+  VI_LOOP_CMP_BASE \
   if (sew == e8){ \
             VI_U_PARAMS(e8); \
             BODY; \
@@ -628,7 +628,7 @@ enum VMUNARY0{
             VI_U_PARAMS(e64); \
             BODY; \
   } \
-  VI_LOOP_COMP_END
+  VI_LOOP_CMP_END
 
 #define VI_VV_LOOP(BODY) \
   VI_LOOP_BASE \
