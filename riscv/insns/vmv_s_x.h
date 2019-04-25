@@ -2,10 +2,11 @@
 require(STATE.VU.vsew == e8 || STATE.VU.vsew == e16 ||
         STATE.VU.vsew == e32 || STATE.VU.vsew == e64);
 reg_t vl = STATE.VU.vl;
-reg_t sew = STATE.VU.vsew;
-reg_t rd_num = insn.rd();
 
 if (vl > 0) {
+  reg_t rd_num = insn.rd();
+  reg_t sew = STATE.VU.vsew;
+
   switch(sew) {
   case e8:
     STATE.VU.elt<uint8_t>(rd_num, 0) = RS1;
@@ -38,4 +39,6 @@ if (vl > 0) {
       break;
     }
   }
+
+  vl = 0;
 }
