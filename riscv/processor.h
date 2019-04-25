@@ -200,9 +200,7 @@ struct vectorUnit_t {
   reg_t get_slen() { return SLEN; }
 
   VRM get_vround_mode() {
-	  uint32_t rm = BITS(vxrm, 0, 2);
-	  assert( rm < VRM::INVALID_RM );
-	  return (VRM)rm;
+	  return (VRM)vxrm;
   }
 };
 

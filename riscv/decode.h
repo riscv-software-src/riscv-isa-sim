@@ -921,20 +921,22 @@ enum VMUNARY0{
 #define INT_ROUNDING(result, xrm, sew) \
   switch(xrm){\
     case VRM::RNU:\
-      result += (1 << (sew - 2));\
-        break;\
+      result += ((uint64_t)1 << (sew - 1));\
+      break;\
     case VRM::RNE:\
-      assert(true);\
+      if ((result & ((uint64_t)1 << (sew + 1))) == 0){\
+          result += ((uint64_t)1 << (sew - 1));\
+      }\
       break;\
     case VRM::RDN:\
       result = (result >> (sew - 1)) << (sew - 1);\
       break;\
     case VRM::ROD:\
-      if ((result & (1 << ((sew -1) - 1 ))) > 0){\
-         result = ((result >> (sew - 1)) + 1) << (sew - 1);\
+      if ((result & ((uint64_t)1 << (sew + 1))) == 1){\
+          result += ((uint64_t)1 << (sew - 1));\
       }\
       break;\
-      case VRM::INVALID_RM:\
+    case VRM::INVALID_RM:\
       assert(true);\
   }
 // Seems that 0x0 doesn't work.
