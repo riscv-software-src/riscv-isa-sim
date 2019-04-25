@@ -300,20 +300,20 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 
 // Vector enums
 enum VFUNARY0{
-    VFCVT_XU_F_V  =0x00000,
-    VFCVT_X_F_V   =0x00001,
-    VFCVT_F_XU_V  =0x00010,
-    VFCVT_F_X_V   =0x00011,
-    VFWCVT_XU_F_V =0x01000,
-    VFWCVT_X_F_V  =0x01001,
-    VFWCVT_F_XU_V =0x01010,
-    VFWCVT_F_X_V  =0x01011,
-    VFWCVT_F_F_V  =0x01100,
-    VFNCVT_XU_F_V =0x10000,
-    VFNCVT_X_F_V  =0x10001,
-    VFNCVT_F_XU_V =0x10010,
-    VFNCVT_F_X_V  =0x10011,
-    VFNCVT_F_F_V  =0x10100
+    VFCVT_XU_F_V  = 0b00000,
+    VFCVT_X_F_V   = 0b00001,
+    VFCVT_F_XU_V  = 0b00010,
+    VFCVT_F_X_V   = 0b00011,
+    VFWCVT_XU_F_V = 0b01000,
+    VFWCVT_X_F_V  = 0b01001,
+    VFWCVT_F_XU_V = 0b01010,
+    VFWCVT_F_X_V  = 0b01011,
+    VFWCVT_F_F_V  = 0b01100,
+    VFNCVT_XU_F_V = 0b10000,
+    VFNCVT_X_F_V  = 0b10001,
+    VFNCVT_F_XU_V = 0b10010,
+    VFNCVT_F_X_V  = 0b10011,
+    VFNCVT_F_F_V  = 0b10100
 };
 
 enum VFUNARY1{
