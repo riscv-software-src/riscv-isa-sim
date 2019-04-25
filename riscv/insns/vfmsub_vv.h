@@ -1,20 +1,14 @@
 // vfmsub: vd[i] = +(vd[i] * vs1[i]) - vs2[i]
-
-require_fp;
-softfloat_roundingMode = STATE.VU.vxrm;
-float32_t mul_result;
-
 VFP_VV_LOOP
 ({
- switch(STATE.VU.vsew){
- case e32:
-    mul_result = f32_mul(vd, vs1);
-    vd = f32_sub(mul_result, vs2);
+  switch(STATE.VU.vsew){
+  case e32:
+    vd = f32_mulAdd(vd, vs1, f32(vs2.v ^ F32_SIGN));
     break;
- case e16:
- case e8:
- default:
-     softfloat_exceptionFlags = 1;
- };
+  case e16:
+  case e8:
+  default:
+    softfloat_exceptionFlags = 1;
+    break;
+  };
 })
-set_fp_exceptions;
