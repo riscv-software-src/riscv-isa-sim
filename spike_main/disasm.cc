@@ -1015,8 +1015,8 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_VF_INSN(vfmax);
   DISASM_OPIV_S__INSN(vfredmax);
   DISASM_OPIV_VF_INSN(vfsgnj);
-  DISASM_OPIV_VF_INSN(vfsgnn);
-  DISASM_OPIV_VF_INSN(vfsgnx);
+  DISASM_OPIV_VF_INSN(vfsgnjn);
+  DISASM_OPIV_VF_INSN(vfsgnjx);
   DISASM_INSN("vfmv.f.s", vfmv_f_s, 0, {&frd, &vs2});
   DISASM_INSN("vfmv.s.f", vfmv_s_f, mask_vfmv_s_f, {&vd, &frs1});
 
