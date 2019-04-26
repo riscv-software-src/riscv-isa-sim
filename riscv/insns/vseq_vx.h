@@ -1,5 +1,5 @@
-// vseq
-VI_VX_LOOP
+// vseq.vx vd, vs2, rs1
+VI_VX_LOOP_CMP
 ({
-    vd = sreg_t(rs1) == sreg_t(vs2);
+  res = rs1 == vs2;
 })

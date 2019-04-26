@@ -1,5 +1,5 @@
-// vsleu
-VI_VI_ULOOP
+// vsleu.vi vd, vs2, zimm5
+VI_VI_ULOOP_CMP
 ({
-	vd = (vs2 <= simm5);
+  res = vs2 <= simm5;
 })
