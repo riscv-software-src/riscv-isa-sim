@@ -1018,7 +1018,9 @@ enum VMUNARY0{
       result += ((uint64_t)1 << (sew - 1));\
       break;\
     case VRM::RNE:\
-      if ((result & ((uint64_t)1 << (sew + 1))) == 0){\
+      if ((result & ((uint64_t)0x3 << (sew - 1))) == 0x1){\
+          result -= ((uint64_t)1 << (sew - 1));\
+	  }else if ((result & ((uint64_t)0x3 << (sew - 1))) == 0x3){\
           result += ((uint64_t)1 << (sew - 1));\
       }\
       break;\
@@ -1026,8 +1028,10 @@ enum VMUNARY0{
       result = (result >> (sew - 1)) << (sew - 1);\
       break;\
     case VRM::ROD:\
-      if ((result & ((uint64_t)1 << (sew + 1))) == 1){\
+      if ((result & ((uint64_t)0x3 << (sew - 1))) == 0x1){\
           result += ((uint64_t)1 << (sew - 1));\
+	  }else if ((result & ((uint64_t)0x3 << (sew - 1))) == 0x3){\
+          result -= ((uint64_t)1 << (sew - 1));\
       }\
       break;\
     case VRM::INVALID_RM:\
