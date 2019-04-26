@@ -798,6 +798,100 @@ enum VMUNARY0{
   } \
   VI_LOOP_END 
 
+#define VI_WIDE_SSMA(sew1, sew2, add, opd) \
+  type_sew_t<sew2>::type &vd = STATE.VU.elt<type_sew_t<sew2>::type>(rd_num, i); \
+  type_sew_t<sew1>::type vs1 = STATE.VU.elt<type_sew_t<sew1>::type>(rs1_num, i); \
+  type_sew_t<sew1>::type vs2 = STATE.VU.elt<type_sew_t<sew1>::type>(rs2_num, i); \
+  type_sew_t<sew1>::type rs1 = (type_sew_t<sew1>::type)RS1; \
+  int##sew2##_t res; \
+  bool sat = false; \
+  const int gb = sew1 / 2; \
+  VRM vrm = STATE.VU.get_vround_mode(); \
+  res = (int##sew2##_t)(int##sew1##_t)vs2 * (int##sew2##_t)(int##sew1##_t)opd; \
+  switch(vrm) { \
+  case VRM::RNU: \
+    res += 1ul << (gb - 1); \
+    break; \
+  case VRM::RNE: \
+    if (((res >> (gb - 1)) & 0x3) == 0x3) \
+      res += 1ul << (gb - 1); \
+    break; \
+  case VRM::ROD: \
+    res |= (1ul << gb); \
+    break; \
+  default: \
+    require(false); \
+    break; \
+  } \
+  \
+  res = res >> gb; \
+  if (add) \
+    vd = sat_add<int##sew2##_t, uint##sew2##_t>(vd, res, sat); \
+  else \
+    vd = sat_sub<int##sew2##_t, uint##sew2##_t>(vd, res, sat); \
+  STATE.VU.vxsat |= sat;
+
+#define VI_VVX_LOOP_WIDE_SSMA(add, opd) \
+  require(STATE.VU.vlmul <= 4); \
+  require(STATE.VU.vsew * 2 <= STATE.VU.ELEN); \
+  require(insn.rd() + STATE.VU.vlmul <= 32); \
+  VI_LOOP_BASE \
+  if (sew == e8){ \
+    VI_WIDE_SSMA(8, 16, add, opd); \
+  } else if(sew == e16){ \
+    VI_WIDE_SSMA(16, 32, add, opd); \
+  } else if(sew == e32){ \
+    VI_WIDE_SSMA(32, 64, add, opd); \
+  } \
+  VI_LOOP_END
+
+#define VI_WIDE_USSMA(sew1, sew2, add, opd) \
+  type_usew_t<sew2>::type &vd = STATE.VU.elt<type_usew_t<sew2>::type>(rd_num, i); \
+  type_usew_t<sew1>::type vs1 = STATE.VU.elt<type_usew_t<sew1>::type>(rs1_num, i); \
+  type_usew_t<sew1>::type vs2 = STATE.VU.elt<type_usew_t<sew1>::type>(rs2_num, i); \
+  type_usew_t<sew1>::type rs1 = (type_usew_t<sew1>::type)RS1; \
+  uint##sew2##_t res; \
+  bool sat = false; \
+  const int gb = sew1 / 2; \
+  VRM vrm = STATE.VU.get_vround_mode(); \
+  res = (uint##sew2##_t)(uint##sew1##_t)vs2 * (uint##sew2##_t)(uint##sew1##_t)opd; \
+  switch(vrm) { \
+  case VRM::RNU: \
+    res += 1ul << (gb - 1); \
+    break; \
+  case VRM::RNE: \
+    if (((res >> (gb - 1)) & 0x3) == 0x3) \
+      res += 1ul << (gb - 1); \
+    break; \
+  case VRM::ROD: \
+    res |= (1ul << gb); \
+    break; \
+  default: \
+    require(false); \
+    break; \
+  } \
+  \
+  res = res >> gb; \
+  if (add) \
+    vd = sat_addu<uint##sew2##_t>(vd, res, sat); \
+  else \
+    vd = sat_subu<uint##sew2##_t>(vd, res, sat); \
+  STATE.VU.vxsat |= sat;
+
+#define VI_VVX_LOOP_WIDE_USSMA(add, opd) \
+  require(STATE.VU.vlmul <= 4); \
+  require(STATE.VU.vsew * 2 <= STATE.VU.ELEN); \
+  require(insn.rd() + STATE.VU.vlmul <= 32); \
+  VI_LOOP_BASE \
+  if (sew == e8){ \
+    VI_WIDE_USSMA(8, 16, add, opd); \
+  } else if(sew == e16){ \
+    VI_WIDE_USSMA(16, 32, add, opd); \
+  } else if(sew == e32){ \
+    VI_WIDE_USSMA(32, 64, add, opd); \
+  } \
+  VI_LOOP_END
+
 #define VF_LOOP_BASE \
   require_extension('F'); \
   require_fp; \
