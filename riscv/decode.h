@@ -411,7 +411,6 @@ enum VMUNARY0{
 
 #define VI_LOOP_CMP_BASE \
   require(STATE.VU.vsew == e8 || STATE.VU.vsew == e16 || STATE.VU.vsew == e32 || STATE.VU.vsew == e64); \
-  require(insn.v_vm() == 1); \
   require(!STATE.VU.vill);\
   reg_t vl = STATE.VU.vl; \
   reg_t sew = STATE.VU.vsew; \
@@ -433,7 +432,6 @@ enum VMUNARY0{
 
 #define VI_LOOP_BASE \
   require(STATE.VU.vsew == e8 || STATE.VU.vsew == e16 || STATE.VU.vsew == e32 || STATE.VU.vsew == e64); \
-  require(insn.v_vm() == 1); \
   require(!STATE.VU.vill);\
   reg_t vl = STATE.VU.vl; \
   reg_t sew = STATE.VU.vsew; \
