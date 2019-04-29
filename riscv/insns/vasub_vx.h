@@ -2,9 +2,7 @@
 VRM xrm = STATE.VU.get_vround_mode();
 VI_VX_LOOP
 ({
-    int64_t result = vsext(rs1, sew) - vsext(vs2, sew); 
-	INT_ROUNDING(result, xrm, 1);
-	result = vzext(result >> 1, sew);
-
-    vd = result; 
+  int64_t ret = (int64_t)vs2 - rs1;
+  INT_ROUNDING(ret, xrm, 1);
+  vd = ret >> 1;
 })
