@@ -460,7 +460,7 @@ enum VMUNARY0{
     uint32_t vs2 = STATE.VU.elt<uint32_t>(insn.rs2(), midx); \
     uint32_t vs1 = STATE.VU.elt<uint32_t>(insn.rs1(), midx); \
     uint32_t &res = STATE.VU.elt<uint32_t>(insn.rd(), midx); \
-    res = (res & ~mmask) | ((op) & mmask); \
+    res = (res & ~mmask) | (((op) << mpos) & mmask); \
   } \
   \
   for (reg_t i = vl; i < STATE.VU.vlmax; ++i) { \
