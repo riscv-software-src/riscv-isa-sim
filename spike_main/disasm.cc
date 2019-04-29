@@ -993,16 +993,16 @@ disassembler_t::disassembler_t(int xlen)
 
   #define DISASM_VFUNARY0_INSN(name, pre, extra) \
     add_insn(new disasm_insn_t(#name "cvt.xu.f.v", match_vfunary0_vv | ((pre << 3) | 0x0ul) << 15, \
-                mask_vfunary0_vv, {&vd, &vs2, &opt, &vm})); \
+                mask_vfunary0_vv | mask_rs1, {&vd, &vs2, &opt, &vm})); \
     add_insn(new disasm_insn_t(#name "cvt.x.f.v", match_vfunary0_vv | ((pre << 3) | 0x1ul) << 15, \
-                mask_vfunary0_vv, {&vd, &vs2, &opt, &vm})); \
+                mask_vfunary0_vv | mask_rs1, {&vd, &vs2, &opt, &vm})); \
     add_insn(new disasm_insn_t(#name "cvt.f.xu.v", match_vfunary0_vv | ((pre << 3) | 0x2ul) << 15, \
-                mask_vfunary0_vv, {&vd, &vs2, &opt, &vm})); \
+                mask_vfunary0_vv | mask_rs1, {&vd, &vs2, &opt, &vm})); \
     add_insn(new disasm_insn_t(#name "cvt.f.x.v", match_vfunary0_vv | ((pre << 3) | 0x3ul) << 15, \
-                mask_vfunary0_vv, {&vd, &vs2, &opt, &vm})); \
+                mask_vfunary0_vv | mask_rs1, {&vd, &vs2, &opt, &vm})); \
     if (extra) \
       add_insn(new disasm_insn_t(#name "cvt.f.f.v", match_vfunary0_vv | ((pre << 3) | 0x4ul) << 15, \
-                  mask_vfunary0_vv, {&vd, &vs2, &opt, &vm}));
+                  mask_vfunary0_vv | mask_rs1, {&vd, &vs2, &opt, &vm}));
 
   //OPFVV/OPFVF
   //0b01_0000
