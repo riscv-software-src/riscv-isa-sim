@@ -1,30 +1,10 @@
 // vaadd: Averaging adds of integers 
-int64_t round = 0;
-VRM vrm = STATE.VU.get_vround_mode();
+VRM xrm = STATE.VU.get_vround_mode();
 VI_VX_LOOP
 ({
-    int64_t result = rs1 + vs2; 
-    // rounding
-    switch(vrm){
-        case VRM::RNU:
-            result += (1 << (sew - 1) );
-            break;
-        case VRM::RNE:
-            assert(true);
-            break;
-        case VRM::RDN:
-            result = (result >> (sew - 1)) << (sew - 1);
-            break;
-        case VRM::ROD:
-            if ((result & (1 << ((sew -1) - 1 ))) > 0){
-                result = ((result >> (sew - 1)) + 1) << (sew - 1);
-            }
-            break;
-        case VRM::INVALID_RM:
-            assert(true);
-    };    
-    
-    result = result >> 1;
+    int64_t tval = vsext(rs1, sew) + vsext(vs2, sew); 
+	INT_ROUNDING(tval, xrm, 1);
+    uint64_t result = vzext(tval >> 1, sew);
 
     vd = result; 
 })
