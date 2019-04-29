@@ -431,7 +431,8 @@ enum VMUNARY0{
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  for (reg_t i=STATE.VU.vstart; i<vl; ++i){
+  for (reg_t i=STATE.VU.vstart; i<vl; ++i){ \
+    V_LOOP_ELEMENT_SKIP; \
 
 #define VI_LOOP_END \
   } \

@@ -1,7 +1,5 @@
 // vssubu.vx vd, vs2, rs1
 VI_LOOP_BASE
-
-  V_LOOP_ELEMENT_SKIP;
   bool sat = false;
 
   switch (sew) {
