@@ -1,6 +1,4 @@
 // vfnmacc: vd[i] = -(f[rs1] * vs2[i]) - vd[i]
-float32_t mul_result;
-
 VFP_VF_LOOP
 ({
   switch(STATE.VU.vsew){
