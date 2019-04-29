@@ -932,9 +932,12 @@ enum VMUNARY0{
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   softfloat_roundingMode = STATE.frm; \
-  float32_t vd_0 = STATE.VU.elt<float32_t>(rs1_num, 0); \
+  float32_t vd_0 = STATE.VU.elt<float32_t>(rd_num, 0); \
+  float32_t vs1_0 = STATE.VU.elt<float32_t>(rs1_num, 0); \
+  vd_0 = vs1_0;\
   for (reg_t i=STATE.VU.vstart; i<vl; ++i){ \
-    V_LOOP_ELEMENT_SKIP;
+    V_LOOP_ELEMENT_SKIP; \
+    int32_t &vd = STATE.VU.elt<int32_t>(rd_num, i); \
 
 #define VF_LOOP_END \
   } \
@@ -991,6 +994,7 @@ enum VMUNARY0{
   VF_LOOP_REDUCTION_BASE \
   float32_t vs2 = STATE.VU.elt<float32_t>(rs2_num, i); \
   BODY; \
+  vd = i == 0? vd: 0;\
   DEBUG_RVV_FP_VV; \
   VF_LOOP_END  \
   STATE.VU.elt<float32_t>(rd_num, 0) = vd_0;
