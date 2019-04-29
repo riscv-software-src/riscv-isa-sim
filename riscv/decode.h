@@ -1014,26 +1014,26 @@ enum VMUNARY0{
   DEBUG_RVV_FP_VV; \
   VF_LOOP_CMP_END \
 
-#define INT_ROUNDING(result, xrm, sew) \
+#define INT_ROUNDING(result, xrm, gb) \
   switch(xrm){\
     case VRM::RNU:\
-      result += ((uint64_t)1 << (sew - 1));\
+      result += ((uint64_t)1 << (gb - 1));\
       break;\
     case VRM::RNE:\
-      if ((result & ((uint64_t)0x3 << (sew - 1))) == 0x1){\
-          result -= ((uint64_t)1 << (sew - 1));\
-	  }else if ((result & ((uint64_t)0x3 << (sew - 1))) == 0x3){\
-          result += ((uint64_t)1 << (sew - 1));\
+      if ((result & ((uint64_t)0x3 << (gb - 1))) == 0x1){\
+          result -= ((uint64_t)1 << (gb - 1));\
+	  }else if ((result & ((uint64_t)0x3 << (gb - 1))) == 0x3){\
+          result += ((uint64_t)1 << (gb - 1));\
       }\
       break;\
     case VRM::RDN:\
-      result = (result >> (sew - 1)) << (sew - 1);\
+      result = (result >> (gb - 1)) << (gb - 1);\
       break;\
     case VRM::ROD:\
-      if ((result & ((uint64_t)0x3 << (sew - 1))) == 0x1){\
-          result += ((uint64_t)1 << (sew - 1));\
-	  }else if ((result & ((uint64_t)0x3 << (sew - 1))) == 0x3){\
-          result -= ((uint64_t)1 << (sew - 1));\
+      if ((result & ((uint64_t)0x3 << (gb - 1))) == 0x1){\
+          result += ((uint64_t)1 << (gb - 1));\
+	  }else if ((result & ((uint64_t)0x3 << (gb - 1))) == 0x3){\
+          result -= ((uint64_t)1 << (gb - 1));\
       }\
       break;\
     case VRM::INVALID_RM:\
