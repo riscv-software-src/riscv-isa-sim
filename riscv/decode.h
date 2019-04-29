@@ -640,7 +640,7 @@ enum VMUNARY0{
   VI_LOOP_END 
 
 // reduction loop
-#define VI_REDUCTION_LOOP_BASE(x) \
+#define VI_LOOP_REDUCTION_BASE(x) \
   require(x == e8 || x == e16 || x == e32 || x == e64); \
   require(!STATE.VU.vill);\
   reg_t vl = STATE.VU.vl; \
@@ -654,12 +654,12 @@ enum VMUNARY0{
     type_sew_t<x>::type vs2 = STATE.VU.elt<type_sew_t<x>::type>(rs2_num, i);
 
 #define REDUCTION_LOOP(x, BODY) \
-  VI_REDUCTION_LOOP_BASE(x) \
+  VI_LOOP_REDUCTION_BASE(x) \
   BODY; \
   VI_LOOP_END \
   vd_0_des = vd_0_res;
 
-#define VI_VV_REDUCTION_LOOP(BODY) \
+#define VI_VV_LOOP_REDUCTION(BODY) \
   require(!STATE.VU.vill);\
   reg_t sew = STATE.VU.vsew; \
   if (sew == e8){ \
@@ -673,7 +673,7 @@ enum VMUNARY0{
   }
 
 // reduction unsiged loop
-#define VI_REDUCTION_ULOOP_BASE(x) \
+#define VI_ULOOP_REDUCTION_BASE(x) \
   require(x == e8 || x == e16 || x == e32 || x == e64); \
   reg_t vl = STATE.VU.vl; \
   reg_t rd_num = insn.rd(); \
@@ -686,12 +686,12 @@ enum VMUNARY0{
     type_usew_t<x>::type vs2u = STATE.VU.elt<type_usew_t<x>::type>(rs2_num, i);
 
 #define REDUCTION_ULOOP(x, BODY) \
-  VI_REDUCTION_ULOOP_BASE(x) \
+  VI_ULOOP_REDUCTION_BASE(x) \
   BODY; \
   VI_LOOP_END \
   vdu_0_des = vdu_0_res;
 
-#define VI_VV_REDUCTION_ULOOP(BODY) \
+#define VI_VV_ULOOP_REDUCTION(BODY) \
   reg_t sew = STATE.VU.vsew; \
   if (sew == e8){ \
       REDUCTION_ULOOP(e8, BODY) \
@@ -984,7 +984,7 @@ enum VMUNARY0{
   DEBUG_RVV_FP_VV; \
   VF_LOOP_END
 
-#define VFP_VV_REDUCTION_LOOP(BODY) \
+#define VFP_VV_LOOP_REDUCTION(BODY) \
   VF_LOOP_REDUCTION_BASE \
   float32_t vs2 = STATE.VU.elt<float32_t>(rs2_num, i); \
   BODY; \
