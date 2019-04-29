@@ -1,7 +1,4 @@
 // vfnmsac.vv vd, vs1, vs2, vm   # vd[i] = -(vs2[i] * vs1[i]) + vd[i]
-require_fp;
-softfloat_roundingMode = STATE.VU.vxrm;
-
 VFP_VV_LOOP
 ({
  switch(STATE.VU.vsew){

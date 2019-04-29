@@ -1,6 +1,5 @@
 // vfmul.vv vd, vs1, vs2, vm
 require_fp;
-softfloat_roundingMode = STATE.VU.vxrm;
 VFP_VV_LOOP
 ({
  switch(STATE.VU.vsew){

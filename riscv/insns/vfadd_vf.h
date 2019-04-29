@@ -1,6 +1,4 @@
 // vfadd
-require_fp;
-softfloat_roundingMode = STATE.VU.vxrm;
 VFP_VF_LOOP
 ({
  switch(STATE.VU.vsew){
