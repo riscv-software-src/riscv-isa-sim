@@ -22,4 +22,3 @@ for (reg_t i=STATE.VU.vstart; i<vl; ++i){
 }
 STATE.VU.vstart = 0;
 WRITE_RD(popcount);
-
