@@ -294,15 +294,18 @@ riscv_insn_list = \
 	vlb_v \
 	vlh_v \
 	vlw_v \
+	vle_v \
 	vlbu_v \
 	vlhu_v \
 	vlwu_v \
 	vlsb_v \
 	vlsh_v \
 	vlsw_v \
+	vlse_v \
 	vlxb_v \
 	vlxh_v \
 	vlxw_v \
+	vlxe_v \
 	vlsbu_v \
 	vlshu_v \
 	vlswu_v \
@@ -312,12 +315,15 @@ riscv_insn_list = \
 	vsb_v \
 	vsh_v \
 	vsw_v \
+	vse_v \
 	vssb_v \
 	vssh_v \
 	vssw_v \
+	vsse_v \
 	vsxb_v \
 	vsxh_v \
 	vsxw_v \
+	vsxe_v \
 	vadd_vi \
 	vadd_vv \
 	vadd_vx \
