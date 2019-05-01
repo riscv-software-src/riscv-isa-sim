@@ -28,7 +28,6 @@ processor_t::processor_t(const char* isa, const char* varch, simif_t* sim,
   VU.p = this;
   parse_isa_string(isa);
   parse_varch_string(varch);
-  fprintf(stderr, "VLEN: %d, ELEN: %d, SLEN: %d\n", VU.VLEN, VU.ELEN, VU.SLEN);
   register_base_instructions();
   mmu = new mmu_t(sim, this);
 
@@ -213,9 +212,8 @@ void state_t::reset(reg_t max_isa)
 void vectorUnit_t::reset(){
   free(reg_file);
   VLEN = get_vlen();
-  ELEN = gte_elen();
+  ELEN = get_elen();
   SLEN = get_slen(); // registers are simply concatenated
-  LMUL = 1;
   reg_file = malloc(NVPR * (VLEN/8));
   vtype = -1;
   set_vl(-1, 0, 0); // vsew8, vlmul1
@@ -226,8 +224,8 @@ reg_t vectorUnit_t::set_vl(uint64_t regId, reg_t reqVL, reg_t newType){
     vtype = newType;
     vsew = 1 << (BITS(newType, 4, 2) + 3);
     vlmul = 1 << BITS(newType, 1, 0);
-    vediv = 1 << BITS(newType, 6, 5); 
-  vlmax = VLEN/vsew * vlmul;
+    vediv = 1 << BITS(newType, 6, 5);
+    vlmax = VLEN/vsew * vlmul;
     vmlen = vsew / vlmul;
     reg_mask = (NVPR-1) & ~(vlmul-1);
   }

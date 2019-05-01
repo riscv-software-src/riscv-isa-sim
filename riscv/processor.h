@@ -153,14 +153,14 @@ struct type_sew_t<64>
 
 class vectorUnit_t {
   public:
-    processor_t* p; 
+    processor_t* p;
     void *reg_file;
     char reg_referenced[NVPR];
     int setvl_count;
     reg_t reg_mask, vlmax, vmlen;
     reg_t vstart, vxrm, vxsat, vl, vtype;
     reg_t vediv, vsew, vlmul;
-    reg_t ELEN, VLEN, SLEN, LMUL;
+    reg_t ELEN, VLEN, SLEN;
     bool vill;
 
 
