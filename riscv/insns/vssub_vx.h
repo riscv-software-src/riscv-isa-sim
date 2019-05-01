@@ -24,5 +24,5 @@ VI_LOOP_BASE
     break;
     }
   }
-  STATE.VU.vxsat |= sat;
+  p->VU.vxsat |= sat;
 VI_LOOP_END

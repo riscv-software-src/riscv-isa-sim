@@ -1,7 +1,7 @@
 // vfsgnj
 VFP_VF_LOOP
 ({
-  switch(STATE.VU.vsew){
+  switch(p->VU.vsew){
   case e32:
     vd = fsgnj32(rs1.v, vs2.v, false, false);
     break;

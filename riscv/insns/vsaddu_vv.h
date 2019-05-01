@@ -7,5 +7,5 @@ VI_VV_ULOOP
   sat = vd < vs2;
   vd |= -(vd < vs2);
 
-  STATE.VU.vxsat |= sat;
+  p->VU.vxsat |= sat;
 })

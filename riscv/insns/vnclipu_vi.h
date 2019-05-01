@@ -1,6 +1,6 @@
 // vnclipu: vd[i] = clip(round(vs2[i] + rnd) >> simm)
-VRM xrm = STATE.VU.get_vround_mode();
-uint64_t int_max = ~(-1ll << STATE.VU.vsew);
+VRM xrm = p->VU.get_vround_mode();
+uint64_t int_max = ~(-1ll << p->VU.vsew);
 VI_VI_ULOOP
 ({
     uint64_t result = (vs2 + 0llu) << sew; // expend the vs2 size more than SEW
@@ -13,7 +13,7 @@ VI_VI_ULOOP
     // saturation
     if (result & (uint64_t)(-1ll << sew)){
        result = int_max; 
-       STATE.VU.vxsat = 1;
+       p->VU.vxsat = 1;
 	}
 
     vd = result;

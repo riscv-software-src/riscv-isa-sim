@@ -1,7 +1,7 @@
 // vfmax
 VFP_VV_LOOP
 ({
-  switch(STATE.VU.vsew){
+  switch(p->VU.vsew){
   case e32:
     vd = f32_max(vs2, vs1);
     break;

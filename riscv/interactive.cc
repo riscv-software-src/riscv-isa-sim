@@ -225,8 +225,8 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
   if (args.size() == 1) {
     // Show all the regs!
     processor_t *p = get_core(args[0]);
-    int vlen = (int)(p->get_state()->VU.get_vlen()) >> 3;
-    int elen = (int)(p->get_state()->VU.get_elen()) >> 3;
+    int vlen = (int)(p->VU.get_vlen()) >> 3;
+    int elen = (int)(p->VU.get_elen()) >> 3;
     int num_elem = vlen/elen;
     fprintf(stderr, "VLEN=%d bits; ELEN=%d bits\n", vlen << 3, elen << 3);
 
@@ -236,20 +236,20 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
             long unsigned val;
             switch(elen){
                 case 8:
-                    val = ((long unsigned*)p->get_state()->VU.reg_file + r*num_elem)[e];
+                    val = ((long unsigned*)p->VU.reg_file + r*num_elem)[e];
                     fprintf(stderr, "%-4s[%d]: 0x%016" PRIx64 "  ", \
                             vr_name[r], e, val);
                     break;
                 case 4:
-                    val = ((unsigned*)p->get_state()->VU.reg_file + r*num_elem)[e];
+                    val = ((unsigned*)p->VU.reg_file + r*num_elem)[e];
                     fprintf(stderr, "[%d]0x%08x  ", e, (unsigned)val);
                     break;
                 case 2:
-                    val = ((unsigned short*)p->get_state()->VU.reg_file + r*num_elem)[e];
+                    val = ((unsigned short*)p->VU.reg_file + r*num_elem)[e];
                     fprintf(stderr, "[%d]0x%08x  ", e, (unsigned short)val);
                     break;
                 case 1:
-                    val = ((unsigned char*)p->get_state()->VU.reg_file + r*num_elem)[e];
+                    val = ((unsigned char*)p->VU.reg_file + r*num_elem)[e];
                     fprintf(stderr, "[%d]0x%08x  ", e, (unsigned char)val);
                     break;
             };

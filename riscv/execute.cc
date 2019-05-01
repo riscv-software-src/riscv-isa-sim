@@ -147,13 +147,13 @@ void processor_t::step(size_t n)
 
           if (debug && !state.prev_state) { // lazy init
             prev_reg_state_t *saved = new prev_reg_state_t;
-            memcpy(&saved->VU, &state.VU, sizeof(vectorUnit_t));
-            int v_regfile_sz = NVPR * (state.VU.VLEN/8);
+            memcpy(&saved->VU, &VU, sizeof(vectorUnit_t));
+            int v_regfile_sz = NVPR * (VU.VLEN/8);
             saved->VU.reg_file = malloc(v_regfile_sz);
             for (int i=0; i<NXPR; ++i) (reg_t&)saved->XPR[i] = 0xdeadbeefcafebabe;
             for (int i=0; i<NFPR; ++i) saved->FPR.write(i, freg(f64(161803398875)));
             for (int i=0; i<NVPR; ++i) {
-              for (reg_t j=0; j<state.VU.VLEN/32; ++j) {
+              for (reg_t j=0; j<VU.VLEN/32; ++j) {
                 saved->VU.elt<uint32_t>(i, j) = f32(0xdeadbeef).v;
               }
             }
@@ -167,10 +167,10 @@ void processor_t::step(size_t n)
 
           if (debug && !state.serialized) {
             prev_reg_state_t *saved = state.prev_state;
-            if (saved->VU.setvl_count != state.VU.setvl_count) {
+            if (saved->VU.setvl_count != VU.setvl_count) {
               fprintf(stderr, "vconfig <- sew=%lu vlmul=%ld vlmax=%lu vl=%lu\n",
-                      state.VU.vsew, state.VU.vlmul, state.VU.vlmax, state.VU.vl);
-              saved->VU.setvl_count = state.VU.setvl_count;
+                      VU.vsew, VU.vlmul, VU.vlmax, VU.vl);
+              saved->VU.setvl_count = VU.setvl_count;
             }
             for (int i=0; i<NXPR; ++i) {
               reg_t &old = (reg_t&)saved->XPR[i];
@@ -194,10 +194,10 @@ void processor_t::step(size_t n)
               }
             }
             for (reg_t i=0; i<NVPR; ++i) {
-              if (!state.VU.reg_referenced[i]) continue;
-              for (reg_t j=0; j<state.VU.VLEN/32; ++j) {
+              if (!VU.reg_referenced[i]) continue;
+              for (reg_t j=0; j<VU.VLEN/32; ++j) {
                 uint32_t &old = saved->VU.elt<uint32_t>(i, j);
-                uint32_t now = state.VU.elt<uint32_t>(i, j);
+                uint32_t now = VU.elt<uint32_t>(i, j);
                 if (now != old) {
                   float fv;
                   memcpy(&fv, &now, sizeof(fv));
@@ -206,7 +206,7 @@ void processor_t::step(size_t n)
                   old = now;
                 }
               }
-              state.VU.reg_referenced[i] = 0;
+              VU.reg_referenced[i] = 0;
             }
           }
 

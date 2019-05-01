@@ -14,19 +14,22 @@
 #include <assert.h>
 #include <limits.h>
 #include <stdexcept>
+#include <string>
 #include <algorithm>
 
 #undef STATE
 #define STATE state
 
-processor_t::processor_t(const char* isa, simif_t* sim, uint32_t id,
-        bool halt_on_reset)
+processor_t::processor_t(const char* isa, const char* varch, simif_t* sim, 
+                         uint32_t id, bool halt_on_reset)
   : debug(false), halt_request(false), sim(sim), ext(NULL), id(id),
   halt_on_reset(halt_on_reset), last_pc(1), executions(1)
 {
+  VU.p = this;
   parse_isa_string(isa);
+  parse_varch_string(varch);
+  fprintf(stderr, "VLEN: %d, ELEN: %d, SLEN: %d\n", VU.VLEN, VU.ELEN, VU.SLEN);
   register_base_instructions();
-  STATE.VU.p = this;
   mmu = new mmu_t(sim, this);
 
   disassembler = new disassembler_t(max_xlen);
@@ -56,6 +59,71 @@ static void bad_isa_string(const char* isa)
 {
   fprintf(stderr, "error: bad --isa option %s\n", isa);
   abort();
+}
+
+static void bad_varch_string(const char* varch)
+{
+  fprintf(stderr, "error: bad --varch option %s\n", varch);
+  abort();
+}
+
+static int parse_varch(std::string &str){
+  int val;
+  if(!str.empty()){
+    std::string sval = str.substr(1);
+    val = std::stoi(sval);
+    if ((val & (val - 1)) != 0) // val should be power of 2
+      bad_varch_string(str.c_str());
+  }else{
+    bad_varch_string(str.c_str());
+  }
+  return val;
+}
+
+void processor_t::parse_varch_string(const char* s)
+{
+  std::string str, tmp;
+  for (const char *r = s; *r; r++)
+    str += std::tolower(*r);
+
+  std::string delimiter = ":";
+
+  size_t pos = 0;
+  int vlen = 0;
+  int elen = 0;
+  int slen = 0;
+  std::string token;
+  while (!str.empty() && token != str) {
+    pos = str.find(delimiter);
+    if (pos == std::string::npos){
+      token = str;
+    }else{
+      token = str.substr(0, pos);
+    }
+    if (token[0] == 'v'){
+        vlen = parse_varch(token);
+        if (!(vlen >= 32 || vlen <= 4096)){
+            bad_varch_string(s);
+        }
+    }else if (token[0] == 'e'){
+        elen = parse_varch(token);
+        if (!(vlen >= 32 || vlen <= 512)){
+            bad_varch_string(s);
+        }
+    }else if (token[0] == 's'){
+        slen = parse_varch(token);
+        if (!(vlen >= 32 || vlen <= 4096)){
+            bad_varch_string(s);
+        }
+    }else{
+        bad_varch_string(str.c_str());
+    }
+    str.erase(0, pos + delimiter.length());
+  }
+  
+  VU.VLEN = vlen;
+  VU.ELEN = elen;
+  VU.SLEN = slen;
 }
 
 void processor_t::parse_isa_string(const char* str)
@@ -119,6 +187,9 @@ void processor_t::parse_isa_string(const char* str)
   if (supports_extension('Q') && supports_extension('V'))
     bad_isa_string(str);
 
+  if (supports_extension('D') && supports_extension('V'))
+    bad_isa_string(str);
+
   if (supports_extension('Q') && max_xlen < 64)
     bad_isa_string(str);
 
@@ -127,9 +198,7 @@ void processor_t::parse_isa_string(const char* str)
 
 void state_t::reset(reg_t max_isa)
 {
-  free(VU.reg_file);
   memset(this, 0, sizeof(*this));
-  VU.reset();
   misa = max_isa;
   prv = PRV_M;
   pc = DEFAULT_RSTVEC;
@@ -142,9 +211,10 @@ void state_t::reset(reg_t max_isa)
 }
 
 void vectorUnit_t::reset(){
-  ELEN = 32;
-  VLEN = 128;
-  SLEN = VLEN; // registers are simply concatenated
+  free(reg_file);
+  VLEN = get_vlen();
+  ELEN = gte_elen();
+  SLEN = get_slen(); // registers are simply concatenated
   LMUL = 1;
   reg_file = malloc(NVPR * (VLEN/8));
   vtype = -1;
@@ -236,6 +306,7 @@ void processor_t::reset()
   state.dcsr.halt = halt_on_reset;
   halt_on_reset = false;
   set_csr(CSR_MSTATUS, state.mstatus);
+  VU.reset();
 
   if (ext)
     ext->reset(); // reset the extension

@@ -1,7 +1,7 @@
 // vnclip: vd[i] = clip(round(vs2[i] + rnd) >> rs1[i])
-VRM xrm = STATE.VU.get_vround_mode();
-uint64_t int_max = (1 << (STATE.VU.vsew - 1)) - 1;
-uint64_t unsigned_mask = ~(-1 << (STATE.VU.vsew - 1));
+VRM xrm = p->VU.get_vround_mode();
+uint64_t int_max = (1 << (p->VU.vsew - 1)) - 1;
+uint64_t unsigned_mask = ~(-1 << (p->VU.vsew - 1));
 VI_VX_LOOP
 ({
     uint64_t result = (vs2 & unsigned_mask) << sew; // expend the vs2 size more than SEW
@@ -14,7 +14,7 @@ VI_VX_LOOP
     // saturation
     if ((result & ((int64_t)-1 << sew)) != 0){
       result = sign | int_max; 
-      STATE.VU.vxsat = 1;
+      p->VU.vxsat = 1;
 	} else if (sign > 0){
 	  result = vsext(result|sign, sew);
 	}

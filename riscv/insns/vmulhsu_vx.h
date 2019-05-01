@@ -1,6 +1,6 @@
 // vmulhsu: Signed multiply, returning high bits of product
-require(STATE.VU.ELEN <= 32);
-reg_t vsew = STATE.VU.vsew;
+require(p->VU.ELEN <= 32);
+reg_t vsew = p->VU.vsew;
 uint64_t umax = -1;
 uint64_t lo_mask = (((uint64_t)1 << vsew) - 1);
 uint64_t double_mask = (vsew == 32)? umax: ((uint64_t)1 << 2*vsew) - 1;

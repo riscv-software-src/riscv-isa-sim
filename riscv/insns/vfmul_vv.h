@@ -2,7 +2,7 @@
 require_fp;
 VFP_VV_LOOP
 ({
- switch(STATE.VU.vsew){
+ switch(p->VU.vsew){
  case e32:
     vd = f32_mul(vs1, vs2);
     break;

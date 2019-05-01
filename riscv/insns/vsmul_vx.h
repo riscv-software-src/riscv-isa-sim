@@ -1,9 +1,9 @@
 // vsmul
-VRM xrm = STATE.VU.get_vround_mode();
-int64_t int_max = (1 << STATE.VU.vsew) - 1;
-int64_t int_min = - (1 << (STATE.VU.vsew - 1));
-int64_t val_mask = ((1 << (STATE.VU.vsew - 1)) - 1);
-int64_t sign_mask = ((1 << (STATE.VU.vsew - 1)));
+VRM xrm = p->VU.get_vround_mode();
+int64_t int_max = (1 << p->VU.vsew) - 1;
+int64_t int_min = - (1 << (p->VU.vsew - 1));
+int64_t val_mask = ((1 << (p->VU.vsew - 1)) - 1);
+int64_t sign_mask = ((1 << (p->VU.vsew - 1)));
 
 VI_VX_LOOP
 ({
@@ -32,7 +32,7 @@ VI_VX_LOOP
 		}else{
 			result = int_min;
 		}
-        STATE.VU.vxsat = 1;
+        p->VU.vxsat = 1;
 	}
     vd = result;
 })

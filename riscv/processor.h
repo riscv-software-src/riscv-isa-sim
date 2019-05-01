@@ -89,11 +89,11 @@ inline reg_t BITS(reg_t v, int hi, int lo){
 }
 
 enum VRM{
-	RNU = 0,
-	RNE,
-	RDN,
-	ROD,
-	INVALID_RM
+  RNU = 0,
+  RNE,
+  RDN,
+  ROD,
+  INVALID_RM
 };
 
 template<uint64_t N>
@@ -102,25 +102,25 @@ struct type_usew_t;
 template<>
 struct type_usew_t<8>
 {
-    using type=uint8_t;
+  using type=uint8_t;
 };
 
 template<>
 struct type_usew_t<16>
 {
-    using type=uint16_t;
+  using type=uint16_t;
 };
 
 template<>
 struct type_usew_t<32>
 {
-    using type=uint32_t;
+  using type=uint32_t;
 };
 
 template<>
 struct type_usew_t<64>
 {
-    using type=uint64_t;
+  using type=uint64_t;
 };
 
 
@@ -130,78 +130,81 @@ struct type_sew_t;
 template<>
 struct type_sew_t<8>
 {
-    using type=int8_t;
+  using type=int8_t;
 };
 
 template<>
 struct type_sew_t<16>
 {
-    using type=int16_t;
+  using type=int16_t;
 };
 
 template<>
 struct type_sew_t<32>
 {
-    using type=int32_t;
+  using type=int32_t;
 };
 
 template<>
 struct type_sew_t<64>
 {
-    using type=int64_t;
+  using type=int64_t;
 };
 
-struct vectorUnit_t {
-  processor_t* p; 
-  void *reg_file;
-  char reg_referenced[NVPR];
-  int setvl_count;
-  reg_t reg_mask, vlmax, vmlen;
-  reg_t vstart, vxrm, vxsat, vl, vtype;
-  reg_t vediv, vsew, vlmul;
-  reg_t ELEN, VLEN, SLEN, LMUL;
-  bool vill;
+class vectorUnit_t {
+  public:
+    processor_t* p; 
+    void *reg_file;
+    char reg_referenced[NVPR];
+    int setvl_count;
+    reg_t reg_mask, vlmax, vmlen;
+    reg_t vstart, vxrm, vxsat, vl, vtype;
+    reg_t vediv, vsew, vlmul;
+    reg_t ELEN, VLEN, SLEN, LMUL;
+    bool vill;
 
-  reg_t set_vl(uint64_t regId, reg_t reqVL, reg_t newType);
 
-  // vector element for varies SEW
-  template<class T>
-  T& elt(reg_t vReg, reg_t n){
-    // this still needs to be adjusted for SLEN != VLEN
-    assert(vsew!=0);
-    reg_t elts_per_reg = (VLEN >> 3) / (sizeof(T));
-    vReg += n / elts_per_reg;
-    n = n % elts_per_reg;
-    reg_referenced[vReg] = 1;
-    #if 0
-    if (((vReg & reg_mask) != vReg) || (n >= vlmax)){
-      throw trap_illegal_instruction(0);
+    // vector element for varies SEW
+    template<class T>
+      T& elt(reg_t vReg, reg_t n){
+        // this still needs to be adjusted for SLEN != VLEN
+        assert(vsew!=0);
+        reg_t elts_per_reg = (VLEN >> 3) / (sizeof(T));
+        vReg += n / elts_per_reg;
+        n = n % elts_per_reg;
+        reg_referenced[vReg] = 1;
+#if 0
+        if (((vReg & reg_mask) != vReg) || (n >= vlmax)){
+          throw trap_illegal_instruction(0);
+        }
+#endif
+        T *regStart = (T*)((char*)reg_file + vReg * (VLEN >> 3));
+        return regStart[n];
+      }
+  public:
+
+    void reset();
+
+    vectorUnit_t(){
+      reg_file = 0;
     }
-    #endif
-    T *regStart = (T*)((char*)reg_file + vReg * (VLEN >> 3));
-    return regStart[n];
-  }
 
-  void reset();
+    ~vectorUnit_t(){
+      free(reg_file);
+      reg_file = 0;
+    }
 
-  vectorUnit_t(){
-    reg_file = 0;
-  }
-  ~vectorUnit_t(){
-    free(reg_file);
-    reg_file = 0;
-  }
+    reg_t set_vl(uint64_t regId, reg_t reqVL, reg_t newType);
+    void set_vcsr(int which, reg_t val);
+    reg_t get_vcsr(int which);
 
-  void set_vcsr(int which, reg_t val);
-  reg_t get_vcsr(int which);
+    reg_t get_vlen() { return VLEN; }
+    reg_t get_elen() { return ELEN; }
+    reg_t get_slen() { return SLEN; }
 
-  reg_t get_vlen() { return VLEN; }
-  reg_t get_elen() { return ELEN; }
-  reg_t get_slen() { return SLEN; }
-
-  VRM get_vround_mode() {
-	  return (VRM)vxrm;
-  }
+    VRM get_vround_mode() {
+      return (VRM)vxrm;
+    }
 };
 
 struct prev_reg_state_t {
@@ -220,7 +223,6 @@ struct state_t
   reg_t pc;
   regfile_t<reg_t, NXPR, true> XPR;
   regfile_t<freg_t, NFPR, false> FPR;
-  vectorUnit_t VU;
 
   // Used when tracing
   prev_reg_state_t *prev_state;
@@ -297,7 +299,8 @@ static int cto(reg_t val)
 class processor_t : public abstract_device_t
 {
 public:
-  processor_t(const char* isa, simif_t* sim, uint32_t id, bool halt_on_reset=false);
+  processor_t(const char* isa, const char* varch, simif_t* sim, uint32_t id, 
+              bool halt_on_reset=false);
   ~processor_t();
 
   void set_debug(bool value);
@@ -461,6 +464,7 @@ private:
   friend class clint_t;
   friend class extension_t;
 
+  void parse_varch_string(const char* isa);
   void parse_isa_string(const char* isa);
   void build_opcode_map();
   void register_base_instructions();
@@ -468,6 +472,8 @@ private:
 
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;
+public:
+  vectorUnit_t VU;
 };
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);

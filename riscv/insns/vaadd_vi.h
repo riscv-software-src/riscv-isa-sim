@@ -1,5 +1,5 @@
 // vaadd: Averaging adds of integers 
-VRM xrm = STATE.VU.get_vround_mode();
+VRM xrm = p->VU.get_vround_mode();
 VI_VI_LOOP
 ({
     int64_t result = vsext(simm5, sew) + vsext(vs2, sew); 
