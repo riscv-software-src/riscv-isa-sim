@@ -6,6 +6,9 @@
 /* Default value for --isa switch */
 #undef DEFAULT_ISA
 
+/* Default value for --vector switch */
+#undef DEFAULT_VARCH
+
 /* Path to the device-tree-compiler */
 #undef DTC
 

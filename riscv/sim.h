@@ -20,8 +20,8 @@ class remote_bitbang_t;
 class sim_t : public htif_t, public simif_t
 {
 public:
-  sim_t(const char* isa, size_t _nprocs,  bool halted, reg_t start_pc,
-        std::vector<std::pair<reg_t, mem_t*>> mems,
+  sim_t(const char* isa, const char* varch, size_t _nprocs, bool halted, 
+        reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
         const std::vector<std::string>& args, const std::vector<int> hartids,
         unsigned progsize, unsigned max_bus_master_bits,
         bool require_authentication, suseconds_t abstract_delay_usec);

@@ -702,6 +702,7 @@ enable_option_checking
 enable_stow
 enable_optional_subprojects
 with_isa
+with_vector
 with_fesvr
 enable_commitlog
 enable_histogram
@@ -1360,6 +1361,8 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-isa=RV64IMAFDC   Sets the default RISC-V ISA
+  --with-vector=v128:e32:s128
+                          Sets the RISC-V Vector micro architecture
   --with-fesvr            path to your fesvr installation if not in a standard
                           location
 
@@ -4463,6 +4466,25 @@ ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
 ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
 ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
 
+# Check whether --with-vector was given.
+if test "${with_vector+set}" = set; then :
+  withval=$with_vector;
+  if test "${withval}" = yes; then :
+cat >>confdefs.h <<_ACEOF
+#define DEFAULT_VARCH "v128:e32:s128"
+_ACEOF
+  else
+cat >>confdefs.h <<_ACEOF
+#define DEFAULT_VARCH "$withval"
+_ACEOF
+  fi
+else
+
+cat >>confdefs.h <<_ACEOF
+#define DEFAULT_VARCH ""
+_ACEOF
+
+fi
 
 
 # Check whether --with-isa was given.
