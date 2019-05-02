@@ -1,4 +1,4 @@
-// vmfirst rd, vs2, vm
+// vmfirst rd, vs2
 require(p->VU.vsew >= e8 && p->VU.vsew <= e64);
 require(!p->VU.vill);
 reg_t vl = p->VU.vl;
@@ -13,10 +13,7 @@ for (reg_t i=p->VU.vstart; i<vl; ++i){
   const int mpos = (mlen * i) % 32;
 
   bool vs2_lsb = ((p->VU.elt<uint32_t>(rs2_num, midx ) >> mpos) & 0x1) == 1;
-  if (insn.v_vm() == 1) {
-    pos = i;
-  } else {
-    bool do_mask = (p->VU.elt<uint32_t>(0, midx) >> mpos) & 0x1;
+  if (vs2_lsb) {
     pos = i;
   }
 }
