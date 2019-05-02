@@ -1,10 +1,14 @@
-//  vd[i] = vs1[i] + vs2[i] + v0[i].LSB
-//  v0[i] = carry(vs1[i] + vs2[i] + v0[i].LSB)
+// vadc.vv vd, vs2, rs1
+require(insn.v_vm() == 1);
 VI_VV_LOOP
 ({
-    uint64_t &v0 = p->VU.elt<uint64_t>(0, i); 
-    int64_t sum = sext_xlen(vs1 + vs2);
-    vd = sext_xlen(sum + (v0&1));
-    if (sum > (1 << p->VU.vsew))
-        v0 |= 1; 
+  uint32_t &v0 = P.VU.elt<uint32_t>(0, midx);
+  int carry = (v0 >> mpos) & 0x1;
+
+  unsigned __int128 res = vs1 + vs2 + carry;
+  vd = res;
+
+  const uint32_t mmask = ((1ul << mlen) - 1) << mpos;
+  carry = (res >> sew) & 0x1u;
+  v0 = (v0 & ~mmask) | ((carry << mpos) & mmask);
 })
