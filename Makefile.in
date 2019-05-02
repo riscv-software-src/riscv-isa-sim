@@ -50,7 +50,7 @@ endif
 
 # Installation directories
 
-prefix       := @prefix@
+prefix       ?= @prefix@
 
 INSTALLDIR ?= $(DESTDIR)$(prefix)
 
