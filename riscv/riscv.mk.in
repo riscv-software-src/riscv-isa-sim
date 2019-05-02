@@ -594,6 +594,7 @@ riscv_insn_list = \
 	vfwnmsac_vv \
 	vfunary0_vv \
 	vfunary1_vv \
+	vmunary0_vv \
 	wfi \
 	xor \
 	xori \

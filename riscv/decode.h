@@ -323,11 +323,11 @@ enum VFUNARY1{
 };
 
 enum VMUNARY0{
-    VMSBF  =0x00001,
-    VMSOF  =0x00010,
-    VMSIF  =0x00011,
-    VMIOTA =0x10000,
-    VID    =0x10001
+    VMSBF  = 0b00001,
+    VMSOF  = 0b00010,
+    VMSIF  = 0b00011,
+    VMIOTA = 0b10000,
+    VID    = 0b10001
 };
 
 // Vector macros
