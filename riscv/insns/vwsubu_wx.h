@@ -1,5 +1,6 @@
-// vwsubu
+// vwsubu.wx vd, vs2, rs1
+V_WIDE_CHECK;
 VI_VX_LOOP
 ({
-    throw trap_unimplemented_instruction(0);
+  VI_WIDE_WVX_OP(rs1, -, uint);
 })

@@ -410,6 +410,28 @@ enum VMUNARY0{
     break; \
   }
 
+#define VI_WIDE_WVX_OP(var0, op0, sign) \
+  switch(P.VU.vsew) { \
+  case e8: { \
+    sign##16_t &vd_w = P.VU.elt<sign##16_t>(rd_num, i); \
+    sign##16_t vs2_w = P.VU.elt<sign##16_t>(rs2_num, i); \
+    vd_w = vs2_w op0 (sign##16_t)(sign##8_t)var0; \
+    } \
+    break; \
+  case e16: { \
+    sign##32_t &vd_w = P.VU.elt<sign##32_t>(rd_num, i); \
+    sign##32_t vs2_w = P.VU.elt<sign##32_t>(rs2_num, i); \
+    vd_w = vs2_w op0 (sign##32_t)(sign##16_t)var0; \
+    } \
+    break; \
+  default: { \
+    sign##64_t &vd_w = P.VU.elt<sign##64_t>(rd_num, i); \
+    sign##64_t vs2_w = P.VU.elt<sign##64_t>(rs2_num, i); \
+    vd_w = vs2_w op0 (sign##64_t)(sign##32_t)var0; \
+    } \
+    break; \
+  }
+
 #define VI_LOOP_CMP_BASE \
   require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64); \
   require(!P.VU.vill);\
