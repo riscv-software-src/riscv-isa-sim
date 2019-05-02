@@ -211,7 +211,7 @@ $(2)_lib_libnames   := $$(patsubst %, lib%.a, $$($(2)_lib_libs))
 $(2)_lib_libarg     := $$(patsubst %, -l%, $$($(2)_lib_libs))
 
 lib$(1).a : $$($(2)_objs) $$($(2)_c_objs) $$($(2)_lib_libnames)
-	$(AR) rcs -o $$@ $$^
+	$(AR) rcs $$@ $$^
 
 $(2)_junk += lib$(1).a
 
