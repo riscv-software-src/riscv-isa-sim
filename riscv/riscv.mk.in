@@ -312,6 +312,13 @@ riscv_insn_list = \
 	vlxbu_v \
 	vlxhu_v \
 	vlxwu_v \
+	vlbff_v \
+	vlhff_v \
+	vlwff_v \
+	vleff_v \
+	vlbuff_v \
+	vlhuff_v \
+	vlwuff_v \
 	vsb_v \
 	vsh_v \
 	vsw_v \
