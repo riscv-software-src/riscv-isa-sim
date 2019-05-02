@@ -1,5 +1,5 @@
-// vdivu
-VI_VX_LOOP
+// vdivu.vx vd, vs2, rs1
+VI_VX_ULOOP
 ({
-    throw trap_unimplemented_instruction(0);
+  vd = vs2 / rs1;
 })

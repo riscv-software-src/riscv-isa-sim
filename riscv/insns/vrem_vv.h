@@ -1,5 +1,5 @@
-// vrem
+// vrem.vv vd, vs2, vs1
 VI_VV_LOOP
 ({
-    throw trap_unimplemented_instruction(0);
+  vd = vs2 % vs1;
 })
