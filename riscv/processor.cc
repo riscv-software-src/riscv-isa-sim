@@ -149,9 +149,6 @@ void processor_t::parse_isa_string(const char* str)
   } else if (*p == 'g') { // treat "G" as "IMAFD"
     tmp = std::string("imafd") + (p+1);
     p = &tmp[0];
-  } else if (*p == 'v') { // treat "V" as "IMAFV"
-    tmp = std::string("imafv") + (p+1);
-    p = &tmp[0];
   } else if (*p != 'i') {
     bad_isa_string(str);
   }
@@ -184,9 +181,6 @@ void processor_t::parse_isa_string(const char* str)
     bad_isa_string(str);
 
   if (supports_extension('Q') && supports_extension('V'))
-    bad_isa_string(str);
-
-  if (supports_extension('D') && supports_extension('V'))
     bad_isa_string(str);
 
   if (supports_extension('Q') && max_xlen < 64)
