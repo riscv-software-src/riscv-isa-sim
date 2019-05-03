@@ -1023,6 +1023,16 @@ enum VMUNARY0{
   DEBUG_RVV_FP_VV; \
   VF_LOOP_CMP_END \
 
+#define VFP_VVF_LOOP_WIDE(BODY) \
+  VF_LOOP_BASE \
+  float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+  float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
+  float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
+  float64_t rs1 = f64(READ_FREG(rs1_num)); \
+  BODY; \
+  DEBUG_RVV_FP_VV; \
+  VF_LOOP_END
+
 #define INT_ROUNDING(result, xrm, gb) \
   switch(xrm){\
     case VRM::RNU:\
