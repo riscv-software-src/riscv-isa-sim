@@ -1,5 +1,28 @@
 // vext_x_v: rd = vs2[rs1]
-VI_XV_LOOP({
-	WRITE_RD(vs2);
-	break;
-})
+require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
+require(!P.VU.vill);\
+reg_t vl = P.VU.vl; \
+reg_t sew = P.VU.vsew; \
+reg_t rd_num = insn.rd(); \
+reg_t rs1_num = insn.rs1(); \
+reg_t rs2_num = insn.rs2(); \
+reg_t rs1 = RS1;
+
+if (!(rs1 >= 0 && rs1 < P.VU.vlmax)) {
+  WRITE_RD(0);
+} else {
+  switch(sew) {
+  case e8:
+    WRITE_RD(P.VU.elt<uint8_t>(rs2_num, rs1));
+    break;
+  case e16:
+    WRITE_RD(P.VU.elt<uint16_t>(rs2_num, rs1));
+    break;
+  case e32:
+    WRITE_RD(P.VU.elt<uint32_t>(rs2_num, rs1));
+    break;
+  default:
+    WRITE_RD(P.VU.elt<uint64_t>(rs2_num, rs1));
+    break;
+  }
+}

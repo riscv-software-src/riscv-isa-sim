@@ -805,23 +805,6 @@ enum VMUNARY0{
   } \
   VI_LOOP_END 
 
-#define VI_XV_LOOP(BODY) \
-  VI_LOOP_BASE \
-  if (sew == e8){ \
-            XV_PARAMS(e8); \
-            BODY; \
-  }else if(sew == e16){ \
-            XV_PARAMS(e16); \
-            BODY; \
-  }else if(sew == e32){ \
-            XV_PARAMS(e32); \
-            BODY; \
-  }else if(sew == e64){ \
-            XV_PARAMS(e64); \
-            BODY; \
-  } \
-  VI_LOOP_END 
-
 #define VI_WIDE_SSMA(sew1, sew2, add, opd) \
   type_sew_t<sew2>::type &vd = P.VU.elt<type_sew_t<sew2>::type>(rd_num, i); \
   type_sew_t<sew1>::type vs1 = P.VU.elt<type_sew_t<sew1>::type>(rs1_num, i); \
