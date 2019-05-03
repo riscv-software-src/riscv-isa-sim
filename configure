@@ -4481,7 +4481,7 @@ _ACEOF
 else
 
 cat >>confdefs.h <<_ACEOF
-#define DEFAULT_VARCH ""
+#define DEFAULT_VARCH "v128:e32:s128"
 _ACEOF
 
 fi
