@@ -1,5 +1,13 @@
-// vfwmul
-VFP_VV_LOOP
+// vfwmul.vv vd, vs2, vs1
+VFP_VVF_LOOP_WIDE
 ({
-    throw trap_unimplemented_instruction(0);
+  switch(p->VU.vsew){
+  case e32:
+    vd = f64_add(vs2, vs1);
+    break;
+  case e16:
+  case e8:
+  default:
+    softfloat_exceptionFlags = 1;
+  };
 })
