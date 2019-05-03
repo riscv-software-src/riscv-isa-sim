@@ -1,5 +1,7 @@
-// vssrl
-VI_VV_LOOP
+// vssrl.vv vd, vs2, vs1
+VRM xrm = p->VU.get_vround_mode();
+VI_VV_ULOOP
 ({
-    throw trap_unimplemented_instruction(0);
+  INT_ROUNDING(vs2, xrm, sew);
+  vd = vs2 >> (vs1 & ((1u << log2(sew)) - 1));
 })
