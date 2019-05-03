@@ -2,4 +2,4 @@
 VFP_VF_LOOP
 ({
   vd = f32_div(rs1, vs2);
- })
+})
