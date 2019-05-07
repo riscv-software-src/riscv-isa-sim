@@ -899,6 +899,29 @@ enum VMUNARY0{
   } \
   VI_LOOP_END
 
+#define VI_NARROW_SHIFT(sew1, sew2) \
+  type_usew_t<sew1>::type &vd = P.VU.elt<type_usew_t<sew1>::type>(rd_num, i); \
+  type_sew_t<sew2>::type vs2 = P.VU.elt<type_sew_t<sew2>::type>(rs2_num, i); \
+  type_usew_t<sew2>::type vs2_u = P.VU.elt<type_usew_t<sew2>::type>(rs2_num, i); \
+  type_sew_t<sew1>::type vs1 = P.VU.elt<type_sew_t<sew1>::type>(rs1_num, i); \
+  type_sew_t<sew1>::type rs1 = (type_sew_t<sew1>::type)RS1; \
+  type_usew_t<sew1>::type zimm5 = (type_usew_t<sew1>::type)insn.v_zimm5();
+
+#define VI_VVXI_LOOP_NARROW(BODY) \
+  require(P.VU.vsew  <= e32); \
+  VI_LOOP_BASE \
+  if (sew == e8){ \
+    VI_NARROW_SHIFT(e8, e16) \
+    BODY; \
+  } else if (sew == e8) { \
+    VI_NARROW_SHIFT(e16, e32) \
+    BODY; \
+  } else if (sew == e8){ \
+    VI_NARROW_SHIFT(e32, e64) \
+    BODY; \
+  } \
+  VI_LOOP_END
+
 #define VF_LOOP_BASE \
   require_extension('F'); \
   require_fp; \

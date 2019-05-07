@@ -1,5 +1,5 @@
-// vnsrl
-VI_VX_LOOP
+// vnsrl.vx vd, vs2, rs1
+VI_VVXI_LOOP_NARROW
 ({
-    throw trap_unimplemented_instruction(0);
+  vd = vs2_u >> (rs1 & ((1u << log2(sew)) - 1));
 })
