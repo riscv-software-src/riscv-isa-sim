@@ -1,13 +1,8 @@
 // vext_x_v: rd = vs2[rs1]
-require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
-require(!P.VU.vill);\
-reg_t vl = P.VU.vl; \
-reg_t sew = P.VU.vsew; \
-reg_t rd_num = insn.rd(); \
-reg_t rs1_num = insn.rs1(); \
-reg_t rs2_num = insn.rs2(); \
+#define LSB(X, B) X << B >> B
+uint64_t xmask = ((uint64_t)1 << P.get_max_xlen()) - 1;
 reg_t rs1 = RS1;
-
+VI_LOOP_BASE 
 if (!(rs1 >= 0 && rs1 < P.VU.vlmax)) {
   WRITE_RD(0);
 } else {
@@ -16,13 +11,24 @@ if (!(rs1 >= 0 && rs1 < P.VU.vlmax)) {
     WRITE_RD(P.VU.elt<uint8_t>(rs2_num, rs1));
     break;
   case e16:
-    WRITE_RD(P.VU.elt<uint16_t>(rs2_num, rs1));
+    if (P.get_max_xlen() <= sew)
+      WRITE_RD(P.VU.elt<uint16_t>(rs2_num, rs1) & xmask);
+    else
+      WRITE_RD(vzext(P.VU.elt<uint16_t>(rs2_num, rs1), P.get_max_xlen()));
     break;
   case e32:
-    WRITE_RD(P.VU.elt<uint32_t>(rs2_num, rs1));
+    if (P.get_max_xlen() <= sew)
+      WRITE_RD(P.VU.elt<uint32_t>(rs2_num, rs1) & xmask);
+    else
+      WRITE_RD(vzext(P.VU.elt<uint32_t>(rs2_num, rs1), P.get_max_xlen()));
     break;
-  default:
-    WRITE_RD(P.VU.elt<uint64_t>(rs2_num, rs1));
+  case e64:
+    if (P.get_max_xlen() <= sew)
+      WRITE_RD(P.VU.elt<uint64_t>(rs2_num, rs1) & xmask);
+    else
+      WRITE_RD(vzext(P.VU.elt<uint64_t>(rs2_num, rs1), P.get_max_xlen()));
     break;
   }
 }
+break;
+VI_LOOP_END
