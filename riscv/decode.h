@@ -368,17 +368,17 @@ enum VMUNARY0{
 
 #define V_CHECK_MASK(do_mask) \
   if (insn.v_vm() == 0) { \
-    int midx = (P.VU.vmlen * i) / 32; \
-    int mpos = (P.VU.vmlen * i) % 32; \
-    do_mask = (P.VU.elt<uint32_t>(0, midx) >> mpos) & 0x1; \
+    int midx = (P.VU.vmlen * i) / 64; \
+    int mpos = (P.VU.vmlen * i) % 64; \
+    do_mask = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1; \
   }
 
 #define V_LOOP_ELEMENT_SKIP \
   const int mlen = P.VU.vmlen; \
-  const int midx = (mlen * i) / 32; \
-  const int mpos = (mlen * i) % 32; \
+  const int midx = (mlen * i) / 64; \
+  const int mpos = (mlen * i) % 64; \
   if (insn.v_vm() == 0) { \
-    bool skip = ((P.VU.elt<uint32_t>(0, midx) >> mpos) & 0x1) == 0; \
+    bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
     if (skip) \
       continue; \
   } \
@@ -442,9 +442,9 @@ enum VMUNARY0{
   reg_t rs2_num = insn.rs2(); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     V_LOOP_ELEMENT_SKIP; \
-    const uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
-    uint32_t &vdi = P.VU.elt<uint32_t>(insn.rd(), midx); \
-    bool res = false;
+    uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
+    uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx); \
+    uint64_t res = 0;
 
 #define VI_LOOP_BASE \
   require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64); \
@@ -471,21 +471,21 @@ enum VMUNARY0{
   reg_t vl = P.VU.vl; \
   for (reg_t i = P.VU.vstart; i < vl; ++i) { \
     int mlen = P.VU.vmlen; \
-    int midx = (mlen * i) / 32; \
-    int mpos = (mlen * i) % 32; \
-    uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
-    uint32_t vs2 = P.VU.elt<uint32_t>(insn.rs2(), midx); \
-    uint32_t vs1 = P.VU.elt<uint32_t>(insn.rs1(), midx); \
-    uint32_t &res = P.VU.elt<uint32_t>(insn.rd(), midx); \
+    int midx = (mlen * i) / 64; \
+    int mpos = (mlen * i) % 64; \
+    uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
+    uint64_t vs2 = P.VU.elt<uint64_t>(insn.rs2(), midx); \
+    uint64_t vs1 = P.VU.elt<uint64_t>(insn.rs1(), midx); \
+    uint64_t &res = P.VU.elt<uint64_t>(insn.rd(), midx); \
     res = (res & ~mmask) | ((op) & mmask); \
   } \
   \
   for (reg_t i = vl; i < P.VU.vlmax; ++i) { \
     int mlen = P.VU.vmlen; \
-    int midx = (mlen * i) / 32; \
-    int mpos = (mlen * i) % 32; \
-    uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
-    uint32_t &res = P.VU.elt<uint32_t>(insn.rd(), midx); \
+    int midx = (mlen * i) / 64; \
+    int mpos = (mlen * i) % 64; \
+    uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
+    uint64_t &res = P.VU.elt<uint64_t>(insn.rd(), midx); \
     res = (res & ~mmask); \
   } \
   P.VU.vstart = 0;
@@ -1029,9 +1029,9 @@ VI_LOOP_END
     float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
     float32_t rs1 = f32(READ_FREG(rs1_num)); \
     V_LOOP_ELEMENT_SKIP; \
-    uint32_t mmask = ((1ul << mlen) - 1) << mpos; \
-    uint32_t &vdi = P.VU.elt<uint32_t>(rd_num, midx); \
-    bool res = false;
+    uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
+    uint64_t &vdi = P.VU.elt<uint64_t>(rd_num, midx); \
+    uint64_t res = 0;
 
 #define VF_LOOP_REDUCTION_BASE \
   require_extension('F'); \
