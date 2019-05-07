@@ -1,5 +1,5 @@
-// vfwredsum
-VFP_VV_LOOP
+// vfwredsum.vs vd, vs2, vs1
+VFP_VV_LOOP_WIDE_REDUCTION
 ({
-    throw trap_unimplemented_instruction(0);
+  vd_0 = f64_add(vd_0, vs2);
 })

@@ -1034,6 +1034,20 @@ enum VMUNARY0{
     V_LOOP_ELEMENT_SKIP; \
     int32_t &vd = P.VU.elt<int32_t>(rd_num, i); \
 
+#define VF_LOOP_WIDE_REDUCTION_BASE \
+  require_extension('F'); \
+  require_fp; \
+  require(P.VU.vsew == 32); \
+  require(!P.VU.vill);\
+  reg_t vl = P.VU.vl; \
+  reg_t rd_num = insn.rd(); \
+  reg_t rs1_num = insn.rs1(); \
+  reg_t rs2_num = insn.rs2(); \
+  softfloat_roundingMode = STATE.frm; \
+  float64_t vd_0 = P.VU.elt<float64_t>(rs1_num, 0); \
+  for (reg_t i=P.VU.vstart; i<vl; ++i) { \
+    V_LOOP_ELEMENT_SKIP;
+
 #define VF_LOOP_END \
   } \
   P.VU.vstart = 0; \
@@ -1093,6 +1107,14 @@ enum VMUNARY0{
   DEBUG_RVV_FP_VV; \
   VF_LOOP_END  \
   P.VU.elt<float32_t>(rd_num, 0) = vd_0;
+
+#define VFP_VV_LOOP_WIDE_REDUCTION(BODY) \
+  VF_LOOP_WIDE_REDUCTION_BASE \
+  float64_t vs2 = f64(P.VU.elt<float32_t>(rs2_num, i).v); \
+  BODY; \
+  DEBUG_RVV_FP_VV; \
+  VF_LOOP_END  \
+  P.VU.elt<float64_t>(rd_num, 0) = vd_0;
 
 #define VFP_VF_LOOP(BODY) \
   VF_LOOP_BASE \
