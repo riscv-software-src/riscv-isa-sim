@@ -1,5 +1,5 @@
-// vwredsumu
-VI_VV_LOOP
+// vwredsum.vs vd, vs2, vs1
+VI_VV_ULOOP_WIDE_REDUCTION
 ({
-    throw trap_unimplemented_instruction(0);
+   vd_0_res += vs2;
 })

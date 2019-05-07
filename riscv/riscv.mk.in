@@ -513,6 +513,8 @@ riscv_insn_list = \
 	vwsmsac_vx \
 	vwmsac_vv \
 	vwmsac_vx \
+	vwredsum_vs \
+	vwredsumu_vs \
 	vredand_vv \
 	vredsum_vv \
 	vredor_vv \

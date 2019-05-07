@@ -922,6 +922,69 @@ enum VMUNARY0{
   } \
   VI_LOOP_END
 
+// wide reduction loop - signed
+#define VI_LOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
+  V_WIDE_CHECK \
+  require(!P.VU.vill);\
+  reg_t vl = P.VU.vl; \
+  reg_t rd_num = insn.rd(); \
+  reg_t rs1_num = insn.rs1(); \
+  reg_t rs2_num = insn.rs2(); \
+  type_sew_t<sew2>::type &vd_0_des = P.VU.elt<type_sew_t<sew2>::type>(rd_num, 0); \
+  type_sew_t<sew2>::type vd_0_res = P.VU.elt<type_sew_t<sew2>::type>(rs1_num, 0); \
+  for (reg_t i=P.VU.vstart; i<vl; ++i){ \
+    V_LOOP_ELEMENT_SKIP; \
+    type_sew_t<sew1>::type vs2 = P.VU.elt<type_sew_t<sew1>::type>(rs2_num, i);
+
+#define WIDE_REDUCTION_LOOP(sew1, sew2, BODY) \
+  VI_LOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
+  BODY; \
+  VI_LOOP_END \
+  vd_0_des = vd_0_res;
+
+#define VI_VV_LOOP_WIDE_REDUCTION(BODY) \
+  require(!P.VU.vill);\
+  reg_t sew = P.VU.vsew; \
+  if (sew == e8){ \
+    WIDE_REDUCTION_LOOP(e8, e16, BODY) \
+  } else if(sew == e16){ \
+    WIDE_REDUCTION_LOOP(e16, e32, BODY) \
+  } else if(sew == e32){ \
+    WIDE_REDUCTION_LOOP(e32, e64, BODY) \
+  }
+
+// wide reduction loop - unsigned
+#define VI_ULOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
+  V_WIDE_CHECK \
+  require(!P.VU.vill);\
+  reg_t vl = P.VU.vl; \
+  reg_t rd_num = insn.rd(); \
+  reg_t rs1_num = insn.rs1(); \
+  reg_t rs2_num = insn.rs2(); \
+  type_sew_t<sew2>::type &vd_0_des = P.VU.elt<type_sew_t<sew2>::type>(rd_num, 0); \
+  type_sew_t<sew2>::type vd_0_res = P.VU.elt<type_sew_t<sew2>::type>(rs1_num, 0); \
+  for (reg_t i=P.VU.vstart; i<vl; ++i){ \
+    V_LOOP_ELEMENT_SKIP; \
+    type_sew_t<sew1>::type vs2 = P.VU.elt<type_sew_t<sew1>::type>(rs2_num, i);
+
+#define WIDE_REDUCTION_ULOOP(sew1, sew2, BODY) \
+  VI_ULOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
+  BODY; \
+  VI_LOOP_END \
+  vd_0_des = vd_0_res;
+
+#define VI_VV_ULOOP_WIDE_REDUCTION(BODY) \
+  require(!P.VU.vill);\
+  reg_t sew = P.VU.vsew; \
+  if (sew == e8){ \
+    WIDE_REDUCTION_ULOOP(e8, e16, BODY) \
+  } else if(sew == e16){ \
+    WIDE_REDUCTION_ULOOP(e16, e32, BODY) \
+  } else if(sew == e32){ \
+    WIDE_REDUCTION_ULOOP(e32, e64, BODY) \
+  }
+
+
 #define VF_LOOP_BASE \
   require_extension('F'); \
   require_fp; \
