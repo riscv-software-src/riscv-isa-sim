@@ -22,7 +22,7 @@ for (reg_t i = p->VU.vstart; i < vl; ++i) {
     case e32:
       val = p->VU.elt<uint32_t>(vs3 + fn, i);
       break;
-    defaualt:
+    default:
       val = p->VU.elt<uint64_t>(vs3 + fn, i);
       break;
     }
