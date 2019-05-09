@@ -1002,6 +1002,44 @@ VI_LOOP_END
     WIDE_REDUCTION_ULOOP(e32, e64, BODY) \
   }
 
+#define VI_VVX_LOOP_AVG(opd, op) \
+VRM xrm = p->VU.get_vround_mode(); \
+VI_LOOP_BASE \
+  switch(sew) { \
+    case e8: { \
+     VV_PARAMS(e8); \
+     type_sew_t<e8>::type rs1 = RS1; \
+     auto res = (int32_t)vs2 op opd; \
+     INT_ROUNDING(res, xrm, 1); \
+     vd = res >> 1; \
+     break; \
+    } \
+    case e16: { \
+     VV_PARAMS(e16); \
+     type_sew_t<e16>::type rs1 = RS1; \
+     auto res = (int32_t)vs2 op opd; \
+     INT_ROUNDING(res, xrm, 1); \
+     vd = res >> 1; \
+     break; \
+    } \
+    case e32: { \
+     VV_PARAMS(e32); \
+     type_sew_t<e32>::type rs1 = RS1; \
+     auto res = (int64_t)vs2 op opd; \
+     INT_ROUNDING(res, xrm, 1); \
+     vd = res >> 1; \
+     break; \
+    } \
+    default: { \
+     VV_PARAMS(e64); \
+     type_sew_t<e64>::type rs1 = RS1; \
+     auto res = (int128_t)vs2 op opd; \
+     INT_ROUNDING(res, xrm, 1); \
+     vd = res >> 1; \
+     break; \
+    } \
+  } \
+VI_LOOP_END
 
 #define VF_LOOP_BASE \
   require_extension('F'); \

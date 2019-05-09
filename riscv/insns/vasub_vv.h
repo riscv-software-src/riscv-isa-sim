@@ -1,8 +1,2 @@
-// vasub: Averaging subs of integers 
-VRM xrm = p->VU.get_vround_mode();
-VI_VV_LOOP
-({
-  int64_t ret = (int64_t)vs2 - vs1;
-  INT_ROUNDING(ret, xrm, 1);
-  vd = ret >> 1;
-})
+// vasub.vv vd, vs2, vs1
+VI_VVX_LOOP_AVG(vs1, -);
