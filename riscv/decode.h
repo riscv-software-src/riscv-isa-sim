@@ -924,7 +924,7 @@ VI_LOOP_END
   type_sew_t<sew1>::type rs1 = (type_sew_t<sew1>::type)RS1; 
 
 #define VI_VVXI_LOOP_NARROW(BODY) \
-  require(P.VU.vsew  <= e32); \
+  require(P.VU.vsew <= e32); \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VI_NARROW_SHIFT(e8, e16) \

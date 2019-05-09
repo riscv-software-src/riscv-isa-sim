@@ -48,7 +48,7 @@ for (reg_t i = vl; i < p->VU.vlmax; ++i) {
       p->VU.elt<uint32_t>(vd + fn, i) = 0;
       break;
     case e64:
-      p->VU.elt<uint32_t>(vd + fn, i) = 0;
+      p->VU.elt<uint64_t>(vd + fn, i) = 0;
       break;
     }
   }
