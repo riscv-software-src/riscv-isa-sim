@@ -1,6 +1,5 @@
 // vext_x_v: rd = vs2[rs1]
-#define LSB(X, B) X << B >> B
-uint64_t xmask = ((uint64_t)1 << P.get_max_xlen()) - 1;
+uint64_t xmask = UINT64_MAX >> (64 - P.get_max_xlen());
 reg_t rs1 = RS1;
 VI_LOOP_BASE 
 if (!(rs1 >= 0 && rs1 < P.VU.vlmax)) {
