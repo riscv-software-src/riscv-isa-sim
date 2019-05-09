@@ -10,7 +10,7 @@ for (reg_t i = p->VU.vstart; i < vl; ++i) {
   V_LOOP_ELEMENT_SKIP;
 
   for (reg_t fn = 0; fn < nf; ++fn) {
-    uint64_t val = MMU.load_int8(baseAddr + i * stride + fn * 1);
+    uint64_t val = MMU.load_uint8(baseAddr + i * stride + fn * 1);
     if (p->VU.vsew == e8) {
       p->VU.elt<uint8_t>(vd + fn, i) = val;
     } else if (p->VU.vsew == e16) {
