@@ -21,7 +21,7 @@ default:
 }
 
 // nan_extened
-if (FLEN >= sew) {
+if (FLEN > sew) {
   vs2_0 = vs2_0 | ~((1ul << sew) - 1);
 }
 
