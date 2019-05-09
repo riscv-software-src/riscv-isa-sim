@@ -934,7 +934,7 @@ VI_LOOP_END
   } else if (sew == e16) { \
     VI_NARROW_SHIFT(e16, e32) \
     BODY; \
-  } else if (sew == e32){ \
+  } else if (sew == e32) { \
     VI_NARROW_SHIFT(e32, e64) \
     BODY; \
   } \
