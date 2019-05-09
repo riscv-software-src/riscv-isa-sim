@@ -23,6 +23,8 @@
 
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
+typedef __int128 int128_t;
+typedef unsigned __int128 uint128_t;
 
 const int NXPR = 32;
 const int NFPR = 32;

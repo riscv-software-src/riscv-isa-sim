@@ -5,7 +5,7 @@ VI_VX_LOOP
   uint32_t &v0 = P.VU.elt<uint32_t>(0, midx);
   int carry = (v0 >> mpos) & 0x1;
 
-  unsigned __int128 res = rs1 - vs2 - carry;
+  uint128_t res = rs1 - vs2 - carry;
   vd = res;
 
   const uint32_t mmask = ((1ul << mlen) - 1) << mpos;
