@@ -10,22 +10,16 @@ if (!(rs1 >= 0 && rs1 < P.VU.vlmax)) {
     WRITE_RD(P.VU.elt<uint8_t>(rs2_num, rs1));
     break;
   case e16:
-    if (P.get_max_xlen() <= sew)
-      WRITE_RD(P.VU.elt<uint16_t>(rs2_num, rs1) & xmask);
-    else
-      WRITE_RD(vzext(P.VU.elt<uint16_t>(rs2_num, rs1), P.get_max_xlen()));
+    WRITE_RD(P.VU.elt<uint16_t>(rs2_num, rs1));
     break;
   case e32:
-    if (P.get_max_xlen() <= sew)
-      WRITE_RD(P.VU.elt<uint32_t>(rs2_num, rs1) & xmask);
-    else
-      WRITE_RD(vzext(P.VU.elt<uint32_t>(rs2_num, rs1), P.get_max_xlen()));
+    WRITE_RD(P.VU.elt<uint32_t>(rs2_num, rs1));
     break;
   case e64:
     if (P.get_max_xlen() <= sew)
       WRITE_RD(P.VU.elt<uint64_t>(rs2_num, rs1) & xmask);
     else
-      WRITE_RD(vzext(P.VU.elt<uint64_t>(rs2_num, rs1), P.get_max_xlen()));
+      WRITE_RD(P.VU.elt<uint64_t>(rs2_num, rs1));
     break;
   }
 }
