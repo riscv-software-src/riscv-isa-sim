@@ -1,10 +1,27 @@
-// vsadd: Saturating adds of signed integers
-VI_VI_LOOP
-({
-	int64_t comp =  (simm5 < 0) ? -(1 << (sew - 1)) : (1 << (sew -1)) - 1;
-	if ((simm5 < 0) == (vs2 > (comp - simm5))) {
-		vd = simm5 + vs2;
-	}else{
-		vd = (simm5 < 0) ? -(1 << (sew - 1)) : (1 << (sew -1)) - 1; 
-	}		
-})
+// vsadd.vi vd, vs2 simm5
+VI_LOOP_BASE
+  bool sat = false;
+  switch(sew) {
+    case e8: {
+     VI_PARAMS(e8);
+     vd = sat_add<int8_t, uint8_t>(vs2, simm5, sat);
+     break;
+    }
+    case e16: {
+     VI_PARAMS(e16);
+     vd = sat_add<int16_t, uint16_t>(vs2, simm5, sat);
+     break;
+    }
+    case e32: {
+     VI_PARAMS(e32);
+     vd = sat_add<int32_t, uint32_t>(vs2, simm5, sat);
+     break;
+    }
+    default: {
+     VI_PARAMS(e64);
+     vd = sat_add<int64_t, uint64_t>(vs2, simm5, sat);
+     break;
+    }
+  }
+  P.VU.vxsat |= sat;
+VI_LOOP_END
