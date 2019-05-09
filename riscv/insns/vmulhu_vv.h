@@ -1,10 +1,5 @@
-// vmulhu: Unsigned multiply, returning high bits of product
-require(p->VU.ELEN <= 32);
-reg_t vsew = p->VU.vsew;
-uint64_t lo_mask = (((uint64_t)1 << vsew) - 1);
-
+// vmulhu vd ,vs2, vs1
 VI_VV_ULOOP
 ({
-    uint64_t result = (uint64_t)vs1 * (uint64_t)vs2;
-    vd = (result >> sew) & lo_mask;
+  vd = ((uint128_t)vs2 * vs1) >> sew;
 })
