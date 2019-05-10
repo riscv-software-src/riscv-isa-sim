@@ -1,5 +1,5 @@
 // vwmulsu vd, vs2, vs1
-V_WIDE_CHECK;
+VI_WIDE_CHECK_TWO;
 VI_VX_LOOP
 ({
   switch(p->VU.vsew) {
