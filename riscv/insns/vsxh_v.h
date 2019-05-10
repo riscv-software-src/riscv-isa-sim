@@ -9,21 +9,25 @@ reg_t vs3 = insn.rd();
 for (reg_t i = p->VU.vstart; i < vl; ++i) {
   V_LOOP_ELEMENT_SKIP;
 
-  reg_t index = p->VU.elt<int16_t>(stride, i);
   for (reg_t fn = 0; fn < nf; ++fn) {
-    uint16_t val = 0;
+    reg_t index = 0;
     switch (p->VU.vsew) {
     case e16:
-      val = p->VU.elt<uint16_t>(vs3 + fn, i);
+      index = p->VU.elt<int16_t>(stride, i);
+      MMU.store_uint16(baseAddr + index + fn * 2,
+                       p->VU.elt<uint16_t>(vs3 + fn, i));
       break;
     case e32:
-      val = p->VU.elt<uint32_t>(vs3 + fn, i);
+      index = p->VU.elt<int32_t>(stride, i);
+      MMU.store_uint16(baseAddr + index + fn * 2,
+                       p->VU.elt<uint32_t>(vs3 + fn, i));
       break;
-    default:
-      val = p->VU.elt<uint64_t>(vs3 + fn, i);
+    case e64:
+      index = p->VU.elt<int64_t>(stride, i);
+      MMU.store_uint16(baseAddr + index + fn * 2,
+                       p->VU.elt<uint64_t>(vs3 + fn, i));
       break;
     }
-    MMU.store_uint16(baseAddr + index + fn * 2, val);
   }
 }
 p->VU.vstart = 0;

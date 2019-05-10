@@ -9,24 +9,30 @@ reg_t vs3 = insn.rd();
 for (reg_t i = p->VU.vstart; i < vl; ++i) {
   V_LOOP_ELEMENT_SKIP;
 
-  reg_t index = p->VU.elt<int8_t>(stride, i);
   for (reg_t fn = 0; fn < nf; ++fn) {
-    uint8_t val = 0;
+    reg_t index = 0;
     switch (p->VU.vsew) {
     case e8:
-      val = p->VU.elt<uint8_t>(vs3 + fn, i);
+      index = p->VU.elt<int8_t>(stride, i);
+      MMU.store_uint8(baseAddr + index + fn * 1,
+                      p->VU.elt<uint8_t>(vs3 + fn, i));
       break;
     case e16:
-      val = p->VU.elt<uint16_t>(vs3 + fn, i);
+      index = p->VU.elt<int16_t>(stride, i);
+      MMU.store_uint8(baseAddr + index + fn * 1,
+                      p->VU.elt<uint16_t>(vs3 + fn, i));
       break;
     case e32:
-      val = p->VU.elt<uint32_t>(vs3 + fn, i);
+      index = p->VU.elt<int32_t>(stride, i);
+      MMU.store_uint8(baseAddr + index + fn * 1,
+                      p->VU.elt<uint32_t>(vs3 + fn, i));
       break;
-    default:
-      val = p->VU.elt<uint64_t>(vs3 + fn, i);
+    case e64:
+      index = p->VU.elt<int64_t>(stride, i);
+      MMU.store_uint8(baseAddr + index + fn * 1,
+                      p->VU.elt<uint64_t>(vs3 + fn, i));
       break;
     }
-    MMU.store_uint8(baseAddr + index + fn * 1, val);
   }
 }
 p->VU.vstart = 0;
