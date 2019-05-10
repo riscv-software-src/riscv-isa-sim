@@ -1040,10 +1040,10 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_VFUNARY0_INSN(vfn, 0x2, 1);
 
   //vfunary1
-  add_insn(new disasm_insn_t("vfsqrt.v", match_vfunary1_vv, mask_vfunary1_vv, \
-                  {&vd, &vs2, &opt, &vm}));
-  add_insn(new disasm_insn_t("vfclass.v", match_vfunary1_vv, mask_vfunary1_vv, \
-                  {&vd, &vs2, &opt, &vm}));
+  add_insn(new disasm_insn_t("vfsqrt.v", match_vfunary1_vv | (0x00ul << 15),
+              mask_vfunary1_vv | mask_rs1, {&vd, &vs2, &opt, &vm}));
+  add_insn(new disasm_insn_t("vfclass.v", match_vfunary1_vv | (0x10ul << 15),
+              mask_vfunary1_vv | mask_rs1, {&vd, &vs2, &opt, &vm}));
 
   DISASM_OPIV_VF_INSN(vfmul);
   DISASM_OPIV_VF_INSN(vfmadd);
