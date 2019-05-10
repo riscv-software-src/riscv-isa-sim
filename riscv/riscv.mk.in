@@ -331,6 +331,10 @@ riscv_insn_list = \
 	vsxh_v \
 	vsxw_v \
 	vsxe_v \
+	vsuxb_v \
+	vsuxh_v \
+	vsuxw_v \
+	vsuxe_v \
 	vadd_vi \
 	vadd_vv \
 	vadd_vx \
