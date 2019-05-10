@@ -1,4 +1,14 @@
 // VFUNARY0 encoding space
+switch (insn.rs1()) {
+case VFUNARY0::VFWCVT_XU_F_V:
+case VFUNARY0::VFWCVT_X_F_V:
+case VFUNARY0::VFWCVT_F_XU_V:
+case VFUNARY0::VFWCVT_F_X_V:
+case VFUNARY0::VFWCVT_F_F_V:
+  VI_WIDE_CHECK_ONE;
+  break;
+}
+
 VFP_VV_LOOP
 ({
   switch(p->VU.vsew){
