@@ -320,8 +320,8 @@ enum VFUNARY0{
 };
 
 enum VFUNARY1{
-    VFSQRT_V = 0x0,
-    VFCLASS_V = 0x10000
+    VFSQRT_V  = 0b00000,
+    VFCLASS_V = 0b10000
 };
 
 enum VMUNARY0{
@@ -1159,7 +1159,6 @@ VI_LOOP_END
 #define VFP_VV_LOOP(BODY) \
   VF_LOOP_BASE \
   float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
-  int16_t &class_vd = P.VU.elt<int16_t>(rd_num, i); \
   float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
   float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
   BODY; \
