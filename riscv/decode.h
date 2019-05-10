@@ -388,7 +388,11 @@ enum VMUNARY0{
 #define V_WIDE_CHECK \
   require(P.VU.vlmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
-  require(insn.rd() + P.VU.vlmul <= 32);
+  require(insn.rd() + P.VU.vlmul <= 31); \
+  require((insn.rd() & ~(P.VU.vlmul - 1)) != (insn.rs2() & ~(P.VU.vlmul - 1)) && \
+          (insn.rd() & ~(P.VU.vlmul - 1)) != (insn.rs1() & ~(P.VU.vlmul - 1))); \
+  if (insn.v_vm() == 0) \
+    require(insn.rd() != 0);
 
 #define V_WIDE_OP_AND_ASSIGN(var0, var1, var2, op0, op1, sign) \
   switch(P.VU.vsew) { \
@@ -942,7 +946,12 @@ VI_LOOP_END
 
 // wide reduction loop - signed
 #define VI_LOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
-  V_WIDE_CHECK \
+  require(P.VU.vlmul <= 4); \
+  require(P.VU.vsew * 2 <= P.VU.ELEN); \
+  require(insn.rd() + P.VU.vlmul <= 31); \
+  require((insn.rd() & ~(P.VU.vlmul - 1)) != (insn.rs2() & ~(P.VU.vlmul - 1))); \
+  if (insn.v_vm() == 0) \
+    require(insn.rd() != 0); \
   require(!P.VU.vill);\
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
@@ -973,7 +982,12 @@ VI_LOOP_END
 
 // wide reduction loop - unsigned
 #define VI_ULOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
-  V_WIDE_CHECK \
+  require(P.VU.vlmul <= 4); \
+  require(P.VU.vsew * 2 <= P.VU.ELEN); \
+  require(insn.rd() + P.VU.vlmul <= 31); \
+  require((insn.rd() & ~(P.VU.vlmul - 1)) != (insn.rs2() & ~(P.VU.vlmul - 1))); \
+  if (insn.v_vm() == 0) \
+    require(insn.rd() != 0); \
   require(!P.VU.vill);\
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
