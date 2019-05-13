@@ -1,0 +1,53 @@
+dist: xenial
+
+language: python
+python:
+  - "3.5"
+
+branches:
+  only:
+  - rvv
+
+addons:
+  apt:
+    packages:
+      - device-tree-compiler
+      - texinfo
+
+env:
+  - BASE=32 SEED="-DSEED=\"0\""
+  - BASE=32 SEED="-DSEED=\"1\""
+  - BASE=32 SEED=""
+  - BASE=64 SEED="-DSEED=\"0\""
+  - BASE=64 SEED="-DSEED=\"1\""
+  - BASE=64 SEED=""
+
+before_install:
+  - mkdir build
+  - git clone git@github.com:sifive/bengal-team.git
+  - cd bengal-team
+  - git submodule update --init riscv-fesvr
+  - cd riscv-fesvr
+  - ./configure --prefix=$(pwd)
+  - make -j install
+  - cd $TRAVIS_BUILD_DIR
+
+install:
+  - ./configure --prefix=$TRAVIS_BUILD_DIR/bengal-team/spike-prefix/ --with-fesvr=$TRAVIS_BUILD_DIR/bengal-team/riscv-fesvr/
+  - make -j install
+  - cd $TRAVIS_BUILD_DIR
+
+before_script:
+  - pip install cffi
+  - cd bengal-team
+  - git submodule update --init --recursive -j $(nproc) riscv-binutils-gdb
+  - make -j toolchain-prefix/bin/riscv64-unknown-elf-gcc
+  - git clone --single-branch --branch hankuanc --recurse-submodules -j $(nproc) git@github.com:sifive/riscv-tests-internal.git
+  - cd $TRAVIS_BUILD_DIR
+
+script:
+  - mkdir bengal-team/riscv-tests-internal/vector/build
+  - cd bengal-team/riscv-tests-internal/vector/build
+  - ../configure "-DBASE=$BASE" "$SEED"
+  - make -j
+  - ctest --timeout 5
