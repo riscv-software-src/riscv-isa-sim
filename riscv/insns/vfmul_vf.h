@@ -11,4 +11,3 @@ VFP_VF_LOOP
     softfloat_exceptionFlags = 1;
   };
 })
-set_fp_exceptions;

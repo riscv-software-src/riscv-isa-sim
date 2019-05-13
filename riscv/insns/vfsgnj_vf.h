@@ -1,4 +1,4 @@
-// vfsgnj
+// vfsgnj vd, vs2, vs1
 VFP_VF_LOOP
 ({
   switch(p->VU.vsew){
@@ -11,4 +11,3 @@ VFP_VF_LOOP
     softfloat_exceptionFlags = 1;
   };
 })
-set_fp_exceptions;
