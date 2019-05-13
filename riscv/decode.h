@@ -385,10 +385,15 @@ enum VMUNARY0{
       continue; \
   } \
 
+#define VI_NARROW_CHECK_COMMON \
+  require(P.VU.vlmul <= 4); \
+  require(P.VU.vsew * 2 <= P.VU.ELEN); \
+  require(insn.rs2() + P.VU.vlmul * 2 <= 31);
+
 #define VI_WIDE_CHECK_COMMON \
   require(P.VU.vlmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
-  require(insn.rd() + P.VU.vlmul <= 31); \
+  require(insn.rd() + P.VU.vlmul * 2 <= 31); \
   if (insn.v_vm() == 0) \
     require(insn.rd() != 0);
 
@@ -548,7 +553,7 @@ enum VMUNARY0{
     type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
 
 #define VI_VV_LOOP_NARROW(BODY) \
-  require(P.VU.vsew  <= e32); \
+VI_NARROW_CHECK_COMMON; \
 VI_LOOP_BASE \
 if (sew == e8){ \
   VI_NARROW_SHIFT(e8, e16) \
