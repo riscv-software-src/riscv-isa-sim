@@ -588,9 +588,6 @@ bool debug_module_t::perform_abstract_command()
 
         if (write) {
           switch (size) {
-            case 1:
-              write32(debug_abstract, i++, flh(fprnum, ZERO, debug_data_start));
-              break;
             case 2:
               write32(debug_abstract, i++, flw(fprnum, ZERO, debug_data_start));
               break;
@@ -604,9 +601,6 @@ bool debug_module_t::perform_abstract_command()
 
         } else {
           switch (size) {
-            case 1:
-              write32(debug_abstract, i++, fsh(fprnum, ZERO, debug_data_start));
-              break;
             case 2:
               write32(debug_abstract, i++, fsw(fprnum, ZERO, debug_data_start));
               break;
