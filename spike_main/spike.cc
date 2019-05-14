@@ -40,16 +40,17 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
   fprintf(stderr, "  --dump-dts            Print device tree string and exit\n");
   fprintf(stderr, "  --disable-dtb         Don't write the device tree blob into memory\n");
-  fprintf(stderr, "  --progsize=<words>    Progsize for the debug module [default 2]\n");
-  fprintf(stderr, "  --debug-sba=<bits>    Debug bus master supports up to "
+  fprintf(stderr, "  --dm-progsize=<words> Progsize for the debug module [default 2]\n");
+  fprintf(stderr, "  --dm-sba=<bits>       Debug bus master supports up to "
       "<bits> wide accesses [default 0]\n");
-  fprintf(stderr, "  --debug-auth          Debug module requires debugger to authenticate\n");
+  fprintf(stderr, "  --dm-auth             Debug module requires debugger to authenticate\n");
   fprintf(stderr, "  --dmi-rti=<n>         Number of Run-Test/Idle cycles "
       "required for a DMI access [default 0]\n");
-  fprintf(stderr, "  --abstract-rti=<n>    Number of Run-Test/Idle cycles "
+  fprintf(stderr, "  --dm-abstract-rti=<n> Number of Run-Test/Idle cycles "
       "required for an abstract command to execute [default 0]\n");
-  fprintf(stderr, "  --without-hasel       Debug module supports hasel\n");
-  fprintf(stderr, "  --debug-no-abstract-csr  Debug module won't support abstract to authenticate\n");
+  fprintf(stderr, "  --dm-no-hasel         Debug module supports hasel\n");
+  fprintf(stderr, "  --dm-no-abstract-csr  Debug module won't support abstract to authenticate\n");
+  fprintf(stderr, "  --dm-no-halt-groups   Debug module won't support halt groups\n");
 
   exit(exit_code);
 }
@@ -110,13 +111,16 @@ int main(int argc, char** argv)
   const char* isa = DEFAULT_ISA;
   uint16_t rbb_port = 0;
   bool use_rbb = false;
-  unsigned progsize = 2;
-  unsigned max_bus_master_bits = 0;
-  bool require_authentication = false;
   unsigned dmi_rti = 0;
-  unsigned abstract_rti = 0;
-  bool support_hasel = true;
-  bool support_abstract_csr_access = true;
+  debug_module_config_t dm_config = {
+    .progbufsize = 2,
+    .max_bus_master_bits = 0,
+    .require_authentication = false,
+    .abstract_rti = 0,
+    .support_hasel = true,
+    .support_abstract_csr_access = true,
+    .support_haltgroups = true
+  };
   std::vector<int> hartids;
 
   auto const hartids_parser = [&](const char *s) {
@@ -159,19 +163,22 @@ int main(int argc, char** argv)
       exit(-1);
     }
   });
-  parser.option(0, "progsize", 1, [&](const char* s){progsize = atoi(s);});
-  parser.option(0, "debug-sba", 1,
-      [&](const char* s){max_bus_master_bits = atoi(s);});
-  parser.option(0, "debug-auth", 0,
-      [&](const char* s){require_authentication = true;});
+  parser.option(0, "dm-progsize", 1,
+      [&](const char* s){dm_config.progbufsize = atoi(s);});
+  parser.option(0, "dm-sba", 1,
+      [&](const char* s){dm_config.max_bus_master_bits = atoi(s);});
+  parser.option(0, "dm-auth", 0,
+      [&](const char* s){dm_config.require_authentication = true;});
   parser.option(0, "dmi-rti", 1,
       [&](const char* s){dmi_rti = atoi(s);});
-  parser.option(0, "abstract-rti", 1,
-      [&](const char* s){abstract_rti = atoi(s);});
-  parser.option(0, "without-hasel", 0,
-      [&](const char* s){support_hasel = false;});
-  parser.option(0, "debug-no-abstract-csr", 0,
-      [&](const char* s){support_abstract_csr_access = false;});
+  parser.option(0, "dm-abstract-rti", 1,
+      [&](const char* s){dm_config.abstract_rti = atoi(s);});
+  parser.option(0, "dm-no-hasel", 0,
+      [&](const char* s){dm_config.support_hasel = false;});
+  parser.option(0, "dm-no-abstract-csr", 0,
+      [&](const char* s){dm_config.support_abstract_csr_access = false;});
+  parser.option(0, "dm-no-halt-groups", 0,
+      [&](const char* s){dm_config.support_haltgroups = false;});
 
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
@@ -182,8 +189,7 @@ int main(int argc, char** argv)
     help();
 
   sim_t s(isa, nprocs, halted, start_pc, mems, htif_args, std::move(hartids),
-      progsize, max_bus_master_bits, require_authentication,
-      abstract_rti, support_hasel, support_abstract_csr_access);
+      dm_config);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));

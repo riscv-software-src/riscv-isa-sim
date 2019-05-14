@@ -24,9 +24,7 @@ public:
   sim_t(const char* isa, size_t _nprocs,  bool halted, reg_t start_pc,
         std::vector<std::pair<reg_t, mem_t*>> mems,
         const std::vector<std::string>& args, const std::vector<int> hartids,
-        unsigned progsize, unsigned max_bus_master_bits,
-        bool require_authentication, suseconds_t abstract_delay_usec,
-        bool support_hasel, bool support_abstract_csr_access);
+        const debug_module_config_t &dm_config);
   ~sim_t();
 
   // run the simulation to completion
