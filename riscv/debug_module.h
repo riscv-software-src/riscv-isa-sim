@@ -9,6 +9,18 @@
 class sim_t;
 
 typedef struct {
+    // Size of program_buffer in 32-bit words, as exposed to the rest of the
+    // world.
+    unsigned progbufsize;
+    unsigned max_bus_master_bits;
+    bool require_authentication;
+    unsigned abstract_rti;
+    bool support_hasel;
+    bool support_abstract_csr_access;
+    bool support_haltgroups;
+} debug_module_config_t;
+
+typedef struct {
   bool haltreq;
   bool resumereq;
   bool hasel;
@@ -93,10 +105,7 @@ class debug_module_t : public abstract_device_t
      * abstract_rti is extra run-test/idle cycles that each abstract command
      * takes to execute. Useful for testing OpenOCD.
      */
-    debug_module_t(sim_t *sim, unsigned progbufsize,
-        unsigned max_bus_master_bits, bool require_authentication,
-        unsigned abstract_rti, bool support_hasel,
-        bool support_abstract_csr_access);
+    debug_module_t(sim_t *sim, const debug_module_config_t &config);
     ~debug_module_t();
 
     void add_device(bus_t *bus);
@@ -119,16 +128,10 @@ class debug_module_t : public abstract_device_t
   private:
     static const unsigned datasize = 2;
     unsigned nprocs;
-    // Size of program_buffer in 32-bit words, as exposed to the rest of the
-    // world.
-    unsigned progbufsize;
+    debug_module_config_t config;
     // Actual size of the program buffer, which is 1 word bigger than we let on
     // to implement the implicit ebreak at the end.
     unsigned program_buffer_bytes;
-    unsigned max_bus_master_bits;
-    bool require_authentication;
-    unsigned abstract_rti;
-    bool support_abstract_csr_access;
     static const unsigned debug_data_start = 0x380;
     unsigned debug_progbuf_start;
 
@@ -182,7 +185,6 @@ class debug_module_t : public abstract_device_t
 
     bool abstract_command_completed;
     unsigned rti_remaining;
-    bool support_hasel;
 };
 
 #endif
