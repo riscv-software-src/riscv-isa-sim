@@ -23,19 +23,11 @@ env:
   - BASE=64 SEED=""
 
 before_install:
-  - mkdir build
   - git clone git@github.com:sifive/bengal-team.git
-  - cd bengal-team
-  - git submodule update --init riscv-fesvr
-  - cd riscv-fesvr
-  - ./configure --prefix=$(pwd)
-  - make -j install
-  - cd $TRAVIS_BUILD_DIR
 
 install:
-  - ./configure --prefix=$TRAVIS_BUILD_DIR/bengal-team/spike-prefix/ --with-fesvr=$TRAVIS_BUILD_DIR/bengal-team/riscv-fesvr/
+  - ./configure --prefix=$TRAVIS_BUILD_DIR/bengal-team/spike-prefix/
   - make -j install
-  - cd $TRAVIS_BUILD_DIR
 
 before_script:
   - pip install cffi
