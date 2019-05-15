@@ -506,6 +506,15 @@ enum VMUNARY0{
   }\
   P.VU.vstart = 0;
 
+#define VI_LOOP_REDUCTION_END(x) \
+  } \
+  P.VU.vstart = 0; \
+  if (vl > 0) { \
+    vd_0_des = vd_0_res; \
+    for (reg_t i = 1; i < P.VU.VLEN / sew; ++i) { \
+      P.VU.elt<type_sew_t<x>::type>(rd_num, i) = 0; \
+    } \
+  }
 
 #define VI_LOOP_CMP_END \
     vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
@@ -781,29 +790,27 @@ VI_LOOP_END
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  type_sew_t<x>::type &vd_0_des = P.VU.elt<type_sew_t<x>::type>(rd_num, 0); \
-  type_sew_t<x>::type vd_0_res = P.VU.elt<type_sew_t<x>::type>(rs1_num, 0); \
+  auto &vd_0_des = P.VU.elt<type_sew_t<x>::type>(rd_num, 0); \
+  auto vd_0_res = P.VU.elt<type_sew_t<x>::type>(rs1_num, 0); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     V_LOOP_ELEMENT_SKIP; \
-    type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
+    auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
 
 #define REDUCTION_LOOP(x, BODY) \
   VI_LOOP_REDUCTION_BASE(x) \
   BODY; \
-  VI_LOOP_END \
-  vd_0_des = vd_0_res;
+  VI_LOOP_REDUCTION_END(x)
 
 #define VI_VV_LOOP_REDUCTION(BODY) \
-  require(!P.VU.vill);\
   reg_t sew = P.VU.vsew; \
-  if (sew == e8){ \
-      REDUCTION_LOOP(e8, BODY) \
-  }else if(sew == e16){ \
-      REDUCTION_LOOP(e16, BODY) \
-  }else if(sew == e32){ \
-      REDUCTION_LOOP(e32, BODY) \
-  }else if(sew == e64){ \
-      REDUCTION_LOOP(e64, BODY) \
+  if (sew == e8) { \
+    REDUCTION_LOOP(e8, BODY) \
+  } else if(sew == e16) { \
+    REDUCTION_LOOP(e16, BODY) \
+  } else if(sew == e32) { \
+    REDUCTION_LOOP(e32, BODY) \
+  } else if(sew == e64) { \
+    REDUCTION_LOOP(e64, BODY) \
   }
 
 // reduction unsiged loop
@@ -813,28 +820,27 @@ VI_LOOP_END
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  type_usew_t<x>::type &vdu_0_des = P.VU.elt<type_usew_t<x>::type>(rd_num, 0); \
-  type_usew_t<x>::type vdu_0_res = P.VU.elt<type_usew_t<x>::type>(rs1_num, 0); \
+  auto &vd_0_des = P.VU.elt<type_usew_t<x>::type>(rd_num, 0); \
+  auto vd_0_res = P.VU.elt<type_usew_t<x>::type>(rs1_num, 0); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     V_LOOP_ELEMENT_SKIP; \
-    type_usew_t<x>::type vs2u = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
+    auto vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
 
 #define REDUCTION_ULOOP(x, BODY) \
   VI_ULOOP_REDUCTION_BASE(x) \
   BODY; \
-  VI_LOOP_END \
-  vdu_0_des = vdu_0_res;
+  VI_LOOP_REDUCTION_END(x)
 
 #define VI_VV_ULOOP_REDUCTION(BODY) \
   reg_t sew = P.VU.vsew; \
   if (sew == e8){ \
-      REDUCTION_ULOOP(e8, BODY) \
-  }else if(sew == e16){ \
-      REDUCTION_ULOOP(e16, BODY) \
-  }else if(sew == e32){ \
-      REDUCTION_ULOOP(e32, BODY) \
-  }else if(sew == e64){ \
-      REDUCTION_ULOOP(e64, BODY) \
+    REDUCTION_ULOOP(e8, BODY) \
+  } else if(sew == e16) { \
+    REDUCTION_ULOOP(e16, BODY) \
+  } else if(sew == e32) { \
+    REDUCTION_ULOOP(e32, BODY) \
+  } else if(sew == e64) { \
+    REDUCTION_ULOOP(e64, BODY) \
   }
 
 #define VI_VX_ULOOP(BODY) \
