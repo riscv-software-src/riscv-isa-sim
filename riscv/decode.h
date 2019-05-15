@@ -479,6 +479,8 @@ enum VMUNARY0{
 
 #define VI_LOOP_END \
   } \
+  uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl); \
+  memset(tail, 0, (P.VU.vlmax - vl) * (sew >> 3)); \
   P.VU.vstart = 0;
 
 #define VI_LOOP_CMP_END \
