@@ -370,6 +370,17 @@ enum VMUNARY0{
 #define DEBUG_RVV_FMA_VF 0
 #endif
 
+#define STRIP(inx) \
+    reg_t elems_per_strip = P.VU.get_slen()/P.VU.vsew; \
+    reg_t elems_per_vreg = P.VU.get_vlen()/P.VU.vsew; \
+    assert(inx>=0 && inx<=P.VU.vlmul * elems_per_vreg); \
+    reg_t elems_per_lane = P.VU.vlmul * elems_per_strip; \
+    reg_t strip_index = (inx % elems_per_vreg) / elems_per_strip; \
+    reg_t lmul_inx = (inx / elems_per_vreg); \
+    reg_t index_in_strip = (inx % elems_per_vreg) % elems_per_strip; \
+    reg_t mmu_inx = lmul_inx * elems_per_strip + index_in_strip + strip_index * elems_per_lane;
+
+
 #define V_CHECK_MASK(do_mask) \
   if (insn.v_vm() == 0) { \
     int midx = (P.VU.vmlen * i) / 64; \
@@ -479,7 +490,7 @@ enum VMUNARY0{
 
 #define VI_LOOP_END \
   } \
-  uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl); \
+  uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * (sew >> 3)); \
   memset(tail, 0, (P.VU.vlmax - vl) * (sew >> 3)); \
   P.VU.vstart = 0;
 
