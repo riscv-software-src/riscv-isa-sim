@@ -396,7 +396,7 @@ enum VMUNARY0{
     bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
     if (skip) \
       continue; \
-  } \
+  } 
 
 #define VI_NARROW_CHECK_COMMON \
   require(P.VU.vlmul <= 4); \
@@ -486,7 +486,7 @@ enum VMUNARY0{
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
-    V_LOOP_ELEMENT_SKIP; \
+    V_LOOP_ELEMENT_SKIP; 
 
 #define VI_LOOP_END \
   } \
