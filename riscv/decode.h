@@ -1054,17 +1054,16 @@ VI_LOOP_END
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  type_sew_t<sew2>::type &vd_0_des = P.VU.elt<type_sew_t<sew2>::type>(rd_num, 0); \
-  type_sew_t<sew2>::type vd_0_res = P.VU.elt<type_sew_t<sew2>::type>(rs1_num, 0); \
+  auto &vd_0_des = P.VU.elt<type_sew_t<sew2>::type>(rd_num, 0); \
+  auto vd_0_res = P.VU.elt<type_sew_t<sew2>::type>(rs1_num, 0); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     V_LOOP_ELEMENT_SKIP; \
-    type_sew_t<sew1>::type vs2 = P.VU.elt<type_sew_t<sew1>::type>(rs2_num, i);
+    auto vs2 = P.VU.elt<type_sew_t<sew1>::type>(rs2_num, i);
 
 #define WIDE_REDUCTION_LOOP(sew1, sew2, BODY) \
   VI_LOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
   BODY; \
-  VI_LOOP_END \
-  vd_0_des = vd_0_res;
+  VI_LOOP_REDUCTION_END(sew2)
 
 #define VI_VV_LOOP_WIDE_REDUCTION(BODY) \
   require(!P.VU.vill);\
@@ -1085,17 +1084,16 @@ VI_LOOP_END
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  type_sew_t<sew2>::type &vd_0_des = P.VU.elt<type_sew_t<sew2>::type>(rd_num, 0); \
-  type_sew_t<sew2>::type vd_0_res = P.VU.elt<type_sew_t<sew2>::type>(rs1_num, 0); \
-  for (reg_t i=P.VU.vstart; i<vl; ++i){ \
+  auto &vd_0_des = P.VU.elt<type_usew_t<sew2>::type>(rd_num, 0); \
+  auto vd_0_res = P.VU.elt<type_usew_t<sew2>::type>(rs1_num, 0); \
+  for (reg_t i=P.VU.vstart; i<vl; ++i) { \
     V_LOOP_ELEMENT_SKIP; \
-    type_sew_t<sew1>::type vs2 = P.VU.elt<type_sew_t<sew1>::type>(rs2_num, i);
+    auto vs2 = P.VU.elt<type_usew_t<sew1>::type>(rs2_num, i);
 
 #define WIDE_REDUCTION_ULOOP(sew1, sew2, BODY) \
   VI_ULOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
   BODY; \
-  VI_LOOP_END \
-  vd_0_des = vd_0_res;
+  VI_LOOP_REDUCTION_END(sew2)
 
 #define VI_VV_ULOOP_WIDE_REDUCTION(BODY) \
   require(!P.VU.vill);\
