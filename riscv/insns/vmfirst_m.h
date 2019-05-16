@@ -15,6 +15,7 @@ for (reg_t i=p->VU.vstart; i<vl; ++i){
   bool vs2_lsb = ((p->VU.elt<uint32_t>(rs2_num, midx ) >> mpos) & 0x1) == 1;
   if (vs2_lsb) {
     pos = i;
+    break;
   }
 }
 p->VU.vstart = 0;
