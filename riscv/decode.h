@@ -1217,6 +1217,17 @@ VI_LOOP_END
   P.VU.vstart = 0; \
   set_fp_exceptions;
 
+#define VF_LOOP_REDUCTION_END(x) \
+  } \
+  P.VU.vstart = 0; \
+  set_fp_exceptions; \
+  if (vl > 0) { \
+    P.VU.elt<type_sew_t<x>::type>(rd_num, 0) = vd_0.v; \
+    for (reg_t i = 1; i < P.VU.VLEN / x; ++i) { \
+       P.VU.elt<type_sew_t<x>::type>(rd_num, i) = 0; \
+    } \
+  }
+
 #define VF_LOOP_CMP_END \
     switch(P.VU.vsew) { \
     case 32: { \
@@ -1266,16 +1277,14 @@ VI_LOOP_END
   BODY; \
   vd = i == 0? vd: 0;\
   DEBUG_RVV_FP_VV; \
-  VF_LOOP_END  \
-  P.VU.elt<float32_t>(rd_num, 0) = vd_0;
+  VF_LOOP_REDUCTION_END(e32)
 
 #define VFP_VV_LOOP_WIDE_REDUCTION(BODY) \
   VF_LOOP_WIDE_REDUCTION_BASE \
   float64_t vs2 = f64(P.VU.elt<float32_t>(rs2_num, i).v); \
   BODY; \
   DEBUG_RVV_FP_VV; \
-  VF_LOOP_END  \
-  P.VU.elt<float64_t>(rd_num, 0) = vd_0;
+  VF_LOOP_REDUCTION_END(e64)
 
 #define VFP_VF_LOOP(BODY) \
   VF_LOOP_BASE \
