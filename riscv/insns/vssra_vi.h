@@ -2,6 +2,7 @@
 VRM xrm = p->VU.get_vround_mode();
 VI_VI_LOOP
 ({
-  INT_ROUNDING(vs2, xrm, sew);
-  vd = vs2 >> (simm5 & ((1u << log2(sew)) - 1) & 0x1f);
+  uint64_t v2 = simm5;
+  INT_ROUNDING(v2, xrm, sew);
+  vd = v2 >> (simm5 & 0x1f);
 })
