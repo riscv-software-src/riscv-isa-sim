@@ -887,14 +887,14 @@ disassembler_t::disassembler_t(int xlen)
 
   //OPMVV/OPMVX
   //0b00_0000
-  DISASM_OPIV_V___INSN(vredsum,   1);
-  DISASM_OPIV_V___INSN(vredand,   1);
-  DISASM_OPIV_V___INSN(vredor,    1);
-  DISASM_OPIV_V___INSN(vredxor,   1);
-  DISASM_OPIV_V___INSN(vredminu,  0);
-  DISASM_OPIV_V___INSN(vredmin,   1);
-  DISASM_OPIV_V___INSN(vredmaxu,  0);
-  DISASM_OPIV_V___INSN(vredmax,   1);
+  DISASM_OPIV_S___INSN(vredsum,   1);
+  DISASM_OPIV_S___INSN(vredand,   1);
+  DISASM_OPIV_S___INSN(vredor,    1);
+  DISASM_OPIV_S___INSN(vredxor,   1);
+  DISASM_OPIV_S___INSN(vredminu,  0);
+  DISASM_OPIV_S___INSN(vredmin,   1);
+  DISASM_OPIV_S___INSN(vredmaxu,  0);
+  DISASM_OPIV_S___INSN(vredmax,   1);
   DISASM_INSN("vext.x.v", vext_x_v, 0, {&xrd, &vs2, &xrs1});
   DISASM_INSN("vmv.s.x", vmv_s_x, 0, {&vd, &xrs1});
   DISASM_OPIV__X__INSN(vslide1up,  1);

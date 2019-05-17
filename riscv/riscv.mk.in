@@ -368,14 +368,14 @@ riscv_insn_ext_v_alu_int = \
 	vor_vi \
 	vor_vv \
 	vor_vx \
-	vredand_vv \
-	vredmax_vv \
-	vredmaxu_vv \
-	vredmin_vv \
-	vredminu_vv \
-	vredor_vv \
-	vredsum_vv \
-	vredxor_vv \
+	vredand_vs \
+	vredmax_vs \
+	vredmaxu_vs \
+	vredmin_vs \
+	vredminu_vs \
+	vredor_vs \
+	vredsum_vs \
+	vredxor_vs \
 	vrem_vv \
 	vrem_vx \
 	vremu_vv \
@@ -485,7 +485,6 @@ riscv_insn_ext_v_alu_int = \
 	vxor_vi \
 	vxor_vv \
 	vxor_vx \
-
 riscv_insn_ext_v_alu_fp = \
 	vfadd_vf \
 	vfadd_vv \
