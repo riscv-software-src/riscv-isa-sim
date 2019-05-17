@@ -477,7 +477,7 @@ enum VMUNARY0{
     uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx); \
     uint64_t res = 0;
 
-#define VI_LOOP_BASE \
+#define VI_GENERAL_LOOP_BASE \
   require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64); \
   require(!P.VU.vill);\
   reg_t vl = P.VU.vl; \
@@ -486,6 +486,9 @@ enum VMUNARY0{
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
+
+#define VI_LOOP_BASE \
+    VI_GENERAL_LOOP_BASE \
     V_LOOP_ELEMENT_SKIP; 
 
 #define VI_LOOP_END \
@@ -523,35 +526,42 @@ enum VMUNARY0{
   } \
   P.VU.vstart = 0;
 
+#define VXI_PARAMS(x) \
+    type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i); \
+    type_sew_t<x>::type vs1 = P.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
+    type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
+    type_sew_t<x>::type rs1 = (type_sew_t<x>::type)RS1; \
+    type_sew_t<x>::type simm5 = (type_sew_t<x>::type)insn.v_simm5(); 
+
 #define VV_U_PARAMS(x) \
     type_usew_t<x>::type &vd = P.VU.elt<type_usew_t<x>::type>(rd_num, i); \
     type_usew_t<x>::type vs1 = P.VU.elt<type_usew_t<x>::type>(rs1_num, i); \
-    type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i); \
+    type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i); 
 
 #define VX_U_PARAMS(x) \
     type_usew_t<x>::type &vd = P.VU.elt<type_usew_t<x>::type>(rd_num, i); \
     type_usew_t<x>::type rs1 = (type_usew_t<x>::type)RS1; \
-    type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i); \
+    type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i); 
 
 #define VI_U_PARAMS(x) \
     type_usew_t<x>::type &vd = P.VU.elt<type_usew_t<x>::type>(rd_num, i); \
     type_usew_t<x>::type simm5 = (type_usew_t<x>::type)insn.v_zimm5(); \
-    type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i); \
+    type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i); 
 
 #define VV_PARAMS(x) \
     type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i); \
     type_sew_t<x>::type vs1 = P.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
-    type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
+    type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); 
 
 #define VX_PARAMS(x) \
     type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i); \
     type_sew_t<x>::type rs1 = (type_sew_t<x>::type)RS1; \
-    type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
+    type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); 
 
 #define VI_PARAMS(x) \
     type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i); \
     type_sew_t<x>::type simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
-    type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
+    type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); 
 
 #define XV_PARAMS(x) \
     type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i); \
@@ -702,6 +712,24 @@ VI_LOOP_END
             BODY; \
   } \
   VI_LOOP_CMP_END
+
+#define VI_VVXI_MERGE_LOOP(BODY) \
+  VI_GENERAL_LOOP_BASE \
+  if (sew == e8){ \
+            VXI_PARAMS(e8); \
+            BODY; \
+  }else if(sew == e16){ \
+            VXI_PARAMS(e16); \
+            BODY; \
+  }else if(sew == e32){ \
+            VXI_PARAMS(e32); \
+            BODY; \
+  }else if(sew == e64){ \
+            VXI_PARAMS(e64); \
+            BODY; \
+  } \
+  VI_LOOP_END 
+
 
 #define VI_VV_LOOP(BODY) \
   VI_LOOP_BASE \
