@@ -485,6 +485,7 @@ riscv_insn_ext_v_alu_int = \
 	vxor_vi \
 	vxor_vv \
 	vxor_vx \
+
 riscv_insn_ext_v_alu_fp = \
 	vfadd_vf \
 	vfadd_vv \
