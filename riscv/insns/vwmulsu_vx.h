@@ -1,6 +1,6 @@
 // vwmulsu vd, vs2, vs1
 VI_WIDE_CHECK_TWO;
-VI_VX_LOOP
+VI_VX_LOOP_WIDEN
 ({
   switch(p->VU.vsew) {
   case e8:

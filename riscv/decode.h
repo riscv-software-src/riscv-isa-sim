@@ -380,7 +380,6 @@ enum VMUNARY0{
     reg_t index_in_strip = (inx % elems_per_vreg) % elems_per_strip; \
     reg_t mmu_inx = lmul_inx * elems_per_strip + index_in_strip + strip_index * elems_per_lane;
 
-
 #define V_CHECK_MASK(do_mask) \
   if (insn.v_vm() == 0) { \
     int midx = (P.VU.vmlen * i) / 64; \
@@ -485,7 +484,7 @@ enum VMUNARY0{
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  for (reg_t i=P.VU.vstart; i<vl; ++i){ \
+  for (reg_t i=P.VU.vstart; i<vl; ++i){ 
 
 #define VI_LOOP_BASE \
     VI_GENERAL_LOOP_BASE \
@@ -493,9 +492,16 @@ enum VMUNARY0{
 
 #define VI_LOOP_END \
   } \
-  uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * (sew >> 3)); \
-  memset(tail, 0, (P.VU.vlmax - vl) * (sew >> 3)); \
+  uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 1)); \
+  memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 1)); \
   P.VU.vstart = 0;
+
+#define VI_LOOP_WIDEN_END \
+  } \
+  uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 2)); \
+  memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 2)); \
+  P.VU.vstart = 0;
+
 
 #define VI_LOOP_CMP_END \
     vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
@@ -730,7 +736,6 @@ VI_LOOP_END
   } \
   VI_LOOP_END 
 
-
 #define VI_VV_LOOP(BODY) \
   VI_LOOP_BASE \
   if (sew == e8){ \
@@ -747,6 +752,23 @@ VI_LOOP_END
             BODY; \
   } \
   VI_LOOP_END 
+
+#define VI_VV_LOOP_WIDEN(BODY) \
+  VI_LOOP_BASE \
+  if (sew == e8){ \
+            VV_PARAMS(e8); \
+            BODY; \
+  }else if(sew == e16){ \
+            VV_PARAMS(e16); \
+            BODY; \
+  }else if(sew == e32){ \
+            VV_PARAMS(e32); \
+            BODY; \
+  }else if(sew == e64){ \
+            VV_PARAMS(e64); \
+            BODY; \
+  } \
+  VI_LOOP_WIDEN_END 
 
 // reduction loop
 #define VI_LOOP_REDUCTION_BASE(x) \
@@ -829,6 +851,22 @@ VI_LOOP_END
   } \
   VI_LOOP_END 
 
+#define VI_VX_LOOP_WIDEN(BODY) \
+  VI_LOOP_BASE \
+  if (sew == e8){ \
+            VX_PARAMS(e8); \
+            BODY; \
+  }else if(sew == e16){ \
+            VX_PARAMS(e16); \
+            BODY; \
+  }else if(sew == e32){ \
+            VX_PARAMS(e32); \
+            BODY; \
+  }else if(sew == e64){ \
+            VX_PARAMS(e64); \
+            BODY; \
+  } \
+  VI_LOOP_WIDEN_END 
 
 #define VI_VX_LOOP(BODY) \
   VI_LOOP_BASE \
@@ -1165,6 +1203,8 @@ VI_LOOP_END
 
 #define VF_LOOP_END \
   } \
+  uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((P.VU.vsew >> 3) * 1)); \
+  memset(tail, 0, (P.VU.vlmax - vl) * ((P.VU.vsew >> 3) * 1)); \
   P.VU.vstart = 0; \
   set_fp_exceptions;
 
@@ -1180,9 +1220,7 @@ VI_LOOP_END
       softfloat_exceptionFlags = 1; \
       break; \
     }; \
-  } \
-  P.VU.vstart = 0; \
-  set_fp_exceptions;
+  VF_LOOP_END
 
 #define VFMA_VV_LOOP(BODY)                      \
   VF_LOOP_BASE \
