@@ -48,21 +48,23 @@ for (reg_t i = p->VU.vstart; i < vl; ++i) {
 }
 
 //zero unfilled part
-for (reg_t i = vl; i < p->VU.vlmax; ++i) {
-  for (reg_t fn = 0; fn < nf; ++fn) {
-    switch (sew) {
-    case e8:
-      p->VU.elt<uint8_t>(vd + fn, i) = 0;
-      break;
-    case e16:
-      p->VU.elt<uint16_t>(vd + fn, i) = 0;
-      break;
-    case e32:
-      p->VU.elt<uint32_t>(vd + fn, i) = 0;
-      break;
-    case e64:
-      p->VU.elt<uint32_t>(vd + fn, i) = 0;
-      break;
+if (vl != 0){
+  for (reg_t i = vl; i < p->VU.vlmax; ++i) {
+    for (reg_t fn = 0; fn < nf; ++fn) {
+      switch (sew) {
+        case e8:
+          p->VU.elt<uint8_t>(vd + fn, i) = 0;
+          break;
+        case e16:
+          p->VU.elt<uint16_t>(vd + fn, i) = 0;
+          break;
+        case e32:
+          p->VU.elt<uint32_t>(vd + fn, i) = 0;
+          break;
+        case e64:
+          p->VU.elt<uint32_t>(vd + fn, i) = 0;
+          break;
+      }
     }
   }
 }

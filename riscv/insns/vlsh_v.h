@@ -22,14 +22,16 @@ for (reg_t i = p->VU.vstart; i < vl; ++i) {
 }
 
 //zero unfilled part
-for (reg_t i = vl; i < p->VU.vlmax; ++i) {
-  for (reg_t fn = 0; fn < nf; ++fn) {
-    if (p->VU.vsew == e16) {
-      p->VU.elt<uint16_t>(vd + fn, i) = 0;
-    } else if (p->VU.vsew == e32) {
-      p->VU.elt<uint32_t>(vd + fn, i) = 0;
-    } else {
-      p->VU.elt<uint64_t>(vd + fn, i) = 0;
+if (vl != 0){
+  for (reg_t i = vl; i < p->VU.vlmax; ++i) {
+    for (reg_t fn = 0; fn < nf; ++fn) {
+      if (p->VU.vsew == e16) {
+        p->VU.elt<uint16_t>(vd + fn, i) = 0;
+      } else if (p->VU.vsew == e32) {
+        p->VU.elt<uint32_t>(vd + fn, i) = 0;
+      } else {
+        p->VU.elt<uint64_t>(vd + fn, i) = 0;
+      }
     }
   }
 }
