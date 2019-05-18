@@ -2,7 +2,7 @@
 VRM xrm = p->VU.get_vround_mode();
 uint64_t int_max = (1 << (p->VU.vsew - 1)) - 1;
 uint64_t unsigned_mask = ~(-1 << (p->VU.vsew - 1));
-VI_VV_LOOP_NARROW
+VI_VVXI_LOOP_NARROW
 ({
  uint64_t result = vs2;
  uint64_t sign = vs2 & ((uint64_t)1 << (sew*2 - 1));
@@ -16,7 +16,7 @@ VI_VV_LOOP_NARROW
   result = (sign >> sew) | int_max;
   p->VU.vxsat = 1;
  } else if (sign > 0){
-  result = vsext(result|sign, sew);
+  result = vsext(result|(sign >> sew), sew);
  }
  vd = result;
 })
