@@ -382,7 +382,10 @@ enum VMUNARY0{
 
 #ifdef RISCV_ENABLE_1905_CHECK
 #define VI_CHECK_1905 \
-  fprintf(stderr, "unsupported in 1905\n");
+  extern bool g_check_1905; \
+  if (g_check_1905) { \
+    fprintf(stderr, "unsupported in 1905\n"); \
+  };
 #else
 #define VI_CHECK_1905 \
   while (0);

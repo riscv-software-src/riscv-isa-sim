@@ -92,6 +92,10 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
   return res;
 }
 
+extern "C" {
+extern bool g_check_1905;
+};
+
 int main(int argc, char** argv)
 {
   bool debug = false;
@@ -154,6 +158,7 @@ int main(int argc, char** argv)
   parser.option(0, "varch", 1, [&](const char* s){varch = s;});
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
+  parser.option(0, "check-1905", 0, [&](const char *s){g_check_1905 = true;});
   parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
