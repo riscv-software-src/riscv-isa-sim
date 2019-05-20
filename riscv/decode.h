@@ -492,14 +492,18 @@ enum VMUNARY0{
 
 #define VI_LOOP_END \
   } \
-  uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 1)); \
-  memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 1)); \
+  if (insn.v_vm() == 0) { \
+    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 1)); \
+    memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 1)); \
+  }\
   P.VU.vstart = 0;
 
 #define VI_LOOP_WIDEN_END \
   } \
-  uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 2)); \
-  memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 2)); \
+  if (insn.v_vm() == 0) { \
+    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 2)); \
+    memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 2)); \
+  }\
   P.VU.vstart = 0;
 
 
@@ -578,9 +582,8 @@ enum VMUNARY0{
     type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i); \
     type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i + off);
 
-#define XI_SLIDEUP_PARAMS(x, off) \
-    type_sew_t<x>::type rs1 = (type_sew_t<x>::type)RS1; \
-    type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i + off); \
+#define XI_SLIDEUP_PARAMS(x, offset) \
+    type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, offset); \
     type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
 
 #define VI_VV_LOOP_NARROW(BODY) \
@@ -1203,8 +1206,10 @@ VI_LOOP_END
 
 #define VF_LOOP_END \
   } \
-  uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((P.VU.vsew >> 3) * 1)); \
-  memset(tail, 0, (P.VU.vlmax - vl) * ((P.VU.vsew >> 3) * 1)); \
+  if (insn.v_vm() == 0) { \
+    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((P.VU.vsew >> 3) * 1)); \
+    memset(tail, 0, (P.VU.vlmax - vl) * ((P.VU.vsew >> 3) * 1)); \
+  }\
   P.VU.vstart = 0; \
   set_fp_exceptions;
 
