@@ -4665,7 +4665,7 @@ if test "${enable_1905_check+set}" = set; then :
   enableval=$enable_1905_check;
 fi
 
-if test "x$enable_1905_check" = "xyes"; then :
+if test "x$enable_1905_check" != "xno"; then :
 
 
 $as_echo "#define RISCV_ENABLE_1905_CHECK /**/" >>confdefs.h
