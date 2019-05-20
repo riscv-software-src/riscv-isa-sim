@@ -380,6 +380,14 @@ enum VMUNARY0{
     reg_t index_in_strip = (inx % elems_per_vreg) % elems_per_strip; \
     reg_t mmu_inx = lmul_inx * elems_per_strip + index_in_strip + strip_index * elems_per_lane;
 
+#ifdef RISCV_ENABLE_1905_CHECK
+#define VI_CHECK_1905 \
+  fprintf(stderr, "unsupported in 1905\n");
+#else
+#define VI_CHECK_1905 \
+  while (0);
+#endif
+
 #define V_CHECK_MASK(do_mask) \
   if (insn.v_vm() == 0) { \
     int midx = (P.VU.vmlen * i) / 64; \
