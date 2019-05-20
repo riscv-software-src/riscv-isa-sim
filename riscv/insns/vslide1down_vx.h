@@ -26,4 +26,3 @@ VI_LOOP_BASE
     }
   }
 VI_LOOP_END
-

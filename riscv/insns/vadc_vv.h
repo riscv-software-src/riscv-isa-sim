@@ -12,3 +12,4 @@ VI_VV_LOOP
   carry = (res >> sew) & 0x1u;
   v0 = (v0 & ~mmask) | ((carry << mpos) & mmask);
 })
+VI_CHECK_1905

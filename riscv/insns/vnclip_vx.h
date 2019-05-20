@@ -20,3 +20,4 @@ VI_VX_LOOP
 	}
     vd = result;
 })
+VI_CHECK_1905

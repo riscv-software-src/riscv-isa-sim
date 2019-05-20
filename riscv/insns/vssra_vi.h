@@ -6,3 +6,4 @@ VI_VI_LOOP
   INT_ROUNDING(v2, xrm, sew);
   vd = v2 >> (simm5 & 0x1f);
 })
+VI_CHECK_1905

@@ -11,3 +11,4 @@ VFP_VVF_LOOP_WIDE
     softfloat_exceptionFlags = 1;
   };
 })
+VI_CHECK_1905

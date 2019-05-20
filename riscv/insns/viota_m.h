@@ -49,3 +49,4 @@ for (reg_t i = 0 ; i < P.VU.vlmax; ++i) {
   if (has_one)
     cnt++;
 }
+VI_CHECK_1905

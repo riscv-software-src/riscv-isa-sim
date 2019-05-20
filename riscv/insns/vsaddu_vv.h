@@ -9,3 +9,4 @@ VI_VV_ULOOP
 
   p->VU.vxsat |= sat;
 })
+VI_CHECK_1905

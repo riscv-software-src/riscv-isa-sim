@@ -18,4 +18,3 @@ VI_LOOP_BASE
     vd = vs2;
   }
 VI_LOOP_END
-

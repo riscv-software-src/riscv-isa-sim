@@ -28,3 +28,4 @@ for (reg_t i = p->VU.vstart; i < vl; ++i) {
   }
 }
 p->VU.vstart = 0;
+VI_CHECK_1905

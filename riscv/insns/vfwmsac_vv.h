@@ -12,3 +12,4 @@ VFP_VVF_LOOP_WIDE
     break;
   };
 })
+VI_CHECK_1905

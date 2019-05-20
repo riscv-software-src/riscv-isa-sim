@@ -28,3 +28,4 @@ for (reg_t i = 0 ; i < P.VU.vlmax; ++i) {
     vd = (vd & ~mmask) | ((res << mpos) & mmask);
   }
 }
+VI_CHECK_1905

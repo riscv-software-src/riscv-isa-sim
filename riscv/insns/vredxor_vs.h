@@ -3,3 +3,4 @@ VI_VV_LOOP_REDUCTION
 ({
   vd_0_res ^= vs2;
 })
+VI_CHECK_1905

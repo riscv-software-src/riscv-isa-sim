@@ -6,3 +6,4 @@ VI_VX_LOOP
   INT_ROUNDING(v2, xrm, sew);
   vd = vsext(v2 >> (rs1 & ((2 * sew) - 1)), sew);
 })
+VI_CHECK_1905

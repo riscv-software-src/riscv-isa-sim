@@ -32,3 +32,4 @@ VI_VVXI_LOOP_NARROW
  
  vd = result;
 })
+VI_CHECK_1905

@@ -4,3 +4,4 @@ VI_VX_LOOP_WIDEN
 ({
   V_WIDE_OP_AND_ASSIGN(vs2, rs1, 0, +, +, uint);
 })
+VI_CHECK_1905

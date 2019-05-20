@@ -26,3 +26,4 @@ for (reg_t i = 0 ; i < P.VU.vl; ++i) {
     break;
   }
 }
+VI_CHECK_1905

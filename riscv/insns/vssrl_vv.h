@@ -6,3 +6,4 @@ VI_VV_ULOOP
   INT_ROUNDING(v2, xrm, 1);
   vd = vzext(v2 >> (vs1 & (2 * sew - 1)), sew);
 })
+VI_CHECK_1905

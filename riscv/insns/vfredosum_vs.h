@@ -3,3 +3,4 @@ VFP_VV_LOOP_REDUCTION
 ({
   vd_0 = f32_add(vd_0, vs2);
 })
+VI_CHECK_1905

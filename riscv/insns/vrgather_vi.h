@@ -41,3 +41,4 @@ for (reg_t i = vl; i < P.VU.vlmax; ++i) {
      break;
    }
 }
+VI_CHECK_1905
