@@ -613,10 +613,9 @@ enum VMUNARY0{
     type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i); \
     type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, RS1);
 
-#define XI_SLIDEDOWN_PARAMS(x, off) \
-    type_sew_t<x>::type rs1 = (type_sew_t<x>::type)RS1; \
-    type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i); \
-    type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i + off);
+#define VI_XI_SLIDEDOWN_PARAMS(x, off) \
+    auto &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i); \
+    auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i + off);
 
 #define XI_SLIDEUP_PARAMS(x, offset) \
     type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, offset); \

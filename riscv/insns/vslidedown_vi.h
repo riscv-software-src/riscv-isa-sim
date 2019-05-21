@@ -1,20 +1,33 @@
 // vslidedown.vi vd, vs2, rs1
 VI_LOOP_BASE
-  const uint32_t uimm5 = insn.v_zimm5();
-  if (i + uimm5 >= P.VU.vlmax)
-    continue;
+  const reg_t sh = insn.v_zimm5() & (P.VU.vlmax - 1);
+  bool is_valid = (i + sh) < P.VU.vlmax;
+  reg_t offset = 0;
 
-  if (sew == e8) {
-    XI_SLIDEDOWN_PARAMS(e8, uimm5);
-    vd = vs2;
-  } else if(sew == e16) {
-    XI_SLIDEDOWN_PARAMS(e16, uimm5);
-    vd = vs2;
-  } else if(sew == e32) {
-    XI_SLIDEDOWN_PARAMS(e32, uimm5);
-    vd = vs2;
-  } else if(sew == e64) {
-    XI_SLIDEDOWN_PARAMS(e64, uimm5);
-    vd = vs2;
+  if (is_valid) {
+    offset = sh;
+  }
+
+  switch (sew) {
+  case e8: {
+    VI_XI_SLIDEDOWN_PARAMS(e8, offset);
+    vd = is_valid ? vs2 : 0;
+    }
+    break;
+  case e16: {
+    VI_XI_SLIDEDOWN_PARAMS(e16, offset);
+    vd = is_valid ? vs2 : 0;
+    }
+    break;
+  case e32: {
+    VI_XI_SLIDEDOWN_PARAMS(e32, offset);
+    vd = is_valid ? vs2 : 0;
+    }
+    break;
+  default: {
+    VI_XI_SLIDEDOWN_PARAMS(e64, offset);
+    vd = is_valid ? vs2 : 0;
+    }
+    break;
   }
 VI_LOOP_END
