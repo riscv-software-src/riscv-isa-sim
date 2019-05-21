@@ -1265,7 +1265,20 @@ VI_LOOP_END
       softfloat_exceptionFlags = 1; \
       break; \
     }; \
-  VF_LOOP_END
+  } \
+  if (vl != 0){ \
+    for (reg_t i=vl; i<P.VU.vlmax; ++i){ \
+      const int mlen = P.VU.vmlen; \
+      const int midx = (mlen * i) / 64; \
+      const int mpos = (mlen * i) % 64; \
+      uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
+      uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx); \
+      vdi = (vdi & ~mmask);\
+    }\
+  }\
+  P.VU.vstart = 0; \
+  set_fp_exceptions;
+
 
 #define VFMA_VV_LOOP(BODY)                      \
   VF_LOOP_BASE \
