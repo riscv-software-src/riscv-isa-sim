@@ -473,20 +473,6 @@ enum VMUNARY0{
     break; \
   }
 
-#define VI_LOOP_CMP_BASE \
-  require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64); \
-  require(!P.VU.vill);\
-  reg_t vl = P.VU.vl; \
-  reg_t sew = P.VU.vsew; \
-  reg_t rd_num = insn.rd(); \
-  reg_t rs1_num = insn.rs1(); \
-  reg_t rs2_num = insn.rs2(); \
-  for (reg_t i=P.VU.vstart; i<vl; ++i){ \
-    V_LOOP_ELEMENT_SKIP; \
-    uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
-    uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx); \
-    uint64_t res = 0;
-
 #define VI_GENERAL_LOOP_BASE \
   require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64); \
   require(!P.VU.vill);\
@@ -531,12 +517,32 @@ enum VMUNARY0{
     } \
   }
 
+#define VI_LOOP_CMP_BASE \
+  require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64); \
+  require(!P.VU.vill);\
+  reg_t vl = P.VU.vl; \
+  reg_t sew = P.VU.vsew; \
+  reg_t rd_num = insn.rd(); \
+  reg_t rs1_num = insn.rs1(); \
+  reg_t rs2_num = insn.rs2(); \
+  for (reg_t i=P.VU.vstart; i<vl; ++i){ \
+    V_LOOP_ELEMENT_SKIP; \
+    uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
+    uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx); \
+    uint64_t res = 0;
+
 #define VI_LOOP_CMP_END \
     vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
   } \
   if (vl != 0){ \
-    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 1)); \
-    memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 1)); \
+    for (reg_t i=vl; i<P.VU.vlmax; ++i){ \
+      const int mlen = P.VU.vmlen; \
+      const int midx = (mlen * i) / 64; \
+      const int mpos = (mlen * i) % 64; \
+      uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
+      uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx); \
+      vdi = (vdi & ~mmask);\
+    }\
   }\
   P.VU.vstart = 0;
 
