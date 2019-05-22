@@ -1,6 +1,6 @@
 // vslidedown.vi vd, vs2, rs1
 VI_LOOP_BASE
-  const reg_t sh = insn.v_zimm5() & (P.VU.vlmax - 1);
+  const reg_t sh = insn.v_zimm5();
   bool is_valid = (i + sh) < P.VU.vlmax;
   reg_t offset = 0;
 
