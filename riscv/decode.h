@@ -491,7 +491,7 @@ enum VMUNARY0{
 
 #define VI_LOOP_END \
   } \
-  if (vl != 0 && TAIL_ZEROING){ \
+  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
     uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 1)); \
     memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 1)); \
   }\
@@ -503,7 +503,7 @@ enum VMUNARY0{
 
 #define VI_LOOP_WIDEN_END \
   } \
-  if (vl != 0 && TAIL_ZEROING){ \
+  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
     uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 2)); \
     memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 2)); \
   }\
@@ -536,7 +536,7 @@ enum VMUNARY0{
 #define VI_LOOP_CMP_END \
     vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
   } \
-  if (vl != 0){ \
+  if (vl != 0 && vl < P.VU.vlmax){ \
     for (reg_t i=vl; i<P.VU.vlmax; ++i){ \
       const int mlen = P.VU.vmlen; \
       const int midx = (mlen * i) / 64; \
@@ -1236,7 +1236,7 @@ VI_LOOP_END
 
 #define VF_LOOP_END \
   } \
-  if (vl != 0 && TAIL_ZEROING){ \
+  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
     uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((P.VU.vsew >> 3) * 1)); \
     memset(tail, 0, (P.VU.vlmax - vl) * ((P.VU.vsew >> 3) * 1)); \
   }\
