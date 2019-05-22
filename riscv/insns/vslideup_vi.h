@@ -1,6 +1,6 @@
 // vslideup.vi vd, vs2, rs1
 VI_LOOP_BASE
-  const reg_t offset = insn.v_zimm5() & (P.VU.vlmax - 1);
+  const reg_t offset = insn.v_zimm5();
   if (P.VU.vstart < offset && i < offset)
     continue;
 
