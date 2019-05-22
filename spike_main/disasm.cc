@@ -910,7 +910,7 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN("vmiota.m", vmiota_m, 0, {&vd, &vs2, &opt, &vm});
   DISASM_INSN("vid.v", vid_v, 0, {&vd, &opt, &vm});
 
-  DISASM_INSN("vcompress.vm", vcompress_vm, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vcompress.vm", vcompress_vm, 0, {&vd, &vs2, &vs1});
 
   DISASM_OPIV_M___INSN(vmandnot,  1);
   DISASM_OPIV_M___INSN(vmand,     1);
