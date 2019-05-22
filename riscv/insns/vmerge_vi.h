@@ -11,5 +11,5 @@ VI_VVXI_MERGE_LOOP
   }
   
   use_first = (insn.v_vm() == 1) || do_mask;
-  vd = use_first ? simm5 : vs2;
+  vd = use_first ? vzext(simm5, 5) : vs2;
 })

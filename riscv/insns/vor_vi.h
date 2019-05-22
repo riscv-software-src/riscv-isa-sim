@@ -1,6 +1,6 @@
 // vor
 VI_VI_LOOP
 ({
-    vd = sext_xlen(simm5 | vs2);
+    vd = vsext(vzext(simm5, 5) | vs2, sew);
 })
 VI_CHECK_1905
