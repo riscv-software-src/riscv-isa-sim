@@ -1,21 +1,30 @@
 //vslideup.vx vd, vs2, rs1
 VI_LOOP_BASE
-  const uint32_t offset = i + RS1;
-  if (offset >= P.VU.vlmax)
+  const reg_t offset = RS1 & (P.VU.vlmax - 1);
+  if (P.VU.vstart < offset && i < offset)
     continue;
 
-  if (sew == e8) {
-    XI_SLIDEUP_PARAMS(e8, offset);
+  switch (sew) {
+  case e8: {
+    VI_XI_SLIDEUP_PARAMS(e8, offset);
     vd = vs2;
-  } else if(sew == e16) {
-    XI_SLIDEUP_PARAMS(e16, offset);
+    }
+    break;
+  case e16: {
+    VI_XI_SLIDEUP_PARAMS(e16, offset);
     vd = vs2;
-  } else if(sew == e32) {
-    XI_SLIDEUP_PARAMS(e32, offset);
+    }
+    break;
+  case e32: {
+    VI_XI_SLIDEUP_PARAMS(e32, offset);
     vd = vs2;
-  } else if(sew == e64) {
-    XI_SLIDEUP_PARAMS(e64, offset);
+    }
+    break;
+  default: {
+    VI_XI_SLIDEUP_PARAMS(e64, offset);
     vd = vs2;
+    }
+    break;
   }
 VI_LOOP_END
 VI_CHECK_1905

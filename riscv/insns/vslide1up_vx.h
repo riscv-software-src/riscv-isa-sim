@@ -2,16 +2,16 @@
 VI_LOOP_BASE
   if (i != 0) {
     if (sew == e8) {
-      XI_SLIDEUP_PARAMS(e8, 1);
+      VI_XI_SLIDEUP_PARAMS(e8, 1);
       vd = vs2;
     } else if(sew == e16) {
-      XI_SLIDEUP_PARAMS(e16, 1);
+      VI_XI_SLIDEUP_PARAMS(e16, 1);
       vd = vs2;
     } else if(sew == e32) {
-      XI_SLIDEUP_PARAMS(e32, 1);
+      VI_XI_SLIDEUP_PARAMS(e32, 1);
       vd = vs2;
     } else if(sew == e64) {
-      XI_SLIDEUP_PARAMS(e64, 1);
+      VI_XI_SLIDEUP_PARAMS(e64, 1);
       vd = vs2;
     }
   } else {

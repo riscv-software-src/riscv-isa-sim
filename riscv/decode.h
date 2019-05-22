@@ -617,9 +617,9 @@ enum VMUNARY0{
     auto &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i); \
     auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i + off);
 
-#define XI_SLIDEUP_PARAMS(x, offset) \
-    type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, offset); \
-    type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
+#define VI_XI_SLIDEUP_PARAMS(x, offset) \
+    auto &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i); \
+    auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i - offset);
 
 #define VI_VV_LOOP_NARROW(BODY) \
 VI_NARROW_CHECK_COMMON; \
