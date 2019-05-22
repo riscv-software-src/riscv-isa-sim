@@ -65,6 +65,8 @@ const int NCSR = 4096;
 #define MAX_INSN_LENGTH 8
 #define PC_ALIGN 2
 
+#define TAIL_ZEROING true
+
 typedef uint64_t insn_bits_t;
 class insn_t
 {
@@ -489,7 +491,7 @@ enum VMUNARY0{
 
 #define VI_LOOP_END \
   } \
-  if (vl != 0){ \
+  if (vl != 0 && TAIL_ZEROING){ \
     uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 1)); \
     memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 1)); \
   }\
@@ -501,7 +503,7 @@ enum VMUNARY0{
 
 #define VI_LOOP_WIDEN_END \
   } \
-  if (vl != 0){ \
+  if (vl != 0 && TAIL_ZEROING){ \
     uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 2)); \
     memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 2)); \
   }\
@@ -509,13 +511,13 @@ enum VMUNARY0{
 
 #define VI_LOOP_REDUCTION_END(x) \
   } \
-  P.VU.vstart = 0; \
   if (vl > 0) { \
     vd_0_des = vd_0_res; \
-    for (reg_t i = 1; i < P.VU.VLEN / sew; ++i) { \
+    for (reg_t i = 1; i < P.VU.vlmax; ++i) { \
       P.VU.elt<type_sew_t<x>::type>(rd_num, i) = 0; \
     } \
-  }
+  } \
+  P.VU.vstart = 0; 
 
 #define VI_LOOP_CMP_BASE \
   require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64); \
@@ -560,7 +562,7 @@ enum VMUNARY0{
     res = (res & ~mmask) | ((op) & mmask); \
   } \
   \
-  for (reg_t i = vl; i < P.VU.vlmax; ++i) { \
+  for (reg_t i = vl; i < P.VU.vlmax && i > 0; ++i) { \
     int mlen = P.VU.vmlen; \
     int midx = (mlen * i) / 64; \
     int mpos = (mlen * i) % 64; \
@@ -1235,7 +1237,7 @@ VI_LOOP_END
 
 #define VF_LOOP_END \
   } \
-  if (vl != 0){ \
+  if (vl != 0 && TAIL_ZEROING){ \
     uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((P.VU.vsew >> 3) * 1)); \
     memset(tail, 0, (P.VU.vlmax - vl) * ((P.VU.vsew >> 3) * 1)); \
   }\
@@ -1246,7 +1248,7 @@ VI_LOOP_END
   } \
   P.VU.vstart = 0; \
   set_fp_exceptions; \
-  if (vl > 0) { \
+  if (vl > 0 && TAIL_ZEROING) { \
     P.VU.elt<type_sew_t<x>::type>(rd_num, 0) = vd_0.v; \
     for (reg_t i = 1; i < P.VU.VLEN / x; ++i) { \
        P.VU.elt<type_sew_t<x>::type>(rd_num, i) = 0; \
@@ -1266,7 +1268,7 @@ VI_LOOP_END
       break; \
     }; \
   } \
-  if (vl != 0){ \
+  if (vl != 0 && TAIL_ZEROING){ \
     for (reg_t i=vl; i<P.VU.vlmax; ++i){ \
       const int mlen = P.VU.vmlen; \
       const int midx = (mlen * i) / 64; \
