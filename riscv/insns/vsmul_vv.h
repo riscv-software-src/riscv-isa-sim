@@ -17,7 +17,7 @@ VI_VV_ULOOP
 
     result_sign = vs1_sign ^ vs2_sign;
 	// rounding
-	INT_ROUNDING(result, xrm, sew);
+	INT_ROUNDING(result, xrm, sew - 1);
     uint64_t after_sign_bits = (result & (0x3llu << ((sew * 2) - 2)));
 
     // unsigned shifting to rs1
