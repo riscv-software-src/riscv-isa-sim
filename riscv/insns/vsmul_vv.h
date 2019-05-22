@@ -1,6 +1,6 @@
 // vsmul: Signed saturating and rounding fractional multiply
 VRM xrm = p->VU.get_vround_mode();
-int64_t int_max = (1 << p->VU.vsew) - 1;
+int64_t int_max = (1 << (p->VU.vsew - 1)) - 1;
 int64_t int_min = - (1 << (p->VU.vsew - 1));
 int64_t sign_mask = ((1 << (p->VU.vsew - 1)));
 
@@ -13,18 +13,18 @@ VI_VV_ULOOP
 	vs1_sign = vs1 & sign_mask;
 	vs2_sign = vs2 & sign_mask;
     uint64_t result = vzext((uint64_t)vs1 * (uint64_t)vs2, sew * 2);
-    uint64_t sign_bits = (result & (0x3 << ((sew * 2) - 2))) >> ((sew * 2) - 2);
+    uint64_t sign_bits = (result & (0x3llu << ((sew * 2) - 2)));
 
     result_sign = vs1_sign ^ vs2_sign;
 	// rounding
 	INT_ROUNDING(result, xrm, sew);
-    uint64_t after_sign_bits = (result & (0x3 << ((sew * 2) - 2))) >> ((sew * 2) - 2);
+    uint64_t after_sign_bits = (result & (0x3llu << ((sew * 2) - 2)));
 
     // unsigned shifting to rs1
     result = result >> (sew - 1);
 
     // saturation
-	if (sign_bits != after_sign_bits){
+	if (sign_bits != after_sign_bits || ((-1ll << sew) & result) != 0){
 		if (result_sign == 0){ // positive
 			result = int_max;
 		}else{
