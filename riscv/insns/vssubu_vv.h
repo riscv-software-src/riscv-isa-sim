@@ -6,7 +6,6 @@ VI_LOOP_BASE
   case e8: {
     VV_U_PARAMS(e8);
     vd = sat_subu<uint8_t>(vs2, vs1, sat);
-    printf("%x   %x   %x   %x\n", vs2, vs1, vd, sat);
     break;
     }
   case e16: {
