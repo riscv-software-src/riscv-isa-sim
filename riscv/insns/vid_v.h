@@ -6,9 +6,8 @@ reg_t sew = p->VU.vsew;
 reg_t rd_num = insn.rd();
 reg_t rs1_num = insn.rs1();
 reg_t rs2_num = insn.rs2();
-require(p->VU.vstart == 0);
 
-for (reg_t i = 0 ; i < P.VU.vl; ++i) {
+for (reg_t i = P.VU.vstart ; i < P.VU.vl; ++i) {
   V_LOOP_ELEMENT_SKIP;
 
   switch (sew) {
@@ -26,4 +25,7 @@ for (reg_t i = 0 ; i < P.VU.vl; ++i) {
     break;
   }
 }
+
+VI_TAIL_ZERO(1);
+P.VU.vstart = 0;
 VI_CHECK_1905

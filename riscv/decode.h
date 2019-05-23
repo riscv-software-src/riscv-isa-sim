@@ -484,6 +484,12 @@ enum VMUNARY0{
   reg_t rs2_num = insn.rs2(); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ 
 
+#define VI_TAIL_ZERO(elm) \
+  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING) { \
+    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * elm)); \
+    memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * elm)); \
+  }
+
 #define VI_LOOP_BASE \
     VI_GENERAL_LOOP_BASE \
     V_LOOP_ELEMENT_SKIP; 
