@@ -378,9 +378,8 @@ enum VMUNARY0{
     assert(inx>=0 && inx<=P.VU.vlmul * elems_per_vreg); \
     reg_t elems_per_lane = P.VU.vlmul * elems_per_strip; \
     reg_t strip_index = (inx % elems_per_vreg) / elems_per_strip; \
-    reg_t lmul_inx = (inx / elems_per_vreg); \
     reg_t index_in_strip = (inx % elems_per_vreg) % elems_per_strip; \
-    reg_t mmu_inx = lmul_inx * elems_per_strip + index_in_strip + strip_index * elems_per_lane;
+    reg_t mmu_inx = index_in_strip + strip_index * elems_per_lane;
 
 #ifdef RISCV_ENABLE_1905_CHECK
 #define VI_CHECK_1905 \
@@ -513,7 +512,7 @@ enum VMUNARY0{
   } \
   if (vl > 0) { \
     vd_0_des = vd_0_res; \
-    for (reg_t i = 1; i < P.VU.vlmax; ++i) { \
+    for (reg_t i = 1; i < P.VU.get_vlen()/sew; ++i) { \
       P.VU.elt<type_sew_t<x>::type>(rd_num, i) = 0; \
     } \
   } \
@@ -1249,7 +1248,7 @@ VI_LOOP_END
   set_fp_exceptions; \
   if (vl > 0 && TAIL_ZEROING) { \
     P.VU.elt<type_sew_t<x>::type>(rd_num, 0) = vd_0.v; \
-    for (reg_t i = 1; i < P.VU.VLEN / x; ++i) { \
+    for (reg_t i = 1; i < (P.VU.VLEN / P.VU.vsew); ++i) { \
        P.VU.elt<type_sew_t<x>::type>(rd_num, i) = 0; \
     } \
   }
@@ -1314,7 +1313,6 @@ VI_LOOP_END
   VF_LOOP_REDUCTION_BASE \
   float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
   BODY; \
-  vd = i == 0? vd: 0;\
   DEBUG_RVV_FP_VV; \
   VF_LOOP_REDUCTION_END(e32)
 

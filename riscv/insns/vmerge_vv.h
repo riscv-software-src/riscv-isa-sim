@@ -4,6 +4,9 @@ bool use_first = false;
 
 VI_VVXI_MERGE_LOOP
 ({
+  do_mask = false;
+  use_first = false;
+
   if (insn.v_vm() == 0) {
     int midx = (p->VU.vmlen * i) / 32;
     int mpos = (p->VU.vmlen * i) % 32;
