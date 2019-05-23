@@ -514,6 +514,14 @@ enum VMUNARY0{
   }\
   P.VU.vstart = 0;
 
+#define VI_LOOP_SLIDE_END(x) \
+  } \
+  if (vl != 0 && (vl + x) < P.VU.vlmax && TAIL_ZEROING){ \
+    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, (vl + x) * ((sew >> 3) * 1)); \
+    memset(tail, 0, (P.VU.vlmax - (vl + x)) * ((sew >> 3) * 1)); \
+  }\
+  P.VU.vstart = 0;
+
 #define VI_LOOP_END_NO_TAIL_ZERO \
   } \
   P.VU.vstart = 0;
@@ -982,22 +990,7 @@ VI_LOOP_END
   const int gb = sew1 / 2; \
   VRM vrm = P.VU.get_vround_mode(); \
   res = (int##sew2##_t)(int##sew1##_t)vs2 * (int##sew2##_t)(int##sew1##_t)opd; \
-  switch(vrm) { \
-  case VRM::RNU: \
-    res += 1ul << (gb - 1); \
-    break; \
-  case VRM::RNE: \
-    if (((res >> (gb - 1)) & 0x3) == 0x3) \
-      res += 1ul << (gb - 1); \
-    break; \
-  case VRM::ROD: \
-    res |= (1ul << gb); \
-    break; \
-  default: \
-    require(false); \
-    break; \
-  } \
-  \
+  INT_ROUNDING(res, vrm, gb); \
   res = res >> gb; \
   if (add) \
     vd = sat_add<int##sew2##_t, uint##sew2##_t>(vd, res, sat); \
@@ -1017,7 +1010,7 @@ VI_LOOP_END
   } else if(sew == e32){ \
     VI_WIDE_SSMA(32, 64, add, opd); \
   } \
-  VI_LOOP_END
+  VI_LOOP_WIDEN_END
 
 #define VI_WIDE_USSMA(sew1, sew2, add, opd) \
   type_usew_t<sew2>::type &vd = P.VU.elt<type_usew_t<sew2>::type>(rd_num, i); \
@@ -1029,21 +1022,7 @@ VI_LOOP_END
   const int gb = sew1 / 2; \
   VRM vrm = P.VU.get_vround_mode(); \
   res = (uint##sew2##_t)(uint##sew1##_t)vs2 * (uint##sew2##_t)(uint##sew1##_t)opd; \
-  switch(vrm) { \
-  case VRM::RNU: \
-    res += 1ul << (gb - 1); \
-    break; \
-  case VRM::RNE: \
-    if (((res >> (gb - 1)) & 0x3) == 0x3) \
-      res += 1ul << (gb - 1); \
-    break; \
-  case VRM::ROD: \
-    res |= (1ul << gb); \
-    break; \
-  default: \
-    require(false); \
-    break; \
-  } \
+  INT_ROUNDING(res, vrm, gb); \
   \
   res = res >> gb; \
   if (add) \
@@ -1064,7 +1043,7 @@ VI_LOOP_END
   } else if(sew == e32){ \
     VI_WIDE_USSMA(32, 64, add, opd); \
   } \
-  VI_LOOP_END
+  VI_LOOP_WIDEN_END
 
 #define VI_NARROW_SHIFT(sew1, sew2) \
   type_usew_t<sew1>::type &vd = P.VU.elt<type_usew_t<sew1>::type>(rd_num, i); \
