@@ -490,6 +490,18 @@ enum VMUNARY0{
     memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * elm)); \
   }
 
+#define VI_TAIL_ZERO_MASK \
+  if (vl != 0 && TAIL_ZEROING){ \
+    for (reg_t i=vl; i<P.VU.vlmax; ++i){ \
+      const int mlen = P.VU.vmlen; \
+      const int midx = (mlen * i) / 64; \
+      const int mpos = (mlen * i) % 64; \
+      uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
+      uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx); \
+      vdi = (vdi & ~mmask);\
+    }\
+  }\
+
 #define VI_LOOP_BASE \
     VI_GENERAL_LOOP_BASE \
     V_LOOP_ELEMENT_SKIP; 
