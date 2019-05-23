@@ -1,6 +1,6 @@
 //vslideup.vx vd, vs2, rs1
+const reg_t offset = RS1;
 VI_LOOP_BASE
-  const reg_t offset = RS1;
   if (P.VU.vstart < offset && i < offset)
     continue;
 
@@ -26,5 +26,5 @@ VI_LOOP_BASE
     }
     break;
   }
-VI_LOOP_END
+VI_LOOP_SLIDE_END(offset)
 VI_CHECK_1905
