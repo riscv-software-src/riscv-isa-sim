@@ -6,35 +6,30 @@ int64_t sign_mask = ((1 << (p->VU.vsew - 1)));
 
 VI_VX_ULOOP
 ({
-    int64_t vs1_sign;
-    int64_t vs2_sign;
-    int64_t result_sign;
+ int64_t rs1_sign;
+ int64_t vs2_sign;
+ int64_t result_sign;
 
-	vs1_sign = rs1 & sign_mask;
-	vs2_sign = vs2 & sign_mask;
-    uint64_t result = vzext((uint64_t)rs1 * (uint64_t)vs2, sew * 2);
-    uint64_t sign_bits = (result & (0x3llu << ((sew * 2) - 2)));
+ rs1_sign = rs1 & sign_mask;
+ vs2_sign = vs2 & sign_mask;
+ bool overflow = rs1 == vs2 && rs1 == int_min;
 
-    result_sign = vs1_sign ^ vs2_sign;
-	// rounding
-	INT_ROUNDING(result, xrm, sew - 1);
-    uint64_t after_sign_bits = (result & (0x3llu << ((sew * 2) - 2)));
+ uint64_t result = vzext((uint64_t)rs1 * (uint64_t)vs2, sew * 2);
+ result &= (1llu << ((sew * 2) - 2)) - 1;
+ result_sign = rs1_sign ^ vs2_sign;
+ // rounding
+ INT_ROUNDING(result, xrm, sew - 1);
 
-    // unsigned shifting to rs1
-    result = result >> (sew - 1);
+ // unsigned shifting
+ result = result >> (sew - 1);
 
-    // saturation
-	if (sign_bits != after_sign_bits || ((-1ll << sew) & result) != 0){
-		if (result_sign == 0){ // positive
-			result = int_max;
-		}else{
-			result = int_min;
-		}
-        p->VU.vxsat = 1;
-    }else{
-	  result |= result_sign;
-    }
-    vd = result;
-
+ // saturation
+ if (overflow){
+   result = int_max;
+   p->VU.vxsat = 1;
+ }else{
+   result |= result_sign;
+ }
+ vd = result;
 })
 VI_CHECK_1905
