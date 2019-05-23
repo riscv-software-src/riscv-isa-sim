@@ -6,7 +6,7 @@ reg_t sew = p->VU.vsew;
 reg_t rd_num = insn.rd();
 reg_t rs1_num = insn.rs1();
 reg_t rs2_num = insn.rs2();
-for (reg_t i = P.VU.vstart ; i < vl; ++i) {
+for (reg_t i = P.VU.vstart; i < vl; ++i) {
   V_LOOP_ELEMENT_SKIP;
 
   switch (sew) {
@@ -33,20 +33,6 @@ for (reg_t i = P.VU.vstart ; i < vl; ++i) {
   }
 }
 
-for (reg_t i = vl; i < P.VU.vlmax; ++i) {
-   switch (sew) {
-   case e8:
-     P.VU.elt<uint8_t>(rd_num, i) = 0;
-     break;
-   case e16:
-     P.VU.elt<uint16_t>(rd_num, i) = 0;
-     break;
-   case e32:
-     P.VU.elt<uint32_t>(rd_num, i) = 0;
-     break;
-   default:
-     P.VU.elt<uint64_t>(rd_num, i) = 0;
-     break;
-   }
-}
+VI_TAIL_ZERO(1);
+P.VU.vstart = 0;
 VI_CHECK_1905

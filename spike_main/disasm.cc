@@ -840,7 +840,7 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_VXI_INSN(vand,      1);
   DISASM_OPIV_VXI_INSN(vor,       1);
   DISASM_OPIV_VXI_INSN(vxor,      1);
-  DISASM_OPIV_VXI_INSN(vrgather,  1);
+  DISASM_OPIV_VXI_INSN(vrgather,  0);
   DISASM_OPIV__XI_INSN(vslideup,  1);
   DISASM_OPIV__XI_INSN(vslidedown,1);
 
