@@ -30,6 +30,6 @@ for (reg_t i = P.VU.vstart ; i < vl; ++i) {
   }
 }
 
-VI_TAIL_ZERO_MASK;
+VI_TAIL_ZERO_MASK(rd_num);
 p->VU.vstart = 0;
 VI_CHECK_1905
