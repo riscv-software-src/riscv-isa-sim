@@ -8,7 +8,7 @@ reg_t rd_num = insn.rd();
 reg_t rs1_num = insn.rs1();
 reg_t rs2_num = insn.rs2();
 reg_t pos = 0;
-for (reg_t i = 0 ; i < vl; ++i) {
+for (reg_t i = P.VU.vstart ; i < vl; ++i) {
   const int mlen = p->VU.vmlen;
   const int midx = (mlen * i) / 64;
   const int mpos = (mlen * i) % 64;
@@ -34,7 +34,7 @@ for (reg_t i = 0 ; i < vl; ++i) {
   }
 }
 
-if (vl > 0) {
+if (vl > 0 && TAIL_ZEROING) {
   uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, pos * ((sew >> 3) * 1));
   memset(tail, 0, (P.VU.vlmax - pos) * ((sew >> 3) * 1));
 }
