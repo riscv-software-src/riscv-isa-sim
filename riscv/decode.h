@@ -65,7 +65,11 @@ const int NCSR = 4096;
 #define MAX_INSN_LENGTH 8
 #define PC_ALIGN 2
 
-#define TAIL_ZEROING true
+#ifndef TAIL_ZEROING
+  #define TAIL_ZEROING true
+#else
+  #define TAIL_ZEROING false
+#endif
 
 typedef uint64_t insn_bits_t;
 class insn_t
@@ -516,9 +520,9 @@ enum VMUNARY0{
 
 #define VI_LOOP_SLIDE_END(x) \
   } \
-  if (vl != 0 && (vl + x) < P.VU.vlmax && TAIL_ZEROING){ \
-    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, (vl + x) * ((sew >> 3) * 1)); \
-    memset(tail, 0, (P.VU.vlmax - (vl + x)) * ((sew >> 3) * 1)); \
+  if (vl != 0 && vl > x && TAIL_ZEROING){ \
+    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 1)); \
+    memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 1)); \
   }\
   P.VU.vstart = 0;
 
