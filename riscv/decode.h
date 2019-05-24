@@ -396,13 +396,6 @@ enum VMUNARY0{
   while (0);
 #endif
 
-#define V_CHECK_MASK(do_mask) \
-  if (insn.v_vm() == 0) { \
-    int midx = (P.VU.vmlen * i) / 64; \
-    int mpos = (P.VU.vmlen * i) % 64; \
-    do_mask = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1; \
-  }
-
 #define V_LOOP_ELEMENT_SKIP \
   const int mlen = P.VU.vmlen; \
   const int midx = (mlen * i) / 64; \
