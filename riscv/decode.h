@@ -561,16 +561,7 @@ enum VMUNARY0{
 #define VI_LOOP_CMP_END \
     vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
   } \
-  if (vl != 0 && vl < P.VU.vlmax){ \
-    for (reg_t i=vl; i<P.VU.vlmax; ++i){ \
-      const int mlen = P.VU.vmlen; \
-      const int midx = (mlen * i) / 64; \
-      const int mpos = (mlen * i) % 64; \
-      uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
-      uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx); \
-      vdi = (vdi & ~mmask);\
-    }\
-  }\
+  VI_TAIL_ZERO_MASK(rd_num); \
   P.VU.vstart = 0;
 
 #define VI_LOOP_MASK(op) \
