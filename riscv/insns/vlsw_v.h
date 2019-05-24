@@ -20,7 +20,7 @@ for (reg_t i = p->VU.vstart; i < vl; ++i) {
 }
 
 //zero unfilled part
-if (vl != 0){
+if (vl != 0 && TAIL_ZEROING){
   for (reg_t i = vl; i < p->VU.vlmax; ++i) {
     for (reg_t fn = 0; fn < nf; ++fn) {
       if (p->VU.vsew == e32) {
