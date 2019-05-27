@@ -525,11 +525,10 @@ enum VMUNARY0{
 
 #define VI_LOOP_REDUCTION_END(x) \
   } \
-  if (vl > 0) { \
+  if (vl > 0 && TAIL_ZEROING) { \
     vd_0_des = vd_0_res; \
-    for (reg_t i = 1; i < P.VU.get_vlen()/sew; ++i) { \
-      P.VU.elt<type_sew_t<x>::type>(rd_num, i) = 0; \
-    } \
+    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, 1 * ((sew >> 3) * 2)); \
+    memset(tail, 0, (P.VU.vlmax - 1) * ((sew >> 3) * 2)); \
   } \
   P.VU.vstart = 0; 
 
@@ -1057,10 +1056,10 @@ VI_LOOP_END
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   auto &vd_0_des = P.VU.elt<type_sew_t<sew2>::type>(rd_num, 0); \
-  auto vd_0_res = P.VU.elt<type_sew_t<sew2>::type>(rs1_num, 0); \
+  type_sew_t<sew2>::type vd_0_res = P.VU.elt<type_sew_t<sew1>::type>(rs1_num, 0); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     V_LOOP_ELEMENT_SKIP; \
-    auto vs2 = P.VU.elt<type_sew_t<sew1>::type>(rs2_num, i);
+    auto vs2 = P.VU.elt<type_sew_t<sew2>::type>(rs2_num, i);
 
 #define WIDE_REDUCTION_LOOP(sew1, sew2, BODY) \
   VI_LOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
@@ -1087,10 +1086,10 @@ VI_LOOP_END
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   auto &vd_0_des = P.VU.elt<type_usew_t<sew2>::type>(rd_num, 0); \
-  auto vd_0_res = P.VU.elt<type_usew_t<sew2>::type>(rs1_num, 0); \
+  type_sew_t<sew2>::type vd_0_res = P.VU.elt<type_usew_t<sew1>::type>(rs1_num, 0); \
   for (reg_t i=P.VU.vstart; i<vl; ++i) { \
     V_LOOP_ELEMENT_SKIP; \
-    auto vs2 = P.VU.elt<type_usew_t<sew1>::type>(rs2_num, i);
+    auto vs2 = P.VU.elt<type_usew_t<sew2>::type>(rs2_num, i);
 
 #define WIDE_REDUCTION_ULOOP(sew1, sew2, BODY) \
   VI_ULOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
