@@ -527,8 +527,8 @@ enum VMUNARY0{
   } \
   if (vl > 0 && TAIL_ZEROING) { \
     vd_0_des = vd_0_res; \
-    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, 1 * ((sew >> 3) * 2)); \
-    memset(tail, 0, (P.VU.vlmax - 1) * ((sew >> 3) * 2)); \
+    uint8_t *tail = (uint8_t *)&P.VU.elt<type_sew_t<x>::type>(rd_num, 1); \
+    memset(tail, 0, (P.VU.get_vlen() - x) >> 3); \
   } \
   P.VU.vstart = 0; 
 
