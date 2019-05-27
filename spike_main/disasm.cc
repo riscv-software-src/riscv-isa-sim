@@ -866,12 +866,12 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_VXI_INSN(vsll,      1);
   DISASM_OPIV_VX__INSN(vasub,     1);
   DISASM_OPIV_VX__INSN(vsmul,     1);
-  DISASM_OPIV_VXI_INSN(vsrl,      1);
-  DISASM_OPIV_VXI_INSN(vsra,      1);
-  DISASM_OPIV_VXI_INSN(vssrl,     1);
-  DISASM_OPIV_VXI_INSN(vssra,     1);
-  DISASM_OPIV_VXI_INSN(vnsrl,     1);
-  DISASM_OPIV_VXI_INSN(vnsra,     1);
+  DISASM_OPIV_VXI_INSN(vsrl,      0);
+  DISASM_OPIV_VXI_INSN(vsra,      0);
+  DISASM_OPIV_VXI_INSN(vssrl,     0);
+  DISASM_OPIV_VXI_INSN(vssra,     0);
+  DISASM_OPIV_VXI_INSN(vnsrl,     0);
+  DISASM_OPIV_VXI_INSN(vnsra,     0);
   DISASM_OPIV_VXI_INSN(vnclipu,   0);
   DISASM_OPIV_VXI_INSN(vnclip,    1);
 
