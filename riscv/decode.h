@@ -960,15 +960,15 @@ VI_LOOP_END
   VI_LOOP_END 
 
 #define VI_WIDE_SSMA(sew1, sew2, add, opd) \
-  type_sew_t<sew2>::type &vd = P.VU.elt<type_sew_t<sew2>::type>(rd_num, i); \
-  type_sew_t<sew1>::type vs1 = P.VU.elt<type_sew_t<sew1>::type>(rs1_num, i); \
-  type_sew_t<sew1>::type vs2 = P.VU.elt<type_sew_t<sew1>::type>(rs2_num, i); \
-  type_sew_t<sew1>::type rs1 = (type_sew_t<sew1>::type)RS1; \
+  auto &vd = P.VU.elt<type_sew_t<sew2>::type>(rd_num, i); \
+  auto vs1 = P.VU.elt<type_sew_t<sew1>::type>(rs1_num, i); \
+  auto vs2 = P.VU.elt<type_sew_t<sew1>::type>(rs2_num, i); \
+  auto rs1 = (type_sew_t<sew1>::type)RS1; \
   int##sew2##_t res; \
   bool sat = false; \
   const int gb = sew1 / 2; \
   VRM vrm = P.VU.get_vround_mode(); \
-  res = (int##sew2##_t)(int##sew1##_t)vs2 * (int##sew2##_t)(int##sew1##_t)opd; \
+  res = (int##sew2##_t)vs2 * (int##sew2##_t)opd; \
   INT_ROUNDING(res, vrm, gb); \
   res = res >> gb; \
   if (add) \
@@ -978,9 +978,7 @@ VI_LOOP_END
   P.VU.vxsat |= sat;
 
 #define VI_VVX_LOOP_WIDE_SSMA(add, opd) \
-  require(P.VU.vlmul <= 4); \
-  require(P.VU.vsew * 2 <= P.VU.ELEN); \
-  require(insn.rd() + P.VU.vlmul <= 32); \
+  VI_WIDE_CHECK_COMMON \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VI_WIDE_SSMA(8, 16, add, opd); \
@@ -992,15 +990,15 @@ VI_LOOP_END
   VI_LOOP_WIDEN_END
 
 #define VI_WIDE_USSMA(sew1, sew2, add, opd) \
-  type_usew_t<sew2>::type &vd = P.VU.elt<type_usew_t<sew2>::type>(rd_num, i); \
-  type_usew_t<sew1>::type vs1 = P.VU.elt<type_usew_t<sew1>::type>(rs1_num, i); \
-  type_usew_t<sew1>::type vs2 = P.VU.elt<type_usew_t<sew1>::type>(rs2_num, i); \
-  type_usew_t<sew1>::type rs1 = (type_usew_t<sew1>::type)RS1; \
+  auto &vd = P.VU.elt<type_usew_t<sew2>::type>(rd_num, i); \
+  auto vs1 = P.VU.elt<type_usew_t<sew1>::type>(rs1_num, i); \
+  auto vs2 = P.VU.elt<type_usew_t<sew1>::type>(rs2_num, i); \
+  auto rs1 = (type_usew_t<sew1>::type)RS1; \
   uint##sew2##_t res; \
   bool sat = false; \
   const int gb = sew1 / 2; \
   VRM vrm = P.VU.get_vround_mode(); \
-  res = (uint##sew2##_t)(uint##sew1##_t)vs2 * (uint##sew2##_t)(uint##sew1##_t)opd; \
+  res = (uint##sew2##_t)vs2 * (uint##sew2##_t)opd; \
   INT_ROUNDING(res, vrm, gb); \
   \
   res = res >> gb; \
@@ -1011,9 +1009,7 @@ VI_LOOP_END
   P.VU.vxsat |= sat;
 
 #define VI_VVX_LOOP_WIDE_USSMA(add, opd) \
-  require(P.VU.vlmul <= 4); \
-  require(P.VU.vsew * 2 <= P.VU.ELEN); \
-  require(insn.rd() + P.VU.vlmul <= 32); \
+  VI_WIDE_CHECK_COMMON \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VI_WIDE_USSMA(8, 16, add, opd); \
