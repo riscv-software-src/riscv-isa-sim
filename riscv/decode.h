@@ -511,14 +511,6 @@ enum VMUNARY0{
   }\
   P.VU.vstart = 0;
 
-#define VI_LOOP_SLIDE_END(x) \
-  } \
-  if (vl != 0 && vl > x && TAIL_ZEROING){ \
-    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 1)); \
-    memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 1)); \
-  }\
-  P.VU.vstart = 0;
-
 #define VI_LOOP_END_NO_TAIL_ZERO \
   } \
   P.VU.vstart = 0;

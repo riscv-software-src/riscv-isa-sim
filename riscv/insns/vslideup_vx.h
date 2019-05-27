@@ -26,5 +26,5 @@ VI_LOOP_BASE
     }
     break;
   }
-VI_LOOP_SLIDE_END(offset)
+VI_LOOP_END
 VI_CHECK_1905
