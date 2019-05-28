@@ -379,11 +379,12 @@ enum VMUNARY0{
 #define STRIP(inx) \
     reg_t elems_per_strip = P.VU.get_slen()/P.VU.vsew; \
     reg_t elems_per_vreg = P.VU.get_vlen()/P.VU.vsew; \
-    assert(inx>=0 && inx<=P.VU.vlmul * elems_per_vreg); \
+    assert((inx)>=0 && (inx)<=P.VU.vlmul * elems_per_vreg); \
     reg_t elems_per_lane = P.VU.vlmul * elems_per_strip; \
-    reg_t strip_index = (inx % elems_per_vreg) / elems_per_strip; \
-    reg_t index_in_strip = (inx % elems_per_vreg) % elems_per_strip; \
-    reg_t mmu_inx = index_in_strip + strip_index * elems_per_lane;
+    reg_t strip_index = ((inx) % elems_per_vreg) / elems_per_strip; \
+    reg_t index_in_strip = ((inx) % elems_per_vreg) % elems_per_strip; \
+    int32_t lmul_index = (int32_t)((inx) / elems_per_vreg); \
+    reg_t mmu_inx = index_in_strip + lmul_index * elems_per_strip + strip_index * elems_per_lane;
 
 #ifdef RISCV_ENABLE_1905_CHECK
 #define VI_CHECK_1905 \
@@ -400,6 +401,16 @@ enum VMUNARY0{
   const int mlen = P.VU.vmlen; \
   const int midx = (mlen * i) / 64; \
   const int mpos = (mlen * i) % 64; \
+  if (insn.v_vm() == 0) { \
+    bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
+    if (skip) \
+      continue; \
+  } 
+
+#define V_ELEMENT_SKIP(inx) \
+  const int mlen = P.VU.vmlen; \
+  const int midx = (mlen * inx) / 64; \
+  const int mpos = (mlen * inx) % 64; \
   if (insn.v_vm() == 0) { \
     bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
     if (skip) \
