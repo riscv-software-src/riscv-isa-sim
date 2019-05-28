@@ -7,7 +7,7 @@ VI_VV_LOOP
   const uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos);
   uint64_t carry = (v0 >> mpos) & 0x1;
 
-  uint128_t res = vs1 - vs2 - carry;
+  uint128_t res = (uint128_t)vs1 - vs2 - carry;
   vd = res;
 
   carry = (res >> sew) & 0x1u;

@@ -1,13 +1,13 @@
 // vsbc.vx vd, vs2, rs1
 require(insn.v_vm() == 1);
 require(insn.rd() != 0);
-VI_VX_LOOP
+VI_VX_ULOOP
 ({
   auto &v0 = P.VU.elt<uint64_t>(0, midx);
   const uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos);
   uint64_t carry = (v0 >> mpos) & 0x1;
 
-  uint128_t res = rs1 - vs2 - carry;
+  uint128_t res = (uint128_t)rs1 - vs2 - carry;
   vd = res;
 
   carry = (res >> sew) & 0x1u;
