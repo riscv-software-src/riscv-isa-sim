@@ -21,7 +21,10 @@ for (reg_t i = p->VU.vstart; i < vl; ++i) {
       val = p->VU.elt<uint64_t>(vs3 + fn, i);
       break;
     }
-    MMU.store_uint16(baseAddr + (i * nf + fn) * 2, val);
+    STRIP(i * nf + fn)
+    V_ELEMENT_SKIP(mmu_inx);
+
+    MMU.store_uint16(baseAddr + (mmu_inx) * 2, val);
   }
 }
 p->VU.vstart = 0;

@@ -7,8 +7,6 @@ reg_t baseAddr = RS1;
 reg_t stride = RS2;
 reg_t vs3 = insn.rd();
 for (reg_t i = p->VU.vstart; i < vl; ++i) {
-  V_LOOP_ELEMENT_SKIP;
-
   for (reg_t fn = 0; fn < nf; ++fn) {
     uint8_t val = 0;
     switch (p->VU.vsew) {
@@ -25,8 +23,10 @@ for (reg_t i = p->VU.vstart; i < vl; ++i) {
       val = p->VU.elt<uint64_t>(vs3 + fn, i);
       break;
     }
+    STRIP(i * nf + fn)
+    V_ELEMENT_SKIP(mmu_inx);
 
-    MMU.store_uint8(baseAddr + i * stride + fn * 1, val);
+    MMU.store_uint8(baseAddr + mmu_inx * 1, val);
   }
 }
 p->VU.vstart = 0;
