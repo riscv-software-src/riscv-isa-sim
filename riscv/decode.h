@@ -1409,11 +1409,7 @@ VI_LOOP_END
       result = (result >> (gb - 1)) << (gb - 1);\
       break;\
     case VRM::ROD:\
-      if ((result & ((uint64_t)0x3 << (gb - 1))) == 0x1){\
-          result += ((uint64_t)1 << (gb - 1));\
-	  }else if ((result & ((uint64_t)0x3 << (gb - 1))) == 0x3){\
-          result -= ((uint64_t)1 << (gb - 1));\
-      }\
+      result |= ((uint64_t)1ul << gb); \
       break;\
     case VRM::INVALID_RM:\
       assert(true);\
