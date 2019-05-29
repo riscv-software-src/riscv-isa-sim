@@ -24,7 +24,8 @@ class disasm_insn_t
  public:
   disasm_insn_t(const char* name, uint32_t match, uint32_t mask,
                 const std::vector<const arg_t*>& args)
-    : match(match), mask(mask), args(args), name(name) {}
+    : match(match), mask(mask), args(args), name(strdup(name)) {}
+  ~disasm_insn_t() { free(const_cast<char *>(name)); }
 
   bool operator == (insn_t insn) const
   {
