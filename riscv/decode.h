@@ -376,7 +376,7 @@ enum VMUNARY0{
 #define DEBUG_RVV_FMA_VF 0
 #endif
 
-#define STRIP(inx) \
+#define STRIP2(inx) \
     reg_t elems_per_strip = P.VU.get_slen()/P.VU.vsew; \
     reg_t elems_per_vreg = P.VU.get_vlen()/P.VU.vsew; \
     reg_t elems_per_lane = P.VU.vlmul * elems_per_strip; \
@@ -384,6 +384,15 @@ enum VMUNARY0{
     reg_t index_in_strip = ((inx) % elems_per_vreg) % elems_per_strip; \
     int32_t lmul_index = (int32_t)((inx) / elems_per_vreg); \
     reg_t mmu_inx = index_in_strip + lmul_index * elems_per_strip + strip_index * elems_per_lane;
+
+#define STRIP(inx) \
+    reg_t elems_per_strip = P.VU.get_slen()/P.VU.vsew; \
+    reg_t elems_per_vreg = P.VU.get_vlen()/P.VU.vsew; \
+    reg_t elems_per_lane = P.VU.vlmul * elems_per_strip; \
+    reg_t strip_index = (inx) / elems_per_lane; \
+    reg_t index_in_strip = (inx) % elems_per_strip; \
+    int32_t lmul_inx = (int32_t)(((inx) % elems_per_lane) / elems_per_strip); \
+	reg_t vreg_inx = lmul_inx * elems_per_vreg + strip_index * elems_per_strip + index_in_strip;
 
 #ifdef RISCV_ENABLE_1905_CHECK
 #define VI_CHECK_1905 \
@@ -407,14 +416,30 @@ enum VMUNARY0{
   } 
 
 #define V_ELEMENT_SKIP(inx) \
-  const int mlen = P.VU.vmlen; \
-  const int midx = (mlen * (inx)) / 64; \
-  const int mpos = (mlen * (inx)) % 64; \
-  if (insn.v_vm() == 0) { \
-    bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
-    if (skip) \
-      continue; \
-  } 
+  if (inx >= vl && TAIL_ZEROING) { \
+    is_valid = false; \
+  } else if (inx < P.VU.vstart) { \
+    continue; \
+  } else { \
+    const int mlen = P.VU.vmlen; \
+    const int midx = (mlen * (inx)) / 64; \
+    const int mpos = (mlen * (inx)) % 64; \
+    if (insn.v_vm() == 0) { \
+      bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
+      if (skip) \
+        continue; \
+    } \
+  }
+
+#define V_ELEMENT_SKIP2(inx) \
+    const int mlen = P.VU.vmlen; \
+    const int midx = (mlen * (inx)) / 64; \
+    const int mpos = (mlen * (inx)) % 64; \
+    if (insn.v_vm() == 0) { \
+      bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
+      if (skip) \
+        continue; \
+    } \
 
 #define VI_NARROW_CHECK_COMMON \
   require(P.VU.vlmul <= 4); \
