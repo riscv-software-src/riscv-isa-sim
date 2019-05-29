@@ -3,7 +3,6 @@
 #include "disasm.h"
 #include <string>
 #include <vector>
-#include <tuple>
 #include <cstdarg>
 #include <sstream>
 #include <stdlib.h>
