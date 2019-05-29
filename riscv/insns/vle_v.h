@@ -8,27 +8,26 @@ require((nf >= 2 && p->VU.vlmul == 1) || nf == 1);
 reg_t baseAddr = RS1;
 reg_t vd = insn.rd();
 for (reg_t i = p->VU.vstart; i < vl; ++i) {
+  STRIP(i)
+  V_ELEMENT_SKIP(mmu_inx);
 
   for (reg_t fn = 0; fn < nf; ++fn) {
-    STRIP(i * nf + fn)
-    V_ELEMENT_SKIP(mmu_inx);
-
     switch (sew) {
     case e8:
       p->VU.elt<uint8_t>(vd + fn, i) = 
-          MMU.load_int8(baseAddr + (mmu_inx) * elt_byte);
+          MMU.load_int8(baseAddr + (mmu_inx * nf + fn) * elt_byte);
       break;
     case e16:
       p->VU.elt<uint16_t>(vd + fn, i) = 
-          MMU.load_int16(baseAddr + (mmu_inx) * elt_byte);
+          MMU.load_int16(baseAddr + (mmu_inx * nf + fn) * elt_byte);
       break;
     case e32:
       p->VU.elt<uint32_t>(vd + fn, i) = 
-          MMU.load_int32(baseAddr + (mmu_inx) * elt_byte);
+          MMU.load_int32(baseAddr + (mmu_inx * nf + fn) * elt_byte);
       break;
     case e64:
       p->VU.elt<uint64_t>(vd + fn, i) = 
-          MMU.load_int64(baseAddr + (mmu_inx) * elt_byte);
+          MMU.load_int64(baseAddr + (mmu_inx * nf + fn) * elt_byte);
       break;
     }
   }
