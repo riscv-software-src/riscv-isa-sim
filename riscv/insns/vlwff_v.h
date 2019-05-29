@@ -5,16 +5,18 @@ reg_t vl = p->VU.vl;
 reg_t baseAddr = RS1;
 reg_t rd_num = insn.rd();
 bool early_stop = false;
-for (reg_t i = p->VU.vstart; i < vl; ++i) {
+reg_t vlmax = p->VU.vlmax;
+for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
+  bool is_valid = true;
   STRIP(i)
-  V_ELEMENT_SKIP(mmu_inx);
+  V_ELEMENT_SKIP(i);
 
-  int64_t val = MMU.load_int32(baseAddr + mmu_inx * 4);
+  int64_t val = MMU.load_int32(baseAddr + i * 4);
   
   if (p->VU.vsew == e32) {
-    p->VU.elt<uint32_t>(rd_num, i) = val;
+    p->VU.elt<uint32_t>(rd_num, vreg_inx) = is_valid ? val : 0;
   } else {
-    p->VU.elt<uint64_t>(rd_num, i) = val;
+    p->VU.elt<uint64_t>(rd_num, vreg_inx) = is_valid ? val : 0;
   }
 
   if (val == 0) {

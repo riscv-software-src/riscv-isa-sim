@@ -6,13 +6,16 @@ reg_t vl = p->VU.vl;
 reg_t baseAddr = RS1;
 reg_t rd_num = insn.rd();
 bool early_stop = false;
-for (reg_t i = p->VU.vstart; i < vl; ++i) {
-  V_LOOP_ELEMENT_SKIP;
+reg_t vlmax = p->VU.vlmax;
+for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
+  bool is_valid = true;
+  STRIP(i)
+  V_ELEMENT_SKIP(i);
 
   switch (sew) {
   case e8: {
       auto val = MMU.load_int8(baseAddr + i * elt_byte);
-      p->VU.elt<uint8_t>(rd_num, i) = val;
+      p->VU.elt<uint8_t>(rd_num, i) = is_valid ? val : 0;
 
       if (val == 0) {
         early_stop = true;
@@ -21,7 +24,7 @@ for (reg_t i = p->VU.vstart; i < vl; ++i) {
     break;
   case e16: {
       auto val = MMU.load_int16(baseAddr + i * elt_byte);
-      p->VU.elt<uint16_t>(rd_num, i) = val;
+      p->VU.elt<uint16_t>(rd_num, i) = is_valid ? val : 0;
 
       if (val == 0) {
         early_stop = true;
@@ -30,7 +33,7 @@ for (reg_t i = p->VU.vstart; i < vl; ++i) {
     break;
   case e32: {
       auto val = MMU.load_int32(baseAddr + i * elt_byte);
-      p->VU.elt<uint32_t>(rd_num, i) = val;
+      p->VU.elt<uint32_t>(rd_num, i) = is_valid ? val : 0;
 
       if (val == 0) {
         early_stop = true;
@@ -39,7 +42,7 @@ for (reg_t i = p->VU.vstart; i < vl; ++i) {
     break;
   default: {
       auto val = MMU.load_int64(baseAddr + i * elt_byte);
-      p->VU.elt<uint64_t>(rd_num, i) = val;
+      p->VU.elt<uint64_t>(rd_num, i) = is_valid ? val : 0;
 
       if (val == 0) {
         early_stop = true;

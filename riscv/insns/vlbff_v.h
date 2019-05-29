@@ -5,24 +5,26 @@ reg_t vl = p->VU.vl;
 reg_t baseAddr = RS1;
 reg_t rd_num = insn.rd();
 bool early_stop = false;
-for (reg_t i = p->VU.vstart; i < vl; ++i) {
+reg_t vlmax = p->VU.vlmax;
+for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
+  bool is_valid = true;
   STRIP(i)
-  V_ELEMENT_SKIP(mmu_inx);
+  V_ELEMENT_SKIP(i);
 
-  int64_t val = MMU.load_int8(baseAddr + mmu_inx * 1);
+  int64_t val = MMU.load_int8(baseAddr + i * 1);
 
   switch (sew) {
   case e8:
-    p->VU.elt<uint8_t>(rd_num, i) = val;
+    p->VU.elt<uint8_t>(rd_num, vreg_inx) = is_valid ? val : 0;
     break;
   case e16:
-    p->VU.elt<uint16_t>(rd_num, i) = val;
+    p->VU.elt<uint16_t>(rd_num, vreg_inx) = is_valid ? val : 0;
     break;
   case e32:
-    p->VU.elt<uint32_t>(rd_num, i) = val;
+    p->VU.elt<uint32_t>(rd_num, vreg_inx) = is_valid ? val : 0;
     break;
   case e64:
-    p->VU.elt<uint64_t>(rd_num, i) = val;
+    p->VU.elt<uint64_t>(rd_num, vreg_inx) = is_valid ? val : 0;
     break;
   }
 
