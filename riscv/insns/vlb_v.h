@@ -6,12 +6,10 @@ reg_t vl = p->VU.vl;
 reg_t baseAddr = RS1;
 reg_t vd = insn.rd();
 for (reg_t i = p->VU.vstart; i < vl; ++i) {
-
+  STRIP(i)
+  V_ELEMENT_SKIP(mmu_inx);
   for (reg_t fn = 0; fn < nf; ++fn) {
-    STRIP(i * nf + fn)
-    V_ELEMENT_SKIP(mmu_inx);
-
-    int64_t val = MMU.load_int8(baseAddr + (mmu_inx) * 1);
+    int64_t val = MMU.load_int8(baseAddr + (mmu_inx * nf + fn) * 1);
     if (p->VU.vsew == e8) {
       p->VU.elt<uint8_t>(vd + fn, i) = val;
     } else if (p->VU.vsew == e16) {

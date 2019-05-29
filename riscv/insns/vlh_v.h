@@ -6,9 +6,10 @@ reg_t vl = p->VU.vl;
 reg_t baseAddr = RS1;
 reg_t vd = insn.rd();
 for (reg_t i=p->VU.vstart; i<vl; ++i) {
+  STRIP(i)
+  V_ELEMENT_SKIP(mmu_inx);
+
   for (reg_t fn=0; fn<nf; ++fn) {
-    STRIP(i)
-    V_ELEMENT_SKIP(mmu_inx);
     int64_t val = MMU.load_int16(baseAddr + (mmu_inx * nf + fn) * 2);
     if (p->VU.vsew == e16) {
       p->VU.elt<uint16_t>(vd+fn, i) = val;

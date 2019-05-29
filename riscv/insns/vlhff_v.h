@@ -6,9 +6,10 @@ reg_t baseAddr = RS1;
 reg_t rd_num = insn.rd();
 bool early_stop = false;
 for (reg_t i=p->VU.vstart; i<vl; ++i) {
-  V_LOOP_ELEMENT_SKIP;
+  STRIP(i)
+  V_ELEMENT_SKIP(mmu_inx);
 
-  int64_t val = MMU.load_int16(baseAddr + i * 2);
+  int64_t val = MMU.load_int16(baseAddr + mmu_inx * 2);
 
   switch (sew) {
   case e16:

@@ -10,7 +10,6 @@ reg_t stride = RS2;
 reg_t vd = insn.rd();
 for (reg_t i = p->VU.vstart; i < vl; ++i) {
   V_LOOP_ELEMENT_SKIP;
-
   for (reg_t fn = 0; fn < nf; ++fn) {
     switch (sew) {
     case e8:

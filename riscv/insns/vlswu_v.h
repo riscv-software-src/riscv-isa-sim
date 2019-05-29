@@ -7,10 +7,11 @@ reg_t baseAddr = RS1;
 reg_t stride = RS2;
 reg_t vd = insn.rd();
 for (reg_t i = p->VU.vstart; i < vl; ++i) {
-  V_LOOP_ELEMENT_SKIP;
-
   for (reg_t fn = 0; fn < nf; ++fn) {
-    uint64_t val = MMU.load_uint32(baseAddr + i * stride + fn * 4);
+    STRIP(i)
+    V_ELEMENT_SKIP(mmu_inx);
+ 
+    uint64_t val = MMU.load_uint32(baseAddr + mmu_inx * stride + fn * 4);
     if (p->VU.vsew == e32) {
       p->VU.elt<uint32_t>(vd + fn, i) = val;
     } else {
