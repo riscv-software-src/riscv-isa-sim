@@ -656,14 +656,14 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN("vsetvli", vsetvli, 0, {&xrd, &xrs1, &v_vtype});
   DISASM_INSN("vsetvl", vsetvl, 0, {&xrd, &xrs1, &xrs2});
 
-  #define DISASM_VMEM_LD_INSN(name, fmt) \
-    add_insn(new disasm_insn_t("vl" #name "b.v",  match_vl##name##b_v,  mask_vl##name##b_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vl" #name "h.v",  match_vl##name##h_v,  mask_vl##name##h_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vl" #name "w.v",  match_vl##name##w_v,  mask_vl##name##w_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vl" #name "e.v",  match_vl##name##e_v,  mask_vl##name##e_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vl" #name "bu.v", match_vl##name##bu_v, mask_vl##name##bu_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vl" #name "hu.v", match_vl##name##hu_v, mask_vl##name##hu_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vl" #name "wu.v", match_vl##name##wu_v, mask_vl##name##wu_v | mask_nf, fmt));
+  #define DISASM_VMEM_LD_INSN(name, ff, fmt) \
+    add_insn(new disasm_insn_t("vl" #name "b" #ff ".v",  match_vl##name##b##ff##_v,  mask_vl##name##b##ff##_v | mask_nf, fmt)); \
+    add_insn(new disasm_insn_t("vl" #name "h" #ff ".v",  match_vl##name##h##ff##_v,  mask_vl##name##h##ff##_v | mask_nf, fmt)); \
+    add_insn(new disasm_insn_t("vl" #name "w" #ff ".v",  match_vl##name##w##ff##_v,  mask_vl##name##w##ff##_v | mask_nf, fmt)); \
+    add_insn(new disasm_insn_t("vl" #name "e" #ff ".v",  match_vl##name##e##ff##_v,  mask_vl##name##e##ff##_v | mask_nf, fmt)); \
+    add_insn(new disasm_insn_t("vl" #name "bu" #ff ".v", match_vl##name##bu##ff##_v, mask_vl##name##bu##ff##_v | mask_nf, fmt)); \
+    add_insn(new disasm_insn_t("vl" #name "hu" #ff ".v", match_vl##name##hu##ff##_v, mask_vl##name##hu##ff##_v | mask_nf, fmt)); \
+    add_insn(new disasm_insn_t("vl" #name "wu" #ff ".v", match_vl##name##wu##ff##_v, mask_vl##name##wu##ff##_v | mask_nf, fmt));
 
   #define DISASM_VMEM_ST_INSN(name, fmt) \
     add_insn(new disasm_insn_t("vs" #name "b.v", match_vs##name##b_v, mask_vs##name##b_v | mask_nf, fmt)); \
@@ -678,12 +678,13 @@ disassembler_t::disassembler_t(int xlen)
   const std::vector<const arg_t *> v_ld_index = {&vd, &v_address, &vs2, &opt, &vm};
   const std::vector<const arg_t *> v_st_index = {&vs3, &v_address, &vs2, &opt, &vm};
 
-  DISASM_VMEM_LD_INSN(, v_ld_unit);
-  DISASM_VMEM_ST_INSN(, v_st_unit);
-  DISASM_VMEM_LD_INSN(s, v_ld_stride);
-  DISASM_VMEM_ST_INSN(s, v_st_stride);
-  DISASM_VMEM_LD_INSN(x, v_ld_index);
-  DISASM_VMEM_ST_INSN(x, v_st_index);
+  DISASM_VMEM_LD_INSN( ,   , v_ld_unit);
+  DISASM_VMEM_ST_INSN( ,     v_st_unit);
+  DISASM_VMEM_LD_INSN(s,   , v_ld_stride);
+  DISASM_VMEM_ST_INSN(s,     v_st_stride);
+  DISASM_VMEM_LD_INSN(x,   , v_ld_index);
+  DISASM_VMEM_ST_INSN(x,     v_st_index);
+  DISASM_VMEM_LD_INSN( , ff, v_ld_unit);
 
   #undef DISASM_VMEM_LD_INSN
   #undef DISASM_VMEM_ST_INSN
@@ -727,6 +728,13 @@ disassembler_t::disassembler_t(int xlen)
       {match_vsxw_v,  mask_vsxw_v},
       {match_vsxe_v,  mask_vsxw_v},
 
+      {match_vlbff_v,  mask_vlbff_v},
+      {match_vlhff_v,  mask_vlhff_v},
+      {match_vlwff_v,  mask_vlwff_v},
+      {match_vleff_v,  mask_vleff_v},
+      {match_vlbuff_v, mask_vlbuff_v},
+      {match_vlhuff_v, mask_vlhuff_v},
+      {match_vlwuff_v, mask_vlwuff_v},
     };
 
     std::pair<const char *, std::vector<const arg_t*>> fmts[] = { 
@@ -765,6 +773,14 @@ disassembler_t::disassembler_t(int xlen)
       {"vsseg%dh.v", {&vs3, &v_address, &vs2, &opt, &vm}},
       {"vsseg%dw.v", {&vs3, &v_address, &vs2, &opt, &vm}},
       {"vsseg%de.v", {&vs3, &v_address, &vs2, &opt, &vm}},
+
+      {"vlseg%dbff.v", {&vd, &v_address, &opt, &vm}},
+      {"vlseg%dhff.v", {&vd, &v_address, &opt, &vm}},
+      {"vlseg%dwff.v", {&vd, &v_address, &opt, &vm}},
+      {"vlseg%deff.v", {&vd, &v_address, &opt, &vm}},
+      {"vlseg%dwuff.v",{&vd, &v_address, &opt, &vm}},
+      {"vlseg%dhuff.v",{&vd, &v_address, &opt, &vm}},
+      {"vlseg%dbuff.v",{&vd, &v_address, &opt, &vm}},
     };
 
     for (size_t idx_insn = 0; idx_insn < sizeof(insn_code) / sizeof(insn_code[0]); ++idx_insn) {
