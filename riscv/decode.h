@@ -376,15 +376,6 @@ enum VMUNARY0{
 #define DEBUG_RVV_FMA_VF 0
 #endif
 
-#define STRIP2(inx) \
-    reg_t elems_per_strip = P.VU.get_slen()/P.VU.vsew; \
-    reg_t elems_per_vreg = P.VU.get_vlen()/P.VU.vsew; \
-    reg_t elems_per_lane = P.VU.vlmul * elems_per_strip; \
-    reg_t strip_index = ((inx) % elems_per_vreg) / elems_per_strip; \
-    reg_t index_in_strip = ((inx) % elems_per_vreg) % elems_per_strip; \
-    int32_t lmul_index = (int32_t)((inx) / elems_per_vreg); \
-    reg_t mmu_inx = index_in_strip + lmul_index * elems_per_strip + strip_index * elems_per_lane;
-
 #define STRIP(inx) \
     reg_t elems_per_strip = P.VU.get_slen()/P.VU.vsew; \
     reg_t elems_per_vreg = P.VU.get_vlen()/P.VU.vsew; \
