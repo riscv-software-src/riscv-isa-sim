@@ -6,27 +6,30 @@ reg_t vl = p->VU.vl;
 reg_t baseAddr = RS1;
 reg_t stride = RS2;
 reg_t vs3 = insn.rd();
-for (reg_t i = p->VU.vstart; i < vl; ++i) {
+reg_t vlmax = p->VU.vlmax;
+for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
+  bool is_valid = true;
+  V_ELEMENT_SKIP(i);
+  STRIP(i)
+
   for (reg_t fn = 0; fn < nf; ++fn) {
     uint8_t val = 0;
     switch (p->VU.vsew) {
     case e8:
-      val = p->VU.elt<uint8_t>(vs3 + fn, i);
+      val = p->VU.elt<uint8_t>(vs3 + fn, vreg_inx);
       break;
     case e16:
-      val = p->VU.elt<uint16_t>(vs3 + fn, i);
+      val = p->VU.elt<uint16_t>(vs3 + fn, vreg_inx);
       break;
     case e32:
-      val = p->VU.elt<uint32_t>(vs3 + fn, i);
+      val = p->VU.elt<uint32_t>(vs3 + fn, vreg_inx);
       break;
     default:
-      val = p->VU.elt<uint64_t>(vs3 + fn, i);
+      val = p->VU.elt<uint64_t>(vs3 + fn, vreg_inx);
       break;
     }
-    STRIP(i * nf + fn)
-    V_ELEMENT_SKIP(mmu_inx);
 
-    MMU.store_uint8(baseAddr + mmu_inx * 1, val);
+    MMU.store_uint8(baseAddr + i * 1, val);
   }
 }
 p->VU.vstart = 0;

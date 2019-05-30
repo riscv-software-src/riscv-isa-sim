@@ -5,20 +5,24 @@ require((nf >= 2 && p->VU.vlmul == 1) || nf == 1);
 reg_t vl = p->VU.vl;
 reg_t baseAddr = RS1;
 reg_t vs3 = insn.rd();
-for (reg_t i = p->VU.vstart; i < vl; ++i){
+reg_t vlmax = p->VU.vlmax;
+for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
+  bool is_valid = true;
+  STRIP(i)
+  V_ELEMENT_SKIP(i);
+
   for (reg_t fn = 0; fn < nf; ++fn){
     uint32_t val = 0;
     switch (p->VU.vsew) {
     case e32:
-      val = p->VU.elt<uint32_t>(vs3 + fn, i);
+      val = is_valid ? p->VU.elt<uint32_t>(vs3 + fn, vreg_inx) : 0;
       break;
     default:
-      val = p->VU.elt<uint64_t>(vs3 + fn, i);
+      val = is_valid ? p->VU.elt<uint64_t>(vs3 + fn, vreg_inx) : 0;
       break;
     }
-    STRIP(i * nf + fn)
-    V_ELEMENT_SKIP(mmu_inx);
-    MMU.store_uint32(baseAddr + (mmu_inx) * 4, val);
+  
+    MMU.store_uint32(baseAddr + i * 4, val);
   }
 }
 p->VU.vstart = 0;
