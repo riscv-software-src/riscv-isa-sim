@@ -13,7 +13,7 @@ for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
   STRIP(i)
   for (reg_t fn = 0; fn < nf; ++fn) {
  
-    int64_t val = MMU.load_int32(baseAddr + i * stride + fn * 1);
+    int64_t val = MMU.load_int32(baseAddr + i * stride + fn * 4);
     if (p->VU.vsew == e32) {
       p->VU.elt<uint32_t>(vd + fn, vreg_inx) = is_valid ? val : 0;
     } else {
