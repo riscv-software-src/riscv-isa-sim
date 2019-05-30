@@ -5,7 +5,7 @@ case VFUNARY0::VFWCVT_X_F_V:
 case VFUNARY0::VFWCVT_F_XU_V:
 case VFUNARY0::VFWCVT_F_X_V:
 case VFUNARY0::VFWCVT_F_F_V:
-  VI_WIDE_CHECK_ONE;
+  VI_WIDE_CHECK_DSS(false);
   break;
 }
 

@@ -425,23 +425,28 @@ enum VMUNARY0{
 #define VI_NARROW_CHECK_COMMON \
   require(P.VU.vlmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
-  require(insn.rs2() + P.VU.vlmul * 2 <= 31);
+  require(insn.rs2() + P.VU.vlmul * 2 <= 32);
 
 #define VI_WIDE_CHECK_COMMON \
+  require(!P.VU.vill);\
   require(P.VU.vlmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
-  require(insn.rd() + P.VU.vlmul * 2 <= 31); \
+  require(insn.rd() + P.VU.vlmul * 2 <= 32); \
   if (insn.v_vm() == 0) \
     require(insn.rd() != 0);
 
-#define VI_WIDE_CHECK_ONE \
+#define VI_WIDE_CHECK_DSS(is_rs) \
   VI_WIDE_CHECK_COMMON; \
-  require((insn.rd() & ~(P.VU.vlmul - 1)) != (insn.rs2() & ~(P.VU.vlmul - 1)));
+  require(!(insn.rd() <= insn.rs2() && (insn.rd() + P.VU.vlmul) < insn.rs2())); \
+  if (is_rs) \
+     require(!(insn.rd() <= insn.rs1() && insn.rs1() < (insn.rd() + P.VU.vlmul)));
 
-#define VI_WIDE_CHECK_TWO \
+#define VI_WIDE_CHECK_DDS(is_rs) \
   VI_WIDE_CHECK_COMMON; \
-  require((insn.rd() & ~(P.VU.vlmul - 1)) != (insn.rs2() & ~(P.VU.vlmul - 1)) && \
-          (insn.rd() & ~(P.VU.vlmul - 1)) != (insn.rs1() & ~(P.VU.vlmul - 1))); \
+  require(insn.rs2() + P.VU.vlmul * 2 <= 32); \
+  require(!(insn.rd() - insn.rs2() < P.VU.vlmul || insn.rs2() - insn.rd() < P.VU.vlmul)); \
+  if (is_rs) \
+     require(!(insn.rd() <= insn.rs1() && insn.rs1() < (insn.rd() + P.VU.vlmul)));
 
 #define V_WIDE_OP_AND_ASSIGN(var0, var1, var2, op0, op1, sign) \
   switch(P.VU.vsew) { \
@@ -1124,8 +1129,7 @@ VI_LOOP_END
 
 // wide reduction loop - signed
 #define VI_LOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
-  VI_WIDE_CHECK_ONE; \
-  require(!P.VU.vill);\
+  VI_WIDE_CHECK_DSS(false); \
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -1154,8 +1158,7 @@ VI_LOOP_END
 
 // wide reduction loop - unsigned
 #define VI_ULOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
-  VI_WIDE_CHECK_ONE; \
-  require(!P.VU.vill);\
+  VI_WIDE_CHECK_DSS(false); \
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
