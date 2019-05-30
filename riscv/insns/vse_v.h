@@ -17,19 +17,19 @@ for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
     switch (sew) {
     case e8:
       MMU.store_uint8(baseAddr + (i * nf + fn) * elt_byte,
-          P.VU.elt<uint8_t>(vs3 + fn, vreg_inx);
+          P.VU.elt<uint8_t>(vs3 + fn, vreg_inx));
       break;
     case e16:
       MMU.store_uint16(baseAddr + (i * nf + fn) * elt_byte,
-          P.VU.elt<uint16_t>(vs3 + fn, vreg_inx);
+          P.VU.elt<uint16_t>(vs3 + fn, vreg_inx));
       break;
     case e32:
       MMU.store_uint32(baseAddr + (i * nf + fn) * elt_byte,
-          P.VU.elt<uint32_t>(vs3 + fn, vreg_inx);
+          P.VU.elt<uint32_t>(vs3 + fn, vreg_inx));
       break;
     case e64:
       MMU.store_uint64(baseAddr + (i * nf + fn) * elt_byte,
-          P.VU.elt<uint64_t>(vs3 + fn, vreg_inx);
+          P.VU.elt<uint64_t>(vs3 + fn, vreg_inx));
       break;
     }
   }
