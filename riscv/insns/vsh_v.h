@@ -24,7 +24,8 @@ for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
       val = p->VU.elt<uint64_t>(vs3 + fn, vreg_inx);
       break;
     }
-    MMU.store_uint16(baseAddr + i * 2, val);
+    if (is_valid)
+      MMU.store_uint16(baseAddr + (i * nf + fn) * 2, val);
   }
 }
 p->VU.vstart = 0;

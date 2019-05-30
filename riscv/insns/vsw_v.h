@@ -15,14 +15,14 @@ for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
     uint32_t val = 0;
     switch (p->VU.vsew) {
     case e32:
-      val = is_valid ? p->VU.elt<uint32_t>(vs3 + fn, vreg_inx) : 0;
+      val = p->VU.elt<uint32_t>(vs3 + fn, vreg_inx);
       break;
     default:
-      val = is_valid ? p->VU.elt<uint64_t>(vs3 + fn, vreg_inx) : 0;
+      val = p->VU.elt<uint64_t>(vs3 + fn, vreg_inx);
       break;
     }
-  
-    MMU.store_uint32(baseAddr + i * 4, val);
+    if (is_valid)
+      MMU.store_uint32(baseAddr + (i * nf + fn) * 4, val);
   }
 }
 p->VU.vstart = 0;

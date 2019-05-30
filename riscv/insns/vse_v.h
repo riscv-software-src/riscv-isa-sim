@@ -13,6 +13,9 @@ for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
   V_ELEMENT_SKIP(i);
   STRIP(i)
 
+  if (!is_valid)
+    continue;
+
   for (reg_t fn = 0; fn < nf; ++fn) {
     switch (sew) {
     case e8:
