@@ -9,9 +9,8 @@ reg_t vs3 = insn.rd();
 reg_t vlmax = p->VU.vlmax;
 for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
   bool is_valid = true;
-  V_ELEMENT_SKIP(i);
   STRIP(i)
-
+  V_ELEMENT_SKIP(i);
   for (reg_t fn = 0; fn < nf; ++fn) {
     uint8_t val = 0;
     switch (p->VU.vsew) {
@@ -28,8 +27,10 @@ for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
       val = p->VU.elt<uint64_t>(vs3 + fn, vreg_inx);
       break;
     }
+    if (is_valid){
+      MMU.store_uint8(baseAddr + i * stride + fn * 1, val);
+    }
 
-    MMU.store_uint8(baseAddr + i * 1, val);
   }
 }
 p->VU.vstart = 0;
