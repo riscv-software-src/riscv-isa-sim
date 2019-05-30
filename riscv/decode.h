@@ -1201,6 +1201,53 @@ VI_LOOP_END
     WIDE_REDUCTION_ULOOP(e32, e64, BODY) \
   }
 
+#define VI_LDST_FF(itype, tsew) \
+  require(p->VU.vsew >= e##tsew && p->VU.vsew <= e64); \
+  const reg_t nf = insn.v_nf() + 1; \
+  require((nf >= 2 && p->VU.vlmul == 1) || nf == 1); \
+  const reg_t sew = p->VU.vsew; \
+  const reg_t vl = p->VU.vl; \
+  const reg_t baseAddr = RS1; \
+  const reg_t rd_num = insn.rd(); \
+  bool early_stop = false; \
+  for (reg_t i = 0; i < P.VU.vlmax && vl != 0; ++i) { \
+    bool is_valid = true; \
+    STRIP(i); \
+    V_ELEMENT_SKIP(i); \
+  \
+  for (reg_t fn = 0; fn < nf; ++fn) { \
+    itype##64_t val = MMU.load_##itype##tsew(baseAddr + (i * nf + fn) * (tsew / 8)); \
+    \
+    switch (sew) { \
+    case e8: \
+      p->VU.elt<uint8_t>(rd_num + fn, vreg_inx) = is_valid ? val : 0; \
+      break; \
+    case e16: \
+      p->VU.elt<uint16_t>(rd_num + fn, vreg_inx) = is_valid ? val : 0; \
+      break; \
+    case e32: \
+      p->VU.elt<uint32_t>(rd_num + fn, vreg_inx) = is_valid ? val : 0; \
+      break; \
+    case e64: \
+      p->VU.elt<uint64_t>(rd_num + fn, vreg_inx) = is_valid ? val : 0; \
+      break; \
+    } \
+     \
+    if (val == 0 && is_valid) { \
+      p->VU.vl = i; \
+      early_stop = true; \
+      break; \
+    } \
+  } \
+  \
+  if (early_stop) { \
+    break; \
+  } \
+} \
+  \
+p->VU.vstart = 0;
+
+
 #define VI_VVX_LOOP_AVG(opd, op) \
 VRM xrm = p->VU.get_vround_mode(); \
 VI_LOOP_BASE \

@@ -1,64 +1,54 @@
-// vle.v and vlseg[2-8]e.v
+require(p->VU.vsew >= e8 && p->VU.vsew <= e64);
+const reg_t nf = insn.v_nf() + 1;
+require((nf >= 2 && p->VU.vlmul == 1) || nf == 1);
 const reg_t sew = p->VU.vsew;
-const reg_t elt_byte = sew / 8;
-require(sew >= e8 && sew <= e64);
-reg_t vl = p->VU.vl;
-reg_t baseAddr = RS1;
-reg_t rd_num = insn.rd();
+const reg_t vl = p->VU.vl;
+const reg_t baseAddr = RS1;
+const reg_t rd_num = insn.rd();
 bool early_stop = false;
-reg_t vlmax = p->VU.vlmax;
-for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
+for (reg_t i = 0; i < P.VU.vlmax && vl != 0; ++i) {
   bool is_valid = true;
-  STRIP(i)
+  bool is_zero = false;
+  STRIP(i);
   V_ELEMENT_SKIP(i);
 
-  switch (sew) {
-  case e8: {
-      auto val = MMU.load_int8(baseAddr + i * elt_byte);
-      p->VU.elt<uint8_t>(rd_num, i) = is_valid ? val : 0;
+  for (reg_t fn = 0; fn < nf; ++fn) {
+    MMU.load_uint8(baseAddr + (i * nf + fn) * 1);
 
-      if (val == 0) {
-        early_stop = true;
-      }
+    switch (sew) {
+    case e8:
+      p->VU.elt<uint8_t>(rd_num + fn, vreg_inx) =
+          is_valid ? MMU.load_uint8(baseAddr + (i * nf + fn) * 1) : 0;
+      is_zero = is_valid && p->VU.elt<uint8_t>(rd_num + fn, vreg_inx) == 0;
+          break;
+    case e16:
+      p->VU.elt<uint16_t>(rd_num + fn, vreg_inx) =
+          is_valid ? MMU.load_uint16(baseAddr + (i * nf + fn) * 2) : 0;
+      is_zero = is_valid && p->VU.elt<uint16_t>(rd_num + fn, vreg_inx) == 0;
+      break;
+    case e32:
+      p->VU.elt<uint32_t>(rd_num + fn, vreg_inx) =
+          is_valid ? MMU.load_uint32(baseAddr + (i * nf + fn) * 4) : 0;
+      is_zero = is_valid && p->VU.elt<uint32_t>(rd_num + fn, vreg_inx) == 0;
+      break;
+    case e64:
+      p->VU.elt<uint64_t>(rd_num + fn, vreg_inx) =
+          is_valid ? MMU.load_uint64(baseAddr + (i * nf + fn) * 8) : 0;
+      is_zero = is_valid && p->VU.elt<uint64_t>(rd_num + fn, vreg_inx) == 0;
+      break;
     }
-    break;
-  case e16: {
-      auto val = MMU.load_int16(baseAddr + i * elt_byte);
-      p->VU.elt<uint16_t>(rd_num, i) = is_valid ? val : 0;
 
-      if (val == 0) {
-        early_stop = true;
-      }
+    if (is_zero) {
+      p->VU.vl = i;
+      early_stop = true;
+      break;
     }
-    break;
-  case e32: {
-      auto val = MMU.load_int32(baseAddr + i * elt_byte);
-      p->VU.elt<uint32_t>(rd_num, i) = is_valid ? val : 0;
-
-      if (val == 0) {
-        early_stop = true;
-      }
-    }
-    break;
-  default: {
-      auto val = MMU.load_int64(baseAddr + i * elt_byte);
-      p->VU.elt<uint64_t>(rd_num, i) = is_valid ? val : 0;
-
-      if (val == 0) {
-        early_stop = true;
-      }
-    }
-    break;
   }
 
   if (early_stop) {
-    p->VU.vl = i;
     break;
   }
 }
 
-if (!early_stop) {
-  VI_TAIL_ZERO(1);
-}
 p->VU.vstart = 0;
 VI_CHECK_1905
