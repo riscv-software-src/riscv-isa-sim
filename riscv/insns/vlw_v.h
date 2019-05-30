@@ -22,3 +22,6 @@ for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
 }
 
 p->VU.vstart = 0;
+if (nf >= 2) {
+    VI_CHECK_1905;
+}
