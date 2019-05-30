@@ -431,16 +431,6 @@ enum VMUNARY0{
     } \
   }
 
-#define V_ELEMENT_SKIP2(inx) \
-    const int mlen = P.VU.vmlen; \
-    const int midx = (mlen * (inx)) / 64; \
-    const int mpos = (mlen * (inx)) % 64; \
-    if (insn.v_vm() == 0) { \
-      bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
-      if (skip) \
-        continue; \
-    } \
-
 #define VI_NARROW_CHECK_COMMON \
   require(P.VU.vlmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
