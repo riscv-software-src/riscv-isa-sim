@@ -396,6 +396,27 @@ enum VMUNARY0{
   while (0);
 #endif
 
+#define DUPLICATE_VREG(v, vlmax) \
+reg_t index[vlmax] = {0}; \
+for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
+  switch(P.VU.vsew) { \
+    case e8: \
+      index[i] = P.VU.elt<int8_t>(v, i); \
+      break; \
+    case e16: \
+      index[i] = P.VU.elt<int16_t>(v, i); \
+      break; \
+    case e32: \
+      index[i] = P.VU.elt<int32_t>(v, i); \
+      break; \
+    case e64: \
+      index[i] = P.VU.elt<int64_t>(v, i); \
+      break; \
+  } \
+}
+
+
+
 #define V_LOOP_ELEMENT_SKIP \
   const int mlen = P.VU.vmlen; \
   const int midx = (mlen * i) / 64; \

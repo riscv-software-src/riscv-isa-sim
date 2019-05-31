@@ -7,29 +7,25 @@ reg_t baseAddr = RS1;
 reg_t stride = insn.rs2();
 reg_t vd = insn.rd();
 reg_t vlmax = p->VU.vlmax;
+DUPLICATE_VREG(stride, vlmax);
 for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
   bool is_valid = true;
   V_ELEMENT_SKIP(i);
   STRIP(i)
 
   for (reg_t fn = 0; fn < nf; ++fn) {
-    reg_t index = 0;
     switch (p->VU.vsew) {
       case e8:
-        index = p->VU.elt<int8_t>(stride, vreg_inx);
-        p->VU.elt<uint8_t>(vd + fn, vreg_inx) = is_valid ? MMU.load_int8(baseAddr + index + fn * 1) : 0;
+        p->VU.elt<uint8_t>(vd + fn, vreg_inx) = is_valid ? MMU.load_int8(baseAddr + index[i] + fn * 1) : 0;
         break;
       case e16:
-        index = p->VU.elt<int16_t>(stride, vreg_inx);
-        p->VU.elt<uint16_t>(vd + fn, vreg_inx) = is_valid ? MMU.load_int8(baseAddr + index + fn * 1) : 0;
+        p->VU.elt<uint16_t>(vd + fn, vreg_inx) = is_valid ? MMU.load_int8(baseAddr + index[i] + fn * 1) : 0;
         break;
       case e32:
-        index = p->VU.elt<int32_t>(stride, vreg_inx);
-        p->VU.elt<uint32_t>(vd + fn, vreg_inx) = is_valid ? MMU.load_int8(baseAddr + index + fn * 1) : 0;
+        p->VU.elt<uint32_t>(vd + fn, vreg_inx) = is_valid ? MMU.load_int8(baseAddr + index[i] + fn * 1) : 0;
         break;
       case e64:
-        index = p->VU.elt<int64_t>(stride, vreg_inx);
-        p->VU.elt<uint64_t>(vd + fn, vreg_inx) = is_valid ? MMU.load_int8(baseAddr + index + fn * 1) : 0;
+        p->VU.elt<uint64_t>(vd + fn, vreg_inx) = is_valid ? MMU.load_int8(baseAddr + index[i] + fn * 1) : 0;
         break;
     }
   }
