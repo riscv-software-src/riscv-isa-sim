@@ -15,26 +15,26 @@ for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
 
   for (reg_t fn = 0; fn < nf; ++fn) {
     switch (p->VU.vsew) {
-    case e8:
-      if (is_valid)
-		MMU.store_uint8(baseAddr + index[i] + fn * 1,
-                      p->VU.elt<uint8_t>(vs3 + fn, vreg_inx));
-      break;
-    case e16:
-      if (is_valid)
-		MMU.store_uint8(baseAddr + index[i] + fn * 1,
-                      p->VU.elt<uint16_t>(vs3 + fn, vreg_inx));
-      break;
-    case e32:
-      if (is_valid)
-		MMU.store_uint8(baseAddr + index[i] + fn * 1,
-                      p->VU.elt<uint32_t>(vs3 + fn, vreg_inx));
-      break;
-    case e64:
-      if (is_valid)
-		MMU.store_uint8(baseAddr + index[i] + fn * 1,
-                      p->VU.elt<uint64_t>(vs3 + fn, vreg_inx));
-      break;
+      case e8:
+        if (is_valid)
+          MMU.store_uint8(baseAddr + index[i] + fn * 1,
+              p->VU.elt<uint8_t>(vs3 + fn, vreg_inx));
+        break;
+      case e16:
+        if (is_valid)
+          MMU.store_uint8(baseAddr + index[i] + fn * 1,
+              p->VU.elt<uint16_t>(vs3 + fn, vreg_inx));
+        break;
+      case e32:
+        if (is_valid)
+          MMU.store_uint8(baseAddr + index[i] + fn * 1,
+              p->VU.elt<uint32_t>(vs3 + fn, vreg_inx));
+        break;
+      case e64:
+        if (is_valid)
+          MMU.store_uint8(baseAddr + index[i] + fn * 1,
+              p->VU.elt<uint64_t>(vs3 + fn, vreg_inx));
+        break;
     }
   }
 }
