@@ -14,7 +14,7 @@ VI_VVXI_LOOP_NARROW
  if (unsigned_shift_amount >= (2 * sew)){
   unsigned_shift_amount = 2 * sew;
  }
- result = result >> unsigned_shift_amount;
+ result = vsext(result, sew * 2) >> unsigned_shift_amount;
 
  // saturation
  if (result < int_min){
