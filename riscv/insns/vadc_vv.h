@@ -1,6 +1,6 @@
 // vadc.vv vd, vs2, rs1
 require(insn.v_vm() == 1);
-require(insn.rd() != 0);
+require(!(insn.rd() == 0 && p->VU.vlmul > 1));
 VI_VV_LOOP
 ({
   auto &v0 = P.VU.elt<uint64_t>(0, midx);
