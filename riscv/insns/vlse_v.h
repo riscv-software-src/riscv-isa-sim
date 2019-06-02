@@ -1,10 +1,10 @@
 // vlse.v and vlsseg[2-8]e.v
 const reg_t sew = p->VU.vsew;
+require(sew >= e8 && sew <= e64);
 const reg_t nf = insn.v_nf() + 1;
+require((nf * p->VU.vlmul) <= (NVPR / 4));
 const reg_t vl = p->VU.vl;
 const reg_t elt_byte = sew / 8;
-require(sew >= e8 && sew <= e64);
-require((nf >= 2 && p->VU.vlmul == 1) || nf == 1);
 reg_t baseAddr = RS1;
 reg_t stride = RS2;
 reg_t vd = insn.rd();
