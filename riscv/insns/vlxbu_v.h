@@ -1,7 +1,7 @@
 // vlxbu.v and vlxseg[2-8]bu.v
 require(p->VU.vsew >= e8);
 reg_t nf = insn.v_nf() + 1;
-require((nf >= 2 && p->VU.vlmul == 1) || nf == 1);
+require((nf * p->VU.vlmul) <= (NVPR / 4));
 reg_t vl = p->VU.vl;
 reg_t baseAddr = RS1;
 reg_t stride = insn.rs2();

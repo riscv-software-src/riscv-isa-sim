@@ -1,6 +1,6 @@
 require(p->VU.vsew >= e8 && p->VU.vsew <= e64);
 const reg_t nf = insn.v_nf() + 1;
-require((nf >= 2 && p->VU.vlmul == 1) || nf == 1);
+require((nf * p->VU.vlmul) <= (NVPR / 4));
 const reg_t sew = p->VU.vsew;
 const reg_t vl = p->VU.vl;
 const reg_t baseAddr = RS1;
