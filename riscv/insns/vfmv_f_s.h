@@ -1,4 +1,5 @@
 // vfmv_f_s: rd = vs2[0] (rs1=0)
+require(insn.v_vm() == 1);
 require_fp;
 require(p->VU.vsew == e8 || p->VU.vsew == e16 || p->VU.vsew == e32 || p->VU.vsew == e64); 
 

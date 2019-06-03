@@ -1,4 +1,5 @@
 // vext_x_v: rd = vs2[rs1]
+require(insn.v_vm() == 1);
 uint64_t xmask = UINT64_MAX >> (64 - P.get_max_xlen());
 reg_t rs1 = RS1;
 VI_LOOP_BASE 

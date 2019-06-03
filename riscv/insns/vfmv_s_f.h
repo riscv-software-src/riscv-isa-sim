@@ -1,4 +1,5 @@
 // vfmv_s_f: vd[0] = rs1 (vs2=0)
+require(insn.v_vm() == 1);
 require_fp;
 require(p->VU.vsew == e32);
 reg_t vl = p->VU.vl;
