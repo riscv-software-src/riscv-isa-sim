@@ -420,7 +420,7 @@ for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
   const int midx = (mlen * i) / 64; \
   const int mpos = (mlen * i) % 64; \
   if (insn.v_vm() == 0) { \
-    BODY \
+    BODY; \
     bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
     if (skip) \
       continue; \
@@ -447,6 +447,10 @@ for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
   require(insn.rd() + P.VU.vlmul * 2 <= 32); \
   if (insn.v_vm() == 0) \
     require(insn.rd() != 0);
+
+#define VI_CHECK_SDS \
+  reg_t insn_dist = insn.rd() <= insn.rs2() ? insn.rs2() - insn.rd() : insn.rd() - insn.rs2(); \
+  require(insn_dist * P.VU.vlmul >= P.VU.vlmax); 
 
 #define VI_CHECK_DSS(is_rs) \
   VI_WIDE_CHECK_COMMON; \
@@ -1095,9 +1099,16 @@ VI_LOOP_END
   } \
   VI_LOOP_END
 
-#define VI_VI_LOOP_NSHIFT(BODY) \
+#define NSHIFT_CHECK \
   require(P.VU.vsew <= e32); \
-  VI_LOOP_BASE \
+  VI_CHECK_SDS; \
+  VI_GENERAL_LOOP_BASE; \
+  V_LOOP_ELEMENT_SKIP({\
+    require(insn.rd() == 0 && P.VU.vlmul == 1);\
+  });
+
+#define VI_VI_LOOP_NSHIFT(BODY) \
+  NSHIFT_CHECK \
   if (sew == e8){ \
     VI_NSHIFT_PARAM(e8, e16) \
     BODY; \
@@ -1111,8 +1122,7 @@ VI_LOOP_END
   VI_LOOP_END
 
 #define VI_VX_LOOP_NSHIFT(BODY) \
-  require(P.VU.vsew <= e32); \
-  VI_LOOP_BASE \
+  NSHIFT_CHECK \
   if (sew == e8){ \
     VX_NSHIFT_PARAM(e8, e16) \
     BODY; \
@@ -1126,8 +1136,7 @@ VI_LOOP_END
   VI_LOOP_END
 
 #define VI_VV_LOOP_NSHIFT(BODY) \
-  require(P.VU.vsew <= e32); \
-  VI_LOOP_BASE \
+  NSHIFT_CHECK \
   if (sew == e8){ \
     VV_NSHIFT_PARAM(e8, e16) \
     BODY; \
