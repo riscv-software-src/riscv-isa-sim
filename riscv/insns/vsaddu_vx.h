@@ -7,7 +7,7 @@ VI_VX_ULOOP
   sat = vd < vs2;
   vd |= -(vd < vs2);
 
-  p->VU.vxsat |= sat;
+  P.VU.vxsat |= sat;
 
 })
 VI_CHECK_1905

@@ -1,7 +1,7 @@
 // vfmadd: vd[i] = +(vd[i] * vs1[i]) + vs2[i]
 VFP_VV_LOOP
 ({
-  switch(p->VU.vsew){
+  switch(P.VU.vsew){
   case e32:
     vd = f32_mulAdd(vd, vs1, vs2);
     break;

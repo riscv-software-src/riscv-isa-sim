@@ -1,8 +1,8 @@
 // vsmul
-VRM xrm = p->VU.get_vround_mode();
-uint128_t int_max = (1ul << (p->VU.vsew - 1)) - 1;
-uint128_t int_min = - (1 << (p->VU.vsew - 1));
-uint128_t sign_mask = ((1ul << (p->VU.vsew - 1)));
+VRM xrm = P.VU.get_vround_mode();
+uint128_t int_max = (1ul << (P.VU.vsew - 1)) - 1;
+uint128_t int_min = - (1 << (P.VU.vsew - 1));
+uint128_t sign_mask = ((1ul << (P.VU.vsew - 1)));
 
 VI_VX_ULOOP
 ({
@@ -26,7 +26,7 @@ VI_VX_ULOOP
   // saturation
   if (overflow) {
     result = int_max;
-    p->VU.vxsat = 1;
+    P.VU.vxsat = 1;
   }else {
     result |= result_sign;
   }

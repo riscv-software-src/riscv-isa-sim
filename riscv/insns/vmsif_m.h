@@ -1,21 +1,21 @@
 // vmpopc rd, vs2, vm
-require(p->VU.vsew >= e8 && p->VU.vsew <= e64);
-require(!p->VU.vill);
-reg_t vl = p->VU.vl;
-reg_t sew = p->VU.vsew;
+require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
+require(!P.VU.vill);
+reg_t vl = P.VU.vl;
+reg_t sew = P.VU.vsew;
 reg_t rd_num = insn.rd();
 reg_t rs1_num = insn.rs1();
 reg_t rs2_num = insn.rs2();
 
 bool has_one = false;
 for (reg_t i = P.VU.vstart ; i < vl; ++i) {
-  const int mlen = p->VU.vmlen;
+  const int mlen = P.VU.vmlen;
   const int midx = (mlen * i) / 64;
   const int mpos = (mlen * i) % 64;
   const uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos);
 
-  bool vs2_lsb = ((p->VU.elt<uint64_t>(rs2_num, midx ) >> mpos) & 0x1) == 1;
-  bool do_mask = (p->VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
+  bool vs2_lsb = ((P.VU.elt<uint64_t>(rs2_num, midx ) >> mpos) & 0x1) == 1;
+  bool do_mask = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
   auto &vd = P.VU.elt<uint64_t>(rd_num, midx);
 
   if (insn.v_vm() == 1 || (insn.v_vm() == 0 && do_mask)) {
@@ -31,5 +31,5 @@ for (reg_t i = P.VU.vstart ; i < vl; ++i) {
 }
 
 VI_TAIL_ZERO_MASK(rd_num);
-p->VU.vstart = 0;
+P.VU.vstart = 0;
 VI_CHECK_1905

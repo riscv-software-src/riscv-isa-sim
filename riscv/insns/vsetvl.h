@@ -1,1 +1,1 @@
-WRITE_RD(p->VU.set_vl(insn.rs1(), RS1, RS2));
+WRITE_RD(P.VU.set_vl(insn.rs1(), RS1, RS2));

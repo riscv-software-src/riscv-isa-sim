@@ -24,7 +24,7 @@ VI_LOOP_BASE
     break;
     }
   }
-  p->VU.vxsat |= sat;
+  P.VU.vxsat |= sat;
 
 VI_LOOP_END
 VI_CHECK_1905

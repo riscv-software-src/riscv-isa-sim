@@ -1,8 +1,8 @@
 // vrgather.vi vd, vs2, zimm5 vm # vd[i] = (zimm5 >= VLMAX) ? 0 : vs2[zimm5];
-require(p->VU.vsew >= e8 && p->VU.vsew <= e64);
-require(!p->VU.vill);
-reg_t vl = p->VU.vl;
-reg_t sew = p->VU.vsew;
+require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
+require(!P.VU.vill);
+reg_t vl = P.VU.vl;
+reg_t sew = P.VU.vsew;
 reg_t rd_num = insn.rd();
 reg_t rs2_num = insn.rs2();
 reg_t zimm5 = insn.v_zimm5();

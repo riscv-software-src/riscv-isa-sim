@@ -2,9 +2,9 @@ bool write = insn.rs1() != 0;
 int csr = validate_csr(insn.csr(), write);
 reg_t old;
 if (check_vcsr(csr)) {
-  old = p->VU.get_vcsr(csr);
+  old = P.VU.get_vcsr(csr);
   if (write) {
-    p->VU.set_vcsr(csr, old | insn.rs1());
+    P.VU.set_vcsr(csr, old | insn.rs1());
   }
 }else{
   old = p->get_csr(csr);

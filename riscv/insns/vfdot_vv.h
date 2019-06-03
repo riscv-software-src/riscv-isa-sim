@@ -1,7 +1,7 @@
 // vfdot.vv vd, vs2, vs1
 VFP_VV_LOOP
 ({
-  switch(p->VU.vsew){
+  switch(P.VU.vsew){
   case e32:
     vd = f32_add(vd, f32_mul(vs2, vs1));
     break;

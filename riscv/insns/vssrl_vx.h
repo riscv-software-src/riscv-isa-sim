@@ -1,5 +1,5 @@
 // vssrl.vx vd, vs2, rs1
-VRM xrm = p->VU.get_vround_mode();
+VRM xrm = P.VU.get_vround_mode();
 VI_VX_ULOOP
 ({
   uint64_t v2 = vs2;

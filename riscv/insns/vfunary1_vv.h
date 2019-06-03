@@ -1,7 +1,7 @@
 // VFUNARY1 encoding space
 VFP_VV_LOOP
 ({
-  switch(p->VU.vsew){
+  switch(P.VU.vsew){
   case e32:
     if (rs1_num == VFUNARY1::VFSQRT_V) {
       vd = f32_sqrt(vs2);

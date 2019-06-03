@@ -1,7 +1,7 @@
 // vfnmsub: vd[i] = -(vd[i] * f[rs1]) + vs2[i]
 VFP_VF_LOOP
 ({
-  switch(p->VU.vsew){
+  switch(P.VU.vsew){
   case e32:
     vd = f32_mulAdd(f32(vd.v ^ F32_SIGN), rs1, vs2);
     break;

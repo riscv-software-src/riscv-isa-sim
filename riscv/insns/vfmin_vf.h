@@ -1,7 +1,7 @@
 // vfmin vd, vs2, rs1
 VFP_VF_LOOP
 ({
-  switch(p->VU.vsew){
+  switch(P.VU.vsew){
   case e32:
     vd = f32_min(vs2, rs1);
     break;
