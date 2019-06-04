@@ -496,14 +496,6 @@ riscv_insn_ext_v_alu_fp = \
 	vfdiv_vf \
 	vfdiv_vv \
 	vfdot_vv \
-	vfeq_vf \
-	vfeq_vv \
-	vfge_vf \
-	vfgt_vf \
-	vfle_vf \
-	vfle_vv \
-	vflt_vf \
-	vflt_vv \
 	vfmacc_vf \
 	vfmacc_vv \
 	vfmadd_vf \
@@ -521,8 +513,6 @@ riscv_insn_ext_v_alu_fp = \
 	vfmul_vv \
 	vfmv_f_s \
 	vfmv_s_f \
-	vfne_vf \
-	vfne_vv \
 	vfnmacc_vf \
 	vfnmacc_vv \
 	vfnmadd_vf \
@@ -531,8 +521,6 @@ riscv_insn_ext_v_alu_fp = \
 	vfnmsac_vv \
 	vfnmsub_vf \
 	vfnmsub_vv \
-	vford_vf \
-	vford_vv \
 	vfrdiv_vf \
 	vfredmax_vs \
 	vfredmin_vs \
@@ -564,6 +552,18 @@ riscv_insn_ext_v_alu_fp = \
 	vfwredsum_vs \
 	vfwsub_vv \
 	vfwsub_wv \
+	vmfeq_vf \
+	vmfeq_vv \
+	vmfge_vf \
+	vmfgt_vf \
+	vmfle_vf \
+	vmfle_vv \
+	vmflt_vf \
+	vmflt_vv \
+	vmfne_vf \
+	vmfne_vv \
+	vmford_vf \
+	vmford_vv \
 
 riscv_insn_ext_v_ldst = \
 	vlb_v \

@@ -1031,13 +1031,13 @@ disassembler_t::disassembler_t(int xlen)
 
   //0b01_0000
   DISASM_OPIV__F_INSN(vfmerge);
-  DISASM_OPIV_VF_INSN(vfeq);
-  DISASM_OPIV_VF_INSN(vfle);
-  DISASM_OPIV_VF_INSN(vford);
-  DISASM_OPIV_VF_INSN(vflt);
-  DISASM_OPIV_VF_INSN(vfne);
-  DISASM_OPIV__F_INSN(vfgt);
-  DISASM_OPIV__F_INSN(vfge);
+  DISASM_OPIV_VF_INSN(vmfeq);
+  DISASM_OPIV_VF_INSN(vmfle);
+  DISASM_OPIV_VF_INSN(vmford);
+  DISASM_OPIV_VF_INSN(vmflt);
+  DISASM_OPIV_VF_INSN(vmfne);
+  DISASM_OPIV__F_INSN(vmfgt);
+  DISASM_OPIV__F_INSN(vmfge);
 
   //0b10_0000
   DISASM_OPIV_VF_INSN(vfdiv);
