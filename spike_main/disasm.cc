@@ -1055,6 +1055,7 @@ disassembler_t::disassembler_t(int xlen)
               mask_vfunary1_vv | mask_rs1, {&vd, &vs2, &opt, &vm}));
 
   DISASM_OPIV_VF_INSN(vfmul);
+  DISASM_OPIV__F_INSN(vfrsub);
   DISASM_OPIV_VF_INSN(vfmadd);
   DISASM_OPIV_VF_INSN(vfnmadd);
   DISASM_OPIV_VF_INSN(vfmsub);

@@ -526,6 +526,7 @@ riscv_insn_ext_v_alu_fp = \
 	vfredmin_vs \
 	vfredosum_vs \
 	vfredsum_vs \
+	vfrsub_vf \
 	vfsgnj_vf \
 	vfsgnj_vv \
 	vfsgnjn_vf \
