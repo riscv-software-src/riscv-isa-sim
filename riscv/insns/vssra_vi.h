@@ -2,8 +2,8 @@
 VRM xrm = P.VU.get_vround_mode();
 VI_VI_LOOP
 ({
-  int64_t v2 = vs2;
-  INT_ROUNDING(v2, xrm, 1);
-  vd = v2 >> (simm5 & ((1u << log2(sew * 2)) - 1) & 0x1f);
+  int sh = simm5 & (sew - 1) & 0x1f;
+  INT_ROUNDING(vs2, xrm, sh);
+  vd = vs2 >> sh;
 })
 VI_CHECK_1905
