@@ -342,7 +342,27 @@ riscv_insn_ext_v_alu_int = \
 	vmsac_vv \
 	vmsac_vx \
 	vmsbf_m \
+	vmseq_vi \
+	vmseq_vv \
+	vmseq_vx \
+	vmsgt_vi \
+	vmsgt_vx \
+	vmsgtu_vi \
+	vmsgtu_vx \
 	vmsif_m \
+	vmsle_vi \
+	vmsle_vv \
+	vmsle_vx \
+	vmsleu_vi \
+	vmsleu_vv \
+	vmsleu_vx \
+	vmslt_vv \
+	vmslt_vx \
+	vmsltu_vv \
+	vmsltu_vx \
+	vmsne_vi \
+	vmsne_vv \
+	vmsne_vx \
 	vmsof_m \
 	vmsub_vv \
 	vmsub_vx \
@@ -397,19 +417,6 @@ riscv_insn_ext_v_alu_int = \
 	vsaddu_vx \
 	vsbc_vv \
 	vsbc_vx \
-	vseq_vi \
-	vseq_vv \
-	vseq_vx \
-	vsgt_vi \
-	vsgt_vx \
-	vsgtu_vi \
-	vsgtu_vx \
-	vsle_vi \
-	vsle_vv \
-	vsle_vx \
-	vsleu_vi \
-	vsleu_vv \
-	vsleu_vx \
 	vslide1down_vx \
 	vslide1up_vx \
 	vslidedown_vi \
@@ -419,15 +426,8 @@ riscv_insn_ext_v_alu_int = \
 	vsll_vi \
 	vsll_vv \
 	vsll_vx \
-	vslt_vv \
-	vslt_vx \
-	vsltu_vv \
-	vsltu_vx \
 	vsmul_vv \
 	vsmul_vx \
-	vsne_vi \
-	vsne_vv \
-	vsne_vx \
 	vsra_vi \
 	vsra_vv \
 	vsra_vx \
