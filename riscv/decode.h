@@ -1206,6 +1206,41 @@ VI_LOOP_END
     WIDE_REDUCTION_ULOOP(e32, e64, BODY) \
   }
 
+#define VI_ST(stride, offset, st_width, elt_byte) \
+  reg_t nf = insn.v_nf() + 1; \
+  require((nf * P.VU.vlmul) <= (NVPR / 4)); \
+  reg_t vl = P.VU.vl; \
+  reg_t baseAddr = RS1; \
+  reg_t vs3 = insn.rd(); \
+  reg_t vlmax = P.VU.vlmax; \
+  for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
+    bool is_valid = true; \
+    STRIP(i) \
+    V_ELEMENT_SKIP(i); \
+    if (!is_valid) \
+      continue; \
+    for (reg_t fn = 0; fn < nf; ++fn) { \
+      st_width##_t val = 0; \
+      switch (P.VU.vsew) { \
+      case e8: \
+        val = P.VU.elt<uint8_t>(vs3 + fn, vreg_inx); \
+        break; \
+      case e16: \
+        val = P.VU.elt<uint16_t>(vs3 + fn, vreg_inx); \
+        break; \
+      case e32: \
+        val = P.VU.elt<uint32_t>(vs3 + fn, vreg_inx); \
+        break; \
+      default: \
+        val = P.VU.elt<uint64_t>(vs3 + fn, vreg_inx); \
+        break; \
+      } \
+      MMU.store_##st_width(baseAddr + (stride) + (offset) * elt_byte, val); \
+    } \
+  } \
+  P.VU.vstart = 0; 
+
+
 #define VI_LD(stride, offset, ld_width, elt_byte) \
   reg_t nf = insn.v_nf() + 1; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \

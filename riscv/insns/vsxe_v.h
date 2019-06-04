@@ -1,44 +1,15 @@
 // vsxe.v and vsxseg[2-8]e.v
-const reg_t sew = P.VU.vsew;
-const reg_t nf = insn.v_nf() + 1;
-const reg_t vl = P.VU.vl;
-const reg_t elt_byte = sew / 8;
+reg_t sew = P.VU.vsew;
 require(sew >= e8 && sew <= e64);
-require((nf * P.VU.vlmul) <= (NVPR / 4));
-reg_t baseAddr = RS1;
-reg_t stride = insn.rs2();
-reg_t vs3 = insn.rd();
-reg_t vlmax = P.VU.vlmax;
-DUPLICATE_VREG(stride, vlmax);
-for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
-  bool is_valid = true;
-  V_ELEMENT_SKIP(i);
-  STRIP(i)
-
-  for (reg_t fn = 0; fn < nf; ++fn) {
-    switch (sew) {
-    case e8:
-      if (is_valid)
-        MMU.store_uint8(baseAddr + index[i] + fn * elt_byte,
-                        P.VU.elt<uint8_t>(vs3 + fn, vreg_inx));
-      break;
-    case e16:
-      if (is_valid)
-        MMU.store_uint16(baseAddr + index[i] + fn * elt_byte,
-                         P.VU.elt<uint16_t>(vs3 + fn, vreg_inx));
-      break;
-    case e32:
-      if (is_valid)
-        MMU.store_uint32(baseAddr + index[i] + fn * elt_byte,
-                         P.VU.elt<uint32_t>(vs3 + fn, vreg_inx));
-      break;
-    case e64:
-      if (is_valid)
-        MMU.store_uint64(baseAddr + index[i] + fn * elt_byte,
-                         P.VU.elt<uint64_t>(vs3 + fn, vreg_inx));
-      break;
-    }
-  }
+DUPLICATE_VREG(insn.rs2(), P.VU.vlmax);
+if (sew == e8){
+  VI_ST(index[i], fn, uint8, 1);
+}else if (sew == e16){
+  VI_ST(index[i], fn, uint16, 2);
+}else if (sew == e32){
+  VI_ST(index[i], fn, uint32, 4);
+}else if (sew == e64){
+  VI_ST(index[i], fn, uint64, 8);
 }
-P.VU.vstart = 0;
+
 VI_CHECK_1905
