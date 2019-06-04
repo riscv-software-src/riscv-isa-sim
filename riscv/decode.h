@@ -1257,6 +1257,10 @@ VI_LOOP_END
     STRIP(i); \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       ld_width##_t val = MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte); \
+      if (vd + fn >= NVPR){ \
+         P.VU.vstart = vreg_inx;\
+         require(false); \
+      } \
       switch(P.VU.vsew){ \
         case e8: \
           P.VU.elt<uint8_t>(vd + fn, vreg_inx) = is_valid ? val : 0; \
