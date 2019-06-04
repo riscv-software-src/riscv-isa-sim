@@ -10,7 +10,7 @@ for (reg_t i = 0; i < P.VU.vlmax && vl != 0; ++i) {
   bool is_valid = true;
   bool is_zero = false;
   STRIP(i);
-  V_ELEMENT_SKIP(i);
+  VI_ELEMENT_SKIP(i);
 
   for (reg_t fn = 0; fn < nf; ++fn) {
     MMU.load_uint8(baseAddr + (i * nf + fn) * 1);

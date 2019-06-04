@@ -9,7 +9,7 @@ reg_t vlmax = P.VU.vlmax;
 DUPLICATE_VREG(stride, vlmax);
 for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
   bool is_valid = true;
-  V_ELEMENT_SKIP(i);
+  VI_ELEMENT_SKIP(i);
   STRIP(i)
 
   switch (sew) {
