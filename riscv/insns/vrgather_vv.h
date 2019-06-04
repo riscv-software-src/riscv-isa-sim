@@ -7,11 +7,13 @@ reg_t rd_num = insn.rd();
 reg_t rs1_num = insn.rs1();
 reg_t rs2_num = insn.rs2();
 for (reg_t i = P.VU.vstart; i < vl; ++i) {
-  VI_LOOP_ELEMENT_SKIP();
-
+  V_LOOP_ELEMENT_SKIP();
+  VI_CHECK_VREG_OVERLAP(rd_num, rs1_num);
+  VI_CHECK_VREG_OVERLAP(rd_num, rs2_num);
   switch (sew) {
   case e8: {
     auto vs1 = P.VU.elt<uint8_t>(rs1_num, i);
+    //if (i > 255) continue;
     P.VU.elt<uint8_t>(rd_num, i) = vs1 >= P.VU.vlmax ? 0 : P.VU.elt<uint8_t>(rs2_num, vs1);
     break;
   }

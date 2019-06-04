@@ -448,9 +448,12 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   if (insn.v_vm() == 0) \
     require(insn.rd() != 0);
 
+#define VI_CHECK_VREG_OVERLAP(v1, v2) \
+  require((v1 <= v2 ? v2 - v1 : v1 - v2) * P.VU.vlmul * (P.VU.VLEN/P.VU.vsew) >= P.VU.vlmax); 
+
 #define VI_CHECK_SDS \
   reg_t insn_dist = insn.rd() <= insn.rs2() ? insn.rs2() - insn.rd() : insn.rd() - insn.rs2(); \
-  require(insn_dist * P.VU.vlmul >= P.VU.vlmax); 
+  require(insn_dist * P.VU.vlmul * (P.VU.VLEN/P.VU.vsew) >= P.VU.vlmax); 
 
 #define VI_CHECK_DSS(is_rs) \
   VI_WIDE_CHECK_COMMON; \
