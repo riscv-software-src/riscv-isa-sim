@@ -849,6 +849,20 @@ disassembler_t::disassembler_t(int xlen)
     add_insn(new disasm_insn_t(#name ".vx", match_##name##_vx, mask_##name##_vx, \
                 {&vd, &vs2, &xrs1, &opt, &vm}));
 
+  #define DISASM_OPIV_VXIM_INSN(name, sign) \
+    add_insn(new disasm_insn_t(#name ".vvm", match_##name##_vvm, mask_##name##_vvm, \
+                {&vd, &vs2, &vs1, &v0})); \
+    add_insn(new disasm_insn_t(#name ".vxm", match_##name##_vxm, mask_##name##_vxm, \
+                {&vd, &vs2, &xrs1, &v0})); \
+    add_insn(new disasm_insn_t(#name ".vim", match_##name##_vim, mask_##name##_vim, \
+                {&vd, &vs2, &v_simm5, &v0}));
+
+  #define DISASM_OPIV_VX_M_INSN(name, sign) \
+    add_insn(new disasm_insn_t(#name ".vvm", match_##name##_vvm, mask_##name##_vvm, \
+                {&vd, &vs2, &vs1, &v0})); \
+    add_insn(new disasm_insn_t(#name ".vxm", match_##name##_vxm, mask_##name##_vxm, \
+                {&vd, &vs2, &xrs1, &v0}));
+
   //OPFVV/OPFVF
   //0b00_0000
   DISASM_OPIV_VXI_INSN(vadd,      1);
@@ -866,11 +880,11 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV__XI_INSN(vslidedown,1);
 
   //0b01_0000
-  DISASM_OPIV_VXI_INSN(vadc,      1);
-  DISASM_OPIV_VX__INSN(vsbc,      1);
-  DISASM_INSN("vmerge.vim", vmerge_vim, 0, {&vd, &vs2, &v_simm5, &v0});
-  DISASM_INSN("vmerge.vvm", vmerge_vvm, 0, {&vd, &vs2, &vs1, &v0});
-  DISASM_INSN("vmerge.vxm", vmerge_vxm, 0, {&vd, &vs2, &xrs1, &v0});
+  DISASM_OPIV_VXIM_INSN(vadc,    1);
+  DISASM_OPIV_VXIM_INSN(vmadc,   1);
+  DISASM_OPIV_VX_M_INSN(vsbc,    1);
+  DISASM_OPIV_VX_M_INSN(vmsbc,   1);
+  DISASM_OPIV_VXIM_INSN(vmerge,  1);
   DISASM_INSN("vmv.v.i", vmv_v_i, 0, {&vd, &v_simm5});
   DISASM_INSN("vmv.v.v", vmv_v_v, 0, {&vd, &vs1});
   DISASM_INSN("vmv.v.x", vmv_v_x, 0, {&vd, &xrs1});
@@ -986,6 +1000,8 @@ disassembler_t::disassembler_t(int xlen)
   #undef DISASM_OPIV_W___INSN
   #undef DISASM_OPIV_M___INSN
   #undef DISASM_OPIV__X__INSN
+  #undef DISASM_OPIV_VXIM_INSN
+  #undef DISASM_OPIV_VX_M_INSN
 
   #define DISASM_OPIV_VF_INSN(name) \
       add_insn(new disasm_insn_t(#name ".vv", match_##name##_vv, mask_##name##_vv, \
