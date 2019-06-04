@@ -415,7 +415,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   } \
 }
 
-#define V_LOOP_ELEMENT_SKIP(BODY) \
+#define VI_LOOP_ELEMENT_SKIP(BODY) \
   const int mlen = P.VU.vmlen; \
   const int midx = (mlen * i) / 64; \
   const int mpos = (mlen * i) % 64; \
@@ -432,7 +432,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   } else if (inx < P.VU.vstart) { \
     continue; \
   } else { \
-    V_LOOP_ELEMENT_SKIP(); \
+    VI_LOOP_ELEMENT_SKIP(); \
   }
 
 #define VI_NARROW_CHECK_COMMON \
@@ -539,7 +539,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_LOOP_BASE \
     VI_GENERAL_LOOP_BASE \
-    V_LOOP_ELEMENT_SKIP(); 
+    VI_LOOP_ELEMENT_SKIP();
 
 #define VI_LOOP_END \
   } \
@@ -579,7 +579,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
-    V_LOOP_ELEMENT_SKIP(); \
+    VI_LOOP_ELEMENT_SKIP(); \
     uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
     uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx); \
     uint64_t res = 0;
@@ -880,7 +880,7 @@ VI_LOOP_END
   auto &vd_0_des = P.VU.elt<type_sew_t<x>::type>(rd_num, 0); \
   auto vd_0_res = P.VU.elt<type_sew_t<x>::type>(rs1_num, 0); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
-    V_LOOP_ELEMENT_SKIP(); \
+    VI_LOOP_ELEMENT_SKIP(); \
     auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
 
 #define REDUCTION_LOOP(x, BODY) \
@@ -910,7 +910,7 @@ VI_LOOP_END
   auto &vd_0_des = P.VU.elt<type_usew_t<x>::type>(rd_num, 0); \
   auto vd_0_res = P.VU.elt<type_usew_t<x>::type>(rs1_num, 0); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
-    V_LOOP_ELEMENT_SKIP(); \
+    VI_LOOP_ELEMENT_SKIP(); \
     auto vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
 
 #define REDUCTION_ULOOP(x, BODY) \
@@ -1104,7 +1104,7 @@ VI_LOOP_END
   require(P.VU.vsew <= e32); \
   VI_CHECK_SDS; \
   VI_GENERAL_LOOP_BASE; \
-  V_LOOP_ELEMENT_SKIP({\
+  VI_LOOP_ELEMENT_SKIP({\
     require(insn.rd() == 0 && P.VU.vlmul == 1);\
   });
 
@@ -1160,7 +1160,7 @@ VI_LOOP_END
   auto &vd_0_des = P.VU.elt<type_sew_t<sew2>::type>(rd_num, 0); \
   auto vd_0_res = P.VU.elt<type_sew_t<sew2>::type>(rs1_num, 0); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
-    V_LOOP_ELEMENT_SKIP(); \
+    VI_LOOP_ELEMENT_SKIP(); \
     auto vs2 = P.VU.elt<type_sew_t<sew1>::type>(rs2_num, i);
 
 #define WIDE_REDUCTION_LOOP(sew1, sew2, BODY) \
@@ -1189,7 +1189,7 @@ VI_LOOP_END
   auto &vd_0_des = P.VU.elt<type_usew_t<sew2>::type>(rd_num, 0); \
   auto vd_0_res = P.VU.elt<type_usew_t<sew2>::type>(rs1_num, 0); \
   for (reg_t i=P.VU.vstart; i<vl; ++i) { \
-    V_LOOP_ELEMENT_SKIP(); \
+    VI_LOOP_ELEMENT_SKIP(); \
     auto vs2 = P.VU.elt<type_usew_t<sew1>::type>(rs2_num, i);
 
 #define WIDE_REDUCTION_ULOOP(sew1, sew2, BODY) \
@@ -1372,7 +1372,7 @@ VI_LOOP_END
   reg_t rs2_num = insn.rs2(); \
   softfloat_roundingMode = STATE.frm; \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
-    V_LOOP_ELEMENT_SKIP();
+    VI_LOOP_ELEMENT_SKIP();
 
 #define VF_LOOP_CMP_BASE \
   require_extension('F'); \
@@ -1388,7 +1388,7 @@ VI_LOOP_END
     float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
     float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
     float32_t rs1 = f32(READ_FREG(rs1_num)); \
-    V_LOOP_ELEMENT_SKIP(); \
+    VI_LOOP_ELEMENT_SKIP(); \
     uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
     uint64_t &vdi = P.VU.elt<uint64_t>(rd_num, midx); \
     uint64_t res = 0;
@@ -1407,7 +1407,7 @@ VI_LOOP_END
   float32_t vs1_0 = P.VU.elt<float32_t>(rs1_num, 0); \
   vd_0 = vs1_0;\
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
-    V_LOOP_ELEMENT_SKIP(); \
+    VI_LOOP_ELEMENT_SKIP(); \
     int32_t &vd = P.VU.elt<int32_t>(rd_num, i); \
 
 #define VF_LOOP_WIDE_REDUCTION_BASE \
@@ -1422,7 +1422,7 @@ VI_LOOP_END
   softfloat_roundingMode = STATE.frm; \
   float64_t vd_0 = P.VU.elt<float64_t>(rs1_num, 0); \
   for (reg_t i=P.VU.vstart; i<vl; ++i) { \
-    V_LOOP_ELEMENT_SKIP();
+    VI_LOOP_ELEMENT_SKIP();
 
 #define VF_LOOP_END \
   } \
