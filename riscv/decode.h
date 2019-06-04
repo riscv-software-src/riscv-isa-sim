@@ -398,7 +398,7 @@ enum VMUNARY0{
 
 #define DUPLICATE_VREG(v, vlmax) \
 reg_t index[vlmax] = {0}; \
-for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
+for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   switch(P.VU.vsew) { \
     case e8: \
       index[i] = P.VU.elt<int8_t>(v, i); \
@@ -695,7 +695,6 @@ if (sew == e8){ \
   BODY; \
 } \
 VI_LOOP_END 
-
 
 #define VI_VV_ULOOP(BODY) \
   VI_LOOP_BASE \
@@ -1206,6 +1205,38 @@ VI_LOOP_END
   } else if(sew == e32){ \
     WIDE_REDUCTION_ULOOP(e32, e64, BODY) \
   }
+
+#define VI_LD(stride, offset, ld_width, elt_byte) \
+  reg_t nf = insn.v_nf() + 1; \
+  require((nf * P.VU.vlmul) <= (NVPR / 4)); \
+  reg_t vl = P.VU.vl; \
+  reg_t baseAddr = RS1; \
+  reg_t vd = insn.rd(); \
+  reg_t vlmax = P.VU.vlmax; \
+  reg_t vlmul = P.VU.vlmul; \
+  for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
+    bool is_valid = true; \
+    V_ELEMENT_SKIP(i); \
+    STRIP(i); \
+    for (reg_t fn = 0; fn < nf; ++fn) { \
+      ld_width##_t val = MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte); \
+      switch(P.VU.vsew){ \
+        case e8: \
+          P.VU.elt<uint8_t>(vd + fn, vreg_inx) = is_valid ? val : 0; \
+          break; \
+        case e16: \
+          P.VU.elt<uint16_t>(vd + fn, vreg_inx) = is_valid ? val : 0; \
+          break; \
+        case e32: \
+          P.VU.elt<uint32_t>(vd + fn, vreg_inx) = is_valid ? val : 0; \
+          break; \
+        default: \
+          P.VU.elt<uint64_t>(vd + fn, vreg_inx) = is_valid ? val : 0; \
+      } \
+    } \
+  } \
+  P.VU.vstart = 0;
+
 
 #define VI_LDST_FF(itype, tsew) \
   require(p->VU.vsew >= e##tsew && p->VU.vsew <= e64); \

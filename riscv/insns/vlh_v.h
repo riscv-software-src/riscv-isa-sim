@@ -1,26 +1,4 @@
 // vlh.v and vlseg[2-8]h.v
 require(P.VU.vsew >= e16);
-reg_t nf = insn.v_nf() + 1;
-require((nf * P.VU.vlmul) <= (NVPR / 4));
-reg_t vl = P.VU.vl;
-reg_t baseAddr = RS1;
-reg_t vd = insn.rd();
-reg_t vlmax = P.VU.vlmax;
-for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
-  bool is_valid = true;
-  V_ELEMENT_SKIP(i);
-  STRIP(i)
-  for (reg_t fn=0; fn<nf; ++fn) {
-    int64_t val = MMU.load_int16(baseAddr + (i * nf + fn) * 2);
-    if (P.VU.vsew == e16) {
-      P.VU.elt<uint16_t>(vd+fn, vreg_inx) = is_valid ? val : 0;
-    } else if (P.VU.vsew == e32) {
-      P.VU.elt<uint32_t>(vd+fn, vreg_inx) = is_valid ? val : 0;
-    } else {
-      P.VU.elt<uint64_t>(vd+fn, vreg_inx) = is_valid ? val : 0;
-    }
-  }
-}
-
-P.VU.vstart = 0;
+VI_LD(0, i * nf + fn, int16, 2);
 VI_CHECK_1905
