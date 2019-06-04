@@ -600,6 +600,8 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
     uint64_t vs2 = P.VU.elt<uint64_t>(insn.rs2(), midx); \
     uint64_t vs1 = P.VU.elt<uint64_t>(insn.rs1(), midx); \
+    bool vs2_lsb = vs2 & 0x1; \
+    bool vs1_lsb = vs1 & 0x1; \
     uint64_t &res = P.VU.elt<uint64_t>(insn.rd(), midx); \
     res = (res & ~mmask) | ((op) & mmask); \
   } \
