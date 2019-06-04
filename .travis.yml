@@ -27,13 +27,13 @@ before_install:
 
 install:
   - ./configure --prefix=$TRAVIS_BUILD_DIR/bengal-team/spike-prefix/
-  - make -j install
+  - make -j $(nproc) install
 
 before_script:
   - pip install cffi
   - cd bengal-team
   - git submodule update --init --recursive -j $(nproc) riscv-binutils-gdb
-  - make -j toolchain-prefix/bin/riscv64-unknown-elf-gcc
+  - make -j $(nproc) toolchain-prefix/bin/riscv64-unknown-elf-gcc
   - git clone --single-branch --branch hankuanc --recurse-submodules -j $(nproc) git@github.com:sifive/riscv-tests-internal.git
   - cd $TRAVIS_BUILD_DIR
 
@@ -41,5 +41,5 @@ script:
   - mkdir bengal-team/riscv-tests-internal/vector/build
   - cd bengal-team/riscv-tests-internal/vector/build
   - ../configure "-DBASE=$BASE" "$SEED"
-  - make -j
+  - make -j $(nproc)
   - ctest --timeout 5
