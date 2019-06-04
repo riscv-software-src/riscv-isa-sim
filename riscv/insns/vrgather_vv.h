@@ -7,7 +7,7 @@ reg_t rd_num = insn.rd();
 reg_t rs1_num = insn.rs1();
 reg_t rs2_num = insn.rs2();
 for (reg_t i = P.VU.vstart; i < vl; ++i) {
-  V_LOOP_ELEMENT_SKIP();
+  VI_LOOP_ELEMENT_SKIP();
   VI_CHECK_VREG_OVERLAP(rd_num, rs1_num);
   VI_CHECK_VREG_OVERLAP(rd_num, rs2_num);
   switch (sew) {
