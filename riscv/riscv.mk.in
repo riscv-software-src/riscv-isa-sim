@@ -298,6 +298,9 @@ riscv_insn_ext_v_alu_int = \
 	vadc_vim \
 	vadc_vvm \
 	vadc_vxm \
+	vmadc_vim \
+	vmadc_vvm \
+	vmadc_vxm \
 	vadd_vi \
 	vadd_vv \
 	vadd_vx \
@@ -420,6 +423,8 @@ riscv_insn_ext_v_alu_int = \
 	vsaddu_vx \
 	vsbc_vvm \
 	vsbc_vxm \
+	vmsbc_vvm \
+	vmsbc_vxm \
 	vslide1down_vx \
 	vslide1up_vx \
 	vslidedown_vi \

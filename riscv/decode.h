@@ -686,6 +686,17 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   auto vs2 = P.VU.elt<type_sew_t<sew2>::type>(rs2_num, i); \
   auto vs1 = P.VU.elt<type_sew_t<sew1>::type>(rs1_num, i);
 
+#define XI_CARRY_PARAMS(x) \
+  auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
+  auto rs1 = (type_sew_t<x>::type)RS1; \
+  auto simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
+  auto &vd = P.VU.elt<uint64_t>(rd_num, midx);
+
+#define VV_CARRY_PARAMS(x) \
+  auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
+  auto vs1 = P.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
+  auto &vd = P.VU.elt<uint64_t>(rd_num, midx);
+
 #define VI_VV_LOOP_NARROW(BODY) \
 VI_NARROW_CHECK_COMMON; \
 VI_LOOP_BASE \
@@ -1209,6 +1220,42 @@ VI_LOOP_END
   } else if(sew == e32){ \
     WIDE_REDUCTION_ULOOP(e32, e64, BODY) \
   }
+
+#define VI_VV_LOOP_CARRY(BODY) \
+  VI_LOOP_BASE \
+    if (sew == e8){ \
+      VV_CARRY_PARAMS(e8) \
+      BODY; \
+    } else if (sew == e16) { \
+      VV_CARRY_PARAMS(e16) \
+      BODY; \
+    } else if (sew == e32) { \
+      VV_CARRY_PARAMS(e32) \
+      BODY; \
+    } else if (sew == e64) { \
+      VV_PARAMS(e64) \
+      BODY; \
+    } \
+  } \
+  VI_TAIL_ZERO_MASK(rd_num);
+
+#define VI_XI_LOOP_CARRY(BODY) \
+  VI_LOOP_BASE \
+    if (sew == e8){ \
+      XI_CARRY_PARAMS(e8) \
+      BODY; \
+    } else if (sew == e16) { \
+      XI_CARRY_PARAMS(e16) \
+      BODY; \
+    } else if (sew == e32) { \
+      XI_CARRY_PARAMS(e32) \
+      BODY; \
+    } else if (sew == e64) { \
+      XI_CARRY_PARAMS(e64) \
+      BODY; \
+    } \
+  } \
+  VI_TAIL_ZERO_MASK(rd_num);
 
 #define VI_ST(stride, offset, st_width, elt_byte) \
   reg_t nf = insn.v_nf() + 1; \
