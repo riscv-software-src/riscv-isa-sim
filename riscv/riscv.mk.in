@@ -326,9 +326,12 @@ riscv_insn_ext_v_alu_int = \
 	vmax_vx \
 	vmaxu_vv \
 	vmaxu_vx \
-	vmerge_vi \
-	vmerge_vv \
-	vmerge_vx \
+	vmerge_vim \
+	vmerge_vvm \
+	vmerge_vxm \
+	vmv_v_i \
+	vmv_v_v \
+	vmv_v_x \
 	vmfirst_m \
 	vmin_vv \
 	vmin_vx \

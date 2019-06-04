@@ -304,6 +304,12 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
+    return "v0";
+  }
+} v0;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     return std::to_string((int)insn.v_simm5());
   }
 } v_simm5;
@@ -862,7 +868,12 @@ disassembler_t::disassembler_t(int xlen)
   //0b01_0000
   DISASM_OPIV_VXI_INSN(vadc,      1);
   DISASM_OPIV_VX__INSN(vsbc,      1);
-  DISASM_OPIV_VXI_INSN(vmerge,    1);
+  DISASM_INSN("vmerge.vim", vmerge_vim, 0, {&vd, &vs2, &v_simm5, &v0});
+  DISASM_INSN("vmerge.vvm", vmerge_vvm, 0, {&vd, &vs2, &vs1, &v0});
+  DISASM_INSN("vmerge.vxm", vmerge_vxm, 0, {&vd, &vs2, &xrs1, &v0});
+  DISASM_INSN("vmv.v.i", vmv_v_i, 0, {&vd, &v_simm5});
+  DISASM_INSN("vmv.v.v", vmv_v_v, 0, {&vd, &vs1});
+  DISASM_INSN("vmv.v.x", vmv_v_x, 0, {&vd, &xrs1});
   DISASM_OPIV_VXI_INSN(vmseq,     1);
   DISASM_OPIV_VXI_INSN(vmsne,     1);
   DISASM_OPIV_VX__INSN(vmsltu,    0);
