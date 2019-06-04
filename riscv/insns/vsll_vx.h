@@ -1,6 +1,6 @@
 // vsll
 VI_VX_LOOP
 ({
-    vd = vsext(vs2 << (rs1 & (sew-1)), sew);
+    vd = vs2 << (rs1 & (sew - 1));
 })
 VI_CHECK_1905
