@@ -43,6 +43,10 @@ entry_loop:
         jal  zero, entry_loop
 
 _exception:
+        // Restore S0, which we always save to dscratch.
+        // We need this in case the user tried an abstract write to a
+        // non-existent CSR.
+        csrr    s0, CSR_DSCRATCH
         sw      zero, DEBUG_ROM_EXCEPTION(zero) // Let debug module know you got an exception.
         ebreak
 
