@@ -123,7 +123,6 @@ struct type_usew_t<64>
   using type=uint64_t;
 };
 
-
 template<uint64_t N>
 struct type_sew_t;
 
@@ -163,11 +162,9 @@ class vectorUnit_t {
     reg_t ELEN, VLEN, SLEN;
     bool vill;
 
-
     // vector element for varies SEW
     template<class T>
       T& elt(reg_t vReg, reg_t n){
-        // this still needs to be adjusted for SLEN != VLEN
         assert(vsew!=0);
         reg_t elts_per_reg = (VLEN >> 3) / (sizeof(T));
         vReg += n / elts_per_reg;

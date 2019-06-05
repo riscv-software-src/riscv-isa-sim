@@ -100,26 +100,21 @@ void processor_t::parse_varch_string(const char* s)
       token = str.substr(0, pos);
     }
     if (token[0] == 'v'){
-        vlen = parse_varch(token);
-        if (!(vlen >= 32 || vlen <= 4096)){
-            bad_varch_string(s);
-        }
+      vlen = parse_varch(token);
     }else if (token[0] == 'e'){
-        elen = parse_varch(token);
-        if (!(vlen >= 32 || vlen <= 512)){
-            bad_varch_string(s);
-        }
+      elen = parse_varch(token);
     }else if (token[0] == 's'){
-        slen = parse_varch(token);
-        if (!(vlen >= 32 || vlen <= 4096)){
-            bad_varch_string(s);
-        }
+      slen = parse_varch(token);
     }else{
-        bad_varch_string(str.c_str());
+      bad_varch_string(str.c_str());
     }
     str.erase(0, pos + delimiter.length());
   }
-  
+
+  if (!(vlen >= 32 || vlen <= 4096) && !(slen >= vlen || slen <= vlen) && !(elen >= slen || elen <= slen)){
+    bad_varch_string(s);
+  }
+
   VU.VLEN = vlen;
   VU.ELEN = elen;
   VU.SLEN = slen;
@@ -223,7 +218,8 @@ reg_t vectorUnit_t::set_vl(uint64_t regId, reg_t reqVL, reg_t newType){
   return vl;
 }
 
-void vectorUnit_t::set_vcsr(int which, reg_t val){
+void vectorUnit_t::set_vcsr(int which, reg_t val)
+{
   switch(which){
     case CSR_VSTART:
       vstart = val;
@@ -251,8 +247,8 @@ void vectorUnit_t::set_vcsr(int which, reg_t val){
   }
 }
 
-reg_t vectorUnit_t::get_vcsr(int which){
-
+reg_t vectorUnit_t::get_vcsr(int which)
+{
   switch(which){
     case CSR_VSTART:
       return vstart; 
