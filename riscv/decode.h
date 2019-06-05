@@ -668,19 +668,19 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   auto &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i); \
   auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i - offset);
 
-#define VI_NSHIFT_PARAM(sew1, sew2) \
+#define VI_NSHIFT_PARAMS(sew1, sew2) \
   auto &vd = P.VU.elt<type_usew_t<sew1>::type>(rd_num, i); \
   auto vs2_u = P.VU.elt<type_usew_t<sew2>::type>(rs2_num, i); \
   auto vs2 = P.VU.elt<type_sew_t<sew2>::type>(rs2_num, i); \
   auto zimm5 = (type_usew_t<sew1>::type)insn.v_zimm5();
 
-#define VX_NSHIFT_PARAM(sew1, sew2) \
+#define VX_NSHIFT_PARAMS(sew1, sew2) \
   auto &vd = P.VU.elt<type_usew_t<sew1>::type>(rd_num, i); \
   auto vs2_u = P.VU.elt<type_usew_t<sew2>::type>(rs2_num, i); \
   auto vs2 = P.VU.elt<type_sew_t<sew2>::type>(rs2_num, i); \
   auto rs1 = (type_sew_t<sew1>::type)RS1;
 
-#define VV_NSHIFT_PARAM(sew1, sew2) \
+#define VV_NSHIFT_PARAMS(sew1, sew2) \
   auto &vd = P.VU.elt<type_usew_t<sew1>::type>(rd_num, i); \
   auto vs2_u = P.VU.elt<type_usew_t<sew2>::type>(rs2_num, i); \
   auto vs2 = P.VU.elt<type_sew_t<sew2>::type>(rs2_num, i); \
@@ -1124,13 +1124,13 @@ VI_LOOP_END
 #define VI_VI_LOOP_NSHIFT(BODY) \
   NSHIFT_CHECK \
   if (sew == e8){ \
-    VI_NSHIFT_PARAM(e8, e16) \
+    VI_NSHIFT_PARAMS(e8, e16) \
     BODY; \
   } else if (sew == e16) { \
-    VI_NSHIFT_PARAM(e16, e32) \
+    VI_NSHIFT_PARAMS(e16, e32) \
     BODY; \
   } else if (sew == e32) { \
-    VI_NSHIFT_PARAM(e32, e64) \
+    VI_NSHIFT_PARAMS(e32, e64) \
     BODY; \
   } \
   VI_LOOP_END
@@ -1138,13 +1138,13 @@ VI_LOOP_END
 #define VI_VX_LOOP_NSHIFT(BODY) \
   NSHIFT_CHECK \
   if (sew == e8){ \
-    VX_NSHIFT_PARAM(e8, e16) \
+    VX_NSHIFT_PARAMS(e8, e16) \
     BODY; \
   } else if (sew == e16) { \
-    VX_NSHIFT_PARAM(e16, e32) \
+    VX_NSHIFT_PARAMS(e16, e32) \
     BODY; \
   } else if (sew == e32) { \
-    VX_NSHIFT_PARAM(e32, e64) \
+    VX_NSHIFT_PARAMS(e32, e64) \
     BODY; \
   } \
   VI_LOOP_END
@@ -1152,13 +1152,13 @@ VI_LOOP_END
 #define VI_VV_LOOP_NSHIFT(BODY) \
   NSHIFT_CHECK \
   if (sew == e8){ \
-    VV_NSHIFT_PARAM(e8, e16) \
+    VV_NSHIFT_PARAMS(e8, e16) \
     BODY; \
   } else if (sew == e16) { \
-    VV_NSHIFT_PARAM(e16, e32) \
+    VV_NSHIFT_PARAMS(e16, e32) \
     BODY; \
   } else if (sew == e32) { \
-    VV_NSHIFT_PARAM(e32, e64) \
+    VV_NSHIFT_PARAMS(e32, e64) \
     BODY; \
   } \
   VI_LOOP_END
