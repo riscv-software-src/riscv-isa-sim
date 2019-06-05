@@ -468,7 +468,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   if (is_rs) \
      require(!(insn.rd() <= insn.rs1() && insn.rs1() < (insn.rd() + P.VU.vlmul)));
 
-#define V_WIDE_OP_AND_ASSIGN(var0, var1, var2, op0, op1, sign) \
+#define VI_WIDE_OP_AND_ASSIGN(var0, var1, var2, op0, op1, sign) \
   switch(P.VU.vsew) { \
   case e8: { \
     sign##16_t vd_w = P.VU.elt<sign##16_t>(rd_num, i); \
