@@ -1,5 +1,5 @@
 // vfdot.vv vd, vs2, vs1
-VFP_VV_LOOP
+VI_VFP_VV_LOOP
 ({
   switch(P.VU.vsew){
   case e32:

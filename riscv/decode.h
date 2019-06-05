@@ -1426,7 +1426,7 @@ VI_LOOP_END
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     VI_LOOP_ELEMENT_SKIP();
 
-#define VI_VF_LOOP_CMP_BASE \
+#define VI_VFP_LOOP_CMP_BASE \
   require_extension('F'); \
   require_fp; \
   require(P.VU.vsew == 32); \
@@ -1445,7 +1445,7 @@ VI_LOOP_END
     uint64_t &vdi = P.VU.elt<uint64_t>(rd_num, midx); \
     uint64_t res = 0;
 
-#define VI_VF_LOOP_REDUCTION_BASE \
+#define VI_VFP_LOOP_REDUCTION_BASE \
   require_extension('F'); \
   require_fp; \
   require(P.VU.vsew == 32); \
@@ -1462,7 +1462,7 @@ VI_LOOP_END
     VI_LOOP_ELEMENT_SKIP(); \
     int32_t &vd = P.VU.elt<int32_t>(rd_num, i); \
 
-#define VI_VF_LOOP_WIDE_REDUCTION_BASE \
+#define VI_VFP_LOOP_WIDE_REDUCTION_BASE \
   require_extension('F'); \
   require_fp; \
   require(P.VU.vsew == 32); \
@@ -1476,7 +1476,7 @@ VI_LOOP_END
   for (reg_t i=P.VU.vstart; i<vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP();
 
-#define VF_LOOP_END \
+#define VI_VFP_LOOP_END \
   } \
   if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
     uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((P.VU.vsew >> 3) * 1)); \
@@ -1485,7 +1485,7 @@ VI_LOOP_END
   P.VU.vstart = 0; \
   set_fp_exceptions;
 
-#define VF_LOOP_REDUCTION_END(x) \
+#define VI_VFP_LOOP_REDUCTION_END(x) \
   } \
   P.VU.vstart = 0; \
   set_fp_exceptions; \
@@ -1496,7 +1496,7 @@ VI_LOOP_END
     } \
   }
 
-#define VF_LOOP_CMP_END \
+#define VI_VFP_LOOP_CMP_END \
     switch(P.VU.vsew) { \
     case 32: { \
       vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
@@ -1522,28 +1522,28 @@ VI_LOOP_END
   P.VU.vstart = 0; \
   set_fp_exceptions;
 
-#define VFP_VV_LOOP(BODY) \
+#define VI_VFP_VV_LOOP(BODY) \
   VI_VFP_LOOP_BASE \
   float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
   float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
   float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
   BODY; \
   DEBUG_RVV_FP_VV; \
-  VF_LOOP_END
+  VI_VFP_LOOP_END
 
 #define VI_VFP_VV_LOOP_REDUCTION(BODY) \
-  VI_VF_LOOP_REDUCTION_BASE \
+  VI_VFP_LOOP_REDUCTION_BASE \
   float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
   BODY; \
   DEBUG_RVV_FP_VV; \
-  VF_LOOP_REDUCTION_END(e32)
+  VI_VFP_LOOP_REDUCTION_END(e32)
 
 #define VI_VFP_VV_LOOP_WIDE_REDUCTION(BODY) \
-  VI_VF_LOOP_WIDE_REDUCTION_BASE \
+  VI_VFP_LOOP_WIDE_REDUCTION_BASE \
   float64_t vs2 = f64(P.VU.elt<float32_t>(rs2_num, i).v); \
   BODY; \
   DEBUG_RVV_FP_VV; \
-  VF_LOOP_REDUCTION_END(e64)
+  VI_VFP_LOOP_REDUCTION_END(e64)
 
 #define VI_VFP_VF_LOOP(BODY) \
   VI_VFP_LOOP_BASE \
@@ -1552,13 +1552,13 @@ VI_LOOP_END
   float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
   BODY; \
   DEBUG_RVV_FP_VF; \
-  VF_LOOP_END
+  VI_VFP_LOOP_END
 
 #define VI_VFP_LOOP_CMP(BODY) \
-  VI_VF_LOOP_CMP_BASE \
+  VI_VFP_LOOP_CMP_BASE \
   BODY; \
   DEBUG_RVV_FP_VV; \
-  VF_LOOP_CMP_END \
+  VI_VFP_LOOP_CMP_END \
 
 #define VI_VFP_VVF_LOOP_WIDE(BODY) \
   VI_VFP_LOOP_BASE \
@@ -1568,7 +1568,7 @@ VI_LOOP_END
   float64_t rs1 = f64(READ_FREG(rs1_num)); \
   BODY; \
   DEBUG_RVV_FP_VV; \
-  VF_LOOP_END
+  VI_VFP_LOOP_END
 
 #define INT_ROUNDING(result, xrm, gb) \
   if (gb > 0) { \

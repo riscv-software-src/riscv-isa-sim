@@ -1,5 +1,5 @@
 // vfmul.vv vd, vs1, vs2, vm
-VFP_VV_LOOP
+VI_VFP_VV_LOOP
 ({
   switch(P.VU.vsew){
   case e32:

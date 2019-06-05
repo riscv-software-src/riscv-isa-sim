@@ -1,5 +1,5 @@
 // vfnmsac.vv vd, vs1, vs2, vm   # vd[i] = -(vs2[i] * vs1[i]) + vd[i]
-VFP_VV_LOOP
+VI_VFP_VV_LOOP
 ({
  switch(P.VU.vsew){
  case e32:

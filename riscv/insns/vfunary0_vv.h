@@ -9,7 +9,7 @@ case VFUNARY0::VFWCVT_F_F_V:
   break;
 }
 
-VFP_VV_LOOP
+VI_VFP_VV_LOOP
 ({
   switch(P.VU.vsew){
   case e32:
