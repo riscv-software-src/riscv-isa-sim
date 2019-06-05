@@ -1115,10 +1115,8 @@ VI_LOOP_END
 
 #define NSHIFT_CHECK \
   require(P.VU.vsew <= e32); \
-  VI_CHECK_SDS; \
   VI_GENERAL_LOOP_BASE; \
   VI_LOOP_ELEMENT_SKIP({\
-    require(insn.rd() == 0 && P.VU.vlmul == 1);\
   });
 
 #define VI_VI_LOOP_NSHIFT(BODY) \
@@ -1258,13 +1256,13 @@ VI_LOOP_END
   VI_TAIL_ZERO_MASK(rd_num);
 
 #define VI_ST(stride, offset, st_width, elt_byte) \
-  reg_t nf = insn.v_nf() + 1; \
+  const reg_t nf = insn.v_nf() + 1; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \
-  reg_t vl = P.VU.vl; \
-  reg_t baseAddr = RS1; \
-  reg_t vs3 = insn.rd(); \
-  reg_t vlmax = P.VU.vlmax; \
-  reg_t vlmul = P.VU.vlmul; \
+  const reg_t vl = P.VU.vl; \
+  const reg_t baseAddr = RS1; \
+  const reg_t vs3 = insn.rd(); \
+  const reg_t vlmax = P.VU.vlmax; \
+  const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
     bool is_valid = true; \
     STRIP(i) \
@@ -1294,13 +1292,13 @@ VI_LOOP_END
 
 
 #define VI_LD(stride, offset, ld_width, elt_byte) \
-  reg_t nf = insn.v_nf() + 1; \
+  const reg_t nf = insn.v_nf() + 1; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \
-  reg_t vl = P.VU.vl; \
-  reg_t baseAddr = RS1; \
-  reg_t vd = insn.rd(); \
-  reg_t vlmax = P.VU.vlmax; \
-  reg_t vlmul = P.VU.vlmul; \
+  const reg_t vl = P.VU.vl; \
+  const reg_t baseAddr = RS1; \
+  const reg_t vd = insn.rd(); \
+  const reg_t vlmax = P.VU.vlmax; \
+  const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
     bool is_valid = true; \
     VI_ELEMENT_SKIP(i); \
@@ -1332,12 +1330,14 @@ VI_LOOP_END
 #define VI_LDST_FF(itype, tsew) \
   require(p->VU.vsew >= e##tsew && p->VU.vsew <= e64); \
   const reg_t nf = insn.v_nf() + 1; \
-  require((nf >= 2 && p->VU.vlmul == 1) || nf == 1); \
+  require((nf * P.VU.vlmul) <= (NVPR / 4)); \
   const reg_t sew = p->VU.vsew; \
   const reg_t vl = p->VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t rd_num = insn.rd(); \
+  const reg_t vlmax = P.VU.vlmax; \
   bool early_stop = false; \
+  const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < P.VU.vlmax && vl != 0; ++i) { \
     bool is_valid = true; \
     STRIP(i); \
@@ -1348,16 +1348,16 @@ VI_LOOP_END
       \
       switch (sew) { \
       case e8: \
-        p->VU.elt<uint8_t>(rd_num + fn, vreg_inx) = is_valid ? val : 0; \
+        p->VU.elt<uint8_t>(rd_num + fn * vlmul, vreg_inx) = is_valid ? val : 0; \
         break; \
       case e16: \
-        p->VU.elt<uint16_t>(rd_num + fn, vreg_inx) = is_valid ? val : 0; \
+        p->VU.elt<uint16_t>(rd_num + fn * vlmul, vreg_inx) = is_valid ? val : 0; \
         break; \
       case e32: \
-        p->VU.elt<uint32_t>(rd_num + fn, vreg_inx) = is_valid ? val : 0; \
+        p->VU.elt<uint32_t>(rd_num + fn * vlmul, vreg_inx) = is_valid ? val : 0; \
         break; \
       case e64: \
-        p->VU.elt<uint64_t>(rd_num + fn, vreg_inx) = is_valid ? val : 0; \
+        p->VU.elt<uint64_t>(rd_num + fn * vlmul, vreg_inx) = is_valid ? val : 0; \
         break; \
       } \
        \
