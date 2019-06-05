@@ -715,17 +715,17 @@ VI_LOOP_END
 #define VI_VV_ULOOP(BODY) \
   VI_LOOP_BASE \
   if (sew == e8){ \
-            VV_U_PARAMS(e8); \
-            BODY; \
+    VV_U_PARAMS(e8); \
+    BODY; \
   }else if(sew == e16){ \
-            VV_U_PARAMS(e16); \
-            BODY; \
+    VV_U_PARAMS(e16); \
+    BODY; \
   }else if(sew == e32){ \
-            VV_U_PARAMS(e32); \
-            BODY; \
+    VV_U_PARAMS(e32); \
+    BODY; \
   }else if(sew == e64){ \
-            VV_U_PARAMS(e64); \
-            BODY; \
+    VV_U_PARAMS(e64); \
+    BODY; \
   } \
   VI_LOOP_END 
 
@@ -733,153 +733,153 @@ VI_LOOP_END
 #define VI_VV_LOOP_CMP(BODY) \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
-            VV_PARAMS(e8); \
-            BODY; \
+    VV_PARAMS(e8); \
+    BODY; \
   }else if(sew == e16){ \
-            VV_PARAMS(e16); \
-            BODY; \
+    VV_PARAMS(e16); \
+    BODY; \
   }else if(sew == e32){ \
-            VV_PARAMS(e32); \
-            BODY; \
+    VV_PARAMS(e32); \
+    BODY; \
   }else if(sew == e64){ \
-            VV_PARAMS(e64); \
-            BODY; \
+    VV_PARAMS(e64); \
+    BODY; \
   } \
   VI_LOOP_CMP_END
 
 #define VI_VX_LOOP_CMP(BODY) \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
-            VX_PARAMS(e8); \
-            BODY; \
+    VX_PARAMS(e8); \
+    BODY; \
   }else if(sew == e16){ \
-            VX_PARAMS(e16); \
-            BODY; \
+    VX_PARAMS(e16); \
+    BODY; \
   }else if(sew == e32){ \
-            VX_PARAMS(e32); \
-            BODY; \
+    VX_PARAMS(e32); \
+    BODY; \
   }else if(sew == e64){ \
-            VX_PARAMS(e64); \
-            BODY; \
+    VX_PARAMS(e64); \
+    BODY; \
   } \
   VI_LOOP_CMP_END
 
 #define VI_VI_LOOP_CMP(BODY) \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
-            VI_PARAMS(e8); \
-            BODY; \
+    VI_PARAMS(e8); \
+    BODY; \
   }else if(sew == e16){ \
-            VI_PARAMS(e16); \
-            BODY; \
+    VI_PARAMS(e16); \
+    BODY; \
   }else if(sew == e32){ \
-            VI_PARAMS(e32); \
-            BODY; \
+    VI_PARAMS(e32); \
+    BODY; \
   }else if(sew == e64){ \
-            VI_PARAMS(e64); \
-            BODY; \
+    VI_PARAMS(e64); \
+    BODY; \
   } \
   VI_LOOP_CMP_END
 
 #define VI_VV_ULOOP_CMP(BODY) \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
-            VV_U_PARAMS(e8); \
-            BODY; \
+    VV_U_PARAMS(e8); \
+    BODY; \
   }else if(sew == e16){ \
-            VV_U_PARAMS(e16); \
-            BODY; \
+    VV_U_PARAMS(e16); \
+    BODY; \
   }else if(sew == e32){ \
-            VV_U_PARAMS(e32); \
-            BODY; \
+    VV_U_PARAMS(e32); \
+    BODY; \
   }else if(sew == e64){ \
-            VV_U_PARAMS(e64); \
-            BODY; \
+    VV_U_PARAMS(e64); \
+    BODY; \
   } \
   VI_LOOP_CMP_END
 
 #define VI_VX_ULOOP_CMP(BODY) \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
-            VX_U_PARAMS(e8); \
-            BODY; \
+    VX_U_PARAMS(e8); \
+    BODY; \
   }else if(sew == e16){ \
-            VX_U_PARAMS(e16); \
-            BODY; \
+    VX_U_PARAMS(e16); \
+    BODY; \
   }else if(sew == e32){ \
-            VX_U_PARAMS(e32); \
-            BODY; \
+    VX_U_PARAMS(e32); \
+    BODY; \
   }else if(sew == e64){ \
-            VX_U_PARAMS(e64); \
-            BODY; \
+    VX_U_PARAMS(e64); \
+    BODY; \
   } \
   VI_LOOP_CMP_END
 
 #define VI_VI_ULOOP_CMP(BODY) \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
-            VI_U_PARAMS(e8); \
-            BODY; \
+    VI_U_PARAMS(e8); \
+    BODY; \
   }else if(sew == e16){ \
-            VI_U_PARAMS(e16); \
-            BODY; \
+    VI_U_PARAMS(e16); \
+    BODY; \
   }else if(sew == e32){ \
-            VI_U_PARAMS(e32); \
-            BODY; \
+    VI_U_PARAMS(e32); \
+    BODY; \
   }else if(sew == e64){ \
-            VI_U_PARAMS(e64); \
-            BODY; \
+    VI_U_PARAMS(e64); \
+    BODY; \
   } \
   VI_LOOP_CMP_END
 
 #define VI_VVXI_MERGE_LOOP(BODY) \
   VI_GENERAL_LOOP_BASE \
   if (sew == e8){ \
-            VXI_PARAMS(e8); \
-            BODY; \
+    VXI_PARAMS(e8); \
+    BODY; \
   }else if(sew == e16){ \
-            VXI_PARAMS(e16); \
-            BODY; \
+    VXI_PARAMS(e16); \
+    BODY; \
   }else if(sew == e32){ \
-            VXI_PARAMS(e32); \
-            BODY; \
+    VXI_PARAMS(e32); \
+    BODY; \
   }else if(sew == e64){ \
-            VXI_PARAMS(e64); \
-            BODY; \
+    VXI_PARAMS(e64); \
+    BODY; \
   } \
   VI_LOOP_END 
 
 #define VI_VV_LOOP(BODY) \
   VI_LOOP_BASE \
   if (sew == e8){ \
-            VV_PARAMS(e8); \
-            BODY; \
+    VV_PARAMS(e8); \
+    BODY; \
   }else if(sew == e16){ \
-            VV_PARAMS(e16); \
-            BODY; \
+    VV_PARAMS(e16); \
+    BODY; \
   }else if(sew == e32){ \
-            VV_PARAMS(e32); \
-            BODY; \
+    VV_PARAMS(e32); \
+    BODY; \
   }else if(sew == e64){ \
-            VV_PARAMS(e64); \
-            BODY; \
+    VV_PARAMS(e64); \
+    BODY; \
   } \
   VI_LOOP_END 
 
 #define VI_VV_LOOP_WIDEN(BODY) \
   VI_LOOP_BASE \
   if (sew == e8){ \
-            VV_PARAMS(e8); \
-            BODY; \
+    VV_PARAMS(e8); \
+    BODY; \
   }else if(sew == e16){ \
-            VV_PARAMS(e16); \
-            BODY; \
+    VV_PARAMS(e16); \
+    BODY; \
   }else if(sew == e32){ \
-            VV_PARAMS(e32); \
-            BODY; \
+    VV_PARAMS(e32); \
+    BODY; \
   }else if(sew == e64){ \
-            VV_PARAMS(e64); \
-            BODY; \
+    VV_PARAMS(e64); \
+    BODY; \
   } \
   VI_LOOP_WIDEN_END 
 
