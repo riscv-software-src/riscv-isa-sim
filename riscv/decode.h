@@ -1426,7 +1426,7 @@ VI_LOOP_END
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     VI_LOOP_ELEMENT_SKIP();
 
-#define VF_LOOP_CMP_BASE \
+#define VI_VF_LOOP_CMP_BASE \
   require_extension('F'); \
   require_fp; \
   require(P.VU.vsew == 32); \
@@ -1554,8 +1554,8 @@ VI_LOOP_END
   DEBUG_RVV_FP_VF; \
   VF_LOOP_END
 
-#define VFP_LOOP_CMP(BODY) \
-  VF_LOOP_CMP_BASE \
+#define VI_VFP_LOOP_CMP(BODY) \
+  VI_VF_LOOP_CMP_BASE \
   BODY; \
   DEBUG_RVV_FP_VV; \
   VF_LOOP_CMP_END \
