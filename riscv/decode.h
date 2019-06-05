@@ -1545,7 +1545,7 @@ VI_LOOP_END
   DEBUG_RVV_FP_VV; \
   VF_LOOP_REDUCTION_END(e64)
 
-#define VFP_VF_LOOP(BODY) \
+#define VI_VFP_VF_LOOP(BODY) \
   VI_VFP_LOOP_BASE \
   float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
   float32_t rs1 = f32(READ_FREG(rs1_num)); \
