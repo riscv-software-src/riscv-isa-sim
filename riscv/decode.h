@@ -1522,27 +1522,6 @@ VI_LOOP_END
   P.VU.vstart = 0; \
   set_fp_exceptions;
 
-
-#define VFMA_VV_LOOP(BODY)                      \
-  VF_LOOP_BASE \
-  float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
-  float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
-  float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
-  float32_t vd_old = vd; \
-  BODY; \
-  DEBUG_RVV_FMA_VV; \
-  VF_LOOP_END
-
-#define VFMA_VF_LOOP(BODY) \
-  VF_LOOP_BASE \
-  float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
-  float32_t rs1 = f32(READ_FREG(rs1_num)); \
-  float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
-  float32_t vd_old = vd; \
-  BODY; \
-  DEBUG_RVV_FMA_VF; \
-  VF_LOOP_END
-
 #define VFP_VV_LOOP(BODY) \
   VF_LOOP_BASE \
   float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
