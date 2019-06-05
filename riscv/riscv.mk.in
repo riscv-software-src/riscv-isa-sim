@@ -510,7 +510,7 @@ riscv_insn_ext_v_alu_fp = \
 	vfmadd_vv \
 	vfmax_vf \
 	vfmax_vv \
-	vfmerge_vf \
+	vfmerge_vfm \
 	vfmin_vf \
 	vfmin_vv \
 	vfmsac_vf \
@@ -521,6 +521,7 @@ riscv_insn_ext_v_alu_fp = \
 	vfmul_vv \
 	vfmv_f_s \
 	vfmv_s_f \
+	vfmv_v_f \
 	vfnmacc_vf \
 	vfnmacc_vv \
 	vfnmadd_vf \
