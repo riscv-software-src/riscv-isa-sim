@@ -1462,7 +1462,7 @@ VI_LOOP_END
     VI_LOOP_ELEMENT_SKIP(); \
     int32_t &vd = P.VU.elt<int32_t>(rd_num, i); \
 
-#define VF_LOOP_WIDE_REDUCTION_BASE \
+#define VI_VF_LOOP_WIDE_REDUCTION_BASE \
   require_extension('F'); \
   require_fp; \
   require(P.VU.vsew == 32); \
@@ -1538,8 +1538,8 @@ VI_LOOP_END
   DEBUG_RVV_FP_VV; \
   VF_LOOP_REDUCTION_END(e32)
 
-#define VFP_VV_LOOP_WIDE_REDUCTION(BODY) \
-  VF_LOOP_WIDE_REDUCTION_BASE \
+#define VI_VFP_VV_LOOP_WIDE_REDUCTION(BODY) \
+  VI_VF_LOOP_WIDE_REDUCTION_BASE \
   float64_t vs2 = f64(P.VU.elt<float32_t>(rs2_num, i).v); \
   BODY; \
   DEBUG_RVV_FP_VV; \
