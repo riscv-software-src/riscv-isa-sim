@@ -1560,7 +1560,7 @@ VI_LOOP_END
   DEBUG_RVV_FP_VV; \
   VF_LOOP_CMP_END \
 
-#define VFP_VVF_LOOP_WIDE(BODY) \
+#define VI_VI_VFP_VVF_LOOP_WIDE(BODY) \
   VI_VFP_LOOP_BASE \
   float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
   float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \

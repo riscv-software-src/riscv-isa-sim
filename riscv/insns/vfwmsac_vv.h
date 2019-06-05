@@ -1,5 +1,5 @@
 // vfwmsac.vv  vd, vs2, vs1
-VFP_VVF_LOOP_WIDE
+VI_VFP_VVF_LOOP_WIDE
 ({
   switch(P.VU.vsew){
   case e32:
