@@ -1413,7 +1413,7 @@ VI_LOOP_BASE \
   } \
 VI_LOOP_END
 
-#define VF_LOOP_BASE \
+#define VI_VFP_LOOP_BASE \
   require_extension('F'); \
   require_fp; \
   require(P.VU.vsew == 32); \
@@ -1523,7 +1523,7 @@ VI_LOOP_END
   set_fp_exceptions;
 
 #define VFP_VV_LOOP(BODY) \
-  VF_LOOP_BASE \
+  VI_VFP_LOOP_BASE \
   float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
   float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
   float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
@@ -1546,7 +1546,7 @@ VI_LOOP_END
   VF_LOOP_REDUCTION_END(e64)
 
 #define VFP_VF_LOOP(BODY) \
-  VF_LOOP_BASE \
+  VI_VFP_LOOP_BASE \
   float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
   float32_t rs1 = f32(READ_FREG(rs1_num)); \
   float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
@@ -1561,7 +1561,7 @@ VI_LOOP_END
   VF_LOOP_CMP_END \
 
 #define VFP_VVF_LOOP_WIDE(BODY) \
-  VF_LOOP_BASE \
+  VI_VFP_LOOP_BASE \
   float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
   float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
   float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
