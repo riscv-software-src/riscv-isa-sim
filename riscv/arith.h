@@ -72,8 +72,4 @@ T sat_subu(T x, T y, bool &sat)
   return res;
 }
 
-static inline int log2(unsigned long long x)
-{
-    return ((unsigned) (8*sizeof (unsigned long long) - __builtin_clzll((x)) - 1));
-}
 #endif
