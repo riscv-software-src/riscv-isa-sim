@@ -170,11 +170,7 @@ class vectorUnit_t {
         vReg += n / elts_per_reg;
         n = n % elts_per_reg;
         reg_referenced[vReg] = 1;
-#if 0
-        if (((vReg & reg_mask) != vReg) || (n >= vlmax)){
-          throw trap_illegal_instruction(0);
-        }
-#endif
+
         T *regStart = (T*)((char*)reg_file + vReg * (VLEN >> 3));
         return regStart[n];
       }
