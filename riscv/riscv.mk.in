@@ -496,6 +496,52 @@ riscv_insn_ext_v_alu_int = \
 	vxor_vv \
 	vxor_vx \
 
+riscv_insn_ext_v_ldst = \
+	vlb_v \
+	vlh_v \
+	vlw_v \
+	vle_v \
+	vlbu_v \
+	vlhu_v \
+	vlwu_v \
+	vlsb_v \
+	vlsh_v \
+	vlsw_v \
+	vlse_v \
+	vlxb_v \
+	vlxh_v \
+	vlxw_v \
+	vlxe_v \
+	vlsbu_v \
+	vlshu_v \
+	vlswu_v \
+	vlxbu_v \
+	vlxhu_v \
+	vlxwu_v \
+	vlbff_v \
+	vlhff_v \
+	vlwff_v \
+	vleff_v \
+	vlbuff_v \
+	vlhuff_v \
+	vlwuff_v \
+	vsb_v \
+	vsh_v \
+	vsw_v \
+	vse_v \
+	vssb_v \
+	vssh_v \
+	vssw_v \
+	vsse_v \
+	vsxb_v \
+	vsxh_v \
+	vsxw_v \
+	vsxe_v \
+	vsuxb_v \
+	vsuxh_v \
+	vsuxw_v \
+	vsuxe_v \
+
 riscv_insn_ext_v_ctrl = \
 	vsetvli \
 	vsetvl \
@@ -503,6 +549,7 @@ riscv_insn_ext_v_ctrl = \
 riscv_insn_ext_v = \
 	$(riscv_insn_ext_v_alu_int) \
 	$(riscv_insn_ext_v_ctrl) \
+	$(riscv_insn_ext_v_ldst) \
 
 riscv_insn_priv = \
 	csrrc \
