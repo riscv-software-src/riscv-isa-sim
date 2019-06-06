@@ -20,7 +20,7 @@
 #undef STATE
 #define STATE state
 
-processor_t::processor_t(const char* isa, const char* varch, simif_t* sim, 
+processor_t::processor_t(const char* isa, const char* varch, simif_t* sim,
                          uint32_t id, bool halt_on_reset)
   : debug(false), halt_request(false), sim(sim), ext(NULL), id(id),
   halt_on_reset(halt_on_reset), last_pc(1), executions(1)
@@ -251,7 +251,7 @@ reg_t vectorUnit_t::get_vcsr(int which)
 {
   switch(which){
     case CSR_VSTART:
-      return vstart; 
+      return vstart;
     case CSR_VXSAT:
       return vxsat;
     case CSR_VXRM:

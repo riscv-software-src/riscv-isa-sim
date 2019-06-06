@@ -296,7 +296,7 @@ static int cto(reg_t val)
 class processor_t : public abstract_device_t
 {
 public:
-  processor_t(const char* isa, const char* varch, simif_t* sim, uint32_t id, 
+  processor_t(const char* isa, const char* varch, simif_t* sim, uint32_t id,
               bool halt_on_reset=false);
   ~processor_t();
 
