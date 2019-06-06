@@ -464,7 +464,6 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 #define VI_CHECK_DDS(is_rs) \
   VI_WIDE_CHECK_COMMON; \
   require(insn.rs2() + P.VU.vlmul * 2 <= 32); \
-  require(!(insn.rd() - insn.rs2() < P.VU.vlmul || insn.rs2() - insn.rd() < P.VU.vlmul)); \
   if (is_rs) \
      require(!(insn.rd() <= insn.rs1() && insn.rs1() < (insn.rd() + P.VU.vlmul)));
 
