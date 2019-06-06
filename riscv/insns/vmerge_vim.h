@@ -5,5 +5,5 @@ VI_VVXI_MERGE_LOOP
   int mpos = (P.VU.vmlen * i) % 64;
   bool use_first = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
   
-  vd = use_first ? vsext(simm5, sew) : vs2;
+  vd = use_first ? simm5 : vs2;
 })
