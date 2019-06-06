@@ -1,6 +1,6 @@
 // vsub
 VI_VV_LOOP
 ({
-    vd = vsext(vs2 - vs1, sew);
+  vd = vs2 - vs1;
 })
 VI_CHECK_1905

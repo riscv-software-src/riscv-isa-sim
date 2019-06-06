@@ -2,7 +2,7 @@
 VI_VI_ULOOP
 ({
   bool sat = false;
-  vd = vs2 + vsext(simm5, sew);
+  vd = vs2 + simm5;
   
   sat = vd < vs2;
   vd |= -(vd < vs2);
