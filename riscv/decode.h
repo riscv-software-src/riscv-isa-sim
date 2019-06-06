@@ -1231,7 +1231,7 @@ VI_LOOP_END
       VV_CARRY_PARAMS(e32) \
       BODY; \
     } else if (sew == e64) { \
-      VV_PARAMS(e64) \
+      VV_CARRY_PARAMS(e64) \
       BODY; \
     } \
   } \
