@@ -191,7 +191,7 @@ int main(int argc, char** argv)
   if (!*argv1)
     help();
 
-  sim_t s(isa, nprocs, halted, start_pc, mems, htif_args, std::move(hartids),
+  sim_t s(isa, varch, nprocs, halted, start_pc, mems, htif_args, std::move(hartids),
       dm_config);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
