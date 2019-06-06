@@ -61,11 +61,61 @@ riscv_gen_hdrs = \
 	icache.h \
 	insn_list.h \
 
-riscv_insn_list = \
+
+riscv_insn_ext_i = \
 	add \
 	addi \
 	addiw \
 	addw \
+	and \
+	andi \
+	auipc \
+	beq \
+	bge \
+	bgeu \
+	blt \
+	bltu \
+	bne \
+	jal \
+	jalr \
+	lb \
+	lbu \
+	ld \
+	lh \
+	lhu \
+	lui \
+	lw \
+	lwu \
+	or \
+	ori \
+	sb \
+	sd \
+	sh \
+	sll \
+	slli \
+	slliw \
+	sllw \
+	slt \
+	slti \
+	sltiu \
+	sltu \
+	sra \
+	srai \
+	sraiw \
+	sraw \
+	srl \
+	srli \
+	srliw \
+	srlw \
+	sub \
+	subw \
+	sw \
+	xor \
+	xori \
+	fence \
+	fence_i \
+
+riscv_insn_ext_a = \
 	amoadd_d \
 	amoadd_w \
 	amoand_d \
@@ -84,18 +134,15 @@ riscv_insn_list = \
 	amoswap_w \
 	amoxor_d \
 	amoxor_w \
-	and \
-	andi \
-	auipc \
-	beq \
-	bge \
-	bgeu \
-	blt \
-	bltu \
-	bne \
+	lr_d \
+	lr_w \
+	sc_d \
+	sc_w \
+
+riscv_insn_ext_c = \
 	c_add \
-	c_addi4spn \
 	c_addi \
+	c_addi4spn \
 	c_addw \
 	c_and \
 	c_andi \
@@ -110,9 +157,9 @@ riscv_insn_list = \
 	c_fsdsp \
 	c_fsw \
 	c_fswsp \
+	c_j \
 	c_jal \
 	c_jalr \
-	c_j \
 	c_jr \
 	c_li \
 	c_lui \
@@ -125,28 +172,60 @@ riscv_insn_list = \
 	c_srli \
 	c_sub \
 	c_subw \
-	c_xor \
-	csrrc \
-	csrrci \
-	csrrs \
-	csrrsi \
-	csrrw \
-	csrrwi \
 	c_sw \
 	c_swsp \
+	c_xor \
+
+riscv_insn_ext_m = \
 	div \
 	divu \
 	divuw \
 	divw \
-	dret \
-	ebreak \
-	ecall \
-	fadd_d \
-	fadd_q \
+	mul \
+	mulh \
+	mulhsu \
+	mulhu \
+	mulw \
+	rem \
+	remu \
+	remuw \
+	remw \
+
+riscv_insn_ext_f = \
 	fadd_s \
-	fclass_d \
-	fclass_q \
 	fclass_s \
+	fcvt_l_s \
+	fcvt_lu_s \
+	fcvt_s_l \
+	fcvt_s_lu \
+	fcvt_s_w \
+	fcvt_s_wu \
+	fcvt_w_s \
+	fcvt_wu_s \
+	fdiv_s \
+	feq_s \
+	fle_s \
+	flt_s \
+	flw \
+	fmadd_s \
+	fmax_s \
+	fmin_s \
+	fmsub_s \
+	fmul_s \
+	fmv_w_x \
+	fmv_x_w \
+	fnmadd_s \
+	fnmsub_s \
+	fsgnj_s \
+	fsgnjn_s \
+	fsgnjx_s \
+	fsqrt_s \
+	fsub_s \
+	fsw \
+
+riscv_insn_ext_d = \
+	fadd_d \
+	fclass_d \
 	fcvt_d_l \
 	fcvt_d_lu \
 	fcvt_d_q \
@@ -154,142 +233,89 @@ riscv_insn_list = \
 	fcvt_d_w \
 	fcvt_d_wu \
 	fcvt_l_d \
-	fcvt_l_q \
-	fcvt_l_s \
 	fcvt_lu_d \
+	fcvt_s_d \
+	fcvt_w_d \
+	fcvt_wu_d \
+	fdiv_d \
+	feq_d \
+	fld \
+	fle_d \
+	flt_d \
+	fmadd_d \
+	fmax_d \
+	fmin_d \
+	fmsub_d \
+	fmul_d \
+	fmv_d_x \
+	fmv_x_d \
+	fnmadd_d \
+	fnmsub_d \
+	fsd \
+	fsgnj_d \
+	fsgnjn_d \
+	fsgnjx_d \
+	fsqrt_d \
+	fsub_d \
+
+riscv_insn_ext_q = \
+	fadd_q \
+	fclass_q \
+	fcvt_l_q \
 	fcvt_lu_q \
-	fcvt_lu_s \
 	fcvt_q_d \
 	fcvt_q_l \
 	fcvt_q_lu \
 	fcvt_q_s \
 	fcvt_q_w \
 	fcvt_q_wu \
-	fcvt_s_d \
-	fcvt_s_l \
-	fcvt_s_lu \
 	fcvt_s_q \
-	fcvt_s_w \
-	fcvt_s_wu \
-	fcvt_w_d \
 	fcvt_w_q \
-	fcvt_w_s \
-	fcvt_wu_d \
 	fcvt_wu_q \
-	fcvt_wu_s \
-	fdiv_d \
 	fdiv_q \
-	fdiv_s \
-	fence \
-	fence_i \
-	feq_d \
 	feq_q \
-	feq_s \
-	fld \
-	fle_d \
 	fle_q \
-	fle_s \
 	flq \
-	flt_d \
 	flt_q \
-	flt_s \
-	flw \
-	fmadd_d \
 	fmadd_q \
-	fmadd_s \
-	fmax_d \
 	fmax_q \
-	fmax_s \
-	fmin_d \
 	fmin_q \
-	fmin_s \
-	fmsub_d \
 	fmsub_q \
-	fmsub_s \
-	fmul_d \
 	fmul_q \
-	fmul_s \
-	fmv_d_x \
-	fmv_w_x \
-	fmv_x_d \
-	fmv_x_w \
-	fnmadd_d \
 	fnmadd_q \
-	fnmadd_s \
-	fnmsub_d \
 	fnmsub_q \
-	fnmsub_s \
-	fsd \
-	fsgnj_d \
 	fsgnj_q \
-	fsgnjn_d \
 	fsgnjn_q \
-	fsgnjn_s \
-	fsgnj_s \
-	fsgnjx_d \
 	fsgnjx_q \
-	fsgnjx_s \
 	fsq \
-	fsqrt_d \
 	fsqrt_q \
-	fsqrt_s \
-	fsub_d \
 	fsub_q \
-	fsub_s \
-	fsw \
-	jal \
-	jalr \
-	lb \
-	lbu \
-	ld \
-	lh \
-	lhu \
-	lr_d \
-	lr_w \
-	lui \
-	lw \
-	lwu \
+
+riscv_insn_priv = \
+	csrrc \
+	csrrci \
+	csrrs \
+	csrrsi \
+	csrrw \
+	csrrwi \
+	dret \
+	ebreak \
+	ecall \
 	mret \
-	mul \
-	mulh \
-	mulhsu \
-	mulhu \
-	mulw \
-	or \
-	ori \
-	rem \
-	remu \
-	remuw \
-	remw \
-	sb \
-	sc_d \
-	sc_w \
-	sd \
 	sfence_vma \
-	sh \
-	sll \
-	slli \
-	slliw \
-	sllw \
-	slt \
-	slti \
-	sltiu \
-	sltu \
-	sra \
-	srai \
-	sraiw \
-	sraw \
 	sret \
-	srl \
-	srli \
-	srliw \
-	srlw \
-	sub \
-	subw \
-	sw \
 	wfi \
-	xor \
-	xori \
+
+
+riscv_insn_list = \
+	$(riscv_insn_ext_a) \
+	$(riscv_insn_ext_c) \
+	$(riscv_insn_ext_i) \
+	$(riscv_insn_ext_m) \
+	$(riscv_insn_ext_f) \
+	$(riscv_insn_ext_d) \
+	$(riscv_insn_ext_q) \
+	$(riscv_insn_priv) \
 
 riscv_gen_srcs = \
 	$(addsuffix .cc,$(riscv_insn_list))
