@@ -130,6 +130,32 @@ void state_t::reset(reg_t max_isa)
   pmpaddr[0] = ~reg_t(0);
 }
 
+void vectorUnit_t::reset(){
+  free(reg_file);
+  VLEN = get_vlen();
+  ELEN = get_elen();
+  SLEN = get_slen(); // registers are simply concatenated
+  reg_file = malloc(NVPR * (VLEN/8));
+  vtype = -1;
+  set_vl(-1, 0, 0); // vsew8, vlmul1
+}
+
+reg_t vectorUnit_t::set_vl(uint64_t regId, reg_t reqVL, reg_t newType){
+  if (vtype != newType){
+    vtype = newType;
+    vsew = 1 << (BITS(newType, 4, 2) + 3);
+    vlmul = 1 << BITS(newType, 1, 0);
+    vediv = 1 << BITS(newType, 6, 5);
+    vlmax = VLEN/vsew * vlmul;
+    vmlen = vsew / vlmul;
+    reg_mask = (NVPR-1) & ~(vlmul-1);
+  }
+  vl = reqVL <= vlmax ? (regId == 0)? vlmax: reqVL : vlmax;
+  vstart = 0;
+  setvl_count++;
+  return vl;
+}
+
 void processor_t::set_debug(bool value)
 {
   debug = value;

@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <cassert>
 #include "debug_rom_defines.h"
 
 class processor_t;
@@ -82,6 +83,121 @@ typedef struct
   bool store;
   bool load;
 } mcontrol_t;
+
+inline reg_t BITS(reg_t v, int hi, int lo){
+  return (v >> lo) & ((2 << (hi - lo)) - 1);
+}
+
+enum VRM{
+  RNU = 0,
+  RNE,
+  RDN,
+  ROD,
+  INVALID_RM
+};
+
+template<uint64_t N>
+struct type_usew_t;
+
+template<>
+struct type_usew_t<8>
+{
+  using type=uint8_t;
+};
+
+template<>
+struct type_usew_t<16>
+{
+  using type=uint16_t;
+};
+
+template<>
+struct type_usew_t<32>
+{
+  using type=uint32_t;
+};
+
+template<>
+struct type_usew_t<64>
+{
+  using type=uint64_t;
+};
+
+template<uint64_t N>
+struct type_sew_t;
+
+template<>
+struct type_sew_t<8>
+{
+  using type=int8_t;
+};
+
+template<>
+struct type_sew_t<16>
+{
+  using type=int16_t;
+};
+
+template<>
+struct type_sew_t<32>
+{
+  using type=int32_t;
+};
+
+template<>
+struct type_sew_t<64>
+{
+  using type=int64_t;
+};
+
+class vectorUnit_t {
+  public:
+    processor_t* p;
+    void *reg_file;
+    char reg_referenced[NVPR];
+    int setvl_count;
+    reg_t reg_mask, vlmax, vmlen;
+    reg_t vstart, vxrm, vxsat, vl, vtype;
+    reg_t vediv, vsew, vlmul;
+    reg_t ELEN, VLEN, SLEN;
+    bool vill;
+
+    // vector element for varies SEW
+    template<class T>
+      T& elt(reg_t vReg, reg_t n){
+        assert(vsew != 0);
+        assert((VLEN >> 3)/sizeof(T) > 0);
+        reg_t elts_per_reg = (VLEN >> 3) / (sizeof(T));
+        vReg += n / elts_per_reg;
+        n = n % elts_per_reg;
+        reg_referenced[vReg] = 1;
+
+        T *regStart = (T*)((char*)reg_file + vReg * (VLEN >> 3));
+        return regStart[n];
+      }
+  public:
+
+    void reset();
+
+    vectorUnit_t(){
+      reg_file = 0;
+    }
+
+    ~vectorUnit_t(){
+      free(reg_file);
+      reg_file = 0;
+    }
+
+    reg_t set_vl(uint64_t regId, reg_t reqVL, reg_t newType);
+
+    reg_t get_vlen() { return VLEN; }
+    reg_t get_elen() { return ELEN; }
+    reg_t get_slen() { return SLEN; }
+
+    VRM get_vround_mode() {
+      return (VRM)vxrm;
+    }
+};
 
 // architectural state of a RISC-V hart
 struct state_t
@@ -337,6 +453,8 @@ private:
 
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;
+public:
+  vectorUnit_t VU;
 };
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
