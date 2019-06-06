@@ -603,10 +603,8 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
     uint64_t vs2 = P.VU.elt<uint64_t>(insn.rs2(), midx); \
     uint64_t vs1 = P.VU.elt<uint64_t>(insn.rs1(), midx); \
-    bool vs2_lsb = vs2 & 0x1; \
-    bool vs1_lsb = vs1 & 0x1; \
     uint64_t &res = P.VU.elt<uint64_t>(insn.rd(), midx); \
-    res = (res & ~mmask) | ((op) & mmask); \
+    res = (res & ~mmask) | ((op) & (1ULL << mpos)); \
   } \
   \
   for (reg_t i = vl; i < P.VU.vlmax && i > 0; ++i) { \
@@ -1115,8 +1113,10 @@ VI_LOOP_END
 
 #define NSHIFT_CHECK \
   require(P.VU.vsew <= e32); \
+  if (insn.rd() != 0){ VI_CHECK_SDS;} \
   VI_GENERAL_LOOP_BASE; \
   VI_LOOP_ELEMENT_SKIP({\
+    require(!(insn.rd() == 0 && P.VU.vlmul > 1));
   });
 
 #define VI_VI_LOOP_NSHIFT(BODY) \
@@ -1290,7 +1290,6 @@ VI_LOOP_END
   } \
   P.VU.vstart = 0; 
 
-
 #define VI_LD(stride, offset, ld_width, elt_byte) \
   const reg_t nf = insn.v_nf() + 1; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \
@@ -1335,10 +1334,10 @@ VI_LOOP_END
   const reg_t vl = p->VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t rd_num = insn.rd(); \
-  const reg_t vlmax = P.VU.vlmax; \
   bool early_stop = false; \
+  const reg_t vlmax = P.VU.vlmax; \
   const reg_t vlmul = P.VU.vlmul; \
-  for (reg_t i = 0; i < P.VU.vlmax && vl != 0; ++i) { \
+  for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
     bool is_valid = true; \
     STRIP(i); \
     VI_ELEMENT_SKIP(i); \
