@@ -148,6 +148,7 @@ private:
 #define MMU (*p->get_mmu())
 #define STATE (*p->get_state())
 #define P (*p)
+#define FLEN (p->get_flen())
 #define READ_REG(reg) STATE.XPR[reg]
 #define READ_FREG(reg) STATE.FPR[reg]
 #define RD READ_REG(insn.rd())
@@ -313,6 +314,24 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 
 #define vsext(x, sew) (((sreg_t)(x) << (64-sew)) >> (64-sew))
 #define vzext(x, sew) (((reg_t)(x) << (64-sew)) >> (64-sew))
+
+#define DEBUG_RVV 0
+
+#if DEBUG_RVV
+#define DEBUG_RVV_FP_VV \
+  printf("vfp(%lu) vd=%f vs1=%f vs2=%f\n", i, to_f(vd), to_f(vs1), to_f(vs2));
+#define DEBUG_RVV_FP_VF \
+  printf("vfp(%lu) vd=%f vs1=%f vs2=%f\n", i, to_f(vd), to_f(rs1), to_f(vs2));
+#define DEBUG_RVV_FMA_VV \
+  printf("vfma(%lu) vd=%f vs1=%f vs2=%f vd_old=%f\n", i, to_f(vd), to_f(vs1), to_f(vs2), to_f(vd_old));
+#define DEBUG_RVV_FMA_VF \
+  printf("vfma(%lu) vd=%f vs1=%f vs2=%f vd_old=%f\n", i, to_f(vd), to_f(rs1), to_f(vs2), to_f(vd_old));
+#else
+#define DEBUG_RVV_FP_VV 0
+#define DEBUG_RVV_FP_VF 0
+#define DEBUG_RVV_FMA_VV 0
+#define DEBUG_RVV_FMA_VF 0
+#endif
 
 //
 // vector: masking skip helper
@@ -1480,8 +1499,252 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   } \
   p->VU.vstart = 0;
 
+
+//
+// vector: vfp helper
+//
+#define VI_VFP_COMMON \
+  require_extension('F'); \
+  require_fp; \
+  require(P.VU.vsew == 32); \
+  require(!P.VU.vill);\
+  reg_t vl = P.VU.vl; \
+  reg_t rd_num = insn.rd(); \
+  reg_t rs1_num = insn.rs1(); \
+  reg_t rs2_num = insn.rs2(); \
+  softfloat_roundingMode = STATE.frm;
+
+#define VI_VFP_LOOP_BASE \
+  VI_VFP_COMMON \
+  for (reg_t i=P.VU.vstart; i<vl; ++i){ \
+    VI_LOOP_ELEMENT_SKIP();
+
+#define VI_VFP_LOOP_CMP_BASE \
+  VI_VFP_COMMON \
+  for (reg_t i = P.VU.vstart; i < vl; ++i) { \
+    float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
+    float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
+    float32_t rs1 = f32(READ_FREG(rs1_num)); \
+    VI_LOOP_ELEMENT_SKIP(); \
+    uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
+    uint64_t &vdi = P.VU.elt<uint64_t>(rd_num, midx); \
+    uint64_t res = 0;
+
+#define VI_VFP_LOOP_REDUCTION_BASE \
+  VI_VFP_COMMON \
+  float32_t vd_0 = P.VU.elt<float32_t>(rd_num, 0); \
+  float32_t vs1_0 = P.VU.elt<float32_t>(rs1_num, 0); \
+  vd_0 = vs1_0;\
+  for (reg_t i=P.VU.vstart; i<vl; ++i){ \
+    VI_LOOP_ELEMENT_SKIP(); \
+    int32_t &vd = P.VU.elt<int32_t>(rd_num, i); \
+
+#define VI_VFP_LOOP_WIDE_REDUCTION_BASE \
+  VI_VFP_COMMON \
+  float64_t vd_0 = f64(P.VU.elt<float64_t>(rs1_num, 0).v); \
+  for (reg_t i=P.VU.vstart; i<vl; ++i) { \
+    VI_LOOP_ELEMENT_SKIP();
+
+#define VI_VFP_LOOP_END \
+  } \
+  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
+    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((P.VU.vsew >> 3) * 1)); \
+    memset(tail, 0, (P.VU.vlmax - vl) * ((P.VU.vsew >> 3) * 1)); \
+  }\
+  P.VU.vstart = 0; \
+
+#define VI_VFP_LOOP_WIDE_END \
+  } \
+  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
+    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((P.VU.vsew >> 3) * 2)); \
+    memset(tail, 0, (P.VU.vlmax - vl) * ((P.VU.vsew >> 3) * 2)); \
+  }\
+  P.VU.vstart = 0; \
+  set_fp_exceptions;
+
+#define VI_VFP_LOOP_REDUCTION_END(x) \
+  } \
+  P.VU.vstart = 0; \
+  set_fp_exceptions; \
+  if (vl > 0 && TAIL_ZEROING) { \
+    P.VU.elt<type_sew_t<x>::type>(rd_num, 0) = vd_0.v; \
+    for (reg_t i = 1; i < (P.VU.VLEN / x); ++i) { \
+       P.VU.elt<type_sew_t<x>::type>(rd_num, i) = 0; \
+    } \
+  }
+
+#define VI_VFP_LOOP_CMP_END \
+  switch(P.VU.vsew) { \
+    case e32: { \
+      vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
+      break; \
+    } \
+    case e16: \
+    case e8: \
+    default: \
+      require(0); \
+      break; \
+    }; \
+  } \
+  if (vl != 0 && TAIL_ZEROING){ \
+    for (reg_t i=vl; i<P.VU.vlmax; ++i){ \
+      const int mlen = P.VU.vmlen; \
+      const int midx = (mlen * i) / 64; \
+      const int mpos = (mlen * i) % 64; \
+      uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
+      uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx); \
+      vdi = (vdi & ~mmask);\
+    }\
+  }\
+  P.VU.vstart = 0; \
+  set_fp_exceptions;
+
+#define VI_VFP_VV_LOOP(BODY) \
+  VI_VFP_LOOP_BASE \
+  switch(P.VU.vsew) { \
+    case e32: {\
+      float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
+      float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
+      float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
+      BODY; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e16: \
+    case e8: \
+    default: \
+      require(0); \
+      break; \
+  }; \
+  DEBUG_RVV_FP_VV; \
+  VI_VFP_LOOP_END
+
+#define VI_VFP_VV_LOOP_REDUCTION(BODY) \
+  VI_VFP_LOOP_REDUCTION_BASE \
+  float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
+  BODY; \
+  DEBUG_RVV_FP_VV; \
+  VI_VFP_LOOP_REDUCTION_END(e32)
+
+#define VI_VFP_VV_LOOP_WIDE_REDUCTION(BODY) \
+  VI_VFP_LOOP_WIDE_REDUCTION_BASE \
+  float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
+  BODY; \
+  DEBUG_RVV_FP_VV; \
+  VI_VFP_LOOP_REDUCTION_END(e64)
+
+#define VI_VFP_VF_LOOP(BODY) \
+  VI_VFP_LOOP_BASE \
+  switch(P.VU.vsew) { \
+    case e32: {\
+      float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
+      float32_t rs1 = f32(READ_FREG(rs1_num)); \
+      float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
+      BODY; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e16: \
+    case e8: \
+    default: \
+      require(0); \
+      break; \
+  }; \
+  DEBUG_RVV_FP_VF; \
+  VI_VFP_LOOP_END
+
+#define VI_VFP_LOOP_CMP(BODY) \
+  VI_VFP_LOOP_CMP_BASE \
+  BODY; \
+  DEBUG_RVV_FP_VV; \
+  VI_VFP_LOOP_CMP_END \
+
+#define VI_VFP_VF_LOOP_WIDE(BODY) \
+  VI_VFP_LOOP_BASE \
+  VI_CHECK_DSS(false); \
+  switch(P.VU.vsew) { \
+    case e32: {\
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
+      float64_t rs1 = f32_to_f64(f32(READ_FREG(rs1_num))); \
+      BODY; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e16: \
+    case e8: \
+    default: \
+      require(0); \
+      break; \
+  }; \
+  DEBUG_RVV_FP_VV; \
+  VI_VFP_LOOP_WIDE_END
+
+
+#define VI_VFP_VV_LOOP_WIDE(BODY) \
+  VI_VFP_LOOP_BASE \
+  VI_CHECK_DSS(true); \
+  switch(P.VU.vsew) { \
+    case e32: {\
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
+      float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
+      BODY; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e16: \
+    case e8: \
+    default: \
+      require(0); \
+      break; \
+  }; \
+  DEBUG_RVV_FP_VV; \
+  VI_VFP_LOOP_WIDE_END
+
+#define VI_VFP_WF_LOOP_WIDE(BODY) \
+  VI_VFP_LOOP_BASE \
+  VI_CHECK_DDS(false); \
+  switch(P.VU.vsew) { \
+    case e32: {\
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
+      float64_t rs1 = f32_to_f64(f32(READ_FREG(rs1_num))); \
+      BODY; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e16: \
+    case e8: \
+    default: \
+      require(0); \
+  }; \
+  DEBUG_RVV_FP_VV; \
+  VI_VFP_LOOP_WIDE_END
+
+#define VI_VFP_WV_LOOP_WIDE(BODY) \
+  VI_VFP_LOOP_BASE \
+  VI_CHECK_DDS(true); \
+  switch(P.VU.vsew) { \
+    case e32: {\
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
+      float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
+      BODY; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e16: \
+    case e8: \
+    default: \
+      require(0); \
+  }; \
+  DEBUG_RVV_FP_VV; \
+  VI_VFP_LOOP_WIDE_END
+
+
 // Seems that 0x0 doesn't work.
 #define DEBUG_START             0x100
-#define DEBUG_END                 (0x1000 - 1)
+#define DEBUG_END               (0x1000 - 1)
 
 #endif

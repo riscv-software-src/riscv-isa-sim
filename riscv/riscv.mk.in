@@ -496,6 +496,101 @@ riscv_insn_ext_v_alu_int = \
 	vxor_vv \
 	vxor_vx \
 
+riscv_insn_ext_v_alu_fp = \
+	vfadd_vf \
+	vfadd_vv \
+	vfclass_v \
+	vfcvt_f_x_v \
+	vfcvt_f_xu_v \
+	vfcvt_x_f_v \
+	vfcvt_xu_f_v \
+	vfdiv_vf \
+	vfdiv_vv \
+	vfdot_vv \
+	vfmacc_vf \
+	vfmacc_vv \
+	vfmadd_vf \
+	vfmadd_vv \
+	vfmax_vf \
+	vfmax_vv \
+	vfmerge_vfm \
+	vfmin_vf \
+	vfmin_vv \
+	vfmsac_vf \
+	vfmsac_vv \
+	vfmsub_vf \
+	vfmsub_vv \
+	vfmul_vf \
+	vfmul_vv \
+	vfmv_f_s \
+	vfmv_s_f \
+	vfmv_v_f \
+	vfncvt_f_f_v \
+	vfncvt_f_x_v \
+	vfncvt_f_xu_v \
+	vfncvt_x_f_v \
+	vfncvt_xu_f_v \
+	vfnmacc_vf \
+	vfnmacc_vv \
+	vfnmadd_vf \
+	vfnmadd_vv \
+	vfnmsac_vf \
+	vfnmsac_vv \
+	vfnmsub_vf \
+	vfnmsub_vv \
+	vfrdiv_vf \
+	vfredmax_vs \
+	vfredmin_vs \
+	vfredosum_vs \
+	vfredsum_vs \
+	vfrsub_vf \
+	vfsgnj_vf \
+	vfsgnj_vv \
+	vfsgnjn_vf \
+	vfsgnjn_vv \
+	vfsgnjx_vf \
+	vfsgnjx_vv \
+	vfsqrt_v \
+	vfsub_vf \
+	vfsub_vv \
+	vfwadd_vf \
+	vfwadd_vv \
+	vfwadd_wf \
+	vfwadd_wv \
+	vfwcvt_f_f_v \
+	vfwcvt_f_x_v \
+	vfwcvt_f_xu_v \
+	vfwcvt_x_f_v \
+	vfwcvt_xu_f_v \
+	vfwmacc_vf \
+	vfwmacc_vv \
+	vfwmsac_vf \
+	vfwmsac_vv \
+	vfwmul_vf \
+	vfwmul_vv \
+	vfwnmacc_vf \
+	vfwnmacc_vv \
+	vfwnmsac_vf \
+	vfwnmsac_vv \
+	vfwredosum_vs \
+	vfwredsum_vs \
+	vfwsub_vf \
+	vfwsub_vv \
+	vfwsub_wf \
+	vfwsub_wv \
+	vmfeq_vf \
+	vmfeq_vv \
+	vmfge_vf \
+	vmfgt_vf \
+	vmfle_vf \
+	vmfle_vv \
+	vmflt_vf \
+	vmflt_vv \
+	vmfne_vf \
+	vmfne_vv \
+	vmford_vf \
+	vmford_vv \
+
 riscv_insn_ext_v_ldst = \
 	vlb_v \
 	vlh_v \
@@ -547,6 +642,7 @@ riscv_insn_ext_v_ctrl = \
 	vsetvl \
 
 riscv_insn_ext_v = \
+	$(riscv_insn_ext_v_alu_fp) \
 	$(riscv_insn_ext_v_alu_int) \
 	$(riscv_insn_ext_v_ctrl) \
 	$(riscv_insn_ext_v_ldst) \
