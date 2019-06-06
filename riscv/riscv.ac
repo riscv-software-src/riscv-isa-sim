@@ -6,6 +6,13 @@ AC_ARG_WITH(isa,
   AC_DEFINE_UNQUOTED([DEFAULT_ISA], "$withval", [Default value for --isa switch]),
   AC_DEFINE_UNQUOTED([DEFAULT_ISA], "RV64IMAFDC", [Default value for --isa switch]))
 
+AC_ARG_WITH(varch,
+	[AS_HELP_STRING([--with-varch=v128:e32:s128],
+		[Sets the default vector config])],
+  AC_DEFINE_UNQUOTED([DEFAULT_VARCH], "$withval", [Default value for --varch switch]),
+  AC_DEFINE_UNQUOTED([DEFAULT_VARCH], "v128:e32:s128", [Default value for --varch switch]))
+
+
 AC_SEARCH_LIBS([dlopen], [dl dld], [], [
   AC_MSG_ERROR([unable to find the dlopen() function])
 ])
