@@ -10,6 +10,7 @@
 
 extern const char* xpr_name[NXPR];
 extern const char* fpr_name[NFPR];
+extern const char* vr_name[NVPR];
 extern const char* csr_name(int which);
 
 class arg_t
@@ -18,6 +19,13 @@ class arg_t
   virtual std::string to_string(insn_t val) const = 0;
   virtual ~arg_t() {}
 };
+
+// Indicates that the next arg (only) is optional.
+// If the result of converting the next arg to a string is ""
+// then it will not be printed.
+struct : public arg_t {
+  std::string to_string(insn_t insn) const { return ""; }
+} opt;
 
 class disasm_insn_t
 {
@@ -41,10 +49,21 @@ class disasm_insn_t
 
     if (args.size())
     {
+      bool next_arg_optional  = false;
       s << std::string(std::max(1, 8 - len), ' ');
-      for (size_t i = 0; i < args.size()-1; i++)
-        s << args[i]->to_string(insn) << ", ";
-      s << args[args.size()-1]->to_string(insn);
+      for (size_t i = 0; i < args.size(); i++) {
+        if (args[i] == &opt) {
+          next_arg_optional = true;
+          continue;
+        }
+        std::string argString = args[i]->to_string(insn);
+        if (next_arg_optional) {
+          next_arg_optional = false;
+          if (argString.empty()) continue;
+        }
+        if (i != 0) s << ", ";
+        s << argString;
+      }
     }
     return s.str();
   }
