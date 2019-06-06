@@ -145,7 +145,6 @@ void processor_t::step(size_t n)
           if (debug && !state.serialized)
             disasm(fetch.insn);
           pc = execute_insn(this, pc, fetch);
-
           advance_pc();
         }
       }
