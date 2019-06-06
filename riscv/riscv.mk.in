@@ -291,6 +291,13 @@ riscv_insn_ext_q = \
 	fsqrt_q \
 	fsub_q \
 
+riscv_insn_ext_v_ctrl = \
+	vsetvli \
+	vsetvl \
+
+riscv_insn_ext_v = \
+	$(riscv_insn_ext_v_ctrl) \
+
 riscv_insn_priv = \
 	csrrc \
 	csrrci \
@@ -315,6 +322,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_f) \
 	$(riscv_insn_ext_d) \
 	$(riscv_insn_ext_q) \
+	$(riscv_insn_ext_v) \
 	$(riscv_insn_priv) \
 
 riscv_gen_srcs = \
