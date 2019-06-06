@@ -376,15 +376,6 @@ enum VMUNARY0{
 #define DEBUG_RVV_FMA_VF 0
 #endif
 
-#define STRIP(inx) \
-  reg_t elems_per_strip = P.VU.get_slen()/P.VU.vsew; \
-  reg_t elems_per_vreg = P.VU.get_vlen()/P.VU.vsew; \
-  reg_t elems_per_lane = P.VU.vlmul * elems_per_strip; \
-  reg_t strip_index = (inx) / elems_per_lane; \
-  reg_t index_in_strip = (inx) % elems_per_strip; \
-  int32_t lmul_inx = (int32_t)(((inx) % elems_per_lane) / elems_per_strip); \
-  reg_t vreg_inx = lmul_inx * elems_per_vreg + strip_index * elems_per_strip + index_in_strip;
-
 #ifdef RISCV_ENABLE_1905_CHECK
 #define VI_CHECK_1905 \
   extern bool g_check_1905; \
@@ -395,25 +386,6 @@ enum VMUNARY0{
 #define VI_CHECK_1905 \
   while (0);
 #endif
-
-#define DUPLICATE_VREG(v, vlmax) \
-reg_t index[vlmax] = {0}; \
-for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
-  switch(P.VU.vsew) { \
-    case e8: \
-      index[i] = P.VU.elt<int8_t>(v, i); \
-      break; \
-    case e16: \
-      index[i] = P.VU.elt<int16_t>(v, i); \
-      break; \
-    case e32: \
-      index[i] = P.VU.elt<int32_t>(v, i); \
-      break; \
-    case e64: \
-      index[i] = P.VU.elt<int64_t>(v, i); \
-      break; \
-  } \
-}
 
 //
 // vector: masking skip helper
@@ -1346,6 +1318,35 @@ VI_LOOP_END
 //
 // vector: load/store helper 
 //
+#define VI_STRIP(inx) \
+  reg_t elems_per_strip = P.VU.get_slen()/P.VU.vsew; \
+  reg_t elems_per_vreg = P.VU.get_vlen()/P.VU.vsew; \
+  reg_t elems_per_lane = P.VU.vlmul * elems_per_strip; \
+  reg_t strip_index = (inx) / elems_per_lane; \
+  reg_t index_in_strip = (inx) % elems_per_strip; \
+  int32_t lmul_inx = (int32_t)(((inx) % elems_per_lane) / elems_per_strip); \
+  reg_t vreg_inx = lmul_inx * elems_per_vreg + strip_index * elems_per_strip + index_in_strip;
+
+
+#define VI_DUPLICATE_VREG(v, vlmax) \
+reg_t index[vlmax] = {0}; \
+for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
+  switch(P.VU.vsew) { \
+    case e8: \
+      index[i] = P.VU.elt<int8_t>(v, i); \
+      break; \
+    case e16: \
+      index[i] = P.VU.elt<int16_t>(v, i); \
+      break; \
+    case e32: \
+      index[i] = P.VU.elt<int32_t>(v, i); \
+      break; \
+    case e64: \
+      index[i] = P.VU.elt<int64_t>(v, i); \
+      break; \
+  } \
+}
+
 #define VI_ST(stride, offset, st_width, elt_byte) \
   const reg_t nf = insn.v_nf() + 1; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \
@@ -1356,7 +1357,7 @@ VI_LOOP_END
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
     bool is_valid = true; \
-    STRIP(i) \
+    VI_STRIP(i) \
     VI_ELEMENT_SKIP(i); \
     if (!is_valid) \
       continue; \
@@ -1392,7 +1393,7 @@ VI_LOOP_END
   for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
     bool is_valid = true; \
     VI_ELEMENT_SKIP(i); \
-    STRIP(i); \
+    VI_STRIP(i); \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       ld_width##_t val = MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte); \
       if (vd + fn >= NVPR){ \
@@ -1430,7 +1431,7 @@ VI_LOOP_END
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
     bool is_valid = true; \
-    STRIP(i); \
+    VI_STRIP(i); \
     VI_ELEMENT_SKIP(i); \
     \
     for (reg_t fn = 0; fn < nf; ++fn) { \

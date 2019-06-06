@@ -10,7 +10,7 @@ const reg_t vlmul = P.VU.vlmul;
 for (reg_t i = 0; i < P.VU.vlmax && vl != 0; ++i) {
   bool is_valid = true;
   bool is_zero = false;
-  STRIP(i);
+  VI_STRIP(i);
   VI_ELEMENT_SKIP(i);
 
   for (reg_t fn = 0; fn < nf; ++fn) {
