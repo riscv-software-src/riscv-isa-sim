@@ -1116,7 +1116,7 @@ VI_LOOP_END
   if (insn.rd() != 0){ VI_CHECK_SDS;} \
   VI_GENERAL_LOOP_BASE; \
   VI_LOOP_ELEMENT_SKIP({\
-    require(!(insn.rd() == 0 && P.VU.vlmul > 1));
+    require(!(insn.rd() == 0 && P.VU.vlmul > 1));\
   });
 
 #define VI_VI_LOOP_NSHIFT(BODY) \
