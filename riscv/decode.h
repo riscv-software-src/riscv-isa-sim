@@ -1202,6 +1202,62 @@ VI_LOOP_END
   } \
   VI_LOOP_WIDEN_END
 
+#define VI_WIDE_SU_SSMA(sew1, sew2, opd) \
+  auto &vd = P.VU.elt<type_sew_t<sew2>::type>(rd_num, i); \
+  auto vs1 = P.VU.elt<type_sew_t<sew1>::type>(rs1_num, i); \
+  auto vs2 = P.VU.elt<type_usew_t<sew1>::type>(rs2_num, i); \
+  auto rs1 = (type_sew_t<sew1>::type)RS1; \
+  int##sew2##_t res; \
+  bool sat = false; \
+  const int gb = sew1 / 2; \
+  VRM vrm = P.VU.get_vround_mode(); \
+  res = (uint##sew2##_t)vs2 * (int##sew2##_t)opd; \
+  INT_ROUNDING(res, vrm, gb); \
+  \
+  res = res >> gb; \
+  vd = sat_sub<int##sew2##_t, uint##sew2##_t>(vd, res, sat); \
+  P.VU.vxsat |= sat;
+
+#define VI_VVX_LOOP_WIDE_SU_SSMA(opd) \
+  VI_WIDE_CHECK_COMMON \
+  VI_LOOP_BASE \
+  if (sew == e8){ \
+    VI_WIDE_SU_SSMA(8, 16, opd); \
+  } else if(sew == e16){ \
+    VI_WIDE_SU_SSMA(16, 32, opd); \
+  } else if(sew == e32){ \
+    VI_WIDE_SU_SSMA(32, 64, opd); \
+  } \
+  VI_LOOP_WIDEN_END
+
+#define VI_WIDE_US_SSMA(sew1, sew2, opd) \
+  auto &vd = P.VU.elt<type_sew_t<sew2>::type>(rd_num, i); \
+  auto vs1 = P.VU.elt<type_usew_t<sew1>::type>(rs1_num, i); \
+  auto vs2 = P.VU.elt<type_sew_t<sew1>::type>(rs2_num, i); \
+  auto rs1 = (type_usew_t<sew1>::type)RS1; \
+  int##sew2##_t res; \
+  bool sat = false; \
+  const int gb = sew1 / 2; \
+  VRM vrm = P.VU.get_vround_mode(); \
+  res = (int##sew2##_t)vs2 * (uint##sew2##_t)opd; \
+  INT_ROUNDING(res, vrm, gb); \
+  \
+  res = res >> gb; \
+  vd = sat_sub<int##sew2##_t, uint##sew2##_t>(vd, res, sat); \
+  P.VU.vxsat |= sat;
+
+#define VI_VVX_LOOP_WIDE_US_SSMA(opd) \
+  VI_WIDE_CHECK_COMMON \
+  VI_LOOP_BASE \
+  if (sew == e8){ \
+    VI_WIDE_US_SSMA(8, 16, opd); \
+  } else if(sew == e16){ \
+    VI_WIDE_US_SSMA(16, 32, opd); \
+  } else if(sew == e32){ \
+    VI_WIDE_US_SSMA(32, 64, opd); \
+  } \
+  VI_LOOP_WIDEN_END
+
 // wide reduction loop - signed
 #define VI_LOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
   VI_CHECK_DSS(false); \
