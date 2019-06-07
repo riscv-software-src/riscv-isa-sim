@@ -1,10 +1,11 @@
 //vslidedown.vx vd, vs2, rs1
 VI_LOOP_BASE
-  bool is_valid = (i + RS1) < P.VU.vlmax;
-  reg_t offset = 0;
 
-  if (is_valid) {
-    offset = RS1;
+  reg_t offset = RS1 == -1 ? (RS1 & (P.VU.vlmax*2 - 1) + i):RS1;
+  bool is_valid = offset < P.VU.vlmax;
+
+  if (!is_valid) {
+    offset = 0;
   }
 
   switch (sew) {
