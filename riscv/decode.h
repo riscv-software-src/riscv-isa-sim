@@ -1141,7 +1141,7 @@ VI_LOOP_END
     break; \
   }
 
-#define VI_WIDE_SSMA(sew1, sew2, add, opd) \
+#define VI_WIDE_SSMA(sew1, sew2, opd) \
   auto &vd = P.VU.elt<type_sew_t<sew2>::type>(rd_num, i); \
   auto vs1 = P.VU.elt<type_sew_t<sew1>::type>(rs1_num, i); \
   auto vs2 = P.VU.elt<type_sew_t<sew1>::type>(rs2_num, i); \
@@ -1153,25 +1153,22 @@ VI_LOOP_END
   res = (int##sew2##_t)vs2 * (int##sew2##_t)opd; \
   INT_ROUNDING(res, vrm, gb); \
   res = res >> gb; \
-  if (add) \
-    vd = sat_add<int##sew2##_t, uint##sew2##_t>(vd, res, sat); \
-  else \
-    vd = sat_sub<int##sew2##_t, uint##sew2##_t>(vd, res, sat); \
+  vd = sat_add<int##sew2##_t, uint##sew2##_t>(vd, res, sat); \
   P.VU.vxsat |= sat;
 
-#define VI_VVX_LOOP_WIDE_SSMA(add, opd) \
+#define VI_VVX_LOOP_WIDE_SSMA(opd) \
   VI_WIDE_CHECK_COMMON \
   VI_LOOP_BASE \
   if (sew == e8){ \
-    VI_WIDE_SSMA(8, 16, add, opd); \
+    VI_WIDE_SSMA(8, 16, opd); \
   } else if(sew == e16){ \
-    VI_WIDE_SSMA(16, 32, add, opd); \
+    VI_WIDE_SSMA(16, 32, opd); \
   } else if(sew == e32){ \
-    VI_WIDE_SSMA(32, 64, add, opd); \
+    VI_WIDE_SSMA(32, 64, opd); \
   } \
   VI_LOOP_WIDEN_END
 
-#define VI_WIDE_USSMA(sew1, sew2, add, opd) \
+#define VI_WIDE_USSMA(sew1, sew2, opd) \
   auto &vd = P.VU.elt<type_usew_t<sew2>::type>(rd_num, i); \
   auto vs1 = P.VU.elt<type_usew_t<sew1>::type>(rs1_num, i); \
   auto vs2 = P.VU.elt<type_usew_t<sew1>::type>(rs2_num, i); \
@@ -1184,21 +1181,18 @@ VI_LOOP_END
   INT_ROUNDING(res, vrm, gb); \
   \
   res = res >> gb; \
-  if (add) \
-    vd = sat_addu<uint##sew2##_t>(vd, res, sat); \
-  else \
-    vd = sat_subu<uint##sew2##_t>(vd, res, sat); \
+  vd = sat_addu<uint##sew2##_t>(vd, res, sat); \
   P.VU.vxsat |= sat;
 
-#define VI_VVX_LOOP_WIDE_USSMA(add, opd) \
+#define VI_VVX_LOOP_WIDE_USSMA(opd) \
   VI_WIDE_CHECK_COMMON \
   VI_LOOP_BASE \
   if (sew == e8){ \
-    VI_WIDE_USSMA(8, 16, add, opd); \
+    VI_WIDE_USSMA(8, 16, opd); \
   } else if(sew == e16){ \
-    VI_WIDE_USSMA(16, 32, add, opd); \
+    VI_WIDE_USSMA(16, 32, opd); \
   } else if(sew == e32){ \
-    VI_WIDE_USSMA(32, 64, add, opd); \
+    VI_WIDE_USSMA(32, 64, opd); \
   } \
   VI_LOOP_WIDEN_END
 
