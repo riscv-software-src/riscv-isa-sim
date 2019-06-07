@@ -1,6 +1,6 @@
-// vmsub.vv: vd[i] = (vd[i] * vs1[i]) - vs2[i]
+// vnmsub.vv: vd[i] = -(vd[i] * vs1[i]) + vs2[i]
 VI_VV_LOOP
 ({
-  vd = vd * vs1 - vs2;
+  vd = -(vd * vs1) + vs2;
 })
 VI_CHECK_1905
