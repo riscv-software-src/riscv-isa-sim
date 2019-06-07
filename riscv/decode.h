@@ -1097,6 +1097,28 @@ VI_LOOP_END
     break; \
   }
 
+#define VI_WIDE_OP_AND_ASSIGN_MIX(var0, var1, var2, op0, op1, sign_d, sign_1, sign_2) \
+  switch(P.VU.vsew) { \
+  case e8: { \
+    sign_d##16_t vd_w = P.VU.elt<sign_d##16_t>(rd_num, i); \
+    P.VU.elt<uint16_t>(rd_num, i) = \
+      op1((sign_1##16_t)(sign_1##8_t)var0 op0 (sign_2##16_t)(sign_2##8_t)var1) + var2; \
+    } \
+    break; \
+  case e16: { \
+    sign_d##32_t vd_w = P.VU.elt<sign_d##32_t>(rd_num, i); \
+    P.VU.elt<uint32_t>(rd_num, i) = \
+      op1((sign_1##32_t)(sign_1##16_t)var0 op0 (sign_2##32_t)(sign_2##16_t)var1) + var2; \
+    } \
+    break; \
+  default: { \
+    sign_d##64_t vd_w = P.VU.elt<sign_d##64_t>(rd_num, i); \
+    P.VU.elt<uint64_t>(rd_num, i) = \
+      op1((sign_1##64_t)(sign_1##32_t)var0 op0 (sign_2##64_t)(sign_2##32_t)var1) + var2; \
+    } \
+    break; \
+  }
+
 #define VI_WIDE_WVX_OP(var0, op0, sign) \
   switch(P.VU.vsew) { \
   case e8: { \
