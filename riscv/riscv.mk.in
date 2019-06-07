@@ -298,9 +298,6 @@ riscv_insn_ext_v_alu_int = \
 	vadc_vim \
 	vadc_vvm \
 	vadc_vxm \
-	vmadc_vim \
-	vmadc_vvm \
-	vmadc_vxm \
 	vadd_vi \
 	vadd_vv \
 	vadd_vx \
@@ -321,6 +318,9 @@ riscv_insn_ext_v_alu_int = \
 	viota_m \
 	vmacc_vv \
 	vmacc_vx \
+	vmadc_vim \
+	vmadc_vvm \
+	vmadc_vxm \
 	vmadd_vv \
 	vmadd_vx \
 	vmand_mm \
@@ -332,9 +332,6 @@ riscv_insn_ext_v_alu_int = \
 	vmerge_vim \
 	vmerge_vvm \
 	vmerge_vxm \
-	vmv_v_i \
-	vmv_v_v \
-	vmv_v_x \
 	vmfirst_m \
 	vmin_vv \
 	vmin_vx \
@@ -345,8 +342,8 @@ riscv_insn_ext_v_alu_int = \
 	vmor_mm \
 	vmornot_mm \
 	vmpopc_m \
-	vmsac_vv \
-	vmsac_vx \
+	vmsbc_vvm \
+	vmsbc_vxm \
 	vmsbf_m \
 	vmseq_vi \
 	vmseq_vv \
@@ -370,8 +367,6 @@ riscv_insn_ext_v_alu_int = \
 	vmsne_vv \
 	vmsne_vx \
 	vmsof_m \
-	vmsub_vv \
-	vmsub_vx \
 	vmul_vv \
 	vmul_vx \
 	vmulh_vv \
@@ -381,6 +376,9 @@ riscv_insn_ext_v_alu_int = \
 	vmulhu_vv \
 	vmulhu_vx \
 	vmv_s_x \
+	vmv_v_i \
+	vmv_v_v \
+	vmv_v_x \
 	vmxnor_mm \
 	vmxor_mm \
 	vnclip_vi \
@@ -389,6 +387,10 @@ riscv_insn_ext_v_alu_int = \
 	vnclipu_vi \
 	vnclipu_vv \
 	vnclipu_vx \
+	vnmsac_vv \
+	vnmsac_vx \
+	vnmsub_vv \
+	vnmsub_vx \
 	vnsra_vi \
 	vnsra_vv \
 	vnsra_vx \
@@ -423,8 +425,6 @@ riscv_insn_ext_v_alu_int = \
 	vsaddu_vx \
 	vsbc_vvm \
 	vsbc_vxm \
-	vmsbc_vvm \
-	vmsbc_vxm \
 	vslide1down_vx \
 	vslide1up_vx \
 	vslidedown_vi \
@@ -464,12 +464,11 @@ riscv_insn_ext_v_alu_int = \
 	vwaddu_wx \
 	vwmacc_vv \
 	vwmacc_vx \
+	vwmaccsu_vv \
+	vwmaccsu_vx \
 	vwmaccu_vv \
 	vwmaccu_vx \
-	vwmsac_vv \
-	vwmsac_vx \
-	vwmsacu_vv \
-	vwmsacu_vx \
+	vwmaccus_vx \
 	vwmul_vv \
 	vwmul_vx \
 	vwmulsu_vv \
@@ -480,12 +479,11 @@ riscv_insn_ext_v_alu_int = \
 	vwredsumu_vs \
 	vwsmacc_vv \
 	vwsmacc_vx \
+	vwsmaccsu_vv \
+	vwsmaccsu_vx \
 	vwsmaccu_vv \
 	vwsmaccu_vx \
-	vwsmsac_vv \
-	vwsmsac_vx \
-	vwsmsacu_vv \
-	vwsmsacu_vx \
+	vwsmaccus_vx \
 	vwsub_vv \
 	vwsub_vx \
 	vwsub_wv \

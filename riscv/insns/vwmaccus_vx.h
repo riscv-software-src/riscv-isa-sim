@@ -1,4 +1,4 @@
-// vwmsac.vx vd, vs2, rs1
+// vwmaccus.vx vd, vs2, rs1
 VI_CHECK_DSS(false);
 VI_VX_LOOP_WIDEN
 ({

@@ -922,8 +922,8 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_V___INSN(vdot,      1);
   DISASM_OPIV_VX__INSN(vwsmaccu,  0);
   DISASM_OPIV_VX__INSN(vwsmacc,   1);
-  DISASM_OPIV_VX__INSN(vwsmsacu,  0);
-  DISASM_OPIV_VX__INSN(vwsmsac,   1);
+  DISASM_OPIV_VX__INSN(vwsmaccsu, 0);
+  DISASM_OPIV__X__INSN(vwsmaccus, 1);
 
   //OPMVV/OPMVX
   //0b00_0000
@@ -971,9 +971,9 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_VX__INSN(vmulhsu,   0);
   DISASM_OPIV_VX__INSN(vmulh,     1);
   DISASM_OPIV_VX__INSN(vmadd,     1);
-  DISASM_OPIV_VX__INSN(vmsub,     1);
+  DISASM_OPIV_VX__INSN(vnmsub,    1);
   DISASM_OPIV_VX__INSN(vmacc,     1);
-  DISASM_OPIV_VX__INSN(vmsac,     1);
+  DISASM_OPIV_VX__INSN(vnmsac,    1);
 
   //0b11_0000
   DISASM_OPIV_VX__INSN(vwaddu,    0);
@@ -989,8 +989,8 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_VX__INSN(vwmul,     1);
   DISASM_OPIV_VX__INSN(vwmaccu,   0);
   DISASM_OPIV_VX__INSN(vwmacc,    1);
-  DISASM_OPIV_VX__INSN(vwmsacu,   0);
-  DISASM_OPIV_VX__INSN(vwmsac,    1);
+  DISASM_OPIV_VX__INSN(vwmaccsu,  0);
+  DISASM_OPIV__X__INSN(vwmaccus,  1);
 
   #undef DISASM_OPIV_VXI_INSN
   #undef DISASM_OPIV_VX__INSN
