@@ -2,7 +2,7 @@
 require(insn.v_vm() == 1);
 uint64_t xmask = UINT64_MAX >> (64 - P.get_max_xlen());
 reg_t rs1 = RS1;
-VI_LOOP_BASE 
+VI_LOOP_BASE
 VI_LOOP_END_NO_TAIL_ZERO
 if (!(rs1 >= 0 && rs1 < (P.VU.get_vlen()/sew))) {
   WRITE_RD(0);

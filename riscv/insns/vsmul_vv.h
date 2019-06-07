@@ -23,10 +23,10 @@ VI_VV_ULOOP
   result = result >> (sew - 1);
 
   // saturation
-  if (overflow){
+  if (overflow) {
     result = int_max;
     P.VU.vxsat = 1;
-  }else{
+  } else {
     result |= result_sign;
   }
   vd = result;

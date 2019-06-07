@@ -27,7 +27,7 @@ VI_VX_ULOOP
   if (overflow) {
     result = int_max;
     P.VU.vxsat = 1;
-  }else {
+  } else {
     result |= result_sign;
   }
   vd = result;

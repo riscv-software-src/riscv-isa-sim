@@ -1,7 +1,7 @@
 // vfwmacc.vv vd, vs2, vs1
 VI_VFP_VVF_LOOP_WIDE
 ({
-  switch(P.VU.vsew){
+  switch(P.VU.vsew) {
   case e32:
     vd = f64_mulAdd(vs1, vs2, vd);
     break;

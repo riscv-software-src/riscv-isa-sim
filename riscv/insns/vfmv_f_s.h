@@ -1,9 +1,9 @@
 // vfmv_f_s: rd = vs2[0] (rs1=0)
 require(insn.v_vm() == 1);
 require_fp;
-require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64); 
+require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64);
 
-reg_t rs2_num = insn.rs2(); 
+reg_t rs2_num = insn.rs2();
 uint64_t vs2_0 = 0;
 const reg_t sew = P.VU.vsew;
 switch(sew) {

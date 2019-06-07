@@ -11,7 +11,7 @@ case VFUNARY0::VFWCVT_F_F_V:
 
 VI_VFP_VV_LOOP
 ({
-  switch(P.VU.vsew){
+  switch(P.VU.vsew) {
   case e32:
     //cvt
     switch (rs1_num) {

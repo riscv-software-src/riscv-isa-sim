@@ -1,7 +1,7 @@
 // vfwmul.vf vd, vs2, rs1
 VI_VFP_VVF_LOOP_WIDE
 ({
-  switch(P.VU.vsew){
+  switch(P.VU.vsew) {
   case e32:
     vd = f64_add(vs2, rs1);
     break;

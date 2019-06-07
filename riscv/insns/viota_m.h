@@ -28,19 +28,19 @@ for (reg_t i = 0; i < vl; ++i) {
   switch (sew) {
   case e8:
     P.VU.elt<uint8_t>(rd_num, i) = use_ori ?
-      P.VU.elt<uint8_t>(rd_num, i) : cnt;
+                                   P.VU.elt<uint8_t>(rd_num, i) : cnt;
     break;
   case e16:
     P.VU.elt<uint16_t>(rd_num, i) = use_ori ?
-      P.VU.elt<uint16_t>(rd_num, i) : cnt;
+                                    P.VU.elt<uint16_t>(rd_num, i) : cnt;
     break;
   case e32:
     P.VU.elt<uint32_t>(rd_num, i) = use_ori ?
-      P.VU.elt<uint32_t>(rd_num, i) : cnt;
+                                    P.VU.elt<uint32_t>(rd_num, i) : cnt;
     break;
   default:
     P.VU.elt<uint64_t>(rd_num, i) = use_ori ?
-      P.VU.elt<uint64_t>(rd_num, i) : cnt;
+                                    P.VU.elt<uint64_t>(rd_num, i) : cnt;
     break;
   }
 

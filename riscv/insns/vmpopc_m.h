@@ -7,7 +7,7 @@ reg_t rd_num = insn.rd();
 reg_t rs2_num = insn.rs2();
 require(P.VU.vstart == 0);
 reg_t popcount = 0;
-for (reg_t i=P.VU.vstart; i<vl; ++i){
+for (reg_t i=P.VU.vstart; i<vl; ++i) {
   const int mlen = P.VU.vmlen;
   const int midx = (mlen * i) / 32;
   const int mpos = (mlen * i) % 32;
