@@ -1,0 +1,68 @@
+#!/bin/bash
+where=$(dirname $(readlink -f "$0"))
+log_path=${where}/logs
+
+slack_uri="https://hooks.slack.com/services/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"
+
+runs=$1
+if [ -z $1 ];then
+    runs=1
+fi
+
+pipeline_st=10
+for i in $(seq 0 ${pipeline_st}); do
+  if [ ! -d ${where}/build_${i} ]
+  then
+    mkdir ${where}/build_${i}
+  fi
+done
+
+proc=()
+pids=()
+
+for i in $(seq 1 ${runs}); do
+    while true; do
+      SEED=$RANDOM
+      result=$(sqlite3 ~/regression.db "SELECT 1 FROM regression WHERE seed = \"${SEED}\" AND status = 'init'")
+      if [[ -z $result ]];then
+        result=$(sqlite3 ~/regression.db "INSERT INTO regression(seed, exp_time, status) SELECT \"${SEED}\", datetime('now'), 'init' WHERE NOT EXISTS(SELECT 1 FROM regression WHERE seed = \"${SEED}\")")
+        break
+      fi
+    done
+    target="build_$(( i % ${pipeline_st} ))"
+    rm -rf ${where}/${target}/*
+    pushd ${target} 
+      cmake_out=$(cmake ../ \
+                  -DCMAKE_ASM_COMPILER="$where/../../toolchain-prefix/bin/riscv64-unknown-elf-gcc" \
+                  -DSPIKE="$where/../../spike-prefix/build-spike/spike" \
+                  -DSEED=$SEED \
+                  -DBASE=64 --VLEN=512 --ELEN=64 --SLEN=128 \
+                  "$where")
+      make  -j20 > /dev/null
+      ctest --timeout 10 -Q -O ${log_path}/${SEED}.log &
+      proc[${i}]=$!
+      pids[$!]=${SEED}
+    popd
+
+    if [ $(( i % ${pipeline_st})) == 0 ]
+    then
+      for pid in ${proc[*]}; do
+        wait $pid
+        SEED=${pids[$pid]}
+        if grep -Fxq Failed ${log_path}/${SEED}.log
+        then
+          sqlite3 ~/regression.db "update regression set status=\"failed\" where seed = \"${SEED}\""
+          #curl -X POST --data-urlencode "payload={\"channel\": \"#spike-vector\", \"username\": \"webhookbot\", \"text\": \"!!THIS IS REAL!! Spike Vector regression fail on SEED ${SEED}.\", \"icon_emoji\": \":scream:\"}" ${slack_uri}
+        else
+          echo "Success"
+          sqlite3 ~/regression.db "update regression set status=\"successed\" where seed = \"${SEED}\""
+        fi
+        echo "Run ${i} finished"
+        if [[ $((${i} % 10000)) == 0 ]]; then
+          echo "PASS"
+            #curl -X POST --data-urlencode "payload={\"channel\": \"#spike-vector\", \"username\": \"webhookbot\", \"text\": \"Spike suvived after ${i} cases.\", \"icon_emoji\": \":100:\"}" ${slack_uri}
+        fi
+      done
+
+    fi
+done
