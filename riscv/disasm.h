@@ -42,7 +42,7 @@ class disasm_insn_t
 
   const char* get_name() const
   {
-      return name;
+    return name;
   }
 
   std::string to_string(insn_t insn) const
