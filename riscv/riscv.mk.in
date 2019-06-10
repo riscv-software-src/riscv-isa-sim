@@ -560,6 +560,7 @@ riscv_insn_ext_v_alu_fp = \
 	vfwnmsac_vv \
 	vfwredosum_vs \
 	vfwredsum_vs \
+	vfwsub_vf \
 	vfwsub_vv \
 	vfwsub_wv \
 	vmfeq_vf \

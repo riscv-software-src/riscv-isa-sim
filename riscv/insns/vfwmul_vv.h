@@ -1,9 +1,9 @@
 // vfwmul.vv vd, vs2, vs1
-VI_VFP_VVF_LOOP_WIDE
+VI_VFP_VV_LOOP_WIDE
 ({
   switch(P.VU.vsew) {
   case e32:
-    vd = f64_add(vs2, vs1);
+    vd = f64_mul(vs2, vs1);
     break;
   case e16:
   case e8:
