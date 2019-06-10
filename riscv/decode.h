@@ -1600,7 +1600,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   softfloat_roundingMode = STATE.frm; \
-  float64_t vd_0 = P.VU.elt<float64_t>(rs1_num, 0); \
+  float64_t vd_0 = f64(P.VU.elt<float64_t>(rs1_num, 0).v); \
   for (reg_t i=P.VU.vstart; i<vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP();
 
@@ -1668,7 +1668,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_VFP_VV_LOOP_WIDE_REDUCTION(BODY) \
   VI_VFP_LOOP_WIDE_REDUCTION_BASE \
-  float64_t vs2 = f64(P.VU.elt<float32_t>(rs2_num, i).v); \
+  float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
   BODY; \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_REDUCTION_END(e64)
