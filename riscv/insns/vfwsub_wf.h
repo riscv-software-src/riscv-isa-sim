@@ -1,10 +1,9 @@
 // vfwsub.wf vd, vs2, rs1
-VI_VFP_VF_LOOP
+VI_VFP_WF_LOOP_WIDE
 ({
   switch(P.VU.vsew) {
   case e32:
-    P.VU.elt<float64_t>(rd_num, i) = f64_sub(P.VU.elt<float64_t>(rs2_num, i),
-        f32_to_f64(rs1));
+    vd = f64_sub(vs2, rs1);
     break;
   case e16:
   case e8:

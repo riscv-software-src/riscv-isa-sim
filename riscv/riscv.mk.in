@@ -544,10 +544,10 @@ riscv_insn_ext_v_alu_fp = \
 	vfsub_vv \
 	vfunary0_vv \
 	vfunary1_vv \
-	vfwadd_vv \
 	vfwadd_vf \
-	vfwadd_wv \
+	vfwadd_vv \
 	vfwadd_wf \
+	vfwadd_wv \
 	vfwmacc_vf \
 	vfwmacc_vv \
 	vfwmsac_vf \
@@ -562,6 +562,7 @@ riscv_insn_ext_v_alu_fp = \
 	vfwredsum_vs \
 	vfwsub_vf \
 	vfwsub_vv \
+	vfwsub_wf \
 	vfwsub_wv \
 	vmfeq_vf \
 	vmfeq_vv \
