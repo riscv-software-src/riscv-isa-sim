@@ -40,6 +40,11 @@ class disasm_insn_t
     return (insn.bits() & mask) == match;
   }
 
+  const char* get_name() const
+  {
+    return name;
+  }
+
   std::string to_string(insn_t insn) const
   {
     std::stringstream s;
@@ -83,12 +88,15 @@ class disassembler_t
  public:
   disassembler_t(int xlen);
   ~disassembler_t();
+
   std::string disassemble(insn_t insn) const;
+  const disasm_insn_t* lookup(insn_t insn) const;
+
   void add_insn(disasm_insn_t* insn);
+
  private:
   static const int HASH_SIZE = 256;
   std::vector<const disasm_insn_t*> chain[HASH_SIZE+1];
-  const disasm_insn_t* lookup(insn_t insn) const;
 };
 
 #endif

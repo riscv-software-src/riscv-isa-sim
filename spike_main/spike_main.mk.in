@@ -6,6 +6,7 @@ spike_main_subproject_deps = \
 spike_main_install_prog_srcs = \
 	spike.cc \
 	spike-dasm.cc \
+	spike-log-parser.cc \
 	xspike.cc \
 	termios-xspike.cc \
 
