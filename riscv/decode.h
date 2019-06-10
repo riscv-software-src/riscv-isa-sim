@@ -1628,7 +1628,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   set_fp_exceptions; \
   if (vl > 0 && TAIL_ZEROING) { \
     P.VU.elt<type_sew_t<x>::type>(rd_num, 0) = vd_0.v; \
-    for (reg_t i = 1; i < (P.VU.VLEN / P.VU.vsew); ++i) { \
+    for (reg_t i = 1; i < (P.VU.VLEN / x); ++i) { \
        P.VU.elt<type_sew_t<x>::type>(rd_num, i) = 0; \
     } \
   }
