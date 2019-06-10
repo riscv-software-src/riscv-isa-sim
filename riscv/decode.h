@@ -1699,6 +1699,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_VFP_VF_LOOP_WIDE(BODY) \
   VI_VFP_LOOP_BASE \
+  VI_CHECK_DSS(false); \
   float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
   float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
   float64_t rs1 = f32_to_f64(f32(READ_FREG(rs1_num))); \
@@ -1708,6 +1709,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_VFP_VV_LOOP_WIDE(BODY) \
   VI_VFP_LOOP_BASE \
+  VI_CHECK_DSS(true); \
   float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
   float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
   float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
@@ -1715,8 +1717,19 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_WIDE_END
 
+#define VI_VFP_WF_LOOP_WIDE(BODY) \
+  VI_VFP_LOOP_BASE \
+  VI_CHECK_DDS(false); \
+  float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+  float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
+  float64_t rs1 = f32_to_f64(f32(READ_FREG(rs1_num))); \
+  BODY; \
+  DEBUG_RVV_FP_VV; \
+  VI_VFP_LOOP_WIDE_END
+
 #define VI_VFP_WV_LOOP_WIDE(BODY) \
   VI_VFP_LOOP_BASE \
+  VI_CHECK_DDS(true); \
   float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
   float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
   float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
@@ -1724,14 +1737,6 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_WIDE_END
 
-#define VI_VFP_WF_LOOP_WIDE(BODY) \
-  VI_VFP_LOOP_BASE \
-  float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
-  float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
-  float64_t rs1 = f32_to_f64(f32(READ_FREG(rs1_num))); \
-  BODY; \
-  DEBUG_RVV_FP_VV; \
-  VI_VFP_LOOP_WIDE_END
 
 // Seems that 0x0 doesn't work.
 #define DEBUG_START             0x100
