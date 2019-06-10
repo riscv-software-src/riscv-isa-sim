@@ -1613,6 +1613,15 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   P.VU.vstart = 0; \
   set_fp_exceptions;
 
+#define VI_VFP_LOOP_WIDE_END \
+  } \
+  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
+    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((P.VU.vsew >> 3) * 2)); \
+    memset(tail, 0, (P.VU.vlmax - vl) * ((P.VU.vsew >> 3) * 2)); \
+  }\
+  P.VU.vstart = 0; \
+  set_fp_exceptions;
+
 #define VI_VFP_LOOP_REDUCTION_END(x) \
   } \
   P.VU.vstart = 0; \
