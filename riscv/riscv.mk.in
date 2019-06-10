@@ -545,7 +545,9 @@ riscv_insn_ext_v_alu_fp = \
 	vfunary0_vv \
 	vfunary1_vv \
 	vfwadd_vv \
+	vfwadd_vf \
 	vfwadd_wv \
+	vfwadd_wf \
 	vfwmacc_vf \
 	vfwmacc_vv \
 	vfwmsac_vf \
