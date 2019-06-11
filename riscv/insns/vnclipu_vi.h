@@ -8,7 +8,7 @@ VI_VVXI_LOOP_NARROW
   INT_ROUNDING(result, xrm, sew);
 
   // unsigned shifting to rs1
-  result = vzext(result, sew * 2) >> zimm5;
+  result = vzext(result, sew * 2) >> (zimm5 & ((sew * 2) < 32? (sew * 2) - 1: 31));
 
   // saturation
   if (result & (uint64_t)(-1ll << sew)) {

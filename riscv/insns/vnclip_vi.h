@@ -9,7 +9,7 @@ VI_VVXI_LOOP_NARROW
 // rounding
   INT_ROUNDING(result, xrm, sew);
 
-  result = (vsext(result, sew * 2)) >> zimm5;
+  result = vsext(result, sew * 2) >> (zimm5 & ((sew * 2) < 32? (sew * 2) - 1: 31));
 
 // saturation
   if (result < int_min) {

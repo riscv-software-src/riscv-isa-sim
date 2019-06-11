@@ -10,7 +10,7 @@ VI_VVXI_LOOP_NARROW
   INT_ROUNDING(result, xrm, sew);
 
 // unsigned shifting to rs1
-  uint64_t unsigned_shift_amount = (uint64_t)(vs1 & ((1ll<<sew) - 1));
+  uint64_t unsigned_shift_amount = (uint64_t)(vs1 & ((sew * 2) - 1));
   if (unsigned_shift_amount >= (2 * sew)) {
     result = 0;
   } else {
