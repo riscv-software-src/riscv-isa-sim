@@ -218,52 +218,6 @@ reg_t vectorUnit_t::set_vl(uint64_t regId, reg_t reqVL, reg_t newType){
   return vl;
 }
 
-void vectorUnit_t::set_vcsr(int which, reg_t val)
-{
-  switch(which){
-    case CSR_VSTART:
-      vstart = val;
-      break;
-    case CSR_VXSAT:
-      vxsat = val;
-      break;
-    case CSR_VXRM:
-      vxrm = val;
-      break;
-    case CSR_VL:
-      vl = val;
-      break;
-    case CSR_VTYPE:
-      vtype = val;
-      // check vill bit
-      if (BITS(vtype, p->get_xlen(), p->get_xlen() - 1) == 1){
-        vill = true;
-      }else{
-        vill = false;
-      }
-      break;
-    default:
-      throw trap_illegal_instruction(0);
-  }
-}
-
-reg_t vectorUnit_t::get_vcsr(int which)
-{
-  switch(which){
-    case CSR_VSTART:
-      return vstart;
-    case CSR_VXSAT:
-      return vxsat;
-    case CSR_VXRM:
-      return vxrm;
-    case CSR_VL:
-      return vl;
-    case CSR_VTYPE:
-      return vtype;
-  }
-  throw trap_illegal_instruction(0);
-}
-
 void processor_t::set_debug(bool value)
 {
   debug = value;
@@ -693,6 +647,27 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_DSCRATCH:
       state.dscratch = val;
       break;
+    case CSR_VSTART:
+      VU.vstart = val;
+      break;
+    case CSR_VXSAT:
+      VU.vxsat = val;
+      break;
+    case CSR_VXRM:
+      VU.vxrm = val;
+      break;
+    case CSR_VL:
+      VU.vl = val;
+      break;
+    case CSR_VTYPE:
+      VU.vtype = val;
+      // check vill bit
+      if (BITS(VU.vtype, get_xlen(), get_xlen() - 1) == 1){
+        VU.vill = true;
+      }else{
+        VU.vill = false;
+      }
+      break;
   }
 }
 
@@ -860,6 +835,16 @@ reg_t processor_t::get_csr(int which)
       return state.dpc & pc_alignment_mask();
     case CSR_DSCRATCH:
       return state.dscratch;
+    case CSR_VSTART:
+      return VU.vstart;
+    case CSR_VXSAT:
+      return VU.vxsat;
+    case CSR_VXRM:
+      return VU.vxrm;
+    case CSR_VL:
+      return VU.vl;
+    case CSR_VTYPE:
+      return VU.vtype;
   }
   throw trap_illegal_instruction(0);
 }

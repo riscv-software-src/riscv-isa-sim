@@ -189,8 +189,6 @@ class vectorUnit_t {
     }
 
     reg_t set_vl(uint64_t regId, reg_t reqVL, reg_t newType);
-    void set_vcsr(int which, reg_t val);
-    reg_t get_vcsr(int which);
 
     reg_t get_vlen() { return VLEN; }
     reg_t get_elen() { return ELEN; }
