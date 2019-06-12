@@ -165,7 +165,8 @@ class vectorUnit_t {
     // vector element for varies SEW
     template<class T>
       T& elt(reg_t vReg, reg_t n){
-        assert(vsew!=0);
+        assert(vsew != 0);
+        assert((VLEN >> 3)/sizeof(T) > 0);
         reg_t elts_per_reg = (VLEN >> 3) / (sizeof(T));
         vReg += n / elts_per_reg;
         n = n % elts_per_reg;

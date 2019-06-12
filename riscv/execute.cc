@@ -145,26 +145,11 @@ void processor_t::step(size_t n)
             state.single_step = state.STEP_STEPPED;
           }
 
-          if (debug && !state.prev_state) { // lazy init
-            prev_reg_state_t *saved = new prev_reg_state_t;
-            memcpy(&saved->VU, &VU, sizeof(vectorUnit_t));
-            int v_regfile_sz = NVPR * (VU.VLEN/8);
-            saved->VU.reg_file = malloc(v_regfile_sz);
-            for (int i=0; i<NXPR; ++i) (reg_t&)saved->XPR[i] = 0xdeadbeefcafebabe;
-            for (int i=0; i<NFPR; ++i) saved->FPR.write(i, freg(f64(161803398875)));
-            for (int i=0; i<NVPR; ++i) {
-              for (reg_t j=0; j<VU.VLEN/32; ++j) {
-                saved->VU.elt<uint32_t>(i, j) = f32(0xdeadbeef).v;
-              }
-            }
-            state.prev_state = saved;
-          }
-
           insn_fetch_t fetch = mmu->load_insn(pc);
           if (debug && !state.serialized)
             disasm(fetch.insn);
           pc = execute_insn(this, pc, fetch);
-
+#if 0
           if (debug && !state.serialized) {
             prev_reg_state_t *saved = state.prev_state;
             if (saved->VU.setvl_count != VU.setvl_count) {
@@ -209,7 +194,7 @@ void processor_t::step(size_t n)
               VU.reg_referenced[i] = 0;
             }
           }
-
+#endif
           advance_pc();
         }
       }

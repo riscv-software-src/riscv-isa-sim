@@ -1,68 +1,134 @@
 #!/bin/bash
-where=$(dirname $(readlink -f "$0"))
-log_path=${where}/logs
+# Using SLURM to run the Spike regression
+# p
 
-slack_uri="https://hooks.slack.com/services/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"
+
+WORKSPACE=${HOME}/local
+BENGAL_TEAM_ROOT=${WORKSPACE}/bengal-team-regression
+set -x
+if [ -z -d "${BENGAL_TEAM_ROOT}" ]
+then
+  mkdir -p ${HOME}/local
+  pushd ${HOME}/local
+  git clone git@github.com:sifive/bengal-team.git bengal-team-regression
+  pushd bengal-team-regression
+  git submodule update --init --recursive
+  pushd riscv-isa-sim
+  git co rvv
+  popd 
+  pushd riscv-tests-internal
+  git co hankuan
+  popd
+  make -j
+else
+  pushd ${BENGAL_TEAM_ROOT}
+  make -j
+fi
+ASM="${BENGAL_TEAM_ROOT}/toolchain-prefix/bin/riscv64-unknown-elf-gcc"
+SPIKE="${BENGAL_TEAM_ROOT}/spike-prefix/build-spike/spike"
+TEST_FRAMEWORK="${BENGAL_TEAM_ROOT}/riscv-tests-internal/vector"
+
+cwd=$(dirname $(readlink -f "$0")) 
+
+if [ -z "${cwd}/regression.db" ]
+then
+  sqlite3 ${cwd}/regression.db "CREATE TABLE regression \
+    (inx INTEGER PRIMARY KEY AUTOINCREMENT, seed TEXT, \
+    exp_time DATETIME, status TEXT);"
+fi
+
+if [ -z -d "${cwd}/out" ]
+then
+  mkdir "${cwd}/out"
+fi
 
 runs=$1
 if [ -z $1 ];then
     runs=1
 fi
 
-pipeline_st=10
-for i in $(seq 0 ${pipeline_st}); do
-  if [ ! -d ${where}/build_${i} ]
-  then
-    mkdir ${where}/build_${i}
-  fi
-done
-
-proc=()
-pids=()
+function gen_job_file {
+    job_name=$2
+    job_file="$1/${job_name}.job"
+    echo "#!/bin/bash
+#SBATCH --job-name=${job_name}.job
+#SBATCH --output=${cwd}/out/${job_name}.out
+#SBATCH --error=${cwd}/out/${job_name}.err
+#SBATCH --time=$5
+#SBATCH --mem=$4
+#SBATCH --cpus-per-task=$3
+#SBATCH --partition=standard
+#SBATCH --mail-user=davewen@sifive.com
+pushd ${target} 
+$6
+popd
+" > ${job_file}
+}
 
 for i in $(seq 1 ${runs}); do
     while true; do
       SEED=$RANDOM
-      result=$(sqlite3 ~/regression.db "SELECT 1 FROM regression WHERE seed = \"${SEED}\" AND status = 'init'")
+      result=$(sqlite3 ${cwd}/regression.db "SELECT 1 FROM regression \
+        WHERE seed = \"${SEED}\" AND status = 'init'")
       if [[ -z $result ]];then
-        result=$(sqlite3 ~/regression.db "INSERT INTO regression(seed, exp_time, status) SELECT \"${SEED}\", datetime('now'), 'init' WHERE NOT EXISTS(SELECT 1 FROM regression WHERE seed = \"${SEED}\")")
+        result=$(sqlite3 ${cwd}/regression.db "INSERT INTO regression(seed, \
+          exp_time, status) SELECT \"${SEED}\", datetime('now'), \
+          'init' WHERE NOT EXISTS(SELECT 1 FROM regression \
+          WHERE seed = \"${SEED}\")")
         break
       fi
     done
-    target="build_$(( i % ${pipeline_st} ))"
-    rm -rf ${where}/${target}/*
-    pushd ${target} 
-      cmake_out=$(cmake ../ \
-                  -DCMAKE_ASM_COMPILER="$where/../../toolchain-prefix/bin/riscv64-unknown-elf-gcc" \
-                  -DSPIKE="$where/../../spike-prefix/build-spike/spike" \
-                  -DSEED=$SEED \
-                  -DBASE=64 --VLEN=512 --ELEN=64 --SLEN=128 \
-                  "$where")
-      make  -j20 > /dev/null
-      ctest --timeout 10 -Q -O ${log_path}/${SEED}.log &
-      proc[${i}]=$!
-      pids[$!]=${SEED}
-    popd
+    target="${cwd}/regression/build_${SEED}"
+    echo $target
 
-    if [ $(( i % ${pipeline_st})) == 0 ]
+    if [ -z -d ${target} ]
     then
-      for pid in ${proc[*]}; do
-        wait $pid
-        SEED=${pids[$pid]}
-        if grep -Fxq Failed ${log_path}/${SEED}.log
-        then
-          sqlite3 ~/regression.db "update regression set status=\"failed\" where seed = \"${SEED}\""
-          #curl -X POST --data-urlencode "payload={\"channel\": \"#spike-vector\", \"username\": \"webhookbot\", \"text\": \"!!THIS IS REAL!! Spike Vector regression fail on SEED ${SEED}.\", \"icon_emoji\": \":scream:\"}" ${slack_uri}
-        else
-          echo "Success"
-          sqlite3 ~/regression.db "update regression set status=\"successed\" where seed = \"${SEED}\""
-        fi
-        echo "Run ${i} finished"
-        if [[ $((${i} % 10000)) == 0 ]]; then
-          echo "PASS"
-            #curl -X POST --data-urlencode "payload={\"channel\": \"#spike-vector\", \"username\": \"webhookbot\", \"text\": \"Spike suvived after ${i} cases.\", \"icon_emoji\": \":100:\"}" ${slack_uri}
-        fi
-      done
-
+      mkdir -p ${target}
+    else
+      rm -rf ${target}/*
     fi
+    gen_job_file ${target} "${SEED}_conf" 1 12000 "0-00:10" "\
+              cmake -DCMAKE_ASM_COMPILER=\"${ASM}\" \
+              -DSPIKE=\"${SPIKE}\" \
+              -DSEED=${SEED} \
+              -DBASE=64 --VLEN=512 --ELEN=64 --SLEN=128 \
+              \"${TEST_FRAMEWORK}\""
+
+    conf_job_file=$job_file
+    gen_job_file ${target} "${SEED}_make" 20 12000 "0-00:20" " \
+      make -j20 > /dev/null \
+      "
+    make_job_file=$job_file
+
+    CONF=$(sbatch ${conf_job_file})
+    MAKE=$(sbatch --dependency=afterok:${CONF##* } ${make_job_file})
+
+    dep_chain=
+
+    vpat=("v[abcde]", "vf[abcdefghijkl]", "vfm", "vf[nopqr]", "vf[stuvwxyz]", \
+          "vl", "vs", "v[mn]", "v[opqr]", "v[tuvwxyz]")
+    for pat in ${vpat[*]}; do
+      f_name=${pat/[/}
+      gen_job_file ${target} "${SEED}_ctest_${fname/]//}" 1 12000 "0-00:15" " \
+      ctest --timeout 10 -R .*${pat}.* --ouput-log ${target}/${SEED}_${i}.log;
+      "
+      dep=$(sbatch --dependency=afterok:${MAKE##* } ${job_file})
+      dep_chain+=":${dep##* }"
+    done
+
+    gen_job_file ${target} "${SEED}_result" 1 1000 "0-00:01" " \
+      if grep -Fxq Failed ${target}/*.log \
+      then \
+        sqlite3 ${cwd}/regression.db "update regression set \
+        status=\"failed\" where seed = \"${SEED}\"" \
+        grep -Fxq Failed ${target}/*.log \
+      else \
+        sqlite3 ${cwd}/regression.db "update regression set \
+        status=\"successed\" where seed = \"${SEED}\"" \
+      fi \
+      #rm -rf ${target}
+    "
+
+    sbatch --dependency=afterany$dep_chain ${job_file}
+    break
 done

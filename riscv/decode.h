@@ -23,6 +23,10 @@
 
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
+#ifndef __SIZEOF_INT128__
+typedef int __int128 __attribute__ ((__mode__ (TI)));
+typedef unsigned int __uint128 __attribute__ ((__mode__ (TI)));
+#endif
 typedef __int128 int128_t;
 typedef unsigned __int128 uint128_t;
 
@@ -1611,7 +1615,6 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     memset(tail, 0, (P.VU.vlmax - vl) * ((P.VU.vsew >> 3) * 1)); \
   }\
   P.VU.vstart = 0; \
-  set_fp_exceptions;
 
 #define VI_VFP_LOOP_WIDE_END \
   } \
@@ -1634,13 +1637,13 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   }
 
 #define VI_VFP_LOOP_CMP_END \
-    switch(P.VU.vsew) { \
-    case 32: { \
+  switch(P.VU.vsew) { \
+    case e32: { \
       vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
       break; \
     } \
-    case 16: \
-    case 8: \
+    case e16: \
+    case e8: \
     default: \
       softfloat_exceptionFlags = 1; \
       break; \
@@ -1661,10 +1664,20 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_VFP_VV_LOOP(BODY) \
   VI_VFP_LOOP_BASE \
-  float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
-  float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
-  float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
-  BODY; \
+  switch(P.VU.vsew) { \
+    case e32: {\
+      float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
+      float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
+      float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
+      BODY; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e16: \
+    case e8: \
+    default: \
+      require(0); \
+  }; \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
 
@@ -1691,6 +1704,26 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   DEBUG_RVV_FP_VF; \
   VI_VFP_LOOP_END
 
+#define VI_VFP_VF_LOOP2(BODY) \
+  VI_VFP_LOOP_BASE \
+  switch(P.VU.vsew) { \
+    case e32: {\
+      float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
+      float32_t rs1 = f32(READ_FREG(rs1_num)); \
+      float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
+      BODY; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e16: \
+    case e8: \
+    default: \
+      require(0); \
+  }; \
+  DEBUG_RVV_FP_VF; \
+  VI_VFP_LOOP_END
+
+
 #define VI_VFP_LOOP_CMP(BODY) \
   VI_VFP_LOOP_CMP_BASE \
   BODY; \
@@ -1700,12 +1733,23 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 #define VI_VFP_VF_LOOP_WIDE(BODY) \
   VI_VFP_LOOP_BASE \
   VI_CHECK_DSS(false); \
-  float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
-  float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
-  float64_t rs1 = f32_to_f64(f32(READ_FREG(rs1_num))); \
-  BODY; \
+    switch(P.VU.vsew) { \
+    case e32: {\
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
+      float64_t rs1 = f32_to_f64(f32(READ_FREG(rs1_num))); \
+      BODY; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e16: \
+    case e8: \
+    default: \
+      require(0); \
+  }; \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_WIDE_END
+
 
 #define VI_VFP_VV_LOOP_WIDE(BODY) \
   VI_VFP_LOOP_BASE \
