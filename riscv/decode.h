@@ -1675,6 +1675,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     }\
     case e16: \
     case e8: \
+      assert(RS1 != VFUNARY1::VFCLASS_V);\
     default: \
       require(0); \
   }; \
@@ -1696,15 +1697,6 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   VI_VFP_LOOP_REDUCTION_END(e64)
 
 #define VI_VFP_VF_LOOP(BODY) \
-  VI_VFP_LOOP_BASE \
-  float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
-  float32_t rs1 = f32(READ_FREG(rs1_num)); \
-  float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
-  BODY; \
-  DEBUG_RVV_FP_VF; \
-  VI_VFP_LOOP_END
-
-#define VI_VFP_VF_LOOP2(BODY) \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\
@@ -1733,7 +1725,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 #define VI_VFP_VF_LOOP_WIDE(BODY) \
   VI_VFP_LOOP_BASE \
   VI_CHECK_DSS(false); \
-    switch(P.VU.vsew) { \
+  switch(P.VU.vsew) { \
     case e32: {\
       float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
       float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
@@ -1754,30 +1746,60 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 #define VI_VFP_VV_LOOP_WIDE(BODY) \
   VI_VFP_LOOP_BASE \
   VI_CHECK_DSS(true); \
-  float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
-  float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
-  float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
-  BODY; \
+  switch(P.VU.vsew) { \
+    case e32: {\
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
+      float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
+      BODY; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e16: \
+    case e8: \
+    default: \
+      require(0); \
+  }; \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_WIDE_END
 
 #define VI_VFP_WF_LOOP_WIDE(BODY) \
   VI_VFP_LOOP_BASE \
   VI_CHECK_DDS(false); \
-  float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
-  float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
-  float64_t rs1 = f32_to_f64(f32(READ_FREG(rs1_num))); \
-  BODY; \
+  switch(P.VU.vsew) { \
+    case e32: {\
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
+      float64_t rs1 = f32_to_f64(f32(READ_FREG(rs1_num))); \
+      BODY; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e16: \
+    case e8: \
+    default: \
+      require(0); \
+  }; \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_WIDE_END
 
 #define VI_VFP_WV_LOOP_WIDE(BODY) \
   VI_VFP_LOOP_BASE \
   VI_CHECK_DDS(true); \
-  float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
-  float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
-  float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
-  BODY; \
+  switch(P.VU.vsew) { \
+    case e32: {\
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
+      float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
+      BODY; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e16: \
+    case e8: \
+    default: \
+      require(0); \
+  }; \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_WIDE_END
 

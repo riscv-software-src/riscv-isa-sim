@@ -1,13 +1,5 @@
 // vfmul.vf vd, vs2, rs1, vm
 VI_VFP_VF_LOOP
 ({
-  switch(P.VU.vsew) {
-  case e32:
-    vd = f32_mul(vs2, rs1);
-    break;
-  case e16:
-  case e8:
-  default:
-    softfloat_exceptionFlags = 1;
-  };
+  vd = f32_mul(vs2, rs1);
 })
