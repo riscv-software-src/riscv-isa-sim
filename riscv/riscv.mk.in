@@ -543,7 +543,8 @@ riscv_insn_ext_v_alu_fp = \
 	vfsub_vf \
 	vfsub_vv \
 	vfunary0_vv \
-	vfunary1_vv \
+	vfclass_v \
+	vfsqrt_v \
 	vfwadd_vf \
 	vfwadd_vv \
 	vfwadd_wf \
