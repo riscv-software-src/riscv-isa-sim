@@ -403,6 +403,8 @@ enum VMUNARY0{
 #define VI_ELEMENT_SKIP(inx) \
   if (inx >= vl && TAIL_ZEROING) { \
     is_valid = false; \
+  } else if (inx >= vl && !TAIL_ZEROING) { \
+    continue; \
   } else if (inx < P.VU.vstart) { \
     continue; \
   } else { \
@@ -542,6 +544,7 @@ enum VMUNARY0{
     res = (res & ~mmask) | ((op) & (1ULL << mpos)); \
   } \
   \
+  if (TAIL_ZEROING) {\
   for (reg_t i = vl; i < P.VU.vlmax && i > 0; ++i) { \
     int mlen = P.VU.vmlen; \
     int midx = (mlen * i) / 64; \
@@ -549,6 +552,7 @@ enum VMUNARY0{
     uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
     uint64_t &res = P.VU.elt<uint64_t>(insn.rd(), midx); \
     res = (res & ~mmask); \
+    } \
   } \
   P.VU.vstart = 0;
 
