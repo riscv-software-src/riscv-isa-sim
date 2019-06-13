@@ -1540,7 +1540,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 //
 // vector: vfp helper
 //
-#define VI_VFP_LOOP_BASE \
+#define VI_VFP_COMMON \
   require_extension('F'); \
   require_fp; \
   require(P.VU.vsew == 32); \
@@ -1549,20 +1549,15 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  softfloat_roundingMode = STATE.frm; \
+  softfloat_roundingMode = STATE.frm;
+
+#define VI_VFP_LOOP_BASE \
+  VI_VFP_COMMON \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     VI_LOOP_ELEMENT_SKIP();
 
 #define VI_VFP_LOOP_CMP_BASE \
-  require_extension('F'); \
-  require_fp; \
-  require(P.VU.vsew == 32); \
-  require(!P.VU.vill);\
-  reg_t vl = P.VU.vl; \
-  reg_t rd_num = insn.rd(); \
-  reg_t rs1_num = insn.rs1(); \
-  reg_t rs2_num = insn.rs2(); \
-  softfloat_roundingMode = STATE.frm; \
+  VI_VFP_COMMON \
   for (reg_t i = P.VU.vstart; i < vl; ++i) { \
     float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
     float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
@@ -1573,15 +1568,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     uint64_t res = 0;
 
 #define VI_VFP_LOOP_REDUCTION_BASE \
-  require_extension('F'); \
-  require_fp; \
-  require(P.VU.vsew == 32); \
-  require(!P.VU.vill);\
-  reg_t vl = P.VU.vl; \
-  reg_t rd_num = insn.rd(); \
-  reg_t rs1_num = insn.rs1(); \
-  reg_t rs2_num = insn.rs2(); \
-  softfloat_roundingMode = STATE.frm; \
+  VI_VFP_COMMON \
   float32_t vd_0 = P.VU.elt<float32_t>(rd_num, 0); \
   float32_t vs1_0 = P.VU.elt<float32_t>(rs1_num, 0); \
   vd_0 = vs1_0;\
@@ -1590,15 +1577,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     int32_t &vd = P.VU.elt<int32_t>(rd_num, i); \
 
 #define VI_VFP_LOOP_WIDE_REDUCTION_BASE \
-  require_extension('F'); \
-  require_fp; \
-  require(P.VU.vsew == 32); \
-  require(!P.VU.vill);\
-  reg_t vl = P.VU.vl; \
-  reg_t rd_num = insn.rd(); \
-  reg_t rs1_num = insn.rs1(); \
-  reg_t rs2_num = insn.rs2(); \
-  softfloat_roundingMode = STATE.frm; \
+  VI_VFP_COMMON \
   float64_t vd_0 = f64(P.VU.elt<float64_t>(rs1_num, 0).v); \
   for (reg_t i=P.VU.vstart; i<vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP();
