@@ -1,4 +1,4 @@
-// VFUNARY0 encoding space
+// vfncvt.f.x.v vd, vs2, vm
 VI_VFP_LOOP_BASE
   VI_CHECK_SDS;
   auto vs2 = P.VU.elt<int64_t>(rs2_num, i);
