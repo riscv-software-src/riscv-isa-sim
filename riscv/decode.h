@@ -327,14 +327,6 @@ enum VFUNARY1{
     VFCLASS_V = 0b10000
 };
 
-enum VMUNARY0{
-    VMSBF  = 0b00001,
-    VMSOF  = 0b00010,
-    VMSIF  = 0b00011,
-    VMIOTA = 0b10000,
-    VID    = 0b10001
-};
-
 // Vector macros
 #define e8 8      // 8b elements
 #define e16 16    // 16b elements
