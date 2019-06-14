@@ -310,14 +310,6 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 #define e32 32    // 32b elements
 #define e64 64    // 64b elements
 #define e128 128  // 128b elements
-#define m1 1      // Vlmul x1, assumed if m setting absent
-#define m2 2      // Vlmul x2
-#define m4 4      // Vlmul x4
-#define m8 8      // Vlmul x8
-#define d1 1      // EDIV 1, assumed if d setting absent
-#define d2 2      // EDIV 2
-#define d4 4      // EDIV 4
-#define d8 8      // EDIV 8
 
 #define vsext(x, sew) (((sreg_t)(x) << (64-sew)) >> (64-sew))
 #define vzext(x, sew) (((reg_t)(x) << (64-sew)) >> (64-sew))
