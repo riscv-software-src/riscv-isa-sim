@@ -23,10 +23,6 @@
 
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
-#ifndef __SIZEOF_INT128__
-typedef int __int128 __attribute__ ((__mode__ (TI)));
-typedef unsigned int __uint128 __attribute__ ((__mode__ (TI)));
-#endif
 typedef __int128 int128_t;
 typedef unsigned __int128 uint128_t;
 
