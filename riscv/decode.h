@@ -1580,7 +1580,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     case e16: \
     case e8: \
     default: \
-      softfloat_exceptionFlags = 1; \
+      require(0); \
       break; \
     }; \
   } \
@@ -1646,10 +1646,10 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     case e8: \
     default: \
       require(0); \
+      break; \
   }; \
   DEBUG_RVV_FP_VF; \
   VI_VFP_LOOP_END
-
 
 #define VI_VFP_LOOP_CMP(BODY) \
   VI_VFP_LOOP_CMP_BASE \
@@ -1673,6 +1673,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     case e8: \
     default: \
       require(0); \
+      break; \
   }; \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_WIDE_END
@@ -1694,6 +1695,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     case e8: \
     default: \
       require(0); \
+      break; \
   }; \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_WIDE_END
