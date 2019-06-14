@@ -1641,9 +1641,9 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     }\
     case e16: \
     case e8: \
-      assert(RS1 != VFUNARY1::VFCLASS_V);\
     default: \
       require(0); \
+      break; \
   }; \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
