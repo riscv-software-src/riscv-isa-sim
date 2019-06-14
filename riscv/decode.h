@@ -304,29 +304,6 @@ inline float to_f(float32_t f){float r; memcpy(&r, &f, sizeof(r)); return r;}
 inline double to_f(float64_t f){double r; memcpy(&r, &f, sizeof(r)); return r;}
 inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); return r;}
 
-// Vector enums
-enum VFUNARY0{
-    VFCVT_XU_F_V  = 0b00000,
-    VFCVT_X_F_V   = 0b00001,
-    VFCVT_F_XU_V  = 0b00010,
-    VFCVT_F_X_V   = 0b00011,
-    VFWCVT_XU_F_V = 0b01000,
-    VFWCVT_X_F_V  = 0b01001,
-    VFWCVT_F_XU_V = 0b01010,
-    VFWCVT_F_X_V  = 0b01011,
-    VFWCVT_F_F_V  = 0b01100,
-    VFNCVT_XU_F_V = 0b10000,
-    VFNCVT_X_F_V  = 0b10001,
-    VFNCVT_F_XU_V = 0b10010,
-    VFNCVT_F_X_V  = 0b10011,
-    VFNCVT_F_F_V  = 0b10100
-};
-
-enum VFUNARY1{
-    VFSQRT_V  = 0b00000,
-    VFCLASS_V = 0b10000
-};
-
 // Vector macros
 #define e8 8      // 8b elements
 #define e16 16    // 16b elements
