@@ -348,8 +348,8 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 //
 #define VI_LOOP_ELEMENT_SKIP(BODY) \
   const int mlen = P.VU.vmlen; \
-  const int midx = (mlen * i) / 64; \
-  const int mpos = (mlen * i) % 64; \
+  const int midx = (mlen * (i)) / 64; \
+  const int mpos = (mlen * (i)) % 64; \
   if (insn.v_vm() == 0) { \
     BODY; \
     bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \

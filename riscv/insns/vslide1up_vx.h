@@ -14,7 +14,10 @@ if (i != 0) {
     VI_XI_SLIDEUP_PARAMS(e64, 1);
     vd = vs2;
   }
-} else {
+} 
+VI_LOOP_END
+
+if (insn.v_vm() != 0 || (insn.v_vm() == 0 && (P.VU.elt<uint64_t>(0, 0) & 0x1) == 1)) {
   if (sew == e8) {
     P.VU.elt<uint8_t>(rd_num, 0) = RS1;
   } else if(sew == e16) {
@@ -25,5 +28,5 @@ if (i != 0) {
     P.VU.elt<uint64_t>(rd_num, 0) = RS1;
   }
 }
-VI_LOOP_END
+
 VI_CHECK_1905
