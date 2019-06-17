@@ -23,23 +23,20 @@ if (i != vl - 1) {
   }
   break;
   }
-}
-VI_LOOP_END
-
-for (reg_t i = vl - 1; i < vl; i++){
-  VI_LOOP_ELEMENT_SKIP()
+} else {
   switch (sew) {
   case e8:
-    P.VU.elt<uint8_t>(rd_num, i) = RS1;
+    P.VU.elt<uint8_t>(rd_num, vl - 1) = RS1;
     break;
   case e16:
-    P.VU.elt<uint16_t>(rd_num, i) = RS1;
+    P.VU.elt<uint16_t>(rd_num, vl - 1) = RS1;
     break;
   case e32:
-    P.VU.elt<uint32_t>(rd_num, i) = RS1;
+    P.VU.elt<uint32_t>(rd_num, vl - 1) = RS1;
     break;
   default:
-    P.VU.elt<uint64_t>(rd_num, i) = RS1;
+    P.VU.elt<uint64_t>(rd_num, vl - 1) = RS1;
     break;
   }
 }
+VI_LOOP_END
