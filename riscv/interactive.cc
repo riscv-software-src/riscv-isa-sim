@@ -222,41 +222,49 @@ freg_t sim_t::get_freg(const std::vector<std::string>& args)
 
 void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::string>& args)
 {
-  if (args.size() == 1) {
-    // Show all the regs!
-    processor_t *p = get_core(args[0]);
-    int vlen = (int)(p->VU.get_vlen()) >> 3;
-    int elen = (int)(p->VU.get_elen()) >> 3;
-    int num_elem = vlen/elen;
-    fprintf(stderr, "VLEN=%d bits; ELEN=%d bits\n", vlen << 3, elen << 3);
-
-    for (int r = 0; r < NVPR; ++r) {
-        fprintf(stderr, "%-4s: ", vr_name[r]);
-        for (int e = num_elem-1; e >= 0; --e){
-            long unsigned val;
-            switch(elen){
-                case 8:
-                    val = ((long unsigned*)p->VU.reg_file + r*num_elem)[e];
-                    fprintf(stderr, "%-4s[%d]: 0x%016" PRIx64 "  ", \
-                            vr_name[r], e, val);
-                    break;
-                case 4:
-                    val = ((unsigned*)p->VU.reg_file + r*num_elem)[e];
-                    fprintf(stderr, "[%d]0x%08x  ", e, (unsigned)val);
-                    break;
-                case 2:
-                    val = ((unsigned short*)p->VU.reg_file + r*num_elem)[e];
-                    fprintf(stderr, "[%d]0x%08x  ", e, (unsigned short)val);
-                    break;
-                case 1:
-                    val = ((unsigned char*)p->VU.reg_file + r*num_elem)[e];
-                    fprintf(stderr, "[%d]0x%08x  ", e, (unsigned char)val);
-                    break;
-            };
-        }
-        fprintf(stderr, "\n");
+  int rstart = 0;
+  int rend = NVPR;
+  if (args.size() >= 2) {
+    rstart = strtol(args[1].c_str(), NULL, 0);
+    if (!(rstart >= 0 && rstart < NVPR)) {
+      rstart = 0;
+    } else {
+      rend = rstart + 1;
     }
-  } // specify register
+  }
+
+  // Show all the regs!
+  processor_t *p = get_core(args[0]);
+  const int vlen = (int)(p->VU.get_vlen()) >> 3;
+  const int elen = (int)(p->VU.get_elen()) >> 3;
+  const int num_elem = vlen/elen;
+  fprintf(stderr, "VLEN=%d bits; ELEN=%d bits\n", vlen << 3, elen << 3);
+
+  for (int r = rstart; r < rend; ++r) {
+    fprintf(stderr, "%-4s: ", vr_name[r]);
+    for (int e = num_elem-1; e >= 0; --e){
+      uint64_t val;
+      switch(elen){
+        case 8:
+          val = P.VU.elt<uint64_t>(r, e);
+          fprintf(stderr, "[%d]: 0x%016" PRIx64 "  ", e, val);
+          break;
+        case 4:
+          val = P.VU.elt<uint32_t>(r, e);
+          fprintf(stderr, "[%d]: 0x%08" PRIx32 "  ", e, (uint32_t)val);
+          break;
+        case 2:
+          val = P.VU.elt<uint16_t>(r, e);
+          fprintf(stderr, "[%d]: 0x%08" PRIx16 "  ", e, (uint16_t)val);
+          break;
+        case 1:
+          val = P.VU.elt<uint8_t>(r, e);
+          fprintf(stderr, "[%d]: 0x%08" PRIx8 "  ", e, (uint8_t)val);
+          break;
+      }
+    }
+    fprintf(stderr, "\n");
+  }
 }
 
 
