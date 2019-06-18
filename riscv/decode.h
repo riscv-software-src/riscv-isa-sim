@@ -11,6 +11,7 @@
 # error spike requires a little-endian host
 #endif
 
+#include <algorithm>
 #include <cstdint>
 #include <string.h>
 #include <strings.h>
@@ -371,6 +372,14 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 //
 // vector: operation and register acccess check helper
 //
+static inline bool is_overlaped(const int astart, const int asize,
+                                const int bstart, const int bsize)
+{
+  const int aend = astart + asize;
+  const int bend = bstart + bsize;
+  return std::max(aend, bend) - std::min(astart, bstart) < asize + bsize;
+}
+
 #define VI_NARROW_CHECK_COMMON \
   require(P.VU.vlmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
@@ -387,9 +396,8 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 #define VI_CHECK_VREG_OVERLAP(v1, v2) \
   require((v1 <= v2 ? v2 - v1 : v1 - v2) * P.VU.vlmul * (P.VU.VLEN/P.VU.vsew) >= P.VU.vlmax); 
 
-#define VI_CHECK_SDS \
-  reg_t insn_dist = insn.rd() <= insn.rs2() ? insn.rs2() - insn.rd() : insn.rd() - insn.rs2(); \
-  require(insn_dist * P.VU.vlmul * (P.VU.VLEN/P.VU.vsew) >= P.VU.vlmax); 
+#define VI_CHECK_SD \
+  require(!is_overlaped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul * 2));
 
 #define VI_CHECK_DSS(is_rs) \
   VI_WIDE_CHECK_COMMON; \
@@ -515,7 +523,9 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 
 #define VI_LOOP_NSHIFT_BASE \
   require(P.VU.vsew <= e32); \
-  if (insn.rd() != 0){ VI_CHECK_SDS;} \
+  if (insn.rd() != 0){ \
+    VI_CHECK_SD; \
+  } \
   VI_GENERAL_LOOP_BASE; \
   VI_LOOP_ELEMENT_SKIP({\
     require(!(insn.rd() == 0 && P.VU.vlmul > 1));\
