@@ -1,4 +1,8 @@
 // vslideup.vi vd, vs2, rs1
+if (insn.v_vm() == 0)
+  require(insn.rd() != 0);
+
+VI_CHECK_SS
 const reg_t offset = insn.v_zimm5();
 VI_LOOP_BASE
 if (P.VU.vstart < offset && i < offset)
