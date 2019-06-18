@@ -61,11 +61,61 @@ riscv_gen_hdrs = \
 	icache.h \
 	insn_list.h \
 
-riscv_insn_list = \
+
+riscv_insn_ext_i = \
 	add \
 	addi \
 	addiw \
 	addw \
+	and \
+	andi \
+	auipc \
+	beq \
+	bge \
+	bgeu \
+	blt \
+	bltu \
+	bne \
+	jal \
+	jalr \
+	lb \
+	lbu \
+	ld \
+	lh \
+	lhu \
+	lui \
+	lw \
+	lwu \
+	or \
+	ori \
+	sb \
+	sd \
+	sh \
+	sll \
+	slli \
+	slliw \
+	sllw \
+	slt \
+	slti \
+	sltiu \
+	sltu \
+	sra \
+	srai \
+	sraiw \
+	sraw \
+	srl \
+	srli \
+	srliw \
+	srlw \
+	sub \
+	subw \
+	sw \
+	xor \
+	xori \
+	fence \
+	fence_i \
+
+riscv_insn_ext_a = \
 	amoadd_d \
 	amoadd_w \
 	amoand_d \
@@ -84,18 +134,15 @@ riscv_insn_list = \
 	amoswap_w \
 	amoxor_d \
 	amoxor_w \
-	and \
-	andi \
-	auipc \
-	beq \
-	bge \
-	bgeu \
-	blt \
-	bltu \
-	bne \
+	lr_d \
+	lr_w \
+	sc_d \
+	sc_w \
+
+riscv_insn_ext_c = \
 	c_add \
-	c_addi4spn \
 	c_addi \
+	c_addi4spn \
 	c_addw \
 	c_and \
 	c_andi \
@@ -110,9 +157,9 @@ riscv_insn_list = \
 	c_fsdsp \
 	c_fsw \
 	c_fswsp \
+	c_j \
 	c_jal \
 	c_jalr \
-	c_j \
 	c_jr \
 	c_li \
 	c_lui \
@@ -125,28 +172,60 @@ riscv_insn_list = \
 	c_srli \
 	c_sub \
 	c_subw \
-	c_xor \
-	csrrc \
-	csrrci \
-	csrrs \
-	csrrsi \
-	csrrw \
-	csrrwi \
 	c_sw \
 	c_swsp \
+	c_xor \
+
+riscv_insn_ext_m = \
 	div \
 	divu \
 	divuw \
 	divw \
-	dret \
-	ebreak \
-	ecall \
-	fadd_d \
-	fadd_q \
+	mul \
+	mulh \
+	mulhsu \
+	mulhu \
+	mulw \
+	rem \
+	remu \
+	remuw \
+	remw \
+
+riscv_insn_ext_f = \
 	fadd_s \
-	fclass_d \
-	fclass_q \
 	fclass_s \
+	fcvt_l_s \
+	fcvt_lu_s \
+	fcvt_s_l \
+	fcvt_s_lu \
+	fcvt_s_w \
+	fcvt_s_wu \
+	fcvt_w_s \
+	fcvt_wu_s \
+	fdiv_s \
+	feq_s \
+	fle_s \
+	flt_s \
+	flw \
+	fmadd_s \
+	fmax_s \
+	fmin_s \
+	fmsub_s \
+	fmul_s \
+	fmv_w_x \
+	fmv_x_w \
+	fnmadd_s \
+	fnmsub_s \
+	fsgnj_s \
+	fsgnjn_s \
+	fsgnjx_s \
+	fsqrt_s \
+	fsub_s \
+	fsw \
+
+riscv_insn_ext_d = \
+	fadd_d \
+	fclass_d \
 	fcvt_d_l \
 	fcvt_d_lu \
 	fcvt_d_q \
@@ -154,142 +233,446 @@ riscv_insn_list = \
 	fcvt_d_w \
 	fcvt_d_wu \
 	fcvt_l_d \
-	fcvt_l_q \
-	fcvt_l_s \
 	fcvt_lu_d \
+	fcvt_s_d \
+	fcvt_w_d \
+	fcvt_wu_d \
+	fdiv_d \
+	feq_d \
+	fld \
+	fle_d \
+	flt_d \
+	fmadd_d \
+	fmax_d \
+	fmin_d \
+	fmsub_d \
+	fmul_d \
+	fmv_d_x \
+	fmv_x_d \
+	fnmadd_d \
+	fnmsub_d \
+	fsd \
+	fsgnj_d \
+	fsgnjn_d \
+	fsgnjx_d \
+	fsqrt_d \
+	fsub_d \
+
+riscv_insn_ext_q = \
+	fadd_q \
+	fclass_q \
+	fcvt_l_q \
 	fcvt_lu_q \
-	fcvt_lu_s \
 	fcvt_q_d \
 	fcvt_q_l \
 	fcvt_q_lu \
 	fcvt_q_s \
 	fcvt_q_w \
 	fcvt_q_wu \
-	fcvt_s_d \
-	fcvt_s_l \
-	fcvt_s_lu \
 	fcvt_s_q \
-	fcvt_s_w \
-	fcvt_s_wu \
-	fcvt_w_d \
 	fcvt_w_q \
-	fcvt_w_s \
-	fcvt_wu_d \
 	fcvt_wu_q \
-	fcvt_wu_s \
-	fdiv_d \
 	fdiv_q \
-	fdiv_s \
-	fence \
-	fence_i \
-	feq_d \
 	feq_q \
-	feq_s \
-	fld \
-	fle_d \
 	fle_q \
-	fle_s \
 	flq \
-	flt_d \
 	flt_q \
-	flt_s \
-	flw \
-	fmadd_d \
 	fmadd_q \
-	fmadd_s \
-	fmax_d \
 	fmax_q \
-	fmax_s \
-	fmin_d \
 	fmin_q \
-	fmin_s \
-	fmsub_d \
 	fmsub_q \
-	fmsub_s \
-	fmul_d \
 	fmul_q \
-	fmul_s \
-	fmv_d_x \
-	fmv_w_x \
-	fmv_x_d \
-	fmv_x_w \
-	fnmadd_d \
 	fnmadd_q \
-	fnmadd_s \
-	fnmsub_d \
 	fnmsub_q \
-	fnmsub_s \
-	fsd \
-	fsgnj_d \
 	fsgnj_q \
-	fsgnjn_d \
 	fsgnjn_q \
-	fsgnjn_s \
-	fsgnj_s \
-	fsgnjx_d \
 	fsgnjx_q \
-	fsgnjx_s \
 	fsq \
-	fsqrt_d \
 	fsqrt_q \
-	fsqrt_s \
-	fsub_d \
 	fsub_q \
-	fsub_s \
-	fsw \
-	jal \
-	jalr \
-	lb \
-	lbu \
-	ld \
-	lh \
-	lhu \
-	lr_d \
-	lr_w \
-	lui \
-	lw \
-	lwu \
+
+riscv_insn_ext_v_alu_int = \
+	vaadd_vi \
+	vaadd_vv \
+	vaadd_vx \
+	vadc_vim \
+	vadc_vvm \
+	vadc_vxm \
+	vadd_vi \
+	vadd_vv \
+	vadd_vx \
+	vand_vi \
+	vand_vv \
+	vand_vx \
+	vasub_vv \
+	vasub_vx \
+	vcompress_vm \
+	vdiv_vv \
+	vdiv_vx \
+	vdivu_vv \
+	vdivu_vx \
+	vdot_vv \
+	vdotu_vv \
+	vext_x_v \
+	vid_v \
+	viota_m \
+	vmacc_vv \
+	vmacc_vx \
+	vmadc_vim \
+	vmadc_vvm \
+	vmadc_vxm \
+	vmadd_vv \
+	vmadd_vx \
+	vmand_mm \
+	vmandnot_mm \
+	vmax_vv \
+	vmax_vx \
+	vmaxu_vv \
+	vmaxu_vx \
+	vmerge_vim \
+	vmerge_vvm \
+	vmerge_vxm \
+	vmfirst_m \
+	vmin_vv \
+	vmin_vx \
+	vminu_vv \
+	vminu_vx \
+	vmnand_mm \
+	vmnor_mm \
+	vmor_mm \
+	vmornot_mm \
+	vmpopc_m \
+	vmsbc_vvm \
+	vmsbc_vxm \
+	vmsbf_m \
+	vmseq_vi \
+	vmseq_vv \
+	vmseq_vx \
+	vmsgt_vi \
+	vmsgt_vx \
+	vmsgtu_vi \
+	vmsgtu_vx \
+	vmsif_m \
+	vmsle_vi \
+	vmsle_vv \
+	vmsle_vx \
+	vmsleu_vi \
+	vmsleu_vv \
+	vmsleu_vx \
+	vmslt_vv \
+	vmslt_vx \
+	vmsltu_vv \
+	vmsltu_vx \
+	vmsne_vi \
+	vmsne_vv \
+	vmsne_vx \
+	vmsof_m \
+	vmul_vv \
+	vmul_vx \
+	vmulh_vv \
+	vmulh_vx \
+	vmulhsu_vv \
+	vmulhsu_vx \
+	vmulhu_vv \
+	vmulhu_vx \
+	vmv_s_x \
+	vmv_v_i \
+	vmv_v_v \
+	vmv_v_x \
+	vmxnor_mm \
+	vmxor_mm \
+	vnclip_vi \
+	vnclip_vv \
+	vnclip_vx \
+	vnclipu_vi \
+	vnclipu_vv \
+	vnclipu_vx \
+	vnmsac_vv \
+	vnmsac_vx \
+	vnmsub_vv \
+	vnmsub_vx \
+	vnsra_vi \
+	vnsra_vv \
+	vnsra_vx \
+	vnsrl_vi \
+	vnsrl_vv \
+	vnsrl_vx \
+	vor_vi \
+	vor_vv \
+	vor_vx \
+	vredand_vs \
+	vredmax_vs \
+	vredmaxu_vs \
+	vredmin_vs \
+	vredminu_vs \
+	vredor_vs \
+	vredsum_vs \
+	vredxor_vs \
+	vrem_vv \
+	vrem_vx \
+	vremu_vv \
+	vremu_vx \
+	vrgather_vi \
+	vrgather_vv \
+	vrgather_vx \
+	vrsub_vi \
+	vrsub_vx \
+	vsadd_vi \
+	vsadd_vv \
+	vsadd_vx \
+	vsaddu_vi \
+	vsaddu_vv \
+	vsaddu_vx \
+	vsbc_vvm \
+	vsbc_vxm \
+	vslide1down_vx \
+	vslide1up_vx \
+	vslidedown_vi \
+	vslidedown_vx \
+	vslideup_vi \
+	vslideup_vx \
+	vsll_vi \
+	vsll_vv \
+	vsll_vx \
+	vsmul_vv \
+	vsmul_vx \
+	vsra_vi \
+	vsra_vv \
+	vsra_vx \
+	vsrl_vi \
+	vsrl_vv \
+	vsrl_vx \
+	vssra_vi \
+	vssra_vv \
+	vssra_vx \
+	vssrl_vi \
+	vssrl_vv \
+	vssrl_vx \
+	vssub_vv \
+	vssub_vx \
+	vssubu_vv \
+	vssubu_vx \
+	vsub_vv \
+	vsub_vx \
+	vwadd_vv \
+	vwadd_vx \
+	vwadd_wv \
+	vwadd_wx \
+	vwaddu_vv \
+	vwaddu_vx \
+	vwaddu_wv \
+	vwaddu_wx \
+	vwmacc_vv \
+	vwmacc_vx \
+	vwmaccsu_vv \
+	vwmaccsu_vx \
+	vwmaccu_vv \
+	vwmaccu_vx \
+	vwmaccus_vx \
+	vwmul_vv \
+	vwmul_vx \
+	vwmulsu_vv \
+	vwmulsu_vx \
+	vwmulu_vv \
+	vwmulu_vx \
+	vwredsum_vs \
+	vwredsumu_vs \
+	vwsmacc_vv \
+	vwsmacc_vx \
+	vwsmaccsu_vv \
+	vwsmaccsu_vx \
+	vwsmaccu_vv \
+	vwsmaccu_vx \
+	vwsmaccus_vx \
+	vwsub_vv \
+	vwsub_vx \
+	vwsub_wv \
+	vwsub_wx \
+	vwsubu_vv \
+	vwsubu_vx \
+	vwsubu_wv \
+	vwsubu_wx \
+	vxor_vi \
+	vxor_vv \
+	vxor_vx \
+
+riscv_insn_ext_v_alu_fp = \
+	vfadd_vf \
+	vfadd_vv \
+	vfclass_v \
+	vfcvt_f_x_v \
+	vfcvt_f_xu_v \
+	vfcvt_x_f_v \
+	vfcvt_xu_f_v \
+	vfdiv_vf \
+	vfdiv_vv \
+	vfdot_vv \
+	vfmacc_vf \
+	vfmacc_vv \
+	vfmadd_vf \
+	vfmadd_vv \
+	vfmax_vf \
+	vfmax_vv \
+	vfmerge_vfm \
+	vfmin_vf \
+	vfmin_vv \
+	vfmsac_vf \
+	vfmsac_vv \
+	vfmsub_vf \
+	vfmsub_vv \
+	vfmul_vf \
+	vfmul_vv \
+	vfmv_f_s \
+	vfmv_s_f \
+	vfmv_v_f \
+	vfncvt_f_f_v \
+	vfncvt_f_x_v \
+	vfncvt_f_xu_v \
+	vfncvt_x_f_v \
+	vfncvt_xu_f_v \
+	vfnmacc_vf \
+	vfnmacc_vv \
+	vfnmadd_vf \
+	vfnmadd_vv \
+	vfnmsac_vf \
+	vfnmsac_vv \
+	vfnmsub_vf \
+	vfnmsub_vv \
+	vfrdiv_vf \
+	vfredmax_vs \
+	vfredmin_vs \
+	vfredosum_vs \
+	vfredsum_vs \
+	vfrsub_vf \
+	vfsgnj_vf \
+	vfsgnj_vv \
+	vfsgnjn_vf \
+	vfsgnjn_vv \
+	vfsgnjx_vf \
+	vfsgnjx_vv \
+	vfsqrt_v \
+	vfsub_vf \
+	vfsub_vv \
+	vfwadd_vf \
+	vfwadd_vv \
+	vfwadd_wf \
+	vfwadd_wv \
+	vfwcvt_f_f_v \
+	vfwcvt_f_x_v \
+	vfwcvt_f_xu_v \
+	vfwcvt_x_f_v \
+	vfwcvt_xu_f_v \
+	vfwmacc_vf \
+	vfwmacc_vv \
+	vfwmsac_vf \
+	vfwmsac_vv \
+	vfwmul_vf \
+	vfwmul_vv \
+	vfwnmacc_vf \
+	vfwnmacc_vv \
+	vfwnmsac_vf \
+	vfwnmsac_vv \
+	vfwredosum_vs \
+	vfwredsum_vs \
+	vfwsub_vf \
+	vfwsub_vv \
+	vfwsub_wf \
+	vfwsub_wv \
+	vmfeq_vf \
+	vmfeq_vv \
+	vmfge_vf \
+	vmfgt_vf \
+	vmfle_vf \
+	vmfle_vv \
+	vmflt_vf \
+	vmflt_vv \
+	vmfne_vf \
+	vmfne_vv \
+	vmford_vf \
+	vmford_vv \
+
+riscv_insn_ext_v_ldst = \
+	vlb_v \
+	vlh_v \
+	vlw_v \
+	vle_v \
+	vlbu_v \
+	vlhu_v \
+	vlwu_v \
+	vlsb_v \
+	vlsh_v \
+	vlsw_v \
+	vlse_v \
+	vlxb_v \
+	vlxh_v \
+	vlxw_v \
+	vlxe_v \
+	vlsbu_v \
+	vlshu_v \
+	vlswu_v \
+	vlxbu_v \
+	vlxhu_v \
+	vlxwu_v \
+	vlbff_v \
+	vlhff_v \
+	vlwff_v \
+	vleff_v \
+	vlbuff_v \
+	vlhuff_v \
+	vlwuff_v \
+	vsb_v \
+	vsh_v \
+	vsw_v \
+	vse_v \
+	vssb_v \
+	vssh_v \
+	vssw_v \
+	vsse_v \
+	vsxb_v \
+	vsxh_v \
+	vsxw_v \
+	vsxe_v \
+	vsuxb_v \
+	vsuxh_v \
+	vsuxw_v \
+	vsuxe_v \
+
+riscv_insn_ext_v_ctrl = \
+	vsetvli \
+	vsetvl \
+
+riscv_insn_ext_v = \
+	$(riscv_insn_ext_v_alu_fp) \
+	$(riscv_insn_ext_v_alu_int) \
+	$(riscv_insn_ext_v_ctrl) \
+	$(riscv_insn_ext_v_ldst) \
+
+riscv_insn_priv = \
+	csrrc \
+	csrrci \
+	csrrs \
+	csrrsi \
+	csrrw \
+	csrrwi \
+	dret \
+	ebreak \
+	ecall \
 	mret \
-	mul \
-	mulh \
-	mulhsu \
-	mulhu \
-	mulw \
-	or \
-	ori \
-	rem \
-	remu \
-	remuw \
-	remw \
-	sb \
-	sc_d \
-	sc_w \
-	sd \
 	sfence_vma \
-	sh \
-	sll \
-	slli \
-	slliw \
-	sllw \
-	slt \
-	slti \
-	sltiu \
-	sltu \
-	sra \
-	srai \
-	sraiw \
-	sraw \
 	sret \
-	srl \
-	srli \
-	srliw \
-	srlw \
-	sub \
-	subw \
-	sw \
 	wfi \
-	xor \
-	xori \
+
+
+riscv_insn_list = \
+	$(riscv_insn_ext_a) \
+	$(riscv_insn_ext_c) \
+	$(riscv_insn_ext_i) \
+	$(riscv_insn_ext_m) \
+	$(riscv_insn_ext_f) \
+	$(riscv_insn_ext_d) \
+	$(riscv_insn_ext_q) \
+	$(riscv_insn_ext_v) \
+	$(riscv_insn_priv) \
 
 riscv_gen_srcs = \
 	$(addsuffix .cc,$(riscv_insn_list))

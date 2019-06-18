@@ -24,8 +24,8 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
-             std::vector<std::pair<reg_t, mem_t*>> mems,
+sim_t::sim_t(const char* isa, const char* varch, size_t nprocs, bool halted,
+             reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
              const std::vector<std::string>& args,
              std::vector<int> const hartids,
              const debug_module_config_t &dm_config)
@@ -45,7 +45,7 @@ sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
 
   if (hartids.size() == 0) {
     for (size_t i = 0; i < procs.size(); i++) {
-      procs[i] = new processor_t(isa, this, i, halted);
+      procs[i] = new processor_t(isa, varch, this, i, halted);
     }
   }
   else {
@@ -54,7 +54,7 @@ sim_t::sim_t(const char* isa, size_t nprocs, bool halted, reg_t start_pc,
       exit(1);
     }
     for (size_t i = 0; i < procs.size(); i++) {
-      procs[i] = new processor_t(isa, this, hartids[i], halted);
+      procs[i] = new processor_t(isa, varch, this, hartids[i], halted);
     }
   }
 

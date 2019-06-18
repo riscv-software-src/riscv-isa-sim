@@ -66,6 +66,7 @@ void sim_t::interactive()
   funcs["run"] = &sim_t::interactive_run_noisy;
   funcs["r"] = funcs["run"];
   funcs["rs"] = &sim_t::interactive_run_silent;
+  funcs["vreg"] = &sim_t::interactive_vreg;
   funcs["reg"] = &sim_t::interactive_reg;
   funcs["freg"] = &sim_t::interactive_freg;
   funcs["fregs"] = &sim_t::interactive_fregs;
@@ -119,6 +120,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "reg <core> [reg]                # Display [reg] (all if omitted) in <core>\n"
     "fregs <core> <reg>              # Display single precision <reg> in <core>\n"
     "fregd <core> <reg>              # Display double precision <reg> in <core>\n"
+    "vreg <core> [reg]               # Display vector [reg] (all if omitted) in <core>\n"
     "pc <core>                       # Show current PC in <core>\n"
     "mem <hex addr>                  # Show contents of physical memory\n"
     "str <hex addr>                  # Show NUL-terminated C string\n"
@@ -217,6 +219,54 @@ freg_t sim_t::get_freg(const std::vector<std::string>& args)
 
   return p->get_state()->FPR[r];
 }
+
+void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::string>& args)
+{
+  int rstart = 0;
+  int rend = NVPR;
+  if (args.size() >= 2) {
+    rstart = strtol(args[1].c_str(), NULL, 0);
+    if (!(rstart >= 0 && rstart < NVPR)) {
+      rstart = 0;
+    } else {
+      rend = rstart + 1;
+    }
+  }
+
+  // Show all the regs!
+  processor_t *p = get_core(args[0]);
+  const int vlen = (int)(p->VU.get_vlen()) >> 3;
+  const int elen = (int)(p->VU.get_elen()) >> 3;
+  const int num_elem = vlen/elen;
+  fprintf(stderr, "VLEN=%d bits; ELEN=%d bits\n", vlen << 3, elen << 3);
+
+  for (int r = rstart; r < rend; ++r) {
+    fprintf(stderr, "%-4s: ", vr_name[r]);
+    for (int e = num_elem-1; e >= 0; --e){
+      uint64_t val;
+      switch(elen){
+        case 8:
+          val = P.VU.elt<uint64_t>(r, e);
+          fprintf(stderr, "[%d]: 0x%016" PRIx64 "  ", e, val);
+          break;
+        case 4:
+          val = P.VU.elt<uint32_t>(r, e);
+          fprintf(stderr, "[%d]: 0x%08" PRIx32 "  ", e, (uint32_t)val);
+          break;
+        case 2:
+          val = P.VU.elt<uint16_t>(r, e);
+          fprintf(stderr, "[%d]: 0x%08" PRIx16 "  ", e, (uint16_t)val);
+          break;
+        case 1:
+          val = P.VU.elt<uint8_t>(r, e);
+          fprintf(stderr, "[%d]: 0x%08" PRIx8 "  ", e, (uint8_t)val);
+          break;
+      }
+    }
+    fprintf(stderr, "\n");
+  }
+}
+
 
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
 {

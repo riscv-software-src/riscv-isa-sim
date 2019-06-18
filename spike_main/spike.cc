@@ -29,6 +29,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  -h, --help            Print this help message\n");
   fprintf(stderr, "  -H                    Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
+  fprintf(stderr, "  --varch=<name>        RISC-V Vector uArch string [default %s]\n", DEFAULT_VARCH);
   fprintf(stderr, "  --pc=<address>        Override ELF entry point\n");
   fprintf(stderr, "  --hartids=<a,b,...>   Explicitly specify hartids, default is 0,1,...\n");
   fprintf(stderr, "  --ic=<S>:<W>:<B>      Instantiate a cache model with S sets,\n");
@@ -109,6 +110,7 @@ int main(int argc, char** argv)
   bool log_cache = false;
   std::function<extension_t*()> extension;
   const char* isa = DEFAULT_ISA;
+  const char* varch = DEFAULT_VARCH;
   uint16_t rbb_port = 0;
   bool use_rbb = false;
   unsigned dmi_rti = 0;
@@ -153,6 +155,7 @@ int main(int argc, char** argv)
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
   parser.option(0, "log-cache-miss", 0, [&](const char* s){log_cache = true;});
   parser.option(0, "isa", 1, [&](const char* s){isa = s;});
+  parser.option(0, "varch", 1, [&](const char* s){varch = s;});
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
   parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
@@ -188,7 +191,7 @@ int main(int argc, char** argv)
   if (!*argv1)
     help();
 
-  sim_t s(isa, nprocs, halted, start_pc, mems, htif_args, std::move(hartids),
+  sim_t s(isa, varch, nprocs, halted, start_pc, mems, htif_args, std::move(hartids),
       dm_config);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(

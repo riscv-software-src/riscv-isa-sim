@@ -14,19 +14,21 @@
 #include <assert.h>
 #include <limits.h>
 #include <stdexcept>
+#include <string>
 #include <algorithm>
 
 #undef STATE
 #define STATE state
 
-processor_t::processor_t(const char* isa, simif_t* sim, uint32_t id,
-        bool halt_on_reset)
+processor_t::processor_t(const char* isa, const char* varch, simif_t* sim,
+                         uint32_t id, bool halt_on_reset)
   : debug(false), halt_request(false), sim(sim), ext(NULL), id(id),
   halt_on_reset(halt_on_reset), last_pc(1), executions(1)
 {
+  VU.p = this;
   parse_isa_string(isa);
+  parse_varch_string(varch);
   register_base_instructions();
-
   mmu = new mmu_t(sim, this);
 
   disassembler = new disassembler_t(max_xlen);
@@ -58,6 +60,66 @@ static void bad_isa_string(const char* isa)
   abort();
 }
 
+static void bad_varch_string(const char* varch)
+{
+  fprintf(stderr, "error: bad --varch option %s\n", varch);
+  abort();
+}
+
+static int parse_varch(std::string &str){
+  int val;
+  if(!str.empty()){
+    std::string sval = str.substr(1);
+    val = std::stoi(sval);
+    if ((val & (val - 1)) != 0) // val should be power of 2
+      bad_varch_string(str.c_str());
+  }else{
+    bad_varch_string(str.c_str());
+  }
+  return val;
+}
+
+void processor_t::parse_varch_string(const char* s)
+{
+  std::string str, tmp;
+  for (const char *r = s; *r; r++)
+    str += std::tolower(*r);
+
+  std::string delimiter = ":";
+
+  size_t pos = 0;
+  int vlen = 0;
+  int elen = 0;
+  int slen = 0;
+  std::string token;
+  while (!str.empty() && token != str) {
+    pos = str.find(delimiter);
+    if (pos == std::string::npos){
+      token = str;
+    }else{
+      token = str.substr(0, pos);
+    }
+    if (token[0] == 'v'){
+      vlen = parse_varch(token);
+    }else if (token[0] == 'e'){
+      elen = parse_varch(token);
+    }else if (token[0] == 's'){
+      slen = parse_varch(token);
+    }else{
+      bad_varch_string(str.c_str());
+    }
+    str.erase(0, pos + delimiter.length());
+  }
+
+  if (!(vlen >= 32 || vlen <= 4096) && !(slen >= vlen || slen <= vlen) && !(elen >= slen || elen <= slen)){
+    bad_varch_string(s);
+  }
+
+  VU.VLEN = vlen;
+  VU.ELEN = elen;
+  VU.SLEN = slen;
+}
+
 void processor_t::parse_isa_string(const char* str)
 {
   std::string lowercase, tmp;
@@ -65,7 +127,7 @@ void processor_t::parse_isa_string(const char* str)
     lowercase += std::tolower(*r);
 
   const char* p = lowercase.c_str();
-  const char* all_subsets = "imafdqc";
+  const char* all_subsets = "imafdqcv";
 
   max_xlen = 64;
   state.misa = reg_t(2) << 62;
@@ -130,6 +192,32 @@ void state_t::reset(reg_t max_isa)
   pmpaddr[0] = ~reg_t(0);
 }
 
+void vectorUnit_t::reset(){
+  free(reg_file);
+  VLEN = get_vlen();
+  ELEN = get_elen();
+  SLEN = get_slen(); // registers are simply concatenated
+  reg_file = malloc(NVPR * (VLEN/8));
+  vtype = -1;
+  set_vl(-1, 0, 0); // vsew8, vlmul1
+}
+
+reg_t vectorUnit_t::set_vl(uint64_t regId, reg_t reqVL, reg_t newType){
+  if (vtype != newType){
+    vtype = newType;
+    vsew = 1 << (BITS(newType, 4, 2) + 3);
+    vlmul = 1 << BITS(newType, 1, 0);
+    vediv = 1 << BITS(newType, 6, 5);
+    vlmax = VLEN/vsew * vlmul;
+    vmlen = vsew / vlmul;
+    reg_mask = (NVPR-1) & ~(vlmul-1);
+  }
+  vl = reqVL <= vlmax ? (regId == 0)? vlmax: reqVL : vlmax;
+  vstart = 0;
+  setvl_count++;
+  return vl;
+}
+
 void processor_t::set_debug(bool value)
 {
   debug = value;
@@ -154,6 +242,7 @@ void processor_t::reset()
   state.dcsr.halt = halt_on_reset;
   halt_on_reset = false;
   set_csr(CSR_MSTATUS, state.mstatus);
+  VU.reset();
 
   if (ext)
     ext->reset(); // reset the extension
@@ -558,6 +647,27 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_DSCRATCH:
       state.dscratch = val;
       break;
+    case CSR_VSTART:
+      VU.vstart = val;
+      break;
+    case CSR_VXSAT:
+      VU.vxsat = val;
+      break;
+    case CSR_VXRM:
+      VU.vxrm = val;
+      break;
+    case CSR_VL:
+      VU.vl = val;
+      break;
+    case CSR_VTYPE:
+      VU.vtype = val;
+      // check vill bit
+      if (BITS(VU.vtype, get_xlen(), get_xlen() - 1) == 1){
+        VU.vill = true;
+      }else{
+        VU.vill = false;
+      }
+      break;
   }
 }
 
@@ -725,6 +835,16 @@ reg_t processor_t::get_csr(int which)
       return state.dpc & pc_alignment_mask();
     case CSR_DSCRATCH:
       return state.dscratch;
+    case CSR_VSTART:
+      return VU.vstart;
+    case CSR_VXSAT:
+      return VU.vxsat;
+    case CSR_VXRM:
+      return VU.vxrm;
+    case CSR_VL:
+      return VU.vl;
+    case CSR_VTYPE:
+      return VU.vtype;
   }
   throw trap_illegal_instruction(0);
 }

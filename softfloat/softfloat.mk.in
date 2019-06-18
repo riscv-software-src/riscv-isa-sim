@@ -117,6 +117,7 @@ softfloat_c_srcs = \
 	f64_to_ui32_r_minMag.c \
 	f64_to_ui64.c \
 	f64_to_ui64_r_minMag.c \
+	fall_maxmin.c \
 	i32_to_f128.c \
 	i32_to_f16.c \
 	i32_to_f32.c \
@@ -224,6 +225,10 @@ softfloat_c_srcs = \
 	ui64_to_f16.c \
 	ui64_to_f32.c \
 	ui64_to_f64.c \
+
+softfloat_CFLAGS = -fPIC
+
+softfloat_install_shared_lib = yes
 
 softfloat_test_srcs =
 

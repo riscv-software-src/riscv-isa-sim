@@ -21,8 +21,8 @@ class remote_bitbang_t;
 class sim_t : public htif_t, public simif_t
 {
 public:
-  sim_t(const char* isa, size_t _nprocs,  bool halted, reg_t start_pc,
-        std::vector<std::pair<reg_t, mem_t*>> mems,
+  sim_t(const char* isa, const char* varch, size_t _nprocs, bool halted,
+        reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
         const std::vector<std::string>& args, const std::vector<int> hartids,
         const debug_module_config_t &dm_config);
   ~sim_t();
@@ -84,6 +84,7 @@ private:
   void interactive_run(const std::string& cmd, const std::vector<std::string>& args, bool noisy);
   void interactive_run_noisy(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_run_silent(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_vreg(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_reg(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_freg(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_fregs(const std::string& cmd, const std::vector<std::string>& args);
