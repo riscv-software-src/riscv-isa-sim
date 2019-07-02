@@ -14,10 +14,10 @@ build:
     - chmod 644 ~/.ssh/known_hosts
     - git clone --depth 1 git@github.com:sifive/bengal-team.git
     - ./configure --prefix=$(pwd)/bengal-team/spike-prefix/
-    - make -j `nproc` install
+    - make install -j
     - cd bengal-team
     - git submodule update --init --recursive -j `nproc` --depth 1 riscv-binutils-gdb
-    - make -j `nproc` toolchain-prefix/bin/riscv64-unknown-elf-gcc
+    - make toolchain-prefix/bin/riscv64-unknown-elf-gcc -j
     - git clone --single-branch --branch hankuanc --recurse-submodules -j `nproc` --depth 1 git@github.com:sifive/riscv-tests-internal.git
     - mkdir riscv-tests-internal/vector/build
   cache:
@@ -35,7 +35,7 @@ build:
       - bengal-team/
     policy: pull
   script:
-    - make -j `nproc`
+    - make -j
     - ctest --timeout 0.1
   after_script:
     - grep RANDOM_SEED bengal-team/riscv-tests-internal/vector/build/CMakeCache.txt
