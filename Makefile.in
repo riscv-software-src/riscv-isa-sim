@@ -275,7 +275,7 @@ $$($(2)_install_prog_objs) : %.o : %.cc $$($(2)_gen_hdrs)
 	$(COMPILE) -c $$<
 
 $$($(2)_install_prog_exes) : % : %.o $$($(2)_prog_libnames)
-	$(LINK) -o $$@ $$< $$($(2)_prog_libarg) $(LIBS)
+	$(LINK) -o $$@ $$< -Wl,-static $$($(2)_prog_libarg) -Wl,-Bdynamic $(LIBS)
 
 $(2)_deps += $$($(2)_install_prog_deps)
 $(2)_junk += \
