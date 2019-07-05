@@ -37,8 +37,8 @@ class tsi_t : public htif_t
   void write_chunk(addr_t taddr, size_t nbytes, const void* src) override;
   void switch_to_target();
 
-  size_t chunk_align() { return 4; }
-  size_t chunk_max_size() { return 1024; }
+  size_t chunk_align() override { return 4; }
+  size_t chunk_max_size() override { return 1024; }
 
   int get_ipi_addrs(addr_t *addrs);
 
