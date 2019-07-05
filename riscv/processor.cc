@@ -67,7 +67,7 @@ static void bad_varch_string(const char* varch)
 }
 
 static int parse_varch(std::string &str){
-  int val;
+  int val = 0;
   if(!str.empty()){
     std::string sval = str.substr(1);
     val = std::stoi(sval);
