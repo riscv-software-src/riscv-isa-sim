@@ -1363,8 +1363,8 @@ VI_LOOP_END
 
 
 #define VI_DUPLICATE_VREG(v, vlmax) \
-reg_t index[vlmax] = {0}; \
-for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
+reg_t index[vlmax]; \
+for (reg_t i = 0; i < vlmax; ++i) { \
   switch(P.VU.vsew) { \
     case e8: \
       index[i] = P.VU.elt<int8_t>(v, i); \
