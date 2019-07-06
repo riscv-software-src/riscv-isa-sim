@@ -332,7 +332,7 @@ riscv_insn_ext_v_alu_int = \
 	vmerge_vim \
 	vmerge_vvm \
 	vmerge_vxm \
-	vmfirst_m \
+	vfirst_m \
 	vmin_vv \
 	vmin_vx \
 	vminu_vv \
@@ -341,7 +341,7 @@ riscv_insn_ext_v_alu_int = \
 	vmnor_mm \
 	vmor_mm \
 	vmornot_mm \
-	vmpopc_m \
+	vpopc_m \
 	vmsbc_vvm \
 	vmsbc_vxm \
 	vmsbf_m \

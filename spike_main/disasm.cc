@@ -941,9 +941,9 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV__X__INSN(vslide1down,1);
 
   //0b01_0000
-  DISASM_INSN("vmpopc.m", vmpopc_m, 0, {&xrd, &vs2, &opt, &vm});
+  DISASM_INSN("vpopc.m", vpopc_m, 0, {&xrd, &vs2, &opt, &vm});
   //vmuary0
-  DISASM_INSN("vmfirst.m", vmfirst_m, 0, {&xrd, &vs2, &opt, &vm});
+  DISASM_INSN("vfirst.m", vfirst_m, 0, {&xrd, &vs2, &opt, &vm});
   DISASM_INSN("vmsbf.m", vmsbf_m, 0, {&vd, &vs2, &opt, &vm});
   DISASM_INSN("vmsof.m", vmsof_m, 0, {&vd, &vs2, &opt, &vm});
   DISASM_INSN("vmsif.m", vmsif_m, 0, {&vd, &vs2, &opt, &vm});
