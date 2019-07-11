@@ -47,7 +47,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "  memory@" << m.first << " {\n"
          "    device_type = \"memory\";\n"
          "    reg = <0x" << (m.first >> 32) << " 0x" << (m.first & (uint32_t)-1) <<
-                   " 0x" << (m.second->size() >> 32) << " 0x" << (m.second->size() & (uint32_t)-1) << ">;\n"
+                   " 0x" << (m.second->size() >> 16 >> 16) << " 0x" << (m.second->size() & (uint32_t)-1) << ">;\n"
          "  };\n";
   }
   s <<   "  soc {\n"

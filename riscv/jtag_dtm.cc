@@ -25,8 +25,8 @@ enum {
 #define DTMCONTROL_DBUSRESET    (1<<16)
 
 #define DMI_OP                 3
-#define DMI_DATA               (0xffffffffL<<2)
-#define DMI_ADDRESS            ((1L<<(abits+34)) - (1L<<34))
+#define DMI_DATA               (0xffffffffLL<<2)
+#define DMI_ADDRESS            ((1LL<<(abits+34)) - (1LL<<34))
 
 #define DMI_OP_STATUS_SUCCESS	0
 #define DMI_OP_STATUS_RESERVED	1
