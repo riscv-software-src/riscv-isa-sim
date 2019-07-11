@@ -626,6 +626,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 subprojects_enabled
 subprojects
+HAVE_INT128
 INSTALL_DATA
 INSTALL_SCRIPT
 INSTALL_PROGRAM
@@ -4350,9 +4351,8 @@ fi
 
 ac_fn_cxx_check_type "$LINENO" "__int128_t" "ac_cv_type___int128_t" "$ac_includes_default"
 if test "x$ac_cv_type___int128_t" = xyes; then :
+  HAVE_INT128=yes
 
-else
-  echo "error: spike requires 128 integer suuport"; exit 1
 fi
 
 

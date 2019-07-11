@@ -36,6 +36,8 @@ project_name := @PACKAGE_TARNAME@
 src_dir      := @srcdir@
 scripts_dir  := $(src_dir)/scripts
 
+HAVE_INT128 := @HAVE_INT128@
+
 # If the version information is not in the configure script, then we
 # assume that we are in a working directory. We use the vcs-version.sh
 # script in the scripts directory to generate an appropriate version
