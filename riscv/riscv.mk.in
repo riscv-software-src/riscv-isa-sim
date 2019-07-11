@@ -671,7 +671,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_f) \
 	$(riscv_insn_ext_d) \
 	$(riscv_insn_ext_q) \
-	$(riscv_insn_ext_v) \
+	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
 	$(riscv_insn_priv) \
 
 riscv_gen_srcs = \

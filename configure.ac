@@ -76,8 +76,7 @@ AC_HEADER_STDC
 # Checks for type
 #-------------------------------------------------------------------------
 
-AC_CHECK_TYPE([__int128_t], [],
-              [echo "error: spike requires 128 integer suuport"; exit 1], [])
+AC_CHECK_TYPE([__int128_t], AC_SUBST([HAVE_INT128],[yes]))
 
 #-------------------------------------------------------------------------
 # Default compiler flags
