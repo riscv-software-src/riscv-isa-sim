@@ -1,5 +1,6 @@
 Version 1.0.1-dev
 -----------------
+- Support S-mode vectored interrupts (i.e. stvec[0] is now writable).
 - Added `hasel` debug feature.
 - Added `--dm-no-abstract-csr` command-line option.
 - Renamed `--progsize` to `--dm-progsize`.
