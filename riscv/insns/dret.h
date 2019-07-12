@@ -1,4 +1,4 @@
-require_privilege(PRV_M);
+require(STATE.debug_mode);
 set_pc_and_serialize(STATE.dpc);
 p->set_privilege(STATE.dcsr.prv);
 
