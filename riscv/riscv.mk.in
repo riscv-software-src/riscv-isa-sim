@@ -24,7 +24,6 @@ riscv_hdrs = \
 	extension.h \
 	rocc.h \
 	insn_template.h \
-	mulhi.h \
 	debug_module.h \
 	debug_rom_defines.h \
 	remote_bitbang.h \
