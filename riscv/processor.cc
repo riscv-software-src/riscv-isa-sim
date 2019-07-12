@@ -277,7 +277,7 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
   if (enabled_interrupts == 0)
     enabled_interrupts = pending_interrupts & state.mideleg & -s_enabled;
 
-  if (state.dcsr.cause == 0 && enabled_interrupts) {
+  if (!state.debug_mode && enabled_interrupts) {
     // nonstandard interrupts have highest priority
     if (enabled_interrupts >> IRQ_M_EXT)
       enabled_interrupts = enabled_interrupts >> IRQ_M_EXT << IRQ_M_EXT;
@@ -331,6 +331,7 @@ void processor_t::set_privilege(reg_t prv)
 
 void processor_t::enter_debug_mode(uint8_t cause)
 {
+  state.debug_mode = true;
   state.dcsr.cause = cause;
   state.dcsr.prv = state.prv;
   set_privilege(PRV_M);
@@ -348,7 +349,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
           t.get_tval());
   }
 
-  if (state.dcsr.cause) {
+  if (state.debug_mode) {
     if (t.cause() == CAUSE_BREAKPOINT) {
       state.pc = DEBUG_ROM_ENTRY;
     } else {
@@ -606,7 +607,7 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_TDATA1:
       {
         mcontrol_t *mc = &state.mcontrol[state.tselect];
-        if (mc->dmode && !state.dcsr.cause) {
+        if (mc->dmode && !state.debug_mode) {
           break;
         }
         mc->dmode = get_field(val, MCONTROL_DMODE(xlen));
@@ -629,7 +630,7 @@ void processor_t::set_csr(int which, reg_t val)
       }
       break;
     case CSR_TDATA2:
-      if (state.mcontrol[state.tselect].dmode && !state.dcsr.cause) {
+      if (state.mcontrol[state.tselect].dmode && !state.debug_mode) {
         break;
       }
       if (state.tselect < state.num_triggers) {

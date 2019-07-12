@@ -232,12 +232,14 @@ struct state_t
   reg_t stvec;
   reg_t satp;
   reg_t scause;
+
   reg_t dpc;
   reg_t dscratch;
   dcsr_t dcsr;
   reg_t tselect;
   mcontrol_t mcontrol[num_triggers];
   reg_t tdata2[num_triggers];
+  bool debug_mode;
 
   static const int n_pmp = 16;
   uint8_t pmpcfg[n_pmp];
@@ -330,13 +332,13 @@ public:
   bool debug;
   // When true, take the slow simulation path.
   bool slow_path();
-  bool halted() { return state.dcsr.cause ? true : false; }
+  bool halted() { return state.debug_mode; }
   bool halt_request;
 
   // Return the index of a trigger that matched, or -1.
   inline int trigger_match(trigger_operation_t operation, reg_t address, reg_t data)
   {
-    if (state.dcsr.cause)
+    if (state.debug_mode)
       return -1;
 
     bool chain_ok = true;
