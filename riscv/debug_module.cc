@@ -557,6 +557,12 @@ void debug_module_t::run_test_idle()
   }
 }
 
+static bool is_fpu_reg(unsigned regno)
+{
+  return (regno >= 0x1020 && regno <= 0x103f) || regno == CSR_FFLAGS ||
+    regno == CSR_FRM || regno == CSR_FCSR;
+}
+
 bool debug_module_t::perform_abstract_command()
 {
   if (abstractcs.cmderr != CMDERR_NONE)
@@ -580,8 +586,22 @@ bool debug_module_t::perform_abstract_command()
     unsigned i = 0;
     if (get_field(command, AC_ACCESS_REGISTER_TRANSFER)) {
 
-      if (regno < 0x1000 && config.support_abstract_csr_access) {
+      if (is_fpu_reg(regno)) {
+        // Save S0
         write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH));
+        // Save mstatus
+        write32(debug_abstract, i++, csrr(S0, CSR_MSTATUS));
+        write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH + 1));
+        // Set mstatus.fs
+        assert((MSTATUS_FS & 0xfff) == 0);
+        write32(debug_abstract, i++, lui(S0, MSTATUS_FS >> 12));
+        write32(debug_abstract, i++, csrrs(ZERO, S0, CSR_MSTATUS));
+      }
+
+      if (regno < 0x1000 && config.support_abstract_csr_access) {
+        if (!is_fpu_reg(regno)) {
+          write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH));
+        }
 
         if (write) {
           switch (size) {
@@ -611,7 +631,9 @@ bool debug_module_t::perform_abstract_command()
               return true;
           }
         }
-        write32(debug_abstract, i++, csrr(S0, CSR_DSCRATCH));
+        if (!is_fpu_reg(regno)) {
+          write32(debug_abstract, i++, csrr(S0, CSR_DSCRATCH));
+        }
 
       } else if (regno >= 0x1000 && regno < 0x1020) {
         unsigned regnum = regno - 0x1000;
@@ -681,6 +703,14 @@ bool debug_module_t::perform_abstract_command()
       } else {
         abstractcs.cmderr = CMDERR_NOTSUP;
         return true;
+      }
+
+      if (is_fpu_reg(regno)) {
+        // restore mstatus
+        write32(debug_abstract, i++, csrr(S0, CSR_DSCRATCH + 1));
+        write32(debug_abstract, i++, csrw(S0, CSR_MSTATUS));
+        // restore s0
+        write32(debug_abstract, i++, csrr(S0, CSR_DSCRATCH));
       }
     }
 

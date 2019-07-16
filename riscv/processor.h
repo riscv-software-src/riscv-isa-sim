@@ -234,7 +234,7 @@ struct state_t
   reg_t scause;
 
   reg_t dpc;
-  reg_t dscratch;
+  reg_t dscratch0, dscratch1;
   dcsr_t dcsr;
   reg_t tselect;
   mcontrol_t mcontrol[num_triggers];
