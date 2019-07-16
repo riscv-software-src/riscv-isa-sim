@@ -651,7 +651,10 @@ void processor_t::set_csr(int which, reg_t val)
       state.dpc = val & ~(reg_t)1;
       break;
     case CSR_DSCRATCH:
-      state.dscratch = val;
+      state.dscratch0 = val;
+      break;
+    case CSR_DSCRATCH + 1:
+      state.dscratch1 = val;
       break;
     case CSR_VSTART:
       VU.vstart = val;
@@ -840,7 +843,9 @@ reg_t processor_t::get_csr(int which)
     case CSR_DPC:
       return state.dpc & pc_alignment_mask();
     case CSR_DSCRATCH:
-      return state.dscratch;
+      return state.dscratch0;
+    case CSR_DSCRATCH + 1:
+      return state.dscratch1;
     case CSR_VSTART:
       return VU.vstart;
     case CSR_VXSAT:
