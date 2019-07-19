@@ -23,7 +23,7 @@ default:
 
 // nan_extened
 if (FLEN > sew) {
-  vs2_0 = vs2_0 | ~((1ul << sew) - 1);
+  vs2_0 = vs2_0 | ~((uint64_t(1) << sew) - 1);
 }
 
 if (FLEN == 64) {
