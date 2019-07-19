@@ -1,4 +1,5 @@
 // vsxh.v and vsxseg[2-8]h.v
+require_vector;
 require(P.VU.vsew >= e16);
 reg_t vl = P.VU.vl;
 reg_t baseAddr = RS1;

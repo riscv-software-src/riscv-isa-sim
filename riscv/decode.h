@@ -216,6 +216,10 @@ private:
 #define require_fp require((STATE.mstatus & MSTATUS_FS) != 0)
 #define require_accelerator require((STATE.mstatus & MSTATUS_XS) != 0)
 
+#define require_vector_vs do { } while (0) // TODO MSTATUS_VS
+#define require_vector do { require_vector_vs; require(!P.VU.vill); } while (0)
+#define require_vector_for_vsetvl do { require_vector_vs; require_extension('V'); } while (0)
+
 #define set_fp_exceptions ({ if (softfloat_exceptionFlags) { \
                                dirty_fp_state; \
                                STATE.fflags |= softfloat_exceptionFlags; \
@@ -389,7 +393,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   require(insn.rs2() + P.VU.vlmul * 2 <= 32);
 
 #define VI_WIDE_CHECK_COMMON \
-  require(!P.VU.vill);\
+  require_vector;\
   require(P.VU.vlmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
   require(insn.rd() + P.VU.vlmul * 2 <= 32); \
@@ -422,7 +426,7 @@ static inline bool is_overlaped(const int astart, const int asize,
 //
 #define VI_GENERAL_LOOP_BASE \
   require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64); \
-  require(!P.VU.vill);\
+  require_vector;\
   reg_t vl = P.VU.vl; \
   reg_t sew = P.VU.vsew; \
   reg_t rd_num = insn.rd(); \
@@ -483,7 +487,7 @@ static inline bool is_overlaped(const int astart, const int asize,
 
 #define VI_LOOP_CMP_BASE \
   require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64); \
-  require(!P.VU.vill);\
+  require_vector;\
   reg_t vl = P.VU.vl; \
   reg_t sew = P.VU.vsew; \
   reg_t rd_num = insn.rd(); \
@@ -774,7 +778,7 @@ static inline bool is_overlaped(const int astart, const int asize,
 // reduction loop - signed
 #define VI_LOOP_REDUCTION_BASE(x) \
   require(x == e8 || x == e16 || x == e32 || x == e64); \
-  require(!P.VU.vill);\
+  require_vector;\
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -1247,7 +1251,7 @@ VI_LOOP_END
   VI_LOOP_REDUCTION_END(sew2)
 
 #define VI_VV_LOOP_WIDE_REDUCTION(BODY) \
-  require(!P.VU.vill);\
+  require_vector;\
   reg_t sew = P.VU.vsew; \
   if (sew == e8){ \
     WIDE_REDUCTION_LOOP(e8, e16, BODY) \
@@ -1276,7 +1280,7 @@ VI_LOOP_END
   VI_LOOP_REDUCTION_END(sew2)
 
 #define VI_VV_ULOOP_WIDE_REDUCTION(BODY) \
-  require(!P.VU.vill);\
+  require_vector;\
   reg_t sew = P.VU.vsew; \
   if (sew == e8){ \
     WIDE_REDUCTION_ULOOP(e8, e16, BODY) \
@@ -1398,6 +1402,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_ST(stride, offset, st_width, elt_byte) \
   const reg_t nf = insn.v_nf() + 1; \
+  require_vector; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
@@ -1433,6 +1438,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_LD(stride, offset, ld_width, elt_byte) \
   const reg_t nf = insn.v_nf() + 1; \
+  require_vector; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
@@ -1468,6 +1474,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 
 
 #define VI_LDST_FF(itype, tsew) \
+  require_vector; \
   require(p->VU.vsew >= e##tsew && p->VU.vsew <= e64); \
   const reg_t nf = insn.v_nf() + 1; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \
@@ -1522,7 +1529,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   require_extension('F'); \
   require_fp; \
   require(P.VU.vsew == 32); \
-  require(!P.VU.vill);\
+  require_vector;\
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \

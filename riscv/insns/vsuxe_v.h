@@ -1,4 +1,5 @@
 // vsxe.v and vsxseg[2-8]e.v
+require_vector;
 const reg_t sew = P.VU.vsew;
 const reg_t vl = P.VU.vl;
 require(sew >= e8 && sew <= e64);

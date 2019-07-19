@@ -1,6 +1,6 @@
 // vcompress vd, vs2, vs1
 require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
-require(!P.VU.vill);
+require_vector;
 require(P.VU.vstart == 0);
 reg_t sew = P.VU.vsew;
 reg_t vl = P.VU.vl;
