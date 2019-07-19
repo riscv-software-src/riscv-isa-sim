@@ -835,14 +835,29 @@ reg_t processor_t::get_csr(int which)
     case CSR_DSCRATCH + 1:
       return state.dscratch1;
     case CSR_VSTART:
+      require_vector_vs;
+      if (!supports_extension('V'))
+        break;
       return VU.vstart;
     case CSR_VXSAT:
+      require_vector_vs;
+      if (!supports_extension('V'))
+        break;
       return VU.vxsat;
     case CSR_VXRM:
+      require_vector_vs;
+      if (!supports_extension('V'))
+        break;
       return VU.vxrm;
     case CSR_VL:
+      require_vector_vs;
+      if (!supports_extension('V'))
+        break;
       return VU.vl;
     case CSR_VTYPE:
+      require_vector_vs;
+      if (!supports_extension('V'))
+        break;
       return VU.vtype;
   }
   throw trap_illegal_instruction(0);
