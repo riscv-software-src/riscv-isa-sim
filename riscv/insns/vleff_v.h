@@ -1,3 +1,4 @@
+require_vector;
 require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
 const reg_t nf = insn.v_nf() + 1;
 require((nf * P.VU.vlmul) <= (NVPR / 4));

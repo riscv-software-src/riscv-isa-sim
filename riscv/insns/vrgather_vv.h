@@ -1,6 +1,6 @@
 // vrgather.vv vd, vs2, vs1, vm # vd[i] = (vs1[i] >= VLMAX) ? 0 : vs2[vs1[i]];
 require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
-require(!P.VU.vill);
+require_vector;
 reg_t vl = P.VU.vl;
 reg_t sew = P.VU.vsew;
 reg_t rd_num = insn.rd();
