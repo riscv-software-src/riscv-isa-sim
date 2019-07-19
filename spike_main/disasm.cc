@@ -935,7 +935,7 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_S___INSN(vredmin,   1);
   DISASM_OPIV_S___INSN(vredmaxu,  0);
   DISASM_OPIV_S___INSN(vredmax,   1);
-  DISASM_INSN("vext.x.v", vext_x_v, 0, {&xrd, &vs2, &xrs1});
+  DISASM_INSN("vmv.x.s", vmv_x_s, 0, {&xrd, &vs2});
   DISASM_INSN("vmv.s.x", vmv_s_x, 0, {&vd, &xrs1});
   DISASM_OPIV__X__INSN(vslide1up,  1);
   DISASM_OPIV__X__INSN(vslide1down,1);
