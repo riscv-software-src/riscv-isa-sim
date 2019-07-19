@@ -202,8 +202,9 @@ void vectorUnit_t::reset(){
   ELEN = get_elen();
   SLEN = get_slen(); // registers are simply concatenated
   reg_file = malloc(NVPR * (VLEN/8));
-  vtype = -1;
-  set_vl(-1, 0, 0); // vsew8, vlmul1
+
+  vtype = 0;
+  set_vl(-1, 0, -1); // default to illegal configuration
 }
 
 reg_t vectorUnit_t::set_vl(uint64_t regId, reg_t reqVL, reg_t newType){
@@ -215,8 +216,12 @@ reg_t vectorUnit_t::set_vl(uint64_t regId, reg_t reqVL, reg_t newType){
     vlmax = VLEN/vsew * vlmul;
     vmlen = vsew / vlmul;
     reg_mask = (NVPR-1) & ~(vlmul-1);
+
+    vill = vsew > e64 || vediv != 1 || (newType >> 7) != 0;
+    if (vill)
+      vlmax = 0;
   }
-  vl = reqVL <= vlmax ? (regId == 0)? vlmax: reqVL : vlmax;
+  vl = reqVL <= vlmax && regId != 0 ? reqVL : vlmax;
   vstart = 0;
   setvl_count++;
   return vl;
