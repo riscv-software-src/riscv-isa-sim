@@ -312,7 +312,7 @@ riscv_insn_ext_v_alu_int = \
 	vdivu_vx \
 	vdot_vv \
 	vdotu_vv \
-	vext_x_v \
+	vmv_x_s \
 	vid_v \
 	viota_m \
 	vmacc_vv \
