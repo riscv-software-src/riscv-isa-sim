@@ -665,18 +665,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_VXRM:
       VU.vxrm = val;
       break;
-    case CSR_VL:
-      VU.vl = val;
-      break;
-    case CSR_VTYPE:
-      VU.vtype = val;
-      // check vill bit
-      if (BITS(VU.vtype, get_xlen(), get_xlen() - 1) == 1){
-        VU.vill = true;
-      }else{
-        VU.vill = false;
-      }
-      break;
   }
 }
 
