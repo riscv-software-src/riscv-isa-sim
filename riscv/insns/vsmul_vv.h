@@ -1,8 +1,8 @@
 // vsmul: Signed saturating and rounding fractional multiply
 VRM xrm = P.VU.get_vround_mode();
-uint64_t int_max = (1ul << (P.VU.vsew - 1)) - 1;
+uint64_t int_max = (uint64_t(1) << (P.VU.vsew - 1)) - 1;
 uint64_t int_min = - (1 << (P.VU.vsew - 1));
-uint64_t sign_mask = ((1ul << (P.VU.vsew - 1)));
+uint64_t sign_mask = uint64_t(1) << (P.VU.vsew - 1);
 
 VI_VV_ULOOP
 ({
