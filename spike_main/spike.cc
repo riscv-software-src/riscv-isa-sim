@@ -35,9 +35,16 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --ic=<S>:<W>:<B>      Instantiate a cache model with S sets,\n");
   fprintf(stderr, "  --dc=<S>:<W>:<B>        W ways, and B-byte blocks (with S and\n");
   fprintf(stderr, "  --l2=<S>:<W>:<B>        B both powers of 2).\n");
+  fprintf(stderr, "  --device=<P,B,A>      Attach MMIO plugin device from an --extlib library\n");
+  fprintf(stderr, "                          P -- Name of the MMIO plugin\n");
+  fprintf(stderr, "                          B -- Base memory address of the device\n");
+  fprintf(stderr, "                          A -- String arguments to pass to the plugin\n");
+  fprintf(stderr, "                          This flag can be used multiple times.\n");
+  fprintf(stderr, "                          The extlib flag for the library must come first.\n");
   fprintf(stderr, "  --log-cache-miss      Generate a log of cache miss\n");
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
   fprintf(stderr, "  --extlib=<name>       Shared library to load\n");
+  fprintf(stderr, "                        This flag can be used multiple times.\n");
   fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
   fprintf(stderr, "  --dump-dts            Print device tree string and exit\n");
   fprintf(stderr, "  --disable-dtb         Don't write the device tree blob into memory\n");
@@ -104,6 +111,7 @@ int main(int argc, char** argv)
   size_t nprocs = 1;
   reg_t start_pc = reg_t(-1);
   std::vector<std::pair<reg_t, mem_t*>> mems;
+  std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
   std::unique_ptr<icache_sim_t> ic;
   std::unique_ptr<dcache_sim_t> dc;
   std::unique_ptr<cache_sim_t> l2;
@@ -137,6 +145,49 @@ int main(int argc, char** argv)
     }
   };
 
+  auto const device_parser = [&plugin_devices](const char *s) {
+    const std::string str(s);
+    std::istringstream stream(str);
+
+    // We are parsing a string like name,base,args.
+
+    // Parse the name, which is simply all of the characters leading up to the
+    // first comma. The validity of the plugin name will be checked later.
+    std::string name;
+    std::getline(stream, name, ',');
+    if (name.empty()) {
+      throw std::runtime_error("Plugin name is empty.");
+    }
+
+    // Parse the base address. First, get all of the characters up to the next
+    // comma (or up to the end of the string if there is no comma). Then try to
+    // parse that string as an integer according to the rules of strtoull. It
+    // could be in decimal, hex, or octal. Fail if we were able to parse a
+    // number but there were garbage characters after the valid number. We must
+    // consume the entire string between the commas.
+    std::string base_str;
+    std::getline(stream, base_str, ',');
+    if (base_str.empty()) {
+      throw std::runtime_error("Device base address is empty.");
+    }
+    char* end;
+    reg_t base = static_cast<reg_t>(strtoull(base_str.c_str(), &end, 0));
+    if (end != &*base_str.cend()) {
+      throw std::runtime_error("Error parsing device base address.");
+    }
+
+    // The remainder of the string is the arguments. We could use getline, but
+    // that could ignore newline characters in the arguments. That should be
+    // rare and discouraged, but handle it here anyway with this weird in_avail
+    // technique. The arguments are optional, so if there were no arguments
+    // specified we could end up with an empty string here. That's okay.
+    auto avail = stream.rdbuf()->in_avail();
+    std::string args(avail, '\0');
+    stream.readsome(&args[0], avail);
+
+    plugin_devices.emplace_back(base, new mmio_plugin_device_t(name, args));
+  };
+
   option_parser_t parser;
   parser.help(&suggest_help);
   parser.option('h', "help", 0, [&](const char* s){help(0);});
@@ -156,6 +207,7 @@ int main(int argc, char** argv)
   parser.option(0, "log-cache-miss", 0, [&](const char* s){log_cache = true;});
   parser.option(0, "isa", 1, [&](const char* s){isa = s;});
   parser.option(0, "varch", 1, [&](const char* s){varch = s;});
+  parser.option(0, "device", 1, device_parser);
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
   parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
@@ -191,8 +243,8 @@ int main(int argc, char** argv)
   if (!*argv1)
     help();
 
-  sim_t s(isa, varch, nprocs, halted, start_pc, mems, htif_args, std::move(hartids),
-      dm_config);
+  sim_t s(isa, varch, nprocs, halted, start_pc, mems, plugin_devices, htif_args,
+      std::move(hartids), dm_config);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));
@@ -221,5 +273,14 @@ int main(int argc, char** argv)
   s.set_debug(debug);
   s.set_log(log);
   s.set_histogram(histogram);
-  return s.run();
+
+  auto return_code = s.run();
+
+  for (auto& mem : mems)
+    delete mem.second;
+
+  for (auto& plugin_device : plugin_devices)
+    delete plugin_device.second;
+
+  return return_code;
 }

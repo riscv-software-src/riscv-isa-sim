@@ -48,3 +48,43 @@ std::pair<reg_t, abstract_device_t*> bus_t::find_device(reg_t addr)
   it--;
   return std::make_pair(it->first, it->second);
 }
+
+// Type for holding all registered MMIO plugins by name.
+using mmio_plugin_map_t = std::map<std::string, mmio_plugin_t>;
+
+// Simple singleton instance of an mmio_plugin_map_t.
+static mmio_plugin_map_t& mmio_plugin_map()
+{
+  static mmio_plugin_map_t instance;
+  return instance;
+}
+
+void register_mmio_plugin(const char* name_cstr,
+                          const mmio_plugin_t* mmio_plugin)
+{
+  std::string name(name_cstr);
+  if (!mmio_plugin_map().emplace(name, *mmio_plugin).second) {
+    throw std::runtime_error("Plugin \"" + name + "\" already registered!");
+  }
+}
+
+mmio_plugin_device_t::mmio_plugin_device_t(const std::string& name,
+                                           const std::string& args)
+  : plugin(mmio_plugin_map().at(name)), user_data((*plugin.alloc)(args.c_str()))
+{
+}
+
+mmio_plugin_device_t::~mmio_plugin_device_t()
+{
+  (*plugin.dealloc)(user_data);
+}
+
+bool mmio_plugin_device_t::load(reg_t addr, size_t len, uint8_t* bytes)
+{
+  return (*plugin.load)(user_data, addr, len, bytes);
+}
+
+bool mmio_plugin_device_t::store(reg_t addr, size_t len, const uint8_t* bytes)
+{
+  return (*plugin.store)(user_data, addr, len, bytes);
+}
