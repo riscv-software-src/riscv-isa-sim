@@ -84,6 +84,7 @@ AC_CHECK_TYPE([__int128_t], AC_SUBST([HAVE_INT128],[yes]))
 
 AC_SUBST([CFLAGS],  ["-Wall -Wno-unused -g -O2"])
 AC_SUBST([CXXFLAGS],["-Wall -Wno-unused -g -O2 -std=c++11"])
+AC_SUBST([LDFLAGS], ["-Wl,--export-dynamic"])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject list
