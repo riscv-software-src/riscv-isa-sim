@@ -44,34 +44,34 @@ all 0 32bit:
   extends: .test
   before_script:
     - cd bengal-team/riscv-tests-internal/build
-    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/toolchain-prefix/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/spike-prefix/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/spike-prefix/lib/libsoftfloat.so -DELEN=32 -DFLEN=32 DSLEN=128 -DVLEN=512 -DXLEN=32 -DINPUT=0 ..
+    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/toolchain-prefix/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/spike-prefix/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/spike-prefix/lib/libsoftfloat.so -DELEN=32 -DFLEN=32 -DSLEN=128 -DVLEN=512 -DXLEN=32 -DINPUT=0 ..
 
 all 1 32bit:
   extends: .test
   before_script:
     - cd bengal-team/riscv-tests-internal/build
-    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/toolchain-prefix/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/spike-prefix/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/spike-prefix/lib/libsoftfloat.so -DELEN=32 -DFLEN=32 DSLEN=128 -DVLEN=512 -DXLEN=32 -DINPUT=1 ..
+    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/toolchain-prefix/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/spike-prefix/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/spike-prefix/lib/libsoftfloat.so -DELEN=32 -DFLEN=32 -DSLEN=128 -DVLEN=512 -DXLEN=32 -DINPUT=1 ..
 
 random 32bit:
   extends: .test
   before_script:
     - cd bengal-team/riscv-tests-internal/build
-    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/toolchain-prefix/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/spike-prefix/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/spike-prefix/lib/libsoftfloat.so -DELEN=32 -DFLEN=32 DSLEN=128 -DVLEN=512 -DXLEN=32 ..
+    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/toolchain-prefix/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/spike-prefix/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/spike-prefix/lib/libsoftfloat.so -DELEN=32 -DFLEN=32 -DSLEN=128 -DVLEN=512 -DXLEN=32 ..
 
 all 0 64bit:
   extends: .test
   before_script:
     - cd bengal-team/riscv-tests-internal/build
-    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/toolchain-prefix/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/spike-prefix/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/spike-prefix/lib/libsoftfloat.so -DELEN=32 -DFLEN=64 DSLEN=128 -DVLEN=512 -DXLEN=64 -DINPUT=0 ..
+    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/toolchain-prefix/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/spike-prefix/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/spike-prefix/lib/libsoftfloat.so -DELEN=32 -DFLEN=64 -DSLEN=128 -DVLEN=512 -DXLEN=64 -DINPUT=0 ..
 
 all 1 64bit:
   extends: .test
   before_script:
     - cd bengal-team/riscv-tests-internal/build
-    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/toolchain-prefix/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/spike-prefix/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/spike-prefix/lib/libsoftfloat.so -DELEN=32 -DFLEN=64 DSLEN=128 -DVLEN=512 -DXLEN=64 -DINPUT=1 ..
+    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/toolchain-prefix/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/spike-prefix/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/spike-prefix/lib/libsoftfloat.so -DELEN=32 -DFLEN=64 -DSLEN=128 -DVLEN=512 -DXLEN=64 -DINPUT=1 ..
 
 random 64bit:
   extends: .test
   before_script:
     - cd bengal-team/riscv-tests-internal/build
-    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/toolchain-prefix/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/spike-prefix/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/spike-prefix/lib/libsoftfloat.so -DELEN=32 -DFLEN=64 DSLEN=128 -DVLEN=512 -DXLEN=64 ..
+    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/toolchain-prefix/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/spike-prefix/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/spike-prefix/lib/libsoftfloat.so -DELEN=32 -DFLEN=64 -DSLEN=128 -DVLEN=512 -DXLEN=64 ..
