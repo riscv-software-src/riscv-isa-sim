@@ -19,7 +19,7 @@ build:
     - git submodule update --init --recursive -j `nproc` --depth 1 riscv-binutils-gdb
     - make toolchain-prefix/bin/riscv64-unknown-elf-gcc -j
     - git clone --single-branch --branch hankuanc --recurse-submodules -j `nproc` --depth 1 git@github.com:sifive/riscv-tests-internal.git
-    - mkdir riscv-tests-internal/vector/build
+    - mkdir riscv-tests-internal/build
   cache:
     key: $CI_PIPELINE_ID
     paths:
@@ -38,40 +38,40 @@ build:
     - make -j
     - ctest --timeout 0.1
   after_script:
-    - grep RANDOM_SEED bengal-team/riscv-tests-internal/vector/build/CMakeCache.txt
+    - grep RANDOM_SEED bengal-team/riscv-tests-internal/build/CMakeCache.txt
 
 all 0 32bit:
   extends: .test
   before_script:
-    - cd bengal-team/riscv-tests-internal/vector/build
-    - ../configure -DBASE=32 -DELEN=32 -DSLEN=128 -DVLEN=512 -DINPUT=0
+    - cd bengal-team/riscv-tests-internal/build
+    - ../configure -DELEN=32 -DFLEN=32 DSLEN=128 -DVLEN=512 -DXLEN=32 -DINPUT=0
 
 all 1 32bit:
   extends: .test
   before_script:
-    - cd bengal-team/riscv-tests-internal/vector/build
-    - ../configure -DBASE=32 -DELEN=32 -DSLEN=128 -DVLEN=512 -DINPUT=1
+    - cd bengal-team/riscv-tests-internal/build
+    - ../configure -DELEN=32 -DFLEN=32 DSLEN=128 -DVLEN=512 -DXLEN=32 -DINPUT=1
 
 random 32bit:
   extends: .test
   before_script:
-    - cd bengal-team/riscv-tests-internal/vector/build
-    - ../configure -DBASE=32 -DELEN=32 -DSLEN=128 -DVLEN=512
+    - cd bengal-team/riscv-tests-internal/build
+    - ../configure -DELEN=32 -DFLEN=32 DSLEN=128 -DVLEN=512 -DXLEN=32
 
 all 0 64bit:
   extends: .test
   before_script:
-    - cd bengal-team/riscv-tests-internal/vector/build
-    - ../configure -DBASE=64 -DELEN=32 -DSLEN=128 -DVLEN=512 -DINPUT=0
+    - cd bengal-team/riscv-tests-internal/build
+    - ../configure -DELEN=32 -DFLEN=64 DSLEN=128 -DVLEN=512 -DXLEN=64 -DINPUT=0
 
 all 1 64bit:
   extends: .test
   before_script:
-    - cd bengal-team/riscv-tests-internal/vector/build
-    - ../configure -DBASE=64 -DELEN=32 -DSLEN=128 -DVLEN=512 -DINPUT=1
+    - cd bengal-team/riscv-tests-internal/build
+    - ../configure -DELEN=32 -DFLEN=64 DSLEN=128 -DVLEN=512 -DXLEN=64 -DINPUT=1
 
 random 64bit:
   extends: .test
   before_script:
-    - cd bengal-team/riscv-tests-internal/vector/build
-    - ../configure -DBASE=64 -DELEN=32 -DSLEN=128 -DVLEN=512
+    - cd bengal-team/riscv-tests-internal/build
+    - ../configure -DELEN=32 -DFLEN=64 DSLEN=128 -DVLEN=512 -DXLEN=64
