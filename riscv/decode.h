@@ -1433,7 +1433,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
         val = P.VU.elt<uint64_t>(vs3 + fn * vlmul, vreg_inx); \
         break; \
       } \
-      MMU.store_##st_width(baseAddr + (stride) + (offset) * elt_byte, val); \
+      MMU.store_##st_width(baseAddr + (stride) + (offset) * elt_byte, val, g_vector_mistrap); \
     } \
   } \
   P.VU.vstart = 0; 
@@ -1452,7 +1452,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     VI_ELEMENT_SKIP(i); \
     VI_STRIP(i); \
     for (reg_t fn = 0; fn < nf; ++fn) { \
-      ld_width##_t val = MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte); \
+      ld_width##_t val = MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte, g_vector_mistrap); \
       if (vd + fn >= NVPR){ \
          P.VU.vstart = vreg_inx;\
          require(false); \
@@ -1493,7 +1493,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     VI_ELEMENT_SKIP(i); \
     \
     for (reg_t fn = 0; fn < nf; ++fn) { \
-      itype##64_t val = MMU.load_##itype##tsew(baseAddr + (i * nf + fn) * (tsew / 8)); \
+      itype##64_t val = MMU.load_##itype##tsew(baseAddr + (i * nf + fn) * (tsew / 8), g_vector_mistrap); \
       \
       switch (sew) { \
       case e8: \
