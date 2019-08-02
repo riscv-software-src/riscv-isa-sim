@@ -15,9 +15,8 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
-extern "C" {
 bool g_check_1905 = false;
-};
+bool g_vector_mistrap = false;
 
 volatile bool ctrlc_pressed = false;
 static void handle_signal(int sig)

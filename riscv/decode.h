@@ -351,6 +351,8 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
   while (0);
 #endif
 
+extern bool g_vector_mistrap;
+
 //
 // vector: masking skip helper
 //
