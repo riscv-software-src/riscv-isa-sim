@@ -1356,9 +1356,7 @@ Optional Features:
                           bits
   --enable-misaligned     Enable hardware support for misaligned loads and
                           stores
-  --enable-1905-check
-                          enable 1905 release check
-
+  --enable-1905-check     Enable 1905 release check
 
 Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
@@ -4730,10 +4728,10 @@ if test "${enable_1905_check+set}" = set; then :
   enableval=$enable_1905_check;
 fi
 
-if test "x$enable_1905_check" != "xno"; then :
+if test "x$enable_1905_check" = "xyes"; then :
 
 
-$as_echo "#define RISCV_ENABLE_1905_CHECK /**/" >>confdefs.h
+$as_echo "#define RISCV_ENABLE_1950_CHECK /**/" >>confdefs.h
 
 
 fi
