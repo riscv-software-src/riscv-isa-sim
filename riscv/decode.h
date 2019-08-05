@@ -402,6 +402,10 @@ static inline bool is_overlaped(const int astart, const int asize,
   if (insn.v_vm() == 0) \
     require(insn.rd() != 0);
 
+#define VI_CHECK_VREG_MASK_LMUL \
+  if (insn.v_vm() == 0 && P.VU.vlmul >= 2) \
+    require(insn.rd() != 0);
+
 #define VI_CHECK_VREG_OVERLAP(v1, v2) \
   require(!is_overlaped(v1, P.VU.vlmul, v2, P.VU.vlmul));
 
@@ -434,6 +438,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
+  VI_CHECK_VREG_MASK_LMUL; \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ 
 
 #define VI_TAIL_ZERO(elm) \
