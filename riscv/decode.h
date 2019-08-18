@@ -7,10 +7,6 @@
 # error spike requires a two''s-complement c++ implementation
 #endif
 
-#ifdef WORDS_BIGENDIAN
-# error spike requires a little-endian host
-#endif
-
 #include <algorithm>
 #include <cstdint>
 #include <string.h>
@@ -73,6 +69,23 @@ const int NCSR = 4096;
   #define TAIL_ZEROING true
 #else
   #define TAIL_ZEROING false
+#endif
+
+#ifdef WORDS_BIGENDIAN
+  // Elements are stored in opposite order, see comment in processor.h
+  #define TAIL_ZERO(x) \
+    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * (x) - 1); \
+    memset(tail - (P.VU.vlmax - vl) * (x), 0, (P.VU.vlmax - vl) * (x));
+  #define TAIL_ZERO_REDUCTION(x) \
+    uint8_t *tail = (uint8_t *)&P.VU.elt<type_sew_t<x>::type>(rd_num, 0); \
+    memset(tail - ((P.VU.get_vlen() - x) >> 3), 0, (P.VU.get_vlen() - x) >> 3);
+#else
+  #define TAIL_ZERO(x) \
+    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * (x)); \
+    memset(tail, 0, (P.VU.vlmax - vl) * (x));
+  #define TAIL_ZERO_REDUCTION(x) \
+    uint8_t *tail = (uint8_t *)&P.VU.elt<type_sew_t<x>::type>(rd_num, 1); \
+    memset(tail, 0, (P.VU.get_vlen() - x) >> 3);
 #endif
 
 typedef uint64_t insn_bits_t;
@@ -425,8 +438,7 @@ static inline bool is_overlaped(const int astart, const int asize,
 
 #define VI_TAIL_ZERO(elm) \
   if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING) { \
-    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * elm)); \
-    memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * elm)); \
+    TAIL_ZERO((sew >> 3) * elm); \
   }
 
 #define VI_TAIL_ZERO_MASK(dst) \
@@ -448,8 +460,7 @@ static inline bool is_overlaped(const int astart, const int asize,
 #define VI_LOOP_END \
   } \
   if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
-    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 1)); \
-    memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 1)); \
+    TAIL_ZERO((sew >> 3) * 1); \
   }\
   P.VU.vstart = 0;
 
@@ -460,8 +471,7 @@ static inline bool is_overlaped(const int astart, const int asize,
 #define VI_LOOP_WIDEN_END \
   } \
   if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
-    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 2)); \
-    memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 2)); \
+    TAIL_ZERO((sew >> 3) * 2); \
   }\
   P.VU.vstart = 0;
 
@@ -469,8 +479,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   } \
   if (vl > 0 && TAIL_ZEROING) { \
     vd_0_des = vd_0_res; \
-    uint8_t *tail = (uint8_t *)&P.VU.elt<type_sew_t<x>::type>(rd_num, 1); \
-    memset(tail, 0, (P.VU.get_vlen() - x) >> 3); \
+    TAIL_ZERO_REDUCTION(x); \
   } \
   P.VU.vstart = 0; 
 
@@ -1558,16 +1567,14 @@ for (reg_t i = 0; i < vlmax; ++i) { \
 #define VI_VFP_LOOP_END \
   } \
   if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
-    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((P.VU.vsew >> 3) * 1)); \
-    memset(tail, 0, (P.VU.vlmax - vl) * ((P.VU.vsew >> 3) * 1)); \
+    TAIL_ZERO((P.VU.vsew >> 3) * 1); \
   }\
   P.VU.vstart = 0; \
 
 #define VI_VFP_LOOP_WIDE_END \
   } \
   if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
-    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((P.VU.vsew >> 3) * 2)); \
-    memset(tail, 0, (P.VU.vlmax - vl) * ((P.VU.vsew >> 3) * 2)); \
+    TAIL_ZERO((P.VU.vsew >> 3) * 2); \
   }\
   P.VU.vstart = 0; \
   set_fp_exceptions;

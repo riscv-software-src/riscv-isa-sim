@@ -4130,7 +4130,8 @@ fi
 $as_echo "$ac_cv_c_bigendian" >&6; }
  case $ac_cv_c_bigendian in #(
    yes)
-     as_fn_error $? "Spike requires a little-endian host" "$LINENO" 5;; #(
+     $as_echo "#define WORDS_BIGENDIAN 1" >>confdefs.h
+;; #(
    no)
       ;; #(
    universal)
