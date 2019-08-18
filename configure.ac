@@ -57,7 +57,7 @@ AC_PATH_PROG([DTC],[dtc],[no])
 AS_IF([test x"$DTC" == xno],AC_MSG_ERROR([device-tree-compiler not found]))
 AC_DEFINE_UNQUOTED(DTC, ["$DTC"], [Path to the device-tree-compiler])
 
-AC_C_BIGENDIAN(AC_MSG_ERROR([Spike requires a little-endian host]))
+AC_C_BIGENDIAN
 
 #-------------------------------------------------------------------------
 # MCPPBS specific program checks

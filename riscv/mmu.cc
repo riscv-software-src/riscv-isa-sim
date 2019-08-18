@@ -288,7 +288,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
     if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S))
       throw_access_exception(addr, type);
 
-    reg_t pte = vm.ptesize == 4 ? *(uint32_t*)ppte : *(uint64_t*)ppte;
+    reg_t pte = vm.ptesize == 4 ? from_le(*(uint32_t*)ppte) : from_le(*(uint64_t*)ppte);
     reg_t ppn = pte >> PTE_PPN_SHIFT;
 
     if (PTE_TABLE(pte)) { // next level of page table
@@ -310,7 +310,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
       if ((pte & ad) != ad) {
         if (!pmp_ok(pte_paddr, vm.ptesize, STORE, PRV_S))
           throw_access_exception(addr, type);
-        *(uint32_t*)ppte |= ad;
+        *(uint32_t*)ppte |= to_le((uint32_t)ad);
       }
 #else
       // take exception if access or possibly dirty bit is not set.

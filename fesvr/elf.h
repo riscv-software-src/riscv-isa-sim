@@ -11,6 +11,8 @@
 
 #define IS_ELF32(hdr) (IS_ELF(hdr) && (hdr).e_ident[4] == 1)
 #define IS_ELF64(hdr) (IS_ELF(hdr) && (hdr).e_ident[4] == 2)
+#define IS_ELFLE(hdr) (IS_ELF(hdr) && (hdr).e_ident[5] == 1)
+#define IS_ELFBE(hdr) (IS_ELF(hdr) && (hdr).e_ident[5] == 2)
 
 #define PT_LOAD 1
 
