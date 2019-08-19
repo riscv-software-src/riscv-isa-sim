@@ -31,7 +31,7 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
   assert(size >= sizeof(Elf64_Ehdr));
   const Elf64_Ehdr* eh64 = (const Elf64_Ehdr*)buf;
   assert(IS_ELF32(*eh64) || IS_ELF64(*eh64));
-  assert(IS_ELFLE(*eh64) || IS_ELFBE(*eh64));
+  assert(IS_ELFLE(*eh64));
 
   std::vector<uint8_t> zeros;
   std::map<std::string, uint64_t> symbols;
@@ -81,15 +81,9 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
   } while(0)
 
   if (IS_ELF32(*eh64))
-    if (IS_ELFLE(*eh64))
-      LOAD_ELF(Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym, from_le);
-    else
-      LOAD_ELF(Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym, from_be);
+    LOAD_ELF(Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym, from_le);
   else
-    if (IS_ELFLE(*eh64))
-      LOAD_ELF(Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym, from_le);
-    else
-      LOAD_ELF(Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym, from_be);
+    LOAD_ELF(Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym, from_le);
 
   munmap(buf, size);
 
