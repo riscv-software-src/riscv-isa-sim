@@ -30,6 +30,9 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  -H                    Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
   fprintf(stderr, "  --varch=<name>        RISC-V Vector uArch string [default %s]\n", DEFAULT_VARCH);
+#ifdef RISCV_ENABLE_IMPL_CHECK
+  fprintf(stderr, "  --check-impl          Check vector instruction implementation\n");
+#endif
   fprintf(stderr, "  --pc=<address>        Override ELF entry point\n");
   fprintf(stderr, "  --hartids=<a,b,...>   Explicitly specify hartids, default is 0,1,...\n");
   fprintf(stderr, "  --ic=<S>:<W>:<B>      Instantiate a cache model with S sets,\n");
@@ -100,7 +103,9 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
   return res;
 }
 
-extern bool g_check_1905;
+#ifdef RISCV_ENABLE_IMPL_CHECK
+extern unsigned g_check_impl;
+#endif
 extern bool g_vector_mistrap;
 
 int main(int argc, char** argv)
@@ -213,7 +218,9 @@ int main(int argc, char** argv)
   parser.option(0, "device", 1, device_parser);
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
-  parser.option(0, "check-1905", 0, [&](const char *s){g_check_1905 = true;});
+#ifdef RISCV_ENABLE_IMPL_CHECK
+  parser.option(0, "check-impl", 1, [&](const char *s){g_check_impl = strtoul(s, NULL, 0);});
+#endif
   parser.option(0, "vector-mistrap", 0, [&](const char *s){g_vector_mistrap = true;});
   parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
   parser.option(0, "extlib", 1, [&](const char *s){

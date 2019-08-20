@@ -15,7 +15,9 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
-bool g_check_1905 = false;
+#ifdef RISCV_ENABLE_IMPL_CHECK
+unsigned g_check_impl = 'a' << 16 | 'n' << 8 | 'y';
+#endif
 bool g_vector_mistrap = false;
 
 volatile bool ctrlc_pressed = false;

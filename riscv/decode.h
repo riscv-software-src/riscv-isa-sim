@@ -340,16 +340,25 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 #define DEBUG_RVV_FMA_VF 0
 #endif
 
-#ifdef RISCV_ENABLE_1905_CHECK
-#define VI_CHECK_1905 \
-  extern bool g_check_1905; \
-  if (g_check_1905) { \
-    fprintf(stderr, "unsupported in 1905\n"); \
+#ifdef RISCV_ENABLE_IMPL_CHECK
+#define VI_CHECK_IMPL \
+  extern unsigned g_check_impl; \
+  { \
+      auto val = P.VU.impl_table.find(local_op); \
+      if (val != P.VU.impl_table.end()) { \
+        auto val2 = val->second.find(g_check_impl); \
+        if (val2 == val->second.end()) {\
+          fprintf(stderr, "unsupported in %u\n", g_check_impl); \
+        }; \
+      }; \
   };
 #else
-#define VI_CHECK_1905 \
+#define VI_CHECK_IMPL \
   while (0);
 #endif
+
+#define VI_CHECK_1905 \
+  while (0);
 
 extern bool g_vector_mistrap;
 
