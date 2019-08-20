@@ -39,4 +39,3 @@ if (vl > 0 && TAIL_ZEROING) {
   memset(tail, 0, (P.VU.vlmax - pos) * ((sew >> 3) * 1));
 }
 
-VI_CHECK_1905

@@ -6,4 +6,3 @@ VI_VX_ULOOP
   else
     vd = vs2 % rs1;
 })
-VI_CHECK_1905

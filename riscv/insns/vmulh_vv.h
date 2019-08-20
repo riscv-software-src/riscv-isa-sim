@@ -3,4 +3,3 @@ VI_VV_LOOP
 ({
   vd = ((int128_t)vs2 * vs1) >> sew;
 })
-VI_CHECK_1905

@@ -8,4 +8,3 @@ VI_VX_ULOOP
   }
 
 })
-VI_CHECK_1905

@@ -8,4 +8,3 @@ VI_VV_LOOP
   else
     vd = vs2 / vs1;
 })
-VI_CHECK_1905

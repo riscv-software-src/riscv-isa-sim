@@ -7,4 +7,3 @@ VI_VI_LOOP
   result = vzext(result >> 1, sew);
   vd = result;
 })
-VI_CHECK_1905

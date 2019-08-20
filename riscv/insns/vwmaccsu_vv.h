@@ -4,4 +4,3 @@ VI_VV_LOOP_WIDEN
 ({
   VI_WIDE_OP_AND_ASSIGN_MIX(vs2, vs1, vd_w, *, +, int, uint, int);
 })
-VI_CHECK_1905

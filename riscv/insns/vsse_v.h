@@ -11,4 +11,3 @@ if (sew == e8) {
   VI_ST(i * RS2, fn, uint64, 8);
 }
 
-VI_CHECK_1905

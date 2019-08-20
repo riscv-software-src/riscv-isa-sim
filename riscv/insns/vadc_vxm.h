@@ -9,4 +9,3 @@ VI_VX_LOOP
   uint128_t res = (op_mask & rs1) + (op_mask & vs2) + carry;
   vd = res;
 })
-VI_CHECK_1905

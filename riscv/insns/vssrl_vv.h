@@ -7,4 +7,3 @@ VI_VV_ULOOP
   INT_ROUNDING(vs2, xrm, sh);
   vd = vs2 >> sh;
 })
-VI_CHECK_1905

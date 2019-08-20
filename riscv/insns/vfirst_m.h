@@ -18,4 +18,3 @@ for (reg_t i=P.VU.vstart; i < vl; ++i) {
 }
 P.VU.vstart = 0;
 WRITE_RD(pos);
-VI_CHECK_1905

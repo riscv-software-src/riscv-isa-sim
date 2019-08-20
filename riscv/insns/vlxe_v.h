@@ -11,4 +11,3 @@ if (sew == e8) {
   VI_LD(index[i], fn, int64, 8);
 }
 
-VI_CHECK_1905

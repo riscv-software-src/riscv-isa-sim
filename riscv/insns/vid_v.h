@@ -28,4 +28,3 @@ for (reg_t i = P.VU.vstart ; i < P.VU.vl; ++i) {
 
 VI_TAIL_ZERO(1);
 P.VU.vstart = 0;
-VI_CHECK_1905

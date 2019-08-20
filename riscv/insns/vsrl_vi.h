@@ -3,4 +3,3 @@ VI_VI_ULOOP
 ({
   vd = vs2 >> (simm5 & (sew - 1) & 0x1f);
 })
-VI_CHECK_1905

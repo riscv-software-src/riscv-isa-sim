@@ -357,9 +357,6 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
   while (0);
 #endif
 
-#define VI_CHECK_1905 \
-  while (0);
-
 extern bool g_vector_mistrap;
 
 //

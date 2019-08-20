@@ -31,4 +31,3 @@ for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
   }
 }
 P.VU.vstart = 0;
-VI_CHECK_1905

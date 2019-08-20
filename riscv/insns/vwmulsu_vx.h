@@ -14,4 +14,3 @@ VI_VX_LOOP_WIDEN
     break;
   }
 })
-VI_CHECK_1905
