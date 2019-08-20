@@ -9,6 +9,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <cassert>
 #include "debug_rom_defines.h"
 
@@ -162,6 +163,8 @@ class vectorUnit_t {
     reg_t ELEN, VLEN, SLEN;
     bool vill;
 
+    std::unordered_map<uint32_t, std::unordered_map<uint64_t, bool>> impl_table;
+
     // vector element for varies SEW
     template<class T>
       T& elt(reg_t vReg, reg_t n){
@@ -179,9 +182,7 @@ class vectorUnit_t {
 
     void reset();
 
-    vectorUnit_t(){
-      reg_file = 0;
-    }
+    vectorUnit_t();
 
     ~vectorUnit_t(){
       free(reg_file);
