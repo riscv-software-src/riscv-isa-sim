@@ -654,9 +654,9 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN("c.beqz", c_beqz, 0, {&rvc_rs1s, &rvc_branch_target});
   DISASM_INSN("c.bnez", c_bnez, 0, {&rvc_rs1s, &rvc_branch_target});
   DISASM_INSN("c.j", c_j, 0, {&rvc_jump_target});
-  DISASM_INSN("c.fldsp", c_fldsp, 0, {&rvc_fp_rs2s, &rvc_ldsp_address});
+  DISASM_INSN("c.fldsp", c_fldsp, 0, {&frd, &rvc_ldsp_address});
   DISASM_INSN("c.fsd", c_fsd, 0, {&rvc_fp_rs2s, &rvc_ld_address});
-  DISASM_INSN("c.fsdsp", c_fsdsp, 0, {&rvc_fp_rs2s, &rvc_sdsp_address});
+  DISASM_INSN("c.fsdsp", c_fsdsp, 0, {&rvc_fp_rs2, &rvc_sdsp_address});
 
   DISASM_INSN("vsetvli", vsetvli, 0, {&xrd, &xrs1, &v_vtype});
   DISASM_INSN("vsetvl", vsetvl, 0, {&xrd, &xrs1, &xrs2});
