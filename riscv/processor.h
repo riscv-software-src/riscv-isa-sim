@@ -34,6 +34,13 @@ struct commit_log_reg_t
   freg_t data;
 };
 
+struct commit_log_mem_t
+{
+  reg_t addr;
+  uint64_t value;
+  uint8_t size; // bytes: 1, 2, 4, or 8
+};
+
 typedef struct
 {
   uint8_t prv;
@@ -259,6 +266,7 @@ struct state_t
 
 #ifdef RISCV_ENABLE_COMMITLOG
   commit_log_reg_t log_reg_write;
+  commit_log_mem_t log_mem_write;
   reg_t last_inst_priv;
   int last_inst_xlen;
   int last_inst_flen;

@@ -18,6 +18,9 @@ static void commit_log_stash_privilege(processor_t* p)
 static void commit_log_print_value(int width, uint64_t hi, uint64_t lo)
 {
   switch (width) {
+    case 8:
+      fprintf(stderr, "0x%01" PRIx8, (uint8_t)lo);
+      break;
     case 16:
       fprintf(stderr, "0x%04" PRIx16, (uint16_t)lo);
       break;
@@ -39,6 +42,7 @@ static void commit_log_print_insn(state_t* state, reg_t pc, insn_t insn)
 {
 #ifdef RISCV_ENABLE_COMMITLOG
   auto& reg = state->log_reg_write;
+  auto& mem = state->log_mem_write;
   int priv = state->last_inst_priv;
   int xlen = state->last_inst_xlen;
   int flen = state->last_inst_flen;
@@ -55,10 +59,17 @@ static void commit_log_print_insn(state_t* state, reg_t pc, insn_t insn)
     fprintf(stderr, ") %c%2d ", fp ? 'f' : 'x', rd);
     commit_log_print_value(size, reg.data.v[1], reg.data.v[0]);
     fprintf(stderr, "\n");
+  } else if (mem.size) {
+    fprintf(stderr, ") mem ");
+    commit_log_print_value(xlen, 0, mem.addr);
+    fprintf(stderr, " ");
+    commit_log_print_value(mem.size << 3, 0, mem.value);
+    fprintf(stderr, "\n");
   } else {
     fprintf(stderr, ")\n");
   }
   reg.addr = 0;
+  mem.size = 0;
 #endif
 }
 

@@ -112,6 +112,16 @@ public:
   load_func(int32)
   load_func(int64)
 
+#ifndef RISCV_ENABLE_COMMITLOG
+# define WRITE_MEM(addr, value, size) ({})
+#else
+# define WRITE_MEM(addr, val, size) ({ \
+    proc->state.log_mem_write.addr = addr; \
+    proc->state.log_mem_write.value = val; \
+    proc->state.log_mem_write.size = size; \
+  })
+#endif
+
   // template for functions that store an aligned value to memory
   #define store_func(type) \
     void store_##type(reg_t addr, type##_t val) { \
@@ -130,7 +140,11 @@ public:
       } \
       else \
         store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&val); \
-    }
+      if (proc) { \
+        size_t size = sizeof(type##_t); \
+        WRITE_MEM(addr, val, size); \
+      } \
+  }
 
   // template for functions that perform an atomic memory operation
   #define amo_func(type) \
