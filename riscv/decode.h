@@ -166,12 +166,14 @@ private:
 #else
 # define WRITE_REG(reg, value) ({ \
     reg_t wdata = (value); /* value may have side effects */ \
-    STATE.log_reg_write = (commit_log_reg_t){(reg) << 1, {wdata, 0}}; \
+    if (p->get_log_commits()) \
+        STATE.log_reg_write = (commit_log_reg_t){(reg) << 1, {wdata, 0}}; \
     STATE.XPR.write(reg, wdata); \
   })
 # define WRITE_FREG(reg, value) ({ \
     freg_t wdata = freg(value); /* value may have side effects */ \
-    STATE.log_reg_write = (commit_log_reg_t){((reg) << 1) | 1, wdata}; \
+    if (p->get_log_commits()) \
+        STATE.log_reg_write = (commit_log_reg_t){((reg) << 1) | 1, wdata}; \
     DO_WRITE_FREG(reg, wdata); \
   })
 #endif

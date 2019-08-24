@@ -245,6 +245,17 @@ void processor_t::set_histogram(bool value)
 #endif
 }
 
+void processor_t::set_log_commits(bool value)
+{
+  log_commits_enabled = value;
+#ifndef RISCV_ENABLE_COMMITLOG
+  if (value) {
+    fprintf(stderr, "Commit logging support has not been properly enabled;");
+    fprintf(stderr, " please re-build the riscv-isa-sim project using \"configure --enable-commitlog\".\n");
+  }
+#endif
+}
+
 void processor_t::reset()
 {
   state.reset(max_isa);
