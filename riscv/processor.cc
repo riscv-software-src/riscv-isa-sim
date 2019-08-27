@@ -241,6 +241,7 @@ void processor_t::set_histogram(bool value)
   if (value) {
     fprintf(stderr, "PC Histogram support has not been properly enabled;");
     fprintf(stderr, " please re-build the riscv-isa-sim project using \"configure --enable-histogram\".\n");
+    abort();
   }
 #endif
 }
@@ -252,6 +253,7 @@ void processor_t::set_log_commits(bool value)
   if (value) {
     fprintf(stderr, "Commit logging support has not been properly enabled;");
     fprintf(stderr, " please re-build the riscv-isa-sim project using \"configure --enable-commitlog\".\n");
+    abort();
   }
 #endif
 }
