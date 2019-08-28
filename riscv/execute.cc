@@ -51,23 +51,21 @@ static void commit_log_print_insn(state_t* state, reg_t pc, insn_t insn)
   commit_log_print_value(xlen, 0, pc);
   fprintf(stderr, " (");
   commit_log_print_value(insn.length() * 8, 0, insn.bits());
-
+  fprintf(stderr, ")");
   if (reg.addr) {
     bool fp = reg.addr & 1;
     int rd = reg.addr >> 1;
     int size = fp ? flen : xlen;
-    fprintf(stderr, ") %c%2d ", fp ? 'f' : 'x', rd);
+    fprintf(stderr, " %c%2d ", fp ? 'f' : 'x', rd);
     commit_log_print_value(size, reg.data.v[1], reg.data.v[0]);
-    fprintf(stderr, "\n");
-  } else if (mem.size) {
-    fprintf(stderr, ") mem ");
+  }
+  if (mem.size) {
+    fprintf(stderr, " mem ");
     commit_log_print_value(xlen, 0, mem.addr);
     fprintf(stderr, " ");
     commit_log_print_value(mem.size << 3, 0, mem.value);
-    fprintf(stderr, "\n");
-  } else {
-    fprintf(stderr, ")\n");
   }
+  fprintf(stderr, "\n");
   reg.addr = 0;
   mem.size = 0;
 #endif
