@@ -20,6 +20,7 @@ riscv_hdrs = \
 	encoding.h \
 	cachesim.h \
 	memtracer.h \
+	mmio_plugin.h \
 	tracer.h \
 	extension.h \
 	rocc.h \
@@ -28,6 +29,8 @@ riscv_hdrs = \
 	debug_rom_defines.h \
 	remote_bitbang.h \
 	jtag_dtm.h \
+
+riscv_install_hdrs = mmio_plugin.h
 
 riscv_precompiled_hdrs = \
 	insn_template.h \

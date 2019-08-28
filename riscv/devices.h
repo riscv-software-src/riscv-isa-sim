@@ -2,6 +2,7 @@
 #define _RISCV_DEVICES_H
 
 #include "decode.h"
+#include "mmio_plugin.h"
 #include <cstdlib>
 #include <string>
 #include <map>
@@ -74,6 +75,19 @@ class clint_t : public abstract_device_t {
   std::vector<processor_t*>& procs;
   mtime_t mtime;
   std::vector<mtimecmp_t> mtimecmp;
+};
+
+class mmio_plugin_device_t : public abstract_device_t {
+ public:
+  mmio_plugin_device_t(const std::string& name, const std::string& args);
+  virtual ~mmio_plugin_device_t() override;
+
+  virtual bool load(reg_t addr, size_t len, uint8_t* bytes) override;
+  virtual bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
+
+ private:
+  mmio_plugin_t plugin;
+  void* user_data;
 };
 
 #endif
