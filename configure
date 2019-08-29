@@ -4364,6 +4364,8 @@ CFLAGS="-Wall -Wno-unused -g -O2"
 
 CXXFLAGS="-Wall -Wno-unused -g -O2 -std=c++11"
 
+LDFLAGS="-Wl,--export-dynamic"
+
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject list
