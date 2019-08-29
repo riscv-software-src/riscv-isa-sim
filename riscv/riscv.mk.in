@@ -342,6 +342,8 @@ riscv_insn_ext_b = \
 	bdepw \
 	bext \
 	bextw \
+	bfp \
+	bfpw \
 	bmatflip \
 	bmator \
 	bmatxor \
@@ -371,6 +373,10 @@ riscv_insn_ext_b = \
 	fsri \
 	fsriw \
 	fsrw \
+	gorc \
+	gorci \
+	gorciw \
+	gorcw \
 	grev \
 	grevi \
 	greviw \
