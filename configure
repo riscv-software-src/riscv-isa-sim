@@ -2202,6 +2202,46 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 
+# ===========================================================================
+#    https://www.gnu.org/software/autoconf-archive/ax_check_link_flag.html
+# ===========================================================================
+#
+# SYNOPSIS
+#
+#   AX_CHECK_LINK_FLAG(FLAG, [ACTION-SUCCESS], [ACTION-FAILURE], [EXTRA-FLAGS], [INPUT])
+#
+# DESCRIPTION
+#
+#   Check whether the given FLAG works with the linker or gives an error.
+#   (Warnings, however, are ignored)
+#
+#   ACTION-SUCCESS/ACTION-FAILURE are shell commands to execute on
+#   success/failure.
+#
+#   If EXTRA-FLAGS is defined, it is added to the linker's default flags
+#   when the check is done.  The check is thus made with the flags: "LDFLAGS
+#   EXTRA-FLAGS FLAG".  This can for example be used to force the linker to
+#   issue an error when a bad flag is given.
+#
+#   INPUT gives an alternative input source to AC_LINK_IFELSE.
+#
+#   NOTE: Implementation based on AX_CFLAGS_GCC_OPTION. Please keep this
+#   macro in sync with AX_CHECK_{PREPROC,COMPILE}_FLAG.
+#
+# LICENSE
+#
+#   Copyright (c) 2008 Guido U. Draheim <guidod@gmx.de>
+#   Copyright (c) 2011 Maarten Bosmans <mkbosmans@gmail.com>
+#
+#   Copying and distribution of this file, with or without modification, are
+#   permitted in any medium without royalty provided the copyright notice
+#   and this notice are preserved.  This file is offered as-is, without any
+#   warranty.
+
+#serial 6
+
+
+
 #-------------------------------------------------------------------------
 # Checks for programs
 #-------------------------------------------------------------------------
@@ -4364,7 +4404,41 @@ CFLAGS="-Wall -Wno-unused -g -O2"
 
 CXXFLAGS="-Wall -Wno-unused -g -O2 -std=c++11"
 
-LDFLAGS="-Wl,--export-dynamic"
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the linker accepts -Wl,--export-dynamic" >&5
+$as_echo_n "checking whether the linker accepts -Wl,--export-dynamic... " >&6; }
+if ${ax_cv_check_ldflags___Wl___export_dynamic+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+
+  ax_check_save_flags=$LDFLAGS
+  LDFLAGS="$LDFLAGS  -Wl,--export-dynamic"
+  cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+int
+main ()
+{
+
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ax_cv_check_ldflags___Wl___export_dynamic=yes
+else
+  ax_cv_check_ldflags___Wl___export_dynamic=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+  LDFLAGS=$ax_check_save_flags
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ax_cv_check_ldflags___Wl___export_dynamic" >&5
+$as_echo "$ax_cv_check_ldflags___Wl___export_dynamic" >&6; }
+if test "x$ax_cv_check_ldflags___Wl___export_dynamic" = xyes; then :
+  LDFLAGS="-Wl,--export-dynamic"
+else
+  :
+fi
 
 
 #-------------------------------------------------------------------------
