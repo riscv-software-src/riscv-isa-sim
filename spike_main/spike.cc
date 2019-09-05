@@ -31,7 +31,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
   fprintf(stderr, "  --varch=<name>        RISC-V Vector uArch string [default %s]\n", DEFAULT_VARCH);
 #ifdef RISCV_ENABLE_IMPL_CHECK
-  fprintf(stderr, "  --check-impl          Check vector instruction implementation\n");
+  fprintf(stderr, "  --check-impl          Check vector instruction implementation(\"any\", \'1905\", \"e27\")\n");
 #endif
   fprintf(stderr, "  --pc=<address>        Override ELF entry point\n");
   fprintf(stderr, "  --hartids=<a,b,...>   Explicitly specify hartids, default is 0,1,...\n");
@@ -226,7 +226,19 @@ int main(int argc, char** argv)
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
 #ifdef RISCV_ENABLE_IMPL_CHECK
-  parser.option(0, "check-impl", 1, [&](const char *s){g_check_impl = strtoul(s, NULL, 0);});
+  parser.option(0, "check-impl", 1, [&](const char *s)
+    {
+      if (strcmp(s, "any") == 0)
+        g_check_impl = 'a' << 16 | 'n' << 8 | 'y';
+      else if (strcmp(s, "1905") == 0)
+        g_check_impl = 1905;
+      else if (strcmp(s, "e27") == 0)
+        g_check_impl = 'e' << 16 | '2' << 8 | '7';
+      else {
+        fprintf(stderr, "unsupport check-impl value %s\n", s);
+        exit(1);
+      }
+    });
 #endif
   parser.option(0, "vector-mistrap", 0, [&](const char *s){g_vector_mistrap = true;});
   parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
