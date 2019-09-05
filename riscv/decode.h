@@ -343,12 +343,14 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 #ifdef RISCV_ENABLE_IMPL_CHECK
 #define VI_CHECK_IMPL \
   extern unsigned g_check_impl; \
+  extern bool g_has_unsupport; \
   { \
       auto val = P.VU.impl_table.find(local_op); \
       if (val != P.VU.impl_table.end()) { \
         auto val2 = val->second.find(g_check_impl); \
         if (val2 == val->second.end()) {\
           fprintf(stderr, "unsupported in %u\n", g_check_impl); \
+          g_has_unsupport = true; \
         }; \
       }; \
   };

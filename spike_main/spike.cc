@@ -105,6 +105,13 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
 
 #ifdef RISCV_ENABLE_IMPL_CHECK
 extern unsigned g_check_impl;
+extern bool g_has_unsupport;
+static void exit_with_unsupport(void)
+{
+    if (g_has_unsupport) {
+        _Exit(123);
+    }
+}
 #endif
 extern bool g_vector_mistrap;
 
@@ -254,6 +261,10 @@ int main(int argc, char** argv)
 
   if (!*argv1)
     help();
+
+#ifdef RISCV_ENABLE_IMPL_CHECK
+  atexit(exit_with_unsupport);
+#endif
 
   sim_t s(isa, varch, nprocs, halted, start_pc, mems, plugin_devices, htif_args,
       std::move(hartids), dm_config);

@@ -17,6 +17,7 @@
 
 #ifdef RISCV_ENABLE_IMPL_CHECK
 unsigned g_check_impl = 'a' << 16 | 'n' << 8 | 'y';
+bool g_has_unsupport = false;
 #endif
 bool g_vector_mistrap = false;
 
