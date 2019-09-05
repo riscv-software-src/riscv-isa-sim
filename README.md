@@ -128,7 +128,7 @@ To see the contents of memory with a virtual address (0 for core 0):
 
     : mem 0 2020
 
-You can advance by one instruction by pressing <enter>. You can also
+You can advance by one instruction by pressing the enter key. You can also
 execute until a desired equality is reached:
 
     : until pc 0 2020                   (stop when pc=2020)
