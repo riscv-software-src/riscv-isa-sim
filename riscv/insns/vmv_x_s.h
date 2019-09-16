@@ -9,10 +9,10 @@ if (!(rs1 >= 0 && rs1 < (P.VU.get_vlen()/sew))) {
 } else {
   switch(sew) {
   case e8:
-    WRITE_RD(P.VU.elt<uint8_t>(rs2_num, rs1));
+    WRITE_RD(P.VU.elt<int8_t>(rs2_num, rs1));
     break;
   case e16:
-    WRITE_RD(P.VU.elt<uint16_t>(rs2_num, rs1));
+    WRITE_RD(P.VU.elt<int16_t>(rs2_num, rs1));
     break;
   case e32:
     if (P.get_max_xlen() == 32)
