@@ -1673,6 +1673,7 @@ for (reg_t i = 0; i < vlmax; ++i) { \
 #define VI_VFP_LOOP_CMP(BODY) \
   VI_VFP_LOOP_CMP_BASE \
   BODY; \
+  set_fp_exceptions; \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_CMP_END \
 
