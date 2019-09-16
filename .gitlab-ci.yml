@@ -16,7 +16,7 @@ build:
     - ./configure --prefix=$(pwd)/bengal-team/spike-prefix/
     - make install -j
     - cd bengal-team
-    - git submodule update --init --recursive -j `nproc` --depth 1 riscv-binutils-gdb
+    - git submodule update --init --recursive -j `nproc` --depth 10 riscv-binutils-gdb
     - make toolchain-prefix/bin/riscv64-unknown-elf-gcc -j
     - git clone --single-branch --branch hankuanc --recurse-submodules -j `nproc` --depth 1 git@github.com:sifive/riscv-tests-internal.git
     - mkdir riscv-tests-internal/build
