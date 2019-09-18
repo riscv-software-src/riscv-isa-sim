@@ -32,7 +32,8 @@ sim_t::sim_t(const char* isa, const char* varch, size_t nprocs, bool halted,
              const debug_module_config_t &dm_config)
   : htif_t(args), mems(mems), plugin_devices(plugin_devices),
     procs(std::max(nprocs, size_t(1))), start_pc(start_pc), current_step(0),
-    current_proc(0), debug(false), histogram_enabled(false), dtb_enabled(true),
+    current_proc(0), debug(false), histogram_enabled(false),
+    log_commits_enabled(false), dtb_enabled(true),
     remote_bitbang(NULL), debug_module(this, dm_config)
 {
   signal(SIGINT, &handle_signal);
@@ -139,6 +140,14 @@ void sim_t::set_histogram(bool value)
   histogram_enabled = value;
   for (size_t i = 0; i < procs.size(); i++) {
     procs[i]->set_histogram(histogram_enabled);
+  }
+}
+
+void sim_t::set_log_commits(bool value)
+{
+  log_commits_enabled = value;
+  for (size_t i = 0; i < procs.size(); i++) {
+    procs[i]->set_log_commits(log_commits_enabled);
   }
 }
 

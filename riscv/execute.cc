@@ -77,7 +77,9 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
   commit_log_stash_privilege(p);
   reg_t npc = fetch.func(p, fetch.insn, pc);
   if (npc != PC_SERIALIZE_BEFORE) {
-    commit_log_print_insn(p->get_state(), pc, fetch.insn);
+    if (p->get_log_commits()) {
+      commit_log_print_insn(p->get_state(), pc, fetch.insn);
+    }
     p->update_histogram(pc);
   }
   return npc;

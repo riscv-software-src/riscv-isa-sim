@@ -290,6 +290,8 @@ public:
 
   void set_debug(bool value);
   void set_histogram(bool value);
+  void set_log_commits(bool value);
+  bool get_log_commits() { return log_commits_enabled; }
   void reset();
   void step(size_t n); // run for n cycles
   void set_csr(int which, reg_t val);
@@ -429,6 +431,7 @@ private:
   reg_t max_isa;
   std::string isa_string;
   bool histogram_enabled;
+  bool log_commits_enabled;
   bool halt_on_reset;
 
   std::vector<insn_desc_t> instructions;

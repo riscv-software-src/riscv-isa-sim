@@ -116,6 +116,7 @@ int main(int argc, char** argv)
   std::unique_ptr<dcache_sim_t> dc;
   std::unique_ptr<cache_sim_t> l2;
   bool log_cache = false;
+  bool log_commits = false;
   std::function<extension_t*()> extension;
   const char* isa = DEFAULT_ISA;
   const char* varch = DEFAULT_VARCH;
@@ -234,6 +235,7 @@ int main(int argc, char** argv)
       [&](const char* s){dm_config.support_abstract_csr_access = false;});
   parser.option(0, "dm-no-halt-groups", 0,
       [&](const char* s){dm_config.support_haltgroups = false;});
+  parser.option(0, "log-commits", 0, [&](const char* s){log_commits = true;});
 
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
@@ -273,6 +275,7 @@ int main(int argc, char** argv)
   s.set_debug(debug);
   s.set_log(log);
   s.set_histogram(histogram);
+  s.set_log_commits(log_commits);
 
   auto return_code = s.run();
 
