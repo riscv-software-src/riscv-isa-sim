@@ -477,9 +477,11 @@ static inline bool is_overlaped(const int astart, const int asize,
 
 #define VI_LOOP_REDUCTION_END(x) \
   } \
-  if (vl > 0 && TAIL_ZEROING) { \
+  if (vl > 0) { \
     vd_0_des = vd_0_res; \
-    TAIL_ZERO_REDUCTION(x); \
+    if (TAIL_ZEROING) { \
+      TAIL_ZERO_REDUCTION(x); \
+    } \
   } \
   P.VU.vstart = 0; 
 
@@ -1583,10 +1585,10 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   } \
   P.VU.vstart = 0; \
   set_fp_exceptions; \
-  if (vl > 0 && TAIL_ZEROING) { \
+  if (vl > 0) { \
     P.VU.elt<type_sew_t<x>::type>(rd_num, 0) = vd_0.v; \
-    for (reg_t i = 1; i < (P.VU.VLEN / x); ++i) { \
-       P.VU.elt<type_sew_t<x>::type>(rd_num, i) = 0; \
+    if (TAIL_ZEROING) { \
+      TAIL_ZERO_REDUCTION(x); \
     } \
   }
 
