@@ -493,10 +493,12 @@ static inline bool is_overlaped(const int astart, const int asize,
 
 #define VI_LOOP_REDUCTION_END(x) \
   } \
-  if (vl > 0 && TAIL_ZEROING) { \
+  if (vl > 0) { \
     vd_0_des = vd_0_res; \
-    uint8_t *tail = (uint8_t *)&P.VU.elt<type_sew_t<x>::type>(rd_num, 1); \
-    memset(tail, 0, (P.VU.get_vlen() - x) >> 3); \
+    if (TAIL_ZEROING) { \
+        uint8_t *tail = (uint8_t *)&P.VU.elt<type_sew_t<x>::type>(rd_num, 1); \
+        memset(tail, 0, (P.VU.get_vlen() - x) >> 3); \
+    } \
   } \
   P.VU.vstart = 0; 
 
@@ -1603,10 +1605,12 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   } \
   P.VU.vstart = 0; \
   set_fp_exceptions; \
-  if (vl > 0 && TAIL_ZEROING) { \
+  if (vl > 0) { \
     P.VU.elt<type_sew_t<x>::type>(rd_num, 0) = vd_0.v; \
-    for (reg_t i = 1; i < (P.VU.VLEN / x); ++i) { \
-       P.VU.elt<type_sew_t<x>::type>(rd_num, i) = 0; \
+    if (TAIL_ZEROING) { \
+        for (reg_t i = 1; i < (P.VU.VLEN / x); ++i) { \
+           P.VU.elt<type_sew_t<x>::type>(rd_num, i) = 0; \
+        } \
     } \
   }
 
