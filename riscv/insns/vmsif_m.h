@@ -30,5 +30,4 @@ for (reg_t i = P.VU.vstart ; i < vl; ++i) {
   }
 }
 
-VI_TAIL_ZERO_MASK(rd_num);
 P.VU.vstart = 0;

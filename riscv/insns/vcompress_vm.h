@@ -34,7 +34,7 @@ for (reg_t i = P.VU.vstart ; i < vl; ++i) {
   }
 }
 
-if (vl > 0 && TAIL_ZEROING) {
+if (vl > 0 && P.VU.TZ) {
   uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, pos * ((sew >> 3) * 1));
   memset(tail, 0, (P.VU.vlmax - pos) * ((sew >> 3) * 1));
 }

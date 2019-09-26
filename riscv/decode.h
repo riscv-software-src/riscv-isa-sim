@@ -65,29 +65,6 @@ const int NCSR = 4096;
 #define MAX_INSN_LENGTH 8
 #define PC_ALIGN 2
 
-#ifndef TAIL_ZEROING
-  #define TAIL_ZEROING true
-#else
-  #define TAIL_ZEROING false
-#endif
-
-#ifdef WORDS_BIGENDIAN
-  // Elements are stored in opposite order, see comment in processor.h
-  #define TAIL_ZERO(x) \
-    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * (x) - 1); \
-    memset(tail - (P.VU.vlmax - vl) * (x), 0, (P.VU.vlmax - vl) * (x));
-  #define TAIL_ZERO_REDUCTION(x) \
-    uint8_t *tail = (uint8_t *)&P.VU.elt<type_sew_t<x>::type>(rd_num, 0); \
-    memset(tail - ((P.VU.get_vlen() - x) >> 3), 0, (P.VU.get_vlen() - x) >> 3);
-#else
-  #define TAIL_ZERO(x) \
-    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * (x)); \
-    memset(tail, 0, (P.VU.vlmax - vl) * (x));
-  #define TAIL_ZERO_REDUCTION(x) \
-    uint8_t *tail = (uint8_t *)&P.VU.elt<type_sew_t<x>::type>(rd_num, 1); \
-    memset(tail, 0, (P.VU.get_vlen() - x) >> 3);
-#endif
-
 typedef uint64_t insn_bits_t;
 class insn_t
 {
@@ -368,9 +345,7 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
   }
 
 #define VI_ELEMENT_SKIP(inx) \
-  if (inx >= vl && TAIL_ZEROING) { \
-    is_valid = false; \
-  } else if (inx >= vl && !TAIL_ZEROING) { \
+  if (inx >= vl) { \
     continue; \
   } else if (inx < P.VU.vstart) { \
     continue; \
@@ -436,52 +411,22 @@ static inline bool is_overlaped(const int astart, const int asize,
   reg_t rs2_num = insn.rs2(); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ 
 
-#define VI_TAIL_ZERO(elm) \
-  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING) { \
-    TAIL_ZERO((sew >> 3) * elm); \
-  }
-
-#define VI_TAIL_ZERO_MASK(dst) \
-  if (vl != 0 && TAIL_ZEROING){ \
-    for (reg_t i=vl; i<P.VU.vlmax; ++i){ \
-      const int mlen = P.VU.vmlen; \
-      const int midx = (mlen * i) / 64; \
-      const int mpos = (mlen * i) % 64; \
-      uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
-      uint64_t &vdi = P.VU.elt<uint64_t>(dst, midx); \
-      vdi = (vdi & ~mmask);\
-    }\
-  }\
-
 #define VI_LOOP_BASE \
     VI_GENERAL_LOOP_BASE \
     VI_LOOP_ELEMENT_SKIP();
 
 #define VI_LOOP_END \
   } \
-  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
-    TAIL_ZERO((sew >> 3) * 1); \
-  }\
-  P.VU.vstart = 0;
-
-#define VI_LOOP_END_NO_TAIL_ZERO \
-  } \
   P.VU.vstart = 0;
 
 #define VI_LOOP_WIDEN_END \
   } \
-  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
-    TAIL_ZERO((sew >> 3) * 2); \
-  }\
   P.VU.vstart = 0;
 
 #define VI_LOOP_REDUCTION_END(x) \
   } \
   if (vl > 0) { \
     vd_0_des = vd_0_res; \
-    if (TAIL_ZEROING) { \
-      TAIL_ZERO_REDUCTION(x); \
-    } \
   } \
   P.VU.vstart = 0; 
 
@@ -502,7 +447,6 @@ static inline bool is_overlaped(const int astart, const int asize,
 #define VI_LOOP_CMP_END \
     vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
   } \
-  VI_TAIL_ZERO_MASK(rd_num); \
   P.VU.vstart = 0;
 
 #define VI_LOOP_MASK(op) \
@@ -517,17 +461,6 @@ static inline bool is_overlaped(const int astart, const int asize,
     uint64_t vs1 = P.VU.elt<uint64_t>(insn.rs1(), midx); \
     uint64_t &res = P.VU.elt<uint64_t>(insn.rd(), midx); \
     res = (res & ~mmask) | ((op) & (1ULL << mpos)); \
-  } \
-  \
-  if (TAIL_ZEROING) {\
-  for (reg_t i = vl; i < P.VU.vlmax && i > 0; ++i) { \
-    int mlen = P.VU.vmlen; \
-    int midx = (mlen * i) / 64; \
-    int mpos = (mlen * i) % 64; \
-    uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
-    uint64_t &res = P.VU.elt<uint64_t>(insn.rd(), midx); \
-    res = (res & ~mmask); \
-    } \
   } \
   P.VU.vstart = 0;
 
@@ -1307,7 +1240,6 @@ VI_LOOP_END
       BODY; \
     } \
   } \
-  VI_TAIL_ZERO_MASK(rd_num);
 
 #define VI_XI_LOOP_CARRY(BODY) \
   VI_LOOP_BASE \
@@ -1325,7 +1257,6 @@ VI_LOOP_END
       BODY; \
     } \
   } \
-  VI_TAIL_ZERO_MASK(rd_num);
 
 // average loop
 #define VI_VVX_LOOP_AVG(opd, op) \
@@ -1409,11 +1340,8 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   const reg_t vlmax = P.VU.vlmax; \
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
-    bool is_valid = true; \
     VI_STRIP(i) \
     VI_ELEMENT_SKIP(i); \
-    if (!is_valid) \
-      continue; \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       st_width##_t val = 0; \
       switch (P.VU.vsew) { \
@@ -1445,11 +1373,10 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   const reg_t vlmax = P.VU.vlmax; \
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
-    bool is_valid = true; \
     VI_ELEMENT_SKIP(i); \
     VI_STRIP(i); \
     for (reg_t fn = 0; fn < nf; ++fn) { \
-      ld_width##_t val = is_valid ? MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte) : 0; \
+      ld_width##_t val = MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte); \
       if (vd + fn >= NVPR){ \
          P.VU.vstart = vreg_inx;\
          require(false); \
@@ -1485,7 +1412,6 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   const reg_t vlmax = P.VU.vlmax; \
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
-    bool is_valid = true; \
     VI_STRIP(i); \
     VI_ELEMENT_SKIP(i); \
     \
@@ -1494,20 +1420,20 @@ for (reg_t i = 0; i < vlmax; ++i) { \
       \
       switch (sew) { \
       case e8: \
-        p->VU.elt<uint8_t>(rd_num + fn * vlmul, vreg_inx) = is_valid ? val : 0; \
+        p->VU.elt<uint8_t>(rd_num + fn * vlmul, vreg_inx) = val; \
         break; \
       case e16: \
-        p->VU.elt<uint16_t>(rd_num + fn * vlmul, vreg_inx) = is_valid ? val : 0; \
+        p->VU.elt<uint16_t>(rd_num + fn * vlmul, vreg_inx) = val; \
         break; \
       case e32: \
-        p->VU.elt<uint32_t>(rd_num + fn * vlmul, vreg_inx) = is_valid ? val : 0; \
+        p->VU.elt<uint32_t>(rd_num + fn * vlmul, vreg_inx) = val; \
         break; \
       case e64: \
-        p->VU.elt<uint64_t>(rd_num + fn * vlmul, vreg_inx) = is_valid ? val : 0; \
+        p->VU.elt<uint64_t>(rd_num + fn * vlmul, vreg_inx) = val; \
         break; \
       } \
        \
-      if (val == 0 && is_valid) { \
+      if (val == 0) { \
         p->VU.vl = i; \
         early_stop = true; \
         break; \
@@ -1568,16 +1494,10 @@ for (reg_t i = 0; i < vlmax; ++i) { \
 
 #define VI_VFP_LOOP_END \
   } \
-  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
-    TAIL_ZERO((P.VU.vsew >> 3) * 1); \
-  }\
   P.VU.vstart = 0; \
 
 #define VI_VFP_LOOP_WIDE_END \
   } \
-  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
-    TAIL_ZERO((P.VU.vsew >> 3) * 2); \
-  }\
   P.VU.vstart = 0; \
   set_fp_exceptions;
 
@@ -1587,9 +1507,6 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   set_fp_exceptions; \
   if (vl > 0) { \
     P.VU.elt<type_sew_t<x>::type>(rd_num, 0) = vd_0.v; \
-    if (TAIL_ZEROING) { \
-      TAIL_ZERO_REDUCTION(x); \
-    } \
   }
 
 #define VI_VFP_LOOP_CMP_END \
@@ -1605,16 +1522,6 @@ for (reg_t i = 0; i < vlmax; ++i) { \
       break; \
     }; \
   } \
-  if (vl != 0 && TAIL_ZEROING){ \
-    for (reg_t i=vl; i<P.VU.vlmax; ++i){ \
-      const int mlen = P.VU.vmlen; \
-      const int midx = (mlen * i) / 64; \
-      const int mpos = (mlen * i) % 64; \
-      uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
-      uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx); \
-      vdi = (vdi & ~mmask);\
-    }\
-  }\
   P.VU.vstart = 0; \
   set_fp_exceptions;
 

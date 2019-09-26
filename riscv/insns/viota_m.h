@@ -49,4 +49,3 @@ for (reg_t i = 0; i < vl; ++i) {
   }
 }
 
-VI_TAIL_ZERO(1);
