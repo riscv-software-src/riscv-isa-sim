@@ -24,7 +24,7 @@ if (vl > 0) {
     break;
   }
 
-  if (TAIL_ZEROING) {
+  if (P.VU.TZ) {
     const reg_t max_len = P.VU.VLEN / sew;
     for (reg_t i = 1; i < max_len; ++i) {
       switch(sew) {

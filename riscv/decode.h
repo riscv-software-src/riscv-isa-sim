@@ -69,12 +69,6 @@ const int NCSR = 4096;
 #define MAX_INSN_LENGTH 8
 #define PC_ALIGN 2
 
-#ifndef TAIL_ZEROING
-  #define TAIL_ZEROING true
-#else
-  #define TAIL_ZEROING false
-#endif
-
 typedef uint64_t insn_bits_t;
 class insn_t
 {
@@ -376,9 +370,9 @@ extern bool g_vector_mistrap;
   }
 
 #define VI_ELEMENT_SKIP(inx) \
-  if (inx >= vl && TAIL_ZEROING) { \
+  if (inx >= vl && P.VU.TZ) { \
     is_valid = false; \
-  } else if (inx >= vl && !TAIL_ZEROING) { \
+  } else if (inx >= vl && !P.VU.TZ) { \
     continue; \
   } else if (inx < P.VU.vstart) { \
     continue; \
@@ -450,13 +444,13 @@ static inline bool is_overlaped(const int astart, const int asize,
   for (reg_t i=P.VU.vstart; i<vl; ++i){ 
 
 #define VI_TAIL_ZERO(elm) \
-  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING) { \
+  if (vl != 0 && vl < P.VU.vlmax && P.VU.TZ) { \
     uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * elm)); \
     memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * elm)); \
   }
 
 #define VI_TAIL_ZERO_MASK(dst) \
-  if (vl != 0 && TAIL_ZEROING){ \
+  if (vl != 0 && P.VU.TZ){ \
     for (reg_t i=vl; i<P.VU.vlmax; ++i){ \
       const int mlen = P.VU.vmlen; \
       const int midx = (mlen * i) / 64; \
@@ -473,7 +467,7 @@ static inline bool is_overlaped(const int astart, const int asize,
 
 #define VI_LOOP_END \
   } \
-  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
+  if (vl != 0 && vl < P.VU.vlmax && P.VU.TZ){ \
     uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 1)); \
     memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 1)); \
   }\
@@ -485,7 +479,7 @@ static inline bool is_overlaped(const int astart, const int asize,
 
 #define VI_LOOP_WIDEN_END \
   } \
-  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
+  if (vl != 0 && vl < P.VU.vlmax && P.VU.TZ){ \
     uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 2)); \
     memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 2)); \
   }\
@@ -495,7 +489,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   } \
   if (vl > 0) { \
     vd_0_des = vd_0_res; \
-    if (TAIL_ZEROING) { \
+    if (P.VU.TZ) { \
         uint8_t *tail = (uint8_t *)&P.VU.elt<type_sew_t<x>::type>(rd_num, 1); \
         memset(tail, 0, (P.VU.get_vlen() - x) >> 3); \
     } \
@@ -536,7 +530,7 @@ static inline bool is_overlaped(const int astart, const int asize,
     res = (res & ~mmask) | ((op) & (1ULL << mpos)); \
   } \
   \
-  if (TAIL_ZEROING) {\
+  if (P.VU.TZ) {\
   for (reg_t i = vl; i < P.VU.vlmax && i > 0; ++i) { \
     int mlen = P.VU.vmlen; \
     int midx = (mlen * i) / 64; \
@@ -1586,7 +1580,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_VFP_LOOP_END \
   } \
-  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
+  if (vl != 0 && vl < P.VU.vlmax && P.VU.TZ){ \
     uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((P.VU.vsew >> 3) * 1)); \
     memset(tail, 0, (P.VU.vlmax - vl) * ((P.VU.vsew >> 3) * 1)); \
   }\
@@ -1594,7 +1588,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_VFP_LOOP_WIDE_END \
   } \
-  if (vl != 0 && vl < P.VU.vlmax && TAIL_ZEROING){ \
+  if (vl != 0 && vl < P.VU.vlmax && P.VU.TZ){ \
     uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((P.VU.vsew >> 3) * 2)); \
     memset(tail, 0, (P.VU.vlmax - vl) * ((P.VU.vsew >> 3) * 2)); \
   }\
@@ -1607,7 +1601,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   set_fp_exceptions; \
   if (vl > 0) { \
     P.VU.elt<type_sew_t<x>::type>(rd_num, 0) = vd_0.v; \
-    if (TAIL_ZEROING) { \
+    if (P.VU.TZ) { \
         for (reg_t i = 1; i < (P.VU.VLEN / x); ++i) { \
            P.VU.elt<type_sew_t<x>::type>(rd_num, i) = 0; \
         } \
@@ -1627,7 +1621,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
       break; \
     }; \
   } \
-  if (vl != 0 && TAIL_ZEROING){ \
+  if (vl != 0 && P.VU.TZ){ \
     for (reg_t i=vl; i<P.VU.vlmax; ++i){ \
       const int mlen = P.VU.vmlen; \
       const int midx = (mlen * i) / 64; \
