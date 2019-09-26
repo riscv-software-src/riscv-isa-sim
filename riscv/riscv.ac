@@ -7,10 +7,10 @@ AC_ARG_WITH(isa,
   AC_DEFINE_UNQUOTED([DEFAULT_ISA], "RV64IMAFDC", [Default value for --isa switch]))
 
 AC_ARG_WITH(varch,
-	[AS_HELP_STRING([--with-varch=v128:e32:s128],
+	[AS_HELP_STRING([--with-varch=v128:e32:s128:t0],
 		[Sets the default vector config])],
   AC_DEFINE_UNQUOTED([DEFAULT_VARCH], "$withval", [Default value for --varch switch]),
-  AC_DEFINE_UNQUOTED([DEFAULT_VARCH], "v128:e32:s128", [Default value for --varch switch]))
+  AC_DEFINE_UNQUOTED([DEFAULT_VARCH], "v128:e32:s128:t0", [Default value for --varch switch]))
 
 
 AC_SEARCH_LIBS([dlopen], [dl dld], [], [

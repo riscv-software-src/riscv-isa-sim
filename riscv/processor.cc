@@ -91,6 +91,7 @@ void processor_t::parse_varch_string(const char* s)
   int vlen = 0;
   int elen = 0;
   int slen = 0;
+  bool tz = false;
   std::string token;
   while (!str.empty() && token != str) {
     pos = str.find(delimiter);
@@ -105,6 +106,8 @@ void processor_t::parse_varch_string(const char* s)
       elen = parse_varch(token);
     }else if (token[0] == 's'){
       slen = parse_varch(token);
+    }else if (token[0] == 't'){
+      tz = strtol(&token[1], NULL, 10) == 1;
     }else{
       bad_varch_string(str.c_str());
     }
@@ -118,6 +121,7 @@ void processor_t::parse_varch_string(const char* s)
   VU.VLEN = vlen;
   VU.ELEN = elen;
   VU.SLEN = slen;
+  VU.TZ = tz;
 }
 
 void processor_t::parse_isa_string(const char* str)
