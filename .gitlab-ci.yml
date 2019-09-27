@@ -14,7 +14,7 @@ build:
     - chmod 644 ~/.ssh/known_hosts
     - git clone --depth 1 --single-branch --no-tags git@github.com:sifive/bengal-team.git
     - ./configure --prefix=$(pwd)/bengal-team/spike-prefix/
-    - make CPPFLAGS=-DTAIL_ZEROING install -j
+    - make install -j
     - cd bengal-team
     - git submodule update --init --recursive -j `nproc` riscv-binutils-gdb
     - make toolchain-prefix/bin/riscv64-unknown-elf-gcc -j
