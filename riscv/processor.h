@@ -398,7 +398,7 @@ public:
           break;
         case MATCH_NAPOT:
           {
-            reg_t mask = ~((1 << cto(state.tdata2[i])) - 1);
+            reg_t mask = ~((1 << (cto(state.tdata2[i])+1)) - 1);
             if ((value & mask) != (state.tdata2[i] & mask))
               continue;
           }
