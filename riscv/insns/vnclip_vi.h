@@ -4,14 +4,17 @@ int64_t int_max = (1 << (P.VU.vsew - 1)) - 1;
 int64_t int_min = -(1 << (P.VU.vsew - 1));
 VI_VVXI_LOOP_NARROW
 ({
-
   int64_t result = vs2;
-// rounding
-  INT_ROUNDING(result, xrm, sew);
+  uint64_t unsigned_shift_amount = (uint64_t)(zimm5 & ((sew * 2) - 1));
+  // The immediate form supports shift amounts up to 31 only.
+  unsigned_shift_amount = min(unsigned_shift_amount, 31);
 
-  result = vsext(result, sew * 2) >> (zimm5 & ((sew * 2) < 32? (sew * 2) - 1: 31));
+  // rounding
+  INT_ROUNDING(result, xrm, unsigned_shift_amount);
 
-// saturation
+  result = (vsext(result, sew * 2)) >> unsigned_shift_amount;
+
+  // saturation
   if (result < int_min) {
     result = int_min;
     P.VU.vxsat = 1;
