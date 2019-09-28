@@ -3,20 +3,15 @@ VRM xrm = P.VU.get_vround_mode();
 uint64_t int_max = ~(-1ll << P.VU.vsew);
 VI_VVXI_LOOP_NARROW
 ({
+  uint128_t result = vs2_u;
+  unsigned shift = vs1 & ((sew * 2) - 1);
 
-  uint64_t result = vs2_u;
+  // rounding
+  INT_ROUNDING(result, xrm, shift);
 
-// rounding
-  INT_ROUNDING(result, xrm, sew);
+  result = result >> shift;
 
-// unsigned shifting to rs1
-  uint64_t unsigned_shift_amount = (uint64_t)(vs1 & ((sew * 2) - 1));
-  if (unsigned_shift_amount >= (2 * sew)) {
-    result = 0;
-  } else {
-    result = vzext(result, sew * 2) >> unsigned_shift_amount;
-  }
-// saturation
+  // saturation
   if (result & (uint64_t)(-1ll << sew)) {
     result = int_max;
     P.VU.vxsat = 1;
