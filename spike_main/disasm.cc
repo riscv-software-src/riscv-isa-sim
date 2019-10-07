@@ -1149,7 +1149,7 @@ const disasm_insn_t* disassembler_t::lookup(insn_t insn) const
   return NULL;
 }
 
-void disassembler_t::add_insn(disasm_insn_t* insn)
+void NOINLINE disassembler_t::add_insn(disasm_insn_t* insn)
 {
   size_t idx = HASH_SIZE;
   if (insn->get_mask() % HASH_SIZE == HASH_SIZE - 1)
