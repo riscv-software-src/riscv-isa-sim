@@ -401,6 +401,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   require(P.VU.vlmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
   require(insn.rd() + P.VU.vlmul * 2 <= 32); \
+  require((insn.rd() & (P.VU.vlmul * 2 - 1)) == 0); \
   if (insn.v_vm() == 0) \
     require(insn.rd() != 0);
 
