@@ -12,7 +12,7 @@ VI_VVXI_LOOP_NARROW
   // rounding
   INT_ROUNDING(result, xrm, unsigned_shift_amount);
 
-  result = (vsext(result, sew * 2)) >> unsigned_shift_amount;
+  result = result >> unsigned_shift_amount;
 
   // saturation
   if (result < int_min) {

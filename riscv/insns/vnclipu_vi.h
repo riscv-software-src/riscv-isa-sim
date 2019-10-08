@@ -12,7 +12,7 @@ VI_VVXI_LOOP_NARROW
   INT_ROUNDING(result, xrm, unsigned_shift_amount);
 
   // unsigned shifting to rs1
-  result = (vzext(result, sew * 2)) >> unsigned_shift_amount;
+  result = result >> unsigned_shift_amount;
 
   // saturation
   if (result & (uint64_t)(-1ll << sew)) {
