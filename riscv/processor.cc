@@ -208,7 +208,7 @@ void vectorUnit_t::reset(){
   set_vl(-1, 0, -1); // default to illegal configuration
 }
 
-reg_t vectorUnit_t::set_vl(uint64_t regId, reg_t reqVL, reg_t newType){
+reg_t vectorUnit_t::set_vl(int regId, reg_t reqVL, reg_t newType){
   if (vtype != newType){
     vtype = newType;
     vsew = 1 << (BITS(newType, 4, 2) + 3);
@@ -218,11 +218,24 @@ reg_t vectorUnit_t::set_vl(uint64_t regId, reg_t reqVL, reg_t newType){
     vmlen = vsew / vlmul;
     reg_mask = (NVPR-1) & ~(vlmul-1);
 
-    vill = vsew > e64 || vediv != 1 || (newType >> 7) != 0;
-    if (vill)
+    vill = vsew > ELEN || vediv != 1 || (newType >> 7) != 0;
+    if (vill) {
       vlmax = 0;
+      vtype = UINT64_MAX << (p->get_xlen() - 1);
+    }
   }
-  vl = reqVL <= vlmax && regId != 0 ? reqVL : vlmax;
+
+  // set vl
+  if (vlmax == 0) {
+    vl = 0;
+  } else if (regId == 0) {
+    vl = vl > vlmax ? vlmax : vl;
+  } else if (regId == -1) {
+    vl = vlmax;
+  } else if (regId >= 0) {
+    vl = reqVL > vlmax ? vlmax : reqVL;
+  }
+
   vstart = 0;
   setvl_count++;
   return vl;
