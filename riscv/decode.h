@@ -561,23 +561,28 @@ static inline bool is_overlaped(const int astart, const int asize,
         result += ((uint64_t)1 << ((gb) - 1));\
         break;\
       case VRM::RNE:\
-        if ((result & ((uint64_t)0x3 << ((gb) - 1))) == 0x1){\
-            result -= ((uint64_t)1 << ((gb) - 1));\
-            }else if ((result & ((uint64_t)0x3 << ((gb) - 1))) == 0x3){\
-            result += ((uint64_t)1 << ((gb) - 1));\
-        }\
+        if (gb > 1) { \
+            if ((result & (1ul << ((gb) - 1))) != 0 && \
+                ((result & ((1ul << ((gb) - 1)) - 1)) != 0 || \
+                (result & (1ul << (gb))) != 0 )) \
+                result += ((uint64_t)1ul << ((gb))); \
+        } else { \
+            if ((result & (1ul << ((gb) - 1))) != 0 && \
+                (result & (1ul << (gb))) != 0 ) \
+                result += ((uint64_t)1ul << ((gb))); \
+        } \
         break;\
       case VRM::RDN:\
         result = (result >> ((gb) - 1)) << ((gb) - 1);\
         break;\
       case VRM::ROD:\
-        result |= ((uint64_t)1ul << (gb)); \
+        if ((result & (1ul << (gb))) == 0 && \
+            (result & ((1ul << (gb)) - 1)) != 0) \
+            result += ((uint64_t)1ul << ((gb))); \
         break;\
       case VRM::INVALID_RM:\
         assert(true);\
     } \
-  } else if (gb == 0 && xrm == VRM::ROD) { \
-    result |= 1ul; \
   }
 
 
