@@ -1274,7 +1274,6 @@ VI_LOOP_END
 
 // wide reduction loop - unsigned
 #define VI_ULOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
-  VI_CHECK_DSS(false); \
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \

@@ -221,11 +221,13 @@ reg_t vectorUnit_t::set_vl(uint64_t regId, reg_t reqVL, reg_t newType){
     vmlen = vsew / vlmul;
     reg_mask = (NVPR-1) & ~(vlmul-1);
 
-    vill = vsew > e64 || vediv != 1 || (newType >> 7) != 0;
-    if (vill)
+    vill = vsew > ELEN || vediv != 1 || (newType >> 7) != 0;
+    if (vill) {
       vlmax = 0;
+      vtype = UINT64_MAX << (p->get_xlen() - 1);
+    }
   }
-  vl = reqVL <= vlmax && regId != 0 ? reqVL : vlmax;
+  vl = vlmax == 0 ? vlmax : (reqVL <= vlmax && regId != 0) ? reqVL : vlmax;
   vstart = 0;
   setvl_count++;
   return vl;
