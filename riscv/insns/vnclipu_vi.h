@@ -6,7 +6,7 @@ VI_VVXI_LOOP_NARROW
   uint64_t result = vs2_u;
   uint64_t unsigned_shift_amount = (uint64_t)(zimm5 & ((sew * 2) - 1));
   // The immediate form supports shift amounts up to 31 only.
-  unsigned_shift_amount = std::min(unsigned_shift_amount, 31ul);
+  unsigned_shift_amount = std::min(unsigned_shift_amount, 31ull);
 
   // rounding
   INT_ROUNDING(result, xrm, unsigned_shift_amount);
