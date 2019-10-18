@@ -111,9 +111,9 @@ RUNFLAGS      := @RUNFLAGS@
 
 MKINSTALLDIRS := $(scripts_dir)/mk-install-dirs.sh
 INSTALL       := @INSTALL@
-INSTALL_HDR   := $(INSTALL) -m 444
+INSTALL_HDR   := $(INSTALL) -m 644
 INSTALL_LIB   := $(INSTALL) -m 644
-INSTALL_EXE   := $(INSTALL) -m 555
+INSTALL_EXE   := $(INSTALL) -m 755
 STOW          := @stow@
 
 # Tests
