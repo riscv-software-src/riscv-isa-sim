@@ -590,8 +590,6 @@ riscv_insn_ext_v_alu_fp = \
 	vmflt_vv \
 	vmfne_vf \
 	vmfne_vv \
-	vmford_vf \
-	vmford_vv \
 
 riscv_insn_ext_v_ldst = \
 	vlb_v \
