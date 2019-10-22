@@ -108,7 +108,7 @@ void sim_t::interactive()
       else
         fprintf(stderr, "Unknown command %s\n", cmd.c_str());
     }
-    catch(trap_t t) {}
+    catch(trap_t& t) {}
   }
   ctrlc_pressed = false;
 }
@@ -411,7 +411,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
       if (ctrlc_pressed)
         break;
     }
-    catch (trap_t t) {}
+    catch (trap_t& t) {}
 
     set_procs_debug(noisy);
     step(1);
