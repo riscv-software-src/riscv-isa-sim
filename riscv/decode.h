@@ -1438,23 +1438,23 @@ for (reg_t i = 0; i < vlmax; ++i) { \
     VI_ELEMENT_SKIP(i); \
     VI_STRIP(i); \
     for (reg_t fn = 0; fn < nf; ++fn) { \
-      ld_width##_t val = MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte); \
+      ld_width##_t val = is_valid ? MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte) : 0; \
       if (vd + fn >= NVPR){ \
          P.VU.vstart = vreg_inx;\
          require(false); \
       } \
       switch(P.VU.vsew){ \
         case e8: \
-          P.VU.elt<uint8_t>(vd + fn * vlmul, vreg_inx) = is_valid ? val : 0; \
+          P.VU.elt<uint8_t>(vd + fn * vlmul, vreg_inx) = val; \
           break; \
         case e16: \
-          P.VU.elt<uint16_t>(vd + fn * vlmul, vreg_inx) = is_valid ? val : 0; \
+          P.VU.elt<uint16_t>(vd + fn * vlmul, vreg_inx) = val; \
           break; \
         case e32: \
-          P.VU.elt<uint32_t>(vd + fn * vlmul, vreg_inx) = is_valid ? val : 0; \
+          P.VU.elt<uint32_t>(vd + fn * vlmul, vreg_inx) = val; \
           break; \
         default: \
-          P.VU.elt<uint64_t>(vd + fn * vlmul, vreg_inx) = is_valid ? val : 0; \
+          P.VU.elt<uint64_t>(vd + fn * vlmul, vreg_inx) = val; \
       } \
     } \
   } \
