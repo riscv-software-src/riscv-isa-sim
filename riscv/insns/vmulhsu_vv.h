@@ -1,4 +1,5 @@
 // vmulhsu.vv vd, vs2, vs1
+VI_CHECK_SSS(true);
 VI_LOOP_BASE
 switch(sew) {
 case e8: {

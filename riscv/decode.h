@@ -408,10 +408,6 @@ static inline bool is_overlaped(const int astart, const int asize,
   if (insn.v_vm() == 0) \
     require(insn.rd() != 0);
 
-#define VI_CHECK_VREG_MASK_LMUL \
-  if (insn.v_vm() == 0 && P.VU.vlmul >= 2) \
-    require(insn.rd() != 0);
-
 #define VI_CHECK_VREG_OVERLAP(v1, v2) \
   require(!is_overlaped(v1, P.VU.vlmul, v2, P.VU.vlmul));
 
@@ -427,6 +423,16 @@ static inline bool is_overlaped(const int astart, const int asize,
     } \
   }
 
+#define VI_CHECK_SSS(is_vs1) \
+  if (P.VU.vlmul > 1) { \
+    require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
+    require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
+    if (is_vs1) { \
+      require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
+    } \
+    if (insn.v_vm() == 0) \
+      require(insn.rd() != 0); \
+  }
 
 #define VI_CHECK_SD \
   require(!is_overlaped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul * 2));
@@ -473,7 +479,6 @@ static inline bool is_overlaped(const int astart, const int asize,
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  VI_CHECK_VREG_MASK_LMUL; \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ 
 
 #define VI_TAIL_ZERO(elm) \
@@ -500,10 +505,7 @@ static inline bool is_overlaped(const int astart, const int asize,
 
 #define VI_LOOP_END \
   } \
-  if (vl != 0 && vl < P.VU.vlmax && P.VU.TZ){ \
-    uint8_t *tail = &P.VU.elt<uint8_t>(rd_num, vl * ((sew >> 3) * 1)); \
-    memset(tail, 0, (P.VU.vlmax - vl) * ((sew >> 3) * 1)); \
-  }\
+  VI_TAIL_ZERO(1) \
   P.VU.vstart = 0;
 
 #define VI_LOOP_END_NO_TAIL_ZERO \
@@ -890,6 +892,7 @@ static inline bool is_overlaped(const int astart, const int asize,
 
 // genearl VXI signed/unsgied loop
 #define VI_VV_ULOOP(BODY) \
+  VI_CHECK_SSS(true) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VV_U_PARAMS(e8); \
@@ -907,6 +910,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   VI_LOOP_END 
 
 #define VI_VV_LOOP(BODY) \
+  VI_CHECK_SSS(true) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VV_PARAMS(e8); \
@@ -924,6 +928,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   VI_LOOP_END 
 
 #define VI_VX_ULOOP(BODY) \
+  VI_CHECK_SSS(false) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VX_U_PARAMS(e8); \
@@ -941,6 +946,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   VI_LOOP_END 
 
 #define VI_VX_LOOP(BODY) \
+  VI_CHECK_SSS(false) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VX_PARAMS(e8); \
@@ -958,6 +964,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   VI_LOOP_END 
 
 #define VI_VI_ULOOP(BODY) \
+  VI_CHECK_SSS(false) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VI_U_PARAMS(e8); \
@@ -975,6 +982,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   VI_LOOP_END 
 
 #define VI_VI_LOOP(BODY) \
+  VI_CHECK_SSS(false) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VI_PARAMS(e8); \
@@ -1383,7 +1391,8 @@ VI_LOOP_END
   VI_TAIL_ZERO_MASK(rd_num);
 
 // average loop
-#define VI_VVX_LOOP_AVG(opd, op) \
+#define VI_VVX_LOOP_AVG(opd, op, is_vs1) \
+VI_CHECK_SSS(is_vs1); \
 VRM xrm = p->VU.get_vround_mode(); \
 VI_LOOP_BASE \
   switch(sew) { \
@@ -1679,6 +1688,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   set_fp_exceptions;
 
 #define VI_VFP_VV_LOOP(BODY) \
+  VI_CHECK_SSS(true); \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\
@@ -1714,6 +1724,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   VI_VFP_LOOP_REDUCTION_END(e64)
 
 #define VI_VFP_VF_LOOP(BODY) \
+  VI_CHECK_SSS(false); \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\

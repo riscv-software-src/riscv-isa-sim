@@ -1,4 +1,5 @@
 // vaadd: Averaging adds of integers
+VI_CHECK_SSS(false);
 VRM xrm = P.VU.get_vround_mode();
 VI_VI_LOOP
 ({
