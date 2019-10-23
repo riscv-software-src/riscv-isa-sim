@@ -417,6 +417,16 @@ static inline bool is_overlaped(const int astart, const int asize,
 
 #define VI_CHECK_SS \
   require(!is_overlaped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul));
+#define VI_CHECK_MSS(is_vs1) \
+  if (P.VU.vlmul > 1) { \
+    require(!is_overlaped(insn.rd(), 1, insn.rs2(), P.VU.vlmul)); \
+    require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
+    if (is_vs1) {\
+      require(!is_overlaped(insn.rd(), 1, insn.rs1(), P.VU.vlmul)); \
+      require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
+    } \
+  }
+
 
 #define VI_CHECK_SD \
   require(!is_overlaped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul * 2));
@@ -691,6 +701,7 @@ static inline bool is_overlaped(const int astart, const int asize,
 
 // comparision result to masking register
 #define VI_VV_LOOP_CMP(BODY) \
+  VI_CHECK_MSS(true); \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
     VV_PARAMS(e8); \
@@ -708,6 +719,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   VI_LOOP_CMP_END
 
 #define VI_VX_LOOP_CMP(BODY) \
+  VI_CHECK_MSS(false); \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
     VX_PARAMS(e8); \
@@ -725,6 +737,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   VI_LOOP_CMP_END
 
 #define VI_VI_LOOP_CMP(BODY) \
+  VI_CHECK_MSS(false); \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
     VI_PARAMS(e8); \
@@ -742,6 +755,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   VI_LOOP_CMP_END
 
 #define VI_VV_ULOOP_CMP(BODY) \
+  VI_CHECK_MSS(true); \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
     VV_U_PARAMS(e8); \
@@ -759,6 +773,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   VI_LOOP_CMP_END
 
 #define VI_VX_ULOOP_CMP(BODY) \
+  VI_CHECK_MSS(false); \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
     VX_U_PARAMS(e8); \
@@ -776,6 +791,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   VI_LOOP_CMP_END
 
 #define VI_VI_ULOOP_CMP(BODY) \
+  VI_CHECK_MSS(false); \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
     VI_U_PARAMS(e8); \
@@ -1329,6 +1345,7 @@ VI_LOOP_END
 
 // carry/borrow bit loop
 #define VI_VV_LOOP_CARRY(BODY) \
+  VI_CHECK_MSS(true); \
   VI_LOOP_BASE \
     if (sew == e8){ \
       VV_CARRY_PARAMS(e8) \
@@ -1347,6 +1364,7 @@ VI_LOOP_END
   VI_TAIL_ZERO_MASK(rd_num);
 
 #define VI_XI_LOOP_CARRY(BODY) \
+  VI_CHECK_MSS(false); \
   VI_LOOP_BASE \
     if (sew == e8){ \
       XI_CARRY_PARAMS(e8) \
@@ -1715,7 +1733,8 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   DEBUG_RVV_FP_VF; \
   VI_VFP_LOOP_END
 
-#define VI_VFP_LOOP_CMP(BODY) \
+#define VI_VFP_LOOP_CMP(BODY, is_vs1) \
+  VI_CHECK_MSS(is_vs1); \
   VI_VFP_LOOP_CMP_BASE \
   BODY; \
   set_fp_exceptions; \
