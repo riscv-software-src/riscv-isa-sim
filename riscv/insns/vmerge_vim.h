@@ -1,4 +1,5 @@
 // vmerge.vim vd, vs2, simm5
+VI_CHECK_SSS(false);
 VI_VVXI_MERGE_LOOP
 ({
   int midx = (P.VU.vmlen * i) / 64;

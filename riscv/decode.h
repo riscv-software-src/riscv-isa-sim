@@ -396,6 +396,17 @@ static inline bool is_overlapped(const int astart, const int asize,
     } \
   }
 
+#define VI_CHECK_SSS(is_vs1) \
+  if (P.VU.vlmul > 1) { \
+    require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
+    require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
+    if (is_vs1) { \
+      require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
+    } \
+    if (insn.v_vm() == 0) \
+      require(insn.rd() != 0); \
+  }
+
 #define VI_CHECK_SD \
   require(!is_overlapped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul * 2));
 
@@ -802,6 +813,7 @@ static inline bool is_overlapped(const int astart, const int asize,
 
 // genearl VXI signed/unsgied loop
 #define VI_VV_ULOOP(BODY) \
+  VI_CHECK_SSS(true) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VV_U_PARAMS(e8); \
@@ -819,6 +831,7 @@ static inline bool is_overlapped(const int astart, const int asize,
   VI_LOOP_END 
 
 #define VI_VV_LOOP(BODY) \
+  VI_CHECK_SSS(true) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VV_PARAMS(e8); \
@@ -836,6 +849,7 @@ static inline bool is_overlapped(const int astart, const int asize,
   VI_LOOP_END 
 
 #define VI_VX_ULOOP(BODY) \
+  VI_CHECK_SSS(false) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VX_U_PARAMS(e8); \
@@ -853,6 +867,7 @@ static inline bool is_overlapped(const int astart, const int asize,
   VI_LOOP_END 
 
 #define VI_VX_LOOP(BODY) \
+  VI_CHECK_SSS(false) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VX_PARAMS(e8); \
@@ -870,6 +885,7 @@ static inline bool is_overlapped(const int astart, const int asize,
   VI_LOOP_END 
 
 #define VI_VI_ULOOP(BODY) \
+  VI_CHECK_SSS(false) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VI_U_PARAMS(e8); \
@@ -887,6 +903,7 @@ static inline bool is_overlapped(const int astart, const int asize,
   VI_LOOP_END 
 
 #define VI_VI_LOOP(BODY) \
+  VI_CHECK_SSS(false) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VI_PARAMS(e8); \
@@ -1293,7 +1310,8 @@ VI_LOOP_END
   } \
 
 // average loop
-#define VI_VVX_LOOP_AVG(opd, op) \
+#define VI_VVX_LOOP_AVG(opd, op, is_vs1) \
+VI_CHECK_SSS(is_vs1); \
 VRM xrm = p->VU.get_vround_mode(); \
 VI_LOOP_BASE \
   switch(sew) { \
@@ -1560,6 +1578,7 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   set_fp_exceptions;
 
 #define VI_VFP_VV_LOOP(BODY) \
+  VI_CHECK_SSS(true); \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\
@@ -1595,6 +1614,7 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   VI_VFP_LOOP_REDUCTION_END(e64)
 
 #define VI_VFP_VF_LOOP(BODY) \
+  VI_CHECK_SSS(false); \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\
