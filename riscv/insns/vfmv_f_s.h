@@ -1,6 +1,5 @@
 // vfmv_f_s: rd = vs2[0] (rs1=0)
 require_vector;
-require(insn.v_vm() == 1);
 require_fp;
 require_extension('F');
 require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64);
