@@ -392,15 +392,18 @@ static inline bool is_overlaped(const int astart, const int asize,
 }
 
 #define VI_NARROW_CHECK_COMMON \
+  require_vector;\
   require(P.VU.vlmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
-  require(insn.rs2() + P.VU.vlmul * 2 <= 32);
+  require((insn.rs2() & (P.VU.vlmul * 2 - 1)) == 0); \
+  require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
+  if (insn.v_vm() == 0 && P.VU.vlmul > 1) \
+    require(insn.rd() != 0);
 
 #define VI_WIDE_CHECK_COMMON \
   require_vector;\
   require(P.VU.vlmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
-  require(insn.rd() + P.VU.vlmul * 2 <= 32); \
   require((insn.rd() & (P.VU.vlmul * 2 - 1)) == 0); \
   if (insn.v_vm() == 0) \
     require(insn.rd() != 0);
@@ -418,17 +421,29 @@ static inline bool is_overlaped(const int astart, const int asize,
 #define VI_CHECK_SD \
   require(!is_overlaped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul * 2));
 
-#define VI_CHECK_DSS(is_rs) \
+#define VI_CHECK_DSS(is_vs1) \
   VI_WIDE_CHECK_COMMON; \
   require(!is_overlaped(insn.rd(), P.VU.vlmul * 2, insn.rs2(), P.VU.vlmul)); \
-  if (is_rs) \
-     require(!is_overlaped(insn.rd(), P.VU.vlmul * 2, insn.rs1(), P.VU.vlmul));
+  require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
+  if (is_vs1) {\
+     require(!is_overlaped(insn.rd(), P.VU.vlmul * 2, insn.rs1(), P.VU.vlmul)); \
+     require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
+  }
 
 #define VI_CHECK_DDS(is_rs) \
   VI_WIDE_CHECK_COMMON; \
-  require(insn.rs2() + P.VU.vlmul * 2 <= 32); \
-  if (is_rs) \
-     require(!is_overlaped(insn.rd(), P.VU.vlmul * 2, insn.rs1(), P.VU.vlmul));
+  require((insn.rs2() & (P.VU.vlmul * 2 - 1)) == 0); \
+  if (is_rs) { \
+     require(!is_overlaped(insn.rd(), P.VU.vlmul * 2, insn.rs1(), P.VU.vlmul)); \
+     require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
+  }
+
+#define VI_CHECK_SDS(is_vs1) \
+  VI_NARROW_CHECK_COMMON; \
+  require(!is_overlaped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul * 2)); \
+  if (is_vs1) \
+    require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
+
 
 //
 // vector: loop header and end helper
@@ -544,10 +559,6 @@ static inline bool is_overlaped(const int astart, const int asize,
   P.VU.vstart = 0;
 
 #define VI_LOOP_NSHIFT_BASE \
-  require(P.VU.vsew <= e32); \
-  if (insn.rd() != 0){ \
-    VI_CHECK_SD; \
-  } \
   VI_GENERAL_LOOP_BASE; \
   VI_LOOP_ELEMENT_SKIP({\
     require(!(insn.rd() == 0 && P.VU.vlmul > 1));\
@@ -980,8 +991,8 @@ VI_LOOP_END
   type_sew_t<sew1>::type vs1 = P.VU.elt<type_sew_t<sew1>::type>(rs1_num, i); \
   type_sew_t<sew1>::type rs1 = (type_sew_t<sew1>::type)RS1; 
 
-#define VI_VVXI_LOOP_NARROW(BODY) \
-  require(P.VU.vsew <= e32); \
+#define VI_VVXI_LOOP_NARROW(BODY, is_vs1) \
+  VI_CHECK_SDS(is_vs1); \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VI_NARROW_SHIFT(e8, e16) \
@@ -995,7 +1006,8 @@ VI_LOOP_END
   } \
   VI_LOOP_END
 
-#define VI_VI_LOOP_NSHIFT(BODY) \
+#define VI_VI_LOOP_NSHIFT(BODY, is_vs1) \
+  VI_CHECK_SDS(is_vs1); \
   VI_LOOP_NSHIFT_BASE \
   if (sew == e8){ \
     VI_NSHIFT_PARAMS(e8, e16) \
@@ -1009,7 +1021,8 @@ VI_LOOP_END
   } \
   VI_LOOP_END
 
-#define VI_VX_LOOP_NSHIFT(BODY) \
+#define VI_VX_LOOP_NSHIFT(BODY, is_vs1) \
+  VI_CHECK_SDS(is_vs1); \
   VI_LOOP_NSHIFT_BASE \
   if (sew == e8){ \
     VX_NSHIFT_PARAMS(e8, e16) \
@@ -1023,7 +1036,8 @@ VI_LOOP_END
   } \
   VI_LOOP_END
 
-#define VI_VV_LOOP_NSHIFT(BODY) \
+#define VI_VV_LOOP_NSHIFT(BODY, is_vs1) \
+  VI_CHECK_SDS(is_vs1); \
   VI_LOOP_NSHIFT_BASE \
   if (sew == e8){ \
     VV_NSHIFT_PARAMS(e8, e16) \
@@ -1153,8 +1167,8 @@ VI_LOOP_END
   vd = sat_add<int##sew2##_t, uint##sew2##_t>(vd, res, sat); \
   P.VU.vxsat |= sat;
 
-#define VI_VVX_LOOP_WIDE_SSMA(opd) \
-  VI_WIDE_CHECK_COMMON \
+#define VI_VVX_LOOP_WIDE_SSMA(opd, is_vs1) \
+  VI_CHECK_DSS(is_vs1) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VI_WIDE_SSMA(8, 16, opd); \
@@ -1181,8 +1195,8 @@ VI_LOOP_END
   vd = sat_addu<uint##sew2##_t>(vd, res, sat); \
   P.VU.vxsat |= sat;
 
-#define VI_VVX_LOOP_WIDE_USSMA(opd) \
-  VI_WIDE_CHECK_COMMON \
+#define VI_VVX_LOOP_WIDE_USSMA(opd, is_vs1) \
+  VI_CHECK_DSS(is_vs1) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VI_WIDE_USSMA(8, 16, opd); \
@@ -1209,8 +1223,8 @@ VI_LOOP_END
   vd = sat_sub<int##sew2##_t, uint##sew2##_t>(vd, res, sat); \
   P.VU.vxsat |= sat;
 
-#define VI_VVX_LOOP_WIDE_SU_SSMA(opd) \
-  VI_WIDE_CHECK_COMMON \
+#define VI_VVX_LOOP_WIDE_SU_SSMA(opd, is_vs1) \
+  VI_CHECK_DSS(is_vs1) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VI_WIDE_SU_SSMA(8, 16, opd); \
@@ -1238,7 +1252,7 @@ VI_LOOP_END
   P.VU.vxsat |= sat;
 
 #define VI_VVX_LOOP_WIDE_US_SSMA(opd) \
-  VI_WIDE_CHECK_COMMON \
+  VI_CHECK_DSS(false) \
   VI_LOOP_BASE \
   if (sew == e8){ \
     VI_WIDE_US_SSMA(8, 16, opd); \
@@ -1700,8 +1714,8 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   VI_VFP_LOOP_CMP_END \
 
 #define VI_VFP_VF_LOOP_WIDE(BODY) \
-  VI_VFP_LOOP_BASE \
   VI_CHECK_DSS(false); \
+  VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\
       float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
@@ -1722,8 +1736,8 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 
 
 #define VI_VFP_VV_LOOP_WIDE(BODY) \
-  VI_VFP_LOOP_BASE \
   VI_CHECK_DSS(true); \
+  VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\
       float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
@@ -1743,8 +1757,8 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   VI_VFP_LOOP_WIDE_END
 
 #define VI_VFP_WF_LOOP_WIDE(BODY) \
-  VI_VFP_LOOP_BASE \
   VI_CHECK_DDS(false); \
+  VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\
       float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
@@ -1763,8 +1777,8 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   VI_VFP_LOOP_WIDE_END
 
 #define VI_VFP_WV_LOOP_WIDE(BODY) \
-  VI_VFP_LOOP_BASE \
   VI_CHECK_DDS(true); \
+  VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\
       float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \

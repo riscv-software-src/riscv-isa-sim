@@ -21,4 +21,4 @@ VI_VVXI_LOOP_NARROW
   }
 
   vd = result;
-})
+}, false)
