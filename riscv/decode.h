@@ -407,6 +407,14 @@ static inline bool is_overlapped(const int astart, const int asize,
       require(insn.rd() != 0); \
   }
 
+#define VI_CHECK_SXX \
+  require_vector; \
+  if (P.VU.vlmul > 1) { \
+    require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
+    if (insn.v_vm() == 0) \
+      require(insn.rd() != 0); \
+  }
+
 #define VI_CHECK_SD \
   require(!is_overlapped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul * 2));
 
@@ -733,6 +741,7 @@ static inline bool is_overlapped(const int astart, const int asize,
 
 // merge and copy loop
 #define VI_VVXI_MERGE_LOOP(BODY) \
+  VI_CHECK_SXX; \
   VI_GENERAL_LOOP_BASE \
   if (sew == e8){ \
     VXI_PARAMS(e8); \
@@ -1384,8 +1393,8 @@ for (reg_t i = 0; i < vlmax; ++i) { \
 
 #define VI_ST(stride, offset, st_width, elt_byte) \
   const reg_t nf = insn.v_nf() + 1; \
-  require_vector; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \
+  VI_CHECK_SXX; \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
@@ -1417,8 +1426,8 @@ for (reg_t i = 0; i < vlmax; ++i) { \
 
 #define VI_LD(stride, offset, ld_width, elt_byte) \
   const reg_t nf = insn.v_nf() + 1; \
-  require_vector; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \
+  VI_CHECK_SXX; \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
@@ -1452,10 +1461,10 @@ for (reg_t i = 0; i < vlmax; ++i) { \
 
 
 #define VI_LDST_FF(itype, tsew) \
-  require_vector; \
   require(p->VU.vsew >= e##tsew && p->VU.vsew <= e64); \
   const reg_t nf = insn.v_nf() + 1; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \
+  VI_CHECK_SXX; \
   const reg_t sew = p->VU.vsew; \
   const reg_t vl = p->VU.vl; \
   const reg_t baseAddr = RS1; \

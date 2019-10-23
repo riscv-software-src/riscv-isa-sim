@@ -1,5 +1,6 @@
 // vlxe.v and vlxseg[2-8]e.v
 reg_t sew = P.VU.vsew;
+require((insn.rs2() & (P.VU.vlmul - 1)) == 0);
 VI_DUPLICATE_VREG(insn.rs2(), P.VU.vlmax);
 if (sew == e8) {
   VI_LD(index[i], fn, int8, 1);
