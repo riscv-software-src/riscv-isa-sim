@@ -444,6 +444,13 @@ static inline bool is_overlaped(const int astart, const int asize,
   if (is_vs1) \
     require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
 
+#define VI_CHECK_REDUCTION(is_wide) \
+  require_vector;\
+  if (is_wide) {\
+    require(P.VU.vlmul <= 4); \
+    require(P.VU.vsew * 2 <= P.VU.ELEN); \
+  } \
+  require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
 
 //
 // vector: loop header and end helper
@@ -806,7 +813,6 @@ static inline bool is_overlaped(const int astart, const int asize,
 // reduction loop - signed
 #define VI_LOOP_REDUCTION_BASE(x) \
   require(x == e8 || x == e16 || x == e32 || x == e64); \
-  require_vector;\
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -823,6 +829,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   VI_LOOP_REDUCTION_END(x)
 
 #define VI_VV_LOOP_REDUCTION(BODY) \
+  VI_CHECK_REDUCTION(false); \
   reg_t sew = P.VU.vsew; \
   if (sew == e8) { \
     REDUCTION_LOOP(e8, BODY) \
@@ -853,6 +860,7 @@ static inline bool is_overlaped(const int astart, const int asize,
   VI_LOOP_REDUCTION_END(x)
 
 #define VI_VV_ULOOP_REDUCTION(BODY) \
+  VI_CHECK_REDUCTION(false); \
   reg_t sew = P.VU.vsew; \
   if (sew == e8){ \
     REDUCTION_ULOOP(e8, BODY) \
@@ -1281,7 +1289,7 @@ VI_LOOP_END
   VI_LOOP_REDUCTION_END(sew2)
 
 #define VI_VV_LOOP_WIDE_REDUCTION(BODY) \
-  require_vector;\
+  VI_CHECK_REDUCTION(true); \
   reg_t sew = P.VU.vsew; \
   if (sew == e8){ \
     WIDE_REDUCTION_LOOP(e8, e16, BODY) \
@@ -1309,7 +1317,7 @@ VI_LOOP_END
   VI_LOOP_REDUCTION_END(sew2)
 
 #define VI_VV_ULOOP_WIDE_REDUCTION(BODY) \
-  require_vector;\
+  VI_CHECK_REDUCTION(true); \
   reg_t sew = P.VU.vsew; \
   if (sew == e8){ \
     WIDE_REDUCTION_ULOOP(e8, e16, BODY) \
@@ -1673,6 +1681,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   VI_VFP_LOOP_END
 
 #define VI_VFP_VV_LOOP_REDUCTION(BODY) \
+  VI_CHECK_REDUCTION(false) \
   VI_VFP_LOOP_REDUCTION_BASE \
   float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
   BODY; \
