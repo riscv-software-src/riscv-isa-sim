@@ -408,11 +408,6 @@ static inline bool is_overlaped(const int astart, const int asize,
   if (insn.v_vm() == 0) \
     require(insn.rd() != 0);
 
-#define VI_CHECK_VREG_OVERLAP(v1, v2) \
-  require(!is_overlaped(v1, P.VU.vlmul, v2, P.VU.vlmul));
-
-#define VI_CHECK_SS \
-  require(!is_overlaped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul));
 #define VI_CHECK_MSS(is_vs1) \
   if (P.VU.vlmul > 1) { \
     require(!is_overlaped(insn.rd(), 1, insn.rs2(), P.VU.vlmul)); \
