@@ -6,10 +6,13 @@ VI_VVXI_LOOP_NARROW
 ({
 
   int64_t result = vs2;
-// rounding
-  INT_ROUNDING(result, xrm, sew);
+  uint64_t shift = zimm5 & ((sew * 2) - 1);
 
-  result = vsext(result, sew * 2) >> (zimm5 & ((sew * 2) < 32? (sew * 2) - 1: 31));
+// rounding
+  INT_ROUNDING(result, xrm, shift);
+
+// signed right shift
+  result = vsext(result, sew * 2) >> shift;
 
 // saturation
   if (result < int_min) {

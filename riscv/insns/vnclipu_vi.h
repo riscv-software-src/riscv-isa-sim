@@ -4,11 +4,13 @@ uint64_t int_max = ~(-1ll << P.VU.vsew);
 VI_VVXI_LOOP_NARROW
 ({
   uint64_t result = vs2_u;
-  // rounding
-  INT_ROUNDING(result, xrm, sew);
+  uint64_t shift = zimm5 & ((sew * 2) - 1);
 
-  // unsigned shifting to rs1
-  result = vzext(result, sew * 2) >> (zimm5 & ((sew * 2) < 32? (sew * 2) - 1: 31));
+  // rounding
+  INT_ROUNDING(result, xrm, shift);
+
+  // unsigned right shift
+  result = vzext(result, sew * 2) >> shift;
 
   // saturation
   if (result & (uint64_t)(-1ll << sew)) {

@@ -6,16 +6,13 @@ VI_VVXI_LOOP_NARROW
 ({
 
   int64_t result = vs2;
+  uint64_t shift = vs1 & ((sew * 2) - 1);
+
 // rounding
-  INT_ROUNDING(result, xrm, sew);
+  INT_ROUNDING(result, xrm, shift);
 
-// unsigned shifting to rs1
-  uint64_t unsigned_shift_amount = (uint64_t)(vs1 & ((sew * 2) - 1));
-  if (unsigned_shift_amount >= (2 * sew)) {
-    unsigned_shift_amount = 2 * sew - 1;
-  }
-
-  result = (vsext(result, sew * 2)) >> unsigned_shift_amount;
+// signed right shift
+  result = (vsext(result, sew * 2)) >> shift;
 
 // saturation
   if (result < int_min) {
