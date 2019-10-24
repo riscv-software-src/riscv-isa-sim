@@ -23,6 +23,7 @@
 processor_t::processor_t(const char* isa, const char* varch, simif_t* sim,
                          uint32_t id, bool halt_on_reset)
   : debug(false), halt_request(false), sim(sim), ext(NULL), id(id),
+  histogram_enabled(false), log_commits_enabled(false),
   halt_on_reset(halt_on_reset), last_pc(1), executions(1)
 {
   VU.p = this;
