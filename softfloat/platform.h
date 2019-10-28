@@ -36,7 +36,10 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
+#include "config.h"
+#ifndef WORDS_BIGENDIAN
 #define LITTLEENDIAN 1
+#endif
 
 #define INLINE_LEVEL 5
 #define SOFTFLOAT_FAST_INT64

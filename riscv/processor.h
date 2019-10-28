@@ -177,6 +177,11 @@ class vectorUnit_t {
         reg_t elts_per_reg = (VLEN >> 3) / (sizeof(T));
         vReg += n / elts_per_reg;
         n = n % elts_per_reg;
+#ifdef WORDS_BIGENDIAN
+	// "V" spec 0.7.1 requires lower indices to map to lower significant
+	// bits when changing SEW, thus we need to index from the end on BE.
+	n ^= elts_per_reg - 1;
+#endif
         reg_referenced[vReg] = 1;
 
         T *regStart = (T*)((char*)reg_file + vReg * (VLEN >> 3));

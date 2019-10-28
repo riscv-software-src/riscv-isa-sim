@@ -2,6 +2,7 @@
 
 #include "syscall.h"
 #include "htif.h"
+#include "byteorder.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
@@ -299,21 +300,21 @@ reg_t syscall_t::sys_getmainvars(reg_t pbuf, reg_t limit, reg_t a2, reg_t a3, re
 {
   std::vector<std::string> args = htif->target_args();
   std::vector<uint64_t> words(args.size() + 3);
-  words[0] = args.size();
+  words[0] = to_le(args.size());
   words[args.size()+1] = 0; // argv[argc] = NULL
   words[args.size()+2] = 0; // envp[0] = NULL
 
   size_t sz = (args.size() + 3) * sizeof(words[0]);
   for (size_t i = 0; i < args.size(); i++)
   {
-    words[i+1] = sz + pbuf;
+    words[i+1] = to_le(sz + pbuf);
     sz += args[i].length() + 1;
   }
 
   std::vector<char> bytes(sz);
   memcpy(&bytes[0], &words[0], sizeof(words[0]) * words.size());
   for (size_t i = 0; i < args.size(); i++)
-    strcpy(&bytes[words[i+1] - pbuf], args[i].c_str());
+    strcpy(&bytes[from_le(words[i+1]) - pbuf], args[i].c_str());
 
   if (bytes.size() > limit)
     return -ENOMEM;
@@ -342,11 +343,11 @@ void syscall_t::dispatch(reg_t mm)
   reg_t magicmem[8];
   memif->read(mm, sizeof(magicmem), magicmem);
 
-  reg_t n = magicmem[0];
+  reg_t n = from_le(magicmem[0]);
   if (n >= table.size() || !table[n])
     throw std::runtime_error("bad syscall #" + std::to_string(n));
 
-  magicmem[0] = (this->*table[n])(magicmem[1], magicmem[2], magicmem[3], magicmem[4], magicmem[5], magicmem[6], magicmem[7]);
+  magicmem[0] = to_le((this->*table[n])(from_le(magicmem[1]), from_le(magicmem[2]), from_le(magicmem[3]), from_le(magicmem[4]), from_le(magicmem[5]), from_le(magicmem[6]), from_le(magicmem[7])));
 
   memif->write(mm, sizeof(magicmem), magicmem);
 }
