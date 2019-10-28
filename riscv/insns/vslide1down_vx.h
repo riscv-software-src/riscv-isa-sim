@@ -1,7 +1,7 @@
 //vslide1down.vx vd, vs2, rs1
 require((insn.rs2() & (P.VU.vlmul - 1)) == 0);
 require((insn.rd() & (P.VU.vlmul - 1)) == 0);
-if (insn.v_vm() == 0)
+if (P.VU.vlmul > 1 && insn.v_vm() == 0)
   require(insn.rd() != 0);
 
 VI_LOOP_BASE
