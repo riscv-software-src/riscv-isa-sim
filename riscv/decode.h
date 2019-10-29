@@ -207,7 +207,7 @@ private:
 #define require_accelerator require((STATE.mstatus & MSTATUS_XS) != 0)
 
 #define require_vector_vs do { } while (0) // TODO MSTATUS_VS
-#define require_vector do { require_vector_vs; require(!P.VU.vill); } while (0)
+#define require_vector do { require_vector_vs; require_extension('V'); require(!P.VU.vill); } while (0)
 #define require_vector_for_vsetvl do { require_vector_vs; require_extension('V'); } while (0)
 
 #define set_fp_exceptions ({ if (softfloat_exceptionFlags) { \
