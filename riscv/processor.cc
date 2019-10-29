@@ -235,7 +235,7 @@ reg_t vectorUnit_t::set_vl(int regId, reg_t reqVL, reg_t newType){
   if (vlmax == 0) {
     vl = 0;
   } else if (regId == 0) {
-    vl = vsew == old_sew && vlmul == old_lmul ? vl : 0;
+    vl = vl > vlmax ? vlmax : vl;
   } else if (regId == -1) {
     vl = vlmax;
   } else if (regId >= 0) {
