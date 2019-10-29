@@ -212,6 +212,8 @@ void vectorUnit_t::reset(){
 }
 
 reg_t vectorUnit_t::set_vl(int regId, reg_t reqVL, reg_t newType){
+  reg_t old_sew = vsew;
+  reg_t old_lmul = vlmul;
   if (vtype != newType){
     vtype = newType;
     vsew = 1 << (BITS(newType, 4, 2) + 3);
@@ -232,7 +234,7 @@ reg_t vectorUnit_t::set_vl(int regId, reg_t reqVL, reg_t newType){
   if (vlmax == 0) {
     vl = 0;
   } else if (regId == 0) {
-    vl = vl > vlmax ? 0 : vl;
+    vl = vsew == old_sew && vlmul == old_lmul ? vl : 0;
   } else if (regId == -1) {
     vl = vlmax;
   } else if (regId >= 0) {
