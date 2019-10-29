@@ -529,9 +529,7 @@ static inline bool is_overlaped(const int astart, const int asize,
 
 #define VI_LOOP_WIDEN_END \
   } \
-  if (vl != 0 && vl < P.VU.vlmax && P.VU.TZ){ \
-    TAIL_ZERO((sew >> 3) * 2); \
-  }\
+  VI_TAIL_ZERO(2); \
   P.VU.vstart = 0;
 
 #define VI_LOOP_REDUCTION_END(x) \
