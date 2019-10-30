@@ -599,36 +599,27 @@ static inline bool is_overlaped(const int astart, const int asize,
 
 
 #define INT_ROUNDING(result, xrm, gb) \
-  if (gb > 0) { \
-    switch(xrm) {\
+  do { \
+    const uint64_t lsb = 1UL << (gb); \
+    const uint64_t lsb_half = lsb >> 1; \
+    switch (xrm) {\
       case VRM::RNU:\
-        result += ((uint64_t)1 << ((gb) - 1));\
+        result += lsb_half; \
         break;\
       case VRM::RNE:\
-        if (gb > 1) { \
-            if ((result & (1ul << ((gb) - 1))) != 0 && \
-                ((result & ((1ul << ((gb) - 1)) - 1)) != 0 || \
-                (result & (1ul << (gb))) != 0 )) \
-                result += ((uint64_t)1ul << ((gb))); \
-        } else { \
-            if ((result & (1ul << ((gb) - 1))) != 0 && \
-                (result & (1ul << (gb))) != 0 ) \
-                result += ((uint64_t)1ul << ((gb))); \
-        } \
+        if ((result & lsb_half) && ((result & (lsb_half - 1)) || (result & lsb))) \
+          result += lsb; \
         break;\
       case VRM::RDN:\
-        result = (result >> ((gb) - 1)) << ((gb) - 1);\
         break;\
       case VRM::ROD:\
-        if ((result & (1ul << (gb))) == 0 && \
-            (result & ((1ul << (gb)) - 1)) != 0) \
-            result += ((uint64_t)1ul << ((gb))); \
+        if (result & (lsb - 1)) \
+          result |= lsb; \
         break;\
       case VRM::INVALID_RM:\
         assert(true);\
     } \
-  }
-
+  } while (0)
 
 //
 // vector: integer and masking operand access helper
