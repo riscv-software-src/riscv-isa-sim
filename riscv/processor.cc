@@ -213,8 +213,6 @@ void vectorUnit_t::reset(){
 }
 
 reg_t vectorUnit_t::set_vl(int regId, reg_t reqVL, reg_t newType){
-  reg_t old_sew = vsew;
-  reg_t old_lmul = vlmul;
   if (vtype != newType){
     vtype = newType;
     vsew = 1 << (BITS(newType, 4, 2) + 3);
