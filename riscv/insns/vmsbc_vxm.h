@@ -1,5 +1,4 @@
 // vmsbc.vxm vd, vs2, rs1
-require(!(insn.rd() == 0 && P.VU.vlmul > 1));
 VI_XI_LOOP_CARRY
 ({
   auto &v0 = P.VU.elt<uint64_t>(0, midx);
