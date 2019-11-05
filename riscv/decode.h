@@ -1659,9 +1659,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   if (vl > 0) { \
     P.VU.elt<type_sew_t<x>::type>(rd_num, 0) = vd_0.v; \
     if (P.VU.TZ) { \
-        for (reg_t i = 1; i < (P.VU.VLEN / x); ++i) { \
-           P.VU.elt<type_sew_t<x>::type>(rd_num, i) = 0; \
-        } \
+      TAIL_ZERO_REDUCTION(x); \
     } \
   }
 
