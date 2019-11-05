@@ -5,14 +5,12 @@ int64_t int_min = -(1 << (P.VU.vsew - 1));
 VI_VVXI_LOOP_NARROW
 ({
   int128_t result = vs2;
-  // The low log2(2*SEW) bits of the vector or scalar shift amount value are used
-  // (e.g., the low 6 bits for a SEW=64-bit to SEW=32-bit narrowing operation).
-  uint64_t unsigned_shift_amount = (uint64_t)(vs1 & ((sew * 2) - 1));
+  unsigned shift = vs1 & ((sew * 2) - 1);
 
   // rounding
-  INT_ROUNDING(result, xrm, unsigned_shift_amount);
+  INT_ROUNDING(result, xrm, shift);
 
-  result = result >> unsigned_shift_amount;
+  result = result >> shift;
 
   // saturation
   if (result < int_min) {
