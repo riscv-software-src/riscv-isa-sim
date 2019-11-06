@@ -14,5 +14,4 @@ for (reg_t i=P.VU.vstart; i<vl; ++i) {
   vd = use_first ? rs1 : vs2;
 }
 
-VI_TAIL_ZERO(1);
 P.VU.vstart = 0;

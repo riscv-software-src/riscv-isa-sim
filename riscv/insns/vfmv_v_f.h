@@ -9,5 +9,4 @@ for (reg_t i=P.VU.vstart; i<vl; ++i) {
   vd = rs1;
 }
 
-VI_TAIL_ZERO(1);
 P.VU.vstart = 0;

@@ -168,7 +168,7 @@ class vectorUnit_t {
     reg_t vstart, vxrm, vxsat, vl, vtype;
     reg_t vediv, vsew, vlmul;
     reg_t ELEN, VLEN, SLEN;
-    bool TZ, vill;
+    bool vill;
 
     std::unordered_map<uint32_t, std::unordered_map<uint64_t, bool>> impl_table;
 
