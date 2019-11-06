@@ -3,7 +3,7 @@ require(P.VU.vstart == 0);
 require((insn.rd() & (P.VU.vlmul - 1)) == 0);
 require((insn.rs2() & (P.VU.vlmul - 1)) == 0);
 require(insn.rd() != insn.rs2());
-require(!is_overlaped(insn.rd(), P.VU.vlmul, insn.rs1(), 1));
+require(!is_overlapped(insn.rd(), P.VU.vlmul, insn.rs1(), 1));
 
 reg_t pos = 0;
 

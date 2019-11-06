@@ -377,7 +377,7 @@ extern bool g_vector_mistrap;
 //
 // vector: operation and register acccess check helper
 //
-static inline bool is_overlaped(const int astart, const int asize,
+static inline bool is_overlapped(const int astart, const int asize,
                                 const int bstart, const int bsize)
 {
   const int aend = astart + asize;
@@ -404,10 +404,10 @@ static inline bool is_overlaped(const int astart, const int asize,
 
 #define VI_CHECK_MSS(is_vs1) \
   if (P.VU.vlmul > 1) { \
-    require(!is_overlaped(insn.rd(), 1, insn.rs2(), P.VU.vlmul)); \
+    require(!is_overlapped(insn.rd(), 1, insn.rs2(), P.VU.vlmul)); \
     require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
     if (is_vs1) {\
-      require(!is_overlaped(insn.rd(), 1, insn.rs1(), P.VU.vlmul)); \
+      require(!is_overlapped(insn.rd(), 1, insn.rs1(), P.VU.vlmul)); \
       require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
     } \
   }
@@ -432,14 +432,14 @@ static inline bool is_overlaped(const int astart, const int asize,
   }
 
 #define VI_CHECK_SD \
-  require(!is_overlaped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul * 2));
+  require(!is_overlapped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul * 2));
 
 #define VI_CHECK_DSS(is_vs1) \
   VI_WIDE_CHECK_COMMON; \
-  require(!is_overlaped(insn.rd(), P.VU.vlmul * 2, insn.rs2(), P.VU.vlmul)); \
+  require(!is_overlapped(insn.rd(), P.VU.vlmul * 2, insn.rs2(), P.VU.vlmul)); \
   require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
   if (is_vs1) {\
-     require(!is_overlaped(insn.rd(), P.VU.vlmul * 2, insn.rs1(), P.VU.vlmul)); \
+     require(!is_overlapped(insn.rd(), P.VU.vlmul * 2, insn.rs1(), P.VU.vlmul)); \
      require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
   }
 
@@ -447,13 +447,13 @@ static inline bool is_overlaped(const int astart, const int asize,
   VI_WIDE_CHECK_COMMON; \
   require((insn.rs2() & (P.VU.vlmul * 2 - 1)) == 0); \
   if (is_rs) { \
-     require(!is_overlaped(insn.rd(), P.VU.vlmul * 2, insn.rs1(), P.VU.vlmul)); \
+     require(!is_overlapped(insn.rd(), P.VU.vlmul * 2, insn.rs1(), P.VU.vlmul)); \
      require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
   }
 
 #define VI_CHECK_SDS(is_vs1) \
   VI_NARROW_CHECK_COMMON; \
-  require(!is_overlaped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul * 2)); \
+  require(!is_overlapped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul * 2)); \
   if (is_vs1) \
     require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
 
