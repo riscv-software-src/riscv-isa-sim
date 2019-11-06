@@ -1514,28 +1514,11 @@ reg_t processor_t::get_csr(int which)
       if (!supports_extension('F'))
         break;
       return state.frm;
-    case CSR_FCSR: {
-      reg_t val = 0;
-      bool is_set = false;
-      if (supports_extension('F')) {
-        require_fp;
-        val |= (state.fflags << FSR_AEXC_SHIFT) |
-               (state.frm << FSR_RD_SHIFT);
-
-        is_set = true;
-      }
-      if (supports_extension('V')) {
-        require_vector_vs;
-        val |= (VU.vxrm << FSR_VXRM_SHIFT) |
-               (VU.vxsat << FSR_VXSAT_SHIFT);
-        is_set = true;
-      }
-
-      if (is_set)
-        return val;
-
-      break;
-    }
+    case CSR_FCSR:
+      require_fp;
+      if (!supports_extension('F'))
+        break;
+      return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
     case CSR_INSTRET:
     case CSR_CYCLE:
       if (ctr_ok)
