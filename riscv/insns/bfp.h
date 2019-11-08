@@ -1,10 +1,10 @@
 require_extension('B');
-int len = (RS2 >> 24) & 15;
-int off = (RS2 >> 16) & (xlen-1);
-int roff = -off & (xlen-1);
-len = len ? len : 16;
-reg_t mask = (1 << len) - 1;
-reg_t data = zext_xlen(RS2);
-mask = (mask << off) | (mask >> roff);
-data = (data << off) | (data >> roff);
+reg_t cfg = RS2 >> (xlen/2);
+if ((cfg >> 30) == 2)
+	cfg = cfg >> 16;
+int len = (cfg >> 8) & (xlen/2-1);
+int off = cfg & (xlen-1);
+len = len ? len : xlen/2;
+reg_t mask = ~(~reg_t(0) << len) << off;
+reg_t data = RS2 << off;
 WRITE_RD(sext_xlen((data & mask) | (RS1 & ~mask)));

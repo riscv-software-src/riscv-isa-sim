@@ -1,10 +1,8 @@
 require_extension('B');
-int len = (RS2 >> 24) & 15;
-int off = (RS2 >> 16) & 31;
-int roff = -off & 31;
+reg_t cfg = RS2 >> 16;
+int len = (cfg >> 8) & 15;
+int off = cfg & 31;
 len = len ? len : 16;
-reg_t mask = (1 << len) - 1;
-reg_t data = zext32(RS2);
-mask = (mask << off) | (mask >> roff);
-data = (data << off) | (data >> roff);
+reg_t mask = ~(~reg_t(0) << len) << off;
+reg_t data = RS2 << off;
 WRITE_RD(sext32((data & mask) | (RS1 & ~mask)));
