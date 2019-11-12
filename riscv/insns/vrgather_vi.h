@@ -1,11 +1,14 @@
 // vrgather.vi vd, vs2, zimm5 vm # vd[i] = (zimm5 >= VLMAX) ? 0 : vs2[zimm5];
-require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
-require_vector;
-reg_t vl = P.VU.vl;
-reg_t sew = P.VU.vsew;
-reg_t rd_num = insn.rd();
-reg_t rs2_num = insn.rs2();
+require((insn.rd() & (P.VU.vlmul - 1)) == 0);
+require((insn.rs2() & (P.VU.vlmul - 1)) == 0);
+require(insn.rd() != insn.rs2());
+if (insn.v_vm() == 0)
+  require(insn.rd() != 0);
+
 reg_t zimm5 = insn.v_zimm5();
+
+VI_LOOP_BASE
+
 for (reg_t i = P.VU.vstart; i < vl; ++i) {
   VI_LOOP_ELEMENT_SKIP();
 
@@ -25,5 +28,4 @@ for (reg_t i = P.VU.vstart; i < vl; ++i) {
   }
 }
 
-VI_TAIL_ZERO(1);
-P.VU.vstart = 0;
+VI_LOOP_END;

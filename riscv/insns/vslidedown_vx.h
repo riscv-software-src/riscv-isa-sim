@@ -1,11 +1,17 @@
 //vslidedown.vx vd, vs2, rs1
+require((insn.rs2() & (P.VU.vlmul - 1)) == 0);
+require((insn.rd() & (P.VU.vlmul - 1)) == 0);
+if (P.VU.vlmul > 1 && insn.v_vm() == 0)
+  require(insn.rd() != 0);
+
+const reg_t sh = RS1;
 VI_LOOP_BASE
 
-reg_t offset = RS1 == (reg_t)-1 ? ((RS1 & (P.VU.vlmax * 2 - 1)) + i) : RS1;
-bool is_valid = offset < P.VU.vlmax;
+reg_t offset = 0;
+bool is_valid = (i + sh) < P.VU.vlmax;
 
-if (!is_valid) {
-  offset = 0;
+if (is_valid) {
+  offset = sh;
 }
 
 switch (sew) {

@@ -1,4 +1,5 @@
 // vssubu.vx vd, vs2, rs1
+VI_CHECK_SSS(false);
 VI_LOOP_BASE
 bool sat = false;
 

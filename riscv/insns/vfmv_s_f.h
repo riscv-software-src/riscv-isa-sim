@@ -15,17 +15,5 @@ if (vl > 0) {
   else
     P.VU.elt<uint32_t>(rd_num, 0) = f32(FRS1).v;
 
-  const reg_t max_len = P.VU.VLEN / sew;
-  for (reg_t i = 1; i < max_len; ++i) {
-    switch(sew) {
-    case e32:
-      P.VU.elt<uint32_t>(rd_num, i) = 0;
-      break;
-    default:
-      require(false);
-      break;
-    }
-  }
-
   vl = 0;
 }

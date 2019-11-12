@@ -1,15 +1,12 @@
 // vrgather.vv vd, vs2, vs1, vm # vd[i] = (vs1[i] >= VLMAX) ? 0 : vs2[vs1[i]];
-require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
-require_vector;
-reg_t vl = P.VU.vl;
-reg_t sew = P.VU.vsew;
-reg_t rd_num = insn.rd();
-reg_t rs1_num = insn.rs1();
-reg_t rs2_num = insn.rs2();
-for (reg_t i = P.VU.vstart; i < vl; ++i) {
-  VI_LOOP_ELEMENT_SKIP();
-  VI_CHECK_VREG_OVERLAP(rd_num, rs1_num);
-  VI_CHECK_VREG_OVERLAP(rd_num, rs2_num);
+require((insn.rd() & (P.VU.vlmul - 1)) == 0);
+require((insn.rs2() & (P.VU.vlmul - 1)) == 0);
+require((insn.rs1() & (P.VU.vlmul - 1)) == 0);
+require(insn.rd() != insn.rs2() && insn.rd() != insn.rs1());
+if (insn.v_vm() == 0)
+  require(insn.rd() != 0);
+
+VI_LOOP_BASE
   switch (sew) {
   case e8: {
     auto vs1 = P.VU.elt<uint8_t>(rs1_num, i);
@@ -33,7 +30,4 @@ for (reg_t i = P.VU.vstart; i < vl; ++i) {
     break;
   }
   }
-}
-
-VI_TAIL_ZERO(1);
-P.VU.vstart = 0;
+VI_LOOP_END;

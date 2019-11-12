@@ -3,7 +3,8 @@ VRM xrm = P.VU.get_vround_mode();
 VI_VX_LOOP
 ({
   int sh = rs1 & (sew - 1);
+  int128_t val = vs2;
 
-  INT_ROUNDING(vs2, xrm, sh);
-  vd = vs2 >> sh;
+  INT_ROUNDING(val, xrm, sh);
+  vd = val >> sh;
 })

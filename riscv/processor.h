@@ -200,7 +200,7 @@ class vectorUnit_t {
       reg_file = 0;
     }
 
-    reg_t set_vl(uint64_t regId, reg_t reqVL, reg_t newType);
+    reg_t set_vl(int regId, reg_t reqVL, reg_t newType);
 
     reg_t get_vlen() { return VLEN; }
     reg_t get_elen() { return ELEN; }
