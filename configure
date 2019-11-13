@@ -702,6 +702,7 @@ enable_option_checking
 enable_stow
 enable_optional_subprojects
 with_isa
+with_priv
 with_varch
 enable_commitlog
 enable_histogram
@@ -1362,6 +1363,7 @@ Optional Packages:
   --with-PACKAGE[=ARG]    use PACKAGE [ARG=yes]
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-isa=RV64IMAFDC   Sets the default RISC-V ISA
+  --with-priv=MSU         Sets the default RISC-V privilege modes supported
   --with-varch=v128:e32:s128
                           Sets the default vector config
 
@@ -4616,6 +4618,23 @@ else
 
 cat >>confdefs.h <<_ACEOF
 #define DEFAULT_ISA "RV64IMAFDC"
+_ACEOF
+
+fi
+
+
+
+# Check whether --with-priv was given.
+if test "${with_priv+set}" = set; then :
+  withval=$with_priv;
+cat >>confdefs.h <<_ACEOF
+#define DEFAULT_PRIV "$withval"
+_ACEOF
+
+else
+
+cat >>confdefs.h <<_ACEOF
+#define DEFAULT_PRIV "MSU"
 _ACEOF
 
 fi

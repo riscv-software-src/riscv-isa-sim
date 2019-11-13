@@ -29,6 +29,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  -h, --help            Print this help message\n");
   fprintf(stderr, "  -H                    Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
+  fprintf(stderr, "  --priv=<m|mu|msu>     RISC-V privilege modes supported [default %s]\n", DEFAULT_PRIV);
   fprintf(stderr, "  --varch=<name>        RISC-V Vector uArch string [default %s]\n", DEFAULT_VARCH);
 #ifdef RISCV_ENABLE_IMPL_CHECK
   fprintf(stderr, "  --check-impl          Check vector instruction implementation(\"any\", \'1905\", \"e27\")\n");
@@ -134,6 +135,7 @@ int main(int argc, char** argv)
   bool log_commits = false;
   std::function<extension_t*()> extension;
   const char* isa = DEFAULT_ISA;
+  const char* priv = DEFAULT_PRIV;
   const char* varch = DEFAULT_VARCH;
   uint16_t rbb_port = 0;
   bool use_rbb = false;
@@ -222,6 +224,7 @@ int main(int argc, char** argv)
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
   parser.option(0, "log-cache-miss", 0, [&](const char* s){log_cache = true;});
   parser.option(0, "isa", 1, [&](const char* s){isa = s;});
+  parser.option(0, "priv", 1, [&](const char* s){priv = s;});
   parser.option(0, "varch", 1, [&](const char* s){varch = s;});
   parser.option(0, "device", 1, device_parser);
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
@@ -280,7 +283,7 @@ int main(int argc, char** argv)
   atexit(exit_with_unsupport);
 #endif
 
-  sim_t s(isa, varch, nprocs, halted, start_pc, mems, plugin_devices, htif_args,
+  sim_t s(isa, priv, varch, nprocs, halted, start_pc, mems, plugin_devices, htif_args,
       std::move(hartids), dm_config);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
