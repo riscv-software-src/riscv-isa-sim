@@ -535,10 +535,14 @@ void processor_t::set_csr(int which, reg_t val)
           (MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_SUM | MSTATUS_MXR))
         mmu->flush_tlb();
 
+      bool has_fs = supports_extension('S') || supports_extension('F')
+                  || supports_extension('V');
+
       reg_t mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE
-                 | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_SUM
+                 | MSTATUS_MPRV | MSTATUS_SUM
                  | MSTATUS_MXR | MSTATUS_TW | MSTATUS_TVM
                  | MSTATUS_TSR | MSTATUS_UXL | MSTATUS_SXL |
+                 (has_fs ? MSTATUS_FS : 0) |
                  (ext ? MSTATUS_XS : 0);
 
       reg_t requested_mpp = legalize_privilege(get_field(val, MSTATUS_MPP));
