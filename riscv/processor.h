@@ -297,8 +297,8 @@ static int cto(reg_t val)
 class processor_t : public abstract_device_t
 {
 public:
-  processor_t(const char* isa, const char* varch, simif_t* sim, uint32_t id,
-              bool halt_on_reset=false);
+  processor_t(const char* isa, const char* priv, const char* varch,
+              simif_t* sim, uint32_t id, bool halt_on_reset=false);
   ~processor_t();
 
   void set_debug(bool value);
@@ -465,8 +465,9 @@ private:
   friend class clint_t;
   friend class extension_t;
 
-  void parse_varch_string(const char* isa);
-  void parse_isa_string(const char* isa);
+  void parse_varch_string(const char*);
+  void parse_priv_string(const char*);
+  void parse_isa_string(const char*);
   void build_opcode_map();
   void register_base_instructions();
   insn_func_t decode_insn(insn_t insn);

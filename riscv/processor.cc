@@ -20,14 +20,15 @@
 #undef STATE
 #define STATE state
 
-processor_t::processor_t(const char* isa, const char* varch, simif_t* sim,
-                         uint32_t id, bool halt_on_reset)
+processor_t::processor_t(const char* isa, const char* priv, const char* varch,
+                         simif_t* sim, uint32_t id, bool halt_on_reset)
   : debug(false), halt_request(false), sim(sim), ext(NULL), id(id),
   histogram_enabled(false), log_commits_enabled(false),
   halt_on_reset(halt_on_reset), last_pc(1), executions(1)
 {
   VU.p = this;
   parse_isa_string(isa);
+  parse_priv_string(priv);
   parse_varch_string(varch);
   register_base_instructions();
   mmu = new mmu_t(sim, this);
@@ -58,6 +59,12 @@ processor_t::~processor_t()
 static void bad_isa_string(const char* isa)
 {
   fprintf(stderr, "error: bad --isa option %s\n", isa);
+  abort();
+}
+
+static void bad_priv_string(const char* priv)
+{
+  fprintf(stderr, "error: bad --priv option %s\n", priv);
   abort();
 }
 
@@ -121,11 +128,35 @@ void processor_t::parse_varch_string(const char* s)
   VU.SLEN = slen;
 }
 
+static std::string strtolower(const char* str)
+{
+  std::string res;
+  for (const char *r = str; *r; r++)
+    res += std::tolower(*r);
+  return res;
+}
+
+void processor_t::parse_priv_string(const char* str)
+{
+  std::string lowercase = strtolower(str);
+  bool user = false, supervisor = false;
+
+  if (lowercase == "m")
+    ;
+  else if (lowercase == "mu")
+    user = true;
+  else if (lowercase == "msu")
+    user = supervisor = true;
+  else
+    bad_priv_string(str);
+
+  max_isa |= reg_t(user) << ('u' - 'a');
+  max_isa |= reg_t(supervisor) << ('s' - 'a');
+}
+
 void processor_t::parse_isa_string(const char* str)
 {
-  std::string lowercase, tmp;
-  for (const char *r = str; *r; r++)
-    lowercase += std::tolower(*r);
+  std::string lowercase = strtolower(str), tmp;
 
   const char* p = lowercase.c_str();
   const char* all_subsets = "imafdqc"
@@ -135,10 +166,10 @@ void processor_t::parse_isa_string(const char* str)
     "";
 
   max_xlen = 64;
-  state.misa = reg_t(2) << 62;
+  max_isa = reg_t(2) << 62;
 
   if (strncmp(p, "rv32", 4) == 0)
-    max_xlen = 32, state.misa = reg_t(1) << 30, p += 4;
+    max_xlen = 32, max_isa = reg_t(1) << 30, p += 4;
   else if (strncmp(p, "rv64", 4) == 0)
     p += 4;
   else if (strncmp(p, "rv", 2) == 0)
@@ -154,11 +185,9 @@ void processor_t::parse_isa_string(const char* str)
   }
 
   isa_string = "rv" + std::to_string(max_xlen) + p;
-  state.misa |= 1L << ('s' - 'a'); // advertise support for supervisor mode
-  state.misa |= 1L << ('u' - 'a'); // advertise support for user mode
 
   while (*p) {
-    state.misa |= 1L << (*p - 'a');
+    max_isa |= 1L << (*p - 'a');
 
     if (auto next = strchr(all_subsets, *p)) {
       all_subsets = next + 1;
@@ -179,8 +208,6 @@ void processor_t::parse_isa_string(const char* str)
 
   if (supports_extension('Q') && !supports_extension('D'))
     bad_isa_string(str);
-
-  max_isa = state.misa;
 }
 
 void state_t::reset(reg_t max_isa)
@@ -349,7 +376,7 @@ reg_t processor_t::legalize_privilege(reg_t prv)
   if (!supports_extension('U'))
     return PRV_M;
 
-  if (prv == PRV_H || !supports_extension('S'))
+  if (prv == PRV_H || (prv == PRV_S && !supports_extension('S')))
     return PRV_U;
 
   return prv;
@@ -461,8 +488,9 @@ int processor_t::paddr_bits()
 void processor_t::set_csr(int which, reg_t val)
 {
   val = zext_xlen(val);
-  reg_t delegable_ints = MIP_SSIP | MIP_STIP | MIP_SEIP
-                       | ((ext != NULL) << IRQ_COP);
+  reg_t supervisor_ints = supports_extension('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
+  reg_t coprocessor_ints = (ext != NULL) << IRQ_COP;
+  reg_t delegable_ints = supervisor_ints | coprocessor_ints;
   reg_t all_ints = delegable_ints | MIP_MSIP | MIP_MTIP;
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.n_pmp) {
@@ -507,10 +535,14 @@ void processor_t::set_csr(int which, reg_t val)
           (MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_SUM | MSTATUS_MXR))
         mmu->flush_tlb();
 
+      bool has_fs = supports_extension('S') || supports_extension('F')
+                  || supports_extension('V');
+
       reg_t mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE
-                 | MSTATUS_FS | MSTATUS_MPRV | MSTATUS_SUM
+                 | MSTATUS_MPRV | MSTATUS_SUM
                  | MSTATUS_MXR | MSTATUS_TW | MSTATUS_TVM
                  | MSTATUS_TSR | MSTATUS_UXL | MSTATUS_SXL |
+                 (has_fs ? MSTATUS_FS : 0) |
                  (ext ? MSTATUS_XS : 0);
 
       reg_t requested_mpp = legalize_privilege(get_field(val, MSTATUS_MPP));
@@ -534,7 +566,7 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_MIP: {
-      reg_t mask = MIP_SSIP | MIP_STIP;
+      reg_t mask = supervisor_ints & (MIP_SSIP | MIP_STIP);
       state.mip = (state.mip & ~mask) | (val & mask);
       break;
     }
@@ -809,8 +841,14 @@ reg_t processor_t::get_csr(int which)
     case CSR_MVENDORID: return 0;
     case CSR_MHARTID: return id;
     case CSR_MTVEC: return state.mtvec;
-    case CSR_MEDELEG: return state.medeleg;
-    case CSR_MIDELEG: return state.mideleg;
+    case CSR_MEDELEG:
+      if (!supports_extension('S'))
+        break;
+      return state.medeleg;
+    case CSR_MIDELEG:
+      if (!supports_extension('S'))
+        break;
+      return state.mideleg;
     case CSR_TSELECT: return state.tselect;
     case CSR_TDATA1:
       if (state.tselect < state.num_triggers) {
