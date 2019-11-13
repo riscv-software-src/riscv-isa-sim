@@ -25,7 +25,8 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-sim_t::sim_t(const char* isa, const char* varch, size_t nprocs, bool halted,
+sim_t::sim_t(const char* isa, const char* priv, const char* varch,
+             size_t nprocs, bool halted,
              reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
@@ -51,7 +52,7 @@ sim_t::sim_t(const char* isa, const char* varch, size_t nprocs, bool halted,
 
   if (hartids.size() == 0) {
     for (size_t i = 0; i < procs.size(); i++) {
-      procs[i] = new processor_t(isa, varch, this, i, halted);
+      procs[i] = new processor_t(isa, priv, varch, this, i, halted);
     }
   }
   else {
@@ -60,7 +61,7 @@ sim_t::sim_t(const char* isa, const char* varch, size_t nprocs, bool halted,
       exit(1);
     }
     for (size_t i = 0; i < procs.size(); i++) {
-      procs[i] = new processor_t(isa, varch, this, hartids[i], halted);
+      procs[i] = new processor_t(isa, priv, varch, this, hartids[i], halted);
     }
   }
 

@@ -20,14 +20,15 @@
 #undef STATE
 #define STATE state
 
-processor_t::processor_t(const char* isa, const char* varch, simif_t* sim,
-                         uint32_t id, bool halt_on_reset)
+processor_t::processor_t(const char* isa, const char* priv, const char* varch,
+                         simif_t* sim, uint32_t id, bool halt_on_reset)
   : debug(false), halt_request(false), sim(sim), ext(NULL), id(id),
   histogram_enabled(false), log_commits_enabled(false),
   halt_on_reset(halt_on_reset), last_pc(1), executions(1)
 {
   VU.p = this;
   parse_isa_string(isa);
+  parse_priv_string(priv);
   parse_varch_string(varch);
   register_base_instructions();
   mmu = new mmu_t(sim, this);
@@ -58,6 +59,12 @@ processor_t::~processor_t()
 static void bad_isa_string(const char* isa)
 {
   fprintf(stderr, "error: bad --isa option %s\n", isa);
+  abort();
+}
+
+static void bad_priv_string(const char* priv)
+{
+  fprintf(stderr, "error: bad --priv option %s\n", priv);
   abort();
 }
 
@@ -127,6 +134,24 @@ static std::string strtolower(const char* str)
   for (const char *r = str; *r; r++)
     res += std::tolower(*r);
   return res;
+}
+
+void processor_t::parse_priv_string(const char* str)
+{
+  std::string lowercase = strtolower(str);
+  bool user = false, supervisor = false;
+
+  if (lowercase == "m")
+    ;
+  else if (lowercase == "mu")
+    user = true;
+  else if (lowercase == "msu")
+    user = supervisor = true;
+  else
+    bad_priv_string(str);
+
+  max_isa |= reg_t(user) << ('u' - 'a');
+  max_isa |= reg_t(supervisor) << ('s' - 'a');
 }
 
 void processor_t::parse_isa_string(const char* str)

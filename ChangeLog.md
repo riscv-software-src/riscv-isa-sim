@@ -3,6 +3,7 @@ Version 1.0.1-dev
 - Preliminary support for a subset of the Vector Extension, v0.7.1.
 - Support S-mode vectored interrupts (i.e. `stvec[0]` is now writable).
 - Added support for dynamic linking of libraries containing MMIO devices.
+- Added `--priv` flag to control which privilege modes are available.
 - When the commit log is enabled at configure time (`--enable-commitlog`),
   it must also be enabled at runtime with the `--log-commits` option.
 - Several debug-related additions and changes:
