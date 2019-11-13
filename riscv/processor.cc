@@ -488,8 +488,9 @@ int processor_t::paddr_bits()
 void processor_t::set_csr(int which, reg_t val)
 {
   val = zext_xlen(val);
-  reg_t delegable_ints = MIP_SSIP | MIP_STIP | MIP_SEIP
-                       | ((ext != NULL) << IRQ_COP);
+  reg_t supervisor_ints = supports_extension('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
+  reg_t coprocessor_ints = (ext != NULL) << IRQ_COP;
+  reg_t delegable_ints = supervisor_ints | coprocessor_ints;
   reg_t all_ints = delegable_ints | MIP_MSIP | MIP_MTIP;
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.n_pmp) {
@@ -561,7 +562,7 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_MIP: {
-      reg_t mask = MIP_SSIP | MIP_STIP;
+      reg_t mask = supervisor_ints & (MIP_SSIP | MIP_STIP);
       state.mip = (state.mip & ~mask) | (val & mask);
       break;
     }
@@ -836,8 +837,14 @@ reg_t processor_t::get_csr(int which)
     case CSR_MVENDORID: return 0;
     case CSR_MHARTID: return id;
     case CSR_MTVEC: return state.mtvec;
-    case CSR_MEDELEG: return state.medeleg;
-    case CSR_MIDELEG: return state.mideleg;
+    case CSR_MEDELEG:
+      if (!supports_extension('S'))
+        break;
+      return state.medeleg;
+    case CSR_MIDELEG:
+      if (!supports_extension('S'))
+        break;
+      return state.mideleg;
     case CSR_TSELECT: return state.tselect;
     case CSR_TDATA1:
       if (state.tselect < state.num_triggers) {
