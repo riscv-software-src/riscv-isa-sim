@@ -135,10 +135,10 @@ void processor_t::parse_isa_string(const char* str)
     "";
 
   max_xlen = 64;
-  state.misa = reg_t(2) << 62;
+  max_isa = reg_t(2) << 62;
 
   if (strncmp(p, "rv32", 4) == 0)
-    max_xlen = 32, state.misa = reg_t(1) << 30, p += 4;
+    max_xlen = 32, max_isa = reg_t(1) << 30, p += 4;
   else if (strncmp(p, "rv64", 4) == 0)
     p += 4;
   else if (strncmp(p, "rv", 2) == 0)
@@ -154,11 +154,9 @@ void processor_t::parse_isa_string(const char* str)
   }
 
   isa_string = "rv" + std::to_string(max_xlen) + p;
-  state.misa |= 1L << ('s' - 'a'); // advertise support for supervisor mode
-  state.misa |= 1L << ('u' - 'a'); // advertise support for user mode
 
   while (*p) {
-    state.misa |= 1L << (*p - 'a');
+    max_isa |= 1L << (*p - 'a');
 
     if (auto next = strchr(all_subsets, *p)) {
       all_subsets = next + 1;
@@ -179,8 +177,6 @@ void processor_t::parse_isa_string(const char* str)
 
   if (supports_extension('Q') && !supports_extension('D'))
     bad_isa_string(str);
-
-  max_isa = state.misa;
 }
 
 void state_t::reset(reg_t max_isa)
