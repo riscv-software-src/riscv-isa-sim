@@ -121,11 +121,17 @@ void processor_t::parse_varch_string(const char* s)
   VU.SLEN = slen;
 }
 
+static std::string strtolower(const char* str)
+{
+  std::string res;
+  for (const char *r = str; *r; r++)
+    res += std::tolower(*r);
+  return res;
+}
+
 void processor_t::parse_isa_string(const char* str)
 {
-  std::string lowercase, tmp;
-  for (const char *r = str; *r; r++)
-    lowercase += std::tolower(*r);
+  std::string lowercase = strtolower(str), tmp;
 
   const char* p = lowercase.c_str();
   const char* all_subsets = "imafdqc"
