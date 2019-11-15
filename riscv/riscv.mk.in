@@ -294,7 +294,6 @@ riscv_insn_ext_q = \
 	fsub_q \
 
 riscv_insn_ext_v_alu_int = \
-	vaadd_vi \
 	vaadd_vv \
 	vaadd_vx \
 	vadc_vim \
