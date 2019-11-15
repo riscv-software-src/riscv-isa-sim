@@ -902,9 +902,11 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_VXI_INSN(vsadd,     1);
   DISASM_OPIV_VX__INSN(vssubu,    0);
   DISASM_OPIV_VX__INSN(vssub,     1);
-  DISASM_OPIV_VXI_INSN(vaadd,     1);
   DISASM_OPIV_VXI_INSN(vsll,      1);
-  DISASM_OPIV_VX__INSN(vasub,     1);
+  DISASM_OPIV_VX__INSN(vaaddu,    0);
+  DISASM_OPIV_VX__INSN(vaadd,     0);
+  DISASM_OPIV_VX__INSN(vasubu,    0);
+  DISASM_OPIV_VX__INSN(vasub,     0);
   DISASM_OPIV_VX__INSN(vsmul,     1);
   DISASM_OPIV_VXI_INSN(vsrl,      0);
   DISASM_OPIV_VXI_INSN(vsra,      0);
@@ -1075,6 +1077,7 @@ disassembler_t::disassembler_t(int xlen)
 
   DISASM_VFUNARY0_INSN(vfn, 1);
   DISASM_INSN("vfncvt.f.f.v", vfncvt_f_f_v, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vfncvt.rod.f.f.v", vfncvt_rod_f_f_v, 0, {&vd, &vs2, &opt, &vm});
 
   //vfunary1
   DISASM_INSN("vfsqrt.v", vfsqrt_v, 0, {&vd, &vs2, &opt, &vm});
