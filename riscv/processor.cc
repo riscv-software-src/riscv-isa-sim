@@ -126,6 +126,7 @@ void processor_t::parse_varch_string(const char* s)
   VU.VLEN = vlen;
   VU.ELEN = elen;
   VU.SLEN = slen;
+  VU.vlenb = vlen / 8;
 }
 
 static std::string strtolower(const char* str)
@@ -1692,6 +1693,11 @@ reg_t processor_t::get_csr(int which)
       if (!supports_extension('V'))
         break;
       return VU.vtype;
+    case CSR_VLENB:
+      require_vector_vs;
+      if (!supports_extension('V'))
+        break;
+      return VU.vlenb;
   }
   throw trap_illegal_instruction(0);
 }
