@@ -401,6 +401,13 @@ riscv_insn_ext_v_alu_int = \
 	vor_vi \
 	vor_vv \
 	vor_vx \
+	vqmacc_vv \
+	vqmacc_vx \
+	vqmaccsu_vv \
+	vqmaccsu_vx \
+	vqmaccu_vv \
+	vqmaccu_vx \
+	vqmaccus_vx \
 	vredand_vs \
 	vredmax_vs \
 	vredmaxu_vs \
