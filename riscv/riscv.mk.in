@@ -478,13 +478,6 @@ riscv_insn_ext_v_alu_int = \
 	vwmulu_vx \
 	vwredsum_vs \
 	vwredsumu_vs \
-	vwsmacc_vv \
-	vwsmacc_vx \
-	vwsmaccsu_vv \
-	vwsmaccsu_vx \
-	vwsmaccu_vv \
-	vwsmaccu_vx \
-	vwsmaccus_vx \
 	vwsub_vv \
 	vwsub_vx \
 	vwsub_wv \

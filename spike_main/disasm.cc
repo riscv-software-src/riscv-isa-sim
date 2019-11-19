@@ -922,10 +922,10 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_S___INSN(vwredsum,  1);
   DISASM_OPIV_V___INSN(vdotu,     0);
   DISASM_OPIV_V___INSN(vdot,      1);
-  DISASM_OPIV_VX__INSN(vwsmaccu,  0);
-  DISASM_OPIV_VX__INSN(vwsmacc,   1);
-  DISASM_OPIV_VX__INSN(vwsmaccsu, 0);
-  DISASM_OPIV__X__INSN(vwsmaccus, 1);
+  DISASM_OPIV_VX__INSN(vqmaccu,   0);
+  DISASM_OPIV_VX__INSN(vqmacc,    1);
+  DISASM_OPIV__X__INSN(vqmaccus,  1);
+  DISASM_OPIV_VX__INSN(vqmaccsu,  0);
 
   //OPMVV/OPMVX
   //0b00_0000
@@ -991,8 +991,8 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_VX__INSN(vwmul,     1);
   DISASM_OPIV_VX__INSN(vwmaccu,   0);
   DISASM_OPIV_VX__INSN(vwmacc,    1);
-  DISASM_OPIV_VX__INSN(vwmaccsu,  0);
   DISASM_OPIV__X__INSN(vwmaccus,  1);
+  DISASM_OPIV_VX__INSN(vwmaccsu,  0);
 
   #undef DISASM_OPIV_VXI_INSN
   #undef DISASM_OPIV_VX__INSN
