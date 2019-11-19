@@ -526,11 +526,12 @@ riscv_insn_ext_v_alu_fp = \
 	vfmv_f_s \
 	vfmv_s_f \
 	vfmv_v_f \
-	vfncvt_f_f_v \
-	vfncvt_f_x_v \
-	vfncvt_f_xu_v \
-	vfncvt_x_f_v \
-	vfncvt_xu_f_v \
+	vfncvt_f_f_w \
+	vfncvt_f_x_w \
+	vfncvt_f_xu_w \
+	vfncvt_rod_f_f_w \
+	vfncvt_x_f_w \
+	vfncvt_xu_f_w \
 	vfnmacc_vf \
 	vfnmacc_vv \
 	vfnmadd_vf \
