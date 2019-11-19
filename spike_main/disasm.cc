@@ -1029,15 +1029,23 @@ disassembler_t::disassembler_t(int xlen)
     add_insn(new disasm_insn_t(#name ".vf", match_##name##_vf, mask_##name##_vf, \
                 {&vd, &vs2, &frs1, &opt, &vm})); \
 
-  #define DISASM_VFUNARY0_INSN(name, extra) \
-    add_insn(new disasm_insn_t(#name "cvt.xu.f.v", match_##name##cvt_xu_f_v, \
-                mask_##name##cvt_xu_f_v, {&vd, &vs2, &opt, &vm})); \
-    add_insn(new disasm_insn_t(#name "cvt.x.f.v", match_##name##cvt_x_f_v, \
-                mask_##name##cvt_x_f_v, {&vd, &vs2, &opt, &vm})); \
-    add_insn(new disasm_insn_t(#name "cvt.f.xu.v", match_##name##cvt_f_xu_v, \
-                mask_##name##cvt_f_xu_v, {&vd, &vs2, &opt, &vm})); \
-    add_insn(new disasm_insn_t(#name "cvt.f.x.v", match_##name##cvt_f_x_v, \
-                mask_##name##cvt_f_x_v, {&vd, &vs2, &opt, &vm}));
+  #define DISASM_VFUNARY0_INSN(name, extra, suf) \
+    add_insn(new disasm_insn_t(#name "cvt.xu.f." #suf, \
+                match_##name##cvt_xu_f_##suf, mask_##name##cvt_xu_f_##suf, \
+                {&vd, &vs2, &opt, &vm})); \
+    add_insn(new disasm_insn_t(#name "cvt.x.f." #suf, \
+                match_##name##cvt_xu_f_##suf, mask_##name##cvt_xu_f_##suf, \
+                {&vd, &vs2, &opt, &vm})); \
+    add_insn(new disasm_insn_t(#name "cvt.f.xu." #suf, \
+                match_##name##cvt_xu_f_##suf, mask_##name##cvt_xu_f_##suf, \
+                {&vd, &vs2, &opt, &vm})); \
+    add_insn(new disasm_insn_t(#name "cvt.f.x." #suf, \
+                match_##name##cvt_xu_f_##suf, mask_##name##cvt_xu_f_##suf, \
+                {&vd, &vs2, &opt, &vm})); \
+    if (extra) \
+        add_insn(new disasm_insn_t(#name "cvt.f.f." #suf, \
+                    match_##name##cvt_xu_f_##suf, mask_##name##cvt_xu_f_##suf, \
+                    {&vd, &vs2, &opt, &vm})); \
 
   //OPFVV/OPFVF
   //0b01_0000
@@ -1070,14 +1078,12 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV__F_INSN(vfrdiv);
 
   //vfunary0
-  DISASM_VFUNARY0_INSN(vf,  0);
+  DISASM_VFUNARY0_INSN(vf,  0, v);
 
-  DISASM_VFUNARY0_INSN(vfw, 1);
-  DISASM_INSN("vfwcvt.f.f.v", vfwcvt_f_f_v, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_VFUNARY0_INSN(vfw, 1, v);
 
-  DISASM_VFUNARY0_INSN(vfn, 1);
-  DISASM_INSN("vfncvt.f.f.v", vfncvt_f_f_v, 0, {&vd, &vs2, &opt, &vm});
-  DISASM_INSN("vfncvt.rod.f.f.v", vfncvt_rod_f_f_v, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_VFUNARY0_INSN(vfn, 1, w);
+  DISASM_INSN("vfncvt.rod.f.f.w", vfncvt_rod_f_f_w, 0, {&vd, &vs2, &opt, &vm});
 
   //vfunary1
   DISASM_INSN("vfsqrt.v", vfsqrt_v, 0, {&vd, &vs2, &opt, &vm});
