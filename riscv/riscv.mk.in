@@ -382,22 +382,22 @@ riscv_insn_ext_v_alu_int = \
 	vmv_x_s \
 	vmxnor_mm \
 	vmxor_mm \
-	vnclip_vi \
-	vnclip_vv \
-	vnclip_vx \
-	vnclipu_vi \
-	vnclipu_vv \
-	vnclipu_vx \
+	vnclip_wi \
+	vnclip_wv \
+	vnclip_wx \
+	vnclipu_wi \
+	vnclipu_wv \
+	vnclipu_wx \
 	vnmsac_vv \
 	vnmsac_vx \
 	vnmsub_vv \
 	vnmsub_vx \
-	vnsra_vi \
-	vnsra_vv \
-	vnsra_vx \
-	vnsrl_vi \
-	vnsrl_vv \
-	vnsrl_vx \
+	vnsra_wi \
+	vnsra_wv \
+	vnsra_wx \
+	vnsrl_wi \
+	vnsrl_wv \
+	vnsrl_wx \
 	vor_vi \
 	vor_vv \
 	vor_vx \
