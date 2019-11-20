@@ -788,6 +788,8 @@ disassembler_t::disassembler_t(int xlen)
       {"vlseg%dbuff.v",{&vd, &v_address, &opt, &vm}},
     };
 
+
+
     for (size_t idx_insn = 0; idx_insn < sizeof(insn_code) / sizeof(insn_code[0]); ++idx_insn) {
       const reg_t match_nf = nf << 29;
       char buf[128];
@@ -800,6 +802,8 @@ disassembler_t::disassembler_t(int xlen)
     }
   }
 
+  DISASM_INSN("vl1r.v", vl1r_v, 0, {&vd, &v_address});
+  DISASM_INSN("vs1r.v", vs1r_v, 0, {&vs3, &v_address});
 
   #define DISASM_OPIV_VXI_INSN(name, sign) \
     add_insn(new disasm_insn_t(#name ".vv", match_##name##_vv, mask_##name##_vv, \
