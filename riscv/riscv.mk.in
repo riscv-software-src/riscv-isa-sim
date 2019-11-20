@@ -295,7 +295,9 @@ riscv_insn_ext_q = \
 
 riscv_insn_ext_v_alu_int = \
 	vaadd_vv \
+	vaaddu_vv \
 	vaadd_vx \
+	vaaddu_vx \
 	vadc_vim \
 	vadc_vvm \
 	vadc_vxm \
@@ -306,7 +308,9 @@ riscv_insn_ext_v_alu_int = \
 	vand_vv \
 	vand_vx \
 	vasub_vv \
+	vasubu_vv \
 	vasub_vx \
+	vasubu_vx \
 	vcompress_vm \
 	vdiv_vv \
 	vdiv_vx \
