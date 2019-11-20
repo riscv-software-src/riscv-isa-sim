@@ -767,17 +767,17 @@ disassembler_t::disassembler_t(int xlen)
       {"vssseg%dw.v", {&vs3, &v_address, &xrs2, &opt, &vm}},
       {"vssseg%de.v", {&vs3, &v_address, &xrs2, &opt, &vm}},
 
-      {"vlseg%db.v", {&vd, &v_address, &vs2, &opt, &vm}},
-      {"vlseg%dh.v", {&vd, &v_address, &vs2, &opt, &vm}},
-      {"vlseg%dw.v", {&vd, &v_address, &vs2, &opt, &vm}},
-      {"vlseg%de.v", {&vd, &v_address, &vs2, &opt, &vm}},
-      {"vlseg%dwu.v",{&vd, &v_address, &vs2, &opt, &vm}},
-      {"vlseg%dhu.v",{&vd, &v_address, &vs2, &opt, &vm}},
-      {"vlseg%dbu.v",{&vd, &v_address, &vs2, &opt, &vm}},
-      {"vsseg%db.v", {&vs3, &v_address, &vs2, &opt, &vm}},
-      {"vsseg%dh.v", {&vs3, &v_address, &vs2, &opt, &vm}},
-      {"vsseg%dw.v", {&vs3, &v_address, &vs2, &opt, &vm}},
-      {"vsseg%de.v", {&vs3, &v_address, &vs2, &opt, &vm}},
+      {"vlxseg%db.v", {&vd, &v_address, &vs2, &opt, &vm}},
+      {"vlxseg%dh.v", {&vd, &v_address, &vs2, &opt, &vm}},
+      {"vlxseg%dw.v", {&vd, &v_address, &vs2, &opt, &vm}},
+      {"vlxseg%de.v", {&vd, &v_address, &vs2, &opt, &vm}},
+      {"vlxseg%dwu.v",{&vd, &v_address, &vs2, &opt, &vm}},
+      {"vlxseg%dhu.v",{&vd, &v_address, &vs2, &opt, &vm}},
+      {"vlxseg%dbu.v",{&vd, &v_address, &vs2, &opt, &vm}},
+      {"vsxseg%db.v", {&vs3, &v_address, &vs2, &opt, &vm}},
+      {"vsxseg%dh.v", {&vs3, &v_address, &vs2, &opt, &vm}},
+      {"vsxseg%dw.v", {&vs3, &v_address, &vs2, &opt, &vm}},
+      {"vsxseg%de.v", {&vs3, &v_address, &vs2, &opt, &vm}},
 
       {"vlseg%dbff.v", {&vd, &v_address, &opt, &vm}},
       {"vlseg%dhff.v", {&vd, &v_address, &opt, &vm}},
@@ -787,6 +787,8 @@ disassembler_t::disassembler_t(int xlen)
       {"vlseg%dhuff.v",{&vd, &v_address, &opt, &vm}},
       {"vlseg%dbuff.v",{&vd, &v_address, &opt, &vm}},
     };
+
+
 
     for (size_t idx_insn = 0; idx_insn < sizeof(insn_code) / sizeof(insn_code[0]); ++idx_insn) {
       const reg_t match_nf = nf << 29;
@@ -800,6 +802,8 @@ disassembler_t::disassembler_t(int xlen)
     }
   }
 
+  DISASM_INSN("vl1r.v", vl1r_v, 0, {&vd, &v_address});
+  DISASM_INSN("vs1r.v", vs1r_v, 0, {&vs3, &v_address});
 
   #define DISASM_OPIV_VXI_INSN(name, sign) \
     add_insn(new disasm_insn_t(#name ".vv", match_##name##_vv, mask_##name##_vv, \
