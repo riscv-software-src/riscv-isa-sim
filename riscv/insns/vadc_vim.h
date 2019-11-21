@@ -1,6 +1,5 @@
-// vadc.vim vd, vs2, simm5
-require(!(insn.rd() == 0 && P.VU.vlmul > 1));
-VI_VI_LOOP
+// vadc.vim vd, vs2, simm5, v0
+VI_XI_LOOP_WITH_CARRY
 ({
   auto &v0 = P.VU.elt<uint64_t>(0, midx);
   const uint128_t op_mask = (UINT64_MAX >> (64 - sew));

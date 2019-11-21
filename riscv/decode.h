@@ -355,10 +355,13 @@ extern bool g_vector_mistrap;
 //
 // vector: masking skip helper
 //
-#define VI_LOOP_ELEMENT_SKIP(BODY) \
+#define VI_MASK_VARS \
   const int mlen = P.VU.vmlen; \
   const int midx = (mlen * i) / 64; \
   const int mpos = (mlen * i) % 64; \
+
+#define VI_LOOP_ELEMENT_SKIP(BODY) \
+  VI_MASK_VARS \
   if (insn.v_vm() == 0) { \
     BODY; \
     bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
@@ -652,6 +655,17 @@ static inline bool is_overlapped(const int astart, const int asize,
   auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
   auto vs1 = P.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
   auto &vd = P.VU.elt<uint64_t>(rd_num, midx);
+
+#define XI_WITH_CARRY_PARAMS(x) \
+  auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
+  auto rs1 = (type_sew_t<x>::type)RS1; \
+  auto simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
+  auto &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i);
+
+#define VV_WITH_CARRY_PARAMS(x) \
+  auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
+  auto vs1 = P.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
+  auto &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i);
 
 //
 // vector: integer and masking operation loop
@@ -1290,6 +1304,46 @@ VI_LOOP_END
       BODY; \
     } \
   } \
+
+#define VI_VV_LOOP_WITH_CARRY(BODY) \
+  require(insn.rd() != 0); \
+  VI_CHECK_SSS(true); \
+  VI_GENERAL_LOOP_BASE \
+  VI_MASK_VARS \
+    if (sew == e8){ \
+      VV_WITH_CARRY_PARAMS(e8) \
+      BODY; \
+    } else if (sew == e16) { \
+      VV_WITH_CARRY_PARAMS(e16) \
+      BODY; \
+    } else if (sew == e32) { \
+      VV_WITH_CARRY_PARAMS(e32) \
+      BODY; \
+    } else if (sew == e64) { \
+      VV_WITH_CARRY_PARAMS(e64) \
+      BODY; \
+    } \
+  VI_LOOP_END
+
+#define VI_XI_LOOP_WITH_CARRY(BODY) \
+  require(insn.rd() != 0); \
+  VI_CHECK_SSS(false); \
+  VI_GENERAL_LOOP_BASE \
+  VI_MASK_VARS \
+    if (sew == e8){ \
+      XI_WITH_CARRY_PARAMS(e8) \
+      BODY; \
+    } else if (sew == e16) { \
+      XI_WITH_CARRY_PARAMS(e16) \
+      BODY; \
+    } else if (sew == e32) { \
+      XI_WITH_CARRY_PARAMS(e32) \
+      BODY; \
+    } else if (sew == e64) { \
+      XI_WITH_CARRY_PARAMS(e64) \
+      BODY; \
+    } \
+  VI_LOOP_END
 
 // average loop
 #define VI_VVX_LOOP_AVG(opd, op, is_vs1) \
