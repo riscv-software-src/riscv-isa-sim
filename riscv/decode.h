@@ -1066,9 +1066,6 @@ VI_LOOP_END
   }else if(sew == e32){ \
     VV_PARAMS(e32); \
     BODY; \
-  }else if(sew == e64){ \
-    VV_PARAMS(e64); \
-    BODY; \
   } \
   VI_LOOP_END
 
@@ -1082,9 +1079,6 @@ VI_LOOP_END
     BODY; \
   }else if(sew == e32){ \
     VX_PARAMS(e32); \
-    BODY; \
-  }else if(sew == e64){ \
-    VX_PARAMS(e64); \
     BODY; \
   } \
   VI_LOOP_END
