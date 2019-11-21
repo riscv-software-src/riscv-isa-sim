@@ -1250,7 +1250,8 @@ VI_LOOP_END
 // carry/borrow bit loop
 #define VI_VV_LOOP_CARRY(BODY) \
   VI_CHECK_MSS(true); \
-  VI_LOOP_BASE \
+  VI_GENERAL_LOOP_BASE \
+  VI_MASK_VARS \
     if (sew == e8){ \
       VV_CARRY_PARAMS(e8) \
       BODY; \
@@ -1264,11 +1265,12 @@ VI_LOOP_END
       VV_CARRY_PARAMS(e64) \
       BODY; \
     } \
-  } \
+  VI_LOOP_END
 
 #define VI_XI_LOOP_CARRY(BODY) \
   VI_CHECK_MSS(false); \
-  VI_LOOP_BASE \
+  VI_GENERAL_LOOP_BASE \
+  VI_MASK_VARS \
     if (sew == e8){ \
       XI_CARRY_PARAMS(e8) \
       BODY; \
@@ -1282,7 +1284,7 @@ VI_LOOP_END
       XI_CARRY_PARAMS(e64) \
       BODY; \
     } \
-  } \
+  VI_LOOP_END
 
 #define VI_VV_LOOP_WITH_CARRY(BODY) \
   require(insn.rd() != 0); \
