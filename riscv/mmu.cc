@@ -294,14 +294,18 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
     if (PTE_TABLE(pte)) { // next level of page table
       base = ppn << PGSHIFT;
     } else if ((pte & PTE_U) ? s_mode && (type == FETCH || !sum) : !s_mode) {
+      fprintf(stderr, "Faulting because of PTE.U/SUM permissions. PTE_V = %lx, PTE_R = %lx, PTE_W = %lx, ppn = %lx", pte & PTE_V, pte & PTE_R, pte & PTE_W, ppn);
       break;
     } else if (!(pte & PTE_V) || (!(pte & PTE_R) && (pte & PTE_W))) {
+      fprintf(stderr, "Faulting because of invalid PTE or reserved permissions::!RW. PTE_V = %lx, PTE_R = %lx, PTE_W = %lx, ppn = %lx", pte & PTE_V, pte & PTE_R, pte & PTE_W, ppn);
       break;
     } else if (type == FETCH ? !(pte & PTE_X) :
                type == LOAD ?  !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
                                !((pte & PTE_R) && (pte & PTE_W))) {
+      fprintf(stderr, "Faulting because of RWX permissions PTE_V = %lx, PTE_R = %lx, PTE_W = %lx, ppn = %lx", pte & PTE_V, pte & PTE_R, pte & PTE_W, ppn);
       break;
     } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
+      fprintf(stderr, "Faulting because of PPN alignment PTE_V = %lx, PTE_R = %lx, PTE_W = %lx, ppn = %lx", pte & PTE_V, pte & PTE_R, pte & PTE_W, ppn);
       break;
     } else {
       reg_t ad = PTE_A | ((type == STORE) * PTE_D);
@@ -314,8 +318,10 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
       }
 #else
       // take exception if access or possibly dirty bit is not set.
-      if ((pte & ad) != ad)
+      if ((pte & ad) != ad) {
+        fprintf(stderr, "Faulting because of A/D bits not set PTE_V = %lx, PTE_R = %lx, PTE_W = %lx, ppn = %lx", pte & PTE_V, pte & PTE_R, pte & PTE_W, ppn);
         break;
+      }
 #endif
       // for superpage mappings, make a fake leaf PTE for the TLB's benefit.
       reg_t vpn = addr >> PGSHIFT;
