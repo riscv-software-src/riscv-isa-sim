@@ -537,6 +537,9 @@ void processor_t::set_csr(int which, reg_t val)
         (1 << CAUSE_USER_ECALL) |
         (1 << CAUSE_FETCH_PAGE_FAULT) |
         (1 << CAUSE_LOAD_PAGE_FAULT) |
+        (1 << CAUSE_MISALIGNED_LOAD) |
+        (1 << CAUSE_MISALIGNED_STORE) |
+        (1 << CAUSE_ILLEGAL_INSTRUCTION) |
         (1 << CAUSE_STORE_PAGE_FAULT);
       state.medeleg = (state.medeleg & ~mask) | (val & mask);
       break;
