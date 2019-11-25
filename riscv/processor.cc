@@ -204,6 +204,8 @@ void processor_t::parse_isa_string(const char* str)
     }
   }
 
+  state.misa = max_isa;
+
   if (supports_extension('D') && !supports_extension('F'))
     bad_isa_string(str);
 
