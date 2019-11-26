@@ -233,10 +233,10 @@ void vectorUnit_t::reset(){
   reg_file = malloc(NVPR * (VLEN/8));
 
   vtype = 0;
-  set_vl(-1, 0, -1); // default to illegal configuration
+  set_vl(0, 0, 0, -1); // default to illegal configuration
 }
 
-reg_t vectorUnit_t::set_vl(int regId, reg_t reqVL, reg_t newType){
+reg_t vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newType){
   if (vtype != newType){
     vtype = newType;
     vsew = 1 << (BITS(newType, 4, 2) + 3);
@@ -256,11 +256,11 @@ reg_t vectorUnit_t::set_vl(int regId, reg_t reqVL, reg_t newType){
   // set vl
   if (vlmax == 0) {
     vl = 0;
-  } else if (regId == 0) {
+  } else if (rd == 0 && rs1 == 0) {
     vl = vl > vlmax ? vlmax : vl;
-  } else if (regId == -1) {
+  } else if (rd != 0 && rs1 == 0) {
     vl = vlmax;
-  } else if (regId >= 0) {
+  } else if (rs1 != 0) {
     vl = reqVL > vlmax ? vlmax : reqVL;
   }
 
