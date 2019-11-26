@@ -18,7 +18,7 @@ build:
     - cd bengal-team
     - git clone -b rvv-0.7.x --depth 1 --single-branch --no-tags --recurse-submodules -j `nproc` https://github.com/riscv/riscv-binutils-gdb.git
     - make toolchain-prefix/bin/riscv64-unknown-elf-gcc -j
-    - git clone -b hankuanc --depth 1 --single-branch --no-tags --recurse-submodules -j `nproc` git@github.com:sifive/riscv-tests-internal.git
+    - git clone -b e27 --depth 1 --single-branch --no-tags --recurse-submodules -j `nproc` git@github.com:sifive/riscv-tests-internal.git
     - git --git-dir=./riscv-tests-internal/.git rev-parse HEAD
     - mkdir riscv-tests-internal/build
   cache:
