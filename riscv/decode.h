@@ -385,6 +385,15 @@ static inline bool is_overlapped(const int astart, const int asize,
   if (insn.v_vm() == 0) \
     require(insn.rd() != 0);
 
+#define VI_CHECK_LDST_INDEX \
+  require_vector; \
+  require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
+  require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
+  if (insn.v_nf() > 0) \
+    require(!is_overlapped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul)); \
+  if (insn.v_vm() == 0 && (insn.v_nf() > 0 || P.VU.vlmul > 1)) \
+    require(insn.rd() != 0); \
+
 #define VI_CHECK_MSS(is_vs1) \
   if (P.VU.vlmul > 1) { \
     require(!is_overlapped(insn.rd(), 1, insn.rs2(), P.VU.vlmul)); \
@@ -1419,31 +1428,29 @@ reg_t index[vlmax]; \
 for (reg_t i = 0; i < vlmax; ++i) { \
   switch(P.VU.vsew) { \
     case e8: \
-      index[i] = P.VU.elt<int8_t>(v, i); \
+      index[i] = P.VU.elt<uint8_t>(v, i); \
       break; \
     case e16: \
-      index[i] = P.VU.elt<int16_t>(v, i); \
+      index[i] = P.VU.elt<uint16_t>(v, i); \
       break; \
     case e32: \
-      index[i] = P.VU.elt<int32_t>(v, i); \
+      index[i] = P.VU.elt<uint32_t>(v, i); \
       break; \
     case e64: \
-      index[i] = P.VU.elt<int64_t>(v, i); \
+      index[i] = P.VU.elt<uint64_t>(v, i); \
       break; \
   } \
 }
 
-#define VI_ST(stride, offset, st_width, elt_byte) \
+#define VI_ST_COMMON(stride, offset, st_width, elt_byte) \
   const reg_t nf = insn.v_nf() + 1; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \
-  VI_CHECK_SXX; \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
   require(vs3 + nf <= NVPR); \
-  const reg_t vlmax = P.VU.vlmax; \
   const reg_t vlmul = P.VU.vlmul; \
-  for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
+  for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i) \
     VI_ELEMENT_SKIP(i); \
     P.VU.vstart = i; \
@@ -1468,17 +1475,15 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   } \
   P.VU.vstart = 0; 
 
-#define VI_LD(stride, offset, ld_width, elt_byte) \
+#define VI_LD_COMMON(stride, offset, ld_width, elt_byte) \
   const reg_t nf = insn.v_nf() + 1; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \
-  VI_CHECK_SXX; \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
   require(vd + nf <= NVPR); \
-  const reg_t vlmax = P.VU.vlmax; \
   const reg_t vlmul = P.VU.vlmul; \
-  for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
+  for (reg_t i = 0; i < vl; ++i) { \
     VI_ELEMENT_SKIP(i); \
     VI_STRIP(i); \
     P.VU.vstart = i; \
@@ -1501,6 +1506,21 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   } \
   P.VU.vstart = 0;
 
+#define VI_LD(stride, offset, ld_width, elt_byte) \
+  VI_CHECK_SXX; \
+  VI_LD_COMMON(stride, offset, ld_width, elt_byte)
+
+#define VI_LD_INDEX(stride, offset, ld_width, elt_byte) \
+  VI_CHECK_LDST_INDEX; \
+  VI_LD_COMMON(stride, offset, ld_width, elt_byte)
+
+#define VI_ST(stride, offset, st_width, elt_byte) \
+  VI_CHECK_SXX; \
+  VI_ST_COMMON(stride, offset, st_width, elt_byte) \
+
+#define VI_ST_INDEX(stride, offset, st_width, elt_byte) \
+  VI_CHECK_LDST_INDEX; \
+  VI_ST_COMMON(stride, offset, st_width, elt_byte) \
 
 #define VI_LDST_FF(itype, tsew) \
   require(p->VU.vsew >= e##tsew && p->VU.vsew <= e64); \
