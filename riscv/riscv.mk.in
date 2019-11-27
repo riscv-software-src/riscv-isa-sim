@@ -596,6 +596,7 @@ riscv_insn_ext_v_alu_fp = \
 	vmfne_vv \
 
 riscv_insn_ext_v_ldst = \
+	vl1r_v \
 	vlb_v \
 	vlh_v \
 	vlw_v \
@@ -624,6 +625,7 @@ riscv_insn_ext_v_ldst = \
 	vlbuff_v \
 	vlhuff_v \
 	vlwuff_v \
+	vs1r_v \
 	vsb_v \
 	vsh_v \
 	vsw_v \
