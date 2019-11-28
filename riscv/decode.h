@@ -34,6 +34,12 @@ const int NCSR = 4096;
 #define X_RA 1
 #define X_SP 2
 
+#define FSR_VXRM_SHIFT 9
+#define FSR_VXRM  (0x3 << FSR_VXRM_SHIFT)
+
+#define FSR_VXSAT_SHIFT 8
+#define FSR_VXSAT  (0x1 << FSR_VXSAT_SHIFT)
+
 #define FP_RD_NE  0
 #define FP_RD_0   1
 #define FP_RD_DN  2
@@ -184,6 +190,7 @@ private:
 #define FRS3 READ_FREG(insn.rs3())
 #define dirty_fp_state (STATE.mstatus |= MSTATUS_FS | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD))
 #define dirty_ext_state (STATE.mstatus |= MSTATUS_XS | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD))
+#define dirty_vs_state (STATE.mstatus |= MSTATUS_VS | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD))
 #define DO_WRITE_FREG(reg, value) (STATE.FPR.write(reg, value), dirty_fp_state)
 #define WRITE_FRD(value) WRITE_FREG(insn.rd(), value)
  
@@ -206,9 +213,20 @@ private:
 #define require_fp require((STATE.mstatus & MSTATUS_FS) != 0)
 #define require_accelerator require((STATE.mstatus & MSTATUS_XS) != 0)
 
-#define require_vector_vs do { } while (0) // TODO MSTATUS_VS
-#define require_vector do { require_vector_vs; require_extension('V'); require(!P.VU.vill); } while (0)
-#define require_vector_for_vsetvl do { require_vector_vs; require_extension('V'); } while (0)
+#define require_vector_vs require((STATE.mstatus & MSTATUS_VS) != 0);
+#define require_vector \
+  do { \
+    require_vector_vs; \
+    require_extension('V'); \
+    require(!P.VU.vill); \
+    dirty_vs_state; \
+  } while (0);
+#define require_vector_for_vsetvl \
+  do {  \
+    require_vector_vs; \
+    require_extension('V'); \
+    dirty_vs_state; \
+  } while (0);
 
 #define set_fp_exceptions ({ if (softfloat_exceptionFlags) { \
                                dirty_fp_state; \

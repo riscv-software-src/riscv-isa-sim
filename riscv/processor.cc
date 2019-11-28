@@ -1295,6 +1295,10 @@ void processor_t::set_csr(int which, reg_t val)
       dirty_fp_state;
       state.fflags = (val & FSR_AEXC) >> FSR_AEXC_SHIFT;
       state.frm = (val & FSR_RD) >> FSR_RD_SHIFT;
+      if (supports_extension('V')) {
+        VU.vxsat = (val & FSR_VXSAT) >> FSR_VXSAT_SHIFT;
+        VU.vxrm = (val & FSR_VXRM) >> FSR_VXRM_SHIFT;
+      }
       break;
     case CSR_MSTATUS: {
       if ((val ^ state.mstatus) &
@@ -1303,12 +1307,14 @@ void processor_t::set_csr(int which, reg_t val)
 
       bool has_fs = supports_extension('S') || supports_extension('F')
                   || supports_extension('V');
+      bool has_vs = supports_extension('V');
 
       reg_t mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE
                  | MSTATUS_MPRV | MSTATUS_SUM
                  | MSTATUS_MXR | MSTATUS_TW | MSTATUS_TVM
                  | MSTATUS_TSR | MSTATUS_UXL | MSTATUS_SXL |
                  (has_fs ? MSTATUS_FS : 0) |
+                 (has_vs ? MSTATUS_VS : 0) |
                  (ext ? MSTATUS_XS : 0);
 
       reg_t requested_mpp = legalize_privilege(get_field(val, MSTATUS_MPP));
@@ -1320,6 +1326,7 @@ void processor_t::set_csr(int which, reg_t val)
 
       bool dirty = (state.mstatus & MSTATUS_FS) == MSTATUS_FS;
       dirty |= (state.mstatus & MSTATUS_XS) == MSTATUS_XS;
+      dirty |= (state.mstatus & MSTATUS_VS) == MSTATUS_VS;
       if (max_xlen == 32)
         state.mstatus = set_field(state.mstatus, MSTATUS32_SD, dirty);
       else
@@ -1378,7 +1385,7 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-                 | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR;
+                 | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_VS;
       return set_csr(CSR_MSTATUS, (state.mstatus & ~mask) | (val & mask));
     }
     case CSR_SIP: {
@@ -1675,12 +1682,12 @@ reg_t processor_t::get_csr(int which)
         break;
       return VU.vstart;
     case CSR_VXSAT:
-      require_vector_vs;
+      require_fp;
       if (!supports_extension('V'))
         break;
       return VU.vxsat;
     case CSR_VXRM:
-      require_vector_vs;
+      require_fp;
       if (!supports_extension('V'))
         break;
       return VU.vxrm;
