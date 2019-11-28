@@ -2,7 +2,7 @@
 #include "processor.h"
 
 clint_t::clint_t(std::vector<processor_t*>& procs)
-  : procs(procs), mtimecmp(procs.size())
+  : procs(procs), mtime(0), mtimecmp(procs.size())
 {
 }
 
