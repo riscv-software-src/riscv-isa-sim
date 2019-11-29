@@ -2,4 +2,7 @@
 VI_VFP_VF_LOOP
 ({
   vd = f32_div(rs1, vs2);
+},
+{
+  vd = f64_div(rs1, vs2);
 })
