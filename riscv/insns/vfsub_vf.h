@@ -2,4 +2,7 @@
 VI_VFP_VF_LOOP
 ({
   vd = f32_sub(vs2, rs1);
+},
+{
+  vd = f64_sub(vs2, rs1);
 })
