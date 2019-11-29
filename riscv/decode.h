@@ -1614,9 +1614,9 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 // vector: vfp helper
 //
 #define VI_VFP_COMMON \
-  require_extension('F'); \
   require_fp; \
-  require(P.VU.vsew == 32); \
+  require((P.VU.vsew == e32 && p->supports_extension('F')) || \
+          (P.VU.vsew == e64 && p->supports_extension('D'))); \
   require_vector;\
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
@@ -1688,7 +1688,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   P.VU.vstart = 0; \
   set_fp_exceptions;
 
-#define VI_VFP_VV_LOOP(BODY) \
+#define VI_VFP_VV_LOOP(BODY32, BODY64) \
   VI_CHECK_SSS(true); \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
@@ -1696,12 +1696,19 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
       float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
       float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
-      BODY; \
+      BODY32; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e64: {\
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t vs1 = P.VU.elt<float64_t>(rs1_num, i); \
+      float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
+      BODY64; \
       set_fp_exceptions; \
       break; \
     }\
     case e16: \
-    case e8: \
     default: \
       require(0); \
       break; \
