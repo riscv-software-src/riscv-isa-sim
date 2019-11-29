@@ -2,4 +2,7 @@
 VI_VFP_VV_LOOP
 ({
   vd = f32_add(vs1, vs2);
+},
+{
+  vd = f64_add(vs1, vs2);
 })

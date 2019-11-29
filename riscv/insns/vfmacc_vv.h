@@ -2,4 +2,7 @@
 VI_VFP_VV_LOOP
 ({
   vd = f32_mulAdd(vs1, vs2, vd);
+},
+{
+  vd = f64_mulAdd(vs1, vs2, vd);
 })
