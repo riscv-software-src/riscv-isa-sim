@@ -1621,14 +1621,14 @@ for (reg_t i = 0; i < vlmax; ++i) { \
     uint64_t &vdi = P.VU.elt<uint64_t>(rd_num, midx); \
     uint64_t res = 0;
 
-#define VI_VFP_LOOP_REDUCTION_BASE \
-  VI_VFP_COMMON \
-  float32_t vd_0 = P.VU.elt<float32_t>(rd_num, 0); \
-  float32_t vs1_0 = P.VU.elt<float32_t>(rs1_num, 0); \
+#define VI_VFP_LOOP_REDUCTION_BASE(width) \
+  float##width##_t vd_0 = P.VU.elt<float##width##_t>(rd_num, 0); \
+  float##width##_t vs1_0 = P.VU.elt<float##width##_t>(rs1_num, 0); \
   vd_0 = vs1_0;\
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     VI_LOOP_ELEMENT_SKIP(); \
-    int32_t &vd = P.VU.elt<int32_t>(rd_num, i); \
+    int##width##_t &vd = P.VU.elt<int##width##_t>(rd_num, i); \
+    float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i); \
 
 #define VI_VFP_LOOP_WIDE_REDUCTION_BASE \
   VI_VFP_COMMON \
@@ -1648,7 +1648,6 @@ for (reg_t i = 0; i < vlmax; ++i) { \
 #define VI_VFP_LOOP_REDUCTION_END(x) \
   } \
   P.VU.vstart = 0; \
-  set_fp_exceptions; \
   if (vl > 0) { \
     P.VU.elt<type_sew_t<x>::type>(rd_num, 0) = vd_0.v; \
   }
@@ -1697,18 +1696,35 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
 
-#define VI_VFP_VV_LOOP_REDUCTION(BODY) \
+#define VI_VFP_VV_LOOP_REDUCTION(BODY32, BODY64) \
   VI_CHECK_REDUCTION(false) \
-  VI_VFP_LOOP_REDUCTION_BASE \
-  float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
-  BODY; \
-  DEBUG_RVV_FP_VV; \
-  VI_VFP_LOOP_REDUCTION_END(e32)
+  VI_VFP_COMMON \
+  switch(P.VU.vsew) { \
+    case e32: {\
+      VI_VFP_LOOP_REDUCTION_BASE(32) \
+        BODY32; \
+        set_fp_exceptions; \
+      VI_VFP_LOOP_REDUCTION_END(e32) \
+      break; \
+    }\
+    case e64: {\
+      VI_VFP_LOOP_REDUCTION_BASE(64) \
+        BODY64; \
+        set_fp_exceptions; \
+      VI_VFP_LOOP_REDUCTION_END(e64) \
+      break; \
+    }\
+    case e16: \
+    default: \
+      require(0); \
+      break; \
+  }; \
 
 #define VI_VFP_VV_LOOP_WIDE_REDUCTION(BODY) \
   VI_VFP_LOOP_WIDE_REDUCTION_BASE \
   float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
   BODY; \
+  set_fp_exceptions; \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_REDUCTION_END(e64)
 
