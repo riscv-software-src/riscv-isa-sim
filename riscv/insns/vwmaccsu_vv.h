@@ -1,4 +1,4 @@
-// vwmaccsu.vv vd, vs2, rs1
+// vwmaccsu.vv vd, vs2, vs1
 VI_CHECK_DSS(true);
 VI_VV_LOOP_WIDEN
 ({
