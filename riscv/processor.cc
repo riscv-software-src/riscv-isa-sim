@@ -1493,12 +1493,15 @@ void processor_t::set_csr(int which, reg_t val)
       state.dscratch1 = val;
       break;
     case CSR_VSTART:
+      dirty_vs_state;
       VU.vstart = val;
       break;
     case CSR_VXSAT:
+      dirty_fp_state;
       VU.vxsat = val;
       break;
     case CSR_VXRM:
+      dirty_fp_state;
       VU.vxrm = val;
       break;
   }
