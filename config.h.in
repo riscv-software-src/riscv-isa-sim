@@ -18,11 +18,14 @@
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef DUMMY_ROCC_ENABLED
 
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef FESVR_ENABLED
+
+/* Enable riscv-sodor DTM support */
+#undef FESVR_ENABLE_SODOR
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
-
-/* Define to 1 if you have the `fesvr' library (-lfesvr). */
-#undef HAVE_LIBFESVR
 
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD

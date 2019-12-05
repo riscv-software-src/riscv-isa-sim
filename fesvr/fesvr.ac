@@ -1,1 +1,6 @@
 AC_CHECK_LIB(pthread, pthread_create, [], [AC_MSG_ERROR([libpthread is required])])
+
+AC_ARG_ENABLE([sodor], AS_HELP_STRING([--enable-sodor], [Enable riscv-sodor DTM support]))
+AS_IF([test "x$enable_sodor" = "xyes"], [
+  AC_DEFINE([FESVR_ENABLE_SODOR],,[Enable riscv-sodor DTM support])
+])

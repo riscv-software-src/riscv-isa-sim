@@ -701,6 +701,7 @@ ac_user_opts='
 enable_option_checking
 enable_stow
 enable_optional_subprojects
+enable_sodor
 with_isa
 with_priv
 with_varch
@@ -1350,6 +1351,7 @@ Optional Features:
   --enable-stow           Enable stow-based install
   --enable-optional-subprojects
                           Enable all optional subprojects
+  --enable-sodor          Enable riscv-sodor DTM support
   --enable-commitlog      Enable commit log generation
   --enable-histogram      Enable PC histogram generation
   --enable-dirty          Enable hardware management of PTE accessed and dirty
@@ -4552,6 +4554,19 @@ else
   as_fn_error $? "libpthread is required" "$LINENO" 5
 fi
 
+
+# Check whether --enable-sodor was given.
+if test "${enable_sodor+set}" = set; then :
+  enableval=$enable_sodor;
+fi
+
+if test "x$enable_sodor" = "xyes"; then :
+
+
+$as_echo "#define FESVR_ENABLE_SODOR /**/" >>confdefs.h
+
+
+fi
 
 
 
