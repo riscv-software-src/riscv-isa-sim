@@ -1312,7 +1312,8 @@ void processor_t::set_csr(int which, reg_t val)
       bool has_vs = supports_extension('V');
 
       reg_t mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE
-                 | MSTATUS_MPRV | MSTATUS_SUM
+                 | MSTATUS_MPRV
+                 | (supports_extension('S') ? MSTATUS_SUM : 0)
                  | MSTATUS_MXR | MSTATUS_TW | MSTATUS_TVM
                  | MSTATUS_TSR | MSTATUS_UXL | MSTATUS_SXL |
                  (has_fs ? MSTATUS_FS : 0) |
