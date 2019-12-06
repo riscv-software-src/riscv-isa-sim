@@ -347,6 +347,12 @@ riscv_insn_ext_b = \
 	bmatflip \
 	bmator \
 	bmatxor \
+	sh1add \
+	sh1addu_w \
+	sh2add \
+	sh2addu_w \
+	sh3add \
+	sh3addu_w \
 	clmul \
 	clmulh \
 	clmulhw \
