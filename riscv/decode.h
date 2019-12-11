@@ -441,12 +441,10 @@ static inline bool is_overlapped(const int astart, const int asize,
       require(insn.rd() != 0); \
   }
 
-#define VI_CHECK_SD \
-  require(!is_overlapped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul * 2));
-
 #define VI_CHECK_DSS(is_vs1) \
   VI_WIDE_CHECK_COMMON; \
   require(!is_overlapped(insn.rd(), P.VU.vlmul * 2, insn.rs2(), P.VU.vlmul)); \
+  require((insn.rd() & (P.VU.vlmul * 2 - 1)) == 0); \
   require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
   if (is_vs1) {\
      require(!is_overlapped(insn.rd(), P.VU.vlmul * 2, insn.rs1(), P.VU.vlmul)); \
