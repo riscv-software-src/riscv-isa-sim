@@ -271,6 +271,7 @@ struct state_t
 
 #ifdef RISCV_ENABLE_COMMITLOG
   commit_log_reg_t log_reg_write;
+  commit_log_mem_t log_mem_read;
   commit_log_mem_t log_mem_write;
   reg_t last_inst_priv;
   int last_inst_xlen;
