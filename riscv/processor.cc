@@ -1387,7 +1387,8 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-                 | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_VS;
+                 | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR
+                 | (supports_extension('V') ? SSTATUS_VS : 0);
       return set_csr(CSR_MSTATUS, (state.mstatus & ~mask) | (val & mask));
     }
     case CSR_SIP: {
@@ -1683,8 +1684,6 @@ reg_t processor_t::get_csr(int which)
       return state.dscratch1;
     case CSR_VSTART:
       require_vector_vs;
-      if (!supports_extension('V'))
-        break;
       return VU.vstart;
     case CSR_VXSAT:
       require_fp;
@@ -1698,18 +1697,12 @@ reg_t processor_t::get_csr(int which)
       return VU.vxrm;
     case CSR_VL:
       require_vector_vs;
-      if (!supports_extension('V'))
-        break;
       return VU.vl;
     case CSR_VTYPE:
       require_vector_vs;
-      if (!supports_extension('V'))
-        break;
       return VU.vtype;
     case CSR_VLENB:
       require_vector_vs;
-      if (!supports_extension('V'))
-        break;
       return VU.vlenb;
   }
   throw trap_illegal_instruction(0);
