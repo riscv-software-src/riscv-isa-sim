@@ -21,8 +21,7 @@ build:
     - git clone -b vector --depth 1 --single-branch --no-tags --recurse-submodules -j `nproc` git@github.com:sifive/riscv-tests-internal.git
     - git --git-dir=./riscv-tests-internal/.git rev-parse HEAD
     - mkdir riscv-tests-internal/build
-  cache:
-    key: $CI_PIPELINE_ID
+  artifacts:
     paths:
       - bengal-team/spike-prefix
       - bengal-team/toolchain-prefix
@@ -30,11 +29,6 @@ build:
 
 .test:
   stage: test
-  cache:
-    key: $CI_PIPELINE_ID
-    paths:
-      - bengal-team/
-    policy: pull
   script:
     - make -j
     - ctest --timeout 0.1
