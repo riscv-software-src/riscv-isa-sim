@@ -13,7 +13,7 @@ Spike supports the following RISC-V ISA features:
   - Zifencei extension, v2.0
   - Zicsr extension, v2.0
   - M extension, v2.0
-  - A extension, v2.0
+  - A extension, v2.1
   - F extension, v2.2
   - D extension, v2.2
   - Q extension, v2.2
