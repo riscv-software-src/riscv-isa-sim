@@ -1468,12 +1468,23 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   bool early_stop = false; \
   const reg_t vlmax = P.VU.vlmax; \
   const reg_t vlmul = P.VU.vlmul; \
+  p->VU.vstart = 0; \
   for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
     VI_STRIP(i); \
     VI_ELEMENT_SKIP(i); \
     \
     for (reg_t fn = 0; fn < nf; ++fn) { \
-      itype##64_t val = MMU.load_##itype##tsew(baseAddr + (i * nf + fn) * (tsew / 8)); \
+      itype##64_t val; \
+      try { \
+        val = MMU.load_##itype##tsew(baseAddr + (i * nf + fn) * (tsew / 8)); \
+      } catch (trap_t& t) { \
+        if (i == 0) \
+          throw t; /* Only take exception on zeroth element */ \
+        /* Reduce VL if an exception occurs on a later element */ \
+        early_stop = true; \
+        P.VU.vl = i; \
+        break; \
+      } \
       \
       switch (sew) { \
       case e8: \
@@ -1494,8 +1505,7 @@ for (reg_t i = 0; i < vlmax; ++i) { \
     if (early_stop) { \
       break; \
     } \
-  } \
-  p->VU.vstart = 0;
+  }
 
 
 //
