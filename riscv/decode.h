@@ -1486,6 +1486,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
+  require(vs3 + nf <= NVPR); \
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i) \
@@ -1517,16 +1518,13 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
+  require(vd + nf <= NVPR); \
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_ELEMENT_SKIP(i); \
     VI_STRIP(i); \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       ld_width##_t val = MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte); \
-      if (vd + fn >= NVPR){ \
-         P.VU.vstart = vreg_inx;\
-         require(false); \
-      } \
       switch(P.VU.vsew){ \
         case e8: \
           P.VU.elt<uint8_t>(vd + fn * vlmul, vreg_inx) = val; \
