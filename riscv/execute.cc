@@ -42,7 +42,8 @@ static void commit_log_print_insn(state_t* state, reg_t pc, insn_t insn)
 {
 #ifdef RISCV_ENABLE_COMMITLOG
   auto& reg = state->log_reg_write;
-  auto& mem = state->log_mem_write;
+  auto& load = state->log_mem_read;
+  auto& store = state->log_mem_write;
   int priv = state->last_inst_priv;
   int xlen = state->last_inst_xlen;
   int flen = state->last_inst_flen;
@@ -59,15 +60,20 @@ static void commit_log_print_insn(state_t* state, reg_t pc, insn_t insn)
     fprintf(stderr, " %c%2d ", fp ? 'f' : 'x', rd);
     commit_log_print_value(size, reg.data.v[1], reg.data.v[0]);
   }
-  if (mem.size) {
+  if (load.size) {
     fprintf(stderr, " mem ");
-    commit_log_print_value(xlen, 0, mem.addr);
+    commit_log_print_value(xlen, 0, load.addr);
+  }
+  if (store.size) {
+    fprintf(stderr, " mem ");
+    commit_log_print_value(xlen, 0, store.addr);
     fprintf(stderr, " ");
-    commit_log_print_value(mem.size << 3, 0, mem.value);
+    commit_log_print_value(store.size << 3, 0, store.value);
   }
   fprintf(stderr, "\n");
   reg.addr = 0;
-  mem.size = 0;
+  load.size = 0;
+  store.size = 0;
 #endif
 }
 
