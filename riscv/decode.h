@@ -1570,14 +1570,24 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   const reg_t baseAddr = RS1; \
   const reg_t rd_num = insn.rd(); \
   bool early_stop = false; \
-  const reg_t vlmax = P.VU.vlmax; \
   const reg_t vlmul = P.VU.vlmul; \
-  for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
+  p->VU.vstart = 0; \
+  for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i); \
     VI_ELEMENT_SKIP(i); \
     \
     for (reg_t fn = 0; fn < nf; ++fn) { \
-      itype##64_t val = MMU.load_##itype##tsew(baseAddr + (i * nf + fn) * (tsew / 8), g_vector_mistrap); \
+      itype##64_t val; \
+      try { \
+        val = MMU.load_##itype##tsew(baseAddr + (i * nf + fn) * (tsew / 8), g_vector_mistrap); \
+      } catch (trap_t& t) { \
+        if (i == 0) \
+          throw t; /* Only take exception on zeroth element */ \
+        /* Reduce VL if an exception occurs on a later element */ \
+        early_stop = true; \
+        P.VU.vl = i; \
+        break; \
+      } \
       \
       switch (sew) { \
       case e8: \
@@ -1593,19 +1603,12 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
         p->VU.elt<uint64_t>(rd_num + fn * vlmul, vreg_inx) = val; \
         break; \
       } \
-       \
-      if (val == 0) { \
-        p->VU.vl = i; \
-        early_stop = true; \
-        break; \
-      } \
     } \
     \
     if (early_stop) { \
       break; \
     } \
-  } \
-  p->VU.vstart = 0;
+  }
 
 
 //
