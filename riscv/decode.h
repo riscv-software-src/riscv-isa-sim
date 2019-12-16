@@ -1400,6 +1400,7 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
     VI_STRIP(i) \
     VI_ELEMENT_SKIP(i); \
+    P.VU.vstart = i; \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       st_width##_t val = 0; \
       switch (P.VU.vsew) { \
@@ -1434,6 +1435,7 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
     VI_ELEMENT_SKIP(i); \
     VI_STRIP(i); \
+    P.VU.vstart = i; \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       ld_width##_t val = MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte); \
       switch(P.VU.vsew){ \
