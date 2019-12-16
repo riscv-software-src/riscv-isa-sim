@@ -1489,12 +1489,6 @@ for (reg_t i = 0; i < vlmax; ++i) { \
         p->VU.elt<uint64_t>(rd_num + fn * vlmul, vreg_inx) = val; \
         break; \
       } \
-       \
-      if (val == 0) { \
-        p->VU.vl = i; \
-        early_stop = true; \
-        break; \
-      } \
     } \
     \
     if (early_stop) { \
