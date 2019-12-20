@@ -1,4 +1,5 @@
 // vfmerge_vf vd, vs2, vs1, vm
+require(insn.rd() != 0);
 VI_CHECK_SSS(false);
 VI_VFP_COMMON;
 reg_t sew = P.VU.vsew;

@@ -1,6 +1,5 @@
-// vadc.vvm vd, vs2, rs1
-require(!(insn.rd() == 0 && P.VU.vlmul > 1));
-VI_VV_LOOP
+// vadc.vvm vd, vs2, rs1, v0
+VI_VV_LOOP_WITH_CARRY
 ({
   auto &v0 = P.VU.elt<uint64_t>(0, midx);
   const uint128_t op_mask = (UINT64_MAX >> (64 - sew));

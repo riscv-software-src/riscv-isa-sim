@@ -164,7 +164,7 @@ class vectorUnit_t {
     char reg_referenced[NVPR];
     int setvl_count;
     reg_t reg_mask, vlmax, vmlen;
-    reg_t vstart, vxrm, vxsat, vl, vtype;
+    reg_t vstart, vxrm, vxsat, vl, vtype, vlenb;
     reg_t vediv, vsew, vlmul;
     reg_t ELEN, VLEN, SLEN;
     bool vill;
@@ -200,7 +200,7 @@ class vectorUnit_t {
       reg_file = 0;
     }
 
-    reg_t set_vl(int regId, reg_t reqVL, reg_t newType);
+    reg_t set_vl(int rd, int rs1, reg_t reqVL, reg_t newType);
 
     reg_t get_vlen() { return VLEN; }
     reg_t get_elen() { return ELEN; }
