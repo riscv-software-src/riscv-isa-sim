@@ -1532,10 +1532,9 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   const reg_t baseAddr = RS1; \
   const reg_t rd_num = insn.rd(); \
   bool early_stop = false; \
-  const reg_t vlmax = P.VU.vlmax; \
   const reg_t vlmul = P.VU.vlmul; \
   p->VU.vstart = 0; \
-  for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
+  for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i); \
     VI_ELEMENT_SKIP(i); \
     \
