@@ -1394,11 +1394,13 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
+  require(vs3 + nf <= NVPR); \
   const reg_t vlmax = P.VU.vlmax; \
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
     VI_STRIP(i) \
     VI_ELEMENT_SKIP(i); \
+    P.VU.vstart = i; \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       st_width##_t val = 0; \
       switch (P.VU.vsew) { \
@@ -1427,17 +1429,15 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
+  require(vd + nf <= NVPR); \
   const reg_t vlmax = P.VU.vlmax; \
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
     VI_ELEMENT_SKIP(i); \
     VI_STRIP(i); \
+    P.VU.vstart = i; \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       ld_width##_t val = MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte); \
-      if (vd + fn >= NVPR){ \
-         P.VU.vstart = vreg_inx;\
-         require(false); \
-      } \
       switch(P.VU.vsew){ \
         case e8: \
           P.VU.elt<uint8_t>(vd + fn * vlmul, vreg_inx) = val; \
@@ -1468,12 +1468,23 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   bool early_stop = false; \
   const reg_t vlmax = P.VU.vlmax; \
   const reg_t vlmul = P.VU.vlmul; \
+  p->VU.vstart = 0; \
   for (reg_t i = 0; i < vlmax && vl != 0; ++i) { \
     VI_STRIP(i); \
     VI_ELEMENT_SKIP(i); \
     \
     for (reg_t fn = 0; fn < nf; ++fn) { \
-      itype##64_t val = MMU.load_##itype##tsew(baseAddr + (i * nf + fn) * (tsew / 8)); \
+      itype##64_t val; \
+      try { \
+        val = MMU.load_##itype##tsew(baseAddr + (i * nf + fn) * (tsew / 8)); \
+      } catch (trap_t& t) { \
+        if (i == 0) \
+          throw t; /* Only take exception on zeroth element */ \
+        /* Reduce VL if an exception occurs on a later element */ \
+        early_stop = true; \
+        P.VU.vl = i; \
+        break; \
+      } \
       \
       switch (sew) { \
       case e8: \
@@ -1489,19 +1500,12 @@ for (reg_t i = 0; i < vlmax; ++i) { \
         p->VU.elt<uint64_t>(rd_num + fn * vlmul, vreg_inx) = val; \
         break; \
       } \
-       \
-      if (val == 0) { \
-        p->VU.vl = i; \
-        early_stop = true; \
-        break; \
-      } \
     } \
     \
     if (early_stop) { \
       break; \
     } \
-  } \
-  p->VU.vstart = 0;
+  }
 
 
 //
