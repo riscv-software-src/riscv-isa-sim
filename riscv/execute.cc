@@ -60,20 +60,22 @@ static void commit_log_print_insn(state_t* state, reg_t pc, insn_t insn)
     fprintf(stderr, " %c%2d ", fp ? 'f' : 'x', rd);
     commit_log_print_value(size, reg.data.v[1], reg.data.v[0]);
   }
-  if (load.size) {
+
+  for (auto item : load) {
     fprintf(stderr, " mem ");
-    commit_log_print_value(xlen, 0, load.addr);
+    commit_log_print_value(xlen, 0, std::get<0>(item));
   }
-  if (store.size) {
+
+  for (auto item : store) {
     fprintf(stderr, " mem ");
-    commit_log_print_value(xlen, 0, store.addr);
+    commit_log_print_value(xlen, 0, std::get<0>(item));
     fprintf(stderr, " ");
-    commit_log_print_value(store.size << 3, 0, store.value);
+    commit_log_print_value(std::get<2>(item) << 3, 0, std::get<1>(item));
   }
   fprintf(stderr, "\n");
   reg.addr = 0;
-  load.size = 0;
-  store.size = 0;
+  load.clear();
+  store.clear();
 #endif
 }
 

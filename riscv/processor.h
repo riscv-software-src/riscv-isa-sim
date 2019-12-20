@@ -34,12 +34,8 @@ struct commit_log_reg_t
   freg_t data;
 };
 
-struct commit_log_mem_t
-{
-  reg_t addr;
-  uint64_t value;
-  uint8_t size; // bytes: 1, 2, 4, or 8
-};
+// addr, value, size
+typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
 
 typedef struct
 {
