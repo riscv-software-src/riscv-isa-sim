@@ -8,6 +8,7 @@
 #include "trap.h"
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <map>
 #include <unordered_map>
 #include <cassert>
@@ -29,11 +30,8 @@ struct insn_desc_t
   insn_func_t rv64;
 };
 
-struct commit_log_reg_t
-{
-  reg_t addr;
-  freg_t data;
-};
+// regnum, data
+typedef std::unordered_map<reg_t, freg_t> commit_log_reg_t;
 
 // addr, value, size
 typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;

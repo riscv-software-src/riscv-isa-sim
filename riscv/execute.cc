@@ -15,6 +15,16 @@ static void commit_log_stash_privilege(processor_t* p)
 #endif
 }
 
+static void commit_log_print_value(int width, const void *data)
+{
+  const uint64_t *arr = (const uint64_t *)data;
+
+  fprintf(stderr, "0x");
+  for (int idx = width / 64 - 1; idx >= 0; --idx) {
+    fprintf(stderr, "%016" PRIx64, arr[idx]);
+  }
+}
+
 static void commit_log_print_value(int width, uint64_t hi, uint64_t lo)
 {
   switch (width) {
@@ -38,27 +48,57 @@ static void commit_log_print_value(int width, uint64_t hi, uint64_t lo)
   }
 }
 
-static void commit_log_print_insn(state_t* state, reg_t pc, insn_t insn)
+static void commit_log_print_insn(processor_t* p, reg_t pc, insn_t insn)
 {
 #ifdef RISCV_ENABLE_COMMITLOG
-  auto& reg = state->log_reg_write;
-  auto& load = state->log_mem_read;
-  auto& store = state->log_mem_write;
-  int priv = state->last_inst_priv;
-  int xlen = state->last_inst_xlen;
-  int flen = state->last_inst_flen;
+  auto& reg = p->get_state()->log_reg_write;
+  auto& load = p->get_state()->log_mem_read;
+  auto& store = p->get_state()->log_mem_write;
+  int priv = p->get_state()->last_inst_priv;
+  int xlen = p->get_state()->last_inst_xlen;
+  int flen = p->get_state()->last_inst_flen;
 
   fprintf(stderr, "%1d ", priv);
   commit_log_print_value(xlen, 0, pc);
   fprintf(stderr, " (");
   commit_log_print_value(insn.length() * 8, 0, insn.bits());
   fprintf(stderr, ")");
-  if (reg.addr) {
-    bool fp = reg.addr & 1;
-    int rd = reg.addr >> 1;
-    int size = fp ? flen : xlen;
-    fprintf(stderr, " %c%2d ", fp ? 'f' : 'x', rd);
-    commit_log_print_value(size, reg.data.v[1], reg.data.v[0]);
+
+  for (auto item : reg) {
+    if (item.first == 0)
+      continue;
+
+    char prefix;
+    int size;
+    int rd = item.first >> 2;
+    bool is_vec = false;
+    switch (item.first & 3) {
+    case 0:
+      size = xlen;
+      prefix = 'x';
+      break;
+    case 1:
+      size = flen;
+      prefix = 'f';
+      break;
+    case 2:
+      size = p->VU.VLEN;
+      prefix = 'v';
+      is_vec = true;
+      break;
+    default:
+      assert("can't been here" && 0);
+      break;
+    }
+
+    if (is_vec)
+        fprintf(stderr, " e%d m%d", p->VU.vsew >> 3, p->VU.vlmul);
+
+    fprintf(stderr, " %c%2d ", prefix, rd);
+    if (is_vec)
+        commit_log_print_value(size, &p->VU.elt<uint8_t>(rd, 0));
+    else
+        commit_log_print_value(size, item.second.v[1], item.second.v[0]);
   }
 
   for (auto item : load) {
@@ -73,7 +113,7 @@ static void commit_log_print_insn(state_t* state, reg_t pc, insn_t insn)
     commit_log_print_value(std::get<2>(item) << 3, 0, std::get<1>(item));
   }
   fprintf(stderr, "\n");
-  reg.addr = 0;
+  reg.clear();
   load.clear();
   store.clear();
 #endif
@@ -95,7 +135,7 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
   reg_t npc = fetch.func(p, fetch.insn, pc);
   if (npc != PC_SERIALIZE_BEFORE) {
     if (p->get_log_commits()) {
-      commit_log_print_insn(p->get_state(), pc, fetch.insn);
+      commit_log_print_insn(p, pc, fetch.insn);
     }
     p->update_histogram(pc);
   }

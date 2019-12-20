@@ -264,7 +264,7 @@ void state_t::reset(reg_t max_isa)
   serialized = false;
 
 #ifdef RISCV_ENABLE_COMMITLOG
-  log_reg_write.addr = 0;
+  log_reg_write.clear();
   log_mem_read.clear();
   log_mem_write.clear();
   last_inst_priv = 0;
