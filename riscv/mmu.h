@@ -92,10 +92,8 @@ public:
 #ifndef RISCV_ENABLE_COMMITLOG
 # define READ_MEM(addr, size) ({})
 #else
-# define READ_MEM(addr, size) ({ \
-    proc->state.log_mem_read.addr = addr; \
-    proc->state.log_mem_read.size = size; \
-  })
+# define READ_MEM(addr, size) \
+  proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, size));
 #endif
 
   // template for functions that load an aligned value from memory
@@ -140,11 +138,8 @@ public:
 #ifndef RISCV_ENABLE_COMMITLOG
 # define WRITE_MEM(addr, value, size) ({})
 #else
-# define WRITE_MEM(addr, val, size) ({ \
-    proc->state.log_mem_write.addr = addr; \
-    proc->state.log_mem_write.value = val; \
-    proc->state.log_mem_write.size = size; \
-  })
+# define WRITE_MEM(addr, val, size) \
+  proc->state.log_mem_write.push_back(std::make_tuple(addr, val, size));
 #endif
 
   // template for functions that store an aligned value to memory
