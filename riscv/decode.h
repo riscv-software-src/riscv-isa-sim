@@ -139,6 +139,14 @@ public:
   {
     return data[i];
   }
+  regfile_t()
+  {
+    reset();
+  }
+  void reset()
+  {
+    memset(data, 0, sizeof(data));
+  }
 private:
   T data[N];
 };

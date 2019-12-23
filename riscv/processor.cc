@@ -215,16 +215,62 @@ void processor_t::parse_isa_string(const char* str)
 
 void state_t::reset(reg_t max_isa)
 {
-  memset(this, 0, sizeof(*this));
-  misa = max_isa;
-  prv = PRV_M;
   pc = DEFAULT_RSTVEC;
-  tselect = 0;
-  for (unsigned int i = 0; i < num_triggers; i++)
-    mcontrol[i].type = 2;
+  XPR.reset();
+  FPR.reset();
 
+  prv = PRV_M;
+  misa = max_isa;
+  mstatus = 0;
+  mepc = 0;
+  mtval = 0;
+  mscratch = 0;
+  mtvec = 0;
+  mcause = 0;
+  minstret = 0;
+  mie = 0;
+  mip = 0;
+  medeleg = 0;
+  mideleg = 0;
+  mcounteren = 0;
+  scounteren = 0;
+  sepc = 0;
+  stval = 0;
+  sscratch = 0;
+  stvec = 0;
+  satp = 0;
+  scause = 0;
+
+  dpc = 0;
+  dscratch0 = 0;
+  dscratch1 = 0;
+  memset(&this->dcsr, 0, sizeof(this->dcsr));
+
+  tselect = 0;
+  for (auto &item : mcontrol)
+    item.type = 2;
+
+  memset(this->tdata2, 0, sizeof(this->tdata2));
+  debug_mode = false;
+
+  memset(this->pmpcfg, 0, sizeof(this->pmpcfg));
   pmpcfg[0] = PMP_R | PMP_W | PMP_X | PMP_NAPOT;
+
+  memset(this->pmpaddr, 0, sizeof(this->pmpaddr));
   pmpaddr[0] = ~reg_t(0);
+
+  fflags = 0;
+  frm = 0;
+  serialized = false;
+
+#ifdef RISCV_ENABLE_COMMITLOG
+  log_reg_write.addr = 0;
+  log_mem_read.size = 0;
+  log_mem_write.size = 0;
+  last_inst_priv = 0;
+  last_inst_xlen = 0;
+  last_inst_flen = 0;
+#endif
 }
 
 void vectorUnit_t::reset(){
