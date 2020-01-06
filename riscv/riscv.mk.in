@@ -384,6 +384,10 @@ riscv_insn_ext_v_alu_int = \
 	vmv_v_v \
 	vmv_v_x \
 	vmv_x_s \
+	vmv1r_v \
+	vmv2r_v \
+	vmv4r_v \
+	vmv8r_v \
 	vmxnor_mm \
 	vmxor_mm \
 	vnclip_wi \
