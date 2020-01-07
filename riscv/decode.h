@@ -168,6 +168,10 @@ private:
 # define WRITE_REG(reg, value) STATE.XPR.write(reg, value)
 # define WRITE_FREG(reg, value) DO_WRITE_FREG(reg, freg(value))
 #else
+   /* 0 : int
+    * 1 : floating
+    * 2 : vector
+    */
 # define WRITE_REG(reg, value) ({ \
     reg_t wdata = (value); /* value may have side effects */ \
     STATE.log_reg_write[(reg) << 2] = {wdata, 0}; \
