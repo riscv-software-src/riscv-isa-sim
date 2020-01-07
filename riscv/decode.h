@@ -1539,16 +1539,17 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
       ld_width##_t val = MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte); \
       switch(P.VU.vsew){ \
         case e8: \
-          P.VU.elt<uint8_t>(vd + fn * vlmul, vreg_inx) = val; \
+          P.VU.elt<uint8_t>(vd + fn * vlmul, vreg_inx, true) = val; \
           break; \
         case e16: \
-          P.VU.elt<uint16_t>(vd + fn * vlmul, vreg_inx) = val; \
+          P.VU.elt<uint16_t>(vd + fn * vlmul, vreg_inx, true) = val; \
           break; \
         case e32: \
-          P.VU.elt<uint32_t>(vd + fn * vlmul, vreg_inx) = val; \
+          P.VU.elt<uint32_t>(vd + fn * vlmul, vreg_inx, true) = val; \
           break; \
         default: \
-          P.VU.elt<uint64_t>(vd + fn * vlmul, vreg_inx) = val; \
+          P.VU.elt<uint64_t>(vd + fn * vlmul, vreg_inx, true) = val; \
+          break; \
       } \
     } \
   } \
@@ -1602,16 +1603,16 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
       \
       switch (sew) { \
       case e8: \
-        p->VU.elt<uint8_t>(rd_num + fn * vlmul, vreg_inx) = val; \
+        p->VU.elt<uint8_t>(rd_num + fn * vlmul, vreg_inx, true) = val; \
         break; \
       case e16: \
-        p->VU.elt<uint16_t>(rd_num + fn * vlmul, vreg_inx) = val; \
+        p->VU.elt<uint16_t>(rd_num + fn * vlmul, vreg_inx, true) = val; \
         break; \
       case e32: \
-        p->VU.elt<uint32_t>(rd_num + fn * vlmul, vreg_inx) = val; \
+        p->VU.elt<uint32_t>(rd_num + fn * vlmul, vreg_inx, true) = val; \
         break; \
       case e64: \
-        p->VU.elt<uint64_t>(rd_num + fn * vlmul, vreg_inx) = val; \
+        p->VU.elt<uint64_t>(rd_num + fn * vlmul, vreg_inx, true) = val; \
         break; \
       } \
     } \
