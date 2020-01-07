@@ -16,16 +16,16 @@ VI_GENERAL_LOOP_BASE
   if (do_mask) {
     switch (sew) {
     case e8:
-      P.VU.elt<uint8_t>(rd_num, pos) = P.VU.elt<uint8_t>(rs2_num, i);
+      P.VU.elt<uint8_t>(rd_num, pos, true) = P.VU.elt<uint8_t>(rs2_num, i);
       break;
     case e16:
-      P.VU.elt<uint16_t>(rd_num, pos) = P.VU.elt<uint16_t>(rs2_num, i);
+      P.VU.elt<uint16_t>(rd_num, pos, true) = P.VU.elt<uint16_t>(rs2_num, i);
       break;
     case e32:
-      P.VU.elt<uint32_t>(rd_num, pos) = P.VU.elt<uint32_t>(rs2_num, i);
+      P.VU.elt<uint32_t>(rd_num, pos, true) = P.VU.elt<uint32_t>(rs2_num, i);
       break;
     default:
-      P.VU.elt<uint64_t>(rd_num, pos) = P.VU.elt<uint64_t>(rs2_num, i);
+      P.VU.elt<uint64_t>(rd_num, pos, true) = P.VU.elt<uint64_t>(rs2_num, i);
       break;
     }
 
