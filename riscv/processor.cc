@@ -273,7 +273,7 @@ void state_t::reset(reg_t max_isa)
 #endif
 }
 
-void vectorUnit_t::reset(){
+void processor_t::vectorUnit_t::reset(){
   free(reg_file);
   VLEN = get_vlen();
   ELEN = get_elen();
@@ -284,7 +284,7 @@ void vectorUnit_t::reset(){
   set_vl(0, 0, 0, -1); // default to illegal configuration
 }
 
-reg_t vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newType){
+reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newType){
   if (vtype != newType){
     vtype = newType;
     vsew = 1 << (BITS(newType, 4, 2) + 3);
