@@ -1650,7 +1650,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     float32_t rs1 = f32(READ_FREG(rs1_num)); \
     VI_LOOP_ELEMENT_SKIP(); \
     uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
-    uint64_t &vdi = P.VU.elt<uint64_t>(rd_num, midx); \
+    uint64_t &vdi = P.VU.elt<uint64_t>(rd_num, midx, true); \
     uint64_t res = 0;
 
 #define VI_VFP_LOOP_REDUCTION_BASE(width) \
@@ -1659,7 +1659,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   vd_0 = vs1_0;\
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     VI_LOOP_ELEMENT_SKIP(); \
-    int##width##_t &vd = P.VU.elt<int##width##_t>(rd_num, i); \
+    int##width##_t &vd = P.VU.elt<int##width##_t>(rd_num, i, true); \
     float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i); \
 
 #define VI_VFP_LOOP_WIDE_REDUCTION_BASE \
@@ -1681,7 +1681,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   } \
   P.VU.vstart = 0; \
   if (vl > 0) { \
-    P.VU.elt<type_sew_t<x>::type>(rd_num, 0) = vd_0.v; \
+    P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = vd_0.v; \
   }
 
 #define VI_VFP_LOOP_CMP_END \
@@ -1705,7 +1705,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\
-      float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
+      float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
       float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
       float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
       BODY32; \
@@ -1713,7 +1713,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
       break; \
     }\
     case e64: {\
-      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
       float64_t vs1 = P.VU.elt<float64_t>(rs1_num, i); \
       float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
       BODY64; \
@@ -1765,7 +1765,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\
-      float32_t &vd = P.VU.elt<float32_t>(rd_num, i); \
+      float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
       float32_t rs1 = f32(READ_FREG(rs1_num)); \
       float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
       BODY32; \
@@ -1773,7 +1773,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
       break; \
     }\
     case e64: {\
-      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
       float64_t rs1 = f64(READ_FREG(rs1_num)); \
       float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
       BODY64; \
@@ -1821,7 +1821,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\
-      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
       float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
       float64_t rs1 = f32_to_f64(f32(READ_FREG(rs1_num))); \
       BODY; \
@@ -1843,7 +1843,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\
-      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
       float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
       float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
       BODY; \
@@ -1864,7 +1864,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\
-      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
       float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
       float64_t rs1 = f32_to_f64(f32(READ_FREG(rs1_num))); \
       BODY; \
@@ -1884,7 +1884,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e32: {\
-      float64_t &vd = P.VU.elt<float64_t>(rd_num, i); \
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
       float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
       float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
       BODY; \
