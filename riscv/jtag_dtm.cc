@@ -20,9 +20,10 @@ enum {
 
 #define DTMCONTROL_VERSION      0xf
 #define DTMCONTROL_ABITS        (0x3f << 4)
-#define DTMCONTROL_DBUSSTAT     (3<<10)
+#define DTMCONTROL_DMISTAT      (3<<10)
 #define DTMCONTROL_IDLE         (7<<12)
-#define DTMCONTROL_DBUSRESET    (1<<16)
+#define DTMCONTROL_DMIRESET     (1<<16)
+#define DTMCONTROL_DMIHARDRESET (1<<17)
 
 #define DMI_OP                 3
 #define DMI_DATA               (0xffffffffLL<<2)
@@ -165,7 +166,9 @@ void jtag_dtm_t::update_dr()
   D(fprintf(stderr, "Update DR; IR=0x%x, DR=0x%lx (%d bits)\n",
         ir, dr, dr_length));
   if (ir == IR_DTMCONTROL) {
-    if (dr & DTMCONTROL_DBUSRESET)
+    if (dr & DTMCONTROL_DMIRESET)
+      busy_stuck = false;
+    if (dr & DTMCONTROL_DMIHARDRESET)
       reset();
   } else if (ir == IR_DBUS && !busy_stuck) {
     unsigned op = get_field(dr, DMI_OP);
