@@ -36,7 +36,7 @@ build:
   script:
     - mkdir build
     - cd build
-    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/prebuilt/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/riscv-isa-sim/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/riscv-isa-sim/lib/libsoftfloat.so -DENV=$CI_PROJECT_DIR/riscv-tests-internal/env -DELEN=$XLEN -DFLEN=$XLEN -DSLEN=$VLEN -DVLEN=$VLEN -DXLEN=$XLEN $OPT -DMASKING=1 -DEXCEPTION=1 -DNEGATIVE_STRIDE=1 -DCHECK_VXSAT=1 -DCHECK_FFLAGS=1 ..
+    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/prebuilt/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/riscv-isa-sim/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/riscv-isa-sim/lib/libsoftfloat.so -DENV=$CI_PROJECT_DIR/riscv-tests-internal/env -DELEN=$XLEN -DFLEN=$XLEN -DSLEN=$VLEN -DVLEN=$VLEN -DXLEN=$XLEN $OPT -DMASKING=1 -DEXCEPTION=1 -DNEGATIVE_STRIDE=1 -DCHECK_VXSAT=1 -DCHECK_FFLAGS=1 ../riscv-tests-internal
     - make -j
     - ctest --timeout 5
   after_script:
