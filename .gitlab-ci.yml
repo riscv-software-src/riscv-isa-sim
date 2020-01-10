@@ -21,10 +21,10 @@ build:
     - git checkout 52358d4ff26650e10d34f2d16db7ef05075063e6
     - ./configure --prefix=$CI_PROJECT_DIR/prebuilt --target=riscv64-unknown-elf --disable-gdb --disable-sim && make -j && make install
     - cd ..
-    - git clone -b vector --depth 1 --no-tags --remote-submodules git@github.com:sifive/riscv-tests-internal.git
+    - git clone -b vector --depth 1 --no-tags git@github.com:sifive/riscv-tests-internal.git
     - cd riscv-tests-internal
     - git submodule update --init env
-    - git submodule update --init --depth 1 isa/vector
+    - git submodule update --init --remote --depth 1 isa/vector
   artifacts:
     paths:
       - riscv-isa-sim
