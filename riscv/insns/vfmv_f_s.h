@@ -2,18 +2,12 @@
 require_vector;
 require_fp;
 require_extension('F');
-require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64);
+require(P.VU.vsew == e32 || P.VU.vsew == e64);
 
 reg_t rs2_num = insn.rs2();
 uint64_t vs2_0 = 0;
 const reg_t sew = P.VU.vsew;
 switch(sew) {
-case e8:
-  vs2_0 = P.VU.elt<uint8_t>(rs2_num, 0);
-  break;
-case e16:
-  vs2_0 = P.VU.elt<uint16_t>(rs2_num, 0);
-  break;
 case e32:
   vs2_0 = P.VU.elt<uint32_t>(rs2_num, 0);
   break;
