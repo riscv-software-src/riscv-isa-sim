@@ -20,9 +20,10 @@ enum {
 
 #define DTMCONTROL_VERSION      0xf
 #define DTMCONTROL_ABITS        (0x3f << 4)
-#define DTMCONTROL_DBUSSTAT     (3<<10)
+#define DTMCONTROL_DMISTAT      (3<<10)
 #define DTMCONTROL_IDLE         (7<<12)
-#define DTMCONTROL_DBUSRESET    (1<<16)
+#define DTMCONTROL_DMIRESET     (1<<16)
+#define DTMCONTROL_DMIHARDRESET (1<<17)
 
 #define DMI_OP                 3
 #define DMI_DATA               (0xffffffffLL<<2)
@@ -144,7 +145,12 @@ void jtag_dtm_t::capture_dr()
       dr_length = 32;
       break;
     case IR_DBUS:
-      dr = dmi;
+      if (rti_remaining > 0 || busy_stuck) {
+        dr = DMI_OP_STATUS_BUSY;
+        busy_stuck = true;
+      } else {
+        dr = dmi;
+      }
       dr_length = abits + 34;
       break;
     default:
@@ -160,39 +166,36 @@ void jtag_dtm_t::update_dr()
   D(fprintf(stderr, "Update DR; IR=0x%x, DR=0x%lx (%d bits)\n",
         ir, dr, dr_length));
   if (ir == IR_DTMCONTROL) {
-    if (dr & DTMCONTROL_DBUSRESET)
+    if (dr & DTMCONTROL_DMIRESET)
+      busy_stuck = false;
+    if (dr & DTMCONTROL_DMIHARDRESET)
       reset();
-  } else if (ir == IR_DBUS) {
-    if (rti_remaining > 0 || busy_stuck) {
-        dmi = DMI_OP_STATUS_BUSY;
-        busy_stuck = true;
-    } else {
-      unsigned op = get_field(dr, DMI_OP);
-      uint32_t data = get_field(dr, DMI_DATA);
-      unsigned address = get_field(dr, DMI_ADDRESS);
+  } else if (ir == IR_DBUS && !busy_stuck) {
+    unsigned op = get_field(dr, DMI_OP);
+    uint32_t data = get_field(dr, DMI_DATA);
+    unsigned address = get_field(dr, DMI_ADDRESS);
 
-      dmi = dr;
+    dmi = dr;
 
-      bool success = true;
-      if (op == DMI_OP_READ) {
-        uint32_t value;
-        if (dm->dmi_read(address, &value)) {
-          dmi = set_field(dmi, DMI_DATA, value);
-        } else {
-          success = false;
-        }
-      } else if (op == DMI_OP_WRITE) {
-        success = dm->dmi_write(address, data);
-      }
-
-      if (success) {
-        dmi = set_field(dmi, DMI_OP, DMI_OP_STATUS_SUCCESS);
+    bool success = true;
+    if (op == DMI_OP_READ) {
+      uint32_t value;
+      if (dm->dmi_read(address, &value)) {
+        dmi = set_field(dmi, DMI_DATA, value);
       } else {
-        dmi = set_field(dmi, DMI_OP, DMI_OP_STATUS_FAILED);
+        success = false;
       }
-      D(fprintf(stderr, "dmi=0x%lx\n", dmi));
-
-      rti_remaining = required_rti_cycles;
+    } else if (op == DMI_OP_WRITE) {
+      success = dm->dmi_write(address, data);
     }
+
+    if (success) {
+      dmi = set_field(dmi, DMI_OP, DMI_OP_STATUS_SUCCESS);
+    } else {
+      dmi = set_field(dmi, DMI_OP, DMI_OP_STATUS_FAILED);
+    }
+    D(fprintf(stderr, "dmi=0x%lx\n", dmi));
+
+    rti_remaining = required_rti_cycles;
   }
 }
