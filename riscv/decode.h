@@ -1464,7 +1464,7 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
-  require(vs3 + nf <= NVPR); \
+  require(vs3 + nf * P.VU.vlmul <= NVPR); \
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i) \
@@ -1497,7 +1497,7 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
-  require(vd + nf <= NVPR); \
+  require(vd + nf * P.VU.vlmul <= NVPR); \
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_ELEMENT_SKIP(i); \
@@ -1549,6 +1549,7 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   const reg_t rd_num = insn.rd(); \
   bool early_stop = false; \
   const reg_t vlmul = P.VU.vlmul; \
+  require(rd_num + nf * P.VU.vlmul <= NVPR); \
   p->VU.vstart = 0; \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i); \
