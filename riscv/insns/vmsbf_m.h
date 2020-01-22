@@ -16,10 +16,10 @@ for (reg_t i = P.VU.vstart; i < vl; ++i) {
 
   bool vs2_lsb = ((P.VU.elt<uint64_t>(rs2_num, midx) >> mpos) & 0x1) == 1;
   bool do_mask = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
-  auto &vd = P.VU.elt<uint64_t>(rd_num, midx);
 
 
   if (insn.v_vm() == 1 || (insn.v_vm() == 0 && do_mask)) {
+    auto &vd = P.VU.elt<uint64_t>(rd_num, midx, true);
     uint64_t res = 0;
     if (!has_one && !vs2_lsb) {
       res = 1;

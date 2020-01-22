@@ -2,12 +2,11 @@
 require(insn.rd() != 0);
 VI_CHECK_SSS(false);
 VI_VFP_COMMON;
-reg_t sew = P.VU.vsew;
 
 switch(P.VU.vsew) {
   case 32:
     for (reg_t i=P.VU.vstart; i<vl; ++i) {
-      auto &vd = P.VU.elt<float32_t>(rd_num, i);
+      auto &vd = P.VU.elt<float32_t>(rd_num, i, true);
       auto rs1 = f32(READ_FREG(rs1_num));
       auto vs2 = P.VU.elt<float32_t>(rs2_num, i);
 
@@ -20,7 +19,7 @@ switch(P.VU.vsew) {
     break;
   case 64:
     for (reg_t i=P.VU.vstart; i<vl; ++i) {
-      auto &vd = P.VU.elt<float64_t>(rd_num, i);
+      auto &vd = P.VU.elt<float64_t>(rd_num, i, true);
       auto rs1 = f64(READ_FREG(rs1_num));
       auto vs2 = P.VU.elt<float64_t>(rs2_num, i);
 

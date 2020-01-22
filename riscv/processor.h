@@ -8,6 +8,7 @@
 #include "trap.h"
 #include <string>
 #include <vector>
+#include <unordered_map>
 #include <map>
 #include <cassert>
 #include "debug_rom_defines.h"
@@ -28,18 +29,11 @@ struct insn_desc_t
   insn_func_t rv64;
 };
 
-struct commit_log_reg_t
-{
-  reg_t addr;
-  freg_t data;
-};
+// regnum, data
+typedef std::unordered_map<reg_t, freg_t> commit_log_reg_t;
 
-struct commit_log_mem_t
-{
-  reg_t addr;
-  uint64_t value;
-  uint8_t size; // bytes: 1, 2, 4, or 8
-};
+// addr, value, size
+typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
 
 typedef struct
 {
@@ -476,6 +470,65 @@ private:
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;
 public:
+  class vectorUnit_t {
+    public:
+      processor_t* p;
+      void *reg_file;
+      char reg_referenced[NVPR];
+      int setvl_count;
+      reg_t reg_mask, vlmax, vmlen;
+      reg_t vstart, vxrm, vxsat, vl, vtype, vlenb;
+      reg_t vediv, vsew, vlmul;
+      reg_t ELEN, VLEN, SLEN;
+      bool vill;
+
+      // vector element for varies SEW
+      template<class T>
+        T& elt(reg_t vReg, reg_t n, bool is_write = false){
+          assert(vsew != 0);
+          assert((VLEN >> 3)/sizeof(T) > 0);
+          reg_t elts_per_reg = (VLEN >> 3) / (sizeof(T));
+          vReg += n / elts_per_reg;
+          n = n % elts_per_reg;
+#ifdef WORDS_BIGENDIAN
+          // "V" spec 0.7.1 requires lower indices to map to lower significant
+          // bits when changing SEW, thus we need to index from the end on BE.
+  	  n ^= elts_per_reg - 1;
+#endif
+          reg_referenced[vReg] = 1;
+
+#ifdef RISCV_ENABLE_COMMITLOG
+          if (is_write)
+            p->get_state()->log_reg_write[((vReg) << 2) | 2] = {0, 0};
+#endif
+
+          T *regStart = (T*)((char*)reg_file + vReg * (VLEN >> 3));
+          return regStart[n];
+        }
+    public:
+
+      void reset();
+
+      vectorUnit_t(){
+        reg_file = 0;
+      }
+
+      ~vectorUnit_t(){
+        free(reg_file);
+        reg_file = 0;
+      }
+
+      reg_t set_vl(int rd, int rs1, reg_t reqVL, reg_t newType);
+
+      reg_t get_vlen() { return VLEN; }
+      reg_t get_elen() { return ELEN; }
+      reg_t get_slen() { return SLEN; }
+
+      VRM get_vround_mode() {
+        return (VRM)vxrm;
+      }
+  };
+
   vectorUnit_t VU;
 };
 
