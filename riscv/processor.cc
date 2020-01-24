@@ -317,8 +317,9 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
   return vl;
 }
 
-vectorUnit_t::vectorUnit_t() :
-  reg_file(0) {
+processor_t::vectorUnit_t::vectorUnit_t()
+  : reg_file(0)
+{
 
   uint64_t val_any = 'a' << 16 | 'n' << 8 | 'y';
   uint64_t val_e27 = 'e' << 16 | '2' << 8 | '7';
