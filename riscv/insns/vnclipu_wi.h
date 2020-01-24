@@ -3,7 +3,7 @@ VRM xrm = P.VU.get_vround_mode();
 uint64_t int_max = ~(-1ll << P.VU.vsew);
 VI_VVXI_LOOP_NARROW
 ({
-  uint64_t result = vs2_u;
+  uint128_t result = vs2_u;
   unsigned shift = zimm5 & ((sew * 2) - 1);
 
   // rounding
