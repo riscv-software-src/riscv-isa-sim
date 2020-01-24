@@ -1314,7 +1314,7 @@ void processor_t::set_csr(int which, reg_t val)
     bool next_locked = i+1 < state.n_pmp && (state.pmpcfg[i+1] & PMP_L);
     bool next_tor = i+1 < state.n_pmp && (state.pmpcfg[i+1] & PMP_A) == PMP_TOR;
     if (!locked && !(next_locked && next_tor))
-      state.pmpaddr[i] = val;
+      state.pmpaddr[i] = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
 
     mmu->flush_tlb();
   }
@@ -1447,13 +1447,14 @@ void processor_t::set_csr(int which, reg_t val)
       return set_csr(CSR_MIE,
                      (state.mie & ~state.mideleg) | (val & state.mideleg));
     case CSR_SATP: {
+      reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
       mmu->flush_tlb();
       if (max_xlen == 32)
         state.satp = val & (SATP32_PPN | SATP32_MODE);
       if (max_xlen == 64 && (get_field(val, SATP64_MODE) == SATP_MODE_OFF ||
                              get_field(val, SATP64_MODE) == SATP_MODE_SV39 ||
                              get_field(val, SATP64_MODE) == SATP_MODE_SV48))
-        state.satp = val & (SATP64_PPN | SATP64_MODE);
+        state.satp = val & (SATP64_PPN | SATP64_MODE | rv64_ppn_mask);
       break;
     }
     case CSR_SEPC: state.sepc = val & ~(reg_t)1; break;
