@@ -7,6 +7,7 @@
 
 #define ET_EXEC 2
 #define EM_RISCV 243
+#define EM_NONE 0
 #define EV_CURRENT 1
 
 #define IS_ELF(hdr) \
@@ -19,6 +20,7 @@
 #define IS_ELFBE(hdr) (IS_ELF(hdr) && (hdr).e_ident[5] == 2)
 #define IS_ELF_EXEC(hdr) (IS_ELF(hdr) && (hdr).e_type == ET_EXEC)
 #define IS_ELF_RISCV(hdr) (IS_ELF(hdr) && (hdr).e_machine == EM_RISCV)
+#define IS_ELF_EM_NONE(hdr) (IS_ELF(hdr) && (hdr).e_machine == EM_NONE)
 #define IS_ELF_VCURRENT(hdr) (IS_ELF(hdr) && (hdr).e_version == EV_CURRENT)
 
 #define PT_LOAD 1
