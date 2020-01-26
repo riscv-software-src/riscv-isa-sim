@@ -33,7 +33,7 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
   assert(IS_ELF32(*eh64) || IS_ELF64(*eh64));
   assert(IS_ELFLE(*eh64));
   assert(IS_ELF_EXEC(*eh64));
-  assert(IS_ELF_RISCV(*eh64));
+  assert(IS_ELF_RISCV(*eh64) || IS_ELF_EM_NONE(*eh64));
   assert(IS_ELF_VCURRENT(*eh64));
 
   std::vector<uint8_t> zeros;
