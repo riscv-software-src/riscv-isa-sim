@@ -5,6 +5,10 @@
 
 #include <stdint.h>
 
+#define ET_EXEC 2
+#define EM_RISCV 243
+#define EV_CURRENT 1
+
 #define IS_ELF(hdr) \
   ((hdr).e_ident[0] == 0x7f && (hdr).e_ident[1] == 'E' && \
    (hdr).e_ident[2] == 'L'  && (hdr).e_ident[3] == 'F')
@@ -13,6 +17,9 @@
 #define IS_ELF64(hdr) (IS_ELF(hdr) && (hdr).e_ident[4] == 2)
 #define IS_ELFLE(hdr) (IS_ELF(hdr) && (hdr).e_ident[5] == 1)
 #define IS_ELFBE(hdr) (IS_ELF(hdr) && (hdr).e_ident[5] == 2)
+#define IS_ELF_EXEC(hdr) (IS_ELF(hdr) && (hdr).e_type == ET_EXEC)
+#define IS_ELF_RISCV(hdr) (IS_ELF(hdr) && (hdr).e_machine == EM_RISCV)
+#define IS_ELF_VCURRENT(hdr) (IS_ELF(hdr) && (hdr).e_version == EV_CURRENT)
 
 #define PT_LOAD 1
 
