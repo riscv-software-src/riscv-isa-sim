@@ -1115,15 +1115,15 @@ void processor_t::reset()
 {
   state.reset(max_isa);
 
-  // For backwards compatibility with software that is unaware of PMP,
-  // initialize PMP to permit unprivileged access to all of memory.
-  set_csr(CSR_PMPADDR0, ~reg_t(0));
-  set_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
-
   state.dcsr.halt = halt_on_reset;
   halt_on_reset = false;
   set_csr(CSR_MSTATUS, state.mstatus);
   VU.reset();
+
+  // For backwards compatibility with software that is unaware of PMP,
+  // initialize PMP to permit unprivileged access to all of memory.
+  set_csr(CSR_PMPADDR0, ~reg_t(0));
+  set_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
 
   if (ext)
     ext->reset(); // reset the extension
