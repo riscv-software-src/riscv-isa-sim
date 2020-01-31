@@ -83,6 +83,7 @@ class htif_t : public chunked_memif_t
 #define HTIF_USAGE_OPTIONS \
 "HOST OPTIONS\n\
   -h, --help               Display this help and exit\n\
+  +h,  +help\n\
        +permissive         The host will ignore any unparsed options up until\n\
                              +permissive-off (Only needed for VCS)\n\
        +permissive-off     Stop ignoring options. This is mandatory if using\n\

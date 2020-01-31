@@ -249,7 +249,11 @@ void htif_t::parse_arguments(int argc, char ** argv)
         throw std::invalid_argument("Unknown argument (did you mean to enable +permissive parsing?)");
       case 1: {
         std::string arg = optarg;
-        if (arg == "+rfb") {
+        if (arg == "+h" || arg == "+help") {
+          c = 'h';
+          optarg = nullptr;
+        }
+        else if (arg == "+rfb") {
           c = HTIF_LONG_OPTIONS_OPTIND;
           optarg = nullptr;
         }
