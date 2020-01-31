@@ -7,6 +7,7 @@
 #include "syscall.h"
 #include "device.h"
 #include <string.h>
+#include <map>
 #include <vector>
 
 class htif_t : public chunked_memif_t
@@ -36,6 +37,7 @@ class htif_t : public chunked_memif_t
   virtual size_t chunk_align() = 0;
   virtual size_t chunk_max_size() = 0;
 
+  virtual std::map<std::string, uint64_t> load_payload(const std::string& payload, reg_t* entry);
   virtual void load_program();
   virtual void idle() {}
 
@@ -69,6 +71,7 @@ class htif_t : public chunked_memif_t
   syscall_t syscall_proxy;
   bcd_t bcd;
   std::vector<device_t*> dynamic_devices;
+  std::vector<std::string> payloads;
 
   const std::vector<std::string>& target_args() { return targs; }
 
@@ -83,6 +86,7 @@ class htif_t : public chunked_memif_t
 #define HTIF_USAGE_OPTIONS \
 "HOST OPTIONS\n\
   -h, --help               Display this help and exit\n\
+  +h,  +help\n\
        +permissive         The host will ignore any unparsed options up until\n\
                              +permissive-off (Only needed for VCS)\n\
        +permissive-off     Stop ignoring options. This is mandatory if using\n\
@@ -93,6 +97,8 @@ class htif_t : public chunked_memif_t
        +signature=FILE\n\
       --chroot=PATH        Use PATH as location of syscall-servicing binaries\n\
        +chroot=PATH\n\
+      --payload=PATH       Load PATH memory as an additional ELF payload\n\
+       +payload=PATH\n\
 \n\
 HOST OPTIONS (currently unsupported)\n\
       --disk=DISK          Add DISK device. Use a ramdisk since this isn't\n\
@@ -109,6 +115,7 @@ TARGET (RISC-V BINARY) OPTIONS\n\
 {"disk",      required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 1 },     \
 {"signature", required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 2 },     \
 {"chroot",    required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 3 },     \
+{"payload",   required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 4 },     \
 {0, 0, 0, 0}
 
 #endif // __HTIF_H

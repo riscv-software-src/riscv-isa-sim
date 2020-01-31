@@ -83,21 +83,21 @@ void htif_t::start()
   reset();
 }
 
-void htif_t::load_program()
+std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload, reg_t* entry)
 {
   std::string path;
-  if (access(targs[0].c_str(), F_OK) == 0)
-    path = targs[0];
-  else if (targs[0].find('/') == std::string::npos)
+  if (access(payload.c_str(), F_OK) == 0)
+    path = payload;
+  else if (payload.find('/') == std::string::npos)
   {
-    std::string test_path = PREFIX TARGET_DIR + targs[0];
+    std::string test_path = PREFIX TARGET_DIR + payload;
     if (access(test_path.c_str(), F_OK) == 0)
       path = test_path;
   }
 
   if (path.empty())
     throw std::runtime_error(
-        "could not open " + targs[0] +
+        "could not open " + payload +
         " (did you misspell it? If VCS, did you forget +permissive/+permissive-off?)");
 
   // temporarily construct a memory interface that skips writing bytes
@@ -116,7 +116,12 @@ void htif_t::load_program()
     htif_t* htif;
   } preload_aware_memif(this);
 
-  std::map<std::string, uint64_t> symbols = load_elf(path.c_str(), &preload_aware_memif, &entry);
+  return load_elf(path.c_str(), &preload_aware_memif, entry);
+}
+
+void htif_t::load_program()
+{
+  std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry);
 
   if (symbols.count("tohost") && symbols.count("fromhost")) {
     tohost_addr = symbols["tohost"];
@@ -130,6 +135,12 @@ void htif_t::load_program()
   {
     sig_addr = symbols["begin_signature"];
     sig_len = symbols["end_signature"] - sig_addr;
+  }
+
+  for (auto payload : payloads)
+  {
+    reg_t dummy_entry;
+    load_payload(payload, &dummy_entry);
   }
 }
 
@@ -243,13 +254,20 @@ void htif_t::parse_arguments(int argc, char ** argv)
       case HTIF_LONG_OPTIONS_OPTIND + 3:
         syscall_proxy.set_chroot(optarg);
         break;
+      case HTIF_LONG_OPTIONS_OPTIND + 4:
+        payloads.push_back(optarg);
+        break;
       case '?':
         if (!opterr)
           break;
         throw std::invalid_argument("Unknown argument (did you mean to enable +permissive parsing?)");
       case 1: {
         std::string arg = optarg;
-        if (arg == "+rfb") {
+        if (arg == "+h" || arg == "+help") {
+          c = 'h';
+          optarg = nullptr;
+        }
+        else if (arg == "+rfb") {
           c = HTIF_LONG_OPTIONS_OPTIND;
           optarg = nullptr;
         }
@@ -268,6 +286,10 @@ void htif_t::parse_arguments(int argc, char ** argv)
         else if (arg.find("+chroot=") == 0) {
           c = HTIF_LONG_OPTIONS_OPTIND + 3;
           optarg = optarg + 8;
+        }
+        else if (arg.find("+payload=") == 0) {
+          c = HTIF_LONG_OPTIONS_OPTIND + 4;
+          optarg = optarg + 9;
         }
         else if (arg.find("+permissive-off") == 0) {
           if (opterr)
