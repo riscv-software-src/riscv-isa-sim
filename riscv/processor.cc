@@ -247,6 +247,7 @@ void state_t::reset(reg_t max_isa)
   memset(&this->dcsr, 0, sizeof(this->dcsr));
 
   tselect = 0;
+  memset(&this->mcontrol, 0, sizeof(this->mcontrol));
   for (auto &item : mcontrol)
     item.type = 2;
 
@@ -259,6 +260,7 @@ void state_t::reset(reg_t max_isa)
   fflags = 0;
   frm = 0;
   serialized = false;
+  single_step = STEP_NONE;
 
 #ifdef RISCV_ENABLE_COMMITLOG
   log_reg_write.clear();
