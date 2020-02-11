@@ -204,12 +204,7 @@ class vectorUnit_t {
     VRM get_vround_mode() {
       return (VRM)vxrm;
     }
-};
 
-struct prev_reg_state_t {
-  regfile_t<reg_t, NXPR, false> XPR;
-  regfile_t<freg_t, NFPR, false> FPR;
-  vectorUnit_t VU;
 };
 
 // architectural state of a RISC-V hart
@@ -222,9 +217,6 @@ struct state_t
   reg_t pc;
   regfile_t<reg_t, NXPR, true> XPR;
   regfile_t<freg_t, NFPR, false> FPR;
-
-  // Used when tracing
-  prev_reg_state_t *prev_state;
 
   // control and status registers
   reg_t prv;    // TODO: Can this be an enum instead?
@@ -540,6 +532,16 @@ public:
   };
 
   vectorUnit_t VU;
+
+  //extra record to the instruction writing
+  class prev_reg_state_t {
+    public:
+      regfile_t<reg_t, NXPR, false> XPR;
+      regfile_t<freg_t, NFPR, false> FPR;
+      processor_t::vectorUnit_t VU;
+  };
+
+  prev_reg_state_t *prev_state;
 };
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);

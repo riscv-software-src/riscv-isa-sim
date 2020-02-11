@@ -205,7 +205,7 @@ void processor_t::step(size_t n)
           }
 
 #if 1
-          if (debug && !state.prev_state) { // lazy init
+          if (debug && !prev_state) { // lazy init
             prev_reg_state_t *saved = new prev_reg_state_t;
             memcpy(&saved->VU, &VU, sizeof(vectorUnit_t));
             int v_regfile_sz = NVPR * (VU.VLEN/8);
@@ -217,7 +217,7 @@ void processor_t::step(size_t n)
                 saved->VU.elt<uint32_t>(i, j) = f32(0xdeadbeef).v;
               }
             }
-            state.prev_state = saved;
+            prev_state = saved;
           }
 #endif
           insn_fetch_t fetch = mmu->load_insn(pc);
@@ -226,7 +226,7 @@ void processor_t::step(size_t n)
           pc = execute_insn(this, pc, fetch);
 #if 1
           if (debug && !state.serialized) {
-            prev_reg_state_t *saved = state.prev_state;
+            prev_reg_state_t *saved = prev_state;
             if (saved->VU.setvl_count != VU.setvl_count) {
               fprintf(stderr, "vconfig <- sew=%lu vlmul=%ld vlmax=%lu vl=%lu\n",
                       VU.vsew, VU.vlmul, VU.vlmax, VU.vl);
