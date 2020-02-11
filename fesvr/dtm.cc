@@ -558,6 +558,9 @@ void dtm_t::producer_thread()
   // Learn about the Debug Module and assert things we
   // depend on in this code.
 
+  // Enable the debugger.
+  write(DMI_DMCONTROL, DMI_DMCONTROL_DMACTIVE);
+    
   // These are checked every time we run an abstract command.
   uint32_t abstractcs = read(DMI_ABSTRACTCS);
   ram_words = get_field(abstractcs, DMI_ABSTRACTCS_PROGSIZE);
@@ -571,9 +574,6 @@ void dtm_t::producer_thread()
   assert(get_field(hartinfo, DMI_HARTINFO_DATAACCESS));
 
   data_base = get_field(hartinfo, DMI_HARTINFO_DATAADDR);
-
-  // Enable the debugger.
-  write(DMI_DMCONTROL, DMI_DMCONTROL_DMACTIVE);
   
   num_harts = enumerate_harts();
   halt(0);
