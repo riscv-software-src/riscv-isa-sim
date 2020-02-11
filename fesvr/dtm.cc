@@ -137,7 +137,7 @@ void dtm_t::resume(int hartsel)
   current_hart = hartsel;
 
   if (running) {
-    write(DMI_DMCONTROL, 0);
+    write(DMI_DMCONTROL, DMI_DMCONTROL_DMACTIVE);
     // Read dmstatus to avoid back-to-back writes to dmcontrol.
     read(DMI_DMSTATUS);
   }
