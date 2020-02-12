@@ -126,10 +126,8 @@ void processor_t::parse_varch_string(const char* s)
     bad_varch_string(s, "vlen must be >= slen");
   if (slen < 32)
     bad_varch_string(s, "slen must be >= 32");
-  if ((unsigned) elen < std::max(max_xlen, get_flen())) {
-    fprintf(stderr, "elen=%d, xlen=%d, flen=%d\n", elen, max_xlen, get_flen());
+  if ((unsigned) elen < std::max(max_xlen, get_flen()))
     bad_varch_string(s, "elen must be >= max(xlen, flen)");
-  }
 
   /* spike requirements. */
   if (vlen > 4096)
