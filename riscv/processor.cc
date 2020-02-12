@@ -846,10 +846,15 @@ reg_t processor_t::get_csr(int which)
         break;
       return state.frm;
     case CSR_FCSR:
-      require_fp;
+      {require_fp;
       if (!supports_extension('F'))
         break;
-      return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
+      uint32_t shared_flags = 0;
+      if (supports_extension('V'))
+            shared_flags = (VU.vxrm << FSR_VXRM_SHIFT) | (VU.vxsat << FSR_VXSAT_SHIFT);
+      return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT) |
+          shared_flags;
+      }
     case CSR_INSTRET:
     case CSR_CYCLE:
       if (ctr_ok)
