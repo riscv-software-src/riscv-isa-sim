@@ -68,9 +68,9 @@ static void bad_priv_string(const char* priv)
   abort();
 }
 
-static void bad_varch_string(const char* varch)
+static void bad_varch_string(const char* varch, const char *message)
 {
-  fprintf(stderr, "error: bad --varch option %s\n", varch);
+  fprintf(stderr, "error: bad --varch option %s: %s\n", varch, message);
   abort();
 }
 
@@ -80,9 +80,9 @@ static int parse_varch(std::string &str){
     std::string sval = str.substr(1);
     val = std::stoi(sval);
     if ((val & (val - 1)) != 0) // val should be power of 2
-      bad_varch_string(str.c_str());
+      bad_varch_string(str.c_str(), "must be a power of 2");
   }else{
-    bad_varch_string(str.c_str());
+    bad_varch_string(str.c_str(), "must not be empty");
   }
   return val;
 }
@@ -114,14 +114,26 @@ void processor_t::parse_varch_string(const char* s)
     }else if (token[0] == 's'){
       slen = parse_varch(token);
     }else{
-      bad_varch_string(str.c_str());
+      bad_varch_string(str.c_str(), "Unsupported token");
     }
     str.erase(0, pos + delimiter.length());
   }
 
-  if (!(vlen >= 32 || vlen <= 4096) && !(slen >= vlen || slen <= vlen) && !(elen >= slen || elen <= slen)){
-    bad_varch_string(s);
+  /* Vector spec requirements. */
+  if (vlen < elen)
+    bad_varch_string(s, "vlen must be >= elen");
+  if (vlen < slen)
+    bad_varch_string(s, "vlen must be >= slen");
+  if (slen < 32)
+    bad_varch_string(s, "slen must be >= 32");
+  if ((unsigned) elen < std::max(max_xlen, get_flen())) {
+    fprintf(stderr, "elen=%d, xlen=%d, flen=%d\n", elen, max_xlen, get_flen());
+    bad_varch_string(s, "elen must be >= max(xlen, flen)");
   }
+
+  /* spike requirements. */
+  if (vlen > 4096)
+    bad_varch_string(s, "vlen must be <= 4096");
 
   VU.VLEN = vlen;
   VU.ELEN = elen;
