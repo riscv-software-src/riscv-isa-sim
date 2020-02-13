@@ -1362,7 +1362,7 @@ Optional Packages:
   --without-PACKAGE       do not use PACKAGE (same as --with-PACKAGE=no)
   --with-isa=RV64IMAFDC   Sets the default RISC-V ISA
   --with-priv=MSU         Sets the default RISC-V privilege modes supported
-  --with-varch=v128:e32:s128
+  --with-varch=v128:e64:s128
                           Sets the default vector config
 
 Some influential environment variables:
@@ -4649,7 +4649,7 @@ _ACEOF
 else
 
 cat >>confdefs.h <<_ACEOF
-#define DEFAULT_VARCH "v128:e32:s128"
+#define DEFAULT_VARCH "v128:e64:s128"
 _ACEOF
 
 fi
