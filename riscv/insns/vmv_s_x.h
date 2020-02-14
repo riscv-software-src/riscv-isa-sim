@@ -5,7 +5,7 @@ require(P.VU.vsew == e8 || P.VU.vsew == e16 ||
         P.VU.vsew == e32 || P.VU.vsew == e64);
 reg_t vl = P.VU.vl;
 
-if (vl > 0) {
+if (vl > 0 && P.VU.vstart < vl) {
   reg_t rd_num = insn.rd();
   reg_t sew = P.VU.vsew;
 
@@ -26,3 +26,5 @@ if (vl > 0) {
 
   vl = 0;
 }
+
+P.VU.vstart = 0;
