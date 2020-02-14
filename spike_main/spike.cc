@@ -12,6 +12,7 @@
 #include <vector>
 #include <string>
 #include <memory>
+#include <fstream>
 #include "../VERSION"
 
 static void help(int exit_code = 1)
@@ -49,6 +50,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
   fprintf(stderr, "  --dump-dts            Print device tree string and exit\n");
   fprintf(stderr, "  --disable-dtb         Don't write the device tree blob into memory\n");
+  fprintf(stderr, "  --initrd=<path>       Load kernel initrd into memory\n");
   fprintf(stderr, "  --dm-progsize=<words> Progsize for the debug module [default 2]\n");
   fprintf(stderr, "  --dm-sba=<bits>       Debug bus master supports up to "
       "<bits> wide accesses [default 0]\n");
@@ -68,6 +70,26 @@ static void suggest_help()
 {
   fprintf(stderr, "Try 'spike --help' for more information.\n");
   exit(1);
+}
+
+static bool check_file_exists(const char *fileName)
+{
+  std::ifstream infile(fileName);
+  return infile.good();
+}
+
+static std::ifstream::pos_type get_file_size(const char *filename)
+{
+  std::ifstream in(filename, std::ios::ate | std::ios::binary);
+  return in.tellg();
+}
+
+static void read_file_bytes(const char *filename,size_t fileoff,
+                            char *read_buf, size_t read_sz)
+{
+  std::ifstream in(filename, std::ios::in | std::ios::binary);
+  in.seekg(fileoff, std::ios::beg);
+  in.read(read_buf, read_sz);
 }
 
 static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
@@ -110,6 +132,8 @@ int main(int argc, char** argv)
   bool dump_dts = false;
   bool dtb_enabled = true;
   size_t nprocs = 1;
+  size_t initrd_size;
+  reg_t initrd_start = 0, initrd_end = 0;
   reg_t start_pc = reg_t(-1);
   std::vector<std::pair<reg_t, mem_t*>> mems;
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
@@ -119,6 +143,7 @@ int main(int argc, char** argv)
   bool log_cache = false;
   bool log_commits = false;
   std::function<extension_t*()> extension;
+  const char* initrd = NULL;
   const char* isa = DEFAULT_ISA;
   const char* priv = DEFAULT_PRIV;
   const char* varch = DEFAULT_VARCH;
@@ -215,6 +240,7 @@ int main(int argc, char** argv)
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
   parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
+  parser.option(0, "initrd", 1, [&](const char* s){initrd = s;});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
     if (lib == NULL) {
@@ -248,7 +274,19 @@ int main(int argc, char** argv)
   if (!*argv1)
     help();
 
-  sim_t s(isa, priv, varch, nprocs, halted, start_pc, mems, plugin_devices, htif_args,
+  if (initrd && check_file_exists(initrd)) {
+    initrd_size = get_file_size(initrd);
+    for (auto& m : mems) {
+      if (initrd_size && (initrd_size + 0x1000) < m.second->size()) {
+         initrd_end = m.first + m.second->size() - 0x1000;
+         initrd_start = initrd_end - initrd_size;
+         read_file_bytes(initrd, 0, m.second->contents() + (initrd_start - m.first), initrd_size);
+         break;
+      }
+    }
+  }
+
+  sim_t s(isa, priv, varch, nprocs, halted, initrd_start, initrd_end, start_pc, mems, plugin_devices, htif_args,
       std::move(hartids), dm_config);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(

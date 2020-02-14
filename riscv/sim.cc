@@ -26,14 +26,14 @@ static void handle_signal(int sig)
 }
 
 sim_t::sim_t(const char* isa, const char* priv, const char* varch,
-             size_t nprocs, bool halted,
+             size_t nprocs, bool halted, reg_t initrd_start, reg_t initrd_end,
              reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
              std::vector<int> const hartids,
              const debug_module_config_t &dm_config)
   : htif_t(args), mems(mems), plugin_devices(plugin_devices),
-    procs(std::max(nprocs, size_t(1))), start_pc(start_pc), current_step(0),
+    procs(std::max(nprocs, size_t(1))), initrd_start(initrd_start), initrd_end(initrd_end), start_pc(start_pc), current_step(0),
     current_proc(0), debug(false), histogram_enabled(false),
     log_commits_enabled(false), dtb_enabled(true),
     remote_bitbang(NULL), debug_module(this, dm_config)
@@ -201,7 +201,7 @@ void sim_t::make_dtb()
 
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
 
-  dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, procs, mems);
+  dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, procs, mems);
   std::string dtb = dts_compile(dts);
 
   rom.insert(rom.end(), dtb.begin(), dtb.end());

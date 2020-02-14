@@ -9,6 +9,7 @@
 #include <sys/types.h>
 
 std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
+                     reg_t initrd_start, reg_t initrd_end,
                      std::vector<processor_t*> procs,
                      std::vector<std::pair<reg_t, mem_t*>> mems)
 {
@@ -21,6 +22,15 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "  #size-cells = <2>;\n"
          "  compatible = \"ucbbar,spike-bare-dev\";\n"
          "  model = \"ucbbar,spike-bare\";\n"
+         "  chosen {\n";
+  if (initrd_start < initrd_end) {
+    s << "    bootargs = \"root=/dev/ram console=hvc0 earlycon=sbi\";\n"
+         "    linux,initrd-start = <" << (size_t)initrd_start << ">;\n"
+         "    linux,initrd-end = <" << (size_t)initrd_end << ">;\n";
+  } else {
+    s << "    bootargs = \"console=hvc0 earlycon=sbi\";\n";
+  }
+    s << "  };\n"
          "  cpus {\n"
          "    #address-cells = <1>;\n"
          "    #size-cells = <0>;\n"
