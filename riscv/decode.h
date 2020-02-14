@@ -1574,7 +1574,7 @@ for (reg_t i = 0; i < vlmax; ++i) { \
         val = MMU.load_##itype##tsew(baseAddr + (i * nf + fn) * (tsew / 8)); \
       } catch (trap_t& t) { \
         if (i == 0) \
-          throw t; /* Only take exception on zeroth element */ \
+          throw; /* Only take exception on zeroth element */ \
         /* Reduce VL if an exception occurs on a later element */ \
         early_stop = true; \
         P.VU.vl = i; \
