@@ -613,7 +613,7 @@ static inline bool is_overlapped(const int astart, const int asize,
 
 #define VI_U_PARAMS(x) \
   type_usew_t<x>::type &vd = P.VU.elt<type_usew_t<x>::type>(rd_num, i, true); \
-  type_usew_t<x>::type simm5 = (type_usew_t<x>::type)insn.v_zimm5(); \
+  type_usew_t<x>::type zimm5 = (type_usew_t<x>::type)insn.v_zimm5(); \
   type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
 
 #define VV_PARAMS(x) \
