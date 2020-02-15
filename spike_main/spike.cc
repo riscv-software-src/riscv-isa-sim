@@ -51,6 +51,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --dump-dts            Print device tree string and exit\n");
   fprintf(stderr, "  --disable-dtb         Don't write the device tree blob into memory\n");
   fprintf(stderr, "  --initrd=<path>       Load kernel initrd into memory\n");
+  fprintf(stderr, "  --real-time-clint     Increment clint time at real-time rate\n");
   fprintf(stderr, "  --dm-progsize=<words> Progsize for the debug module [default 2]\n");
   fprintf(stderr, "  --dm-sba=<bits>       Debug bus master supports up to "
       "<bits> wide accesses [default 0]\n");
@@ -131,6 +132,7 @@ int main(int argc, char** argv)
   bool log = false;
   bool dump_dts = false;
   bool dtb_enabled = true;
+  bool real_time_clint = false;
   size_t nprocs = 1;
   size_t initrd_size;
   reg_t initrd_start = 0, initrd_end = 0;
@@ -241,6 +243,7 @@ int main(int argc, char** argv)
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
   parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
   parser.option(0, "initrd", 1, [&](const char* s){initrd = s;});
+  parser.option(0, "real-time-clint", 0, [&](const char *s){real_time_clint = true;});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
     if (lib == NULL) {
@@ -286,7 +289,8 @@ int main(int argc, char** argv)
     }
   }
 
-  sim_t s(isa, priv, varch, nprocs, halted, initrd_start, initrd_end, start_pc, mems, plugin_devices, htif_args,
+  sim_t s(isa, priv, varch, nprocs, halted, real_time_clint,
+      initrd_start, initrd_end, start_pc, mems, plugin_devices, htif_args,
       std::move(hartids), dm_config);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
