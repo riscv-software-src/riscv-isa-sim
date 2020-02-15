@@ -72,7 +72,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     }
   }
 
-  clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK / 1000000, real_time_clint));
+  clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, real_time_clint));
   bus.add_device(CLINT_BASE, clint.get());
 }
 
