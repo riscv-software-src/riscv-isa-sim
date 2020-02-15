@@ -26,7 +26,8 @@ static void handle_signal(int sig)
 }
 
 sim_t::sim_t(const char* isa, const char* priv, const char* varch,
-             size_t nprocs, bool halted, reg_t initrd_start, reg_t initrd_end,
+             size_t nprocs, bool halted, bool real_time_clint,
+             reg_t initrd_start, reg_t initrd_end,
              reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
@@ -65,7 +66,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     }
   }
 
-  clint.reset(new clint_t(procs));
+  clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, real_time_clint));
   bus.add_device(CLINT_BASE, clint.get());
 }
 

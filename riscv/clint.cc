@@ -1,9 +1,16 @@
+#include <sys/time.h>
 #include "devices.h"
 #include "processor.h"
 
-clint_t::clint_t(std::vector<processor_t*>& procs)
-  : procs(procs), mtime(0), mtimecmp(procs.size())
+clint_t::clint_t(std::vector<processor_t*>& procs, uint64_t freq_hz, bool real_time)
+  : procs(procs), freq_hz(freq_hz), real_time(real_time), mtime(0), mtimecmp(procs.size())
 {
+  struct timeval base;
+
+  gettimeofday(&base, NULL);
+
+  real_time_ref_secs = base.tv_sec;
+  real_time_ref_usecs = base.tv_usec;
 }
 
 /* 0000 msip hart 0
@@ -22,6 +29,7 @@ clint_t::clint_t(std::vector<processor_t*>& procs)
 
 bool clint_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
+  increment(0);
   if (addr >= MSIP_BASE && addr + len <= MSIP_BASE + procs.size()*sizeof(msip_t)) {
     std::vector<msip_t> msip(procs.size());
     for (size_t i = 0; i < procs.size(); ++i)
@@ -63,7 +71,16 @@ bool clint_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 
 void clint_t::increment(reg_t inc)
 {
-  mtime += inc;
+  if (real_time) {
+   struct timeval now;
+   uint64_t diff_usecs;
+
+   gettimeofday(&now, NULL);
+   diff_usecs = ((now.tv_sec - real_time_ref_secs) * 1000000) + (now.tv_usec - real_time_ref_usecs);
+   mtime = diff_usecs * freq_hz / 1000000;
+  } else {
+    mtime += inc;
+  }
   for (size_t i = 0; i < procs.size(); i++) {
     procs[i]->state.mip &= ~MIP_MTIP;
     if (mtime >= mtimecmp[i])
