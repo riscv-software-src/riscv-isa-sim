@@ -1,5 +1,4 @@
 // vmerge.vxm vd, vs2, rs1
-require(insn.rd() != 0);
 VI_CHECK_SSS(false);
 VI_VVXI_MERGE_LOOP
 ({
