@@ -13,6 +13,7 @@ mmu_t::mmu_t(simif_t* sim, processor_t* proc)
 {
   flush_tlb();
   yield_load_reservation();
+  clear_stats();
 }
 
 mmu_t::~mmu_t()
@@ -27,6 +28,7 @@ void mmu_t::flush_icache()
 
 void mmu_t::flush_tlb()
 {
+  stats_tlb_flush_all++;
   memset(tlb_insn_tag, -1, sizeof(tlb_insn_tag));
   memset(tlb_load_tag, -1, sizeof(tlb_load_tag));
   memset(tlb_store_tag, -1, sizeof(tlb_store_tag));

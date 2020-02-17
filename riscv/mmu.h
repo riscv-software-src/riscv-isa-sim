@@ -95,10 +95,12 @@ public:
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
       if (likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) { \
+        stats_tlb_load_hit++; \
         if (proc) READ_MEM(addr, size); \
         return from_le(*(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
       } \
       if (unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
+        stats_tlb_load_hit++; \
         type##_t data = from_le(*(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
         if (!matched_trigger) { \
           matched_trigger = trigger_exception(OPERATION_LOAD, addr, data); \
@@ -109,6 +111,7 @@ public:
         return data; \
       } \
       type##_t res; \
+      stats_tlb_load_miss++; \
       load_slow_path(addr, sizeof(type##_t), (uint8_t*)&res); \
       if (proc) READ_MEM(addr, size); \
       return from_le(res); \
@@ -141,10 +144,12 @@ public:
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
       if (likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \
+        stats_tlb_store_hit++; \
         if (proc) WRITE_MEM(addr, val, size); \
         *(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_le(val); \
       } \
       else if (unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
+        stats_tlb_store_hit++; \
         if (!matched_trigger) { \
           matched_trigger = trigger_exception(OPERATION_STORE, addr, val); \
           if (matched_trigger) \
@@ -156,6 +161,7 @@ public:
       else { \
 	type##_t le_val = to_le(val); \
         if (proc) WRITE_MEM(addr, val, size); \
+        stats_tlb_store_miss++; \
         store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&le_val); \
       } \
   }
@@ -308,6 +314,24 @@ public:
 #endif
   }
 
+  void clear_stats(void)
+  {
+    stats_tlb_flush_all = 0;
+    stats_tlb_fetch_hit = 0;
+    stats_tlb_fetch_miss = 0;
+    stats_tlb_load_hit = 0;
+    stats_tlb_load_miss = 0;
+    stats_tlb_store_hit = 0;
+    stats_tlb_store_miss = 0;
+  }
+  uint64_t get_stats_tlb_flush_all(void) { return stats_tlb_flush_all; }
+  uint64_t get_stats_tlb_fetch_hit(void) { return stats_tlb_fetch_miss; }
+  uint64_t get_stats_tlb_fetch_miss(void) { return stats_tlb_fetch_miss; }
+  uint64_t get_stats_tlb_load_hit(void) { return stats_tlb_load_hit; }
+  uint64_t get_stats_tlb_load_miss(void) { return stats_tlb_load_miss; }
+  uint64_t get_stats_tlb_store_hit(void) { return stats_tlb_store_hit; }
+  uint64_t get_stats_tlb_store_miss(void) { return stats_tlb_store_miss; }
+
 private:
   simif_t* sim;
   processor_t* proc;
@@ -328,6 +352,14 @@ private:
   reg_t tlb_load_tag[TLB_ENTRIES];
   reg_t tlb_store_tag[TLB_ENTRIES];
 
+  uint64_t stats_tlb_flush_all;
+  uint64_t stats_tlb_fetch_hit;
+  uint64_t stats_tlb_fetch_miss;
+  uint64_t stats_tlb_load_hit;
+  uint64_t stats_tlb_load_miss;
+  uint64_t stats_tlb_store_hit;
+  uint64_t stats_tlb_store_miss;
+
   // finish translation on a TLB miss and update the TLB
   tlb_entry_t refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type);
   const char* fill_from_mmio(reg_t vaddr, reg_t paddr);
@@ -344,12 +376,16 @@ private:
   // ITLB lookup
   inline tlb_entry_t translate_insn_addr(reg_t addr) {
     reg_t vpn = addr >> PGSHIFT;
-    if (likely(tlb_insn_tag[vpn % TLB_ENTRIES] == vpn))
+    if (likely(tlb_insn_tag[vpn % TLB_ENTRIES] == vpn)) {
+      stats_tlb_fetch_hit++;
       return tlb_data[vpn % TLB_ENTRIES];
+    }
     tlb_entry_t result;
     if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] != (vpn | TLB_CHECK_TRIGGERS))) {
+      stats_tlb_fetch_miss++;
       result = fetch_slow_path(addr);
     } else {
+      stats_tlb_fetch_hit++;
       result = tlb_data[vpn % TLB_ENTRIES];
     }
     if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {

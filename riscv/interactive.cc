@@ -73,6 +73,7 @@ void sim_t::interactive()
   funcs["fregd"] = &sim_t::interactive_fregd;
   funcs["pc"] = &sim_t::interactive_pc;
   funcs["mem"] = &sim_t::interactive_mem;
+  funcs["stats"] = &sim_t::interactive_stats;
   funcs["str"] = &sim_t::interactive_str;
   funcs["until"] = &sim_t::interactive_until_silent;
   funcs["untiln"] = &sim_t::interactive_until_noisy;
@@ -123,6 +124,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "vreg <core> [reg]               # Display vector [reg] (all if omitted) in <core>\n"
     "pc <core>                       # Show current PC in <core>\n"
     "mem <hex addr>                  # Show contents of physical memory\n"
+    "stats <show|clear> [<core>]     # Show/clear stats for <core>\n"
     "str <hex addr>                  # Show NUL-terminated C string\n"
     "until reg <core> <reg> <val>    # Stop when <reg> in <core> hits <val>\n"
     "until pc <core> <val>           # Stop when PC in <core> hits <val>\n"
@@ -350,6 +352,60 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
 void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::string>& args)
 {
   fprintf(stderr, "0x%016" PRIx64 "\n", get_mem(args));
+}
+
+void sim_t::interactive_stats(const std::string& cmd, const std::vector<std::string>& args)
+{
+  char *ptr;
+  unsigned long core;
+  processor_t *p = NULL;
+  bool stats_show = false;
+  bool stats_clear = false;
+
+  if (args.size() >= 1 && args[0] == "show")
+    stats_show = true;
+  if (args.size() >= 1 && args[0] == "clear")
+    stats_clear = true;
+
+  for (unsigned long i = 0; i < procs.size(); i++) {
+    if (args.size() >= 2) {
+      p = get_core(args[1]);
+      core = strtoul(args[1].c_str(), NULL, 10);
+    } else {
+      p = get_core(i);
+      core = i;
+    }
+
+    if (!p)
+      break;
+
+    if (stats_show) {
+      fprintf(stderr, "core%ld %-16s: %" PRId64 "\n", core,
+             "tlb_flush_all", p->get_mmu()->get_stats_tlb_flush_all());
+      fprintf(stderr, "core%ld %-16s: %" PRId64 "\n", core,
+             "tlb_fetch_hit", p->get_mmu()->get_stats_tlb_fetch_hit());
+      fprintf(stderr, "core%ld %-16s: %" PRId64 "\n", core,
+             "tlb_fetch_miss", p->get_mmu()->get_stats_tlb_fetch_miss());
+      fprintf(stderr, "core%ld %-16s: %" PRId64 "\n", core,
+              "tlb_load_hit", p->get_mmu()->get_stats_tlb_load_hit());
+      fprintf(stderr, "core%ld %-16s: %" PRId64 "\n", core,
+              "tlb_load_miss", p->get_mmu()->get_stats_tlb_load_miss());
+      fprintf(stderr, "core%ld %-16s: %" PRId64 "\n", core,
+            "tlb_store_hit", p->get_mmu()->get_stats_tlb_store_hit());
+      fprintf(stderr, "core%ld %-16s: %" PRId64 "\n", core,
+            "tlb_store_miss", p->get_mmu()->get_stats_tlb_store_miss());
+    }
+
+    if (stats_clear) {
+      p->get_mmu()->clear_stats();
+      fprintf(stderr, "core%ld stats cleared\n", core);
+    }
+
+    fprintf(stderr, "\n");
+
+    if (args.size() >= 2)
+      break;
+  }
 }
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)
