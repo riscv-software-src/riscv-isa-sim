@@ -1339,7 +1339,7 @@ VI_LOOP_END
   VI_LOOP_END
 
 #define VI_VV_LOOP_WITH_CARRY(BODY) \
-  require(insn.rd() != 0); \
+  require(P.VU.vlmul == 1 || insn.rd() != 0); \
   VI_CHECK_SSS(true); \
   VI_GENERAL_LOOP_BASE \
   VI_MASK_VARS \
@@ -1359,7 +1359,7 @@ VI_LOOP_END
   VI_LOOP_END
 
 #define VI_XI_LOOP_WITH_CARRY(BODY) \
-  require(insn.rd() != 0); \
+  require(P.VU.vlmul == 1 || insn.rd() != 0); \
   VI_CHECK_SSS(false); \
   VI_GENERAL_LOOP_BASE \
   VI_MASK_VARS \
