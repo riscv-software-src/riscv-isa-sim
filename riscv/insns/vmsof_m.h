@@ -1,6 +1,7 @@
 // vmsof.m rd, vs2, vm
 require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
 require_vector;
+require(P.VU.vstart == 0);
 reg_t vl = P.VU.vl;
 reg_t sew = P.VU.vsew;
 reg_t rd_num = insn.rd();
@@ -27,5 +28,3 @@ for (reg_t i = P.VU.vstart ; i < vl; ++i) {
     vd = (vd & ~mmask) | ((res << mpos) & mmask);
   }
 }
-
-P.VU.vstart = 0;

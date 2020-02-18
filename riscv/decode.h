@@ -613,7 +613,7 @@ static inline bool is_overlapped(const int astart, const int asize,
 
 #define VI_U_PARAMS(x) \
   type_usew_t<x>::type &vd = P.VU.elt<type_usew_t<x>::type>(rd_num, i, true); \
-  type_usew_t<x>::type simm5 = (type_usew_t<x>::type)insn.v_zimm5(); \
+  type_usew_t<x>::type zimm5 = (type_usew_t<x>::type)insn.v_zimm5(); \
   type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
 
 #define VV_PARAMS(x) \
@@ -1564,7 +1564,7 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   const reg_t vlmul = P.VU.vlmul; \
   require(rd_num + nf * P.VU.vlmul <= NVPR); \
   p->VU.vstart = 0; \
-  for (reg_t i = 0; i < vl; ++i) { \
+  for (reg_t i = p->VU.vstart; i < vl; ++i) { \
     VI_STRIP(i); \
     VI_ELEMENT_SKIP(i); \
     \
@@ -1574,7 +1574,7 @@ for (reg_t i = 0; i < vlmax; ++i) { \
         val = MMU.load_##itype##tsew(baseAddr + (i * nf + fn) * (tsew / 8)); \
       } catch (trap_t& t) { \
         if (i == 0) \
-          throw t; /* Only take exception on zeroth element */ \
+          throw; /* Only take exception on zeroth element */ \
         /* Reduce VL if an exception occurs on a later element */ \
         early_stop = true; \
         P.VU.vl = i; \
@@ -1600,8 +1600,8 @@ for (reg_t i = 0; i < vlmax; ++i) { \
     if (early_stop) { \
       break; \
     } \
-  }
-
+  } \
+  p->VU.vstart = 0;
 
 //
 // vector: vfp helper

@@ -92,7 +92,7 @@ static void commit_log_print_insn(processor_t* p, reg_t pc, insn_t insn)
     }
 
     if (is_vec)
-        fprintf(stderr, " e%d m%d", p->VU.vsew >> 3, p->VU.vlmul);
+        fprintf(stderr, " e%ld m%ld", p->VU.vsew >> 3, p->VU.vlmul);
 
     fprintf(stderr, " %c%2d ", prefix, rd);
     if (is_vec)

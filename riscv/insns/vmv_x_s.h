@@ -26,3 +26,5 @@ if (!(rs1 >= 0 && rs1 < (P.VU.get_vlen() / sew))) {
     break;
   }
 }
+
+P.VU.vstart = 0;
