@@ -2,7 +2,7 @@
 const reg_t sew = P.VU.vsew;
 const reg_t vl = P.VU.vl;
 require(sew >= e8 && sew <= e64);
-VI_CHECK_SXX;
+VI_CHECK_STORE_SXX;
 require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
 reg_t baseAddr = RS1;
 reg_t stride = insn.rs2();

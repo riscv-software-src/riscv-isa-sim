@@ -415,12 +415,17 @@ static inline bool is_overlapped(const int astart, const int asize,
   if (insn.v_vm() == 0) \
     require(insn.rd() != 0);
 
-#define VI_CHECK_LDST_INDEX \
+#define VI_CHECK_ST_INDEX \
   require_vector; \
   require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
   require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
   if (insn.v_nf() > 0) \
     require(!is_overlapped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul)); \
+  if (insn.v_vm() == 0 && (insn.v_nf() > 0 || P.VU.vlmul > 1)) \
+    require(insn.rd() != 0); \
+
+#define VI_CHECK_LD_INDEX \
+  VI_CHECK_ST_INDEX; \
   if (insn.v_vm() == 0 && (insn.v_nf() > 0 || P.VU.vlmul > 1)) \
     require(insn.rd() != 0); \
 
@@ -445,12 +450,14 @@ static inline bool is_overlapped(const int astart, const int asize,
       require(insn.rd() != 0); \
   }
 
-#define VI_CHECK_SXX \
+#define VI_CHECK_STORE_SXX \
   require_vector; \
-  if (P.VU.vlmul > 1) { \
-    require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
-    if (insn.v_vm() == 0) \
-      require(insn.rd() != 0); \
+  require((insn.rd() & (P.VU.vlmul - 1)) == 0);
+
+#define VI_CHECK_SXX \
+  VI_CHECK_STORE_SXX; \
+  if (P.VU.vlmul > 1 && insn.v_vm() == 0) { \
+    require(insn.rd() != 0); \
   }
 
 #define VI_CHECK_DSS(is_vs1) \
@@ -1540,15 +1547,15 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   VI_LD_COMMON(stride, offset, ld_width, elt_byte)
 
 #define VI_LD_INDEX(stride, offset, ld_width, elt_byte) \
-  VI_CHECK_LDST_INDEX; \
+  VI_CHECK_LD_INDEX; \
   VI_LD_COMMON(stride, offset, ld_width, elt_byte)
 
 #define VI_ST(stride, offset, st_width, elt_byte) \
-  VI_CHECK_SXX; \
+  VI_CHECK_STORE_SXX; \
   VI_ST_COMMON(stride, offset, st_width, elt_byte) \
 
 #define VI_ST_INDEX(stride, offset, st_width, elt_byte) \
-  VI_CHECK_LDST_INDEX; \
+  VI_CHECK_ST_INDEX; \
   VI_ST_COMMON(stride, offset, st_width, elt_byte) \
 
 #define VI_LDST_FF(itype, tsew) \
