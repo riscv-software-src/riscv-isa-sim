@@ -1,6 +1,6 @@
 // vsuxb.v and vsxseg[2-8]b.v
 require(P.VU.vsew >= e8);
-VI_CHECK_SXX;
+VI_CHECK_STORE_SXX;
 require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
 reg_t vl = P.VU.vl;
 reg_t baseAddr = RS1;
