@@ -501,7 +501,6 @@ static inline bool is_overlapped(const int astart, const int asize,
 #define VI_CHECK_REDUCTION(is_wide) \
   require_vector;\
   if (is_wide) {\
-    require(P.VU.vlmul <= 4); \
     require(P.VU.vsew * 2 <= P.VU.ELEN); \
   } \
   require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
