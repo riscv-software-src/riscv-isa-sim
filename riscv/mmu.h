@@ -339,6 +339,9 @@ private:
   tlb_entry_t fetch_slow_path(reg_t addr);
   void load_slow_path(reg_t addr, reg_t len, uint8_t* bytes);
   void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes);
+  bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
+  bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
+  bool mmio_ok(reg_t addr, access_type type);
   reg_t translate(reg_t addr, reg_t len, access_type type);
 
   // ITLB lookup
