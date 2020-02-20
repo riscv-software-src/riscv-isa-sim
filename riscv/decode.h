@@ -419,13 +419,11 @@ static inline bool is_overlapped(const int astart, const int asize,
   require_vector; \
   require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
   require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
-  if (insn.v_nf() > 0) \
-    require(!is_overlapped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul)); \
-  if (insn.v_vm() == 0 && (insn.v_nf() > 0 || P.VU.vlmul > 1)) \
-    require(insn.rd() != 0); \
 
 #define VI_CHECK_LD_INDEX \
   VI_CHECK_ST_INDEX; \
+  if (insn.v_nf() > 0) \
+    require(!is_overlapped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul)); \
   if (insn.v_vm() == 0 && (insn.v_nf() > 0 || P.VU.vlmul > 1)) \
     require(insn.rd() != 0); \
 
