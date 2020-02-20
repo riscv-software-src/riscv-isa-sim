@@ -1569,7 +1569,6 @@ for (reg_t i = 0; i < vlmax; ++i) { \
   bool early_stop = false; \
   const reg_t vlmul = P.VU.vlmul; \
   require(rd_num + nf * P.VU.vlmul <= NVPR); \
-  p->VU.vstart = 0; \
   for (reg_t i = p->VU.vstart; i < vl; ++i) { \
     VI_STRIP(i); \
     VI_ELEMENT_SKIP(i); \
