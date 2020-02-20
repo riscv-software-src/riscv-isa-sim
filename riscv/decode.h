@@ -1883,8 +1883,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   VI_VFP_LOOP_WIDE_END
 
 
-// Seems that 0x0 doesn't work.
-#define DEBUG_START             0x100
+#define DEBUG_START             0x0
 #define DEBUG_END               (0x1000 - 1)
 
 #endif
