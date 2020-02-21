@@ -262,6 +262,8 @@ void state_t::reset(reg_t max_isa)
 
   memset(this->tdata2, 0, sizeof(this->tdata2));
   debug_mode = false;
+  single_step = STEP_NONE;
+  memset(this->mcontrol, 0, sizeof(this->mcontrol));
 
   memset(this->pmpcfg, 0, sizeof(this->pmpcfg));
   memset(this->pmpaddr, 0, sizeof(this->pmpaddr));
