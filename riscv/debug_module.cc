@@ -43,7 +43,8 @@ debug_module_t::debug_module_t(sim_t *sim, const debug_module_config_t &config) 
   // The spec lets a debugger select nonexistent harts. Create hart_state for
   // them because I'm too lazy to add the code to just ignore accesses.
   hart_state(1 << field_width(sim->nprocs())),
-  hart_array_mask(sim->nprocs())
+  hart_array_mask(sim->nprocs()),
+  rti_remaining(0)
 {
   D(fprintf(stderr, "debug_data_start=0x%x\n", debug_data_start));
   D(fprintf(stderr, "debug_progbuf_start=0x%x\n", debug_progbuf_start));
