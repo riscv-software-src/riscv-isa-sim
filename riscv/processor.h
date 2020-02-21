@@ -426,6 +426,8 @@ public:
       reg_t vstart, vxrm, vxsat, vl, vtype, vlenb;
       reg_t vediv, vsew, vlmul;
       reg_t ELEN, VLEN, SLEN;
+      reg_t VALU;
+      std::string FREDSUM_IMPL;
       bool vill;
 
       // vector element for varies SEW
@@ -469,6 +471,7 @@ public:
       reg_t get_vlen() { return VLEN; }
       reg_t get_elen() { return ELEN; }
       reg_t get_slen() { return SLEN; }
+      reg_t get_valu() { return VALU; }
 
       VRM get_vround_mode() {
         return (VRM)vxrm;

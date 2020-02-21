@@ -1,8 +1,7 @@
 // vfwredsum.vs vd, vs2, vs1
-require_vector;
-require(P.VU.vsew * 2 <= P.VU.ELEN);
-require((insn.rs2() & (P.VU.vlmul - 1)) == 0);
-VI_VFP_VV_LOOP_WIDE_REDUCTION
-({
-  vd_0 = f64_add(vd_0, vs2);
-})
+if(p->VU.FREDSUM_IMPL == "ordered") {
+  #include "vfwredosum_vs.h"
+} else if (p->VU.FREDSUM_IMPL == "parallel") {
+  #include "vfwredsum_vs_parallel.h"
+} else
+  require(0);

@@ -1738,6 +1738,59 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
       break; \
   }; \
 
+#define VI_VFP_LOOP_REDUCTIONSUM_WIDEN_INIT /* Dedicated to f32 -> f64 */ \
+  float64_t vd_0 = f64(p->VU.elt<float64_t>(rs1_num, 0).v); \
+  reg_t temp_len = 1, temp_vl = (vl > 0) ? (vl - 1) : 0; \
+  uint64_t valu = p->VU.get_valu(); \
+  float64_t* temp_arr = NULL; \
+  for (; temp_vl > 0; temp_len <<= 1) temp_vl >>= 1; /* Calculate the bit length of vl */ \
+  temp_arr = new float64_t[temp_len](); \
+  for (reg_t i=p->VU.vstart; i<vl; ++i) { /* Allocate a temporary array for computing */  \
+    VI_LOOP_ELEMENT_SKIP(); \
+    temp_arr[i] = f32_to_f64(p->VU.elt<float32_t>(rs2_num, i)); \
+  }
+
+#define VI_VFP_LOOP_REDUCTIONSUM_INIT(width) \
+  float##width##_t vd_0 = p->VU.elt<float##width##_t>(rd_num, 0); \
+  float##width##_t vs1_0 = p->VU.elt<float##width##_t>(rs1_num, 0); \
+  vd_0 = vs1_0; \
+  reg_t temp_len = 1, temp_vl = (vl > 0) ? (vl - 1) : 0; \
+  uint64_t valu = p->VU.get_valu(); \
+  float##width##_t* temp_arr = NULL; \
+  for (; temp_vl > 0; temp_len <<= 1) temp_vl >>= 1; /* Calculate the bit length of vl */ \
+  temp_arr = new float##width##_t[temp_len](); \
+  for (reg_t i=p->VU.vstart; i<vl; ++i) { /* Allocate a temporary array for computing */  \
+    VI_LOOP_ELEMENT_SKIP(); \
+    temp_arr[i] = p->VU.elt<float##width##_t>(rs2_num, i); \
+  }
+
+#define VI_VFP_LOOP_REDUCTIONSUM_MERGE(width) \
+  while (valu > 0) { \
+    while (valu < temp_len) { \
+      uint64_t write_pos = 0; \
+      uint64_t read_pos = 0; \
+      while (read_pos < temp_len) { \
+        temp_arr[write_pos] = f##width##_add(temp_arr[read_pos], temp_arr[read_pos + valu]); \
+        set_fp_exceptions; \
+        ++write_pos; \
+        ++read_pos; \
+        if (read_pos % valu == 0) \
+          read_pos += valu; \
+      } \
+      temp_len = write_pos; \
+    } \
+    valu >>= 1; \
+  } \
+  vd_0 = f##width##_add(vd_0, temp_arr[0]); \
+  set_fp_exceptions; \
+  delete [] temp_arr;
+
+#define VI_VFP_LOOP_REDUCTIONSUM_CLOSE(x) \
+  P.VU.vstart = 0; \
+  if (vl > 0) { \
+    P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = vd_0.v; \
+  }
+
 #define VI_VFP_VV_LOOP_WIDE_REDUCTION(BODY) \
   VI_VFP_LOOP_WIDE_REDUCTION_BASE \
   float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \

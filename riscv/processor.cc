@@ -108,6 +108,8 @@ void processor_t::parse_varch_string(const char* s)
   int vlen = 0;
   int elen = 0;
   int slen = 0;
+  int valu = 4; // default
+  std::string fredsum_impl("ordered"); // default
 
   while (pos < len) {
     std::string attr = get_string_token(str, ':', pos);
@@ -120,15 +122,21 @@ void processor_t::parse_varch_string(const char* s)
       slen = get_int_token(str, ',', pos);
     else if (attr == "elen")
       elen = get_int_token(str, ',', pos);
+    else if (attr == "nalu")
+      valu = get_int_token(str, ',', pos);
+    else if (attr == "fredsum-impl")
+      fredsum_impl = get_string_token(str, ',', pos);
     else
       bad_varch_string(s, "Unsupported token");
 
     ++pos;
   }
 
-  // The integer should be the power of 2
-  if (!check_pow2(vlen) || !check_pow2(elen) || !check_pow2(slen)){
+  if (!check_pow2(vlen) || !check_pow2(elen) || !check_pow2(slen) || !check_pow2(valu)){
     bad_varch_string(s, "The integer value should be the power of 2");
+  }
+  if (fredsum_impl != "ordered" && fredsum_impl != "parallel"){
+    bad_varch_string(s, "fredsum-impl now only supported ordered/parallel");
   }
 
   /* Vector spec requirements. */
@@ -144,10 +152,15 @@ void processor_t::parse_varch_string(const char* s)
   /* spike requirements. */
   if (vlen > 4096)
     bad_varch_string(s, "vlen must be <= 4096");
+  if (valu == 0){
+    bad_varch_string(s, "nalu (Number of vector ALUs) must be > 0");
+  }
 
   VU.VLEN = vlen;
   VU.ELEN = elen;
   VU.SLEN = slen;
+  VU.VALU = valu;
+  VU.FREDSUM_IMPL = fredsum_impl;
   VU.vlenb = vlen / 8;
 }
 
