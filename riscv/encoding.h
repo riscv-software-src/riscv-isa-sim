@@ -42,6 +42,9 @@
 #define SSTATUS_UXL         0x0000000300000000
 #define SSTATUS64_SD        0x8000000000000000
 
+#define USTATUS_UIE         0x00000001
+#define USTATUS_UPIE        0x00000010
+
 #define DCSR_XDEBUGVER      (3U<<30)
 #define DCSR_NDRESET        (1<<29)
 #define DCSR_FULLRESET      (1<<28)
@@ -97,12 +100,15 @@
 #define MCONTROL_MATCH_MASK_LOW  4
 #define MCONTROL_MATCH_MASK_HIGH 5
 
+#define MIP_USIP            (1 << IRQ_U_SOFT)
 #define MIP_SSIP            (1 << IRQ_S_SOFT)
 #define MIP_HSIP            (1 << IRQ_H_SOFT)
 #define MIP_MSIP            (1 << IRQ_M_SOFT)
+#define MIP_UTIP            (1 << IRQ_U_TIMER)
 #define MIP_STIP            (1 << IRQ_S_TIMER)
 #define MIP_HTIP            (1 << IRQ_H_TIMER)
 #define MIP_MTIP            (1 << IRQ_M_TIMER)
+#define MIP_UEIP            (1 << IRQ_U_EXT)
 #define MIP_SEIP            (1 << IRQ_S_EXT)
 #define MIP_HEIP            (1 << IRQ_H_EXT)
 #define MIP_MEIP            (1 << IRQ_M_EXT)
@@ -140,12 +146,15 @@
 #define PMP_NA4   0x10
 #define PMP_NAPOT 0x18
 
+#define IRQ_U_SOFT   0
 #define IRQ_S_SOFT   1
 #define IRQ_H_SOFT   2
 #define IRQ_M_SOFT   3
+#define IRQ_U_TIMER  4
 #define IRQ_S_TIMER  5
 #define IRQ_H_TIMER  6
 #define IRQ_M_TIMER  7
+#define IRQ_U_EXT    8
 #define IRQ_S_EXT    9
 #define IRQ_H_EXT    10
 #define IRQ_M_EXT    11
@@ -1572,6 +1581,8 @@
 #define CSR_VTYPE 0xc21
 #define CSR_VLENB 0xc22
 #define CSR_SSTATUS 0x100
+#define CSR_SEDELEG 0x102
+#define CSR_SIDELEG 0x103
 #define CSR_SIE 0x104
 #define CSR_STVEC 0x105
 #define CSR_SCOUNTEREN 0x106
@@ -2502,6 +2513,8 @@ DECLARE_CSR(scause, CSR_SCAUSE)
 DECLARE_CSR(stval, CSR_STVAL)
 DECLARE_CSR(sip, CSR_SIP)
 DECLARE_CSR(satp, CSR_SATP)
+DECLARE_CSR(sedeleg, CSR_SEDELEG)
+DECLARE_CSR(sideleg, CSR_SIDELEG)
 DECLARE_CSR(vsstatus, CSR_VSSTATUS)
 DECLARE_CSR(vsie, CSR_VSIE)
 DECLARE_CSR(vstvec, CSR_VSTVEC)
