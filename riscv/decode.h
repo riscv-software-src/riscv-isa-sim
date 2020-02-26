@@ -1739,32 +1739,41 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   }; \
 
 #define VI_VFP_LOOP_REDUCTIONSUM_WIDEN_INIT /* Dedicated to f32 -> f64 */ \
-  float64_t vd_0 = f64(p->VU.elt<float64_t>(rs1_num, 0).v); \
-  reg_t temp_len = 1, temp_vl = (vl > 0) ? (vl - 1) : 0; \
-  uint64_t valu = p->VU.get_valu(); \
-  float64_t* temp_arr = NULL; \
-  for (; temp_vl > 0; temp_len <<= 1) temp_vl >>= 1; /* Calculate the bit length of vl */ \
-  temp_arr = new float64_t[temp_len](); \
+  float64_t vd_0 = p->VU.elt<float64_t>(rd_num, 0); \
+  float64_t vs1_0 = p->VU.elt<float64_t>(rs1_num, 0); \
+  vd_0 = vs1_0; \
+  size_t temp_len = vl; \
+  if (temp_len > 1) { \
+    size_t leading_zeros = __builtin_clzl(temp_len - 1); \
+    temp_len = 1 << (64 - leading_zeros); \
+  } \
+  std::vector<float64_t> temp_arr(temp_len, f64(0)); \
+  reg_t num_active_element = 0; \
   for (reg_t i=p->VU.vstart; i<vl; ++i) { /* Allocate a temporary array for computing */  \
     VI_LOOP_ELEMENT_SKIP(); \
-    temp_arr[i] = f32_to_f64(p->VU.elt<float32_t>(rs2_num, i)); \
+    temp_arr.at(i) = f32_to_f64(p->VU.elt<float32_t>(rs2_num, i)); \
+    ++num_active_element; \
   }
 
 #define VI_VFP_LOOP_REDUCTIONSUM_INIT(width) \
   float##width##_t vd_0 = p->VU.elt<float##width##_t>(rd_num, 0); \
   float##width##_t vs1_0 = p->VU.elt<float##width##_t>(rs1_num, 0); \
   vd_0 = vs1_0; \
-  reg_t temp_len = 1, temp_vl = (vl > 0) ? (vl - 1) : 0; \
-  uint64_t valu = p->VU.get_valu(); \
-  float##width##_t* temp_arr = NULL; \
-  for (; temp_vl > 0; temp_len <<= 1) temp_vl >>= 1; /* Calculate the bit length of vl */ \
-  temp_arr = new float##width##_t[temp_len](); \
+  size_t temp_len = vl; \
+  if (temp_len > 1) { \
+    size_t leading_zeros = __builtin_clzl(temp_len - 1); \
+    temp_len = 1 << (64 - leading_zeros); \
+  } \
+  std::vector<float##width##_t> temp_arr(temp_len, f##width(0)); \
+  reg_t num_active_element = 0; \
   for (reg_t i=p->VU.vstart; i<vl; ++i) { /* Allocate a temporary array for computing */  \
     VI_LOOP_ELEMENT_SKIP(); \
-    temp_arr[i] = p->VU.elt<float##width##_t>(rs2_num, i); \
+    temp_arr.at(i) = p->VU.elt<float##width##_t>(rs2_num, i); \
+    ++num_active_element; \
   }
 
 #define VI_VFP_LOOP_REDUCTIONSUM_MERGE(width) \
+  uint64_t valu = p->VU.get_valu(); \
   while (valu > 0) { \
     while (valu < temp_len) { \
       uint64_t write_pos = 0; \
@@ -1781,9 +1790,8 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     } \
     valu >>= 1; \
   } \
-  vd_0 = f##width##_add(vd_0, temp_arr[0]); \
+  vd_0 = (num_active_element > 0) ? f##width##_add(vd_0, temp_arr[0]) : vd_0; \
   set_fp_exceptions; \
-  delete [] temp_arr;
 
 #define VI_VFP_LOOP_REDUCTIONSUM_CLOSE(x) \
   P.VU.vstart = 0; \
