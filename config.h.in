@@ -84,9 +84,6 @@
 /* Enable hardware support for misaligned loads and stores */
 #undef RISCV_ENABLE_MISALIGNED
 
-/* Enable implementation check for specific instructions */
-#undef RISCV_ENABLE_IMPL_CHECK
-
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SOFTFLOAT_ENABLED
 

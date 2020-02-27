@@ -361,25 +361,6 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 #define DEBUG_RVV_FMA_VF 0
 #endif
 
-#ifdef RISCV_ENABLE_IMPL_CHECK
-#define VI_CHECK_IMPL \
-  extern unsigned g_check_impl; \
-  extern bool g_has_unsupport; \
-  { \
-      auto val = P.VU.impl_table.find(local_op); \
-      if (val != P.VU.impl_table.end()) { \
-        auto val2 = val->second.find(g_check_impl); \
-        if (val2 == val->second.end()) {\
-          fprintf(stderr, "unsupported in %u\n", g_check_impl); \
-          g_has_unsupport = true; \
-        }; \
-      }; \
-  };
-#else
-#define VI_CHECK_IMPL \
-  while (0);
-#endif
-
 extern bool g_vector_mistrap;
 
 //
