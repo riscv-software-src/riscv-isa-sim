@@ -1,4 +1,5 @@
-image: $CI_REGISTRY_IMAGE/riscv-isa-sim:rvv
+default:
+  image: docker.pkg.github.com/sifive/riscv-isa-sim/rvv:latest
 
 variables:
   GIT_DEPTH: 1
@@ -6,98 +7,16 @@ variables:
 build:
   stage: build
   script:
-    - mkdir -p ~/.ssh
-    - chmod 700 ~/.ssh
-    - echo "$SSH_PRIVATE_KEY" > ~/.ssh/id_rsa
-    - chmod 600 ~/.ssh/id_rsa
-    - ssh-keyscan github.com > ~/.ssh/known_hosts
-    - chmod 644 ~/.ssh/known_hosts
-    - ./configure --prefix=$CI_PROJECT_DIR/riscv-isa-sim && make -j && make install
-    - wget https://static.dev.sifive.com/dev-tools/riscv64-unknown-elf-gcc-8.3.0-2019.08.0-x86_64-linux-ubuntu14.tar.gz
-    - mkdir prebuilt
-    - tar -axf riscv64-unknown-elf-gcc-8.3.0-2019.08.0-x86_64-linux-ubuntu14.tar.gz --strip-components=1 -C $CI_PROJECT_DIR/prebuilt
-    - git clone -b riscv-binutils-2.33.1-rvv-0.8.x --depth 4 --no-tags https://github.com/riscv/riscv-binutils-gdb.git
-    - cd riscv-binutils-gdb
-    - git checkout 587c4ed0
-    - ./configure --prefix=$CI_PROJECT_DIR/prebuilt --target=riscv64-unknown-elf --disable-gdb --disable-sim && make -j && make install
-    - cd ..
-    - git clone -b vector --depth 1 --no-tags git@github.com:sifive/riscv-tests-internal.git
-    - cd riscv-tests-internal
-    - git submodule update --init env
-    - git submodule update --init --remote --depth 1 isa/vector
+    - ./configure --prefix=$CI_PROJECT_DIR/riscv-isa-sim
+    - make -j
+    - make install -j
   artifacts:
     paths:
       - riscv-isa-sim
-      - prebuilt
-      - riscv-tests-internal
 
-.test:
-  stage: test
-  script:
-    - mkdir build
-    - cd build
-    - cmake -DRISCV_GCC=$CI_PROJECT_DIR/prebuilt/bin/riscv64-unknown-elf-gcc -DSPIKE=$CI_PROJECT_DIR/riscv-isa-sim/bin/spike -DSOFTFLOAT=$CI_PROJECT_DIR/riscv-isa-sim/lib/libsoftfloat.so -DENV=$CI_PROJECT_DIR/riscv-tests-internal/env -DELEN=$XLEN -DFLEN=$XLEN -DSLEN=$VLEN -DVLEN=$VLEN -DXLEN=$XLEN $OPT -DMASKING=1 -DEXCEPTION=1 -DNEGATIVE_STRIDE=1 -DSHUFFLE_ALLOC_ORDER=1 -DALLOC_ONCE=1 -DCHECK_VXSAT=1 -DCHECK_FFLAGS=1 ../riscv-tests-internal
-    - make -j
-    - ctest --timeout 5
-  after_script:
-    - grep RANDOM_SEED build/CMakeCache.txt
-
-S64V64X32:
-  extends: .test
-  before_script:
-    - XLEN=32;VLEN=64
-
-S64V64X32INPUT0:
-  extends: .test
-  before_script:
-    - XLEN=32;VLEN=64;OPT=-DINPUT=0
-
-S64V64X32INPUT1:
-  extends: .test
-  before_script:
-    - XLEN=32;VLEN=64;OPT=-DINPUT=1
-
-S64V64X64:
-  extends: .test
-  before_script:
-    - XLEN=64;VLEN=64
-
-S64V64X64INPUT0:
-  extends: .test
-  before_script:
-    - XLEN=64;VLEN=64;OPT=-DINPUT=0
-
-S64V64X64INPUT1:
-  extends: .test
-  before_script:
-    - XLEN=64;VLEN=64;OPT=-DINPUT=1
-
-S512V512X32:
-  extends: .test
-  before_script:
-    - XLEN=32;VLEN=512
-
-S512V512X32INPUT0:
-  extends: .test
-  before_script:
-    - XLEN=32;VLEN=512;OPT=-DINPUT=0
-
-S512V512X32INPUT1:
-  extends: .test
-  before_script:
-    - XLEN=32;VLEN=512;OPT=-DINPUT=1
-
-S512V512X64:
-  extends: .test
-  before_script:
-    - XLEN=64;VLEN=512
-
-S512V512X64INPUT0:
-  extends: .test
-  before_script:
-    - XLEN=64;VLEN=512;OPT=-DINPUT=0
-
-S512V512X64INPUT1:
-  extends: .test
-  before_script:
-    - XLEN=64;VLEN=512;OPT=-DINPUT=1
+trigger:
+  stage: .post
+  trigger:
+    project: root/riscv-vector-tests
+    strategy: depend
+    branch: master
