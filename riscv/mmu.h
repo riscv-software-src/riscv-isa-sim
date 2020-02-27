@@ -58,32 +58,23 @@ public:
   mmu_t(simif_t* sim, processor_t* proc);
   ~mmu_t();
 
-  inline reg_t misaligned_load(reg_t addr, size_t size, bool mistrap)
+  inline reg_t misaligned_load(reg_t addr, size_t size)
   {
 #ifdef RISCV_ENABLE_MISALIGNED
-    if (mistrap) {
-      throw trap_load_address_misaligned(addr);
-    } else {
-      reg_t res = 0;
-      for (size_t i = 0; i < size; i++)
-        res += (reg_t)load_uint8(addr + i) << (i * 8);
-      return res;
-    }
+    reg_t res = 0;
+    for (size_t i = 0; i < size; i++)
+      res += (reg_t)load_uint8(addr + i) << (i * 8);
+    return res;
 #else
     throw trap_load_address_misaligned(addr);
 #endif
   }
 
-  inline void misaligned_store(reg_t addr, reg_t data, size_t size,
-                               bool mistrap)
+  inline void misaligned_store(reg_t addr, reg_t data, size_t size)
   {
 #ifdef RISCV_ENABLE_MISALIGNED
-    if (mistrap) {
-      throw trap_store_address_misaligned(addr);
-    } else {
-        for (size_t i = 0; i < size; i++)
-          store_uint8(addr + i, data >> (i * 8));
-    }
+    for (size_t i = 0; i < size; i++)
+      store_uint8(addr + i, data >> (i * 8));
 #else
     throw trap_store_address_misaligned(addr);
 #endif
@@ -98,9 +89,9 @@ public:
 
   // template for functions that load an aligned value from memory
   #define load_func(type) \
-    inline type##_t load_##type(reg_t addr, bool mistrap = false) { \
+    inline type##_t load_##type(reg_t addr) { \
       if (unlikely(addr & (sizeof(type##_t)-1))) \
-        return misaligned_load(addr, sizeof(type##_t), mistrap); \
+        return misaligned_load(addr, sizeof(type##_t)); \
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
       if (likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) { \
@@ -144,9 +135,9 @@ public:
 
   // template for functions that store an aligned value to memory
   #define store_func(type) \
-    void store_##type(reg_t addr, type##_t val, bool mistrap = false) { \
+    void store_##type(reg_t addr, type##_t val) { \
       if (unlikely(addr & (sizeof(type##_t)-1))) \
-        return misaligned_store(addr, val, sizeof(type##_t), mistrap); \
+        return misaligned_store(addr, val, sizeof(type##_t)); \
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
       if (likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \

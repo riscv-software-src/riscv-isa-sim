@@ -361,8 +361,6 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 #define DEBUG_RVV_FMA_VF 0
 #endif
 
-extern bool g_vector_mistrap;
-
 //
 // vector: masking skip helper
 //
@@ -1504,7 +1502,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
         val = P.VU.elt<uint64_t>(vs3 + fn * vlmul, vreg_inx); \
         break; \
       } \
-      MMU.store_##st_width(baseAddr + (stride) + (offset) * elt_byte, val, g_vector_mistrap); \
+      MMU.store_##st_width(baseAddr + (stride) + (offset) * elt_byte, val); \
     } \
   } \
   P.VU.vstart = 0; 
@@ -1575,7 +1573,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       itype##64_t val; \
       try { \
-        val = MMU.load_##itype##tsew(baseAddr + (i * nf + fn) * (tsew / 8), g_vector_mistrap); \
+        val = MMU.load_##itype##tsew(baseAddr + (i * nf + fn) * (tsew / 8)); \
       } catch (trap_t& t) { \
         if (i == 0) \
           throw; /* Only take exception on zeroth element */ \

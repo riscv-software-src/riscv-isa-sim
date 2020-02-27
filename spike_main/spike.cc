@@ -124,8 +124,6 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
   return res;
 }
 
-extern bool g_vector_mistrap;
-
 int main(int argc, char** argv)
 {
   bool debug = false;
@@ -243,7 +241,6 @@ int main(int argc, char** argv)
   parser.option(0, "device", 1, device_parser);
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
-  parser.option(0, "vector-mistrap", 0, [&](const char *s){g_vector_mistrap = true;});
   parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
   parser.option(0, "initrd", 1, [&](const char* s){initrd = s;});
   parser.option(0, "real-time-clint", 0, [&](const char *s){real_time_clint = true;});

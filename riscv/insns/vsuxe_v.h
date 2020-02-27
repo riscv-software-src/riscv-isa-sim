@@ -16,19 +16,19 @@ for (reg_t i = 0; i < vlmax && vl != 0; ++i) {
   switch (sew) {
   case e8:
     MMU.store_uint8(baseAddr + index[i],
-                    P.VU.elt<uint8_t>(vs3, vreg_inx), g_vector_mistrap);
+                    P.VU.elt<uint8_t>(vs3, vreg_inx));
     break;
   case e16:
     MMU.store_uint16(baseAddr + index[i],
-                     P.VU.elt<uint16_t>(vs3, vreg_inx), g_vector_mistrap);
+                     P.VU.elt<uint16_t>(vs3, vreg_inx));
     break;
   case e32:
     MMU.store_uint32(baseAddr + index[i],
-                     P.VU.elt<uint32_t>(vs3, vreg_inx), g_vector_mistrap);
+                     P.VU.elt<uint32_t>(vs3, vreg_inx));
     break;
   case e64:
     MMU.store_uint64(baseAddr + index[i],
-                     P.VU.elt<uint64_t>(vs3, vreg_inx), g_vector_mistrap);
+                     P.VU.elt<uint64_t>(vs3, vreg_inx));
     break;
   }
 }

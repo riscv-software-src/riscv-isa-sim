@@ -16,8 +16,6 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
-bool g_vector_mistrap = false;
-
 volatile bool ctrlc_pressed = false;
 static void handle_signal(int sig)
 {
