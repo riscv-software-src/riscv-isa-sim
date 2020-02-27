@@ -77,25 +77,52 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 # C++ compiler
 #  - CPPFLAGS : flags for the preprocessor (eg. -I,-D)
 #  - CXXFLAGS : flags for C++ compiler (eg. -Wall,-g,-O3)
+#
+# To allow a user to specify CFLAGS or similar as part of the Make
+# command, we also have mcpps-CFLAGS etc. with stuff that shouldn't be
+# lost in such a case.
+#
+# The order of precedence (highest to lowest) is then:
+#
+#    - Specified as part of Make command line
+#    - Specified as part of running configure
+#    - Specified here (default-CFLAGS)
+#
+# These all appear on the command line, from lowest precedence to
+# highest.
+
+default-CFLAGS   := -DPREFIX=\"$(prefix)\" -Wall -Wno-unused -g -O2
+default-CXXFLAGS := $(default-CFLAGS) -std=c++11
+
+mcppbs-CPPFLAGS := @CPPFLAGS@
+mcppbs-CFLAGS   := $(default-CFLAGS) @CFLAGS@
+mcppbs-CXXFLAGS := $(default-CXXFLAGS) @CXXFLAGS@
 
 CC            := @CC@
 CXX           := @CXX@
-CFLAGS        += @CFLAGS@ -DPREFIX=\"$(prefix)\"
-CPPFLAGS      += @CPPFLAGS@
-CXXFLAGS      += @CXXFLAGS@ -DPREFIX=\"$(prefix)\"
-COMPILE       := $(CXX) -MMD -MP $(CPPFLAGS) $(CXXFLAGS) \
-                 $(sprojs_include)
-COMPILE_C     := $(CC) -MMD -MP $(CPPFLAGS) $(CFLAGS) \
-                 $(sprojs_include)
+
+# These are the flags actually used for a C++ compile or a C compile.
+# The language-specific flags come after the preprocessor flags, but
+# user-supplied flags always take precedence.
+all-cxx-flags := \
+  $(mcppbs-CPPFLAGS) $(mcppbs-CXXFLAGS) $(CPPFLAGS) $(CXXFLAGS)
+all-c-flags := \
+  $(mcppbs-CPPFLAGS) $(mcppbs-CFLAGS) $(CPPFLAGS) $(CFLAGS)
+
+COMPILE       := $(CXX) -MMD -MP $(all-cxx-flags) $(sprojs_include)
+COMPILE_C     := $(CC) -MMD -MP $(all-c-flags) $(sprojs_include)
+
 # Linker
 #  - LDFLAGS : Flags for the linker (eg. -L)
 #  - LIBS    : Library flags (eg. -l)
 
+mcppbs-LDFLAGS := @LDFLAGS@
+all-link-flags := $(mcppbs-LDFLAGS) $(LDFLAGS)
+
 comma := ,
 LD            := $(CXX)
-LDFLAGS       := @LDFLAGS@
 LIBS          := @LIBS@
-LINK          := $(LD) -L. $(LDFLAGS) -Wl,-rpath,$(install_libs_dir) $(patsubst -L%,-Wl$(comma)-rpath$(comma)%,$(filter -L%,$(LDFLAGS)))
+LINK          := $(LD) -L. $(all-link-flags) -Wl,-rpath,$(install_libs_dir) $(patsubst -L%,-Wl$(comma)-rpath$(comma)%,$(filter -L%,$(LDFLAGS)))
 
 # Library creation
 
