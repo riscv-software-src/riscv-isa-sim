@@ -610,11 +610,10 @@ void processor_t::set_csr(int which, reg_t val)
       reg_t mask = MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_MIE | MSTATUS_MPIE
                  | MSTATUS_MPRV
                  | (supports_extension('S') ? MSTATUS_SUM : 0)
-                 | MSTATUS_MXR | MSTATUS_TW | MSTATUS_TVM
-                 | MSTATUS_TSR | MSTATUS_UXL | MSTATUS_SXL |
-                 (has_fs ? MSTATUS_FS : 0) |
-                 (has_vs ? MSTATUS_VS : 0) |
-                 (ext ? MSTATUS_XS : 0);
+                 | MSTATUS_MXR | MSTATUS_TW | MSTATUS_TVM | MSTATUS_TSR
+                 | (has_fs ? MSTATUS_FS : 0)
+                 | (has_vs ? MSTATUS_VS : 0)
+                 | (ext ? MSTATUS_XS : 0);
 
       reg_t requested_mpp = legalize_privilege(get_field(val, MSTATUS_MPP));
       state.mstatus = set_field(state.mstatus, MSTATUS_MPP, requested_mpp);
@@ -631,8 +630,10 @@ void processor_t::set_csr(int which, reg_t val)
       else
         state.mstatus = set_field(state.mstatus, MSTATUS64_SD, dirty);
 
-      state.mstatus = set_field(state.mstatus, MSTATUS_UXL, xlen_to_uxl(max_xlen));
-      state.mstatus = set_field(state.mstatus, MSTATUS_SXL, xlen_to_uxl(max_xlen));
+      if (supports_extension('U'))
+        state.mstatus = set_field(state.mstatus, MSTATUS_UXL, xlen_to_uxl(max_xlen));
+      if (supports_extension('S'))
+        state.mstatus = set_field(state.mstatus, MSTATUS_SXL, xlen_to_uxl(max_xlen));
       // U-XLEN == S-XLEN == M-XLEN
       xlen = max_xlen;
       break;
