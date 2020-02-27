@@ -74,17 +74,27 @@ static void bad_varch_string(const char* varch, const char *message)
   abort();
 }
 
-static int parse_varch(std::string &str){
-  int val = 0;
-  if(!str.empty()){
-    std::string sval = str.substr(1);
-    val = std::stoi(sval);
-    if ((val & (val - 1)) != 0) // val should be power of 2
-      bad_varch_string(str.c_str(), "must be a power of 2");
-  }else{
-    bad_varch_string(str.c_str(), "must not be empty");
+static std::string get_string_token(std::string str, const char delimiter, size_t& pos)
+{
+  size_t _pos = pos;
+  while (pos < str.length() && str[pos] != delimiter) ++pos;
+  return str.substr(_pos, pos - _pos);
+}
+
+static int get_int_token(std::string str, const char delimiter, size_t& pos)
+{
+  size_t _pos = pos;
+  while (pos < str.length() && str[pos] != delimiter) {
+    if (!isdigit(str[pos]))
+      bad_varch_string(str.c_str(), "Unsupported value"); // An integer is expected
+    ++pos;
   }
-  return val;
+  return (pos == _pos) ? 0 : stoi(str.substr(_pos, pos - _pos));
+}
+
+static bool check_pow2(int val)
+{
+  return ((val & (val - 1))) == 0;
 }
 
 void processor_t::parse_varch_string(const char* s)
@@ -93,30 +103,32 @@ void processor_t::parse_varch_string(const char* s)
   for (const char *r = s; *r; r++)
     str += std::tolower(*r);
 
-  std::string delimiter = ":";
-
   size_t pos = 0;
+  size_t len = str.length();
   int vlen = 0;
   int elen = 0;
   int slen = 0;
-  std::string token;
-  while (!str.empty() && token != str) {
-    pos = str.find(delimiter);
-    if (pos == std::string::npos){
-      token = str;
-    }else{
-      token = str.substr(0, pos);
-    }
-    if (token[0] == 'v'){
-      vlen = parse_varch(token);
-    }else if (token[0] == 'e'){
-      elen = parse_varch(token);
-    }else if (token[0] == 's'){
-      slen = parse_varch(token);
-    }else{
-      bad_varch_string(str.c_str(), "Unsupported token");
-    }
-    str.erase(0, pos + delimiter.length());
+
+  while (pos < len) {
+    std::string attr = get_string_token(str, ':', pos);
+
+    ++pos;
+
+    if (attr == "vlen")
+      vlen = get_int_token(str, ',', pos);
+    else if (attr == "slen")
+      slen = get_int_token(str, ',', pos);
+    else if (attr == "elen")
+      elen = get_int_token(str, ',', pos);
+    else
+      bad_varch_string(s, "Unsupported token");
+
+    ++pos;
+  }
+
+  // The integer should be the power of 2
+  if (!check_pow2(vlen) || !check_pow2(elen) || !check_pow2(slen)){
+    bad_varch_string(s, "The integer value should be the power of 2");
   }
 
   /* Vector spec requirements. */
