@@ -502,6 +502,7 @@ static inline bool is_overlapped(const int astart, const int asize,
     require(P.VU.vsew * 2 <= P.VU.ELEN); \
   } \
   require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
+  require(P.VU.vstart == 0); \
 
 //
 // vector: loop header and end helper
