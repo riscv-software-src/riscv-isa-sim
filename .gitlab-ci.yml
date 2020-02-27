@@ -18,7 +18,7 @@ build:
     - tar -axf riscv64-unknown-elf-gcc-8.3.0-2019.08.0-x86_64-linux-ubuntu14.tar.gz --strip-components=1 -C $CI_PROJECT_DIR/prebuilt
     - git clone -b riscv-binutils-2.33.1-rvv-0.8.x --depth 4 --no-tags https://github.com/riscv/riscv-binutils-gdb.git
     - cd riscv-binutils-gdb
-    - git checkout 52358d4ff26650e10d34f2d16db7ef05075063e6
+    - git checkout 587c4ed0
     - ./configure --prefix=$CI_PROJECT_DIR/prebuilt --target=riscv64-unknown-elf --disable-gdb --disable-sim && make -j && make install
     - cd ..
     - git clone -b vector --depth 1 --no-tags git@github.com:sifive/riscv-tests-internal.git
