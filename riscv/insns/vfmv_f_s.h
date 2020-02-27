@@ -26,3 +26,5 @@ if (FLEN == 64) {
 } else {
   WRITE_FRD(f32(vs2_0));
 }
+
+P.VU.vstart = 0;
