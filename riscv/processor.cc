@@ -900,6 +900,7 @@ reg_t processor_t::get_csr(int which)
       break;
     case CSR_SCOUNTEREN: return state.scounteren;
     case CSR_MCOUNTEREN: return state.mcounteren;
+    case CSR_MCOUNTINHIBIT: return 0;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
                  | (supports_extension('V') ? SSTATUS_VS : 0)
