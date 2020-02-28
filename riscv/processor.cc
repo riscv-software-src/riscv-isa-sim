@@ -831,6 +831,8 @@ reg_t processor_t::get_csr(int which)
     return 0;
   if (xlen == 32 && which >= CSR_MHPMCOUNTER3H && which <= CSR_MHPMCOUNTER31H)
     return 0;
+  if (which == CSR_MCOUNTINHIBIT)
+	return 0;
   if (which >= CSR_MHPMEVENT3 && which <= CSR_MHPMEVENT31)
     return 0;
 
