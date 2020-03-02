@@ -109,7 +109,7 @@ void processor_t::parse_varch_string(const char* s)
   int elen = 0;
   int slen = 0;
   int valu = 4; // default
-  std::string fredsum_impl("ordered"); // default
+  vectorUnit_t::fredsum_impl_t fredsum_impl = vectorUnit_t::ORDERED_FREDSUM_IMPL; // default
 
   while (pos < len) {
     std::string attr = get_string_token(str, ':', pos);
@@ -124,9 +124,12 @@ void processor_t::parse_varch_string(const char* s)
       elen = get_int_token(str, ',', pos);
     else if (attr == "nalu")
       valu = get_int_token(str, ',', pos);
-    else if (attr == "fredsum-impl")
-      fredsum_impl = get_string_token(str, ',', pos);
-    else
+    else if (attr == "fredsum-impl") {
+      std::string temp = get_string_token(str, ',', pos);
+      if (temp == "ordered") VU.fredsum_impl = vectorUnit_t::ORDERED_FREDSUM_IMPL;
+      else if (temp == "parallel") VU.fredsum_impl = vectorUnit_t::PARALLEL_FREDSUM_IMPL;
+      else VU.fredsum_impl = vectorUnit_t::UNKNOWN_FREDSUM_IMPL;
+    } else
       bad_varch_string(s, "Unsupported token");
 
     ++pos;
@@ -135,7 +138,7 @@ void processor_t::parse_varch_string(const char* s)
   if (!check_pow2(vlen) || !check_pow2(elen) || !check_pow2(slen) || !check_pow2(valu)){
     bad_varch_string(s, "The integer value should be the power of 2");
   }
-  if (fredsum_impl != "ordered" && fredsum_impl != "parallel"){
+  if (VU.fredsum_impl == vectorUnit_t::UNKNOWN_FREDSUM_IMPL) {
     bad_varch_string(s, "fredsum-impl now only supported ordered/parallel");
   }
 
@@ -160,7 +163,6 @@ void processor_t::parse_varch_string(const char* s)
   VU.ELEN = elen;
   VU.SLEN = slen;
   VU.VALU = valu;
-  VU.FREDSUM_IMPL = fredsum_impl;
   VU.vlenb = vlen / 8;
 }
 

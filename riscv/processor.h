@@ -427,8 +427,15 @@ public:
       reg_t vediv, vsew, vlmul;
       reg_t ELEN, VLEN, SLEN;
       reg_t VALU;
-      std::string FREDSUM_IMPL;
       bool vill;
+
+      // Microarchitecture dependent features
+      typedef enum {
+        UNKNOWN_FREDSUM_IMPL,
+        ORDERED_FREDSUM_IMPL,
+        PARALLEL_FREDSUM_IMPL
+      } fredsum_impl_t;
+      fredsum_impl_t fredsum_impl;
 
       // vector element for varies SEW
       template<class T>
