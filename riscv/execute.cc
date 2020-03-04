@@ -63,6 +63,7 @@ static void commit_log_print_insn(processor_t* p, reg_t pc, insn_t insn)
   fprintf(stderr, " (");
   commit_log_print_value(insn.length() * 8, 0, insn.bits());
   fprintf(stderr, ")");
+  bool show_vec = false;
 
   for (auto item : reg) {
     if (item.first == 0)
@@ -72,6 +73,7 @@ static void commit_log_print_insn(processor_t* p, reg_t pc, insn_t insn)
     int size;
     int rd = item.first >> 2;
     bool is_vec = false;
+    bool is_vreg = false;
     switch (item.first & 3) {
     case 0:
       size = xlen;
@@ -84,6 +86,9 @@ static void commit_log_print_insn(processor_t* p, reg_t pc, insn_t insn)
     case 2:
       size = p->VU.VLEN;
       prefix = 'v';
+      is_vreg = true;
+      break;
+    case 3:
       is_vec = true;
       break;
     default:
@@ -91,14 +96,18 @@ static void commit_log_print_insn(processor_t* p, reg_t pc, insn_t insn)
       break;
     }
 
-    if (is_vec)
-        fprintf(stderr, " e%ld m%ld", p->VU.vsew, p->VU.vlmul);
+    if (!show_vec && (is_vreg || is_vec)) {
+        fprintf(stderr, " e%ld m%ld l%ld", p->VU.vsew, p->VU.vlmul, p->VU.vl);
+        show_vec = true;
+    }
 
-    fprintf(stderr, " %c%2d ", prefix, rd);
-    if (is_vec)
+    if (!is_vec) {
+      fprintf(stderr, " %c%2d ", prefix, rd);
+      if (is_vreg)
         commit_log_print_value(size, &p->VU.elt<uint8_t>(rd, 0));
-    else
+      else
         commit_log_print_value(size, item.second.v[1], item.second.v[0]);
+    }
   }
 
   for (auto item : load) {

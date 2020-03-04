@@ -231,6 +231,7 @@ private:
     require_vector_vs; \
     require_extension('V'); \
     require(!P.VU.vill); \
+    STATE.log_reg_write[3] = {0, 0}; \
     dirty_vs_state; \
   } while (0);
 #define require_vector_for_vsetvl \
