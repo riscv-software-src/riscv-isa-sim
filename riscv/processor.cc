@@ -23,8 +23,8 @@
 processor_t::processor_t(const char* isa, const char* priv, const char* varch,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
                          FILE* log_file)
-  : debug(false), halt_request(false), sim(sim), ext(NULL), id(id), xlen(0),
-  histogram_enabled(false), log_commits_enabled(false),
+  : debug(false), halt_request(false), sim(sim), mmu(new mmu_t (sim, this)),
+  ext(NULL), id(id), xlen(0), histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), halt_on_reset(halt_on_reset), last_pc(1), executions(1)
 {
   VU.p = this;
@@ -32,9 +32,12 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
   parse_priv_string(priv);
   parse_varch_string(varch);
   register_base_instructions();
-  mmu = new mmu_t(sim, this);
 
-  disassembler = new disassembler_t(max_xlen);
+  // Instantiate disassembler. Note this has to be constructed after
+  // the call to register_base_instructions because that can set
+  // max_xlen.
+  disassembler.reset(new disassembler_t(max_xlen));
+
   if (ext)
     for (auto disasm_insn : ext->get_disasms())
       disassembler->add_insn(disasm_insn);
@@ -52,9 +55,6 @@ processor_t::~processor_t()
       fprintf(stderr, "%0" PRIx64 " %" PRIu64 "\n", it.first, it.second);
   }
 #endif
-
-  delete mmu;
-  delete disassembler;
 }
 
 static void bad_isa_string(const char* isa)

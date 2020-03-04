@@ -6,11 +6,14 @@
 #include "config.h"
 #include "devices.h"
 #include "trap.h"
-#include <string>
-#include <vector>
-#include <unordered_map>
+
 #include <map>
+#include <memory>
+#include <string>
+#include <unordered_map>
+#include <vector>
 #include <cassert>
+
 #include "debug_rom_defines.h"
 
 class processor_t;
@@ -253,7 +256,7 @@ public:
   void step(size_t n); // run for n cycles
   void set_csr(int which, reg_t val);
   reg_t get_csr(int which);
-  mmu_t* get_mmu() { return mmu; }
+  mmu_t* get_mmu() { return mmu.get(); }
   state_t* get_state() { return &state; }
   unsigned get_xlen() { return xlen; }
   unsigned get_max_xlen() { return max_xlen; }
@@ -278,7 +281,7 @@ public:
   reg_t legalize_privilege(reg_t);
   void set_privilege(reg_t);
   void update_histogram(reg_t pc);
-  const disassembler_t* get_disassembler() { return disassembler; }
+  const disassembler_t* get_disassembler() const { return disassembler.get(); }
 
   FILE *get_log_file() { return log_file; }
 
@@ -380,9 +383,9 @@ public:
 
 private:
   simif_t* sim;
-  mmu_t* mmu; // main memory is always accessed via the mmu
+  std::unique_ptr<mmu_t> mmu; // main memory is always accessed via the mmu
   extension_t* ext;
-  disassembler_t* disassembler;
+  std::unique_ptr<disassembler_t> disassembler;
   state_t state;
   uint32_t id;
   unsigned max_xlen;

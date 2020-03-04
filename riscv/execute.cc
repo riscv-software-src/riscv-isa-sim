@@ -170,10 +170,11 @@ void processor_t::step(size_t n)
     }
   }
 
+  mmu_t &_mmu = * mmu;
+
   while (n > 0) {
     size_t instret = 0;
     reg_t pc = state.pc;
-    mmu_t* _mmu = mmu;
 
     #define advance_pc() \
      if (unlikely(invalid_pc(pc))) { \
@@ -236,13 +237,13 @@ void processor_t::step(size_t n)
         // resulted in approximately a 2x performance increase.
 
         // This figures out where to jump to in the switch statement
-        size_t idx = _mmu->icache_index(pc);
+        size_t idx = _mmu.icache_index(pc);
 
         // This gets the cached decoded instruction from the MMU. If the MMU
         // does not have the current pc cached, it will refill the MMU and
         // return the correct entry. ic_entry->data.func is the C++ function
         // corresponding to the instruction.
-        auto ic_entry = _mmu->access_icache(pc);
+        auto ic_entry = _mmu.access_icache(pc);
 
         // This macro is included in "icache.h" included within the switch
         // statement below. The indirect jump corresponding to the instruction
