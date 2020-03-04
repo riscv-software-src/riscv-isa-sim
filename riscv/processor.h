@@ -239,13 +239,16 @@ class processor_t : public abstract_device_t
 {
 public:
   processor_t(const char* isa, const char* priv, const char* varch,
-              simif_t* sim, uint32_t id, bool halt_on_reset=false);
+              simif_t* sim, uint32_t id, bool halt_on_reset,
+              FILE *log_file);
   ~processor_t();
 
   void set_debug(bool value);
   void set_histogram(bool value);
-  void set_log_commits(bool value);
-  bool get_log_commits() { return log_commits_enabled; }
+#ifdef RISCV_ENABLE_COMMITLOG
+  void enable_log_commits();
+  bool get_log_commits_enabled() const { return log_commits_enabled; }
+#endif
   void reset();
   void step(size_t n); // run for n cycles
   void set_csr(int which, reg_t val);
@@ -276,6 +279,8 @@ public:
   void set_privilege(reg_t);
   void update_histogram(reg_t pc);
   const disassembler_t* get_disassembler() { return disassembler; }
+
+  FILE *get_log_file() { return log_file; }
 
   void register_insn(insn_desc_t);
   void register_extension(extension_t*);
@@ -386,6 +391,7 @@ private:
   std::string isa_string;
   bool histogram_enabled;
   bool log_commits_enabled;
+  FILE *log_file;
   bool halt_on_reset;
 
   std::vector<insn_desc_t> instructions;
