@@ -3,10 +3,12 @@
 #ifndef _RISCV_SIM_H
 #define _RISCV_SIM_H
 
-#include "processor.h"
-#include "devices.h"
 #include "debug_module.h"
+#include "devices.h"
+#include "log_file.h"
+#include "processor.h"
 #include "simif.h"
+
 #include <fesvr/htif.h>
 #include <fesvr/context.h>
 #include <vector>
@@ -27,15 +29,22 @@ public:
         reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
         std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
         const std::vector<std::string>& args, const std::vector<int> hartids,
-        const debug_module_config_t &dm_config);
+        const debug_module_config_t &dm_config, const char *log_path);
   ~sim_t();
 
   // run the simulation to completion
   int run();
   void set_debug(bool value);
-  void set_log(bool value);
   void set_histogram(bool value);
-  void set_log_commits(bool value);
+
+  // Configure logging
+  //
+  // If enable_log is true, an instruction trace will be generated. If
+  // enable_commitlog is true, so will the commit results (if this
+  // build was configured without support for commit logging, the
+  // function will print an error message and abort).
+  void configure_log(bool enable_log, bool enable_commitlog);
+
   void set_procs_debug(bool value);
   void set_dtb_enabled(bool value) {
     this->dtb_enabled = value;
@@ -62,6 +71,7 @@ private:
   std::unique_ptr<rom_device_t> boot_rom;
   std::unique_ptr<clint_t> clint;
   bus_t bus;
+  log_file_t log_file;
 
   processor_t* get_core(const std::string& i);
   void step(size_t n); // step through simulation
@@ -71,9 +81,8 @@ private:
   size_t current_step;
   size_t current_proc;
   bool debug;
-  bool log;
   bool histogram_enabled; // provide a histogram of PCs
-  bool log_commits_enabled;
+  bool log;
   bool dtb_enabled;
   remote_bitbang_t* remote_bitbang;
 

@@ -21,10 +21,11 @@
 #define STATE state
 
 processor_t::processor_t(const char* isa, const char* priv, const char* varch,
-                         simif_t* sim, uint32_t id, bool halt_on_reset)
+                         simif_t* sim, uint32_t id, bool halt_on_reset,
+                         FILE* log_file)
   : debug(false), halt_request(false), sim(sim), ext(NULL), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
-  halt_on_reset(halt_on_reset), last_pc(1), executions(1)
+  log_file(log_file), halt_on_reset(halt_on_reset), last_pc(1), executions(1)
 {
   VU.p = this;
   parse_isa_string(isa);
@@ -345,17 +346,12 @@ void processor_t::set_histogram(bool value)
 #endif
 }
 
-void processor_t::set_log_commits(bool value)
+#ifdef RISCV_ENABLE_COMMITLOG
+void processor_t::enable_log_commits()
 {
-  log_commits_enabled = value;
-#ifndef RISCV_ENABLE_COMMITLOG
-  if (value) {
-    fprintf(stderr, "Commit logging support has not been properly enabled;");
-    fprintf(stderr, " please re-build the riscv-isa-sim project using \"configure --enable-commitlog\".\n");
-    abort();
-  }
-#endif
+  log_commits_enabled = true;
 }
+#endif
 
 void processor_t::reset()
 {
@@ -465,11 +461,11 @@ void processor_t::enter_debug_mode(uint8_t cause)
 void processor_t::take_trap(trap_t& t, reg_t epc)
 {
   if (debug) {
-    fprintf(stderr, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
+    fprintf(log_file, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
             id, t.name(), epc);
     if (t.has_tval())
-      fprintf(stderr, "core %3d:           tval 0x%016" PRIx64 "\n", id,
-          t.get_tval());
+      fprintf(log_file, "core %3d:           tval 0x%016" PRIx64 "\n",
+              id, t.get_tval());
   }
 
   if (state.debug_mode) {
@@ -530,10 +526,10 @@ void processor_t::disasm(insn_t insn)
   uint64_t bits = insn.bits() & ((1ULL << (8 * insn_length(insn.bits()))) - 1);
   if (last_pc != state.pc || last_bits != bits) {
     if (executions != 1) {
-      fprintf(stderr, "core %3d: Executed %" PRIx64 " times\n", id, executions);
+      fprintf(log_file, "core %3d: Executed %" PRIx64 " times\n", id, executions);
     }
 
-    fprintf(stderr, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx64 ") %s\n",
+    fprintf(log_file, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx64 ") %s\n",
             id, state.pc, bits, disassembler->disassemble(insn).c_str());
     last_pc = state.pc;
     last_bits = bits;
