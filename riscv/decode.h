@@ -167,6 +167,7 @@ private:
 #ifndef RISCV_ENABLE_COMMITLOG
 # define WRITE_REG(reg, value) STATE.XPR.write(reg, value)
 # define WRITE_FREG(reg, value) DO_WRITE_FREG(reg, freg(value))
+# define WRITE_VSTATUS
 #else
    /* 0 : int
     * 1 : floating
@@ -182,6 +183,7 @@ private:
     STATE.log_reg_write[((reg) << 2) | 1] = wdata; \
     DO_WRITE_FREG(reg, wdata); \
   })
+# define WRITE_VSTATUS STATE.log_reg_write[3] = {0, 0};
 #endif
 
 // RVC macros
@@ -231,6 +233,7 @@ private:
     require_vector_vs; \
     require_extension('V'); \
     require(!P.VU.vill); \
+    WRITE_VSTATUS; \
     dirty_vs_state; \
   } while (0);
 #define require_vector_for_vsetvl \
