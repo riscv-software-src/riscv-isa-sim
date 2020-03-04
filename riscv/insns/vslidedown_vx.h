@@ -4,7 +4,7 @@ require((insn.rd() & (P.VU.vlmul - 1)) == 0);
 if (P.VU.vlmul > 1 && insn.v_vm() == 0)
   require(insn.rd() != 0);
 
-const reg_t sh = RS1;
+const uint128_t sh = RS1;
 VI_LOOP_BASE
 
 reg_t offset = 0;
