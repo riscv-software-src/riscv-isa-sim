@@ -47,7 +47,7 @@ int main(int argc, char** argv)
           opcode = opcode << (64-bit_num) >> (64-bit_num);
       }
 
-      const disasm_insn_t* disasm = p.get_disassembler()->lookup(opcode);
+      const disasm_insn_t* disasm = p.get_disassembler().lookup(opcode);
       if (disasm) {
           cout << disasm->get_name() << '\n';
       } else {

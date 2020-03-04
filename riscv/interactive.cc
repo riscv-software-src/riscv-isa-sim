@@ -320,7 +320,7 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
   if(args.size() == 2)
   {
     processor_t *p = get_core(args[0]);
-    mmu = p->get_mmu();
+    mmu = &p->get_mmu();
     addr_str = args[1];
   }
 

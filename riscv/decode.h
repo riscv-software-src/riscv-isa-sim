@@ -152,7 +152,7 @@ private:
 };
 
 // helpful macros, etc
-#define MMU (*p->get_mmu())
+#define MMU (p->get_mmu())
 #define STATE (*p->get_state())
 #define P (*p)
 #define FLEN (p->get_flen())

@@ -316,8 +316,8 @@ int main(int argc, char** argv)
   if (dc) dc->set_log(log_cache);
   for (size_t i = 0; i < nprocs; i++)
   {
-    if (ic) s.get_core(i)->get_mmu()->register_memtracer(&*ic);
-    if (dc) s.get_core(i)->get_mmu()->register_memtracer(&*dc);
+    if (ic) s.get_core(i)->get_mmu().register_memtracer(&*ic);
+    if (dc) s.get_core(i)->get_mmu().register_memtracer(&*dc);
     if (extension) s.get_core(i)->register_extension(extension());
   }
 

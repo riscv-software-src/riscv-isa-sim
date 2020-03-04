@@ -256,7 +256,7 @@ public:
   void step(size_t n); // run for n cycles
   void set_csr(int which, reg_t val);
   reg_t get_csr(int which);
-  mmu_t* get_mmu() { return mmu.get(); }
+  mmu_t &get_mmu() { return *mmu; }
   state_t* get_state() { return &state; }
   unsigned get_xlen() { return xlen; }
   unsigned get_max_xlen() { return max_xlen; }
@@ -281,7 +281,7 @@ public:
   reg_t legalize_privilege(reg_t);
   void set_privilege(reg_t);
   void update_histogram(reg_t pc);
-  const disassembler_t* get_disassembler() const { return disassembler.get(); }
+  const disassembler_t &get_disassembler() const { return *disassembler; }
 
   FILE *get_log_file() { return log_file; }
 
