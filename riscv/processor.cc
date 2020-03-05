@@ -285,13 +285,13 @@ void state_t::reset(reg_t max_isa)
   memset(&this->dcsr, 0, sizeof(this->dcsr));
 
   tselect = 0;
+  memset(this->mcontrol, 0, sizeof(this->mcontrol));
   for (auto &item : mcontrol)
     item.type = 2;
 
   memset(this->tdata2, 0, sizeof(this->tdata2));
   debug_mode = false;
   single_step = STEP_NONE;
-  memset(this->mcontrol, 0, sizeof(this->mcontrol));
 
   memset(this->pmpcfg, 0, sizeof(this->pmpcfg));
   memset(this->pmpaddr, 0, sizeof(this->pmpaddr));
