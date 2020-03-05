@@ -152,8 +152,8 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
     return true;
   }
 
-  fprintf(stderr, "ERROR: invalid load from debug module: %zd bytes at 0x%016"
-          PRIx64 "\n", len, addr);
+  D(fprintf(stderr, "ERROR: invalid load from debug module: %zd bytes at 0x%016"
+          PRIx64 "\n", len, addr));
 
   return false;
 }
@@ -241,8 +241,8 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     return true;
   }
 
-  fprintf(stderr, "ERROR: invalid store to debug module: %zd bytes at 0x%016"
-          PRIx64 "\n", len, addr);
+  D(fprintf(stderr, "ERROR: invalid store to debug module: %zd bytes at 0x%016"
+          PRIx64 "\n", len, addr));
   return false;
 }
 
@@ -358,7 +358,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
     result = read32(dmdata, i);
     if (abstractcs.busy) {
       result = -1;
-      fprintf(stderr, "\ndmi_read(0x%02x (data[%d]) -> -1 because abstractcs.busy==true\n", address, i);
+      D(fprintf(stderr, "\ndmi_read(0x%02x (data[%d]) -> -1 because abstractcs.busy==true\n", address, i));
     }
 
     if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
@@ -373,7 +373,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
     result = read32(program_buffer, i);
     if (abstractcs.busy) {
       result = -1;
-      fprintf(stderr, "\ndmi_read(0x%02x (progbuf[%d]) -> -1 because abstractcs.busy==true\n", address, i);
+      D(fprintf(stderr, "\ndmi_read(0x%02x (progbuf[%d]) -> -1 because abstractcs.busy==true\n", address, i));
     }
     if (!abstractcs.busy && ((abstractauto.autoexecprogbuf >> i) & 1)) {
       perform_abstract_command();
