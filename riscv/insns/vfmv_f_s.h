@@ -4,28 +4,27 @@ require_fp;
 require_extension('F');
 require(P.VU.vsew == e32 || P.VU.vsew == e64);
 
-if (P.VU.vstart < P.VU.vl && P.VU.vl > 0) {
-  reg_t rs2_num = insn.rs2();
-  uint64_t vs2_0 = 0;
-  const reg_t sew = P.VU.vsew;
-  switch(sew) {
-  case e32:
-    vs2_0 = P.VU.elt<uint32_t>(rs2_num, 0);
-    break;
-  default:
-    vs2_0 = P.VU.elt<uint64_t>(rs2_num, 0);
-    break;
-  }
-
-  // nan_extened
-  if (FLEN > sew) {
-    vs2_0 = vs2_0 | ~((uint64_t(1) << sew) - 1);
-  }
-
-  if (FLEN == 64) {
-    WRITE_FRD(f64(vs2_0));
-  } else {
-    WRITE_FRD(f32(vs2_0));
-  }
+reg_t rs2_num = insn.rs2();
+uint64_t vs2_0 = 0;
+const reg_t sew = P.VU.vsew;
+switch(sew) {
+case e32:
+  vs2_0 = P.VU.elt<uint32_t>(rs2_num, 0);
+  break;
+default:
+  vs2_0 = P.VU.elt<uint64_t>(rs2_num, 0);
+  break;
 }
+
+// nan_extened
+if (FLEN > sew) {
+  vs2_0 = vs2_0 | ~((uint64_t(1) << sew) - 1);
+}
+
+if (FLEN == 64) {
+  WRITE_FRD(f64(vs2_0));
+} else {
+  WRITE_FRD(f32(vs2_0));
+}
+
 P.VU.vstart = 0;
