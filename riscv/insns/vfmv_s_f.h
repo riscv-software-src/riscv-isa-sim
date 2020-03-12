@@ -5,7 +5,7 @@ require_extension('F');
 require(P.VU.vsew >= e32 && P.VU.vsew <= 64);
 reg_t vl = P.VU.vl;
 
-if (vl > 0) {
+if (vl > 0 && P.VU.vstart < vl) {
   reg_t rd_num = insn.rd();
 
   switch(P.VU.vsew) {

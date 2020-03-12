@@ -11,16 +11,16 @@ if (vl > 0 && P.VU.vstart < vl) {
 
   switch(sew) {
   case e8:
-    P.VU.elt<uint8_t>(rd_num, 0) = RS1;
+    P.VU.elt<uint8_t>(rd_num, 0, true) = RS1;
     break;
   case e16:
-    P.VU.elt<uint16_t>(rd_num, 0) = RS1;
+    P.VU.elt<uint16_t>(rd_num, 0, true) = RS1;
     break;
   case e32:
-    P.VU.elt<uint32_t>(rd_num, 0) = RS1;
+    P.VU.elt<uint32_t>(rd_num, 0, true) = RS1;
     break;
   default:
-    P.VU.elt<uint64_t>(rd_num, 0) = RS1;
+    P.VU.elt<uint64_t>(rd_num, 0, true) = RS1;
     break;
   }
 

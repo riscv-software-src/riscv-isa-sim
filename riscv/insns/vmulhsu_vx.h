@@ -3,7 +3,7 @@ VI_CHECK_SSS(false);
 VI_LOOP_BASE
 switch(sew) {
 case e8: {
-  auto &vd = P.VU.elt<int8_t>(rd_num, i);
+  auto &vd = P.VU.elt<int8_t>(rd_num, i, true);
   auto vs2 = P.VU.elt<int8_t>(rs2_num, i);
   uint8_t rs1 = RS1;
 
@@ -11,7 +11,7 @@ case e8: {
   break;
 }
 case e16: {
-  auto &vd = P.VU.elt<int16_t>(rd_num, i);
+  auto &vd = P.VU.elt<int16_t>(rd_num, i, true);
   auto vs2 = P.VU.elt<int16_t>(rs2_num, i);
   uint16_t rs1 = RS1;
 
@@ -19,7 +19,7 @@ case e16: {
   break;
 }
 case e32: {
-  auto &vd = P.VU.elt<int32_t>(rd_num, i);
+  auto &vd = P.VU.elt<int32_t>(rd_num, i, true);
   auto vs2 = P.VU.elt<int32_t>(rs2_num, i);
   uint32_t rs1 = RS1;
 
@@ -27,7 +27,7 @@ case e32: {
   break;
 }
 default: {
-  auto &vd = P.VU.elt<int64_t>(rd_num, i);
+  auto &vd = P.VU.elt<int64_t>(rd_num, i, true);
   auto vs2 = P.VU.elt<int64_t>(rs2_num, i);
   uint64_t rs1 = RS1;
 
