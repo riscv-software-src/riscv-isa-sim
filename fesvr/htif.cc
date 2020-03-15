@@ -238,7 +238,7 @@ void htif_t::parse_arguments(int argc, char ** argv)
  retry:
     switch (c) {
       case 'h': usage(argv[0]);
-        throw std::invalid_argument("User quered htif_t help text");
+        throw std::invalid_argument("User queried htif_t help text");
       case HTIF_LONG_OPTIONS_OPTIND:
         if (optarg) dynamic_devices.push_back(new rfb_t(atoi(optarg)));
         else        dynamic_devices.push_back(new rfb_t);
