@@ -45,7 +45,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define COMPARE_MAX(a, b, bits) \
 float ## bits ## _t f ## bits ## _max( float ## bits ## _t a, float ## bits ## _t b )          \
 {                                                                                              \
-    if (isNaNF ## bits ## UI(a.v) && isNaNF ## bits ## UI(b.v)) {                              \
+    if (f ## bits ## _isSignalingNaN(a) ||                                                     \
+        f ## bits ## _isSignalingNaN(b)) {                                                     \
+        union ui ## bits ## _f ## bits  ui;                                                    \
+        ui.ui = defaultNaNF ## bits ## UI;                                                     \
+        softfloat_raiseFlags( softfloat_flag_invalid );                                        \
+        return ui.f;                                                                           \
+    } else if (isNaNF ## bits ## UI(a.v) && isNaNF ## bits ## UI(b.v)) {                       \
         union ui ## bits ## _f ## bits  ui;                                                    \
         ui.ui = defaultNaNF ## bits ## UI;                                                     \
         return ui.f;                                                                           \
@@ -60,7 +66,13 @@ float ## bits ## _t f ## bits ## _max( float ## bits ## _t a, float ## bits ## _
 #define COMPARE_MIN(a, b, bits) \
 float ## bits ## _t f ## bits ## _min( float ## bits ## _t a, float ## bits ## _t b )          \
 {                                                                                              \
-    if (isNaNF ## bits ## UI(a.v) && isNaNF ## bits ## UI(b.v)) {                              \
+    if (f ## bits ## _isSignalingNaN(a) ||                                                     \
+        f ## bits ## _isSignalingNaN(b)) {                                                     \
+        union ui ## bits ## _f ## bits  ui;                                                    \
+        ui.ui = defaultNaNF ## bits ## UI;                                                     \
+        softfloat_raiseFlags( softfloat_flag_invalid );                                        \
+        return ui.f;                                                                           \
+    } else if (isNaNF ## bits ## UI(a.v) && isNaNF ## bits ## UI(b.v)) {                       \
         union ui ## bits ## _f ## bits  ui;                                                    \
         ui.ui = defaultNaNF ## bits ## UI;                                                     \
         return ui.f;                                                                           \
