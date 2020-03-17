@@ -4,6 +4,12 @@
 #include "mmu.h"
 #include <cassert>
 
+static void commit_log_reset(processor_t* p)
+{
+  p->get_state()->log_reg_write.clear();
+  p->get_state()->log_mem_read.clear();
+  p->get_state()->log_mem_write.clear();
+}
 
 static void commit_log_stash_privilege(processor_t* p)
 {
@@ -122,9 +128,6 @@ static void commit_log_print_insn(processor_t* p, reg_t pc, insn_t insn)
     commit_log_print_value(std::get<2>(item) << 3, 0, std::get<1>(item));
   }
   fprintf(stderr, "\n");
-  reg.clear();
-  load.clear();
-  store.clear();
 #endif
 }
 
@@ -140,7 +143,9 @@ inline void processor_t::update_histogram(reg_t pc)
 // function calls.
 static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
+  commit_log_reset(p);
   commit_log_stash_privilege(p);
+
   reg_t npc = fetch.func(p, fetch.insn, pc);
   if (npc != PC_SERIALIZE_BEFORE) {
     if (p->get_log_commits()) {
