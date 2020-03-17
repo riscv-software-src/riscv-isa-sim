@@ -4,6 +4,7 @@
 #include "mmu.h"
 #include <cassert>
 
+#ifdef RISCV_ENABLE_COMMITLOG
 static void commit_log_reset(processor_t* p)
 {
   p->get_state()->log_reg_write.clear();
@@ -13,12 +14,10 @@ static void commit_log_reset(processor_t* p)
 
 static void commit_log_stash_privilege(processor_t* p)
 {
-#ifdef RISCV_ENABLE_COMMITLOG
   state_t* state = p->get_state();
   state->last_inst_priv = state->prv;
   state->last_inst_xlen = p->get_xlen();
   state->last_inst_flen = p->get_flen();
-#endif
 }
 
 static void commit_log_print_value(int width, const void *data)
@@ -56,7 +55,6 @@ static void commit_log_print_value(int width, uint64_t hi, uint64_t lo)
 
 static void commit_log_print_insn(processor_t* p, reg_t pc, insn_t insn)
 {
-#ifdef RISCV_ENABLE_COMMITLOG
   auto& reg = p->get_state()->log_reg_write;
   auto& load = p->get_state()->log_mem_read;
   auto& store = p->get_state()->log_mem_write;
@@ -128,8 +126,12 @@ static void commit_log_print_insn(processor_t* p, reg_t pc, insn_t insn)
     commit_log_print_value(std::get<2>(item) << 3, 0, std::get<1>(item));
   }
   fprintf(stderr, "\n");
-#endif
 }
+#else
+static void commit_log_reset(processor_t* p) {}
+static void commit_log_stash_privilege(processor_t* p) {}
+static void commit_log_print_insn(processor_t* p, reg_t pc, insn_t insn) {}
+#endif
 
 inline void processor_t::update_histogram(reg_t pc)
 {
