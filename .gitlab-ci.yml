@@ -1,5 +1,5 @@
 default:
-  image: docker.pkg.github.com/sifive/riscv-isa-sim/rvv:latest
+  image: docker.pkg.github.com/sifive/riscv-vector-tests/master:latest
 
 variables:
   GIT_DEPTH: 1
