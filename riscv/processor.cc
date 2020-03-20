@@ -828,11 +828,11 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_VXSAT:
       dirty_fp_state;
-      VU.vxsat = val;
+      VU.vxsat = val & 0x1ul;
       break;
     case CSR_VXRM:
       dirty_fp_state;
-      VU.vxrm = val;
+      VU.vxrm = val & 0x3ul;
       break;
   }
 }
