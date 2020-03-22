@@ -58,7 +58,7 @@ AC_CHECK_TOOL([AR],[ar])
 AC_CHECK_TOOL([RANLIB],[ranlib])
 AC_PATH_PROG([DTC],[dtc],[no])
 AS_IF([test x"$DTC" == xno],AC_MSG_ERROR([device-tree-compiler not found]))
-AC_DEFINE_UNQUOTED(DTC, ["$DTC"], [Path to the device-tree-compiler])
+AC_DEFINE_UNQUOTED(DTC, ["dtc"], [Executable name of device-tree-compiler])
 
 AC_C_BIGENDIAN
 
