@@ -457,9 +457,8 @@ static inline bool is_overlapped(const int astart, const int asize,
 
 #define VI_CHECK_SXX \
   VI_CHECK_STORE_SXX; \
-  if (P.VU.vlmul > 1 && insn.v_vm() == 0) { \
+  if (insn.v_vm() == 0 && (insn.v_nf() > 0 || P.VU.vlmul > 1)) \
     require(insn.rd() != 0); \
-  }
 
 #define VI_CHECK_DSS(is_vs1) \
   VI_WIDE_CHECK_COMMON; \
@@ -806,7 +805,6 @@ static inline bool is_overlapped(const int astart, const int asize,
 
 // merge and copy loop
 #define VI_VVXI_MERGE_LOOP(BODY) \
-  VI_CHECK_SXX; \
   VI_GENERAL_LOOP_BASE \
   if (sew == e8){ \
     VXI_PARAMS(e8); \
