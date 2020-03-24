@@ -155,8 +155,8 @@ public:
       } \
       else { \
 	type##_t le_val = to_le(val); \
-        if (proc) WRITE_MEM(addr, val, size); \
         store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&le_val); \
+        if (proc) WRITE_MEM(addr, val, size); \
       } \
   }
 

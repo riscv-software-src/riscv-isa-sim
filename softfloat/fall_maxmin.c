@@ -45,31 +45,31 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #define COMPARE_MAX(a, b, bits) \
 float ## bits ## _t f ## bits ## _max( float ## bits ## _t a, float ## bits ## _t b )          \
 {                                                                                              \
+    bool greater = f ## bits ## _lt_quiet(b, a) ||                                             \
+               (f ## bits ## _eq(b, a) && signF ## bits ## UI(b.v));                           \
+                                                                                               \
     if (isNaNF ## bits ## UI(a.v) && isNaNF ## bits ## UI(b.v)) {                              \
         union ui ## bits ## _f ## bits  ui;                                                    \
         ui.ui = defaultNaNF ## bits ## UI;                                                     \
         return ui.f;                                                                           \
+    } else {                                                                                   \
+        return greater || isNaNF ## bits ## UI((b).v) ? a : b;                                 \
     }                                                                                          \
-                                                                                               \
-    bool greater = f ## bits ## _lt_quiet(b, a) ||                                             \
-               (f ## bits ## _eq(b, a) && signF ## bits ## UI(b.v));                           \
-                                                                                               \
-    return greater || isNaNF ## bits ## UI((b).v) ? a : b;                                     \
 }
 
 #define COMPARE_MIN(a, b, bits) \
 float ## bits ## _t f ## bits ## _min( float ## bits ## _t a, float ## bits ## _t b )          \
 {                                                                                              \
+    bool less = f ## bits ## _lt_quiet(a, b) ||                                                \
+               (f ## bits ## _eq(a, b) && signF ## bits ## UI(a.v));                           \
+                                                                                               \
     if (isNaNF ## bits ## UI(a.v) && isNaNF ## bits ## UI(b.v)) {                              \
         union ui ## bits ## _f ## bits  ui;                                                    \
         ui.ui = defaultNaNF ## bits ## UI;                                                     \
         return ui.f;                                                                           \
+    } else {                                                                                   \
+        return less || isNaNF ## bits ## UI((b).v) ? a : b;                                    \
     }                                                                                          \
-                                                                                               \
-    bool greater = f ## bits ## _lt_quiet(a, b) ||                                             \
-               (f ## bits ## _eq(a, b) && signF ## bits ## UI(a.v));                           \
-                                                                                               \
-    return greater || isNaNF ## bits ## UI((b).v) ? a : b;                                     \
 }
 
 COMPARE_MAX(a, b, 16);
