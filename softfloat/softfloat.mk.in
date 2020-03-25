@@ -38,6 +38,7 @@ softfloat_c_srcs = \
 	f128_to_ui64.c \
 	f128_to_ui64_r_minMag.c \
 	f16_add.c \
+	f16_classify.c \
 	f16_div.c \
 	f16_eq.c \
 	f16_eq_signaling.c \
