@@ -38,6 +38,7 @@ softfloat_c_srcs = \
 	f128_to_ui64.c \
 	f128_to_ui64_r_minMag.c \
 	f16_add.c \
+	f16_classify.c \
 	f16_div.c \
 	f16_eq.c \
 	f16_eq_signaling.c \
@@ -55,10 +56,12 @@ softfloat_c_srcs = \
 	f16_to_f128.c \
 	f16_to_f32.c \
 	f16_to_f64.c \
+	f16_to_i16.c \
 	f16_to_i32.c \
 	f16_to_i32_r_minMag.c \
 	f16_to_i64.c \
 	f16_to_i64_r_minMag.c \
+	f16_to_ui16.c \
 	f16_to_ui32.c \
 	f16_to_ui32_r_minMag.c \
 	f16_to_ui64.c \
@@ -82,10 +85,12 @@ softfloat_c_srcs = \
 	f32_to_f128.c \
 	f32_to_f16.c \
 	f32_to_f64.c \
+	f32_to_i16.c \
 	f32_to_i32.c \
 	f32_to_i32_r_minMag.c \
 	f32_to_i64.c \
 	f32_to_i64_r_minMag.c \
+	f32_to_ui16.c \
 	f32_to_ui32.c \
 	f32_to_ui32_r_minMag.c \
 	f32_to_ui64.c \
