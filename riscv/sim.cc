@@ -32,11 +32,13 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
              std::vector<int> const hartids,
-             const debug_module_config_t &dm_config)
+             const debug_module_config_t &dm_config,
+             const char *log_path)
   : htif_t(args), mems(mems), plugin_devices(plugin_devices),
-    procs(std::max(nprocs, size_t(1))), initrd_start(initrd_start), initrd_end(initrd_end), start_pc(start_pc), current_step(0),
-    current_proc(0), debug(false), histogram_enabled(false),
-    log_commits_enabled(false), dtb_enabled(true),
+    initrd_start(initrd_start), initrd_end(initrd_end), start_pc(start_pc),
+    log_file(log_path),
+    current_step(0), current_proc(0), debug(false), histogram_enabled(false),
+    log(false), dtb_enabled(true),
     remote_bitbang(NULL), debug_module(this, dm_config)
 {
   signal(SIGINT, &handle_signal);
@@ -51,19 +53,18 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
 
   debug_mmu = new mmu_t(this, NULL);
 
-  if (hartids.size() == 0) {
-    for (size_t i = 0; i < procs.size(); i++) {
-      procs[i] = new processor_t(isa, priv, varch, this, i, halted);
-    }
-  }
-  else {
-    if (hartids.size() != procs.size()) {
-      std::cerr << "Number of specified hartids doesn't match number of processors" << strerror(errno) << std::endl;
+  if (! (hartids.empty() || hartids.size() == nprocs)) {
+      std::cerr << "Number of specified hartids ("
+                << hartids.size()
+                << ") doesn't match number of processors ("
+                << nprocs << ").\n";
       exit(1);
-    }
-    for (size_t i = 0; i < procs.size(); i++) {
-      procs[i] = new processor_t(isa, priv, varch, this, hartids[i], halted);
-    }
+  }
+
+  for (size_t i = 0; i < nprocs; i++) {
+    int hart_id = hartids.empty() ? i : hartids[i];
+    procs.push_back(new processor_t (isa, priv, varch, this,
+                                     hart_id, halted, log_file.get()));
   }
 
   clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, real_time_clint));
@@ -133,11 +134,6 @@ void sim_t::set_debug(bool value)
   debug = value;
 }
 
-void sim_t::set_log(bool value)
-{
-  log = value;
-}
-
 void sim_t::set_histogram(bool value)
 {
   histogram_enabled = value;
@@ -146,12 +142,24 @@ void sim_t::set_histogram(bool value)
   }
 }
 
-void sim_t::set_log_commits(bool value)
+void sim_t::configure_log(bool enable_log, bool enable_commitlog)
 {
-  log_commits_enabled = value;
-  for (size_t i = 0; i < procs.size(); i++) {
-    procs[i]->set_log_commits(log_commits_enabled);
+  log = enable_log;
+
+  if (!enable_commitlog)
+    return;
+
+#ifndef RISCV_ENABLE_COMMITLOG
+  fputs("Commit logging support has not been properly enabled; "
+        "please re-build the riscv-isa-sim project using "
+        "\"configure --enable-commitlog\".\n",
+        stderr);
+  abort();
+#else
+  for (processor_t *proc : procs) {
+    proc->enable_log_commits();
   }
+#endif
 }
 
 void sim_t::set_procs_debug(bool value)

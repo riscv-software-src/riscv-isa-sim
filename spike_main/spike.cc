@@ -144,6 +144,7 @@ int main(int argc, char** argv)
   std::unique_ptr<cache_sim_t> l2;
   bool log_cache = false;
   bool log_commits = false;
+  const char *log_path = nullptr;
   std::function<extension_t*()> extension;
   const char* initrd = NULL;
   const char* isa = DEFAULT_ISA;
@@ -267,7 +268,10 @@ int main(int argc, char** argv)
       [&](const char* s){dm_config.support_abstract_csr_access = false;});
   parser.option(0, "dm-no-halt-groups", 0,
       [&](const char* s){dm_config.support_haltgroups = false;});
-  parser.option(0, "log-commits", 0, [&](const char* s){log_commits = true;});
+  parser.option(0, "log-commits", 0,
+                [&](const char* s){log_commits = true;});
+  parser.option(0, "log", 1,
+                [&](const char* s){log_path = s;});
 
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
@@ -291,7 +295,7 @@ int main(int argc, char** argv)
 
   sim_t s(isa, priv, varch, nprocs, halted, real_time_clint,
       initrd_start, initrd_end, start_pc, mems, plugin_devices, htif_args,
-      std::move(hartids), dm_config);
+      std::move(hartids), dm_config, log_path);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));
@@ -318,9 +322,8 @@ int main(int argc, char** argv)
   }
 
   s.set_debug(debug);
-  s.set_log(log);
+  s.configure_log(log, log_commits);
   s.set_histogram(histogram);
-  s.set_log_commits(log_commits);
 
   auto return_code = s.run();
 
