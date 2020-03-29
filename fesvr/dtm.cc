@@ -560,6 +560,8 @@ void dtm_t::producer_thread()
 
   // Enable the debugger.
   write(DMI_DMCONTROL, DMI_DMCONTROL_DMACTIVE);
+  // Poll until the debugger agrees it's enabled.
+  while ((read(DMI_DMCONTROL) & DMI_DMCONTROL_DMACTIVE) == 0) ;
     
   // These are checked every time we run an abstract command.
   uint32_t abstractcs = read(DMI_ABSTRACTCS);
