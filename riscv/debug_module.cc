@@ -77,6 +77,7 @@ debug_module_t::~debug_module_t()
 
 void debug_module_t::reset()
 {
+  assert(sim->nprocs() > 0);
   for (unsigned i = 0; i < sim->nprocs(); i++) {
     processor_t *proc = sim->get_core(i);
     if (proc)
