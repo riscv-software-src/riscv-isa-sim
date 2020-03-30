@@ -35,6 +35,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
              const debug_module_config_t &dm_config,
              const char *log_path)
   : htif_t(args), mems(mems), plugin_devices(plugin_devices),
+    procs(std::max(nprocs, size_t(1))),
     initrd_start(initrd_start), initrd_end(initrd_end), start_pc(start_pc),
     log_file(log_path),
     current_step(0), current_proc(0), debug(false), histogram_enabled(false),
@@ -63,8 +64,8 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
 
   for (size_t i = 0; i < nprocs; i++) {
     int hart_id = hartids.empty() ? i : hartids[i];
-    procs.push_back(new processor_t (isa, priv, varch, this,
-                                     hart_id, halted, log_file.get()));
+    procs[i] = new processor_t(isa, priv, varch, this, hart_id, halted,
+                               log_file.get());
   }
 
   clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, real_time_clint));
