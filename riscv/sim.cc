@@ -5,6 +5,7 @@
 #include "dts.h"
 #include "remote_bitbang.h"
 #include "byteorder.h"
+#include <fstream>
 #include <map>
 #include <iostream>
 #include <sstream>
@@ -211,8 +212,22 @@ void sim_t::make_dtb()
 
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
 
-  dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, procs, mems);
-  std::string dtb = dts_compile(dts);
+  std::string dtb;
+  if (!dtb_file.empty()) {
+    std::ifstream fin(dtb_file.c_str(), std::ios::binary);
+    if (!fin.good()) {
+      std::cerr << "can't find dtb file: " << dtb_file << std::endl;
+      exit(-1);
+    }
+
+    std::stringstream strstream;
+    strstream << fin.rdbuf();
+
+    dtb = strstream.str();
+  } else {
+    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, procs, mems);
+    dtb = dts_compile(dts);
+  }
 
   rom.insert(rom.end(), dtb.begin(), dtb.end());
   const int align = 0x1000;
