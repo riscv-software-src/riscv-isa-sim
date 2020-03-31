@@ -49,6 +49,10 @@ public:
   void set_dtb_enabled(bool value) {
     this->dtb_enabled = value;
   }
+  void set_dtb_file(const char* value) {
+    if (value)
+      this->dtb_file = value;
+  }
   void set_remote_bitbang(remote_bitbang_t* remote_bitbang) {
     this->remote_bitbang = remote_bitbang;
   }
@@ -68,6 +72,7 @@ private:
   reg_t initrd_end;
   reg_t start_pc;
   std::string dts;
+  std::string dtb_file;
   std::unique_ptr<rom_device_t> boot_rom;
   std::unique_ptr<clint_t> clint;
   bus_t bus;
