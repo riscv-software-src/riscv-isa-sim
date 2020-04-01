@@ -1797,10 +1797,18 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_REDUCTION_END(e64)
 
-#define VI_VFP_VF_LOOP(BODY32, BODY64) \
+#define VI_VFP_VF_LOOP(BODY16, BODY32, BODY64) \
   VI_CHECK_SSS(false); \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
+    case e16: {\
+      float16_t &vd = P.VU.elt<float16_t>(rd_num, i, true); \
+      float16_t rs1 = f16(READ_FREG(rs1_num)); \
+      float16_t vs2 = P.VU.elt<float16_t>(rs2_num, i); \
+      BODY16; \
+      set_fp_exceptions; \
+      break; \
+    }\
     case e32: {\
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
       float32_t rs1 = f32(READ_FREG(rs1_num)); \
@@ -1817,8 +1825,6 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
       set_fp_exceptions; \
       break; \
     }\
-    case e16: \
-    case e8: \
     default: \
       require(0); \
       break; \
