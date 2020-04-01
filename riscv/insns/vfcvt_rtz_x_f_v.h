@@ -2,6 +2,10 @@
 VI_VFP_VF_LOOP
 ({
   softfloat_roundingMode = softfloat_round_minMag;
+  P.VU.elt<int16_t>(rd_num, i) = f16_to_i32(vs2, STATE.frm, true);
+},
+{
+  softfloat_roundingMode = softfloat_round_minMag;
   P.VU.elt<int32_t>(rd_num, i) = f32_to_i32(vs2, STATE.frm, true);
 },
 {
