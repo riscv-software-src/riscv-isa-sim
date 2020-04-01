@@ -174,6 +174,7 @@ bool f16_eq_signaling( float16_t, float16_t );
 bool f16_le_quiet( float16_t, float16_t );
 bool f16_lt_quiet( float16_t, float16_t );
 bool f16_isSignalingNaN( float16_t );
+uint_fast16_t f16_classify( float16_t );
 
 /*----------------------------------------------------------------------------
 | 32-bit (single-precision) floating-point operations.
