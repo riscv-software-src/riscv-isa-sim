@@ -1765,10 +1765,17 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
 
-#define VI_VFP_VV_LOOP_REDUCTION(BODY32, BODY64) \
+#define VI_VFP_VV_LOOP_REDUCTION(BODY16, BODY32, BODY64) \
   VI_CHECK_REDUCTION(false) \
   VI_VFP_COMMON \
   switch(P.VU.vsew) { \
+    case e16: {\
+      VI_VFP_LOOP_REDUCTION_BASE(16) \
+        BODY16; \
+        set_fp_exceptions; \
+      VI_VFP_LOOP_REDUCTION_END(e16) \
+      break; \
+    }\
     case e32: {\
       VI_VFP_LOOP_REDUCTION_BASE(32) \
         BODY32; \
@@ -1783,19 +1790,41 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
       VI_VFP_LOOP_REDUCTION_END(e64) \
       break; \
     }\
-    case e16: \
     default: \
       require(0); \
       break; \
   }; \
 
-#define VI_VFP_VV_LOOP_WIDE_REDUCTION(BODY) \
-  VI_VFP_LOOP_WIDE_REDUCTION_BASE \
-  float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
-  BODY; \
-  set_fp_exceptions; \
-  DEBUG_RVV_FP_VV; \
-  VI_VFP_LOOP_REDUCTION_END(e64)
+#define VI_VFP_VV_LOOP_WIDE_REDUCTION(BODY16, BODY32) \
+  VI_CHECK_REDUCTION(true) \
+  VI_VFP_COMMON \
+  require((P.VU.vsew == e16 && p->supports_extension('F')) || \
+          (P.VU.vsew == e32 && p->supports_extension('D'))); \
+  switch(P.VU.vsew) { \
+    case e16: {\
+      float32_t vd_0 = P.VU.elt<float32_t>(rs1_num, 0); \
+      for (reg_t i=P.VU.vstart; i<vl; ++i) { \
+        VI_LOOP_ELEMENT_SKIP(); \
+        float32_t vs2 = f16_to_f32(P.VU.elt<float16_t>(rs2_num, i)); \
+        BODY16; \
+        set_fp_exceptions; \
+      VI_VFP_LOOP_REDUCTION_END(e32) \
+      break; \
+    }\
+    case e32: {\
+      float64_t vd_0 = P.VU.elt<float64_t>(rs1_num, 0); \
+      for (reg_t i=P.VU.vstart; i<vl; ++i) { \
+        VI_LOOP_ELEMENT_SKIP(); \
+        float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
+        BODY32; \
+        set_fp_exceptions; \
+      VI_VFP_LOOP_REDUCTION_END(e64) \
+      break; \
+    }\
+    default: \
+      require(0); \
+      break; \
+  }; \
 
 #define VI_VFP_VF_LOOP(BODY16, BODY32, BODY64) \
   VI_CHECK_SSS(false); \
