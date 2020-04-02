@@ -979,6 +979,8 @@ reg_t processor_t::get_csr(int which)
     case CSR_TDATA3: return 0;
     case CSR_DCSR:
       {
+        if (!state.debug_mode)
+          break;
         uint32_t v = 0;
         v = set_field(v, DCSR_XDEBUGVER, 1);
         v = set_field(v, DCSR_EBREAKM, state.dcsr.ebreakm);
@@ -993,10 +995,16 @@ reg_t processor_t::get_csr(int which)
         return v;
       }
     case CSR_DPC:
+      if (!state.debug_mode)
+        break;
       return state.dpc & pc_alignment_mask();
     case CSR_DSCRATCH:
+      if (!state.debug_mode)
+        break;
       return state.dscratch0;
     case CSR_DSCRATCH + 1:
+      if (!state.debug_mode)
+        break;
       return state.dscratch1;
     case CSR_VSTART:
       require_vector_vs;
