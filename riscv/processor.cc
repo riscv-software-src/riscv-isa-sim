@@ -238,7 +238,11 @@ void processor_t::parse_isa_string(const char* str)
       const char* ext = p+1, *end = ext;
       while (islower(*end))
         end++;
-      register_extension(find_extension(std::string(ext, end - ext).c_str())());
+
+      auto ext_str = std::string(ext, end - ext);
+      if (ext_str != "dummy")
+        register_extension(find_extension(ext_str.c_str())());
+
       p = end;
     } else {
       bad_isa_string(str);
