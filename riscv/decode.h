@@ -1679,11 +1679,6 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   } \
   P.VU.vstart = 0; \
 
-#define VI_VFP_LOOP_WIDE_END \
-  } \
-  P.VU.vstart = 0; \
-  set_fp_exceptions;
-
 #define VI_VFP_LOOP_REDUCTION_END(x) \
   } \
   P.VU.vstart = 0; \
@@ -1903,7 +1898,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
       break; \
   }; \
   DEBUG_RVV_FP_VV; \
-  VI_VFP_LOOP_WIDE_END
+  VI_VFP_LOOP_END
 
 
 #define VI_VFP_VV_LOOP_WIDE(BODY) \
@@ -1925,7 +1920,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
       break; \
   }; \
   DEBUG_RVV_FP_VV; \
-  VI_VFP_LOOP_WIDE_END
+  VI_VFP_LOOP_END
 
 #define VI_VFP_WF_LOOP_WIDE(BODY) \
   VI_CHECK_DDS(false); \
@@ -1945,7 +1940,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
       require(0); \
   }; \
   DEBUG_RVV_FP_VV; \
-  VI_VFP_LOOP_WIDE_END
+  VI_VFP_LOOP_END
 
 #define VI_VFP_WV_LOOP_WIDE(BODY) \
   VI_CHECK_DDS(true); \
@@ -1965,7 +1960,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
       require(0); \
   }; \
   DEBUG_RVV_FP_VV; \
-  VI_VFP_LOOP_WIDE_END
+  VI_VFP_LOOP_END
 
 
 #define DEBUG_START             0x0
