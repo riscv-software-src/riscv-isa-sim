@@ -555,6 +555,7 @@ static inline bool is_overlapped(const int astart, const int asize,
 
 #define VI_LOOP_MASK(op) \
   require(P.VU.vsew <= e64); \
+  require_vector;\
   reg_t vl = P.VU.vl; \
   for (reg_t i = P.VU.vstart; i < vl; ++i) { \
     int mlen = P.VU.vmlen; \
