@@ -1978,6 +1978,33 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
 
+#define VI_VFP_CVT_SCALE(BODY16, BODY32, is_widen) \
+  if (is_widen) { \
+    VI_CHECK_DSS(false);\
+  } else { \
+    VI_CHECK_SDS(false); \
+  } \
+  require((P.VU.vsew == e16 && p->supports_extension('F')) || \
+          (P.VU.vsew == e32 && p->supports_extension('D'))); \
+  switch(P.VU.vsew) { \
+    case e16: {\
+      VI_VFP_LOOP_BASE \
+        BODY16 \
+        set_fp_exceptions; \
+      VI_VFP_LOOP_END \
+      } \
+      break; \
+    case e32: {\
+      VI_VFP_LOOP_BASE \
+        BODY32 \
+        set_fp_exceptions; \
+      VI_VFP_LOOP_END \
+      } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
 
 #define DEBUG_START             0x0
 #define DEBUG_END               (0x1000 - 1)
