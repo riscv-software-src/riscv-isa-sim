@@ -555,6 +555,7 @@ static inline bool is_overlapped(const int astart, const int asize,
 
 #define VI_LOOP_MASK(op) \
   require(P.VU.vsew <= e64); \
+  require_vector;\
   reg_t vl = P.VU.vl; \
   for (reg_t i = P.VU.vstart; i < vl; ++i) { \
     int mlen = P.VU.vmlen; \
@@ -1459,7 +1460,7 @@ VI_LOOP_END
 
 #define VI_DUPLICATE_VREG(v, vlmax) \
 reg_t index[vlmax]; \
-for (reg_t i = 0; i < vlmax; ++i) { \
+for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   switch(P.VU.vsew) { \
     case e8: \
       index[i] = P.VU.elt<uint8_t>(v, i); \
@@ -1478,11 +1479,11 @@ for (reg_t i = 0; i < vlmax; ++i) { \
 
 #define VI_ST_COMMON(stride, offset, st_width, elt_byte) \
   const reg_t nf = insn.v_nf() + 1; \
-  require((nf * P.VU.vlmul) <= (NVPR / 4)); \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
-  require(vs3 + nf * P.VU.vlmul <= NVPR); \
+  require((nf * P.VU.vlmul) <= (NVPR / 4) && \
+          vs3 + nf * P.VU.vlmul <= NVPR); \
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i) \
@@ -1511,11 +1512,11 @@ for (reg_t i = 0; i < vlmax; ++i) { \
 
 #define VI_LD_COMMON(stride, offset, ld_width, elt_byte) \
   const reg_t nf = insn.v_nf() + 1; \
-  require((nf * P.VU.vlmul) <= (NVPR / 4)); \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
-  require(vd + nf * P.VU.vlmul <= NVPR); \
+  require((nf * P.VU.vlmul) <= (NVPR / 4) && \
+          (vd + nf * P.VU.vlmul) <= NVPR); \
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_ELEMENT_SKIP(i); \
@@ -1547,7 +1548,9 @@ for (reg_t i = 0; i < vlmax; ++i) { \
 
 #define VI_LD_INDEX(stride, offset, ld_width, elt_byte) \
   VI_CHECK_LD_INDEX; \
-  VI_LD_COMMON(stride, offset, ld_width, elt_byte)
+  VI_LD_COMMON(stride, offset, ld_width, elt_byte) \
+  if (nf >= 2) \
+    require(!is_overlapped(vd, nf, insn.rs2(), 1));
 
 #define VI_ST(stride, offset, st_width, elt_byte) \
   VI_CHECK_STORE_SXX; \
