@@ -25,12 +25,16 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
                          FILE* log_file)
   : debug(false), halt_request(false), sim(sim), ext(NULL), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
-  log_file(log_file), halt_on_reset(halt_on_reset), last_pc(1), executions(1)
+  log_file(log_file), halt_on_reset(halt_on_reset),
+  extension_table(256, false), last_pc(1), executions(1)
 {
   VU.p = this;
+
   parse_isa_string(isa);
   parse_priv_string(priv);
-  parse_varch_string(varch);
+  if (supports_extension('V'))
+    parse_varch_string(varch);
+
   register_base_instructions();
   mmu = new mmu_t(sim, this);
 
@@ -57,10 +61,16 @@ processor_t::~processor_t()
   delete disassembler;
 }
 
-static void bad_isa_string(const char* isa)
+static void bad_option_string(const char *option, const char *value,
+                              const char *msg)
 {
-  fprintf(stderr, "error: bad --isa option %s\n", isa);
+  fprintf(stderr, "error: bad %s option '%s'. %s\n", option, value, msg);
   abort();
+}
+
+static void bad_isa_string(const char* isa, const char* msg)
+{
+  bad_option_string("--isa", isa, msg);
 }
 
 static void bad_priv_string(const char* priv)
@@ -69,10 +79,9 @@ static void bad_priv_string(const char* priv)
   abort();
 }
 
-static void bad_varch_string(const char* varch, const char *message)
+static void bad_varch_string(const char* varch, const char *msg)
 {
-  fprintf(stderr, "error: bad --varch option %s: %s\n", varch, message);
-  abort();
+  bad_option_string("--varch", varch, msg);
 }
 
 static std::string get_string_token(std::string str, const char delimiter, size_t& pos)
@@ -176,14 +185,22 @@ void processor_t::parse_priv_string(const char* str)
   else
     bad_priv_string(str);
 
-  max_isa |= reg_t(user) << ('u' - 'a');
-  max_isa |= reg_t(supervisor) << ('s' - 'a');
+  if (user) {
+    max_isa |= reg_t(user) << ('u' - 'a');
+    extension_table['U'] = true;
+  }
+
+  if (supervisor) {
+    max_isa |= reg_t(supervisor) << ('s' - 'a');
+    extension_table['S'] = true;
+  }
 }
 
 void processor_t::parse_isa_string(const char* str)
 {
   std::string lowercase = strtolower(str), tmp;
 
+  char error_msg[256];
   const char* p = lowercase.c_str();
   const char* all_subsets = "imafdqc"
 #ifdef __SIZEOF_INT128__
@@ -206,40 +223,61 @@ void processor_t::parse_isa_string(const char* str)
   } else if (*p == 'g') { // treat "G" as "IMAFD"
     tmp = std::string("imafd") + (p+1);
     p = &tmp[0];
-  } else if (*p != 'i') {
-    bad_isa_string(str);
   }
 
   isa_string = "rv" + std::to_string(max_xlen) + p;
 
   while (*p) {
-    max_isa |= 1L << (*p - 'a');
+    if (islower(*p)) {
+      max_isa |= 1L << (*p - 'a');
+      extension_table[toupper(*p)] = true;
 
-    if (auto next = strchr(all_subsets, *p)) {
-      all_subsets = next + 1;
-      p++;
-    } else if (*p == 'x') {
-      const char* ext = p+1, *end = ext;
+      if (strchr(all_subsets, *p)) {
+        p++;
+      } else if (*p == 'x') {
+        const char* ext = p + 1, *end = ext;
+        while (islower(*end))
+          end++;
+
+        auto ext_str = std::string(ext, end - ext);
+        if (ext_str != "dummy")
+          register_extension(find_extension(ext_str.c_str())());
+
+        p = end;
+      } else {
+        sprintf(error_msg, "unsupported extension '%c'", *p);
+        bad_isa_string(str, error_msg);
+      }
+    } else if (*p == '_') {
+      const char* ext = p + 1, *end = ext;
       while (islower(*end))
         end++;
 
       auto ext_str = std::string(ext, end - ext);
-      if (ext_str != "dummy")
-        register_extension(find_extension(ext_str.c_str())());
+      if (ext_str == "zfh") {
+        extension_table[EXT_ZFH] = true;
+      } else {
+        sprintf(error_msg, "unsupported extension '%s'", ext_str.c_str());
+        bad_isa_string(str, error_msg);
+      }
 
       p = end;
     } else {
-      bad_isa_string(str);
+      sprintf(error_msg, "can't parse '%c(%d)'", *p, *p);
+      bad_isa_string(str, error_msg);
     }
   }
 
-  state.misa = max_isa;
+  state.misa |= max_isa;
+
+  if (!supports_extension('I'))
+    bad_isa_string(str, "'I' extension is required");
 
   if (supports_extension('D') && !supports_extension('F'))
-    bad_isa_string(str);
+    bad_isa_string(str, "'D' extension requires 'F'");
 
   if (supports_extension('Q') && !supports_extension('D'))
-    bad_isa_string(str);
+    bad_isa_string(str, "'Q' extension requires 'D'");
 }
 
 void state_t::reset(reg_t max_isa)
