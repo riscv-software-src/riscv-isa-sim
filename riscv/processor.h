@@ -225,6 +225,15 @@ typedef enum {
   OPERATION_LOAD,
 } trigger_operation_t;
 
+typedef enum {
+  // 65('A') ~ 90('Z') is reserved for standard isa in misa
+  EXT_ZFH   = 0,
+  EXT_ZVAMO,
+  EXT_ZVEDIV,
+  EXT_ZVLSSEG,
+  EXT_ZVQMAC,
+} isa_extension_t;
+
 // Count number of contiguous 1 bits starting from the LSB.
 static int cto(reg_t val)
 {
@@ -265,8 +274,10 @@ public:
   }
   extension_t* get_extension() { return ext; }
   bool supports_extension(unsigned char ext) {
-    if (ext >= 'a' && ext <= 'z') ext += 'A' - 'a';
-    return ext >= 'A' && ext <= 'Z' && ((state.misa >> (ext - 'A')) & 1);
+    if (isupper(ext))
+      return ((state.misa >> (ext - 'A')) & 1);
+    else
+      return extension_table[ext];
   }
   reg_t pc_alignment_mask() {
     return ~(reg_t)(supports_extension('C') ? 0 : 2);
@@ -393,6 +404,8 @@ private:
   bool log_commits_enabled;
   FILE *log_file;
   bool halt_on_reset;
+  std::vector<bool> extension_table;
+  
 
   std::vector<insn_desc_t> instructions;
   std::map<reg_t,uint64_t> pc_histogram;

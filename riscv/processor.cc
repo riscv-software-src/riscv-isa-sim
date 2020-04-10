@@ -25,12 +25,16 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
                          FILE* log_file)
   : debug(false), halt_request(false), sim(sim), ext(NULL), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
-  log_file(log_file), halt_on_reset(halt_on_reset), last_pc(1), executions(1)
+  log_file(log_file), halt_on_reset(halt_on_reset),
+  extension_table(256, false), last_pc(1), executions(1)
 {
   VU.p = this;
+
   parse_isa_string(isa);
   parse_priv_string(priv);
-  parse_varch_string(varch);
+  if (supports_extension('V'))
+    parse_varch_string(varch);
+
   register_base_instructions();
   mmu = new mmu_t(sim, this);
 
@@ -192,8 +196,15 @@ void processor_t::parse_priv_string(const char* str)
   else
     bad_priv_string(str);
 
-  max_isa |= reg_t(user) << ('u' - 'a');
-  max_isa |= reg_t(supervisor) << ('s' - 'a');
+  if (user) {
+    max_isa |= reg_t(user) << ('u' - 'a');
+    extension_table['U'] = true;
+  }
+
+  if (supervisor) {
+    max_isa |= reg_t(supervisor) << ('s' - 'a');
+    extension_table['S'] = true;
+  }
 }
 
 void processor_t::parse_isa_string(const char* str)
@@ -222,26 +233,36 @@ void processor_t::parse_isa_string(const char* str)
   } else if (*p == 'g') { // treat "G" as "IMAFD"
     tmp = std::string("imafd") + (p+1);
     p = &tmp[0];
-  } else if (*p != 'i') {
-    bad_isa_string(str);
   }
 
   isa_string = "rv" + std::to_string(max_xlen) + p;
 
   while (*p) {
-    max_isa |= 1L << (*p - 'a');
+    if (islower(*p)) {
+      max_isa |= 1L << (*p - 'a');
+      extension_table[toupper(*p)] = true;
 
-    if (auto next = strchr(all_subsets, *p)) {
-      all_subsets = next + 1;
-      p++;
-    } else if (*p == 'x') {
-      const char* ext = p+1, *end = ext;
+      if (strchr(all_subsets, *p)) {
+        p++;
+      } else if (*p == 'x') {
+        const char* ext = p + 1, *end = ext;
+        while (islower(*end))
+          end++;
+
+        auto ext_str = std::string(ext, end - ext);
+        if (ext_str != "dummy")
+          register_extension(find_extension(ext_str.c_str())());
+
+        p = end;
+      }
+    } else if (*p == '_') {
+      const char* ext = p + 1, *end = ext;
       while (islower(*end))
         end++;
 
       auto ext_str = std::string(ext, end - ext);
-      if (ext_str != "dummy")
-        register_extension(find_extension(ext_str.c_str())());
+      if (ext_str == "zfh")
+        extension_table[EXT_ZFH] = true;
 
       p = end;
     } else {
@@ -249,7 +270,10 @@ void processor_t::parse_isa_string(const char* str)
     }
   }
 
-  state.misa = max_isa;
+  state.misa |= max_isa;
+
+  if (!supports_extension('I'))
+    bad_isa_string(str);
 
   if (supports_extension('D') && !supports_extension('F'))
     bad_isa_string(str);
