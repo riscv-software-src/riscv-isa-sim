@@ -1460,7 +1460,6 @@ VI_LOOP_END
 
 #define VI_DUPLICATE_VREG(v, vlmax) \
 reg_t index[vlmax]; \
-memset(index, 0, sizeof(reg_t) * vlmax); \
 for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   switch(P.VU.vsew) { \
     case e8: \
