@@ -260,6 +260,44 @@ riscv_insn_ext_d = \
 	fsqrt_d \
 	fsub_d \
 
+riscv_insn_ext_zfh = \
+	fadd_h \
+	fclass_h \
+	fcvt_l_h \
+	fcvt_lu_h \
+	fcvt_d_h \
+	fcvt_h_d \
+	fcvt_h_l \
+	fcvt_h_lu \
+	fcvt_h_q \
+	fcvt_h_s \
+	fcvt_h_w \
+	fcvt_h_wu \
+	fcvt_q_h \
+	fcvt_s_h \
+	fcvt_w_h \
+	fcvt_wu_h \
+	fdiv_h \
+	feq_h \
+	fle_h \
+	flh \
+	flt_h \
+	fmadd_h \
+	fmax_h \
+	fmin_h \
+	fmsub_h \
+	fmul_h \
+	fmv_h_x \
+	fmv_x_h \
+	fnmadd_h \
+	fnmsub_h \
+	fsgnj_h \
+	fsgnjn_h \
+	fsgnjx_h \
+	fsh \
+	fsqrt_h \
+	fsub_h \
+
 riscv_insn_ext_q = \
 	fadd_q \
 	fclass_q \
@@ -688,6 +726,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_m) \
 	$(riscv_insn_ext_f) \
 	$(riscv_insn_ext_d) \
+	$(riscv_insn_ext_zfh) \
 	$(riscv_insn_ext_q) \
 	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
 	$(riscv_insn_priv) \
