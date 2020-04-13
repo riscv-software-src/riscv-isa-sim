@@ -1055,9 +1055,15 @@ disassembler_t::disassembler_t(int xlen)
     add_insn(new disasm_insn_t(#name "cvt.f.x." #suf, \
                 match_##name##cvt_f_x_##suf, mask_##name##cvt_f_x_##suf, \
                 {&vd, &vs2, &opt, &vm})); \
+    add_insn(new disasm_insn_t(#name "cvt.rtz.xu.f." #suf, \
+                match_##name##cvt_xu_f_##suf, mask_##name##cvt_xu_f_##suf, \
+                {&vd, &vs2, &opt, &vm})); \
+    add_insn(new disasm_insn_t(#name "cvt.rtz.x.f." #suf, \
+                match_##name##cvt_x_f_##suf, mask_##name##cvt_x_f_##suf, \
+                {&vd, &vs2, &opt, &vm})); \
 
   //OPFVV/OPFVF
-  //0b01_0000
+  //0b00_0000
   DISASM_OPIV_VF_INSN(vfadd);
   DISASM_OPIV_S__INSN(vfredsum);
   DISASM_OPIV_VF_INSN(vfsub);
