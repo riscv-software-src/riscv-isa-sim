@@ -506,6 +506,15 @@ static inline bool is_overlapped(const int astart, const int asize,
   require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
   require(P.VU.vstart == 0); \
 
+#define VI_CHECK_SLIDE(is_over) \
+  require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
+  require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
+  if (insn.v_vm() == 0 && P.VU.vlmul > 1) \
+    require(insn.rd() != 0); \
+  if (is_over) \
+    require(insn.rd() != insn.rs2()); \
+
+
 //
 // vector: loop header and end helper
 //
