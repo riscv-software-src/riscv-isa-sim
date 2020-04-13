@@ -623,10 +623,6 @@ void processor_t::set_csr(int which, reg_t val)
       dirty_fp_state;
       state.fflags = (val & FSR_AEXC) >> FSR_AEXC_SHIFT;
       state.frm = (val & FSR_RD) >> FSR_RD_SHIFT;
-      if (supports_extension('V')) {
-        VU.vxsat = (val & FSR_VXSAT) >> FSR_VXSAT_SHIFT;
-        VU.vxrm = (val & FSR_VXRM) >> FSR_VXRM_SHIFT;
-      }
       break;
     case CSR_MSTATUS: {
       if ((val ^ state.mstatus) &
@@ -829,12 +825,17 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vstart = val;
       break;
     case CSR_VXSAT:
-      dirty_fp_state;
+      dirty_vs_state;
       VU.vxsat = val & 0x1ul;
       break;
     case CSR_VXRM:
-      dirty_fp_state;
+      dirty_vs_state;
       VU.vxrm = val & 0x3ul;
+      break;
+    case CSR_VCSR :
+      dirty_vs_state;
+      VU.vxsat = (val & VSR_VXSAT) >> VSR_VXSAT_SHIFT;
+      VU.vxrm = (val & VSR_VXRM) >> VSR_VXRM_SHIFT;
       break;
   }
 }
@@ -889,15 +890,11 @@ reg_t processor_t::get_csr(int which)
         break;
       return state.frm;
     case CSR_FCSR:
-      {require_fp;
+      require_fp;
       if (!supports_extension('F'))
         break;
-      uint32_t shared_flags = 0;
-      if (supports_extension('V'))
-            shared_flags = (VU.vxrm << FSR_VXRM_SHIFT) | (VU.vxsat << FSR_VXSAT_SHIFT);
-      return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT) |
-          shared_flags;
-      }
+      return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
+      
     case CSR_INSTRET:
     case CSR_CYCLE:
       if (ctr_ok)
@@ -1028,26 +1025,39 @@ reg_t processor_t::get_csr(int which)
       return state.dscratch1;
     case CSR_VSTART:
       require_vector_vs;
+      if (!supports_extension('V'))
+        break;
       return VU.vstart;
     case CSR_VXSAT:
-      require_fp;
+      require_vector_vs;
       if (!supports_extension('V'))
         break;
       return VU.vxsat;
     case CSR_VXRM:
-      require_fp;
+      require_vector_vs;
       if (!supports_extension('V'))
         break;
       return VU.vxrm;
     case CSR_VL:
       require_vector_vs;
+      if (!supports_extension('V'))
+        break;
       return VU.vl;
     case CSR_VTYPE:
       require_vector_vs;
+      if (!supports_extension('V'))
+        break;
       return VU.vtype;
     case CSR_VLENB:
       require_vector_vs;
+      if (!supports_extension('V'))
+        break;
       return VU.vlenb;
+    case CSR_VCSR:
+      require_vector_vs;
+      if (!supports_extension('V'))
+        break;
+      return (VU.vxrm << VSR_VXRM_SHIFT) | (VU.vxsat << VSR_VXSAT_SHIFT);
   }
   throw trap_illegal_instruction(0);
 }
