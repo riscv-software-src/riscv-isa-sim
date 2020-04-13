@@ -1077,6 +1077,8 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_VF_INSN(vfsgnjx);
   DISASM_INSN("vfmv.f.s", vfmv_f_s, 0, {&frd, &vs2});
   DISASM_INSN("vfmv.s.f", vfmv_s_f, mask_vfmv_s_f, {&vd, &frs1});
+  DISASM_OPIV__F_INSN(vfslide1up);
+  DISASM_OPIV__F_INSN(vfslide1down);
 
   //0b01_0000
   DISASM_INSN("vfmerge.vfm", vfmerge_vfm, 0, {&vd, &vs2, &frs1, &v0});

@@ -565,6 +565,8 @@ riscv_insn_ext_v_alu_fp = \
 	vfsgnjx_vf \
 	vfsgnjx_vv \
 	vfsqrt_v \
+	vfslide1down_vf \
+	vfslide1up_vf \
 	vfsub_vf \
 	vfsub_vv \
 	vfwadd_vf \
