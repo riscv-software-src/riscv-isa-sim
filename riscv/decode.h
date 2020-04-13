@@ -1561,11 +1561,11 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   if (nf >= 2) \
     require(!is_overlapped(vd, nf, insn.rs2(), 1));
 
-#define VI_ST(stride, offset, st_width, elt_byte) \
+#define VI_ST(stride, offset, st_width, elt_byte, is_seg) \
   VI_CHECK_STORE_SXX; \
   VI_ST_COMMON(stride, offset, st_width, elt_byte) \
 
-#define VI_ST_INDEX(stride, offset, st_width, elt_byte) \
+#define VI_ST_INDEX(stride, offset, st_width, elt_byte, is_seg) \
   VI_CHECK_ST_INDEX; \
   VI_ST_COMMON(stride, offset, st_width, elt_byte) \
 
