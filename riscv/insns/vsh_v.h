@@ -1,3 +1,3 @@
-// vsh.v and vsseg[2-8]h.v
+// vsh.v
 require(P.VU.vsew >= e16);
-VI_ST(0, i * nf + fn, uint16, 2);
+VI_ST(0, i * nf + fn, uint16, 2, false);
