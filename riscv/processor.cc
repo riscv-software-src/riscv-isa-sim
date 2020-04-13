@@ -814,11 +814,11 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vstart = val;
       break;
     case CSR_VXSAT:
-      dirty_fp_state;
+      dirty_vs_state;
       VU.vxsat = val & 0x1ul;
       break;
     case CSR_VXRM:
-      dirty_fp_state;
+      dirty_vs_state;
       VU.vxrm = val & 0x3ul;
       break;
   }
@@ -875,6 +875,8 @@ reg_t processor_t::get_csr(int which)
       return state.frm;
     case CSR_FCSR:
       require_fp;
+      if (!supports_extension('F'))
+        break;
       return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
     case CSR_VCSR:
       if (!supports_extension('V'))
@@ -1010,25 +1012,33 @@ reg_t processor_t::get_csr(int which)
       return state.dscratch1;
     case CSR_VSTART:
       require_vector_vs;
+      if (!supports_extension('V'))
+        break;
       return VU.vstart;
     case CSR_VXSAT:
-      require_fp;
+      require_vector_vs;
       if (!supports_extension('V'))
         break;
       return VU.vxsat;
     case CSR_VXRM:
-      require_fp;
+      require_vector_vs;
       if (!supports_extension('V'))
         break;
       return VU.vxrm;
     case CSR_VL:
       require_vector_vs;
+      if (!supports_extension('V'))
+        break;
       return VU.vl;
     case CSR_VTYPE:
       require_vector_vs;
+      if (!supports_extension('V'))
+        break;
       return VU.vtype;
     case CSR_VLENB:
       require_vector_vs;
+      if (!supports_extension('V'))
+        break;
       return VU.vlenb;
   }
   throw trap_illegal_instruction(0);
