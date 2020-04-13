@@ -23,7 +23,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  -p<n>                 Simulate <n> processors [default 1]\n");
   fprintf(stderr, "  -m<n>                 Provide <n> MiB of target memory [default 2048]\n");
   fprintf(stderr, "  -m<a:m,b:n,...>       Provide memory regions of size m and n bytes\n");
-  fprintf(stderr, "                          at base addresses a and b (with 4 KiB alignment)\n");
+  fprintf(stderr, "                          at base addresses a and b\n");
   fprintf(stderr, "  -d                    Interactive debug mode\n");
   fprintf(stderr, "  -g                    Track histogram of PCs\n");
   fprintf(stderr, "  -l                    Generate a log of execution\n");
@@ -112,8 +112,13 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
     if (!*p || *p != ':')
       help();
     auto size = strtoull(p + 1, &p, 0);
-    if ((size | base) % PGSIZE != 0)
-      fprintf(stderr, "Warning: the memory size %llu at 0x%llX is not align to the page size (%ld)\n", size, base, PGSIZE);
+    if ((size | base) % PGSIZE != 0) {
+      auto origin_size = size;
+      size += (PGSIZE - (size % PGSIZE)); // padding the size the PGSIZE
+      fprintf(stderr, "Warning: the memory size %llu at 0x%llX "
+              "is not align to the page size (%ld). \n"
+              "Spike is padding to %lld automatically.\n", origin_size, base, PGSIZE, size);
+    }
     res.push_back(std::make_pair(reg_t(base), new mem_t(size)));
     if (!*p)
       break;
