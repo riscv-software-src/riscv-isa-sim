@@ -113,7 +113,7 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
       help();
     auto size = strtoull(p + 1, &p, 0);
     if ((size | base) % PGSIZE != 0)
-      fprintf(stderr, "Warning: the memory size %llu at 0x%llX is not align to the page size (%ld)\n\n", size, base, PGSIZE);
+      help();
     res.push_back(std::make_pair(reg_t(base), new mem_t(size)));
     if (!*p)
       break;
