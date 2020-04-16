@@ -1,4 +1,4 @@
-// vfncvt.f.f.v vd, vs2, vm
+// vfncvt.rod.f.f.v vd, vs2, vm
 VI_VFP_CVT_SCALE
 ({
   softfloat_roundingMode = softfloat_round_odd;

@@ -990,10 +990,10 @@ disassembler_t::disassembler_t(int xlen)
                 match_##name##cvt_f_x_##suf, mask_##name##cvt_f_x_##suf, \
                 {&vd, &vs2, &opt, &vm})); \
     add_insn(new disasm_insn_t(#name "cvt.rtz.xu.f." #suf, \
-                match_##name##cvt_xu_f_##suf, mask_##name##cvt_xu_f_##suf, \
+                match_##name##cvt_rtz_xu_f_##suf, mask_##name##cvt_rtz_xu_f_##suf, \
                 {&vd, &vs2, &opt, &vm})); \
     add_insn(new disasm_insn_t(#name "cvt.rtz.x.f." #suf, \
-                match_##name##cvt_x_f_##suf, mask_##name##cvt_x_f_##suf, \
+                match_##name##cvt_rtz_x_f_##suf, mask_##name##cvt_rtz_x_f_##suf, \
                 {&vd, &vs2, &opt, &vm})); \
 
   //OPFVV/OPFVF

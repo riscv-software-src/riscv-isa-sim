@@ -1,4 +1,4 @@
-// vfncvt.xu.f.v vd, vs2, vm
+// vfncvt.xu.f.w vd, vs2, vm
 VI_VFP_CVT_SCALE
 ({
   auto vs2 = P.VU.elt<float32_t>(rs2_num, i);
