@@ -1,6 +1,8 @@
 // Parallel version of vfwredsum
-VI_CHECK_REDUCTION(false)
+VI_CHECK_REDUCTION(true)
 VI_VFP_COMMON
+require((P.VU.vsew == e16 && p->supports_extension('F')) || \
+          (P.VU.vsew == e32 && p->supports_extension('D'))); \
 
 switch(p->VU.vsew) {
   case e16: {
