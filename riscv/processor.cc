@@ -607,10 +607,11 @@ void processor_t::set_csr(int which, reg_t val)
       dirty_fp_state;
       state.fflags = (val & FSR_AEXC) >> FSR_AEXC_SHIFT;
       state.frm = (val & FSR_RD) >> FSR_RD_SHIFT;
-      if (supports_extension('V')) {
-        VU.vxsat = (val & FSR_VXSAT) >> FSR_VXSAT_SHIFT;
-        VU.vxrm = (val & FSR_VXRM) >> FSR_VXRM_SHIFT;
-      }
+      break;
+    case CSR_VCSR:
+      dirty_vs_state;
+      VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
+      VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
     case CSR_MSTATUS: {
       if ((val ^ state.mstatus) &
@@ -873,15 +874,12 @@ reg_t processor_t::get_csr(int which)
         break;
       return state.frm;
     case CSR_FCSR:
-      {require_fp;
-      if (!supports_extension('F'))
+      require_fp;
+      return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
+    case CSR_VCSR:
+      if (!supports_extension('V'))
         break;
-      uint32_t shared_flags = 0;
-      if (supports_extension('V'))
-            shared_flags = (VU.vxrm << FSR_VXRM_SHIFT) | (VU.vxsat << FSR_VXSAT_SHIFT);
-      return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT) |
-          shared_flags;
-      }
+      return (VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT);
     case CSR_INSTRET:
     case CSR_CYCLE:
       if (ctr_ok)
