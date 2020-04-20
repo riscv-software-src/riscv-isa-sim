@@ -1,8 +1,7 @@
 // vfcvt.x.f.v vd, vd2, vm
 VI_VFP_VF_LOOP
 ({
-  require(0);
-  //P.VU.elt<int16_t>(rd_num, i) = f16_to_i16(vs2, STATE.frm, true);
+  P.VU.elt<int16_t>(rd_num, i) = f16_to_i16(vs2, STATE.frm, true);
 },
 {
   P.VU.elt<int32_t>(rd_num, i) = f32_to_i32(vs2, STATE.frm, true);
