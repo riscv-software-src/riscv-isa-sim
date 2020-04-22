@@ -1494,13 +1494,15 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   } \
 }
 
-#define VI_ST_COMMON(stride, offset, st_width, elt_byte) \
+#define VI_ST_COMMON(stride, offset, st_width, elt_byte, is_seg) \
   const reg_t nf = insn.v_nf() + 1; \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
   require((nf * P.VU.vlmul) <= (NVPR / 4) && \
           vs3 + nf * P.VU.vlmul <= NVPR); \
+  if (!is_seg) \
+    require(nf == 1); \
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i) \
@@ -1527,7 +1529,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   P.VU.vstart = 0; 
 
 #define VI_LD_COMMON(stride, offset, ld_width, elt_byte, is_seg) \
-  const reg_t nf = is_seg ? insn.v_nf() + 1 : 1; \
+  const reg_t nf = insn.v_nf() + 1; \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
@@ -1571,15 +1573,15 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_ST(stride, offset, st_width, elt_byte, is_seg) \
   VI_CHECK_STORE_SXX; \
-  VI_ST_COMMON(stride, offset, st_width, elt_byte) \
+  VI_ST_COMMON(stride, offset, st_width, elt_byte, is_seg) \
 
 #define VI_ST_INDEX(stride, offset, st_width, elt_byte, is_seg) \
   VI_CHECK_ST_INDEX; \
-  VI_ST_COMMON(stride, offset, st_width, elt_byte) \
+  VI_ST_COMMON(stride, offset, st_width, elt_byte, is_seg) \
 
 #define VI_LDST_FF(itype, tsew, is_seg) \
   require(p->VU.vsew >= e##tsew && p->VU.vsew <= e64); \
-  const reg_t nf = is_seg ? insn.v_nf() + 1 : 1; \
+  const reg_t nf = insn.v_nf() + 1; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \
   if (!is_seg) \
     require(nf == 1); \
