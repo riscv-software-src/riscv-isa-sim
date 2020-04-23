@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "dts.h"
+#include "libfdt.h"
 #include <iostream>
 #include <sstream>
 #include <signal.h>
@@ -164,4 +165,65 @@ std::string dts_compile(const std::string& dts)
   }
 
   return dtb.str();
+}
+
+
+static int fdt_get_node_addr_size(void *fdt, int node, unsigned long *addr,
+                                  unsigned long *size, const char *field)
+{
+  int parent, len, i;
+  int cell_addr, cell_size;
+  const fdt32_t *prop_addr, *prop_size;
+  uint64_t temp = 0;
+
+  parent = fdt_parent_offset(fdt, node);
+  if (parent < 0)
+    return parent;
+
+  cell_addr = fdt_address_cells(fdt, parent);
+  if (cell_addr < 1)
+    return -ENODEV;
+
+  cell_size = fdt_size_cells(fdt, parent);
+  if (cell_size < 0)
+    return -ENODEV;
+
+  if (!field)
+    return -ENODEV;
+
+  prop_addr = (fdt32_t *)fdt_getprop(fdt, node, field, &len);
+  if (!prop_addr)
+    return -ENODEV;
+  prop_size = prop_addr + cell_addr;
+
+  if (addr) {
+    for (i = 0; i < cell_addr; i++)
+      temp = (temp << 32) | fdt32_to_cpu(*prop_addr++);
+    *addr = temp;
+  }
+  temp = 0;
+
+  if (size) {
+    for (i = 0; i < cell_size; i++)
+      temp = (temp << 32) | fdt32_to_cpu(*prop_size++);
+    *size = temp;
+  }
+
+  return 0;
+}
+
+int fdt_parse_clint(void *fdt, unsigned long *clint_addr,
+                    const char *compatible)
+{
+  int nodeoffset, rc;
+
+  nodeoffset = fdt_node_offset_by_compatible(fdt, -1, compatible);
+  if (nodeoffset < 0)
+    return nodeoffset;
+
+  rc = fdt_get_node_addr_size(fdt, nodeoffset, clint_addr, NULL, "reg");
+  if (rc < 0 || !clint_addr)
+    return -ENODEV;
+
+  return 0;
 }

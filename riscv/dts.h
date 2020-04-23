@@ -13,4 +13,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
 
 std::string dts_compile(const std::string& dts);
 
+int fdt_parse_clint(void *fdt, unsigned long *clint_addr,
+                    const char *compatible);
+
 #endif
