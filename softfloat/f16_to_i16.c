@@ -34,59 +34,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
-#include <stdbool.h>
 #include <stdint.h>
-#include "platform.h"
-#include "internals.h"
 #include "specialize.h"
 #include "softfloat.h"
 
 int_fast16_t f16_to_i16( float16_t a, uint_fast8_t roundingMode, bool exact )
 {
-    union ui16_f16 uA;
-    uint_fast16_t uiA;
-    bool sign;
-    int_fast8_t exp;
-    uint_fast16_t frac;
-    int_fast32_t sig32;
-    int_fast8_t shiftDist;
-    bool do_round = true;
-
-    /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
-    uA.f = a;
-    uiA = uA.ui;
-    sign = signF16UI( uiA );
-    exp  = expF16UI( uiA );
-    frac = fracF16UI( uiA );
-    /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
-    if ( exp == 0x1F ) {
-        softfloat_raiseFlags( softfloat_flag_invalid );
-        return
-            frac ? i16_fromNaN
-                : sign ? i16_fromNegOverflow : i16_fromPosOverflow;
-    }
-    /*------------------------------------------------------------------------
-    *------------------------------------------------------------------------*/
-    sig32 = frac;
-    if ( exp ) {
-        sig32 |= 0x0400;
-        shiftDist = exp - 0x19;
-        if ( 0 <= shiftDist ) {
-            sig32 <<= shiftDist;
-            sig32 = sign ? -sig32 : sig32;
-            do_round = false;
-        } else {
-          shiftDist = exp - 0x0D;
-          if ( 0 < shiftDist )
-              sig32 <<= shiftDist;
-        }
-    }
-
-    if (do_round)
-        sig32 = softfloat_roundToI32(
-                  sign, (uint_fast32_t) sig32, roundingMode, exact);
+    int_fast32_t sig32 = f16_to_i32(a, roundingMode, exact);
 
     if (sig32 > INT16_MAX) {
         softfloat_exceptionFlags |= softfloat_flag_invalid;
