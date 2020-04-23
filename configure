@@ -5019,6 +5019,51 @@ $as_echo "#define DUMMY_ROCC_ENABLED /**/" >>confdefs.h
 
     # Add subproject to our running list
 
+    subprojects="$subprojects fdt"
+
+    # Process the subproject appropriately. If enabled add it to the
+    # $enabled_subprojects running shell variable, set a
+    # SUBPROJECT_ENABLED C define, and include the appropriate
+    # 'subproject.ac'.
+
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: configuring default subproject : fdt" >&5
+$as_echo "$as_me: configuring default subproject : fdt" >&6;}
+      ac_config_files="$ac_config_files fdt.mk:fdt/fdt.mk.in"
+
+      enable_fdt_sproj="yes"
+      subprojects_enabled="$subprojects_enabled fdt"
+
+$as_echo "#define FDT_ENABLED /**/" >>confdefs.h
+
+
+
+
+
+
+    # Determine if this is a required or an optional subproject
+
+
+
+    # Determine if there is a group with the same name
+
+
+
+    # Create variations of the subproject name suitable for use as a CPP
+    # enabled define, a shell enabled variable, and a shell function
+
+
+
+
+
+
+
+
+
+
+
+    # Add subproject to our running list
+
     subprojects="$subprojects softfloat"
 
     # Process the subproject appropriately. If enabled add it to the
@@ -5121,6 +5166,8 @@ ac_config_files="$ac_config_files riscv-fesvr.pc"
 ac_config_files="$ac_config_files riscv-softfloat.pc"
 
 ac_config_files="$ac_config_files riscv-dummy_rocc.pc"
+
+ac_config_files="$ac_config_files riscv-fdt.pc"
 
 ac_config_files="$ac_config_files riscv-spike_main.pc"
 
@@ -5818,6 +5865,7 @@ do
     "fesvr.mk") CONFIG_FILES="$CONFIG_FILES fesvr.mk:fesvr/fesvr.mk.in" ;;
     "riscv.mk") CONFIG_FILES="$CONFIG_FILES riscv.mk:riscv/riscv.mk.in" ;;
     "dummy_rocc.mk") CONFIG_FILES="$CONFIG_FILES dummy_rocc.mk:dummy_rocc/dummy_rocc.mk.in" ;;
+    "fdt.mk") CONFIG_FILES="$CONFIG_FILES fdt.mk:fdt/fdt.mk.in" ;;
     "softfloat.mk") CONFIG_FILES="$CONFIG_FILES softfloat.mk:softfloat/softfloat.mk.in" ;;
     "spike_main.mk") CONFIG_FILES="$CONFIG_FILES spike_main.mk:spike_main/spike_main.mk.in" ;;
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
@@ -5827,6 +5875,7 @@ do
     "riscv-fesvr.pc") CONFIG_FILES="$CONFIG_FILES riscv-fesvr.pc" ;;
     "riscv-softfloat.pc") CONFIG_FILES="$CONFIG_FILES riscv-softfloat.pc" ;;
     "riscv-dummy_rocc.pc") CONFIG_FILES="$CONFIG_FILES riscv-dummy_rocc.pc" ;;
+    "riscv-fdt.pc") CONFIG_FILES="$CONFIG_FILES riscv-fdt.pc" ;;
     "riscv-spike_main.pc") CONFIG_FILES="$CONFIG_FILES riscv-spike_main.pc" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;

@@ -3,8 +3,9 @@ exec_prefix=@prefix@
 libdir=${prefix}/@libdir@
 includedir=${prefix}/@includedir@
 
-Name: riscv-spike
-Description: RISC-V spike meta library
+Name: riscv-fdt
+Description: Simple fdt library from opensbit
 Version: git
-Depends: riscv-spike_main riscv-riscv riscv-softfloat riscv-fdt
+Libs: -Wl,-rpath,${libdir} -L${libdir} -lfdt
+Cflags: -I${includedir}
 URL: http://riscv.org/download.html#tab_spike
