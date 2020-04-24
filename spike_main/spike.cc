@@ -312,7 +312,7 @@ int main(int argc, char** argv)
 
   sim_t s(isa, priv, varch, nprocs, halted, real_time_clint,
       initrd_start, initrd_end, start_pc, mems, plugin_devices, htif_args,
-      std::move(hartids), dm_config, log_path);
+      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));
@@ -320,8 +320,6 @@ int main(int argc, char** argv)
     remote_bitbang.reset(new remote_bitbang_t(rbb_port, &(*jtag_dtm)));
     s.set_remote_bitbang(&(*remote_bitbang));
   }
-  s.set_dtb_enabled(dtb_enabled);
-  s.set_dtb_file(dtb_file);
 
   if (dump_dts) {
     printf("%s", s.get_dts());
