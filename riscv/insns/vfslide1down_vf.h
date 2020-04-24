@@ -26,10 +26,10 @@ if (i != vl - 1) {
       P.VU.elt<float16_t>(rd_num, vl - 1) = f16(FRS1);
       break;
     case e32:
-      P.VU.elt<float32_t>(rd_num, vl - 1) = f32(FRS1);
+      P.VU.elt<float32_t>(rd_num, vl - 1, true) = f32(FRS1);
       break;
     case e64:
-      P.VU.elt<float64_t>(rd_num, vl - 1) = f64(FRS1);
+      P.VU.elt<float64_t>(rd_num, vl - 1, true) = f64(FRS1);
       break;
   }
 }
