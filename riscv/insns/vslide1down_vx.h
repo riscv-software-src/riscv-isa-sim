@@ -1,8 +1,5 @@
 //vslide1down.vx vd, vs2, rs1
-require((insn.rs2() & (P.VU.vlmul - 1)) == 0);
-require((insn.rd() & (P.VU.vlmul - 1)) == 0);
-if (P.VU.vlmul > 1 && insn.v_vm() == 0)
-  require(insn.rd() != 0);
+VI_CHECK_SLIDE(false);
 
 VI_LOOP_BASE
 if (i != vl - 1) {
@@ -31,16 +28,16 @@ if (i != vl - 1) {
 } else {
   switch (sew) {
   case e8:
-    P.VU.elt<uint8_t>(rd_num, vl - 1) = RS1;
+    P.VU.elt<uint8_t>(rd_num, vl - 1, true) = RS1;
     break;
   case e16:
-    P.VU.elt<uint16_t>(rd_num, vl - 1) = RS1;
+    P.VU.elt<uint16_t>(rd_num, vl - 1, true) = RS1;
     break;
   case e32:
-    P.VU.elt<uint32_t>(rd_num, vl - 1) = RS1;
+    P.VU.elt<uint32_t>(rd_num, vl - 1, true) = RS1;
     break;
   default:
-    P.VU.elt<uint64_t>(rd_num, vl - 1) = RS1;
+    P.VU.elt<uint64_t>(rd_num, vl - 1, true) = RS1;
     break;
   }
 }

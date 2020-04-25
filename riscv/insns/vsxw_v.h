@@ -1,4 +1,4 @@
-// vsxw.v and vsxseg[2-8]w.v
+// vsxw.v
 require(P.VU.vsew >= e32);
 VI_DUPLICATE_VREG(insn.rs2(), P.VU.vlmax);
-VI_ST_INDEX(index[i], fn, uint32, 4);
+VI_ST_INDEX(index[i], fn, uint32, 4, false);

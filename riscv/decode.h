@@ -506,6 +506,15 @@ static inline bool is_overlapped(const int astart, const int asize,
   require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
   require(P.VU.vstart == 0); \
 
+#define VI_CHECK_SLIDE(is_over) \
+  require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
+  require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
+  if (insn.v_vm() == 0 && P.VU.vlmul > 1) \
+    require(insn.rd() != 0); \
+  if (is_over) \
+    require(insn.rd() != insn.rs2()); \
+
+
 //
 // vector: loop header and end helper
 //
@@ -643,6 +652,26 @@ static inline bool is_overlapped(const int astart, const int asize,
   type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
   type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, RS1);
 
+#define VV_UCMP_PARAMS(x) \
+  type_usew_t<x>::type vs1 = P.VU.elt<type_usew_t<x>::type>(rs1_num, i); \
+  type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
+
+#define VX_UCMP_PARAMS(x) \
+  type_usew_t<x>::type rs1 = (type_usew_t<x>::type)RS1; \
+  type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
+
+#define VV_CMP_PARAMS(x) \
+  type_sew_t<x>::type vs1 = P.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
+  type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
+
+#define VX_CMP_PARAMS(x) \
+  type_sew_t<x>::type rs1 = (type_sew_t<x>::type)RS1; \
+  type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
+
+#define VI_CMP_PARAMS(x) \
+  type_sew_t<x>::type simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
+  type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
+
 #define VI_XI_SLIDEDOWN_PARAMS(x, off) \
   auto &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
   auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i + off);
@@ -700,16 +729,16 @@ static inline bool is_overlapped(const int astart, const int asize,
   VI_CHECK_MSS(true); \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
-    VV_PARAMS(e8); \
+    VV_CMP_PARAMS(e8); \
     BODY; \
   }else if(sew == e16){ \
-    VV_PARAMS(e16); \
+    VV_CMP_PARAMS(e16); \
     BODY; \
   }else if(sew == e32){ \
-    VV_PARAMS(e32); \
+    VV_CMP_PARAMS(e32); \
     BODY; \
   }else if(sew == e64){ \
-    VV_PARAMS(e64); \
+    VV_CMP_PARAMS(e64); \
     BODY; \
   } \
   VI_LOOP_CMP_END
@@ -718,16 +747,16 @@ static inline bool is_overlapped(const int astart, const int asize,
   VI_CHECK_MSS(false); \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
-    VX_PARAMS(e8); \
+    VX_CMP_PARAMS(e8); \
     BODY; \
   }else if(sew == e16){ \
-    VX_PARAMS(e16); \
+    VX_CMP_PARAMS(e16); \
     BODY; \
   }else if(sew == e32){ \
-    VX_PARAMS(e32); \
+    VX_CMP_PARAMS(e32); \
     BODY; \
   }else if(sew == e64){ \
-    VX_PARAMS(e64); \
+    VX_CMP_PARAMS(e64); \
     BODY; \
   } \
   VI_LOOP_CMP_END
@@ -736,16 +765,16 @@ static inline bool is_overlapped(const int astart, const int asize,
   VI_CHECK_MSS(false); \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
-    VI_PARAMS(e8); \
+    VI_CMP_PARAMS(e8); \
     BODY; \
   }else if(sew == e16){ \
-    VI_PARAMS(e16); \
+    VI_CMP_PARAMS(e16); \
     BODY; \
   }else if(sew == e32){ \
-    VI_PARAMS(e32); \
+    VI_CMP_PARAMS(e32); \
     BODY; \
   }else if(sew == e64){ \
-    VI_PARAMS(e64); \
+    VI_CMP_PARAMS(e64); \
     BODY; \
   } \
   VI_LOOP_CMP_END
@@ -754,16 +783,16 @@ static inline bool is_overlapped(const int astart, const int asize,
   VI_CHECK_MSS(true); \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
-    VV_U_PARAMS(e8); \
+    VV_UCMP_PARAMS(e8); \
     BODY; \
   }else if(sew == e16){ \
-    VV_U_PARAMS(e16); \
+    VV_UCMP_PARAMS(e16); \
     BODY; \
   }else if(sew == e32){ \
-    VV_U_PARAMS(e32); \
+    VV_UCMP_PARAMS(e32); \
     BODY; \
   }else if(sew == e64){ \
-    VV_U_PARAMS(e64); \
+    VV_UCMP_PARAMS(e64); \
     BODY; \
   } \
   VI_LOOP_CMP_END
@@ -772,16 +801,16 @@ static inline bool is_overlapped(const int astart, const int asize,
   VI_CHECK_MSS(false); \
   VI_LOOP_CMP_BASE \
   if (sew == e8){ \
-    VX_U_PARAMS(e8); \
+    VX_UCMP_PARAMS(e8); \
     BODY; \
   }else if(sew == e16){ \
-    VX_U_PARAMS(e16); \
+    VX_UCMP_PARAMS(e16); \
     BODY; \
   }else if(sew == e32){ \
-    VX_U_PARAMS(e32); \
+    VX_UCMP_PARAMS(e32); \
     BODY; \
   }else if(sew == e64){ \
-    VX_U_PARAMS(e64); \
+    VX_UCMP_PARAMS(e64); \
     BODY; \
   } \
   VI_LOOP_CMP_END
@@ -1477,13 +1506,15 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   } \
 }
 
-#define VI_ST_COMMON(stride, offset, st_width, elt_byte) \
+#define VI_ST_COMMON(stride, offset, st_width, elt_byte, is_seg) \
   const reg_t nf = insn.v_nf() + 1; \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
   require((nf * P.VU.vlmul) <= (NVPR / 4) && \
           vs3 + nf * P.VU.vlmul <= NVPR); \
+  if (!is_seg) \
+    require(nf == 1); \
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i) \
@@ -1510,13 +1541,15 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   } \
   P.VU.vstart = 0; 
 
-#define VI_LD_COMMON(stride, offset, ld_width, elt_byte) \
+#define VI_LD_COMMON(stride, offset, ld_width, elt_byte, is_seg) \
   const reg_t nf = insn.v_nf() + 1; \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
   require((nf * P.VU.vlmul) <= (NVPR / 4) && \
           (vd + nf * P.VU.vlmul) <= NVPR); \
+  if (!is_seg) \
+    require(nf == 1); \
   const reg_t vlmul = P.VU.vlmul; \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_ELEMENT_SKIP(i); \
@@ -1542,28 +1575,30 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   } \
   P.VU.vstart = 0;
 
-#define VI_LD(stride, offset, ld_width, elt_byte) \
+#define VI_LD(stride, offset, ld_width, elt_byte, is_seg) \
   VI_CHECK_SXX; \
-  VI_LD_COMMON(stride, offset, ld_width, elt_byte)
+  VI_LD_COMMON(stride, offset, ld_width, elt_byte, is_seg)
 
-#define VI_LD_INDEX(stride, offset, ld_width, elt_byte) \
+#define VI_LD_INDEX(stride, offset, ld_width, elt_byte, is_seg) \
   VI_CHECK_LD_INDEX; \
-  VI_LD_COMMON(stride, offset, ld_width, elt_byte) \
+  VI_LD_COMMON(stride, offset, ld_width, elt_byte, is_seg) \
   if (nf >= 2) \
     require(!is_overlapped(vd, nf, insn.rs2(), 1));
 
-#define VI_ST(stride, offset, st_width, elt_byte) \
+#define VI_ST(stride, offset, st_width, elt_byte, is_seg) \
   VI_CHECK_STORE_SXX; \
-  VI_ST_COMMON(stride, offset, st_width, elt_byte) \
+  VI_ST_COMMON(stride, offset, st_width, elt_byte, is_seg) \
 
-#define VI_ST_INDEX(stride, offset, st_width, elt_byte) \
+#define VI_ST_INDEX(stride, offset, st_width, elt_byte, is_seg) \
   VI_CHECK_ST_INDEX; \
-  VI_ST_COMMON(stride, offset, st_width, elt_byte) \
+  VI_ST_COMMON(stride, offset, st_width, elt_byte, is_seg) \
 
-#define VI_LDST_FF(itype, tsew) \
+#define VI_LDST_FF(itype, tsew, is_seg) \
   require(p->VU.vsew >= e##tsew && p->VU.vsew <= e64); \
   const reg_t nf = insn.v_nf() + 1; \
   require((nf * P.VU.vlmul) <= (NVPR / 4)); \
+  if (!is_seg) \
+    require(nf == 1); \
   VI_CHECK_SXX; \
   const reg_t sew = p->VU.vsew; \
   const reg_t vl = p->VU.vl; \

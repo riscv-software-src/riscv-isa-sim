@@ -511,6 +511,8 @@ riscv_insn_ext_v_alu_fp = \
 	vfclass_v \
 	vfcvt_f_x_v \
 	vfcvt_f_xu_v \
+	vfcvt_rtz_x_f_v \
+	vfcvt_rtz_xu_f_v \
 	vfcvt_x_f_v \
 	vfcvt_xu_f_v \
 	vfdiv_vf \
@@ -538,6 +540,8 @@ riscv_insn_ext_v_alu_fp = \
 	vfncvt_f_x_w \
 	vfncvt_f_xu_w \
 	vfncvt_rod_f_f_w \
+	vfncvt_rtz_x_f_w \
+	vfncvt_rtz_xu_f_w \
 	vfncvt_x_f_w \
 	vfncvt_xu_f_w \
 	vfnmacc_vf \
@@ -561,6 +565,8 @@ riscv_insn_ext_v_alu_fp = \
 	vfsgnjx_vf \
 	vfsgnjx_vv \
 	vfsqrt_v \
+	vfslide1down_vf \
+	vfslide1up_vf \
 	vfsub_vf \
 	vfsub_vv \
 	vfwadd_vf \
@@ -570,6 +576,8 @@ riscv_insn_ext_v_alu_fp = \
 	vfwcvt_f_f_v \
 	vfwcvt_f_x_v \
 	vfwcvt_f_xu_v \
+	vfwcvt_rtz_x_f_v \
+	vfwcvt_rtz_xu_f_v \
 	vfwcvt_x_f_v \
 	vfwcvt_xu_f_v \
 	vfwmacc_vf \

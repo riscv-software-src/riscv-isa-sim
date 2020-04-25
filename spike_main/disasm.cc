@@ -697,95 +697,29 @@ disassembler_t::disassembler_t(int xlen)
   // handle vector segment load/store
   for (size_t nf = 1; nf <= 7; ++nf) {
     std::pair<reg_t, reg_t> insn_code[] = {
-      {match_vlb_v,  mask_vlb_v},
-      {match_vlh_v,  mask_vlh_v},
-      {match_vlw_v,  mask_vlw_v},
       {match_vle_v,  mask_vle_v},
-      {match_vlbu_v, mask_vlbu_v},
-      {match_vlhu_v, mask_vlhu_v},
-      {match_vlwu_v, mask_vlwu_v},
-      {match_vsb_v,  mask_vsb_v},
-      {match_vsh_v,  mask_vsh_v},
-      {match_vsw_v,  mask_vsw_v},
       {match_vse_v,  mask_vse_v},
 
-      {match_vlsb_v,  mask_vlsb_v},
-      {match_vlsh_v,  mask_vlsh_v},
-      {match_vlsw_v,  mask_vlsw_v},
       {match_vlse_v,  mask_vlse_v},
-      {match_vlsbu_v, mask_vlsbu_v},
-      {match_vlshu_v, mask_vlshu_v},
-      {match_vlswu_v, mask_vlswu_v},
-      {match_vssb_v,  mask_vssb_v},
-      {match_vssh_v,  mask_vssh_v},
-      {match_vssw_v,  mask_vssw_v},
       {match_vsse_v,  mask_vssw_v},
 
-      {match_vlxb_v,  mask_vlxb_v},
-      {match_vlxh_v,  mask_vlxh_v},
-      {match_vlxw_v,  mask_vlxw_v},
       {match_vlxe_v,  mask_vlxe_v},
-      {match_vlxbu_v, mask_vlxbu_v},
-      {match_vlxhu_v, mask_vlxhu_v},
-      {match_vlxwu_v, mask_vlxwu_v},
-      {match_vsxb_v,  mask_vsxb_v},
-      {match_vsxh_v,  mask_vsxh_v},
-      {match_vsxw_v,  mask_vsxw_v},
       {match_vsxe_v,  mask_vsxw_v},
 
-      {match_vlbff_v,  mask_vlbff_v},
-      {match_vlhff_v,  mask_vlhff_v},
-      {match_vlwff_v,  mask_vlwff_v},
       {match_vleff_v,  mask_vleff_v},
-      {match_vlbuff_v, mask_vlbuff_v},
-      {match_vlhuff_v, mask_vlhuff_v},
-      {match_vlwuff_v, mask_vlwuff_v},
     };
 
     std::pair<const char *, std::vector<const arg_t*>> fmts[] = { 
-      {"vlseg%db.v", {&vd, &v_address, &opt, &vm}},
-      {"vlseg%dh.v", {&vd, &v_address, &opt, &vm}},
-      {"vlseg%dw.v", {&vd, &v_address, &opt, &vm}},
       {"vlseg%de.v", {&vd, &v_address, &opt, &vm}},
-      {"vlseg%dwu.v", {&vd, &v_address, &opt, &vm}},
-      {"vlseg%dhu.v", {&vd, &v_address, &opt, &vm}},
-      {"vlseg%dbu.v", {&vd, &v_address, &opt, &vm}},
-      {"vsseg%db.v", {&vs3, &v_address, &opt, &vm}},
-      {"vsseg%dh.v", {&vs3, &v_address, &opt, &vm}},
-      {"vsseg%dw.v", {&vs3, &v_address, &opt, &vm}},
       {"vsseg%de.v", {&vs3, &v_address, &opt, &vm}},
 
-      {"vlsseg%db.v", {&vd, &v_address, &xrs2, &opt, &vm}},
-      {"vlsseg%dh.v", {&vd, &v_address, &xrs2, &opt, &vm}},
-      {"vlsseg%dw.v", {&vd, &v_address, &xrs2, &opt, &vm}},
       {"vlsseg%de.v", {&vd, &v_address, &xrs2, &opt, &vm}},
-      {"vlsseg%dbu.v",{&vd, &v_address, &xrs2, &opt, &vm}},
-      {"vlsseg%dhu.v",{&vd, &v_address, &xrs2, &opt, &vm}},
-      {"vlsseg%dwu.v",{&vd, &v_address, &xrs2, &opt, &vm}},
-      {"vssseg%db.v", {&vs3, &v_address, &xrs2, &opt, &vm}},
-      {"vssseg%dh.v", {&vs3, &v_address, &xrs2, &opt, &vm}},
-      {"vssseg%dw.v", {&vs3, &v_address, &xrs2, &opt, &vm}},
       {"vssseg%de.v", {&vs3, &v_address, &xrs2, &opt, &vm}},
 
-      {"vlxseg%db.v", {&vd, &v_address, &vs2, &opt, &vm}},
-      {"vlxseg%dh.v", {&vd, &v_address, &vs2, &opt, &vm}},
-      {"vlxseg%dw.v", {&vd, &v_address, &vs2, &opt, &vm}},
       {"vlxseg%de.v", {&vd, &v_address, &vs2, &opt, &vm}},
-      {"vlxseg%dwu.v",{&vd, &v_address, &vs2, &opt, &vm}},
-      {"vlxseg%dhu.v",{&vd, &v_address, &vs2, &opt, &vm}},
-      {"vlxseg%dbu.v",{&vd, &v_address, &vs2, &opt, &vm}},
-      {"vsxseg%db.v", {&vs3, &v_address, &vs2, &opt, &vm}},
-      {"vsxseg%dh.v", {&vs3, &v_address, &vs2, &opt, &vm}},
-      {"vsxseg%dw.v", {&vs3, &v_address, &vs2, &opt, &vm}},
       {"vsxseg%de.v", {&vs3, &v_address, &vs2, &opt, &vm}},
 
-      {"vlseg%dbff.v", {&vd, &v_address, &opt, &vm}},
-      {"vlseg%dhff.v", {&vd, &v_address, &opt, &vm}},
-      {"vlseg%dwff.v", {&vd, &v_address, &opt, &vm}},
       {"vlseg%deff.v", {&vd, &v_address, &opt, &vm}},
-      {"vlseg%dwuff.v",{&vd, &v_address, &opt, &vm}},
-      {"vlseg%dhuff.v",{&vd, &v_address, &opt, &vm}},
-      {"vlseg%dbuff.v",{&vd, &v_address, &opt, &vm}},
     };
 
 
@@ -1055,9 +989,15 @@ disassembler_t::disassembler_t(int xlen)
     add_insn(new disasm_insn_t(#name "cvt.f.x." #suf, \
                 match_##name##cvt_f_x_##suf, mask_##name##cvt_f_x_##suf, \
                 {&vd, &vs2, &opt, &vm})); \
+    add_insn(new disasm_insn_t(#name "cvt.rtz.xu.f." #suf, \
+                match_##name##cvt_xu_f_##suf, mask_##name##cvt_xu_f_##suf, \
+                {&vd, &vs2, &opt, &vm})); \
+    add_insn(new disasm_insn_t(#name "cvt.rtz.x.f." #suf, \
+                match_##name##cvt_x_f_##suf, mask_##name##cvt_x_f_##suf, \
+                {&vd, &vs2, &opt, &vm})); \
 
   //OPFVV/OPFVF
-  //0b01_0000
+  //0b00_0000
   DISASM_OPIV_VF_INSN(vfadd);
   DISASM_OPIV_S__INSN(vfredsum);
   DISASM_OPIV_VF_INSN(vfsub);
@@ -1071,6 +1011,8 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_VF_INSN(vfsgnjx);
   DISASM_INSN("vfmv.f.s", vfmv_f_s, 0, {&frd, &vs2});
   DISASM_INSN("vfmv.s.f", vfmv_s_f, mask_vfmv_s_f, {&vd, &frs1});
+  DISASM_OPIV__F_INSN(vfslide1up);
+  DISASM_OPIV__F_INSN(vfslide1down);
 
   //0b01_0000
   DISASM_INSN("vfmerge.vfm", vfmerge_vfm, 0, {&vd, &vs2, &frs1, &v0});
