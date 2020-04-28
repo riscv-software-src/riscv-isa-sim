@@ -61,10 +61,16 @@ processor_t::~processor_t()
   delete disassembler;
 }
 
-static void bad_isa_string(const char* isa)
+static void bad_option_string(const char *option, const char *value,
+                              const char *msg)
 {
-  fprintf(stderr, "error: bad --isa option %s\n", isa);
+  fprintf(stderr, "error: bad %s option '%s'. %s\n", option, value, msg);
   abort();
+}
+
+static void bad_isa_string(const char* isa, const char* msg)
+{
+  bad_option_string("--isa", isa, msg);
 }
 
 static void bad_priv_string(const char* priv)
@@ -73,10 +79,9 @@ static void bad_priv_string(const char* priv)
   abort();
 }
 
-static void bad_varch_string(const char* varch, const char *message)
+static void bad_varch_string(const char* varch, const char *msg)
 {
-  fprintf(stderr, "error: bad --varch option %s: %s\n", varch, message);
-  abort();
+  bad_option_string("--varch", varch, msg);
 }
 
 static std::string get_string_token(std::string str, const char delimiter, size_t& pos)
@@ -211,6 +216,7 @@ void processor_t::parse_isa_string(const char* str)
 {
   std::string lowercase = strtolower(str), tmp;
 
+  char error_msg[256];
   const char* p = lowercase.c_str();
   const char* all_subsets = "imafdqc"
 #ifdef __SIZEOF_INT128__
@@ -254,6 +260,9 @@ void processor_t::parse_isa_string(const char* str)
           register_extension(find_extension(ext_str.c_str())());
 
         p = end;
+      } else {
+        sprintf(error_msg, "unsupported extension '%c'", *p);
+        bad_isa_string(str, error_msg);
       }
     } else if (*p == '_') {
       const char* ext = p + 1, *end = ext;
@@ -261,25 +270,30 @@ void processor_t::parse_isa_string(const char* str)
         end++;
 
       auto ext_str = std::string(ext, end - ext);
-      if (ext_str == "zfh")
+      if (ext_str == "zfh") {
         extension_table[EXT_ZFH] = true;
+      } else {
+        sprintf(error_msg, "unsupported extension '%s'", ext_str.c_str());
+        bad_isa_string(str, error_msg);
+      }
 
       p = end;
     } else {
-      bad_isa_string(str);
+      sprintf(error_msg, "can't parse '%c(%d)'", *p, *p);
+      bad_isa_string(str, error_msg);
     }
   }
 
   state.misa |= max_isa;
 
   if (!supports_extension('I'))
-    bad_isa_string(str);
+    bad_isa_string(str, "'I' extension is required");
 
   if (supports_extension('D') && !supports_extension('F'))
-    bad_isa_string(str);
+    bad_isa_string(str, "'D' extension requires 'F'");
 
   if (supports_extension('Q') && !supports_extension('D'))
-    bad_isa_string(str);
+    bad_isa_string(str, "'Q' extension requires 'D'");
 }
 
 void state_t::reset(reg_t max_isa)
