@@ -15,5 +15,5 @@ std::string dts_compile(const std::string& dts);
 
 int fdt_parse_clint(void *fdt, unsigned long *clint_addr,
                     const char *compatible);
-
+int fdt_parse_pmp(void *fdt, unsigned long *pmp_num, const char *compatible);
 #endif
