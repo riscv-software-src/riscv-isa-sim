@@ -34,11 +34,11 @@ const int NCSR = 4096;
 #define X_RA 1
 #define X_SP 2
 
-#define VSR_VXRM_SHIFT 1
-#define VSR_VXRM  (0x3 << VSR_VXRM_SHIFT)
+#define VCSR_VXRM_SHIFT 1
+#define VCSR_VXRM  (0x3 << VCSR_VXRM_SHIFT)
 
-#define VSR_VXSAT_SHIFT 0
-#define VSR_VXSAT  (0x1 << VSR_VXSAT_SHIFT)
+#define VCSR_VXSAT_SHIFT 0
+#define VCSR_VXSAT  (0x1 << VCSR_VXSAT_SHIFT)
 
 #define FP_RD_NE  0
 #define FP_RD_0   1

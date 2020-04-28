@@ -662,6 +662,11 @@ void processor_t::set_csr(int which, reg_t val)
       state.fflags = (val & FSR_AEXC) >> FSR_AEXC_SHIFT;
       state.frm = (val & FSR_RD) >> FSR_RD_SHIFT;
       break;
+    case CSR_VCSR:
+      dirty_vs_state;
+      VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
+      VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
+      break;
     case CSR_MSTATUS: {
       if ((val ^ state.mstatus) &
           (MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_SUM | MSTATUS_MXR))
@@ -870,11 +875,6 @@ void processor_t::set_csr(int which, reg_t val)
       dirty_vs_state;
       VU.vxrm = val & 0x3ul;
       break;
-    case CSR_VCSR :
-      dirty_vs_state;
-      VU.vxsat = (val & VSR_VXSAT) >> VSR_VXSAT_SHIFT;
-      VU.vxrm = (val & VSR_VXRM) >> VSR_VXRM_SHIFT;
-      break;
   }
 }
 
@@ -932,7 +932,10 @@ reg_t processor_t::get_csr(int which)
       if (!supports_extension('F'))
         break;
       return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
-      
+    case CSR_VCSR:
+      if (!supports_extension('V'))
+        break;
+      return (VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT);
     case CSR_INSTRET:
     case CSR_CYCLE:
       if (ctr_ok)
@@ -1091,11 +1094,6 @@ reg_t processor_t::get_csr(int which)
       if (!supports_extension('V'))
         break;
       return VU.vlenb;
-    case CSR_VCSR:
-      require_vector_vs;
-      if (!supports_extension('V'))
-        break;
-      return (VU.vxrm << VSR_VXRM_SHIFT) | (VU.vxsat << VSR_VXSAT_SHIFT);
   }
   throw trap_illegal_instruction(0);
 }
