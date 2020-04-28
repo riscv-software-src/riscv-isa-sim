@@ -45,6 +45,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "      riscv,isa = \"" << procs[i]->get_isa_string() << "\";\n"
          "      mmu-type = \"riscv," << (procs[i]->get_max_xlen() <= 32 ? "sv32" : "sv48") << "\";\n"
          "      riscv,pmpregions = <16>;\n"
+         "      riscv,pmpgranularity = <4>;\n"
          "      clock-frequency = <" << cpu_hz << ">;\n"
          "      CPU" << i << "_intc: interrupt-controller {\n"
          "        #interrupt-cells = <1>;\n"
@@ -229,7 +230,7 @@ int fdt_parse_clint(void *fdt, unsigned long *clint_addr,
   return 0;
 }
 
-int fdt_parse_pmp(void *fdt, unsigned long *pmp_num, const char *compatible)
+int fdt_parse_pmp_num(void *fdt, unsigned long *pmp_num, const char *compatible)
 {
   int nodeoffset, rc;
 
@@ -237,8 +238,26 @@ int fdt_parse_pmp(void *fdt, unsigned long *pmp_num, const char *compatible)
   if (nodeoffset < 0)
     return nodeoffset;
 
-  rc = fdt_get_node_addr_size(fdt, nodeoffset, pmp_num, NULL, "riscv,pmpregions");
+  rc = fdt_get_node_addr_size(fdt, nodeoffset, pmp_num, NULL,
+                              "riscv,pmpregions");
   if (rc < 0 || !pmp_num)
+    return -ENODEV;
+
+  return 0;
+}
+
+int fdt_parse_pmp_alignment(void *fdt, unsigned long *pmp_align,
+                            const char *compatible)
+{
+  int nodeoffset, rc;
+
+  nodeoffset = fdt_node_offset_by_compatible(fdt, -1, compatible);
+  if (nodeoffset < 0)
+    return nodeoffset;
+
+  rc = fdt_get_node_addr_size(fdt, nodeoffset, pmp_align, NULL,
+                              "riscv,pmpgranularity");
+  if (rc < 0 || !pmp_align)
     return -ENODEV;
 
   return 0;
