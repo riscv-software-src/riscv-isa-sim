@@ -204,7 +204,8 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
     return true;
 
   reg_t base = 0;
-  for (size_t i = 0; i < proc->state.n_pmp; i++) {
+  for (size_t i = 0; i < (size_t)proc->state.platform_n_pmp; i++) {
+
     reg_t tor = proc->state.pmpaddr[i] << PMP_SHIFT;
     uint8_t cfg = proc->state.pmpcfg[i];
 
@@ -226,7 +227,6 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
         any_match |= match;
         all_match &= match;
       }
-
       if (any_match) {
         // If the PMP matches only a strict subset of the access, fail it
         if (!all_match)
@@ -255,7 +255,7 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
     return true;
 
   reg_t base = 0;
-  for (size_t i = 0; i < proc->state.n_pmp; i++) {
+  for (size_t i = 0; i < (size_t)proc->state.platform_n_pmp; i++) {
     reg_t tor = proc->state.pmpaddr[i] << PMP_SHIFT;
     uint8_t cfg = proc->state.pmpcfg[i];
 

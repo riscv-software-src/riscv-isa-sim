@@ -196,6 +196,8 @@ struct state_t
   static const int n_pmp = 16;
   uint8_t pmpcfg[n_pmp];
   reg_t pmpaddr[n_pmp];
+  int platform_n_pmp = n_pmp;
+  int pmp_granularity = 4;
 
   uint32_t fflags;
   uint32_t frm;
@@ -250,6 +252,7 @@ public:
   processor_t(const char* isa, const char* priv, const char* varch,
               simif_t* sim, uint32_t id, bool halt_on_reset,
               FILE *log_file);
+
   ~processor_t();
 
   void set_debug(bool value);
@@ -307,6 +310,7 @@ public:
   bool halted() { return state.debug_mode; }
   bool halt_request;
 
+  std::map<std::string, int32_t> plat_params;
   // Return the index of a trigger that matched, or -1.
   inline int trigger_match(trigger_operation_t operation, reg_t address, reg_t data)
   {
@@ -389,6 +393,9 @@ public:
 
   void trigger_updated();
 
+  void set_pmp_num(reg_t pmp_num);
+  void set_pmp_granularity(reg_t pmp_granularity);
+
 private:
   simif_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
@@ -405,7 +412,6 @@ private:
   FILE *log_file;
   bool halt_on_reset;
   std::vector<bool> extension_table;
-  
 
   std::vector<insn_desc_t> instructions;
   std::map<reg_t,uint64_t> pc_histogram;
@@ -428,12 +434,16 @@ private:
   void parse_varch_string(const char*);
   void parse_priv_string(const char*);
   void parse_isa_string(const char*);
+  
   void build_opcode_map();
   void register_base_instructions();
   insn_func_t decode_insn(insn_t insn);
 
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;
+  reg_t pmp_num;
+  reg_t pmp_granularity;
+
 public:
   class vectorUnit_t {
     public:

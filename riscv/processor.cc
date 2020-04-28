@@ -440,6 +440,35 @@ static int ctz(reg_t val)
   return res;
 }
 
+void processor_t::set_pmp_num(reg_t pmp_num) {
+
+  // check the number of pmp is in a reasonable range
+  if( pmp_num >= 0 && pmp_num <= 16) {
+    state.platform_n_pmp = pmp_num;
+  } else {
+    fprintf(stderr, "error: bad number of pmp regions: '%ld' from the dtb\n", pmp_num);
+    abort();
+  }
+}
+
+void processor_t::set_pmp_granularity(reg_t pmp_granularity) {
+  // check the pmp granularity is set from dtb(!=0) and is power of 2
+  if (ctz(pmp_granularity) > 0 && ((pmp_granularity & (pmp_granularity - 1)) == 0)) {
+    state.pmp_granularity = ctz(pmp_granularity);
+    for(int i = CSR_PMPADDR0; i < CSR_PMPADDR0 + state.platform_n_pmp; i++) {
+      if (state.pmp_granularity > 2) { // skip NA4
+        reg_t pmpaddr = 0;
+        pmpaddr = (1 << (state.pmp_granularity - PMP_SHIFT - 1)) - 1;
+        set_csr(i, pmpaddr);
+      }
+    }
+
+  } else {
+    fprintf(stderr, "error: bad pmp granularity '%ld' from the dtb\n", pmp_granularity);
+    abort();
+  }
+}
+
 void processor_t::take_interrupt(reg_t pending_interrupts)
 {
   reg_t mie = get_field(state.mstatus, MSTATUS_MIE);
@@ -609,18 +638,19 @@ void processor_t::set_csr(int which, reg_t val)
   reg_t delegable_ints = supervisor_ints | coprocessor_ints;
   reg_t all_ints = delegable_ints | MIP_MSIP | MIP_MTIP;
 
-  if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.n_pmp) {
-    size_t i = which - CSR_PMPADDR0;
+  size_t i = which - CSR_PMPADDR0;
+  if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.platform_n_pmp) {
     bool locked = state.pmpcfg[i] & PMP_L;
-    bool next_locked = i+1 < state.n_pmp && (state.pmpcfg[i+1] & PMP_L);
-    bool next_tor = i+1 < state.n_pmp && (state.pmpcfg[i+1] & PMP_A) == PMP_TOR;
+    bool next_locked = i+1 < (size_t)state.platform_n_pmp && (state.pmpcfg[i+1] & PMP_L);
+    bool next_tor = i+1 < (size_t)state.platform_n_pmp && (state.pmpcfg[i+1] & PMP_A) == PMP_TOR;
     if (!locked && !(next_locked && next_tor))
       state.pmpaddr[i] = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
 
     mmu->flush_tlb();
   }
 
-  if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.n_pmp / 4) {
+  if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 +
+          (state.platform_n_pmp + state.platform_n_pmp % 4)/ 4) {
     for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8; i++) {
       if (!(state.pmpcfg[i] & PMP_L)) {
         uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
@@ -887,14 +917,15 @@ reg_t processor_t::get_csr(int which)
   if (which >= CSR_MHPMEVENT3 && which <= CSR_MHPMEVENT31)
     return 0;
 
-  if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.n_pmp)
+  if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.platform_n_pmp)
     return state.pmpaddr[which - CSR_PMPADDR0];
 
-  if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.n_pmp / 4) {
+  if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + (
+              state.platform_n_pmp + state.platform_n_pmp % 4)/ 4) {
     require((which & ((xlen / 32) - 1)) == 0);
 
     reg_t res = 0;
-    for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8 && i < state.n_pmp; i++)
+    for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8 && i < (size_t)state.platform_n_pmp; i++)
       res |= reg_t(state.pmpcfg[i]) << (8 * (i - i0));
     return res;
   }

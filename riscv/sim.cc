@@ -80,6 +80,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
                                log_file.get());
   }
 
+
   make_dtb();
 
   clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, real_time_clint));
@@ -89,6 +90,17 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
   } else {
     bus.add_device(clint_base, clint.get());
   }
+
+  for (size_t i = 0; i < nprocs; i++) {
+    reg_t pmp_num = 0, pmp_granularity = 0;
+    fdt_parse_pmp_num((void *)dtb.c_str(), &pmp_num, "riscv");
+    fdt_parse_pmp_alignment((void *)dtb.c_str(), &pmp_granularity, "riscv");
+
+    procs[i]->set_pmp_num(pmp_num);
+    procs[i]->set_pmp_granularity(pmp_granularity);
+  }
+
+
 }
 
 sim_t::~sim_t()
