@@ -273,6 +273,9 @@ void processor_t::parse_isa_string(const char* str)
   if (!supports_extension('I'))
     bad_isa_string(str, "'I' extension is required");
 
+  if (supports_extension(EXT_ZFH) && !supports_extension('F'))
+    bad_isa_string(str, "'Zfh' extension requires 'F'");
+
   if (supports_extension('D') && !supports_extension('F'))
     bad_isa_string(str, "'D' extension requires 'F'");
 
