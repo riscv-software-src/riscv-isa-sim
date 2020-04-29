@@ -153,18 +153,37 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
   commit_log_reset(p);
   commit_log_stash_privilege(p);
+  reg_t npc;
 
-  reg_t npc = fetch.func(p, fetch.insn, pc);
-  if (npc != PC_SERIALIZE_BEFORE) {
+  try {
+    npc = fetch.func(p, fetch.insn, pc);
+    if (npc != PC_SERIALIZE_BEFORE) {
 
 #ifdef RISCV_ENABLE_COMMITLOG
-    if (p->get_log_commits_enabled()) {
-      commit_log_print_insn(p, pc, fetch.insn);
-    }
+      if (p->get_log_commits_enabled()) {
+        commit_log_print_insn(p, pc, fetch.insn);
+      }
 #endif
 
-    p->update_histogram(pc);
+     }
+#ifdef RISCV_ENABLE_COMMITLOG
+  } catch(mem_trap_t& t) {
+      //handle segfault in midlle of vector load/store
+      if (p->get_log_commits_enabled()) {
+        for (auto item : p->get_state()->log_reg_write) {
+          if ((item.first & 3) == 3) {
+            commit_log_print_insn(p, pc, fetch.insn);
+            break;
+          }
+        }
+      }
+      throw;
+#endif
+  } catch(...) {
+    throw;
   }
+  p->update_histogram(pc);
+
   return npc;
 }
 
