@@ -93,6 +93,44 @@ static void read_file_bytes(const char *filename,size_t fileoff,
   in.read(read_buf, read_sz);
 }
 
+bool sort_mem_region(const std::pair<reg_t, mem_t*> &a,
+                       const std::pair<reg_t, mem_t*> &b)
+{
+  if (a.first == b.first)
+    return (a.second->size() < b.second->size());
+  else
+    return (a.first < b.first);
+}
+
+void merge_overlapping_memory_regions(std::vector<std::pair<reg_t, mem_t*>>& mems)
+{
+  // check the user specified memory regions and merge the overlapping or
+  // eliminate the containing parts
+  std::sort(mems.begin(), mems.end(), sort_mem_region);
+  reg_t start_page = 0, end_page = 0;
+  std::vector<std::pair<reg_t, mem_t*>>::reverse_iterator it = mems.rbegin();
+  std::vector<std::pair<reg_t, mem_t*>>::reverse_iterator _it = mems.rbegin();
+  for(; it != mems.rend(); ++it) {
+    reg_t _start_page = it->first/PGSIZE;
+    reg_t _end_page = _start_page + it->second->size()/PGSIZE;
+    if (_start_page >= start_page && _end_page <= end_page) {
+      // contains
+      mems.erase(std::next(it).base());
+    }else if ( _start_page < start_page && _end_page > start_page) {
+      // overlapping
+      _it->first = it->first;
+      if (_end_page > end_page)
+        end_page = _end_page;
+      mems.erase(std::next(it).base());
+    }else {
+      _it = it;
+      start_page = _start_page;
+      end_page = _end_page;
+      assert(start_page < end_page);
+    }
+  }
+}
+
 static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
 {
   // handle legacy mem argument
@@ -136,6 +174,8 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
       help();
     arg = p + 1;
   }
+
+  merge_overlapping_memory_regions(res);
   return res;
 }
 
