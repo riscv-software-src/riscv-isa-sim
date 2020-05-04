@@ -141,8 +141,10 @@ void i64_to_f128M( int64_t, float128_t * );
 /*----------------------------------------------------------------------------
 | 16-bit (half-precision) floating-point operations.
 *----------------------------------------------------------------------------*/
+uint_fast16_t f16_to_ui16( float16_t, uint_fast8_t, bool );
 uint_fast32_t f16_to_ui32( float16_t, uint_fast8_t, bool );
 uint_fast64_t f16_to_ui64( float16_t, uint_fast8_t, bool );
+int_fast16_t f16_to_i16( float16_t, uint_fast8_t, bool );
 int_fast32_t f16_to_i32( float16_t, uint_fast8_t, bool );
 int_fast64_t f16_to_i64( float16_t, uint_fast8_t, bool );
 uint_fast32_t f16_to_ui32_r_minMag( float16_t, bool );
@@ -174,12 +176,15 @@ bool f16_eq_signaling( float16_t, float16_t );
 bool f16_le_quiet( float16_t, float16_t );
 bool f16_lt_quiet( float16_t, float16_t );
 bool f16_isSignalingNaN( float16_t );
+uint_fast16_t f16_classify( float16_t );
 
 /*----------------------------------------------------------------------------
 | 32-bit (single-precision) floating-point operations.
 *----------------------------------------------------------------------------*/
+uint_fast16_t f32_to_ui16( float32_t, uint_fast8_t, bool );
 uint_fast32_t f32_to_ui32( float32_t, uint_fast8_t, bool );
 uint_fast64_t f32_to_ui64( float32_t, uint_fast8_t, bool );
+int_fast16_t f32_to_i16( float32_t, uint_fast8_t, bool );
 int_fast32_t f32_to_i32( float32_t, uint_fast8_t, bool );
 int_fast64_t f32_to_i64( float32_t, uint_fast8_t, bool );
 uint_fast32_t f32_to_ui32_r_minMag( float32_t, bool );
