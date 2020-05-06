@@ -441,12 +441,14 @@ public:
       void *reg_file;
       char reg_referenced[NVPR];
       int setvl_count;
-      reg_t reg_mask, vlmax, vmlen;
+      reg_t vlmax, vmlen;
       reg_t vstart, vxrm, vxsat, vl, vtype, vlenb;
+      reg_t vma, vta;
       reg_t vediv, vsew, vlmul;
       reg_t ELEN, VLEN, SLEN;
       reg_t VALU;
       bool vill;
+      bool fractional_lmul;
 
       // Microarchitecture dependent features
       typedef enum {
