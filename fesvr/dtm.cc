@@ -6,6 +6,7 @@
 #include <string.h>
 #include <assert.h>
 #include <pthread.h>
+#include <stdexcept>
 
 #define RV_X(x, s, n) \
   (((x) >> (s)) & ((1 << (n)) - 1))
