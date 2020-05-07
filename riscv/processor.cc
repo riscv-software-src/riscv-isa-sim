@@ -374,10 +374,14 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
     vtype = newType;
     vsew = 1 << (BITS(newType, 4, 2) + 3);
     vlmul = 1 << BITS(newType, 1, 0);
-    vediv = 1 << BITS(newType, 6, 5);
-    vlmax = VLEN/vsew * vlmul;
-    vmlen = vsew / vlmul;
-    reg_mask = (NVPR-1) & ~(vlmul-1);
+    vemul = vlmul;
+    veew = vsew;
+    fractional_lmul = BITS(newType, 5, 5);
+    vta = BITS(newType, 6, 6);
+    vma = BITS(newType, 7, 7);
+    vediv = 1 << BITS(newType, 9, 8);
+    vlmax = fractional_lmul? (VLEN/vsew)/vlmul : VLEN/vsew * vlmul;
+    vmlen = fractional_lmul? 1 : vsew / vlmul;
 
     vill = vsew > ELEN || vediv != 1 || (newType >> 7) != 0;
     if (vill) {

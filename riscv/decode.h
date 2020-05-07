@@ -118,6 +118,11 @@ public:
   uint64_t v_zimm11() { return x(20, 11); }
   uint64_t v_lmul() { return 1 << x(20, 2); }
   uint64_t v_sew() { return 1 << (x(22, 3) + 3); }
+  uint64_t v_width() {return x(12, 3); }
+  uint64_t v_mop() {return x(26, 2); }
+  uint64_t v_lumop() {return x(20, 5); }
+  uint64_t v_sumop() {return x(20, 5); }
+  uint64_t v_mew() {return x(28, 1); }
 
 private:
   insn_bits_t b;
@@ -350,6 +355,9 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 #define e32 32    // 32b elements
 #define e64 64    // 64b elements
 #define e128 128  // 128b elements
+#define e256 256  // 256b elements
+#define e512 512  // 512b elements
+#define e1024 1024  // 1024b elements
 
 #define vsext(x, sew) (((sreg_t)(x) << (64-sew)) >> (64-sew))
 #define vzext(x, sew) (((reg_t)(x) << (64-sew)) >> (64-sew))
@@ -1551,11 +1559,21 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   } \
   P.VU.vstart = 0; 
 
+#define VI_EEW(mew, width) \
+  reg_t base = mew? 128 : 8; \
+  reg_t shf = width == 0? 0: width - 5; \
+  P.VU.veew = base << shf; \
+  P.VU.vemul = (P.VU.veew/P.VU.vsew) * P.VU.vlmul; \
+  assert((P.VU.veew/P.VU.vemul) == (P.VU.vsew/P.VU.vlmul));
+
 #define VI_LD_COMMON(stride, offset, ld_width, elt_byte, is_seg) \
   const reg_t nf = insn.v_nf() + 1; \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
+  const reg_t mew = insn.v_mew(); \
+  const reg_t width = insn.v_width(); \
+  VI_EEW(mew, width); \
   require((nf * P.VU.vlmul) <= (NVPR / 4) && \
           (vd + nf * P.VU.vlmul) <= NVPR); \
   if (!is_seg) \
@@ -1566,7 +1584,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
     VI_STRIP(i); \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       ld_width##_t val = MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte); \
-      switch(P.VU.vsew){ \
+      switch(P.VU.veew){ \
         case e8: \
           P.VU.elt<uint8_t>(vd + fn * vlmul, vreg_inx, true) = val; \
           break; \
@@ -1613,6 +1631,9 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   const reg_t vl = p->VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t rd_num = insn.rd(); \
+  const reg_t mew = insn.v_mew(); \
+  const reg_t width = insn.v_width(); \
+  VI_EEW(mew, width); \
   bool early_stop = false; \
   const reg_t vlmul = P.VU.vlmul; \
   require(rd_num + nf * P.VU.vlmul <= NVPR); \
@@ -1633,7 +1654,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
         break; \
       } \
       \
-      switch (sew) { \
+      switch (P.VU.veew) { \
       case e8: \
         p->VU.elt<uint8_t>(rd_num + fn * vlmul, vreg_inx, true) = val; \
         break; \
