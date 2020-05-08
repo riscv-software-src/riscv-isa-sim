@@ -645,6 +645,17 @@ riscv_insn_ext_v_alu_fp = \
 	vmfne_vf \
 	vmfne_vv \
 
+riscv_insn_ext_v_amo = \
+	vamoswape_v \
+	vamoadde_v \
+	vamoande_v \
+	vamomaxe_v \
+	vamomaxue_v \
+	vamomine_v \
+	vamominue_v \
+	vamoore_v \
+	vamoxore_v \
+
 riscv_insn_ext_v_ldst = \
 	vl1r_v \
 	vlb_v \
@@ -700,6 +711,7 @@ riscv_insn_ext_v_ctrl = \
 riscv_insn_ext_v = \
 	$(riscv_insn_ext_v_alu_fp) \
 	$(riscv_insn_ext_v_alu_int) \
+	$(riscv_insn_ext_v_amo) \
 	$(riscv_insn_ext_v_ctrl) \
 	$(riscv_insn_ext_v_ldst) \
 

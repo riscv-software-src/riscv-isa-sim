@@ -326,6 +326,12 @@ struct : public arg_t {
   }
 } v_vtype;
 
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return "x0";
+  }
+} x0;
+
 
 std::string disassembler_t::disassemble(insn_t insn) const
 {
@@ -345,6 +351,7 @@ disassembler_t::disassembler_t(int xlen)
   const uint32_t mask_rvc_rs2 = 0x1fUL << 2;
   const uint32_t mask_rvc_imm = mask_rvc_rs2 | 0x1000UL;
   const uint32_t mask_nf = 0x7Ul << 29;
+  const uint32_t mask_wd = 0x1Ul << 26;
 
   #define DECLARE_INSN(code, match, mask) \
    const uint32_t match_##code = match; \
@@ -1111,6 +1118,26 @@ disassembler_t::disassembler_t(int xlen)
   #undef DISASM_OPIV_S__INSN
   #undef DISASM_OPIV_W__INSN
   #undef DISASM_VFUNARY0_INSN
+
+  #define DISASM_VAMO_INSN(name) \
+    add_insn(new disasm_insn_t(#name "e.v",  match_##name##e_v | mask_wd, \
+                mask_##name##e_v | mask_wd, \
+                {&vd, &v_address, &vs2, &vd, &opt, &vm})); \
+    add_insn(new disasm_insn_t(#name "e.v",  match_##name##e_v, \
+                mask_##name##e_v | mask_wd, \
+                {&x0, &v_address, &vs2, &vd, &opt, &vm}));
+
+  DISASM_VAMO_INSN(vamoswap);
+  DISASM_VAMO_INSN(vamoadd);
+  DISASM_VAMO_INSN(vamoxor);
+  DISASM_VAMO_INSN(vamoand);
+  DISASM_VAMO_INSN(vamoor);
+  DISASM_VAMO_INSN(vamomin);
+  DISASM_VAMO_INSN(vamomax);
+  DISASM_VAMO_INSN(vamominu);
+  DISASM_VAMO_INSN(vamomaxu);
+
+  #undef DISASM_VAMO_INSN
 
   if (xlen == 32) {
     DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
