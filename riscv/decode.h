@@ -112,6 +112,7 @@ public:
   uint64_t rvc_rs2s() { return 8 + x(2, 3); }
 
   uint64_t v_vm() { return x(25, 1); }
+  uint64_t v_wd() { return x(26, 1); }
   uint64_t v_nf() { return x(29, 3); }
   uint64_t v_simm5() { return xs(15, 5); }
   uint64_t v_zimm5() { return x(15, 5); }
@@ -1703,6 +1704,57 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
     } \
   } \
   p->VU.vstart = 0;
+
+//
+// vector: amo 
+//
+#define VI_AMO(op, type) \
+  require_vector; \
+  require_extension(EXT_ZVAMO); \
+  VI_CHECK_SSS(false); \
+  VI_DUPLICATE_VREG(insn.rs2(), P.VU.vlmax); \
+  const reg_t vl = P.VU.vl; \
+  const reg_t baseAddr = RS1; \
+  const reg_t vd = insn.rd(); \
+  const reg_t rs2_num = insn.rs2(); \
+  for (reg_t i = P.VU.vstart; i < vl; ++i) { \
+    VI_ELEMENT_SKIP(i); \
+    VI_STRIP(i); \
+    switch (P.VU.vsew) { \
+    case e8: {\
+      auto vs3 = P.VU.elt< type ## 8_t>(vd, vreg_inx); \
+      auto val = MMU.amo_uint8(baseAddr + index[i], [&]( type ## 8_t lhs) { op }); \
+      if (insn.v_wd()) \
+        P.VU.elt< type ## 8_t>(vd, vreg_inx, true) = val; \
+      } \
+      break; \
+    case e16: {\
+      auto vs3 = P.VU.elt< type ## 16_t>(vd, vreg_inx); \
+      auto val = MMU.amo_uint16(baseAddr + index[i], [&]( type ## 16_t lhs) { op }); \
+      if (insn.v_wd()) \
+        P.VU.elt< type ## 16_t>(vd, vreg_inx, true) = val; \
+      } \
+      break; \
+    case e32: {\
+      auto vs3 = P.VU.elt< type ## 32_t>(vd, vreg_inx); \
+      auto val = MMU.amo_uint32(baseAddr + index[i], [&]( type ## 32_t lhs) { op }); \
+      if (insn.v_wd()) \
+        P.VU.elt< type ## 32_t>(vd, vreg_inx, true) = val; \
+      } \
+      break; \
+    case e64: {\
+      auto vs3 = P.VU.elt< type ## 64_t>(vd, vreg_inx); \
+      auto val = MMU.amo_uint64(baseAddr + index[i], [&]( type ## 64_t lhs) { op }); \
+      if (insn.v_wd()) \
+        P.VU.elt< type ## 64_t>(vd, vreg_inx, true) = val; \
+      } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+    } \
+  } \
+  P.VU.vstart = 0;
 
 //
 // vector: vfp helper

@@ -272,6 +272,8 @@ void processor_t::parse_isa_string(const char* str)
       auto ext_str = std::string(ext, end - ext);
       if (ext_str == "zfh") {
         extension_table[EXT_ZFH] = true;
+      } else if (ext_str == "zvamo") {
+        extension_table[EXT_ZVAMO] = true;
       } else {
         sprintf(error_msg, "unsupported extension '%s'", ext_str.c_str());
         bad_isa_string(str, error_msg);
@@ -297,6 +299,9 @@ void processor_t::parse_isa_string(const char* str)
 
   if (supports_extension('Q') && !supports_extension('D'))
     bad_isa_string(str, "'Q' extension requires 'D'");
+
+  if (supports_extension(EXT_ZVAMO) && !supports_extension('V'))
+    bad_isa_string(str, "'Zvamo' extension requires 'V'");
 }
 
 void state_t::reset(reg_t max_isa)
