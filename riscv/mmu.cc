@@ -200,7 +200,7 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
 
 reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
 {
-  if (!proc)
+  if (!proc || proc->n_pmp == 0)
     return true;
 
   reg_t base = 0;
