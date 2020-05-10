@@ -205,6 +205,7 @@ int main(int argc, char** argv)
   const char* isa = DEFAULT_ISA;
   const char* priv = DEFAULT_PRIV;
   const char* varch = DEFAULT_VARCH;
+  const char* dtb_file = NULL;
   uint16_t rbb_port = 0;
   bool use_rbb = false;
   unsigned dmi_rti = 0;
@@ -298,6 +299,7 @@ int main(int argc, char** argv)
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
   parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
+  parser.option(0, "dtb", 1, [&](const char *s){dtb_file = s;});
   parser.option(0, "initrd", 1, [&](const char* s){initrd = s;});
   parser.option(0, "real-time-clint", 0, [&](const char *s){real_time_clint = true;});
   parser.option(0, "extlib", 1, [&](const char *s){
@@ -350,7 +352,7 @@ int main(int argc, char** argv)
 
   sim_t s(isa, priv, varch, nprocs, halted, real_time_clint,
       initrd_start, initrd_end, start_pc, mems, plugin_devices, htif_args,
-      std::move(hartids), dm_config, log_path);
+      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));
@@ -358,7 +360,6 @@ int main(int argc, char** argv)
     remote_bitbang.reset(new remote_bitbang_t(rbb_port, &(*jtag_dtm)));
     s.set_remote_bitbang(&(*remote_bitbang));
   }
-  s.set_dtb_enabled(dtb_enabled);
 
   if (dump_dts) {
     printf("%s", s.get_dts());

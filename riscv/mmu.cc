@@ -200,19 +200,19 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
 
 reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
 {
-  if (!proc)
+  if (!proc || proc->n_pmp == 0)
     return true;
 
   reg_t base = 0;
-  for (size_t i = 0; i < proc->state.n_pmp; i++) {
-    reg_t tor = proc->state.pmpaddr[i] << PMP_SHIFT;
+  for (size_t i = 0; i < proc->n_pmp; i++) {
+    reg_t tor = (proc->state.pmpaddr[i] & proc->pmp_tor_mask()) << PMP_SHIFT;
     uint8_t cfg = proc->state.pmpcfg[i];
 
     if (cfg & PMP_A) {
       bool is_tor = (cfg & PMP_A) == PMP_TOR;
       bool is_na4 = (cfg & PMP_A) == PMP_NA4;
 
-      reg_t mask = (proc->state.pmpaddr[i] << 1) | (!is_na4);
+      reg_t mask = (proc->state.pmpaddr[i] << 1) | (!is_na4) | ~proc->pmp_tor_mask();
       mask = ~(mask & ~(mask + 1)) << PMP_SHIFT;
 
       // Check each 4-byte sector of the access
@@ -255,8 +255,8 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
     return true;
 
   reg_t base = 0;
-  for (size_t i = 0; i < proc->state.n_pmp; i++) {
-    reg_t tor = proc->state.pmpaddr[i] << PMP_SHIFT;
+  for (size_t i = 0; i < proc->n_pmp; i++) {
+    reg_t tor = (proc->state.pmpaddr[i] & proc->pmp_tor_mask()) << PMP_SHIFT;
     uint8_t cfg = proc->state.pmpcfg[i];
 
     if (cfg & PMP_A) {
@@ -270,7 +270,7 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
       bool tor_homogeneous = ends_before_lower || begins_after_upper ||
         (begins_after_lower && ends_before_upper);
 
-      reg_t mask = (proc->state.pmpaddr[i] << 1) | (!is_na4);
+      reg_t mask = (proc->state.pmpaddr[i] << 1) | (!is_na4) | ~proc->pmp_tor_mask();
       mask = ~(mask & ~(mask + 1)) << PMP_SHIFT;
       bool mask_homogeneous = ~(mask << 1) & len;
       bool napot_homogeneous = mask_homogeneous || ((addr ^ tor) / len) != 0;

@@ -5,6 +5,7 @@
 #include "dts.h"
 #include "remote_bitbang.h"
 #include "byteorder.h"
+#include <fstream>
 #include <map>
 #include <iostream>
 #include <sstream>
@@ -33,14 +34,25 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
              const std::vector<std::string>& args,
              std::vector<int> const hartids,
              const debug_module_config_t &dm_config,
-             const char *log_path)
-  : htif_t(args), mems(mems), plugin_devices(plugin_devices),
+             const char *log_path,
+             bool dtb_enabled, const char *dtb_file)
+  : htif_t(args),
+    mems(mems),
+    plugin_devices(plugin_devices),
     procs(std::max(nprocs, size_t(1))),
-    initrd_start(initrd_start), initrd_end(initrd_end), start_pc(start_pc),
+    initrd_start(initrd_start),
+    initrd_end(initrd_end),
+    start_pc(start_pc),
+    dtb_file(dtb_file ? dtb_file : ""),
+    dtb_enabled(dtb_enabled),
     log_file(log_path),
-    current_step(0), current_proc(0), debug(false), histogram_enabled(false),
-    log(false), dtb_enabled(true),
-    remote_bitbang(NULL), debug_module(this, dm_config)
+    current_step(0),
+    current_proc(0),
+    debug(false),
+    histogram_enabled(false),
+    log(false),
+    remote_bitbang(NULL),
+    debug_module(this, dm_config)
 {
   signal(SIGINT, &handle_signal);
 
@@ -68,8 +80,24 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
                                log_file.get());
   }
 
+  make_dtb();
+
   clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, real_time_clint));
-  bus.add_device(CLINT_BASE, clint.get());
+  reg_t clint_base;
+  if (fdt_parse_clint((void *)dtb.c_str(), &clint_base, "riscv,clint0")) {
+    bus.add_device(CLINT_BASE, clint.get());
+  } else {
+    bus.add_device(clint_base, clint.get());
+  }
+
+  for (size_t i = 0; i < nprocs; i++) {
+    reg_t pmp_num = 0, pmp_granularity = 0;
+    fdt_parse_pmp_num((void *)dtb.c_str(), &pmp_num, "riscv");
+    fdt_parse_pmp_alignment((void *)dtb.c_str(), &pmp_granularity, "riscv");
+
+    procs[i]->set_pmp_num(pmp_num);
+    procs[i]->set_pmp_granularity(pmp_granularity);
+  }
 }
 
 sim_t::~sim_t()
@@ -190,6 +218,25 @@ bool sim_t::mmio_store(reg_t addr, size_t len, const uint8_t* bytes)
 
 void sim_t::make_dtb()
 {
+  if (!dtb_file.empty()) {
+    std::ifstream fin(dtb_file.c_str(), std::ios::binary);
+    if (!fin.good()) {
+      std::cerr << "can't find dtb file: " << dtb_file << std::endl;
+      exit(-1);
+    }
+
+    std::stringstream strstream;
+    strstream << fin.rdbuf();
+
+    dtb = strstream.str();
+  } else {
+    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, procs, mems);
+    dtb = dts_compile(dts);
+  }
+}
+
+void sim_t::set_rom()
+{
   const int reset_vec_size = 8;
 
   start_pc = start_pc == reg_t(-1) ? get_entry_point() : start_pc;
@@ -211,8 +258,22 @@ void sim_t::make_dtb()
 
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
 
-  dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, procs, mems);
-  std::string dtb = dts_compile(dts);
+  std::string dtb;
+  if (!dtb_file.empty()) {
+    std::ifstream fin(dtb_file.c_str(), std::ios::binary);
+    if (!fin.good()) {
+      std::cerr << "can't find dtb file: " << dtb_file << std::endl;
+      exit(-1);
+    }
+
+    std::stringstream strstream;
+    strstream << fin.rdbuf();
+
+    dtb = strstream.str();
+  } else {
+    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, procs, mems);
+    dtb = dts_compile(dts);
+  }
 
   rom.insert(rom.end(), dtb.begin(), dtb.end());
   const int align = 0x1000;
@@ -237,7 +298,7 @@ char* sim_t::addr_to_mem(reg_t addr) {
 void sim_t::reset()
 {
   if (dtb_enabled)
-    make_dtb();
+    set_rom();
 }
 
 void sim_t::idle()

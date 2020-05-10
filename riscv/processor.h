@@ -193,9 +193,9 @@ struct state_t
   reg_t tdata2[num_triggers];
   bool debug_mode;
 
-  static const int n_pmp = 16;
-  uint8_t pmpcfg[n_pmp];
-  reg_t pmpaddr[n_pmp];
+  static const int max_pmp = 16;
+  uint8_t pmpcfg[max_pmp];
+  reg_t pmpaddr[max_pmp];
 
   uint32_t fflags;
   uint32_t frm;
@@ -389,6 +389,9 @@ public:
 
   void trigger_updated();
 
+  void set_pmp_num(reg_t pmp_num);
+  void set_pmp_granularity(reg_t pmp_granularity);
+
 private:
   simif_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
@@ -419,6 +422,8 @@ private:
   void disasm(insn_t insn); // disassemble and print an instruction
   int paddr_bits();
 
+  reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }
+
   void enter_debug_mode(uint8_t cause);
 
   friend class mmu_t;
@@ -434,6 +439,9 @@ private:
 
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;
+  reg_t n_pmp;
+  reg_t lg_pmp_granularity;
+
 public:
   class vectorUnit_t {
     public:

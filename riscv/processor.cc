@@ -43,6 +43,8 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
     for (auto disasm_insn : ext->get_disasms())
       disassembler->add_insn(disasm_insn);
 
+  set_pmp_granularity(1 << PMP_SHIFT);
+  set_pmp_num(state.max_pmp);
   reset();
 }
 
@@ -421,10 +423,12 @@ void processor_t::reset()
   set_csr(CSR_MSTATUS, state.mstatus);
   VU.reset();
 
-  // For backwards compatibility with software that is unaware of PMP,
-  // initialize PMP to permit unprivileged access to all of memory.
-  set_csr(CSR_PMPADDR0, ~reg_t(0));
-  set_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
+  if (n_pmp > 0) {
+    // For backwards compatibility with software that is unaware of PMP,
+    // initialize PMP to permit unprivileged access to all of memory.
+    set_csr(CSR_PMPADDR0, ~reg_t(0));
+    set_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
+  }
 
   if (ext)
     ext->reset(); // reset the extension
@@ -441,6 +445,26 @@ static int ctz(reg_t val)
     while ((val & 1) == 0)
       val >>= 1, res++;
   return res;
+}
+
+void processor_t::set_pmp_num(reg_t n)
+{
+  // check the number of pmp is in a reasonable range
+  if (n > state.max_pmp) {
+    fprintf(stderr, "error: bad number of pmp regions: '%ld' from the dtb\n", (unsigned long)n);
+    abort();
+  }
+  n_pmp = n;
+}
+
+void processor_t::set_pmp_granularity(reg_t gran) {
+  // check the pmp granularity is set from dtb(!=0) and is power of 2
+  if (gran < (1 << PMP_SHIFT) || (gran & (gran - 1)) != 0) {
+    fprintf(stderr, "error: bad pmp granularity '%ld' from the dtb\n", (unsigned long)gran);
+    abort();
+  }
+
+  lg_pmp_granularity = ctz(gran);
 }
 
 void processor_t::take_interrupt(reg_t pending_interrupts)
@@ -612,22 +636,32 @@ void processor_t::set_csr(int which, reg_t val)
   reg_t delegable_ints = supervisor_ints | coprocessor_ints;
   reg_t all_ints = delegable_ints | MIP_MSIP | MIP_MTIP;
 
-  if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.n_pmp) {
+  if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
+    // If no PMPs are configured, disallow access to all.  Otherwise, allow
+    // access to all, but unimplemented ones are hardwired to zero.
+    if (n_pmp == 0)
+      return;
+
     size_t i = which - CSR_PMPADDR0;
     bool locked = state.pmpcfg[i] & PMP_L;
-    bool next_locked = i+1 < state.n_pmp && (state.pmpcfg[i+1] & PMP_L);
-    bool next_tor = i+1 < state.n_pmp && (state.pmpcfg[i+1] & PMP_A) == PMP_TOR;
-    if (!locked && !(next_locked && next_tor))
+    bool next_locked = i+1 < state.max_pmp && (state.pmpcfg[i+1] & PMP_L);
+    bool next_tor = i+1 < state.max_pmp && (state.pmpcfg[i+1] & PMP_A) == PMP_TOR;
+    if (i < n_pmp && !locked && !(next_locked && next_tor))
       state.pmpaddr[i] = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
 
     mmu->flush_tlb();
   }
 
-  if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.n_pmp / 4) {
+  if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.max_pmp / 4) {
+    if (n_pmp == 0)
+      return;
+
     for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8; i++) {
-      if (!(state.pmpcfg[i] & PMP_L)) {
+      if (i < n_pmp && !(state.pmpcfg[i] & PMP_L)) {
         uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
         cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1
+        if (lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
+          cfg |= PMP_NAPOT; // Disallow A=NA4 when granularity > 4
         state.pmpcfg[i] = cfg;
       }
     }
@@ -890,14 +924,19 @@ reg_t processor_t::get_csr(int which)
   if (which >= CSR_MHPMEVENT3 && which <= CSR_MHPMEVENT31)
     return 0;
 
-  if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.n_pmp)
-    return state.pmpaddr[which - CSR_PMPADDR0];
+  if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
+    reg_t i = which - CSR_PMPADDR0;
+    if ((state.pmpcfg[i] & PMP_A) >= PMP_NAPOT)
+      return state.pmpaddr[i] | (~pmp_tor_mask() >> 1);
+    else
+      return state.pmpaddr[i] & pmp_tor_mask();
+  }
 
-  if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.n_pmp / 4) {
+  if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.max_pmp / 4) {
     require((which & ((xlen / 32) - 1)) == 0);
 
     reg_t res = 0;
-    for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8 && i < state.n_pmp; i++)
+    for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8 && i < state.max_pmp; i++)
       res |= reg_t(state.pmpcfg[i]) << (8 * (i - i0));
     return res;
   }
