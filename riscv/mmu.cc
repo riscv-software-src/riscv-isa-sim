@@ -204,7 +204,7 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
     return true;
 
   reg_t base = 0;
-  for (size_t i = 0; i < proc->state.n_pmp; i++) {
+  for (size_t i = 0; i < proc->state.max_pmp; i++) {
     reg_t tor = proc->state.pmpaddr[i] << PMP_SHIFT;
     uint8_t cfg = proc->state.pmpcfg[i];
 
@@ -255,7 +255,7 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
     return true;
 
   reg_t base = 0;
-  for (size_t i = 0; i < proc->state.n_pmp; i++) {
+  for (size_t i = 0; i < proc->state.max_pmp; i++) {
     reg_t tor = proc->state.pmpaddr[i] << PMP_SHIFT;
     uint8_t cfg = proc->state.pmpcfg[i];
 
