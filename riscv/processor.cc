@@ -420,10 +420,12 @@ void processor_t::reset()
   set_csr(CSR_MSTATUS, state.mstatus);
   VU.reset();
 
-  // For backwards compatibility with software that is unaware of PMP,
-  // initialize PMP to permit unprivileged access to all of memory.
-  set_csr(CSR_PMPADDR0, ~reg_t(0));
-  set_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
+  if (n_pmp > 0) {
+    // For backwards compatibility with software that is unaware of PMP,
+    // initialize PMP to permit unprivileged access to all of memory.
+    set_csr(CSR_PMPADDR0, ~reg_t(0));
+    set_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
+  }
 
   if (ext)
     ext->reset(); // reset the extension
@@ -632,19 +634,27 @@ void processor_t::set_csr(int which, reg_t val)
   reg_t all_ints = delegable_ints | MIP_MSIP | MIP_MTIP;
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
+    // If no PMPs are configured, disallow access to all.  Otherwise, allow
+    // access to all, but unimplemented ones are hardwired to zero.
+    if (n_pmp == 0)
+      return;
+
     size_t i = which - CSR_PMPADDR0;
     bool locked = state.pmpcfg[i] & PMP_L;
     bool next_locked = i+1 < state.max_pmp && (state.pmpcfg[i+1] & PMP_L);
     bool next_tor = i+1 < state.max_pmp && (state.pmpcfg[i+1] & PMP_A) == PMP_TOR;
-    if (!locked && !(next_locked && next_tor))
+    if (i < n_pmp && !locked && !(next_locked && next_tor))
       state.pmpaddr[i] = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
 
     mmu->flush_tlb();
   }
 
   if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.max_pmp / 4) {
+    if (n_pmp == 0)
+      return;
+
     for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8; i++) {
-      if (!(state.pmpcfg[i] & PMP_L)) {
+      if (i < n_pmp && !(state.pmpcfg[i] & PMP_L)) {
         uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
         cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1
         state.pmpcfg[i] = cfg;
