@@ -422,6 +422,8 @@ private:
   void disasm(insn_t insn); // disassemble and print an instruction
   int paddr_bits();
 
+  reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }
+
   void enter_debug_mode(uint8_t cause);
 
   friend class mmu_t;
