@@ -43,6 +43,8 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
     for (auto disasm_insn : ext->get_disasms())
       disassembler->add_insn(disasm_insn);
 
+  set_pmp_granularity(1 << PMP_SHIFT);
+  set_pmp_num(state.max_pmp);
   reset();
 }
 
@@ -438,6 +440,26 @@ static int ctz(reg_t val)
     while ((val & 1) == 0)
       val >>= 1, res++;
   return res;
+}
+
+void processor_t::set_pmp_num(reg_t n)
+{
+  // check the number of pmp is in a reasonable range
+  if (n > state.max_pmp) {
+    fprintf(stderr, "error: bad number of pmp regions: '%ld' from the dtb\n", (unsigned long)n);
+    abort();
+  }
+  n_pmp = n;
+}
+
+void processor_t::set_pmp_granularity(reg_t gran) {
+  // check the pmp granularity is set from dtb(!=0) and is power of 2
+  if (gran < (1 << PMP_SHIFT) || (gran & (gran - 1)) != 0) {
+    fprintf(stderr, "error: bad pmp granularity '%ld' from the dtb\n", (unsigned long)gran);
+    abort();
+  }
+
+  lg_pmp_granularity = ctz(gran);
 }
 
 void processor_t::take_interrupt(reg_t pending_interrupts)

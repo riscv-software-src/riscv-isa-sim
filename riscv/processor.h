@@ -389,6 +389,9 @@ public:
 
   void trigger_updated();
 
+  void set_pmp_num(reg_t pmp_num);
+  void set_pmp_granularity(reg_t pmp_granularity);
+
 private:
   simif_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
@@ -434,6 +437,9 @@ private:
 
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;
+  reg_t n_pmp;
+  reg_t lg_pmp_granularity;
+
 public:
   class vectorUnit_t {
     public:
