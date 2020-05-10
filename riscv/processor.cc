@@ -681,6 +681,8 @@ void processor_t::set_csr(int which, reg_t val)
       if (i < n_pmp && !(state.pmpcfg[i] & PMP_L)) {
         uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
         cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1
+        if (lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
+          cfg |= PMP_NAPOT; // Disallow A=NA4 when granularity > 4
         state.pmpcfg[i] = cfg;
       }
     }
@@ -943,8 +945,13 @@ reg_t processor_t::get_csr(int which)
   if (which >= CSR_MHPMEVENT3 && which <= CSR_MHPMEVENT31)
     return 0;
 
-  if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp)
-    return state.pmpaddr[which - CSR_PMPADDR0];
+  if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
+    reg_t i = which - CSR_PMPADDR0;
+    if ((state.pmpcfg[i] & PMP_A) >= PMP_NAPOT)
+      return state.pmpaddr[i] | (~pmp_tor_mask() >> 1);
+    else
+      return state.pmpaddr[i] & pmp_tor_mask();
+  }
 
   if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.max_pmp / 4) {
     require((which & ((xlen / 32) - 1)) == 0);
