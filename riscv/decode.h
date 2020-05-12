@@ -118,11 +118,11 @@ public:
   uint64_t v_zimm11() { return x(20, 11); }
   uint64_t v_lmul() { return 1 << x(20, 2); }
   uint64_t v_sew() { return 1 << (x(22, 3) + 3); }
-  uint64_t v_width() {return x(12, 3); }
-  uint64_t v_mop() {return x(26, 2); }
-  uint64_t v_lumop() {return x(20, 5); }
-  uint64_t v_sumop() {return x(20, 5); }
-  uint64_t v_mew() {return x(28, 1); }
+  uint64_t v_width() { return x(12, 3); }
+  uint64_t v_mop() { return x(26, 2); }
+  uint64_t v_lumop() { return x(20, 5); }
+  uint64_t v_sumop() { return x(20, 5); }
+  uint64_t v_mew() { return x(28, 1); }
 
 private:
   insn_bits_t b;
@@ -386,15 +386,16 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 #define VI_MASK_VARS \
   const int mlen = P.VU.vmlen; \
   const int midx = (mlen * i) / 64; \
-  const int mpos = (mlen * i) % 64; \
+  const int mpos = (mlen * i) % 64;
 
 #define VI_LOOP_ELEMENT_SKIP(BODY) \
   VI_MASK_VARS \
   if (insn.v_vm() == 0) { \
     BODY; \
     bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
-    if (skip) \
-      continue; \
+    if (skip) {\
+        continue; \
+    }\
   }
 
 #define VI_ELEMENT_SKIP(inx) \
@@ -931,6 +932,7 @@ static inline bool is_overlapped(const int astart, const int asize,
   } else if(sew == e64) { \
     REDUCTION_ULOOP(e64, BODY) \
   }
+
 
 // genearl VXI signed/unsgied loop
 #define VI_VV_ULOOP(BODY) \
@@ -1547,11 +1549,12 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   P.VU.vstart = 0;
 
 #define VI_EEW(mew, width) \
-  reg_t base = mew? 128 : 8; \
-  reg_t shf = width == 0? 0: width - 5; \
-  P.VU.veew = base << shf; \
-  P.VU.vemul = (P.VU.veew/P.VU.vsew) * P.VU.vlmul; \
-  assert((P.VU.veew/P.VU.vemul) == (P.VU.vsew/P.VU.vlmul));
+  int32_t base = mew? 128 : 8; \
+  int32_t shf = width? width - 5 : 0; \
+  P.VU.veew = base << (shf + 1); \
+  P.VU.vemul = ((float)P.VU.veew/P.VU.vsew) * P.VU.vlmul; \
+  assert((P.VU.veew/P.VU.vemul) == (P.VU.vsew/P.VU.vlmul)); \
+  assert(P.VU.vemul <= 8 && P.VU.vemul >= (1/8)); 
 
 #define VI_LD_INDEX(stride, offset, ld_width, is_seg) \
   VI_CHECK_LD_INDEX; \
