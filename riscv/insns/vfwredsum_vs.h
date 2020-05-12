@@ -1,7 +1,14 @@
 // vfwredsum.vs vd, vs2, vs1
+bool is_propagate = true;
 switch (p->VU.fredsum_impl) {
   case processor_t::vectorUnit_t::ORDERED_FREDSUM_IMPL: { /* Ordered reduction sum */
-    #include "vfwredosum_vs.h"
+      VI_VFP_VV_LOOP_WIDE_REDUCTION
+      ({
+        vd_0 = f32_add(vd_0, vs2);
+      },
+      {
+        vd_0 = f64_add(vd_0, vs2);
+      })
     }
     break;
   case processor_t::vectorUnit_t::PARALLEL_FREDSUM_IMPL: { /* Parallel reduction sum */

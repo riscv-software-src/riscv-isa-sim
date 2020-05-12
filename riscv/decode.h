@@ -1741,11 +1741,13 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
 #define VI_VFP_LOOP_REDUCTION_BASE(width) \
   float##width##_t vd_0 = P.VU.elt<float##width##_t>(rd_num, 0); \
   float##width##_t vs1_0 = P.VU.elt<float##width##_t>(rs1_num, 0); \
-  vd_0 = vs1_0;\
+  vd_0 = vs1_0; \
+  bool is_active = false; \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     VI_LOOP_ELEMENT_SKIP(); \
     int##width##_t &vd = P.VU.elt<int##width##_t>(rd_num, i, true); \
     float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i); \
+    is_active = true; \
 
 #define VI_VFP_LOOP_WIDE_REDUCTION_BASE \
   VI_VFP_COMMON \
@@ -1761,7 +1763,51 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   } \
   P.VU.vstart = 0; \
   if (vl > 0) { \
-    P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = vd_0.v; \
+    if (is_propagate && !is_active) { \
+      switch (x) { \
+        case e16: {\
+            auto ret = f16_classify(f16(vd_0.v)); \
+            if (ret & 0x300) { \
+              if (ret & 0x100) { \
+                softfloat_exceptionFlags |= softfloat_flag_invalid; \
+                set_fp_exceptions; \
+              } \
+              P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = defaultNaNF16UI; \
+            } else { \
+              P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = vd_0.v; \
+            } \
+          } \
+          break; \
+        case e32: { \
+            auto ret = f32_classify(f32(vd_0.v)); \
+            if (ret & 0x300) { \
+              if (ret & 0x100) { \
+                softfloat_exceptionFlags |= softfloat_flag_invalid; \
+                set_fp_exceptions; \
+              } \
+              P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = defaultNaNF32UI; \
+            } else { \
+              P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = vd_0.v; \
+            } \
+          } \
+          break; \
+        case e64: {\
+            auto ret = f64_classify(f64(vd_0.v)); \
+            if (ret & 0x300) { \
+              if (ret & 0x100) { \
+                softfloat_exceptionFlags |= softfloat_flag_invalid; \
+                set_fp_exceptions; \
+              } \
+              P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = defaultNaNF64UI; \
+            } else { \
+              P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = vd_0.v; \
+            } \
+          } \
+          break; \
+      } \
+    } else { \
+      P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = vd_0.v; \
+    } \
   }
 
 #define VI_VFP_LOOP_CMP_END \
@@ -1908,11 +1954,13 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   VI_VFP_COMMON \
   require((P.VU.vsew == e16 && p->supports_extension('F')) || \
           (P.VU.vsew == e32 && p->supports_extension('D'))); \
+  bool is_active = false; \
   switch(P.VU.vsew) { \
     case e16: {\
       float32_t vd_0 = P.VU.elt<float32_t>(rs1_num, 0); \
       for (reg_t i=P.VU.vstart; i<vl; ++i) { \
         VI_LOOP_ELEMENT_SKIP(); \
+        is_active = true; \
         float32_t vs2 = f16_to_f32(P.VU.elt<float16_t>(rs2_num, i)); \
         BODY16; \
         set_fp_exceptions; \
@@ -1923,6 +1971,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
       float64_t vd_0 = P.VU.elt<float64_t>(rs1_num, 0); \
       for (reg_t i=P.VU.vstart; i<vl; ++i) { \
         VI_LOOP_ELEMENT_SKIP(); \
+        is_active = true; \
         float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
         BODY32; \
         set_fp_exceptions; \
