@@ -118,10 +118,13 @@ public:
   uint64_t v_zimm11() { return x(20, 11); }
   uint64_t v_lmul() { return 1 << x(20, 2); }
   uint64_t v_sew() { return 1 << (x(22, 3) + 3); }
+  uint64_t v_frac_lmul() { return 1 << x(25, 1); }
   uint64_t v_width() { return x(12, 3); }
   uint64_t v_mop() { return x(26, 2); }
   uint64_t v_lumop() { return x(20, 5); }
   uint64_t v_sumop() { return x(20, 5); }
+  uint64_t v_vta() { return x(26, 1); }
+  uint64_t v_vma() { return x(27, 1); }
   uint64_t v_mew() { return x(28, 1); }
 
 private:

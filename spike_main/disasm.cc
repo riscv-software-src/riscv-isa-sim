@@ -319,9 +319,12 @@ struct : public arg_t {
     std::stringstream s;
     int sew = insn.v_sew();
     int lmul = insn.v_lmul();
+    auto vta = insn.v_vta() == 1 ? "ta" : "tu";
+    auto vma = insn.v_vma() == 1 ? "ma" : "mu";
     s << "e" << sew;
     if (lmul != 1)
       s << ",m" << lmul;
+    s << ", " << vta << ", " << vma;
     return s.str();
   }
 } v_vtype;

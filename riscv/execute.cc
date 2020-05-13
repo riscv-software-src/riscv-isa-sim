@@ -254,8 +254,8 @@ void processor_t::step(size_t n)
           if (debug && !state.serialized) {
             prev_reg_state_t *saved = prev_state;
             if (saved->VU.setvl_count != VU.setvl_count) {
-              fprintf(stderr, "vconfig <- sew=%lu vlmul=%ld vlmax=%lu vl=%lu\n",
-                      VU.vsew, VU.vlmul, VU.vlmax, VU.vl);
+              fprintf(stderr, "vconfig <- sew=%lu vlmul=%ld vlmax=%lu vl=%lu vta=%ld, vma=%ld\n",
+                      VU.vsew, VU.vlmul, VU.vlmax, VU.vl, VU.vta, VU.vma);
               saved->VU.setvl_count = VU.setvl_count;
             }
             for (int i=0; i<NXPR; ++i) {
