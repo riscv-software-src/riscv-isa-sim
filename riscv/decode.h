@@ -1527,12 +1527,26 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   } \
 }
 
+#define VI_EEW(mew, width) \
+  int32_t base = mew? 128 : 8; \
+  int32_t shf = width? width - 5 : 0; \
+  P.VU.veew = base << (shf + 1); \
+  P.VU.vemul = ((float)P.VU.veew/P.VU.vsew) * P.VU.vlmul; \
+  assert((P.VU.veew/P.VU.vemul) == (P.VU.vsew/P.VU.vlmul)); \
+  if (P.VU.vemul > 8 && P.VU.vemul < (1/8)) { \
+    throw trap_illegal_instruction(0); \
+  }
+
+
 #define VI_LD(stride, offset, ld_width) \
   VI_CHECK_SXX; \
   const reg_t nf = insn.v_nf() + 1; \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
+  const reg_t mew = insn.v_mew(); \
+  const reg_t width = insn.v_width(); \
+  VI_EEW(mew, width); \
   require((nf * P.VU.vlmul) <= (NVPR / 4) && \
           (vd + nf * P.VU.vlmul) <= NVPR); \
   const reg_t vlmul = P.VU.vlmul; \
@@ -1547,14 +1561,6 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
     } \
   } \
   P.VU.vstart = 0;
-
-#define VI_EEW(mew, width) \
-  int32_t base = mew? 128 : 8; \
-  int32_t shf = width? width - 5 : 0; \
-  P.VU.veew = base << (shf + 1); \
-  P.VU.vemul = ((float)P.VU.veew/P.VU.vsew) * P.VU.vlmul; \
-  assert((P.VU.veew/P.VU.vemul) == (P.VU.vsew/P.VU.vlmul)); \
-  assert(P.VU.vemul <= 8 && P.VU.vemul >= (1/8)); 
 
 #define VI_LD_INDEX(stride, offset, ld_width, is_seg) \
   VI_CHECK_LD_INDEX; \
@@ -1602,6 +1608,9 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
+  const reg_t mew = insn.v_mew(); \
+  const reg_t width = insn.v_width(); \
+  VI_EEW(mew, width); \
   require((nf * P.VU.vlmul) <= (NVPR / 4) && \
           vs3 + nf * P.VU.vlmul <= NVPR); \
   const reg_t vlmul = P.VU.vlmul; \
