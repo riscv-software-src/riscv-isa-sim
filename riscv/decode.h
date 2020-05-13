@@ -1526,6 +1526,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 }
 
 #define VI_LD(stride, offset, ld_width) \
+  VI_CHECK_SXX; \
   const reg_t nf = insn.v_nf() + 1; \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
@@ -1560,7 +1561,6 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   const reg_t vd = insn.rd(); \
   const reg_t mew = insn.v_mew(); \
   const reg_t width = insn.v_width(); \
-  VI_EEW(mew, width); \
   require((nf * P.VU.vlmul) <= (NVPR / 4) && \
           (vd + nf * P.VU.vlmul) <= NVPR); \
   if (!is_seg) \
@@ -1660,7 +1660,6 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   const reg_t rd_num = insn.rd(); \
   const reg_t mew = insn.v_mew(); \
   const reg_t width = insn.v_width(); \
-  VI_EEW(mew, width); \
   bool early_stop = false; \
   const reg_t vlmul = P.VU.vlmul; \
   require(rd_num + nf * P.VU.vlmul <= NVPR); \
