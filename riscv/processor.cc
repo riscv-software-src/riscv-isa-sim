@@ -380,8 +380,16 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
     vta = BITS(newType, 6, 6);
     vma = BITS(newType, 7, 7);
     vediv = 1 << BITS(newType, 9, 8);
-    vlmax = fractional_lmul? (VLEN/vsew)/vlmul : VLEN/vsew * vlmul;
-    vmlen = fractional_lmul? 1 : vsew / vlmul;
+
+    if (fractional_lmul) {
+        vlmax = (VLEN/vsew)/vlmul;
+        vmlen = 1;
+        vflmul = 1/(float)vlmul;
+        vlmul = 1;
+    } else {
+        vlmax = VLEN/vsew * vlmul;
+        vmlen = vsew / vlmul; 
+    }
 
     vill = !(vlmul>=1 && vlmul <=8) || vsew > ELEN || vediv != 1 || (newType >> 8) != 0;
     if (vill) {

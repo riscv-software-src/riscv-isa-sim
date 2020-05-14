@@ -447,6 +447,7 @@ public:
       reg_t vediv, vsew, vlmul;
       reg_t veew;
       float vemul;
+      float vflmul;
       reg_t vmel;
       reg_t ELEN, VLEN, SLEN;
       reg_t VALU;

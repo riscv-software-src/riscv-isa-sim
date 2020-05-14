@@ -1532,11 +1532,11 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_EEW(mew, width) \
   int32_t base = mew? 128 : 8; \
-  int32_t shf = width? width - 5 : 0; \
-  P.VU.veew = base << (shf + 1); \
+  int32_t shf = width? width - 4 : 0; \
+  P.VU.veew = base << shf; \
   P.VU.vemul = ((float)P.VU.veew/P.VU.vsew) * P.VU.vlmul; \
-  assert((P.VU.veew/P.VU.vemul) == (P.VU.vsew/P.VU.vlmul)); \
-  if (P.VU.vemul > 8 && P.VU.vemul < (1/8)) { \
+  if ((P.VU.vemul > 8 && P.VU.vemul < (1/8)) || \
+          ((P.VU.veew/P.VU.vemul) != (P.VU.vsew/P.VU.vlmul))) { \
     throw trap_illegal_instruction(0); \
   }
 

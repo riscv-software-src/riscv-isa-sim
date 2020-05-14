@@ -253,9 +253,10 @@ void processor_t::step(size_t n)
 #if 1
           if (debug && !state.serialized) {
             prev_reg_state_t *saved = prev_state;
+            float vlmul = VU.fractional_lmul? VU.vflmul : VU.vlmul;
             if (saved->VU.setvl_count != VU.setvl_count) {
-              fprintf(stderr, "vconfig <- sew=%lu vlmul=%ld vlmax=%lu vl=%lu vta=%ld, vma=%ld\n",
-                      VU.vsew, VU.vlmul, VU.vlmax, VU.vl, VU.vta, VU.vma);
+              fprintf(stderr, "vconfig <- sew=%lu vlmul=%.3f vlmax=%lu vl=%lu vta=%ld vma=%ld\n",
+                      VU.vsew, vlmul, VU.vlmax, VU.vl, VU.vta, VU.vma);
               saved->VU.setvl_count = VU.setvl_count;
             }
             for (int i=0; i<NXPR; ++i) {
@@ -281,8 +282,8 @@ void processor_t::step(size_t n)
             }
             for (reg_t i=0; i<NVPR; ++i) {
               if (!VU.reg_referenced[i]) continue;
-              fprintf(stderr, "vconfig <- sew=%lu vlmul=%ld eew=%lu emul=%f vlmax=%lu vl=%lu\n",
-                      VU.vsew, VU.vlmul, VU.veew, VU.vemul, VU.vlmax, VU.vl);
+              fprintf(stderr, "vconfig <- sew=%lu vlmul=%.3f eew=%lu emul=%f vlmax=%lu vl=%lu\n",
+                      VU.vsew, vlmul, VU.veew, VU.vemul, VU.vlmax, VU.vl);
               for (reg_t j=0; j<VU.VLEN/32; ++j) {
                 uint32_t &old = saved->VU.elt<uint32_t>(i, j);
                 uint32_t now = VU.elt<uint32_t>(i, j);
