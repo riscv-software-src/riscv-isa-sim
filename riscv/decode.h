@@ -1708,11 +1708,11 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 //
 // vector: amo 
 //
-#define VI_AMO(op, type) \
+#define VI_AMO(op, type, idx_type) \
   require_vector; \
   require_extension(EXT_ZVAMO); \
   VI_CHECK_SSS(false); \
-  VI_DUPLICATE_VREG(insn.rs2(), P.VU.vlmax); \
+  VI_DUPLICATE_VREG(insn.rs2(), idx_type); \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
