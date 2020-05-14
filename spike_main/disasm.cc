@@ -327,13 +327,13 @@ struct : public arg_t {
       if(insn.v_frac_lmul()) {
         std::string lmul_str = "";
         switch(lmul){
-          case 2:
+          case 3:
             lmul_str = "f2";
             break;
-          case 4:
+          case 2:
             lmul_str = "f4";
             break;
-          case 8:
+          case 1:
             lmul_str = "f8";
             break;
           default:
