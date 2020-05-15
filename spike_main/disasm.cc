@@ -380,7 +380,7 @@ disassembler_t::disassembler_t(int xlen)
   const uint32_t mask_nf = 0x7Ul << 29;
   const uint32_t mask_wd = 0x1Ul << 26;
   const uint32_t mask_vldst = 0x7Ul << 12 | 0x1UL << 28;
-  const uint32_t mask_amoop = 0x1fUl;
+  const uint32_t mask_amoop = 0x1fUl << 27;
   const uint32_t mask_width = 0x7Ul << 12;
 
   #define DECLARE_INSN(code, match, mask) \
