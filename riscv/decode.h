@@ -1717,24 +1717,11 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
   const reg_t rs2_num = insn.rs2(); \
+  require(P.VU.vsew >= xlen && P.VU.vsew <= xlen); \
   for (reg_t i = P.VU.vstart; i < vl; ++i) { \
     VI_ELEMENT_SKIP(i); \
     VI_STRIP(i); \
     switch (P.VU.vsew) { \
-    case e8: {\
-      auto vs3 = P.VU.elt< type ## 8_t>(vd, vreg_inx); \
-      auto val = MMU.amo_uint8(baseAddr + index[i], [&]( type ## 8_t lhs) { op }); \
-      if (insn.v_wd()) \
-        P.VU.elt< type ## 8_t>(vd, vreg_inx, true) = val; \
-      } \
-      break; \
-    case e16: {\
-      auto vs3 = P.VU.elt< type ## 16_t>(vd, vreg_inx); \
-      auto val = MMU.amo_uint16(baseAddr + index[i], [&]( type ## 16_t lhs) { op }); \
-      if (insn.v_wd()) \
-        P.VU.elt< type ## 16_t>(vd, vreg_inx, true) = val; \
-      } \
-      break; \
     case e32: {\
       auto vs3 = P.VU.elt< type ## 32_t>(vd, vreg_inx); \
       auto val = MMU.amo_uint32(baseAddr + index[i], [&]( type ## 32_t lhs) { op }); \
