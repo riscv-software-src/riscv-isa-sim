@@ -358,7 +358,7 @@ typedef struct {
   reg_t mask;
   const char *fmt;
   std::vector<const arg_t*>& arg;
-} ldst_seg_t;
+} custom_fmt_t;
 
 std::string disassembler_t::disassemble(insn_t insn) const
 {
@@ -766,7 +766,7 @@ disassembler_t::disassembler_t(int xlen)
 
   // handle vector segment load/store
   for (size_t elt = 0; elt <= 7; ++elt) {
-    const ldst_seg_t template_insn[] = {
+    const custom_fmt_t template_insn[] = {
       {match_vle8_v,   mask_vle8_v,   "vlseg%de%d.v",   v_ld_unit},
       {match_vse8_v,   mask_vse8_v,   "vsseg%de%d.v",   v_st_unit},
 
@@ -1153,7 +1153,7 @@ disassembler_t::disassembler_t(int xlen)
   std::vector<const arg_t *> v_fmt_amo_wd = {&vd, &v_address, &vs2, &vd, &opt, &vm};
   std::vector<const arg_t *> v_fmt_amo = {&x0, &v_address, &vs2, &vd, &opt, &vm};
   for (size_t elt = 0; elt <= 3; ++elt) {
-    const ldst_seg_t template_insn[] = {
+    const custom_fmt_t template_insn[] = {
       {match_vamoswape8_v | mask_wd,   mask_vamoswape8_v | mask_wd,
          "%se%d.v", v_fmt_amo_wd},
       {match_vamoswape8_v,   mask_vamoswape8_v | mask_wd,
