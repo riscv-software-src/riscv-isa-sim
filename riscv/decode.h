@@ -1538,7 +1538,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   P.VU.vemul = ((float)P.VU.veew/P.VU.vsew) * P.VU.vlmul; \
   if ((P.VU.vemul > 8 && P.VU.vemul < (1/8)) || \
           ((P.VU.veew/P.VU.vemul) != (P.VU.vsew/P.VU.vlmul))) { \
-    throw trap_illegal_instruction(0); \
+    require(0); \
   }
 
 
