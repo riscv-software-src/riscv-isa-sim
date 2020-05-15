@@ -1756,6 +1756,38 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   } \
   P.VU.vstart = 0;
 
+// vector: sign/unsiged extension
+#define VI_VV_EXT(div, type) \
+  reg_t from = P.VU.vsew / div; \
+  require(from >= e8 && from <= e64); \
+  const reg_t mew = insn.v_mew(); \
+  const reg_t width = insn.v_width(); \
+  VI_EEW(mew, width); \
+  VI_GENERAL_LOOP_BASE \
+    switch (((P.VU.vsew >> 3) << 4)| from) { \
+      case 0x21: \
+        P.VU.elt<type##16_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
+        break; \
+      case 0x41: \
+        P.VU.elt<type##32_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
+        break; \
+      case 0x81: \
+        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
+        break; \
+      case 0x42: \
+        P.VU.elt<type##32_t>(rd_num, i, true) = P.VU.elt<type##16_t>(rs2_num, i); \
+        break; \
+      case 0x82: \
+        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##16_t>(rs2_num, i); \
+        break; \
+      case 0x84: \
+        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##32_t>(rs2_num, i); \
+        break; \
+      default: \
+        break; \
+    } \
+  VI_LOOP_END
+
 //
 // vector: vfp helper
 //
