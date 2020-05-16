@@ -85,7 +85,7 @@ void sim_t::interactive()
   while (!done())
   {
     std::cerr << ": " << std::flush;
-    std::string s = readline(2);
+    std::string s = readline(0);
 
     std::stringstream ss(s);
     std::string cmd, tmp;
