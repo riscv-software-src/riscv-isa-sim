@@ -462,19 +462,20 @@ static inline bool is_overlapped(const int astart, const int asize,
   }
 
 #define VI_CHECK_SSS(is_vs1) \
+  if (insn.v_vm() == 0) \
+    require(insn.rd() != 0); \
   if (P.VU.vlmul > 1) { \
     require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
     require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
     if (is_vs1) { \
       require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
     } \
-    if (insn.v_vm() == 0) \
-      require(insn.rd() != 0); \
   }
 
 #define VI_CHECK_STORE_SXX \
   require_vector; \
-  require((insn.rd() & (P.VU.vlmul - 1)) == 0);
+  if (insn.v_vm() == 0) \
+    require(insn.rd() != 0);
 
 #define VI_CHECK_SXX \
   VI_CHECK_STORE_SXX; \
