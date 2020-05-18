@@ -428,7 +428,7 @@ static inline bool is_overlapped(const int astart, const int asize,
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
   require((insn.rs2() & (P.VU.vlmul * 2 - 1)) == 0); \
   require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
-  if (insn.v_vm() == 0 && P.VU.vlmul > 1) \
+  if (insn.v_vm() == 0) \
     require(insn.rd() != 0);
 
 #define VI_WIDE_CHECK_COMMON \
@@ -448,7 +448,7 @@ static inline bool is_overlapped(const int astart, const int asize,
   VI_CHECK_ST_INDEX; \
   if (insn.v_nf() > 0) \
     require(!is_overlapped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul)); \
-  if (insn.v_vm() == 0 && (insn.v_nf() > 0 || P.VU.vlmul > 1)) \
+  if (insn.v_vm() == 0) \
     require(insn.rd() != 0); \
 
 #define VI_CHECK_MSS(is_vs1) \
@@ -479,7 +479,7 @@ static inline bool is_overlapped(const int astart, const int asize,
 
 #define VI_CHECK_SXX \
   VI_CHECK_STORE_SXX; \
-  if (insn.v_vm() == 0 && (insn.v_nf() > 0 || P.VU.vlmul > 1)) \
+  if (insn.v_vm() == 0) \
     require(insn.rd() != 0); \
 
 #define VI_CHECK_DSS(is_vs1) \
@@ -531,7 +531,7 @@ static inline bool is_overlapped(const int astart, const int asize,
 #define VI_CHECK_SLIDE(is_over) \
   require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
   require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
-  if (insn.v_vm() == 0 && P.VU.vlmul > 1) \
+  if (insn.v_vm() == 0) \
     require(insn.rd() != 0); \
   if (is_over) \
     require(insn.rd() != insn.rs2()); \
