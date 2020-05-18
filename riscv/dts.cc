@@ -170,7 +170,7 @@ std::string dts_compile(const std::string& dts)
 }
 
 
-static int fdt_get_node_addr_size(void *fdt, int node, unsigned long *addr,
+static int fdt_get_node_addr_size(void *fdt, int node, reg_t *addr,
                                   unsigned long *size, const char *field)
 {
   int parent, len, i;
@@ -214,7 +214,7 @@ static int fdt_get_node_addr_size(void *fdt, int node, unsigned long *addr,
   return 0;
 }
 
-int fdt_parse_clint(void *fdt, unsigned long *clint_addr,
+int fdt_parse_clint(void *fdt, reg_t *clint_addr,
                     const char *compatible)
 {
   int nodeoffset, rc;
@@ -230,7 +230,7 @@ int fdt_parse_clint(void *fdt, unsigned long *clint_addr,
   return 0;
 }
 
-int fdt_parse_pmp_num(void *fdt, unsigned long *pmp_num, const char *compatible)
+int fdt_parse_pmp_num(void *fdt, reg_t *pmp_num, const char *compatible)
 {
   int nodeoffset, rc;
 
@@ -246,7 +246,7 @@ int fdt_parse_pmp_num(void *fdt, unsigned long *pmp_num, const char *compatible)
   return 0;
 }
 
-int fdt_parse_pmp_alignment(void *fdt, unsigned long *pmp_align,
+int fdt_parse_pmp_alignment(void *fdt, reg_t *pmp_align,
                             const char *compatible)
 {
   int nodeoffset, rc;
