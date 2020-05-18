@@ -760,7 +760,7 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_VMEM_INSN(vse,    v_st_unit,   );
   DISASM_VMEM_INSN(vsse,   v_st_stride, );
   DISASM_VMEM_INSN(vsxei,  v_st_index,  );
-  DISASM_VMEM_INSN(vsuxei, v_st_unit,   );
+  DISASM_VMEM_INSN(vsuxei, v_st_index,  );
 
   #undef DISASM_VMEM_INSN
 
