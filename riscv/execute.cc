@@ -282,7 +282,7 @@ void processor_t::step(size_t n)
             }
             for (reg_t i=0; i<NVPR; ++i) {
               if (!VU.reg_referenced[i]) continue;
-              fprintf(stderr, "vconfig <- sew=%lu vlmul=%.3f eew=%lu emul=%f vlmax=%lu vl=%lu\n",
+              fprintf(stderr, "vconfig <- sew=%lu vlmul=%.3f eew=%lu emul=%.3f vlmax=%lu vl=%lu\n",
                       VU.vsew, vlmul, VU.veew, VU.vemul, VU.vlmax, VU.vl);
               for (reg_t j=0; j<VU.VLEN/32; ++j) {
                 uint32_t &old = saved->VU.elt<uint32_t>(i, j);
