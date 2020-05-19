@@ -251,6 +251,7 @@ private:
     require_extension('V'); \
     dirty_vs_state; \
   } while (0);
+#define require_align(val, pos) require(is_aligned(val, pos))
 
 #define set_fp_exceptions ({ if (softfloat_exceptionFlags) { \
                                dirty_fp_state; \
@@ -422,6 +423,11 @@ static inline bool is_overlapped(const int astart, const int asize,
   return std::max(aend, bend) - std::min(astart, bstart) < asize + bsize;
 }
 
+static inline bool is_aligned(const unsigned val, const unsigned pos)
+{
+  return pos ? (val & (pos - 1)) == 0 : true;
+}
+
 #define VI_NARROW_CHECK_COMMON \
   require_vector;\
   require(P.VU.vlmul <= 4); \
@@ -435,7 +441,7 @@ static inline bool is_overlapped(const int astart, const int asize,
   require_vector;\
   require(P.VU.vlmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
-  require((insn.rd() & (P.VU.vlmul * 2 - 1)) == 0); \
+  require_align(insn.rd(), P.VU.vflmul * 2); \
   if (insn.v_vm() == 0) \
     require(insn.rd() != 0);
 
@@ -490,11 +496,11 @@ static inline bool is_overlapped(const int astart, const int asize,
 #define VI_CHECK_DSS(is_vs1) \
   VI_WIDE_CHECK_COMMON; \
   require(!is_overlapped(insn.rd(), P.VU.vlmul * 2, insn.rs2(), P.VU.vlmul)); \
-  require((insn.rd() & (P.VU.vlmul * 2 - 1)) == 0); \
-  require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
+  require_align(insn.rs2(), P.VU.vflmul); \
   if (is_vs1) {\
+     fprintf(stderr, "here 5\n");  \
      require(!is_overlapped(insn.rd(), P.VU.vlmul * 2, insn.rs1(), P.VU.vlmul)); \
-     require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
+     require_align(insn.rs1(), P.VU.vflmul); \
   }
 
 #define VI_CHECK_QSS(is_vs1) \

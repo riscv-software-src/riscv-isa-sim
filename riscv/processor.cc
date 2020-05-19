@@ -404,6 +404,7 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
     } else {
       vlmul = 1 << vlmul;
       vlmax = VLEN/vsew * vlmul;
+      vflmul = vlmul;
     }
     vmlen = 1; 
 
