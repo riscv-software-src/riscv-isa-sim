@@ -1707,7 +1707,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
   const reg_t rs2_num = insn.rs2(); \
-  require(P.VU.vsew >= xlen && P.VU.vsew <= xlen); \
+  require(P.VU.vsew >= P.get_xlen() && P.VU.vsew <= P.get_xlen()); \
   for (reg_t i = P.VU.vstart; i < vl; ++i) { \
     VI_ELEMENT_SKIP(i); \
     VI_STRIP(i); \
