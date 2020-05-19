@@ -472,13 +472,16 @@ static inline bool is_overlapped(const int astart, const int asize,
     } \
   }
 
-#define VI_CHECK_STORE_SXX \
+#define VI_CHECK_STORE \
   require_vector; \
-  if (insn.v_vm() == 0) \
-    require(insn.rd() != 0);
+  reg_t emul = (eew / P.VU.vsew * P.VU.vlmul) + 0.75; \
+  require(emul >= 1 && emul <= 8); \
+  require((insn.rd() & (emul - 1)) == 0); \
+  require((nf * emul) <= (NVPR / 4) && \
+          (insn.rd() + nf * emul) <= NVPR); \
 
-#define VI_CHECK_SXX \
-  VI_CHECK_STORE_SXX; \
+#define VI_CHECK_LOAD \
+  VI_CHECK_STORE; \
   if (insn.v_vm() == 0) \
     require(insn.rd() != 0); \
 
@@ -1544,17 +1547,12 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 
 #define VI_LD(stride, offset, ld_width) \
-  VI_CHECK_SXX; \
   const reg_t nf = insn.v_nf() + 1; \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
-  const reg_t mew = insn.v_mew(); \
-  const reg_t width = insn.v_width(); \
-  VI_EEW(mew, width); \
-  require((nf * P.VU.vlmul) <= (NVPR / 4) && \
-          (vd + nf * P.VU.vlmul) <= NVPR); \
-  const reg_t vlmul = P.VU.vlmul; \
+  const float eew = sizeof(ld_width##_t) * 8; \
+  VI_CHECK_LOAD; \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_ELEMENT_SKIP(i); \
     VI_STRIP(i); \
@@ -1562,7 +1560,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       ld_width##_t val = MMU.load_##ld_width( \
         baseAddr + (stride) + (offset) * sizeof(ld_width##_t)); \
-      P.VU.elt<ld_width##_t>(vd + fn * vlmul, vreg_inx, true) = val; \
+      P.VU.elt<ld_width##_t>(vd + fn * emul, vreg_inx, true) = val; \
     } \
   } \
   P.VU.vstart = 0;
@@ -1608,23 +1606,18 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   P.VU.vstart = 0;
 
 #define VI_ST(stride, offset, st_width) \
-  VI_CHECK_STORE_SXX; \
   const reg_t nf = insn.v_nf() + 1; \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
-  const reg_t mew = insn.v_mew(); \
-  const reg_t width = insn.v_width(); \
-  VI_EEW(mew, width); \
-  require((nf * P.VU.vlmul) <= (NVPR / 4) && \
-          vs3 + nf * P.VU.vlmul <= NVPR); \
-  const reg_t vlmul = P.VU.vlmul; \
+  const reg_t eew = sizeof(st_width##_t) * 8; \
+  VI_CHECK_STORE; \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i) \
     VI_ELEMENT_SKIP(i); \
     P.VU.vstart = i; \
     for (reg_t fn = 0; fn < nf; ++fn) { \
-      st_width##_t val = P.VU.elt<st_width##_t>(vs3 + fn * vlmul, vreg_inx); \
+      st_width##_t val = P.VU.elt<st_width##_t>(vs3 + fn * emul, vreg_inx); \
       MMU.store_##st_width( \
         baseAddr + (stride) + (offset) * sizeof(st_width##_t), val); \
     } \
@@ -1669,17 +1662,13 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_LDST_FF(ld_type) \
   const reg_t nf = insn.v_nf() + 1; \
-  require((nf * P.VU.vlmul) <= (NVPR / 4)); \
-  VI_CHECK_SXX; \
   const reg_t sew = p->VU.vsew; \
   const reg_t vl = p->VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t rd_num = insn.rd(); \
-  const reg_t mew = insn.v_mew(); \
-  const reg_t width = insn.v_width(); \
+  const reg_t eew = sizeof(ld_type##_t) * 8; \
+  VI_CHECK_LOAD; \
   bool early_stop = false; \
-  const reg_t vlmul = P.VU.vlmul; \
-  require(rd_num + nf * P.VU.vlmul <= NVPR); \
   for (reg_t i = p->VU.vstart; i < vl; ++i) { \
     VI_STRIP(i); \
     VI_ELEMENT_SKIP(i); \
@@ -1697,7 +1686,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
         P.VU.vl = i; \
         break; \
       } \
-      p->VU.elt<ld_type##_t>(rd_num + fn * vlmul, vreg_inx, true) = val; \
+      p->VU.elt<ld_type##_t>(rd_num + fn * emul, vreg_inx, true) = val; \
     } \
     \
     if (early_stop) { \
