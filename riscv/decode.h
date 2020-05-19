@@ -474,7 +474,7 @@ static inline bool is_overlapped(const int astart, const int asize,
 
 #define VI_CHECK_STORE \
   require_vector; \
-  reg_t emul = (eew / P.VU.vsew * P.VU.vlmul) + 0.75; \
+  reg_t emul = (eew / P.VU.vsew * P.VU.vlmul) + 0.875; \
   require(emul >= 1 && emul <= 8); \
   require((insn.rd() & (emul - 1)) == 0); \
   require((nf * emul) <= (NVPR / 4) && \
@@ -1610,7 +1610,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
-  const reg_t eew = sizeof(st_width##_t) * 8; \
+  const float eew = sizeof(st_width##_t) * 8; \
   VI_CHECK_STORE; \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i) \
@@ -1666,7 +1666,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   const reg_t vl = p->VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t rd_num = insn.rd(); \
-  const reg_t eew = sizeof(ld_type##_t) * 8; \
+  const float eew = sizeof(ld_type##_t) * 8; \
   VI_CHECK_LOAD; \
   bool early_stop = false; \
   for (reg_t i = p->VU.vstart; i < vl; ++i) { \
