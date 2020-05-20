@@ -484,9 +484,9 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require_vector; \
   P.VU.veew = sizeof(elt_width##_t) * 8; \
   P.VU.vemul = ((float)P.VU.veew / P.VU.vsew * P.VU.vflmul); \
-  reg_t emul = P.VU.vemul + 0.875; \
-  require(emul >= 1 && emul <= 8); \
-  require_align(insn.rd(), P.VU.vflmul); \
+  reg_t emul = P.VU.vemul < 1 ? 1 : P.VU.vemul; \
+  require(P.VU.vemul >= 0.125 && P.VU.vemul <= 8); \
+  require_align(insn.rd(), P.VU.vemul); \
   require((nf * emul) <= (NVPR / 4) && \
           (insn.rd() + nf * emul) <= NVPR); \
 
