@@ -418,14 +418,15 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 //
 // vector: operation and register acccess check helper
 //
-static inline bool is_overlapped(const int astart, const int asize,
-                                const int bstart, const int bsize)
+static inline bool is_overlapped(const int astart, int asize,
+                                const int bstart, int bsize)
 {
-  if (asize == 0 && bsize == 0)
-    return false;
+  asize = asize == 0 ? 1 : asize;
+  bsize = bsize == 0 ? 1 : bsize;
 
   const int aend = astart + asize;
   const int bend = bstart + bsize;
+
   return std::max(aend, bend) - std::min(astart, bstart) < asize + bsize;
 }
 
