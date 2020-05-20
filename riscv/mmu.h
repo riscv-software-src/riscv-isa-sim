@@ -210,25 +210,62 @@ public:
 
   inline void yield_load_reservation()
   {
-    load_reservation_address = (reg_t)-1;
+      auto reserv_set = sim->get_reservation_set();
+      for (auto& entry: reserv_set) {
+          if (entry.second.id == proc->id) {
+            entry.second.valid = false;
+          }
+      }
+  }
+
+  inline void check_reservation_set()
+  {
+    if (sim->get_reservation_set().size() > sim->get_reservation_set_size())
+      throw trap_load_access_fault(0);
   }
 
   inline void acquire_load_reservation(reg_t vaddr)
   {
     reg_t paddr = translate(vaddr, 1, LOAD);
-    if (auto host_addr = sim->addr_to_mem(paddr))
-      load_reservation_address = refill_tlb(vaddr, paddr, host_addr, LOAD).target_offset + vaddr;
-    else
-      throw trap_load_access_fault(vaddr); // disallow LR to I/O space
+    if (auto host_addr = sim->addr_to_mem(paddr)) {
+      reg_t load_reservation_address = refill_tlb(vaddr, paddr, host_addr, LOAD).target_offset + vaddr;
+      auto& reserv_set = sim->get_reservation_set();
+      auto exist = reserv_set.count(load_reservation_address);
+      if (exist > 1) {
+        auto& entry = reserv_set[load_reservation_address];
+        if (entry.id == proc->id && entry.valid) {
+          throw trap_load_access_fault(vaddr); // disallow nested LR
+      	}
+      }
+      reserv_set[load_reservation_address] = {proc->id, true};
+      check_reservation_set();
+
+    } else {
+        throw trap_load_access_fault(vaddr); // disallow LR to I/O space
+    }
   }
 
   inline bool check_load_reservation(reg_t vaddr)
   {
     reg_t paddr = translate(vaddr, 1, STORE);
-    if (auto host_addr = sim->addr_to_mem(paddr))
-      return load_reservation_address == refill_tlb(vaddr, paddr, host_addr, STORE).target_offset + vaddr;
-    else
+    if (auto host_addr = sim->addr_to_mem(paddr)) {
+      reg_t reserved_addr = refill_tlb(vaddr, paddr, host_addr, STORE).target_offset + vaddr;
+      auto reserv_set = sim->get_reservation_set();
+      auto exist = reserv_set.count(reserved_addr);
+      if (exist > 0) {
+        auto entry = reserv_set[reserved_addr];
+        if (entry.id == proc->id && entry.valid) {
+            sim->get_reservation_set().erase(reserved_addr);
+            return true;
+        } else {
+            return false;
+        }
+      } else {
+          return false;
+      }
+    } else {
       throw trap_store_access_fault(vaddr); // disallow SC to I/O space
+    }
   }
 
   static const reg_t ICACHE_ENTRIES = 1024;
@@ -312,7 +349,6 @@ private:
   simif_t* sim;
   processor_t* proc;
   memtracer_list_t tracer;
-  reg_t load_reservation_address;
   uint16_t fetch_temp;
 
   // implement an instruction cache for simulator performance
@@ -394,6 +430,7 @@ private:
   trigger_matched_t *matched_trigger;
 
   friend class processor_t;
+
 };
 
 struct vm_info {

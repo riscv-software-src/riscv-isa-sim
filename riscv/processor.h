@@ -47,6 +47,7 @@ typedef struct
   uint8_t cause;
 } dcsr_t;
 
+
 typedef enum
 {
   ACTION_DEBUG_EXCEPTION = MCONTROL_ACTION_DEBUG_EXCEPTION,
@@ -408,7 +409,6 @@ private:
   FILE *log_file;
   bool halt_on_reset;
   std::vector<bool> extension_table;
-  
 
   std::vector<insn_desc_t> instructions;
   std::map<reg_t,uint64_t> pc_histogram;
