@@ -292,7 +292,7 @@ void processor_t::parse_isa_string(const char* str)
     }
   }
 
-  state.misa |= max_isa;
+  state.misa = max_isa;
 
   if (!supports_extension('I'))
     bad_isa_string(str, "'I' extension is required");
