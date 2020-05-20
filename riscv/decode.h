@@ -499,7 +499,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs2(), P.VU.vflmul); \
   require_align(insn.rs2(), P.VU.vflmul); \
   if (is_vs1) {\
-     fprintf(stderr, "here 5\n");  \
      require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs1(), P.VU.vflmul); \
      require_align(insn.rs1(), P.VU.vflmul); \
   }
