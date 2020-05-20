@@ -254,6 +254,7 @@ private:
 #define require_align(val, pos) require(is_aligned(val, pos))
 #define require_noover(astart, asize, bstart, bsize) \
   require(!is_overlapped(astart, asize, bstart, bsize))
+#define require_vm do { if (insn.v_vm() == 0) require(insn.rd() != 0);} while(0);
 
 #define set_fp_exceptions ({ if (softfloat_exceptionFlags) { \
                                dirty_fp_state; \
@@ -439,16 +440,14 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
   require_align(insn.rs2(), P.VU.vflmul * 2); \
   require_align(insn.rd(), P.VU.vflmul); \
-  if (insn.v_vm() == 0) \
-    require(insn.rd() != 0);
+  require_vm; \
 
 #define VI_WIDE_CHECK_COMMON \
   require_vector;\
   require(P.VU.vflmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
   require_align(insn.rd(), P.VU.vflmul * 2); \
-  if (insn.v_vm() == 0) \
-    require(insn.rd() != 0);
+  require_vm; \
 
 #define VI_CHECK_ST_INDEX \
   require_vector; \
@@ -459,8 +458,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   VI_CHECK_ST_INDEX; \
   if (insn.v_nf() > 0) \
     require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vflmul); \
-  if (insn.v_vm() == 0) \
-    require(insn.rd() != 0); \
+  require_vm; \
 
 #define VI_CHECK_MSS(is_vs1) \
   if (P.VU.vflmul > 1) { \
@@ -473,8 +471,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   }
 
 #define VI_CHECK_SSS(is_vs1) \
-  if (insn.v_vm() == 0) \
-    require(insn.rd() != 0); \
+  require_vm; \
   if (P.VU.vflmul > 1) { \
     require_align(insn.rd(), P.VU.vflmul); \
     require_align(insn.rs2(), P.VU.vflmul); \
@@ -495,8 +492,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_CHECK_LOAD(elt_width) \
   VI_CHECK_STORE(elt_width); \
-  if (insn.v_vm() == 0) \
-    require(insn.rd() != 0); \
+  require_vm; \
 
 #define VI_CHECK_DSS(is_vs1) \
   VI_WIDE_CHECK_COMMON; \
@@ -513,8 +509,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require(P.VU.vflmul <= 2); \
   require(P.VU.vsew * 4 <= P.VU.ELEN); \
   require_align(insn.rd(), P.VU.vflmul * 4); \
-  if (insn.v_vm() == 0) \
-    require(insn.rd() != 0); \
+  require_vm; \
   require_noover(insn.rd(), P.VU.vflmul * 4, insn.rs2(), P.VU.vflmul); \
   require_align(insn.rs2(), P.VU.vflmul); \
   if (is_vs1) {\
@@ -547,8 +542,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define VI_CHECK_SLIDE(is_over) \
   require_align(insn.rs2(), P.VU.vflmul); \
   require_align(insn.rd(), P.VU.vflmul); \
-  if (insn.v_vm() == 0) \
-    require(insn.rd() != 0); \
+  require_vm; \
   if (is_over) \
     require(insn.rd() != insn.rs2()); \
 
