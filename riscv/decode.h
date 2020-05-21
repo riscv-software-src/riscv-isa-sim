@@ -17,6 +17,7 @@
 #include "softfloat_types.h"
 #include "specialize.h"
 #include <cinttypes>
+#include <deque>
 
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
@@ -1742,13 +1743,14 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 // vector: sign/unsiged extension
 #define VI_VV_EXT(div, type) \
+  require_vm; \
   reg_t from = P.VU.vsew / div; \
   require(from >= e8 && from <= e64); \
-  const reg_t mew = insn.v_mew(); \
-  const reg_t width = insn.v_width(); \
-  VI_EEW(mew, width); \
+  reg_t pat = (((P.VU.vsew >> 3) << 4) | from >> 3); \
+  std::deque<type##8_t> origin; \
   VI_GENERAL_LOOP_BASE \
-    switch (((P.VU.vsew >> 3) << 4)| from) { \
+  fprintf(stderr, "%d, %d\n", P.VU.vsew, from);\
+    switch (pat) { \
       case 0x21: \
         P.VU.elt<type##16_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
         break; \
@@ -1756,7 +1758,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
         P.VU.elt<type##32_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
         break; \
       case 0x81: \
-        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
+        origin.push_back(P.VU.elt<type##8_t>(rs2_num, i)); \
         break; \
       case 0x42: \
         P.VU.elt<type##32_t>(rd_num, i, true) = P.VU.elt<type##16_t>(rs2_num, i); \
@@ -1767,10 +1769,49 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
       case 0x84: \
         P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##32_t>(rs2_num, i); \
         break; \
+      case 0x88: \
+        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##32_t>(rs2_num, i); \
+        break; \
       default: \
         break; \
     } \
-  VI_LOOP_END
+  VI_LOOP_END \
+  for (reg_t i=P.VU.vstart; i<vl; ++i){\
+    VI_MASK_VARS \
+    if (insn.v_vm() == 0) { \
+      bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
+      if (skip) {\
+          origin.pop_front();\
+          continue; \
+      }\
+    } \
+    switch (pat) { \
+      case 0x21: \
+        P.VU.elt<type##16_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
+        break; \
+      case 0x41: \
+        P.VU.elt<type##32_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
+        break; \
+      case 0x81: \
+        P.VU.elt<type##64_t>(rd_num, i, true) = origin.front(); \
+        origin.pop_front();\
+        break; \
+      case 0x42: \
+        P.VU.elt<type##32_t>(rd_num, i, true) = P.VU.elt<type##16_t>(rs2_num, i); \
+        break; \
+      case 0x82: \
+        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##16_t>(rs2_num, i); \
+        break; \
+      case 0x84: \
+        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##32_t>(rs2_num, i); \
+        break; \
+      case 0x88: \
+        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##32_t>(rs2_num, i); \
+        break; \
+      default: \
+        break; \
+    } \
+  }
 
 //
 // vector: vfp helper
