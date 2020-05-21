@@ -1759,6 +1759,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   require_vm; \
   reg_t from = P.VU.vsew / div; \
   require(from >= e8 && from <= e64); \
+  require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vflmul / div); \
   reg_t pat = (((P.VU.vsew >> 3) << 4) | from >> 3); \
   VI_GENERAL_LOOP_BASE \
   VI_LOOP_ELEMENT_SKIP(); \
