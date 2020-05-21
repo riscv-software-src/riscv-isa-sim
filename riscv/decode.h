@@ -456,14 +456,18 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   P.VU.veew = elt_width; \
   P.VU.vemul = ((float)P.VU.veew / P.VU.vsew * P.VU.vflmul); \
   require(P.VU.vemul >= 0.125 && P.VU.vemul <= 8); \
+  reg_t emul = P.VU.vemul < 1 ? 1 : P.VU.vemul; \
   reg_t flmul = P.VU.vflmul < 1 ? 1 : P.VU.vflmul; \
   require_align(insn.rd(), P.VU.vflmul); \
   require_align(insn.rs2(), P.VU.vemul); \
   require((nf * flmul) <= (NVPR / 4) && \
-          (insn.rd() + nf * flmul) <= NVPR); \
+          (insn.rd() + nf * flmul) <= NVPR && \
+          (insn.rs2() + nf * emul) <= NVPR); \
 
 #define VI_CHECK_LD_INDEX(elt_width) \
   VI_CHECK_ST_INDEX(elt_width); \
+  if (P.VU.vemul != P.VU.vflmul) \
+    require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
   if (insn.v_nf() > 0) {\
     require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
     require_noover(vd, nf, insn.rs2(), 1); \
