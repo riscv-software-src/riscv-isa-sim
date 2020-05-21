@@ -1749,13 +1749,15 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 // vector: sign/unsiged extension
 #define VI_VV_EXT(div, type) \
+  require(insn.rd() != insn.rs2()); \
+  require_align(insn.rd(), P.VU.vflmul); \
+  require_align(insn.rs2(), P.VU.vflmul); \
   require_vm; \
   reg_t from = P.VU.vsew / div; \
   require(from >= e8 && from <= e64); \
   reg_t pat = (((P.VU.vsew >> 3) << 4) | from >> 3); \
-  std::deque<type##8_t> origin; \
   VI_GENERAL_LOOP_BASE \
-  fprintf(stderr, "%d, %d\n", P.VU.vsew, from);\
+  VI_LOOP_ELEMENT_SKIP(); \
     switch (pat) { \
       case 0x21: \
         P.VU.elt<type##16_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
@@ -1764,7 +1766,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
         P.VU.elt<type##32_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
         break; \
       case 0x81: \
-        origin.push_back(P.VU.elt<type##8_t>(rs2_num, i)); \
+        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
         break; \
       case 0x42: \
         P.VU.elt<type##32_t>(rd_num, i, true) = P.VU.elt<type##16_t>(rs2_num, i); \
@@ -1781,43 +1783,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
       default: \
         break; \
     } \
-  VI_LOOP_END \
-  for (reg_t i=P.VU.vstart; i<vl; ++i){\
-    VI_MASK_VARS \
-    if (insn.v_vm() == 0) { \
-      bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
-      if (skip) {\
-          origin.pop_front();\
-          continue; \
-      }\
-    } \
-    switch (pat) { \
-      case 0x21: \
-        P.VU.elt<type##16_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
-        break; \
-      case 0x41: \
-        P.VU.elt<type##32_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
-        break; \
-      case 0x81: \
-        P.VU.elt<type##64_t>(rd_num, i, true) = origin.front(); \
-        origin.pop_front();\
-        break; \
-      case 0x42: \
-        P.VU.elt<type##32_t>(rd_num, i, true) = P.VU.elt<type##16_t>(rs2_num, i); \
-        break; \
-      case 0x82: \
-        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##16_t>(rs2_num, i); \
-        break; \
-      case 0x84: \
-        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##32_t>(rs2_num, i); \
-        break; \
-      case 0x88: \
-        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##32_t>(rs2_num, i); \
-        break; \
-      default: \
-        break; \
-    } \
-  }
+  VI_LOOP_END 
 
 //
 // vector: vfp helper
