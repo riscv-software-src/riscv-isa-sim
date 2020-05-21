@@ -458,7 +458,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require(P.VU.vemul >= 0.125 && P.VU.vemul <= 8); \
   reg_t flmul = P.VU.vflmul < 1 ? 1 : P.VU.vflmul; \
   require_align(insn.rd(), P.VU.vflmul); \
-  require_align(insn.rs2(), P.VU.vflmul); \
+  require_align(insn.rs2(), P.VU.vemul); \
   require((nf * flmul) <= (NVPR / 4) && \
           (insn.rd() + nf * flmul) <= NVPR); \
 
