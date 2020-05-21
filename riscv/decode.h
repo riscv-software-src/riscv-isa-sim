@@ -1709,13 +1709,19 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define VI_AMO(op, type, idx_type) \
   require_vector; \
   require_extension(EXT_ZVAMO); \
-  VI_CHECK_SSS(false); \
+  if (insn.v_wd()) \
+    require_vm; \
+  require_align(insn.rd(), P.VU.vflmul); \
+  require(P.VU.vsew <= P.get_xlen() && P.VU.vsew >= 32); \
+  require_align(insn.rd(), P.VU.vflmul); \
+  P.VU.veew = idx_type; \
+  P.VU.vemul = ((float)P.VU.veew / P.VU.vsew * P.VU.vflmul); \
+  require(P.VU.vemul >= 0.125 && P.VU.vemul <= 8); \
+  require_align(insn.rs2(), P.VU.vemul); \
   VI_DUPLICATE_VREG(insn.rs2(), idx_type); \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
-  const reg_t rs2_num = insn.rs2(); \
-  require(P.VU.vsew >= P.get_xlen() && P.VU.vsew <= P.get_xlen()); \
   for (reg_t i = P.VU.vstart; i < vl; ++i) { \
     VI_ELEMENT_SKIP(i); \
     VI_STRIP(i); \
