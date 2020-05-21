@@ -2,10 +2,11 @@
 require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
 require_vector;
 require(P.VU.vstart == 0);
-reg_t vl = P.VU.vl;
-reg_t sew = P.VU.vsew;
+if (insn.v_vm() == 0)
+  require(insn.rd() != 0 && insn.rd() != insn.rs2());
+
+reg_t vl = std::min(P.VU.vl, P.VU.VLEN);
 reg_t rd_num = insn.rd();
-reg_t rs1_num = insn.rs1();
 reg_t rs2_num = insn.rs2();
 
 bool has_one = false;
