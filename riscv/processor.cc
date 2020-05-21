@@ -32,8 +32,7 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
 
   parse_isa_string(isa);
   parse_priv_string(priv);
-  if (supports_extension('V'))
-    parse_varch_string(varch);
+  parse_varch_string(varch);
 
   register_base_instructions();
   mmu = new mmu_t(sim, this);
