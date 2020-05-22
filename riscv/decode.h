@@ -573,7 +573,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 // vector: loop header and end helper
 //
 #define VI_GENERAL_LOOP_BASE \
-  require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64); \
+  require(P.VU.vsew >= e8 && P.VU.vsew <= e64); \
   require_vector;\
   reg_t vl = P.VU.vl; \
   reg_t sew = P.VU.vsew; \
@@ -598,7 +598,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   P.VU.vstart = 0; 
 
 #define VI_LOOP_CMP_BASE \
-  require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64); \
+  require(P.VU.vsew >= e8 && P.VU.vsew <= e64); \
   require_vector;\
   reg_t vl = P.VU.vl; \
   reg_t sew = P.VU.vsew; \
@@ -910,7 +910,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 // reduction loop - signed
 #define VI_LOOP_REDUCTION_BASE(x) \
-  require(x == e8 || x == e16 || x == e32 || x == e64); \
+  require(x >= e8 && x <= e64); \
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -941,7 +941,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 // reduction loop - unsgied
 #define VI_ULOOP_REDUCTION_BASE(x) \
-  require(x == e8 || x == e16 || x == e32 || x == e64); \
+  require(x >= e8 && x <= e64); \
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
