@@ -449,7 +449,7 @@ public:
       void *reg_file;
       char reg_referenced[NVPR];
       int setvl_count;
-      reg_t vlmax, vmlen;
+      reg_t vlmax;
       reg_t vstart, vxrm, vxsat, vl, vtype, vlenb;
       reg_t vma, vta;
       reg_t vediv, vsew, vlmul;

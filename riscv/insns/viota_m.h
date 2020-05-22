@@ -14,9 +14,8 @@ require((rd_num & (P.VU.vlmul - 1)) == 0);
 
 int cnt = 0;
 for (reg_t i = 0; i < vl; ++i) {
-  const int mlen = P.VU.vmlen;
-  const int midx = (mlen * i) / 64;
-  const int mpos = (mlen * i) % 64;
+  const int midx = i / 64;
+  const int mpos = i % 64;
 
   bool vs2_lsb = ((P.VU.elt<uint64_t>(rs2_num, midx) >> mpos) & 0x1) == 1;
   bool do_mask = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;

@@ -393,9 +393,8 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 // vector: masking skip helper
 //
 #define VI_MASK_VARS \
-  const int mlen = P.VU.vmlen; \
-  const int midx = (mlen * i) / 64; \
-  const int mpos = (mlen * i) % 64;
+  const int midx = i / 64; \
+  const int mpos = i % 64;
 
 #define VI_LOOP_ELEMENT_SKIP(BODY) \
   VI_MASK_VARS \
@@ -607,7 +606,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   reg_t rs2_num = insn.rs2(); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     VI_LOOP_ELEMENT_SKIP(); \
-    uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
+    uint64_t mmask = UINT64_C(1) << mpos; \
     uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx, true); \
     uint64_t res = 0;
 
@@ -621,10 +620,9 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require_vector;\
   reg_t vl = P.VU.vl; \
   for (reg_t i = P.VU.vstart; i < vl; ++i) { \
-    int mlen = P.VU.vmlen; \
-    int midx = (mlen * i) / 64; \
-    int mpos = (mlen * i) % 64; \
-    uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
+    int midx = i / 64; \
+    int mpos = i % 64; \
+    uint64_t mmask = UINT64_C(1) << mpos; \
     uint64_t vs2 = P.VU.elt<uint64_t>(insn.rs2(), midx); \
     uint64_t vs1 = P.VU.elt<uint64_t>(insn.rs1(), midx); \
     uint64_t &res = P.VU.elt<uint64_t>(insn.rd(), midx, true); \
@@ -1826,7 +1824,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
     float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
     float32_t rs1 = f32(READ_FREG(rs1_num)); \
     VI_LOOP_ELEMENT_SKIP(); \
-    uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos); \
+    uint64_t mmask = UINT64_C(1) << mpos; \
     uint64_t &vdi = P.VU.elt<uint64_t>(rd_num, midx, true); \
     uint64_t res = 0;
 

@@ -408,7 +408,6 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
       vlmax = VLEN/vsew * vlmul;
       vflmul = vlmul;
     }
-    vmlen = 1; 
 
     vill = !(vlmul>=1 && vlmul <=8) || vsew > ELEN || vediv != 1 || (newType >> 8) != 0;
     if (vill) {

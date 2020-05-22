@@ -11,10 +11,9 @@ reg_t rs2_num = insn.rs2();
 
 bool has_one = false;
 for (reg_t i = P.VU.vstart; i < vl; ++i) {
-  const int mlen = P.VU.vmlen;
-  const int midx = (mlen * i) / 64;
-  const int mpos = (mlen * i) % 64;
-  const uint64_t mmask = (UINT64_MAX << (64 - mlen)) >> (64 - mlen - mpos);
+  const int midx = i / 64;
+  const int mpos = i % 64;
+  const uint64_t mmask = UINT64_C(1) << mpos; \
 
   bool vs2_lsb = ((P.VU.elt<uint64_t>(rs2_num, midx) >> mpos) & 0x1) == 1;
   bool do_mask = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
