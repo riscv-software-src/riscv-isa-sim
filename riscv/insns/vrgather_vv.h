@@ -1,10 +1,9 @@
 // vrgather.vv vd, vs2, vs1, vm # vd[i] = (vs1[i] >= VLMAX) ? 0 : vs2[vs1[i]];
-require((insn.rd() & (P.VU.vlmul - 1)) == 0);
-require((insn.rs2() & (P.VU.vlmul - 1)) == 0);
-require((insn.rs1() & (P.VU.vlmul - 1)) == 0);
+require_align(insn.rd(), P.VU.vflmul);
+require_align(insn.rs2(), P.VU.vflmul);
+require_align(insn.rs1(), P.VU.vflmul);
 require(insn.rd() != insn.rs2() && insn.rd() != insn.rs1());
-if (insn.v_vm() == 0)
-  require(insn.rd() != 0);
+require_vm;
 
 VI_LOOP_BASE
   switch (sew) {

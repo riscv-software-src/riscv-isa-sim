@@ -377,6 +377,7 @@ void processor_t::vectorUnit_t::reset(){
 }
 
 reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newType){
+  reg_t vlmul = 0;
   if (vtype != newType){
     vtype = newType;
     vsew = 1 << (BITS(newType, 4, 2) + 3);
@@ -401,7 +402,7 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
           break;
       }
       vlmax = (VLEN/vsew)/vlmul;
-      vflmul = 1/(float)vlmul;
+      vflmul = 1.0/vlmul;
       vlmul = 1;
     } else {
       vlmul = 1 << vlmul;
@@ -409,7 +410,7 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
       vflmul = vlmul;
     }
 
-    vill = !(vlmul>=1 && vlmul <=8) || vsew > ELEN || vediv != 1 || (newType >> 8) != 0;
+    vill = !(vflmul >= 0.125 && vflmul <= 8) || vsew > ELEN || vediv != 1 || (newType >> 8) != 0;
     if (vill) {
       vlmax = 0;
       vtype = UINT64_MAX << (p->get_xlen() - 1);

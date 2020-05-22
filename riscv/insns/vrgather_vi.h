@@ -1,9 +1,8 @@
 // vrgather.vi vd, vs2, zimm5 vm # vd[i] = (zimm5 >= VLMAX) ? 0 : vs2[zimm5];
-require((insn.rd() & (P.VU.vlmul - 1)) == 0);
-require((insn.rs2() & (P.VU.vlmul - 1)) == 0);
+require_align(insn.rd(), P.VU.vflmul);
+require_align(insn.rs2(), P.VU.vflmul);
 require(insn.rd() != insn.rs2());
-if (insn.v_vm() == 0)
-  require(insn.rd() != 0);
+require_vm;
 
 reg_t zimm5 = insn.v_zimm5();
 

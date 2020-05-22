@@ -107,7 +107,10 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
     }
 
     if (!show_vec && (is_vreg || is_vec)) {
-        fprintf(log_file, " e%ld m%ld l%ld", p->VU.vsew, p->VU.vlmul, p->VU.vl);
+        if (p->VU.vflmul < 0)
+          fprintf(log_file, " e%ld mf%ld l%ld", p->VU.vsew, (reg_t)(1.0/p->VU.vflmul), p->VU.vl);
+        else
+          fprintf(log_file, " e%ld m%ld l%ld", p->VU.vsew, (reg_t)p->VU.vflmul, p->VU.vl);
         show_vec = true;
     }
 
@@ -253,10 +256,9 @@ void processor_t::step(size_t n)
 #if 1
           if (debug && !state.serialized) {
             prev_reg_state_t *saved = prev_state;
-            float vlmul = VU.fractional_lmul? VU.vflmul : VU.vlmul;
             if (saved->VU.setvl_count != VU.setvl_count) {
               fprintf(stderr, "vconfig <- sew=%lu vlmul=%.3f vlmax=%lu vl=%lu vta=%ld vma=%ld\n",
-                      VU.vsew, vlmul, VU.vlmax, VU.vl, VU.vta, VU.vma);
+                      VU.vsew, VU.vflmul, VU.vlmax, VU.vl, VU.vta, VU.vma);
               saved->VU.setvl_count = VU.setvl_count;
             }
             for (int i=0; i<NXPR; ++i) {
@@ -283,7 +285,7 @@ void processor_t::step(size_t n)
             for (reg_t i=0; i<NVPR; ++i) {
               if (!VU.reg_referenced[i]) continue;
               fprintf(stderr, "vconfig <- sew=%lu vlmul=%.3f eew=%lu emul=%.3f vlmax=%lu vl=%lu\n",
-                      VU.vsew, vlmul, VU.veew, VU.vemul, VU.vlmax, VU.vl);
+                      VU.vsew, VU.vflmul, VU.veew, VU.vemul, VU.vlmax, VU.vl);
               for (reg_t j=0; j<VU.VLEN/32; ++j) {
                 uint32_t &old = saved->VU.elt<uint32_t>(i, j);
                 uint32_t now = VU.elt<uint32_t>(i, j);
