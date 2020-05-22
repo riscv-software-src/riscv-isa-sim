@@ -460,7 +460,6 @@ public:
       reg_t ELEN, VLEN, SLEN;
       reg_t VALU;
       bool vill;
-      bool fractional_lmul;
 
       // Microarchitecture dependent features
       typedef enum {

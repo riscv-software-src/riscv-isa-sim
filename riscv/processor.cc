@@ -377,38 +377,19 @@ void processor_t::vectorUnit_t::reset(){
 }
 
 reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newType){
-  reg_t vlmul = 0;
+  int vlmul = 0;
   if (vtype != newType){
     vtype = newType;
     vsew = 1 << (BITS(newType, 4, 2) + 3);
-    vlmul = BITS(newType, 1, 0);
-    vemul = vlmul;
+    vlmul = (BITS(newType, 5, 5) << 2) | BITS(newType, 1, 0);
+    vlmul = (int8_t)(vlmul << 5) >> 5;
+    vflmul = vlmul >= 0 ? 1 << vlmul : 1.0 / (1 << -vlmul);
+    vlmax = (VLEN/vsew) * vflmul;
+    vemul = vflmul;
     veew = vsew;
-    fractional_lmul = BITS(newType, 5, 5);
     vta = BITS(newType, 6, 6);
     vma = BITS(newType, 7, 7);
     vediv = 1 << BITS(newType, 9, 8);
-
-    if (fractional_lmul) {
-      switch(vlmul){
-        case 3:
-          vlmul = 2;
-          break;
-        case 2:
-          vlmul = 4;
-          break;
-        case 1:
-          vlmul = 8;
-          break;
-      }
-      vlmax = (VLEN/vsew)/vlmul;
-      vflmul = 1.0/vlmul;
-      vlmul = 1;
-    } else {
-      vlmul = 1 << vlmul;
-      vlmax = VLEN/vsew * vlmul;
-      vflmul = vlmul;
-    }
 
     vill = !(vflmul >= 0.125 && vflmul <= 8) || vsew > ELEN || vediv != 1 || (newType >> 8) != 0;
     if (vill) {
