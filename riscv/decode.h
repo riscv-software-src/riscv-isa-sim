@@ -474,14 +474,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   } \
   require_vm; \
 
-#define VI_CHECK_CI_BI(is_vs1) \
-  require_noover(insn.rd(), 1, insn.rs2(), P.VU.vflmul); \
-  require_align(insn.rs2(), P.VU.vflmul); \
-  if (is_vs1) {\
-    require_noover(insn.rd(), 1, insn.rs1(), P.VU.vflmul); \
-    require_align(insn.rs1(), P.VU.vflmul); \
-  }
-
 #define VI_CHECK_MSS(is_vs1) \
   require_noover(insn.rd(), 1, insn.rs2(), P.VU.vflmul); \
   require_align(insn.rs2(), P.VU.vflmul); \
@@ -1370,7 +1362,7 @@ VI_LOOP_END
 
 // carry/borrow bit loop
 #define VI_VV_LOOP_CARRY(BODY) \
-  VI_CHECK_CI_BI(true); \
+  VI_CHECK_MSS(true); \
   VI_GENERAL_LOOP_BASE \
   VI_MASK_VARS \
     if (sew == e8){ \
@@ -1389,7 +1381,7 @@ VI_LOOP_END
   VI_LOOP_END
 
 #define VI_XI_LOOP_CARRY(BODY) \
-  VI_CHECK_CI_BI(false); \
+  VI_CHECK_MSS(false); \
   VI_GENERAL_LOOP_BASE \
   VI_MASK_VARS \
     if (sew == e8){ \
