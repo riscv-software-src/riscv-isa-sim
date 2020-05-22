@@ -340,7 +340,7 @@ struct : public arg_t {
       }
       s << ", m" << lmul_str;
     } else {
-      s << ", m" << lmul;
+      s << ", m" << (1 << lmul);
     }
     s << ", " << vta << ", " << vma;
     return s.str();
