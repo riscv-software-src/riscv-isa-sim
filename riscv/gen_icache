@@ -1,7 +1,8 @@
 #!/bin/sh
-n=$(($1-1))
-for i in `seq 0 $n`
+i=0
+while [ $i -lt $1 ]
 do
   echo case $i: ICACHE_ACCESS\($i\)\;
+  i=$((i+1))
 done
 echo
