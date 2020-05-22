@@ -483,14 +483,12 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   }
 
 #define VI_CHECK_MSS(is_vs1) \
-  if (P.VU.vflmul > 1) { \
-    require_noover(insn.rd(), 1, insn.rs2(), P.VU.vflmul); \
-    require_align(insn.rs2(), P.VU.vflmul); \
-    if (is_vs1) {\
-      require_noover(insn.rd(), 1, insn.rs1(), P.VU.vflmul); \
-      require_align(insn.rs1(), P.VU.vflmul); \
-    } \
-  }
+  require_noover(insn.rd(), 1, insn.rs2(), P.VU.vflmul); \
+  require_align(insn.rs2(), P.VU.vflmul); \
+  if (is_vs1) {\
+    require_noover(insn.rd(), 1, insn.rs1(), P.VU.vflmul); \
+    require_align(insn.rs1(), P.VU.vflmul); \
+  } \
 
 #define VI_CHECK_SSS(is_vs1) \
   require_vm; \
