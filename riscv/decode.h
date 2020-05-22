@@ -1524,14 +1524,7 @@ VI_LOOP_END
 // vector: load/store helper 
 //
 #define VI_STRIP(inx) \
-  reg_t elems_per_strip = P.VU.get_slen()/P.VU.vsew; \
-  reg_t elems_per_vreg = P.VU.get_vlen()/P.VU.vsew; \
-  reg_t elems_per_lane = P.VU.vlmul * elems_per_strip; \
-  reg_t strip_index = (inx) / elems_per_lane; \
-  reg_t index_in_strip = (inx) % elems_per_strip; \
-  int32_t lmul_inx = (int32_t)(((inx) % elems_per_lane) / elems_per_strip); \
-  reg_t vreg_inx = lmul_inx * elems_per_vreg + strip_index * elems_per_strip + index_in_strip;
-
+  reg_t vreg_inx = inx;
 
 #define VI_DUPLICATE_VREG(reg_num, idx_sew) \
 reg_t index[P.VU.vlmax]; \
