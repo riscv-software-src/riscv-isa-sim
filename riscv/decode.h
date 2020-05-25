@@ -246,10 +246,12 @@ private:
     WRITE_VSTATUS; \
     dirty_vs_state; \
   } while (0);
-#define require_vector_for_vsetvl \
+#define require_vector_novtype(is_log) \
   do {  \
     require_vector_vs; \
     require_extension('V'); \
+    if (is_log) \
+      WRITE_VSTATUS; \
     dirty_vs_state; \
   } while (0);
 #define require_align(val, pos) require(is_aligned(val, pos))
