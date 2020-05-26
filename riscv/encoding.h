@@ -65,6 +65,7 @@
 #define DCSR_CAUSE_DEBUGINT 3
 #define DCSR_CAUSE_STEP     4
 #define DCSR_CAUSE_HALT     5
+#define DCSR_CAUSE_GROUP    6
 
 #define MCONTROL_TYPE(xlen)    (0xfULL<<((xlen)-4))
 #define MCONTROL_DMODE(xlen)   (1ULL<<((xlen)-5))

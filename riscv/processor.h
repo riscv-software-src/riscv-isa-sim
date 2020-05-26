@@ -305,7 +305,11 @@ public:
   // When true, take the slow simulation path.
   bool slow_path();
   bool halted() { return state.debug_mode; }
-  bool halt_request;
+  enum {
+    HR_NONE,    /* Halt request is inactive. */
+    HR_REGULAR, /* Regular halt request/debug interrupt. */
+    HR_GROUP    /* Halt requested due to halt group. */
+  } halt_request;
 
   // Return the index of a trigger that matched, or -1.
   inline int trigger_match(trigger_operation_t operation, reg_t address, reg_t data)
