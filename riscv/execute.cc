@@ -196,8 +196,10 @@ bool processor_t::slow_path()
 void processor_t::step(size_t n)
 {
   if (!state.debug_mode) {
-    if (halt_request) {
+    if (halt_request == HR_REGULAR) {
       enter_debug_mode(DCSR_CAUSE_DEBUGINT);
+    } else if (halt_request == HR_GROUP) {
+      enter_debug_mode(DCSR_CAUSE_GROUP);
     } // !!!The halt bit in DCSR is deprecated.
     else if (state.dcsr.halt) {
       enter_debug_mode(DCSR_CAUSE_HALT);

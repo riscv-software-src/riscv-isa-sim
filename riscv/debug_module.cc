@@ -81,7 +81,7 @@ void debug_module_t::reset()
   for (unsigned i = 0; i < sim->nprocs(); i++) {
     processor_t *proc = sim->get_core(i);
     if (proc)
-      proc->halt_request = false;
+      proc->halt_request = proc->HR_NONE;
   }
 
   dmcontrol = {0};
@@ -204,7 +204,7 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
           if (!hart_state[i].halted &&
               hart_state[i].haltgroup == hart_state[id].haltgroup) {
             processor_t *proc = sim->get_core(i);
-            proc->halt_request = true;
+            proc->halt_request = proc->HR_GROUP;
             // TODO: What if the debugger comes and writes dmcontrol before the
             // halt occurs?
           }
@@ -797,7 +797,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
               }
               processor_t *proc = processor(i);
               if (proc) {
-                proc->halt_request = dmcontrol.haltreq;
+                proc->halt_request = dmcontrol.haltreq ? proc->HR_REGULAR : proc->HR_NONE;
                 if (dmcontrol.haltreq) {
                   D(fprintf(stderr, "halt hart %d\n", i));
                 }
