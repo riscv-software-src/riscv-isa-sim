@@ -3,6 +3,7 @@ VI_VFP_CVT_SCALE
 ({
   auto vs2 = P.VU.elt<float16_t>(rs2_num, i);
   P.VU.elt<int8_t>(rd_num, i, true) = f16_to_i8(vs2, STATE.frm, true);
+  fprintf(stderr, "here 3 %ld %x %x\n", i, vs2.v, P.VU.elt<int8_t>(rd_num, i));
 },
 {
   auto vs2 = P.VU.elt<float32_t>(rs2_num, i);
