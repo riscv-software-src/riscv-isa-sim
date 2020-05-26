@@ -23,7 +23,7 @@
 processor_t::processor_t(const char* isa, const char* priv, const char* varch,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
                          FILE* log_file)
-  : debug(false), halt_request(false), sim(sim), ext(NULL), id(id), xlen(0),
+  : debug(false), halt_request(HR_NONE), sim(sim), ext(NULL), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), halt_on_reset(halt_on_reset),
   extension_table(256, false), last_pc(1), executions(1)
