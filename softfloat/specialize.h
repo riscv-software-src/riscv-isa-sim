@@ -55,6 +55,13 @@ extern "C" {
 | The values to return on conversions to 32-bit integer formats that raise an
 | invalid exception.
 *----------------------------------------------------------------------------*/
+#define ui8_fromPosOverflow  0xFF
+#define ui8_fromNegOverflow  0
+#define ui8_fromNaN          0xFF
+#define i8_fromPosOverflow   0x7F
+#define i8_fromNegOverflow   (-0x7F - 1)
+#define i8_fromNaN           0x7F
+
 #define ui16_fromPosOverflow 0xFFFF
 #define ui16_fromNegOverflow 0
 #define ui16_fromNaN         0xFFFF

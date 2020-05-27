@@ -141,9 +141,11 @@ void i64_to_f128M( int64_t, float128_t * );
 /*----------------------------------------------------------------------------
 | 16-bit (half-precision) floating-point operations.
 *----------------------------------------------------------------------------*/
+uint_fast8_t f16_to_ui8( float16_t, uint_fast8_t, bool );
 uint_fast16_t f16_to_ui16( float16_t, uint_fast8_t, bool );
 uint_fast32_t f16_to_ui32( float16_t, uint_fast8_t, bool );
 uint_fast64_t f16_to_ui64( float16_t, uint_fast8_t, bool );
+int_fast8_t f16_to_i8( float16_t, uint_fast8_t, bool );
 int_fast16_t f16_to_i16( float16_t, uint_fast8_t, bool );
 int_fast32_t f16_to_i32( float16_t, uint_fast8_t, bool );
 int_fast64_t f16_to_i64( float16_t, uint_fast8_t, bool );
