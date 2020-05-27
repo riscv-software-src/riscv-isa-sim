@@ -112,12 +112,21 @@ public:
   uint64_t rvc_rs2s() { return 8 + x(2, 3); }
 
   uint64_t v_vm() { return x(25, 1); }
+  uint64_t v_wd() { return x(26, 1); }
   uint64_t v_nf() { return x(29, 3); }
   uint64_t v_simm5() { return xs(15, 5); }
   uint64_t v_zimm5() { return x(15, 5); }
   uint64_t v_zimm11() { return x(20, 11); }
-  uint64_t v_lmul() { return 1 << x(20, 2); }
+  uint64_t v_lmul() { return x(20, 2); }
   uint64_t v_sew() { return 1 << (x(22, 3) + 3); }
+  uint64_t v_frac_lmul() { return x(25, 1); }
+  uint64_t v_width() { return x(12, 3); }
+  uint64_t v_mop() { return x(26, 2); }
+  uint64_t v_lumop() { return x(20, 5); }
+  uint64_t v_sumop() { return x(20, 5); }
+  uint64_t v_vta() { return x(26, 1); }
+  uint64_t v_vma() { return x(27, 1); }
+  uint64_t v_mew() { return x(28, 1); }
 
 private:
   insn_bits_t b;
@@ -236,12 +245,18 @@ private:
     WRITE_VSTATUS; \
     dirty_vs_state; \
   } while (0);
-#define require_vector_for_vsetvl \
+#define require_vector_novtype(is_log) \
   do {  \
     require_vector_vs; \
     require_extension('V'); \
+    if (is_log) \
+      WRITE_VSTATUS; \
     dirty_vs_state; \
   } while (0);
+#define require_align(val, pos) require(is_aligned(val, pos))
+#define require_noover(astart, asize, bstart, bsize) \
+  require(!is_overlapped(astart, asize, bstart, bsize))
+#define require_vm do { if (insn.v_vm() == 0) require(insn.rd() != 0);} while(0);
 
 #define set_fp_exceptions ({ if (softfloat_exceptionFlags) { \
                                dirty_fp_state; \
@@ -350,6 +365,9 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 #define e32 32    // 32b elements
 #define e64 64    // 64b elements
 #define e128 128  // 128b elements
+#define e256 256  // 256b elements
+#define e512 512  // 512b elements
+#define e1024 1024  // 1024b elements
 
 #define vsext(x, sew) (((sreg_t)(x) << (64-sew)) >> (64-sew))
 #define vzext(x, sew) (((reg_t)(x) << (64-sew)) >> (64-sew))
@@ -401,12 +419,21 @@ inline long double to_f(float128_t f){long double r; memcpy(&r, &f, sizeof(r)); 
 //
 // vector: operation and register acccess check helper
 //
-static inline bool is_overlapped(const int astart, const int asize,
-                                const int bstart, const int bsize)
+static inline bool is_overlapped(const int astart, int asize,
+                                const int bstart, int bsize)
 {
+  asize = asize == 0 ? 1 : asize;
+  bsize = bsize == 0 ? 1 : bsize;
+
   const int aend = astart + asize;
   const int bend = bstart + bsize;
+
   return std::max(aend, bend) - std::min(astart, bstart) < asize + bsize;
+}
+
+static inline bool is_aligned(const unsigned val, const unsigned pos)
+{
+  return pos ? (val & (pos - 1)) == 0 : true;
 }
 
 #define VI_NARROW_CHECK_COMMON \
