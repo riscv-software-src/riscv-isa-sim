@@ -1,5 +1,5 @@
 // vl1r.v vd, (rs1)
-require_vector;
+require_vector_novtype(true);
 const reg_t baseAddr = RS1;
 const reg_t vd = insn.rd();
 for (reg_t i = 0; i < P.VU.vlenb; ++i) {
