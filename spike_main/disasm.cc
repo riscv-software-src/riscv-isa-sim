@@ -347,6 +347,18 @@ struct : public arg_t {
   }
 } v_vtype;
 
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return "x0";
+  }
+} x0;
+
+typedef struct {
+  reg_t match;
+  reg_t mask;
+  const char *fmt;
+  std::vector<const arg_t*>& arg;
+} custom_fmt_t;
 
 std::string disassembler_t::disassemble(insn_t insn) const
 {
@@ -366,6 +378,9 @@ disassembler_t::disassembler_t(int xlen)
   const uint32_t mask_rvc_rs2 = 0x1fUL << 2;
   const uint32_t mask_rvc_imm = mask_rvc_rs2 | 0x1000UL;
   const uint32_t mask_nf = 0x7Ul << 29;
+  const uint32_t mask_wd = 0x1Ul << 26;
+  const uint32_t mask_amoop = 0x1fUl << 27;
+  const uint32_t mask_width = 0x7Ul << 12;
 
   #define DECLARE_INSN(code, match, mask) \
    const uint32_t match_##code = match; \
@@ -1110,6 +1125,41 @@ disassembler_t::disassembler_t(int xlen)
   #undef DISASM_OPIV_S__INSN
   #undef DISASM_OPIV_W__INSN
   #undef DISASM_VFUNARY0_INSN
+
+  // vector amo
+  std::vector<const arg_t *> v_fmt_amo_wd = {&vd, &v_address, &vs2, &vd, &opt, &vm};
+  std::vector<const arg_t *> v_fmt_amo = {&x0, &v_address, &vs2, &vd, &opt, &vm};
+  for (size_t elt = 0; elt <= 3; ++elt) {
+    const custom_fmt_t template_insn[] = {
+      {match_vamoswape8_v | mask_wd,   mask_vamoswape8_v | mask_wd,
+         "%se%d.v", v_fmt_amo_wd},
+      {match_vamoswape8_v,   mask_vamoswape8_v | mask_wd,
+         "%se%d.v", v_fmt_amo},
+    };
+    std::pair<const char*, reg_t> amo_map[] = {
+        {"vamoswap", 0x01ul << 27},
+        {"vamoadd",  0x00ul << 27},
+        {"vamoxor",  0x04ul << 27},
+        {"vamoor",   0x0cul << 27},
+        {"vamomin",  0x10ul << 27},
+        {"vamomax",  0x14ul << 27},
+        {"vamominu", 0x18ul << 27},
+        {"vamomaxu", 0x1cul << 27}};
+    const reg_t elt_map[] = {0x0ul << 12,  0x4ul << 12,
+                             0x6ul <<12, 0x7ul << 12};
+
+    for (size_t idx = 0; idx < sizeof(amo_map) / sizeof(amo_map[0]); ++idx) {
+      for (auto item : template_insn) {
+        char buf[128];
+        sprintf(buf, item.fmt, amo_map[idx].first, 8 << elt);
+        add_insn(new disasm_insn_t(buf,
+                  (item.match & ~mask_width & ~mask_amoop) |
+                    (amo_map[idx].second | elt_map[elt]),
+                  item.mask,
+                  item.arg));
+      }
+    }
+  }
 
   if (xlen == 32) {
     DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});

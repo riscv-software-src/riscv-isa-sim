@@ -1684,6 +1684,49 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
   p->VU.vstart = 0;
 
 //
+// vector: amo 
+//
+#define VI_AMO(op, type, idx_type) \
+  require_vector; \
+  require_extension(EXT_ZVAMO); \
+  if (insn.v_wd()) \
+    require_vm; \
+  require_align(insn.rd(), P.VU.vflmul); \
+  require(P.VU.vsew <= P.get_xlen() && P.VU.vsew >= 32); \
+  require_align(insn.rd(), P.VU.vflmul); \
+  P.VU.veew = idx_type; \
+  P.VU.vemul = ((float)P.VU.veew / P.VU.vsew * P.VU.vflmul); \
+  require(P.VU.vemul >= 0.125 && P.VU.vemul <= 8); \
+  require_align(insn.rs2(), P.VU.vemul); \
+  VI_DUPLICATE_VREG(insn.rs2(), idx_type); \
+  const reg_t vl = P.VU.vl; \
+  const reg_t baseAddr = RS1; \
+  const reg_t vd = insn.rd(); \
+  for (reg_t i = P.VU.vstart; i < vl; ++i) { \
+    VI_ELEMENT_SKIP(i); \
+    VI_STRIP(i); \
+    switch (P.VU.vsew) { \
+    case e32: {\
+      auto vs3 = P.VU.elt< type ## 32_t>(vd, vreg_inx); \
+      auto val = MMU.amo_uint32(baseAddr + index[i], [&]( type ## 32_t lhs) { op }); \
+      if (insn.v_wd()) \
+        P.VU.elt< type ## 32_t>(vd, vreg_inx, true) = val; \
+      } \
+      break; \
+    case e64: {\
+      auto vs3 = P.VU.elt< type ## 64_t>(vd, vreg_inx); \
+      auto val = MMU.amo_uint64(baseAddr + index[i], [&]( type ## 64_t lhs) { op }); \
+      if (insn.v_wd()) \
+        P.VU.elt< type ## 64_t>(vd, vreg_inx, true) = val; \
+      } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+    } \
+  } \
+  P.VU.vstart = 0;
+
 // vector: sign/unsiged extension
 #define VI_VV_EXT(div, type) \
   require(insn.rd() != insn.rs2()); \
