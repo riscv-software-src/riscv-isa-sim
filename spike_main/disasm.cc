@@ -886,19 +886,25 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_S___INSN(vredmin,   1);
   DISASM_OPIV_S___INSN(vredmaxu,  0);
   DISASM_OPIV_S___INSN(vredmax,   1);
-  DISASM_INSN("vmv.x.s", vmv_x_s, 0, {&xrd, &vs2});
-  DISASM_INSN("vmv.s.x", vmv_s_x, 0, {&vd, &xrs1});
   DISASM_OPIV__X__INSN(vslide1up,  1);
   DISASM_OPIV__X__INSN(vslide1down,1);
 
   //0b01_0000
+  //VWXUNARY0
+  DISASM_INSN("vmv.x.s", vmv_x_s, 0, {&xrd, &vs2});
   DISASM_INSN("vpopc.m", vpopc_m, 0, {&xrd, &vs2, &opt, &vm});
-  //vmuary0
   DISASM_INSN("vfirst.m", vfirst_m, 0, {&xrd, &vs2, &opt, &vm});
+
+  //VRXUNARY0
+  DISASM_INSN("vmv.s.x", vmv_s_x, 0, {&vd, &xrs1});
+
+  //VMUNARY0
   DISASM_INSN("vmsbf.m", vmsbf_m, 0, {&vd, &vs2, &opt, &vm});
   DISASM_INSN("vmsof.m", vmsof_m, 0, {&vd, &vs2, &opt, &vm});
   DISASM_INSN("vmsif.m", vmsif_m, 0, {&vd, &vs2, &opt, &vm});
   DISASM_INSN("viota.m", viota_m, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vid.v", vid_v, 0, {&vd, &opt, &vm});
+
   DISASM_INSN("vid.v", vid_v, 0, {&vd, &opt, &vm});
 
   DISASM_INSN("vcompress.vm", vcompress_vm, 0, {&vd, &vs2, &vs1});
