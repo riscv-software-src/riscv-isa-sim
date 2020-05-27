@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "disasm.h"
+#include <cassert>
 #include <string>
 #include <vector>
 #include <cstdarg>
@@ -319,9 +320,29 @@ struct : public arg_t {
     std::stringstream s;
     int sew = insn.v_sew();
     int lmul = insn.v_lmul();
+    auto vta = insn.v_vta() == 1 ? "ta" : "tu";
+    auto vma = insn.v_vma() == 1 ? "ma" : "mu";
     s << "e" << sew;
-    if (lmul != 1)
-      s << ",m" << lmul;
+    if(insn.v_frac_lmul()) {
+      std::string lmul_str = "";
+      switch(lmul){
+        case 3:
+          lmul_str = "f2";
+          break;
+        case 2:
+          lmul_str = "f4";
+          break;
+        case 1:
+          lmul_str = "f8";
+          break;
+        default:
+          assert(true && "unsupport fractional LMUL");
+      }
+      s << ", m" << lmul_str;
+    } else {
+      s << ", m" << (1 << lmul);
+    }
+    s << ", " << vta << ", " << vma;
     return s.str();
   }
 } v_vtype;
