@@ -480,6 +480,9 @@ riscv_insn_ext_v_alu_int = \
 	vsaddu_vx \
 	vsbc_vvm \
 	vsbc_vxm \
+	vsext_vf2 \
+	vsext_vf4 \
+	vsext_vf8 \
 	vslide1down_vx \
 	vslide1up_vx \
 	vslidedown_vi \
@@ -543,6 +546,9 @@ riscv_insn_ext_v_alu_int = \
 	vxor_vi \
 	vxor_vv \
 	vxor_vx \
+	vzext_vf2 \
+	vzext_vf4 \
+	vzext_vf8 \
 
 riscv_insn_ext_v_alu_fp = \
 	vfadd_vf \

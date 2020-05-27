@@ -964,6 +964,14 @@ disassembler_t::disassembler_t(int xlen)
   //VRXUNARY0
   DISASM_INSN("vmv.s.x", vmv_s_x, 0, {&vd, &xrs1});
 
+  //VXUNARY0
+  DISASM_INSN("vzext.vf2", vzext_vf2, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vsext.vf2", vsext_vf2, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vzext.vf4", vzext_vf4, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vsext.vf4", vsext_vf4, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vzext.vf8", vzext_vf8, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vsext.vf8", vsext_vf8, 0, {&vd, &vs2, &opt, &vm});
+
   //VMUNARY0
   DISASM_INSN("vmsbf.m", vmsbf_m, 0, {&vd, &vs2, &opt, &vm});
   DISASM_INSN("vmsof.m", vmsof_m, 0, {&vd, &vs2, &opt, &vm});
