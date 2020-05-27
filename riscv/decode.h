@@ -1746,8 +1746,6 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 // vector: sign/unsiged extension
 #define VI_VV_EXT(div, type) \
   require(insn.rd() != insn.rs2()); \
-  require_align(insn.rd(), P.VU.vflmul); \
-  require_align(insn.rs2(), P.VU.vflmul); \
   require_vm; \
   reg_t from = P.VU.vsew / div; \
   require(from >= e8 && from <= e64); \
