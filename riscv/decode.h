@@ -1772,9 +1772,9 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
                 softfloat_exceptionFlags |= softfloat_flag_invalid; \
                 set_fp_exceptions; \
               } \
-              P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = defaultNaNF16UI; \
+              P.VU.elt<uint16_t>(rd_num, 0, true) = defaultNaNF16UI; \
             } else { \
-              P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = vd_0.v; \
+              P.VU.elt<uint16_t>(rd_num, 0, true) = vd_0.v; \
             } \
           } \
           break; \
@@ -1785,9 +1785,9 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
                 softfloat_exceptionFlags |= softfloat_flag_invalid; \
                 set_fp_exceptions; \
               } \
-              P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = defaultNaNF32UI; \
+              P.VU.elt<uint32_t>(rd_num, 0, true) = defaultNaNF32UI; \
             } else { \
-              P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = vd_0.v; \
+              P.VU.elt<uint32_t>(rd_num, 0, true) = vd_0.v; \
             } \
           } \
           break; \
@@ -1798,9 +1798,9 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
                 softfloat_exceptionFlags |= softfloat_flag_invalid; \
                 set_fp_exceptions; \
               } \
-              P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = defaultNaNF64UI; \
+              P.VU.elt<uint64_t>(rd_num, 0, true) = defaultNaNF64UI; \
             } else { \
-              P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = vd_0.v; \
+              P.VU.elt<uint64_t>(rd_num, 0, true) = vd_0.v; \
             } \
           } \
           break; \
