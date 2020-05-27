@@ -2173,24 +2173,43 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
 
-#define VI_VFP_CVT_SCALE(BODY16, BODY32, is_widen) \
+#define VI_VFP_LOOP_SCALE_BASE \
+  require_fp; \
+  require_vector;\
+  require((P.VU.vsew == e8 && p->supports_extension(EXT_ZFH)) || \
+          (P.VU.vsew == e16 && p->supports_extension('F')) || \
+          (P.VU.vsew == e32 && p->supports_extension('D'))); \
+  reg_t vl = P.VU.vl; \
+  reg_t rd_num = insn.rd(); \
+  reg_t rs1_num = insn.rs1(); \
+  reg_t rs2_num = insn.rs2(); \
+  softfloat_roundingMode = STATE.frm; \
+  for (reg_t i=P.VU.vstart; i<vl; ++i){ \
+    VI_LOOP_ELEMENT_SKIP();
+
+#define VI_VFP_CVT_SCALE(BODY8, BODY16, BODY32, is_widen) \
   if (is_widen) { \
     VI_CHECK_DSS(false);\
   } else { \
     VI_CHECK_SDS(false); \
   } \
-  require((P.VU.vsew == e16 && p->supports_extension('F')) || \
-          (P.VU.vsew == e32 && p->supports_extension('D'))); \
   switch(P.VU.vsew) { \
+    case e8: {\
+      VI_VFP_LOOP_SCALE_BASE \
+        BODY8 \
+        set_fp_exceptions; \
+      VI_VFP_LOOP_END \
+      } \
+      break; \
     case e16: {\
-      VI_VFP_LOOP_BASE \
+      VI_VFP_LOOP_SCALE_BASE \
         BODY16 \
         set_fp_exceptions; \
       VI_VFP_LOOP_END \
       } \
       break; \
     case e32: {\
-      VI_VFP_LOOP_BASE \
+      VI_VFP_LOOP_SCALE_BASE \
         BODY32 \
         set_fp_exceptions; \
       VI_VFP_LOOP_END \

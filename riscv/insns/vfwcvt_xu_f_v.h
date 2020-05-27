@@ -1,6 +1,9 @@
 // vfwcvt.xu.f.v vd, vs2, vm
 VI_VFP_CVT_SCALE
 ({
+  require(0);
+},
+{
   auto vs2 = P.VU.elt<float16_t>(rs2_num, i);
   P.VU.elt<uint32_t>(rd_num, i, true) = f16_to_ui32(vs2, STATE.frm, true);
 },
