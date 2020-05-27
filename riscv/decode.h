@@ -453,17 +453,29 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   if (insn.v_vm() == 0) \
     require(insn.rd() != 0);
 
-#define VI_CHECK_ST_INDEX \
+#define VI_CHECK_ST_INDEX(elt_width) \
   require_vector; \
-  require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
-  require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
+  P.VU.veew = elt_width; \
+  P.VU.vemul = ((float)P.VU.veew / P.VU.vsew * P.VU.vflmul); \
+  require(P.VU.vemul >= 0.125 && P.VU.vemul <= 8); \
+  reg_t emul = P.VU.vemul < 1 ? 1 : P.VU.vemul; \
+  reg_t flmul = P.VU.vflmul < 1 ? 1 : P.VU.vflmul; \
+  require_align(insn.rd(), P.VU.vflmul); \
+  require_align(insn.rs2(), P.VU.vemul); \
+  require((nf * flmul) <= (NVPR / 4) && \
+          (insn.rd() + nf * flmul) <= NVPR); \
+  if (nf > 1) \
+    require(p->supports_extension(EXT_ZVLSSEG)); \
 
-#define VI_CHECK_LD_INDEX \
-  VI_CHECK_ST_INDEX; \
-  if (insn.v_nf() > 0) \
-    require(!is_overlapped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul)); \
-  if (insn.v_vm() == 0 && (insn.v_nf() > 0 || P.VU.vlmul > 1)) \
-    require(insn.rd() != 0); \
+#define VI_CHECK_LD_INDEX(elt_width) \
+  VI_CHECK_ST_INDEX(elt_width); \
+  if (P.VU.vemul != P.VU.vflmul) \
+    require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+  if (insn.v_nf() > 0) {\
+    require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+    require_noover(vd, nf, insn.rs2(), 1); \
+  } \
+  require_vm; \
 
 #define VI_CHECK_MSS(is_vs1) \
   if (P.VU.vlmul > 1) { \
@@ -486,14 +498,21 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
       require(insn.rd() != 0); \
   }
 
-#define VI_CHECK_STORE_SXX \
+#define VI_CHECK_STORE(elt_width) \
   require_vector; \
-  require((insn.rd() & (P.VU.vlmul - 1)) == 0);
+  P.VU.veew = sizeof(elt_width##_t) * 8; \
+  P.VU.vemul = ((float)P.VU.veew / P.VU.vsew * P.VU.vflmul); \
+  reg_t emul = P.VU.vemul < 1 ? 1 : P.VU.vemul; \
+  require(P.VU.vemul >= 0.125 && P.VU.vemul <= 8); \
+  require_align(insn.rd(), P.VU.vemul); \
+  require((nf * emul) <= (NVPR / 4) && \
+          (insn.rd() + nf * emul) <= NVPR); \
+  if (nf > 1) \
+    require(p->supports_extension(EXT_ZVLSSEG)); \
 
-#define VI_CHECK_SXX \
-  VI_CHECK_STORE_SXX; \
-  if (insn.v_vm() == 0 && (insn.v_nf() > 0 || P.VU.vlmul > 1)) \
-    require(insn.rd() != 0); \
+#define VI_CHECK_LOAD(elt_width) \
+  VI_CHECK_STORE(elt_width); \
+  require_vm; \
 
 #define VI_CHECK_DSS(is_vs1) \
   VI_WIDE_CHECK_COMMON; \
@@ -1515,143 +1534,152 @@ VI_LOOP_END
 // vector: load/store helper 
 //
 #define VI_STRIP(inx) \
-  reg_t elems_per_strip = P.VU.get_slen()/P.VU.vsew; \
-  reg_t elems_per_vreg = P.VU.get_vlen()/P.VU.vsew; \
-  reg_t elems_per_lane = P.VU.vlmul * elems_per_strip; \
-  reg_t strip_index = (inx) / elems_per_lane; \
-  reg_t index_in_strip = (inx) % elems_per_strip; \
-  int32_t lmul_inx = (int32_t)(((inx) % elems_per_lane) / elems_per_strip); \
-  reg_t vreg_inx = lmul_inx * elems_per_vreg + strip_index * elems_per_strip + index_in_strip;
+  reg_t vreg_inx = inx;
 
-
-#define VI_DUPLICATE_VREG(v, vlmax) \
-reg_t index[vlmax]; \
-for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
-  switch(P.VU.vsew) { \
+#define VI_DUPLICATE_VREG(reg_num, idx_sew) \
+reg_t index[P.VU.vlmax]; \
+for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
+  switch(idx_sew) { \
     case e8: \
-      index[i] = P.VU.elt<uint8_t>(v, i); \
+      index[i] = P.VU.elt<uint8_t>(reg_num, i); \
       break; \
     case e16: \
-      index[i] = P.VU.elt<uint16_t>(v, i); \
+      index[i] = P.VU.elt<uint16_t>(reg_num, i); \
       break; \
     case e32: \
-      index[i] = P.VU.elt<uint32_t>(v, i); \
+      index[i] = P.VU.elt<uint32_t>(reg_num, i); \
       break; \
     case e64: \
-      index[i] = P.VU.elt<uint64_t>(v, i); \
+      index[i] = P.VU.elt<uint64_t>(reg_num, i); \
       break; \
   } \
 }
 
-#define VI_ST_COMMON(stride, offset, st_width, elt_byte, is_seg) \
-  const reg_t nf = insn.v_nf() + 1; \
-  const reg_t vl = P.VU.vl; \
-  const reg_t baseAddr = RS1; \
-  const reg_t vs3 = insn.rd(); \
-  require((nf * P.VU.vlmul) <= (NVPR / 4) && \
-          vs3 + nf * P.VU.vlmul <= NVPR); \
-  if (!is_seg) \
-    require(nf == 1); \
-  const reg_t vlmul = P.VU.vlmul; \
-  for (reg_t i = 0; i < vl; ++i) { \
-    VI_STRIP(i) \
-    VI_ELEMENT_SKIP(i); \
-    P.VU.vstart = i; \
-    for (reg_t fn = 0; fn < nf; ++fn) { \
-      st_width##_t val = 0; \
-      switch (P.VU.vsew) { \
-      case e8: \
-        val = P.VU.elt<uint8_t>(vs3 + fn * vlmul, vreg_inx); \
-        break; \
-      case e16: \
-        val = P.VU.elt<uint16_t>(vs3 + fn * vlmul, vreg_inx); \
-        break; \
-      case e32: \
-        val = P.VU.elt<uint32_t>(vs3 + fn * vlmul, vreg_inx); \
-        break; \
-      default: \
-        val = P.VU.elt<uint64_t>(vs3 + fn * vlmul, vreg_inx); \
-        break; \
-      } \
-      MMU.store_##st_width(baseAddr + (stride) + (offset) * elt_byte, val); \
-    } \
-  } \
-  P.VU.vstart = 0; 
-
-#define VI_LD_COMMON(stride, offset, ld_width, elt_byte, is_seg) \
+#define VI_LD(stride, offset, elt_width) \
   const reg_t nf = insn.v_nf() + 1; \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
-  require((nf * P.VU.vlmul) <= (NVPR / 4) && \
-          (vd + nf * P.VU.vlmul) <= NVPR); \
-  if (!is_seg) \
-    require(nf == 1); \
-  const reg_t vlmul = P.VU.vlmul; \
+  VI_CHECK_LOAD(elt_width); \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_ELEMENT_SKIP(i); \
     VI_STRIP(i); \
     P.VU.vstart = i; \
     for (reg_t fn = 0; fn < nf; ++fn) { \
-      ld_width##_t val = MMU.load_##ld_width(baseAddr + (stride) + (offset) * elt_byte); \
+      elt_width##_t val = MMU.load_##elt_width( \
+        baseAddr + (stride) + (offset) * sizeof(elt_width##_t)); \
+      P.VU.elt<elt_width##_t>(vd + fn * emul, vreg_inx, true) = val; \
+    } \
+  } \
+  P.VU.vstart = 0;
+
+#define VI_LD_INDEX(elt_width, is_seg) \
+  const reg_t nf = insn.v_nf() + 1; \
+  const reg_t vl = P.VU.vl; \
+  const reg_t baseAddr = RS1; \
+  const reg_t vd = insn.rd(); \
+  if (!is_seg) \
+    require(nf == 1); \
+  VI_CHECK_LD_INDEX(elt_width); \
+  VI_DUPLICATE_VREG(insn.rs2(), elt_width); \
+  for (reg_t i = 0; i < vl; ++i) { \
+    VI_ELEMENT_SKIP(i); \
+    VI_STRIP(i); \
+    P.VU.vstart = i; \
+    for (reg_t fn = 0; fn < nf; ++fn) { \
       switch(P.VU.vsew){ \
         case e8: \
-          P.VU.elt<uint8_t>(vd + fn * vlmul, vreg_inx, true) = val; \
+          P.VU.elt<uint8_t>(vd + fn * flmul, vreg_inx, true) = \
+            MMU.load_uint8(baseAddr + index[i] + fn * 1); \
           break; \
         case e16: \
-          P.VU.elt<uint16_t>(vd + fn * vlmul, vreg_inx, true) = val; \
+          P.VU.elt<uint16_t>(vd + fn * flmul, vreg_inx, true) = \
+            MMU.load_uint16(baseAddr + index[i] + fn * 2); \
           break; \
         case e32: \
-          P.VU.elt<uint32_t>(vd + fn * vlmul, vreg_inx, true) = val; \
+          P.VU.elt<uint32_t>(vd + fn * flmul, vreg_inx, true) = \
+            MMU.load_uint32(baseAddr + index[i] + fn * 4); \
           break; \
         default: \
-          P.VU.elt<uint64_t>(vd + fn * vlmul, vreg_inx, true) = val; \
+          P.VU.elt<uint64_t>(vd + fn * flmul, vreg_inx, true) = \
+            MMU.load_uint64(baseAddr + index[i] + fn * 8); \
           break; \
       } \
     } \
   } \
   P.VU.vstart = 0;
 
-#define VI_LD(stride, offset, ld_width, elt_byte, is_seg) \
-  VI_CHECK_SXX; \
-  VI_LD_COMMON(stride, offset, ld_width, elt_byte, is_seg)
-
-#define VI_LD_INDEX(stride, offset, ld_width, elt_byte, is_seg) \
-  VI_CHECK_LD_INDEX; \
-  VI_LD_COMMON(stride, offset, ld_width, elt_byte, is_seg) \
-  if (nf >= 2) \
-    require(!is_overlapped(vd, nf, insn.rs2(), 1));
-
-#define VI_ST(stride, offset, st_width, elt_byte, is_seg) \
-  VI_CHECK_STORE_SXX; \
-  VI_ST_COMMON(stride, offset, st_width, elt_byte, is_seg) \
-
-#define VI_ST_INDEX(stride, offset, st_width, elt_byte, is_seg) \
-  VI_CHECK_ST_INDEX; \
-  VI_ST_COMMON(stride, offset, st_width, elt_byte, is_seg) \
-
-#define VI_LDST_FF(itype, tsew, is_seg) \
-  require(p->VU.vsew >= e##tsew && p->VU.vsew <= e64); \
+#define VI_ST(stride, offset, elt_width) \
   const reg_t nf = insn.v_nf() + 1; \
-  require((nf * P.VU.vlmul) <= (NVPR / 4)); \
+  const reg_t vl = P.VU.vl; \
+  const reg_t baseAddr = RS1; \
+  const reg_t vs3 = insn.rd(); \
+  VI_CHECK_STORE(elt_width); \
+  for (reg_t i = 0; i < vl; ++i) { \
+    VI_STRIP(i) \
+    VI_ELEMENT_SKIP(i); \
+    P.VU.vstart = i; \
+    for (reg_t fn = 0; fn < nf; ++fn) { \
+      elt_width##_t val = P.VU.elt<elt_width##_t>(vs3 + fn * emul, vreg_inx); \
+      MMU.store_##elt_width( \
+        baseAddr + (stride) + (offset) * sizeof(elt_width##_t), val); \
+    } \
+  } \
+  P.VU.vstart = 0;
+
+#define VI_ST_INDEX(elt_width, is_seg) \
+  const reg_t nf = insn.v_nf() + 1; \
+  const reg_t vl = P.VU.vl; \
+  const reg_t baseAddr = RS1; \
+  const reg_t vs3 = insn.rd(); \
   if (!is_seg) \
     require(nf == 1); \
-  VI_CHECK_SXX; \
+  VI_CHECK_ST_INDEX(elt_width); \
+  VI_DUPLICATE_VREG(insn.rs2(), elt_width);   \
+  for (reg_t i = 0; i < vl; ++i) { \
+    VI_STRIP(i) \
+    VI_ELEMENT_SKIP(i); \
+    P.VU.vstart = i; \
+    for (reg_t fn = 0; fn < nf; ++fn) { \
+      switch (P.VU.vsew) { \
+      case e8: \
+        MMU.store_uint8(baseAddr + index[i] + fn * 1, \
+          P.VU.elt<uint8_t>(vs3 + fn * flmul, vreg_inx)); \
+        break; \
+      case e16: \
+        MMU.store_uint16(baseAddr + index[i] + fn * 2, \
+          P.VU.elt<uint16_t>(vs3 + fn * flmul, vreg_inx)); \
+        break; \
+      case e32: \
+        MMU.store_uint32(baseAddr + index[i] + fn * 4, \
+          P.VU.elt<uint32_t>(vs3 + fn * flmul, vreg_inx)); \
+        break; \
+      default: \
+        MMU.store_uint64(baseAddr + index[i] + fn * 8, \
+          P.VU.elt<uint64_t>(vs3 + fn * flmul, vreg_inx)); \
+        break; \
+      } \
+    } \
+  } \
+  P.VU.vstart = 0;
+
+#define VI_LDST_FF(elt_width) \
+  const reg_t nf = insn.v_nf() + 1; \
   const reg_t sew = p->VU.vsew; \
   const reg_t vl = p->VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t rd_num = insn.rd(); \
+  VI_CHECK_LOAD(elt_width); \
   bool early_stop = false; \
-  const reg_t vlmul = P.VU.vlmul; \
-  require(rd_num + nf * P.VU.vlmul <= NVPR); \
   for (reg_t i = p->VU.vstart; i < vl; ++i) { \
     VI_STRIP(i); \
     VI_ELEMENT_SKIP(i); \
     \
     for (reg_t fn = 0; fn < nf; ++fn) { \
-      itype##64_t val; \
+      uint64_t val; \
       try { \
-        val = MMU.load_##itype##tsew(baseAddr + (i * nf + fn) * (tsew / 8)); \
+        val = MMU.load_##elt_width( \
+          baseAddr + (i * nf + fn) * sizeof(elt_width##_t)); \
       } catch (trap_t& t) { \
         if (i == 0) \
           throw; /* Only take exception on zeroth element */ \
@@ -1660,21 +1688,7 @@ for (reg_t i = 0; i < vlmax && P.VU.vl != 0; ++i) { \
         P.VU.vl = i; \
         break; \
       } \
-      \
-      switch (sew) { \
-      case e8: \
-        p->VU.elt<uint8_t>(rd_num + fn * vlmul, vreg_inx, true) = val; \
-        break; \
-      case e16: \
-        p->VU.elt<uint16_t>(rd_num + fn * vlmul, vreg_inx, true) = val; \
-        break; \
-      case e32: \
-        p->VU.elt<uint32_t>(rd_num + fn * vlmul, vreg_inx, true) = val; \
-        break; \
-      case e64: \
-        p->VU.elt<uint64_t>(rd_num + fn * vlmul, vreg_inx, true) = val; \
-        break; \
-      } \
+      p->VU.elt<elt_width##_t>(rd_num + fn * emul, vreg_inx, true) = val; \
     } \
     \
     if (early_stop) { \
