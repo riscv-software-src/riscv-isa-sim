@@ -205,8 +205,6 @@ public:
   store_func(uint64)
 
   // perform an atomic memory operation at an aligned address
-  amo_func(uint8)
-  amo_func(uint16)
   amo_func(uint32)
   amo_func(uint64)
 

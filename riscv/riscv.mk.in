@@ -653,15 +653,42 @@ riscv_insn_ext_v_alu_fp = \
 	vmfne_vv \
 
 riscv_insn_ext_v_amo = \
-	vamoswape_v \
-	vamoadde_v \
-	vamoande_v \
-	vamomaxe_v \
-	vamomaxue_v \
-	vamomine_v \
-	vamominue_v \
-	vamoore_v \
-	vamoxore_v \
+	vamoswape8_v \
+	vamoadde8_v \
+	vamoande8_v \
+	vamomaxe8_v \
+	vamomaxue8_v \
+	vamomine8_v \
+	vamominue8_v \
+	vamoore8_v \
+	vamoxore8_v \
+	vamoswape16_v \
+	vamoadde16_v \
+	vamoande16_v \
+	vamomaxe16_v \
+	vamomaxue16_v \
+	vamomine16_v \
+	vamominue16_v \
+	vamoore16_v \
+	vamoxore16_v \
+	vamoswape32_v \
+	vamoadde32_v \
+	vamoande32_v \
+	vamomaxe32_v \
+	vamomaxue32_v \
+	vamomine32_v \
+	vamominue32_v \
+	vamoore32_v \
+	vamoxore32_v \
+	vamoswape64_v \
+	vamoadde64_v \
+	vamoande64_v \
+	vamomaxe64_v \
+	vamomaxue64_v \
+	vamomine64_v \
+	vamominue64_v \
+	vamoore64_v \
+	vamoxore64_v \
 
 riscv_insn_ext_v_ldst = \
 	vl1r_v \
