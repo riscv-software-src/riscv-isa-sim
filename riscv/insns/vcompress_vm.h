@@ -8,9 +8,8 @@ require(!is_overlapped(insn.rd(), P.VU.vlmul, insn.rs1(), 1));
 reg_t pos = 0;
 
 VI_GENERAL_LOOP_BASE
-  const int mlen = P.VU.vmlen;
-  const int midx = (mlen * i) / 64;
-  const int mpos = (mlen * i) % 64;
+  const int midx = i / 64;
+  const int mpos = i % 64;
 
   bool do_mask = (P.VU.elt<uint64_t>(rs1_num, midx) >> mpos) & 0x1;
   if (do_mask) {
