@@ -118,7 +118,7 @@ void merge_overlapping_memory_regions(std::vector<std::pair<reg_t, mem_t*>>& mem
       mems.erase(std::next(it).base());
     }else if ( _start_page < start_page && _end_page > start_page) {
       // overlapping
-      _it->first = it->first;
+      _it->first = _start_page;
       if (_end_page > end_page)
         end_page = _end_page;
       mems.erase(std::next(it).base());
