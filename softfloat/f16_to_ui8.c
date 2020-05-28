@@ -40,10 +40,12 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 uint_fast8_t f16_to_ui8( float16_t a, uint_fast8_t roundingMode, bool exact )
 {
+    uint_fast8_t old_flags = softfloat_exceptionFlags;
+
     uint_fast32_t sig32 = f16_to_ui32(a, roundingMode, exact);
 
     if (sig32 > UINT8_MAX) {
-        softfloat_exceptionFlags |= softfloat_flag_invalid;
+        softfloat_exceptionFlags = old_flags | softfloat_flag_invalid;
         return ui8_fromPosOverflow;
     } else {
         return sig32;
