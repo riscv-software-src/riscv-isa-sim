@@ -373,7 +373,6 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
     new_vlmul = (BITS(newType, 5, 5) << 2) | BITS(newType, 1, 0);
     new_vlmul = (int8_t)(new_vlmul << 5) >> 5;
     vflmul = new_vlmul >= 0 ? 1 << new_vlmul : 1.0 / (1 << -new_vlmul);
-    vlmul = vflmul < 1 ? 1 : vflmul;
     vlmax = (VLEN/vsew) * vflmul;
     vemul = vflmul;
     veew = vsew;

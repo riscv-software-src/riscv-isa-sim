@@ -1,9 +1,8 @@
 // vrgather.vx vd, vs2, rs1, vm # vd[i] = (rs1 >= VLMAX) ? 0 : vs2[rs1];
-require((insn.rd() & (P.VU.vlmul - 1)) == 0);
-require((insn.rs2() & (P.VU.vlmul - 1)) == 0);
+require_align(insn.rd(), P.VU.vflmul);
+require_align(insn.rs2(), P.VU.vflmul);
 require(insn.rd() != insn.rs2());
-if (insn.v_vm() == 0)
-  require(insn.rd() != 0);
+require_vm;
 
 reg_t rs1 = RS1;
 

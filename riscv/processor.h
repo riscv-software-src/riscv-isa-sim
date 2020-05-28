@@ -456,7 +456,7 @@ public:
       reg_t vlmax;
       reg_t vstart, vxrm, vxsat, vl, vtype, vlenb;
       reg_t vma, vta;
-      reg_t vediv, vsew, vlmul;
+      reg_t vediv, vsew;
       reg_t veew;
       float vemul;
       float vflmul;
