@@ -438,20 +438,18 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_NARROW_CHECK_COMMON \
   require_vector;\
-  require(P.VU.vlmul <= 4); \
+  require(P.VU.vflmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
-  require((insn.rs2() & (P.VU.vlmul * 2 - 1)) == 0); \
-  require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
-  if (insn.v_vm() == 0 && P.VU.vlmul > 1) \
-    require(insn.rd() != 0);
+  require_align(insn.rs2(), P.VU.vflmul * 2); \
+  require_align(insn.rd(), P.VU.vflmul); \
+  require_vm; \
 
 #define VI_WIDE_CHECK_COMMON \
   require_vector;\
-  require(P.VU.vlmul <= 4); \
+  require(P.VU.vflmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
-  require((insn.rd() & (P.VU.vlmul * 2 - 1)) == 0); \
-  if (insn.v_vm() == 0) \
-    require(insn.rd() != 0);
+  require_align(insn.rd(), P.VU.vflmul * 2); \
+  require_vm; \
 
 #define VI_CHECK_ST_INDEX(elt_width) \
   require_vector; \
@@ -476,24 +474,21 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require_vm; \
 
 #define VI_CHECK_MSS(is_vs1) \
-  if (P.VU.vlmul > 1) { \
-    require(!is_overlapped(insn.rd(), 1, insn.rs2(), P.VU.vlmul)); \
-    require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
-    if (is_vs1) {\
-      require(!is_overlapped(insn.rd(), 1, insn.rs1(), P.VU.vlmul)); \
-      require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
-    } \
-  }
+  require_noover(insn.rd(), 1, insn.rs2(), P.VU.vflmul); \
+  require_align(insn.rs2(), P.VU.vflmul); \
+  if (is_vs1) {\
+    require_noover(insn.rd(), 1, insn.rs1(), P.VU.vflmul); \
+    require_align(insn.rs1(), P.VU.vflmul); \
+  } \
 
 #define VI_CHECK_SSS(is_vs1) \
-  if (P.VU.vlmul > 1) { \
-    require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
-    require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
+  require_vm; \
+  if (P.VU.vflmul > 1) { \
+    require_align(insn.rd(), P.VU.vflmul); \
+    require_align(insn.rs2(), P.VU.vflmul); \
     if (is_vs1) { \
-      require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
+      require_align(insn.rs1(), P.VU.vflmul); \
     } \
-    if (insn.v_vm() == 0) \
-      require(insn.rd() != 0); \
   }
 
 #define VI_CHECK_STORE(elt_width) \
@@ -512,55 +507,52 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_CHECK_DSS(is_vs1) \
   VI_WIDE_CHECK_COMMON; \
-  require(!is_overlapped(insn.rd(), P.VU.vlmul * 2, insn.rs2(), P.VU.vlmul)); \
-  require((insn.rd() & (P.VU.vlmul * 2 - 1)) == 0); \
-  require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
+  require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs2(), P.VU.vflmul); \
+  require_align(insn.rs2(), P.VU.vflmul); \
   if (is_vs1) {\
-     require(!is_overlapped(insn.rd(), P.VU.vlmul * 2, insn.rs1(), P.VU.vlmul)); \
-     require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
+     require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs1(), P.VU.vflmul); \
+     require_align(insn.rs1(), P.VU.vflmul); \
   }
 
 #define VI_CHECK_QSS(is_vs1) \
   require_vector;\
-  require(P.VU.vlmul <= 2); \
+  require(P.VU.vflmul <= 2); \
   require(P.VU.vsew * 4 <= P.VU.ELEN); \
-  require((insn.rd() & (P.VU.vlmul * 4 - 1)) == 0); \
-  if (insn.v_vm() == 0) \
-    require(insn.rd() != 0); \
-  require(!is_overlapped(insn.rd(), P.VU.vlmul * 4, insn.rs2(), P.VU.vlmul)); \
-  require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
+  require_align(insn.rd(), P.VU.vflmul * 4); \
+  require_vm; \
+  require_noover(insn.rd(), P.VU.vflmul * 4, insn.rs2(), P.VU.vflmul); \
+  require_align(insn.rs2(), P.VU.vflmul); \
   if (is_vs1) {\
-     require(!is_overlapped(insn.rd(), P.VU.vlmul * 4, insn.rs1(), P.VU.vlmul)); \
-     require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
+     require_noover(insn.rd(), P.VU.vflmul * 4, insn.rs1(), P.VU.vflmul); \
+     require_align(insn.rs1(), P.VU.vflmul); \
   }
 
 #define VI_CHECK_DDS(is_rs) \
   VI_WIDE_CHECK_COMMON; \
-  require((insn.rs2() & (P.VU.vlmul * 2 - 1)) == 0); \
+  require_align(insn.rs2(), P.VU.vflmul * 2); \
   if (is_rs) { \
-     require(!is_overlapped(insn.rd(), P.VU.vlmul * 2, insn.rs1(), P.VU.vlmul)); \
-     require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
+     require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs1(), P.VU.vflmul); \
+     require_align(insn.rs1(), P.VU.vflmul); \
   }
 
 #define VI_CHECK_SDS(is_vs1) \
   VI_NARROW_CHECK_COMMON; \
-  require(!is_overlapped(insn.rd(), P.VU.vlmul, insn.rs2(), P.VU.vlmul * 2)); \
+  require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vflmul * 2); \
   if (is_vs1) \
-    require((insn.rs1() & (P.VU.vlmul - 1)) == 0); \
+    require_align(insn.rs1(), P.VU.vflmul); \
 
 #define VI_CHECK_REDUCTION(is_wide) \
   require_vector;\
   if (is_wide) {\
     require(P.VU.vsew * 2 <= P.VU.ELEN); \
   } \
-  require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
+  require_align(insn.rs2(), P.VU.vflmul); \
   require(P.VU.vstart == 0); \
 
 #define VI_CHECK_SLIDE(is_over) \
-  require((insn.rs2() & (P.VU.vlmul - 1)) == 0); \
-  require((insn.rd() & (P.VU.vlmul - 1)) == 0); \
-  if (insn.v_vm() == 0 && P.VU.vlmul > 1) \
-    require(insn.rd() != 0); \
+  require_align(insn.rs2(), P.VU.vflmul); \
+  require_align(insn.rd(), P.VU.vflmul); \
+  require_vm; \
   if (is_over) \
     require(insn.rd() != insn.rs2()); \
 
@@ -569,7 +561,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 // vector: loop header and end helper
 //
 #define VI_GENERAL_LOOP_BASE \
-  require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64); \
+  require(P.VU.vsew >= e8 && P.VU.vsew <= e64); \
   require_vector;\
   reg_t vl = P.VU.vl; \
   reg_t sew = P.VU.vsew; \
@@ -594,7 +586,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   P.VU.vstart = 0; 
 
 #define VI_LOOP_CMP_BASE \
-  require(P.VU.vsew == e8 || P.VU.vsew == e16 || P.VU.vsew == e32 || P.VU.vsew == e64); \
+  require(P.VU.vsew >= e8 && P.VU.vsew <= e64); \
   require_vector;\
   reg_t vl = P.VU.vl; \
   reg_t sew = P.VU.vsew; \
@@ -630,7 +622,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define VI_LOOP_NSHIFT_BASE \
   VI_GENERAL_LOOP_BASE; \
   VI_LOOP_ELEMENT_SKIP({\
-    require(!(insn.rd() == 0 && P.VU.vlmul > 1));\
+    require(!(insn.rd() == 0 && P.VU.vflmul > 1));\
   });
 
 
@@ -905,7 +897,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 // reduction loop - signed
 #define VI_LOOP_REDUCTION_BASE(x) \
-  require(x == e8 || x == e16 || x == e32 || x == e64); \
+  require(x >= e8 && x <= e64); \
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -936,7 +928,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 // reduction loop - unsgied
 #define VI_ULOOP_REDUCTION_BASE(x) \
-  require(x == e8 || x == e16 || x == e32 || x == e64); \
+  require(x >= e8 && x <= e64); \
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -964,6 +956,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   } else if(sew == e64) { \
     REDUCTION_ULOOP(e64, BODY) \
   }
+
 
 // genearl VXI signed/unsgied loop
 #define VI_VV_ULOOP(BODY) \
@@ -1406,7 +1399,7 @@ VI_LOOP_END
   VI_LOOP_END
 
 #define VI_VV_LOOP_WITH_CARRY(BODY) \
-  require(P.VU.vlmul == 1 || insn.rd() != 0); \
+  require(insn.rd() != 0); \
   VI_CHECK_SSS(true); \
   VI_GENERAL_LOOP_BASE \
   VI_MASK_VARS \
@@ -1426,7 +1419,7 @@ VI_LOOP_END
   VI_LOOP_END
 
 #define VI_XI_LOOP_WITH_CARRY(BODY) \
-  require(P.VU.vlmul == 1 || insn.rd() != 0); \
+  require(insn.rd() != 0); \
   VI_CHECK_SSS(false); \
   VI_GENERAL_LOOP_BASE \
   VI_MASK_VARS \

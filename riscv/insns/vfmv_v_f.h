@@ -1,5 +1,5 @@
 // vfmv_vf vd, vs1
-require((insn.rd() & (P.VU.vlmul - 1)) == 0);
+require_align(insn.rd(), P.VU.vflmul);
 VI_VFP_COMMON
 switch(P.VU.vsew) {
   case e16:
