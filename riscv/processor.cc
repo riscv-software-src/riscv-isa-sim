@@ -276,10 +276,10 @@ void processor_t::parse_isa_string(const char* str)
         extension_table[EXT_ZFH] = true;
       } else if (ext_str == "zvamo") {
         extension_table[EXT_ZVAMO] = true;
-      } else if (ext_str == "zvqmac") {
-        extension_table[EXT_ZVQMAC] = true;
       } else if (ext_str == "zvlsseg") {
         extension_table[EXT_ZVLSSEG] = true;
+      } else if (ext_str == "zvqmac") {
+        extension_table[EXT_ZVQMAC] = true;
       } else {
         sprintf(error_msg, "unsupported extension '%s'", ext_str.c_str());
         bad_isa_string(str, error_msg);
@@ -308,6 +308,12 @@ void processor_t::parse_isa_string(const char* str)
 
   if (supports_extension(EXT_ZVAMO) && !supports_extension('V'))
     bad_isa_string(str, "'Zvamo' extension requires 'V'");
+
+  if (supports_extension(EXT_ZVLSSEG) && !supports_extension('V'))
+    bad_isa_string(str, "'Zvlsseg' extension requires 'V'");
+
+  if (supports_extension(EXT_ZVQMAC) && !supports_extension('V'))
+    bad_isa_string(str, "'Zvqamc' extension requires 'V'");
 }
 
 void state_t::reset(reg_t max_isa)

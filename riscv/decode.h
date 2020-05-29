@@ -462,6 +462,8 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require_align(insn.rs2(), P.VU.vemul); \
   require((nf * flmul) <= (NVPR / 4) && \
           (insn.rd() + nf * flmul) <= NVPR); \
+  if (nf > 1) \
+    require(p->supports_extension(EXT_ZVLSSEG)); \
 
 #define VI_CHECK_LD_INDEX(elt_width) \
   VI_CHECK_ST_INDEX(elt_width); \
@@ -500,9 +502,8 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require_align(insn.rd(), P.VU.vemul); \
   require((nf * emul) <= (NVPR / 4) && \
           (insn.rd() + nf * emul) <= NVPR); \
-  if (nf > 1) {\
-    p->supports_extension(EXT_ZVLSSEG); \
-  } \
+  if (nf > 1) \
+    require(p->supports_extension(EXT_ZVLSSEG)); \
 
 #define VI_CHECK_LOAD(elt_width) \
   VI_CHECK_STORE(elt_width); \
@@ -1571,10 +1572,8 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
-  if (is_seg) {\
-    require(nf > 1); \
-    p->supports_extension(EXT_ZVLSSEG); \
-  } \
+  if (!is_seg) \
+    require(nf == 1); \
   VI_CHECK_LD_INDEX(elt_width); \
   VI_DUPLICATE_VREG(insn.rs2(), elt_width); \
   for (reg_t i = 0; i < vl; ++i) { \
@@ -1627,10 +1626,8 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
-  if (is_seg) {\
-    require(nf > 1); \
-    p->supports_extension(EXT_ZVLSSEG); \
-  } \
+  if (!is_seg) \
+    require(nf == 1); \
   VI_CHECK_ST_INDEX(elt_width); \
   VI_DUPLICATE_VREG(insn.rs2(), elt_width);   \
   for (reg_t i = 0; i < vl; ++i) { \
