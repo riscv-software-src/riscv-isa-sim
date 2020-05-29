@@ -278,6 +278,8 @@ void processor_t::parse_isa_string(const char* str)
         extension_table[EXT_ZVAMO] = true;
       } else if (ext_str == "zvqmac") {
         extension_table[EXT_ZVQMAC] = true;
+      } else if (ext_str == "zvlsseg") {
+        extension_table[EXT_ZVLSSEG] = true;
       } else {
         sprintf(error_msg, "unsupported extension '%s'", ext_str.c_str());
         bad_isa_string(str, error_msg);
