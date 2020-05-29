@@ -516,6 +516,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_CHECK_QSS(is_vs1) \
   require_vector;\
+  p->supports_extension(EXT_ZVQMAC); \
   require(P.VU.vflmul <= 2); \
   require(P.VU.vsew * 4 <= P.VU.ELEN); \
   require_align(insn.rd(), P.VU.vflmul * 4); \
