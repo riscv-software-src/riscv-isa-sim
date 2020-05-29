@@ -1,4 +1,5 @@
 // vfwredsum.vs vd, vs2, vs1
+bool is_propagate = true;
 VI_VFP_VV_LOOP_WIDE_REDUCTION
 ({
   vd_0 = f32_add(vd_0, vs2);

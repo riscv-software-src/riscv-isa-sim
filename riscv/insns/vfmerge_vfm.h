@@ -9,8 +9,8 @@ switch(P.VU.vsew) {
       auto rs1 = f16(READ_FREG(rs1_num));
       auto vs2 = P.VU.elt<float16_t>(rs2_num, i);
 
-      int midx = (P.VU.vmlen * i) / 64;
-      int mpos = (P.VU.vmlen * i) % 64;
+      int midx = i / 64;
+      int mpos = i % 64;
       bool use_first = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
 
       vd = use_first ? rs1 : vs2;
@@ -22,8 +22,8 @@ switch(P.VU.vsew) {
       auto rs1 = f32(READ_FREG(rs1_num));
       auto vs2 = P.VU.elt<float32_t>(rs2_num, i);
 
-      int midx = (P.VU.vmlen * i) / 64;
-      int mpos = (P.VU.vmlen * i) % 64;
+      int midx = i / 64;
+      int mpos = i % 64;
       bool use_first = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
 
       vd = use_first ? rs1 : vs2;
@@ -35,8 +35,8 @@ switch(P.VU.vsew) {
       auto rs1 = f64(READ_FREG(rs1_num));
       auto vs2 = P.VU.elt<float64_t>(rs2_num, i);
 
-      int midx = (P.VU.vmlen * i) / 64;
-      int mpos = (P.VU.vmlen * i) % 64;
+      int midx = i / 64;
+      int mpos = i % 64;
       bool use_first = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
 
       vd = use_first ? rs1 : vs2;

@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "disasm.h"
+#include <cassert>
 #include <string>
 #include <vector>
 #include <cstdarg>
@@ -319,13 +320,45 @@ struct : public arg_t {
     std::stringstream s;
     int sew = insn.v_sew();
     int lmul = insn.v_lmul();
+    auto vta = insn.v_vta() == 1 ? "ta" : "tu";
+    auto vma = insn.v_vma() == 1 ? "ma" : "mu";
     s << "e" << sew;
-    if (lmul != 1)
-      s << ",m" << lmul;
+    if(insn.v_frac_lmul()) {
+      std::string lmul_str = "";
+      switch(lmul){
+        case 3:
+          lmul_str = "f2";
+          break;
+        case 2:
+          lmul_str = "f4";
+          break;
+        case 1:
+          lmul_str = "f8";
+          break;
+        default:
+          assert(true && "unsupport fractional LMUL");
+      }
+      s << ", m" << lmul_str;
+    } else {
+      s << ", m" << (1 << lmul);
+    }
+    s << ", " << vta << ", " << vma;
     return s.str();
   }
 } v_vtype;
 
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return "x0";
+  }
+} x0;
+
+typedef struct {
+  reg_t match;
+  reg_t mask;
+  const char *fmt;
+  std::vector<const arg_t*>& arg;
+} custom_fmt_t;
 
 std::string disassembler_t::disassemble(insn_t insn) const
 {
@@ -345,6 +378,10 @@ disassembler_t::disassembler_t(int xlen)
   const uint32_t mask_rvc_rs2 = 0x1fUL << 2;
   const uint32_t mask_rvc_imm = mask_rvc_rs2 | 0x1000UL;
   const uint32_t mask_nf = 0x7Ul << 29;
+  const uint32_t mask_wd = 0x1Ul << 26;
+  const uint32_t mask_vldst = 0x7Ul << 12 | 0x1UL << 28;
+  const uint32_t mask_amoop = 0x1fUl << 27;
+  const uint32_t mask_width = 0x7Ul << 12;
 
   #define DECLARE_INSN(code, match, mask) \
    const uint32_t match_##code = match; \
@@ -661,78 +698,64 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN("vsetvli", vsetvli, 0, {&xrd, &xrs1, &v_vtype});
   DISASM_INSN("vsetvl", vsetvl, 0, {&xrd, &xrs1, &xrs2});
 
-  #define DISASM_VMEM_LD_INSN(name, ff, fmt) \
-    add_insn(new disasm_insn_t("vl" #name "b" #ff ".v",  match_vl##name##b##ff##_v,  mask_vl##name##b##ff##_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vl" #name "h" #ff ".v",  match_vl##name##h##ff##_v,  mask_vl##name##h##ff##_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vl" #name "w" #ff ".v",  match_vl##name##w##ff##_v,  mask_vl##name##w##ff##_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vl" #name "e" #ff ".v",  match_vl##name##e##ff##_v,  mask_vl##name##e##ff##_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vl" #name "bu" #ff ".v", match_vl##name##bu##ff##_v, mask_vl##name##bu##ff##_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vl" #name "hu" #ff ".v", match_vl##name##hu##ff##_v, mask_vl##name##hu##ff##_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vl" #name "wu" #ff ".v", match_vl##name##wu##ff##_v, mask_vl##name##wu##ff##_v | mask_nf, fmt));
+  #define DISASM_VMEM_INSN(name, fmt, ff) \
+    add_insn(new disasm_insn_t(#name "8"    #ff ".v",  match_##name##8##ff##_v,     mask_##name##8##ff##_v    | mask_nf, fmt)); \
+    add_insn(new disasm_insn_t(#name "16"   #ff ".v",  match_##name##16##ff##_v,    mask_##name##16##ff##_v   | mask_nf, fmt)); \
+    add_insn(new disasm_insn_t(#name "32"   #ff ".v",  match_##name##32##ff##_v,    mask_##name##32##ff##_v   | mask_nf, fmt)); \
+    add_insn(new disasm_insn_t(#name "64"   #ff ".v",  match_##name##64##ff##_v,    mask_##name##64##ff##_v   | mask_nf, fmt)); \
+    add_insn(new disasm_insn_t(#name "128"  #ff ".v",  match_##name##128##ff##_v,   mask_##name##128##ff##_v  | mask_nf, fmt)); \
+    add_insn(new disasm_insn_t(#name "256"  #ff ".v",  match_##name##256##ff##_v,   mask_##name##256##ff##_v  | mask_nf, fmt)); \
+    add_insn(new disasm_insn_t(#name "512"  #ff ".v",  match_##name##512##ff##_v,   mask_##name##512##ff##_v  | mask_nf, fmt)); \
+    add_insn(new disasm_insn_t(#name "1024" #ff ".v",  match_##name##1024##ff##_v,  mask_##name##1024##ff##_v | mask_nf, fmt)); \
 
-  #define DISASM_VMEM_ST_INSN(name, fmt) \
-    add_insn(new disasm_insn_t("vs" #name "b.v", match_vs##name##b_v, mask_vs##name##b_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vs" #name "h.v", match_vs##name##h_v, mask_vs##name##h_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vs" #name "w.v", match_vs##name##w_v, mask_vs##name##w_v | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t("vs" #name "e.v", match_vs##name##e_v, mask_vs##name##e_v | mask_nf, fmt));
+  std::vector<const arg_t *> v_ld_unit = {&vd, &v_address, &opt, &vm};
+  std::vector<const arg_t *> v_st_unit = {&vs3, &v_address, &opt, &vm};
+  std::vector<const arg_t *> v_ld_stride = {&vd, &v_address, &xrs2, &opt, &vm};
+  std::vector<const arg_t *> v_st_stride = {&vs3, &v_address, &xrs2, &opt, &vm};
+  std::vector<const arg_t *> v_ld_index = {&vd, &v_address, &vs2, &opt, &vm};
+  std::vector<const arg_t *> v_st_index = {&vs3, &v_address, &vs2, &opt, &vm};
 
-  const std::vector<const arg_t *> v_ld_unit = {&vd, &v_address, &opt, &vm};
-  const std::vector<const arg_t *> v_st_unit = {&vs3, &v_address, &opt, &vm};
-  const std::vector<const arg_t *> v_ld_stride = {&vd, &v_address, &xrs2, &opt, &vm};
-  const std::vector<const arg_t *> v_st_stride = {&vs3, &v_address, &xrs2, &opt, &vm};
-  const std::vector<const arg_t *> v_ld_index = {&vd, &v_address, &vs2, &opt, &vm};
-  const std::vector<const arg_t *> v_st_index = {&vs3, &v_address, &vs2, &opt, &vm};
+  DISASM_VMEM_INSN(vle,    v_ld_unit,   );
+  DISASM_VMEM_INSN(vlse,   v_ld_stride, );
+  DISASM_VMEM_INSN(vlxei,  v_ld_index,  );
+  DISASM_VMEM_INSN(vle,    v_ld_unit, ff);
+  DISASM_VMEM_INSN(vse,    v_st_unit,   );
+  DISASM_VMEM_INSN(vsse,   v_st_stride, );
+  DISASM_VMEM_INSN(vsxei,  v_st_index,  );
+  DISASM_VMEM_INSN(vsuxei, v_st_index,  );
 
-  DISASM_VMEM_LD_INSN( ,   , v_ld_unit);
-  DISASM_VMEM_ST_INSN( ,     v_st_unit);
-  DISASM_VMEM_LD_INSN(s,   , v_ld_stride);
-  DISASM_VMEM_ST_INSN(s,     v_st_stride);
-  DISASM_VMEM_LD_INSN(x,   , v_ld_index);
-  DISASM_VMEM_ST_INSN(x,     v_st_index);
-  DISASM_VMEM_LD_INSN( , ff, v_ld_unit);
-
-  #undef DISASM_VMEM_LD_INSN
-  #undef DISASM_VMEM_ST_INSN
+  #undef DISASM_VMEM_INSN
 
   // handle vector segment load/store
-  for (size_t nf = 1; nf <= 7; ++nf) {
-    std::pair<reg_t, reg_t> insn_code[] = {
-      {match_vle_v,  mask_vle_v},
-      {match_vse_v,  mask_vse_v},
+  for (size_t elt = 0; elt <= 7; ++elt) {
+    const custom_fmt_t template_insn[] = {
+      {match_vle8_v,   mask_vle8_v,   "vlseg%de%d.v",   v_ld_unit},
+      {match_vse8_v,   mask_vse8_v,   "vsseg%de%d.v",   v_st_unit},
 
-      {match_vlse_v,  mask_vlse_v},
-      {match_vsse_v,  mask_vssw_v},
+      {match_vlse8_v,  mask_vlse8_v,  "vlsseg%de%d.v",  v_ld_stride},
+      {match_vsse8_v,  mask_vsse8_v,  "vssseg%de%d.v",  v_st_stride},
 
-      {match_vlxe_v,  mask_vlxe_v},
-      {match_vsxe_v,  mask_vsxw_v},
+      {match_vlxei8_v, mask_vlxei8_v, "vlxseg%dei%d.v", v_ld_index},
+      {match_vsxei8_v, mask_vsxei8_v, "vsxseg%dei%d.v", v_st_index},
 
-      {match_vleff_v,  mask_vleff_v},
+      {match_vle8ff_v, mask_vle8ff_v, "vlseg%de%dff.v", v_ld_unit}
     };
 
-    std::pair<const char *, std::vector<const arg_t*>> fmts[] = { 
-      {"vlseg%de.v", {&vd, &v_address, &opt, &vm}},
-      {"vsseg%de.v", {&vs3, &v_address, &opt, &vm}},
+    reg_t elt_map[] = {0x00000000, 0x00005000, 0x00006000, 0x00007000,
+                       0x10000000, 0x10005000, 0x10006000, 0x10007000};
 
-      {"vlsseg%de.v", {&vd, &v_address, &xrs2, &opt, &vm}},
-      {"vssseg%de.v", {&vs3, &v_address, &xrs2, &opt, &vm}},
-
-      {"vlxseg%de.v", {&vd, &v_address, &vs2, &opt, &vm}},
-      {"vsxseg%de.v", {&vs3, &v_address, &vs2, &opt, &vm}},
-
-      {"vlseg%deff.v", {&vd, &v_address, &opt, &vm}},
-    };
-
-
-
-    for (size_t idx_insn = 0; idx_insn < sizeof(insn_code) / sizeof(insn_code[0]); ++idx_insn) {
-      const reg_t match_nf = nf << 29;
-      char buf[128];
-      sprintf(buf, fmts[idx_insn].first, nf + 1);
-      add_insn(new disasm_insn_t(buf,
-                                 insn_code[idx_insn].first | match_nf,
-                                 insn_code[idx_insn].second | mask_nf,
-                                 fmts[idx_insn].second
-                                 ));
+    for (size_t nf = 1; nf <= 7; ++nf) {
+      for (auto item : template_insn) {
+        const reg_t match_nf = nf << 29;
+        char buf[128];
+        sprintf(buf, item.fmt, nf + 1, 8 << elt);
+        add_insn(new disasm_insn_t(
+          buf,
+          ((item.match | match_nf) & ~mask_vldst) | elt_map[elt],
+          item.mask | mask_nf,
+          item.arg
+          ));
+      }
     }
   }
 
@@ -781,7 +804,9 @@ disassembler_t::disassembler_t(int xlen)
 
   #define DISASM_OPIV_W___INSN(name, sign) \
     add_insn(new disasm_insn_t(#name ".wv", match_##name##_wv, mask_##name##_wv, \
-                {&vd, &vs2, &vs1, &opt, &vm}));
+                {&vd, &vs2, &vs1, &opt, &vm})); \
+    add_insn(new disasm_insn_t(#name ".wx", match_##name##_wv, mask_##name##_wv, \
+                {&vd, &vs2, &xrs1, &opt, &vm}));
 
   #define DISASM_OPIV_M___INSN(name, sign) \
     add_insn(new disasm_insn_t(#name ".mm", match_##name##_mm, mask_##name##_mm, \
@@ -884,19 +909,33 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_S___INSN(vredmin,   1);
   DISASM_OPIV_S___INSN(vredmaxu,  0);
   DISASM_OPIV_S___INSN(vredmax,   1);
-  DISASM_INSN("vmv.x.s", vmv_x_s, 0, {&xrd, &vs2});
-  DISASM_INSN("vmv.s.x", vmv_s_x, 0, {&vd, &xrs1});
   DISASM_OPIV__X__INSN(vslide1up,  1);
   DISASM_OPIV__X__INSN(vslide1down,1);
 
   //0b01_0000
+  //VWXUNARY0
+  DISASM_INSN("vmv.x.s", vmv_x_s, 0, {&xrd, &vs2});
   DISASM_INSN("vpopc.m", vpopc_m, 0, {&xrd, &vs2, &opt, &vm});
-  //vmuary0
   DISASM_INSN("vfirst.m", vfirst_m, 0, {&xrd, &vs2, &opt, &vm});
+
+  //VRXUNARY0
+  DISASM_INSN("vmv.s.x", vmv_s_x, 0, {&vd, &xrs1});
+
+  //VXUNARY0
+  DISASM_INSN("vzext.vf2", vzext_vf2, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vsext.vf2", vsext_vf2, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vzext.vf4", vzext_vf4, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vsext.vf4", vsext_vf4, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vzext.vf8", vzext_vf8, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vsext.vf8", vsext_vf8, 0, {&vd, &vs2, &opt, &vm});
+
+  //VMUNARY0
   DISASM_INSN("vmsbf.m", vmsbf_m, 0, {&vd, &vs2, &opt, &vm});
   DISASM_INSN("vmsof.m", vmsof_m, 0, {&vd, &vs2, &opt, &vm});
   DISASM_INSN("vmsif.m", vmsif_m, 0, {&vd, &vs2, &opt, &vm});
   DISASM_INSN("viota.m", viota_m, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vid.v", vid_v, 0, {&vd, &opt, &vm});
+
   DISASM_INSN("vid.v", vid_v, 0, {&vd, &opt, &vm});
 
   DISASM_INSN("vcompress.vm", vcompress_vm, 0, {&vd, &vs2, &vs1});
@@ -1073,6 +1112,41 @@ disassembler_t::disassembler_t(int xlen)
   #undef DISASM_OPIV_S__INSN
   #undef DISASM_OPIV_W__INSN
   #undef DISASM_VFUNARY0_INSN
+
+  // vector amo
+  std::vector<const arg_t *> v_fmt_amo_wd = {&vd, &v_address, &vs2, &vd, &opt, &vm};
+  std::vector<const arg_t *> v_fmt_amo = {&x0, &v_address, &vs2, &vd, &opt, &vm};
+  for (size_t elt = 0; elt <= 3; ++elt) {
+    const custom_fmt_t template_insn[] = {
+      {match_vamoswape8_v | mask_wd,   mask_vamoswape8_v | mask_wd,
+         "%se%d.v", v_fmt_amo_wd},
+      {match_vamoswape8_v,   mask_vamoswape8_v | mask_wd,
+         "%se%d.v", v_fmt_amo},
+    };
+    std::pair<const char*, reg_t> amo_map[] = {
+        {"vamoswap", 0x01ul << 27},
+        {"vamoadd",  0x00ul << 27},
+        {"vamoxor",  0x04ul << 27},
+        {"vamoor",   0x0cul << 27},
+        {"vamomin",  0x10ul << 27},
+        {"vamomax",  0x14ul << 27},
+        {"vamominu", 0x18ul << 27},
+        {"vamomaxu", 0x1cul << 27}};
+    const reg_t elt_map[] = {0x0ul << 12,  0x4ul << 12,
+                             0x6ul <<12, 0x7ul << 12};
+
+    for (size_t idx = 0; idx < sizeof(amo_map) / sizeof(amo_map[0]); ++idx) {
+      for (auto item : template_insn) {
+        char buf[128];
+        sprintf(buf, item.fmt, amo_map[idx].first, 8 << elt);
+        add_insn(new disasm_insn_t(buf,
+                  (item.match & ~mask_width & ~mask_amoop) |
+                    (amo_map[idx].second | elt_map[elt]),
+                  item.mask,
+                  item.arg));
+      }
+    }
+  }
 
   if (xlen == 32) {
     DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
