@@ -107,10 +107,11 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
     }
 
     if (!show_vec && (is_vreg || is_vec)) {
-        if (p->VU.vflmul < 0)
-          fprintf(log_file, " e%ld mf%ld l%ld", p->VU.vsew, (reg_t)(1.0/p->VU.vflmul), p->VU.vl);
-        else
-          fprintf(log_file, " e%ld m%ld l%ld", p->VU.vsew, (reg_t)p->VU.vflmul, p->VU.vl);
+        fprintf(log_file, " e%ld %s%ld l%ld",
+                          p->VU.vsew,
+                          p->VU.vflmul < 0 ? "mf" : "m",
+                          p->VU.vflmul < 0 ? (reg_t)(1 / p->VU.vflmul) : (reg_t)p->VU.vflmul,
+                          p->VU.vl);
         show_vec = true;
     }
 
