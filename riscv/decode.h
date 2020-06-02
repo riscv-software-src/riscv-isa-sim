@@ -1957,65 +1957,6 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
       break; \
   }; \
 
-#define VI_VFP_LOOP_REDUCTIONSUM_WIDEN_INIT(swidth, dwidth) \
-  float##dwidth##_t vd_0 = p->VU.elt<float##dwidth##_t>(rs1_num, 0); \
-  size_t temp_len = vl; \
-  if (temp_len > 1) { \
-    size_t leading_zeros = __builtin_clzl(temp_len - 1); \
-    temp_len = 1 << (64 - leading_zeros); \
-  } \
-  std::vector<float##dwidth##_t> temp_arr(temp_len, f##dwidth(0)); \
-  reg_t num_active_element = 0; \
-  for (reg_t i=p->VU.vstart; i<vl; ++i) { /* Allocate a temporary array for computing */  \
-    VI_LOOP_ELEMENT_SKIP(); \
-    temp_arr.at(i) = f##swidth##_to_f##dwidth(p->VU.elt<float##swidth##_t>(rs2_num, i)); \
-    ++num_active_element; \
-  }
-
-#define VI_VFP_LOOP_REDUCTIONSUM_INIT(width) \
-  float##width##_t vd_0 = p->VU.elt<float##width##_t>(rd_num, 0); \
-  float##width##_t vs1_0 = p->VU.elt<float##width##_t>(rs1_num, 0); \
-  vd_0 = vs1_0; \
-  size_t temp_len = vl; \
-  if (temp_len > 1) { \
-    size_t leading_zeros = __builtin_clzl(temp_len - 1); \
-    temp_len = 1 << (64 - leading_zeros); \
-  } \
-  std::vector<float##width##_t> temp_arr(temp_len, f##width(0)); \
-  reg_t num_active_element = 0; \
-  for (reg_t i=p->VU.vstart; i<vl; ++i) { /* Allocate a temporary array for computing */  \
-    VI_LOOP_ELEMENT_SKIP(); \
-    temp_arr.at(i) = p->VU.elt<float##width##_t>(rs2_num, i); \
-    ++num_active_element; \
-  }
-
-#define VI_VFP_LOOP_REDUCTIONSUM_MERGE(width) \
-  uint64_t valu = p->VU.get_valu(); \
-  while (valu > 0) { \
-    while (valu < temp_len) { \
-      uint64_t write_pos = 0; \
-      uint64_t read_pos = 0; \
-      while (read_pos < temp_len) { \
-        temp_arr[write_pos] = f##width##_add(temp_arr[read_pos], temp_arr[read_pos + valu]); \
-        set_fp_exceptions; \
-        ++write_pos; \
-        ++read_pos; \
-        if (read_pos % valu == 0) \
-          read_pos += valu; \
-      } \
-      temp_len = write_pos; \
-    } \
-    valu >>= 1; \
-  } \
-  vd_0 = (num_active_element > 0) ? f##width##_add(vd_0, temp_arr[0]) : vd_0; \
-  set_fp_exceptions; \
-
-#define VI_VFP_LOOP_REDUCTIONSUM_CLOSE(x) \
-  P.VU.vstart = 0; \
-  if (vl > 0) { \
-    P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true) = vd_0.v; \
-  }
-
 #define VI_VFP_VV_LOOP_WIDE_REDUCTION(BODY16, BODY32) \
   VI_CHECK_REDUCTION(true) \
   VI_VFP_COMMON \
