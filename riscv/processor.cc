@@ -305,14 +305,15 @@ void processor_t::parse_isa_string(const char* str)
   if (supports_extension('Q') && !supports_extension('D'))
     bad_isa_string(str, "'Q' extension requires 'D'");
 
-  if (supports_extension(EXT_ZVAMO) && !supports_extension('V'))
-    bad_isa_string(str, "'Zvamo' extension requires 'V'");
+  if (supports_extension(EXT_ZVAMO) &&
+      !(supports_extension('A') && supports_extension('V')))
+    bad_isa_string(str, "'Zvamo' extension requires 'A' and 'V'");
 
   if (supports_extension(EXT_ZVLSSEG) && !supports_extension('V'))
     bad_isa_string(str, "'Zvlsseg' extension requires 'V'");
 
   if (supports_extension(EXT_ZVQMAC) && !supports_extension('V'))
-    bad_isa_string(str, "'Zvqamc' extension requires 'V'");
+    bad_isa_string(str, "'Zvqmac' extension requires 'V'");
 }
 
 void state_t::reset(reg_t max_isa)
