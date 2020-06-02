@@ -462,16 +462,7 @@ public:
       float vflmul;
       reg_t vmel;
       reg_t ELEN, VLEN, SLEN;
-      reg_t VALU;
       bool vill;
-
-      // Microarchitecture dependent features
-      typedef enum {
-        UNKNOWN_FREDSUM_IMPL,
-        ORDERED_FREDSUM_IMPL,
-        PARALLEL_FREDSUM_IMPL
-      } fredsum_impl_t;
-      fredsum_impl_t fredsum_impl;
 
       // vector element for varies SEW
       template<class T>
@@ -514,7 +505,6 @@ public:
       reg_t get_vlen() { return VLEN; }
       reg_t get_elen() { return ELEN; }
       reg_t get_slen() { return SLEN; }
-      reg_t get_valu() { return VALU; }
 
       VRM get_vround_mode() {
         return (VRM)vxrm;
