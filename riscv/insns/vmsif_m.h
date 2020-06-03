@@ -1,9 +1,9 @@
-// vmpopc rd, vs2, vm
+// vmsif.m rd, vs2, vm
 require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
 require_vector;
 require(P.VU.vstart == 0);
-if (insn.v_vm() == 0)
-  require(insn.rd() != 0 && insn.rd() != insn.rs2());
+require_vm;
+require(insn.rd() != insn.rs2());
 
 reg_t vl = P.VU.vl;
 reg_t rd_num = insn.rd();
