@@ -12,16 +12,10 @@ if (vl > 0 && P.VU.vstart < vl) {
 
   switch(P.VU.vsew) {
     case e16:
-      if (FLEN == 64)
-        P.VU.elt<uint16_t>(rd_num, 0, true) = f64(FRS1).v;
-      else
-        P.VU.elt<uint16_t>(rd_num, 0, true) = f32(FRS1).v;
+      P.VU.elt<uint16_t>(rd_num, 0, true) = f16(FRS1).v;
       break;
     case e32:
-      if (FLEN == 64)
-        P.VU.elt<uint32_t>(rd_num, 0, true) = f64(FRS1).v;
-      else
-        P.VU.elt<uint32_t>(rd_num, 0, true) = f32(FRS1).v;
+      P.VU.elt<uint32_t>(rd_num, 0, true) = f32(FRS1).v;
       break;
     case e64:
       if (FLEN == 64)
