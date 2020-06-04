@@ -110,7 +110,7 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
         fprintf(log_file, " e%ld %s%ld l%ld",
                 p->VU.vsew,
                 p->VU.vflmul < 0 ? "mf" : "m",
-                p->VU.vflmul < 0 ? (1 / p->VU.vflmul) : p->VU.vflmul,
+                p->VU.vflmul < 0 ? (reg_t)(1 / p->VU.vflmul) : (reg_t)p->VU.vflmul,
                 p->VU.vl);
         show_vec = true;
     }
