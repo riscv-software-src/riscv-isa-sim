@@ -4974,7 +4974,7 @@ fi
 
     # Add subproject to our running list
 
-    subprojects="$subprojects dummy_rocc"
+    subprojects="$subprojects customext"
 
     # Process the subproject appropriately. If enabled add it to the
     # $enabled_subprojects running shell variable, set a
@@ -4982,14 +4982,14 @@ fi
     # 'subproject.ac'.
 
 
-      { $as_echo "$as_me:${as_lineno-$LINENO}: configuring default subproject : dummy_rocc" >&5
-$as_echo "$as_me: configuring default subproject : dummy_rocc" >&6;}
-      ac_config_files="$ac_config_files dummy_rocc.mk:dummy_rocc/dummy_rocc.mk.in"
+      { $as_echo "$as_me:${as_lineno-$LINENO}: configuring default subproject : customext" >&5
+$as_echo "$as_me: configuring default subproject : customext" >&6;}
+      ac_config_files="$ac_config_files customext.mk:customext/customext.mk.in"
 
-      enable_dummy_rocc_sproj="yes"
-      subprojects_enabled="$subprojects_enabled dummy_rocc"
+      enable_customext_sproj="yes"
+      subprojects_enabled="$subprojects_enabled customext"
 
-$as_echo "#define DUMMY_ROCC_ENABLED /**/" >>confdefs.h
+$as_echo "#define CUSTOMEXT_ENABLED /**/" >>confdefs.h
 
 
 
@@ -5165,7 +5165,7 @@ ac_config_files="$ac_config_files riscv-fesvr.pc"
 
 ac_config_files="$ac_config_files riscv-softfloat.pc"
 
-ac_config_files="$ac_config_files riscv-dummy_rocc.pc"
+ac_config_files="$ac_config_files riscv-customext.pc"
 
 ac_config_files="$ac_config_files riscv-fdt.pc"
 
@@ -5864,7 +5864,7 @@ do
   case $ac_config_target in
     "fesvr.mk") CONFIG_FILES="$CONFIG_FILES fesvr.mk:fesvr/fesvr.mk.in" ;;
     "riscv.mk") CONFIG_FILES="$CONFIG_FILES riscv.mk:riscv/riscv.mk.in" ;;
-    "dummy_rocc.mk") CONFIG_FILES="$CONFIG_FILES dummy_rocc.mk:dummy_rocc/dummy_rocc.mk.in" ;;
+    "customext.mk") CONFIG_FILES="$CONFIG_FILES customext.mk:customext/customext.mk.in" ;;
     "fdt.mk") CONFIG_FILES="$CONFIG_FILES fdt.mk:fdt/fdt.mk.in" ;;
     "softfloat.mk") CONFIG_FILES="$CONFIG_FILES softfloat.mk:softfloat/softfloat.mk.in" ;;
     "spike_main.mk") CONFIG_FILES="$CONFIG_FILES spike_main.mk:spike_main/spike_main.mk.in" ;;
@@ -5874,7 +5874,7 @@ do
     "riscv-riscv.pc") CONFIG_FILES="$CONFIG_FILES riscv-riscv.pc" ;;
     "riscv-fesvr.pc") CONFIG_FILES="$CONFIG_FILES riscv-fesvr.pc" ;;
     "riscv-softfloat.pc") CONFIG_FILES="$CONFIG_FILES riscv-softfloat.pc" ;;
-    "riscv-dummy_rocc.pc") CONFIG_FILES="$CONFIG_FILES riscv-dummy_rocc.pc" ;;
+    "riscv-customext.pc") CONFIG_FILES="$CONFIG_FILES riscv-customext.pc" ;;
     "riscv-fdt.pc") CONFIG_FILES="$CONFIG_FILES riscv-fdt.pc" ;;
     "riscv-spike_main.pc") CONFIG_FILES="$CONFIG_FILES riscv-spike_main.pc" ;;
 
