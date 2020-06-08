@@ -222,8 +222,11 @@ public:
       throw trap_load_access_fault(vaddr); // disallow LR to I/O space
   }
 
-  inline bool check_load_reservation(reg_t vaddr)
+  inline bool check_load_reservation(reg_t vaddr, size_t size)
   {
+    if (vaddr & (size-1))
+      throw trap_store_address_misaligned(vaddr);
+
     reg_t paddr = translate(vaddr, 1, STORE);
     if (auto host_addr = sim->addr_to_mem(paddr))
       return load_reservation_address == refill_tlb(vaddr, paddr, host_addr, STORE).target_offset + vaddr;

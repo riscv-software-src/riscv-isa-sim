@@ -1,8 +1,11 @@
 require_extension('A');
 require_rv64;
 
-bool have_reservation = MMU.check_load_reservation(RS1);
-MMU.amo_uint64(RS1, [&](uint64_t lhs) { return have_reservation ? RS2 : lhs; });
+bool have_reservation = MMU.check_load_reservation(RS1, 8);
+
+if (have_reservation)
+  MMU.store_uint64(RS1, RS2);
+
 MMU.yield_load_reservation();
 
 WRITE_RD(!have_reservation);
