@@ -3,9 +3,9 @@ exec_prefix=@prefix@
 libdir=${prefix}/@libdir@
 includedir=${prefix}/@includedir@
 
-Name: riscv-dummy_rocc
+Name: riscv-customext
 Description: Example RISC-V ROCC accelerator
 Version: git
-Libs: -Wl,-rpath,${libdir} -L${libdir} -ldummy_rocc
+Libs: -Wl,-rpath,${libdir} -L${libdir} -lcustomext
 Cflags: -I${includedir}
 URL: http://riscv.org/download.html#tab_spike
