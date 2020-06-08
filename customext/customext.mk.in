@@ -5,6 +5,7 @@ customext_subproject_deps = \
 
 customext_srcs = \
 	dummy_rocc.cc \
+	cflush.cc \
 
 customext_CFLAGS = -fPIC
 
