@@ -274,7 +274,7 @@ public:
   }
   extension_t* get_extension() { return ext; }
   bool supports_extension(unsigned char ext) {
-    if (isupper(ext))
+    if (ext >= 'A' && ext <= 'Z')
       return ((state.misa >> (ext - 'A')) & 1);
     else
       return extension_table[ext];
