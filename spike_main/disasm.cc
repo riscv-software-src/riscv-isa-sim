@@ -1112,7 +1112,7 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN("vfwcvt.f.f.v", vfwcvt_f_f_v, 0, {&vd, &vs2, &opt, &vm});
 
   DISASM_VFUNARY0_INSN(vfn, w);
-  DISASM_INSN("vfncvt.f.f.w", vfncvt_rod_f_f_w, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vfncvt.f.f.w", vfncvt_f_f_w, 0, {&vd, &vs2, &opt, &vm});
   DISASM_INSN("vfncvt.rod.f.f.w", vfncvt_rod_f_f_w, 0, {&vd, &vs2, &opt, &vm});
 
   //vfunary1
