@@ -256,6 +256,8 @@ private:
 #define require_align(val, pos) require(is_aligned(val, pos))
 #define require_noover(astart, asize, bstart, bsize) \
   require(!is_overlapped(astart, asize, bstart, bsize))
+#define require_noover_widen(astart, asize, bstart, bsize) \
+  require(!is_overlapped_widen(astart, asize, bstart, bsize))
 #define require_vm do { if (insn.v_vm() == 0) require(insn.rd() != 0);} while(0);
 
 #define set_fp_exceptions ({ if (softfloat_exceptionFlags) { \
@@ -431,6 +433,24 @@ static inline bool is_overlapped(const int astart, int asize,
   return std::max(aend, bend) - std::min(astart, bstart) < asize + bsize;
 }
 
+static inline bool is_overlapped_widen(const int astart, int asize,
+                                       const int bstart, int bsize)
+{
+  asize = asize == 0 ? 1 : asize;
+  bsize = bsize == 0 ? 1 : bsize;
+
+  const int aend = astart + asize;
+  const int bend = bstart + bsize;
+
+  if (astart < bstart &&
+      is_overlapped(astart, asize, bstart, bsize) &&
+      !is_overlapped(astart, asize, bstart + bsize, bsize)) {
+      return false;
+  } else  {
+    return std::max(aend, bend) - std::min(astart, bstart) < asize + bsize;
+  }
+}
+
 static inline bool is_aligned(const unsigned val, const unsigned pos)
 {
   return pos ? (val & (pos - 1)) == 0 : true;
@@ -513,11 +533,19 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_CHECK_DSS(is_vs1) \
   VI_WIDE_CHECK_COMMON; \
-  require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs2(), P.VU.vflmul); \
   require_align(insn.rs2(), P.VU.vflmul); \
+  if (P.VU.vflmul < 1) {\
+    require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs2(), P.VU.vflmul); \
+  } else {\
+    require_noover_widen(insn.rd(), P.VU.vflmul * 2, insn.rs2(), P.VU.vflmul); \
+  } \
   if (is_vs1) {\
-     require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs1(), P.VU.vflmul); \
-     require_align(insn.rs1(), P.VU.vflmul); \
+    require_align(insn.rs1(), P.VU.vflmul); \
+    if (P.VU.vflmul < 1) {\
+      require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs1(), P.VU.vflmul); \
+    } else {\
+      require_noover_widen(insn.rd(), P.VU.vflmul * 2, insn.rs1(), P.VU.vflmul); \
+    } \
   }
 
 #define VI_CHECK_QSS(is_vs1) \
@@ -526,20 +554,32 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require(P.VU.vflmul <= 2); \
   require(P.VU.vsew * 4 <= P.VU.ELEN); \
   require_align(insn.rd(), P.VU.vflmul * 4); \
-  require_vm; \
-  require_noover(insn.rd(), P.VU.vflmul * 4, insn.rs2(), P.VU.vflmul); \
   require_align(insn.rs2(), P.VU.vflmul); \
+  require_vm; \
+  if (P.VU.vflmul < 1) {\
+    require_noover(insn.rd(), P.VU.vflmul * 4, insn.rs2(), P.VU.vflmul); \
+  } else {\
+    require_noover_widen(insn.rd(), P.VU.vflmul * 4, insn.rs2(), P.VU.vflmul); \
+  } \
   if (is_vs1) {\
-     require_noover(insn.rd(), P.VU.vflmul * 4, insn.rs1(), P.VU.vflmul); \
      require_align(insn.rs1(), P.VU.vflmul); \
+    if (P.VU.vflmul < 1) {\
+      require_noover(insn.rd(), P.VU.vflmul * 4, insn.rs1(), P.VU.vflmul); \
+    } else {\
+      require_noover_widen(insn.rd(), P.VU.vflmul * 4, insn.rs1(), P.VU.vflmul); \
+    } \
   }
 
 #define VI_CHECK_DDS(is_rs) \
   VI_WIDE_CHECK_COMMON; \
   require_align(insn.rs2(), P.VU.vflmul * 2); \
   if (is_rs) { \
-     require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs1(), P.VU.vflmul); \
      require_align(insn.rs1(), P.VU.vflmul); \
+    if (P.VU.vflmul < 1) {\
+      require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs1(), P.VU.vflmul); \
+    } else {\
+      require_noover_widen(insn.rd(), P.VU.vflmul * 2, insn.rs1(), P.VU.vflmul); \
+    } \
   }
 
 #define VI_CHECK_SDS(is_vs1) \
@@ -1746,7 +1786,11 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   require(from >= e8 && from <= e64); \
   require_align(insn.rd(), P.VU.vflmul); \
   require_align(insn.rs2(), P.VU.vflmul / div); \
-  require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vflmul / div); \
+  if ((P.VU.vflmul / div) < 1) { \
+    require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vflmul / div); \
+  } else {\
+    require_noover_widen(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vflmul / div); \
+  } \
   reg_t pat = (((P.VU.vsew >> 3) << 4) | from >> 3); \
   VI_GENERAL_LOOP_BASE \
   VI_LOOP_ELEMENT_SKIP(); \
