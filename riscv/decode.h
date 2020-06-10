@@ -562,12 +562,20 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require(P.VU.vflmul <= 2); \
   require(P.VU.vsew * 4 <= P.VU.ELEN); \
   require_align(insn.rd(), P.VU.vflmul * 4); \
-  require_vm; \
-  require_noover(insn.rd(), P.VU.vflmul * 4, insn.rs2(), P.VU.vflmul); \
   require_align(insn.rs2(), P.VU.vflmul); \
+  require_vm; \
+  if (P.VU.vflmul < 1) {\
+    require_noover(insn.rd(), P.VU.vflmul * 4, insn.rs2(), P.VU.vflmul); \
+  } else {\
+    require_noover_widen(insn.rd(), P.VU.vflmul * 4, insn.rs2(), P.VU.vflmul); \
+  } \
   if (is_vs1) {\
-     require_noover(insn.rd(), P.VU.vflmul * 4, insn.rs1(), P.VU.vflmul); \
      require_align(insn.rs1(), P.VU.vflmul); \
+    if (P.VU.vflmul < 1) {\
+      require_noover(insn.rd(), P.VU.vflmul * 4, insn.rs1(), P.VU.vflmul); \
+    } else {\
+      require_noover_widen(insn.rd(), P.VU.vflmul * 4, insn.rs1(), P.VU.vflmul); \
+    } \
   }
 
 #define VI_CHECK_DDS(is_rs) \
