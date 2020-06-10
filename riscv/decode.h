@@ -487,8 +487,16 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_CHECK_LD_INDEX(elt_width) \
   VI_CHECK_ST_INDEX(elt_width); \
-  if (P.VU.vemul != P.VU.vflmul) \
-    require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+  if (P.VU.veew > P.VU.vsew) { \
+    if (insn.rd() != insn.rs2()) \
+      require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+  } else if (P.VU.veew < P.VU.vsew) { \
+    if (P.VU.vemul < 1) {\
+      require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+    } else {\
+      require_noover_widen(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+    } \
+  } \
   if (insn.v_nf() > 0) {\
     require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
     require_noover(vd, nf, insn.rs2(), 1); \
