@@ -237,7 +237,7 @@ void processor_t::parse_isa_string(const char* str)
         p++;
       } else if (*p == 'x') {
         const char* ext = p + 1, *end = ext;
-        while (islower(*end))
+        while (islower(*end) || *end == '_')
           end++;
 
         auto ext_str = std::string(ext, end - ext);
@@ -251,6 +251,11 @@ void processor_t::parse_isa_string(const char* str)
       }
     } else if (*p == '_') {
       const char* ext = p + 1, *end = ext;
+      if (*ext == 'x') {
+        p++;
+        continue;
+      }
+
       while (islower(*end))
         end++;
 
@@ -1207,8 +1212,7 @@ void processor_t::register_extension(extension_t* x)
   for (auto insn : x->get_instructions())
     register_insn(insn);
   build_opcode_map();
-  for (auto disasm_insn : x->get_disasms())
-    disassembler->add_insn(disasm_insn);
+
   if (ext != NULL)
     throw std::logic_error("only one extension may be registered");
   ext = x;
