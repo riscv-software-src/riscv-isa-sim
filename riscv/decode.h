@@ -544,7 +544,8 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_CHECK_SDS(is_vs1) \
   VI_NARROW_CHECK_COMMON; \
-  require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vflmul * 2); \
+  if (insn.rd() != insn.rs2()) \
+    require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vflmul * 2); \
   if (is_vs1) \
     require_align(insn.rs1(), P.VU.vflmul); \
 
