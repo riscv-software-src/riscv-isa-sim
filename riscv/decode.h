@@ -487,8 +487,16 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_CHECK_LD_INDEX(elt_width) \
   VI_CHECK_ST_INDEX(elt_width); \
-  if (P.VU.vemul != P.VU.vflmul) \
-    require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+  if (P.VU.veew > P.VU.vsew) { \
+    if (insn.rd() != insn.rs2()) \
+      require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+  } else if (P.VU.veew < P.VU.vsew) { \
+    if (P.VU.vemul < 1) {\
+      require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+    } else {\
+      require_noover_widen(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+    } \
+  } \
   if (insn.v_nf() > 0) {\
     require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
     require_noover(vd, nf, insn.rs2(), 1); \
@@ -1740,8 +1748,6 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define VI_AMO(op, type, idx_type) \
   require_vector; \
   require_extension(EXT_ZVAMO); \
-  if (insn.v_wd()) \
-    require_vm; \
   require_align(insn.rd(), P.VU.vflmul); \
   require(P.VU.vsew <= P.get_xlen() && P.VU.vsew >= 32); \
   require_align(insn.rd(), P.VU.vflmul); \
@@ -1749,6 +1755,19 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   P.VU.vemul = ((float)P.VU.veew / P.VU.vsew * P.VU.vflmul); \
   require(P.VU.vemul >= 0.125 && P.VU.vemul <= 8); \
   require_align(insn.rs2(), P.VU.vemul); \
+  if (insn.v_wd()) {\
+    require_vm; \
+    if (P.VU.veew > P.VU.vsew) { \
+      if (insn.rd() != insn.rs2()) \
+        require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+    } else if (P.VU.veew < P.VU.vsew) { \
+      if (P.VU.vemul < 1) {\
+        require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+      } else {\
+        require_noover_widen(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+      } \
+    } \
+  } \
   VI_DUPLICATE_VREG(insn.rs2(), idx_type); \
   const reg_t vl = P.VU.vl; \
   const reg_t baseAddr = RS1; \
