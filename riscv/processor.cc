@@ -1213,6 +1213,10 @@ void processor_t::register_extension(extension_t* x)
     register_insn(insn);
   build_opcode_map();
 
+  if (disassembler)
+    for (auto disasm_insn : x->get_disasms())
+      disassembler->add_insn(disasm_insn);
+
   if (ext != NULL)
     throw std::logic_error("only one extension may be registered");
   ext = x;
