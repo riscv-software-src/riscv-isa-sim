@@ -6,4 +6,4 @@ for (reg_t i = 0; i < P.VU.vlenb; ++i) {
   auto val = P.VU.elt<uint8_t>(vs3, i);
   MMU.store_uint8(baseAddr + i, val);
 }
-P.VU.vstart = 0; 
+P.VU.vstart = 0;
