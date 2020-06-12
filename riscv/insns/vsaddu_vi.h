@@ -1,4 +1,4 @@
-// vsaddu vd, vs2, simm5
+// vsaddu vd, vs2, zimm5
 VI_VI_ULOOP
 ({
   bool sat = false;
