@@ -43,6 +43,10 @@
 #define SSTATUS_UXL         0x0000000300000000
 #define SSTATUS64_SD        0x8000000000000000
 
+#define SSTATUS_VS_MASK     (SSTATUS_SIE | SSTATUS_SPIE | \
+                             SSTATUS_SPP | SSTATUS_SUM | \
+                             SSTATUS_MXR | SSTATUS_UXL)
+
 #define HSTATUS_VSXL        0x300000000
 #define HSTATUS_VTSR        0x00400000
 #define HSTATUS_VTW         0x00200000
@@ -127,13 +131,20 @@
 #define MIP_MEIP            (1 << IRQ_M_EXT)
 #define MIP_SGEIP           (1 << IRQ_S_GEXT)
 
+#define MIP_S_MASK          (MIP_SSIP | MIP_STIP | MIP_SEIP)
+#define MIP_VS_MASK         (MIP_VSSIP | MIP_VSTIP | MIP_VSEIP)
+#define MIP_HS_MASK         (MIP_VS_MASK | MIP_SGEIP)
+
+#define MIDELEG_FORCED_MASK MIP_HS_MASK
+
 #define SIP_SSIP MIP_SSIP
 #define SIP_STIP MIP_STIP
 
 #define PRV_U 0
 #define PRV_S 1
-#define PRV_H 2
 #define PRV_M 3
+
+#define PRV_HS (PRV_S + 1)
 
 #define SATP32_MODE 0x80000000
 #define SATP32_ASID 0x7FC00000
@@ -2071,8 +2082,8 @@
 #define CAUSE_MISALIGNED_STORE 0x6
 #define CAUSE_STORE_ACCESS 0x7
 #define CAUSE_USER_ECALL 0x8
-#define CAUSE_SUPERVISOR_ECALL 0x9
-#define CAUSE_HYPERVISOR_ECALL 0xa
+#define CAUSE_HYPERVISOR_ECALL 0x9
+#define CAUSE_SUPERVISOR_ECALL 0xa
 #define CAUSE_MACHINE_ECALL 0xb
 #define CAUSE_FETCH_PAGE_FAULT 0xc
 #define CAUSE_LOAD_PAGE_FAULT 0xd

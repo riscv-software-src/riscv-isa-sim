@@ -164,6 +164,7 @@ struct state_t
 
   // control and status registers
   reg_t prv;    // TODO: Can this be an enum instead?
+  bool v;
   reg_t misa;
   reg_t mstatus;
   reg_t mepc;
@@ -184,6 +185,23 @@ struct state_t
   reg_t stvec;
   reg_t satp;
   reg_t scause;
+
+  reg_t mtval2;
+  reg_t mtinst;
+  reg_t hstatus;
+  reg_t hideleg;
+  reg_t hedeleg;
+  uint32_t hcounteren;
+  reg_t htval;
+  reg_t htinst;
+  reg_t hgatp;
+  reg_t vsstatus;
+  reg_t vstvec;
+  reg_t vsscratch;
+  reg_t vsepc;
+  reg_t vscause;
+  reg_t vstval;
+  reg_t vsatp;
 
   reg_t dpc;
   reg_t dscratch0, dscratch1;
@@ -288,6 +306,7 @@ public:
   }
   reg_t legalize_privilege(reg_t);
   void set_privilege(reg_t);
+  void set_virt(bool);
   void update_histogram(reg_t pc);
   const disassembler_t* get_disassembler() { return disassembler; }
 
