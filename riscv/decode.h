@@ -1878,7 +1878,6 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   bool is_active = false; \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     VI_LOOP_ELEMENT_SKIP(); \
-    int##width##_t &vd = P.VU.elt<int##width##_t>(rd_num, i, true); \
     float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i); \
     is_active = true; \
 
