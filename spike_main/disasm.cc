@@ -457,10 +457,12 @@ disassembler_t::disassembler_t(int xlen)
 
   DEFINE_FLOAD(flw)
   DEFINE_FLOAD(fld)
+  DEFINE_FLOAD(flh)
   DEFINE_FLOAD(flq)
 
   DEFINE_FSTORE(fsw)
   DEFINE_FSTORE(fsd)
+  DEFINE_FSTORE(fsh)
   DEFINE_FSTORE(fsq)
 
   add_insn(new disasm_insn_t("j", match_jal, mask_jal | mask_rd, {&jump_target}));
@@ -628,6 +630,42 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_FX2TYPE(feq_d);
   DEFINE_FX2TYPE(flt_d);
   DEFINE_FX2TYPE(fle_d);
+
+  DEFINE_FRTYPE(fadd_h);
+  DEFINE_FRTYPE(fsub_h);
+  DEFINE_FRTYPE(fmul_h);
+  DEFINE_FRTYPE(fdiv_h);
+  DEFINE_FR1TYPE(fsqrt_h);
+  DEFINE_FRTYPE(fmin_h);
+  DEFINE_FRTYPE(fmax_h);
+  DEFINE_FR3TYPE(fmadd_h);
+  DEFINE_FR3TYPE(fmsub_h);
+  DEFINE_FR3TYPE(fnmadd_h);
+  DEFINE_FR3TYPE(fnmsub_h);
+  DEFINE_FRTYPE(fsgnj_h);
+  DEFINE_FRTYPE(fsgnjn_h);
+  DEFINE_FRTYPE(fsgnjx_h);
+  DEFINE_FR1TYPE(fcvt_h_s);
+  DEFINE_FR1TYPE(fcvt_h_d);
+  DEFINE_FR1TYPE(fcvt_h_q);
+  DEFINE_FR1TYPE(fcvt_s_h);
+  DEFINE_FR1TYPE(fcvt_d_h);
+  DEFINE_FR1TYPE(fcvt_q_h);
+  DEFINE_XFTYPE(fcvt_h_l);
+  DEFINE_XFTYPE(fcvt_h_lu);
+  DEFINE_XFTYPE(fcvt_h_w);
+  DEFINE_XFTYPE(fcvt_h_wu);
+  DEFINE_XFTYPE(fcvt_h_wu);
+  DEFINE_XFTYPE(fmv_h_x);
+  DEFINE_FXTYPE(fcvt_l_h);
+  DEFINE_FXTYPE(fcvt_lu_h);
+  DEFINE_FXTYPE(fcvt_w_h);
+  DEFINE_FXTYPE(fcvt_wu_h);
+  DEFINE_FXTYPE(fclass_h);
+  DEFINE_FXTYPE(fmv_x_h);
+  DEFINE_FX2TYPE(feq_h);
+  DEFINE_FX2TYPE(flt_h);
+  DEFINE_FX2TYPE(fle_h);
 
   DEFINE_FRTYPE(fadd_q);
   DEFINE_FRTYPE(fsub_q);
