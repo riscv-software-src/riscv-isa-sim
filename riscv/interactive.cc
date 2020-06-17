@@ -69,6 +69,7 @@ void sim_t::interactive()
   funcs["vreg"] = &sim_t::interactive_vreg;
   funcs["reg"] = &sim_t::interactive_reg;
   funcs["freg"] = &sim_t::interactive_freg;
+  funcs["fregh"] = &sim_t::interactive_fregh;
   funcs["fregs"] = &sim_t::interactive_fregs;
   funcs["fregd"] = &sim_t::interactive_fregd;
   funcs["pc"] = &sim_t::interactive_pc;
@@ -118,6 +119,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
   std::cerr <<
     "Interactive commands:\n"
     "reg <core> [reg]                # Display [reg] (all if omitted) in <core>\n"
+    "fregh <core> <reg>              # Display half precision <reg> in <core>\n"
     "fregs <core> <reg>              # Display single precision <reg> in <core>\n"
     "fregd <core> <reg>              # Display double precision <reg> in <core>\n"
     "vreg <core> [reg]               # Display vector [reg] (all if omitted) in <core>\n"
@@ -294,6 +296,13 @@ void sim_t::interactive_freg(const std::string& cmd, const std::vector<std::stri
 {
   freg_t r = get_freg(args);
   fprintf(stderr, "0x%016" PRIx64 "%016" PRIx64 "\n", r.v[1], r.v[0]);
+}
+
+void sim_t::interactive_fregh(const std::string& cmd, const std::vector<std::string>& args)
+{
+  fpr f;
+  f.r = freg(f16_to_f32(f16(get_freg(args))));
+  fprintf(stderr, "%g\n", isBoxedF32(f.r) ? (double)f.s : NAN);
 }
 
 void sim_t::interactive_fregs(const std::string& cmd, const std::vector<std::string>& args)
