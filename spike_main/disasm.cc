@@ -805,7 +805,7 @@ disassembler_t::disassembler_t(int xlen)
   #define DISASM_OPIV_W___INSN(name, sign) \
     add_insn(new disasm_insn_t(#name ".wv", match_##name##_wv, mask_##name##_wv, \
                 {&vd, &vs2, &vs1, &opt, &vm})); \
-    add_insn(new disasm_insn_t(#name ".wx", match_##name##_wv, mask_##name##_wv, \
+    add_insn(new disasm_insn_t(#name ".wx", match_##name##_wx, mask_##name##_wx, \
                 {&vd, &vs2, &xrs1, &opt, &vm}));
 
   #define DISASM_OPIV_M___INSN(name, sign) \
