@@ -739,6 +739,23 @@ riscv_insn_ext_v = \
 	$(riscv_insn_ext_v_ctrl) \
 	$(riscv_insn_ext_v_ldst) \
 
+riscv_insn_ext_h = \
+	hfence_gvma \
+	hfence_vvma \
+	hlv_b \
+	hlv_bu \
+	hlv_h \
+	hlv_hu \
+	hlvx_hu \
+	hlv_w \
+	hlv_wu \
+	hlvx_wu \
+	hlv_d \
+	hsv_b \
+	hsv_h \
+	hsv_w \
+	hsv_d \
+
 riscv_insn_priv = \
 	csrrc \
 	csrrci \
@@ -765,6 +782,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_zfh) \
 	$(riscv_insn_ext_q) \
 	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
+	$(riscv_insn_ext_h) \
 	$(riscv_insn_priv) \
 
 riscv_gen_srcs = \
