@@ -415,7 +415,7 @@ void processor_t::step(size_t n)
           enter_debug_mode(DCSR_CAUSE_HWBP);
           break;
         case ACTION_DEBUG_EXCEPTION: {
-          mem_trap_t trap(CAUSE_BREAKPOINT, t.address);
+          insn_trap_t trap(CAUSE_BREAKPOINT, t.address);
           take_trap(trap, pc);
           break;
         }
