@@ -37,9 +37,9 @@ void mmu_t::flush_tlb()
 static void throw_access_exception(reg_t addr, access_type type)
 {
   switch (type) {
-    case FETCH: throw trap_instruction_access_fault(addr);
-    case LOAD: throw trap_load_access_fault(addr);
-    case STORE: throw trap_store_access_fault(addr);
+    case FETCH: throw trap_instruction_access_fault(addr, 0, 0);
+    case LOAD: throw trap_load_access_fault(addr, 0, 0);
+    case STORE: throw trap_store_access_fault(addr, 0, 0);
     default: abort();
   }
 }
@@ -69,7 +69,7 @@ tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
     return refill_tlb(vaddr, paddr, host_addr, FETCH);
   } else {
     if (!mmio_load(paddr, sizeof fetch_temp, (uint8_t*)&fetch_temp))
-      throw trap_instruction_access_fault(vaddr);
+      throw trap_instruction_access_fault(vaddr, 0, 0);
     tlb_entry_t entry = {(char*)&fetch_temp - vaddr, paddr - vaddr};
     return entry;
   }
@@ -137,7 +137,7 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes)
     else
       refill_tlb(addr, paddr, host_addr, LOAD);
   } else if (!mmio_load(paddr, len, bytes)) {
-    throw trap_load_access_fault(addr);
+    throw trap_load_access_fault(addr, 0, 0);
   }
 
   if (!matched_trigger) {
@@ -166,7 +166,7 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes)
     else
       refill_tlb(addr, paddr, host_addr, STORE);
   } else if (!mmio_store(paddr, len, bytes)) {
-    throw trap_store_access_fault(addr);
+    throw trap_store_access_fault(addr, 0, 0);
   }
 }
 
@@ -350,9 +350,9 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode)
   }
 
   switch (type) {
-    case FETCH: throw trap_instruction_page_fault(addr);
-    case LOAD: throw trap_load_page_fault(addr);
-    case STORE: throw trap_store_page_fault(addr);
+    case FETCH: throw trap_instruction_page_fault(addr, 0, 0);
+    case LOAD: throw trap_load_page_fault(addr, 0, 0);
+    case STORE: throw trap_store_page_fault(addr, 0, 0);
     default: abort();
   }
 }

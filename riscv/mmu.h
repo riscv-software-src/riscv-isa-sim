@@ -66,7 +66,7 @@ public:
       res += (reg_t)load_uint8(addr + i) << (i * 8);
     return res;
 #else
-    throw trap_load_address_misaligned(addr);
+    throw trap_load_address_misaligned(addr, 0, 0);
 #endif
   }
 
@@ -76,7 +76,7 @@ public:
     for (size_t i = 0; i < size; i++)
       store_uint8(addr + i, data >> (i * 8));
 #else
-    throw trap_store_address_misaligned(addr);
+    throw trap_store_address_misaligned(addr, 0, 0);
 #endif
   }
 
@@ -165,17 +165,17 @@ public:
     template<typename op> \
     type##_t amo_##type(reg_t addr, op f) { \
       if (addr & (sizeof(type##_t)-1)) \
-        throw trap_store_address_misaligned(addr); \
+        throw trap_store_address_misaligned(addr, 0, 0); \
       try { \
         auto lhs = load_##type(addr); \
         store_##type(addr, f(lhs)); \
         return lhs; \
       } catch (trap_load_page_fault& t) { \
         /* AMO faults should be reported as store faults */ \
-        throw trap_store_page_fault(t.get_tval()); \
+        throw trap_store_page_fault(t.get_tval(), t.get_tval2(), t.get_tinst()); \
       } catch (trap_load_access_fault& t) { \
         /* AMO faults should be reported as store faults */ \
-        throw trap_store_access_fault(t.get_tval()); \
+        throw trap_store_access_fault(t.get_tval(), t.get_tval2(), t.get_tinst()); \
       } \
     }
 
@@ -183,7 +183,7 @@ public:
   {
 #ifndef RISCV_ENABLE_MISALIGNED
     if (unlikely(addr & (sizeof(float128_t)-1)))
-      throw trap_store_address_misaligned(addr);
+      throw trap_store_address_misaligned(addr, 0, 0);
 #endif
     store_uint64(addr, val.v[0]);
     store_uint64(addr + 8, val.v[1]);
@@ -193,7 +193,7 @@ public:
   {
 #ifndef RISCV_ENABLE_MISALIGNED
     if (unlikely(addr & (sizeof(float128_t)-1)))
-      throw trap_load_address_misaligned(addr);
+      throw trap_load_address_misaligned(addr, 0, 0);
 #endif
     return (float128_t){load_uint64(addr), load_uint64(addr + 8)};
   }
@@ -219,19 +219,19 @@ public:
     if (auto host_addr = sim->addr_to_mem(paddr))
       load_reservation_address = refill_tlb(vaddr, paddr, host_addr, LOAD).target_offset + vaddr;
     else
-      throw trap_load_access_fault(vaddr); // disallow LR to I/O space
+      throw trap_load_access_fault(vaddr, 0, 0); // disallow LR to I/O space
   }
 
   inline bool check_load_reservation(reg_t vaddr, size_t size)
   {
     if (vaddr & (size-1))
-      throw trap_store_address_misaligned(vaddr);
+      throw trap_store_address_misaligned(vaddr, 0, 0);
 
     reg_t paddr = translate(vaddr, 1, STORE);
     if (auto host_addr = sim->addr_to_mem(paddr))
       return load_reservation_address == refill_tlb(vaddr, paddr, host_addr, STORE).target_offset + vaddr;
     else
-      throw trap_store_access_fault(vaddr); // disallow SC to I/O space
+      throw trap_store_access_fault(vaddr, 0, 0); // disallow SC to I/O space
   }
 
   static const reg_t ICACHE_ENTRIES = 1024;
