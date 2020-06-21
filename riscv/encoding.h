@@ -25,6 +25,8 @@
 #define MSTATUS32_SD        0x80000000
 #define MSTATUS_UXL         0x0000000300000000
 #define MSTATUS_SXL         0x0000000C00000000
+#define MSTATUS_GVA         0x0000004000000000
+#define MSTATUS_MPV         0x0000008000000000
 #define MSTATUS64_SD        0x8000000000000000
 
 #define SSTATUS_UIE         0x00000001
@@ -40,6 +42,17 @@
 #define SSTATUS32_SD        0x80000000
 #define SSTATUS_UXL         0x0000000300000000
 #define SSTATUS64_SD        0x8000000000000000
+
+#define HSTATUS_VSXL        0x300000000
+#define HSTATUS_VTSR        0x00400000
+#define HSTATUS_VTW         0x00200000
+#define HSTATUS_VTVM        0x00100000
+#define HSTATUS_VGEIN       0x0003f000
+#define HSTATUS_HU          0x00000200
+#define HSTATUS_SPVP        0x00000100
+#define HSTATUS_SPV         0x00000080
+#define HSTATUS_GVA         0x00000040
+#define HSTATUS_VSBE        0x00000020
 
 #define USTATUS_UIE         0x00000001
 #define USTATUS_UPIE        0x00000010
@@ -102,16 +115,17 @@
 
 #define MIP_USIP            (1 << IRQ_U_SOFT)
 #define MIP_SSIP            (1 << IRQ_S_SOFT)
-#define MIP_HSIP            (1 << IRQ_H_SOFT)
+#define MIP_VSSIP           (1 << IRQ_VS_SOFT)
 #define MIP_MSIP            (1 << IRQ_M_SOFT)
 #define MIP_UTIP            (1 << IRQ_U_TIMER)
 #define MIP_STIP            (1 << IRQ_S_TIMER)
-#define MIP_HTIP            (1 << IRQ_H_TIMER)
+#define MIP_VSTIP           (1 << IRQ_VS_TIMER)
 #define MIP_MTIP            (1 << IRQ_M_TIMER)
 #define MIP_UEIP            (1 << IRQ_U_EXT)
 #define MIP_SEIP            (1 << IRQ_S_EXT)
-#define MIP_HEIP            (1 << IRQ_H_EXT)
+#define MIP_VSEIP           (1 << IRQ_VS_EXT)
 #define MIP_MEIP            (1 << IRQ_M_EXT)
+#define MIP_SGEIP           (1 << IRQ_S_GEXT)
 
 #define SIP_SSIP MIP_SSIP
 #define SIP_STIP MIP_STIP
@@ -135,6 +149,19 @@
 #define SATP_MODE_SV57 10
 #define SATP_MODE_SV64 11
 
+#define HGATP32_MODE 0x80000000
+#define HGATP32_VMID 0x1FC00000
+#define HGATP32_PPN 0x003FFFFF
+
+#define HGATP64_MODE 0xF000000000000000
+#define HGATP64_VMID 0x03FFF00000000000
+#define HGATP64_PPN 0x00000FFFFFFFFFFF
+
+#define HGATP_MODE_OFF 0
+#define HGATP_MODE_SV32X4 1
+#define HGATP_MODE_SV39X4 8
+#define HGATP_MODE_SV48X4 9
+
 #define PMP_R     0x01
 #define PMP_W     0x02
 #define PMP_X     0x04
@@ -148,16 +175,17 @@
 
 #define IRQ_U_SOFT   0
 #define IRQ_S_SOFT   1
-#define IRQ_H_SOFT   2
+#define IRQ_VS_SOFT  2
 #define IRQ_M_SOFT   3
 #define IRQ_U_TIMER  4
 #define IRQ_S_TIMER  5
-#define IRQ_H_TIMER  6
+#define IRQ_VS_TIMER 6
 #define IRQ_M_TIMER  7
 #define IRQ_U_EXT    8
 #define IRQ_S_EXT    9
-#define IRQ_H_EXT    10
+#define IRQ_VS_EXT   10
 #define IRQ_M_EXT    11
+#define IRQ_S_GEXT   12
 #define IRQ_COP      12
 #define IRQ_HOST     13
 
@@ -749,6 +777,32 @@
 #define MASK_HFENCE_VVMA  0xfe007fff
 #define MATCH_HFENCE_GVMA 0x62000073
 #define MASK_HFENCE_GVMA  0xfe007fff
+#define MATCH_HLV_B 0x60004073
+#define MASK_HLV_B  0xfff0707f
+#define MATCH_HLV_BU 0x60104073
+#define MASK_HLV_BU  0xfff0707f
+#define MATCH_HLV_H 0x64004073
+#define MASK_HLV_H  0xfff0707f
+#define MATCH_HLV_HU 0x64104073
+#define MASK_HLV_HU  0xfff0707f
+#define MATCH_HLVX_HU 0x64304073
+#define MASK_HLVX_HU  0xfff0707f
+#define MATCH_HLV_W 0x68004073
+#define MASK_HLV_W  0xfff0707f
+#define MATCH_HLV_WU 0x68104073
+#define MASK_HLV_WU  0xfff0707f
+#define MATCH_HLVX_WU 0x68304073
+#define MASK_HLVX_WU  0xfff0707f
+#define MATCH_HLV_D 0x6c004073
+#define MASK_HLV_D  0xfff0707f
+#define MATCH_HSV_B 0x62004073
+#define MASK_HSV_B  0xfe007fff
+#define MATCH_HSV_H 0x66004073
+#define MASK_HSV_H  0xfe007fff
+#define MATCH_HSV_W 0x6a004073
+#define MASK_HSV_W  0xfe007fff
+#define MATCH_HSV_D 0x6e004073
+#define MASK_HSV_D  0xfe007fff
 #define MATCH_C_NOP 0x1
 #define MASK_C_NOP  0xffff
 #define MATCH_C_ADDI16SP 0x6101
@@ -2023,6 +2077,10 @@
 #define CAUSE_FETCH_PAGE_FAULT 0xc
 #define CAUSE_LOAD_PAGE_FAULT 0xd
 #define CAUSE_STORE_PAGE_FAULT 0xf
+#define CAUSE_FETCH_GUEST_PAGE_FAULT 0x14
+#define CAUSE_LOAD_GUEST_PAGE_FAULT 0x15
+#define CAUSE_VIRTUAL_INSTRUCTION 0x16
+#define CAUSE_STORE_GUEST_PAGE_FAULT 0x17
 #endif
 #ifdef DECLARE_INSN
 DECLARE_INSN(slli_rv32, MATCH_SLLI_RV32, MASK_SLLI_RV32)
@@ -2282,6 +2340,19 @@ DECLARE_INSN(csrrsi, MATCH_CSRRSI, MASK_CSRRSI)
 DECLARE_INSN(csrrci, MATCH_CSRRCI, MASK_CSRRCI)
 DECLARE_INSN(hfence_vvma, MATCH_HFENCE_VVMA, MASK_HFENCE_VVMA)
 DECLARE_INSN(hfence_gvma, MATCH_HFENCE_GVMA, MASK_HFENCE_GVMA)
+DECLARE_INSN(hlv_b, MATCH_HLV_B, MASK_HLV_B)
+DECLARE_INSN(hlv_bu, MATCH_HLV_BU, MASK_HLV_BU)
+DECLARE_INSN(hlv_h, MATCH_HLV_H, MASK_HLV_H)
+DECLARE_INSN(hlv_hu, MATCH_HLV_HU, MASK_HLV_HU)
+DECLARE_INSN(hlvx_hu, MATCH_HLVX_HU, MASK_HLVX_HU)
+DECLARE_INSN(hlv_w, MATCH_HLV_W, MASK_HLV_W)
+DECLARE_INSN(hlv_wu, MATCH_HLV_WU, MASK_HLV_WU)
+DECLARE_INSN(hlvx_wu, MATCH_HLVX_WU, MASK_HLVX_WU)
+DECLARE_INSN(hlv_d, MATCH_HLV_D, MASK_HLV_D)
+DECLARE_INSN(hsv_b, MATCH_HSV_B, MASK_HSV_B)
+DECLARE_INSN(hsv_h, MATCH_HSV_H, MASK_HSV_H)
+DECLARE_INSN(hsv_w, MATCH_HSV_W, MASK_HSV_W)
+DECLARE_INSN(hsv_d, MATCH_HSV_D, MASK_HSV_D)
 DECLARE_INSN(c_nop, MATCH_C_NOP, MASK_C_NOP)
 DECLARE_INSN(c_addi16sp, MATCH_C_ADDI16SP, MASK_C_ADDI16SP)
 DECLARE_INSN(c_jr, MATCH_C_JR, MASK_C_JR)
@@ -3066,4 +3137,8 @@ DECLARE_CAUSE("machine_ecall", CAUSE_MACHINE_ECALL)
 DECLARE_CAUSE("fetch page fault", CAUSE_FETCH_PAGE_FAULT)
 DECLARE_CAUSE("load page fault", CAUSE_LOAD_PAGE_FAULT)
 DECLARE_CAUSE("store page fault", CAUSE_STORE_PAGE_FAULT)
+DECLARE_CAUSE("fetch guest page fault", CAUSE_FETCH_GUEST_PAGE_FAULT)
+DECLARE_CAUSE("load guest page fault", CAUSE_LOAD_GUEST_PAGE_FAULT)
+DECLARE_CAUSE("virtual instruction", CAUSE_VIRTUAL_INSTRUCTION)
+DECLARE_CAUSE("store guest page fault", CAUSE_STORE_GUEST_PAGE_FAULT)
 #endif
