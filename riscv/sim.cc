@@ -28,7 +28,7 @@ static void handle_signal(int sig)
 
 sim_t::sim_t(const char* isa, const char* priv, const char* varch,
              size_t nprocs, bool halted, bool real_time_clint,
-             reg_t initrd_start, reg_t initrd_end,
+             reg_t initrd_start, reg_t initrd_end, const char* bootargs,
              reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
@@ -42,6 +42,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     procs(std::max(nprocs, size_t(1))),
     initrd_start(initrd_start),
     initrd_end(initrd_end),
+    bootargs(bootargs),
     start_pc(start_pc),
     dtb_file(dtb_file ? dtb_file : ""),
     dtb_enabled(dtb_enabled),
@@ -230,7 +231,7 @@ void sim_t::make_dtb()
 
     dtb = strstream.str();
   } else {
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, procs, mems);
+    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, bootargs, procs, mems);
     dtb = dts_compile(dts);
   }
 }
@@ -271,7 +272,7 @@ void sim_t::set_rom()
 
     dtb = strstream.str();
   } else {
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, procs, mems);
+    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, bootargs, procs, mems);
     dtb = dts_compile(dts);
   }
 
