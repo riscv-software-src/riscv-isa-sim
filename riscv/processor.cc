@@ -437,6 +437,11 @@ void processor_t::set_histogram(bool value)
 #endif
 }
 
+void processor_t::enable_tval_nz_csr()
+{
+  tval_nz_csr_enabled = true;
+}
+
 #ifdef RISCV_ENABLE_COMMITLOG
 void processor_t::enable_log_commits()
 {

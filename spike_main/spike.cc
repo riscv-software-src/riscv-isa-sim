@@ -219,6 +219,7 @@ int main(int argc, char** argv)
     .support_haltgroups = true
   };
   std::vector<int> hartids;
+  bool tval_nz_csr = false;
 
   auto const hartids_parser = [&](const char *s) {
     std::string const str(s);
@@ -329,6 +330,8 @@ int main(int argc, char** argv)
                 [&](const char* s){log_commits = true;});
   parser.option(0, "log", 1,
                 [&](const char* s){log_path = s;});
+  parser.option(0, "tval-nz-csr", 0,
+                [&](const char* s){tval_nz_csr = true;});
 
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
@@ -375,6 +378,7 @@ int main(int argc, char** argv)
     if (ic) s.get_core(i)->get_mmu()->register_memtracer(&*ic);
     if (dc) s.get_core(i)->get_mmu()->register_memtracer(&*dc);
     if (extension) s.get_core(i)->register_extension(extension());
+	if (tval_nz_csr) s.get_core(i)->enable_tval_nz_csr();
   }
 
   s.set_debug(debug);

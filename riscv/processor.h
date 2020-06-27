@@ -254,6 +254,8 @@ public:
 
   void set_debug(bool value);
   void set_histogram(bool value);
+  void enable_tval_nz_csr();
+  bool get_tval_nz_csr_enabled() const { return tval_nz_csr_enabled; }
 #ifdef RISCV_ENABLE_COMMITLOG
   void enable_log_commits();
   bool get_log_commits_enabled() const { return log_commits_enabled; }
@@ -407,6 +409,7 @@ private:
   unsigned xlen;
   reg_t max_isa;
   std::string isa_string;
+  bool tval_nz_csr_enabled;
   bool histogram_enabled;
   bool log_commits_enabled;
   FILE *log_file;
