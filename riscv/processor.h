@@ -481,7 +481,7 @@ public:
 
 #ifdef RISCV_ENABLE_COMMITLOG
           if (is_write)
-            p->get_state()->log_reg_write[((vReg) << 2) | 2] = {0, 0};
+            p->get_state()->log_reg_write[((vReg) << 4) | 2] = {0, 0};
 #endif
 
           T *regStart = (T*)((char*)reg_file + vReg * (VLEN >> 3));

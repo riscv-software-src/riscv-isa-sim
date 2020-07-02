@@ -81,10 +81,10 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
 
     char prefix;
     int size;
-    int rd = item.first >> 2;
+    int rd = item.first >> 4;
     bool is_vec = false;
     bool is_vreg = false;
-    switch (item.first & 3) {
+    switch (item.first & 0xf) {
     case 0:
       size = xlen;
       prefix = 'x';
@@ -100,6 +100,10 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
       break;
     case 3:
       is_vec = true;
+      break;
+    case 4:
+      size = xlen;
+      prefix = 'c';
       break;
     default:
       assert("can't been here" && 0);
