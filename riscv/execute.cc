@@ -2,6 +2,7 @@
 
 #include "processor.h"
 #include "mmu.h"
+#include "disasm.h"
 #include <cassert>
 
 #ifdef RISCV_ENABLE_COMMITLOG
@@ -121,7 +122,10 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
     }
 
     if (!is_vec) {
-      fprintf(log_file, " %c%2d ", prefix, rd);
+      if (prefix == 'c')
+        fprintf(log_file, " c%d_%s ", rd, csr_name(rd));
+      else
+        fprintf(log_file, " %c%2d ", prefix, rd);
       if (is_vreg)
         commit_log_print_value(log_file, size, &p->VU.elt<uint8_t>(rd, 0));
       else
