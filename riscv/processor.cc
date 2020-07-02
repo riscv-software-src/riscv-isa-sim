@@ -659,6 +659,13 @@ int processor_t::paddr_bits()
 
 void processor_t::set_csr(int which, reg_t val)
 {
+#if defined(RISCV_ENABLE_COMMITLOG)
+#define LOG_CSR(rd) \
+  STATE.log_reg_write[((which) << 4) | 4] = {get_csr(rd), 0};
+#else
+#define LOG_CSR(rd)
+#endif
+
   val = zext_xlen(val);
   reg_t supervisor_ints = supports_extension('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
   reg_t coprocessor_ints = (ext != NULL) << IRQ_COP;
@@ -675,8 +682,10 @@ void processor_t::set_csr(int which, reg_t val)
     bool locked = state.pmpcfg[i] & PMP_L;
     bool next_locked = i+1 < state.max_pmp && (state.pmpcfg[i+1] & PMP_L);
     bool next_tor = i+1 < state.max_pmp && (state.pmpcfg[i+1] & PMP_A) == PMP_TOR;
-    if (i < n_pmp && !locked && !(next_locked && next_tor))
+    if (i < n_pmp && !locked && !(next_locked && next_tor)) {
       state.pmpaddr[i] = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
+      LOG_CSR(which);
+    }
 
     mmu->flush_tlb();
   }
@@ -692,6 +701,7 @@ void processor_t::set_csr(int which, reg_t val)
         if (lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
           cfg |= PMP_NAPOT; // Disallow A=NA4 when granularity > 4
         state.pmpcfg[i] = cfg;
+        LOG_CSR(which);
       }
     }
     mmu->flush_tlb();
@@ -925,6 +935,89 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxrm = val & 0x3ul;
       break;
   }
+
+#if defined(RISCV_ENABLE_COMMITLOG)
+  switch (which)
+  {
+    case CSR_FFLAGS:
+      LOG_CSR(CSR_MSTATUS);
+      LOG_CSR(CSR_FFLAGS);
+      break;
+    case CSR_FRM:
+      LOG_CSR(CSR_MSTATUS);
+      LOG_CSR(CSR_FRM);
+      break;
+    case CSR_FCSR:
+      LOG_CSR(CSR_MSTATUS);
+      LOG_CSR(CSR_FFLAGS);
+      LOG_CSR(CSR_FRM);
+      break;
+    case CSR_VCSR:
+      LOG_CSR(CSR_MSTATUS);
+      LOG_CSR(CSR_VXSAT);
+      LOG_CSR(CSR_VXRM);
+      break;
+
+    case CSR_VSTART:
+      LOG_CSR(CSR_MSTATUS);
+      LOG_CSR(CSR_VSTART);
+      break;
+    case CSR_VXSAT:
+      LOG_CSR(CSR_MSTATUS);
+      LOG_CSR(CSR_VXSAT);
+      break;
+    case CSR_VXRM:
+      LOG_CSR(CSR_MSTATUS);
+      LOG_CSR(CSR_VXRM);
+      break;
+
+    case CSR_SSTATUS:
+      LOG_CSR(CSR_MSTATUS);
+      LOG_CSR(CSR_SSTATUS);
+      break;
+    case CSR_SIP:
+      LOG_CSR(CSR_MIP);
+      LOG_CSR(CSR_SIP);
+      break;
+    case CSR_SIE:
+      LOG_CSR(CSR_MIE);
+      LOG_CSR(CSR_SIE);
+      break;
+
+    case CSR_MSTATUS:
+    case CSR_MIP:
+    case CSR_MIE:
+    case CSR_MIDELEG:
+    case CSR_MEDELEG:
+    case CSR_MINSTRET:
+    case CSR_MCYCLE:
+    case CSR_MINSTRETH:
+    case CSR_MCYCLEH:
+    case CSR_SCOUNTEREN:
+    case CSR_MCOUNTEREN:
+    case CSR_SATP:
+    case CSR_SEPC:
+    case CSR_STVEC:
+    case CSR_SSCRATCH:
+    case CSR_SCAUSE:
+    case CSR_STVAL:
+    case CSR_MEPC:
+    case CSR_MTVEC:
+    case CSR_MSCRATCH:
+    case CSR_MCAUSE:
+    case CSR_MTVAL:
+    case CSR_MISA:
+    case CSR_TSELECT:
+    case CSR_TDATA1:
+    case CSR_TDATA2:
+    case CSR_DCSR:
+    case CSR_DPC:
+    case CSR_DSCRATCH0:
+    case CSR_DSCRATCH1:
+      LOG_CSR(which);
+      break;
+  }
+#endif
 }
 
 // Note that get_csr is sometimes called when read side-effects should not
