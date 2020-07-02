@@ -180,16 +180,18 @@ private:
 #else
    /* 0 : int
     * 1 : floating
-    * 2 : vector
+    * 2 : vector reg
+    * 3 : vector hint
+    * 4 : csr
     */
 # define WRITE_REG(reg, value) ({ \
     reg_t wdata = (value); /* value may have side effects */ \
-    STATE.log_reg_write[(reg) << 2] = {wdata, 0}; \
+    STATE.log_reg_write[(reg) << 4] = {wdata, 0}; \
     STATE.XPR.write(reg, wdata); \
   })
 # define WRITE_FREG(reg, value) ({ \
     freg_t wdata = freg(value); /* value may have side effects */ \
-    STATE.log_reg_write[((reg) << 2) | 1] = wdata; \
+    STATE.log_reg_write[((reg) << 4) | 1] = wdata; \
     DO_WRITE_FREG(reg, wdata); \
   })
 # define WRITE_VSTATUS STATE.log_reg_write[3] = {0, 0};
