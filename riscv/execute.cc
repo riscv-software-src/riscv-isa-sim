@@ -2,6 +2,7 @@
 
 #include "processor.h"
 #include "mmu.h"
+#include "disasm.h"
 #include <cassert>
 
 #ifdef RISCV_ENABLE_COMMITLOG
@@ -23,38 +24,39 @@ static void commit_log_stash_privilege(processor_t* p)
 static void commit_log_print_value(FILE *log_file, int width, const void *data)
 {
   assert(log_file);
-  const uint64_t *arr = (const uint64_t *)data;
-
-  fprintf(log_file, "0x");
-  for (int idx = width / 64 - 1; idx >= 0; --idx) {
-    fprintf(log_file, "%016" PRIx64, arr[idx]);
-  }
-}
-
-static void commit_log_print_value(FILE *log_file,
-                                   int width, uint64_t hi, uint64_t lo)
-{
-  assert(log_file);
 
   switch (width) {
     case 8:
-      fprintf(log_file, "0x%01" PRIx8, (uint8_t)lo);
+      fprintf(log_file, "0x%01" PRIx8, *(const uint8_t *)data);
       break;
     case 16:
-      fprintf(log_file, "0x%04" PRIx16, (uint16_t)lo);
+      fprintf(log_file, "0x%04" PRIx16, *(const uint16_t *)data);
       break;
     case 32:
-      fprintf(log_file, "0x%08" PRIx32, (uint32_t)lo);
+      fprintf(log_file, "0x%08" PRIx32, *(const uint32_t *)data);
       break;
     case 64:
-      fprintf(log_file, "0x%016" PRIx64, lo);
-      break;
-    case 128:
-      fprintf(log_file, "0x%016" PRIx64 "%016" PRIx64, hi, lo);
+      fprintf(log_file, "0x%016" PRIx64, *(const uint64_t *)data);
       break;
     default:
-      abort();
+      // max lengh of vector
+      if (((width - 1) & width) == 0) {
+        const uint64_t *arr = (const uint64_t *)data;
+
+        fprintf(log_file, "0x");
+        for (int idx = width / 64 - 1; idx >= 0; --idx) {
+          fprintf(log_file, "%016" PRIx64, arr[idx]);
+        }
+      } else {
+        abort();
+      }
+      break;
   }
+}
+
+static void commit_log_print_value(FILE *log_file, int width, uint64_t val)
+{
+  commit_log_print_value(log_file, width, &val);
 }
 
 static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
@@ -69,9 +71,9 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
   int flen = p->get_state()->last_inst_flen;
 
   fprintf(log_file, "%1d ", priv);
-  commit_log_print_value(log_file, xlen, 0, pc);
+  commit_log_print_value(log_file, xlen, pc);
   fprintf(log_file, " (");
-  commit_log_print_value(log_file, insn.length() * 8, 0, insn.bits());
+  commit_log_print_value(log_file, insn.length() * 8, insn.bits());
   fprintf(log_file, ")");
   bool show_vec = false;
 
@@ -81,10 +83,10 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
 
     char prefix;
     int size;
-    int rd = item.first >> 2;
+    int rd = item.first >> 4;
     bool is_vec = false;
     bool is_vreg = false;
-    switch (item.first & 3) {
+    switch (item.first & 0xf) {
     case 0:
       size = xlen;
       prefix = 'x';
@@ -101,6 +103,10 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
     case 3:
       is_vec = true;
       break;
+    case 4:
+      size = xlen;
+      prefix = 'c';
+      break;
     default:
       assert("can't been here" && 0);
       break;
@@ -116,24 +122,27 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
     }
 
     if (!is_vec) {
-      fprintf(log_file, " %c%2d ", prefix, rd);
+      if (prefix == 'c')
+        fprintf(log_file, " c%d_%s ", rd, csr_name(rd));
+      else
+        fprintf(log_file, " %c%2d ", prefix, rd);
       if (is_vreg)
         commit_log_print_value(log_file, size, &p->VU.elt<uint8_t>(rd, 0));
       else
-        commit_log_print_value(log_file, size, item.second.v[1], item.second.v[0]);
+        commit_log_print_value(log_file, size, item.second.v);
     }
   }
 
   for (auto item : load) {
     fprintf(log_file, " mem ");
-    commit_log_print_value(log_file, xlen, 0, std::get<0>(item));
+    commit_log_print_value(log_file, xlen, std::get<0>(item));
   }
 
   for (auto item : store) {
     fprintf(log_file, " mem ");
-    commit_log_print_value(log_file, xlen, 0, std::get<0>(item));
+    commit_log_print_value(log_file, xlen, std::get<0>(item));
     fprintf(log_file, " ");
-    commit_log_print_value(log_file, std::get<2>(item) << 3, 0, std::get<1>(item));
+    commit_log_print_value(log_file, std::get<2>(item) << 3, std::get<1>(item));
   }
   fprintf(log_file, "\n");
 }
