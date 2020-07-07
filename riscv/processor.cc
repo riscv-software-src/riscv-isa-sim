@@ -1047,6 +1047,9 @@ reg_t processor_t::get_csr(int which)
     return 0;
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
+    // If n_pmp is zero, that means pmp is not implemented hence raise trap if it tries to access the csr
+    if (n_pmp == 0)
+      throw trap_illegal_instruction(0);
     reg_t i = which - CSR_PMPADDR0;
     if ((state.pmpcfg[i] & PMP_A) >= PMP_NAPOT)
       return state.pmpaddr[i] | (~pmp_tor_mask() >> 1);
