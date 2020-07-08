@@ -4,7 +4,7 @@
 #define _RISCV_DECODE_H
 
 #if (-1 != ~0) || ((-1 >> 1) != -1)
-# error spike requires a two''s-complement c++ implementation
+# error spike requires a two's-complement c++ implementation
 #endif
 
 #include <algorithm>
