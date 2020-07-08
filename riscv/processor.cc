@@ -925,7 +925,7 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_VSTART:
       dirty_vs_state;
-      VU.vstart = val;
+      VU.vstart = val & (VU.get_vlen() - 1);
       break;
     case CSR_VXSAT:
       dirty_vs_state;
