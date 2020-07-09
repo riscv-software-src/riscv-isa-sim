@@ -50,7 +50,9 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
   fprintf(stderr, "  --dump-dts            Print device tree string and exit\n");
   fprintf(stderr, "  --disable-dtb         Don't write the device tree blob into memory\n");
+  fprintf(stderr, "  --kernel=<path>       Load kernel flat image into memory\n");
   fprintf(stderr, "  --initrd=<path>       Load kernel initrd into memory\n");
+  fprintf(stderr, "  --bootargs=<args>     Provide custom bootargs for kernel [default: console=hvc0 earlycon=sbi]\n");
   fprintf(stderr, "  --real-time-clint     Increment clint time at real-time rate\n");
   fprintf(stderr, "  --dm-progsize=<words> Progsize for the debug module [default 2]\n");
   fprintf(stderr, "  --dm-sba=<bits>       Debug bus master supports up to "
@@ -189,8 +191,11 @@ int main(int argc, char** argv)
   bool dtb_enabled = true;
   bool real_time_clint = false;
   size_t nprocs = 1;
+  const char* kernel = NULL;
+  reg_t kernel_offset, kernel_size;
   size_t initrd_size;
   reg_t initrd_start = 0, initrd_end = 0;
+  const char* bootargs = NULL;
   reg_t start_pc = reg_t(-1);
   std::vector<std::pair<reg_t, mem_t*>> mems;
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
@@ -300,7 +305,9 @@ int main(int argc, char** argv)
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
   parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
   parser.option(0, "dtb", 1, [&](const char *s){dtb_file = s;});
+  parser.option(0, "kernel", 1, [&](const char* s){kernel = s;});
   parser.option(0, "initrd", 1, [&](const char* s){initrd = s;});
+  parser.option(0, "bootargs", 1, [&](const char* s){bootargs = s;});
   parser.option(0, "real-time-clint", 0, [&](const char *s){real_time_clint = true;});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
@@ -338,6 +345,20 @@ int main(int argc, char** argv)
   if (!*argv1)
     help();
 
+  if (kernel && check_file_exists(kernel)) {
+    kernel_size = get_file_size(kernel);
+    if (isa[2] == '6' && isa[3] == '4')
+      kernel_offset = 0x200000;
+    else
+      kernel_offset = 0x400000;
+    for (auto& m : mems) {
+      if (kernel_size && (kernel_offset + kernel_size) < m.second->size()) {
+         read_file_bytes(kernel, 0, m.second->contents() + kernel_offset, kernel_size);
+         break;
+      }
+    }
+  }
+
   if (initrd && check_file_exists(initrd)) {
     initrd_size = get_file_size(initrd);
     for (auto& m : mems) {
@@ -351,7 +372,7 @@ int main(int argc, char** argv)
   }
 
   sim_t s(isa, priv, varch, nprocs, halted, real_time_clint,
-      initrd_start, initrd_end, start_pc, mems, plugin_devices, htif_args,
+      initrd_start, initrd_end, bootargs, start_pc, mems, plugin_devices, htif_args,
       std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(

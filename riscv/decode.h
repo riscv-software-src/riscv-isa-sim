@@ -232,6 +232,7 @@ private:
 
 #define require(x) if (unlikely(!(x))) throw trap_illegal_instruction(0)
 #define require_privilege(p) require(STATE.prv >= (p))
+#define require_novirt() if (unlikely(STATE.v == true)) throw trap_virtual_instruction(0)
 #define require_rv64 require(xlen == 64)
 #define require_rv32 require(xlen == 32)
 #define require_extension(s) require(p->supports_extension(s))
@@ -352,10 +353,18 @@ inline freg_t f128_negate(freg_t a)
   if (!STATE.serialized) return PC_SERIALIZE_BEFORE; \
   STATE.serialized = false; \
   unsigned csr_priv = get_field((which), 0x300); \
-  bool mode_unsupported = csr_priv == PRV_S && !P.supports_extension('S'); \
-  unsigned csr_read_only = get_field((which), 0xC00) == 3; \
-  if (((write) && csr_read_only) || STATE.prv < csr_priv || mode_unsupported) \
+  bool mode_unsupported = (csr_priv == PRV_S && !P.supports_extension('S')) || \
+                          (csr_priv == PRV_HS && !P.supports_extension('H')); \
+  if (mode_unsupported) \
     throw trap_illegal_instruction(0); \
+  unsigned state_prv = (STATE.prv == PRV_S && !STATE.v) ? PRV_HS: STATE.prv; \
+  unsigned csr_read_only = get_field((which), 0xC00) == 3; \
+  if (((write) && csr_read_only) || state_prv < csr_priv) { \
+    if (csr_priv == PRV_HS) \
+      throw trap_virtual_instruction(0); \
+    else \
+      throw trap_illegal_instruction(0); \
+  } \
   (which); })
 
 /* For debug only. This will fail if the native machine's float types are not IEEE */
