@@ -3,6 +3,7 @@ spike_main_subproject_deps = \
 	fesvr \
 	softfloat \
 	riscv \
+	snapshot \
 
 spike_main_install_prog_srcs = \
 	spike.cc \
