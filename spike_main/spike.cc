@@ -7,6 +7,8 @@
 #include "extension.h"
 #include <dlfcn.h>
 #include <fesvr/option_parser.h>
+#include "snapshot.h"
+#include "device.h"
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
@@ -199,6 +201,7 @@ int main(int argc, char** argv)
   std::unique_ptr<cache_sim_t> l2;
   bool log_cache = false;
   bool log_commits = false;
+  bool ramdump = false;
   const char *log_path = nullptr;
   std::function<extension_t*()> extension;
   const char* initrd = NULL;
@@ -232,6 +235,7 @@ int main(int argc, char** argv)
     }
   };
 
+  snapshot_t snapshot;
   auto const device_parser = [&plugin_devices](const char *s) {
     const std::string str(s);
     std::istringstream stream(str);
@@ -309,6 +313,12 @@ int main(int argc, char** argv)
       exit(-1);
     }
   });
+  parser.option(0, "snapshot", 1, [&](const char *s){
+    ramdump = true;
+    snapshot = snapshot_t(s);
+    mems = snapshot.mem_restore();
+    nprocs = snapshot.get_procs();
+  });
   parser.option(0, "dm-progsize", 1,
       [&](const char* s){dm_config.progbufsize = atoi(s);});
   parser.option(0, "dm-sba", 1,
@@ -352,7 +362,20 @@ int main(int argc, char** argv)
 
   sim_t s(isa, priv, varch, nprocs, halted, real_time_clint,
       initrd_start, initrd_end, start_pc, mems, plugin_devices, htif_args,
-      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file);
+      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file,ramdump);
+  if(ramdump) {
+    #define MTIMECMP_BASE	0x4000
+    #define MTIME_BASE	0xbff8
+    typedef uint64_t mtime_t;
+    typedef uint64_t mtimecmp_t;
+    s.get_core(0)->get_mmu()->store_uint64(s.get_clint() + MTIME_BASE, snapshot.mtime);
+    for(int i = 0; i < nprocs; i++) {
+      memcpy((char *)s.get_core(i)->get_state(),(char *)snapshot.get_state(i),sizeof(state_t));
+      s.get_core(0)->get_mmu()->store_uint64(s.get_clint() + MTIMECMP_BASE + (uint64_t)sizeof(mtimecmp_t) * i, snapshot.mtimecmp[i]);
+    }
+
+  }
+
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));
