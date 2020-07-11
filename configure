@@ -5126,7 +5126,24 @@ $as_echo "$as_me: configuring default subproject : spike_main" >&6;}
 
 $as_echo "#define SPIKE_MAIN_ENABLED /**/" >>confdefs.h
 
+    # Add subproject to our running list
 
+    subprojects="$subprojects snapshot"
+
+    # Process the subproject appropriately. If enabled add it to the
+    # $enabled_subprojects running shell variable, set a
+    # SUBPROJECT_ENABLED C define, and include the appropriate
+    # 'subproject.ac'.
+
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: configuring default subproject : snapshot" >&5
+$as_echo "$as_me: configuring default subproject : snapshot" >&6;}
+      ac_config_files="$ac_config_files snapshot.mk:snapshot/snapshot.mk.in"
+
+      enable_customext_sproj="yes"
+      subprojects_enabled="$subprojects_enabled snapshot"
+
+$as_echo "#define SNAPSHOT_ENABLED /**/" >>confdefs.h
 
 
 
@@ -5170,6 +5187,8 @@ ac_config_files="$ac_config_files riscv-customext.pc"
 ac_config_files="$ac_config_files riscv-fdt.pc"
 
 ac_config_files="$ac_config_files riscv-spike_main.pc"
+
+ac_config_files="$ac_config_files riscv-snapshot.pc"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -5877,6 +5896,7 @@ do
     "riscv-customext.pc") CONFIG_FILES="$CONFIG_FILES riscv-customext.pc" ;;
     "riscv-fdt.pc") CONFIG_FILES="$CONFIG_FILES riscv-fdt.pc" ;;
     "riscv-spike_main.pc") CONFIG_FILES="$CONFIG_FILES riscv-spike_main.pc" ;;
+    "riscv-snapshot.pc") CONFIG_FILES="$CONFIG_FILES riscv-snapshot.pc" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
