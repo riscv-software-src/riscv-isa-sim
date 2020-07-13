@@ -1863,9 +1863,6 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define VI_VFP_LOOP_CMP_BASE \
   VI_VFP_COMMON \
   for (reg_t i = P.VU.vstart; i < vl; ++i) { \
-    float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
-    float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
-    float32_t rs1 = f32(READ_FREG(rs1_num)); \
     VI_LOOP_ELEMENT_SKIP(); \
     uint64_t mmask = UINT64_C(1) << mpos; \
     uint64_t &vdi = P.VU.elt<uint64_t>(rd_num, midx, true); \
