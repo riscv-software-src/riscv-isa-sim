@@ -139,7 +139,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "r [count]                         Alias for run\n"
     "rs [count]                      # Resume silent execution (until CTRL+C, or [count] insns)\n"
     "quit                            # End the simulation\n"
-    "ramdump <path>                  # save ramdump file to <path>\n"
+    "snapshot <path>                 # save snapshot file to <path>\n"
     "q                                 Alias for quit\n"
     "help                            # This screen!\n"
     "h                                 Alias for help\n"
@@ -438,5 +438,5 @@ void sim_t::interactive_snapshot(const std::string& cmd, const std::vector<std::
 
   snapshot_t snapshot(this);
   snapshot.save(args[0].c_str());
-  fprintf(stderr, "ramdump file saved to %s\n",args[0].c_str());
+  fprintf(stderr, "snapshot file saved to %s\n",args[0].c_str());
 }

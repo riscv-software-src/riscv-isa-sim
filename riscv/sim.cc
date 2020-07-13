@@ -35,8 +35,8 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
              std::vector<int> const hartids,
              const debug_module_config_t &dm_config,
              const char *log_path,
-             bool dtb_enabled, const char *dtb_file,bool ramdump)
-  : htif_t(args,ramdump),
+             bool dtb_enabled, const char *dtb_file, bool ramdump)
+  : htif_t(args, ramdump),
     mems(mems),
     plugin_devices(plugin_devices),
     procs(std::max(nprocs, size_t(1))),

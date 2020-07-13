@@ -56,7 +56,7 @@ htif_t::htif_t(int argc, char** argv) : htif_t()
   register_devices();
 }
 
-htif_t::htif_t(const std::vector<std::string>& args,bool dumped) : htif_t()
+htif_t::htif_t(const std::vector<std::string>& args, bool dumped) : htif_t()
 {
   int argc = args.size() + 1;
   char * argv[argc];
@@ -84,7 +84,7 @@ void htif_t::start()
   reset();
 }
 
-std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload, reg_t* entry,bool ramdump)
+std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload, reg_t* entry, bool ramdump)
 {
   std::string path;
   if (access(payload.c_str(), F_OK) == 0)
@@ -117,12 +117,12 @@ std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload,
     htif_t* htif;
   } preload_aware_memif(this);
 
-  return load_elf(path.c_str(), &preload_aware_memif, entry,ramdump);
+  return load_elf(path.c_str(), &preload_aware_memif, entry, ramdump);
 }
 
 void htif_t::load_program(bool ramdump)
 {
-  std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry,ramdump);
+  std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry, ramdump);
 
   if (symbols.count("tohost") && symbols.count("fromhost")) {
     tohost_addr = symbols["tohost"];
@@ -141,7 +141,7 @@ void htif_t::load_program(bool ramdump)
   for (auto payload : payloads)
   {
     reg_t dummy_entry;
-    load_payload(payload, &dummy_entry,ramdump);
+    load_payload(payload, &dummy_entry, ramdump);
   }
 }
 

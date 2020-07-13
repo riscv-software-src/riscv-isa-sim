@@ -54,6 +54,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --disable-dtb         Don't write the device tree blob into memory\n");
   fprintf(stderr, "  --initrd=<path>       Load kernel initrd into memory\n");
   fprintf(stderr, "  --real-time-clint     Increment clint time at real-time rate\n");
+  fprintf(stderr, "  --snapshot=<path>     Load a snapshot to start from the breakpoint\n");
   fprintf(stderr, "  --dm-progsize=<words> Progsize for the debug module [default 2]\n");
   fprintf(stderr, "  --dm-sba=<bits>       Debug bus master supports up to "
       "<bits> wide accesses [default 0]\n");
