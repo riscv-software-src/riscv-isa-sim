@@ -9,11 +9,7 @@ reg_t rs2_num = insn.rs2();
 require(P.VU.vstart == 0);
 require_vm;
 require_align(rd_num, P.VU.vflmul);
-if ((P.VU.vflmul / P.VU.vsew) < 1) {
-  require_noover(rd_num, P.VU.vflmul, rs2_num, 1);
-} else {
-  require_noover_widen(rd_num, P.VU.vflmul, rs2_num, 1);
-}
+require_noover(rd_num, P.VU.vflmul, rs2_num, 1);
 
 int cnt = 0;
 for (reg_t i = 0; i < vl; ++i) {
