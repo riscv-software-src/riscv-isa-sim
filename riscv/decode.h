@@ -1753,6 +1753,66 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   } \
   p->VU.vstart = 0;
 
+#define VI_LD_WHOLE(elt_width) \
+  require_vector_novtype(true); \
+  const reg_t baseAddr = RS1; \
+  const reg_t vd = insn.rd(); \
+  const reg_t len = insn.v_nf() + 1; \
+  require_align(vd, len); \
+  const reg_t elt_per_reg = P.VU.vlenb / sizeof(elt_width ## _t); \
+  const reg_t size = len * elt_per_reg; \
+  if (P.VU.vstart < size) { \
+    reg_t i = P.VU.vstart / elt_per_reg; \
+    reg_t off = P.VU.vstart % elt_per_reg; \
+    if (off) { \
+      for (reg_t pos = off; pos < elt_per_reg; ++pos) { \
+        auto val = MMU.load_## elt_width(baseAddr + \
+          P.VU.vstart * sizeof(elt_width ## _t)); \
+        P.VU.elt<elt_width ## _t>(vd + i, pos, true) = val; \
+        P.VU.vstart++; \
+      } \
+      ++i; \
+    } \
+    for (; i < len; ++i) { \
+      for (reg_t pos = 0; pos < elt_per_reg; ++pos) { \
+        auto val = MMU.load_## elt_width(baseAddr + \
+          P.VU.vstart * sizeof(elt_width ## _t)); \
+        P.VU.elt<elt_width ## _t>(vd + i, pos, true) = val; \
+        P.VU.vstart++; \
+      } \
+    } \
+  } \
+  P.VU.vstart = 0; \
+
+#define VI_ST_WHOLE \
+  require_vector_novtype(true); \
+  const reg_t baseAddr = RS1; \
+  const reg_t vs3 = insn.rd(); \
+  const reg_t len = insn.v_nf() + 1; \
+  require_align(vs3, len); \
+  const reg_t size = len * P.VU.vlenb; \
+   \
+  if (P.VU.vstart < size) { \
+    reg_t i = P.VU.vstart / P.VU.vlenb; \
+    reg_t off = P.VU.vstart % P.VU.vlenb; \
+    if (off) { \
+      for (reg_t pos = off; pos < P.VU.vlenb; ++pos) { \
+        auto val = P.VU.elt<uint8_t>(vs3 + i, pos); \
+        MMU.store_uint8(baseAddr + P.VU.vstart, val); \
+        P.VU.vstart++; \
+      } \
+      i++; \
+    } \
+    for (; i < len; ++i) { \
+      for (reg_t pos = 0; pos < P.VU.vlenb; ++pos) { \
+        auto val = P.VU.elt<uint8_t>(vs3 + i, pos); \
+        MMU.store_uint8(baseAddr + P.VU.vstart, val); \
+        P.VU.vstart++; \
+      } \
+    } \
+  } \
+  P.VU.vstart = 0;
+
 //
 // vector: amo 
 //
