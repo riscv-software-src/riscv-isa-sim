@@ -141,13 +141,12 @@ void processor_t::parse_varch_string(const char* s)
     bad_varch_string(s, "The integer value should be the power of 2");
   }
 
+  if (slen == 0)
+    slen = vlen;
+
   /* Vector spec requirements. */
   if (vlen < elen)
     bad_varch_string(s, "vlen must be >= elen");
-  if (vlen < slen)
-    bad_varch_string(s, "vlen must be >= slen");
-  if (slen < 32)
-    bad_varch_string(s, "slen must be >= 32");
   if ((unsigned) elen < std::max(max_xlen, get_flen()))
     bad_varch_string(s, "elen must be >= max(xlen, flen)");
   if (vlen != slen)
@@ -159,7 +158,6 @@ void processor_t::parse_varch_string(const char* s)
 
   VU.VLEN = vlen;
   VU.ELEN = elen;
-  VU.SLEN = slen;
   VU.vlenb = vlen / 8;
 }
 
@@ -384,7 +382,6 @@ void processor_t::vectorUnit_t::reset(){
   free(reg_file);
   VLEN = get_vlen();
   ELEN = get_elen();
-  SLEN = get_slen(); // registers are simply concatenated
   reg_file = malloc(NVPR * vlenb);
   memset(reg_file, 0, NVPR * vlenb);
 

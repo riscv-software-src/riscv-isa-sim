@@ -480,7 +480,7 @@ public:
       float vemul;
       float vflmul;
       reg_t vmel;
-      reg_t ELEN, VLEN, SLEN;
+      reg_t ELEN, VLEN;
       bool vill;
 
       // vector element for varies SEW
@@ -523,7 +523,7 @@ public:
 
       reg_t get_vlen() { return VLEN; }
       reg_t get_elen() { return ELEN; }
-      reg_t get_slen() { return SLEN; }
+      reg_t get_slen() { return VLEN; }
 
       VRM get_vround_mode() {
         return (VRM)vxrm;
