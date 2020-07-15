@@ -794,10 +794,33 @@ disassembler_t::disassembler_t(int xlen)
           ));
       }
     }
+
+    const custom_fmt_t template_insn2[] = {
+      {match_vl1re8_v,   mask_vl1re8_v,   "vl%dre%d.v",   v_ld_unit},
+    };
+
+    for (reg_t i = 0, nf = 7; nf < 4; i++, nf >>= 1) {
+      for (auto item : template_insn) {
+        const reg_t match_nf = nf << 29;
+        char buf[128];
+        sprintf(buf, item.fmt, nf + 1, 8 << elt);
+        add_insn(new disasm_insn_t(
+          buf, item.match | match_nf, item.mask | mask_nf, item.arg
+        ));
+      }
+    }
   }
 
-  DISASM_INSN("vl1r.v", vl1r_v, 0, {&vd, &v_address});
-  DISASM_INSN("vs1r.v", vs1r_v, 0, {&vs3, &v_address});
+  #define DISASM_ST_WHOLE_INSN(name, nf) \
+    add_insn(new disasm_insn_t(#name, match_vs1r_v | (nf << 29), \
+                                      mask_vs1r_v | mask_nf, \
+                                      {&vs3, &v_address}));
+  DISASM_ST_WHOLE_INSN(vs1r.v, 0);
+  DISASM_ST_WHOLE_INSN(vs2r.v, 1);
+  DISASM_ST_WHOLE_INSN(vs4r.v, 3);
+  DISASM_ST_WHOLE_INSN(vs8r.v, 7);
+
+  #undef DISASM_ST_WHOLE_INSN
 
   #define DISASM_OPIV_VXI_INSN(name, sign, suf) \
     add_insn(new disasm_insn_t(#name "." #suf "v", \
