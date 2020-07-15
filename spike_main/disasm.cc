@@ -1156,10 +1156,10 @@ disassembler_t::disassembler_t(int xlen)
   std::vector<const arg_t *> v_fmt_amo = {&x0, &v_address, &vs2, &vd, &opt, &vm};
   for (size_t elt = 0; elt <= 3; ++elt) {
     const custom_fmt_t template_insn[] = {
-      {match_vamoswape8_v | mask_wd,   mask_vamoswape8_v | mask_wd,
-         "%se%d.v", v_fmt_amo_wd},
-      {match_vamoswape8_v,   mask_vamoswape8_v | mask_wd,
-         "%se%d.v", v_fmt_amo},
+      {match_vamoswapei8_v | mask_wd,   mask_vamoswapei8_v | mask_wd,
+         "%sei%d.v", v_fmt_amo_wd},
+      {match_vamoswapei8_v,   mask_vamoswapei8_v | mask_wd,
+         "%sei%d.v", v_fmt_amo},
     };
     std::pair<const char*, reg_t> amo_map[] = {
         {"vamoswap", 0x01ul << 27},
