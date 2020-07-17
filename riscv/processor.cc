@@ -592,7 +592,7 @@ reg_t processor_t::legalize_privilege(reg_t prv)
   if (!supports_extension('U'))
     return PRV_M;
 
-  if (prv == PRV_S && !supports_extension('S'))
+  if ((prv == PRV_HS && !supports_extension('H')) || (prv == PRV_S && !supports_extension('S')))
     return PRV_U;
 
   return prv;
