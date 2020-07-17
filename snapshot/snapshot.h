@@ -23,23 +23,19 @@ class snapshot_t
 {
 public:
   snapshot_t(const char *path);
-  snapshot_t(sim_t *sim);
+  snapshot_t(sim_t *sim, mmu_t *mmu);
   snapshot_t() {}
   void save(const char *path);
   bool ramdump(std::ofstream &out);
   std::vector<std::pair<reg_t, mem_t *>> mem_restore();
   state_t *get_state(int i);
   int get_procs();
-  typedef uint64_t mtime_t;
-  typedef uint64_t mtimecmp_t;
   std::vector<mtimecmp_t> mtimecmp;
   mtime_t mtime;
 
 private:
   std::vector<std::pair<reg_t, mem_t *>> mems;
   std::vector<state_t *> cpu_states;
-  // clint_t clint;
-
   int procs;
 };
 

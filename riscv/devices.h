@@ -9,6 +9,14 @@
 #include <vector>
 #include <stdexcept>
 
+typedef uint64_t mtime_t;
+typedef uint64_t mtimecmp_t;
+typedef uint32_t msip_t;
+
+#define MSIP_BASE	0x0
+#define MTIMECMP_BASE	0x4000
+#define MTIME_BASE	0xbff8
+
 class processor_t;
 
 class abstract_device_t {
@@ -70,9 +78,6 @@ class clint_t : public abstract_device_t {
   size_t size() { return CLINT_SIZE; }
   void increment(reg_t inc);
  private:
-  typedef uint64_t mtime_t;
-  typedef uint64_t mtimecmp_t;
-  typedef uint32_t msip_t;
   std::vector<processor_t*>& procs;
   uint64_t freq_hz;
   bool real_time;

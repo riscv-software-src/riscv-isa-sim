@@ -207,7 +207,7 @@ int main(int argc, char** argv)
   std::unique_ptr<cache_sim_t> l2;
   bool log_cache = false;
   bool log_commits = false;
-  bool ramdump = false;
+  bool snapshot_mode = false;
   const char *log_path = nullptr;
   std::function<extension_t*()> extension;
   const char* initrd = NULL;
@@ -321,8 +321,8 @@ int main(int argc, char** argv)
       exit(-1);
     }
   });
-  parser.option(0, "snapshot", 1, [&](const char *s){
-    ramdump = true;
+  parser.option(0, "snapshot", 1, [&](const char *s) {
+    snapshot_mode = true;
     snapshot = snapshot_t(s);
     mems = snapshot.mem_restore();
     nprocs = snapshot.get_procs();
@@ -384,18 +384,14 @@ int main(int argc, char** argv)
 
   sim_t s(isa, priv, varch, nprocs, halted, real_time_clint,
       initrd_start, initrd_end, bootargs, start_pc, mems, plugin_devices, htif_args,
-      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file,ramdump);
-  if(ramdump) {
-    #define MTIMECMP_BASE	0x4000
-    #define MTIME_BASE	0xbff8
-    typedef uint64_t mtime_t;
-    typedef uint64_t mtimecmp_t;
-    s.get_core(0)->get_mmu()->store_uint64(s.get_clint() + MTIME_BASE, snapshot.mtime);
-    for(int i = 0; i < nprocs; i++) {
+      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file, snapshot_mode);
+      
+  if(snapshot_mode) {
+    s.get_debug_mmu()->store_uint64(s.get_clint() + MTIME_BASE, snapshot.mtime);
+    for(size_t i = 0; i < nprocs; i++) {
       memcpy((char *)s.get_core(i)->get_state(),(char *)snapshot.get_state(i),sizeof(state_t));
-      s.get_core(0)->get_mmu()->store_uint64(s.get_clint() + MTIMECMP_BASE + (uint64_t)sizeof(mtimecmp_t) * i, snapshot.mtimecmp[i]);
+      s.get_debug_mmu()->store_uint64(s.get_clint() + MTIMECMP_BASE + (uint64_t)sizeof(mtimecmp_t) * i, snapshot.mtimecmp[i]);
     }
-
   }
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(

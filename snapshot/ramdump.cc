@@ -1,6 +1,8 @@
 #include "snapshot.h"
 #include <fstream>
+
 using namespace std;
+
 bool snapshot_t::ramdump(ofstream &out) 
 {
   for (auto &mem : mems) {
@@ -11,6 +13,7 @@ bool snapshot_t::ramdump(ofstream &out)
   }
   return true;
 }
+
 std::vector<std::pair<reg_t, mem_t *>> getmem(const char *start,
                                               const char *end) 
 {
