@@ -23,9 +23,6 @@ clint_t::clint_t(std::vector<processor_t*>& procs, uint64_t freq_hz, bool real_t
  * bffc mtime hi
  */
 
-#define MSIP_BASE	0x0
-#define MTIMECMP_BASE	0x4000
-#define MTIME_BASE	0xbff8
 
 bool clint_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {

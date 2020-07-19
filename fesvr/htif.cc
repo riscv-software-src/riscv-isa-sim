@@ -56,7 +56,7 @@ htif_t::htif_t(int argc, char** argv) : htif_t()
   register_devices();
 }
 
-htif_t::htif_t(const std::vector<std::string>& args) : htif_t()
+htif_t::htif_t(const std::vector<std::string>& args, bool snapshot_mode) : htif_t()
 {
   int argc = args.size() + 1;
   char * argv[argc];
@@ -65,6 +65,7 @@ htif_t::htif_t(const std::vector<std::string>& args) : htif_t()
     argv[i+1] = (char *) args[i].c_str();
   }
 
+  this -> snapshot_mode = snapshot_mode;
   parse_arguments(argc, argv);
   register_devices();
 }
@@ -78,12 +79,12 @@ htif_t::~htif_t()
 void htif_t::start()
 {
   if (!targs.empty() && targs[0] != "none")
-      load_program();
+      load_program(snapshot_mode);
 
   reset();
 }
 
-std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload, reg_t* entry)
+std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload, reg_t* entry, bool snapshot_mode)
 {
   std::string path;
   if (access(payload.c_str(), F_OK) == 0)
@@ -116,12 +117,12 @@ std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload,
     htif_t* htif;
   } preload_aware_memif(this);
 
-  return load_elf(path.c_str(), &preload_aware_memif, entry);
+  return load_elf(path.c_str(), &preload_aware_memif, entry, snapshot_mode);
 }
 
-void htif_t::load_program()
+void htif_t::load_program(bool snapshot_mode)
 {
-  std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry);
+  std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry, snapshot_mode);
 
   if (symbols.count("tohost") && symbols.count("fromhost")) {
     tohost_addr = symbols["tohost"];
@@ -140,7 +141,7 @@ void htif_t::load_program()
   for (auto payload : payloads)
   {
     reg_t dummy_entry;
-    load_payload(payload, &dummy_entry);
+    load_payload(payload, &dummy_entry, snapshot_mode);
   }
 }
 

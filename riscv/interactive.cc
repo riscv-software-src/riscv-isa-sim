@@ -18,6 +18,7 @@
 #include <vector>
 #include <algorithm>
 #include <math.h>
+#include "snapshot.h"
 
 DECLARE_TRAP(-1, interactive)
 
@@ -82,6 +83,7 @@ void sim_t::interactive()
   funcs["q"] = funcs["quit"];
   funcs["help"] = &sim_t::interactive_help;
   funcs["h"] = funcs["help"];
+  funcs["snapshot"] = &sim_t::interactive_snapshot;
 
   while (!done())
   {
@@ -137,6 +139,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "r [count]                         Alias for run\n"
     "rs [count]                      # Resume silent execution (until CTRL+C, or [count] insns)\n"
     "quit                            # End the simulation\n"
+    "snapshot <path>                 # save snapshot file to <path>\n"
     "q                                 Alias for quit\n"
     "help                            # This screen!\n"
     "h                                 Alias for help\n"
@@ -425,4 +428,16 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
     set_procs_debug(noisy);
     step(1);
   }
+}
+
+void sim_t::interactive_snapshot(const std::string& cmd, const std::vector<std::string>& args)
+{
+  if(args.size() < 1)  {
+    fprintf(stderr, "illegal argument!\n" );
+    return;
+  }
+
+  snapshot_t snapshot(this, debug_mmu);
+  snapshot.save(args[0].c_str());
+  fprintf(stderr, "snapshot file saved to %s\n",args[0].c_str());
 }

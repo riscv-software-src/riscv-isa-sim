@@ -15,7 +15,7 @@ class htif_t : public chunked_memif_t
  public:
   htif_t();
   htif_t(int argc, char** argv);
-  htif_t(const std::vector<std::string>& args);
+  htif_t(const std::vector<std::string>& args, bool snapshot_mode = false);
   virtual ~htif_t();
 
   virtual void start();
@@ -37,8 +37,8 @@ class htif_t : public chunked_memif_t
   virtual size_t chunk_align() = 0;
   virtual size_t chunk_max_size() = 0;
 
-  virtual std::map<std::string, uint64_t> load_payload(const std::string& payload, reg_t* entry);
-  virtual void load_program();
+  virtual std::map<std::string, uint64_t> load_payload(const std::string& payload, reg_t* entry, bool snapshot_mode);
+  virtual void load_program(bool snapshot_mode);
   virtual void idle() {}
 
   const std::vector<std::string>& host_args() { return hargs; }
@@ -66,6 +66,7 @@ class htif_t : public chunked_memif_t
   addr_t fromhost_addr;
   int exitcode;
   bool stopped;
+  bool snapshot_mode;
 
   device_list_t device_list;
   syscall_t syscall_proxy;

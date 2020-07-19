@@ -1,0 +1,10 @@
+prefix=@prefix@
+exec_prefix=@prefix@
+libdir=${prefix}/@libdir@
+includedir=${prefix}/@includedir@
+
+Name: riscv-snapshot
+Description: RISC-V Snapshot Plugin
+Version: git
+Libs: -Wl,-rpath,${libdir} -L${libdir} -lsnapshot
+Cflags: -I${includedir}

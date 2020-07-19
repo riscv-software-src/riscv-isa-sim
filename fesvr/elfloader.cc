@@ -15,7 +15,7 @@
 #include <vector>
 #include <map>
 
-std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* entry)
+std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* entry, bool snapshot_mode)
 {
   int fd = open(fn, O_RDONLY);
   struct stat s;
@@ -39,19 +39,21 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
   std::vector<uint8_t> zeros;
   std::map<std::string, uint64_t> symbols;
 
-  #define LOAD_ELF(ehdr_t, phdr_t, shdr_t, sym_t, bswap) do { \
+  #define LOAD_ELF(ehdr_t, phdr_t, shdr_t, sym_t, bswap, snapshot_mode) do { \
     ehdr_t* eh = (ehdr_t*)buf; \
     phdr_t* ph = (phdr_t*)(buf + bswap(eh->e_phoff)); \
     *entry = bswap(eh->e_entry); \
-    assert(size >= bswap(eh->e_phoff) + bswap(eh->e_phnum)*sizeof(*ph)); \
-    for (unsigned i = 0; i < bswap(eh->e_phnum); i++) {			\
-      if(bswap(ph[i].p_type) == PT_LOAD && bswap(ph[i].p_memsz)) {	\
-        if (bswap(ph[i].p_filesz)) {					\
-          assert(size >= bswap(ph[i].p_offset) + bswap(ph[i].p_filesz)); \
-          memif->write(bswap(ph[i].p_paddr), bswap(ph[i].p_filesz), (uint8_t*)buf + bswap(ph[i].p_offset)); \
+    if(snapshot_mode == false) { \
+      assert(size >= bswap(eh->e_phoff) + bswap(eh->e_phnum)*sizeof(*ph)); \
+      for (unsigned i = 0; i < bswap(eh->e_phnum); i++) {			\
+        if(bswap(ph[i].p_type) == PT_LOAD && bswap(ph[i].p_memsz)) {	\
+          if (bswap(ph[i].p_filesz)) {					\
+            assert(size >= bswap(ph[i].p_offset) + bswap(ph[i].p_filesz)); \
+            memif->write(bswap(ph[i].p_paddr), bswap(ph[i].p_filesz), (uint8_t*)buf + bswap(ph[i].p_offset)); \
+          } \
+          zeros.resize(bswap(ph[i].p_memsz) - bswap(ph[i].p_filesz)); \
+          memif->write(bswap(ph[i].p_paddr) + bswap(ph[i].p_filesz), bswap(ph[i].p_memsz) - bswap(ph[i].p_filesz), &zeros[0]); \
         } \
-        zeros.resize(bswap(ph[i].p_memsz) - bswap(ph[i].p_filesz)); \
-        memif->write(bswap(ph[i].p_paddr) + bswap(ph[i].p_filesz), bswap(ph[i].p_memsz) - bswap(ph[i].p_filesz), &zeros[0]); \
       } \
     } \
     shdr_t* sh = (shdr_t*)(buf + bswap(eh->e_shoff)); \
@@ -84,9 +86,9 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
   } while(0)
 
   if (IS_ELF32(*eh64))
-    LOAD_ELF(Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym, from_le);
+    LOAD_ELF(Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym, from_le, snapshot_mode);
   else
-    LOAD_ELF(Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym, from_le);
+    LOAD_ELF(Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym, from_le, snapshot_mode);
 
   munmap(buf, size);
 

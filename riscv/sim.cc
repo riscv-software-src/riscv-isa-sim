@@ -35,8 +35,8 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
              std::vector<int> const hartids,
              const debug_module_config_t &dm_config,
              const char *log_path,
-             bool dtb_enabled, const char *dtb_file)
-  : htif_t(args),
+             bool dtb_enabled, const char *dtb_file, bool snapshot_mode)
+  : htif_t(args, snapshot_mode),
     mems(mems),
     plugin_devices(plugin_devices),
     procs(std::max(nprocs, size_t(1))),
@@ -325,4 +325,14 @@ void sim_t::write_chunk(addr_t taddr, size_t len, const void* src)
 void sim_t::proc_reset(unsigned id)
 {
   debug_module.proc_reset(id);
+}
+
+reg_t sim_t::get_clint() 
+{
+  reg_t clint_base;
+  if (fdt_parse_clint((void *)dtb.c_str(), &clint_base, "riscv,clint0")) {
+    return clint_base;
+  } else {
+    return CLINT_BASE;
+  }
 }

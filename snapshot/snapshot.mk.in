@@ -1,0 +1,12 @@
+snapshot_subproject_deps = \
+	riscv \
+
+snapshot_install_prog_srcs = \
+
+
+snapshot_hdrs = \
+    snapshot.h \
+
+snapshot_srcs = \
+	ramdump.cc \
+	snapshot.cc \
