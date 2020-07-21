@@ -303,7 +303,7 @@ class wait_for_interrupt_t {};
 
 /* Convenience wrappers to simplify softfloat code sequences */
 #define isBoxedF16(r) (isBoxedF32(r) && ((uint64_t)((r.v[0] >> 16) + 1) == ((uint64_t)1 << 48)))
-#define unboxF16(r) (isBoxedF16(r) ? (uint32_t)r.v[0] : defaultNaNF16UI)
+#define unboxF16(r) (isBoxedF16(r) ? (uint16_t)r.v[0] : defaultNaNF16UI)
 #define isBoxedF32(r) (isBoxedF64(r) && ((uint32_t)((r.v[0] >> 32) + 1) == 0))
 #define unboxF32(r) (isBoxedF32(r) ? (uint32_t)r.v[0] : defaultNaNF32UI)
 #define isBoxedF64(r) ((r.v[1] + 1) == 0)
