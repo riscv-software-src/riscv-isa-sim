@@ -489,7 +489,6 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_ITYPE(jalr);
 
   add_insn(new disasm_insn_t("nop", match_addi, mask_addi | mask_rd | mask_rs1 | mask_imm, {}));
-  add_insn(new disasm_insn_t(" - ", match_xor, mask_xor | mask_rd | mask_rs1 | mask_rs2, {})); // for machine-generated bubbles
   DEFINE_I0TYPE("li", addi);
   DEFINE_I1TYPE("mv", addi);
   DEFINE_ITYPE(addi);
