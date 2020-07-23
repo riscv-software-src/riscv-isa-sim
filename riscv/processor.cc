@@ -385,7 +385,8 @@ void processor_t::vectorUnit_t::reset(){
   VLEN = get_vlen();
   ELEN = get_elen();
   SLEN = get_slen(); // registers are simply concatenated
-  reg_file = malloc(NVPR * (VLEN/8));
+  reg_file = malloc(NVPR * vlenb);
+  memset(reg_file, 0, NVPR * vlenb);
 
   vtype = 0;
   set_vl(0, 0, 0, -1); // default to illegal configuration
