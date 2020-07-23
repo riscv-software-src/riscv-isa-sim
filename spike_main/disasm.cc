@@ -892,19 +892,20 @@ disassembler_t::disassembler_t(int xlen)
 
   //OPFVV/OPFVF
   //0b00_0000
-  DISASM_OPIV_VXI_INSN(vadd,      1, v);
-  DISASM_OPIV_VX__INSN(vsub,      1);
-  DISASM_OPIV__XI_INSN(vrsub,     1);
-  DISASM_OPIV_VX__INSN(vminu,     0);
-  DISASM_OPIV_VX__INSN(vmin,      1);
-  DISASM_OPIV_VX__INSN(vmaxu,     1);
-  DISASM_OPIV_VX__INSN(vmax,      0);
-  DISASM_OPIV_VXI_INSN(vand,      1, v);
-  DISASM_OPIV_VXI_INSN(vor,       1, v);
-  DISASM_OPIV_VXI_INSN(vxor,      1, v);
-  DISASM_OPIV_VXI_INSN(vrgather,  0, v);
-  DISASM_OPIV__XI_INSN(vslideup,  0);
-  DISASM_OPIV__XI_INSN(vslidedown,0);
+  DISASM_OPIV_VXI_INSN(vadd,         1, v);
+  DISASM_OPIV_VX__INSN(vsub,         1);
+  DISASM_OPIV__XI_INSN(vrsub,        1);
+  DISASM_OPIV_VX__INSN(vminu,        0);
+  DISASM_OPIV_VX__INSN(vmin,         1);
+  DISASM_OPIV_VX__INSN(vmaxu,        1);
+  DISASM_OPIV_VX__INSN(vmax,         0);
+  DISASM_OPIV_VXI_INSN(vand,         1, v);
+  DISASM_OPIV_VXI_INSN(vor,          1, v);
+  DISASM_OPIV_VXI_INSN(vxor,         1, v);
+  DISASM_OPIV_VXI_INSN(vrgather,     0, v);
+  DISASM_OPIV_V___INSN(vrgatherei16, 0);
+  DISASM_OPIV__XI_INSN(vslideup,     0);
+  DISASM_OPIV__XI_INSN(vslidedown,   0);
 
   //0b01_0000
   DISASM_OPIV_VXIM_INSN(vadc,    1);

@@ -472,6 +472,7 @@ riscv_insn_ext_v_alu_int = \
 	vrgather_vi \
 	vrgather_vv \
 	vrgather_vx \
+	vrgatherei16_vv \
 	vrsub_vi \
 	vrsub_vx \
 	vsadd_vi \
