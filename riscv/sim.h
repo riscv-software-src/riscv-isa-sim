@@ -86,6 +86,10 @@ private:
   bool histogram_enabled; // provide a histogram of PCs
   bool log;
   remote_bitbang_t* remote_bitbang;
+  std::vector<std::string> history_list;
+  std::vector<std::string> history_list_tmp;
+  std::map<std::string,std::vector<std::string>> cmd_list;
+  std::vector<std::string> cmd_list_tmp;
 
   // memory-mapped I/O routines
   char* addr_to_mem(reg_t addr);
@@ -119,6 +123,16 @@ private:
   freg_t get_freg(const std::vector<std::string>& args);
   reg_t get_mem(const std::vector<std::string>& args);
   reg_t get_pc(const std::vector<std::string>& args);
+  std::string readline(int fd);
+  void interactive_set(const std::string& cmd, const std::vector<std::string>& args);
+  void set_freg(const std::string& cmd, const std::vector<std::string>& args);
+  reg_t set_reg(const std::vector<std::string>& args, reg_t val);
+  reg_t set_mem(const std::vector<std::string>& args, reg_t val);
+  reg_t set_pc_value(const std::vector<std::string>& args, reg_t val);
+  int get_reg_index(const std::vector<std::string>& args);
+  void interactive_history(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_csr(const std::string& cmd, const std::vector<std::string>& args);
+  std::string last_cmd(const std::string& cmd, bool* valid_history);
 
   friend class processor_t;
   friend class mmu_t;
