@@ -219,11 +219,12 @@ std::string sim_t::readline(int fd)
 	    while(cur_pos_tmp-- > 0) write(fd, "\b", 1);
     }
   }
+  while(s.size() > 0 && s[0] == ' ') s.erase(0, 1);
+  while(s.size() > 0 && s[s.size()-1]== ' ') s.erase(s.size()-1, 1);
   if(!s.size()) s = "run 1";
   else if(s[0] == '!') s = last_cmd(s, &valid_history);
   if(valid_history && (!history_list.size() || s != history_list[history_list.size()-1])) {
-	  while(s.size() > 0 && s[s.size()-1]== ' ') s.erase(s.size()-1, 1);
-	  if(s.size()) history_list.push_back(s);
+	  history_list.push_back(s);
   }
   return s;
 }
