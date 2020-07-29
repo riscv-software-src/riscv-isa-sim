@@ -823,20 +823,43 @@ void sim_t::interactive_csr(const std::string& cmd, const std::vector<std::strin
   if(args.size() != 1)
     throw trap_interactive();
 
-    int i = 0;
+    int i = 0, j = CSR_FFLAGS;
     std::map<std::string,reg_t> csr;
     processor_t *p = get_core(args[0]);
 
-    #define CSR_DECLARE(name, number) csr[#name] = p->get_csr(number);
-    #include "encoding.h"              // generates if's for all csrs
+    #define DECLARE_CSR(name, number) case number: \
+                                                  if(j != number && !((CSR_MHPMEVENT3    <= number  &&  number <= CSR_MHPMEVENT31)    || \
+                                                                      (CSR_HPMCOUNTER3   <= number  &&  number <= CSR_HPMCOUNTER31)   || \
+                                                                      (CSR_HPMCOUNTER3H  <= number  &&  number <= CSR_HPMCOUNTER31H)  || \
+                                                                      (CSR_MHPMCOUNTER3  <= number  &&  number <= CSR_MHPMCOUNTER31)  || \
+                                                                      (CSR_MHPMCOUNTER3H <= number  &&  number <  CSR_MHPMCOUNTER31H) )) \
+                                                  { \
+                                                    j = number; \
+                                                    csr[#name] = p->get_csr(number); \
+                                                  }
+    try {
+      csr["fflags"] = p->get_csr(CSR_FFLAGS);
+    }   
+    catch(trap_t& t) {}
+
+    while(j != CSR_MHPMCOUNTER31H) {
+      try {
+        switch(j) {
+          #include "encoding.h"              // generates if's for all csrs
+        }
+      }   
+      catch(trap_t& t) {}
+    }
     #undef CSR_DECLARE
 
     for (auto r = csr.begin(); r != csr.end(); ++r) {
-      fprintf(stderr, "%-10s: 0x%016" PRIx64 "  ", r->first.c_str(), r->second);
+      fprintf(stderr, "%-14s: 0x%016" PRIx64 "  ", r->first.c_str(), r->second);
       ++i;
-      if (i % 3 == 0)
+      if (i % 4 == 0)
         fprintf(stderr, "\n");
     }
+    if (i % 4 != 0)
+      fprintf(stderr, "\n");
 }
 
 std::string sim_t::last_cmd(const std::string& cmd, bool* valid_history)
