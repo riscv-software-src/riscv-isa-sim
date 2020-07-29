@@ -324,7 +324,6 @@ int main(int argc, char** argv)
   parser.option(0, "snapshot", 1, [&](const char *s) {
     snapshot_mode = true;
     snapshot = snapshot_t(s);
-    mems = snapshot.mem_restore();
     nprocs = snapshot.get_procs();
   });
   parser.option(0, "dm-progsize", 1,
@@ -384,13 +383,15 @@ int main(int argc, char** argv)
 
   sim_t s(isa, priv, varch, nprocs, halted, real_time_clint,
       initrd_start, initrd_end, bootargs, start_pc, mems, plugin_devices, htif_args,
-      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file, snapshot_mode);
-      
+      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file, snapshot_mode, snapshot_mode?&snapshot:NULL); 
   if(snapshot_mode) {
     s.get_debug_mmu()->store_uint64(s.get_clint() + MTIME_BASE, snapshot.mtime);
     for(size_t i = 0; i < nprocs; i++) {
       memcpy((char *)s.get_core(i)->get_state(),(char *)snapshot.get_state(i),sizeof(state_t));
       s.get_debug_mmu()->store_uint64(s.get_clint() + MTIMECMP_BASE + (uint64_t)sizeof(mtimecmp_t) * i, snapshot.mtimecmp[i]);
+    }
+    for(auto mem: snapshot.mems) {
+      (*s.tags)[mem.first] = true;
     }
   }
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
@@ -405,7 +406,7 @@ int main(int argc, char** argv)
     printf("%s", s.get_dts());
     return 0;
   }
-
+  
   if (ic && l2) ic->set_miss_handler(&*l2);
   if (dc && l2) dc->set_miss_handler(&*l2);
   if (ic) ic->set_log(log_cache);

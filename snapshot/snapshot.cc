@@ -2,9 +2,6 @@
 #include <fstream>
 
 using namespace std;
-std::vector<std::pair<reg_t, mem_t *>> snapshot_t::mem_restore() {
-  return mems;
-}
 
 state_t *snapshot_t::get_state(int i) { return cpu_states[i]; }
 
@@ -48,8 +45,11 @@ snapshot_t::snapshot_t(const char *path)
 
 snapshot_t::snapshot_t(sim_t *sim, mmu_t *mmu) 
 {
-  mems = sim->get_mems();
   procs = sim->nprocs();
+  this->sim = sim;
+  tags = sim -> tags;
+  this->mmu = mmu;
+
   for (int i = 0; i < procs; i++) {
     cpu_states.push_back(sim->get_core(i)->get_state());
     mtimecmp.push_back(mmu->load_uint64(
@@ -66,7 +66,9 @@ void snapshot_t::save(const char *path)
   out.open(path, ios::binary);
   out.write((char *)&sh, sizeof(Snapshot_Head));
   sh.memoff = out.tellp();
-  ramdump(out);
+  if(!ramdump(out)) {
+    fprintf(stderr,"ramdump failed.\n");
+  }
   sh.memend = out.tellp();
   sh.cpuoff = out.tellp();
   sh.procs = procs;

@@ -15,6 +15,7 @@
 #include <string>
 #include <memory>
 #include <sys/types.h>
+#include <map>
 
 class mmu_t;
 class remote_bitbang_t;
@@ -30,7 +31,7 @@ public:
         std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
         const std::vector<std::string>& args, const std::vector<int> hartids,
         const debug_module_config_t &dm_config, const char *log_path,
-        bool dtb_enabled, const char *dtb_file, bool snapshot_mode);
+        bool dtb_enabled, const char *dtb_file, bool snapshot_mode, snapshot_t *snap);
   ~sim_t();
 
   // run the simulation to completion
@@ -59,6 +60,9 @@ public:
 
   // Callback for processors to let the simulation know they were reset.
   void proc_reset(unsigned id);
+  std::map<reg_t, bool> *tags;
+  std::map<reg_t, bool> *get_tags();
+  char* addr_to_mem(reg_t addr);
 
 private:
   std::vector<std::pair<reg_t, mem_t*>> mems;
@@ -91,7 +95,7 @@ private:
   remote_bitbang_t* remote_bitbang;
 
   // memory-mapped I/O routines
-  char* addr_to_mem(reg_t addr);
+  
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
   void make_dtb();

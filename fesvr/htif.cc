@@ -16,6 +16,7 @@
 #include <unistd.h>
 #include <signal.h>
 #include <getopt.h>
+#include "snapshot.h"
 
 /* Attempt to determine the execution prefix automatically.  autoconf
  * sets PREFIX, and pconfigure sets __PCONFIGURE__PREFIX. */
@@ -56,7 +57,7 @@ htif_t::htif_t(int argc, char** argv) : htif_t()
   register_devices();
 }
 
-htif_t::htif_t(const std::vector<std::string>& args, bool snapshot_mode) : htif_t()
+htif_t::htif_t(const std::vector<std::string>& args, bool snapshot_mode, snapshot_t *snap) : htif_t()
 {
   int argc = args.size() + 1;
   char * argv[argc];
@@ -66,6 +67,7 @@ htif_t::htif_t(const std::vector<std::string>& args, bool snapshot_mode) : htif_
   }
 
   this -> snapshot_mode = snapshot_mode;
+  this->snap = snap;
   parse_arguments(argc, argv);
   register_devices();
 }
@@ -79,12 +81,16 @@ htif_t::~htif_t()
 void htif_t::start()
 {
   if (!targs.empty() && targs[0] != "none")
-      load_program(snapshot_mode);
-
+      load_program();
+  if(snapshot_mode) {
+    for(auto mem: snap -> mems) {
+      memif().write(mem.first << PGSHIFT, 1 << PGSHIFT, mem.second);
+    }
+  }
   reset();
 }
 
-std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload, reg_t* entry, bool snapshot_mode)
+std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload, reg_t* entry)
 {
   std::string path;
   if (access(payload.c_str(), F_OK) == 0)
@@ -117,12 +123,12 @@ std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload,
     htif_t* htif;
   } preload_aware_memif(this);
 
-  return load_elf(path.c_str(), &preload_aware_memif, entry, snapshot_mode);
+  return load_elf(path.c_str(), &preload_aware_memif, entry);
 }
 
-void htif_t::load_program(bool snapshot_mode)
+void htif_t::load_program()
 {
-  std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry, snapshot_mode);
+  std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry);
 
   if (symbols.count("tohost") && symbols.count("fromhost")) {
     tohost_addr = symbols["tohost"];
@@ -141,7 +147,7 @@ void htif_t::load_program(bool snapshot_mode)
   for (auto payload : payloads)
   {
     reg_t dummy_entry;
-    load_payload(payload, &dummy_entry, snapshot_mode);
+    load_payload(payload, &dummy_entry);
   }
 }
 

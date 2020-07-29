@@ -436,7 +436,7 @@ void sim_t::interactive_snapshot(const std::string& cmd, const std::vector<std::
     fprintf(stderr, "illegal argument!\n" );
     return;
   }
-
+  
   snapshot_t snapshot(this, debug_mmu);
   snapshot.save(args[0].c_str());
   fprintf(stderr, "snapshot file saved to %s\n",args[0].c_str());

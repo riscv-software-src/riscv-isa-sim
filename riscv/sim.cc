@@ -35,8 +35,8 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
              std::vector<int> const hartids,
              const debug_module_config_t &dm_config,
              const char *log_path,
-             bool dtb_enabled, const char *dtb_file, bool snapshot_mode)
-  : htif_t(args, snapshot_mode),
+             bool dtb_enabled, const char *dtb_file, bool snapshot_mode, snapshot_t *snap)
+  : htif_t(args, snapshot_mode, snap),
     mems(mems),
     plugin_devices(plugin_devices),
     procs(std::max(nprocs, size_t(1))),
@@ -99,6 +99,8 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     procs[i]->set_pmp_num(pmp_num);
     procs[i]->set_pmp_granularity(pmp_granularity);
   }
+
+  tags = new std::map<reg_t, bool>;
 }
 
 sim_t::~sim_t()
@@ -335,4 +337,8 @@ reg_t sim_t::get_clint()
   } else {
     return CLINT_BASE;
   }
+}
+
+std::map<reg_t, bool> * sim_t::get_tags() {
+  return tags;
 }
