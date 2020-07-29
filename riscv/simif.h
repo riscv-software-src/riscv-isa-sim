@@ -4,6 +4,7 @@
 #define _RISCV_SIMIF_H
 
 #include "decode.h"
+#include <map>
 
 // this is the interface to the simulator used by the processors and memory
 class simif_t
@@ -16,6 +17,7 @@ public:
   virtual bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes) = 0;
   // Callback for processors to let the simulation know they were reset.
   virtual void proc_reset(unsigned id) = 0;
+  virtual std::map<reg_t, bool> *get_tags() = 0;
 };
 
 #endif

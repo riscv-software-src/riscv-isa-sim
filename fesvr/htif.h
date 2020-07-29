@@ -10,12 +10,13 @@
 #include <map>
 #include <vector>
 
+class snapshot_t;
 class htif_t : public chunked_memif_t
 {
  public:
   htif_t();
   htif_t(int argc, char** argv);
-  htif_t(const std::vector<std::string>& args, bool snapshot_mode = false);
+  htif_t(const std::vector<std::string>& args, bool snapshot_mode = false, snapshot_t *snap = NULL);
   virtual ~htif_t();
 
   virtual void start();
@@ -37,8 +38,8 @@ class htif_t : public chunked_memif_t
   virtual size_t chunk_align() = 0;
   virtual size_t chunk_max_size() = 0;
 
-  virtual std::map<std::string, uint64_t> load_payload(const std::string& payload, reg_t* entry, bool snapshot_mode);
-  virtual void load_program(bool snapshot_mode);
+  virtual std::map<std::string, uint64_t> load_payload(const std::string& payload, reg_t* entry);
+  virtual void load_program();
   virtual void idle() {}
 
   const std::vector<std::string>& host_args() { return hargs; }
@@ -73,6 +74,7 @@ class htif_t : public chunked_memif_t
   bcd_t bcd;
   std::vector<device_t*> dynamic_devices;
   std::vector<std::string> payloads;
+  snapshot_t *snap;
 
   const std::vector<std::string>& target_args() { return targs; }
 

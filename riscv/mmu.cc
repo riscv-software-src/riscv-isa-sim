@@ -170,8 +170,9 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_
     if (matched_trigger)
       throw *matched_trigger;
   }
-
+  
   if (auto host_addr = sim->addr_to_mem(paddr)) {
+    (*sim -> get_tags())[paddr >> PGSHIFT] = true;
     memcpy(host_addr, bytes, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
       tracer.trace(paddr, len, STORE);
