@@ -260,10 +260,6 @@ void processor_t::parse_isa_string(const char* str)
       auto ext_str = std::string(ext, end - ext);
       if (ext_str == "zfh") {
         extension_table[EXT_ZFH] = true;
-      } else if (ext_str == "zvamo") {
-        extension_table[EXT_ZVAMO] = true;
-      } else if (ext_str == "zvlsseg") {
-        extension_table[EXT_ZVLSSEG] = true;
       } else if (ext_str == "zvqmac") {
         extension_table[EXT_ZVQMAC] = true;
       } else {
@@ -291,13 +287,6 @@ void processor_t::parse_isa_string(const char* str)
 
   if (supports_extension('Q') && !supports_extension('D'))
     bad_isa_string(str, "'Q' extension requires 'D'");
-
-  if (supports_extension(EXT_ZVAMO) &&
-      !(supports_extension('A') && supports_extension('V')))
-    bad_isa_string(str, "'Zvamo' extension requires 'A' and 'V'");
-
-  if (supports_extension(EXT_ZVLSSEG) && !supports_extension('V'))
-    bad_isa_string(str, "'Zvlsseg' extension requires 'V'");
 
   if (supports_extension(EXT_ZVQMAC) && !supports_extension('V'))
     bad_isa_string(str, "'Zvqmac' extension requires 'V'");

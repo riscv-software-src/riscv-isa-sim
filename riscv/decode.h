@@ -492,8 +492,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require_align(insn.rs2(), vemul); \
   require((nf * flmul) <= (NVPR / 4) && \
           (insn.rd() + nf * flmul) <= NVPR); \
-  if (nf > 1) \
-    require(p->supports_extension(EXT_ZVLSSEG)); \
 
 #define VI_CHECK_LD_INDEX(elt_width) \
   VI_CHECK_ST_INDEX(elt_width); \
@@ -542,8 +540,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require_align(insn.rd(), vemul); \
   require((nf * emul) <= (NVPR / 4) && \
           (insn.rd() + nf * emul) <= NVPR); \
-  if (nf > 1) \
-    require(p->supports_extension(EXT_ZVLSSEG)); \
 
 #define VI_CHECK_LOAD(elt_width) \
   VI_CHECK_STORE(elt_width); \
@@ -1817,7 +1813,6 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 //
 #define VI_AMO(op, type, idx_type) \
   require_vector; \
-  require_extension(EXT_ZVAMO); \
   require_align(insn.rd(), P.VU.vflmul); \
   require(P.VU.vsew <= P.get_xlen() && P.VU.vsew >= 32); \
   require_align(insn.rd(), P.VU.vflmul); \
