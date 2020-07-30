@@ -43,7 +43,7 @@ std::string sim_t::readline(int fd)
   int cur_pos = 0;  // cursor
   int cur_pos_tmp = 0;
   int cur_hinum = history_list.size();
-  int n = 0, m = 0;
+  int n = 0, m = 0, k = 0;
   bool tab_pressed = false, blank_end = false, valid_history = true;
   for (char ch[2], ch_last = 0; read(fd, &ch, 1) == 1; ch_last = ch[0])
   {
@@ -88,8 +88,8 @@ std::string sim_t::readline(int fd)
 					    cmd_list_tmp.push_back(r->first);
 					    break;
 				    }
-		    if(!cmd_list_tmp.size()) continue;
-		    else if(cmd_list_tmp.size() == 1) {
+		    if(!cmd_list_tmp.size()) continue;  // no match
+		    else if(cmd_list_tmp.size() == 1) {  // single match, completion the command
 			    s = cmd_list_tmp[0];
 			    s += ' ';
 			    cmd_list_tmp.pop_back();
@@ -97,7 +97,20 @@ std::string sim_t::readline(int fd)
 			    write(fd, s.c_str(), s.size());
 			    continue;
 		    }
-		    else tab_pressed = true;
+                    else {  // multiple matched, completion the same part of them
+                            tab_pressed = true;
+                            for(n = 1, m = cmd_list_tmp[0].size(); n < cmd_list_tmp.size(); n++)
+                                    if(m > cmd_list_tmp[n].size()) m = cmd_list_tmp[n].size();
+                            for(n = 1; n < m; n++) {
+                                    for(k = 1; k < cmd_list_tmp.size(); k++)
+                                            if(cmd_list_tmp[k][n] != cmd_list_tmp[0][n]) break;
+                                    if(k == cmd_list_tmp.size()) {
+                                            if(s.size() < n+1) s += cmd_list_tmp[0][n];
+                                    } else break;
+                            }
+                            write(fd, "\r: ", 3); 
+                            write(fd, s.c_str(), s.size());
+                    }
 		    continue;
 	    } else {  // double click
 		    write(fd, "\n\r", 2);
