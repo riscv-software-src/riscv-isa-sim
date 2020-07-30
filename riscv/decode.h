@@ -118,8 +118,8 @@ public:
   uint64_t v_zimm5() { return x(15, 5); }
   uint64_t v_zimm11() { return x(20, 11); }
   uint64_t v_lmul() { return x(20, 2); }
+  uint64_t v_frac_lmul() { return x(22, 1); }
   uint64_t v_sew() { return 1 << (x(23, 3) + 3); }
-  uint64_t v_frac_lmul() { return x(23, 1); }
   uint64_t v_width() { return x(12, 3); }
   uint64_t v_mop() { return x(26, 2); }
   uint64_t v_lumop() { return x(20, 5); }
