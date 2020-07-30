@@ -850,7 +850,7 @@ void sim_t::interactive_csr(const std::string& cmd, const std::vector<std::strin
       }   
       catch(trap_t& t) {}
     }
-    #undef CSR_DECLARE
+    #undef DECLARE_CSR
 
     for (auto r = csr.begin(); r != csr.end(); ++r) {
       fprintf(stderr, "%-14s: 0x%016" PRIx64 "  ", r->first.c_str(), r->second);
