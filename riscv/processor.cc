@@ -142,13 +142,12 @@ void processor_t::parse_varch_string(const char* s)
     bad_varch_string(s, "The integer value should be the power of 2");
   }
 
+  if (slen == 0)
+    slen = vlen;
+
   /* Vector spec requirements. */
   if (vlen < elen)
     bad_varch_string(s, "vlen must be >= elen");
-  if (vlen < slen)
-    bad_varch_string(s, "vlen must be >= slen");
-  if (slen < 32)
-    bad_varch_string(s, "slen must be >= 32");
   if ((unsigned) elen < std::max(max_xlen, get_flen()))
     bad_varch_string(s, "elen must be >= max(xlen, flen)");
   if (vlen != slen)
@@ -160,7 +159,6 @@ void processor_t::parse_varch_string(const char* s)
 
   VU.VLEN = vlen;
   VU.ELEN = elen;
-  VU.SLEN = slen;
   VU.vlenb = vlen / 8;
 }
 
@@ -262,10 +260,6 @@ void processor_t::parse_isa_string(const char* str)
       auto ext_str = std::string(ext, end - ext);
       if (ext_str == "zfh") {
         extension_table[EXT_ZFH] = true;
-      } else if (ext_str == "zvamo") {
-        extension_table[EXT_ZVAMO] = true;
-      } else if (ext_str == "zvlsseg") {
-        extension_table[EXT_ZVLSSEG] = true;
       } else if (ext_str == "zvqmac") {
         extension_table[EXT_ZVQMAC] = true;
       } else {
@@ -293,13 +287,6 @@ void processor_t::parse_isa_string(const char* str)
 
   if (supports_extension('Q') && !supports_extension('D'))
     bad_isa_string(str, "'Q' extension requires 'D'");
-
-  if (supports_extension(EXT_ZVAMO) &&
-      !(supports_extension('A') && supports_extension('V')))
-    bad_isa_string(str, "'Zvamo' extension requires 'A' and 'V'");
-
-  if (supports_extension(EXT_ZVLSSEG) && !supports_extension('V'))
-    bad_isa_string(str, "'Zvlsseg' extension requires 'V'");
 
   if (supports_extension(EXT_ZVQMAC) && !supports_extension('V'))
     bad_isa_string(str, "'Zvqmac' extension requires 'V'");
@@ -385,8 +372,8 @@ void processor_t::vectorUnit_t::reset(){
   free(reg_file);
   VLEN = get_vlen();
   ELEN = get_elen();
-  SLEN = get_slen(); // registers are simply concatenated
-  reg_file = malloc(NVPR * (VLEN/8));
+  reg_file = malloc(NVPR * vlenb);
+  memset(reg_file, 0, NVPR * vlenb);
 
   vtype = 0;
   set_vl(0, 0, 0, -1); // default to illegal configuration
@@ -400,8 +387,6 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
     new_vlmul = int8_t(BITS(newType, 2, 0) << 5) >> 5;
     vflmul = new_vlmul >= 0 ? 1 << new_vlmul : 1.0 / (1 << -new_vlmul);
     vlmax = (VLEN/vsew) * vflmul;
-    vemul = vflmul;
-    veew = vsew;
     vta = BITS(newType, 6, 6);
     vma = BITS(newType, 7, 7);
     vediv = 1 << BITS(newType, 9, 8);

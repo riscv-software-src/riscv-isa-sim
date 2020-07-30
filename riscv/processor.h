@@ -246,9 +246,7 @@ typedef enum {
 typedef enum {
   // 65('A') ~ 90('Z') is reserved for standard isa in misa
   EXT_ZFH   = 0,
-  EXT_ZVAMO,
   EXT_ZVEDIV,
-  EXT_ZVLSSEG,
   EXT_ZVQMAC,
 } isa_extension_t;
 
@@ -476,11 +474,8 @@ public:
       reg_t vstart, vxrm, vxsat, vl, vtype, vlenb;
       reg_t vma, vta;
       reg_t vediv, vsew;
-      reg_t veew;
-      float vemul;
       float vflmul;
-      reg_t vmel;
-      reg_t ELEN, VLEN, SLEN;
+      reg_t ELEN, VLEN;
       bool vill;
 
       // vector element for varies SEW
@@ -523,7 +518,7 @@ public:
 
       reg_t get_vlen() { return VLEN; }
       reg_t get_elen() { return ELEN; }
-      reg_t get_slen() { return SLEN; }
+      reg_t get_slen() { return VLEN; }
 
       VRM get_vround_mode() {
         return (VRM)vxrm;

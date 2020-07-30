@@ -472,6 +472,7 @@ riscv_insn_ext_v_alu_int = \
 	vrgather_vi \
 	vrgather_vv \
 	vrgather_vx \
+	vrgatherei16_vv \
 	vrsub_vi \
 	vrsub_vx \
 	vsadd_vi \
@@ -655,42 +656,42 @@ riscv_insn_ext_v_alu_fp = \
 	vmfne_vv \
 
 riscv_insn_ext_v_amo = \
-	vamoswape8_v \
-	vamoadde8_v \
-	vamoande8_v \
-	vamomaxe8_v \
-	vamomaxue8_v \
-	vamomine8_v \
-	vamominue8_v \
-	vamoore8_v \
-	vamoxore8_v \
-	vamoswape16_v \
-	vamoadde16_v \
-	vamoande16_v \
-	vamomaxe16_v \
-	vamomaxue16_v \
-	vamomine16_v \
-	vamominue16_v \
-	vamoore16_v \
-	vamoxore16_v \
-	vamoswape32_v \
-	vamoadde32_v \
-	vamoande32_v \
-	vamomaxe32_v \
-	vamomaxue32_v \
-	vamomine32_v \
-	vamominue32_v \
-	vamoore32_v \
-	vamoxore32_v \
-	vamoswape64_v \
-	vamoadde64_v \
-	vamoande64_v \
-	vamomaxe64_v \
-	vamomaxue64_v \
-	vamomine64_v \
-	vamominue64_v \
-	vamoore64_v \
-	vamoxore64_v \
+	vamoswapei8_v \
+	vamoaddei8_v \
+	vamoandei8_v \
+	vamomaxei8_v \
+	vamomaxuei8_v \
+	vamominei8_v \
+	vamominuei8_v \
+	vamoorei8_v \
+	vamoxorei8_v \
+	vamoswapei16_v \
+	vamoaddei16_v \
+	vamoandei16_v \
+	vamomaxei16_v \
+	vamomaxuei16_v \
+	vamominei16_v \
+	vamominuei16_v \
+	vamoorei16_v \
+	vamoxorei16_v \
+	vamoswapei32_v \
+	vamoaddei32_v \
+	vamoandei32_v \
+	vamomaxei32_v \
+	vamomaxuei32_v \
+	vamominei32_v \
+	vamominuei32_v \
+	vamoorei32_v \
+	vamoxorei32_v \
+	vamoswapei64_v \
+	vamoaddei64_v \
+	vamoandei64_v \
+	vamomaxei64_v \
+	vamomaxuei64_v \
+	vamominei64_v \
+	vamominuei64_v \
+	vamoorei64_v \
+	vamoxorei64_v \
 
 riscv_insn_ext_v_ldst = \
 	vle8_v \
@@ -709,6 +710,22 @@ riscv_insn_ext_v_ldst = \
 	vle16ff_v \
 	vle32ff_v \
 	vle64ff_v \
+	vl1re8_v \
+	vl2re8_v \
+	vl4re8_v \
+	vl8re8_v \
+	vl1re16_v \
+	vl2re16_v \
+	vl4re16_v \
+	vl8re16_v \
+	vl1re32_v \
+	vl2re32_v \
+	vl4re32_v \
+	vl8re32_v \
+	vl1re64_v \
+	vl2re64_v \
+	vl4re64_v \
+	vl8re64_v \
 	vse8_v \
 	vse16_v \
 	vse32_v \
@@ -725,8 +742,10 @@ riscv_insn_ext_v_ldst = \
 	vsuxei16_v \
 	vsuxei32_v \
 	vsuxei64_v \
-	vl1r_v \
 	vs1r_v \
+	vs2r_v \
+	vs4r_v \
+	vs8r_v \
 
 riscv_insn_ext_v_ctrl = \
 	vsetvli \
