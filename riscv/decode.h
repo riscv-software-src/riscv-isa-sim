@@ -484,13 +484,12 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_CHECK_ST_INDEX(elt_width) \
   require_vector; \
-  P.VU.veew = elt_width; \
-  P.VU.vemul = ((float)P.VU.veew / P.VU.vsew * P.VU.vflmul); \
-  require(P.VU.vemul >= 0.125 && P.VU.vemul <= 8); \
-  reg_t emul = P.VU.vemul < 1 ? 1 : P.VU.vemul; \
+  float vemul = ((float)elt_width / P.VU.vsew * P.VU.vflmul); \
+  require(vemul >= 0.125 && vemul <= 8); \
+  reg_t emul = vemul < 1 ? 1 : vemul; \
   reg_t flmul = P.VU.vflmul < 1 ? 1 : P.VU.vflmul; \
   require_align(insn.rd(), P.VU.vflmul); \
-  require_align(insn.rs2(), P.VU.vemul); \
+  require_align(insn.rs2(), vemul); \
   require((nf * flmul) <= (NVPR / 4) && \
           (insn.rd() + nf * flmul) <= NVPR); \
   if (nf > 1) \
@@ -498,18 +497,18 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_CHECK_LD_INDEX(elt_width) \
   VI_CHECK_ST_INDEX(elt_width); \
-  if (P.VU.veew > P.VU.vsew) { \
+  if (elt_width > P.VU.vsew) { \
     if (insn.rd() != insn.rs2()) \
-      require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
-  } else if (P.VU.veew < P.VU.vsew) { \
-    if (P.VU.vemul < 1) {\
-      require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+      require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), vemul); \
+  } else if (elt_width < P.VU.vsew) { \
+    if (vemul < 1) {\
+      require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), vemul); \
     } else {\
-      require_noover_widen(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+      require_noover_widen(insn.rd(), P.VU.vflmul, insn.rs2(), vemul); \
     } \
   } \
   if (insn.v_nf() > 0) {\
-    require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+    require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), vemul); \
     require_noover(vd, nf, insn.rs2(), 1); \
   } \
   require_vm; \
@@ -536,11 +535,11 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_CHECK_STORE(elt_width) \
   require_vector; \
-  P.VU.veew = sizeof(elt_width##_t) * 8; \
-  P.VU.vemul = ((float)P.VU.veew / P.VU.vsew * P.VU.vflmul); \
-  reg_t emul = P.VU.vemul < 1 ? 1 : P.VU.vemul; \
-  require(P.VU.vemul >= 0.125 && P.VU.vemul <= 8); \
-  require_align(insn.rd(), P.VU.vemul); \
+  reg_t veew = sizeof(elt_width##_t) * 8; \
+  float vemul = ((float)veew / P.VU.vsew * P.VU.vflmul); \
+  reg_t emul = vemul < 1 ? 1 : vemul; \
+  require(vemul >= 0.125 && vemul <= 8); \
+  require_align(insn.rd(), vemul); \
   require((nf * emul) <= (NVPR / 4) && \
           (insn.rd() + nf * emul) <= NVPR); \
   if (nf > 1) \
@@ -1822,20 +1821,19 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   require_align(insn.rd(), P.VU.vflmul); \
   require(P.VU.vsew <= P.get_xlen() && P.VU.vsew >= 32); \
   require_align(insn.rd(), P.VU.vflmul); \
-  P.VU.veew = idx_type; \
-  P.VU.vemul = ((float)P.VU.veew / P.VU.vsew * P.VU.vflmul); \
-  require(P.VU.vemul >= 0.125 && P.VU.vemul <= 8); \
-  require_align(insn.rs2(), P.VU.vemul); \
+  float vemul = ((float)idx_type / P.VU.vsew * P.VU.vflmul); \
+  require(vemul >= 0.125 && vemul <= 8); \
+  require_align(insn.rs2(), vemul); \
   if (insn.v_wd()) {\
     require_vm; \
-    if (P.VU.veew > P.VU.vsew) { \
+    if (idx_type > P.VU.vsew) { \
       if (insn.rd() != insn.rs2()) \
-        require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
-    } else if (P.VU.veew < P.VU.vsew) { \
-      if (P.VU.vemul < 1) {\
-        require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+        require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), vemul); \
+    } else if (idx_type < P.VU.vsew) { \
+      if (vemul < 1) {\
+        require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), vemul); \
       } else {\
-        require_noover_widen(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vemul); \
+        require_noover_widen(insn.rd(), P.VU.vflmul, insn.rs2(), vemul); \
       } \
     } \
   } \
