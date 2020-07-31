@@ -148,6 +148,7 @@ std::string sim_t::readline(int fd)
 						    while(flush_ch--) write(fd, " ", 1);
 						    write(fd, "\r: ", 3);
 						    write(fd, s.c_str(), s.size());
+						    cur_pos = 0;
 					    }
 					    break;
 				    case 'B':  // down
@@ -161,6 +162,7 @@ std::string sim_t::readline(int fd)
 						    while(flush_ch--) write(fd, " ", 1);
 						    write(fd, "\r: ", 3);
 						    write(fd, s.c_str(), s.size());
+						    cur_pos = 0;
 					    }
 					    break;
 				    case 'C':  // right
