@@ -75,9 +75,11 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
       exit(1);
   }
 
+  const char* hart_isa[5] = {"rv64imac",  "rv64imafdc", "rv64imafdc", "rv64imafdc", "rv64imafdc"};
+  const char* hart_priv[5] = {"m", "mu", "msu", "msu", "msu"};
   for (size_t i = 0; i < nprocs; i++) {
     int hart_id = hartids.empty() ? i : hartids[i];
-    procs[i] = new processor_t(isa, priv, varch, this, hart_id, halted,
+    procs[i] = new processor_t(hart_isa[hart_id], hart_priv[hart_id], varch, this, hart_id, halted,
                                log_file.get());
   }
 
