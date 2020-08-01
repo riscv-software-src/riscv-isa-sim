@@ -51,6 +51,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
     s << "    CPU" << i << ": cpu@" << i << " {\n"
          "      device_type = \"cpu\";\n"
          "      reg = <" << i << ">;\n"
+         "      reservation-set-size = <64>;\n"
          "      status = \"okay\";\n"
          "      compatible = \"riscv\";\n"
          "      riscv,isa = \"" << procs[i]->get_isa_string() << "\";\n"
@@ -180,7 +181,6 @@ std::string dts_compile(const std::string& dts)
   return dtb.str();
 }
 
-
 static int fdt_get_node_addr_size(void *fdt, int node, reg_t *addr,
                                   unsigned long *size, const char *field)
 {
@@ -252,6 +252,23 @@ int fdt_parse_pmp_num(void *fdt, reg_t *pmp_num, const char *compatible)
   rc = fdt_get_node_addr_size(fdt, nodeoffset, pmp_num, NULL,
                               "riscv,pmpregions");
   if (rc < 0 || !pmp_num)
+    return -ENODEV;
+
+  return 0;
+}
+
+int fdt_parse_reservation_set_size(void *fdt, reg_t *reservation_set_size,
+                                   const char *compatible)
+{
+  int nodeoffset, rc;
+
+  nodeoffset = fdt_node_offset_by_compatible(fdt, -1, compatible);
+  if (nodeoffset < 0)
+    return nodeoffset;
+
+  rc = fdt_get_node_addr_size(fdt, nodeoffset, reservation_set_size, NULL,
+                              "reservation-set-size");
+  if (rc < 0 || !reservation_set_size)
     return -ENODEV;
 
   return 0;

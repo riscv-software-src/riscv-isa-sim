@@ -99,6 +99,11 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     procs[i]->set_pmp_num(pmp_num);
     procs[i]->set_pmp_granularity(pmp_granularity);
   }
+  
+  reg_t reservation_set_size = 0;
+  fdt_parse_reservation_set_size((void *)dtb.c_str(), &reservation_set_size, "riscv");
+  set_reservation_set_size(reservation_set_size);
+
 }
 
 sim_t::~sim_t()

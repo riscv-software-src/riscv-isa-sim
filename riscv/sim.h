@@ -57,6 +57,17 @@ public:
   // Callback for processors to let the simulation know they were reset.
   void proc_reset(unsigned id);
 
+  std::map<reg_t, reservation> reservation_set;
+  reg_t reservation_set_size;
+
+  void set_reservation_set_size(reg_t set_size) {
+      if(set_size == 0) {
+          reservation_set_size = 1;
+      } else {
+          reservation_set_size = set_size;
+      }
+  }
+
 private:
   std::vector<std::pair<reg_t, mem_t*>> mems;
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
@@ -137,6 +148,8 @@ private:
   size_t chunk_align() { return 8; }
   size_t chunk_max_size() { return 8; }
 
+  std::map<reg_t, reservation>& get_reservation_set() { return reservation_set; }
+  reg_t get_reservation_set_size() { return reservation_set_size; }
 public:
   // Initialize this after procs, because in debug_module_t::reset() we
   // enumerate processors, which segfaults if procs hasn't been initialized

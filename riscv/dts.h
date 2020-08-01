@@ -20,4 +20,6 @@ int fdt_parse_pmp_num(void *fdt, reg_t *pmp_num,
                       const char *compatible);
 int fdt_parse_pmp_alignment(void *fdt, reg_t *pmp_align,
                             const char *compatible);
+int fdt_parse_reservation_set_size(void *fdt, reg_t *reservation_set_size,
+                                   const char *compatible);
 #endif
