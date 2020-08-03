@@ -1842,11 +1842,11 @@
 #define MASK_VMVNFR_V  0xfe00707f
 #define MATCH_VL1R_V 0x2800007
 #define MASK_VL1R_V  0xfff0707f
-#define MATCH_VL2R_V 0x2805007
+#define MATCH_VL2R_V 0x6805007
 #define MASK_VL2R_V  0xfff0707f
-#define MATCH_VL4R_V 0x2806007
+#define MATCH_VL4R_V 0xe806007
 #define MASK_VL4R_V  0xfff0707f
-#define MATCH_VL8R_V 0x2807007
+#define MATCH_VL8R_V 0x1e807007
 #define MASK_VL8R_V  0xfff0707f
 #define CSR_FFLAGS 0x1
 #define CSR_FRM 0x2
