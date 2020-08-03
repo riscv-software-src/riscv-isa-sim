@@ -240,18 +240,22 @@ private:
 #define require_accelerator require((STATE.mstatus & MSTATUS_XS) != 0)
 
 #define require_vector_vs require((STATE.mstatus & MSTATUS_VS) != 0);
-#define require_vector \
+#define require_vector(alu) \
   do { \
     require_vector_vs; \
     require_extension('V'); \
     require(!P.VU.vill); \
+    if (alu && !P.VU.vstart_alu) \
+      require(P.VU.vstart == 0); \
     WRITE_VSTATUS; \
     dirty_vs_state; \
   } while (0);
-#define require_vector_novtype(is_log) \
+#define require_vector_novtype(is_log, alu) \
   do {  \
     require_vector_vs; \
     require_extension('V'); \
+    if (alu && !P.VU.vstart_alu) \
+      require(P.VU.vstart == 0); \
     if (is_log) \
       WRITE_VSTATUS; \
     dirty_vs_state; \
@@ -468,7 +472,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 }
 
 #define VI_NARROW_CHECK_COMMON \
-  require_vector;\
+  require_vector(true);\
   require(P.VU.vflmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
   require_align(insn.rs2(), P.VU.vflmul * 2); \
@@ -476,14 +480,14 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require_vm; \
 
 #define VI_WIDE_CHECK_COMMON \
-  require_vector;\
+  require_vector(true);\
   require(P.VU.vflmul <= 4); \
   require(P.VU.vsew * 2 <= P.VU.ELEN); \
   require_align(insn.rd(), P.VU.vflmul * 2); \
   require_vm; \
 
 #define VI_CHECK_ST_INDEX(elt_width) \
-  require_vector; \
+  require_vector(false); \
   float vemul = ((float)elt_width / P.VU.vsew * P.VU.vflmul); \
   require(vemul >= 0.125 && vemul <= 8); \
   reg_t emul = vemul < 1 ? 1 : vemul; \
@@ -532,7 +536,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   }
 
 #define VI_CHECK_STORE(elt_width) \
-  require_vector; \
+  require_vector(false); \
   reg_t veew = sizeof(elt_width##_t) * 8; \
   float vemul = ((float)veew / P.VU.vsew * P.VU.vflmul); \
   reg_t emul = vemul < 1 ? 1 : vemul; \
@@ -563,7 +567,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   }
 
 #define VI_CHECK_QSS(is_vs1) \
-  require_vector;\
+  require_vector(true);\
   p->supports_extension(EXT_ZVQMAC); \
   require(P.VU.vflmul <= 2); \
   require(P.VU.vsew * 4 <= P.VU.ELEN); \
@@ -604,7 +608,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
     require_align(insn.rs1(), P.VU.vflmul); \
 
 #define VI_CHECK_REDUCTION(is_wide) \
-  require_vector;\
+  require_vector(true);\
   if (is_wide) {\
     require(P.VU.vsew * 2 <= P.VU.ELEN); \
   } \
@@ -624,7 +628,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 //
 #define VI_GENERAL_LOOP_BASE \
   require(P.VU.vsew >= e8 && P.VU.vsew <= e64); \
-  require_vector;\
+  require_vector(true);\
   reg_t vl = P.VU.vl; \
   reg_t sew = P.VU.vsew; \
   reg_t rd_num = insn.rd(); \
@@ -649,7 +653,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_LOOP_CMP_BASE \
   require(P.VU.vsew >= e8 && P.VU.vsew <= e64); \
-  require_vector;\
+  require_vector(true);\
   reg_t vl = P.VU.vl; \
   reg_t sew = P.VU.vsew; \
   reg_t rd_num = insn.rd(); \
@@ -668,7 +672,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_LOOP_MASK(op) \
   require(P.VU.vsew <= e64); \
-  require_vector;\
+  require_vector(true);\
   reg_t vl = P.VU.vl; \
   for (reg_t i = P.VU.vstart; i < vl; ++i) { \
     int midx = i / 64; \
@@ -1749,7 +1753,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   p->VU.vstart = 0;
 
 #define VI_LD_WHOLE(elt_width) \
-  require_vector_novtype(true); \
+  require_vector_novtype(true, false); \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
   const reg_t len = insn.v_nf() + 1; \
@@ -1780,7 +1784,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   P.VU.vstart = 0; \
 
 #define VI_ST_WHOLE \
-  require_vector_novtype(true); \
+  require_vector_novtype(true, false); \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
   const reg_t len = insn.v_nf() + 1; \
@@ -1812,7 +1816,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 // vector: amo 
 //
 #define VI_AMO(op, type, idx_type) \
-  require_vector; \
+  require_vector(false); \
   require_align(insn.rd(), P.VU.vflmul); \
   require(P.VU.vsew <= P.get_xlen() && P.VU.vsew >= 32); \
   require_align(insn.rd(), P.VU.vflmul); \
@@ -1912,7 +1916,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   require((P.VU.vsew == e16 && p->supports_extension(EXT_ZFH)) || \
           (P.VU.vsew == e32 && p->supports_extension('F')) || \
           (P.VU.vsew == e64 && p->supports_extension('D'))); \
-  require_vector;\
+  require_vector(true);\
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -2295,7 +2299,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_VFP_LOOP_SCALE_BASE \
   require_fp; \
-  require_vector;\
+  require_vector(true);\
   require((P.VU.vsew == e8 && p->supports_extension(EXT_ZFH)) || \
           (P.VU.vsew == e16 && p->supports_extension('F')) || \
           (P.VU.vsew == e32 && p->supports_extension('D'))); \

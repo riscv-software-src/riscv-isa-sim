@@ -119,6 +119,7 @@ void processor_t::parse_varch_string(const char* s)
   int vlen = 0;
   int elen = 0;
   int slen = 0;
+  int vstart_alu = 1;
 
   while (pos < len) {
     std::string attr = get_string_token(str, ':', pos);
@@ -131,6 +132,8 @@ void processor_t::parse_varch_string(const char* s)
       slen = get_int_token(str, ',', pos);
     else if (attr == "elen")
       elen = get_int_token(str, ',', pos);
+    else if (attr == "vstartalu")
+      vstart_alu = get_int_token(str, ',', pos);
     else
       bad_varch_string(s, "Unsupported token");
 
@@ -159,6 +162,7 @@ void processor_t::parse_varch_string(const char* s)
   VU.VLEN = vlen;
   VU.ELEN = elen;
   VU.vlenb = vlen / 8;
+  VU.vstart_alu = vstart_alu;
 }
 
 static std::string strtolower(const char* str)

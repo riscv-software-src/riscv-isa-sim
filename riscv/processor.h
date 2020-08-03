@@ -477,6 +477,7 @@ public:
       float vflmul;
       reg_t ELEN, VLEN;
       bool vill;
+      bool vstart_alu;
 
       // vector element for varies SEW
       template<class T>

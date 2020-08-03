@@ -1,6 +1,6 @@
 // vmfirst rd, vs2
 require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
-require_vector;
+require_vector(true);
 reg_t vl = P.VU.vl;
 reg_t sew = P.VU.vsew;
 reg_t rd_num = insn.rd();
