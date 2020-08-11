@@ -48,6 +48,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --extlib=<name>       Shared library to load\n");
   fprintf(stderr, "                        This flag can be used multiple times.\n");
   fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
+  fprintf(stderr, "  --rbb-unix-socket=<path> Listen on <path> unix socket for remote bitbang connection\n");
   fprintf(stderr, "  --dump-dts            Print device tree string and exit\n");
   fprintf(stderr, "  --disable-dtb         Don't write the device tree blob into memory\n");
   fprintf(stderr, "  --kernel=<path>       Load kernel flat image into memory\n");
@@ -213,6 +214,8 @@ int main(int argc, char** argv)
   const char* dtb_file = NULL;
   uint16_t rbb_port = 0;
   bool use_rbb = false;
+  bool use_rbb_unix_socket = false;
+  std::string rbb_unix_socket;
   unsigned dmi_rti = 0;
   debug_module_config_t dm_config = {
     .progbufsize = 2,
@@ -291,6 +294,7 @@ int main(int argc, char** argv)
   // I wanted to use --halted, but for some reason that doesn't work.
   parser.option('H', 0, 0, [&](const char* s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoi(s);});
+  parser.option(0, "rbb-unix-socket", 1, [&](const char* s){use_rbb_unix_socket  = true; rbb_unix_socket = s;});
   parser.option(0, "pc", 1, [&](const char* s){start_pc = strtoull(s, 0, 0);});
   parser.option(0, "hartids", 1, hartids_parser);
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
@@ -379,6 +383,9 @@ int main(int argc, char** argv)
       new jtag_dtm_t(&s.debug_module, dmi_rti));
   if (use_rbb) {
     remote_bitbang.reset(new remote_bitbang_t(rbb_port, &(*jtag_dtm)));
+    s.set_remote_bitbang(&(*remote_bitbang));
+  } else if (use_rbb_unix_socket) {
+    remote_bitbang.reset(new remote_bitbang_t(rbb_unix_socket.c_str(), &(*jtag_dtm)));
     s.set_remote_bitbang(&(*remote_bitbang));
   }
 

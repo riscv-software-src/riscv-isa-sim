@@ -5,6 +5,8 @@
 #include <string.h>
 #include <unistd.h>
 
+#include <sys/un.h>
+
 #ifndef AF_INET
 #include <sys/socket.h>
 #endif
@@ -76,6 +78,57 @@ remote_bitbang_t::remote_bitbang_t(uint16_t port, jtag_dtm_t *tap) :
 
   printf("Listening for remote bitbang connection on port %d.\n",
       ntohs(addr.sin_port));
+  fflush(stdout);
+}
+
+remote_bitbang_t::remote_bitbang_t(const char *unix_socket_addr, jtag_dtm_t *tap) :
+  tap(tap),
+  socket_fd(0),
+  client_fd(0),
+  recv_start(0),
+  recv_end(0)
+{
+  socket_fd = socket(AF_UNIX, SOCK_STREAM, 0);
+  if (socket_fd == -1) {
+    fprintf(stderr, "remote_bitbang failed to make unix socket: %s (%d)\n",
+        strerror(errno), errno);
+    abort();
+  }
+
+  fcntl(socket_fd, F_SETFL, O_NONBLOCK);
+  int reuseaddr = 1;
+  if (setsockopt(socket_fd, SOL_SOCKET, SO_REUSEADDR, &reuseaddr,
+        sizeof(int)) == -1) {
+    fprintf(stderr, "remote_bitbang failed setsockopt: %s (%d)\n",
+        strerror(errno), errno);
+    abort();
+  }
+
+  struct sockaddr_un addr;
+  memset(&addr, 0, sizeof(addr));
+  addr.sun_family = AF_UNIX;
+  if (strlen(unix_socket_addr) > sizeof(addr.sun_path) - 1) {
+    fprintf(stderr, "remote_bitbang unix socket address is too long!\n");
+    abort();
+  }
+  strcpy(addr.sun_path, unix_socket_addr);
+  int servlen=strlen(addr.sun_path) +
+                     sizeof(addr.sun_family);
+
+  if (bind(socket_fd,(struct sockaddr *)&addr,servlen) < 0) {
+    fprintf(stderr, "remote_bitbang failed to bind unix socket: %s (%d)\n",
+        strerror(errno), errno);
+    abort();
+  }
+
+  if (listen(socket_fd, 1) == -1) {
+    fprintf(stderr, "remote_bitbang failed to listen on socket: %s (%d)\n",
+        strerror(errno), errno);
+    abort();
+  }
+
+  printf("Listening for remote bitbang connection on unix socket: %s\n",
+      unix_socket_addr);
   fflush(stdout);
 }
 
