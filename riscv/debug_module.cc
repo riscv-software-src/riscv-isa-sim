@@ -34,7 +34,7 @@ static unsigned field_width(unsigned n)
 debug_module_t::debug_module_t(sim_t *sim, const debug_module_config_t &config) :
   nprocs(sim->nprocs()),
   config(config),
-  program_buffer_bytes(4 + 4*config.progbufsize),
+  program_buffer_bytes(config.support_impebreak ? 4 : 0 + 4*config.progbufsize),
   debug_progbuf_start(debug_data_start - program_buffer_bytes),
   debug_abstract_start(debug_progbuf_start - debug_abstract_size*4),
   custom_base(0),
@@ -56,11 +56,14 @@ debug_module_t::debug_module_t(sim_t *sim, const debug_module_config_t &config) 
 
   memset(debug_rom_flags, 0, sizeof(debug_rom_flags));
   memset(program_buffer, 0, program_buffer_bytes);
-  program_buffer[4*config.progbufsize] = ebreak();
-  program_buffer[4*config.progbufsize+1] = ebreak() >> 8;
-  program_buffer[4*config.progbufsize+2] = ebreak() >> 16;
-  program_buffer[4*config.progbufsize+3] = ebreak() >> 24;
   memset(dmdata, 0, sizeof(dmdata));
+
+  if (config.support_impebreak) {
+    program_buffer[4*config.progbufsize] = ebreak();
+    program_buffer[4*config.progbufsize+1] = ebreak() >> 8;
+    program_buffer[4*config.progbufsize+2] = ebreak() >> 16;
+    program_buffer[4*config.progbufsize+3] = ebreak() >> 24;
+  }
 
   write32(debug_rom_whereto, 0,
           jal(ZERO, debug_abstract_start - DEBUG_ROM_WHERETO));
@@ -87,7 +90,7 @@ void debug_module_t::reset()
   dmcontrol = {0};
 
   dmstatus = {0};
-  dmstatus.impebreak = true;
+  dmstatus.impebreak = config.support_impebreak;
   dmstatus.authenticated = !config.require_authentication;
   dmstatus.version = 2;
 

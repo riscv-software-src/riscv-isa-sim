@@ -65,6 +65,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --dm-no-hasel         Debug module supports hasel\n");
   fprintf(stderr, "  --dm-no-abstract-csr  Debug module won't support abstract to authenticate\n");
   fprintf(stderr, "  --dm-no-halt-groups   Debug module won't support halt groups\n");
+  fprintf(stderr, "  --dm-no-impebreak     Debug module won't support implicit ebreak in program buffer\n");
 
   exit(exit_code);
 }
@@ -181,7 +182,8 @@ int main(int argc, char** argv)
     .abstract_rti = 0,
     .support_hasel = true,
     .support_abstract_csr_access = true,
-    .support_haltgroups = true
+    .support_haltgroups = true,
+    .support_impebreak = true
   };
   std::vector<int> hartids;
 
@@ -278,6 +280,8 @@ int main(int argc, char** argv)
   });
   parser.option(0, "dm-progsize", 1,
       [&](const char* s){dm_config.progbufsize = atoi(s);});
+  parser.option(0, "dm-no-impebreak", 0,
+      [&](const char* s){dm_config.support_impebreak = false;});
   parser.option(0, "dm-sba", 1,
       [&](const char* s){dm_config.max_bus_master_bits = atoi(s);});
   parser.option(0, "dm-auth", 0,
