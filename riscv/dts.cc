@@ -94,6 +94,11 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "  htif {\n"
          "    compatible = \"ucb,htif0\";\n"
          "  };\n"
+         "  vblock@10000000 {\n"
+         "    compatible = \"plct,vblock\";\n"
+         "    reg = <0x0 0x10000000 0x0 0xA00000>;\n"
+         "    len = <0x5000>;\n"
+         "  };\n"
          "};\n";
   return s.str();
 }
