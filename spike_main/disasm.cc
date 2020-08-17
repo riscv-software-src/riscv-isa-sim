@@ -950,10 +950,6 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_S___INSN(vwredsum,  1);
   DISASM_OPIV_V___INSN(vdotu,     0);
   DISASM_OPIV_V___INSN(vdot,      1);
-  DISASM_OPIV_VX__INSN(vqmaccu,   0);
-  DISASM_OPIV_VX__INSN(vqmacc,    1);
-  DISASM_OPIV__X__INSN(vqmaccus,  1);
-  DISASM_OPIV_VX__INSN(vqmaccsu,  0);
 
   //OPMVV/OPMVX
   //0b00_0000
