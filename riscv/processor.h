@@ -85,10 +85,6 @@ typedef struct
   bool load;
 } mcontrol_t;
 
-inline reg_t BITS(reg_t v, int hi, int lo){
-  return (v >> lo) & ((2 << (hi - lo)) - 1);
-}
-
 enum VRM{
   RNU = 0,
   RNE,
