@@ -3,6 +3,7 @@
 #ifndef _RISCV_ARITH_H
 #define _RISCV_ARITH_H
 
+#include <cassert>
 #include <cstdint>
 #include <climits>
 
@@ -108,4 +109,15 @@ T sat_subu(T x, T y, bool &sat)
   return res;
 }
 
+static inline uint64_t extract64(uint64_t val, int pos, int len)
+{
+  assert(pos >= 0 && len > 0 && len <= 64 - pos);
+  return (val >> pos) & (~UINT64_C(0) >> (64 - len));
+}
+
+static inline uint64_t make_mask64(int pos, int len)
+{
+    assert(pos >= 0 && len > 0 && pos < 64 && len <= 64);
+    return (UINT64_MAX >> (64 - len)) << pos;
+}
 #endif

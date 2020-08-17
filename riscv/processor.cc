@@ -1,5 +1,6 @@
 // See LICENSE for license details.
 
+#include "arith.h"
 #include "processor.h"
 #include "extension.h"
 #include "common.h"
@@ -382,13 +383,13 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
   int new_vlmul = 0;
   if (vtype != newType){
     vtype = newType;
-    vsew = 1 << (BITS(newType, 5, 3) + 3);
-    new_vlmul = int8_t(BITS(newType, 2, 0) << 5) >> 5;
+    vsew = 1 << (extract64(newType, 3, 3) + 3);
+    new_vlmul = int8_t(extract64(newType, 0, 3) << 5) >> 5;
     vflmul = new_vlmul >= 0 ? 1 << new_vlmul : 1.0 / (1 << -new_vlmul);
     vlmax = (VLEN/vsew) * vflmul;
-    vta = BITS(newType, 6, 6);
-    vma = BITS(newType, 7, 7);
-    vediv = 1 << BITS(newType, 9, 8);
+    vta = extract64(newType, 6, 1);
+    vma = extract64(newType, 7, 1);
+    vediv = 1 << extract64(newType, 8, 2);
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
            || vsew > ELEN
