@@ -34,7 +34,7 @@ static unsigned field_width(unsigned n)
 debug_module_t::debug_module_t(sim_t *sim, const debug_module_config_t &config) :
   nprocs(sim->nprocs()),
   config(config),
-  program_buffer_bytes(config.support_impebreak ? 4 : 0 + 4*config.progbufsize),
+  program_buffer_bytes((config.support_impebreak ? 4 : 0) + 4*config.progbufsize),
   debug_progbuf_start(debug_data_start - program_buffer_bytes),
   debug_abstract_start(debug_progbuf_start - debug_abstract_size*4),
   custom_base(0),
