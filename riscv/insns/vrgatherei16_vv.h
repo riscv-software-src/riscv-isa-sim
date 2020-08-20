@@ -4,7 +4,8 @@ require(vemul >= 0.125 && vemul <= 8);
 require_align(insn.rd(), P.VU.vflmul);
 require_align(insn.rs2(), P.VU.vflmul);
 require_align(insn.rs1(), vemul);
-require(insn.rd() != insn.rs2() && insn.rd() != insn.rs1());
+require_noover(insn.rd(), P.VU.vflmul, insn.rs1(), vemul);
+require(insn.rd() != insn.rs2());
 require_vm;
 
 VI_LOOP_BASE
