@@ -2313,12 +2313,13 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     VI_LOOP_ELEMENT_SKIP();
 
-#define VI_VFP_CVT_SCALE(BODY8, BODY16, BODY32, is_widen) \
+#define VI_VFP_CVT_SCALE(BODY8, BODY16, BODY32, is_widen, eew_check) \
   if (is_widen) { \
     VI_CHECK_DSS(false);\
   } else { \
     VI_CHECK_SDS(false); \
   } \
+  require(eew_check); \
   switch(P.VU.vsew) { \
     case e8: {\
       VI_VFP_LOOP_SCALE_BASE \
