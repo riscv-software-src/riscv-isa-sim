@@ -179,6 +179,8 @@ bool f16_le_quiet( float16_t, float16_t );
 bool f16_lt_quiet( float16_t, float16_t );
 bool f16_isSignalingNaN( float16_t );
 uint_fast16_t f16_classify( float16_t );
+float16_t f16_rsqrte( float16_t, int  );
+float16_t f16_recip( float16_t, int );
 
 /*----------------------------------------------------------------------------
 | 32-bit (single-precision) floating-point operations.
@@ -219,6 +221,8 @@ bool f32_le_quiet( float32_t, float32_t );
 bool f32_lt_quiet( float32_t, float32_t );
 bool f32_isSignalingNaN( float32_t );
 uint_fast16_t f32_classify( float32_t );
+float32_t f32_rsqrte( float32_t, int );
+float32_t f32_recip( float32_t, int );
 
 /*----------------------------------------------------------------------------
 | 64-bit (double-precision) floating-point operations.
@@ -257,6 +261,8 @@ bool f64_le_quiet( float64_t, float64_t );
 bool f64_lt_quiet( float64_t, float64_t );
 bool f64_isSignalingNaN( float64_t );
 uint_fast16_t f64_classify( float64_t );
+float64_t f64_rsqrte( float64_t, int );
+float64_t f64_recip( float64_t, int );
 
 /*----------------------------------------------------------------------------
 | Rounding precision for 80-bit extended double-precision floating-point.
