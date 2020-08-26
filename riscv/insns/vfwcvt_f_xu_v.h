@@ -11,4 +11,4 @@ VI_VFP_CVT_SCALE
 {
   auto vs2 = P.VU.elt<uint32_t>(rs2_num, i);
   P.VU.elt<float64_t>(rd_num, i, true) = ui32_to_f64(vs2);
-}, true)
+}, true, (P.VU.vsew >= 8))
