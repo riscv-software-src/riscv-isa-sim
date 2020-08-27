@@ -795,17 +795,24 @@ disassembler_t::disassembler_t(int xlen)
       }
     }
 
+    //handle whole register load
+    if (elt >= 4)
+        continue;
+
     const custom_fmt_t template_insn2[] = {
       {match_vl1re8_v,   mask_vl1re8_v,   "vl%dre%d.v",   v_ld_unit},
     };
 
-    for (reg_t i = 0, nf = 7; nf < 4; i++, nf >>= 1) {
-      for (auto item : template_insn) {
+    for (reg_t i = 0, nf = 7; i < 4; i++, nf >>= 1) {
+      for (auto item : template_insn2) {
         const reg_t match_nf = nf << 29;
         char buf[128];
         sprintf(buf, item.fmt, nf + 1, 8 << elt);
         add_insn(new disasm_insn_t(
-          buf, item.match | match_nf, item.mask | mask_nf, item.arg
+          buf,
+          item.match | match_nf | elt_map[elt],
+          item.mask | mask_nf,
+          item.arg
         ));
       }
     }
