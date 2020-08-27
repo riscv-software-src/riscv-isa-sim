@@ -1,5 +1,5 @@
 // vsqrt.v vd, vd2, vm
-VI_VFP_VV_LOOP
+VI_VFP_V_LOOP
 ({
   vd = f16_sqrt(vs2);
 },
