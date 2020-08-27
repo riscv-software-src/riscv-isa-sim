@@ -1367,6 +1367,7 @@ reg_t processor_t::get_csr(int which)
         break;
       return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
     case CSR_VCSR:
+      require_vector_vs;
       if (!supports_extension('V'))
         break;
       return (VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT);
