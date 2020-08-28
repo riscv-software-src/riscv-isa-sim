@@ -55,12 +55,13 @@ static inline uint64_t make_mask64(int pos, int len)
 }
 
 //user needs to truncate output to required length
-static inline uint64_t rsqrte(uint64_t val, int e, int s, int p, bool sub) {
+static inline uint64_t rsqrte7(uint64_t val, int e, int s, bool sub) {
   uint64_t exp = extract64(val, s, e);
   uint64_t sig = extract64(val, 0, s);
   uint64_t sign = extract64(val, s + e, 1);
+  const int p = 7;
 
-  const uint8_t table[] = {
+  static const uint8_t table[] = {
       52, 51, 50, 48, 47, 46, 44, 43,
       42, 41, 40, 39, 38, 36, 35, 34,
       33, 32, 31, 30, 30, 29, 28, 27,
@@ -92,11 +93,9 @@ static inline uint64_t rsqrte(uint64_t val, int e, int s, int p, bool sub) {
   return (sign << (s+e)) | (out_exp << s) | out_sig;
 }
 
-float16_t f16_rsqrte(float16_t in, int precision)
+float16_t f16_rsqrte7(float16_t in)
 {
     union ui16_f16 uA;
-
-    assert(precision >= 0);
 
     uA.f = in;
     unsigned int ret = f16_classify(in);
@@ -124,20 +123,16 @@ float16_t f16_rsqrte(float16_t in, int precision)
     case 0x020: //+ sub
         sub = true;
     default: // +num
-        uA.ui = precision > 10
-                  ? defaultNaNF16UI
-                  : rsqrte(uA.ui, 5, 10, precision, sub);
+        uA.ui = rsqrte7(uA.ui, 5, 10, sub);
         break;
     }
 
     return uA.f;
 }
 
-float32_t f32_rsqrte(float32_t in, int precision)
+float32_t f32_rsqrte7(float32_t in)
 {
     union ui32_f32 uA;
-
-    assert(precision >= 0);
 
     uA.f = in;
     unsigned int ret = f32_classify(in);
@@ -165,20 +160,16 @@ float32_t f32_rsqrte(float32_t in, int precision)
     case 0x020: //+ sub
         sub = true;
     default: // +num
-        uA.ui = precision > 23
-                  ? defaultNaNF32UI
-                  : rsqrte(uA.ui, 8, 23, precision, sub);
+        uA.ui = rsqrte7(uA.ui, 8, 23, sub);
         break;
     }
 
     return uA.f;
 }
 
-float64_t f64_rsqrte(float64_t in, int precision)
+float64_t f64_rsqrte7(float64_t in)
 {
     union ui64_f64 uA;
-
-    assert(precision >= 0);
 
     uA.f = in;
     unsigned int ret = f64_classify(in);
@@ -206,9 +197,7 @@ float64_t f64_rsqrte(float64_t in, int precision)
     case 0x020: //+ sub
         sub = true;
     default: // +num
-        uA.ui = precision > 52
-                  ? defaultNaNF64UI
-                  : rsqrte(uA.ui, 11, 52, precision, sub);
+        uA.ui = rsqrte7(uA.ui, 11, 52, sub);
         break;
     }
 
@@ -216,12 +205,13 @@ float64_t f64_rsqrte(float64_t in, int precision)
 }
 
 //user needs to truncate output to required length
-static inline uint64_t recip(uint64_t val, int e, int s, int p,
-                             int rm, bool sub, bool *round_abnormal)
+static inline uint64_t recip7(uint64_t val, int e, int s, int rm, bool sub,
+                              bool *round_abnormal)
 {
     uint64_t exp = extract64(val, s, e);
     uint64_t sig = extract64(val, 0, s);
     uint64_t sign = extract64(val, s + e, 1);
+    const int p = 7;
 
     static const uint8_t table[] = {
         127, 125, 123, 121, 119, 117, 116, 114,
@@ -272,11 +262,9 @@ static inline uint64_t recip(uint64_t val, int e, int s, int p,
     return (sign << (s+e)) | (out_exp << s) | out_sig;
 }
 
-float16_t f16_recip(float16_t in, int precision)
+float16_t f16_recip7(float16_t in)
 {
     union ui16_f16 uA;
-
-    assert(precision >= 0);
 
     uA.f = in;
     unsigned int ret = f16_classify(in);
@@ -306,10 +294,8 @@ float16_t f16_recip(float16_t in, int precision)
     case 0x020: //+ sub
         sub = true;
     default: // +- normal
-        uA.ui = precision > 10
-                  ? defaultNaNF16UI
-                  : recip(uA.ui, 5, 10, precision,
-                          softfloat_roundingMode, sub, &round_abnormal);
+        uA.ui = recip7(uA.ui, 5, 10,
+                       softfloat_roundingMode, sub, &round_abnormal);
         if (round_abnormal)
             softfloat_exceptionFlags |= softfloat_flag_invalid |
                                         softfloat_flag_overflow;
@@ -319,11 +305,9 @@ float16_t f16_recip(float16_t in, int precision)
     return uA.f;
 }
 
-float32_t f32_recip(float32_t in, int precision)
+float32_t f32_recip7(float32_t in)
 {
     union ui32_f32 uA;
-
-    assert(precision >= 0);
 
     uA.f = in;
     unsigned int ret = f32_classify(in);
@@ -353,10 +337,8 @@ float32_t f32_recip(float32_t in, int precision)
     case 0x020: //+ sub
         sub = true;
     default: // +- normal
-        uA.ui = precision > 23
-                  ? defaultNaNF32UI
-                  : recip(uA.ui, 8, 23, precision,
-                          softfloat_roundingMode, sub, &round_abnormal);
+        uA.ui = recip7(uA.ui, 8, 23,
+                       softfloat_roundingMode, sub, &round_abnormal);
         if (round_abnormal)
           softfloat_exceptionFlags |= softfloat_flag_invalid |
                                       softfloat_flag_overflow;
@@ -366,11 +348,9 @@ float32_t f32_recip(float32_t in, int precision)
     return uA.f;
 }
 
-float64_t f64_recip(float64_t in, int precision)
+float64_t f64_recip7(float64_t in)
 {
     union ui64_f64 uA;
-
-    assert(precision >= 0);
 
     uA.f = in;
     unsigned int ret = f64_classify(in);
@@ -400,10 +380,8 @@ float64_t f64_recip(float64_t in, int precision)
     case 0x020: //+ sub
         sub = true;
     default: // +- normal
-        uA.ui = precision > 52
-                  ? defaultNaNF64UI
-                  : recip(uA.ui, 11, 52, precision,
-                          softfloat_roundingMode, sub, &round_abnormal);
+        uA.ui = recip7(uA.ui, 11, 52,
+                       softfloat_roundingMode, sub, &round_abnormal);
         if (round_abnormal)
             softfloat_exceptionFlags |= softfloat_flag_invalid |
                                         softfloat_flag_overflow;
