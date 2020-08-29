@@ -104,9 +104,9 @@ float16_t f16_rsqrte7(float16_t in)
     case 0x001: // -inf
     case 0x002: // -normal
     case 0x004: // -subnormal
-    case 0x200: // sNaN
+    case 0x100: // sNaN
         softfloat_exceptionFlags |= softfloat_flag_invalid;
-    case 0x100: //qNaN
+    case 0x200: //qNaN
         uA.ui = defaultNaNF16UI;
         break;
     case 0x008: // -0
@@ -141,9 +141,9 @@ float32_t f32_rsqrte7(float32_t in)
     case 0x001: // -inf
     case 0x002: // -normal
     case 0x004: // -subnormal
-    case 0x200: // sNaN
+    case 0x100: // sNaN
         softfloat_exceptionFlags |= softfloat_flag_invalid;
-    case 0x100: //qNaN
+    case 0x200: //qNaN
         uA.ui = defaultNaNF32UI;
         break;
     case 0x008: // -0
@@ -178,9 +178,9 @@ float64_t f64_rsqrte7(float64_t in)
     case 0x001: // -inf
     case 0x002: // -normal
     case 0x004: // -subnormal
-    case 0x200: // sNaN
+    case 0x100: // sNaN
         softfloat_exceptionFlags |= softfloat_flag_invalid;
-    case 0x100: //qNaN
+    case 0x200: //qNaN
         uA.ui = defaultNaNF64UI;
         break;
     case 0x008: // -0
@@ -285,9 +285,9 @@ float16_t f16_recip7(float16_t in)
         uA.ui = 0x7c00;
         softfloat_exceptionFlags |= softfloat_flag_infinite;
         break;
-    case 0x200: // sNaN
+    case 0x100: // sNaN
         softfloat_exceptionFlags |= softfloat_flag_invalid;
-    case 0x100: //qNaN
+    case 0x200: //qNaN
         uA.ui = defaultNaNF16UI;
         break;
     case 0x004: // -subnormal
@@ -328,9 +328,9 @@ float32_t f32_recip7(float32_t in)
         uA.ui = 0x7f800000;
         softfloat_exceptionFlags |= softfloat_flag_infinite;
         break;
-    case 0x200: // sNaN
+    case 0x100: // sNaN
         softfloat_exceptionFlags |= softfloat_flag_invalid;
-    case 0x100: //qNaN
+    case 0x200: //qNaN
         uA.ui = defaultNaNF32UI;
         break;
     case 0x004: // -subnormal
@@ -371,9 +371,9 @@ float64_t f64_recip7(float64_t in)
         uA.ui = 0x7ff0000000000000;
         softfloat_exceptionFlags |= softfloat_flag_infinite;
         break;
-    case 0x200: // sNaN
+    case 0x100: // sNaN
         softfloat_exceptionFlags |= softfloat_flag_invalid;
-    case 0x100: //qNaN
+    case 0x200: //qNaN
         uA.ui = defaultNaNF64UI;
         break;
     case 0x004: // -subnormal
