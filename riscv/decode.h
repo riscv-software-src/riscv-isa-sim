@@ -1917,6 +1917,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
           (P.VU.vsew == e32 && p->supports_extension('F')) || \
           (P.VU.vsew == e64 && p->supports_extension('D'))); \
   require_vector(true);\
+  require(STATE.frm < 0x5);\
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -2055,6 +2056,35 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
       break; \
   }; \
   DEBUG_RVV_FP_VV; \
+  VI_VFP_LOOP_END
+
+#define VI_VFP_V_LOOP(BODY16, BODY32, BODY64) \
+  VI_CHECK_SSS(false); \
+  VI_VFP_LOOP_BASE \
+  switch(P.VU.vsew) { \
+    case e16: {\
+      float16_t &vd = P.VU.elt<float16_t>(rd_num, i, true); \
+      float16_t vs2 = P.VU.elt<float16_t>(rs2_num, i); \
+      BODY16; \
+      break; \
+    }\
+    case e32: {\
+      float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
+      float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
+      BODY32; \
+      break; \
+    }\
+    case e64: {\
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
+      float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
+      BODY64; \
+      break; \
+    }\
+    default: \
+      require(0); \
+      break; \
+  }; \
+  set_fp_exceptions; \
   VI_VFP_LOOP_END
 
 #define VI_VFP_VV_LOOP_REDUCTION(BODY16, BODY32, BODY64) \
@@ -2303,6 +2333,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   require((P.VU.vsew == e8 && p->supports_extension(EXT_ZFH)) || \
           (P.VU.vsew == e16 && p->supports_extension('F')) || \
           (P.VU.vsew == e32 && p->supports_extension('D'))); \
+  require(STATE.frm < 0x5);\
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -2311,12 +2342,13 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     VI_LOOP_ELEMENT_SKIP();
 
-#define VI_VFP_CVT_SCALE(BODY8, BODY16, BODY32, is_widen) \
+#define VI_VFP_CVT_SCALE(BODY8, BODY16, BODY32, is_widen, eew_check) \
   if (is_widen) { \
     VI_CHECK_DSS(false);\
   } else { \
     VI_CHECK_SDS(false); \
   } \
+  require(eew_check); \
   switch(P.VU.vsew) { \
     case e8: {\
       VI_VFP_LOOP_SCALE_BASE \

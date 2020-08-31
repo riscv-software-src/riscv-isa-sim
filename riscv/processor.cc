@@ -1,5 +1,6 @@
 // See LICENSE for license details.
 
+#include "arith.h"
 #include "processor.h"
 #include "extension.h"
 #include "common.h"
@@ -264,8 +265,6 @@ void processor_t::parse_isa_string(const char* str)
       auto ext_str = std::string(ext, end - ext);
       if (ext_str == "zfh") {
         extension_table[EXT_ZFH] = true;
-      } else if (ext_str == "zvqmac") {
-        extension_table[EXT_ZVQMAC] = true;
       } else {
         sprintf(error_msg, "unsupported extension '%s'", ext_str.c_str());
         bad_isa_string(str, error_msg);
@@ -291,9 +290,6 @@ void processor_t::parse_isa_string(const char* str)
 
   if (supports_extension('Q') && !supports_extension('D'))
     bad_isa_string(str, "'Q' extension requires 'D'");
-
-  if (supports_extension(EXT_ZVQMAC) && !supports_extension('V'))
-    bad_isa_string(str, "'Zvqmac' extension requires 'V'");
 }
 
 void state_t::reset(reg_t max_isa)
@@ -387,13 +383,13 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
   int new_vlmul = 0;
   if (vtype != newType){
     vtype = newType;
-    vsew = 1 << (BITS(newType, 5, 3) + 3);
-    new_vlmul = int8_t(BITS(newType, 2, 0) << 5) >> 5;
+    vsew = 1 << (extract64(newType, 3, 3) + 3);
+    new_vlmul = int8_t(extract64(newType, 0, 3) << 5) >> 5;
     vflmul = new_vlmul >= 0 ? 1 << new_vlmul : 1.0 / (1 << -new_vlmul);
     vlmax = (VLEN/vsew) * vflmul;
-    vta = BITS(newType, 6, 6);
-    vma = BITS(newType, 7, 7);
-    vediv = 1 << BITS(newType, 9, 8);
+    vta = extract64(newType, 6, 1);
+    vma = extract64(newType, 7, 1);
+    vediv = 1 << extract64(newType, 8, 2);
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
            || vsew > ELEN
@@ -1372,6 +1368,7 @@ reg_t processor_t::get_csr(int which)
         break;
       return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
     case CSR_VCSR:
+      require_vector_vs;
       if (!supports_extension('V'))
         break;
       return (VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT);

@@ -450,13 +450,6 @@ riscv_insn_ext_v_alu_int = \
 	vor_vi \
 	vor_vv \
 	vor_vx \
-	vqmacc_vv \
-	vqmacc_vx \
-	vqmaccsu_vv \
-	vqmaccsu_vx \
-	vqmaccu_vv \
-	vqmaccu_vx \
-	vqmaccus_vx \
 	vredand_vs \
 	vredmax_vs \
 	vredmaxu_vs \
@@ -605,7 +598,9 @@ riscv_insn_ext_v_alu_fp = \
 	vfredmin_vs \
 	vfredosum_vs \
 	vfredsum_vs \
+	vfrece7_v \
 	vfrsub_vf \
+	vfrsqrte7_v \
 	vfsgnj_vf \
 	vfsgnj_vv \
 	vfsgnjn_vf \

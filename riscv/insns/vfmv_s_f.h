@@ -4,6 +4,7 @@ require_fp;
 require((P.VU.vsew == e16 && p->supports_extension(EXT_ZFH)) ||
         (P.VU.vsew == e32 && p->supports_extension('F')) ||
         (P.VU.vsew == e64 && p->supports_extension('D')));
+require(STATE.frm < 0x5);
 
 reg_t vl = P.VU.vl;
 
