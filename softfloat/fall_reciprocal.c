@@ -297,7 +297,7 @@ float16_t f16_recip7(float16_t in)
         uA.ui = recip7(uA.ui, 5, 10,
                        softfloat_roundingMode, sub, &round_abnormal);
         if (round_abnormal)
-            softfloat_exceptionFlags |= softfloat_flag_invalid |
+            softfloat_exceptionFlags |= softfloat_flag_inexact |
                                         softfloat_flag_overflow;
         break;
     }
@@ -340,7 +340,7 @@ float32_t f32_recip7(float32_t in)
         uA.ui = recip7(uA.ui, 8, 23,
                        softfloat_roundingMode, sub, &round_abnormal);
         if (round_abnormal)
-          softfloat_exceptionFlags |= softfloat_flag_invalid |
+          softfloat_exceptionFlags |= softfloat_flag_inexact |
                                       softfloat_flag_overflow;
         break;
     }
@@ -383,7 +383,7 @@ float64_t f64_recip7(float64_t in)
         uA.ui = recip7(uA.ui, 11, 52,
                        softfloat_roundingMode, sub, &round_abnormal);
         if (round_abnormal)
-            softfloat_exceptionFlags |= softfloat_flag_invalid |
+            softfloat_exceptionFlags |= softfloat_flag_inexact |
                                         softfloat_flag_overflow;
         break;
     }
