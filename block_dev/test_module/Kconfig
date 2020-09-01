@@ -1,0 +1,4 @@
+config VBLOCK
+    tristate "Test driver"
+    help
+        This is a demo for test
