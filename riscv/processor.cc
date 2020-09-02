@@ -898,6 +898,7 @@ void processor_t::set_csr(int which, reg_t val)
         (1 << CAUSE_LOAD_PAGE_FAULT) |
         (1 << CAUSE_STORE_PAGE_FAULT);
       mask |= supports_extension('H') ?
+        (1 << CAUSE_VIRTUAL_SUPERVISOR_ECALL) |
         (1 << CAUSE_FETCH_GUEST_PAGE_FAULT) |
         (1 << CAUSE_LOAD_GUEST_PAGE_FAULT) |
         (1 << CAUSE_VIRTUAL_INSTRUCTION) |
@@ -1039,6 +1040,12 @@ void processor_t::set_csr(int which, reg_t val)
       mask &= max_isa;
 
       state.misa = (val & mask) | (state.misa & ~mask);
+
+      // update the forced bits in MIDELEG
+      if (supports_extension('H'))
+          state.mideleg |= MIDELEG_FORCED_MASK;
+      else
+          state.mideleg &= ~MIDELEG_FORCED_MASK;
       break;
     }
     case CSR_HSTATUS: {
