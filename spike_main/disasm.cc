@@ -379,6 +379,7 @@ disassembler_t::disassembler_t(int xlen)
   const uint32_t mask_rvc_imm = mask_rvc_rs2 | 0x1000UL;
   const uint32_t mask_nf = 0x7Ul << 29;
   const uint32_t mask_wd = 0x1Ul << 26;
+  const uint32_t mask_vm = 0x1Ul << 25;
   const uint32_t mask_vldst = 0x7Ul << 12 | 0x1UL << 28;
   const uint32_t mask_amoop = 0x1fUl << 27;
   const uint32_t mask_width = 0x7Ul << 12;
@@ -883,19 +884,48 @@ disassembler_t::disassembler_t(int xlen)
     add_insn(new disasm_insn_t(#name ".vx", match_##name##_vx, mask_##name##_vx, \
                 {&vd, &vs2, &xrs1, &opt, &vm}));
 
-  #define DISASM_OPIV_VXIM_INSN(name, sign) \
-    add_insn(new disasm_insn_t(#name ".vvm", match_##name##_vvm, mask_##name##_vvm, \
+  #define DISASM_OPIV_VXIM_INSN(name, sign, has_vm) \
+    add_insn(new disasm_insn_t(#name ".vvm", match_##name##_vvm, \
+                mask_##name##_vvm | mask_vm, \
                 {&vd, &vs2, &vs1, &v0})); \
-    add_insn(new disasm_insn_t(#name ".vxm", match_##name##_vxm, mask_##name##_vxm, \
+    add_insn(new disasm_insn_t(#name ".vxm", match_##name##_vxm, \
+                mask_##name##_vxm | mask_vm, \
                 {&vd, &vs2, &xrs1, &v0})); \
-    add_insn(new disasm_insn_t(#name ".vim", match_##name##_vim, mask_##name##_vim, \
-                {&vd, &vs2, &v_simm5, &v0}));
+    add_insn(new disasm_insn_t(#name ".vim", match_##name##_vim, \
+                mask_##name##_vim | mask_vm, \
+                {&vd, &vs2, &v_simm5, &v0})); \
+    if (has_vm) { \
+        add_insn(new disasm_insn_t(#name ".vv", \
+                    match_##name##_vvm | mask_vm, \
+                    mask_##name##_vvm | mask_vm, \
+                    {&vd, &vs2, &vs1})); \
+        add_insn(new disasm_insn_t(#name ".vx", \
+                    match_##name##_vxm | mask_vm, \
+                    mask_##name##_vxm | mask_vm, \
+                    {&vd, &vs2, &xrs1})); \
+        add_insn(new disasm_insn_t(#name ".vi", \
+                    match_##name##_vim | mask_vm, \
+                    mask_##name##_vim | mask_vm, \
+                    {&vd, &vs2, &v_simm5})); \
+    }
 
-  #define DISASM_OPIV_VX_M_INSN(name, sign) \
-    add_insn(new disasm_insn_t(#name ".vvm", match_##name##_vvm, mask_##name##_vvm, \
+  #define DISASM_OPIV_VX_M_INSN(name, sign, has_vm) \
+    add_insn(new disasm_insn_t(#name ".vvm", match_##name##_vvm, \
+                mask_##name##_vvm | mask_vm, \
                 {&vd, &vs2, &vs1, &v0})); \
-    add_insn(new disasm_insn_t(#name ".vxm", match_##name##_vxm, mask_##name##_vxm, \
-                {&vd, &vs2, &xrs1, &v0}));
+    add_insn(new disasm_insn_t(#name ".vxm", match_##name##_vxm, \
+                mask_##name##_vxm | mask_vm, \
+                {&vd, &vs2, &xrs1, &v0})); \
+    if (has_vm) { \
+        add_insn(new disasm_insn_t(#name ".vv", \
+                    match_##name##_vvm | mask_vm, \
+                    mask_##name##_vvm | mask_vm, \
+                    {&vd, &vs2, &vs1})); \
+        add_insn(new disasm_insn_t(#name ".vx", \
+                    match_##name##_vxm | mask_vm, \
+                    mask_##name##_vxm | mask_vm, \
+                    {&vd, &vs2, &xrs1})); \
+    } \
 
   //OPFVV/OPFVF
   //0b00_0000
@@ -915,11 +945,11 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV__XI_INSN(vslidedown,   0);
 
   //0b01_0000
-  DISASM_OPIV_VXIM_INSN(vadc,    1);
-  DISASM_OPIV_VXIM_INSN(vmadc,   1);
-  DISASM_OPIV_VX_M_INSN(vsbc,    1);
-  DISASM_OPIV_VX_M_INSN(vmsbc,   1);
-  DISASM_OPIV_VXIM_INSN(vmerge,  1);
+  DISASM_OPIV_VXIM_INSN(vadc,    1, 0);
+  DISASM_OPIV_VXIM_INSN(vmadc,   1, 1);
+  DISASM_OPIV_VX_M_INSN(vsbc,    1, 0);
+  DISASM_OPIV_VX_M_INSN(vmsbc,   1, 1);
+  DISASM_OPIV_VXIM_INSN(vmerge,  1, 0);
   DISASM_INSN("vmv.v.i", vmv_v_i, 0, {&vd, &v_simm5});
   DISASM_INSN("vmv.v.v", vmv_v_v, 0, {&vd, &vs1});
   DISASM_INSN("vmv.v.x", vmv_v_x, 0, {&vd, &xrs1});
