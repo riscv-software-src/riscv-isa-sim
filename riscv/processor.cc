@@ -778,7 +778,7 @@ void processor_t::set_csr(int which, reg_t val)
   reg_t hypervisor_ints = supports_extension('H') ? MIP_HS_MASK : 0;
   reg_t coprocessor_ints = (ext != NULL) << IRQ_COP;
   reg_t delegable_ints = supervisor_ints | coprocessor_ints;
-  reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP;
+  reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP | MIP_MEIP;
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
     // If no PMPs are configured, disallow access to all.  Otherwise, allow
