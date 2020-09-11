@@ -10,4 +10,14 @@ VI_VFP_CVT_SCALE
 {
   auto vs2 = P.VU.elt<float32_t>(rs2_num, i);
   P.VU.elt<int64_t>(rd_num, i, true) = f32_to_i64(vs2, STATE.frm, true);
-}, true, (P.VU.vsew >= 16))
+},
+{
+  ;
+},
+{
+  require(p->supports_extension(EXT_ZFH));
+},
+{
+  require(p->supports_extension('F'));
+},
+true, (P.VU.vsew >= 16))

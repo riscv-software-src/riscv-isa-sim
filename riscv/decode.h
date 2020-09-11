@@ -2342,7 +2342,9 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     VI_LOOP_ELEMENT_SKIP();
 
-#define VI_VFP_CVT_SCALE(BODY8, BODY16, BODY32, is_widen, eew_check) \
+#define VI_VFP_CVT_SCALE(BODY8, BODY16, BODY32, \
+                         CHECK8, CHECK16, CHECK32, \
+                         is_widen, eew_check) \
   if (is_widen) { \
     VI_CHECK_DSS(false);\
   } else { \
@@ -2351,6 +2353,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   require(eew_check); \
   switch(P.VU.vsew) { \
     case e8: {\
+      CHECK8 \
       VI_VFP_LOOP_SCALE_BASE \
         BODY8 \
         set_fp_exceptions; \
@@ -2358,6 +2361,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
       } \
       break; \
     case e16: {\
+      CHECK16 \
       VI_VFP_LOOP_SCALE_BASE \
         BODY16 \
         set_fp_exceptions; \
@@ -2365,6 +2369,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
       } \
       break; \
     case e32: {\
+      CHECK32 \
       VI_VFP_LOOP_SCALE_BASE \
         BODY32 \
         set_fp_exceptions; \
