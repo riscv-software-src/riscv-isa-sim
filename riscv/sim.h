@@ -33,6 +33,14 @@ public:
         bool dtb_enabled, const char *dtb_file);
   ~sim_t();
 
+  // DiffTest
+  void set_log_commits(bool value) {log = value;}
+  void difftest_continue(size_t n) { step(n); }
+  void difftest_setup() {
+    set_procs_debug(true);
+    start();
+  }
+
   // run the simulation to completion
   int run();
   void set_debug(bool value);
