@@ -1298,7 +1298,7 @@ void processor_t::set_csr(int which, reg_t val)
 // Note that get_csr is sometimes called when read side-effects should not
 // be actioned.  In other words, Spike cannot currently support CSRs with
 // side effects on reads.
-reg_t processor_t::get_csr(int which)
+reg_t processor_t::get_csr(int which, insn_t insn)
 {
   uint32_t ctr_en = -1;
   if (state.prv < PRV_M)
@@ -1325,7 +1325,7 @@ reg_t processor_t::get_csr(int which)
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
     // If n_pmp is zero, that means pmp is not implemented hence raise trap if it tries to access the csr
     if (n_pmp == 0)
-      throw trap_illegal_instruction(0);
+      goto throw_illegal;
     reg_t i = which - CSR_PMPADDR0;
     if ((state.pmpcfg[i] & PMP_A) >= PMP_NAPOT)
       return state.pmpaddr[i] | (~pmp_tor_mask() >> 1);
@@ -1371,7 +1371,7 @@ reg_t processor_t::get_csr(int which)
       if (state.v &&
           ((state.mcounteren >> (which & 31)) & 1) &&
           !((state.hcounteren >> (which & 31)) & 1)) {
-        throw trap_virtual_instruction(0);
+        goto throw_virtual;
       }
       break;
     case CSR_MINSTRET:
@@ -1384,7 +1384,7 @@ reg_t processor_t::get_csr(int which)
       if (state.v &&
           ((state.mcounteren >> (which & 31)) & 1) &&
           !((state.hcounteren >> (which & 31)) & 1)) {
-        throw trap_virtual_instruction(0);
+        goto throw_virtual;
       }
       break;
     case CSR_MINSTRETH:
@@ -1459,7 +1459,7 @@ reg_t processor_t::get_csr(int which)
         require_privilege(PRV_M);
       if (state.v) {
         if (get_field(state.hstatus, HSTATUS_VTVM))
-          throw trap_virtual_instruction(0);
+          goto throw_virtual;
         return state.vsatp;
       } else {
         return state.satp;
@@ -1621,12 +1621,17 @@ reg_t processor_t::get_csr(int which)
         break;
       return VU.vlenb;
   }
-  throw trap_illegal_instruction(0);
+
+throw_illegal:
+  throw trap_illegal_instruction(insn.bits());
+
+throw_virtual:
+  throw trap_virtual_instruction(insn.bits());
 }
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)
 {
-  throw trap_illegal_instruction(0);
+  throw trap_illegal_instruction(insn.bits());
 }
 
 insn_func_t processor_t::decode_insn(insn_t insn)

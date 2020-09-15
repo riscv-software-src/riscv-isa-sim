@@ -224,15 +224,15 @@ private:
 #define JUMP_TARGET (pc + insn.uj_imm())
 #define RM ({ int rm = insn.rm(); \
               if(rm == 7) rm = STATE.frm; \
-              if(rm > 4) throw trap_illegal_instruction(0); \
+              if(rm > 4) throw trap_illegal_instruction(insn.bits()); \
               rm; })
 
 #define get_field(reg, mask) (((reg) & (decltype(reg))(mask)) / ((mask) & ~((mask) << 1)))
 #define set_field(reg, mask, val) (((reg) & ~(decltype(reg))(mask)) | (((decltype(reg))(val) * ((mask) & ~((mask) << 1))) & (decltype(reg))(mask)))
 
-#define require(x) if (unlikely(!(x))) throw trap_illegal_instruction(0)
+#define require(x) if (unlikely(!(x))) throw trap_illegal_instruction(insn.bits())
 #define require_privilege(p) require(STATE.prv >= (p))
-#define require_novirt() if (unlikely(STATE.v == true)) throw trap_virtual_instruction(0)
+#define require_novirt() if (unlikely(STATE.v)) throw trap_virtual_instruction(insn.bits())
 #define require_rv64 require(xlen == 64)
 #define require_rv32 require(xlen == 32)
 #define require_extension(s) require(p->supports_extension(s))
@@ -360,14 +360,14 @@ inline freg_t f128_negate(freg_t a)
   bool mode_unsupported = (csr_priv == PRV_S && !P.supports_extension('S')) || \
                           (csr_priv == PRV_HS && !P.supports_extension('H')); \
   if (mode_unsupported) \
-    throw trap_illegal_instruction(0); \
+    throw trap_illegal_instruction(insn.bits()); \
   unsigned state_prv = (STATE.prv == PRV_S && !STATE.v) ? PRV_HS: STATE.prv; \
   unsigned csr_read_only = get_field((which), 0xC00) == 3; \
   if (((write) && csr_read_only) || state_prv < csr_priv) { \
     if (csr_priv == PRV_HS) \
-      throw trap_virtual_instruction(0); \
+      throw trap_virtual_instruction(insn.bits()); \
     else \
-      throw trap_illegal_instruction(0); \
+      throw trap_illegal_instruction(insn.bits()); \
   } \
   (which); })
 
