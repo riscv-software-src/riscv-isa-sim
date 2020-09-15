@@ -1010,18 +1010,8 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MTVAL: state.mtval = val; break;
-    case CSR_MTVAL2:
-      if (supports_extension('H'))
-        state.mtval2 = val;
-      else
-        throw trap_illegal_instruction(0);
-      break;
-    case CSR_MTINST:
-      if (supports_extension('H'))
-        state.mtinst = val;
-      else
-        throw trap_illegal_instruction(0);
-      break;
+    case CSR_MTVAL2: state.mtval2 = val; break;
+    case CSR_MTINST: state.mtinst = val; break;
     case CSR_MISA: {
       // the write is ignored if increasing IALIGN would misalign the PC
       if (!(val & (1L << ('C' - 'A'))) && (state.pc & 2))
@@ -1080,10 +1070,6 @@ void processor_t::set_csr(int which, reg_t val)
       state.mie = (state.mie & ~mask) | (val & mask);
       break;
     }
-    case CSR_HTIMEDELTA:
-    case CSR_HTIMEDELTAH:
-      throw trap_illegal_instruction(0);
-      break;
     case CSR_HCOUNTEREN:
       state.hcounteren = val;
       break;
