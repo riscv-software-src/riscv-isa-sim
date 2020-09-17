@@ -211,6 +211,9 @@ struct state_t
   reg_t tdata2[num_triggers];
   bool debug_mode;
 
+  reg_t mseccfg;
+  bool pmplock_recorded;
+
   static const int max_pmp = 16;
   uint8_t pmpcfg[max_pmp];
   reg_t pmpaddr[max_pmp];

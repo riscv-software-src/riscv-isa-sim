@@ -216,6 +216,7 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
     return true;
 
   reg_t base = 0;
+  bool mml_set = proc->state.mseccfg && MSECCFG_MML;
   for (size_t i = 0; i < proc->n_pmp; i++) {
     reg_t tor = (proc->state.pmpaddr[i] & proc->pmp_tor_mask()) << PMP_SHIFT;
     uint8_t cfg = proc->state.pmpcfg[i];
@@ -244,18 +245,39 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
         if (!all_match)
           return false;
 
-        return
-          (mode == PRV_M && !(cfg & PMP_L)) ||
-          (type == LOAD && (cfg & PMP_R)) ||
-          (type == STORE && (cfg & PMP_W)) ||
-          (type == FETCH && (cfg & PMP_X));
+        // prepare to check mml_set
+        bool cfgx = cfg & PMP_X;
+        bool cfgw = cfg & PMP_W;
+        bool cfgr = cfg & PMP_R;
+        bool cfgl = cfg & PMP_L;
+
+        bool prvm = mode == PRV_M;
+
+        bool typer = type == LOAD;
+        bool typex = type == FETCH;
+        bool typew = type == STORE;
+        bool normal_rwx = (typer && cfgr) || (typew && cfgw) || (typex && cfgx);
+
+        if (mml_set) {
+          bool mml_shared_region = !cfgr && cfgw;
+          bool mml_chk_normal = (prvm == cfgl) && normal_rwx;
+          bool mml_chk_shared =
+              (!cfgl && cfgx && (typer || typew)) ||
+              (!cfgl && !cfgx && (typer || (typew && prvm))) ||
+              (cfgl && typex) ||
+              (cfgl && typer && cfgx && prvm);
+          return mml_shared_region ? mml_chk_shared : mml_chk_normal;
+        } else {
+          bool m_bypass = (prvm && !cfgl);
+          return m_bypass || normal_rwx;
+        }
       }
     }
 
     base = tor;
   }
 
-  return mode == PRV_M;
+  return ((mode == PRV_M) && !(proc->state.mseccfg & MSECCFG_MMWP));
 }
 
 reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)

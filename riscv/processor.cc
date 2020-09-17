@@ -355,6 +355,8 @@ void state_t::reset(reg_t max_isa)
   debug_mode = false;
   single_step = STEP_NONE;
 
+  mseccfg = 0;
+  pmplock_recorded = false;
   memset(this->pmpcfg, 0, sizeof(this->pmpcfg));
   memset(this->pmpaddr, 0, sizeof(this->pmpaddr));
 
@@ -784,6 +786,25 @@ void processor_t::set_csr(int which, reg_t val)
   reg_t delegable_ints = supervisor_ints | coprocessor_ints;
   reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP;
 
+  bool lock_bypass = state.mseccfg & MSECCFG_RLB;
+
+  if (which == CSR_MSECCFG) {
+    // When mseccfg.RLB is unset and any pmpcfg.L is set, mseccfg.RLB is locked
+    if (!(state.pmplock_recorded && (state.mseccfg & MSECCFG_RLB) == 0)) {
+      state.mseccfg &= ~MSECCFG_RLB;
+      state.mseccfg |= (val & MSECCFG_RLB);
+    }
+    // mseccfg.MMWP and mseccfg.MML are sticky bits, only writable when 0
+    if (!(state.mseccfg & MSECCFG_MMWP)) {
+      state.mseccfg |= (val & MSECCFG_MMWP);
+    }
+    if (!(state.mseccfg & MSECCFG_MML)) {
+      state.mseccfg |= (val & MSECCFG_MML);
+    }
+
+    mmu->flush_tlb();
+  }
+
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
     // If no PMPs are configured, disallow access to all.  Otherwise, allow
     // access to all, but unimplemented ones are hardwired to zero.
@@ -791,8 +812,8 @@ void processor_t::set_csr(int which, reg_t val)
       return;
 
     size_t i = which - CSR_PMPADDR0;
-    bool locked = state.pmpcfg[i] & PMP_L;
-    bool next_locked = i+1 < state.max_pmp && (state.pmpcfg[i+1] & PMP_L);
+    bool locked = !lock_bypass && (state.pmpcfg[i] & PMP_L);
+    bool next_locked = !lock_bypass && i+1 < state.max_pmp && (state.pmpcfg[i+1] & PMP_L);
     bool next_tor = i+1 < state.max_pmp && (state.pmpcfg[i+1] & PMP_A) == PMP_TOR;
     if (i < n_pmp && !locked && !(next_locked && next_tor)) {
       state.pmpaddr[i] = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
@@ -807,9 +828,17 @@ void processor_t::set_csr(int which, reg_t val)
       return;
 
     for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8; i++) {
-      if (i < n_pmp && !(state.pmpcfg[i] & PMP_L)) {
+      if (i < n_pmp && (lock_bypass || !(state.pmpcfg[i] & PMP_L))) {
         uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
-        cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1
+        /*
+         * Disallow RW=01 when mseccfg.MML == 0
+         * Remove the restriction when mseccfg.MML == 1 for shared region.
+         */
+        if ((state.mseccfg & MSECCFG_MML) == 0) {
+          cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0);
+        }
+        state.pmplock_recorded |= (cfg & PMP_L); // record PMP.L set event was occurred
+
         if (lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
           cfg |= PMP_NAPOT; // Disallow A=NA4 when granularity > 4
         state.pmpcfg[i] = cfg;
