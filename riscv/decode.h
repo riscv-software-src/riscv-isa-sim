@@ -224,15 +224,15 @@ private:
 #define JUMP_TARGET (pc + insn.uj_imm())
 #define RM ({ int rm = insn.rm(); \
               if(rm == 7) rm = STATE.frm; \
-              if(rm > 4) throw trap_illegal_instruction(0); \
+              if(rm > 4) throw trap_illegal_instruction(insn.bits()); \
               rm; })
 
 #define get_field(reg, mask) (((reg) & (decltype(reg))(mask)) / ((mask) & ~((mask) << 1)))
 #define set_field(reg, mask, val) (((reg) & ~(decltype(reg))(mask)) | (((decltype(reg))(val) * ((mask) & ~((mask) << 1))) & (decltype(reg))(mask)))
 
-#define require(x) if (unlikely(!(x))) throw trap_illegal_instruction(0)
+#define require(x) if (unlikely(!(x))) throw trap_illegal_instruction(insn.bits())
 #define require_privilege(p) require(STATE.prv >= (p))
-#define require_novirt() if (unlikely(STATE.v == true)) throw trap_virtual_instruction(0)
+#define require_novirt() if (unlikely(STATE.v)) throw trap_virtual_instruction(insn.bits())
 #define require_rv64 require(xlen == 64)
 #define require_rv32 require(xlen == 32)
 #define require_extension(s) require(p->supports_extension(s))
@@ -360,14 +360,14 @@ inline freg_t f128_negate(freg_t a)
   bool mode_unsupported = (csr_priv == PRV_S && !P.supports_extension('S')) || \
                           (csr_priv == PRV_HS && !P.supports_extension('H')); \
   if (mode_unsupported) \
-    throw trap_illegal_instruction(0); \
+    throw trap_illegal_instruction(insn.bits()); \
   unsigned state_prv = (STATE.prv == PRV_S && !STATE.v) ? PRV_HS: STATE.prv; \
   unsigned csr_read_only = get_field((which), 0xC00) == 3; \
   if (((write) && csr_read_only) || state_prv < csr_priv) { \
     if (csr_priv == PRV_HS) \
-      throw trap_virtual_instruction(0); \
+      throw trap_virtual_instruction(insn.bits()); \
     else \
-      throw trap_illegal_instruction(0); \
+      throw trap_illegal_instruction(insn.bits()); \
   } \
   (which); })
 
@@ -1917,6 +1917,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
           (P.VU.vsew == e32 && p->supports_extension('F')) || \
           (P.VU.vsew == e64 && p->supports_extension('D'))); \
   require_vector(true);\
+  require(STATE.frm < 0x5);\
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -2055,6 +2056,35 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
       break; \
   }; \
   DEBUG_RVV_FP_VV; \
+  VI_VFP_LOOP_END
+
+#define VI_VFP_V_LOOP(BODY16, BODY32, BODY64) \
+  VI_CHECK_SSS(false); \
+  VI_VFP_LOOP_BASE \
+  switch(P.VU.vsew) { \
+    case e16: {\
+      float16_t &vd = P.VU.elt<float16_t>(rd_num, i, true); \
+      float16_t vs2 = P.VU.elt<float16_t>(rs2_num, i); \
+      BODY16; \
+      break; \
+    }\
+    case e32: {\
+      float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
+      float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
+      BODY32; \
+      break; \
+    }\
+    case e64: {\
+      float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
+      float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
+      BODY64; \
+      break; \
+    }\
+    default: \
+      require(0); \
+      break; \
+  }; \
+  set_fp_exceptions; \
   VI_VFP_LOOP_END
 
 #define VI_VFP_VV_LOOP_REDUCTION(BODY16, BODY32, BODY64) \
@@ -2303,6 +2333,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   require((P.VU.vsew == e8 && p->supports_extension(EXT_ZFH)) || \
           (P.VU.vsew == e16 && p->supports_extension('F')) || \
           (P.VU.vsew == e32 && p->supports_extension('D'))); \
+  require(STATE.frm < 0x5);\
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -2311,12 +2342,13 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     VI_LOOP_ELEMENT_SKIP();
 
-#define VI_VFP_CVT_SCALE(BODY8, BODY16, BODY32, is_widen) \
+#define VI_VFP_CVT_SCALE(BODY8, BODY16, BODY32, is_widen, eew_check) \
   if (is_widen) { \
     VI_CHECK_DSS(false);\
   } else { \
     VI_CHECK_SDS(false); \
   } \
+  require(eew_check); \
   switch(P.VU.vsew) { \
     case e8: {\
       VI_VFP_LOOP_SCALE_BASE \

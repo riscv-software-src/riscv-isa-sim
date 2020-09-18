@@ -1,5 +1,5 @@
 // vfclass.v vd, vs2, vm
-VI_VFP_VV_LOOP
+VI_VFP_V_LOOP
 ({
   vd.v = f16_classify(vs2);
 },

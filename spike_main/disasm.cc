@@ -379,6 +379,7 @@ disassembler_t::disassembler_t(int xlen)
   const uint32_t mask_rvc_imm = mask_rvc_rs2 | 0x1000UL;
   const uint32_t mask_nf = 0x7Ul << 29;
   const uint32_t mask_wd = 0x1Ul << 26;
+  const uint32_t mask_vm = 0x1Ul << 25;
   const uint32_t mask_vldst = 0x7Ul << 12 | 0x1UL << 28;
   const uint32_t mask_amoop = 0x1fUl << 27;
   const uint32_t mask_width = 0x7Ul << 12;
@@ -795,17 +796,24 @@ disassembler_t::disassembler_t(int xlen)
       }
     }
 
+    //handle whole register load
+    if (elt >= 4)
+        continue;
+
     const custom_fmt_t template_insn2[] = {
       {match_vl1re8_v,   mask_vl1re8_v,   "vl%dre%d.v",   v_ld_unit},
     };
 
-    for (reg_t i = 0, nf = 7; nf < 4; i++, nf >>= 1) {
-      for (auto item : template_insn) {
+    for (reg_t i = 0, nf = 7; i < 4; i++, nf >>= 1) {
+      for (auto item : template_insn2) {
         const reg_t match_nf = nf << 29;
         char buf[128];
         sprintf(buf, item.fmt, nf + 1, 8 << elt);
         add_insn(new disasm_insn_t(
-          buf, item.match | match_nf, item.mask | mask_nf, item.arg
+          buf,
+          item.match | match_nf | elt_map[elt],
+          item.mask | mask_nf,
+          item.arg
         ));
       }
     }
@@ -876,19 +884,48 @@ disassembler_t::disassembler_t(int xlen)
     add_insn(new disasm_insn_t(#name ".vx", match_##name##_vx, mask_##name##_vx, \
                 {&vd, &vs2, &xrs1, &opt, &vm}));
 
-  #define DISASM_OPIV_VXIM_INSN(name, sign) \
-    add_insn(new disasm_insn_t(#name ".vvm", match_##name##_vvm, mask_##name##_vvm, \
+  #define DISASM_OPIV_VXIM_INSN(name, sign, has_vm) \
+    add_insn(new disasm_insn_t(#name ".vvm", match_##name##_vvm, \
+                mask_##name##_vvm | mask_vm, \
                 {&vd, &vs2, &vs1, &v0})); \
-    add_insn(new disasm_insn_t(#name ".vxm", match_##name##_vxm, mask_##name##_vxm, \
+    add_insn(new disasm_insn_t(#name ".vxm", match_##name##_vxm, \
+                mask_##name##_vxm | mask_vm, \
                 {&vd, &vs2, &xrs1, &v0})); \
-    add_insn(new disasm_insn_t(#name ".vim", match_##name##_vim, mask_##name##_vim, \
-                {&vd, &vs2, &v_simm5, &v0}));
+    add_insn(new disasm_insn_t(#name ".vim", match_##name##_vim, \
+                mask_##name##_vim | mask_vm, \
+                {&vd, &vs2, &v_simm5, &v0})); \
+    if (has_vm) { \
+        add_insn(new disasm_insn_t(#name ".vv", \
+                    match_##name##_vvm | mask_vm, \
+                    mask_##name##_vvm | mask_vm, \
+                    {&vd, &vs2, &vs1})); \
+        add_insn(new disasm_insn_t(#name ".vx", \
+                    match_##name##_vxm | mask_vm, \
+                    mask_##name##_vxm | mask_vm, \
+                    {&vd, &vs2, &xrs1})); \
+        add_insn(new disasm_insn_t(#name ".vi", \
+                    match_##name##_vim | mask_vm, \
+                    mask_##name##_vim | mask_vm, \
+                    {&vd, &vs2, &v_simm5})); \
+    }
 
-  #define DISASM_OPIV_VX_M_INSN(name, sign) \
-    add_insn(new disasm_insn_t(#name ".vvm", match_##name##_vvm, mask_##name##_vvm, \
+  #define DISASM_OPIV_VX_M_INSN(name, sign, has_vm) \
+    add_insn(new disasm_insn_t(#name ".vvm", match_##name##_vvm, \
+                mask_##name##_vvm | mask_vm, \
                 {&vd, &vs2, &vs1, &v0})); \
-    add_insn(new disasm_insn_t(#name ".vxm", match_##name##_vxm, mask_##name##_vxm, \
-                {&vd, &vs2, &xrs1, &v0}));
+    add_insn(new disasm_insn_t(#name ".vxm", match_##name##_vxm, \
+                mask_##name##_vxm | mask_vm, \
+                {&vd, &vs2, &xrs1, &v0})); \
+    if (has_vm) { \
+        add_insn(new disasm_insn_t(#name ".vv", \
+                    match_##name##_vvm | mask_vm, \
+                    mask_##name##_vvm | mask_vm, \
+                    {&vd, &vs2, &vs1})); \
+        add_insn(new disasm_insn_t(#name ".vx", \
+                    match_##name##_vxm | mask_vm, \
+                    mask_##name##_vxm | mask_vm, \
+                    {&vd, &vs2, &xrs1})); \
+    } \
 
   //OPFVV/OPFVF
   //0b00_0000
@@ -908,11 +945,11 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV__XI_INSN(vslidedown,   0);
 
   //0b01_0000
-  DISASM_OPIV_VXIM_INSN(vadc,    1);
-  DISASM_OPIV_VXIM_INSN(vmadc,   1);
-  DISASM_OPIV_VX_M_INSN(vsbc,    1);
-  DISASM_OPIV_VX_M_INSN(vmsbc,   1);
-  DISASM_OPIV_VXIM_INSN(vmerge,  1);
+  DISASM_OPIV_VXIM_INSN(vadc,    1, 0);
+  DISASM_OPIV_VXIM_INSN(vmadc,   1, 1);
+  DISASM_OPIV_VX_M_INSN(vsbc,    1, 0);
+  DISASM_OPIV_VX_M_INSN(vmsbc,   1, 1);
+  DISASM_OPIV_VXIM_INSN(vmerge,  1, 0);
   DISASM_INSN("vmv.v.i", vmv_v_i, 0, {&vd, &v_simm5});
   DISASM_INSN("vmv.v.v", vmv_v_v, 0, {&vd, &vs1});
   DISASM_INSN("vmv.v.x", vmv_v_x, 0, {&vd, &xrs1});
@@ -950,10 +987,6 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_OPIV_S___INSN(vwredsum,  1);
   DISASM_OPIV_V___INSN(vdotu,     0);
   DISASM_OPIV_V___INSN(vdot,      1);
-  DISASM_OPIV_VX__INSN(vqmaccu,   0);
-  DISASM_OPIV_VX__INSN(vqmacc,    1);
-  DISASM_OPIV__X__INSN(vqmaccus,  1);
-  DISASM_OPIV_VX__INSN(vqmaccsu,  0);
 
   //OPMVV/OPMVX
   //0b00_0000
@@ -1140,6 +1173,8 @@ disassembler_t::disassembler_t(int xlen)
 
   //vfunary1
   DISASM_INSN("vfsqrt.v", vfsqrt_v, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vfrsqrte7.v", vfrsqrte7_v, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vfrece7.v", vfrece7_v, 0, {&vd, &vs2, &opt, &vm});
   DISASM_INSN("vfclass.v", vfclass_v, 0, {&vd, &vs2, &opt, &vm});
 
   DISASM_OPIV_VF_INSN(vfmul);
@@ -1179,22 +1214,22 @@ disassembler_t::disassembler_t(int xlen)
   std::vector<const arg_t *> v_fmt_amo = {&x0, &v_address, &vs2, &vd, &opt, &vm};
   for (size_t elt = 0; elt <= 3; ++elt) {
     const custom_fmt_t template_insn[] = {
-      {match_vamoswapei8_v | mask_wd,   mask_vamoswapei8_v | mask_wd,
+      {match_vamoaddei8_v | mask_wd,   mask_vamoaddei8_v | mask_wd,
          "%sei%d.v", v_fmt_amo_wd},
-      {match_vamoswapei8_v,   mask_vamoswapei8_v | mask_wd,
+      {match_vamoaddei8_v,   mask_vamoaddei8_v | mask_wd,
          "%sei%d.v", v_fmt_amo},
     };
     std::pair<const char*, reg_t> amo_map[] = {
         {"vamoswap", 0x01ul << 27},
         {"vamoadd",  0x00ul << 27},
         {"vamoxor",  0x04ul << 27},
-        {"vamand",   0x0cul << 27},
+        {"vamoand",  0x0cul << 27},
         {"vamoor",   0x08ul << 27},
         {"vamomin",  0x10ul << 27},
         {"vamomax",  0x14ul << 27},
         {"vamominu", 0x18ul << 27},
         {"vamomaxu", 0x1cul << 27}};
-    const reg_t elt_map[] = {0x0ul << 12,  0x4ul << 12,
+    const reg_t elt_map[] = {0x0ul << 12,  0x5ul << 12,
                              0x6ul <<12, 0x7ul << 12};
 
     for (size_t idx = 0; idx < sizeof(amo_map) / sizeof(amo_map[0]); ++idx) {
@@ -1202,8 +1237,7 @@ disassembler_t::disassembler_t(int xlen)
         char buf[128];
         sprintf(buf, item.fmt, amo_map[idx].first, 8 << elt);
         add_insn(new disasm_insn_t(buf,
-                  (item.match & ~mask_width & ~mask_amoop) |
-                    (amo_map[idx].second | elt_map[elt]),
+                  item.match | amo_map[idx].second | elt_map[elt],
                   item.mask,
                   item.arg));
       }

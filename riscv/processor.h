@@ -85,10 +85,6 @@ typedef struct
   bool load;
 } mcontrol_t;
 
-inline reg_t BITS(reg_t v, int hi, int lo){
-  return (v >> lo) & ((2 << (hi - lo)) - 1);
-}
-
 enum VRM{
   RNU = 0,
   RNE,
@@ -250,7 +246,6 @@ typedef enum {
   // 65('A') ~ 90('Z') is reserved for standard isa in misa
   EXT_ZFH   = 0,
   EXT_ZVEDIV,
-  EXT_ZVQMAC,
 } isa_extension_t;
 
 // Count number of contiguous 1 bits starting from the LSB.
@@ -280,7 +275,8 @@ public:
   void reset();
   void step(size_t n); // run for n cycles
   void set_csr(int which, reg_t val);
-  reg_t get_csr(int which);
+  reg_t get_csr(int which, insn_t insn);
+  reg_t get_csr(int which) { return get_csr(which, insn_t(0)); }
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
   unsigned get_xlen() { return xlen; }

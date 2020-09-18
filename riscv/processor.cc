@@ -1,5 +1,6 @@
 // See LICENSE for license details.
 
+#include "arith.h"
 #include "processor.h"
 #include "extension.h"
 #include "common.h"
@@ -264,8 +265,6 @@ void processor_t::parse_isa_string(const char* str)
       auto ext_str = std::string(ext, end - ext);
       if (ext_str == "zfh") {
         extension_table[EXT_ZFH] = true;
-      } else if (ext_str == "zvqmac") {
-        extension_table[EXT_ZVQMAC] = true;
       } else {
         sprintf(error_msg, "unsupported extension '%s'", ext_str.c_str());
         bad_isa_string(str, error_msg);
@@ -291,9 +290,6 @@ void processor_t::parse_isa_string(const char* str)
 
   if (supports_extension('Q') && !supports_extension('D'))
     bad_isa_string(str, "'Q' extension requires 'D'");
-
-  if (supports_extension(EXT_ZVQMAC) && !supports_extension('V'))
-    bad_isa_string(str, "'Zvqmac' extension requires 'V'");
 }
 
 void state_t::reset(reg_t max_isa)
@@ -389,13 +385,13 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
   int new_vlmul = 0;
   if (vtype != newType){
     vtype = newType;
-    vsew = 1 << (BITS(newType, 5, 3) + 3);
-    new_vlmul = int8_t(BITS(newType, 2, 0) << 5) >> 5;
+    vsew = 1 << (extract64(newType, 3, 3) + 3);
+    new_vlmul = int8_t(extract64(newType, 0, 3) << 5) >> 5;
     vflmul = new_vlmul >= 0 ? 1 << new_vlmul : 1.0 / (1 << -new_vlmul);
     vlmax = (VLEN/vsew) * vflmul;
-    vta = BITS(newType, 6, 6);
-    vma = BITS(newType, 7, 7);
-    vediv = 1 << BITS(newType, 9, 8);
+    vta = extract64(newType, 6, 1);
+    vma = extract64(newType, 7, 1);
+    vediv = 1 << extract64(newType, 8, 2);
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
            || vsew > ELEN
@@ -784,7 +780,7 @@ void processor_t::set_csr(int which, reg_t val)
   reg_t hypervisor_ints = supports_extension('H') ? MIP_HS_MASK : 0;
   reg_t coprocessor_ints = (ext != NULL) << IRQ_COP;
   reg_t delegable_ints = supervisor_ints | coprocessor_ints;
-  reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP;
+  reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP | MIP_MEIP;
 
   bool lock_bypass = state.mseccfg & MSECCFG_RLB;
 
@@ -932,6 +928,7 @@ void processor_t::set_csr(int which, reg_t val)
         (1 << CAUSE_LOAD_PAGE_FAULT) |
         (1 << CAUSE_STORE_PAGE_FAULT);
       mask |= supports_extension('H') ?
+        (1 << CAUSE_VIRTUAL_SUPERVISOR_ECALL) |
         (1 << CAUSE_FETCH_GUEST_PAGE_FAULT) |
         (1 << CAUSE_LOAD_GUEST_PAGE_FAULT) |
         (1 << CAUSE_VIRTUAL_INSTRUCTION) |
@@ -1042,18 +1039,8 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MTVAL: state.mtval = val; break;
-    case CSR_MTVAL2:
-      if (supports_extension('H'))
-        state.mtval2 = val;
-      else
-        throw trap_illegal_instruction(0);
-      break;
-    case CSR_MTINST:
-      if (supports_extension('H'))
-        state.mtinst = val;
-      else
-        throw trap_illegal_instruction(0);
-      break;
+    case CSR_MTVAL2: state.mtval2 = val; break;
+    case CSR_MTINST: state.mtinst = val; break;
     case CSR_MISA: {
       // the write is ignored if increasing IALIGN would misalign the PC
       if (!(val & (1L << ('C' - 'A'))) && (state.pc & 2))
@@ -1073,6 +1060,12 @@ void processor_t::set_csr(int which, reg_t val)
       mask &= max_isa;
 
       state.misa = (val & mask) | (state.misa & ~mask);
+
+      // update the forced bits in MIDELEG
+      if (supports_extension('H'))
+          state.mideleg |= MIDELEG_FORCED_MASK;
+      else
+          state.mideleg &= ~MIDELEG_FORCED_MASK;
       break;
     }
     case CSR_HSTATUS: {
@@ -1106,10 +1099,6 @@ void processor_t::set_csr(int which, reg_t val)
       state.mie = (state.mie & ~mask) | (val & mask);
       break;
     }
-    case CSR_HTIMEDELTA:
-    case CSR_HTIMEDELTAH:
-      throw trap_illegal_instruction(0);
-      break;
     case CSR_HCOUNTEREN:
       state.hcounteren = val;
       break;
@@ -1339,7 +1328,7 @@ void processor_t::set_csr(int which, reg_t val)
 // Note that get_csr is sometimes called when read side-effects should not
 // be actioned.  In other words, Spike cannot currently support CSRs with
 // side effects on reads.
-reg_t processor_t::get_csr(int which)
+reg_t processor_t::get_csr(int which, insn_t insn)
 {
   uint32_t ctr_en = -1;
   if (state.prv < PRV_M)
@@ -1366,7 +1355,7 @@ reg_t processor_t::get_csr(int which)
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
     // If n_pmp is zero, that means pmp is not implemented hence raise trap if it tries to access the csr
     if (n_pmp == 0)
-      throw trap_illegal_instruction(0);
+      goto throw_illegal;
     reg_t i = which - CSR_PMPADDR0;
     if ((state.pmpcfg[i] & PMP_A) >= PMP_NAPOT)
       return state.pmpaddr[i] | (~pmp_tor_mask() >> 1);
@@ -1401,6 +1390,7 @@ reg_t processor_t::get_csr(int which)
         break;
       return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
     case CSR_VCSR:
+      require_vector_vs;
       if (!supports_extension('V'))
         break;
       return (VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT);
@@ -1411,7 +1401,7 @@ reg_t processor_t::get_csr(int which)
       if (state.v &&
           ((state.mcounteren >> (which & 31)) & 1) &&
           !((state.hcounteren >> (which & 31)) & 1)) {
-        throw trap_virtual_instruction(0);
+        goto throw_virtual;
       }
       break;
     case CSR_MINSTRET:
@@ -1424,7 +1414,7 @@ reg_t processor_t::get_csr(int which)
       if (state.v &&
           ((state.mcounteren >> (which & 31)) & 1) &&
           !((state.hcounteren >> (which & 31)) & 1)) {
-        throw trap_virtual_instruction(0);
+        goto throw_virtual;
       }
       break;
     case CSR_MINSTRETH:
@@ -1499,7 +1489,7 @@ reg_t processor_t::get_csr(int which)
         require_privilege(PRV_M);
       if (state.v) {
         if (get_field(state.hstatus, HSTATUS_VTVM))
-          throw trap_virtual_instruction(0);
+          goto throw_virtual;
         return state.vsatp;
       } else {
         return state.satp;
@@ -1661,12 +1651,17 @@ reg_t processor_t::get_csr(int which)
         break;
       return VU.vlenb;
   }
-  throw trap_illegal_instruction(0);
+
+throw_illegal:
+  throw trap_illegal_instruction(insn.bits());
+
+throw_virtual:
+  throw trap_virtual_instruction(insn.bits());
 }
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)
 {
-  throw trap_illegal_instruction(0);
+  throw trap_illegal_instruction(insn.bits());
 }
 
 insn_func_t processor_t::decode_insn(insn_t insn)
