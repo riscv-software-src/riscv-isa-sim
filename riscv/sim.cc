@@ -294,6 +294,11 @@ char* sim_t::addr_to_mem(reg_t addr) {
   return NULL;
 }
 
+const char* sim_t::get_symbol(uint64_t addr)
+{
+  return htif_t::get_symbol(addr);
+}
+
 // htif
 
 void sim_t::reset()

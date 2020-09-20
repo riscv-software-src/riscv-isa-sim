@@ -49,6 +49,9 @@ class htif_t : public chunked_memif_t
   // range to memory, because it has already been loaded through a sideband
   virtual bool is_address_preloaded(addr_t taddr, size_t len) { return false; }
 
+  // Given an address, return symbol from addr2symbol map
+  const char* get_symbol(uint64_t addr);
+
  private:
   void parse_arguments(int argc, char ** argv);
   void register_devices();
@@ -74,6 +77,9 @@ class htif_t : public chunked_memif_t
   std::vector<std::string> payloads;
 
   const std::vector<std::string>& target_args() { return targs; }
+
+  std::map<std::string, uint64_t> symbols;
+  std::map<uint64_t, std::string> addr2symbol;
 
   friend class memif_t;
   friend class syscall_t;

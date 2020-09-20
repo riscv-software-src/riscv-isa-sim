@@ -121,7 +121,16 @@ std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload,
 
 void htif_t::load_program()
 {
-  std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry);
+  // Allow load of multiple elfs
+  // Unfortunately it is not additive now as it clears up the previous loads
+  // It is however useful to get symbols
+  // The last elf should be the combined elf
+  // TODO: make elf load additive
+  for(auto const& targ : targs)
+  {
+    std::map<std::string, uint64_t> csymbols = load_payload(targ, &entry);
+    symbols.insert(csymbols.begin(), csymbols.end());
+  }
 
   if (symbols.count("tohost") && symbols.count("fromhost")) {
     tohost_addr = symbols["tohost"];
@@ -142,6 +151,25 @@ void htif_t::load_program()
     reg_t dummy_entry;
     load_payload(payload, &dummy_entry);
   }
+
+  for (auto i : symbols)
+  {
+    auto it = addr2symbol.find(i.second);
+    if ( it == addr2symbol.end())
+      addr2symbol[i.second] = i.first;
+  }
+
+  return;
+}
+
+const char* htif_t::get_symbol(uint64_t addr)
+{
+  auto it = addr2symbol.find(addr);
+
+  if(it == addr2symbol.end())
+      return nullptr;
+
+  return it->second.c_str();
 }
 
 void htif_t::stop()

@@ -59,6 +59,11 @@ static void commit_log_print_value(FILE *log_file, int width, uint64_t val)
   commit_log_print_value(log_file, width, &val);
 }
 
+const char* processor_t::get_symbol(uint64_t addr)
+{
+  return sim->get_symbol(addr);
+}
+
 static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
 {
   FILE *log_file = p->get_log_file();
@@ -70,6 +75,9 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
   int xlen = p->get_state()->last_inst_xlen;
   int flen = p->get_state()->last_inst_flen;
 
+  // print core id on all lines so it is easy to grep
+  uint64_t id = p->get_csr(CSR_MHARTID);
+  fprintf(log_file, "core%4ld: ", id);
   fprintf(log_file, "%1d ", priv);
   commit_log_print_value(log_file, xlen, pc);
   fprintf(log_file, " (");
