@@ -67,6 +67,7 @@ const int NCSR = 4096;
   (((x) & 0x03) < 0x03 ? 2 : \
    ((x) & 0x1f) < 0x1f ? 4 : \
    ((x) & 0x3f) < 0x3f ? 6 : \
+   ((x) & 0x7f) == 0x7f ? 4 : \
    8)
 #define MAX_INSN_LENGTH 8
 #define PC_ALIGN 2
@@ -2382,6 +2383,118 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
       require(0); \
       break; \
   }
+
+// rvp macro
+#define INSERT_BITS(STRUCT, VALUE, MASK, SHIFT) \
+  (STRUCT) = (((STRUCT) & ~((reg_t)(MASK) << (SHIFT))) \
+              | ((reg_t)((VALUE) & (MASK)) << (SHIFT)))
+
+#define EXTRACT_BITS(STRUCT, MASK, SHIFT) \
+  (((STRUCT) >> (SHIFT)) & (MASK))
+
+#define P_FIELD(R, INDEX, TYPE) \
+  EXTRACT_BITS(R, (((reg_t)1 << (sizeof(TYPE) * 8)) - 1), ((INDEX) * sizeof(TYPE) * 8)) \
+
+#define P_B(R, INDEX) P_FIELD(R, INDEX, uint8_t)
+#define P_H(R, INDEX) P_FIELD(R, INDEX, uint16_t)
+#define P_W(R, INDEX) P_FIELD(R, INDEX, uint32_t)
+
+#define WRITE_PD() \
+  INSERT_BITS(rd_tmp, pd, (((reg_t)1 << (sizeof(pd) * 8)) - 1), (i * sizeof(pd) * 8)) \
+
+#define P_LOOP_BASE(BIT) \
+  require(BIT == e8 || BIT == e16 || BIT == e32); \
+  reg_t rd_tmp = 0; \
+  reg_t rs1 = RS1; \
+  reg_t rs2 = RS2; \
+  unsigned len = xlen / BIT; \
+  for (int i = len - 1; i >= 0; --i) {
+
+#define P_PARAMS(x) \
+  type_sew_t<x>::type pd = 0; \
+  type_sew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type); \
+  type_sew_t<x>::type ps2 = P_FIELD(rs2, i, type_sew_t<x>::type);
+
+#define P_UPARAMS(x) \
+  type_usew_t<x>::type pd = 0; \
+  type_usew_t<x>::type ps1 = P_FIELD(rs1, i, type_usew_t<x>::type); \
+  type_usew_t<x>::type ps2 = P_FIELD(rs2, i, type_usew_t<x>::type);
+
+#define P_CORSS_PARAMS(x) \
+  type_sew_t<x>::type pd = 0; \
+  type_sew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type); \
+  type_sew_t<x>::type ps2 = P_FIELD(rs2, (i ^ 1), type_sew_t<x>::type);
+
+#define P_CORSS_UPARAMS(x) \
+  type_usew_t<x>::type pd = 0; \
+  type_usew_t<x>::type ps1 = P_FIELD(rs1, i, type_usew_t<x>::type); \
+  type_usew_t<x>::type ps2 = P_FIELD(rs2, (i ^ 1), type_usew_t<x>::type);
+
+#define P_LOOP_BODY(x, BODY) { \
+  P_PARAMS(x) \
+  BODY \
+  WRITE_PD(); \
+}
+
+#define P_ULOOP_BODY(x, BODY) { \
+  P_UPARAMS(x) \
+  BODY \
+  WRITE_PD(); \
+}
+
+#define P_CROSS_LOOP_BODY(x, BODY) { \
+  P_CORSS_PARAMS(x) \
+  BODY \
+  WRITE_PD(); \
+}
+
+#define P_CROSS_ULOOP_BODY(x, BODY) { \
+  P_CORSS_UPARAMS(x) \
+  BODY \
+  WRITE_PD(); \
+}
+
+#define P_LOOP(BIT, BODY) \
+  P_LOOP_BASE(BIT) \
+  P_LOOP_BODY(BIT, BODY) \
+  P_LOOP_END()
+
+#define P_ULOOP(BIT, BODY) \
+  P_LOOP_BASE(BIT) \
+  P_ULOOP_BODY(BIT, BODY) \
+  P_LOOP_END()
+
+#define P_CROSS_LOOP(BIT, BODY1, BODY2) \
+  P_LOOP_BASE(BIT) \
+  P_CROSS_LOOP_BODY(BIT, BODY1) \
+  --i; \
+  P_CROSS_LOOP_BODY(BIT, BODY2) \
+  P_LOOP_END()
+
+#define P_CROSS_ULOOP(BIT, BODY1, BODY2) \
+  P_LOOP_BASE(BIT) \
+  P_CROSS_ULOOP_BODY(BIT, BODY1) \
+  --i; \
+  P_CROSS_ULOOP_BODY(BIT, BODY2) \
+  P_LOOP_END()
+
+#define P_STRAIGHT_LOOP(BIT, BODY1, BODY2) \
+  P_LOOP_BASE(BIT) \
+  P_LOOP_BODY(BIT, BODY1) \
+  --i; \
+  P_LOOP_BODY(BIT, BODY2) \
+  P_LOOP_END()
+
+#define P_STRAIGHT_ULOOP(BIT, BODY1, BODY2) \
+  P_LOOP_BASE(BIT) \
+  P_ULOOP_BODY(BIT, BODY1) \
+  --i; \
+  P_ULOOP_BODY(BIT, BODY2) \
+  P_LOOP_END()
+
+#define P_LOOP_END() \
+  } \
+  WRITE_RD(rd_tmp);
 
 #define DEBUG_START             0x0
 #define DEBUG_END               (0x1000 - 1)
