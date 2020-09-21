@@ -356,19 +356,7 @@ inline freg_t f128_negate(freg_t a)
 #define validate_csr(which, write) ({ \
   if (!STATE.serialized) return PC_SERIALIZE_BEFORE; \
   STATE.serialized = false; \
-  unsigned csr_priv = get_field((which), 0x300); \
-  bool mode_unsupported = (csr_priv == PRV_S && !P.supports_extension('S')) || \
-                          (csr_priv == PRV_HS && !P.supports_extension('H')); \
-  if (mode_unsupported) \
-    throw trap_illegal_instruction(insn.bits()); \
-  unsigned state_prv = (STATE.prv == PRV_S && !STATE.v) ? PRV_HS: STATE.prv; \
-  unsigned csr_read_only = get_field((which), 0xC00) == 3; \
-  if (((write) && csr_read_only) || state_prv < csr_priv) { \
-    if (csr_priv == PRV_HS) \
-      throw trap_virtual_instruction(insn.bits()); \
-    else \
-      throw trap_illegal_instruction(insn.bits()); \
-  } \
+  /* permissions check occurs in get_csr */ \
   (which); })
 
 /* For debug only. This will fail if the native machine's float types are not IEEE */
