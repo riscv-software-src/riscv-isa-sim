@@ -1298,7 +1298,7 @@ void processor_t::set_csr(int which, reg_t val)
 // Note that get_csr is sometimes called when read side-effects should not
 // be actioned.  In other words, Spike cannot currently support CSRs with
 // side effects on reads.
-reg_t processor_t::get_csr(int which, insn_t insn)
+reg_t processor_t::get_csr(int which, insn_t insn, bool write)
 {
   uint32_t ctr_en = -1;
   if (state.prv < PRV_M)
@@ -1309,18 +1309,24 @@ reg_t processor_t::get_csr(int which, insn_t insn)
     ctr_en &= state.scounteren;
   bool ctr_ok = (ctr_en >> (which & 31)) & 1;
 
+  reg_t res = 0;
+#define ret(n) do { \
+    res = (n); \
+    goto out; \
+  } while (false)
+
   if (ctr_ok) {
     if (which >= CSR_HPMCOUNTER3 && which <= CSR_HPMCOUNTER31)
-      return 0;
+      ret(0);
     if (xlen == 32 && which >= CSR_HPMCOUNTER3H && which <= CSR_HPMCOUNTER31H)
-      return 0;
+      ret(0);
   }
   if (which >= CSR_MHPMCOUNTER3 && which <= CSR_MHPMCOUNTER31)
-    return 0;
+    ret(0);
   if (xlen == 32 && which >= CSR_MHPMCOUNTER3H && which <= CSR_MHPMCOUNTER31H)
-    return 0;
+    ret(0);
   if (which >= CSR_MHPMEVENT3 && which <= CSR_MHPMEVENT31)
-    return 0;
+    ret(0);
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
     // If n_pmp is zero, that means pmp is not implemented hence raise trap if it tries to access the csr
@@ -1328,9 +1334,9 @@ reg_t processor_t::get_csr(int which, insn_t insn)
       goto throw_illegal;
     reg_t i = which - CSR_PMPADDR0;
     if ((state.pmpcfg[i] & PMP_A) >= PMP_NAPOT)
-      return state.pmpaddr[i] | (~pmp_tor_mask() >> 1);
+      ret(state.pmpaddr[i] | (~pmp_tor_mask() >> 1));
     else
-      return state.pmpaddr[i] & pmp_tor_mask();
+      ret(state.pmpaddr[i] & pmp_tor_mask());
   }
 
   if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.max_pmp / 4) {
@@ -1339,7 +1345,7 @@ reg_t processor_t::get_csr(int which, insn_t insn)
     reg_t res = 0;
     for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8 && i < state.max_pmp; i++)
       res |= reg_t(state.pmpcfg[i]) << (8 * (i - i0));
-    return res;
+    ret(res);
   }
 
   switch (which)
@@ -1348,26 +1354,26 @@ reg_t processor_t::get_csr(int which, insn_t insn)
       require_fp;
       if (!supports_extension('F'))
         break;
-      return state.fflags;
+      ret(state.fflags);
     case CSR_FRM:
       require_fp;
       if (!supports_extension('F'))
         break;
-      return state.frm;
+      ret(state.frm);
     case CSR_FCSR:
       require_fp;
       if (!supports_extension('F'))
         break;
-      return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
+      ret((state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT));
     case CSR_VCSR:
       require_vector_vs;
       if (!supports_extension('V'))
         break;
-      return (VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT);
+      ret((VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT));
     case CSR_INSTRET:
     case CSR_CYCLE:
       if (ctr_ok)
-        return state.minstret;
+        ret(state.minstret);
       if (state.v &&
           ((state.mcounteren >> (which & 31)) & 1) &&
           !((state.hcounteren >> (which & 31)) & 1)) {
@@ -1376,11 +1382,11 @@ reg_t processor_t::get_csr(int which, insn_t insn)
       break;
     case CSR_MINSTRET:
     case CSR_MCYCLE:
-      return state.minstret;
+      ret(state.minstret);
     case CSR_INSTRETH:
     case CSR_CYCLEH:
       if (ctr_ok && xlen == 32)
-        return state.minstret >> 32;
+        ret(state.minstret >> 32);
       if (state.v &&
           ((state.mcounteren >> (which & 31)) & 1) &&
           !((state.hcounteren >> (which & 31)) & 1)) {
@@ -1390,14 +1396,14 @@ reg_t processor_t::get_csr(int which, insn_t insn)
     case CSR_MINSTRETH:
     case CSR_MCYCLEH:
       if (xlen == 32)
-        return state.minstret >> 32;
+        ret(state.minstret >> 32);
       break;
-    case CSR_SCOUNTEREN: return state.scounteren;
+    case CSR_SCOUNTEREN: ret(state.scounteren);
     case CSR_MCOUNTEREN:
       if (!supports_extension('U'))
         break;
-      return state.mcounteren;
-    case CSR_MCOUNTINHIBIT: return 0;
+      ret(state.mcounteren);
+    case CSR_MCOUNTINHIBIT: ret(0);
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
                  | (supports_extension('V') ? SSTATUS_VS : 0)
@@ -1406,52 +1412,52 @@ reg_t processor_t::get_csr(int which, insn_t insn)
       if ((sstatus & SSTATUS_FS) == SSTATUS_FS ||
           (sstatus & SSTATUS_XS) == SSTATUS_XS)
         sstatus |= (xlen == 32 ? SSTATUS32_SD : SSTATUS64_SD);
-      return sstatus;
+      ret(sstatus);
     }
     case CSR_SIP: {
       if (state.v) {
-        return (state.mip & state.hideleg & MIP_VS_MASK) >> 1;
+        ret((state.mip & state.hideleg & MIP_VS_MASK) >> 1);
       } else {
-        return state.mip & state.mideleg & ~MIP_HS_MASK;
+        ret(state.mip & state.mideleg & ~MIP_HS_MASK);
       }
     }
     case CSR_SIE: {
       if (state.v) {
-        return (state.mie & state.hideleg & MIP_VS_MASK) >> 1;
+        ret((state.mie & state.hideleg & MIP_VS_MASK) >> 1);
       } else {
-        return state.mie & state.mideleg & ~MIP_HS_MASK;
+        ret(state.mie & state.mideleg & ~MIP_HS_MASK);
       }
     }
     case CSR_SEPC: {
       if (state.v) {
-        return state.vsepc & pc_alignment_mask();
+        ret(state.vsepc & pc_alignment_mask());
       } else {
-        return state.sepc & pc_alignment_mask();
+        ret(state.sepc & pc_alignment_mask());
       }
     }
     case CSR_STVAL: {
       if (state.v) {
-        return state.vstval;
+        ret(state.vstval);
       } else {
-        return state.stval;
+        ret(state.stval);
       }
     }
     case CSR_STVEC: {
       if (state.v) {
-        return state.vstvec;
+        ret(state.vstvec);
       } else {
-        return state.stvec;
+        ret(state.stvec);
       }
     }
     case CSR_SCAUSE: {
       if (state.v) {
         if (max_xlen > xlen)
-          return state.vscause | ((state.vscause >> (max_xlen-1)) << (xlen-1));
-        return state.vscause;
+          ret(state.vscause | ((state.vscause >> (max_xlen-1)) << (xlen-1)));
+        ret(state.vscause);
       } else {
         if (max_xlen > xlen)
-          return state.scause | ((state.scause >> (max_xlen-1)) << (xlen-1));
-        return state.scause;
+          ret(state.scause | ((state.scause >> (max_xlen-1)) << (xlen-1)));
+        ret(state.scause);
       }
     }
     case CSR_SATP: {
@@ -1460,75 +1466,75 @@ reg_t processor_t::get_csr(int which, insn_t insn)
       if (state.v) {
         if (get_field(state.hstatus, HSTATUS_VTVM))
           goto throw_virtual;
-        return state.vsatp;
+        ret(state.vsatp);
       } else {
-        return state.satp;
+        ret(state.satp);
       }
     }
     case CSR_SSCRATCH: {
       if (state.v) {
-        return state.vsscratch;
+        ret(state.vsscratch);
       } else {
-        return state.sscratch;
+        ret(state.sscratch);
       }
     }
-    case CSR_MSTATUS: return state.mstatus;
-    case CSR_MIP: return state.mip;
-    case CSR_MIE: return state.mie;
-    case CSR_MEPC: return state.mepc & pc_alignment_mask();
-    case CSR_MSCRATCH: return state.mscratch;
-    case CSR_MCAUSE: return state.mcause;
-    case CSR_MTVAL: return state.mtval;
+    case CSR_MSTATUS: ret(state.mstatus);
+    case CSR_MIP: ret(state.mip);
+    case CSR_MIE: ret(state.mie);
+    case CSR_MEPC: ret(state.mepc & pc_alignment_mask());
+    case CSR_MSCRATCH: ret(state.mscratch);
+    case CSR_MCAUSE: ret(state.mcause);
+    case CSR_MTVAL: ret(state.mtval);
     case CSR_MTVAL2:
       if (supports_extension('H'))
-        return state.mtval2;
+        ret(state.mtval2);
       break;
     case CSR_MTINST:
       if (supports_extension('H'))
-        return state.mtinst;
+        ret(state.mtinst);
       break;
-    case CSR_MISA: return state.misa;
-    case CSR_MARCHID: return 5;
-    case CSR_MIMPID: return 0;
-    case CSR_MVENDORID: return 0;
-    case CSR_MHARTID: return id;
-    case CSR_MTVEC: return state.mtvec;
+    case CSR_MISA: ret(state.misa);
+    case CSR_MARCHID: ret(5);
+    case CSR_MIMPID: ret(0);
+    case CSR_MVENDORID: ret(0);
+    case CSR_MHARTID: ret(id);
+    case CSR_MTVEC: ret(state.mtvec);
     case CSR_MEDELEG:
       if (!supports_extension('S'))
         break;
-      return state.medeleg;
+      ret(state.medeleg);
     case CSR_MIDELEG:
       if (!supports_extension('S'))
         break;
-      return state.mideleg;
-    case CSR_HSTATUS: return state.hstatus;
-    case CSR_HEDELEG: return state.hedeleg;
-    case CSR_HIDELEG: return state.hideleg;
-    case CSR_HIE: return state.mie & MIP_HS_MASK;
-    case CSR_HCOUNTEREN: return state.hcounteren;
-    case CSR_HGEIE: return 0;
-    case CSR_HTVAL: return state.htval;
-    case CSR_HIP: return state.mip & MIP_HS_MASK;
-    case CSR_HVIP: return state.mip & MIP_VS_MASK;
-    case CSR_HTINST: return state.htinst;
-    case CSR_HGATP: return state.hgatp;
-    case CSR_HGEIP: return 0;
+      ret(state.mideleg);
+    case CSR_HSTATUS: ret(state.hstatus);
+    case CSR_HEDELEG: ret(state.hedeleg);
+    case CSR_HIDELEG: ret(state.hideleg);
+    case CSR_HIE: ret(state.mie & MIP_HS_MASK);
+    case CSR_HCOUNTEREN: ret(state.hcounteren);
+    case CSR_HGEIE: ret(0);
+    case CSR_HTVAL: ret(state.htval);
+    case CSR_HIP: ret(state.mip & MIP_HS_MASK);
+    case CSR_HVIP: ret(state.mip & MIP_VS_MASK);
+    case CSR_HTINST: ret(state.htinst);
+    case CSR_HGATP: ret(state.hgatp);
+    case CSR_HGEIP: ret(0);
     case CSR_VSSTATUS: {
       reg_t mask = SSTATUS_VS_MASK;
       mask |= (supports_extension('F') ? SSTATUS_FS : 0);
       mask |= (supports_extension('V') ? SSTATUS_VS : 0);
       mask |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-      return state.vsstatus & mask;
+      ret(state.vsstatus & mask);
     }
-    case CSR_VSIE: return (state.mie & state.hideleg & MIP_VS_MASK) >> 1;
-    case CSR_VSTVEC: return state.vstvec;
-    case CSR_VSSCRATCH: return state.vsscratch;
-    case CSR_VSEPC: return state.vsepc & pc_alignment_mask();
-    case CSR_VSCAUSE: return state.vscause;
-    case CSR_VSTVAL: return state.vstval;
-    case CSR_VSIP: return (state.mip & state.hideleg & MIP_VS_MASK) >> 1;
-    case CSR_VSATP: return state.vsatp;
-    case CSR_TSELECT: return state.tselect;
+    case CSR_VSIE: ret((state.mie & state.hideleg & MIP_VS_MASK) >> 1);
+    case CSR_VSTVEC: ret(state.vstvec);
+    case CSR_VSSCRATCH: ret(state.vsscratch);
+    case CSR_VSEPC: ret(state.vsepc & pc_alignment_mask());
+    case CSR_VSCAUSE: ret(state.vscause);
+    case CSR_VSTVAL: ret(state.vstval);
+    case CSR_VSIP: ret((state.mip & state.hideleg & MIP_VS_MASK) >> 1);
+    case CSR_VSATP: ret(state.vsatp);
+    case CSR_TSELECT: ret(state.tselect);
     case CSR_TDATA1:
       if (state.tselect < state.num_triggers) {
         reg_t v = 0;
@@ -1548,19 +1554,19 @@ reg_t processor_t::get_csr(int which, insn_t insn)
         v = set_field(v, MCONTROL_EXECUTE, mc->execute);
         v = set_field(v, MCONTROL_STORE, mc->store);
         v = set_field(v, MCONTROL_LOAD, mc->load);
-        return v;
+        ret(v);
       } else {
-        return 0;
+        ret(0);
       }
       break;
     case CSR_TDATA2:
       if (state.tselect < state.num_triggers) {
-        return state.tdata2[state.tselect];
+        ret(state.tdata2[state.tselect]);
       } else {
-        return 0;
+        ret(0);
       }
       break;
-    case CSR_TDATA3: return 0;
+    case CSR_TDATA3: ret(0);
     case CSR_DCSR:
       {
         if (!state.debug_mode)
@@ -1576,57 +1582,81 @@ reg_t processor_t::get_csr(int which, insn_t insn)
         v = set_field(v, DCSR_CAUSE, state.dcsr.cause);
         v = set_field(v, DCSR_STEP, state.dcsr.step);
         v = set_field(v, DCSR_PRV, state.dcsr.prv);
-        return v;
+        ret(v);
       }
     case CSR_DPC:
       if (!state.debug_mode)
         break;
-      return state.dpc & pc_alignment_mask();
+      ret(state.dpc & pc_alignment_mask());
     case CSR_DSCRATCH0:
       if (!state.debug_mode)
         break;
-      return state.dscratch0;
+      ret(state.dscratch0);
     case CSR_DSCRATCH1:
       if (!state.debug_mode)
         break;
-      return state.dscratch1;
+      ret(state.dscratch1);
     case CSR_VSTART:
       require_vector_vs;
       if (!supports_extension('V'))
         break;
-      return VU.vstart;
+      ret(VU.vstart);
     case CSR_VXSAT:
       require_vector_vs;
       if (!supports_extension('V'))
         break;
-      return VU.vxsat;
+      ret(VU.vxsat);
     case CSR_VXRM:
       require_vector_vs;
       if (!supports_extension('V'))
         break;
-      return VU.vxrm;
+      ret(VU.vxrm);
     case CSR_VL:
       require_vector_vs;
       if (!supports_extension('V'))
         break;
-      return VU.vl;
+      ret(VU.vl);
     case CSR_VTYPE:
       require_vector_vs;
       if (!supports_extension('V'))
         break;
-      return VU.vtype;
+      ret(VU.vtype);
     case CSR_VLENB:
       require_vector_vs;
       if (!supports_extension('V'))
         break;
-      return VU.vlenb;
+      ret(VU.vlenb);
   }
 
+#undef ret
+
+  // If we get here, the CSR doesn't exist.  Unimplemented CSRs always throw
+  // illegal-instruction exceptions, not virtual-instruction exceptions.
 throw_illegal:
   throw trap_illegal_instruction(insn.bits());
 
 throw_virtual:
   throw trap_virtual_instruction(insn.bits());
+
+out:
+  // Check permissions.  Raise virtual-instruction exception if V=1,
+  // privileges are insufficient, and the CSR belongs to supervisor or
+  // hypervisor.  Raise illegal-instruction exception otherwise.
+  unsigned csr_priv = get_field(which, 0x300);
+  bool csr_read_only = get_field(which, 0xC00) == 3;
+  unsigned priv = state.prv == PRV_S && !state.v ? PRV_HS : state.prv;
+
+  if ((csr_priv == PRV_S && !supports_extension('S')) ||
+      (csr_priv == PRV_HS && !supports_extension('H')))
+    goto throw_illegal;
+
+  if ((write && csr_read_only) || priv < csr_priv) {
+    if (state.v && csr_priv <= PRV_HS)
+      goto throw_virtual;
+    goto throw_illegal;
+  }
+
+  return res;
 }
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)
