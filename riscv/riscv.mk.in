@@ -51,7 +51,6 @@ riscv_srcs = \
 	extension.cc \
 	extensions.cc \
 	rocc.cc \
-	regnames.cc \
 	devices.cc \
 	rom.cc \
 	clint.cc \

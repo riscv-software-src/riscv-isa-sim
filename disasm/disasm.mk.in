@@ -1,0 +1,5 @@
+disasm_CFLAGS = -fPIC
+
+disasm_srcs = \
+  disasm.cc \
+	regnames.cc \
