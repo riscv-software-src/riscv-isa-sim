@@ -21,7 +21,9 @@ int main(int argc, char** argv)
 
   std::function<extension_t*()> extension;
   option_parser_t parser;
+#ifdef HAVE_DLOPEN
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
+#endif
   parser.option(0, "isa", 1, [&](const char* s){isa = s;});
   parser.parse(argv);
 
