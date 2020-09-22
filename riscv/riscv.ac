@@ -19,9 +19,7 @@ AC_ARG_WITH(varch,
   AC_DEFINE_UNQUOTED([DEFAULT_VARCH], ["vlen:128,elen:64,slen:128"], [Default value for --varch switch]))
 
 
-AC_SEARCH_LIBS([dlopen], [dl dld], [], [
-  AC_MSG_ERROR([unable to find the dlopen() function])
-])
+AC_SEARCH_LIBS([dlopen], [dl dld], AC_DEFINE([HAVE_DLOPEN], [], [Dynamic library loading is supported]))
 
 AC_CHECK_LIB(pthread, pthread_create, [], [AC_MSG_ERROR([libpthread is required])])
 
