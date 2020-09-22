@@ -5262,19 +5262,7 @@ ac_config_headers="$ac_config_headers config.h"
 
 ac_config_files="$ac_config_files Makefile"
 
-ac_config_files="$ac_config_files riscv-spike.pc"
-
-ac_config_files="$ac_config_files riscv-riscv.pc"
-
 ac_config_files="$ac_config_files riscv-fesvr.pc"
-
-ac_config_files="$ac_config_files riscv-softfloat.pc"
-
-ac_config_files="$ac_config_files riscv-customext.pc"
-
-ac_config_files="$ac_config_files riscv-fdt.pc"
-
-ac_config_files="$ac_config_files riscv-spike_main.pc"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -5977,13 +5965,7 @@ do
     "spike_dasm.mk") CONFIG_FILES="$CONFIG_FILES spike_dasm.mk:spike_dasm/spike_dasm.mk.in" ;;
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
-    "riscv-spike.pc") CONFIG_FILES="$CONFIG_FILES riscv-spike.pc" ;;
-    "riscv-riscv.pc") CONFIG_FILES="$CONFIG_FILES riscv-riscv.pc" ;;
     "riscv-fesvr.pc") CONFIG_FILES="$CONFIG_FILES riscv-fesvr.pc" ;;
-    "riscv-softfloat.pc") CONFIG_FILES="$CONFIG_FILES riscv-softfloat.pc" ;;
-    "riscv-customext.pc") CONFIG_FILES="$CONFIG_FILES riscv-customext.pc" ;;
-    "riscv-fdt.pc") CONFIG_FILES="$CONFIG_FILES riscv-fdt.pc" ;;
-    "riscv-spike_main.pc") CONFIG_FILES="$CONFIG_FILES riscv-spike_main.pc" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
