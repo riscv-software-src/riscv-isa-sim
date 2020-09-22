@@ -16,6 +16,8 @@
 #include <memory>
 #include <sys/types.h>
 
+#include "difftest.h"
+
 class mmu_t;
 class remote_bitbang_t;
 
@@ -36,9 +38,18 @@ public:
   // DiffTest
   void set_log_commits(bool value) {log = value;}
   void difftest_continue(size_t n) { step(n); }
+  
   void difftest_setup() {
     set_procs_debug(true);
     start();
+  }
+
+  void* get_regs(difftest_regs_t* difftest) {
+    state_t s = *(get_core(0)->get_state());
+    for (int i = 0; i < 32; i++) {
+      difftest->regs[i] = s.XPR[i];
+    }
+    difftest->pc = s.pc;
   }
 
   // run the simulation to completion
