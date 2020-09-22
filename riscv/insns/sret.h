@@ -1,7 +1,7 @@
 require_extension('S');
-require_privilege(get_field(STATE.mstatus, MSTATUS_TSR) ? PRV_M : PRV_S);
-if (STATE.v && get_field(STATE.hstatus, HSTATUS_VTSR))
+if (STATE.v && (STATE.prv == PRV_U || get_field(STATE.hstatus, HSTATUS_VTSR)))
   require_novirt();
+require_privilege(get_field(STATE.mstatus, MSTATUS_TSR) ? PRV_M : PRV_S);
 reg_t next_pc = (STATE.v) ? p->get_state()->vsepc : p->get_state()->sepc;
 set_pc_and_serialize(next_pc);
 reg_t s = STATE.mstatus;
