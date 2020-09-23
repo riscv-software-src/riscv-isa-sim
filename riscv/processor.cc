@@ -766,7 +766,9 @@ void processor_t::set_csr(int which, reg_t val)
 {
 #if defined(RISCV_ENABLE_COMMITLOG)
 #define LOG_CSR(rd) \
-  STATE.log_reg_write[((which) << 4) | 4] = {get_csr(rd), 0};
+  STATE.log_reg_write[((which) << 4) | 4] = { \
+      get_csr(rd, insn_t(0), false, true), \
+      0};
 #else
 #define LOG_CSR(rd)
 #endif
@@ -1298,7 +1300,7 @@ void processor_t::set_csr(int which, reg_t val)
 // Note that get_csr is sometimes called when read side-effects should not
 // be actioned.  In other words, Spike cannot currently support CSRs with
 // side effects on reads.
-reg_t processor_t::get_csr(int which, insn_t insn, bool write)
+reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 {
   uint32_t ctr_en = -1;
   if (state.prv < PRV_M)
@@ -1642,6 +1644,10 @@ out:
   // Check permissions.  Raise virtual-instruction exception if V=1,
   // privileges are insufficient, and the CSR belongs to supervisor or
   // hypervisor.  Raise illegal-instruction exception otherwise.
+
+  if (peek)
+    return res;
+
   unsigned csr_priv = get_field(which, 0x300);
   bool csr_read_only = get_field(which, 0xC00) == 3;
   unsigned priv = state.prv == PRV_S && !state.v ? PRV_HS : state.prv;
