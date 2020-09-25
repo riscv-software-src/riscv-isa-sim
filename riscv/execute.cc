@@ -225,6 +225,7 @@ void processor_t::step(size_t n)
     mmu_t* _mmu = mmu;
 
     #define advance_pc() \
+     state.last_pc = state.pc; \
      if (unlikely(invalid_pc(pc))) { \
        switch (pc) { \
          case PC_SERIALIZE_BEFORE: state.serialized = true; break; \
@@ -304,6 +305,7 @@ void processor_t::step(size_t n)
           if (unlikely(ic_entry->tag != pc)) break; \
           if (unlikely(instret+1 == n)) break; \
           instret++; \
+          state.last_pc = state.pc; \
           state.pc = pc; \
         }
 

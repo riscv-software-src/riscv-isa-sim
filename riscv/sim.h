@@ -49,7 +49,8 @@ public:
     for (int i = 0; i < 32; i++) {
       difftest->regs[i] = s.XPR[i];
     }
-    difftest->pc = s.pc;
+    difftest->npc = s.pc;
+    difftest->pc = s.last_pc;
   }
 
   // run the simulation to completion
