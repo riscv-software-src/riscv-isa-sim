@@ -1462,13 +1462,13 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       }
     }
     case CSR_SATP: {
-      if (get_field(state.mstatus, MSTATUS_TVM))
-        require_privilege(PRV_M);
       if (state.v) {
         if (get_field(state.hstatus, HSTATUS_VTVM))
           goto throw_virtual;
         ret(state.vsatp);
       } else {
+        if (get_field(state.mstatus, MSTATUS_TVM))
+          require_privilege(PRV_M);
         ret(state.satp);
       }
     }
@@ -1518,7 +1518,11 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_HIP: ret(state.mip & MIP_HS_MASK);
     case CSR_HVIP: ret(state.mip & MIP_VS_MASK);
     case CSR_HTINST: ret(state.htinst);
-    case CSR_HGATP: ret(state.hgatp);
+    case CSR_HGATP: {
+      if (!state.v && get_field(state.mstatus, MSTATUS_TVM))
+        require_privilege(PRV_M);
+      ret(state.hgatp);
+    }
     case CSR_HGEIP: ret(0);
     case CSR_VSSTATUS: {
       reg_t mask = SSTATUS_VS_MASK;
