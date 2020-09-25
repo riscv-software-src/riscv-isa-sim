@@ -1343,10 +1343,10 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
   if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.max_pmp / 4) {
     require((which & ((xlen / 32) - 1)) == 0);
 
-    reg_t res = 0;
+    reg_t cfg_res = 0;
     for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8 && i < state.max_pmp; i++)
-      res |= reg_t(state.pmpcfg[i]) << (8 * (i - i0));
-    ret(res);
+      cfg_res |= reg_t(state.pmpcfg[i]) << (8 * (i - i0));
+    ret(cfg_res);
   }
 
   switch (which)
