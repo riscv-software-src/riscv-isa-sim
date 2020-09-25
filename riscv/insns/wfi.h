@@ -1,4 +1,11 @@
-if (STATE.v && (STATE.prv == PRV_U || get_field(STATE.hstatus, HSTATUS_VTW)))
+if (STATE.v && STATE.prv == PRV_U) {
   require_novirt();
-require_privilege(get_field(STATE.mstatus, MSTATUS_TW) ? PRV_M : PRV_S);
+} else if (get_field(STATE.mstatus, MSTATUS_TW)) {
+  require_privilege(PRV_M);
+} else if (STATE.v) { // VS-mode
+  if (get_field(STATE.hstatus, HSTATUS_VTW))
+    require_novirt();
+} else {
+  require_privilege(PRV_S);
+}
 wfi();
