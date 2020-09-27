@@ -16,6 +16,11 @@
 #include <memory>
 #include <sys/types.h>
 
+// TO DELETE
+#include <iostream>
+#include <stdlib.h>
+#include <unistd.h>
+
 #include "difftest.h"
 
 class mmu_t;
@@ -39,18 +44,26 @@ public:
   void set_log_commits(bool value) {log = value;}
   void difftest_continue(size_t n) { step(n); }
   
+
   void difftest_setup() {
     set_procs_debug(true);
     start();
+
+    state_t* state = get_core(0)->get_state();
+    do {
+      step(1);
+    } while(state->pc != start_pc);
+
+    state->XPR.reset();
   }
 
-  void* get_regs(difftest_regs_t* difftest) {
+  void* get_state(difftest_sim_state_t* buf) {
     state_t s = *(get_core(0)->get_state());
     for (int i = 0; i < 32; i++) {
-      difftest->regs[i] = s.XPR[i];
+      buf->regs[i] = s.XPR[i];
     }
-    difftest->npc = s.pc;
-    difftest->pc = s.last_pc;
+    buf->npc = s.pc;
+    buf->pc = s.last_pc;
   }
 
   // run the simulation to completion

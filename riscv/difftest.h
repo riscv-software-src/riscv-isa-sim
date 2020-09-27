@@ -4,10 +4,16 @@
 #include "decode.h"
 #include <iostream>
 
-struct difftest_regs_t {
+struct difftest_sim_state_t {
     reg_t regs[32];
     reg_t pc;
     reg_t npc;
+};
+
+struct difftest_emu_state_t {
+    reg_t regs[32];
+    reg_t pc;
+    reg_t inst;
 };
 
 #endif
