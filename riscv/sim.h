@@ -46,7 +46,6 @@ public:
   
 
   void difftest_setup() {
-    set_procs_debug(true);
     start();
 
     state_t* state = get_core(0)->get_state();
