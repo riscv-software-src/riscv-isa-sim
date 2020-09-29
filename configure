@@ -5268,6 +5268,8 @@ ac_config_files="$ac_config_files riscv-riscv.pc"
 
 ac_config_files="$ac_config_files riscv-fesvr.pc"
 
+ac_config_files="$ac_config_files riscv-disasm.pc"
+
 ac_config_files="$ac_config_files riscv-softfloat.pc"
 
 ac_config_files="$ac_config_files riscv-customext.pc"
@@ -5980,6 +5982,7 @@ do
     "riscv-spike.pc") CONFIG_FILES="$CONFIG_FILES riscv-spike.pc" ;;
     "riscv-riscv.pc") CONFIG_FILES="$CONFIG_FILES riscv-riscv.pc" ;;
     "riscv-fesvr.pc") CONFIG_FILES="$CONFIG_FILES riscv-fesvr.pc" ;;
+    "riscv-disasm.pc") CONFIG_FILES="$CONFIG_FILES riscv-disasm.pc" ;;
     "riscv-softfloat.pc") CONFIG_FILES="$CONFIG_FILES riscv-softfloat.pc" ;;
     "riscv-customext.pc") CONFIG_FILES="$CONFIG_FILES riscv-customext.pc" ;;
     "riscv-fdt.pc") CONFIG_FILES="$CONFIG_FILES riscv-fdt.pc" ;;
