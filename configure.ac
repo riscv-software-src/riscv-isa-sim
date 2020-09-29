@@ -116,4 +116,5 @@ MCPPBS_SUBPROJECTS([ fesvr, riscv, disasm, customext, fdt, softfloat, spike_main
 AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([riscv-fesvr.pc])
+AC_CONFIG_FILES([riscv-disasm.pc])
 AC_OUTPUT
