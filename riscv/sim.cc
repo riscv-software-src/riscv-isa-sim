@@ -294,6 +294,13 @@ char* sim_t::addr_to_mem(reg_t addr) {
   return NULL;
 }
 
+#ifdef RISCV_ENABLE_COMMITLOG
+const char* sim_t::get_symbol(uint64_t addr)
+{
+  return htif_t::get_symbol(addr);
+}
+#endif
+
 // htif
 
 void sim_t::reset()

@@ -16,6 +16,10 @@ public:
   virtual bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes) = 0;
   // Callback for processors to let the simulation know they were reset.
   virtual void proc_reset(unsigned id) = 0;
+
+#ifdef RISCV_ENABLE_COMMITLOG
+  virtual const char* get_symbol(uint64_t addr) = 0;
+#endif
 };
 
 #endif
