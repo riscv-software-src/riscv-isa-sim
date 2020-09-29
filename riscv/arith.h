@@ -109,6 +109,26 @@ T sat_subu(T x, T y, bool &sat)
   return res;
 }
 
+template<typename T, typename UT>
+T sat_shl(T x, uint16_t y, bool &sat)
+{
+  UT ux = x;
+  T res = x << y;
+  sat = false;
+  int sh = sizeof(T) * 8 - 1;
+
+  /* Calculate overflowed result. (Don't change the sign bit of ux) */
+  ux = (ux >> sh) + (((UT)0x1 << sh) - 1);
+
+  sat = (x > 0 && res < x) || (x < 0 && res > x);
+  
+  if (sat) {
+    res = ux;
+  }
+
+  return res;
+}
+
 static inline uint64_t extract64(uint64_t val, int pos, int len)
 {
   assert(pos >= 0 && len > 0 && len <= 64 - pos);
