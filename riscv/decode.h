@@ -133,6 +133,12 @@ public:
   uint64_t v_vma() { return x(27, 1); }
   uint64_t v_mew() { return x(28, 1); }
 
+  uint64_t p_imm2() { return x(20, 2); }
+  uint64_t p_imm3() { return x(20, 3); }
+  uint64_t p_imm4() { return x(20, 4); }
+  uint64_t p_imm5() { return x(20, 5); }
+  uint64_t p_imm6() { return x(20, 6); }
+
 private:
   insn_bits_t b;
   uint64_t x(int lo, int len) { return (b >> lo) & ((insn_bits_t(1) << len)-1); }
@@ -2410,6 +2416,23 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   unsigned len = xlen / BIT; \
   for (int i = len - 1; i >= 0; --i) {
 
+#define P_I_LOOP_BASE(BIT, IMMBIT) \
+  require(BIT == e8 || BIT == e16 || BIT == e32); \
+  reg_t rd_tmp = 0; \
+  reg_t rs1 = RS1; \
+  type_usew_t<BIT>::type imm##IMMBIT##u = insn.p_imm##IMMBIT(); \
+  unsigned len = xlen / BIT; \
+  for (int i = len - 1; i >= 0; --i) {
+
+#define P_X_LOOP_BASE(BIT, LOWBIT) \
+  require(BIT == e8 || BIT == e16 || BIT == e32); \
+  reg_t rd_tmp = 0; \
+  reg_t rs1 = RS1; \
+  type_usew_t<BIT>::type sa = RS2 & ((uint64_t(1) << LOWBIT) - 1); \
+  type_sew_t<BIT>::type ssa = int64_t(RS2) << (64 - LOWBIT) >> (64 - LOWBIT); \
+  unsigned len = xlen / BIT; \
+  for (int i = len - 1; i >= 0; --i) {
+
 #define P_PARAMS(x) \
   type_sew_t<x>::type pd = 0; \
   type_sew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type); \
@@ -2429,6 +2452,14 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   type_usew_t<x>::type pd = 0; \
   type_usew_t<x>::type ps1 = P_FIELD(rs1, i, type_usew_t<x>::type); \
   type_usew_t<x>::type ps2 = P_FIELD(rs2, (i ^ 1), type_usew_t<x>::type);
+
+#define P_ONE_PARAMS(x) \
+  type_sew_t<x>::type pd = 0; \
+  type_sew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type);
+
+#define P_ONE_UPARAMS(x) \
+  type_usew_t<x>::type pd = 0; \
+  type_usew_t<x>::type ps1 = P_FIELD(rs1, i, type_usew_t<x>::type);
 
 #define P_LOOP_BODY(x, BODY) { \
   P_PARAMS(x) \
@@ -2450,6 +2481,18 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 #define P_CROSS_ULOOP_BODY(x, BODY) { \
   P_CORSS_UPARAMS(x) \
+  BODY \
+  WRITE_PD(); \
+}
+
+#define P_XI_LOOP_BODY(x, BODY) { \
+  P_ONE_PARAMS(x) \
+  BODY \
+  WRITE_PD(); \
+}
+
+#define P_XI_ULOOP_BODY(x, BODY) { \
+  P_ONE_UPARAMS(x) \
   BODY \
   WRITE_PD(); \
 }
@@ -2490,6 +2533,26 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   P_ULOOP_BODY(BIT, BODY1) \
   --i; \
   P_ULOOP_BODY(BIT, BODY2) \
+  P_LOOP_END()
+
+#define P_X_LOOP(BIT, RS2_LOW_BIT, BODY) \
+  P_X_LOOP_BASE(BIT, RS2_LOW_BIT) \
+  P_XI_LOOP_BODY(BIT, BODY) \
+  P_LOOP_END()
+
+#define P_X_ULOOP(BIT, RS2_LOW_BIT, BODY) \
+  P_X_LOOP_BASE(BIT, RS2_LOW_BIT) \
+  P_XI_ULOOP_BODY(BIT, BODY) \
+  P_LOOP_END()
+
+#define P_I_LOOP(BIT, IMMBIT, BODY) \
+  P_I_LOOP_BASE(BIT, IMMBIT) \
+  P_XI_LOOP_BODY(BIT, BODY) \
+  P_LOOP_END()
+
+#define P_I_ULOOP(BIT, IMMBIT, BODY) \
+  P_I_LOOP_BASE(BIT, IMMBIT) \
+  P_XI_ULOOP_BODY(BIT, BODY) \
   P_LOOP_END()
 
 #define P_LOOP_END() \
