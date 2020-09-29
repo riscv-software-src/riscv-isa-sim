@@ -59,6 +59,11 @@ static void commit_log_print_value(FILE *log_file, int width, uint64_t val)
   commit_log_print_value(log_file, width, &val);
 }
 
+const char* processor_t::get_symbol(uint64_t addr)
+{
+  return sim->get_symbol(addr);
+}
+
 static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
 {
   FILE *log_file = p->get_log_file();
