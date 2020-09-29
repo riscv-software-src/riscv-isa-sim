@@ -94,9 +94,7 @@ private:
   void make_dtb();
   void set_rom();
 
-#ifdef RISCV_ENABLE_COMMITLOG
   const char* get_symbol(uint64_t addr);
-#endif
 
   // presents a prompt for introspection into the simulation
   void interactive();

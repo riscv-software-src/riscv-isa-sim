@@ -409,9 +409,7 @@ public:
   void set_pmp_num(reg_t pmp_num);
   void set_pmp_granularity(reg_t pmp_granularity);
 
-#ifdef RISCV_ENABLE_COMMITLOG
   const char* get_symbol(uint64_t addr);
-#endif
 
 private:
   simif_t* sim;
