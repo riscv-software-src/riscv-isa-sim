@@ -409,6 +409,8 @@ public:
   void set_pmp_num(reg_t pmp_num);
   void set_pmp_granularity(reg_t pmp_granularity);
 
+  const char* get_symbol(uint64_t addr);
+
 private:
   simif_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu

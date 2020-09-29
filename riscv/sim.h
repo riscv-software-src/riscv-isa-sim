@@ -94,6 +94,8 @@ private:
   void make_dtb();
   void set_rom();
 
+  const char* get_symbol(uint64_t addr);
+
   // presents a prompt for introspection into the simulation
   void interactive();
 

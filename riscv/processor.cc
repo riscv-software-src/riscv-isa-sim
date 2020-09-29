@@ -743,6 +743,15 @@ void processor_t::disasm(insn_t insn)
 {
   uint64_t bits = insn.bits() & ((1ULL << (8 * insn_length(insn.bits()))) - 1);
   if (last_pc != state.pc || last_bits != bits) {
+
+#ifdef RISCV_ENABLE_COMMITLOG
+    const char* sym = get_symbol(state.pc);
+    if (sym != nullptr)
+    {
+      fprintf(log_file, "core %3d: >>>>  %s\n", id, sym);
+    }
+#endif
+
     if (executions != 1) {
       fprintf(log_file, "core %3d: Executed %" PRIx64 " times\n", id, executions);
     }
