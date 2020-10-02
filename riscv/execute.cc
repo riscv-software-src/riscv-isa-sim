@@ -169,6 +169,7 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
   reg_t npc;
 
   try {
+    p->get_state()->last_pc = pc;
     npc = fetch.func(p, fetch.insn, pc);
     if (npc != PC_SERIALIZE_BEFORE) {
 
@@ -225,7 +226,6 @@ void processor_t::step(size_t n)
     mmu_t* _mmu = mmu;
 
     #define advance_pc() \
-     state.last_pc = state.pc; \
      if (unlikely(invalid_pc(pc))) { \
        switch (pc) { \
          case PC_SERIALIZE_BEFORE: state.serialized = true; break; \
@@ -305,7 +305,6 @@ void processor_t::step(size_t n)
           if (unlikely(ic_entry->tag != pc)) break; \
           if (unlikely(instret+1 == n)) break; \
           instret++; \
-          state.last_pc = state.pc; \
           state.pc = pc; \
         }
 

@@ -56,7 +56,7 @@ public:
     state->XPR.reset();
   }
 
-  void* get_state(difftest_sim_state_t* buf) {
+  void get_state(difftest_sim_state_t* buf) {
     state_t s = *(get_core(0)->get_state());
     for (int i = 0; i < 32; i++) {
       buf->regs[i] = s.XPR[i];
