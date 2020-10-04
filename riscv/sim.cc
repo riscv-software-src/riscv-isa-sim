@@ -91,6 +91,11 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     bus.add_device(clint_base, clint.get());
   }
 
+#ifdef ZJV_DEVICE_EXTENSTION  
+  uart.reset(new uart_t());
+  bus.add_device(UART_BASE, uart.get());
+#endif
+
   for (size_t i = 0; i < nprocs; i++) {
     reg_t pmp_num = 0, pmp_granularity = 0;
     fdt_parse_pmp_num((void *)dtb.c_str(), &pmp_num, "riscv");

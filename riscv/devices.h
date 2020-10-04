@@ -82,6 +82,25 @@ class clint_t : public abstract_device_t {
   std::vector<mtimecmp_t> mtimecmp;
 };
 
+class uart_t : public abstract_device_t {
+ public:
+  bool load(reg_t addr, size_t len, uint8_t* bytes);
+  bool store(reg_t addr, size_t len, const uint8_t* bytes);
+  size_t size() { return UART_SIZE; }
+ 
+ private:
+  uint8_t uart_ier;
+  uint8_t uart_isr;
+  uint8_t uart_fcr;
+  uint8_t uart_lcr;
+  uint8_t uart_mcr;
+  uint8_t uart_msr;
+  uint8_t uart_spr;
+  uint8_t uart_dll;
+  uint8_t uart_dlm;
+  uint8_t uart_psd;
+};
+
 class mmio_plugin_device_t : public abstract_device_t {
  public:
   mmio_plugin_device_t(const std::string& name, const std::string& args);

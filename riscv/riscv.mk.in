@@ -60,6 +60,7 @@ riscv_srcs = \
 	remote_bitbang.cc \
 	jtag_dtm.cc \
 	$(riscv_gen_srcs) \
+	uart.cc \
 
 riscv_test_srcs =
 
