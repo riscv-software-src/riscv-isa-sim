@@ -41,6 +41,7 @@ public:
   ~sim_t();
 
   // DiffTest
+  void set_diffTest(bool value) {diffTest = value;}
   void set_log_commits(bool value) {log = value;}
   void difftest_continue(size_t n) { step(n); }
   
@@ -121,6 +122,7 @@ private:
   bool histogram_enabled; // provide a histogram of PCs
   bool log;
   remote_bitbang_t* remote_bitbang;
+  bool diffTest;
 
   // memory-mapped I/O routines
   char* addr_to_mem(reg_t addr);

@@ -104,6 +104,8 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     procs[i]->set_pmp_num(pmp_num);
     procs[i]->set_pmp_granularity(pmp_granularity);
   }
+
+  diffTest = false;
 }
 
 sim_t::~sim_t()
@@ -158,8 +160,8 @@ void sim_t::step(size_t n)
         current_proc = 0;
         clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
       }
-
-      host->switch_to();
+      if (!diffTest)
+        host->switch_to();
     }
   }
 }
