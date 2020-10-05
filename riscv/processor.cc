@@ -1419,7 +1419,8 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
                  | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_UXL;
       reg_t sstatus = state.mstatus & mask;
       if ((sstatus & SSTATUS_FS) == SSTATUS_FS ||
-          (sstatus & SSTATUS_XS) == SSTATUS_XS)
+          (sstatus & SSTATUS_XS) == SSTATUS_XS ||
+          (sstatus & SSTATUS_VS) == SSTATUS_VS)
         sstatus |= (xlen == 32 ? SSTATUS32_SD : SSTATUS64_SD);
       ret(sstatus);
     }
