@@ -1,6 +1,7 @@
 customext_subproject_deps = \
 	spike_main \
 	riscv \
+	disasm \
 	softfloat \
 
 customext_srcs = \
