@@ -16,7 +16,7 @@
 #define UART_SPR   0x07  // Scratch Pad Register 
 #define UART_DLL   0x00  // Divisor LSB (LCR_DLAB) 
 #define UART_DLM   0x01  // Divisor MSB (LCR_DLAB) 
-#define UART_SSDR  0x05  // Prescaler's Division Factor (LCR_DLAB) 
+#define UART_PSD   0x05  // Prescaler's Division Factor (LCR_DLAB) 
 
 
 /* LCR Register */
