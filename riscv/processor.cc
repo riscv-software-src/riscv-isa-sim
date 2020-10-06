@@ -309,6 +309,7 @@ void state_t::reset(reg_t max_isa)
   mscratch = 0;
   mtvec = 0;
   mcause = 0;
+  mcycle = 0;
   minstret = 0;
   mie = 0;
   mip = 0;
@@ -427,6 +428,12 @@ void processor_t::set_debug(bool value)
   if (ext)
     ext->set_debug(value);
 }
+
+void processor_t::set_diffTest(bool value)
+{
+  diffTest = value;
+}
+
 
 void processor_t::set_histogram(bool value)
 {
@@ -910,8 +917,15 @@ void processor_t::set_csr(int which, reg_t val)
       state.medeleg = (state.medeleg & ~mask) | (val & mask);
       break;
     }
-    case CSR_MINSTRET:
     case CSR_MCYCLE:
+#ifdef ZJV_DEVICE_EXTENSTION    
+      if (xlen == 32)
+        state.mcycle = (state.mcycle >> 32 << 32) | (val & 0xffffffffU);
+      else
+        state.mcycle = val;
+      break;
+#endif
+    case CSR_MINSTRET:
       if (xlen == 32)
         state.minstret = (state.minstret >> 32 << 32) | (val & 0xffffffffU);
       else
@@ -922,11 +936,15 @@ void processor_t::set_csr(int which, reg_t val)
       // Correct for this artifact by decrementing instret here.
       state.minstret--;
       break;
-    case CSR_MINSTRETH:
     case CSR_MCYCLEH:
+#ifdef ZJV_DEVICE_EXTENSTION    
+      state.mcycle = (val << 32) | (state.mcycle << 32 >> 32);
+      break;
+#endif
+    case CSR_MINSTRETH:
       state.minstret = (val << 32) | (state.minstret << 32 >> 32);
       state.minstret--; // See comment above.
-      break;
+      break;    
     case CSR_SCOUNTEREN:
       state.scounteren = val;
       break;
@@ -1391,8 +1409,11 @@ reg_t processor_t::get_csr(int which)
         throw trap_virtual_instruction(0);
       }
       break;
-    case CSR_MINSTRET:
     case CSR_MCYCLE:
+#ifdef ZJV_DEVICE_EXTENSTION    
+      return state.mcycle;
+#endif
+    case CSR_MINSTRET:
       return state.minstret;
     case CSR_INSTRETH:
     case CSR_CYCLEH:
@@ -1404,8 +1425,13 @@ reg_t processor_t::get_csr(int which)
         throw trap_virtual_instruction(0);
       }
       break;
-    case CSR_MINSTRETH:
     case CSR_MCYCLEH:
+#ifdef ZJV_DEVICE_EXTENSTION    
+      if (xlen == 32)
+        return state.mcycle >> 32;
+      break;
+#endif
+    case CSR_MINSTRETH:
       if (xlen == 32)
         return state.minstret >> 32;
       break;

@@ -169,6 +169,7 @@ struct state_t
   reg_t mscratch;
   reg_t mtvec;
   reg_t mcause;
+  reg_t mcycle;
   reg_t minstret;
   reg_t mie;
   reg_t mip;
@@ -265,6 +266,7 @@ public:
   ~processor_t();
 
   void set_debug(bool value);
+  void set_diffTest(bool value);
   void set_histogram(bool value);
 #ifdef RISCV_ENABLE_COMMITLOG
   void enable_log_commits();
@@ -323,6 +325,8 @@ public:
     HR_REGULAR, /* Regular halt request/debug interrupt. */
     HR_GROUP    /* Halt requested due to halt group. */
   } halt_request;
+
+  bool diffTest;
 
   // Return the index of a trigger that matched, or -1.
   inline int trigger_match(trigger_operation_t operation, reg_t address, reg_t data)

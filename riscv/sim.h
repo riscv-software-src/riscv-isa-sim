@@ -41,10 +41,14 @@ public:
   ~sim_t();
 
   // DiffTest
-  void set_diffTest(bool value) { diffTest = value; }
+  void set_diffTest(bool value) { diffTest = value; set_procs_diffTest(value); }
   void set_log_commits(bool value) { log = value; }
   void difftest_continue(size_t n) { step(n); }
-  void sync_cycle() { current_step++; }  
+  void sync_cycle() {
+    current_step++; 
+    state_t* state = get_core(0)->get_state();
+    state->mcycle++;
+  }  
 
   void difftest_setup() {
     start();
@@ -80,6 +84,7 @@ public:
   void configure_log(bool enable_log, bool enable_commitlog);
 
   void set_procs_debug(bool value);
+  void set_procs_diffTest(bool value);
   void set_remote_bitbang(remote_bitbang_t* remote_bitbang) {
     this->remote_bitbang = remote_bitbang;
   }

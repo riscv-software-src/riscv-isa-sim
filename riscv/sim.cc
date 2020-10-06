@@ -211,6 +211,12 @@ void sim_t::set_procs_debug(bool value)
     procs[i]->set_debug(value);
 }
 
+void sim_t::set_procs_diffTest(bool value)
+{
+  for (size_t i=0; i< procs.size(); i++)
+    procs[i]->set_diffTest(value);
+}
+
 static bool paddr_ok(reg_t addr)
 {
   return (addr >> MAX_PADDR_BITS) == 0;
