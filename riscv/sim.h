@@ -41,10 +41,10 @@ public:
   ~sim_t();
 
   // DiffTest
-  void set_diffTest(bool value) {diffTest = value;}
-  void set_log_commits(bool value) {log = value;}
+  void set_diffTest(bool value) { diffTest = value; }
+  void set_log_commits(bool value) { log = value; }
   void difftest_continue(size_t n) { step(n); }
-  
+  void sync_cycle() { current_step++; }  
 
   void difftest_setup() {
     start();
