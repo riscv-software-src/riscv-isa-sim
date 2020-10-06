@@ -1831,6 +1831,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   for (reg_t i = P.VU.vstart; i < vl; ++i) { \
     VI_ELEMENT_SKIP(i); \
     VI_STRIP(i); \
+    P.VU.vstart = i; \
     switch (P.VU.vsew) { \
     case e32: {\
       auto vs3 = P.VU.elt< type ## 32_t>(vd, vreg_inx); \

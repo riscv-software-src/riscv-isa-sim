@@ -152,8 +152,6 @@ void processor_t::parse_varch_string(const char* s)
   /* Vector spec requirements. */
   if (vlen < elen)
     bad_varch_string(s, "vlen must be >= elen");
-  if ((unsigned) elen < std::max(max_xlen, get_flen()))
-    bad_varch_string(s, "elen must be >= max(xlen, flen)");
   if (vlen != slen)
     bad_varch_string(s, "vlen must be == slen for current limitation");
 
