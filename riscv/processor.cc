@@ -977,7 +977,7 @@ void processor_t::set_csr(int which, reg_t val)
       if (max_xlen == 64 && (get_field(val, SATP64_MODE) == SATP_MODE_OFF ||
                              get_field(val, SATP64_MODE) == SATP_MODE_SV39 ||
                              get_field(val, SATP64_MODE) == SATP_MODE_SV48))
-        reg_val = val & (SATP64_PPN | SATP64_MODE | rv64_ppn_mask);
+        reg_val = val & (SATP64_MODE | (SATP64_PPN & rv64_ppn_mask));
       if (state.v)
         state.vsatp = reg_val;
       else
@@ -1110,7 +1110,7 @@ void processor_t::set_csr(int which, reg_t val)
       if (max_xlen == 64 && (get_field(val, HGATP64_MODE) == HGATP_MODE_OFF ||
                              get_field(val, HGATP64_MODE) == HGATP_MODE_SV39X4 ||
                              get_field(val, HGATP64_MODE) == HGATP_MODE_SV48X4))
-        reg_val = val & (HGATP64_PPN | HGATP64_MODE | rv64_ppn_mask);
+        reg_val = val & (HGATP64_MODE | (HGATP64_PPN & rv64_ppn_mask));
       state.hgatp = reg_val;
       break;
     }
@@ -1146,7 +1146,7 @@ void processor_t::set_csr(int which, reg_t val)
       if (max_xlen == 64 && (get_field(val, SATP64_MODE) == SATP_MODE_OFF ||
                              get_field(val, SATP64_MODE) == SATP_MODE_SV39 ||
                              get_field(val, SATP64_MODE) == SATP_MODE_SV48))
-        reg_val = val & (SATP64_PPN | SATP64_MODE | rv64_ppn_mask);
+        reg_val = val & (SATP64_MODE | (SATP64_PPN & rv64_ppn_mask));
       state.vsatp = reg_val;
       break;
     }
