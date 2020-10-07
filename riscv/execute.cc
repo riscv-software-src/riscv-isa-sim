@@ -368,6 +368,10 @@ void processor_t::step(size_t n)
     }
 
     state.minstret += instret;
+#ifdef ZJV_DEVICE_EXTENSTION
+    if (!diffTest) 
+      state.mcycle += instret;
+#endif
     n -= instret;
   }
 }

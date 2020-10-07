@@ -8,6 +8,8 @@
 #include <map>
 #include <vector>
 #include <stdexcept>
+#include <fstream>
+#include <iostream>
 
 class processor_t;
 
@@ -84,11 +86,20 @@ class clint_t : public abstract_device_t {
 
 class uart_t : public abstract_device_t {
  public:
+  uart_t(bool diffTest, std::string file_path) 
+    : diffTest(diffTest) {
+    file_fifo.open(file_path);
+    if (file_fifo.is_open()) {
+      printf("[SimUART] open uart file fifo %s\n", file_path.c_str());
+    }
+  }
   bool load(reg_t addr, size_t len, uint8_t* bytes);
   bool store(reg_t addr, size_t len, const uint8_t* bytes);
   size_t size() { return UART_SIZE; }
- 
+
  private:
+  bool diffTest;
+  std::ifstream file_fifo; 
   uint8_t uart_ier;
   uint8_t uart_isr;
   uint8_t uart_fcr;

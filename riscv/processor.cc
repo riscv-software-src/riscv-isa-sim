@@ -653,10 +653,10 @@ void processor_t::enter_debug_mode(uint8_t cause)
 void processor_t::take_trap(trap_t& t, reg_t epc)
 {
   if (debug) {
-    fprintf(log_file, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
+    fprintf(log_file, "\x1b[1;33mcore %3d: exception %s, epc 0x%016" PRIx64 "\x1b[0m\n",
             id, t.name(), epc);
     if (t.has_tval())
-      fprintf(log_file, "core %3d:           tval 0x%016" PRIx64 "\n",
+      fprintf(log_file, "\x1b[1;33mcore %3d:           tval 0x%016" PRIx64 "\x1b[0m\n",
               id, t.get_tval());
   }
 
@@ -753,10 +753,10 @@ void processor_t::disasm(insn_t insn)
   uint64_t bits = insn.bits() & ((1ULL << (8 * insn_length(insn.bits()))) - 1);
   if (last_pc != state.pc || last_bits != bits) {
     if (executions != 1) {
-      fprintf(log_file, "core %3d: Executed %" PRIx64 " times\n", id, executions);
+      fprintf(log_file, "\x1b[33mcore %3d: Executed %" PRIx64 " times\x1b[0m\n", id, executions);
     }
 
-    fprintf(log_file, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx64 ") %s\n",
+    fprintf(log_file, "\x1b[33mcore %3d: 0x%016" PRIx64 " (0x%08" PRIx64 ") %s\x1b[0m\n",
             id, state.pc, bits, disassembler->disassemble(insn).c_str());
     last_pc = state.pc;
     last_bits = bits;

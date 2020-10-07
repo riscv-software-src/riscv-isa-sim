@@ -37,11 +37,11 @@ public:
         std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
         const std::vector<std::string>& args, const std::vector<int> hartids,
         const debug_module_config_t &dm_config, const char *log_path,
-        bool dtb_enabled, const char *dtb_file);
+        bool dtb_enabled, const char *dtb_file, 
+        bool diffTest, std::string uart_fifo);
   ~sim_t();
 
   // DiffTest
-  void set_diffTest(bool value) { diffTest = value; set_procs_diffTest(value); }
   void set_log_commits(bool value) { log = value; }
   void difftest_continue(size_t n) { step(n); }
   void sync_cycle() {

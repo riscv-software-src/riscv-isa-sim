@@ -35,7 +35,8 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
              std::vector<int> const hartids,
              const debug_module_config_t &dm_config,
              const char *log_path,
-             bool dtb_enabled, const char *dtb_file)
+             bool dtb_enabled, const char *dtb_file,
+             bool diffTest, std::string uart_fifo)
   : htif_t(args),
     mems(mems),
     plugin_devices(plugin_devices),
@@ -53,7 +54,8 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     histogram_enabled(false),
     log(false),
     remote_bitbang(NULL),
-    debug_module(this, dm_config)
+    debug_module(this, dm_config),
+    diffTest(diffTest)
 {
   signal(SIGINT, &handle_signal);
 
@@ -80,6 +82,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     procs[i] = new processor_t(isa, priv, varch, this, hart_id, halted,
                                log_file.get());
   }
+  set_procs_diffTest(diffTest);
 
   make_dtb();
 
@@ -92,7 +95,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
   }
 
 #ifdef ZJV_DEVICE_EXTENSTION  
-  uart.reset(new uart_t());
+  uart.reset(new uart_t(diffTest, uart_fifo));
   bus.add_device(UART_BASE, uart.get());
 #endif
 
@@ -104,8 +107,6 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     procs[i]->set_pmp_num(pmp_num);
     procs[i]->set_pmp_granularity(pmp_granularity);
   }
-
-  diffTest = false;
 }
 
 sim_t::~sim_t()

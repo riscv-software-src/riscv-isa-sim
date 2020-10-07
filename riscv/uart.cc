@@ -17,9 +17,19 @@ bool uart_t::load(reg_t addr, size_t len, uint8_t* bytes) {
         case UART_RHR : // 0  
             if (uart_lcr & UART_LCR_DLAB) memcpy(bytes, &uart_dll, len);
             else {
-                int amt;
-                if ((ioctl(0, FIONREAD, &amt) == 0) && (amt > 0))
-                    read(0, bytes, len);
+                if (file_fifo.is_open()) {
+                    if (!file_fifo.eof()) {
+                        file_fifo.get(*(char*)bytes);
+                    }
+                    else {
+                        file_fifo.close();
+                    }
+                }
+                else if (!diffTest) {
+                    int amt;
+                    if ((ioctl(0, FIONREAD, &amt) == 0) && (amt > 0))
+                        read(0, bytes, len);
+                }
             }
             break; 
         case UART_IER : // 1  
@@ -38,8 +48,14 @@ bool uart_t::load(reg_t addr, size_t len, uint8_t* bytes) {
         case UART_LSR : // 5 
             int amt;
             *bytes = UART_LSR_TE | UART_LSR_THRE;
-            if ((ioctl(0, FIONREAD, &amt) == 0) && (amt > 0))
-                *bytes |= UART_LSR_DR; 
+            if (file_fifo.is_open()) {
+                *bytes |= !file_fifo.eof(); 
+            }
+            else if (!diffTest) {
+                if ((ioctl(0, FIONREAD, &amt) == 0) && (amt > 0))
+                    *bytes |= UART_LSR_DR; 
+            }
+
             break; 
         case UART_MSR : // 6  
             memcpy(&uart_msr, bytes, len);
@@ -65,7 +81,10 @@ bool uart_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
     switch (addr) {
         case UART_THR : // 0
             if (uart_lcr & UART_LCR_DLAB) memcpy(&uart_dll, bytes, len);
-            else { putchar(*bytes); fflush(stdout); }
+            else { 
+                fprintf(stderr, "\x1b[34m%c\x1b[0m", *bytes);
+                fflush(stderr); 
+            }
             
             break; 
         case UART_IER : // 1
