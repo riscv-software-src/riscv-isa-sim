@@ -15,7 +15,8 @@ struct difftest_emu_state_t {
     reg_t pc;
     reg_t inst;
     bool valid;
-    bool trmt;
+    bool interrupt;
+    bool poweroff;
 };
 
 #endif

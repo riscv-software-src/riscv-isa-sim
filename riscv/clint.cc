@@ -83,7 +83,8 @@ void clint_t::increment(reg_t inc)
   }
   for (size_t i = 0; i < procs.size(); i++) {
     procs[i]->state.mip &= ~MIP_MTIP;
-    if (mtime >= mtimecmp[i])
-      procs[i]->state.mip |= MIP_MTIP;
+    /* Following will remove in next version */
+    // if (mtime >= mtimecmp[i])
+    //   procs[i]->state.mip |= MIP_MTIP;
   }
 }

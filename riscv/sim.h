@@ -42,13 +42,35 @@ public:
   ~sim_t();
 
   // DiffTest
-  void set_log_commits(bool value) { log = value; }
-  void difftest_continue(size_t n) { step(n); }
+  void difftest_continue(size_t n) { 
+    step(n); 
+  }
+
   void sync_cycle() {
     current_step++; 
     state_t* state = get_core(0)->get_state();
     state->mcycle++;
   }  
+
+  void set_state (difftest_sim_state_t* new_state) {
+    state_t* state = get_core(0)->get_state();
+    for (int i = 0; i < 32; i++) {
+      state->XPR.write(i, new_state->regs[i]);
+    }
+
+    // TODO: else
+  }
+
+  void set_state (int index, reg_t new_value) {
+    state_t* state = get_core(0)->get_state();
+    state->XPR.write(index, new_value);
+  }
+
+/* Following will remove in next version */
+  void set_mip() {
+    state_t* state = get_core(0)->get_state();
+    state->mip |= MIP_MTIP;
+  }
 
   void difftest_setup() {
     start();
