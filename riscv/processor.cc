@@ -1311,11 +1311,12 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
   uint32_t ctr_en = -1;
   if (state.prv < PRV_M)
     ctr_en &= state.mcounteren;
-  if (state.v)
-    ctr_en &= state.hcounteren;
   if (state.prv < PRV_S)
     ctr_en &= state.scounteren;
   bool ctr_ok = (ctr_en >> (which & 31)) & 1;
+  if (state.v)
+    ctr_en &= state.hcounteren;
+  bool ctr_v_ok = (ctr_en >> (which & 31)) & 1;
 
   reg_t res = 0;
 #define ret(n) do { \
@@ -1323,11 +1324,13 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     goto out; \
   } while (false)
 
-  if (ctr_ok) {
-    if (which >= CSR_HPMCOUNTER3 && which <= CSR_HPMCOUNTER31)
-      ret(0);
-    if (xlen == 32 && which >= CSR_HPMCOUNTER3H && which <= CSR_HPMCOUNTER31H)
-      ret(0);
+  if ((which >= CSR_HPMCOUNTER3 && which <= CSR_HPMCOUNTER31) ||
+      (xlen == 32 && which >= CSR_HPMCOUNTER3H && which <= CSR_HPMCOUNTER31H)) {
+    if (!ctr_ok)
+      goto throw_illegal;
+    if (!ctr_v_ok)
+      goto throw_virtual;
+    ret(0);
   }
   if (which >= CSR_MHPMCOUNTER3 && which <= CSR_MHPMCOUNTER31)
     ret(0);
@@ -1380,27 +1383,21 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       ret((VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT));
     case CSR_INSTRET:
     case CSR_CYCLE:
-      if (ctr_ok)
-        ret(state.minstret);
-      if (state.v &&
-          ((state.mcounteren >> (which & 31)) & 1) &&
-          !((state.hcounteren >> (which & 31)) & 1)) {
+      if (!ctr_ok)
+        goto throw_illegal;
+      if (!ctr_v_ok)
         goto throw_virtual;
-      }
-      break;
+      ret(state.minstret);
     case CSR_MINSTRET:
     case CSR_MCYCLE:
       ret(state.minstret);
     case CSR_INSTRETH:
     case CSR_CYCLEH:
-      if (ctr_ok && xlen == 32)
-        ret(state.minstret >> 32);
-      if (state.v &&
-          ((state.mcounteren >> (which & 31)) & 1) &&
-          !((state.hcounteren >> (which & 31)) & 1)) {
+      if (!ctr_ok || xlen != 32)
+        goto throw_illegal;
+      if (!ctr_v_ok)
         goto throw_virtual;
-      }
-      break;
+      ret(state.minstret >> 32);
     case CSR_MINSTRETH:
     case CSR_MCYCLEH:
       if (xlen == 32)
