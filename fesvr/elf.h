@@ -14,14 +14,16 @@
   ((hdr).e_ident[0] == 0x7f && (hdr).e_ident[1] == 'E' && \
    (hdr).e_ident[2] == 'L'  && (hdr).e_ident[3] == 'F')
 
+#define ELF_SWAP(hdr, val) (IS_ELFLE(hdr)? from_le((val)) : from_be((val)))
+
 #define IS_ELF32(hdr) (IS_ELF(hdr) && (hdr).e_ident[4] == 1)
 #define IS_ELF64(hdr) (IS_ELF(hdr) && (hdr).e_ident[4] == 2)
 #define IS_ELFLE(hdr) (IS_ELF(hdr) && (hdr).e_ident[5] == 1)
 #define IS_ELFBE(hdr) (IS_ELF(hdr) && (hdr).e_ident[5] == 2)
-#define IS_ELF_EXEC(hdr) (IS_ELF(hdr) && (hdr).e_type == ET_EXEC)
-#define IS_ELF_RISCV(hdr) (IS_ELF(hdr) && (hdr).e_machine == EM_RISCV)
-#define IS_ELF_EM_NONE(hdr) (IS_ELF(hdr) && (hdr).e_machine == EM_NONE)
-#define IS_ELF_VCURRENT(hdr) (IS_ELF(hdr) && (hdr).e_version == EV_CURRENT)
+#define IS_ELF_EXEC(hdr) (IS_ELF(hdr) && ELF_SWAP((hdr), (hdr).e_type) == ET_EXEC)
+#define IS_ELF_RISCV(hdr) (IS_ELF(hdr) && ELF_SWAP((hdr), (hdr).e_machine) == EM_RISCV)
+#define IS_ELF_EM_NONE(hdr) (IS_ELF(hdr) && ELF_SWAP((hdr), (hdr).e_machine) == EM_NONE)
+#define IS_ELF_VCURRENT(hdr) (IS_ELF(hdr) && ELF_SWAP((hdr), (hdr).e_version) == EV_CURRENT)
 
 #define PT_LOAD 1
 
