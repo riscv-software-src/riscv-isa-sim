@@ -605,21 +605,22 @@ void processor_t::set_virt(bool virt)
        * we should sync Guest/VM FS, VS, and XS state with Host FS,
        * VS, and XS state.
        */
-       if ((state.mstatus & SSTATUS_FS) == SSTATUS_FS) {
-         state.vsstatus |= SSTATUS_FS;
+      state.vsstatus &= ~SSTATUS_FS;
+      state.vsstatus |= (state.mstatus & SSTATUS_FS);
+      if (supports_extension('V')) {
+        state.vsstatus &= ~SSTATUS_VS;
+        state.vsstatus |= (state.mstatus & SSTATUS_VS);
+      }
+      state.vsstatus &= ~SSTATUS_XS;
+      state.vsstatus |= (state.mstatus & SSTATUS_XS);
+      state.vsstatus &= (xlen == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
+      if (((state.mstatus & SSTATUS_FS) == SSTATUS_FS) ||
+          ((state.vsstatus & SSTATUS_VS) == SSTATUS_VS) ||
+          ((state.vsstatus & SSTATUS_XS) == SSTATUS_XS)) {
          state.vsstatus |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-       }
-       if ((state.mstatus & SSTATUS_VS) == SSTATUS_VS) {
-         state.vsstatus |= SSTATUS_VS;
-         state.vsstatus |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-       }
-       if ((state.mstatus & SSTATUS_XS) == SSTATUS_XS) {
-         state.vsstatus |= SSTATUS_XS;
-         state.vsstatus |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-       }
+      }
     }
     mask = SSTATUS_VS_MASK;
-    mask |= (supports_extension('F') ? SSTATUS_FS : 0);
     mask |= (supports_extension('V') ? SSTATUS_VS : 0);
     mask |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
     tmp = state.mstatus & mask;
@@ -1115,10 +1116,14 @@ void processor_t::set_csr(int which, reg_t val)
     }
     case CSR_VSSTATUS: {
       reg_t mask = SSTATUS_VS_MASK;
-      mask |= (supports_extension('F') ? SSTATUS_FS : 0);
       mask |= (supports_extension('V') ? SSTATUS_VS : 0);
-      mask |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
       state.vsstatus = (state.vsstatus & ~mask) | (val & mask);
+      state.vsstatus &= (xlen == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
+      if (((state.mstatus & SSTATUS_FS) == SSTATUS_FS) ||
+          ((state.vsstatus & SSTATUS_VS) == SSTATUS_VS) ||
+          ((state.vsstatus & SSTATUS_XS) == SSTATUS_XS)) {
+         state.vsstatus |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
+      }
       break;
     }
     case CSR_VSIE: {
@@ -1532,7 +1537,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_HGEIP: ret(0);
     case CSR_VSSTATUS: {
       reg_t mask = SSTATUS_VS_MASK;
-      mask |= (supports_extension('F') ? SSTATUS_FS : 0);
       mask |= (supports_extension('V') ? SSTATUS_VS : 0);
       mask |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
       ret(state.vsstatus & mask);
