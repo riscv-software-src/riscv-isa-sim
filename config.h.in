@@ -15,6 +15,9 @@
 /* Default value for --varch switch */
 #undef DEFAULT_VARCH
 
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef DISASM_ENABLED
+
 /* Executable name of device-tree-compiler */
 #undef DTC
 
@@ -84,6 +87,9 @@
 /* Enable hardware management of PTE accessed and dirty bits */
 #undef RISCV_ENABLE_DIRTY
 
+/* Enable support for running target in either endianness */
+#undef RISCV_ENABLE_DUAL_ENDIAN
+
 /* Enable PC histogram generation */
 #undef RISCV_ENABLE_HISTOGRAM
 
@@ -92,6 +98,9 @@
 
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SOFTFLOAT_ENABLED
+
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef SPIKE_DASM_ENABLED
 
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SPIKE_MAIN_ENABLED
