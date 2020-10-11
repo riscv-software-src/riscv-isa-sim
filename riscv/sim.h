@@ -138,6 +138,8 @@ private:
   void write_chunk(addr_t taddr, size_t len, const void* src);
   size_t chunk_align() { return 8; }
   size_t chunk_max_size() { return 8; }
+  void set_target_endianness(memif_endianness_t endianness);
+  memif_endianness_t get_target_endianness() const;
 
 public:
   // Initialize this after procs, because in debug_module_t::reset() we

@@ -254,8 +254,22 @@ void sim_t::set_rom()
     (uint32_t) (start_pc & 0xffffffff),
     (uint32_t) (start_pc >> 32)
   };
-  for(int i = 0; i < reset_vec_size; i++)
-    reset_vec[i] = to_le(reset_vec[i]);
+  if (get_target_endianness() == memif_endianness_big) {
+    int i;
+    // Instuctions are little endian
+    for (i = 0; reset_vec[i] != 0; i++)
+      reset_vec[i] = to_le(reset_vec[i]);
+    // Data is big endian
+    for (; i < reset_vec_size; i++)
+      reset_vec[i] = to_be(reset_vec[i]);
+
+    // Correct the high/low order of 64-bit start PC
+    if (get_core(0)->get_xlen() != 32)
+      std::swap(reset_vec[reset_vec_size-2], reset_vec[reset_vec_size-1]);
+  } else {
+    for (int i = 0; i < reset_vec_size; i++)
+      reset_vec[i] = to_le(reset_vec[i]);
+  }
 
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
 
@@ -315,7 +329,7 @@ void sim_t::idle()
 void sim_t::read_chunk(addr_t taddr, size_t len, void* dst)
 {
   assert(len == 8);
-  auto data = to_le(debug_mmu->load_uint64(taddr));
+  auto data = debug_mmu->to_target(debug_mmu->load_uint64(taddr));
   memcpy(dst, &data, sizeof data);
 }
 
@@ -324,7 +338,31 @@ void sim_t::write_chunk(addr_t taddr, size_t len, const void* src)
   assert(len == 8);
   uint64_t data;
   memcpy(&data, src, sizeof data);
-  debug_mmu->store_uint64(taddr, from_le(data));
+  debug_mmu->store_uint64(taddr, debug_mmu->from_target(data));
+}
+
+void sim_t::set_target_endianness(memif_endianness_t endianness)
+{
+#ifdef RISCV_ENABLE_DUAL_ENDIAN
+  assert(endianness == memif_endianness_little || endianness == memif_endianness_big);
+
+  bool enable = endianness == memif_endianness_big;
+  debug_mmu->set_target_big_endian(enable);
+  for (size_t i = 0; i < procs.size(); i++) {
+    procs[i]->get_mmu()->set_target_big_endian(enable);
+  }
+#else
+  assert(endianness == memif_endianness_little);
+#endif
+}
+
+memif_endianness_t sim_t::get_target_endianness() const
+{
+#ifdef RISCV_ENABLE_DUAL_ENDIAN
+  return debug_mmu->is_target_big_endian()? memif_endianness_big : memif_endianness_little;
+#else
+  return memif_endianness_little;
+#endif
 }
 
 void sim_t::proc_reset(unsigned id)
