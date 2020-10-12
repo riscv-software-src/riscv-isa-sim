@@ -2416,6 +2416,13 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   unsigned len = xlen / BIT; \
   for (int i = len - 1; i >= 0; --i) {
 
+#define P_ONE_LOOP_BASE(BIT) \
+  require(BIT == e8 || BIT == e16 || BIT == e32); \
+  reg_t rd_tmp = 0; \
+  reg_t rs1 = RS1; \
+  unsigned len = xlen / BIT; \
+  for (int i = len - 1; i >= 0; --i) {
+
 #define P_I_LOOP_BASE(BIT, IMMBIT) \
   require(BIT == e8 || BIT == e16 || BIT == e32); \
   reg_t rd_tmp = 0; \
@@ -2439,7 +2446,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   reg_t rs1 = RS1; \
   reg_t rs2 = RS2; \
   unsigned len = 32 / BIT; \
-  for (int i = len - 1; i >= 0; --i) { 
+  for (int i = len - 1; i >= 0; --i) {
 
 #define P_PARAMS(x) \
   type_sew_t<x>::type pd = 0; \
@@ -2468,6 +2475,10 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_ONE_UPARAMS(x) \
   type_usew_t<x>::type pd = 0; \
   type_usew_t<x>::type ps1 = P_FIELD(rs1, i, type_usew_t<x>::type);
+
+#define P_ONE_SUPARAMS(x) \
+  type_usew_t<x>::type pd = 0; \
+  type_sew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type);
 
 #define P_MUL_PARAMS(x) \
   type_sew_t<x*2>::type pd = 0; \
@@ -2501,6 +2512,12 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   WRITE_PD(); \
 }
 
+#define P_ONE_LOOP_BODY(x, BODY) { \
+  P_ONE_PARAMS(x) \
+  BODY \
+  WRITE_PD(); \
+}
+
 #define P_CROSS_LOOP_BODY(x, BODY) { \
   P_CORSS_PARAMS(x) \
   BODY \
@@ -2524,6 +2541,13 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   BODY \
   WRITE_PD(); \
 }
+
+#define P_XI_SULOOP_BODY(x, BODY) { \
+  P_ONE_SUPARAMS(x) \
+  BODY \
+  WRITE_PD(); \
+}
+
 
 #define P_MUL_LOOP_BODY(x, BODY) { \
   P_MUL_PARAMS(x) \
@@ -2552,6 +2576,11 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_LOOP(BIT, BODY) \
   P_LOOP_BASE(BIT) \
   P_LOOP_BODY(BIT, BODY) \
+  P_LOOP_END()
+
+#define P_ONE_LOOP(BIT, BODY) \
+  P_ONE_LOOP_BASE(BIT) \
+  P_ONE_LOOP_BODY(BIT, BODY) \
   P_LOOP_END()
 
 #define P_ULOOP(BIT, BODY) \
@@ -2610,6 +2639,11 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_I_ULOOP(BIT, IMMBIT, BODY) \
   P_I_LOOP_BASE(BIT, IMMBIT) \
   P_XI_ULOOP_BODY(BIT, BODY) \
+  P_LOOP_END()
+
+#define P_I_SULOOP(BIT, IMMBIT, BODY) \
+  P_I_LOOP_BASE(BIT, IMMBIT) \
+  P_XI_SULOOP_BODY(BIT, BODY) \
   P_LOOP_END()
 
 #define P_MUL_LOOP(BIT, BODY) \
