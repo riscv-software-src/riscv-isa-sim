@@ -2420,6 +2420,14 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   unsigned len = xlen / BIT; \
   for (int i = len - 1; i >= 0; --i) {
 
+#define P_MUL_LOOP_BASE(BIT) \
+  require(BIT == e8 || BIT == e16 || BIT == e32); \
+  reg_t rd_tmp = 0; \
+  reg_t rs1 = RS1; \
+  reg_t rs2 = RS2; \
+  unsigned len = 32 / BIT; \
+  for (int i = len - 1; i >= 0; --i) { 
+
 #define P_PARAMS(x) \
   type_sew_t<x>::type pd = 0; \
   type_sew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type); \
@@ -2447,6 +2455,26 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_ONE_UPARAMS(x) \
   type_usew_t<x>::type pd = 0; \
   type_usew_t<x>::type ps1 = P_FIELD(rs1, i, type_usew_t<x>::type);
+
+#define P_MUL_PARAMS(x) \
+  type_sew_t<x*2>::type pd = 0; \
+  type_sew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type); \
+  type_sew_t<x>::type ps2 = P_FIELD(rs2, i, type_sew_t<x>::type);
+
+#define P_MUL_UPARAMS(x) \
+  type_usew_t<x*2>::type pd = 0; \
+  type_usew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type); \
+  type_usew_t<x>::type ps2 = P_FIELD(rs2, i, type_sew_t<x>::type);
+
+#define P_MUL_CROSS_PARAMS(x) \
+  type_sew_t<x*2>::type pd = 0; \
+  type_sew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type); \
+  type_sew_t<x>::type ps2 = P_FIELD(rs2, (i ^ 1), type_sew_t<x>::type);
+
+#define P_MUL_CROSS_UPARAMS(x) \
+  type_usew_t<x*2>::type pd = 0; \
+  type_usew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type); \
+  type_usew_t<x>::type ps2 = P_FIELD(rs2, (i ^ 1), type_sew_t<x>::type);
 
 #define P_LOOP_BODY(x, BODY) { \
   P_PARAMS(x) \
@@ -2484,6 +2512,30 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   WRITE_PD(); \
 }
 
+#define P_MUL_LOOP_BODY(x, BODY) { \
+  P_MUL_PARAMS(x) \
+  BODY \
+  WRITE_PD(); \
+}
+
+#define P_MUL_ULOOP_BODY(x, BODY) { \
+  P_MUL_UPARAMS(x) \
+  BODY \
+  WRITE_PD(); \
+}
+
+#define P_MUL_CROSS_LOOP_BODY(x, BODY) { \
+  P_MUL_CROSS_PARAMS(x) \
+  BODY \
+  WRITE_PD(); \
+}
+
+#define P_MUL_CROSS_ULOOP_BODY(x, BODY) { \
+  P_MUL_CROSS_UPARAMS(x) \
+  BODY \
+  WRITE_PD(); \
+}
+
 #define P_LOOP(BIT, BODY) \
   P_LOOP_BASE(BIT) \
   P_LOOP_BODY(BIT, BODY) \
@@ -2498,7 +2550,12 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   P_LOOP_BASE(BIT) \
   P_CROSS_LOOP_BODY(BIT, BODY1) \
   --i; \
-  P_CROSS_LOOP_BODY(BIT, BODY2) \
+  if (sizeof(#BODY2) == 1) { \
+    P_CROSS_LOOP_BODY(BIT, BODY1) \
+  } \
+  else { \
+    P_CROSS_LOOP_BODY(BIT, BODY2) \
+  } \
   P_LOOP_END()
 
 #define P_CROSS_ULOOP(BIT, BODY1, BODY2) \
@@ -2542,9 +2599,39 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   P_XI_ULOOP_BODY(BIT, BODY) \
   P_LOOP_END()
 
+#define P_MUL_LOOP(BIT, BODY) \
+  P_MUL_LOOP_BASE(BIT) \
+  P_MUL_LOOP_BODY(BIT, BODY) \
+  P_MUL_LOOP_END()
+
+#define P_MUL_ULOOP(BIT, BODY) \
+  P_MUL_LOOP_BASE(BIT) \
+  P_MUL_ULOOP_BODY(BIT, BODY) \
+  P_MUL_LOOP_END()
+
+#define P_MUL_CROSS_LOOP(BIT, BODY) \
+  P_MUL_LOOP_BASE(BIT) \
+  P_MUL_CROSS_LOOP_BODY(BIT, BODY) \
+  P_MUL_LOOP_END()
+
+#define P_MUL_CROSS_ULOOP(BIT, BODY) \
+  P_MUL_LOOP_BASE(BIT) \
+  P_MUL_CROSS_ULOOP_BODY(BIT, BODY) \
+  P_MUL_LOOP_END()
+
 #define P_LOOP_END() \
   } \
   WRITE_RD(rd_tmp);
+
+#define P_MUL_LOOP_END() \
+  } \
+  if (xlen == 32) { \
+    WRITE_REG(insn.rd(), zext32(rd_tmp)); \
+    WRITE_REG(insn.rd() + 1, rd_tmp >> 32); \
+  } \
+  else { \
+    WRITE_RD(rd_tmp); \
+  }
 
 #define DEBUG_START             0x0
 #define DEBUG_END               (0x1000 - 1)
