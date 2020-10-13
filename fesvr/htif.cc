@@ -174,7 +174,7 @@ void htif_t::stop()
     assert(sigs && "can't open signature file!");
     sigs << std::setfill('0') << std::hex;
 
-    const addr_t incr = 16;
+    const addr_t incr = 4;
     assert(sig_len % incr == 0);
     for (addr_t i = 0; i < sig_len; i += incr)
     {
