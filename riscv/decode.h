@@ -2680,6 +2680,36 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
     WRITE_RD(rd_tmp); \
   }
 
+#define P_SUNPKD8(X, Y) \
+  reg_t rd_tmp = 0; \
+  int16_t pd[4] = { \
+    int8_t(P_B(RS1, Y)), \
+    int8_t(P_B(RS1, X)), \
+    int8_t(P_B(RS1, Y + 4)), \
+    int8_t(P_B(RS1, X + 4)), \
+  }; \
+  if (xlen == 64) { \
+    memcpy(&rd_tmp, pd, 8); \
+  } else { \
+    memcpy(&rd_tmp, pd, 4); \
+  } \
+  WRITE_RD(rd_tmp);
+
+#define P_ZUNPKD8(X, Y) \
+  reg_t rd_tmp = 0; \
+  uint16_t pd[4] = { \
+    uint8_t(P_B(RS1, Y)), \
+    uint8_t(P_B(RS1, X)), \
+    uint8_t(P_B(RS1, Y + 4)), \
+    uint8_t(P_B(RS1, X + 4)), \
+  }; \
+  if (xlen == 64) { \
+    memcpy(&rd_tmp, pd, 8); \
+  } else { \
+    memcpy(&rd_tmp, pd, 4); \
+  } \
+  WRITE_RD(rd_tmp);
+
 #define DEBUG_START             0x0
 #define DEBUG_END               (0x1000 - 1)
 
