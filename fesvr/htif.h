@@ -101,8 +101,8 @@ class htif_t : public chunked_memif_t
        +rfb=DISPLAY          to be accessible on 5900 + DISPLAY (default = 0)\n\
       --signature=FILE     Write torture test signature to FILE\n\
        +signature=FILE\n\
-      --granularity=VAL           Size of each line in signature.\n\
-       +granularity=VAL\n\
+      --signature-granularity=VAL           Size of each line in signature.\n\
+       +signature-granularity=VAL\n\
       --chroot=PATH        Use PATH as location of syscall-servicing binaries\n\
        +chroot=PATH\n\
       --payload=PATH       Load PATH memory as an additional ELF payload\n\
@@ -124,7 +124,7 @@ TARGET (RISC-V BINARY) OPTIONS\n\
 {"signature", required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 2 },     \
 {"chroot",    required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 3 },     \
 {"payload",   required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 4 },     \
-{"granularity",    optional_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 5 },     \
+{"signature-granularity",    optional_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 5 },     \
 {0, 0, 0, 0}
 
 #endif // __HTIF_H
