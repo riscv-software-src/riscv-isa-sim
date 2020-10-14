@@ -63,7 +63,7 @@ class htif_t : public chunked_memif_t
   std::vector<std::string> hargs;
   std::vector<std::string> targs;
   std::string sig_file;
-  int line_size;
+  unsigned int line_size;
   addr_t sig_addr; // torture
   addr_t sig_len; // torture
   addr_t tohost_addr;
