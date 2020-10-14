@@ -204,7 +204,7 @@ void processor_t::parse_isa_string(const char* str)
 
   char error_msg[256];
   const char* p = lowercase.c_str();
-  const char* all_subsets = "imafdqch"
+  const char* all_subsets = "imafdqchp"
 #ifdef __SIZEOF_INT128__
     "v"
 #endif
