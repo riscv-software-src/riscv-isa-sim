@@ -64,7 +64,8 @@ htif_t::htif_t(const std::vector<std::string>& args) : htif_t()
   for (unsigned int i = 0; i < args.size(); i++) {
     argv[i+1] = (char *) args[i].c_str();
   }
-
+  //Set line size as 16 by default.
+  line_size = 16;
   parse_arguments(argc, argv);
   register_devices();
 }
@@ -174,12 +175,13 @@ void htif_t::stop()
     assert(sigs && "can't open signature file!");
     sigs << std::setfill('0') << std::hex;
 
-    const addr_t incr = 4;
-    assert(sig_len % incr == 0);
-    for (addr_t i = 0; i < sig_len; i += incr)
+    for (addr_t i = 0; i < sig_len; i += line_size)
     {
-      for (addr_t j = incr; j > 0; j--)
-        sigs << std::setw(2) << (uint16_t)buf[i+j-1];
+      for (addr_t j = line_size; j > 0; j--)
+          if (i+j < sig_len)
+            sigs << std::setw(2) << (uint16_t)buf[i+j-1];
+          else
+            sigs << std::setw(2) << (uint16_t)0;
       sigs << '\n';
     }
 
@@ -276,6 +278,10 @@ void htif_t::parse_arguments(int argc, char ** argv)
       case HTIF_LONG_OPTIONS_OPTIND + 4:
         payloads.push_back(optarg);
         break;
+      case HTIF_LONG_OPTIONS_OPTIND + 5:
+        line_size = atoi(optarg);
+
+        break;
       case '?':
         if (!opterr)
           break;
@@ -309,6 +315,10 @@ void htif_t::parse_arguments(int argc, char ** argv)
         else if (arg.find("+payload=") == 0) {
           c = HTIF_LONG_OPTIONS_OPTIND + 4;
           optarg = optarg + 9;
+        }
+        else if(arg.find("+size=")==0){
+            c = HTIF_LONG_OPTIONS_OPTIND + 5;
+            optarg = optarg + 6;
         }
         else if (arg.find("+permissive-off") == 0) {
           if (opterr)
