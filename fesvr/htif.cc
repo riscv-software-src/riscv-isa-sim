@@ -316,9 +316,9 @@ void htif_t::parse_arguments(int argc, char ** argv)
           c = HTIF_LONG_OPTIONS_OPTIND + 4;
           optarg = optarg + 9;
         }
-        else if(arg.find("+size=")==0){
+        else if(arg.find("+granularity=")==0){
             c = HTIF_LONG_OPTIONS_OPTIND + 5;
-            optarg = optarg + 6;
+            optarg = optarg + 13;
         }
         else if (arg.find("+permissive-off") == 0) {
           if (opterr)
