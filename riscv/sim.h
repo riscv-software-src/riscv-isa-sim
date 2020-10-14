@@ -48,8 +48,13 @@ public:
 
   void sync_cycle() {
     current_step++; 
+    // fprintf(stderr, "mtime %lx current_step %lx\n", clint.get()->get_mtime(), current_step);
     state_t* state = get_core(0)->get_state();
     state->mcycle++;
+    if (current_step == INSNS_PER_RTC_TICK) {
+        current_step = 0;
+        clint->increment(1);
+    }
   }  
 
   void set_state (difftest_sim_state_t* new_state) {

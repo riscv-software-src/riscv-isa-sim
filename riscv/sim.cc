@@ -164,12 +164,6 @@ void sim_t::step(size_t n)
         host->switch_to();
       }
     }
-    else {
-      if (current_step >= INSNS_PER_RTC_TICK) {
-        current_step -= INSNS_PER_RTC_TICK;
-        clint->increment(1);
-      }
-    }
   }
 }
 
