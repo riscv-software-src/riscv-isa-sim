@@ -336,7 +336,7 @@ void sim_t::read_chunk(addr_t taddr, size_t len, void* dst)
 void sim_t::write_chunk(addr_t taddr, size_t len, const void* src)
 {
   assert(len == 8);
-  uint64_t data;
+  target_endian<uint64_t> data;
   memcpy(&data, src, sizeof data);
   debug_mmu->store_uint64(taddr, debug_mmu->from_target(data));
 }
