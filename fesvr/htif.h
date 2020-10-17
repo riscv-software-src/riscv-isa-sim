@@ -29,27 +29,27 @@ class htif_t : public chunked_memif_t
 
   virtual memif_t& memif() { return mem; }
 
-  template<typename T> inline T from_target(T n) const
+  template<typename T> inline T from_target(target_endian<T> n) const
   {
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
     memif_endianness_t endianness = get_target_endianness();
     assert(endianness == memif_endianness_little || endianness == memif_endianness_big);
 
-    return endianness == memif_endianness_big? from_be(n) : from_le(n);
+    return endianness == memif_endianness_big? n.from_be() : n.from_le();
 #else
-    return from_le(n);
+    return n.from_le();
 #endif
   }
 
-  template<typename T> inline T to_target(T n) const
+  template<typename T> inline target_endian<T> to_target(T n) const
   {
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
     memif_endianness_t endianness = get_target_endianness();
     assert(endianness == memif_endianness_little || endianness == memif_endianness_big);
 
-    return endianness == memif_endianness_big? to_be(n) : to_le(n);
+    return endianness == memif_endianness_big? target_endian<T>::to_be(n) : target_endian<T>::to_le(n);
 #else
-    return to_le(n);
+    return target_endian<T>::to_le(n);
 #endif
   }
 

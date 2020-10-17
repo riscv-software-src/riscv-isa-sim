@@ -217,7 +217,7 @@ int htif_t::run()
   while (!signal_exit && exitcode == 0)
   {
     if (auto tohost = from_target(mem.read_uint64(tohost_addr))) {
-      mem.write_uint64(tohost_addr, 0);
+      mem.write_uint64(tohost_addr, target_endian<uint64_t>::zero);
       command_t cmd(mem, tohost, fromhost_callback);
       device_list.handle_command(cmd);
     } else {
@@ -226,7 +226,7 @@ int htif_t::run()
 
     device_list.tick();
 
-    if (!fromhost_queue.empty() && mem.read_uint64(fromhost_addr) == 0) {
+    if (!fromhost_queue.empty() && !mem.read_uint64(fromhost_addr)) {
       mem.write_uint64(fromhost_addr, to_target(fromhost_queue.front()));
       fromhost_queue.pop();
     }

@@ -322,7 +322,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
       throw_access_exception(gva, trap_type);
     }
 
-    reg_t pte = vm.ptesize == 4 ? from_target(*(uint32_t*)ppte) : from_target(*(uint64_t*)ppte);
+    reg_t pte = vm.ptesize == 4 ? from_target(*(target_endian<uint32_t>*)ppte) : from_target(*(target_endian<uint64_t>*)ppte);
     reg_t ppn = pte >> PTE_PPN_SHIFT;
 
     if (PTE_TABLE(pte)) { // next level of page table
@@ -344,7 +344,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
       if ((pte & ad) != ad) {
         if (!pmp_ok(pte_paddr, vm.ptesize, STORE, PRV_S))
           throw_access_exception(gva, trap_type);
-        *(uint32_t*)ppte |= to_target((uint32_t)ad);
+        *(target_endian<uint32_t>*)ppte |= to_target((uint32_t)ad);
       }
 #else
       // take exception if access or possibly dirty bit is not set.
@@ -395,7 +395,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
     if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S))
       throw_access_exception(addr, type);
 
-    reg_t pte = vm.ptesize == 4 ? from_target(*(uint32_t*)ppte) : from_target(*(uint64_t*)ppte);
+    reg_t pte = vm.ptesize == 4 ? from_target(*(target_endian<uint32_t>*)ppte) : from_target(*(target_endian<uint64_t>*)ppte);
     reg_t ppn = pte >> PTE_PPN_SHIFT;
 
     if (PTE_TABLE(pte)) { // next level of page table
@@ -417,7 +417,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
       if ((pte & ad) != ad) {
         if (!pmp_ok(pte_paddr, vm.ptesize, STORE, PRV_S))
           throw_access_exception(addr, type);
-        *(uint32_t*)ppte |= to_target((uint32_t)ad);
+        *(target_endian<uint32_t>*)ppte |= to_target((uint32_t)ad);
       }
 #else
       // take exception if access or possibly dirty bit is not set.

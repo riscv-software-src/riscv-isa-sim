@@ -101,10 +101,10 @@ public:
       size_t size = sizeof(type##_t); \
       if (likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) { \
         if (proc) READ_MEM(addr, size); \
-        return from_target(*(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
+        return from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
       } \
       if (unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
-        type##_t data = from_target(*(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
+        type##_t data = from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
         if (!matched_trigger) { \
           matched_trigger = trigger_exception(OPERATION_LOAD, addr, data); \
           if (matched_trigger) \
@@ -113,7 +113,7 @@ public:
         if (proc) READ_MEM(addr, size); \
         return data; \
       } \
-      type##_t res; \
+      target_endian<type##_t> res; \
       load_slow_path(addr, sizeof(type##_t), (uint8_t*)&res, (xlate_flags)); \
       if (proc) READ_MEM(addr, size); \
       if (xlate_flags) \
@@ -165,7 +165,7 @@ public:
       size_t size = sizeof(type##_t); \
       if (likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \
         if (proc) WRITE_MEM(addr, val, size); \
-        *(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
+        *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
       } \
       else if (unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
         if (!matched_trigger) { \
@@ -174,10 +174,10 @@ public:
             throw *matched_trigger; \
         } \
         if (proc) WRITE_MEM(addr, val, size); \
-        *(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
+        *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
       } \
       else { \
-        type##_t target_val = to_target(val); \
+        target_endian<type##_t> target_val = to_target(val); \
         store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&target_val, (xlate_flags)); \
         if (proc) WRITE_MEM(addr, val, size); \
       } \
@@ -360,21 +360,21 @@ public:
 #endif
   }
 
-  template<typename T> inline T from_target(T n) const
+  template<typename T> inline T from_target(target_endian<T> n) const
   {
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
-    return target_big_endian? from_be(n) : from_le(n);
+    return target_big_endian? n.from_be() : n.from_le();
 #else
-    return from_le(n);
+    return n.from_le();
 #endif
   }
 
-  template<typename T> inline T to_target(T n) const
+  template<typename T> inline target_endian<T> to_target(T n) const
   {
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
-    return target_big_endian? to_be(n) : to_le(n);
+    return target_big_endian? target_endian<T>::to_be(n) : target_endian<T>::to_le(n);
 #else
-    return to_le(n);
+    return target_endian<T>::to_le(n);
 #endif
   }
 
@@ -429,7 +429,7 @@ private:
       result = tlb_data[vpn % TLB_ENTRIES];
     }
     if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
-      uint16_t* ptr = (uint16_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
+      target_endian<uint16_t>* ptr = (target_endian<uint16_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
       int match = proc->trigger_match(OPERATION_EXECUTE, addr, from_target(*ptr));
       if (match >= 0) {
         throw trigger_matched_t(match, OPERATION_EXECUTE, addr, from_target(*ptr));

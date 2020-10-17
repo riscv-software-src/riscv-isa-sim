@@ -299,10 +299,10 @@ reg_t syscall_t::sys_getcwd(reg_t pbuf, reg_t size, reg_t a2, reg_t a3, reg_t a4
 reg_t syscall_t::sys_getmainvars(reg_t pbuf, reg_t limit, reg_t a2, reg_t a3, reg_t a4, reg_t a5, reg_t a6)
 {
   std::vector<std::string> args = htif->target_args();
-  std::vector<uint64_t> words(args.size() + 3);
+  std::vector<target_endian<uint64_t>> words(args.size() + 3);
   words[0] = htif->to_target<uint64_t>(args.size());
-  words[args.size()+1] = 0; // argv[argc] = NULL
-  words[args.size()+2] = 0; // envp[0] = NULL
+  words[args.size()+1] = target_endian<uint64_t>::zero; // argv[argc] = NULL
+  words[args.size()+2] = target_endian<uint64_t>::zero; // envp[0] = NULL
 
   size_t sz = (args.size() + 3) * sizeof(words[0]);
   for (size_t i = 0; i < args.size(); i++)
@@ -340,7 +340,7 @@ reg_t syscall_t::sys_chdir(reg_t path, reg_t a1, reg_t a2, reg_t a3, reg_t a4, r
 
 void syscall_t::dispatch(reg_t mm)
 {
-  reg_t magicmem[8];
+  target_endian<reg_t> magicmem[8];
   memif->read(mm, sizeof(magicmem), magicmem);
 
   reg_t n = htif->from_target(magicmem[0]);
