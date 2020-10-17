@@ -1,1 +1,1 @@
-throw trap_breakpoint(0);
+throw trap_breakpoint(pc);
