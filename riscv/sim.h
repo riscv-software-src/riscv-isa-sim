@@ -43,18 +43,22 @@ public:
 
   // DiffTest
   void difftest_continue(size_t n) { 
-    step(n); 
+    step(n, false); 
+  }
+
+  void difftest_checkINT() {
+    step(1, true);
   }
 
   void sync_cycle() {
-    current_step++; 
-    // fprintf(stderr, "mtime %lx current_step %lx\n", clint.get()->get_mtime(), current_step);
-    state_t* state = get_core(0)->get_state();
-    state->mcycle++;
     if (current_step == INSNS_PER_RTC_TICK) {
         current_step = 0;
         clint->increment(1);
     }
+    // fprintf(stderr, "mtime %lx current_step %lx\n", clint.get()->get_mtime(), current_step);
+    current_step++; 
+    state_t* state = get_core(0)->get_state();
+    state->mcycle++;
   }  
 
   void set_state (difftest_sim_state_t* new_state) {
@@ -71,18 +75,12 @@ public:
     state->XPR.write(index, new_value);
   }
 
-/* Following will remove in next version */
-  void set_mip() {
-    state_t* state = get_core(0)->get_state();
-    state->mip |= MIP_MTIP;
-  }
-
   void difftest_setup() {
     start();
 
     state_t* state = get_core(0)->get_state();
     do {
-      step(1);
+      step(1, false);
     } while(state->pc != start_pc);
 
     state->XPR.reset();
@@ -144,7 +142,7 @@ private:
   log_file_t log_file;
 
   processor_t* get_core(const std::string& i);
-  void step(size_t n); // step through simulation
+  void step(size_t n, bool check_int=true); // step through simulation
   static const size_t INTERLEAVE = 5000;
   static const size_t INSNS_PER_RTC_TICK = 100; // 10 MHz clock for 1 BIPS core
   static const size_t CPU_HZ = 1000000000; // 1GHz CPU

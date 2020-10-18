@@ -207,7 +207,7 @@ bool processor_t::slow_path()
 }
 
 // fetch/decode/execute loop
-void processor_t::step(size_t n)
+void processor_t::step(size_t n, bool check_int)
 {
   if (!state.debug_mode) {
     if (halt_request == HR_REGULAR) {
@@ -242,7 +242,8 @@ void processor_t::step(size_t n)
 
     try
     {
-      take_pending_interrupt();
+      if (check_int)
+        take_pending_interrupt();
 
       if (unlikely(slow_path()))
       {
@@ -321,6 +322,7 @@ void processor_t::step(size_t n)
     catch(trap_t& t)
     {
       take_trap(t, pc);
+
       n = instret;
 
       if (unlikely(state.single_step == state.STEP_STEPPED)) {

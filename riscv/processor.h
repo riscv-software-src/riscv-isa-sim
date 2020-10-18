@@ -273,7 +273,7 @@ public:
   bool get_log_commits_enabled() const { return log_commits_enabled; }
 #endif
   void reset();
-  void step(size_t n); // run for n cycles
+  void step(size_t n, bool check_int=true); // run for n cycles
   void set_csr(int which, reg_t val);
   reg_t get_csr(int which);
   mmu_t* get_mmu() { return mmu; }
