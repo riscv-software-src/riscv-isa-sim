@@ -61,6 +61,7 @@ riscv_srcs = \
 	jtag_dtm.cc \
 	$(riscv_gen_srcs) \
 	uart.cc \
+	plic.cc \
 
 riscv_test_srcs =
 

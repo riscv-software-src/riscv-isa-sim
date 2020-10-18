@@ -137,6 +137,7 @@ private:
   std::unique_ptr<clint_t> clint;
 #ifdef ZJV_DEVICE_EXTENSTION  
   std::unique_ptr<uart_t> uart;
+  std::unique_ptr<plic_t> plic;
 #endif
   bus_t bus;
   log_file_t log_file;

@@ -54,8 +54,8 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     histogram_enabled(false),
     log(false),
     remote_bitbang(NULL),
-    debug_module(this, dm_config),
-    diffTest(diffTest)
+    diffTest(diffTest),
+    debug_module(this, dm_config)
 {
   signal(SIGINT, &handle_signal);
 
@@ -95,7 +95,14 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
   }
 
 #ifdef ZJV_DEVICE_EXTENSTION  
-  uart.reset(new uart_t(diffTest, uart_fifo));
+  int context_size = 1;
+  if (strchr(priv, 'S'))
+    context_size = 2;
+
+  plic.reset(new plic_t(procs, PLIC_MAX_SRC, nprocs*context_size));
+  bus.add_device(PLIC_BASE, plic.get());
+
+  uart.reset(new uart_t(plic.get(), diffTest, uart_fifo));
   bus.add_device(UART_BASE, uart.get());
 #endif
 
@@ -149,6 +156,11 @@ void sim_t::step(size_t n, bool check_int)
 {
   for (size_t i = 0, steps = 0; i < n; i += steps)
   {
+
+#ifdef ZJV_DEVICE_EXTENSTION 
+    uart.get()->check_int();
+#endif
+
     steps = std::min(n - i, INTERLEAVE - current_step);
     procs[current_proc]->step(steps, check_int);
 
