@@ -377,6 +377,36 @@ struct : public arg_t {
   }
 } iorw;
 
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.p_imm2());
+  }
+} p_imm2;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.p_imm3());
+  }
+} p_imm3;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.p_imm4());
+  }
+} p_imm4;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.p_imm5());
+  }
+} p_imm5;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.p_imm6());
+  }
+} p_imm6;
+
 typedef struct {
   reg_t match;
   reg_t mask;
@@ -1314,6 +1344,112 @@ disassembler_t::disassembler_t(int xlen)
       }
     }
   }
+
+#define DEFINE_PITYTPE(code, immbti) DISASM_INSN(#code, code, 0, {&xrd, &xrs1, &p_imm##immbti});
+#define DEFINE_ONEOP(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs1});
+
+#define DISASM_8_AND_16_RINSN(code) \
+  DEFINE_RTYPE(code##8); \
+  DEFINE_RTYPE(code##16);
+
+#define DISASM_8_AND_16_RINSN_ROUND(code) \
+  DISASM_INSN(#code "8.u", code##8_u, 0, {&xrd, &xrs1, &xrs2}); \
+  DISASM_INSN(#code "16.u", code##16_u, 0, {&xrd, &xrs1, &xrs2}); \
+
+#define DISASM_8_AND_16_PIINSN(code) \
+  DEFINE_PITYTPE(code##8, 3); \
+  DEFINE_PITYTPE(code##16, 4);
+
+#define DISASM_8_AND_16_PIINSN_ROUND(code) \
+  DISASM_INSN(#code "8.u", code##8_u, 0, {&xrd, &xrs1, &p_imm3}); \
+  DISASM_INSN(#code "16.u", code##16_u, 0, {&xrd, &xrs1, &p_imm4});
+
+  DISASM_8_AND_16_RINSN(add);
+  DISASM_8_AND_16_RINSN(radd);
+  DISASM_8_AND_16_RINSN(uradd);
+  DISASM_8_AND_16_RINSN(kadd);
+  DISASM_8_AND_16_RINSN(ukadd);
+  DISASM_8_AND_16_RINSN(sub);
+  DISASM_8_AND_16_RINSN(rsub);
+  DISASM_8_AND_16_RINSN(ursub);
+  DISASM_8_AND_16_RINSN(ksub);
+  DISASM_8_AND_16_RINSN(uksub);
+  DEFINE_RTYPE(cras16);
+  DEFINE_RTYPE(rcras16);
+  DEFINE_RTYPE(urcras16);
+  DEFINE_RTYPE(kcras16);
+  DEFINE_RTYPE(ukcras16);
+  DEFINE_RTYPE(crsa16);
+  DEFINE_RTYPE(rcrsa16);
+  DEFINE_RTYPE(urcrsa16);
+  DEFINE_RTYPE(kcrsa16);
+  DEFINE_RTYPE(ukcrsa16);
+  DEFINE_RTYPE(stas16);
+  DEFINE_RTYPE(rstas16);
+  DEFINE_RTYPE(urstas16);
+  DEFINE_RTYPE(kstas16);
+  DEFINE_RTYPE(ukstas16);
+  DEFINE_RTYPE(stsa16);
+  DEFINE_RTYPE(rstsa16);
+  DEFINE_RTYPE(urstsa16);
+  DEFINE_RTYPE(kstsa16);
+  DEFINE_RTYPE(ukstsa16);
+
+  DISASM_8_AND_16_RINSN(sra);
+  DISASM_8_AND_16_RINSN(srl);
+  DISASM_8_AND_16_RINSN(sll);
+  DISASM_8_AND_16_RINSN(ksll);
+  DISASM_8_AND_16_RINSN(kslra);
+  DISASM_8_AND_16_PIINSN(srai);
+  DISASM_8_AND_16_PIINSN(srli);
+  DISASM_8_AND_16_PIINSN(slli);
+  DISASM_8_AND_16_PIINSN(kslli);
+  DISASM_8_AND_16_RINSN_ROUND(sra);
+  DISASM_8_AND_16_RINSN_ROUND(srl);
+  DISASM_8_AND_16_RINSN_ROUND(kslra);
+  DISASM_8_AND_16_PIINSN_ROUND(srai);
+  DISASM_8_AND_16_PIINSN_ROUND(srli);
+
+  DISASM_8_AND_16_RINSN(cmpeq);
+  DISASM_8_AND_16_RINSN(scmplt);
+  DISASM_8_AND_16_RINSN(scmple);
+  DISASM_8_AND_16_RINSN(ucmplt);
+  DISASM_8_AND_16_RINSN(ucmple);
+
+  DISASM_8_AND_16_RINSN(smul);
+  DISASM_8_AND_16_RINSN(smulx);
+  DISASM_8_AND_16_RINSN(umul);
+  DISASM_8_AND_16_RINSN(umulx);
+  DISASM_8_AND_16_RINSN(khm);
+  DISASM_8_AND_16_RINSN(khmx);
+  
+  DISASM_8_AND_16_RINSN(smin);
+  DISASM_8_AND_16_RINSN(umin);
+  DISASM_8_AND_16_RINSN(smax);
+  DISASM_8_AND_16_RINSN(umax);
+  DISASM_8_AND_16_PIINSN(sclip);
+  DISASM_8_AND_16_PIINSN(uclip);
+  DEFINE_ONEOP(kabs16);
+  DEFINE_ONEOP(clrs16);
+  DEFINE_ONEOP(clz16);
+  DEFINE_ONEOP(clo16);
+  DEFINE_ONEOP(swap16);
+  DEFINE_ONEOP(kabs8);
+  DEFINE_ONEOP(clrs8);
+  DEFINE_ONEOP(clz8);
+  DEFINE_ONEOP(clo8);
+  DEFINE_ONEOP(swap8);
+
+  DEFINE_ONEOP(sunpkd810);
+  DEFINE_ONEOP(sunpkd820);
+  DEFINE_ONEOP(sunpkd830);
+  DEFINE_ONEOP(sunpkd831);
+  DEFINE_ONEOP(sunpkd832);
+  DEFINE_ONEOP(zunpkd810);
+  DEFINE_ONEOP(zunpkd820);
+  DEFINE_ONEOP(zunpkd830);
+  DEFINE_ONEOP(zunpkd831);
+  DEFINE_ONEOP(zunpkd832);
 
   if (xlen == 32) {
     DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
