@@ -350,6 +350,7 @@ void sim_t::set_target_endianness(memif_endianness_t endianness)
   debug_mmu->set_target_big_endian(enable);
   for (size_t i = 0; i < procs.size(); i++) {
     procs[i]->get_mmu()->set_target_big_endian(enable);
+    procs[i]->reset();
   }
 #else
   assert(endianness == memif_endianness_little);
