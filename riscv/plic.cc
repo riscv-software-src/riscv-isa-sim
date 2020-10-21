@@ -183,14 +183,6 @@ bool plic_t::plic_int_check(uint32_t contextid) {
   return false;
 }
 
-
-    // for (size_t i = 0; i < procs.size(); ++i) {
-    //   if (!(mask[i] & 0xFF)) continue;
-    //   procs[i]->state.mip &= ~MIP_MSIP;
-    //   if (!!(msip[i] & 1))
-    //     procs[i]->state.mip |= MIP_MSIP;
-    // }
-
 void plic_t::plic_update() {
   for (size_t i = 0; i < num_context; i++) {
     bool ip = plic_int_check(i);
