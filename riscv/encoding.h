@@ -538,10 +538,10 @@
 #define MASK_CLMULH  0xfe00707f
 #define MATCH_MIN 0xa004033
 #define MASK_MIN  0xfe00707f
-#define MATCH_MAX 0xa005033
-#define MASK_MAX  0xfe00707f
-#define MATCH_MINU 0xa006033
+#define MATCH_MINU 0xa005033
 #define MASK_MINU  0xfe00707f
+#define MATCH_MAX 0xa006033
+#define MASK_MAX  0xfe00707f
 #define MATCH_MAXU 0xa007033
 #define MASK_MAXU  0xfe00707f
 #define MATCH_SHFL 0x8001033
