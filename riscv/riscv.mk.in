@@ -434,7 +434,6 @@ riscv_insn_ext_b = \
 	sroi \
 	sroiw \
 	srow \
-	subu_w \
 	subwu \
 	unshfl \
 	unshfli \
