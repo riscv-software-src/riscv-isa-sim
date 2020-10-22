@@ -178,7 +178,7 @@ void htif_t::stop()
     for (addr_t i = 0; i < sig_len; i += line_size)
     {
       for (addr_t j = line_size; j > 0; j--)
-          if (i+j < sig_len)
+          if (i+j <= sig_len)
             sigs << std::setw(2) << (uint16_t)buf[i+j-1];
           else
             sigs << std::setw(2) << (uint16_t)0;
