@@ -35,7 +35,7 @@ plic_t::plic_t(std::vector<processor_t*>& procs, size_t num_source, size_t num_c
     
       assert(context.size() == num_context);
 
-      printf("[SimPlic] Register PLIC SUCCESS with source %ld target %ld\n", num_source, num_context);
+      printf("[SimPLIC] Register PLIC SUCCESS with source %ld target %ld\n", num_source, num_context);
     }
   }
 
@@ -96,7 +96,7 @@ bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes) {
   } 
   else {
 err:
-    printf("[SimPlic] read unknown addr %lx with %ld\n", addr, len);
+    printf("[SimPLIC] read unknown addr %lx with %ld\n", addr, len);
     return false;
   }
   return true;
@@ -139,7 +139,7 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
   } 
   else {
 err:
-    printf("[SimPlic] write unknown addr %lx with %ld\n", addr, len);
+    printf("[SimPLIC] write unknown addr %lx with %ld\n", addr, len);
     return false;
   }
   return true;

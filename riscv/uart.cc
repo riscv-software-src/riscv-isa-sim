@@ -18,7 +18,7 @@ void uart_t::check_int() {
     else if (!diffTest) {
         int amt;
         if ((ioctl(0, FIONREAD, &amt) == 0) && (amt > 0))
-            plic->plic_irq(1);
+            plic->plic_irq(10);
     }
 }
 
@@ -64,7 +64,7 @@ void uart_t::check_int() {
 
 bool uart_t::load(reg_t addr, size_t len, uint8_t* bytes) {
     if (len > 1) {
-        printf("[UART] Load 0x%016lx with %ld byte (>1) \n", addr, len);
+        printf("[SimUART] Load 0x%016lx with %ld byte (>1) \n", addr, len);
         return false;
     }
 
@@ -121,7 +121,7 @@ bool uart_t::load(reg_t addr, size_t len, uint8_t* bytes) {
             memcpy(&uart_spr, bytes, len);
             break; 
         default:
-                printf("[UART] Load illegal address 0x%016lx[%x] \n", addr + UART_BASE, *bytes);
+                printf("[SimUART] Load illegal address 0x%016lx[%x] \n", addr + UART_BASE, *bytes);
                 return false;
     }
     return true;
@@ -129,7 +129,7 @@ bool uart_t::load(reg_t addr, size_t len, uint8_t* bytes) {
 
 bool uart_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
     if (len > 1) {
-        printf("[UART] Store 0x%016lx with %ld byte (>1) \n", addr, len);
+        printf("[SimUART] Store 0x%016lx with %ld byte (>1) \n", addr, len);
         return false;
     }
 
@@ -161,7 +161,7 @@ bool uart_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
         default:
             if ((addr == UART_PSD) && (uart_lcr & UART_LCR_DLAB)) memcpy(&uart_psd, bytes, len);
             else {
-                printf("[UART] Store illegal address 0x%016lx[%x] \n", addr + UART_BASE, *bytes);
+                printf("[SimUART] Store illegal address 0x%016lx[%x] \n", addr + UART_BASE, *bytes);
                 return false;
             } 
     }
