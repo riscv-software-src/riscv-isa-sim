@@ -1352,6 +1352,12 @@ reg_t processor_t::get_csr(int which, insn_t insn)
   if (which >= CSR_MHPMEVENT3 && which <= CSR_MHPMEVENT31)
     return 0;
 
+  if (which == CSR_MSECCFG) {
+    if (n_pmp == 0)
+      goto throw_illegal;
+    return state.mseccfg;
+  }
+
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
     // If n_pmp is zero, that means pmp is not implemented hence raise trap if it tries to access the csr
     if (n_pmp == 0)

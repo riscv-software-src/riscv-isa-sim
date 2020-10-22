@@ -216,7 +216,6 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
     return true;
 
   reg_t base = 0;
-  bool mml_set = proc->state.mseccfg && MSECCFG_MML;
   for (size_t i = 0; i < proc->n_pmp; i++) {
     reg_t tor = (proc->state.pmpaddr[i] & proc->pmp_tor_mask()) << PMP_SHIFT;
     uint8_t cfg = proc->state.pmpcfg[i];
@@ -245,7 +244,7 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
         if (!all_match)
           return false;
 
-        // prepare to check mml_set
+        // prepare to check bit MSECCFG_MML
         bool cfgx = cfg & PMP_X;
         bool cfgw = cfg & PMP_W;
         bool cfgr = cfg & PMP_R;
@@ -258,7 +257,7 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
         bool typew = type == STORE;
         bool normal_rwx = (typer && cfgr) || (typew && cfgw) || (typex && cfgx);
 
-        if (mml_set) {
+        if (proc->state.mseccfg & MSECCFG_MML) {
           bool mml_shared_region = !cfgr && cfgw;
           bool mml_chk_normal = (prvm == cfgl) && normal_rwx;
           bool mml_chk_shared =
