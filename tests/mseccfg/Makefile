@@ -38,6 +38,7 @@ LDFLAGS = -mcmodel=medany -static -nostdlib -nostartfiles -lm -lgcc \
 SIM_ISA = --isa=RV64IMAFDC
 
 default:
+	@echo "make gen, to generate all test cases with gengen"
 	@echo "make all, to run all test cases"
 	@echo "set OBJECTS variant to select specified test case"
 	
