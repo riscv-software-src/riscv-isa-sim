@@ -542,6 +542,19 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(remw);
   DEFINE_RTYPE(remuw);
 
+  DEFINE_RTYPE(sh1add);
+  DEFINE_RTYPE(sh2add);
+  DEFINE_RTYPE(sh3add);
+  DEFINE_RTYPE(sh1addu_w);
+  DEFINE_RTYPE(sh2addu_w);
+  DEFINE_RTYPE(sh3addu_w);
+  DEFINE_RTYPE(addwu);
+  DEFINE_RTYPE(subwu);
+  DEFINE_ITYPE(addiwu);
+  DEFINE_RTYPE(ror);
+  DEFINE_RTYPE(rol);
+  DEFINE_ITYPE_SHIFT(rori);
+
   DEFINE_NOARG(ecall);
   DEFINE_NOARG(ebreak);
   DEFINE_NOARG(uret);
