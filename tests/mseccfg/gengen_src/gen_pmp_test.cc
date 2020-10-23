@@ -14,6 +14,7 @@
 #include <assert.h>
 
 #include "test_pmp_ok_1.h"
+#include "test_pmp_ok_share_1.h"
 #include "test_pmp_csr_1.h"
 
 #define GEN_ALL 1
@@ -204,6 +205,90 @@ main()
     }
 #endif
 
+#if GEN_ALL
+    pmp_ok_share_1_gen_class gen_class_3;
+    for (int r = 0; r < 2; r++) {
+        for (int x = 0; x < 2; x++) {
+            for (int cfgl = 0; cfgl < 2; cfgl++) {
+                for (int typex = 0; typex < 2; typex++) {
+                    for (int umode = 0; umode < 2; umode++) {
+    // not share mode and M mode
+    if (r == 1 && umode == 0) continue;
+
+    str_buffer.str("");
+    str_buffer << "outputs/test_pmp_ok_share_1_r" << r << "_x" << x << "_cfgl" << cfgl
+            << "_typex" << typex << "_umode" << umode << ".c";
+    m_ofstream.open(str_buffer.str().c_str());
+    cur_files_count++;
+
+    gen_class_3.set_tag(str_buffer.str());
+
+    unsigned r_err = 0;
+    unsigned w_err = 0;
+    unsigned x_err = 0;
+
+    gen_class_3.set_pmp_r(r);
+    gen_class_3.set_pmp_x(x);
+    gen_class_3.set_pmp_l(cfgl);
+    gen_class_3.set_typex(typex);
+    gen_class_3.set_enable_umode_test(umode);
+
+    if (r != 0) {   // not share mode
+        if (typex == 0) {
+            r_err = 1;
+            w_err = 1;
+        } else {
+            x_err = 1;
+        }
+    } else {
+        if (cfgl) {
+            if (typex == 0) {
+                if (x == 0) {
+                    // no RW access
+                    r_err = 1;
+                    w_err = 1;
+                } else {
+                    // readable for M mode
+                    if (umode) {
+                        r_err = 1;
+                        w_err = 1;
+                    } else {
+                        w_err = 1;
+                    }
+                }
+            } else {
+                // always executable
+            }
+        } else {
+            if (typex == 0) {
+                if (x == 0) {
+                    // RW M mode, R for U
+                    if (umode) {
+                        w_err = 1;
+                    }
+                }
+            } else {
+                x_err = 1;  // when !cfgl, not executable
+            }
+        }
+    }
+
+    cur_expected_errors += r_err + w_err + x_err;
+    gen_class_3.set_expected_r_fail(r_err);
+    gen_class_3.set_expected_w_fail(w_err);
+    gen_class_3.set_expected_x_fail(x_err);
+
+    str_buffer.str("");
+    gen_class_3.generate_pmp_ok_share_1(str_buffer, 0);
+    str_buffer << std::endl;
+    m_ofstream << str_buffer.str();
+    m_ofstream.close();
+                    }
+                }
+            }
+        }
+    }
+#endif
     printf("Total %d files generated, expected errors %d.\n", cur_files_count, cur_expected_errors);
     return 0;
 }
