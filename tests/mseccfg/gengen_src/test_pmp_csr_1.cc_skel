@@ -24,6 +24,10 @@
 #define PMP_L     0x80
 #define PMP_SHIFT 2
 
+#if ((PMP_R | PMP_W | PMP_X) != 0x7)
+#error unexpected
+#endif
+
 #define PMP_TOR   0x08
 #define PMP_NA4   0x10
 #define PMP_NAPOT 0x18
@@ -187,7 +191,8 @@ static void set_cfg() {
         actual_pmpaddr_fail = 1;
     }
     
-    wval = cfg0 ^ ((PMP_R | PMP_W | PMP_X) << (@cfg_sub_idx:int@ * 8));
+    wval = (@cfg_idx:int@ == 0 ? cfg0 : 0) 
+            ^ (@revert_rwx:int@ << (@cfg_sub_idx:int@ * 8));
     asm volatile ("csrw pmpcfg@cfg_idx:int@, %1 \n"
                 "\tcsrr %0, pmpcfg@cfg_idx:int@ \n"
             : "=r"(rval)

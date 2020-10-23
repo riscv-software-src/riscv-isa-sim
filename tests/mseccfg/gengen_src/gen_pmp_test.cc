@@ -121,7 +121,8 @@ main()
                         for (int test_pmp = 0; test_pmp < 2; test_pmp++) {
                             for (int idx = 0; idx < 2; idx++) {
                                 if (test_pmp == 0 && idx == 1) continue;   // only 1 seccfg
-                                for (int val = 0; val < (test_pmp ? 2 : 8); val++) {
+                                for (int val = 0; val < 8; val++) {
+                                    if (val == 0 && test_pmp) continue;    // skip, since no change
 
     str_buffer.str("");
     str_buffer << "outputs/test_pmp_csr_1_lock" << pmp_lock << lock_once
@@ -147,6 +148,8 @@ main()
     int seccfg_fail = 0;
 
     if (test_pmp == 1) {   // pmpcfg and pmpaddr test
+        gen_class_2.set_revert_rwx(val);
+
         if (idx == 0) { // for cfg2 and cfg3, since PMP_L might set there
             int sub_idx = 2 + cur_files_count % 2;
             gen_class_2.set_addr_idx(sub_idx);
@@ -157,14 +160,21 @@ main()
             if (pmp_lock && !pre_rlb) {
                 pmpcfg_fail = 1;
                 pmpaddr_fail = 1;
-                cur_expected_errors += 1;
+            }
+            if (!pre_mml && (val & 0x3) == 0x1) { // b'11^01 = 10, RW=01
+                pmpcfg_fail = 1;
             }
         } else {    // for invalid cfgs
             gen_class_2.set_addr_idx(4 + cur_files_count % (max_pmp - 4));
             gen_class_2.set_addr_offset(0x10000);
             gen_class_2.set_cfg_idx((1 + cur_files_count % (max_pmp_cfg - 1)) * 2);   // for 2, 4, ..., 14
             gen_class_2.set_cfg_sub_idx((cur_files_count >> val) % 4);
+            if (!pre_mml && (val & 0x3) == 0x2) { // b'00^10 = 10, RW=01
+                pmpcfg_fail = 1;
+            }
         }
+
+        if (pmpcfg_fail || pmpaddr_fail) cur_expected_errors += 1;
     } else {            // seccfg test
         unsigned sec_val = val;
         unsigned sec_rlb = sec_val & 0x1;
