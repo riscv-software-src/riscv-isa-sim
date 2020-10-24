@@ -93,6 +93,9 @@ public:
     }
     buf->npc = s.pc;
     buf->pc = s.last_pc;
+    buf->priv = s.prv;
+    buf->mideleg = s.mideleg;
+    buf->medeleg = s.medeleg;
   }
 
   // run the simulation to completion
