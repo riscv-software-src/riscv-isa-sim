@@ -281,6 +281,9 @@ void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::strin
       if ((r + 1) % 4 == 0)
         fprintf(stderr, "\n");
     }
+
+
+    fprintf(stderr, "mstatus 0x%016lx mie 0x%016lx mip 0x%016lx mtvec 0x%016lx\n", p->get_state()->mstatus, p->get_state()->mie, p->get_state()->mip, p->get_state()->mtvec);
   } else
     fprintf(stderr, "0x%016" PRIx64 "\n", get_reg(args));
 }

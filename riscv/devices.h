@@ -85,21 +85,47 @@ class clint_t : public abstract_device_t {
   std::vector<mtimecmp_t> mtimecmp;
 };
 
+#ifdef ZJV_DEVICE_EXTENSTION 
+class plic_t : public abstract_device_t {
+ public:
+  plic_t(std::vector<processor_t*>& procs, size_t num_source, size_t num_context);
+  bool load(reg_t addr, size_t len, uint8_t* bytes);
+  bool store(reg_t addr, size_t len, const uint8_t* bytes);
+  size_t size() { return PLIC_SIZE; }
+
+  uint32_t plic_claim (uint32_t contextid);
+  void plic_update();
+  bool plic_int_check(uint32_t contextid);
+  void plic_irq (uint32_t irq);
+ private:
+  size_t num_source;
+  size_t num_context;
+  typedef uint32_t plic_reg_t;
+  std::vector<processor_t*>& procs;
+  std::vector<plic_reg_t> priority;
+  std::vector<std::vector<plic_reg_t> > ie;
+  std::vector<plic_reg_t> ip;
+  std::vector<plic_reg_t> threshold;
+  std::vector<std::vector<plic_reg_t> > claimed;
+
+  typedef struct {
+    uint32_t hartid;
+    char mode;
+  } context_t;
+  std::vector<context_t> context;
+};
+
 class uart_t : public abstract_device_t {
  public:
-  uart_t(bool diffTest, std::string file_path) 
-    : diffTest(diffTest) {
-    file_fifo.open(file_path);
-    if (file_fifo.is_open()) {
-      printf("[SimUART] open uart file fifo %s\n", file_path.c_str());
-    }
-  }
+  uart_t(plic_t* plic ,bool diffTest, std::string file_path);
   bool load(reg_t addr, size_t len, uint8_t* bytes);
   bool store(reg_t addr, size_t len, const uint8_t* bytes);
   size_t size() { return UART_SIZE; }
+  void check_int();
 
  private:
   bool diffTest;
+  plic_t* plic;
   std::ifstream file_fifo; 
   uint8_t uart_ier;
   uint8_t uart_isr;
@@ -112,6 +138,9 @@ class uart_t : public abstract_device_t {
   uint8_t uart_dlm;
   uint8_t uart_psd;
 };
+
+#endif
+
 
 class mmio_plugin_device_t : public abstract_device_t {
  public:

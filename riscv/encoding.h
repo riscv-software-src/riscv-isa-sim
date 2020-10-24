@@ -205,16 +205,14 @@
 #define CLINT_SIZE         0x000c0000
 #define EXT_IO_BASE        0x40000000
 #define DRAM_BASE          0x80000000
+
 #define UART_BASE          0x10000000
 #define UART_SIZE          0x00000100
-<<<<<<< Updated upstream
-=======
 #define PLIC_BASE          0x0C000000
 #define PLIC_SIZE          0x04000000
 #define PLIC_MAX_SRC       32
 #define PLIC_MAX_PRIO      7
 #define PLIC_UART_IRQ      10
->>>>>>> Stashed changes
 
 /* page table entry (PTE) fields */
 #define PTE_V     0x001 /* Valid */

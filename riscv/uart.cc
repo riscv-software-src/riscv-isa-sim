@@ -1,12 +1,8 @@
 #include "devices.h"
 #include "processor.h"
-#include "uart.h"
-
 #include <unistd.h>
 #include <sys/ioctl.h>
 
-<<<<<<< Updated upstream
-=======
 uart_t::uart_t(plic_t* plic, bool diffTest, std::string file_path) : diffTest(diffTest), plic(plic) {
     file_fifo.open(file_path);
     if (file_fifo.is_open()) {
@@ -66,10 +62,10 @@ void uart_t::check_int() {
 #define UART_LSR_TE     0x40  // Transmitter Empty 
 #define UART_LSR_FIFOE  0x80  // FIFO Data Error
 
->>>>>>> Stashed changes
+
 bool uart_t::load(reg_t addr, size_t len, uint8_t* bytes) {
     if (len > 1) {
-        printf("[UART] Load 0x%016lx with %ld byte (>1) \n", addr, len);
+        printf("[SimUART] Load 0x%016lx with %ld byte (>1) \n", addr, len);
         return false;
     }
 
@@ -126,17 +122,15 @@ bool uart_t::load(reg_t addr, size_t len, uint8_t* bytes) {
             memcpy(&uart_spr, bytes, len);
             break; 
         default:
-                printf("[UART] Load illegal address 0x%016lx[%x] \n", addr + UART_BASE, *bytes);
+                printf("[SimUART] Load illegal address 0x%016lx[%x] \n", addr + UART_BASE, *bytes);
                 return false;
     }
-
-
     return true;
 }
 
 bool uart_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
     if (len > 1) {
-        printf("[UART] Store 0x%016lx with %ld byte (>1) \n", addr, len);
+        printf("[SimUART] Store 0x%016lx with %ld byte (>1) \n", addr, len);
         return false;
     }
 
@@ -168,7 +162,7 @@ bool uart_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
         default:
             if ((addr == UART_PSD) && (uart_lcr & UART_LCR_DLAB)) memcpy(&uart_psd, bytes, len);
             else {
-                printf("[UART] Store illegal address 0x%016lx[%x] \n", addr + UART_BASE, *bytes);
+                printf("[SimUART] Store illegal address 0x%016lx[%x] \n", addr + UART_BASE, *bytes);
                 return false;
             } 
     }
