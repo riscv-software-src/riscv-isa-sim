@@ -17,8 +17,8 @@
 */
 
 plic_t::plic_t(std::vector<processor_t*>& procs, size_t num_source, size_t num_context) :
-  num_source(num_source), num_context(num_context), procs(procs), priority(num_source, PLIC_MAX_PRIO), 
-  ie(num_context, std::vector<plic_t::plic_reg_t>((num_source + 31) >> 5, -1)), ip((num_source + 31) >> 5),
+  num_source(num_source), num_context(num_context), procs(procs), priority(num_source, 0), 
+  ie(num_context, std::vector<plic_t::plic_reg_t>((num_source + 31) >> 5, 0)), ip((num_source + 31) >> 5),
   threshold(num_context), claimed(num_context, std::vector<plic_t::plic_reg_t>((num_source + 31) >> 5))
   {
     for (size_t i = 0; i < procs.size(); i++) {
