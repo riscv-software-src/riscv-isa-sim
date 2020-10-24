@@ -297,7 +297,7 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
   return true;
 }
 
-reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, bool virt, bool mxr)
+reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool mxr)
 {
   if (!virt)
     return gpa;
@@ -316,7 +316,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, bool virt, bool mxr
     auto pte_paddr = base + idx * vm.ptesize;
     auto ppte = sim->addr_to_mem(pte_paddr);
     if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S)) {
-      throw_access_exception(gva, type);
+      throw_access_exception(gva, trap_type);
     }
 
     reg_t pte = vm.ptesize == 4 ? from_le(*(uint32_t*)ppte) : from_le(*(uint64_t*)ppte);
@@ -340,7 +340,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, bool virt, bool mxr
       // set accessed and possibly dirty bits.
       if ((pte & ad) != ad) {
         if (!pmp_ok(pte_paddr, vm.ptesize, STORE, PRV_S))
-          throw_access_exception(gva, type);
+          throw_access_exception(gva, trap_type);
         *(uint32_t*)ppte |= to_le((uint32_t)ad);
       }
 #else
@@ -355,7 +355,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, bool virt, bool mxr
     }
   }
 
-  switch (type) {
+  switch (trap_type) {
     case FETCH: throw trap_instruction_guest_page_fault(gva, gpa >> 2, 0);
     case LOAD: throw trap_load_guest_page_fault(gva, gpa >> 2, 0);
     case STORE: throw trap_store_guest_page_fault(gva, gpa >> 2, 0);
@@ -369,7 +369,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
   reg_t satp = (virt) ? proc->get_state()->vsatp : proc->get_state()->satp;
   vm_info vm = decode_vm_info(proc->max_xlen, false, mode, satp);
   if (vm.levels == 0)
-    return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, virt, mxr) & ~page_mask; // zero-extend from xlen
+    return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, mxr) & ~page_mask; // zero-extend from xlen
 
   bool s_mode = mode == PRV_S;
   bool sum = get_field(proc->state.mstatus, MSTATUS_SUM);
@@ -387,7 +387,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
     reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
 
     // check that physical address of PTE is legal
-    auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, virt, false);
+    auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, type, virt, false);
     auto ppte = sim->addr_to_mem(pte_paddr);
     if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S))
       throw_access_exception(addr, type);
@@ -425,7 +425,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
       reg_t vpn = addr >> PGSHIFT;
       reg_t page_base = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
       reg_t phys = page_base | (addr & page_mask);
-      return s2xlate(addr, phys, type, virt, mxr) & ~page_mask;
+      return s2xlate(addr, phys, type, type, virt, mxr) & ~page_mask;
     }
   }
 
