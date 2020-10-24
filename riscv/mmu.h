@@ -367,7 +367,7 @@ private:
   const char* fill_from_mmio(reg_t vaddr, reg_t paddr);
 
   // perform a stage2 translation for a given guest address
-  reg_t s2xlate(reg_t gva, reg_t gpa, access_type type, bool virt, bool mxr);
+  reg_t s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool mxr);
 
   // perform a page table walk for a given VA; set referenced/dirty bits
   reg_t walk(reg_t addr, access_type type, reg_t prv, bool virt, bool mxr);
