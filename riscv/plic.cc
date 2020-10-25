@@ -32,11 +32,14 @@ plic_t::plic_t(std::vector<processor_t*>& procs, size_t num_source, size_t num_c
         ctx.hartid = i;
         context.push_back(ctx);
       }
-    
-      assert(context.size() == num_context);
-
-      printf("[SimPLIC] Register PLIC SUCCESS with source %ld target %ld\n", num_source, num_context);
     }
+    if (context.size() != num_context) {
+      printf("[SimPLIC] Create %ld context, which should be %ld, Failed\n", context.size(), num_context);
+      exit(1);
+    }
+
+    printf("[SimPLIC] Register PLIC SUCCESS with source %ld target %ld\n", num_source, num_context);
+    
   }
 
 
@@ -139,7 +142,7 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
   } 
   else {
 err:
-    printf("[SimPLIC] write unknown addr %lx with %ld\n", addr, len);
+    printf("[SimPLIC] write unknown addr %lx with %ld: %ld\n", addr, len, *(long *)bytes);
     return false;
   }
   return true;
