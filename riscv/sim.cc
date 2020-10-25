@@ -157,12 +157,12 @@ void sim_t::step(size_t n, bool check_int)
   for (size_t i = 0, steps = 0; i < n; i += steps)
   {
 
+    steps = std::min(n - i, INTERLEAVE - current_step);
+    procs[current_proc]->step(steps, check_int);
+
 #ifdef ZJV_DEVICE_EXTENSTION 
     uart.get()->check_int();
 #endif
-
-    steps = std::min(n - i, INTERLEAVE - current_step);
-    procs[current_proc]->step(steps, check_int);
 
     if (!diffTest) {
       current_step += steps;

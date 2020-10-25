@@ -131,8 +131,8 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
     else if (offset == 4) {
         if (*(plic_reg_t*)bytes < num_source) {
           uint32_t irq = *(plic_reg_t*)bytes;
-          plic_update();
           claimed[contextid][irq >> 5] &= ~(1 << (irq & 31));  // clear claimed
+          plic_update();
         }
     }
     else goto err;
@@ -204,7 +204,10 @@ void plic_t::plic_update() {
   }
 }
 
-void plic_t::plic_irq (uint32_t irq) { 
-  ip[irq >> 5] |= 1 << (irq & 31);   // set pending
+void plic_t::plic_irq (uint32_t irq, bool level) {
+  if (level)
+    ip[irq >> 5] |= 1 << (irq & 31);      // set pending
+  else
+    ip[irq >> 5] &= ~(1 << (irq & 31));   // clear pending
   plic_update();
 }

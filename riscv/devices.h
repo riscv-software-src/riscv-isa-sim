@@ -96,7 +96,7 @@ class plic_t : public abstract_device_t {
   uint32_t plic_claim (uint32_t contextid);
   void plic_update();
   bool plic_int_check(uint32_t contextid);
-  void plic_irq (uint32_t irq);
+  void plic_irq (uint32_t irq, bool level);
  private:
   size_t num_source;
   size_t num_context;

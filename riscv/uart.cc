@@ -11,13 +11,15 @@ uart_t::uart_t(plic_t* plic, bool diffTest, std::string file_path) : diffTest(di
 }
 
 void uart_t::check_int() {
+    int amt;
     if (file_fifo.is_open() && !file_fifo.eof()) {
-            plic->plic_irq(PLIC_UART_IRQ);
+        plic->plic_irq(PLIC_UART_IRQ, true);
     }
-    else if (!diffTest) {
-        int amt;
-        if ((ioctl(0, FIONREAD, &amt) == 0) && (amt > 0))
-            plic->plic_irq(PLIC_UART_IRQ);
+    else if (!diffTest && ((ioctl(0, FIONREAD, &amt) == 0) && (amt > 0)) ) {
+        plic->plic_irq(PLIC_UART_IRQ, true);
+    }
+    else {
+        plic->plic_irq(PLIC_UART_IRQ, false);
     }
 }
 
