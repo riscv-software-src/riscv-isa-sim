@@ -11,8 +11,7 @@ uart_t::uart_t(plic_t* plic, bool diffTest, std::string file_path) : diffTest(di
 }
 
 void uart_t::check_int() {
-    if (file_fifo.is_open()) {
-        if (!file_fifo.eof())
+    if (file_fifo.is_open() && !file_fifo.eof()) {
             plic->plic_irq(PLIC_UART_IRQ);
     }
     else if (!diffTest) {
@@ -76,12 +75,10 @@ bool uart_t::load(reg_t addr, size_t len, uint8_t* bytes) {
             if (uart_lcr & UART_LCR_DLAB) memcpy(bytes, &uart_dll, len);
             else {
                 if (file_fifo.is_open()) {
-                    if (!file_fifo.eof()) {
+                    if (!file_fifo.eof())
                         file_fifo.get(*(char*)bytes);
-                    }
-                    else {
+                    if (file_fifo.eof())
                         file_fifo.close();
-                    }
                 }
                 else if (!diffTest) {
                     int amt;

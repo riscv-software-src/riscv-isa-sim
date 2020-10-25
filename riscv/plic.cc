@@ -131,8 +131,8 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
     else if (offset == 4) {
         if (*(plic_reg_t*)bytes < num_source) {
           uint32_t irq = *(plic_reg_t*)bytes;
-          claimed[contextid][irq >> 5] &= ~(1 << (irq & 31));  // clear claimed
           plic_update();
+          claimed[contextid][irq >> 5] &= ~(1 << (irq & 31));  // clear claimed
         }
     }
     else goto err;
