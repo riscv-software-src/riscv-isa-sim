@@ -21,8 +21,6 @@
 #include <stdlib.h>
 #include <unistd.h>
 
-#include "difftest.h"
-
 class mmu_t;
 class remote_bitbang_t;
 
@@ -61,10 +59,10 @@ public:
     state->mcycle++;
   }  
 
-  void set_state (difftest_sim_state_t* new_state) {
+  void set_state (state_t* new_state) {
     state_t* state = get_core(0)->get_state();
     for (int i = 0; i < 32; i++) {
-      state->XPR.write(i, new_state->regs[i]);
+      state->XPR.write(i, new_state->XPR[i]);
     }
 
     // TODO: else
@@ -86,16 +84,8 @@ public:
     state->XPR.reset();
   }
 
-  void get_state(difftest_sim_state_t* buf) {
-    state_t s = *(get_core(0)->get_state());
-    for (int i = 0; i < 32; i++) {
-      buf->regs[i] = s.XPR[i];
-    }
-    buf->npc = s.pc;
-    buf->pc = s.last_pc;
-    buf->priv = s.prv;
-    buf->mideleg = s.mideleg;
-    buf->medeleg = s.medeleg;
+  state_t* get_state() {
+    return get_core(0)->get_state();
   }
 
   // run the simulation to completion
