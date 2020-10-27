@@ -79,8 +79,11 @@ bool uart_t::load(reg_t addr, size_t len, uint8_t* bytes) {
                 if (file_fifo.is_open()) {
                     if (!file_fifo.eof())
                         file_fifo.get(*(char*)bytes);
-                    if (file_fifo.eof())
+                    if (file_fifo.eof()) {
                         file_fifo.close();
+                        fprintf(stderr, "[SimUART] close fifo \n");
+                    }
+                        
                 }
                 else if (!diffTest) {
                     int amt;
@@ -137,8 +140,8 @@ bool uart_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
         case UART_THR : // 0
             if (uart_lcr & UART_LCR_DLAB) memcpy(&uart_dll, bytes, len);
             else { 
-                fprintf(stderr, "\x1b[34m%c\x1b[0m", *bytes);
-                fflush(stderr); 
+                fprintf(stdout, "\x1b[34m%c\x1b[0m", *bytes);
+                fflush(stdout); 
             }
             
             break; 

@@ -84,13 +84,6 @@ void memif_t::write(addr_t addr, size_t len, const void* bytes)
   }
 }
 
-// #define MEMIF_READ_FUNC \
-//   this->read(addr, sizeof(val), &val); \
-//   return val
-
-// #define MEMIF_WRITE_FUNC \
-//   this->write(addr, sizeof(val), &val)
-
 #define MEMIF_READ_FUNC \
   if(addr & (sizeof(val)-1)) \
     throw std::runtime_error("Read misaligned address"); \

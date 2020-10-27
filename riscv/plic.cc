@@ -16,11 +16,14 @@
              and supervisor mode.
 */
 
+static reg_t pc_hook;
+
 plic_t::plic_t(std::vector<processor_t*>& procs, size_t num_source, size_t num_context) :
   num_source(num_source), num_context(num_context), procs(procs), priority(num_source, 0), 
   ie(num_context, std::vector<plic_t::plic_reg_t>((num_source + 31) >> 5, 0)), ip((num_source + 31) >> 5),
   threshold(num_context), claimed(num_context, std::vector<plic_t::plic_reg_t>((num_source + 31) >> 5))
   {
+    pc_hook == 0x80002da8;
     for (size_t i = 0; i < procs.size(); i++) {
       context_t ctx;
       ctx.mode = 'M';
@@ -72,6 +75,9 @@ plic_t::plic_t(std::vector<processor_t*>& procs, size_t num_source, size_t num_c
 #define PLIC_CONTEXT_STRIDE  0x1000
 
 bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes) {
+  if (this->procs[0]->get_state()->pc == pc_hook) {
+
+  }
   if (len != sizeof(plic_reg_t)) goto err;
 
   if (addr >= PLIC_PRIO_BASE && addr <= PLIC_PRIO_BASE + (num_source << 2)) {
@@ -107,6 +113,9 @@ err:
 
 
 bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
+  if (this->procs[0]->get_state()->pc == pc_hook) {
+    
+  }
   if (len != sizeof(plic_reg_t)) goto err;
 
   if (addr > PLIC_PRIO_BASE && addr <= PLIC_PRIO_BASE + (num_source << 2)) {
@@ -207,9 +216,17 @@ void plic_t::plic_update() {
 }
 
 void plic_t::plic_irq (uint32_t irq, bool level) {
+  if (this->procs[0]->get_state()->pc == pc_hook) {
+    
+  }
   if (level)
     ip[irq >> 5] |= 1 << (irq & 31);      // set pending
   else
     ip[irq >> 5] &= ~(1 << (irq & 31));   // clear pending
   plic_update();
+  
+  // fprintf(stderr, "     prio %08x c0ie %08x ip %08x c0thr %08x c0claim %08x\n", 
+  //                       priority[1], ie[0][0], ip[0],
+  //                       threshold[0], claimed[0][0]);
+  // fprintf(stderr, "sim: uart %d plic0 %d plic1 %d ", level, (procs[0]->get_state()->mip & MIP_MEIP) != 0, (procs[0]->get_state()->mip & MIP_SEIP) != 0);
 }

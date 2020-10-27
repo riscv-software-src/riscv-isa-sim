@@ -215,7 +215,7 @@
 #define PLIC_SIZE          0x04000000
 #define PLIC_MAX_SRC       32
 #define PLIC_MAX_PRIO      7
-#define PLIC_UART_IRQ      10
+#define PLIC_UART_IRQ      1
 
 /* page table entry (PTE) fields */
 #define PTE_V     0x001 /* Valid */
