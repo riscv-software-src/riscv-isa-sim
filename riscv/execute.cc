@@ -170,6 +170,8 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 
   try {
     p->get_state()->last_pc = pc;
+    p->get_state()->last_inst = fetch.insn.bits();
+
     npc = fetch.func(p, fetch.insn, pc);
     if (npc != PC_SERIALIZE_BEFORE) {
 
