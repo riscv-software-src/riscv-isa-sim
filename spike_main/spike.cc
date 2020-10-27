@@ -182,6 +182,23 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
   return res;
 }
 
+static unsigned long atoul_safe(const char* s)
+{
+  char* e;
+  auto res = strtoul(s, &e, 10);
+  if (*e)
+    help();
+  return res;
+}
+
+static unsigned long atoul_nonzero_safe(const char* s)
+{
+  auto res = atoul_safe(s);
+  if (!res)
+    help();
+  return res;
+}
+
 int main(int argc, char** argv)
 {
   bool debug = false;
@@ -288,11 +305,11 @@ int main(int argc, char** argv)
   parser.option('d', 0, 0, [&](const char* s){debug = true;});
   parser.option('g', 0, 0, [&](const char* s){histogram = true;});
   parser.option('l', 0, 0, [&](const char* s){log = true;});
-  parser.option('p', 0, 1, [&](const char* s){nprocs = atoi(s);});
+  parser.option('p', 0, 1, [&](const char* s){nprocs = atoul_nonzero_safe(s);});
   parser.option('m', 0, 1, [&](const char* s){mems = make_mems(s);});
   // I wanted to use --halted, but for some reason that doesn't work.
   parser.option('H', 0, 0, [&](const char* s){halted = true;});
-  parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoi(s);});
+  parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
   parser.option(0, "pc", 1, [&](const char* s){start_pc = strtoull(s, 0, 0);});
   parser.option(0, "hartids", 1, hartids_parser);
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
@@ -319,17 +336,17 @@ int main(int argc, char** argv)
     }
   });
   parser.option(0, "dm-progsize", 1,
-      [&](const char* s){dm_config.progbufsize = atoi(s);});
+      [&](const char* s){dm_config.progbufsize = atoul_safe(s);});
   parser.option(0, "dm-no-impebreak", 0,
       [&](const char* s){dm_config.support_impebreak = false;});
   parser.option(0, "dm-sba", 1,
-      [&](const char* s){dm_config.max_bus_master_bits = atoi(s);});
+      [&](const char* s){dm_config.max_bus_master_bits = atoul_safe(s);});
   parser.option(0, "dm-auth", 0,
       [&](const char* s){dm_config.require_authentication = true;});
   parser.option(0, "dmi-rti", 1,
-      [&](const char* s){dmi_rti = atoi(s);});
+      [&](const char* s){dmi_rti = atoul_safe(s);});
   parser.option(0, "dm-abstract-rti", 1,
-      [&](const char* s){dm_config.abstract_rti = atoi(s);});
+      [&](const char* s){dm_config.abstract_rti = atoul_safe(s);});
   parser.option(0, "dm-no-hasel", 0,
       [&](const char* s){dm_config.support_hasel = false;});
   parser.option(0, "dm-no-abstract-csr", 0,
