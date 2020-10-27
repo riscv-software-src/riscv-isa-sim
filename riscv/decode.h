@@ -487,19 +487,22 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_CHECK_LD_INDEX(elt_width) \
   VI_CHECK_ST_INDEX(elt_width); \
-  if (elt_width > P.VU.vsew) { \
-    if (insn.rd() != insn.rs2()) \
-      require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), vemul); \
-  } else if (elt_width < P.VU.vsew) { \
-    if (vemul < 1) {\
-      require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), vemul); \
-    } else {\
-      require_noover_widen(insn.rd(), P.VU.vflmul, insn.rs2(), vemul); \
+  for (reg_t idx = 0; idx < nf; ++idx) { \
+    reg_t flmul = P.VU.vflmul < 1 ? 1 : P.VU.vflmul; \
+    reg_t seg_vd = insn.rd() + flmul * idx;  \
+    if (elt_width > P.VU.vsew) { \
+      if (seg_vd != insn.rs2()) \
+        require_noover(seg_vd, P.VU.vflmul, insn.rs2(), vemul); \
+    } else if (elt_width < P.VU.vsew) { \
+      if (vemul < 1) {\
+        require_noover(seg_vd, P.VU.vflmul, insn.rs2(), vemul); \
+      } else {\
+        require_noover_widen(seg_vd, P.VU.vflmul, insn.rs2(), vemul); \
+      } \
     } \
-  } \
-  if (insn.v_nf() > 0) {\
-    require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), vemul); \
-    require_noover(vd, nf, insn.rs2(), 1); \
+    if (nf >= 2) { \
+      require_noover(seg_vd, P.VU.vflmul, insn.rs2(), vemul); \
+    } \
   } \
   require_vm; \
 
