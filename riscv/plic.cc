@@ -215,6 +215,8 @@ void plic_t::plic_update() {
   }
 }
 
+unsigned int sim_prio, sim_ie, sim_ip, sim_thrs, sim_claim;
+
 void plic_t::plic_irq (uint32_t irq, bool level) {
   if (this->procs[0]->get_state()->pc == pc_hook) {
     
@@ -224,6 +226,12 @@ void plic_t::plic_irq (uint32_t irq, bool level) {
   else
     ip[irq >> 5] &= ~(1 << (irq & 31));   // clear pending
   plic_update();
+
+  sim_prio = priority[1];
+  sim_ie = ie[0][0];
+  sim_ip = ip[0];
+  sim_thrs = threshold[0];
+  sim_claim = claimed[0][0];
   
   // fprintf(stderr, "     prio %08x c0ie %08x ip %08x c0thr %08x c0claim %08x\n", 
   //                       priority[1], ie[0][0], ip[0],

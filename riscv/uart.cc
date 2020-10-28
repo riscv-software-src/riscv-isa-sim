@@ -10,16 +10,21 @@ uart_t::uart_t(plic_t* plic, bool diffTest, std::string file_path) : diffTest(di
     }
 }
 
+unsigned int sim_uart_irq;
+
 void uart_t::check_int() {
     int amt;
     if (file_fifo.is_open() && !file_fifo.eof()) {
         plic->plic_irq(PLIC_UART_IRQ, true);
+        sim_uart_irq = true;
     }
     else if (!diffTest && ((ioctl(0, FIONREAD, &amt) == 0) && (amt > 0)) ) {
         plic->plic_irq(PLIC_UART_IRQ, true);
+        sim_uart_irq = false;
     }
     else {
         plic->plic_irq(PLIC_UART_IRQ, false);
+        sim_uart_irq = false;
     }
 }
 
@@ -143,7 +148,6 @@ bool uart_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
                 fprintf(stdout, "\x1b[34m%c\x1b[0m", *bytes);
                 fflush(stdout); 
             }
-            
             break; 
         case UART_IER : // 1
             if (uart_lcr & UART_LCR_DLAB) memcpy(&uart_dlm, bytes, len);
