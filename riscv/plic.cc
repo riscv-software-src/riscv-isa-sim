@@ -136,6 +136,7 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
     if (offset == 0) {
         if (*(plic_reg_t*)bytes <= PLIC_MAX_PRIO) {
             memcpy((uint8_t*)&threshold[contextid], bytes, len);
+            plic_update();
         }
         else goto err;
     } 
@@ -143,6 +144,7 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
         if (*(plic_reg_t*)bytes < num_source) {
           uint32_t irq = *(plic_reg_t*)bytes;
           claimed[contextid][irq >> 5] &= ~(1 << (irq & 31));  // clear claimed
+          plic_update();
         }
     }
     else goto err;
@@ -152,7 +154,7 @@ err:
     printf("[SimPLIC] write unknown addr %lx with %ld: %ld\n", addr, len, *(long *)bytes);
     return false;
   }
-  plic_update();
+  
   return true;
 }
 
