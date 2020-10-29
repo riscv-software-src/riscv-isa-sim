@@ -790,13 +790,9 @@ void processor_t::set_csr(int which, reg_t val)
       state.mseccfg &= ~MSECCFG_RLB;
       state.mseccfg |= (val & MSECCFG_RLB);
     }
-    // mseccfg.MMWP and mseccfg.MML are sticky bits, only writable when 0
-    if (!(state.mseccfg & MSECCFG_MMWP)) {
-      state.mseccfg |= (val & MSECCFG_MMWP);
-    }
-    if (!(state.mseccfg & MSECCFG_MML)) {
-      state.mseccfg |= (val & MSECCFG_MML);
-    }
+    // mseccfg.MMWP and mseccfg.MML are sticky bits to 1
+    state.mseccfg |= (val & MSECCFG_MMWP);
+    state.mseccfg |= (val & MSECCFG_MML);
 
     mmu->flush_tlb();
   }

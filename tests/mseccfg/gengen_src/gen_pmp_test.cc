@@ -20,6 +20,14 @@
 #define GEN_ALL 1
 
 namespace {
+
+const unsigned expected_files_count[] = {
+        128,
+        528,
+        24,
+        0
+};
+
     std::ostringstream str_buffer, val_buffer;
     std::ofstream m_ofstream;
     unsigned cur_files_count = 0;
@@ -124,6 +132,15 @@ main()
                                 if (test_pmp == 0 && idx == 1) continue;   // only 1 seccfg
                                 for (int val = 0; val < 8; val++) {
                                     if (val == 0 && test_pmp) continue;    // skip, since no change
+#if TEST_RW01_ONLY
+    if (test_pmp) {
+        if ((idx == 0 && (val & 0x3) == 0x1) || (idx == 1 && (val & 0x3) == 0x2)) {
+            // test RW=01;
+        } else {
+            continue;
+        }
+    }
+#endif
 
     str_buffer.str("");
     str_buffer << "outputs/test_pmp_csr_1_lock" << pmp_lock << lock_once
@@ -162,6 +179,7 @@ main()
                 pmpcfg_fail = 1;
                 pmpaddr_fail = 1;
             }
+
             if (!pre_mml && (val & 0x3) == 0x1) { // b'11^01 = 10, RW=01
                 pmpcfg_fail = 1;
             }
@@ -178,9 +196,9 @@ main()
         if (pmpcfg_fail || pmpaddr_fail) cur_expected_errors += 1;
     } else {            // seccfg test
         unsigned sec_val = val;
-        unsigned sec_rlb = sec_val & 0x1;
-        unsigned sec_mml = (sec_val >> 1) & 0x1;
-        unsigned sec_mmwp = (sec_val >> 2) & 0x1;
+        unsigned sec_rlb = (sec_val >> 2) & 0x1;
+        unsigned sec_mml = (sec_val >> 0) & 0x1;
+        unsigned sec_mmwp = (sec_val >> 1) & 0x1;
         gen_class_2.set_sec_rlb(sec_rlb);
         gen_class_2.set_sec_mml(sec_mml);
         gen_class_2.set_sec_mmwp(sec_mmwp);
@@ -289,7 +307,21 @@ main()
         }
     }
 #endif
-    printf("Total %d files generated, expected errors %d.\n", cur_files_count, cur_expected_errors);
+
+#if GEN_ALL
+    unsigned expectedCount = 0;
+    for (int i=0; i<sizeof(expected_files_count)/sizeof(expected_files_count[0]); i++) {
+        expectedCount += expected_files_count[i];
+    }
+    if (expectedCount != cur_files_count) {
+        std::cerr << std::dec << "Total " << cur_files_count << " files generated, v.s. expected "
+                << expectedCount << std::endl;
+        exit(1);
+    } else {
+        std::cout << std::dec << "Total " << expectedCount << " files generated as expected." << std::endl;
+    }
+#endif
+    printf("Generates expected errors %d.\n", cur_expected_errors);
     return 0;
 }
 

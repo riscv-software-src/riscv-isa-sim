@@ -43,7 +43,12 @@ typedef unsigned long uintptr_t;
 /*
  * functions from syscalls.c
  */
+#if PRINTF_SUPPORTED
 int printf(const char* fmt, ...);
+#else
+#define printf(...)
+#endif
+
 void __attribute__((noreturn)) tohost_exit(uintptr_t code);
 void exit(int code);
 
@@ -159,11 +164,12 @@ static void set_cfg() {
     asm volatile ("csrw pmpaddr1, %0 \n" :: "r"((TEST_MEM_START + @pmp_addr_offset:int@) >> 2) : "memory");
     asm volatile ("csrw pmpaddr0, %0 \n" :: "r"((TEST_MEM_START >> 3) - 1) : "memory");
     
-    reg_t cfg0;
-    asm volatile ("csrr %0, pmpcfg0\n":"=r"(cfg0)); 
-    if (cfg0 != (PMP_R | PMP_W | PMP_X | PMP_NAPOT)) {
-        exit(cfg0);
-    }
+    reg_t cfg0 = (PMP_R | PMP_W | PMP_X | PMP_NAPOT);
+    // Only true for Spike
+//    asm volatile ("csrr %0, pmpcfg0\n":"=r"(cfg0)); 
+//    if (cfg0 != (PMP_R | PMP_W | PMP_X | PMP_NAPOT)) {
+//        exit(cfg0);
+//    }
     
     if (@set_sec_mml:int@) {    // need to set L bit for M mode code like trap_handling
         cfg0 |= PMP_L;
