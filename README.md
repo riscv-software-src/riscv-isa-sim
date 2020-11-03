@@ -18,6 +18,7 @@ Spike supports the following RISC-V ISA features:
   - D extension, v2.2
   - Q extension, v2.2
   - C extension, v2.0
+  - B extension, v0.92
   - V extension, v0.9, w/ Zvlsseg/Zvamo/Zvqmac, w/o Zvediv, (_requires a 64-bit host_)
   - Conformance to both RVWMO and RVTSO (Spike is sequentially consistent)
   - Machine, Supervisor, and User modes, v1.11
