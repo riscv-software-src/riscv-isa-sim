@@ -27,7 +27,7 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
   : debug(false), halt_request(HR_NONE), sim(sim), ext(NULL), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), halt_on_reset(halt_on_reset),
-  extension_table(256, false), last_pc(1), executions(1)
+  extension_table(256, false), impl_table(256, false), last_pc(1), executions(1)
 {
   VU.p = this;
 
@@ -45,6 +45,12 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
 
   set_pmp_granularity(1 << PMP_SHIFT);
   set_pmp_num(state.max_pmp);
+
+  if (max_xlen == 32)
+    set_mmu_capability(IMPL_MMU_SV32);
+  else if (max_xlen == 64)
+    set_mmu_capability(IMPL_MMU_SV48);
+
   reset();
 }
 
@@ -499,6 +505,31 @@ void processor_t::set_pmp_granularity(reg_t gran) {
   }
 
   lg_pmp_granularity = ctz(gran);
+}
+
+void processor_t::set_mmu_capability(int cap)
+{
+  switch (cap) {
+    case IMPL_MMU_SV32:
+      set_impl(cap, true);
+      set_impl(IMPL_MMU, true);
+      break;
+    case IMPL_MMU_SV39:
+      set_impl(cap, true);
+      set_impl(IMPL_MMU, true);
+      break;
+    case IMPL_MMU_SV48:
+      set_impl(cap, true);
+      set_impl(IMPL_MMU_SV39, true);
+      set_impl(IMPL_MMU, true);
+      break;
+    default:
+      set_impl(IMPL_MMU_SV32, false);
+      set_impl(IMPL_MMU_SV39, false);
+      set_impl(IMPL_MMU_SV48, false);
+      set_impl(IMPL_MMU, false);
+      break;
+  }
 }
 
 void processor_t::take_interrupt(reg_t pending_interrupts)
