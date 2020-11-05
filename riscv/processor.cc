@@ -810,13 +810,31 @@ reg_t processor_t::cal_satp(reg_t val) const
   reg_t reg_val = 0;
   reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
   mmu->flush_tlb();
-  if (max_xlen == 32)
-    reg_val = val & (SATP32_PPN | SATP32_MODE);
+  if (max_xlen == 32) {
+    reg_val = val & (SATP32_PPN |
+                    (supports_impl(IMPL_MMU_SV32) ? SATP32_MODE : 0));
+  }
 
   if (max_xlen == 64 && (get_field(val, SATP64_MODE) == SATP_MODE_OFF ||
                          get_field(val, SATP64_MODE) == SATP_MODE_SV39 ||
-                         get_field(val, SATP64_MODE) == SATP_MODE_SV48))
-    reg_val = val & (SATP64_PPN | SATP64_MODE | rv64_ppn_mask);
+                         get_field(val, SATP64_MODE) == SATP_MODE_SV48)) {
+    reg_val = val & (SATP64_PPN | rv64_ppn_mask);
+    reg_t mode = get_field(val, SATP64_MODE);
+
+    switch(mode) {
+      case SATP_MODE_OFF:
+      default:
+        mode = SATP_MODE_OFF;
+        break;
+      case SATP_MODE_SV39:
+        mode = supports_impl(IMPL_MMU_SV39) ? SATP_MODE_SV39 : SATP_MODE_OFF;
+        break;
+      case SATP_MODE_SV48:
+        mode = supports_impl(IMPL_MMU_SV48) ? SATP_MODE_SV48 : SATP_MODE_OFF;
+        break;
+    }
+    reg_val = set_field(reg_val, SATP64_MODE, mode);
+  }
 
   return reg_val;
 }
@@ -893,8 +911,11 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
     case CSR_MSTATUS: {
+      bool has_page = supports_extension('S') && supports_impl(IMPL_MMU);
       if ((val ^ state.mstatus) &
-          (MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_SUM | MSTATUS_MXR))
+          (MSTATUS_MPP | MSTATUS_MPRV
+           | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
+           | MSTATUS_MXR))
         mmu->flush_tlb();
 
       bool has_fs = supports_extension('S') || supports_extension('F')
@@ -904,8 +925,9 @@ void processor_t::set_csr(int which, reg_t val)
       bool has_gva = has_mpv;
 
       reg_t mask = MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPRV
-                 | (supports_extension('S') ? (MSTATUS_SUM | MSTATUS_SIE | MSTATUS_SPIE) : 0)
-                 | MSTATUS_MXR | MSTATUS_TW | MSTATUS_TVM | MSTATUS_TSR
+                 | (supports_extension('S') ? (MSTATUS_SIE | MSTATUS_SPIE) : 0)
+                 | MSTATUS_TW | MSTATUS_TSR
+                 | (has_page ? (MSTATUS_MXR | MSTATUS_SUM | MSTATUS_TVM) : 0)
                  | (has_fs ? MSTATUS_FS : 0)
                  | (has_vs ? MSTATUS_VS : 0)
                  | (ext ? MSTATUS_XS : 0)
@@ -1017,6 +1039,9 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_SATP:
+      if (!supports_impl(IMPL_MMU))
+        val = 0;
+
       if (state.v)
         state.vsatp = cal_satp(val);
       else
@@ -1088,8 +1113,9 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_HSTATUS: {
-      reg_t mask = HSTATUS_VTSR | HSTATUS_VTW | HSTATUS_VTVM |
-                   HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
+      reg_t mask = HSTATUS_VTSR | HSTATUS_VTW
+                   | (supports_impl(IMPL_MMU) ? HSTATUS_VTVM : 0)
+                   | HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
       state.hstatus = (state.hstatus & ~mask) | (val & mask);
       break;
     }
@@ -1177,6 +1203,9 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_VSATP:
+      if (!supports_impl(IMPL_MMU))
+        val = 0;
+
       state.vsatp = cal_satp(val);
       break;
     case CSR_TSELECT:
