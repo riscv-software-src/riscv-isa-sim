@@ -804,6 +804,21 @@ int processor_t::paddr_bits()
   return max_xlen == 64 ? 50 : 34;
 }
 
+reg_t processor_t::cal_satp(reg_t val) const
+{
+  reg_t reg_val = 0;
+  reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
+  mmu->flush_tlb();
+  if (max_xlen == 32)
+    reg_val = val & (SATP32_PPN | SATP32_MODE);
+
+  if (max_xlen == 64 && (get_field(val, SATP64_MODE) == SATP_MODE_OFF ||
+                         get_field(val, SATP64_MODE) == SATP_MODE_SV39 ||
+                         get_field(val, SATP64_MODE) == SATP_MODE_SV48))
+    reg_val = val & (SATP64_PPN | SATP64_MODE | rv64_ppn_mask);
+
+  return reg_val;
+}
 void processor_t::set_csr(int which, reg_t val)
 {
 #if defined(RISCV_ENABLE_COMMITLOG)
@@ -1002,22 +1017,12 @@ void processor_t::set_csr(int which, reg_t val)
       state.mie = (state.mie & ~mask) | (val & mask);
       break;
     }
-    case CSR_SATP: {
-      reg_t reg_val = 0;
-      reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
-      mmu->flush_tlb();
-      if (max_xlen == 32)
-        reg_val = val & (SATP32_PPN | SATP32_MODE);
-      if (max_xlen == 64 && (get_field(val, SATP64_MODE) == SATP_MODE_OFF ||
-                             get_field(val, SATP64_MODE) == SATP_MODE_SV39 ||
-                             get_field(val, SATP64_MODE) == SATP_MODE_SV48))
-        reg_val = val & (SATP64_PPN | SATP64_MODE | rv64_ppn_mask);
+    case CSR_SATP:
       if (state.v)
-        state.vsatp = reg_val;
+        state.vsatp = cal_satp(val);
       else
-        state.satp = reg_val;
+        state.satp = cal_satp(val);
       break;
-    }
     case CSR_SEPC:
       if (state.v)
         state.vsepc = val & ~(reg_t)1;
@@ -1172,19 +1177,9 @@ void processor_t::set_csr(int which, reg_t val)
       state.mip = (state.mip & ~mask) | ((val << 1) & mask);
       break;
     }
-    case CSR_VSATP: {
-      reg_t reg_val = 0;
-      reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
-      mmu->flush_tlb();
-      if (max_xlen == 32)
-        reg_val = val & (SATP32_PPN | SATP32_MODE);
-      if (max_xlen == 64 && (get_field(val, SATP64_MODE) == SATP_MODE_OFF ||
-                             get_field(val, SATP64_MODE) == SATP_MODE_SV39 ||
-                             get_field(val, SATP64_MODE) == SATP_MODE_SV48))
-        reg_val = val & (SATP64_PPN | SATP64_MODE | rv64_ppn_mask);
-      state.vsatp = reg_val;
+    case CSR_VSATP:
+      state.vsatp = cal_satp(val);
       break;
-    }
     case CSR_TSELECT:
       if (val < state.num_triggers) {
         state.tselect = val;

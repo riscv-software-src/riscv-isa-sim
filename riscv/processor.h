@@ -470,6 +470,7 @@ private:
   void build_opcode_map();
   void register_base_instructions();
   insn_func_t decode_insn(insn_t insn);
+  reg_t cal_satp(reg_t val) const;
 
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;
