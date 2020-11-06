@@ -4,6 +4,9 @@
 #include "simif.h"
 #include "processor.h"
 
+reg_t physic_addr = 0;
+
+
 mmu_t::mmu_t(simif_t* sim, processor_t* proc)
  : sim(sim), proc(proc),
   check_triggers_fetch(false),
@@ -141,6 +144,7 @@ bool mmu_t::mmio_store(reg_t addr, size_t len, const uint8_t* bytes)
 void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags)
 {
   reg_t paddr = translate(addr, len, LOAD, xlate_flags);
+  physic_addr = paddr;
 
   if (auto host_addr = sim->addr_to_mem(paddr)) {
     memcpy(bytes, host_addr, len);
@@ -163,6 +167,7 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
 void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags)
 {
   reg_t paddr = translate(addr, len, STORE, xlate_flags);
+  physic_addr = paddr;
 
   if (!matched_trigger) {
     reg_t data = reg_from_bytes(len, bytes);

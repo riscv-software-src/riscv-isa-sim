@@ -20,6 +20,8 @@ const reg_t PGSIZE = 1 << PGSHIFT;
 const reg_t PGMASK = ~(PGSIZE-1);
 #define MAX_PADDR_BITS 56 // imposed by Sv39 / Sv48
 
+extern reg_t physic_addr;
+
 struct insn_fetch_t
 {
   insn_func_t func;
@@ -100,11 +102,13 @@ public:
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
       if (likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) { \
+        physic_addr = (tlb_data[vpn % TLB_ENTRIES].target_offset + addr); \
         if (proc) READ_MEM(addr, size); \
         return from_le(*(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
       } \
       if (unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
         type##_t data = from_le(*(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
+        physic_addr = (tlb_data[vpn % TLB_ENTRIES].target_offset + addr); \
         if (!matched_trigger) { \
           matched_trigger = trigger_exception(OPERATION_LOAD, addr, data); \
           if (matched_trigger) \
@@ -164,10 +168,12 @@ public:
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
       if (likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \
+        physic_addr = (tlb_data[vpn % TLB_ENTRIES].target_offset + addr); \
         if (proc) WRITE_MEM(addr, val, size); \
         *(type##_t*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_le(val); \
       } \
       else if (unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
+        physic_addr = (tlb_data[vpn % TLB_ENTRIES].target_offset + addr); \
         if (!matched_trigger) { \
           matched_trigger = trigger_exception(OPERATION_STORE, addr, val); \
           if (matched_trigger) \
