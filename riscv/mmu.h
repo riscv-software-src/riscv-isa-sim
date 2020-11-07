@@ -353,29 +353,17 @@ public:
 
   bool is_target_big_endian()
   {
-#ifdef RISCV_ENABLE_DUAL_ENDIAN
     return target_big_endian;
-#else
-    return false;
-#endif
   }
 
   template<typename T> inline T from_target(target_endian<T> n) const
   {
-#ifdef RISCV_ENABLE_DUAL_ENDIAN
     return target_big_endian? n.from_be() : n.from_le();
-#else
-    return n.from_le();
-#endif
   }
 
   template<typename T> inline target_endian<T> to_target(T n) const
   {
-#ifdef RISCV_ENABLE_DUAL_ENDIAN
     return target_big_endian? target_endian<T>::to_be(n) : target_endian<T>::to_le(n);
-#else
-    return target_endian<T>::to_le(n);
-#endif
   }
 
 private:
@@ -462,6 +450,8 @@ private:
 
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
   bool target_big_endian;
+#else
+  static const bool target_big_endian = false;
 #endif
   bool check_triggers_fetch;
   bool check_triggers_load;
