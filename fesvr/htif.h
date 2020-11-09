@@ -6,9 +6,11 @@
 #include "memif.h"
 #include "syscall.h"
 #include "device.h"
+#include "byteorder.h"
 #include <string.h>
 #include <map>
 #include <vector>
+#include <assert.h>
 
 class htif_t : public chunked_memif_t
 {
@@ -26,6 +28,30 @@ class htif_t : public chunked_memif_t
   int exit_code();
 
   virtual memif_t& memif() { return mem; }
+
+  template<typename T> inline T from_target(target_endian<T> n) const
+  {
+#ifdef RISCV_ENABLE_DUAL_ENDIAN
+    memif_endianness_t endianness = get_target_endianness();
+    assert(endianness == memif_endianness_little || endianness == memif_endianness_big);
+
+    return endianness == memif_endianness_big? n.from_be() : n.from_le();
+#else
+    return n.from_le();
+#endif
+  }
+
+  template<typename T> inline target_endian<T> to_target(T n) const
+  {
+#ifdef RISCV_ENABLE_DUAL_ENDIAN
+    memif_endianness_t endianness = get_target_endianness();
+    assert(endianness == memif_endianness_little || endianness == memif_endianness_big);
+
+    return endianness == memif_endianness_big? target_endian<T>::to_be(n) : target_endian<T>::to_le(n);
+#else
+    return target_endian<T>::to_le(n);
+#endif
+  }
 
  protected:
   virtual void reset() = 0;

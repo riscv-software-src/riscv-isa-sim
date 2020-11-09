@@ -299,22 +299,22 @@ reg_t syscall_t::sys_getcwd(reg_t pbuf, reg_t size, reg_t a2, reg_t a3, reg_t a4
 reg_t syscall_t::sys_getmainvars(reg_t pbuf, reg_t limit, reg_t a2, reg_t a3, reg_t a4, reg_t a5, reg_t a6)
 {
   std::vector<std::string> args = htif->target_args();
-  std::vector<uint64_t> words(args.size() + 3);
-  words[0] = to_le(args.size());
-  words[args.size()+1] = 0; // argv[argc] = NULL
-  words[args.size()+2] = 0; // envp[0] = NULL
+  std::vector<target_endian<uint64_t>> words(args.size() + 3);
+  words[0] = htif->to_target<uint64_t>(args.size());
+  words[args.size()+1] = target_endian<uint64_t>::zero; // argv[argc] = NULL
+  words[args.size()+2] = target_endian<uint64_t>::zero; // envp[0] = NULL
 
   size_t sz = (args.size() + 3) * sizeof(words[0]);
   for (size_t i = 0; i < args.size(); i++)
   {
-    words[i+1] = to_le(sz + pbuf);
+    words[i+1] = htif->to_target<uint64_t>(sz + pbuf);
     sz += args[i].length() + 1;
   }
 
   std::vector<char> bytes(sz);
   memcpy(&bytes[0], &words[0], sizeof(words[0]) * words.size());
   for (size_t i = 0; i < args.size(); i++)
-    strcpy(&bytes[from_le(words[i+1]) - pbuf], args[i].c_str());
+    strcpy(&bytes[htif->from_target(words[i+1]) - pbuf], args[i].c_str());
 
   if (bytes.size() > limit)
     return -ENOMEM;
@@ -340,14 +340,14 @@ reg_t syscall_t::sys_chdir(reg_t path, reg_t a1, reg_t a2, reg_t a3, reg_t a4, r
 
 void syscall_t::dispatch(reg_t mm)
 {
-  reg_t magicmem[8];
+  target_endian<reg_t> magicmem[8];
   memif->read(mm, sizeof(magicmem), magicmem);
 
-  reg_t n = from_le(magicmem[0]);
+  reg_t n = htif->from_target(magicmem[0]);
   if (n >= table.size() || !table[n])
     throw std::runtime_error("bad syscall #" + std::to_string(n));
 
-  magicmem[0] = to_le((this->*table[n])(from_le(magicmem[1]), from_le(magicmem[2]), from_le(magicmem[3]), from_le(magicmem[4]), from_le(magicmem[5]), from_le(magicmem[6]), from_le(magicmem[7])));
+  magicmem[0] = htif->to_target((this->*table[n])(htif->from_target(magicmem[1]), htif->from_target(magicmem[2]), htif->from_target(magicmem[3]), htif->from_target(magicmem[4]), htif->from_target(magicmem[5]), htif->from_target(magicmem[6]), htif->from_target(magicmem[7])));
 
   memif->write(mm, sizeof(magicmem), magicmem);
 }

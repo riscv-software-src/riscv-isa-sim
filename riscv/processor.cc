@@ -446,6 +446,10 @@ void processor_t::enable_log_commits()
 void processor_t::reset()
 {
   state.reset(max_isa);
+#ifdef RISCV_ENABLE_DUAL_ENDIAN
+  if (mmu->is_target_big_endian())
+    state.mstatus |= MSTATUS_UBE | MSTATUS_SBE | MSTATUS_MBE;
+#endif
 
   state.mideleg = supports_extension('H') ? MIDELEG_FORCED_MASK : 0;
 
@@ -1411,8 +1415,8 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       ret(state.mcounteren);
     case CSR_MCOUNTINHIBIT: ret(0);
     case CSR_SSTATUS: {
-      reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-                 | (supports_extension('V') ? SSTATUS_VS : 0)
+      reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_UBE | SSTATUS_SPP
+                 | SSTATUS_FS | (supports_extension('V') ? SSTATUS_VS : 0)
                  | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_UXL;
       reg_t sstatus = state.mstatus & mask;
       if ((sstatus & SSTATUS_FS) == SSTATUS_FS ||
@@ -1486,6 +1490,10 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       }
     }
     case CSR_MSTATUS: ret(state.mstatus);
+    case CSR_MSTATUSH:
+      if (xlen == 32)
+        ret((state.mstatus >> 32) & (MSTATUSH_SBE | MSTATUSH_MBE));
+      break;
     case CSR_MIP: ret(state.mip);
     case CSR_MIE: ret(state.mie);
     case CSR_MEPC: ret(state.mepc & pc_alignment_mask());
