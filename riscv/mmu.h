@@ -191,10 +191,8 @@ public:
   #define amo_func(type) \
     template<typename op> \
     type##_t amo_##type(reg_t addr, op f) { \
-      if (addr & (sizeof(type##_t)-1)) \
-        throw trap_store_address_misaligned(addr, 0, 0); \
       try { \
-        auto lhs = load_##type(addr, false); \
+        auto lhs = load_##type(addr, true); \
         store_##type(addr, f(lhs)); \
         return lhs; \
       } catch (trap_load_page_fault& t) { \
