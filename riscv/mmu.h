@@ -92,11 +92,13 @@ public:
 
   // template for functions that load an aligned value from memory
   #define load_func(type, prefix, xlate_flags) \
-    inline type##_t prefix##_##type(reg_t addr) { \
+    inline type##_t prefix##_##type(reg_t addr, bool require_alignment = false) { \
       if (xlate_flags) \
         flush_tlb(); \
-      if (unlikely(addr & (sizeof(type##_t)-1))) \
-        return misaligned_load(addr, sizeof(type##_t)); \
+      if (unlikely(addr & (sizeof(type##_t)-1))) { \
+        if (require_alignment) throw trap_load_address_misaligned(addr, 0, 0); \
+        else return misaligned_load(addr, sizeof(type##_t)); \
+      } \
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
       if (likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) { \
@@ -192,7 +194,7 @@ public:
       if (addr & (sizeof(type##_t)-1)) \
         throw trap_store_address_misaligned(addr, 0, 0); \
       try { \
-        auto lhs = load_##type(addr); \
+        auto lhs = load_##type(addr, false); \
         store_##type(addr, f(lhs)); \
         return lhs; \
       } catch (trap_load_page_fault& t) { \
