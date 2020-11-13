@@ -195,6 +195,9 @@ public:
         auto lhs = load_##type(addr, true); \
         store_##type(addr, f(lhs)); \
         return lhs; \
+      } catch (trap_load_address_misaligned& t) { \
+        /* AMO faults should be reported as store faults */ \
+        throw trap_store_address_misaligned(t.get_tval(), t.get_tval2(), t.get_tinst()); \
       } catch (trap_load_page_fault& t) { \
         /* AMO faults should be reported as store faults */ \
         throw trap_store_page_fault(t.get_tval(), t.get_tval2(), t.get_tinst()); \
