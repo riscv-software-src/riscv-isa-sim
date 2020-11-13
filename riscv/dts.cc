@@ -225,6 +225,21 @@ static int fdt_get_node_addr_size(void *fdt, int node, reg_t *addr,
   return 0;
 }
 
+int fdt_get_offset(void *fdt, const char *field)
+{
+  return fdt_path_offset(fdt, field);
+}
+
+int fdt_get_first_subnode(void *fdt, int node)
+{
+  return fdt_first_subnode(fdt, node);
+}
+
+int fdt_get_next_subnode(void *fdt, int node)
+{
+  return fdt_next_subnode(fdt, node);
+}
+
 int fdt_parse_clint(void *fdt, reg_t *clint_addr,
                     const char *compatible)
 {
@@ -270,6 +285,29 @@ int fdt_parse_pmp_alignment(void *fdt, reg_t *pmp_align,
                               "riscv,pmpgranularity");
   if (rc < 0 || !pmp_align)
     return -ENODEV;
+
+  return 0;
+}
+
+int fdt_parse_mmu_type(void *fdt, int cpu_offset, char *mmu_type)
+{
+  int len;
+  const void *prop;
+
+  if (!fdt || cpu_offset < 0)
+    return -EINVAL;
+
+  prop = fdt_getprop(fdt, cpu_offset, "device_type", &len);
+  if (!prop || !len)
+    return -EINVAL;
+  if (strncmp ((char *)prop, "cpu", strlen ("cpu")))
+    return -EINVAL;
+
+  prop = fdt_getprop(fdt, cpu_offset, "mmu-type", &len);
+  if (!prop || !len)
+    return -EINVAL;
+
+  strcpy(mmu_type, (char *)prop);
 
   return 0;
 }

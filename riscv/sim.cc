@@ -83,6 +83,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
 
   make_dtb();
 
+  //handle clic
   clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, real_time_clint));
   reg_t clint_base;
   if (fdt_parse_clint((void *)dtb.c_str(), &clint_base, "riscv,clint0")) {
@@ -91,6 +92,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     bus.add_device(clint_base, clint.get());
   }
 
+  //handle pmp
   for (size_t i = 0; i < nprocs; i++) {
     reg_t pmp_num = 0, pmp_granularity = 0;
     fdt_parse_pmp_num((void *)dtb.c_str(), &pmp_num, "riscv");
@@ -98,6 +100,52 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
 
     procs[i]->set_pmp_num(pmp_num);
     procs[i]->set_pmp_granularity(pmp_granularity);
+  }
+
+  void *fdt = (void *)dtb.c_str();
+  int cpu_offset = 0, rc;
+  size_t cpu_idx = 0;
+  cpu_offset = fdt_get_offset(fdt, "/cpus");
+  if (cpu_offset < 0)
+    return;
+
+  for (cpu_offset = fdt_get_first_subnode(fdt, cpu_offset); cpu_offset >= 0;
+       cpu_offset = fdt_get_next_subnode(fdt, cpu_offset)) {
+
+    if (cpu_idx >= nprocs)
+      break;
+
+    //handle mmu-type
+    char mmu_type[256] = "";
+    rc = fdt_parse_mmu_type(fdt, cpu_offset, mmu_type);
+    if (rc == 0) {
+      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_BARE);
+      if (strncmp(mmu_type, "riscv,sv32", strlen("riscv,sv32")) == 0) {
+        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV32);
+      } else if (strncmp(mmu_type, "riscv,sv39", strlen("riscv,sv39")) == 0) {
+        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV39);
+      } else if (strncmp(mmu_type, "riscv,sv48", strlen("riscv,sv48")) == 0) {
+        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV48);
+      } else if (strncmp(mmu_type, "riscv,bare", strlen("riscv,bare")) == 0) {
+        //has been set in the beginning
+      } else {
+        std::cerr << "core ("
+                  << hartids.size()
+                  << ") doesn't have valid 'mmu-type'"
+                  << mmu_type << ").\n";
+        exit(1);
+      }
+    }
+
+    cpu_idx++;
+  }
+
+  if (cpu_idx != nprocs) {
+      std::cerr << "core number in dts ("
+                <<  cpu_idx
+                << ") doesn't match it in command line ("
+                << nprocs << ").\n";
+      exit(1);
   }
 }
 
