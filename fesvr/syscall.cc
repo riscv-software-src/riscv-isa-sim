@@ -19,34 +19,42 @@ using namespace std::placeholders;
 
 struct riscv_stat
 {
-  uint64_t dev;
-  uint64_t ino;
-  uint32_t mode;
-  uint32_t nlink;
-  uint32_t uid;
-  uint32_t gid;
-  uint64_t rdev;
-  uint64_t __pad1;
-  uint64_t size;
-  uint32_t blksize;
-  uint32_t __pad2;
-  uint64_t blocks;
-  uint64_t atime;
-  uint64_t __pad3;
-  uint64_t mtime;
-  uint64_t __pad4;
-  uint64_t ctime;
-  uint64_t __pad5;
-  uint32_t __unused4;
-  uint32_t __unused5;
+  target_endian<uint64_t> dev;
+  target_endian<uint64_t> ino;
+  target_endian<uint32_t> mode;
+  target_endian<uint32_t> nlink;
+  target_endian<uint32_t> uid;
+  target_endian<uint32_t> gid;
+  target_endian<uint64_t> rdev;
+  target_endian<uint64_t> __pad1;
+  target_endian<uint64_t> size;
+  target_endian<uint32_t> blksize;
+  target_endian<uint32_t> __pad2;
+  target_endian<uint64_t> blocks;
+  target_endian<uint64_t> atime;
+  target_endian<uint64_t> __pad3;
+  target_endian<uint64_t> mtime;
+  target_endian<uint64_t> __pad4;
+  target_endian<uint64_t> ctime;
+  target_endian<uint64_t> __pad5;
+  target_endian<uint32_t> __unused4;
+  target_endian<uint32_t> __unused5;
 
-  riscv_stat(const struct stat& s)
-    : dev(s.st_dev), ino(s.st_ino), mode(s.st_mode), nlink(s.st_nlink),
-      uid(s.st_uid), gid(s.st_gid), rdev(s.st_rdev), __pad1(0),
-      size(s.st_size), blksize(s.st_blksize), __pad2(0),
-      blocks(s.st_blocks), atime(s.st_atime), __pad3(0),
-      mtime(s.st_mtime), __pad4(0), ctime(s.st_ctime), __pad5(0),
-      __unused4(0), __unused5(0) {}
+  riscv_stat(const struct stat& s, htif_t* htif)
+    : dev(htif->to_target<uint64_t>(s.st_dev)),
+      ino(htif->to_target<uint64_t>(s.st_ino)),
+      mode(htif->to_target<uint32_t>(s.st_mode)),
+      nlink(htif->to_target<uint32_t>(s.st_nlink)),
+      uid(htif->to_target<uint32_t>(s.st_uid)),
+      gid(htif->to_target<uint32_t>(s.st_gid)),
+      rdev(htif->to_target<uint64_t>(s.st_rdev)), __pad1(),
+      size(htif->to_target<uint64_t>(s.st_size)),
+      blksize(htif->to_target<uint32_t>(s.st_blksize)), __pad2(),
+      blocks(htif->to_target<uint64_t>(s.st_blocks)),
+      atime(htif->to_target<uint64_t>(s.st_atime)), __pad3(),
+      mtime(htif->to_target<uint64_t>(s.st_mtime)), __pad4(),
+      ctime(htif->to_target<uint64_t>(s.st_ctime)), __pad5(),
+      __unused4(), __unused5() {}
 };
 
 syscall_t::syscall_t(htif_t* htif)
@@ -183,7 +191,7 @@ reg_t syscall_t::sys_fstat(reg_t fd, reg_t pbuf, reg_t a2, reg_t a3, reg_t a4, r
   reg_t ret = sysret_errno(fstat(fds.lookup(fd), &buf));
   if (ret != (reg_t)-1)
   {
-    riscv_stat rbuf(buf);
+    riscv_stat rbuf(buf, htif);
     memif->write(pbuf, sizeof(rbuf), &rbuf);
   }
   return ret;
@@ -206,10 +214,9 @@ reg_t syscall_t::sys_lstat(reg_t pname, reg_t len, reg_t pbuf, reg_t a3, reg_t a
 
   struct stat buf;
   reg_t ret = sysret_errno(lstat(do_chroot(&name[0]).c_str(), &buf));
-  riscv_stat rbuf(buf);
   if (ret != (reg_t)-1)
   {
-    riscv_stat rbuf(buf);
+    riscv_stat rbuf(buf, htif);
     memif->write(pbuf, sizeof(rbuf), &rbuf);
   }
   return ret;
@@ -237,7 +244,7 @@ reg_t syscall_t::sys_fstatat(reg_t dirfd, reg_t pname, reg_t len, reg_t pbuf, re
   reg_t ret = sysret_errno(AT_SYSCALL(fstatat, dirfd, &name[0], &buf, flags));
   if (ret != (reg_t)-1)
   {
-    riscv_stat rbuf(buf);
+    riscv_stat rbuf(buf, htif);
     memif->write(pbuf, sizeof(rbuf), &rbuf);
   }
   return ret;
