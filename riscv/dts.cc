@@ -225,6 +225,24 @@ static int fdt_get_node_addr_size(void *fdt, int node, reg_t *addr,
   return 0;
 }
 
+static int check_cpu_node(void *fdt, int cpu_offset)
+{
+  int len;
+  const void *prop;
+
+  if (!fdt || cpu_offset < 0)
+    return -EINVAL;
+
+  prop = fdt_getprop(fdt, cpu_offset, "device_type", &len);
+  if (!prop || !len)
+    return -EINVAL;
+  if (strncmp ((char *)prop, "cpu", strlen ("cpu")))
+    return -EINVAL;
+
+  return 0;
+}
+
+
 int fdt_get_offset(void *fdt, const char *field)
 {
   return fdt_path_offset(fdt, field);
@@ -291,17 +309,11 @@ int fdt_parse_pmp_alignment(void *fdt, reg_t *pmp_align,
 
 int fdt_parse_mmu_type(void *fdt, int cpu_offset, char *mmu_type)
 {
-  int len;
+  int len, rc;
   const void *prop;
 
-  if (!fdt || cpu_offset < 0)
-    return -EINVAL;
-
-  prop = fdt_getprop(fdt, cpu_offset, "device_type", &len);
-  if (!prop || !len)
-    return -EINVAL;
-  if (strncmp ((char *)prop, "cpu", strlen ("cpu")))
-    return -EINVAL;
+  if ((rc = check_cpu_node(fdt, cpu_offset)) < 0)
+    return rc;
 
   prop = fdt_getprop(fdt, cpu_offset, "mmu-type", &len);
   if (!prop || !len)
