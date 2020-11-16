@@ -83,26 +83,17 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
 
   make_dtb();
 
+  void *fdt = (void *)dtb.c_str();
   //handle clic
   clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, real_time_clint));
   reg_t clint_base;
-  if (fdt_parse_clint((void *)dtb.c_str(), &clint_base, "riscv,clint0")) {
+  if (fdt_parse_clint(fdt, &clint_base, "riscv,clint0")) {
     bus.add_device(CLINT_BASE, clint.get());
   } else {
     bus.add_device(clint_base, clint.get());
   }
 
-  //handle pmp
-  for (size_t i = 0; i < nprocs; i++) {
-    reg_t pmp_num = 0, pmp_granularity = 0;
-    fdt_parse_pmp_num((void *)dtb.c_str(), &pmp_num, "riscv");
-    fdt_parse_pmp_alignment((void *)dtb.c_str(), &pmp_granularity, "riscv");
-
-    procs[i]->set_pmp_num(pmp_num);
-    procs[i]->set_pmp_granularity(pmp_granularity);
-  }
-
-  void *fdt = (void *)dtb.c_str();
+  //per core attribute
   int cpu_offset = 0, rc;
   size_t cpu_idx = 0;
   cpu_offset = fdt_get_offset(fdt, "/cpus");
@@ -114,6 +105,16 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
 
     if (cpu_idx >= nprocs)
       break;
+
+    //handle pmp
+    reg_t pmp_num = 0, pmp_granularity = 0;
+    if (fdt_parse_pmp_num(fdt, cpu_offset, &pmp_num) == 0) {
+      procs[cpu_idx]->set_pmp_num(pmp_num);
+    }
+
+    if (fdt_parse_pmp_alignment(fdt, cpu_offset, &pmp_granularity) == 0) {
+      procs[cpu_idx]->set_pmp_granularity(pmp_granularity);
+    }
 
     //handle mmu-type
     char mmu_type[256] = "";
