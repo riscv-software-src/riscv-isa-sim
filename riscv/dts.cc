@@ -274,15 +274,14 @@ int fdt_parse_clint(void *fdt, reg_t *clint_addr,
   return 0;
 }
 
-int fdt_parse_pmp_num(void *fdt, reg_t *pmp_num, const char *compatible)
+int fdt_parse_pmp_num(void *fdt, int cpu_offset, reg_t *pmp_num)
 {
-  int nodeoffset, rc;
+  int rc;
 
-  nodeoffset = fdt_node_offset_by_compatible(fdt, -1, compatible);
-  if (nodeoffset < 0)
-    return nodeoffset;
+  if ((rc = check_cpu_node(fdt, cpu_offset)) < 0)
+    return rc;
 
-  rc = fdt_get_node_addr_size(fdt, nodeoffset, pmp_num, NULL,
+  rc = fdt_get_node_addr_size(fdt, cpu_offset, pmp_num, NULL,
                               "riscv,pmpregions");
   if (rc < 0 || !pmp_num)
     return -ENODEV;
@@ -290,16 +289,14 @@ int fdt_parse_pmp_num(void *fdt, reg_t *pmp_num, const char *compatible)
   return 0;
 }
 
-int fdt_parse_pmp_alignment(void *fdt, reg_t *pmp_align,
-                            const char *compatible)
+int fdt_parse_pmp_alignment(void *fdt, int cpu_offset, reg_t *pmp_align)
 {
-  int nodeoffset, rc;
+  int rc;
 
-  nodeoffset = fdt_node_offset_by_compatible(fdt, -1, compatible);
-  if (nodeoffset < 0)
-    return nodeoffset;
+  if ((rc = check_cpu_node(fdt, cpu_offset)) < 0)
+    return rc;
 
-  rc = fdt_get_node_addr_size(fdt, nodeoffset, pmp_align, NULL,
+  rc = fdt_get_node_addr_size(fdt, cpu_offset, pmp_align, NULL,
                               "riscv,pmpgranularity");
   if (rc < 0 || !pmp_align)
     return -ENODEV;
