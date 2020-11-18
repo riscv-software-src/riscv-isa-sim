@@ -120,4 +120,39 @@ static inline uint64_t make_mask64(int pos, int len)
     assert(pos >= 0 && len > 0 && pos < 64 && len <= 64);
     return (UINT64_MAX >> (64 - len)) << pos;
 }
+
+static inline int ctz(uint64_t val)
+{
+  if (!val)
+    return 0;
+
+  int res = 0;
+
+  if ((val << 32) == 0) res += 32, val >>= 32;
+  if ((val << 48) == 0) res += 16, val >>= 16;
+  if ((val << 56) == 0) res += 8, val >>= 8;
+  if ((val << 60) == 0) res += 4, val >>= 4;
+  if ((val << 62) == 0) res += 2, val >>= 2;
+  if ((val << 63) == 0) res += 1, val >>= 1;
+
+  return res;
+}
+
+static inline int clz(uint64_t val)
+{
+  if (!val)
+    return 0;
+
+  int res = 0;
+
+  if ((val >> 32) == 0) res += 32, val <<= 32;
+  if ((val >> 48) == 0) res += 16, val <<= 16;
+  if ((val >> 56) == 0) res += 8, val <<= 8;
+  if ((val >> 60) == 0) res += 4, val <<= 4;
+  if ((val >> 62) == 0) res += 2, val <<= 2;
+  if ((val >> 63) == 0) res += 1, val <<= 1;
+
+  return res;
+}
+
 #endif

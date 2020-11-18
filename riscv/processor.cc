@@ -478,16 +478,6 @@ void processor_t::reset()
     sim->proc_reset(id);
 }
 
-// Count number of contiguous 0 bits starting from the LSB.
-static int ctz(reg_t val)
-{
-  int res = 0;
-  if (val)
-    while ((val & 1) == 0)
-      val >>= 1, res++;
-  return res;
-}
-
 void processor_t::set_pmp_num(reg_t n)
 {
   // check the number of pmp is in a reasonable range
