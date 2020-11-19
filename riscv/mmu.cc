@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "mmu.h"
+#include "arith.h"
 #include "simif.h"
 #include "processor.h"
 
@@ -353,7 +354,14 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
 #endif
       reg_t vpn = gpa >> PGSHIFT;
       reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
-      reg_t page_base = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
+
+      int napot_bits = ((pte & PTE_N) ? (clz(ppn) + 1) : 0);
+      if (((pte & PTE_N) && (ppn == 0 || i != 0)) || (napot_bits != 0 && napot_bits != 4))
+        throw_access_exception(gva, trap_type);
+
+      reg_t page_base = ((ppn & ~((reg_t(1) << napot_bits) - 1))
+                        | (vpn & ((reg_t(1) << napot_bits) - 1))
+                        | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
       return page_base | (gpa & page_mask);
     }
   }
@@ -424,9 +432,16 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
       if ((pte & ad) != ad)
         break;
 #endif
-      // for superpage mappings, make a fake leaf PTE for the TLB's benefit.
+      // for superpage or Zsn NAPOT mappings, make a fake leaf PTE for the TLB's benefit.
       reg_t vpn = addr >> PGSHIFT;
-      reg_t page_base = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
+
+      int napot_bits = ((pte & PTE_N) ? (clz(ppn) + 1) : 0);
+      if (((pte & PTE_N) && (ppn == 0 || i != 0)) || (napot_bits != 0 && napot_bits != 4))
+        throw_access_exception(addr, type);
+
+      reg_t page_base = ((ppn & ~((reg_t(1) << napot_bits) - 1))
+                        | (vpn & ((reg_t(1) << napot_bits) - 1))
+                        | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
       reg_t phys = page_base | (addr & page_mask);
       return s2xlate(addr, phys, type, type, virt, mxr) & ~page_mask;
     }
