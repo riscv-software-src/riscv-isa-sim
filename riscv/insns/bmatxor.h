@@ -22,7 +22,7 @@ for (int i = 0; i < 8; i++) {
 
 uint64_t x = 0;
 for (int i = 0; i < 64; i++) {
-  if (__builtin_popcountl(u[i / 8] & v[i % 8]) & 1)
+  if (popcount(u[i / 8] & v[i % 8]) & 1)
     x |= 1LL << i;
 }
 

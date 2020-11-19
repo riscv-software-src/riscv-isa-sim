@@ -121,6 +121,17 @@ static inline uint64_t make_mask64(int pos, int len)
     return (UINT64_MAX >> (64 - len)) << pos;
 }
 
+static inline int popcount(uint64_t val)
+{
+  val = (val & 0x5555555555555555U) + ((val >>  1) & 0x5555555555555555U);
+  val = (val & 0x3333333333333333U) + ((val >>  2) & 0x3333333333333333U);
+  val = (val & 0x0f0f0f0f0f0f0f0fU) + ((val >>  4) & 0x0f0f0f0f0f0f0f0fU);
+  val = (val & 0x00ff00ff00ff00ffU) + ((val >>  8) & 0x00ff00ff00ff00ffU);
+  val = (val & 0x0000ffff0000ffffU) + ((val >> 16) & 0x0000ffff0000ffffU);
+  val = (val & 0x00000000ffffffffU) + ((val >> 32) & 0x00000000ffffffffU);
+  return val;
+}
+
 static inline int ctz(uint64_t val)
 {
   if (!val)
