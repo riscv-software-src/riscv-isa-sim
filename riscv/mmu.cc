@@ -324,7 +324,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
     }
 
     reg_t pte = vm.ptesize == 4 ? from_target(*(target_endian<uint32_t>*)ppte) : from_target(*(target_endian<uint64_t>*)ppte);
-    reg_t ppn = pte >> PTE_PPN_SHIFT;
+    reg_t ppn = (pte & ~reg_t(PTE_N)) >> PTE_PPN_SHIFT;
 
     if (PTE_TABLE(pte)) { // next level of page table
       base = ppn << PGSHIFT;
@@ -404,7 +404,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
       throw_access_exception(addr, type);
 
     reg_t pte = vm.ptesize == 4 ? from_target(*(target_endian<uint32_t>*)ppte) : from_target(*(target_endian<uint64_t>*)ppte);
-    reg_t ppn = pte >> PTE_PPN_SHIFT;
+    reg_t ppn = (pte & ~reg_t(PTE_N)) >> PTE_PPN_SHIFT;
 
     if (PTE_TABLE(pte)) { // next level of page table
       base = ppn << PGSHIFT;
