@@ -23,6 +23,7 @@ Spike supports the following RISC-V ISA features:
   - Bi-endianness
   - Conformance to both RVWMO and RVTSO (Spike is sequentially consistent)
   - Machine, Supervisor, and User modes, v1.11
+  - Zsn extension, v0.1
   - Debug v0.14
 
 Versioning and APIs
