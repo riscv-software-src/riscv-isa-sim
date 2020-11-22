@@ -63,7 +63,7 @@ public:
 #ifdef RISCV_ENABLE_MISALIGNED
     reg_t res = 0;
     for (size_t i = 0; i < size; i++)
-      res += (reg_t)load_uint8(addr + i) << (i * 8);
+      res += (reg_t)load_uint8(addr + (target_big_endian? size-1-i : i)) << (i * 8);
     return res;
 #else
     throw trap_load_address_misaligned(addr, 0, 0);
@@ -74,7 +74,7 @@ public:
   {
 #ifdef RISCV_ENABLE_MISALIGNED
     for (size_t i = 0; i < size; i++)
-      store_uint8(addr + i, data >> (i * 8));
+      store_uint8(addr + (target_big_endian? size-1-i : i), data >> (i * 8));
 #else
     throw trap_store_address_misaligned(addr, 0, 0);
 #endif
