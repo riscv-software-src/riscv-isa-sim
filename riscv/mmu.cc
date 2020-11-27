@@ -38,12 +38,12 @@ void mmu_t::flush_tlb()
   flush_icache();
 }
 
-static void throw_access_exception(reg_t addr, access_type type)
+static void throw_access_exception(bool virt, reg_t addr, access_type type)
 {
   switch (type) {
-    case FETCH: throw trap_instruction_access_fault(addr, 0, 0);
-    case LOAD: throw trap_load_access_fault(addr, 0, 0);
-    case STORE: throw trap_store_access_fault(addr, 0, 0);
+    case FETCH: throw trap_instruction_access_fault(virt, addr, 0, 0);
+    case LOAD: throw trap_load_access_fault(virt, addr, 0, 0);
+    case STORE: throw trap_store_access_fault(virt, addr, 0, 0);
     default: abort();
   }
 }
@@ -73,7 +73,7 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
 
   reg_t paddr = walk(addr, type, mode, virt, mxr) | (addr & (PGSIZE-1));
   if (!pmp_ok(paddr, len, type, mode))
-    throw_access_exception(addr, type);
+    throw_access_exception(virt, addr, type);
   return paddr;
 }
 
@@ -85,7 +85,7 @@ tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
     return refill_tlb(vaddr, paddr, host_addr, FETCH);
   } else {
     if (!mmio_load(paddr, sizeof fetch_temp, (uint8_t*)&fetch_temp))
-      throw trap_instruction_access_fault(vaddr, 0, 0);
+      throw trap_instruction_access_fault(proc->state.v, vaddr, 0, 0);
     tlb_entry_t entry = {(char*)&fetch_temp - vaddr, paddr - vaddr};
     return entry;
   }
@@ -153,7 +153,7 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
     else
       refill_tlb(addr, paddr, host_addr, LOAD);
   } else if (!mmio_load(paddr, len, bytes)) {
-    throw trap_load_access_fault(addr, 0, 0);
+    throw trap_load_access_fault(proc->state.v, addr, 0, 0);
   }
 
   if (!matched_trigger) {
@@ -182,7 +182,7 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_
     else
       refill_tlb(addr, paddr, host_addr, STORE);
   } else if (!mmio_store(paddr, len, bytes)) {
-    throw trap_store_access_fault(addr, 0, 0);
+    throw trap_store_access_fault(proc->state.v, addr, 0, 0);
   }
 }
 
@@ -320,7 +320,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
     auto pte_paddr = base + idx * vm.ptesize;
     auto ppte = sim->addr_to_mem(pte_paddr);
     if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S)) {
-      throw_access_exception(gva, trap_type);
+      throw_access_exception(virt, gva, trap_type);
     }
 
     reg_t pte = vm.ptesize == 4 ? from_target(*(target_endian<uint32_t>*)ppte) : from_target(*(target_endian<uint64_t>*)ppte);
@@ -344,7 +344,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
       // set accessed and possibly dirty bits.
       if ((pte & ad) != ad) {
         if (!pmp_ok(pte_paddr, vm.ptesize, STORE, PRV_S))
-          throw_access_exception(gva, trap_type);
+          throw_access_exception(virt, gva, trap_type);
         *(target_endian<uint32_t>*)ppte |= to_target((uint32_t)ad);
       }
 #else
@@ -401,7 +401,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
     auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, type, virt, false);
     auto ppte = sim->addr_to_mem(pte_paddr);
     if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S))
-      throw_access_exception(addr, type);
+      throw_access_exception(virt, addr, type);
 
     reg_t pte = vm.ptesize == 4 ? from_target(*(target_endian<uint32_t>*)ppte) : from_target(*(target_endian<uint64_t>*)ppte);
     reg_t ppn = (pte & ~reg_t(PTE_N)) >> PTE_PPN_SHIFT;
@@ -424,7 +424,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
       // set accessed and possibly dirty bits.
       if ((pte & ad) != ad) {
         if (!pmp_ok(pte_paddr, vm.ptesize, STORE, PRV_S))
-          throw_access_exception(addr, type);
+          throw_access_exception(virt, addr, type);
         *(target_endian<uint32_t>*)ppte |= to_target((uint32_t)ad);
       }
 #else
@@ -448,9 +448,9 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
   }
 
   switch (type) {
-    case FETCH: throw trap_instruction_page_fault(addr, 0, 0);
-    case LOAD: throw trap_load_page_fault(addr, 0, 0);
-    case STORE: throw trap_store_page_fault(addr, 0, 0);
+    case FETCH: throw trap_instruction_page_fault(virt, addr, 0, 0);
+    case LOAD: throw trap_load_page_fault(virt, addr, 0, 0);
+    case STORE: throw trap_store_page_fault(virt, addr, 0, 0);
     default: abort();
   }
 }
