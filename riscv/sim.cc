@@ -351,9 +351,13 @@ char* sim_t::addr_to_mem(reg_t addr) {
   if (!paddr_ok(addr))
     return NULL;
   auto desc = bus.find_device(addr);
-  if (auto mem = dynamic_cast<mem_t*>(desc.second))
+  if (auto mem = dynamic_cast<mem_t*>(desc.second)) {
     if (addr - desc.first < mem->size())
       return mem->contents() + (addr - desc.first);
+  } else if (auto mem = dynamic_cast<clint_t*>(desc.second)) {
+    fprintf(stdout, "clint_t\n");
+    return NULL;
+  }
   return NULL;
 }
 
