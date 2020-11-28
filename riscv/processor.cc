@@ -1143,7 +1143,7 @@ void processor_t::set_csr(int which, reg_t val)
       /* Ignore */
       break;
     case CSR_HTVAL:
-      state.htinst = val;
+      state.htval = val;
       break;
     case CSR_HIP: {
       reg_t mask = MIP_VSSIP;
