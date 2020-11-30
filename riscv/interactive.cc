@@ -125,7 +125,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "vreg <core> [reg]               # Display vector [reg] (all if omitted) in <core>\n"
     "pc <core>                       # Show current PC in <core>\n"
     "mem <hex addr>                  # Show contents of physical memory\n"
-    "str <hex addr>                  # Show NUL-terminated C string\n"
+    "str <core> <hex addr>           # Show NUL-terminated C string at <hex addr> in core <core>\n"
     "until reg <core> <reg> <val>    # Stop when <reg> in <core> hits <val>\n"
     "until pc <core> <val>           # Stop when PC in <core> hits <val>\n"
     "untiln pc <core> <val>          # Run noisy and stop when PC in <core> hits <val>\n"
@@ -363,13 +363,22 @@ void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::strin
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)
 {
-  if(args.size() != 1)
+  if(args.size() != 1 && args.size() != 2)
     throw trap_interactive();
 
-  reg_t addr = strtol(args[0].c_str(),NULL,16);
+  std::string addr_str = args[0];
+  mmu_t* mmu = debug_mmu;
+  if(args.size() == 2)
+  {
+    processor_t *p = get_core(args[0]);
+    mmu = p->get_mmu();
+    addr_str = args[1];
+  }
+
+  reg_t addr = strtol(addr_str.c_str(),NULL,16);
 
   char ch;
-  while((ch = debug_mmu->load_uint8(addr++)))
+  while((ch = mmu->load_uint8(addr++)))
     putchar(ch);
 
   putchar('\n');
