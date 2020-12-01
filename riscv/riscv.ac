@@ -20,7 +20,7 @@ AC_ARG_WITH(varch,
 
 
 AC_SEARCH_LIBS([dlopen], [dl dld], [
-  AC_DEFINE([HAVE_DLOPEN], [], [Dynamic library loading is supported]),
+  AC_DEFINE([HAVE_DLOPEN], [], [Dynamic library loading is supported])
   AC_SUBST([HAVE_DLOPEN], [yes])
 ])
 
