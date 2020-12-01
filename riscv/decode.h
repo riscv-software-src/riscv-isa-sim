@@ -2453,127 +2453,121 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   unsigned len = 32 / BIT; \
   for (int i = len - 1; i >= 0; --i) {
 
-#define P_PARAMS(x) \
-  type_sew_t<x>::type pd = 0; \
-  type_sew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type); \
-  type_sew_t<x>::type ps2 = P_FIELD(rs2, i, type_sew_t<x>::type);
+#define P_PARAMS(BIT) \
+  type_sew_t<BIT>::type pd = 0; \
+  type_sew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type); \
+  type_sew_t<BIT>::type ps2 = P_FIELD(rs2, i, type_sew_t<BIT>::type);
 
-#define P_UPARAMS(x) \
-  type_usew_t<x>::type pd = 0; \
-  type_usew_t<x>::type ps1 = P_FIELD(rs1, i, type_usew_t<x>::type); \
-  type_usew_t<x>::type ps2 = P_FIELD(rs2, i, type_usew_t<x>::type);
+#define P_UPARAMS(BIT) \
+  type_usew_t<BIT>::type pd = 0; \
+  type_usew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_usew_t<BIT>::type); \
+  type_usew_t<BIT>::type ps2 = P_FIELD(rs2, i, type_usew_t<BIT>::type);
 
-#define P_CORSS_PARAMS(x) \
-  type_sew_t<x>::type pd = 0; \
-  type_sew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type); \
-  type_sew_t<x>::type ps2 = P_FIELD(rs2, (i ^ 1), type_sew_t<x>::type);
+#define P_CORSS_PARAMS(BIT) \
+  type_sew_t<BIT>::type pd = 0; \
+  type_sew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type); \
+  type_sew_t<BIT>::type ps2 = P_FIELD(rs2, (i ^ 1), type_sew_t<BIT>::type);
 
-#define P_CORSS_UPARAMS(x) \
-  type_usew_t<x>::type pd = 0; \
-  type_usew_t<x>::type ps1 = P_FIELD(rs1, i, type_usew_t<x>::type); \
-  type_usew_t<x>::type ps2 = P_FIELD(rs2, (i ^ 1), type_usew_t<x>::type);
+#define P_CORSS_UPARAMS(BIT) \
+  type_usew_t<BIT>::type pd = 0; \
+  type_usew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_usew_t<BIT>::type); \
+  type_usew_t<BIT>::type ps2 = P_FIELD(rs2, (i ^ 1), type_usew_t<BIT>::type);
 
-#define P_ONE_PARAMS(x) \
-  type_sew_t<x>::type pd = 0; \
-  type_sew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type);
+#define P_ONE_PARAMS(BIT) \
+  type_sew_t<BIT>::type pd = 0; \
+  type_sew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type);
 
-#define P_ONE_UPARAMS(x) \
-  type_usew_t<x>::type pd = 0; \
-  type_usew_t<x>::type ps1 = P_FIELD(rs1, i, type_usew_t<x>::type);
+#define P_ONE_UPARAMS(BIT) \
+  type_usew_t<BIT>::type pd = 0; \
+  type_usew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_usew_t<BIT>::type);
 
-#define P_ONE_SUPARAMS(x) \
-  type_usew_t<x>::type pd = 0; \
-  type_sew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type);
+#define P_ONE_SUPARAMS(BIT) \
+  type_usew_t<BIT>::type pd = 0; \
+  type_sew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type);
 
-#define P_MUL_PARAMS(x) \
-  type_sew_t<x*2>::type pd = 0; \
-  type_sew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type); \
-  type_sew_t<x>::type ps2 = P_FIELD(rs2, i, type_sew_t<x>::type);
+#define P_MUL_PARAMS(BIT) \
+  type_sew_t<BIT*2>::type pd = 0; \
+  type_sew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type); \
+  type_sew_t<BIT>::type ps2 = P_FIELD(rs2, i, type_sew_t<BIT>::type);
 
-#define P_MUL_UPARAMS(x) \
-  type_usew_t<x*2>::type pd = 0; \
-  type_usew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type); \
-  type_usew_t<x>::type ps2 = P_FIELD(rs2, i, type_sew_t<x>::type);
+#define P_MUL_UPARAMS(BIT) \
+  type_usew_t<BIT*2>::type pd = 0; \
+  type_usew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type); \
+  type_usew_t<BIT>::type ps2 = P_FIELD(rs2, i, type_sew_t<BIT>::type);
 
-#define P_MUL_CROSS_PARAMS(x) \
-  type_sew_t<x*2>::type pd = 0; \
-  type_sew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type); \
-  type_sew_t<x>::type ps2 = P_FIELD(rs2, (i ^ 1), type_sew_t<x>::type);
+#define P_MUL_CROSS_PARAMS(BIT) \
+  type_sew_t<BIT*2>::type pd = 0; \
+  type_sew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type); \
+  type_sew_t<BIT>::type ps2 = P_FIELD(rs2, (i ^ 1), type_sew_t<BIT>::type);
 
-#define P_MUL_CROSS_UPARAMS(x) \
-  type_usew_t<x*2>::type pd = 0; \
-  type_usew_t<x>::type ps1 = P_FIELD(rs1, i, type_sew_t<x>::type); \
-  type_usew_t<x>::type ps2 = P_FIELD(rs2, (i ^ 1), type_sew_t<x>::type);
+#define P_MUL_CROSS_UPARAMS(BIT) \
+  type_usew_t<BIT*2>::type pd = 0; \
+  type_usew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type); \
+  type_usew_t<BIT>::type ps2 = P_FIELD(rs2, (i ^ 1), type_sew_t<BIT>::type);
 
-#define P_LOOP_BODY(x, BODY) { \
-  P_PARAMS(x) \
+#define P_LOOP_BODY(BIT, BODY) { \
+  P_PARAMS(BIT) \
   BODY \
   WRITE_PD(); \
 }
 
-#define P_ULOOP_BODY(x, BODY) { \
-  P_UPARAMS(x) \
+#define P_ULOOP_BODY(BIT, BODY) { \
+  P_UPARAMS(BIT) \
   BODY \
   WRITE_PD(); \
 }
 
-#define P_ONE_LOOP_BODY(x, BODY) { \
-  P_ONE_PARAMS(x) \
+#define P_ONE_LOOP_BODY(BIT, BODY) { \
+  P_ONE_PARAMS(BIT) \
   BODY \
   WRITE_PD(); \
 }
 
-#define P_CROSS_LOOP_BODY(x, BODY) { \
-  P_CORSS_PARAMS(x) \
+#define P_CROSS_LOOP_BODY(BIT, BODY) { \
+  P_CORSS_PARAMS(BIT) \
   BODY \
   WRITE_PD(); \
 }
 
-#define P_CROSS_ULOOP_BODY(x, BODY) { \
-  P_CORSS_UPARAMS(x) \
+#define P_CROSS_ULOOP_BODY(BIT, BODY) { \
+  P_CORSS_UPARAMS(BIT) \
   BODY \
   WRITE_PD(); \
 }
 
-#define P_XI_LOOP_BODY(x, BODY) { \
-  P_ONE_PARAMS(x) \
+#define P_ONE_ULOOP_BODY(BIT, BODY) { \
+  P_ONE_UPARAMS(BIT) \
   BODY \
   WRITE_PD(); \
 }
 
-#define P_XI_ULOOP_BODY(x, BODY) { \
-  P_ONE_UPARAMS(x) \
-  BODY \
-  WRITE_PD(); \
-}
-
-#define P_XI_SULOOP_BODY(x, BODY) { \
-  P_ONE_SUPARAMS(x) \
+#define P_ONE_SULOOP_BODY(BIT, BODY) { \
+  P_ONE_SUPARAMS(BIT) \
   BODY \
   WRITE_PD(); \
 }
 
 
-#define P_MUL_LOOP_BODY(x, BODY) { \
-  P_MUL_PARAMS(x) \
+#define P_MUL_LOOP_BODY(BIT, BODY) { \
+  P_MUL_PARAMS(BIT) \
   BODY \
   WRITE_PD(); \
 }
 
-#define P_MUL_ULOOP_BODY(x, BODY) { \
-  P_MUL_UPARAMS(x) \
+#define P_MUL_ULOOP_BODY(BIT, BODY) { \
+  P_MUL_UPARAMS(BIT) \
   BODY \
   WRITE_PD(); \
 }
 
-#define P_MUL_CROSS_LOOP_BODY(x, BODY) { \
-  P_MUL_CROSS_PARAMS(x) \
+#define P_MUL_CROSS_LOOP_BODY(BIT, BODY) { \
+  P_MUL_CROSS_PARAMS(BIT) \
   BODY \
   WRITE_PD(); \
 }
 
-#define P_MUL_CROSS_ULOOP_BODY(x, BODY) { \
-  P_MUL_CROSS_UPARAMS(x) \
+#define P_MUL_CROSS_ULOOP_BODY(BIT, BODY) { \
+  P_MUL_CROSS_UPARAMS(BIT) \
   BODY \
   WRITE_PD(); \
 }
@@ -2628,27 +2622,27 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 #define P_X_LOOP(BIT, RS2_LOW_BIT, BODY) \
   P_X_LOOP_BASE(BIT, RS2_LOW_BIT) \
-  P_XI_LOOP_BODY(BIT, BODY) \
+  P_ONE_LOOP_BODY(BIT, BODY) \
   P_LOOP_END()
 
 #define P_X_ULOOP(BIT, RS2_LOW_BIT, BODY) \
   P_X_LOOP_BASE(BIT, RS2_LOW_BIT) \
-  P_XI_ULOOP_BODY(BIT, BODY) \
+  P_ONE_ULOOP_BODY(BIT, BODY) \
   P_LOOP_END()
 
 #define P_I_LOOP(BIT, IMMBIT, BODY) \
   P_I_LOOP_BASE(BIT, IMMBIT) \
-  P_XI_LOOP_BODY(BIT, BODY) \
+  P_ONE_LOOP_BODY(BIT, BODY) \
   P_LOOP_END()
 
 #define P_I_ULOOP(BIT, IMMBIT, BODY) \
   P_I_LOOP_BASE(BIT, IMMBIT) \
-  P_XI_ULOOP_BODY(BIT, BODY) \
+  P_ONE_ULOOP_BODY(BIT, BODY) \
   P_LOOP_END()
 
 #define P_I_SULOOP(BIT, IMMBIT, BODY) \
   P_I_LOOP_BASE(BIT, IMMBIT) \
-  P_XI_SULOOP_BODY(BIT, BODY) \
+  P_ONE_SULOOP_BODY(BIT, BODY) \
   P_LOOP_END()
 
 #define P_MUL_LOOP(BIT, BODY) \
