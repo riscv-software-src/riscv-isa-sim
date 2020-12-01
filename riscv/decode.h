@@ -2711,6 +2711,18 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   } \
   WRITE_RD(rd_tmp);
 
+#define P_PK(BIT, X, Y) \
+  require_extension('P'); \
+  require(BIT == e16 || BIT == e32); \
+  unsigned size = BIT / 8 * 2; \
+  reg_t rd_tmp = 0; \
+  uint##BIT##_t pd[2] = { \
+    uint##BIT##_t(P_FIELD(RS1, Y, uint##BIT##_t)), \
+    uint##BIT##_t(P_FIELD(RS1, X, uint##BIT##_t)) \
+  }; \
+  memcpy(&rd_tmp, pd, size); \
+  WRITE_RD(rd_tmp);
+  
 #define DEBUG_START             0x0
 #define DEBUG_END               (0x1000 - 1)
 

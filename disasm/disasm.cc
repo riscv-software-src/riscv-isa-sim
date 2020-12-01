@@ -1450,6 +1450,11 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_ONEOP(zunpkd830);
   DEFINE_ONEOP(zunpkd831);
   DEFINE_ONEOP(zunpkd832);
+  
+  DEFINE_RTYPE(pkbb16);
+  DEFINE_RTYPE(pkbt16);
+  DEFINE_RTYPE(pktb16);
+  DEFINE_RTYPE(pktt16);
 
   if (xlen == 32) {
     DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
@@ -1463,6 +1468,10 @@ disassembler_t::disassembler_t(int xlen)
     DISASM_INSN("c.sd", c_sd, 0, {&rvc_rs2s, &rvc_ld_address});
     DISASM_INSN("c.sdsp", c_sdsp, 0, {&rvc_rs2, &rvc_sdsp_address});
     DISASM_INSN("c.addiw", c_addiw, 0, {&xrd, &rvc_imm});
+    DEFINE_RTYPE(pkbb32);
+    DEFINE_RTYPE(pkbt32);
+    DEFINE_RTYPE(pktb32);
+    DEFINE_RTYPE(pktt32);
   }
 
   // provide a default disassembly for all instructions as a fallback
