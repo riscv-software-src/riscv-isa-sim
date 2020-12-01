@@ -1455,6 +1455,9 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(pkbt16);
   DEFINE_RTYPE(pktb16);
   DEFINE_RTYPE(pktt16);
+  DEFINE_RTYPE(smaqa);
+  DEFINE_RTYPE(umaqa);
+  DISASM_INSN("smaqa.su", smaqa_su, 0, {&xrd, &xrs1, &xrs2});
 
   if (xlen == 32) {
     DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
@@ -1472,6 +1475,7 @@ disassembler_t::disassembler_t(int xlen)
     DEFINE_RTYPE(pkbt32);
     DEFINE_RTYPE(pktb32);
     DEFINE_RTYPE(pktt32);
+    DEFINE_RTYPE(kadd32);
   }
 
   // provide a default disassembly for all instructions as a fallback

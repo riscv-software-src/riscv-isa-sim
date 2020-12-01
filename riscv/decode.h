@@ -2453,6 +2453,18 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   unsigned len = 32 / BIT; \
   for (int i = len - 1; i >= 0; --i) {
 
+#define P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
+  require_extension('P'); \
+  require(BIT == e16 || BIT == e32); \
+  reg_t rd_tmp = USE_RD ? RD : 0; \
+  reg_t rs1 = RS1; \
+  reg_t rs2 = RS2; \
+  unsigned len = xlen / BIT; \
+  unsigned len_inner = BIT / BIT_INNER; \
+  for (int i = 0; i < len; ++i) { \
+    type_sew_t<BIT>::type pd = P_FIELD(rd_tmp, i, type_sew_t<BIT>::type); \
+    for (int j = i * len_inner; j < (i + 1) * len_inner; ++j) {
+
 #define P_PARAMS(BIT) \
   type_sew_t<BIT>::type pd = 0; \
   type_sew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type); \
@@ -2504,6 +2516,18 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   type_usew_t<BIT*2>::type pd = 0; \
   type_usew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type); \
   type_usew_t<BIT>::type ps2 = P_FIELD(rs2, (i ^ 1), type_sew_t<BIT>::type);
+
+#define P_REDUCTION_PARAMS(BIT_INNER) \
+  type_sew_t<BIT_INNER>::type ps1 = P_FIELD(rs1, j, type_sew_t<BIT_INNER>::type); \
+  type_sew_t<BIT_INNER>::type ps2 = P_FIELD(rs2, j, type_sew_t<BIT_INNER>::type);
+
+#define P_REDUCTION_UPARAMS(BIT_INNER) \
+  type_usew_t<BIT_INNER>::type ps1 = P_FIELD(rs1, j, type_usew_t<BIT_INNER>::type); \
+  type_usew_t<BIT_INNER>::type ps2 = P_FIELD(rs2, j, type_usew_t<BIT_INNER>::type);
+
+#define P_REDUCTION_SUPARAMS(BIT_INNER) \
+  type_sew_t<BIT_INNER>::type ps1 = P_FIELD(rs1, j, type_sew_t<BIT_INNER>::type); \
+  type_usew_t<BIT_INNER>::type ps2 = P_FIELD(rs2, j, type_usew_t<BIT_INNER>::type);
 
 #define P_LOOP_BODY(BIT, BODY) { \
   P_PARAMS(BIT) \
@@ -2664,6 +2688,30 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   P_MUL_LOOP_BASE(BIT) \
   P_MUL_CROSS_ULOOP_BODY(BIT, BODY) \
   P_MUL_LOOP_END()
+
+#define P_REDUCTION_LOOP(BIT, BIT_INNER, USE_RD, BODY) \
+  P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
+  P_REDUCTION_PARAMS(BIT_INNER) \
+  BODY \
+  } \
+  WRITE_PD(); \
+  P_LOOP_END()
+
+#define P_REDUCTION_ULOOP(BIT, BIT_INNER, USE_RD, BODY) \
+  P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
+  P_REDUCTION_UPARAMS(BIT_INNER) \
+  BODY \
+  } \
+  WRITE_PD(); \
+  P_LOOP_END()
+
+#define P_REDUCTION_SULOOP(BIT, BIT_INNER, USE_RD, BODY) \
+  P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
+  P_REDUCTION_SUPARAMS(BIT_INNER) \
+  BODY \
+  } \
+  WRITE_PD(); \
+  P_LOOP_END()
 
 #define P_LOOP_END() \
   } \
