@@ -799,14 +799,18 @@ riscv_insn_ext_v_ldst = \
 	vle16_v \
 	vle32_v \
 	vle64_v \
+	vloxei8_v \
+	vloxei16_v \
+	vloxei32_v \
+	vloxei64_v \
 	vlse8_v \
 	vlse16_v \
 	vlse32_v \
 	vlse64_v \
-	vlxei8_v \
-	vlxei16_v \
-	vlxei32_v \
-	vlxei64_v \
+	vluxei8_v \
+	vluxei16_v \
+	vluxei32_v \
+	vluxei64_v \
 	vle8ff_v \
 	vle16ff_v \
 	vle32ff_v \
@@ -832,13 +836,13 @@ riscv_insn_ext_v_ldst = \
 	vse32_v \
 	vse64_v \
 	vsse8_v \
+	vsoxei8_v \
+	vsoxei16_v \
+	vsoxei32_v \
+	vsoxei64_v \
 	vsse16_v \
 	vsse32_v \
 	vsse64_v \
-	vsxei8_v \
-	vsxei16_v \
-	vsxei32_v \
-	vsxei64_v \
 	vsuxei8_v \
 	vsuxei16_v \
 	vsuxei32_v \

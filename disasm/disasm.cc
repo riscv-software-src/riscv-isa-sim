@@ -767,12 +767,13 @@ disassembler_t::disassembler_t(int xlen)
   std::vector<const arg_t *> v_st_index = {&vs3, &v_address, &vs2, &opt, &vm};
 
   DISASM_VMEM_INSN(vle,    v_ld_unit,   );
+  DISASM_VMEM_INSN(vluxei, v_ld_index,  );
   DISASM_VMEM_INSN(vlse,   v_ld_stride, );
-  DISASM_VMEM_INSN(vlxei,  v_ld_index,  );
+  DISASM_VMEM_INSN(vloxei, v_ld_index,  );
   DISASM_VMEM_INSN(vle,    v_ld_unit, ff);
   DISASM_VMEM_INSN(vse,    v_st_unit,   );
+  DISASM_VMEM_INSN(vsoxei, v_st_index,  );
   DISASM_VMEM_INSN(vsse,   v_st_stride, );
-  DISASM_VMEM_INSN(vsxei,  v_st_index,  );
   DISASM_VMEM_INSN(vsuxei, v_st_index,  );
 
   #undef DISASM_VMEM_INSN
@@ -783,11 +784,14 @@ disassembler_t::disassembler_t(int xlen)
       {match_vle8_v,   mask_vle8_v,   "vlseg%de%d.v",   v_ld_unit},
       {match_vse8_v,   mask_vse8_v,   "vsseg%de%d.v",   v_st_unit},
 
+      {match_vluxei8_v, mask_vluxei8_v, "vluxseg%dei%d.v", v_ld_index},
+      {match_vsuxei8_v, mask_vsuxei8_v, "vsuxseg%dei%d.v", v_st_index},
+
       {match_vlse8_v,  mask_vlse8_v,  "vlsseg%de%d.v",  v_ld_stride},
       {match_vsse8_v,  mask_vsse8_v,  "vssseg%de%d.v",  v_st_stride},
 
-      {match_vlxei8_v, mask_vlxei8_v, "vlxseg%dei%d.v", v_ld_index},
-      {match_vsxei8_v, mask_vsxei8_v, "vsxseg%dei%d.v", v_st_index},
+      {match_vloxei8_v, mask_vloxei8_v, "vloxseg%dei%d.v", v_ld_index},
+      {match_vsoxei8_v, mask_vsoxei8_v, "vsoxseg%dei%d.v", v_st_index},
 
       {match_vle8ff_v, mask_vle8ff_v, "vlseg%de%dff.v", v_ld_unit}
     };
