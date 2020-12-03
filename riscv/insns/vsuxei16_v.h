@@ -1,2 +1,2 @@
 // vsuxe16.v
-VI_ST_INDEX(e16, false);
+VI_ST_INDEX(e16, true);

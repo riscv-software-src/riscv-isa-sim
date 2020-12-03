@@ -4858,7 +4858,7 @@ if test "$ac_res" != no; then :
 
 
 $as_echo "#define HAVE_DLOPEN /**/" >>confdefs.h
-,
+
   HAVE_DLOPEN=yes
 
 
