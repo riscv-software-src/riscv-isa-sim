@@ -397,7 +397,7 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
            || vsew > ELEN
-           || vflmul < ((float)vsew / ELEN)
+           || vflmul < ((float)vsew_min / ELEN)
            || vediv != 1
            || (newType >> 8) != 0;
 
