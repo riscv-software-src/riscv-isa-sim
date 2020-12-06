@@ -1364,6 +1364,10 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN(#code "8.u", code##8_u, 0, {&xrd, &xrs1, &p_imm3}); \
   DISASM_INSN(#code "16.u", code##16_u, 0, {&xrd, &xrs1, &p_imm4});
 
+#define DISASM_RINSN_AND_ROUND(code) \
+  DEFINE_RTYPE(code); \
+  DISASM_INSN(#code ".u", code##_u, 0, {&xrd, &xrs1, &xrs2});
+
   DISASM_8_AND_16_RINSN(add);
   DISASM_8_AND_16_RINSN(radd);
   DISASM_8_AND_16_RINSN(uradd);
@@ -1455,6 +1459,10 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(pkbt16);
   DEFINE_RTYPE(pktb16);
   DEFINE_RTYPE(pktt16);
+  DISASM_RINSN_AND_ROUND(smmul);
+  DISASM_RINSN_AND_ROUND(kmmac);
+  DISASM_RINSN_AND_ROUND(kmmsb);
+  DISASM_RINSN_AND_ROUND(kwmmul);
   DEFINE_RTYPE(smaqa);
   DEFINE_RTYPE(umaqa);
   DISASM_INSN("smaqa.su", smaqa_su, 0, {&xrd, &xrs1, &xrs2});

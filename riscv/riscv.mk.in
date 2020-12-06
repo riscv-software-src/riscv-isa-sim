@@ -1032,6 +1032,14 @@ riscv_insn_ext_p_partial_simd = \
 	pkbt16 \
 	pktb16 \
 	pktt16 \
+	smmul \
+	smmul_u \
+	kmmac \
+	kmmac_u \
+	kmmsb \
+	kmmsb_u \
+	kwmmul \
+	kwmmul_u \
 	smaqa \
 	umaqa \
 	smaqa_su \
