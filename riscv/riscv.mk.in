@@ -1040,6 +1040,22 @@ riscv_insn_ext_p_partial_simd = \
 	kmmsb_u \
 	kwmmul \
 	kwmmul_u \
+	smmwb \
+	smmwb_u \
+	smmwt \
+	smmwt_u \
+	kmmawb \
+	kmmawb_u \
+	kmmawt \
+	kmmawt_u \
+	kmmwb2 \
+	kmmwb2_u \
+	kmmwt2 \
+	kmmwt2_u \
+	kmmawb2 \
+	kmmawb2_u \
+	kmmawt2 \
+	kmmawt2_u \
 	smaqa \
 	umaqa \
 	smaqa_su \

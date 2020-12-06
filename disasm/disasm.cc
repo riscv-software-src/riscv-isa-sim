@@ -1463,6 +1463,15 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_RINSN_AND_ROUND(kmmac);
   DISASM_RINSN_AND_ROUND(kmmsb);
   DISASM_RINSN_AND_ROUND(kwmmul);
+  DISASM_RINSN_AND_ROUND(smmwb);
+  DISASM_RINSN_AND_ROUND(smmwt);
+  DISASM_RINSN_AND_ROUND(kmmawb);
+  DISASM_RINSN_AND_ROUND(kmmawt);
+  DISASM_RINSN_AND_ROUND(kmmwb2);
+  DISASM_RINSN_AND_ROUND(kmmwt2);
+  DISASM_RINSN_AND_ROUND(kmmawb2);
+  DISASM_RINSN_AND_ROUND(kmmawt2);
+
   DEFINE_RTYPE(smaqa);
   DEFINE_RTYPE(umaqa);
   DISASM_INSN("smaqa.su", smaqa_su, 0, {&xrd, &xrs1, &xrs2});
