@@ -2395,18 +2395,15 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   (STRUCT) = (((STRUCT) & ~((reg_t)(MASK) << (SHIFT))) \
               | ((reg_t)((VALUE) & (MASK)) << (SHIFT)))
 
-#define EXTRACT_BITS(STRUCT, MASK, SHIFT) \
-  (((STRUCT) >> (SHIFT)) & (MASK))
-
 #define P_FIELD(R, INDEX, TYPE) \
-  EXTRACT_BITS(R, (((reg_t)1 << (sizeof(TYPE) * 8)) - 1), ((INDEX) * sizeof(TYPE) * 8)) \
+  extract64(R, ((INDEX) * sizeof(TYPE) * 8), sizeof(TYPE) * 8)
 
 #define P_B(R, INDEX) P_FIELD(R, INDEX, uint8_t)
 #define P_H(R, INDEX) P_FIELD(R, INDEX, uint16_t)
 #define P_W(R, INDEX) P_FIELD(R, INDEX, uint32_t)
 
 #define WRITE_PD() \
-  INSERT_BITS(rd_tmp, pd, (((reg_t)1 << (sizeof(pd) * 8)) - 1), (i * sizeof(pd) * 8)) \
+  INSERT_BITS(rd_tmp, pd, make_mask64(0, sizeof(pd) * 8), (i * sizeof(pd) * 8)) \
 
 #define P_LOOP_BASE(BIT) \
   require_extension('P'); \
