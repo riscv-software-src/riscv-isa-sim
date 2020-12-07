@@ -2459,7 +2459,19 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   unsigned len = xlen / BIT; \
   unsigned len_inner = BIT / BIT_INNER; \
   for (int i = 0; i < len; ++i) { \
-    type_sew_t<BIT>::type pd = P_FIELD(rd_tmp, i, type_sew_t<BIT>::type); \
+    int64_t pd_res = P_FIELD(rd_tmp, i, type_sew_t<BIT>::type); \
+    for (int j = i * len_inner; j < (i + 1) * len_inner; ++j) {
+
+#define P_REDUCTION_ULOOP_BASE(BIT, BIT_INNER, USE_RD) \
+  require_extension('P'); \
+  require(BIT == e16 || BIT == e32); \
+  reg_t rd_tmp = USE_RD ? RD : 0; \
+  reg_t rs1 = RS1; \
+  reg_t rs2 = RS2; \
+  unsigned len = xlen / BIT; \
+  unsigned len_inner = BIT / BIT_INNER; \
+  for (int i = 0; i < len; ++i) { \
+    uint64_t pd_res = P_FIELD(rd_tmp, i, type_usew_t<BIT>::type); \
     for (int j = i * len_inner; j < (i + 1) * len_inner; ++j) {
 
 #define P_PARAMS(BIT) \
@@ -2686,29 +2698,23 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   P_MUL_CROSS_ULOOP_BODY(BIT, BODY) \
   P_MUL_LOOP_END()
 
-#define P_REDUCTION_LOOP(BIT, BIT_INNER, USE_RD, BODY) \
+#define P_REDUCTION_LOOP(BIT, BIT_INNER, USE_RD, IS_SAT, BODY) \
   P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
   P_REDUCTION_PARAMS(BIT_INNER) \
   BODY \
-  } \
-  WRITE_PD(); \
-  P_LOOP_END()
+  P_REDUCTION_LOOP_END(BIT, IS_SAT)
 
-#define P_REDUCTION_ULOOP(BIT, BIT_INNER, USE_RD, BODY) \
-  P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
+#define P_REDUCTION_ULOOP(BIT, BIT_INNER, USE_RD, IS_SAT, BODY) \
+  P_REDUCTION_ULOOP_BASE(BIT, BIT_INNER, USE_RD) \
   P_REDUCTION_UPARAMS(BIT_INNER) \
   BODY \
-  } \
-  WRITE_PD(); \
-  P_LOOP_END()
+  P_REDUCTION_LOOP_END(BIT, IS_SAT)
 
-#define P_REDUCTION_SULOOP(BIT, BIT_INNER, USE_RD, BODY) \
+#define P_REDUCTION_SULOOP(BIT, BIT_INNER, USE_RD, IS_SAT, BODY) \
   P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
   P_REDUCTION_SUPARAMS(BIT_INNER) \
   BODY \
-  } \
-  WRITE_PD(); \
-  P_LOOP_END()
+  P_REDUCTION_LOOP_END(BIT, IS_SAT)
 
 #define P_LOOP_END() \
   } \
@@ -2723,6 +2729,22 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   else { \
     WRITE_RD(rd_tmp); \
   }
+
+#define P_REDUCTION_LOOP_END(BIT, IS_SAT) \
+    } \
+    if (IS_SAT) { \
+      if (pd_res > INT##BIT##_MAX) { \
+        pd_res = INT##BIT##_MAX; \
+        P.VU.vxsat |= 1; \
+      } else if (pd_res < INT##BIT##_MIN) { \
+        pd_res = INT##BIT##_MIN; \
+        P.VU.vxsat |= 1; \
+      } \
+    } \
+    type_usew_t<BIT>::type pd = pd_res; \
+    WRITE_PD(); \
+  } \
+  WRITE_RD(rd_tmp);
 
 #define P_SUNPKD8(X, Y) \
   require_extension('P'); \
