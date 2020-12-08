@@ -1056,6 +1056,24 @@ riscv_insn_ext_p_partial_simd = \
 	kmmawb2_u \
 	kmmawt2 \
 	kmmawt2_u \
+	smbb16 \
+	smbt16 \
+	smtt16 \
+	kmda \
+	kmxda \
+	smds \
+	smdrs \
+	smxds \
+	kmabb \
+	kmabt \
+	kmatt \
+	kmada \
+	kmaxda \
+	kmads \
+	kmadrs \
+	kmaxds \
+	kmsda \
+	kmsxda \
 	smaqa \
 	umaqa \
 	smaqa_su \

@@ -1471,6 +1471,24 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_RINSN_AND_ROUND(kmmwt2);
   DISASM_RINSN_AND_ROUND(kmmawb2);
   DISASM_RINSN_AND_ROUND(kmmawt2);
+  DEFINE_RTYPE(smbb16)
+	DEFINE_RTYPE(smbt16)
+	DEFINE_RTYPE(smtt16)
+	DEFINE_RTYPE(kmda)
+	DEFINE_RTYPE(kmxda)
+	DEFINE_RTYPE(smds)
+	DEFINE_RTYPE(smdrs)
+	DEFINE_RTYPE(smxds)
+	DEFINE_RTYPE(kmabb)
+	DEFINE_RTYPE(kmabt)
+	DEFINE_RTYPE(kmatt)
+	DEFINE_RTYPE(kmada)
+	DEFINE_RTYPE(kmaxda)
+	DEFINE_RTYPE(kmads)
+	DEFINE_RTYPE(kmadrs)
+	DEFINE_RTYPE(kmaxds)
+	DEFINE_RTYPE(kmsda)
+	DEFINE_RTYPE(kmsxda)
 
   DEFINE_RTYPE(smaqa);
   DEFINE_RTYPE(umaqa);

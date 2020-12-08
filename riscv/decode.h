@@ -2396,11 +2396,14 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
               | ((reg_t)((VALUE) & (MASK)) << (SHIFT)))
 
 #define P_FIELD(R, INDEX, TYPE) \
-  extract64(R, ((INDEX) * sizeof(TYPE) * 8), sizeof(TYPE) * 8)
+  (TYPE)extract64(R, ((INDEX) * sizeof(TYPE) * 8), sizeof(TYPE) * 8)
 
 #define P_B(R, INDEX) P_FIELD(R, INDEX, uint8_t)
 #define P_H(R, INDEX) P_FIELD(R, INDEX, uint16_t)
 #define P_W(R, INDEX) P_FIELD(R, INDEX, uint32_t)
+#define P_SB(R, INDEX) P_FIELD(R, INDEX, int8_t)
+#define P_SH(R, INDEX) P_FIELD(R, INDEX, int16_t)
+#define P_SW(R, INDEX) P_FIELD(R, INDEX, int32_t)
 
 #define WRITE_PD() \
   INSERT_BITS(rd_tmp, pd, make_mask64(0, sizeof(pd) * 8), (i * sizeof(pd) * 8)) \
@@ -2537,6 +2540,10 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_REDUCTION_SUPARAMS(BIT_INNER) \
   type_sew_t<BIT_INNER>::type ps1 = P_FIELD(rs1, j, type_sew_t<BIT_INNER>::type); \
   type_usew_t<BIT_INNER>::type ps2 = P_FIELD(rs2, j, type_usew_t<BIT_INNER>::type);
+
+#define P_REDUCTION_CROSS_PARAMS(BIT_INNER) \
+  type_sew_t<BIT_INNER>::type ps1 = P_FIELD(rs1, j, type_sew_t<BIT_INNER>::type); \
+  type_sew_t<BIT_INNER>::type ps2 = P_FIELD(rs2, (j ^ 1), type_sew_t<BIT_INNER>::type);
 
 #define P_LOOP_BODY(BIT, BODY) { \
   P_PARAMS(BIT) \
@@ -2713,6 +2720,12 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_REDUCTION_SULOOP(BIT, BIT_INNER, USE_RD, IS_SAT, BODY) \
   P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
   P_REDUCTION_SUPARAMS(BIT_INNER) \
+  BODY \
+  P_REDUCTION_LOOP_END(BIT, IS_SAT)
+
+#define P_REDUCTION_CROSS_LOOP(BIT, BIT_INNER, USE_RD, IS_SAT, BODY) \
+  P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
+  P_REDUCTION_CROSS_PARAMS(BIT_INNER) \
   BODY \
   P_REDUCTION_LOOP_END(BIT, IS_SAT)
 
