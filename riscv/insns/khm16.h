@@ -1,8 +1,8 @@
 P_LOOP(16, {
-  if ((ps1 != -32768) | (ps2 != -32768)) {
+  if ((ps1 != INT16_MIN) | (ps2 != INT16_MIN)) {
     pd = (ps1 * ps2) >> 15;
   } else {
-    pd = 0x7FFF;
+    pd = INT16_MAX;
     P.VU.vxsat = 1;
   }
 })
