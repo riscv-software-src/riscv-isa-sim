@@ -2391,22 +2391,21 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   }
 
 // rvp macro
-#define INSERT_BITS(STRUCT, VALUE, MASK, SHIFT) \
-  (STRUCT) = (((STRUCT) & ~((reg_t)(MASK) << (SHIFT))) \
-              | ((reg_t)((VALUE) & (MASK)) << (SHIFT)))
+#define P_FIELD(R, INDEX, SIZE) \
+  (type_sew_t<SIZE>::type)get_field(R, make_mask64(((INDEX) * SIZE), SIZE))
 
-#define P_FIELD(R, INDEX, TYPE) \
-  (TYPE)extract64(R, ((INDEX) * sizeof(TYPE) * 8), sizeof(TYPE) * 8)
+#define P_UFIELD(R, INDEX, SIZE) \
+  (type_usew_t<SIZE>::type)get_field(R, make_mask64(((INDEX) * SIZE), SIZE))
 
-#define P_B(R, INDEX) P_FIELD(R, INDEX, uint8_t)
-#define P_H(R, INDEX) P_FIELD(R, INDEX, uint16_t)
-#define P_W(R, INDEX) P_FIELD(R, INDEX, uint32_t)
-#define P_SB(R, INDEX) P_FIELD(R, INDEX, int8_t)
-#define P_SH(R, INDEX) P_FIELD(R, INDEX, int16_t)
-#define P_SW(R, INDEX) P_FIELD(R, INDEX, int32_t)
+#define P_B(R, INDEX) P_UFIELD(R, INDEX, 8)
+#define P_H(R, INDEX) P_UFIELD(R, INDEX, 16)
+#define P_W(R, INDEX) P_UFIELD(R, INDEX, 32)
+#define P_SB(R, INDEX) P_FIELD(R, INDEX, 8)
+#define P_SH(R, INDEX) P_FIELD(R, INDEX, 16)
+#define P_SW(R, INDEX) P_FIELD(R, INDEX, 32)
 
 #define WRITE_PD() \
-  INSERT_BITS(rd_tmp, pd, make_mask64(0, sizeof(pd) * 8), (i * sizeof(pd) * 8)) \
+  rd_tmp = set_field(rd_tmp, make_mask64((i * sizeof(pd) * 8), sizeof(pd) * 8), pd);
 
 #define P_LOOP_BASE(BIT) \
   require_extension('P'); \
@@ -2414,16 +2413,16 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   reg_t rd_tmp = RD; \
   reg_t rs1 = RS1; \
   reg_t rs2 = RS2; \
-  unsigned len = xlen / BIT; \
-  for (int i = len - 1; i >= 0; --i) {
+  sreg_t len = xlen / BIT; \
+  for (sreg_t i = len - 1; i >= 0; --i) {
 
 #define P_ONE_LOOP_BASE(BIT) \
   require_extension('P'); \
   require(BIT == e8 || BIT == e16 || BIT == e32); \
   reg_t rd_tmp = RD; \
   reg_t rs1 = RS1; \
-  unsigned len = xlen / BIT; \
-  for (int i = len - 1; i >= 0; --i) {
+  sreg_t len = xlen / BIT; \
+  for (sreg_t i = len - 1; i >= 0; --i) {
 
 #define P_I_LOOP_BASE(BIT, IMMBIT) \
   require_extension('P'); \
@@ -2431,8 +2430,8 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   reg_t rd_tmp = RD; \
   reg_t rs1 = RS1; \
   type_usew_t<BIT>::type imm##IMMBIT##u = insn.p_imm##IMMBIT(); \
-  unsigned len = xlen / BIT; \
-  for (int i = len - 1; i >= 0; --i) {
+  sreg_t len = xlen / BIT; \
+  for (sreg_t i = len - 1; i >= 0; --i) {
 
 #define P_X_LOOP_BASE(BIT, LOWBIT) \
   require_extension('P'); \
@@ -2441,8 +2440,8 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   reg_t rs1 = RS1; \
   type_usew_t<BIT>::type sa = RS2 & ((uint64_t(1) << LOWBIT) - 1); \
   type_sew_t<BIT>::type ssa = int64_t(RS2) << (64 - LOWBIT) >> (64 - LOWBIT); \
-  unsigned len = xlen / BIT; \
-  for (int i = len - 1; i >= 0; --i) {
+  sreg_t len = xlen / BIT; \
+  for (sreg_t i = len - 1; i >= 0; --i) {
 
 #define P_MUL_LOOP_BASE(BIT) \
   require_extension('P'); \
@@ -2450,8 +2449,8 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   reg_t rd_tmp = RD; \
   reg_t rs1 = RS1; \
   reg_t rs2 = RS2; \
-  unsigned len = 32 / BIT; \
-  for (int i = len - 1; i >= 0; --i) {
+  sreg_t len = 32 / BIT; \
+  for (sreg_t i = len - 1; i >= 0; --i) {
 
 #define P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
   require_extension('P'); \
@@ -2459,11 +2458,11 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   reg_t rd_tmp = USE_RD ? RD : 0; \
   reg_t rs1 = RS1; \
   reg_t rs2 = RS2; \
-  unsigned len = xlen / BIT; \
-  unsigned len_inner = BIT / BIT_INNER; \
-  for (int i = 0; i < len; ++i) { \
-    int64_t pd_res = P_FIELD(rd_tmp, i, type_sew_t<BIT>::type); \
-    for (int j = i * len_inner; j < (i + 1) * len_inner; ++j) {
+  sreg_t len = xlen / BIT; \
+  sreg_t len_inner = BIT / BIT_INNER; \
+  for (sreg_t i = len - 1; i >= 0; --i) { \
+    int64_t pd_res = P_FIELD(rd_tmp, i, BIT); \
+    for (sreg_t j = i * len_inner; j < (i + 1) * len_inner; ++j) {
 
 #define P_REDUCTION_ULOOP_BASE(BIT, BIT_INNER, USE_RD) \
   require_extension('P'); \
@@ -2471,79 +2470,79 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   reg_t rd_tmp = USE_RD ? RD : 0; \
   reg_t rs1 = RS1; \
   reg_t rs2 = RS2; \
-  unsigned len = xlen / BIT; \
-  unsigned len_inner = BIT / BIT_INNER; \
-  for (int i = 0; i < len; ++i) { \
-    uint64_t pd_res = P_FIELD(rd_tmp, i, type_usew_t<BIT>::type); \
-    for (int j = i * len_inner; j < (i + 1) * len_inner; ++j) {
+  sreg_t len = xlen / BIT; \
+  sreg_t len_inner = BIT / BIT_INNER; \
+  for (sreg_t i = len - 1; i >=0; --i) { \
+    uint64_t pd_res = P_UFIELD(rd_tmp, i, BIT); \
+    for (sreg_t j = i * len_inner; j < (i + 1) * len_inner; ++j) {
 
 #define P_PARAMS(BIT) \
-  type_sew_t<BIT>::type pd = P_FIELD(rd_tmp, i, type_sew_t<BIT>::type);; \
-  type_sew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type); \
-  type_sew_t<BIT>::type ps2 = P_FIELD(rs2, i, type_sew_t<BIT>::type);
+  auto pd = P_FIELD(rd_tmp, i, BIT); \
+  auto ps1 = P_FIELD(rs1, i, BIT); \
+  auto ps2 = P_FIELD(rs2, i, BIT);
 
 #define P_UPARAMS(BIT) \
-  type_usew_t<BIT>::type pd = P_FIELD(rd_tmp, i, type_usew_t<BIT>::type);; \
-  type_usew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_usew_t<BIT>::type); \
-  type_usew_t<BIT>::type ps2 = P_FIELD(rs2, i, type_usew_t<BIT>::type);
+  auto pd = P_UFIELD(rd_tmp, i, BIT); \
+  auto ps1 = P_UFIELD(rs1, i, BIT); \
+  auto ps2 = P_UFIELD(rs2, i, BIT);
 
 #define P_CORSS_PARAMS(BIT) \
-  type_sew_t<BIT>::type pd = P_FIELD(rd_tmp, i, type_sew_t<BIT>::type);; \
-  type_sew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type); \
-  type_sew_t<BIT>::type ps2 = P_FIELD(rs2, (i ^ 1), type_sew_t<BIT>::type);
+  auto pd = P_FIELD(rd_tmp, i, BIT); \
+  auto ps1 = P_FIELD(rs1, i, BIT); \
+  auto ps2 = P_FIELD(rs2, (i ^ 1), BIT);
 
 #define P_CORSS_UPARAMS(BIT) \
-  type_usew_t<BIT>::type pd = P_FIELD(rd_tmp, i, type_usew_t<BIT>::type);; \
-  type_usew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_usew_t<BIT>::type); \
-  type_usew_t<BIT>::type ps2 = P_FIELD(rs2, (i ^ 1), type_usew_t<BIT>::type);
+  auto pd = P_UFIELD(rd_tmp, i, BIT); \
+  auto ps1 = P_UFIELD(rs1, i, BIT); \
+  auto ps2 = P_UFIELD(rs2, (i ^ 1), BIT);
 
 #define P_ONE_PARAMS(BIT) \
-  type_sew_t<BIT>::type pd = P_FIELD(rd_tmp, i, type_sew_t<BIT>::type);; \
-  type_sew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type);
+  auto pd = P_FIELD(rd_tmp, i, BIT); \
+  auto ps1 = P_FIELD(rs1, i, BIT);
 
 #define P_ONE_UPARAMS(BIT) \
-  type_usew_t<BIT>::type pd = P_FIELD(rd_tmp, i, type_usew_t<BIT>::type);; \
-  type_usew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_usew_t<BIT>::type);
+  auto pd = P_UFIELD(rd_tmp, i, BIT); \
+  auto ps1 = P_UFIELD(rs1, i, BIT);
 
 #define P_ONE_SUPARAMS(BIT) \
-  type_usew_t<BIT>::type pd = P_FIELD(rd_tmp, i, type_usew_t<BIT>::type);; \
-  type_sew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type);
+  auto pd = P_UFIELD(rd_tmp, i, BIT); \
+  auto ps1 = P_FIELD(rs1, i, BIT);
 
 #define P_MUL_PARAMS(BIT) \
-  type_sew_t<BIT*2>::type pd = P_FIELD(rd_tmp, i, type_sew_t<BIT*2>::type);; \
-  type_sew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type); \
-  type_sew_t<BIT>::type ps2 = P_FIELD(rs2, i, type_sew_t<BIT>::type);
+  auto pd = P_FIELD(rd_tmp, i, BIT * 2); \
+  auto ps1 = P_FIELD(rs1, i, BIT); \
+  auto ps2 = P_FIELD(rs2, i, BIT);
 
 #define P_MUL_UPARAMS(BIT) \
-  type_usew_t<BIT*2>::type pd = P_FIELD(rd_tmp, i, type_usew_t<BIT*2>::type);; \
-  type_usew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type); \
-  type_usew_t<BIT>::type ps2 = P_FIELD(rs2, i, type_sew_t<BIT>::type);
+  auto pd = P_UFIELD(rd_tmp, i, BIT * 2); \
+  auto ps1 = P_UFIELD(rs1, i, BIT); \
+  auto ps2 = P_UFIELD(rs2, i, BIT);
 
 #define P_MUL_CROSS_PARAMS(BIT) \
-  type_sew_t<BIT*2>::type pd = P_FIELD(rd_tmp, i, type_sew_t<BIT*2>::type);; \
-  type_sew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type); \
-  type_sew_t<BIT>::type ps2 = P_FIELD(rs2, (i ^ 1), type_sew_t<BIT>::type);
+  auto pd = P_FIELD(rd_tmp, i, BIT * 2); \
+  auto ps1 = P_FIELD(rs1, i, BIT); \
+  auto ps2 = P_FIELD(rs2, (i ^ 1), BIT);
 
 #define P_MUL_CROSS_UPARAMS(BIT) \
-  type_usew_t<BIT*2>::type pd = P_FIELD(rd_tmp, i, type_usew_t<BIT*2>::type);; \
-  type_usew_t<BIT>::type ps1 = P_FIELD(rs1, i, type_sew_t<BIT>::type); \
-  type_usew_t<BIT>::type ps2 = P_FIELD(rs2, (i ^ 1), type_sew_t<BIT>::type);
+  auto pd = P_UFIELD(rd_tmp, i, BIT*2); \
+  auto ps1 = P_UFIELD(rs1, i, BIT); \
+  auto ps2 = P_UFIELD(rs2, (i ^ 1), BIT);
 
 #define P_REDUCTION_PARAMS(BIT_INNER) \
-  type_sew_t<BIT_INNER>::type ps1 = P_FIELD(rs1, j, type_sew_t<BIT_INNER>::type); \
-  type_sew_t<BIT_INNER>::type ps2 = P_FIELD(rs2, j, type_sew_t<BIT_INNER>::type);
+  auto ps1 = P_FIELD(rs1, j, BIT_INNER); \
+  auto ps2 = P_FIELD(rs2, j, BIT_INNER);
 
 #define P_REDUCTION_UPARAMS(BIT_INNER) \
-  type_usew_t<BIT_INNER>::type ps1 = P_FIELD(rs1, j, type_usew_t<BIT_INNER>::type); \
-  type_usew_t<BIT_INNER>::type ps2 = P_FIELD(rs2, j, type_usew_t<BIT_INNER>::type);
+  auto ps1 = P_UFIELD(rs1, j, BIT_INNER); \
+  auto ps2 = P_UFIELD(rs2, j, BIT_INNER);
 
 #define P_REDUCTION_SUPARAMS(BIT_INNER) \
-  type_sew_t<BIT_INNER>::type ps1 = P_FIELD(rs1, j, type_sew_t<BIT_INNER>::type); \
-  type_usew_t<BIT_INNER>::type ps2 = P_FIELD(rs2, j, type_usew_t<BIT_INNER>::type);
+  auto ps1 = P_FIELD(rs1, j, BIT_INNER); \
+  auto ps2 = P_UFIELD(rs2, j, BIT_INNER);
 
 #define P_REDUCTION_CROSS_PARAMS(BIT_INNER) \
-  type_sew_t<BIT_INNER>::type ps1 = P_FIELD(rs1, j, type_sew_t<BIT_INNER>::type); \
-  type_sew_t<BIT_INNER>::type ps2 = P_FIELD(rs2, (j ^ 1), type_sew_t<BIT_INNER>::type);
+  auto ps1 = P_FIELD(rs1, j, BIT_INNER); \
+  auto ps2 = P_FIELD(rs2, (j ^ 1), BIT_INNER);
 
 #define P_LOOP_BODY(BIT, BODY) { \
   P_PARAMS(BIT) \
@@ -2688,22 +2687,22 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_MUL_LOOP(BIT, BODY) \
   P_MUL_LOOP_BASE(BIT) \
   P_MUL_LOOP_BODY(BIT, BODY) \
-  P_MUL_LOOP_END()
+  P_PAIR_LOOP_END()
 
 #define P_MUL_ULOOP(BIT, BODY) \
   P_MUL_LOOP_BASE(BIT) \
   P_MUL_ULOOP_BODY(BIT, BODY) \
-  P_MUL_LOOP_END()
+  P_PAIR_LOOP_END()
 
 #define P_MUL_CROSS_LOOP(BIT, BODY) \
   P_MUL_LOOP_BASE(BIT) \
   P_MUL_CROSS_LOOP_BODY(BIT, BODY) \
-  P_MUL_LOOP_END()
+  P_PAIR_LOOP_END()
 
 #define P_MUL_CROSS_ULOOP(BIT, BODY) \
   P_MUL_LOOP_BASE(BIT) \
   P_MUL_CROSS_ULOOP_BODY(BIT, BODY) \
-  P_MUL_LOOP_END()
+  P_PAIR_LOOP_END()
 
 #define P_REDUCTION_LOOP(BIT, BIT_INNER, USE_RD, IS_SAT, BODY) \
   P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
@@ -2715,7 +2714,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   P_REDUCTION_ULOOP_BASE(BIT, BIT_INNER, USE_RD) \
   P_REDUCTION_UPARAMS(BIT_INNER) \
   BODY \
-  P_REDUCTION_LOOP_END(BIT, IS_SAT)
+  P_REDUCTION_ULOOP_END(BIT, IS_SAT)
 
 #define P_REDUCTION_SULOOP(BIT, BIT_INNER, USE_RD, IS_SAT, BODY) \
   P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
@@ -2733,7 +2732,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   } \
   WRITE_RD(rd_tmp);
 
-#define P_MUL_LOOP_END() \
+#define P_PAIR_LOOP_END() \
   } \
   if (xlen == 32) { \
     WRITE_REG(insn.rd(), zext32(rd_tmp)); \
@@ -2759,14 +2758,27 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   } \
   WRITE_RD(rd_tmp);
 
+#define P_REDUCTION_ULOOP_END(BIT, IS_SAT) \
+    } \
+    if (IS_SAT) { \
+      if (pd_res > UINT##BIT##_MAX) { \
+        pd_res = UINT##BIT##_MAX; \
+        P.VU.vxsat |= 1; \
+      } \
+    } \
+    type_usew_t<BIT>::type pd = pd_res; \
+    WRITE_PD(); \
+  } \
+  WRITE_RD(rd_tmp);
+
 #define P_SUNPKD8(X, Y) \
   require_extension('P'); \
   reg_t rd_tmp = 0; \
   int16_t pd[4] = { \
-    int8_t(P_B(RS1, Y)), \
-    int8_t(P_B(RS1, X)), \
-    int8_t(P_B(RS1, Y + 4)), \
-    int8_t(P_B(RS1, X + 4)), \
+    P_SB(RS1, Y), \
+    P_SB(RS1, X), \
+    P_SB(RS1, Y + 4), \
+    P_SB(RS1, X + 4), \
   }; \
   if (xlen == 64) { \
     memcpy(&rd_tmp, pd, 8); \
@@ -2779,10 +2791,10 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   require_extension('P'); \
   reg_t rd_tmp = 0; \
   uint16_t pd[4] = { \
-    uint8_t(P_B(RS1, Y)), \
-    uint8_t(P_B(RS1, X)), \
-    uint8_t(P_B(RS1, Y + 4)), \
-    uint8_t(P_B(RS1, X + 4)), \
+    P_B(RS1, Y), \
+    P_B(RS1, X), \
+    P_B(RS1, Y + 4), \
+    P_B(RS1, X + 4), \
   }; \
   if (xlen == 64) { \
     memcpy(&rd_tmp, pd, 8); \
@@ -2794,11 +2806,11 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_PK(BIT, X, Y) \
   require_extension('P'); \
   require(BIT == e16 || BIT == e32); \
-  unsigned size = BIT / 8 * 2; \
+  reg_t size = BIT / 8 * 2; \
   reg_t rd_tmp = 0; \
-  uint##BIT##_t pd[2] = { \
-    uint##BIT##_t(P_FIELD(RS1, Y, uint##BIT##_t)), \
-    uint##BIT##_t(P_FIELD(RS1, X, uint##BIT##_t)) \
+  type_usew_t<BIT>::type pd[2] = { \
+    P_UFIELD(RS1, Y, BIT), \
+    P_UFIELD(RS1, X, BIT) \
   }; \
   memcpy(&rd_tmp, pd, size); \
   WRITE_RD(rd_tmp);
