@@ -353,6 +353,30 @@ struct : public arg_t {
   }
 } x0;
 
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    std::stringstream s;
+    auto iorw = insn.iorw();
+    bool has_pre = false;
+    static const char type[] = "wroi";
+    for (int i = 7; i >= 4; --i) {
+      if (iorw & (1ul << i)) {
+        s << type[i - 4];
+        has_pre = true;
+      }
+    }
+
+    s << (has_pre ? "," : "");
+    for (int i = 3; i >= 0; --i) {
+      if (iorw & (1ul << i)) {
+        s << type[i];
+      }
+    }
+
+    return s.str();
+  }
+} iorw;
+
 typedef struct {
   reg_t match;
   reg_t mask;
@@ -562,7 +586,7 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_NOARG(mret);
   DEFINE_NOARG(dret);
   DEFINE_NOARG(wfi);
-  DEFINE_NOARG(fence);
+  add_insn(new disasm_insn_t("fence", match_fence, mask_fence, {&iorw}));
   DEFINE_NOARG(fence_i);
   DEFINE_SFENCE_TYPE(sfence_vma);
 
