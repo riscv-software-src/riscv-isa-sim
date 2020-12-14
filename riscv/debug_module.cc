@@ -661,6 +661,17 @@ bool debug_module_t::perform_abstract_command()
             return true;
         }
 
+        if (regno == 0x1000 + S0 && write) {
+          /*
+           * The exception handler starts out be restoring dscratch to s0,
+           * which was saved before executing the abstract memory region. Since
+           * we just wrote s0, also make sure to write that same value to
+           * dscratch in case an exception occurs in a program buffer that
+           * might be executed later.
+           */
+          write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH0));
+        }
+
       } else if (regno >= 0x1020 && regno < 0x1040) {
         unsigned fprnum = regno - 0x1020;
 
