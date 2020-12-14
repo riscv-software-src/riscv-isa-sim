@@ -120,14 +120,14 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     char mmu_type[256] = "";
     rc = fdt_parse_mmu_type(fdt, cpu_offset, mmu_type);
     if (rc == 0) {
-      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_BARE);
+      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
       if (strncmp(mmu_type, "riscv,sv32", strlen("riscv,sv32")) == 0) {
         procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV32);
       } else if (strncmp(mmu_type, "riscv,sv39", strlen("riscv,sv39")) == 0) {
         procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV39);
       } else if (strncmp(mmu_type, "riscv,sv48", strlen("riscv,sv48")) == 0) {
         procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV48);
-      } else if (strncmp(mmu_type, "riscv,bare", strlen("riscv,bare")) == 0) {
+      } else if (strncmp(mmu_type, "riscv,sbare", strlen("riscv,sbare")) == 0) {
         //has been set in the beginning
       } else {
         std::cerr << "core ("
