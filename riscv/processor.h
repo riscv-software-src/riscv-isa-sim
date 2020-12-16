@@ -488,7 +488,6 @@ public:
       reg_t vstart, vxrm, vxsat, vl, vtype, vlenb;
       reg_t vma, vta;
       reg_t vediv, vsew;
-      const reg_t vsew_min = 8; // the narrowest supported SEW value at LMUL=1
       float vflmul;
       reg_t ELEN, VLEN;
       bool vill;
