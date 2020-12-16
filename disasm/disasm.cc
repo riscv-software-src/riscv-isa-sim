@@ -420,6 +420,7 @@ disassembler_t::disassembler_t(int xlen)
   #define DEFINE_NOARG(code) \
     add_insn(new disasm_insn_t(#code, match_##code, mask_##code, {}));
   #define DEFINE_RTYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs1, &xrs2})
+  #define DEFINE_R1TYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs1})
   #define DEFINE_ITYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs1, &imm})
   #define DEFINE_ITYPE_SHIFT(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs1, &shamt})
   #define DEFINE_I0TYPE(name, code) DISASM_INSN(name, code, mask_rs1, {&xrd, &imm})
@@ -566,6 +567,8 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(remw);
   DEFINE_RTYPE(remuw);
 
+  DEFINE_ITYPE_SHIFT(slliu_w);
+  DEFINE_RTYPE(addu_w);
   DEFINE_RTYPE(sh1add);
   DEFINE_RTYPE(sh2add);
   DEFINE_RTYPE(sh3add);
@@ -576,8 +579,32 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(subwu);
   DEFINE_ITYPE(addiwu);
   DEFINE_RTYPE(ror);
+  DEFINE_RTYPE(rorw);
   DEFINE_RTYPE(rol);
+  DEFINE_RTYPE(rolw);
   DEFINE_ITYPE_SHIFT(rori);
+  DEFINE_ITYPE_SHIFT(roriw);
+  DEFINE_R1TYPE(ctz);
+  DEFINE_R1TYPE(ctzw);
+  DEFINE_R1TYPE(clz);
+  DEFINE_R1TYPE(clzw);
+  DEFINE_R1TYPE(pcnt);
+  DEFINE_R1TYPE(pcntw);
+  DEFINE_RTYPE(min);
+  DEFINE_RTYPE(minu);
+  DEFINE_RTYPE(max);
+  DEFINE_RTYPE(maxu);
+  DEFINE_RTYPE(andn);
+  DEFINE_RTYPE(orn);
+  DEFINE_RTYPE(xnor);
+  DEFINE_R1TYPE(sext_b);
+  DEFINE_R1TYPE(sext_h);
+  DEFINE_RTYPE(pack);
+  DEFINE_RTYPE(packw);
+  DEFINE_RTYPE(grev);
+  DEFINE_ITYPE_SHIFT(grevi);
+  DEFINE_RTYPE(gorc);
+  DEFINE_ITYPE_SHIFT(gorci);
 
   DEFINE_NOARG(ecall);
   DEFINE_NOARG(ebreak);
