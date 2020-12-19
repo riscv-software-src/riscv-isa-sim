@@ -253,7 +253,7 @@ public:
     if (auto host_addr = sim->addr_to_mem(paddr))
       load_reservation_address = refill_tlb(vaddr, paddr, host_addr, LOAD).target_offset + vaddr;
     else
-      throw trap_load_access_fault(proc->state.v, vaddr, 0, 0); // disallow LR to I/O space
+      throw trap_load_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0); // disallow LR to I/O space
   }
 
   inline bool check_load_reservation(reg_t vaddr, size_t size)
@@ -265,7 +265,7 @@ public:
     if (auto host_addr = sim->addr_to_mem(paddr))
       return load_reservation_address == refill_tlb(vaddr, paddr, host_addr, STORE).target_offset + vaddr;
     else
-      throw trap_store_access_fault(proc->state.v, vaddr, 0, 0); // disallow SC to I/O space
+      throw trap_store_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0); // disallow SC to I/O space
   }
 
   static const reg_t ICACHE_ENTRIES = 1024;

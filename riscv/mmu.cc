@@ -54,7 +54,7 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
     return addr;
 
   bool mxr = get_field(proc->state.mstatus, MSTATUS_MXR);
-  bool virt = proc->state.v;
+  bool virt = (proc) ? proc->state.v : false;
   reg_t mode = proc->state.prv;
   if (type != FETCH) {
     if (!proc->state.debug_mode && get_field(proc->state.mstatus, MSTATUS_MPRV)) {
@@ -153,7 +153,7 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
     else
       refill_tlb(addr, paddr, host_addr, LOAD);
   } else if (!mmio_load(paddr, len, bytes)) {
-    throw trap_load_access_fault(proc->state.v, addr, 0, 0);
+    throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
   }
 
   if (!matched_trigger) {
@@ -182,7 +182,7 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_
     else
       refill_tlb(addr, paddr, host_addr, STORE);
   } else if (!mmio_store(paddr, len, bytes)) {
-    throw trap_store_access_fault(proc->state.v, addr, 0, 0);
+    throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
   }
 }
 
