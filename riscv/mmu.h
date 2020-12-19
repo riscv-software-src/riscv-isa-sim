@@ -96,7 +96,7 @@ public:
       if (xlate_flags) \
         flush_tlb(); \
       if (unlikely(addr & (sizeof(type##_t)-1))) { \
-        if (require_alignment) throw trap_load_address_misaligned(addr, 0, 0); \
+        if (require_alignment) load_reserved_address_misaligned(addr); \
         else return misaligned_load(addr, sizeof(type##_t)); \
       } \
       reg_t vpn = addr >> PGSHIFT; \
@@ -256,10 +256,28 @@ public:
       throw trap_load_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0); // disallow LR to I/O space
   }
 
+  inline void load_reserved_address_misaligned(reg_t vaddr)
+  {
+#ifdef RISCV_ENABLE_MISALIGNED
+    throw trap_load_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0);
+#else
+    throw trap_load_address_misaligned(vaddr, 0, 0);
+#endif
+  }
+
+  inline void store_conditional_address_misaligned(reg_t vaddr)
+  {
+#ifdef RISCV_ENABLE_MISALIGNED
+    throw trap_store_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0);
+#else
+    throw trap_store_address_misaligned(vaddr, 0, 0);
+#endif
+  }
+
   inline bool check_load_reservation(reg_t vaddr, size_t size)
   {
     if (vaddr & (size-1))
-      throw trap_store_address_misaligned(vaddr, 0, 0);
+      store_conditional_address_misaligned(vaddr);
 
     reg_t paddr = translate(vaddr, 1, STORE, 0);
     if (auto host_addr = sim->addr_to_mem(paddr))
