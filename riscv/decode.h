@@ -2454,7 +2454,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 #define P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
   require_extension('P'); \
-  require(BIT == e16 || BIT == e32); \
+  require(BIT == e16 || BIT == e32 || BIT == e64); \
   reg_t rd_tmp = USE_RD ? RD : 0; \
   reg_t rs1 = RS1; \
   reg_t rs2 = RS2; \
@@ -2466,7 +2466,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 #define P_REDUCTION_ULOOP_BASE(BIT, BIT_INNER, USE_RD) \
   require_extension('P'); \
-  require(BIT == e16 || BIT == e32); \
+  require(BIT == e16 || BIT == e32 || BIT == e64); \
   reg_t rd_tmp = USE_RD ? RD : 0; \
   reg_t rs1 = RS1; \
   reg_t rs2 = RS2; \

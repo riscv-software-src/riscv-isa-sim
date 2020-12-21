@@ -1489,7 +1489,13 @@ disassembler_t::disassembler_t(int xlen)
 	DEFINE_RTYPE(kmaxds)
 	DEFINE_RTYPE(kmsda)
 	DEFINE_RTYPE(kmsxda)
-
+	DEFINE_RTYPE(sclip32)
+	DEFINE_RTYPE(uclip32)
+  DEFINE_ONEOP(clrs32);
+  DEFINE_ONEOP(clz32);
+  DEFINE_ONEOP(clo32);
+	DEFINE_RTYPE(pbsad);
+	DEFINE_RTYPE(pbsada);
   DEFINE_RTYPE(smaqa);
   DEFINE_RTYPE(umaqa);
   DISASM_INSN("smaqa.su", smaqa_su, 0, {&xrd, &xrs1, &xrs2});
