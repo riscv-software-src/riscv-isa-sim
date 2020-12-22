@@ -396,8 +396,7 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
     vediv = 1 << extract64(newType, 8, 2);
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
-           || vsew > ELEN
-           || vflmul < ((float)vsew_min / ELEN)
+           || vsew > std::min(vflmul, 1.0f) * ELEN
            || vediv != 1
            || (newType >> 8) != 0;
 
