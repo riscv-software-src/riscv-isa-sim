@@ -1,4 +1,5 @@
 fesvr_hdrs = \
+  byteorder.h \
   elf.h \
   elfloader.h \
   htif.h \
