@@ -9,6 +9,7 @@
 #include "processor.h"
 #include "simif.h"
 
+#include <util/byteorder.h>
 #include <fesvr/htif.h>
 #include <fesvr/context.h>
 #include <vector>

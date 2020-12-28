@@ -1,3 +1,6 @@
+fesvr_subproject_deps = \
+	util \
+
 fesvr_hdrs = \
   elf.h \
   elfloader.h \

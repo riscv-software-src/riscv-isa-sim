@@ -3,7 +3,6 @@
 #ifndef _RISCV_BYTEORDER_H
 #define _RISCV_BYTEORDER_H
 
-#include "config.h"
 #include <stdint.h>
 
 static inline uint8_t swap(uint8_t n) { return n; }
@@ -15,46 +14,55 @@ static inline int16_t swap(int16_t n) { return int16_t(swap(uint16_t(n))); }
 static inline int32_t swap(int32_t n) { return int32_t(swap(uint32_t(n))); }
 static inline int64_t swap(int64_t n) { return int64_t(swap(uint64_t(n))); }
 
-#ifdef WORDS_BIGENDIAN
-template<typename T> static inline T from_be(T n) { return n; }
-template<typename T> static inline T to_be(T n) { return n; }
-template<typename T> static inline T from_le(T n) { return swap(n); }
-template<typename T> static inline T to_le(T n) { return swap(n); }
-#else
-template<typename T> static inline T from_le(T n) { return n; }
-template<typename T> static inline T to_le(T n) { return n; }
-template<typename T> static inline T from_be(T n) { return swap(n); }
-template<typename T> static inline T to_be(T n) { return swap(n); }
-#endif
+template <typename T> T from_le(T n);
+template <typename T> T to_le(T n);
+template <typename T> T from_be(T n);
+template <typename T> T to_be(T n);
 
 // Wrapper to mark a value as target endian, to guide conversion code
 
-template<typename T> class base_endian {
+template <typename T>
+class base_endian
+{
 
- protected:
+protected:
   T value;
 
   base_endian(T n) : value(n) {}
 
- public:
+public:
   // Setting to and testing against zero never needs swapping
   base_endian() : value(0) {}
   bool operator!() { return !value; }
 
   // Bitwise logic operations can be performed without swapping
-  base_endian& operator|=(const base_endian& rhs) { value |= rhs.value; return *this; }
-  base_endian& operator&=(const base_endian& rhs) { value &= rhs.value; return *this; }
-  base_endian& operator^=(const base_endian& rhs) { value ^= rhs.value; return *this; }
+  base_endian &operator|=(const base_endian &rhs)
+  {
+    value |= rhs.value;
+    return *this;
+  }
+  base_endian &operator&=(const base_endian &rhs)
+  {
+    value &= rhs.value;
+    return *this;
+  }
+  base_endian &operator^=(const base_endian &rhs)
+  {
+    value ^= rhs.value;
+    return *this;
+  }
 
   inline T from_be() { return ::from_be(value); }
   inline T from_le() { return ::from_le(value); }
 };
 
-template<typename T> class target_endian : public base_endian<T> {
- protected:
+template <typename T>
+class target_endian : public base_endian<T>
+{
+protected:
   target_endian(T n) : base_endian<T>(n) {}
 
- public:
+public:
   target_endian() {}
 
   static inline target_endian to_be(T n) { return target_endian(::to_be(n)); }
@@ -65,14 +73,17 @@ template<typename T> class target_endian : public base_endian<T> {
   static const target_endian all_ones;
 };
 
-template<typename T> const target_endian<T> target_endian<T>::zero = target_endian(T(0));
-template<typename T> const target_endian<T> target_endian<T>::all_ones = target_endian(~T(0));
-
+template <typename T>
+const target_endian<T> target_endian<T>::zero = target_endian(T(0));
+template <typename T>
+const target_endian<T> target_endian<T>::all_ones = target_endian(~T(0));
 
 // Specializations with implicit conversions (no swap information needed)
 
-template<> class target_endian<uint8_t> : public base_endian<uint8_t> {
- public:
+template <>
+class target_endian<uint8_t> : public base_endian<uint8_t>
+{
+public:
   target_endian() {}
   target_endian(uint8_t n) : base_endian<uint8_t>(n) {}
   operator uint8_t() { return value; }
@@ -81,8 +92,10 @@ template<> class target_endian<uint8_t> : public base_endian<uint8_t> {
   static inline target_endian to_le(uint8_t n) { return target_endian(n); }
 };
 
-template<> class target_endian<int8_t> : public base_endian<int8_t> {
- public:
+template <>
+class target_endian<int8_t> : public base_endian<int8_t>
+{
+public:
   target_endian() {}
   target_endian(int8_t n) : base_endian<int8_t>(n) {}
   operator int8_t() { return value; }

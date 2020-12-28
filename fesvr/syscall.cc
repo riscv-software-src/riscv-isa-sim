@@ -2,7 +2,7 @@
 
 #include "syscall.h"
 #include "htif.h"
-#include "byteorder.h"
+#include <util/byteorder.h>
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>

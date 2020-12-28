@@ -6,7 +6,7 @@
 #include "memif.h"
 #include "syscall.h"
 #include "device.h"
-#include "byteorder.h"
+#include <util/byteorder.h>
 #include <string.h>
 #include <map>
 #include <vector>

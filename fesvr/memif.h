@@ -5,7 +5,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
-#include "byteorder.h"
+#include <util/byteorder.h>
 
 typedef uint64_t reg_t;
 typedef int64_t sreg_t;

@@ -4634,6 +4634,51 @@ fi
 
     # Add subproject to our running list
 
+    subprojects="$subprojects util"
+
+    # Process the subproject appropriately. If enabled add it to the
+    # $enabled_subprojects running shell variable, set a
+    # SUBPROJECT_ENABLED C define, and include the appropriate
+    # 'subproject.ac'.
+
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: configuring default subproject : util" >&5
+$as_echo "$as_me: configuring default subproject : util" >&6;}
+      ac_config_files="$ac_config_files util.mk:util/util.mk.in"
+
+      enable_util_sproj="yes"
+      subprojects_enabled="$subprojects_enabled util"
+
+$as_echo "#define UTIL_ENABLED /**/" >>confdefs.h
+
+
+
+
+
+
+    # Determine if this is a required or an optional subproject
+
+
+
+    # Determine if there is a group with the same name
+
+
+
+    # Create variations of the subproject name suitable for use as a CPP
+    # enabled define, a shell enabled variable, and a shell function
+
+
+
+
+
+
+
+
+
+
+
+    # Add subproject to our running list
+
     subprojects="$subprojects fesvr"
 
     # Process the subproject appropriately. If enabled add it to the
@@ -5973,6 +6018,7 @@ cat >>$CONFIG_STATUS <<\_ACEOF || ac_write_fail=1
 for ac_config_target in $ac_config_targets
 do
   case $ac_config_target in
+    "util.mk") CONFIG_FILES="$CONFIG_FILES util.mk:util/util.mk.in" ;;
     "fesvr.mk") CONFIG_FILES="$CONFIG_FILES fesvr.mk:fesvr/fesvr.mk.in" ;;
     "riscv.mk") CONFIG_FILES="$CONFIG_FILES riscv.mk:riscv/riscv.mk.in" ;;
     "disasm.mk") CONFIG_FILES="$CONFIG_FILES disasm.mk:disasm/disasm.mk.in" ;;

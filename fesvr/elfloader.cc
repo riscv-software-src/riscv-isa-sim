@@ -2,7 +2,7 @@
 
 #include "elf.h"
 #include "memif.h"
-#include "byteorder.h"
+#include <util/byteorder.h>
 #include <cstring>
 #include <string>
 #include <sys/stat.h>

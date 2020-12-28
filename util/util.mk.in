@@ -1,0 +1,7 @@
+util_hdrs = \
+  byteorder.h \
+
+util_install_hdrs = $(util_hdrs)
+
+fesvr_srcs = \
+  byteorder.cc \

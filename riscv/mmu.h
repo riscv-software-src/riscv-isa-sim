@@ -10,7 +10,7 @@
 #include "simif.h"
 #include "processor.h"
 #include "memtracer.h"
-#include "byteorder.h"
+#include <util/byteorder.h>
 #include <stdlib.h>
 #include <vector>
 

@@ -4,7 +4,7 @@
 #include "rfb.h"
 #include "elfloader.h"
 #include "encoding.h"
-#include "byteorder.h"
+#include <util/byteorder.h>
 #include <algorithm>
 #include <assert.h>
 #include <vector>

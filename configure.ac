@@ -96,7 +96,7 @@ AX_APPEND_LINK_FLAGS([-Wl,--export-dynamic])
 # The '*' suffix indicates an optional subproject. The '**' suffix
 # indicates an optional subproject which is also the name of a group.
 
-MCPPBS_SUBPROJECTS([ fesvr, riscv, disasm, customext, fdt, softfloat, spike_main, spike_dasm ])
+MCPPBS_SUBPROJECTS([ util, fesvr, riscv, disasm, customext, fdt, softfloat, spike_main, spike_dasm ])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject groups
