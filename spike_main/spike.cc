@@ -129,7 +129,7 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
     if (size != size0) {
       fprintf(stderr, "Warning: the memory at  [0x%llX, 0x%llX] has been realigned\n"
                       "to the %ld KiB page size: [0x%llX, 0x%llX]\n",
-              base0, base0 + size0 - 1, PGSIZE / 1024, base, base + size - 1);
+              base0, base0 + size0 - 1, long(PGSIZE / 1024), base, base + size - 1);
     }
 
     res.push_back(std::make_pair(reg_t(base), new mem_t(size)));
