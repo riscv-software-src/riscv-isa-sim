@@ -335,6 +335,7 @@ deps += $$($(2)_deps)
 
 test_outs += $$($(2)_test_outs)
 
+install_config_hdrs += $$(if $$($(2)_install_config_hdr),$(1),)
 install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_install_hdrs))
 install_libs += $$(if $$($(2)_install_lib),lib$(1).a,)
 install_libs += $$(if $$($(2)_install_shared_lib),lib$(1).so,)
@@ -382,6 +383,14 @@ check : check-cpp check-bin
 # Installation
 #-------------------------------------------------------------------------
 
+install-config-hdrs : config.h
+	$(MKINSTALLDIRS) $(install_hdrs_dir)
+	for dir in $(install_config_hdrs); \
+  do \
+		$(MKINSTALLDIRS) $(install_hdrs_dir)/$$dir; \
+    $(INSTALL_HDR) $< $(install_hdrs_dir)/$$dir; \
+  done
+
 install-hdrs : $(install_hdrs)
 	$(MKINSTALLDIRS) $(install_hdrs_dir)
 	for file in $(subst $(src_dir)/,,$^); \
@@ -411,9 +420,9 @@ install-pc : $(install_pcs)
     $(INSTALL_HDR) $$file $(install_libs_dir)/pkgconfig/; \
   done
 
-install : install-hdrs install-libs install-exes install-pc
+install : install-hdrs install-config-hdrs install-libs install-exes install-pc
 
-.PHONY : install install-hdrs install-libs install-exes
+.PHONY : install install-hdrs install-config-hdrs install-libs install-exes
 
 #-------------------------------------------------------------------------
 # Regenerate configure information
