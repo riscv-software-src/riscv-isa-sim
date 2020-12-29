@@ -166,4 +166,12 @@ static inline int clz(uint64_t val)
   return res;
 }
 
+static inline int log2(uint64_t val)
+{
+  if (!val)
+    return 0;
+
+  return 63 - clz(val);
+}
+
 #endif
