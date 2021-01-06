@@ -1074,6 +1074,7 @@ riscv_insn_ext_p_partial_simd = \
 	kmaxds \
 	kmsda \
 	kmsxda \
+	smal \
 	sclip32 \
 	uclip32 \
 	clrs32 \
