@@ -1105,6 +1105,16 @@ riscv_insn_ext_p_64_bit_profile = \
 	kmsr64 \
 	ukmar64 \
 	ukmsr64 \
+	smalbb \
+	smalbt \
+	smaltt \
+	smalda \
+	smalxda \
+	smalds \
+	smaldrs \
+	smalxds \
+	smslda \
+	smslxda \
 
 riscv_insn_ext_p_rv64_only = \
 	kadd32 \
