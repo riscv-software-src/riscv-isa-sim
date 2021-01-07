@@ -1086,6 +1086,18 @@ riscv_insn_ext_p_partial_simd = \
 	umaqa \
 	smaqa_su \
 
+riscv_insn_ext_p_64_bit_profile = \
+	add64 \
+	radd64 \
+	uradd64 \
+	kadd64 \
+	ukadd64 \
+	sub64 \
+	rsub64 \
+	ursub64 \
+	ksub64 \
+	uksub64 \
+
 riscv_insn_ext_p_rv64_only = \
 	kadd32 \
 	pkbb32 \
@@ -1096,6 +1108,7 @@ riscv_insn_ext_p_rv64_only = \
 riscv_insn_ext_p = \
 	$(riscv_insn_ext_p_simd) \
 	$(riscv_insn_ext_p_partial_simd) \
+	$(riscv_insn_ext_p_64_bit_profile) \
 	$(riscv_insn_ext_p_rv64_only) \
 
 riscv_insn_priv = \

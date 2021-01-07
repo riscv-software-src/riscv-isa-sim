@@ -2404,8 +2404,19 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_SH(R, INDEX) P_FIELD(R, INDEX, 16)
 #define P_SW(R, INDEX) P_FIELD(R, INDEX, 32)
 
+#define READ_REG_PAIR(reg) \
+  ((zext32(READ_REG(reg + 1)) << 32) + zext32(READ_REG(reg)))\
+
+#define RS1_PAIR READ_REG_PAIR(insn.rs1())
+#define RS2_PAIR READ_REG_PAIR(insn.rs2())
+#define RD_PAIR READ_REG_PAIR(insn.rd())
+
 #define WRITE_PD() \
   rd_tmp = set_field(rd_tmp, make_mask64((i * sizeof(pd) * 8), sizeof(pd) * 8), pd);
+
+#define WRITE_RD_PAIR(value) \
+  WRITE_REG(insn.rd(), zext32(value)); \
+  WRITE_REG(insn.rd() + 1, ((reg_t)value) >> 32);
 
 #define P_LOOP_BASE(BIT) \
   require_extension('P'); \
@@ -2814,6 +2825,44 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   }; \
   memcpy(&rd_tmp, pd, size); \
   WRITE_RD(rd_tmp);
+
+#define P_64_PROFILE_BASE() \
+  require_extension('P'); \
+  sreg_t rd, rs1, rs2;
+
+#define P_64_UPROFILE_BASE() \
+  require_extension('P'); \
+  reg_t rd, rs1, rs2;
+
+#define P_64_PROFILE_PARAM(USE_RD, INPUT_PAIR) \
+  if (xlen == 32) { \
+    rs1 = INPUT_PAIR ? RS1_PAIR : RS1; \
+    rs2 = INPUT_PAIR ? RS2_PAIR : RS2; \
+    rd = USE_RD ? RD_PAIR : 0; \
+  } else { \
+    rs1 = RS1; \
+    rs2 = RS2; \
+    rd = USE_RD ? RD : 0; \
+  }
+
+#define P_64_PROFILE(BODY) \
+  P_64_PROFILE_BASE() \
+  P_64_PROFILE_PARAM(false, true) \
+  BODY \
+  P_64_PROFILE_END() \
+
+#define P_64_UPROFILE(BODY) \
+  P_64_UPROFILE_BASE() \
+  P_64_PROFILE_PARAM(false, true) \
+  BODY \
+  P_64_PROFILE_END() \
+
+#define P_64_PROFILE_END() \
+  if (xlen == 32) { \
+    WRITE_RD_PAIR(rd); \
+  } else { \
+    WRITE_RD(rd); \
+  }
 
 #define DEBUG_START             0x0
 #define DEBUG_END               (0x1000 - 1)
