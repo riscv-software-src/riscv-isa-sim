@@ -2418,6 +2418,23 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   WRITE_REG(insn.rd(), zext32(value)); \
   WRITE_REG(insn.rd() + 1, ((reg_t)value) >> 32);
 
+#define P_SAT(R, BIT) \
+  if (R > INT##BIT##_MAX) { \
+    R = INT##BIT##_MAX; \
+    P.VU.vxsat |= 1; \
+  } else if (R < INT##BIT##_MIN) { \
+    R = INT##BIT##_MIN; \
+    P.VU.vxsat |= 1; \
+  }
+
+#define P_SATU(R, BIT) \
+  if (R > UINT##BIT##_MAX) { \
+    R = UINT##BIT##_MAX; \
+    P.VU.vxsat |= 1; \
+  } else if (R < 0) { \
+    R = 0; \
+  }
+
 #define P_LOOP_BASE(BIT) \
   require_extension('P'); \
   require(BIT == e8 || BIT == e16 || BIT == e32); \
@@ -2756,13 +2773,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_REDUCTION_LOOP_END(BIT, IS_SAT) \
     } \
     if (IS_SAT) { \
-      if (pd_res > INT##BIT##_MAX) { \
-        pd_res = INT##BIT##_MAX; \
-        P.VU.vxsat |= 1; \
-      } else if (pd_res < INT##BIT##_MIN) { \
-        pd_res = INT##BIT##_MIN; \
-        P.VU.vxsat |= 1; \
-      } \
+      P_SAT(pd_res, BIT); \
     } \
     type_usew_t<BIT>::type pd = pd_res; \
     WRITE_PD(); \
@@ -2772,10 +2783,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_REDUCTION_ULOOP_END(BIT, IS_SAT) \
     } \
     if (IS_SAT) { \
-      if (pd_res > UINT##BIT##_MAX) { \
-        pd_res = UINT##BIT##_MAX; \
-        P.VU.vxsat |= 1; \
-      } \
+      P_SATU(pd_res, BIT); \
     } \
     type_usew_t<BIT>::type pd = pd_res; \
     WRITE_PD(); \
