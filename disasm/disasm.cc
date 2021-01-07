@@ -1489,6 +1489,7 @@ disassembler_t::disassembler_t(int xlen)
 	DEFINE_RTYPE(kmaxds)
 	DEFINE_RTYPE(kmsda)
 	DEFINE_RTYPE(kmsxda)
+	DEFINE_RTYPE(smal)
 	DEFINE_RTYPE(sclip32)
 	DEFINE_RTYPE(uclip32)
   DEFINE_ONEOP(clrs32);
@@ -1499,6 +1500,35 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(smaqa);
   DEFINE_RTYPE(umaqa);
   DISASM_INSN("smaqa.su", smaqa_su, 0, {&xrd, &xrs1, &xrs2});
+
+  DEFINE_RTYPE(add64);
+	DEFINE_RTYPE(radd64);
+	DEFINE_RTYPE(uradd64);
+	DEFINE_RTYPE(kadd64);
+	DEFINE_RTYPE(ukadd64);
+	DEFINE_RTYPE(sub64);
+	DEFINE_RTYPE(rsub64);
+	DEFINE_RTYPE(ursub64);
+	DEFINE_RTYPE(ksub64);
+	DEFINE_RTYPE(uksub64);
+	DEFINE_RTYPE(smar64);
+	DEFINE_RTYPE(smsr64);
+	DEFINE_RTYPE(umar64);
+	DEFINE_RTYPE(umsr64);
+	DEFINE_RTYPE(kmar64);
+	DEFINE_RTYPE(kmsr64);
+	DEFINE_RTYPE(ukmar64);
+	DEFINE_RTYPE(ukmsr64);
+	DEFINE_RTYPE(smalbb);
+	DEFINE_RTYPE(smalbt);
+	DEFINE_RTYPE(smaltt);
+	DEFINE_RTYPE(smalda);
+	DEFINE_RTYPE(smalxda);
+	DEFINE_RTYPE(smalds);
+	DEFINE_RTYPE(smaldrs);
+	DEFINE_RTYPE(smalxds);
+	DEFINE_RTYPE(smslda);
+	DEFINE_RTYPE(smslxda);
 
   if (xlen == 32) {
     DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
