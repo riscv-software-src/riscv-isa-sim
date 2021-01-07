@@ -1097,6 +1097,14 @@ riscv_insn_ext_p_64_bit_profile = \
 	ursub64 \
 	ksub64 \
 	uksub64 \
+	smar64 \
+	smsr64 \
+	umar64 \
+	umsr64 \
+	kmar64 \
+	kmsr64 \
+	ukmar64 \
+	ukmsr64 \
 
 riscv_insn_ext_p_rv64_only = \
 	kadd32 \

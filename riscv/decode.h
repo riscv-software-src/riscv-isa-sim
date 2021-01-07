@@ -2857,6 +2857,26 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   BODY \
   P_64_PROFILE_END() \
 
+#define P_64_PROFILE_REDUCTION(BIT, BODY) \
+  P_64_PROFILE_BASE() \
+  P_64_PROFILE_PARAM(true, false) \
+  for (sreg_t i = 0; i < xlen / BIT; i++) { \
+    sreg_t ps1 = P_FIELD(rs1, i, BIT); \
+    sreg_t ps2 = P_FIELD(rs2, i, BIT); \
+    BODY \
+  } \
+  P_64_PROFILE_END() \
+
+#define P_64_UPROFILE_REDUCTION(BIT, BODY) \
+  P_64_UPROFILE_BASE() \
+  P_64_PROFILE_PARAM(true, false) \
+  for (sreg_t i = 0; i < xlen / BIT; i++) { \
+    reg_t ps1 = P_UFIELD(rs1, i, BIT); \
+    reg_t ps2 = P_UFIELD(rs2, i, BIT); \
+    BODY \
+  } \
+  P_64_PROFILE_END() \
+
 #define P_64_PROFILE_END() \
   if (xlen == 32) { \
     WRITE_RD_PAIR(rd); \
