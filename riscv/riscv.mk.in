@@ -334,31 +334,26 @@ riscv_insn_ext_q = \
 	fsub_q \
 
 riscv_insn_ext_b = \
-	addiwu \
-	addu_w \
-	addwu \
+	add_uw \
 	andn \
-	bdep \
-	bdepw \
-	bext \
-	bextw \
+	bdecompress \
+	bdecompressw \
+	bcompress \
+	bcompressw \
 	bfp \
 	bfpw \
 	bmatflip \
 	bmator \
 	bmatxor \
 	sh1add \
-	sh1addu_w \
+	sh1add_uw \
 	sh2add \
-	sh2addu_w \
+	sh2add_uw \
 	sh3add \
-	sh3addu_w \
+	sh3add_uw \
 	clmul \
 	clmulh \
-	clmulhw \
 	clmulr \
-	clmulrw \
-	clmulw \
 	clz \
 	clzw \
 	cmix \
@@ -397,35 +392,28 @@ riscv_insn_ext_b = \
 	packu \
 	packuw \
 	packw \
-	pcnt \
-	pcntw \
+	cpop \
+	cpopw \
 	rol \
 	rolw \
 	ror \
 	rori \
 	roriw \
 	rorw \
-	sbclr \
-	sbclri \
-	sbclriw \
-	sbclrw \
-	sbext \
-	sbexti \
-	sbextw \
-	sbinv \
-	sbinvi \
-	sbinviw \
-	sbinvw \
-	sbset \
-	sbseti \
-	sbsetiw \
-	sbsetw \
+	bclr \
+	bclri \
+	bext \
+	bexti \
+	binv \
+	binvi \
+	bset \
+	bseti \
 	sext_b \
 	sext_h \
 	shfl \
 	shfli \
 	shflw \
-	slliu_w \
+	slli_uw \
 	slo \
 	sloi \
 	sloiw \
@@ -434,7 +422,6 @@ riscv_insn_ext_b = \
 	sroi \
 	sroiw \
 	srow \
-	subwu \
 	unshfl \
 	unshfli \
 	unshflw \
