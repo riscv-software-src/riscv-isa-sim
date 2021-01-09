@@ -752,13 +752,11 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_XFTYPE(fcvt_q_w);
   DEFINE_XFTYPE(fcvt_q_wu);
   DEFINE_XFTYPE(fcvt_q_wu);
-  DEFINE_XFTYPE(fmv_q_x);
   DEFINE_FXTYPE(fcvt_l_q);
   DEFINE_FXTYPE(fcvt_lu_q);
   DEFINE_FXTYPE(fcvt_w_q);
   DEFINE_FXTYPE(fcvt_wu_q);
   DEFINE_FXTYPE(fclass_q);
-  DEFINE_FXTYPE(fmv_x_q);
   DEFINE_FX2TYPE(feq_q);
   DEFINE_FX2TYPE(flt_q);
   DEFINE_FX2TYPE(fle_q);
