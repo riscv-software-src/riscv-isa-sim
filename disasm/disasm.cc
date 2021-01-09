@@ -398,7 +398,7 @@ disassembler_t::disassembler_t(int xlen)
   const uint32_t match_rs1_ra = 1UL << 15;
   const uint32_t mask_rs2 = 0x1fUL << 20;
   const uint32_t mask_imm = 0xfffUL << 20;
-  const uint32_t match_imm_1 = 1UL << 20;
+  const uint32_t imm_shift = 20;
   const uint32_t mask_rvc_rs2 = 0x1fUL << 2;
   const uint32_t mask_rvc_imm = mask_rvc_rs2 | 0x1000UL;
   const uint32_t mask_nf = 0x7Ul << 29;
@@ -519,7 +519,7 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_I1TYPE("mv", addi);
   DEFINE_ITYPE(addi);
   DEFINE_ITYPE(slti);
-  add_insn(new disasm_insn_t("seqz", match_sltiu | match_imm_1, mask_sltiu | mask_imm, {&xrd, &xrs1}));
+  add_insn(new disasm_insn_t("seqz", match_sltiu | (1 << imm_shift), mask_sltiu | mask_imm, {&xrd, &xrs1}));
   DEFINE_ITYPE(sltiu);
   add_insn(new disasm_insn_t("not", match_xori | mask_imm, mask_xori | mask_imm, {&xrd, &xrs1}));
   DEFINE_ITYPE(xori);
@@ -567,17 +567,15 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(remw);
   DEFINE_RTYPE(remuw);
 
-  DEFINE_ITYPE_SHIFT(slliu_w);
-  DEFINE_RTYPE(addu_w);
+  DEFINE_ITYPE_SHIFT(slli_uw);
+  add_insn(new disasm_insn_t("zext.w", match_add_uw, mask_add_uw | mask_rs2, {&xrd, &xrs1}));
+  DEFINE_RTYPE(add_uw);
   DEFINE_RTYPE(sh1add);
   DEFINE_RTYPE(sh2add);
   DEFINE_RTYPE(sh3add);
-  DEFINE_RTYPE(sh1addu_w);
-  DEFINE_RTYPE(sh2addu_w);
-  DEFINE_RTYPE(sh3addu_w);
-  DEFINE_RTYPE(addwu);
-  DEFINE_RTYPE(subwu);
-  DEFINE_ITYPE(addiwu);
+  DEFINE_RTYPE(sh1add_uw);
+  DEFINE_RTYPE(sh2add_uw);
+  DEFINE_RTYPE(sh3add_uw);
   DEFINE_RTYPE(ror);
   DEFINE_RTYPE(rorw);
   DEFINE_RTYPE(rol);
@@ -588,8 +586,8 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_R1TYPE(ctzw);
   DEFINE_R1TYPE(clz);
   DEFINE_R1TYPE(clzw);
-  DEFINE_R1TYPE(pcnt);
-  DEFINE_R1TYPE(pcntw);
+  DEFINE_R1TYPE(cpop);
+  DEFINE_R1TYPE(cpopw);
   DEFINE_RTYPE(min);
   DEFINE_RTYPE(minu);
   DEFINE_RTYPE(max);
@@ -599,11 +597,14 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(xnor);
   DEFINE_R1TYPE(sext_b);
   DEFINE_R1TYPE(sext_h);
+  add_insn(new disasm_insn_t("zext.h", (xlen == 32 ? match_pack : match_packw), mask_pack | mask_rs2, {&xrd, &xrs1}));
   DEFINE_RTYPE(pack);
   DEFINE_RTYPE(packw);
   DEFINE_RTYPE(grev);
+  add_insn(new disasm_insn_t("rev8", match_grevi | ((xlen == 32 ? 0x18 : 0x38) << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
   DEFINE_ITYPE_SHIFT(grevi);
   DEFINE_RTYPE(gorc);
+  add_insn(new disasm_insn_t("orc.b", match_gorci | (0x7 << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
   DEFINE_ITYPE_SHIFT(gorci);
 
   DEFINE_NOARG(ecall);
