@@ -1124,6 +1124,16 @@ riscv_insn_ext_p_non_simd = \
 	khmtt \
 	ukaddh \
 	uksubh \
+	raddw \
+	uraddw \
+	rsubw \
+	ursubw \
+	maxw \
+	minw \
+	mulr64 \
+	mulsr64 \
+	msubr32 \
+
 riscv_insn_ext_p_rv64_only = \
 	kadd32 \
 	pkbb32 \
