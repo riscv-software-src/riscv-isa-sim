@@ -3,6 +3,6 @@ P_LOOP(16, {
     pd = (ps1 * ps2) >> 15;
   } else {
     pd = INT16_MAX;
-    P.VU.vxsat = 1;
+    P.VU.vxsat |= 1;
   }
 })
