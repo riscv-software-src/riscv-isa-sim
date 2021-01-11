@@ -55,6 +55,9 @@ install path.
     $ make
     $ [sudo] make install
 
+If your system uses the `yum` package manager, you can substitute
+`yum install dtc` for the first step.
+
 Build Steps on OpenBSD
 ----------------------
 
