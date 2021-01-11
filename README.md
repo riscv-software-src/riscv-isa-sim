@@ -49,6 +49,8 @@ We assume that the RISCV environment variable is set to the RISC-V tools
 install path.
 
     $ apt-get install device-tree-compiler
+    $ # or
+    $ yum install dtc
     $ mkdir build
     $ cd build
     $ ../configure --prefix=$RISCV
