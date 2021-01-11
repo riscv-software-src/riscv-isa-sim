@@ -138,6 +138,7 @@ public:
   uint64_t p_imm4() { return x(20, 4); }
   uint64_t p_imm5() { return x(20, 5); }
   uint64_t p_imm6() { return x(20, 6); }
+  uint64_t p_rc() { return x(25, 5); }
 
 private:
   insn_bits_t b;
