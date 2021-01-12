@@ -1124,6 +1124,21 @@ riscv_insn_ext_p_non_simd = \
 	khmtt \
 	ukaddh \
 	uksubh \
+	kaddw \
+	ukaddw \
+	ksubw \
+	uksubw \
+	kdmbb \
+	kdmbt \
+	kdmtt \
+	kslraw \
+	kslraw_u \
+	ksllw \
+	kslliw \
+	kdmabb \
+	kdmabt \
+	kdmatt \
+	kabsw \
 	raddw \
 	uraddw \
 	rsubw \
