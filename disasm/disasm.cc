@@ -407,6 +407,12 @@ struct : public arg_t {
   }
 } p_imm6;
 
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.p_rc());
+  }
+} p_rc;
+
 typedef struct {
   reg_t match;
   reg_t mask;
@@ -1530,12 +1536,54 @@ disassembler_t::disassembler_t(int xlen)
 	DEFINE_RTYPE(smslda);
 	DEFINE_RTYPE(smslxda);
 
+	DEFINE_RTYPE(kaddh);
+	DEFINE_RTYPE(ksubh);
+	DEFINE_RTYPE(khmbb);
+	DEFINE_RTYPE(khmbt);
+	DEFINE_RTYPE(khmtt);
+	DEFINE_RTYPE(ukaddh);
+	DEFINE_RTYPE(uksubh);
+	DEFINE_RTYPE(kaddw);
+	DEFINE_RTYPE(ukaddw);
+	DEFINE_RTYPE(ksubw);
+	DEFINE_RTYPE(uksubw);
+	DEFINE_RTYPE(kdmbb);
+	DEFINE_RTYPE(kdmbt);
+	DEFINE_RTYPE(kdmtt);
+	DEFINE_RTYPE(kslraw);
+  DISASM_INSN("kslraw.u", kslraw_u, 0, {&xrd, &xrs1, &xrs2});
+	DEFINE_RTYPE(ksllw);
+	DEFINE_PITYTPE(kslliw, 5);
+	DEFINE_RTYPE(kdmabb);
+	DEFINE_RTYPE(kdmabt);
+	DEFINE_RTYPE(kdmatt);
+	DEFINE_RTYPE(kabsw);
+	DEFINE_RTYPE(raddw);
+	DEFINE_RTYPE(uraddw);
+	DEFINE_RTYPE(rsubw);
+	DEFINE_RTYPE(ursubw);
+	DEFINE_RTYPE(maxw);
+	DEFINE_RTYPE(minw);
+	DEFINE_RTYPE(mulr64);
+	DEFINE_RTYPE(mulsr64);
+	DEFINE_RTYPE(msubr32);
+	DEFINE_RTYPE(ave);
+  DISASM_INSN("sra.u", sra_u, 0, {&xrd, &xrs1, &xrs2});
+  DISASM_INSN("srai.u", srai_u, 0, {&xrd, &xrs1, &p_imm5});
+	DEFINE_RTYPE(bitrev);
+	DEFINE_RTYPE(wext);
+	DEFINE_PITYTPE(wexti, 5);
+  DISASM_INSN("bpick", bpick, 0, {&xrd, &xrs1, &xrs2, &p_rc});
+	DEFINE_PITYTPE(insb, 3);
+	DEFINE_RTYPE(maddr32)
+
   if (xlen == 32) {
     DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
     DISASM_INSN("c.flwsp", c_flwsp, 0, {&frd, &rvc_lwsp_address});
     DISASM_INSN("c.fsw", c_fsw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
     DISASM_INSN("c.fswsp", c_fswsp, 0, {&rvc_fp_rs2, &rvc_swsp_address});
     DISASM_INSN("c.jal", c_jal, 0, {&rvc_jump_target});
+  	DEFINE_PITYTPE(bitrevi, 5);
   } else {
     DISASM_INSN("c.ld", c_ld, 0, {&rvc_rs2s, &rvc_ld_address});
     DISASM_INSN("c.ldsp", c_ldsp, 0, {&xrd, &rvc_ldsp_address});
@@ -1547,6 +1595,7 @@ disassembler_t::disassembler_t(int xlen)
     DEFINE_RTYPE(pktb32);
     DEFINE_RTYPE(pktt32);
     DEFINE_RTYPE(kadd32);
+  	DEFINE_PITYTPE(bitrevi, 6);
   }
 
   // provide a default disassembly for all instructions as a fallback
