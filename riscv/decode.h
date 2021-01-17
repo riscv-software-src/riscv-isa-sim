@@ -2391,7 +2391,9 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
       break; \
   }
 
-// rvp macro
+// The p-extension support is contributed by
+// Programming Langauge Lab, Department of Computer Science, National Tsing-Hua University, Taiwan
+
 #define P_FIELD(R, INDEX, SIZE) \
   (type_sew_t<SIZE>::type)get_field(R, make_mask64(((INDEX) * SIZE), SIZE))
 

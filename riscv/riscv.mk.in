@@ -1160,7 +1160,36 @@ riscv_insn_ext_p_non_simd = \
 	maddr32 \
 
 riscv_insn_ext_p_rv64_only = \
+	add32 \
+	radd32 \
+	uradd32 \
 	kadd32 \
+	ukadd32 \
+	sub32 \
+	rsub32 \
+	ursub32 \
+	ksub32 \
+	uksub32 \
+	cras32 \
+	rcras32 \
+	urcras32 \
+	kcras32 \
+	ukcras32 \
+	crsa32 \
+	rcrsa32 \
+	urcrsa32 \
+	kcrsa32 \
+	ukcrsa32 \
+	stas32 \
+	rstas32 \
+	urstas32 \
+	kstas32 \
+	ukstas32 \
+	stsa32 \
+	rstsa32 \
+	urstsa32 \
+	kstsa32 \
+	ukstsa32 \
 	pkbb32 \
 	pkbt32 \
 	pktb32 \
