@@ -426,6 +426,10 @@ riscv_insn_ext_b = \
 	unshfli \
 	unshflw \
 	xnor \
+	xperm_n \
+	xperm_b \
+	xperm_h \
+	xperm_w \
 
 riscv_insn_ext_v_alu_int = \
 	vaadd_vv \

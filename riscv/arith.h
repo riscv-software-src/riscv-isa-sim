@@ -6,6 +6,7 @@
 #include <cassert>
 #include <cstdint>
 #include <climits>
+#include <cstddef>
 
 inline uint64_t mulhu(uint64_t a, uint64_t b)
 {
@@ -172,6 +173,23 @@ static inline int log2(uint64_t val)
     return 0;
 
   return 63 - clz(val);
+}
+
+static inline uint64_t xperm(uint64_t rs1, uint64_t rs2, size_t sz_log2, size_t len)
+{
+  uint64_t r = 0;
+  uint64_t sz = 1LL << sz_log2;
+  uint64_t mask = (1LL << sz) - 1;
+
+  assert(sz_log2 <= 6 && len <= 64);
+
+  for (size_t i = 0; i < len; i += sz) {
+    uint64_t pos = ((rs2 >> i) & mask) << sz_log2;
+    if (pos < len)
+      r |= ((rs1 >> pos) & mask) << i;
+  }
+
+  return r;
 }
 
 #endif
