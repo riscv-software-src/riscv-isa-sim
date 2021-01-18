@@ -1,5 +1,5 @@
-P_X_ULOOP(8, 3, {
-  bool sat = false;
-  pd = (sat_shl<int8_t, uint8_t>(ps1, sa, sat));
-  P.VU.vxsat |= sat;
+P_X_LOOP(8, 3, {
+  auto res = (sreg_t)ps1 << sa;
+  P_SAT(res, 8);
+  pd = res;
 })

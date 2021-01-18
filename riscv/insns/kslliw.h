@@ -1,7 +1,7 @@
 require_extension('P');
-sreg_t rs1 = sext_xlen(RS1);
+sreg_t rs1 = sext32(RS1);
 sreg_t sa = insn.p_imm5();
-bool sat = false;
+sreg_t res = rs1 << sa;
 
-WRITE_RD(sext_xlen((sat_shl<int32_t, uint32_t>(rs1, sa, sat))));
-P.VU.vxsat |= sat;
+P_SAT(res, 32);
+WRITE_RD(sext32(res));

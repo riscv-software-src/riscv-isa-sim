@@ -7,9 +7,8 @@ P_X_LOOP(8, 4, {
     else
       pd = ps1;
   } else {
-    sa = ssa;
-    bool sat = false;
-    pd = (sat_shl<int8_t, uint8_t>(ps1, sa, sat));
-    P.VU.vxsat |= sat;
+    auto res = (sreg_t)ps1 << ssa;
+    P_SAT(res, 8);
+    pd = res;
   }
 })

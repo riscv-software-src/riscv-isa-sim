@@ -1,5 +1,5 @@
-P_I_ULOOP(16, 4, {
-  bool sat = false;
-  pd = (sat_shl<int16_t, uint16_t>(ps1, imm4u, sat));
-  P.VU.vxsat |= sat;
+P_I_LOOP(16, 4, {
+  auto res = (sreg_t)ps1 << imm4u;
+  P_SAT(res, 16);
+  pd = res;
 })

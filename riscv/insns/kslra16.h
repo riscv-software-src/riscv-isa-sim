@@ -4,9 +4,8 @@ P_X_LOOP(16, 5, {
     sa = (sa == 16) ? 15 : sa;
     pd = ps1 >> sa;
   } else {
-    sa = ssa;
-    bool sat = false;
-    pd = (sat_shl<int16_t, uint16_t>(ps1, sa, sat));
-    P.VU.vxsat |= sat;
+    auto res = (sreg_t)ps1 << ssa;
+    P_SAT(res, 16);
+    pd = res;
   }
 })
