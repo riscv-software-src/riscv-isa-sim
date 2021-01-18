@@ -606,6 +606,10 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(gorc);
   add_insn(new disasm_insn_t("orc.b", match_gorci | (0x7 << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
   DEFINE_ITYPE_SHIFT(gorci);
+  DEFINE_RTYPE(xperm_n);
+  DEFINE_RTYPE(xperm_b);
+  DEFINE_RTYPE(xperm_h);
+  DEFINE_RTYPE(xperm_w);
 
   DEFINE_NOARG(ecall);
   DEFINE_NOARG(ebreak);
