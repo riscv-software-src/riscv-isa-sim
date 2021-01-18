@@ -1190,6 +1190,20 @@ riscv_insn_ext_p_rv64_only = \
 	urstsa32 \
 	kstsa32 \
 	ukstsa32 \
+	sra32 \
+	srai32 \
+	sra32_u \
+	srai32_u \
+	srl32 \
+	srli32 \
+	srl32_u \
+	srli32_u \
+	sll32 \
+	slli32 \
+	ksll32 \
+	kslli32 \
+	kslra32 \
+	kslra32_u \
 	pkbb32 \
 	pkbt32 \
 	pktb32 \
