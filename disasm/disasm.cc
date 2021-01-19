@@ -1351,7 +1351,7 @@ disassembler_t::disassembler_t(int xlen)
     }
   }
 
-#define DEFINE_PITYTPE(code, immbti) DISASM_INSN(#code, code, 0, {&xrd, &xrs1, &p_imm##immbti});
+#define DEFINE_PITYTPE(code, immbit) DISASM_INSN(#code, code, 0, {&xrd, &xrs1, &p_imm##immbit});
 #define DEFINE_ONEOP(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs1});
 
 #define DISASM_8_AND_16_RINSN(code) \
@@ -1432,7 +1432,7 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_8_AND_16_RINSN(umulx);
   DISASM_8_AND_16_RINSN(khm);
   DISASM_8_AND_16_RINSN(khmx);
-  
+
   DISASM_8_AND_16_RINSN(smin);
   DISASM_8_AND_16_RINSN(umin);
   DISASM_8_AND_16_RINSN(smax);
@@ -1460,7 +1460,7 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_ONEOP(zunpkd830);
   DEFINE_ONEOP(zunpkd831);
   DEFINE_ONEOP(zunpkd832);
-  
+
   DEFINE_RTYPE(pkbb16);
   DEFINE_RTYPE(pkbt16);
   DEFINE_RTYPE(pktb16);
@@ -1478,104 +1478,104 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_RINSN_AND_ROUND(kmmawb2);
   DISASM_RINSN_AND_ROUND(kmmawt2);
   DEFINE_RTYPE(smbb16)
-	DEFINE_RTYPE(smbt16)
-	DEFINE_RTYPE(smtt16)
-	DEFINE_RTYPE(kmda)
-	DEFINE_RTYPE(kmxda)
-	DEFINE_RTYPE(smds)
-	DEFINE_RTYPE(smdrs)
-	DEFINE_RTYPE(smxds)
-	DEFINE_RTYPE(kmabb)
-	DEFINE_RTYPE(kmabt)
-	DEFINE_RTYPE(kmatt)
-	DEFINE_RTYPE(kmada)
-	DEFINE_RTYPE(kmaxda)
-	DEFINE_RTYPE(kmads)
-	DEFINE_RTYPE(kmadrs)
-	DEFINE_RTYPE(kmaxds)
-	DEFINE_RTYPE(kmsda)
-	DEFINE_RTYPE(kmsxda)
-	DEFINE_RTYPE(smal)
-	DEFINE_RTYPE(sclip32)
-	DEFINE_RTYPE(uclip32)
+  DEFINE_RTYPE(smbt16)
+  DEFINE_RTYPE(smtt16)
+  DEFINE_RTYPE(kmda)
+  DEFINE_RTYPE(kmxda)
+  DEFINE_RTYPE(smds)
+  DEFINE_RTYPE(smdrs)
+  DEFINE_RTYPE(smxds)
+  DEFINE_RTYPE(kmabb)
+  DEFINE_RTYPE(kmabt)
+  DEFINE_RTYPE(kmatt)
+  DEFINE_RTYPE(kmada)
+  DEFINE_RTYPE(kmaxda)
+  DEFINE_RTYPE(kmads)
+  DEFINE_RTYPE(kmadrs)
+  DEFINE_RTYPE(kmaxds)
+  DEFINE_RTYPE(kmsda)
+  DEFINE_RTYPE(kmsxda)
+  DEFINE_RTYPE(smal)
+  DEFINE_RTYPE(sclip32)
+  DEFINE_RTYPE(uclip32)
   DEFINE_ONEOP(clrs32);
   DEFINE_ONEOP(clz32);
   DEFINE_ONEOP(clo32);
-	DEFINE_RTYPE(pbsad);
-	DEFINE_RTYPE(pbsada);
+  DEFINE_RTYPE(pbsad);
+  DEFINE_RTYPE(pbsada);
   DEFINE_RTYPE(smaqa);
   DEFINE_RTYPE(umaqa);
   DISASM_INSN("smaqa.su", smaqa_su, 0, {&xrd, &xrs1, &xrs2});
 
   DEFINE_RTYPE(add64);
-	DEFINE_RTYPE(radd64);
-	DEFINE_RTYPE(uradd64);
-	DEFINE_RTYPE(kadd64);
-	DEFINE_RTYPE(ukadd64);
-	DEFINE_RTYPE(sub64);
-	DEFINE_RTYPE(rsub64);
-	DEFINE_RTYPE(ursub64);
-	DEFINE_RTYPE(ksub64);
-	DEFINE_RTYPE(uksub64);
-	DEFINE_RTYPE(smar64);
-	DEFINE_RTYPE(smsr64);
-	DEFINE_RTYPE(umar64);
-	DEFINE_RTYPE(umsr64);
-	DEFINE_RTYPE(kmar64);
-	DEFINE_RTYPE(kmsr64);
-	DEFINE_RTYPE(ukmar64);
-	DEFINE_RTYPE(ukmsr64);
-	DEFINE_RTYPE(smalbb);
-	DEFINE_RTYPE(smalbt);
-	DEFINE_RTYPE(smaltt);
-	DEFINE_RTYPE(smalda);
-	DEFINE_RTYPE(smalxda);
-	DEFINE_RTYPE(smalds);
-	DEFINE_RTYPE(smaldrs);
-	DEFINE_RTYPE(smalxds);
-	DEFINE_RTYPE(smslda);
-	DEFINE_RTYPE(smslxda);
+  DEFINE_RTYPE(radd64);
+  DEFINE_RTYPE(uradd64);
+  DEFINE_RTYPE(kadd64);
+  DEFINE_RTYPE(ukadd64);
+  DEFINE_RTYPE(sub64);
+  DEFINE_RTYPE(rsub64);
+  DEFINE_RTYPE(ursub64);
+  DEFINE_RTYPE(ksub64);
+  DEFINE_RTYPE(uksub64);
+  DEFINE_RTYPE(smar64);
+  DEFINE_RTYPE(smsr64);
+  DEFINE_RTYPE(umar64);
+  DEFINE_RTYPE(umsr64);
+  DEFINE_RTYPE(kmar64);
+  DEFINE_RTYPE(kmsr64);
+  DEFINE_RTYPE(ukmar64);
+  DEFINE_RTYPE(ukmsr64);
+  DEFINE_RTYPE(smalbb);
+  DEFINE_RTYPE(smalbt);
+  DEFINE_RTYPE(smaltt);
+  DEFINE_RTYPE(smalda);
+  DEFINE_RTYPE(smalxda);
+  DEFINE_RTYPE(smalds);
+  DEFINE_RTYPE(smaldrs);
+  DEFINE_RTYPE(smalxds);
+  DEFINE_RTYPE(smslda);
+  DEFINE_RTYPE(smslxda);
 
-	DEFINE_RTYPE(kaddh);
-	DEFINE_RTYPE(ksubh);
-	DEFINE_RTYPE(khmbb);
-	DEFINE_RTYPE(khmbt);
-	DEFINE_RTYPE(khmtt);
-	DEFINE_RTYPE(ukaddh);
-	DEFINE_RTYPE(uksubh);
-	DEFINE_RTYPE(kaddw);
-	DEFINE_RTYPE(ukaddw);
-	DEFINE_RTYPE(ksubw);
-	DEFINE_RTYPE(uksubw);
-	DEFINE_RTYPE(kdmbb);
-	DEFINE_RTYPE(kdmbt);
-	DEFINE_RTYPE(kdmtt);
-	DEFINE_RTYPE(kslraw);
+  DEFINE_RTYPE(kaddh);
+  DEFINE_RTYPE(ksubh);
+  DEFINE_RTYPE(khmbb);
+  DEFINE_RTYPE(khmbt);
+  DEFINE_RTYPE(khmtt);
+  DEFINE_RTYPE(ukaddh);
+  DEFINE_RTYPE(uksubh);
+  DEFINE_RTYPE(kaddw);
+  DEFINE_RTYPE(ukaddw);
+  DEFINE_RTYPE(ksubw);
+  DEFINE_RTYPE(uksubw);
+  DEFINE_RTYPE(kdmbb);
+  DEFINE_RTYPE(kdmbt);
+  DEFINE_RTYPE(kdmtt);
+  DEFINE_RTYPE(kslraw);
   DISASM_INSN("kslraw.u", kslraw_u, 0, {&xrd, &xrs1, &xrs2});
-	DEFINE_RTYPE(ksllw);
-	DEFINE_PITYTPE(kslliw, 5);
-	DEFINE_RTYPE(kdmabb);
-	DEFINE_RTYPE(kdmabt);
-	DEFINE_RTYPE(kdmatt);
-	DEFINE_RTYPE(kabsw);
-	DEFINE_RTYPE(raddw);
-	DEFINE_RTYPE(uraddw);
-	DEFINE_RTYPE(rsubw);
-	DEFINE_RTYPE(ursubw);
-	DEFINE_RTYPE(maxw);
-	DEFINE_RTYPE(minw);
-	DEFINE_RTYPE(mulr64);
-	DEFINE_RTYPE(mulsr64);
-	DEFINE_RTYPE(msubr32);
-	DEFINE_RTYPE(ave);
+  DEFINE_RTYPE(ksllw);
+  DEFINE_PITYTPE(kslliw, 5);
+  DEFINE_RTYPE(kdmabb);
+  DEFINE_RTYPE(kdmabt);
+  DEFINE_RTYPE(kdmatt);
+  DEFINE_RTYPE(kabsw);
+  DEFINE_RTYPE(raddw);
+  DEFINE_RTYPE(uraddw);
+  DEFINE_RTYPE(rsubw);
+  DEFINE_RTYPE(ursubw);
+  DEFINE_RTYPE(maxw);
+  DEFINE_RTYPE(minw);
+  DEFINE_RTYPE(mulr64);
+  DEFINE_RTYPE(mulsr64);
+  DEFINE_RTYPE(msubr32);
+  DEFINE_RTYPE(ave);
   DISASM_INSN("sra.u", sra_u, 0, {&xrd, &xrs1, &xrs2});
   DISASM_INSN("srai.u", srai_u, 0, {&xrd, &xrs1, &p_imm5});
-	DEFINE_RTYPE(bitrev);
-	DEFINE_RTYPE(wext);
-	DEFINE_PITYTPE(wexti, 5);
+  DEFINE_RTYPE(bitrev);
+  DEFINE_RTYPE(wext);
+  DEFINE_PITYTPE(wexti, 5);
   DISASM_INSN("bpick", bpick, 0, {&xrd, &xrs1, &xrs2, &p_rc});
-	DEFINE_PITYTPE(insb, 3);
-	DEFINE_RTYPE(maddr32)
+  DEFINE_PITYTPE(insb, 3);
+  DEFINE_RTYPE(maddr32)
 
   if (xlen == 32) {
     DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
@@ -1595,7 +1595,7 @@ disassembler_t::disassembler_t(int xlen)
     DEFINE_RTYPE(pktb32);
     DEFINE_RTYPE(pktt32);
     DEFINE_RTYPE(kadd32);
-  	DEFINE_PITYTPE(bitrevi, 6);
+    DEFINE_PITYTPE(bitrevi, 6);
   }
 
   // provide a default disassembly for all instructions as a fallback
