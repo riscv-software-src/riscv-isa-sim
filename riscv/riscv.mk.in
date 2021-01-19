@@ -1234,6 +1234,7 @@ riscv_insn_ext_p_rv64_only = \
 	smds32 \
 	smdrs32 \
 	smxds32 \
+	sraiw_u \
 	pkbb32 \
 	pkbt32 \
 	pktb32 \
