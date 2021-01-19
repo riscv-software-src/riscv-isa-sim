@@ -1204,6 +1204,11 @@ riscv_insn_ext_p_rv64_only = \
 	kslli32 \
 	kslra32 \
 	kslra32_u \
+	smin32 \
+	umin32 \
+	smax32 \
+	umax32 \
+	kabs32 \
 	khmbb16 \
 	khmbt16 \
 	khmtt16 \
