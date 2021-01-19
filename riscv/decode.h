@@ -2492,7 +2492,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   sreg_t len = xlen / BIT; \
   sreg_t len_inner = BIT / BIT_INNER; \
   for (sreg_t i = len - 1; i >= 0; --i) { \
-    int64_t pd_res = P_FIELD(rd_tmp, i, BIT); \
+    sreg_t pd_res = P_FIELD(rd_tmp, i, BIT); \
     for (sreg_t j = i * len_inner; j < (i + 1) * len_inner; ++j) {
 
 #define P_REDUCTION_ULOOP_BASE(BIT, BIT_INNER, USE_RD) \
@@ -2504,7 +2504,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   sreg_t len = xlen / BIT; \
   sreg_t len_inner = BIT / BIT_INNER; \
   for (sreg_t i = len - 1; i >=0; --i) { \
-    uint64_t pd_res = P_UFIELD(rd_tmp, i, BIT); \
+    reg_t pd_res = P_UFIELD(rd_tmp, i, BIT); \
     for (sreg_t j = i * len_inner; j < (i + 1) * len_inner; ++j) {
 
 #define P_PARAMS(BIT) \

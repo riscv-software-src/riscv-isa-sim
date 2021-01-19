@@ -1223,6 +1223,17 @@ riscv_insn_ext_p_rv64_only = \
 	kmabb32 \
 	kmabt32 \
 	kmatt32 \
+	kmda32 \
+	kmxda32 \
+	kmaxda32 \
+	kmads32 \
+	kmadrs32 \
+	kmaxds32 \
+	kmsda32 \
+	kmsxda32 \
+	smds32 \
+	smdrs32 \
+	smxds32 \
 	pkbb32 \
 	pkbt32 \
 	pktb32 \
