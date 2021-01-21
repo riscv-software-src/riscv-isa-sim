@@ -15,7 +15,7 @@ The [README.md](../README.md) at the top level of the riscv-isa-sim directory gi
 Also at the top level is an ``arch_test_target directory``. This directory contains all the collaterals
 required to add Spike as a target to the architectural test framework.
 
-The user will have to modify the ``TARGETDIR`` variable in ``arch_test_target/spike/Makfile.include`` to point the to
+The user will have to modify the ``TARGETDIR`` variable in ``arch_test_target/spike/Makfile.include`` to point to the
 absolute address of the ``riscv-isa-sim/arch_test_target``. 
 
 The user can also modify the ``XLEN`` variable based on whether 32-bit or 64-bit tests need to be run.
