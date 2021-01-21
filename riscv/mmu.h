@@ -54,6 +54,9 @@ class trigger_matched_t
 // an MMU and instruction cache are maintained for simulator performance.
 class mmu_t
 {
+private:
+  std::map<reg_t, reg_t> alloc_cache;
+  std::vector<std::pair<reg_t, reg_t >> addr_tbl;
 public:
   mmu_t(simif_t* sim, processor_t* proc);
   ~mmu_t();

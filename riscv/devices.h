@@ -8,6 +8,7 @@
 #include <map>
 #include <vector>
 #include <stdexcept>
+#include <utility>
 
 class processor_t;
 
@@ -45,19 +46,21 @@ class mem_t : public abstract_device_t {
   mem_t(size_t size) : len(size) {
     if (!size)
       throw std::runtime_error("zero bytes of target memory requested");
-    data = (char*)calloc(1, size);
-    if (!data)
-      throw std::runtime_error("couldn't allocate " + std::to_string(size) + " bytes of target memory");
+    data = nullptr;
   }
   mem_t(const mem_t& that) = delete;
-  ~mem_t() { free(data); }
+  ~mem_t() {
+        free(data);
+  }
 
   bool load(reg_t addr, size_t len, uint8_t* bytes) { return false; }
   bool store(reg_t addr, size_t len, const uint8_t* bytes) { return false; }
-  char* contents() { return data; }
+  char* contents();
+  char* contents(reg_t addr);
   size_t size() { return len; }
 
  private:
+  std::map<reg_t, std::pair<char*, bool>> acc_tbl;
   char* data;
   size_t len;
 };
