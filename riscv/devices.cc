@@ -1,4 +1,5 @@
 #include "devices.h"
+#include "mmu.h"
 
 void bus_t::add_device(reg_t addr, abstract_device_t* dev)
 {
@@ -87,4 +88,19 @@ bool mmio_plugin_device_t::load(reg_t addr, size_t len, uint8_t* bytes)
 bool mmio_plugin_device_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
   return (*plugin.store)(user_data, addr, len, bytes);
+}
+
+char* mem_t::contents() {
+    return data;
+}
+
+char* mem_t::contents(reg_t addr) {
+    reg_t pg_idx = addr & ~reg_t(PGSIZE - 1);
+    auto search = acc_tbl.find(pg_idx);
+    if (search == acc_tbl.end() || !search->second.second) {
+        char* mem_ptr = (char*)calloc(PGSIZE, sizeof(char));
+        acc_tbl[pg_idx] = std::make_pair(mem_ptr, true);
+    }
+    auto offset = addr & (PGSIZE - 1);
+    return acc_tbl[pg_idx].first + offset;
 }
