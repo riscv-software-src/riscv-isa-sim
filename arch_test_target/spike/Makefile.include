@@ -1,0 +1,25 @@
+# set TARGETDIR to point to the directory which contains a sub-folder in the same name as the target
+export TARGETDIR ?= /scratch/git-repo/github/neel/riscv-isa-sim/arch_test_target
+
+# set XLEN to max supported XLEN. Allowed values are 32 and 64
+export XLEN 							?= 64
+
+# name of the target. Note a folder of the same name must exist in the TARGETDIR directory
+export RISCV_TARGET       ?= spike
+
+# set the RISCV_DEVICE environment to a single extension you want to compile, simulate and/or verify. 
+# Leave this blank if you want to iterate through all the supported extensions available in the target
+export RISCV_DEVICE       ?= 
+
+# set this to a string which needs to be passed to your target Makefile.include files
+export RISCV_TARGET_FLAGS ?= 
+
+# set this if you want to enable assertions on the test-suites. Currently no tests support
+# assertions.
+export RISCV_ASSERT       ?= 0
+
+# set the number of parallel jobs (along with any other arguments) you would like to execute. Note that the target needs to ensure
+# that no common files across jobs are created/overwritten leading to unknown behavior
+JOBS= -j1
+
+
