@@ -92,6 +92,8 @@ public:
   uint64_t rm() { return x(12, 3); }
   uint64_t csr() { return x(20, 12); }
   uint64_t iorw() { return x(20, 8); }
+  uint64_t bs  () {return x(30,2);} // Crypto ISE - SM4/AES32 byte select.
+  uint64_t rcon() {return x(20,4);} // Crypto ISE - AES64 round const.
 
   int64_t rvc_imm() { return x(2, 5) + (xs(12, 1) << 5); }
   int64_t rvc_zimm() { return x(2, 5) + (x(12, 1) << 5); }
@@ -237,6 +239,7 @@ private:
 #define require_rv64 require(xlen == 64)
 #define require_rv32 require(xlen == 32)
 #define require_extension(s) require(p->supports_extension(s))
+#define require_either_extension(A,B) require(p->supports_extension(A) || p->supports_extension(B));
 #define require_impl(s) require(p->supports_impl(s))
 #define require_fp require((STATE.mstatus & MSTATUS_FS) != 0)
 #define require_accelerator require((STATE.mstatus & MSTATUS_XS) != 0)
