@@ -12,6 +12,8 @@
 #include <map>
 #include <cassert>
 #include "debug_rom_defines.h"
+#include "entropy_source.h"
+
 
 class processor_t;
 class mmu_t;
@@ -443,6 +445,7 @@ private:
   std::vector<bool> extension_table;
   std::vector<bool> impl_table;
   
+  entropy_source es; // Crypto ISE Entropy source.
 
   std::vector<insn_desc_t> instructions;
   std::map<reg_t,uint64_t> pc_histogram;
