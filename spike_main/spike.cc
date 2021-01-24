@@ -217,9 +217,9 @@ int main(int argc, char** argv)
   reg_t start_pc = reg_t(-1);
   std::vector<std::pair<reg_t, mem_t*>> mems;
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
-  std::unique_ptr<icache_sim_t> ic;
-  std::unique_ptr<dcache_sim_t> dc;
-  std::unique_ptr<cache_sim_t> l2;
+  const char* ic_str = nullptr;
+  const char* dc_str = nullptr;
+  const char* l2_str = nullptr;
   bool log_cache = false;
   bool log_commits = false;
   const char *log_path = nullptr;
@@ -312,9 +312,9 @@ int main(int argc, char** argv)
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
   parser.option(0, "pc", 1, [&](const char* s){start_pc = strtoull(s, 0, 0);});
   parser.option(0, "hartids", 1, hartids_parser);
-  parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
-  parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
-  parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
+  parser.option(0, "ic", 1, [&](const char* s){ic_str = s;});
+  parser.option(0, "dc", 1, [&](const char* s){dc_str = s;});
+  parser.option(0, "l2", 1, [&](const char* s){l2_str = s;});
   parser.option(0, "log-cache-miss", 0, [&](const char* s){log_cache = true;});
   parser.option(0, "isa", 1, [&](const char* s){isa = s;});
   parser.option(0, "priv", 1, [&](const char* s){priv = s;});
@@ -408,15 +408,29 @@ int main(int argc, char** argv)
     return 0;
   }
 
-  if (ic && l2) ic->set_miss_handler(&*l2);
-  if (dc && l2) dc->set_miss_handler(&*l2);
-  if (ic) ic->set_log(log_cache);
-  if (dc) dc->set_log(log_cache);
+  std::unique_ptr<cache_sim_t> l2(l2_str ? cache_sim_t::construct(l2_str, "L2$") : nullptr);
+  std::vector<std::unique_ptr<icache_sim_t>> ic(nprocs);
+  std::vector<std::unique_ptr<dcache_sim_t>> dc(nprocs);
   for (size_t i = 0; i < nprocs; i++)
   {
-    if (ic) s.get_core(i)->get_mmu()->register_memtracer(&*ic);
-    if (dc) s.get_core(i)->get_mmu()->register_memtracer(&*dc);
-    if (extension) s.get_core(i)->register_extension(extension());
+    if (ic_str) {
+      ic[i].reset(new icache_sim_t(ic_str));
+      ic[i]->set_log(log_cache);
+      s.get_core(i)->get_mmu()->register_memtracer(&*ic[i]);
+      if (l2)
+        ic[i]->set_miss_handler(&*l2);
+    }
+
+    if (dc_str) {
+      dc[i].reset(new dcache_sim_t(dc_str));
+      dc[i]->set_log(log_cache);
+      s.get_core(i)->get_mmu()->register_memtracer(&*dc[i]);
+      if (l2)
+        dc[i]->set_miss_handler(&*l2);
+    }
+
+    if (extension)
+      s.get_core(i)->register_extension(extension());
   }
 
   s.set_debug(debug);
