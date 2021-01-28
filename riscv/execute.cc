@@ -439,7 +439,7 @@ void processor_t::step(size_t n)
       // In the debug ROM this prevents us from wasting time looping, but also
       // allows us to switch to other threads only once per idle loop in case
       // there is activity.
-      n = instret;
+      n = ++instret;
     }
 
     state.minstret += instret;
