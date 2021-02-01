@@ -1284,7 +1284,7 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     // for rvp v0.5
     case CSR_UCODE:
-      VU.vxsat = val & 0x1ul;
+      state.ucode = val & 0x1ul;
       break;
   }
 
@@ -1369,6 +1369,7 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_DSCRATCH1:
     case CSR_MENTROPY:
     case CSR_MNOISE:
+    case CSR_UCODE:
       LOG_CSR(which);
       break;
   }
@@ -1723,7 +1724,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_UCODE:
       if (!supports_extension('P'))
         break;
-      ret(VU.vxsat);
+      ret(state.ucode);
   }
 
 #undef ret

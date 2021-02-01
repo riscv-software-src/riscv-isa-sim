@@ -3,5 +3,5 @@ P_LOOP(32, {
   int32_t round = (((mres >> 31) + 1) >> 1);
   bool sat = false;
   pd = (sat_sub<int32_t, uint32_t>(pd, round, sat));
-  P.VU.vxsat |= sat;
+  P_SET_OV(sat);
 })

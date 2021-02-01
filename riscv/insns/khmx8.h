@@ -3,6 +3,6 @@ P_CROSS_LOOP(8, {
     pd = (ps1 * ps2) >> 7;
   } else {
     pd = INT8_MAX;
-    P.VU.vxsat |= 1;
+    P_SET_OV(1);
   }
 },)

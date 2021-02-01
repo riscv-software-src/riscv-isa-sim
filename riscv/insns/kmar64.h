@@ -11,5 +11,5 @@ if (xlen == 32) {
 } else {
   rd = (sat_add<int64_t, uint64_t>(rd, mres0, mres1, sat));
 }
-P.VU.vxsat |= sat;
+P_SET_OV(sat);
 P_64_PROFILE_END()

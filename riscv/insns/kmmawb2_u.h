@@ -7,8 +7,8 @@ P_LOOP(32, {
     addop = ((mres >> 15) + 1) >> 1;
   } else {
     addop = INT32_MAX;
-    P.VU.vxsat |= 1;
+    P_SET_OV(1);
   }
   pd = (sat_add<int32_t, uint32_t>(pd, addop, sat));
-  P.VU.vxsat |= sat;
+  P_SET_OV(sat);
 })

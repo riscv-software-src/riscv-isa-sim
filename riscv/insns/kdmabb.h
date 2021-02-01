@@ -8,7 +8,7 @@ if ((INT16_MIN != aop) | (INT16_MIN != bop)) {
   res <<= 1;
 } else {
   res = INT32_MAX;
-  P.VU.vxsat |= 1;
+  P_SET_OV(1);
 }
 
 res += sext32(RD);

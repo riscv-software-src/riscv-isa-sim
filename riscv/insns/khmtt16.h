@@ -7,7 +7,7 @@ P_LOOP(32, {
     pd >>= 15;
   } else {
     pd = INT16_MAX;
-    P.VU.vxsat |= 1;
+    P_SET_OV(1);
   }
   pd = (int16_t)pd;
 })

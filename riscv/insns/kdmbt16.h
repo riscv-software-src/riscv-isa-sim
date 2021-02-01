@@ -7,6 +7,6 @@ P_LOOP(32, {
     pd <<= 1;
   } else {
     pd = INT32_MAX;
-    P.VU.vxsat |= 1;
+    P_SET_OV(1);
   }
 })

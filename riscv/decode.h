@@ -2421,19 +2421,24 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   WRITE_REG(insn.rd(), zext32(value)); \
   WRITE_REG(insn.rd() + 1, ((reg_t)value) >> 32);
 
+#define P_SET_OV(ov) \
+  auto old = p->get_csr(CSR_UCODE); \
+  old |= ov; \
+  p->set_csr(CSR_UCODE, old);
+
 #define P_SAT(R, BIT) \
   if (R > INT##BIT##_MAX) { \
     R = INT##BIT##_MAX; \
-    P.VU.vxsat |= 1; \
+    P_SET_OV(1); \
   } else if (R < INT##BIT##_MIN) { \
     R = INT##BIT##_MIN; \
-    P.VU.vxsat |= 1; \
+    P_SET_OV(1); \
   }
 
 #define P_SATU(R, BIT) \
   if (R > UINT##BIT##_MAX) { \
     R = UINT##BIT##_MAX; \
-    P.VU.vxsat |= 1; \
+    P_SET_OV(1); \
   } else if (R < 0) { \
     R = 0; \
   }

@@ -10,8 +10,8 @@ P_LOOP(32, {
     mres <<= 1;
   } else {
     mres = INT32_MAX;
-    P.VU.vxsat |= 1;
+    P_SET_OV(1);
   }
   pd = (sat_add<int32_t, uint32_t>(pd, mres, sat));
-  P.VU.vxsat |= sat;
+  P_SET_OV(sat);
 })

@@ -5,9 +5,9 @@ P_I_LOOP(32, 5, {
 
   if (ps1 > int_max) {
     pd = int_max;
-    P.VU.vxsat = 1;
+    P_SET_OV(1);
   } else if (ps1 < int_min) {
     pd = int_min;
-    P.VU.vxsat = 1;
+    P_SET_OV(1);
   }
 })

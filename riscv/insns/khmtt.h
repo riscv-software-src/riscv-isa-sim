@@ -7,6 +7,6 @@ if ((INT16_MIN != aop) | (INT16_MIN != bop)) {
   res >>= 15;
 } else {
   res = INT16_MAX;
-  P.VU.vxsat |= 1;
+  P_SET_OV(1);
 }
 WRITE_RD(sext_xlen((int16_t)res));
