@@ -22,7 +22,7 @@ Spike supports the following RISC-V ISA features:
   - K extension, v0.8.1 ([Scalar Cryptography](https://github.com/riscv/riscv-crypto))
   - V extension, v0.10, w/ Zvlsseg/Zvamo (_requires a 64-bit host_)
   - Bi-endianness
-  - P extension, SIMD Data Processing Instructions, v0.5.2
+  - P extension, v0.5.2
   - Conformance to both RVWMO and RVTSO (Spike is sequentially consistent)
   - Machine, Supervisor, and User modes, v1.11
   - Hypervisor extension, v0.6.1
