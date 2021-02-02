@@ -46,6 +46,12 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
+    return xpr_name[insn.rs3()];
+  }
+} xrs3;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     return fpr_name[insn.rd()];
   }
 } frd;
@@ -406,12 +412,6 @@ struct : public arg_t {
     return std::to_string((int)insn.p_imm6());
   }
 } p_imm6;
-
-struct : public arg_t {
-  std::string to_string(insn_t insn) const {
-    return std::to_string((int)insn.p_rc());
-  }
-} p_rc;
 
 typedef struct {
   reg_t match;
@@ -1573,7 +1573,7 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(bitrev);
   DEFINE_RTYPE(wext);
   DEFINE_PITYTPE(wexti, 5);
-  DISASM_INSN("bpick", bpick, 0, {&xrd, &xrs1, &xrs2, &p_rc});
+  DISASM_INSN("bpick", bpick, 0, {&xrd, &xrs1, &xrs2, &xrs3});
   DEFINE_PITYTPE(insb, 3);
   DEFINE_RTYPE(maddr32)
 

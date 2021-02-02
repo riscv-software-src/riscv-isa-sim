@@ -1282,10 +1282,6 @@ void processor_t::set_csr(int which, reg_t val)
       dirty_vs_state;
       VU.vxrm = val & 0x3ul;
       break;
-    // for rvp v0.5
-    case CSR_UCODE:
-      state.ucode = val & 0x1ul;
-      break;
   }
 
 #if defined(RISCV_ENABLE_COMMITLOG)
@@ -1369,7 +1365,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_DSCRATCH1:
     case CSR_MENTROPY:
     case CSR_MNOISE:
-    case CSR_UCODE:
       LOG_CSR(which);
       break;
   }
@@ -1720,11 +1715,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (!supports_extension('V'))
         break;
       ret(VU.vlenb);
-    // for rvp v0.5 
-    case CSR_UCODE:
-      if (!supports_extension('P'))
-        break;
-      ret(state.ucode);
   }
 
 #undef ret

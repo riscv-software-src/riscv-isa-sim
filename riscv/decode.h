@@ -138,7 +138,6 @@ public:
   uint64_t p_imm4() { return x(20, 4); }
   uint64_t p_imm5() { return x(20, 5); }
   uint64_t p_imm6() { return x(20, 6); }
-  uint64_t p_rc() { return x(25, 5); }
 
 private:
   insn_bits_t b;
@@ -2408,7 +2407,9 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_SW(R, INDEX) P_FIELD(R, INDEX, 32)
 
 #define READ_REG_PAIR(reg) \
-  ((zext32(READ_REG(reg + 1)) << 32) + zext32(READ_REG(reg)))\
+  MMU.is_target_big_endian() \
+  ? ((zext32(READ_REG(reg)) << 32) + zext32(READ_REG(reg + 1))) \
+  : ((zext32(READ_REG(reg + 1)) << 32) + zext32(READ_REG(reg)))
 
 #define RS1_PAIR READ_REG_PAIR(insn.rs1())
 #define RS2_PAIR READ_REG_PAIR(insn.rs2())
@@ -2418,13 +2419,16 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   rd_tmp = set_field(rd_tmp, make_mask64((i * sizeof(pd) * 8), sizeof(pd) * 8), pd);
 
 #define WRITE_RD_PAIR(value) \
-  WRITE_REG(insn.rd(), zext32(value)); \
-  WRITE_REG(insn.rd() + 1, ((reg_t)value) >> 32);
+  if (MMU.is_target_big_endian()) { \
+    WRITE_REG(insn.rd() + 1, zext32(value)); \
+    WRITE_REG(insn.rd(), ((reg_t)value) >> 32); \
+  } else { \
+    WRITE_REG(insn.rd(), zext32(value)); \
+    WRITE_REG(insn.rd() + 1, ((reg_t)value) >> 32); \
+  }
 
 #define P_SET_OV(ov) \
-  auto old = p->get_csr(CSR_UCODE); \
-  old |= ov; \
-  p->set_csr(CSR_UCODE, old);
+  P.VU.vxsat |= ov;
 
 #define P_SAT(R, BIT) \
   if (R > INT##BIT##_MAX) { \
@@ -2771,8 +2775,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_PAIR_LOOP_END() \
   } \
   if (xlen == 32) { \
-    WRITE_REG(insn.rd(), zext32(rd_tmp)); \
-    WRITE_REG(insn.rd() + 1, rd_tmp >> 32); \
+    WRITE_RD_PAIR(rd_tmp); \
   } \
   else { \
     WRITE_RD(rd_tmp); \

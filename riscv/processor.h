@@ -200,8 +200,6 @@ struct state_t
   reg_t vscause;
   reg_t vstval;
   reg_t vsatp;
-  
-  reg_t ucode;
 
   reg_t dpc;
   reg_t dscratch0, dscratch1;
