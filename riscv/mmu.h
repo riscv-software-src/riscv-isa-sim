@@ -96,7 +96,7 @@ public:
   // template for functions that load an aligned value from memory
   #define load_func(type, prefix, xlate_flags) \
     inline type##_t prefix##_##type(reg_t addr, bool require_alignment = false) { \
-      if (xlate_flags) \
+      if ((xlate_flags) != 0) \
         flush_tlb(); \
       if (unlikely(addr & (sizeof(type##_t)-1))) { \
         if (require_alignment) load_reserved_address_misaligned(addr); \
@@ -121,7 +121,7 @@ public:
       target_endian<type##_t> res; \
       load_slow_path(addr, sizeof(type##_t), (uint8_t*)&res, (xlate_flags)); \
       if (proc) READ_MEM(addr, size); \
-      if (xlate_flags) \
+      if ((xlate_flags) != 0) \
         flush_tlb(); \
       return from_target(res); \
     }
@@ -162,7 +162,7 @@ public:
   // template for functions that store an aligned value to memory
   #define store_func(type, prefix, xlate_flags) \
     void prefix##_##type(reg_t addr, type##_t val) { \
-      if (xlate_flags) \
+      if ((xlate_flags) != 0) \
         flush_tlb(); \
       if (unlikely(addr & (sizeof(type##_t)-1))) \
         return misaligned_store(addr, val, sizeof(type##_t)); \
@@ -186,7 +186,7 @@ public:
         store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&target_val, (xlate_flags)); \
         if (proc) WRITE_MEM(addr, val, size); \
       } \
-      if (xlate_flags) \
+      if ((xlate_flags) != 0) \
         flush_tlb(); \
   }
 
