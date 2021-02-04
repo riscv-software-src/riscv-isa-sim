@@ -110,7 +110,7 @@ bool mem_t::load_store(reg_t addr, size_t len, uint8_t* bytes, bool store)
     return false;
 
   while (len > 0) {
-    auto n = std::min(PGSIZE - (addr % PGSIZE), len);
+    auto n = std::min(PGSIZE - (addr % PGSIZE), reg_t(len));
 
     if (store)
       memcpy(this->contents(addr), bytes, n);
