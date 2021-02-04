@@ -1295,6 +1295,7 @@ void processor_t::set_csr(int which, reg_t val)
       LOG_CSR(CSR_MSTATUS);
       LOG_CSR(CSR_FFLAGS);
       LOG_CSR(CSR_FRM);
+      LOG_CSR(CSR_FCSR);
       break;
     case CSR_VCSR:
       LOG_CSR(CSR_MSTATUS);
