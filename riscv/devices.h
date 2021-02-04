@@ -3,6 +3,7 @@
 
 #include "decode.h"
 #include "mmio_plugin.h"
+#include "int_map.h"
 #include <cstdlib>
 #include <string>
 #include <map>
@@ -54,7 +55,7 @@ class mem_t : public abstract_device_t {
  private:
   bool load_store(reg_t addr, size_t len, uint8_t* bytes, bool store);
 
-  std::map<reg_t, char*> sparse_memory_map;
+  int_map<reg_t, char*> sparse_memory_map;
   reg_t sz;
 };
 

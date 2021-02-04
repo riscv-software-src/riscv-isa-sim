@@ -92,7 +92,7 @@ bool mmio_plugin_device_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 }
 
 mem_t::mem_t(reg_t size)
-  : sz(size)
+  : sparse_memory_map(log2(size) + (size & (size-1) ? 1 : 0)), sz(size)
 {
   if (size == 0 || size % PGSIZE != 0)
     throw std::runtime_error("memory size must be a positive multiple of 4 KiB");
@@ -100,8 +100,8 @@ mem_t::mem_t(reg_t size)
 
 mem_t::~mem_t()
 {
-  for (auto& entry : sparse_memory_map)
-    free(entry.second);
+  //for (auto& entry : sparse_memory_map)
+  //  free(entry.second);
 }
 
 bool mem_t::load_store(reg_t addr, size_t len, uint8_t* bytes, bool store)
@@ -127,13 +127,11 @@ bool mem_t::load_store(reg_t addr, size_t len, uint8_t* bytes, bool store)
 
 char* mem_t::contents(reg_t addr) {
   reg_t ppn = addr >> PGSHIFT, pgoff = addr % PGSIZE;
-  auto search = sparse_memory_map.find(ppn);
-  if (search == sparse_memory_map.end()) {
-    auto res = (char*)calloc(PGSIZE, 1);
-    if (res == nullptr)
+  auto search = sparse_memory_map.lookup(ppn);
+  if (*search == nullptr) {
+    *search = (char*)calloc(PGSIZE, 1);
+    if (*search == nullptr)
       throw std::bad_alloc();
-    sparse_memory_map[ppn] = res;
-    return res + pgoff;
   }
-  return search->second + pgoff;
+  return *search + pgoff;
 }
