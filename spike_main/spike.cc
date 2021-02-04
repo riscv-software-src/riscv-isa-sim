@@ -89,11 +89,14 @@ static std::ifstream::pos_type get_file_size(const char *filename)
 }
 
 static void read_file_bytes(const char *filename,size_t fileoff,
-                            char *read_buf, size_t read_sz)
+                            mem_t* mem, size_t memoff, size_t read_sz)
 {
   std::ifstream in(filename, std::ios::in | std::ios::binary);
   in.seekg(fileoff, std::ios::beg);
-  in.read(read_buf, read_sz);
+
+  std::vector<char> read_buf(read_sz, 0);
+  in.read(&read_buf[0], read_sz);
+  mem->store(memoff, read_sz, (uint8_t*)&read_buf[0]);
 }
 
 static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
@@ -334,7 +337,7 @@ int main(int argc, char** argv)
       kernel_offset = 0x400000;
     for (auto& m : mems) {
       if (kernel_size && (kernel_offset + kernel_size) < m.second->size()) {
-         read_file_bytes(kernel, 0, m.second->contents() + kernel_offset, kernel_size);
+         read_file_bytes(kernel, 0, m.second, kernel_offset, kernel_size);
          break;
       }
     }
@@ -346,7 +349,7 @@ int main(int argc, char** argv)
       if (initrd_size && (initrd_size + 0x1000) < m.second->size()) {
          initrd_end = m.first + m.second->size() - 0x1000;
          initrd_start = initrd_end - initrd_size;
-         read_file_bytes(initrd, 0, m.second->contents() + (initrd_start - m.first), initrd_size);
+         read_file_bytes(initrd, 0, m.second, initrd_start - m.first, initrd_size);
          break;
       }
     }
