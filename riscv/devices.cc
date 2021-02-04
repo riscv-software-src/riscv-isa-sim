@@ -1,5 +1,6 @@
 #include "devices.h"
 #include "mmu.h"
+#include <stdexcept>
 
 void bus_t::add_device(reg_t addr, abstract_device_t* dev)
 {
@@ -90,17 +91,49 @@ bool mmio_plugin_device_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   return (*plugin.store)(user_data, addr, len, bytes);
 }
 
-char* mem_t::contents() {
-    return data;
+mem_t::mem_t(reg_t size)
+  : sz(size)
+{
+  if (size == 0 || size % PGSIZE != 0)
+    throw std::runtime_error("memory size must be a positive multiple of 4 KiB");
+}
+
+mem_t::~mem_t()
+{
+  for (auto& entry : sparse_memory_map)
+    free(entry.second);
+}
+
+bool mem_t::load_store(reg_t addr, size_t len, uint8_t* bytes, bool store)
+{
+  if (addr + len < addr || addr + len > sz)
+    return false;
+
+  while (len > 0) {
+    auto n = std::min(PGSIZE - (addr % PGSIZE), len);
+
+    if (store)
+      memcpy(this->contents(addr), bytes, n);
+    else
+      memcpy(bytes, this->contents(addr), n);
+
+    addr += n;
+    bytes += n;
+    len -= n;
+  }
+
+  return true;
 }
 
 char* mem_t::contents(reg_t addr) {
-    reg_t pg_idx = addr & ~reg_t(PGSIZE - 1);
-    auto search = acc_tbl.find(pg_idx);
-    if (search == acc_tbl.end() || !search->second.second) {
-        char* mem_ptr = (char*)calloc(PGSIZE, sizeof(char));
-        acc_tbl[pg_idx] = std::make_pair(mem_ptr, true);
-    }
-    auto offset = addr & (PGSIZE - 1);
-    return acc_tbl[pg_idx].first + offset;
+  reg_t ppn = addr >> PGSHIFT, pgoff = addr % PGSIZE;
+  auto search = sparse_memory_map.find(ppn);
+  if (search == sparse_memory_map.end()) {
+    auto res = (char*)calloc(PGSIZE, 1);
+    if (res == nullptr)
+      throw std::bad_alloc();
+    sparse_memory_map[ppn] = res;
+    return res + pgoff;
+  }
+  return search->second + pgoff;
 }
