@@ -92,7 +92,7 @@ bool mmio_plugin_device_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 }
 
 mem_t::mem_t(reg_t size)
-  : sparse_memory_map(log2(size) + (size & (size-1) ? 1 : 0)), sz(size)
+  : sz(size)
 {
   if (size == 0 || size % PGSIZE != 0)
     throw std::runtime_error("memory size must be a positive multiple of 4 KiB");
