@@ -10,6 +10,7 @@ riscv_install_prog_srcs = \
 riscv_CFLAGS = -fPIC
 
 riscv_hdrs = \
+	abstract_device.h \
 	common.h \
 	decode.h \
 	devices.h \

@@ -4,8 +4,8 @@
 
 #include "decode.h"
 #include "config.h"
-#include "devices.h"
 #include "trap.h"
+#include "abstract_device.h"
 #include <string>
 #include <vector>
 #include <unordered_map>

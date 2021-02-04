@@ -3,20 +3,12 @@
 
 #include "decode.h"
 #include "mmio_plugin.h"
-#include <cstdlib>
-#include <string>
+#include "abstract_device.h"
 #include <map>
 #include <vector>
 #include <utility>
 
 class processor_t;
-
-class abstract_device_t {
- public:
-  virtual bool load(reg_t addr, size_t len, uint8_t* bytes) = 0;
-  virtual bool store(reg_t addr, size_t len, const uint8_t* bytes) = 0;
-  virtual ~abstract_device_t() {}
-};
 
 class bus_t : public abstract_device_t {
  public:

@@ -2,6 +2,7 @@
 #ifndef _RISCV_DTS_H
 #define _RISCV_DTS_H
 
+#include "devices.h"
 #include "processor.h"
 #include "mmu.h"
 #include <string>
