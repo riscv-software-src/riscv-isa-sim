@@ -432,7 +432,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
       if ((pte & ad) != ad)
         break;
 #endif
-      // for superpage or Zsn NAPOT mappings, make a fake leaf PTE for the TLB's benefit.
+      // for superpage or Svnapot NAPOT mappings, make a fake leaf PTE for the TLB's benefit.
       reg_t vpn = addr >> PGSHIFT;
 
       int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
