@@ -188,6 +188,9 @@ static reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 
      }
 #ifdef RISCV_ENABLE_COMMITLOG
+  } catch (wait_for_interrupt_t &t) {
+      commit_log_print_insn(p, pc, fetch.insn);
+      throw;
   } catch(mem_trap_t& t) {
       //handle segfault in midlle of vector load/store
       if (p->get_log_commits_enabled()) {
