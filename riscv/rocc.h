@@ -21,6 +21,9 @@ union rocc_insn_union_t
   insn_t i;
 };
 
+// DEPRECATED: This class is deprecated to support multiple extensions. All extensions extending the 
+// classes below will need to be rewritten before using them with other extensions at the same time.
+// However, if the extension is used alone as before this patch, no modification is needed.
 class rocc_t : public extension_t
 {
  public:
@@ -31,5 +34,31 @@ class rocc_t : public extension_t
   std::vector<insn_desc_t> get_instructions();
   std::vector<disasm_insn_t*> get_disasms();
 };
+
+#define define_custom_func(type_name, ext_name_str, func_name, method_name) \
+  static reg_t func_name(processor_t* p, insn_t insn, reg_t pc) \
+  { \
+    type_name* rocc = static_cast<type_name*>(p->get_extension(ext_name_str)); \
+    rocc_insn_union_t u; \
+    u.i = insn; \
+    reg_t xs1 = u.r.xs1 ? RS1 : -1; \
+    reg_t xs2 = u.r.xs2 ? RS2 : -1; \
+    reg_t xd = rocc->method_name(u.r, xs1, xs2); \
+    if (u.r.xd) \
+      WRITE_RD(xd); \
+    return pc+4; \
+  } \
+
+#define push_custom_insn(insn_list, opcode, opcode_mask, func_name_32, func_name_64) \
+  insn_list.push_back((insn_desc_t){opcode, opcode_mask, func_name_32, func_name_64})
+
+#define ILLEGAL_INSN_FUNC &::illegal_instruction
+
+#define ROCC_OPCODE0 0x0b
+#define ROCC_OPCODE1 0x2b
+#define ROCC_OPCODE2 0x5b
+#define ROCC_OPCODE3 0x7b
+
+#define ROCC_OPCODE_MASK 0x7f
 
 #endif

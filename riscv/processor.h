@@ -295,7 +295,7 @@ public:
            supports_extension('D') ? 64 :
            supports_extension('F') ? 32 : 0;
   }
-  extension_t* get_extension() { return ext; }
+  extension_t* get_extension(const char* name = NULL);
   bool supports_extension(unsigned char ext) {
     if (ext >= 'A' && ext <= 'Z')
       return ((state.misa >> (ext - 'A')) & 1);
@@ -430,7 +430,8 @@ public:
 private:
   simif_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
-  extension_t* ext;
+  std::vector<extension_t*> ext;
+  std::unordered_map<std::string, int> ext_indices;
   disassembler_t* disassembler;
   state_t state;
   uint32_t id;
