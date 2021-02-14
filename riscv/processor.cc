@@ -24,7 +24,7 @@
 processor_t::processor_t(const char* isa, const char* priv, const char* varch,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
                          FILE* log_file)
-  : debug(false), halt_request(HR_NONE), sim(sim), ext(NULL), id(id), xlen(0),
+  : debug(false), halt_request(HR_NONE), sim(sim), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), halt_on_reset(halt_on_reset),
   extension_table(256, false), impl_table(256, false), last_pc(1), executions(1)
@@ -39,8 +39,8 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
   mmu = new mmu_t(sim, this);
 
   disassembler = new disassembler_t(max_xlen);
-  if (ext)
-    for (auto disasm_insn : ext->get_disasms())
+  for (auto e : custom_extensions)
+    for (auto disasm_insn : e.second->get_disasms())
       disassembler->add_insn(disasm_insn);
 
   set_pmp_granularity(1 << PMP_SHIFT);
@@ -425,8 +425,9 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
 void processor_t::set_debug(bool value)
 {
   debug = value;
-  if (ext)
-    ext->set_debug(value);
+
+  for (auto e : custom_extensions)
+    e.second->set_debug(value);
 }
 
 void processor_t::set_histogram(bool value)
@@ -470,11 +471,31 @@ void processor_t::reset()
     set_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
   }
 
-  if (ext)
-    ext->reset(); // reset the extension
+   for (auto e : custom_extensions) // reset any extensions
+    e.second->reset();
 
   if (sim)
     sim->proc_reset(id);
+}
+
+extension_t* processor_t::get_extension()
+{
+  switch (custom_extensions.size()) {
+    case 0: return NULL;
+    case 1: return custom_extensions.begin()->second;
+    default:
+      fprintf(stderr, "processor_t::get_extension() is ambiguous when multiple extensions\n");
+      fprintf(stderr, "are present!\n");
+      abort();
+  }
+}
+
+extension_t* processor_t::get_extension(const char* name)
+{
+  auto it = custom_extensions.find(name);
+  if (it == custom_extensions.end())
+    abort();
+  return it->second;
 }
 
 void processor_t::set_pmp_num(reg_t n)
@@ -841,7 +862,7 @@ void processor_t::set_csr(int which, reg_t val)
   reg_t supervisor_ints = supports_extension('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
   reg_t vssip_int = supports_extension('H') ? MIP_VSSIP : 0;
   reg_t hypervisor_ints = supports_extension('H') ? MIP_HS_MASK : 0;
-  reg_t coprocessor_ints = (ext != NULL) << IRQ_COP;
+  reg_t coprocessor_ints = (!custom_extensions.empty()) << IRQ_COP;
   reg_t delegable_ints = supervisor_ints | coprocessor_ints;
   reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP | MIP_MEIP;
 
@@ -926,7 +947,7 @@ void processor_t::set_csr(int which, reg_t val)
                  | (has_page ? (MSTATUS_MXR | MSTATUS_SUM | MSTATUS_TVM) : 0)
                  | (has_fs ? MSTATUS_FS : 0)
                  | (has_vs ? MSTATUS_VS : 0)
-                 | (ext ? MSTATUS_XS : 0)
+                 | (!custom_extensions.empty() ? MSTATUS_XS : 0)
                  | (has_gva ? MSTATUS_GVA : 0)
                  | (has_mpv ? MSTATUS_MPV : 0);
 
@@ -1811,9 +1832,11 @@ void processor_t::register_extension(extension_t* x)
     for (auto disasm_insn : x->get_disasms())
       disassembler->add_insn(disasm_insn);
 
-  if (ext != NULL)
-    throw std::logic_error("only one extension may be registered");
-  ext = x;
+  if (!custom_extensions.insert(std::make_pair(x->name(), x)).second) {
+    fprintf(stderr, "extensions must have unique names (got two named \"%s\"!)\n", x->name());
+    abort();
+  }
+
   x->set_processor(this);
 }
 

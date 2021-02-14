@@ -45,6 +45,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "                          The extlib flag for the library must come first.\n");
   fprintf(stderr, "  --log-cache-miss      Generate a log of cache miss\n");
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
+  fprintf(stderr, "                          This flag can be used multiple times.\n");
   fprintf(stderr, "  --extlib=<name>       Shared library to load\n");
   fprintf(stderr, "                        This flag can be used multiple times.\n");
   fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
@@ -226,7 +227,7 @@ int main(int argc, char** argv)
   bool log_cache = false;
   bool log_commits = false;
   const char *log_path = nullptr;
-  std::function<extension_t*()> extension;
+  std::vector<std::function<extension_t*()>> extensions;
   const char* initrd = NULL;
   const char* isa = DEFAULT_ISA;
   const char* priv = DEFAULT_PRIV;
@@ -323,7 +324,7 @@ int main(int argc, char** argv)
   parser.option(0, "priv", 1, [&](const char* s){priv = s;});
   parser.option(0, "varch", 1, [&](const char* s){varch = s;});
   parser.option(0, "device", 1, device_parser);
-  parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
+  parser.option(0, "extension", 1, [&](const char* s){extensions.push_back(find_extension(s));});
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
   parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
   parser.option(0, "dtb", 1, [&](const char *s){dtb_file = s;});
@@ -419,7 +420,8 @@ int main(int argc, char** argv)
   {
     if (ic) s.get_core(i)->get_mmu()->register_memtracer(&*ic);
     if (dc) s.get_core(i)->get_mmu()->register_memtracer(&*dc);
-    if (extension) s.get_core(i)->register_extension(extension());
+    for (auto e : extensions)
+      s.get_core(i)->register_extension(e());
   }
 
   s.set_debug(debug);
