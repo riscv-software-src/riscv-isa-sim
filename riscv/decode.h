@@ -244,7 +244,7 @@ private:
 #define require_fp require((((STATE.mstatus & MSTATUS_FS) != 0) && (STATE.v == 0)) || (((STATE.mstatus & MSTATUS_FS) != 0) && ((STATE.vsstatus & SSTATUS_FS) != 0) && STATE.v))
 #define require_accelerator require((STATE.mstatus & MSTATUS_XS) != 0)
 
-#define require_vector_vs require((STATE.mstatus & MSTATUS_VS) != 0);
+#define require_vector_vs require((((STATE.mstatus & MSTATUS_VS) != 0) && (STATE.v == 0)) || (((STATE.mstatus & MSTATUS_VS) != 0) && ((STATE.vsstatus & SSTATUS_VS) != 0) && STATE.v))
 #define require_vector(alu) \
   do { \
     require_vector_vs; \
