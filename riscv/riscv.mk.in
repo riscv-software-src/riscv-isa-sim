@@ -434,10 +434,14 @@ riscv_insn_ext_b = \
 
 # Scalar Crypto ISE
 riscv_insn_ext_k = \
-       aesds \
-       aesdsm \
-       aeses \
-       aesesm \
+       aes32dsi \
+       aes32dsmi \
+       aes32esi \
+       aes32esmi \
+       aes64ds \
+       aes64dsm \
+       aes64es \
+       aes64esm \
        aes64ks1i \
        aes64ks2 \
        aes64im \
