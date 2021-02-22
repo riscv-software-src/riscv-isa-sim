@@ -10,6 +10,7 @@
 #include <vector>
 #include <unordered_map>
 #include <map>
+#include <memory>
 #include <cassert>
 #include "debug_rom_defines.h"
 #include "entropy_source.h"
@@ -151,6 +152,38 @@ struct type_sew_t<64>
   using type=int64_t;
 };
 
+
+// Parent, abstract class for all CSRs
+class csr_t {
+ public:
+  // read() returns the architectural value of this CSR. No permission
+  // checking needed or allowed. Side effects not allowed.
+  virtual reg_t read() const noexcept = 0;
+
+  // write() updates the architectural value of this CSR. No
+  // permission checking needed or allowed.
+  virtual void write(const reg_t val) noexcept = 0;
+
+  virtual ~csr_t() {}
+};
+
+typedef std::shared_ptr<csr_t> csr_t_p;
+
+// Basic CSRs, with XLEN bits fully readable and writable.
+class basic_csr_t: public csr_t {
+ public:
+  basic_csr_t(const reg_t init): val(init) {}
+  virtual reg_t read() const noexcept override {
+    return val;
+  }
+  virtual void write(const reg_t val) noexcept override {
+    this->val = val;
+  }
+ private:
+  reg_t val;
+};
+
+
 // architectural state of a RISC-V hart
 struct state_t
 {
@@ -169,7 +202,7 @@ struct state_t
   reg_t mstatus;
   reg_t mepc;
   reg_t mtval;
-  reg_t mscratch;
+  csr_t_p mscratch;
   reg_t mtvec;
   reg_t mcause;
   reg_t minstret;

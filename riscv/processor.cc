@@ -335,7 +335,7 @@ void state_t::reset(reg_t max_isa)
   mstatus = 0;
   mepc = 0;
   mtval = 0;
-  mscratch = 0;
+  mscratch = std::make_shared<basic_csr_t>(0);
   mtvec = 0;
   mcause = 0;
   minstret = 0;
@@ -1123,7 +1123,7 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_MEPC: state.mepc = val & ~(reg_t)1; break;
     case CSR_MTVEC: state.mtvec = val & ~(reg_t)2; break;
-    case CSR_MSCRATCH: state.mscratch = val; break;
+    case CSR_MSCRATCH: state.mscratch->write(val); break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MTVAL: state.mtval = val; break;
     case CSR_MTVAL2: state.mtval2 = val; break;
@@ -1652,7 +1652,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIP: ret(state.mip);
     case CSR_MIE: ret(state.mie);
     case CSR_MEPC: ret(state.mepc & pc_alignment_mask());
-    case CSR_MSCRATCH: ret(state.mscratch);
+    case CSR_MSCRATCH: ret(state.mscratch->read());
     case CSR_MCAUSE: ret(state.mcause);
     case CSR_MTVAL: ret(state.mtval);
     case CSR_MTVAL2:
