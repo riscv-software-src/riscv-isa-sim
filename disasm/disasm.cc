@@ -1240,8 +1240,8 @@ disassembler_t::disassembler_t(int xlen)
 
   //vfunary1
   DISASM_INSN("vfsqrt.v", vfsqrt_v, 0, {&vd, &vs2, &opt, &vm});
-  DISASM_INSN("vfrsqrte7.v", vfrsqrte7_v, 0, {&vd, &vs2, &opt, &vm});
-  DISASM_INSN("vfrece7.v", vfrece7_v, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vfrsqrt7.v", vfrsqrt7_v, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vfrec7.v", vfrec7_v, 0, {&vd, &vs2, &opt, &vm});
   DISASM_INSN("vfclass.v", vfclass_v, 0, {&vd, &vs2, &opt, &vm});
 
   DISASM_OPIV_VF_INSN(vfmul);
