@@ -31,12 +31,27 @@ class csr_t {
 
 typedef std::shared_ptr<csr_t> csr_t_p;
 
+
+// Parent class that records log of every write to itself
+class logged_csr_t: public csr_t {
+ public:
+  logged_csr_t(processor_t* const proc, const reg_t addr);
+
+  // Child classes must implement unlogged_write()
+  virtual void write(const reg_t val) noexcept override final;
+
+ protected:
+  virtual void unlogged_write(const reg_t val) noexcept = 0;
+};
+
+
 // Basic CSRs, with XLEN bits fully readable and writable.
-class basic_csr_t: public csr_t {
+class basic_csr_t: public logged_csr_t {
  public:
   basic_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
   virtual reg_t read() const noexcept override;
-  virtual void write(const reg_t val) noexcept override;
+ protected:
+  virtual void unlogged_write(const reg_t val) noexcept override;
  private:
   reg_t val;
 };
