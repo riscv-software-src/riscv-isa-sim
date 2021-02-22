@@ -808,10 +808,6 @@ disassembler_t::disassembler_t(int xlen)
     add_insn(new disasm_insn_t(#name "16"   #ff ".v",  match_##name##16##ff##_v,    mask_##name##16##ff##_v   | mask_nf, fmt)); \
     add_insn(new disasm_insn_t(#name "32"   #ff ".v",  match_##name##32##ff##_v,    mask_##name##32##ff##_v   | mask_nf, fmt)); \
     add_insn(new disasm_insn_t(#name "64"   #ff ".v",  match_##name##64##ff##_v,    mask_##name##64##ff##_v   | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t(#name "128"  #ff ".v",  match_##name##128##ff##_v,   mask_##name##128##ff##_v  | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t(#name "256"  #ff ".v",  match_##name##256##ff##_v,   mask_##name##256##ff##_v  | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t(#name "512"  #ff ".v",  match_##name##512##ff##_v,   mask_##name##512##ff##_v  | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t(#name "1024" #ff ".v",  match_##name##1024##ff##_v,  mask_##name##1024##ff##_v | mask_nf, fmt)); \
 
   std::vector<const arg_t *> v_ld_unit = {&vd, &v_address, &opt, &vm};
   std::vector<const arg_t *> v_st_unit = {&vs3, &v_address, &opt, &vm};
