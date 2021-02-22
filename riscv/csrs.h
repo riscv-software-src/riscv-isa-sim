@@ -7,11 +7,12 @@
 // For std::shared_ptr
 #include <memory>
 
+class processor_t;
 
 // Parent, abstract class for all CSRs
 class csr_t {
  public:
-  csr_t(const reg_t addr);
+  csr_t(processor_t* const proc, const reg_t addr);
 
   // read() returns the architectural value of this CSR. No permission
   // checking needed or allowed. Side effects not allowed.
@@ -24,6 +25,7 @@ class csr_t {
   virtual ~csr_t();
 
  private:
+  processor_t* const proc;
   const reg_t address;
 };
 
@@ -32,7 +34,7 @@ typedef std::shared_ptr<csr_t> csr_t_p;
 // Basic CSRs, with XLEN bits fully readable and writable.
 class basic_csr_t: public csr_t {
  public:
-  basic_csr_t(const reg_t addr, const reg_t init);
+  basic_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
   virtual reg_t read() const noexcept override;
   virtual void write(const reg_t val) noexcept override;
  private:
