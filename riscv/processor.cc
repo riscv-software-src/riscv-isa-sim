@@ -901,6 +901,7 @@ void processor_t::set_csr(int which, reg_t val)
   if (search != state.csrmap.end()) {
     search->second->write(val);
   }
+  else {  // legacy non-csr_t CSRs
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
     // If no PMPs are configured, disallow access to all.  Otherwise, allow
@@ -1346,6 +1347,7 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxrm = val & 0x3ul;
       break;
   }
+  } // end legacy non-csr_t CSRs
 
 #if defined(RISCV_ENABLE_COMMITLOG)
   switch (which)
