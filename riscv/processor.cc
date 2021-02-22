@@ -897,6 +897,11 @@ void processor_t::set_csr(int which, reg_t val)
     | (1 << CAUSE_STORE_GUEST_PAGE_FAULT)
     ;
 
+  auto search = state.csrmap.find(which);
+  if (search != state.csrmap.end()) {
+    search->second->write(val);
+  }
+
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
     // If no PMPs are configured, disallow access to all.  Otherwise, allow
     // access to all, but unimplemented ones are hardwired to zero.
@@ -1123,7 +1128,6 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_MEPC: state.mepc = val & ~(reg_t)1; break;
     case CSR_MTVEC: state.mtvec = val & ~(reg_t)2; break;
-    case CSR_MSCRATCH: state.mscratch->write(val); break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MTVAL: state.mtval = val; break;
     case CSR_MTVAL2: state.mtval2 = val; break;
