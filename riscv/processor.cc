@@ -335,7 +335,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   mstatus = 0;
   mepc = 0;
   mtval = 0;
-  csrmap[CSR_MSCRATCH] = std::make_shared<basic_csr_t>(CSR_MSCRATCH, 0);
+  csrmap[CSR_MSCRATCH] = std::make_shared<basic_csr_t>(proc, CSR_MSCRATCH, 0);
   mtvec = 0;
   mcause = 0;
   minstret = 0;

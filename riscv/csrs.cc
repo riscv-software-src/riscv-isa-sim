@@ -1,15 +1,21 @@
 // See LICENSE for license details.
 
 #include "csrs.h"
+// For processor_t:
+#include "processor.h"
 
 // implement class csr_t
-csr_t::csr_t(const reg_t addr): address(addr) {}
+csr_t::csr_t(processor_t* const proc, const reg_t addr):
+  proc(proc),
+  address(addr) {
+}
 
-csr_t::~csr_t() {}
+csr_t::~csr_t() {
+}
 
 // implement class basic_csr_t
-basic_csr_t::basic_csr_t(const reg_t addr, const reg_t init):
-  csr_t(addr),
+basic_csr_t::basic_csr_t(processor_t* const proc, const reg_t addr, const reg_t init):
+  csr_t(proc, addr),
   val(init) {
 }
 
