@@ -335,7 +335,7 @@ void state_t::reset(reg_t max_isa)
   mstatus = 0;
   mepc = 0;
   mtval = 0;
-  mscratch = std::make_shared<basic_csr_t>(0);
+  csrmap[CSR_MSCRATCH] = mscratch = std::make_shared<basic_csr_t>(0);
   mtvec = 0;
   mcause = 0;
   minstret = 0;
@@ -1462,6 +1462,11 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     goto out; \
   } while (false)
 
+  auto search = state.csrmap.find(which);
+  if (search != state.csrmap.end()) {
+    ret(search->second->read());
+  }
+
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
     // If n_pmp is zero, that means pmp is not implemented hence raise trap if it tries to access the csr
     if (n_pmp == 0)
@@ -1652,7 +1657,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIP: ret(state.mip);
     case CSR_MIE: ret(state.mie);
     case CSR_MEPC: ret(state.mepc & pc_alignment_mask());
-    case CSR_MSCRATCH: ret(state.mscratch->read());
     case CSR_MCAUSE: ret(state.mcause);
     case CSR_MTVAL: ret(state.mtval);
     case CSR_MTVAL2:

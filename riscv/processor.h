@@ -196,6 +196,7 @@ struct state_t
   regfile_t<freg_t, NFPR, false> FPR;
 
   // control and status registers
+  std::unordered_map<reg_t, csr_t_p> csrmap;
   reg_t prv;    // TODO: Can this be an enum instead?
   bool v;
   reg_t misa;
