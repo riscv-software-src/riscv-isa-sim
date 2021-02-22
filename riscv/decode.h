@@ -531,18 +531,18 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
     } \
   }
 
-#define VI_CHECK_STORE(elt_width) \
+#define VI_CHECK_STORE(elt_width, normal_fmt) \
   require_vector(false); \
-  reg_t veew = sizeof(elt_width##_t) * 8; \
-  float vemul = ((float)veew / P.VU.vsew * P.VU.vflmul); \
+  reg_t veew = normal_fmt ? sizeof(elt_width##_t) * 8 : 1; \
+  float vemul = normal_fmt ? ((float)veew / P.VU.vsew * P.VU.vflmul) : 1; \
   reg_t emul = vemul < 1 ? 1 : vemul; \
   require(vemul >= 0.125 && vemul <= 8); \
   require_align(insn.rd(), vemul); \
   require((nf * emul) <= (NVPR / 4) && \
           (insn.rd() + nf * emul) <= NVPR); \
 
-#define VI_CHECK_LOAD(elt_width) \
-  VI_CHECK_STORE(elt_width); \
+#define VI_CHECK_LOAD(elt_width, normal_fmt) \
+  VI_CHECK_STORE(elt_width, normal_fmt); \
   require_vm; \
 
 #define VI_CHECK_DSS(is_vs1) \
@@ -1606,12 +1606,12 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   } \
 }
 
-#define VI_LD(stride, offset, elt_width) \
+#define VI_LD(stride, offset, elt_width, normal_fmt) \
   const reg_t nf = insn.v_nf() + 1; \
-  const reg_t vl = P.VU.vl; \
+  const reg_t vl = normal_fmt ? P.VU.vl : ((P.VU.vl + 7) / 8); \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
-  VI_CHECK_LOAD(elt_width); \
+  VI_CHECK_LOAD(elt_width, normal_fmt); \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_ELEMENT_SKIP(i); \
     VI_STRIP(i); \
@@ -1660,12 +1660,12 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   } \
   P.VU.vstart = 0;
 
-#define VI_ST(stride, offset, elt_width) \
+#define VI_ST(stride, offset, elt_width, normal_fmt) \
   const reg_t nf = insn.v_nf() + 1; \
-  const reg_t vl = P.VU.vl; \
+  const reg_t vl = normal_fmt ? P.VU.vl : ((P.VU.vl + 7) / 8); \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
-  VI_CHECK_STORE(elt_width); \
+  VI_CHECK_STORE(elt_width, normal_fmt); \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i) \
     VI_ELEMENT_SKIP(i); \
@@ -1720,7 +1720,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   const reg_t vl = p->VU.vl; \
   const reg_t baseAddr = RS1; \
   const reg_t rd_num = insn.rd(); \
-  VI_CHECK_LOAD(elt_width); \
+  VI_CHECK_LOAD(elt_width, true); \
   bool early_stop = false; \
   for (reg_t i = p->VU.vstart; i < vl; ++i) { \
     VI_STRIP(i); \
