@@ -24,7 +24,7 @@ class csr_t {
 
   virtual ~csr_t();
 
- private:
+ protected:
   processor_t* const proc;
   const reg_t address;
 };

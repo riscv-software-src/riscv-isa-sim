@@ -900,8 +900,8 @@ void processor_t::set_csr(int which, reg_t val)
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
     search->second->write(val);
+    return;
   }
-  else {  // legacy non-csr_t CSRs
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
     // If no PMPs are configured, disallow access to all.  Otherwise, allow
@@ -1347,7 +1347,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxrm = val & 0x3ul;
       break;
   }
-  } // end legacy non-csr_t CSRs
 
 #if defined(RISCV_ENABLE_COMMITLOG)
   switch (which)
@@ -1417,7 +1416,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_STVAL:
     case CSR_MEPC:
     case CSR_MTVEC:
-    case CSR_MSCRATCH:
     case CSR_MCAUSE:
     case CSR_MTVAL:
     case CSR_MISA:
