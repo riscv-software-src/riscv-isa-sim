@@ -41,6 +41,10 @@ class csr_t {
   // Record a write to an alternate CSR (e.g. minstreth instead of minstret)
   void log_special_write(const reg_t address, const reg_t val) const noexcept;
 
+  // What value was written to this reg? Default implementation simply
+  // calls read(), but a few CSRs are special.
+  virtual reg_t written_value() const noexcept;
+
   processor_t* const proc;
   state_t* const state;
  public:
