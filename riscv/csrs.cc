@@ -3,6 +3,7 @@
 #include "csrs.h"
 // For processor_t:
 #include "processor.h"
+#include "mmu.h"
 // For get_field():
 #include "decode.h"
 // For trap_virtual_instruction and trap_illegal_instruction:
@@ -64,5 +65,60 @@ reg_t basic_csr_t::read() const noexcept {
 
 bool basic_csr_t::unlogged_write(const reg_t val) noexcept {
   this->val = val;
+  return true;
+}
+
+
+// implement class pmpaddr_csr_t
+pmpaddr_csr_t::pmpaddr_csr_t(processor_t* const proc, const reg_t addr):
+  logged_csr_t(proc, addr),
+  val(0) {
+}
+
+
+void pmpaddr_csr_t::verify_permissions(insn_t insn, bool write) const {
+  logged_csr_t::verify_permissions(insn, write);
+  // If n_pmp is zero, that means pmp is not implemented hence raise
+  // trap if it tries to access the csr. I would prefer to implement
+  // this by not instantiating any pmpaddr_csr_t for these regs, but
+  // n_pmp can change after reset() is run.
+  if (proc->n_pmp == 0)
+    throw trap_illegal_instruction(insn.bits());
+}
+
+
+reg_t pmpaddr_csr_t::read() const noexcept {
+  state_t* const state = proc->get_state();
+  reg_t i = address - CSR_PMPADDR0;
+  if ((state->pmpcfg[i] & PMP_A) >= PMP_NAPOT)
+    return val | (~proc->pmp_tor_mask() >> 1);
+  return val & proc->pmp_tor_mask();
+}
+
+reg_t pmpaddr_csr_t::raw_value() const noexcept {
+  return val;
+}
+
+
+bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
+  // If no PMPs are configured, disallow access to all. Otherwise,
+  // allow access to all, but unimplemented ones are hardwired to
+  // zero. Note that n_pmp can change after reset(); otherwise I would
+  // implement this in state_t::reset() by instantiating the correct
+  // number of pmpaddr_csr_t.
+  if (proc->n_pmp == 0)
+    return false;
+
+  state_t* const state = proc->get_state();
+  size_t i = address - CSR_PMPADDR0;
+  bool locked = state->pmpcfg[i] & PMP_L;
+  bool next_locked = i+1 < state->max_pmp && (state->pmpcfg[i+1] & PMP_L);
+  bool next_tor = i+1 < state->max_pmp && (state->pmpcfg[i+1] & PMP_A) == PMP_TOR;
+  if (i < proc->n_pmp && !locked && !(next_locked && next_tor)) {
+    this->val = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
+  }
+  else
+    return false;
+  proc->get_mmu()->flush_tlb();
   return true;
 }
