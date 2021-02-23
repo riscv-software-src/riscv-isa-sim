@@ -392,11 +392,9 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
     vlmax = (VLEN/vsew) * vflmul;
     vta = extract64(newType, 6, 1);
     vma = extract64(newType, 7, 1);
-    vediv = 1 << extract64(newType, 8, 2);
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
            || vsew > std::min(vflmul, 1.0f) * ELEN
-           || vediv != 1
            || (newType >> 8) != 0;
 
     if (vill) {
