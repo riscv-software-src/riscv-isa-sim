@@ -323,7 +323,7 @@ void processor_t::parse_isa_string(const char* str)
     bad_isa_string(str, "'Q' extension requires 'D'");
 }
 
-void state_t::reset(reg_t max_isa)
+void state_t::reset(processor_t* const proc, reg_t max_isa)
 {
   pc = DEFAULT_RSTVEC;
   XPR.reset();
@@ -476,7 +476,7 @@ void processor_t::enable_log_commits()
 
 void processor_t::reset()
 {
-  state.reset(max_isa);
+  state.reset(this, max_isa);
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
   if (mmu->is_target_big_endian())
     state.mstatus |= MSTATUS_UBE | MSTATUS_SBE | MSTATUS_MBE;
