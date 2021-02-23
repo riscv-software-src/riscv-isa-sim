@@ -30,6 +30,9 @@ class csr_t {
  protected:
   processor_t* const proc;
   const reg_t address;
+ private:
+  const unsigned csr_priv;
+  const bool csr_read_only;
 };
 
 typedef std::shared_ptr<csr_t> csr_t_p;

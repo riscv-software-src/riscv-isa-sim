@@ -12,7 +12,9 @@
 // implement class csr_t
 csr_t::csr_t(processor_t* const proc, const reg_t addr):
   proc(proc),
-  address(addr) {
+  address(addr),
+  csr_priv(get_field(addr, 0x300)),
+  csr_read_only(get_field(addr, 0xC00) == 3) {
 }
 
 void csr_t::verify_permissions(insn_t insn, bool write) const {
@@ -20,8 +22,6 @@ void csr_t::verify_permissions(insn_t insn, bool write) const {
   // privileges are insufficient, and the CSR belongs to supervisor or
   // hypervisor. Raise illegal-instruction exception otherwise.
   state_t* const state = proc->get_state();
-  unsigned csr_priv = get_field(address, 0x300);
-  bool csr_read_only = get_field(address, 0xC00) == 3;
   unsigned priv = state->prv == PRV_S && !state->v ? PRV_HS : state->prv;
 
   if ((csr_priv == PRV_S && !proc->supports_extension('S')) ||
