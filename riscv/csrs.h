@@ -75,6 +75,7 @@ class pmpaddr_csr_t: public logged_csr_t {
  private:
   bool next_locked_and_tor() const noexcept;
   reg_t val;
+  const size_t pmpidx;
 };
 
 typedef std::shared_ptr<pmpaddr_csr_t> pmpaddr_csr_t_p;
