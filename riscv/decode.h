@@ -119,6 +119,7 @@ public:
   uint64_t v_nf() { return x(29, 3); }
   uint64_t v_simm5() { return xs(15, 5); }
   uint64_t v_zimm5() { return x(15, 5); }
+  uint64_t v_zimm10() { return x(20, 10); }
   uint64_t v_zimm11() { return x(20, 11); }
   uint64_t v_lmul() { return x(20, 2); }
   uint64_t v_frac_lmul() { return x(22, 1); }
