@@ -124,8 +124,9 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
 bool pmpaddr_csr_t::next_locked_and_tor() const noexcept {
   state_t* const state = proc->get_state();
   size_t i = address - CSR_PMPADDR0;
-  bool next_locked = i+1 < state->max_pmp && (state->pmpcfg[i+1] & PMP_L);
-  bool next_tor = i+1 < state->max_pmp && (state->pmpcfg[i+1] & PMP_A) == PMP_TOR;
+  if (i >= state->max_pmp) return false;  // this is the last entry
+  bool next_locked = state->pmpcfg[i+1] & PMP_L;
+  bool next_tor = (state->pmpcfg[i+1] & PMP_A) == PMP_TOR;
   return next_locked && next_tor;
 }
 
