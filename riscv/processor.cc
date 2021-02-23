@@ -1468,7 +1468,9 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
-    ret(search->second->read());
+    if (!peek)
+      search->second->verify_permissions(insn, write);
+    return search->second->read();
   }
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {

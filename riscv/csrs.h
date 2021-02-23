@@ -14,6 +14,9 @@ class csr_t {
  public:
   csr_t(processor_t* const proc, const reg_t addr);
 
+  // Throw exception if read/write disallowed.
+  virtual void verify_permissions(insn_t insn, bool write) const;
+
   // read() returns the architectural value of this CSR. No permission
   // checking needed or allowed. Side effects not allowed.
   virtual reg_t read() const noexcept = 0;
