@@ -89,8 +89,8 @@ void pmpaddr_csr_t::verify_permissions(insn_t insn, bool write) const {
 
 reg_t pmpaddr_csr_t::read() const noexcept {
   state_t* const state = proc->get_state();
-  size_t i = address - CSR_PMPADDR0;
-  if ((state->pmpcfg[i] & PMP_A) >= PMP_NAPOT)
+  size_t pmpidx = address - CSR_PMPADDR0;
+  if ((state->pmpcfg[pmpidx] & PMP_A) >= PMP_NAPOT)
     return val | (~proc->pmp_tor_mask() >> 1);
   return val & proc->pmp_tor_mask();
 }
@@ -110,9 +110,9 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
     return false;
 
   state_t* const state = proc->get_state();
-  size_t i = address - CSR_PMPADDR0;
-  bool locked = state->pmpcfg[i] & PMP_L;
-  if (i < proc->n_pmp && !locked && !next_locked_and_tor()) {
+  size_t pmpidx = address - CSR_PMPADDR0;
+  bool locked = state->pmpcfg[pmpidx] & PMP_L;
+  if (pmpidx < proc->n_pmp && !locked && !next_locked_and_tor()) {
     this->val = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
   }
   else
@@ -123,10 +123,10 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
 
 bool pmpaddr_csr_t::next_locked_and_tor() const noexcept {
   state_t* const state = proc->get_state();
-  size_t i = address - CSR_PMPADDR0;
-  if (i >= state->max_pmp) return false;  // this is the last entry
-  bool next_locked = state->pmpcfg[i+1] & PMP_L;
-  bool next_tor = (state->pmpcfg[i+1] & PMP_A) == PMP_TOR;
+  size_t pmpidx = address - CSR_PMPADDR0;
+  if (pmpidx >= state->max_pmp) return false;  // this is the last entry
+  bool next_locked = state->pmpcfg[pmpidx+1] & PMP_L;
+  bool next_tor = (state->pmpcfg[pmpidx+1] & PMP_A) == PMP_TOR;
   return next_locked && next_tor;
 }
 
