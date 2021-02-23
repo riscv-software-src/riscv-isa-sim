@@ -47,7 +47,8 @@ class logged_csr_t: public csr_t {
   virtual void write(const reg_t val) noexcept override final;
 
  protected:
-  virtual void unlogged_write(const reg_t val) noexcept = 0;
+  // Return value indicates success; false means no write actually occurred
+  virtual bool unlogged_write(const reg_t val) noexcept = 0;
 };
 
 
@@ -57,7 +58,7 @@ class basic_csr_t: public logged_csr_t {
   basic_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
   virtual reg_t read() const noexcept override;
  protected:
-  virtual void unlogged_write(const reg_t val) noexcept override;
+  virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
   reg_t val;
 };
