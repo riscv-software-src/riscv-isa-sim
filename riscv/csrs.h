@@ -73,6 +73,7 @@ class pmpaddr_csr_t: public logged_csr_t {
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
+  bool next_locked_and_tor() const noexcept;
   reg_t val;
 };
 

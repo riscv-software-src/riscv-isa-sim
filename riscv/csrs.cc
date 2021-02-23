@@ -112,15 +112,21 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
   state_t* const state = proc->get_state();
   size_t i = address - CSR_PMPADDR0;
   bool locked = state->pmpcfg[i] & PMP_L;
-  bool next_locked = i+1 < state->max_pmp && (state->pmpcfg[i+1] & PMP_L);
-  bool next_tor = i+1 < state->max_pmp && (state->pmpcfg[i+1] & PMP_A) == PMP_TOR;
-  if (i < proc->n_pmp && !locked && !(next_locked && next_tor)) {
+  if (i < proc->n_pmp && !locked && !next_locked_and_tor()) {
     this->val = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
   }
   else
     return false;
   proc->get_mmu()->flush_tlb();
   return true;
+}
+
+bool pmpaddr_csr_t::next_locked_and_tor() const noexcept {
+  state_t* const state = proc->get_state();
+  size_t i = address - CSR_PMPADDR0;
+  bool next_locked = i+1 < state->max_pmp && (state->pmpcfg[i+1] & PMP_L);
+  bool next_tor = i+1 < state->max_pmp && (state->pmpcfg[i+1] & PMP_A) == PMP_TOR;
+  return next_locked && next_tor;
 }
 
 
