@@ -383,7 +383,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   single_step = STEP_NONE;
 
   memset(this->pmpcfg, 0, sizeof(this->pmpcfg));
-  memset(this->pmpaddr, 0, sizeof(this->pmpaddr));
+  for (int i=0; i < max_pmp; ++i) {
+    csrmap[CSR_PMPADDR0 + i] = pmpaddr[i] = std::make_shared<pmpaddr_csr_t>(proc, CSR_PMPADDR0 + i);
+  }
 
   fflags = 0;
   frm = 0;
@@ -901,24 +903,6 @@ void processor_t::set_csr(int which, reg_t val)
   if (search != state.csrmap.end()) {
     search->second->write(val);
     return;
-  }
-
-  if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
-    // If no PMPs are configured, disallow access to all.  Otherwise, allow
-    // access to all, but unimplemented ones are hardwired to zero.
-    if (n_pmp == 0)
-      return;
-
-    size_t i = which - CSR_PMPADDR0;
-    bool locked = state.pmpcfg[i] & PMP_L;
-    bool next_locked = i+1 < state.max_pmp && (state.pmpcfg[i+1] & PMP_L);
-    bool next_tor = i+1 < state.max_pmp && (state.pmpcfg[i+1] & PMP_A) == PMP_TOR;
-    if (i < n_pmp && !locked && !(next_locked && next_tor)) {
-      state.pmpaddr[i] = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
-      LOG_CSR(which);
-    }
-
-    mmu->flush_tlb();
   }
 
   if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.max_pmp / 4) {
@@ -1471,17 +1455,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     if (!peek)
       search->second->verify_permissions(insn, write);
     return search->second->read();
-  }
-
-  if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
-    // If n_pmp is zero, that means pmp is not implemented hence raise trap if it tries to access the csr
-    if (n_pmp == 0)
-      goto throw_illegal;
-    reg_t i = which - CSR_PMPADDR0;
-    if ((state.pmpcfg[i] & PMP_A) >= PMP_NAPOT)
-      ret(state.pmpaddr[i] | (~pmp_tor_mask() >> 1));
-    else
-      ret(state.pmpaddr[i] & pmp_tor_mask());
   }
 
   if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.max_pmp / 4) {

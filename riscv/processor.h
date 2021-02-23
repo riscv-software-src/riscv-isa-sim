@@ -215,7 +215,7 @@ struct state_t
 
   static const int max_pmp = 16;
   uint8_t pmpcfg[max_pmp];
-  reg_t pmpaddr[max_pmp];
+  pmpaddr_csr_t_p pmpaddr[max_pmp];
 
   uint32_t fflags;
   uint32_t frm;
@@ -472,8 +472,6 @@ private:
   void disasm(insn_t insn); // disassemble and print an instruction
   int paddr_bits();
 
-  reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }
-
   void enter_debug_mode(uint8_t cause);
 
   void debug_output_log(stringstream *s); // either output to interactive user or write to log file
@@ -493,10 +491,11 @@ private:
 
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;
+public:
   reg_t n_pmp;
   reg_t lg_pmp_granularity;
+  reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }
 
-public:
   class vectorUnit_t {
     public:
       processor_t* p;
