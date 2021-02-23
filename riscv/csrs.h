@@ -78,4 +78,13 @@ class pmpaddr_csr_t: public logged_csr_t {
 
 typedef std::shared_ptr<pmpaddr_csr_t> pmpaddr_csr_t_p;
 
+class pmpcfg_csr_t: public logged_csr_t {
+ public:
+  pmpcfg_csr_t(processor_t* const proc, const reg_t addr);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+
 #endif
