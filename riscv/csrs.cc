@@ -122,3 +122,39 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
   proc->get_mmu()->flush_tlb();
   return true;
 }
+
+
+// implement class pmpcfg_csr_t
+pmpcfg_csr_t::pmpcfg_csr_t(processor_t* const proc, const reg_t addr):
+  logged_csr_t(proc, addr) {
+}
+
+reg_t pmpcfg_csr_t::read() const noexcept {
+  state_t* const state = proc->get_state();
+  reg_t cfg_res = 0;
+  for (size_t i0 = (address - CSR_PMPCFG0) * 4, i = i0; i < i0 + proc->get_xlen() / 8 && i < state->max_pmp; i++)
+    cfg_res |= reg_t(state->pmpcfg[i]) << (8 * (i - i0));
+  return cfg_res;
+}
+
+bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
+  if (proc->n_pmp == 0)
+    return false;
+
+  state_t* const state = proc->get_state();
+  bool write_success = false;
+  for (size_t i0 = (address - CSR_PMPCFG0) * 4, i = i0; i < i0 + proc->get_xlen() / 8; i++) {
+    if (i < proc->n_pmp) {
+      if (!(state->pmpcfg[i] & PMP_L)) {
+        uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
+        cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1
+        if (proc->lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
+          cfg |= PMP_NAPOT; // Disallow A=NA4 when granularity > 4
+        state->pmpcfg[i] = cfg;
+      }
+      write_success = true;
+    }
+  }
+  proc->get_mmu()->flush_tlb();
+  return write_success;
+}

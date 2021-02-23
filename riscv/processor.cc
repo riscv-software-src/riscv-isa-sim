@@ -329,6 +329,10 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   XPR.reset();
   FPR.reset();
 
+  // This assumes xlen is always max_xlen, which is true today (see
+  // set_csr() for CSR_MSTATUS):
+  auto xlen = proc->get_max_xlen();
+
   prv = PRV_M;
   v = false;
   misa = max_isa;
@@ -385,6 +389,10 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   memset(this->pmpcfg, 0, sizeof(this->pmpcfg));
   for (int i=0; i < max_pmp; ++i) {
     csrmap[CSR_PMPADDR0 + i] = pmpaddr[i] = std::make_shared<pmpaddr_csr_t>(proc, CSR_PMPADDR0 + i);
+  }
+  for (int i=0; i < max_pmp; i += xlen/8) {
+    reg_t addr = CSR_PMPCFG0 + i/4;
+    csrmap[addr] = std::make_shared<pmpcfg_csr_t>(proc, addr);
   }
 
   fflags = 0;
@@ -903,23 +911,6 @@ void processor_t::set_csr(int which, reg_t val)
   if (search != state.csrmap.end()) {
     search->second->write(val);
     return;
-  }
-
-  if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.max_pmp / 4) {
-    if (n_pmp == 0)
-      return;
-
-    for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8; i++) {
-      if (i < n_pmp && !(state.pmpcfg[i] & PMP_L)) {
-        uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
-        cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1
-        if (lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
-          cfg |= PMP_NAPOT; // Disallow A=NA4 when granularity > 4
-        state.pmpcfg[i] = cfg;
-        LOG_CSR(which);
-      }
-    }
-    mmu->flush_tlb();
   }
 
   switch (which)
@@ -1455,15 +1446,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     if (!peek)
       search->second->verify_permissions(insn, write);
     return search->second->read();
-  }
-
-  if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.max_pmp / 4) {
-    require((which & ((xlen / 32) - 1)) == 0);
-
-    reg_t cfg_res = 0;
-    for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8 && i < state.max_pmp; i++)
-      cfg_res |= reg_t(state.pmpcfg[i]) << (8 * (i - i0));
-    ret(cfg_res);
   }
 
   switch (which)
