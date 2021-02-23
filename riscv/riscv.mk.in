@@ -875,6 +875,7 @@ riscv_insn_ext_v_ldst = \
 	vs8r_v \
 
 riscv_insn_ext_v_ctrl = \
+	vsetivli \
 	vsetvli \
 	vsetvl \
 
