@@ -89,7 +89,7 @@ void pmpaddr_csr_t::verify_permissions(insn_t insn, bool write) const {
 
 reg_t pmpaddr_csr_t::read() const noexcept {
   state_t* const state = proc->get_state();
-  reg_t i = address - CSR_PMPADDR0;
+  size_t i = address - CSR_PMPADDR0;
   if ((state->pmpcfg[i] & PMP_A) >= PMP_NAPOT)
     return val | (~proc->pmp_tor_mask() >> 1);
   return val & proc->pmp_tor_mask();
