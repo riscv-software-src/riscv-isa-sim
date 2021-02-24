@@ -351,7 +351,11 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   scounteren = 0;
   sepc = 0;
   stval = 0;
-  sscratch = 0;
+  auto sscratch = std::make_shared<basic_csr_t>(proc, CSR_SSCRATCH, 0);
+  auto vsscratch = std::make_shared<basic_csr_t>(proc, CSR_VSSCRATCH, 0);
+  // Note: if max_isa does not include H, we don't really need this virtualized_csr_t at all (though it doesn't hurt):
+  csrmap[CSR_SSCRATCH] = std::make_shared<virtualized_csr_t>(proc, sscratch, vsscratch);
+  csrmap[CSR_VSSCRATCH] = vsscratch;
   stvec = 0;
   satp = 0;
   scause = 0;
@@ -366,7 +370,6 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   hgatp = 0;
   vsstatus = 0;
   vstvec = 0;
-  vsscratch = 0;
   vsepc = 0;
   vscause = 0;
   vstval = 0;
@@ -1083,12 +1086,6 @@ void processor_t::set_csr(int which, reg_t val)
       else
         state.stvec = val & ~(reg_t)2;
       break;
-    case CSR_SSCRATCH:
-      if (state.v)
-        state.vsscratch = val;
-      else
-        state.sscratch = val;
-      break;
     case CSR_SCAUSE:
       if (state.v)
         state.vscause = val;
@@ -1235,7 +1232,6 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_VSTVEC: state.vstvec = val & ~(reg_t)2; break;
-    case CSR_VSSCRATCH: state.vsscratch = val; break;
     case CSR_VSEPC: state.vsepc = val & ~(reg_t)1; break;
     case CSR_VSCAUSE: state.vscause = val; break;
     case CSR_VSTVAL: state.vstval = val; break;
@@ -1385,7 +1381,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SATP:
     case CSR_SEPC:
     case CSR_STVEC:
-    case CSR_SSCRATCH:
     case CSR_SCAUSE:
     case CSR_STVAL:
     case CSR_MEPC:
@@ -1602,13 +1597,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
         ret(state.satp);
       }
     }
-    case CSR_SSCRATCH: {
-      if (state.v) {
-        ret(state.vsscratch);
-      } else {
-        ret(state.sscratch);
-      }
-    }
     case CSR_MSTATUS: ret(state.mstatus);
     case CSR_MSTATUSH:
       if (xlen == 32)
@@ -1665,7 +1653,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     }
     case CSR_VSIE: ret((state.mie & state.hideleg & MIP_VS_MASK) >> 1);
     case CSR_VSTVEC: ret(state.vstvec);
-    case CSR_VSSCRATCH: ret(state.vsscratch);
     case CSR_VSEPC: ret(state.vsepc & pc_alignment_mask());
     case CSR_VSCAUSE: ret(state.vscause);
     case CSR_VSTVAL: ret(state.vstval);

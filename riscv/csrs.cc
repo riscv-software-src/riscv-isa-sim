@@ -218,3 +218,26 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
   proc->get_mmu()->flush_tlb();
   return write_success;
 }
+
+
+// implement class virtualized_csr_t
+virtualized_csr_t::virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
+  csr_t(proc, orig->address),
+  orig_csr(orig),
+  virt_csr(virt) {
+}
+
+
+reg_t virtualized_csr_t::read() const noexcept {
+  state_t* const state = proc->get_state();
+  return state->v ? virt_csr->read() : orig_csr->read();
+}
+
+
+void virtualized_csr_t::write(const reg_t val) noexcept {
+  state_t* const state = proc->get_state();
+  if (state->v)
+    virt_csr->write(val);
+  else
+    orig_csr->write(val);
+}
