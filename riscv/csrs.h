@@ -69,7 +69,6 @@ class pmpaddr_csr_t: public logged_csr_t {
   pmpaddr_csr_t(processor_t* const proc, const reg_t addr);
   virtual void verify_permissions(insn_t insn, bool write) const override;
   virtual reg_t read() const noexcept override;
-  reg_t raw_value() const noexcept;
 
   // Assuming this is configured as TOR, return address for top of
   // range. Also forms bottom-of-range for next-highest pmpaddr
