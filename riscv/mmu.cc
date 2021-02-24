@@ -221,31 +221,27 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
     return true;
 
   for (size_t i = 0; i < proc->n_pmp; i++) {
-    uint8_t cfg = proc->state.pmpcfg[i];
+    // Check each 4-byte sector of the access
+    bool any_match = false;
+    bool all_match = true;
+    for (reg_t offset = 0; offset < len; offset += 1 << PMP_SHIFT) {
+      reg_t cur_addr = addr + offset;
+      bool match = proc->state.pmpaddr[i]->match4(cur_addr);
+      any_match |= match;
+      all_match &= match;
+    }
 
-    if (cfg & PMP_A) {
+    if (any_match) {
+      // If the PMP matches only a strict subset of the access, fail it
+      if (!all_match)
+        return false;
 
-      // Check each 4-byte sector of the access
-      bool any_match = false;
-      bool all_match = true;
-      for (reg_t offset = 0; offset < len; offset += 1 << PMP_SHIFT) {
-        reg_t cur_addr = addr + offset;
-        bool match = proc->state.pmpaddr[i]->match4(cur_addr);
-        any_match |= match;
-        all_match &= match;
-      }
-
-      if (any_match) {
-        // If the PMP matches only a strict subset of the access, fail it
-        if (!all_match)
-          return false;
-
-        return
-          (mode == PRV_M && !(cfg & PMP_L)) ||
-          (type == LOAD && (cfg & PMP_R)) ||
-          (type == STORE && (cfg & PMP_W)) ||
-          (type == FETCH && (cfg & PMP_X));
-      }
+      uint8_t cfg = proc->state.pmpcfg[i];
+      return
+        (mode == PRV_M && !(cfg & PMP_L)) ||
+        (type == LOAD && (cfg & PMP_R)) ||
+        (type == STORE && (cfg & PMP_W)) ||
+        (type == FETCH && (cfg & PMP_X));
     }
   }
 
