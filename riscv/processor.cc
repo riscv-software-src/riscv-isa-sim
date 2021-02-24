@@ -735,7 +735,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   if (state.prv <= PRV_S && bit < max_xlen && ((vsdeleg >> bit) & 1)) {
     // Handle the trap in VS-mode
     reg_t vector = (state.vstvec & 1) && interrupt ? 4*bit : 0;
-    state.pc = (state.vstvec & ~(reg_t)1) + vector;
+    state.pc = (state.vstvec & ~(reg_t)3) + vector;
     state.vscause = (interrupt) ? (t.cause() - 1) : t.cause();
     state.vsepc = epc;
     state.vstval = t.get_tval();
@@ -750,7 +750,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     // Handle the trap in HS-mode
     set_virt(false);
     reg_t vector = (state.stvec & 1) && interrupt ? 4*bit : 0;
-    state.pc = (state.stvec & ~(reg_t)1) + vector;
+    state.pc = (state.stvec & ~(reg_t)3) + vector;
     state.scause = t.cause();
     state.sepc = epc;
     state.stval = t.get_tval();
@@ -772,7 +772,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     // Handle the trap in M-mode
     set_virt(false);
     reg_t vector = (state.mtvec & 1) && interrupt ? 4*bit : 0;
-    state.pc = (state.mtvec & ~(reg_t)1) + vector;
+    state.pc = (state.mtvec & ~(reg_t)3) + vector;
     state.mepc = epc;
     state.mcause = t.cause();
     state.mtval = t.get_tval();
