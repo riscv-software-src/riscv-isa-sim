@@ -72,6 +72,18 @@ class pmpaddr_csr_t: public logged_csr_t {
   virtual void verify_permissions(insn_t insn, bool write) const override;
   virtual reg_t read() const noexcept override;
 
+  // Does a 4-byte access at the specified address match this PMP entry?
+  bool match4(reg_t addr) const noexcept;
+
+  // Does the specified range match only a proper subset of this page?
+  bool subset_match(reg_t addr, reg_t len) const noexcept;
+
+  // Is the specified access allowed given the pmpcfg privileges?
+  bool access_ok(access_type type, reg_t mode) const noexcept;
+
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
   // Assuming this is configured as TOR, return address for top of
   // range. Also forms bottom-of-range for next-highest pmpaddr
   // register if that one is TOR.
@@ -85,18 +97,6 @@ class pmpaddr_csr_t: public logged_csr_t {
   // E.g. for 4KiB region, returns 0xffffffff_fffff000.
   reg_t napot_mask() const noexcept;
 
-  // Does a 4-byte access at the specified address match this PMP entry?
-  bool match4(reg_t addr) const noexcept;
-
-  // Does the specified range match only a proper subset of this page?
-  bool subset_match(reg_t addr, reg_t len) const noexcept;
-
-  // Is the specified access allowed given the pmpcfg privileges?
-  bool access_ok(access_type type, reg_t mode) const noexcept;
-
- protected:
-  virtual bool unlogged_write(const reg_t val) noexcept override;
- private:
   bool next_locked_and_tor() const noexcept;
   reg_t val;
   friend class pmpcfg_csr_t;  // so he can access cfg
