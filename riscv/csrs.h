@@ -84,7 +84,7 @@ class pmpaddr_csr_t: public logged_csr_t {
   reg_t napot_mask() const noexcept;
 
   // Does a 4-byte access at the specified address match this PMP entry?
-  bool match4(reg_t cur_addr) const noexcept;
+  bool match4(reg_t addr) const noexcept;
 
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
