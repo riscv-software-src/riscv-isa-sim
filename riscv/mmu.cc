@@ -227,17 +227,13 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
 
     if (cfg & PMP_A) {
       bool is_tor = (cfg & PMP_A) == PMP_TOR;
-      bool is_na4 = (cfg & PMP_A) == PMP_NA4;
-
-      reg_t mask = (proc->state.pmpaddr[i]->raw_value() << 1) | (!is_na4) | ~proc->pmp_tor_mask();
-      mask = ~(mask & ~(mask + 1)) << PMP_SHIFT;
 
       // Check each 4-byte sector of the access
       bool any_match = false;
       bool all_match = true;
       for (reg_t offset = 0; offset < len; offset += 1 << PMP_SHIFT) {
         reg_t cur_addr = addr + offset;
-        bool napot_match = ((cur_addr ^ tor) & mask) == 0;
+        bool napot_match = ((cur_addr ^ tor) & proc->state.pmpaddr[i]->napot_mask()) == 0;
         bool tor_match = base <= cur_addr && cur_addr < tor;
         bool match = is_tor ? tor_match : napot_match;
         any_match |= match;
@@ -278,7 +274,6 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
 
     if (cfg & PMP_A) {
       bool is_tor = (cfg & PMP_A) == PMP_TOR;
-      bool is_na4 = (cfg & PMP_A) == PMP_NA4;
 
       bool begins_after_lower = addr >= base;
       bool begins_after_upper = addr >= tor;
@@ -287,9 +282,7 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
       bool tor_homogeneous = ends_before_lower || begins_after_upper ||
         (begins_after_lower && ends_before_upper);
 
-      reg_t mask = (proc->state.pmpaddr[i]->raw_value() << 1) | (!is_na4) | ~proc->pmp_tor_mask();
-      mask = ~(mask & ~(mask + 1)) << PMP_SHIFT;
-      bool mask_homogeneous = ~(mask << 1) & len;
+      bool mask_homogeneous = ~(proc->state.pmpaddr[i]->napot_mask() << 1) & len;
       bool napot_homogeneous = mask_homogeneous || ((addr ^ tor) / len) != 0;
 
       if (!(is_tor ? tor_homogeneous : napot_homogeneous))

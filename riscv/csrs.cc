@@ -134,6 +134,14 @@ reg_t pmpaddr_csr_t::tor_paddr() const noexcept {
 }
 
 
+reg_t pmpaddr_csr_t::napot_mask() const noexcept {
+  state_t* const state = proc->get_state();
+  bool is_na4 = (state->pmpcfg[pmpidx] & PMP_A) == PMP_NA4;
+  reg_t mask = (val << 1) | (!is_na4) | ~proc->pmp_tor_mask();
+  return ~(mask & ~(mask + 1)) << PMP_SHIFT;
+}
+
+
 // implement class pmpcfg_csr_t
 pmpcfg_csr_t::pmpcfg_csr_t(processor_t* const proc, const reg_t addr):
   logged_csr_t(proc, addr) {
