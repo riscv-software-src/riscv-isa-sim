@@ -130,6 +130,13 @@ reg_t pmpaddr_csr_t::tor_paddr() const noexcept {
 }
 
 
+reg_t pmpaddr_csr_t::tor_base_paddr() const noexcept {
+  if (pmpidx == 0) return 0;  // entry 0 always uses 0 as base
+  state_t* const state = proc->get_state();
+  return state->pmpaddr[pmpidx-1]->tor_paddr();
+}
+
+
 reg_t pmpaddr_csr_t::napot_mask() const noexcept {
   state_t* const state = proc->get_state();
   bool is_na4 = (state->pmpcfg[pmpidx] & PMP_A) == PMP_NA4;
