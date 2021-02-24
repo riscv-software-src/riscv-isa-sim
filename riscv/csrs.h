@@ -86,6 +86,9 @@ class pmpaddr_csr_t: public logged_csr_t {
   // Does a 4-byte access at the specified address match this PMP entry?
   bool match4(reg_t addr) const noexcept;
 
+  // Does the specified range match only a proper subset of this page?
+  bool subset_match(reg_t addr, reg_t len) const noexcept;
+
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:

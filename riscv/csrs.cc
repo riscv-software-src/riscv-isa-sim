@@ -156,6 +156,30 @@ bool pmpaddr_csr_t::match4(reg_t addr) const noexcept {
 }
 
 
+bool pmpaddr_csr_t::subset_match(reg_t addr, reg_t len) const noexcept {
+  if ((addr | len) & (len - 1))
+    abort();
+  state_t* const state = proc->get_state();
+  reg_t base = tor_base_paddr();
+  reg_t tor = tor_paddr();
+  uint8_t cfg = state->pmpcfg[pmpidx];
+
+  if ((cfg & PMP_A) == 0) return false;
+
+  bool is_tor = (cfg & PMP_A) == PMP_TOR;
+  bool begins_after_lower = addr >= base;
+  bool begins_after_upper = addr >= tor;
+  bool ends_before_lower = (addr & -len) < (base & -len);
+  bool ends_before_upper = (addr & -len) < (tor & -len);
+  bool tor_homogeneous = ends_before_lower || begins_after_upper ||
+    (begins_after_lower && ends_before_upper);
+
+  bool mask_homogeneous = ~(napot_mask() << 1) & len;
+  bool napot_homogeneous = mask_homogeneous || ((addr ^ tor) / len) != 0;
+
+  return !(is_tor ? tor_homogeneous : napot_homogeneous);
+}
+
 // implement class pmpcfg_csr_t
 pmpcfg_csr_t::pmpcfg_csr_t(processor_t* const proc, const reg_t addr):
   logged_csr_t(proc, addr) {
