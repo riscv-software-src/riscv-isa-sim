@@ -31,6 +31,7 @@ class csr_t {
 
  protected:
   processor_t* const proc;
+ public:
   const reg_t address;
  private:
   const unsigned csr_priv;
@@ -112,6 +113,27 @@ class pmpcfg_csr_t: public logged_csr_t {
   virtual reg_t read() const noexcept override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+
+// For CSRs that have a virtualized copy under another name. Each
+// instance of virtualized_csr_t will read/write one of two CSRs,
+// based on state.v. E.g. sscratch, stval, etc.
+//
+// Example: sscratch and vsscratch are both instances of basic_csr_t.
+// The csrmap will contain a virtualized_csr_t under sscratch's
+// address, plus the vsscratch basic_csr_t under its address.
+
+class virtualized_csr_t: public csr_t {
+ public:
+  virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
+
+  virtual reg_t read() const noexcept override;
+  virtual void write(const reg_t val) noexcept override;
+
+ protected:
+  csr_t_p orig_csr;
+  csr_t_p virt_csr;
 };
 
 
