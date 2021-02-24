@@ -129,6 +129,11 @@ bool pmpaddr_csr_t::next_locked_and_tor() const noexcept {
 }
 
 
+reg_t pmpaddr_csr_t::tor_paddr() const noexcept {
+  return (val & proc->pmp_tor_mask()) << PMP_SHIFT;
+}
+
+
 // implement class pmpcfg_csr_t
 pmpcfg_csr_t::pmpcfg_csr_t(processor_t* const proc, const reg_t addr):
   logged_csr_t(proc, addr) {
