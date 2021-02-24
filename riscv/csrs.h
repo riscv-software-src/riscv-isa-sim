@@ -99,6 +99,8 @@ class pmpaddr_csr_t: public logged_csr_t {
  private:
   bool next_locked_and_tor() const noexcept;
   reg_t val;
+  friend class pmpcfg_csr_t;  // so he can access cfg
+  uint8_t cfg;
   const size_t pmpidx;
 };
 
