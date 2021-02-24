@@ -6,6 +6,8 @@
 #include "decode.h"
 // For std::shared_ptr
 #include <memory>
+// For access_type:
+#include "memtracer.h"
 
 class processor_t;
 
@@ -88,6 +90,9 @@ class pmpaddr_csr_t: public logged_csr_t {
 
   // Does the specified range match only a proper subset of this page?
   bool subset_match(reg_t addr, reg_t len) const noexcept;
+
+  // Is the specified access allowed given the pmpcfg privileges?
+  bool access_ok(access_type type, reg_t mode) const noexcept;
 
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
