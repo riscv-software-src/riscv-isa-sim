@@ -149,12 +149,10 @@ bool pmpaddr_csr_t::match4(reg_t addr) const noexcept {
   state_t* const state = proc->get_state();
   uint8_t cfg = state->pmpcfg[pmpidx];
   if ((cfg & PMP_A) == 0) return false;
-  reg_t base = tor_base_paddr();
-  reg_t tor = tor_paddr();
   bool is_tor = (cfg & PMP_A) == PMP_TOR;
-  bool napot_match = ((addr ^ tor) & napot_mask()) == 0;
-  bool tor_match = base <= addr && addr < tor;
-  return is_tor ? tor_match : napot_match;
+  if (is_tor) return tor_base_paddr() <= addr && addr < tor_paddr();
+  // NAPOT or NA4:
+  return ((addr ^ tor_paddr()) & napot_mask()) == 0;
 }
 
 
