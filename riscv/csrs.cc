@@ -180,6 +180,18 @@ bool pmpaddr_csr_t::subset_match(reg_t addr, reg_t len) const noexcept {
   return !(is_tor ? tor_homogeneous : napot_homogeneous);
 }
 
+
+bool pmpaddr_csr_t::access_ok(access_type type, reg_t mode) const noexcept {
+  state_t* const state = proc->get_state();
+  uint8_t cfg = state->pmpcfg[pmpidx];
+  return
+    (mode == PRV_M && !(cfg & PMP_L)) ||
+    (type == LOAD && (cfg & PMP_R)) ||
+    (type == STORE && (cfg & PMP_W)) ||
+    (type == FETCH && (cfg & PMP_X));
+}
+
+
 // implement class pmpcfg_csr_t
 pmpcfg_csr_t::pmpcfg_csr_t(processor_t* const proc, const reg_t addr):
   logged_csr_t(proc, addr) {

@@ -236,12 +236,7 @@ bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
       if (!all_match)
         return false;
 
-      uint8_t cfg = proc->state.pmpcfg[i];
-      return
-        (mode == PRV_M && !(cfg & PMP_L)) ||
-        (type == LOAD && (cfg & PMP_R)) ||
-        (type == STORE && (cfg & PMP_W)) ||
-        (type == FETCH && (cfg & PMP_X));
+      return proc->state.pmpaddr[i]->access_ok(type, mode);
     }
   }
 
