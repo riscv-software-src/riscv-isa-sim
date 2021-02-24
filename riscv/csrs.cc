@@ -95,10 +95,6 @@ reg_t pmpaddr_csr_t::read() const noexcept {
   return val & proc->pmp_tor_mask();
 }
 
-reg_t pmpaddr_csr_t::raw_value() const noexcept {
-  return val;
-}
-
 
 bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
   // If no PMPs are configured, disallow access to all. Otherwise,
