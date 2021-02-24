@@ -220,8 +220,8 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
   if (!proc || proc->n_pmp == 0)
     return true;
 
-  reg_t base = 0;
   for (size_t i = 0; i < proc->n_pmp; i++) {
+    reg_t base = proc->state.pmpaddr[i]->tor_base_paddr();
     reg_t tor = proc->state.pmpaddr[i]->tor_paddr();
     uint8_t cfg = proc->state.pmpcfg[i];
 
@@ -252,8 +252,6 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
           (type == FETCH && (cfg & PMP_X));
       }
     }
-
-    base = tor;
   }
 
   return mode == PRV_M;
@@ -267,8 +265,8 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
   if (!proc)
     return true;
 
-  reg_t base = 0;
   for (size_t i = 0; i < proc->n_pmp; i++) {
+    reg_t base = proc->state.pmpaddr[i]->tor_base_paddr();
     reg_t tor = proc->state.pmpaddr[i]->tor_paddr();
     uint8_t cfg = proc->state.pmpcfg[i];
 
@@ -288,8 +286,6 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
       if (!(is_tor ? tor_homogeneous : napot_homogeneous))
         return false;
     }
-
-    base = tor;
   }
 
   return true;

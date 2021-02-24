@@ -75,6 +75,10 @@ class pmpaddr_csr_t: public logged_csr_t {
   // register if that one is TOR.
   reg_t tor_paddr() const noexcept;
 
+  // Assuming this is configured as TOR, return address for bottom of
+  // range. This is tor_paddr() from the previous pmpaddr register.
+  reg_t tor_base_paddr() const noexcept;
+
   // Assuming this is configured as NAPOT or NA4, return mask for paddr.
   // E.g. for 4KiB region, returns 0xffffffff_fffff000.
   reg_t napot_mask() const noexcept;
