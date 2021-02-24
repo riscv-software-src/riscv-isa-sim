@@ -221,21 +221,16 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
     return true;
 
   for (size_t i = 0; i < proc->n_pmp; i++) {
-    reg_t base = proc->state.pmpaddr[i]->tor_base_paddr();
-    reg_t tor = proc->state.pmpaddr[i]->tor_paddr();
     uint8_t cfg = proc->state.pmpcfg[i];
 
     if (cfg & PMP_A) {
-      bool is_tor = (cfg & PMP_A) == PMP_TOR;
 
       // Check each 4-byte sector of the access
       bool any_match = false;
       bool all_match = true;
       for (reg_t offset = 0; offset < len; offset += 1 << PMP_SHIFT) {
         reg_t cur_addr = addr + offset;
-        bool napot_match = ((cur_addr ^ tor) & proc->state.pmpaddr[i]->napot_mask()) == 0;
-        bool tor_match = base <= cur_addr && cur_addr < tor;
-        bool match = is_tor ? tor_match : napot_match;
+        bool match = proc->state.pmpaddr[i]->match4(cur_addr);
         any_match |= match;
         all_match &= match;
       }

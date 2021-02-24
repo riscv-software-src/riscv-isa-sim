@@ -145,6 +145,19 @@ reg_t pmpaddr_csr_t::napot_mask() const noexcept {
 }
 
 
+bool pmpaddr_csr_t::match4(reg_t cur_addr) const noexcept {
+  state_t* const state = proc->get_state();
+  uint8_t cfg = state->pmpcfg[pmpidx];
+  if ((cfg & PMP_A) == 0) return false;
+  reg_t base = tor_base_paddr();
+  reg_t tor = tor_paddr();
+  bool is_tor = (cfg & PMP_A) == PMP_TOR;
+  bool napot_match = ((cur_addr ^ tor) & napot_mask()) == 0;
+  bool tor_match = base <= cur_addr && cur_addr < tor;
+  return is_tor ? tor_match : napot_match;
+}
+
+
 // implement class pmpcfg_csr_t
 pmpcfg_csr_t::pmpcfg_csr_t(processor_t* const proc, const reg_t addr):
   logged_csr_t(proc, addr) {
