@@ -256,28 +256,9 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
   if (!proc)
     return true;
 
-  for (size_t i = 0; i < proc->n_pmp; i++) {
-    reg_t base = proc->state.pmpaddr[i]->tor_base_paddr();
-    reg_t tor = proc->state.pmpaddr[i]->tor_paddr();
-    uint8_t cfg = proc->state.pmpcfg[i];
-
-    if (cfg & PMP_A) {
-      bool is_tor = (cfg & PMP_A) == PMP_TOR;
-
-      bool begins_after_lower = addr >= base;
-      bool begins_after_upper = addr >= tor;
-      bool ends_before_lower = (addr & -len) < (base & -len);
-      bool ends_before_upper = (addr & -len) < (tor & -len);
-      bool tor_homogeneous = ends_before_lower || begins_after_upper ||
-        (begins_after_lower && ends_before_upper);
-
-      bool mask_homogeneous = ~(proc->state.pmpaddr[i]->napot_mask() << 1) & len;
-      bool napot_homogeneous = mask_homogeneous || ((addr ^ tor) / len) != 0;
-
-      if (!(is_tor ? tor_homogeneous : napot_homogeneous))
-        return false;
-    }
-  }
+  for (size_t i = 0; i < proc->n_pmp; i++)
+    if (proc->state.pmpaddr[i]->subset_match(addr, len))
+      return false;
 
   return true;
 }
