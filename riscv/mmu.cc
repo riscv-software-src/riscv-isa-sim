@@ -53,7 +53,7 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
   if (!proc)
     return addr;
 
-  bool virt = (proc) ? proc->state.v : false;
+  bool virt = proc->state.v;
   bool hlvx = xlate_flags & RISCV_XLATE_VIRT_HLVX;
   reg_t mode = proc->state.prv;
   if (type != FETCH) {
