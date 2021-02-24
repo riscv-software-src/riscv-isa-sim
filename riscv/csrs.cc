@@ -73,6 +73,7 @@ bool basic_csr_t::unlogged_write(const reg_t val) noexcept {
 pmpaddr_csr_t::pmpaddr_csr_t(processor_t* const proc, const reg_t addr):
   logged_csr_t(proc, addr),
   val(0),
+  cfg(0),
   pmpidx(address - CSR_PMPADDR0) {
 }
 
@@ -89,8 +90,7 @@ void pmpaddr_csr_t::verify_permissions(insn_t insn, bool write) const {
 
 
 reg_t pmpaddr_csr_t::read() const noexcept {
-  state_t* const state = proc->get_state();
-  if ((state->pmpcfg[pmpidx] & PMP_A) >= PMP_NAPOT)
+  if ((cfg & PMP_A) >= PMP_NAPOT)
     return val | (~proc->pmp_tor_mask() >> 1);
   return val & proc->pmp_tor_mask();
 }
@@ -105,8 +105,7 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->n_pmp == 0)
     return false;
 
-  state_t* const state = proc->get_state();
-  bool locked = state->pmpcfg[pmpidx] & PMP_L;
+  bool locked = cfg & PMP_L;
   if (pmpidx < proc->n_pmp && !locked && !next_locked_and_tor()) {
     this->val = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
   }
@@ -119,8 +118,8 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
 bool pmpaddr_csr_t::next_locked_and_tor() const noexcept {
   state_t* const state = proc->get_state();
   if (pmpidx >= state->max_pmp) return false;  // this is the last entry
-  bool next_locked = state->pmpcfg[pmpidx+1] & PMP_L;
-  bool next_tor = (state->pmpcfg[pmpidx+1] & PMP_A) == PMP_TOR;
+  bool next_locked = state->pmpaddr[pmpidx+1]->cfg & PMP_L;
+  bool next_tor = (state->pmpaddr[pmpidx+1]->cfg & PMP_A) == PMP_TOR;
   return next_locked && next_tor;
 }
 
@@ -138,16 +137,13 @@ reg_t pmpaddr_csr_t::tor_base_paddr() const noexcept {
 
 
 reg_t pmpaddr_csr_t::napot_mask() const noexcept {
-  state_t* const state = proc->get_state();
-  bool is_na4 = (state->pmpcfg[pmpidx] & PMP_A) == PMP_NA4;
+  bool is_na4 = (cfg & PMP_A) == PMP_NA4;
   reg_t mask = (val << 1) | (!is_na4) | ~proc->pmp_tor_mask();
   return ~(mask & ~(mask + 1)) << PMP_SHIFT;
 }
 
 
 bool pmpaddr_csr_t::match4(reg_t addr) const noexcept {
-  state_t* const state = proc->get_state();
-  uint8_t cfg = state->pmpcfg[pmpidx];
   if ((cfg & PMP_A) == 0) return false;
   bool is_tor = (cfg & PMP_A) == PMP_TOR;
   if (is_tor) return tor_base_paddr() <= addr && addr < tor_paddr();
@@ -159,10 +155,8 @@ bool pmpaddr_csr_t::match4(reg_t addr) const noexcept {
 bool pmpaddr_csr_t::subset_match(reg_t addr, reg_t len) const noexcept {
   if ((addr | len) & (len - 1))
     abort();
-  state_t* const state = proc->get_state();
   reg_t base = tor_base_paddr();
   reg_t tor = tor_paddr();
-  uint8_t cfg = state->pmpcfg[pmpidx];
 
   if ((cfg & PMP_A) == 0) return false;
 
@@ -182,8 +176,6 @@ bool pmpaddr_csr_t::subset_match(reg_t addr, reg_t len) const noexcept {
 
 
 bool pmpaddr_csr_t::access_ok(access_type type, reg_t mode) const noexcept {
-  state_t* const state = proc->get_state();
-  uint8_t cfg = state->pmpcfg[pmpidx];
   return
     (mode == PRV_M && !(cfg & PMP_L)) ||
     (type == LOAD && (cfg & PMP_R)) ||
@@ -201,7 +193,7 @@ reg_t pmpcfg_csr_t::read() const noexcept {
   state_t* const state = proc->get_state();
   reg_t cfg_res = 0;
   for (size_t i0 = (address - CSR_PMPCFG0) * 4, i = i0; i < i0 + proc->get_xlen() / 8 && i < state->max_pmp; i++)
-    cfg_res |= reg_t(state->pmpcfg[i]) << (8 * (i - i0));
+    cfg_res |= reg_t(state->pmpaddr[i]->cfg) << (8 * (i - i0));
   return cfg_res;
 }
 
@@ -213,12 +205,12 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
   bool write_success = false;
   for (size_t i0 = (address - CSR_PMPCFG0) * 4, i = i0; i < i0 + proc->get_xlen() / 8; i++) {
     if (i < proc->n_pmp) {
-      if (!(state->pmpcfg[i] & PMP_L)) {
+      if (!(state->pmpaddr[i]->cfg & PMP_L)) {
         uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
         cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1
         if (proc->lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
           cfg |= PMP_NAPOT; // Disallow A=NA4 when granularity > 4
-        state->pmpcfg[i] = cfg;
+        state->pmpaddr[i]->cfg = cfg;
       }
       write_success = true;
     }

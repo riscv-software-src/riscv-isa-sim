@@ -214,7 +214,6 @@ struct state_t
   bool debug_mode;
 
   static const int max_pmp = 16;
-  uint8_t pmpcfg[max_pmp];
   pmpaddr_csr_t_p pmpaddr[max_pmp];
 
   uint32_t fflags;
