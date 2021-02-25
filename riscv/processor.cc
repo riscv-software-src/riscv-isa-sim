@@ -1131,9 +1131,9 @@ void processor_t::set_csr(int which, reg_t val)
 
       // update the forced bits in MIDELEG
       if (supports_extension('H'))
-          state.mideleg |= MIDELEG_FORCED_MASK;
+        state.mideleg |= MIDELEG_FORCED_MASK;
       else
-          state.mideleg &= ~MIDELEG_FORCED_MASK;
+        state.mideleg &= ~MIDELEG_FORCED_MASK;
       break;
     }
     case CSR_HSTATUS: {
