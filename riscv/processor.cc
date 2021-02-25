@@ -1116,7 +1116,7 @@ void processor_t::set_csr(int which, reg_t val)
       if (!(val & (1L << ('F' - 'A'))))
         val &= ~(1L << ('D' - 'A'));
 
-      // allow MAFDCB bits in MISA to be modified
+      // allow MAFDCHB bits in MISA to be modified
       reg_t mask = 0;
       mask |= 1L << ('M' - 'A');
       mask |= 1L << ('A' - 'A');
