@@ -800,6 +800,7 @@ disassembler_t::disassembler_t(int xlen)
   DISASM_INSN("c.fsd", c_fsd, 0, {&rvc_fp_rs2s, &rvc_ld_address});
   DISASM_INSN("c.fsdsp", c_fsdsp, 0, {&rvc_fp_rs2, &rvc_sdsp_address});
 
+  DISASM_INSN("vsetivli", vsetivli, 0, {&xrd, &zimm5, &v_vtype});
   DISASM_INSN("vsetvli", vsetvli, 0, {&xrd, &xrs1, &v_vtype});
   DISASM_INSN("vsetvl", vsetvl, 0, {&xrd, &xrs1, &xrs2});
 
@@ -808,10 +809,6 @@ disassembler_t::disassembler_t(int xlen)
     add_insn(new disasm_insn_t(#name "16"   #ff ".v",  match_##name##16##ff##_v,    mask_##name##16##ff##_v   | mask_nf, fmt)); \
     add_insn(new disasm_insn_t(#name "32"   #ff ".v",  match_##name##32##ff##_v,    mask_##name##32##ff##_v   | mask_nf, fmt)); \
     add_insn(new disasm_insn_t(#name "64"   #ff ".v",  match_##name##64##ff##_v,    mask_##name##64##ff##_v   | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t(#name "128"  #ff ".v",  match_##name##128##ff##_v,   mask_##name##128##ff##_v  | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t(#name "256"  #ff ".v",  match_##name##256##ff##_v,   mask_##name##256##ff##_v  | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t(#name "512"  #ff ".v",  match_##name##512##ff##_v,   mask_##name##512##ff##_v  | mask_nf, fmt)); \
-    add_insn(new disasm_insn_t(#name "1024" #ff ".v",  match_##name##1024##ff##_v,  mask_##name##1024##ff##_v | mask_nf, fmt)); \
 
   std::vector<const arg_t *> v_ld_unit = {&vd, &v_address, &opt, &vm};
   std::vector<const arg_t *> v_st_unit = {&vs3, &v_address, &opt, &vm};
@@ -819,6 +816,9 @@ disassembler_t::disassembler_t(int xlen)
   std::vector<const arg_t *> v_st_stride = {&vs3, &v_address, &xrs2, &opt, &vm};
   std::vector<const arg_t *> v_ld_index = {&vd, &v_address, &vs2, &opt, &vm};
   std::vector<const arg_t *> v_st_index = {&vs3, &v_address, &vs2, &opt, &vm};
+
+  add_insn(new disasm_insn_t("vle1.v",  match_vle1_v,     mask_vle1_v, v_ld_unit));
+  add_insn(new disasm_insn_t("vse1.v",  match_vse1_v,     mask_vse1_v, v_st_unit));
 
   DISASM_VMEM_INSN(vle,    v_ld_unit,   );
   DISASM_VMEM_INSN(vluxei, v_ld_index,  );
@@ -1244,8 +1244,8 @@ disassembler_t::disassembler_t(int xlen)
 
   //vfunary1
   DISASM_INSN("vfsqrt.v", vfsqrt_v, 0, {&vd, &vs2, &opt, &vm});
-  DISASM_INSN("vfrsqrte7.v", vfrsqrte7_v, 0, {&vd, &vs2, &opt, &vm});
-  DISASM_INSN("vfrece7.v", vfrece7_v, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vfrsqrt7.v", vfrsqrt7_v, 0, {&vd, &vs2, &opt, &vm});
+  DISASM_INSN("vfrec7.v", vfrec7_v, 0, {&vd, &vs2, &opt, &vm});
   DISASM_INSN("vfclass.v", vfclass_v, 0, {&vd, &vs2, &opt, &vm});
 
   DISASM_OPIV_VF_INSN(vfmul);

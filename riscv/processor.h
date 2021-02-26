@@ -244,7 +244,6 @@ typedef enum {
 typedef enum {
   // 65('A') ~ 90('Z') is reserved for standard isa in misa
   EXT_ZFH   = 0,
-  EXT_ZVEDIV,
 } isa_extension_t;
 
 typedef enum {
@@ -491,7 +490,7 @@ public:
       reg_t vlmax;
       reg_t vstart, vxrm, vxsat, vl, vtype, vlenb;
       reg_t vma, vta;
-      reg_t vediv, vsew;
+      reg_t vsew;
       float vflmul;
       reg_t ELEN, VLEN;
       bool vill;

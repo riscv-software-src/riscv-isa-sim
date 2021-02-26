@@ -724,9 +724,9 @@ riscv_insn_ext_v_alu_fp = \
 	vfredmin_vs \
 	vfredosum_vs \
 	vfredsum_vs \
-	vfrece7_v \
+	vfrec7_v \
 	vfrsub_vf \
-	vfrsqrte7_v \
+	vfrsqrt7_v \
 	vfsgnj_vf \
 	vfsgnj_vv \
 	vfsgnjn_vf \
@@ -815,6 +815,7 @@ riscv_insn_ext_v_amo = \
 	vamoxorei64_v \
 
 riscv_insn_ext_v_ldst = \
+	vle1_v \
 	vle8_v \
 	vle16_v \
 	vle32_v \
@@ -851,6 +852,7 @@ riscv_insn_ext_v_ldst = \
 	vl2re64_v \
 	vl4re64_v \
 	vl8re64_v \
+	vse1_v \
 	vse8_v \
 	vse16_v \
 	vse32_v \
@@ -873,6 +875,7 @@ riscv_insn_ext_v_ldst = \
 	vs8r_v \
 
 riscv_insn_ext_v_ctrl = \
+	vsetivli \
 	vsetvli \
 	vsetvl \
 
