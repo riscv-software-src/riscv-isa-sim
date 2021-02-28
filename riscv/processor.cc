@@ -460,6 +460,7 @@ void processor_t::reset()
   state.dcsr.halt = halt_on_reset;
   halt_on_reset = false;
   set_csr(CSR_MSTATUS, state.mstatus);
+  state.vsstatus = state.mstatus & SSTATUS_VS_MASK;  // set UXL
   VU.reset();
 
   if (n_pmp > 0) {
