@@ -23,6 +23,7 @@
 #define PMP_L     0x80
 #define PMP_SHIFT 2
 
+#define PMP_OFF   0x0
 #define PMP_TOR   0x08
 #define PMP_NA4   0x10
 #define PMP_NAPOT 0x18
@@ -33,6 +34,11 @@
 
 #define TEST_RW 1
 #define TEST_FETCH 1
+/*
+ * Whether rwx share single cfg for M mode
+ * When @@set_sec_mml@@ set, it must be 0, otherwise unexpected exception
+ */
+#define M_MODE_RWX @m_mode_rwx:int@
 
 #define CAUSE_LOAD_ACCESS 0x5
 #define CAUSE_STORE_ACCESS 0x7
@@ -162,9 +168,18 @@ static void set_cfg() {
     asm volatile ("csrw pmpaddr3, %0 \n" :: "r"(U_MEM_END >> 2) : "memory");
     asm volatile ("csrw pmpaddr2, %0 \n" :: "r"(TEST_MEM_END >> 2) : "memory");
     asm volatile ("csrw pmpaddr1, %0 \n" :: "r"((TEST_MEM_START + @pmp_addr_offset:int@) >> 2) : "memory");
-    asm volatile ("csrw pmpaddr0, %0 \n" :: "r"((TEST_MEM_START >> 3) - 1) : "memory");
     
+#if M_MODE_RWX
+    asm volatile ("csrw pmpaddr0, %0 \n" :: "r"((TEST_MEM_START >> 3) - 1) : "memory");
     reg_t cfg0 = (PMP_R | PMP_W | PMP_X | PMP_NAPOT);
+#else
+    asm volatile ("csrw pmpaddr6, %0 \n" :: "r"(TEST_MEM_START >> 2) : "memory"); // for data
+    asm volatile ("csrw pmpaddr5, %0 \n" :: "r"(0x110000 >> 2) : "memory");       // for code
+    asm volatile ("csrw pmpaddr4, %0 \n" :: "r"(0x100000 >> 2) : "memory");       // addr start
+    reg_t cfg0 = PMP_OFF;
+    reg_t cfg1 = PMP_OFF | ((PMP_R | PMP_W | PMP_TOR) << 16) | ((PMP_X | PMP_TOR) << 8);
+#endif
+    
     // Only true for Spike
 //    asm volatile ("csrr %0, pmpcfg0\n":"=r"(cfg0)); 
 //    if (cfg0 != (PMP_R | PMP_W | PMP_X | PMP_NAPOT)) {
@@ -172,12 +187,29 @@ static void set_cfg() {
 //    }
     
     if (@set_sec_mml:int@) {    // need to set L bit for M mode code like trap_handling
+#if M_MODE_RWX
         cfg0 |= PMP_L;
+#else
+        cfg1 |= ((PMP_L << 8) | (PMP_L << 16));
+#endif
     }
+    
     cfg0 |= (PMP_R | PMP_W | PMP_X | PMP_TOR) << 24;    // for U_MEM
 #if @create_pmp_cfg:int@
     cfg0 |= ((@pmp_rw:int@ ? (PMP_R | PMP_W)  : 0) | (@pmp_x:int@ ? PMP_X : 0) | PMP_TOR | (@pmp_l:int@ ? PMP_L : 0)) << 16;
 #endif   
+    
+#if !M_MODE_RWX
+#if __riscv_xlen == 64
+    cfg0 |= (cfg1 << 32);
+#else
+    asm volatile ("csrw pmpcfg1, %0 \n"
+                :
+                : "r"(cfg1)
+                : "memory");
+#endif // __riscv_xlen == 64
+#endif // !M_MODE_RWX
+    
     asm volatile ("csrw pmpcfg0, %0 \n"
                 :
                 : "r"(cfg0)

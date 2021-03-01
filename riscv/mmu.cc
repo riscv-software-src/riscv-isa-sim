@@ -258,14 +258,21 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
         bool normal_rwx = (typer && cfgr) || (typew && cfgw) || (typex && cfgx);
 
         if (proc->state.mseccfg & MSECCFG_MML) {
-          bool mml_shared_region = !cfgr && cfgw;
-          bool mml_chk_normal = (prvm == cfgl) && normal_rwx;
-          bool mml_chk_shared =
-              (!cfgl && cfgx && (typer || typew)) ||
-              (!cfgl && !cfgx && (typer || (typew && prvm))) ||
-              (cfgl && typex) ||
-              (cfgl && typer && cfgx && prvm);
-          return mml_shared_region ? mml_chk_shared : mml_chk_normal;
+            if (cfgx && cfgw && cfgr && cfgl) {
+                // Locked Shared data region: Read only on both M and S/U mode.
+                return typer;
+            } else {
+              bool mml_shared_region = !cfgr && cfgw;
+              bool mml_chk_normal = (prvm == cfgl) && normal_rwx;
+              bool mml_chk_shared =
+                  (!cfgl && cfgx && (typer || typew)) ||
+                  (!cfgl && !cfgx && (typer || (typew && prvm))) ||
+                  (cfgl && typex) ||
+                  (cfgl && typer && cfgx && prvm);
+              if (mml_shared_region)
+                  printf("share range, mode = %d\n", prvm);
+              return mml_shared_region ? mml_chk_shared : mml_chk_normal;
+            }
         } else {
           bool m_bypass = (prvm && !cfgl);
           return m_bypass || normal_rwx;

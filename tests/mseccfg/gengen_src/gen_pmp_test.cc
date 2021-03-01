@@ -75,12 +75,17 @@ main()
         gen_class_1.set_create_pmp_cfg(pmp_match);
         gen_class_1.set_pmp_addr_offset(0);
         if (mml) {
-            if (1 - u_mode != cfgl) {
+            if (cfgl && rw && x) { // 2nd version, XWRL-MML is shared read-only
                 rw_err = 1;
                 x_err = 1;
+            } else {
+                if (1 - u_mode != cfgl) {
+                    rw_err = 1;
+                    x_err = 1;
+                }
+                if (rw == 0) rw_err = 1;
+                if (x == 0) x_err = 1;
             }
-            if (rw == 0) rw_err = 1;
-            if (x == 0) x_err = 1;
         } else {
             if (u_mode == 1 || cfgl) {
                 if (rw == 0) rw_err = 1;
@@ -183,8 +188,8 @@ main()
             if (!pre_mml && (val & 0x3) == 0x1) { // b'11^01 = 10, RW=01
                 pmpcfg_fail = 1;
             }
-        } else {    // for invalid cfgs
-            gen_class_2.set_addr_idx(4 + cur_files_count % (max_pmp - 4));
+        } else {    // for invalid cfgs, start from 7
+            gen_class_2.set_addr_idx(7 + cur_files_count % (max_pmp - 7));
             gen_class_2.set_addr_offset(0x10000);
             gen_class_2.set_cfg_idx((1 + cur_files_count % (max_pmp_cfg - 1)) * 2);   // for 2, 4, ..., 14
             gen_class_2.set_cfg_sub_idx((cur_files_count >> val) % 4);
@@ -252,11 +257,20 @@ main()
     gen_class_3.set_enable_umode_test(umode);
 
     if (r != 0) {   // not share mode
-        if (typex == 0) {
-            r_err = 1;
-            w_err = 1;
+        // 2nd version, XWRL-MML is shared read-only
+        if (x && cfgl) {
+            if (typex == 0) {
+                w_err = 1;
+            } else {
+                x_err = 1;
+            }
         } else {
-            x_err = 1;
+            if (typex == 0) {
+                r_err = 1;
+                w_err = 1;
+            } else {
+                x_err = 1;
+            }
         }
     } else {
         if (cfgl) {

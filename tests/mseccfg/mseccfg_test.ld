@@ -31,16 +31,17 @@ SECTIONS
     . = 0x100000;
     __global_pointer$ = 0x140000;
     
+    .text : ALIGN(256) { 
+        *(.text.init) 
+        *(.text) *(.text.*) *(.device_code) . = ALIGN(256); . = 0x10000; }
+    PROVIDE (__TEXT_END = .);
+    
     .tohost : { *(.tohost) }
     .rodata : ALIGN(256) { *(.rodata) *(.rodata.*) }
     .sdata  : ALIGN(256) {
       *(.srodata.cst16) *(.srodata.cst8) *(.srodata.cst4) *(.srodata.cst2) *(.srodata*)
       *(.sdata .sdata.* .gnu.linkonce.s.*)
     }
-    
-    .text : ALIGN(256) { 
-        *(.text.init) 
-        *(.text) *(.text.*) *(.device_code) . = ALIGN(256); }
     
     /* data sections, mostly for host to deal with input and output data */
     .data : {LONG(0xdeadbeef) *(.data) }
