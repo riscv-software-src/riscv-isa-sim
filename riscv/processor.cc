@@ -349,7 +349,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   mideleg = 0;
   mcounteren = 0;
   scounteren = 0;
-  sepc = 0;
+  auto nonvirtual_sepc = std::make_shared<epc_csr_t>(proc, CSR_SEPC);
+  csrmap[CSR_VSEPC] = vsepc = std::make_shared<epc_csr_t>(proc, CSR_VSEPC);
+  csrmap[CSR_SEPC] = sepc = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sepc, vsepc);
   stval = 0;
   auto sscratch = std::make_shared<basic_csr_t>(proc, CSR_SSCRATCH, 0);
   auto vsscratch = std::make_shared<basic_csr_t>(proc, CSR_VSSCRATCH, 0);
@@ -370,7 +372,6 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   hgatp = 0;
   vsstatus = 0;
   vstvec = 0;
-  vsepc = 0;
   vscause = 0;
   vstval = 0;
   vsatp = 0;
@@ -760,7 +761,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     reg_t vector = (state.vstvec & 1) && interrupt ? 4*bit : 0;
     state.pc = (state.vstvec & ~(reg_t)1) + vector;
     state.vscause = (interrupt) ? (t.cause() - 1) : t.cause();
-    state.vsepc = epc;
+    state.vsepc->write(epc);
     state.vstval = t.get_tval();
 
     reg_t s = state.mstatus;
@@ -775,7 +776,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     reg_t vector = (state.stvec & 1) && interrupt ? 4*bit : 0;
     state.pc = (state.stvec & ~(reg_t)1) + vector;
     state.scause = t.cause();
-    state.sepc = epc;
+    state.sepc->write(epc);
     state.stval = t.get_tval();
     state.htval = t.get_tval2();
     state.htinst = t.get_tinst();
@@ -1074,12 +1075,6 @@ void processor_t::set_csr(int which, reg_t val)
           state.satp = compute_new_satp(val, state.satp);
       }
       break;
-    case CSR_SEPC:
-      if (state.v)
-        state.vsepc = val & ~(reg_t)1;
-      else
-        state.sepc = val & ~(reg_t)1;
-      break;
     case CSR_STVEC:
       if (state.v)
         state.vstvec = val & ~(reg_t)2;
@@ -1231,7 +1226,6 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_VSTVEC: state.vstvec = val & ~(reg_t)2; break;
-    case CSR_VSEPC: state.vsepc = val & ~(reg_t)1; break;
     case CSR_VSCAUSE: state.vscause = val; break;
     case CSR_VSTVAL: state.vstval = val; break;
     case CSR_VSIP: {
@@ -1378,7 +1372,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SCOUNTEREN:
     case CSR_MCOUNTEREN:
     case CSR_SATP:
-    case CSR_SEPC:
     case CSR_STVEC:
     case CSR_SCAUSE:
     case CSR_STVAL:
@@ -1552,13 +1545,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
         ret(state.mie & state.mideleg & ~MIP_HS_MASK);
       }
     }
-    case CSR_SEPC: {
-      if (state.v) {
-        ret(state.vsepc & pc_alignment_mask());
-      } else {
-        ret(state.sepc & pc_alignment_mask());
-      }
-    }
     case CSR_STVAL: {
       if (state.v) {
         ret(state.vstval);
@@ -1650,7 +1636,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     }
     case CSR_VSIE: ret((state.mie & state.hideleg & MIP_VS_MASK) >> 1);
     case CSR_VSTVEC: ret(state.vstvec);
-    case CSR_VSEPC: ret(state.vsepc & pc_alignment_mask());
     case CSR_VSCAUSE: ret(state.vscause);
     case CSR_VSTVAL: ret(state.vstval);
     case CSR_VSIP: ret((state.mip & state.hideleg & MIP_VS_MASK) >> 1);

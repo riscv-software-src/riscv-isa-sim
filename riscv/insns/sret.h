@@ -5,7 +5,7 @@ if (STATE.v) {
 } else {
   require_privilege(get_field(STATE.mstatus, MSTATUS_TSR) ? PRV_M : PRV_S);
 }
-reg_t next_pc = (STATE.v) ? p->get_state()->vsepc : p->get_state()->sepc;
+reg_t next_pc = p->get_state()->sepc->read();
 set_pc_and_serialize(next_pc);
 reg_t s = STATE.mstatus;
 reg_t prev_prv = get_field(s, MSTATUS_SPP);
