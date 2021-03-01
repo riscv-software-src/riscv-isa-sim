@@ -170,7 +170,7 @@ struct state_t
   bool v;
   reg_t misa;
   reg_t mstatus;
-  reg_t mepc;
+  csr_t_p mepc;
   reg_t mtval;
   reg_t mtvec;
   reg_t mcause;
