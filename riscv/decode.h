@@ -217,7 +217,10 @@ private:
 #define FRS1 READ_FREG(insn.rs1())
 #define FRS2 READ_FREG(insn.rs2())
 #define FRS3 READ_FREG(insn.rs3())
-#define dirty_mstatus(bits) (STATE.mstatus |= (bits) | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD))
+#define dirty_mstatus(bits) ({ reg_t dirties = (bits) | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD); \
+                               STATE.mstatus |= dirties; \
+                               if (STATE.v) STATE.vsstatus |= dirties; \
+                            })
 #define dirty_fp_state  dirty_mstatus(MSTATUS_FS)
 #define dirty_ext_state dirty_mstatus(MSTATUS_XS)
 #define dirty_vs_state  dirty_mstatus(MSTATUS_VS)

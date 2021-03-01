@@ -642,34 +642,6 @@ void processor_t::set_virt(bool virt)
      * set_virt() is always used in conjucter with set_privilege() and
      * set_privilege() will flush TLB unconditionally.
      */
-    if (state.v and !virt) {
-      /*
-       * When transitioning from virt-on (VS/VU) to virt-off (HS/M)
-       * we should mark Host extension status (i.e. FS, VS, and XS
-       * bits) as dirty when Guest/VM extension status is dirty and
-       * Host extension status is initial, clean, or dirty.
-       */
-      if ((state.vsstatus & SSTATUS_FS) &&
-          ((state.mstatus & SSTATUS_FS) == SSTATUS_FS)) {
-        state.vsstatus |= SSTATUS_FS;
-      }
-      if (supports_extension('V') &&
-          (state.vsstatus & SSTATUS_VS) &&
-          ((state.mstatus & SSTATUS_VS) == SSTATUS_VS)) {
-        state.vsstatus |= SSTATUS_VS;
-      }
-      if ((state.vsstatus & SSTATUS_XS) &&
-          ((state.mstatus & SSTATUS_XS) == SSTATUS_XS)) {
-        state.vsstatus |= SSTATUS_XS;
-      }
-      /* Update SD bit of Host */
-      state.vsstatus &= (xlen == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
-      if (((state.mstatus & SSTATUS_FS) == SSTATUS_FS) ||
-          ((state.vsstatus & SSTATUS_VS) == SSTATUS_VS) ||
-          ((state.vsstatus & SSTATUS_XS) == SSTATUS_XS)) {
-         state.vsstatus |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-      }
-    }
     mask = SSTATUS_VS_MASK;
     mask |= (supports_extension('V') ? SSTATUS_VS : 0);
     mask |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
