@@ -241,3 +241,21 @@ void virtualized_csr_t::write(const reg_t val) noexcept {
   else
     orig_csr->write(val);
 }
+
+
+// implement class epc_csr_t
+epc_csr_t::epc_csr_t(processor_t* const proc, const reg_t addr):
+  logged_csr_t(proc, addr),
+  val(0) {
+}
+
+
+reg_t epc_csr_t::read() const noexcept {
+  return val & proc->pc_alignment_mask();
+}
+
+
+bool epc_csr_t::unlogged_write(const reg_t val) noexcept {
+  this->val = val & ~(reg_t)1;
+  return true;
+}

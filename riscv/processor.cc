@@ -337,7 +337,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   v = false;
   misa = max_isa;
   mstatus = 0;
-  mepc = 0;
+  csrmap[CSR_MEPC] = mepc = std::make_shared<epc_csr_t>(proc, CSR_MEPC);
   mtval = 0;
   csrmap[CSR_MSCRATCH] = std::make_shared<basic_csr_t>(proc, CSR_MSCRATCH, 0);
   mtvec = 0;
@@ -797,7 +797,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     set_virt(false);
     reg_t vector = (state.mtvec & 1) && interrupt ? 4*bit : 0;
     state.pc = (state.mtvec & ~(reg_t)1) + vector;
-    state.mepc = epc;
+    state.mepc->write(epc);
     state.mcause = t.cause();
     state.mtval = t.get_tval();
     state.mtval2 = t.get_tval2();
@@ -1098,7 +1098,6 @@ void processor_t::set_csr(int which, reg_t val)
       else
         state.stval = val;
       break;
-    case CSR_MEPC: state.mepc = val & ~(reg_t)1; break;
     case CSR_MTVEC: state.mtvec = val & ~(reg_t)2; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MTVAL: state.mtval = val; break;
@@ -1383,7 +1382,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_STVEC:
     case CSR_SCAUSE:
     case CSR_STVAL:
-    case CSR_MEPC:
     case CSR_MTVEC:
     case CSR_MCAUSE:
     case CSR_MTVAL:
@@ -1604,7 +1602,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       break;
     case CSR_MIP: ret(state.mip);
     case CSR_MIE: ret(state.mie);
-    case CSR_MEPC: ret(state.mepc & pc_alignment_mask());
     case CSR_MCAUSE: ret(state.mcause);
     case CSR_MTVAL: ret(state.mtval);
     case CSR_MTVAL2:
