@@ -163,4 +163,13 @@ class tvec_csr_t: public logged_csr_t {
 };
 
 
+// For mcause, scause, and vscause
+class cause_csr_t: public basic_csr_t {
+ public:
+  cause_csr_t(processor_t* const proc, const reg_t addr);
+
+  virtual reg_t read() const noexcept override;
+};
+
+
 #endif
