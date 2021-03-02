@@ -411,7 +411,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   auto nonvirtual_stvec = std::make_shared<tvec_csr_t>(proc, CSR_STVEC);
   csrmap[CSR_VSTVEC] = vstvec = std::make_shared<tvec_csr_t>(proc, CSR_VSTVEC);
   csrmap[CSR_STVEC] = stvec = std::make_shared<virtualized_csr_t>(proc, nonvirtual_stvec, vstvec);
-  satp = 0;
+  auto nonvirtual_satp = std::make_shared<satp_csr_t>(proc, CSR_SATP);
+  csrmap[CSR_VSATP] = vsatp = std::make_shared<base_atp_csr_t>(proc, CSR_VSATP);
+  csrmap[CSR_SATP] = satp = std::make_shared<virtualized_satp_csr_t>(proc, nonvirtual_satp, vsatp);
   auto nonvirtual_scause = std::make_shared<cause_csr_t>(proc, CSR_SCAUSE);
   csrmap[CSR_VSCAUSE] = vscause = std::make_shared<cause_csr_t>(proc, CSR_VSCAUSE);
   csrmap[CSR_SCAUSE] = scause = std::make_shared<virtualized_csr_t>(proc, nonvirtual_scause, vscause);
@@ -427,7 +429,6 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   auto nonvirtual_sstatus = std::make_shared<sstatus_proxy_csr_t>(proc, CSR_SSTATUS, mstatus);
   csrmap[CSR_VSSTATUS] = vsstatus = std::make_shared<vsstatus_csr_t>(proc, CSR_VSSTATUS);
   csrmap[CSR_SSTATUS] = sstatus = std::make_shared<sstatus_csr_t>(proc, nonvirtual_sstatus, vsstatus);
-  vsatp = 0;
 
   dpc = 0;
   dscratch0 = 0;
@@ -986,19 +987,6 @@ void processor_t::set_csr(int which, reg_t val)
       state.minstret = (val << 32) | (state.minstret << 32 >> 32);
       state.minstret--; // See comment above.
       break;
-    case CSR_SATP:
-      if (!supports_impl(IMPL_MMU))
-        val = 0;
-
-      if (satp_valid(val)) {
-        mmu->flush_tlb();
-
-        if (state.v)
-          state.vsatp = compute_new_satp(val, state.vsatp);
-        else
-          state.satp = compute_new_satp(val, state.satp);
-      }
-      break;
     case CSR_MTVAL2: state.mtval2 = val; break;
     case CSR_MTINST: state.mtinst = val; break;
     case CSR_HEDELEG: {
@@ -1051,13 +1039,6 @@ void processor_t::set_csr(int which, reg_t val)
       state.hgatp = val & mask;
       break;
     }
-    case CSR_VSATP:
-      if (!supports_impl(IMPL_MMU))
-        val = 0;
-
-      mmu->flush_tlb();
-      state.vsatp = compute_new_satp(val, state.vsatp);
-      break;
     case CSR_TSELECT:
       if (val < state.num_triggers) {
         state.tselect = val;
@@ -1162,7 +1143,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MCYCLE:
     case CSR_MINSTRETH:
     case CSR_MCYCLEH:
-    case CSR_SATP:
     case CSR_TSELECT:
     case CSR_TDATA1:
     case CSR_TDATA2:
@@ -1299,17 +1279,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       }
       break;
     case CSR_MCOUNTINHIBIT: ret(0);
-    case CSR_SATP: {
-      if (state.v) {
-        if (get_field(state.hstatus->read(), HSTATUS_VTVM))
-          goto throw_virtual;
-        ret(state.vsatp);
-      } else {
-        if (get_field(state.mstatus->read(), MSTATUS_TVM))
-          require_privilege(PRV_M);
-        ret(state.satp);
-      }
-    }
     case CSR_MSTATUSH:
       if (xlen == 32)
         ret((state.mstatus->read() >> 32) & (MSTATUSH_SBE | MSTATUSH_MBE));
@@ -1337,7 +1306,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       ret(state.hgatp);
     }
     case CSR_HGEIP: ret(0);
-    case CSR_VSATP: ret(state.vsatp);
     case CSR_TSELECT: ret(state.tselect);
     case CSR_TDATA1:
       if (state.tselect < state.num_triggers) {

@@ -143,6 +143,7 @@ class virtualized_csr_t: public csr_t {
   csr_t_p virt_csr;
 };
 
+typedef std::shared_ptr<virtualized_csr_t> virtualized_csr_t_p;
 
 // For mepc, sepc, and vsepc
 class epc_csr_t: public logged_csr_t {
@@ -389,5 +390,29 @@ class counteren_csr_t: public basic_csr_t {
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
+
+
+// For satp and vsatp
+// These are three classes in order to handle the [V]TVM bits permission checks
+class base_atp_csr_t: public basic_csr_t {
+ public:
+  base_atp_csr_t(processor_t* const proc, const reg_t addr);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class satp_csr_t: public base_atp_csr_t {
+ public:
+  satp_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class virtualized_satp_csr_t: public virtualized_csr_t {
+ public:
+  virtualized_satp_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  virtual void write(const reg_t val) noexcept override;
+};
+
 
 #endif
