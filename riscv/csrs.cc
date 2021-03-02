@@ -259,3 +259,21 @@ bool epc_csr_t::unlogged_write(const reg_t val) noexcept {
   this->val = val & ~(reg_t)1;
   return true;
 }
+
+
+// implement class tvec_csr_t
+tvec_csr_t::tvec_csr_t(processor_t* const proc, const reg_t addr):
+  logged_csr_t(proc, addr),
+  val(0) {
+}
+
+
+reg_t tvec_csr_t::read() const noexcept {
+  return val;
+}
+
+
+bool tvec_csr_t::unlogged_write(const reg_t val) noexcept {
+  this->val = val & ~(reg_t)2;
+  return true;
+}

@@ -150,4 +150,17 @@ class epc_csr_t: public logged_csr_t {
 };
 
 
+// For mtvec, stvec, and vstvec
+class tvec_csr_t: public logged_csr_t {
+ public:
+  tvec_csr_t(processor_t* const proc, const reg_t addr);
+
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  reg_t val;
+};
+
+
 #endif

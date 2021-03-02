@@ -340,7 +340,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MEPC] = mepc = std::make_shared<epc_csr_t>(proc, CSR_MEPC);
   csrmap[CSR_MTVAL] = mtval = std::make_shared<basic_csr_t>(proc, CSR_MTVAL, 0);
   csrmap[CSR_MSCRATCH] = std::make_shared<basic_csr_t>(proc, CSR_MSCRATCH, 0);
-  mtvec = 0;
+  csrmap[CSR_MTVEC] = mtvec = std::make_shared<tvec_csr_t>(proc, CSR_MTVEC);
   mcause = 0;
   minstret = 0;
   mie = 0;
@@ -797,8 +797,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   } else {
     // Handle the trap in M-mode
     set_virt(false);
-    reg_t vector = (state.mtvec & 1) && interrupt ? 4*bit : 0;
-    state.pc = (state.mtvec & ~(reg_t)1) + vector;
+    reg_t vector = (state.mtvec->read() & 1) && interrupt ? 4*bit : 0;
+    state.pc = (state.mtvec->read() & ~(reg_t)1) + vector;
     state.mepc->write(epc);
     state.mcause = t.cause();
     state.mtval->write(t.get_tval());
@@ -1088,7 +1088,6 @@ void processor_t::set_csr(int which, reg_t val)
       else
         state.scause = val;
       break;
-    case CSR_MTVEC: state.mtvec = val & ~(reg_t)2; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MTVAL2: state.mtval2 = val; break;
     case CSR_MTINST: state.mtinst = val; break;
@@ -1367,7 +1366,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SATP:
     case CSR_STVEC:
     case CSR_SCAUSE:
-    case CSR_MTVEC:
     case CSR_MCAUSE:
     case CSR_MISA:
     case CSR_TSELECT:
@@ -1586,7 +1584,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIMPID: ret(0);
     case CSR_MVENDORID: ret(0);
     case CSR_MHARTID: ret(id);
-    case CSR_MTVEC: ret(state.mtvec);
     case CSR_MEDELEG:
       if (!supports_extension('S'))
         break;
