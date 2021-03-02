@@ -1100,12 +1100,14 @@ void processor_t::set_csr(int which, reg_t val)
       mask |= 1L << ('H' - 'A');
       mask &= max_isa;
 
+      bool prev_h = state.misa & (1L << ('H' - 'A'));
       state.misa = (val & mask) | (state.misa & ~mask);
+      bool new_h = state.misa & (1L << ('H' - 'A'));
 
       // update the forced bits in MIDELEG and other CSRs
-      if (supports_extension('H'))
+      if (new_h && !prev_h)
         state.mideleg |= MIDELEG_FORCED_MASK;
-      else {
+      if (!new_h && prev_h) {
         state.mideleg &= ~MIDELEG_FORCED_MASK;
         state.medeleg &= ~hypervisor_exceptions;
         state.mstatus &= ~(MSTATUS_GVA | MSTATUS_MPV);
