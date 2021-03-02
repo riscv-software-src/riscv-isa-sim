@@ -173,7 +173,7 @@ struct state_t
   csr_t_p mepc;
   csr_t_p mtval;
   csr_t_p mtvec;
-  reg_t mcause;
+  csr_t_p mcause;
   reg_t minstret;
   reg_t mie;
   reg_t mip;
