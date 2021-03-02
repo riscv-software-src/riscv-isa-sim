@@ -341,7 +341,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MTVAL] = mtval = std::make_shared<basic_csr_t>(proc, CSR_MTVAL, 0);
   csrmap[CSR_MSCRATCH] = std::make_shared<basic_csr_t>(proc, CSR_MSCRATCH, 0);
   csrmap[CSR_MTVEC] = mtvec = std::make_shared<tvec_csr_t>(proc, CSR_MTVEC);
-  csrmap[CSR_MCAUSE] = mcause = std::make_shared<basic_csr_t>(proc, CSR_MCAUSE, 0);
+  csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE);
   minstret = 0;
   mie = 0;
   mip = 0;
