@@ -789,12 +789,14 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_SPP, state.prv);
     s = set_field(s, MSTATUS_SIE, 0);
     set_csr(CSR_MSTATUS, s);
-    s = state.hstatus;
-    if (curr_virt)
-      s = set_field(s, HSTATUS_SPVP, state.prv);
-    s = set_field(s, HSTATUS_SPV, curr_virt);
-    s = set_field(s, HSTATUS_GVA, t.has_gva());
-    set_csr(CSR_HSTATUS, s);
+    if (supports_extension('H')) {
+      s = state.hstatus;
+      if (curr_virt)
+        s = set_field(s, HSTATUS_SPVP, state.prv);
+      s = set_field(s, HSTATUS_SPV, curr_virt);
+      s = set_field(s, HSTATUS_GVA, t.has_gva());
+      set_csr(CSR_HSTATUS, s);
+    }
     set_privilege(PRV_S);
   } else {
     // Handle the trap in M-mode
