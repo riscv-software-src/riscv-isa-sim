@@ -338,7 +338,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   misa = max_isa;
   mstatus = 0;
   csrmap[CSR_MEPC] = mepc = std::make_shared<epc_csr_t>(proc, CSR_MEPC);
-  mtval = 0;
+  csrmap[CSR_MTVAL] = mtval = std::make_shared<basic_csr_t>(proc, CSR_MTVAL, 0);
   csrmap[CSR_MSCRATCH] = std::make_shared<basic_csr_t>(proc, CSR_MSCRATCH, 0);
   mtvec = 0;
   mcause = 0;
@@ -800,7 +800,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.pc = (state.mtvec & ~(reg_t)1) + vector;
     state.mepc->write(epc);
     state.mcause = t.cause();
-    state.mtval = t.get_tval();
+    state.mtval->write(t.get_tval());
     state.mtval2 = t.get_tval2();
     state.mtinst = t.get_tinst();
 
@@ -1095,7 +1095,6 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_MTVEC: state.mtvec = val & ~(reg_t)2; break;
     case CSR_MCAUSE: state.mcause = val; break;
-    case CSR_MTVAL: state.mtval = val; break;
     case CSR_MTVAL2: state.mtval2 = val; break;
     case CSR_MTINST: state.mtinst = val; break;
     case CSR_MISA: {
@@ -1377,7 +1376,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_STVAL:
     case CSR_MTVEC:
     case CSR_MCAUSE:
-    case CSR_MTVAL:
     case CSR_MISA:
     case CSR_TSELECT:
     case CSR_TDATA1:
@@ -1589,7 +1587,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIP: ret(state.mip);
     case CSR_MIE: ret(state.mie);
     case CSR_MCAUSE: ret(state.mcause);
-    case CSR_MTVAL: ret(state.mtval);
     case CSR_MTVAL2:
       if (supports_extension('H'))
         ret(state.mtval2);

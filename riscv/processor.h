@@ -171,7 +171,7 @@ struct state_t
   reg_t misa;
   reg_t mstatus;
   csr_t_p mepc;
-  reg_t mtval;
+  csr_t_p mtval;
   reg_t mtvec;
   reg_t mcause;
   reg_t minstret;
