@@ -9,6 +9,10 @@
  * Remarks:
  * - RW=01 not covered. U/M mode share will be tested separately
  * - RLB is always 0. CSR access control will be tested separately
+ * 
+ * @@changed 2020-Mar-2 soberl
+ *  For RWXL + MML, need to separate R and W combinations.
+ *  Skip RW=01 (share mode) at generator driver side.
  */
 
 /*
@@ -196,7 +200,10 @@ static void set_cfg() {
     
     cfg0 |= (PMP_R | PMP_W | PMP_X | PMP_TOR) << 24;    // for U_MEM
 #if @create_pmp_cfg:int@
-    cfg0 |= ((@pmp_rw:int@ ? (PMP_R | PMP_W)  : 0) | (@pmp_x:int@ ? PMP_X : 0) | PMP_TOR | (@pmp_l:int@ ? PMP_L : 0)) << 16;
+    cfg0 |= ( (@pmp_r:int@ ? PMP_R : 0)
+            | (@pmp_w:int@ ? PMP_W : 0)
+            | (@pmp_x:int@ ? PMP_X : 0) 
+            | PMP_TOR | (@pmp_l:int@ ? PMP_L : 0)) << 16;
 #endif   
     
 #if !M_MODE_RWX

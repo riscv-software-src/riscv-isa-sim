@@ -22,7 +22,7 @@
 namespace {
 
 const unsigned expected_files_count[] = {
-        128,
+        256 - 32,
         528,
         24,
         0
@@ -46,14 +46,17 @@ main()
     pmp_ok_1_gen_class gen_class_1;
 
     for (int u_mode = 0; u_mode < 2; u_mode++) {
-        for (int rw = 0; rw < 2; rw++) {
-            for (int x = 0; x < 2; x++) {
-                for (int cfgl = 0; cfgl < 2; cfgl++) {
-                    for (int pmp_match = 0; pmp_match < 2; pmp_match++) {
-                        for (int mmwp = 0; mmwp < 2; mmwp++) {
-                            for (int mml = 0; mml < 2; mml++) {
+        for (int r = 0; r < 2; r++) {
+            for (int w = 0; w < 2; w++) {
+                for (int x = 0; x < 2; x++) {
+                    for (int cfgl = 0; cfgl < 2; cfgl++) {
+                        for (int pmp_match = 0; pmp_match < 2; pmp_match++) {
+                            for (int mmwp = 0; mmwp < 2; mmwp++) {
+                                for (int mml = 0; mml < 2; mml++) {
+    if (r == 0 && w == 1 && mml == 1) continue; // test in pmp_ok_share_1
+
     str_buffer.str("");
-    str_buffer << "outputs/test_pmp_ok_1_u" << u_mode << "_rw" << rw << "_x" << x << "_l" << cfgl
+    str_buffer << "outputs/test_pmp_ok_1_u" << u_mode << "_rw" << r << w << "_x" << x << "_l" << cfgl
             << "_match" << pmp_match << "_mmwp" << mmwp << "_mml" << mml << ".c";
     m_ofstream.open(str_buffer.str().c_str());
     cur_files_count++;
@@ -64,7 +67,8 @@ main()
     unsigned x_err = 0;
 
     gen_class_1.set_switch_u_mode(u_mode);
-    gen_class_1.set_pmp_rw(rw);
+    gen_class_1.set_pmp_r(r);
+    gen_class_1.set_pmp_w(w);
     gen_class_1.set_pmp_x(x);
     gen_class_1.set_pmp_l(cfgl);
 
@@ -75,7 +79,7 @@ main()
         gen_class_1.set_create_pmp_cfg(pmp_match);
         gen_class_1.set_pmp_addr_offset(0);
         if (mml) {
-            if (cfgl && rw && x) { // 2nd version, XWRL-MML is shared read-only
+            if (cfgl && r && w && x) { // 2nd version, XWRL-MML is shared read-only
                 rw_err = 1;
                 x_err = 1;
             } else {
@@ -83,12 +87,12 @@ main()
                     rw_err = 1;
                     x_err = 1;
                 }
-                if (rw == 0) rw_err = 1;
+                if (r == 0 || w == 0) rw_err = 1;
                 if (x == 0) x_err = 1;
             }
         } else {
             if (u_mode == 1 || cfgl) {
-                if (rw == 0) rw_err = 1;
+                if (r == 0 || w == 0) rw_err = 1;
                 if (x == 0) x_err = 1;
             }
         }
@@ -114,6 +118,7 @@ main()
     str_buffer << std::endl;
     m_ofstream << str_buffer.str();
     m_ofstream.close();
+                                }
                             }
                         }
                     }
