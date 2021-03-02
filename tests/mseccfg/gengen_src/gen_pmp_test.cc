@@ -72,6 +72,12 @@ main()
     gen_class_1.set_pmp_x(x);
     gen_class_1.set_pmp_l(cfgl);
 
+    if (mml) {
+        gen_class_1.set_m_mode_rwx(0);
+    } else {
+        gen_class_1.set_m_mode_rwx(cur_files_count % 3 == 0 ? 1 : 0);
+    }
+
     gen_class_1.set_set_sec_mmwp(mmwp);
     gen_class_1.set_set_sec_mml(mml);
 
