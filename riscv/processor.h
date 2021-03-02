@@ -185,7 +185,7 @@ struct state_t
   csr_t_p stval;
   csr_t_p stvec;
   reg_t satp;
-  reg_t scause;
+  csr_t_p scause;
 
   reg_t mtval2;
   reg_t mtinst;
@@ -199,7 +199,7 @@ struct state_t
   reg_t vsstatus;
   csr_t_p vstvec;
   csr_t_p vsepc;
-  reg_t vscause;
+  csr_t_p vscause;
   csr_t_p vstval;
   reg_t vsatp;
 

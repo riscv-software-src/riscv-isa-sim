@@ -364,7 +364,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_VSTVEC] = vstvec = std::make_shared<tvec_csr_t>(proc, CSR_VSTVEC);
   csrmap[CSR_STVEC] = stvec = std::make_shared<virtualized_csr_t>(proc, nonvirtual_stvec, vstvec);
   satp = 0;
-  scause = 0;
+  auto nonvirtual_scause = std::make_shared<cause_csr_t>(proc, CSR_SCAUSE);
+  csrmap[CSR_VSCAUSE] = vscause = std::make_shared<cause_csr_t>(proc, CSR_VSCAUSE);
+  csrmap[CSR_SCAUSE] = scause = std::make_shared<virtualized_csr_t>(proc, nonvirtual_scause, vscause);
   mtval2 = 0;
   mtinst = 0;
   hstatus = 0;
@@ -375,7 +377,6 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   htinst = 0;
   hgatp = 0;
   vsstatus = 0;
-  vscause = 0;
   vsatp = 0;
 
   dpc = 0;
@@ -762,7 +763,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     // Handle the trap in VS-mode
     reg_t vector = (state.vstvec->read() & 1) && interrupt ? 4*bit : 0;
     state.pc = (state.vstvec->read() & ~(reg_t)1) + vector;
-    state.vscause = (interrupt) ? (t.cause() - 1) : t.cause();
+    state.vscause->write((interrupt) ? (t.cause() - 1) : t.cause());
     state.vsepc->write(epc);
     state.vstval->write(t.get_tval());
 
@@ -777,7 +778,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     set_virt(false);
     reg_t vector = (state.stvec->read() & 1) && interrupt ? 4*bit : 0;
     state.pc = (state.stvec->read() & ~(reg_t)1) + vector;
-    state.scause = t.cause();
+    state.scause->write(t.cause());
     state.sepc->write(epc);
     state.stval->write(t.get_tval());
     state.htval = t.get_tval2();
@@ -1077,12 +1078,6 @@ void processor_t::set_csr(int which, reg_t val)
           state.satp = compute_new_satp(val, state.satp);
       }
       break;
-    case CSR_SCAUSE:
-      if (state.v)
-        state.vscause = val;
-      else
-        state.scause = val;
-      break;
     case CSR_MTVAL2: state.mtval2 = val; break;
     case CSR_MTINST: state.mtinst = val; break;
     case CSR_MISA: {
@@ -1212,7 +1207,6 @@ void processor_t::set_csr(int which, reg_t val)
       state.mie = (state.mie & ~mask) | ((val << 1) & mask);
       break;
     }
-    case CSR_VSCAUSE: state.vscause = val; break;
     case CSR_VSIP: {
       reg_t mask = state.hideleg & MIP_VSSIP;
       state.mip = (state.mip & ~mask) | ((val << 1) & mask);
@@ -1357,7 +1351,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SCOUNTEREN:
     case CSR_MCOUNTEREN:
     case CSR_SATP:
-    case CSR_SCAUSE:
     case CSR_MISA:
     case CSR_TSELECT:
     case CSR_TDATA1:
@@ -1525,17 +1518,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
         ret(state.mie & state.mideleg & ~MIP_HS_MASK);
       }
     }
-    case CSR_SCAUSE: {
-      if (state.v) {
-        if (max_xlen > xlen)
-          ret(state.vscause | ((state.vscause >> (max_xlen-1)) << (xlen-1)));
-        ret(state.vscause);
-      } else {
-        if (max_xlen > xlen)
-          ret(state.scause | ((state.scause >> (max_xlen-1)) << (xlen-1)));
-        ret(state.scause);
-      }
-    }
     case CSR_SATP: {
       if (state.v) {
         if (get_field(state.hstatus, HSTATUS_VTVM))
@@ -1598,7 +1580,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       ret(state.vsstatus & mask);
     }
     case CSR_VSIE: ret((state.mie & state.hideleg & MIP_VS_MASK) >> 1);
-    case CSR_VSCAUSE: ret(state.vscause);
     case CSR_VSIP: ret((state.mip & state.hideleg & MIP_VS_MASK) >> 1);
     case CSR_VSATP: ret(state.vsatp);
     case CSR_TSELECT: ret(state.tselect);
