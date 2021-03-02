@@ -183,7 +183,7 @@ struct state_t
   uint32_t scounteren;
   csr_t_p sepc;
   csr_t_p stval;
-  reg_t stvec;
+  csr_t_p stvec;
   reg_t satp;
   reg_t scause;
 
@@ -197,7 +197,7 @@ struct state_t
   reg_t htinst;
   reg_t hgatp;
   reg_t vsstatus;
-  reg_t vstvec;
+  csr_t_p vstvec;
   csr_t_p vsepc;
   reg_t vscause;
   csr_t_p vstval;
