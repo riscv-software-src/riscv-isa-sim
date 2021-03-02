@@ -184,7 +184,7 @@ struct state_t
   csr_t_p sepc;
   csr_t_p stval;
   csr_t_p stvec;
-  reg_t satp;
+  virtualized_csr_t_p satp;
   csr_t_p scause;
 
   reg_t mtval2;
@@ -202,7 +202,7 @@ struct state_t
   csr_t_p vsepc;
   csr_t_p vscause;
   csr_t_p vstval;
-  reg_t vsatp;
+  csr_t_p vsatp;
 
   reg_t dpc;
   reg_t dscratch0, dscratch1;
@@ -502,12 +502,12 @@ private:
   void build_opcode_map();
   void register_base_instructions();
   insn_func_t decode_insn(insn_t insn);
-  bool satp_valid(reg_t val) const;
-  reg_t compute_new_satp(reg_t val, reg_t old) const;
 
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;
 public:
+  bool satp_valid(reg_t val) const;
+  reg_t compute_new_satp(reg_t val, reg_t old) const;
   reg_t n_pmp;
   reg_t lg_pmp_granularity;
   reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }

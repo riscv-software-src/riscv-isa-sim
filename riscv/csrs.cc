@@ -725,3 +725,51 @@ counteren_csr_t::counteren_csr_t(processor_t* const proc, const reg_t addr):
 bool counteren_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write(val & 0xffffffffULL);
 }
+
+
+// implement class base_atp_csr_t and family
+base_atp_csr_t::base_atp_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, 0) {
+}
+
+
+bool base_atp_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t newval = proc->supports_impl(IMPL_MMU) ? proc->compute_new_satp(val, read()) : 0;
+  if (newval != read())
+    proc->get_mmu()->flush_tlb();
+  return basic_csr_t::unlogged_write(newval);
+}
+
+satp_csr_t::satp_csr_t(processor_t* const proc, const reg_t addr):
+  base_atp_csr_t(proc, addr) {
+}
+
+void satp_csr_t::verify_permissions(insn_t insn, bool write) const {
+  base_atp_csr_t::verify_permissions(insn, write);
+  if (get_field(state->mstatus->read(), MSTATUS_TVM))
+    require(state->prv >= PRV_M);
+}
+
+virtualized_satp_csr_t::virtualized_satp_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
+  virtualized_csr_t(proc, orig, virt) {
+}
+
+void virtualized_satp_csr_t::verify_permissions(insn_t insn, bool write) const {
+  virtualized_csr_t::verify_permissions(insn, write);
+
+  // If satp is accessed from VS mode, it's really accessing vsatp,
+  // and the hstatus.VTVM bit controls.
+  if (state->v) {
+    if (get_field(state->hstatus->read(), HSTATUS_VTVM))
+      throw trap_virtual_instruction(insn.bits());
+  }
+  else {
+    orig_csr->verify_permissions(insn, write);
+  }
+}
+
+void virtualized_satp_csr_t::write(const reg_t val) noexcept {
+  // If unsupported Mode field: no change to contents
+  const reg_t newval = proc->satp_valid(val) ? val : read();
+  return virtualized_csr_t::write(newval);
+}
