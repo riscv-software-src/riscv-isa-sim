@@ -207,6 +207,9 @@ public:
       } catch (trap_load_access_fault& t) { \
         /* AMO faults should be reported as store faults */ \
         throw trap_store_access_fault(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
+      } catch (trap_load_guest_page_fault& t) { \
+        /* AMO faults should be reported as store faults */ \
+        throw trap_store_guest_page_fault(t.get_tval(), t.get_tval2(), t.get_tinst()); \
       } \
     }
 
