@@ -461,6 +461,7 @@ void processor_t::reset()
   halt_on_reset = false;
   set_csr(CSR_MSTATUS, state.mstatus);
   state.vsstatus = state.mstatus & SSTATUS_VS_MASK;  // set UXL
+  set_csr(CSR_HSTATUS, state.hstatus);  // set VSXL
   VU.reset();
 
   if (n_pmp > 0) {
@@ -1139,6 +1140,7 @@ void processor_t::set_csr(int which, reg_t val)
       reg_t mask = HSTATUS_VTSR | HSTATUS_VTW
                    | (supports_impl(IMPL_MMU) ? HSTATUS_VTVM : 0)
                    | HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
+      state.hstatus = set_field(state.hstatus, HSTATUS_VSXL, xlen_to_uxl(max_xlen));
       state.hstatus = (state.hstatus & ~mask) | (val & mask);
       break;
     }
