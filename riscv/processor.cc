@@ -992,6 +992,11 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_MIP: {
+      // We must mask off sgeip, vstip, and vseip. All three of these
+      // bits are aliases for the same bits in hip. The hip spec says:
+      //  * sgeip is read-only -- write hgeip instead
+      //  * vseip is read-only -- write hvip instead
+      //  * vstip is read-only -- write hvip instead
       reg_t mask = (supervisor_ints | hypervisor_ints) &
                    (MIP_SEIP | MIP_SSIP | MIP_STIP | vssip_int);
       state.mip = (state.mip & ~mask) | (val & mask);
