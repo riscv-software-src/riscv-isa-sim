@@ -1209,7 +1209,7 @@ void processor_t::set_csr(int which, reg_t val)
       mask |= (supports_extension('V') ? SSTATUS_VS : 0);
       state.vsstatus = (state.vsstatus & ~mask) | (val & mask);
       state.vsstatus &= (xlen == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
-      if (((state.mstatus & SSTATUS_FS) == SSTATUS_FS) ||
+      if (((state.vsstatus & SSTATUS_FS) == SSTATUS_FS) ||
           ((state.vsstatus & SSTATUS_VS) == SSTATUS_VS) ||
           ((state.vsstatus & SSTATUS_XS) == SSTATUS_XS)) {
          state.vsstatus |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
