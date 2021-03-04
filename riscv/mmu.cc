@@ -347,10 +347,10 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
     return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx) & ~page_mask; // zero-extend from xlen
 
   bool s_mode = mode == PRV_S;
-  reg_t arch_vsstatus = proc->state.v ? proc->state.mstatus : proc->state.vsstatus->read();
-  reg_t arch_mstatus = proc->state.v ? proc->state.vsstatus->read() : proc->state.mstatus;
-  bool sum = (virt ? arch_vsstatus : arch_mstatus) & MSTATUS_SUM;
-  bool mxr = (arch_mstatus | (virt ? arch_vsstatus : 0)) & MSTATUS_MXR;
+  reg_t arch_vsstatus = proc->state.v ? proc->state.sstatus->read() : proc->state.vsstatus->read();
+  reg_t arch_sstatus = proc->state.v ? proc->state.vsstatus->read() : proc->state.sstatus->read();
+  bool sum = (virt ? arch_vsstatus : arch_sstatus) & MSTATUS_SUM;
+  bool mxr = (arch_sstatus | (virt ? arch_vsstatus : 0)) & MSTATUS_MXR;
 
   // verify bits xlen-1:va_bits-1 are all equal
   int va_bits = PGSHIFT + vm.levels * vm.idxbits;
