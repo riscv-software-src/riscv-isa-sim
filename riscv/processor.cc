@@ -703,7 +703,7 @@ void processor_t::set_virt(bool virt)
     mask |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
     tmp = state.mstatus & mask;
     state.mstatus = (state.mstatus & ~mask) | (state.vsstatus->read() & mask);
-    state.vsstatus->write(tmp);
+    state.vsstatus->backdoor_write(tmp);
     state.v = virt;
   }
 }

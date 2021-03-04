@@ -322,6 +322,11 @@ namespace {
 
 
 bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
+  backdoor_write(val);
+  return true;
+}
+
+void vsstatus_csr_t::backdoor_write(const reg_t val) noexcept {
   reg_t mask = SSTATUS_VS_MASK;
   mask |= (proc->supports_extension('V') ? SSTATUS_VS : 0);
   reg_t newval = (this->val & ~mask) | (val & mask);
@@ -335,5 +340,4 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
     newval = set_field(newval, SSTATUS_UXL, xlen_to_uxl(proc->get_max_xlen()));
 
   this->val = newval;
-  return true;
 }
