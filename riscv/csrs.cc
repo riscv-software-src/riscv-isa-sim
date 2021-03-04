@@ -350,7 +350,15 @@ sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t ad
 }
 
 reg_t sstatus_proxy_csr_t::read() const noexcept {
-  return *mstatus;
+  reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_UBE | SSTATUS_SPP
+             | SSTATUS_FS | (proc->supports_extension('V') ? SSTATUS_VS : 0)
+             | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_UXL;
+  reg_t sstatus = *mstatus & mask;
+  if ((sstatus & SSTATUS_FS) == SSTATUS_FS ||
+      (sstatus & SSTATUS_XS) == SSTATUS_XS ||
+      (sstatus & SSTATUS_VS) == SSTATUS_VS)
+    sstatus |= (proc->get_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD);
+  return sstatus;
 }
 
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
