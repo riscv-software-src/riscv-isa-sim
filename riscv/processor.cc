@@ -779,11 +779,11 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.vsepc->write(epc);
     state.vstval->write(t.get_tval());
 
-    reg_t s = state.mstatus;
+    reg_t s = state.sstatus->read();
     s = set_field(s, MSTATUS_SPIE, get_field(s, MSTATUS_SIE));
     s = set_field(s, MSTATUS_SPP, state.prv);
     s = set_field(s, MSTATUS_SIE, 0);
-    set_csr(CSR_MSTATUS, s);
+    state.sstatus->write(s);
     set_privilege(PRV_S);
   } else if (state.prv <= PRV_S && bit < max_xlen && ((hsdeleg >> bit) & 1)) {
     // Handle the trap in HS-mode
@@ -796,11 +796,11 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.htval = t.get_tval2();
     state.htinst = t.get_tinst();
 
-    reg_t s = state.mstatus;
+    reg_t s = state.sstatus->read();
     s = set_field(s, MSTATUS_SPIE, get_field(s, MSTATUS_SIE));
     s = set_field(s, MSTATUS_SPP, state.prv);
     s = set_field(s, MSTATUS_SIE, 0);
-    set_csr(CSR_MSTATUS, s);
+    state.sstatus->write(s);
     if (supports_extension('H')) {
       s = state.hstatus;
       if (curr_virt)
