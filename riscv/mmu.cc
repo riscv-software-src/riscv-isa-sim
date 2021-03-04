@@ -267,7 +267,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   if (vm.levels == 0)
     return gpa;
 
-  reg_t arch_mstatus = proc->state.v ? proc->state.vsstatus : proc->state.mstatus;
+  reg_t arch_mstatus = proc->state.v ? proc->state.vsstatus->read() : proc->state.mstatus;
   bool mxr = arch_mstatus & MSTATUS_MXR;
 
   reg_t base = vm.ptbase;
@@ -347,8 +347,8 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
     return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx) & ~page_mask; // zero-extend from xlen
 
   bool s_mode = mode == PRV_S;
-  reg_t arch_vsstatus = proc->state.v ? proc->state.mstatus : proc->state.vsstatus;
-  reg_t arch_mstatus = proc->state.v ? proc->state.vsstatus : proc->state.mstatus;
+  reg_t arch_vsstatus = proc->state.v ? proc->state.mstatus : proc->state.vsstatus->read();
+  reg_t arch_mstatus = proc->state.v ? proc->state.vsstatus->read() : proc->state.mstatus;
   bool sum = (virt ? arch_vsstatus : arch_mstatus) & MSTATUS_SUM;
   bool mxr = (arch_mstatus | (virt ? arch_vsstatus : 0)) & MSTATUS_MXR;
 

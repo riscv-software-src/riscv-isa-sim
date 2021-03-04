@@ -376,7 +376,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   htval = 0;
   htinst = 0;
   hgatp = 0;
-  vsstatus = 0;
+  csrmap[CSR_VSSTATUS] = vsstatus = std::make_shared<vsstatus_csr_t>(proc, CSR_VSSTATUS);
   vsatp = 0;
 
   dpc = 0;
@@ -417,7 +417,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
 void state_t::dirty_mstatus(reg_t dirties){  // set VS, FS, or XS to Dirty
   mstatus |= dirties;
-  vsstatus |= (v ? dirties : 0);
+  if (v) {
+    vsstatus->write(vsstatus->read() | dirties);
+  }
 }
 
 void processor_t::vectorUnit_t::reset(){
@@ -508,7 +510,7 @@ void processor_t::reset()
   state.dcsr.halt = halt_on_reset;
   halt_on_reset = false;
   set_csr(CSR_MSTATUS, state.mstatus);
-  state.vsstatus = state.mstatus & SSTATUS_VS_MASK;  // set UXL
+  state.vsstatus->write(state.mstatus & SSTATUS_VS_MASK);  // set UXL
   set_csr(CSR_HSTATUS, state.hstatus);  // set VSXL
   VU.reset();
 
@@ -610,7 +612,7 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     deleg = state.mideleg & ~state.hideleg;
     // NB: this is always looking at architectural mstatus. Because when
     // state.v, vsstatus & mstatus have been swapped.
-    status = (state.v) ? state.vsstatus : state.mstatus;
+    status = (state.v) ? state.vsstatus->read() : state.mstatus;
     hsie = get_field(status, MSTATUS_SIE);
     hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && hsie);
     enabled_interrupts = pending_interrupts & deleg & -hs_enabled;
@@ -700,8 +702,8 @@ void processor_t::set_virt(bool virt)
     mask |= (supports_extension('V') ? SSTATUS_VS : 0);
     mask |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
     tmp = state.mstatus & mask;
-    state.mstatus = (state.mstatus & ~mask) | (state.vsstatus & mask);
-    state.vsstatus = tmp;
+    state.mstatus = (state.mstatus & ~mask) | (state.vsstatus->read() & mask);
+    state.vsstatus->write(tmp);
     state.v = virt;
   }
 }
@@ -1207,19 +1209,6 @@ void processor_t::set_csr(int which, reg_t val)
       state.hgatp = val & mask;
       break;
     }
-    case CSR_VSSTATUS: {
-      reg_t mask = SSTATUS_VS_MASK;
-      mask |= (supports_extension('V') ? SSTATUS_VS : 0);
-      state.vsstatus = (state.vsstatus & ~mask) | (val & mask);
-      state.vsstatus &= (xlen == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
-      if (((state.vsstatus & SSTATUS_FS) == SSTATUS_FS) ||
-          ((state.vsstatus & SSTATUS_VS) == SSTATUS_VS) ||
-          ((state.vsstatus & SSTATUS_XS) == SSTATUS_XS)) {
-         state.vsstatus |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-      }
-      state.vsstatus = set_field(state.vsstatus, SSTATUS_UXL, xlen_to_uxl(max_xlen));
-      break;
-    }
     case CSR_VSIE: {
       reg_t mask = state.hideleg & MIP_VS_MASK;
       state.mie = (state.mie & ~mask) | ((val << 1) & mask);
@@ -1591,12 +1580,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       ret(state.hgatp);
     }
     case CSR_HGEIP: ret(0);
-    case CSR_VSSTATUS: {
-      reg_t mask = SSTATUS_VS_MASK;
-      mask |= (supports_extension('V') ? SSTATUS_VS : 0);
-      mask |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-      ret(state.vsstatus & mask);
-    }
     case CSR_VSIE: ret((state.mie & state.hideleg & MIP_VS_MASK) >> 1);
     case CSR_VSIP: ret((state.mip & state.hideleg & MIP_VS_MASK) >> 1);
     case CSR_VSATP: ret(state.vsatp);
