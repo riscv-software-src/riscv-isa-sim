@@ -603,6 +603,8 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
   if (enabled_interrupts == 0) {
     // HS-ints have higher priority over VS-ints
     deleg = state.mideleg & ~state.hideleg;
+    // NB: this is always looking at architectural mstatus. Because when
+    // state.v, vsstatus & mstatus have been swapped.
     status = (state.v) ? state.vsstatus : state.mstatus;
     hsie = get_field(status, MSTATUS_SIE);
     hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && hsie);
@@ -610,6 +612,8 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     if (state.v && enabled_interrupts == 0) {
       // VS-ints have least priority and can only be taken with virt enabled
       deleg = state.mideleg & state.hideleg;
+      // NB: this is actually looking at architectural vsstatus.
+      // Because when state.v, vsstatus & mstatus have been swapped.
       vsie = get_field(state.mstatus, MSTATUS_SIE);
       vs_enabled = state.prv < PRV_S || (state.prv == PRV_S && vsie);
       enabled_interrupts = pending_interrupts & deleg & -vs_enabled;
