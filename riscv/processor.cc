@@ -376,6 +376,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   htval = 0;
   htinst = 0;
   hgatp = 0;
+  nonvirtual_sstatus = sstatus = std::make_shared<sstatus_proxy_csr_t>(proc, CSR_SSTATUS);
   csrmap[CSR_VSSTATUS] = vsstatus = std::make_shared<vsstatus_csr_t>(proc, CSR_VSSTATUS);
   vsatp = 0;
 
@@ -416,7 +417,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 }
 
 void state_t::dirty_mstatus(reg_t dirties){  // set VS, FS, or XS to Dirty
-  mstatus |= dirties;
+  nonvirtual_sstatus->write(nonvirtual_sstatus->read() | dirties);
   if (v) {
     vsstatus->write(vsstatus->read() | dirties);
   }

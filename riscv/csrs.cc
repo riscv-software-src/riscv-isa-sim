@@ -341,3 +341,24 @@ void vsstatus_csr_t::backdoor_write(const reg_t val) noexcept {
 
   this->val = newval;
 }
+
+
+// implement class sstatus_proxy_csr_t
+sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr):
+  logged_csr_t(proc, addr),
+  mstatus(&(proc->get_state()->mstatus)) {
+}
+
+reg_t sstatus_proxy_csr_t::read() const noexcept {
+  return *mstatus;
+}
+
+bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
+  reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
+             | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR
+             | (proc->supports_extension('V') ? SSTATUS_VS : 0);
+  reg_t new_mstatus = (*mstatus & ~mask) | (val & mask);
+
+  proc->set_csr(CSR_MSTATUS, new_mstatus);
+  return false; // avoid double logging: already logged by proc->set_csr()
+}
