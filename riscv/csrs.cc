@@ -325,11 +325,6 @@ namespace {
 
 
 bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
-  backdoor_write(val);
-  return true;
-}
-
-void vsstatus_csr_t::backdoor_write(const reg_t val) noexcept {
   state_t* const state = proc->get_state();
   bool has_page = proc->supports_extension('S') && proc->supports_impl(IMPL_MMU);
   if (state->v && has_page && ((val ^ read()) & (MSTATUS_MXR | MSTATUS_SUM)))
@@ -347,6 +342,7 @@ void vsstatus_csr_t::backdoor_write(const reg_t val) noexcept {
     newval = set_field(newval, SSTATUS_UXL, xlen_to_uxl(proc->get_max_xlen()));
 
   this->val = newval;
+  return true;
 }
 
 
@@ -391,10 +387,6 @@ mstatus_csr_t::mstatus_csr_t(processor_t* const proc, const reg_t addr):
 
 
 bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
-  return backdoor_write(val);
-}
-
-bool mstatus_csr_t::backdoor_write(const reg_t val) noexcept {
   bool has_page = proc->supports_extension('S') && proc->supports_impl(IMPL_MMU);
   if ((val ^ read()) &
       (MSTATUS_MPP | MSTATUS_MPRV

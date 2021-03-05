@@ -182,7 +182,6 @@ class vsstatus_csr_t: public logged_csr_t {
  public:
   vsstatus_csr_t(processor_t* const proc, const reg_t addr);
   virtual reg_t read() const noexcept override;
-  void backdoor_write(const reg_t val) noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -230,7 +229,6 @@ class sstatus_proxy_csr_t: public logged_csr_t {
 class mstatus_csr_t: public basic_csr_t {
  public:
   mstatus_csr_t(processor_t* const proc, const reg_t addr);
-  bool backdoor_write(const reg_t val) noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
