@@ -377,8 +377,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   htinst = 0;
   hgatp = 0;
   nonvirtual_sstatus = std::make_shared<sstatus_proxy_csr_t>(proc, CSR_SSTATUS);
-  csrmap[CSR_SSTATUS] = sstatus = nonvirtual_sstatus;
   csrmap[CSR_VSSTATUS] = vsstatus = std::make_shared<vsstatus_csr_t>(proc, CSR_VSSTATUS);
+  csrmap[CSR_SSTATUS] = sstatus = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sstatus, vsstatus);
   vsatp = 0;
 
   dpc = 0;
@@ -609,17 +609,13 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
   if (enabled_interrupts == 0) {
     // HS-ints have higher priority over VS-ints
     deleg = state.mideleg & ~state.hideleg;
-    // NB: this is always looking at architectural sstatus. Because when
-    // state.v, vsstatus & mstatus have been swapped.
-    status = (state.v) ? state.vsstatus->read() : state.sstatus->read();
+    status = state.nonvirtual_sstatus->read();
     hsie = get_field(status, MSTATUS_SIE);
     hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && hsie);
     enabled_interrupts = pending_interrupts & deleg & -hs_enabled;
     if (state.v && enabled_interrupts == 0) {
       // VS-ints have least priority and can only be taken with virt enabled
       deleg = state.mideleg & state.hideleg;
-      // NB: this is actually looking at architectural vsstatus.
-      // Because when state.v, vsstatus & mstatus have been swapped.
       vsie = get_field(state.sstatus->read(), MSTATUS_SIE);
       vs_enabled = state.prv < PRV_S || (state.prv == PRV_S && vsie);
       enabled_interrupts = pending_interrupts & deleg & -vs_enabled;
@@ -696,13 +692,10 @@ void processor_t::set_virt(bool virt)
      * Ideally, we should flush TLB here but we don't need it because
      * set_virt() is always used in conjucter with set_privilege() and
      * set_privilege() will flush TLB unconditionally.
+     *
+     * The virtualized sstatus register also relies on this TLB flush,
+     * since changing V might change sstatus.MXR and sstatus.SUM.
      */
-    mask = SSTATUS_VS_MASK;
-    mask |= (supports_extension('V') ? SSTATUS_VS : 0);
-    mask |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-    tmp = state.mstatus->read() & mask;
-    state.mstatus->backdoor_write((state.mstatus->read() & ~mask) | (state.vsstatus->read() & mask));
-    state.vsstatus->backdoor_write(tmp);
     state.v = virt;
   }
 }

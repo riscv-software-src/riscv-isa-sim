@@ -138,6 +138,8 @@ class virtualized_csr_t: public csr_t {
   csr_t_p virt_csr;
 };
 
+typedef std::shared_ptr<virtualized_csr_t> virtualized_csr_t_p;
+
 
 // For mepc, sepc, and vsepc
 class epc_csr_t: public logged_csr_t {
@@ -207,7 +209,7 @@ typedef std::shared_ptr<vsstatus_csr_t> vsstatus_csr_t_p;
 //    need to be virtualized will be through this object.
 // 3. [done] Convert mstatus into a csr_t subclass.
 // 4. Refactor common code into base class.
-// 5. Convert sstatus to a virtualized_csr_t, with a
+// 5. [done] Convert sstatus to a virtualized_csr_t, with a
 //    nonvirtual_sstatus of type sstatus_proxy_csr_t, and
 //    simultaneously remove the swapping of mstatus & vsstatus from
 //    set_priv().
