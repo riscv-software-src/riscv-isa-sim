@@ -349,14 +349,14 @@ void vsstatus_csr_t::backdoor_write(const reg_t val) noexcept {
 // implement class sstatus_proxy_csr_t
 sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr):
   logged_csr_t(proc, addr),
-  mstatus(&(proc->get_state()->mstatus)) {
+  mstatus(proc->get_state()->mstatus) {
 }
 
 reg_t sstatus_proxy_csr_t::read() const noexcept {
   reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_UBE | SSTATUS_SPP
              | SSTATUS_FS | (proc->supports_extension('V') ? SSTATUS_VS : 0)
              | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_UXL;
-  reg_t sstatus = *mstatus & mask;
+  reg_t sstatus = mstatus->read() & mask;
   if ((sstatus & SSTATUS_FS) == SSTATUS_FS ||
       (sstatus & SSTATUS_XS) == SSTATUS_XS ||
       (sstatus & SSTATUS_VS) == SSTATUS_VS)
@@ -368,8 +368,71 @@ bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
   reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
              | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR
              | (proc->supports_extension('V') ? SSTATUS_VS : 0);
-  reg_t new_mstatus = (*mstatus & ~mask) | (val & mask);
+  reg_t new_mstatus = (mstatus->read() & ~mask) | (val & mask);
 
-  proc->set_csr(CSR_MSTATUS, new_mstatus);
-  return false; // avoid double logging: already logged by proc->set_csr()
+  mstatus->write(new_mstatus);
+  return false; // avoid double logging: already logged by mstatus->write()
+}
+
+
+// implement class mstatus_csr_t
+mstatus_csr_t::mstatus_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr,
+#ifdef RISCV_ENABLE_DUAL_ENDIAN
+              proc->get_mmu()->is_target_big_endian() ? MSTATUS_UBE | MSTATUS_SBE | MSTATUS_MBE :
+#endif
+              0  // initial value for mstatus
+  ) {
+}
+
+
+bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
+  return backdoor_write(val);
+}
+
+bool mstatus_csr_t::backdoor_write(const reg_t val) noexcept {
+  bool has_page = proc->supports_extension('S') && proc->supports_impl(IMPL_MMU);
+  if ((val ^ read()) &
+      (MSTATUS_MPP | MSTATUS_MPRV
+       | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
+       | MSTATUS_MXR))
+    proc->get_mmu()->flush_tlb();
+
+  bool has_fs = proc->supports_extension('S') || proc->supports_extension('F')
+              || proc->supports_extension('V');
+  bool has_vs = proc->supports_extension('V');
+  bool has_mpv = proc->supports_extension('S') && proc->supports_extension('H');
+  bool has_gva = has_mpv;
+
+  reg_t mask = MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPRV | MSTATUS_MPP
+             | (proc->supports_extension('S') ? (MSTATUS_SIE | MSTATUS_SPIE) : 0)
+             | MSTATUS_TW | MSTATUS_TSR
+             | (has_page ? (MSTATUS_MXR | MSTATUS_SUM | MSTATUS_TVM) : 0)
+             | (has_fs ? MSTATUS_FS : 0)
+             | (has_vs ? MSTATUS_VS : 0)
+             | (proc->any_custom_extensions() ? MSTATUS_XS : 0)
+             | (has_gva ? MSTATUS_GVA : 0)
+             | (has_mpv ? MSTATUS_MPV : 0);
+
+  reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
+  reg_t new_mstatus = set_field(val, MSTATUS_MPP, requested_mpp);
+  if (proc->supports_extension('S'))
+    mask |= MSTATUS_SPP;
+
+  new_mstatus = (read() & ~mask) | (new_mstatus & mask);
+
+  bool dirty = (new_mstatus & MSTATUS_FS) == MSTATUS_FS;
+  dirty |= (new_mstatus & MSTATUS_XS) == MSTATUS_XS;
+  dirty |= (new_mstatus & MSTATUS_VS) == MSTATUS_VS;
+  if (proc->get_max_xlen() == 32)
+    new_mstatus = set_field(new_mstatus, MSTATUS32_SD, dirty);
+  else
+    new_mstatus = set_field(new_mstatus, MSTATUS64_SD, dirty);
+
+  if (proc->supports_extension('U'))
+    new_mstatus = set_field(new_mstatus, MSTATUS_UXL, xlen_to_uxl(proc->get_max_xlen()));
+  if (proc->supports_extension('S'))
+    new_mstatus = set_field(new_mstatus, MSTATUS_SXL, xlen_to_uxl(proc->get_max_xlen()));
+
+  return basic_csr_t::unlogged_write(new_mstatus);
 }

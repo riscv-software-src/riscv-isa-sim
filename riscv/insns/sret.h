@@ -3,7 +3,7 @@ if (STATE.v) {
   if (STATE.prv == PRV_U || get_field(STATE.hstatus, HSTATUS_VTSR))
     require_novirt();
 } else {
-  require_privilege(get_field(STATE.mstatus, MSTATUS_TSR) ? PRV_M : PRV_S);
+  require_privilege(get_field(STATE.mstatus->read(), MSTATUS_TSR) ? PRV_M : PRV_S);
 }
 reg_t next_pc = p->get_state()->sepc->read();
 set_pc_and_serialize(next_pc);

@@ -330,13 +330,13 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   FPR.reset();
 
   // This assumes xlen is always max_xlen, which is true today (see
-  // set_csr() for CSR_MSTATUS):
+  // mstatus_csr_t::backdoor_write()):
   auto xlen = proc->get_max_xlen();
 
   prv = PRV_M;
   v = false;
   misa = max_isa;
-  mstatus = 0;
+  csrmap[CSR_MSTATUS] = mstatus = std::make_shared<mstatus_csr_t>(proc, CSR_MSTATUS);
   csrmap[CSR_MEPC] = mepc = std::make_shared<epc_csr_t>(proc, CSR_MEPC);
   csrmap[CSR_MTVAL] = mtval = std::make_shared<basic_csr_t>(proc, CSR_MTVAL, 0);
   csrmap[CSR_MSCRATCH] = std::make_shared<basic_csr_t>(proc, CSR_MSCRATCH, 0);
@@ -501,18 +501,15 @@ void processor_t::enable_log_commits()
 
 void processor_t::reset()
 {
+  xlen = max_xlen;
   state.reset(this, max_isa);
-#ifdef RISCV_ENABLE_DUAL_ENDIAN
-  if (mmu->is_target_big_endian())
-    state.mstatus |= MSTATUS_UBE | MSTATUS_SBE | MSTATUS_MBE;
-#endif
 
   state.mideleg = supports_extension('H') ? MIDELEG_FORCED_MASK : 0;
 
   state.dcsr.halt = halt_on_reset;
   halt_on_reset = false;
-  set_csr(CSR_MSTATUS, state.mstatus);
-  state.vsstatus->write(state.mstatus & SSTATUS_VS_MASK);  // set UXL
+  state.mstatus->write(state.mstatus->read());  // set fixed fields
+  state.vsstatus->write(state.mstatus->read() & SSTATUS_VS_MASK);  // set UXL
   set_csr(CSR_HSTATUS, state.hstatus);  // set VSXL
   VU.reset();
 
@@ -606,7 +603,7 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
   }
 
   // M-ints have higher priority over HS-ints and VS-ints
-  mie = get_field(state.mstatus, MSTATUS_MIE);
+  mie = get_field(state.mstatus->read(), MSTATUS_MIE);
   m_enabled = state.prv < PRV_M || (state.prv == PRV_M && mie);
   enabled_interrupts = pending_interrupts & ~state.mideleg & -m_enabled;
   if (enabled_interrupts == 0) {
@@ -703,8 +700,8 @@ void processor_t::set_virt(bool virt)
     mask = SSTATUS_VS_MASK;
     mask |= (supports_extension('V') ? SSTATUS_VS : 0);
     mask |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-    tmp = state.mstatus & mask;
-    state.mstatus = (state.mstatus & ~mask) | (state.vsstatus->read() & mask);
+    tmp = state.mstatus->read() & mask;
+    state.mstatus->backdoor_write((state.mstatus->read() & ~mask) | (state.vsstatus->read() & mask));
     state.vsstatus->backdoor_write(tmp);
     state.v = virt;
   }
@@ -822,13 +819,13 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.mtval2 = t.get_tval2();
     state.mtinst = t.get_tinst();
 
-    reg_t s = state.mstatus;
+    reg_t s = state.mstatus->read();
     s = set_field(s, MSTATUS_MPIE, get_field(s, MSTATUS_MIE));
     s = set_field(s, MSTATUS_MPP, state.prv);
     s = set_field(s, MSTATUS_MIE, 0);
     s = set_field(s, MSTATUS_MPV, curr_virt);
     s = set_field(s, MSTATUS_GVA, t.has_gva());
-    set_csr(CSR_MSTATUS, s);
+    state.mstatus->write(s);
     set_privilege(PRV_M);
   }
 }
@@ -957,53 +954,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_MSTATUS: {
-      bool has_page = supports_extension('S') && supports_impl(IMPL_MMU);
-      if ((val ^ state.mstatus) &
-          (MSTATUS_MPP | MSTATUS_MPRV
-           | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
-           | MSTATUS_MXR))
-        mmu->flush_tlb();
-
-      bool has_fs = supports_extension('S') || supports_extension('F')
-                  || supports_extension('V');
-      bool has_vs = supports_extension('V');
-      bool has_mpv = supports_extension('S') && supports_extension('H');
-      bool has_gva = has_mpv;
-
-      reg_t mask = MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPRV
-                 | (supports_extension('S') ? (MSTATUS_SIE | MSTATUS_SPIE) : 0)
-                 | MSTATUS_TW | MSTATUS_TSR
-                 | (has_page ? (MSTATUS_MXR | MSTATUS_SUM | MSTATUS_TVM) : 0)
-                 | (has_fs ? MSTATUS_FS : 0)
-                 | (has_vs ? MSTATUS_VS : 0)
-                 | (any_custom_extensions() ? MSTATUS_XS : 0)
-                 | (has_gva ? MSTATUS_GVA : 0)
-                 | (has_mpv ? MSTATUS_MPV : 0);
-
-      reg_t requested_mpp = legalize_privilege(get_field(val, MSTATUS_MPP));
-      state.mstatus = set_field(state.mstatus, MSTATUS_MPP, requested_mpp);
-      if (supports_extension('S'))
-        mask |= MSTATUS_SPP;
-
-      state.mstatus = (state.mstatus & ~mask) | (val & mask);
-
-      bool dirty = (state.mstatus & MSTATUS_FS) == MSTATUS_FS;
-      dirty |= (state.mstatus & MSTATUS_XS) == MSTATUS_XS;
-      dirty |= (state.mstatus & MSTATUS_VS) == MSTATUS_VS;
-      if (max_xlen == 32)
-        state.mstatus = set_field(state.mstatus, MSTATUS32_SD, dirty);
-      else
-        state.mstatus = set_field(state.mstatus, MSTATUS64_SD, dirty);
-
-      if (supports_extension('U'))
-        state.mstatus = set_field(state.mstatus, MSTATUS_UXL, xlen_to_uxl(max_xlen));
-      if (supports_extension('S'))
-        state.mstatus = set_field(state.mstatus, MSTATUS_SXL, xlen_to_uxl(max_xlen));
-      // U-XLEN == S-XLEN == M-XLEN
-      xlen = max_xlen;
-      break;
-    }
     case CSR_MIP: {
       // We must mask off sgeip, vstip, and vseip. All three of these
       // bits are aliases for the same bits in hip. The hip spec says:
@@ -1122,7 +1072,7 @@ void processor_t::set_csr(int which, reg_t val)
       if (!new_h && prev_h) {
         state.mideleg &= ~MIDELEG_FORCED_MASK;
         state.medeleg &= ~hypervisor_exceptions;
-        state.mstatus &= ~(MSTATUS_GVA | MSTATUS_MPV);
+        state.mstatus->write(state.mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV));
         state.mie &= ~MIP_HS_MASK;  // also takes care of hie, sie
         state.mip &= ~MIP_HS_MASK;  // also takes care of hip, sip, hvip
         set_csr(CSR_HSTATUS, 0);
@@ -1298,35 +1248,28 @@ void processor_t::set_csr(int which, reg_t val)
   switch (which)
   {
     case CSR_FFLAGS:
-      LOG_CSR(CSR_MSTATUS);
       LOG_CSR(CSR_FFLAGS);
       break;
     case CSR_FRM:
-      LOG_CSR(CSR_MSTATUS);
       LOG_CSR(CSR_FRM);
       break;
     case CSR_FCSR:
-      LOG_CSR(CSR_MSTATUS);
       LOG_CSR(CSR_FFLAGS);
       LOG_CSR(CSR_FRM);
       LOG_CSR(CSR_FCSR);
       break;
     case CSR_VCSR:
-      LOG_CSR(CSR_MSTATUS);
       LOG_CSR(CSR_VXSAT);
       LOG_CSR(CSR_VXRM);
       break;
 
     case CSR_VSTART:
-      LOG_CSR(CSR_MSTATUS);
       LOG_CSR(CSR_VSTART);
       break;
     case CSR_VXSAT:
-      LOG_CSR(CSR_MSTATUS);
       LOG_CSR(CSR_VXSAT);
       break;
     case CSR_VXRM:
-      LOG_CSR(CSR_MSTATUS);
       LOG_CSR(CSR_VXRM);
       break;
 
@@ -1339,7 +1282,6 @@ void processor_t::set_csr(int which, reg_t val)
       LOG_CSR(CSR_SIE);
       break;
 
-    case CSR_MSTATUS:
     case CSR_MIP:
     case CSR_MIE:
     case CSR_MIDELEG:
@@ -1513,15 +1455,14 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
           goto throw_virtual;
         ret(state.vsatp);
       } else {
-        if (get_field(state.mstatus, MSTATUS_TVM))
+        if (get_field(state.mstatus->read(), MSTATUS_TVM))
           require_privilege(PRV_M);
         ret(state.satp);
       }
     }
-    case CSR_MSTATUS: ret(state.mstatus);
     case CSR_MSTATUSH:
       if (xlen == 32)
-        ret((state.mstatus >> 32) & (MSTATUSH_SBE | MSTATUSH_MBE));
+        ret((state.mstatus->read() >> 32) & (MSTATUSH_SBE | MSTATUSH_MBE));
       break;
     case CSR_MIP: ret(state.mip);
     case CSR_MIE: ret(state.mie);
@@ -1557,7 +1498,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_HVIP: ret(state.mip & MIP_VS_MASK);
     case CSR_HTINST: ret(state.htinst);
     case CSR_HGATP: {
-      if (!state.v && get_field(state.mstatus, MSTATUS_TVM))
+      if (!state.v && get_field(state.mstatus->read(), MSTATUS_TVM))
         require_privilege(PRV_M);
       ret(state.hgatp);
     }
