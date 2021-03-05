@@ -57,9 +57,9 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
   bool hlvx = xlate_flags & RISCV_XLATE_VIRT_HLVX;
   reg_t mode = proc->state.prv;
   if (type != FETCH) {
-    if (!proc->state.debug_mode && get_field(proc->state.mstatus, MSTATUS_MPRV)) {
-      mode = get_field(proc->state.mstatus, MSTATUS_MPP);
-      if (get_field(proc->state.mstatus, MSTATUS_MPV) && mode != PRV_M)
+    if (!proc->state.debug_mode && get_field(proc->state.mstatus->read(), MSTATUS_MPRV)) {
+      mode = get_field(proc->state.mstatus->read(), MSTATUS_MPP);
+      if (get_field(proc->state.mstatus->read(), MSTATUS_MPV) && mode != PRV_M)
         virt = true;
     }
     if (xlate_flags & RISCV_XLATE_VIRT) {
@@ -190,7 +190,7 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
 
   tlb_entry_t entry = {host_addr - vaddr, paddr - vaddr};
 
-  if (proc && get_field(proc->state.mstatus, MSTATUS_MPRV))
+  if (proc && get_field(proc->state.mstatus->read(), MSTATUS_MPRV))
     return entry;
 
   if ((tlb_load_tag[idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)

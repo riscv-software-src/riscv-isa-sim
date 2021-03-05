@@ -205,7 +205,7 @@ typedef std::shared_ptr<vsstatus_csr_t> vsstatus_csr_t_p;
 // 2. [done] One by one, switch references to state.mstatus to use
 //    state.sstatus. When complete, all references to sstatus that
 //    need to be virtualized will be through this object.
-// 3. Convert mstatus into a csr_t subclass.
+// 3. [done] Convert mstatus into a csr_t subclass.
 // 4. Refactor common code into base class.
 // 5. Convert sstatus to a virtualized_csr_t, with a
 //    nonvirtual_sstatus of type sstatus_proxy_csr_t, and
@@ -221,8 +221,19 @@ class sstatus_proxy_csr_t: public logged_csr_t {
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
-  reg_t* const mstatus;
+  csr_t_p mstatus;
 };
+
+
+class mstatus_csr_t: public basic_csr_t {
+ public:
+  mstatus_csr_t(processor_t* const proc, const reg_t addr);
+  bool backdoor_write(const reg_t val) noexcept;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+typedef std::shared_ptr<mstatus_csr_t> mstatus_csr_t_p;
 
 
 #endif

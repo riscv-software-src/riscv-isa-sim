@@ -169,7 +169,7 @@ struct state_t
   reg_t prv;    // TODO: Can this be an enum instead?
   bool v;
   reg_t misa;
-  reg_t mstatus;
+  mstatus_csr_t_p mstatus;
   csr_t_p mepc;
   csr_t_p mtval;
   csr_t_p mtvec;
