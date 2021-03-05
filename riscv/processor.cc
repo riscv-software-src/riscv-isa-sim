@@ -1147,6 +1147,8 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_HEDELEG: {
       reg_t mask =
         (1 << CAUSE_MISALIGNED_FETCH) |
+        (1 << CAUSE_FETCH_ACCESS) |
+        (1 << CAUSE_ILLEGAL_INSTRUCTION) |
         (1 << CAUSE_BREAKPOINT) |
         (1 << CAUSE_MISALIGNED_LOAD) |
         (1 << CAUSE_LOAD_ACCESS) |
