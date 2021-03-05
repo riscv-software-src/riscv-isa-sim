@@ -202,7 +202,7 @@ typedef std::shared_ptr<vsstatus_csr_t> vsstatus_csr_t_p;
 //
 // 1. [done] Create one of these proxy objects as state.sstatus,
 //    with no logging. Do not put it into csrmap yet.
-// 2. One by one, switch references to state.mstatus to use
+// 2. [done] One by one, switch references to state.mstatus to use
 //    state.sstatus. When complete, all references to sstatus that
 //    need to be virtualized will be through this object.
 // 3. Convert mstatus into a csr_t subclass.

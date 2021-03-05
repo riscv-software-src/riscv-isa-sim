@@ -376,7 +376,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   htval = 0;
   htinst = 0;
   hgatp = 0;
-  nonvirtual_sstatus = sstatus = std::make_shared<sstatus_proxy_csr_t>(proc, CSR_SSTATUS);
+  nonvirtual_sstatus = std::make_shared<sstatus_proxy_csr_t>(proc, CSR_SSTATUS);
+  csrmap[CSR_SSTATUS] = sstatus = nonvirtual_sstatus;
   csrmap[CSR_VSSTATUS] = vsstatus = std::make_shared<vsstatus_csr_t>(proc, CSR_VSSTATUS);
   vsatp = 0;
 
@@ -1056,12 +1057,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MCOUNTEREN:
       state.mcounteren = val;
       break;
-    case CSR_SSTATUS: {
-      reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-                 | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR
-                 | (supports_extension('V') ? SSTATUS_VS : 0);
-      return set_csr(CSR_MSTATUS, (state.mstatus & ~mask) | (val & mask));
-    }
     case CSR_SIP: {
       reg_t mask;
       if (state.v) {
@@ -1334,10 +1329,6 @@ void processor_t::set_csr(int which, reg_t val)
       LOG_CSR(CSR_VXRM);
       break;
 
-    case CSR_SSTATUS:
-      LOG_CSR(CSR_MSTATUS);
-      LOG_CSR(CSR_SSTATUS);
-      break;
     case CSR_SIP:
       LOG_CSR(CSR_MIP);
       LOG_CSR(CSR_SIP);
@@ -1501,17 +1492,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
         break;
       ret(state.mcounteren);
     case CSR_MCOUNTINHIBIT: ret(0);
-    case CSR_SSTATUS: {
-      reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_UBE | SSTATUS_SPP
-                 | SSTATUS_FS | (supports_extension('V') ? SSTATUS_VS : 0)
-                 | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_UXL;
-      reg_t sstatus = state.mstatus & mask;
-      if ((sstatus & SSTATUS_FS) == SSTATUS_FS ||
-          (sstatus & SSTATUS_XS) == SSTATUS_XS ||
-          (sstatus & SSTATUS_VS) == SSTATUS_VS)
-        sstatus |= (xlen == 32 ? SSTATUS32_SD : SSTATUS64_SD);
-      ret(sstatus);
-    }
     case CSR_SIP: {
       if (state.v) {
         ret((state.mip & state.hideleg & MIP_VS_MASK) >> 1);
