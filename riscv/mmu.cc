@@ -267,8 +267,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   if (vm.levels == 0)
     return gpa;
 
-  reg_t arch_sstatus = proc->state.v ? proc->state.vsstatus->read() : proc->state.sstatus->read();
-  bool mxr = arch_sstatus & MSTATUS_MXR;
+  bool mxr = proc->state.sstatus->readvirt(false) & MSTATUS_MXR;
 
   reg_t base = vm.ptbase;
   for (int i = vm.levels - 1; i >= 0; i--) {
@@ -347,9 +346,9 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
     return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx) & ~page_mask; // zero-extend from xlen
 
   bool s_mode = mode == PRV_S;
-  reg_t arch_vsstatus = proc->state.v ? proc->state.sstatus->read() : proc->state.vsstatus->read();
-  reg_t arch_sstatus = proc->state.v ? proc->state.vsstatus->read() : proc->state.sstatus->read();
-  bool sum = (virt ? arch_vsstatus : arch_sstatus) & MSTATUS_SUM;
+  bool sum = proc->state.sstatus->readvirt(virt) & MSTATUS_SUM;
+  reg_t arch_vsstatus = proc->state.sstatus->readvirt(true);
+  reg_t arch_sstatus = proc->state.sstatus->readvirt(false);
   bool mxr = (arch_sstatus | (virt ? arch_vsstatus : 0)) & MSTATUS_MXR;
 
   // verify bits xlen-1:va_bits-1 are all equal
