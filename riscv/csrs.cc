@@ -330,8 +330,9 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 void vsstatus_csr_t::backdoor_write(const reg_t val) noexcept {
+  state_t* const state = proc->get_state();
   bool has_page = proc->supports_extension('S') && proc->supports_impl(IMPL_MMU);
-  if (has_page && ((val ^ read()) & (MSTATUS_MXR | MSTATUS_SUM)))
+  if (state->v && has_page && ((val ^ read()) & (MSTATUS_MXR | MSTATUS_SUM)))
     proc->get_mmu()->flush_tlb();
   reg_t mask = SSTATUS_VS_MASK;
   mask |= (proc->supports_extension('V') ? SSTATUS_VS : 0);
