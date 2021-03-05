@@ -330,7 +330,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   FPR.reset();
 
   // This assumes xlen is always max_xlen, which is true today (see
-  // mstatus_csr_t::backdoor_write()):
+  // mstatus_csr_t::unlogged_write()):
   auto xlen = proc->get_max_xlen();
 
   prv = PRV_M;
