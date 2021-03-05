@@ -59,7 +59,7 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
   if (type != FETCH) {
     if (!proc->state.debug_mode && get_field(proc->state.mstatus, MSTATUS_MPRV)) {
       mode = get_field(proc->state.mstatus, MSTATUS_MPP);
-      if (get_field(proc->state.mstatus, MSTATUS_MPV))
+      if (get_field(proc->state.mstatus, MSTATUS_MPV) && mode != PRV_M)
         virt = true;
     }
     if (!proc->state.debug_mode && (xlate_flags & RISCV_XLATE_VIRT)) {
