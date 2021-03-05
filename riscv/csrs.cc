@@ -395,7 +395,7 @@ bool mstatus_csr_t::backdoor_write(const reg_t val) noexcept {
   if ((val ^ read()) &
       (MSTATUS_MPP | MSTATUS_MPRV
        | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
-       | MSTATUS_MXR))
+      ))
     proc->get_mmu()->flush_tlb();
 
   bool has_fs = proc->supports_extension('S') || proc->supports_extension('F')
