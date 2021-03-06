@@ -337,7 +337,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   prv = PRV_M;
   v = false;
-  misa = max_isa;
+  csrmap[CSR_MISA] = misa = std::make_shared<misa_csr_t>(proc, CSR_MISA, max_isa);
   csrmap[CSR_MSTATUS] = mstatus = std::make_shared<mstatus_csr_t>(proc, CSR_MSTATUS);
   csrmap[CSR_MEPC] = mepc = std::make_shared<epc_csr_t>(proc, CSR_MEPC);
   csrmap[CSR_MTVAL] = mtval = std::make_shared<basic_csr_t>(proc, CSR_MTVAL, 0);
@@ -1039,42 +1039,6 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_MTVAL2: state.mtval2 = val; break;
     case CSR_MTINST: state.mtinst = val; break;
-    case CSR_MISA: {
-      // the write is ignored if increasing IALIGN would misalign the PC
-      if (!(val & (1L << ('C' - 'A'))) && (state.pc & 2))
-        break;
-
-      if (!(val & (1L << ('F' - 'A'))))
-        val &= ~(1L << ('D' - 'A'));
-
-      // allow MAFDCHB bits in MISA to be modified
-      reg_t mask = 0;
-      mask |= 1L << ('M' - 'A');
-      mask |= 1L << ('A' - 'A');
-      mask |= 1L << ('F' - 'A');
-      mask |= 1L << ('D' - 'A');
-      mask |= 1L << ('C' - 'A');
-      mask |= 1L << ('H' - 'A');
-      mask &= max_isa;
-
-      bool prev_h = state.misa & (1L << ('H' - 'A'));
-      reg_t new_misa = (val & mask) | (state.misa & ~mask);
-      bool new_h = new_misa & (1L << ('H' - 'A'));
-
-      // update the forced bits in MIDELEG and other CSRs
-      if (new_h && !prev_h)
-        state.mideleg |= MIDELEG_FORCED_MASK;
-      if (!new_h && prev_h) {
-        state.mideleg &= ~MIDELEG_FORCED_MASK;
-        state.medeleg &= ~hypervisor_exceptions;
-        state.mstatus->write(state.mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV));
-        state.mie &= ~MIP_HS_MASK;  // also takes care of hie, sie
-        state.mip &= ~MIP_HS_MASK;  // also takes care of hip, sip, hvip
-        set_csr(CSR_HSTATUS, 0);
-      }
-      state.misa = new_misa;
-      break;
-    }
     case CSR_HSTATUS: {
       reg_t mask = HSTATUS_VTSR | HSTATUS_VTW
                    | (supports_impl(IMPL_MMU) ? HSTATUS_VTVM : 0)
@@ -1288,7 +1252,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SCOUNTEREN:
     case CSR_MCOUNTEREN:
     case CSR_SATP:
-    case CSR_MISA:
     case CSR_TSELECT:
     case CSR_TDATA1:
     case CSR_TDATA2:
@@ -1469,7 +1432,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (supports_extension('H'))
         ret(state.mtinst);
       break;
-    case CSR_MISA: ret(state.misa);
     case CSR_MARCHID: ret(5);
     case CSR_MIMPID: ret(0);
     case CSR_MVENDORID: ret(0);
