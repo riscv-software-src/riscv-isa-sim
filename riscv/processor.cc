@@ -763,7 +763,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_SIE, 0);
     set_csr(CSR_MSTATUS, s);
     s = state.hstatus;
-    s = set_field(s, HSTATUS_SPVP, state.prv);
+    if (curr_virt)
+      s = set_field(s, HSTATUS_SPVP, state.prv);
     s = set_field(s, HSTATUS_SPV, curr_virt);
     s = set_field(s, HSTATUS_GVA, t.has_gva());
     set_csr(CSR_HSTATUS, s);
