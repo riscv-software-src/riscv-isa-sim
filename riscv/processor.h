@@ -300,6 +300,12 @@ public:
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
   unsigned get_xlen() { return xlen; }
+  unsigned get_const_xlen() {
+    // Any code that assumes a const xlen should use this method to
+    // document that assumption. If Spike ever changes to allow
+    // variable xlen, this method should be removed.
+    return xlen;
+  }
   unsigned get_max_xlen() { return max_xlen; }
   std::string get_isa_string() { return isa_string; }
   unsigned get_flen() {

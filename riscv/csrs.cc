@@ -335,14 +335,14 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   reg_t mask = SSTATUS_VS_MASK;
   mask |= (proc->supports_extension('V') ? SSTATUS_VS : 0);
   reg_t newval = (this->val & ~mask) | (val & mask);
-  newval &= (proc->get_xlen() == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
+  newval &= (proc->get_const_xlen() == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
   if (((newval & SSTATUS_FS) == SSTATUS_FS) ||
       ((newval & SSTATUS_VS) == SSTATUS_VS) ||
       ((newval & SSTATUS_XS) == SSTATUS_XS)) {
-    newval |= (proc->get_xlen() == 64 ? SSTATUS64_SD : SSTATUS32_SD);
+    newval |= (proc->get_const_xlen() == 64 ? SSTATUS64_SD : SSTATUS32_SD);
   }
   if (proc->supports_extension('U'))
-    newval = set_field(newval, SSTATUS_UXL, xlen_to_uxl(proc->get_max_xlen()));
+    newval = set_field(newval, SSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen()));
 
   this->val = newval;
   return true;
@@ -359,7 +359,7 @@ reg_t sstatus_proxy_csr_t::read() const noexcept {
   reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_UBE | SSTATUS_SPP
              | SSTATUS_FS | (proc->supports_extension('V') ? SSTATUS_VS : 0)
              | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_UXL
-             | (proc->get_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD);
+             | (proc->get_const_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD);
   return mstatus->read() & mask;
 }
 
@@ -425,15 +425,15 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   bool dirty = (new_mstatus & MSTATUS_FS) == MSTATUS_FS;
   dirty |= (new_mstatus & MSTATUS_XS) == MSTATUS_XS;
   dirty |= (new_mstatus & MSTATUS_VS) == MSTATUS_VS;
-  if (proc->get_max_xlen() == 32)
+  if (proc->get_const_xlen() == 32)
     new_mstatus = set_field(new_mstatus, MSTATUS32_SD, dirty);
   else
     new_mstatus = set_field(new_mstatus, MSTATUS64_SD, dirty);
 
   if (proc->supports_extension('U'))
-    new_mstatus = set_field(new_mstatus, MSTATUS_UXL, xlen_to_uxl(proc->get_max_xlen()));
+    new_mstatus = set_field(new_mstatus, MSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen()));
   if (proc->supports_extension('S'))
-    new_mstatus = set_field(new_mstatus, MSTATUS_SXL, xlen_to_uxl(proc->get_max_xlen()));
+    new_mstatus = set_field(new_mstatus, MSTATUS_SXL, xlen_to_uxl(proc->get_const_xlen()));
 
   this->val = new_mstatus;
   return true;
