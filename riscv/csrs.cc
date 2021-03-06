@@ -333,7 +333,7 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   if (state->v && has_page && ((val ^ read()) & (MSTATUS_MXR | MSTATUS_SUM)))
     proc->get_mmu()->flush_tlb();
   reg_t mask = SSTATUS_VS_MASK;
-  mask |= (proc->extension_enabled('V') ? SSTATUS_VS : 0);
+  mask |= (proc->extension_enabled_const('V') ? SSTATUS_VS : 0);
   reg_t newval = (this->val & ~mask) | (val & mask);
   newval &= (proc->get_const_xlen() == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
   if (((newval & SSTATUS_FS) == SSTATUS_FS) ||
@@ -357,7 +357,7 @@ sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t ad
 
 reg_t sstatus_proxy_csr_t::read() const noexcept {
   reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_UBE | SSTATUS_SPP
-             | SSTATUS_FS | (proc->extension_enabled('V') ? SSTATUS_VS : 0)
+             | SSTATUS_FS | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0)
              | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_UXL
              | (proc->get_const_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD);
   return mstatus->read() & mask;
@@ -366,7 +366,7 @@ reg_t sstatus_proxy_csr_t::read() const noexcept {
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
   reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
              | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR
-             | (proc->extension_enabled('V') ? SSTATUS_VS : 0);
+             | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0);
   reg_t new_mstatus = (mstatus->read() & ~mask) | (val & mask);
 
   mstatus->write(new_mstatus);
@@ -400,8 +400,8 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
     proc->get_mmu()->flush_tlb();
 
   bool has_fs = proc->extension_enabled('S') || proc->extension_enabled('F')
-              || proc->extension_enabled('V');
-  bool has_vs = proc->extension_enabled('V');
+              || proc->extension_enabled_const('V');
+  bool has_vs = proc->extension_enabled_const('V');
   bool has_mpv = proc->extension_enabled('S') && proc->extension_enabled('H');
   bool has_gva = has_mpv;
 
@@ -495,4 +495,9 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
 bool misa_csr_t::extension_enabled(unsigned char ext) const noexcept {
   assert(ext >= 'A' && ext <= 'Z');
   return (read() >> (ext - 'A')) & 1;
+}
+
+bool misa_csr_t::extension_enabled_const(unsigned char ext) const noexcept {
+  assert(!(1 & (write_mask >> (ext - 'A'))));
+  return extension_enabled(ext);
 }

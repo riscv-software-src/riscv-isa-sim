@@ -324,6 +324,15 @@ public:
     else
       return extension_table[ext];
   }
+  // Is this extension enabled? and abort if this extension can
+  // possibly be disabled dynamically. Useful for documenting
+  // assumptions about writable misa bits.
+  bool extension_enabled_const(unsigned char ext) const {
+    if (ext >= 'A' && ext <= 'Z')
+      return state.misa->extension_enabled_const(ext);
+    else
+      return extension_table[ext];  // assume this can't change
+  }
   void set_impl(uint8_t impl, bool val) { impl_table[impl] = val; }
   bool supports_impl(uint8_t impl) const {
     return impl_table[impl];
