@@ -457,18 +457,18 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t adjusted_val = val_supports_f ? val : val_without_d;
 
   // allow MAFDCH bits in MISA to be modified
-  reg_t mask = 0;
-  mask |= 1L << ('M' - 'A');
-  mask |= 1L << ('A' - 'A');
-  mask |= 1L << ('F' - 'A');
-  mask |= 1L << ('D' - 'A');
-  mask |= 1L << ('C' - 'A');
-  mask |= 1L << ('H' - 'A');
-  mask &= max_isa;
+  reg_t write_mask = 0;
+  write_mask |= 1L << ('M' - 'A');
+  write_mask |= 1L << ('A' - 'A');
+  write_mask |= 1L << ('F' - 'A');
+  write_mask |= 1L << ('D' - 'A');
+  write_mask |= 1L << ('C' - 'A');
+  write_mask |= 1L << ('H' - 'A');
+  write_mask &= max_isa;
 
   const reg_t old_misa = read();
   const bool prev_h = old_misa & (1L << ('H' - 'A'));
-  const reg_t new_misa = (adjusted_val & mask) | (old_misa & ~mask);
+  const reg_t new_misa = (adjusted_val & write_mask) | (old_misa & ~write_mask);
   const bool new_h = new_misa & (1L << ('H' - 'A'));
 
   // update the forced bits in MIDELEG and other CSRs
