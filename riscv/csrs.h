@@ -253,6 +253,7 @@ class misa_csr_t: public basic_csr_t {
  public:
   misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa);
   bool extension_enabled(unsigned char ext) const noexcept;
+  bool extension_enabled_const(unsigned char ext) const noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
