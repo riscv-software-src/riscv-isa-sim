@@ -168,7 +168,7 @@ struct state_t
   std::unordered_map<reg_t, csr_t_p> csrmap;
   reg_t prv;    // TODO: Can this be an enum instead?
   bool v;
-  reg_t misa;
+  misa_csr_t_p misa;
   mstatus_csr_t_p mstatus;
   csr_t_p mepc;
   csr_t_p mtval;
@@ -320,7 +320,7 @@ public:
   }
   bool supports_extension(unsigned char ext) {
     if (ext >= 'A' && ext <= 'Z')
-      return ((state.misa >> (ext - 'A')) & 1);
+      return state.misa->supports_extension(ext);
     else
       return extension_table[ext];
   }

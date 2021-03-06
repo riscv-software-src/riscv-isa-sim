@@ -442,11 +442,55 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 
 // implement class misa_csr_t
 misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa):
-  basic_csr_t(proc, addr, max_isa) {
+  basic_csr_t(proc, addr, max_isa),
+  max_isa(max_isa) {
 }
 
 bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
-  abort();  // not implemented yet
+  state_t* const state = proc->get_state();
+  // the write is ignored if increasing IALIGN would misalign the PC
+  if (!(val & (1L << ('C' - 'A'))) && (state->pc & 2))
+    return false;
+
+  const bool val_supports_f = val & (1L << ('F' - 'A'));
+  const reg_t val_without_d = val & ~(1L << ('D' - 'A'));
+  const reg_t adjusted_val = val_supports_f ? val : val_without_d;
+
+  // allow MAFDCH bits in MISA to be modified
+  reg_t mask = 0;
+  mask |= 1L << ('M' - 'A');
+  mask |= 1L << ('A' - 'A');
+  mask |= 1L << ('F' - 'A');
+  mask |= 1L << ('D' - 'A');
+  mask |= 1L << ('C' - 'A');
+  mask |= 1L << ('H' - 'A');
+  mask &= max_isa;
+
+  const reg_t old_misa = read();
+  const bool prev_h = old_misa & (1L << ('H' - 'A'));
+  const reg_t new_misa = (adjusted_val & mask) | (old_misa & ~mask);
+  const bool new_h = new_misa & (1L << ('H' - 'A'));
+
+  // update the forced bits in MIDELEG and other CSRs
+  if (new_h && !prev_h)
+    state->mideleg |= MIDELEG_FORCED_MASK;
+  if (!new_h && prev_h) {
+    reg_t hypervisor_exceptions = 0
+      | (1 << CAUSE_VIRTUAL_SUPERVISOR_ECALL)
+      | (1 << CAUSE_FETCH_GUEST_PAGE_FAULT)
+      | (1 << CAUSE_LOAD_GUEST_PAGE_FAULT)
+      | (1 << CAUSE_VIRTUAL_INSTRUCTION)
+      | (1 << CAUSE_STORE_GUEST_PAGE_FAULT)
+      ;
+    state->mideleg &= ~MIDELEG_FORCED_MASK;
+    state->medeleg &= ~hypervisor_exceptions;
+    state->mstatus->write(state->mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV));
+    state->mie &= ~MIP_HS_MASK;  // also takes care of hie, sie
+    state->mip &= ~MIP_HS_MASK;  // also takes care of hip, sip, hvip
+    proc->set_csr(CSR_HSTATUS, 0);
+  }
+
+  return basic_csr_t::unlogged_write(new_misa);
 }
 
 bool misa_csr_t::supports_extension(unsigned char ext) const noexcept {

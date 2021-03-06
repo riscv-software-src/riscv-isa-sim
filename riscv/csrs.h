@@ -255,6 +255,8 @@ class misa_csr_t: public basic_csr_t {
   bool supports_extension(unsigned char ext) const noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  const reg_t max_isa;
 };
 
 typedef std::shared_ptr<misa_csr_t> misa_csr_t_p;
