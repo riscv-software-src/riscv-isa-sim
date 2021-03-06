@@ -249,4 +249,14 @@ class mstatus_csr_t: public base_status_csr_t {
 typedef std::shared_ptr<mstatus_csr_t> mstatus_csr_t_p;
 
 
+class misa_csr_t: public basic_csr_t {
+ public:
+  misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa);
+  bool supports_extension(unsigned char ext) const noexcept;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+typedef std::shared_ptr<misa_csr_t> misa_csr_t_p;
+
 #endif

@@ -308,18 +308,20 @@ void processor_t::parse_isa_string(const char* str)
     }
   }
 
-  state.misa = max_isa;
+  // The real state.misa hasn't been created yet, but we want to do
+  // some sanity checks on the supplied options.
+  misa_csr_t fake_misa(this, CSR_MISA, max_isa);
 
-  if (!supports_extension('I'))
+  if (!fake_misa.supports_extension('I'))
     bad_isa_string(str, "'I' extension is required");
 
-  if (supports_extension(EXT_ZFH) && !supports_extension('F'))
+  if (supports_extension(EXT_ZFH) && !fake_misa.supports_extension('F'))
     bad_isa_string(str, "'Zfh' extension requires 'F'");
 
-  if (supports_extension('D') && !supports_extension('F'))
+  if (fake_misa.supports_extension('D') && !fake_misa.supports_extension('F'))
     bad_isa_string(str, "'D' extension requires 'F'");
 
-  if (supports_extension('Q') && !supports_extension('D'))
+  if (fake_misa.supports_extension('Q') && !fake_misa.supports_extension('D'))
     bad_isa_string(str, "'Q' extension requires 'D'");
 }
 
