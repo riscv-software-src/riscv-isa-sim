@@ -217,9 +217,13 @@ private:
 #define FRS1 READ_FREG(insn.rs1())
 #define FRS2 READ_FREG(insn.rs2())
 #define FRS3 READ_FREG(insn.rs3())
-#define dirty_fp_state (STATE.mstatus |= MSTATUS_FS | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD))
-#define dirty_ext_state (STATE.mstatus |= MSTATUS_XS | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD))
-#define dirty_vs_state (STATE.mstatus |= MSTATUS_VS | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD))
+#define dirty_mstatus(bits) ({ reg_t dirties = (bits) | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD); \
+                               STATE.mstatus |= dirties; \
+                               if (STATE.v) STATE.vsstatus |= dirties; \
+                            })
+#define dirty_fp_state  dirty_mstatus(MSTATUS_FS)
+#define dirty_ext_state dirty_mstatus(MSTATUS_XS)
+#define dirty_vs_state  dirty_mstatus(MSTATUS_VS)
 #define DO_WRITE_FREG(reg, value) (STATE.FPR.write(reg, value), dirty_fp_state)
 #define WRITE_FRD(value) WRITE_FREG(insn.rd(), value)
  
@@ -242,10 +246,9 @@ private:
 #define require_extension(s) require(p->supports_extension(s))
 #define require_either_extension(A,B) require(p->supports_extension(A) || p->supports_extension(B));
 #define require_impl(s) require(p->supports_impl(s))
-#define require_fp require((((STATE.mstatus & MSTATUS_FS) != 0) && (STATE.v == 0)) || (((STATE.mstatus & MSTATUS_FS) != 0) && ((STATE.vsstatus & SSTATUS_FS) != 0) && STATE.v))
-#define require_accelerator require((STATE.mstatus & MSTATUS_XS) != 0)
-
-#define require_vector_vs require((((STATE.mstatus & MSTATUS_VS) != 0) && (STATE.v == 0)) || (((STATE.mstatus & MSTATUS_VS) != 0) && ((STATE.vsstatus & SSTATUS_VS) != 0) && STATE.v))
+#define require_fp require(((STATE.mstatus & MSTATUS_FS) != 0) && ((STATE.v == 0) || ((STATE.vsstatus & SSTATUS_FS) != 0)))
+#define require_accelerator require(((STATE.mstatus & MSTATUS_XS) != 0) && ((STATE.v == 0) || ((STATE.vsstatus & SSTATUS_XS) != 0)))
+#define require_vector_vs require(((STATE.mstatus & MSTATUS_VS) != 0) && ((STATE.v == 0) || ((STATE.vsstatus & SSTATUS_VS) != 0)))
 #define require_vector(alu) \
   do { \
     require_vector_vs; \
