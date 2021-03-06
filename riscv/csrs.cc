@@ -377,12 +377,18 @@ bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
 
 // implement class mstatus_csr_t
 mstatus_csr_t::mstatus_csr_t(processor_t* const proc, const reg_t addr):
-  basic_csr_t(proc, addr,
+  logged_csr_t(proc, addr),
+  val(
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
-              proc->get_mmu()->is_target_big_endian() ? MSTATUS_UBE | MSTATUS_SBE | MSTATUS_MBE :
+      proc->get_mmu()->is_target_big_endian() ? MSTATUS_UBE | MSTATUS_SBE | MSTATUS_MBE :
 #endif
-              0  // initial value for mstatus
+      0  // initial value for mstatus
   ) {
+}
+
+
+reg_t mstatus_csr_t::read() const noexcept {
+  return val;
 }
 
 
@@ -430,5 +436,6 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->supports_extension('S'))
     new_mstatus = set_field(new_mstatus, MSTATUS_SXL, xlen_to_uxl(proc->get_max_xlen()));
 
-  return basic_csr_t::unlogged_write(new_mstatus);
+  this->val = new_mstatus;
+  return true;
 }

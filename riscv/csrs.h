@@ -226,11 +226,14 @@ class sstatus_proxy_csr_t: public logged_csr_t {
 };
 
 
-class mstatus_csr_t: public basic_csr_t {
+class mstatus_csr_t: public logged_csr_t {
  public:
   mstatus_csr_t(processor_t* const proc, const reg_t addr);
+  virtual reg_t read() const noexcept override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  reg_t val;
 };
 
 typedef std::shared_ptr<mstatus_csr_t> mstatus_csr_t_p;
