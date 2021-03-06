@@ -312,10 +312,7 @@ vsstatus_csr_t::vsstatus_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 reg_t vsstatus_csr_t::read() const noexcept {
-  reg_t mask = SSTATUS_VS_MASK;
-  mask |= (proc->supports_extension('V') ? SSTATUS_VS : 0);
-  mask |= (proc->get_xlen() == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-  return val & mask;
+  return val;
 }
 
 
