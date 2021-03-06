@@ -176,9 +176,16 @@ class cause_csr_t: public basic_csr_t {
 };
 
 
+// For *status family of CSRs
+class base_status_csr_t: public logged_csr_t {
+ public:
+  base_status_csr_t(processor_t* const proc, const reg_t addr);
+};
+
+
 // For vsstatus, which is its own separate architectural register
 // (unlike sstatus)
-class vsstatus_csr_t: public logged_csr_t {
+class vsstatus_csr_t: public base_status_csr_t {
  public:
   vsstatus_csr_t(processor_t* const proc, const reg_t addr);
   virtual reg_t read() const noexcept override;
@@ -215,6 +222,9 @@ typedef std::shared_ptr<vsstatus_csr_t> vsstatus_csr_t_p;
 // 6. Move assorted manipulation code (like mstatus dirtying) into new
 //    sstatus class.
 
+
+// This is not base_status_csr_t because it defers all the hard work
+// to mstatus_csr_t, which is.
 class sstatus_proxy_csr_t: public logged_csr_t {
  public:
   sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr);
@@ -226,7 +236,7 @@ class sstatus_proxy_csr_t: public logged_csr_t {
 };
 
 
-class mstatus_csr_t: public logged_csr_t {
+class mstatus_csr_t: public base_status_csr_t {
  public:
   mstatus_csr_t(processor_t* const proc, const reg_t addr);
   virtual reg_t read() const noexcept override;
