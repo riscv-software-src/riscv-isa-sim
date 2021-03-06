@@ -443,7 +443,16 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 // implement class misa_csr_t
 misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa):
   basic_csr_t(proc, addr, max_isa),
-  max_isa(max_isa) {
+  max_isa(max_isa),
+  write_mask(max_isa & (0  // allow MAFDCH bits in MISA to be modified
+                        | (1L << ('M' - 'A'))
+                        | (1L << ('A' - 'A'))
+                        | (1L << ('F' - 'A'))
+                        | (1L << ('D' - 'A'))
+                        | (1L << ('C' - 'A'))
+                        | (1L << ('H' - 'A'))
+                        )
+             ) {
 }
 
 bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
@@ -455,16 +464,6 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   const bool val_supports_f = val & (1L << ('F' - 'A'));
   const reg_t val_without_d = val & ~(1L << ('D' - 'A'));
   const reg_t adjusted_val = val_supports_f ? val : val_without_d;
-
-  // allow MAFDCH bits in MISA to be modified
-  const reg_t write_mask = max_isa & (0
-                                      | (1L << ('M' - 'A'))
-                                      | (1L << ('A' - 'A'))
-                                      | (1L << ('F' - 'A'))
-                                      | (1L << ('D' - 'A'))
-                                      | (1L << ('C' - 'A'))
-                                      | (1L << ('H' - 'A'))
-                                      );
 
   const reg_t old_misa = read();
   const bool prev_h = old_misa & (1L << ('H' - 'A'));
