@@ -54,9 +54,9 @@
 #define SSTATUS_UXL         0x0000000300000000
 #define SSTATUS64_SD        0x8000000000000000
 
-#define SSTATUS_VS_MASK     (SSTATUS_SIE | SSTATUS_SPIE | \
-                             SSTATUS_SPP | SSTATUS_FS | SSTATUS_SUM | \
-                             SSTATUS_MXR | SSTATUS_UXL)
+#define SSTATUS_VS_MASK     (SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_UBE | \
+                             SSTATUS_SPP | SSTATUS_XS | SSTATUS_FS | \
+                             SSTATUS_SUM | SSTATUS_MXR | SSTATUS_UXL)
 
 #define HSTATUS_VSXL        0x300000000
 #define HSTATUS_VTSR        0x00400000
