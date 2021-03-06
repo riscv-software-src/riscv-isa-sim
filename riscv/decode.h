@@ -246,8 +246,8 @@ private:
 #define require_novirt() if (unlikely(STATE.v)) throw trap_virtual_instruction(insn.bits())
 #define require_rv64 require(xlen == 64)
 #define require_rv32 require(xlen == 32)
-#define require_extension(s) require(p->supports_extension(s))
-#define require_either_extension(A,B) require(p->supports_extension(A) || p->supports_extension(B));
+#define require_extension(s) require(p->extension_enabled(s))
+#define require_either_extension(A,B) require(p->extension_enabled(A) || p->extension_enabled(B));
 #define require_impl(s) require(p->supports_impl(s))
 #define require_fp require(((STATE.mstatus->read() & MSTATUS_FS) != 0) && ((STATE.v == 0) || ((STATE.vsstatus->read() & SSTATUS_FS) != 0)))
 #define require_accelerator require(((STATE.mstatus->read() & MSTATUS_XS) != 0) && ((STATE.v == 0) || ((STATE.vsstatus->read() & SSTATUS_XS) != 0)))
@@ -1844,9 +1844,9 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 //
 #define VI_VFP_COMMON \
   require_fp; \
-  require((P.VU.vsew == e16 && p->supports_extension(EXT_ZFH)) || \
-          (P.VU.vsew == e32 && p->supports_extension('F')) || \
-          (P.VU.vsew == e64 && p->supports_extension('D'))); \
+  require((P.VU.vsew == e16 && p->extension_enabled(EXT_ZFH)) || \
+          (P.VU.vsew == e32 && p->extension_enabled('F')) || \
+          (P.VU.vsew == e64 && p->extension_enabled('D'))); \
   require_vector(true);\
   require(STATE.frm < 0x5);\
   reg_t vl = P.VU.vl; \
@@ -2051,8 +2051,8 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define VI_VFP_VV_LOOP_WIDE_REDUCTION(BODY16, BODY32) \
   VI_CHECK_REDUCTION(true) \
   VI_VFP_COMMON \
-  require((P.VU.vsew == e16 && p->supports_extension('F')) || \
-          (P.VU.vsew == e32 && p->supports_extension('D'))); \
+  require((P.VU.vsew == e16 && p->extension_enabled('F')) || \
+          (P.VU.vsew == e32 && p->extension_enabled('D'))); \
   bool is_active = false; \
   switch(P.VU.vsew) { \
     case e16: {\
@@ -2261,9 +2261,9 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define VI_VFP_LOOP_SCALE_BASE \
   require_fp; \
   require_vector(true);\
-  require((P.VU.vsew == e8 && p->supports_extension(EXT_ZFH)) || \
-          (P.VU.vsew == e16 && p->supports_extension('F')) || \
-          (P.VU.vsew == e32 && p->supports_extension('D'))); \
+  require((P.VU.vsew == e8 && p->extension_enabled(EXT_ZFH)) || \
+          (P.VU.vsew == e16 && p->extension_enabled('F')) || \
+          (P.VU.vsew == e32 && p->extension_enabled('D'))); \
   require(STATE.frm < 0x5);\
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
