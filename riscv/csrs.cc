@@ -438,3 +438,18 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   this->val = new_mstatus;
   return true;
 }
+
+
+// implement class misa_csr_t
+misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa):
+  basic_csr_t(proc, addr, max_isa) {
+}
+
+bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
+  abort();  // not implemented yet
+}
+
+bool misa_csr_t::supports_extension(unsigned char ext) const noexcept {
+  assert(ext >= 'A' && ext <= 'Z');
+  return (read() >> (ext - 'A')) & 1;
+}
