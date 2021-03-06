@@ -13,12 +13,12 @@ VI_VFP_CVT_SCALE
   P.VU.elt<float64_t>(rd_num, i, true) = ui32_to_f64(vs2);
 },
 {
-  require(p->supports_extension(EXT_ZFH));
+  require(p->extension_enabled(EXT_ZFH));
 },
 {
-  require(p->supports_extension('F'));
+  require(p->extension_enabled('F'));
 },
 {
-  require(p->supports_extension('D'));
+  require(p->extension_enabled('D'));
 },
 true, (P.VU.vsew >= 8))

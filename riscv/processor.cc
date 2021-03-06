@@ -312,16 +312,16 @@ void processor_t::parse_isa_string(const char* str)
   // some sanity checks on the supplied options.
   misa_csr_t fake_misa(this, CSR_MISA, max_isa);
 
-  if (!fake_misa.supports_extension('I'))
+  if (!fake_misa.extension_enabled('I'))
     bad_isa_string(str, "'I' extension is required");
 
-  if (supports_extension(EXT_ZFH) && !fake_misa.supports_extension('F'))
+  if (extension_enabled(EXT_ZFH) && !fake_misa.extension_enabled('F'))
     bad_isa_string(str, "'Zfh' extension requires 'F'");
 
-  if (fake_misa.supports_extension('D') && !fake_misa.supports_extension('F'))
+  if (fake_misa.extension_enabled('D') && !fake_misa.extension_enabled('F'))
     bad_isa_string(str, "'D' extension requires 'F'");
 
-  if (fake_misa.supports_extension('Q') && !fake_misa.supports_extension('D'))
+  if (fake_misa.extension_enabled('Q') && !fake_misa.extension_enabled('D'))
     bad_isa_string(str, "'Q' extension requires 'D'");
 }
 
@@ -506,7 +506,7 @@ void processor_t::reset()
   xlen = max_xlen;
   state.reset(this, max_isa);
 
-  state.mideleg = supports_extension('H') ? MIDELEG_FORCED_MASK : 0;
+  state.mideleg = extension_enabled('H') ? MIDELEG_FORCED_MASK : 0;
 
   state.dcsr.halt = halt_on_reset;
   halt_on_reset = false;
@@ -667,10 +667,10 @@ reg_t processor_t::legalize_privilege(reg_t prv)
 {
   assert(prv <= PRV_M);
 
-  if (!supports_extension('U'))
+  if (!extension_enabled('U'))
     return PRV_M;
 
-  if (prv == PRV_HS || (prv == PRV_S && !supports_extension('S')))
+  if (prv == PRV_HS || (prv == PRV_S && !extension_enabled('S')))
     return PRV_U;
 
   return prv;
@@ -794,7 +794,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_SPP, state.prv);
     s = set_field(s, MSTATUS_SIE, 0);
     state.sstatus->write(s);
-    if (supports_extension('H')) {
+    if (extension_enabled('H')) {
       s = state.hstatus;
       if (curr_virt)
         s = set_field(s, HSTATUS_SPVP, state.prv);
@@ -906,9 +906,9 @@ void processor_t::set_csr(int which, reg_t val)
 #endif
 
   val = zext_xlen(val);
-  reg_t supervisor_ints = supports_extension('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
-  reg_t vssip_int = supports_extension('H') ? MIP_VSSIP : 0;
-  reg_t hypervisor_ints = supports_extension('H') ? MIP_HS_MASK : 0;
+  reg_t supervisor_ints = extension_enabled('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
+  reg_t vssip_int = extension_enabled('H') ? MIP_VSSIP : 0;
+  reg_t hypervisor_ints = extension_enabled('H') ? MIP_HS_MASK : 0;
   reg_t coprocessor_ints = (reg_t)any_custom_extensions() << IRQ_COP;
   reg_t delegable_ints = supervisor_ints | coprocessor_ints;
   reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP | MIP_MEIP;
@@ -975,7 +975,7 @@ void processor_t::set_csr(int which, reg_t val)
         (1 << CAUSE_FETCH_PAGE_FAULT) |
         (1 << CAUSE_LOAD_PAGE_FAULT) |
         (1 << CAUSE_STORE_PAGE_FAULT);
-      mask |= supports_extension('H') ? hypervisor_exceptions : 0;
+      mask |= extension_enabled('H') ? hypervisor_exceptions : 0;
       state.medeleg = (state.medeleg & ~mask) | (val & mask);
       break;
     }
@@ -1288,7 +1288,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 #define scounteren_ok(__which) \
 ({ \
   bool __ctr_ok = true; \
-  if (supports_extension('S') && state.prv < PRV_S) \
+  if (extension_enabled('S') && state.prv < PRV_S) \
     __ctr_ok = (state.scounteren >> (__which & 31)) & 1; \
   __ctr_ok; \
 })
@@ -1309,7 +1309,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
   switch (which)
   {
     case CSR_SENTROPY:
-      if (!supports_extension('K'))
+      if (!extension_enabled('K'))
         break;
       /* Read-only access disallowed due to wipe-on-read side effect */
       if (!write)
@@ -1317,22 +1317,22 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       ret(es.get_sentropy());
     case CSR_FFLAGS:
       require_fp;
-      if (!supports_extension('F'))
+      if (!extension_enabled('F'))
         break;
       ret(state.fflags);
     case CSR_FRM:
       require_fp;
-      if (!supports_extension('F'))
+      if (!extension_enabled('F'))
         break;
       ret(state.frm);
     case CSR_FCSR:
       require_fp;
-      if (!supports_extension('F'))
+      if (!extension_enabled('F'))
         break;
       ret((state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT));
     case CSR_VCSR:
       require_vector_vs;
-      if (!supports_extension('V'))
+      if (!extension_enabled('V'))
         break;
       ret((VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT));
     case CSR_INSTRET:
@@ -1389,7 +1389,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       break;
     case CSR_SCOUNTEREN: ret(state.scounteren);
     case CSR_MCOUNTEREN:
-      if (!supports_extension('U'))
+      if (!extension_enabled('U'))
         break;
       ret(state.mcounteren);
     case CSR_MCOUNTINHIBIT: ret(0);
@@ -1425,11 +1425,11 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIP: ret(state.mip);
     case CSR_MIE: ret(state.mie);
     case CSR_MTVAL2:
-      if (supports_extension('H'))
+      if (extension_enabled('H'))
         ret(state.mtval2);
       break;
     case CSR_MTINST:
-      if (supports_extension('H'))
+      if (extension_enabled('H'))
         ret(state.mtinst);
       break;
     case CSR_MARCHID: ret(5);
@@ -1437,11 +1437,11 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MVENDORID: ret(0);
     case CSR_MHARTID: ret(id);
     case CSR_MEDELEG:
-      if (!supports_extension('S'))
+      if (!extension_enabled('S'))
         break;
       ret(state.medeleg);
     case CSR_MIDELEG:
-      if (!supports_extension('S'))
+      if (!extension_enabled('S'))
         break;
       ret(state.mideleg);
     case CSR_HSTATUS: ret(state.hstatus);
@@ -1527,32 +1527,32 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       ret(state.dscratch1);
     case CSR_VSTART:
       require_vector_vs;
-      if (!supports_extension('V'))
+      if (!extension_enabled('V'))
         break;
       ret(VU.vstart);
     case CSR_VXSAT:
       require_vector_vs;
-      if (!supports_extension('V'))
+      if (!extension_enabled('V'))
         break;
       ret(VU.vxsat);
     case CSR_VXRM:
       require_vector_vs;
-      if (!supports_extension('V'))
+      if (!extension_enabled('V'))
         break;
       ret(VU.vxrm);
     case CSR_VL:
       require_vector_vs;
-      if (!supports_extension('V'))
+      if (!extension_enabled('V'))
         break;
       ret(VU.vl);
     case CSR_VTYPE:
       require_vector_vs;
-      if (!supports_extension('V'))
+      if (!extension_enabled('V'))
         break;
       ret(VU.vtype);
     case CSR_VLENB:
       require_vector_vs;
-      if (!supports_extension('V'))
+      if (!extension_enabled('V'))
         break;
       ret(VU.vlenb);
   }
@@ -1578,8 +1578,8 @@ out:
   unsigned csr_priv = get_field(which, 0x300);
   unsigned priv = state.prv == PRV_S && !state.v ? PRV_HS : state.prv;
 
-  if ((csr_priv == PRV_S && !supports_extension('S')) ||
-      (csr_priv == PRV_HS && !supports_extension('H')))
+  if ((csr_priv == PRV_S && !extension_enabled('S')) ||
+      (csr_priv == PRV_HS && !extension_enabled('H')))
     goto throw_illegal;
 
   if (priv < csr_priv) {

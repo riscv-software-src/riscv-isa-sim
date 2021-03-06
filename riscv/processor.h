@@ -309,18 +309,18 @@ public:
   unsigned get_max_xlen() { return max_xlen; }
   std::string get_isa_string() { return isa_string; }
   unsigned get_flen() {
-    return supports_extension('Q') ? 128 :
-           supports_extension('D') ? 64 :
-           supports_extension('F') ? 32 : 0;
+    return extension_enabled('Q') ? 128 :
+           extension_enabled('D') ? 64 :
+           extension_enabled('F') ? 32 : 0;
   }
   extension_t* get_extension();
   extension_t* get_extension(const char* name);
   bool any_custom_extensions() const {
     return !custom_extensions.empty();
   }
-  bool supports_extension(unsigned char ext) {
+  bool extension_enabled(unsigned char ext) const {
     if (ext >= 'A' && ext <= 'Z')
-      return state.misa->supports_extension(ext);
+      return state.misa->extension_enabled(ext);
     else
       return extension_table[ext];
   }
@@ -329,7 +329,7 @@ public:
     return impl_table[impl];
   }
   reg_t pc_alignment_mask() {
-    return ~(reg_t)(supports_extension('C') ? 0 : 2);
+    return ~(reg_t)(extension_enabled('C') ? 0 : 2);
   }
   void check_pc_alignment(reg_t pc) {
     if (unlikely(pc & ~pc_alignment_mask()))

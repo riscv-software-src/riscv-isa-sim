@@ -25,8 +25,8 @@ void csr_t::verify_permissions(insn_t insn, bool write) const {
   state_t* const state = proc->get_state();
   unsigned priv = state->prv == PRV_S && !state->v ? PRV_HS : state->prv;
 
-  if ((csr_priv == PRV_S && !proc->supports_extension('S')) ||
-      (csr_priv == PRV_HS && !proc->supports_extension('H')))
+  if ((csr_priv == PRV_S && !proc->extension_enabled('S')) ||
+      (csr_priv == PRV_HS && !proc->extension_enabled('H')))
     throw trap_illegal_instruction(insn.bits());
 
   if ((write && csr_read_only) || priv < csr_priv) {
@@ -329,11 +329,11 @@ namespace {
 
 bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   state_t* const state = proc->get_state();
-  bool has_page = proc->supports_extension('S') && proc->supports_impl(IMPL_MMU);
+  bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
   if (state->v && has_page && ((val ^ read()) & (MSTATUS_MXR | MSTATUS_SUM)))
     proc->get_mmu()->flush_tlb();
   reg_t mask = SSTATUS_VS_MASK;
-  mask |= (proc->supports_extension('V') ? SSTATUS_VS : 0);
+  mask |= (proc->extension_enabled('V') ? SSTATUS_VS : 0);
   reg_t newval = (this->val & ~mask) | (val & mask);
   newval &= (proc->get_const_xlen() == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
   if (((newval & SSTATUS_FS) == SSTATUS_FS) ||
@@ -341,7 +341,7 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
       ((newval & SSTATUS_XS) == SSTATUS_XS)) {
     newval |= (proc->get_const_xlen() == 64 ? SSTATUS64_SD : SSTATUS32_SD);
   }
-  if (proc->supports_extension('U'))
+  if (proc->extension_enabled('U'))
     newval = set_field(newval, SSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen()));
 
   this->val = newval;
@@ -357,7 +357,7 @@ sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t ad
 
 reg_t sstatus_proxy_csr_t::read() const noexcept {
   reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_UBE | SSTATUS_SPP
-             | SSTATUS_FS | (proc->supports_extension('V') ? SSTATUS_VS : 0)
+             | SSTATUS_FS | (proc->extension_enabled('V') ? SSTATUS_VS : 0)
              | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_UXL
              | (proc->get_const_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD);
   return mstatus->read() & mask;
@@ -366,7 +366,7 @@ reg_t sstatus_proxy_csr_t::read() const noexcept {
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
   reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
              | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR
-             | (proc->supports_extension('V') ? SSTATUS_VS : 0);
+             | (proc->extension_enabled('V') ? SSTATUS_VS : 0);
   reg_t new_mstatus = (mstatus->read() & ~mask) | (val & mask);
 
   mstatus->write(new_mstatus);
@@ -392,21 +392,21 @@ reg_t mstatus_csr_t::read() const noexcept {
 
 
 bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
-  bool has_page = proc->supports_extension('S') && proc->supports_impl(IMPL_MMU);
+  bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
   if ((val ^ read()) &
       (MSTATUS_MPP | MSTATUS_MPRV
        | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
       ))
     proc->get_mmu()->flush_tlb();
 
-  bool has_fs = proc->supports_extension('S') || proc->supports_extension('F')
-              || proc->supports_extension('V');
-  bool has_vs = proc->supports_extension('V');
-  bool has_mpv = proc->supports_extension('S') && proc->supports_extension('H');
+  bool has_fs = proc->extension_enabled('S') || proc->extension_enabled('F')
+              || proc->extension_enabled('V');
+  bool has_vs = proc->extension_enabled('V');
+  bool has_mpv = proc->extension_enabled('S') && proc->extension_enabled('H');
   bool has_gva = has_mpv;
 
   reg_t mask = MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPRV | MSTATUS_MPP
-             | (proc->supports_extension('S') ? (MSTATUS_SIE | MSTATUS_SPIE) : 0)
+             | (proc->extension_enabled('S') ? (MSTATUS_SIE | MSTATUS_SPIE) : 0)
              | MSTATUS_TW | MSTATUS_TSR
              | (has_page ? (MSTATUS_MXR | MSTATUS_SUM | MSTATUS_TVM) : 0)
              | (has_fs ? MSTATUS_FS : 0)
@@ -417,7 +417,7 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 
   reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
   reg_t new_mstatus = set_field(val, MSTATUS_MPP, requested_mpp);
-  if (proc->supports_extension('S'))
+  if (proc->extension_enabled('S'))
     mask |= MSTATUS_SPP;
 
   new_mstatus = (read() & ~mask) | (new_mstatus & mask);
@@ -430,9 +430,9 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   else
     new_mstatus = set_field(new_mstatus, MSTATUS64_SD, dirty);
 
-  if (proc->supports_extension('U'))
+  if (proc->extension_enabled('U'))
     new_mstatus = set_field(new_mstatus, MSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen()));
-  if (proc->supports_extension('S'))
+  if (proc->extension_enabled('S'))
     new_mstatus = set_field(new_mstatus, MSTATUS_SXL, xlen_to_uxl(proc->get_const_xlen()));
 
   this->val = new_mstatus;
@@ -492,7 +492,7 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write(new_misa);
 }
 
-bool misa_csr_t::supports_extension(unsigned char ext) const noexcept {
+bool misa_csr_t::extension_enabled(unsigned char ext) const noexcept {
   assert(ext >= 'A' && ext <= 'Z');
   return (read() >> (ext - 'A')) & 1;
 }
