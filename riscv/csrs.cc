@@ -299,9 +299,15 @@ reg_t cause_csr_t::read() const noexcept {
 }
 
 
+// implement class base_status_csr_t
+base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
+  logged_csr_t(proc, addr) {
+}
+
+
 // implement class vsstatus_csr_t
 vsstatus_csr_t::vsstatus_csr_t(processor_t* const proc, const reg_t addr):
-  logged_csr_t(proc, addr),
+  base_status_csr_t(proc, addr),
   val(0) {
 }
 
@@ -377,7 +383,7 @@ bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
 
 // implement class mstatus_csr_t
 mstatus_csr_t::mstatus_csr_t(processor_t* const proc, const reg_t addr):
-  logged_csr_t(proc, addr),
+  base_status_csr_t(proc, addr),
   val(
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
       proc->get_mmu()->is_target_big_endian() ? MSTATUS_UBE | MSTATUS_SBE | MSTATUS_MBE :
