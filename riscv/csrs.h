@@ -233,6 +233,7 @@ class sstatus_proxy_csr_t: public logged_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
   csr_t_p mstatus;
+  const reg_t write_mask;
   const reg_t read_mask;
 };
 
