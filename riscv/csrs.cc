@@ -356,11 +356,11 @@ sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t ad
 }
 
 reg_t sstatus_proxy_csr_t::read() const noexcept {
-  reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_UBE | SSTATUS_SPP
-             | SSTATUS_FS | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0)
-             | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_UXL
-             | (proc->get_const_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD);
-  return mstatus->read() & mask;
+  reg_t read_mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_UBE | SSTATUS_SPP
+                  | SSTATUS_FS | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0)
+                  | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_UXL
+                  | (proc->get_const_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD);
+  return mstatus->read() & read_mask;
 }
 
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
