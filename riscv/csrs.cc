@@ -364,10 +364,10 @@ reg_t sstatus_proxy_csr_t::read() const noexcept {
 }
 
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
-  reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-             | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR
-             | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0);
-  reg_t new_mstatus = (mstatus->read() & ~mask) | (val & mask);
+  reg_t write_mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
+                   | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR
+                   | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0);
+  reg_t new_mstatus = (mstatus->read() & ~write_mask) | (val & write_mask);
 
   mstatus->write(new_mstatus);
   return false; // avoid double logging: already logged by mstatus->write()
