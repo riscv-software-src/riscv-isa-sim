@@ -356,9 +356,7 @@ sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t ad
   write_mask(SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
              | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR
              | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0)),
-  read_mask(SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_UBE | SSTATUS_SPP
-            | SSTATUS_FS | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0)
-            | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_UXL
+  read_mask(write_mask | SSTATUS_UBE | SSTATUS_UXL
             | (proc->get_const_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD)) {
 }
 
