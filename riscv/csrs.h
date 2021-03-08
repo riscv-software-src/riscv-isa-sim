@@ -183,6 +183,7 @@ class base_status_csr_t: public logged_csr_t {
   base_status_csr_t(processor_t* const proc, const reg_t addr);
  protected:
   reg_t adjust_sd(const reg_t val) const noexcept;
+  void maybe_flush_tlb(const reg_t newval) noexcept;
   const reg_t sstatus_write_mask;
   const reg_t sstatus_read_mask;
  private:
