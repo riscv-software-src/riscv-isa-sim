@@ -359,7 +359,7 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 
 // implement class sstatus_proxy_csr_t
 sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr):
-  logged_csr_t(proc, addr),
+  base_status_csr_t(proc, addr),
   mstatus(proc->get_state()->mstatus),
   write_mask(SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
              | SSTATUS_SUM | SSTATUS_MXR

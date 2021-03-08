@@ -225,9 +225,7 @@ typedef std::shared_ptr<vsstatus_csr_t> vsstatus_csr_t_p;
 //    sstatus class.
 
 
-// This is not base_status_csr_t because it defers all the hard work
-// to mstatus_csr_t, which is.
-class sstatus_proxy_csr_t: public logged_csr_t {
+class sstatus_proxy_csr_t: public base_status_csr_t {
  public:
   sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr);
   virtual reg_t read() const noexcept override;
