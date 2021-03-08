@@ -301,6 +301,7 @@ reg_t cause_csr_t::read() const noexcept {
 // implement class base_status_csr_t
 base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
   logged_csr_t(proc, addr),
+  has_page(proc->extension_enabled_const('S') && proc->supports_impl(IMPL_MMU)),
   sstatus_write_mask(compute_sstatus_write_mask()),
   sstatus_read_mask(sstatus_write_mask | SSTATUS_UBE | SSTATUS_UXL
                     | (proc->get_const_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD)) {
@@ -308,7 +309,6 @@ base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
 
 
 reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
-  const bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
   // If a configuration has FS bits, they will always be accessible no
   // matter the state of misa.
   const bool has_fs = proc->extension_enabled('S') || proc->extension_enabled('F')
@@ -341,7 +341,6 @@ reg_t base_status_csr_t::adjust_sd(const reg_t val) const noexcept {
 
 
 void base_status_csr_t::maybe_flush_tlb(const reg_t newval) noexcept {
-  const bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
   if ((newval ^ read()) &
       (MSTATUS_MPP | MSTATUS_MPRV
        | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
@@ -417,7 +416,6 @@ reg_t mstatus_csr_t::read() const noexcept {
 
 
 bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
-  const bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
   const bool has_mpv = proc->extension_enabled('S') && proc->extension_enabled('H');
   const bool has_gva = has_mpv;
 
