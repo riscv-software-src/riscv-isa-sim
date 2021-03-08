@@ -279,12 +279,31 @@ class mip_csr_t: public logged_csr_t {
 typedef std::shared_ptr<mip_csr_t> mip_csr_t_p;
 
 
-class sip_csr_t: public csr_t {
+// For sip, hip, hvip, vsip, which are all just (masked & shifted) views into mip
+class generic_ip_csr_t: public csr_t {
  public:
-  sip_csr_t(processor_t* const proc, const reg_t addr);
-
+  generic_ip_csr_t(processor_t* const proc,
+                   const reg_t addr,
+                   const reg_t read_mask,
+                   const reg_t write_mask,
+                   const bool mask_mideleg,
+                   const bool mask_hideleg,
+                   const int shiftamt);
   virtual reg_t read() const noexcept override;
   virtual void write(const reg_t val) noexcept override;
+ private:
+  const reg_t read_mask;
+  const reg_t write_mask;
+  const bool mask_mideleg;
+  const bool mask_hideleg;
+  const int shiftamt;
+  reg_t deleg_mask() const;
+};
+
+
+class sip_csr_t: public generic_ip_csr_t {
+ public:
+  sip_csr_t(processor_t* const proc, const reg_t addr);
 };
 
 
