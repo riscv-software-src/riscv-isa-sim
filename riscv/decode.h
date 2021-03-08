@@ -249,9 +249,9 @@ private:
 #define require_extension(s) require(p->extension_enabled(s))
 #define require_either_extension(A,B) require(p->extension_enabled(A) || p->extension_enabled(B));
 #define require_impl(s) require(p->supports_impl(s))
-#define require_fp require(((STATE.mstatus->read() & MSTATUS_FS) != 0) && ((STATE.v == 0) || ((STATE.vsstatus->read() & SSTATUS_FS) != 0)))
-#define require_accelerator require(((STATE.mstatus->read() & MSTATUS_XS) != 0) && ((STATE.v == 0) || ((STATE.vsstatus->read() & SSTATUS_XS) != 0)))
-#define require_vector_vs require(((STATE.mstatus->read() & MSTATUS_VS) != 0) && ((STATE.v == 0) || ((STATE.vsstatus->read() & SSTATUS_VS) != 0)))
+#define require_fp          require(STATE.sstatus->enabled(SSTATUS_FS))
+#define require_accelerator require(STATE.sstatus->enabled(SSTATUS_XS))
+#define require_vector_vs   require(STATE.sstatus->enabled(SSTATUS_VS))
 #define require_vector(alu) \
   do { \
     require_vector_vs; \

@@ -453,6 +453,15 @@ void sstatus_csr_t::dirty(const reg_t dirties) {
   }
 }
 
+bool sstatus_csr_t::enabled(const reg_t which) {
+  if ((orig_csr->read() & which) == 0)
+    return false;
+  state_t* const state = proc->get_state();
+  if (state->v && ((virt_csr->read() & which) == 0))
+    return false;
+  return true;
+}
+
 
 // implement class misa_csr_t
 misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa):
