@@ -348,7 +348,10 @@ reg_t base_status_csr_t::adjust_sd(const reg_t val) const noexcept {
 
 void base_status_csr_t::maybe_flush_tlb(const reg_t newval) noexcept {
   const bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
-  if (has_page && ((newval ^ read()) & (MSTATUS_MXR | MSTATUS_SUM)))
+  if ((newval ^ read()) &
+      (MSTATUS_MPP | MSTATUS_MPRV
+       | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
+      ))
     proc->get_mmu()->flush_tlb();
 }
 
@@ -422,12 +425,6 @@ reg_t mstatus_csr_t::read() const noexcept {
 
 bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
-  if ((val ^ read()) &
-      (MSTATUS_MPP | MSTATUS_MPRV
-       | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
-      ))
-    proc->get_mmu()->flush_tlb();
-
   const bool has_mpv = proc->extension_enabled('S') && proc->extension_enabled('H');
   const bool has_gva = has_mpv;
 
@@ -441,6 +438,7 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
   const reg_t adjusted_val = set_field(val, MSTATUS_MPP, requested_mpp);
   const reg_t new_mstatus = (read() & ~mask) | (adjusted_val & mask);
+  maybe_flush_tlb(new_mstatus);
   this->val = adjust_sd(new_mstatus);
   return true;
 }
