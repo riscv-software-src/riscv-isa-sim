@@ -347,6 +347,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   minstret = 0;
   mie = 0;
   csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
+  csrmap[CSR_SIP] = std::make_shared<sip_csr_t>(proc, CSR_SIP);
   medeleg = 0;
   mideleg = 0;
   mcounteren = 0;
@@ -982,17 +983,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MCOUNTEREN:
       state.mcounteren = val;
       break;
-    case CSR_SIP: {
-      reg_t mask;
-      if (state.v) {
-        mask = state.hideleg & MIP_VSSIP;
-        val = val << 1;
-      } else {
-        mask = state.mideleg & MIP_SSIP;
-      }
-      state.mip->write_with_mask(mask, val);
-      return;
-    }
     case CSR_SIE: {
       reg_t mask;
       if (state.v) {
@@ -1368,13 +1358,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
         break;
       ret(state.mcounteren);
     case CSR_MCOUNTINHIBIT: ret(0);
-    case CSR_SIP: {
-      if (state.v) {
-        ret((state.mip->read() & state.hideleg & MIP_VS_MASK) >> 1);
-      } else {
-        ret(state.mip->read() & state.mideleg & ~MIP_HS_MASK);
-      }
-    }
     case CSR_SIE: {
       if (state.v) {
         ret((state.mie & state.hideleg & MIP_VS_MASK) >> 1);
