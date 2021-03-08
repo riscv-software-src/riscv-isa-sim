@@ -547,8 +547,8 @@ bool mip_csr_t::unlogged_write(const reg_t val) noexcept {
   //  * vstip is read-only -- write hvip instead
   const reg_t mask = (supervisor_ints | hypervisor_ints) &
                      (MIP_SEIP | MIP_SSIP | MIP_STIP | vssip_int);
-  this->val = (this->val & ~mask) | (val & mask);
-  return true;
+  write_with_mask(mask, val);
+  return false; // avoid double logging: already logged by write_with_mask()
 }
 
 
