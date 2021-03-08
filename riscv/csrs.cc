@@ -309,12 +309,12 @@ base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
 
 
 reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
-  bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
+  const bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
   // If a configuration has FS bits, they will always be accessible no
   // matter the state of misa.
-  bool has_fs = proc->extension_enabled('S') || proc->extension_enabled('F')
+  const bool has_fs = proc->extension_enabled('S') || proc->extension_enabled('F')
               || proc->extension_enabled_const('V');
-  bool has_vs = proc->extension_enabled_const('V');
+  const bool has_vs = proc->extension_enabled_const('V');
   return 0
     | (proc->extension_enabled('S') ? (SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP) : 0)
     | (has_page ? (SSTATUS_SUM | SSTATUS_MXR) : 0)
@@ -359,7 +359,7 @@ reg_t vsstatus_csr_t::read() const noexcept {
 
 bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   state_t* const state = proc->get_state();
-  bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
+  const bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
   if (state->v && has_page && ((val ^ read()) & (MSTATUS_MXR | MSTATUS_SUM)))
     proc->get_mmu()->flush_tlb();
   const reg_t newval = (this->val & ~sstatus_write_mask) | (val & sstatus_write_mask);
@@ -379,7 +379,7 @@ reg_t sstatus_proxy_csr_t::read() const noexcept {
 }
 
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
-  reg_t new_mstatus = (mstatus->read() & ~sstatus_write_mask) | (val & sstatus_write_mask);
+  const reg_t new_mstatus = (mstatus->read() & ~sstatus_write_mask) | (val & sstatus_write_mask);
 
   mstatus->write(new_mstatus);
   return false; // avoid double logging: already logged by mstatus->write()
@@ -406,24 +406,24 @@ reg_t mstatus_csr_t::read() const noexcept {
 
 
 bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
-  bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
+  const bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
   if ((val ^ read()) &
       (MSTATUS_MPP | MSTATUS_MPRV
        | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
       ))
     proc->get_mmu()->flush_tlb();
 
-  bool has_mpv = proc->extension_enabled('S') && proc->extension_enabled('H');
-  bool has_gva = has_mpv;
+  const bool has_mpv = proc->extension_enabled('S') && proc->extension_enabled('H');
+  const bool has_gva = has_mpv;
 
-  reg_t mask = sstatus_write_mask
-             | MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPRV
-             | MSTATUS_MPP | MSTATUS_TW | MSTATUS_TSR
-             | (has_page ? MSTATUS_TVM : 0)
-             | (has_gva ? MSTATUS_GVA : 0)
-             | (has_mpv ? MSTATUS_MPV : 0);
+  const reg_t mask = sstatus_write_mask
+                   | MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPRV
+                   | MSTATUS_MPP | MSTATUS_TW | MSTATUS_TSR
+                   | (has_page ? MSTATUS_TVM : 0)
+                   | (has_gva ? MSTATUS_GVA : 0)
+                   | (has_mpv ? MSTATUS_MPV : 0);
 
-  reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
+  const reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
   reg_t new_mstatus = set_field(val, MSTATUS_MPP, requested_mpp);
 
   new_mstatus = (read() & ~mask) | (new_mstatus & mask);
