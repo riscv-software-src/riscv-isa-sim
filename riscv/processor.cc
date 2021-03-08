@@ -1189,6 +1189,7 @@ void processor_t::set_csr(int which, reg_t val)
           ((state.vsstatus & SSTATUS_XS) == SSTATUS_XS)) {
          state.vsstatus |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
       }
+      state.vsstatus = set_field(state.vsstatus, SSTATUS_UXL, xlen_to_uxl(max_xlen));
       break;
     }
     case CSR_VSIE: {
