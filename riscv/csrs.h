@@ -317,12 +317,9 @@ class hip_csr_t: public generic_ip_csr_t {
   hip_csr_t(processor_t* const proc, const reg_t addr);
 };
 
-class vsip_csr_t: public csr_t {
+class vsip_csr_t: public generic_ip_csr_t {
  public:
   vsip_csr_t(processor_t* const proc, const reg_t addr);
-
-  virtual reg_t read() const noexcept override;
-  virtual void write(const reg_t val) noexcept override;
 };
 
 
