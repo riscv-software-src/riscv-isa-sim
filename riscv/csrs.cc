@@ -321,17 +321,6 @@ reg_t base_status_csr_t::adjust_sd(reg_t newval) const noexcept {
 }
 
 
-// implement class vsstatus_csr_t
-vsstatus_csr_t::vsstatus_csr_t(processor_t* const proc, const reg_t addr):
-  base_status_csr_t(proc, addr),
-  val(0) {
-}
-
-reg_t vsstatus_csr_t::read() const noexcept {
-  return val;
-}
-
-
 namespace {
   int xlen_to_uxl(int xlen) {
     if (xlen == 32)
@@ -343,6 +332,16 @@ namespace {
 }
 
 
+// implement class vsstatus_csr_t
+vsstatus_csr_t::vsstatus_csr_t(processor_t* const proc, const reg_t addr):
+  base_status_csr_t(proc, addr),
+  val(set_field((reg_t)0, SSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen()))) {
+}
+
+reg_t vsstatus_csr_t::read() const noexcept {
+  return val;
+}
+
 bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   state_t* const state = proc->get_state();
   bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
@@ -350,9 +349,6 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
     proc->get_mmu()->flush_tlb();
   reg_t newval = (this->val & ~sstatus_write_mask) | (val & sstatus_write_mask);
   newval = adjust_sd(newval);
-  if (proc->extension_enabled('U'))
-    newval = set_field(newval, SSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen()));
-
   this->val = newval;
   return true;
 }
