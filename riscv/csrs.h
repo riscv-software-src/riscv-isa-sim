@@ -184,6 +184,8 @@ class base_status_csr_t: public logged_csr_t {
   reg_t adjust_sd(reg_t newval) const noexcept;
   const reg_t sstatus_write_mask;
   const reg_t sstatus_read_mask;
+ private:
+  reg_t compute_sstatus_write_mask() const noexcept;
 };
 
 
