@@ -517,26 +517,26 @@ bool misa_csr_t::extension_enabled_const(unsigned char ext) const noexcept {
 }
 
 
-// implement class mip_csr_t
-mip_csr_t::mip_csr_t(processor_t* const proc, const reg_t addr):
+// implement class mip_or_mie_csr_t
+mip_or_mie_csr_t::mip_or_mie_csr_t(processor_t* const proc, const reg_t addr):
   logged_csr_t(proc, addr),
   val(0) {
 }
 
-reg_t mip_csr_t::read() const noexcept {
+reg_t mip_or_mie_csr_t::read() const noexcept {
   return val;
 }
 
-void mip_csr_t::write_with_mask(const reg_t mask, const reg_t val) noexcept {
+void mip_or_mie_csr_t::write_with_mask(const reg_t mask, const reg_t val) noexcept {
   backdoor_write_with_mask(mask, val);
   log_write();
 }
 
-void mip_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept {
+void mip_or_mie_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept {
   this->val = (this->val & ~mask) | (val & mask);
 }
 
-bool mip_csr_t::unlogged_write(const reg_t val) noexcept {
+bool mip_or_mie_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t supervisor_ints = proc->extension_enabled('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
   const reg_t vssip_int = proc->extension_enabled('H') ? MIP_VSSIP : 0;
   const reg_t hypervisor_ints = proc->extension_enabled('H') ? MIP_HS_MASK : 0;
