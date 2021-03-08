@@ -347,12 +347,41 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   minstret = 0;
   mie = 0;
   csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
-  csrmap[CSR_HVIP] = std::make_shared<hvip_csr_t>(proc, CSR_HVIP);
-  csrmap[CSR_HIP] = std::make_shared<hvip_csr_t>(proc, CSR_HIP);
-  auto nonvirtual_sip = std::make_shared<sip_csr_t>(proc, CSR_SIP);
-  auto vsip = std::make_shared<vsip_csr_t>(proc, CSR_VSIP);
+  auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(this,
+                                                               ~MIP_HS_MASK,  // read_mask
+                                                               MIP_SSIP,      // write_mask
+                                                               true,          // mask_mideleg
+                                                               false,         // mask_hideleg
+                                                               0);            // shiftamt
+
+  auto hip_hie_accr = std::make_shared<generic_int_accessor_t>(this,
+                                                               MIP_HS_MASK,   // read_mask
+                                                               MIP_VSSIP,     // write_mask
+                                                               false,         // mask_mideleg
+                                                               false,         // mask_hideleg
+                                                               0);
+
+  auto hvip_accr = std::make_shared<generic_int_accessor_t>(this,
+                                                            MIP_VS_MASK,   // read_mask
+                                                            MIP_VS_MASK,   // write_mask
+                                                            false,         // mask_mideleg
+                                                            false,         // mask_hideleg
+                                                            0);            // shiftamt
+
+  auto vsip_vsie_accr = std::make_shared<generic_int_accessor_t>(this,
+                                                                 MIP_VS_MASK,   // read_mask
+                                                                 MIP_VSSIP,     // write_mask
+                                                                 false,         // mask_mideleg
+                                                                 true,          // mask_hideleg
+                                                                 1);            // shiftamt
+
+  auto nonvirtual_sip = std::make_shared<mip_proxy_csr_t>(proc, CSR_SIP, sip_sie_accr);
+  auto vsip = std::make_shared<mip_proxy_csr_t>(proc, CSR_VSIP, vsip_vsie_accr);
   csrmap[CSR_VSIP] = vsip;
   csrmap[CSR_SIP] = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sip, vsip);
+  csrmap[CSR_HIP] = std::make_shared<mip_proxy_csr_t>(proc, CSR_HIP, hip_hie_accr);
+  csrmap[CSR_HVIP] = std::make_shared<mip_proxy_csr_t>(proc, CSR_HVIP, hvip_accr);
+
   medeleg = 0;
   mideleg = 0;
   mcounteren = 0;
