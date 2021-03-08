@@ -361,20 +361,20 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr):
   base_status_csr_t(proc, addr),
   mstatus(proc->get_state()->mstatus),
-  write_mask(SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-             | SSTATUS_SUM | SSTATUS_MXR
-             | (proc->any_custom_extensions() ? SSTATUS_XS : 0)
-             | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0)),
-  read_mask(write_mask | SSTATUS_UBE | SSTATUS_UXL
-            | (proc->get_const_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD)) {
+  sstatus_write_mask(SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
+                     | SSTATUS_SUM | SSTATUS_MXR
+                     | (proc->any_custom_extensions() ? SSTATUS_XS : 0)
+                     | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0)),
+  sstatus_read_mask(sstatus_write_mask | SSTATUS_UBE | SSTATUS_UXL
+                    | (proc->get_const_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD)) {
 }
 
 reg_t sstatus_proxy_csr_t::read() const noexcept {
-  return mstatus->read() & read_mask;
+  return mstatus->read() & sstatus_read_mask;
 }
 
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
-  reg_t new_mstatus = (mstatus->read() & ~write_mask) | (val & write_mask);
+  reg_t new_mstatus = (mstatus->read() & ~sstatus_write_mask) | (val & sstatus_write_mask);
 
   mstatus->write(new_mstatus);
   return false; // avoid double logging: already logged by mstatus->write()
