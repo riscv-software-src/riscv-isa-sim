@@ -13,6 +13,7 @@
 // implement class csr_t
 csr_t::csr_t(processor_t* const proc, const reg_t addr):
   proc(proc),
+  state(proc->get_state()),
   address(addr),
   csr_priv(get_field(addr, 0x300)),
   csr_read_only(get_field(addr, 0xC00) == 3) {
@@ -22,7 +23,6 @@ void csr_t::verify_permissions(insn_t insn, bool write) const {
   // Check permissions. Raise virtual-instruction exception if V=1,
   // privileges are insufficient, and the CSR belongs to supervisor or
   // hypervisor. Raise illegal-instruction exception otherwise.
-  state_t* const state = proc->get_state();
   unsigned priv = state->prv == PRV_S && !state->v ? PRV_HS : state->prv;
 
   if ((csr_priv == PRV_S && !proc->extension_enabled('S')) ||
@@ -121,7 +121,6 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 bool pmpaddr_csr_t::next_locked_and_tor() const noexcept {
-  state_t* const state = proc->get_state();
   if (pmpidx >= state->max_pmp) return false;  // this is the last entry
   bool next_locked = state->pmpaddr[pmpidx+1]->cfg & PMP_L;
   bool next_tor = (state->pmpaddr[pmpidx+1]->cfg & PMP_A) == PMP_TOR;
@@ -136,7 +135,6 @@ reg_t pmpaddr_csr_t::tor_paddr() const noexcept {
 
 reg_t pmpaddr_csr_t::tor_base_paddr() const noexcept {
   if (pmpidx == 0) return 0;  // entry 0 always uses 0 as base
-  state_t* const state = proc->get_state();
   return state->pmpaddr[pmpidx-1]->tor_paddr();
 }
 
@@ -195,7 +193,6 @@ pmpcfg_csr_t::pmpcfg_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 reg_t pmpcfg_csr_t::read() const noexcept {
-  state_t* const state = proc->get_state();
   reg_t cfg_res = 0;
   for (size_t i0 = (address - CSR_PMPCFG0) * 4, i = i0; i < i0 + proc->get_xlen() / 8 && i < state->max_pmp; i++)
     cfg_res |= reg_t(state->pmpaddr[i]->cfg) << (8 * (i - i0));
@@ -206,7 +203,6 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->n_pmp == 0)
     return false;
 
-  state_t* const state = proc->get_state();
   bool write_success = false;
   for (size_t i0 = (address - CSR_PMPCFG0) * 4, i = i0; i < i0 + proc->get_xlen() / 8; i++) {
     if (i < proc->n_pmp) {
@@ -234,7 +230,6 @@ virtualized_csr_t::virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_
 
 
 reg_t virtualized_csr_t::read() const noexcept {
-  state_t* const state = proc->get_state();
   return readvirt(state->v);
 }
 
@@ -243,7 +238,6 @@ reg_t virtualized_csr_t::readvirt(bool virt) const noexcept {
 }
 
 void virtualized_csr_t::write(const reg_t val) noexcept {
-  state_t* const state = proc->get_state();
   if (state->v)
     virt_csr->write(val);
   else
@@ -378,7 +372,6 @@ reg_t vsstatus_csr_t::read() const noexcept {
 }
 
 bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
-  state_t* const state = proc->get_state();
   const reg_t newval = (this->val & ~sstatus_write_mask) | (val & sstatus_write_mask);
   if (state->v) maybe_flush_tlb(newval);
   this->val = adjust_sd(newval);
@@ -449,7 +442,6 @@ sstatus_csr_t::sstatus_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt
 }
 
 void sstatus_csr_t::dirty(const reg_t dirties) {
-  state_t* const state = proc->get_state();
   orig_csr->write(orig_csr->read() | dirties);
   if (state->v) {
     virt_csr->write(virt_csr->read() | dirties);
@@ -459,7 +451,6 @@ void sstatus_csr_t::dirty(const reg_t dirties) {
 bool sstatus_csr_t::enabled(const reg_t which) {
   if ((orig_csr->read() & which) == 0)
     return false;
-  state_t* const state = proc->get_state();
   if (state->v && ((virt_csr->read() & which) == 0))
     return false;
   return true;
@@ -482,7 +473,6 @@ misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t ma
 }
 
 bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
-  state_t* const state = proc->get_state();
   // the write is ignored if increasing IALIGN would misalign the PC
   if (!(val & (1L << ('C' - 'A'))) && (state->pc & 2))
     return false;
@@ -570,15 +560,12 @@ sip_csr_t::sip_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 reg_t sip_csr_t::read() const noexcept {
-  state_t* const state = proc->get_state();
   if (state->v)
     return (state->mip->read() & state->hideleg & MIP_VS_MASK) >> 1;
   return state->mip->read() & state->mideleg & ~MIP_HS_MASK;
 }
 
 void sip_csr_t::write(const reg_t val) noexcept {
-  state_t* const state = proc->get_state();
-
   if (state->v)
     state->mip->write_with_mask(state->hideleg & MIP_VSSIP, val << 1);
   else
@@ -591,12 +578,10 @@ hvip_csr_t::hvip_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 reg_t hvip_csr_t::read() const noexcept {
-  state_t* const state = proc->get_state();
   return state->mip->read() & MIP_VS_MASK;
 }
 
 void hvip_csr_t::write(const reg_t val) noexcept {
-  state_t* const state = proc->get_state();
   const reg_t mask = MIP_VS_MASK;
   state->mip->write_with_mask(mask, val);
 }
