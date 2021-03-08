@@ -345,6 +345,7 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t mask = (SSTATUS_SIE | SSTATUS_SPIE
                       | SSTATUS_SPP | SSTATUS_FS | SSTATUS_SUM
                       | SSTATUS_MXR
+                      | (proc->any_custom_extensions() ? SSTATUS_XS : 0)
                       | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0));
   reg_t newval = (this->val & ~mask) | (val & mask);
   newval = adjust_sd(newval);
