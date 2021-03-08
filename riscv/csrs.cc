@@ -309,10 +309,19 @@ base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
 
 
 reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
-  return SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-    | SSTATUS_SUM | SSTATUS_MXR
+  bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
+  // If a configuration has FS bits, they will always be accessible no
+  // matter the state of misa.
+  bool has_fs = proc->extension_enabled('S') || proc->extension_enabled('F')
+              || proc->extension_enabled_const('V');
+  bool has_vs = proc->extension_enabled_const('V');
+  return 0
+    | (proc->extension_enabled('S') ? (SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP) : 0)
+    | (has_page ? (SSTATUS_SUM | SSTATUS_MXR) : 0)
+    | (has_fs ? SSTATUS_FS : 0)
     | (proc->any_custom_extensions() ? SSTATUS_XS : 0)
-    | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0);
+    | (has_vs ? SSTATUS_VS : 0)
+    ;
 }
 
 
