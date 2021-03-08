@@ -264,19 +264,28 @@ typedef std::shared_ptr<misa_csr_t> misa_csr_t_p;
 class mip_or_mie_csr_t: public logged_csr_t {
  public:
   mip_or_mie_csr_t(processor_t* const proc, const reg_t addr);
-  virtual reg_t read() const noexcept override;
+  virtual reg_t read() const noexcept override final;
 
   void write_with_mask(const reg_t mask, const reg_t val) noexcept;
 
   // Does not log. Used by external things (clint) that wiggle bits in mip.
   void backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept;
  protected:
-  virtual bool unlogged_write(const reg_t val) noexcept override;
+  virtual bool unlogged_write(const reg_t val) noexcept override final;
  private:
+  virtual reg_t write_mask() const noexcept = 0;
   reg_t val;
 };
 
 typedef std::shared_ptr<mip_or_mie_csr_t> mip_or_mie_csr_t_p;
+
+
+class mip_csr_t: public mip_or_mie_csr_t {
+ public:
+  mip_csr_t(processor_t* const proc, const reg_t addr);
+ private:
+  virtual reg_t write_mask() const noexcept override;
+};
 
 
 // For sip, hip, hvip, vsip, sie, hie, vsie which are all just (masked
