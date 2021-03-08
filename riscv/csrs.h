@@ -180,6 +180,8 @@ class cause_csr_t: public basic_csr_t {
 class base_status_csr_t: public logged_csr_t {
  public:
   base_status_csr_t(processor_t* const proc, const reg_t addr);
+ protected:
+  reg_t adjust_sd(reg_t newval) const noexcept;
 };
 
 

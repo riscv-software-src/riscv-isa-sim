@@ -304,6 +304,16 @@ base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
   logged_csr_t(proc, addr) {
 }
 
+reg_t base_status_csr_t::adjust_sd(reg_t newval) const noexcept {
+  newval &= (proc->get_const_xlen() == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
+  if (((newval & SSTATUS_FS) == SSTATUS_FS) ||
+      ((newval & SSTATUS_VS) == SSTATUS_VS) ||
+      ((newval & SSTATUS_XS) == SSTATUS_XS)) {
+    newval |= (proc->get_const_xlen() == 64 ? SSTATUS64_SD : SSTATUS32_SD);
+  }
+  return newval;
+}
+
 
 // implement class vsstatus_csr_t
 vsstatus_csr_t::vsstatus_csr_t(processor_t* const proc, const reg_t addr):
@@ -337,12 +347,7 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
                       | SSTATUS_MXR
                       | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0));
   reg_t newval = (this->val & ~mask) | (val & mask);
-  newval &= (proc->get_const_xlen() == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
-  if (((newval & SSTATUS_FS) == SSTATUS_FS) ||
-      ((newval & SSTATUS_VS) == SSTATUS_VS) ||
-      ((newval & SSTATUS_XS) == SSTATUS_XS)) {
-    newval |= (proc->get_const_xlen() == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-  }
+  newval = adjust_sd(newval);
   if (proc->extension_enabled('U'))
     newval = set_field(newval, SSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen()));
 
