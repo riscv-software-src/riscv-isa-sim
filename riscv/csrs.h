@@ -52,6 +52,9 @@ class logged_csr_t: public csr_t {
  protected:
   // Return value indicates success; false means no write actually occurred
   virtual bool unlogged_write(const reg_t val) noexcept = 0;
+
+  // Record this CSR update (which has already happened) in the commit log
+  void log_write() const noexcept;
 };
 
 
