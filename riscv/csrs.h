@@ -234,7 +234,7 @@ typedef std::shared_ptr<vsstatus_csr_t> vsstatus_csr_t_p;
 
 class sstatus_proxy_csr_t: public base_status_csr_t {
  public:
-  sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr);
+  sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mstatus);
   virtual reg_t read() const noexcept override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
