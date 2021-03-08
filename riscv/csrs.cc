@@ -486,7 +486,7 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
     state->medeleg &= ~hypervisor_exceptions;
     state->mstatus->write(state->mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV));
     state->mie &= ~MIP_HS_MASK;  // also takes care of hie, sie
-    state->mip &= ~MIP_HS_MASK;  // also takes care of hip, sip, hvip
+    state->mip->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hip, sip, hvip
     proc->set_csr(CSR_HSTATUS, 0);
   }
 
@@ -501,4 +501,39 @@ bool misa_csr_t::extension_enabled(unsigned char ext) const noexcept {
 bool misa_csr_t::extension_enabled_const(unsigned char ext) const noexcept {
   assert(!(1 & (write_mask >> (ext - 'A'))));
   return extension_enabled(ext);
+}
+
+
+// implement class mip_csr_t
+mip_csr_t::mip_csr_t(processor_t* const proc, const reg_t addr):
+  logged_csr_t(proc, addr),
+  val(0) {
+}
+
+reg_t mip_csr_t::read() const noexcept {
+  return val;
+}
+
+void mip_csr_t::write_with_mask(const reg_t mask, const reg_t val) noexcept {
+  backdoor_write_with_mask(mask, val);
+  log_write();
+}
+
+void mip_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept {
+  this->val = (this->val & ~mask) | (val & mask);
+}
+
+bool mip_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t supervisor_ints = proc->extension_enabled('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
+  const reg_t vssip_int = proc->extension_enabled('H') ? MIP_VSSIP : 0;
+  const reg_t hypervisor_ints = proc->extension_enabled('H') ? MIP_HS_MASK : 0;
+  // We must mask off sgeip, vstip, and vseip. All three of these
+  // bits are aliases for the same bits in hip. The hip spec says:
+  //  * sgeip is read-only -- write hgeip instead
+  //  * vseip is read-only -- write hvip instead
+  //  * vstip is read-only -- write hvip instead
+  const reg_t mask = (supervisor_ints | hypervisor_ints) &
+                     (MIP_SEIP | MIP_SSIP | MIP_STIP | vssip_int);
+  this->val = (this->val & ~mask) | (val & mask);
+  return true;
 }

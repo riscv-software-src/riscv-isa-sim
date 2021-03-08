@@ -33,7 +33,7 @@ bool clint_t::load(reg_t addr, size_t len, uint8_t* bytes)
   if (addr >= MSIP_BASE && addr + len <= MSIP_BASE + procs.size()*sizeof(msip_t)) {
     std::vector<msip_t> msip(procs.size());
     for (size_t i = 0; i < procs.size(); ++i)
-      msip[i] = !!(procs[i]->state.mip & MIP_MSIP);
+      msip[i] = !!(procs[i]->state.mip->read() & MIP_MSIP);
     memcpy(bytes, (uint8_t*)&msip[0] + addr - MSIP_BASE, len);
   } else if (addr >= MTIMECMP_BASE && addr + len <= MTIMECMP_BASE + procs.size()*sizeof(mtimecmp_t)) {
     memcpy(bytes, (uint8_t*)&mtimecmp[0] + addr - MTIMECMP_BASE, len);
@@ -54,9 +54,9 @@ bool clint_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     memset((uint8_t*)&mask[0] + addr - MSIP_BASE, 0xff, len);
     for (size_t i = 0; i < procs.size(); ++i) {
       if (!(mask[i] & 0xFF)) continue;
-      procs[i]->state.mip &= ~MIP_MSIP;
+      procs[i]->state.mip->backdoor_write_with_mask(MIP_MSIP, 0);
       if (!!(msip[i] & 1))
-        procs[i]->state.mip |= MIP_MSIP;
+        procs[i]->state.mip->backdoor_write_with_mask(MIP_MSIP, MIP_MSIP);
     }
   } else if (addr >= MTIMECMP_BASE && addr + len <= MTIMECMP_BASE + procs.size()*sizeof(mtimecmp_t)) {
     memcpy((uint8_t*)&mtimecmp[0] + addr - MTIMECMP_BASE, bytes, len);
@@ -82,8 +82,8 @@ void clint_t::increment(reg_t inc)
     mtime += inc;
   }
   for (size_t i = 0; i < procs.size(); i++) {
-    procs[i]->state.mip &= ~MIP_MTIP;
+    procs[i]->state.mip->backdoor_write_with_mask(MIP_MTIP, 0);
     if (mtime >= mtimecmp[i])
-      procs[i]->state.mip |= MIP_MTIP;
+      procs[i]->state.mip->backdoor_write_with_mask(MIP_MTIP, MIP_MTIP);
   }
 }
