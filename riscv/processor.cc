@@ -350,6 +350,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_SIP] = std::make_shared<sip_csr_t>(proc, CSR_SIP);
   csrmap[CSR_HVIP] = std::make_shared<hvip_csr_t>(proc, CSR_HVIP);
   csrmap[CSR_HIP] = std::make_shared<hvip_csr_t>(proc, CSR_HIP);
+  csrmap[CSR_VSIP] = std::make_shared<vsip_csr_t>(proc, CSR_VSIP);
   medeleg = 0;
   mideleg = 0;
   mcounteren = 0;
@@ -1082,11 +1083,6 @@ void processor_t::set_csr(int which, reg_t val)
       state.mie = (state.mie & ~mask) | ((val << 1) & mask);
       break;
     }
-    case CSR_VSIP: {
-      reg_t mask = state.hideleg & MIP_VSSIP;
-      state.mip->write_with_mask(mask, val << 1);
-      return;
-    }
     case CSR_VSATP:
       if (!supports_impl(IMPL_MMU))
         val = 0;
@@ -1408,7 +1404,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     }
     case CSR_HGEIP: ret(0);
     case CSR_VSIE: ret((state.mie & state.hideleg & MIP_VS_MASK) >> 1);
-    case CSR_VSIP: ret((state.mip->read() & state.hideleg & MIP_VS_MASK) >> 1);
     case CSR_VSATP: ret(state.vsatp);
     case CSR_TSELECT: ret(state.tselect);
     case CSR_TDATA1:
