@@ -412,19 +412,13 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
       ))
     proc->get_mmu()->flush_tlb();
 
-  bool has_fs = proc->extension_enabled('S') || proc->extension_enabled('F')
-              || proc->extension_enabled_const('V');
-  bool has_vs = proc->extension_enabled_const('V');
   bool has_mpv = proc->extension_enabled('S') && proc->extension_enabled('H');
   bool has_gva = has_mpv;
 
-  reg_t mask = MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPRV | MSTATUS_MPP
-             | (proc->extension_enabled('S') ? (MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_SPP) : 0)
-             | MSTATUS_TW | MSTATUS_TSR
-             | (has_page ? (MSTATUS_MXR | MSTATUS_SUM | MSTATUS_TVM) : 0)
-             | (has_fs ? MSTATUS_FS : 0)
-             | (has_vs ? MSTATUS_VS : 0)
-             | (proc->any_custom_extensions() ? MSTATUS_XS : 0)
+  reg_t mask = sstatus_write_mask
+             | MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPRV
+             | MSTATUS_MPP | MSTATUS_TW | MSTATUS_TSR
+             | (has_page ? MSTATUS_TVM : 0)
              | (has_gva ? MSTATUS_GVA : 0)
              | (has_mpv ? MSTATUS_MPV : 0);
 

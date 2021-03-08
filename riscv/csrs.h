@@ -220,7 +220,7 @@ typedef std::shared_ptr<vsstatus_csr_t> vsstatus_csr_t_p;
 //    state.sstatus. When complete, all references to sstatus that
 //    need to be virtualized will be through this object.
 // 3. [done] Convert mstatus into a csr_t subclass.
-// 4. Refactor common code into base class.
+// 4. [done] Refactor common code into base class.
 // 5. [done] Convert sstatus to a virtualized_csr_t, with a
 //    nonvirtual_sstatus of type sstatus_proxy_csr_t, and
 //    simultaneously remove the swapping of mstatus & vsstatus from
