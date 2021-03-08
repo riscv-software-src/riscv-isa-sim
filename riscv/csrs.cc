@@ -355,7 +355,7 @@ namespace {
 // implement class vsstatus_csr_t
 vsstatus_csr_t::vsstatus_csr_t(processor_t* const proc, const reg_t addr):
   base_status_csr_t(proc, addr),
-  val(set_field((reg_t)0, SSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen()))) {
+  val(proc->get_state()->mstatus->read() & sstatus_read_mask) {
 }
 
 reg_t vsstatus_csr_t::read() const noexcept {
