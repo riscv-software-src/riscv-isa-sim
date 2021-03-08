@@ -426,14 +426,7 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
     mask |= MSTATUS_SPP;
 
   new_mstatus = (read() & ~mask) | (new_mstatus & mask);
-
-  bool dirty = (new_mstatus & MSTATUS_FS) == MSTATUS_FS;
-  dirty |= (new_mstatus & MSTATUS_XS) == MSTATUS_XS;
-  dirty |= (new_mstatus & MSTATUS_VS) == MSTATUS_VS;
-  if (proc->get_const_xlen() == 32)
-    new_mstatus = set_field(new_mstatus, MSTATUS32_SD, dirty);
-  else
-    new_mstatus = set_field(new_mstatus, MSTATUS64_SD, dirty);
+  new_mstatus = adjust_sd(new_mstatus);
 
   if (proc->extension_enabled('U'))
     new_mstatus = set_field(new_mstatus, MSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen()));
