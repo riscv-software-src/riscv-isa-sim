@@ -302,13 +302,19 @@ reg_t cause_csr_t::read() const noexcept {
 // implement class base_status_csr_t
 base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
   logged_csr_t(proc, addr),
-  sstatus_write_mask(SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-                     | SSTATUS_SUM | SSTATUS_MXR
-                     | (proc->any_custom_extensions() ? SSTATUS_XS : 0)
-                     | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0)),
+  sstatus_write_mask(compute_sstatus_write_mask()),
   sstatus_read_mask(sstatus_write_mask | SSTATUS_UBE | SSTATUS_UXL
                     | (proc->get_const_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD)) {
 }
+
+
+reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
+  return SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
+    | SSTATUS_SUM | SSTATUS_MXR
+    | (proc->any_custom_extensions() ? SSTATUS_XS : 0)
+    | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0);
+}
+
 
 reg_t base_status_csr_t::adjust_sd(reg_t newval) const noexcept {
   newval &= (proc->get_const_xlen() == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
