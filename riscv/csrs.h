@@ -304,15 +304,19 @@ class generic_int_accessor_t {
   generic_int_accessor_t(state_t* const state,
                          const reg_t read_mask,
                          const reg_t ip_write_mask,
+                         const reg_t ie_write_mask,
                          const bool mask_mideleg,
                          const bool mask_hideleg,
                          const int shiftamt);
   reg_t ip_read() const noexcept;
   void ip_write(const reg_t val) noexcept;
+  reg_t ie_read() const noexcept;
+  void ie_write(const reg_t val) noexcept;
  private:
   state_t* const state;
   const reg_t read_mask;
   const reg_t ip_write_mask;
+  const reg_t ie_write_mask;
   const bool mask_mideleg;
   const bool mask_hideleg;
   const int shiftamt;
@@ -326,6 +330,16 @@ typedef std::shared_ptr<generic_int_accessor_t> generic_int_accessor_t_p;
 class mip_proxy_csr_t: public csr_t {
  public:
   mip_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr);
+  virtual reg_t read() const noexcept override;
+  virtual void write(const reg_t val) noexcept override;
+ private:
+  generic_int_accessor_t_p accr;
+};
+
+// For all CSRs that are simply (masked & shifted) views into mie
+class mie_proxy_csr_t: public csr_t {
+ public:
+  mie_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr);
   virtual reg_t read() const noexcept override;
   virtual void write(const reg_t val) noexcept override;
  private:

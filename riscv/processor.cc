@@ -350,6 +350,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(this,
                                                                ~MIP_HS_MASK,  // read_mask
                                                                MIP_SSIP,      // ip_write_mask
+                                                               ~MIP_HS_MASK,  // ie_write_mask
                                                                true,          // mask_mideleg
                                                                false,         // mask_hideleg
                                                                0);            // shiftamt
@@ -357,6 +358,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   auto hip_hie_accr = std::make_shared<generic_int_accessor_t>(this,
                                                                MIP_HS_MASK,   // read_mask
                                                                MIP_VSSIP,     // ip_write_mask
+                                                               MIP_HS_MASK,   // ie_write_mask
                                                                false,         // mask_mideleg
                                                                false,         // mask_hideleg
                                                                0);
@@ -364,6 +366,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   auto hvip_accr = std::make_shared<generic_int_accessor_t>(this,
                                                             MIP_VS_MASK,   // read_mask
                                                             MIP_VS_MASK,   // ip_write_mask
+                                                            MIP_VS_MASK,   // ie_write_mask
                                                             false,         // mask_mideleg
                                                             false,         // mask_hideleg
                                                             0);            // shiftamt
@@ -371,6 +374,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   auto vsip_vsie_accr = std::make_shared<generic_int_accessor_t>(this,
                                                                  MIP_VS_MASK,   // read_mask
                                                                  MIP_VSSIP,     // ip_write_mask
+                                                                 MIP_VSSIP,     // ie_write_mask
                                                                  false,         // mask_mideleg
                                                                  true,          // mask_hideleg
                                                                  1);            // shiftamt
@@ -381,6 +385,12 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_SIP] = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sip, vsip);
   csrmap[CSR_HIP] = std::make_shared<mip_proxy_csr_t>(proc, CSR_HIP, hip_hie_accr);
   csrmap[CSR_HVIP] = std::make_shared<mip_proxy_csr_t>(proc, CSR_HVIP, hvip_accr);
+
+  auto nonvirtual_sie = std::make_shared<mie_proxy_csr_t>(proc, CSR_SIE, sip_sie_accr);
+  auto vsie = std::make_shared<mie_proxy_csr_t>(proc, CSR_VSIE, vsip_vsie_accr);
+  csrmap[CSR_VSIE] = vsie;
+  csrmap[CSR_SIE] = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sie, vsie);
+  csrmap[CSR_HIE] = std::make_shared<mie_proxy_csr_t>(proc, CSR_HIE, hip_hie_accr);
 
   medeleg = 0;
   mideleg = 0;
@@ -1014,17 +1024,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MCOUNTEREN:
       state.mcounteren = val;
       break;
-    case CSR_SIE: {
-      reg_t mask;
-      if (state.v) {
-        mask = state.hideleg & MIP_VS_MASK;
-        val = val << 1;
-      } else {
-        mask = state.mideleg & ~MIP_HS_MASK;
-      }
-      state.mie->write_with_mask(mask, val);
-      return;
-    }
     case CSR_SATP:
       if (!supports_impl(IMPL_MMU))
         val = 0;
@@ -1070,11 +1069,6 @@ void processor_t::set_csr(int which, reg_t val)
       state.hideleg = (state.hideleg & ~mask) | (val & mask);
       break;
     }
-    case CSR_HIE: {
-      reg_t mask = MIP_HS_MASK;
-      state.mie->write_with_mask(mask, val);
-      return;
-    }
     case CSR_HCOUNTEREN:
       state.hcounteren = val;
       break;
@@ -1105,11 +1099,6 @@ void processor_t::set_csr(int which, reg_t val)
 
       state.hgatp = val & mask;
       break;
-    }
-    case CSR_VSIE: {
-      reg_t mask = state.hideleg & MIP_VS_MASK;
-      state.mie->write_with_mask(mask, val << 1);
-      return;
     }
     case CSR_VSATP:
       if (!supports_impl(IMPL_MMU))
@@ -1368,13 +1357,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
         break;
       ret(state.mcounteren);
     case CSR_MCOUNTINHIBIT: ret(0);
-    case CSR_SIE: {
-      if (state.v) {
-        ret((state.mie->read() & state.hideleg & MIP_VS_MASK) >> 1);
-      } else {
-        ret(state.mie->read() & state.mideleg & ~MIP_HS_MASK);
-      }
-    }
     case CSR_SATP: {
       if (state.v) {
         if (get_field(state.hstatus, HSTATUS_VTVM))
@@ -1413,7 +1395,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_HSTATUS: ret(state.hstatus);
     case CSR_HEDELEG: ret(state.hedeleg);
     case CSR_HIDELEG: ret(state.hideleg);
-    case CSR_HIE: ret(state.mie->read() & MIP_HS_MASK);
     case CSR_HCOUNTEREN: ret(state.hcounteren);
     case CSR_HGEIE: ret(0);
     case CSR_HTVAL: ret(state.htval);
@@ -1424,7 +1405,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       ret(state.hgatp);
     }
     case CSR_HGEIP: ret(0);
-    case CSR_VSIE: ret((state.mie->read() & state.hideleg & MIP_VS_MASK) >> 1);
     case CSR_VSATP: ret(state.vsatp);
     case CSR_TSELECT: ret(state.tselect);
     case CSR_TDATA1:
