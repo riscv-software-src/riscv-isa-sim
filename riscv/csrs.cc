@@ -597,16 +597,13 @@ sip_csr_t::sip_csr_t(processor_t* const proc, const reg_t addr):
 
 // implement class hvip_csr_t
 hvip_csr_t::hvip_csr_t(processor_t* const proc, const reg_t addr):
-  csr_t(proc, addr) {
-}
-
-reg_t hvip_csr_t::read() const noexcept {
-  return state->mip->read() & MIP_VS_MASK;
-}
-
-void hvip_csr_t::write(const reg_t val) noexcept {
-  const reg_t mask = MIP_VS_MASK;
-  state->mip->write_with_mask(mask, val);
+  generic_ip_csr_t(proc,
+                   addr,
+                   MIP_VS_MASK,   // read_mask
+                   MIP_VS_MASK,   // write_mask
+                   false,         // mask_mideleg
+                   false,         // mask_hideleg
+                   0) {           // shiftamt
 }
 
 
