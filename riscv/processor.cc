@@ -349,28 +349,28 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(this,
                                                                ~MIP_HS_MASK,  // read_mask
-                                                               MIP_SSIP,      // write_mask
+                                                               MIP_SSIP,      // ip_write_mask
                                                                true,          // mask_mideleg
                                                                false,         // mask_hideleg
                                                                0);            // shiftamt
 
   auto hip_hie_accr = std::make_shared<generic_int_accessor_t>(this,
                                                                MIP_HS_MASK,   // read_mask
-                                                               MIP_VSSIP,     // write_mask
+                                                               MIP_VSSIP,     // ip_write_mask
                                                                false,         // mask_mideleg
                                                                false,         // mask_hideleg
                                                                0);
 
   auto hvip_accr = std::make_shared<generic_int_accessor_t>(this,
                                                             MIP_VS_MASK,   // read_mask
-                                                            MIP_VS_MASK,   // write_mask
+                                                            MIP_VS_MASK,   // ip_write_mask
                                                             false,         // mask_mideleg
                                                             false,         // mask_hideleg
                                                             0);            // shiftamt
 
   auto vsip_vsie_accr = std::make_shared<generic_int_accessor_t>(this,
                                                                  MIP_VS_MASK,   // read_mask
-                                                                 MIP_VSSIP,     // write_mask
+                                                                 MIP_VSSIP,     // ip_write_mask
                                                                  false,         // mask_mideleg
                                                                  true,          // mask_hideleg
                                                                  1);            // shiftamt
