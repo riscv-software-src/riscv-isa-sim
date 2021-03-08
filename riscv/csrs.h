@@ -226,8 +226,8 @@ typedef std::shared_ptr<vsstatus_csr_t> vsstatus_csr_t_p;
 //    nonvirtual_sstatus of type sstatus_proxy_csr_t, and
 //    simultaneously remove the swapping of mstatus & vsstatus from
 //    set_priv().
-// 6. Move assorted manipulation code (like mstatus dirtying) into new
-//    sstatus class.
+// 6. [done] Move assorted manipulation code (like mstatus dirtying)
+//    into new sstatus class.
 
 
 class sstatus_proxy_csr_t: public base_status_csr_t {
@@ -260,6 +260,8 @@ class sstatus_csr_t: public virtualized_csr_t {
 
   // Set FS, VS, or XS bits to dirty
   void dirty(const reg_t dirties);
+  // Return true if the specified bits are not 00 (Off)
+  bool enabled(const reg_t which);
 };
 
 typedef std::shared_ptr<sstatus_csr_t> sstatus_csr_t_p;
