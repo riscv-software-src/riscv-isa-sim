@@ -256,6 +256,12 @@ class mstatus_csr_t: public base_status_csr_t {
 typedef std::shared_ptr<mstatus_csr_t> mstatus_csr_t_p;
 
 
+class sstatus_csr_t: public virtualized_csr_t {
+ public:
+  sstatus_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
+};
+
+
 class misa_csr_t: public basic_csr_t {
  public:
   misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa);
