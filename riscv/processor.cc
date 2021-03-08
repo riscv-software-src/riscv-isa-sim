@@ -347,10 +347,12 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   minstret = 0;
   mie = 0;
   csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
-  csrmap[CSR_SIP] = std::make_shared<sip_csr_t>(proc, CSR_SIP);
   csrmap[CSR_HVIP] = std::make_shared<hvip_csr_t>(proc, CSR_HVIP);
   csrmap[CSR_HIP] = std::make_shared<hvip_csr_t>(proc, CSR_HIP);
-  csrmap[CSR_VSIP] = std::make_shared<vsip_csr_t>(proc, CSR_VSIP);
+  auto nonvirtual_sip = std::make_shared<sip_csr_t>(proc, CSR_SIP);
+  auto vsip = std::make_shared<vsip_csr_t>(proc, CSR_VSIP);
+  csrmap[CSR_VSIP] = vsip;
+  csrmap[CSR_SIP] = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sip, vsip);
   medeleg = 0;
   mideleg = 0;
   mcounteren = 0;
