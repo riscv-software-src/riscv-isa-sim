@@ -176,7 +176,7 @@ struct state_t
   csr_t_p mcause;
   reg_t minstret;
   reg_t mie;
-  mip_csr_t_p mip;
+  mip_or_mie_csr_t_p mip;
   reg_t medeleg;
   reg_t mideleg;
   uint32_t mcounteren;

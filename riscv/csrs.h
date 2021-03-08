@@ -261,9 +261,9 @@ class misa_csr_t: public basic_csr_t {
 typedef std::shared_ptr<misa_csr_t> misa_csr_t_p;
 
 
-class mip_csr_t: public logged_csr_t {
+class mip_or_mie_csr_t: public logged_csr_t {
  public:
-  mip_csr_t(processor_t* const proc, const reg_t addr);
+  mip_or_mie_csr_t(processor_t* const proc, const reg_t addr);
   virtual reg_t read() const noexcept override;
 
   void write_with_mask(const reg_t mask, const reg_t val) noexcept;
@@ -276,7 +276,7 @@ class mip_csr_t: public logged_csr_t {
   reg_t val;
 };
 
-typedef std::shared_ptr<mip_csr_t> mip_csr_t_p;
+typedef std::shared_ptr<mip_or_mie_csr_t> mip_or_mie_csr_t_p;
 
 
 // For sip, hip, hvip, vsip, sie, hie, vsie which are all just (masked

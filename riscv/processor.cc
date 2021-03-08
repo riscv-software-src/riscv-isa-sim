@@ -346,7 +346,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE);
   minstret = 0;
   mie = 0;
-  csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
+  csrmap[CSR_MIP] = mip = std::make_shared<mip_or_mie_csr_t>(proc, CSR_MIP);
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(this,
                                                                ~MIP_HS_MASK,  // read_mask
                                                                MIP_SSIP,      // ip_write_mask
