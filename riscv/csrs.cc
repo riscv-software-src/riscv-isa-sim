@@ -537,6 +537,17 @@ void mip_or_mie_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t va
 }
 
 bool mip_or_mie_csr_t::unlogged_write(const reg_t val) noexcept {
+  write_with_mask(write_mask(), val);
+  return false; // avoid double logging: already logged by write_with_mask()
+}
+
+
+mip_csr_t::mip_csr_t(processor_t* const proc, const reg_t addr):
+  mip_or_mie_csr_t(proc, addr) {
+}
+
+
+reg_t mip_csr_t::write_mask() const noexcept {
   const reg_t supervisor_ints = proc->extension_enabled('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
   const reg_t vssip_int = proc->extension_enabled('H') ? MIP_VSSIP : 0;
   const reg_t hypervisor_ints = proc->extension_enabled('H') ? MIP_HS_MASK : 0;
@@ -545,10 +556,8 @@ bool mip_or_mie_csr_t::unlogged_write(const reg_t val) noexcept {
   //  * sgeip is read-only -- write hgeip instead
   //  * vseip is read-only -- write hvip instead
   //  * vstip is read-only -- write hvip instead
-  const reg_t mask = (supervisor_ints | hypervisor_ints) &
-                     (MIP_SEIP | MIP_SSIP | MIP_STIP | vssip_int);
-  write_with_mask(mask, val);
-  return false; // avoid double logging: already logged by write_with_mask()
+  return (supervisor_ints | hypervisor_ints) &
+         (MIP_SEIP | MIP_SSIP | MIP_STIP | vssip_int);
 }
 
 
