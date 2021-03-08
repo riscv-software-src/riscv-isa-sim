@@ -552,18 +552,48 @@ bool mip_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 
+// implement class generic_ip_csr_t
+generic_ip_csr_t::generic_ip_csr_t(processor_t* const proc,
+                                   const reg_t addr,
+                                   const reg_t read_mask,
+                                   const reg_t write_mask,
+                                   const bool mask_mideleg,
+                                   const bool mask_hideleg,
+                                   const int shiftamt):
+  csr_t(proc, addr),
+  read_mask(read_mask),
+  write_mask(write_mask),
+  mask_mideleg(mask_mideleg),
+  mask_hideleg(mask_hideleg),
+  shiftamt(shiftamt) {
+}
+
+reg_t generic_ip_csr_t::deleg_mask() const {
+  const reg_t hideleg_mask = mask_hideleg ? state->hideleg : (reg_t)~0;
+  const reg_t mideleg_mask = mask_mideleg ? state->mideleg : (reg_t)~0;
+  return hideleg_mask & mideleg_mask;
+}
+
+reg_t generic_ip_csr_t::read() const noexcept {
+  return (state->mip->read() & deleg_mask() & read_mask) >> shiftamt;
+}
+
+void generic_ip_csr_t::write(const reg_t val) noexcept {
+  const reg_t mask = deleg_mask() & write_mask;
+  state->mip->write_with_mask(mask, val << shiftamt);
+}
+
 // implement class sip_csr_t
 sip_csr_t::sip_csr_t(processor_t* const proc, const reg_t addr):
-  csr_t(proc, addr) {
+  generic_ip_csr_t(proc,
+                   addr,
+                   ~MIP_HS_MASK,  // read_mask
+                   MIP_SSIP,      // write_mask
+                   true,          // mask_mideleg
+                   false,         // mask_hideleg
+                   0) {           // shiftamt
 }
 
-reg_t sip_csr_t::read() const noexcept {
-  return state->mip->read() & state->mideleg & ~MIP_HS_MASK;
-}
-
-void sip_csr_t::write(const reg_t val) noexcept {
-  state->mip->write_with_mask(state->mideleg & MIP_SSIP, val);
-}
 
 // implement class hvip_csr_t
 hvip_csr_t::hvip_csr_t(processor_t* const proc, const reg_t addr):
