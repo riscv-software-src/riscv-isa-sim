@@ -46,11 +46,16 @@ logged_csr_t::logged_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 void logged_csr_t::write(const reg_t val) noexcept {
-  if (unlogged_write(val)) {
-#if defined(RISCV_ENABLE_COMMITLOG)
-    proc->get_state()->log_reg_write[((address) << 4) | 4] = {read(), 0};
-#endif
+  const bool success = unlogged_write(val);
+  if (success) {
+    log_write();
   }
+}
+
+void logged_csr_t::log_write() const noexcept {
+#if defined(RISCV_ENABLE_COMMITLOG)
+  proc->get_state()->log_reg_write[((address) << 4) | 4] = {read(), 0};
+#endif
 }
 
 // implement class basic_csr_t
