@@ -205,31 +205,6 @@ class vsstatus_csr_t: public base_status_csr_t {
 typedef std::shared_ptr<vsstatus_csr_t> vsstatus_csr_t_p;
 
 
-// Problem: the vsstatus implementation of swapping mstatus & vsstatus
-// within set_priv() results in confusing code and
-// non-architecturally-compliant commitlog (e.g. `csrw sstatus` from
-// VS-mode reports that mstatus has changed when really it's only
-// vsstatus that was supposed to change).
-//
-// Goal: get all appropriate references to state.mstatus to use
-// state.sstatus instead, so it can be virtualized via the usual
-// (virtualized_csr_t) mechanism.
-//
-// 1. [done] Create one of these proxy objects as state.sstatus,
-//    with no logging. Do not put it into csrmap yet.
-// 2. [done] One by one, switch references to state.mstatus to use
-//    state.sstatus. When complete, all references to sstatus that
-//    need to be virtualized will be through this object.
-// 3. [done] Convert mstatus into a csr_t subclass.
-// 4. [done] Refactor common code into base class.
-// 5. [done] Convert sstatus to a virtualized_csr_t, with a
-//    nonvirtual_sstatus of type sstatus_proxy_csr_t, and
-//    simultaneously remove the swapping of mstatus & vsstatus from
-//    set_priv().
-// 6. [done] Move assorted manipulation code (like mstatus dirtying)
-//    into new sstatus class.
-
-
 class sstatus_proxy_csr_t: public base_status_csr_t {
  public:
   sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mstatus);
