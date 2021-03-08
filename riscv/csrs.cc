@@ -404,7 +404,7 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   bool has_gva = has_mpv;
 
   reg_t mask = MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPRV | MSTATUS_MPP
-             | (proc->extension_enabled('S') ? (MSTATUS_SIE | MSTATUS_SPIE) : 0)
+             | (proc->extension_enabled('S') ? (MSTATUS_SIE | MSTATUS_SPIE | MSTATUS_SPP) : 0)
              | MSTATUS_TW | MSTATUS_TSR
              | (has_page ? (MSTATUS_MXR | MSTATUS_SUM | MSTATUS_TVM) : 0)
              | (has_fs ? MSTATUS_FS : 0)
@@ -415,8 +415,6 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 
   reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
   reg_t new_mstatus = set_field(val, MSTATUS_MPP, requested_mpp);
-  if (proc->extension_enabled('S'))
-    mask |= MSTATUS_SPP;
 
   new_mstatus = (read() & ~mask) | (new_mstatus & mask);
   new_mstatus = adjust_sd(new_mstatus);
