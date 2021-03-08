@@ -332,8 +332,10 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
   if (state->v && has_page && ((val ^ read()) & (MSTATUS_MXR | MSTATUS_SUM)))
     proc->get_mmu()->flush_tlb();
-  reg_t mask = SSTATUS_VS_MASK;
-  mask |= (proc->extension_enabled_const('V') ? SSTATUS_VS : 0);
+  const reg_t mask = (SSTATUS_SIE | SSTATUS_SPIE
+                      | SSTATUS_SPP | SSTATUS_FS | SSTATUS_SUM
+                      | SSTATUS_MXR | SSTATUS_UXL
+                      | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0));
   reg_t newval = (this->val & ~mask) | (val & mask);
   newval &= (proc->get_const_xlen() == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
   if (((newval & SSTATUS_FS) == SSTATUS_FS) ||
