@@ -270,4 +270,23 @@ class misa_csr_t: public basic_csr_t {
 
 typedef std::shared_ptr<misa_csr_t> misa_csr_t_p;
 
+
+class mip_csr_t: public logged_csr_t {
+ public:
+  mip_csr_t(processor_t* const proc, const reg_t addr);
+  virtual reg_t read() const noexcept override;
+
+  void write_with_mask(const reg_t mask, const reg_t val) noexcept;
+
+  // Does not log. Used by external things (clint) that wiggle bits in mip.
+  void backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  reg_t val;
+};
+
+typedef std::shared_ptr<mip_csr_t> mip_csr_t_p;
+
+
 #endif

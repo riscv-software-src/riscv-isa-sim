@@ -346,7 +346,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE);
   minstret = 0;
   mie = 0;
-  mip = 0;
+  csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
   medeleg = 0;
   mideleg = 0;
   mcounteren = 0;
@@ -947,17 +947,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_MIP: {
-      // We must mask off sgeip, vstip, and vseip. All three of these
-      // bits are aliases for the same bits in hip. The hip spec says:
-      //  * sgeip is read-only -- write hgeip instead
-      //  * vseip is read-only -- write hvip instead
-      //  * vstip is read-only -- write hvip instead
-      reg_t mask = (supervisor_ints | hypervisor_ints) &
-                   (MIP_SEIP | MIP_SSIP | MIP_STIP | vssip_int);
-      state.mip = (state.mip & ~mask) | (val & mask);
-      break;
-    }
     case CSR_MIE:
       state.mie = (state.mie & ~all_ints) | (val & all_ints);
       break;
@@ -1008,8 +997,8 @@ void processor_t::set_csr(int which, reg_t val)
       } else {
         mask = state.mideleg & MIP_SSIP;
       }
-      state.mip = (state.mip & ~mask) | (val & mask);
-      break;
+      state.mip->write_with_mask(mask, val);
+      return;
     }
     case CSR_SIE: {
       reg_t mask;
@@ -1083,13 +1072,13 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_HIP: {
       reg_t mask = MIP_VSSIP;
-      state.mip = (state.mip & ~mask) | (val & mask);
-      break;
+      state.mip->write_with_mask(mask, val);
+      return;
     }
     case CSR_HVIP: {
       reg_t mask = MIP_VS_MASK;
-      state.mip = (state.mip & ~mask) | (val & mask);
-      break;
+      state.mip->write_with_mask(mask, val);
+      return;
     }
     case CSR_HTINST:
       state.htinst = val;
@@ -1120,8 +1109,8 @@ void processor_t::set_csr(int which, reg_t val)
     }
     case CSR_VSIP: {
       reg_t mask = state.hideleg & MIP_VSSIP;
-      state.mip = (state.mip & ~mask) | ((val << 1) & mask);
-      break;
+      state.mip->write_with_mask(mask, val << 1);
+      return;
     }
     case CSR_VSATP:
       if (!supports_impl(IMPL_MMU))
@@ -1230,16 +1219,11 @@ void processor_t::set_csr(int which, reg_t val)
       LOG_CSR(CSR_VXRM);
       break;
 
-    case CSR_SIP:
-      LOG_CSR(CSR_MIP);
-      LOG_CSR(CSR_SIP);
-      break;
     case CSR_SIE:
       LOG_CSR(CSR_MIE);
       LOG_CSR(CSR_SIE);
       break;
 
-    case CSR_MIP:
     case CSR_MIE:
     case CSR_MIDELEG:
     case CSR_MEDELEG:
@@ -1393,9 +1377,9 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MCOUNTINHIBIT: ret(0);
     case CSR_SIP: {
       if (state.v) {
-        ret((state.mip & state.hideleg & MIP_VS_MASK) >> 1);
+        ret((state.mip->read() & state.hideleg & MIP_VS_MASK) >> 1);
       } else {
-        ret(state.mip & state.mideleg & ~MIP_HS_MASK);
+        ret(state.mip->read() & state.mideleg & ~MIP_HS_MASK);
       }
     }
     case CSR_SIE: {
@@ -1420,7 +1404,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (xlen == 32)
         ret((state.mstatus->read() >> 32) & (MSTATUSH_SBE | MSTATUSH_MBE));
       break;
-    case CSR_MIP: ret(state.mip);
     case CSR_MIE: ret(state.mie);
     case CSR_MTVAL2:
       if (extension_enabled('H'))
@@ -1449,8 +1432,8 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_HCOUNTEREN: ret(state.hcounteren);
     case CSR_HGEIE: ret(0);
     case CSR_HTVAL: ret(state.htval);
-    case CSR_HIP: ret(state.mip & MIP_HS_MASK);
-    case CSR_HVIP: ret(state.mip & MIP_VS_MASK);
+    case CSR_HIP: ret(state.mip->read() & MIP_HS_MASK);
+    case CSR_HVIP: ret(state.mip->read() & MIP_VS_MASK);
     case CSR_HTINST: ret(state.htinst);
     case CSR_HGATP: {
       if (!state.v && get_field(state.mstatus->read(), MSTATUS_TVM))
@@ -1459,7 +1442,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     }
     case CSR_HGEIP: ret(0);
     case CSR_VSIE: ret((state.mie & state.hideleg & MIP_VS_MASK) >> 1);
-    case CSR_VSIP: ret((state.mip & state.hideleg & MIP_VS_MASK) >> 1);
+    case CSR_VSIP: ret((state.mip->read() & state.hideleg & MIP_VS_MASK) >> 1);
     case CSR_VSATP: ret(state.vsatp);
     case CSR_TSELECT: ret(state.tselect);
     case CSR_TDATA1:
@@ -1691,7 +1674,7 @@ bool processor_t::load(reg_t addr, size_t len, uint8_t* bytes)
     case 0:
       if (len <= 4) {
         memset(bytes, 0, len);
-        bytes[0] = get_field(state.mip, MIP_MSIP);
+        bytes[0] = get_field(state.mip->read(), MIP_MSIP);
         return true;
       }
       break;
@@ -1706,7 +1689,7 @@ bool processor_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   {
     case 0:
       if (len <= 4) {
-        state.mip = set_field(state.mip, MIP_MSIP, bytes[0]);
+        state.mip->write_with_mask(MIP_MSIP, bytes[0] << IRQ_M_SOFT);
         return true;
       }
       break;
