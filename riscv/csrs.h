@@ -10,6 +10,7 @@
 #include "memtracer.h"
 
 class processor_t;
+class state_t;
 
 // Parent, abstract class for all CSRs
 class csr_t {
@@ -31,6 +32,7 @@ class csr_t {
 
  protected:
   processor_t* const proc;
+  state_t* const state;
  public:
   const reg_t address;
  private:
