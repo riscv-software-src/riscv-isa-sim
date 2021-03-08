@@ -287,6 +287,13 @@ class mip_csr_t: public mip_or_mie_csr_t {
   virtual reg_t write_mask() const noexcept override;
 };
 
+class mie_csr_t: public mip_or_mie_csr_t {
+ public:
+  mie_csr_t(processor_t* const proc, const reg_t addr);
+ private:
+  virtual reg_t write_mask() const noexcept override;
+};
+
 
 // For sip, hip, hvip, vsip, sie, hie, vsie which are all just (masked
 // & shifted) views into mip or mie. Each pair will have one of these
