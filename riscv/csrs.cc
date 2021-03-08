@@ -389,11 +389,13 @@ bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
 // implement class mstatus_csr_t
 mstatus_csr_t::mstatus_csr_t(processor_t* const proc, const reg_t addr):
   base_status_csr_t(proc, addr),
-  val(
+  val(0
+      | (proc->extension_enabled_const('U') ? set_field((reg_t)0, MSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
+      | (proc->extension_enabled_const('S') ? set_field((reg_t)0, MSTATUS_SXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
-      proc->get_mmu()->is_target_big_endian() ? MSTATUS_UBE | MSTATUS_SBE | MSTATUS_MBE :
+      | (proc->get_mmu()->is_target_big_endian() ? MSTATUS_UBE | MSTATUS_SBE | MSTATUS_MBE : 0)
 #endif
-      0  // initial value for mstatus
+      | 0  // initial value for mstatus
   ) {
 }
 
@@ -426,12 +428,6 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 
   new_mstatus = (read() & ~mask) | (new_mstatus & mask);
   new_mstatus = adjust_sd(new_mstatus);
-
-  if (proc->extension_enabled('U'))
-    new_mstatus = set_field(new_mstatus, MSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen()));
-  if (proc->extension_enabled('S'))
-    new_mstatus = set_field(new_mstatus, MSTATUS_SXL, xlen_to_uxl(proc->get_const_xlen()));
-
   this->val = new_mstatus;
   return true;
 }
