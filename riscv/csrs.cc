@@ -346,6 +346,13 @@ reg_t base_status_csr_t::adjust_sd(const reg_t val) const noexcept {
 }
 
 
+void base_status_csr_t::maybe_flush_tlb(const reg_t newval) noexcept {
+  const bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
+  if (has_page && ((newval ^ read()) & (MSTATUS_MXR | MSTATUS_SUM)))
+    proc->get_mmu()->flush_tlb();
+}
+
+
 namespace {
   int xlen_to_uxl(int xlen) {
     if (xlen == 32)
@@ -369,10 +376,8 @@ reg_t vsstatus_csr_t::read() const noexcept {
 
 bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   state_t* const state = proc->get_state();
-  const bool has_page = proc->extension_enabled('S') && proc->supports_impl(IMPL_MMU);
-  if (state->v && has_page && ((val ^ read()) & (MSTATUS_MXR | MSTATUS_SUM)))
-    proc->get_mmu()->flush_tlb();
   const reg_t newval = (this->val & ~sstatus_write_mask) | (val & sstatus_write_mask);
+  if (state->v) maybe_flush_tlb(newval);
   this->val = adjust_sd(newval);
   return true;
 }
