@@ -445,6 +445,14 @@ sstatus_csr_t::sstatus_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt
   virtualized_csr_t(proc, orig, virt) {
 }
 
+void sstatus_csr_t::dirty(const reg_t dirties) {
+  state_t* const state = proc->get_state();
+  orig_csr->write(orig_csr->read() | dirties);
+  if (state->v) {
+    virt_csr->write(virt_csr->read() | dirties);
+  }
+}
+
 
 // implement class misa_csr_t
 misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa):

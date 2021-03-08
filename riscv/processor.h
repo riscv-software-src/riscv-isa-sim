@@ -197,15 +197,13 @@ struct state_t
   reg_t htinst;
   reg_t hgatp;
   csr_t_p nonvirtual_sstatus;
-  virtualized_csr_t_p sstatus;
+  sstatus_csr_t_p sstatus;
   vsstatus_csr_t_p vsstatus;
   csr_t_p vstvec;
   csr_t_p vsepc;
   csr_t_p vscause;
   csr_t_p vstval;
   reg_t vsatp;
-
-  void dirty_mstatus(reg_t dirties);  // set VS, FS, or XS to Dirty
 
   reg_t dpc;
   reg_t dscratch0, dscratch1;

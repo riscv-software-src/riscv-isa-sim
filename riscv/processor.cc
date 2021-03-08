@@ -419,13 +419,6 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 #endif
 }
 
-void state_t::dirty_mstatus(reg_t dirties){  // set VS, FS, or XS to Dirty
-  nonvirtual_sstatus->write(nonvirtual_sstatus->read() | dirties);
-  if (v) {
-    vsstatus->write(vsstatus->read() | dirties);
-  }
-}
-
 void processor_t::vectorUnit_t::reset(){
   free(reg_file);
   VLEN = get_vlen();
