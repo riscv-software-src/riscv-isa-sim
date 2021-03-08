@@ -23,12 +23,18 @@ class trap_t;
 class extension_t;
 class disassembler_t;
 
+typedef char archen_t;
+const   archen_t ARCHEN_RV32_ONLY=1;
+const   archen_t ARCHEN_RV64_ONLY=2;
+const   archen_t ARCHEN_ANY      =7;
+
 struct insn_desc_t
 {
   insn_bits_t match;
   insn_bits_t mask;
   insn_func_t rv32;
   insn_func_t rv64;
+  char        archen; // 0x7=all arches, 0x2=rv64 only, 0x1=rv32 only etc
 };
 
 // regnum, data
@@ -548,9 +554,9 @@ public:
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
 
-#define REGISTER_INSN(proc, name, match, mask) \
+#define REGISTER_INSN(proc, name, match, mask, archen) \
   extern reg_t rv32_##name(processor_t*, insn_t, reg_t); \
   extern reg_t rv64_##name(processor_t*, insn_t, reg_t); \
-  proc->register_insn((insn_desc_t){match, mask, rv32_##name, rv64_##name});
+  proc->register_insn((insn_desc_t){match, mask, rv32_##name, rv64_##name,archen});
 
 #endif
