@@ -580,12 +580,14 @@ reg_t mie_csr_t::write_mask() const noexcept {
 generic_int_accessor_t::generic_int_accessor_t(state_t* const state,
                                                const reg_t read_mask,
                                                const reg_t ip_write_mask,
+                                               const reg_t ie_write_mask,
                                                const bool mask_mideleg,
                                                const bool mask_hideleg,
                                                const int shiftamt):
   state(state),
   read_mask(read_mask),
   ip_write_mask(ip_write_mask),
+  ie_write_mask(ie_write_mask),
   mask_mideleg(mask_mideleg),
   mask_hideleg(mask_hideleg),
   shiftamt(shiftamt) {
@@ -598,6 +600,15 @@ reg_t generic_int_accessor_t::ip_read() const noexcept {
 void generic_int_accessor_t::ip_write(const reg_t val) noexcept {
   const reg_t mask = deleg_mask() & ip_write_mask;
   state->mip->write_with_mask(mask, val << shiftamt);
+}
+
+reg_t generic_int_accessor_t::ie_read() const noexcept {
+  return (state->mie->read() & deleg_mask() & read_mask) >> shiftamt;
+}
+
+void generic_int_accessor_t::ie_write(const reg_t val) noexcept {
+  const reg_t mask = deleg_mask() & ie_write_mask;
+  state->mie->write_with_mask(mask, val << shiftamt);
 }
 
 reg_t generic_int_accessor_t::deleg_mask() const {
@@ -619,4 +630,18 @@ reg_t mip_proxy_csr_t::read() const noexcept {
 
 void mip_proxy_csr_t::write(const reg_t val) noexcept {
   accr->ip_write(val);
+}
+
+// implement class mie_proxy_csr_t
+mie_proxy_csr_t::mie_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr):
+  csr_t(proc, addr),
+  accr(accr) {
+}
+
+reg_t mie_proxy_csr_t::read() const noexcept {
+  return accr->ie_read();
+}
+
+void mie_proxy_csr_t::write(const reg_t val) noexcept {
+  accr->ie_write(val);
 }
