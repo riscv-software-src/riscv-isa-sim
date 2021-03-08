@@ -334,7 +334,7 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
     proc->get_mmu()->flush_tlb();
   const reg_t mask = (SSTATUS_SIE | SSTATUS_SPIE
                       | SSTATUS_SPP | SSTATUS_FS | SSTATUS_SUM
-                      | SSTATUS_MXR | SSTATUS_UXL
+                      | SSTATUS_MXR
                       | (proc->extension_enabled_const('V') ? SSTATUS_VS : 0));
   reg_t newval = (this->val & ~mask) | (val & mask);
   newval &= (proc->get_const_xlen() == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
