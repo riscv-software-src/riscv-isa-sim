@@ -510,7 +510,6 @@ void processor_t::reset()
 
   state.dcsr.halt = halt_on_reset;
   halt_on_reset = false;
-  state.mstatus->write(state.mstatus->read());  // set fixed fields
   set_csr(CSR_HSTATUS, state.hstatus);  // set VSXL
   VU.reset();
 
