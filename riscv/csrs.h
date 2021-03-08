@@ -141,8 +141,6 @@ class virtualized_csr_t: public csr_t {
   csr_t_p virt_csr;
 };
 
-typedef std::shared_ptr<virtualized_csr_t> virtualized_csr_t_p;
-
 
 // For mepc, sepc, and vsepc
 class epc_csr_t: public logged_csr_t {
@@ -259,7 +257,12 @@ typedef std::shared_ptr<mstatus_csr_t> mstatus_csr_t_p;
 class sstatus_csr_t: public virtualized_csr_t {
  public:
   sstatus_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
+
+  // Set FS, VS, or XS bits to dirty
+  void dirty(const reg_t dirties);
 };
+
+typedef std::shared_ptr<sstatus_csr_t> sstatus_csr_t_p;
 
 
 class misa_csr_t: public basic_csr_t {
