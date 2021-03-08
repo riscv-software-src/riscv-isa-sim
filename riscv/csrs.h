@@ -279,19 +279,22 @@ class mip_csr_t: public logged_csr_t {
 typedef std::shared_ptr<mip_csr_t> mip_csr_t_p;
 
 
-// For sip, hip, hvip, vsip, which are all just (masked & shifted) views into mip
-class generic_ip_csr_t: public csr_t {
+// For sip, hip, hvip, vsip, sie, hie, vsie which are all just (masked
+// & shifted) views into mip or mie. Each pair will have one of these
+// objects describing the view, e.g. one for sip+sie, one for hip+hie,
+// etc.
+class generic_int_accessor_t {
  public:
-  generic_ip_csr_t(processor_t* const proc,
-                   const reg_t addr,
-                   const reg_t read_mask,
-                   const reg_t write_mask,
-                   const bool mask_mideleg,
-                   const bool mask_hideleg,
-                   const int shiftamt);
-  virtual reg_t read() const noexcept override;
-  virtual void write(const reg_t val) noexcept override;
+  generic_int_accessor_t(state_t* const state,
+                         const reg_t read_mask,
+                         const reg_t write_mask,
+                         const bool mask_mideleg,
+                         const bool mask_hideleg,
+                         const int shiftamt);
+  reg_t ip_read() const noexcept;
+  void ip_write(const reg_t val) noexcept;
  private:
+  state_t* const state;
   const reg_t read_mask;
   const reg_t write_mask;
   const bool mask_mideleg;
@@ -300,26 +303,17 @@ class generic_ip_csr_t: public csr_t {
   reg_t deleg_mask() const;
 };
 
+typedef std::shared_ptr<generic_int_accessor_t> generic_int_accessor_t_p;
 
-class sip_csr_t: public generic_ip_csr_t {
+
+// For all CSRs that are simply (masked & shifted) views into mip
+class mip_proxy_csr_t: public csr_t {
  public:
-  sip_csr_t(processor_t* const proc, const reg_t addr);
-};
-
-
-class hvip_csr_t: public generic_ip_csr_t {
- public:
-  hvip_csr_t(processor_t* const proc, const reg_t addr);
-};
-
-class hip_csr_t: public generic_ip_csr_t {
- public:
-  hip_csr_t(processor_t* const proc, const reg_t addr);
-};
-
-class vsip_csr_t: public generic_ip_csr_t {
- public:
-  vsip_csr_t(processor_t* const proc, const reg_t addr);
+  mip_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr);
+  virtual reg_t read() const noexcept override;
+  virtual void write(const reg_t val) noexcept override;
+ private:
+  generic_int_accessor_t_p accr;
 };
 
 
