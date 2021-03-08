@@ -379,9 +379,9 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 
 
 // implement class sstatus_proxy_csr_t
-sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr):
+sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mstatus):
   base_status_csr_t(proc, addr),
-  mstatus(proc->get_state()->mstatus) {
+  mstatus(mstatus) {
 }
 
 reg_t sstatus_proxy_csr_t::read() const noexcept {
