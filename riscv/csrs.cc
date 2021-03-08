@@ -424,11 +424,9 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
                    | (has_mpv ? MSTATUS_MPV : 0);
 
   const reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
-  reg_t new_mstatus = set_field(val, MSTATUS_MPP, requested_mpp);
-
-  new_mstatus = (read() & ~mask) | (new_mstatus & mask);
-  new_mstatus = adjust_sd(new_mstatus);
-  this->val = new_mstatus;
+  const reg_t adjusted_val = set_field(val, MSTATUS_MPP, requested_mpp);
+  const reg_t new_mstatus = (read() & ~mask) | (adjusted_val & mask);
+  this->val = adjust_sd(new_mstatus);
   return true;
 }
 
