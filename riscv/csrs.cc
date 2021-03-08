@@ -555,13 +555,13 @@ bool mip_csr_t::unlogged_write(const reg_t val) noexcept {
 // implement class generic_int_accessor_t
 generic_int_accessor_t::generic_int_accessor_t(state_t* const state,
                                                const reg_t read_mask,
-                                               const reg_t write_mask,
+                                               const reg_t ip_write_mask,
                                                const bool mask_mideleg,
                                                const bool mask_hideleg,
                                                const int shiftamt):
   state(state),
   read_mask(read_mask),
-  write_mask(write_mask),
+  ip_write_mask(ip_write_mask),
   mask_mideleg(mask_mideleg),
   mask_hideleg(mask_hideleg),
   shiftamt(shiftamt) {
@@ -572,7 +572,7 @@ reg_t generic_int_accessor_t::ip_read() const noexcept {
 }
 
 void generic_int_accessor_t::ip_write(const reg_t val) noexcept {
-  const reg_t mask = deleg_mask() & write_mask;
+  const reg_t mask = deleg_mask() & ip_write_mask;
   state->mip->write_with_mask(mask, val << shiftamt);
 }
 

@@ -287,7 +287,7 @@ class generic_int_accessor_t {
  public:
   generic_int_accessor_t(state_t* const state,
                          const reg_t read_mask,
-                         const reg_t write_mask,
+                         const reg_t ip_write_mask,
                          const bool mask_mideleg,
                          const bool mask_hideleg,
                          const int shiftamt);
@@ -296,7 +296,7 @@ class generic_int_accessor_t {
  private:
   state_t* const state;
   const reg_t read_mask;
-  const reg_t write_mask;
+  const reg_t ip_write_mask;
   const bool mask_mideleg;
   const bool mask_hideleg;
   const int shiftamt;
