@@ -498,7 +498,7 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
     state->mideleg &= ~MIDELEG_FORCED_MASK;
     state->medeleg &= ~hypervisor_exceptions;
     state->mstatus->write(state->mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV));
-    state->mie &= ~MIP_HS_MASK;  // also takes care of hie, sie
+    state->mie->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hie, sie
     state->mip->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hip, sip, hvip
     proc->set_csr(CSR_HSTATUS, 0);
   }
@@ -558,6 +558,21 @@ reg_t mip_csr_t::write_mask() const noexcept {
   //  * vstip is read-only -- write hvip instead
   return (supervisor_ints | hypervisor_ints) &
          (MIP_SEIP | MIP_SSIP | MIP_STIP | vssip_int);
+}
+
+
+mie_csr_t::mie_csr_t(processor_t* const proc, const reg_t addr):
+  mip_or_mie_csr_t(proc, addr) {
+}
+
+
+reg_t mie_csr_t::write_mask() const noexcept {
+  const reg_t supervisor_ints = proc->extension_enabled('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
+  const reg_t hypervisor_ints = proc->extension_enabled('H') ? MIP_HS_MASK : 0;
+  const reg_t coprocessor_ints = (reg_t)proc->any_custom_extensions() << IRQ_COP;
+  const reg_t delegable_ints = supervisor_ints | coprocessor_ints;
+  const reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP | MIP_MEIP;
+  return all_ints;
 }
 
 

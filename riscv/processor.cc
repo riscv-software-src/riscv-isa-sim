@@ -345,7 +345,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MTVEC] = mtvec = std::make_shared<tvec_csr_t>(proc, CSR_MTVEC);
   csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE);
   minstret = 0;
-  mie = 0;
+  csrmap[CSR_MIE] = mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
   csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(this,
                                                                ~MIP_HS_MASK,  // read_mask
@@ -975,9 +975,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_MIE:
-      state.mie = (state.mie & ~all_ints) | (val & all_ints);
-      break;
     case CSR_MIDELEG:
       state.mideleg = (state.mideleg & ~delegable_ints) | (val & delegable_ints);
       break;
@@ -1025,8 +1022,8 @@ void processor_t::set_csr(int which, reg_t val)
       } else {
         mask = state.mideleg & ~MIP_HS_MASK;
       }
-      state.mie = (state.mie & ~mask) | (val & mask);
-      break;
+      state.mie->write_with_mask(mask, val);
+      return;
     }
     case CSR_SATP:
       if (!supports_impl(IMPL_MMU))
@@ -1075,8 +1072,8 @@ void processor_t::set_csr(int which, reg_t val)
     }
     case CSR_HIE: {
       reg_t mask = MIP_HS_MASK;
-      state.mie = (state.mie & ~mask) | (val & mask);
-      break;
+      state.mie->write_with_mask(mask, val);
+      return;
     }
     case CSR_HCOUNTEREN:
       state.hcounteren = val;
@@ -1111,8 +1108,8 @@ void processor_t::set_csr(int which, reg_t val)
     }
     case CSR_VSIE: {
       reg_t mask = state.hideleg & MIP_VS_MASK;
-      state.mie = (state.mie & ~mask) | ((val << 1) & mask);
-      break;
+      state.mie->write_with_mask(mask, val << 1);
+      return;
     }
     case CSR_VSATP:
       if (!supports_impl(IMPL_MMU))
@@ -1221,12 +1218,6 @@ void processor_t::set_csr(int which, reg_t val)
       LOG_CSR(CSR_VXRM);
       break;
 
-    case CSR_SIE:
-      LOG_CSR(CSR_MIE);
-      LOG_CSR(CSR_SIE);
-      break;
-
-    case CSR_MIE:
     case CSR_MIDELEG:
     case CSR_MEDELEG:
     case CSR_MINSTRET:
@@ -1379,9 +1370,9 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MCOUNTINHIBIT: ret(0);
     case CSR_SIE: {
       if (state.v) {
-        ret((state.mie & state.hideleg & MIP_VS_MASK) >> 1);
+        ret((state.mie->read() & state.hideleg & MIP_VS_MASK) >> 1);
       } else {
-        ret(state.mie & state.mideleg & ~MIP_HS_MASK);
+        ret(state.mie->read() & state.mideleg & ~MIP_HS_MASK);
       }
     }
     case CSR_SATP: {
@@ -1399,7 +1390,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (xlen == 32)
         ret((state.mstatus->read() >> 32) & (MSTATUSH_SBE | MSTATUSH_MBE));
       break;
-    case CSR_MIE: ret(state.mie);
     case CSR_MTVAL2:
       if (extension_enabled('H'))
         ret(state.mtval2);
@@ -1423,7 +1413,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_HSTATUS: ret(state.hstatus);
     case CSR_HEDELEG: ret(state.hedeleg);
     case CSR_HIDELEG: ret(state.hideleg);
-    case CSR_HIE: ret(state.mie & MIP_HS_MASK);
+    case CSR_HIE: ret(state.mie->read() & MIP_HS_MASK);
     case CSR_HCOUNTEREN: ret(state.hcounteren);
     case CSR_HGEIE: ret(0);
     case CSR_HTVAL: ret(state.htval);
@@ -1434,7 +1424,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       ret(state.hgatp);
     }
     case CSR_HGEIP: ret(0);
-    case CSR_VSIE: ret((state.mie & state.hideleg & MIP_VS_MASK) >> 1);
+    case CSR_VSIE: ret((state.mie->read() & state.hideleg & MIP_VS_MASK) >> 1);
     case CSR_VSATP: ret(state.vsatp);
     case CSR_TSELECT: ret(state.tselect);
     case CSR_TDATA1:
