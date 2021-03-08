@@ -584,3 +584,19 @@ void sip_csr_t::write(const reg_t val) noexcept {
   else
     state->mip->write_with_mask(state->mideleg & MIP_SSIP, val);
 }
+
+// implement class hvip_csr_t
+hvip_csr_t::hvip_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+reg_t hvip_csr_t::read() const noexcept {
+  state_t* const state = proc->get_state();
+  return state->mip->read() & MIP_VS_MASK;
+}
+
+void hvip_csr_t::write(const reg_t val) noexcept {
+  state_t* const state = proc->get_state();
+  const reg_t mask = MIP_VS_MASK;
+  state->mip->write_with_mask(mask, val);
+}
