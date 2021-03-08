@@ -325,14 +325,19 @@ reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
 }
 
 
-reg_t base_status_csr_t::adjust_sd(reg_t newval) const noexcept {
-  newval &= (proc->get_const_xlen() == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
-  if (((newval & SSTATUS_FS) == SSTATUS_FS) ||
-      ((newval & SSTATUS_VS) == SSTATUS_VS) ||
-      ((newval & SSTATUS_XS) == SSTATUS_XS)) {
-    newval |= (proc->get_const_xlen() == 64 ? SSTATUS64_SD : SSTATUS32_SD);
+reg_t base_status_csr_t::adjust_sd(const reg_t val) const noexcept {
+  // This uses get_const_xlen() instead of get_xlen() not only because
+  // the variable is static, so it's only called once, but also
+  // because the SD bit moves when XLEN changes, which means we would
+  // need to call adjust_sd() on every read, instead of on every
+  // write.
+  static const reg_t sd_bit = proc->get_const_xlen() == 64 ? SSTATUS64_SD : SSTATUS32_SD;
+  if (((val & SSTATUS_FS) == SSTATUS_FS) ||
+      ((val & SSTATUS_VS) == SSTATUS_VS) ||
+      ((val & SSTATUS_XS) == SSTATUS_XS)) {
+    return val | sd_bit;
   }
-  return newval;
+  return val & ~sd_bit;
 }
 
 
