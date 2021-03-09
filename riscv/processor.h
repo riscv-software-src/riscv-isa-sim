@@ -178,7 +178,7 @@ struct state_t
   mip_or_mie_csr_t_p mie;
   mip_or_mie_csr_t_p mip;
   reg_t medeleg;
-  reg_t mideleg;
+  csr_t_p mideleg;
   uint32_t mcounteren;
   uint32_t scounteren;
   csr_t_p sepc;
