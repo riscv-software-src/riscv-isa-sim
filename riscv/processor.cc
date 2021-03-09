@@ -416,7 +416,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_SCAUSE] = scause = std::make_shared<virtualized_csr_t>(proc, nonvirtual_scause, vscause);
   mtval2 = 0;
   mtinst = 0;
-  hstatus = 0;
+  csrmap[CSR_HSTATUS] = hstatus = std::make_shared<hstatus_csr_t>(proc, CSR_HSTATUS);
   hideleg = 0;
   hedeleg = 0;
   hcounteren = 0;
@@ -545,7 +545,6 @@ void processor_t::reset()
   state.reset(this, max_isa);
   state.dcsr.halt = halt_on_reset;
   halt_on_reset = false;
-  set_csr(CSR_HSTATUS, state.hstatus);  // set VSXL
   VU.reset();
 
   if (n_pmp > 0) {
@@ -828,12 +827,12 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_SIE, 0);
     state.sstatus->write(s);
     if (extension_enabled('H')) {
-      s = state.hstatus;
+      s = state.hstatus->read();
       if (curr_virt)
         s = set_field(s, HSTATUS_SPVP, state.prv);
       s = set_field(s, HSTATUS_SPV, curr_virt);
       s = set_field(s, HSTATUS_GVA, t.has_gva());
-      set_csr(CSR_HSTATUS, s);
+      state.hstatus->write(s);
     }
     set_privilege(PRV_S);
   } else {
@@ -1012,14 +1011,6 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_MTVAL2: state.mtval2 = val; break;
     case CSR_MTINST: state.mtinst = val; break;
-    case CSR_HSTATUS: {
-      reg_t mask = HSTATUS_VTSR | HSTATUS_VTW
-                   | (supports_impl(IMPL_MMU) ? HSTATUS_VTVM : 0)
-                   | HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
-      state.hstatus = set_field(state.hstatus, HSTATUS_VSXL, xlen_to_uxl(max_xlen));
-      state.hstatus = (state.hstatus & ~mask) | (val & mask);
-      break;
-    }
     case CSR_HEDELEG: {
       reg_t mask =
         (1 << CAUSE_MISALIGNED_FETCH) |
@@ -1330,7 +1321,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MCOUNTINHIBIT: ret(0);
     case CSR_SATP: {
       if (state.v) {
-        if (get_field(state.hstatus, HSTATUS_VTVM))
+        if (get_field(state.hstatus->read(), HSTATUS_VTVM))
           goto throw_virtual;
         ret(state.vsatp);
       } else {
@@ -1355,7 +1346,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIMPID: ret(0);
     case CSR_MVENDORID: ret(0);
     case CSR_MHARTID: ret(id);
-    case CSR_HSTATUS: ret(state.hstatus);
     case CSR_HEDELEG: ret(state.hedeleg);
     case CSR_HIDELEG: ret(state.hideleg);
     case CSR_HCOUNTEREN: ret(state.hcounteren);

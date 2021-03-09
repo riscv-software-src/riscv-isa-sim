@@ -189,7 +189,7 @@ struct state_t
 
   reg_t mtval2;
   reg_t mtinst;
-  reg_t hstatus;
+  csr_t_p hstatus;
   reg_t hideleg;
   reg_t hedeleg;
   uint32_t hcounteren;
