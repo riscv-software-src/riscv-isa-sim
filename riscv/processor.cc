@@ -1130,11 +1130,17 @@ void processor_t::set_csr(int which, reg_t val)
 
       state.misa = (val & mask) | (state.misa & ~mask);
 
-      // update the forced bits in MIDELEG
+      // update the forced bits in MIDELEG and other CSRs
       if (supports_extension('H'))
         state.mideleg |= MIDELEG_FORCED_MASK;
-      else
+      else {
         state.mideleg &= ~MIDELEG_FORCED_MASK;
+        state.medeleg &= ~hypervisor_exceptions;
+        state.mstatus &= ~(MSTATUS_GVA | MSTATUS_MPV);
+        state.mie &= ~MIP_HS_MASK;  // also takes care of hip, sip, hvip
+        state.mip &= ~MIP_HS_MASK;  // also takes care of hie, sie
+        set_csr(CSR_HSTATUS, 0);
+      }
       break;
     }
     case CSR_HSTATUS: {
