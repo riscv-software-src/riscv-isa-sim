@@ -497,7 +497,7 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
     state->mstatus->write(state->mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV));
     state->mie->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hie, sie
     state->mip->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hip, sip, hvip
-    proc->set_csr(CSR_HSTATUS, 0);
+    state->hstatus->write(0);
   }
 
   return basic_csr_t::unlogged_write(new_misa);
@@ -701,5 +701,18 @@ bool medeleg_csr_t::unlogged_write(const reg_t val) noexcept {
     | (1 << CAUSE_STORE_PAGE_FAULT)
     | (proc->extension_enabled('H') ? hypervisor_exceptions : 0)
     ;
+  return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
+}
+
+
+// implement class hstatus_csr_t
+hstatus_csr_t::hstatus_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, set_field((reg_t)0, HSTATUS_VSXL, xlen_to_uxl(proc->get_const_xlen()))) {
+}
+
+bool hstatus_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t mask = HSTATUS_VTSR | HSTATUS_VTW
+    | (proc->supports_impl(IMPL_MMU) ? HSTATUS_VTVM : 0)
+    | HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
   return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
 }

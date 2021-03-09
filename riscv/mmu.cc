@@ -64,7 +64,7 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
     }
     if (xlate_flags & RISCV_XLATE_VIRT) {
       virt = true;
-      mode = get_field(proc->state.hstatus, HSTATUS_SPVP);
+      mode = get_field(proc->state.hstatus->read(), HSTATUS_SPVP);
     }
   }
 
