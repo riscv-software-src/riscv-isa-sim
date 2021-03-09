@@ -484,9 +484,7 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t new_misa = (adjusted_val & write_mask) | (old_misa & ~write_mask);
   const bool new_h = new_misa & (1L << ('H' - 'A'));
 
-  // update the forced bits in MIDELEG and other CSRs
-  if (new_h && !prev_h)
-    state->mideleg |= MIDELEG_FORCED_MASK;
+  // update the hypervisor-only bits in MEDELEG and other CSRs
   if (!new_h && prev_h) {
     reg_t hypervisor_exceptions = 0
       | (1 << CAUSE_VIRTUAL_SUPERVISOR_ECALL)
@@ -495,7 +493,6 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
       | (1 << CAUSE_VIRTUAL_INSTRUCTION)
       | (1 << CAUSE_STORE_GUEST_PAGE_FAULT)
       ;
-    state->mideleg &= ~MIDELEG_FORCED_MASK;
     state->medeleg &= ~hypervisor_exceptions;
     state->mstatus->write(state->mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV));
     state->mie->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hie, sie
@@ -613,7 +610,7 @@ void generic_int_accessor_t::ie_write(const reg_t val) noexcept {
 
 reg_t generic_int_accessor_t::deleg_mask() const {
   const reg_t hideleg_mask = mask_hideleg ? state->hideleg : (reg_t)~0;
-  const reg_t mideleg_mask = mask_mideleg ? state->mideleg : (reg_t)~0;
+  const reg_t mideleg_mask = mask_mideleg ? state->mideleg->read() : (reg_t)~0;
   return hideleg_mask & mideleg_mask;
 }
 
@@ -644,4 +641,32 @@ reg_t mie_proxy_csr_t::read() const noexcept {
 
 void mie_proxy_csr_t::write(const reg_t val) noexcept {
   accr->ie_write(val);
+}
+
+
+// implement class mideleg_csr_t
+mideleg_csr_t::mideleg_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, 0) {
+}
+
+reg_t mideleg_csr_t::read() const noexcept {
+  reg_t val = basic_csr_t::read();
+  if (proc->extension_enabled('H')) return val | MIDELEG_FORCED_MASK;
+  // No need to clear MIDELEG_FORCED_MASK because those bits can never
+  // get set in val.
+  return val;
+}
+
+void mideleg_csr_t::verify_permissions(insn_t insn, bool write) const {
+  basic_csr_t::verify_permissions(insn, write);
+  if (!proc->extension_enabled('S'))
+    throw trap_illegal_instruction(insn.bits());
+}
+
+bool mideleg_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t supervisor_ints = proc->extension_enabled('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
+  const reg_t coprocessor_ints = (reg_t)proc->any_custom_extensions() << IRQ_COP;
+  const reg_t delegable_ints = supervisor_ints | coprocessor_ints;
+
+  return basic_csr_t::unlogged_write(val & delegable_ints);
 }
