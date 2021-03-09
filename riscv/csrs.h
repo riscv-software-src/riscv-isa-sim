@@ -358,4 +358,15 @@ class mideleg_csr_t: public basic_csr_t {
 };
 
 
+class medeleg_csr_t: public basic_csr_t {
+ public:
+  medeleg_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  const reg_t hypervisor_exceptions;
+};
+
+
 #endif

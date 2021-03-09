@@ -493,7 +493,7 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
       | (1 << CAUSE_VIRTUAL_INSTRUCTION)
       | (1 << CAUSE_STORE_GUEST_PAGE_FAULT)
       ;
-    state->medeleg &= ~hypervisor_exceptions;
+    state->medeleg->write(state->medeleg->read() & ~hypervisor_exceptions);
     state->mstatus->write(state->mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV));
     state->mie->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hie, sie
     state->mip->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hip, sip, hvip
@@ -669,4 +669,37 @@ bool mideleg_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t delegable_ints = supervisor_ints | coprocessor_ints;
 
   return basic_csr_t::unlogged_write(val & delegable_ints);
+}
+
+
+// implement class medeleg_csr_t
+medeleg_csr_t::medeleg_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, 0),
+  hypervisor_exceptions(0
+                        | (1 << CAUSE_VIRTUAL_SUPERVISOR_ECALL)
+                        | (1 << CAUSE_FETCH_GUEST_PAGE_FAULT)
+                        | (1 << CAUSE_LOAD_GUEST_PAGE_FAULT)
+                        | (1 << CAUSE_VIRTUAL_INSTRUCTION)
+                        | (1 << CAUSE_STORE_GUEST_PAGE_FAULT)
+                        ) {
+}
+
+void medeleg_csr_t::verify_permissions(insn_t insn, bool write) const {
+  basic_csr_t::verify_permissions(insn, write);
+  if (!proc->extension_enabled('S'))
+    throw trap_illegal_instruction(insn.bits());
+}
+
+bool medeleg_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t mask = 0
+    | (1 << CAUSE_MISALIGNED_FETCH)
+    | (1 << CAUSE_BREAKPOINT)
+    | (1 << CAUSE_USER_ECALL)
+    | (1 << CAUSE_SUPERVISOR_ECALL)
+    | (1 << CAUSE_FETCH_PAGE_FAULT)
+    | (1 << CAUSE_LOAD_PAGE_FAULT)
+    | (1 << CAUSE_STORE_PAGE_FAULT)
+    | (proc->extension_enabled('H') ? hypervisor_exceptions : 0)
+    ;
+  return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
 }

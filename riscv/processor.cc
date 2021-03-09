@@ -392,7 +392,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_SIE] = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sie, vsie);
   csrmap[CSR_HIE] = std::make_shared<mie_proxy_csr_t>(proc, CSR_HIE, hip_hie_accr);
 
-  medeleg = 0;
+  csrmap[CSR_MEDELEG] = medeleg = std::make_shared<medeleg_csr_t>(proc, CSR_MEDELEG);
   csrmap[CSR_MIDELEG] = mideleg = std::make_shared<mideleg_csr_t>(proc, CSR_MIDELEG);
   mcounteren = 0;
   scounteren = 0;
@@ -794,8 +794,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     hsdeleg = (state.prv <= PRV_S) ? state.mideleg->read() : 0;
     bit &= ~((reg_t)1 << (max_xlen-1));
   } else {
-    vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.medeleg & state.hedeleg) : 0;
-    hsdeleg = (state.prv <= PRV_S) ? state.medeleg : 0;
+    vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.medeleg->read() & state.hedeleg) : 0;
+    hsdeleg = (state.prv <= PRV_S) ? state.medeleg->read() : 0;
   }
   if (state.prv <= PRV_S && bit < max_xlen && ((vsdeleg >> bit) & 1)) {
     // Handle the trap in VS-mode
@@ -945,14 +945,6 @@ void processor_t::set_csr(int which, reg_t val)
   reg_t coprocessor_ints = (reg_t)any_custom_extensions() << IRQ_COP;
   reg_t delegable_ints = supervisor_ints | coprocessor_ints;
   reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP | MIP_MEIP;
-  reg_t hypervisor_exceptions = 0
-    | (1 << CAUSE_VIRTUAL_SUPERVISOR_ECALL)
-    | (1 << CAUSE_FETCH_GUEST_PAGE_FAULT)
-    | (1 << CAUSE_LOAD_GUEST_PAGE_FAULT)
-    | (1 << CAUSE_VIRTUAL_INSTRUCTION)
-    | (1 << CAUSE_STORE_GUEST_PAGE_FAULT)
-    ;
-
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
     search->second->write(val);
@@ -982,19 +974,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_MEDELEG: {
-      reg_t mask =
-        (1 << CAUSE_MISALIGNED_FETCH) |
-        (1 << CAUSE_BREAKPOINT) |
-        (1 << CAUSE_USER_ECALL) |
-        (1 << CAUSE_SUPERVISOR_ECALL) |
-        (1 << CAUSE_FETCH_PAGE_FAULT) |
-        (1 << CAUSE_LOAD_PAGE_FAULT) |
-        (1 << CAUSE_STORE_PAGE_FAULT);
-      mask |= extension_enabled('H') ? hypervisor_exceptions : 0;
-      state.medeleg = (state.medeleg & ~mask) | (val & mask);
-      break;
-    }
     case CSR_MINSTRET:
     case CSR_MCYCLE:
       if (xlen == 32)
@@ -1201,7 +1180,6 @@ void processor_t::set_csr(int which, reg_t val)
       LOG_CSR(CSR_VXRM);
       break;
 
-    case CSR_MEDELEG:
     case CSR_MINSTRET:
     case CSR_MCYCLE:
     case CSR_MINSTRETH:
@@ -1377,10 +1355,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIMPID: ret(0);
     case CSR_MVENDORID: ret(0);
     case CSR_MHARTID: ret(id);
-    case CSR_MEDELEG:
-      if (!extension_enabled('S'))
-        break;
-      ret(state.medeleg);
     case CSR_HSTATUS: ret(state.hstatus);
     case CSR_HEDELEG: ret(state.hedeleg);
     case CSR_HIDELEG: ret(state.hideleg);
