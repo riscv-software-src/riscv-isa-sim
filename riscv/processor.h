@@ -24,9 +24,9 @@ class extension_t;
 class disassembler_t;
 
 typedef char archen_t;
-const   archen_t ARCHEN_RV32_ONLY=1;
-const   archen_t ARCHEN_RV64_ONLY=2;
-const   archen_t ARCHEN_ANY      =7;
+static const archen_t ARCHEN_RV32_ONLY = 1;
+static const archen_t ARCHEN_RV64_ONLY = 2;
+static const archen_t ARCHEN_ANY       = 7;
 
 struct insn_desc_t
 {
@@ -34,7 +34,7 @@ struct insn_desc_t
   insn_bits_t mask;
   insn_func_t rv32;
   insn_func_t rv64;
-  char        archen; // 0x7=all arches, 0x2=rv64 only, 0x1=rv32 only etc
+  archen_t archen;
 };
 
 // regnum, data
@@ -513,7 +513,7 @@ public:
 #ifdef WORDS_BIGENDIAN
           // "V" spec 0.7.1 requires lower indices to map to lower significant
           // bits when changing SEW, thus we need to index from the end on BE.
-  	  n ^= elts_per_reg - 1;
+          n ^= elts_per_reg - 1;
 #endif
           reg_referenced[vReg] = 1;
 

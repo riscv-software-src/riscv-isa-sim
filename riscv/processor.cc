@@ -1763,17 +1763,16 @@ insn_func_t processor_t::decode_insn(insn_t insn)
   size_t idx = insn.bits() % OPCODE_CACHE_SIZE;
   insn_desc_t desc = opcode_cache[idx];
 
-  archen_t current_arch         = xlen >> 5;
-  bool     insn_valid_for_arch  = (desc.archen & current_arch) != 0;
+  archen_t current_arch = xlen >> 5;
+  bool insn_valid_for_arch = (desc.archen & current_arch) != 0;
 
-  if (unlikely(insn.bits() != desc.match || insn_valid_for_arch == false)) {
+  if (unlikely(insn.bits() != desc.match || !insn_valid_for_arch)) {
     // fall back to linear search
     insn_desc_t* p = &instructions[0];
-    while ((insn.bits() & p->mask) != p->match      ||
-        (p->archen & current_arch) == 0)
+    while ((insn.bits() & p->mask) != p->match || !(p->archen & current_arch))
       p++;
     desc = *p;
-    
+
     if (p->mask != 0 && p > &instructions[0]) {
       if (p->match != (p-1)->match && p->match != (p+1)->match) {
         // move to front of opcode list to reduce miss penalty
