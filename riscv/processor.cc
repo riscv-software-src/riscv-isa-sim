@@ -1763,14 +1763,12 @@ insn_func_t processor_t::decode_insn(insn_t insn)
   size_t idx = insn.bits() % OPCODE_CACHE_SIZE;
   insn_desc_t desc = opcode_cache[idx];
 
-  archen_t current_arch = xlen >> 5;
-  bool insn_valid_for_arch = (desc.archen & current_arch) != 0;
-
-  if (unlikely(insn.bits() != desc.match || !insn_valid_for_arch)) {
+  if (unlikely(insn.bits() != desc.match || !(xlen == 64 ? desc.rv64 : desc.rv32))) {
     // fall back to linear search
+    int cnt = 0;
     insn_desc_t* p = &instructions[0];
-    while ((insn.bits() & p->mask) != p->match || !(p->archen & current_arch))
-      p++;
+    while ((insn.bits() & p->mask) != p->match || !(xlen == 64 ? p->rv64 : p->rv32))
+      p++, cnt++;
     desc = *p;
 
     if (p->mask != 0 && p > &instructions[0]) {
@@ -1831,9 +1829,9 @@ void processor_t::register_base_instructions()
 {
   #define DECLARE_INSN(name, match, mask) \
     insn_bits_t name##_match = (match), name##_mask = (mask); \
-    archen_t name##_arch_en = ARCHEN_ANY;
-  #define DECLARE_RV32_ONLY(name) {name##_arch_en=ARCHEN_RV32_ONLY;}
-  #define DECLARE_RV64_ONLY(name) {name##_arch_en=ARCHEN_RV64_ONLY;}
+    unsigned name##_arch_en = (unsigned)-1;
+  #define DECLARE_RV32_ONLY(name) {name##_arch_en = 32;}
+  #define DECLARE_RV64_ONLY(name) {name##_arch_en = 64;}
 
   #include "encoding.h"
   #undef DECLARE_RV64_INSN
@@ -1841,7 +1839,13 @@ void processor_t::register_base_instructions()
   #undef DECLARE_INSN
 
   #define DEFINE_INSN(name) \
-    REGISTER_INSN(this, name, name##_match, name##_mask, name##_arch_en)
+    extern reg_t rv32_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t rv64_##name(processor_t*, insn_t, reg_t); \
+    register_insn((insn_desc_t){ \
+      name##_match, \
+      name##_mask, \
+      (name##_arch_en & 32) ? rv32_##name : nullptr, \
+      (name##_arch_en & 64) ? rv64_##name : nullptr});
   #include "insn_list.h"
   #undef DEFINE_INSN
 

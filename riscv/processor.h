@@ -23,18 +23,12 @@ class trap_t;
 class extension_t;
 class disassembler_t;
 
-typedef char archen_t;
-static const archen_t ARCHEN_RV32_ONLY = 1;
-static const archen_t ARCHEN_RV64_ONLY = 2;
-static const archen_t ARCHEN_ANY       = 7;
-
 struct insn_desc_t
 {
   insn_bits_t match;
   insn_bits_t mask;
   insn_func_t rv32;
   insn_func_t rv64;
-  archen_t archen;
 };
 
 // regnum, data
