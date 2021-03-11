@@ -252,6 +252,14 @@ void processor_t::step(size_t n)
 
     try
     {
+      if (halt_wfi)
+      {
+        if (state.mie & state.mip) // Resume if any pending interrupt.
+          halt_wfi = false;
+        else // End current loop
+          break;
+      }
+
       take_pending_interrupt();
 
       if (unlikely(slow_path()))
@@ -375,6 +383,7 @@ void processor_t::step(size_t n)
       // allows us to switch to other threads only once per idle loop in case
       // there is activity.
       n = ++instret;
+      halt_wfi = true;
     }
 
     state.minstret += instret;

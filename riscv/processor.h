@@ -338,6 +338,7 @@ public:
     HR_REGULAR, /* Regular halt request/debug interrupt. */
     HR_GROUP    /* Halt requested due to halt group. */
   } halt_request;
+  bool halt_wfi;/* Halt due to WFI. */
 
   // Return the index of a trigger that matched, or -1.
   inline int trigger_match(trigger_operation_t operation, reg_t address, reg_t data)
