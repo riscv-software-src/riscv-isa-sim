@@ -1,0 +1,64 @@
+# debug log
+
+> ldd libpec.so                                        pec [a298f8e] deleted modified untracked
+        linux-vdso.so.1 (0x00007ffd4a8ef000)
+        libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007fabda97a000)
+        libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007fabda95f000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007fabda76d000)
+        libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007fabda61e000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007fabdab80000)
+> ldd libcustomext.so                                  pec [a298f8e] deleted modified untracked
+        linux-vdso.so.1 (0x00007ffdc8d96000)
+        libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f188fb0b000)
+        libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f188fb05000)
+        libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f188f924000)
+        libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f188f909000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f188f717000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007f188fc41000)
+        libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f188f5c8000)
+> ldd spike                                            pec [a298f8e] deleted modified untracked
+        linux-vdso.so.1 (0x00007ffef8790000)
+        libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f29c3472000)
+        libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f29c346c000)
+        libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f29c328b000)
+        libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f29c3270000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f29c307e000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007f29c3617000)
+        libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f29c2f2f000)
+
+g++ -L. -Wl,--export-dynamic  -Wl,-rpath,/usr/local/lib  -shared -o libpec.so  pec.o qarma.o -lpthread -ldl -lpthread
+g++ -L. -Wl,--export-dynamic  -Wl,-rpath,/usr/local/lib  -shared -o libcustomext.so  dummy_rocc.o cflush.o libsoftfloat.a libriscv.a libspike_main.a  libsoftfloat.a  libriscv.a  libspike_main.a -lpthread -ldl -lpthread
+g++ -L. -Wl,--export-dynamic  -Wl,-rpath,/usr/local/lib  -o spike spike.o  libspike_main.a  libpec.a  libriscv.a  libsoftfloat.a  libfesvr.a  libfdt.a -lpthread -ldl -lpthread
+
+> ldd lib*.so                                          pec [a298f8e] deleted modified untracked
+libcustomext.so:
+        linux-vdso.so.1 (0x00007ffd13fae000)
+        libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f71c5976000)
+        libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f71c5970000)
+        libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f71c578f000)
+        libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f71c5774000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f71c5582000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007f71c5aac000)
+        libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f71c5433000)
+libpec.so:
+        linux-vdso.so.1 (0x00007ffe575fa000)
+        libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f41d5ebd000)
+        libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f41d5eb7000)
+        libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f41d5cd6000)
+        libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f41d5cbb000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f41d5ac9000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007f41d5fed000)
+        libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f41d597a000)
+> ldd spike                                            pec [a298f8e] deleted modified untracked
+        linux-vdso.so.1 (0x00007ffda33fa000)
+        libpthread.so.0 => /lib/x86_64-linux-gnu/libpthread.so.0 (0x00007f34ddac0000)
+        libdl.so.2 => /lib/x86_64-linux-gnu/libdl.so.2 (0x00007f34ddaba000)
+        libstdc++.so.6 => /lib/x86_64-linux-gnu/libstdc++.so.6 (0x00007f34dd8d9000)
+        libgcc_s.so.1 => /lib/x86_64-linux-gnu/libgcc_s.so.1 (0x00007f34dd8be000)
+        libc.so.6 => /lib/x86_64-linux-gnu/libc.so.6 (0x00007f34dd6cc000)
+        /lib64/ld-linux-x86-64.so.2 (0x00007f34ddc65000)
+        libm.so.6 => /lib/x86_64-linux-gnu/libm.so.6 (0x00007f34dd57d000)
+
+g++ -L. -Wl,--export-dynamic  -Wl,-rpath,/usr/local/lib  -shared -o libpec.so  pec.o qarma.o  libriscv.a  libriscv.a -lpthread -ldl -lpthread
+g++ -L. -Wl,--export-dynamic  -Wl,-rpath,/usr/local/lib  -shared -o libcustomext.so  dummy_rocc.o cflush.o libsoftfloat.a libriscv.a libspike_main.a  libsoftfloat.a  libriscv.a  libspike_main.a -lpthread -ldl -lpthread
+g++ -L. -Wl,--export-dynamic  -Wl,-rpath,/usr/local/lib  -o spike spike.o  libspike_main.a  libpec.a  libriscv.a  libsoftfloat.a  libfesvr.a  libfdt.a -lpthread -ldl -lpthread

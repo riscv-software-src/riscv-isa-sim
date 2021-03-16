@@ -1,0 +1,10 @@
+pec_subproject_deps = \
+	riscv \
+
+pec_srcs = \
+	pec.cc \
+	qarma.cc \
+
+pec_CFLAGS = -fPIC
+
+pec_install_shared_lib = yes

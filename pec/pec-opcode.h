@@ -1,0 +1,16 @@
+#define MATCH_CRETK 0x6b
+#define MASK_CRETK  0xfe00707f
+#define MATCH_CRDTK 0x200006b
+#define MASK_CRDTK  0xfe00707f
+#define MATCH_CREMK 0x106b
+#define MASK_CREMK  0xfe00707f
+#define MATCH_CRDMK 0x200106b
+#define MASK_CRDMK  0xfe00707f
+#define MATCH_CREAK 0x206b
+#define MASK_CREAK  0xfe00707f
+#define MATCH_CRDAK 0x200206b
+#define MASK_CRDAK  0xfe00707f
+#define MATCH_CREBK 0x306b
+#define MASK_CREBK  0xfe00707f
+#define MATCH_CRDBK 0x200306b
+#define MASK_CRDBK  0xfe00707f

@@ -71,7 +71,7 @@ text_t pseudo_reflect(text_t is, qkey_t tk) {
 		for (int y = 0; y < 4; y++) {
 			cell_t temp = 0;
 			for (int j = 0; j < 4; j++) {
-				int b;
+				cell_t b;
 				if (b = Q[4 * x + j]) {
 					cell_t a = perm[4 * j + y];
 					temp ^= ((a << b) & 0x0F) | (a >> (4 - b));
@@ -112,7 +112,7 @@ text_t forward(text_t is, qkey_t tk, int r) {
 			for (int y = 0; y < 4; y++) {
 				cell_t temp = 0;
 				for (int j = 0; j < 4; j++) {
-					int b;
+					cell_t b;
 					if (b = M[4 * x + j]) {
 						cell_t a = perm[4 * j + y];
 						temp ^= ((a << b) & 0x0F) | (a >> (4 - b));
@@ -151,7 +151,7 @@ text_t backward(text_t is, qkey_t tk, int r) {
 			for (int y = 0; y < 4; y++) {
 				cell_t temp = 0;
 				for (int j = 0; j < 4; j++) {
-					int b;
+					cell_t b;
 					if (b = M_inv[4 * x + j]) {
 						cell_t a = cell[4 * j + y];
 						temp ^= ((a << b) & 0x0F) | (a >> (4 - b));
@@ -272,7 +272,7 @@ text_t qarma64_dec(text_t plaintext, tweak_t tweak, qkey_t w0, qkey_t k0, int ro
 		for (int y = 0; y < 4; y++) {
 			cell_t temp = 0;
 			for (int j = 0; j < 4; j++) {
-				int b;
+				cell_t b;
 				if (b = Q[4 * x + j]) {
 					cell_t a = k0_cell[4 * j + y];
 					temp ^= ((a << b) & 0x0F) | (a >> (4 - b));

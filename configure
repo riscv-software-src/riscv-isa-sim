@@ -3038,13 +3038,13 @@ if test "$ac_test_CFLAGS" = set; then
   CFLAGS=$ac_save_CFLAGS
 elif test $ac_cv_prog_cc_g = yes; then
   if test "$GCC" = yes; then
-    CFLAGS="-g "
+    CFLAGS="-g -O2"
   else
     CFLAGS="-g"
   fi
 else
   if test "$GCC" = yes; then
-    CFLAGS=" "
+    CFLAGS="-O2"
   else
     CFLAGS=
   fi
@@ -3385,13 +3385,13 @@ if test "$ac_test_CXXFLAGS" = set; then
   CXXFLAGS=$ac_save_CXXFLAGS
 elif test $ac_cv_prog_cxx_g = yes; then
   if test "$GXX" = yes; then
-    CXXFLAGS="-g "
+    CXXFLAGS="-g -O2"
   else
     CXXFLAGS="-g"
   fi
 else
   if test "$GXX" = yes; then
-    CXXFLAGS=""
+    CXXFLAGS="-O2"
   else
     CXXFLAGS=
   fi
@@ -5158,6 +5158,51 @@ $as_echo "#define SPIKE_MAIN_ENABLED /**/" >>confdefs.h
 
 
 
+    # Determine if this is a required or an optional subproject
+
+
+
+    # Determine if there is a group with the same name
+
+
+
+    # Create variations of the subproject name suitable for use as a CPP
+    # enabled define, a shell enabled variable, and a shell function
+
+
+
+
+
+
+
+
+
+
+
+    # Add subproject to our running list
+
+    subprojects="$subprojects pec"
+
+    # Process the subproject appropriately. If enabled add it to the
+    # $enabled_subprojects running shell variable, set a
+    # SUBPROJECT_ENABLED C define, and include the appropriate
+    # 'subproject.ac'.
+
+
+      { $as_echo "$as_me:${as_lineno-$LINENO}: configuring default subproject : pec" >&5
+$as_echo "$as_me: configuring default subproject : pec" >&6;}
+      ac_config_files="$ac_config_files pec.mk:pec/pec.mk.in"
+
+      enable_pec_sproj="yes"
+      subprojects_enabled="$subprojects_enabled pec"
+
+$as_echo "#define PEC_ENABLED /**/" >>confdefs.h
+
+
+
+
+
+
   # Output make variables
 
 
@@ -5197,6 +5242,8 @@ ac_config_files="$ac_config_files riscv-customext.pc"
 ac_config_files="$ac_config_files riscv-fdt.pc"
 
 ac_config_files="$ac_config_files riscv-spike_main.pc"
+
+ac_config_files="$ac_config_files riscv-pec.pc"
 
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
@@ -5895,6 +5942,7 @@ do
     "fdt.mk") CONFIG_FILES="$CONFIG_FILES fdt.mk:fdt/fdt.mk.in" ;;
     "softfloat.mk") CONFIG_FILES="$CONFIG_FILES softfloat.mk:softfloat/softfloat.mk.in" ;;
     "spike_main.mk") CONFIG_FILES="$CONFIG_FILES spike_main.mk:spike_main/spike_main.mk.in" ;;
+    "pec.mk") CONFIG_FILES="$CONFIG_FILES pec.mk:pec/pec.mk.in" ;;
     "config.h") CONFIG_HEADERS="$CONFIG_HEADERS config.h" ;;
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "riscv-spike.pc") CONFIG_FILES="$CONFIG_FILES riscv-spike.pc" ;;
@@ -5904,6 +5952,7 @@ do
     "riscv-customext.pc") CONFIG_FILES="$CONFIG_FILES riscv-customext.pc" ;;
     "riscv-fdt.pc") CONFIG_FILES="$CONFIG_FILES riscv-fdt.pc" ;;
     "riscv-spike_main.pc") CONFIG_FILES="$CONFIG_FILES riscv-spike_main.pc" ;;
+    "riscv-pec.pc") CONFIG_FILES="$CONFIG_FILES riscv-pec.pc" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac

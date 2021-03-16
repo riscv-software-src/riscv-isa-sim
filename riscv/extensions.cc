@@ -14,14 +14,15 @@ static std::map<std::string, std::function<extension_t*()>>& extensions()
 void register_extension(const char* name, std::function<extension_t*()> f)
 {
   extensions()[name] = f;
+  printf("register custom instruction set: %s\n", name);
 }
 
 std::function<extension_t*()> find_extension(const char* name)
 {
   if (!extensions().count(name)) {
     // try to find extension xyz by loading libxyz.so
-    std::string libname = std::string("lib") + name + ".so";
-    std::string libdefault = "libcustomext.so";
+    std::string libname = "./" + std::string("lib") + name + ".so";
+    std::string libdefault = "./libcustomext.so";
     bool is_default = false;
     auto dlh = dlopen(libname.c_str(), RTLD_LAZY);
     if (!dlh) {
