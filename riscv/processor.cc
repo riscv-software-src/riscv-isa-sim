@@ -1245,6 +1245,30 @@ void processor_t::set_csr(int which, reg_t val)
       dirty_vs_state;
       VU.vxrm = val & 0x3ul;
       break;
+        case CSR_MCRMKEYH:
+      state.mcrmkeyh = val;
+      break;
+    case CSR_MCRMKEYL:
+      state.mcrmkel = val;
+      break;
+    case CSR_SCRTKEYH:
+      state.scrtkeyh = val;
+      break;      
+    case CSR_SCRTKEYL:
+      state.scrtkel = val;
+      break;
+    case CSR_SCRAKEYH:
+      state.scrakeyh = val;
+      break;
+    case CSR_SCRAKEYL:
+      state.scrakel = val;
+      break;
+    case CSR_SCRBKEYH:
+      state.scrbkeyh = val;
+      break;      
+    case CSR_SCRBKEYL:
+      state.scrbkel = val;
+      break; 
   }
 
 #if defined(RISCV_ENABLE_COMMITLOG)
@@ -1664,6 +1688,23 @@ reg_t processor_t::get_csr(int which)
       if (!supports_extension('V'))
         break;
       return VU.vlenb;
+        case CSR_MCRMKEYH:
+      return state.mcrmkeyh;
+    case CSR_MCRMKEYL:
+      return state.mcrmkel;
+    case CSR_SCRTKEYH:
+      return state.scrtkeyh;
+    case CSR_SCRTKEYL:
+      return state.scrtkel;
+    case CSR_SCRAKEYH:
+      return state.scrakeyh;
+    case CSR_SCRAKEYL:
+      return state.scrakel;
+    case CSR_SCRBKEYH:
+      return state.scrbkeyh;
+    case CSR_SCRBKEYL:
+      return state.scrbkel;
+
   }
   throw trap_illegal_instruction(0);
 }

@@ -541,6 +541,14 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(divuw);
   DEFINE_RTYPE(remw);
   DEFINE_RTYPE(remuw);
+  DEFINE_RTYPE(cretk);
+  DEFINE_RTYPE(crdtk);
+  DEFINE_RTYPE(cremk);
+  DEFINE_RTYPE(crdmk);
+  DEFINE_RTYPE(creak);
+  DEFINE_RTYPE(crdak);
+  DEFINE_RTYPE(crebk);
+  DEFINE_RTYPE(crdbk);
 
   DEFINE_NOARG(ecall);
   DEFINE_NOARG(ebreak);

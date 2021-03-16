@@ -235,6 +235,10 @@ struct state_t
   int last_inst_xlen;
   int last_inst_flen;
 #endif
+  reg_t scrtkeyh, scrtkel;
+  reg_t scrakeyh, scrakel;
+  reg_t scrbkeyh, scrbkel;
+  reg_t mcrmkeyh, mcrmkel;
 };
 
 typedef enum {

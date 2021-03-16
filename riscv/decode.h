@@ -17,6 +17,7 @@
 #include "softfloat_types.h"
 #include "specialize.h"
 #include <cinttypes>
+#include "qarma.h"
 
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
