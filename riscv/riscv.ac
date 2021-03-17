@@ -47,5 +47,6 @@ AS_IF([test "x$enable_misaligned" = "xyes"], [
 
 AC_ARG_ENABLE([zjv-device], AS_HELP_STRING([--enable-zjv-device], [Enable ZJV device extension]))
 AS_IF([test "x$enable_zjv_device" = "xyes"], [
-  AC_DEFINE([ZJV_DEVICE_EXTENSTION],,[Enable ZJV device extension])
+  AC_DEFINE([ZJV_DEVICE_EXTENSION],,[Enable ZJV device extension])
+  AC_SUBST([enable_zjv_device], [yes], [Enable ZJV device extension])
 ])

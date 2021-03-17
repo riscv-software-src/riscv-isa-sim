@@ -91,7 +91,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
                      " 0x" << (clintsz >> 32) << " 0x" << (clintsz & (uint32_t)-1) << ">;\n"
          "    };\n";
 
-#ifdef ZJV_DEVICE_EXTENSTION
+#ifdef ZJV_DEVICE_EXTENSION
   reg_t uartbs = UART_BASE;
   reg_t uartsz = UART_SIZE;
   s << std::hex <<

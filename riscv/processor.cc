@@ -919,7 +919,7 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_MCYCLE:
-#ifdef ZJV_DEVICE_EXTENSTION    
+#ifdef ZJV_DEVICE_EXTENSION    
       if (xlen == 32)
         state.mcycle = (state.mcycle >> 32 << 32) | (val & 0xffffffffU);
       else
@@ -938,7 +938,7 @@ void processor_t::set_csr(int which, reg_t val)
       state.minstret--;
       break;
     case CSR_MCYCLEH:
-#ifdef ZJV_DEVICE_EXTENSTION    
+#ifdef ZJV_DEVICE_EXTENSION    
       state.mcycle = (val << 32) | (state.mcycle << 32 >> 32);
       break;
 #endif
@@ -1435,7 +1435,7 @@ reg_t processor_t::get_csr(int which)
       }
       break;
     case CSR_MCYCLE:
-#ifdef ZJV_DEVICE_EXTENSTION    
+#ifdef ZJV_DEVICE_EXTENSION    
       return state.mcycle;
 #endif
     case CSR_MINSTRET:
@@ -1451,7 +1451,7 @@ reg_t processor_t::get_csr(int which)
       }
       break;
     case CSR_MCYCLEH:
-#ifdef ZJV_DEVICE_EXTENSTION    
+#ifdef ZJV_DEVICE_EXTENSION    
       if (xlen == 32)
         return state.mcycle >> 32;
       break;

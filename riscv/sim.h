@@ -128,7 +128,7 @@ private:
   bool dtb_enabled;
   std::unique_ptr<rom_device_t> boot_rom;
   std::unique_ptr<clint_t> clint;
-#ifdef ZJV_DEVICE_EXTENSTION  
+#ifdef ZJV_DEVICE_EXTENSION  
   std::unique_ptr<uart_t> uart;
   std::unique_ptr<plic_t> plic;
 #endif

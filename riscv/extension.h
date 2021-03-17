@@ -32,7 +32,7 @@ void register_extension(const char* name, std::function<extension_t*()> f);
 
 #define REGISTER_EXTENSION(name, constructor) \
   class register_##name { \
-    public: register_##name() { register_extension(#name, constructor); } \
+    public: register_##name() { printf("%s dummy class init\n", #name); register_extension(#name, constructor); } \
   }; static register_##name dummy_##name;
 
 #endif

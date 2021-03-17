@@ -94,7 +94,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     bus.add_device(clint_base, clint.get());
   }
 
-#ifdef ZJV_DEVICE_EXTENSTION  
+#ifdef ZJV_DEVICE_EXTENSION  
   int context_size = 1;
   if (strchr(priv, 'S'))
     context_size = 2;
@@ -160,7 +160,7 @@ void sim_t::step(size_t n, bool check_int)
     steps = std::min(n - i, INTERLEAVE - current_step);
     procs[current_proc]->step(steps, check_int);
 
-#ifdef ZJV_DEVICE_EXTENSTION 
+#ifdef ZJV_DEVICE_EXTENSION 
     uart.get()->check_int();
 #endif
 

@@ -372,7 +372,7 @@ void processor_t::step(size_t n, bool check_int)
     }
 
     state.minstret += instret;
-#ifdef ZJV_DEVICE_EXTENSTION
+#ifdef ZJV_DEVICE_EXTENSION
     if (!diffTest) 
       state.mcycle += instret;
 #endif

@@ -85,7 +85,7 @@ class clint_t : public abstract_device_t {
   std::vector<mtimecmp_t> mtimecmp;
 };
 
-#ifdef ZJV_DEVICE_EXTENSTION 
+#ifdef ZJV_DEVICE_EXTENSION 
 class plic_t : public abstract_device_t {
  public:
   plic_t(std::vector<processor_t*>& procs, size_t num_source, size_t num_context);

@@ -626,6 +626,7 @@ ac_subst_vars='LTLIBOBJS
 LIBOBJS
 subprojects_enabled
 subprojects
+enable_zjv_device
 HAVE_INT128
 INSTALL_DATA
 INSTALL_SCRIPT
@@ -4969,7 +4970,9 @@ fi
 if test "x$enable_zjv_device" = "xyes"; then :
 
 
-$as_echo "#define ZJV_DEVICE_EXTENSTION /**/" >>confdefs.h
+$as_echo "#define ZJV_DEVICE_EXTENSION /**/" >>confdefs.h
+
+  enable_zjv_device=yes
 
 
 fi

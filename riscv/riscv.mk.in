@@ -40,6 +40,15 @@ riscv_install_hdrs = mmio_plugin.h
 riscv_precompiled_hdrs = \
 	insn_template.h \
 
+riscv_zjv_device_extension = \
+
+ifeq ($(enable_zjv_device),yes)
+riscv_zjv_device_extension += \
+	uart.cc \
+	plic.cc \
+
+endif
+
 riscv_srcs = \
 	processor.cc \
 	execute.cc \
@@ -61,8 +70,8 @@ riscv_srcs = \
 	remote_bitbang.cc \
 	jtag_dtm.cc \
 	$(riscv_gen_srcs) \
-	$(if $(enable_zjv_device), uart.cc,) \
-	$(if $(enable_zjv_device), plic.cc,) \
+	$(riscv_zjv_device_extension) \
+
 
 riscv_test_srcs =
 
@@ -794,10 +803,10 @@ riscv_insn_list = \
 	$(riscv_insn_ext_c) \
 	$(riscv_insn_ext_i) \
 	$(riscv_insn_ext_m) \
-	$(riscv_insn_ext_f) \
-	$(riscv_insn_ext_d) \
 	$(riscv_insn_priv) \
 
+#	$(riscv_insn_ext_f) \
+#	$(riscv_insn_ext_d) \
 #	$(riscv_insn_ext_zfh) \
 #	$(riscv_insn_ext_q) \
 #	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
