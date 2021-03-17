@@ -82,7 +82,7 @@ class pec_t : public extension_t
   const char* name() { return "pec"; }
 
   pec_t() {
-    printf("create pec class\n");
+    printf("Register pec extension\n");
   }
 
   std::vector<insn_desc_t> get_instructions() {
