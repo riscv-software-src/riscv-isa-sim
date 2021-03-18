@@ -2837,6 +2837,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   require_extension('P'); \
   require(BIT == e16 || BIT == e32); \
   reg_t rd_tmp = 0, rs1 = RS1, rs2 = RS2; \
+  for (sreg_t i = 0; i < xlen / BIT / 2; i++) { \
     rd_tmp = set_field(rd_tmp, make_mask64(i * 2 * BIT, BIT), \
       P_UFIELD(RS2, i * 2 + Y, BIT)); \
     rd_tmp = set_field(rd_tmp, make_mask64((i * 2 + 1) * BIT, BIT), \
