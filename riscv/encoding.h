@@ -213,7 +213,7 @@
 #define UART_SIZE          0x00000100
 #define PLIC_BASE          0x0C000000
 #define PLIC_SIZE          0x04000000
-#define PLIC_MAX_SRC       32
+#define PLIC_MAX_SRC       31
 #define PLIC_MAX_PRIO      7
 #define PLIC_UART_IRQ      1
 
