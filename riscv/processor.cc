@@ -562,7 +562,7 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     deleg = state.mideleg & ~state.hideleg;
     status = (state.v) ? state.vsstatus : state.mstatus;
     hsie = get_field(status, MSTATUS_SIE);
-    hs_enabled = state.prv < PRV_S || (state.prv == PRV_S && hsie);
+    hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && hsie);
     enabled_interrupts = pending_interrupts & deleg & -hs_enabled;
     if (state.v && enabled_interrupts == 0) {
       // VS-ints have least priority and can only be taken with virt enabled
