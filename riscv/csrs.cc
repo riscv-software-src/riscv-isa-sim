@@ -529,7 +529,7 @@ void mip_or_mie_csr_t::write_with_mask(const reg_t mask, const reg_t val) noexce
   log_write();
 }
 
-void mip_or_mie_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept {
+void mip_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept {
   this->val = (this->val & ~mask) | (val & mask);
 }
 

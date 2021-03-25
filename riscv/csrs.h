@@ -268,19 +268,21 @@ class mip_or_mie_csr_t: public logged_csr_t {
 
   void write_with_mask(const reg_t mask, const reg_t val) noexcept;
 
-  // Does not log. Used by external things (clint) that wiggle bits in mip.
-  void backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override final;
+  reg_t val;
  private:
   virtual reg_t write_mask() const noexcept = 0;
-  reg_t val;
 };
 
 
+// mip is special because some of the bits are driven by hardware pins
 class mip_csr_t: public mip_or_mie_csr_t {
  public:
   mip_csr_t(processor_t* const proc, const reg_t addr);
+
+  // Does not log. Used by external things (clint) that wiggle bits in mip.
+  void backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept;
  private:
   virtual reg_t write_mask() const noexcept override;
 };
