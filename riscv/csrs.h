@@ -277,8 +277,6 @@ class mip_or_mie_csr_t: public logged_csr_t {
   reg_t val;
 };
 
-typedef std::shared_ptr<mip_or_mie_csr_t> mip_or_mie_csr_t_p;
-
 
 class mip_csr_t: public mip_or_mie_csr_t {
  public:
@@ -287,12 +285,17 @@ class mip_csr_t: public mip_or_mie_csr_t {
   virtual reg_t write_mask() const noexcept override;
 };
 
+typedef std::shared_ptr<mip_csr_t> mip_csr_t_p;
+
+
 class mie_csr_t: public mip_or_mie_csr_t {
  public:
   mie_csr_t(processor_t* const proc, const reg_t addr);
  private:
   virtual reg_t write_mask() const noexcept override;
 };
+
+typedef std::shared_ptr<mie_csr_t> mie_csr_t_p;
 
 
 // For sip, hip, hvip, vsip, sie, hie, vsie which are all just (masked
