@@ -64,6 +64,7 @@ struct riscv_statx_timestamp {
     target_endian<int32_t>  __reserved;
 };
 
+#ifdef HAVE_STATX
 struct riscv_statx
 {
     target_endian<uint32_t> mask;
@@ -134,6 +135,7 @@ struct riscv_statx
 #endif      
       {}
 };
+#endif
 
 syscall_t::syscall_t(htif_t* htif)
   : htif(htif), memif(&htif->memif()), table(2048)
@@ -303,6 +305,9 @@ reg_t syscall_t::sys_lstat(reg_t pname, reg_t len, reg_t pbuf, reg_t a3, reg_t a
 
 reg_t syscall_t::sys_statx(reg_t fd, reg_t pname, reg_t len, reg_t flags, reg_t mask, reg_t pbuf, reg_t a6)
 {
+#ifndef HAVE_STATX
+  return -ENOSYS;
+#else
   std::vector<char> name(len);
   memif->read(pname, len, &name[0]);
 
@@ -314,6 +319,7 @@ reg_t syscall_t::sys_statx(reg_t fd, reg_t pname, reg_t len, reg_t flags, reg_t 
     memif->write(pbuf, sizeof(rbuf), &rbuf);
   }
   return ret;
+#endif
 }
 
 #define AT_SYSCALL(syscall, fd, name, ...) \

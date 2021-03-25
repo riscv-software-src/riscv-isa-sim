@@ -4756,6 +4756,16 @@ else
 fi
 
 
+ac_fn_cxx_check_member "$LINENO" "struct statx" "ino" "ac_cv_member_struct_statx_ino" "$ac_includes_default"
+if test "x$ac_cv_member_struct_statx_ino" = xyes; then :
+
+cat >>confdefs.h <<_ACEOF
+#define HAVE_STATX 1
+_ACEOF
+
+fi
+
+
 ac_fn_cxx_check_member "$LINENO" "struct statx" "stx_mnt_id" "ac_cv_member_struct_statx_stx_mnt_id" "$ac_includes_default"
 if test "x$ac_cv_member_struct_statx_stx_mnt_id" = xyes; then :
 
@@ -4764,6 +4774,7 @@ cat >>confdefs.h <<_ACEOF
 _ACEOF
 
 fi
+
 
 
 
