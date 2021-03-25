@@ -196,7 +196,6 @@ struct state_t
   reg_t htval;
   reg_t htinst;
   reg_t hgatp;
-  csr_t_p nonvirtual_sstatus;
   sstatus_csr_t_p sstatus;
   vsstatus_csr_t_p vsstatus;
   csr_t_p vstvec;
