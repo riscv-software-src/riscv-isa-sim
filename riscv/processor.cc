@@ -628,17 +628,15 @@ void processor_t::set_mmu_capability(int cap)
 
 void processor_t::take_interrupt(reg_t pending_interrupts)
 {
-  reg_t enabled_interrupts, mie, m_enabled;
-
   // Do nothing if no pending interrupts
   if (!pending_interrupts) {
     return;
   }
 
   // M-ints have higher priority over HS-ints and VS-ints
-  mie = get_field(state.mstatus->read(), MSTATUS_MIE);
-  m_enabled = state.prv < PRV_M || (state.prv == PRV_M && mie);
-  enabled_interrupts = pending_interrupts & ~state.mideleg->read() & -m_enabled;
+  const reg_t mie = get_field(state.mstatus->read(), MSTATUS_MIE);
+  const reg_t m_enabled = state.prv < PRV_M || (state.prv == PRV_M && mie);
+  reg_t enabled_interrupts = pending_interrupts & ~state.mideleg->read() & -m_enabled;
   if (enabled_interrupts == 0) {
     // HS-ints have higher priority over VS-ints
     const reg_t deleg_to_hs = state.mideleg->read() & ~state.hideleg;
