@@ -643,7 +643,7 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
   if (enabled_interrupts == 0) {
     // HS-ints have higher priority over VS-ints
     deleg = state.mideleg->read() & ~state.hideleg;
-    status = state.nonvirtual_sstatus->read();
+    status = state.sstatus->read();
     hsie = get_field(status, MSTATUS_SIE);
     hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && hsie);
     enabled_interrupts = pending_interrupts & deleg & -hs_enabled;
