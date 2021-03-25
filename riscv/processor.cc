@@ -628,8 +628,7 @@ void processor_t::set_mmu_capability(int cap)
 
 void processor_t::take_interrupt(reg_t pending_interrupts)
 {
-  reg_t enabled_interrupts, deleg, status, mie, m_enabled;
-  reg_t hsie, hs_enabled, vsie, vs_enabled;
+  reg_t enabled_interrupts, mie, m_enabled;
 
   // Do nothing if no pending interrupts
   if (!pending_interrupts) {
@@ -641,6 +640,9 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
   m_enabled = state.prv < PRV_M || (state.prv == PRV_M && mie);
   enabled_interrupts = pending_interrupts & ~state.mideleg->read() & -m_enabled;
   if (enabled_interrupts == 0) {
+    reg_t deleg, status;
+    reg_t hsie, hs_enabled;
+
     // HS-ints have higher priority over VS-ints
     deleg = state.mideleg->read() & ~state.hideleg;
     status = state.sstatus->read();
@@ -648,6 +650,7 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && hsie);
     enabled_interrupts = pending_interrupts & deleg & -hs_enabled;
     if (state.v && enabled_interrupts == 0) {
+      reg_t vsie, vs_enabled;
       // VS-ints have least priority and can only be taken with virt enabled
       deleg = state.mideleg->read() & state.hideleg;
       vsie = get_field(state.sstatus->read(), MSTATUS_SIE);
