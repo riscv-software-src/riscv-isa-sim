@@ -529,10 +529,6 @@ void mip_or_mie_csr_t::write_with_mask(const reg_t mask, const reg_t val) noexce
   log_write();
 }
 
-void mip_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept {
-  this->val = (this->val & ~mask) | (val & mask);
-}
-
 bool mip_or_mie_csr_t::unlogged_write(const reg_t val) noexcept {
   write_with_mask(write_mask(), val);
   return false; // avoid double logging: already logged by write_with_mask()
@@ -543,6 +539,9 @@ mip_csr_t::mip_csr_t(processor_t* const proc, const reg_t addr):
   mip_or_mie_csr_t(proc, addr) {
 }
 
+void mip_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept {
+  this->val = (this->val & ~mask) | (val & mask);
+}
 
 reg_t mip_csr_t::write_mask() const noexcept {
   const reg_t supervisor_ints = proc->extension_enabled('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
