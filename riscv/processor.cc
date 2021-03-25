@@ -640,21 +640,17 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
   m_enabled = state.prv < PRV_M || (state.prv == PRV_M && mie);
   enabled_interrupts = pending_interrupts & ~state.mideleg->read() & -m_enabled;
   if (enabled_interrupts == 0) {
-    reg_t deleg_to_hs, status;
-    reg_t hsie, hs_enabled;
-
     // HS-ints have higher priority over VS-ints
-    deleg_to_hs = state.mideleg->read() & ~state.hideleg;
-    status = state.sstatus->read();
-    hsie = get_field(status, MSTATUS_SIE);
-    hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && hsie);
+    const reg_t deleg_to_hs = state.mideleg->read() & ~state.hideleg;
+    const reg_t status = state.sstatus->read();
+    const reg_t hsie = get_field(status, MSTATUS_SIE);
+    const reg_t hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && hsie);
     enabled_interrupts = pending_interrupts & deleg_to_hs & -hs_enabled;
     if (state.v && enabled_interrupts == 0) {
-      reg_t vsie, vs_enabled, deleg_to_vs;
       // VS-ints have least priority and can only be taken with virt enabled
-      deleg_to_vs = state.mideleg->read() & state.hideleg;
-      vsie = get_field(state.sstatus->read(), MSTATUS_SIE);
-      vs_enabled = state.prv < PRV_S || (state.prv == PRV_S && vsie);
+      const reg_t deleg_to_vs = state.mideleg->read() & state.hideleg;
+      const reg_t vsie = get_field(state.sstatus->read(), MSTATUS_SIE);
+      const reg_t vs_enabled = state.prv < PRV_S || (state.prv == PRV_S && vsie);
       enabled_interrupts = pending_interrupts & deleg_to_vs & -vs_enabled;
     }
   }
