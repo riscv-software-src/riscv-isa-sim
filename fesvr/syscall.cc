@@ -57,6 +57,84 @@ struct riscv_stat
       __unused4(), __unused5() {}
 };
 
+
+struct riscv_statx_timestamp {
+    target_endian<int64_t>  tv_sec;
+    target_endian<uint32_t> tv_nsec;
+    target_endian<int32_t>  __reserved;
+};
+
+struct riscv_statx
+{
+    target_endian<uint32_t> mask;
+    target_endian<uint32_t> blksize;
+    target_endian<uint64_t> attributes;
+    target_endian<uint32_t> nlink;
+    target_endian<uint32_t> uid;
+    target_endian<uint32_t> gid;
+    target_endian<uint16_t> mode;
+    target_endian<uint16_t> __spare0[1];
+    target_endian<uint64_t> ino;
+    target_endian<uint64_t> size;
+    target_endian<uint64_t> blocks;
+    target_endian<uint64_t> attributes_mask;
+    struct riscv_statx_timestamp atime;
+    struct riscv_statx_timestamp btime;
+    struct riscv_statx_timestamp ctime;
+    struct riscv_statx_timestamp mtime;
+    target_endian<uint32_t> rdev_major;
+    target_endian<uint32_t> rdev_minor;
+    target_endian<uint32_t> dev_major;
+    target_endian<uint32_t> dev_minor;
+#ifdef HAVE_STATX_MNT_ID
+    target_endian<uint64_t> mnt_id;
+    target_endian<uint64_t> __spare2;
+    target_endian<uint64_t> __spare3[12];
+#else
+    target_endian<uint64_t> __spare2[14];
+#endif
+
+  riscv_statx(const struct statx& s, htif_t* htif)
+    : mask(htif->to_target<uint32_t>(s.stx_mask)),
+      blksize(htif->to_target<uint32_t>(s.stx_blksize)),
+      attributes(htif->to_target<uint64_t>(s.stx_attributes)),
+      nlink(htif->to_target<uint32_t>(s.stx_nlink)),
+      uid(htif->to_target<uint32_t>(s.stx_uid)),
+      gid(htif->to_target<uint32_t>(s.stx_gid)),
+      mode(htif->to_target<uint16_t>(s.stx_mode)), __spare0(),
+      ino(htif->to_target<uint64_t>(s.stx_ino)),
+      size(htif->to_target<uint64_t>(s.stx_size)),
+      blocks(htif->to_target<uint64_t>(s.stx_blocks)),
+      attributes_mask(htif->to_target<uint64_t>(s.stx_attributes_mask)),
+      atime {
+        htif->to_target<int64_t>(s.stx_atime.tv_sec),
+        htif->to_target<uint32_t>(s.stx_atime.tv_nsec)
+      },
+      btime {
+        htif->to_target<int64_t>(s.stx_btime.tv_sec),
+        htif->to_target<uint32_t>(s.stx_btime.tv_nsec)
+      },
+      ctime {
+        htif->to_target<int64_t>(s.stx_ctime.tv_sec),
+        htif->to_target<uint32_t>(s.stx_ctime.tv_nsec)
+      },
+      mtime {
+        htif->to_target<int64_t>(s.stx_mtime.tv_sec),
+        htif->to_target<uint32_t>(s.stx_mtime.tv_nsec)
+      },
+      rdev_major(htif->to_target<uint32_t>(s.stx_rdev_major)),
+      rdev_minor(htif->to_target<uint32_t>(s.stx_rdev_minor)),
+      dev_major(htif->to_target<uint32_t>(s.stx_dev_major)),
+      dev_minor(htif->to_target<uint32_t>(s.stx_dev_minor)),
+#ifdef HAVE_STATX_MNT_ID
+      mnt_id(htif->to_target<uint64_t>(s.stx_mnt_id)),
+      __spare2(), __spare3()
+#else
+      __spare2()
+#endif      
+      {}
+};
+
 syscall_t::syscall_t(htif_t* htif)
   : htif(htif), memif(&htif->memif()), table(2048)
 {
@@ -79,6 +157,7 @@ syscall_t::syscall_t(htif_t* htif)
   table[79] = &syscall_t::sys_fstatat;
   table[80] = &syscall_t::sys_fstat;
   table[93] = &syscall_t::sys_exit;
+  table[291] = &syscall_t::sys_statx;
   table[1039] = &syscall_t::sys_lstat;
   table[2011] = &syscall_t::sys_getmainvars;
 
@@ -217,6 +296,21 @@ reg_t syscall_t::sys_lstat(reg_t pname, reg_t len, reg_t pbuf, reg_t a3, reg_t a
   if (ret != (reg_t)-1)
   {
     riscv_stat rbuf(buf, htif);
+    memif->write(pbuf, sizeof(rbuf), &rbuf);
+  }
+  return ret;
+}
+
+reg_t syscall_t::sys_statx(reg_t fd, reg_t pname, reg_t len, reg_t flags, reg_t mask, reg_t pbuf, reg_t a6)
+{
+  std::vector<char> name(len);
+  memif->read(pname, len, &name[0]);
+
+  struct statx buf;
+  reg_t ret = sysret_errno(statx(fds.lookup(fd), do_chroot(&name[0]).c_str(), flags, mask, &buf));
+  if (ret != (reg_t)-1)
+  {
+    riscv_statx rbuf(buf, htif);
     memif->write(pbuf, sizeof(rbuf), &rbuf);
   }
   return ret;
