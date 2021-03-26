@@ -1,3 +1,4 @@
+require_rv64;
 require_extension('B');
 require(SHAMT < 32);
 int shamt = SHAMT & 31;

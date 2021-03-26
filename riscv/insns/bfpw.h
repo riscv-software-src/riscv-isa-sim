@@ -1,3 +1,4 @@
+require_rv64;
 require_extension('B');
 reg_t cfg = RS2 >> 16;
 int len = (cfg >> 8) & 15;
