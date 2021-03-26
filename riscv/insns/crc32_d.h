@@ -1,3 +1,4 @@
+require_rv64;
 require_extension('B');
 reg_t x = zext_xlen(RS1);
 for (int i = 0; i < 64; i++)
