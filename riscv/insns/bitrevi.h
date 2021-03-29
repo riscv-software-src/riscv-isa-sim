@@ -9,4 +9,4 @@ for (size_t i = 0; i <= msb; i++) {
   n >>= 1;
 }
 
-WRITE_RD(rev);
+WRITE_RD(sext_xlen(rev));
