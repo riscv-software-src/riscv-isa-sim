@@ -2770,7 +2770,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 #define P_LOOP_END() \
   } \
-  WRITE_RD(rd_tmp);
+  WRITE_RD(sext_xlen(rd_tmp));
 
 #define P_PAIR_LOOP_END() \
   } \
@@ -2778,7 +2778,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
     WRITE_RD_PAIR(rd_tmp); \
   } \
   else { \
-    WRITE_RD(rd_tmp); \
+    WRITE_RD(sext_xlen(rd_tmp)); \
   }
 
 #define P_REDUCTION_LOOP_END(BIT, IS_SAT) \
@@ -2789,7 +2789,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
     type_usew_t<BIT>::type pd = pd_res; \
     WRITE_PD(); \
   } \
-  WRITE_RD(rd_tmp);
+  WRITE_RD(sext_xlen(rd_tmp));
 
 #define P_REDUCTION_ULOOP_END(BIT, IS_SAT) \
     } \
@@ -2799,7 +2799,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
     type_usew_t<BIT>::type pd = pd_res; \
     WRITE_PD(); \
   } \
-  WRITE_RD(rd_tmp);
+  WRITE_RD(sext_xlen(rd_tmp));
 
 #define P_SUNPKD8(X, Y) \
   require_extension('P'); \
@@ -2815,7 +2815,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   } else { \
     memcpy(&rd_tmp, pd, 4); \
   } \
-  WRITE_RD(rd_tmp);
+  WRITE_RD(sext_xlen(rd_tmp));
 
 #define P_ZUNPKD8(X, Y) \
   require_extension('P'); \
@@ -2831,7 +2831,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   } else { \
     memcpy(&rd_tmp, pd, 4); \
   } \
-  WRITE_RD(rd_tmp);
+  WRITE_RD(sext_xlen(rd_tmp));
 
 #define P_PK(BIT, X, Y) \
   require_extension('P'); \
@@ -2843,7 +2843,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
     rd_tmp = set_field(rd_tmp, make_mask64((i * 2 + 1) * BIT, BIT), \
       P_UFIELD(RS1, i * 2 + X, BIT)); \
   } \
-  WRITE_RD(rd_tmp);
+  WRITE_RD(sext_xlen(rd_tmp));
 
 #define P_64_PROFILE_BASE() \
   require_extension('P'); \
@@ -2900,7 +2900,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   if (xlen == 32) { \
     WRITE_RD_PAIR(rd); \
   } else { \
-    WRITE_RD(rd); \
+    WRITE_RD(sext_xlen(rd)); \
   }
 
 #define DEBUG_START             0x0
