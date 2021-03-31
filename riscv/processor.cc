@@ -1427,7 +1427,7 @@ reg_t processor_t::get_csr(int which)
     case CSR_INSTRET:
     case CSR_CYCLE:
       if (ctr_ok)
-        return state.minstret;
+        return state.minstret - state.minstret;
       if (state.v &&
           ((state.mcounteren >> (which & 31)) & 1) &&
           !((state.hcounteren >> (which & 31)) & 1)) {
@@ -1439,7 +1439,7 @@ reg_t processor_t::get_csr(int which)
       return state.mcycle;
 #endif
     case CSR_MINSTRET:
-      return state.minstret;
+      return state.minstret - state.minstret;
     case CSR_INSTRETH:
     case CSR_CYCLEH:
       if (ctr_ok && xlen == 32)
