@@ -123,34 +123,21 @@ void sdcard_t::init() {
 }
 
 bool sdcard_t::load(reg_t addr, size_t len, uint8_t* bytes) {
-	// printf("sdcard read addr 0x%x len %d\n", addr, len);
-	sdcard_io_handler(addr, len, false);
-	uint8_t* base_8 = (uint8_t*)base;
-	// memcpy(bytes, base_8 + addr, len);
-	for (int i = 0; i < len; ++i) {
-		bytes[i] = base_8[addr + i];
-		//printf("base8[addr+i]=%x\n", base_8[addr+i]);
-	}
-	/*
-	printf("NEMU diff:\n");
-	for (int i = 0; i < 0x20; ++i) {
-		printf("0x%x ", base[i]);
-	}
-	printf("\n");
-	printf("data read = 0x%x\n", *bytes);*/
-	return true;
+  // printf("sdcard read addr 0x%x len %d\n", addr, len);
+  sdcard_io_handler(addr, len, false);
+  uint8_t* base_8 = (uint8_t*)base;
+  // memcpy(bytes, base_8 + addr, len);
+  for (int i = 0; i < len; ++i) {
+    bytes[i] = base_8[addr + i];
+    //printf("base8[addr+i]=%x\n", base_8[addr+i]);
+  }
+  return true;
 }
 
 bool sdcard_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
-	// printf("sdcard write addr 0x%x len %d\n", addr, len);
-	memcpy((uint8_t*)(base) + addr, bytes, len);
-	sdcard_io_handler(addr, len , true);
-	/*
-	printf("NEMU diff:\n");
-        for (int i = 0; i < 0x20; ++i) {
-                printf("0x%x ", base[i]);
-        }
-	printf("\n");*/
-	return true;
+  // printf("sdcard write addr 0x%x len %d\n", addr, len);
+  memcpy((uint8_t*)(base) + addr, bytes, len);
+  sdcard_io_handler(addr, len , true);
+  return true;
 }
 
