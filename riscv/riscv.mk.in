@@ -17,6 +17,7 @@ riscv_hdrs = \
 	disasm.h \
 	dts.h \
 	mmu.h \
+	mmc.h \
 	processor.h \
 	sim.h \
 	simif.h \
@@ -55,6 +56,7 @@ riscv_srcs = \
 	devices.cc \
 	rom.cc \
 	clint.cc \
+	sdcard.cc \
 	debug_module.cc \
 	remote_bitbang.cc \
 	jtag_dtm.cc \

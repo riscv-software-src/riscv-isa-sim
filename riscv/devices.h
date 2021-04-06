@@ -83,4 +83,12 @@ class mmio_plugin_device_t : public abstract_device_t {
   void* user_data;
 };
 
+class sdcard_t : public abstract_device_t {
+  public:
+   bool load(reg_t addr, size_t len, uint8_t* bytes);
+   bool store(reg_t addr, size_t len, const uint8_t* bytes);
+   size_t size() { return SDCARD_SIZE; }
+   void init();
+};
+
 #endif

@@ -92,7 +92,9 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
   } else {
     bus.add_device(clint_base, clint.get());
   }
-
+  sdcard.reset(new sdcard_t());
+  sdcard.get()->init();
+  bus.add_device(SDCARD_BASE, sdcard.get());
   //per core attribute
   int cpu_offset = 0, rc;
   size_t cpu_idx = 0;

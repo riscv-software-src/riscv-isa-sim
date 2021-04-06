@@ -94,6 +94,10 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "  htif {\n"
          "    compatible = \"ucb,htif0\";\n"
          "  };\n"
+	 "  sdhci: mmc {\n"
+         "    compatible = \"nemu-sdhost\";\n"
+	 "		reg = <0x0 0x40002000 0x0 0x1000>;\n"
+         "  };\n"
          "};\n";
   return s.str();
 }
