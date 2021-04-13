@@ -1,5 +1,5 @@
-P_I_SULOOP(16, 4, {
-  int64_t uint_max = UINT64_MAX >> (64 - imm4u);
+P_I_LOOP(16, 4, {
+  int64_t uint_max = imm4u ? UINT64_MAX >> (64 - imm4u) : 0;
   pd = ps1;
 
   if (ps1 > uint_max) {

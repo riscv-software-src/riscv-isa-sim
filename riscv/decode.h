@@ -2444,6 +2444,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
     R = UINT##BIT##_MAX; \
     P_SET_OV(1); \
   } else if (R < 0) { \
+    P_SET_OV(1); \
     R = 0; \
   }
 
@@ -2495,10 +2496,10 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
   require_extension('P'); \
   require(BIT == e16 || BIT == e32 || BIT == e64); \
-  reg_t rd_tmp = USE_RD ? RD : 0; \
-  reg_t rs1 = RS1; \
-  reg_t rs2 = RS2; \
-  sreg_t len = xlen / BIT; \
+  reg_t rd_tmp = USE_RD ? zext_xlen(RD) : 0; \
+  reg_t rs1 = zext_xlen(RS1); \
+  reg_t rs2 = zext_xlen(RS2); \
+  sreg_t len = 64 / BIT; \
   sreg_t len_inner = BIT / BIT_INNER; \
   for (sreg_t i = len - 1; i >= 0; --i) { \
     sreg_t pd_res = P_FIELD(rd_tmp, i, BIT); \
@@ -2507,10 +2508,10 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_REDUCTION_ULOOP_BASE(BIT, BIT_INNER, USE_RD) \
   require_extension('P'); \
   require(BIT == e16 || BIT == e32 || BIT == e64); \
-  reg_t rd_tmp = USE_RD ? RD : 0; \
-  reg_t rs1 = RS1; \
-  reg_t rs2 = RS2; \
-  sreg_t len = xlen / BIT; \
+  reg_t rd_tmp = USE_RD ? zext_xlen(RD) : 0; \
+  reg_t rs1 = zext_xlen(RS1); \
+  reg_t rs2 = zext_xlen(RS2); \
+  sreg_t len = 64 / BIT; \
   sreg_t len_inner = BIT / BIT_INNER; \
   for (sreg_t i = len - 1; i >=0; --i) { \
     reg_t pd_res = P_UFIELD(rd_tmp, i, BIT); \
