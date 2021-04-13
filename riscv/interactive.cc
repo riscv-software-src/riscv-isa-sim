@@ -179,7 +179,13 @@ reg_t sim_t::get_pc(const std::vector<std::string>& args)
 
 void sim_t::interactive_pc(const std::string& cmd, const std::vector<std::string>& args)
 {
-  fprintf(stderr, "0x%016" PRIx64 "\n", get_pc(args));
+  if(args.size() != 1)
+    throw trap_interactive();
+
+  processor_t *p = get_core(args[0]);
+  int max_xlen = p->get_max_xlen();
+  fprintf(stderr, max_xlen==32 ? "0x%08" PRIx64 "\n" :
+                                 "0x%016" PRIx64 "\n", ERASE_32MSB(max_xlen,get_pc(args)));
 }
 
 reg_t sim_t::get_reg(const std::vector<std::string>& args)
@@ -272,17 +278,24 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
 
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
 {
+  if(args.size() < 1)
+     throw trap_interactive();
+
+  processor_t *p = get_core(args[0]);
+  int max_xlen = p->get_max_xlen();
+
   if (args.size() == 1) {
     // Show all the regs!
-    processor_t *p = get_core(args[0]);
 
     for (int r = 0; r < NXPR; ++r) {
-      fprintf(stderr, "%-4s: 0x%016" PRIx64 "  ", xpr_name[r], p->get_state()->XPR[r]);
+      fprintf(stderr, max_xlen==32 ? "%-4s: 0x%08" PRIx64 "  " :
+                      "%-4s: 0x%016" PRIx64 "  ", xpr_name[r], ERASE_32MSB(max_xlen,p->get_state()->XPR[r]));
       if ((r + 1) % 4 == 0)
         fprintf(stderr, "\n");
     }
   } else
-    fprintf(stderr, "0x%016" PRIx64 "\n", get_reg(args));
+      fprintf(stderr, max_xlen==32 ? "0x%08" PRIx64 "\n" :
+                     "0x%016" PRIx64 "\n", ERASE_32MSB(max_xlen,get_reg(args)));
 }
 
 union fpr
@@ -358,7 +371,10 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
 
 void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::string>& args)
 {
-  fprintf(stderr, "0x%016" PRIx64 "\n", get_mem(args));
+  int max_xlen = procs[0]->get_max_xlen();
+
+  fprintf(stderr, max_xlen==32 ? "0x%08" PRIx64 "\n" :
+                  "0x%016" PRIx64 "\n", ERASE_32MSB(max_xlen,get_mem(args)));
 }
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)
@@ -404,6 +420,10 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
   reg_t val = strtol(args[args.size()-1].c_str(),NULL,16);
   if(val == LONG_MAX)
     val = strtoul(args[args.size()-1].c_str(),NULL,16);
+
+  // mask bits above max_xlen
+  int max_xlen = procs[strtol(args[1].c_str(),NULL,10)]->get_max_xlen();
+  if (max_xlen == 32) val &= 0xFFFFFFFF;
   
   std::vector<std::string> args2;
   args2 = std::vector<std::string>(args.begin()+1,args.end()-1);
@@ -423,6 +443,9 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
     try
     {
       reg_t current = (this->*func)(args2);
+
+      // mask bits above max_xlen
+      if (max_xlen == 32) current &= 0xFFFFFFFF;
 
       if (cmd_until == (current == val))
         break;

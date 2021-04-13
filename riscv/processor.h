@@ -553,4 +553,6 @@ reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
   extern reg_t rv64_##name(processor_t*, insn_t, reg_t); \
   proc->register_insn((insn_desc_t){match, mask, rv32_##name, rv64_##name,archen});
 
+#define ERASE_32MSB(m,n) (m==32 ? n & 0xffffffff : n)
+
 #endif
