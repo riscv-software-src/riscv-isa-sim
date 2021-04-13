@@ -371,7 +371,10 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
 
 void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::string>& args)
 {
-  fprintf(stderr, "0x%016" PRIx64 "\n", get_mem(args));
+  int max_xlen = procs[0]->get_max_xlen();
+
+  fprintf(stderr, max_xlen==32 ? "0x%08" PRIx64 "\n" :
+                  "0x%016" PRIx64 "\n", ERASE_32MSB(max_xlen,get_mem(args)));
 }
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)

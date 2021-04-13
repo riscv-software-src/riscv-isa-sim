@@ -667,11 +667,13 @@ void processor_t::enter_debug_mode(uint8_t cause)
 void processor_t::take_trap(trap_t& t, reg_t epc)
 {
   if (debug) {
-    fprintf(log_file, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
-            id, t.name(), epc);
+    fprintf(log_file, max_xlen==32 ? "core %3d: exception %s, epc 0x%08" PRIx64 "\n" :
+                                     "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
+            id, t.name(), ERASE_32MSB(max_xlen,epc));
     if (t.has_tval())
-      fprintf(log_file, "core %3d:           tval 0x%016" PRIx64 "\n",
-              id, t.get_tval());
+      fprintf(log_file,  max_xlen==32 ? "core %3d:           tval 0x%08" PRIx64 "\n" :
+                                        "core %3d:           tval 0x%016" PRIx64 "\n",
+              id, ERASE_32MSB(max_xlen,t.get_tval()));
   }
 
   if (state.debug_mode) {
