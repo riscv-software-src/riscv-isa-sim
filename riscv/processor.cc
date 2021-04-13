@@ -780,9 +780,9 @@ void processor_t::disasm(insn_t insn)
       fprintf(log_file, "core %3d: Executed %" PRIx64 " times\n", id, executions);
     }
 
-    fprintf(log_file, max_xlen==32 ? "core %3d: 0x%08" PRIx32 " (0x%08" PRIx32 ") %s\n" :
+    fprintf(log_file, max_xlen==32 ? "core %3d: 0x%08" PRIx64 " (0x%08" PRIx32 ") %s\n" :
                       "core %3d: 0x%016" PRIx64 " (0x%08" PRIx32 ") %s\n",
-            id, state.pc, bits, disassembler->disassemble(insn).c_str());
+            id, ERASE_32MSB(max_xlen,state.pc), bits, disassembler->disassemble(insn).c_str());
     last_pc = state.pc;
     last_bits = bits;
     executions = 1;
