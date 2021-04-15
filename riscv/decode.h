@@ -2420,11 +2420,11 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 #define WRITE_RD_PAIR(value) \
   if (MMU.is_target_big_endian()) { \
-    WRITE_REG(insn.rd() + 1, zext32(value)); \
-    WRITE_REG(insn.rd(), ((reg_t)value) >> 32); \
+    WRITE_REG(insn.rd() + 1, sext32(value)); \
+    WRITE_REG(insn.rd(), ((sreg_t)value) >> 32); \
   } else { \
-    WRITE_REG(insn.rd(), zext32(value)); \
-    WRITE_REG(insn.rd() + 1, ((reg_t)value) >> 32); \
+    WRITE_REG(insn.rd(), sext32(value)); \
+    WRITE_REG(insn.rd() + 1, ((sreg_t)value) >> 32); \
   }
 
 #define P_SET_OV(ov) \
