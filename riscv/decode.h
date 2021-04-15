@@ -2621,13 +2621,6 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   WRITE_PD(); \
 }
 
-#define P_ONE_SULOOP_BODY(BIT, BODY) { \
-  P_ONE_SUPARAMS(BIT) \
-  BODY \
-  WRITE_PD(); \
-}
-
-
 #define P_MUL_LOOP_BODY(BIT, BODY) { \
   P_MUL_PARAMS(BIT) \
   BODY \
@@ -2718,11 +2711,6 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_I_ULOOP(BIT, IMMBIT, BODY) \
   P_I_LOOP_BASE(BIT, IMMBIT) \
   P_ONE_ULOOP_BODY(BIT, BODY) \
-  P_LOOP_END()
-
-#define P_I_SULOOP(BIT, IMMBIT, BODY) \
-  P_I_LOOP_BASE(BIT, IMMBIT) \
-  P_ONE_SULOOP_BODY(BIT, BODY) \
   P_LOOP_END()
 
 #define P_MUL_LOOP(BIT, BODY) \
