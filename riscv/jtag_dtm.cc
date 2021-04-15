@@ -15,7 +15,7 @@ enum {
   IR_IDCODE=1,
   IR_DTMCONTROL=0x10,
   IR_DBUS=0x11,
-  IR_RESET=0x1c
+  IR_BYPASS=0x1f
 };
 
 #define DTMCONTROL_VERSION      0xf
@@ -114,11 +114,6 @@ void jtag_dtm_t::set_pins(bool tck, bool tms, bool tdi) {
       case SHIFT_IR:
         _tdo = ir & 1;
         break;
-      //case UPDATE_IR:
-        //if (ir == IR_RESET) {
-          // Make a reset happen
-        //}
-        //break;
       default:
         break;
     }
@@ -153,8 +148,12 @@ void jtag_dtm_t::capture_dr()
       }
       dr_length = abits + 34;
       break;
+    case IR_BYPASS:
+      dr = bypass;
+      dr_length = 1;
+      break;
     default:
-      D(fprintf(stderr, "Unsupported IR: 0x%x\n", ir));
+      fprintf(stderr, "Unsupported IR: 0x%x\n", ir);
       break;
   }
   D(fprintf(stderr, "Capture DR; IR=0x%x, DR=0x%lx (%d bits)\n",
@@ -170,6 +169,8 @@ void jtag_dtm_t::update_dr()
       busy_stuck = false;
     if (dr & DTMCONTROL_DMIHARDRESET)
       reset();
+  } else if (ir == IR_BYPASS) {
+    bypass = dr;
   } else if (ir == IR_DBUS && !busy_stuck) {
     unsigned op = get_field(dr, DMI_OP);
     uint32_t data = get_field(dr, DMI_DATA);
