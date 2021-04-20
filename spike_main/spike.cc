@@ -114,26 +114,25 @@ void merge_overlapping_memory_regions(std::vector<std::pair<reg_t, mem_t*>>& mem
   // check the user specified memory regions and merge the overlapping or
   // eliminate the containing parts
   std::sort(mems.begin(), mems.end(), sort_mem_region);
-  reg_t start_page = 0, end_page = 0;
-  std::vector<std::pair<reg_t, mem_t*>>::reverse_iterator it = mems.rbegin();
-  std::vector<std::pair<reg_t, mem_t*>>::reverse_iterator _it = mems.rbegin();
-  for(; it != mems.rend(); ++it) {
-    reg_t _start_page = it->first/PGSIZE;
-    reg_t _end_page = _start_page + it->second->size()/PGSIZE;
-    if (_start_page >= start_page && _end_page <= end_page) {
-      // contains
-      mems.erase(std::next(it).base());
-    }else if ( _start_page < start_page && _end_page > start_page) {
-      // overlapping
-      _it->first = _start_page;
-      if (_end_page > end_page)
-        end_page = _end_page;
-      mems.erase(std::next(it).base());
-    }else {
-      _it = it;
-      start_page = _start_page;
-      end_page = _end_page;
-      assert(start_page < end_page);
+  std::vector<std::pair<reg_t, mem_t*>>::iterator it = mems.begin() + 1;
+
+  while (it != mems.end()) {
+    reg_t start = prev(it)->first;
+    reg_t end = prev(it)->first + prev(it)->second->size();
+    reg_t start2 = it->first;
+    reg_t end2 = it->first + it->second->size();
+
+    //contains -> remove
+    if (start2 >= start && end2 <= end) {
+      it = mems.erase(it);
+    //parital overlapped -> extend
+    } else if (start2 >= start && start2 < end) {
+      delete prev(it)->second;
+      prev(it)->second = new mem_t(std::max(end, end2) - start);
+      it = mems.erase(it);
+    // no overlapping -> keep it
+    } else {
+      it++;
     }
   }
 }
