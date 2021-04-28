@@ -18,9 +18,14 @@ Spike supports the following RISC-V ISA features:
   - D extension, v2.2
   - Q extension, v2.2
   - C extension, v2.0
-  - V extension, v0.9, w/ Zvlsseg/Zvamo/Zvqmac, w/o Zvediv, (_requires a 64-bit host_)
+  - B extension, v0.92
+  - K extension, v0.8.1 ([Scalar Cryptography](https://github.com/riscv/riscv-crypto))
+  - V extension, v0.10, w/ Zvlsseg/Zvamo (_requires a 64-bit host_)
+  - Bi-endianness
   - Conformance to both RVWMO and RVTSO (Spike is sequentially consistent)
   - Machine, Supervisor, and User modes, v1.11
+  - Hypervisor extension, v0.6.1
+  - Svnapot extension, v0.1
   - Debug v0.14
 
 Versioning and APIs
@@ -51,6 +56,9 @@ install path.
     $ ../configure --prefix=$RISCV
     $ make
     $ [sudo] make install
+
+If your system uses the `yum` package manager, you can substitute
+`yum install dtc` for the first step.
 
 Build Steps on OpenBSD
 ----------------------

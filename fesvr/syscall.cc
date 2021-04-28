@@ -19,35 +19,123 @@ using namespace std::placeholders;
 
 struct riscv_stat
 {
-  uint64_t dev;
-  uint64_t ino;
-  uint32_t mode;
-  uint32_t nlink;
-  uint32_t uid;
-  uint32_t gid;
-  uint64_t rdev;
-  uint64_t __pad1;
-  uint64_t size;
-  uint32_t blksize;
-  uint32_t __pad2;
-  uint64_t blocks;
-  uint64_t atime;
-  uint64_t __pad3;
-  uint64_t mtime;
-  uint64_t __pad4;
-  uint64_t ctime;
-  uint64_t __pad5;
-  uint32_t __unused4;
-  uint32_t __unused5;
+  target_endian<uint64_t> dev;
+  target_endian<uint64_t> ino;
+  target_endian<uint32_t> mode;
+  target_endian<uint32_t> nlink;
+  target_endian<uint32_t> uid;
+  target_endian<uint32_t> gid;
+  target_endian<uint64_t> rdev;
+  target_endian<uint64_t> __pad1;
+  target_endian<uint64_t> size;
+  target_endian<uint32_t> blksize;
+  target_endian<uint32_t> __pad2;
+  target_endian<uint64_t> blocks;
+  target_endian<uint64_t> atime;
+  target_endian<uint64_t> __pad3;
+  target_endian<uint64_t> mtime;
+  target_endian<uint64_t> __pad4;
+  target_endian<uint64_t> ctime;
+  target_endian<uint64_t> __pad5;
+  target_endian<uint32_t> __unused4;
+  target_endian<uint32_t> __unused5;
 
-  riscv_stat(const struct stat& s)
-    : dev(s.st_dev), ino(s.st_ino), mode(s.st_mode), nlink(s.st_nlink),
-      uid(s.st_uid), gid(s.st_gid), rdev(s.st_rdev), __pad1(0),
-      size(s.st_size), blksize(s.st_blksize), __pad2(0),
-      blocks(s.st_blocks), atime(s.st_atime), __pad3(0),
-      mtime(s.st_mtime), __pad4(0), ctime(s.st_ctime), __pad5(0),
-      __unused4(0), __unused5(0) {}
+  riscv_stat(const struct stat& s, htif_t* htif)
+    : dev(htif->to_target<uint64_t>(s.st_dev)),
+      ino(htif->to_target<uint64_t>(s.st_ino)),
+      mode(htif->to_target<uint32_t>(s.st_mode)),
+      nlink(htif->to_target<uint32_t>(s.st_nlink)),
+      uid(htif->to_target<uint32_t>(s.st_uid)),
+      gid(htif->to_target<uint32_t>(s.st_gid)),
+      rdev(htif->to_target<uint64_t>(s.st_rdev)), __pad1(),
+      size(htif->to_target<uint64_t>(s.st_size)),
+      blksize(htif->to_target<uint32_t>(s.st_blksize)), __pad2(),
+      blocks(htif->to_target<uint64_t>(s.st_blocks)),
+      atime(htif->to_target<uint64_t>(s.st_atime)), __pad3(),
+      mtime(htif->to_target<uint64_t>(s.st_mtime)), __pad4(),
+      ctime(htif->to_target<uint64_t>(s.st_ctime)), __pad5(),
+      __unused4(), __unused5() {}
 };
+
+
+struct riscv_statx_timestamp {
+    target_endian<int64_t>  tv_sec;
+    target_endian<uint32_t> tv_nsec;
+    target_endian<int32_t>  __reserved;
+};
+
+#ifdef HAVE_STATX
+struct riscv_statx
+{
+    target_endian<uint32_t> mask;
+    target_endian<uint32_t> blksize;
+    target_endian<uint64_t> attributes;
+    target_endian<uint32_t> nlink;
+    target_endian<uint32_t> uid;
+    target_endian<uint32_t> gid;
+    target_endian<uint16_t> mode;
+    target_endian<uint16_t> __spare0[1];
+    target_endian<uint64_t> ino;
+    target_endian<uint64_t> size;
+    target_endian<uint64_t> blocks;
+    target_endian<uint64_t> attributes_mask;
+    struct riscv_statx_timestamp atime;
+    struct riscv_statx_timestamp btime;
+    struct riscv_statx_timestamp ctime;
+    struct riscv_statx_timestamp mtime;
+    target_endian<uint32_t> rdev_major;
+    target_endian<uint32_t> rdev_minor;
+    target_endian<uint32_t> dev_major;
+    target_endian<uint32_t> dev_minor;
+#ifdef HAVE_STATX_MNT_ID
+    target_endian<uint64_t> mnt_id;
+    target_endian<uint64_t> __spare2;
+    target_endian<uint64_t> __spare3[12];
+#else
+    target_endian<uint64_t> __spare2[14];
+#endif
+
+  riscv_statx(const struct statx& s, htif_t* htif)
+    : mask(htif->to_target<uint32_t>(s.stx_mask)),
+      blksize(htif->to_target<uint32_t>(s.stx_blksize)),
+      attributes(htif->to_target<uint64_t>(s.stx_attributes)),
+      nlink(htif->to_target<uint32_t>(s.stx_nlink)),
+      uid(htif->to_target<uint32_t>(s.stx_uid)),
+      gid(htif->to_target<uint32_t>(s.stx_gid)),
+      mode(htif->to_target<uint16_t>(s.stx_mode)), __spare0(),
+      ino(htif->to_target<uint64_t>(s.stx_ino)),
+      size(htif->to_target<uint64_t>(s.stx_size)),
+      blocks(htif->to_target<uint64_t>(s.stx_blocks)),
+      attributes_mask(htif->to_target<uint64_t>(s.stx_attributes_mask)),
+      atime {
+        htif->to_target<int64_t>(s.stx_atime.tv_sec),
+        htif->to_target<uint32_t>(s.stx_atime.tv_nsec)
+      },
+      btime {
+        htif->to_target<int64_t>(s.stx_btime.tv_sec),
+        htif->to_target<uint32_t>(s.stx_btime.tv_nsec)
+      },
+      ctime {
+        htif->to_target<int64_t>(s.stx_ctime.tv_sec),
+        htif->to_target<uint32_t>(s.stx_ctime.tv_nsec)
+      },
+      mtime {
+        htif->to_target<int64_t>(s.stx_mtime.tv_sec),
+        htif->to_target<uint32_t>(s.stx_mtime.tv_nsec)
+      },
+      rdev_major(htif->to_target<uint32_t>(s.stx_rdev_major)),
+      rdev_minor(htif->to_target<uint32_t>(s.stx_rdev_minor)),
+      dev_major(htif->to_target<uint32_t>(s.stx_dev_major)),
+      dev_minor(htif->to_target<uint32_t>(s.stx_dev_minor)),
+#ifdef HAVE_STATX_MNT_ID
+      mnt_id(htif->to_target<uint64_t>(s.stx_mnt_id)),
+      __spare2(), __spare3()
+#else
+      __spare2()
+#endif      
+      {}
+};
+#endif
 
 syscall_t::syscall_t(htif_t* htif)
   : htif(htif), memif(&htif->memif()), table(2048)
@@ -71,6 +159,7 @@ syscall_t::syscall_t(htif_t* htif)
   table[79] = &syscall_t::sys_fstatat;
   table[80] = &syscall_t::sys_fstat;
   table[93] = &syscall_t::sys_exit;
+  table[291] = &syscall_t::sys_statx;
   table[1039] = &syscall_t::sys_lstat;
   table[2011] = &syscall_t::sys_getmainvars;
 
@@ -183,7 +272,7 @@ reg_t syscall_t::sys_fstat(reg_t fd, reg_t pbuf, reg_t a2, reg_t a3, reg_t a4, r
   reg_t ret = sysret_errno(fstat(fds.lookup(fd), &buf));
   if (ret != (reg_t)-1)
   {
-    riscv_stat rbuf(buf);
+    riscv_stat rbuf(buf, htif);
     memif->write(pbuf, sizeof(rbuf), &rbuf);
   }
   return ret;
@@ -206,13 +295,31 @@ reg_t syscall_t::sys_lstat(reg_t pname, reg_t len, reg_t pbuf, reg_t a3, reg_t a
 
   struct stat buf;
   reg_t ret = sysret_errno(lstat(do_chroot(&name[0]).c_str(), &buf));
-  riscv_stat rbuf(buf);
   if (ret != (reg_t)-1)
   {
-    riscv_stat rbuf(buf);
+    riscv_stat rbuf(buf, htif);
     memif->write(pbuf, sizeof(rbuf), &rbuf);
   }
   return ret;
+}
+
+reg_t syscall_t::sys_statx(reg_t fd, reg_t pname, reg_t len, reg_t flags, reg_t mask, reg_t pbuf, reg_t a6)
+{
+#ifndef HAVE_STATX
+  return -ENOSYS;
+#else
+  std::vector<char> name(len);
+  memif->read(pname, len, &name[0]);
+
+  struct statx buf;
+  reg_t ret = sysret_errno(statx(fds.lookup(fd), do_chroot(&name[0]).c_str(), flags, mask, &buf));
+  if (ret != (reg_t)-1)
+  {
+    riscv_statx rbuf(buf, htif);
+    memif->write(pbuf, sizeof(rbuf), &rbuf);
+  }
+  return ret;
+#endif
 }
 
 #define AT_SYSCALL(syscall, fd, name, ...) \
@@ -237,7 +344,7 @@ reg_t syscall_t::sys_fstatat(reg_t dirfd, reg_t pname, reg_t len, reg_t pbuf, re
   reg_t ret = sysret_errno(AT_SYSCALL(fstatat, dirfd, &name[0], &buf, flags));
   if (ret != (reg_t)-1)
   {
-    riscv_stat rbuf(buf);
+    riscv_stat rbuf(buf, htif);
     memif->write(pbuf, sizeof(rbuf), &rbuf);
   }
   return ret;
@@ -299,22 +406,22 @@ reg_t syscall_t::sys_getcwd(reg_t pbuf, reg_t size, reg_t a2, reg_t a3, reg_t a4
 reg_t syscall_t::sys_getmainvars(reg_t pbuf, reg_t limit, reg_t a2, reg_t a3, reg_t a4, reg_t a5, reg_t a6)
 {
   std::vector<std::string> args = htif->target_args();
-  std::vector<uint64_t> words(args.size() + 3);
-  words[0] = to_le(args.size());
-  words[args.size()+1] = 0; // argv[argc] = NULL
-  words[args.size()+2] = 0; // envp[0] = NULL
+  std::vector<target_endian<uint64_t>> words(args.size() + 3);
+  words[0] = htif->to_target<uint64_t>(args.size());
+  words[args.size()+1] = target_endian<uint64_t>::zero; // argv[argc] = NULL
+  words[args.size()+2] = target_endian<uint64_t>::zero; // envp[0] = NULL
 
   size_t sz = (args.size() + 3) * sizeof(words[0]);
   for (size_t i = 0; i < args.size(); i++)
   {
-    words[i+1] = to_le(sz + pbuf);
+    words[i+1] = htif->to_target<uint64_t>(sz + pbuf);
     sz += args[i].length() + 1;
   }
 
   std::vector<char> bytes(sz);
   memcpy(&bytes[0], &words[0], sizeof(words[0]) * words.size());
   for (size_t i = 0; i < args.size(); i++)
-    strcpy(&bytes[from_le(words[i+1]) - pbuf], args[i].c_str());
+    strcpy(&bytes[htif->from_target(words[i+1]) - pbuf], args[i].c_str());
 
   if (bytes.size() > limit)
     return -ENOMEM;
@@ -340,14 +447,14 @@ reg_t syscall_t::sys_chdir(reg_t path, reg_t a1, reg_t a2, reg_t a3, reg_t a4, r
 
 void syscall_t::dispatch(reg_t mm)
 {
-  reg_t magicmem[8];
+  target_endian<reg_t> magicmem[8];
   memif->read(mm, sizeof(magicmem), magicmem);
 
-  reg_t n = from_le(magicmem[0]);
+  reg_t n = htif->from_target(magicmem[0]);
   if (n >= table.size() || !table[n])
     throw std::runtime_error("bad syscall #" + std::to_string(n));
 
-  magicmem[0] = to_le((this->*table[n])(from_le(magicmem[1]), from_le(magicmem[2]), from_le(magicmem[3]), from_le(magicmem[4]), from_le(magicmem[5]), from_le(magicmem[6]), from_le(magicmem[7])));
+  magicmem[0] = htif->to_target((this->*table[n])(htif->from_target(magicmem[1]), htif->from_target(magicmem[2]), htif->from_target(magicmem[3]), htif->from_target(magicmem[4]), htif->from_target(magicmem[5]), htif->from_target(magicmem[6]), htif->from_target(magicmem[7])));
 
   memif->write(mm, sizeof(magicmem), magicmem);
 }

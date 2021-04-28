@@ -1,5 +1,6 @@
 // See LICENSE for license details.
 
+#include "arith.h"
 #include "processor.h"
 #include "extension.h"
 #include "common.h"
@@ -23,10 +24,10 @@
 processor_t::processor_t(const char* isa, const char* priv, const char* varch,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
                          FILE* log_file)
-  : debug(false), halt_request(HR_NONE), sim(sim), ext(NULL), id(id), xlen(0),
+  : debug(false), halt_request(HR_NONE), sim(sim), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), halt_on_reset(halt_on_reset),
-  extension_table(256, false), last_pc(1), executions(1)
+  extension_table(256, false), impl_table(256, false), last_pc(1), executions(1)
 {
   VU.p = this;
 
@@ -38,12 +39,18 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
   mmu = new mmu_t(sim, this);
 
   disassembler = new disassembler_t(max_xlen);
-  if (ext)
-    for (auto disasm_insn : ext->get_disasms())
+  for (auto e : custom_extensions)
+    for (auto disasm_insn : e.second->get_disasms())
       disassembler->add_insn(disasm_insn);
 
   set_pmp_granularity(1 << PMP_SHIFT);
   set_pmp_num(state.max_pmp);
+
+  if (max_xlen == 32)
+    set_mmu_capability(IMPL_MMU_SV32);
+  else if (max_xlen == 64)
+    set_mmu_capability(IMPL_MMU_SV48);
+
   reset();
 }
 
@@ -151,8 +158,6 @@ void processor_t::parse_varch_string(const char* s)
   /* Vector spec requirements. */
   if (vlen < elen)
     bad_varch_string(s, "vlen must be >= elen");
-  if ((unsigned) elen < std::max(max_xlen, get_flen()))
-    bad_varch_string(s, "elen must be >= max(xlen, flen)");
   if (vlen != slen)
     bad_varch_string(s, "vlen must be == slen for current limitation");
 
@@ -205,7 +210,7 @@ void processor_t::parse_isa_string(const char* str)
 
   char error_msg[256];
   const char* p = lowercase.c_str();
-  const char* all_subsets = "imafdqch"
+  const char* all_subsets = "imafdqcbkh"
 #ifdef __SIZEOF_INT128__
     "v"
 #endif
@@ -264,8 +269,6 @@ void processor_t::parse_isa_string(const char* str)
       auto ext_str = std::string(ext, end - ext);
       if (ext_str == "zfh") {
         extension_table[EXT_ZFH] = true;
-      } else if (ext_str == "zvqmac") {
-        extension_table[EXT_ZVQMAC] = true;
       } else {
         sprintf(error_msg, "unsupported extension '%s'", ext_str.c_str());
         bad_isa_string(str, error_msg);
@@ -291,9 +294,6 @@ void processor_t::parse_isa_string(const char* str)
 
   if (supports_extension('Q') && !supports_extension('D'))
     bad_isa_string(str, "'Q' extension requires 'D'");
-
-  if (supports_extension(EXT_ZVQMAC) && !supports_extension('V'))
-    bad_isa_string(str, "'Zvqmac' extension requires 'V'");
 }
 
 void state_t::reset(reg_t max_isa)
@@ -387,18 +387,15 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
   int new_vlmul = 0;
   if (vtype != newType){
     vtype = newType;
-    vsew = 1 << (BITS(newType, 5, 3) + 3);
-    new_vlmul = int8_t(BITS(newType, 2, 0) << 5) >> 5;
+    vsew = 1 << (extract64(newType, 3, 3) + 3);
+    new_vlmul = int8_t(extract64(newType, 0, 3) << 5) >> 5;
     vflmul = new_vlmul >= 0 ? 1 << new_vlmul : 1.0 / (1 << -new_vlmul);
     vlmax = (VLEN/vsew) * vflmul;
-    vta = BITS(newType, 6, 6);
-    vma = BITS(newType, 7, 7);
-    vediv = 1 << BITS(newType, 9, 8);
+    vta = extract64(newType, 6, 1);
+    vma = extract64(newType, 7, 1);
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
-           || vsew > ELEN
-           || vflmul < ((float)vsew / ELEN)
-           || vediv != 1
+           || vsew > std::min(vflmul, 1.0f) * ELEN
            || (newType >> 8) != 0;
 
     if (vill) {
@@ -426,8 +423,9 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
 void processor_t::set_debug(bool value)
 {
   debug = value;
-  if (ext)
-    ext->set_debug(value);
+
+  for (auto e : custom_extensions)
+    e.second->set_debug(value);
 }
 
 void processor_t::set_histogram(bool value)
@@ -452,12 +450,18 @@ void processor_t::enable_log_commits()
 void processor_t::reset()
 {
   state.reset(max_isa);
+#ifdef RISCV_ENABLE_DUAL_ENDIAN
+  if (mmu->is_target_big_endian())
+    state.mstatus |= MSTATUS_UBE | MSTATUS_SBE | MSTATUS_MBE;
+#endif
 
   state.mideleg = supports_extension('H') ? MIDELEG_FORCED_MASK : 0;
 
   state.dcsr.halt = halt_on_reset;
   halt_on_reset = false;
   set_csr(CSR_MSTATUS, state.mstatus);
+  state.vsstatus = state.mstatus & SSTATUS_VS_MASK;  // set UXL
+  set_csr(CSR_HSTATUS, state.hstatus);  // set VSXL
   VU.reset();
 
   if (n_pmp > 0) {
@@ -467,21 +471,31 @@ void processor_t::reset()
     set_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
   }
 
-  if (ext)
-    ext->reset(); // reset the extension
+   for (auto e : custom_extensions) // reset any extensions
+    e.second->reset();
 
   if (sim)
     sim->proc_reset(id);
 }
 
-// Count number of contiguous 0 bits starting from the LSB.
-static int ctz(reg_t val)
+extension_t* processor_t::get_extension()
 {
-  int res = 0;
-  if (val)
-    while ((val & 1) == 0)
-      val >>= 1, res++;
-  return res;
+  switch (custom_extensions.size()) {
+    case 0: return NULL;
+    case 1: return custom_extensions.begin()->second;
+    default:
+      fprintf(stderr, "processor_t::get_extension() is ambiguous when multiple extensions\n");
+      fprintf(stderr, "are present!\n");
+      abort();
+  }
+}
+
+extension_t* processor_t::get_extension(const char* name)
+{
+  auto it = custom_extensions.find(name);
+  if (it == custom_extensions.end())
+    abort();
+  return it->second;
 }
 
 void processor_t::set_pmp_num(reg_t n)
@@ -504,6 +518,31 @@ void processor_t::set_pmp_granularity(reg_t gran) {
   lg_pmp_granularity = ctz(gran);
 }
 
+void processor_t::set_mmu_capability(int cap)
+{
+  switch (cap) {
+    case IMPL_MMU_SV32:
+      set_impl(cap, true);
+      set_impl(IMPL_MMU, true);
+      break;
+    case IMPL_MMU_SV39:
+      set_impl(cap, true);
+      set_impl(IMPL_MMU, true);
+      break;
+    case IMPL_MMU_SV48:
+      set_impl(cap, true);
+      set_impl(IMPL_MMU_SV39, true);
+      set_impl(IMPL_MMU, true);
+      break;
+    default:
+      set_impl(IMPL_MMU_SV32, false);
+      set_impl(IMPL_MMU_SV39, false);
+      set_impl(IMPL_MMU_SV48, false);
+      set_impl(IMPL_MMU, false);
+      break;
+  }
+}
+
 void processor_t::take_interrupt(reg_t pending_interrupts)
 {
   reg_t enabled_interrupts, deleg, status, mie, m_enabled;
@@ -520,10 +559,10 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
   enabled_interrupts = pending_interrupts & ~state.mideleg & -m_enabled;
   if (enabled_interrupts == 0) {
     // HS-ints have higher priority over VS-ints
-    deleg = state.mideleg & ~MIP_VS_MASK;
+    deleg = state.mideleg & ~state.hideleg;
     status = (state.v) ? state.vsstatus : state.mstatus;
     hsie = get_field(status, MSTATUS_SIE);
-    hs_enabled = state.prv < PRV_S || (state.prv == PRV_S && hsie);
+    hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && hsie);
     enabled_interrupts = pending_interrupts & deleg & -hs_enabled;
     if (state.v && enabled_interrupts == 0) {
       // VS-ints have least priority and can only be taken with virt enabled
@@ -580,7 +619,7 @@ reg_t processor_t::legalize_privilege(reg_t prv)
   if (!supports_extension('U'))
     return PRV_M;
 
-  if ((prv == PRV_HS && !supports_extension('H')) || (prv == PRV_S && !supports_extension('S')))
+  if (prv == PRV_HS || (prv == PRV_S && !supports_extension('S')))
     return PRV_U;
 
   return prv;
@@ -605,27 +644,7 @@ void processor_t::set_virt(bool virt)
      * set_virt() is always used in conjucter with set_privilege() and
      * set_privilege() will flush TLB unconditionally.
      */
-    if (state.v and !virt) {
-      /*
-       * When transitioning from virt-on (VS/VU) to virt-off (HS/M)
-       * we should sync Guest/VM FS, VS, and XS state with Host FS,
-       * VS, and XS state.
-       */
-       if ((state.mstatus & SSTATUS_FS) == SSTATUS_FS) {
-         state.vsstatus |= SSTATUS_FS;
-         state.vsstatus |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-       }
-       if ((state.mstatus & SSTATUS_VS) == SSTATUS_VS) {
-         state.vsstatus |= SSTATUS_VS;
-         state.vsstatus |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-       }
-       if ((state.mstatus & SSTATUS_XS) == SSTATUS_XS) {
-         state.vsstatus |= SSTATUS_XS;
-         state.vsstatus |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-       }
-    }
     mask = SSTATUS_VS_MASK;
-    mask |= (supports_extension('F') ? SSTATUS_FS : 0);
     mask |= (supports_extension('V') ? SSTATUS_VS : 0);
     mask |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
     tmp = state.mstatus & mask;
@@ -648,11 +667,13 @@ void processor_t::enter_debug_mode(uint8_t cause)
 void processor_t::take_trap(trap_t& t, reg_t epc)
 {
   if (debug) {
-    fprintf(log_file, "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
-            id, t.name(), epc);
+    fprintf(log_file, max_xlen==32 ? "core %3d: exception %s, epc 0x%08" PRIx64 "\n" :
+                                     "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
+            id, t.name(), ERASE_32MSB(max_xlen,epc));
     if (t.has_tval())
-      fprintf(log_file, "core %3d:           tval 0x%016" PRIx64 "\n",
-              id, t.get_tval());
+      fprintf(log_file,  max_xlen==32 ? "core %3d:           tval 0x%08" PRIx64 "\n" :
+                                        "core %3d:           tval 0x%016" PRIx64 "\n",
+              id, ERASE_32MSB(max_xlen,t.get_tval()));
   }
 
   if (state.debug_mode) {
@@ -716,7 +737,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_SIE, 0);
     set_csr(CSR_MSTATUS, s);
     s = state.hstatus;
-    s = set_field(s, HSTATUS_SPVP, state.prv);
+    if (curr_virt)
+      s = set_field(s, HSTATUS_SPVP, state.prv);
     s = set_field(s, HSTATUS_SPV, curr_virt);
     s = set_field(s, HSTATUS_GVA, t.has_gva());
     set_csr(CSR_HSTATUS, s);
@@ -747,12 +769,22 @@ void processor_t::disasm(insn_t insn)
 {
   uint64_t bits = insn.bits() & ((1ULL << (8 * insn_length(insn.bits()))) - 1);
   if (last_pc != state.pc || last_bits != bits) {
+
+#ifdef RISCV_ENABLE_COMMITLOG
+    const char* sym = get_symbol(state.pc);
+    if (sym != nullptr)
+    {
+      fprintf(log_file, "core %3d: >>>>  %s\n", id, sym);
+    }
+#endif
+
     if (executions != 1) {
       fprintf(log_file, "core %3d: Executed %" PRIx64 " times\n", id, executions);
     }
 
-    fprintf(log_file, "core %3d: 0x%016" PRIx64 " (0x%08" PRIx64 ") %s\n",
-            id, state.pc, bits, disassembler->disassemble(insn).c_str());
+    fprintf(log_file, max_xlen==32 ? "core %3d: 0x%08" PRIx64 " (0x%08" PRIx32 ") %s\n" :
+                      "core %3d: 0x%016" PRIx64 " (0x%08" PRIx32 ") %s\n",
+            id, ERASE_32MSB(max_xlen,state.pc), bits, disassembler->disassemble(insn).c_str());
     last_pc = state.pc;
     last_bits = bits;
     executions = 1;
@@ -767,6 +799,39 @@ int processor_t::paddr_bits()
   return max_xlen == 64 ? 50 : 34;
 }
 
+reg_t processor_t::cal_satp(reg_t val) const
+{
+  reg_t reg_val = 0;
+  reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
+  mmu->flush_tlb();
+  if (max_xlen == 32) {
+    reg_val = val & (SATP32_PPN |
+                    (supports_impl(IMPL_MMU_SV32) ? SATP32_MODE : 0));
+  }
+
+  if (max_xlen == 64 && (get_field(val, SATP64_MODE) == SATP_MODE_OFF ||
+                         get_field(val, SATP64_MODE) == SATP_MODE_SV39 ||
+                         get_field(val, SATP64_MODE) == SATP_MODE_SV48)) {
+    reg_val = val & (SATP64_PPN | rv64_ppn_mask);
+    reg_t mode = get_field(val, SATP64_MODE);
+
+    switch(mode) {
+      case SATP_MODE_OFF:
+      default:
+        mode = SATP_MODE_OFF;
+        break;
+      case SATP_MODE_SV39:
+        mode = supports_impl(IMPL_MMU_SV39) ? SATP_MODE_SV39 : SATP_MODE_OFF;
+        break;
+      case SATP_MODE_SV48:
+        mode = supports_impl(IMPL_MMU_SV48) ? SATP_MODE_SV48 : SATP_MODE_OFF;
+        break;
+    }
+    reg_val = set_field(reg_val, SATP64_MODE, mode);
+  }
+
+  return reg_val;
+}
 void processor_t::set_csr(int which, reg_t val)
 {
 #if defined(RISCV_ENABLE_COMMITLOG)
@@ -780,9 +845,9 @@ void processor_t::set_csr(int which, reg_t val)
   reg_t supervisor_ints = supports_extension('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
   reg_t vssip_int = supports_extension('H') ? MIP_VSSIP : 0;
   reg_t hypervisor_ints = supports_extension('H') ? MIP_HS_MASK : 0;
-  reg_t coprocessor_ints = (ext != NULL) << IRQ_COP;
+  reg_t coprocessor_ints = (!custom_extensions.empty()) << IRQ_COP;
   reg_t delegable_ints = supervisor_ints | coprocessor_ints;
-  reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP;
+  reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP | MIP_MEIP;
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
     // If no PMPs are configured, disallow access to all.  Otherwise, allow
@@ -821,6 +886,12 @@ void processor_t::set_csr(int which, reg_t val)
 
   switch (which)
   {
+    case CSR_MENTROPY:
+      es.set_mentropy(val);
+      break;
+    case CSR_MNOISE:
+      es.set_mnoise(val);
+      break;
     case CSR_FFLAGS:
       dirty_fp_state;
       state.fflags = val & (FSR_AEXC >> FSR_AEXC_SHIFT);
@@ -840,8 +911,11 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
     case CSR_MSTATUS: {
+      bool has_page = supports_extension('S') && supports_impl(IMPL_MMU);
       if ((val ^ state.mstatus) &
-          (MSTATUS_MPP | MSTATUS_MPRV | MSTATUS_SUM | MSTATUS_MXR))
+          (MSTATUS_MPP | MSTATUS_MPRV
+           | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
+           | MSTATUS_MXR))
         mmu->flush_tlb();
 
       bool has_fs = supports_extension('S') || supports_extension('F')
@@ -851,11 +925,12 @@ void processor_t::set_csr(int which, reg_t val)
       bool has_gva = has_mpv;
 
       reg_t mask = MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPRV
-                 | (supports_extension('S') ? (MSTATUS_SUM | MSTATUS_SIE | MSTATUS_SPIE) : 0)
-                 | MSTATUS_MXR | MSTATUS_TW | MSTATUS_TVM | MSTATUS_TSR
+                 | (supports_extension('S') ? (MSTATUS_SIE | MSTATUS_SPIE) : 0)
+                 | MSTATUS_TW | MSTATUS_TSR
+                 | (has_page ? (MSTATUS_MXR | MSTATUS_SUM | MSTATUS_TVM) : 0)
                  | (has_fs ? MSTATUS_FS : 0)
                  | (has_vs ? MSTATUS_VS : 0)
-                 | (ext ? MSTATUS_XS : 0)
+                 | (!custom_extensions.empty() ? MSTATUS_XS : 0)
                  | (has_gva ? MSTATUS_GVA : 0)
                  | (has_mpv ? MSTATUS_MPV : 0);
 
@@ -903,6 +978,7 @@ void processor_t::set_csr(int which, reg_t val)
         (1 << CAUSE_LOAD_PAGE_FAULT) |
         (1 << CAUSE_STORE_PAGE_FAULT);
       mask |= supports_extension('H') ?
+        (1 << CAUSE_VIRTUAL_SUPERVISOR_ECALL) |
         (1 << CAUSE_FETCH_GUEST_PAGE_FAULT) |
         (1 << CAUSE_LOAD_GUEST_PAGE_FAULT) |
         (1 << CAUSE_VIRTUAL_INSTRUCTION) |
@@ -962,22 +1038,15 @@ void processor_t::set_csr(int which, reg_t val)
       state.mie = (state.mie & ~mask) | (val & mask);
       break;
     }
-    case CSR_SATP: {
-      reg_t reg_val = 0;
-      reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
-      mmu->flush_tlb();
-      if (max_xlen == 32)
-        reg_val = val & (SATP32_PPN | SATP32_MODE);
-      if (max_xlen == 64 && (get_field(val, SATP64_MODE) == SATP_MODE_OFF ||
-                             get_field(val, SATP64_MODE) == SATP_MODE_SV39 ||
-                             get_field(val, SATP64_MODE) == SATP_MODE_SV48))
-        reg_val = val & (SATP64_PPN | SATP64_MODE | rv64_ppn_mask);
+    case CSR_SATP:
+      if (!supports_impl(IMPL_MMU))
+        val = 0;
+
       if (state.v)
-        state.vsatp = reg_val;
+        state.vsatp = cal_satp(val);
       else
-        state.satp = reg_val;
+        state.satp = cal_satp(val);
       break;
-    }
     case CSR_SEPC:
       if (state.v)
         state.vsepc = val & ~(reg_t)1;
@@ -1013,18 +1082,8 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MSCRATCH: state.mscratch = val; break;
     case CSR_MCAUSE: state.mcause = val; break;
     case CSR_MTVAL: state.mtval = val; break;
-    case CSR_MTVAL2:
-      if (supports_extension('H'))
-        state.mtval2 = val;
-      else
-        throw trap_illegal_instruction(0);
-      break;
-    case CSR_MTINST:
-      if (supports_extension('H'))
-        state.mtinst = val;
-      else
-        throw trap_illegal_instruction(0);
-      break;
+    case CSR_MTVAL2: state.mtval2 = val; break;
+    case CSR_MTINST: state.mtinst = val; break;
     case CSR_MISA: {
       // the write is ignored if increasing IALIGN would misalign the PC
       if (!(val & (1L << ('C' - 'A'))) && (state.pc & 2))
@@ -1033,7 +1092,7 @@ void processor_t::set_csr(int which, reg_t val)
       if (!(val & (1L << ('F' - 'A'))))
         val &= ~(1L << ('D' - 'A'));
 
-      // allow MAFDC bits in MISA to be modified
+      // allow MAFDCB bits in MISA to be modified
       reg_t mask = 0;
       mask |= 1L << ('M' - 'A');
       mask |= 1L << ('A' - 'A');
@@ -1041,20 +1100,31 @@ void processor_t::set_csr(int which, reg_t val)
       mask |= 1L << ('D' - 'A');
       mask |= 1L << ('C' - 'A');
       mask |= 1L << ('H' - 'A');
+      mask |= 1L << ('B' - 'A');
       mask &= max_isa;
 
       state.misa = (val & mask) | (state.misa & ~mask);
+
+      // update the forced bits in MIDELEG
+      if (supports_extension('H'))
+          state.mideleg |= MIDELEG_FORCED_MASK;
+      else
+          state.mideleg &= ~MIDELEG_FORCED_MASK;
       break;
     }
     case CSR_HSTATUS: {
-      reg_t mask = HSTATUS_VTSR | HSTATUS_VTW | HSTATUS_VTVM |
-                   HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
+      reg_t mask = HSTATUS_VTSR | HSTATUS_VTW
+                   | (supports_impl(IMPL_MMU) ? HSTATUS_VTVM : 0)
+                   | HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
+      state.hstatus = set_field(state.hstatus, HSTATUS_VSXL, xlen_to_uxl(max_xlen));
       state.hstatus = (state.hstatus & ~mask) | (val & mask);
       break;
     }
     case CSR_HEDELEG: {
       reg_t mask =
         (1 << CAUSE_MISALIGNED_FETCH) |
+        (1 << CAUSE_FETCH_ACCESS) |
+        (1 << CAUSE_ILLEGAL_INSTRUCTION) |
         (1 << CAUSE_BREAKPOINT) |
         (1 << CAUSE_MISALIGNED_LOAD) |
         (1 << CAUSE_LOAD_ACCESS) |
@@ -1077,10 +1147,6 @@ void processor_t::set_csr(int which, reg_t val)
       state.mie = (state.mie & ~mask) | (val & mask);
       break;
     }
-    case CSR_HTIMEDELTA:
-    case CSR_HTIMEDELTAH:
-      throw trap_illegal_instruction(0);
-      break;
     case CSR_HCOUNTEREN:
       state.hcounteren = val;
       break;
@@ -1088,7 +1154,7 @@ void processor_t::set_csr(int which, reg_t val)
       /* Ignore */
       break;
     case CSR_HTVAL:
-      state.htinst = val;
+      state.htval = val;
       break;
     case CSR_HIP: {
       reg_t mask = MIP_VSSIP;
@@ -1112,16 +1178,21 @@ void processor_t::set_csr(int which, reg_t val)
       if (max_xlen == 64 && (get_field(val, HGATP64_MODE) == HGATP_MODE_OFF ||
                              get_field(val, HGATP64_MODE) == HGATP_MODE_SV39X4 ||
                              get_field(val, HGATP64_MODE) == HGATP_MODE_SV48X4))
-        reg_val = val & (HGATP64_PPN | HGATP64_MODE | rv64_ppn_mask);
+        reg_val = val & (HGATP64_MODE | (HGATP64_PPN & rv64_ppn_mask));
       state.hgatp = reg_val;
       break;
     }
     case CSR_VSSTATUS: {
       reg_t mask = SSTATUS_VS_MASK;
-      mask |= (supports_extension('F') ? SSTATUS_FS : 0);
       mask |= (supports_extension('V') ? SSTATUS_VS : 0);
-      mask |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
       state.vsstatus = (state.vsstatus & ~mask) | (val & mask);
+      state.vsstatus &= (xlen == 64 ? ~SSTATUS64_SD : ~SSTATUS32_SD);
+      if (((state.vsstatus & SSTATUS_FS) == SSTATUS_FS) ||
+          ((state.vsstatus & SSTATUS_VS) == SSTATUS_VS) ||
+          ((state.vsstatus & SSTATUS_XS) == SSTATUS_XS)) {
+         state.vsstatus |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
+      }
+      state.vsstatus = set_field(state.vsstatus, SSTATUS_UXL, xlen_to_uxl(max_xlen));
       break;
     }
     case CSR_VSIE: {
@@ -1139,19 +1210,12 @@ void processor_t::set_csr(int which, reg_t val)
       state.mip = (state.mip & ~mask) | ((val << 1) & mask);
       break;
     }
-    case CSR_VSATP: {
-      reg_t reg_val = 0;
-      reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
-      mmu->flush_tlb();
-      if (max_xlen == 32)
-        reg_val = val & (SATP32_PPN | SATP32_MODE);
-      if (max_xlen == 64 && (get_field(val, SATP64_MODE) == SATP_MODE_OFF ||
-                             get_field(val, SATP64_MODE) == SATP_MODE_SV39 ||
-                             get_field(val, SATP64_MODE) == SATP_MODE_SV48))
-        reg_val = val & (SATP64_PPN | SATP64_MODE | rv64_ppn_mask);
-      state.vsatp = reg_val;
+    case CSR_VSATP:
+      if (!supports_impl(IMPL_MMU))
+        val = 0;
+
+      state.vsatp = cal_satp(val);
       break;
-    }
     case CSR_TSELECT:
       if (val < state.num_triggers) {
         state.tselect = val;
@@ -1238,6 +1302,7 @@ void processor_t::set_csr(int which, reg_t val)
       LOG_CSR(CSR_MSTATUS);
       LOG_CSR(CSR_FFLAGS);
       LOG_CSR(CSR_FRM);
+      LOG_CSR(CSR_FCSR);
       break;
     case CSR_VCSR:
       LOG_CSR(CSR_MSTATUS);
@@ -1301,6 +1366,8 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_DPC:
     case CSR_DSCRATCH0:
     case CSR_DSCRATCH1:
+    case CSR_MENTROPY:
+    case CSR_MNOISE:
       LOG_CSR(which);
       break;
   }
@@ -1310,233 +1377,256 @@ void processor_t::set_csr(int which, reg_t val)
 // Note that get_csr is sometimes called when read side-effects should not
 // be actioned.  In other words, Spike cannot currently support CSRs with
 // side effects on reads.
-reg_t processor_t::get_csr(int which)
+reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 {
   uint32_t ctr_en = -1;
   if (state.prv < PRV_M)
     ctr_en &= state.mcounteren;
-  if (state.v)
-    ctr_en &= state.hcounteren;
   if (state.prv < PRV_S)
     ctr_en &= state.scounteren;
   bool ctr_ok = (ctr_en >> (which & 31)) & 1;
+  if (state.v)
+    ctr_en &= state.hcounteren;
+  bool ctr_v_ok = (ctr_en >> (which & 31)) & 1;
 
-  if (ctr_ok) {
-    if (which >= CSR_HPMCOUNTER3 && which <= CSR_HPMCOUNTER31)
-      return 0;
-    if (xlen == 32 && which >= CSR_HPMCOUNTER3H && which <= CSR_HPMCOUNTER31H)
-      return 0;
+  reg_t res = 0;
+#define ret(n) do { \
+    res = (n); \
+    goto out; \
+  } while (false)
+
+  if ((which >= CSR_HPMCOUNTER3 && which <= CSR_HPMCOUNTER31) ||
+      (xlen == 32 && which >= CSR_HPMCOUNTER3H && which <= CSR_HPMCOUNTER31H)) {
+    if (!ctr_ok)
+      goto throw_illegal;
+    if (!ctr_v_ok)
+      goto throw_virtual;
+    ret(0);
   }
   if (which >= CSR_MHPMCOUNTER3 && which <= CSR_MHPMCOUNTER31)
-    return 0;
+    ret(0);
   if (xlen == 32 && which >= CSR_MHPMCOUNTER3H && which <= CSR_MHPMCOUNTER31H)
-    return 0;
+    ret(0);
   if (which >= CSR_MHPMEVENT3 && which <= CSR_MHPMEVENT31)
-    return 0;
+    ret(0);
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
     // If n_pmp is zero, that means pmp is not implemented hence raise trap if it tries to access the csr
     if (n_pmp == 0)
-      throw trap_illegal_instruction(0);
+      goto throw_illegal;
     reg_t i = which - CSR_PMPADDR0;
     if ((state.pmpcfg[i] & PMP_A) >= PMP_NAPOT)
-      return state.pmpaddr[i] | (~pmp_tor_mask() >> 1);
+      ret(state.pmpaddr[i] | (~pmp_tor_mask() >> 1));
     else
-      return state.pmpaddr[i] & pmp_tor_mask();
+      ret(state.pmpaddr[i] & pmp_tor_mask());
   }
 
   if (which >= CSR_PMPCFG0 && which < CSR_PMPCFG0 + state.max_pmp / 4) {
     require((which & ((xlen / 32) - 1)) == 0);
 
-    reg_t res = 0;
+    reg_t cfg_res = 0;
     for (size_t i0 = (which - CSR_PMPCFG0) * 4, i = i0; i < i0 + xlen / 8 && i < state.max_pmp; i++)
-      res |= reg_t(state.pmpcfg[i]) << (8 * (i - i0));
-    return res;
+      cfg_res |= reg_t(state.pmpcfg[i]) << (8 * (i - i0));
+    ret(cfg_res);
   }
 
   switch (which)
   {
+    case CSR_MENTROPY:
+      if(!supports_extension('K'))
+          break;
+      return es.get_mentropy();
+    case CSR_MNOISE:
+      if(!supports_extension('K'))
+          break;
+      return es.get_mnoise();
     case CSR_FFLAGS:
       require_fp;
       if (!supports_extension('F'))
         break;
-      return state.fflags;
+      ret(state.fflags);
     case CSR_FRM:
       require_fp;
       if (!supports_extension('F'))
         break;
-      return state.frm;
+      ret(state.frm);
     case CSR_FCSR:
       require_fp;
       if (!supports_extension('F'))
         break;
-      return (state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT);
+      ret((state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT));
     case CSR_VCSR:
+      require_vector_vs;
       if (!supports_extension('V'))
         break;
-      return (VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT);
+      ret((VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT));
     case CSR_INSTRET:
     case CSR_CYCLE:
-      if (ctr_ok)
-        return state.minstret;
-      if (state.v &&
-          ((state.mcounteren >> (which & 31)) & 1) &&
-          !((state.hcounteren >> (which & 31)) & 1)) {
-        throw trap_virtual_instruction(0);
-      }
-      break;
+      if (!ctr_ok)
+        goto throw_illegal;
+      if (!ctr_v_ok)
+        goto throw_virtual;
+      ret(state.minstret);
     case CSR_MINSTRET:
     case CSR_MCYCLE:
-      return state.minstret;
+      ret(state.minstret);
     case CSR_INSTRETH:
     case CSR_CYCLEH:
-      if (ctr_ok && xlen == 32)
-        return state.minstret >> 32;
-      if (state.v &&
-          ((state.mcounteren >> (which & 31)) & 1) &&
-          !((state.hcounteren >> (which & 31)) & 1)) {
-        throw trap_virtual_instruction(0);
-      }
-      break;
+      if (!ctr_ok || xlen != 32)
+        goto throw_illegal;
+      if (!ctr_v_ok)
+        goto throw_virtual;
+      ret(state.minstret >> 32);
     case CSR_MINSTRETH:
     case CSR_MCYCLEH:
       if (xlen == 32)
-        return state.minstret >> 32;
+        ret(state.minstret >> 32);
       break;
-    case CSR_SCOUNTEREN: return state.scounteren;
-    case CSR_MCOUNTEREN: return state.mcounteren;
-    case CSR_MCOUNTINHIBIT: return 0;
+    case CSR_SCOUNTEREN: ret(state.scounteren);
+    case CSR_MCOUNTEREN:
+      if (!supports_extension('U'))
+        break;
+      ret(state.mcounteren);
+    case CSR_MCOUNTINHIBIT: ret(0);
     case CSR_SSTATUS: {
-      reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-                 | (supports_extension('V') ? SSTATUS_VS : 0)
+      reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_UBE | SSTATUS_SPP
+                 | SSTATUS_FS | (supports_extension('V') ? SSTATUS_VS : 0)
                  | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_UXL;
       reg_t sstatus = state.mstatus & mask;
       if ((sstatus & SSTATUS_FS) == SSTATUS_FS ||
-          (sstatus & SSTATUS_XS) == SSTATUS_XS)
+          (sstatus & SSTATUS_XS) == SSTATUS_XS ||
+          (sstatus & SSTATUS_VS) == SSTATUS_VS)
         sstatus |= (xlen == 32 ? SSTATUS32_SD : SSTATUS64_SD);
-      return sstatus;
+      ret(sstatus);
     }
     case CSR_SIP: {
       if (state.v) {
-        return (state.mip & state.hideleg & MIP_VS_MASK) >> 1;
+        ret((state.mip & state.hideleg & MIP_VS_MASK) >> 1);
       } else {
-        return state.mip & state.mideleg & ~MIP_HS_MASK;
+        ret(state.mip & state.mideleg & ~MIP_HS_MASK);
       }
     }
     case CSR_SIE: {
       if (state.v) {
-        return (state.mie & state.hideleg & MIP_VS_MASK) >> 1;
+        ret((state.mie & state.hideleg & MIP_VS_MASK) >> 1);
       } else {
-        return state.mie & state.mideleg & ~MIP_HS_MASK;
+        ret(state.mie & state.mideleg & ~MIP_HS_MASK);
       }
     }
     case CSR_SEPC: {
       if (state.v) {
-        return state.vsepc & pc_alignment_mask();
+        ret(state.vsepc & pc_alignment_mask());
       } else {
-        return state.sepc & pc_alignment_mask();
+        ret(state.sepc & pc_alignment_mask());
       }
     }
     case CSR_STVAL: {
       if (state.v) {
-        return state.vstval;
+        ret(state.vstval);
       } else {
-        return state.stval;
+        ret(state.stval);
       }
     }
     case CSR_STVEC: {
       if (state.v) {
-        return state.vstvec;
+        ret(state.vstvec);
       } else {
-        return state.stvec;
+        ret(state.stvec);
       }
     }
     case CSR_SCAUSE: {
       if (state.v) {
         if (max_xlen > xlen)
-          return state.vscause | ((state.vscause >> (max_xlen-1)) << (xlen-1));
-        return state.vscause;
+          ret(state.vscause | ((state.vscause >> (max_xlen-1)) << (xlen-1)));
+        ret(state.vscause);
       } else {
         if (max_xlen > xlen)
-          return state.scause | ((state.scause >> (max_xlen-1)) << (xlen-1));
-        return state.scause;
+          ret(state.scause | ((state.scause >> (max_xlen-1)) << (xlen-1)));
+        ret(state.scause);
       }
     }
     case CSR_SATP: {
-      if (get_field(state.mstatus, MSTATUS_TVM))
-        require_privilege(PRV_M);
       if (state.v) {
         if (get_field(state.hstatus, HSTATUS_VTVM))
-          throw trap_virtual_instruction(0);
-        return state.vsatp;
+          goto throw_virtual;
+        ret(state.vsatp);
       } else {
-        return state.satp;
+        if (get_field(state.mstatus, MSTATUS_TVM))
+          require_privilege(PRV_M);
+        ret(state.satp);
       }
     }
     case CSR_SSCRATCH: {
       if (state.v) {
-        return state.vsscratch;
+        ret(state.vsscratch);
       } else {
-        return state.sscratch;
+        ret(state.sscratch);
       }
     }
-    case CSR_MSTATUS: return state.mstatus;
-    case CSR_MIP: return state.mip;
-    case CSR_MIE: return state.mie;
-    case CSR_MEPC: return state.mepc & pc_alignment_mask();
-    case CSR_MSCRATCH: return state.mscratch;
-    case CSR_MCAUSE: return state.mcause;
-    case CSR_MTVAL: return state.mtval;
+    case CSR_MSTATUS: ret(state.mstatus);
+    case CSR_MSTATUSH:
+      if (xlen == 32)
+        ret((state.mstatus >> 32) & (MSTATUSH_SBE | MSTATUSH_MBE));
+      break;
+    case CSR_MIP: ret(state.mip);
+    case CSR_MIE: ret(state.mie);
+    case CSR_MEPC: ret(state.mepc & pc_alignment_mask());
+    case CSR_MSCRATCH: ret(state.mscratch);
+    case CSR_MCAUSE: ret(state.mcause);
+    case CSR_MTVAL: ret(state.mtval);
     case CSR_MTVAL2:
       if (supports_extension('H'))
-        return state.mtval2;
+        ret(state.mtval2);
       break;
     case CSR_MTINST:
       if (supports_extension('H'))
-        return state.mtinst;
+        ret(state.mtinst);
       break;
-    case CSR_MISA: return state.misa;
-    case CSR_MARCHID: return 5;
-    case CSR_MIMPID: return 0;
-    case CSR_MVENDORID: return 0;
-    case CSR_MHARTID: return id;
-    case CSR_MTVEC: return state.mtvec;
+    case CSR_MISA: ret(state.misa);
+    case CSR_MARCHID: ret(5);
+    case CSR_MIMPID: ret(0);
+    case CSR_MVENDORID: ret(0);
+    case CSR_MHARTID: ret(id);
+    case CSR_MTVEC: ret(state.mtvec);
     case CSR_MEDELEG:
       if (!supports_extension('S'))
         break;
-      return state.medeleg;
+      ret(state.medeleg);
     case CSR_MIDELEG:
       if (!supports_extension('S'))
         break;
-      return state.mideleg;
-    case CSR_HSTATUS: return state.hstatus;
-    case CSR_HEDELEG: return state.hedeleg;
-    case CSR_HIDELEG: return state.hideleg;
-    case CSR_HIE: return state.mie & MIP_HS_MASK;
-    case CSR_HCOUNTEREN: return state.hcounteren;
-    case CSR_HGEIE: return 0;
-    case CSR_HTVAL: return state.htval;
-    case CSR_HIP: return state.mip & MIP_HS_MASK;
-    case CSR_HVIP: return state.mip & MIP_VS_MASK;
-    case CSR_HTINST: return state.htinst;
-    case CSR_HGATP: return state.hgatp;
-    case CSR_HGEIP: return 0;
+      ret(state.mideleg);
+    case CSR_HSTATUS: ret(state.hstatus);
+    case CSR_HEDELEG: ret(state.hedeleg);
+    case CSR_HIDELEG: ret(state.hideleg);
+    case CSR_HIE: ret(state.mie & MIP_HS_MASK);
+    case CSR_HCOUNTEREN: ret(state.hcounteren);
+    case CSR_HGEIE: ret(0);
+    case CSR_HTVAL: ret(state.htval);
+    case CSR_HIP: ret(state.mip & MIP_HS_MASK);
+    case CSR_HVIP: ret(state.mip & MIP_VS_MASK);
+    case CSR_HTINST: ret(state.htinst);
+    case CSR_HGATP: {
+      if (!state.v && get_field(state.mstatus, MSTATUS_TVM))
+        require_privilege(PRV_M);
+      ret(state.hgatp);
+    }
+    case CSR_HGEIP: ret(0);
     case CSR_VSSTATUS: {
       reg_t mask = SSTATUS_VS_MASK;
-      mask |= (supports_extension('F') ? SSTATUS_FS : 0);
       mask |= (supports_extension('V') ? SSTATUS_VS : 0);
       mask |= (xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD);
-      return state.vsstatus & mask;
+      ret(state.vsstatus & mask);
     }
-    case CSR_VSIE: return (state.mie & state.hideleg & MIP_VS_MASK) >> 1;
-    case CSR_VSTVEC: return state.vstvec;
-    case CSR_VSSCRATCH: return state.vsscratch;
-    case CSR_VSEPC: return state.vsepc & pc_alignment_mask();
-    case CSR_VSCAUSE: return state.vscause;
-    case CSR_VSTVAL: return state.vstval;
-    case CSR_VSIP: return (state.mip & state.hideleg & MIP_VS_MASK) >> 1;
-    case CSR_VSATP: return state.vsatp;
-    case CSR_TSELECT: return state.tselect;
+    case CSR_VSIE: ret((state.mie & state.hideleg & MIP_VS_MASK) >> 1);
+    case CSR_VSTVEC: ret(state.vstvec);
+    case CSR_VSSCRATCH: ret(state.vsscratch);
+    case CSR_VSEPC: ret(state.vsepc & pc_alignment_mask());
+    case CSR_VSCAUSE: ret(state.vscause);
+    case CSR_VSTVAL: ret(state.vstval);
+    case CSR_VSIP: ret((state.mip & state.hideleg & MIP_VS_MASK) >> 1);
+    case CSR_VSATP: ret(state.vsatp);
+    case CSR_TSELECT: ret(state.tselect);
     case CSR_TDATA1:
       if (state.tselect < state.num_triggers) {
         reg_t v = 0;
@@ -1556,19 +1646,19 @@ reg_t processor_t::get_csr(int which)
         v = set_field(v, MCONTROL_EXECUTE, mc->execute);
         v = set_field(v, MCONTROL_STORE, mc->store);
         v = set_field(v, MCONTROL_LOAD, mc->load);
-        return v;
+        ret(v);
       } else {
-        return 0;
+        ret(0);
       }
       break;
     case CSR_TDATA2:
       if (state.tselect < state.num_triggers) {
-        return state.tdata2[state.tselect];
+        ret(state.tdata2[state.tselect]);
       } else {
-        return 0;
+        ret(0);
       }
       break;
-    case CSR_TDATA3: return 0;
+    case CSR_TDATA3: ret(0);
     case CSR_DCSR:
       {
         if (!state.debug_mode)
@@ -1584,57 +1674,90 @@ reg_t processor_t::get_csr(int which)
         v = set_field(v, DCSR_CAUSE, state.dcsr.cause);
         v = set_field(v, DCSR_STEP, state.dcsr.step);
         v = set_field(v, DCSR_PRV, state.dcsr.prv);
-        return v;
+        ret(v);
       }
     case CSR_DPC:
       if (!state.debug_mode)
         break;
-      return state.dpc & pc_alignment_mask();
+      ret(state.dpc & pc_alignment_mask());
     case CSR_DSCRATCH0:
       if (!state.debug_mode)
         break;
-      return state.dscratch0;
+      ret(state.dscratch0);
     case CSR_DSCRATCH1:
       if (!state.debug_mode)
         break;
-      return state.dscratch1;
+      ret(state.dscratch1);
     case CSR_VSTART:
       require_vector_vs;
       if (!supports_extension('V'))
         break;
-      return VU.vstart;
+      ret(VU.vstart);
     case CSR_VXSAT:
       require_vector_vs;
       if (!supports_extension('V'))
         break;
-      return VU.vxsat;
+      ret(VU.vxsat);
     case CSR_VXRM:
       require_vector_vs;
       if (!supports_extension('V'))
         break;
-      return VU.vxrm;
+      ret(VU.vxrm);
     case CSR_VL:
       require_vector_vs;
       if (!supports_extension('V'))
         break;
-      return VU.vl;
+      ret(VU.vl);
     case CSR_VTYPE:
       require_vector_vs;
       if (!supports_extension('V'))
         break;
-      return VU.vtype;
+      ret(VU.vtype);
     case CSR_VLENB:
       require_vector_vs;
       if (!supports_extension('V'))
         break;
-      return VU.vlenb;
+      ret(VU.vlenb);
   }
-  throw trap_illegal_instruction(0);
+
+#undef ret
+
+  // If we get here, the CSR doesn't exist.  Unimplemented CSRs always throw
+  // illegal-instruction exceptions, not virtual-instruction exceptions.
+throw_illegal:
+  throw trap_illegal_instruction(insn.bits());
+
+throw_virtual:
+  throw trap_virtual_instruction(insn.bits());
+
+out:
+  // Check permissions.  Raise virtual-instruction exception if V=1,
+  // privileges are insufficient, and the CSR belongs to supervisor or
+  // hypervisor.  Raise illegal-instruction exception otherwise.
+
+  if (peek)
+    return res;
+
+  unsigned csr_priv = get_field(which, 0x300);
+  bool csr_read_only = get_field(which, 0xC00) == 3;
+  unsigned priv = state.prv == PRV_S && !state.v ? PRV_HS : state.prv;
+
+  if ((csr_priv == PRV_S && !supports_extension('S')) ||
+      (csr_priv == PRV_HS && !supports_extension('H')))
+    goto throw_illegal;
+
+  if ((write && csr_read_only) || priv < csr_priv) {
+    if (state.v && csr_priv <= PRV_HS)
+      goto throw_virtual;
+    goto throw_illegal;
+  }
+
+  return res;
 }
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)
 {
-  throw trap_illegal_instruction(0);
+  throw trap_illegal_instruction(insn.bits());
 }
 
 insn_func_t processor_t::decode_insn(insn_t insn)
@@ -1643,11 +1766,12 @@ insn_func_t processor_t::decode_insn(insn_t insn)
   size_t idx = insn.bits() % OPCODE_CACHE_SIZE;
   insn_desc_t desc = opcode_cache[idx];
 
-  if (unlikely(insn.bits() != desc.match)) {
+  if (unlikely(insn.bits() != desc.match || !(xlen == 64 ? desc.rv64 : desc.rv32))) {
     // fall back to linear search
+    int cnt = 0;
     insn_desc_t* p = &instructions[0];
-    while ((insn.bits() & p->mask) != p->match)
-      p++;
+    while ((insn.bits() & p->mask) != p->match || !(xlen == 64 ? p->rv64 : p->rv32))
+      p++, cnt++;
     desc = *p;
 
     if (p->mask != 0 && p > &instructions[0]) {
@@ -1696,21 +1820,35 @@ void processor_t::register_extension(extension_t* x)
     for (auto disasm_insn : x->get_disasms())
       disassembler->add_insn(disasm_insn);
 
-  if (ext != NULL)
-    throw std::logic_error("only one extension may be registered");
-  ext = x;
+  if (!custom_extensions.insert(std::make_pair(x->name(), x)).second) {
+    fprintf(stderr, "extensions must have unique names (got two named \"%s\"!)\n", x->name());
+    abort();
+  }
+
   x->set_processor(this);
 }
 
 void processor_t::register_base_instructions()
 {
   #define DECLARE_INSN(name, match, mask) \
-    insn_bits_t name##_match = (match), name##_mask = (mask);
+    insn_bits_t name##_match = (match), name##_mask = (mask); \
+    unsigned name##_arch_en = (unsigned)-1;
+  #define DECLARE_RV32_ONLY(name) {name##_arch_en = 32;}
+  #define DECLARE_RV64_ONLY(name) {name##_arch_en = 64;}
+
   #include "encoding.h"
+  #undef DECLARE_RV64_INSN
+  #undef DECLARE_RV32_INSN
   #undef DECLARE_INSN
 
   #define DEFINE_INSN(name) \
-    REGISTER_INSN(this, name, name##_match, name##_mask)
+    extern reg_t rv32_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t rv64_##name(processor_t*, insn_t, reg_t); \
+    register_insn((insn_desc_t){ \
+      name##_match, \
+      name##_mask, \
+      (name##_arch_en & 32) ? rv32_##name : nullptr, \
+      (name##_arch_en & 64) ? rv64_##name : nullptr});
   #include "insn_list.h"
   #undef DEFINE_INSN
 

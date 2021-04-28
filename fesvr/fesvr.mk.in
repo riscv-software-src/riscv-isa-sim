@@ -1,4 +1,5 @@
 fesvr_hdrs = \
+  byteorder.h \
   elf.h \
   elfloader.h \
   htif.h \
@@ -17,6 +18,8 @@ fesvr_hdrs = \
 fesvr_CFLAGS = -fPIC
 
 fesvr_install_hdrs = $(fesvr_hdrs)
+
+fesvr_install_config_hdr = yes
 
 fesvr_install_lib = yes
 

@@ -10,6 +10,7 @@
 #include <sys/mman.h>
 #include <assert.h>
 #include <unistd.h>
+#include <stdexcept>
 #include <stdlib.h>
 #include <stdio.h>
 #include <vector>
@@ -31,7 +32,7 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
   assert(size >= sizeof(Elf64_Ehdr));
   const Elf64_Ehdr* eh64 = (const Elf64_Ehdr*)buf;
   assert(IS_ELF32(*eh64) || IS_ELF64(*eh64));
-  assert(IS_ELFLE(*eh64));
+  assert(IS_ELFLE(*eh64) || IS_ELFBE(*eh64));
   assert(IS_ELF_EXEC(*eh64));
   assert(IS_ELF_RISCV(*eh64) || IS_ELF_EM_NONE(*eh64));
   assert(IS_ELF_VCURRENT(*eh64));
@@ -83,10 +84,23 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
     } \
   } while(0)
 
-  if (IS_ELF32(*eh64))
-    LOAD_ELF(Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym, from_le);
-  else
-    LOAD_ELF(Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym, from_le);
+  if (IS_ELFLE(*eh64)) {
+    memif->set_target_endianness(memif_endianness_little);
+    if (IS_ELF32(*eh64))
+      LOAD_ELF(Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym, from_le);
+    else
+      LOAD_ELF(Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym, from_le);
+  } else {
+#ifndef RISCV_ENABLE_DUAL_ENDIAN
+    throw std::invalid_argument("Specified ELF is big endian.  Configure with --enable-dual-endian to enable support");
+#else
+    memif->set_target_endianness(memif_endianness_big);
+    if (IS_ELF32(*eh64))
+      LOAD_ELF(Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym, from_be);
+    else
+      LOAD_ELF(Elf64_Ehdr, Elf64_Phdr, Elf64_Shdr, Elf64_Sym, from_be);
+#endif
+  }
 
   munmap(buf, size);
 

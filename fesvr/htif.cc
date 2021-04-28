@@ -64,7 +64,8 @@ htif_t::htif_t(const std::vector<std::string>& args) : htif_t()
   for (unsigned int i = 0; i < args.size(); i++) {
     argv[i+1] = (char *) args[i].c_str();
   }
-
+  //Set line size as 16 by default.
+  line_size = 16;
   parse_arguments(argc, argv);
   register_devices();
 }
@@ -142,6 +143,25 @@ void htif_t::load_program()
     reg_t dummy_entry;
     load_payload(payload, &dummy_entry);
   }
+
+   for (auto i : symbols)
+   {
+     auto it = addr2symbol.find(i.second);
+     if ( it == addr2symbol.end())
+       addr2symbol[i.second] = i.first;
+   }
+
+   return;
+}
+
+const char* htif_t::get_symbol(uint64_t addr)
+{
+  auto it = addr2symbol.find(addr);
+
+  if(it == addr2symbol.end())
+      return nullptr;
+
+  return it->second.c_str();
 }
 
 void htif_t::stop()
@@ -155,12 +175,13 @@ void htif_t::stop()
     assert(sigs && "can't open signature file!");
     sigs << std::setfill('0') << std::hex;
 
-    const addr_t incr = 16;
-    assert(sig_len % incr == 0);
-    for (addr_t i = 0; i < sig_len; i += incr)
+    for (addr_t i = 0; i < sig_len; i += line_size)
     {
-      for (addr_t j = incr; j > 0; j--)
-        sigs << std::setw(2) << (uint16_t)buf[i+j-1];
+      for (addr_t j = line_size; j > 0; j--)
+          if (i+j <= sig_len)
+            sigs << std::setw(2) << (uint16_t)buf[i+j-1];
+          else
+            sigs << std::setw(2) << (uint16_t)0;
       sigs << '\n';
     }
 
@@ -195,8 +216,8 @@ int htif_t::run()
 
   while (!signal_exit && exitcode == 0)
   {
-    if (auto tohost = from_le(mem.read_uint64(tohost_addr))) {
-      mem.write_uint64(tohost_addr, 0);
+    if (auto tohost = from_target(mem.read_uint64(tohost_addr))) {
+      mem.write_uint64(tohost_addr, target_endian<uint64_t>::zero);
       command_t cmd(mem, tohost, fromhost_callback);
       device_list.handle_command(cmd);
     } else {
@@ -205,8 +226,8 @@ int htif_t::run()
 
     device_list.tick();
 
-    if (!fromhost_queue.empty() && mem.read_uint64(fromhost_addr) == 0) {
-      mem.write_uint64(fromhost_addr, to_le(fromhost_queue.front()));
+    if (!fromhost_queue.empty() && !mem.read_uint64(fromhost_addr)) {
+      mem.write_uint64(fromhost_addr, to_target(fromhost_queue.front()));
       fromhost_queue.pop();
     }
   }
@@ -257,6 +278,10 @@ void htif_t::parse_arguments(int argc, char ** argv)
       case HTIF_LONG_OPTIONS_OPTIND + 4:
         payloads.push_back(optarg);
         break;
+      case HTIF_LONG_OPTIONS_OPTIND + 5:
+        line_size = atoi(optarg);
+
+        break;
       case '?':
         if (!opterr)
           break;
@@ -290,6 +315,10 @@ void htif_t::parse_arguments(int argc, char ** argv)
         else if (arg.find("+payload=") == 0) {
           c = HTIF_LONG_OPTIONS_OPTIND + 4;
           optarg = optarg + 9;
+        }
+        else if(arg.find("+signature-granularity=")==0){
+            c = HTIF_LONG_OPTIONS_OPTIND + 5;
+            optarg = optarg + 23;
         }
         else if (arg.find("+permissive-off") == 0) {
           if (opterr)

@@ -3,8 +3,10 @@
 #ifndef _RISCV_ARITH_H
 #define _RISCV_ARITH_H
 
+#include <cassert>
 #include <cstdint>
 #include <climits>
+#include <cstddef>
 
 inline uint64_t mulhu(uint64_t a, uint64_t b)
 {
@@ -106,6 +108,88 @@ T sat_subu(T x, T y, bool &sat)
   res &= -(res <= x);
 
   return res;
+}
+
+static inline uint64_t extract64(uint64_t val, int pos, int len)
+{
+  assert(pos >= 0 && len > 0 && len <= 64 - pos);
+  return (val >> pos) & (~UINT64_C(0) >> (64 - len));
+}
+
+static inline uint64_t make_mask64(int pos, int len)
+{
+    assert(pos >= 0 && len > 0 && pos < 64 && len <= 64);
+    return (UINT64_MAX >> (64 - len)) << pos;
+}
+
+static inline int popcount(uint64_t val)
+{
+  val = (val & 0x5555555555555555U) + ((val >>  1) & 0x5555555555555555U);
+  val = (val & 0x3333333333333333U) + ((val >>  2) & 0x3333333333333333U);
+  val = (val & 0x0f0f0f0f0f0f0f0fU) + ((val >>  4) & 0x0f0f0f0f0f0f0f0fU);
+  val = (val & 0x00ff00ff00ff00ffU) + ((val >>  8) & 0x00ff00ff00ff00ffU);
+  val = (val & 0x0000ffff0000ffffU) + ((val >> 16) & 0x0000ffff0000ffffU);
+  val = (val & 0x00000000ffffffffU) + ((val >> 32) & 0x00000000ffffffffU);
+  return val;
+}
+
+static inline int ctz(uint64_t val)
+{
+  if (!val)
+    return 0;
+
+  int res = 0;
+
+  if ((val << 32) == 0) res += 32, val >>= 32;
+  if ((val << 48) == 0) res += 16, val >>= 16;
+  if ((val << 56) == 0) res += 8, val >>= 8;
+  if ((val << 60) == 0) res += 4, val >>= 4;
+  if ((val << 62) == 0) res += 2, val >>= 2;
+  if ((val << 63) == 0) res += 1, val >>= 1;
+
+  return res;
+}
+
+static inline int clz(uint64_t val)
+{
+  if (!val)
+    return 0;
+
+  int res = 0;
+
+  if ((val >> 32) == 0) res += 32, val <<= 32;
+  if ((val >> 48) == 0) res += 16, val <<= 16;
+  if ((val >> 56) == 0) res += 8, val <<= 8;
+  if ((val >> 60) == 0) res += 4, val <<= 4;
+  if ((val >> 62) == 0) res += 2, val <<= 2;
+  if ((val >> 63) == 0) res += 1, val <<= 1;
+
+  return res;
+}
+
+static inline int log2(uint64_t val)
+{
+  if (!val)
+    return 0;
+
+  return 63 - clz(val);
+}
+
+static inline uint64_t xperm(uint64_t rs1, uint64_t rs2, size_t sz_log2, size_t len)
+{
+  uint64_t r = 0;
+  uint64_t sz = 1LL << sz_log2;
+  uint64_t mask = (1LL << sz) - 1;
+
+  assert(sz_log2 <= 6 && len <= 64);
+
+  for (size_t i = 0; i < len; i += sz) {
+    uint64_t pos = ((rs2 >> i) & mask) << sz_log2;
+    if (pos < len)
+      r |= ((rs1 >> pos) & mask) << i;
+  }
+
+  return r;
 }
 
 #endif
