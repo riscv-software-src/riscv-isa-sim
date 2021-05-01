@@ -184,8 +184,7 @@ void sim_t::interactive_pc(const std::string& cmd, const std::vector<std::string
 
   processor_t *p = get_core(args[0]);
   int max_xlen = p->get_max_xlen();
-  fprintf(stderr, max_xlen==32 ? "0x%08" PRIx64 "\n" :
-                                 "0x%016" PRIx64 "\n", ERASE_32MSB(max_xlen,get_pc(args)));
+  fprintf(stderr, "0x%0*" PRIx64 "\n", max_xlen/4, zext(get_pc(args), max_xlen));
 }
 
 reg_t sim_t::get_reg(const std::vector<std::string>& args)
@@ -288,14 +287,14 @@ void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::strin
     // Show all the regs!
 
     for (int r = 0; r < NXPR; ++r) {
-      fprintf(stderr, max_xlen==32 ? "%-4s: 0x%08" PRIx64 "  " :
-                      "%-4s: 0x%016" PRIx64 "  ", xpr_name[r], ERASE_32MSB(max_xlen,p->get_state()->XPR[r]));
+      fprintf(stderr, "%-4s: 0x%0*" PRIx64 "  ", xpr_name[r], max_xlen/4,
+              zext(p->get_state()->XPR[r], max_xlen));
       if ((r + 1) % 4 == 0)
         fprintf(stderr, "\n");
     }
-  } else
-      fprintf(stderr, max_xlen==32 ? "0x%08" PRIx64 "\n" :
-                     "0x%016" PRIx64 "\n", ERASE_32MSB(max_xlen,get_reg(args)));
+  } else {
+    fprintf(stderr, "0x%0*" PRIx64 "\n", max_xlen/4, zext(get_reg(args), max_xlen));
+  }
 }
 
 union fpr
@@ -373,8 +372,7 @@ void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::strin
 {
   int max_xlen = procs[0]->get_max_xlen();
 
-  fprintf(stderr, max_xlen==32 ? "0x%08" PRIx64 "\n" :
-                  "0x%016" PRIx64 "\n", ERASE_32MSB(max_xlen,get_mem(args)));
+  fprintf(stderr, "0x%0*" PRIx64 "\n", max_xlen/4, zext(get_mem(args), max_xlen));
 }
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)

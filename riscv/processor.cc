@@ -667,13 +667,11 @@ void processor_t::enter_debug_mode(uint8_t cause)
 void processor_t::take_trap(trap_t& t, reg_t epc)
 {
   if (debug) {
-    fprintf(log_file, max_xlen==32 ? "core %3d: exception %s, epc 0x%08" PRIx64 "\n" :
-                                     "core %3d: exception %s, epc 0x%016" PRIx64 "\n",
-            id, t.name(), ERASE_32MSB(max_xlen,epc));
+    fprintf(log_file, "core %3d: exception %s, epc 0x%0*" PRIx64 "\n",
+            id, t.name(), max_xlen/4, zext(epc, max_xlen));
     if (t.has_tval())
-      fprintf(log_file,  max_xlen==32 ? "core %3d:           tval 0x%08" PRIx64 "\n" :
-                                        "core %3d:           tval 0x%016" PRIx64 "\n",
-              id, ERASE_32MSB(max_xlen,t.get_tval()));
+      fprintf(log_file, "core %3d:           tval 0x%0*" PRIx64 "\n",
+              id, max_xlen/4, zext(t.get_tval(), max_xlen));
   }
 
   if (state.debug_mode) {
@@ -782,9 +780,9 @@ void processor_t::disasm(insn_t insn)
       fprintf(log_file, "core %3d: Executed %" PRIx64 " times\n", id, executions);
     }
 
-    fprintf(log_file, max_xlen==32 ? "core %3d: 0x%08" PRIx64 " (0x%08" PRIx64 ") %s\n" :
-                      "core %3d: 0x%016" PRIx64 " (0x%08" PRIx64 ") %s\n",
-            id, ERASE_32MSB(max_xlen,state.pc), bits, disassembler->disassemble(insn).c_str());
+    fprintf(log_file, "core %3d: 0x%0*" PRIx64 " (0x%08" PRIx64 ") %s\n",
+            id, max_xlen/4, zext(state.pc, max_xlen), bits,
+            disassembler->disassemble(insn).c_str());
     last_pc = state.pc;
     last_bits = bits;
     executions = 1;
