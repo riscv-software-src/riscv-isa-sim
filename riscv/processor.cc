@@ -1433,11 +1433,11 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MENTROPY:
       if(!supports_extension('K'))
           break;
-      return es.get_mentropy();
+      ret(es.get_mentropy());
     case CSR_MNOISE:
       if(!supports_extension('K'))
           break;
-      return es.get_mnoise();
+      ret(es.get_mnoise());
     case CSR_FFLAGS:
       require_fp;
       if (!supports_extension('F'))
