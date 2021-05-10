@@ -1583,7 +1583,7 @@ disassembler_t::disassembler_t(int xlen)
     DISASM_INSN("c.fsw", c_fsw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
     DISASM_INSN("c.fswsp", c_fswsp, 0, {&rvc_fp_rs2, &rvc_swsp_address});
     DISASM_INSN("c.jal", c_jal, 0, {&rvc_jump_target});
-  	DEFINE_PITYTPE(bitrevi, 5);
+    DEFINE_PITYTPE(bitrevi, 5);
   } else {
     DISASM_INSN("c.ld", c_ld, 0, {&rvc_rs2s, &rvc_ld_address});
     DISASM_INSN("c.ldsp", c_ldsp, 0, {&xrd, &rvc_ldsp_address});
