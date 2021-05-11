@@ -46,6 +46,12 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
+    return xpr_name[insn.rs3()];
+  }
+} xrs3;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     return fpr_name[insn.rd()];
   }
 } frd;
@@ -376,6 +382,36 @@ struct : public arg_t {
     return s.str();
   }
 } iorw;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.p_imm2());
+  }
+} p_imm2;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.p_imm3());
+  }
+} p_imm3;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.p_imm4());
+  }
+} p_imm4;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.p_imm5());
+  }
+} p_imm5;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.p_imm6());
+  }
+} p_imm6;
 
 typedef struct {
   reg_t match;
@@ -1319,18 +1355,325 @@ disassembler_t::disassembler_t(int xlen)
     }
   }
 
+#define DEFINE_PITYTPE(code, immbit) DISASM_INSN(#code, code, 0, {&xrd, &xrs1, &p_imm##immbit});
+#define DEFINE_ONEOP(code) DISASM_INSN(#code, code, 0, {&xrd, &xrs1});
+
+#define DISASM_8_AND_16_RINSN(code) \
+  DEFINE_RTYPE(code##8); \
+  DEFINE_RTYPE(code##16);
+
+#define DISASM_8_AND_16_RINSN_ROUND(code) \
+  DISASM_INSN(#code "8.u", code##8_u, 0, {&xrd, &xrs1, &xrs2}); \
+  DISASM_INSN(#code "16.u", code##16_u, 0, {&xrd, &xrs1, &xrs2}); \
+
+#define DISASM_8_AND_16_PIINSN(code) \
+  DEFINE_PITYTPE(code##8, 3); \
+  DEFINE_PITYTPE(code##16, 4);
+
+#define DISASM_8_AND_16_PIINSN_ROUND(code) \
+  DISASM_INSN(#code "8.u", code##8_u, 0, {&xrd, &xrs1, &p_imm3}); \
+  DISASM_INSN(#code "16.u", code##16_u, 0, {&xrd, &xrs1, &p_imm4});
+
+#define DISASM_RINSN_AND_ROUND(code) \
+  DEFINE_RTYPE(code); \
+  DISASM_INSN(#code ".u", code##_u, 0, {&xrd, &xrs1, &xrs2});
+
+  DISASM_8_AND_16_RINSN(add);
+  DISASM_8_AND_16_RINSN(radd);
+  DISASM_8_AND_16_RINSN(uradd);
+  DISASM_8_AND_16_RINSN(kadd);
+  DISASM_8_AND_16_RINSN(ukadd);
+  DISASM_8_AND_16_RINSN(sub);
+  DISASM_8_AND_16_RINSN(rsub);
+  DISASM_8_AND_16_RINSN(ursub);
+  DISASM_8_AND_16_RINSN(ksub);
+  DISASM_8_AND_16_RINSN(uksub);
+  DEFINE_RTYPE(cras16);
+  DEFINE_RTYPE(rcras16);
+  DEFINE_RTYPE(urcras16);
+  DEFINE_RTYPE(kcras16);
+  DEFINE_RTYPE(ukcras16);
+  DEFINE_RTYPE(crsa16);
+  DEFINE_RTYPE(rcrsa16);
+  DEFINE_RTYPE(urcrsa16);
+  DEFINE_RTYPE(kcrsa16);
+  DEFINE_RTYPE(ukcrsa16);
+  DEFINE_RTYPE(stas16);
+  DEFINE_RTYPE(rstas16);
+  DEFINE_RTYPE(urstas16);
+  DEFINE_RTYPE(kstas16);
+  DEFINE_RTYPE(ukstas16);
+  DEFINE_RTYPE(stsa16);
+  DEFINE_RTYPE(rstsa16);
+  DEFINE_RTYPE(urstsa16);
+  DEFINE_RTYPE(kstsa16);
+  DEFINE_RTYPE(ukstsa16);
+
+  DISASM_8_AND_16_RINSN(sra);
+  DISASM_8_AND_16_RINSN(srl);
+  DISASM_8_AND_16_RINSN(sll);
+  DISASM_8_AND_16_RINSN(ksll);
+  DISASM_8_AND_16_RINSN(kslra);
+  DISASM_8_AND_16_PIINSN(srai);
+  DISASM_8_AND_16_PIINSN(srli);
+  DISASM_8_AND_16_PIINSN(slli);
+  DISASM_8_AND_16_PIINSN(kslli);
+  DISASM_8_AND_16_RINSN_ROUND(sra);
+  DISASM_8_AND_16_RINSN_ROUND(srl);
+  DISASM_8_AND_16_RINSN_ROUND(kslra);
+  DISASM_8_AND_16_PIINSN_ROUND(srai);
+  DISASM_8_AND_16_PIINSN_ROUND(srli);
+
+  DISASM_8_AND_16_RINSN(cmpeq);
+  DISASM_8_AND_16_RINSN(scmplt);
+  DISASM_8_AND_16_RINSN(scmple);
+  DISASM_8_AND_16_RINSN(ucmplt);
+  DISASM_8_AND_16_RINSN(ucmple);
+
+  DISASM_8_AND_16_RINSN(smul);
+  DISASM_8_AND_16_RINSN(smulx);
+  DISASM_8_AND_16_RINSN(umul);
+  DISASM_8_AND_16_RINSN(umulx);
+  DISASM_8_AND_16_RINSN(khm);
+  DISASM_8_AND_16_RINSN(khmx);
+
+  DISASM_8_AND_16_RINSN(smin);
+  DISASM_8_AND_16_RINSN(umin);
+  DISASM_8_AND_16_RINSN(smax);
+  DISASM_8_AND_16_RINSN(umax);
+  DISASM_8_AND_16_PIINSN(sclip);
+  DISASM_8_AND_16_PIINSN(uclip);
+  DEFINE_ONEOP(kabs16);
+  DEFINE_ONEOP(clrs16);
+  DEFINE_ONEOP(clz16);
+  DEFINE_ONEOP(clo16);
+  DEFINE_ONEOP(swap16);
+  DEFINE_ONEOP(kabs8);
+  DEFINE_ONEOP(clrs8);
+  DEFINE_ONEOP(clz8);
+  DEFINE_ONEOP(clo8);
+  DEFINE_ONEOP(swap8);
+
+  DEFINE_ONEOP(sunpkd810);
+  DEFINE_ONEOP(sunpkd820);
+  DEFINE_ONEOP(sunpkd830);
+  DEFINE_ONEOP(sunpkd831);
+  DEFINE_ONEOP(sunpkd832);
+  DEFINE_ONEOP(zunpkd810);
+  DEFINE_ONEOP(zunpkd820);
+  DEFINE_ONEOP(zunpkd830);
+  DEFINE_ONEOP(zunpkd831);
+  DEFINE_ONEOP(zunpkd832);
+
+  DEFINE_RTYPE(pkbb16);
+  DEFINE_RTYPE(pkbt16);
+  DEFINE_RTYPE(pktb16);
+  DEFINE_RTYPE(pktt16);
+  DISASM_RINSN_AND_ROUND(smmul);
+  DISASM_RINSN_AND_ROUND(kmmac);
+  DISASM_RINSN_AND_ROUND(kmmsb);
+  DISASM_RINSN_AND_ROUND(kwmmul);
+  DISASM_RINSN_AND_ROUND(smmwb);
+  DISASM_RINSN_AND_ROUND(smmwt);
+  DISASM_RINSN_AND_ROUND(kmmawb);
+  DISASM_RINSN_AND_ROUND(kmmawt);
+  DISASM_RINSN_AND_ROUND(kmmwb2);
+  DISASM_RINSN_AND_ROUND(kmmwt2);
+  DISASM_RINSN_AND_ROUND(kmmawb2);
+  DISASM_RINSN_AND_ROUND(kmmawt2);
+  DEFINE_RTYPE(smbb16)
+  DEFINE_RTYPE(smbt16)
+  DEFINE_RTYPE(smtt16)
+  DEFINE_RTYPE(kmda)
+  DEFINE_RTYPE(kmxda)
+  DEFINE_RTYPE(smds)
+  DEFINE_RTYPE(smdrs)
+  DEFINE_RTYPE(smxds)
+  DEFINE_RTYPE(kmabb)
+  DEFINE_RTYPE(kmabt)
+  DEFINE_RTYPE(kmatt)
+  DEFINE_RTYPE(kmada)
+  DEFINE_RTYPE(kmaxda)
+  DEFINE_RTYPE(kmads)
+  DEFINE_RTYPE(kmadrs)
+  DEFINE_RTYPE(kmaxds)
+  DEFINE_RTYPE(kmsda)
+  DEFINE_RTYPE(kmsxda)
+  DEFINE_RTYPE(smal)
+  DEFINE_RTYPE(sclip32)
+  DEFINE_RTYPE(uclip32)
+  DEFINE_ONEOP(clrs32);
+  DEFINE_ONEOP(clz32);
+  DEFINE_ONEOP(clo32);
+  DEFINE_RTYPE(pbsad);
+  DEFINE_RTYPE(pbsada);
+  DEFINE_RTYPE(smaqa);
+  DEFINE_RTYPE(umaqa);
+  DISASM_INSN("smaqa.su", smaqa_su, 0, {&xrd, &xrs1, &xrs2});
+
+  DEFINE_RTYPE(add64);
+  DEFINE_RTYPE(radd64);
+  DEFINE_RTYPE(uradd64);
+  DEFINE_RTYPE(kadd64);
+  DEFINE_RTYPE(ukadd64);
+  DEFINE_RTYPE(sub64);
+  DEFINE_RTYPE(rsub64);
+  DEFINE_RTYPE(ursub64);
+  DEFINE_RTYPE(ksub64);
+  DEFINE_RTYPE(uksub64);
+  DEFINE_RTYPE(smar64);
+  DEFINE_RTYPE(smsr64);
+  DEFINE_RTYPE(umar64);
+  DEFINE_RTYPE(umsr64);
+  DEFINE_RTYPE(kmar64);
+  DEFINE_RTYPE(kmsr64);
+  DEFINE_RTYPE(ukmar64);
+  DEFINE_RTYPE(ukmsr64);
+  DEFINE_RTYPE(smalbb);
+  DEFINE_RTYPE(smalbt);
+  DEFINE_RTYPE(smaltt);
+  DEFINE_RTYPE(smalda);
+  DEFINE_RTYPE(smalxda);
+  DEFINE_RTYPE(smalds);
+  DEFINE_RTYPE(smaldrs);
+  DEFINE_RTYPE(smalxds);
+  DEFINE_RTYPE(smslda);
+  DEFINE_RTYPE(smslxda);
+
+  DEFINE_RTYPE(kaddh);
+  DEFINE_RTYPE(ksubh);
+  DEFINE_RTYPE(khmbb);
+  DEFINE_RTYPE(khmbt);
+  DEFINE_RTYPE(khmtt);
+  DEFINE_RTYPE(ukaddh);
+  DEFINE_RTYPE(uksubh);
+  DEFINE_RTYPE(kaddw);
+  DEFINE_RTYPE(ukaddw);
+  DEFINE_RTYPE(ksubw);
+  DEFINE_RTYPE(uksubw);
+  DEFINE_RTYPE(kdmbb);
+  DEFINE_RTYPE(kdmbt);
+  DEFINE_RTYPE(kdmtt);
+  DEFINE_RTYPE(kslraw);
+  DISASM_INSN("kslraw.u", kslraw_u, 0, {&xrd, &xrs1, &xrs2});
+  DEFINE_RTYPE(ksllw);
+  DEFINE_PITYTPE(kslliw, 5);
+  DEFINE_RTYPE(kdmabb);
+  DEFINE_RTYPE(kdmabt);
+  DEFINE_RTYPE(kdmatt);
+  DEFINE_RTYPE(kabsw);
+  DEFINE_RTYPE(raddw);
+  DEFINE_RTYPE(uraddw);
+  DEFINE_RTYPE(rsubw);
+  DEFINE_RTYPE(ursubw);
+  DEFINE_RTYPE(maxw);
+  DEFINE_RTYPE(minw);
+  DEFINE_RTYPE(mulr64);
+  DEFINE_RTYPE(mulsr64);
+  DEFINE_RTYPE(msubr32);
+  DEFINE_RTYPE(ave);
+  DISASM_INSN("sra.u", sra_u, 0, {&xrd, &xrs1, &xrs2});
+  DISASM_INSN("srai.u", srai_u, 0, {&xrd, &xrs1, &p_imm5});
+  DEFINE_RTYPE(bitrev);
+  DEFINE_RTYPE(wext);
+  DEFINE_PITYTPE(wexti, 5);
+  DISASM_INSN("bpick", bpick, 0, {&xrd, &xrs1, &xrs2, &xrs3});
+  DEFINE_PITYTPE(insb, 3);
+  DEFINE_RTYPE(maddr32)
+
   if (xlen == 32) {
     DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
     DISASM_INSN("c.flwsp", c_flwsp, 0, {&frd, &rvc_lwsp_address});
     DISASM_INSN("c.fsw", c_fsw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
     DISASM_INSN("c.fswsp", c_fswsp, 0, {&rvc_fp_rs2, &rvc_swsp_address});
     DISASM_INSN("c.jal", c_jal, 0, {&rvc_jump_target});
+    DEFINE_PITYTPE(bitrevi, 5);
   } else {
     DISASM_INSN("c.ld", c_ld, 0, {&rvc_rs2s, &rvc_ld_address});
     DISASM_INSN("c.ldsp", c_ldsp, 0, {&xrd, &rvc_ldsp_address});
     DISASM_INSN("c.sd", c_sd, 0, {&rvc_rs2s, &rvc_ld_address});
     DISASM_INSN("c.sdsp", c_sdsp, 0, {&rvc_rs2, &rvc_sdsp_address});
     DISASM_INSN("c.addiw", c_addiw, 0, {&xrd, &rvc_imm});
+    DEFINE_PITYTPE(bitrevi, 6);
+    DEFINE_RTYPE(add32);
+    DEFINE_RTYPE(radd32);
+    DEFINE_RTYPE(uradd32);
+    DEFINE_RTYPE(kadd32);
+    DEFINE_RTYPE(ukadd32);
+    DEFINE_RTYPE(sub32);
+    DEFINE_RTYPE(rsub32);
+    DEFINE_RTYPE(ursub32);
+    DEFINE_RTYPE(ksub32);
+    DEFINE_RTYPE(uksub32);
+    DEFINE_RTYPE(cras32);
+    DEFINE_RTYPE(rcras32);
+    DEFINE_RTYPE(urcras32);
+    DEFINE_RTYPE(kcras32);
+    DEFINE_RTYPE(ukcras32);
+    DEFINE_RTYPE(crsa32);
+    DEFINE_RTYPE(rcrsa32);
+    DEFINE_RTYPE(urcrsa32);
+    DEFINE_RTYPE(kcrsa32);
+    DEFINE_RTYPE(ukcrsa32);
+    DEFINE_RTYPE(stas32);
+    DEFINE_RTYPE(rstas32);
+    DEFINE_RTYPE(urstas32);
+    DEFINE_RTYPE(kstas32);
+    DEFINE_RTYPE(ukstas32);
+    DEFINE_RTYPE(stsa32);
+    DEFINE_RTYPE(rstsa32);
+    DEFINE_RTYPE(urstsa32);
+    DEFINE_RTYPE(kstsa32);
+    DEFINE_RTYPE(ukstsa32);
+    DEFINE_RTYPE(sra32);
+    DEFINE_PITYTPE(srai32, 5);
+    DISASM_INSN("sra32.u", sra32_u, 0, {&xrd, &xrs1, &xrs2});
+    DISASM_INSN("srai32.u", srai32_u, 0, {&xrd, &xrs1, &p_imm5});
+    DEFINE_RTYPE(srl32);
+    DEFINE_PITYTPE(srli32, 5);
+    DISASM_INSN("srl32.u", srl32_u, 0, {&xrd, &xrs1, &xrs2});
+    DISASM_INSN("srli32.u", srli32_u, 0, {&xrd, &xrs1, &p_imm5});
+    DEFINE_RTYPE(sll32);
+    DEFINE_PITYTPE(slli32, 5);
+    DEFINE_RTYPE(ksll32);
+    DEFINE_PITYTPE(kslli32, 5);
+    DEFINE_RTYPE(kslra32);
+    DISASM_INSN("kslra32.u", kslra32_u, 0, {&xrd, &xrs1, &xrs2});
+    DEFINE_RTYPE(smin32);
+    DEFINE_RTYPE(umin32);
+    DEFINE_RTYPE(smax32);
+    DEFINE_RTYPE(umax32);
+    DEFINE_ONEOP(kabs32);
+    DEFINE_RTYPE(khmbb16);
+    DEFINE_RTYPE(khmbt16);
+    DEFINE_RTYPE(khmtt16);
+    DEFINE_RTYPE(kdmbb16);
+    DEFINE_RTYPE(kdmbt16);
+    DEFINE_RTYPE(kdmtt16);
+    DEFINE_RTYPE(kdmabb16);
+    DEFINE_RTYPE(kdmabt16);
+    DEFINE_RTYPE(kdmatt16);
+    DEFINE_RTYPE(smbt32);
+    DEFINE_RTYPE(smtt32);
+    DEFINE_RTYPE(kmabb32);
+    DEFINE_RTYPE(kmabt32);
+    DEFINE_RTYPE(kmatt32);
+    DEFINE_RTYPE(kmda32);
+    DEFINE_RTYPE(kmxda32);
+    DEFINE_RTYPE(kmaxda32);
+    DEFINE_RTYPE(kmads32);
+    DEFINE_RTYPE(kmadrs32);
+    DEFINE_RTYPE(kmaxds32);
+    DEFINE_RTYPE(kmsda32);
+    DEFINE_RTYPE(kmsxda32);
+    DEFINE_RTYPE(smds32);
+    DEFINE_RTYPE(smdrs32);
+    DEFINE_RTYPE(smxds32);
+    DISASM_INSN("sraiw.u", sraiw_u, 0, {&xrd, &xrs1, &p_imm5});
+    DEFINE_RTYPE(pkbb32);
+    DEFINE_RTYPE(pkbt32);
+    DEFINE_RTYPE(pktb32);
+    DEFINE_RTYPE(pktt32);
   }
 
   // provide a default disassembly for all instructions as a fallback
