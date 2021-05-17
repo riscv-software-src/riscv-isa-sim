@@ -797,39 +797,36 @@ int processor_t::paddr_bits()
   return max_xlen == 64 ? 50 : 34;
 }
 
-reg_t processor_t::cal_satp(reg_t val) const
+bool processor_t::satp_valid(reg_t val) const
 {
-  reg_t reg_val = 0;
-  reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
-  mmu->flush_tlb();
-  if (max_xlen == 32) {
-    reg_val = val & (SATP32_PPN |
-                    (supports_impl(IMPL_MMU_SV32) ? SATP32_MODE : 0));
-  }
-
-  if (max_xlen == 64 && (get_field(val, SATP64_MODE) == SATP_MODE_OFF ||
-                         get_field(val, SATP64_MODE) == SATP_MODE_SV39 ||
-                         get_field(val, SATP64_MODE) == SATP_MODE_SV48)) {
-    reg_val = val & (SATP64_PPN | rv64_ppn_mask);
-    reg_t mode = get_field(val, SATP64_MODE);
-
-    switch(mode) {
-      case SATP_MODE_OFF:
-      default:
-        mode = SATP_MODE_OFF;
-        break;
-      case SATP_MODE_SV39:
-        mode = supports_impl(IMPL_MMU_SV39) ? SATP_MODE_SV39 : SATP_MODE_OFF;
-        break;
-      case SATP_MODE_SV48:
-        mode = supports_impl(IMPL_MMU_SV48) ? SATP_MODE_SV48 : SATP_MODE_OFF;
-        break;
+  if (xlen == 32) {
+    switch (get_field(val, SATP32_MODE)) {
+      case SATP_MODE_SV32: return supports_impl(IMPL_MMU_SV32);
+      case SATP_MODE_OFF: return true;
+      default: return false;
     }
-    reg_val = set_field(reg_val, SATP64_MODE, mode);
+  } else {
+    switch (get_field(val, SATP64_MODE)) {
+      case SATP_MODE_SV39: return supports_impl(IMPL_MMU_SV39);
+      case SATP_MODE_SV48: return supports_impl(IMPL_MMU_SV48);
+      case SATP_MODE_OFF: return true;
+      default: return false;
+    }
   }
-
-  return reg_val;
 }
+
+reg_t processor_t::compute_new_satp(reg_t val, reg_t old) const
+{
+  reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
+
+  reg_t mode_mask = xlen == 32 ? SATP32_MODE : SATP64_MODE;
+  reg_t ppn_mask = xlen == 32 ? SATP32_PPN : SATP64_PPN & rv64_ppn_mask;
+  reg_t new_mask = (satp_valid(val) ? mode_mask : 0) | ppn_mask;
+  reg_t old_mask = satp_valid(val) ? 0 : mode_mask;
+
+  return (new_mask & val) | (old_mask & old);
+}
+
 void processor_t::set_csr(int which, reg_t val)
 {
 #if defined(RISCV_ENABLE_COMMITLOG)
@@ -1040,10 +1037,14 @@ void processor_t::set_csr(int which, reg_t val)
       if (!supports_impl(IMPL_MMU))
         val = 0;
 
-      if (state.v)
-        state.vsatp = cal_satp(val);
-      else
-        state.satp = cal_satp(val);
+      if (satp_valid(val)) {
+        mmu->flush_tlb();
+
+        if (state.v)
+          state.vsatp = compute_new_satp(val, state.vsatp);
+        else
+          state.satp = compute_new_satp(val, state.satp);
+      }
       break;
     case CSR_SEPC:
       if (state.v)
@@ -1218,7 +1219,8 @@ void processor_t::set_csr(int which, reg_t val)
       if (!supports_impl(IMPL_MMU))
         val = 0;
 
-      state.vsatp = cal_satp(val);
+      mmu->flush_tlb();
+      state.vsatp = compute_new_satp(val, state.vsatp);
       break;
     case CSR_TSELECT:
       if (val < state.num_triggers) {
