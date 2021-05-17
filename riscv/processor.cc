@@ -1168,16 +1168,22 @@ void processor_t::set_csr(int which, reg_t val)
       state.htinst = val;
       break;
     case CSR_HGATP: {
-      reg_t reg_val = 0;
-      reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
       mmu->flush_tlb();
-      if (max_xlen == 32)
-        reg_val = val & (HGATP32_PPN | HGATP32_MODE);
-      if (max_xlen == 64 && (get_field(val, HGATP64_MODE) == HGATP_MODE_OFF ||
-                             get_field(val, HGATP64_MODE) == HGATP_MODE_SV39X4 ||
-                             get_field(val, HGATP64_MODE) == HGATP_MODE_SV48X4))
-        reg_val = val & (HGATP64_MODE | (HGATP64_PPN & rv64_ppn_mask));
-      state.hgatp = reg_val;
+
+      reg_t mask;
+      if (max_xlen == 32) {
+        mask = HGATP32_PPN | HGATP32_MODE;
+      } else {
+        mask = HGATP64_PPN & ((reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1);
+
+        if (get_field(val, HGATP64_MODE) == HGATP_MODE_OFF ||
+            get_field(val, HGATP64_MODE) == HGATP_MODE_SV39X4 ||
+            get_field(val, HGATP64_MODE) == HGATP_MODE_SV48X4)
+          mask |= HGATP64_MODE;
+      }
+      mask &= ~(reg_t)3;
+
+      state.hgatp = val & mask;
       break;
     }
     case CSR_VSSTATUS: {
