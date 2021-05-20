@@ -1745,14 +1745,13 @@ out:
     return res;
 
   unsigned csr_priv = get_field(which, 0x300);
-  bool csr_read_only = get_field(which, 0xC00) == 3;
   unsigned priv = state.prv == PRV_S && !state.v ? PRV_HS : state.prv;
 
   if ((csr_priv == PRV_S && !supports_extension('S')) ||
       (csr_priv == PRV_HS && !supports_extension('H')))
     goto throw_illegal;
 
-  if ((write && csr_read_only) || priv < csr_priv) {
+  if (priv < csr_priv) {
     if (state.v && csr_priv <= PRV_HS)
       goto throw_virtual;
     goto throw_illegal;
