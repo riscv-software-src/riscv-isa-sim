@@ -253,8 +253,11 @@ public:
     load_reservation_address = (reg_t)-1;
   }
 
-  inline void acquire_load_reservation(reg_t vaddr)
+  inline void acquire_load_reservation(reg_t vaddr, size_t size)
   {
+    if (vaddr & (size-1))
+      load_reserved_address_misaligned(vaddr);
+
     reg_t paddr = translate(vaddr, 1, LOAD, 0);
     if (auto host_addr = sim->addr_to_mem(paddr))
       load_reservation_address = refill_tlb(vaddr, paddr, host_addr, LOAD).target_offset + vaddr;
