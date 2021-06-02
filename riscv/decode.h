@@ -245,7 +245,7 @@ private:
 #define get_field(reg, mask) (((reg) & (decltype(reg))(mask)) / ((mask) & ~((mask) << 1)))
 #define set_field(reg, mask, val) (((reg) & ~(decltype(reg))(mask)) | (((decltype(reg))(val) * ((mask) & ~((mask) << 1))) & (decltype(reg))(mask)))
 
-#define require(x) if (unlikely(!(x))) throw trap_illegal_instruction(insn.bits())
+#define require(x) do { if (unlikely(!(x))) throw trap_illegal_instruction(insn.bits()); } while (0)
 #define require_privilege(p) require(STATE.prv >= (p))
 #define require_novirt() if (unlikely(STATE.v)) throw trap_virtual_instruction(insn.bits())
 #define require_rv64 require(xlen == 64)
