@@ -1,4 +1,4 @@
-require_extension('B');
+require_extension(EXT_ZBB);
 int shamt = RS2 & (xlen-1);
 int rshamt = -shamt & (xlen-1);
 WRITE_RD(sext_xlen((RS1 << rshamt) | (zext_xlen(RS1) >> shamt)));

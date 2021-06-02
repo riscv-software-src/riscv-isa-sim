@@ -269,6 +269,14 @@ void processor_t::parse_isa_string(const char* str)
       auto ext_str = std::string(ext, end - ext);
       if (ext_str == "zfh") {
         extension_table[EXT_ZFH] = true;
+      } else if (ext_str == "zba") {
+        extension_table[EXT_ZBA] = true;
+      } else if (ext_str == "zbb") {
+        extension_table[EXT_ZBB] = true;
+      } else if (ext_str == "zbc") {
+        extension_table[EXT_ZBC] = true;
+      } else if (ext_str == "zbs") {
+        extension_table[EXT_ZBS] = true;
       } else {
         sprintf(error_msg, "unsupported extension '%s'", ext_str.c_str());
         bad_isa_string(str, error_msg);
@@ -282,6 +290,14 @@ void processor_t::parse_isa_string(const char* str)
   }
 
   state.misa = max_isa;
+
+  if (supports_extension('B')) {
+    // B implies Zba, Zbb, Zbc, Zbs
+    extension_table[EXT_ZBA] = true;
+    extension_table[EXT_ZBB] = true;
+    extension_table[EXT_ZBC] = true;
+    extension_table[EXT_ZBS] = true;
+  }
 
   if (!supports_extension('I'))
     bad_isa_string(str, "'I' extension is required");

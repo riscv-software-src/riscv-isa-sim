@@ -1,4 +1,9 @@
-require_extension('B');
+// Zbb contains rev8 but not general grevi
+if (SHAMT == xlen - 8)
+  require_extension(EXT_ZBB);
+else
+  require_extension('B');
+
 require(SHAMT < xlen);
 reg_t x = RS1;
 int shamt = SHAMT;

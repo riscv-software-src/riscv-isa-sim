@@ -1,4 +1,9 @@
-require_extension('B');
+// Zbb contains orc.b but not general gorci
+if (SHAMT == 7)
+  require_extension(EXT_ZBB);
+else
+  require_extension('B');
+
 require(SHAMT < xlen);
 reg_t x = RS1;
 int shamt = SHAMT;
