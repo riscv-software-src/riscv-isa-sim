@@ -63,7 +63,6 @@ riscv_srcs = \
 riscv_test_srcs =
 
 riscv_gen_hdrs = \
-	icache.h \
 	insn_list.h \
 
 
@@ -1285,12 +1284,6 @@ riscv_insn_list = \
 
 riscv_gen_srcs = \
 	$(addsuffix .cc,$(riscv_insn_list))
-
-icache_entries := `grep "ICACHE_ENTRIES =" $(src_dir)/riscv/mmu.h | sed 's/.* = \(.*\);/\1/'`
-
-icache.h: mmu.h
-	$(src_dir)/riscv/gen_icache $(icache_entries) > $@.tmp
-	mv $@.tmp $@
 
 insn_list.h: $(src_dir)/riscv/riscv.mk.in
 	for insn in $(foreach insn,$(riscv_insn_list),$(subst .,_,$(insn))) ; do \
