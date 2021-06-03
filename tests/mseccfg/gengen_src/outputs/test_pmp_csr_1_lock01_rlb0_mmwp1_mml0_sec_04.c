@@ -263,10 +263,10 @@ static void set_cfg() {
     reg_t expected_val = wval & (MSECCFG_RLB | MSECCFG_MML | MSECCFG_MMWP);
     /*
      * pre_sec_mml means cfg0 locked
-     * lock_once || pmp_lock means cfg2/3 once locked
+     * pmp_lock means cfg2/3 locked
      * sec_mml is the test coverage hole just mentioned
      */
-    if ((0 || 1 || 0 || 0) 
+    if ((0 || 0 || 0) 
             && 0 == 0) {
         expected_val &= ~MSECCFG_RLB;
     } 

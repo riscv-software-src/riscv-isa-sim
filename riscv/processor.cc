@@ -352,7 +352,7 @@ void state_t::reset(reg_t max_isa)
   single_step = STEP_NONE;
 
   mseccfg = 0;
-  pmplock_recorded = false;
+  pmplock_recorded = 0;
   memset(this->pmpcfg, 0, sizeof(this->pmpcfg));
   memset(this->pmpaddr, 0, sizeof(this->pmpaddr));
 
@@ -785,7 +785,7 @@ void processor_t::set_csr(int which, reg_t val)
   bool lock_bypass = state.mseccfg & MSECCFG_RLB;
 
   if (which == CSR_MSECCFG) {
-    // When mseccfg.RLB is unset and any pmpcfg.L is set, mseccfg.RLB is locked
+    // When mseccfg.RLB is 0 and pmpcfg.L is 1 in any entry, mseccfg.RLB is locked
     if (!(state.pmplock_recorded && (state.mseccfg & MSECCFG_RLB) == 0)) {
       state.mseccfg &= ~MSECCFG_RLB;
       state.mseccfg |= (val & MSECCFG_RLB);
@@ -829,7 +829,11 @@ void processor_t::set_csr(int which, reg_t val)
         if ((state.mseccfg & MSECCFG_MML) == 0) {
           cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0);
         }
-        state.pmplock_recorded |= (cfg & PMP_L); // record PMP.L set event was occurred
+
+        state.pmplock_recorded &= ~(1ULL << i);
+        if ((cfg & PMP_L)) {
+            state.pmplock_recorded |= (1ULL << i);
+        }
 
         if (lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
           cfg |= PMP_NAPOT; // Disallow A=NA4 when granularity > 4

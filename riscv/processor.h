@@ -208,7 +208,7 @@ struct state_t
   bool debug_mode;
 
   reg_t mseccfg;
-  bool pmplock_recorded;
+  uint64_t pmplock_recorded; // copy of each PMPCFG.L bit
 
   static const int max_pmp = 16;
   uint8_t pmpcfg[max_pmp];
