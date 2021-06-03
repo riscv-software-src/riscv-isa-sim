@@ -5,6 +5,7 @@
 #include "dts.h"
 #include "remote_bitbang.h"
 #include "byteorder.h"
+#include "platform.h"
 #include <fstream>
 #include <map>
 #include <iostream>

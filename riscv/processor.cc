@@ -8,6 +8,7 @@
 #include "simif.h"
 #include "mmu.h"
 #include "disasm.h"
+#include "platform.h"
 #include <cinttypes>
 #include <cmath>
 #include <cstdlib>

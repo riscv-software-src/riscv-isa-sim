@@ -3,7 +3,7 @@
 #include "htif.h"
 #include "rfb.h"
 #include "elfloader.h"
-#include "encoding.h"
+#include "platform.h"
 #include "byteorder.h"
 #include <algorithm>
 #include <assert.h>
