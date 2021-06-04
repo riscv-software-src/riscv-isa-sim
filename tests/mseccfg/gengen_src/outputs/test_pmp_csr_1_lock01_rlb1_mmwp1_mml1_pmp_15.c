@@ -205,26 +205,26 @@ static void set_cfg() {
      */
     reg_t wval = 0, rval;
 #if 1
-    asm volatile ("csrr %0, pmpaddr14 \n"
+    asm volatile ("csrr %0, pmpaddr9 \n"
             : "=r"(rval));
     // give a valid value for both NAPOT and TOR
-    if (14 == 0) {
+    if (9 == 0) {
         wval = ((rval + 1) << 1) - 1;   // NAPOT mask
     } else {
         wval = (rval << 1) + 65536;   
     }
-    asm volatile ("csrw pmpaddr14, %1 \n"
-                "\tcsrr %0, pmpaddr14 \n"
+    asm volatile ("csrw pmpaddr9, %1 \n"
+                "\tcsrr %0, pmpaddr9 \n"
             : "=r"(rval)
             : "r"(wval)
               : "memory");
     if (wval != rval) {
-        printf("pmpaddr14 expects %lx vs %lx\n", wval, rval);
+        printf("pmpaddr9 expects %lx vs %lx\n", wval, rval);
         actual_pmpaddr_fail = 1;
     }
     
     wval = (2 == 0 ? cfg0 : 0) 
-            ^ (5 << (1 * 8));
+            ^ (5 << (0 * 8));
     asm volatile ("csrw pmpcfg2, %1 \n"
                 "\tcsrr %0, pmpcfg2 \n"
             : "=r"(rval)

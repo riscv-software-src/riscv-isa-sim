@@ -22,7 +22,7 @@
 namespace {
 
 const unsigned expected_files_count[] = {
-        256 - 32,
+        256 - 64,
         528,
         24,
         0
@@ -53,7 +53,12 @@ main()
                         for (int pmp_match = 0; pmp_match < 2; pmp_match++) {
                             for (int mmwp = 0; mmwp < 2; mmwp++) {
                                 for (int mml = 0; mml < 2; mml++) {
-    if (r == 0 && w == 1 && mml == 1) continue; // test in pmp_ok_share_1
+    /*
+     * For RW=01,
+     * - mml == 1, test in pmp_ok_share_1
+     * - mml == 0, reserved.
+     */
+    if (r == 0 && w == 1) continue;
 
     str_buffer.str("");
     str_buffer << "outputs/test_pmp_ok_1_u" << u_mode << "_rw" << r << w << "_x" << x << "_l" << cfgl

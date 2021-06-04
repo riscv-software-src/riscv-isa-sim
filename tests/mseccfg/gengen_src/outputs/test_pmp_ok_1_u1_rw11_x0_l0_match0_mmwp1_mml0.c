@@ -42,7 +42,7 @@
  * Whether rwx share single cfg for M mode
  * When @set_sec_mml@ set, it must be 0, otherwise unexpected exception
  */
-#define M_MODE_RWX 1
+#define M_MODE_RWX 0
 
 #define CAUSE_LOAD_ACCESS 0x5
 #define CAUSE_STORE_ACCESS 0x7
@@ -199,7 +199,7 @@ static void set_cfg() {
     }
     
     cfg0 |= (PMP_R | PMP_W | PMP_X | PMP_TOR) << 24;    // for U_MEM
-#if 1
+#if 0
     cfg0 |= ( (1 ? PMP_R : 0)
             | (1 ? PMP_W : 0)
             | (0 ? PMP_X : 0) 

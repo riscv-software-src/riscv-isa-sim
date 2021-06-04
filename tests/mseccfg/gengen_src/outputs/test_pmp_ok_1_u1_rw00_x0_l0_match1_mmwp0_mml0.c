@@ -42,7 +42,7 @@
  * Whether rwx share single cfg for M mode
  * When @set_sec_mml@ set, it must be 0, otherwise unexpected exception
  */
-#define M_MODE_RWX 1
+#define M_MODE_RWX 0
 
 #define CAUSE_LOAD_ACCESS 0x5
 #define CAUSE_STORE_ACCESS 0x7

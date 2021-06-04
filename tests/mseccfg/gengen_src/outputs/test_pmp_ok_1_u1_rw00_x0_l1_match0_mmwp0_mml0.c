@@ -42,7 +42,7 @@
  * Whether rwx share single cfg for M mode
  * When @set_sec_mml@ set, it must be 0, otherwise unexpected exception
  */
-#define M_MODE_RWX 0
+#define M_MODE_RWX 1
 
 #define CAUSE_LOAD_ACCESS 0x5
 #define CAUSE_STORE_ACCESS 0x7
@@ -171,7 +171,7 @@ static void set_cfg() {
      */
     asm volatile ("csrw pmpaddr3, %0 \n" :: "r"(U_MEM_END >> 2) : "memory");
     asm volatile ("csrw pmpaddr2, %0 \n" :: "r"(TEST_MEM_END >> 2) : "memory");
-    asm volatile ("csrw pmpaddr1, %0 \n" :: "r"((TEST_MEM_START + 0) >> 2) : "memory");
+    asm volatile ("csrw pmpaddr1, %0 \n" :: "r"((TEST_MEM_START + 256) >> 2) : "memory");
     
 #if M_MODE_RWX
     asm volatile ("csrw pmpaddr0, %0 \n" :: "r"((TEST_MEM_START >> 3) - 1) : "memory");
@@ -199,7 +199,7 @@ static void set_cfg() {
     }
     
     cfg0 |= (PMP_R | PMP_W | PMP_X | PMP_TOR) << 24;    // for U_MEM
-#if 0
+#if 1
     cfg0 |= ( (0 ? PMP_R : 0)
             | (0 ? PMP_W : 0)
             | (0 ? PMP_X : 0) 

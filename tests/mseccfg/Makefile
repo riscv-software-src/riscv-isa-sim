@@ -72,4 +72,4 @@ env:
 	echo $(ALL_TEST)
 	
 
-.PHONY: all $(OBJECTS) clean
+.PHONY: gen $(OBJECTS) clean

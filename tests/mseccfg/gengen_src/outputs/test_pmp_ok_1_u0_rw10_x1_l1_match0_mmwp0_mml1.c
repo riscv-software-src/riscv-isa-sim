@@ -171,7 +171,7 @@ static void set_cfg() {
      */
     asm volatile ("csrw pmpaddr3, %0 \n" :: "r"(U_MEM_END >> 2) : "memory");
     asm volatile ("csrw pmpaddr2, %0 \n" :: "r"(TEST_MEM_END >> 2) : "memory");
-    asm volatile ("csrw pmpaddr1, %0 \n" :: "r"((TEST_MEM_START + 0) >> 2) : "memory");
+    asm volatile ("csrw pmpaddr1, %0 \n" :: "r"((TEST_MEM_START + 256) >> 2) : "memory");
     
 #if M_MODE_RWX
     asm volatile ("csrw pmpaddr0, %0 \n" :: "r"((TEST_MEM_START >> 3) - 1) : "memory");

@@ -199,7 +199,7 @@ static void set_cfg() {
     }
     
     cfg0 |= (PMP_R | PMP_W | PMP_X | PMP_TOR) << 24;    // for U_MEM
-#if 1
+#if 0
     cfg0 |= ( (1 ? PMP_R : 0)
             | (1 ? PMP_W : 0)
             | (1 ? PMP_X : 0) 
