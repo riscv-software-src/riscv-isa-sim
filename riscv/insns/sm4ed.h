@@ -17,7 +17,6 @@ uint32_t linear = sb_out ^  (sb_out         <<  8) ^
 uint32_t rotl   = (linear << (8*bs)) | (linear >> (32-8*bs));
 
 uint32_t result = rotl ^ RS1;
-uint64_t rd     = insn.rs1(); // RD sourced from RS1 field.
 
-WRITE_REG(rd, zext_xlen(result));
+WRITE_RD(zext_xlen(result));
 
