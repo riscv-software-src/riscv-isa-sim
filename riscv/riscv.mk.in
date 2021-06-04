@@ -486,8 +486,6 @@ riscv_insn_ext_v_alu_int = \
 	vdiv_vx \
 	vdivu_vv \
 	vdivu_vx \
-	vdot_vv \
-	vdotu_vv \
 	vid_v \
 	viota_m \
 	vmacc_vv \
@@ -687,7 +685,6 @@ riscv_insn_ext_v_alu_fp = \
 	vfcvt_xu_f_v \
 	vfdiv_vf \
 	vfdiv_vv \
-	vfdot_vv \
 	vfmacc_vf \
 	vfmacc_vv \
 	vfmadd_vf \
