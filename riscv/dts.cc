@@ -2,6 +2,7 @@
 
 #include "dts.h"
 #include "libfdt.h"
+#include "platform.h"
 #include <iostream>
 #include <sstream>
 #include <signal.h>

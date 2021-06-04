@@ -9,6 +9,8 @@ reg_t next_pc = (STATE.v) ? p->get_state()->vsepc : p->get_state()->sepc;
 set_pc_and_serialize(next_pc);
 reg_t s = STATE.mstatus;
 reg_t prev_prv = get_field(s, MSTATUS_SPP);
+if (prev_prv != PRV_M)
+  s = set_field(s, MSTATUS_MPRV, 0);
 s = set_field(s, MSTATUS_SIE, get_field(s, MSTATUS_SPIE));
 s = set_field(s, MSTATUS_SPIE, 1);
 s = set_field(s, MSTATUS_SPP, PRV_U);

@@ -8,6 +8,7 @@
 #include "simif.h"
 #include "mmu.h"
 #include "disasm.h"
+#include "platform.h"
 #include <cinttypes>
 #include <cmath>
 #include <cstdlib>
@@ -244,7 +245,7 @@ void processor_t::parse_isa_string(const char* str)
         p++;
       } else if (*p == 'x') {
         const char* ext = p + 1, *end = ext;
-        while (islower(*end) || *end == '_')
+        while (islower(*end))
           end++;
 
         auto ext_str = std::string(ext, end - ext);
