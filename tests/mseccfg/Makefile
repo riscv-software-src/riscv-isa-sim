@@ -39,27 +39,27 @@ SIM_ISA = --isa=RV64IMAFDC
 
 default:
 	@echo "make gen, to generate all test cases with gengen"
-	@echo "make all, to run all test cases"
+	@echo "make run, to run all test cases"
 	@echo "set OBJECTS variant to select specified test case"
 	
 gen:
 	cd gengen_src; $(MAKE); $(MAKE) gen;
 	
 $(OBJECTS):
-	$(RISCV_TOOL)/riscv64-unknown-elf-gcc $(CFLAGS) $(TEST_PATH)/$@.c $(COMMON_FILES) $(LDFLAGS) -o a.out 
+	@$(RISCV_TOOL)/riscv64-unknown-elf-gcc $(CFLAGS) $(TEST_PATH)/$@.c $(COMMON_FILES) $(LDFLAGS) -o a.out 
 	@echo Running $(TEST_PATH)/$@.c
 	@$(RISCV_TOOL)/riscv64-unknown-elf-objdump -d a.out > a.ss
 	@$(RISCV_TOOL)/riscv64-unknown-elf-objdump --disassemble=target_foo a.out >> a.ss
 ifeq ($(PERF), 0)
 	$(SPIKE_PATH)/spike $(SIM_ISA) -m0x100000:0x200000 a.out
-#	$(SAIL_EMULATOR_PATH)/riscv_sim_RV64 --enable-pmp -V a.out > tmp.log 2>&1; grep SUCCESS tmp.log
-#	@-grep FAILURE tmp.log
+	$(SAIL_EMULATOR_PATH)/riscv_sim_RV64 --enable-pmp -V a.out > tmp.log 2>&1; grep SUCCESS tmp.log
+	@! grep FAILURE tmp.log
 #	$(RISCV_TOOL)/spike $(SIM_ISA) -l a.out > $@_pc.log 2>&1
 #	sed -i '0,/ nop/d' $@_pc.log
 #	sed -i '/ nop/q' $@_pc.log
 endif
 	
-all: $(OBJECTS)
+run: $(OBJECTS)
 
 clean:
 	rm *.s *.o *.i *.ss *.out *.log *.bin
