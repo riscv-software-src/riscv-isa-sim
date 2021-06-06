@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 #ifndef _RISCV_PLATFORM_H
-#define _RISCV_PLATFROM_H
+#define _RISCV_PLATFORM_H
 
 #define DEFAULT_RSTVEC     0x00001000
 #define CLINT_BASE         0x02000000
