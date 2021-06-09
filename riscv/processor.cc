@@ -1405,7 +1405,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
   uint32_t ctr_en = -1;
   if (state.prv < PRV_M)
     ctr_en &= state.mcounteren;
-  if (state.prv < PRV_S)
+  if (supports_extension('S') && state.prv < PRV_S)
     ctr_en &= state.scounteren;
   bool ctr_ok = (ctr_en >> (which & 31)) & 1;
   if (state.v)
