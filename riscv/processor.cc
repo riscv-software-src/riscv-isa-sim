@@ -860,6 +860,13 @@ void processor_t::set_csr(int which, reg_t val)
   reg_t coprocessor_ints = (!custom_extensions.empty()) << IRQ_COP;
   reg_t delegable_ints = supervisor_ints | coprocessor_ints;
   reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP | MIP_MEIP;
+  reg_t hypervisor_exceptions = 0
+    | (1 << CAUSE_VIRTUAL_SUPERVISOR_ECALL)
+    | (1 << CAUSE_FETCH_GUEST_PAGE_FAULT)
+    | (1 << CAUSE_LOAD_GUEST_PAGE_FAULT)
+    | (1 << CAUSE_VIRTUAL_INSTRUCTION)
+    | (1 << CAUSE_STORE_GUEST_PAGE_FAULT)
+    ;
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
     // If no PMPs are configured, disallow access to all.  Otherwise, allow
@@ -989,13 +996,7 @@ void processor_t::set_csr(int which, reg_t val)
         (1 << CAUSE_FETCH_PAGE_FAULT) |
         (1 << CAUSE_LOAD_PAGE_FAULT) |
         (1 << CAUSE_STORE_PAGE_FAULT);
-      mask |= supports_extension('H') ?
-        (1 << CAUSE_VIRTUAL_SUPERVISOR_ECALL) |
-        (1 << CAUSE_FETCH_GUEST_PAGE_FAULT) |
-        (1 << CAUSE_LOAD_GUEST_PAGE_FAULT) |
-        (1 << CAUSE_VIRTUAL_INSTRUCTION) |
-        (1 << CAUSE_STORE_GUEST_PAGE_FAULT)
-        : 0;
+      mask |= supports_extension('H') ? hypervisor_exceptions : 0;
       state.medeleg = (state.medeleg & ~mask) | (val & mask);
       break;
     }
@@ -1108,7 +1109,7 @@ void processor_t::set_csr(int which, reg_t val)
       if (!(val & (1L << ('F' - 'A'))))
         val &= ~(1L << ('D' - 'A'));
 
-      // allow MAFDCB bits in MISA to be modified
+      // allow MAFDCHB bits in MISA to be modified
       reg_t mask = 0;
       mask |= 1L << ('M' - 'A');
       mask |= 1L << ('A' - 'A');
@@ -1121,11 +1122,17 @@ void processor_t::set_csr(int which, reg_t val)
 
       state.misa = (val & mask) | (state.misa & ~mask);
 
-      // update the forced bits in MIDELEG
+      // update the forced bits in MIDELEG and other CSRs
       if (supports_extension('H'))
-          state.mideleg |= MIDELEG_FORCED_MASK;
-      else
-          state.mideleg &= ~MIDELEG_FORCED_MASK;
+        state.mideleg |= MIDELEG_FORCED_MASK;
+      else {
+        state.mideleg &= ~MIDELEG_FORCED_MASK;
+        state.medeleg &= ~hypervisor_exceptions;
+        state.mstatus &= ~(MSTATUS_GVA | MSTATUS_MPV);
+        state.mie &= ~MIP_HS_MASK;  // also takes care of hip, sip, hvip
+        state.mip &= ~MIP_HS_MASK;  // also takes care of hie, sie
+        set_csr(CSR_HSTATUS, 0);
+      }
       break;
     }
     case CSR_HSTATUS: {
