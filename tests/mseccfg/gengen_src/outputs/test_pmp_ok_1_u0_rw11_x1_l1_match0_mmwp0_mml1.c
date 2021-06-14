@@ -73,7 +73,7 @@ void exit(int code);
 static const unsigned long expected_rw_fail = 0;
 static unsigned actual_rw_fail = 0;
 
-static const unsigned long expected_x_fail = 0;
+static const unsigned long expected_x_fail = 1;
 static unsigned actual_x_fail = 0;
 static void checkTestResult(void);
 

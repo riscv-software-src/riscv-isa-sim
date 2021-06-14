@@ -117,6 +117,8 @@ main()
         if (u_mode == 1 || mmwp) { // mmwp to against non-match
             rw_err = 1;
             x_err = 1;
+        } else if (mml == 1) {
+            x_err = 1;
         }
     }
 
