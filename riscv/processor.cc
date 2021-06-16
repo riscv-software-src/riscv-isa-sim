@@ -844,6 +844,54 @@ reg_t processor_t::compute_new_satp(reg_t val, reg_t old) const
   return (new_mask & val) | (old_mask & old);
 }
 
+void processor_t::set_mstatus(reg_t val)
+{
+  bool has_page = supports_extension('S') && supports_impl(IMPL_MMU);
+  if ((val ^ state.mstatus) &
+      (MSTATUS_MPP | MSTATUS_MPRV
+       | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
+       | MSTATUS_MXR))
+    mmu->flush_tlb();
+
+  bool has_fs = supports_extension('S') || supports_extension('F')
+              || supports_extension('V');
+  bool has_vs = supports_extension('V');
+  bool has_mpv = supports_extension('S') && supports_extension('H');
+  bool has_gva = has_mpv;
+
+  reg_t mask = MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPRV
+             | (supports_extension('S') ? (MSTATUS_SIE | MSTATUS_SPIE) : 0)
+             | MSTATUS_TW | MSTATUS_TSR
+             | (has_page ? (MSTATUS_MXR | MSTATUS_SUM | MSTATUS_TVM) : 0)
+             | (has_fs ? MSTATUS_FS : 0)
+             | (has_vs ? MSTATUS_VS : 0)
+             | (!custom_extensions.empty() ? MSTATUS_XS : 0)
+             | (has_gva ? MSTATUS_GVA : 0)
+             | (has_mpv ? MSTATUS_MPV : 0);
+
+  reg_t requested_mpp = legalize_privilege(get_field(val, MSTATUS_MPP));
+  state.mstatus = set_field(state.mstatus, MSTATUS_MPP, requested_mpp);
+  if (supports_extension('S'))
+    mask |= MSTATUS_SPP;
+
+  state.mstatus = (state.mstatus & ~mask) | (val & mask);
+
+  bool dirty = (state.mstatus & MSTATUS_FS) == MSTATUS_FS;
+  dirty |= (state.mstatus & MSTATUS_XS) == MSTATUS_XS;
+  dirty |= (state.mstatus & MSTATUS_VS) == MSTATUS_VS;
+  if (max_xlen == 32)
+    state.mstatus = set_field(state.mstatus, MSTATUS32_SD, dirty);
+  else
+    state.mstatus = set_field(state.mstatus, MSTATUS64_SD, dirty);
+
+  if (supports_extension('U'))
+    state.mstatus = set_field(state.mstatus, MSTATUS_UXL, xlen_to_uxl(max_xlen));
+  if (supports_extension('S'))
+    state.mstatus = set_field(state.mstatus, MSTATUS_SXL, xlen_to_uxl(max_xlen));
+  // U-XLEN == S-XLEN == M-XLEN
+  xlen = max_xlen;
+}
+
 void processor_t::set_csr(int which, reg_t val)
 {
 #if defined(RISCV_ENABLE_COMMITLOG)
@@ -922,53 +970,9 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_MSTATUS: {
-      bool has_page = supports_extension('S') && supports_impl(IMPL_MMU);
-      if ((val ^ state.mstatus) &
-          (MSTATUS_MPP | MSTATUS_MPRV
-           | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
-           | MSTATUS_MXR))
-        mmu->flush_tlb();
-
-      bool has_fs = supports_extension('S') || supports_extension('F')
-                  || supports_extension('V');
-      bool has_vs = supports_extension('V');
-      bool has_mpv = supports_extension('S') && supports_extension('H');
-      bool has_gva = has_mpv;
-
-      reg_t mask = MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPRV
-                 | (supports_extension('S') ? (MSTATUS_SIE | MSTATUS_SPIE) : 0)
-                 | MSTATUS_TW | MSTATUS_TSR
-                 | (has_page ? (MSTATUS_MXR | MSTATUS_SUM | MSTATUS_TVM) : 0)
-                 | (has_fs ? MSTATUS_FS : 0)
-                 | (has_vs ? MSTATUS_VS : 0)
-                 | (!custom_extensions.empty() ? MSTATUS_XS : 0)
-                 | (has_gva ? MSTATUS_GVA : 0)
-                 | (has_mpv ? MSTATUS_MPV : 0);
-
-      reg_t requested_mpp = legalize_privilege(get_field(val, MSTATUS_MPP));
-      state.mstatus = set_field(state.mstatus, MSTATUS_MPP, requested_mpp);
-      if (supports_extension('S'))
-        mask |= MSTATUS_SPP;
-
-      state.mstatus = (state.mstatus & ~mask) | (val & mask);
-
-      bool dirty = (state.mstatus & MSTATUS_FS) == MSTATUS_FS;
-      dirty |= (state.mstatus & MSTATUS_XS) == MSTATUS_XS;
-      dirty |= (state.mstatus & MSTATUS_VS) == MSTATUS_VS;
-      if (max_xlen == 32)
-        state.mstatus = set_field(state.mstatus, MSTATUS32_SD, dirty);
-      else
-        state.mstatus = set_field(state.mstatus, MSTATUS64_SD, dirty);
-
-      if (supports_extension('U'))
-        state.mstatus = set_field(state.mstatus, MSTATUS_UXL, xlen_to_uxl(max_xlen));
-      if (supports_extension('S'))
-        state.mstatus = set_field(state.mstatus, MSTATUS_SXL, xlen_to_uxl(max_xlen));
-      // U-XLEN == S-XLEN == M-XLEN
-      xlen = max_xlen;
+    case CSR_MSTATUS:
+      set_mstatus(val);
       break;
-    }
     case CSR_MIP: {
       reg_t mask = (supervisor_ints | hypervisor_ints) & (MIP_SSIP | MIP_STIP | vssip_int);
       state.mip = (state.mip & ~mask) | (val & mask);
