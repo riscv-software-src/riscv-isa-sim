@@ -272,7 +272,7 @@ class processor_t : public abstract_device_t
 {
 public:
   processor_t(const char* isa, const char* priv, const char* varch,
-              simif_t* sim, uint32_t id, bool halt_on_reset,
+              simif_t* sim, uint32_t id, bool halt_on_reset, bool dynamic_endian,
               FILE *log_file);
   ~processor_t();
 
@@ -446,7 +446,11 @@ private:
   bool log_commits_enabled;
   FILE *log_file;
   bool halt_on_reset;
+#ifdef RISCV_ENABLE_DUAL_ENDIAN
+  bool dynamic_endian;
+#else
   static const bool dynamic_endian = false;
+#endif
   std::vector<bool> extension_table;
   std::vector<bool> impl_table;
   
