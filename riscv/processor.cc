@@ -468,7 +468,10 @@ void processor_t::reset()
 {
   state.reset(max_isa);
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
-  if (mmu->is_target_big_endian())
+  if (dynamic_endian)
+    // A writable MBE gets set to 0 on reset
+    mmu->set_target_big_endian(false);
+  else if (mmu->is_target_big_endian())
     state.mstatus |= MSTATUS_UBE | MSTATUS_SBE | MSTATUS_MBE;
 #endif
 
@@ -646,6 +649,8 @@ void processor_t::set_privilege(reg_t prv)
 {
   mmu->flush_tlb();
   state.prv = legalize_privilege(prv);
+  if (dynamic_endian)
+    change_endianness(state.prv);
 }
 
 void processor_t::set_virt(bool virt)
@@ -862,6 +867,7 @@ void processor_t::set_mstatus(reg_t val)
   if ((val ^ state.mstatus) &
       (MSTATUS_MPP | MSTATUS_MPRV
        | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
+       | (has_page && dynamic_endian? MSTATUS_SBE : 0)
        | MSTATUS_MXR))
     mmu->flush_tlb();
 
@@ -879,7 +885,8 @@ void processor_t::set_mstatus(reg_t val)
              | (has_vs ? MSTATUS_VS : 0)
              | (!custom_extensions.empty() ? MSTATUS_XS : 0)
              | (has_gva ? MSTATUS_GVA : 0)
-             | (has_mpv ? MSTATUS_MPV : 0);
+             | (has_mpv ? MSTATUS_MPV : 0)
+             | (dynamic_endian ? (MSTATUS_MBE | MSTATUS_SBE | MSTATUS_UBE) : 0);
 
   reg_t requested_mpp = legalize_privilege(get_field(val, MSTATUS_MPP));
   state.mstatus = set_field(state.mstatus, MSTATUS_MPP, requested_mpp);
@@ -898,10 +905,17 @@ void processor_t::set_mstatus(reg_t val)
 
   if (supports_extension('U'))
     state.mstatus = set_field(state.mstatus, MSTATUS_UXL, xlen_to_uxl(max_xlen));
+  else
+    state.mstatus = set_field(state.mstatus, MSTATUS_UBE, 0);
   if (supports_extension('S'))
     state.mstatus = set_field(state.mstatus, MSTATUS_SXL, xlen_to_uxl(max_xlen));
+  else
+    state.mstatus = set_field(state.mstatus, MSTATUS_SBE, 0);
   // U-XLEN == S-XLEN == M-XLEN
   xlen = max_xlen;
+
+  if (dynamic_endian)
+    change_endianness(state.prv);
 }
 
 void processor_t::set_csr(int which, reg_t val)
@@ -1049,7 +1063,7 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     case CSR_SSTATUS: {
       reg_t mask = SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP | SSTATUS_FS
-                 | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR
+                 | SSTATUS_XS | SSTATUS_SUM | SSTATUS_MXR | SSTATUS_UBE
                  | (supports_extension('V') ? SSTATUS_VS : 0);
       return set_csr(CSR_MSTATUS, (state.mstatus & ~mask) | (val & mask));
     }

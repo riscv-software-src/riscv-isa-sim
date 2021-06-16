@@ -446,6 +446,7 @@ private:
   bool log_commits_enabled;
   FILE *log_file;
   bool halt_on_reset;
+  static const bool dynamic_endian = false;
   std::vector<bool> extension_table;
   std::vector<bool> impl_table;
   
