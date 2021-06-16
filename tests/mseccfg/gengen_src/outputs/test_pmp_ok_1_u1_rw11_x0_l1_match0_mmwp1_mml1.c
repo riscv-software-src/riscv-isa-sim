@@ -147,6 +147,41 @@ static volatile unsigned char target_arr[100] = {
         1,2,3,4,5,6,7,8,
 };
 
+static int detect_pmp_granularity(){
+    unsigned int granule;
+    unsigned long int temp_reg;
+    unsigned long int all_ones = 0xffffffffffffffffULL;
+
+    asm volatile ("csrw pmpaddr0, %0 \n" :: "r"(all_ones) : "memory");
+    asm volatile ("csrr %0, pmpaddr0 \n" : "=r"(temp_reg));
+    asm volatile ("csrw pmpaddr0, %0 \n" :: "r"(0x0) : "memory");
+
+    int g = 2;
+    for(uintptr_t i = 1; i; i<<=1) {
+        if((temp_reg & i) != 0)
+            break;
+        g++;
+    }
+    granule = 1UL << g;
+
+    return granule;
+}
+
+static int mismatch_addr_offset(int granule_size){
+    unsigned int addr_offset = 256;
+
+    if (addr_offset == 0x0){
+        return 0x0;
+    }
+    else {
+        unsigned int mismatch_offset   = granule_size;
+        while (mismatch_offset < addr_offset){
+            mismatch_offset = mismatch_offset << 0x1;
+        }
+        return mismatch_offset;
+    }
+}
+
 /*
  * On processor_t::reset():
  *  - set_csr(CSR_PMPADDR0, ~reg_t(0));
@@ -169,9 +204,17 @@ static void set_cfg() {
      * Here @pmp_addr_offset:int@ is to create an address mismatch
      * And @create_pmp_cfg:int@ is to create cfg mismatch.
      */
+
+    unsigned int mismatch_offset = 256;
+
+    if (mismatch_offset != 0x0){
+        volatile int pmp_granularity = detect_pmp_granularity();
+        mismatch_offset = mismatch_addr_offset(pmp_granularity);
+    }
+
     asm volatile ("csrw pmpaddr3, %0 \n" :: "r"(U_MEM_END >> 2) : "memory");
     asm volatile ("csrw pmpaddr2, %0 \n" :: "r"(TEST_MEM_END >> 2) : "memory");
-    asm volatile ("csrw pmpaddr1, %0 \n" :: "r"((TEST_MEM_START + 256) >> 2) : "memory");
+    asm volatile ("csrw pmpaddr1, %0 \n" :: "r"((TEST_MEM_START + mismatch_offset) >> 2) : "memory");
     
 #if M_MODE_RWX
     asm volatile ("csrw pmpaddr0, %0 \n" :: "r"((TEST_MEM_START >> 3) - 1) : "memory");
