@@ -24,7 +24,7 @@ class sim_t : public htif_t, public simif_t
 {
 public:
   sim_t(const char* isa, const char* priv, const char* varch, size_t _nprocs,
-        bool halted, bool real_time_clint,
+        bool halted, bool real_time_clint, bool dynamic_endian,
         reg_t initrd_start, reg_t initrd_end, const char* bootargs,
         reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
         std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
