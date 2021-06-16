@@ -681,6 +681,18 @@ void processor_t::enter_debug_mode(uint8_t cause)
   state.pc = DEBUG_ROM_ENTRY;
 }
 
+void processor_t::change_endianness(reg_t prv)
+{
+  reg_t be;
+  if (prv == PRV_U)
+    be = state.mstatus & MSTATUS_UBE;
+  else if (prv == PRV_M)
+    be = state.mstatus & MSTATUS_MBE;
+  else // S or HS
+    be = state.mstatus & MSTATUS_SBE;
+  mmu->set_target_big_endian(be != 0, (state.mstatus & MSTATUS_SBE) != 0);
+}
+
 void processor_t::take_trap(trap_t& t, reg_t epc)
 {
   if (debug) {

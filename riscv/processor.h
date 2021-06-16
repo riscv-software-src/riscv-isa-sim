@@ -466,6 +466,7 @@ private:
   reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }
 
   void enter_debug_mode(uint8_t cause);
+  void change_endianness(reg_t prv);
 
   friend class mmu_t;
   friend class clint_t;
