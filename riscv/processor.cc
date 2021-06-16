@@ -970,8 +970,17 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
+    case CSR_MSTATUSH:
+      if (xlen == 32) {
+        reg_t mask = MSTATUS_SBE | MSTATUS_MBE;
+        set_mstatus((state.mstatus & ~mask) | ((val << 32) & mask));
+      }
+      break;
     case CSR_MSTATUS:
-      set_mstatus(val);
+      if (xlen == 32)
+        set_mstatus(((state.mstatus >> 32) << 32) | (uint32_t)val);
+      else
+        set_mstatus(val);
       break;
     case CSR_MIP: {
       reg_t mask = (supervisor_ints | hypervisor_ints) & (MIP_SSIP | MIP_STIP | vssip_int);
