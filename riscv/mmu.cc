@@ -269,8 +269,6 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
                   (!cfgl && !cfgx && (typer || (typew && prvm))) ||
                   (cfgl && typex) ||
                   (cfgl && typer && cfgx && prvm);
-              if (mml_shared_region)
-                  printf("share range, mode = %d\n", prvm);
               return mml_shared_region ? mml_chk_shared : mml_chk_normal;
             }
         } else {
