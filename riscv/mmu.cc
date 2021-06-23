@@ -283,7 +283,9 @@ reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
     base = tor;
   }
 
-  return ((mode == PRV_M) && !(proc->state.mseccfg & MSECCFG_MMWP));
+  return ((mode == PRV_M) &&
+          !(proc->state.mseccfg & MSECCFG_MMWP) &&
+          !(type == FETCH && (proc->state.mseccfg & MSECCFG_MML)));
 }
 
 reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
