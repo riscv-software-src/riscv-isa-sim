@@ -20,7 +20,7 @@ uint8_t     rcon              = 0            ;
 uint64_t    result                           ;
 
 if(enc_rcon != 0xA) {
-    temp    = (temp >> 8) | (temp << 24); // Rotate left by 8
+    temp    = (temp >> 8) | (temp << 24); // Rotate right by 8
     rcon    = round_consts[enc_rcon];
 }
 
