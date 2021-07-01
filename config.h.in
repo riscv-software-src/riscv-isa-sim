@@ -27,17 +27,35 @@
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef FESVR_ENABLED
 
+/* define if the Boost library is available */
+#undef HAVE_BOOST
+
+/* define if the Boost::ASIO library is available */
+#undef HAVE_BOOST_ASIO
+
 /* Dynamic library loading is supported */
 #undef HAVE_DLOPEN
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
+/* Define to 1 if you have the `boost_regex' library (-lboost_regex). */
+#undef HAVE_LIBBOOST_REGEX
+
+/* Define to 1 if you have the `boost_system' library (-lboost_system). */
+#undef HAVE_LIBBOOST_SYSTEM
+
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* Define to 1 if struct statx exists. */
+#undef HAVE_STATX
+
+/* Define to 1 if struct statx has stx_mnt_id. */
+#undef HAVE_STATX_MNT_ID
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H

@@ -96,7 +96,7 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 default-CFLAGS   := -DPREFIX=\"$(prefix)\" -Wall -Wno-unused -g -O2 -fPIC
 default-CXXFLAGS := $(default-CFLAGS) -std=c++11
 
-mcppbs-CPPFLAGS := @CPPFLAGS@
+mcppbs-CPPFLAGS := @CPPFLAGS@ @BOOST_CPPFLAGS@
 mcppbs-CFLAGS   := $(default-CFLAGS) @CFLAGS@
 mcppbs-CXXFLAGS := $(default-CXXFLAGS) @CXXFLAGS@
 
@@ -118,12 +118,12 @@ COMPILE_C     := $(CC) -MMD -MP $(all-c-flags) $(sprojs_include)
 #  - LDFLAGS : Flags for the linker (eg. -L)
 #  - LIBS    : Library flags (eg. -l)
 
-mcppbs-LDFLAGS := @LDFLAGS@
+mcppbs-LDFLAGS := @LDFLAGS@ @BOOST_LDFLAGS@
 all-link-flags := $(mcppbs-LDFLAGS) $(LDFLAGS)
 
 comma := ,
 LD            := $(CXX)
-LIBS          := @LIBS@
+LIBS          := @LIBS@ @BOOST_ASIO_LIB@ @BOOST_REGEX_LIB@
 LINK          := $(LD) -L. $(all-link-flags) -Wl,-rpath,$(install_libs_dir) $(patsubst -L%,-Wl$(comma)-rpath$(comma)%,$(filter -L%,$(LDFLAGS)))
 
 # Library creation
