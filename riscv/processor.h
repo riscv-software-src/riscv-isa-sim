@@ -448,7 +448,7 @@ private:
   bool halt_on_reset;
   std::vector<bool> extension_table;
   std::vector<bool> impl_table;
-  
+
   entropy_source es; // Crypto ISE Entropy source.
 
   std::vector<insn_desc_t> instructions;

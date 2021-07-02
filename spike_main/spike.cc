@@ -395,9 +395,18 @@ int main(int argc, char** argv)
     }
   }
 
+#ifdef HAVE_BOOST_ASIO
+  boost::asio::io_service *io_service_ptr = NULL; // needed for socket command interface option -s
+  tcp::acceptor *acceptor_ptr = NULL;
+#endif
+
   sim_t s(isa, priv, varch, nprocs, halted, real_time_clint,
       initrd_start, initrd_end, bootargs, start_pc, mems, plugin_devices, htif_args,
-      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file);
+      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file
+#ifdef HAVE_BOOST_ASIO
+      , io_service_ptr, acceptor_ptr
+#endif
+      );
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));

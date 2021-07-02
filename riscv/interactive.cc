@@ -1,8 +1,8 @@
 // See LICENSE for license details.
 
+#include "sim.h"
 #include "decode.h"
 #include "disasm.h"
-#include "sim.h"
 #include "mmu.h"
 #include <sys/mman.h>
 #include <termios.h>
@@ -422,7 +422,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
   // mask bits above max_xlen
   int max_xlen = procs[strtol(args[1].c_str(),NULL,10)]->get_max_xlen();
   if (max_xlen == 32) val &= 0xFFFFFFFF;
-  
+
   std::vector<std::string> args2;
   args2 = std::vector<std::string>(args.begin()+1,args.end()-1);
 
