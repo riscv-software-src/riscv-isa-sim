@@ -13,11 +13,19 @@
 #include <cmath>
 #include <cstdlib>
 #include <iostream>
+#include <iomanip>
 #include <assert.h>
 #include <limits.h>
 #include <stdexcept>
 #include <string>
 #include <algorithm>
+
+using std::stringstream;
+using std::hex;
+using std::dec;
+using std::setfill;
+using std::setw;
+using std::endl;
 
 #undef STATE
 #define STATE state
@@ -51,6 +59,8 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
     set_mmu_capability(IMPL_MMU_SV32);
   else if (max_xlen == 64)
     set_mmu_capability(IMPL_MMU_SV48);
+
+  sout_ptr = sout_ptr_ctor; // needed for command line option -s
 
   reset();
 }
@@ -684,11 +694,16 @@ void processor_t::enter_debug_mode(uint8_t cause)
 void processor_t::take_trap(trap_t& t, reg_t epc)
 {
   if (debug) {
-    fprintf(log_file, "core %3d: exception %s, epc 0x%0*" PRIx64 "\n",
-            id, t.name(), max_xlen/4, zext(epc, max_xlen));
+    stringstream s; // first put everything in a string, later send it to output
+    s << "core " << dec << setfill(' ') << setw(3) << id
+      << ": exception " << t.name() << ", epc 0x"
+      << hex << setfill('0') << setw(max_xlen/4) << zext(epc, max_xlen) << endl;
     if (t.has_tval())
-      fprintf(log_file, "core %3d:           tval 0x%0*" PRIx64 "\n",
-              id, max_xlen/4, zext(t.get_tval(), max_xlen));
+       s << "core " << dec << setfill(' ') << setw(3) << id
+         << ":           tval 0x" << hex << setfill('0') << setw(max_xlen/4)
+         << zext(t.get_tval(), max_xlen) << endl;
+    if (log_file==stderr) *sout_ptr << s.str(); // handles command line options -d -s -l
+    else fputs(s.str().c_str(),log_file); // handles command line option --log
   }
 
   if (state.debug_mode) {
@@ -797,9 +812,13 @@ void processor_t::disasm(insn_t insn)
       fprintf(log_file, "core %3d: Executed %" PRIx64 " times\n", id, executions);
     }
 
-    fprintf(log_file, "core %3d: 0x%0*" PRIx64 " (0x%08" PRIx64 ") %s\n",
-            id, max_xlen/4, zext(state.pc, max_xlen), bits,
-            disassembler->disassemble(insn).c_str());
+    stringstream s;  // first put everything in a string, later send it to output
+    s << "core " << dec << setfill(' ') << setw(3) << id
+      << hex << ": 0x" << setfill('0') << setw(max_xlen/4)
+      << zext(state.pc, max_xlen) << " (0x" << setw(8) << bits << ") "
+      << disassembler->disassemble(insn) << endl;
+    if (log_file==stderr) *sout_ptr << s.str(); // handles command line options -d -s -l
+    else fputs(s.str().c_str(),log_file); // handles command line option --log
     last_pc = state.pc;
     last_bits = bits;
     executions = 1;

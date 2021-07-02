@@ -415,7 +415,7 @@ int main(int argc, char** argv)
        // aceptor is created passing argument port=0, so O.S. will choose a free port
        string name = boost::asio::ip::host_name();
        std::cout << "Listening for debug commands on " << name.substr(0,name.find('.'))
-		 << " port " << acceptor_ptr->local_endpoint().port() << " ." << std::endl;
+                 << " port " << acceptor_ptr->local_endpoint().port() << " ." << std::endl;
        // at the end, add space and some other character for convenience of javascript .split(" ")
      }
      catch (std::exception& e)
