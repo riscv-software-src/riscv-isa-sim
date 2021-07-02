@@ -62,6 +62,11 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     debug_module(this, dm_config)
 {
   signal(SIGINT, &handle_signal);
+
+#ifdef HAVE_BOOST_ASIO
+  io_service_ptr = io_service_ptr_ctor; // socket interface
+  acceptor_ptr = acceptor_ptr_ctor; // socket interface
+#endif
   sout.rdbuf(cerr.rdbuf()); // debug output goes to stderr by default
 
   for (auto& x : mems)
