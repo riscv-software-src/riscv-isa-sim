@@ -104,7 +104,7 @@ std::string sim_t::rin(streambuf *bout_ptr) {
       sout.rdbuf(bout_ptr);
    } else { // if we are not listening on a socket, get commands from terminal
       cerr << ": " << std::flush;
-      s = readline(2); // 2 is stderr which in turn is stdin
+      s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
       // output goes to stderr
       sout.rdbuf(cerr.rdbuf());
    }
@@ -156,8 +156,14 @@ void sim_t::interactive()
 
   while (!done())
   {
-    std::cerr << ": " << std::flush;
-    std::string s = readline(2);
+    std::string s;
+#ifdef HAVE_BOOST_ASIO
+    streambuf bout; // socket output
+       s = rin(&bout); // get command string from socket or terminal
+#else
+       cerr << ": " << std::flush;
+       s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
+#endif
 
     std::stringstream ss(s);
     std::string cmd, tmp;
@@ -167,6 +173,9 @@ void sim_t::interactive()
     {
       set_procs_debug(true);
       step(1);
+#ifdef HAVE_BOOST_ASIO
+      wout(&bout); // socket output, if required
+#endif
       continue;
     }
 
@@ -175,12 +184,15 @@ void sim_t::interactive()
 
     try
     {
-      if(funcs.count(cmd))
+      if (funcs.count(cmd))
         (this->*funcs[cmd])(cmd, args);
       else
         fprintf(stderr, "Unknown command %s\n", cmd.c_str());
     }
     catch(trap_t& t) {}
+#ifdef HAVE_BOOST_ASIO
+    wout(&bout); // socket output, if required
+#endif
   }
   ctrlc_pressed = false;
 }
@@ -241,7 +253,7 @@ void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::stri
 
 reg_t sim_t::get_pc(const std::vector<std::string>& args)
 {
-  if(args.size() != 1)
+  if (args.size() != 1)
     throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
@@ -404,12 +416,12 @@ void sim_t::interactive_fregd(const std::string& cmd, const std::vector<std::str
 
 reg_t sim_t::get_mem(const std::vector<std::string>& args)
 {
-  if(args.size() != 1 && args.size() != 2)
+  if (args.size() != 1 && args.size() != 2)
     throw trap_interactive();
 
   std::string addr_str = args[0];
   mmu_t* mmu = debug_mmu;
-  if(args.size() == 2)
+  if (args.size() == 2)
   {
     processor_t *p = get_core(args[0]);
     mmu = p->get_mmu();
@@ -417,7 +429,7 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
   }
 
   reg_t addr = strtol(addr_str.c_str(),NULL,16), val;
-  if(addr == LONG_MAX)
+  if (addr == LONG_MAX)
     addr = strtoul(addr_str.c_str(),NULL,16);
 
   switch(addr % 8)
@@ -448,12 +460,12 @@ void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::strin
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)
 {
-  if(args.size() != 1 && args.size() != 2)
+  if (args.size() != 1 && args.size() != 2)
     throw trap_interactive();
 
   std::string addr_str = args[0];
   mmu_t* mmu = debug_mmu;
-  if(args.size() == 2)
+  if (args.size() == 2)
   {
     processor_t *p = get_core(args[0]);
     mmu = p->get_mmu();
@@ -483,11 +495,11 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
 {
   bool cmd_until = cmd == "until" || cmd == "untiln";
 
-  if(args.size() < 3)
+  if (args.size() < 3)
     return;
 
   reg_t val = strtol(args[args.size()-1].c_str(),NULL,16);
-  if(val == LONG_MAX)
+  if (val == LONG_MAX)
     val = strtoul(args[args.size()-1].c_str(),NULL,16);
 
   // mask bits above max_xlen
