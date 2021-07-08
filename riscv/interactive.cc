@@ -187,7 +187,7 @@ void sim_t::interactive()
       if (funcs.count(cmd))
         (this->*funcs[cmd])(cmd, args);
       else
-        fprintf(stderr, "Unknown command %s\n", cmd.c_str());
+        sout << "Unknown command " << cmd << endl;
     }
     catch(trap_t& t) {}
 #ifdef HAVE_BOOST_ASIO
@@ -199,7 +199,7 @@ void sim_t::interactive()
 
 void sim_t::interactive_help(const std::string& cmd, const std::vector<std::string>& args)
 {
-  std::cerr <<
+  sout <<
     "Interactive commands:\n"
     "reg <core> [reg]                # Display [reg] (all if omitted) in <core>\n"
     "fregh <core> <reg>              # Display half precision <reg> in <core>\n"
@@ -223,8 +223,8 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "q                                 Alias for quit\n"
     "help                            # This screen!\n"
     "h                                 Alias for help\n"
-    "Note: Hitting enter is the same as: run 1\n"
-    << std::flush;
+    "Note: Hitting enter is the same as: run 1"
+    << endl;
 }
 
 void sim_t::interactive_run_noisy(const std::string& cmd, const std::vector<std::string>& args)
@@ -244,6 +244,7 @@ void sim_t::interactive_run(const std::string& cmd, const std::vector<std::strin
   set_procs_debug(noisy);
   for (size_t i = 0; i < steps && !ctrlc_pressed && !done(); i++)
     step(1);
+  if (!noisy) sout << ":" << endl;
 }
 
 void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::string>& args)
@@ -267,12 +268,13 @@ void sim_t::interactive_pc(const std::string& cmd, const std::vector<std::string
 
   processor_t *p = get_core(args[0]);
   int max_xlen = p->get_max_xlen();
-  fprintf(stderr, "0x%0*" PRIx64 "\n", max_xlen/4, zext(get_pc(args), max_xlen));
+  sout << hex << setfill('0') << "0x" << setw(max_xlen/4)
+       << zext(get_pc(args), max_xlen) << endl;
 }
 
 reg_t sim_t::get_reg(const std::vector<std::string>& args)
 {
-  if(args.size() != 2)
+  if (args.size() != 2)
     throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
@@ -328,39 +330,39 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
   const int vlen = (int)(p->VU.get_vlen()) >> 3;
   const int elen = (int)(p->VU.get_elen()) >> 3;
   const int num_elem = vlen/elen;
-  fprintf(stderr, "VLEN=%d bits; ELEN=%d bits\n", vlen << 3, elen << 3);
+  sout << dec << "VLEN=" << (vlen << 3) << " bits; ELEN=" << (elen << 3) << " bits" << endl;
 
   for (int r = rstart; r < rend; ++r) {
-    fprintf(stderr, "%-4s: ", vr_name[r]);
+    sout << setfill (' ') << left << setw(4) << vr_name[r] << right << ": ";
     for (int e = num_elem-1; e >= 0; --e){
       uint64_t val;
       switch(elen){
         case 8:
           val = P.VU.elt<uint64_t>(r, e);
-          fprintf(stderr, "[%d]: 0x%016" PRIx64 "  ", e, val);
+          sout << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(16) << val << "  ";
           break;
         case 4:
           val = P.VU.elt<uint32_t>(r, e);
-          fprintf(stderr, "[%d]: 0x%08" PRIx32 "  ", e, (uint32_t)val);
+          sout << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(8) << (uint32_t)val << "  ";
           break;
         case 2:
           val = P.VU.elt<uint16_t>(r, e);
-          fprintf(stderr, "[%d]: 0x%08" PRIx16 "  ", e, (uint16_t)val);
+          sout << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(8) << (uint16_t)val << "  ";
           break;
         case 1:
           val = P.VU.elt<uint8_t>(r, e);
-          fprintf(stderr, "[%d]: 0x%08" PRIx8 "  ", e, (uint8_t)val);
+          sout << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(8) << (int)(uint8_t)val << "  ";
           break;
       }
     }
-    fprintf(stderr, "\n");
+    sout << endl;
   }
 }
 
 
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
 {
-  if(args.size() < 1)
+  if (args.size() < 1)
      throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
@@ -369,14 +371,17 @@ void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::strin
   if (args.size() == 1) {
     // Show all the regs!
 
+    sout << hex;
     for (int r = 0; r < NXPR; ++r) {
-      fprintf(stderr, "%-4s: 0x%0*" PRIx64 "  ", xpr_name[r], max_xlen/4,
-              zext(p->get_state()->XPR[r], max_xlen));
+      sout << setfill(' ') << setw(4) << xpr_name[r]
+           << ": 0x" << setfill('0') << setw(max_xlen/4)
+           << zext(p->get_state()->XPR[r], max_xlen);
       if ((r + 1) % 4 == 0)
-        fprintf(stderr, "\n");
+        sout << endl;
     }
   } else {
-    fprintf(stderr, "0x%0*" PRIx64 "\n", max_xlen/4, zext(get_reg(args), max_xlen));
+      sout << "0x" << setfill('0') << setw(max_xlen/4)
+           << zext(get_reg(args), max_xlen) << endl;
   }
 }
 
@@ -390,28 +395,28 @@ union fpr
 void sim_t::interactive_freg(const std::string& cmd, const std::vector<std::string>& args)
 {
   freg_t r = get_freg(args);
-  fprintf(stderr, "0x%016" PRIx64 "%016" PRIx64 "\n", r.v[1], r.v[0]);
+  sout << hex << "0x" << setfill ('0') << setw(16) << r.v[1] << setw(16) << r.v[0] << endl;
 }
 
 void sim_t::interactive_fregh(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = freg(f16_to_f32(f16(get_freg(args))));
-  fprintf(stderr, "%g\n", isBoxedF32(f.r) ? (double)f.s : NAN);
+  sout << dec << (isBoxedF32(f.r) ? (double)f.s : NAN) << endl;
 }
 
 void sim_t::interactive_fregs(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = get_freg(args);
-  fprintf(stderr, "%g\n", isBoxedF32(f.r) ? (double)f.s : NAN);
+  sout << dec << (isBoxedF32(f.r) ? (double)f.s : NAN) << endl;
 }
 
 void sim_t::interactive_fregd(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = get_freg(args);
-  fprintf(stderr, "%g\n", isBoxedF64(f.r) ? f.d : NAN);
+  sout << dec << (isBoxedF64(f.r) ? f.d : NAN) << endl;
 }
 
 reg_t sim_t::get_mem(const std::vector<std::string>& args)
@@ -455,7 +460,8 @@ void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::strin
 {
   int max_xlen = procs[0]->get_max_xlen();
 
-  fprintf(stderr, "0x%0*" PRIx64 "\n", max_xlen/4, zext(get_mem(args), max_xlen));
+  sout << hex << "0x" << setfill('0') << setw(max_xlen/4)
+       << zext(get_mem(args), max_xlen) << endl;
 }
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)
@@ -476,9 +482,9 @@ void sim_t::interactive_str(const std::string& cmd, const std::vector<std::strin
 
   char ch;
   while((ch = mmu->load_uint8(addr++)))
-    putchar(ch);
+    sout << ch;
 
-  putchar('\n');
+  sout << endl;
 }
 
 void sim_t::interactive_until_silent(const std::string& cmd, const std::vector<std::string>& args)
