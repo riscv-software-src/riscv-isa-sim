@@ -6,7 +6,7 @@ require_extension('K');
 uint32_t a = RS1;
 
 WRITE_RD(
-    ROR32(a, 17) ^ ROR32(a,19) ^ (a >> 10)
+    sext_xlen(ROR32(a, 17) ^ ROR32(a,19) ^ (a >> 10))
 );
 
 #undef ROR32
