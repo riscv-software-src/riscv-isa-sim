@@ -12,5 +12,5 @@ uint32_t     u = x;
 
 u = (u << (8*bs)) | (u >> (32-8*bs));
 
-WRITE_RD(u ^ RS1);
+WRITE_RD(sext_xlen(u ^ RS1));
 
