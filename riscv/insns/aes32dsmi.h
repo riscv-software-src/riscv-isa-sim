@@ -17,5 +17,5 @@ u = (AES_GFMUL(x,0xb) << 24) |
 
 u = (u << (8*bs)) | (u >> (32-8*bs));
 
-WRITE_RD(u ^ RS1);
+WRITE_RD(sext_xlen(u ^ RS1));
 
