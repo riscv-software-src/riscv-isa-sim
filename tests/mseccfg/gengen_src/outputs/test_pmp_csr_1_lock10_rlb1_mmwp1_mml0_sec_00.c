@@ -123,7 +123,7 @@ static void set_cfg() {
     /*
      * set MSECCFG_RLB to avoid locked at start
      */
-    asm volatile ("csrs 0x390, %0 \n"::"r"(MSECCFG_RLB));
+    asm volatile ("csrs 0x747, %0 \n"::"r"(MSECCFG_RLB));
     asm volatile ("nop");
 #endif
     
@@ -195,7 +195,7 @@ static void set_cfg() {
     const unsigned seccfg_bits = (1 ? MSECCFG_RLB : 0) 
             | (0 ? MSECCFG_MML : 0) 
             | (1 ? MSECCFG_MMWP : 0);
-    asm volatile ("csrw 0x390, %0 \n"::"r"(seccfg_bits));
+    asm volatile ("csrw 0x747, %0 \n"::"r"(seccfg_bits));
     
 //------------------------Test target
     asm volatile ("nop");
@@ -255,8 +255,8 @@ static void set_cfg() {
     wval = (0 ? MSECCFG_RLB : 0) 
             | (0 ? MSECCFG_MML : 0) 
             | (0 ? MSECCFG_MMWP : 0);
-    asm volatile ("csrw 0x390, %1 \n"
-                "\tcsrr %0, 0x390 \n"
+    asm volatile ("csrw 0x747, %1 \n"
+                "\tcsrr %0, 0x747 \n"
             : "=r"(rval)
             : "r"(wval)
               : "memory");

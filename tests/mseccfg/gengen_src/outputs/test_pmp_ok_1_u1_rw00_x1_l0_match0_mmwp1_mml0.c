@@ -193,7 +193,7 @@ static void set_cfg() {
      * set MSECCFG_RLB to avoid locked
      */
     unsigned rlb_value = MSECCFG_RLB;
-    asm volatile ("csrs 0x390, %0 \n"::"r"(rlb_value));
+    asm volatile ("csrs 0x747, %0 \n"::"r"(rlb_value));
 #endif
     
     /*
@@ -268,7 +268,7 @@ static void set_cfg() {
     // set proc->state.mseccfg, for MML/MMWP
     const unsigned seccfg_bits = (0 ? MSECCFG_MML : 0) | (1 ? MSECCFG_MMWP : 0);
     if (seccfg_bits) {
-        asm volatile ("csrs 0x390, %0 \n"::"r"(seccfg_bits));
+        asm volatile ("csrs 0x747, %0 \n"::"r"(seccfg_bits));
     }
     
     // currently dummy since tlb flushed when set_csr on mseccfg
