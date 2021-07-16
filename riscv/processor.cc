@@ -917,7 +917,7 @@ void processor_t::set_csr(int which, reg_t val)
   reg_t supervisor_ints = supports_extension('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
   reg_t vssip_int = supports_extension('H') ? MIP_VSSIP : 0;
   reg_t hypervisor_ints = supports_extension('H') ? MIP_HS_MASK : 0;
-  reg_t coprocessor_ints = (!custom_extensions.empty()) << IRQ_COP;
+  reg_t coprocessor_ints = (reg_t)any_custom_extensions() << IRQ_COP;
   reg_t delegable_ints = supervisor_ints | coprocessor_ints;
   reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP | MIP_MEIP;
   reg_t hypervisor_exceptions = 0
@@ -977,7 +977,7 @@ void processor_t::set_csr(int which, reg_t val)
                  | (has_page ? (MSTATUS_MXR | MSTATUS_SUM | MSTATUS_TVM) : 0)
                  | (has_fs ? MSTATUS_FS : 0)
                  | (has_vs ? MSTATUS_VS : 0)
-                 | (!custom_extensions.empty() ? MSTATUS_XS : 0)
+                 | (any_custom_extensions() ? MSTATUS_XS : 0)
                  | (has_gva ? MSTATUS_GVA : 0)
                  | (has_mpv ? MSTATUS_MPV : 0);
 

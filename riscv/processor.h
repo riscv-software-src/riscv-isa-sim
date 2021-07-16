@@ -309,6 +309,9 @@ public:
   }
   extension_t* get_extension();
   extension_t* get_extension(const char* name);
+  bool any_custom_extensions() const {
+    return !custom_extensions.empty();
+  }
   bool supports_extension(unsigned char ext) {
     if (ext >= 'A' && ext <= 'Z')
       return ((state.misa >> (ext - 'A')) & 1);
