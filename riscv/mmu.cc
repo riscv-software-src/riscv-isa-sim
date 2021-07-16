@@ -191,6 +191,11 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
   reg_t idx = (vaddr >> PGSHIFT) % TLB_ENTRIES;
   reg_t expected_tag = vaddr >> PGSHIFT;
 
+  tlb_entry_t entry = {host_addr - vaddr, paddr - vaddr};
+
+  if (proc && get_field(proc->state.mstatus, MSTATUS_MPRV))
+    return entry;
+
   if ((tlb_load_tag[idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)
     tlb_load_tag[idx] = -1;
   if ((tlb_store_tag[idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)
@@ -209,7 +214,6 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
     else tlb_load_tag[idx] = expected_tag;
   }
 
-  tlb_entry_t entry = {host_addr - vaddr, paddr - vaddr};
   tlb_data[idx] = entry;
   return entry;
 }
