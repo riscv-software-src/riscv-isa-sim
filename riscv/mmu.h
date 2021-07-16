@@ -369,13 +369,19 @@ public:
 #endif
   }
 
-  void set_target_big_endian(bool enable)
+  void set_target_big_endian(bool enable, bool enable_for_pte)
   {
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
     target_big_endian = enable;
+    target_pte_big_endian = enable_for_pte;
 #else
     assert(enable == false);
+    assert(enable_for_pte == false);
 #endif
+  }
+
+  void set_target_big_endian(bool enable) {
+    set_target_big_endian(enable, enable);
   }
 
   bool is_target_big_endian()
@@ -472,13 +478,25 @@ private:
     return new trigger_matched_t(match, operation, address, data);
   }
 
+  template<typename T> inline T pte_from_target(target_endian<T> n) const
+  {
+    return target_pte_big_endian? n.from_be() : n.from_le();
+  }
+
+  template<typename T> inline target_endian<T> pte_to_target(T n) const
+  {
+    return target_pte_big_endian? target_endian<T>::to_be(n) : target_endian<T>::to_le(n);
+  }
+
   reg_t pmp_homogeneous(reg_t addr, reg_t len);
   reg_t pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode);
 
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
   bool target_big_endian;
+  bool target_pte_big_endian;
 #else
   static const bool target_big_endian = false;
+  static const bool target_pte_big_endian = false;
 #endif
   bool check_triggers_fetch;
   bool check_triggers_load;

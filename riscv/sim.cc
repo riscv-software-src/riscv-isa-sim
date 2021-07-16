@@ -28,7 +28,7 @@ static void handle_signal(int sig)
 }
 
 sim_t::sim_t(const char* isa, const char* priv, const char* varch,
-             size_t nprocs, bool halted, bool real_time_clint,
+             size_t nprocs, bool halted, bool real_time_clint, bool dynamic_endian,
              reg_t initrd_start, reg_t initrd_end, const char* bootargs,
              reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
@@ -76,10 +76,17 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
       exit(1);
   }
 
+#ifndef RISCV_ENABLE_DUAL_ENDIAN
+  if (dynamic_endian) {
+      std::cerr << "Support for --dynamic-endian not compiled in.  Configure with --enable-dual-endian.\n";
+      exit(1);
+  }
+#endif
+
   for (size_t i = 0; i < nprocs; i++) {
     int hart_id = hartids.empty() ? i : hartids[i];
     procs[i] = new processor_t(isa, priv, varch, this, hart_id, halted,
-                               log_file.get());
+                               dynamic_endian, log_file.get());
   }
 
   make_dtb();
@@ -304,7 +311,7 @@ void sim_t::set_rom()
     (uint32_t) (start_pc & 0xffffffff),
     (uint32_t) (start_pc >> 32)
   };
-  if (get_target_endianness() == memif_endianness_big) {
+  if (procs[0]->get_mmu()->is_target_big_endian()) {
     int i;
     // Instuctions are little endian
     for (i = 0; reset_vec[i] != 0; i++)

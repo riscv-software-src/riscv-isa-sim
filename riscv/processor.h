@@ -272,7 +272,7 @@ class processor_t : public abstract_device_t
 {
 public:
   processor_t(const char* isa, const char* priv, const char* varch,
-              simif_t* sim, uint32_t id, bool halt_on_reset,
+              simif_t* sim, uint32_t id, bool halt_on_reset, bool dynamic_endian,
               FILE *log_file);
   ~processor_t();
 
@@ -446,6 +446,11 @@ private:
   bool log_commits_enabled;
   FILE *log_file;
   bool halt_on_reset;
+#ifdef RISCV_ENABLE_DUAL_ENDIAN
+  bool dynamic_endian;
+#else
+  static const bool dynamic_endian = false;
+#endif
   std::vector<bool> extension_table;
   std::vector<bool> impl_table;
   
@@ -466,6 +471,7 @@ private:
   reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }
 
   void enter_debug_mode(uint8_t cause);
+  void change_endianness(reg_t prv);
 
   friend class mmu_t;
   friend class clint_t;
@@ -479,6 +485,7 @@ private:
   insn_func_t decode_insn(insn_t insn);
   bool satp_valid(reg_t val) const;
   reg_t compute_new_satp(reg_t val, reg_t old) const;
+  void set_mstatus(reg_t val);
 
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;

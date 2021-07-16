@@ -55,6 +55,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --initrd=<path>       Load kernel initrd into memory\n");
   fprintf(stderr, "  --bootargs=<args>     Provide custom bootargs for kernel [default: console=hvc0 earlycon=sbi]\n");
   fprintf(stderr, "  --real-time-clint     Increment clint time at real-time rate\n");
+  fprintf(stderr, "  --dynamic-endian      Make UBE/SBE/MBE writable\n");
   fprintf(stderr, "  --dm-progsize=<words> Progsize for the debug module [default 2]\n");
   fprintf(stderr, "  --dm-sba=<bits>       Debug bus master supports up to "
       "<bits> wide accesses [default 0]\n");
@@ -211,6 +212,7 @@ int main(int argc, char** argv)
   bool dump_dts = false;
   bool dtb_enabled = true;
   bool real_time_clint = false;
+  bool dynamic_endian = false;
   size_t nprocs = 1;
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
@@ -331,6 +333,7 @@ int main(int argc, char** argv)
   parser.option(0, "initrd", 1, [&](const char* s){initrd = s;});
   parser.option(0, "bootargs", 1, [&](const char* s){bootargs = s;});
   parser.option(0, "real-time-clint", 0, [&](const char *s){real_time_clint = true;});
+  parser.option(0, "dynamic-endian", 0, [&](const char* s){dynamic_endian = true;});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
     if (lib == NULL) {
@@ -395,7 +398,7 @@ int main(int argc, char** argv)
     }
   }
 
-  sim_t s(isa, priv, varch, nprocs, halted, real_time_clint,
+  sim_t s(isa, priv, varch, nprocs, halted, real_time_clint, dynamic_endian,
       initrd_start, initrd_end, bootargs, start_pc, mems, plugin_devices, htif_args,
       std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
