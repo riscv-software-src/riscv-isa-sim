@@ -203,6 +203,8 @@ struct state_t
   csr_t_p vstval;
   reg_t vsatp;
 
+  void dirty_mstatus(reg_t dirties);  // set VS, FS, or XS to Dirty
+
   reg_t dpc;
   reg_t dscratch0, dscratch1;
   dcsr_t dcsr;
