@@ -203,7 +203,6 @@ struct state_t
   reg_t mstatus;
   reg_t mepc;
   reg_t mtval;
-  csr_t_p mscratch;
   reg_t mtvec;
   reg_t mcause;
   reg_t minstret;
