@@ -61,7 +61,10 @@ public:
   mmu_t(simif_t* sim, processor_t* proc);
   ~mmu_t();
 
-  inline reg_t misaligned_load(reg_t addr, size_t size)
+#define RISCV_XLATE_VIRT (1U << 0)
+#define RISCV_XLATE_VIRT_MXR (1U << 1)
+
+  inline reg_t misaligned_load(reg_t addr, size_t size, uint32_t xlate_flags)
   {
 #ifdef RISCV_ENABLE_MISALIGNED
     reg_t res = 0;
@@ -69,17 +72,19 @@ public:
       res += (reg_t)load_uint8(addr + (target_big_endian? size-1-i : i)) << (i * 8);
     return res;
 #else
-    throw trap_load_address_misaligned(addr, 0, 0);
+    bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
+    throw trap_load_address_misaligned(gva, addr, 0, 0);
 #endif
   }
 
-  inline void misaligned_store(reg_t addr, reg_t data, size_t size)
+  inline void misaligned_store(reg_t addr, reg_t data, size_t size, uint32_t xlate_flags)
   {
 #ifdef RISCV_ENABLE_MISALIGNED
     for (size_t i = 0; i < size; i++)
       store_uint8(addr + (target_big_endian? size-1-i : i), data >> (i * 8));
 #else
-    throw trap_store_address_misaligned(addr, 0, 0);
+    bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
+    throw trap_store_address_misaligned(gva, addr, 0, 0);
 #endif
   }
 
@@ -90,9 +95,6 @@ public:
   proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, size));
 #endif
 
-#define RISCV_XLATE_VIRT (1U << 0)
-#define RISCV_XLATE_VIRT_MXR (1U << 1)
-
   // template for functions that load an aligned value from memory
   #define load_func(type, prefix, xlate_flags) \
     inline type##_t prefix##_##type(reg_t addr, bool require_alignment = false) { \
@@ -100,7 +102,7 @@ public:
         flush_tlb(); \
       if (unlikely(addr & (sizeof(type##_t)-1))) { \
         if (require_alignment) load_reserved_address_misaligned(addr); \
-        else return misaligned_load(addr, sizeof(type##_t)); \
+        else return misaligned_load(addr, sizeof(type##_t), xlate_flags); \
       } \
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
@@ -165,7 +167,7 @@ public:
       if ((xlate_flags) != 0) \
         flush_tlb(); \
       if (unlikely(addr & (sizeof(type##_t)-1))) \
-        return misaligned_store(addr, val, sizeof(type##_t)); \
+        return misaligned_store(addr, val, sizeof(type##_t), xlate_flags); \
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
       if (likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \
@@ -200,7 +202,7 @@ public:
         return lhs; \
       } catch (trap_load_address_misaligned& t) { \
         /* AMO faults should be reported as store faults */ \
-        throw trap_store_address_misaligned(t.get_tval(), t.get_tval2(), t.get_tinst()); \
+        throw trap_store_address_misaligned(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
       } catch (trap_load_page_fault& t) { \
         /* AMO faults should be reported as store faults */ \
         throw trap_store_page_fault(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
@@ -217,7 +219,7 @@ public:
   {
 #ifndef RISCV_ENABLE_MISALIGNED
     if (unlikely(addr & (sizeof(float128_t)-1)))
-      throw trap_store_address_misaligned(addr, 0, 0);
+      throw trap_store_address_misaligned((proc) ? proc->state.v : false, addr, 0, 0);
 #endif
     store_uint64(addr, val.v[0]);
     store_uint64(addr + 8, val.v[1]);
@@ -227,7 +229,7 @@ public:
   {
 #ifndef RISCV_ENABLE_MISALIGNED
     if (unlikely(addr & (sizeof(float128_t)-1)))
-      throw trap_load_address_misaligned(addr, 0, 0);
+      throw trap_load_address_misaligned((proc) ? proc->state.v : false, addr, 0, 0);
 #endif
     return (float128_t){load_uint64(addr), load_uint64(addr + 8)};
   }
@@ -264,19 +266,21 @@ public:
 
   inline void load_reserved_address_misaligned(reg_t vaddr)
   {
+    bool gva = proc ? proc->state.v : false;
 #ifdef RISCV_ENABLE_MISALIGNED
-    throw trap_load_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0);
+    throw trap_load_access_fault(gva, vaddr, 0, 0);
 #else
-    throw trap_load_address_misaligned(vaddr, 0, 0);
+    throw trap_load_address_misaligned(gva, vaddr, 0, 0);
 #endif
   }
 
   inline void store_conditional_address_misaligned(reg_t vaddr)
   {
+    bool gva = proc ? proc->state.v : false;
 #ifdef RISCV_ENABLE_MISALIGNED
-    throw trap_store_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0);
+    throw trap_store_access_fault(gva, vaddr, 0, 0);
 #else
-    throw trap_store_address_misaligned(vaddr, 0, 0);
+    throw trap_store_address_misaligned(gva, vaddr, 0, 0);
 #endif
   }
 
