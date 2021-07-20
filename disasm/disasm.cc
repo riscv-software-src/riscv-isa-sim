@@ -662,6 +662,12 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_NOARG(fence_i);
   DEFINE_SFENCE_TYPE(sfence_vma);
 
+  DEFINE_NOARG(sfence_w_inval);
+  DEFINE_NOARG(sfence_inval_ir);
+  DEFINE_SFENCE_TYPE(sinval_vma);
+  DEFINE_SFENCE_TYPE(hinval_vvma);
+  DEFINE_SFENCE_TYPE(hinval_gvma);
+
   add_insn(new disasm_insn_t("csrr", match_csrrs, mask_csrrs | mask_rs1, {&xrd, &csr}));
   add_insn(new disasm_insn_t("csrw", match_csrrw, mask_csrrw | mask_rd, {&csr, &xrs1}));
   add_insn(new disasm_insn_t("csrs", match_csrrs, mask_csrrs | mask_rd, {&csr, &xrs1}));

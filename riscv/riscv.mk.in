@@ -1262,6 +1262,12 @@ riscv_insn_priv = \
 	sret \
 	wfi \
 
+riscv_insn_svinval = \
+	sfence_w_inval \
+	sfence_inval_ir \
+	sinval_vma \
+	hinval_vvma \
+	hinval_gvma \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_a) \
@@ -1278,6 +1284,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_h) \
 	$(riscv_insn_ext_p) \
 	$(riscv_insn_priv) \
+	$(riscv_insn_svinval) \
 
 riscv_gen_srcs = \
 	$(addsuffix .cc,$(riscv_insn_list))

@@ -27,6 +27,8 @@ Spike supports the following RISC-V ISA features:
   - Machine, Supervisor, and User modes, v1.11
   - Hypervisor extension, v0.6.1
   - Svnapot extension, v0.1
+  - Svpbmt extension, v0.1
+  - Svinval extension, v0.1
   - Debug v0.14
 
 Versioning and APIs
