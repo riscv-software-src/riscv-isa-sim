@@ -25,14 +25,16 @@ does not configure spike in any other way
 
 ## Plugin Files
 
+Description of all files present in this plugin:
 
 ``` 
-  env                          # contains the model header files and linker script
-  riscof_spike.py              # plugin file for spike. MUST be prefixed with "riscof_"
-  spike_isa.yaml               # ISA YAML configuration file
-  spike_platform.yaml          # PLATFORM YAML configuration file
-  __init__.py                  # used expose the plugin path.
-  README.md                    # This file
+  env                 # contains the model_test.h and the link.ld files currently found in 
+                      # the arch-test-target/spike/ directory of this repo
+  riscof_spike.py     # plugin file for spike. MUST be prefixed with "riscof_"
+  spike_isa.yaml      # ISA YAML configuration file - new file
+  spike_platform.yaml # PLATFORM YAML configuration file - new file
+  __init__.py         # used expose the plugin path. - new file
+  README.md           # This file
 ```
 
 ## Adding Spike Plugin target to RISCOF
