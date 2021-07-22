@@ -53,7 +53,6 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
   if (!proc)
     return addr;
 
-  bool mxr = get_field(proc->state.mstatus, MSTATUS_MXR);
   bool virt = (proc) ? proc->state.v : false;
   bool hlvx = xlate_flags & RISCV_XLATE_VIRT_HLVX;
   reg_t mode = proc->state.prv;
@@ -69,7 +68,7 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
     }
   }
 
-  reg_t paddr = walk(addr, type, mode, virt, mxr, hlvx) | (addr & (PGSIZE-1));
+  reg_t paddr = walk(addr, type, mode, virt, hlvx) | (addr & (PGSIZE-1));
   if (!pmp_ok(paddr, len, type, mode))
     throw_access_exception(virt, addr, type);
   return paddr;
@@ -303,7 +302,7 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
   return true;
 }
 
-reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool mxr, bool hlvx)
+reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool hlvx)
 {
   if (!virt)
     return gpa;
@@ -311,6 +310,8 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   vm_info vm = decode_vm_info(proc->max_xlen, true, 0, proc->get_state()->hgatp);
   if (vm.levels == 0)
     return gpa;
+
+  bool mxr = proc->state.mstatus & MSTATUS_MXR;
 
   reg_t base = vm.ptbase;
   for (int i = vm.levels - 1; i >= 0; i--) {
@@ -378,16 +379,17 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   }
 }
 
-reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr, bool hlvx)
+reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx)
 {
   reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
   reg_t satp = (virt) ? proc->get_state()->vsatp : proc->get_state()->satp;
   vm_info vm = decode_vm_info(proc->max_xlen, false, mode, satp);
   if (vm.levels == 0)
-    return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, mxr, hlvx) & ~page_mask; // zero-extend from xlen
+    return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx) & ~page_mask; // zero-extend from xlen
 
   bool s_mode = mode == PRV_S;
-  bool sum = get_field(proc->state.mstatus, MSTATUS_SUM);
+  bool sum = (virt ? proc->state.vsstatus : proc->state.mstatus) & MSTATUS_SUM;
+  bool mxr = (proc->state.mstatus | (virt ? proc->state.vsstatus : 0)) & MSTATUS_MXR;
 
   // verify bits xlen-1:va_bits-1 are all equal
   int va_bits = PGSHIFT + vm.levels * vm.idxbits;
@@ -402,7 +404,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr,
     reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
 
     // check that physical address of PTE is legal
-    auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, type, virt, false, false);
+    auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, type, virt, false);
     auto ppte = sim->addr_to_mem(pte_paddr);
     if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S))
       throw_access_exception(virt, addr, type);
@@ -449,7 +451,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr,
                         | (vpn & ((reg_t(1) << napot_bits) - 1))
                         | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
       reg_t phys = page_base | (addr & page_mask);
-      return s2xlate(addr, phys, type, type, virt, mxr, hlvx) & ~page_mask;
+      return s2xlate(addr, phys, type, type, virt, hlvx) & ~page_mask;
     }
   }
 
