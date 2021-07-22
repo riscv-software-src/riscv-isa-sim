@@ -224,9 +224,9 @@ private:
 #define FRS1 READ_FREG(insn.rs1())
 #define FRS2 READ_FREG(insn.rs2())
 #define FRS3 READ_FREG(insn.rs3())
-#define dirty_fp_state  STATE.dirty_mstatus(MSTATUS_FS | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD))
-#define dirty_ext_state STATE.dirty_mstatus(MSTATUS_XS | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD))
-#define dirty_vs_state  STATE.dirty_mstatus(MSTATUS_VS | (xlen == 64 ? MSTATUS64_SD : MSTATUS32_SD))
+#define dirty_fp_state  STATE.dirty_mstatus(MSTATUS_FS)
+#define dirty_ext_state STATE.dirty_mstatus(MSTATUS_XS)
+#define dirty_vs_state  STATE.dirty_mstatus(MSTATUS_VS)
 #define DO_WRITE_FREG(reg, value) (STATE.FPR.write(reg, value), dirty_fp_state)
 #define WRITE_FRD(value) WRITE_FREG(insn.rd(), value)
  
