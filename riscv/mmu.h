@@ -62,7 +62,7 @@ public:
   ~mmu_t();
 
 #define RISCV_XLATE_VIRT (1U << 0)
-#define RISCV_XLATE_VIRT_MXR (1U << 1)
+#define RISCV_XLATE_VIRT_HLVX (1U << 1)
 
   inline reg_t misaligned_load(reg_t addr, size_t size, uint32_t xlate_flags)
   {
@@ -135,8 +135,8 @@ public:
   load_func(uint16, guest_load, RISCV_XLATE_VIRT)
   load_func(uint32, guest_load, RISCV_XLATE_VIRT)
   load_func(uint64, guest_load, RISCV_XLATE_VIRT)
-  load_func(uint16, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_MXR)
-  load_func(uint32, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_MXR)
+  load_func(uint16, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX)
+  load_func(uint32, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX)
 
   // load value from memory at aligned address; sign extend to register width
   load_func(int8, load, 0)
@@ -414,10 +414,10 @@ private:
   const char* fill_from_mmio(reg_t vaddr, reg_t paddr);
 
   // perform a stage2 translation for a given guest address
-  reg_t s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool mxr);
+  reg_t s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool mxr, bool hlvx);
 
   // perform a page table walk for a given VA; set referenced/dirty bits
-  reg_t walk(reg_t addr, access_type type, reg_t prv, bool virt, bool mxr);
+  reg_t walk(reg_t addr, access_type type, reg_t prv, bool virt, bool mxr, bool hlvx);
 
   // handle uncommon cases: TLB misses, page faults, MMIO
   tlb_entry_t fetch_slow_path(reg_t addr);
