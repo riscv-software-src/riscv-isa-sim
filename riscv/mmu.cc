@@ -62,7 +62,7 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
       if (get_field(proc->state.mstatus, MSTATUS_MPV) && mode != PRV_M)
         virt = true;
     }
-    if (!proc->state.debug_mode && (xlate_flags & RISCV_XLATE_VIRT)) {
+    if (xlate_flags & RISCV_XLATE_VIRT) {
       virt = true;
       mode = get_field(proc->state.hstatus, HSTATUS_SPVP);
       if (type == LOAD && (xlate_flags & RISCV_XLATE_VIRT_MXR)) {
