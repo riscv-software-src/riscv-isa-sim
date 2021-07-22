@@ -415,6 +415,8 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
     if (pte & PTE_RSVD) {
       break;
     } else if (PTE_TABLE(pte)) { // next level of page table
+      if (pte & (PTE_D | PTE_A | PTE_U))
+        break;
       base = ppn << PGSHIFT;
     } else if ((pte & PTE_U) ? s_mode && (type == FETCH || !sum) : !s_mode) {
       break;
