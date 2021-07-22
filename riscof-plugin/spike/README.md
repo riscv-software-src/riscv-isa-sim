@@ -41,8 +41,7 @@ Description of all files present in this plugin:
 
 RISCOF requires a `config.ini` file to detect various parameters of the run like - name and path 
 of the dut and reference plugins, the isa spec files, etc. A template of this this file can be generated
-automatically using the `riscof setup` command . Please see the [Generate
-Templates](https://riscof.readthedocs.io/en/stable/plugins.html#generate-templates)
+automatically using the `riscof setup` command . Please see the [Config.ini Syntax](https://riscof.readthedocs.io/en/stable/inputs.html#config-ini-syntax))
 guide for mode details on the syntax of this file and how to modify/build custom plugins.
 
 
