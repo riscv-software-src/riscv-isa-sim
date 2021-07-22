@@ -54,7 +54,7 @@ class spike(pluginTemplate):
             raise SystemExit
 
         # logger statements to print on the terminal during the run
-        logger.debug("SPIKE Parallel plugin initialised using the following configuration.")
+        logger.debug("SPIKE plugin initialised using the following configuration.")
         for entry in config:
             logger.debug(entry+' : '+config[entry])
         return sclass
@@ -131,7 +131,7 @@ class spike(pluginTemplate):
         # set the jobs that can be used by the make command.
         make.makeCommand = self.make + ' -j' + self.num_jobs
 
-        # we will not parse through each test selected by the framework and
+        # we will now parse through each test selected by the framework and
         # create makefile targets.
         for file in testList:
 
@@ -155,8 +155,8 @@ class spike(pluginTemplate):
             else:
                 elf = 'dut.elf'
 
-            # We not start building the execution command for the test. First
-            # let make change directories to the work_dir specified by the test.
+            # We now start building the execution command for the test. First
+            # lets change directories to the work_dir specified by the test.
             execute = "@cd "+testentry['work_dir']+";"
 
             # Set the march value, test name and elf name to the compile command. 
