@@ -98,19 +98,17 @@ public:
   // template for functions that load an aligned value from memory
   #define load_func(type, prefix, xlate_flags) \
     inline type##_t prefix##_##type(reg_t addr, bool require_alignment = false) { \
-      if ((xlate_flags) != 0) \
-        flush_tlb(); \
       if (unlikely(addr & (sizeof(type##_t)-1))) { \
         if (require_alignment) load_reserved_address_misaligned(addr); \
         else return misaligned_load(addr, sizeof(type##_t), xlate_flags); \
       } \
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
-      if (likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) { \
+      if ((xlate_flags) == 0 && likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) { \
         if (proc) READ_MEM(addr, size); \
         return from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
       } \
-      if (unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
+      if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
         type##_t data = from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
         if (!matched_trigger) { \
           matched_trigger = trigger_exception(OPERATION_LOAD, addr, data); \
@@ -123,8 +121,6 @@ public:
       target_endian<type##_t> res; \
       load_slow_path(addr, sizeof(type##_t), (uint8_t*)&res, (xlate_flags)); \
       if (proc) READ_MEM(addr, size); \
-      if ((xlate_flags) != 0) \
-        flush_tlb(); \
       return from_target(res); \
     }
 
@@ -164,17 +160,15 @@ public:
   // template for functions that store an aligned value to memory
   #define store_func(type, prefix, xlate_flags) \
     void prefix##_##type(reg_t addr, type##_t val) { \
-      if ((xlate_flags) != 0) \
-        flush_tlb(); \
       if (unlikely(addr & (sizeof(type##_t)-1))) \
         return misaligned_store(addr, val, sizeof(type##_t), xlate_flags); \
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
-      if (likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \
+      if ((xlate_flags) == 0 && likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \
         if (proc) WRITE_MEM(addr, val, size); \
         *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
       } \
-      else if (unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
+      else if ((xlate_flags) == 0 && unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
         if (!matched_trigger) { \
           matched_trigger = trigger_exception(OPERATION_STORE, addr, val); \
           if (matched_trigger) \
@@ -188,8 +182,6 @@ public:
         store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&target_val, (xlate_flags)); \
         if (proc) WRITE_MEM(addr, val, size); \
       } \
-      if ((xlate_flags) != 0) \
-        flush_tlb(); \
   }
 
   // template for functions that perform an atomic memory operation
