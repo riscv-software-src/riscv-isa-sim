@@ -332,6 +332,8 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
     if (pte & PTE_RSVD) {
       break;
     } else if (PTE_TABLE(pte)) { // next level of page table
+      if (pte & (PTE_D | PTE_A | PTE_U))
+        break;
       base = ppn << PGSHIFT;
     } else if (!(pte & PTE_V) || (!(pte & PTE_R) && (pte & PTE_W))) {
       break;
@@ -415,6 +417,8 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
     if (pte & PTE_RSVD) {
       break;
     } else if (PTE_TABLE(pte)) { // next level of page table
+      if (pte & (PTE_D | PTE_A | PTE_U))
+        break;
       base = ppn << PGSHIFT;
     } else if ((pte & PTE_U) ? s_mode && (type == FETCH || !sum) : !s_mode) {
       break;
