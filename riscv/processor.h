@@ -179,7 +179,7 @@ struct state_t
   mip_csr_t_p mip;
   csr_t_p medeleg;
   csr_t_p mideleg;
-  uint32_t mcounteren;
+  csr_t_p mcounteren;
   uint32_t scounteren;
   csr_t_p sepc;
   csr_t_p stval;
