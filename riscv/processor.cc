@@ -394,7 +394,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   csrmap[CSR_MEDELEG] = medeleg = std::make_shared<medeleg_csr_t>(proc, CSR_MEDELEG);
   csrmap[CSR_MIDELEG] = mideleg = std::make_shared<mideleg_csr_t>(proc, CSR_MIDELEG);
-  mcounteren = 0;
+  mcounteren = std::make_shared<counteren_csr_t>(proc, CSR_MCOUNTEREN);
+  if (proc->extension_enabled_const('U')) csrmap[CSR_MCOUNTEREN] = mcounteren;
   scounteren = 0;
   auto nonvirtual_sepc = std::make_shared<epc_csr_t>(proc, CSR_SEPC);
   csrmap[CSR_VSEPC] = vsepc = std::make_shared<epc_csr_t>(proc, CSR_VSEPC);
@@ -988,9 +989,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SCOUNTEREN:
       state.scounteren = val;
       break;
-    case CSR_MCOUNTEREN:
-      state.mcounteren = val;
-      break;
     case CSR_SATP:
       if (!supports_impl(IMPL_MMU))
         val = 0;
@@ -1171,7 +1169,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MINSTRETH:
     case CSR_MCYCLEH:
     case CSR_SCOUNTEREN:
-    case CSR_MCOUNTEREN:
     case CSR_SATP:
     case CSR_TSELECT:
     case CSR_TDATA1:
@@ -1196,7 +1193,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 ({ \
   bool __ctr_ok = true; \
   if (state.prv < PRV_M) \
-    __ctr_ok = (state.mcounteren >> (__which & 31)) & 1; \
+    __ctr_ok = (state.mcounteren->read() >> (__which & 31)) & 1;        \
   __ctr_ok; \
 })
 #define hcounteren_ok(__which) \
@@ -1309,10 +1306,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       }
       break;
     case CSR_SCOUNTEREN: ret(state.scounteren);
-    case CSR_MCOUNTEREN:
-      if (!extension_enabled('U'))
-        break;
-      ret(state.mcounteren);
     case CSR_MCOUNTINHIBIT: ret(0);
     case CSR_SATP: {
       if (state.v) {
