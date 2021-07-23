@@ -420,7 +420,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_HSTATUS] = hstatus = std::make_shared<hstatus_csr_t>(proc, CSR_HSTATUS);
   hideleg = 0;
   hedeleg = 0;
-  hcounteren = 0;
+  csrmap[CSR_HCOUNTEREN] = hcounteren = std::make_shared<counteren_csr_t>(proc, CSR_HCOUNTEREN);
   htval = 0;
   htinst = 0;
   hgatp = 0;
@@ -1023,9 +1023,6 @@ void processor_t::set_csr(int which, reg_t val)
       state.hideleg = (state.hideleg & ~mask) | (val & mask);
       break;
     }
-    case CSR_HCOUNTEREN:
-      state.hcounteren = val;
-      break;
     case CSR_HGEIE:
       /* Ignore */
       break;
@@ -1196,7 +1193,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 ({ \
   bool __ctr_ok = true; \
   if (state.v) \
-    __ctr_ok = (state.hcounteren >> (__which & 31)) & 1; \
+    __ctr_ok = (state.hcounteren->read() >> (__which & 31)) & 1;        \
   __ctr_ok; \
 })
 #define scounteren_ok(__which) \
@@ -1331,7 +1328,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MHARTID: ret(id);
     case CSR_HEDELEG: ret(state.hedeleg);
     case CSR_HIDELEG: ret(state.hideleg);
-    case CSR_HCOUNTEREN: ret(state.hcounteren);
     case CSR_HGEIE: ret(0);
     case CSR_HTVAL: ret(state.htval);
     case CSR_HTINST: ret(state.htinst);
