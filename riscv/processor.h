@@ -192,7 +192,7 @@ struct state_t
   csr_t_p hstatus;
   reg_t hideleg;
   reg_t hedeleg;
-  uint32_t hcounteren;
+  csr_t_p hcounteren;
   reg_t htval;
   reg_t htinst;
   reg_t hgatp;
