@@ -180,7 +180,7 @@ struct state_t
   csr_t_p medeleg;
   csr_t_p mideleg;
   csr_t_p mcounteren;
-  uint32_t scounteren;
+  csr_t_p scounteren;
   csr_t_p sepc;
   csr_t_p stval;
   csr_t_p stvec;
