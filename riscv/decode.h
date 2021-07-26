@@ -578,28 +578,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
     } \
   }
 
-#define VI_CHECK_QSS(is_vs1) \
-  require_vector(true);\
-  p->supports_extension(EXT_ZVQMAC); \
-  require(P.VU.vflmul <= 2); \
-  require(P.VU.vsew * 4 <= P.VU.ELEN); \
-  require_align(insn.rd(), P.VU.vflmul * 4); \
-  require_align(insn.rs2(), P.VU.vflmul); \
-  require_vm; \
-  if (P.VU.vflmul < 1) {\
-    require_noover(insn.rd(), P.VU.vflmul * 4, insn.rs2(), P.VU.vflmul); \
-  } else {\
-    require_noover_widen(insn.rd(), P.VU.vflmul * 4, insn.rs2(), P.VU.vflmul); \
-  } \
-  if (is_vs1) {\
-     require_align(insn.rs1(), P.VU.vflmul); \
-    if (P.VU.vflmul < 1) {\
-      require_noover(insn.rd(), P.VU.vflmul * 4, insn.rs1(), P.VU.vflmul); \
-    } else {\
-      require_noover_widen(insn.rd(), P.VU.vflmul * 4, insn.rs1(), P.VU.vflmul); \
-    } \
-  }
-
 #define VI_CHECK_DDS(is_rs) \
   VI_WIDE_CHECK_COMMON; \
   require_align(insn.rs2(), P.VU.vflmul * 2); \
@@ -1320,63 +1298,6 @@ VI_LOOP_END
     sign##64_t &vd_w = P.VU.elt<sign##64_t>(rd_num, i, true); \
     sign##64_t vs2_w = P.VU.elt<sign##64_t>(rs2_num, i); \
     vd_w = vs2_w op0 (sign##64_t)(sign##32_t)var0; \
-    } \
-    break; \
-  }
-
-// quad operation loop
-#define VI_VV_LOOP_QUAD(BODY) \
-  VI_CHECK_QSS(true); \
-  VI_LOOP_BASE \
-  if (sew == e8){ \
-    VV_PARAMS(e8); \
-    BODY; \
-  }else if(sew == e16){ \
-    VV_PARAMS(e16); \
-    BODY; \
-  } \
-  VI_LOOP_END
-
-#define VI_VX_LOOP_QUAD(BODY) \
-  VI_CHECK_QSS(false); \
-  VI_LOOP_BASE \
-  if (sew == e8){ \
-    VX_PARAMS(e8); \
-    BODY; \
-  }else if(sew == e16){ \
-    VX_PARAMS(e16); \
-    BODY; \
-  } \
-  VI_LOOP_END
-
-#define VI_QUAD_OP_AND_ASSIGN(var0, var1, var2, op0, op1, sign) \
-  switch(P.VU.vsew) { \
-  case e8: { \
-    sign##32_t vd_w = P.VU.elt<sign##32_t>(rd_num, i); \
-    P.VU.elt<uint32_t>(rd_num, i, true) = \
-      op1((sign##32_t)(sign##8_t)var0 op0 (sign##32_t)(sign##8_t)var1) + var2; \
-    } \
-    break; \
-  default: { \
-    sign##64_t vd_w = P.VU.elt<sign##64_t>(rd_num, i); \
-    P.VU.elt<uint64_t>(rd_num, i, true) = \
-      op1((sign##64_t)(sign##16_t)var0 op0 (sign##64_t)(sign##16_t)var1) + var2; \
-    } \
-    break; \
-  }
-
-#define VI_QUAD_OP_AND_ASSIGN_MIX(var0, var1, var2, op0, op1, sign_d, sign_1, sign_2) \
-  switch(P.VU.vsew) { \
-  case e8: { \
-    sign_d##32_t vd_w = P.VU.elt<sign_d##32_t>(rd_num, i); \
-    P.VU.elt<uint32_t>(rd_num, i, true) = \
-      op1((sign_1##32_t)(sign_1##8_t)var0 op0 (sign_2##32_t)(sign_2##8_t)var1) + var2; \
-    } \
-    break; \
-  default: { \
-    sign_d##64_t vd_w = P.VU.elt<sign_d##64_t>(rd_num, i); \
-    P.VU.elt<uint64_t>(rd_num, i, true) = \
-      op1((sign_1##64_t)(sign_1##16_t)var0 op0 (sign_2##64_t)(sign_2##16_t)var1) + var2; \
     } \
     break; \
   }
