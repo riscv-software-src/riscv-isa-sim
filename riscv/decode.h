@@ -2332,10 +2332,10 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define P_SH(R, INDEX) P_FIELD(R, INDEX, 16)
 #define P_SW(R, INDEX) P_FIELD(R, INDEX, 32)
 
-#define READ_REG_PAIR(reg) \
-  MMU.is_target_big_endian() \
-  ? ((zext32(READ_REG(reg)) << 32) + zext32(READ_REG(reg + 1))) \
-  : ((zext32(READ_REG(reg + 1)) << 32) + zext32(READ_REG(reg)))
+#define READ_REG_PAIR(reg) ({ \
+  require((reg) % 2 == 0); \
+  (reg) == 0 ? reg_t(0) : \
+  (READ_REG((reg) + 1) << 32) + zext32(READ_REG(reg)); })
 
 #define RS1_PAIR READ_REG_PAIR(insn.rs1())
 #define RS2_PAIR READ_REG_PAIR(insn.rs2())
@@ -2345,12 +2345,10 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   rd_tmp = set_field(rd_tmp, make_mask64((i * sizeof(pd) * 8), sizeof(pd) * 8), pd);
 
 #define WRITE_RD_PAIR(value) \
-  if (MMU.is_target_big_endian()) { \
-    WRITE_REG(insn.rd() + 1, sext32(value)); \
-    WRITE_REG(insn.rd(), ((sreg_t)value) >> 32); \
-  } else { \
+  if (insn.rd() != 0) { \
+    require(insn.rd() % 2 == 0); \
     WRITE_REG(insn.rd(), sext32(value)); \
-    WRITE_REG(insn.rd() + 1, ((sreg_t)value) >> 32); \
+    WRITE_REG(insn.rd() + 1, (sreg_t(value)) >> 32); \
   }
 
 #define P_SET_OV(ov) \
