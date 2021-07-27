@@ -1,3 +1,4 @@
+require_extension('P');
 sreg_t res = 0;
 if (xlen == 32) {
   res = RS1_PAIR;
