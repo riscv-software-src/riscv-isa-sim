@@ -859,8 +859,8 @@ disassembler_t::disassembler_t(int xlen)
   std::vector<const arg_t *> v_ld_index = {&vd, &v_address, &vs2, &opt, &vm};
   std::vector<const arg_t *> v_st_index = {&vs3, &v_address, &vs2, &opt, &vm};
 
-  add_insn(new disasm_insn_t("vle1.v",  match_vle1_v,     mask_vle1_v, v_ld_unit));
-  add_insn(new disasm_insn_t("vse1.v",  match_vse1_v,     mask_vse1_v, v_st_unit));
+  add_insn(new disasm_insn_t("vlm.v",  match_vlm_v,     mask_vlm_v, v_ld_unit));
+  add_insn(new disasm_insn_t("vsm.v",  match_vsm_v,     mask_vsm_v, v_st_unit));
 
   DISASM_VMEM_INSN(vle,    v_ld_unit,   );
   DISASM_VMEM_INSN(vluxei, v_ld_index,  );
@@ -1120,7 +1120,7 @@ disassembler_t::disassembler_t(int xlen)
   //0b01_0000
   //VWXUNARY0
   DISASM_INSN("vmv.x.s", vmv_x_s, 0, {&xrd, &vs2});
-  DISASM_INSN("vpopc.m", vpopc_m, 0, {&xrd, &vs2, &opt, &vm});
+  DISASM_INSN("vcpop.m", vcpop_m, 0, {&xrd, &vs2, &opt, &vm});
   DISASM_INSN("vfirst.m", vfirst_m, 0, {&xrd, &vs2, &opt, &vm});
 
   //VRXUNARY0
@@ -1243,7 +1243,7 @@ disassembler_t::disassembler_t(int xlen)
   //OPFVV/OPFVF
   //0b00_0000
   DISASM_OPIV_VF_INSN(vfadd);
-  DISASM_OPIV_S__INSN(vfredsum);
+  DISASM_OPIV_S__INSN(vfredusum);
   DISASM_OPIV_VF_INSN(vfsub);
   DISASM_OPIV_S__INSN(vfredosum);
   DISASM_OPIV_VF_INSN(vfmin);
@@ -1301,7 +1301,7 @@ disassembler_t::disassembler_t(int xlen)
 
   //0b11_0000
   DISASM_OPIV_VF_INSN(vfwadd);
-  DISASM_OPIV_S__INSN(vfwredsum);
+  DISASM_OPIV_S__INSN(vfwredusum);
   DISASM_OPIV_VF_INSN(vfwsub);
   DISASM_OPIV_S__INSN(vfwredosum);
   DISASM_OPIV_WF_INSN(vfwadd);
