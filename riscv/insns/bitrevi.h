@@ -1,5 +1,6 @@
 require_extension('P');
-reg_t msb = xlen == 32 ? insn.p_imm5() : insn.p_imm6();
+reg_t msb = insn.p_imm6();
+require(msb < (unsigned long)xlen); // imm[5] == 1 is illegal on rv32
 reg_t n = get_field(RS1, make_mask64(0, msb + 1));
 reg_t rev = 0;
 
