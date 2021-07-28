@@ -447,11 +447,7 @@ disassembler_t::disassembler_t(int xlen)
   #define DECLARE_INSN(code, match, mask) \
    const uint32_t match_##code = match; \
    const uint32_t mask_##code = mask;
-  #define DECLARE_RV32_ONLY(code) {}
-  #define DECLARE_RV64_ONLY(code) {}
   #include "encoding.h"
-  #undef DECLARE_RV64_INSN
-  #undef DECLARE_RV32_INSN
   #undef DECLARE_INSN
 
   // explicit per-instruction disassembly
@@ -1682,11 +1678,7 @@ disassembler_t::disassembler_t(int xlen)
   // provide a default disassembly for all instructions as a fallback
   #define DECLARE_INSN(code, match, mask) \
    add_insn(new disasm_insn_t(#code " (args unknown)", match, mask, {}));
-  #define DECLARE_RV32_ONLY(code) {}
-  #define DECLARE_RV64_ONLY(code) {}
   #include "encoding.h"
-  #undef DECLARE_RV64_INSN
-  #undef DECLARE_RV32_INSN
   #undef DECLARE_INSN
 }
 

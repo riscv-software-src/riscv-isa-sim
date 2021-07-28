@@ -1860,14 +1860,8 @@ void processor_t::register_extension(extension_t* x)
 void processor_t::register_base_instructions()
 {
   #define DECLARE_INSN(name, match, mask) \
-    insn_bits_t name##_match = (match), name##_mask = (mask); \
-    unsigned name##_arch_en = (unsigned)-1;
-  #define DECLARE_RV32_ONLY(name) {name##_arch_en = 32;}
-  #define DECLARE_RV64_ONLY(name) {name##_arch_en = 64;}
-
+    insn_bits_t name##_match = (match), name##_mask = (mask);
   #include "encoding.h"
-  #undef DECLARE_RV64_INSN
-  #undef DECLARE_RV32_INSN
   #undef DECLARE_INSN
 
   #define DEFINE_INSN(name) \
@@ -1876,8 +1870,8 @@ void processor_t::register_base_instructions()
     register_insn((insn_desc_t){ \
       name##_match, \
       name##_mask, \
-      (name##_arch_en & 32) ? rv32_##name : nullptr, \
-      (name##_arch_en & 64) ? rv64_##name : nullptr});
+      rv32_##name, \
+      rv64_##name});
   #include "insn_list.h"
   #undef DEFINE_INSN
 
