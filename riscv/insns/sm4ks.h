@@ -16,5 +16,5 @@ uint32_t rotl   = (x << (8*bs)) | (x >> (32-8*bs));
 
 uint32_t result = rotl ^ RS1;
 
-WRITE_RD(zext_xlen(result));
+WRITE_RD(sext_xlen(result));
 
