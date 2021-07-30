@@ -20,13 +20,6 @@ class arg_t
   virtual ~arg_t() {}
 };
 
-// Indicates that the next arg (only) is optional.
-// If the result of converting the next arg to a string is ""
-// then it will not be printed.
-struct : public arg_t {
-  std::string to_string(insn_t insn) const { return ""; }
-} opt;
-
 class disasm_insn_t
 {
  public:
@@ -57,7 +50,7 @@ class disasm_insn_t
       bool next_arg_optional  = false;
       s << std::string(std::max(1, 8 - len), ' ');
       for (size_t i = 0; i < args.size(); i++) {
-        if (args[i] == &opt) {
+        if (args[i] == nullptr) {
           next_arg_optional = true;
           continue;
         }
