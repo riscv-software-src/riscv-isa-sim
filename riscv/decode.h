@@ -377,6 +377,9 @@ inline freg_t f128_negate(freg_t a)
   unsigned csr_read_only = get_field((which), 0xC00) == 3; \
   if ((write) && csr_read_only) \
     throw trap_illegal_instruction(insn.bits()); \
+  /* Read-only access to SENTROPY are disallowed due to wipe-on-read side effect */ \
+  if (which==CSR_SENTROPY && !write) \
+    throw trap_illegal_instruction(insn.bits()); \
   /* other permissions checks occur in get_csr */ \
   (which); })
 
