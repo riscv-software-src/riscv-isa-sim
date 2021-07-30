@@ -905,11 +905,8 @@ void processor_t::set_csr(int which, reg_t val)
 
   switch (which)
   {
-    case CSR_MENTROPY:
-      es.set_mentropy(val);
-      break;
-    case CSR_MNOISE:
-      es.set_mnoise(val);
+    case CSR_SENTROPY:
+      es.set_sentropy(val);
       break;
     case CSR_FFLAGS:
       dirty_fp_state;
@@ -1396,8 +1393,7 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_DPC:
     case CSR_DSCRATCH0:
     case CSR_DSCRATCH1:
-    case CSR_MENTROPY:
-    case CSR_MNOISE:
+    case CSR_SENTROPY:
       LOG_CSR(which);
       break;
   }
@@ -1462,14 +1458,13 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 
   switch (which)
   {
-    case CSR_MENTROPY:
-      if(!supports_extension('K'))
-          break;
-      ret(es.get_mentropy());
-    case CSR_MNOISE:
-      if(!supports_extension('K'))
-          break;
-      ret(es.get_mnoise());
+    case CSR_SENTROPY:
+      if (!supports_extension('K'))
+        break;
+      /* Read-only access disallowed due to wipe-on-read side effect */
+      if (!write)
+        break;
+      ret(es.get_sentropy());
     case CSR_FFLAGS:
       require_fp;
       if (!supports_extension('F'))

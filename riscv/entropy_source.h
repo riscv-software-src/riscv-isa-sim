@@ -11,10 +11,10 @@ class entropy_source {
 
 public:
 
-  // Valid return codes for OPST bits [31:30] when reading mentropy.
+  // Valid return codes for OPST bits [31:30] when reading sentropy.
   static const uint32_t OPST_BIST = 0x0 << 30;
-  static const uint32_t OPST_ES16 = 0x1 << 30;
-  static const uint32_t OPST_WAIT = 0x2 << 30;
+  static const uint32_t OPST_WAIT = 0x1 << 30;
+  static const uint32_t OPST_ES16 = 0x2 << 30;
   static const uint32_t OPST_DEAD = 0x3 << 30;
 
   //
@@ -27,27 +27,28 @@ public:
   }
 
   //
-  // mentropy register
+  // sentropy register
   // ------------------------------------------------------------
 
-  void set_mentropy(reg_t val) {
-    // Always ignore writes to mentropy.
-    // This CSR *must never* accept write values, it is strictly read only.
+  void set_sentropy(reg_t val) {
+    // Always ignore writes to sentropy.
+    // This CSR is strictly read only. It occupies a RW CSR address
+    // to handle the side-effect of the changing seed value on a read.
   }
 
 
   //
-  // The format of mentropy is described in Table 3 / Section 4.1 of
+  // The format of sentropy is described in Section 4.1 of
   // the scalar cryptography specification.
-  reg_t get_mentropy() {
+  reg_t get_sentropy() {
 
     uint32_t result  = 0;
 
-    // Currently, always return ES16 (i.e. good randomness) unless in
-    // noise capture mode.  In the future, we can more realistically model
-    // things like WAIT states, BIST warm up and maybe scriptable entry
-    // into the DEAD state, but until then, this is the bare minimum.
-    uint32_t return_status = noise_capture_mode ? OPST_BIST : OPST_ES16;
+    // Currently, always return ES16 (i.e. good randomness) In the future, we
+    // can more realistically model things like WAIT states, BIST warm up and
+    // maybe scriptable entry into the DEAD state, but until then, this is
+    // the bare minimum.
+    uint32_t return_status = OPST_ES16;
 
     if(return_status == OPST_ES16) {
 
@@ -83,36 +84,8 @@ public:
   }
 
   //
-  // mnoise register
-  // ------------------------------------------------------------
-
-
-  void set_mnoise(reg_t val) {
-      // Almost all of the behaviour for mnoise is vendor specific,
-      // except for bit 31.
-      int new_noisemode = (val >> 31) & 0x1;
-      noise_capture_mode = new_noisemode == 1;
-  }
-
-
-  reg_t get_mnoise() {
-      reg_t to_return = 0;
-
-      if(this -> noise_capture_mode) {
-          // Set bit 31 indicating we are in noise capture mode.
-          to_return |= 0x1 << 31;
-      }
-
-      return to_return;
-  }
-
-  //
   // Utility / support variables and functions.
   // ------------------------------------------------------------
-
-  // The ES is in noise capture mode?
-  // If so, then get_mentropy must always return OPST_BIST.
-  bool noise_capture_mode = false;
 
   // The file to read entropy from.
   std::string randomness_source = "/dev/urandom";
