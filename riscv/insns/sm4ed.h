@@ -18,5 +18,5 @@ uint32_t rotl   = (linear << (8*bs)) | (linear >> (32-8*bs));
 
 uint32_t result = rotl ^ RS1;
 
-WRITE_RD(sext_xlen(result));
+WRITE_RD(sext32(result));
 

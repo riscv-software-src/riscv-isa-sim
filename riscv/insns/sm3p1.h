@@ -7,7 +7,7 @@ uint32_t src    = RS1;
 uint32_t result = src ^ ROL32(src, 15) ^ ROL32(src, 23);
 
 WRITE_RD(
-    sext_xlen(result)
+    sext32(result)
 );
 
 #undef ROL32
