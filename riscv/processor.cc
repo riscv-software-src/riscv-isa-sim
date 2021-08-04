@@ -974,7 +974,8 @@ void processor_t::set_csr(int which, reg_t val)
       break;
     }
     case CSR_MIP: {
-      reg_t mask = (supervisor_ints | hypervisor_ints) & (MIP_SSIP | MIP_STIP | vssip_int);
+      reg_t mask = (supervisor_ints | hypervisor_ints) &
+                   (MIP_SEIP | MIP_SSIP | MIP_STIP | vssip_int);
       state.mip = (state.mip & ~mask) | (val & mask);
       break;
     }
