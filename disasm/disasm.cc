@@ -1565,7 +1565,6 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_R1TYPE(clrs16);
   DEFINE_R1TYPE(clz16);
   DEFINE_R1TYPE(clo16);
-  DEFINE_R1TYPE(swap16);
   DEFINE_R1TYPE(kabs8);
   DEFINE_R1TYPE(clrs8);
   DEFINE_R1TYPE(clz8);
