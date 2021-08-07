@@ -691,6 +691,14 @@ void processor_t::enter_debug_mode(uint8_t cause)
   state.pc = DEBUG_ROM_ENTRY;
 }
 
+void processor_t::debug_output_log(stringstream *s)
+{
+  if (log_file==stderr)
+    *sout_ptr << s->str(); // handles command line options -d -s -l
+  else
+    fputs(s->str().c_str(), log_file); // handles command line option --log
+}
+
 void processor_t::take_trap(trap_t& t, reg_t epc)
 {
   if (debug) {
@@ -702,8 +710,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
        s << "core " << dec << setfill(' ') << setw(3) << id
          << ":           tval 0x" << hex << setfill('0') << setw(max_xlen/4)
          << zext(t.get_tval(), max_xlen) << endl;
-    if (log_file==stderr) *sout_ptr << s.str(); // handles command line options -d -s -l
-    else fputs(s.str().c_str(),log_file); // handles command line option --log
+    debug_output_log(&s);
   }
 
   if (state.debug_mode) {
@@ -799,26 +806,29 @@ void processor_t::disasm(insn_t insn)
 {
   uint64_t bits = insn.bits() & ((1ULL << (8 * insn_length(insn.bits()))) - 1);
   if (last_pc != state.pc || last_bits != bits) {
+    stringstream s;  // first put everything in a string, later send it to output
 
 #ifdef RISCV_ENABLE_COMMITLOG
     const char* sym = get_symbol(state.pc);
     if (sym != nullptr)
     {
-      fprintf(log_file, "core %3d: >>>>  %s\n", id, sym);
+      s << "core " << dec << setfill(' ') << setw(3) << id
+        << ": >>>>  " << sym << endl;
     }
 #endif
 
     if (executions != 1) {
-      fprintf(log_file, "core %3d: Executed %" PRIx64 " times\n", id, executions);
+      s << "core " << dec << setfill(' ') << setw(3) << id
+        << ": Executed " << executions << " times" << endl;
     }
 
-    stringstream s;  // first put everything in a string, later send it to output
     s << "core " << dec << setfill(' ') << setw(3) << id
       << hex << ": 0x" << setfill('0') << setw(max_xlen/4)
       << zext(state.pc, max_xlen) << " (0x" << setw(8) << bits << ") "
       << disassembler->disassemble(insn) << endl;
-    if (log_file==stderr) *sout_ptr << s.str(); // handles command line options -d -s -l
-    else fputs(s.str().c_str(),log_file); // handles command line option --log
+
+    debug_output_log(&s);
+
     last_pc = state.pc;
     last_bits = bits;
     executions = 1;

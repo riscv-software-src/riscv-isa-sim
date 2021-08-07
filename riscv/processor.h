@@ -15,6 +15,7 @@
 #include "entropy_source.h"
 
 using std::ostream;
+using std::stringstream;
 
 class processor_t;
 class mmu_t;
@@ -468,6 +469,8 @@ private:
   reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }
 
   void enter_debug_mode(uint8_t cause);
+
+  void debug_output_log(stringstream *s); // either output to interactive user or write to log file
 
   friend class mmu_t;
   friend class clint_t;
