@@ -1002,7 +1002,6 @@ riscv_insn_ext_p_simd = \
 	clrs16 \
 	clz16 \
 	clo16 \
-	swap16 \
 	smin8 \
 	umin8 \
 	smax8 \
