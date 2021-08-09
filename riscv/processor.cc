@@ -602,8 +602,8 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
 
   if (!state.debug_mode && enabled_interrupts) {
     // nonstandard interrupts have highest priority
-    if (enabled_interrupts >> IRQ_M_EXT)
-      enabled_interrupts = enabled_interrupts >> IRQ_M_EXT << IRQ_M_EXT;
+    if (enabled_interrupts >> (IRQ_M_EXT + 1))
+      enabled_interrupts = enabled_interrupts >> (IRQ_M_EXT + 1) << (IRQ_M_EXT + 1);
     // standard interrupt priority is MEI, MSI, MTI, SEI, SSI, STI
     else if (enabled_interrupts & MIP_MEIP)
       enabled_interrupts = MIP_MEIP;
