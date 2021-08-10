@@ -1,4 +1,4 @@
-// vadc.vx vd, vs2, rs1
+// vadc.vx vd, vs2, rs1, v0
 VI_XI_LOOP_CARRY
 ({
   auto v0 = P.VU.elt<uint64_t>(0, midx);
