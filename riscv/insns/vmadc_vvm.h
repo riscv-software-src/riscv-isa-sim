@@ -1,4 +1,4 @@
-// vmadc.vvm vd, vs2, rs1
+// vmadc.vvm vd, vs2, rs1, v0
 VI_VV_LOOP_CARRY
 ({
   auto v0 = P.VU.elt<uint64_t>(0, midx);
