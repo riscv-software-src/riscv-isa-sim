@@ -488,6 +488,9 @@ riscv_insn_ext_v_alu_int = \
 	viota_m \
 	vmacc_vv \
 	vmacc_vx \
+	vmadc_vv \
+	vmadc_vx \
+	vmadc_vi \
 	vmadc_vim \
 	vmadc_vvm \
 	vmadc_vxm \
@@ -512,6 +515,8 @@ riscv_insn_ext_v_alu_int = \
 	vmor_mm \
 	vmornot_mm \
 	vpopc_m \
+	vmsbc_vv \
+	vmsbc_vx \
 	vmsbc_vvm \
 	vmsbc_vxm \
 	vmsbf_m \
