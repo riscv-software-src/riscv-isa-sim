@@ -75,57 +75,52 @@ static std::string readline(int fd)
 #ifdef HAVE_BOOST_ASIO
 // read input command string
 std::string sim_t::rin(streambuf *bout_ptr) {
-   std::string s;
-   if (acceptor_ptr) { // if we are listening, get commands from socket
-      try
-      {
-         socket_ptr = new tcp::socket(*io_service_ptr);
-         acceptor_ptr->accept(*socket_ptr); // wait for someone to open connection
-         boost::asio::streambuf buf;
-         boost::asio::read_until(*socket_ptr, buf, "\n"); // wait for command
-         s = buffer_cast<const char*>(buf.data());
-         erase_all(s, "\r");  // get rid off any cr and lf
-         erase_all(s, "\n");
-         // The socket client is a web server and it appends the IP of the computer
-         // that sent the command from its web browser.
+  std::string s;
+  if (acceptor_ptr) { // if we are listening, get commands from socket
+    try {
+      socket_ptr = new tcp::socket(*io_service_ptr);
+      acceptor_ptr->accept(*socket_ptr); // wait for someone to open connection
+      boost::asio::streambuf buf;
+      boost::asio::read_until(*socket_ptr, buf, "\n"); // wait for command
+      s = buffer_cast<const char*>(buf.data());
+      erase_all(s, "\r");  // get rid off any cr and lf
+      erase_all(s, "\n");
+      // The socket client is a web server and it appends the IP of the computer
+      // that sent the command from its web browser.
 
-         // For now, erase the IP if it is there.
-         regex re(" ((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\\.){3}"
-                  "(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$");
-         s = regex_replace(s, re, (std::string)"");
+      // For now, erase the IP if it is there.
+      regex re(" ((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\\.){3}"
+               "(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$");
+      s = regex_replace(s, re, (std::string)"");
 
-         // TODO: check the IP against the IP used to upload RISC-V source files
-      }
-      catch (std::exception& e)
-      {
-         cerr << e.what() << endl;
-      }
-      // output goes to socket
-      sout.rdbuf(bout_ptr);
-   } else { // if we are not listening on a socket, get commands from terminal
-      cerr << ": " << std::flush;
-      s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
-      // output goes to stderr
-      sout.rdbuf(cerr.rdbuf());
-   }
-   return s;
+      // TODO: check the IP against the IP used to upload RISC-V source files
+    } catch (std::exception& e) {
+      cerr << e.what() << endl;
+    }
+    // output goes to socket
+    sout.rdbuf(bout_ptr);
+  } else { // if we are not listening on a socket, get commands from terminal
+    cerr << ": " << std::flush;
+    s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
+    // output goes to stderr
+    sout.rdbuf(cerr.rdbuf());
+  }
+  return s;
 }
 
 // write sout to socket (via bout)
 void sim_t::wout(streambuf *bout_ptr) {
-   if (acceptor_ptr) { // only if a socket has been created
-      try
-      {
-        boost::system::error_code ignored_error;
-        boost::asio::write(*socket_ptr, *bout_ptr, transfer_all(), ignored_error);
-        socket_ptr->close(); // close the socket after each command input/ouput
-                             //  This is need to in order to make the socket interface
-      }                      //  acessible by HTML GET via a socket client in a web server.
-      catch (std::exception& e)
-      {
-        cerr << e.what() << endl;
-      }
-   }
+  if (acceptor_ptr) { // only if a socket has been created
+    try {
+      boost::system::error_code ignored_error;
+      boost::asio::write(*socket_ptr, *bout_ptr, transfer_all(), ignored_error);
+      socket_ptr->close(); // close the socket after each command input/ouput
+                           //  This is need to in order to make the socket interface
+                           //  acessible by HTTP GET via a socket client in a web server.
+    } catch (std::exception& e) {
+      cerr << e.what() << endl;
+    }
+  }
 }
 #endif
 
@@ -159,10 +154,10 @@ void sim_t::interactive()
     std::string s;
 #ifdef HAVE_BOOST_ASIO
     streambuf bout; // socket output
-       s = rin(&bout); // get command string from socket or terminal
+    s = rin(&bout); // get command string from socket or terminal
 #else
-       cerr << ": " << std::flush;
-       s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
+    cerr << ": " << std::flush;
+    s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
 #endif
 
     std::stringstream ss(s);
