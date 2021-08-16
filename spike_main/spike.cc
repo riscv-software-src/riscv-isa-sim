@@ -15,6 +15,8 @@
 #include <fstream>
 #include "../VERSION"
 
+using std::string;
+
 static void help(int exit_code = 1)
 {
   fprintf(stderr, "Spike RISC-V ISA Simulator " SPIKE_VERSION "\n\n");
@@ -27,6 +29,9 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  -d                    Interactive debug mode\n");
   fprintf(stderr, "  -g                    Track histogram of PCs\n");
   fprintf(stderr, "  -l                    Generate a log of execution\n");
+#ifdef HAVE_BOOST_ASIO
+  fprintf(stderr, "  -s                    Command I/O via socket (use with -d)\n");
+#endif
   fprintf(stderr, "  -h, --help            Print this help message\n");
   fprintf(stderr, "  -H                    Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
@@ -208,6 +213,7 @@ int main(int argc, char** argv)
   bool halted = false;
   bool histogram = false;
   bool log = false;
+  bool socket = false;  // command line option -s
   bool dump_dts = false;
   bool dtb_enabled = true;
   bool real_time_clint = false;
@@ -308,6 +314,9 @@ int main(int argc, char** argv)
   parser.option('d', 0, 0, [&](const char* s){debug = true;});
   parser.option('g', 0, 0, [&](const char* s){histogram = true;});
   parser.option('l', 0, 0, [&](const char* s){log = true;});
+#ifdef HAVE_BOOST_ASIO
+  parser.option('s', 0, 0, [&](const char* s){socket = true;});
+#endif
   parser.option('p', 0, 1, [&](const char* s){nprocs = atoul_nonzero_safe(s);});
   parser.option('m', 0, 1, [&](const char* s){mems = make_mems(s);});
   // I wanted to use --halted, but for some reason that doesn't work.
@@ -395,9 +404,35 @@ int main(int argc, char** argv)
     }
   }
 
+#ifdef HAVE_BOOST_ASIO
+  boost::asio::io_service *io_service_ptr = NULL; // needed for socket command interface option -s
+  tcp::acceptor *acceptor_ptr = NULL;
+  if (socket) {  // if command line option -s is set
+     try
+     { // create socket server
+       io_service_ptr = new boost::asio::io_service;
+       acceptor_ptr = new tcp::acceptor(*io_service_ptr, tcp::endpoint(tcp::v4(), 0));
+       // aceptor is created passing argument port=0, so O.S. will choose a free port
+       string name = boost::asio::ip::host_name();
+       std::cout << "Listening for debug commands on " << name.substr(0,name.find('.'))
+                 << " port " << acceptor_ptr->local_endpoint().port() << " ." << std::endl;
+       // at the end, add space and some other character for convenience of javascript .split(" ")
+     }
+     catch (std::exception& e)
+     {
+       std::cerr << e.what() << std::endl;
+       exit(-1);
+     }
+  }
+#endif
+
   sim_t s(isa, priv, varch, nprocs, halted, real_time_clint,
       initrd_start, initrd_end, bootargs, start_pc, mems, plugin_devices, htif_args,
-      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file);
+      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file
+#ifdef HAVE_BOOST_ASIO
+      , io_service_ptr, acceptor_ptr
+#endif
+      );
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));

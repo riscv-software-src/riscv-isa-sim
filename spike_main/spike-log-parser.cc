@@ -27,7 +27,7 @@ int main(int argc, char** argv)
   parser.option(0, "isa", 1, [&](const char* s){isa = s;});
   parser.parse(argv);
 
-  processor_t p(isa, DEFAULT_PRIV, DEFAULT_VARCH, 0, 0, false, nullptr);
+  processor_t p(isa, DEFAULT_PRIV, DEFAULT_VARCH, 0, 0, false, nullptr, nullptr);
   if (extension) {
     p.register_extension(extension());
   }

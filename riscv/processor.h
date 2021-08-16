@@ -14,6 +14,8 @@
 #include "debug_rom_defines.h"
 #include "entropy_source.h"
 
+using std::ostream;
+using std::stringstream;
 
 class processor_t;
 class mmu_t;
@@ -273,7 +275,7 @@ class processor_t : public abstract_device_t
 public:
   processor_t(const char* isa, const char* priv, const char* varch,
               simif_t* sim, uint32_t id, bool halt_on_reset,
-              FILE *log_file);
+              FILE *log_file, ostream *sout_ptr); // because of command line option --log and -s we need both
   ~processor_t();
 
   void set_debug(bool value);
@@ -445,10 +447,11 @@ private:
   bool histogram_enabled;
   bool log_commits_enabled;
   FILE *log_file;
+  ostream *sout_ptr; // needed for socket command interface -s, also used for -d and -l, but not for --log
   bool halt_on_reset;
   std::vector<bool> extension_table;
   std::vector<bool> impl_table;
-  
+
   entropy_source es; // Crypto ISE Entropy source.
 
   std::vector<insn_desc_t> instructions;
@@ -466,6 +469,8 @@ private:
   reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }
 
   void enter_debug_mode(uint8_t cause);
+
+  void debug_output_log(stringstream *s); // either output to interactive user or write to log file
 
   friend class mmu_t;
   friend class clint_t;
