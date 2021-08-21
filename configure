@@ -714,6 +714,7 @@ with_boost_regex
 with_isa
 with_priv
 with_varch
+with_target
 enable_commitlog
 enable_histogram
 enable_dirty
@@ -1394,6 +1395,8 @@ Optional Packages:
   --with-priv=MSU         Sets the default RISC-V privilege modes supported
   --with-varch=vlen:128,elen:64,slen:128
                           Sets the default vector config
+  --with-target=riscv64-unknown-elf
+                          Sets the default target config
 
 Some influential environment variables:
   CC          C compiler command
@@ -5922,6 +5925,22 @@ _ACEOF
 
 fi
 
+
+
+# Check whether --with-target was given.
+if test "${with_target+set}" = set; then :
+  withval=$with_target;
+cat >>confdefs.h <<_ACEOF
+#define TARGET_ARCH "$withval"
+_ACEOF
+
+else
+
+cat >>confdefs.h <<_ACEOF
+#define TARGET_ARCH "riscv64-unknown-elf"
+_ACEOF
+
+fi
 
 
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking for library containing dlopen" >&5
