@@ -26,6 +26,11 @@ AC_ARG_WITH(varch,
   AC_DEFINE_UNQUOTED([DEFAULT_VARCH], "$withval", [Default value for --varch switch]),
   AC_DEFINE_UNQUOTED([DEFAULT_VARCH], ["vlen:128,elen:64,slen:128"], [Default value for --varch switch]))
 
+AC_ARG_WITH(target,
+	[AS_HELP_STRING([--with-target=riscv64-unknown-elf],
+		[Sets the default target config])],
+  AC_DEFINE_UNQUOTED([TARGET_ARCH], "$withval", [Default value for --target switch]),
+  AC_DEFINE_UNQUOTED([TARGET_ARCH], ["riscv64-unknown-elf"], [Default value for --target switch]))
 
 AC_SEARCH_LIBS([dlopen], [dl dld], [
   AC_DEFINE([HAVE_DLOPEN], [], [Dynamic library loading is supported])
