@@ -184,7 +184,9 @@ void sim_t::interactive()
       else
         sout << "Unknown command " << cmd << endl;
     }
-    catch(trap_t& t) {}
+    catch(trap_t& t) {
+      sout << "Bad or missing arguments for command " << cmd << endl;
+    }
 #ifdef HAVE_BOOST_ASIO
     wout(&bout); // socket output, if required
 #endif
@@ -309,6 +311,9 @@ freg_t sim_t::get_freg(const std::vector<std::string>& args)
 
 void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::string>& args)
 {
+  if (args.size() < 1)
+    throw trap_interactive();
+
   int rstart = 0;
   int rend = NVPR;
   if (args.size() >= 2) {
@@ -497,11 +502,17 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
   bool cmd_until = cmd == "until" || cmd == "untiln";
 
   if (args.size() < 3)
-    return;
+    throw trap_interactive();
 
-  reg_t val = strtol(args[args.size()-1].c_str(),NULL,16);
+  if (args.size() == 3)
+    get_core(args[1]); // make sure that argument is a valid core number
+
+  char *end;
+  reg_t val = strtol(args[args.size()-1].c_str(),&end,16);
   if (val == LONG_MAX)
-    val = strtoul(args[args.size()-1].c_str(),NULL,16);
+    val = strtoul(args[args.size()-1].c_str(),&end,16);
+  if (args[args.size()-1].c_str() == end)  // not a valid number
+    throw trap_interactive();
 
   // mask bits above max_xlen
   int max_xlen = procs[strtol(args[1].c_str(),NULL,10)]->get_max_xlen();
@@ -516,7 +527,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
               NULL;
 
   if (func == NULL)
-    return;
+    throw trap_interactive();
 
   ctrlc_pressed = false;
 
