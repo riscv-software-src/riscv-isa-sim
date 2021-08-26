@@ -53,9 +53,11 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
           memif->write(bswap(ph[i].p_paddr), bswap(ph[i].p_filesz),            \
                        (uint8_t*)buf + bswap(ph[i].p_offset));                 \
         }                                                                      \
-        zeros.resize(bswap(ph[i].p_memsz) - bswap(ph[i].p_filesz));            \
-        memif->write(bswap(ph[i].p_paddr) + bswap(ph[i].p_filesz),             \
-                     bswap(ph[i].p_memsz) - bswap(ph[i].p_filesz), &zeros[0]); \
+        if (size_t pad = bswap(ph[i].p_memsz) - bswap(ph[i].p_filesz)) {       \
+          zeros.resize(pad);                                                   \
+          memif->write(bswap(ph[i].p_paddr) + bswap(ph[i].p_filesz), pad,      \
+                       &zeros[0]);                                             \
+        }                                                                      \
       }                                                                        \
     }                                                                          \
     shdr_t* sh = (shdr_t*)(buf + bswap(eh->e_shoff));                          \
