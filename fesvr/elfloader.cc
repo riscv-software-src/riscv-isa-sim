@@ -56,7 +56,7 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
         if (size_t pad = bswap(ph[i].p_memsz) - bswap(ph[i].p_filesz)) {       \
           zeros.resize(pad);                                                   \
           memif->write(bswap(ph[i].p_paddr) + bswap(ph[i].p_filesz), pad,      \
-                       &zeros[0]);                                             \
+                       zeros.data());                                          \
         }                                                                      \
       }                                                                        \
     }                                                                          \
