@@ -29,7 +29,7 @@ struct : public arg_t {
   std::string to_string(insn_t insn) const {
     return std::string("(") + xpr_name[insn.rs1()] + ')';
   }
-} amo_address;
+} base_only_address;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
@@ -483,12 +483,17 @@ static void NOINLINE add_fstore_insn(disassembler_t* d, const char* name, uint32
 
 static void NOINLINE add_xamo_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
-  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &xrs2, &amo_address}));
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &xrs2, &base_only_address}));
 }
 
 static void NOINLINE add_xlr_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
-  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &amo_address}));
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &base_only_address}));
+}
+
+static void NOINLINE add_xst_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrs2, &base_only_address}));
 }
 
 static void NOINLINE add_btype_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
@@ -662,7 +667,8 @@ disassembler_t::disassembler_t(int xlen)
   #define DEFINE_XLOAD(code) add_xload_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_XSTORE(code) add_xstore_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_XAMO(code) add_xamo_insn(this, #code, match_##code, mask_##code);
-  #define DEFINE_XAMO_LR(code) add_xlr_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_XLOAD_BASE(code) add_xlr_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_XSTORE_BASE(code) add_xst_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FLOAD(code) add_fload_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FSTORE(code) add_fstore_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FRTYPE(code) add_frtype_insn(this, #code, match_##code, mask_##code);
@@ -705,9 +711,9 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_XAMO(amominu_d)
   DEFINE_XAMO(amomaxu_d)
 
-  DEFINE_XAMO_LR(lr_w)
+  DEFINE_XLOAD_BASE(lr_w)
   DEFINE_XAMO(sc_w)
-  DEFINE_XAMO_LR(lr_d)
+  DEFINE_XLOAD_BASE(lr_d)
   DEFINE_XAMO(sc_d)
 
   DEFINE_FLOAD(flw)
@@ -850,7 +856,6 @@ disassembler_t::disassembler_t(int xlen)
   add_insn(new disasm_insn_t("fence", match_fence, mask_fence, {&iorw}));
   DEFINE_NOARG(fence_i);
   DEFINE_SFENCE_TYPE(sfence_vma);
-
   DEFINE_NOARG(sfence_w_inval);
   DEFINE_NOARG(sfence_inval_ir);
   DEFINE_SFENCE_TYPE(sinval_vma);
@@ -1001,6 +1006,29 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_FX2TYPE(flt_q);
   DEFINE_FX2TYPE(fle_q);
 
+
+  // ext-h
+  DEFINE_XLOAD_BASE(hlv_b)
+  DEFINE_XLOAD_BASE(hlv_bu)
+  DEFINE_XLOAD_BASE(hlv_h)
+  DEFINE_XLOAD_BASE(hlv_hu)
+  DEFINE_XLOAD_BASE(hlv_w)
+  DEFINE_XLOAD_BASE(hlv_wu)
+  DEFINE_XLOAD_BASE(hlv_d)
+
+  DEFINE_XLOAD_BASE(hlvx_hu)
+  DEFINE_XLOAD_BASE(hlvx_wu)
+
+  DEFINE_XSTORE_BASE(hsv_b)
+  DEFINE_XSTORE_BASE(hsv_h)
+  DEFINE_XSTORE_BASE(hsv_w)
+  DEFINE_XSTORE_BASE(hsv_d)
+
+  DEFINE_SFENCE_TYPE(hfence_gvma);
+  DEFINE_SFENCE_TYPE(hfence_vvma);
+
+
+  // ext-c
   DISASM_INSN("c.ebreak", c_add, mask_rd | mask_rvc_rs2, {});
   add_insn(new disasm_insn_t("ret", match_c_jr | match_rd_ra, mask_c_jr | mask_rd | mask_rvc_imm, {}));
   DISASM_INSN("c.jr", c_jr, mask_rvc_imm, {&rvc_rs1});
