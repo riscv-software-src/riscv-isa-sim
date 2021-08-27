@@ -250,6 +250,9 @@ typedef enum {
   EXT_ZBB,
   EXT_ZBC,
   EXT_ZBS,
+  EXT_SVNAPOT,
+  EXT_SVPBMT,
+  EXT_SVINVAL,
 } isa_extension_t;
 
 typedef enum {

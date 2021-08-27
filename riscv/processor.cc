@@ -288,6 +288,12 @@ void processor_t::parse_isa_string(const char* str)
         extension_table[EXT_ZBC] = true;
       } else if (ext_str == "zbs") {
         extension_table[EXT_ZBS] = true;
+      } else if (ext_str == "SVNAPOT") {
+        extension_table[EXT_SVNAPOT] = true;
+      } else if (ext_str == "SVPBMT") {
+        extension_table[EXT_SVPBMT] = true;
+      } else if (ext_str == "SVINVAL") {
+        extension_table[EXT_SVINVAL] = true;
       } else {
         sprintf(error_msg, "unsupported extension '%s'", ext_str.c_str());
         bad_isa_string(str, error_msg);
