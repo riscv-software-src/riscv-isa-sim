@@ -60,6 +60,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "      riscv,pmpgranularity = <4>;\n"
          "      clock-frequency = <" << cpu_hz << ">;\n"
          "      CPU" << i << "_intc: interrupt-controller {\n"
+         "        #address-cells = <2>;\n"
          "        #interrupt-cells = <1>;\n"
          "        interrupt-controller;\n"
          "        compatible = \"riscv,cpu-intc\";\n"
