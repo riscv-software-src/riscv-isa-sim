@@ -199,6 +199,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
   sout <<
     "Interactive commands:\n"
     "reg <core> [reg]                # Display [reg] (all if omitted) in <core>\n"
+    "freg <core> <reg>               # Display float <reg> in <core> as hex\n"
     "fregh <core> <reg>              # Display half precision <reg> in <core>\n"
     "fregs <core> <reg>              # Display single precision <reg> in <core>\n"
     "fregd <core> <reg>              # Display double precision <reg> in <core>\n"
