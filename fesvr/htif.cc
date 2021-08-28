@@ -169,7 +169,7 @@ void htif_t::stop()
   if (!sig_file.empty() && sig_len) // print final torture test signature
   {
     std::vector<uint8_t> buf(sig_len);
-    mem.read(sig_addr, sig_len, &buf[0]);
+    mem.read(sig_addr, sig_len, buf.data());
 
     std::ofstream sigs(sig_file);
     assert(sigs && "can't open signature file!");
