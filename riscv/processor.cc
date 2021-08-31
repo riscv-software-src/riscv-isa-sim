@@ -1441,36 +1441,33 @@ void processor_t::set_csr(int which, reg_t val)
 // side effects on reads.
 reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 {
-  uint32_t ctr_en = -1;
-  if (state.prv < PRV_M)
-    ctr_en &= state.mcounteren;
-  if (supports_extension('S') && state.prv < PRV_S)
-    ctr_en &= state.scounteren;
-  bool ctr_ok = (ctr_en >> (which & 31)) & 1;
-  if (state.v)
-    ctr_en &= state.hcounteren;
-  bool ctr_v_ok = (ctr_en >> (which & 31)) & 1;
+#define mcounteren_ok(__which) \
+({ \
+  bool __ctr_ok = true; \
+  if (state.prv < PRV_M) \
+    __ctr_ok = (state.mcounteren >> (__which & 31)) & 1; \
+  __ctr_ok; \
+})
+#define hcounteren_ok(__which) \
+({ \
+  bool __ctr_ok = true; \
+  if (state.v) \
+    __ctr_ok = (state.hcounteren >> (__which & 31)) & 1; \
+  __ctr_ok; \
+})
+#define scounteren_ok(__which) \
+({ \
+  bool __ctr_ok = true; \
+  if (supports_extension('S') && state.prv < PRV_S) \
+    __ctr_ok = (state.scounteren >> (__which & 31)) & 1; \
+  __ctr_ok; \
+})
 
   reg_t res = 0;
 #define ret(n) do { \
     res = (n); \
     goto out; \
   } while (false)
-
-  if ((which >= CSR_HPMCOUNTER3 && which <= CSR_HPMCOUNTER31) ||
-      (xlen == 32 && which >= CSR_HPMCOUNTER3H && which <= CSR_HPMCOUNTER31H)) {
-    if (!ctr_ok)
-      goto throw_illegal;
-    if (!ctr_v_ok)
-      goto throw_virtual;
-    ret(0);
-  }
-  if (which >= CSR_MHPMCOUNTER3 && which <= CSR_MHPMCOUNTER31)
-    ret(0);
-  if (xlen == 32 && which >= CSR_MHPMCOUNTER3H && which <= CSR_MHPMCOUNTER31H)
-    ret(0);
-  if (which >= CSR_MHPMEVENT3 && which <= CSR_MHPMEVENT31)
-    ret(0);
 
   if (which >= CSR_PMPADDR0 && which < CSR_PMPADDR0 + state.max_pmp) {
     // If n_pmp is zero, that means pmp is not implemented hence raise trap if it tries to access the csr
@@ -1523,25 +1520,55 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       ret((VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT));
     case CSR_INSTRET:
     case CSR_CYCLE:
-      if (!ctr_ok)
-        goto throw_illegal;
-      if (!ctr_v_ok)
-        goto throw_virtual;
-      ret(state.minstret);
+    case CSR_HPMCOUNTER3 ... CSR_HPMCOUNTER31:
+      if (!mcounteren_ok(which))
+          goto throw_illegal;
+      if (!hcounteren_ok(which))
+          goto throw_virtual;
+      if (!scounteren_ok(which)) {
+        if (state.v)
+          goto throw_virtual;
+        else
+          goto throw_illegal;
+      }
+      if (which == CSR_INSTRET || which == CSR_CYCLE)
+        ret(state.minstret);
+      else
+        ret(0);
     case CSR_MINSTRET:
     case CSR_MCYCLE:
-      ret(state.minstret);
+    case CSR_MHPMCOUNTER3 ... CSR_MHPMCOUNTER31:
+    case CSR_MHPMEVENT3 ... CSR_MHPMEVENT31:
+      if (which == CSR_MINSTRET || which == CSR_MCYCLE)
+        ret(state.minstret);
+      else
+        ret(0);
     case CSR_INSTRETH:
     case CSR_CYCLEH:
-      if (!ctr_ok || xlen != 32)
-        goto throw_illegal;
-      if (!ctr_v_ok)
-        goto throw_virtual;
-      ret(state.minstret >> 32);
+    case CSR_HPMCOUNTER3H ... CSR_HPMCOUNTER31H:
+      if (!mcounteren_ok(which) || xlen != 32)
+          goto throw_illegal;
+      if (!hcounteren_ok(which))
+          goto throw_virtual;
+      if (!scounteren_ok(which)) {
+        if (state.v)
+          goto throw_virtual;
+        else
+          goto throw_illegal;
+      }
+      if (which == CSR_INSTRETH || which == CSR_CYCLEH)
+        ret(state.minstret >> 32);
+      else
+        ret(0);
     case CSR_MINSTRETH:
     case CSR_MCYCLEH:
-      if (xlen == 32)
-        ret(state.minstret >> 32);
+    case CSR_MHPMCOUNTER3H ... CSR_MHPMCOUNTER31H:
+      if (xlen == 32) {
+        if (which == CSR_MINSTRETH || which == CSR_MCYCLEH)
+          ret(state.minstret >> 32);
+        else
+          ret(0);
+      }
       break;
     case CSR_SCOUNTEREN: ret(state.scounteren);
     case CSR_MCOUNTEREN:
