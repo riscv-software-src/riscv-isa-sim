@@ -38,7 +38,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
              const char *log_path,
              bool dtb_enabled, const char *dtb_file
 #ifdef HAVE_BOOST_ASIO
-             , io_service *io_service_ptr_ctor, tcp::acceptor *acceptor_ptr_ctor // option -s
+             , io_service *io_service_ptr, tcp::acceptor *acceptor_ptr // option -s
 #endif
              )
   : htif_t(args),
@@ -52,6 +52,10 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     dtb_file(dtb_file ? dtb_file : ""),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
+#ifdef HAVE_BOOST_ASIO
+    io_service_ptr(io_service_ptr), // socket interface
+    acceptor_ptr(acceptor_ptr),
+#endif
     sout(nullptr),
     current_step(0),
     current_proc(0),
@@ -63,10 +67,6 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
 {
   signal(SIGINT, &handle_signal);
 
-#ifdef HAVE_BOOST_ASIO
-  io_service_ptr = io_service_ptr_ctor; // socket interface
-  acceptor_ptr = acceptor_ptr_ctor; // socket interface
-#endif
   sout.rdbuf(cerr.rdbuf()); // debug output goes to stderr by default
 
   for (auto& x : mems)
