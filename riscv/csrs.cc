@@ -230,9 +230,12 @@ virtualized_csr_t::virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_
 
 reg_t virtualized_csr_t::read() const noexcept {
   state_t* const state = proc->get_state();
-  return state->v ? virt_csr->read() : orig_csr->read();
+  return readvirt(state->v);
 }
 
+reg_t virtualized_csr_t::readvirt(bool virt) const noexcept {
+  return virt ? virt_csr->read() : orig_csr->read();
+}
 
 void virtualized_csr_t::write(const reg_t val) noexcept {
   state_t* const state = proc->get_state();
