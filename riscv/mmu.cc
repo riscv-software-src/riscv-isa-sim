@@ -267,8 +267,8 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   if (vm.levels == 0)
     return gpa;
 
-  reg_t arch_mstatus = proc->state.v ? proc->state.vsstatus->read() : proc->state.mstatus;
-  bool mxr = arch_mstatus & MSTATUS_MXR;
+  reg_t arch_sstatus = proc->state.v ? proc->state.vsstatus->read() : proc->state.sstatus->read();
+  bool mxr = arch_sstatus & MSTATUS_MXR;
 
   reg_t base = vm.ptbase;
   for (int i = vm.levels - 1; i >= 0; i--) {
