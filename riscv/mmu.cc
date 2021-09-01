@@ -347,9 +347,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
 
   bool s_mode = mode == PRV_S;
   bool sum = proc->state.sstatus->readvirt(virt) & MSTATUS_SUM;
-  reg_t arch_vsstatus = proc->state.sstatus->readvirt(true);
-  reg_t arch_sstatus = proc->state.sstatus->readvirt(false);
-  bool mxr = (arch_sstatus | (virt ? arch_vsstatus : 0)) & MSTATUS_MXR;
+  bool mxr = (proc->state.sstatus->readvirt(false) | proc->state.sstatus->readvirt(virt)) & MSTATUS_MXR;
 
   // verify bits xlen-1:va_bits-1 are all equal
   int va_bits = PGSHIFT + vm.levels * vm.idxbits;
