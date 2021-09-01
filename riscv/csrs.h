@@ -129,6 +129,8 @@ class virtualized_csr_t: public csr_t {
   virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
 
   virtual reg_t read() const noexcept override;
+  // Instead of using state.v, explicitly request original or virtual:
+  reg_t readvirt(bool virt) const noexcept;
   virtual void write(const reg_t val) noexcept override;
 
  protected:
