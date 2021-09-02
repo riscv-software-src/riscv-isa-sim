@@ -734,7 +734,7 @@ base_atp_csr_t::base_atp_csr_t(processor_t* const proc, const reg_t addr):
 
 
 bool base_atp_csr_t::unlogged_write(const reg_t val) noexcept {
-  const reg_t newval = proc->supports_impl(IMPL_MMU) ? compute_new_satp(val, read()) : 0;
+  const reg_t newval = proc->supports_impl(IMPL_MMU) ? compute_new_satp(val) : 0;
   if (newval != read())
     proc->get_mmu()->flush_tlb();
   return basic_csr_t::unlogged_write(newval);
@@ -757,7 +757,7 @@ bool base_atp_csr_t::satp_valid(reg_t val) const noexcept {
   }
 }
 
-reg_t base_atp_csr_t::compute_new_satp(reg_t val, reg_t old) const noexcept {
+reg_t base_atp_csr_t::compute_new_satp(reg_t val) const noexcept {
   reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
 
   reg_t mode_mask = proc->get_xlen() == 32 ? SATP32_MODE : SATP64_MODE;
@@ -765,7 +765,7 @@ reg_t base_atp_csr_t::compute_new_satp(reg_t val, reg_t old) const noexcept {
   reg_t new_mask = (satp_valid(val) ? mode_mask : 0) | ppn_mask;
   reg_t old_mask = satp_valid(val) ? 0 : mode_mask;
 
-  return (new_mask & val) | (old_mask & old);
+  return (new_mask & val) | (old_mask & read());
 }
 
 satp_csr_t::satp_csr_t(processor_t* const proc, const reg_t addr):
