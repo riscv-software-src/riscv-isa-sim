@@ -778,8 +778,9 @@ void satp_csr_t::verify_permissions(insn_t insn, bool write) const {
     require(state->prv >= PRV_M);
 }
 
-virtualized_satp_csr_t::virtualized_satp_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
-  virtualized_csr_t(proc, orig, virt) {
+virtualized_satp_csr_t::virtualized_satp_csr_t(processor_t* const proc, satp_csr_t_p orig, csr_t_p virt):
+  virtualized_csr_t(proc, orig, virt),
+  orig_satp(orig) {
 }
 
 void virtualized_satp_csr_t::verify_permissions(insn_t insn, bool write) const {
