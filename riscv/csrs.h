@@ -401,7 +401,7 @@ class base_atp_csr_t: public basic_csr_t {
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
-  reg_t compute_new_satp(reg_t val, reg_t old) const noexcept;
+  reg_t compute_new_satp(reg_t val) const noexcept;
 };
 
 class satp_csr_t: public base_atp_csr_t {
