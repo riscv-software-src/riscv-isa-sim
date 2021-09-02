@@ -506,8 +506,6 @@ private:
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;
 public:
-  bool satp_valid(reg_t val) const;
-  reg_t compute_new_satp(reg_t val, reg_t old) const;
   reg_t n_pmp;
   reg_t lg_pmp_granularity;
   reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }

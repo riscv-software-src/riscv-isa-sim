@@ -397,8 +397,11 @@ class counteren_csr_t: public basic_csr_t {
 class base_atp_csr_t: public basic_csr_t {
  public:
   base_atp_csr_t(processor_t* const proc, const reg_t addr);
+  bool satp_valid(reg_t val) const noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  reg_t compute_new_satp(reg_t val, reg_t old) const noexcept;
 };
 
 class satp_csr_t: public base_atp_csr_t {
