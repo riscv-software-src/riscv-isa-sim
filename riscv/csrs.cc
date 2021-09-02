@@ -740,6 +740,34 @@ bool base_atp_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write(newval);
 }
 
+bool processor_t::satp_valid(reg_t val) const {
+  if (xlen == 32) {
+    switch (get_field(val, SATP32_MODE)) {
+      case SATP_MODE_SV32: return supports_impl(IMPL_MMU_SV32);
+      case SATP_MODE_OFF: return true;
+      default: return false;
+    }
+  } else {
+    switch (get_field(val, SATP64_MODE)) {
+      case SATP_MODE_SV39: return supports_impl(IMPL_MMU_SV39);
+      case SATP_MODE_SV48: return supports_impl(IMPL_MMU_SV48);
+      case SATP_MODE_OFF: return true;
+      default: return false;
+    }
+  }
+}
+
+reg_t processor_t::compute_new_satp(reg_t val, reg_t old) const {
+  reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
+
+  reg_t mode_mask = xlen == 32 ? SATP32_MODE : SATP64_MODE;
+  reg_t ppn_mask = xlen == 32 ? SATP32_PPN : SATP64_PPN & rv64_ppn_mask;
+  reg_t new_mask = (satp_valid(val) ? mode_mask : 0) | ppn_mask;
+  reg_t old_mask = satp_valid(val) ? 0 : mode_mask;
+
+  return (new_mask & val) | (old_mask & old);
+}
+
 satp_csr_t::satp_csr_t(processor_t* const proc, const reg_t addr):
   base_atp_csr_t(proc, addr) {
 }
