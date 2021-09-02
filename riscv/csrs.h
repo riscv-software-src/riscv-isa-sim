@@ -407,11 +407,15 @@ class satp_csr_t: public base_atp_csr_t {
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
 
+typedef std::shared_ptr<satp_csr_t> satp_csr_t_p;
+
 class virtualized_satp_csr_t: public virtualized_csr_t {
  public:
-  virtualized_satp_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
+  virtualized_satp_csr_t(processor_t* const proc, satp_csr_t_p orig, csr_t_p virt);
   virtual void verify_permissions(insn_t insn, bool write) const override;
   virtual void write(const reg_t val) noexcept override;
+ private:
+  satp_csr_t_p orig_satp;
 };
 
 
