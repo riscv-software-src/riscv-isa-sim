@@ -1113,8 +1113,8 @@ void processor_t::set_csr(int which, reg_t val)
       mask &= max_isa;
 
       bool prev_h = state.misa & (1L << ('H' - 'A'));
-      state.misa = (val & mask) | (state.misa & ~mask);
-      bool new_h = state.misa & (1L << ('H' - 'A'));
+      reg_t new_misa = (val & mask) | (state.misa & ~mask);
+      bool new_h = new_misa & (1L << ('H' - 'A'));
 
       // update the forced bits in MIDELEG and other CSRs
       if (new_h && !prev_h)
@@ -1127,6 +1127,7 @@ void processor_t::set_csr(int which, reg_t val)
         state.mip &= ~MIP_HS_MASK;  // also takes care of hip, sip, hvip
         set_csr(CSR_HSTATUS, 0);
       }
+      state.misa = new_misa;
       break;
     }
     case CSR_HSTATUS: {
