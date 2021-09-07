@@ -129,16 +129,15 @@ class pmpcfg_csr_t: public logged_csr_t {
 // The csrmap will contain a virtualized_csr_t under sscratch's
 // address, plus the vsscratch basic_csr_t under its address.
 
-class virtualized_csr_t: public csr_t {
+class virtualized_csr_t: public logged_csr_t {
  public:
   virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
 
   virtual reg_t read() const noexcept override;
   // Instead of using state.v, explicitly request original or virtual:
   reg_t readvirt(bool virt) const noexcept;
-  virtual void write(const reg_t val) noexcept override;
-
  protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
   csr_t_p orig_csr;
   csr_t_p virt_csr;
 };
@@ -416,7 +415,8 @@ class virtualized_satp_csr_t: public virtualized_csr_t {
  public:
   virtualized_satp_csr_t(processor_t* const proc, satp_csr_t_p orig, csr_t_p virt);
   virtual void verify_permissions(insn_t insn, bool write) const override;
-  virtual void write(const reg_t val) noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
   satp_csr_t_p orig_satp;
 };
