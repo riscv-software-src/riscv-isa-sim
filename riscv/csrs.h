@@ -26,11 +26,18 @@ class csr_t {
 
   // write() updates the architectural value of this CSR. No
   // permission checking needed or allowed.
-  virtual void write(const reg_t val) noexcept = 0;
+  // Child classes must implement unlogged_write()
+  void write(const reg_t val) noexcept;
 
   virtual ~csr_t();
 
  protected:
+  // Return value indicates success; false means no write actually occurred
+  virtual bool unlogged_write(const reg_t val) noexcept = 0;
+
+  // Record this CSR update (which has already happened) in the commit log
+  void log_write() const noexcept;
+
   processor_t* const proc;
   state_t* const state;
  public:
@@ -47,16 +54,6 @@ typedef std::shared_ptr<csr_t> csr_t_p;
 class logged_csr_t: public csr_t {
  public:
   logged_csr_t(processor_t* const proc, const reg_t addr);
-
-  // Child classes must implement unlogged_write()
-  virtual void write(const reg_t val) noexcept override final;
-
- protected:
-  // Return value indicates success; false means no write actually occurred
-  virtual bool unlogged_write(const reg_t val) noexcept = 0;
-
-  // Record this CSR update (which has already happened) in the commit log
-  void log_write() const noexcept;
 };
 
 
