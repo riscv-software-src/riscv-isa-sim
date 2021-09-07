@@ -27,7 +27,7 @@ Now clone the architectural test framework repo and copy the updated Makefile.in
 ```
   $ git clone https://github.com/riscv/riscv-arch-test.git
   $ cd riscv-arch-test
-  $ cp <custom-path>/riscv-isa-sim/arch_test_target/Makefile.include .
+  $ cp <custom-path>/riscv-isa-sim/arch_test_target/spike/Makefile.include .
 ```
 
 The user will have to modify the ``TARGETDIR`` variable in ``riscv-arch-test/Makefile.include`` to point to the
