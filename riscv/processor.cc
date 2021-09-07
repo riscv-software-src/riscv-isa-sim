@@ -221,7 +221,7 @@ void processor_t::parse_isa_string(const char* str)
 
   char error_msg[256];
   const char* p = lowercase.c_str();
-  const char* all_subsets = "imafdqcbkhp"
+  const char* all_subsets = "imafdqckhp"
 #ifdef __SIZEOF_INT128__
     "v"
 #endif
@@ -307,14 +307,6 @@ void processor_t::parse_isa_string(const char* str)
   }
 
   state.misa = max_isa;
-
-  if (supports_extension('B')) {
-    // B implies Zba, Zbb, Zbc, Zbs
-    extension_table[EXT_ZBA] = true;
-    extension_table[EXT_ZBB] = true;
-    extension_table[EXT_ZBC] = true;
-    extension_table[EXT_ZBS] = true;
-  }
 
   if (!supports_extension('I'))
     bad_isa_string(str, "'I' extension is required");
@@ -1150,7 +1142,6 @@ void processor_t::set_csr(int which, reg_t val)
       mask |= 1L << ('D' - 'A');
       mask |= 1L << ('C' - 'A');
       mask |= 1L << ('H' - 'A');
-      mask |= 1L << ('B' - 'A');
       mask &= max_isa;
 
       state.misa = (val & mask) | (state.misa & ~mask);
