@@ -2,7 +2,7 @@
 if (SHAMT == 7)
   require_extension(EXT_ZBB);
 else
-  require_extension('B');
+  require_extension(EXT_XBITMANIP);
 
 require(SHAMT < xlen);
 reg_t x = RS1;

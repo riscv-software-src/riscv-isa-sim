@@ -259,7 +259,9 @@ void processor_t::parse_isa_string(const char* str)
           end++;
 
         auto ext_str = std::string(ext, end - ext);
-        if (ext_str != "dummy")
+        if (ext_str == "bitmanip")
+          extension_table[EXT_XBITMANIP] = true;
+        else if (ext_str != "dummy")
           register_extension(find_extension(ext_str.c_str())());
 
         p = end;

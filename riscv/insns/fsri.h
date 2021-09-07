@@ -1,4 +1,4 @@
-require_extension('B');
+require_extension(EXT_XBITMANIP);
 int shamt = SHAMT & (2*xlen-1);
 reg_t a = RS1, b = RS3;
 if (shamt >= xlen) {

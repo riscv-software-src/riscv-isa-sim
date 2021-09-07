@@ -1,5 +1,5 @@
 require_rv64;
-require_extension('B');
+require_extension(EXT_XBITMANIP);
 int shamt = SHAMT & 63;
 reg_t a = RS1, b = RS3;
 if (shamt >= 32) {

@@ -253,6 +253,7 @@ typedef enum {
   EXT_SVNAPOT,
   EXT_SVPBMT,
   EXT_SVINVAL,
+  EXT_XBITMANIP,
 } isa_extension_t;
 
 typedef enum {

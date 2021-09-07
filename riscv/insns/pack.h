@@ -2,7 +2,7 @@
 if (insn.rs2() == 0 && xlen == 32)
   require_extension(EXT_ZBB);
 else
-  require_extension('B');
+  require_extension(EXT_XBITMANIP);
 
 reg_t lo = zext_xlen(RS1 << (xlen/2)) >> (xlen/2);
 reg_t hi = zext_xlen(RS2 << (xlen/2));
