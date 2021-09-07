@@ -631,7 +631,7 @@ void mip_proxy_csr_t::write(const reg_t val) noexcept {
 
 // implement class mie_proxy_csr_t
 mie_proxy_csr_t::mie_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr):
-  csr_t(proc, addr),
+  logged_csr_t(proc, addr),
   accr(accr) {
 }
 
@@ -639,8 +639,9 @@ reg_t mie_proxy_csr_t::read() const noexcept {
   return accr->ie_read();
 }
 
-void mie_proxy_csr_t::write(const reg_t val) noexcept {
+bool mie_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
   accr->ie_write(val);
+  return false;  // accr has already logged
 }
 
 
