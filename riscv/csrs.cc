@@ -617,7 +617,7 @@ reg_t generic_int_accessor_t::deleg_mask() const {
 
 // implement class mip_proxy_csr_t
 mip_proxy_csr_t::mip_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr):
-  csr_t(proc, addr),
+  logged_csr_t(proc, addr),
   accr(accr) {
 }
 
@@ -625,8 +625,9 @@ reg_t mip_proxy_csr_t::read() const noexcept {
   return accr->ip_read();
 }
 
-void mip_proxy_csr_t::write(const reg_t val) noexcept {
+bool mip_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
   accr->ip_write(val);
+  return false;  // accr has already logged
 }
 
 // implement class mie_proxy_csr_t
