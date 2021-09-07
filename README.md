@@ -22,7 +22,10 @@ Spike supports the following RISC-V ISA features:
   - K extension, v0.8.1 ([Scalar Cryptography](https://github.com/riscv/riscv-crypto))
   - V extension, v0.10, w/ Zvlsseg/Zvamo (_requires a 64-bit host_)
   - P extension, v0.9.2
-  - Bi-endianness
+  - Zba extension, v1.0
+  - Zbb extension, v1.0
+  - Zbc extension, v1.0
+  - Zbs extension, v1.0
   - Conformance to both RVWMO and RVTSO (Spike is sequentially consistent)
   - Machine, Supervisor, and User modes, v1.11
   - Hypervisor extension, v0.6.1
@@ -30,6 +33,12 @@ Spike supports the following RISC-V ISA features:
   - Svpbmt extension, v0.1
   - Svinval extension, v0.1
   - Debug v0.14
+
+As a Spike extension, the remainder of the proposed
+[Bit-Manipulation Extensions](https://github.com/riscv/riscv-bitmanip)
+is provided under the Spike-custom extension name _Xbitmanip_.
+These instructions (and, of course, the extension name) are not RISC-V
+standards.
 
 Versioning and APIs
 -------------------
