@@ -223,7 +223,7 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
 
 // implement class virtualized_csr_t
 virtualized_csr_t::virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
-  csr_t(proc, orig->address),
+  logged_csr_t(proc, orig->address),
   orig_csr(orig),
   virt_csr(virt) {
 }
@@ -237,11 +237,12 @@ reg_t virtualized_csr_t::readvirt(bool virt) const noexcept {
   return virt ? virt_csr->read() : orig_csr->read();
 }
 
-void virtualized_csr_t::write(const reg_t val) noexcept {
+bool virtualized_csr_t::unlogged_write(const reg_t val) noexcept {
   if (state->v)
     virt_csr->write(val);
   else
     orig_csr->write(val);
+  return false; // virt_csr or orig_csr has already logged
 }
 
 
@@ -797,8 +798,8 @@ void virtualized_satp_csr_t::verify_permissions(insn_t insn, bool write) const {
   }
 }
 
-void virtualized_satp_csr_t::write(const reg_t val) noexcept {
+bool virtualized_satp_csr_t::unlogged_write(const reg_t val) noexcept {
   // If unsupported Mode field: no change to contents
   const reg_t newval = orig_satp->satp_valid(val) ? val : read();
-  return virtualized_csr_t::write(newval);
+  return virtualized_csr_t::unlogged_write(newval);
 }
