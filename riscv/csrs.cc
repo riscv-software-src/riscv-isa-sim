@@ -40,11 +40,6 @@ void csr_t::verify_permissions(insn_t insn, bool write) const {
 csr_t::~csr_t() {
 }
 
-// implement class logged_csr_t
-logged_csr_t::logged_csr_t(processor_t* const proc, const reg_t addr):
-  csr_t(proc, addr) {
-}
-
 void csr_t::write(const reg_t val) noexcept {
   const bool success = unlogged_write(val);
   if (success) {
@@ -60,7 +55,7 @@ void csr_t::log_write() const noexcept {
 
 // implement class basic_csr_t
 basic_csr_t::basic_csr_t(processor_t* const proc, const reg_t addr, const reg_t init):
-  logged_csr_t(proc, addr),
+  csr_t(proc, addr),
   val(init) {
 }
 
@@ -76,7 +71,7 @@ bool basic_csr_t::unlogged_write(const reg_t val) noexcept {
 
 // implement class pmpaddr_csr_t
 pmpaddr_csr_t::pmpaddr_csr_t(processor_t* const proc, const reg_t addr):
-  logged_csr_t(proc, addr),
+  csr_t(proc, addr),
   val(0),
   cfg(0),
   pmpidx(address - CSR_PMPADDR0) {
@@ -84,7 +79,7 @@ pmpaddr_csr_t::pmpaddr_csr_t(processor_t* const proc, const reg_t addr):
 
 
 void pmpaddr_csr_t::verify_permissions(insn_t insn, bool write) const {
-  logged_csr_t::verify_permissions(insn, write);
+  csr_t::verify_permissions(insn, write);
   // If n_pmp is zero, that means pmp is not implemented hence raise
   // trap if it tries to access the csr. I would prefer to implement
   // this by not instantiating any pmpaddr_csr_t for these regs, but
@@ -189,7 +184,7 @@ bool pmpaddr_csr_t::access_ok(access_type type, reg_t mode) const noexcept {
 
 // implement class pmpcfg_csr_t
 pmpcfg_csr_t::pmpcfg_csr_t(processor_t* const proc, const reg_t addr):
-  logged_csr_t(proc, addr) {
+  csr_t(proc, addr) {
 }
 
 reg_t pmpcfg_csr_t::read() const noexcept {
@@ -223,7 +218,7 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
 
 // implement class virtualized_csr_t
 virtualized_csr_t::virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
-  logged_csr_t(proc, orig->address),
+  csr_t(proc, orig->address),
   orig_csr(orig),
   virt_csr(virt) {
 }
@@ -248,7 +243,7 @@ bool virtualized_csr_t::unlogged_write(const reg_t val) noexcept {
 
 // implement class epc_csr_t
 epc_csr_t::epc_csr_t(processor_t* const proc, const reg_t addr):
-  logged_csr_t(proc, addr),
+  csr_t(proc, addr),
   val(0) {
 }
 
@@ -266,7 +261,7 @@ bool epc_csr_t::unlogged_write(const reg_t val) noexcept {
 
 // implement class tvec_csr_t
 tvec_csr_t::tvec_csr_t(processor_t* const proc, const reg_t addr):
-  logged_csr_t(proc, addr),
+  csr_t(proc, addr),
   val(0) {
 }
 
@@ -301,7 +296,7 @@ reg_t cause_csr_t::read() const noexcept {
 
 // implement class base_status_csr_t
 base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
-  logged_csr_t(proc, addr),
+  csr_t(proc, addr),
   has_page(proc->extension_enabled_const('S') && proc->supports_impl(IMPL_MMU)),
   sstatus_write_mask(compute_sstatus_write_mask()),
   sstatus_read_mask(sstatus_write_mask | SSTATUS_UBE | SSTATUS_UXL
@@ -517,7 +512,7 @@ bool misa_csr_t::extension_enabled_const(unsigned char ext) const noexcept {
 
 // implement class mip_or_mie_csr_t
 mip_or_mie_csr_t::mip_or_mie_csr_t(processor_t* const proc, const reg_t addr):
-  logged_csr_t(proc, addr),
+  csr_t(proc, addr),
   val(0) {
 }
 
@@ -617,7 +612,7 @@ reg_t generic_int_accessor_t::deleg_mask() const {
 
 // implement class mip_proxy_csr_t
 mip_proxy_csr_t::mip_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr):
-  logged_csr_t(proc, addr),
+  csr_t(proc, addr),
   accr(accr) {
 }
 
@@ -632,7 +627,7 @@ bool mip_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
 
 // implement class mie_proxy_csr_t
 mie_proxy_csr_t::mie_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr):
-  logged_csr_t(proc, addr),
+  csr_t(proc, addr),
   accr(accr) {
 }
 
