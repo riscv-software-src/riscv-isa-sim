@@ -50,15 +50,8 @@ class csr_t {
 typedef std::shared_ptr<csr_t> csr_t_p;
 
 
-// Parent class that records log of every write to itself
-class logged_csr_t: public csr_t {
- public:
-  logged_csr_t(processor_t* const proc, const reg_t addr);
-};
-
-
 // Basic CSRs, with XLEN bits fully readable and writable.
-class basic_csr_t: public logged_csr_t {
+class basic_csr_t: public csr_t {
  public:
   basic_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
   virtual reg_t read() const noexcept override;
@@ -69,7 +62,7 @@ class basic_csr_t: public logged_csr_t {
 };
 
 
-class pmpaddr_csr_t: public logged_csr_t {
+class pmpaddr_csr_t: public csr_t {
  public:
   pmpaddr_csr_t(processor_t* const proc, const reg_t addr);
   virtual void verify_permissions(insn_t insn, bool write) const override;
@@ -109,7 +102,7 @@ class pmpaddr_csr_t: public logged_csr_t {
 
 typedef std::shared_ptr<pmpaddr_csr_t> pmpaddr_csr_t_p;
 
-class pmpcfg_csr_t: public logged_csr_t {
+class pmpcfg_csr_t: public csr_t {
  public:
   pmpcfg_csr_t(processor_t* const proc, const reg_t addr);
   virtual reg_t read() const noexcept override;
@@ -126,7 +119,7 @@ class pmpcfg_csr_t: public logged_csr_t {
 // The csrmap will contain a virtualized_csr_t under sscratch's
 // address, plus the vsscratch basic_csr_t under its address.
 
-class virtualized_csr_t: public logged_csr_t {
+class virtualized_csr_t: public csr_t {
  public:
   virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
 
@@ -142,7 +135,7 @@ class virtualized_csr_t: public logged_csr_t {
 typedef std::shared_ptr<virtualized_csr_t> virtualized_csr_t_p;
 
 // For mepc, sepc, and vsepc
-class epc_csr_t: public logged_csr_t {
+class epc_csr_t: public csr_t {
  public:
   epc_csr_t(processor_t* const proc, const reg_t addr);
 
@@ -155,7 +148,7 @@ class epc_csr_t: public logged_csr_t {
 
 
 // For mtvec, stvec, and vstvec
-class tvec_csr_t: public logged_csr_t {
+class tvec_csr_t: public csr_t {
  public:
   tvec_csr_t(processor_t* const proc, const reg_t addr);
 
@@ -177,7 +170,7 @@ class cause_csr_t: public basic_csr_t {
 
 
 // For *status family of CSRs
-class base_status_csr_t: public logged_csr_t {
+class base_status_csr_t: public csr_t {
  public:
   base_status_csr_t(processor_t* const proc, const reg_t addr);
  protected:
@@ -258,7 +251,7 @@ class misa_csr_t: public basic_csr_t {
 typedef std::shared_ptr<misa_csr_t> misa_csr_t_p;
 
 
-class mip_or_mie_csr_t: public logged_csr_t {
+class mip_or_mie_csr_t: public csr_t {
  public:
   mip_or_mie_csr_t(processor_t* const proc, const reg_t addr);
   virtual reg_t read() const noexcept override final;
@@ -329,7 +322,7 @@ typedef std::shared_ptr<generic_int_accessor_t> generic_int_accessor_t_p;
 
 
 // For all CSRs that are simply (masked & shifted) views into mip
-class mip_proxy_csr_t: public logged_csr_t {
+class mip_proxy_csr_t: public csr_t {
  public:
   mip_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr);
   virtual reg_t read() const noexcept override;
@@ -340,7 +333,7 @@ class mip_proxy_csr_t: public logged_csr_t {
 };
 
 // For all CSRs that are simply (masked & shifted) views into mie
-class mie_proxy_csr_t: public logged_csr_t {
+class mie_proxy_csr_t: public csr_t {
  public:
   mie_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr);
   virtual reg_t read() const noexcept override;
