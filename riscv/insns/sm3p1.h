@@ -1,5 +1,5 @@
 
-require_extension('K');
+require_extension(EXT_ZKSH);
 
 #define ROL32(a,amt) ((a >> (-amt & (32-1))) | (a << (amt & (32-1))))
 

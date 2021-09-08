@@ -2,7 +2,7 @@
 #include "aes_common.h"
 
 require_rv64;
-require_extension('K');
+require_extension(EXT_ZKND);
 
 uint32_t col_0 = RS1 & 0xFFFFFFFF;
 uint32_t col_1 = RS1 >> 32       ;

@@ -221,7 +221,7 @@ void processor_t::parse_isa_string(const char* str)
 
   char error_msg[256];
   const char* p = lowercase.c_str();
-  const char* all_subsets = "imafdqckhp"
+  const char* all_subsets = "imafdqchp"
 #ifdef __SIZEOF_INT128__
     "v"
 #endif
@@ -290,6 +290,38 @@ void processor_t::parse_isa_string(const char* str)
         extension_table[EXT_ZBC] = true;
       } else if (ext_str == "zbs") {
         extension_table[EXT_ZBS] = true;
+      } else if (ext_str == "zbkb") {
+        extension_table[EXT_ZBKB] = true;
+      } else if (ext_str == "zbkc") {
+        extension_table[EXT_ZBKC] = true;
+      } else if (ext_str == "zbkx") {
+        extension_table[EXT_ZBKX] = true;
+      } else if (ext_str == "zkn") {
+        extension_table[EXT_ZBKB] = true;
+        extension_table[EXT_ZBKC] = true;
+        extension_table[EXT_ZBKX] = true;
+        extension_table[EXT_ZKND] = true;
+        extension_table[EXT_ZKNE] = true;
+        extension_table[EXT_ZKNH] = true;
+      } else if (ext_str == "zknd") {
+        extension_table[EXT_ZKND] = true;
+      } else if (ext_str == "zkne") {
+        extension_table[EXT_ZKNE] = true;
+      } else if (ext_str == "zknh") {
+        extension_table[EXT_ZKNH] = true;
+      } else if (ext_str == "zks") {
+        extension_table[EXT_ZBKB] = true;
+        extension_table[EXT_ZBKC] = true;
+        extension_table[EXT_ZBKX] = true;
+        extension_table[EXT_ZKSED] = true;
+        extension_table[EXT_ZKSH] = true;
+      } else if (ext_str == "zksed") {
+        extension_table[EXT_ZKSED] = true;
+      } else if (ext_str == "zksh") {
+        extension_table[EXT_ZKSH] = true;
+      } else if (ext_str == "zkr") {
+        extension_table[EXT_ZKR] = true;
+      } else if (ext_str == "zkt") {
       } else if (ext_str == "SVNAPOT") {
         extension_table[EXT_SVNAPOT] = true;
       } else if (ext_str == "SVPBMT") {
@@ -1170,7 +1202,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
   switch (which)
   {
     case CSR_SENTROPY:
-      if (!extension_enabled('K'))
+      if (!extension_enabled(EXT_ZKR))
         break;
       /* Read-only access disallowed due to wipe-on-read side effect */
       if (!write)
