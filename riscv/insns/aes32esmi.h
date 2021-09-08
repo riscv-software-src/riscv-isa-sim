@@ -2,7 +2,7 @@
 #include "aes_common.h"
 
 require_rv32;
-require_extension('K');
+require_extension(EXT_ZKNE);
 
 uint8_t     bs = insn.bs();
 

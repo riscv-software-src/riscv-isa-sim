@@ -2,7 +2,7 @@
 #include "aes_common.h"
 
 require_rv64;
-require_extension('K');
+require_extension(EXT_ZKNE);
 
 uint64_t temp = AES_SHIFROWS_LO(RS1,RS2);
 

@@ -1,5 +1,5 @@
 
-require_extension('K');
+require_extension(EXT_ZKSED);
 
 #include "sm4_common.h"
 
