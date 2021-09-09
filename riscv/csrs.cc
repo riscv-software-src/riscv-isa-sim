@@ -116,7 +116,7 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 bool pmpaddr_csr_t::next_locked_and_tor() const noexcept {
-  if (pmpidx >= state->max_pmp) return false;  // this is the last entry
+  if (pmpidx+1 >= state->max_pmp) return false;  // this is the last entry
   bool next_locked = state->pmpaddr[pmpidx+1]->cfg & PMP_L;
   bool next_tor = (state->pmpaddr[pmpidx+1]->cfg & PMP_A) == PMP_TOR;
   return next_locked && next_tor;
