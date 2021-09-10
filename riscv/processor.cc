@@ -322,11 +322,11 @@ void processor_t::parse_isa_string(const char* str)
       } else if (ext_str == "zkr") {
         extension_table[EXT_ZKR] = true;
       } else if (ext_str == "zkt") {
-      } else if (ext_str == "SVNAPOT") {
+      } else if (ext_str == "svnapot") {
         extension_table[EXT_SVNAPOT] = true;
-      } else if (ext_str == "SVPBMT") {
+      } else if (ext_str == "svpbmt") {
         extension_table[EXT_SVPBMT] = true;
-      } else if (ext_str == "SVINVAL") {
+      } else if (ext_str == "svinval") {
         extension_table[EXT_SVINVAL] = true;
       } else {
         sprintf(error_msg, "unsupported extension '%s'", ext_str.c_str());
