@@ -205,7 +205,7 @@ void sim_t::step(size_t n)
     steps = std::min(n - i, INTERLEAVE - current_step);
     procs[current_proc]->step(steps);
 
-    current_step += steps;
+    // current_step += steps;
     if (current_step == INTERLEAVE)
     {
       current_step = 0;
