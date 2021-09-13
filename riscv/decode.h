@@ -167,6 +167,11 @@ public:
   {
     memset(data, 0, sizeof(data));
   }
+  const T *get_addr(void)
+  {
+    return data;
+  }
+
 private:
   T data[N];
 };
