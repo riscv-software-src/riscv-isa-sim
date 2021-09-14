@@ -417,4 +417,22 @@ class virtualized_satp_csr_t: public virtualized_csr_t {
 };
 
 
+// For minstret, which is always 64 bits, but in RV32 is split into
+// high and low halves. The first class always holds the full 64-bit
+// value.
+class minstret_csr_t: public csr_t {
+ public:
+  minstret_csr_t(processor_t* const proc, const reg_t addr);
+  // Always returns full 64-bit value
+  virtual reg_t read() const noexcept override;
+  void bump(const reg_t howmuch) noexcept;
+  void write_upper_half(const reg_t val) noexcept;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  reg_t val;
+};
+
+typedef std::shared_ptr<minstret_csr_t> minstret_csr_t_p;
+
 #endif

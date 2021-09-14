@@ -348,7 +348,7 @@ void processor_t::step(size_t n)
       n = ++instret;
     }
 
-    state.minstret += instret;
+    state.minstret->bump(instret);
     n -= instret;
   }
 }

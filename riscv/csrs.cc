@@ -804,3 +804,38 @@ bool virtualized_satp_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t newval = orig_satp->satp_valid(val) ? val : read();
   return virtualized_csr_t::unlogged_write(newval);
 }
+
+
+// implement class minstret_csr_t
+minstret_csr_t::minstret_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr),
+  val(0) {
+}
+
+reg_t minstret_csr_t::read() const noexcept {
+  return val;
+}
+
+void minstret_csr_t::bump(const reg_t howmuch) noexcept {
+  val += howmuch;  // to keep log reasonable size, don't log every bump
+}
+
+bool minstret_csr_t::unlogged_write(const reg_t val) noexcept {
+  if (proc->get_xlen() == 32)
+    this->val = (this->val >> 32 << 32) | (val & 0xffffffffU);
+  else
+    this->val = val;
+  // The ISA mandates that if an instruction writes instret, the write
+  // takes precedence over the increment to instret.  However, Spike
+  // unconditionally increments instret after executing an instruction.
+  // Correct for this artifact by decrementing instret here.
+  this->val--;
+  return true;
+}
+
+void minstret_csr_t::write_upper_half(const reg_t val) noexcept {
+  this->val = (val << 32) | (this->val << 32 >> 32);
+  this->val--; // See comment above.
+  // Log upper half only.
+  log_special_write(address + (CSR_MINSTRETH - CSR_MINSTRET), this->val >> 32);
+}

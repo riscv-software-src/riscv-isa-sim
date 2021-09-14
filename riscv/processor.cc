@@ -376,7 +376,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MSCRATCH] = std::make_shared<basic_csr_t>(proc, CSR_MSCRATCH, 0);
   csrmap[CSR_MTVEC] = mtvec = std::make_shared<tvec_csr_t>(proc, CSR_MTVEC);
   csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE);
-  minstret = 0;
+  csrmap[CSR_MINSTRET] = minstret = std::make_shared<minstret_csr_t>(proc, CSR_MINSTRET);
   csrmap[CSR_MIE] = mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
   csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(this,
@@ -972,22 +972,12 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_MINSTRET:
     case CSR_MCYCLE:
-      if (xlen == 32)
-        state.minstret = (state.minstret >> 32 << 32) | (val & 0xffffffffU);
-      else
-        state.minstret = val;
-      // The ISA mandates that if an instruction writes instret, the write
-      // takes precedence over the increment to instret.  However, Spike
-      // unconditionally increments instret after executing an instruction.
-      // Correct for this artifact by decrementing instret here.
-      state.minstret--;
+      state.minstret->write(val);
       break;
     case CSR_MINSTRETH:
     case CSR_MCYCLEH:
-      state.minstret = (val << 32) | (state.minstret << 32 >> 32);
-      state.minstret--; // See comment above.
+      state.minstret->write_upper_half(val);
       break;
     case CSR_MTVAL2: state.mtval2 = val; break;
     case CSR_MTINST: state.mtinst = val; break;
@@ -1141,10 +1131,6 @@ void processor_t::set_csr(int which, reg_t val)
       LOG_CSR(CSR_VXRM);
       break;
 
-    case CSR_MINSTRET:
-    case CSR_MCYCLE:
-    case CSR_MINSTRETH:
-    case CSR_MCYCLEH:
     case CSR_TSELECT:
     case CSR_TDATA1:
     case CSR_TDATA2:
@@ -1242,15 +1228,14 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
           goto throw_illegal;
       }
       if (which == CSR_INSTRET || which == CSR_CYCLE)
-        ret(state.minstret);
+        ret(state.minstret->read());
       else
         ret(0);
-    case CSR_MINSTRET:
     case CSR_MCYCLE:
     case CSR_MHPMCOUNTER3 ... CSR_MHPMCOUNTER31:
     case CSR_MHPMEVENT3 ... CSR_MHPMEVENT31:
-      if (which == CSR_MINSTRET || which == CSR_MCYCLE)
-        ret(state.minstret);
+      if (which == CSR_MCYCLE)
+        ret(state.minstret->read());
       else
         ret(0);
     case CSR_INSTRETH:
@@ -1267,7 +1252,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
           goto throw_illegal;
       }
       if (which == CSR_INSTRETH || which == CSR_CYCLEH)
-        ret(state.minstret >> 32);
+        ret(state.minstret->read() >> 32);
       else
         ret(0);
     case CSR_MINSTRETH:
@@ -1275,7 +1260,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MHPMCOUNTER3H ... CSR_MHPMCOUNTER31H:
       if (xlen == 32) {
         if (which == CSR_MINSTRETH || which == CSR_MCYCLEH)
-          ret(state.minstret >> 32);
+          ret(state.minstret->read() >> 32);
         else
           ret(0);
       }
