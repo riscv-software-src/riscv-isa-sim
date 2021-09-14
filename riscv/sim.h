@@ -89,6 +89,7 @@ private:
   size_t current_step;
   size_t current_proc;
   bool debug;
+  bool is_diff_ref;
   bool histogram_enabled; // provide a histogram of PCs
   bool log;
   remote_bitbang_t* remote_bitbang;
