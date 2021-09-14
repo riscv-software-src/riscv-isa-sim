@@ -48,8 +48,12 @@ void csr_t::write(const reg_t val) noexcept {
 }
 
 void csr_t::log_write() const noexcept {
+  log_special_write(address, read());
+}
+
+void csr_t::log_special_write(const reg_t address, const reg_t val) const noexcept {
 #if defined(RISCV_ENABLE_COMMITLOG)
-  proc->get_state()->log_reg_write[((address) << 4) | 4] = {read(), 0};
+  proc->get_state()->log_reg_write[((address) << 4) | 4] = {val, 0};
 #endif
 }
 
