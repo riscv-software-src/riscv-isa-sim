@@ -1,9 +1,8 @@
 // Zbb contains rev8 but not general grevi
-if (SHAMT == xlen - 8)
-  require_extension(EXT_ZBB);
-else
-  require_extension(EXT_XBITMANIP);
-
+// Zbkb contains rev8 and brev8 (a.k.a. rev.b) but not general grevi
+require(((SHAMT == xlen - 8) && (p->extension_enabled(EXT_ZBB) || p->extension_enabled(EXT_ZBKB)))
+  || ((SHAMT == 8) && p->extension_enabled(EXT_ZBKB))
+  || p->extension_enabled(EXT_XBITMANIP));
 require(SHAMT < xlen);
 reg_t x = RS1;
 int shamt = SHAMT;
