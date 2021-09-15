@@ -474,4 +474,11 @@ class const_csr_t: public csr_t {
 };
 
 
+// For a CSR that is an unprivileged accessor of a privileged counter
+class counter_proxy_csr_t: public proxy_csr_t {
+ public:
+  counter_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
 #endif

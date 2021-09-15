@@ -378,22 +378,32 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE);
   csrmap[CSR_MINSTRET] = minstret = std::make_shared<minstret_csr_t>(proc, CSR_MINSTRET);
   csrmap[CSR_MCYCLE] = std::make_shared<proxy_csr_t>(proc, CSR_MCYCLE, minstret);
+  csrmap[CSR_INSTRET] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRET, minstret);
+  csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, minstret);
   if (xlen == 32) {
     minstreth_csr_t_p minstreth;
     csrmap[CSR_MINSTRETH] = minstreth = std::make_shared<minstreth_csr_t>(proc, CSR_MINSTRETH, minstret);
     csrmap[CSR_MCYCLEH] = std::make_shared<proxy_csr_t>(proc, CSR_MCYCLEH, minstreth);
+    csrmap[CSR_INSTRETH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRETH, minstreth);
+    csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, minstreth);
   }
   for (reg_t i=3; i<=31; ++i) {
-    const reg_t which_mcounter = CSR_MHPMCOUNTER3 + i - 3;
     const reg_t which_mevent = CSR_MHPMEVENT3 + i - 3;
+    const reg_t which_mcounter = CSR_MHPMCOUNTER3 + i - 3;
     const reg_t which_mcounterh = CSR_MHPMCOUNTER3H + i - 3;
-    auto mcounter = std::make_shared<const_csr_t>(proc, which_mcounter, 0);
+    const reg_t which_counter = CSR_HPMCOUNTER3 + i - 3;
+    const reg_t which_counterh = CSR_HPMCOUNTER3H + i - 3;
     auto mevent = std::make_shared<const_csr_t>(proc, which_mevent, 0);
-    csrmap[which_mcounter] = mcounter;
+    auto mcounter = std::make_shared<const_csr_t>(proc, which_mcounter, 0);
+    auto counter = std::make_shared<counter_proxy_csr_t>(proc, which_counter, mcounter);
     csrmap[which_mevent] = mevent;
+    csrmap[which_mcounter] = mcounter;
+    csrmap[which_counter] = counter;
     if (xlen == 32) {
       auto mcounterh = std::make_shared<const_csr_t>(proc, which_mcounterh, 0);
+      auto counterh = std::make_shared<counter_proxy_csr_t>(proc, which_counterh, mcounterh);
       csrmap[which_mcounterh] = mcounterh;
+      csrmap[which_counterh] = counterh;
     }
   }
   csrmap[CSR_MIE] = mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
@@ -1162,28 +1172,6 @@ void processor_t::set_csr(int which, reg_t val)
 // side effects on reads.
 reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 {
-#define mcounteren_ok(__which) \
-({ \
-  bool __ctr_ok = true; \
-  if (state.prv < PRV_M) \
-    __ctr_ok = (state.mcounteren->read() >> (__which & 31)) & 1;        \
-  __ctr_ok; \
-})
-#define hcounteren_ok(__which) \
-({ \
-  bool __ctr_ok = true; \
-  if (state.v) \
-    __ctr_ok = (state.hcounteren->read() >> (__which & 31)) & 1;        \
-  __ctr_ok; \
-})
-#define scounteren_ok(__which) \
-({ \
-  bool __ctr_ok = true; \
-  if (extension_enabled('S') && state.prv < PRV_S) \
-    __ctr_ok = (state.scounteren->read() >> (__which & 31)) & 1;        \
-  __ctr_ok; \
-})
-
   reg_t res = 0;
 #define ret(n) do { \
     res = (n); \
@@ -1226,40 +1214,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (!extension_enabled('V'))
         break;
       ret((VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT));
-    case CSR_INSTRET:
-    case CSR_CYCLE:
-    case CSR_HPMCOUNTER3 ... CSR_HPMCOUNTER31:
-      if (!mcounteren_ok(which))
-          goto throw_illegal;
-      if (!hcounteren_ok(which))
-          goto throw_virtual;
-      if (!scounteren_ok(which)) {
-        if (state.v)
-          goto throw_virtual;
-        else
-          goto throw_illegal;
-      }
-      if (which == CSR_INSTRET || which == CSR_CYCLE)
-        ret(state.minstret->read());
-      else
-        ret(0);
-    case CSR_INSTRETH:
-    case CSR_CYCLEH:
-    case CSR_HPMCOUNTER3H ... CSR_HPMCOUNTER31H:
-      if (!mcounteren_ok(which) || xlen != 32)
-          goto throw_illegal;
-      if (!hcounteren_ok(which))
-          goto throw_virtual;
-      if (!scounteren_ok(which)) {
-        if (state.v)
-          goto throw_virtual;
-        else
-          goto throw_illegal;
-      }
-      if (which == CSR_INSTRETH || which == CSR_CYCLEH)
-        ret(state.minstret->read() >> 32);
-      else
-        ret(0);
     case CSR_MCOUNTINHIBIT: ret(0);
     case CSR_MSTATUSH:
       if (xlen == 32)

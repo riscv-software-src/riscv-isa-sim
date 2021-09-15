@@ -883,3 +883,44 @@ reg_t const_csr_t::read() const noexcept {
 bool const_csr_t::unlogged_write(const reg_t val) noexcept {
   return false;
 }
+
+
+counter_proxy_csr_t::counter_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate):
+  proxy_csr_t(proc, addr, delegate) {
+}
+
+void counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
+  proxy_csr_t::verify_permissions(insn, write);
+#define mcounteren_ok(__which) \
+({ \
+  bool __ctr_ok = true; \
+  if (state->prv < PRV_M) \
+    __ctr_ok = (state->mcounteren->read() >> (__which & 31)) & 1;        \
+  __ctr_ok; \
+})
+#define hcounteren_ok(__which) \
+({ \
+  bool __ctr_ok = true; \
+  if (state->v) \
+    __ctr_ok = (state->hcounteren->read() >> (__which & 31)) & 1;        \
+  __ctr_ok; \
+})
+#define scounteren_ok(__which) \
+({ \
+  bool __ctr_ok = true; \
+  if (proc->extension_enabled('S') && state->prv < PRV_S) \
+    __ctr_ok = (state->scounteren->read() >> (__which & 31)) & 1;        \
+  __ctr_ok; \
+})
+
+  if (!mcounteren_ok(address))
+    throw trap_illegal_instruction(insn.bits());
+  if (!hcounteren_ok(address))
+      throw trap_virtual_instruction(insn.bits());
+  if (!scounteren_ok(address)) {
+    if (state->v)
+      throw trap_virtual_instruction(insn.bits());
+    else
+      throw trap_illegal_instruction(insn.bits());
+  }
+}
