@@ -889,35 +889,22 @@ counter_proxy_csr_t::counter_proxy_csr_t(processor_t* const proc, const reg_t ad
   proxy_csr_t(proc, addr, delegate) {
 }
 
+bool counter_proxy_csr_t::myenable(csr_t_p counteren) const noexcept {
+  return 1 & (counteren->read() >> (address & 31));
+}
+
 void counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
   proxy_csr_t::verify_permissions(insn, write);
-#define mcounteren_ok(__which) \
-({ \
-  bool __ctr_ok = true; \
-  if (state->prv < PRV_M) \
-    __ctr_ok = (state->mcounteren->read() >> (__which & 31)) & 1;        \
-  __ctr_ok; \
-})
-#define hcounteren_ok(__which) \
-({ \
-  bool __ctr_ok = true; \
-  if (state->v) \
-    __ctr_ok = (state->hcounteren->read() >> (__which & 31)) & 1;        \
-  __ctr_ok; \
-})
-#define scounteren_ok(__which) \
-({ \
-  bool __ctr_ok = true; \
-  if (proc->extension_enabled('S') && state->prv < PRV_S) \
-    __ctr_ok = (state->scounteren->read() >> (__which & 31)) & 1;        \
-  __ctr_ok; \
-})
 
-  if (!mcounteren_ok(address))
+  const bool mctr_ok = (state->prv < PRV_M) ? myenable(state->mcounteren) : true;
+  const bool hctr_ok = state->v ? myenable(state->hcounteren) : true;
+  const bool sctr_ok = (proc->extension_enabled('S') && state->prv < PRV_S) ? myenable(state->scounteren) : true;
+
+  if (!mctr_ok)
     throw trap_illegal_instruction(insn.bits());
-  if (!hcounteren_ok(address))
+  if (!hctr_ok)
       throw trap_virtual_instruction(insn.bits());
-  if (!scounteren_ok(address)) {
+  if (!sctr_ok) {
     if (state->v)
       throw trap_virtual_instruction(insn.bits());
     else
