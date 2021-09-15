@@ -377,8 +377,12 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MTVEC] = mtvec = std::make_shared<tvec_csr_t>(proc, CSR_MTVEC);
   csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE);
   csrmap[CSR_MINSTRET] = minstret = std::make_shared<minstret_csr_t>(proc, CSR_MINSTRET);
-  if (xlen == 32)
-    csrmap[CSR_MINSTRETH] = std::make_shared<minstreth_csr_t>(proc, CSR_MINSTRETH, minstret);
+  csrmap[CSR_MCYCLE] = std::make_shared<proxy_csr_t>(proc, CSR_MCYCLE, minstret);
+  if (xlen == 32) {
+    minstreth_csr_t_p minstreth;
+    csrmap[CSR_MINSTRETH] = minstreth = std::make_shared<minstreth_csr_t>(proc, CSR_MINSTRETH, minstret);
+    csrmap[CSR_MCYCLEH] = std::make_shared<proxy_csr_t>(proc, CSR_MCYCLEH, minstreth);
+  }
   csrmap[CSR_MIE] = mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
   csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(this,
@@ -974,12 +978,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_MCYCLE:
-      state.minstret->write(val);
-      break;
-    case CSR_MCYCLEH:
-      state.minstret->write_upper_half(val);
-      break;
     case CSR_MTVAL2: state.mtval2 = val; break;
     case CSR_MTINST: state.mtinst = val; break;
     case CSR_HEDELEG: {
@@ -1232,13 +1230,9 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
         ret(state.minstret->read());
       else
         ret(0);
-    case CSR_MCYCLE:
     case CSR_MHPMCOUNTER3 ... CSR_MHPMCOUNTER31:
     case CSR_MHPMEVENT3 ... CSR_MHPMEVENT31:
-      if (which == CSR_MCYCLE)
-        ret(state.minstret->read());
-      else
-        ret(0);
+      ret(0);
     case CSR_INSTRETH:
     case CSR_CYCLEH:
     case CSR_HPMCOUNTER3H ... CSR_HPMCOUNTER31H:
@@ -1256,13 +1250,9 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
         ret(state.minstret->read() >> 32);
       else
         ret(0);
-    case CSR_MCYCLEH:
     case CSR_MHPMCOUNTER3H ... CSR_MHPMCOUNTER31H:
       if (xlen == 32) {
-        if (which == CSR_MCYCLEH)
-          ret(state.minstret->read() >> 32);
-        else
-          ret(0);
+        ret(0);
       }
       break;
     case CSR_MCOUNTINHIBIT: ret(0);

@@ -854,3 +854,18 @@ bool minstreth_csr_t::unlogged_write(const reg_t val) noexcept {
   minstret->write_upper_half(val);
   return true;
 }
+
+
+proxy_csr_t::proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate):
+  csr_t(proc, addr),
+  delegate(delegate) {
+}
+
+reg_t proxy_csr_t::read() const noexcept {
+  return delegate->read();
+}
+
+bool proxy_csr_t::unlogged_write(const reg_t val) noexcept {
+  delegate->write(val);  // log only under the original (delegate's) name
+  return false;
+}

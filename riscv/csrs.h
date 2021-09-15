@@ -447,4 +447,19 @@ class minstreth_csr_t: public csr_t {
   minstret_csr_t_p minstret;
 };
 
+typedef std::shared_ptr<minstreth_csr_t> minstreth_csr_t_p;
+
+
+// For a CSR that is an alias of another
+class proxy_csr_t: public csr_t {
+ public:
+  proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate);
+  virtual reg_t read() const noexcept override;
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  csr_t_p delegate;
+};
+
+
 #endif
