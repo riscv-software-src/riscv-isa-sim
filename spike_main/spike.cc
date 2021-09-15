@@ -35,6 +35,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  -h, --help            Print this help message\n");
   fprintf(stderr, "  -H                    Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --log=<name>          File name for option -l\n");
+  fprintf(stderr, "  --debug-cmd=<name>    Read commands from file (use with -d)\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
   fprintf(stderr, "  --priv=<m|mu|msu>     RISC-V privilege modes supported [default %s]\n", DEFAULT_PRIV);
   fprintf(stderr, "  --varch=<name>        RISC-V Vector uArch string [default %s]\n", DEFAULT_VARCH);
@@ -370,6 +371,13 @@ int main(int argc, char** argv)
                 [&](const char* s){log_commits = true;});
   parser.option(0, "log", 1,
                 [&](const char* s){log_path = s;});
+  FILE *cmd_file = NULL;
+  parser.option(0, "debug-cmd", 1, [&](const char* s){
+     if ((cmd_file = fopen(s, "r"))==NULL) {
+        fprintf(stderr, "Unable to open command file '%s'\n", s);
+        exit(-1);
+     }
+  });
 
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
@@ -429,11 +437,11 @@ int main(int argc, char** argv)
 
   sim_t s(isa, priv, varch, nprocs, halted, real_time_clint,
       initrd_start, initrd_end, bootargs, start_pc, mems, plugin_devices, htif_args,
-      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file
+      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file,
 #ifdef HAVE_BOOST_ASIO
-      , io_service_ptr, acceptor_ptr
+      io_service_ptr, acceptor_ptr,
 #endif
-      );
+      cmd_file);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));
