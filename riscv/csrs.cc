@@ -869,3 +869,17 @@ bool proxy_csr_t::unlogged_write(const reg_t val) noexcept {
   delegate->write(val);  // log only under the original (delegate's) name
   return false;
 }
+
+
+const_csr_t::const_csr_t(processor_t* const proc, const reg_t addr, reg_t val):
+  csr_t(proc, addr),
+  val(val) {
+}
+
+reg_t const_csr_t::read() const noexcept {
+  return val;
+}
+
+bool const_csr_t::unlogged_write(const reg_t val) noexcept {
+  return false;
+}

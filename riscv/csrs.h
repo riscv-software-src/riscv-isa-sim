@@ -462,4 +462,16 @@ class proxy_csr_t: public csr_t {
 };
 
 
+// For a CSR with a fixed, unchanging value
+class const_csr_t: public csr_t {
+ public:
+  const_csr_t(processor_t* const proc, const reg_t addr, reg_t val);
+  virtual reg_t read() const noexcept override;
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  const reg_t val;
+};
+
+
 #endif

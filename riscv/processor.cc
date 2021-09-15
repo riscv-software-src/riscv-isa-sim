@@ -383,6 +383,19 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     csrmap[CSR_MINSTRETH] = minstreth = std::make_shared<minstreth_csr_t>(proc, CSR_MINSTRETH, minstret);
     csrmap[CSR_MCYCLEH] = std::make_shared<proxy_csr_t>(proc, CSR_MCYCLEH, minstreth);
   }
+  for (reg_t i=3; i<=31; ++i) {
+    const reg_t which_mcounter = CSR_MHPMCOUNTER3 + i - 3;
+    const reg_t which_mevent = CSR_MHPMEVENT3 + i - 3;
+    const reg_t which_mcounterh = CSR_MHPMCOUNTER3H + i - 3;
+    auto mcounter = std::make_shared<const_csr_t>(proc, which_mcounter, 0);
+    auto mevent = std::make_shared<const_csr_t>(proc, which_mevent, 0);
+    csrmap[which_mcounter] = mcounter;
+    csrmap[which_mevent] = mevent;
+    if (xlen == 32) {
+      auto mcounterh = std::make_shared<const_csr_t>(proc, which_mcounterh, 0);
+      csrmap[which_mcounterh] = mcounterh;
+    }
+  }
   csrmap[CSR_MIE] = mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
   csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(this,
@@ -1230,9 +1243,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
         ret(state.minstret->read());
       else
         ret(0);
-    case CSR_MHPMCOUNTER3 ... CSR_MHPMCOUNTER31:
-    case CSR_MHPMEVENT3 ... CSR_MHPMEVENT31:
-      ret(0);
     case CSR_INSTRETH:
     case CSR_CYCLEH:
     case CSR_HPMCOUNTER3H ... CSR_HPMCOUNTER31H:
@@ -1250,11 +1260,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
         ret(state.minstret->read() >> 32);
       else
         ret(0);
-    case CSR_MHPMCOUNTER3H ... CSR_MHPMCOUNTER31H:
-      if (xlen == 32) {
-        ret(0);
-      }
-      break;
     case CSR_MCOUNTINHIBIT: ret(0);
     case CSR_MSTATUSH:
       if (xlen == 32)
