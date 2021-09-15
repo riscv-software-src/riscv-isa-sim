@@ -839,3 +839,18 @@ void minstret_csr_t::write_upper_half(const reg_t val) noexcept {
   // Log upper half only.
   log_special_write(address + (CSR_MINSTRETH - CSR_MINSTRET), this->val >> 32);
 }
+
+
+minstreth_csr_t::minstreth_csr_t(processor_t* const proc, const reg_t addr, minstret_csr_t_p minstret):
+  csr_t(proc, addr),
+  minstret(minstret) {
+}
+
+reg_t minstreth_csr_t::read() const noexcept {
+  return minstret->read() >> 32;
+}
+
+bool minstreth_csr_t::unlogged_write(const reg_t val) noexcept {
+  minstret->write_upper_half(val);
+  return true;
+}

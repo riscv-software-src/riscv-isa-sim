@@ -435,4 +435,16 @@ class minstret_csr_t: public csr_t {
 
 typedef std::shared_ptr<minstret_csr_t> minstret_csr_t_p;
 
+
+// A simple proxy to read/write the upper half of minstret
+class minstreth_csr_t: public csr_t {
+ public:
+  minstreth_csr_t(processor_t* const proc, const reg_t addr, minstret_csr_t_p minstret);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  minstret_csr_t_p minstret;
+};
+
 #endif

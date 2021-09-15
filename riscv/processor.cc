@@ -377,6 +377,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MTVEC] = mtvec = std::make_shared<tvec_csr_t>(proc, CSR_MTVEC);
   csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE);
   csrmap[CSR_MINSTRET] = minstret = std::make_shared<minstret_csr_t>(proc, CSR_MINSTRET);
+  if (xlen == 32)
+    csrmap[CSR_MINSTRETH] = std::make_shared<minstreth_csr_t>(proc, CSR_MINSTRETH, minstret);
   csrmap[CSR_MIE] = mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
   csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(this,
@@ -975,7 +977,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_MCYCLE:
       state.minstret->write(val);
       break;
-    case CSR_MINSTRETH:
     case CSR_MCYCLEH:
       state.minstret->write_upper_half(val);
       break;
@@ -1255,11 +1256,10 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
         ret(state.minstret->read() >> 32);
       else
         ret(0);
-    case CSR_MINSTRETH:
     case CSR_MCYCLEH:
     case CSR_MHPMCOUNTER3H ... CSR_MHPMCOUNTER31H:
       if (xlen == 32) {
-        if (which == CSR_MINSTRETH || which == CSR_MCYCLEH)
+        if (which == CSR_MCYCLEH)
           ret(state.minstret->read() >> 32);
         else
           ret(0);
