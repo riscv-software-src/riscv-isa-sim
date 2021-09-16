@@ -22,12 +22,24 @@ struct diff_context_t {
   word_t gpr[32];
   word_t pc;
   word_t mstatus;
+  word_t mepc;
+  word_t sepc;
+  word_t mtvec;
+  word_t stvec;
+  word_t mcause;
+  word_t scause;
 };
 
 struct diff_context_p {
   volatile const reg_t *volatile gpr;
   volatile const reg_t *pc;
   volatile const reg_t *mstatus;
+  volatile const reg_t *mepc;
+  volatile const reg_t *sepc;
+  volatile const reg_t *mtvec;
+  volatile const reg_t *stvec;
+  volatile const reg_t *mcause;
+  volatile const reg_t *scause;
 };
 
 struct diff_context_p diff_context = {};
@@ -42,6 +54,12 @@ void sim_t::diff_init(int port) {
   diff_context.gpr = state->XPR.get_addr();
   diff_context.pc = &(state->pc);
   diff_context.mstatus = state->mstatus->get_addr();
+  diff_context.mepc = state->mepc->get_addr();
+  diff_context.sepc = state->sepc->get_addr();
+  diff_context.mtvec = state->mtvec->get_addr();
+  diff_context.stvec = state->stvec->get_addr();
+  diff_context.mcause = state->mcause->get_addr();
+  diff_context.scause = state->scause->get_addr();
 }
 
 void sim_t::diff_step(uint64_t n) {
@@ -55,6 +73,12 @@ void sim_t::diff_get_regs(void* diff_context) {
   }
   ctx->pc = state->pc;
   ctx->mstatus = state->mstatus->read();
+  ctx->mepc = state->mepc->read();
+  ctx->sepc = state->sepc->read();
+  ctx->mtvec = state->mtvec->read();
+  ctx->stvec = state->stvec->read();
+  ctx->mcause = state->mcause->read();
+  ctx->scause = state->scause->read();
 }
 
 void sim_t::diff_set_regs(void* diff_context) {
@@ -64,6 +88,12 @@ void sim_t::diff_set_regs(void* diff_context) {
   }
   if (ctx->pc)      state->pc = ctx->pc;
   if (ctx->mstatus) state->mstatus->write(ctx->mstatus);
+  if (ctx->mepc)    state->mepc->write(ctx->mepc);
+  if (ctx->sepc)    state->mepc->write(ctx->sepc);
+  if (ctx->mtvec)   state->mtvec->write(ctx->mtvec);
+  if (ctx->stvec)   state->stvec->write(ctx->stvec);
+  state->mcause->write(ctx->mcause);
+  state->scause->write(ctx->scause);
 }
 
 void sim_t::diff_memcpy(reg_t dest, void* src, size_t n) {
