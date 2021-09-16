@@ -837,6 +837,11 @@ bool minstret_csr_t::unlogged_write(const reg_t val) noexcept {
   return true;
 }
 
+reg_t minstret_csr_t::written_value() const noexcept {
+  // Re-adjust for upcoming bump()
+  return this->val + 1;
+}
+
 void minstret_csr_t::write_upper_half(const reg_t val) noexcept {
   this->val = (val << 32) | (this->val << 32 >> 32);
   this->val--; // See comment above.

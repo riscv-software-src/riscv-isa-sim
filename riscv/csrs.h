@@ -433,6 +433,7 @@ class minstret_csr_t: public csr_t {
   void write_upper_half(const reg_t val) noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
+  virtual reg_t written_value() const noexcept override;
  private:
   reg_t val;
 };
