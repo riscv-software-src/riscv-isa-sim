@@ -52,11 +52,11 @@ public:
         std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
         const std::vector<std::string>& args, const std::vector<int> hartids,
         const debug_module_config_t &dm_config, const char *log_path,
-        bool dtb_enabled, const char *dtb_file
+        bool dtb_enabled, const char *dtb_file,
 #ifdef HAVE_BOOST_ASIO
-        , io_service *io_service_ptr_ctor, tcp::acceptor *acceptor_ptr_ctor  // option -s
+        io_service *io_service_ptr_ctor, tcp::acceptor *acceptor_ptr_ctor,  // option -s
 #endif
-        );
+        FILE *cmd_file); // needed for command line option --cmd
   ~sim_t();
 
   // run the simulation to completion
@@ -106,6 +106,8 @@ private:
   std::unique_ptr<clint_t> clint;
   bus_t bus;
   log_file_t log_file;
+
+  FILE *cmd_file; // pointer to debug command input file
 
 #ifdef HAVE_BOOST_ASIO
   // the following are needed for command socket interface

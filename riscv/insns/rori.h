@@ -1,4 +1,4 @@
-require_extension(EXT_ZBB);
+require_either_extension(EXT_ZBB, EXT_ZBKB);
 require(SHAMT < xlen);
 int shamt = SHAMT & (xlen-1);
 int rshamt = -shamt & (xlen-1);

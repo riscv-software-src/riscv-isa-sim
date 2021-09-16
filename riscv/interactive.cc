@@ -30,6 +30,8 @@ using std::right;
 using std::setw;
 using std::endl;
 
+#define MAX_CMD_STR 40 // maximum possible size of a command line
+
 #define STR_(X) #X      // these definitions allow to use a macro as a string
 #define STR(X) STR_(X)
 
@@ -110,7 +112,8 @@ std::string sim_t::rin(streambuf *bout_ptr) {
 
 // write sout to socket (via bout)
 void sim_t::wout(streambuf *bout_ptr) {
-  if (acceptor_ptr) { // only if a socket has been created
+  if (!cmd_file && acceptor_ptr) { // only if  we are not getting command inputs from a file
+                                   // and if a socket has been created
     try {
       boost::system::error_code ignored_error;
       boost::asio::write(*socket_ptr, *bout_ptr, transfer_all(), ignored_error);
@@ -151,14 +154,27 @@ void sim_t::interactive()
 
   while (!done())
   {
-    std::string s;
 #ifdef HAVE_BOOST_ASIO
     streambuf bout; // socket output
-    s = rin(&bout); // get command string from socket or terminal
-#else
-    cerr << ": " << std::flush;
-    s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
 #endif
+    std::string s;
+    char cmd_str[MAX_CMD_STR+1]; // only used for following fscanf
+    // first get commands from file, if cmd_file has been set
+    if (cmd_file && !feof(cmd_file) && fscanf(cmd_file,"%" STR(MAX_CMD_STR) "[^\n]\n", cmd_str)==1) {
+                                                      // up to MAX_CMD_STR characters before \n, skipping \n
+       s = cmd_str;
+       // while we get input from file, output goes to stderr
+       sout.rdbuf(cerr.rdbuf());
+    } else {
+       // when there are no commands left from file or if there was no file from the beginning
+       cmd_file = NULL; // mark file pointer as being not valid, so any method can test this easily
+#ifdef HAVE_BOOST_ASIO
+       s = rin(&bout); // get command string from socket or terminal
+#else
+       cerr << ": " << std::flush;
+       s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
+#endif
+    }
 
     std::stringstream ss(s);
     std::string cmd, tmp;
