@@ -61,6 +61,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     current_step(0),
     current_proc(0),
     debug(false),
+    is_diff_ref(false),
     histogram_enabled(false),
     log(false),
     remote_bitbang(NULL),
@@ -206,7 +207,7 @@ void sim_t::step(size_t n)
     steps = std::min(n - i, INTERLEAVE - current_step);
     procs[current_proc]->step(steps);
 
-    // current_step += steps;
+    if (!is_diff_ref) current_step += steps;
     if (current_step == INTERLEAVE)
     {
       current_step = 0;
