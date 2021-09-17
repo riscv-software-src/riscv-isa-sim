@@ -17,6 +17,7 @@ static debug_module_config_t difftest_dm_config = {
   .support_haltgroups = true,
   .support_impebreak = true
 };
+static csr_t_p mscratch = nullptr;
 
 struct diff_context_t {
   word_t gpr[32];
@@ -28,6 +29,9 @@ struct diff_context_t {
   word_t stvec;
   word_t mcause;
   word_t scause;
+  word_t mie;
+  word_t mscratch;
+  word_t priv;
 };
 
 struct diff_context_p {
@@ -53,13 +57,7 @@ void sim_t::diff_init(int port) {
   state = p->get_state();
   diff_context.gpr = state->XPR.get_addr();
   diff_context.pc = &(state->pc);
-  diff_context.mstatus = state->mstatus->get_addr();
-  diff_context.mepc = state->mepc->get_addr();
-  diff_context.sepc = state->sepc->get_addr();
-  diff_context.mtvec = state->mtvec->get_addr();
-  diff_context.stvec = state->stvec->get_addr();
-  diff_context.mcause = state->mcause->get_addr();
-  diff_context.scause = state->scause->get_addr();
+  mscratch = state->csrmap.find(CSR_MSCRATCH)->second;
 }
 
 void sim_t::diff_step(uint64_t n) {
@@ -67,7 +65,7 @@ void sim_t::diff_step(uint64_t n) {
 }
 
 void sim_t::diff_get_regs(void* diff_context) {
-  struct diff_context_t* ctx = (struct diff_context_t*)diff_context;
+  struct diff_context_t *ctx = (struct diff_context_t *)diff_context;
   for (int i = 0; i < NXPR; i++) {
     ctx->gpr[i] = state->XPR[i];
   }
@@ -79,6 +77,9 @@ void sim_t::diff_get_regs(void* diff_context) {
   ctx->stvec = state->stvec->read();
   ctx->mcause = state->mcause->read();
   ctx->scause = state->scause->read();
+  ctx->mie = state->mie->read();
+  ctx->mscratch = mscratch->read();
+  ctx->priv = state->prv;
 }
 
 void sim_t::diff_set_regs(void* diff_context) {
@@ -94,6 +95,9 @@ void sim_t::diff_set_regs(void* diff_context) {
   if (ctx->stvec)   state->stvec->write(ctx->stvec);
   state->mcause->write(ctx->mcause);
   state->scause->write(ctx->scause);
+  state->mie->write(ctx->mie);
+  mscratch->write(ctx->mscratch);
+  state->prv = ctx->priv;
 }
 
 void sim_t::diff_memcpy(reg_t dest, void* src, size_t n) {
