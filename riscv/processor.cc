@@ -237,7 +237,7 @@ void processor_t::parse_isa_string(const char* str)
     bad_isa_string(str, "'I' extension is required");
 
   auto p = isa_string.begin();
-  for (p += 4; islower(*p) && !strchr("zshx", *p); ++p) {
+  for (p += 4; islower(*p) && !strchr("zsx", *p); ++p) {
     while (*all_subsets && (*p != *all_subsets))
       ++all_subsets;
     if (!*all_subsets)
