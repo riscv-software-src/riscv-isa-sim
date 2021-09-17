@@ -34,19 +34,12 @@ struct diff_context_t {
   word_t priv;
 };
 
-struct diff_context_p {
+struct diff_gpr_pc_p {
   volatile const reg_t *volatile gpr;
   volatile const reg_t *pc;
-  volatile const reg_t *mstatus;
-  volatile const reg_t *mepc;
-  volatile const reg_t *sepc;
-  volatile const reg_t *mtvec;
-  volatile const reg_t *stvec;
-  volatile const reg_t *mcause;
-  volatile const reg_t *scause;
 };
 
-struct diff_context_p diff_context = {};
+struct diff_gpr_pc_p diff_gpr_pc = {};
 
 static sim_t *s = NULL;
 static processor_t *p = NULL;
@@ -55,8 +48,8 @@ static state_t *state = NULL;
 void sim_t::diff_init(int port) {
   p = get_core("0");
   state = p->get_state();
-  diff_context.gpr = state->XPR.get_addr();
-  diff_context.pc = &(state->pc);
+  diff_gpr_pc.gpr = state->XPR.get_addr();
+  diff_gpr_pc.pc = &(state->pc);
   mscratch = state->csrmap.find(CSR_MSCRATCH)->second;
 }
 
