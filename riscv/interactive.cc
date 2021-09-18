@@ -100,17 +100,17 @@ std::string sim_t::rin(streambuf *bout_ptr) {
       cerr << e.what() << endl;
     }
     // output goes to socket
-    sout.rdbuf(bout_ptr);
+    sout_.rdbuf(bout_ptr);
   } else { // if we are not listening on a socket, get commands from terminal
     cerr << ": " << std::flush;
     s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
     // output goes to stderr
-    sout.rdbuf(cerr.rdbuf());
+    sout_.rdbuf(cerr.rdbuf());
   }
   return s;
 }
 
-// write sout to socket (via bout)
+// write sout_ to socket (via bout)
 void sim_t::wout(streambuf *bout_ptr) {
   if (!cmd_file && acceptor_ptr) { // only if  we are not getting command inputs from a file
                                    // and if a socket has been created
@@ -164,7 +164,7 @@ void sim_t::interactive()
                                                       // up to MAX_CMD_STR characters before \n, skipping \n
        s = cmd_str;
        // while we get input from file, output goes to stderr
-       sout.rdbuf(cerr.rdbuf());
+       sout_.rdbuf(cerr.rdbuf());
     } else {
        // when there are no commands left from file or if there was no file from the beginning
        cmd_file = NULL; // mark file pointer as being not valid, so any method can test this easily
@@ -193,15 +193,16 @@ void sim_t::interactive()
     while (ss >> tmp)
       args.push_back(tmp);
 
+    ostream out(sout_.rdbuf());
+
     try
     {
       if (funcs.count(cmd))
         (this->*funcs[cmd])(cmd, args);
       else
-        sout << "Unknown command " << cmd << endl;
-    }
-    catch(trap_t& t) {
-      sout << "Bad or missing arguments for command " << cmd << endl;
+        out << "Unknown command " << cmd << endl;
+    } catch(trap_t& t) {
+      out << "Bad or missing arguments for command " << cmd << endl;
     }
 #ifdef HAVE_BOOST_ASIO
     wout(&bout); // socket output, if required
@@ -212,7 +213,8 @@ void sim_t::interactive()
 
 void sim_t::interactive_help(const std::string& cmd, const std::vector<std::string>& args)
 {
-  sout <<
+  ostream out(sout_.rdbuf());
+  out <<
     "Interactive commands:\n"
     "reg <core> [reg]                # Display [reg] (all if omitted) in <core>\n"
     "freg <core> <reg>               # Display float <reg> in <core> as hex\n"
@@ -258,7 +260,9 @@ void sim_t::interactive_run(const std::string& cmd, const std::vector<std::strin
   set_procs_debug(noisy);
   for (size_t i = 0; i < steps && !ctrlc_pressed && !done(); i++)
     step(1);
-  if (!noisy) sout << ":" << endl;
+
+  ostream out(sout_.rdbuf());
+  if (!noisy) out << ":" << endl;
 }
 
 void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::string>& args)
@@ -282,8 +286,10 @@ void sim_t::interactive_pc(const std::string& cmd, const std::vector<std::string
 
   processor_t *p = get_core(args[0]);
   int max_xlen = p->get_max_xlen();
-  sout << hex << setfill('0') << "0x" << setw(max_xlen/4)
-       << zext(get_pc(args), max_xlen) << endl;
+
+  ostream out(sout_.rdbuf());
+  out << hex << setfill('0') << "0x" << setw(max_xlen/4)
+      << zext(get_pc(args), max_xlen) << endl;
 }
 
 reg_t sim_t::get_reg(const std::vector<std::string>& args)
@@ -347,32 +353,34 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
   const int vlen = (int)(p->VU.get_vlen()) >> 3;
   const int elen = (int)(p->VU.get_elen()) >> 3;
   const int num_elem = vlen/elen;
-  sout << dec << "VLEN=" << (vlen << 3) << " bits; ELEN=" << (elen << 3) << " bits" << endl;
+
+  ostream out(sout_.rdbuf());
+  out << dec << "VLEN=" << (vlen << 3) << " bits; ELEN=" << (elen << 3) << " bits" << endl;
 
   for (int r = rstart; r < rend; ++r) {
-    sout << setfill (' ') << left << setw(4) << vr_name[r] << right << ": ";
+    out << setfill (' ') << left << setw(4) << vr_name[r] << right << ": ";
     for (int e = num_elem-1; e >= 0; --e){
       uint64_t val;
       switch(elen){
         case 8:
           val = P.VU.elt<uint64_t>(r, e);
-          sout << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(16) << val << "  ";
+          out << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(16) << val << "  ";
           break;
         case 4:
           val = P.VU.elt<uint32_t>(r, e);
-          sout << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(8) << (uint32_t)val << "  ";
+          out << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(8) << (uint32_t)val << "  ";
           break;
         case 2:
           val = P.VU.elt<uint16_t>(r, e);
-          sout << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(8) << (uint16_t)val << "  ";
+          out << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(8) << (uint16_t)val << "  ";
           break;
         case 1:
           val = P.VU.elt<uint8_t>(r, e);
-          sout << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(8) << (int)(uint8_t)val << "  ";
+          out << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(8) << (int)(uint8_t)val << "  ";
           break;
       }
     }
-    sout << endl;
+    out << endl;
   }
 }
 
@@ -385,19 +393,21 @@ void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::strin
   processor_t *p = get_core(args[0]);
   int max_xlen = p->get_max_xlen();
 
+  ostream out(sout_.rdbuf());
+  out << hex;
+
   if (args.size() == 1) {
     // Show all the regs!
 
-    sout << hex;
     for (int r = 0; r < NXPR; ++r) {
-      sout << setfill(' ') << setw(4) << xpr_name[r]
+      out << setfill(' ') << setw(4) << xpr_name[r]
            << ": 0x" << setfill('0') << setw(max_xlen/4)
            << zext(p->get_state()->XPR[r], max_xlen);
       if ((r + 1) % 4 == 0)
-        sout << endl;
+        out << endl;
     }
   } else {
-      sout << "0x" << setfill('0') << setw(max_xlen/4)
+      out << "0x" << setfill('0') << setw(max_xlen/4)
            << zext(get_reg(args), max_xlen) << endl;
   }
 }
@@ -412,28 +422,36 @@ union fpr
 void sim_t::interactive_freg(const std::string& cmd, const std::vector<std::string>& args)
 {
   freg_t r = get_freg(args);
-  sout << hex << "0x" << setfill ('0') << setw(16) << r.v[1] << setw(16) << r.v[0] << endl;
+
+  ostream out(sout_.rdbuf());
+  out << hex << "0x" << setfill ('0') << setw(16) << r.v[1] << setw(16) << r.v[0] << endl;
 }
 
 void sim_t::interactive_fregh(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = freg(f16_to_f32(f16(get_freg(args))));
-  sout << dec << (isBoxedF32(f.r) ? (double)f.s : NAN) << endl;
+
+  ostream out(sout_.rdbuf());
+  out << dec << (isBoxedF32(f.r) ? (double)f.s : NAN) << endl;
 }
 
 void sim_t::interactive_fregs(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = get_freg(args);
-  sout << dec << (isBoxedF32(f.r) ? (double)f.s : NAN) << endl;
+
+  ostream out(sout_.rdbuf());
+  out << dec << (isBoxedF32(f.r) ? (double)f.s : NAN) << endl;
 }
 
 void sim_t::interactive_fregd(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = get_freg(args);
-  sout << dec << (isBoxedF64(f.r) ? f.d : NAN) << endl;
+
+  ostream out(sout_.rdbuf());
+  out << dec << (isBoxedF64(f.r) ? f.d : NAN) << endl;
 }
 
 reg_t sim_t::get_mem(const std::vector<std::string>& args)
@@ -477,8 +495,9 @@ void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::strin
 {
   int max_xlen = procs[0]->get_max_xlen();
 
-  sout << hex << "0x" << setfill('0') << setw(max_xlen/4)
-       << zext(get_mem(args), max_xlen) << endl;
+  ostream out(sout_.rdbuf());
+  out << hex << "0x" << setfill('0') << setw(max_xlen/4)
+      << zext(get_mem(args), max_xlen) << endl;
 }
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)
@@ -497,11 +516,13 @@ void sim_t::interactive_str(const std::string& cmd, const std::vector<std::strin
 
   reg_t addr = strtol(addr_str.c_str(),NULL,16);
 
+  ostream out(sout_.rdbuf());
+
   char ch;
   while((ch = mmu->load_uint8(addr++)))
-    sout << ch;
+    out << ch;
 
-  sout << endl;
+  out << endl;
 }
 
 void sim_t::interactive_until_silent(const std::string& cmd, const std::vector<std::string>& args)

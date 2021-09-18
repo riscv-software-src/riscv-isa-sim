@@ -57,7 +57,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     io_service_ptr(io_service_ptr), // socket interface
     acceptor_ptr(acceptor_ptr),
 #endif
-    sout(nullptr),
+    sout_(nullptr),
     current_step(0),
     current_proc(0),
     debug(false),
@@ -68,7 +68,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
 {
   signal(SIGINT, &handle_signal);
 
-  sout.rdbuf(cerr.rdbuf()); // debug output goes to stderr by default
+  sout_.rdbuf(cerr.rdbuf()); // debug output goes to stderr by default
 
   for (auto& x : mems)
     bus.add_device(x.first, x.second);
@@ -91,7 +91,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
   for (size_t i = 0; i < nprocs; i++) {
     int hart_id = hartids.empty() ? i : hartids[i];
     procs[i] = new processor_t(isa, priv, varch, this, hart_id, halted,
-                               log_file.get(), &sout);
+                               log_file.get(), sout_);
   }
 
   make_dtb();

@@ -111,7 +111,7 @@ private:
   string rin(streambuf *bout_ptr); // read input command string
   void wout(streambuf *bout_ptr); // write output to socket
 #endif
-  ostream sout; // used for socket and terminal interface
+  ostream sout_; // used for socket and terminal interface
 
   processor_t* get_core(const std::string& i);
   void step(size_t n); // step through simulation

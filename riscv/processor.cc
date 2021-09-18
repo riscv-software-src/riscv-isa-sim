@@ -32,10 +32,10 @@ using std::endl;
 
 processor_t::processor_t(const char* isa, const char* priv, const char* varch,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
-                         FILE* log_file, ostream *sout_ptr_ctor)
+                         FILE* log_file, ostream& sout_)
   : debug(false), halt_request(HR_NONE), sim(sim), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
-  log_file(log_file), halt_on_reset(halt_on_reset),
+  log_file(log_file), sout_(sout_.rdbuf()), halt_on_reset(halt_on_reset),
   extension_table(256, false), impl_table(256, false), last_pc(1), executions(1)
 {
   VU.p = this;
@@ -59,8 +59,6 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
     set_mmu_capability(IMPL_MMU_SV32);
   else if (max_xlen == 64)
     set_mmu_capability(IMPL_MMU_SV48);
-
-  sout_ptr = sout_ptr_ctor; // needed for command line option -s
 
   reset();
 }
@@ -751,10 +749,12 @@ void processor_t::enter_debug_mode(uint8_t cause)
 
 void processor_t::debug_output_log(stringstream *s)
 {
-  if (log_file==stderr)
-    *sout_ptr << s->str(); // handles command line options -d -s -l
-  else
+  if (log_file==stderr) {
+    ostream out(sout_.rdbuf());
+    out << s->str(); // handles command line options -d -s -l
+  } else {
     fputs(s->str().c_str(), log_file); // handles command line option --log
+  }
 }
 
 void processor_t::take_trap(trap_t& t, reg_t epc)
