@@ -15,8 +15,6 @@
 #include <fstream>
 #include "../VERSION"
 
-using std::string;
-
 static void help(int exit_code = 1)
 {
   fprintf(stderr, "Spike RISC-V ISA Simulator " SPIKE_VERSION "\n\n");
@@ -415,14 +413,15 @@ int main(int argc, char** argv)
 
 #ifdef HAVE_BOOST_ASIO
   boost::asio::io_service *io_service_ptr = NULL; // needed for socket command interface option -s
-  tcp::acceptor *acceptor_ptr = NULL;
+  boost::asio::ip::tcp::acceptor *acceptor_ptr = NULL;
   if (socket) {  // if command line option -s is set
      try
      { // create socket server
+       using boost::asio::ip::tcp;
        io_service_ptr = new boost::asio::io_service;
        acceptor_ptr = new tcp::acceptor(*io_service_ptr, tcp::endpoint(tcp::v4(), 0));
        // aceptor is created passing argument port=0, so O.S. will choose a free port
-       string name = boost::asio::ip::host_name();
+       std::string name = boost::asio::ip::host_name();
        std::cout << "Listening for debug commands on " << name.substr(0,name.find('.'))
                  << " port " << acceptor_ptr->local_endpoint().port() << " ." << std::endl;
        // at the end, add space and some other character for convenience of javascript .split(" ")

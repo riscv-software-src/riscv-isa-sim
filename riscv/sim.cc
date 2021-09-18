@@ -38,7 +38,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
              const char *log_path,
              bool dtb_enabled, const char *dtb_file,
 #ifdef HAVE_BOOST_ASIO
-             io_service *io_service_ptr, tcp::acceptor *acceptor_ptr, // option -s
+             boost::asio::io_service *io_service_ptr, boost::asio::ip::tcp::acceptor *acceptor_ptr, // option -s
 #endif
              FILE *cmd_file) // needed for command line option --cmd
   : htif_t(args),
@@ -68,7 +68,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
 {
   signal(SIGINT, &handle_signal);
 
-  sout_.rdbuf(cerr.rdbuf()); // debug output goes to stderr by default
+  sout_.rdbuf(std::cerr.rdbuf()); // debug output goes to stderr by default
 
   for (auto& x : mems)
     bus.add_device(x.first, x.second);

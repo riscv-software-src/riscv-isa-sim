@@ -15,9 +15,6 @@
 #include "entropy_source.h"
 #include "csrs.h"
 
-using std::ostream;
-using std::stringstream;
-
 class processor_t;
 class mmu_t;
 typedef reg_t (*insn_func_t)(processor_t*, insn_t, reg_t);
@@ -499,7 +496,7 @@ private:
 
   void enter_debug_mode(uint8_t cause);
 
-  void debug_output_log(stringstream *s); // either output to interactive user or write to log file
+  void debug_output_log(std::stringstream *s); // either output to interactive user or write to log file
 
   friend class mmu_t;
   friend class clint_t;

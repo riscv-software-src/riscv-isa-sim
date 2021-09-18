@@ -20,19 +20,12 @@
 #include <string>
 #include <algorithm>
 
-using std::stringstream;
-using std::hex;
-using std::dec;
-using std::setfill;
-using std::setw;
-using std::endl;
-
 #undef STATE
 #define STATE state
 
 processor_t::processor_t(const char* isa, const char* priv, const char* varch,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
-                         FILE* log_file, ostream& sout_)
+                         FILE* log_file, std::ostream& sout_)
   : debug(false), halt_request(HR_NONE), sim(sim), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), sout_(sout_.rdbuf()), halt_on_reset(halt_on_reset),
@@ -747,10 +740,10 @@ void processor_t::enter_debug_mode(uint8_t cause)
   state.pc = DEBUG_ROM_ENTRY;
 }
 
-void processor_t::debug_output_log(stringstream *s)
+void processor_t::debug_output_log(std::stringstream *s)
 {
   if (log_file==stderr) {
-    ostream out(sout_.rdbuf());
+    std::ostream out(sout_.rdbuf());
     out << s->str(); // handles command line options -d -s -l
   } else {
     fputs(s->str().c_str(), log_file); // handles command line option --log
@@ -760,14 +753,14 @@ void processor_t::debug_output_log(stringstream *s)
 void processor_t::take_trap(trap_t& t, reg_t epc)
 {
   if (debug) {
-    stringstream s; // first put everything in a string, later send it to output
-    s << "core " << dec << setfill(' ') << setw(3) << id
+    std::stringstream s; // first put everything in a string, later send it to output
+    s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
       << ": exception " << t.name() << ", epc 0x"
-      << hex << setfill('0') << setw(max_xlen/4) << zext(epc, max_xlen) << endl;
+      << std::hex << std::setfill('0') << std::setw(max_xlen/4) << zext(epc, max_xlen) << std::endl;
     if (t.has_tval())
-       s << "core " << dec << setfill(' ') << setw(3) << id
-         << ":           tval 0x" << hex << setfill('0') << setw(max_xlen/4)
-         << zext(t.get_tval(), max_xlen) << endl;
+       s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
+         << ":           tval 0x" << std::hex << std::setfill('0') << std::setw(max_xlen/4)
+         << zext(t.get_tval(), max_xlen) << std::endl;
     debug_output_log(&s);
   }
 
@@ -866,26 +859,26 @@ void processor_t::disasm(insn_t insn)
 {
   uint64_t bits = insn.bits() & ((1ULL << (8 * insn_length(insn.bits()))) - 1);
   if (last_pc != state.pc || last_bits != bits) {
-    stringstream s;  // first put everything in a string, later send it to output
+    std::stringstream s;  // first put everything in a string, later send it to output
 
 #ifdef RISCV_ENABLE_COMMITLOG
     const char* sym = get_symbol(state.pc);
     if (sym != nullptr)
     {
-      s << "core " << dec << setfill(' ') << setw(3) << id
-        << ": >>>>  " << sym << endl;
+      s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
+        << ": >>>>  " << sym << std::endl;
     }
 #endif
 
     if (executions != 1) {
-      s << "core " << dec << setfill(' ') << setw(3) << id
-        << ": Executed " << executions << " times" << endl;
+      s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
+        << ": Executed " << executions << " times" << std::endl;
     }
 
-    s << "core " << dec << setfill(' ') << setw(3) << id
-      << hex << ": 0x" << setfill('0') << setw(max_xlen/4)
-      << zext(state.pc, max_xlen) << " (0x" << setw(8) << bits << ") "
-      << disassembler->disassemble(insn) << endl;
+    s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
+      << std::hex << ": 0x" << std::setfill('0') << std::setw(max_xlen/4)
+      << zext(state.pc, max_xlen) << " (0x" << std::setw(8) << bits << ") "
+      << disassembler->disassemble(insn) << std::endl;
 
     debug_output_log(&s);
 
