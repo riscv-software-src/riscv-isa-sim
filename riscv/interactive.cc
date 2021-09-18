@@ -70,7 +70,7 @@ std::string sim_t::rin(boost::asio::streambuf *bout_ptr) {
   std::string s;
   if (acceptor_ptr) { // if we are listening, get commands from socket
     try {
-      socket_ptr = new boost::asio::ip::tcp::socket(*io_service_ptr);
+      socket_ptr.reset(new boost::asio::ip::tcp::socket(*io_service_ptr));
       acceptor_ptr->accept(*socket_ptr); // wait for someone to open connection
       boost::asio::streambuf buf;
       boost::asio::read_until(*socket_ptr, buf, "\n"); // wait for command

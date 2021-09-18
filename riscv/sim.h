@@ -93,7 +93,7 @@ private:
   // the following are needed for command socket interface
   boost::asio::io_service *io_service_ptr;
   boost::asio::ip::tcp::acceptor *acceptor_ptr;
-  boost::asio::ip::tcp::socket *socket_ptr;
+  std::unique_ptr<boost::asio::ip::tcp::socket> socket_ptr;
   std::string rin(boost::asio::streambuf *bout_ptr); // read input command string
   void wout(boost::asio::streambuf *bout_ptr); // write output to socket
 #endif
