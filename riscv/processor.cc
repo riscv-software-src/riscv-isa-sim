@@ -309,10 +309,10 @@ void processor_t::parse_isa_string(const char* str)
       extension_table[toupper('x')] = true;
       if (ext_str == "xbitmanip") {
         extension_table[EXT_XBITMANIP] = true;
-      } else if (ext_str[1] && ext_str != "xdummy") {
-        register_extension(find_extension(ext_str.substr(1).c_str())());
-      } else {
+      } else if (ext_str.size() == 1) {
         bad_isa_string(str, "single 'X' is not a proper name");
+      } else if (ext_str != "xdummy") {
+        register_extension(find_extension(ext_str.substr(1).c_str())());
       }
     } else {
       bad_isa_string(str, ("unsupported extension: " + ext_str).c_str());
