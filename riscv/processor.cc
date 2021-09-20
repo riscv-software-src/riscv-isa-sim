@@ -455,7 +455,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_VSCAUSE] = vscause = std::make_shared<cause_csr_t>(proc, CSR_VSCAUSE);
   csrmap[CSR_SCAUSE] = scause = std::make_shared<virtualized_csr_t>(proc, nonvirtual_scause, vscause);
   csrmap[CSR_MTVAL2] = mtval2 = std::make_shared<hypervisor_csr_t>(proc, CSR_MTVAL2);
-  mtinst = 0;
+  csrmap[CSR_MTINST] = mtinst = std::make_shared<hypervisor_csr_t>(proc, CSR_MTINST);
   csrmap[CSR_HSTATUS] = hstatus = std::make_shared<hstatus_csr_t>(proc, CSR_HSTATUS);
   hideleg = 0;
   hedeleg = 0;
@@ -880,7 +880,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.mcause->write(t.cause());
     state.mtval->write(t.get_tval());
     state.mtval2->write(t.get_tval2());
-    state.mtinst = t.get_tinst();
+    state.mtinst->write(t.get_tinst());
 
     reg_t s = state.mstatus->read();
     s = set_field(s, MSTATUS_MPIE, get_field(s, MSTATUS_MIE));
@@ -979,7 +979,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_MTINST: state.mtinst = val; break;
     case CSR_HEDELEG: {
       reg_t mask =
         (1 << CAUSE_MISALIGNED_FETCH) |
@@ -1194,10 +1193,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MSTATUSH:
       if (xlen == 32)
         ret((state.mstatus->read() >> 32) & (MSTATUSH_SBE | MSTATUSH_MBE));
-      break;
-    case CSR_MTINST:
-      if (extension_enabled('H'))
-        ret(state.mtinst);
       break;
     case CSR_MARCHID: ret(5);
     case CSR_MIMPID: ret(0);
