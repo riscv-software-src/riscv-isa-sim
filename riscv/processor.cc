@@ -472,7 +472,20 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_HSTATUS] = hstatus = std::make_shared<masked_csr_t>(proc, CSR_HSTATUS, hstatus_mask, hstatus_init);
   csrmap[CSR_HGEIE] = std::make_shared<const_csr_t>(proc, CSR_HGEIE, 0);
   hideleg = 0;
-  hedeleg = 0;
+  const reg_t hedeleg_mask =
+    (1 << CAUSE_MISALIGNED_FETCH) |
+    (1 << CAUSE_FETCH_ACCESS) |
+    (1 << CAUSE_ILLEGAL_INSTRUCTION) |
+    (1 << CAUSE_BREAKPOINT) |
+    (1 << CAUSE_MISALIGNED_LOAD) |
+    (1 << CAUSE_LOAD_ACCESS) |
+    (1 << CAUSE_MISALIGNED_STORE) |
+    (1 << CAUSE_STORE_ACCESS) |
+    (1 << CAUSE_USER_ECALL) |
+    (1 << CAUSE_FETCH_PAGE_FAULT) |
+    (1 << CAUSE_LOAD_PAGE_FAULT) |
+    (1 << CAUSE_STORE_PAGE_FAULT);
+  csrmap[CSR_HEDELEG] = hedeleg = std::make_shared<masked_csr_t>(proc, CSR_HEDELEG, hedeleg_mask, 0);
   csrmap[CSR_HCOUNTEREN] = hcounteren = std::make_shared<counteren_csr_t>(proc, CSR_HCOUNTEREN);
   csrmap[CSR_HTVAL] = htval = std::make_shared<basic_csr_t>(proc, CSR_HTVAL, 0);
   csrmap[CSR_HTINST] = htinst = std::make_shared<basic_csr_t>(proc, CSR_HTINST, 0);
@@ -834,7 +847,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     hsdeleg = (state.prv <= PRV_S) ? state.mideleg->read() : 0;
     bit &= ~((reg_t)1 << (max_xlen-1));
   } else {
-    vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.medeleg->read() & state.hedeleg) : 0;
+    vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.medeleg->read() & state.hedeleg->read()) : 0;
     hsdeleg = (state.prv <= PRV_S) ? state.medeleg->read() : 0;
   }
   if (state.prv <= PRV_S && bit < max_xlen && ((vsdeleg >> bit) & 1)) {
@@ -984,23 +997,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_HEDELEG: {
-      reg_t mask =
-        (1 << CAUSE_MISALIGNED_FETCH) |
-        (1 << CAUSE_FETCH_ACCESS) |
-        (1 << CAUSE_ILLEGAL_INSTRUCTION) |
-        (1 << CAUSE_BREAKPOINT) |
-        (1 << CAUSE_MISALIGNED_LOAD) |
-        (1 << CAUSE_LOAD_ACCESS) |
-        (1 << CAUSE_MISALIGNED_STORE) |
-        (1 << CAUSE_STORE_ACCESS) |
-        (1 << CAUSE_USER_ECALL) |
-        (1 << CAUSE_FETCH_PAGE_FAULT) |
-        (1 << CAUSE_LOAD_PAGE_FAULT) |
-        (1 << CAUSE_STORE_PAGE_FAULT);
-      state.hedeleg = (state.hedeleg & ~mask) | (val & mask);
-      break;
-    }
     case CSR_HIDELEG: {
       reg_t mask = MIP_VS_MASK;
       state.hideleg = (state.hideleg & ~mask) | (val & mask);
@@ -1194,7 +1190,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIMPID: ret(0);
     case CSR_MVENDORID: ret(0);
     case CSR_MHARTID: ret(id);
-    case CSR_HEDELEG: ret(state.hedeleg);
     case CSR_HIDELEG: ret(state.hideleg);
     case CSR_HGATP: {
       if (!state.v && get_field(state.mstatus->read(), MSTATUS_TVM))
