@@ -471,7 +471,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     | HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
   csrmap[CSR_HSTATUS] = hstatus = std::make_shared<masked_csr_t>(proc, CSR_HSTATUS, hstatus_mask, hstatus_init);
   csrmap[CSR_HGEIE] = std::make_shared<const_csr_t>(proc, CSR_HGEIE, 0);
-  hideleg = 0;
+  csrmap[CSR_HIDELEG] = hideleg = std::make_shared<masked_csr_t>(proc, CSR_HIDELEG, MIP_VS_MASK, 0);
   const reg_t hedeleg_mask =
     (1 << CAUSE_MISALIGNED_FETCH) |
     (1 << CAUSE_FETCH_ACCESS) |
@@ -705,13 +705,13 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
   reg_t enabled_interrupts = pending_interrupts & ~state.mideleg->read() & -m_enabled;
   if (enabled_interrupts == 0) {
     // HS-ints have higher priority over VS-ints
-    const reg_t deleg_to_hs = state.mideleg->read() & ~state.hideleg;
+    const reg_t deleg_to_hs = state.mideleg->read() & ~state.hideleg->read();
     const reg_t sie = get_field(state.sstatus->read(), MSTATUS_SIE);
     const reg_t hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && sie);
     enabled_interrupts = pending_interrupts & deleg_to_hs & -hs_enabled;
     if (state.v && enabled_interrupts == 0) {
       // VS-ints have least priority and can only be taken with virt enabled
-      const reg_t deleg_to_vs = state.mideleg->read() & state.hideleg;
+      const reg_t deleg_to_vs = state.mideleg->read() & state.hideleg->read();
       const reg_t vs_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
       enabled_interrupts = pending_interrupts & deleg_to_vs & -vs_enabled;
     }
@@ -843,7 +843,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   bool curr_virt = state.v;
   bool interrupt = (bit & ((reg_t)1 << (max_xlen-1))) != 0;
   if (interrupt) {
-    vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.mideleg->read() & state.hideleg) : 0;
+    vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.mideleg->read() & state.hideleg->read()) : 0;
     hsdeleg = (state.prv <= PRV_S) ? state.mideleg->read() : 0;
     bit &= ~((reg_t)1 << (max_xlen-1));
   } else {
@@ -997,11 +997,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_HIDELEG: {
-      reg_t mask = MIP_VS_MASK;
-      state.hideleg = (state.hideleg & ~mask) | (val & mask);
-      break;
-    }
     case CSR_HGATP: {
       mmu->flush_tlb();
 
@@ -1190,7 +1185,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIMPID: ret(0);
     case CSR_MVENDORID: ret(0);
     case CSR_MHARTID: ret(id);
-    case CSR_HIDELEG: ret(state.hideleg);
     case CSR_HGATP: {
       if (!state.v && get_field(state.mstatus->read(), MSTATUS_TVM))
         require_privilege(PRV_M);

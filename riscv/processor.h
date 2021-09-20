@@ -187,7 +187,7 @@ struct state_t
   csr_t_p mtval2;
   csr_t_p mtinst;
   csr_t_p hstatus;
-  reg_t hideleg;
+  csr_t_p hideleg;
   csr_t_p hedeleg;
   csr_t_p hcounteren;
   csr_t_p htval;

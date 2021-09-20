@@ -612,7 +612,7 @@ void generic_int_accessor_t::ie_write(const reg_t val) noexcept {
 }
 
 reg_t generic_int_accessor_t::deleg_mask() const {
-  const reg_t hideleg_mask = mask_hideleg ? state->hideleg : (reg_t)~0;
+  const reg_t hideleg_mask = mask_hideleg ? state->hideleg->read() : (reg_t)~0;
   const reg_t mideleg_mask = mask_mideleg ? state->mideleg->read() : (reg_t)~0;
   return hideleg_mask & mideleg_mask;
 }
