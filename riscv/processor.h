@@ -190,7 +190,7 @@ struct state_t
   reg_t hideleg;
   reg_t hedeleg;
   csr_t_p hcounteren;
-  reg_t htval;
+  csr_t_p htval;
   reg_t htinst;
   reg_t hgatp;
   sstatus_csr_t_p sstatus;
