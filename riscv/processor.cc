@@ -490,7 +490,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_HCOUNTEREN] = hcounteren = std::make_shared<counteren_csr_t>(proc, CSR_HCOUNTEREN);
   csrmap[CSR_HTVAL] = htval = std::make_shared<basic_csr_t>(proc, CSR_HTVAL, 0);
   csrmap[CSR_HTINST] = htinst = std::make_shared<basic_csr_t>(proc, CSR_HTINST, 0);
-  hgatp = 0;
+  csrmap[CSR_HGATP] = hgatp = std::make_shared<hgatp_csr_t>(proc, CSR_HGATP);
   auto nonvirtual_sstatus = std::make_shared<sstatus_proxy_csr_t>(proc, CSR_SSTATUS, mstatus);
   csrmap[CSR_VSSTATUS] = vsstatus = std::make_shared<vsstatus_csr_t>(proc, CSR_VSSTATUS);
   csrmap[CSR_SSTATUS] = sstatus = std::make_shared<sstatus_csr_t>(proc, nonvirtual_sstatus, vsstatus);
@@ -998,25 +998,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_HGATP: {
-      mmu->flush_tlb();
-
-      reg_t mask;
-      if (max_xlen == 32) {
-        mask = HGATP32_PPN | HGATP32_MODE;
-      } else {
-        mask = HGATP64_PPN & ((reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1);
-
-        if (get_field(val, HGATP64_MODE) == HGATP_MODE_OFF ||
-            get_field(val, HGATP64_MODE) == HGATP_MODE_SV39X4 ||
-            get_field(val, HGATP64_MODE) == HGATP_MODE_SV48X4)
-          mask |= HGATP64_MODE;
-      }
-      mask &= ~(reg_t)3;
-
-      state.hgatp = val & mask;
-      break;
-    }
     case CSR_TSELECT:
       if (val < state.num_triggers) {
         state.tselect = val;
@@ -1186,11 +1167,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIMPID: ret(0);
     case CSR_MVENDORID: ret(0);
     case CSR_MHARTID: ret(id);
-    case CSR_HGATP: {
-      if (!state.v && get_field(state.mstatus->read(), MSTATUS_TVM))
-        require_privilege(PRV_M);
-      ret(state.hgatp);
-    }
     case CSR_TSELECT: ret(state.tselect);
     case CSR_TDATA1:
       if (state.tselect < state.num_triggers) {
