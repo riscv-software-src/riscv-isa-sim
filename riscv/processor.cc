@@ -272,6 +272,14 @@ void processor_t::parse_isa_string(const char* str)
       extension_table[EXT_ZBKC] = true;
     } else if (ext_str == "zbkx") {
       extension_table[EXT_ZBKX] = true;
+    } else if (ext_str == "zk") {
+      extension_table[EXT_ZBKB] = true;
+      extension_table[EXT_ZBKC] = true;
+      extension_table[EXT_ZBKX] = true;
+      extension_table[EXT_ZKND] = true;
+      extension_table[EXT_ZKNE] = true;
+      extension_table[EXT_ZKNH] = true;
+      extension_table[EXT_ZKR] = true;
     } else if (ext_str == "zkn") {
       extension_table[EXT_ZBKB] = true;
       extension_table[EXT_ZBKC] = true;
