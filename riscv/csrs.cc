@@ -710,15 +710,13 @@ bool medeleg_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 
-// implement class hstatus_csr_t
-hstatus_csr_t::hstatus_csr_t(processor_t* const proc, const reg_t addr):
-  basic_csr_t(proc, addr, set_field((reg_t)0, HSTATUS_VSXL, xlen_to_uxl(proc->get_const_xlen()))) {
+// implement class masked_csr_t
+masked_csr_t::masked_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  basic_csr_t(proc, addr, init),
+  mask(mask) {
 }
 
-bool hstatus_csr_t::unlogged_write(const reg_t val) noexcept {
-  const reg_t mask = HSTATUS_VTSR | HSTATUS_VTW
-    | (proc->supports_impl(IMPL_MMU) ? HSTATUS_VTVM : 0)
-    | HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
+bool masked_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
 }
 

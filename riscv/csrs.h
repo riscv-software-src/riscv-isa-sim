@@ -373,11 +373,14 @@ class medeleg_csr_t: public basic_csr_t {
 };
 
 
-class hstatus_csr_t: public basic_csr_t {
+// For CSRs with certain bits hardwired
+class masked_csr_t: public basic_csr_t {
  public:
-  hstatus_csr_t(processor_t* const proc, const reg_t addr);
+  masked_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  const reg_t mask;
 };
 
 
