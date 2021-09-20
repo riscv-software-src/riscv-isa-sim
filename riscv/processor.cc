@@ -462,7 +462,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   hedeleg = 0;
   csrmap[CSR_HCOUNTEREN] = hcounteren = std::make_shared<counteren_csr_t>(proc, CSR_HCOUNTEREN);
   csrmap[CSR_HTVAL] = htval = std::make_shared<basic_csr_t>(proc, CSR_HTVAL, 0);
-  htinst = 0;
+  csrmap[CSR_HTINST] = htinst = std::make_shared<basic_csr_t>(proc, CSR_HTINST, 0);
   hgatp = 0;
   auto nonvirtual_sstatus = std::make_shared<sstatus_proxy_csr_t>(proc, CSR_SSTATUS, mstatus);
   csrmap[CSR_VSSTATUS] = vsstatus = std::make_shared<vsstatus_csr_t>(proc, CSR_VSSTATUS);
@@ -856,7 +856,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.sepc->write(epc);
     state.stval->write(t.get_tval());
     state.htval->write(t.get_tval2());
-    state.htinst = t.get_tinst();
+    state.htinst->write(t.get_tinst());
 
     reg_t s = state.sstatus->read();
     s = set_field(s, MSTATUS_SPIE, get_field(s, MSTATUS_SIE));
@@ -1002,9 +1002,6 @@ void processor_t::set_csr(int which, reg_t val)
       state.hideleg = (state.hideleg & ~mask) | (val & mask);
       break;
     }
-    case CSR_HTINST:
-      state.htinst = val;
-      break;
     case CSR_HGATP: {
       mmu->flush_tlb();
 
@@ -1195,7 +1192,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MHARTID: ret(id);
     case CSR_HEDELEG: ret(state.hedeleg);
     case CSR_HIDELEG: ret(state.hideleg);
-    case CSR_HTINST: ret(state.htinst);
     case CSR_HGATP: {
       if (!state.v && get_field(state.mstatus->read(), MSTATUS_TVM))
         require_privilege(PRV_M);
