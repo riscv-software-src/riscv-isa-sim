@@ -471,6 +471,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     | HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
   csrmap[CSR_HSTATUS] = hstatus = std::make_shared<masked_csr_t>(proc, CSR_HSTATUS, hstatus_mask, hstatus_init);
   csrmap[CSR_HGEIE] = std::make_shared<const_csr_t>(proc, CSR_HGEIE, 0);
+  csrmap[CSR_HGEIP] = std::make_shared<const_csr_t>(proc, CSR_HGEIP, 0);
   csrmap[CSR_HIDELEG] = hideleg = std::make_shared<masked_csr_t>(proc, CSR_HIDELEG, MIP_VS_MASK, 0);
   const reg_t hedeleg_mask =
     (1 << CAUSE_MISALIGNED_FETCH) |
@@ -1190,7 +1191,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
         require_privilege(PRV_M);
       ret(state.hgatp);
     }
-    case CSR_HGEIP: ret(0);
     case CSR_TSELECT: ret(state.tselect);
     case CSR_TDATA1:
       if (state.tselect < state.num_triggers) {
