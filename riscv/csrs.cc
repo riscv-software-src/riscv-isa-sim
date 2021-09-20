@@ -725,16 +725,6 @@ bool masked_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 
-// implement class counteren_csr_t
-counteren_csr_t::counteren_csr_t(processor_t* const proc, const reg_t addr):
-  basic_csr_t(proc, addr, 0) {
-}
-
-bool counteren_csr_t::unlogged_write(const reg_t val) noexcept {
-  return basic_csr_t::unlogged_write(val & 0xffffffffULL);
-}
-
-
 // implement class base_atp_csr_t and family
 base_atp_csr_t::base_atp_csr_t(processor_t* const proc, const reg_t addr):
   basic_csr_t(proc, addr, 0) {

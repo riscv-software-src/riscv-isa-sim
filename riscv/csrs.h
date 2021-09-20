@@ -384,15 +384,6 @@ class masked_csr_t: public basic_csr_t {
 };
 
 
-// Used for mcounteren, scounteren, hcounteren
-class counteren_csr_t: public basic_csr_t {
- public:
-  counteren_csr_t(processor_t* const proc, const reg_t addr);
- protected:
-  virtual bool unlogged_write(const reg_t val) noexcept override;
-};
-
-
 // For satp and vsatp
 // These are three classes in order to handle the [V]TVM bits permission checks
 class base_atp_csr_t: public basic_csr_t {
