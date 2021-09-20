@@ -920,3 +920,14 @@ void counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
       throw trap_illegal_instruction(insn.bits());
   }
 }
+
+
+hypervisor_csr_t::hypervisor_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, 0) {
+}
+
+void hypervisor_csr_t::verify_permissions(insn_t insn, bool write) const {
+  basic_csr_t::verify_permissions(insn, write);
+  if (!proc->extension_enabled('H'))
+    throw trap_illegal_instruction(insn.bits());
+}

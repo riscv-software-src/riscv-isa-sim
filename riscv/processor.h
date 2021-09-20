@@ -184,7 +184,7 @@ struct state_t
   virtualized_csr_t_p satp;
   csr_t_p scause;
 
-  reg_t mtval2;
+  csr_t_p mtval2;
   reg_t mtinst;
   csr_t_p hstatus;
   reg_t hideleg;

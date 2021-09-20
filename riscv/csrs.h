@@ -488,4 +488,12 @@ class counter_proxy_csr_t: public proxy_csr_t {
   bool myenable(csr_t_p counteren) const noexcept;
 };
 
+
+// For machine-level CSRs that only exist with Hypervisor
+class hypervisor_csr_t: public basic_csr_t {
+ public:
+  hypervisor_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
 #endif

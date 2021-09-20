@@ -454,7 +454,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   auto nonvirtual_scause = std::make_shared<cause_csr_t>(proc, CSR_SCAUSE);
   csrmap[CSR_VSCAUSE] = vscause = std::make_shared<cause_csr_t>(proc, CSR_VSCAUSE);
   csrmap[CSR_SCAUSE] = scause = std::make_shared<virtualized_csr_t>(proc, nonvirtual_scause, vscause);
-  mtval2 = 0;
+  csrmap[CSR_MTVAL2] = mtval2 = std::make_shared<hypervisor_csr_t>(proc, CSR_MTVAL2);
   mtinst = 0;
   csrmap[CSR_HSTATUS] = hstatus = std::make_shared<hstatus_csr_t>(proc, CSR_HSTATUS);
   hideleg = 0;
@@ -879,7 +879,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.mepc->write(epc);
     state.mcause->write(t.cause());
     state.mtval->write(t.get_tval());
-    state.mtval2 = t.get_tval2();
+    state.mtval2->write(t.get_tval2());
     state.mtinst = t.get_tinst();
 
     reg_t s = state.mstatus->read();
@@ -979,7 +979,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_MTVAL2: state.mtval2 = val; break;
     case CSR_MTINST: state.mtinst = val; break;
     case CSR_HEDELEG: {
       reg_t mask =
@@ -1195,10 +1194,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MSTATUSH:
       if (xlen == 32)
         ret((state.mstatus->read() >> 32) & (MSTATUSH_SBE | MSTATUSH_MBE));
-      break;
-    case CSR_MTVAL2:
-      if (extension_enabled('H'))
-        ret(state.mtval2);
       break;
     case CSR_MTINST:
       if (extension_enabled('H'))
