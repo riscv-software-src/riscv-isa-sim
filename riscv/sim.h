@@ -9,16 +9,6 @@
 #include <boost/algorithm/string.hpp>
 #include <boost/regex.hpp>
 #include <boost/asio.hpp>
-// namespace boost::asio does not work for all environments
-using boost::asio::ip::tcp;
-using boost::asio::io_service;
-using boost::asio::streambuf;
-// using boost::asio::write does not work either
-using boost::asio::transfer_all;
-using boost::asio::buffer_cast;
-using boost::erase_all;
-using boost::regex;
-using boost::regex_replace;
 #endif
 
 #include "debug_module.h"
@@ -33,10 +23,6 @@ using boost::regex_replace;
 #include <string>
 #include <memory>
 #include <sys/types.h>
-
-using std::ostream;
-using std::string;
-using std::cerr;
 
 class mmu_t;
 class remote_bitbang_t;
@@ -54,7 +40,7 @@ public:
         const debug_module_config_t &dm_config, const char *log_path,
         bool dtb_enabled, const char *dtb_file,
 #ifdef HAVE_BOOST_ASIO
-        io_service *io_service_ptr_ctor, tcp::acceptor *acceptor_ptr_ctor,  // option -s
+        boost::asio::io_service *io_service_ptr_ctor, boost::asio::ip::tcp::acceptor *acceptor_ptr_ctor,  // option -s
 #endif
         FILE *cmd_file); // needed for command line option --cmd
   ~sim_t();
@@ -112,12 +98,12 @@ private:
 #ifdef HAVE_BOOST_ASIO
   // the following are needed for command socket interface
   boost::asio::io_service *io_service_ptr;
-  tcp::acceptor *acceptor_ptr;
-  tcp::socket *socket_ptr;
-  string rin(streambuf *bout_ptr); // read input command string
-  void wout(streambuf *bout_ptr); // write output to socket
+  boost::asio::ip::tcp::acceptor *acceptor_ptr;
+  std::unique_ptr<boost::asio::ip::tcp::socket> socket_ptr;
+  std::string rin(boost::asio::streambuf *bout_ptr); // read input command string
+  void wout(boost::asio::streambuf *bout_ptr); // write output to socket
 #endif
-  ostream sout; // used for socket and terminal interface
+  std::ostream sout_; // used for socket and terminal interface
 
   processor_t* get_core(const std::string& i);
   void step(size_t n); // step through simulation

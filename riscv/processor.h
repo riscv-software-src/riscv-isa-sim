@@ -15,9 +15,6 @@
 #include "entropy_source.h"
 #include "csrs.h"
 
-using std::ostream;
-using std::stringstream;
-
 class processor_t;
 class mmu_t;
 typedef reg_t (*insn_func_t)(processor_t*, insn_t, reg_t);
@@ -288,7 +285,7 @@ class processor_t : public abstract_device_t
 public:
   processor_t(const char* isa, const char* priv, const char* varch,
               simif_t* sim, uint32_t id, bool halt_on_reset,
-              FILE *log_file, ostream *sout_ptr); // because of command line option --log and -s we need both
+              FILE *log_file, std::ostream& sout_); // because of command line option --log and -s we need both
   ~processor_t();
 
   void set_debug(bool value);
@@ -478,7 +475,7 @@ private:
   bool histogram_enabled;
   bool log_commits_enabled;
   FILE *log_file;
-  ostream *sout_ptr; // needed for socket command interface -s, also used for -d and -l, but not for --log
+  std::ostream sout_; // needed for socket command interface -s, also used for -d and -l, but not for --log
   bool halt_on_reset;
   std::vector<bool> extension_table;
   std::vector<bool> impl_table;
@@ -499,7 +496,7 @@ private:
 
   void enter_debug_mode(uint8_t cause);
 
-  void debug_output_log(stringstream *s); // either output to interactive user or write to log file
+  void debug_output_log(std::stringstream *s); // either output to interactive user or write to log file
 
   friend class mmu_t;
   friend class clint_t;

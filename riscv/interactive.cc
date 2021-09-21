@@ -20,16 +20,6 @@
 #include <algorithm>
 #include <math.h>
 
-using std::ostream;
-using std::cerr;
-using std::hex;
-using std::dec;
-using std::setfill;
-using std::left;
-using std::right;
-using std::setw;
-using std::endl;
-
 #define MAX_CMD_STR 40 // maximum possible size of a command line
 
 #define STR_(X) #X      // these definitions allow to use a macro as a string
@@ -76,52 +66,52 @@ static std::string readline(int fd)
 
 #ifdef HAVE_BOOST_ASIO
 // read input command string
-std::string sim_t::rin(streambuf *bout_ptr) {
+std::string sim_t::rin(boost::asio::streambuf *bout_ptr) {
   std::string s;
   if (acceptor_ptr) { // if we are listening, get commands from socket
     try {
-      socket_ptr = new tcp::socket(*io_service_ptr);
+      socket_ptr.reset(new boost::asio::ip::tcp::socket(*io_service_ptr));
       acceptor_ptr->accept(*socket_ptr); // wait for someone to open connection
       boost::asio::streambuf buf;
       boost::asio::read_until(*socket_ptr, buf, "\n"); // wait for command
-      s = buffer_cast<const char*>(buf.data());
-      erase_all(s, "\r");  // get rid off any cr and lf
-      erase_all(s, "\n");
+      s = boost::asio::buffer_cast<const char*>(buf.data());
+      boost::erase_all(s, "\r");  // get rid off any cr and lf
+      boost::erase_all(s, "\n");
       // The socket client is a web server and it appends the IP of the computer
       // that sent the command from its web browser.
 
       // For now, erase the IP if it is there.
-      regex re(" ((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\\.){3}"
-               "(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$");
-      s = regex_replace(s, re, (std::string)"");
+      boost::regex re(" ((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\\.){3}"
+                      "(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$");
+      s = boost::regex_replace(s, re, (std::string)"");
 
       // TODO: check the IP against the IP used to upload RISC-V source files
     } catch (std::exception& e) {
-      cerr << e.what() << endl;
+      std::cerr << e.what() << std::endl;
     }
     // output goes to socket
-    sout.rdbuf(bout_ptr);
+    sout_.rdbuf(bout_ptr);
   } else { // if we are not listening on a socket, get commands from terminal
-    cerr << ": " << std::flush;
+    std::cerr << ": " << std::flush;
     s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
     // output goes to stderr
-    sout.rdbuf(cerr.rdbuf());
+    sout_.rdbuf(std::cerr.rdbuf());
   }
   return s;
 }
 
-// write sout to socket (via bout)
-void sim_t::wout(streambuf *bout_ptr) {
+// write sout_ to socket (via bout)
+void sim_t::wout(boost::asio::streambuf *bout_ptr) {
   if (!cmd_file && acceptor_ptr) { // only if  we are not getting command inputs from a file
                                    // and if a socket has been created
     try {
       boost::system::error_code ignored_error;
-      boost::asio::write(*socket_ptr, *bout_ptr, transfer_all(), ignored_error);
+      boost::asio::write(*socket_ptr, *bout_ptr, boost::asio::transfer_all(), ignored_error);
       socket_ptr->close(); // close the socket after each command input/ouput
                            //  This is need to in order to make the socket interface
                            //  acessible by HTTP GET via a socket client in a web server.
     } catch (std::exception& e) {
-      cerr << e.what() << endl;
+      std::cerr << e.what() << std::endl;
     }
   }
 }
@@ -155,7 +145,7 @@ void sim_t::interactive()
   while (!done())
   {
 #ifdef HAVE_BOOST_ASIO
-    streambuf bout; // socket output
+    boost::asio::streambuf bout; // socket output
 #endif
     std::string s;
     char cmd_str[MAX_CMD_STR+1]; // only used for following fscanf
@@ -164,14 +154,14 @@ void sim_t::interactive()
                                                       // up to MAX_CMD_STR characters before \n, skipping \n
        s = cmd_str;
        // while we get input from file, output goes to stderr
-       sout.rdbuf(cerr.rdbuf());
+       sout_.rdbuf(std::cerr.rdbuf());
     } else {
        // when there are no commands left from file or if there was no file from the beginning
        cmd_file = NULL; // mark file pointer as being not valid, so any method can test this easily
 #ifdef HAVE_BOOST_ASIO
        s = rin(&bout); // get command string from socket or terminal
 #else
-       cerr << ": " << std::flush;
+       std::cerr << ": " << std::flush;
        s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
 #endif
     }
@@ -193,15 +183,16 @@ void sim_t::interactive()
     while (ss >> tmp)
       args.push_back(tmp);
 
+    std::ostream out(sout_.rdbuf());
+
     try
     {
       if (funcs.count(cmd))
         (this->*funcs[cmd])(cmd, args);
       else
-        sout << "Unknown command " << cmd << endl;
-    }
-    catch(trap_t& t) {
-      sout << "Bad or missing arguments for command " << cmd << endl;
+        out << "Unknown command " << cmd << std::endl;
+    } catch(trap_t& t) {
+      out << "Bad or missing arguments for command " << cmd << std::endl;
     }
 #ifdef HAVE_BOOST_ASIO
     wout(&bout); // socket output, if required
@@ -212,7 +203,8 @@ void sim_t::interactive()
 
 void sim_t::interactive_help(const std::string& cmd, const std::vector<std::string>& args)
 {
-  sout <<
+  std::ostream out(sout_.rdbuf());
+  out <<
     "Interactive commands:\n"
     "reg <core> [reg]                # Display [reg] (all if omitted) in <core>\n"
     "freg <core> <reg>               # Display float <reg> in <core> as hex\n"
@@ -238,7 +230,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "help                            # This screen!\n"
     "h                                 Alias for help\n"
     "Note: Hitting enter is the same as: run 1"
-    << endl;
+    << std::endl;
 }
 
 void sim_t::interactive_run_noisy(const std::string& cmd, const std::vector<std::string>& args)
@@ -258,7 +250,9 @@ void sim_t::interactive_run(const std::string& cmd, const std::vector<std::strin
   set_procs_debug(noisy);
   for (size_t i = 0; i < steps && !ctrlc_pressed && !done(); i++)
     step(1);
-  if (!noisy) sout << ":" << endl;
+
+  std::ostream out(sout_.rdbuf());
+  if (!noisy) out << ":" << std::endl;
 }
 
 void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::string>& args)
@@ -282,8 +276,10 @@ void sim_t::interactive_pc(const std::string& cmd, const std::vector<std::string
 
   processor_t *p = get_core(args[0]);
   int max_xlen = p->get_max_xlen();
-  sout << hex << setfill('0') << "0x" << setw(max_xlen/4)
-       << zext(get_pc(args), max_xlen) << endl;
+
+  std::ostream out(sout_.rdbuf());
+  out << std::hex << std::setfill('0') << "0x" << std::setw(max_xlen/4)
+      << zext(get_pc(args), max_xlen) << std::endl;
 }
 
 reg_t sim_t::get_reg(const std::vector<std::string>& args)
@@ -347,32 +343,34 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
   const int vlen = (int)(p->VU.get_vlen()) >> 3;
   const int elen = (int)(p->VU.get_elen()) >> 3;
   const int num_elem = vlen/elen;
-  sout << dec << "VLEN=" << (vlen << 3) << " bits; ELEN=" << (elen << 3) << " bits" << endl;
+
+  std::ostream out(sout_.rdbuf());
+  out << std::dec << "VLEN=" << (vlen << 3) << " bits; ELEN=" << (elen << 3) << " bits" << std::endl;
 
   for (int r = rstart; r < rend; ++r) {
-    sout << setfill (' ') << left << setw(4) << vr_name[r] << right << ": ";
+    out << std::setfill (' ') << std::left << std::setw(4) << vr_name[r] << std::right << ": ";
     for (int e = num_elem-1; e >= 0; --e){
       uint64_t val;
       switch(elen){
         case 8:
           val = P.VU.elt<uint64_t>(r, e);
-          sout << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(16) << val << "  ";
+          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(16) << val << "  ";
           break;
         case 4:
           val = P.VU.elt<uint32_t>(r, e);
-          sout << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(8) << (uint32_t)val << "  ";
+          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (uint32_t)val << "  ";
           break;
         case 2:
           val = P.VU.elt<uint16_t>(r, e);
-          sout << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(8) << (uint16_t)val << "  ";
+          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (uint16_t)val << "  ";
           break;
         case 1:
           val = P.VU.elt<uint8_t>(r, e);
-          sout << dec << "[" << e << "]: 0x" << hex << setfill ('0') << setw(8) << (int)(uint8_t)val << "  ";
+          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (int)(uint8_t)val << "  ";
           break;
       }
     }
-    sout << endl;
+    out << std::endl;
   }
 }
 
@@ -385,20 +383,22 @@ void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::strin
   processor_t *p = get_core(args[0]);
   int max_xlen = p->get_max_xlen();
 
+  std::ostream out(sout_.rdbuf());
+  out << std::hex;
+
   if (args.size() == 1) {
     // Show all the regs!
 
-    sout << hex;
     for (int r = 0; r < NXPR; ++r) {
-      sout << setfill(' ') << setw(4) << xpr_name[r]
-           << ": 0x" << setfill('0') << setw(max_xlen/4)
+      out << std::setfill(' ') << std::setw(4) << xpr_name[r]
+           << ": 0x" << std::setfill('0') << std::setw(max_xlen/4)
            << zext(p->get_state()->XPR[r], max_xlen);
       if ((r + 1) % 4 == 0)
-        sout << endl;
+        out << std::endl;
     }
   } else {
-      sout << "0x" << setfill('0') << setw(max_xlen/4)
-           << zext(get_reg(args), max_xlen) << endl;
+      out << "0x" << std::setfill('0') << std::setw(max_xlen/4)
+           << zext(get_reg(args), max_xlen) << std::endl;
   }
 }
 
@@ -412,28 +412,36 @@ union fpr
 void sim_t::interactive_freg(const std::string& cmd, const std::vector<std::string>& args)
 {
   freg_t r = get_freg(args);
-  sout << hex << "0x" << setfill ('0') << setw(16) << r.v[1] << setw(16) << r.v[0] << endl;
+
+  std::ostream out(sout_.rdbuf());
+  out << std::hex << "0x" << std::setfill ('0') << std::setw(16) << r.v[1] << std::setw(16) << r.v[0] << std::endl;
 }
 
 void sim_t::interactive_fregh(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = freg(f16_to_f32(f16(get_freg(args))));
-  sout << dec << (isBoxedF32(f.r) ? (double)f.s : NAN) << endl;
+
+  std::ostream out(sout_.rdbuf());
+  out << (isBoxedF32(f.r) ? (double)f.s : NAN) << std::endl;
 }
 
 void sim_t::interactive_fregs(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = get_freg(args);
-  sout << dec << (isBoxedF32(f.r) ? (double)f.s : NAN) << endl;
+
+  std::ostream out(sout_.rdbuf());
+  out << (isBoxedF32(f.r) ? (double)f.s : NAN) << std::endl;
 }
 
 void sim_t::interactive_fregd(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = get_freg(args);
-  sout << dec << (isBoxedF64(f.r) ? f.d : NAN) << endl;
+
+  std::ostream out(sout_.rdbuf());
+  out << (isBoxedF64(f.r) ? f.d : NAN) << std::endl;
 }
 
 reg_t sim_t::get_mem(const std::vector<std::string>& args)
@@ -477,8 +485,9 @@ void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::strin
 {
   int max_xlen = procs[0]->get_max_xlen();
 
-  sout << hex << "0x" << setfill('0') << setw(max_xlen/4)
-       << zext(get_mem(args), max_xlen) << endl;
+  std::ostream out(sout_.rdbuf());
+  out << std::hex << "0x" << std::setfill('0') << std::setw(max_xlen/4)
+      << zext(get_mem(args), max_xlen) << std::endl;
 }
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)
@@ -497,11 +506,13 @@ void sim_t::interactive_str(const std::string& cmd, const std::vector<std::strin
 
   reg_t addr = strtol(addr_str.c_str(),NULL,16);
 
+  std::ostream out(sout_.rdbuf());
+
   char ch;
   while((ch = mmu->load_uint8(addr++)))
-    sout << ch;
+    out << ch;
 
-  sout << endl;
+  out << std::endl;
 }
 
 void sim_t::interactive_until_silent(const std::string& cmd, const std::vector<std::string>& args)

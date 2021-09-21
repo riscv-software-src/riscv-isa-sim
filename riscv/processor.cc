@@ -20,22 +20,15 @@
 #include <string>
 #include <algorithm>
 
-using std::stringstream;
-using std::hex;
-using std::dec;
-using std::setfill;
-using std::setw;
-using std::endl;
-
 #undef STATE
 #define STATE state
 
 processor_t::processor_t(const char* isa, const char* priv, const char* varch,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
-                         FILE* log_file, ostream *sout_ptr_ctor)
+                         FILE* log_file, std::ostream& sout_)
   : debug(false), halt_request(HR_NONE), sim(sim), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
-  log_file(log_file), halt_on_reset(halt_on_reset),
+  log_file(log_file), sout_(sout_.rdbuf()), halt_on_reset(halt_on_reset),
   extension_table(256, false), impl_table(256, false), last_pc(1), executions(1)
 {
   VU.p = this;
@@ -59,8 +52,6 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
     set_mmu_capability(IMPL_MMU_SV32);
   else if (max_xlen == 64)
     set_mmu_capability(IMPL_MMU_SV48);
-
-  sout_ptr = sout_ptr_ctor; // needed for command line option -s
 
   reset();
 }
@@ -217,144 +208,128 @@ void processor_t::parse_priv_string(const char* str)
 
 void processor_t::parse_isa_string(const char* str)
 {
-  std::string lowercase = strtolower(str), tmp;
-
-  char error_msg[256];
-  const char* p = lowercase.c_str();
+  isa_string = strtolower(str);
   const char* all_subsets = "imafdqchp"
 #ifdef __SIZEOF_INT128__
     "v"
 #endif
     "";
 
-  max_xlen = 64;
   max_isa = reg_t(2) << 62;
-
-  if (strncmp(p, "rv32", 4) == 0)
-    max_xlen = 32, max_isa = reg_t(1) << 30, p += 4;
-  else if (strncmp(p, "rv64", 4) == 0)
-    p += 4;
-  else if (strncmp(p, "rv", 2) == 0)
-    p += 2;
-
-  if (!*p) {
-    p = "imafdc";
-  } else if (*p == 'g') { // treat "G" as "IMAFD"
-    tmp = std::string("imafd") + (p+1);
-    p = &tmp[0];
-  }
-
-  isa_string = "rv" + std::to_string(max_xlen) + p;
-
-  while (*p) {
-    if (islower(*p)) {
-      max_isa |= 1L << (*p - 'a');
-      extension_table[toupper(*p)] = true;
-
-      if (strchr(all_subsets, *p)) {
-        p++;
-      } else if (*p == 'x') {
-        const char* ext = p + 1, *end = ext;
-        while (islower(*end))
-          end++;
-
-        auto ext_str = std::string(ext, end - ext);
-        if (ext_str == "bitmanip")
-          extension_table[EXT_XBITMANIP] = true;
-        else if (ext_str != "dummy")
-          register_extension(find_extension(ext_str.c_str())());
-
-        p = end;
-      } else {
-        sprintf(error_msg, "unsupported extension '%c'", *p);
-        bad_isa_string(str, error_msg);
-      }
-    } else if (*p == '_') {
-      const char* ext = p + 1, *end = ext;
-      if (*ext == 'x') {
-        p++;
-        continue;
-      }
-
-      while (islower(*end))
-        end++;
-
-      auto ext_str = std::string(ext, end - ext);
-      if (ext_str == "zfh") {
-        extension_table[EXT_ZFH] = true;
-      } else if (ext_str == "zba") {
-        extension_table[EXT_ZBA] = true;
-      } else if (ext_str == "zbb") {
-        extension_table[EXT_ZBB] = true;
-      } else if (ext_str == "zbc") {
-        extension_table[EXT_ZBC] = true;
-      } else if (ext_str == "zbs") {
-        extension_table[EXT_ZBS] = true;
-      } else if (ext_str == "zbkb") {
-        extension_table[EXT_ZBKB] = true;
-      } else if (ext_str == "zbkc") {
-        extension_table[EXT_ZBKC] = true;
-      } else if (ext_str == "zbkx") {
-        extension_table[EXT_ZBKX] = true;
-      } else if (ext_str == "zkn") {
-        extension_table[EXT_ZBKB] = true;
-        extension_table[EXT_ZBKC] = true;
-        extension_table[EXT_ZBKX] = true;
-        extension_table[EXT_ZKND] = true;
-        extension_table[EXT_ZKNE] = true;
-        extension_table[EXT_ZKNH] = true;
-      } else if (ext_str == "zknd") {
-        extension_table[EXT_ZKND] = true;
-      } else if (ext_str == "zkne") {
-        extension_table[EXT_ZKNE] = true;
-      } else if (ext_str == "zknh") {
-        extension_table[EXT_ZKNH] = true;
-      } else if (ext_str == "zks") {
-        extension_table[EXT_ZBKB] = true;
-        extension_table[EXT_ZBKC] = true;
-        extension_table[EXT_ZBKX] = true;
-        extension_table[EXT_ZKSED] = true;
-        extension_table[EXT_ZKSH] = true;
-      } else if (ext_str == "zksed") {
-        extension_table[EXT_ZKSED] = true;
-      } else if (ext_str == "zksh") {
-        extension_table[EXT_ZKSH] = true;
-      } else if (ext_str == "zkr") {
-        extension_table[EXT_ZKR] = true;
-      } else if (ext_str == "zkt") {
-      } else if (ext_str == "svnapot") {
-        extension_table[EXT_SVNAPOT] = true;
-      } else if (ext_str == "svpbmt") {
-        extension_table[EXT_SVPBMT] = true;
-      } else if (ext_str == "svinval") {
-        extension_table[EXT_SVINVAL] = true;
-      } else {
-        sprintf(error_msg, "unsupported extension '%s'", ext_str.c_str());
-        bad_isa_string(str, error_msg);
-      }
-
-      p = end;
-    } else {
-      sprintf(error_msg, "can't parse '%c(%d)'", *p, *p);
-      bad_isa_string(str, error_msg);
-    }
-  }
-
-  // The real state.misa hasn't been created yet, but we want to do
-  // some sanity checks on the supplied options.
-  misa_csr_t fake_misa(this, CSR_MISA, max_isa);
-
-  if (!fake_misa.extension_enabled('I'))
+  if (isa_string.compare(0, 4, "rv32") == 0)
+    max_xlen = 32, max_isa = reg_t(1) << 30;
+  else if (isa_string.compare(0, 4, "rv64") == 0)
+    max_xlen = 64;
+  else
+    bad_isa_string(str, "Spike supports either RV32I or RV64I");
+  if (isa_string[4] == 'g')
+    isa_string = isa_string.substr(0, 4) + "imafd" + isa_string.substr(5);
+  if (isa_string[4] != 'i')
     bad_isa_string(str, "'I' extension is required");
 
-  if (extension_enabled(EXT_ZFH) && !fake_misa.extension_enabled('F'))
-    bad_isa_string(str, "'Zfh' extension requires 'F'");
+  auto p = isa_string.begin();
+  for (p += 4; islower(*p) && !strchr("zsx", *p); ++p) {
+    while (*all_subsets && (*p != *all_subsets))
+      ++all_subsets;
+    if (!*all_subsets)
+      bad_isa_string(str, "Wrong order");
+    switch (*p) {
+      case 'q': max_isa |= 1L << ('d' - 'a');
+      case 'd': max_isa |= 1L << ('f' - 'a');
+    }
+    max_isa |= 1L << (*p - 'a');
+    extension_table[toupper(*p)] = true;
+    while (isdigit(*(p + 1))) {
+      ++p; // skip major version, point, and minor version if presented
+      if (*(p + 1) == 'p') ++p;
+    }
+    p += *(p + 1) == '_'; // underscores may be used to improve readability
+  }
 
-  if (fake_misa.extension_enabled('D') && !fake_misa.extension_enabled('F'))
-    bad_isa_string(str, "'D' extension requires 'F'");
-
-  if (fake_misa.extension_enabled('Q') && !fake_misa.extension_enabled('D'))
-    bad_isa_string(str, "'Q' extension requires 'D'");
+  while (islower(*p) || (*p == '_')) {
+    p += *p == '_'; // first underscore is optional
+    auto end = p;
+    do ++end; while (*end && *end != '_');
+    auto ext_str = std::string(p, end);
+    if (ext_str == "zfh") {
+      if (!((max_isa >> ('f' - 'a')) & 1))
+        bad_isa_string(str, "'Zfh' extension requires 'F'");
+      extension_table[EXT_ZFH] = true;
+    } else if (ext_str == "zicsr") {
+      // Spike necessarily has Zicsr, because
+      // Zicsr is implied by the privileged architecture
+    } else if (ext_str == "zba") {
+      extension_table[EXT_ZBA] = true;
+    } else if (ext_str == "zbb") {
+      extension_table[EXT_ZBB] = true;
+    } else if (ext_str == "zbc") {
+      extension_table[EXT_ZBC] = true;
+    } else if (ext_str == "zbs") {
+      extension_table[EXT_ZBS] = true;
+    } else if (ext_str == "zbkb") {
+      extension_table[EXT_ZBKB] = true;
+    } else if (ext_str == "zbkc") {
+      extension_table[EXT_ZBKC] = true;
+    } else if (ext_str == "zbkx") {
+      extension_table[EXT_ZBKX] = true;
+    } else if (ext_str == "zk") {
+      extension_table[EXT_ZBKB] = true;
+      extension_table[EXT_ZBKC] = true;
+      extension_table[EXT_ZBKX] = true;
+      extension_table[EXT_ZKND] = true;
+      extension_table[EXT_ZKNE] = true;
+      extension_table[EXT_ZKNH] = true;
+      extension_table[EXT_ZKR] = true;
+    } else if (ext_str == "zkn") {
+      extension_table[EXT_ZBKB] = true;
+      extension_table[EXT_ZBKC] = true;
+      extension_table[EXT_ZBKX] = true;
+      extension_table[EXT_ZKND] = true;
+      extension_table[EXT_ZKNE] = true;
+      extension_table[EXT_ZKNH] = true;
+    } else if (ext_str == "zknd") {
+      extension_table[EXT_ZKND] = true;
+    } else if (ext_str == "zkne") {
+      extension_table[EXT_ZKNE] = true;
+    } else if (ext_str == "zknh") {
+      extension_table[EXT_ZKNH] = true;
+    } else if (ext_str == "zks") {
+      extension_table[EXT_ZBKB] = true;
+      extension_table[EXT_ZBKC] = true;
+      extension_table[EXT_ZBKX] = true;
+      extension_table[EXT_ZKSED] = true;
+      extension_table[EXT_ZKSH] = true;
+    } else if (ext_str == "zksed") {
+      extension_table[EXT_ZKSED] = true;
+    } else if (ext_str == "zksh") {
+      extension_table[EXT_ZKSH] = true;
+    } else if (ext_str == "zkr") {
+      extension_table[EXT_ZKR] = true;
+    } else if (ext_str == "zkt") {
+    } else if (ext_str == "svnapot") {
+      extension_table[EXT_SVNAPOT] = true;
+    } else if (ext_str == "svpbmt") {
+      extension_table[EXT_SVPBMT] = true;
+    } else if (ext_str == "svinval") {
+      extension_table[EXT_SVINVAL] = true;
+    } else if (ext_str[0] == 'x') {
+      max_isa |= 1L << ('x' - 'a');
+      extension_table[toupper('x')] = true;
+      if (ext_str == "xbitmanip") {
+        extension_table[EXT_XBITMANIP] = true;
+      } else if (ext_str.size() == 1) {
+        bad_isa_string(str, "single 'X' is not a proper name");
+      } else if (ext_str != "xdummy") {
+        register_extension(find_extension(ext_str.substr(1).c_str())());
+      }
+    } else {
+      bad_isa_string(str, ("unsupported extension: " + ext_str).c_str());
+    }
+    p = end;
+  }
+  if (*p) {
+    bad_isa_string(str, ("can't parse: " + std::string(p, isa_string.end())).c_str());
+  }
 }
 
 void state_t::reset(processor_t* const proc, reg_t max_isa)
@@ -773,25 +748,27 @@ void processor_t::enter_debug_mode(uint8_t cause)
   state.pc = DEBUG_ROM_ENTRY;
 }
 
-void processor_t::debug_output_log(stringstream *s)
+void processor_t::debug_output_log(std::stringstream *s)
 {
-  if (log_file==stderr)
-    *sout_ptr << s->str(); // handles command line options -d -s -l
-  else
+  if (log_file==stderr) {
+    std::ostream out(sout_.rdbuf());
+    out << s->str(); // handles command line options -d -s -l
+  } else {
     fputs(s->str().c_str(), log_file); // handles command line option --log
+  }
 }
 
 void processor_t::take_trap(trap_t& t, reg_t epc)
 {
   if (debug) {
-    stringstream s; // first put everything in a string, later send it to output
-    s << "core " << dec << setfill(' ') << setw(3) << id
+    std::stringstream s; // first put everything in a string, later send it to output
+    s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
       << ": exception " << t.name() << ", epc 0x"
-      << hex << setfill('0') << setw(max_xlen/4) << zext(epc, max_xlen) << endl;
+      << std::hex << std::setfill('0') << std::setw(max_xlen/4) << zext(epc, max_xlen) << std::endl;
     if (t.has_tval())
-       s << "core " << dec << setfill(' ') << setw(3) << id
-         << ":           tval 0x" << hex << setfill('0') << setw(max_xlen/4)
-         << zext(t.get_tval(), max_xlen) << endl;
+       s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
+         << ":           tval 0x" << std::hex << std::setfill('0') << std::setw(max_xlen/4)
+         << zext(t.get_tval(), max_xlen) << std::endl;
     debug_output_log(&s);
   }
 
@@ -890,26 +867,26 @@ void processor_t::disasm(insn_t insn)
 {
   uint64_t bits = insn.bits() & ((1ULL << (8 * insn_length(insn.bits()))) - 1);
   if (last_pc != state.pc || last_bits != bits) {
-    stringstream s;  // first put everything in a string, later send it to output
+    std::stringstream s;  // first put everything in a string, later send it to output
 
 #ifdef RISCV_ENABLE_COMMITLOG
     const char* sym = get_symbol(state.pc);
     if (sym != nullptr)
     {
-      s << "core " << dec << setfill(' ') << setw(3) << id
-        << ": >>>>  " << sym << endl;
+      s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
+        << ": >>>>  " << sym << std::endl;
     }
 #endif
 
     if (executions != 1) {
-      s << "core " << dec << setfill(' ') << setw(3) << id
-        << ": Executed " << executions << " times" << endl;
+      s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
+        << ": Executed " << executions << " times" << std::endl;
     }
 
-    s << "core " << dec << setfill(' ') << setw(3) << id
-      << hex << ": 0x" << setfill('0') << setw(max_xlen/4)
-      << zext(state.pc, max_xlen) << " (0x" << setw(8) << bits << ") "
-      << disassembler->disassemble(insn) << endl;
+    s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
+      << std::hex << ": 0x" << std::setfill('0') << std::setw(max_xlen/4)
+      << zext(state.pc, max_xlen) << " (0x" << std::setw(8) << bits << ") "
+      << disassembler->disassemble(insn) << std::endl;
 
     debug_output_log(&s);
 
