@@ -964,12 +964,6 @@ void processor_t::set_csr(int which, reg_t val)
 #endif
 
   val = zext_xlen(val);
-  reg_t supervisor_ints = extension_enabled('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
-  reg_t vssip_int = extension_enabled('H') ? MIP_VSSIP : 0;
-  reg_t hypervisor_ints = extension_enabled('H') ? MIP_HS_MASK : 0;
-  reg_t coprocessor_ints = (reg_t)any_custom_extensions() << IRQ_COP;
-  reg_t delegable_ints = supervisor_ints | coprocessor_ints;
-  reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP | MIP_MEIP;
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
     search->second->write(val);
