@@ -206,7 +206,7 @@ struct state_t
   dcsr_t dcsr;
   csr_t_p tselect;
   mcontrol_t mcontrol[num_triggers];
-  reg_t tdata2[num_triggers];
+  tdata2_csr_t_p tdata2;
   bool debug_mode;
 
   static const int max_pmp = 16;
@@ -409,7 +409,7 @@ public:
         value &= 0xffffffff;
       }
 
-      auto tdata2 = state.tdata2[i];
+      auto tdata2 = state.tdata2->read(i);
       switch (state.mcontrol[i].match) {
         case MATCH_EQUAL:
           if (value != tdata2)

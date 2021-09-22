@@ -507,7 +507,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     item.type = 2;
 
   csrmap[CSR_TDATA1] = std::make_shared<tdata1_csr_t>(proc, CSR_TDATA1);
-  memset(this->tdata2, 0, sizeof(this->tdata2));
+  csrmap[CSR_TDATA2] = tdata2 = std::make_shared<tdata2_csr_t>(proc, CSR_TDATA2, num_triggers);
   debug_mode = false;
   single_step = STEP_NONE;
 
@@ -994,12 +994,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_TDATA2:
-      if (state.mcontrol[state.tselect->read()].dmode && !state.debug_mode) {
-        break;
-      }
-      state.tdata2[state.tselect->read()] = val;
-      break;
     case CSR_DCSR:
       state.dcsr.prv = get_field(val, DCSR_PRV);
       state.dcsr.step = get_field(val, DCSR_STEP);
@@ -1062,7 +1056,6 @@ void processor_t::set_csr(int which, reg_t val)
       LOG_CSR(CSR_VXRM);
       break;
 
-    case CSR_TDATA2:
     case CSR_DCSR:
     case CSR_DPC:
     case CSR_DSCRATCH0:
@@ -1129,7 +1122,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIMPID: ret(0);
     case CSR_MVENDORID: ret(0);
     case CSR_MHARTID: ret(id);
-    case CSR_TDATA2: ret(state.tdata2[state.tselect->read()]);
     case CSR_TDATA3: ret(0);
     case CSR_DCSR:
       {

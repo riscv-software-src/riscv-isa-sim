@@ -1014,3 +1014,25 @@ bool tdata1_csr_t::unlogged_write(const reg_t val) noexcept {
   proc->trigger_updated();
   return true;
 }
+
+
+tdata2_csr_t::tdata2_csr_t(processor_t* const proc, const reg_t addr, const size_t count):
+  csr_t(proc, addr),
+  vals(count, 0) {
+}
+
+reg_t tdata2_csr_t::read() const noexcept {
+  return read(state->tselect->read());
+}
+
+reg_t tdata2_csr_t::read(const size_t idx) const noexcept {
+  return vals[idx];
+}
+
+bool tdata2_csr_t::unlogged_write(const reg_t val) noexcept {
+  if (state->mcontrol[state->tselect->read()].dmode && !state->debug_mode) {
+    return false;
+  }
+  vals[state->tselect->read()] = val;
+  return true;
+}
