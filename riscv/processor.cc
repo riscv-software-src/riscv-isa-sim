@@ -506,6 +506,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   for (auto &item : mcontrol)
     item.type = 2;
 
+  csrmap[CSR_TDATA1] = std::make_shared<tdata1_csr_t>(proc, CSR_TDATA1);
   memset(this->tdata2, 0, sizeof(this->tdata2));
   debug_mode = false;
   single_step = STEP_NONE;
@@ -993,31 +994,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_TDATA1:
-      {
-        mcontrol_t *mc = &state.mcontrol[state.tselect->read()];
-        if (mc->dmode && !state.debug_mode) {
-          break;
-        }
-        mc->dmode = get_field(val, MCONTROL_DMODE(xlen));
-        mc->select = get_field(val, MCONTROL_SELECT);
-        mc->timing = get_field(val, MCONTROL_TIMING);
-        mc->action = (mcontrol_action_t) get_field(val, MCONTROL_ACTION);
-        mc->chain = get_field(val, MCONTROL_CHAIN);
-        mc->match = (mcontrol_match_t) get_field(val, MCONTROL_MATCH);
-        mc->m = get_field(val, MCONTROL_M);
-        mc->h = get_field(val, MCONTROL_H);
-        mc->s = get_field(val, MCONTROL_S);
-        mc->u = get_field(val, MCONTROL_U);
-        mc->execute = get_field(val, MCONTROL_EXECUTE);
-        mc->store = get_field(val, MCONTROL_STORE);
-        mc->load = get_field(val, MCONTROL_LOAD);
-        // Assume we're here because of csrw.
-        if (mc->execute)
-          mc->timing = 0;
-        trigger_updated();
-      }
-      break;
     case CSR_TDATA2:
       if (state.mcontrol[state.tselect->read()].dmode && !state.debug_mode) {
         break;
@@ -1086,7 +1062,6 @@ void processor_t::set_csr(int which, reg_t val)
       LOG_CSR(CSR_VXRM);
       break;
 
-    case CSR_TDATA1:
     case CSR_TDATA2:
     case CSR_DCSR:
     case CSR_DPC:
@@ -1154,27 +1129,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIMPID: ret(0);
     case CSR_MVENDORID: ret(0);
     case CSR_MHARTID: ret(id);
-    case CSR_TDATA1:
-      {
-        reg_t v = 0;
-        mcontrol_t *mc = &state.mcontrol[state.tselect->read()];
-        v = set_field(v, MCONTROL_TYPE(xlen), mc->type);
-        v = set_field(v, MCONTROL_DMODE(xlen), mc->dmode);
-        v = set_field(v, MCONTROL_MASKMAX(xlen), mc->maskmax);
-        v = set_field(v, MCONTROL_SELECT, mc->select);
-        v = set_field(v, MCONTROL_TIMING, mc->timing);
-        v = set_field(v, MCONTROL_ACTION, mc->action);
-        v = set_field(v, MCONTROL_CHAIN, mc->chain);
-        v = set_field(v, MCONTROL_MATCH, mc->match);
-        v = set_field(v, MCONTROL_M, mc->m);
-        v = set_field(v, MCONTROL_H, mc->h);
-        v = set_field(v, MCONTROL_S, mc->s);
-        v = set_field(v, MCONTROL_U, mc->u);
-        v = set_field(v, MCONTROL_EXECUTE, mc->execute);
-        v = set_field(v, MCONTROL_STORE, mc->store);
-        v = set_field(v, MCONTROL_LOAD, mc->load);
-        ret(v);
-      }
     case CSR_TDATA2: ret(state.tdata2[state.tselect->read()]);
     case CSR_TDATA3: ret(0);
     case CSR_DCSR:
