@@ -204,7 +204,7 @@ struct state_t
   reg_t dpc;
   reg_t dscratch0, dscratch1;
   dcsr_t dcsr;
-  reg_t tselect;
+  csr_t_p tselect;
   mcontrol_t mcontrol[num_triggers];
   reg_t tdata2[num_triggers];
   bool debug_mode;

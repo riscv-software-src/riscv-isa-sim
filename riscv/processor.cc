@@ -501,7 +501,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   dscratch1 = 0;
   memset(&this->dcsr, 0, sizeof(this->dcsr));
 
-  tselect = 0;
+  csrmap[CSR_TSELECT] = tselect = std::make_shared<tselect_csr_t>(proc, CSR_TSELECT);
   memset(this->mcontrol, 0, sizeof(this->mcontrol));
   for (auto &item : mcontrol)
     item.type = 2;
@@ -993,14 +993,9 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_TSELECT:
-      if (val < state.num_triggers) {
-        state.tselect = val;
-      }
-      break;
     case CSR_TDATA1:
       {
-        mcontrol_t *mc = &state.mcontrol[state.tselect];
+        mcontrol_t *mc = &state.mcontrol[state.tselect->read()];
         if (mc->dmode && !state.debug_mode) {
           break;
         }
@@ -1024,10 +1019,10 @@ void processor_t::set_csr(int which, reg_t val)
       }
       break;
     case CSR_TDATA2:
-      if (state.mcontrol[state.tselect].dmode && !state.debug_mode) {
+      if (state.mcontrol[state.tselect->read()].dmode && !state.debug_mode) {
         break;
       }
-      state.tdata2[state.tselect] = val;
+      state.tdata2[state.tselect->read()] = val;
       break;
     case CSR_DCSR:
       state.dcsr.prv = get_field(val, DCSR_PRV);
@@ -1091,7 +1086,6 @@ void processor_t::set_csr(int which, reg_t val)
       LOG_CSR(CSR_VXRM);
       break;
 
-    case CSR_TSELECT:
     case CSR_TDATA1:
     case CSR_TDATA2:
     case CSR_DCSR:
@@ -1160,11 +1154,10 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIMPID: ret(0);
     case CSR_MVENDORID: ret(0);
     case CSR_MHARTID: ret(id);
-    case CSR_TSELECT: ret(state.tselect);
     case CSR_TDATA1:
       {
         reg_t v = 0;
-        mcontrol_t *mc = &state.mcontrol[state.tselect];
+        mcontrol_t *mc = &state.mcontrol[state.tselect->read()];
         v = set_field(v, MCONTROL_TYPE(xlen), mc->type);
         v = set_field(v, MCONTROL_DMODE(xlen), mc->dmode);
         v = set_field(v, MCONTROL_MASKMAX(xlen), mc->maskmax);
@@ -1182,7 +1175,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
         v = set_field(v, MCONTROL_LOAD, mc->load);
         ret(v);
       }
-    case CSR_TDATA2: ret(state.tdata2[state.tselect]);
+    case CSR_TDATA2: ret(state.tdata2[state.tselect->read()]);
     case CSR_TDATA3: ret(0);
     case CSR_DCSR:
       {

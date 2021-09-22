@@ -500,4 +500,12 @@ class hgatp_csr_t: public basic_csr_t {
 };
 
 
+class tselect_csr_t: public basic_csr_t {
+ public:
+  tselect_csr_t(processor_t* const proc, const reg_t addr);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+
 #endif

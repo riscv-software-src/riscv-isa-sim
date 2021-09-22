@@ -952,3 +952,12 @@ bool hgatp_csr_t::unlogged_write(const reg_t val) noexcept {
   mask &= ~(reg_t)3;
   return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
 }
+
+
+tselect_csr_t::tselect_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, 0) {
+}
+
+bool tselect_csr_t::unlogged_write(const reg_t val) noexcept {
+  return basic_csr_t::unlogged_write((val < state->num_triggers) ? val : read());
+}
