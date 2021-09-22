@@ -1027,9 +1027,7 @@ void processor_t::set_csr(int which, reg_t val)
       if (state.mcontrol[state.tselect].dmode && !state.debug_mode) {
         break;
       }
-      if (state.tselect < state.num_triggers) {
-        state.tdata2[state.tselect] = val;
-      }
+      state.tdata2[state.tselect] = val;
       break;
     case CSR_DCSR:
       state.dcsr.prv = get_field(val, DCSR_PRV);
@@ -1164,7 +1162,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MHARTID: ret(id);
     case CSR_TSELECT: ret(state.tselect);
     case CSR_TDATA1:
-      if (state.tselect < state.num_triggers) {
+      {
         reg_t v = 0;
         mcontrol_t *mc = &state.mcontrol[state.tselect];
         v = set_field(v, MCONTROL_TYPE(xlen), mc->type);
@@ -1183,17 +1181,8 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
         v = set_field(v, MCONTROL_STORE, mc->store);
         v = set_field(v, MCONTROL_LOAD, mc->load);
         ret(v);
-      } else {
-        ret(0);
       }
-      break;
-    case CSR_TDATA2:
-      if (state.tselect < state.num_triggers) {
-        ret(state.tdata2[state.tselect]);
-      } else {
-        ret(0);
-      }
-      break;
+    case CSR_TDATA2: ret(state.tdata2[state.tselect]);
     case CSR_TDATA3: ret(0);
     case CSR_DCSR:
       {
