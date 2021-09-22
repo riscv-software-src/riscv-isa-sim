@@ -409,37 +409,38 @@ public:
         value &= 0xffffffff;
       }
 
+      auto tdata2 = state.tdata2[i];
       switch (state.mcontrol[i].match) {
         case MATCH_EQUAL:
-          if (value != state.tdata2[i])
+          if (value != tdata2)
             continue;
           break;
         case MATCH_NAPOT:
           {
-            reg_t mask = ~((1 << (cto(state.tdata2[i])+1)) - 1);
-            if ((value & mask) != (state.tdata2[i] & mask))
+            reg_t mask = ~((1 << (cto(tdata2)+1)) - 1);
+            if ((value & mask) != (tdata2 & mask))
               continue;
           }
           break;
         case MATCH_GE:
-          if (value < state.tdata2[i])
+          if (value < tdata2)
             continue;
           break;
         case MATCH_LT:
-          if (value >= state.tdata2[i])
+          if (value >= tdata2)
             continue;
           break;
         case MATCH_MASK_LOW:
           {
-            reg_t mask = state.tdata2[i] >> (xlen/2);
-            if ((value & mask) != (state.tdata2[i] & mask))
+            reg_t mask = tdata2 >> (xlen/2);
+            if ((value & mask) != (tdata2 & mask))
               continue;
           }
           break;
         case MATCH_MASK_HIGH:
           {
-            reg_t mask = state.tdata2[i] >> (xlen/2);
-            if (((value >> (xlen/2)) & mask) != (state.tdata2[i] & mask))
+            reg_t mask = tdata2 >> (xlen/2);
+            if (((value >> (xlen/2)) & mask) != (tdata2 & mask))
               continue;
           }
           break;
