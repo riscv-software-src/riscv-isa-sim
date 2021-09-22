@@ -83,7 +83,7 @@ void sim_t::diff_set_regs(void* diff_context) {
   if (ctx->pc)      state->pc = ctx->pc;
   if (ctx->mstatus) state->mstatus->write(ctx->mstatus);
   if (ctx->mepc)    state->mepc->write(ctx->mepc);
-  if (ctx->sepc)    state->mepc->write(ctx->sepc);
+  if (ctx->sepc)    state->sepc->write(ctx->sepc);
   if (ctx->mtvec)   state->mtvec->write(ctx->mtvec);
   if (ctx->stvec)   state->stvec->write(ctx->stvec);
   state->mcause->write(ctx->mcause);
