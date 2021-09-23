@@ -1047,3 +1047,13 @@ void debug_mode_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (!state->debug_mode)
     throw trap_illegal_instruction(insn.bits());
 }
+
+dpc_csr_t::dpc_csr_t(processor_t* const proc, const reg_t addr):
+  epc_csr_t(proc, addr) {
+}
+
+void dpc_csr_t::verify_permissions(insn_t insn, bool write) const {
+  epc_csr_t::verify_permissions(insn, write);
+  if (!state->debug_mode)
+    throw trap_illegal_instruction(insn.bits());
+}
