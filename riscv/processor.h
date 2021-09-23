@@ -37,18 +37,6 @@ typedef std::unordered_map<reg_t, freg_t> commit_log_reg_t;
 // addr, value, size
 typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
 
-typedef struct
-{
-  uint8_t prv;
-  bool step;
-  bool ebreakm;
-  bool ebreakh;
-  bool ebreaks;
-  bool ebreaku;
-  bool halt;
-  uint8_t cause;
-} dcsr_t;
-
 typedef enum
 {
   ACTION_DEBUG_EXCEPTION = MCONTROL_ACTION_DEBUG_EXCEPTION,

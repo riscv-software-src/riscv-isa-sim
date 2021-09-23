@@ -543,4 +543,17 @@ class dpc_csr_t: public epc_csr_t {
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
 
+typedef struct
+{
+  uint8_t prv;
+  bool step;
+  bool ebreakm;
+  bool ebreakh;
+  bool ebreaks;
+  bool ebreaku;
+  bool halt;
+  uint8_t cause;
+} dcsr_t;
+
+
 #endif
