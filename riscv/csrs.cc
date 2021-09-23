@@ -1036,3 +1036,14 @@ bool tdata2_csr_t::unlogged_write(const reg_t val) noexcept {
   vals[state->tselect->read()] = val;
   return true;
 }
+
+
+debug_mode_csr_t::debug_mode_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, 0) {
+}
+
+void debug_mode_csr_t::verify_permissions(insn_t insn, bool write) const {
+  basic_csr_t::verify_permissions(insn, write);
+  if (!state->debug_mode)
+    throw trap_illegal_instruction(insn.bits());
+}

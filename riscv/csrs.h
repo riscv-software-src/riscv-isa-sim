@@ -527,6 +527,13 @@ class tdata2_csr_t: public csr_t {
   std::vector<reg_t> vals;
 };
 
+// For CSRs that are only writable from debug mode
+class debug_mode_csr_t: public basic_csr_t {
+ public:
+  debug_mode_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
 typedef std::shared_ptr<tdata2_csr_t> tdata2_csr_t_p;
 
 

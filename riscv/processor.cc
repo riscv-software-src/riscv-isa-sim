@@ -497,8 +497,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_SSTATUS] = sstatus = std::make_shared<sstatus_csr_t>(proc, nonvirtual_sstatus, vsstatus);
 
   dpc = 0;
-  dscratch0 = 0;
-  dscratch1 = 0;
+  csrmap[CSR_DSCRATCH0] = std::make_shared<debug_mode_csr_t>(proc, CSR_DSCRATCH0);
+  csrmap[CSR_DSCRATCH1] = std::make_shared<debug_mode_csr_t>(proc, CSR_DSCRATCH1);
   memset(&this->dcsr, 0, sizeof(this->dcsr));
 
   csrmap[CSR_TSELECT] = tselect = std::make_shared<tselect_csr_t>(proc, CSR_TSELECT);
@@ -1007,12 +1007,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_DPC:
       state.dpc = val & ~(reg_t)1;
       break;
-    case CSR_DSCRATCH0:
-      state.dscratch0 = val;
-      break;
-    case CSR_DSCRATCH1:
-      state.dscratch1 = val;
-      break;
     case CSR_VSTART:
       dirty_vs_state;
       VU.vstart = val & (VU.get_vlen() - 1);
@@ -1058,8 +1052,6 @@ void processor_t::set_csr(int which, reg_t val)
 
     case CSR_DCSR:
     case CSR_DPC:
-    case CSR_DSCRATCH0:
-    case CSR_DSCRATCH1:
     case CSR_SENTROPY:
       LOG_CSR(which);
       break;
@@ -1144,14 +1136,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (!state.debug_mode)
         break;
       ret(state.dpc & pc_alignment_mask());
-    case CSR_DSCRATCH0:
-      if (!state.debug_mode)
-        break;
-      ret(state.dscratch0);
-    case CSR_DSCRATCH1:
-      if (!state.debug_mode)
-        break;
-      ret(state.dscratch1);
     case CSR_VSTART:
       require_vector_vs;
       if (!extension_enabled('V'))
