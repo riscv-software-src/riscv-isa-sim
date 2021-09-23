@@ -6,7 +6,7 @@ REPO_MAKEFILE = $(REPO_BUILD_PATH)/Makefile
 
 $(REPO_MAKEFILE): $(REPO_PATH)/configure
 	mkdir -p $(@D)
-	cd $(@D) && $(abspath $(REPO_PATH))/configure --with-boost=no --with-boost-asio=no --with-boost-regex=no CXXFLAGS="-O3" CFLAGS="-O3"
+	cd $(@D) && $(abspath $(REPO_PATH))/configure --enable-dirty --with-boost=no --with-boost-asio=no --with-boost-regex=no CXXFLAGS="-O3" CFLAGS="-O3"
 	sed -i -e 's/-g -O2/-O3/' $@
 
 SPIKE = $(REPO_BUILD_PATH)/spike
