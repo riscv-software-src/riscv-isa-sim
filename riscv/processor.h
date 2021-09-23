@@ -190,7 +190,7 @@ struct state_t
   csr_t_p vsatp;
 
   csr_t_p dpc;
-  dcsr_t dcsr;
+  dcsr_csr_t_p dcsr;
   csr_t_p tselect;
   mcontrol_t mcontrol[num_triggers];
   tdata2_csr_t_p tdata2;

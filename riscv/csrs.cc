@@ -1057,3 +1057,47 @@ void dpc_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (!state->debug_mode)
     throw trap_illegal_instruction(insn.bits());
 }
+
+
+dcsr_csr_t::dcsr_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+void dcsr_csr_t::verify_permissions(insn_t insn, bool write) const {
+  csr_t::verify_permissions(insn, write);
+  if (!state->debug_mode)
+    throw trap_illegal_instruction(insn.bits());
+}
+
+reg_t dcsr_csr_t::read() const noexcept {
+  uint32_t v = 0;
+  v = set_field(v, DCSR_XDEBUGVER, 1);
+  v = set_field(v, DCSR_EBREAKM, ebreakm);
+  v = set_field(v, DCSR_EBREAKH, ebreakh);
+  v = set_field(v, DCSR_EBREAKS, ebreaks);
+  v = set_field(v, DCSR_EBREAKU, ebreaku);
+  v = set_field(v, DCSR_STOPCYCLE, 0);
+  v = set_field(v, DCSR_STOPTIME, 0);
+  v = set_field(v, DCSR_CAUSE, cause);
+  v = set_field(v, DCSR_STEP, step);
+  v = set_field(v, DCSR_PRV, prv);
+  return v;
+}
+
+bool dcsr_csr_t::unlogged_write(const reg_t val) noexcept {
+  prv = get_field(val, DCSR_PRV);
+  step = get_field(val, DCSR_STEP);
+  // TODO: ndreset and fullreset
+  ebreakm = get_field(val, DCSR_EBREAKM);
+  ebreakh = get_field(val, DCSR_EBREAKH);
+  ebreaks = get_field(val, DCSR_EBREAKS);
+  ebreaku = get_field(val, DCSR_EBREAKU);
+  halt = get_field(val, DCSR_HALT);
+  return true;
+}
+
+void dcsr_csr_t::write_cause_and_prv(uint8_t cause, reg_t prv) noexcept {
+  this->cause = cause;
+  this->prv = prv;
+  log_write();
+}

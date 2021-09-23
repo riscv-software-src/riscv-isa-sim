@@ -227,7 +227,7 @@ void processor_t::step(size_t n)
     } else if (halt_request == HR_GROUP) {
       enter_debug_mode(DCSR_CAUSE_GROUP);
     } // !!!The halt bit in DCSR is deprecated.
-    else if (state.dcsr.halt) {
+    else if (state.dcsr->halt) {
       enter_debug_mode(DCSR_CAUSE_HALT);
     }
   }

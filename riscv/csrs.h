@@ -543,8 +543,15 @@ class dpc_csr_t: public epc_csr_t {
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
 
-typedef struct
-{
+class dcsr_csr_t: public csr_t {
+ public:
+  dcsr_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  virtual reg_t read() const noexcept override;
+  void write_cause_and_prv(uint8_t cause, reg_t prv) noexcept;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ public:
   uint8_t prv;
   bool step;
   bool ebreakm;
@@ -553,7 +560,8 @@ typedef struct
   bool ebreaku;
   bool halt;
   uint8_t cause;
-} dcsr_t;
+};
 
+typedef std::shared_ptr<dcsr_csr_t> dcsr_csr_t_p;
 
 #endif
