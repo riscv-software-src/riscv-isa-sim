@@ -508,6 +508,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   csrmap[CSR_TDATA1] = std::make_shared<tdata1_csr_t>(proc, CSR_TDATA1);
   csrmap[CSR_TDATA2] = tdata2 = std::make_shared<tdata2_csr_t>(proc, CSR_TDATA2, num_triggers);
+  csrmap[CSR_TDATA3] = std::make_shared<const_csr_t>(proc, CSR_TDATA3, 0);
   debug_mode = false;
   single_step = STEP_NONE;
 
@@ -1098,7 +1099,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIMPID: ret(0);
     case CSR_MVENDORID: ret(0);
     case CSR_MHARTID: ret(id);
-    case CSR_TDATA3: ret(0);
     case CSR_VSTART:
       require_vector_vs;
       if (!extension_enabled('V'))
