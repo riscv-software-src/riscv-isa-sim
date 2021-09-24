@@ -52,6 +52,8 @@ htif_t::htif_t()
 
 htif_t::htif_t(int argc, char** argv) : htif_t()
 {
+  //Set line size as 16 by default.
+  line_size = 16;
   parse_arguments(argc, argv);
   register_devices();
 }
