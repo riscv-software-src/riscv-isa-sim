@@ -33,7 +33,9 @@ void csr_t::verify_permissions(insn_t insn, bool write) const {
       (csr_priv == PRV_HS && !proc->extension_enabled('H')))
     throw trap_illegal_instruction(insn.bits());
 
-  if ((write && csr_read_only) || priv < csr_priv) {
+  if (write && csr_read_only)
+    throw trap_illegal_instruction(insn.bits());
+  if (priv < csr_priv) {
     if (state->v && csr_priv <= PRV_HS)
       throw trap_virtual_instruction(insn.bits());
     throw trap_illegal_instruction(insn.bits());
