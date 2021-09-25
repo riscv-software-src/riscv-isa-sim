@@ -521,8 +521,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     csrmap[addr] = std::make_shared<pmpcfg_csr_t>(proc, addr);
   }
 
-  fflags = 0;
-  frm = 0;
+  csrmap[CSR_FFLAGS] = fflags = std::make_shared<float_csr_t>(proc, CSR_FFLAGS, FSR_AEXC >> FSR_AEXC_SHIFT, 0);
+  csrmap[CSR_FRM] = frm = std::make_shared<float_csr_t>(proc, CSR_FRM, FSR_RD >> FSR_RD_SHIFT, 0);
   serialized = false;
 
 #ifdef RISCV_ENABLE_COMMITLOG
@@ -977,18 +977,10 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SENTROPY:
       es.set_sentropy(val);
       break;
-    case CSR_FFLAGS:
-      dirty_fp_state;
-      state.fflags = val & (FSR_AEXC >> FSR_AEXC_SHIFT);
-      break;
-    case CSR_FRM:
-      dirty_fp_state;
-      state.frm = val & (FSR_RD >> FSR_RD_SHIFT);
-      break;
     case CSR_FCSR:
       dirty_fp_state;
-      state.fflags = (val & FSR_AEXC) >> FSR_AEXC_SHIFT;
-      state.frm = (val & FSR_RD) >> FSR_RD_SHIFT;
+      state.fflags->write((val & FSR_AEXC) >> FSR_AEXC_SHIFT);
+      state.frm->write((val & FSR_RD) >> FSR_RD_SHIFT);
       break;
     case CSR_VCSR:
       dirty_vs_state;
@@ -1012,16 +1004,6 @@ void processor_t::set_csr(int which, reg_t val)
 #if defined(RISCV_ENABLE_COMMITLOG)
   switch (which)
   {
-    case CSR_FFLAGS:
-      LOG_CSR(CSR_FFLAGS);
-      break;
-    case CSR_FRM:
-      LOG_CSR(CSR_FRM);
-      break;
-    case CSR_FCSR:
-      LOG_CSR(CSR_FFLAGS);
-      LOG_CSR(CSR_FRM);
-      break;
     case CSR_VCSR:
       LOG_CSR(CSR_VXSAT);
       LOG_CSR(CSR_VXRM);
@@ -1071,21 +1053,11 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (!write)
         break;
       ret(es.get_sentropy());
-    case CSR_FFLAGS:
-      require_fp;
-      if (!extension_enabled('F'))
-        break;
-      ret(state.fflags);
-    case CSR_FRM:
-      require_fp;
-      if (!extension_enabled('F'))
-        break;
-      ret(state.frm);
     case CSR_FCSR:
       require_fp;
       if (!extension_enabled('F'))
         break;
-      ret((state.fflags << FSR_AEXC_SHIFT) | (state.frm << FSR_RD_SHIFT));
+      ret((state.fflags->read() << FSR_AEXC_SHIFT) | (state.frm->read() << FSR_RD_SHIFT));
     case CSR_VCSR:
       require_vector_vs;
       if (!extension_enabled('V'))

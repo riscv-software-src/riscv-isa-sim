@@ -1116,3 +1116,19 @@ void dcsr_csr_t::write_cause_and_prv(uint8_t cause, reg_t prv) noexcept {
   this->prv = prv;
   log_write();
 }
+
+
+float_csr_t::float_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  masked_csr_t(proc, addr, mask, init) {
+}
+
+void float_csr_t::verify_permissions(insn_t insn, bool write) const {
+  require_fp;
+  if (!proc->extension_enabled('F'))
+    throw trap_illegal_instruction(insn.bits());
+}
+
+bool float_csr_t::unlogged_write(const reg_t val) noexcept {
+  dirty_fp_state;
+  return masked_csr_t::unlogged_write(val);
+}
