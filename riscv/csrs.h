@@ -586,4 +586,21 @@ class float_csr_t: public masked_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
+
+// For a CSR like FCSR, that is actually a view into multiple
+// underlying registers.
+class composite_csr_t: public csr_t {
+ public:
+  // We assume the lower_csr maps to bit 0.
+  composite_csr_t(processor_t* const proc, const reg_t addr, csr_t_p upper_csr, csr_t_p lower_csr, const unsigned upper_lsb);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  csr_t_p upper_csr;
+  csr_t_p lower_csr;
+  const unsigned upper_lsb;
+};
+
 #endif

@@ -1132,3 +1132,27 @@ bool float_csr_t::unlogged_write(const reg_t val) noexcept {
   dirty_fp_state;
   return masked_csr_t::unlogged_write(val);
 }
+
+
+composite_csr_t::composite_csr_t(processor_t* const proc, const reg_t addr, csr_t_p upper_csr, csr_t_p lower_csr, const unsigned upper_lsb):
+  csr_t(proc, addr),
+  upper_csr(upper_csr),
+  lower_csr(lower_csr),
+  upper_lsb(upper_lsb) {
+}
+
+void composite_csr_t::verify_permissions(insn_t insn, bool write) const {
+  // It is reasonable to assume that either underlying CSR will have
+  // the same permissions as this composite.
+  upper_csr->verify_permissions(insn, write);
+}
+
+reg_t composite_csr_t::read() const noexcept {
+  return (upper_csr->read() << upper_lsb) | lower_csr->read();
+}
+
+bool composite_csr_t::unlogged_write(const reg_t val) noexcept {
+  upper_csr->write(val >> upper_lsb);
+  lower_csr->write(val);
+  return false;  // logging is done only by the underlying CSRs
+}

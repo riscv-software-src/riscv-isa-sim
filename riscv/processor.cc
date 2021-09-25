@@ -523,6 +523,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   csrmap[CSR_FFLAGS] = fflags = std::make_shared<float_csr_t>(proc, CSR_FFLAGS, FSR_AEXC >> FSR_AEXC_SHIFT, 0);
   csrmap[CSR_FRM] = frm = std::make_shared<float_csr_t>(proc, CSR_FRM, FSR_RD >> FSR_RD_SHIFT, 0);
+  assert(FSR_AEXC_SHIFT == 0);  // composite_csr_t assumes fflags begins at bit 0
+  csrmap[CSR_FCSR] = std::make_shared<composite_csr_t>(proc, CSR_FFLAGS, frm, fflags, FSR_RD_SHIFT);
   serialized = false;
 
 #ifdef RISCV_ENABLE_COMMITLOG
@@ -977,10 +979,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_SENTROPY:
       es.set_sentropy(val);
       break;
-    case CSR_FCSR:
-      state.fflags->write((val & FSR_AEXC) >> FSR_AEXC_SHIFT);
-      state.frm->write((val & FSR_RD) >> FSR_RD_SHIFT);
-      break;
     case CSR_VCSR:
       dirty_vs_state;
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
@@ -1052,11 +1050,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (!write)
         break;
       ret(es.get_sentropy());
-    case CSR_FCSR:
-      require_fp;
-      if (!extension_enabled('F'))
-        break;
-      ret((state.fflags->read() << FSR_AEXC_SHIFT) | (state.frm->read() << FSR_RD_SHIFT));
     case CSR_VCSR:
       require_vector_vs;
       if (!extension_enabled('V'))
