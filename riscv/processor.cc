@@ -978,7 +978,6 @@ void processor_t::set_csr(int which, reg_t val)
       es.set_sentropy(val);
       break;
     case CSR_FCSR:
-      dirty_fp_state;
       state.fflags->write((val & FSR_AEXC) >> FSR_AEXC_SHIFT);
       state.frm->write((val & FSR_RD) >> FSR_RD_SHIFT);
       break;
