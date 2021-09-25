@@ -8,14 +8,12 @@ if (STATE.v) {
 }
 reg_t next_pc = p->get_state()->sepc->read();
 set_pc_and_serialize(next_pc);
-reg_t s = STATE.mstatus->read();
+reg_t s = STATE.sstatus->read();
 reg_t prev_prv = get_field(s, MSTATUS_SPP);
-if (prev_prv != PRV_M)
-  s = set_field(s, MSTATUS_MPRV, 0);
 s = set_field(s, MSTATUS_SIE, get_field(s, MSTATUS_SPIE));
 s = set_field(s, MSTATUS_SPIE, 1);
 s = set_field(s, MSTATUS_SPP, PRV_U);
-STATE.mstatus->write(s);
+STATE.sstatus->write(s);
 p->set_privilege(prev_prv);
 if (!STATE.v) {
   reg_t prev_virt = get_field(prev_hstatus, HSTATUS_SPV);
@@ -23,4 +21,6 @@ if (!STATE.v) {
 
   reg_t new_hstatus = set_field(prev_hstatus, HSTATUS_SPV, 0);
   STATE.hstatus->write(new_hstatus);
+
+  STATE.mstatus->write(set_field(STATE.mstatus->read(), MSTATUS_MPRV, 0));
 }
