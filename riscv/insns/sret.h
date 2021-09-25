@@ -1,6 +1,7 @@
 require_extension('S');
+reg_t prev_hstatus = STATE.hstatus->read();
 if (STATE.v) {
-  if (STATE.prv == PRV_U || get_field(STATE.hstatus->read(), HSTATUS_VTSR))
+  if (STATE.prv == PRV_U || get_field(prev_hstatus, HSTATUS_VTSR))
     require_novirt();
 } else {
   require_privilege(get_field(STATE.mstatus->read(), MSTATUS_TSR) ? PRV_M : PRV_S);
@@ -17,6 +18,9 @@ s = set_field(s, MSTATUS_SPP, PRV_U);
 STATE.sstatus->write(s);
 p->set_privilege(prev_prv);
 if (!STATE.v) {
-  reg_t prev_virt = get_field(STATE.hstatus->read(), HSTATUS_SPV);
+  reg_t prev_virt = get_field(prev_hstatus, HSTATUS_SPV);
   p->set_virt(prev_virt);
+
+  reg_t new_hstatus = set_field(prev_hstatus, HSTATUS_SPV, 0);
+  STATE.hstatus->write(new_hstatus);
 }
