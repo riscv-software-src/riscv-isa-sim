@@ -960,7 +960,7 @@ void processor_t::set_csr(int which, reg_t val)
 {
 #if defined(RISCV_ENABLE_COMMITLOG)
 #define LOG_CSR(rd) \
-  STATE.log_reg_write[((which) << 4) | 4] = {get_csr(rd), 0};
+  STATE.log_reg_write[((rd) << 4) | 4] = {get_csr(rd), 0};
 #else
 #define LOG_CSR(rd)
 #endif
@@ -1021,7 +1021,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_FCSR:
       LOG_CSR(CSR_FFLAGS);
       LOG_CSR(CSR_FRM);
-      LOG_CSR(CSR_FCSR);
       break;
     case CSR_VCSR:
       LOG_CSR(CSR_VXSAT);
