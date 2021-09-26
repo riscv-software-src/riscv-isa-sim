@@ -351,7 +351,37 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MSCRATCH] = std::make_shared<basic_csr_t>(proc, CSR_MSCRATCH, 0);
   csrmap[CSR_MTVEC] = mtvec = std::make_shared<tvec_csr_t>(proc, CSR_MTVEC);
   csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE);
-  minstret = 0;
+  csrmap[CSR_MINSTRET] = minstret = std::make_shared<minstret_csr_t>(proc, CSR_MINSTRET);
+  csrmap[CSR_MCYCLE] = std::make_shared<proxy_csr_t>(proc, CSR_MCYCLE, minstret);
+  csrmap[CSR_INSTRET] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRET, minstret);
+  csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, minstret);
+  if (xlen == 32) {
+    minstreth_csr_t_p minstreth;
+    csrmap[CSR_MINSTRETH] = minstreth = std::make_shared<minstreth_csr_t>(proc, CSR_MINSTRETH, minstret);
+    csrmap[CSR_MCYCLEH] = std::make_shared<proxy_csr_t>(proc, CSR_MCYCLEH, minstreth);
+    csrmap[CSR_INSTRETH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRETH, minstreth);
+    csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, minstreth);
+  }
+  for (reg_t i=3; i<=31; ++i) {
+    const reg_t which_mevent = CSR_MHPMEVENT3 + i - 3;
+    const reg_t which_mcounter = CSR_MHPMCOUNTER3 + i - 3;
+    const reg_t which_mcounterh = CSR_MHPMCOUNTER3H + i - 3;
+    const reg_t which_counter = CSR_HPMCOUNTER3 + i - 3;
+    const reg_t which_counterh = CSR_HPMCOUNTER3H + i - 3;
+    auto mevent = std::make_shared<const_csr_t>(proc, which_mevent, 0);
+    auto mcounter = std::make_shared<const_csr_t>(proc, which_mcounter, 0);
+    auto counter = std::make_shared<counter_proxy_csr_t>(proc, which_counter, mcounter);
+    csrmap[which_mevent] = mevent;
+    csrmap[which_mcounter] = mcounter;
+    csrmap[which_counter] = counter;
+    if (xlen == 32) {
+      auto mcounterh = std::make_shared<const_csr_t>(proc, which_mcounterh, 0);
+      auto counterh = std::make_shared<counter_proxy_csr_t>(proc, which_counterh, mcounterh);
+      csrmap[which_mcounterh] = mcounterh;
+      csrmap[which_counterh] = counterh;
+    }
+  }
+  csrmap[CSR_MCOUNTINHIBIT] = std::make_shared<const_csr_t>(proc, CSR_MCOUNTINHIBIT, 0);
   csrmap[CSR_MIE] = mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
   csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(this,
@@ -949,23 +979,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_MINSTRET:
-    case CSR_MCYCLE:
-      if (xlen == 32)
-        state.minstret = (state.minstret >> 32 << 32) | (val & 0xffffffffU);
-      else
-        state.minstret = val;
-      // The ISA mandates that if an instruction writes instret, the write
-      // takes precedence over the increment to instret.  However, Spike
-      // unconditionally increments instret after executing an instruction.
-      // Correct for this artifact by decrementing instret here.
-      state.minstret--;
-      break;
-    case CSR_MINSTRETH:
-    case CSR_MCYCLEH:
-      state.minstret = (val << 32) | (state.minstret << 32 >> 32);
-      state.minstret--; // See comment above.
-      break;
     case CSR_MTVAL2: state.mtval2 = val; break;
     case CSR_MTINST: state.mtinst = val; break;
     case CSR_HEDELEG: {
@@ -1118,10 +1131,6 @@ void processor_t::set_csr(int which, reg_t val)
       LOG_CSR(CSR_VXRM);
       break;
 
-    case CSR_MINSTRET:
-    case CSR_MCYCLE:
-    case CSR_MINSTRETH:
-    case CSR_MCYCLEH:
     case CSR_TSELECT:
     case CSR_TDATA1:
     case CSR_TDATA2:
@@ -1141,28 +1150,6 @@ void processor_t::set_csr(int which, reg_t val)
 // side effects on reads.
 reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 {
-#define mcounteren_ok(__which) \
-({ \
-  bool __ctr_ok = true; \
-  if (state.prv < PRV_M) \
-    __ctr_ok = (state.mcounteren->read() >> (__which & 31)) & 1;        \
-  __ctr_ok; \
-})
-#define hcounteren_ok(__which) \
-({ \
-  bool __ctr_ok = true; \
-  if (state.v) \
-    __ctr_ok = (state.hcounteren->read() >> (__which & 31)) & 1;        \
-  __ctr_ok; \
-})
-#define scounteren_ok(__which) \
-({ \
-  bool __ctr_ok = true; \
-  if (extension_enabled('S') && state.prv < PRV_S) \
-    __ctr_ok = (state.scounteren->read() >> (__which & 31)) & 1;        \
-  __ctr_ok; \
-})
-
   reg_t res = 0;
 #define ret(n) do { \
     res = (n); \
@@ -1205,59 +1192,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (!extension_enabled('V'))
         break;
       ret((VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT));
-    case CSR_INSTRET:
-    case CSR_CYCLE:
-    case CSR_HPMCOUNTER3 ... CSR_HPMCOUNTER31:
-      if (!mcounteren_ok(which))
-          goto throw_illegal;
-      if (!hcounteren_ok(which))
-          goto throw_virtual;
-      if (!scounteren_ok(which)) {
-        if (state.v)
-          goto throw_virtual;
-        else
-          goto throw_illegal;
-      }
-      if (which == CSR_INSTRET || which == CSR_CYCLE)
-        ret(state.minstret);
-      else
-        ret(0);
-    case CSR_MINSTRET:
-    case CSR_MCYCLE:
-    case CSR_MHPMCOUNTER3 ... CSR_MHPMCOUNTER31:
-    case CSR_MHPMEVENT3 ... CSR_MHPMEVENT31:
-      if (which == CSR_MINSTRET || which == CSR_MCYCLE)
-        ret(state.minstret);
-      else
-        ret(0);
-    case CSR_INSTRETH:
-    case CSR_CYCLEH:
-    case CSR_HPMCOUNTER3H ... CSR_HPMCOUNTER31H:
-      if (!mcounteren_ok(which) || xlen != 32)
-          goto throw_illegal;
-      if (!hcounteren_ok(which))
-          goto throw_virtual;
-      if (!scounteren_ok(which)) {
-        if (state.v)
-          goto throw_virtual;
-        else
-          goto throw_illegal;
-      }
-      if (which == CSR_INSTRETH || which == CSR_CYCLEH)
-        ret(state.minstret >> 32);
-      else
-        ret(0);
-    case CSR_MINSTRETH:
-    case CSR_MCYCLEH:
-    case CSR_MHPMCOUNTER3H ... CSR_MHPMCOUNTER31H:
-      if (xlen == 32) {
-        if (which == CSR_MINSTRETH || which == CSR_MCYCLEH)
-          ret(state.minstret >> 32);
-        else
-          ret(0);
-      }
-      break;
-    case CSR_MCOUNTINHIBIT: ret(0);
     case CSR_MSTATUSH:
       if (xlen == 32)
         ret((state.mstatus->read() >> 32) & (MSTATUSH_SBE | MSTATUSH_MBE));

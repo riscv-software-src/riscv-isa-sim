@@ -38,6 +38,13 @@ class csr_t {
   // Record this CSR update (which has already happened) in the commit log
   void log_write() const noexcept;
 
+  // Record a write to an alternate CSR (e.g. minstreth instead of minstret)
+  void log_special_write(const reg_t address, const reg_t val) const noexcept;
+
+  // What value was written to this reg? Default implementation simply
+  // calls read(), but a few CSRs are special.
+  virtual reg_t written_value() const noexcept;
+
   processor_t* const proc;
   state_t* const state;
  public:
@@ -413,5 +420,72 @@ class virtualized_satp_csr_t: public virtualized_csr_t {
   satp_csr_t_p orig_satp;
 };
 
+
+// For minstret, which is always 64 bits, but in RV32 is split into
+// high and low halves. The first class always holds the full 64-bit
+// value.
+class minstret_csr_t: public csr_t {
+ public:
+  minstret_csr_t(processor_t* const proc, const reg_t addr);
+  // Always returns full 64-bit value
+  virtual reg_t read() const noexcept override;
+  void bump(const reg_t howmuch) noexcept;
+  void write_upper_half(const reg_t val) noexcept;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+  virtual reg_t written_value() const noexcept override;
+ private:
+  reg_t val;
+};
+
+typedef std::shared_ptr<minstret_csr_t> minstret_csr_t_p;
+
+
+// A simple proxy to read/write the upper half of minstret
+class minstreth_csr_t: public csr_t {
+ public:
+  minstreth_csr_t(processor_t* const proc, const reg_t addr, minstret_csr_t_p minstret);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  minstret_csr_t_p minstret;
+};
+
+typedef std::shared_ptr<minstreth_csr_t> minstreth_csr_t_p;
+
+
+// For a CSR that is an alias of another
+class proxy_csr_t: public csr_t {
+ public:
+  proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate);
+  virtual reg_t read() const noexcept override;
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  csr_t_p delegate;
+};
+
+
+// For a CSR with a fixed, unchanging value
+class const_csr_t: public csr_t {
+ public:
+  const_csr_t(processor_t* const proc, const reg_t addr, reg_t val);
+  virtual reg_t read() const noexcept override;
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  const reg_t val;
+};
+
+
+// For a CSR that is an unprivileged accessor of a privileged counter
+class counter_proxy_csr_t: public proxy_csr_t {
+ public:
+  counter_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+ private:
+  bool myenable(csr_t_p counteren) const noexcept;
+};
 
 #endif

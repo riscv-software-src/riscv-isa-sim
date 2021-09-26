@@ -48,9 +48,17 @@ void csr_t::write(const reg_t val) noexcept {
 }
 
 void csr_t::log_write() const noexcept {
+  log_special_write(address, written_value());
+}
+
+void csr_t::log_special_write(const reg_t address, const reg_t val) const noexcept {
 #if defined(RISCV_ENABLE_COMMITLOG)
-  proc->get_state()->log_reg_write[((address) << 4) | 4] = {read(), 0};
+  proc->get_state()->log_reg_write[((address) << 4) | 4] = {val, 0};
 #endif
+}
+
+reg_t csr_t::written_value() const noexcept {
+  return read();
 }
 
 // implement class basic_csr_t
@@ -799,4 +807,116 @@ bool virtualized_satp_csr_t::unlogged_write(const reg_t val) noexcept {
   // If unsupported Mode field: no change to contents
   const reg_t newval = orig_satp->satp_valid(val) ? val : read();
   return virtualized_csr_t::unlogged_write(newval);
+}
+
+
+// implement class minstret_csr_t
+minstret_csr_t::minstret_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr),
+  val(0) {
+}
+
+reg_t minstret_csr_t::read() const noexcept {
+  return val;
+}
+
+void minstret_csr_t::bump(const reg_t howmuch) noexcept {
+  val += howmuch;  // to keep log reasonable size, don't log every bump
+}
+
+bool minstret_csr_t::unlogged_write(const reg_t val) noexcept {
+  if (proc->get_xlen() == 32)
+    this->val = (this->val >> 32 << 32) | (val & 0xffffffffU);
+  else
+    this->val = val;
+  // The ISA mandates that if an instruction writes instret, the write
+  // takes precedence over the increment to instret.  However, Spike
+  // unconditionally increments instret after executing an instruction.
+  // Correct for this artifact by decrementing instret here.
+  this->val--;
+  return true;
+}
+
+reg_t minstret_csr_t::written_value() const noexcept {
+  // Re-adjust for upcoming bump()
+  return this->val + 1;
+}
+
+void minstret_csr_t::write_upper_half(const reg_t val) noexcept {
+  this->val = (val << 32) | (this->val << 32 >> 32);
+  this->val--; // See comment above.
+  // Log upper half only.
+  log_special_write(address + (CSR_MINSTRETH - CSR_MINSTRET), written_value() >> 32);
+}
+
+
+minstreth_csr_t::minstreth_csr_t(processor_t* const proc, const reg_t addr, minstret_csr_t_p minstret):
+  csr_t(proc, addr),
+  minstret(minstret) {
+}
+
+reg_t minstreth_csr_t::read() const noexcept {
+  return minstret->read() >> 32;
+}
+
+bool minstreth_csr_t::unlogged_write(const reg_t val) noexcept {
+  minstret->write_upper_half(val);
+  return true;
+}
+
+
+proxy_csr_t::proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate):
+  csr_t(proc, addr),
+  delegate(delegate) {
+}
+
+reg_t proxy_csr_t::read() const noexcept {
+  return delegate->read();
+}
+
+bool proxy_csr_t::unlogged_write(const reg_t val) noexcept {
+  delegate->write(val);  // log only under the original (delegate's) name
+  return false;
+}
+
+
+const_csr_t::const_csr_t(processor_t* const proc, const reg_t addr, reg_t val):
+  csr_t(proc, addr),
+  val(val) {
+}
+
+reg_t const_csr_t::read() const noexcept {
+  return val;
+}
+
+bool const_csr_t::unlogged_write(const reg_t val) noexcept {
+  return false;
+}
+
+
+counter_proxy_csr_t::counter_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate):
+  proxy_csr_t(proc, addr, delegate) {
+}
+
+bool counter_proxy_csr_t::myenable(csr_t_p counteren) const noexcept {
+  return 1 & (counteren->read() >> (address & 31));
+}
+
+void counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
+  proxy_csr_t::verify_permissions(insn, write);
+
+  const bool mctr_ok = (state->prv < PRV_M) ? myenable(state->mcounteren) : true;
+  const bool hctr_ok = state->v ? myenable(state->hcounteren) : true;
+  const bool sctr_ok = (proc->extension_enabled('S') && state->prv < PRV_S) ? myenable(state->scounteren) : true;
+
+  if (!mctr_ok)
+    throw trap_illegal_instruction(insn.bits());
+  if (!hctr_ok)
+      throw trap_virtual_instruction(insn.bits());
+  if (!sctr_ok) {
+    if (state->v)
+      throw trap_virtual_instruction(insn.bits());
+    else
+      throw trap_illegal_instruction(insn.bits());
+  }
 }
