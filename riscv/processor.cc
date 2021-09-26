@@ -1162,7 +1162,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       ret((VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT));
     case CSR_MSTATUSH:
       if (xlen == 32)
-        ret((state.mstatus->read() >> 32) & (MSTATUSH_SBE | MSTATUSH_MBE));
+        ret((state.mstatus->read() >> 32) & (MSTATUSH_MPV | MSTATUSH_GVA | MSTATUSH_SBE | MSTATUSH_MBE));
       break;
     case CSR_MARCHID: ret(5);
     case CSR_MIMPID: ret(0);
