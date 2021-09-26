@@ -373,20 +373,14 @@ class medeleg_csr_t: public basic_csr_t {
 };
 
 
-class hstatus_csr_t: public basic_csr_t {
+// For CSRs with certain bits hardwired
+class masked_csr_t: public basic_csr_t {
  public:
-  hstatus_csr_t(processor_t* const proc, const reg_t addr);
+  masked_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
-};
-
-
-// Used for mcounteren, scounteren, hcounteren
-class counteren_csr_t: public basic_csr_t {
- public:
-  counteren_csr_t(processor_t* const proc, const reg_t addr);
- protected:
-  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  const reg_t mask;
 };
 
 
@@ -487,5 +481,23 @@ class counter_proxy_csr_t: public proxy_csr_t {
  private:
   bool myenable(csr_t_p counteren) const noexcept;
 };
+
+
+// For machine-level CSRs that only exist with Hypervisor
+class hypervisor_csr_t: public basic_csr_t {
+ public:
+  hypervisor_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+
+class hgatp_csr_t: public basic_csr_t {
+ public:
+  hgatp_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
 
 #endif

@@ -332,6 +332,15 @@ void processor_t::parse_isa_string(const char* str)
   }
 }
 
+static int xlen_to_uxl(int xlen)
+{
+  if (xlen == 32)
+    return 1;
+  if (xlen == 64)
+    return 2;
+  abort();
+}
+
 void state_t::reset(processor_t* const proc, reg_t max_isa)
 {
   pc = DEFAULT_RSTVEC;
@@ -431,9 +440,10 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   csrmap[CSR_MEDELEG] = medeleg = std::make_shared<medeleg_csr_t>(proc, CSR_MEDELEG);
   csrmap[CSR_MIDELEG] = mideleg = std::make_shared<mideleg_csr_t>(proc, CSR_MIDELEG);
-  mcounteren = std::make_shared<counteren_csr_t>(proc, CSR_MCOUNTEREN);
+  const reg_t counteren_mask = 0xffffffffULL;
+  mcounteren = std::make_shared<masked_csr_t>(proc, CSR_MCOUNTEREN, counteren_mask, 0);
   if (proc->extension_enabled_const('U')) csrmap[CSR_MCOUNTEREN] = mcounteren;
-  csrmap[CSR_SCOUNTEREN] = scounteren = std::make_shared<counteren_csr_t>(proc, CSR_SCOUNTEREN);
+  csrmap[CSR_SCOUNTEREN] = scounteren = std::make_shared<masked_csr_t>(proc, CSR_SCOUNTEREN, counteren_mask, 0);
   auto nonvirtual_sepc = std::make_shared<epc_csr_t>(proc, CSR_SEPC);
   csrmap[CSR_VSEPC] = vsepc = std::make_shared<epc_csr_t>(proc, CSR_VSEPC);
   csrmap[CSR_SEPC] = sepc = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sepc, vsepc);
@@ -454,15 +464,34 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   auto nonvirtual_scause = std::make_shared<cause_csr_t>(proc, CSR_SCAUSE);
   csrmap[CSR_VSCAUSE] = vscause = std::make_shared<cause_csr_t>(proc, CSR_VSCAUSE);
   csrmap[CSR_SCAUSE] = scause = std::make_shared<virtualized_csr_t>(proc, nonvirtual_scause, vscause);
-  mtval2 = 0;
-  mtinst = 0;
-  csrmap[CSR_HSTATUS] = hstatus = std::make_shared<hstatus_csr_t>(proc, CSR_HSTATUS);
-  hideleg = 0;
-  hedeleg = 0;
-  csrmap[CSR_HCOUNTEREN] = hcounteren = std::make_shared<counteren_csr_t>(proc, CSR_HCOUNTEREN);
-  htval = 0;
-  htinst = 0;
-  hgatp = 0;
+  csrmap[CSR_MTVAL2] = mtval2 = std::make_shared<hypervisor_csr_t>(proc, CSR_MTVAL2);
+  csrmap[CSR_MTINST] = mtinst = std::make_shared<hypervisor_csr_t>(proc, CSR_MTINST);
+  const reg_t hstatus_init = set_field((reg_t)0, HSTATUS_VSXL, xlen_to_uxl(proc->get_const_xlen()));
+  const reg_t hstatus_mask = HSTATUS_VTSR | HSTATUS_VTW
+    | (proc->supports_impl(IMPL_MMU) ? HSTATUS_VTVM : 0)
+    | HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
+  csrmap[CSR_HSTATUS] = hstatus = std::make_shared<masked_csr_t>(proc, CSR_HSTATUS, hstatus_mask, hstatus_init);
+  csrmap[CSR_HGEIE] = std::make_shared<const_csr_t>(proc, CSR_HGEIE, 0);
+  csrmap[CSR_HGEIP] = std::make_shared<const_csr_t>(proc, CSR_HGEIP, 0);
+  csrmap[CSR_HIDELEG] = hideleg = std::make_shared<masked_csr_t>(proc, CSR_HIDELEG, MIP_VS_MASK, 0);
+  const reg_t hedeleg_mask =
+    (1 << CAUSE_MISALIGNED_FETCH) |
+    (1 << CAUSE_FETCH_ACCESS) |
+    (1 << CAUSE_ILLEGAL_INSTRUCTION) |
+    (1 << CAUSE_BREAKPOINT) |
+    (1 << CAUSE_MISALIGNED_LOAD) |
+    (1 << CAUSE_LOAD_ACCESS) |
+    (1 << CAUSE_MISALIGNED_STORE) |
+    (1 << CAUSE_STORE_ACCESS) |
+    (1 << CAUSE_USER_ECALL) |
+    (1 << CAUSE_FETCH_PAGE_FAULT) |
+    (1 << CAUSE_LOAD_PAGE_FAULT) |
+    (1 << CAUSE_STORE_PAGE_FAULT);
+  csrmap[CSR_HEDELEG] = hedeleg = std::make_shared<masked_csr_t>(proc, CSR_HEDELEG, hedeleg_mask, 0);
+  csrmap[CSR_HCOUNTEREN] = hcounteren = std::make_shared<masked_csr_t>(proc, CSR_HCOUNTEREN, counteren_mask, 0);
+  csrmap[CSR_HTVAL] = htval = std::make_shared<basic_csr_t>(proc, CSR_HTVAL, 0);
+  csrmap[CSR_HTINST] = htinst = std::make_shared<basic_csr_t>(proc, CSR_HTINST, 0);
+  csrmap[CSR_HGATP] = hgatp = std::make_shared<hgatp_csr_t>(proc, CSR_HGATP);
   auto nonvirtual_sstatus = std::make_shared<sstatus_proxy_csr_t>(proc, CSR_SSTATUS, mstatus);
   csrmap[CSR_VSSTATUS] = vsstatus = std::make_shared<vsstatus_csr_t>(proc, CSR_VSSTATUS);
   csrmap[CSR_SSTATUS] = sstatus = std::make_shared<sstatus_csr_t>(proc, nonvirtual_sstatus, vsstatus);
@@ -678,13 +707,13 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
   reg_t enabled_interrupts = pending_interrupts & ~state.mideleg->read() & -m_enabled;
   if (enabled_interrupts == 0) {
     // HS-ints have higher priority over VS-ints
-    const reg_t deleg_to_hs = state.mideleg->read() & ~state.hideleg;
+    const reg_t deleg_to_hs = state.mideleg->read() & ~state.hideleg->read();
     const reg_t sie = get_field(state.sstatus->read(), MSTATUS_SIE);
     const reg_t hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && sie);
     enabled_interrupts = pending_interrupts & deleg_to_hs & -hs_enabled;
     if (state.v && enabled_interrupts == 0) {
       // VS-ints have least priority and can only be taken with virt enabled
-      const reg_t deleg_to_vs = state.mideleg->read() & state.hideleg;
+      const reg_t deleg_to_vs = state.mideleg->read() & state.hideleg->read();
       const reg_t vs_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
       enabled_interrupts = pending_interrupts & deleg_to_vs & -vs_enabled;
     }
@@ -718,15 +747,6 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
 
     throw trap_t(((reg_t)1 << (max_xlen-1)) | ctz(enabled_interrupts));
   }
-}
-
-static int xlen_to_uxl(int xlen)
-{
-  if (xlen == 32)
-    return 1;
-  if (xlen == 64)
-    return 2;
-  abort();
 }
 
 reg_t processor_t::legalize_privilege(reg_t prv)
@@ -825,11 +845,11 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   bool curr_virt = state.v;
   bool interrupt = (bit & ((reg_t)1 << (max_xlen-1))) != 0;
   if (interrupt) {
-    vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.mideleg->read() & state.hideleg) : 0;
+    vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.mideleg->read() & state.hideleg->read()) : 0;
     hsdeleg = (state.prv <= PRV_S) ? state.mideleg->read() : 0;
     bit &= ~((reg_t)1 << (max_xlen-1));
   } else {
-    vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.medeleg->read() & state.hedeleg) : 0;
+    vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.medeleg->read() & state.hedeleg->read()) : 0;
     hsdeleg = (state.prv <= PRV_S) ? state.medeleg->read() : 0;
   }
   if (state.prv <= PRV_S && bit < max_xlen && ((vsdeleg >> bit) & 1)) {
@@ -854,8 +874,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.scause->write(t.cause());
     state.sepc->write(epc);
     state.stval->write(t.get_tval());
-    state.htval = t.get_tval2();
-    state.htinst = t.get_tinst();
+    state.htval->write(t.get_tval2());
+    state.htinst->write(t.get_tinst());
 
     reg_t s = state.sstatus->read();
     s = set_field(s, MSTATUS_SPIE, get_field(s, MSTATUS_SIE));
@@ -879,8 +899,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.mepc->write(epc);
     state.mcause->write(t.cause());
     state.mtval->write(t.get_tval());
-    state.mtval2 = t.get_tval2();
-    state.mtinst = t.get_tinst();
+    state.mtval2->write(t.get_tval2());
+    state.mtinst->write(t.get_tinst());
 
     reg_t s = state.mstatus->read();
     s = set_field(s, MSTATUS_MPIE, get_field(s, MSTATUS_MIE));
@@ -979,58 +999,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_MTVAL2: state.mtval2 = val; break;
-    case CSR_MTINST: state.mtinst = val; break;
-    case CSR_HEDELEG: {
-      reg_t mask =
-        (1 << CAUSE_MISALIGNED_FETCH) |
-        (1 << CAUSE_FETCH_ACCESS) |
-        (1 << CAUSE_ILLEGAL_INSTRUCTION) |
-        (1 << CAUSE_BREAKPOINT) |
-        (1 << CAUSE_MISALIGNED_LOAD) |
-        (1 << CAUSE_LOAD_ACCESS) |
-        (1 << CAUSE_MISALIGNED_STORE) |
-        (1 << CAUSE_STORE_ACCESS) |
-        (1 << CAUSE_USER_ECALL) |
-        (1 << CAUSE_FETCH_PAGE_FAULT) |
-        (1 << CAUSE_LOAD_PAGE_FAULT) |
-        (1 << CAUSE_STORE_PAGE_FAULT);
-      state.hedeleg = (state.hedeleg & ~mask) | (val & mask);
-      break;
-    }
-    case CSR_HIDELEG: {
-      reg_t mask = MIP_VS_MASK;
-      state.hideleg = (state.hideleg & ~mask) | (val & mask);
-      break;
-    }
-    case CSR_HGEIE:
-      /* Ignore */
-      break;
-    case CSR_HTVAL:
-      state.htval = val;
-      break;
-    case CSR_HTINST:
-      state.htinst = val;
-      break;
-    case CSR_HGATP: {
-      mmu->flush_tlb();
-
-      reg_t mask;
-      if (max_xlen == 32) {
-        mask = HGATP32_PPN | HGATP32_MODE;
-      } else {
-        mask = HGATP64_PPN & ((reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1);
-
-        if (get_field(val, HGATP64_MODE) == HGATP_MODE_OFF ||
-            get_field(val, HGATP64_MODE) == HGATP_MODE_SV39X4 ||
-            get_field(val, HGATP64_MODE) == HGATP_MODE_SV48X4)
-          mask |= HGATP64_MODE;
-      }
-      mask &= ~(reg_t)3;
-
-      state.hgatp = val & mask;
-      break;
-    }
     case CSR_TSELECT:
       if (val < state.num_triggers) {
         state.tselect = val;
@@ -1196,29 +1164,10 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (xlen == 32)
         ret((state.mstatus->read() >> 32) & (MSTATUSH_SBE | MSTATUSH_MBE));
       break;
-    case CSR_MTVAL2:
-      if (extension_enabled('H'))
-        ret(state.mtval2);
-      break;
-    case CSR_MTINST:
-      if (extension_enabled('H'))
-        ret(state.mtinst);
-      break;
     case CSR_MARCHID: ret(5);
     case CSR_MIMPID: ret(0);
     case CSR_MVENDORID: ret(0);
     case CSR_MHARTID: ret(id);
-    case CSR_HEDELEG: ret(state.hedeleg);
-    case CSR_HIDELEG: ret(state.hideleg);
-    case CSR_HGEIE: ret(0);
-    case CSR_HTVAL: ret(state.htval);
-    case CSR_HTINST: ret(state.htinst);
-    case CSR_HGATP: {
-      if (!state.v && get_field(state.mstatus->read(), MSTATUS_TVM))
-        require_privilege(PRV_M);
-      ret(state.hgatp);
-    }
-    case CSR_HGEIP: ret(0);
     case CSR_TSELECT: ret(state.tselect);
     case CSR_TDATA1:
       if (state.tselect < state.num_triggers) {

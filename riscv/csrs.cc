@@ -9,6 +9,10 @@
 // For trap_virtual_instruction and trap_illegal_instruction:
 #include "trap.h"
 
+// STATE macro used by require_privilege() macro:
+#undef STATE
+#define STATE (*state)
+
 
 // implement class csr_t
 csr_t::csr_t(processor_t* const proc, const reg_t addr):
@@ -612,7 +616,7 @@ void generic_int_accessor_t::ie_write(const reg_t val) noexcept {
 }
 
 reg_t generic_int_accessor_t::deleg_mask() const {
-  const reg_t hideleg_mask = mask_hideleg ? state->hideleg : (reg_t)~0;
+  const reg_t hideleg_mask = mask_hideleg ? state->hideleg->read() : (reg_t)~0;
   const reg_t mideleg_mask = mask_mideleg ? state->mideleg->read() : (reg_t)~0;
   return hideleg_mask & mideleg_mask;
 }
@@ -710,26 +714,14 @@ bool medeleg_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 
-// implement class hstatus_csr_t
-hstatus_csr_t::hstatus_csr_t(processor_t* const proc, const reg_t addr):
-  basic_csr_t(proc, addr, set_field((reg_t)0, HSTATUS_VSXL, xlen_to_uxl(proc->get_const_xlen()))) {
+// implement class masked_csr_t
+masked_csr_t::masked_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  basic_csr_t(proc, addr, init),
+  mask(mask) {
 }
 
-bool hstatus_csr_t::unlogged_write(const reg_t val) noexcept {
-  const reg_t mask = HSTATUS_VTSR | HSTATUS_VTW
-    | (proc->supports_impl(IMPL_MMU) ? HSTATUS_VTVM : 0)
-    | HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
+bool masked_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
-}
-
-
-// implement class counteren_csr_t
-counteren_csr_t::counteren_csr_t(processor_t* const proc, const reg_t addr):
-  basic_csr_t(proc, addr, 0) {
-}
-
-bool counteren_csr_t::unlogged_write(const reg_t val) noexcept {
-  return basic_csr_t::unlogged_write(val & 0xffffffffULL);
 }
 
 
@@ -919,4 +911,44 @@ void counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
     else
       throw trap_illegal_instruction(insn.bits());
   }
+}
+
+
+hypervisor_csr_t::hypervisor_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, 0) {
+}
+
+void hypervisor_csr_t::verify_permissions(insn_t insn, bool write) const {
+  basic_csr_t::verify_permissions(insn, write);
+  if (!proc->extension_enabled('H'))
+    throw trap_illegal_instruction(insn.bits());
+}
+
+
+hgatp_csr_t::hgatp_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, 0) {
+}
+
+void hgatp_csr_t::verify_permissions(insn_t insn, bool write) const {
+  basic_csr_t::verify_permissions(insn, write);
+  if (!state->v && get_field(state->mstatus->read(), MSTATUS_TVM))
+     require_privilege(PRV_M);
+}
+
+bool hgatp_csr_t::unlogged_write(const reg_t val) noexcept {
+  proc->get_mmu()->flush_tlb();
+
+  reg_t mask;
+  if (proc->get_const_xlen() == 32) {
+    mask = HGATP32_PPN | HGATP32_MODE;
+  } else {
+    mask = HGATP64_PPN & ((reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1);
+
+    if (get_field(val, HGATP64_MODE) == HGATP_MODE_OFF ||
+        get_field(val, HGATP64_MODE) == HGATP_MODE_SV39X4 ||
+        get_field(val, HGATP64_MODE) == HGATP_MODE_SV48X4)
+      mask |= HGATP64_MODE;
+  }
+  mask &= ~(reg_t)3;
+  return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
 }
