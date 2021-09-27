@@ -952,3 +952,152 @@ bool hgatp_csr_t::unlogged_write(const reg_t val) noexcept {
   mask &= ~(reg_t)3;
   return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
 }
+
+
+tselect_csr_t::tselect_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, 0) {
+}
+
+bool tselect_csr_t::unlogged_write(const reg_t val) noexcept {
+  return basic_csr_t::unlogged_write((val < state->num_triggers) ? val : read());
+}
+
+
+tdata1_csr_t::tdata1_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+reg_t tdata1_csr_t::read() const noexcept {
+  reg_t v = 0;
+  auto xlen = proc->get_xlen();
+  mcontrol_t *mc = &state->mcontrol[state->tselect->read()];
+  v = set_field(v, MCONTROL_TYPE(xlen), mc->type);
+  v = set_field(v, MCONTROL_DMODE(xlen), mc->dmode);
+  v = set_field(v, MCONTROL_MASKMAX(xlen), mc->maskmax);
+  v = set_field(v, MCONTROL_SELECT, mc->select);
+  v = set_field(v, MCONTROL_TIMING, mc->timing);
+  v = set_field(v, MCONTROL_ACTION, mc->action);
+  v = set_field(v, MCONTROL_CHAIN, mc->chain);
+  v = set_field(v, MCONTROL_MATCH, mc->match);
+  v = set_field(v, MCONTROL_M, mc->m);
+  v = set_field(v, MCONTROL_H, mc->h);
+  v = set_field(v, MCONTROL_S, mc->s);
+  v = set_field(v, MCONTROL_U, mc->u);
+  v = set_field(v, MCONTROL_EXECUTE, mc->execute);
+  v = set_field(v, MCONTROL_STORE, mc->store);
+  v = set_field(v, MCONTROL_LOAD, mc->load);
+  return v;
+}
+
+bool tdata1_csr_t::unlogged_write(const reg_t val) noexcept {
+  mcontrol_t *mc = &state->mcontrol[state->tselect->read()];
+  if (mc->dmode && !state->debug_mode) {
+    return false;
+  }
+  auto xlen = proc->get_xlen();
+  mc->dmode = get_field(val, MCONTROL_DMODE(xlen));
+  mc->select = get_field(val, MCONTROL_SELECT);
+  mc->timing = get_field(val, MCONTROL_TIMING);
+  mc->action = (mcontrol_action_t) get_field(val, MCONTROL_ACTION);
+  mc->chain = get_field(val, MCONTROL_CHAIN);
+  mc->match = (mcontrol_match_t) get_field(val, MCONTROL_MATCH);
+  mc->m = get_field(val, MCONTROL_M);
+  mc->h = get_field(val, MCONTROL_H);
+  mc->s = get_field(val, MCONTROL_S);
+  mc->u = get_field(val, MCONTROL_U);
+  mc->execute = get_field(val, MCONTROL_EXECUTE);
+  mc->store = get_field(val, MCONTROL_STORE);
+  mc->load = get_field(val, MCONTROL_LOAD);
+  // Assume we're here because of csrw.
+  if (mc->execute)
+    mc->timing = 0;
+  proc->trigger_updated();
+  return true;
+}
+
+
+tdata2_csr_t::tdata2_csr_t(processor_t* const proc, const reg_t addr, const size_t count):
+  csr_t(proc, addr),
+  vals(count, 0) {
+}
+
+reg_t tdata2_csr_t::read() const noexcept {
+  return read(state->tselect->read());
+}
+
+reg_t tdata2_csr_t::read(const size_t idx) const noexcept {
+  return vals[idx];
+}
+
+bool tdata2_csr_t::unlogged_write(const reg_t val) noexcept {
+  if (state->mcontrol[state->tselect->read()].dmode && !state->debug_mode) {
+    return false;
+  }
+  vals[state->tselect->read()] = val;
+  return true;
+}
+
+
+debug_mode_csr_t::debug_mode_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, 0) {
+}
+
+void debug_mode_csr_t::verify_permissions(insn_t insn, bool write) const {
+  basic_csr_t::verify_permissions(insn, write);
+  if (!state->debug_mode)
+    throw trap_illegal_instruction(insn.bits());
+}
+
+dpc_csr_t::dpc_csr_t(processor_t* const proc, const reg_t addr):
+  epc_csr_t(proc, addr) {
+}
+
+void dpc_csr_t::verify_permissions(insn_t insn, bool write) const {
+  epc_csr_t::verify_permissions(insn, write);
+  if (!state->debug_mode)
+    throw trap_illegal_instruction(insn.bits());
+}
+
+
+dcsr_csr_t::dcsr_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+void dcsr_csr_t::verify_permissions(insn_t insn, bool write) const {
+  csr_t::verify_permissions(insn, write);
+  if (!state->debug_mode)
+    throw trap_illegal_instruction(insn.bits());
+}
+
+reg_t dcsr_csr_t::read() const noexcept {
+  uint32_t v = 0;
+  v = set_field(v, DCSR_XDEBUGVER, 1);
+  v = set_field(v, DCSR_EBREAKM, ebreakm);
+  v = set_field(v, DCSR_EBREAKH, ebreakh);
+  v = set_field(v, DCSR_EBREAKS, ebreaks);
+  v = set_field(v, DCSR_EBREAKU, ebreaku);
+  v = set_field(v, DCSR_STOPCYCLE, 0);
+  v = set_field(v, DCSR_STOPTIME, 0);
+  v = set_field(v, DCSR_CAUSE, cause);
+  v = set_field(v, DCSR_STEP, step);
+  v = set_field(v, DCSR_PRV, prv);
+  return v;
+}
+
+bool dcsr_csr_t::unlogged_write(const reg_t val) noexcept {
+  prv = get_field(val, DCSR_PRV);
+  step = get_field(val, DCSR_STEP);
+  // TODO: ndreset and fullreset
+  ebreakm = get_field(val, DCSR_EBREAKM);
+  ebreakh = get_field(val, DCSR_EBREAKH);
+  ebreaks = get_field(val, DCSR_EBREAKS);
+  ebreaku = get_field(val, DCSR_EBREAKU);
+  halt = get_field(val, DCSR_HALT);
+  return true;
+}
+
+void dcsr_csr_t::write_cause_and_prv(uint8_t cause, reg_t prv) noexcept {
+  this->cause = cause;
+  this->prv = prv;
+  log_write();
+}

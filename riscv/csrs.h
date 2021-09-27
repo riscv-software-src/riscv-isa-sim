@@ -500,4 +500,68 @@ class hgatp_csr_t: public basic_csr_t {
 };
 
 
+class tselect_csr_t: public basic_csr_t {
+ public:
+  tselect_csr_t(processor_t* const proc, const reg_t addr);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+
+class tdata1_csr_t: public csr_t {
+ public:
+  tdata1_csr_t(processor_t* const proc, const reg_t addr);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class tdata2_csr_t: public csr_t {
+ public:
+  tdata2_csr_t(processor_t* const proc, const reg_t addr, const size_t count);
+  virtual reg_t read() const noexcept override;
+  reg_t read(const size_t idx) const noexcept;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  std::vector<reg_t> vals;
+};
+
+// For CSRs that are only writable from debug mode
+class debug_mode_csr_t: public basic_csr_t {
+ public:
+  debug_mode_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+typedef std::shared_ptr<tdata2_csr_t> tdata2_csr_t_p;
+
+
+class dpc_csr_t: public epc_csr_t {
+ public:
+  dpc_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class dcsr_csr_t: public csr_t {
+ public:
+  dcsr_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  virtual reg_t read() const noexcept override;
+  void write_cause_and_prv(uint8_t cause, reg_t prv) noexcept;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ public:
+  uint8_t prv;
+  bool step;
+  bool ebreakm;
+  bool ebreakh;
+  bool ebreaks;
+  bool ebreaku;
+  bool halt;
+  uint8_t cause;
+};
+
+typedef std::shared_ptr<dcsr_csr_t> dcsr_csr_t_p;
+
 #endif

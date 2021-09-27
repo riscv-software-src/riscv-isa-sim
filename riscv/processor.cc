@@ -496,17 +496,19 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_VSSTATUS] = vsstatus = std::make_shared<vsstatus_csr_t>(proc, CSR_VSSTATUS);
   csrmap[CSR_SSTATUS] = sstatus = std::make_shared<sstatus_csr_t>(proc, nonvirtual_sstatus, vsstatus);
 
-  dpc = 0;
-  dscratch0 = 0;
-  dscratch1 = 0;
-  memset(&this->dcsr, 0, sizeof(this->dcsr));
+  csrmap[CSR_DPC] = dpc = std::make_shared<dpc_csr_t>(proc, CSR_DPC);
+  csrmap[CSR_DSCRATCH0] = std::make_shared<debug_mode_csr_t>(proc, CSR_DSCRATCH0);
+  csrmap[CSR_DSCRATCH1] = std::make_shared<debug_mode_csr_t>(proc, CSR_DSCRATCH1);
+  csrmap[CSR_DCSR] = dcsr = std::make_shared<dcsr_csr_t>(proc, CSR_DCSR);
 
-  tselect = 0;
+  csrmap[CSR_TSELECT] = tselect = std::make_shared<tselect_csr_t>(proc, CSR_TSELECT);
   memset(this->mcontrol, 0, sizeof(this->mcontrol));
   for (auto &item : mcontrol)
     item.type = 2;
 
-  memset(this->tdata2, 0, sizeof(this->tdata2));
+  csrmap[CSR_TDATA1] = std::make_shared<tdata1_csr_t>(proc, CSR_TDATA1);
+  csrmap[CSR_TDATA2] = tdata2 = std::make_shared<tdata2_csr_t>(proc, CSR_TDATA2, num_triggers);
+  csrmap[CSR_TDATA3] = std::make_shared<const_csr_t>(proc, CSR_TDATA3, 0);
   debug_mode = false;
   single_step = STEP_NONE;
 
@@ -611,7 +613,7 @@ void processor_t::reset()
 {
   xlen = max_xlen;
   state.reset(this, max_isa);
-  state.dcsr.halt = halt_on_reset;
+  state.dcsr->halt = halt_on_reset;
   halt_on_reset = false;
   VU.reset();
 
@@ -791,10 +793,9 @@ void processor_t::set_virt(bool virt)
 void processor_t::enter_debug_mode(uint8_t cause)
 {
   state.debug_mode = true;
-  state.dcsr.cause = cause;
-  state.dcsr.prv = state.prv;
+  state.dcsr->write_cause_and_prv(cause, state.prv);
   set_privilege(PRV_M);
-  state.dpc = state.pc;
+  state.dpc->write(state.pc);
   state.pc = DEBUG_ROM_ENTRY;
 }
 
@@ -832,9 +833,9 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   }
 
   if (t.cause() == CAUSE_BREAKPOINT && (
-              (state.prv == PRV_M && state.dcsr.ebreakm) ||
-              (state.prv == PRV_S && state.dcsr.ebreaks) ||
-              (state.prv == PRV_U && state.dcsr.ebreaku))) {
+              (state.prv == PRV_M && state.dcsr->ebreakm) ||
+              (state.prv == PRV_S && state.dcsr->ebreaks) ||
+              (state.prv == PRV_U && state.dcsr->ebreaku))) {
     enter_debug_mode(DCSR_CAUSE_SWBP);
     return;
   }
@@ -964,12 +965,6 @@ void processor_t::set_csr(int which, reg_t val)
 #endif
 
   val = zext_xlen(val);
-  reg_t supervisor_ints = extension_enabled('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
-  reg_t vssip_int = extension_enabled('H') ? MIP_VSSIP : 0;
-  reg_t hypervisor_ints = extension_enabled('H') ? MIP_HS_MASK : 0;
-  reg_t coprocessor_ints = (reg_t)any_custom_extensions() << IRQ_COP;
-  reg_t delegable_ints = supervisor_ints | coprocessor_ints;
-  reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP | MIP_MEIP;
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
     search->second->write(val);
@@ -998,63 +993,6 @@ void processor_t::set_csr(int which, reg_t val)
       dirty_vs_state;
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
-      break;
-    case CSR_TSELECT:
-      if (val < state.num_triggers) {
-        state.tselect = val;
-      }
-      break;
-    case CSR_TDATA1:
-      {
-        mcontrol_t *mc = &state.mcontrol[state.tselect];
-        if (mc->dmode && !state.debug_mode) {
-          break;
-        }
-        mc->dmode = get_field(val, MCONTROL_DMODE(xlen));
-        mc->select = get_field(val, MCONTROL_SELECT);
-        mc->timing = get_field(val, MCONTROL_TIMING);
-        mc->action = (mcontrol_action_t) get_field(val, MCONTROL_ACTION);
-        mc->chain = get_field(val, MCONTROL_CHAIN);
-        mc->match = (mcontrol_match_t) get_field(val, MCONTROL_MATCH);
-        mc->m = get_field(val, MCONTROL_M);
-        mc->h = get_field(val, MCONTROL_H);
-        mc->s = get_field(val, MCONTROL_S);
-        mc->u = get_field(val, MCONTROL_U);
-        mc->execute = get_field(val, MCONTROL_EXECUTE);
-        mc->store = get_field(val, MCONTROL_STORE);
-        mc->load = get_field(val, MCONTROL_LOAD);
-        // Assume we're here because of csrw.
-        if (mc->execute)
-          mc->timing = 0;
-        trigger_updated();
-      }
-      break;
-    case CSR_TDATA2:
-      if (state.mcontrol[state.tselect].dmode && !state.debug_mode) {
-        break;
-      }
-      if (state.tselect < state.num_triggers) {
-        state.tdata2[state.tselect] = val;
-      }
-      break;
-    case CSR_DCSR:
-      state.dcsr.prv = get_field(val, DCSR_PRV);
-      state.dcsr.step = get_field(val, DCSR_STEP);
-      // TODO: ndreset and fullreset
-      state.dcsr.ebreakm = get_field(val, DCSR_EBREAKM);
-      state.dcsr.ebreakh = get_field(val, DCSR_EBREAKH);
-      state.dcsr.ebreaks = get_field(val, DCSR_EBREAKS);
-      state.dcsr.ebreaku = get_field(val, DCSR_EBREAKU);
-      state.dcsr.halt = get_field(val, DCSR_HALT);
-      break;
-    case CSR_DPC:
-      state.dpc = val & ~(reg_t)1;
-      break;
-    case CSR_DSCRATCH0:
-      state.dscratch0 = val;
-      break;
-    case CSR_DSCRATCH1:
-      state.dscratch1 = val;
       break;
     case CSR_VSTART:
       dirty_vs_state;
@@ -1099,13 +1037,6 @@ void processor_t::set_csr(int which, reg_t val)
       LOG_CSR(CSR_VXRM);
       break;
 
-    case CSR_TSELECT:
-    case CSR_TDATA1:
-    case CSR_TDATA2:
-    case CSR_DCSR:
-    case CSR_DPC:
-    case CSR_DSCRATCH0:
-    case CSR_DSCRATCH1:
     case CSR_SENTROPY:
       LOG_CSR(which);
       break;
@@ -1168,68 +1099,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     case CSR_MIMPID: ret(0);
     case CSR_MVENDORID: ret(0);
     case CSR_MHARTID: ret(id);
-    case CSR_TSELECT: ret(state.tselect);
-    case CSR_TDATA1:
-      if (state.tselect < state.num_triggers) {
-        reg_t v = 0;
-        mcontrol_t *mc = &state.mcontrol[state.tselect];
-        v = set_field(v, MCONTROL_TYPE(xlen), mc->type);
-        v = set_field(v, MCONTROL_DMODE(xlen), mc->dmode);
-        v = set_field(v, MCONTROL_MASKMAX(xlen), mc->maskmax);
-        v = set_field(v, MCONTROL_SELECT, mc->select);
-        v = set_field(v, MCONTROL_TIMING, mc->timing);
-        v = set_field(v, MCONTROL_ACTION, mc->action);
-        v = set_field(v, MCONTROL_CHAIN, mc->chain);
-        v = set_field(v, MCONTROL_MATCH, mc->match);
-        v = set_field(v, MCONTROL_M, mc->m);
-        v = set_field(v, MCONTROL_H, mc->h);
-        v = set_field(v, MCONTROL_S, mc->s);
-        v = set_field(v, MCONTROL_U, mc->u);
-        v = set_field(v, MCONTROL_EXECUTE, mc->execute);
-        v = set_field(v, MCONTROL_STORE, mc->store);
-        v = set_field(v, MCONTROL_LOAD, mc->load);
-        ret(v);
-      } else {
-        ret(0);
-      }
-      break;
-    case CSR_TDATA2:
-      if (state.tselect < state.num_triggers) {
-        ret(state.tdata2[state.tselect]);
-      } else {
-        ret(0);
-      }
-      break;
-    case CSR_TDATA3: ret(0);
-    case CSR_DCSR:
-      {
-        if (!state.debug_mode)
-          break;
-        uint32_t v = 0;
-        v = set_field(v, DCSR_XDEBUGVER, 1);
-        v = set_field(v, DCSR_EBREAKM, state.dcsr.ebreakm);
-        v = set_field(v, DCSR_EBREAKH, state.dcsr.ebreakh);
-        v = set_field(v, DCSR_EBREAKS, state.dcsr.ebreaks);
-        v = set_field(v, DCSR_EBREAKU, state.dcsr.ebreaku);
-        v = set_field(v, DCSR_STOPCYCLE, 0);
-        v = set_field(v, DCSR_STOPTIME, 0);
-        v = set_field(v, DCSR_CAUSE, state.dcsr.cause);
-        v = set_field(v, DCSR_STEP, state.dcsr.step);
-        v = set_field(v, DCSR_PRV, state.dcsr.prv);
-        ret(v);
-      }
-    case CSR_DPC:
-      if (!state.debug_mode)
-        break;
-      ret(state.dpc & pc_alignment_mask());
-    case CSR_DSCRATCH0:
-      if (!state.debug_mode)
-        break;
-      ret(state.dscratch0);
-    case CSR_DSCRATCH1:
-      if (!state.debug_mode)
-        break;
-      ret(state.dscratch1);
     case CSR_VSTART:
       require_vector_vs;
       if (!extension_enabled('V'))
