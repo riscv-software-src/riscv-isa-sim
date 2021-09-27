@@ -225,6 +225,7 @@ class mstatus_csr_t: public base_status_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
   reg_t val;
+  friend class mstatush_csr_t;
 };
 
 typedef std::shared_ptr<mstatus_csr_t> mstatus_csr_t_p;

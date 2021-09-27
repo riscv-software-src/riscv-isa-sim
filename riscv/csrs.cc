@@ -454,7 +454,7 @@ reg_t mstatush_csr_t::read() const noexcept {
 }
 
 bool mstatush_csr_t::unlogged_write(const reg_t val) noexcept {
-  return true;  // recreate bug #812; fix coming soon
+  return mstatus->unlogged_write((mstatus->written_value() & ~(mask << 32)) | ((val & mask) << 32));
 }
 
 // implement class sstatus_csr_t
