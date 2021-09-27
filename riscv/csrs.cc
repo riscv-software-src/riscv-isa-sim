@@ -442,6 +442,21 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   return true;
 }
 
+// implement class mstatush_csr_t
+mstatush_csr_t::mstatush_csr_t(processor_t* const proc, const reg_t addr, mstatus_csr_t_p mstatus):
+  csr_t(proc, addr),
+  mstatus(mstatus),
+  mask(MSTATUSH_MPV | MSTATUSH_GVA | MSTATUSH_SBE | MSTATUSH_MBE) {
+}
+
+reg_t mstatush_csr_t::read() const noexcept {
+  return (mstatus->read() >> 32) & mask;
+}
+
+bool mstatush_csr_t::unlogged_write(const reg_t val) noexcept {
+  return true;  // recreate bug #812; fix coming soon
+}
+
 // implement class sstatus_csr_t
 sstatus_csr_t::sstatus_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
   virtualized_csr_t(proc, orig, virt) {

@@ -230,6 +230,18 @@ class mstatus_csr_t: public base_status_csr_t {
 typedef std::shared_ptr<mstatus_csr_t> mstatus_csr_t_p;
 
 
+class mstatush_csr_t: public csr_t {
+ public:
+  mstatush_csr_t(processor_t* const proc, const reg_t addr, mstatus_csr_t_p mstatus);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  mstatus_csr_t_p mstatus;
+  const reg_t mask;
+};
+
+
 class sstatus_csr_t: public virtualized_csr_t {
  public:
   sstatus_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
