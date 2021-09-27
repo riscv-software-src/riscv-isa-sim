@@ -127,7 +127,7 @@ void processor_t::parse_varch_string(const char* s)
   size_t len = str.length();
   int vlen = 0;
   int elen = 0;
-  int vstart_alu = 1;
+  int vstart_alu = 0;
 
   while (pos < len) {
     std::string attr = get_string_token(str, ':', pos);
