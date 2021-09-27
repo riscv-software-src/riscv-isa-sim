@@ -127,7 +127,6 @@ void processor_t::parse_varch_string(const char* s)
   size_t len = str.length();
   int vlen = 0;
   int elen = 0;
-  int slen = 0;
   int vstart_alu = 1;
 
   while (pos < len) {
@@ -137,8 +136,6 @@ void processor_t::parse_varch_string(const char* s)
 
     if (attr == "vlen")
       vlen = get_int_token(str, ',', pos);
-    else if (attr == "slen")
-      slen = get_int_token(str, ',', pos);
     else if (attr == "elen")
       elen = get_int_token(str, ',', pos);
     else if (attr == "vstartalu")
@@ -150,18 +147,13 @@ void processor_t::parse_varch_string(const char* s)
   }
 
   // The integer should be the power of 2
-  if (!check_pow2(vlen) || !check_pow2(elen) || !check_pow2(slen)){
+  if (!check_pow2(vlen) || !check_pow2(elen)){
     bad_varch_string(s, "The integer value should be the power of 2");
   }
-
-  if (slen == 0)
-    slen = vlen;
 
   /* Vector spec requirements. */
   if (vlen < elen)
     bad_varch_string(s, "vlen must be >= elen");
-  if (vlen != slen)
-    bad_varch_string(s, "vlen must be == slen for current limitation");
 
   /* spike requirements. */
   if (vlen > 4096)
