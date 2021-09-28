@@ -525,6 +525,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_FRM] = frm = std::make_shared<float_csr_t>(proc, CSR_FRM, FSR_RD >> FSR_RD_SHIFT, 0);
   assert(FSR_AEXC_SHIFT == 0);  // composite_csr_t assumes fflags begins at bit 0
   csrmap[CSR_FCSR] = std::make_shared<composite_csr_t>(proc, CSR_FFLAGS, frm, fflags, FSR_RD_SHIFT);
+
+  csrmap[CSR_SENTROPY] = std::make_shared<sentropy_csr_t>(proc, CSR_SENTROPY);
+
   serialized = false;
 
 #ifdef RISCV_ENABLE_COMMITLOG
@@ -976,9 +979,6 @@ void processor_t::set_csr(int which, reg_t val)
 
   switch (which)
   {
-    case CSR_SENTROPY:
-      es.set_sentropy(val);
-      break;
     case CSR_VCSR:
       dirty_vs_state;
       VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
@@ -1015,10 +1015,6 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_VXRM:
       LOG_CSR(CSR_VXRM);
       break;
-
-    case CSR_SENTROPY:
-      LOG_CSR(which);
-      break;
   }
 #endif
 }
@@ -1043,13 +1039,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 
   switch (which)
   {
-    case CSR_SENTROPY:
-      if (!extension_enabled(EXT_ZKR))
-        break;
-      /* Read-only access disallowed due to wipe-on-read side effect */
-      if (!write && !peek)
-        break;
-      ret(es.get_sentropy());
     case CSR_VCSR:
       require_vector_vs;
       if (!extension_enabled('V'))
