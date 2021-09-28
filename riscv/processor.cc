@@ -1047,7 +1047,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (!extension_enabled(EXT_ZKR))
         break;
       /* Read-only access disallowed due to wipe-on-read side effect */
-      if (!write)
+      if (!write && !peek)
         break;
       ret(es.get_sentropy());
     case CSR_VCSR:
