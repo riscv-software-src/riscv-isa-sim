@@ -199,8 +199,8 @@ struct state_t
   static const int max_pmp = 16;
   pmpaddr_csr_t_p pmpaddr[max_pmp];
 
-  uint32_t fflags;
-  uint32_t frm;
+  csr_t_p fflags;
+  csr_t_p frm;
   bool serialized; // whether timer CSRs are in a well-defined state
 
   // When true, execute a single instruction and then enter debug mode.  This

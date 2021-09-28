@@ -234,7 +234,7 @@ private:
 #define BRANCH_TARGET (pc + insn.sb_imm())
 #define JUMP_TARGET (pc + insn.uj_imm())
 #define RM ({ int rm = insn.rm(); \
-              if(rm == 7) rm = STATE.frm; \
+              if(rm == 7) rm = STATE.frm->read(); \
               if(rm > 4) throw trap_illegal_instruction(insn.bits()); \
               rm; })
 
@@ -280,8 +280,7 @@ private:
 #define require_vm do { if (insn.v_vm() == 0) require(insn.rd() != 0);} while(0);
 
 #define set_fp_exceptions ({ if (softfloat_exceptionFlags) { \
-                               dirty_fp_state; \
-                               STATE.fflags |= softfloat_exceptionFlags; \
+                               STATE.fflags->write(STATE.fflags->read() | softfloat_exceptionFlags); \
                              } \
                              softfloat_exceptionFlags = 0; })
 
@@ -1848,12 +1847,12 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
           (P.VU.vsew == e32 && p->extension_enabled('F')) || \
           (P.VU.vsew == e64 && p->extension_enabled('D'))); \
   require_vector(true);\
-  require(STATE.frm < 0x5);\
+  require(STATE.frm->read() < 0x5);\
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  softfloat_roundingMode = STATE.frm;
+  softfloat_roundingMode = STATE.frm->read();
 
 #define VI_VFP_LOOP_BASE \
   VI_VFP_COMMON \
@@ -2264,12 +2263,12 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   require((P.VU.vsew == e8 && p->extension_enabled(EXT_ZFH)) || \
           (P.VU.vsew == e16 && p->extension_enabled('F')) || \
           (P.VU.vsew == e32 && p->extension_enabled('D'))); \
-  require(STATE.frm < 0x5);\
+  require(STATE.frm->read() < 0x5);\
   reg_t vl = P.VU.vl; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  softfloat_roundingMode = STATE.frm; \
+  softfloat_roundingMode = STATE.frm->read(); \
   for (reg_t i=P.VU.vstart; i<vl; ++i){ \
     VI_LOOP_ELEMENT_SKIP();
 
