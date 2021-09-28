@@ -529,6 +529,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_SENTROPY] = std::make_shared<sentropy_csr_t>(proc, CSR_SENTROPY);
 
   csrmap[CSR_MARCHID] = std::make_shared<const_csr_t>(proc, CSR_MARCHID, 5);
+  csrmap[CSR_MIMPID] = std::make_shared<const_csr_t>(proc, CSR_MIMPID, 0);
 
   serialized = false;
 
@@ -1046,7 +1047,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (!extension_enabled('V'))
         break;
       ret((VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT));
-    case CSR_MIMPID: ret(0);
     case CSR_MVENDORID: ret(0);
     case CSR_MHARTID: ret(id);
     case CSR_VSTART:
