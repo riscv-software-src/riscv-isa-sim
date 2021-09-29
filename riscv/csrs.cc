@@ -1185,3 +1185,23 @@ bool sentropy_csr_t::unlogged_write(const reg_t val) noexcept {
   proc->es.set_sentropy(val);
   return true;
 }
+
+
+
+vector_csr_t::vector_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask):
+  basic_csr_t(proc, addr, 0),
+  mask(mask) {
+}
+
+void vector_csr_t::verify_permissions(insn_t insn, bool write) const {
+  require_vector_vs;
+  if (!proc->extension_enabled('V'))
+    throw trap_illegal_instruction(insn.bits());
+  basic_csr_t::verify_permissions(insn, write);
+}
+
+bool vector_csr_t::unlogged_write(const reg_t val) noexcept {
+  if (mask == 0) return false;
+  dirty_vs_state;
+  return basic_csr_t::unlogged_write(val & mask);
+}

@@ -511,7 +511,8 @@ public:
       char reg_referenced[NVPR];
       int setvl_count;
       reg_t vlmax;
-      reg_t vstart, vxrm, vxsat, vl, vtype, vlenb;
+      reg_t vstart, vxrm, vl, vtype, vlenb;
+      csr_t_p vxsat;
       reg_t vma, vta;
       reg_t vsew;
       float vflmul;
@@ -554,10 +555,10 @@ public:
         vlmax(0),
         vstart(0),
         vxrm(0),
-        vxsat(0),
         vl(0),
         vtype(0),
         vlenb(0),
+        vxsat(0),
         vma(0),
         vta(0),
         vsew(0),

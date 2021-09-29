@@ -2347,7 +2347,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
   }
 
 #define P_SET_OV(ov) \
-  P.VU.vxsat |= ov;
+  P.VU.vxsat->write(P.VU.vxsat->read() | ov);
 
 #define P_SAT(R, BIT) \
   if (R > INT##BIT##_MAX) { \
