@@ -614,7 +614,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define VI_GENERAL_LOOP_BASE \
   require(P.VU.vsew >= e8 && P.VU.vsew <= e64); \
   require_vector(true);\
-  reg_t vl = P.VU.vl; \
+  reg_t vl = P.VU.vl->read();                   \
   reg_t sew = P.VU.vsew; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -639,7 +639,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define VI_LOOP_CMP_BASE \
   require(P.VU.vsew >= e8 && P.VU.vsew <= e64); \
   require_vector(true);\
-  reg_t vl = P.VU.vl; \
+  reg_t vl = P.VU.vl->read();                   \
   reg_t sew = P.VU.vsew; \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
@@ -658,7 +658,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define VI_LOOP_MASK(op) \
   require(P.VU.vsew <= e64); \
   require_vector(true);\
-  reg_t vl = P.VU.vl; \
+  reg_t vl = P.VU.vl->read();                        \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     int midx = i / 64; \
     int mpos = i % 64; \
@@ -949,7 +949,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 // reduction loop - signed
 #define VI_LOOP_REDUCTION_BASE(x) \
   require(x >= e8 && x <= e64); \
-  reg_t vl = P.VU.vl; \
+  reg_t vl = P.VU.vl->read();   \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
@@ -980,7 +980,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 // reduction loop - unsgied
 #define VI_ULOOP_REDUCTION_BASE(x) \
   require(x >= e8 && x <= e64); \
-  reg_t vl = P.VU.vl; \
+  reg_t vl = P.VU.vl->read();   \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
@@ -1299,7 +1299,7 @@ VI_LOOP_END
 
 // wide reduction loop - signed
 #define VI_LOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
-  reg_t vl = P.VU.vl; \
+  reg_t vl = P.VU.vl->read();                   \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
@@ -1327,7 +1327,7 @@ VI_LOOP_END
 
 // wide reduction loop - unsigned
 #define VI_ULOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
-  reg_t vl = P.VU.vl; \
+  reg_t vl = P.VU.vl->read();                    \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
@@ -1521,7 +1521,7 @@ VI_LOOP_END
 
 #define VI_DUPLICATE_VREG(reg_num, idx_sew) \
 reg_t index[P.VU.vlmax]; \
-for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
+ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl->read() != 0; ++i) {       \
   switch(idx_sew) { \
     case e8: \
       index[i] = P.VU.elt<uint8_t>(reg_num, i); \
@@ -1540,7 +1540,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_LD(stride, offset, elt_width, is_mask_ldst) \
   const reg_t nf = insn.v_nf() + 1; \
-  const reg_t vl = is_mask_ldst ? ((P.VU.vl + 7) / 8) : P.VU.vl; \
+  const reg_t vl = is_mask_ldst ? ((P.VU.vl->read() + 7) / 8) : P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
   VI_CHECK_LOAD(elt_width, is_mask_ldst); \
@@ -1558,7 +1558,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_LD_INDEX(elt_width, is_seg) \
   const reg_t nf = insn.v_nf() + 1; \
-  const reg_t vl = P.VU.vl; \
+  const reg_t vl = P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
   if (!is_seg) \
@@ -1594,7 +1594,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_ST(stride, offset, elt_width, is_mask_ldst) \
   const reg_t nf = insn.v_nf() + 1; \
-  const reg_t vl = is_mask_ldst ? ((P.VU.vl + 7) / 8) : P.VU.vl; \
+  const reg_t vl = is_mask_ldst ? ((P.VU.vl->read() + 7) / 8) : P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
   VI_CHECK_STORE(elt_width, is_mask_ldst); \
@@ -1612,7 +1612,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 
 #define VI_ST_INDEX(elt_width, is_seg) \
   const reg_t nf = insn.v_nf() + 1; \
-  const reg_t vl = P.VU.vl; \
+  const reg_t vl = P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
   if (!is_seg) \
@@ -1649,7 +1649,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
 #define VI_LDST_FF(elt_width) \
   const reg_t nf = insn.v_nf() + 1; \
   const reg_t sew = p->VU.vsew; \
-  const reg_t vl = p->VU.vl; \
+  const reg_t vl = p->VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t rd_num = insn.rd(); \
   VI_CHECK_LOAD(elt_width, false); \
@@ -1668,7 +1668,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
           throw; /* Only take exception on zeroth element */ \
         /* Reduce VL if an exception occurs on a later element */ \
         early_stop = true; \
-        P.VU.vl = i; \
+        P.VU.vl->write_raw(i);                  \
         break; \
       } \
       p->VU.elt<elt_width##_t>(rd_num + fn * emul, vreg_inx, true) = val; \
@@ -1765,7 +1765,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
     } \
   } \
   VI_DUPLICATE_VREG(insn.rs2(), idx_type); \
-  const reg_t vl = P.VU.vl; \
+  const reg_t vl = P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
@@ -1848,7 +1848,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
           (P.VU.vsew == e64 && p->extension_enabled('D'))); \
   require_vector(true);\
   require(STATE.frm->read() < 0x5);\
-  reg_t vl = P.VU.vl; \
+  reg_t vl = P.VU.vl->read(); \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
@@ -2264,7 +2264,7 @@ for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl != 0; ++i) { \
           (P.VU.vsew == e16 && p->extension_enabled('F')) || \
           (P.VU.vsew == e32 && p->extension_enabled('D'))); \
   require(STATE.frm->read() < 0x5);\
-  reg_t vl = P.VU.vl; \
+  reg_t vl = P.VU.vl->read(); \
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \

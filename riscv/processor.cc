@@ -556,6 +556,7 @@ void processor_t::vectorUnit_t::reset(){
   csrmap[CSR_VXSAT] = vxsat = std::make_shared<vector_csr_t>(p, CSR_VXSAT, /*mask*/ 0x1ul);
   csrmap[CSR_VSTART] = vstart = std::make_shared<vector_csr_t>(p, CSR_VSTART, /*mask*/ VLEN - 1);
   csrmap[CSR_VXRM] = vxrm = std::make_shared<vector_csr_t>(p, CSR_VXRM, /*mask*/ 0x3ul);
+  csrmap[CSR_VL] = vl = std::make_shared<vector_csr_t>(p, CSR_VL, /*mask*/ 0);
 
   vtype = 0;
   set_vl(0, 0, 0, -1); // default to illegal configuration
@@ -584,18 +585,18 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
 
   // set vl
   if (vlmax == 0) {
-    vl = 0;
+    vl->write_raw(0);
   } else if (rd == 0 && rs1 == 0) {
-    vl = vl > vlmax ? vlmax : vl;
+    vl->write_raw(vl->read() > vlmax ? vlmax : vl->read());
   } else if (rd != 0 && rs1 == 0) {
-    vl = vlmax;
+    vl->write_raw(vlmax);
   } else if (rs1 != 0) {
-    vl = reqVL > vlmax ? vlmax : reqVL;
+    vl->write_raw(reqVL > vlmax ? vlmax : reqVL);
   }
 
   vstart->write_raw(0);
   setvl_count++;
-  return vl;
+  return vl->read();
 }
 
 void processor_t::set_debug(bool value)
@@ -1022,11 +1023,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (!extension_enabled('V'))
         break;
       ret((VU.vxsat->read() << VCSR_VXSAT_SHIFT) | (VU.vxrm->read() << VCSR_VXRM_SHIFT));
-    case CSR_VL:
-      require_vector_vs;
-      if (!extension_enabled('V'))
-        break;
-      ret(VU.vl);
     case CSR_VTYPE:
       require_vector_vs;
       if (!extension_enabled('V'))

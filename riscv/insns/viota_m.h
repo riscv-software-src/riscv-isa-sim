@@ -1,7 +1,7 @@
 // vmpopc rd, vs2, vm
 require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
 require_vector(true);
-reg_t vl = P.VU.vl;
+reg_t vl = P.VU.vl->read();
 reg_t sew = P.VU.vsew;
 reg_t rd_num = insn.rd();
 reg_t rs1_num = insn.rs1();

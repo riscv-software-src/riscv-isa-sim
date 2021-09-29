@@ -5,7 +5,7 @@ require(P.VU.vstart->read() == 0);
 require_vm;
 require(insn.rd() != insn.rs2());
 
-reg_t vl = P.VU.vl;
+reg_t vl = P.VU.vl->read();
 reg_t rd_num = insn.rd();
 reg_t rs2_num = insn.rs2();
 

@@ -6,7 +6,7 @@ require((P.VU.vsew == e16 && p->extension_enabled(EXT_ZFH)) ||
         (P.VU.vsew == e64 && p->extension_enabled('D')));
 require(STATE.frm->read() < 0x5);
 
-reg_t vl = P.VU.vl;
+reg_t vl = P.VU.vl->read();
 
 if (vl > 0 && P.VU.vstart->read() < vl) {
   reg_t rd_num = insn.rd();
