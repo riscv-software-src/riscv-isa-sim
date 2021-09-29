@@ -368,11 +368,7 @@ inline freg_t f128_negate(freg_t a)
 #define validate_csr(which, write) ({ \
   if (!STATE.serialized) return PC_SERIALIZE_BEFORE; \
   STATE.serialized = false; \
-  /* disallow writes to read-only CSRs */ \
-  unsigned csr_read_only = get_field((which), 0xC00) == 3; \
-  if ((write) && csr_read_only) \
-    throw trap_illegal_instruction(insn.bits()); \
-  /* other permissions checks occur in get_csr */ \
+  /* permissions check occurs in get_csr */ \
   (which); })
 
 /* For debug only. This will fail if the native machine's float types are not IEEE */
