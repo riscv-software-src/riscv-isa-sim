@@ -511,8 +511,8 @@ public:
       char reg_referenced[NVPR];
       int setvl_count;
       reg_t vlmax;
-      reg_t vxrm, vl, vtype, vlenb;
-      vector_csr_t_p vstart, vxsat;
+      reg_t vl, vtype, vlenb;
+      vector_csr_t_p vxrm, vstart, vxsat;
       reg_t vma, vta;
       reg_t vsew;
       float vflmul;
@@ -553,10 +553,10 @@ public:
         reg_referenced{0},
         setvl_count(0),
         vlmax(0),
-        vxrm(0),
         vl(0),
         vtype(0),
         vlenb(0),
+        vxrm(0),
         vstart(0),
         vxsat(0),
         vma(0),
@@ -581,7 +581,7 @@ public:
       reg_t get_slen() { return VLEN; }
 
       VRM get_vround_mode() {
-        return (VRM)vxrm;
+        return (VRM)(vxrm->read());
       }
   };
 

@@ -555,6 +555,7 @@ void processor_t::vectorUnit_t::reset(){
   auto& csrmap = p->get_state()->csrmap;
   csrmap[CSR_VXSAT] = vxsat = std::make_shared<vector_csr_t>(p, CSR_VXSAT, /*mask*/ 0x1ul);
   csrmap[CSR_VSTART] = vstart = std::make_shared<vector_csr_t>(p, CSR_VSTART, /*mask*/ VLEN - 1);
+  csrmap[CSR_VXRM] = vxrm = std::make_shared<vector_csr_t>(p, CSR_VXRM, /*mask*/ 0x3ul);
 
   vtype = 0;
   set_vl(0, 0, 0, -1); // default to illegal configuration
@@ -991,25 +992,9 @@ void processor_t::set_csr(int which, reg_t val)
     case CSR_VCSR:
       dirty_vs_state;
       VU.vxsat->write((val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT);
-      VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
-      break;
-    case CSR_VXRM:
-      dirty_vs_state;
-      VU.vxrm = val & 0x3ul;
+      VU.vxrm->write((val & VCSR_VXRM) >> VCSR_VXRM_SHIFT);
       break;
   }
-
-#if defined(RISCV_ENABLE_COMMITLOG)
-  switch (which)
-  {
-    case CSR_VCSR:
-      LOG_CSR(CSR_VXRM);
-      break;
-    case CSR_VXRM:
-      LOG_CSR(CSR_VXRM);
-      break;
-  }
-#endif
 }
 
 // Note that get_csr is sometimes called when read side-effects should not
@@ -1036,12 +1021,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       require_vector_vs;
       if (!extension_enabled('V'))
         break;
-      ret((VU.vxsat->read() << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT));
-    case CSR_VXRM:
-      require_vector_vs;
-      if (!extension_enabled('V'))
-        break;
-      ret(VU.vxrm);
+      ret((VU.vxsat->read() << VCSR_VXSAT_SHIFT) | (VU.vxrm->read() << VCSR_VXRM_SHIFT));
     case CSR_VL:
       require_vector_vs;
       if (!extension_enabled('V'))
