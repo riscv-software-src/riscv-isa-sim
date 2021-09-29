@@ -557,15 +557,16 @@ void processor_t::vectorUnit_t::reset(){
   csrmap[CSR_VSTART] = vstart = std::make_shared<vector_csr_t>(p, CSR_VSTART, /*mask*/ VLEN - 1);
   csrmap[CSR_VXRM] = vxrm = std::make_shared<vector_csr_t>(p, CSR_VXRM, /*mask*/ 0x3ul);
   csrmap[CSR_VL] = vl = std::make_shared<vector_csr_t>(p, CSR_VL, /*mask*/ 0);
+  csrmap[CSR_VTYPE] = vtype = std::make_shared<vector_csr_t>(p, CSR_VTYPE, /*mask*/ 0);
 
-  vtype = 0;
+  vtype->write_raw(0);
   set_vl(0, 0, 0, -1); // default to illegal configuration
 }
 
 reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newType){
   int new_vlmul = 0;
-  if (vtype != newType){
-    vtype = newType;
+  if (vtype->read() != newType){
+    vtype->write_raw(newType);
     vsew = 1 << (extract64(newType, 3, 3) + 3);
     new_vlmul = int8_t(extract64(newType, 0, 3) << 5) >> 5;
     vflmul = new_vlmul >= 0 ? 1 << new_vlmul : 1.0 / (1 << -new_vlmul);
@@ -579,7 +580,7 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
 
     if (vill) {
       vlmax = 0;
-      vtype = UINT64_MAX << (p->get_xlen() - 1);
+      vtype->write_raw(UINT64_MAX << (p->get_xlen() - 1));
     }
   }
 
@@ -1023,11 +1024,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (!extension_enabled('V'))
         break;
       ret((VU.vxsat->read() << VCSR_VXSAT_SHIFT) | (VU.vxrm->read() << VCSR_VXRM_SHIFT));
-    case CSR_VTYPE:
-      require_vector_vs;
-      if (!extension_enabled('V'))
-        break;
-      ret(VU.vtype);
     case CSR_VLENB:
       require_vector_vs;
       if (!extension_enabled('V'))
