@@ -15,7 +15,7 @@ VI_VVXI_LOOP_NARROW
   // saturation
   if (result & sign_mask) {
     result = uint_max;
-    P.VU.vxsat = 1;
+    P_SET_OV(1);
   }
 
   vd = result;
