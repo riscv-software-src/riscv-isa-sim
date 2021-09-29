@@ -6,7 +6,7 @@ reg_t sew = P.VU.vsew;
 reg_t rd_num = insn.rd();
 reg_t rs1_num = insn.rs1();
 reg_t rs2_num = insn.rs2();
-require(P.VU.vstart == 0);
+require(P.VU.vstart->read() == 0);
 require_vm;
 require_align(rd_num, P.VU.vflmul);
 require_noover(rd_num, P.VU.vflmul, rs2_num, 1);

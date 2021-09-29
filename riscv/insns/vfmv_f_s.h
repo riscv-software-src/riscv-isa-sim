@@ -35,4 +35,4 @@ if (FLEN == 64) {
   WRITE_FRD(f32(vs2_0));
 }
 
-P.VU.vstart = 0;
+P.VU.vstart->write(0);

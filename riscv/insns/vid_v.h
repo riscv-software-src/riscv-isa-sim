@@ -9,7 +9,7 @@ reg_t rs2_num = insn.rs2();
 require_align(rd_num, P.VU.vflmul);
 require_vm;
 
-for (reg_t i = P.VU.vstart ; i < P.VU.vl; ++i) {
+for (reg_t i = P.VU.vstart->read() ; i < P.VU.vl; ++i) {
   VI_LOOP_ELEMENT_SKIP();
 
   switch (sew) {
@@ -28,4 +28,4 @@ for (reg_t i = P.VU.vstart ; i < P.VU.vl; ++i) {
   }
 }
 
-P.VU.vstart = 0;
+P.VU.vstart->write(0);

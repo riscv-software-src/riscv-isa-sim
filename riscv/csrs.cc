@@ -1200,6 +1200,12 @@ void vector_csr_t::verify_permissions(insn_t insn, bool write) const {
   basic_csr_t::verify_permissions(insn, write);
 }
 
+void vector_csr_t::write_raw(const reg_t val) noexcept {
+  const bool success = basic_csr_t::unlogged_write(val);
+  if (success)
+    log_write();
+}
+
 bool vector_csr_t::unlogged_write(const reg_t val) noexcept {
   if (mask == 0) return false;
   dirty_vs_state;

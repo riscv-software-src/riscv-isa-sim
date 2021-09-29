@@ -554,6 +554,7 @@ void processor_t::vectorUnit_t::reset(){
 
   auto& csrmap = p->get_state()->csrmap;
   csrmap[CSR_VXSAT] = vxsat = std::make_shared<vector_csr_t>(p, CSR_VXSAT, /*mask*/ 0x1ul);
+  csrmap[CSR_VSTART] = vstart = std::make_shared<vector_csr_t>(p, CSR_VSTART, /*mask*/ VLEN - 1);
 
   vtype = 0;
   set_vl(0, 0, 0, -1); // default to illegal configuration
@@ -591,7 +592,7 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
     vl = reqVL > vlmax ? vlmax : reqVL;
   }
 
-  vstart = 0;
+  vstart->write_raw(0);
   setvl_count++;
   return vl;
 }
@@ -992,10 +993,6 @@ void processor_t::set_csr(int which, reg_t val)
       VU.vxsat->write((val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT);
       VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
       break;
-    case CSR_VSTART:
-      dirty_vs_state;
-      VU.vstart = val & (VU.get_vlen() - 1);
-      break;
     case CSR_VXRM:
       dirty_vs_state;
       VU.vxrm = val & 0x3ul;
@@ -1007,10 +1004,6 @@ void processor_t::set_csr(int which, reg_t val)
   {
     case CSR_VCSR:
       LOG_CSR(CSR_VXRM);
-      break;
-
-    case CSR_VSTART:
-      LOG_CSR(CSR_VSTART);
       break;
     case CSR_VXRM:
       LOG_CSR(CSR_VXRM);
@@ -1044,11 +1037,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (!extension_enabled('V'))
         break;
       ret((VU.vxsat->read() << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT));
-    case CSR_VSTART:
-      require_vector_vs;
-      if (!extension_enabled('V'))
-        break;
-      ret(VU.vstart);
     case CSR_VXRM:
       require_vector_vs;
       if (!extension_enabled('V'))

@@ -5,9 +5,9 @@ reg_t vl = P.VU.vl;
 reg_t sew = P.VU.vsew;
 reg_t rd_num = insn.rd();
 reg_t rs2_num = insn.rs2();
-require(P.VU.vstart == 0);
+require(P.VU.vstart->read() == 0);
 reg_t popcount = 0;
-for (reg_t i=P.VU.vstart; i<vl; ++i) {
+for (reg_t i=P.VU.vstart->read(); i<vl; ++i) {
   const int midx = i / 32;
   const int mpos = i % 32;
 
@@ -19,5 +19,5 @@ for (reg_t i=P.VU.vstart; i<vl; ++i) {
     popcount += (vs2_lsb && do_mask);
   }
 }
-P.VU.vstart = 0;
+P.VU.vstart->write(0);
 WRITE_RD(popcount);
