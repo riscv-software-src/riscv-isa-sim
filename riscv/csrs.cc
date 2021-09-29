@@ -1075,7 +1075,15 @@ void dpc_csr_t::verify_permissions(insn_t insn, bool write) const {
 
 
 dcsr_csr_t::dcsr_csr_t(processor_t* const proc, const reg_t addr):
-  csr_t(proc, addr) {
+  csr_t(proc, addr),
+  prv(0),
+  step(false),
+  ebreakm(false),
+  ebreakh(false),
+  ebreaks(false),
+  ebreaku(false),
+  halt(false),
+  cause(0) {
 }
 
 void dcsr_csr_t::verify_permissions(insn_t insn, bool write) const {
