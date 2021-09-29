@@ -978,13 +978,6 @@ int processor_t::paddr_bits()
 
 void processor_t::set_csr(int which, reg_t val)
 {
-#if defined(RISCV_ENABLE_COMMITLOG)
-#define LOG_CSR(rd) \
-  STATE.log_reg_write[((rd) << 4) | 4] = {get_csr(rd), 0};
-#else
-#define LOG_CSR(rd)
-#endif
-
   val = zext_xlen(val);
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
@@ -998,51 +991,15 @@ void processor_t::set_csr(int which, reg_t val)
 // side effects on reads.
 reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 {
-  reg_t res = 0;
-#define ret(n) do { \
-    res = (n); \
-    goto out; \
-  } while (false)
-
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
     if (!peek)
       search->second->verify_permissions(insn, write);
     return search->second->read();
   }
-
-#undef ret
-
   // If we get here, the CSR doesn't exist.  Unimplemented CSRs always throw
   // illegal-instruction exceptions, not virtual-instruction exceptions.
-throw_illegal:
   throw trap_illegal_instruction(insn.bits());
-
-throw_virtual:
-  throw trap_virtual_instruction(insn.bits());
-
-out:
-  // Check permissions.  Raise virtual-instruction exception if V=1,
-  // privileges are insufficient, and the CSR belongs to supervisor or
-  // hypervisor.  Raise illegal-instruction exception otherwise.
-
-  if (peek)
-    return res;
-
-  unsigned csr_priv = get_field(which, 0x300);
-  unsigned priv = state.prv == PRV_S && !state.v ? PRV_HS : state.prv;
-
-  if ((csr_priv == PRV_S && !extension_enabled('S')) ||
-      (csr_priv == PRV_HS && !extension_enabled('H')))
-    goto throw_illegal;
-
-  if (priv < csr_priv) {
-    if (state.v && csr_priv <= PRV_HS)
-      goto throw_virtual;
-    goto throw_illegal;
-  }
-
-  return res;
 }
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)
