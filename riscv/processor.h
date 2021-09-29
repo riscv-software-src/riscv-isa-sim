@@ -546,8 +546,26 @@ public:
 
       void reset();
 
-      vectorUnit_t(){
-        reg_file = 0;
+      vectorUnit_t():
+        p(0),
+        reg_file(0),
+        reg_referenced{0},
+        setvl_count(0),
+        vlmax(0),
+        vstart(0),
+        vxrm(0),
+        vxsat(0),
+        vl(0),
+        vtype(0),
+        vlenb(0),
+        vma(0),
+        vta(0),
+        vsew(0),
+        vflmul(0),
+        ELEN(0),
+        VLEN(0),
+        vill(false),
+        vstart_alu(false) {
       }
 
       ~vectorUnit_t(){
