@@ -603,4 +603,15 @@ class composite_csr_t: public csr_t {
   const unsigned upper_lsb;
 };
 
+
+class sentropy_csr_t: public csr_t {
+ public:
+  sentropy_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+
 #endif

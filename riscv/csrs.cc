@@ -1156,3 +1156,24 @@ bool composite_csr_t::unlogged_write(const reg_t val) noexcept {
   lower_csr->write(val);
   return false;  // logging is done only by the underlying CSRs
 }
+
+
+sentropy_csr_t::sentropy_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+void sentropy_csr_t::verify_permissions(insn_t insn, bool write) const {
+  /* Read-only access disallowed due to wipe-on-read side effect */
+  if (!proc->extension_enabled(EXT_ZKR) || !write)
+    throw trap_illegal_instruction(insn.bits());
+  csr_t::verify_permissions(insn, write);
+}
+
+reg_t sentropy_csr_t::read() const noexcept {
+  return proc->es.get_sentropy();
+}
+
+bool sentropy_csr_t::unlogged_write(const reg_t val) noexcept {
+  proc->es.set_sentropy(val);
+  return true;
+}

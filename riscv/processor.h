@@ -468,8 +468,6 @@ private:
   std::vector<bool> extension_table;
   std::vector<bool> impl_table;
 
-  entropy_source es; // Crypto ISE Entropy source.
-
   std::vector<insn_desc_t> instructions;
   std::map<reg_t,uint64_t> pc_histogram;
 
@@ -500,6 +498,8 @@ private:
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;
 public:
+  entropy_source es; // Crypto ISE Entropy source.
+
   reg_t n_pmp;
   reg_t lg_pmp_granularity;
   reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }
