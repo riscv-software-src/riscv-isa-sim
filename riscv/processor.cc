@@ -559,6 +559,8 @@ void processor_t::vectorUnit_t::reset(){
   csrmap[CSR_VL] = vl = std::make_shared<vector_csr_t>(p, CSR_VL, /*mask*/ 0);
   csrmap[CSR_VTYPE] = vtype = std::make_shared<vector_csr_t>(p, CSR_VTYPE, /*mask*/ 0);
   csrmap[CSR_VLENB] = std::make_shared<vector_csr_t>(p, CSR_VLENB, /*mask*/ 0, /*init*/ vlenb);
+  assert(VCSR_VXSAT_SHIFT == 0);  // composite_csr_t assumes vxsat begins at bit 0
+  csrmap[CSR_VCSR] = std::make_shared<composite_csr_t>(p, CSR_VCSR, vxrm, vxsat, VCSR_VXRM_SHIFT);
 
   vtype->write_raw(0);
   set_vl(0, 0, 0, -1); // default to illegal configuration
@@ -989,15 +991,6 @@ void processor_t::set_csr(int which, reg_t val)
     search->second->write(val);
     return;
   }
-
-  switch (which)
-  {
-    case CSR_VCSR:
-      dirty_vs_state;
-      VU.vxsat->write((val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT);
-      VU.vxrm->write((val & VCSR_VXRM) >> VCSR_VXRM_SHIFT);
-      break;
-  }
 }
 
 // Note that get_csr is sometimes called when read side-effects should not
@@ -1016,15 +1009,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
     if (!peek)
       search->second->verify_permissions(insn, write);
     return search->second->read();
-  }
-
-  switch (which)
-  {
-    case CSR_VCSR:
-      require_vector_vs;
-      if (!extension_enabled('V'))
-        break;
-      ret((VU.vxsat->read() << VCSR_VXSAT_SHIFT) | (VU.vxrm->read() << VCSR_VXRM_SHIFT));
   }
 
 #undef ret
