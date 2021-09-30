@@ -614,4 +614,20 @@ class sentropy_csr_t: public csr_t {
 };
 
 
+class vector_csr_t: public basic_csr_t {
+ public:
+  vector_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init=0);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  // Write without regard to mask, and without touching mstatus.VS
+  void write_raw(const reg_t val) noexcept;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  reg_t mask;
+};
+
+typedef std::shared_ptr<vector_csr_t> vector_csr_t_p;
+
+
+
 #endif

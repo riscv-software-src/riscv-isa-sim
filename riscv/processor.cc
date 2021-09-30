@@ -524,7 +524,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_FFLAGS] = fflags = std::make_shared<float_csr_t>(proc, CSR_FFLAGS, FSR_AEXC >> FSR_AEXC_SHIFT, 0);
   csrmap[CSR_FRM] = frm = std::make_shared<float_csr_t>(proc, CSR_FRM, FSR_RD >> FSR_RD_SHIFT, 0);
   assert(FSR_AEXC_SHIFT == 0);  // composite_csr_t assumes fflags begins at bit 0
-  csrmap[CSR_FCSR] = std::make_shared<composite_csr_t>(proc, CSR_FFLAGS, frm, fflags, FSR_RD_SHIFT);
+  csrmap[CSR_FCSR] = std::make_shared<composite_csr_t>(proc, CSR_FCSR, frm, fflags, FSR_RD_SHIFT);
 
   csrmap[CSR_SENTROPY] = std::make_shared<sentropy_csr_t>(proc, CSR_SENTROPY);
 
@@ -552,14 +552,24 @@ void processor_t::vectorUnit_t::reset(){
   reg_file = malloc(NVPR * vlenb);
   memset(reg_file, 0, NVPR * vlenb);
 
-  vtype = 0;
+  auto& csrmap = p->get_state()->csrmap;
+  csrmap[CSR_VXSAT] = vxsat = std::make_shared<vector_csr_t>(p, CSR_VXSAT, /*mask*/ 0x1ul);
+  csrmap[CSR_VSTART] = vstart = std::make_shared<vector_csr_t>(p, CSR_VSTART, /*mask*/ VLEN - 1);
+  csrmap[CSR_VXRM] = vxrm = std::make_shared<vector_csr_t>(p, CSR_VXRM, /*mask*/ 0x3ul);
+  csrmap[CSR_VL] = vl = std::make_shared<vector_csr_t>(p, CSR_VL, /*mask*/ 0);
+  csrmap[CSR_VTYPE] = vtype = std::make_shared<vector_csr_t>(p, CSR_VTYPE, /*mask*/ 0);
+  csrmap[CSR_VLENB] = std::make_shared<vector_csr_t>(p, CSR_VLENB, /*mask*/ 0, /*init*/ vlenb);
+  assert(VCSR_VXSAT_SHIFT == 0);  // composite_csr_t assumes vxsat begins at bit 0
+  csrmap[CSR_VCSR] = std::make_shared<composite_csr_t>(p, CSR_VCSR, vxrm, vxsat, VCSR_VXRM_SHIFT);
+
+  vtype->write_raw(0);
   set_vl(0, 0, 0, -1); // default to illegal configuration
 }
 
 reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newType){
   int new_vlmul = 0;
-  if (vtype != newType){
-    vtype = newType;
+  if (vtype->read() != newType){
+    vtype->write_raw(newType);
     vsew = 1 << (extract64(newType, 3, 3) + 3);
     new_vlmul = int8_t(extract64(newType, 0, 3) << 5) >> 5;
     vflmul = new_vlmul >= 0 ? 1 << new_vlmul : 1.0 / (1 << -new_vlmul);
@@ -573,24 +583,24 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
 
     if (vill) {
       vlmax = 0;
-      vtype = UINT64_MAX << (p->get_xlen() - 1);
+      vtype->write_raw(UINT64_MAX << (p->get_xlen() - 1));
     }
   }
 
   // set vl
   if (vlmax == 0) {
-    vl = 0;
+    vl->write_raw(0);
   } else if (rd == 0 && rs1 == 0) {
-    vl = vl > vlmax ? vlmax : vl;
+    vl->write_raw(vl->read() > vlmax ? vlmax : vl->read());
   } else if (rd != 0 && rs1 == 0) {
-    vl = vlmax;
+    vl->write_raw(vlmax);
   } else if (rs1 != 0) {
-    vl = reqVL > vlmax ? vlmax : reqVL;
+    vl->write_raw(reqVL > vlmax ? vlmax : reqVL);
   }
 
-  vstart = 0;
+  vstart->write_raw(0);
   setvl_count++;
-  return vl;
+  return vl->read();
 }
 
 void processor_t::set_debug(bool value)
@@ -968,60 +978,12 @@ int processor_t::paddr_bits()
 
 void processor_t::set_csr(int which, reg_t val)
 {
-#if defined(RISCV_ENABLE_COMMITLOG)
-#define LOG_CSR(rd) \
-  STATE.log_reg_write[((rd) << 4) | 4] = {get_csr(rd), 0};
-#else
-#define LOG_CSR(rd)
-#endif
-
   val = zext_xlen(val);
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
     search->second->write(val);
     return;
   }
-
-  switch (which)
-  {
-    case CSR_VCSR:
-      dirty_vs_state;
-      VU.vxsat = (val & VCSR_VXSAT) >> VCSR_VXSAT_SHIFT;
-      VU.vxrm = (val & VCSR_VXRM) >> VCSR_VXRM_SHIFT;
-      break;
-    case CSR_VSTART:
-      dirty_vs_state;
-      VU.vstart = val & (VU.get_vlen() - 1);
-      break;
-    case CSR_VXSAT:
-      dirty_vs_state;
-      VU.vxsat = val & 0x1ul;
-      break;
-    case CSR_VXRM:
-      dirty_vs_state;
-      VU.vxrm = val & 0x3ul;
-      break;
-  }
-
-#if defined(RISCV_ENABLE_COMMITLOG)
-  switch (which)
-  {
-    case CSR_VCSR:
-      LOG_CSR(CSR_VXSAT);
-      LOG_CSR(CSR_VXRM);
-      break;
-
-    case CSR_VSTART:
-      LOG_CSR(CSR_VSTART);
-      break;
-    case CSR_VXSAT:
-      LOG_CSR(CSR_VXSAT);
-      break;
-    case CSR_VXRM:
-      LOG_CSR(CSR_VXRM);
-      break;
-  }
-#endif
 }
 
 // Note that get_csr is sometimes called when read side-effects should not
@@ -1029,90 +991,15 @@ void processor_t::set_csr(int which, reg_t val)
 // side effects on reads.
 reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 {
-  reg_t res = 0;
-#define ret(n) do { \
-    res = (n); \
-    goto out; \
-  } while (false)
-
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
     if (!peek)
       search->second->verify_permissions(insn, write);
     return search->second->read();
   }
-
-  switch (which)
-  {
-    case CSR_VCSR:
-      require_vector_vs;
-      if (!extension_enabled('V'))
-        break;
-      ret((VU.vxsat << VCSR_VXSAT_SHIFT) | (VU.vxrm << VCSR_VXRM_SHIFT));
-    case CSR_VSTART:
-      require_vector_vs;
-      if (!extension_enabled('V'))
-        break;
-      ret(VU.vstart);
-    case CSR_VXSAT:
-      require_vector_vs;
-      if (!extension_enabled('V'))
-        break;
-      ret(VU.vxsat);
-    case CSR_VXRM:
-      require_vector_vs;
-      if (!extension_enabled('V'))
-        break;
-      ret(VU.vxrm);
-    case CSR_VL:
-      require_vector_vs;
-      if (!extension_enabled('V'))
-        break;
-      ret(VU.vl);
-    case CSR_VTYPE:
-      require_vector_vs;
-      if (!extension_enabled('V'))
-        break;
-      ret(VU.vtype);
-    case CSR_VLENB:
-      require_vector_vs;
-      if (!extension_enabled('V'))
-        break;
-      ret(VU.vlenb);
-  }
-
-#undef ret
-
   // If we get here, the CSR doesn't exist.  Unimplemented CSRs always throw
   // illegal-instruction exceptions, not virtual-instruction exceptions.
-throw_illegal:
   throw trap_illegal_instruction(insn.bits());
-
-throw_virtual:
-  throw trap_virtual_instruction(insn.bits());
-
-out:
-  // Check permissions.  Raise virtual-instruction exception if V=1,
-  // privileges are insufficient, and the CSR belongs to supervisor or
-  // hypervisor.  Raise illegal-instruction exception otherwise.
-
-  if (peek)
-    return res;
-
-  unsigned csr_priv = get_field(which, 0x300);
-  unsigned priv = state.prv == PRV_S && !state.v ? PRV_HS : state.prv;
-
-  if ((csr_priv == PRV_S && !extension_enabled('S')) ||
-      (csr_priv == PRV_HS && !extension_enabled('H')))
-    goto throw_illegal;
-
-  if (priv < csr_priv) {
-    if (state.v && csr_priv <= PRV_HS)
-      goto throw_virtual;
-    goto throw_illegal;
-  }
-
-  return res;
 }
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)

@@ -33,7 +33,9 @@ void csr_t::verify_permissions(insn_t insn, bool write) const {
       (csr_priv == PRV_HS && !proc->extension_enabled('H')))
     throw trap_illegal_instruction(insn.bits());
 
-  if ((write && csr_read_only) || priv < csr_priv) {
+  if (write && csr_read_only)
+    throw trap_illegal_instruction(insn.bits());
+  if (priv < csr_priv) {
     if (state->v && csr_priv <= PRV_HS)
       throw trap_virtual_instruction(insn.bits());
     throw trap_illegal_instruction(insn.bits());
@@ -1075,7 +1077,15 @@ void dpc_csr_t::verify_permissions(insn_t insn, bool write) const {
 
 
 dcsr_csr_t::dcsr_csr_t(processor_t* const proc, const reg_t addr):
-  csr_t(proc, addr) {
+  csr_t(proc, addr),
+  prv(0),
+  step(false),
+  ebreakm(false),
+  ebreakh(false),
+  ebreaks(false),
+  ebreaku(false),
+  halt(false),
+  cause(0) {
 }
 
 void dcsr_csr_t::verify_permissions(insn_t insn, bool write) const {
@@ -1176,4 +1186,30 @@ reg_t sentropy_csr_t::read() const noexcept {
 bool sentropy_csr_t::unlogged_write(const reg_t val) noexcept {
   proc->es.set_sentropy(val);
   return true;
+}
+
+
+
+vector_csr_t::vector_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  basic_csr_t(proc, addr, init),
+  mask(mask) {
+}
+
+void vector_csr_t::verify_permissions(insn_t insn, bool write) const {
+  require_vector_vs;
+  if (!proc->extension_enabled('V'))
+    throw trap_illegal_instruction(insn.bits());
+  basic_csr_t::verify_permissions(insn, write);
+}
+
+void vector_csr_t::write_raw(const reg_t val) noexcept {
+  const bool success = basic_csr_t::unlogged_write(val);
+  if (success)
+    log_write();
+}
+
+bool vector_csr_t::unlogged_write(const reg_t val) noexcept {
+  if (mask == 0) return false;
+  dirty_vs_state;
+  return basic_csr_t::unlogged_write(val & mask);
 }

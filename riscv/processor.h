@@ -511,7 +511,8 @@ public:
       char reg_referenced[NVPR];
       int setvl_count;
       reg_t vlmax;
-      reg_t vstart, vxrm, vxsat, vl, vtype, vlenb;
+      reg_t vlenb;
+      vector_csr_t_p vxrm, vstart, vxsat, vl, vtype;
       reg_t vma, vta;
       reg_t vsew;
       float vflmul;
@@ -546,8 +547,26 @@ public:
 
       void reset();
 
-      vectorUnit_t(){
-        reg_file = 0;
+      vectorUnit_t():
+        p(0),
+        reg_file(0),
+        reg_referenced{0},
+        setvl_count(0),
+        vlmax(0),
+        vlenb(0),
+        vxrm(0),
+        vstart(0),
+        vxsat(0),
+        vl(0),
+        vtype(0),
+        vma(0),
+        vta(0),
+        vsew(0),
+        vflmul(0),
+        ELEN(0),
+        VLEN(0),
+        vill(false),
+        vstart_alu(false) {
       }
 
       ~vectorUnit_t(){
@@ -562,7 +581,7 @@ public:
       reg_t get_slen() { return VLEN; }
 
       VRM get_vround_mode() {
-        return (VRM)vxrm;
+        return (VRM)(vxrm->read());
       }
   };
 

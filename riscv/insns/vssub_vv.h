@@ -25,5 +25,5 @@ default: {
   break;
 }
 }
-P.VU.vxsat |= sat;
+P_SET_OV(sat);
 VI_LOOP_END

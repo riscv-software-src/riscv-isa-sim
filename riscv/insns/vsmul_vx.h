@@ -26,7 +26,7 @@ VI_VX_LOOP
   // max saturation
   if (overflow) {
     result = int_max;
-    P.VU.vxsat |= 1;
+    P_SET_OV(1);
   }
 
   vd = result;
