@@ -1188,8 +1188,8 @@ bool sentropy_csr_t::unlogged_write(const reg_t val) noexcept {
 
 
 
-vector_csr_t::vector_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask):
-  basic_csr_t(proc, addr, 0),
+vector_csr_t::vector_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  basic_csr_t(proc, addr, init),
   mask(mask) {
 }
 

@@ -558,6 +558,7 @@ void processor_t::vectorUnit_t::reset(){
   csrmap[CSR_VXRM] = vxrm = std::make_shared<vector_csr_t>(p, CSR_VXRM, /*mask*/ 0x3ul);
   csrmap[CSR_VL] = vl = std::make_shared<vector_csr_t>(p, CSR_VL, /*mask*/ 0);
   csrmap[CSR_VTYPE] = vtype = std::make_shared<vector_csr_t>(p, CSR_VTYPE, /*mask*/ 0);
+  csrmap[CSR_VLENB] = std::make_shared<vector_csr_t>(p, CSR_VLENB, /*mask*/ 0, /*init*/ vlenb);
 
   vtype->write_raw(0);
   set_vl(0, 0, 0, -1); // default to illegal configuration
@@ -1024,11 +1025,6 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
       if (!extension_enabled('V'))
         break;
       ret((VU.vxsat->read() << VCSR_VXSAT_SHIFT) | (VU.vxrm->read() << VCSR_VXRM_SHIFT));
-    case CSR_VLENB:
-      require_vector_vs;
-      if (!extension_enabled('V'))
-        break;
-      ret(VU.vlenb);
   }
 
 #undef ret
