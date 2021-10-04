@@ -413,7 +413,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   auto vsip_vsie_accr = std::make_shared<generic_int_accessor_t>(this,
                                                                  MIP_VS_MASK,   // read_mask
                                                                  MIP_VSSIP,     // ip_write_mask
-                                                                 MIP_VSSIP,     // ie_write_mask
+                                                                 MIP_VS_MASK,   // ie_write_mask
                                                                  false,         // mask_mideleg
                                                                  true,          // mask_hideleg
                                                                  1);            // shiftamt
