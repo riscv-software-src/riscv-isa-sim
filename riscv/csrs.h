@@ -180,6 +180,8 @@ class cause_csr_t: public basic_csr_t {
 class base_status_csr_t: public csr_t {
  public:
   base_status_csr_t(processor_t* const proc, const reg_t addr);
+  // Return true if the specified bits are not 00 (Off)
+  bool enabled(const reg_t which);
  protected:
   reg_t adjust_sd(const reg_t val) const noexcept;
   void maybe_flush_tlb(const reg_t newval) noexcept;
