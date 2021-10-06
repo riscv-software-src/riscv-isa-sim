@@ -319,6 +319,8 @@ base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
 
 
 bool base_status_csr_t::enabled(const reg_t which) {
+  // If the field doesn't exist, it is always enabled. See #823.
+  if ((sstatus_write_mask & which) == 0) return true;
   return (read() & which) != 0;
 }
 
