@@ -190,6 +190,8 @@ class base_status_csr_t: public csr_t {
   reg_t compute_sstatus_write_mask() const noexcept;
 };
 
+typedef std::shared_ptr<base_status_csr_t> base_status_csr_t_p;
+
 
 // For vsstatus, which is its own separate architectural register
 // (unlike sstatus)
@@ -245,12 +247,15 @@ class mstatush_csr_t: public csr_t {
 
 class sstatus_csr_t: public virtualized_csr_t {
  public:
-  sstatus_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
+  sstatus_csr_t(processor_t* const proc, base_status_csr_t_p orig, base_status_csr_t_p virt);
 
   // Set FS, VS, or XS bits to dirty
   void dirty(const reg_t dirties);
   // Return true if the specified bits are not 00 (Off)
   bool enabled(const reg_t which);
+ private:
+  base_status_csr_t_p orig_sstatus;
+  base_status_csr_t_p virt_sstatus;
 };
 
 typedef std::shared_ptr<sstatus_csr_t> sstatus_csr_t_p;
