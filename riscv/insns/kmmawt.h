@@ -1,3 +1,4 @@
+require_vector_vs;
 P_LOOP(32, {
   int64_t mres = (int64_t)ps1 * P_SH(ps2, 1);
   bool sat = false;

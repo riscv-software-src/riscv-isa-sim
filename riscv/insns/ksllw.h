@@ -1,3 +1,4 @@
+require_vector_vs;
 require_extension('P');
 sreg_t rs1 = sext32(RS1);
 sreg_t sa = get_field(RS2, make_mask64(0, 5));

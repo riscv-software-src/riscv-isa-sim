@@ -1,3 +1,4 @@
+require_vector_vs;
 P_64_PROFILE_BASE()
 P_64_PROFILE_PARAM(true, false)
 

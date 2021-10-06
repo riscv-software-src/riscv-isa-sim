@@ -1,3 +1,4 @@
+require_vector_vs;
 P_I_LOOP(16, 4, {
   int64_t int_max = INT64_MAX >> (64 - (imm4u + 1));
   int64_t int_min = INT64_MIN >> (64 - (imm4u + 1));

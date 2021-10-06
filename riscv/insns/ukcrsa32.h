@@ -1,3 +1,4 @@
+require_vector_vs;
 require_rv64;
 P_CROSS_ULOOP(32, {
   bool sat = false;

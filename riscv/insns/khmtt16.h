@@ -1,3 +1,4 @@
+require_vector_vs;
 require_rv64;
 P_LOOP(32, {
   int32_t aop = P_SH(ps1, 1);
