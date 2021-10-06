@@ -473,6 +473,10 @@ sstatus_csr_t::sstatus_csr_t(processor_t* const proc, base_status_csr_t_p orig, 
 }
 
 void sstatus_csr_t::dirty(const reg_t dirties) {
+  // Catch problems like #823 where P-extension instructions were not
+  // checking for mstatus.VS!=Off:
+  if (!enabled(dirties)) abort();
+
   orig_csr->write(orig_csr->read() | dirties);
   if (state->v) {
     virt_csr->write(virt_csr->read() | dirties);
