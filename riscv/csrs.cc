@@ -1221,3 +1221,20 @@ bool vector_csr_t::unlogged_write(const reg_t val) noexcept {
   dirty_vs_state;
   return basic_csr_t::unlogged_write(val & mask);
 }
+
+
+vxsat_csr_t::vxsat_csr_t(processor_t* const proc, const reg_t addr):
+  masked_csr_t(proc, addr, /*mask*/ 1, /*init*/ 0) {
+}
+
+void vxsat_csr_t::verify_permissions(insn_t insn, bool write) const {
+  require_vector_vs;
+  if (!proc->extension_enabled('V'))
+    throw trap_illegal_instruction(insn.bits());
+  masked_csr_t::verify_permissions(insn, write);
+}
+
+bool vxsat_csr_t::unlogged_write(const reg_t val) noexcept {
+  dirty_vs_state;
+  return masked_csr_t::unlogged_write(val);
+}
