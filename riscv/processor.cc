@@ -545,7 +545,7 @@ void processor_t::vectorUnit_t::reset(){
   memset(reg_file, 0, NVPR * vlenb);
 
   auto& csrmap = p->get_state()->csrmap;
-  csrmap[CSR_VXSAT] = vxsat = std::make_shared<vector_csr_t>(p, CSR_VXSAT, /*mask*/ 0x1ul);
+  csrmap[CSR_VXSAT] = vxsat = std::make_shared<vxsat_csr_t>(p, CSR_VXSAT);
   csrmap[CSR_VSTART] = vstart = std::make_shared<vector_csr_t>(p, CSR_VSTART, /*mask*/ VLEN - 1);
   csrmap[CSR_VXRM] = vxrm = std::make_shared<vector_csr_t>(p, CSR_VXRM, /*mask*/ 0x3ul);
   csrmap[CSR_VL] = vl = std::make_shared<vector_csr_t>(p, CSR_VL, /*mask*/ 0);

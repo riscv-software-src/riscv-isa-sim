@@ -1,3 +1,4 @@
+require_vector_vs;
 P_CROSS_ULOOP(16, {
   bool sat = false;
   pd = (sat_add<int16_t, uint16_t>(ps1, ps2, sat));

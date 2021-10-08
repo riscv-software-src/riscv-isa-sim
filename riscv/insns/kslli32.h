@@ -1,3 +1,4 @@
+require_vector_vs;
 require_rv64;
 P_I_LOOP(32, 5, {
   auto res = (sreg_t)ps1 << imm5u;

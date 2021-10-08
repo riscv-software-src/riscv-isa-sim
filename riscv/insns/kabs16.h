@@ -1,3 +1,4 @@
+require_vector_vs;
 P_ONE_LOOP(16, {
   pd = ps1;
   if (ps1 == INT16_MIN) {

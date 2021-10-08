@@ -1,3 +1,4 @@
+require_vector_vs;
 require_rv64;
 P_ONE_LOOP(32, {
   pd = ps1;

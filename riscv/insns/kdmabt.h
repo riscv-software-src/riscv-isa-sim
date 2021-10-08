@@ -1,3 +1,4 @@
+require_vector_vs;
 require_extension('P');
 sreg_t res;
 sreg_t aop = P_SH(RS1, 0);

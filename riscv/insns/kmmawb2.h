@@ -1,3 +1,4 @@
+require_vector_vs;
 P_LOOP(32, {
   int64_t addop = 0;
   int64_t mres = 0;

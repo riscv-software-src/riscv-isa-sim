@@ -512,7 +512,8 @@ public:
       int setvl_count;
       reg_t vlmax;
       reg_t vlenb;
-      vector_csr_t_p vxrm, vstart, vxsat, vl, vtype;
+      csr_t_p vxsat;
+      vector_csr_t_p vxrm, vstart, vl, vtype;
       reg_t vma, vta;
       reg_t vsew;
       float vflmul;
@@ -554,9 +555,9 @@ public:
         setvl_count(0),
         vlmax(0),
         vlenb(0),
+        vxsat(0),
         vxrm(0),
         vstart(0),
-        vxsat(0),
         vl(0),
         vtype(0),
         vma(0),
