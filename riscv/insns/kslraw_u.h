@@ -1,3 +1,4 @@
+require_vector_vs;
 require_extension('P');
 sreg_t rs1 = sext32(RS1);
 sreg_t sa = int64_t(RS2) << (64 - 6) >> (64 - 6);

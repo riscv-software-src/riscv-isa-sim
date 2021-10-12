@@ -1,3 +1,4 @@
+require_vector_vs;
 require_extension('P');
 int32_t rs1 = P_W(RS1, 0);
 

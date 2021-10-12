@@ -1,3 +1,4 @@
+require_vector_vs;
 P_LOOP(32, {
   int64_t mres = (int64_t) ps1 * (int64_t) ps2;
   int32_t round = (((mres >> 31) + 1) >> 1);

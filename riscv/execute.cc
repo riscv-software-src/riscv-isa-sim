@@ -125,7 +125,7 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
                 p->VU.vsew,
                 p->VU.vflmul < 1 ? "mf" : "m",
                 p->VU.vflmul < 1 ? (reg_t)(1 / p->VU.vflmul) : (reg_t)p->VU.vflmul,
-                p->VU.vl);
+                p->VU.vl->read());
         show_vec = true;
     }
 
@@ -227,7 +227,7 @@ void processor_t::step(size_t n)
     } else if (halt_request == HR_GROUP) {
       enter_debug_mode(DCSR_CAUSE_GROUP);
     } // !!!The halt bit in DCSR is deprecated.
-    else if (state.dcsr.halt) {
+    else if (state.dcsr->halt) {
       enter_debug_mode(DCSR_CAUSE_HALT);
     }
   }
@@ -348,7 +348,7 @@ void processor_t::step(size_t n)
       n = ++instret;
     }
 
-    state.minstret += instret;
+    state.minstret->bump(instret);
     n -= instret;
   }
 }

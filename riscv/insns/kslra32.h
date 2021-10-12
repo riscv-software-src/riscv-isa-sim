@@ -1,3 +1,4 @@
+require_vector_vs;
 require_rv64;
 P_X_LOOP(32, 6, {
   if (ssa < 0) {

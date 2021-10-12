@@ -1,3 +1,4 @@
+require_vector_vs;
 P_STRAIGHT_ULOOP(16, {
   bool sat = false;
   pd = (sat_addu<uint16_t>(ps1, ps2, sat));

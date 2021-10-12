@@ -1,3 +1,4 @@
+require_vector_vs;
 P_X_LOOP(16, 5, {
   if (ssa < 0) {
     sa = -ssa;

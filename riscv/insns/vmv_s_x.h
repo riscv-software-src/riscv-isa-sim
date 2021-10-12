@@ -2,9 +2,9 @@
 require_vector(true);
 require(insn.v_vm() == 1);
 require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
-reg_t vl = P.VU.vl;
+reg_t vl = P.VU.vl->read();
 
-if (vl > 0 && P.VU.vstart < vl) {
+if (vl > 0 && P.VU.vstart->read() < vl) {
   reg_t rd_num = insn.rd();
   reg_t sew = P.VU.vsew;
 
@@ -26,4 +26,4 @@ if (vl > 0 && P.VU.vstart < vl) {
   vl = 0;
 }
 
-P.VU.vstart = 0;
+P.VU.vstart->write(0);

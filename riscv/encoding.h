@@ -38,6 +38,8 @@
 
 #define MSTATUSH_SBE        0x00000010
 #define MSTATUSH_MBE        0x00000020
+#define MSTATUSH_GVA        0x00000040
+#define MSTATUSH_MPV        0x00000080
 
 #define SSTATUS_UIE         0x00000001
 #define SSTATUS_SIE         0x00000002

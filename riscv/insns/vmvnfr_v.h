@@ -9,9 +9,9 @@ require_align(vs2, len);
 const reg_t size = len * P.VU.vlenb;
 
 //register needs one-by-one copy to keep commitlog correct
-if (vd != vs2 && P.VU.vstart < size) {
-  reg_t i = P.VU.vstart / P.VU.vlenb;
-  reg_t off = P.VU.vstart % P.VU.vlenb;
+if (vd != vs2 && P.VU.vstart->read() < size) {
+  reg_t i = P.VU.vstart->read() / P.VU.vlenb;
+  reg_t off = P.VU.vstart->read() % P.VU.vlenb;
   if (off) {
     memcpy(&P.VU.elt<uint8_t>(vd + i, off, true),
            &P.VU.elt<uint8_t>(vs2 + i, off), P.VU.vlenb - off);
@@ -24,4 +24,4 @@ if (vd != vs2 && P.VU.vstart < size) {
   }
 }
 
-P.VU.vstart = 0;
+P.VU.vstart->write(0);

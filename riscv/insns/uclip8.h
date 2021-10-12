@@ -1,3 +1,4 @@
+require_vector_vs;
 P_I_LOOP(8, 3, {
   int64_t uint_max = imm3u ? UINT64_MAX >> (64 - imm3u) : 0;
   pd = ps1;

@@ -1,3 +1,4 @@
+require_vector_vs;
 require_rv64;
 require_extension('P');
 
