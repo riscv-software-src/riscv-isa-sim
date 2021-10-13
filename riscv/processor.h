@@ -243,6 +243,7 @@ typedef enum {
   EXT_ZKSED,
   EXT_ZKSH,
   EXT_ZKR,
+  EXT_ZMMUL,
   EXT_SVNAPOT,
   EXT_SVPBMT,
   EXT_SVINVAL,

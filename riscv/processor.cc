@@ -250,6 +250,8 @@ void processor_t::parse_isa_string(const char* str)
     } else if (ext_str == "zicsr") {
       // Spike necessarily has Zicsr, because
       // Zicsr is implied by the privileged architecture
+    } else if (ext_str == "zmmul") {
+      extension_table[EXT_ZMMUL] = true;
     } else if (ext_str == "zba") {
       extension_table[EXT_ZBA] = true;
     } else if (ext_str == "zbb") {
