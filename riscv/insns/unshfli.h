@@ -1,4 +1,4 @@
-// Zbkb contains unzip but not general packw
+// Zbkb contains unzip but not general unshfli
 require(((insn.rs2() == (xlen / 2 - 1)) && p->extension_enabled(EXT_ZBKB))
   || p->extension_enabled(EXT_XBITMANIP));
 require(SHAMT < (xlen/2));
