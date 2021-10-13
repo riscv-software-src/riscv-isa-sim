@@ -1,6 +1,6 @@
 require_vector_vs;
 require_rv64;
-require_extension('P');
+require_extension(EXT_ZPN);
 
 bool sat;
 sreg_t mres0 = (sreg_t)P_SW(RS1, 0) * P_SW(RS2, 0);
