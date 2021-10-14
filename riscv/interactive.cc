@@ -305,19 +305,33 @@ reg_t sim_t::get_reg(const std::vector<std::string>& args)
   return p->get_state()->XPR[r];
 }
 
-freg_t sim_t::get_freg(const std::vector<std::string>& args)
+freg_t sim_t::get_freg(const std::vector<std::string>& args, int size)
 {
   if(args.size() != 2)
     throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
-  int r = std::find(fpr_name, fpr_name + NFPR, args[1]) - fpr_name;
-  if (r == NFPR)
-    r = atoi(args[1].c_str());
-  if (r >= NFPR)
-    throw trap_interactive();
-
-  return p->get_state()->FPR[r];
+  if (p->extension_enabled(EXT_ZFINX)) {
+    int r = std::find(xpr_name, xpr_name + NXPR, args[1]) - xpr_name;
+    if (r == NXPR)
+      r = atoi(args[1].c_str());
+    if (r >= NXPR)
+      throw trap_interactive();
+    if ((p->get_xlen() == 32) && (size == 64)) {
+      if (r % 2 != 0)
+        throw trap_interactive();
+      return freg(f64(r== 0 ? reg_t(0) : (READ_REG(r + 1) << 32) + zext32(READ_REG(r))));
+    } else { //xlen >= size
+      return {p->get_state()->XPR[r] | ~(((uint64_t)-1) >> (64 - size)) ,(uint64_t)-1};
+    }
+  } else {
+    int r = std::find(fpr_name, fpr_name + NFPR, args[1]) - fpr_name;
+    if (r == NFPR)
+      r = atoi(args[1].c_str());
+    if (r >= NFPR)
+      throw trap_interactive();
+    return p->get_state()->FPR[r];
+  }
 }
 
 void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::string>& args)
@@ -408,7 +422,7 @@ union fpr
 
 void sim_t::interactive_freg(const std::string& cmd, const std::vector<std::string>& args)
 {
-  freg_t r = get_freg(args);
+  freg_t r = get_freg(args, 64);
 
   std::ostream out(sout_.rdbuf());
   out << std::hex << "0x" << std::setfill ('0') << std::setw(16) << r.v[1] << std::setw(16) << r.v[0] << std::endl;
@@ -417,7 +431,7 @@ void sim_t::interactive_freg(const std::string& cmd, const std::vector<std::stri
 void sim_t::interactive_fregh(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
-  f.r = freg(f16_to_f32(f16(get_freg(args))));
+  f.r = freg(f16_to_f32(f16(get_freg(args, 16))));
 
   std::ostream out(sout_.rdbuf());
   out << (isBoxedF32(f.r) ? (double)f.s : NAN) << std::endl;
@@ -426,7 +440,7 @@ void sim_t::interactive_fregh(const std::string& cmd, const std::vector<std::str
 void sim_t::interactive_fregs(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
-  f.r = get_freg(args);
+  f.r = get_freg(args, 32);
 
   std::ostream out(sout_.rdbuf());
   out << (isBoxedF32(f.r) ? (double)f.s : NAN) << std::endl;
@@ -435,7 +449,7 @@ void sim_t::interactive_fregs(const std::string& cmd, const std::vector<std::str
 void sim_t::interactive_fregd(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
-  f.r = get_freg(args);
+  f.r = get_freg(args, 64);
 
   std::ostream out(sout_.rdbuf());
   out << (isBoxedF64(f.r) ? f.d : NAN) << std::endl;
