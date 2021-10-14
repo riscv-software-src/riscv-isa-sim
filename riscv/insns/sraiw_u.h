@@ -1,5 +1,5 @@
 require_rv64;
-require_extension('P');
+require_extension(EXT_ZPN);
 
 reg_t sa = insn.p_imm5();
 if (sa != 0) {

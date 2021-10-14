@@ -1,11 +1,13 @@
 // Zbb contains rev8 but not general grevi
 // Zbkb contains rev8 and brev8 (a.k.a. rev.b) but not general grevi
-require(((SHAMT == xlen - 8) && (p->extension_enabled(EXT_ZBB) || p->extension_enabled(EXT_ZBKB)))
-  || ((SHAMT == 8) && p->extension_enabled(EXT_ZBKB))
-  || p->extension_enabled(EXT_XBITMANIP));
-require(SHAMT < xlen);
-reg_t x = RS1;
 int shamt = SHAMT;
+require(((shamt == xlen - 8) && (p->extension_enabled(EXT_ZBB) || p->extension_enabled(EXT_ZBKB))) //rev8
+  || ((shamt == 7) && p->extension_enabled(EXT_ZBKB)) // rev8.b
+  || ((shamt == 8) && p->extension_enabled(EXT_ZPN)) // rev8.h
+  || ((shamt == xlen - 1) && p->extension_enabled(EXT_ZPN)) // rev
+  || p->extension_enabled(EXT_XBITMANIP));
+require(shamt < xlen);
+reg_t x = RS1;
 if (shamt &  1) x = ((x & 0x5555555555555555LL) <<  1) | ((x & 0xAAAAAAAAAAAAAAAALL) >>  1);
 if (shamt &  2) x = ((x & 0x3333333333333333LL) <<  2) | ((x & 0xCCCCCCCCCCCCCCCCLL) >>  2);
 if (shamt &  4) x = ((x & 0x0F0F0F0F0F0F0F0FLL) <<  4) | ((x & 0xF0F0F0F0F0F0F0F0LL) >>  4);

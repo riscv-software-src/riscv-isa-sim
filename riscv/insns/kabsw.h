@@ -1,5 +1,5 @@
 require_vector_vs;
-require_extension('P');
+require_extension(EXT_ZPN);
 int32_t rs1 = P_W(RS1, 0);
 
 if (rs1 == INT32_MIN) {

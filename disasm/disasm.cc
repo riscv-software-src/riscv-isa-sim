@@ -834,9 +834,13 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_R1TYPE(sext_h);
   add_insn(new disasm_insn_t("zext.h", (xlen == 32 ? match_pack : match_packw), mask_pack | mask_rs2, {&xrd, &xrs1}));
   DEFINE_RTYPE(pack);
+  DEFINE_RTYPE(packu);
   DEFINE_RTYPE(packw);
   DEFINE_RTYPE(grev);
-  add_insn(new disasm_insn_t("rev8", match_grevi | ((xlen == 32 ? 0x18 : 0x38) << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
+  add_insn(new disasm_insn_t("rev", match_grevi | ((xlen - 1) << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
+  add_insn(new disasm_insn_t("rev8", match_grevi | ((xlen - 8) << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
+  add_insn(new disasm_insn_t("rev.b", match_grevi | (0x7 << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1})); // brev8
+  add_insn(new disasm_insn_t("rev8.h", match_grevi | (0x8 << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1})); // swap16
   DEFINE_ITYPE_SHIFT(grevi);
   DEFINE_RTYPE(gorc);
   add_insn(new disasm_insn_t("orc.b", match_gorci | (0x7 << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
@@ -845,6 +849,12 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(xperm_b);
   DEFINE_RTYPE(xperm_h);
   DEFINE_RTYPE(xperm_w);
+
+  DEFINE_R3TYPE(cmix);
+  DEFINE_R3TYPE(fsr);
+  DEFINE_R3TYPE(fsri);
+  DEFINE_R3TYPE(fsriw);
+  DEFINE_R3TYPE(fsrw);
 
   DEFINE_NOARG(ecall);
   DEFINE_NOARG(ebreak);
@@ -1592,12 +1602,9 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_R1TYPE(kabs16);
   DEFINE_R1TYPE(clrs16);
   DEFINE_R1TYPE(clz16);
-  DEFINE_R1TYPE(clo16);
   DEFINE_R1TYPE(kabs8);
   DEFINE_R1TYPE(clrs8);
   DEFINE_R1TYPE(clz8);
-  DEFINE_R1TYPE(clo8);
-  DEFINE_R1TYPE(swap8);
 
   DEFINE_R1TYPE(sunpkd810);
   DEFINE_R1TYPE(sunpkd820);
@@ -1649,19 +1656,16 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(uclip32)
   DEFINE_R1TYPE(clrs32);
   DEFINE_R1TYPE(clz32);
-  DEFINE_R1TYPE(clo32);
   DEFINE_RTYPE(pbsad);
   DEFINE_RTYPE(pbsada);
   DEFINE_RTYPE(smaqa);
   DEFINE_RTYPE(umaqa);
   DEFINE_RTYPE(smaqa_su);
 
-  DEFINE_RTYPE(add64);
   DEFINE_RTYPE(radd64);
   DEFINE_RTYPE(uradd64);
   DEFINE_RTYPE(kadd64);
   DEFINE_RTYPE(ukadd64);
-  DEFINE_RTYPE(sub64);
   DEFINE_RTYPE(rsub64);
   DEFINE_RTYPE(ursub64);
   DEFINE_RTYPE(ksub64);
@@ -1711,18 +1715,14 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(uraddw);
   DEFINE_RTYPE(rsubw);
   DEFINE_RTYPE(ursubw);
-  DEFINE_RTYPE(maxw);
-  DEFINE_RTYPE(minw);
+  DEFINE_RTYPE(max);
+  DEFINE_RTYPE(min);
   DEFINE_RTYPE(mulr64);
   DEFINE_RTYPE(mulsr64);
   DEFINE_RTYPE(msubr32);
   DEFINE_RTYPE(ave);
   DEFINE_RTYPE(sra_u);
   DEFINE_PI5TYPE(srai_u);
-  DEFINE_RTYPE(bitrev);
-  DEFINE_RTYPE(wext);
-  DEFINE_PI5TYPE(wexti);
-  DEFINE_R3TYPE(bpick);
   DEFINE_PI3TYPE(insb);
   DEFINE_RTYPE(maddr32)
 
@@ -1732,14 +1732,16 @@ disassembler_t::disassembler_t(int xlen)
     DISASM_INSN("c.fsw", c_fsw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
     DISASM_INSN("c.fswsp", c_fswsp, 0, {&rvc_fp_rs2, &rvc_swsp_address});
     DISASM_INSN("c.jal", c_jal, 0, {&rvc_jump_target});
-    DEFINE_PI5TYPE(bitrevi);
+
+    DEFINE_RTYPE(add64);
+    DEFINE_RTYPE(sub64);
   } else {
     DISASM_INSN("c.ld", c_ld, 0, {&rvc_rs2s, &rvc_ld_address});
     DISASM_INSN("c.ldsp", c_ldsp, 0, {&xrd, &rvc_ldsp_address});
     DISASM_INSN("c.sd", c_sd, 0, {&rvc_rs2s, &rvc_ld_address});
     DISASM_INSN("c.sdsp", c_sdsp, 0, {&rvc_rs2, &rvc_sdsp_address});
     DISASM_INSN("c.addiw", c_addiw, 0, {&xrd, &rvc_imm});
-    DEFINE_PI6TYPE(bitrevi);
+
     DEFINE_RTYPE(add32);
     DEFINE_RTYPE(radd32);
     DEFINE_RTYPE(uradd32);
