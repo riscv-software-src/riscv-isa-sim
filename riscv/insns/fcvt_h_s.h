@@ -1,5 +1,5 @@
-require_extension(EXT_ZFHMIN);
+require_either_extension(EXT_ZFHMIN, EXT_ZHINXMIN);
 require_fp;
 softfloat_roundingMode = RM;
-WRITE_FRD(f32_to_f16(f32(FRS1)));
+WRITE_FRD_H(f32_to_f16(FRS1_F));
 set_fp_exceptions;

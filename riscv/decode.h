@@ -223,14 +223,56 @@ private:
 #define RVC_SP READ_REG(X_SP)
 
 // FPU macros
+#define READ_ZDINX_REG(reg) (xlen == 32 ? f64(READ_REG_PAIR(reg)) : f64(STATE.XPR[reg] & (uint64_t)-1))
+#define READ_FREG_H(reg) (p->extension_enabled(EXT_ZFINX) ? f16(STATE.XPR[reg] & (uint16_t)-1) : f16(READ_FREG(reg)))
+#define READ_FREG_F(reg) (p->extension_enabled(EXT_ZFINX) ? f32(STATE.XPR[reg] & (uint32_t)-1) : f32(READ_FREG(reg)))
+#define READ_FREG_D(reg) (p->extension_enabled(EXT_ZFINX) ? READ_ZDINX_REG(reg) : f64(READ_FREG(reg)))
 #define FRS1 READ_FREG(insn.rs1())
 #define FRS2 READ_FREG(insn.rs2())
 #define FRS3 READ_FREG(insn.rs3())
+#define FRS1_H READ_FREG_H(insn.rs1())
+#define FRS1_F READ_FREG_F(insn.rs1())
+#define FRS1_D READ_FREG_D(insn.rs1())
+#define FRS2_H READ_FREG_H(insn.rs2())
+#define FRS2_F READ_FREG_F(insn.rs2())
+#define FRS2_D READ_FREG_D(insn.rs2())
+#define FRS3_H READ_FREG_H(insn.rs3())
+#define FRS3_F READ_FREG_F(insn.rs3())
+#define FRS3_D READ_FREG_D(insn.rs3())
 #define dirty_fp_state  STATE.sstatus->dirty(SSTATUS_FS)
 #define dirty_ext_state STATE.sstatus->dirty(SSTATUS_XS)
 #define dirty_vs_state  STATE.sstatus->dirty(SSTATUS_VS)
 #define DO_WRITE_FREG(reg, value) (STATE.FPR.write(reg, value), dirty_fp_state)
 #define WRITE_FRD(value) WRITE_FREG(insn.rd(), value)
+#define WRITE_FRD_H(value) \
+do { \
+  if (p->extension_enabled(EXT_ZFINX)) \
+    WRITE_REG(insn.rd(), sext_xlen((int16_t)((value).v))); \
+  else { \
+    WRITE_FRD(value); \
+  } \
+} while(0)
+#define WRITE_FRD_F(value) \
+do { \
+  if (p->extension_enabled(EXT_ZFINX)) \
+    WRITE_REG(insn.rd(), sext_xlen((value).v)); \
+  else { \
+    WRITE_FRD(value); \
+  } \
+} while(0)
+#define WRITE_FRD_D(value) \
+do { \
+  if (p->extension_enabled(EXT_ZFINX)) { \
+    if (xlen == 32) { \
+      uint64_t val = (value).v; \
+      WRITE_RD_PAIR(val); \
+    } else { \
+      WRITE_REG(insn.rd(), (value).v); \
+    } \
+  } else { \
+    WRITE_FRD(value); \
+  } \
+} while(0)
  
 #define SHAMT (insn.i_imm() & 0x3F)
 #define BRANCH_TARGET (pc + insn.sb_imm())

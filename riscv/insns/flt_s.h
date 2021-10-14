@@ -1,4 +1,4 @@
-require_extension('F');
+require_either_extension('F', EXT_ZFINX);
 require_fp;
-WRITE_RD(f32_lt(f32(FRS1), f32(FRS2)));
+WRITE_RD(f32_lt(FRS1_F, FRS2_F));
 set_fp_exceptions;
