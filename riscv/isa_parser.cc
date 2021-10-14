@@ -130,6 +130,18 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZBKC] = true;
     } else if (ext_str == "zbkx") {
       extension_table[EXT_ZBKX] = true;
+    } else if (ext_str == "zdinx") {
+      extension_table[EXT_ZFINX] = true;
+      extension_table[EXT_ZDINX] = true;
+    } else if (ext_str == "zfinx") {
+      extension_table[EXT_ZFINX] = true;
+    } else if (ext_str == "zhinx") {
+      extension_table[EXT_ZFINX] = true;
+      extension_table[EXT_ZHINX] = true;
+      extension_table[EXT_ZHINXMIN] = true;
+    } else if (ext_str == "zhinxmin") {
+      extension_table[EXT_ZFINX] = true;
+      extension_table[EXT_ZHINXMIN] = true;
     } else if (ext_str == "zk") {
       extension_table[EXT_ZBKB] = true;
       extension_table[EXT_ZBKC] = true;
@@ -227,6 +239,10 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   }
   if (*p) {
     bad_isa_string(str, ("can't parse: " + std::string(p)).c_str());
+  }
+
+  if (extension_table[EXT_ZFINX] && ((max_isa >> ('f' - 'a')) & 1)) {
+    bad_isa_string(str, ("Zfinx/ZDinx/Zhinx{min} extensions conflict with Base 'F/D/Q/Zfh{min}' extensions"));
   }
 
   std::string lowercase = strtolower(priv);
