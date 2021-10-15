@@ -10,7 +10,7 @@
 #include "memtracer.h"
 
 class processor_t;
-class state_t;
+struct state_t;
 
 // Parent, abstract class for all CSRs
 class csr_t {
