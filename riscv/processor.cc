@@ -226,6 +226,10 @@ void processor_t::parse_isa_string(const char* str)
     if (!*all_subsets)
       bad_isa_string(str, "Wrong order");
     switch (*p) {
+      case 'p': extension_table[EXT_ZBPBO] = true;
+                extension_table[EXT_ZPN] = true;
+                extension_table[EXT_ZPSFOPERAND] = true;
+                extension_table[EXT_ZMMUL] = true; break;
       case 'q': max_isa |= 1L << ('d' - 'a');
       case 'd': max_isa |= 1L << ('f' - 'a');
     }
@@ -250,6 +254,8 @@ void processor_t::parse_isa_string(const char* str)
     } else if (ext_str == "zicsr") {
       // Spike necessarily has Zicsr, because
       // Zicsr is implied by the privileged architecture
+    } else if (ext_str == "zmmul") {
+      extension_table[EXT_ZMMUL] = true;
     } else if (ext_str == "zba") {
       extension_table[EXT_ZBA] = true;
     } else if (ext_str == "zbb") {

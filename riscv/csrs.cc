@@ -1145,6 +1145,7 @@ float_csr_t::float_csr_t(processor_t* const proc, const reg_t addr, const reg_t 
 }
 
 void float_csr_t::verify_permissions(insn_t insn, bool write) const {
+  masked_csr_t::verify_permissions(insn, write);
   require_fp;
   if (!proc->extension_enabled('F'))
     throw trap_illegal_instruction(insn.bits());
@@ -1233,7 +1234,7 @@ vxsat_csr_t::vxsat_csr_t(processor_t* const proc, const reg_t addr):
 
 void vxsat_csr_t::verify_permissions(insn_t insn, bool write) const {
   require_vector_vs;
-  if (!proc->extension_enabled('V') && !proc->extension_enabled('P'))
+  if (!proc->extension_enabled('V') && !proc->extension_enabled(EXT_ZPN))
     throw trap_illegal_instruction(insn.bits());
   masked_csr_t::verify_permissions(insn, write);
 }

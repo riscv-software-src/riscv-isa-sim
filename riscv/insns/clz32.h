@@ -1,3 +1,4 @@
+require_rv64;
 P_ONE_LOOP(32, {
   pd = 0;
   if (ps1 == 0) pd = 32;

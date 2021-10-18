@@ -1008,7 +1008,6 @@ riscv_insn_ext_p_simd = \
 	kabs16 \
 	clrs16 \
 	clz16 \
-	clo16 \
 	smin8 \
 	umin8 \
 	smax8 \
@@ -1018,8 +1017,6 @@ riscv_insn_ext_p_simd = \
 	kabs8 \
 	clrs8 \
 	clz8 \
-	clo8 \
-	swap8 \
 	sunpkd810 \
 	sunpkd820 \
 	sunpkd830 \
@@ -1082,8 +1079,6 @@ riscv_insn_ext_p_partial_simd = \
 	sclip32 \
 	uclip32 \
 	clrs32 \
-	clz32 \
-	clo32 \
 	pbsad \
 	pbsada \
 	smaqa \
@@ -1147,19 +1142,12 @@ riscv_insn_ext_p_non_simd = \
 	uraddw \
 	rsubw \
 	ursubw \
-	maxw \
-	minw \
 	mulr64 \
 	mulsr64 \
 	msubr32 \
 	ave \
 	sra_u \
 	srai_u \
-	bitrev \
-	bitrevi \
-	wext \
-	wexti \
-	bpick \
 	insb \
 	maddr32 \
 
@@ -1239,10 +1227,9 @@ riscv_insn_ext_p_rv64_only = \
 	smdrs32 \
 	smxds32 \
 	sraiw_u \
-	pkbb32 \
 	pkbt32 \
 	pktb32 \
-	pktt32 \
+	clz32 \
 
 riscv_insn_ext_p = \
 	$(riscv_insn_ext_p_simd) \

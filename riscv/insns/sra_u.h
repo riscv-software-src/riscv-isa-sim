@@ -1,4 +1,4 @@
-require_extension('P');
+require_extension(EXT_ZPN);
 sreg_t rs1 = sext_xlen(RS1);
 reg_t sa = get_field(RS2, make_mask64(0, xlen == 32 ? 5 : 6));
 

@@ -2369,7 +2369,7 @@ reg_t index[P.VU.vlmax]; \
   }
 
 #define P_LOOP_BASE(BIT) \
-  require_extension('P'); \
+  require_extension(EXT_ZPN); \
   require(BIT == e8 || BIT == e16 || BIT == e32); \
   reg_t rd_tmp = RD; \
   reg_t rs1 = RS1; \
@@ -2378,7 +2378,7 @@ reg_t index[P.VU.vlmax]; \
   for (sreg_t i = len - 1; i >= 0; --i) {
 
 #define P_ONE_LOOP_BASE(BIT) \
-  require_extension('P'); \
+  require_extension(EXT_ZPN); \
   require(BIT == e8 || BIT == e16 || BIT == e32); \
   reg_t rd_tmp = RD; \
   reg_t rs1 = RS1; \
@@ -2386,7 +2386,7 @@ reg_t index[P.VU.vlmax]; \
   for (sreg_t i = len - 1; i >= 0; --i) {
 
 #define P_I_LOOP_BASE(BIT, IMMBIT) \
-  require_extension('P'); \
+  require_extension(EXT_ZPN); \
   require(BIT == e8 || BIT == e16 || BIT == e32); \
   reg_t rd_tmp = RD; \
   reg_t rs1 = RS1; \
@@ -2395,7 +2395,7 @@ reg_t index[P.VU.vlmax]; \
   for (sreg_t i = len - 1; i >= 0; --i) {
 
 #define P_X_LOOP_BASE(BIT, LOWBIT) \
-  require_extension('P'); \
+  require_extension(EXT_ZPN); \
   require(BIT == e8 || BIT == e16 || BIT == e32); \
   reg_t rd_tmp = RD; \
   reg_t rs1 = RS1; \
@@ -2405,7 +2405,7 @@ reg_t index[P.VU.vlmax]; \
   for (sreg_t i = len - 1; i >= 0; --i) {
 
 #define P_MUL_LOOP_BASE(BIT) \
-  require_extension('P'); \
+  require_extension(EXT_ZPN); \
   require(BIT == e8 || BIT == e16 || BIT == e32); \
   reg_t rd_tmp = RD; \
   reg_t rs1 = RS1; \
@@ -2414,7 +2414,7 @@ reg_t index[P.VU.vlmax]; \
   for (sreg_t i = len - 1; i >= 0; --i) {
 
 #define P_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
-  require_extension('P'); \
+  require_extension(EXT_ZPN); \
   require(BIT == e16 || BIT == e32 || BIT == e64); \
   reg_t rd_tmp = USE_RD ? zext_xlen(RD) : 0; \
   reg_t rs1 = zext_xlen(RS1); \
@@ -2426,7 +2426,7 @@ reg_t index[P.VU.vlmax]; \
     for (sreg_t j = i * len_inner; j < (i + 1) * len_inner; ++j) {
 
 #define P_REDUCTION_ULOOP_BASE(BIT, BIT_INNER, USE_RD) \
-  require_extension('P'); \
+  require_extension(EXT_ZPN); \
   require(BIT == e16 || BIT == e32 || BIT == e64); \
   reg_t rd_tmp = USE_RD ? zext_xlen(RD) : 0; \
   reg_t rs1 = zext_xlen(RS1); \
@@ -2711,7 +2711,7 @@ reg_t index[P.VU.vlmax]; \
   WRITE_RD(sext_xlen(rd_tmp));
 
 #define P_SUNPKD8(X, Y) \
-  require_extension('P'); \
+  require_extension(EXT_ZPN); \
   reg_t rd_tmp = 0; \
   int16_t pd[4] = { \
     P_SB(RS1, Y), \
@@ -2727,7 +2727,7 @@ reg_t index[P.VU.vlmax]; \
   WRITE_RD(sext_xlen(rd_tmp));
 
 #define P_ZUNPKD8(X, Y) \
-  require_extension('P'); \
+  require_extension(EXT_ZPN); \
   reg_t rd_tmp = 0; \
   uint16_t pd[4] = { \
     P_B(RS1, Y), \
@@ -2743,7 +2743,7 @@ reg_t index[P.VU.vlmax]; \
   WRITE_RD(sext_xlen(rd_tmp));
 
 #define P_PK(BIT, X, Y) \
-  require_extension('P'); \
+  require_extension(EXT_ZPN); \
   require(BIT == e16 || BIT == e32); \
   reg_t rd_tmp = 0, rs1 = RS1, rs2 = RS2; \
   for (sreg_t i = 0; i < xlen / BIT / 2; i++) { \
@@ -2755,11 +2755,11 @@ reg_t index[P.VU.vlmax]; \
   WRITE_RD(sext_xlen(rd_tmp));
 
 #define P_64_PROFILE_BASE() \
-  require_extension('P'); \
+  require_extension(EXT_ZPSFOPERAND); \
   sreg_t rd, rs1, rs2;
 
 #define P_64_UPROFILE_BASE() \
-  require_extension('P'); \
+  require_extension(EXT_ZPSFOPERAND); \
   reg_t rd, rs1, rs2;
 
 #define P_64_PROFILE_PARAM(USE_RD, INPUT_PAIR) \
