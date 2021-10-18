@@ -29,6 +29,8 @@ struct diff_context_t {
   word_t stvec;
   word_t mcause;
   word_t scause;
+  word_t mtval;
+  word_t stval;
   word_t mie;
   word_t mscratch;
   word_t priv;
@@ -70,6 +72,8 @@ void sim_t::diff_get_regs(void* diff_context) {
   ctx->stvec = state->stvec->read();
   ctx->mcause = state->mcause->read();
   ctx->scause = state->scause->read();
+  ctx->mtval = state->mtval->read();
+  ctx->stval = state->stval->read();
   ctx->mie = state->mie->read();
   ctx->mscratch = mscratch->read();
   ctx->priv = state->prv;
@@ -88,6 +92,8 @@ void sim_t::diff_set_regs(void* diff_context) {
   state->stvec->write(ctx->stvec);
   state->mcause->write(ctx->mcause);
   state->scause->write(ctx->scause);
+  state->mtval->write(ctx->mtval);
+  state->stval->write(ctx->stval);
   state->mie->write(ctx->mie);
   mscratch->write(ctx->mscratch);
   state->prv = ctx->priv;
