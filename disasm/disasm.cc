@@ -1826,14 +1826,8 @@ disassembler_t::disassembler_t(int xlen)
   add_unknown_insns(this);
 }
 
-const disasm_insn_t* disassembler_t::lookup(insn_t insn) const
+const disasm_insn_t* disassembler_t::probe_once(insn_t insn, size_t idx) const
 {
-  size_t idx = insn.bits() % HASH_SIZE;
-  for (size_t j = 0; j < chain[idx].size(); j++)
-    if(*chain[idx][j] == insn)
-      return chain[idx][j];
-
-  idx = HASH_SIZE;
   for (size_t j = 0; j < chain[idx].size(); j++)
     if(*chain[idx][j] == insn)
       return chain[idx][j];
@@ -1841,11 +1835,24 @@ const disasm_insn_t* disassembler_t::lookup(insn_t insn) const
   return NULL;
 }
 
+const disasm_insn_t* disassembler_t::lookup(insn_t insn) const
+{
+  if (auto p = probe_once(insn, hash(insn.bits(), MASK1)))
+    return p;
+
+  if (auto p = probe_once(insn, hash(insn.bits(), MASK2)))
+    return p;
+
+  return probe_once(insn, HASH_SIZE);
+}
+
 void NOINLINE disassembler_t::add_insn(disasm_insn_t* insn)
 {
-  size_t idx = HASH_SIZE;
-  if (insn->get_mask() % HASH_SIZE == HASH_SIZE - 1)
-    idx = insn->get_match() % HASH_SIZE;
+  size_t idx =
+    (insn->get_mask() & MASK1) == MASK1 ? hash(insn->get_match(), MASK1) :
+    (insn->get_mask() & MASK2) == MASK2 ? hash(insn->get_match(), MASK2) :
+    HASH_SIZE;
+
   chain[idx].push_back(insn);
 }
 
