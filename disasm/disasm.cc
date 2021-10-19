@@ -124,11 +124,10 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    std::stringstream s;
     int32_t target = insn.sb_imm();
-    char sign = target >= 0 ? '+' : '-';
-    s << "pc " << sign << ' ' << abs(target);
-    return s.str();
+    std::string s = target >= 0 ? "pc + " : "pc - ";
+    s += std::to_string(abs(target));
+    return s;
   }
 } branch_target;
 
@@ -260,21 +259,19 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    std::stringstream s;
     int32_t target = insn.rvc_b_imm();
-    char sign = target >= 0 ? '+' : '-';
-    s << "pc " << sign << ' ' << abs(target);
-    return s.str();
+    std::string s = target >= 0 ? "pc + " : "pc - ";
+    s += std::to_string(abs(target));
+    return s;
   }
 } rvc_branch_target;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    std::stringstream s;
     int32_t target = insn.rvc_j_imm();
-    char sign = target >= 0 ? '+' : '-';
-    s << "pc " << sign << ' ' << abs(target);
-    return s.str();
+    std::string s = target >= 0 ? "pc + " : "pc - ";
+    s += std::to_string(abs(target));
+    return s;
   }
 } rvc_jump_target;
 
@@ -366,25 +363,25 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    std::stringstream s;
+    std::string s;
     auto iorw = insn.iorw();
     bool has_pre = false;
     static const char type[] = "wroi";
     for (int i = 7; i >= 4; --i) {
       if (iorw & (1ul << i)) {
-        s << type[i - 4];
+        s += type[i - 4];
         has_pre = true;
       }
     }
 
-    s << (has_pre ? "," : "");
+    s += (has_pre ? "," : "");
     for (int i = 3; i >= 0; --i) {
       if (iorw & (1ul << i)) {
-        s << type[i];
+        s += type[i];
       }
     }
 
-    return s.str();
+    return s;
   }
 } iorw;
 
