@@ -243,7 +243,7 @@ $(2)_lib_libnames_shared	:= $$(if $$($(2)_install_shared_lib),lib$(1).so,)
 
 lib$(1).a : $$($(2)_objs) $$($(2)_c_objs) $$($(2)_lib_libnames)
 	$(AR) rcs $$@ $$^
-lib$(1).so : $$($(2)_objs) $$($(2)_c_objs) $$($(2)_lib_libnames_shared) $$($(2)_lib_libnames)
+lib$(1).so : $$($(2)_objs) $$($(2)_c_objs) $$($(2)_lib_libnames)
 	$(LINK) -shared -o $$@ $(if $(filter Darwin,$(shell uname -s)),-install_name $(install_libs_dir)/$$@) $$^ $$($(2)_lib_libnames) $(LIBS)
 
 $(2)_junk += lib$(1).a
