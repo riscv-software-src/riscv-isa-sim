@@ -1705,7 +1705,7 @@ reg_t index[P.VU.vlmax]; \
       } \
     } \
   } \
-  P.VU.vstart = 0; \
+  P.VU.vstart->write(0);
 
 #define VI_ST_WHOLE \
   require_vector_novtype(true, false); \
