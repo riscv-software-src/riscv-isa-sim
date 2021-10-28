@@ -339,6 +339,8 @@ static int xlen_to_uxl(int xlen)
   abort();
 }
 
+const int state_t::num_triggers;
+
 void state_t::reset(processor_t* const proc, reg_t max_isa)
 {
   pc = DEFAULT_RSTVEC;
