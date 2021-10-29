@@ -49,7 +49,7 @@ class cache_sim_t
   size_t idx_shift;
 
   uint64_t* tags;
-  
+
   uint64_t read_accesses;
   uint64_t read_misses;
   uint64_t bytes_read;
@@ -107,9 +107,9 @@ class icache_sim_t : public cache_memtracer_t
   {
     return type == FETCH;
   }
-  void trace(uint64_t addr, size_t bytes, access_type type)
+  void trace(uint64_t addr, size_t len_bytes, access_type type, const uint8_t* bytes)
   {
-    if (type == FETCH) cache->access(addr, bytes, false);
+    if (type == FETCH) cache->access(addr, len_bytes, false);
   }
 };
 
@@ -121,9 +121,9 @@ class dcache_sim_t : public cache_memtracer_t
   {
     return type == LOAD || type == STORE;
   }
-  void trace(uint64_t addr, size_t bytes, access_type type)
+  void trace(uint64_t addr, size_t len_bytes, access_type type, const uint8_t* bytes)
   {
-    if (type == LOAD || type == STORE) cache->access(addr, bytes, type == STORE);
+    if (type == LOAD || type == STORE) cache->access(addr, len_bytes, type == STORE);
   }
 };
 

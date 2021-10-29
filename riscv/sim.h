@@ -48,6 +48,9 @@ public:
   // run the simulation to completion
   int run();
   void set_debug(bool value);
+  void set_ust_trace(const char * const instruction_trace_file,
+                     const char * const data_trace_file,
+                     bool data_trace_debug);
   void set_histogram(bool value);
 
   // Configure logging
@@ -59,6 +62,7 @@ public:
   void configure_log(bool enable_log, bool enable_commitlog);
 
   void set_procs_debug(bool value);
+  void set_procs_trace(bool i_value, bool d_value);
   void set_remote_bitbang(remote_bitbang_t* remote_bitbang) {
     this->remote_bitbang = remote_bitbang;
   }
@@ -107,6 +111,8 @@ private:
   size_t current_step;
   size_t current_proc;
   bool debug;
+  bool i_trace;
+  bool d_trace;
   bool histogram_enabled; // provide a histogram of PCs
   bool log;
   remote_bitbang_t* remote_bitbang;

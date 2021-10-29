@@ -55,6 +55,9 @@ static void help(int exit_code = 1)
   fprintf(stderr, "                        This flag can be used multiple times.\n");
   fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
   fprintf(stderr, "  --dump-dts            Print device tree string and exit\n");
+  fprintf(stderr, "  --ust-trace=<file>    Write Instruction trace file\n");
+  fprintf(stderr, "  --data-trace=<file>   Write Data trace file\n");
+  fprintf(stderr, "  --data-trace-debug    Produce data trace debug output (not usable for trace)\n");
   fprintf(stderr, "  --disable-dtb         Don't write the device tree blob into memory\n");
   fprintf(stderr, "  --kernel=<path>       Load kernel flat image into memory\n");
   fprintf(stderr, "  --initrd=<path>       Load kernel initrd into memory\n");
@@ -238,6 +241,9 @@ int main(int argc, char** argv)
   const char* priv = DEFAULT_PRIV;
   const char* varch = DEFAULT_VARCH;
   const char* dtb_file = NULL;
+  const char* instruction_trace_file = NULL;
+  const char* data_trace_file = NULL;
+  bool data_trace_debug = false;
   uint16_t rbb_port = 0;
   bool use_rbb = false;
   unsigned dmi_rti = 0;
@@ -334,6 +340,9 @@ int main(int argc, char** argv)
   parser.option(0, "device", 1, device_parser);
   parser.option(0, "extension", 1, [&](const char* s){extensions.push_back(find_extension(s));});
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
+  parser.option(0, "ust-trace", 1, [&](const char *s){instruction_trace_file = s;});
+  parser.option(0, "data-trace", 1, [&](const char *s){data_trace_file = s;});
+  parser.option(0, "data-trace-debug", 0, [&](const char *s){data_trace_debug = true;});
   parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
   parser.option(0, "dtb", 1, [&](const char *s){dtb_file = s;});
   parser.option(0, "kernel", 1, [&](const char* s){kernel = s;});
@@ -467,6 +476,7 @@ int main(int argc, char** argv)
   }
 
   s.set_debug(debug);
+  s.set_ust_trace(instruction_trace_file, data_trace_file, data_trace_debug);
   s.configure_log(log, log_commits);
   s.set_histogram(histogram);
 

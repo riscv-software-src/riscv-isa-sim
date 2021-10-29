@@ -16,6 +16,7 @@ class extension_t
   virtual const char* name() = 0;
   virtual void reset() {};
   virtual void set_debug(bool value) {};
+  virtual void set_trace(bool i_value, bool d_value) {};
   virtual ~extension_t();
 
   void set_processor(processor_t* _p) { p = _p; }

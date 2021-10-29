@@ -280,6 +280,7 @@ public:
   ~processor_t();
 
   void set_debug(bool value);
+  void set_trace(bool i_value, bool d_value);
   void set_histogram(bool value);
 #ifdef RISCV_ENABLE_COMMITLOG
   void enable_log_commits();
@@ -355,6 +356,10 @@ public:
 
   // When true, display disassembly of each instruction that's executed.
   bool debug;
+  // When true, write the instruction trace
+  bool i_trace;
+  // When true, write the data trace
+  bool d_trace;
   // When true, take the slow simulation path.
   bool slow_path();
   bool halted() { return state.debug_mode; }

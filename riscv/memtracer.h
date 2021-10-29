@@ -20,7 +20,7 @@ class memtracer_t
   virtual ~memtracer_t() {}
 
   virtual bool interested_in_range(uint64_t begin, uint64_t end, access_type type) = 0;
-  virtual void trace(uint64_t addr, size_t bytes, access_type type) = 0;
+  virtual void trace(uint64_t addr, size_t len_bytes, access_type type, const uint8_t* bytes) = 0;
 };
 
 class memtracer_list_t : public memtracer_t
@@ -34,10 +34,10 @@ class memtracer_list_t : public memtracer_t
         return true;
     return false;
   }
-  void trace(uint64_t addr, size_t bytes, access_type type)
+  void trace(uint64_t addr, size_t len_bytes, access_type type, const uint8_t* bytes)
   {
     for (std::vector<memtracer_t*>::iterator it = list.begin(); it != list.end(); ++it)
-      (*it)->trace(addr, bytes, type);
+      (*it)->trace(addr, len_bytes, type, bytes);
   }
   void hook(memtracer_t* h)
   {

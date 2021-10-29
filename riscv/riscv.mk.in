@@ -8,6 +8,7 @@ riscv_subproject_deps = \
 riscv_install_prog_srcs = \
 
 riscv_hdrs = \
+	ust_tracer.h \
 	abstract_device.h \
 	common.h \
 	decode.h \
@@ -39,6 +40,7 @@ riscv_precompiled_hdrs = \
 	insn_template.h \
 
 riscv_srcs = \
+	ust_tracer.cc \
 	processor.cc \
 	execute.cc \
 	dts.cc \

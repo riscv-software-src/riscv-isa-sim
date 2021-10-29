@@ -1,6 +1,8 @@
 // See LICENSE for license details.
 
 #include "sim.h"
+#include "ust_tracer.h"
+#include "ust_data_tracer.h"
 #include "mmu.h"
 #include "dts.h"
 #include "remote_bitbang.h"
@@ -61,6 +63,8 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     current_step(0),
     current_proc(0),
     debug(false),
+    i_trace(false),
+    d_trace(false),
     histogram_enabled(false),
     log(false),
     remote_bitbang(NULL),
@@ -165,6 +169,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
 
 sim_t::~sim_t()
 {
+  ust_close();
   for (size_t i = 0; i < procs.size(); i++)
     delete procs[i];
   delete debug_mmu;
@@ -179,6 +184,9 @@ void sim_t::main()
 {
   if (!debug && log)
     set_procs_debug(true);
+
+  if (!debug && (i_trace || d_trace))
+      set_procs_trace(i_trace, d_trace);
 
   while (!done())
   {
@@ -226,6 +234,30 @@ void sim_t::set_debug(bool value)
   debug = value;
 }
 
+void sim_t::set_ust_trace(const char * const instruction_trace_file,
+                          const char * const data_trace_file,
+                          bool data_trace_debug)
+{
+  if (instruction_trace_file == NULL)
+    i_trace = false;
+  else {
+    ust_open_i_trace(instruction_trace_file);
+    i_trace = true;
+  }
+
+  if (data_trace_file == NULL)
+    d_trace = false;
+  else {
+    ust_open_d_trace(data_trace_file, data_trace_debug);
+    d_tracers.resize(procs.size());
+    for (size_t i = 0; i < procs.size(); i++) {
+        d_tracers[i] = new data_tracer_t();
+        procs[i]->get_mmu()->register_memtracer(d_tracers[i]);
+    }
+    d_trace = true;
+  }
+}
+
 void sim_t::set_histogram(bool value)
 {
   histogram_enabled = value;
@@ -263,6 +295,12 @@ void sim_t::set_procs_debug(bool value)
 static bool paddr_ok(reg_t addr)
 {
   return (addr >> MAX_PADDR_BITS) == 0;
+}
+
+void sim_t::set_procs_trace(bool i_value, bool d_value)
+{
+  for (size_t i=0; i< procs.size(); i++)
+      procs[i]->set_trace(i_value, d_value);
 }
 
 bool sim_t::mmio_load(reg_t addr, size_t len, uint8_t* bytes)
