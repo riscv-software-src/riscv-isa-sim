@@ -18,7 +18,8 @@ Spike supports the following RISC-V ISA features:
   - D extension, v2.2
   - Q extension, v2.2
   - C extension, v2.0
-  - K extension, v0.8.1 ([Scalar Cryptography](https://github.com/riscv/riscv-crypto))
+  - Zbkb, Zbkc, Zbkx, Zknd, Zkne, Zknh, Zksed, Zksh scalar cryptography extensions (Zk, Zkn, and Zks groups), v1.0
+  - Zkr virtual entropy source emulation, v1.0
   - V extension, v1.0 (_requires a 64-bit host_)
   - P extension, v0.9.2
   - Zba extension, v1.0
