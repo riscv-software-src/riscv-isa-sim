@@ -17,6 +17,6 @@ typedef uint64_t paddr_t;
 #define FMT_PADDR "0x%08x"
 typedef uint16_t ioaddr_t;
 
-#define CONFIG_MSIZE (256*1024*1024)
+#define CONFIG_MSIZE (1024*1024*1024)
 
 #endif
