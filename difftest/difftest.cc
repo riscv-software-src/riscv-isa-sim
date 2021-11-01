@@ -130,7 +130,7 @@ void difftest_exec(uint64_t n) {
 
 void difftest_init(int port) {
   difftest_htif_args.push_back("");
-  s = new sim_t(DEFAULT_ISA, DEFAULT_PRIV, DEFAULT_VARCH, 1, false, false,
+  s = new sim_t("RV64IMAC", DEFAULT_PRIV, DEFAULT_VARCH, 1, false, false,
       0, 0, nullptr, reg_t(-1), difftest_mem, difftest_plugin_devices, difftest_htif_args,
       std::move(difftest_hartids), difftest_dm_config, nullptr, false, nullptr, nullptr);
   s->diff_init(port);
