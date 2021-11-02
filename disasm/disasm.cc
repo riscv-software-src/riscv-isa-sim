@@ -855,7 +855,6 @@ disassembler_t::disassembler_t(int xlen)
 
   DEFINE_NOARG(ecall);
   DEFINE_NOARG(ebreak);
-  DEFINE_NOARG(uret);
   DEFINE_NOARG(sret);
   DEFINE_NOARG(mret);
   DEFINE_NOARG(dret);
