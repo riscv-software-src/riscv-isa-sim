@@ -29,11 +29,13 @@ class trap_t
 class insn_trap_t : public trap_t
 {
  public:
-  insn_trap_t(reg_t which, reg_t tval)
-    : trap_t(which), tval(tval) {}
+  insn_trap_t(reg_t which, bool gva, reg_t tval)
+    : trap_t(which), gva(gva), tval(tval) {}
+  bool has_gva() override { return gva; }
   bool has_tval() override { return true; }
   reg_t get_tval() override { return tval; }
  private:
+  bool gva;
   reg_t tval;
 };
 
@@ -62,7 +64,7 @@ class mem_trap_t : public trap_t
 
 #define DECLARE_INST_TRAP(n, x) class trap_##x : public insn_trap_t { \
  public: \
-  trap_##x(reg_t tval) : insn_trap_t(n, tval) {} \
+  trap_##x(reg_t tval) : insn_trap_t(n, /*gva*/false, tval) {} \
   const char* name() { return "trap_"#x; } \
 };
 
