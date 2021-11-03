@@ -1,2 +1,2 @@
 require_extension('C');
-throw trap_breakpoint(/*gva*/false, pc);
+throw trap_breakpoint(STATE.v, pc);
