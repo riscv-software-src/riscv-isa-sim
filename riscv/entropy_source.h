@@ -11,7 +11,7 @@ class entropy_source {
 
 public:
 
-  // Valid return codes for OPST bits [31:30] when reading sentropy.
+  // Valid return codes for OPST bits [31:30] when reading seed.
   static const uint32_t OPST_BIST = 0x0 << 30;
   static const uint32_t OPST_WAIT = 0x1 << 30;
   static const uint32_t OPST_ES16 = 0x2 << 30;
@@ -27,20 +27,20 @@ public:
   }
 
   //
-  // sentropy register
+  // seed register
   // ------------------------------------------------------------
 
-  void set_sentropy(reg_t val) {
-    // Always ignore writes to sentropy.
+  void set_seed(reg_t val) {
+    // Always ignore writes to seed.
     // This CSR is strictly read only. It occupies a RW CSR address
     // to handle the side-effect of the changing seed value on a read.
   }
 
 
   //
-  // The format of sentropy is described in Section 4.1 of
+  // The format of seed is described in Section 4.1 of
   // the scalar cryptography specification.
-  reg_t get_sentropy() {
+  reg_t get_seed() {
 
     uint32_t result  = 0;
 
@@ -53,8 +53,8 @@ public:
     if(return_status == OPST_ES16) {
 
         // Add some sampled entropy into the low 16 bits
-        uint16_t seed  = this -> get_two_random_bytes();
-        result        |= seed;
+        uint16_t entropy = this -> get_two_random_bytes();
+        result |= entropy;
 
     } else if(return_status == OPST_BIST) {
 

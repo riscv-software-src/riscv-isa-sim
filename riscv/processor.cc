@@ -526,7 +526,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   assert(FSR_AEXC_SHIFT == 0);  // composite_csr_t assumes fflags begins at bit 0
   csrmap[CSR_FCSR] = std::make_shared<composite_csr_t>(proc, CSR_FCSR, frm, fflags, FSR_RD_SHIFT);
 
-  csrmap[CSR_SENTROPY] = std::make_shared<sentropy_csr_t>(proc, CSR_SENTROPY);
+  csrmap[CSR_SEED] = std::make_shared<seed_csr_t>(proc, CSR_SEED);
 
   csrmap[CSR_MARCHID] = std::make_shared<const_csr_t>(proc, CSR_MARCHID, 5);
   csrmap[CSR_MIMPID] = std::make_shared<const_csr_t>(proc, CSR_MIMPID, 0);

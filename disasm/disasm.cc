@@ -836,16 +836,16 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(grev);
   add_insn(new disasm_insn_t("rev", match_grevi | ((xlen - 1) << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
   add_insn(new disasm_insn_t("rev8", match_grevi | ((xlen - 8) << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
-  add_insn(new disasm_insn_t("rev.b", match_grevi | (0x7 << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1})); // brev8
+  add_insn(new disasm_insn_t("brev8", match_grevi | (0x7 << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1})); // brev8
   add_insn(new disasm_insn_t("rev8.h", match_grevi | (0x8 << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1})); // swap16
   DEFINE_ITYPE_SHIFT(grevi);
   DEFINE_RTYPE(gorc);
   add_insn(new disasm_insn_t("orc.b", match_gorci | (0x7 << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
   DEFINE_ITYPE_SHIFT(gorci);
-  DEFINE_RTYPE(xperm_n);
-  DEFINE_RTYPE(xperm_b);
-  DEFINE_RTYPE(xperm_h);
-  DEFINE_RTYPE(xperm_w);
+  DEFINE_RTYPE(xperm4);
+  DEFINE_RTYPE(xperm8);
+  DEFINE_RTYPE(xperm16);
+  DEFINE_RTYPE(xperm32);
 
   DEFINE_R3TYPE(cmix);
   DEFINE_R3TYPE(fsr);
