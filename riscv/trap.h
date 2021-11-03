@@ -68,6 +68,12 @@ class mem_trap_t : public trap_t
   const char* name() { return "trap_"#x; } \
 };
 
+#define DECLARE_INST_WITH_GVA_TRAP(n, x) class trap_##x : public insn_trap_t {  \
+ public: \
+  trap_##x(bool gva, reg_t tval) : insn_trap_t(n, gva, tval) {} \
+  const char* name() { return "trap_"#x; } \
+};
+
 #define DECLARE_MEM_TRAP(n, x) class trap_##x : public mem_trap_t { \
  public: \
   trap_##x(bool gva, reg_t tval, reg_t tval2, reg_t tinst) : mem_trap_t(n, gva, tval, tval2, tinst) {} \
@@ -83,7 +89,7 @@ class mem_trap_t : public trap_t
 DECLARE_MEM_TRAP(CAUSE_MISALIGNED_FETCH, instruction_address_misaligned)
 DECLARE_MEM_TRAP(CAUSE_FETCH_ACCESS, instruction_access_fault)
 DECLARE_INST_TRAP(CAUSE_ILLEGAL_INSTRUCTION, illegal_instruction)
-DECLARE_INST_TRAP(CAUSE_BREAKPOINT, breakpoint)
+DECLARE_INST_WITH_GVA_TRAP(CAUSE_BREAKPOINT, breakpoint)
 DECLARE_MEM_TRAP(CAUSE_MISALIGNED_LOAD, load_address_misaligned)
 DECLARE_MEM_TRAP(CAUSE_MISALIGNED_STORE, store_address_misaligned)
 DECLARE_MEM_TRAP(CAUSE_LOAD_ACCESS, load_access_fault)
