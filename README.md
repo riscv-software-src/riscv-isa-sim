@@ -152,7 +152,7 @@ You can advance by one instruction by pressing the enter key. You can also
 execute until a desired equality is reached:
 
     : until pc 0 2020                   (stop when pc=2020)
-    : until reg 0 mie 100               (stop when register mie=256 (0x100 = 256))
+    : until reg 0 mie a                 (stop when register mie=0xa)
     : until mem 2020 50a9907311096993   (stop when mem[2020]=50a9907311096993)
 
 Alternatively, you can execute as long as an equality is true:
