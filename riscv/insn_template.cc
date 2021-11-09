@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "insn_template.h"
+#include "insn_macros.h"
 
 reg_t rv32_NAME(processor_t* p, insn_t insn, reg_t pc)
 {

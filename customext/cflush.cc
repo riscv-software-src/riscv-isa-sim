@@ -1,3 +1,4 @@
+#include "insn_macros.h"
 #include "extension.h"
 #include <cstring>
 
