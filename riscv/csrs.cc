@@ -8,6 +8,8 @@
 #include "decode.h"
 // For trap_virtual_instruction and trap_illegal_instruction:
 #include "trap.h"
+// For require():
+#include "insn_macros.h"
 
 // STATE macro used by require_privilege() macro:
 #undef STATE

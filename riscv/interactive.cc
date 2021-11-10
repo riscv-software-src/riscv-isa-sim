@@ -353,19 +353,19 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
       uint64_t val;
       switch(elen){
         case 8:
-          val = P.VU.elt<uint64_t>(r, e);
+          val = p->VU.elt<uint64_t>(r, e);
           out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(16) << val << "  ";
           break;
         case 4:
-          val = P.VU.elt<uint32_t>(r, e);
+          val = p->VU.elt<uint32_t>(r, e);
           out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (uint32_t)val << "  ";
           break;
         case 2:
-          val = P.VU.elt<uint16_t>(r, e);
+          val = p->VU.elt<uint16_t>(r, e);
           out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (uint16_t)val << "  ";
           break;
         case 1:
-          val = P.VU.elt<uint8_t>(r, e);
+          val = p->VU.elt<uint8_t>(r, e);
           out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (int)(uint8_t)val << "  ";
           break;
       }
