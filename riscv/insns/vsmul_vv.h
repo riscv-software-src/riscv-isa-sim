@@ -1,8 +1,8 @@
 // vsmul.vv vd, vs2, vs1
-VRM xrm = P.VU.get_vround_mode();
-int64_t int_max = INT64_MAX >> (64 - P.VU.vsew);
-int64_t int_min = INT64_MIN >> (64 - P.VU.vsew);
-int64_t sign_mask = uint64_t(1) << (P.VU.vsew - 1);
+VRM xrm = p->VU.get_vround_mode();
+int64_t int_max = INT64_MAX >> (64 - p->VU.vsew);
+int64_t int_min = INT64_MIN >> (64 - p->VU.vsew);
+int64_t sign_mask = uint64_t(1) << (p->VU.vsew - 1);
 
 VI_VV_LOOP
 ({

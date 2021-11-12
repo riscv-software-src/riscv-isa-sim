@@ -3,7 +3,7 @@ VI_CHECK_SLIDE(false);
 
 VI_VFP_LOOP_BASE
 if (i != vl - 1) {
-  switch (P.VU.vsew) {
+  switch (p->VU.vsew) {
     case e16: {
       VI_XI_SLIDEDOWN_PARAMS(e16, 1);
       vd = vs2;
@@ -21,15 +21,15 @@ if (i != vl - 1) {
     break;
   }
 } else {
-  switch (P.VU.vsew) {
+  switch (p->VU.vsew) {
     case e16:
-      P.VU.elt<float16_t>(rd_num, vl - 1, true) = f16(FRS1);
+      p->VU.elt<float16_t>(rd_num, vl - 1, true) = f16(FRS1);
       break;
     case e32:
-      P.VU.elt<float32_t>(rd_num, vl - 1, true) = f32(FRS1);
+      p->VU.elt<float32_t>(rd_num, vl - 1, true) = f32(FRS1);
       break;
     case e64:
-      P.VU.elt<float64_t>(rd_num, vl - 1, true) = f64(FRS1);
+      p->VU.elt<float64_t>(rd_num, vl - 1, true) = f64(FRS1);
       break;
   }
 }

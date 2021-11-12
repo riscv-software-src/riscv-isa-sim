@@ -4,12 +4,12 @@ VI_VFP_CVT_SCALE
   ;
 },
 {
-  auto vs2 = P.VU.elt<float16_t>(rs2_num, i);
-  P.VU.elt<float32_t>(rd_num, i, true) = f16_to_f32(vs2);
+  auto vs2 = p->VU.elt<float16_t>(rs2_num, i);
+  p->VU.elt<float32_t>(rd_num, i, true) = f16_to_f32(vs2);
 },
 {
-  auto vs2 = P.VU.elt<float32_t>(rs2_num, i);
-  P.VU.elt<float64_t>(rd_num, i, true) = f32_to_f64(vs2);
+  auto vs2 = p->VU.elt<float32_t>(rs2_num, i);
+  p->VU.elt<float64_t>(rd_num, i, true) = f32_to_f64(vs2);
 },
 {
   ;
@@ -20,4 +20,4 @@ VI_VFP_CVT_SCALE
 {
   require(p->extension_enabled('D'));
 },
-true, (P.VU.vsew >= 16))
+true, (p->VU.vsew >= 16))

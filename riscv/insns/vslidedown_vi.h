@@ -5,7 +5,7 @@ const reg_t sh = insn.v_zimm5();
 VI_LOOP_BASE
 
 reg_t offset = 0;
-bool is_valid = (i + sh) < P.VU.vlmax;
+bool is_valid = (i + sh) < p->VU.vlmax;
 
 if (is_valid) {
   offset = sh;

@@ -6,22 +6,22 @@ const reg_t vs2 = insn.rs2();
 const reg_t len = insn.rs1() + 1;
 require_align(vd, len);
 require_align(vs2, len);
-const reg_t size = len * P.VU.vlenb;
+const reg_t size = len * p->VU.vlenb;
 
 //register needs one-by-one copy to keep commitlog correct
-if (vd != vs2 && P.VU.vstart->read() < size) {
-  reg_t i = P.VU.vstart->read() / P.VU.vlenb;
-  reg_t off = P.VU.vstart->read() % P.VU.vlenb;
+if (vd != vs2 && p->VU.vstart->read() < size) {
+  reg_t i = p->VU.vstart->read() / p->VU.vlenb;
+  reg_t off = p->VU.vstart->read() % p->VU.vlenb;
   if (off) {
-    memcpy(&P.VU.elt<uint8_t>(vd + i, off, true),
-           &P.VU.elt<uint8_t>(vs2 + i, off), P.VU.vlenb - off);
+    memcpy(&p->VU.elt<uint8_t>(vd + i, off, true),
+           &p->VU.elt<uint8_t>(vs2 + i, off), p->VU.vlenb - off);
     i++;
   }
 
   for (; i < len; ++i) {
-    memcpy(&P.VU.elt<uint8_t>(vd + i, 0, true),
-           &P.VU.elt<uint8_t>(vs2 + i, 0), P.VU.vlenb);
+    memcpy(&p->VU.elt<uint8_t>(vd + i, 0, true),
+           &p->VU.elt<uint8_t>(vs2 + i, 0), p->VU.vlenb);
   }
 }
 
-P.VU.vstart->write(0);
+p->VU.vstart->write(0);
