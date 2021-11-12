@@ -406,7 +406,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
                                                                MIP_HS_MASK,   // read_mask
                                                                MIP_VSSIP,     // ip_write_mask
                                                                MIP_HS_MASK,   // ie_write_mask
-                                                               false,         // mask_mideleg
+                                                               true,          // mask_mideleg
                                                                false,         // mask_hideleg
                                                                0);
 
