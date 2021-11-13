@@ -956,6 +956,16 @@ void hypervisor_csr_t::verify_permissions(insn_t insn, bool write) const {
 }
 
 
+hideleg_csr_t::hideleg_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mideleg):
+  masked_csr_t(proc, addr, MIP_VS_MASK, 0),
+  mideleg(mideleg) {
+}
+
+reg_t hideleg_csr_t::read() const noexcept {
+  return masked_csr_t::read() & mideleg->read();
+};
+
+
 hgatp_csr_t::hgatp_csr_t(processor_t* const proc, const reg_t addr):
   basic_csr_t(proc, addr, 0) {
 }

@@ -511,6 +511,15 @@ class hypervisor_csr_t: public basic_csr_t {
 };
 
 
+class hideleg_csr_t: public masked_csr_t {
+ public:
+  hideleg_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mideleg);
+  virtual reg_t read() const noexcept override;
+ private:
+  csr_t_p mideleg;
+};
+
+
 class hgatp_csr_t: public basic_csr_t {
  public:
   hgatp_csr_t(processor_t* const proc, const reg_t addr);

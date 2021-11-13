@@ -474,7 +474,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_HSTATUS] = hstatus = std::make_shared<masked_csr_t>(proc, CSR_HSTATUS, hstatus_mask, hstatus_init);
   csrmap[CSR_HGEIE] = std::make_shared<const_csr_t>(proc, CSR_HGEIE, 0);
   csrmap[CSR_HGEIP] = std::make_shared<const_csr_t>(proc, CSR_HGEIP, 0);
-  csrmap[CSR_HIDELEG] = hideleg = std::make_shared<masked_csr_t>(proc, CSR_HIDELEG, MIP_VS_MASK, 0);
+  csrmap[CSR_HIDELEG] = hideleg = std::make_shared<hideleg_csr_t>(proc, CSR_HIDELEG, mideleg);
   const reg_t hedeleg_mask =
     (1 << CAUSE_MISALIGNED_FETCH) |
     (1 << CAUSE_FETCH_ACCESS) |
