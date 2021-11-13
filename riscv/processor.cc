@@ -394,37 +394,45 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MCOUNTINHIBIT] = std::make_shared<const_csr_t>(proc, CSR_MCOUNTINHIBIT, 0);
   csrmap[CSR_MIE] = mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
   csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
-  auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(this,
-                                                               ~MIP_HS_MASK,  // read_mask
-                                                               MIP_SSIP,      // ip_write_mask
-                                                               ~MIP_HS_MASK,  // ie_write_mask
-                                                               true,          // mask_mideleg
-                                                               false,         // mask_hideleg
-                                                               0);            // shiftamt
+  auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(
+    this,
+    ~MIP_HS_MASK,  // read_mask
+    MIP_SSIP,      // ip_write_mask
+    ~MIP_HS_MASK,  // ie_write_mask
+    true,          // mask_mideleg
+    false,         // mask_hideleg
+    0              // shiftamt
+  );
 
-  auto hip_hie_accr = std::make_shared<generic_int_accessor_t>(this,
-                                                               MIP_HS_MASK,   // read_mask
-                                                               MIP_VSSIP,     // ip_write_mask
-                                                               MIP_HS_MASK,   // ie_write_mask
-                                                               true,          // mask_mideleg
-                                                               false,         // mask_hideleg
-                                                               0);
+  auto hip_hie_accr = std::make_shared<generic_int_accessor_t>(
+    this,
+    MIP_HS_MASK,   // read_mask
+    MIP_VSSIP,     // ip_write_mask
+    MIP_HS_MASK,   // ie_write_mask
+    true,          // mask_mideleg
+    false,         // mask_hideleg
+    0              // shiftamt
+  );
 
-  auto hvip_accr = std::make_shared<generic_int_accessor_t>(this,
-                                                            MIP_VS_MASK,   // read_mask
-                                                            MIP_VS_MASK,   // ip_write_mask
-                                                            MIP_VS_MASK,   // ie_write_mask
-                                                            false,         // mask_mideleg
-                                                            false,         // mask_hideleg
-                                                            0);            // shiftamt
+  auto hvip_accr = std::make_shared<generic_int_accessor_t>(
+    this,
+    MIP_VS_MASK,   // read_mask
+    MIP_VS_MASK,   // ip_write_mask
+    MIP_VS_MASK,   // ie_write_mask
+    false,         // mask_mideleg
+    false,         // mask_hideleg
+    0              // shiftamt
+  );
 
-  auto vsip_vsie_accr = std::make_shared<generic_int_accessor_t>(this,
-                                                                 MIP_VS_MASK,   // read_mask
-                                                                 MIP_VSSIP,     // ip_write_mask
-                                                                 MIP_VS_MASK,   // ie_write_mask
-                                                                 false,         // mask_mideleg
-                                                                 true,          // mask_hideleg
-                                                                 1);            // shiftamt
+  auto vsip_vsie_accr = std::make_shared<generic_int_accessor_t>(
+    this,
+    MIP_VS_MASK,   // read_mask
+    MIP_VSSIP,     // ip_write_mask
+    MIP_VS_MASK,   // ie_write_mask
+    false,         // mask_mideleg
+    true,          // mask_hideleg
+    1              // shiftamt
+  );
 
   auto nonvirtual_sip = std::make_shared<mip_proxy_csr_t>(proc, CSR_SIP, sip_sie_accr);
   auto vsip = std::make_shared<mip_proxy_csr_t>(proc, CSR_VSIP, vsip_vsie_accr);
