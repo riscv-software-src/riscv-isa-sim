@@ -399,8 +399,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     ~MIP_HS_MASK,  // read_mask
     MIP_SSIP,      // ip_write_mask
     ~MIP_HS_MASK,  // ie_write_mask
-    true,          // mask_mideleg
-    false,         // mask_hideleg
+    generic_int_accessor_t::mask_mode_t::MIDELEG,
     0              // shiftamt
   );
 
@@ -409,8 +408,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     MIP_HS_MASK,   // read_mask
     MIP_VSSIP,     // ip_write_mask
     MIP_HS_MASK,   // ie_write_mask
-    true,          // mask_mideleg
-    false,         // mask_hideleg
+    generic_int_accessor_t::mask_mode_t::MIDELEG,
     0              // shiftamt
   );
 
@@ -419,8 +417,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     MIP_VS_MASK,   // read_mask
     MIP_VS_MASK,   // ip_write_mask
     MIP_VS_MASK,   // ie_write_mask
-    false,         // mask_mideleg
-    false,         // mask_hideleg
+    generic_int_accessor_t::mask_mode_t::NONE,
     0              // shiftamt
   );
 
@@ -429,8 +426,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     MIP_VS_MASK,   // read_mask
     MIP_VSSIP,     // ip_write_mask
     MIP_VS_MASK,   // ie_write_mask
-    false,         // mask_mideleg
-    true,          // mask_hideleg
+    generic_int_accessor_t::mask_mode_t::HIDELEG,
     1              // shiftamt
   );
 

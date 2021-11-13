@@ -616,15 +616,14 @@ generic_int_accessor_t::generic_int_accessor_t(state_t* const state,
                                                const reg_t read_mask,
                                                const reg_t ip_write_mask,
                                                const reg_t ie_write_mask,
-                                               const bool mask_mideleg,
-                                               const bool mask_hideleg,
+                                               const mask_mode_t mask_mode,
                                                const int shiftamt):
   state(state),
   read_mask(read_mask),
   ip_write_mask(ip_write_mask),
   ie_write_mask(ie_write_mask),
-  mask_mideleg(mask_mideleg),
-  mask_hideleg(mask_hideleg),
+  mask_mideleg(mask_mode == MIDELEG),
+  mask_hideleg(mask_mode == HIDELEG),
   shiftamt(shiftamt) {
 }
 

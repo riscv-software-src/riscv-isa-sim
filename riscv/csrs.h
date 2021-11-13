@@ -323,12 +323,13 @@ typedef std::shared_ptr<mie_csr_t> mie_csr_t_p;
 // etc.
 class generic_int_accessor_t {
  public:
+  enum mask_mode_t { NONE, MIDELEG, HIDELEG };
+
   generic_int_accessor_t(state_t* const state,
                          const reg_t read_mask,
                          const reg_t ip_write_mask,
                          const reg_t ie_write_mask,
-                         const bool mask_mideleg,
-                         const bool mask_hideleg,
+                         const mask_mode_t mask_mode,
                          const int shiftamt);
   reg_t ip_read() const noexcept;
   void ip_write(const reg_t val) noexcept;
