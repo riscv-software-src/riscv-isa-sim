@@ -736,7 +736,7 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     enabled_interrupts = pending_interrupts & deleg_to_hs & -hs_enabled;
     if (state.v && enabled_interrupts == 0) {
       // VS-ints have least priority and can only be taken with virt enabled
-      const reg_t deleg_to_vs = state.mideleg->read() & state.hideleg->read();
+      const reg_t deleg_to_vs = state.hideleg->read();
       const reg_t vs_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
       enabled_interrupts = pending_interrupts & deleg_to_vs & -vs_enabled;
     }
@@ -867,7 +867,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   bool curr_virt = state.v;
   bool interrupt = (bit & ((reg_t)1 << (max_xlen-1))) != 0;
   if (interrupt) {
-    vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.mideleg->read() & state.hideleg->read()) : 0;
+    vsdeleg = (curr_virt && state.prv <= PRV_S) ? state.hideleg->read() : 0;
     hsdeleg = (state.prv <= PRV_S) ? state.mideleg->read() : 0;
     bit &= ~((reg_t)1 << (max_xlen-1));
   } else {
