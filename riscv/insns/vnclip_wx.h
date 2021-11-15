@@ -1,7 +1,7 @@
 // vnclip: vd[i] = clip(round(vs2[i] + rnd) >> rs1[i])
-VRM xrm = P.VU.get_vround_mode();
-int64_t int_max = INT64_MAX >> (64 - P.VU.vsew);
-int64_t int_min = INT64_MIN >> (64 - P.VU.vsew);
+VRM xrm = p->VU.get_vround_mode();
+int64_t int_max = INT64_MAX >> (64 - p->VU.vsew);
+int64_t int_min = INT64_MIN >> (64 - p->VU.vsew);
 VI_VVXI_LOOP_NARROW
 ({
   int128_t result = vs2;

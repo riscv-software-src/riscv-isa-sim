@@ -1,5 +1,5 @@
 // vssrl.vv vd, vs2, vs1
-VRM xrm = P.VU.get_vround_mode();
+VRM xrm = p->VU.get_vround_mode();
 VI_VV_ULOOP
 ({
   int sh = vs1 & (sew - 1);
