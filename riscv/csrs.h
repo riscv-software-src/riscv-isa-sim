@@ -323,12 +323,13 @@ typedef std::shared_ptr<mie_csr_t> mie_csr_t_p;
 // etc.
 class generic_int_accessor_t {
  public:
+  enum mask_mode_t { NONE, MIDELEG, HIDELEG };
+
   generic_int_accessor_t(state_t* const state,
                          const reg_t read_mask,
                          const reg_t ip_write_mask,
                          const reg_t ie_write_mask,
-                         const bool mask_mideleg,
-                         const bool mask_hideleg,
+                         const mask_mode_t mask_mode,
                          const int shiftamt);
   reg_t ip_read() const noexcept;
   void ip_write(const reg_t val) noexcept;
@@ -508,6 +509,15 @@ class hypervisor_csr_t: public basic_csr_t {
  public:
   hypervisor_csr_t(processor_t* const proc, const reg_t addr);
   virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+
+class hideleg_csr_t: public masked_csr_t {
+ public:
+  hideleg_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mideleg);
+  virtual reg_t read() const noexcept override;
+ private:
+  csr_t_p mideleg;
 };
 
 
