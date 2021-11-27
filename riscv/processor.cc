@@ -214,8 +214,13 @@ void processor_t::parse_isa_string(const char* str)
     max_xlen = 64;
   else
     bad_isa_string(str, "Spike supports either RV32I or RV64I");
-  if (isa_string[4] == 'g')
+
+  if (isa_string[4] == 'g') {
+    // G = IMAFD_Zicsr_Zifencei, but Spike includes the latter two
+    // unconditionally, so they need not be explicitly added here.
     isa_string = isa_string.substr(0, 4) + "imafd" + isa_string.substr(5);
+  }
+
   if (isa_string[4] != 'i')
     bad_isa_string(str, "'I' extension is required");
 
