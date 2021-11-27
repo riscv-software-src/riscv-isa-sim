@@ -256,6 +256,8 @@ void processor_t::parse_isa_string(const char* str)
       // Zicsr is implied by the privileged architecture
     } else if (ext_str == "zifencei") {
       // Zifencei is ignored and implied
+    } else if (ext_str == "zihintpause") {
+      // ZiHintPause is ignored (only a hint)
     } else if (ext_str == "zmmul") {
       extension_table[EXT_ZMMUL] = true;
     } else if (ext_str == "zba") {
