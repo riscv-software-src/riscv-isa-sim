@@ -254,6 +254,9 @@ void processor_t::parse_isa_string(const char* str)
     } else if (ext_str == "zicsr") {
       // Spike necessarily has Zicsr, because
       // Zicsr is implied by the privileged architecture
+    } else if (ext_str == "zifencei") {
+      // For compatibility with version 2.0 of the base ISAs, we
+      // unconditionally include FENCE.I, so Zifencei adds nothing more.
     } else if (ext_str == "zmmul") {
       extension_table[EXT_ZMMUL] = true;
     } else if (ext_str == "zba") {
