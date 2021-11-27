@@ -96,7 +96,7 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 default-CFLAGS   := -DPREFIX=\"$(prefix)\" -Wall -Wno-unused -Wno-nonportable-include-path -g -O2 -fPIC
 default-CXXFLAGS := $(default-CFLAGS) -std=c++11
 
-mcppbs-CPPFLAGS := @CPPFLAGS@ @BOOST_CPPFLAGS@
+mcppbs-CPPFLAGS := @CPPFLAGS@
 mcppbs-CFLAGS   := $(default-CFLAGS) @CFLAGS@
 mcppbs-CXXFLAGS := $(default-CXXFLAGS) @CXXFLAGS@
 
@@ -111,7 +111,7 @@ all-cxx-flags := \
 all-c-flags := \
   $(mcppbs-CPPFLAGS) $(mcppbs-CFLAGS) $(CPPFLAGS) $(CFLAGS)
 
-COMPILE       := $(CXX) -MMD -MP $(all-cxx-flags) $(sprojs_include)
+COMPILE       := $(CXX) -MMD -MP $(all-cxx-flags) $(sprojs_include) @BOOST_CPPFLAGS@
 COMPILE_C     := $(CC) -MMD -MP $(all-c-flags) $(sprojs_include)
 
 # Linker
