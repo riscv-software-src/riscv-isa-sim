@@ -1427,85 +1427,37 @@ VI_LOOP_END
   VI_LOOP_END
 
 // average loop
-#define VI_VVX_LOOP_AVG(opd, op, is_vs1) \
-VI_CHECK_SSS(is_vs1); \
+#define VI_VV_LOOP_AVG(op) \
 VRM xrm = p->VU.get_vround_mode(); \
-VI_LOOP_BASE \
-  switch(sew) { \
-    case e8: { \
-     VV_PARAMS(e8); \
-     type_sew_t<e8>::type rs1 = RS1; \
-     auto res = (int32_t)vs2 op opd; \
-     INT_ROUNDING(res, xrm, 1); \
-     vd = res >> 1; \
-     break; \
-    } \
-    case e16: { \
-     VV_PARAMS(e16); \
-     type_sew_t<e16>::type rs1 = RS1; \
-     auto res = (int32_t)vs2 op opd; \
-     INT_ROUNDING(res, xrm, 1); \
-     vd = res >> 1; \
-     break; \
-    } \
-    case e32: { \
-     VV_PARAMS(e32); \
-     type_sew_t<e32>::type rs1 = RS1; \
-     auto res = (int64_t)vs2 op opd; \
-     INT_ROUNDING(res, xrm, 1); \
-     vd = res >> 1; \
-     break; \
-    } \
-    default: { \
-     VV_PARAMS(e64); \
-     type_sew_t<e64>::type rs1 = RS1; \
-     auto res = (int128_t)vs2 op opd; \
-     INT_ROUNDING(res, xrm, 1); \
-     vd = res >> 1; \
-     break; \
-    } \
-  } \
-VI_LOOP_END
+VI_VV_LOOP({ \
+  uint128_t res = ((uint128_t)vs2) op vs1; \
+  INT_ROUNDING(res, xrm, 1); \
+  vd = res >> 1; \
+})
 
-#define VI_VVX_ULOOP_AVG(opd, op, is_vs1) \
-VI_CHECK_SSS(is_vs1); \
+#define VI_VX_LOOP_AVG(op) \
 VRM xrm = p->VU.get_vround_mode(); \
-VI_LOOP_BASE \
-  switch(sew) { \
-    case e8: { \
-     VV_U_PARAMS(e8); \
-     type_usew_t<e8>::type rs1 = RS1; \
-     auto res = (uint16_t)vs2 op opd; \
-     INT_ROUNDING(res, xrm, 1); \
-     vd = res >> 1; \
-     break; \
-    } \
-    case e16: { \
-     VV_U_PARAMS(e16); \
-     type_usew_t<e16>::type rs1 = RS1; \
-     auto res = (uint32_t)vs2 op opd; \
-     INT_ROUNDING(res, xrm, 1); \
-     vd = res >> 1; \
-     break; \
-    } \
-    case e32: { \
-     VV_U_PARAMS(e32); \
-     type_usew_t<e32>::type rs1 = RS1; \
-     auto res = (uint64_t)vs2 op opd; \
-     INT_ROUNDING(res, xrm, 1); \
-     vd = res >> 1; \
-     break; \
-    } \
-    default: { \
-     VV_U_PARAMS(e64); \
-     type_usew_t<e64>::type rs1 = RS1; \
-     auto res = (uint128_t)vs2 op opd; \
-     INT_ROUNDING(res, xrm, 1); \
-     vd = res >> 1; \
-     break; \
-    } \
-  } \
-VI_LOOP_END
+VI_VX_LOOP({ \
+  uint128_t res = ((uint128_t)vs2) op rs1; \
+  INT_ROUNDING(res, xrm, 1); \
+  vd = res >> 1; \
+})
+
+#define VI_VV_ULOOP_AVG(op) \
+VRM xrm = p->VU.get_vround_mode(); \
+VI_VV_ULOOP({ \
+  uint128_t res = ((uint128_t)vs2) op vs1; \
+  INT_ROUNDING(res, xrm, 1); \
+  vd = res >> 1; \
+})
+
+#define VI_VX_ULOOP_AVG(op) \
+VRM xrm = p->VU.get_vround_mode(); \
+VI_VX_ULOOP({ \
+  uint128_t res = ((uint128_t)vs2) op rs1; \
+  INT_ROUNDING(res, xrm, 1); \
+  vd = res >> 1; \
+})
 
 //
 // vector: load/store helper 
