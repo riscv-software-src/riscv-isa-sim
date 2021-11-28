@@ -2,7 +2,7 @@
 VRM xrm = P.VU.get_vround_mode();
 int64_t int_max = INT64_MAX >> (64 - P.VU.vsew);
 int64_t int_min = INT64_MIN >> (64 - P.VU.vsew);
-VI_VVXI_LOOP_NARROW
+VI_VV_LOOP_NARROW
 ({
   int128_t result = vs2;
   unsigned shift = vs1 & ((sew * 2) - 1);
@@ -22,4 +22,4 @@ VI_VVXI_LOOP_NARROW
   }
 
   vd = result;
-}, true)
+})
