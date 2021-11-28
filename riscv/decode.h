@@ -1151,8 +1151,8 @@ VI_LOOP_END
   } \
   VI_LOOP_END
 
-#define VI_VI_LOOP_NSHIFT(BODY, is_vs1) \
-  VI_CHECK_SDS(is_vs1); \
+#define VI_VI_LOOP_NSHIFT(BODY) \
+  VI_CHECK_SDS(false); \
   VI_LOOP_NSHIFT_BASE \
   if (sew == e8){ \
     VI_NSHIFT_PARAMS(e8, e16) \
@@ -1166,8 +1166,8 @@ VI_LOOP_END
   } \
   VI_LOOP_END
 
-#define VI_VX_LOOP_NSHIFT(BODY, is_vs1) \
-  VI_CHECK_SDS(is_vs1); \
+#define VI_VX_LOOP_NSHIFT(BODY) \
+  VI_CHECK_SDS(false); \
   VI_LOOP_NSHIFT_BASE \
   if (sew == e8){ \
     VX_NSHIFT_PARAMS(e8, e16) \
@@ -1181,8 +1181,8 @@ VI_LOOP_END
   } \
   VI_LOOP_END
 
-#define VI_VV_LOOP_NSHIFT(BODY, is_vs1) \
-  VI_CHECK_SDS(is_vs1); \
+#define VI_VV_LOOP_NSHIFT(BODY) \
+  VI_CHECK_SDS(true); \
   VI_LOOP_NSHIFT_BASE \
   if (sew == e8){ \
     VV_NSHIFT_PARAMS(e8, e16) \
