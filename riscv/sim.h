@@ -69,6 +69,12 @@ public:
   // Callback for processors to let the simulation know they were reset.
   void proc_reset(unsigned id);
 
+  void diff_init(int port);
+  void diff_step(uint64_t n);
+  void diff_get_regs(void* diff_context);
+  void diff_set_regs(void* diff_context);
+  void diff_memcpy(reg_t dest, void* src, size_t n);
+
 private:
   std::vector<std::pair<reg_t, mem_t*>> mems;
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
@@ -108,6 +114,7 @@ private:
   size_t current_step;
   size_t current_proc;
   bool debug;
+  bool is_diff_ref;
   bool histogram_enabled; // provide a histogram of PCs
   bool log;
   remote_bitbang_t* remote_bitbang;

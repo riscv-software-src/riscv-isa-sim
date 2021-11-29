@@ -289,7 +289,7 @@ void htif_t::parse_arguments(int argc, char ** argv)
           break;
         throw std::invalid_argument("Unknown argument (did you mean to enable +permissive parsing?)");
       case 1: {
-        std::string arg = optarg;
+        std::string arg = optarg ? optarg : "";
         if (arg == "+h" || arg == "+help") {
           c = 'h';
           optarg = nullptr;
