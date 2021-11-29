@@ -1,5 +1,5 @@
 require_rv64;
-require_extension('B');
+require_extension(EXT_XBITMANIP);
 reg_t x = zext_xlen(RS1);
 for (int i = 0; i < 64; i++)
   x = (x >> 1) ^ (0x82F63B78 & ~((x&1)-1));

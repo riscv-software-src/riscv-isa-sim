@@ -2,7 +2,7 @@
 #include "aes_common.h"
 
 require_rv64;
-require_extension('K');
+require_either_extension(EXT_ZKND, EXT_ZKNE);
 
 uint8_t     round_consts [10] = {
     0x01, 0x02, 0x04, 0x08, 0x10, 0x20, 0x40, 0x80, 0x1b, 0x36
@@ -20,7 +20,7 @@ uint8_t     rcon              = 0            ;
 uint64_t    result                           ;
 
 if(enc_rcon != 0xA) {
-    temp    = (temp >> 8) | (temp << 24); // Rotate left by 8
+    temp    = (temp >> 8) | (temp << 24); // Rotate right by 8
     rcon    = round_consts[enc_rcon];
 }
 

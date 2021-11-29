@@ -8,7 +8,7 @@ reg_t zimm5 = insn.v_zimm5();
 
 VI_LOOP_BASE
 
-for (reg_t i = P.VU.vstart; i < vl; ++i) {
+for (reg_t i = P.VU.vstart->read(); i < vl; ++i) {
   VI_LOOP_ELEMENT_SKIP();
 
   switch (sew) {

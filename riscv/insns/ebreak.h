@@ -1,1 +1,1 @@
-throw trap_breakpoint(pc);
+throw trap_breakpoint(STATE.v, pc);

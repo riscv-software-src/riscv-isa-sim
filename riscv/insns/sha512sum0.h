@@ -1,5 +1,5 @@
 require_rv64;
-require_extension('K');
+require_extension(EXT_ZKNH);
 
 #define ROR64(a,amt) ((a << (-amt & (64-1))) | (a >> (amt & (64-1))))
 

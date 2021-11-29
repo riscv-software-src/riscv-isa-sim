@@ -15,9 +15,9 @@ VI_VFP_CVT_SCALE
   ;
 },
 {
-  require(p->supports_extension(EXT_ZFH));
+  require(p->extension_enabled(EXT_ZFH));
 },
 {
-  require(p->supports_extension('D'));
+  require(p->extension_enabled('D'));
 },
 false, (P.VU.vsew >= 16))

@@ -3,7 +3,7 @@
 #include "htif.h"
 #include "rfb.h"
 #include "elfloader.h"
-#include "encoding.h"
+#include "platform.h"
 #include "byteorder.h"
 #include <algorithm>
 #include <assert.h>
@@ -52,6 +52,8 @@ htif_t::htif_t()
 
 htif_t::htif_t(int argc, char** argv) : htif_t()
 {
+  //Set line size as 16 by default.
+  line_size = 16;
   parse_arguments(argc, argv);
   register_devices();
 }
@@ -169,7 +171,7 @@ void htif_t::stop()
   if (!sig_file.empty() && sig_len) // print final torture test signature
   {
     std::vector<uint8_t> buf(sig_len);
-    mem.read(sig_addr, sig_len, &buf[0]);
+    mem.read(sig_addr, sig_len, buf.data());
 
     std::ofstream sigs(sig_file);
     assert(sigs && "can't open signature file!");

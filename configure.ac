@@ -45,8 +45,12 @@ AC_CANONICAL_HOST
 
 m4_include(ax_require_defined.m4)
 m4_include(ax_append_flag.m4)
+m4_include(ax_check_compile_flag.m4)
 m4_include(ax_check_link_flag.m4)
 m4_include(ax_append_link_flags.m4)
+m4_include(ax_boost_base.m4)
+m4_include(ax_boost_asio.m4)
+m4_include(ax_boost_regex.m4)
 
 #-------------------------------------------------------------------------
 # Checks for programs
@@ -88,6 +92,8 @@ AC_CHECK_TYPE([__int128_t], AC_SUBST([HAVE_INT128],[yes]))
 #-------------------------------------------------------------------------
 
 AX_APPEND_LINK_FLAGS([-Wl,--export-dynamic])
+
+AX_CHECK_COMPILE_FLAG([-relocatable-pch], AC_SUBST([HAVE_CLANG_PCH],[yes]))
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject list

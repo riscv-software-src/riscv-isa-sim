@@ -38,6 +38,7 @@ scripts_dir  := $(src_dir)/scripts
 
 HAVE_INT128 := @HAVE_INT128@
 HAVE_DLOPEN := @HAVE_DLOPEN@
+HAVE_CLANG_PCH := @HAVE_CLANG_PCH@
 
 # If the version information is not in the configure script, then we
 # assume that we are in a working directory. We use the vcs-version.sh
@@ -92,7 +93,7 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 # These all appear on the command line, from lowest precedence to
 # highest.
 
-default-CFLAGS   := -DPREFIX=\"$(prefix)\" -Wall -Wno-unused -g -O2
+default-CFLAGS   := -DPREFIX=\"$(prefix)\" -Wall -Wno-unused -Wno-nonportable-include-path -g -O2 -fPIC
 default-CXXFLAGS := $(default-CFLAGS) -std=c++11
 
 mcppbs-CPPFLAGS := @CPPFLAGS@
@@ -110,19 +111,19 @@ all-cxx-flags := \
 all-c-flags := \
   $(mcppbs-CPPFLAGS) $(mcppbs-CFLAGS) $(CPPFLAGS) $(CFLAGS)
 
-COMPILE       := $(CXX) -MMD -MP $(all-cxx-flags) $(sprojs_include)
+COMPILE       := $(CXX) -MMD -MP $(all-cxx-flags) $(sprojs_include) @BOOST_CPPFLAGS@
 COMPILE_C     := $(CC) -MMD -MP $(all-c-flags) $(sprojs_include)
 
 # Linker
 #  - LDFLAGS : Flags for the linker (eg. -L)
 #  - LIBS    : Library flags (eg. -l)
 
-mcppbs-LDFLAGS := @LDFLAGS@
+mcppbs-LDFLAGS := @LDFLAGS@ @BOOST_LDFLAGS@
 all-link-flags := $(mcppbs-LDFLAGS) $(LDFLAGS)
 
 comma := ,
 LD            := $(CXX)
-LIBS          := @LIBS@
+LIBS          := @LIBS@ @BOOST_ASIO_LIB@ @BOOST_REGEX_LIB@
 LINK          := $(LD) -L. $(all-link-flags) -Wl,-rpath,$(install_libs_dir) $(patsubst -L%,-Wl$(comma)-rpath$(comma)%,$(filter -L%,$(LDFLAGS)))
 
 # Library creation
@@ -219,9 +220,8 @@ $(2)_deps += $$(patsubst %.o, %.d, $$($(2)_c_objs))
 $(2)_deps += $$(patsubst %.h, %.h.d, $$($(2)_precompiled_hdrs))
 $$($(2)_pch) : %.h.gch : %.h
 	$(COMPILE) -x c++-header $$< -o $$@
-# If using clang, don't depend (and thus don't build) precompiled headers
-$$($(2)_objs) : %.o : %.cc $$($(2)_gen_hdrs) $(if $(filter-out clang,$(CC)),$$($(2)_pch))
-	$(COMPILE) $$($(2)_CFLAGS) -c $$<
+$$($(2)_objs) : %.o : %.cc $$($(2)_gen_hdrs) $$($(2)_pch)
+	$(COMPILE) $(if $(HAVE_CLANG_PCH), $$(if $$($(2)_pch), -include-pch $$($(2)_pch))) $$($(2)_CFLAGS) -c $$<
 $$($(2)_c_objs) : %.o : %.c $$($(2)_gen_hdrs)
 	$(COMPILE_C) $$($(2)_CFLAGS) -c $$<
 

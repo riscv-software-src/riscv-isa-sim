@@ -13,7 +13,7 @@
 #include <cassert>
 #include "debug_rom_defines.h"
 #include "entropy_source.h"
-
+#include "csrs.h"
 
 class processor_t;
 class mmu_t;
@@ -36,18 +36,6 @@ typedef std::unordered_map<reg_t, freg_t> commit_log_reg_t;
 
 // addr, value, size
 typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
-
-typedef struct
-{
-  uint8_t prv;
-  bool step;
-  bool ebreakm;
-  bool ebreakh;
-  bool ebreaks;
-  bool ebreaku;
-  bool halt;
-  uint8_t cause;
-} dcsr_t;
 
 typedef enum
 {
@@ -149,10 +137,11 @@ struct type_sew_t<64>
   using type=int64_t;
 };
 
+
 // architectural state of a RISC-V hart
 struct state_t
 {
-  void reset(reg_t max_isa);
+  void reset(processor_t* const proc, reg_t max_isa);
 
   static const int num_triggers = 4;
 
@@ -161,60 +150,57 @@ struct state_t
   regfile_t<freg_t, NFPR, false> FPR;
 
   // control and status registers
+  std::unordered_map<reg_t, csr_t_p> csrmap;
   reg_t prv;    // TODO: Can this be an enum instead?
   bool v;
-  reg_t misa;
-  reg_t mstatus;
-  reg_t mepc;
-  reg_t mtval;
-  reg_t mscratch;
-  reg_t mtvec;
-  reg_t mcause;
-  reg_t minstret;
-  reg_t mie;
-  reg_t mip;
-  reg_t medeleg;
-  reg_t mideleg;
-  uint32_t mcounteren;
-  uint32_t scounteren;
-  reg_t sepc;
-  reg_t stval;
-  reg_t sscratch;
-  reg_t stvec;
-  reg_t satp;
-  reg_t scause;
+  misa_csr_t_p misa;
+  mstatus_csr_t_p mstatus;
+  csr_t_p mepc;
+  csr_t_p mtval;
+  csr_t_p mtvec;
+  csr_t_p mcause;
+  minstret_csr_t_p minstret;
+  mie_csr_t_p mie;
+  mip_csr_t_p mip;
+  csr_t_p medeleg;
+  csr_t_p mideleg;
+  csr_t_p mcounteren;
+  csr_t_p scounteren;
+  csr_t_p sepc;
+  csr_t_p stval;
+  csr_t_p stvec;
+  virtualized_csr_t_p satp;
+  csr_t_p scause;
 
-  reg_t mtval2;
-  reg_t mtinst;
-  reg_t hstatus;
-  reg_t hideleg;
-  reg_t hedeleg;
-  uint32_t hcounteren;
-  reg_t htval;
-  reg_t htinst;
-  reg_t hgatp;
-  reg_t vsstatus;
-  reg_t vstvec;
-  reg_t vsscratch;
-  reg_t vsepc;
-  reg_t vscause;
-  reg_t vstval;
-  reg_t vsatp;
+  csr_t_p mtval2;
+  csr_t_p mtinst;
+  csr_t_p hstatus;
+  csr_t_p hideleg;
+  csr_t_p hedeleg;
+  csr_t_p hcounteren;
+  csr_t_p htval;
+  csr_t_p htinst;
+  csr_t_p hgatp;
+  sstatus_csr_t_p sstatus;
+  vsstatus_csr_t_p vsstatus;
+  csr_t_p vstvec;
+  csr_t_p vsepc;
+  csr_t_p vscause;
+  csr_t_p vstval;
+  csr_t_p vsatp;
 
-  reg_t dpc;
-  reg_t dscratch0, dscratch1;
-  dcsr_t dcsr;
-  reg_t tselect;
+  csr_t_p dpc;
+  dcsr_csr_t_p dcsr;
+  csr_t_p tselect;
   mcontrol_t mcontrol[num_triggers];
-  reg_t tdata2[num_triggers];
+  tdata2_csr_t_p tdata2;
   bool debug_mode;
 
   static const int max_pmp = 16;
-  uint8_t pmpcfg[max_pmp];
-  reg_t pmpaddr[max_pmp];
+  pmpaddr_csr_t_p pmpaddr[max_pmp];
 
-  uint32_t fflags;
-  uint32_t frm;
+  csr_t_p fflags;
+  csr_t_p frm;
   bool serialized; // whether timer CSRs are in a well-defined state
 
   // When true, execute a single instruction and then enter debug mode.  This
@@ -243,7 +229,28 @@ typedef enum {
 
 typedef enum {
   // 65('A') ~ 90('Z') is reserved for standard isa in misa
-  EXT_ZFH   = 0,
+  EXT_ZFH,
+  EXT_ZBA,
+  EXT_ZBB,
+  EXT_ZBC,
+  EXT_ZBS,
+  EXT_ZBKB,
+  EXT_ZBKC,
+  EXT_ZBKX,
+  EXT_ZKND,
+  EXT_ZKNE,
+  EXT_ZKNH,
+  EXT_ZKSED,
+  EXT_ZKSH,
+  EXT_ZKR,
+  EXT_ZMMUL,
+  EXT_ZBPBO,
+  EXT_ZPN,
+  EXT_ZPSFOPERAND,
+  EXT_SVNAPOT,
+  EXT_SVPBMT,
+  EXT_SVINVAL,
+  EXT_XBITMANIP,
 } isa_extension_t;
 
 typedef enum {
@@ -269,7 +276,7 @@ class processor_t : public abstract_device_t
 public:
   processor_t(const char* isa, const char* priv, const char* varch,
               simif_t* sim, uint32_t id, bool halt_on_reset,
-              FILE *log_file);
+              FILE *log_file, std::ostream& sout_); // because of command line option --log and -s we need both
   ~processor_t();
 
   void set_debug(bool value);
@@ -287,31 +294,49 @@ public:
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
   unsigned get_xlen() { return xlen; }
+  unsigned get_const_xlen() {
+    // Any code that assumes a const xlen should use this method to
+    // document that assumption. If Spike ever changes to allow
+    // variable xlen, this method should be removed.
+    return xlen;
+  }
   unsigned get_max_xlen() { return max_xlen; }
   std::string get_isa_string() { return isa_string; }
   unsigned get_flen() {
-    return supports_extension('Q') ? 128 :
-           supports_extension('D') ? 64 :
-           supports_extension('F') ? 32 : 0;
+    return extension_enabled('Q') ? 128 :
+           extension_enabled('D') ? 64 :
+           extension_enabled('F') ? 32 : 0;
   }
   extension_t* get_extension();
   extension_t* get_extension(const char* name);
-  bool supports_extension(unsigned char ext) {
+  bool any_custom_extensions() const {
+    return !custom_extensions.empty();
+  }
+  bool extension_enabled(unsigned char ext) const {
     if (ext >= 'A' && ext <= 'Z')
-      return ((state.misa >> (ext - 'A')) & 1);
+      return state.misa->extension_enabled(ext);
     else
       return extension_table[ext];
+  }
+  // Is this extension enabled? and abort if this extension can
+  // possibly be disabled dynamically. Useful for documenting
+  // assumptions about writable misa bits.
+  bool extension_enabled_const(unsigned char ext) const {
+    if (ext >= 'A' && ext <= 'Z')
+      return state.misa->extension_enabled_const(ext);
+    else
+      return extension_table[ext];  // assume this can't change
   }
   void set_impl(uint8_t impl, bool val) { impl_table[impl] = val; }
   bool supports_impl(uint8_t impl) const {
     return impl_table[impl];
   }
   reg_t pc_alignment_mask() {
-    return ~(reg_t)(supports_extension('C') ? 0 : 2);
+    return ~(reg_t)(extension_enabled('C') ? 0 : 2);
   }
   void check_pc_alignment(reg_t pc) {
     if (unlikely(pc & ~pc_alignment_mask()))
-      throw trap_instruction_address_misaligned(pc, 0, 0);
+      throw trap_instruction_address_misaligned(state.v, pc, 0, 0);
   }
   reg_t legalize_privilege(reg_t);
   void set_privilege(reg_t);
@@ -375,37 +400,38 @@ public:
         value &= 0xffffffff;
       }
 
+      auto tdata2 = state.tdata2->read(i);
       switch (state.mcontrol[i].match) {
         case MATCH_EQUAL:
-          if (value != state.tdata2[i])
+          if (value != tdata2)
             continue;
           break;
         case MATCH_NAPOT:
           {
-            reg_t mask = ~((1 << (cto(state.tdata2[i])+1)) - 1);
-            if ((value & mask) != (state.tdata2[i] & mask))
+            reg_t mask = ~((1 << (cto(tdata2)+1)) - 1);
+            if ((value & mask) != (tdata2 & mask))
               continue;
           }
           break;
         case MATCH_GE:
-          if (value < state.tdata2[i])
+          if (value < tdata2)
             continue;
           break;
         case MATCH_LT:
-          if (value >= state.tdata2[i])
+          if (value >= tdata2)
             continue;
           break;
         case MATCH_MASK_LOW:
           {
-            reg_t mask = state.tdata2[i] >> (xlen/2);
-            if ((value & mask) != (state.tdata2[i] & mask))
+            reg_t mask = tdata2 >> (xlen/2);
+            if ((value & mask) != (tdata2 & mask))
               continue;
           }
           break;
         case MATCH_MASK_HIGH:
           {
-            reg_t mask = state.tdata2[i] >> (xlen/2);
-            if (((value >> (xlen/2)) & mask) != (state.tdata2[i] & mask))
+            reg_t mask = tdata2 >> (xlen/2);
+            if (((value >> (xlen/2)) & mask) != (tdata2 & mask))
               continue;
           }
           break;
@@ -441,11 +467,10 @@ private:
   bool histogram_enabled;
   bool log_commits_enabled;
   FILE *log_file;
+  std::ostream sout_; // needed for socket command interface -s, also used for -d and -l, but not for --log
   bool halt_on_reset;
   std::vector<bool> extension_table;
   std::vector<bool> impl_table;
-  
-  entropy_source es; // Crypto ISE Entropy source.
 
   std::vector<insn_desc_t> instructions;
   std::map<reg_t,uint64_t> pc_histogram;
@@ -453,15 +478,15 @@ private:
   static const size_t OPCODE_CACHE_SIZE = 8191;
   insn_desc_t opcode_cache[OPCODE_CACHE_SIZE];
 
-  void take_pending_interrupt() { take_interrupt(state.mip & state.mie); }
+  void take_pending_interrupt() { take_interrupt(state.mip->read() & state.mie->read()); }
   void take_interrupt(reg_t mask); // take first enabled interrupt in mask
   void take_trap(trap_t& t, reg_t epc); // take an exception
   void disasm(insn_t insn); // disassemble and print an instruction
   int paddr_bits();
 
-  reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }
-
   void enter_debug_mode(uint8_t cause);
+
+  void debug_output_log(std::stringstream *s); // either output to interactive user or write to log file
 
   friend class mmu_t;
   friend class clint_t;
@@ -473,14 +498,16 @@ private:
   void build_opcode_map();
   void register_base_instructions();
   insn_func_t decode_insn(insn_t insn);
-  reg_t cal_satp(reg_t val) const;
 
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;
+public:
+  entropy_source es; // Crypto ISE Entropy source.
+
   reg_t n_pmp;
   reg_t lg_pmp_granularity;
+  reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }
 
-public:
   class vectorUnit_t {
     public:
       processor_t* p;
@@ -488,7 +515,9 @@ public:
       char reg_referenced[NVPR];
       int setvl_count;
       reg_t vlmax;
-      reg_t vstart, vxrm, vxsat, vl, vtype, vlenb;
+      reg_t vlenb;
+      csr_t_p vxsat;
+      vector_csr_t_p vxrm, vstart, vl, vtype;
       reg_t vma, vta;
       reg_t vsew;
       float vflmul;
@@ -523,8 +552,26 @@ public:
 
       void reset();
 
-      vectorUnit_t(){
-        reg_file = 0;
+      vectorUnit_t():
+        p(0),
+        reg_file(0),
+        reg_referenced{0},
+        setvl_count(0),
+        vlmax(0),
+        vlenb(0),
+        vxsat(0),
+        vxrm(0),
+        vstart(0),
+        vl(0),
+        vtype(0),
+        vma(0),
+        vta(0),
+        vsew(0),
+        vflmul(0),
+        ELEN(0),
+        VLEN(0),
+        vill(false),
+        vstart_alu(false) {
       }
 
       ~vectorUnit_t(){
@@ -539,7 +586,7 @@ public:
       reg_t get_slen() { return VLEN; }
 
       VRM get_vround_mode() {
-        return (VRM)vxrm;
+        return (VRM)(vxrm->read());
       }
   };
 

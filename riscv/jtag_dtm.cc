@@ -15,7 +15,7 @@ enum {
   IR_IDCODE=1,
   IR_DTMCONTROL=0x10,
   IR_DBUS=0x11,
-  IR_RESET=0x1c
+  IR_BYPASS=0x1f
 };
 
 #define DTMCONTROL_VERSION      0xf
@@ -44,6 +44,7 @@ jtag_dtm_t::jtag_dtm_t(debug_module_t *dm, unsigned required_rti_cycles) :
   _tck(false), _tms(false), _tdi(false), _tdo(false),
   dtmcontrol((abits << DTM_DTMCS_ABITS_OFFSET) | 1),
   dmi(DMI_OP_STATUS_SUCCESS << DTM_DMI_OP_OFFSET),
+  bypass(0),
   _state(TEST_LOGIC_RESET)
 {
 }
@@ -76,8 +77,8 @@ void jtag_dtm_t::set_pins(bool tck, bool tms, bool tdi) {
   };
 
   if (!_tck && tck) {
-    // Positive clock edge.
-
+    // Positive clock edge. TMS and TDI are sampled on the rising edge of TCK by
+    // Target.
     switch (_state) {
       case SHIFT_DR:
         dr >>= 1;
@@ -91,6 +92,9 @@ void jtag_dtm_t::set_pins(bool tck, bool tms, bool tdi) {
         break;
     }
     _state = next[_state][_tms];
+
+  } else {
+    // Negative clock edge. TDO is updated.
     switch (_state) {
       case RUN_TEST_IDLE:
         if (rti_remaining > 0)
@@ -109,16 +113,9 @@ void jtag_dtm_t::set_pins(bool tck, bool tms, bool tdi) {
       case UPDATE_DR:
         update_dr();
         break;
-      case CAPTURE_IR:
-        break;
       case SHIFT_IR:
         _tdo = ir & 1;
         break;
-      //case UPDATE_IR:
-        //if (ir == IR_RESET) {
-          // Make a reset happen
-        //}
-        //break;
       default:
         break;
     }
@@ -153,8 +150,12 @@ void jtag_dtm_t::capture_dr()
       }
       dr_length = abits + 34;
       break;
+    case IR_BYPASS:
+      dr = bypass;
+      dr_length = 1;
+      break;
     default:
-      D(fprintf(stderr, "Unsupported IR: 0x%x\n", ir));
+      fprintf(stderr, "Unsupported IR: 0x%x\n", ir);
       break;
   }
   D(fprintf(stderr, "Capture DR; IR=0x%x, DR=0x%lx (%d bits)\n",
@@ -170,6 +171,8 @@ void jtag_dtm_t::update_dr()
       busy_stuck = false;
     if (dr & DTMCONTROL_DMIHARDRESET)
       reset();
+  } else if (ir == IR_BYPASS) {
+    bypass = dr;
   } else if (ir == IR_DBUS && !busy_stuck) {
     unsigned op = get_field(dr, DMI_OP);
     uint32_t data = get_field(dr, DMI_DATA);

@@ -1,6 +1,6 @@
 
 require_rv32;
-require_extension('K');
+require_extension(EXT_ZKNH);
 
 reg_t result =
     (zext32(RS1) << 25) ^ (zext32(RS1) << 30) ^ (zext32(RS1) >> 28) ^

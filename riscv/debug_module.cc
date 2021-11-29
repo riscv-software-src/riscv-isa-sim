@@ -1,10 +1,10 @@
 #include <cassert>
 
+#include "sim.h"
 #include "debug_module.h"
 #include "debug_defines.h"
 #include "opcodes.h"
 #include "mmu.h"
-#include "sim.h"
 
 #include "debug_rom/debug_rom.h"
 #include "debug_rom_defines.h"

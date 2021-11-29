@@ -66,6 +66,27 @@ static inline T sat_add(T x, T y, bool &sat)
 }
 
 template<typename T, typename UT>
+static inline T sat_add(T x, T y, T z, bool &sat)
+{
+  bool sat1, sat2;
+  T a = y;
+  T b = z;
+  T res;
+
+  /* Force compiler to use cmovs instruction */
+  if (((y ^ z) & (x ^ z)) < 0) {
+    a = z;
+    b = y;
+  }
+
+  res = sat_add<T, UT>(x, a, sat1);
+  res = sat_add<T, UT>(res, b, sat2);
+  sat = sat1 || sat2;
+
+  return res;
+}
+
+template<typename T, typename UT>
 static inline T sat_sub(T x, T y, bool &sat)
 {
   UT ux = x;
