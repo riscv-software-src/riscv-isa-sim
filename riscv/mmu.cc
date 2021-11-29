@@ -267,9 +267,13 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   if (vm.levels == 0)
     return gpa;
 
+  int maxgpabits = vm.levels * vm.idxbits + vm.widenbits + PGSHIFT;
+  reg_t maxgpa = (1ULL << maxgpabits) - 1;
+
   bool mxr = proc->state.sstatus->readvirt(false) & MSTATUS_MXR;
 
   reg_t base = vm.ptbase;
+  if ((gpa & ~maxgpa) == 0) {
   for (int i = vm.levels - 1; i >= 0; i--) {
     int ptshift = i * vm.idxbits;
     int idxbits = (i == (vm.levels - 1)) ? vm.idxbits + vm.widenbits : vm.idxbits;
@@ -327,6 +331,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
                         | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
       return page_base | (gpa & page_mask);
     }
+  }
   }
 
   switch (trap_type) {
