@@ -738,6 +738,16 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
   type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, RS1);
 
+#define VV_SU_PARAMS(x) \
+  type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
+  type_usew_t<x>::type vs1 = P.VU.elt<type_usew_t<x>::type>(rs1_num, i); \
+  type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
+
+#define VX_SU_PARAMS(x) \
+  type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
+  type_usew_t<x>::type rs1 = (type_usew_t<x>::type)RS1; \
+  type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
+
 #define VV_UCMP_PARAMS(x) \
   type_usew_t<x>::type vs1 = P.VU.elt<type_usew_t<x>::type>(rs1_num, i); \
   type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
@@ -1108,6 +1118,43 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
     BODY; \
   }else if(sew == e64){ \
     VI_PARAMS(e64); \
+    BODY; \
+  } \
+  VI_LOOP_END 
+
+// signed unsigned operation loop (e.g. mulhsu)
+#define VI_VV_SU_LOOP(BODY) \
+  VI_CHECK_SSS(true) \
+  VI_LOOP_BASE \
+  if (sew == e8){ \
+    VV_SU_PARAMS(e8); \
+    BODY; \
+  }else if(sew == e16){ \
+    VV_SU_PARAMS(e16); \
+    BODY; \
+  }else if(sew == e32){ \
+    VV_SU_PARAMS(e32); \
+    BODY; \
+  }else if(sew == e64){ \
+    VV_SU_PARAMS(e64); \
+    BODY; \
+  } \
+  VI_LOOP_END 
+
+#define VI_VX_SU_LOOP(BODY) \
+  VI_CHECK_SSS(false) \
+  VI_LOOP_BASE \
+  if (sew == e8){ \
+    VX_SU_PARAMS(e8); \
+    BODY; \
+  }else if(sew == e16){ \
+    VX_SU_PARAMS(e16); \
+    BODY; \
+  }else if(sew == e32){ \
+    VX_SU_PARAMS(e32); \
+    BODY; \
+  }else if(sew == e64){ \
+    VX_SU_PARAMS(e64); \
     BODY; \
   } \
   VI_LOOP_END 
