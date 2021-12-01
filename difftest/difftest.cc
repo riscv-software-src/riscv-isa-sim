@@ -21,18 +21,25 @@ static csr_t_p mscratch = nullptr;
 
 struct diff_context_t {
   word_t gpr[32];
+  word_t fpr[32];
   word_t pc;
   word_t mstatus;
-  word_t mepc;
-  word_t sepc;
-  word_t mtvec;
-  word_t stvec;
   word_t mcause;
+  word_t mepc;
+  word_t sstatus;
   word_t scause;
-  word_t mtval;
-  word_t stval;
+  word_t sepc;
+  word_t satp;
+  word_t mip;
   word_t mie;
   word_t mscratch;
+  word_t sscratch;
+  word_t mideleg;
+  word_t medeleg;
+  word_t mtval;
+  word_t stval;
+  word_t mtvec;
+  word_t stvec;
   word_t priv;
 };
 
@@ -64,18 +71,27 @@ void sim_t::diff_get_regs(void* diff_context) {
   for (int i = 0; i < NXPR; i++) {
     ctx->gpr[i] = state->XPR[i];
   }
+  for (int i = 0; i < NFPR; i++) {
+    ctx->fpr[i] = f128_to_ui64_r_minMag(state->FPR[i], true);
+  }
   ctx->pc = state->pc;
   ctx->mstatus = state->mstatus->read();
-  ctx->mepc = state->mepc->read();
-  ctx->sepc = state->sepc->read();
-  ctx->mtvec = state->mtvec->read();
-  ctx->stvec = state->stvec->read();
   ctx->mcause = state->mcause->read();
+  ctx->mepc = state->mepc->read();
+  ctx->sstatus = state->sstatus->read();
   ctx->scause = state->scause->read();
+  ctx->sepc = state->sepc->read();
+  ctx->satp = state->satp->read();
+  ctx->mip = state->mip->read();
+  ctx->mie = state->mie->read();
+  ctx->mscratch = state->csrmap[CSR_MSCRATCH]->read();
+  ctx->sscratch = state->csrmap[CSR_SSCRATCH]->read();
+  ctx->mideleg = state->mideleg->read();
+  ctx->medeleg = state->medeleg->read();
   ctx->mtval = state->mtval->read();
   ctx->stval = state->stval->read();
-  ctx->mie = state->mie->read();
-  ctx->mscratch = mscratch->read();
+  ctx->mtvec = state->mtvec->read();
+  ctx->stvec = state->stvec->read();
   ctx->priv = state->prv;
 }
 
@@ -84,18 +100,27 @@ void sim_t::diff_set_regs(void* diff_context) {
   for (int i = 0; i < NXPR; i++) {
     state->XPR.write(i, (sword_t)ctx->gpr[i]);
   }
-  if (ctx->pc)      state->pc = ctx->pc;
-  if (ctx->mstatus) state->mstatus->write(ctx->mstatus);
-  state->mepc->write(ctx->mepc);
-  state->sepc->write(ctx->sepc);
-  state->mtvec->write(ctx->mtvec);
-  state->stvec->write(ctx->stvec);
+  for (int i = 0; i < NFPR; i++) {
+    state->FPR.write(i, ui64_to_f128(ctx->fpr[i]));
+  }
+  state->pc = ctx->pc;
+  state->mstatus->write(ctx->mstatus);
   state->mcause->write(ctx->mcause);
+  state->mepc->write(ctx->mepc);
+  state->sstatus->write(ctx->sstatus);
   state->scause->write(ctx->scause);
+  state->sepc->write(ctx->sepc);
+  state->satp->write(ctx->satp);
+  state->mip->write(ctx->mip);
+  state->mie->write(ctx->mie);
+  state->csrmap[CSR_MSCRATCH]->write(ctx->mscratch);
+  state->csrmap[CSR_SSCRATCH]->write(ctx->sscratch);
+  state->mideleg->write(ctx->mideleg);
+  state->medeleg->write(ctx->medeleg);
   state->mtval->write(ctx->mtval);
   state->stval->write(ctx->stval);
-  state->mie->write(ctx->mie);
-  mscratch->write(ctx->mscratch);
+  state->mtvec->write(ctx->mtvec);
+  state->stvec->write(ctx->stvec);
   state->prv = ctx->priv;
 }
 
@@ -130,14 +155,46 @@ void difftest_exec(uint64_t n) {
 
 void difftest_init(int port) {
   difftest_htif_args.push_back("");
-  s = new sim_t("RV64IMAC", DEFAULT_PRIV, DEFAULT_VARCH, 1, false, false,
-      0, 0, nullptr, reg_t(-1), difftest_mem, difftest_plugin_devices, difftest_htif_args,
-      std::move(difftest_hartids), difftest_dm_config, nullptr, false, nullptr, nullptr);
+  s = new sim_t(
+    // const char* isa
+    "RV64IMAFDC_zba_zbb_zbc_zbs_zbkb_zbkc_zbkx_zknd_zkne_zknh_zksed_zksh_svinval",
+    // const char* priv
+    DEFAULT_PRIV,
+    // const char* varch
+    DEFAULT_VARCH,
+    // size_t _nprocs
+    1,
+    // bool halted, bool real_time_clint
+    false, false,
+    // reg_t initrd_start, reg_t initrd_end, const char* bootargs
+    0, 0, nullptr,
+    // reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems
+    reg_t(-1), difftest_mem,
+    // std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices
+    difftest_plugin_devices,
+    // const std::vector<std::string>& args
+    difftest_htif_args,
+    // const std::vector<int> hartids
+    std::move(difftest_hartids),
+    // const debug_module_config_t &dm_config
+    difftest_dm_config,
+    // const char *log_path
+    nullptr,
+    //bool dtb_enabled, const char *dtb_file, FILE *cmd_file
+    false, nullptr, nullptr);
   s->diff_init(port);
 }
 
 void difftest_raise_intr(uint64_t NO) {
   assert(0);
+}
+
+void isa_reg_display() {
+  printf("TODO in Spike\n");
+}
+
+int difftest_store_commit(uint64_t *addr, uint64_t *data, uint8_t *mask) {
+  return 0;
 }
 
 }
