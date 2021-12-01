@@ -4,8 +4,7 @@ GUEST_ISA = riscv64
 REPO_BUILD_PATH = $(REPO_PATH)/build
 REPO_MAKEFILE = $(REPO_BUILD_PATH)/Makefile
 
-SPIKE_SRC = $(shell find ../ -name '*.c') $(shell find ../ -name '*.cc') $(shell find ../ -name '*.h')
-$(REPO_MAKEFILE): $(REPO_PATH)/configure $(SPIKE_SRC)
+$(REPO_MAKEFILE): $(REPO_PATH)/configure
 	mkdir -p $(@D)
 	cd $(@D) && $(abspath $(REPO_PATH))/configure --enable-dirty --with-boost=no --with-boost-asio=no --with-boost-regex=no CXXFLAGS="-O3" CFLAGS="-O3"
 	sed -i -e 's/-g -O2/-O3/' $@
