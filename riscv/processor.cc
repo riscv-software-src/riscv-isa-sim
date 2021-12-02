@@ -117,12 +117,17 @@ static bool check_pow2(int val)
   return ((val & (val - 1))) == 0;
 }
 
+static std::string strtolower(const char* str)
+{
+  std::string res;
+  for (const char *r = str; *r; r++)
+    res += std::tolower(*r);
+  return res;
+}
+
 void processor_t::parse_varch_string(const char* s)
 {
-  std::string str, tmp;
-  for (const char *r = s; *r; r++)
-    str += std::tolower(*r);
-
+  std::string str = strtolower(s);
   size_t pos = 0;
   size_t len = str.length();
   int vlen = 0;
@@ -163,14 +168,6 @@ void processor_t::parse_varch_string(const char* s)
   VU.ELEN = elen;
   VU.vlenb = vlen / 8;
   VU.vstart_alu = vstart_alu;
-}
-
-static std::string strtolower(const char* str)
-{
-  std::string res;
-  for (const char *r = str; *r; r++)
-    res += std::tolower(*r);
-  return res;
 }
 
 void processor_t::parse_priv_string(const char* str)
