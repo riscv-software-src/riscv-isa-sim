@@ -221,7 +221,8 @@ void processor_t::parse_isa_string(const char* str)
   if (isa_string[4] != 'i')
     bad_isa_string(str, "'I' extension is required");
 
-  auto p = isa_string.begin();
+  const char* isa_str = isa_string.c_str();
+  auto p = isa_str;
   for (p += 4; islower(*p) && !strchr("zsx", *p); ++p) {
     while (*all_subsets && (*p != *all_subsets))
       ++all_subsets;
@@ -333,7 +334,7 @@ void processor_t::parse_isa_string(const char* str)
     p = end;
   }
   if (*p) {
-    bad_isa_string(str, ("can't parse: " + std::string(p, isa_string.end())).c_str());
+    bad_isa_string(str, ("can't parse: " + std::string(p)).c_str());
   }
 }
 
