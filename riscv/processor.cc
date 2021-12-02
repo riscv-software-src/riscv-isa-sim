@@ -117,12 +117,17 @@ static bool check_pow2(int val)
   return ((val & (val - 1))) == 0;
 }
 
+static std::string strtolower(const char* str)
+{
+  std::string res;
+  for (const char *r = str; *r; r++)
+    res += std::tolower(*r);
+  return res;
+}
+
 void processor_t::parse_varch_string(const char* s)
 {
-  std::string str, tmp;
-  for (const char *r = s; *r; r++)
-    str += std::tolower(*r);
-
+  std::string str = strtolower(s);
   size_t pos = 0;
   size_t len = str.length();
   int vlen = 0;
@@ -163,14 +168,6 @@ void processor_t::parse_varch_string(const char* s)
   VU.ELEN = elen;
   VU.vlenb = vlen / 8;
   VU.vstart_alu = vstart_alu;
-}
-
-static std::string strtolower(const char* str)
-{
-  std::string res;
-  for (const char *r = str; *r; r++)
-    res += std::tolower(*r);
-  return res;
 }
 
 void processor_t::parse_priv_string(const char* str)
@@ -224,7 +221,8 @@ void processor_t::parse_isa_string(const char* str)
   if (isa_string[4] != 'i')
     bad_isa_string(str, "'I' extension is required");
 
-  auto p = isa_string.begin();
+  const char* isa_str = isa_string.c_str();
+  auto p = isa_str;
   for (p += 4; islower(*p) && !strchr("zsx", *p); ++p) {
     while (*all_subsets && (*p != *all_subsets))
       ++all_subsets;
@@ -336,7 +334,7 @@ void processor_t::parse_isa_string(const char* str)
     p = end;
   }
   if (*p) {
-    bad_isa_string(str, ("can't parse: " + std::string(p, isa_string.end())).c_str());
+    bad_isa_string(str, ("can't parse: " + std::string(p)).c_str());
   }
 }
 
