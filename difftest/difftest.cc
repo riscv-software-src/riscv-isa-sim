@@ -186,7 +186,9 @@ void difftest_init(int port) {
 }
 
 void difftest_raise_intr(uint64_t NO) {
-  printf("TODO difftest_raise_intr in Spike\n");
+  state->mip->write(state->mip->read() | 0xa00UL);
+  difftest_exec(1);
+  state->mip->write(state->mip->read() & (~0xa00UL));
 }
 
 void isa_reg_display() {
