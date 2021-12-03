@@ -186,14 +186,19 @@ void difftest_init(int port) {
 }
 
 void difftest_raise_intr(uint64_t NO) {
-  assert(0);
+  printf("TODO difftest_raise_intr in Spike\n");
 }
 
 void isa_reg_display() {
-  printf("TODO in Spike\n");
+  printf("TODO isa_reg_display in Spike\n");
 }
 
 int difftest_store_commit(uint64_t *addr, uint64_t *data, uint8_t *mask) {
+  return 0;
+}
+
+uint64_t difftest_guided_exec(void *) {
+  difftest_exec(1);
   return 0;
 }
 
