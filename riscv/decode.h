@@ -630,6 +630,21 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   } \
   P.VU.vstart->write(0);
 
+#define VI_LOOP_CARRY_BASE \
+  VI_GENERAL_LOOP_BASE \
+  VI_MASK_VARS \
+  auto v0 = P.VU.elt<uint64_t>(0, midx); \
+  const uint64_t mmask = UINT64_C(1) << mpos; \
+  const uint128_t op_mask = (UINT64_MAX >> (64 - sew)); \
+  uint64_t carry = insn.v_vm() == 0 ? (v0 >> mpos) & 0x1 : 0; \
+  uint128_t res = 0; \
+  auto &vd = P.VU.elt<uint64_t>(rd_num, midx, true);
+
+#define VI_LOOP_CARRY_END \
+    vd = (vd & ~mmask) | (((res) << mpos) & mmask); \
+  } \
+  P.VU.vstart->write(0);
+
 #define VI_LOOP_CMP_BASE \
   require(P.VU.vsew >= e8 && P.VU.vsew <= e64); \
   require_vector(true);\
@@ -801,12 +816,10 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
   auto rs1 = (type_sew_t<x>::type)RS1; \
   auto simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
-  auto &vd = P.VU.elt<uint64_t>(rd_num, midx, true);
 
 #define VV_CARRY_PARAMS(x) \
   auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
   auto vs1 = P.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
-  auto &vd = P.VU.elt<uint64_t>(rd_num, midx, true);
 
 #define XI_WITH_CARRY_PARAMS(x) \
   auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
@@ -1397,8 +1410,7 @@ VI_LOOP_END
 // carry/borrow bit loop
 #define VI_VV_LOOP_CARRY(BODY) \
   VI_CHECK_MSS(true); \
-  VI_GENERAL_LOOP_BASE \
-  VI_MASK_VARS \
+  VI_LOOP_CARRY_BASE \
     if (sew == e8){ \
       VV_CARRY_PARAMS(e8) \
       BODY; \
@@ -1412,12 +1424,11 @@ VI_LOOP_END
       VV_CARRY_PARAMS(e64) \
       BODY; \
     } \
-  VI_LOOP_END
+  VI_LOOP_CARRY_END
 
 #define VI_XI_LOOP_CARRY(BODY) \
   VI_CHECK_MSS(false); \
-  VI_GENERAL_LOOP_BASE \
-  VI_MASK_VARS \
+  VI_LOOP_CARRY_BASE \
     if (sew == e8){ \
       XI_CARRY_PARAMS(e8) \
       BODY; \
@@ -1431,7 +1442,7 @@ VI_LOOP_END
       XI_CARRY_PARAMS(e64) \
       BODY; \
     } \
-  VI_LOOP_END
+  VI_LOOP_CARRY_END
 
 #define VI_VV_LOOP_WITH_CARRY(BODY) \
   require(insn.rd() != 0); \
