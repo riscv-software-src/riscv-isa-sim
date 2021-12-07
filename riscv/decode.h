@@ -960,22 +960,83 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   VI_LOOP_CMP_END
 
 // merge and copy loop
-#define VI_VVXI_MERGE_LOOP(BODY) \
+#define VI_MERGE_VARS \
+  VI_MASK_VARS \
+  bool use_first = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
+
+#define VI_MERGE_LOOP_BASE \
+  require_vector(true); \
   VI_GENERAL_LOOP_BASE \
+  VI_MERGE_VARS
+
+#define VI_VV_MERGE_LOOP(BODY) \
+  VI_CHECK_SSS(true); \
+  VI_MERGE_LOOP_BASE \
   if (sew == e8){ \
-    VXI_PARAMS(e8); \
+    VV_PARAMS(e8); \
     BODY; \
   }else if(sew == e16){ \
-    VXI_PARAMS(e16); \
+    VV_PARAMS(e16); \
     BODY; \
   }else if(sew == e32){ \
-    VXI_PARAMS(e32); \
+    VV_PARAMS(e32); \
     BODY; \
   }else if(sew == e64){ \
-    VXI_PARAMS(e64); \
+    VV_PARAMS(e64); \
+    BODY; \
+  } \
+  VI_LOOP_END
+
+#define VI_VX_MERGE_LOOP(BODY) \
+  VI_CHECK_SSS(false); \
+  VI_MERGE_LOOP_BASE \
+  if (sew == e8){ \
+    VX_PARAMS(e8); \
+    BODY; \
+  }else if(sew == e16){ \
+    VX_PARAMS(e16); \
+    BODY; \
+  }else if(sew == e32){ \
+    VX_PARAMS(e32); \
+    BODY; \
+  }else if(sew == e64){ \
+    VX_PARAMS(e64); \
     BODY; \
   } \
   VI_LOOP_END 
+
+#define VI_VI_MERGE_LOOP(BODY) \
+  VI_CHECK_SSS(false); \
+  VI_MERGE_LOOP_BASE \
+  if (sew == e8){ \
+    VI_PARAMS(e8); \
+    BODY; \
+  }else if(sew == e16){ \
+    VI_PARAMS(e16); \
+    BODY; \
+  }else if(sew == e32){ \
+    VI_PARAMS(e32); \
+    BODY; \
+  }else if(sew == e64){ \
+    VI_PARAMS(e64); \
+    BODY; \
+  } \
+  VI_LOOP_END
+
+#define VI_VF_MERGE_LOOP(BODY) \
+  VI_CHECK_SSS(false); \
+  VI_MERGE_LOOP_BASE \
+  if(sew == e16){ \
+    VFP_VF_PARAMS(16); \
+    BODY; \
+  }else if(sew == e32){ \
+    VFP_VF_PARAMS(32); \
+    BODY; \
+  }else if(sew == e64){ \
+    VFP_VF_PARAMS(64); \
+    BODY; \
+  } \
+  VI_LOOP_END
 
 // reduction loop - signed
 #define VI_LOOP_REDUCTION_BASE(x) \
