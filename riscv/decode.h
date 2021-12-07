@@ -1882,7 +1882,7 @@ reg_t index[P.VU.vlmax]; \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
     uint64_t mmask = UINT64_C(1) << mpos; \
-    uint64_t &vdi = P.VU.elt<uint64_t>(rd_num, midx, true); \
+    uint64_t &vd = P.VU.elt<uint64_t>(rd_num, midx, true); \
     uint64_t res = 0;
 
 #define VI_VFP_LOOP_REDUCTION_BASE(width) \
@@ -1961,7 +1961,7 @@ reg_t index[P.VU.vlmax]; \
     case e16: \
     case e32: \
     case e64: { \
-      vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
+      vd = (vd & ~mmask) | (((res) << mpos) & mmask); \
       break; \
     } \
     default: \
@@ -2119,30 +2119,52 @@ reg_t index[P.VU.vlmax]; \
   DEBUG_RVV_FP_VF; \
   VI_VFP_LOOP_END
 
-#define VI_VFP_LOOP_CMP(BODY16, BODY32, BODY64, is_vs1) \
-  VI_CHECK_MSS(is_vs1); \
+#define VI_VFP_VV_LOOP_CMP(BODY16, BODY32, BODY64) \
+  VI_CHECK_MSS(true); \
   VI_VFP_LOOP_CMP_BASE \
   switch(P.VU.vsew) { \
     case e16: {\
-      float16_t vs2 = P.VU.elt<float16_t>(rs2_num, i); \
-      float16_t vs1 = P.VU.elt<float16_t>(rs1_num, i); \
-      float16_t rs1 = f16(READ_FREG(rs1_num)); \
+      VFP_VV_PARAMS(16); \
       BODY16; \
       set_fp_exceptions; \
       break; \
     }\
     case e32: {\
-      float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
-      float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
-      float32_t rs1 = f32(READ_FREG(rs1_num)); \
+      VFP_VV_PARAMS(32); \
       BODY32; \
       set_fp_exceptions; \
       break; \
     }\
     case e64: {\
-      float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
-      float64_t vs1 = P.VU.elt<float64_t>(rs1_num, i); \
-      float64_t rs1 = f64(READ_FREG(rs1_num)); \
+      VFP_VV_PARAMS(64); \
+      BODY64; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    default: \
+      require(0); \
+      break; \
+  }; \
+  VI_VFP_LOOP_CMP_END \
+
+#define VI_VFP_VF_LOOP_CMP(BODY16, BODY32, BODY64) \
+  VI_CHECK_MSS(false); \
+  VI_VFP_LOOP_CMP_BASE \
+  switch(P.VU.vsew) { \
+    case e16: {\
+      VFP_VF_PARAMS(16); \
+      BODY16; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e32: {\
+      VFP_VF_PARAMS(32); \
+      BODY32; \
+      set_fp_exceptions; \
+      break; \
+    }\
+    case e64: {\
+      VFP_VF_PARAMS(64); \
       BODY64; \
       set_fp_exceptions; \
       break; \
