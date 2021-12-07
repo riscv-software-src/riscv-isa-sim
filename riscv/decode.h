@@ -644,6 +644,12 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
     vd = (vd & ~mmask) | (((res) << mpos) & mmask); \
   } \
   P.VU.vstart->write(0);
+#define VI_LOOP_WITH_CARRY_BASE \
+  VI_GENERAL_LOOP_BASE \
+  VI_MASK_VARS \
+  auto &v0 = P.VU.elt<uint64_t>(0, midx); \
+  const uint128_t op_mask = (UINT64_MAX >> (64 - sew)); \
+  uint64_t carry = (v0 >> mpos) & 0x1;
 
 #define VI_LOOP_CMP_BASE \
   require(P.VU.vsew >= e8 && P.VU.vsew <= e64); \
@@ -1452,10 +1458,9 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   VI_LOOP_CARRY_END
 
 #define VI_VV_LOOP_WITH_CARRY(BODY) \
-  require(insn.rd() != 0); \
+  require_vm; \
   VI_CHECK_SSS(true); \
-  VI_GENERAL_LOOP_BASE \
-  VI_MASK_VARS \
+  VI_LOOP_WITH_CARRY_BASE \
     if (sew == e8){ \
       VV_WITH_CARRY_PARAMS(e8) \
       BODY; \
@@ -1472,10 +1477,9 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   VI_LOOP_END
 
 #define VI_XI_LOOP_WITH_CARRY(BODY) \
-  require(insn.rd() != 0); \
+  require_vm; \
   VI_CHECK_SSS(false); \
-  VI_GENERAL_LOOP_BASE \
-  VI_MASK_VARS \
+  VI_LOOP_WITH_CARRY_BASE \
     if (sew == e8){ \
       XI_WITH_CARRY_PARAMS(e8) \
       BODY; \
