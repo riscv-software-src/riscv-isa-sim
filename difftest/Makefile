@@ -25,7 +25,7 @@ INC_LIBS  = $(addprefix $(REPO_PATH)/build/, $(lib_dependencies))
 
 NAME = $(GUEST_ISA)-spike-so
 BINARY = $(BUILD_DIR)/$(NAME)
-SRCS = difftest.cc $(shell find ./include -name '*.h')
+SRCS = difftest.cc dummy_debug.cc $(shell find ./include -name '*.h')
 
 $(BINARY): $(SPIKE) $(SRCS)
 	g++ -O3 -shared -fPIC $(INC_PATH) $(SRCS) $(INC_LIBS) -o $@

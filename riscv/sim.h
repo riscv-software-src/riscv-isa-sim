@@ -74,6 +74,9 @@ public:
   void diff_get_regs(void* diff_context);
   void diff_set_regs(void* diff_context);
   void diff_memcpy(reg_t dest, void* src, size_t n);
+  void diff_debugmode(void);
+  abstract_device_t * get_debug_module(void);
+  // void debug_mem_sync(reg_t addr, void *buf, size_t n);
 
 private:
   std::vector<std::pair<reg_t, mem_t*>> mems;

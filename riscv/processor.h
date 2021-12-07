@@ -601,3 +601,8 @@ reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
   proc->register_insn((insn_desc_t){match, mask, rv32_##name, rv64_##name,archen});
 
 #endif
+
+// #define DM_BASE_ADDR 0x38020000L
+// #define DM_END_ADDR 0x38030000L
+// #define DUMMY_MEM_SIZE_BYTE (DM_END_ADDR - DM_BASE_ADDR) / sizeof(uint8_t)
+// uint8_t public_debug_mem[DUMMY_MEM_SIZE_BYTE]; 

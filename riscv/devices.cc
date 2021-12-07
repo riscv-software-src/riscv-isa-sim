@@ -26,6 +26,7 @@ bool bus_t::load(reg_t addr, size_t len, uint8_t* bytes)
   // The iterator points to the device after this, so
   // go back by one item.
   it--;
+  // printf("a bus load at paddr %x with len %x with bytes %x\n",addr ,len, *((uint32_t *)bytes));
   return it->second->load(addr - it->first, len, bytes);
 }
 

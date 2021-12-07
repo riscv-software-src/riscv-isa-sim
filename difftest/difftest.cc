@@ -1,8 +1,10 @@
 #include "sim.h"
 #include "include/common.h"
 #include "include/difftest-def.h"
+#include "include/dummy_debug.h"
 
-static std::vector<std::pair<reg_t, abstract_device_t*>> difftest_plugin_devices;
+static std::vector<std::pair<reg_t, abstract_device_t*>> difftest_plugin_devices(
+ 1, std::make_pair(reg_t(DM_BASE_ADDR), new dummy_debug_t));
 static std::vector<std::string> difftest_htif_args;
 static std::vector<std::pair<reg_t, mem_t*>> difftest_mem(
     1, std::make_pair(reg_t(DRAM_BASE), new mem_t(CONFIG_MSIZE)));
@@ -15,7 +17,7 @@ static debug_module_config_t difftest_dm_config = {
   .support_hasel = true,
   .support_abstract_csr_access = true,
   .support_haltgroups = true,
-  .support_impebreak = true
+  .support_impebreak = false
 };
 static csr_t_p mscratch = nullptr;
 
@@ -41,6 +43,11 @@ struct diff_context_t {
   word_t mtvec;
   word_t stvec;
   word_t priv;
+  word_t debugMode;
+  word_t dcsr;
+  word_t dpc;
+  word_t dscratch0;
+  word_t dscratch1;
 };
 
 struct diff_gpr_pc_p {
@@ -93,6 +100,11 @@ void sim_t::diff_get_regs(void* diff_context) {
   ctx->mtvec = state->mtvec->read();
   ctx->stvec = state->stvec->read();
   ctx->priv = state->prv;
+  ctx->debugMode = state->debug_mode;
+  ctx->dcsr = state->dcsr->read();
+  ctx->dpc = state->dpc->read();
+  ctx->dscratch0 = state->csrmap[CSR_DSCRATCH0]->read();
+  ctx->dscratch1 = state->csrmap[CSR_DSCRATCH1]->read();
 }
 
 void sim_t::diff_set_regs(void* diff_context) {
@@ -122,6 +134,11 @@ void sim_t::diff_set_regs(void* diff_context) {
   state->mtvec->write(ctx->mtvec);
   state->stvec->write(ctx->stvec);
   state->prv = ctx->priv;
+  state->debug_mode = ctx->debugMode;
+  state->dcsr->write(ctx->dcsr);
+  state->dpc->write(ctx->dpc);
+  state->csrmap[CSR_DSCRATCH0]->write(ctx->dscratch0);
+  state->csrmap[CSR_DSCRATCH1]->write(ctx->dscratch1);
 }
 
 void sim_t::diff_memcpy(reg_t dest, void* src, size_t n) {
@@ -130,6 +147,18 @@ void sim_t::diff_memcpy(reg_t dest, void* src, size_t n) {
     mmu->store_uint8(dest+i, *((uint8_t*)src+i));
   }
 }
+
+void sim_t::diff_debugmode(void){
+  // Debug Intr causes entry to debug mode
+  p->halt_request = p->HR_REGULAR;
+  procs[current_proc]->step(0);
+  p->halt_request = p->HR_NONE;
+}
+
+abstract_device_t * sim_t::get_debug_module(void){
+  return s->plugin_devices.front().second;
+}
+
 
 extern "C" {
 
@@ -186,9 +215,15 @@ void difftest_init(int port) {
 }
 
 void difftest_raise_intr(uint64_t NO) {
-  state->mip->write(state->mip->read() | 0xa00UL);
-  difftest_exec(1);
-  state->mip->write(state->mip->read() & (~0xa00UL));
+  if (NO & 0xc) {
+    printf("Debug Intr!!!\n");
+    s->diff_debugmode();  // Debug Intr
+  } else {
+      printf("Other Intr!!!\n");
+    state->mip->write(state->mip->read() | 0xa00UL);
+    difftest_exec(1);
+    state->mip->write(state->mip->read() & (~0xa00UL));
+  }
 }
 
 void isa_reg_display() {
@@ -202,6 +237,16 @@ int difftest_store_commit(uint64_t *addr, uint64_t *data, uint8_t *mask) {
 uint64_t difftest_guided_exec(void *) {
   difftest_exec(1);
   return 0;
+}
+
+void debug_mem_sync(reg_t addr, void* buf, size_t n) {
+  // addr is absolute physical addr
+  // now we are not using this right now because I don't know how spike does if from device
+  dummy_debug_t* dummy_debug = (dummy_debug_t *) s->get_debug_module();
+  // start addr is virtual addr used by simulator
+  int offset = (addr - DM_BASE_ADDR) / sizeof(uint8_t);
+  uint8_t* start_addr = dummy_debug->dummy_debug_mem + offset;
+  memcpy(start_addr, buf, n); // TODO copy to device not addr
 }
 
 }
