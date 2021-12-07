@@ -832,6 +832,20 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   auto vs1 = P.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
   auto &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true);
 
+#define VFP_V_PARAMS(width) \
+  float##width##_t &vd = P.VU.elt<float##width##_t>(rd_num, i, true); \
+  float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i);
+
+#define VFP_VV_PARAMS(width) \
+  float##width##_t &vd = P.VU.elt<float##width##_t>(rd_num, i, true); \
+  float##width##_t vs1 = P.VU.elt<float##width##_t>(rs1_num, i); \
+  float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i);
+
+#define VFP_VF_PARAMS(width) \
+  float##width##_t &vd = P.VU.elt<float##width##_t>(rd_num, i, true); \
+  float##width##_t rs1 = f##width(READ_FREG(rs1_num)); \
+  float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i);
+
 //
 // vector: integer and masking operation loop
 //
@@ -1962,25 +1976,19 @@ reg_t index[P.VU.vlmax]; \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e16: {\
-      float16_t &vd = P.VU.elt<float16_t>(rd_num, i, true); \
-      float16_t vs1 = P.VU.elt<float16_t>(rs1_num, i); \
-      float16_t vs2 = P.VU.elt<float16_t>(rs2_num, i); \
+      VFP_VV_PARAMS(16); \
       BODY16; \
       set_fp_exceptions; \
       break; \
     }\
     case e32: {\
-      float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
-      float32_t vs1 = P.VU.elt<float32_t>(rs1_num, i); \
-      float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
+      VFP_VV_PARAMS(32); \
       BODY32; \
       set_fp_exceptions; \
       break; \
     }\
     case e64: {\
-      float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
-      float64_t vs1 = P.VU.elt<float64_t>(rs1_num, i); \
-      float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
+      VFP_VV_PARAMS(64); \
       BODY64; \
       set_fp_exceptions; \
       break; \
@@ -1997,20 +2005,17 @@ reg_t index[P.VU.vlmax]; \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e16: {\
-      float16_t &vd = P.VU.elt<float16_t>(rd_num, i, true); \
-      float16_t vs2 = P.VU.elt<float16_t>(rs2_num, i); \
+      VFP_V_PARAMS(16); \
       BODY16; \
       break; \
     }\
     case e32: {\
-      float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
-      float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
+      VFP_V_PARAMS(32); \
       BODY32; \
       break; \
     }\
     case e64: {\
-      float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
-      float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
+      VFP_V_PARAMS(64); \
       BODY64; \
       break; \
     }\
@@ -2090,25 +2095,19 @@ reg_t index[P.VU.vlmax]; \
   VI_VFP_LOOP_BASE \
   switch(P.VU.vsew) { \
     case e16: {\
-      float16_t &vd = P.VU.elt<float16_t>(rd_num, i, true); \
-      float16_t rs1 = f16(READ_FREG(rs1_num)); \
-      float16_t vs2 = P.VU.elt<float16_t>(rs2_num, i); \
+      VFP_VF_PARAMS(16); \
       BODY16; \
       set_fp_exceptions; \
       break; \
     }\
     case e32: {\
-      float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
-      float32_t rs1 = f32(READ_FREG(rs1_num)); \
-      float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
+      VFP_VF_PARAMS(32); \
       BODY32; \
       set_fp_exceptions; \
       break; \
     }\
     case e64: {\
-      float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
-      float64_t rs1 = f64(READ_FREG(rs1_num)); \
-      float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
+      VFP_VF_PARAMS(64); \
       BODY64; \
       set_fp_exceptions; \
       break; \
