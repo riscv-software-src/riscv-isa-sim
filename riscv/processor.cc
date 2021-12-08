@@ -250,10 +250,12 @@ void processor_t::parse_isa_string(const char* str)
     auto end = p;
     do ++end; while (*end && *end != '_');
     auto ext_str = std::string(p, end);
-    if (ext_str == "zfh") {
+    if (ext_str == "zfh" || ext_str == "zfhmin") {
       if (!((max_isa >> ('f' - 'a')) & 1))
-        bad_isa_string(str, "'Zfh' extension requires 'F'");
-      extension_table[EXT_ZFH] = true;
+        bad_isa_string(str, ("'" + ext_str + "' extension requires 'F'").c_str());
+      extension_table[EXT_ZFHMIN] = true;
+      if (ext_str == "zfh")
+        extension_table[EXT_ZFH] = true;
     } else if (ext_str == "zicsr") {
       // Spike necessarily has Zicsr, because
       // Zicsr is implied by the privileged architecture
