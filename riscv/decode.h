@@ -2423,6 +2423,56 @@ reg_t index[P.VU.vlmax]; \
       break; \
   }
 
+#define VI_VFP_WCVT_FP_TO_FP(BODY8, BODY16, BODY32, \
+                             CHECK8, CHECK16, CHECK32) \
+  VI_CHECK_DSS(false); \
+  switch(P.VU.vsew) { \
+    case e16: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_FP_PARAMS(16, 32), CHECK16, BODY16); } \
+      break; \
+    case e32: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_FP_PARAMS(32, 64), CHECK32, BODY32); } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
+
+#define VI_VFP_WCVT_INT_TO_FP(BODY8, BODY16, BODY32, \
+                              CHECK8, CHECK16, CHECK32, \
+                              sign) \
+  VI_CHECK_DSS(false); \
+  switch(P.VU.vsew) { \
+    case e8: \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(8, 16, sign), CHECK8, BODY8); } \
+      break; \
+    case e16: \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(16, 32, sign), CHECK16, BODY16); } \
+      break; \
+    case e32: \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(32, 64, sign), CHECK32, BODY32); } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
+
+#define VI_VFP_WCVT_FP_TO_INT(BODY8, BODY16, BODY32, \
+                              CHECK8, CHECK16, CHECK32, \
+                              sign) \
+  VI_CHECK_DSS(false); \
+  switch(P.VU.vsew) { \
+    case e16: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(16, 32, sign), CHECK16, BODY16); } \
+      break; \
+    case e32: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(32, 64, sign), CHECK32, BODY32); } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
+
 #define VI_VFP_NCVT_FP_TO_FP(BODY8, BODY16, BODY32, \
                             CHECK8, CHECK16, CHECK32) \
   VI_CHECK_SDS(false); \
@@ -2467,45 +2517,6 @@ reg_t index[P.VU.vlmax]; \
       break; \
     case e32: \
       { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(64, 32, sign), CHECK32, BODY32); } \
-      break; \
-    default: \
-      require(0); \
-      break; \
-  }
-
-#define VI_VFP_CVT_SCALE(BODY8, BODY16, BODY32, \
-                         CHECK8, CHECK16, CHECK32, \
-                         is_widen, eew_check) \
-  if (is_widen) { \
-    VI_CHECK_DSS(false);\
-  } else { \
-    VI_CHECK_SDS(false); \
-  } \
-  require(eew_check); \
-  switch(P.VU.vsew) { \
-    case e8: {\
-      CHECK8 \
-      VI_VFP_LOOP_SCALE_BASE \
-        BODY8 \
-        set_fp_exceptions; \
-      VI_VFP_LOOP_END \
-      } \
-      break; \
-    case e16: {\
-      CHECK16 \
-      VI_VFP_LOOP_SCALE_BASE \
-        BODY16 \
-        set_fp_exceptions; \
-      VI_VFP_LOOP_END \
-      } \
-      break; \
-    case e32: {\
-      CHECK32 \
-      VI_VFP_LOOP_SCALE_BASE \
-        BODY32 \
-        set_fp_exceptions; \
-      VI_VFP_LOOP_END \
-      } \
       break; \
     default: \
       require(0); \
