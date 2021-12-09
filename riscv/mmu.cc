@@ -267,65 +267,74 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   if (vm.levels == 0)
     return gpa;
 
+  int maxgpabits = vm.levels * vm.idxbits + vm.widenbits + PGSHIFT;
+  reg_t maxgpa = (1ULL << maxgpabits) - 1;
+
   bool mxr = proc->state.sstatus->readvirt(false) & MSTATUS_MXR;
 
   reg_t base = vm.ptbase;
-  for (int i = vm.levels - 1; i >= 0; i--) {
-    int ptshift = i * vm.idxbits;
-    int idxbits = (i == (vm.levels - 1)) ? vm.idxbits + vm.widenbits : vm.idxbits;
-    reg_t idx = (gpa >> (PGSHIFT + ptshift)) & ((reg_t(1) << idxbits) - 1);
+  if ((gpa & ~maxgpa) == 0) {
+    for (int i = vm.levels - 1; i >= 0; i--) {
+      int ptshift = i * vm.idxbits;
+      int idxbits = (i == (vm.levels - 1)) ? vm.idxbits + vm.widenbits : vm.idxbits;
+      reg_t idx = (gpa >> (PGSHIFT + ptshift)) & ((reg_t(1) << idxbits) - 1);
 
-    // check that physical address of PTE is legal
-    auto pte_paddr = base + idx * vm.ptesize;
-    auto ppte = sim->addr_to_mem(pte_paddr);
-    if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S)) {
-      throw_access_exception(virt, gva, trap_type);
-    }
-
-    reg_t pte = vm.ptesize == 4 ? from_target(*(target_endian<uint32_t>*)ppte) : from_target(*(target_endian<uint64_t>*)ppte);
-    reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
-
-    if (pte & PTE_RSVD) {
-      break;
-    } else if (PTE_TABLE(pte)) { // next level of page table
-      if (pte & (PTE_D | PTE_A | PTE_U | PTE_N | PTE_PBMT))
-        break;
-      base = ppn << PGSHIFT;
-    } else if (!(pte & PTE_V) || (!(pte & PTE_R) && (pte & PTE_W))) {
-      break;
-    } else if (!(pte & PTE_U)) {
-      break;
-    } else if (type == FETCH || hlvx ? !(pte & PTE_X) :
-               type == LOAD          ? !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
-                                       !((pte & PTE_R) && (pte & PTE_W))) {
-      break;
-    } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
-      break;
-    } else {
-      reg_t ad = PTE_A | ((type == STORE) * PTE_D);
-#ifdef RISCV_ENABLE_DIRTY
-      // set accessed and possibly dirty bits.
-      if ((pte & ad) != ad) {
-        if (!pmp_ok(pte_paddr, vm.ptesize, STORE, PRV_S))
-          throw_access_exception(virt, gva, trap_type);
-        *(target_endian<uint32_t>*)ppte |= to_target((uint32_t)ad);
+      // check that physical address of PTE is legal
+      auto pte_paddr = base + idx * vm.ptesize;
+      auto ppte = sim->addr_to_mem(pte_paddr);
+      if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S)) {
+        throw_access_exception(virt, gva, trap_type);
       }
+
+      reg_t pte = vm.ptesize == 4 ? from_target(*(target_endian<uint32_t>*)ppte) : from_target(*(target_endian<uint64_t>*)ppte);
+      reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
+
+      if (pte & PTE_RSVD) {
+        break;
+      } else if (!proc->extension_enabled(EXT_SVNAPOT) && (pte & PTE_N)) {
+        break;
+      } else if (!proc->extension_enabled(EXT_SVPBMT) && (pte & PTE_PBMT)) {
+        break;
+      } else if (PTE_TABLE(pte)) { // next level of page table
+        if (pte & (PTE_D | PTE_A | PTE_U | PTE_N | PTE_PBMT))
+          break;
+        base = ppn << PGSHIFT;
+      } else if (!(pte & PTE_V) || (!(pte & PTE_R) && (pte & PTE_W))) {
+        break;
+      } else if (!(pte & PTE_U)) {
+        break;
+      } else if (type == FETCH || hlvx ? !(pte & PTE_X) :
+                 type == LOAD          ? !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
+                                         !((pte & PTE_R) && (pte & PTE_W))) {
+        break;
+      } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
+        break;
+      } else {
+        reg_t ad = PTE_A | ((type == STORE) * PTE_D);
+#ifdef RISCV_ENABLE_DIRTY
+        // set accessed and possibly dirty bits.
+        if ((pte & ad) != ad) {
+          if (!pmp_ok(pte_paddr, vm.ptesize, STORE, PRV_S))
+            throw_access_exception(virt, gva, trap_type);
+          *(target_endian<uint32_t>*)ppte |= to_target((uint32_t)ad);
+        }
 #else
-      // take exception if access or possibly dirty bit is not set.
-      if ((pte & ad) != ad)
-        break;
+        // take exception if access or possibly dirty bit is not set.
+        if ((pte & ad) != ad)
+          break;
 #endif
-      reg_t vpn = gpa >> PGSHIFT;
-      reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
+        reg_t vpn = gpa >> PGSHIFT;
+        reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
 
-      int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
-      if (((pte & PTE_N) && (ppn == 0 || i != 0)) || (napot_bits != 0 && napot_bits != 4))
-        break;
+        int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
+        if (((pte & PTE_N) && (ppn == 0 || i != 0)) || (napot_bits != 0 && napot_bits != 4))
+          break;
 
-      reg_t page_base = ((ppn & ~((reg_t(1) << napot_bits) - 1))
-                        | (vpn & ((reg_t(1) << napot_bits) - 1))
-                        | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
-      return page_base | (gpa & page_mask);
+        reg_t page_base = ((ppn & ~((reg_t(1) << napot_bits) - 1))
+                          | (vpn & ((reg_t(1) << napot_bits) - 1))
+                          | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
+        return page_base | (gpa & page_mask);
+      }
     }
   }
 
@@ -371,6 +380,10 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
     reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
 
     if (pte & PTE_RSVD) {
+      break;
+    } else if (!proc->extension_enabled(EXT_SVNAPOT) && (pte & PTE_N)) {
+      break;
+    } else if (!proc->extension_enabled(EXT_SVPBMT) && (pte & PTE_PBMT)) {
       break;
     } else if (PTE_TABLE(pte)) { // next level of page table
       if (pte & (PTE_D | PTE_A | PTE_U | PTE_N | PTE_PBMT))

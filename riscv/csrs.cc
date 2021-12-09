@@ -8,6 +8,8 @@
 #include "decode.h"
 // For trap_virtual_instruction and trap_illegal_instruction:
 #include "trap.h"
+// For require():
+#include "insn_macros.h"
 
 // STATE macro used by require_privilege() macro:
 #undef STATE
@@ -614,15 +616,14 @@ generic_int_accessor_t::generic_int_accessor_t(state_t* const state,
                                                const reg_t read_mask,
                                                const reg_t ip_write_mask,
                                                const reg_t ie_write_mask,
-                                               const bool mask_mideleg,
-                                               const bool mask_hideleg,
+                                               const mask_mode_t mask_mode,
                                                const int shiftamt):
   state(state),
   read_mask(read_mask),
   ip_write_mask(ip_write_mask),
   ie_write_mask(ie_write_mask),
-  mask_mideleg(mask_mideleg),
-  mask_hideleg(mask_hideleg),
+  mask_mideleg(mask_mode == MIDELEG),
+  mask_hideleg(mask_mode == HIDELEG),
   shiftamt(shiftamt) {
 }
 
@@ -954,6 +955,16 @@ void hypervisor_csr_t::verify_permissions(insn_t insn, bool write) const {
 }
 
 
+hideleg_csr_t::hideleg_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mideleg):
+  masked_csr_t(proc, addr, MIP_VS_MASK, 0),
+  mideleg(mideleg) {
+}
+
+reg_t hideleg_csr_t::read() const noexcept {
+  return masked_csr_t::read() & mideleg->read();
+};
+
+
 hgatp_csr_t::hgatp_csr_t(processor_t* const proc, const reg_t addr):
   basic_csr_t(proc, addr, 0) {
 }
@@ -1181,23 +1192,24 @@ bool composite_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 
-sentropy_csr_t::sentropy_csr_t(processor_t* const proc, const reg_t addr):
+seed_csr_t::seed_csr_t(processor_t* const proc, const reg_t addr):
   csr_t(proc, addr) {
 }
 
-void sentropy_csr_t::verify_permissions(insn_t insn, bool write) const {
+void seed_csr_t::verify_permissions(insn_t insn, bool write) const {
   /* Read-only access disallowed due to wipe-on-read side effect */
+  /* XXX mseccfg.sseed and mseccfg.useed should be verified. */
   if (!proc->extension_enabled(EXT_ZKR) || !write)
     throw trap_illegal_instruction(insn.bits());
   csr_t::verify_permissions(insn, write);
 }
 
-reg_t sentropy_csr_t::read() const noexcept {
-  return proc->es.get_sentropy();
+reg_t seed_csr_t::read() const noexcept {
+  return proc->es.get_seed();
 }
 
-bool sentropy_csr_t::unlogged_write(const reg_t val) noexcept {
-  proc->es.set_sentropy(val);
+bool seed_csr_t::unlogged_write(const reg_t val) noexcept {
+  proc->es.set_seed(val);
   return true;
 }
 

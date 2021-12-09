@@ -117,12 +117,17 @@ static bool check_pow2(int val)
   return ((val & (val - 1))) == 0;
 }
 
+static std::string strtolower(const char* str)
+{
+  std::string res;
+  for (const char *r = str; *r; r++)
+    res += std::tolower(*r);
+  return res;
+}
+
 void processor_t::parse_varch_string(const char* s)
 {
-  std::string str, tmp;
-  for (const char *r = s; *r; r++)
-    str += std::tolower(*r);
-
+  std::string str = strtolower(s);
   size_t pos = 0;
   size_t len = str.length();
   int vlen = 0;
@@ -163,14 +168,6 @@ void processor_t::parse_varch_string(const char* s)
   VU.ELEN = elen;
   VU.vlenb = vlen / 8;
   VU.vstart_alu = vstart_alu;
-}
-
-static std::string strtolower(const char* str)
-{
-  std::string res;
-  for (const char *r = str; *r; r++)
-    res += std::tolower(*r);
-  return res;
 }
 
 void processor_t::parse_priv_string(const char* str)
@@ -214,12 +211,18 @@ void processor_t::parse_isa_string(const char* str)
     max_xlen = 64;
   else
     bad_isa_string(str, "Spike supports either RV32I or RV64I");
-  if (isa_string[4] == 'g')
+
+  if (isa_string[4] == 'g') {
+    // G = IMAFD_Zicsr_Zifencei, but Spike includes the latter two
+    // unconditionally, so they need not be explicitly added here.
     isa_string = isa_string.substr(0, 4) + "imafd" + isa_string.substr(5);
+  }
+
   if (isa_string[4] != 'i')
     bad_isa_string(str, "'I' extension is required");
 
-  auto p = isa_string.begin();
+  const char* isa_str = isa_string.c_str();
+  auto p = isa_str;
   for (p += 4; islower(*p) && !strchr("zsx", *p); ++p) {
     while (*all_subsets && (*p != *all_subsets))
       ++all_subsets;
@@ -247,13 +250,20 @@ void processor_t::parse_isa_string(const char* str)
     auto end = p;
     do ++end; while (*end && *end != '_');
     auto ext_str = std::string(p, end);
-    if (ext_str == "zfh") {
+    if (ext_str == "zfh" || ext_str == "zfhmin") {
       if (!((max_isa >> ('f' - 'a')) & 1))
-        bad_isa_string(str, "'Zfh' extension requires 'F'");
-      extension_table[EXT_ZFH] = true;
+        bad_isa_string(str, ("'" + ext_str + "' extension requires 'F'").c_str());
+      extension_table[EXT_ZFHMIN] = true;
+      if (ext_str == "zfh")
+        extension_table[EXT_ZFH] = true;
     } else if (ext_str == "zicsr") {
       // Spike necessarily has Zicsr, because
       // Zicsr is implied by the privileged architecture
+    } else if (ext_str == "zifencei") {
+      // For compatibility with version 2.0 of the base ISAs, we
+      // unconditionally include FENCE.I, so Zifencei adds nothing more.
+    } else if (ext_str == "zihintpause") {
+      // HINTs encoded in base-ISA instructions are always present.
     } else if (ext_str == "zmmul") {
       extension_table[EXT_ZMMUL] = true;
     } else if (ext_str == "zba") {
@@ -326,7 +336,7 @@ void processor_t::parse_isa_string(const char* str)
     p = end;
   }
   if (*p) {
-    bad_isa_string(str, ("can't parse: " + std::string(p, isa_string.end())).c_str());
+    bad_isa_string(str, ("can't parse: " + std::string(p)).c_str());
   }
 }
 
@@ -338,6 +348,8 @@ static int xlen_to_uxl(int xlen)
     return 2;
   abort();
 }
+
+const int state_t::num_triggers;
 
 void state_t::reset(processor_t* const proc, reg_t max_isa)
 {
@@ -392,37 +404,41 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MCOUNTINHIBIT] = std::make_shared<const_csr_t>(proc, CSR_MCOUNTINHIBIT, 0);
   csrmap[CSR_MIE] = mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
   csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
-  auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(this,
-                                                               ~MIP_HS_MASK,  // read_mask
-                                                               MIP_SSIP,      // ip_write_mask
-                                                               ~MIP_HS_MASK,  // ie_write_mask
-                                                               true,          // mask_mideleg
-                                                               false,         // mask_hideleg
-                                                               0);            // shiftamt
+  auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(
+    this,
+    ~MIP_HS_MASK,  // read_mask
+    MIP_SSIP,      // ip_write_mask
+    ~MIP_HS_MASK,  // ie_write_mask
+    generic_int_accessor_t::mask_mode_t::MIDELEG,
+    0              // shiftamt
+  );
 
-  auto hip_hie_accr = std::make_shared<generic_int_accessor_t>(this,
-                                                               MIP_HS_MASK,   // read_mask
-                                                               MIP_VSSIP,     // ip_write_mask
-                                                               MIP_HS_MASK,   // ie_write_mask
-                                                               false,         // mask_mideleg
-                                                               false,         // mask_hideleg
-                                                               0);
+  auto hip_hie_accr = std::make_shared<generic_int_accessor_t>(
+    this,
+    MIP_HS_MASK,   // read_mask
+    MIP_VSSIP,     // ip_write_mask
+    MIP_HS_MASK,   // ie_write_mask
+    generic_int_accessor_t::mask_mode_t::MIDELEG,
+    0              // shiftamt
+  );
 
-  auto hvip_accr = std::make_shared<generic_int_accessor_t>(this,
-                                                            MIP_VS_MASK,   // read_mask
-                                                            MIP_VS_MASK,   // ip_write_mask
-                                                            MIP_VS_MASK,   // ie_write_mask
-                                                            false,         // mask_mideleg
-                                                            false,         // mask_hideleg
-                                                            0);            // shiftamt
+  auto hvip_accr = std::make_shared<generic_int_accessor_t>(
+    this,
+    MIP_VS_MASK,   // read_mask
+    MIP_VS_MASK,   // ip_write_mask
+    MIP_VS_MASK,   // ie_write_mask
+    generic_int_accessor_t::mask_mode_t::NONE,
+    0              // shiftamt
+  );
 
-  auto vsip_vsie_accr = std::make_shared<generic_int_accessor_t>(this,
-                                                                 MIP_VS_MASK,   // read_mask
-                                                                 MIP_VSSIP,     // ip_write_mask
-                                                                 MIP_VS_MASK,   // ie_write_mask
-                                                                 false,         // mask_mideleg
-                                                                 true,          // mask_hideleg
-                                                                 1);            // shiftamt
+  auto vsip_vsie_accr = std::make_shared<generic_int_accessor_t>(
+    this,
+    MIP_VS_MASK,   // read_mask
+    MIP_VSSIP,     // ip_write_mask
+    MIP_VS_MASK,   // ie_write_mask
+    generic_int_accessor_t::mask_mode_t::HIDELEG,
+    1              // shiftamt
+  );
 
   auto nonvirtual_sip = std::make_shared<mip_proxy_csr_t>(proc, CSR_SIP, sip_sie_accr);
   auto vsip = std::make_shared<mip_proxy_csr_t>(proc, CSR_VSIP, vsip_vsie_accr);
@@ -472,7 +488,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_HSTATUS] = hstatus = std::make_shared<masked_csr_t>(proc, CSR_HSTATUS, hstatus_mask, hstatus_init);
   csrmap[CSR_HGEIE] = std::make_shared<const_csr_t>(proc, CSR_HGEIE, 0);
   csrmap[CSR_HGEIP] = std::make_shared<const_csr_t>(proc, CSR_HGEIP, 0);
-  csrmap[CSR_HIDELEG] = hideleg = std::make_shared<masked_csr_t>(proc, CSR_HIDELEG, MIP_VS_MASK, 0);
+  csrmap[CSR_HIDELEG] = hideleg = std::make_shared<hideleg_csr_t>(proc, CSR_HIDELEG, mideleg);
   const reg_t hedeleg_mask =
     (1 << CAUSE_MISALIGNED_FETCH) |
     (1 << CAUSE_FETCH_ACCESS) |
@@ -524,7 +540,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   assert(FSR_AEXC_SHIFT == 0);  // composite_csr_t assumes fflags begins at bit 0
   csrmap[CSR_FCSR] = std::make_shared<composite_csr_t>(proc, CSR_FCSR, frm, fflags, FSR_RD_SHIFT);
 
-  csrmap[CSR_SENTROPY] = std::make_shared<sentropy_csr_t>(proc, CSR_SENTROPY);
+  csrmap[CSR_SEED] = std::make_shared<seed_csr_t>(proc, CSR_SEED);
 
   csrmap[CSR_MARCHID] = std::make_shared<const_csr_t>(proc, CSR_MARCHID, 5);
   csrmap[CSR_MIMPID] = std::make_shared<const_csr_t>(proc, CSR_MIMPID, 0);
@@ -734,7 +750,7 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     enabled_interrupts = pending_interrupts & deleg_to_hs & -hs_enabled;
     if (state.v && enabled_interrupts == 0) {
       // VS-ints have least priority and can only be taken with virt enabled
-      const reg_t deleg_to_vs = state.mideleg->read() & state.hideleg->read();
+      const reg_t deleg_to_vs = state.hideleg->read();
       const reg_t vs_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
       enabled_interrupts = pending_interrupts & deleg_to_vs & -vs_enabled;
     }
@@ -865,7 +881,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   bool curr_virt = state.v;
   bool interrupt = (bit & ((reg_t)1 << (max_xlen-1))) != 0;
   if (interrupt) {
-    vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.mideleg->read() & state.hideleg->read()) : 0;
+    vsdeleg = (curr_virt && state.prv <= PRV_S) ? state.hideleg->read() : 0;
     hsdeleg = (state.prv <= PRV_S) ? state.mideleg->read() : 0;
     bit &= ~((reg_t)1 << (max_xlen-1));
   } else {

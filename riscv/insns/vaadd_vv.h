@@ -1,2 +1,2 @@
 // vaadd.vv vd, vs2, vs1
-VI_VVX_LOOP_AVG(vs1, +, true);
+VI_VV_LOOP_AVG(+);

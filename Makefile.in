@@ -38,7 +38,7 @@ scripts_dir  := $(src_dir)/scripts
 
 HAVE_INT128 := @HAVE_INT128@
 HAVE_DLOPEN := @HAVE_DLOPEN@
-HAVE_CLANG_PCH := $(and @HAVE_CLANG_PCH@, $(if @BOOST_ASIO_LIB@,,yes))
+HAVE_CLANG_PCH := @HAVE_CLANG_PCH@
 
 # If the version information is not in the configure script, then we
 # assume that we are in a working directory. We use the vcs-version.sh
@@ -96,7 +96,7 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 default-CFLAGS   := -DPREFIX=\"$(prefix)\" -Wall -Wno-unused -Wno-nonportable-include-path -g -O2 -fPIC
 default-CXXFLAGS := $(default-CFLAGS) -std=c++11
 
-mcppbs-CPPFLAGS := @CPPFLAGS@ @BOOST_CPPFLAGS@
+mcppbs-CPPFLAGS := @CPPFLAGS@
 mcppbs-CFLAGS   := $(default-CFLAGS) @CFLAGS@
 mcppbs-CXXFLAGS := $(default-CXXFLAGS) @CXXFLAGS@
 
@@ -111,7 +111,7 @@ all-cxx-flags := \
 all-c-flags := \
   $(mcppbs-CPPFLAGS) $(mcppbs-CFLAGS) $(CPPFLAGS) $(CFLAGS)
 
-COMPILE       := $(CXX) -MMD -MP $(all-cxx-flags) $(sprojs_include)
+COMPILE       := $(CXX) -MMD -MP $(all-cxx-flags) $(sprojs_include) @BOOST_CPPFLAGS@
 COMPILE_C     := $(CC) -MMD -MP $(all-c-flags) $(sprojs_include)
 
 # Linker

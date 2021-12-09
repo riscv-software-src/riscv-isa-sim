@@ -426,10 +426,10 @@ riscv_insn_ext_b = \
 	unshfli \
 	unshflw \
 	xnor \
-	xperm_n \
-	xperm_b \
-	xperm_h \
-	xperm_w \
+	xperm4 \
+	xperm8 \
+	xperm16 \
+	xperm32 \
 
 # Scalar Crypto ISE
 riscv_insn_ext_k = \
