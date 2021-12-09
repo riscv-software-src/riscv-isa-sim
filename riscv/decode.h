@@ -2389,6 +2389,40 @@ reg_t index[P.VU.vlmax]; \
   set_fp_exceptions; \
   VI_VFP_LOOP_END
 
+#define VI_VFP_CVT_INT_TO_FP(BODY16, BODY32, BODY64, sign) \
+  VI_CHECK_SDS(false); \
+  switch(P.VU.vsew) { \
+    case e16: \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(16, 16, sign), {}, BODY16); } \
+      break; \
+    case e32: \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(32, 32, sign), {}, BODY32); } \
+      break; \
+    case e64: \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(64, 64, sign), {}, BODY64); } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
+
+#define VI_VFP_CVT_FP_TO_INT(BODY16, BODY32, BODY64, sign) \
+  VI_CHECK_SDS(false); \
+  switch(P.VU.vsew) { \
+    case e16: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(16, 16, sign), {}, BODY16); } \
+      break; \
+    case e32: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(32, 32, sign), {}, BODY32); } \
+      break; \
+    case e64: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(64, 64, sign), {}, BODY64); } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
+
 #define VI_VFP_NCVT_FP_TO_FP(BODY8, BODY16, BODY32, \
                             CHECK8, CHECK16, CHECK32) \
   VI_CHECK_SDS(false); \
