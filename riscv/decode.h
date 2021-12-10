@@ -1075,7 +1075,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
     REDUCTION_LOOP(e64, BODY) \
   }
 
-// reduction loop - unsgied
+// reduction loop - unsigned
 #define VI_ULOOP_REDUCTION_BASE(x) \
   require(x >= e8 && x <= e64); \
   reg_t vl = P.VU.vl->read();   \
@@ -1107,7 +1107,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   }
 
 
-// genearl VXI signed/unsgied loop
+// genearl VXI signed/unsigned loop
 #define VI_VV_ULOOP(BODY) \
   VI_CHECK_SSS(true) \
   VI_LOOP_BASE \
