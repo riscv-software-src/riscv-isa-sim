@@ -74,6 +74,7 @@ public:
   void diff_get_regs(void* diff_context);
   void diff_set_regs(void* diff_context);
   void diff_memcpy(reg_t dest, void* src, size_t n);
+  void diff_display();
 
 private:
   std::vector<std::pair<reg_t, mem_t*>> mems;

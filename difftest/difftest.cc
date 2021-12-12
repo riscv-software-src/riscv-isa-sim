@@ -1,6 +1,7 @@
 #include "sim.h"
 #include "include/common.h"
 #include "include/difftest-def.h"
+#include "disasm.h"
 
 static std::vector<std::pair<reg_t, abstract_device_t*>> difftest_plugin_devices;
 static std::vector<std::string> difftest_htif_args;
@@ -131,6 +132,35 @@ void sim_t::diff_memcpy(reg_t dest, void* src, size_t n) {
   }
 }
 
+void sim_t::diff_display() {
+    int i;
+  for (i = 0; i < 32; i ++) {
+    printf("%4s: " FMT_WORD " ", xpr_name[i], state->XPR[i]);
+    if (i % 4 == 3) {
+      printf("\n");
+    }
+  }
+  for (i = 0; i < 32; i ++) {
+    printf("%4s: " FMT_WORD " ", fpr_name[i], f128_to_ui64_r_minMag(state->FPR[i], true));
+    if (i % 4 == 3) {
+      printf("\n");
+    }
+  }
+  printf("pc: " FMT_WORD " mstatus: " FMT_WORD " mcause: " FMT_WORD " mepc: " FMT_WORD "\n",
+      state->pc, state->mstatus->read(), state->mcause->read(), state->mepc->read());
+  printf("%22s sstatus: " FMT_WORD " scause: " FMT_WORD " sepc: " FMT_WORD "\n",
+      "", state->sstatus->read(), state->scause->read(), state->sepc->read());
+  printf("satp: " FMT_WORD "\n", state->satp->read());
+  printf("mip: " FMT_WORD " mie: " FMT_WORD " mscratch: " FMT_WORD " sscratch: " FMT_WORD "\n",
+      state->mip->read(), state->mie->read(), state->csrmap[CSR_MSCRATCH]->read(), state->csrmap[CSR_MSCRATCH]->read());
+  printf("mideleg: " FMT_WORD " medeleg: " FMT_WORD "\n",
+      state->mideleg->read(), state->medeleg->read());
+  printf("mtval: " FMT_WORD " stval: " FMT_WORD " mtvec: " FMT_WORD " stvec: " FMT_WORD "\n",
+      state->mtval->read(), state->stval->read(), state->mtvec->read(), state->stvec->read());
+  printf("privilege mode:%ld\n", state->prv);
+  fflush(stdout);
+}
+
 extern "C" {
 
 void difftest_memcpy(paddr_t addr, void *buf, size_t n, bool direction) {
@@ -192,7 +222,7 @@ void difftest_raise_intr(uint64_t NO) {
 }
 
 void isa_reg_display() {
-  printf("TODO isa_reg_display in Spike\n");
+  s->diff_display();
 }
 
 int difftest_store_commit(uint64_t *addr, uint64_t *data, uint8_t *mask) {
