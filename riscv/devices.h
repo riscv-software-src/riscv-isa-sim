@@ -4,6 +4,7 @@
 #include "decode.h"
 #include "mmio_plugin.h"
 #include "abstract_device.h"
+#include "abstract_interrupt_controller.h"
 #include "platform.h"
 #include <map>
 #include <vector>
