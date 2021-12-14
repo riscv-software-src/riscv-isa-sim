@@ -77,6 +77,7 @@ public:
   void diff_debugmode(void);
   abstract_device_t * get_debug_module(void);
   // void debug_mem_sync(reg_t addr, void *buf, size_t n);
+  void diff_display();
 
 private:
   std::vector<std::pair<reg_t, mem_t*>> mems;
