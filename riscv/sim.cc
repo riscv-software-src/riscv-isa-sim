@@ -98,12 +98,27 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     bus.add_device(clint_base, clint.get());
   }
 
+  // pointer to wired interrupt controller
+  abstract_interrupt_controller_t *intctrl = NULL;
+
   // create plic
   reg_t plic_base;
   uint32_t plic_ndev;
   if (fdt_parse_plic(fdt, &plic_base, &plic_ndev, "riscv,plic0") == 0) {
     plic.reset(new plic_t(procs, true, plic_ndev));
     bus.add_device(plic_base, plic.get());
+    intctrl = plic.get();
+  }
+
+  // create ns16550
+  reg_t ns16550_base;
+  uint32_t ns16550_shift, ns16550_io_width;
+  if (fdt_parse_ns16550(fdt, &ns16550_base,
+                        &ns16550_shift, &ns16550_io_width, "ns16550a") == 0) {
+    assert(intctrl);
+    ns16550.reset(new ns16550_t(&bus, intctrl, NS16550_INTERRUPT_ID,
+                                ns16550_shift, ns16550_io_width));
+    bus.add_device(ns16550_base, ns16550.get());
   }
 
   //per core attribute
@@ -228,6 +243,7 @@ void sim_t::step(size_t n)
       if (++current_proc == procs.size()) {
         current_proc = 0;
         if (clint) clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
+        if (ns16550) ns16550->tick();
       }
 
       host->switch_to();

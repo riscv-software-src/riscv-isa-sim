@@ -9,6 +9,11 @@
 #define PLIC_SIZE          0x01000000
 #define PLIC_NDEV          31
 #define PLIC_PRIO_BITS     4
+#define NS16550_BASE       0x10000000
+#define NS16550_SIZE       0x100
+#define NS16550_REG_SHIFT  0
+#define NS16550_REG_IO_WIDTH 1
+#define NS16550_INTERRUPT_ID 1
 #define EXT_IO_BASE        0x40000000
 #define DRAM_BASE          0x80000000
 

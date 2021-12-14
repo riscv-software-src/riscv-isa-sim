@@ -7,6 +7,7 @@
 #include "abstract_interrupt_controller.h"
 #include "platform.h"
 #include <map>
+#include <queue>
 #include <vector>
 #include <utility>
 
@@ -115,6 +116,36 @@ class plic_t : public abstract_device_t, public abstract_interrupt_controller_t 
                     reg_t offset, uint32_t *val);
   bool context_write(plic_context_t *context,
                      reg_t offset, uint32_t val);
+};
+
+class ns16550_t : public abstract_device_t {
+ public:
+  ns16550_t(class bus_t *bus, abstract_interrupt_controller_t *intctrl,
+            uint32_t interrupt_id, uint32_t reg_shift, uint32_t reg_io_width);
+  bool load(reg_t addr, size_t len, uint8_t* bytes);
+  bool store(reg_t addr, size_t len, const uint8_t* bytes);
+  void tick(void);
+  size_t size() { return NS16550_SIZE; }
+ private:
+  class bus_t *bus;
+  abstract_interrupt_controller_t *intctrl;
+  uint32_t interrupt_id;
+  uint32_t reg_shift;
+  uint32_t reg_io_width;
+  std::queue<uint8_t> rx_queue;
+  uint8_t dll;
+  uint8_t dlm;
+  uint8_t iir;
+  uint8_t ier;
+  uint8_t fcr;
+  uint8_t lcr;
+  uint8_t mcr;
+  uint8_t lsr;
+  uint8_t msr;
+  uint8_t scr;
+  void update_interrupt(void);
+  uint8_t rx_byte(void);
+  void tx_byte(uint8_t val);
 };
 
 class mmio_plugin_device_t : public abstract_device_t {
