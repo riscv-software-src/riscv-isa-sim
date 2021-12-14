@@ -72,6 +72,51 @@ class clint_t : public abstract_device_t {
   std::vector<mtimecmp_t> mtimecmp;
 };
 
+#define PLIC_MAX_DEVICES 1024
+
+struct plic_context {
+	uint32_t num;
+	processor_t *proc;
+	bool mmode;
+
+	uint8_t priority_threshold;
+	uint32_t enable[PLIC_MAX_DEVICES/32];
+	uint32_t pending[PLIC_MAX_DEVICES/32];
+	uint8_t pending_priority[PLIC_MAX_DEVICES];
+	uint32_t claimed[PLIC_MAX_DEVICES/32];
+};
+typedef struct plic_context plic_context_t;
+
+class plic_t : public abstract_device_t, public abstract_interrupt_controller_t {
+ public:
+  plic_t(std::vector<processor_t*>&, bool smode, uint32_t ndev);
+  bool load(reg_t addr, size_t len, uint8_t* bytes);
+  bool store(reg_t addr, size_t len, const uint8_t* bytes);
+  void set_interrupt_level(uint32_t id, int lvl);
+  size_t size() { return PLIC_SIZE; }
+ private:
+  std::vector<processor_t*>& procs;
+  std::vector<plic_context_t> contexts;
+  uint32_t num_ids;
+  uint32_t num_ids_word;
+  uint32_t max_prio;
+  uint8_t priority[PLIC_MAX_DEVICES];
+  uint32_t level[PLIC_MAX_DEVICES/32];
+  uint32_t context_best_pending(plic_context_t *c);
+  void context_update(plic_context_t *context);
+  uint32_t context_claim(plic_context_t *c);
+  bool priority_read(reg_t offset, uint32_t *val);
+  bool priority_write(reg_t offset, uint32_t val);
+  bool context_enable_read(plic_context_t *context,
+                           reg_t offset, uint32_t *val);
+  bool context_enable_write(plic_context_t *context,
+                            reg_t offset, uint32_t val);
+  bool context_read(plic_context_t *context,
+                    reg_t offset, uint32_t *val);
+  bool context_write(plic_context_t *context,
+                     reg_t offset, uint32_t val);
+};
+
 class mmio_plugin_device_t : public abstract_device_t {
  public:
   mmio_plugin_device_t(const std::string& name, const std::string& args);

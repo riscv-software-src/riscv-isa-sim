@@ -98,6 +98,14 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     bus.add_device(clint_base, clint.get());
   }
 
+  // create plic
+  reg_t plic_base;
+  uint32_t plic_ndev;
+  if (fdt_parse_plic(fdt, &plic_base, &plic_ndev, "riscv,plic0") == 0) {
+    plic.reset(new plic_t(procs, true, plic_ndev));
+    bus.add_device(plic_base, plic.get());
+  }
+
   //per core attribute
   int cpu_offset = 0, rc;
   size_t cpu_idx = 0;

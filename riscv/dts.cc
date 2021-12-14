@@ -93,6 +93,21 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "      reg = <0x" << (clintbs >> 32) << " 0x" << (clintbs & (uint32_t)-1) <<
                      " 0x" << (clintsz >> 32) << " 0x" << (clintsz & (uint32_t)-1) << ">;\n"
          "    };\n"
+         "    plic@" << PLIC_BASE << " {\n"
+         "      compatible = \"riscv,plic0\";\n"
+         "      interrupts-extended = <" << std::dec;
+  for (size_t i = 0; i < procs.size(); i++)
+    s << "&CPU" << i << "_intc 11 &CPU" << i << "_intc 9 ";
+  reg_t plicbs = PLIC_BASE;
+  reg_t plicsz = PLIC_SIZE;
+  s << std::hex << ">;\n"
+         "      reg = <0x" << (plicbs >> 32) << " 0x" << (plicbs & (uint32_t)-1) <<
+                     " 0x" << (plicsz >> 32) << " 0x" << (plicsz & (uint32_t)-1) << ">;\n"
+         "      riscv,ndev = <0x" << PLIC_NDEV << ">;\n"
+         "      riscv,max-priority = <0x" << ((1U << PLIC_PRIO_BITS) - 1) << ">;\n"
+         "      #interrupt-cells = <1>;\n"
+         "      interrupt-controller;\n"
+         "    };\n"
          "  };\n"
          "  htif {\n"
          "    compatible = \"ucb,htif0\";\n"
@@ -273,6 +288,28 @@ int fdt_parse_clint(void *fdt, reg_t *clint_addr,
   rc = fdt_get_node_addr_size(fdt, nodeoffset, clint_addr, NULL, "reg");
   if (rc < 0 || !clint_addr)
     return -ENODEV;
+
+  return 0;
+}
+
+int fdt_parse_plic(void *fdt, reg_t *plic_addr, uint32_t *ndev,
+                   const char *compatible)
+{
+  int nodeoffset, len, rc;
+  const fdt32_t *ndev_p;
+
+  nodeoffset = fdt_node_offset_by_compatible(fdt, -1, compatible);
+  if (nodeoffset < 0)
+    return nodeoffset;
+
+  rc = fdt_get_node_addr_size(fdt, nodeoffset, plic_addr, NULL, "reg");
+  if (rc < 0 || !plic_addr)
+    return -ENODEV;
+
+  ndev_p = (fdt32_t *)fdt_getprop(fdt, nodeoffset, "riscv,ndev", &len);
+  if (!ndev || !ndev_p)
+    return -ENODEV;
+  *ndev = fdt32_to_cpu(*ndev_p);
 
   return 0;
 }

@@ -361,6 +361,7 @@ private:
 
   friend class mmu_t;
   friend class clint_t;
+  friend class plic_t;
   friend class extension_t;
 
   void parse_varch_string(const char*);
