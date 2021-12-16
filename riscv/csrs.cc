@@ -439,7 +439,8 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 
   const reg_t mask = sstatus_write_mask
                    | MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPRV
-                   | MSTATUS_MPP | MSTATUS_TW | MSTATUS_TSR
+                   | MSTATUS_MPP | MSTATUS_TW
+                   | (proc->extension_enabled('S') ? MSTATUS_TSR : 0)
                    | (has_page ? MSTATUS_TVM : 0)
                    | (has_gva ? MSTATUS_GVA : 0)
                    | (has_mpv ? MSTATUS_MPV : 0);
