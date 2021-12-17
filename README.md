@@ -28,10 +28,10 @@ Spike supports the following RISC-V ISA features:
   - Zbs extension, v1.0
   - Conformance to both RVWMO and RVTSO (Spike is sequentially consistent)
   - Machine, Supervisor, and User modes, v1.11
-  - Hypervisor extension, v0.6.1
-  - Svnapot extension, v0.1
-  - Svpbmt extension, v0.1
-  - Svinval extension, v0.1
+  - Hypervisor extension, v1.0
+  - Svnapot extension, v1.0
+  - Svpbmt extension, v1.0
+  - Svinval extension, v1.0
   - Debug v0.14
 
 As a Spike extension, the remainder of the proposed
