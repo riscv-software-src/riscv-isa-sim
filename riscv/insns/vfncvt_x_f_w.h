@@ -1,24 +1,10 @@
 // vfncvt.x.f.w vd, vs2, vm
-VI_VFP_CVT_SCALE
-({
-  auto vs2 = P.VU.elt<float16_t>(rs2_num, i);
-  P.VU.elt<int8_t>(rd_num, i, true) = f16_to_i8(vs2, STATE.frm->read(), true);
-},
-{
-  auto vs2 = P.VU.elt<float32_t>(rs2_num, i);
-  P.VU.elt<int16_t>(rd_num, i, true) = f32_to_i16(vs2, STATE.frm->read(), true);
-},
-{
-  auto vs2 = P.VU.elt<float64_t>(rs2_num, i);
-  P.VU.elt<int32_t>(rd_num, i, true) = f64_to_i32(vs2, STATE.frm->read(), true);
-},
-{
-  require(p->extension_enabled(EXT_ZFH));
-},
-{
-  require(p->extension_enabled('F'));
-},
-{
-  require(p->extension_enabled('D'));
-},
-false, (P.VU.vsew <= 32))
+VI_VFP_NCVT_FP_TO_INT(
+  { vd = f16_to_i8(vs2, softfloat_roundingMode, true); },  // BODY16
+  { vd = f32_to_i16(vs2, softfloat_roundingMode, true); }, // BODY32
+  { vd = f64_to_i32(vs2, softfloat_roundingMode, true); }, // BODY64
+  { require_extension(EXT_ZFH); },                         // CHECK16
+  { require(p->extension_enabled('F')); },                 // CHECK32
+  { require(p->extension_enabled('D')); },                 // CHECK64
+  int                                                      // sign
+)

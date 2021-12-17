@@ -1,23 +1,10 @@
 // vfwcvt.x.f.v vd, vs2, vm
-VI_VFP_CVT_SCALE
-({
-  ;
-},
-{
-  auto vs2 = P.VU.elt<float16_t>(rs2_num, i);
-  P.VU.elt<int32_t>(rd_num, i, true) = f16_to_i32(vs2, STATE.frm->read(), true);
-},
-{
-  auto vs2 = P.VU.elt<float32_t>(rs2_num, i);
-  P.VU.elt<int64_t>(rd_num, i, true) = f32_to_i64(vs2, STATE.frm->read(), true);
-},
-{
-  ;
-},
-{
-  require(p->extension_enabled(EXT_ZFH));
-},
-{
-  require(p->extension_enabled('F'));
-},
-true, (P.VU.vsew >= 16))
+VI_VFP_WCVT_FP_TO_INT(
+  {;},                                                     // BODY8
+  { vd = f16_to_i32(vs2, softfloat_roundingMode, true); }, // BODY16
+  { vd = f32_to_i64(vs2, softfloat_roundingMode, true); }, // BODY32
+  {;},                                                     // CHECK8
+  { require_extension(EXT_ZFH); },                         // CHECK16
+  { require_extension('F'); },                             // CHECK32
+  int                                                      // sign
+)

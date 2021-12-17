@@ -852,6 +852,18 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   float##width##_t rs1 = f##width(READ_FREG(rs1_num)); \
   float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i);
 
+#define CVT_FP_TO_FP_PARAMS(from_width, to_width) \
+  auto vs2 = P.VU.elt<float##from_width##_t>(rs2_num, i); \
+  auto &vd = P.VU.elt<float##to_width##_t>(rd_num, i, true);
+
+#define CVT_INT_TO_FP_PARAMS(from_width, to_width, sign) \
+  auto vs2 = P.VU.elt<sign##from_width##_t>(rs2_num, i); \
+  auto &vd = P.VU.elt<float##to_width##_t>(rd_num, i, true);
+
+#define CVT_FP_TO_INT_PARAMS(from_width, to_width, sign) \
+  auto vs2 = P.VU.elt<float##from_width##_t>(rs2_num, i); \
+  auto &vd = P.VU.elt<sign##to_width##_t>(rd_num, i, true);
+
 //
 // vector: integer and masking operation loop
 //
@@ -2369,39 +2381,142 @@ reg_t index[P.VU.vlmax]; \
   for (reg_t i=P.VU.vstart->read(); i<vl; ++i){ \
     VI_LOOP_ELEMENT_SKIP();
 
-#define VI_VFP_CVT_SCALE(BODY8, BODY16, BODY32, \
-                         CHECK8, CHECK16, CHECK32, \
-                         is_widen, eew_check) \
-  if (is_widen) { \
-    VI_CHECK_DSS(false);\
-  } else { \
-    VI_CHECK_SDS(false); \
-  } \
-  require(eew_check); \
+#define VI_VFP_CVT_LOOP(CVT_PARAMS, CHECK, BODY) \
+  CHECK \
+  VI_VFP_LOOP_SCALE_BASE \
+  CVT_PARAMS \
+  BODY \
+  set_fp_exceptions; \
+  VI_VFP_LOOP_END
+
+#define VI_VFP_CVT_INT_TO_FP(BODY16, BODY32, BODY64, sign) \
+  VI_CHECK_SDS(false); \
   switch(P.VU.vsew) { \
-    case e8: {\
-      CHECK8 \
-      VI_VFP_LOOP_SCALE_BASE \
-        BODY8 \
-        set_fp_exceptions; \
-      VI_VFP_LOOP_END \
-      } \
+    case e16: \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(16, 16, sign), {}, BODY16); } \
       break; \
-    case e16: {\
-      CHECK16 \
-      VI_VFP_LOOP_SCALE_BASE \
-        BODY16 \
-        set_fp_exceptions; \
-      VI_VFP_LOOP_END \
-      } \
+    case e32: \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(32, 32, sign), {}, BODY32); } \
       break; \
-    case e32: {\
-      CHECK32 \
-      VI_VFP_LOOP_SCALE_BASE \
-        BODY32 \
-        set_fp_exceptions; \
-      VI_VFP_LOOP_END \
-      } \
+    case e64: \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(64, 64, sign), {}, BODY64); } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
+
+#define VI_VFP_CVT_FP_TO_INT(BODY16, BODY32, BODY64, sign) \
+  VI_CHECK_SDS(false); \
+  switch(P.VU.vsew) { \
+    case e16: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(16, 16, sign), {}, BODY16); } \
+      break; \
+    case e32: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(32, 32, sign), {}, BODY32); } \
+      break; \
+    case e64: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(64, 64, sign), {}, BODY64); } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
+
+#define VI_VFP_WCVT_FP_TO_FP(BODY8, BODY16, BODY32, \
+                             CHECK8, CHECK16, CHECK32) \
+  VI_CHECK_DSS(false); \
+  switch(P.VU.vsew) { \
+    case e16: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_FP_PARAMS(16, 32), CHECK16, BODY16); } \
+      break; \
+    case e32: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_FP_PARAMS(32, 64), CHECK32, BODY32); } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
+
+#define VI_VFP_WCVT_INT_TO_FP(BODY8, BODY16, BODY32, \
+                              CHECK8, CHECK16, CHECK32, \
+                              sign) \
+  VI_CHECK_DSS(false); \
+  switch(P.VU.vsew) { \
+    case e8: \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(8, 16, sign), CHECK8, BODY8); } \
+      break; \
+    case e16: \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(16, 32, sign), CHECK16, BODY16); } \
+      break; \
+    case e32: \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(32, 64, sign), CHECK32, BODY32); } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
+
+#define VI_VFP_WCVT_FP_TO_INT(BODY8, BODY16, BODY32, \
+                              CHECK8, CHECK16, CHECK32, \
+                              sign) \
+  VI_CHECK_DSS(false); \
+  switch(P.VU.vsew) { \
+    case e16: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(16, 32, sign), CHECK16, BODY16); } \
+      break; \
+    case e32: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(32, 64, sign), CHECK32, BODY32); } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
+
+#define VI_VFP_NCVT_FP_TO_FP(BODY8, BODY16, BODY32, \
+                            CHECK8, CHECK16, CHECK32) \
+  VI_CHECK_SDS(false); \
+  switch(P.VU.vsew) { \
+    case e16: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_FP_PARAMS(32, 16), CHECK16, BODY16); } \
+      break; \
+    case e32: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_FP_PARAMS(64, 32), CHECK32, BODY32); } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
+
+#define VI_VFP_NCVT_INT_TO_FP(BODY8, BODY16, BODY32, \
+                             CHECK8, CHECK16, CHECK32, \
+                             sign) \
+  VI_CHECK_SDS(false); \
+  switch(P.VU.vsew) { \
+    case e16: \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(32, 16, sign), CHECK16, BODY16); } \
+      break; \
+    case e32: \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(64, 32, sign), CHECK32, BODY32); } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
+
+#define VI_VFP_NCVT_FP_TO_INT(BODY8, BODY16, BODY32, \
+                             CHECK8, CHECK16, CHECK32, \
+                             sign) \
+  VI_CHECK_SDS(false); \
+  switch(P.VU.vsew) { \
+    case e8: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(16, 8, sign), CHECK8, BODY8); } \
+      break; \
+    case e16: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(32, 16, sign), CHECK16, BODY16); } \
+      break; \
+    case e32: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(64, 32, sign), CHECK32, BODY32); } \
       break; \
     default: \
       require(0); \
