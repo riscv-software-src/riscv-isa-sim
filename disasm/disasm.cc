@@ -676,6 +676,9 @@ disassembler_t::disassembler_t(int xlen)
   #define DEFINE_XFTYPE(code) add_xftype_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_SFENCE_TYPE(code) add_sfence_insn(this, #code, match_##code, mask_##code);
 
+  add_insn(new disasm_insn_t("unimp", match_csrrw|(CSR_CYCLE<<20), 0xffffffff, {}));
+  add_insn(new disasm_insn_t("c.unimp", 0, 0xffff, {}));
+
   DEFINE_XLOAD(lb)
   DEFINE_XLOAD(lbu)
   DEFINE_XLOAD(lh)
