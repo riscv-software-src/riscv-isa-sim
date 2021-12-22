@@ -1043,14 +1043,16 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_VF_MERGE_LOOP(BODY) \
   VI_CHECK_SSS(false); \
-  VI_MERGE_LOOP_BASE \
-  if(sew == e16){ \
+  VI_VFP_COMMON \
+  for (reg_t i=P.VU.vstart->read(); i<vl; ++i){ \
+  VI_MERGE_VARS \
+  if(P.VU.vsew == e16){ \
     VFP_VF_PARAMS(16); \
     BODY; \
-  }else if(sew == e32){ \
+  }else if(P.VU.vsew == e32){ \
     VFP_VF_PARAMS(32); \
     BODY; \
-  }else if(sew == e64){ \
+  }else if(P.VU.vsew == e64){ \
     VFP_VF_PARAMS(64); \
     BODY; \
   } \
