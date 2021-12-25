@@ -2371,9 +2371,6 @@ reg_t index[P.VU.vlmax]; \
 #define VI_VFP_LOOP_SCALE_BASE \
   require_fp; \
   require_vector(true);\
-  require((P.VU.vsew == e8 && p->extension_enabled(EXT_ZFH)) || \
-          (P.VU.vsew == e16 && p->extension_enabled('F')) || \
-          (P.VU.vsew == e32 && p->extension_enabled('D'))); \
   require(STATE.frm->read() < 0x5);\
   reg_t vl = P.VU.vl->read(); \
   reg_t rd_num = insn.rd(); \
@@ -2395,13 +2392,19 @@ reg_t index[P.VU.vlmax]; \
   VI_CHECK_SSS(false); \
   switch(P.VU.vsew) { \
     case e16: \
-      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(16, 16, sign), {}, BODY16); } \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(16, 16, sign), \
+        { p->extension_enabled(EXT_ZFH); }, \
+        BODY16); } \
       break; \
     case e32: \
-      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(32, 32, sign), {}, BODY32); } \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(32, 32, sign), \
+        { p->extension_enabled('F'); }, \
+        BODY32); } \
       break; \
     case e64: \
-      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(64, 64, sign), {}, BODY64); } \
+      { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(64, 64, sign), \
+        { p->extension_enabled('D'); }, \
+        BODY64); } \
       break; \
     default: \
       require(0); \
@@ -2412,13 +2415,19 @@ reg_t index[P.VU.vlmax]; \
   VI_CHECK_SSS(false); \
   switch(P.VU.vsew) { \
     case e16: \
-      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(16, 16, sign), {}, BODY16); } \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(16, 16, sign), \
+        { p->extension_enabled(EXT_ZFH); }, \
+        BODY16); } \
       break; \
     case e32: \
-      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(32, 32, sign), {}, BODY32); } \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(32, 32, sign), \
+        { p->extension_enabled('F'); }, \
+        BODY32); } \
       break; \
     case e64: \
-      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(64, 64, sign), {}, BODY64); } \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(64, 64, sign), \
+        { p->extension_enabled('D'); }, \
+        BODY64); } \
       break; \
     default: \
       require(0); \
