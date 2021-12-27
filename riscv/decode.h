@@ -278,6 +278,15 @@ private:
 #define require_noover_widen(astart, asize, bstart, bsize) \
   require(!is_overlapped_widen(astart, asize, bstart, bsize))
 #define require_vm do { if (insn.v_vm() == 0) require(insn.rd() != 0);} while(0);
+#define require_envcfg(field) \
+  do { \
+    if (((STATE.prv != PRV_M) && (m##field == 0)) || \
+        ((STATE.prv == PRV_U && !STATE.v) && (s##field == 0))) \
+      throw trap_illegal_instruction(insn.bits()); \
+    else if (STATE.v && ((h##field == 0) || \
+                        ((STATE.prv == PRV_U) && (s##field == 0)))) \
+      throw trap_virtual_instruction(insn.bits()); \
+  } while(0);
 
 #define set_fp_exceptions ({ if (softfloat_exceptionFlags) { \
                                STATE.fflags->write(STATE.fflags->read() | softfloat_exceptionFlags); \
@@ -3037,6 +3046,11 @@ reg_t index[P.VU.vlmax]; \
   } else { \
     WRITE_RD(sext_xlen(rd)); \
   }
+
+#define DECLARE_XENVCFG_VARS(field) \
+  reg_t m##field = get_field(STATE.menvcfg->read(), MENVCFG_##field); \
+  reg_t s##field = get_field(STATE.senvcfg->read(), SENVCFG_##field); \
+  reg_t h##field = get_field(STATE.henvcfg->read(), HENVCFG_##field)
 
 #define DEBUG_START             0x0
 #define DEBUG_END               (0x1000 - 1)
