@@ -389,12 +389,18 @@ public:
     return target_big_endian? target_endian<T>::to_be(n) : target_endian<T>::to_le(n);
   }
 
+  void set_cache_blocksz(uint64_t size)
+  {
+    blocksz = size;
+  }
+
 private:
   simif_t* sim;
   processor_t* proc;
   memtracer_list_t tracer;
   reg_t load_reservation_address;
   uint16_t fetch_temp;
+  uint64_t blocksz;
 
   // implement an instruction cache for simulator performance
   icache_entry_t icache[ICACHE_ENTRIES];
