@@ -1831,6 +1831,12 @@ disassembler_t::disassembler_t(int xlen)
     DEFINE_RTYPE(pktt32);
   }
 
+  // ext-cmo
+  DISASM_INSN("cbo.clean", cbo_clean, 0, {&xrs1});
+  DISASM_INSN("cbo.flush", cbo_flush, 0, {&xrs1});
+  DISASM_INSN("cbo.inval", cbo_inval, 0, {&xrs1});
+  DISASM_INSN("cbo.zero", cbo_zero, 0, {&xrs1});
+
   add_unknown_insns(this);
 }
 
