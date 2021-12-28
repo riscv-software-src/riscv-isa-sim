@@ -1322,11 +1322,11 @@ disassembler_t::disassembler_t(int xlen)
 
   DISASM_INSN("vcompress.vm", vcompress_vm, 0, {&vd, &vs2, &vs1});
 
-  DISASM_OPIV_M___INSN(vmandnot,  1);
+  DISASM_OPIV_M___INSN(vmandn,    1);
   DISASM_OPIV_M___INSN(vmand,     1);
   DISASM_OPIV_M___INSN(vmor,      1);
   DISASM_OPIV_M___INSN(vmxor,     1);
-  DISASM_OPIV_M___INSN(vmornot,   1);
+  DISASM_OPIV_M___INSN(vmorn,     1);
   DISASM_OPIV_M___INSN(vmnand,    1);
   DISASM_OPIV_M___INSN(vmnor,     1);
   DISASM_OPIV_M___INSN(vmxnor,    1);

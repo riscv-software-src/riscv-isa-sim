@@ -500,7 +500,7 @@ riscv_insn_ext_v_alu_int = \
 	vmadd_vv \
 	vmadd_vx \
 	vmand_mm \
-	vmandnot_mm \
+	vmandn_mm \
 	vmax_vv \
 	vmax_vx \
 	vmaxu_vv \
@@ -516,7 +516,7 @@ riscv_insn_ext_v_alu_int = \
 	vmnand_mm \
 	vmnor_mm \
 	vmor_mm \
-	vmornot_mm \
+	vmorn_mm \
 	vmsbc_vv \
 	vmsbc_vx \
 	vmsbc_vvm \
