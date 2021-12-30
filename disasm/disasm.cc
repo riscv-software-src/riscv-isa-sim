@@ -850,6 +850,15 @@ disassembler_t::disassembler_t(int xlen)
   DEFINE_RTYPE(xperm16);
   DEFINE_RTYPE(xperm32);
 
+  DEFINE_RTYPE(bclr);
+  DEFINE_RTYPE(binv);
+  DEFINE_RTYPE(bset);
+  DEFINE_RTYPE(bext);
+  DEFINE_ITYPE_SHIFT(bclri);
+  DEFINE_ITYPE_SHIFT(binvi);
+  DEFINE_ITYPE_SHIFT(bseti);
+  DEFINE_ITYPE_SHIFT(bexti);
+
   DEFINE_R3TYPE(cmix);
   DEFINE_R3TYPE(fsr);
   DEFINE_R3TYPE(fsri);
