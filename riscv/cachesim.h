@@ -27,6 +27,7 @@ class cache_sim_t
   virtual ~cache_sim_t();
 
   void access(uint64_t addr, size_t bytes, bool store);
+  void clean_invalidate(uint64_t addr, size_t bytes, bool clean, bool inval);
   void print_stats();
   void set_miss_handler(cache_sim_t* mh) { miss_handler = mh; }
   void set_log(bool _log) { log = _log; }
@@ -89,6 +90,10 @@ class cache_memtracer_t : public memtracer_t
   void set_miss_handler(cache_sim_t* mh)
   {
     cache->set_miss_handler(mh);
+  }
+  void clean_invalidate(uint64_t addr, size_t bytes, bool clean, bool inval)
+  {
+    cache->clean_invalidate(addr, bytes, clean, inval);
   }
   void set_log(bool log)
   {
