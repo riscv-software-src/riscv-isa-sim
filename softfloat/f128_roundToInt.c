@@ -115,6 +115,7 @@ float128_t
             switch ( roundingMode ) {
              case softfloat_round_near_even:
                 if ( ! (fracF128UI64( uiA64 ) | uiA0) ) break;
+                __attribute__ ((fallthrough));
              case softfloat_round_near_maxMag:
                 if ( exp == 0x3FFE ) uiZ.v64 |= packToF128UI64( 0, 0x3FFF, 0 );
                 break;

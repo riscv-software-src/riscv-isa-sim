@@ -106,6 +106,7 @@ float16_t f16_rsqrte7(float16_t in)
     case 0x004: // -subnormal
     case 0x100: // sNaN
         softfloat_exceptionFlags |= softfloat_flag_invalid;
+        __attribute__ ((fallthrough));
     case 0x200: //qNaN
         uA.ui = defaultNaNF16UI;
         break;
@@ -122,6 +123,7 @@ float16_t f16_rsqrte7(float16_t in)
         break;
     case 0x020: //+ sub
         sub = true;
+        __attribute__ ((fallthrough));
     default: // +num
         uA.ui = rsqrte7(uA.ui, 5, 10, sub);
         break;
@@ -143,6 +145,7 @@ float32_t f32_rsqrte7(float32_t in)
     case 0x004: // -subnormal
     case 0x100: // sNaN
         softfloat_exceptionFlags |= softfloat_flag_invalid;
+        __attribute__ ((fallthrough));
     case 0x200: //qNaN
         uA.ui = defaultNaNF32UI;
         break;
@@ -159,6 +162,7 @@ float32_t f32_rsqrte7(float32_t in)
         break;
     case 0x020: //+ sub
         sub = true;
+        __attribute__ ((fallthrough));
     default: // +num
         uA.ui = rsqrte7(uA.ui, 8, 23, sub);
         break;
@@ -180,6 +184,7 @@ float64_t f64_rsqrte7(float64_t in)
     case 0x004: // -subnormal
     case 0x100: // sNaN
         softfloat_exceptionFlags |= softfloat_flag_invalid;
+        __attribute__ ((fallthrough));
     case 0x200: //qNaN
         uA.ui = defaultNaNF64UI;
         break;
@@ -196,6 +201,7 @@ float64_t f64_rsqrte7(float64_t in)
         break;
     case 0x020: //+ sub
         sub = true;
+        __attribute__ ((fallthrough));
     default: // +num
         uA.ui = rsqrte7(uA.ui, 11, 52, sub);
         break;
@@ -287,12 +293,14 @@ float16_t f16_recip7(float16_t in)
         break;
     case 0x100: // sNaN
         softfloat_exceptionFlags |= softfloat_flag_invalid;
+        __attribute__ ((fallthrough));
     case 0x200: //qNaN
         uA.ui = defaultNaNF16UI;
         break;
     case 0x004: // -subnormal
     case 0x020: //+ sub
         sub = true;
+        __attribute__ ((fallthrough));
     default: // +- normal
         uA.ui = recip7(uA.ui, 5, 10,
                        softfloat_roundingMode, sub, &round_abnormal);
@@ -330,12 +338,14 @@ float32_t f32_recip7(float32_t in)
         break;
     case 0x100: // sNaN
         softfloat_exceptionFlags |= softfloat_flag_invalid;
+        __attribute__ ((fallthrough));
     case 0x200: //qNaN
         uA.ui = defaultNaNF32UI;
         break;
     case 0x004: // -subnormal
     case 0x020: //+ sub
         sub = true;
+        __attribute__ ((fallthrough));
     default: // +- normal
         uA.ui = recip7(uA.ui, 8, 23,
                        softfloat_roundingMode, sub, &round_abnormal);
@@ -373,12 +383,14 @@ float64_t f64_recip7(float64_t in)
         break;
     case 0x100: // sNaN
         softfloat_exceptionFlags |= softfloat_flag_invalid;
+        __attribute__ ((fallthrough));
     case 0x200: //qNaN
         uA.ui = defaultNaNF64UI;
         break;
     case 0x004: // -subnormal
     case 0x020: //+ sub
         sub = true;
+        __attribute__ ((fallthrough));
     default: // +- normal
         uA.ui = recip7(uA.ui, 11, 52,
                        softfloat_roundingMode, sub, &round_abnormal);

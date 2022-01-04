@@ -63,6 +63,7 @@ float32_t f32_roundToInt( float32_t a, uint_fast8_t roundingMode, bool exact )
         switch ( roundingMode ) {
          case softfloat_round_near_even:
             if ( ! fracF32UI( uiA ) ) break;
+            __attribute__ ((fallthrough));
          case softfloat_round_near_maxMag:
             if ( exp == 0x7E ) uiZ |= packToF32UI( 0, 0x7F, 0 );
             break;
