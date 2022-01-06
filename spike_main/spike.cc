@@ -61,7 +61,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --bootargs=<args>     Provide custom bootargs for kernel [default: console=hvc0 earlycon=sbi]\n");
   fprintf(stderr, "  --real-time-clint     Increment clint time at real-time rate\n");
   fprintf(stderr, "  --dm-progsize=<words> Progsize for the debug module [default 2]\n");
-  fprintf(stderr, "  --dm-sba=<bits>       Debug bus master supports up to "
+  fprintf(stderr, "  --dm-sba=<bits>       Debug system bus access supports up to "
       "<bits> wide accesses [default 0]\n");
   fprintf(stderr, "  --dm-auth             Debug module requires debugger to authenticate\n");
   fprintf(stderr, "  --dmi-rti=<n>         Number of Run-Test/Idle cycles "
@@ -243,7 +243,7 @@ int main(int argc, char** argv)
   unsigned dmi_rti = 0;
   debug_module_config_t dm_config = {
     .progbufsize = 2,
-    .max_bus_master_bits = 0,
+    .max_sba_data_width = 0,
     .require_authentication = false,
     .abstract_rti = 0,
     .support_hasel = true,
@@ -352,7 +352,7 @@ int main(int argc, char** argv)
   parser.option(0, "dm-no-impebreak", 0,
       [&](const char* s){dm_config.support_impebreak = false;});
   parser.option(0, "dm-sba", 1,
-      [&](const char* s){dm_config.max_bus_master_bits = atoul_safe(s);});
+      [&](const char* s){dm_config.max_sba_data_width = atoul_safe(s);});
   parser.option(0, "dm-auth", 0,
       [&](const char* s){dm_config.require_authentication = true;});
   parser.option(0, "dmi-rti", 1,
