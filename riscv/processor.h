@@ -29,6 +29,8 @@ struct insn_desc_t
   insn_bits_t mask;
   insn_func_t rv32;
   insn_func_t rv64;
+
+  insn_func_t func(int xlen) { return xlen == 64 ? rv64 : rv32; }
 };
 
 // regnum, data

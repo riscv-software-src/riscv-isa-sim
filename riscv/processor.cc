@@ -1027,11 +1027,11 @@ insn_func_t processor_t::decode_insn(insn_t insn)
   size_t idx = insn.bits() % OPCODE_CACHE_SIZE;
   insn_desc_t desc = opcode_cache[idx];
 
-  if (unlikely(insn.bits() != desc.match || !(xlen == 64 ? desc.rv64 : desc.rv32))) {
+  if (unlikely(insn.bits() != desc.match || !desc.func(xlen))) {
     // fall back to linear search
     int cnt = 0;
     insn_desc_t* p = &instructions[0];
-    while ((insn.bits() & p->mask) != p->match || !(xlen == 64 ? p->rv64 : p->rv32))
+    while ((insn.bits() & p->mask) != p->match || !desc.func(xlen))
       p++, cnt++;
     desc = *p;
 
@@ -1048,7 +1048,7 @@ insn_func_t processor_t::decode_insn(insn_t insn)
     opcode_cache[idx].match = insn.bits();
   }
 
-  return xlen == 64 ? desc.rv64 : desc.rv32;
+  return desc.func(xlen);
 }
 
 void processor_t::register_insn(insn_desc_t desc)
