@@ -1068,7 +1068,7 @@ void processor_t::build_opcode_map()
   std::sort(instructions.begin(), instructions.end(), cmp());
 
   for (size_t i = 0; i < OPCODE_CACHE_SIZE; i++)
-    opcode_cache[i] = {0, 0, &illegal_instruction, &illegal_instruction};
+    opcode_cache[i] = insn_desc_t::illegal();
 }
 
 void processor_t::register_extension(extension_t* x)
@@ -1107,7 +1107,9 @@ void processor_t::register_base_instructions()
   #include "insn_list.h"
   #undef DEFINE_INSN
 
-  register_insn({0, 0, &illegal_instruction, &illegal_instruction});
+  // terminate instruction list with a catch-all
+  register_insn(insn_desc_t::illegal());
+
   build_opcode_map();
 }
 

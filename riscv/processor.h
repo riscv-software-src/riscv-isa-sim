@@ -23,6 +23,8 @@ class trap_t;
 class extension_t;
 class disassembler_t;
 
+reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
+
 struct insn_desc_t
 {
   insn_bits_t match;
@@ -31,6 +33,11 @@ struct insn_desc_t
   insn_func_t rv64;
 
   insn_func_t func(int xlen) { return xlen == 64 ? rv64 : rv32; }
+
+  static insn_desc_t illegal()
+  {
+    return {0, 0, &illegal_instruction, &illegal_instruction};
+  }
 };
 
 // regnum, data
@@ -595,8 +602,6 @@ public:
 
   vectorUnit_t VU;
 };
-
-reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
 
 #define REGISTER_INSN(proc, name, match, mask, archen) \
   extern reg_t rv32_##name(processor_t*, insn_t, reg_t); \
