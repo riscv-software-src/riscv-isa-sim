@@ -175,7 +175,8 @@ private:
 #define MMU (*p->get_mmu())
 #define STATE (*p->get_state())
 #define FLEN (p->get_flen())
-#define READ_REG(reg) STATE.XPR[reg]
+#define CHECK_REG(reg) ((void) 0)
+#define READ_REG(reg) ({ CHECK_REG(reg); STATE.XPR[reg]; })
 #define READ_FREG(reg) STATE.FPR[reg]
 #define RD READ_REG(insn.rd())
 #define RS1 READ_REG(insn.rs1())
@@ -184,7 +185,7 @@ private:
 #define WRITE_RD(value) WRITE_REG(insn.rd(), value)
 
 #ifndef RISCV_ENABLE_COMMITLOG
-# define WRITE_REG(reg, value) STATE.XPR.write(reg, value)
+# define WRITE_REG(reg, value) ({ CHECK_REG(reg); STATE.XPR.write(reg, value); })
 # define WRITE_FREG(reg, value) DO_WRITE_FREG(reg, freg(value))
 # define WRITE_VSTATUS
 #else
@@ -197,6 +198,7 @@ private:
 # define WRITE_REG(reg, value) ({ \
     reg_t wdata = (value); /* value may have side effects */ \
     STATE.log_reg_write[(reg) << 4] = {wdata, 0}; \
+    CHECK_REG(reg); \
     STATE.XPR.write(reg, wdata); \
   })
 # define WRITE_FREG(reg, value) ({ \
