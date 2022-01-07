@@ -198,7 +198,7 @@ void processor_t::parse_priv_string(const char* str)
 void processor_t::parse_isa_string(const char* str)
 {
   isa_string = strtolower(str);
-  const char* all_subsets = "imafdqchp"
+  const char* all_subsets = "mafdqchp"
 #ifdef __SIZEOF_INT128__
     "v"
 #endif
@@ -210,24 +210,39 @@ void processor_t::parse_isa_string(const char* str)
   else if (isa_string.compare(0, 4, "rv64") == 0)
     max_xlen = 64;
   else
-    bad_isa_string(str, "Spike supports either RV32I or RV64I");
+    bad_isa_string(str, "ISA strings must begin with RV32 or RV64");
 
-  if (isa_string[4] == 'g') {
-    // G = IMAFD_Zicsr_Zifencei, but Spike includes the latter two
-    // unconditionally, so they need not be explicitly added here.
-    isa_string = isa_string.substr(0, 4) + "imafd" + isa_string.substr(5);
+  switch (isa_string[4]) {
+    case 'g':
+      // G = IMAFD_Zicsr_Zifencei, but Spike includes the latter two
+      // unconditionally, so they need not be explicitly added here.
+      isa_string = isa_string.substr(0, 4) + "imafd" + isa_string.substr(5);
+      // Fall through
+    case 'i':
+      max_isa |= 1L << ('i' - 'a');
+      break;
+
+    case 'e':
+      max_isa |= 1L << ('e' - 'a');
+      break;
+
+    default:
+      bad_isa_string(str, ("'" + isa_string.substr(0, 4) + "' must be followed by I, E, or G").c_str());
   }
 
-  if (isa_string[4] != 'i')
-    bad_isa_string(str, "'I' extension is required");
-
   const char* isa_str = isa_string.c_str();
-  auto p = isa_str;
-  for (p += 4; islower(*p) && !strchr("zsx", *p); ++p) {
-    while (*all_subsets && (*p != *all_subsets))
-      ++all_subsets;
-    if (!*all_subsets)
-      bad_isa_string(str, "Wrong order");
+  auto p = isa_str, subset = all_subsets;
+  for (p += 5; islower(*p) && !strchr("zsx", *p); ++p) {
+    while (*subset && (*p != *subset))
+      ++subset;
+
+    if (!*subset) {
+      if (strchr(all_subsets, *p))
+        bad_isa_string(str, ("Extension '" + std::string(1, *p) + "' appears too late in ISA string").c_str());
+      else
+        bad_isa_string(str, ("Unsupported extension '" + std::string(1, *p) + "'").c_str());
+    }
+
     switch (*p) {
       case 'p': extension_table[EXT_ZBPBO] = true;
                 extension_table[EXT_ZPN] = true;
