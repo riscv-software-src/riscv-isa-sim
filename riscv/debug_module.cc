@@ -87,20 +87,20 @@ void debug_module_t::reset()
       proc->halt_request = proc->HR_NONE;
   }
 
-  dmcontrol = {0};
+  memset(&dmcontrol, 0, sizeof(dmcontrol));
 
-  dmstatus = {0};
+  memset(&dmstatus, 0, sizeof(dmstatus));
   dmstatus.impebreak = config.support_impebreak;
   dmstatus.authenticated = !config.require_authentication;
   dmstatus.version = 2;
 
-  abstractcs = {0};
+  memset(&abstractcs, 0, sizeof(abstractcs));
   abstractcs.datacount = sizeof(dmdata) / 4;
   abstractcs.progbufsize = config.progbufsize;
 
-  abstractauto = {0};
+  memset(&abstractauto, 0, sizeof(abstractauto));
 
-  sbcs = {0};
+  memset(&sbcs, 0, sizeof(sbcs));
   if (config.max_sba_data_width > 0) {
     sbcs.version = 1;
     sbcs.asize = sizeof(reg_t) * 8;
