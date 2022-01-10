@@ -50,11 +50,9 @@ static std::string readline(int fd)
         continue;
       s.erase(s.end()-1);
 
-      if (noncanonical && write(fd, "\b \b", 3) != 3)
-        ; // shut up gcc
+      if (noncanonical && write(fd, "\b \b", 3) != 3) {}
     }
-    else if (noncanonical && write(fd, &ch, 1) != 1)
-      ; // shut up gcc
+    else if (noncanonical && write(fd, &ch, 1) != 1) {}
 
     if (ch == '\n')
       break;

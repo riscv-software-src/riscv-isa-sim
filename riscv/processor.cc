@@ -234,6 +234,7 @@ void processor_t::parse_isa_string(const char* str)
                 extension_table[EXT_ZPSFOPERAND] = true;
                 extension_table[EXT_ZMMUL] = true; break;
       case 'q': max_isa |= 1L << ('d' - 'a');
+                // Fall through
       case 'd': max_isa |= 1L << ('f' - 'a');
     }
     max_isa |= 1L << (*p - 'a');

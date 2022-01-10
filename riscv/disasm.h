@@ -97,7 +97,7 @@ class disassembler_t
   static const unsigned int MASK1 = 0x7f;
   static const unsigned int MASK2 = 0xe003;
 
-  static const unsigned int hash(insn_bits_t insn, unsigned int mask)
+  static unsigned int hash(insn_bits_t insn, unsigned int mask)
   {
     return (insn & mask) % HASH_SIZE;
   }
