@@ -10,6 +10,7 @@ completion of the US transcontinental railway.
 
 Spike supports the following RISC-V ISA features:
   - RV32I and RV64I base ISAs, v2.1
+  - RV32E and RV64E base ISAs, v1.9
   - Zifencei extension, v2.0
   - Zicsr extension, v2.0
   - M extension, v2.0

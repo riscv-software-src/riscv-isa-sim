@@ -198,7 +198,7 @@ void processor_t::parse_priv_string(const char* str)
 void processor_t::parse_isa_string(const char* str)
 {
   isa_string = strtolower(str);
-  const char* all_subsets = "imafdqchp"
+  const char* all_subsets = "mafdqchp"
 #ifdef __SIZEOF_INT128__
     "v"
 #endif
@@ -210,24 +210,39 @@ void processor_t::parse_isa_string(const char* str)
   else if (isa_string.compare(0, 4, "rv64") == 0)
     max_xlen = 64;
   else
-    bad_isa_string(str, "Spike supports either RV32I or RV64I");
+    bad_isa_string(str, "ISA strings must begin with RV32 or RV64");
 
-  if (isa_string[4] == 'g') {
-    // G = IMAFD_Zicsr_Zifencei, but Spike includes the latter two
-    // unconditionally, so they need not be explicitly added here.
-    isa_string = isa_string.substr(0, 4) + "imafd" + isa_string.substr(5);
+  switch (isa_string[4]) {
+    case 'g':
+      // G = IMAFD_Zicsr_Zifencei, but Spike includes the latter two
+      // unconditionally, so they need not be explicitly added here.
+      isa_string = isa_string.substr(0, 4) + "imafd" + isa_string.substr(5);
+      // Fall through
+    case 'i':
+      max_isa |= 1L << ('i' - 'a');
+      break;
+
+    case 'e':
+      max_isa |= 1L << ('e' - 'a');
+      break;
+
+    default:
+      bad_isa_string(str, ("'" + isa_string.substr(0, 4) + "' must be followed by I, E, or G").c_str());
   }
 
-  if (isa_string[4] != 'i')
-    bad_isa_string(str, "'I' extension is required");
-
   const char* isa_str = isa_string.c_str();
-  auto p = isa_str;
-  for (p += 4; islower(*p) && !strchr("zsx", *p); ++p) {
-    while (*all_subsets && (*p != *all_subsets))
-      ++all_subsets;
-    if (!*all_subsets)
-      bad_isa_string(str, "Wrong order");
+  auto p = isa_str, subset = all_subsets;
+  for (p += 5; islower(*p) && !strchr("zsx", *p); ++p) {
+    while (*subset && (*p != *subset))
+      ++subset;
+
+    if (!*subset) {
+      if (strchr(all_subsets, *p))
+        bad_isa_string(str, ("Extension '" + std::string(1, *p) + "' appears too late in ISA string").c_str());
+      else
+        bad_isa_string(str, ("Unsupported extension '" + std::string(1, *p) + "'").c_str());
+    }
+
     switch (*p) {
       case 'p': extension_table[EXT_ZBPBO] = true;
                 extension_table[EXT_ZPN] = true;
@@ -1028,11 +1043,13 @@ insn_func_t processor_t::decode_insn(insn_t insn)
   size_t idx = insn.bits() % OPCODE_CACHE_SIZE;
   insn_desc_t desc = opcode_cache[idx];
 
-  if (unlikely(insn.bits() != desc.match || !(xlen == 64 ? desc.rv64 : desc.rv32))) {
+  bool rve = extension_enabled('E');
+
+  if (unlikely(insn.bits() != desc.match || !desc.func(xlen, rve))) {
     // fall back to linear search
     int cnt = 0;
     insn_desc_t* p = &instructions[0];
-    while ((insn.bits() & p->mask) != p->match || !(xlen == 64 ? p->rv64 : p->rv32))
+    while ((insn.bits() & p->mask) != p->match || !desc.func(xlen, rve))
       p++, cnt++;
     desc = *p;
 
@@ -1049,7 +1066,7 @@ insn_func_t processor_t::decode_insn(insn_t insn)
     opcode_cache[idx].match = insn.bits();
   }
 
-  return xlen == 64 ? desc.rv64 : desc.rv32;
+  return desc.func(xlen, rve);
 }
 
 void processor_t::register_insn(insn_desc_t desc)
@@ -1069,7 +1086,7 @@ void processor_t::build_opcode_map()
   std::sort(instructions.begin(), instructions.end(), cmp());
 
   for (size_t i = 0; i < OPCODE_CACHE_SIZE; i++)
-    opcode_cache[i] = {0, 0, &illegal_instruction, &illegal_instruction};
+    opcode_cache[i] = insn_desc_t::illegal();
 }
 
 void processor_t::register_extension(extension_t* x)
@@ -1098,17 +1115,23 @@ void processor_t::register_base_instructions()
   #undef DECLARE_INSN
 
   #define DEFINE_INSN(name) \
-    extern reg_t rv32_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t rv64_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t rv32i_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t rv64i_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t rv32e_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t rv64e_##name(processor_t*, insn_t, reg_t); \
     register_insn((insn_desc_t){ \
       name##_match, \
       name##_mask, \
-      rv32_##name, \
-      rv64_##name});
+      rv32i_##name, \
+      rv64i_##name, \
+      rv32e_##name, \
+      rv64e_##name});
   #include "insn_list.h"
   #undef DEFINE_INSN
 
-  register_insn({0, 0, &illegal_instruction, &illegal_instruction});
+  // terminate instruction list with a catch-all
+  register_insn(insn_desc_t::illegal());
+
   build_opcode_map();
 }
 
