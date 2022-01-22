@@ -403,7 +403,6 @@
 #define CSR_TCONTROL_MTE_OFFSET             3
 #define CSR_TCONTROL_MTE_LENGTH             1
 #define CSR_TCONTROL_MTE                    (0x1ULL << CSR_TCONTROL_MTE_OFFSET)
-#define CSR_MCONTEXT                        0x7a8
 /*
 * Machine mode software can write a context number to this register,
 * which can be used to set triggers that only fire in that specific
@@ -416,7 +415,6 @@
 #define CSR_MCONTEXT_MCONTEXT_OFFSET        0
 #define CSR_MCONTEXT_MCONTEXT_LENGTH        XLEN
 #define CSR_MCONTEXT_MCONTEXT               (((1L<<XLEN)-1) << CSR_MCONTEXT_MCONTEXT_OFFSET)
-#define CSR_SCONTEXT                        0x7aa
 /*
 * Supervisor mode software can write a context number to this
 * register, which can be used to set triggers that only fire in that
