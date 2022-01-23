@@ -1,12 +1,9 @@
 AC_LANG([C++])
 
-AX_BOOST_BASE([1.53])
-AX_BOOST_ASIO
-AX_BOOST_REGEX
-
-AC_CHECK_LIB([boost_system], [main], [], [])
-
-AC_CHECK_LIB([boost_regex], [main], [], [])
+AX_BOOST_BASE([1.53], [
+  AX_BOOST_ASIO
+  AX_BOOST_REGEX
+])
 
 AC_ARG_WITH(isa,
 	[AS_HELP_STRING([--with-isa=RV64IMAFDC_zicntr_zihpm],
