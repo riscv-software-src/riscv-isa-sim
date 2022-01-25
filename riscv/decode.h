@@ -2392,6 +2392,7 @@ reg_t index[P.VU.vlmax]; \
 
 #define VI_VFP_CVT_INT_TO_FP(BODY16, BODY32, BODY64, sign) \
   VI_CHECK_SSS(false); \
+  VI_VFP_COMMON \
   switch(P.VU.vsew) { \
     case e16: \
       { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(16, 16, sign), \
@@ -2415,6 +2416,7 @@ reg_t index[P.VU.vlmax]; \
 
 #define VI_VFP_CVT_FP_TO_INT(BODY16, BODY32, BODY64, sign) \
   VI_CHECK_SSS(false); \
+  VI_VFP_COMMON \
   switch(P.VU.vsew) { \
     case e16: \
       { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(16, 16, sign), \
