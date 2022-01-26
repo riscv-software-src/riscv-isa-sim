@@ -27,21 +27,8 @@ int main(int argc, char** argv)
   parser.option(0, "isa", 1, [&](const char* s){isa = s;});
   parser.parse(argv);
 
-  std::string lowercase;
-  for (const char *p = isa; *p; p++)
-    lowercase += std::tolower(*p);
-
-  int xlen;
-  if (lowercase.compare(0, 4, "rv32") == 0) {
-    xlen = 32;
-  } else if (lowercase.compare(0, 4, "rv64") == 0) {
-    xlen = 64;
-  } else {
-    fprintf(stderr, "bad ISA string: %s\n", isa);
-    return 1;
-  }
-
-  disassembler_t* disassembler = new disassembler_t(xlen);
+  isa_parser_t isa_parser(isa);
+  disassembler_t* disassembler = new disassembler_t(isa_parser.get_max_xlen());
   if (extension) {
     for (auto disasm_insn : extension()->get_disasms()) {
       disassembler->add_insn(disasm_insn);

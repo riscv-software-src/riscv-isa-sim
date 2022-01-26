@@ -288,8 +288,28 @@ static int cto(reg_t val)
   return res;
 }
 
+class isa_parser_t {
+public:
+  isa_parser_t(const char* str);
+  ~isa_parser_t(){};
+  unsigned get_max_xlen() { return max_xlen; }
+  std::string get_isa_string() { return isa_string; }
+  bool extension_enabled(unsigned char ext) const {
+    if (ext >= 'A' && ext <= 'Z')
+      return (max_isa >> (ext - 'A')) & 1;
+    else
+      return extension_table[ext];
+  }
+protected:
+  unsigned max_xlen;
+  reg_t max_isa;
+  std::vector<bool> extension_table;
+  std::string isa_string;
+  std::unordered_map<std::string, extension_t*> custom_extensions;
+};
+
 // this class represents one processor in a RISC-V machine.
-class processor_t : public abstract_device_t
+class processor_t : public abstract_device_t, public isa_parser_t
 {
 public:
   processor_t(const char* isa, const char* priv, const char* varch,
@@ -318,8 +338,6 @@ public:
     // variable xlen, this method should be removed.
     return xlen;
   }
-  unsigned get_max_xlen() { return max_xlen; }
-  std::string get_isa_string() { return isa_string; }
   unsigned get_flen() {
     return extension_enabled('Q') ? 128 :
            extension_enabled('D') ? 64 :
@@ -478,16 +496,12 @@ private:
   disassembler_t* disassembler;
   state_t state;
   uint32_t id;
-  unsigned max_xlen;
   unsigned xlen;
-  reg_t max_isa;
-  std::string isa_string;
   bool histogram_enabled;
   bool log_commits_enabled;
   FILE *log_file;
   std::ostream sout_; // needed for socket command interface -s, also used for -d and -l, but not for --log
   bool halt_on_reset;
-  std::vector<bool> extension_table;
   std::vector<bool> impl_table;
 
   std::vector<insn_desc_t> instructions;
@@ -512,7 +526,6 @@ private:
 
   void parse_varch_string(const char*);
   void parse_priv_string(const char*);
-  void parse_isa_string(const char*);
   void build_opcode_map();
   void register_base_instructions();
   insn_func_t decode_insn(insn_t insn);
