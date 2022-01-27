@@ -4,6 +4,7 @@
 #define _RISCV_DISASM_H
 
 #include "decode.h"
+#include "processor.h"
 #include <string>
 #include <sstream>
 #include <algorithm>
@@ -80,7 +81,7 @@ class disasm_insn_t
 class disassembler_t
 {
  public:
-  disassembler_t(int xlen);
+  disassembler_t(isa_parser_t* isa);
   ~disassembler_t();
 
   std::string disassemble(insn_t insn) const;

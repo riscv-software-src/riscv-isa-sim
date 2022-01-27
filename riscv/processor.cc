@@ -26,24 +26,22 @@
 processor_t::processor_t(const char* isa, const char* priv, const char* varch,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
                          FILE* log_file, std::ostream& sout_)
-  : debug(false), halt_request(HR_NONE), sim(sim), id(id), xlen(0),
+  : isa_parser_t(isa), debug(false), halt_request(HR_NONE), sim(sim), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), sout_(sout_.rdbuf()), halt_on_reset(halt_on_reset),
-  extension_table(256, false), impl_table(256, false), last_pc(1), executions(1)
+  impl_table(256, false), last_pc(1), executions(1)
 {
   VU.p = this;
 
-  parse_isa_string(isa);
   parse_priv_string(priv);
   parse_varch_string(varch);
 
   register_base_instructions();
   mmu = new mmu_t(sim, this);
 
-  disassembler = new disassembler_t(max_xlen);
+  disassembler = new disassembler_t(this);
   for (auto e : custom_extensions)
-    for (auto disasm_insn : e.second->get_disasms())
-      disassembler->add_insn(disasm_insn);
+    register_extension(e.second);
 
   set_pmp_granularity(1 << PMP_SHIFT);
   set_pmp_num(state.max_pmp);
@@ -195,7 +193,8 @@ void processor_t::parse_priv_string(const char* str)
   }
 }
 
-void processor_t::parse_isa_string(const char* str)
+isa_parser_t::isa_parser_t(const char* str)
+  : extension_table(256, false)
 {
   isa_string = strtolower(str);
   const char* all_subsets = "mafdqchp"
@@ -344,7 +343,12 @@ void processor_t::parse_isa_string(const char* str)
       } else if (ext_str.size() == 1) {
         bad_isa_string(str, "single 'X' is not a proper name");
       } else if (ext_str != "xdummy") {
-        register_extension(find_extension(ext_str.substr(1).c_str())());
+         extension_t* x = find_extension(ext_str.substr(1).c_str())();
+         if (!custom_extensions.insert(std::make_pair(x->name(), x)).second) {
+           fprintf(stderr, "extensions must have unique names (got two named \"%s\"!)\n", x->name());
+           abort();
+         }
+
       }
     } else {
       bad_isa_string(str, ("unsupported extension: " + ext_str).c_str());
@@ -1095,14 +1099,8 @@ void processor_t::register_extension(extension_t* x)
     register_insn(insn);
   build_opcode_map();
 
-  if (disassembler)
-    for (auto disasm_insn : x->get_disasms())
-      disassembler->add_insn(disasm_insn);
-
-  if (!custom_extensions.insert(std::make_pair(x->name(), x)).second) {
-    fprintf(stderr, "extensions must have unique names (got two named \"%s\"!)\n", x->name());
-    abort();
-  }
+  for (auto disasm_insn : x->get_disasms())
+    disassembler->add_insn(disasm_insn);
 
   x->set_processor(this);
 }

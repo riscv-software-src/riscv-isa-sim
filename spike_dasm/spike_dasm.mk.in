@@ -1,5 +1,6 @@
 spike_dasm_subproject_deps = \
 	disasm \
+  softfloat \
   $(if $(HAVE_DLOPEN),riscv,) \
 
 spike_dasm_srcs = \
