@@ -57,6 +57,9 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
   fprintf(stderr, "  --dump-dts            Print device tree string and exit\n");
   fprintf(stderr, "  --dtb=<path>          Use specified device tree blob [default: auto-generate]\n");
+  fprintf(stderr, "  --ust-trace=<file>    Write Instruction trace file\n");
+  fprintf(stderr, "  --data-trace=<file>   Write Data trace file\n");
+  fprintf(stderr, "  --data-trace-debug    Produce data trace debug output (not usable for trace)\n");
   fprintf(stderr, "  --disable-dtb         Don't write the device tree blob into memory\n");
   fprintf(stderr, "  --kernel=<path>       Load kernel flat image into memory\n");
   fprintf(stderr, "  --initrd=<path>       Load kernel initrd into memory\n");
@@ -257,6 +260,9 @@ int main(int argc, char** argv)
   std::vector<std::function<extension_t*()>> extensions;
   const char* initrd = NULL;
   const char* dtb_file = NULL;
+  const char* i_trace_file = NULL;
+  const char* d_trace_file = NULL;
+  bool d_trace_debug = false;
   uint16_t rbb_port = 0;
   bool use_rbb = false;
   unsigned dmi_rti = 0;
@@ -354,6 +360,9 @@ int main(int argc, char** argv)
   parser.option(0, "device", 1, device_parser);
   parser.option(0, "extension", 1, [&](const char* s){extensions.push_back(find_extension(s));});
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
+  parser.option(0, "ust-trace", 1, [&](const char *s){i_trace_file = s;});
+  parser.option(0, "data-trace", 1, [&](const char *s){d_trace_file = s;});
+  parser.option(0, "data-trace-debug", 0, [&](const char *s){d_trace_debug = true;});
   parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
   parser.option(0, "dtb", 1, [&](const char *s){dtb_file = s;});
   parser.option(0, "kernel", 1, [&](const char* s){kernel = s;});
@@ -513,6 +522,25 @@ int main(int argc, char** argv)
     for (auto e : extensions)
       s.get_core(i)->register_extension(e());
     s.get_core(i)->get_mmu()->set_cache_blocksz(blocksz);
+
+    if (i_trace_file != NULL) {
+        std::string i_trace_filename(i_trace_file);
+        if (nprocs != 1) {
+            std::stringstream ss;
+            ss << "_" << i;
+            i_trace_filename += ss.str();
+        }
+        s.get_core(i)->set_i_trace(i_trace_filename.c_str());
+    }
+    if (d_trace_file != NULL) {
+        std::string d_trace_filename(d_trace_file);
+        if (nprocs != 1) {
+            std::stringstream ss;
+            ss << "_" << i;
+            d_trace_filename += ss.str();
+        }
+        s.get_core(i)->set_d_trace(d_trace_filename.c_str(), d_trace_debug);
+    }
   }
 
   s.set_debug(debug);
