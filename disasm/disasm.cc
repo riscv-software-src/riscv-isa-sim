@@ -931,6 +931,38 @@ disassembler_t::disassembler_t(isa_parser_t* isa)
     DEFINE_FX2TYPE(fle_s);
   }
 
+  if (isa->extension_enabled(EXT_ZFINX)) {
+    DEFINE_RTYPE(fadd_s);
+    DEFINE_RTYPE(fsub_s);
+    DEFINE_RTYPE(fmul_s);
+    DEFINE_RTYPE(fdiv_s);
+    DEFINE_R1TYPE(fsqrt_s);
+    DEFINE_RTYPE(fmin_s);
+    DEFINE_RTYPE(fmax_s);
+    DEFINE_R3TYPE(fmadd_s);
+    DEFINE_R3TYPE(fmsub_s);
+    DEFINE_R3TYPE(fnmadd_s);
+    DEFINE_R3TYPE(fnmsub_s);
+    DEFINE_RTYPE(fsgnj_s);
+    DEFINE_RTYPE(fsgnjn_s);
+    DEFINE_RTYPE(fsgnjx_s);
+    DEFINE_R1TYPE(fcvt_s_d);
+    //DEFINE_R1TYPE(fcvt_s_q);
+    DEFINE_R1TYPE(fcvt_s_l);
+    DEFINE_R1TYPE(fcvt_s_lu);
+    DEFINE_R1TYPE(fcvt_s_w);
+    DEFINE_R1TYPE(fcvt_s_wu);
+    DEFINE_R1TYPE(fcvt_s_wu);
+    DEFINE_R1TYPE(fcvt_l_s);
+    DEFINE_R1TYPE(fcvt_lu_s);
+    DEFINE_R1TYPE(fcvt_w_s);
+    DEFINE_R1TYPE(fcvt_wu_s);
+    DEFINE_R1TYPE(fclass_s);
+    DEFINE_RTYPE(feq_s);
+    DEFINE_RTYPE(flt_s);
+    DEFINE_RTYPE(fle_s);
+  }
+
   if (isa->extension_enabled('D')) {
     DEFINE_FLOAD(fld)
     DEFINE_FSTORE(fsd)
@@ -967,6 +999,38 @@ disassembler_t::disassembler_t(isa_parser_t* isa)
     DEFINE_FX2TYPE(fle_d);
   }
 
+  if (isa->extension_enabled(EXT_ZDINX)) {
+    DEFINE_RTYPE(fadd_d);
+    DEFINE_RTYPE(fsub_d);
+    DEFINE_RTYPE(fmul_d);
+    DEFINE_RTYPE(fdiv_d);
+    DEFINE_R1TYPE(fsqrt_d);
+    DEFINE_RTYPE(fmin_d);
+    DEFINE_RTYPE(fmax_d);
+    DEFINE_R3TYPE(fmadd_d);
+    DEFINE_R3TYPE(fmsub_d);
+    DEFINE_R3TYPE(fnmadd_d);
+    DEFINE_R3TYPE(fnmsub_d);
+    DEFINE_RTYPE(fsgnj_d);
+    DEFINE_RTYPE(fsgnjn_d);
+    DEFINE_RTYPE(fsgnjx_d);
+    DEFINE_R1TYPE(fcvt_d_s);
+    //DEFINE_R1TYPE(fcvt_d_q);
+    DEFINE_R1TYPE(fcvt_d_l);
+    DEFINE_R1TYPE(fcvt_d_lu);
+    DEFINE_R1TYPE(fcvt_d_w);
+    DEFINE_R1TYPE(fcvt_d_wu);
+    DEFINE_R1TYPE(fcvt_d_wu);
+    DEFINE_R1TYPE(fcvt_l_d);
+    DEFINE_R1TYPE(fcvt_lu_d);
+    DEFINE_R1TYPE(fcvt_w_d);
+    DEFINE_R1TYPE(fcvt_wu_d);
+    DEFINE_R1TYPE(fclass_d);
+    DEFINE_RTYPE(feq_d);
+    DEFINE_RTYPE(flt_d);
+    DEFINE_RTYPE(fle_d);
+  }
+
   if (isa->extension_enabled(EXT_ZFH)) { 
     DEFINE_FRTYPE(fadd_h);
     DEFINE_FRTYPE(fsub_h);
@@ -997,6 +1061,36 @@ disassembler_t::disassembler_t(isa_parser_t* isa)
     DEFINE_FX2TYPE(fle_h);
   }
 
+  if (isa->extension_enabled(EXT_ZHINX)) {
+    DEFINE_RTYPE(fadd_h);
+    DEFINE_RTYPE(fsub_h);
+    DEFINE_RTYPE(fmul_h);
+    DEFINE_RTYPE(fdiv_h);
+    DEFINE_R1TYPE(fsqrt_h);
+    DEFINE_RTYPE(fmin_h);
+    DEFINE_RTYPE(fmax_h);
+    DEFINE_R3TYPE(fmadd_h);
+    DEFINE_R3TYPE(fmsub_h);
+    DEFINE_R3TYPE(fnmadd_h);
+    DEFINE_R3TYPE(fnmsub_h);
+    DEFINE_RTYPE(fsgnj_h);
+    DEFINE_RTYPE(fsgnjn_h);
+    DEFINE_RTYPE(fsgnjx_h);
+    DEFINE_R1TYPE(fcvt_h_l);
+    DEFINE_R1TYPE(fcvt_h_lu);
+    DEFINE_R1TYPE(fcvt_h_w);
+    DEFINE_R1TYPE(fcvt_h_wu);
+    DEFINE_R1TYPE(fcvt_h_wu);
+    DEFINE_R1TYPE(fcvt_l_h);
+    DEFINE_R1TYPE(fcvt_lu_h);
+    DEFINE_R1TYPE(fcvt_w_h);
+    DEFINE_R1TYPE(fcvt_wu_h);
+    DEFINE_R1TYPE(fclass_h);
+    DEFINE_RTYPE(feq_h);
+    DEFINE_RTYPE(flt_h);
+    DEFINE_RTYPE(fle_h);
+  }
+
   if (isa->extension_enabled(EXT_ZFHMIN)) {
     DEFINE_FLOAD(flh)
     DEFINE_FSTORE(fsh)
@@ -1008,6 +1102,15 @@ disassembler_t::disassembler_t(isa_parser_t* isa)
     DEFINE_FR1TYPE(fcvt_q_h);
     DEFINE_XFTYPE(fmv_h_x);
     DEFINE_FXTYPE(fmv_x_h);
+  }
+
+  if (isa->extension_enabled(EXT_ZHINXMIN)) {
+    DEFINE_R1TYPE(fcvt_h_s);
+    DEFINE_R1TYPE(fcvt_h_d);
+    //DEFINE_R1TYPE(fcvt_h_q);
+    DEFINE_R1TYPE(fcvt_s_h);
+    DEFINE_R1TYPE(fcvt_d_h);
+    //DEFINE_R1TYPE(fcvt_q_h);
   }
 
   if (isa->extension_enabled('Q')) {
