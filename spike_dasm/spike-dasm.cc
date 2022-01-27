@@ -28,7 +28,7 @@ int main(int argc, char** argv)
   parser.parse(argv);
 
   isa_parser_t isa_parser(isa);
-  disassembler_t* disassembler = new disassembler_t(isa_parser.get_max_xlen());
+  disassembler_t* disassembler = new disassembler_t(&isa_parser);
   if (extension) {
     for (auto disasm_insn : extension()->get_disasms()) {
       disassembler->add_insn(disasm_insn);
