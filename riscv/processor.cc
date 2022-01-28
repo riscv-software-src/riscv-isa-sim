@@ -9,6 +9,7 @@
 #include "mmu.h"
 #include "disasm.h"
 #include "platform.h"
+#include "proc_trace.h"
 #include <cinttypes>
 #include <cmath>
 #include <cstdlib>
@@ -51,6 +52,11 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
   else if (max_xlen == 64)
     set_mmu_capability(IMPL_MMU_SV48);
 
+  proc_trace = new proc_trace_t();
+  d_tracer = NULL;
+  i_trace = false;
+  d_trace = false;
+
   reset();
 }
 
@@ -67,6 +73,9 @@ processor_t::~processor_t()
 
   delete mmu;
   delete disassembler;
+  delete proc_trace;
+  if (d_tracer)
+      delete d_tracer;
 }
 
 static void bad_option_string(const char *option, const char *value,
@@ -645,6 +654,29 @@ void processor_t::set_debug(bool value)
     e.second->set_debug(value);
 }
 
+void processor_t::set_i_trace(const char * const i_trace_file)
+{
+  proc_trace->set_is_32bit_isa(get_max_xlen() == 32);
+
+  assert(i_trace_file != NULL);
+
+  proc_trace->open_i_trace(i_trace_file);
+  i_trace = true;
+}
+
+void processor_t::set_d_trace(const char * const d_trace_file,
+                              bool d_trace_debug)
+{
+  proc_trace->set_is_32bit_isa(get_max_xlen() == 32);
+
+  assert(d_trace_file != NULL);
+
+  proc_trace->open_d_trace(d_trace_file, d_trace_debug);
+  d_tracer = new datatracer_t();
+  get_mmu()->register_memtracer(d_tracer);
+  d_trace = true;
+}
+
 void processor_t::set_histogram(bool value)
 {
   histogram_enabled = value;
@@ -878,6 +910,13 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     debug_output_log(&s);
   }
 
+  if (i_trace) {
+    proc_trace->set_exception(t.cause());
+    if (t.has_tval())
+      proc_trace->set_tval(t.get_tval());
+    proc_trace->set_interrupt(0);
+  }
+
   if (state.debug_mode) {
     if (t.cause() == CAUSE_BREAKPOINT) {
       state.pc = DEBUG_ROM_ENTRY;
@@ -900,6 +939,11 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   reg_t bit = t.cause();
   bool curr_virt = state.v;
   bool interrupt = (bit & ((reg_t)1 << (max_xlen-1))) != 0;
+
+  if (i_trace) {
+    proc_trace->set_interrupt(interrupt);
+  }
+
   if (interrupt) {
     vsdeleg = (curr_virt && state.prv <= PRV_S) ? state.hideleg->read() : 0;
     hsdeleg = (state.prv <= PRV_S) ? state.mideleg->read() : 0;
@@ -996,6 +1040,18 @@ void processor_t::disasm(insn_t insn)
 
     debug_output_log(&s);
 
+    if (i_trace || d_trace) {
+      proc_trace->step();
+      // Need to translate addresses in a trap so do an mmu translate in that case.
+      // However, in general we want virtual addresses for the instruction trace.
+      if (state.pc & 0x7000000000000000ULL)
+          proc_trace->set_addr(mmu->translate(state.pc, 2, FETCH, 0));
+      else
+          proc_trace->set_addr(state.pc);
+      proc_trace->set_insn(insn, bits);
+      proc_trace->set_priv(state.prv);
+    }
+
     last_pc = state.pc;
     last_bits = bits;
     executions = 1;
@@ -1016,6 +1072,8 @@ void processor_t::set_csr(int which, reg_t val)
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
     search->second->write(val);
+    if (d_trace)
+        proc_trace->record_csr_set_trace(which, val);
     return;
   }
 }
@@ -1029,7 +1087,10 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
   if (search != state.csrmap.end()) {
     if (!peek)
       search->second->verify_permissions(insn, write);
-    return search->second->read();
+    reg_t old = search->second->read();
+    if (d_trace)
+        proc_trace->record_csr_get_trace(which, insn, write, old, xlen >> 3);
+    return old;
   }
   // If we get here, the CSR doesn't exist.  Unimplemented CSRs always throw
   // illegal-instruction exceptions, not virtual-instruction exceptions.

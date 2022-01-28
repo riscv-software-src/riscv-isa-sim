@@ -22,6 +22,8 @@ class simif_t;
 class trap_t;
 class extension_t;
 class disassembler_t;
+class proc_trace_t;
+class datatracer_t;
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
 
@@ -322,6 +324,9 @@ public:
   ~processor_t();
 
   void set_debug(bool value);
+  void set_i_trace(const char * const i_trace_file);
+  void set_d_trace(const char * const d_trace_file,
+                   bool d_trace_debug);
   void set_histogram(bool value);
 #ifdef RISCV_ENABLE_COMMITLOG
   void enable_log_commits();
@@ -334,6 +339,7 @@ public:
   reg_t get_csr(int which, insn_t insn, bool write, bool peek = 0);
   reg_t get_csr(int which) { return get_csr(which, insn_t(0), false, true); }
   mmu_t* get_mmu() { return mmu; }
+  proc_trace_t* get_proc_trace() { return proc_trace; }
   state_t* get_state() { return &state; }
   unsigned get_xlen() { return xlen; }
   unsigned get_const_xlen() {
@@ -395,6 +401,7 @@ public:
 
   // When true, display disassembly of each instruction that's executed.
   bool debug;
+
   // When true, take the slow simulation path.
   bool slow_path();
   bool halted() { return state.debug_mode; }
@@ -496,6 +503,15 @@ public:
 private:
   simif_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
+
+  // Instruction and data trace
+  proc_trace_t* proc_trace;
+  datatracer_t* d_tracer;
+  // When true, write the instruction trace
+  bool i_trace;
+  // When true, write the data trace
+  bool d_trace;
+
   std::unordered_map<std::string, extension_t*> custom_extensions;
   disassembler_t* disassembler;
   state_t state;

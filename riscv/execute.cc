@@ -3,6 +3,7 @@
 #include "processor.h"
 #include "mmu.h"
 #include "disasm.h"
+#include "proc_trace.h"
 #include <cassert>
 
 #ifdef RISCV_ENABLE_COMMITLOG
@@ -215,7 +216,7 @@ static inline reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 
 bool processor_t::slow_path()
 {
-  return debug || state.single_step != state.STEP_NONE || state.debug_mode;
+  return i_trace | d_trace | debug || state.single_step != state.STEP_NONE || state.debug_mode;
 }
 
 // fetch/decode/execute loop
@@ -275,9 +276,11 @@ void processor_t::step(size_t n)
           }
 
           insn_fetch_t fetch = mmu->load_insn(pc);
-          if (debug && !state.serialized)
+          if ((i_trace || d_trace || debug) && !state.serialized)
             disasm(fetch.insn);
           pc = execute_insn(this, pc, fetch);
+          if (i_trace || d_trace)
+            proc_trace->check_data_trace();
           advance_pc();
         }
       }
@@ -287,6 +290,8 @@ void processor_t::step(size_t n)
         for (auto ic_entry = _mmu->access_icache(pc); ; ) {
           auto fetch = ic_entry->data;
           pc = execute_insn(this, pc, fetch);
+          if (i_trace || d_trace)
+            proc_trace->check_data_trace();
           ic_entry = ic_entry->next;
           if (unlikely(ic_entry->tag != pc))
             break;
