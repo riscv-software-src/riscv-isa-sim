@@ -11,6 +11,7 @@
 #include "processor.h"
 #include "memtracer.h"
 #include "byteorder.h"
+#include "proc_trace.h"
 #include <stdlib.h>
 #include <vector>
 
@@ -106,7 +107,9 @@ public:
       size_t size = sizeof(type##_t); \
       if ((xlate_flags) == 0 && likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) { \
         if (proc) READ_MEM(addr, size); \
-        return from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
+        type##_t data = from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
+        if (proc) proc->get_proc_trace()->record_load(addr, data, size, DATA_SRC_LOAD_TLB_1); \
+        return data; \
       } \
       if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
         type##_t data = from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
@@ -116,11 +119,13 @@ public:
             throw *matched_trigger; \
         } \
         if (proc) READ_MEM(addr, size); \
+        if (proc) proc->get_proc_trace()->record_load(addr, data, size, DATA_SRC_LOAD_TLB_2); \
         return data; \
       } \
       target_endian<type##_t> res; \
       load_slow_path(addr, sizeof(type##_t), (uint8_t*)&res, (xlate_flags)); \
       if (proc) READ_MEM(addr, size); \
+      if (proc) proc->get_proc_trace()->record_load(addr, from_target(res), size, DATA_SRC_LOAD_SLOW_PATH); \
       return from_target(res); \
     }
 
@@ -164,6 +169,7 @@ public:
         return misaligned_store(addr, val, sizeof(type##_t), xlate_flags); \
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
+      if (proc) proc->get_proc_trace()->record_store(addr, val, size, DATA_SRC_STORE); \
       if ((xlate_flags) == 0 && likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \
         if (proc) WRITE_MEM(addr, val, size); \
         *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
@@ -190,7 +196,9 @@ public:
     type##_t amo_##type(reg_t addr, op f) { \
       try { \
         auto lhs = load_##type(addr, true); \
-        store_##type(addr, f(lhs)); \
+        auto f_lhs = f(lhs); \
+        if (proc) proc->get_proc_trace()->record_amo(addr, (uint64_t)lhs, (uint64_t)f_lhs, sizeof(lhs)); \
+        store_##type(addr, f_lhs); \
         return lhs; \
       } catch (trap_load_address_misaligned& t) { \
         /* AMO faults should be reported as store faults */ \
