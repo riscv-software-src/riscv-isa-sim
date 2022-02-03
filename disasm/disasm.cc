@@ -1341,29 +1341,23 @@ disassembler_t::disassembler_t(isa_parser_t* isa)
 
     #define DISASM_OPIV__X__INSN(name, sign) DEFINE_VECTOR_VX(name##_vx)
 
-    #define DEFINE_VECTOR_VVM(name, has_vm) \
-      add_vector_vvm_insn(this, #name, match_##name, mask_##name | mask_vm); \
-      if (has_vm) \
-        add_vector_vv_insn(this, #name, match_##name, mask_##name | mask_vm)
+    #define DEFINE_VECTOR_VVM(name) \
+      add_vector_vvm_insn(this, #name, match_##name, mask_##name | mask_vm)
 
-    #define DEFINE_VECTOR_VXM(name, has_vm) \
-      add_vector_vxm_insn(this, #name, match_##name, mask_##name | mask_vm); \
-      if (has_vm) \
-        add_vector_vx_insn(this, #name, match_##name, mask_##name | mask_vm)
+    #define DEFINE_VECTOR_VXM(name) \
+      add_vector_vxm_insn(this, #name, match_##name, mask_##name | mask_vm)
 
-    #define DEFINE_VECTOR_VIM(name, has_vm) \
-      add_vector_vim_insn(this, #name, match_##name, mask_##name | mask_vm); \
-      if (has_vm) \
-        add_vector_vi_insn(this, #name, match_##name, mask_##name | mask_vm)
+    #define DEFINE_VECTOR_VIM(name) \
+      add_vector_vim_insn(this, #name, match_##name, mask_##name | mask_vm)
 
-    #define DISASM_OPIV_VXIM_INSN(name, sign, has_vm) \
-      DEFINE_VECTOR_VVM(name##_vvm, has_vm); \
-      DEFINE_VECTOR_VXM(name##_vxm, has_vm); \
-      DEFINE_VECTOR_VIM(name##_vim, has_vm)
+    #define DISASM_OPIV_VXIM_INSN(name) \
+      DEFINE_VECTOR_VVM(name##_vvm); \
+      DEFINE_VECTOR_VXM(name##_vxm); \
+      DEFINE_VECTOR_VIM(name##_vim)
 
-    #define DISASM_OPIV_VX_M_INSN(name, sign, has_vm) \
-      DEFINE_VECTOR_VVM(name##_vvm, has_vm); \
-      DEFINE_VECTOR_VXM(name##_vxm, has_vm)
+    #define DISASM_OPIV_VX_M_INSN(name) \
+      DEFINE_VECTOR_VVM(name##_vvm); \
+      DEFINE_VECTOR_VXM(name##_vxm)
 
     //OPFVV/OPFVF
     //0b00_0000
@@ -1383,11 +1377,13 @@ disassembler_t::disassembler_t(isa_parser_t* isa)
     DISASM_OPIV__XI_INSN(vslidedown,   0);
 
     //0b01_0000
-    DISASM_OPIV_VXIM_INSN(vadc,    1, 0);
-    DISASM_OPIV_VXIM_INSN(vmadc,   1, 1);
-    DISASM_OPIV_VX_M_INSN(vsbc,    1, 0);
-    DISASM_OPIV_VX_M_INSN(vmsbc,   1, 1);
-    DISASM_OPIV_VXIM_INSN(vmerge,  1, 0);
+    DISASM_OPIV_VXIM_INSN(vadc);
+    DISASM_OPIV_VX_M_INSN(vsbc);
+    DISASM_OPIV_VXIM_INSN(vmadc);
+    DISASM_OPIV_VXI_INSN(vmadc, 1, v);
+    DISASM_OPIV_VX_M_INSN(vmsbc);
+    DISASM_OPIV_VX__INSN(vmsbc, 1);
+    DISASM_OPIV_VXIM_INSN(vmerge);
     DISASM_INSN("vmv.v.i", vmv_v_i, 0, {&vd, &v_simm5});
     DISASM_INSN("vmv.v.v", vmv_v_v, 0, {&vd, &vs1});
     DISASM_INSN("vmv.v.x", vmv_v_x, 0, {&vd, &xrs1});
