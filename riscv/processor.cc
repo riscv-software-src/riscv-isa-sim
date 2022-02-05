@@ -33,6 +33,13 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
 {
   VU.p = this;
 
+#ifndef __SIZEOF_INT128__
+  if (extension_enabled('V')) {
+    fprintf(stderr, "V extension is not supported on platforms without __int128 type\n");
+    abort();
+  }
+#endif
+
   parse_priv_string(priv);
   parse_varch_string(varch);
 
@@ -197,11 +204,7 @@ isa_parser_t::isa_parser_t(const char* str)
   : extension_table(256, false)
 {
   isa_string = strtolower(str);
-  const char* all_subsets = "mafdqchp"
-#ifdef __SIZEOF_INT128__
-    "v"
-#endif
-    "";
+  const char* all_subsets = "mafdqchpv";
 
   max_isa = reg_t(2) << 62;
   if (isa_string.compare(0, 4, "rv32") == 0)
