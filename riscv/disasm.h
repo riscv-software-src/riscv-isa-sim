@@ -93,6 +93,8 @@ class disassembler_t
   static const int HASH_SIZE = 255;
   std::vector<const disasm_insn_t*> chain[HASH_SIZE+1];
 
+  void add_instructions(isa_parser_t* isa);
+
   const disasm_insn_t* probe_once(insn_t insn, size_t idx) const;
 
   static const unsigned int MASK1 = 0x7f;

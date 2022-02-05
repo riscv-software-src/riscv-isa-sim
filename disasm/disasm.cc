@@ -622,7 +622,7 @@ static void NOINLINE add_unknown_insns(disassembler_t* d)
   #undef DECLARE_INSN
 }
 
-disassembler_t::disassembler_t(isa_parser_t* isa)
+void disassembler_t::add_instructions(isa_parser_t* isa)
 {
   const uint32_t mask_rd = 0x1fUL << 7;
   const uint32_t match_rd_ra = 1UL << 7;
@@ -2003,7 +2003,20 @@ disassembler_t::disassembler_t(isa_parser_t* isa)
       DEFINE_R3TYPE(fsrw);
     }
   }
+}
 
+disassembler_t::disassembler_t(isa_parser_t* isa)
+{
+  // highest priority: instructions explicitly enabled
+  add_instructions(isa);
+
+  // next-highest priority: other instructions in same base ISA
+  std::string fallback_isa_string = std::string("rv") + std::to_string(isa->get_max_xlen()) +
+    "gcv_zfh_zba_zbb_zbc_zbs_zkn_zkr_zks_xbitmanip";
+  isa_parser_t fallback_isa(fallback_isa_string.c_str());
+  add_instructions(&fallback_isa);
+
+  // finally: instructions with known opcodes but unknown arguments
   add_unknown_insns(this);
 }
 
