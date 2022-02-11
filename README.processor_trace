@@ -81,3 +81,20 @@ DSIZE: The data transfer is 2^DSIZE bytes. (%ld format, size_t)
 
 DATA: The data value or values transferred. (hex format, length is
 dependent on DSIZE)
+
+Testing
+-------
+
+A small collection of tests are included which run spike to generate instruction and data trace
+file and then checks the output against expected files. Both 64-bit and 32-bit binaries are
+tested.
+
+These can be run by using the script
+  tests/processor_trace/run_trace_tests.sh path-to-spike-binary
+
+The binaries and expected files are stored in tests/processor_trace/test_files.
+Note that the expected files have been compressed using gzip and that the test script
+automatically uncompresses these before comparing with the generated traces.
+
+The output is placed in a sub-directory of the current working directory, called trace_regression.
+Each run of the script will remove any previously run tests.
