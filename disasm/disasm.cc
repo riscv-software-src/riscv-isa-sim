@@ -2003,6 +2003,16 @@ void disassembler_t::add_instructions(isa_parser_t* isa)
       DEFINE_R3TYPE(fsrw);
     }
   }
+
+  if (isa->extension_enabled(EXT_ZICBOM)) {
+    DISASM_INSN("cbo.clean", cbo_clean, 0, {&xrs1});
+    DISASM_INSN("cbo.flush", cbo_flush, 0, {&xrs1});
+    DISASM_INSN("cbo.inval", cbo_inval, 0, {&xrs1});
+  }
+
+  if (isa->extension_enabled(EXT_ZICBOZ)) {
+    DISASM_INSN("cbo.zero", cbo_zero, 0, {&xrs1});
+  }
 }
 
 disassembler_t::disassembler_t(isa_parser_t* isa)

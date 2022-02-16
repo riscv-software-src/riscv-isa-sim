@@ -218,6 +218,11 @@ struct state_t
 
   csr_t_p fflags;
   csr_t_p frm;
+
+  csr_t_p menvcfg;
+  csr_t_p senvcfg;
+  csr_t_p henvcfg;
+
   bool serialized; // whether timer CSRs are in a well-defined state
 
   // When true, execute a single instruction and then enter debug mode.  This
@@ -273,6 +278,8 @@ typedef enum {
   EXT_ZHINX,
   EXT_ZHINXMIN,
   EXT_XBITMANIP,
+  EXT_ZICBOM,
+  EXT_ZICBOZ,
 } isa_extension_t;
 
 typedef enum {

@@ -184,27 +184,30 @@ public:
       } \
   }
 
+  // AMO/Zicbom faults should be reported as store faults
+  #define convert_load_traps_to_store_traps(BODY) \
+    try { \
+      BODY \
+    } catch (trap_load_address_misaligned& t) { \
+      /* Misaligned fault will not be triggered by Zicbom */ \
+      throw trap_store_address_misaligned(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
+    } catch (trap_load_page_fault& t) { \
+      throw trap_store_page_fault(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
+    } catch (trap_load_access_fault& t) { \
+      throw trap_store_access_fault(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
+    } catch (trap_load_guest_page_fault& t) { \
+      throw trap_store_guest_page_fault(t.get_tval(), t.get_tval2(), t.get_tinst()); \
+    }
+
   // template for functions that perform an atomic memory operation
   #define amo_func(type) \
     template<typename op> \
     type##_t amo_##type(reg_t addr, op f) { \
-      try { \
+      convert_load_traps_to_store_traps({ \
         auto lhs = load_##type(addr, true); \
         store_##type(addr, f(lhs)); \
         return lhs; \
-      } catch (trap_load_address_misaligned& t) { \
-        /* AMO faults should be reported as store faults */ \
-        throw trap_store_address_misaligned(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
-      } catch (trap_load_page_fault& t) { \
-        /* AMO faults should be reported as store faults */ \
-        throw trap_store_page_fault(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
-      } catch (trap_load_access_fault& t) { \
-        /* AMO faults should be reported as store faults */ \
-        throw trap_store_access_fault(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
-      } catch (trap_load_guest_page_fault& t) { \
-        /* AMO faults should be reported as store faults */ \
-        throw trap_store_guest_page_fault(t.get_tval(), t.get_tval2(), t.get_tinst()); \
-      } \
+      }) \
     }
 
   void store_float128(reg_t addr, float128_t val)
@@ -241,6 +244,25 @@ public:
   // perform an atomic memory operation at an aligned address
   amo_func(uint32)
   amo_func(uint64)
+
+  void cbo_zero(reg_t addr) {
+    auto base = addr & ~(blocksz - 1);
+    for (size_t offset = 0; offset < blocksz; offset += 1)
+      store_uint8(base + offset, 0);
+  }
+
+  void clean_inval(reg_t addr, bool clean, bool inval) {
+    convert_load_traps_to_store_traps({
+      reg_t paddr = addr & ~(blocksz - 1);
+      paddr = translate(paddr, blocksz, LOAD, 0);
+      if (auto host_addr = sim->addr_to_mem(paddr)) {
+        if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
+          tracer.clean_invalidate(paddr, blocksz, clean, inval);
+      } else {
+        throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+      }
+    })
+  }
 
   inline void yield_load_reservation()
   {
@@ -389,12 +411,18 @@ public:
     return target_big_endian? target_endian<T>::to_be(n) : target_endian<T>::to_le(n);
   }
 
+  void set_cache_blocksz(uint64_t size)
+  {
+    blocksz = size;
+  }
+
 private:
   simif_t* sim;
   processor_t* proc;
   memtracer_list_t tracer;
   reg_t load_reservation_address;
   uint16_t fetch_temp;
+  uint64_t blocksz;
 
   // implement an instruction cache for simulator performance
   icache_entry_t icache[ICACHE_ENTRIES];

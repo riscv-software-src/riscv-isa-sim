@@ -159,6 +159,31 @@ void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
     *check_tag(addr) |= DIRTY;
 }
 
+void cache_sim_t::clean_invalidate(uint64_t addr, size_t bytes, bool clean, bool inval)
+{
+  uint64_t start_addr = addr & ~(linesz-1);
+  uint64_t end_addr = (addr + bytes + linesz-1) & ~(linesz-1);
+  uint64_t cur_addr = start_addr;
+  while (cur_addr < end_addr) {
+    uint64_t* hit_way = check_tag(cur_addr);
+    if (likely(hit_way != NULL))
+    {
+      if (clean) {
+        if (*hit_way & DIRTY) {
+          writebacks++;
+          *hit_way &= ~DIRTY;
+        }
+      }
+
+      if (inval)
+        *hit_way &= ~VALID;
+    }
+    cur_addr += linesz;
+  }
+  if (miss_handler)
+    miss_handler->clean_invalidate(addr, bytes, clean, inval);
+}
+
 fa_cache_sim_t::fa_cache_sim_t(size_t ways, size_t linesz, const char* name)
   : cache_sim_t(1, ways, linesz, name)
 {
