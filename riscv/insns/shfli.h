@@ -1,6 +1,6 @@
 // Zbkb contains zip but not general shfli
 require(((insn.rs2() == (xlen / 2 - 1)) && p->extension_enabled(EXT_ZBKB))
-  || p->extension_enabled(EXT_XBITMANIP));
+  || p->extension_enabled(EXT_XZBP));
 require(SHAMT < (xlen/2));
 reg_t x = RS1;
 int shamt = SHAMT & ((xlen-1) >> 1);

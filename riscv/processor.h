@@ -277,9 +277,16 @@ typedef enum {
   EXT_ZFINX,
   EXT_ZHINX,
   EXT_ZHINXMIN,
-  EXT_XBITMANIP,
   EXT_ZICBOM,
   EXT_ZICBOZ,
+  EXT_XZBP,
+  EXT_XZBS,
+  EXT_XZBE,
+  EXT_XZBF,
+  EXT_XZBC,
+  EXT_XZBM,
+  EXT_XZBR,
+  EXT_XZBT,
 } isa_extension_t;
 
 typedef enum {

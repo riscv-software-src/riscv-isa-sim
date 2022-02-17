@@ -1,4 +1,4 @@
-require_extension(EXT_XBITMANIP);
+require_extension(EXT_XZBP);
 reg_t x = RS1;
 int shamt = RS2 & ((xlen-1) >> 1);
 if (shamt & 16) x = (x & 0xFFFF00000000FFFFLL) | ((x & 0x0000FFFF00000000LL) >> 16) | ((x & 0x00000000FFFF0000LL) << 16);

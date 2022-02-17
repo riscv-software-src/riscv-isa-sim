@@ -1,5 +1,5 @@
 require_rv64;
-require_extension(EXT_XBITMANIP);
+require_extension(EXT_XZBP);
 require(SHAMT < 32);
 reg_t x = RS1;
 int shamt = SHAMT;

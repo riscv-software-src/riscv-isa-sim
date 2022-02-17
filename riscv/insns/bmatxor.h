@@ -1,5 +1,5 @@
 require_rv64;
-require_extension(EXT_XBITMANIP);
+require_extension(EXT_XZBM);
 
 // transpose of rs2
 int64_t rs2t = RS2;

@@ -1981,7 +1981,7 @@ void disassembler_t::add_instructions(isa_parser_t* isa)
     }
   }
 
-  if (isa->extension_enabled(EXT_XBITMANIP)) {
+  if (isa->extension_enabled(EXT_XZBP)) {
     DEFINE_ITYPE_SHIFT(grevi);
     DEFINE_ITYPE_SHIFT(gorci);
     DEFINE_RTYPE(pack);
@@ -1993,12 +1993,21 @@ void disassembler_t::add_instructions(isa_parser_t* isa)
     DEFINE_RTYPE(xperm8);
     DEFINE_RTYPE(xperm16);
     DEFINE_RTYPE(xperm32);
+  }
 
+  if (isa->extension_enabled(EXT_XZBP) ||
+      isa->extension_enabled(EXT_XZBE) ||
+      isa->extension_enabled(EXT_XZBF)) {
+    if(isa->get_max_xlen() == 64) {
+      DEFINE_RTYPE(packw);
+    }
+  }
+
+  if (isa->extension_enabled(EXT_XZBT)) {
     DEFINE_R3TYPE(cmix);
     DEFINE_R3TYPE(fsr);
     DEFINE_R3TYPE(fsri);
     if(isa->get_max_xlen() == 64) {
-      DEFINE_RTYPE(packw);
       DEFINE_R3TYPE(fsriw);
       DEFINE_R3TYPE(fsrw);
     }
