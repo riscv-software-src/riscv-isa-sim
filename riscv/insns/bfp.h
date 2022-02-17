@@ -1,4 +1,4 @@
-require_extension(EXT_XBITMANIP);
+require_extension(EXT_XZBF);
 reg_t cfg = RS2 >> (xlen/2);
 if ((cfg >> 30) == 2)
 	cfg = cfg >> 16;

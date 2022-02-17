@@ -1,5 +1,5 @@
 require_rv64;
-require_extension(EXT_XBITMANIP);
+require_extension(EXT_XZBP);
 reg_t x = RS1;
 int shamt = RS2 & 15;
 if (shamt &  1) x = (x & 0x9999999999999999LL) | ((x & 0x4444444444444444LL) >>  1) | ((x & 0x2222222222222222LL) <<  1);
