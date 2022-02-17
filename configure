@@ -4741,7 +4741,7 @@ fi
 
 
 
-for flag in -Wl,--export-dynamic; do
+for flag in -rdynamic; do
   as_CACHEVAR=`$as_echo "ax_cv_check_ldflags__$flag" | $as_tr_sh`
 { $as_echo "$as_me:${as_lineno-$LINENO}: checking whether the linker accepts $flag" >&5
 $as_echo_n "checking whether the linker accepts $flag... " >&6; }

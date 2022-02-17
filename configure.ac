@@ -91,7 +91,7 @@ AC_CHECK_TYPE([__int128_t], AC_SUBST([HAVE_INT128],[yes]))
 # Default compiler flags
 #-------------------------------------------------------------------------
 
-AX_APPEND_LINK_FLAGS([-Wl,--export-dynamic])
+AX_APPEND_LINK_FLAGS([-rdynamic])
 
 AX_CHECK_COMPILE_FLAG([-relocatable-pch], AC_SUBST([HAVE_CLANG_PCH],[yes]))
 
