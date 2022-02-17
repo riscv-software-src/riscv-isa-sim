@@ -33,6 +33,9 @@
 /* define if the Boost::ASIO library is available */
 #undef HAVE_BOOST_ASIO
 
+/* define if the Boost::Regex library is available */
+#undef HAVE_BOOST_REGEX
+
 /* Dynamic library loading is supported */
 #undef HAVE_DLOPEN
 
@@ -114,7 +117,7 @@
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
-/* Default value for --with-target switch */
+/* Default value for --target switch */
 #undef TARGET_ARCH
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
