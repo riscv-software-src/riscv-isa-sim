@@ -6,6 +6,7 @@
 #include "remote_bitbang.h"
 #include "byteorder.h"
 #include "platform.h"
+#include "libfdt.h"
 #include <fstream>
 #include <map>
 #include <iostream>
@@ -296,6 +297,18 @@ void sim_t::make_dtb()
     dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, bootargs, procs, mems);
     dtb = dts_compile(dts);
   }
+
+  int fdt_code = fdt_check_header(dtb.c_str());
+  if (fdt_code) {
+    std::cerr << "Failed to read DTB from ";
+    if (dtb_file.empty()) {
+      std::cerr << "auto-generated DTS string";
+    } else {
+      std::cerr << "`" << dtb_file << "'";
+    }
+    std::cerr << ": " << fdt_strerror(fdt_code) << ".\n";
+    exit(-1);
+  }
 }
 
 void sim_t::set_rom()
@@ -334,23 +347,6 @@ void sim_t::set_rom()
   }
 
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
-
-  std::string dtb;
-  if (!dtb_file.empty()) {
-    std::ifstream fin(dtb_file.c_str(), std::ios::binary);
-    if (!fin.good()) {
-      std::cerr << "can't find dtb file: " << dtb_file << std::endl;
-      exit(-1);
-    }
-
-    std::stringstream strstream;
-    strstream << fin.rdbuf();
-
-    dtb = strstream.str();
-  } else {
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, bootargs, procs, mems);
-    dtb = dts_compile(dts);
-  }
 
   rom.insert(rom.end(), dtb.begin(), dtb.end());
   const int align = 0x1000;
