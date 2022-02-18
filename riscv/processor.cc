@@ -423,15 +423,15 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MTVEC] = mtvec = std::make_shared<tvec_csr_t>(proc, CSR_MTVEC);
   csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE);
   csrmap[CSR_MINSTRET] = minstret = std::make_shared<wide_counter_csr_t>(proc, CSR_MINSTRET);
-  csrmap[CSR_MCYCLE] = std::make_shared<proxy_csr_t>(proc, CSR_MCYCLE, minstret);
+  csrmap[CSR_MCYCLE] = mcycle = std::make_shared<wide_counter_csr_t>(proc, CSR_MCYCLE);
   csrmap[CSR_INSTRET] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRET, minstret);
-  csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, minstret);
+  csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, mcycle);
   if (xlen == 32) {
-    counter_top_csr_t_p minstreth;
+    counter_top_csr_t_p minstreth, mcycleh;
     csrmap[CSR_MINSTRETH] = minstreth = std::make_shared<counter_top_csr_t>(proc, CSR_MINSTRETH, minstret);
-    csrmap[CSR_MCYCLEH] = std::make_shared<proxy_csr_t>(proc, CSR_MCYCLEH, minstreth);
+    csrmap[CSR_MCYCLEH] = mcycleh = std::make_shared<counter_top_csr_t>(proc, CSR_MCYCLEH, mcycle);
     csrmap[CSR_INSTRETH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRETH, minstreth);
-    csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, minstreth);
+    csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, mcycleh);
   }
   for (reg_t i=3; i<=31; ++i) {
     const reg_t which_mevent = CSR_MHPMEVENT3 + i - 3;

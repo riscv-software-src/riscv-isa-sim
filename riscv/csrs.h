@@ -436,9 +436,9 @@ class virtualized_satp_csr_t: public virtualized_csr_t {
 };
 
 
-// For minstret, which is always 64 bits, but in RV32 is split into
-// high and low halves. The first class always holds the full 64-bit
-// value.
+// For minstret and mcycle, which are always 64 bits, but in RV32 are
+// split into high and low halves. The first class always holds the
+// full 64-bit value.
 class wide_counter_csr_t: public csr_t {
  public:
   wide_counter_csr_t(processor_t* const proc, const reg_t addr);
@@ -456,7 +456,7 @@ class wide_counter_csr_t: public csr_t {
 typedef std::shared_ptr<wide_counter_csr_t> wide_counter_csr_t_p;
 
 
-// A simple proxy to read/write the upper half of minstret
+// A simple proxy to read/write the upper half of minstret/mcycle
 class counter_top_csr_t: public csr_t {
  public:
   counter_top_csr_t(processor_t* const proc, const reg_t addr, wide_counter_csr_t_p parent);

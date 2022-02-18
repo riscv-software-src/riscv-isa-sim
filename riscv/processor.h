@@ -177,6 +177,7 @@ struct state_t
   csr_t_p mtvec;
   csr_t_p mcause;
   wide_counter_csr_t_p minstret;
+  wide_counter_csr_t_p mcycle;
   mie_csr_t_p mie;
   mip_csr_t_p mip;
   csr_t_p medeleg;
