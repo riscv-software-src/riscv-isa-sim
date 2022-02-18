@@ -98,12 +98,17 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
   make_dtb();
 
   void *fdt = (void *)dtb.c_str();
-  //handle clic
-  clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, real_time_clint));
+
+  // Only make a CLINT (Core-Local INTerrupt controller) if one is specified in
+  // the device tree configuration.
+  //
+  // This isn't *quite* as general as we could get (because you might have one
+  // that's not bus-accessible), but it should handle the normal use cases. In
+  // particular, the default device tree configuration that you get without
+  // setting the dtb_file argument has one.
   reg_t clint_base;
-  if (fdt_parse_clint(fdt, &clint_base, "riscv,clint0")) {
-    bus.add_device(CLINT_BASE, clint.get());
-  } else {
+  if (fdt_parse_clint(fdt, &clint_base, "riscv,clint0") == 0) {
+    clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, real_time_clint));
     bus.add_device(clint_base, clint.get());
   }
 
@@ -214,7 +219,7 @@ void sim_t::step(size_t n)
       procs[current_proc]->get_mmu()->yield_load_reservation();
       if (++current_proc == procs.size()) {
         current_proc = 0;
-        clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
+        if (clint) clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
       }
 
       host->switch_to();
