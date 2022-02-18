@@ -28,7 +28,7 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-sim_t::sim_t(const char* isa, const char* priv, const char* varch,
+sim_t::sim_t(const char* isa_string, const char* priv, const char* varch,
              size_t nprocs, bool halted, bool real_time_clint,
              reg_t initrd_start, reg_t initrd_end, const char* bootargs,
              reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
@@ -43,6 +43,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
 #endif
              FILE *cmd_file) // needed for command line option --cmd
   : htif_t(args),
+    isa(isa_string, priv),
     mems(mems),
     plugin_devices(plugin_devices),
     procs(std::max(nprocs, size_t(1))),
@@ -91,7 +92,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
 
   for (size_t i = 0; i < nprocs; i++) {
     int hart_id = hartids.empty() ? i : hartids[i];
-    procs[i] = new processor_t(isa, priv, varch, this, hart_id, halted,
+    procs[i] = new processor_t(isa, varch, this, hart_id, halted,
                                log_file.get(), sout_);
   }
 
