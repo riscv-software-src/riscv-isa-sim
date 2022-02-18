@@ -439,9 +439,9 @@ class virtualized_satp_csr_t: public virtualized_csr_t {
 // For minstret, which is always 64 bits, but in RV32 is split into
 // high and low halves. The first class always holds the full 64-bit
 // value.
-class minstret_csr_t: public csr_t {
+class wide_counter_csr_t: public csr_t {
  public:
-  minstret_csr_t(processor_t* const proc, const reg_t addr);
+  wide_counter_csr_t(processor_t* const proc, const reg_t addr);
   // Always returns full 64-bit value
   virtual reg_t read() const noexcept override;
   void bump(const reg_t howmuch) noexcept;
@@ -453,21 +453,21 @@ class minstret_csr_t: public csr_t {
   reg_t val;
 };
 
-typedef std::shared_ptr<minstret_csr_t> minstret_csr_t_p;
+typedef std::shared_ptr<wide_counter_csr_t> wide_counter_csr_t_p;
 
 
 // A simple proxy to read/write the upper half of minstret
-class minstreth_csr_t: public csr_t {
+class counter_top_csr_t: public csr_t {
  public:
-  minstreth_csr_t(processor_t* const proc, const reg_t addr, minstret_csr_t_p minstret);
+  counter_top_csr_t(processor_t* const proc, const reg_t addr, wide_counter_csr_t_p parent);
   virtual reg_t read() const noexcept override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
-  minstret_csr_t_p minstret;
+  wide_counter_csr_t_p parent;
 };
 
-typedef std::shared_ptr<minstreth_csr_t> minstreth_csr_t_p;
+typedef std::shared_ptr<counter_top_csr_t> counter_top_csr_t_p;
 
 
 // For a CSR that is an alias of another
