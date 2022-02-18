@@ -335,23 +335,6 @@ void sim_t::set_rom()
 
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
 
-  std::string dtb;
-  if (!dtb_file.empty()) {
-    std::ifstream fin(dtb_file.c_str(), std::ios::binary);
-    if (!fin.good()) {
-      std::cerr << "can't find dtb file: " << dtb_file << std::endl;
-      exit(-1);
-    }
-
-    std::stringstream strstream;
-    strstream << fin.rdbuf();
-
-    dtb = strstream.str();
-  } else {
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, bootargs, procs, mems);
-    dtb = dts_compile(dts);
-  }
-
   rom.insert(rom.end(), dtb.begin(), dtb.end());
   const int align = 0x1000;
   rom.resize((rom.size() + align - 1) / align * align);
