@@ -12,7 +12,6 @@ riscv_hdrs = \
 	common.h \
 	decode.h \
 	devices.h \
-	disasm.h \
 	dts.h \
 	mmu.h \
 	processor.h \
@@ -47,7 +46,6 @@ riscv_srcs = \
 	trap.cc \
 	cachesim.cc \
 	mmu.cc \
-	disasm.cc \
 	extension.cc \
 	extensions.cc \
 	rocc.cc \
