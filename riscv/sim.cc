@@ -6,6 +6,7 @@
 #include "remote_bitbang.h"
 #include "byteorder.h"
 #include "platform.h"
+#include "libfdt.h"
 #include <fstream>
 #include <map>
 #include <iostream>
@@ -295,6 +296,18 @@ void sim_t::make_dtb()
   } else {
     dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, bootargs, procs, mems);
     dtb = dts_compile(dts);
+  }
+
+  int fdt_code = fdt_check_header(dtb.c_str());
+  if (fdt_code) {
+    std::cerr << "Failed to read DTB from ";
+    if (dtb_file.empty()) {
+      std::cerr << "auto-generated DTS string";
+    } else {
+      std::cerr << "`" << dtb_file << "'";
+    }
+    std::cerr << ": " << fdt_strerror(fdt_code) << ".\n";
+    exit(-1);
   }
 }
 
