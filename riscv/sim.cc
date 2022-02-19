@@ -28,9 +28,9 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-sim_t::sim_t(const char* isa_string, const char* priv, const char* varch,
-             size_t nprocs, bool halted, bool real_time_clint,
-             reg_t initrd_start, reg_t initrd_end, const char* bootargs,
+sim_t::sim_t(const cfg_t *cfg,
+             const char* isa_string, const char* priv, const char* varch,
+             size_t nprocs, bool halted, bool real_time_clint, const char* bootargs,
              reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
@@ -44,11 +44,10 @@ sim_t::sim_t(const char* isa_string, const char* priv, const char* varch,
              FILE *cmd_file) // needed for command line option --cmd
   : htif_t(args),
     isa(isa_string, priv),
+    cfg(cfg),
     mems(mems),
     plugin_devices(plugin_devices),
     procs(std::max(nprocs, size_t(1))),
-    initrd_start(initrd_start),
-    initrd_end(initrd_end),
     bootargs(bootargs),
     start_pc(start_pc),
     dtb_file(dtb_file ? dtb_file : ""),
@@ -312,7 +311,10 @@ void sim_t::make_dtb()
 
     dtb = strstream.str();
   } else {
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, bootargs, procs, mems);
+    std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds();
+    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
+                   initrd_bounds.first, initrd_bounds.second,
+                   bootargs, procs, mems);
     dtb = dts_compile(dts);
   }
 

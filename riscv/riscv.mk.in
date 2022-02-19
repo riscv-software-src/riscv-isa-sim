@@ -14,6 +14,7 @@ riscv_hdrs = \
 	devices.h \
 	dts.h \
 	mmu.h \
+	cfg.h \
 	processor.h \
 	sim.h \
 	simif.h \

@@ -1,5 +1,6 @@
 // See LICENSE for license details.
 
+#include "cfg.h"
 #include "sim.h"
 #include "mmu.h"
 #include "remote_bitbang.h"
@@ -221,8 +222,6 @@ int main(int argc, char** argv)
   size_t nprocs = 1;
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
-  size_t initrd_size;
-  reg_t initrd_start = 0, initrd_end = 0;
   const char* bootargs = NULL;
   reg_t start_pc = reg_t(-1);
   std::vector<std::pair<reg_t, mem_t*>> mems;
@@ -254,6 +253,7 @@ int main(int argc, char** argv)
     .support_impebreak = true
   };
   std::vector<int> hartids;
+  cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0));
 
   auto const hartids_parser = [&](const char *s) {
     std::string const str(s);
@@ -409,11 +409,12 @@ int main(int argc, char** argv)
   }
 
   if (initrd && check_file_exists(initrd)) {
-    initrd_size = get_file_size(initrd);
+    size_t initrd_size = get_file_size(initrd);
     for (auto& m : mems) {
       if (initrd_size && (initrd_size + 0x1000) < m.second->size()) {
-         initrd_end = m.first + m.second->size() - 0x1000;
-         initrd_start = initrd_end - initrd_size;
+         reg_t initrd_end = m.first + m.second->size() - 0x1000;
+         reg_t initrd_start = initrd_end - initrd_size;
+         cfg.initrd_bounds = std::make_pair(initrd_start, initrd_end);
          read_file_bytes(initrd, 0, m.second, initrd_start - m.first, initrd_size);
          break;
       }
@@ -443,8 +444,8 @@ int main(int argc, char** argv)
   }
 #endif
 
-  sim_t s(isa, priv, varch, nprocs, halted, real_time_clint,
-      initrd_start, initrd_end, bootargs, start_pc, mems, plugin_devices, htif_args,
+  sim_t s(&cfg, isa, priv, varch, nprocs, halted, real_time_clint,
+      bootargs, start_pc, mems, plugin_devices, htif_args,
       std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file,
 #ifdef HAVE_BOOST_ASIO
       io_service_ptr, acceptor_ptr,
