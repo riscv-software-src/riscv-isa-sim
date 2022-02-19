@@ -350,11 +350,7 @@ void processor_t::step(size_t n)
 
     state.minstret->bump(instret);
 
-    // By default, bump the MCYCLE register by the same delta. This models a
-    // machine where each instruction takes exactly one cycle to retire. In a
-    // cosimulation environment, the RTL might manually update MCYCLE
-    // separately. It should do that between the end of this step() and the
-    // start of the next one.
+    // Model a hart whose CPI is 1.
     state.mcycle->bump(instret);
 
     n -= instret;
