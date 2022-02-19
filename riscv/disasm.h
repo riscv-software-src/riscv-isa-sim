@@ -4,7 +4,7 @@
 #define _RISCV_DISASM_H
 
 #include "decode.h"
-#include "processor.h"
+#include "isa_parser.h"
 #include <string>
 #include <sstream>
 #include <algorithm>
