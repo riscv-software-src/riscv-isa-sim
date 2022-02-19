@@ -833,21 +833,21 @@ bool virtualized_satp_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 
-// implement class minstret_csr_t
-minstret_csr_t::minstret_csr_t(processor_t* const proc, const reg_t addr):
+// implement class wide_counter_csr_t
+wide_counter_csr_t::wide_counter_csr_t(processor_t* const proc, const reg_t addr):
   csr_t(proc, addr),
   val(0) {
 }
 
-reg_t minstret_csr_t::read() const noexcept {
+reg_t wide_counter_csr_t::read() const noexcept {
   return val;
 }
 
-void minstret_csr_t::bump(const reg_t howmuch) noexcept {
+void wide_counter_csr_t::bump(const reg_t howmuch) noexcept {
   val += howmuch;  // to keep log reasonable size, don't log every bump
 }
 
-bool minstret_csr_t::unlogged_write(const reg_t val) noexcept {
+bool wide_counter_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->get_xlen() == 32)
     this->val = (this->val >> 32 << 32) | (val & 0xffffffffU);
   else
@@ -860,12 +860,12 @@ bool minstret_csr_t::unlogged_write(const reg_t val) noexcept {
   return true;
 }
 
-reg_t minstret_csr_t::written_value() const noexcept {
+reg_t wide_counter_csr_t::written_value() const noexcept {
   // Re-adjust for upcoming bump()
   return this->val + 1;
 }
 
-void minstret_csr_t::write_upper_half(const reg_t val) noexcept {
+void wide_counter_csr_t::write_upper_half(const reg_t val) noexcept {
   this->val = (val << 32) | (this->val << 32 >> 32);
   this->val--; // See comment above.
   // Log upper half only.
@@ -873,17 +873,17 @@ void minstret_csr_t::write_upper_half(const reg_t val) noexcept {
 }
 
 
-minstreth_csr_t::minstreth_csr_t(processor_t* const proc, const reg_t addr, minstret_csr_t_p minstret):
+counter_top_csr_t::counter_top_csr_t(processor_t* const proc, const reg_t addr, wide_counter_csr_t_p parent):
   csr_t(proc, addr),
-  minstret(minstret) {
+  parent(parent) {
 }
 
-reg_t minstreth_csr_t::read() const noexcept {
-  return minstret->read() >> 32;
+reg_t counter_top_csr_t::read() const noexcept {
+  return parent->read() >> 32;
 }
 
-bool minstreth_csr_t::unlogged_write(const reg_t val) noexcept {
-  minstret->write_upper_half(val);
+bool counter_top_csr_t::unlogged_write(const reg_t val) noexcept {
+  parent->write_upper_half(val);
   return true;
 }
 
