@@ -11,7 +11,6 @@
 #include <boost/asio.hpp>
 #endif
 
-#include "cfg.h"
 #include "debug_module.h"
 #include "devices.h"
 #include "log_file.h"
@@ -33,7 +32,7 @@ class remote_bitbang_t;
 class sim_t : public htif_t, public simif_t
 {
 public:
-  sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_clint,
+  sim_t(const devicetree_t *devicetree, const char* varch, bool halted, bool real_time_clint,
         reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
         std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
         const std::vector<std::string>& args, const std::vector<int> hartids,
@@ -63,7 +62,6 @@ public:
   void set_remote_bitbang(remote_bitbang_t* remote_bitbang) {
     this->remote_bitbang = remote_bitbang;
   }
-  const char* get_dts() { return devicetree.get_dts(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
   unsigned nprocs() const { return procs.size(); }
 
@@ -71,14 +69,13 @@ public:
   void proc_reset(unsigned id);
 
 private:
-  const cfg_t * const cfg;
   std::vector<std::pair<reg_t, mem_t*>> mems;
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
   std::pair<reg_t, reg_t> initrd_range;
   reg_t start_pc;
-  devicetree_t devicetree;
+  const devicetree_t * const devicetree;
   bool dtb_enabled;
   std::unique_ptr<rom_device_t> boot_rom;
   std::unique_ptr<clint_t> clint;

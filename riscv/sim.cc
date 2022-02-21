@@ -28,7 +28,7 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_clint,
+sim_t::sim_t(const devicetree_t *devicetree, const char* varch, bool halted, bool real_time_clint,
              reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
@@ -42,11 +42,10 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
              FILE *cmd_file,
              size_t interleave, size_t insns_per_rtc_tick, size_t cpu_hz)
   : htif_t(args),
-    cfg(cfg),
     mems(mems),
     plugin_devices(plugin_devices),
     start_pc(start_pc),
-    devicetree(devicetree_t::make(dtb_file, insns_per_rtc_tick, cpu_hz, *cfg)),
+    devicetree(devicetree),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
     cmd_file(cmd_file),
@@ -88,12 +87,12 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
   // particular, the default device tree configuration that you get without
   // setting the dtb_file argument has one.
   reg_t clint_base;
-  if (devicetree.find_clint(&clint_base, "riscv,clint0") == 0) {
+  if (devicetree->find_clint(&clint_base, "riscv,clint0") == 0) {
     clint.reset(new clint_t(procs, cpu_hz / insns_per_rtc_tick, real_time_clint));
     bus.add_device(clint_base, clint.get());
   }
 
-  const std::vector<cpu_dtb_t> &cpu_dtbs = devicetree.get_cpus();
+  const std::vector<cpu_dtb_t> &cpu_dtbs = devicetree->get_cpus();
 
   if (! (hartids.empty() || hartids.size() == cpu_dtbs.size())) {
       std::cerr << "Number of specified hartids ("
@@ -272,7 +271,7 @@ void sim_t::set_rom()
 
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
 
-  const std::string &dtb = devicetree.get_dtb_str();
+  const std::string &dtb = devicetree->get_dtb_str();
   rom.insert(rom.end(), dtb.begin(), dtb.end());
   const int align = 0x1000;
   rom.resize((rom.size() + align - 1) / align * align);

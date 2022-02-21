@@ -462,7 +462,15 @@ int main(int argc, char** argv)
   }
 #endif
 
-  sim_t s(&frozen_cfg, varch, halted, real_time_clint,
+  devicetree_t devicetree =
+    devicetree_t::make(dtb_file, INSNS_PER_RTC_TICK, CPU_HZ, frozen_cfg);
+
+  if (dump_dts) {
+    printf("%s", devicetree.get_dts());
+    return 0;
+  }
+
+  sim_t s(&devicetree, varch, halted, real_time_clint,
       start_pc, mems, plugin_devices, htif_args,
       std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file,
 #ifdef HAVE_BOOST_ASIO
@@ -475,11 +483,6 @@ int main(int argc, char** argv)
   if (use_rbb) {
     remote_bitbang.reset(new remote_bitbang_t(rbb_port, &(*jtag_dtm)));
     s.set_remote_bitbang(&(*remote_bitbang));
-  }
-
-  if (dump_dts) {
-    printf("%s", s.get_dts());
-    return 0;
   }
 
   if (ic && l2) ic->set_miss_handler(&*l2);
