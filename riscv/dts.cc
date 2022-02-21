@@ -3,6 +3,7 @@
 #include "dts.h"
 #include "libfdt.h"
 #include "platform.h"
+#include <cassert>
 #include <iostream>
 #include <sstream>
 #include <signal.h>
@@ -306,8 +307,10 @@ int fdt_parse_pmp_alignment(void *fdt, int cpu_offset, reg_t *pmp_align)
   return 0;
 }
 
-int fdt_parse_mmu_type(void *fdt, int cpu_offset, char *mmu_type)
+int fdt_parse_mmu_type(void *fdt, int cpu_offset, const char **mmu_type)
 {
+  assert(mmu_type);
+
   int len, rc;
   const void *prop;
 
@@ -318,7 +321,7 @@ int fdt_parse_mmu_type(void *fdt, int cpu_offset, char *mmu_type)
   if (!prop || !len)
     return -EINVAL;
 
-  strcpy(mmu_type, (char *)prop);
+  *mmu_type = (const char *)prop;
 
   return 0;
 }

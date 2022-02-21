@@ -136,8 +136,8 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     }
 
     //handle mmu-type
-    char mmu_type[256] = "";
-    rc = fdt_parse_mmu_type(fdt, cpu_offset, mmu_type);
+    const char *mmu_type;
+    rc = fdt_parse_mmu_type(fdt, cpu_offset, &mmu_type);
     if (rc == 0) {
       procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
       if (strncmp(mmu_type, "riscv,sv32", strlen("riscv,sv32")) == 0) {
@@ -151,7 +151,7 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
       } else {
         std::cerr << "core ("
                   << hartids.size()
-                  << ") doesn't have valid 'mmu-type'"
+                  << ") has an invalid 'mmu-type': "
                   << mmu_type << ").\n";
         exit(1);
       }
