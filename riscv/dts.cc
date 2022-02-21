@@ -60,6 +60,7 @@ static std::string make_dts(size_t insns_per_rtc_tick,
          "      status = \"okay\";\n"
          "      compatible = \"riscv\";\n"
          "      riscv,isa = \"" << isa->get_isa_string() << "\";\n"
+         "      riscv,priv = \"" << isa->get_priv_string() << "\";\n"
          "      mmu-type = \"riscv," << (isa->get_max_xlen() <= 32 ? "sv32" : "sv48") << "\";\n"
          "      riscv,pmpregions = <16>;\n"
          "      riscv,pmpgranularity = <4>;\n"

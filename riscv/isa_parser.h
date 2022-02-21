@@ -67,9 +67,12 @@ class isa_parser_t {
 public:
   isa_parser_t(const char* str, const char *priv);
   ~isa_parser_t(){};
+
   unsigned get_max_xlen() const { return max_xlen; }
   reg_t get_max_isa() const { return max_isa; }
   std::string get_isa_string() const { return isa_string; }
+  std::string get_priv_string() const;
+
   bool extension_enabled(unsigned char ext) const {
     if (ext >= 'A' && ext <= 'Z')
       return (max_isa >> (ext - 'A')) & 1;

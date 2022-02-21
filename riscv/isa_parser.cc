@@ -245,3 +245,11 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     extension_table['S'] = true;
   }
 }
+
+std::string isa_parser_t::get_priv_string() const
+{
+  std::string priv = "m";
+  if (extension_enabled('S')) priv += "s";
+  if (extension_enabled('U')) priv += "u";
+  return priv;
+}
