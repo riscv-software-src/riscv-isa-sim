@@ -280,6 +280,8 @@ typedef enum {
   EXT_ZHINXMIN,
   EXT_ZICBOM,
   EXT_ZICBOZ,
+  EXT_ZICNTR,
+  EXT_ZIHPM,
   EXT_XZBP,
   EXT_XZBS,
   EXT_XZBE,

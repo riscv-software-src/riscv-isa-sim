@@ -926,8 +926,6 @@ bool counter_proxy_csr_t::myenable(csr_t_p counteren) const noexcept {
 }
 
 void counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
-  proxy_csr_t::verify_permissions(insn, write);
-
   const bool mctr_ok = (state->prv < PRV_M) ? myenable(state->mcounteren) : true;
   const bool hctr_ok = state->v ? myenable(state->hcounteren) : true;
   const bool sctr_ok = (proc->extension_enabled('S') && state->prv < PRV_S) ? myenable(state->scounteren) : true;
@@ -942,6 +940,9 @@ void counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
     else
       throw trap_illegal_instruction(insn.bits());
   }
+
+  if (write)
+    throw trap_illegal_instruction(insn.bits());
 }
 
 

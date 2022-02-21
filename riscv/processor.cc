@@ -207,6 +207,10 @@ isa_parser_t::isa_parser_t(const char* str)
   const char* all_subsets = "mafdqchpv";
 
   max_isa = reg_t(2) << 62;
+  // enable zicntr and zihpm unconditionally for backward compatibility
+  extension_table[EXT_ZICNTR] = true;
+  extension_table[EXT_ZIHPM] = true;
+
   if (isa_string.compare(0, 4, "rv32") == 0)
     max_xlen = 32, max_isa = reg_t(1) << 30;
   else if (isa_string.compare(0, 4, "rv64") == 0)
@@ -341,8 +345,10 @@ isa_parser_t::isa_parser_t(const char* str)
     } else if (ext_str == "zicbom") {
       extension_table[EXT_ZICBOM] = true;
     } else if (ext_str == "zicboz") {
-       extension_table[EXT_ZICBOZ] = true;
+      extension_table[EXT_ZICBOZ] = true;
     } else if (ext_str == "zicbop") {
+    } else if (ext_str == "zicntr") {
+    } else if (ext_str == "zihpm") {
     } else if (ext_str[0] == 'x') {
       max_isa |= 1L << ('x' - 'a');
       extension_table[toupper('x')] = true;
@@ -424,14 +430,18 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE);
   csrmap[CSR_MINSTRET] = minstret = std::make_shared<wide_counter_csr_t>(proc, CSR_MINSTRET);
   csrmap[CSR_MCYCLE] = mcycle = std::make_shared<wide_counter_csr_t>(proc, CSR_MCYCLE);
-  csrmap[CSR_INSTRET] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRET, minstret);
-  csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, mcycle);
+  if (proc->extension_enabled_const(EXT_ZICNTR)) {
+    csrmap[CSR_INSTRET] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRET, minstret);
+    csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, mcycle);
+  }
   if (xlen == 32) {
     counter_top_csr_t_p minstreth, mcycleh;
     csrmap[CSR_MINSTRETH] = minstreth = std::make_shared<counter_top_csr_t>(proc, CSR_MINSTRETH, minstret);
     csrmap[CSR_MCYCLEH] = mcycleh = std::make_shared<counter_top_csr_t>(proc, CSR_MCYCLEH, mcycle);
-    csrmap[CSR_INSTRETH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRETH, minstreth);
-    csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, mcycleh);
+    if (proc->extension_enabled_const(EXT_ZICNTR)) {
+      csrmap[CSR_INSTRETH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRETH, minstreth);
+      csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, mcycleh);
+    }
   }
   for (reg_t i=3; i<=31; ++i) {
     const reg_t which_mevent = CSR_MHPMEVENT3 + i - 3;
@@ -441,15 +451,20 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     const reg_t which_counterh = CSR_HPMCOUNTER3H + i - 3;
     auto mevent = std::make_shared<const_csr_t>(proc, which_mevent, 0);
     auto mcounter = std::make_shared<const_csr_t>(proc, which_mcounter, 0);
-    auto counter = std::make_shared<counter_proxy_csr_t>(proc, which_counter, mcounter);
     csrmap[which_mevent] = mevent;
     csrmap[which_mcounter] = mcounter;
-    csrmap[which_counter] = counter;
+
+    if (proc->extension_enabled_const(EXT_ZICNTR) && proc->extension_enabled_const(EXT_ZIHPM)) {
+      auto counter = std::make_shared<counter_proxy_csr_t>(proc, which_counter, mcounter);
+      csrmap[which_counter] = counter;
+    }
     if (xlen == 32) {
       auto mcounterh = std::make_shared<const_csr_t>(proc, which_mcounterh, 0);
-      auto counterh = std::make_shared<counter_proxy_csr_t>(proc, which_counterh, mcounterh);
       csrmap[which_mcounterh] = mcounterh;
-      csrmap[which_counterh] = counterh;
+      if (proc->extension_enabled_const(EXT_ZICNTR) && proc->extension_enabled_const(EXT_ZIHPM)) {
+        auto counterh = std::make_shared<counter_proxy_csr_t>(proc, which_counterh, mcounterh);
+        csrmap[which_counterh] = counterh;
+      }
     }
   }
   csrmap[CSR_MCOUNTINHIBIT] = std::make_shared<const_csr_t>(proc, CSR_MCOUNTINHIBIT, 0);
