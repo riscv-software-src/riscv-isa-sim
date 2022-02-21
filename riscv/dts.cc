@@ -232,27 +232,120 @@ static int fdt_get_node_addr_size(const void *fdt, int node, reg_t *addr,
   return 0;
 }
 
-static int check_cpu_node(const void *fdt, int cpu_offset)
+static const char*
+fdt_get_string_prop(const void *dtb, int offset,
+                    const char *prop_name,
+                    bool optional, const char *where)
 {
   int len;
   const void *prop;
+  prop = fdt_getprop(dtb, offset, prop_name, &len);
+  if (!prop) {
+    if (optional) return nullptr;
 
-  if (!fdt || cpu_offset < 0)
-    return -EINVAL;
+    std::cerr << "Cannot get " << prop_name << " property";
+    if (where) std::cerr << " " << where;
+    std::cerr << " in DTB.\n";
+    exit(-1);
+  }
+  if (!len) {
+    std::cerr << "The " << prop_name << " property";
+    if (where) std::cerr << " " << where;
+    std::cerr << " has zero length.\n";
+    exit(-1);
+  }
+  return (const char*)prop;
+}
 
-  prop = fdt_getprop(fdt, cpu_offset, "device_type", &len);
-  if (!prop || !len)
-    return -EINVAL;
-  if (strncmp ((char *)prop, "cpu", strlen ("cpu")))
-    return -EINVAL;
+cpu_dtb_t::cpu_dtb_t(size_t cpu_idx, const void *dtb, int offset)
+  : dtb(dtb), offset(offset),
+    num_pmp_regions(0), pmp_granularity(4)
+{
+  assert(dtb);
+  assert(offset >= 0);
 
-  return 0;
+  std::ostringstream where_ss;
+  where_ss << "for CPU " << cpu_idx;
+  const char *where = where_ss.str().c_str();
+
+  const char *device_type =
+    fdt_get_string_prop(dtb, offset, "device_type", false, where);
+  if (strcmp(device_type, "cpu")) {
+    std::cerr << "The device_type property " << where
+              << " is `" << device_type << "', not `cpu'.\n";
+    exit(-1);
+  }
+
+  // Look up the ISA string / priv string for the CPU and parse it. If not
+  // specified, these default to DEFAULT_ISA / DEFAULT_PRIV.
+  const char *isa = fdt_get_string_prop(dtb, offset, "riscv,isa", true, where);
+  if (!isa) isa = DEFAULT_ISA;
+
+  const char *priv = fdt_get_string_prop(dtb, offset, "riscv,priv", true, where);
+  if (!priv) priv = DEFAULT_PRIV;
+
+  isa_parser.reset(new isa_parser_t(isa, priv));
+
+  // Look up the number of PMP regions. If not specified, this defaults to 0
+  fdt_get_node_addr_size(dtb, offset, &num_pmp_regions, NULL, "riscv,pmpregions");
+  if (num_pmp_regions > 64) {
+    std::cerr << "The riscv,pmpregions property " << where
+              << "is " << num_pmp_regions
+              << ", which is not supported (maximum 64).\n";
+    exit(1);
+  }
+
+  // Look up PMP granularity. If not specified, this defaults to 4 (32-bit granularity)
+  fdt_get_node_addr_size(dtb, offset, &pmp_granularity, NULL, "riscv,pmpgranularity");
+
+  // Look up MMU type. If not specified, this is based on the ISA: IMPL_MMU_SV32 if
+  // maximum xlen is <= 32; IMPL_MMU_SV48 otherwise.
+  const char *mmu_type_str = fdt_get_string_prop(dtb, offset, "mmu-type", true, where);
+  if (!mmu_type_str) {
+    mmu_type = isa_parser->get_max_xlen() <= 32 ? IMPL_MMU_SV32 : IMPL_MMU_SV48;
+  } else {
+    if (strcmp(mmu_type_str, "riscv,sv32") == 0) {
+      mmu_type = IMPL_MMU_SV32;
+    } else if (strcmp(mmu_type_str, "riscv,sv39") == 0) {
+      mmu_type = IMPL_MMU_SV39;
+    } else if (strcmp(mmu_type_str, "riscv,sv48") == 0) {
+      mmu_type = IMPL_MMU_SV48;
+    } else if (strcmp(mmu_type_str, "riscv,sbare") == 0) {
+      mmu_type = IMPL_MMU_SBARE;
+    } else {
+      std::cerr << "The mmu-type property " << where << " is `" << mmu_type_str
+                << "', which isn't one of the supported values.\n";
+      exit(-1);
+    }
+  }
+}
+
+void cpu_dtb_t::check_compatible(size_t i, const cfg_t &cfg) const
+{
+  // Check that if cfg gives an ISA string then it matches ours.
+  if (cfg.isa.overridden() && (isa_parser->get_isa_string() != cfg.isa())) {
+    std::cerr << "CPU " << i << " in the device tree has an ISA of `"
+              << isa_parser->get_isa_string()
+              << "', which doesn't match the command line ISA of `"
+              << cfg.isa() << "'.\n";
+    exit(-1);
+  }
+
+  // Similarly with a priv argument
+  if (cfg.priv.overridden() && (isa_parser->get_priv_string() != cfg.priv())) {
+    std::cerr << "CPU " << i << " in the device tree supports privilege modes "
+              << isa_parser->get_priv_string()
+              << ", which doesn't match the command line list: "
+              << cfg.priv() << ".\n";
+    exit(-1);
+  }
 }
 
 devicetree_t::devicetree_t(std::string dtb, std::string dts, const char *src_path)
   : dtb(dtb), dts(dts)
 {
-  int fdt_code = fdt_check_header(dtb.c_str());
+  const void *fdt = dtb.c_str();
+  int fdt_code = fdt_check_header(fdt);
   if (fdt_code) {
     std::cerr << "Failed to read DTB from ";
     if (!src_path) {
@@ -261,6 +354,25 @@ devicetree_t::devicetree_t(std::string dtb, std::string dts, const char *src_pat
       std::cerr << "`" << src_path << "'";
     }
     std::cerr << ": " << fdt_strerror(fdt_code) << ".\n";
+    exit(-1);
+  }
+
+  // Look up processors at the "/cpus" path. It's an error if there is
+  // no such subtree.
+  int cpus_offset = fdt_path_offset(fdt, "/cpus");
+  if (cpus_offset < 0) {
+    std::cerr << "DTB has no /cpus node.\n";
+    exit(-1);
+  }
+  for (int off = fdt_first_subnode(fdt, cpus_offset);
+       off >= 0;
+       off = fdt_next_subnode(fdt, off)) {
+    cpus.push_back(cpu_dtb_t(cpus.size(), fdt, off));
+  }
+
+  // It's also an error if there were no CPUs at all
+  if (cpus.empty()) {
+    std::cerr << "DTB has no entries in /cpus node.\n";
     exit(-1);
   }
 }
@@ -279,7 +391,9 @@ devicetree_t devicetree_t::make(const char *dtb_path,
     std::stringstream strstream;
     strstream << fin.rdbuf();
 
-    return devicetree_t(strstream.str(), "", dtb_path);
+    devicetree_t ret(strstream.str(), "", dtb_path);
+    ret.check_compatible(cfg);
+    return ret;
   }
 
   std::string dts = make_dts(insns_per_rtc_tick, cpu_hz, cfg);
@@ -288,9 +402,21 @@ devicetree_t devicetree_t::make(const char *dtb_path,
   return devicetree_t(dtb, dts, dtb_path);
 }
 
-int devicetree_t::get_offset(const char *path) const
+void devicetree_t::check_compatible(const cfg_t &cfg) const
 {
-  return fdt_path_offset(dtb.c_str(), path);
+  // Check that if nprocs was specified in the base config then it matches the
+  // number of processors in the DTB.
+  if (cfg.nprocs.overridden() && (cpus.size() != cfg.nprocs())) {
+    std::cerr << "Number of processors specified on command line was "
+              << cfg.nprocs()
+              << ", but the DTB file contains " << cpus.size()
+              << ".\n";
+    exit(-1);
+  }
+
+  for (size_t i = 0; i < cpus.size(); ++i) {
+    cpus[i].check_compatible(i, cfg);
+  }
 }
 
 int devicetree_t::find_clint(reg_t *clint_addr, const char *compatible) const
@@ -308,67 +434,4 @@ int devicetree_t::find_clint(reg_t *clint_addr, const char *compatible) const
     return -ENODEV;
 
   return 0;
-}
-
-int devicetree_t::get_pmp_num(int cpu_offset, reg_t *pmp_num) const
-{
-  assert(pmp_num);
-
-  int rc;
-
-  if ((rc = check_cpu_node(dtb.c_str(), cpu_offset)) < 0)
-    return rc;
-
-  rc = fdt_get_node_addr_size(dtb.c_str(), cpu_offset, pmp_num, NULL,
-                              "riscv,pmpregions");
-  if (rc < 0)
-    return -ENODEV;
-
-  return 0;
-}
-
-int devicetree_t::get_pmp_alignment(int cpu_offset, reg_t *pmp_align) const
-{
-  assert(pmp_align);
-
-  int rc;
-
-  if ((rc = check_cpu_node(dtb.c_str(), cpu_offset)) < 0)
-    return rc;
-
-  rc = fdt_get_node_addr_size(dtb.c_str(), cpu_offset, pmp_align, NULL,
-                              "riscv,pmpgranularity");
-  if (rc < 0)
-    return -ENODEV;
-
-  return 0;
-}
-
-int devicetree_t::get_mmu_type(int cpu_offset, const char **mmu_type) const
-{
-  assert(mmu_type);
-
-  int len, rc;
-  const void *prop;
-
-  if ((rc = check_cpu_node(dtb.c_str(), cpu_offset)) < 0)
-    return rc;
-
-  prop = fdt_getprop(dtb.c_str(), cpu_offset, "mmu-type", &len);
-  if (!prop || !len)
-    return -EINVAL;
-
-  *mmu_type = (const char *)prop;
-
-  return 0;
-}
-
-int fdt_get_first_subnode(const void *fdt, int node)
-{
-  return fdt_first_subnode(fdt, node);
-}
-
-int fdt_get_next_subnode(const void *fdt, int node)
-{
-  return fdt_next_subnode(fdt, node);
 }

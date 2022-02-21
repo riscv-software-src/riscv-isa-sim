@@ -44,7 +44,6 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
     cfg(cfg),
     mems(mems),
     plugin_devices(plugin_devices),
-    procs(std::max(cfg->nprocs(), size_t(1))),
     start_pc(start_pc),
     devicetree(devicetree_t::make(dtb_file, INSNS_PER_RTC_TICK, CPU_HZ, *cfg)),
     dtb_enabled(dtb_enabled),
@@ -77,20 +76,6 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
 
   debug_mmu = new mmu_t(this, NULL);
 
-  if (! (hartids.empty() || hartids.size() == nprocs())) {
-      std::cerr << "Number of specified hartids ("
-                << hartids.size()
-                << ") doesn't match number of processors ("
-                << nprocs() << ").\n";
-      exit(1);
-  }
-
-  for (size_t i = 0; i < nprocs(); i++) {
-    int hart_id = hartids.empty() ? i : hartids[i];
-    procs[i] = new processor_t(cfg->get_isa_parser()(), varch, this, hart_id, halted,
-                               log_file.get(), sout_);
-  }
-
   // Only make a CLINT (Core-Local INTerrupt controller) if one is specified in
   // the device tree configuration.
   //
@@ -104,76 +89,29 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
     bus.add_device(clint_base, clint.get());
   }
 
-  const void *fdt = devicetree.get_dtb();
+  const std::vector<cpu_dtb_t> &cpu_dtbs = devicetree.get_cpus();
 
-  //per core attribute
-  int cpu_offset = 0, rc;
-  size_t cpu_idx = 0;
-  cpu_offset = devicetree.get_offset("/cpus");
-  if (cpu_offset < 0)
-    return;
-
-  for (cpu_offset = fdt_get_first_subnode(fdt, cpu_offset); cpu_offset >= 0;
-       cpu_offset = fdt_get_next_subnode(fdt, cpu_offset)) {
-
-    if (cpu_idx >= nprocs())
-      break;
-
-    //handle pmp
-    reg_t pmp_num = 0, pmp_granularity = 0;
-    if (devicetree.get_pmp_num(cpu_offset, &pmp_num) == 0) {
-      if (pmp_num <= 64) {
-        procs[cpu_idx]->set_pmp_num(pmp_num);
-      } else {
-        std::cerr << "core ("
-                  << hartids.size()
-                  << ") doesn't have valid 'riscv,pmpregions'"
-                  << pmp_num << ").\n";
-        exit(1);
-      }
-    } else {
-      procs[cpu_idx]->set_pmp_num(0);
-    }
-
-    if (devicetree.get_pmp_alignment(cpu_offset, &pmp_granularity) == 0) {
-      procs[cpu_idx]->set_pmp_granularity(pmp_granularity);
-    }
-
-    //handle mmu-type
-    const char *mmu_type;
-    rc = devicetree.get_mmu_type(cpu_offset, &mmu_type);
-    if (rc == 0) {
-      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
-      if (strncmp(mmu_type, "riscv,sv32", strlen("riscv,sv32")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV32);
-      } else if (strncmp(mmu_type, "riscv,sv39", strlen("riscv,sv39")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV39);
-      } else if (strncmp(mmu_type, "riscv,sv48", strlen("riscv,sv48")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV48);
-      } else if (strncmp(mmu_type, "riscv,sv57", strlen("riscv,sv57")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV57);
-      } else if (strncmp(mmu_type, "riscv,sbare", strlen("riscv,sbare")) == 0) {
-        //has been set in the beginning
-      } else {
-        std::cerr << "core ("
-                  << hartids.size()
-                  << ") has an invalid 'mmu-type': "
-                  << mmu_type << ").\n";
-        exit(1);
-      }
-    } else {
-      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
-    }
-
-    cpu_idx++;
+  if (! (hartids.empty() || hartids.size() == cpu_dtbs.size())) {
+      std::cerr << "Number of specified hartids ("
+                << hartids.size()
+                << ") doesn't match number of processors ("
+                << cpu_dtbs.size() << ").\n";
+      exit(1);
   }
 
-  if (cpu_idx != nprocs()) {
-      std::cerr << "core number in dts ("
-                <<  cpu_idx
-                << ") doesn't match it in command line ("
-                << nprocs() << ").\n";
-      exit(1);
+  for (size_t i = 0; i < cpu_dtbs.size(); ++i) {
+    const cpu_dtb_t &cpu_dtb = cpu_dtbs[i];
+    int hart_id = hartids.empty() ? i : hartids[i];
+
+    std::unique_ptr<processor_t>
+      proc (new processor_t(&cpu_dtb.get_isa(), varch, this, hart_id, halted,
+                            log_file.get(), sout_));
+
+    proc->set_pmp_num(cpu_dtb.get_num_pmp_regions());
+    proc->set_pmp_granularity(cpu_dtb.get_pmp_granularity());
+    proc->set_mmu_capability(cpu_dtb.get_mmu_type());
+
+    procs.push_back(proc.release());
   }
 }
 

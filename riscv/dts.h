@@ -4,7 +4,34 @@
 
 #include "cfg.h"
 #include "isa_parser.h"
+#include <memory>
 #include <string>
+
+class cpu_dtb_t
+{
+public:
+  cpu_dtb_t(size_t cpu_idx, const void *dtb, int offset);
+
+  reg_t get_num_pmp_regions() const { return num_pmp_regions; }
+  reg_t get_pmp_granularity() const { return pmp_granularity; }
+  impl_extension_t get_mmu_type() const { return mmu_type; }
+  const isa_parser_t &get_isa() const { return *isa_parser; }
+
+  // Check that this CPU node parsed from a device tree matches the base
+  // configuration. i is the index of the current CPU (used in error messages).
+  void check_compatible(size_t i, const cfg_t &cfg) const;
+
+private:
+  const void *dtb;
+  int offset;
+
+  reg_t num_pmp_regions;
+  reg_t pmp_granularity;
+
+  std::unique_ptr<isa_parser_t> isa_parser;
+
+  impl_extension_t mmu_type;
+};
 
 class devicetree_t
 {
@@ -18,29 +45,18 @@ public:
                            size_t insns_per_rtc_tick, size_t cpu_hz,
                            const cfg_t &cfg);
 
-  // A wrapper for fdt_path_offset: returns non-negative block offset of node
-  // with the given path or a negative libfdt error code on failure.
-  int get_offset(const char *path) const;
+  // Check that this device tree is compatible with the configuration in cfg.
+  // This is used when we have a DTB file and also some commandline arguments
+  // and we want to check that they agree with each other.
+  void check_compatible(const cfg_t &cfg) const;
+
+  // Get CPU vector
+  const std::vector<cpu_dtb_t> &get_cpus() const { return cpus; }
 
   // Search DTB for a CLINT. On success, writes its address to the non-null
   // clint_addr and returns 0. On failure, returns a negative libfdt error
   // code.
   int find_clint(reg_t *clint_addr, const char *compatible) const;
-
-  // Get the number of PMP regions for CPU node at cpu_offset. On success,
-  // writes the number to the non-null pmp_num and returns 0. On failure,
-  // returns a negative libfdt error code.
-  int get_pmp_num(int cpu_offset, reg_t *pmp_num) const;
-
-  // Get PMP granularity for CPU node at cpu_offset. On success, writes the
-  // number to the non-null pmp_align and returns 0. On failure, returns a
-  // negative libfdt error code.
-  int get_pmp_alignment(int cpu_offset, reg_t *pmp_align) const;
-
-  // Get MMU type for CPU node at cpu_offset. On success, writes the pointer to
-  // the property string to the non-null mmu_type and returns 0. On failure,
-  // returns a negative libfdt error code.
-  int get_mmu_type(int cpu_offset, const char **mmu_type) const;
 
   // Get access to the DTS form of the device tree. This is empty if the device
   // tree was constructed directly from a DTB.
@@ -58,9 +74,8 @@ public:
 private:
   std::string dtb;
   std::string dts;
-};
 
-int fdt_get_first_subnode(const void *fdt, int node);
-int fdt_get_next_subnode(const void *fdt, int node);
+  std::vector<cpu_dtb_t> cpus;
+};
 
 #endif
