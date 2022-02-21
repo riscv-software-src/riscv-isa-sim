@@ -16,6 +16,10 @@
 #include <fstream>
 #include "../VERSION"
 
+static const size_t INTERLEAVE = 5000;
+static const size_t INSNS_PER_RTC_TICK = 100; // 10 MHz clock for 1 BIPS core
+static const size_t CPU_HZ = 1000000000; // 1GHz CPU
+
 static void help(int exit_code = 1)
 {
   fprintf(stderr, "Spike RISC-V ISA Simulator " SPIKE_VERSION "\n\n");
@@ -464,7 +468,7 @@ int main(int argc, char** argv)
 #ifdef HAVE_BOOST_ASIO
       io_service_ptr, acceptor_ptr,
 #endif
-      cmd_file);
+      cmd_file, INTERLEAVE, INSNS_PER_RTC_TICK, CPU_HZ);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));

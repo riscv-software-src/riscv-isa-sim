@@ -42,7 +42,8 @@ public:
 #ifdef HAVE_BOOST_ASIO
         boost::asio::io_service *io_service_ptr_ctor, boost::asio::ip::tcp::acceptor *acceptor_ptr_ctor,  // option -s
 #endif
-        FILE *cmd_file); // needed for command line option --cmd
+        FILE *cmd_file, // needed for command line option --cmd
+        size_t interleave, size_t insns_per_rtc_tick, size_t cpu_hz);
   ~sim_t();
 
   // run the simulation to completion
@@ -98,9 +99,9 @@ private:
 
   processor_t* get_core(const std::string& i);
   void step(size_t n); // step through simulation
-  static const size_t INTERLEAVE = 5000;
-  static const size_t INSNS_PER_RTC_TICK = 100; // 10 MHz clock for 1 BIPS core
-  static const size_t CPU_HZ = 1000000000; // 1GHz CPU
+  size_t interleave;
+  size_t insns_per_rtc_tick;
+  size_t cpu_hz;
   size_t current_step;
   size_t current_proc;
   bool debug;

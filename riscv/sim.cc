@@ -39,13 +39,14 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
 #ifdef HAVE_BOOST_ASIO
              boost::asio::io_service *io_service_ptr, boost::asio::ip::tcp::acceptor *acceptor_ptr, // option -s
 #endif
-             FILE *cmd_file) // needed for command line option --cmd
+             FILE *cmd_file,
+             size_t interleave, size_t insns_per_rtc_tick, size_t cpu_hz)
   : htif_t(args),
     cfg(cfg),
     mems(mems),
     plugin_devices(plugin_devices),
     start_pc(start_pc),
-    devicetree(devicetree_t::make(dtb_file, INSNS_PER_RTC_TICK, CPU_HZ, *cfg)),
+    devicetree(devicetree_t::make(dtb_file, insns_per_rtc_tick, cpu_hz, *cfg)),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
     cmd_file(cmd_file),
@@ -54,6 +55,9 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
     acceptor_ptr(acceptor_ptr),
 #endif
     sout_(nullptr),
+    interleave(interleave),
+    insns_per_rtc_tick(insns_per_rtc_tick),
+    cpu_hz(cpu_hz),
     current_step(0),
     current_proc(0),
     debug(false),
@@ -85,7 +89,7 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
   // setting the dtb_file argument has one.
   reg_t clint_base;
   if (devicetree.find_clint(&clint_base, "riscv,clint0") == 0) {
-    clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, real_time_clint));
+    clint.reset(new clint_t(procs, cpu_hz / insns_per_rtc_tick, real_time_clint));
     bus.add_device(clint_base, clint.get());
   }
 
@@ -137,7 +141,7 @@ void sim_t::main()
     if (debug || ctrlc_pressed)
       interactive();
     else
-      step(INTERLEAVE);
+      step(interleave);
     if (remote_bitbang) {
       remote_bitbang->tick();
     }
@@ -155,17 +159,17 @@ void sim_t::step(size_t n)
 {
   for (size_t i = 0, steps = 0; i < n; i += steps)
   {
-    steps = std::min(n - i, INTERLEAVE - current_step);
+    steps = std::min(n - i, interleave - current_step);
     procs[current_proc]->step(steps);
 
     current_step += steps;
-    if (current_step == INTERLEAVE)
+    if (current_step == interleave)
     {
       current_step = 0;
       procs[current_proc]->get_mmu()->yield_load_reservation();
       if (++current_proc == procs.size()) {
         current_proc = 0;
-        if (clint) clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
+        if (clint) clint->increment(interleave / insns_per_rtc_tick);
       }
 
       host->switch_to();
