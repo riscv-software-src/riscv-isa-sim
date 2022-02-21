@@ -418,8 +418,9 @@ bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
 mstatus_csr_t::mstatus_csr_t(processor_t* const proc, const reg_t addr):
   base_status_csr_t(proc, addr),
   val(0
-      | (proc->extension_enabled_const('U') ? set_field((reg_t)0, MSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
-      | (proc->extension_enabled_const('S') ? set_field((reg_t)0, MSTATUS_SXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
+      | (proc->extension_enabled_const('U') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
+      | (proc->extension_enabled_const('S') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_SXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
+
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
       | (proc->get_mmu()->is_target_big_endian() ? MSTATUS_UBE | MSTATUS_SBE | MSTATUS_MBE : 0)
 #endif
