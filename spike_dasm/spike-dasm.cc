@@ -27,7 +27,7 @@ int main(int argc, char** argv)
   parser.option(0, "isa", 1, [&](const char* s){isa = s;});
   parser.parse(argv);
 
-  isa_parser_t isa_parser(isa);
+  isa_parser_t isa_parser(isa, DEFAULT_PRIV);
   disassembler_t* disassembler = new disassembler_t(&isa_parser);
   if (extension) {
     for (auto disasm_insn : extension()->get_disasms()) {
