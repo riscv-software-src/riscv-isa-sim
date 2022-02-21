@@ -17,6 +17,7 @@
 #include "log_file.h"
 #include "processor.h"
 #include "simif.h"
+#include "dts.h"
 
 #include <fesvr/htif.h>
 #include <fesvr/context.h>
@@ -61,7 +62,7 @@ public:
   void set_remote_bitbang(remote_bitbang_t* remote_bitbang) {
     this->remote_bitbang = remote_bitbang;
   }
-  const char* get_dts() { if (dts.empty()) reset(); return dts.c_str(); }
+  const char* get_dts() { return devicetree.get_dts(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
   unsigned nprocs() const { return procs.size(); }
 
@@ -76,9 +77,7 @@ private:
   std::vector<processor_t*> procs;
   std::pair<reg_t, reg_t> initrd_range;
   reg_t start_pc;
-  std::string dts;
-  std::string dtb;
-  std::string dtb_file;
+  devicetree_t devicetree;
   bool dtb_enabled;
   std::unique_ptr<rom_device_t> boot_rom;
   std::unique_ptr<clint_t> clint;
@@ -113,7 +112,6 @@ private:
   char* addr_to_mem(reg_t addr);
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
-  void make_dtb();
   void set_rom();
 
   const char* get_symbol(uint64_t addr);

@@ -5,13 +5,15 @@
 #include "platform.h"
 #include <cassert>
 #include <iostream>
+#include <fstream>
 #include <sstream>
 #include <signal.h>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/types.h>
 
-std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz, const cfg_t &cfg)
+static std::string make_dts(size_t insns_per_rtc_tick,
+                            size_t cpu_hz, const cfg_t &cfg)
 {
   std::pair<reg_t, reg_t> initrd_bounds = cfg.initrd_bounds();
   reg_t initrd_start = initrd_bounds.first;
@@ -103,7 +105,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz, const cfg_t &cfg)
   return s.str();
 }
 
-std::string dts_compile(const std::string& dts)
+static std::string dts_compile(const std::string& dts)
 {
   // Convert the DTS to DTB
   int dts_pipe[2];
@@ -185,8 +187,7 @@ std::string dts_compile(const std::string& dts)
   return dtb.str();
 }
 
-
-static int fdt_get_node_addr_size(void *fdt, int node, reg_t *addr,
+static int fdt_get_node_addr_size(const void *fdt, int node, reg_t *addr,
                                   unsigned long *size, const char *field)
 {
   int parent, len, i;
@@ -230,7 +231,7 @@ static int fdt_get_node_addr_size(void *fdt, int node, reg_t *addr,
   return 0;
 }
 
-static int check_cpu_node(void *fdt, int cpu_offset)
+static int check_cpu_node(const void *fdt, int cpu_offset)
 {
   int len;
   const void *prop;
@@ -247,83 +248,126 @@ static int check_cpu_node(void *fdt, int cpu_offset)
   return 0;
 }
 
-
-int fdt_get_offset(void *fdt, const char *field)
+devicetree_t::devicetree_t(std::string dtb, std::string dts, const char *src_path)
+  : dtb(dtb), dts(dts)
 {
-  return fdt_path_offset(fdt, field);
+  int fdt_code = fdt_check_header(dtb.c_str());
+  if (fdt_code) {
+    std::cerr << "Failed to read DTB from ";
+    if (!src_path) {
+      std::cerr << "auto-generated DTS string";
+    } else {
+      std::cerr << "`" << src_path << "'";
+    }
+    std::cerr << ": " << fdt_strerror(fdt_code) << ".\n";
+    exit(-1);
+  }
 }
 
-int fdt_get_first_subnode(void *fdt, int node)
+devicetree_t devicetree_t::make(const char *dtb_path,
+                                size_t insns_per_rtc_tick, size_t cpu_hz,
+                                const cfg_t &cfg)
 {
-  return fdt_first_subnode(fdt, node);
+  if (dtb_path) {
+    std::ifstream fin(dtb_path, std::ios::binary);
+    if (!fin.good()) {
+      std::cerr << "can't find dtb file: " << dtb_path << std::endl;
+      exit(-1);
+    }
+
+    std::stringstream strstream;
+    strstream << fin.rdbuf();
+
+    return devicetree_t(strstream.str(), "", dtb_path);
+  }
+
+  std::string dts = make_dts(insns_per_rtc_tick, cpu_hz, cfg);
+  std::string dtb = dts_compile(dts);
+
+  return devicetree_t(dtb, dts, dtb_path);
 }
 
-int fdt_get_next_subnode(void *fdt, int node)
+int devicetree_t::get_offset(const char *path) const
 {
-  return fdt_next_subnode(fdt, node);
+  return fdt_path_offset(dtb.c_str(), path);
 }
 
-int fdt_parse_clint(void *fdt, reg_t *clint_addr,
-                    const char *compatible)
+int devicetree_t::find_clint(reg_t *clint_addr, const char *compatible) const
 {
+  assert(clint_addr);
+
   int nodeoffset, rc;
 
-  nodeoffset = fdt_node_offset_by_compatible(fdt, -1, compatible);
+  nodeoffset = fdt_node_offset_by_compatible(dtb.c_str(), -1, compatible);
   if (nodeoffset < 0)
     return nodeoffset;
 
-  rc = fdt_get_node_addr_size(fdt, nodeoffset, clint_addr, NULL, "reg");
-  if (rc < 0 || !clint_addr)
+  rc = fdt_get_node_addr_size(dtb.c_str(), nodeoffset, clint_addr, NULL, "reg");
+  if (rc < 0)
     return -ENODEV;
 
   return 0;
 }
 
-int fdt_parse_pmp_num(void *fdt, int cpu_offset, reg_t *pmp_num)
+int devicetree_t::get_pmp_num(int cpu_offset, reg_t *pmp_num) const
 {
+  assert(pmp_num);
+
   int rc;
 
-  if ((rc = check_cpu_node(fdt, cpu_offset)) < 0)
+  if ((rc = check_cpu_node(dtb.c_str(), cpu_offset)) < 0)
     return rc;
 
-  rc = fdt_get_node_addr_size(fdt, cpu_offset, pmp_num, NULL,
+  rc = fdt_get_node_addr_size(dtb.c_str(), cpu_offset, pmp_num, NULL,
                               "riscv,pmpregions");
-  if (rc < 0 || !pmp_num)
+  if (rc < 0)
     return -ENODEV;
 
   return 0;
 }
 
-int fdt_parse_pmp_alignment(void *fdt, int cpu_offset, reg_t *pmp_align)
+int devicetree_t::get_pmp_alignment(int cpu_offset, reg_t *pmp_align) const
 {
+  assert(pmp_align);
+
   int rc;
 
-  if ((rc = check_cpu_node(fdt, cpu_offset)) < 0)
+  if ((rc = check_cpu_node(dtb.c_str(), cpu_offset)) < 0)
     return rc;
 
-  rc = fdt_get_node_addr_size(fdt, cpu_offset, pmp_align, NULL,
+  rc = fdt_get_node_addr_size(dtb.c_str(), cpu_offset, pmp_align, NULL,
                               "riscv,pmpgranularity");
-  if (rc < 0 || !pmp_align)
+  if (rc < 0)
     return -ENODEV;
 
   return 0;
 }
 
-int fdt_parse_mmu_type(void *fdt, int cpu_offset, const char **mmu_type)
+int devicetree_t::get_mmu_type(int cpu_offset, const char **mmu_type) const
 {
   assert(mmu_type);
 
   int len, rc;
   const void *prop;
 
-  if ((rc = check_cpu_node(fdt, cpu_offset)) < 0)
+  if ((rc = check_cpu_node(dtb.c_str(), cpu_offset)) < 0)
     return rc;
 
-  prop = fdt_getprop(fdt, cpu_offset, "mmu-type", &len);
+  prop = fdt_getprop(dtb.c_str(), cpu_offset, "mmu-type", &len);
   if (!prop || !len)
     return -EINVAL;
 
   *mmu_type = (const char *)prop;
 
   return 0;
+}
+
+int fdt_get_first_subnode(const void *fdt, int node)
+{
+  return fdt_first_subnode(fdt, node);
+}
+
+int fdt_get_next_subnode(const void *fdt, int node)
+{
+  return fdt_next_subnode(fdt, node);
 }

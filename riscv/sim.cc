@@ -46,7 +46,7 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
     plugin_devices(plugin_devices),
     procs(std::max(cfg->nprocs(), size_t(1))),
     start_pc(start_pc),
-    dtb_file(dtb_file ? dtb_file : ""),
+    devicetree(devicetree_t::make(dtb_file, INSNS_PER_RTC_TICK, CPU_HZ, *cfg)),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
     cmd_file(cmd_file),
@@ -91,10 +91,6 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
                                log_file.get(), sout_);
   }
 
-  make_dtb();
-
-  void *fdt = (void *)dtb.c_str();
-
   // Only make a CLINT (Core-Local INTerrupt controller) if one is specified in
   // the device tree configuration.
   //
@@ -103,15 +99,17 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
   // particular, the default device tree configuration that you get without
   // setting the dtb_file argument has one.
   reg_t clint_base;
-  if (fdt_parse_clint(fdt, &clint_base, "riscv,clint0") == 0) {
+  if (devicetree.find_clint(&clint_base, "riscv,clint0") == 0) {
     clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, real_time_clint));
     bus.add_device(clint_base, clint.get());
   }
 
+  const void *fdt = devicetree.get_dtb();
+
   //per core attribute
   int cpu_offset = 0, rc;
   size_t cpu_idx = 0;
-  cpu_offset = fdt_get_offset(fdt, "/cpus");
+  cpu_offset = devicetree.get_offset("/cpus");
   if (cpu_offset < 0)
     return;
 
@@ -123,7 +121,7 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
 
     //handle pmp
     reg_t pmp_num = 0, pmp_granularity = 0;
-    if (fdt_parse_pmp_num(fdt, cpu_offset, &pmp_num) == 0) {
+    if (devicetree.get_pmp_num(cpu_offset, &pmp_num) == 0) {
       if (pmp_num <= 64) {
         procs[cpu_idx]->set_pmp_num(pmp_num);
       } else {
@@ -137,13 +135,13 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
       procs[cpu_idx]->set_pmp_num(0);
     }
 
-    if (fdt_parse_pmp_alignment(fdt, cpu_offset, &pmp_granularity) == 0) {
+    if (devicetree.get_pmp_alignment(cpu_offset, &pmp_granularity) == 0) {
       procs[cpu_idx]->set_pmp_granularity(pmp_granularity);
     }
 
     //handle mmu-type
     const char *mmu_type;
-    rc = fdt_parse_mmu_type(fdt, cpu_offset, &mmu_type);
+    rc = devicetree.get_mmu_type(cpu_offset, &mmu_type);
     if (rc == 0) {
       procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
       if (strncmp(mmu_type, "riscv,sv32", strlen("riscv,sv32")) == 0) {
@@ -295,37 +293,6 @@ bool sim_t::mmio_store(reg_t addr, size_t len, const uint8_t* bytes)
   return bus.store(addr, len, bytes);
 }
 
-void sim_t::make_dtb()
-{
-  if (!dtb_file.empty()) {
-    std::ifstream fin(dtb_file.c_str(), std::ios::binary);
-    if (!fin.good()) {
-      std::cerr << "can't find dtb file: " << dtb_file << std::endl;
-      exit(-1);
-    }
-
-    std::stringstream strstream;
-    strstream << fin.rdbuf();
-
-    dtb = strstream.str();
-  } else {
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, *cfg);
-    dtb = dts_compile(dts);
-  }
-
-  int fdt_code = fdt_check_header(dtb.c_str());
-  if (fdt_code) {
-    std::cerr << "Failed to read DTB from ";
-    if (dtb_file.empty()) {
-      std::cerr << "auto-generated DTS string";
-    } else {
-      std::cerr << "`" << dtb_file << "'";
-    }
-    std::cerr << ": " << fdt_strerror(fdt_code) << ".\n";
-    exit(-1);
-  }
-}
-
 void sim_t::set_rom()
 {
   const int reset_vec_size = 8;
@@ -363,6 +330,7 @@ void sim_t::set_rom()
 
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
 
+  const std::string &dtb = devicetree.get_dtb_str();
   rom.insert(rom.end(), dtb.begin(), dtb.end());
   const int align = 0x1000;
   rom.resize((rom.size() + align - 1) / align * align);
