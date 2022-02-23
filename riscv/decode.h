@@ -556,6 +556,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require_align(insn.rd(), vemul); \
   require((nf * emul) <= (NVPR / 4) && \
           (insn.rd() + nf * emul) <= NVPR); \
+  require(veew <= P.VU.ELEN); \
 
 #define VI_CHECK_LOAD(elt_width, is_mask_ldst) \
   VI_CHECK_STORE(elt_width, is_mask_ldst); \
@@ -1797,6 +1798,7 @@ reg_t index[P.VU.vlmax]; \
 
 #define VI_LD_WHOLE(elt_width) \
   require_vector_novtype(true, false); \
+  require(sizeof(elt_width ## _t) * 8 <= P.VU.ELEN); \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
   const reg_t len = insn.v_nf() + 1; \
