@@ -866,12 +866,7 @@ void processor_t::disasm(insn_t insn)
 
     if (i_trace || d_trace) {
       proc_trace->step();
-      // Need to translate addresses in a trap so do an mmu translate in that case.
-      // However, in general we want virtual addresses for the instruction trace.
-      if (state.pc & 0x7000000000000000ULL)
-          proc_trace->set_addr(mmu->translate(state.pc, 2, FETCH, 0));
-      else
-          proc_trace->set_addr(state.pc);
+      proc_trace->set_addr(state.pc);
       proc_trace->set_insn(insn, bits);
       proc_trace->set_priv(state.prv);
     }
