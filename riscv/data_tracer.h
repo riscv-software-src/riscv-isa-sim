@@ -10,16 +10,12 @@ class datatracer_t : public memtracer_t
 {
  public:
     datatracer_t() {}
-    bool interested_in_range(uint64_t begin, uint64_t end, access_type type) {
+    virtual bool interested_in_range(uint64_t begin, uint64_t end, access_type type) override {
         return type == LOAD || type == STORE;
     }
-    void trace(uint64_t addr, size_t bytes, access_type type) {
-        (void)addr;
-        (void)type;
+    virtual void trace(uint64_t /*addr*/, size_t bytes, access_type /*type*/) override {
         assert(bytes <= 8);
     }
 };
-
-//extern std::vector<datatracer_t*> d_tracers;
 
 #endif
