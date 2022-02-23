@@ -198,7 +198,7 @@ void proc_trace_t::record_amo(reg_t addr, uint64_t load_data, uint64_t store_dat
     }
 }
 
-void proc_trace_t::record_csr_get_trace(int which, insn_t insn, bool write, reg_t load_data, size_t size) {
+void proc_trace_t::record_csr_get(int which, insn_t insn, bool write, reg_t load_data, size_t size) {
     // Record the current csr being processed as there may be a set to go with this
     m_csr_which = which;
     m_csr_write = write;
@@ -231,7 +231,7 @@ void proc_trace_t::record_csr_get_trace(int which, insn_t insn, bool write, reg_
     }
 }
 
-void proc_trace_t::record_csr_set_trace(int which, reg_t store_data) {
+void proc_trace_t::record_csr_set(int which, reg_t store_data) {
     // mret is a special case where there is no call to csr_get to go with this.
     // In this case the csr must be MSTATUS and it does not get recorded.
     if (m_insn_binary == 0x30200073) {

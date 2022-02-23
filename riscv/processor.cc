@@ -899,7 +899,7 @@ void processor_t::put_csr(int which, reg_t val)
   if (search != state.csrmap.end()) {
     search->second->write(val);
     if (d_trace)
-        proc_trace->record_csr_set_trace(which, val);
+        proc_trace->record_csr_set(which, val);
     return;
   }
 }
@@ -913,10 +913,10 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
   if (search != state.csrmap.end()) {
     if (!peek)
       search->second->verify_permissions(insn, write);
-    reg_t old = search->second->read();
+    reg_t csr_value = search->second->read();
     if (d_trace)
-        proc_trace->record_csr_get_trace(which, insn, write, old, xlen >> 3);
-    return old;
+        proc_trace->record_csr_get(which, insn, write, csr_value, xlen >> 3);
+    return csr_value;
   }
   // If we get here, the CSR doesn't exist.  Unimplemented CSRs always throw
   // illegal-instruction exceptions, not virtual-instruction exceptions.
