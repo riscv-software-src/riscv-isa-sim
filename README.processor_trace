@@ -12,6 +12,9 @@ decoder can be found here:
 
 https://github.com/riscv-non-isa/riscv-trace-spec/tree/main/referenceFlow
 
+IMPORTANT: In order to use data trace, spike must be built with the --enable-commitlog
+configuration option.
+
 Processor trace CSV formats
 ---------------------------
 
