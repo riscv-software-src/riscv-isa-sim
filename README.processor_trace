@@ -7,7 +7,7 @@ traced. Further details of how this is achieved can be found in the
 
 https://github.com/riscv-non-isa/riscv-trace-spec/blob/main/riscv-trace-spec.pdf
 
-In addition python refence models of the trace encoder and trace
+In addition python reference models of the trace encoder and trace
 decoder can be found here:
 
 https://github.com/riscv-non-isa/riscv-trace-spec/tree/main/referenceFlow
@@ -41,7 +41,7 @@ PRIVILEGE: Privilege level (%x format, uint8_t)
 
 EXCEPTION: Whether an exception occurred (%x format, uint8_t)
 
-ECAUSE: The exception value when an exception occurred (%lx format, reg_t)
+ECAUSE: The exception cause value when an exception occurred (%lx format, reg_t)
 
 TVAL: The trap value (%lx format, reg_t)
 
@@ -98,3 +98,15 @@ automatically uncompresses these before comparing with the generated traces.
 
 The output is placed in a sub-directory of the current working directory, called trace_regression.
 Each run of the script will remove any previously run tests.
+
+Note that the test binaries were built from the following sources:
+
+vvadd/pmp source is from https://github.com/riscv-software-src/riscv-tests/tree/master/benchmarks
+
+embench-statemate source is from https://github.com/embench/embench-iot/tree/master/src
+
+br_j_asm is from https://github.com/riscv-non-isa/riscv-trace-spec/tree/main/referenceFlow/tests/examples/br_j_asm (written by Bill McSpadden, Seagate Technology)
+
+Although these tests could be recompiled using the latest RISCV toolchain, this may well break these
+tests as they are against expected output files. If the tests were recompiled then the expected
+output may well need to be updated as well.
