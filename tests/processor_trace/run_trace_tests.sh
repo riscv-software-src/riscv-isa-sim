@@ -59,13 +59,13 @@ function run_test() {
         exit 1
     fi
 
-    d_expected=$(get_expected $name data)
-    i_expected=$(get_expected $name pc)
+    d_expected=`realpath $(get_expected $name data)`
+    i_expected=`realpath $(get_expected $name pc)`
     d_output=`realpath $name.d_trace`
     i_output=`realpath $name.i_trace`
 
     # Run with both instruction and data trace enabled
-    $spike_path $memory --ust-trace=$i_output --data-trace=$d_output $args $input > $name.log 2>&1
+    $spike_path $memory --inst-trace=$i_output --data-trace=$d_output $args $input > $name.log 2>&1
 
     # Check the output is as expected
     if diff $i_output $i_expected > /dev/null 2>&1; then
@@ -86,7 +86,7 @@ function run_test() {
     rm $d_output
 
     # Run with just instruction trace enabled
-    $spike_path $memory --ust-trace=$i_output $args $input > $name.log 2>&1
+    $spike_path $memory --inst-trace=$i_output $args $input > $name.log 2>&1
 
     # Check the output is as expected
     if diff $i_output $i_expected > /dev/null 2>&1; then
