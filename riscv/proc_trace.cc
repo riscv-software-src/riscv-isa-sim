@@ -3,13 +3,14 @@
 #include "proc_trace.h"
 #include "trap.h"
 
-#include <cstdio>
+#include <fstream>
+#include <iomanip>
 #include <cassert>
 
 proc_trace_t::proc_trace_t(void)
-    : m_itrace_fd(NULL), m_addr(0), m_insn_binary(0), m_prv(0), m_ex(0), m_ex_cause(0),
+    : m_addr(0), m_insn_binary(0), m_prv(0), m_ex(0), m_ex_cause(0),
       m_tval(0), m_interrupt(0), m_is_32bit_isa(false), m_is_first_step(true),
-      m_dtrace_fd(NULL), m_data_trace_debug(false), m_has_insn(false), m_insn(insn_t()),
+      m_data_trace_debug(false), m_has_insn(false), m_insn(insn_t()),
       m_is_load(false), m_is_store(false), m_is_amo(false), m_dtype(DTYPE_INVALID),
       m_recorded_dtype(DTYPE_INVALID), m_csr_which(CSR_INVALID), m_csr_write(false),
       m_csr_load_data(0), m_csr_size(0)
@@ -17,12 +18,12 @@ proc_trace_t::proc_trace_t(void)
 }
 
 void proc_trace_t::open_i_trace(const char *instruction_trace_file_name) {
-    m_itrace_fd = fopen(instruction_trace_file_name, "w");
-    if (!m_itrace_fd)
-        fprintf(stderr, "Failed to open instruction trace file %s: %s",
-                instruction_trace_file_name, strerror(errno));
+    m_itrace_ofs.open(instruction_trace_file_name);
+    if (!m_itrace_ofs)
+        throw std::runtime_error("Failed to open instruction trace file "
+                                 + std::string(instruction_trace_file_name));
     else
-        fprintf(m_itrace_fd, "VALID,ADDRESS,INSN,PRIVILEGE,EXCEPTION,ECAUSE,TVAL,INTERRUPT\n");
+        m_itrace_ofs << "VALID,ADDRESS,INSN,PRIVILEGE,EXCEPTION,ECAUSE,TVAL,INTERRUPT\n";
 }
 
 /*
@@ -37,17 +38,17 @@ void proc_trace_t::open_i_trace(const char *instruction_trace_file_name) {
 void proc_trace_t::open_d_trace(const char *data_trace_file_name, bool debug) {
     m_data_trace_debug = debug;
     if (m_data_trace_debug)
-        fprintf(stderr, "Warning: data trace debug switched on - data trace files will not be usable\n");
-    m_dtrace_fd = fopen(data_trace_file_name, "w");
-    if (!m_dtrace_fd)
-        fprintf(stderr, "Failed to open data trace file %s: %s",
-                data_trace_file_name, strerror(errno));
+        std::cerr << "Warning: data trace debug switched on - data trace files will not be usable\n";
+    m_dtrace_ofs.open(data_trace_file_name);
+    if (!m_dtrace_ofs)
+        throw std::runtime_error("Failed to open data trace file "
+                                 + std::string(data_trace_file_name));
     else
-        fprintf(m_dtrace_fd, "DRETIRE,DTYPE,DADDR,DSIZE,DATA\n");
+        m_dtrace_ofs << "DRETIRE,DTYPE,DADDR,DSIZE,DATA\n";
 }
 
 void proc_trace_t::step(void) {
-    if (!m_itrace_fd)
+    if (!m_itrace_ofs)
         return;
 
     if (m_is_first_step) {
@@ -61,9 +62,11 @@ void proc_trace_t::step(void) {
         addr &= 0xffffffff;
         tval &= 0xffffffff;
     }
-    fprintf(m_itrace_fd, "1,%lx,%lx,%x,%x,%lx,%lx,%x\n",
-            addr, m_insn_binary, m_prv, m_ex, m_ex_cause, tval, m_interrupt);
-    fflush(m_itrace_fd);
+    m_itrace_ofs << "1," << std::hex << addr << "," << m_insn_binary << ","
+                 << static_cast<unsigned>(m_prv) << "," << static_cast<unsigned>(m_ex) << ","
+                 << m_ex_cause << "," << tval << ","
+                 << static_cast<unsigned>(m_interrupt) << "\n";
+    m_itrace_ofs.flush();
 
     m_ex = 0;
     m_ex_cause = 0;
@@ -79,7 +82,7 @@ void proc_trace_t::set_insn(insn_t insn, uint64_t binary) {
     m_has_insn = true;
     m_insn = insn;
     m_insn_binary = binary;
-    if (m_dtrace_fd) {
+    if (m_dtrace_ofs) {
         m_dtype = DTYPE_INVALID;
         m_recorded_dtype = DTYPE_INVALID;
         m_csr_which = CSR_INVALID;
@@ -109,7 +112,7 @@ void proc_trace_t::set_insn(insn_t insn, uint64_t binary) {
         if (m_is_store)
             set_dtype(DTYPE_STORE);
         if (m_data_trace_debug)
-            fprintf(m_dtrace_fd, "DEBUG: INSN@%lx: %lx\n", m_addr, m_insn_binary);
+            m_dtrace_ofs << "DEBUG: INSN@" << std::hex << m_addr << ":" << m_insn_binary << "\n";
     }
 }
 
@@ -135,7 +138,7 @@ void proc_trace_t::set_is_32bit_isa(bool is_32bit_isa) {
 }
 
 void proc_trace_t::record_load(reg_t addr, uint64_t res, size_t size, data_src_t src) {
-    if (m_dtrace_fd) {
+    if (m_dtrace_ofs) {
         if (!m_has_insn || m_is_amo)
             return;
 
@@ -143,11 +146,13 @@ void proc_trace_t::record_load(reg_t addr, uint64_t res, size_t size, data_src_t
             // It's not clear why these are being triggered.
             // They seem to come from DATA_SRC_LOAD_TLB_1
             if (m_data_trace_debug)
-                fprintf(m_dtrace_fd, "NOT LOAD SRC %d %lx ld %d st %d amo %d %lx\n",
-                        src, addr, m_is_load, m_is_store, m_is_amo, m_insn_binary);
+                m_dtrace_ofs << "NOT LOAD SRC " << std::dec << src << " " << std::hex << addr <<
+                    std::dec << " ld " << m_is_load << " st " << m_is_store << " amo " << m_is_amo <<
+                    std::hex << m_insn_binary << "\n";
             else
-                fprintf(stderr, "NOT LOAD SRC %d %lx ld %d st %d amo %d %lx\n",
-                        src, addr, m_is_load, m_is_store, m_is_amo, m_insn_binary);
+                std::cerr << "NOT LOAD SRC " << std::dec << src << " " << std::hex << addr <<
+                    std::dec << " ld " << m_is_load << " st " << m_is_store << " amo " << m_is_amo <<
+                    std::hex << m_insn_binary << "\n";
             return;
         }
 
@@ -162,7 +167,7 @@ void proc_trace_t::record_load(reg_t addr, uint64_t res, size_t size, data_src_t
 }
 
 void proc_trace_t::record_store(reg_t addr, uint64_t val, size_t size, data_src_t src) {
-    if (m_dtrace_fd) {
+    if (m_dtrace_ofs) {
         if (!m_has_insn || m_is_amo)
             return;
 
@@ -180,7 +185,7 @@ void proc_trace_t::record_store(reg_t addr, uint64_t val, size_t size, data_src_
    CSRs and unified atomics, both values are reported via data, with the store data in the LSBs and
    the load data or operand in the MSBs. */
 void proc_trace_t::record_amo(reg_t addr, uint64_t load_data, uint64_t store_data, size_t size) {
-    if (m_dtrace_fd) {
+    if (m_dtrace_ofs) {
         reg_t insn_31_27 = (m_insn_binary >> 27) & ((insn_bits_t(1) << 5) - 1);
         switch (insn_31_27) {
         case 0: set_dtype(DTYPE_ATOMIC_ADD); break;
@@ -249,7 +254,7 @@ void proc_trace_t::record_csr_set(int which, reg_t store_data) {
 
 void proc_trace_t::check_data_trace(void) {
     m_has_insn = false;
-    if (m_dtrace_fd) {
+    if (m_dtrace_ofs) {
         if (!m_is_amo) {
             bool check_passed = true;
             if (m_is_load && m_recorded_dtype != DTYPE_LOAD) {
@@ -277,12 +282,10 @@ void proc_trace_t::check_data_trace(void) {
 }
 
 void proc_trace_t::close(void) {
-    if (m_itrace_fd)
-        fclose(m_itrace_fd);
-    m_itrace_fd = NULL;
-    if (m_dtrace_fd)
-        fclose(m_dtrace_fd);
-    m_dtrace_fd = NULL;
+    if (m_itrace_ofs)
+        m_itrace_ofs.close();
+    if (m_dtrace_ofs)
+        m_dtrace_ofs.close();
 }
 
 void proc_trace_t::set_dtype(dtype_t dtype) {
@@ -311,15 +314,15 @@ void proc_trace_t::record_data(reg_t addr, uint8_t* data, size_t size) {
     size_t _size = size;
     while (_size >>= 1)
         ++dsize;
-    fprintf(m_dtrace_fd, "1,%d,%lx,%ld,", m_dtype, addr, dsize);
+    m_dtrace_ofs << "1," << m_dtype << "," << std::hex << addr << "," << std::dec << dsize << ",";
     size_t i = size - 1;
     while ((i > 0) && (data[i] == 0))
         --i;
-    fprintf(m_dtrace_fd, "%hx", data[i]);
+    m_dtrace_ofs << std::hex << static_cast<unsigned>(data[i]);
     while (i > 0) {
         --i;
-        fprintf(m_dtrace_fd, "%02hx", data[i]);
+        m_dtrace_ofs << std::hex << std::setfill('0') << std::setw(2) << static_cast<unsigned>(data[i]);
     }
-    fprintf(m_dtrace_fd, "\n");
-    fflush(m_dtrace_fd);
+    m_dtrace_ofs << "\n";
+    m_dtrace_ofs.flush();
 }

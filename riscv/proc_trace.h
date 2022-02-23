@@ -3,6 +3,8 @@
 #ifndef _RISCV_PROC_TRACE_H
 #define _RISCV_PROC_TRACE_H
 
+#include <fstream>
+
 #include "disasm.h"
 #include "processor.h"
 #include "data_tracer.h"
@@ -62,7 +64,7 @@ public:
 
 private:
     // Instruction trace information
-    FILE* m_itrace_fd = NULL;
+    std::ofstream m_itrace_ofs;
     reg_t m_addr = 0;
     uint64_t m_insn_binary = 0;
     uint8_t m_prv = 0;
@@ -74,7 +76,7 @@ private:
     bool m_is_first_step = true;
 
     // Data trace information
-    FILE* m_dtrace_fd = NULL;
+    std::ofstream m_dtrace_ofs;
     std::vector<datatracer_t*> m_d_tracers;
     bool m_data_trace_debug = false;
 
