@@ -128,7 +128,17 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     //handle pmp
     reg_t pmp_num = 0, pmp_granularity = 0;
     if (fdt_parse_pmp_num(fdt, cpu_offset, &pmp_num) == 0) {
-      procs[cpu_idx]->set_pmp_num(pmp_num);
+      if (pmp_num <= 64) {
+        procs[cpu_idx]->set_pmp_num(pmp_num);
+      } else {
+        std::cerr << "core ("
+                  << hartids.size()
+                  << ") doesn't have valid 'riscv,pmpregions'"
+                  << pmp_num << ").\n";
+        exit(1);
+      }
+    } else {
+      procs[cpu_idx]->set_pmp_num(0);
     }
 
     if (fdt_parse_pmp_alignment(fdt, cpu_offset, &pmp_granularity) == 0) {
@@ -155,6 +165,8 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
                   << mmu_type << ").\n";
         exit(1);
       }
+    } else {
+      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
     }
 
     cpu_idx++;
