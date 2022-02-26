@@ -47,7 +47,7 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
   mmu = new mmu_t(sim, this);
 
   disassembler = new disassembler_t(this);
-  for (auto e : custom_extensions)
+  for (auto e : isa_extensions)
     register_extension(e.second);
 
   set_pmp_granularity(1 << PMP_SHIFT);
@@ -380,12 +380,11 @@ isa_parser_t::isa_parser_t(const char* str)
       } else if (ext_str.size() == 1) {
         bad_isa_string(str, "single 'X' is not a proper name");
       } else if (ext_str != "xdummy") {
-         extension_t* x = find_extension(ext_str.substr(1).c_str())();
-         if (!custom_extensions.insert(std::make_pair(x->name(), x)).second) {
-           fprintf(stderr, "extensions must have unique names (got two named \"%s\"!)\n", x->name());
-           abort();
-         }
-
+        extension_t* x = find_extension(ext_str.substr(1).c_str())();
+        if (!isa_extensions.insert(std::make_pair(x->name(), x)).second) {
+          fprintf(stderr, "extensions must have unique names (got two named \"%s\"!)\n", x->name());
+          abort();
+        }
       }
     } else {
       bad_isa_string(str, ("unsupported extension: " + ext_str).c_str());
@@ -1157,6 +1156,10 @@ void processor_t::register_extension(extension_t* x)
   for (auto disasm_insn : x->get_disasms())
     disassembler->add_insn(disasm_insn);
 
+  if (!custom_extensions.insert(std::make_pair(x->name(), x)).second) {
+    fprintf(stderr, "extensions must have unique names (got two named \"%s\"!)\n", x->name());
+    abort();
+  }
   x->set_processor(this);
 }
 
