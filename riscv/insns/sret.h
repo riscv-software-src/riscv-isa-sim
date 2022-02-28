@@ -16,7 +16,7 @@ s = set_field(s, MSTATUS_SPP, PRV_U);
 STATE.sstatus->write(s);
 p->set_privilege(prev_prv);
 if (!STATE.v) {
-  if p->extension_enabled('H') {
+  if (p->extension_enabled('H')) {
     reg_t prev_virt = get_field(prev_hstatus, HSTATUS_SPV);
     p->set_virt(prev_virt);
     reg_t new_hstatus = set_field(prev_hstatus, HSTATUS_SPV, 0);
