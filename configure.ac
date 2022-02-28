@@ -123,4 +123,8 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([riscv-fesvr.pc])
 AC_CONFIG_FILES([riscv-disasm.pc])
+VERSION=`git describe --tags $(git rev-list --tags --max-count=1)`
+AC_DEFINE_UNQUOTED([VERSION],
+                   ["$VERSION"],
+                   [Define git release version])
 AC_OUTPUT
