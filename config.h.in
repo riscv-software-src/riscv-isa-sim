@@ -123,14 +123,14 @@
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SPIKE_MAIN_ENABLED
 
+/* Define version of spike installed */
+#undef SPIKE_VERSION
+
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
 
 /* Default value for --with-target switch */
 #undef TARGET_ARCH
-
-/* Define git release version */
-#undef VERSION
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */

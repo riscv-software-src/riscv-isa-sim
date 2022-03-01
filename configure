@@ -6423,10 +6423,10 @@ ac_config_files="$ac_config_files riscv-fesvr.pc"
 
 ac_config_files="$ac_config_files riscv-disasm.pc"
 
-VERSION=`git describe --tags $(git rev-list --tags --max-count=1)`
+SPIKE_VERSION=`git describe --tags --dirty`
 
 cat >>confdefs.h <<_ACEOF
-#define VERSION "$VERSION"
+#define SPIKE_VERSION "$SPIKE_VERSION"
 _ACEOF
 
 cat >confcache <<\_ACEOF
