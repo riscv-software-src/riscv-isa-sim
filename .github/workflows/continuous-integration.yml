@@ -27,7 +27,7 @@ jobs:
 
       - run: ci-tests/test-spike
 
-      - name: Calver Release
+      - name: Calendar versioning Release
         uses: StephaneBour/actions-calver@master
         id: calver
         with:
