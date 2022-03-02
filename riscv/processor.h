@@ -326,7 +326,7 @@ protected:
   reg_t max_isa;
   std::vector<bool> extension_table;
   std::string isa_string;
-  std::unordered_map<std::string, extension_t*> custom_extensions;
+  std::unordered_map<std::string, extension_t*> isa_extensions;
 };
 
 // this class represents one processor in a RISC-V machine.
