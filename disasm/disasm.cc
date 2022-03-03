@@ -622,7 +622,7 @@ static void NOINLINE add_unknown_insns(disassembler_t* d)
   #undef DECLARE_INSN
 }
 
-void disassembler_t::add_instructions(isa_parser_t* isa)
+void disassembler_t::add_instructions(const isa_parser_t* isa)
 {
   const uint32_t mask_rd = 0x1fUL << 7;
   const uint32_t match_rd_ra = 1UL << 7;
@@ -2024,7 +2024,7 @@ void disassembler_t::add_instructions(isa_parser_t* isa)
   }
 }
 
-disassembler_t::disassembler_t(isa_parser_t* isa)
+disassembler_t::disassembler_t(const isa_parser_t *isa)
 {
   // highest priority: instructions explicitly enabled
   add_instructions(isa);

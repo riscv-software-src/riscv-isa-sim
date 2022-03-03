@@ -313,8 +313,8 @@ class isa_parser_t {
 public:
   isa_parser_t(const char* str);
   ~isa_parser_t(){};
-  unsigned get_max_xlen() { return max_xlen; }
-  std::string get_isa_string() { return isa_string; }
+  unsigned get_max_xlen() const { return max_xlen; }
+  std::string get_isa_string() const { return isa_string; }
   bool extension_enabled(unsigned char ext) const {
     if (ext >= 'A' && ext <= 'Z')
       return (max_isa >> (ext - 'A')) & 1;
