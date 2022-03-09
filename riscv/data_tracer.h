@@ -16,6 +16,8 @@ class datatracer_t : public memtracer_t
     virtual void trace(uint64_t /*addr*/, size_t bytes, access_type /*type*/) override {
         assert(bytes <= 8);
     }
+    virtual void clean_invalidate(uint64_t /*addr*/, size_t /*bytes*/, bool /*clean*/, bool /*inval*/) override {
+    }
 };
 
 #endif

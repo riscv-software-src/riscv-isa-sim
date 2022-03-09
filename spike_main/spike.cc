@@ -522,7 +522,7 @@ int main(int argc, char** argv)
 
     if (i_trace_file != NULL) {
         std::string i_trace_filename(i_trace_file);
-        if (nprocs != 1) {
+        if (cfg.nprocs() != 1) {
             std::stringstream ss;
             ss << "_" << i;
             i_trace_filename += ss.str();
@@ -531,7 +531,7 @@ int main(int argc, char** argv)
     }
     if (d_trace_file != NULL) {
         std::string d_trace_filename(d_trace_file);
-        if (nprocs != 1) {
+        if (cfg.nprocs() != 1) {
             std::stringstream ss;
             ss << "_" << i;
             d_trace_filename += ss.str();

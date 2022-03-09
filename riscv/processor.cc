@@ -482,7 +482,7 @@ void processor_t::set_debug(bool value)
 
 void processor_t::set_i_trace(const char * const i_trace_file)
 {
-  proc_trace->set_is_32bit_isa(get_max_xlen() == 32);
+  proc_trace->set_is_32bit_isa(isa.get_max_xlen() == 32);
 
   assert(i_trace_file != NULL);
 
@@ -492,7 +492,7 @@ void processor_t::set_i_trace(const char * const i_trace_file)
 
 void processor_t::set_d_trace(const char * const d_trace_file)
 {
-  proc_trace->set_is_32bit_isa(get_max_xlen() == 32);
+  proc_trace->set_is_32bit_isa(isa.get_max_xlen() == 32);
 
   assert(d_trace_file != NULL);
 
