@@ -36,6 +36,15 @@ void proc_trace_t::open_i_trace(const char *instruction_trace_file_name) {
   required.
 */
 void proc_trace_t::open_d_trace(const char *data_trace_file_name, bool debug) {
+#ifndef RISCV_ENABLE_COMMITLOG
+    fputs("Commit logging support has not been properly enabled; "
+          "this is required to allow processor data trace, "
+          "please re-build the riscv-isa-sim project using "
+          "\"configure --enable-commitlog\".\n",
+          stderr);
+    abort();
+#endif
+
     m_data_trace_debug = debug;
     if (m_data_trace_debug)
         std::cerr << "Warning: data trace debug switched on - data trace files will not be usable\n";
