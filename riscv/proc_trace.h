@@ -41,7 +41,7 @@ public:
     proc_trace_t(void);
 
     void open_i_trace(const char *instruction_trace_file_name);
-    void open_d_trace(const char *data_trace_file_name, bool debug);
+    void open_d_trace(const char *data_trace_file_name);
 
     void step(void);
     void set_addr(reg_t addr);
@@ -78,16 +78,11 @@ private:
     // Data trace information
     std::ofstream m_dtrace_ofs;
     std::vector<datatracer_t*> m_d_tracers;
-    bool m_data_trace_debug = false;
 
-    bool m_has_insn = false;
     insn_t m_insn = insn_t();
-    bool m_is_load = false;
-    bool m_is_store = false;
     bool m_is_amo = false;
 
     dtype_t m_dtype = DTYPE_INVALID;
-    dtype_t m_recorded_dtype = DTYPE_INVALID;
 
     int m_csr_which = CSR_INVALID;
     bool m_csr_write = false;

@@ -1,5 +1,6 @@
 // See LICENSE for license details.
 
+#include "encoding.h"
 #include "proc_trace.h"
 #include "trap.h"
 
@@ -10,10 +11,8 @@
 proc_trace_t::proc_trace_t(void)
     : m_addr(0), m_insn_binary(0), m_prv(0), m_ex(0), m_ex_cause(0),
       m_tval(0), m_interrupt(0), m_is_32bit_isa(false), m_is_first_step(true),
-      m_data_trace_debug(false), m_has_insn(false), m_insn(insn_t()),
-      m_is_load(false), m_is_store(false), m_is_amo(false), m_dtype(DTYPE_INVALID),
-      m_recorded_dtype(DTYPE_INVALID), m_csr_which(CSR_INVALID), m_csr_write(false),
-      m_csr_load_data(0), m_csr_size(0)
+      m_insn(insn_t()), m_is_amo(false), m_dtype(DTYPE_INVALID),
+      m_csr_which(CSR_INVALID), m_csr_write(false), m_csr_load_data(0), m_csr_size(0)
 {
 }
 
@@ -35,7 +34,7 @@ void proc_trace_t::open_i_trace(const char *instruction_trace_file_name) {
   the trace data. The MMU changes it's behaviour when a memtracer is registered and this is
   required.
 */
-void proc_trace_t::open_d_trace(const char *data_trace_file_name, bool debug) {
+void proc_trace_t::open_d_trace(const char *data_trace_file_name) {
 #ifndef RISCV_ENABLE_COMMITLOG
     fputs("Commit logging support has not been properly enabled; "
           "this is required to allow processor data trace, "
@@ -45,9 +44,6 @@ void proc_trace_t::open_d_trace(const char *data_trace_file_name, bool debug) {
     abort();
 #endif
 
-    m_data_trace_debug = debug;
-    if (m_data_trace_debug)
-        std::cerr << "Warning: data trace debug switched on - data trace files will not be usable\n";
     m_dtrace_ofs.open(data_trace_file_name);
     if (!m_dtrace_ofs)
         throw std::runtime_error("Failed to open data trace file "
@@ -88,40 +84,44 @@ void proc_trace_t::set_addr(reg_t addr) {
 }
 
 void proc_trace_t::set_insn(insn_t insn, uint64_t binary) {
-    m_has_insn = true;
     m_insn = insn;
     m_insn_binary = binary;
     if (m_dtrace_ofs) {
         m_dtype = DTYPE_INVALID;
-        m_recorded_dtype = DTYPE_INVALID;
         m_csr_which = CSR_INVALID;
         m_csr_write = false;
         m_csr_load_data = 0;
         m_csr_size = 0;
 
-        bool is_compact = (binary & 0x3) != 0x3;
-        m_is_amo = false;
-        if (is_compact) {
-            // Not interested in load immediate
-            uint64_t inst_15_13 = (binary >> 13) & ((insn_bits_t(1) << 3) - 1);
-            uint64_t inst_1_0 = binary & 0x3;
-            m_is_load = (((inst_1_0 == 0) || (inst_1_0 == 2)) && (inst_15_13 > 0) && (inst_15_13 < 4));
-            m_is_store = ((inst_1_0 == 0) || (inst_1_0 == 2)) & (inst_15_13 > 4);
-        } else {
-            uint64_t inst_6_0 = binary & ((insn_bits_t(1) << 7) - 1);
-            uint64_t inst_4_2 = binary >> 2 & ((insn_bits_t(1) << 3) - 1);
-            uint64_t inst_6_5 = binary >> 5 & ((insn_bits_t(1) << 2) - 1);
-            m_is_load = (inst_4_2 < 2) && (inst_6_5 == 0);
-            m_is_store = (inst_4_2 < 2) && (inst_6_5 == 1);
-            m_is_amo = (inst_6_0 == 0x2f);
-        }
-
-        if (m_is_load)
-            set_dtype(DTYPE_LOAD);
-        if (m_is_store)
-            set_dtype(DTYPE_STORE);
-        if (m_data_trace_debug)
-            m_dtrace_ofs << "DEBUG: INSN@" << std::hex << m_addr << ":" << m_insn_binary << "\n";
+        /* Atomic instructions also trigger record_load/record_store so it is necessary
+           to determine the type of the instruction to allow differentiation. */
+        bool is_amo_add = (((m_insn_binary & MASK_AMOADD_W) == MATCH_AMOADD_W) ||
+                           ((m_insn_binary & MASK_AMOADD_D) == MATCH_AMOADD_D));
+        bool is_amo_swap = (((m_insn_binary & MASK_AMOSWAP_W) == MATCH_AMOSWAP_W) ||
+                            ((m_insn_binary & MASK_AMOSWAP_D) == MATCH_AMOSWAP_D));
+        bool is_amo_xor = (((m_insn_binary & MASK_AMOXOR_W) == MATCH_AMOXOR_W) ||
+                           ((m_insn_binary & MASK_AMOXOR_D) == MATCH_AMOXOR_D));
+        bool is_amo_or = (((m_insn_binary & MASK_AMOOR_W) == MATCH_AMOOR_W) ||
+                          ((m_insn_binary & MASK_AMOOR_D) == MATCH_AMOOR_D));
+        bool is_amo_and = (((m_insn_binary & MASK_AMOAND_W) == MATCH_AMOAND_W) ||
+                           ((m_insn_binary & MASK_AMOAND_D) == MATCH_AMOAND_D));
+        bool is_amo_min = (((m_insn_binary & MASK_AMOMIN_W) == MATCH_AMOMIN_W) ||
+                           ((m_insn_binary & MASK_AMOMINU_W) == MATCH_AMOMINU_W) ||
+                           ((m_insn_binary & MASK_AMOMIN_D) == MATCH_AMOMIN_D) ||
+                           ((m_insn_binary & MASK_AMOMINU_D) == MATCH_AMOMINU_D));
+        bool is_amo_max = (((m_insn_binary & MASK_AMOMAX_W) == MATCH_AMOMAX_W) ||
+                           ((m_insn_binary & MASK_AMOMAXU_W) == MATCH_AMOMAXU_W) ||
+                           ((m_insn_binary & MASK_AMOMAX_D) == MATCH_AMOMAX_D) ||
+                           ((m_insn_binary & MASK_AMOMAXU_D) == MATCH_AMOMAXU_D));
+        m_is_amo = (is_amo_add || is_amo_swap || is_amo_xor || is_amo_or ||
+                    is_amo_and || is_amo_min || is_amo_max);
+        if (is_amo_add) set_dtype(DTYPE_ATOMIC_ADD);
+        if (is_amo_swap) set_dtype(DTYPE_ATOMIC_SWAP);
+        if (is_amo_xor) set_dtype(DTYPE_ATOMIC_XOR);
+        if (is_amo_or) set_dtype(DTYPE_ATOMIC_OR);
+        if (is_amo_and) set_dtype(DTYPE_ATOMIC_AND);
+        if (is_amo_min) set_dtype(DTYPE_ATOMIC_MIN);
+        if (is_amo_max) set_dtype(DTYPE_ATOMIC_MAX);
     }
 }
 
@@ -148,45 +148,31 @@ void proc_trace_t::set_is_32bit_isa(bool is_32bit_isa) {
 
 void proc_trace_t::record_load(reg_t addr, uint64_t res, size_t size, data_src_t src) {
     if (m_dtrace_ofs) {
-        if (!m_has_insn || m_is_amo)
-            return;
+        /* Atomic instructions also trigger this function but this needs to be
+           ignored in this case */
+        if (!m_is_amo) {
+            // Limit value to the size given
+            if (size != 8)
+                res &= ((uint64_t(1) << (size * 8)) - 1);
 
-        if (!m_is_load) {
-            // It's not clear why these are being triggered.
-            // They seem to come from DATA_SRC_LOAD_TLB_1
-            if (m_data_trace_debug)
-                m_dtrace_ofs << "NOT LOAD SRC " << std::dec << src << " " << std::hex << addr <<
-                    std::dec << " ld " << m_is_load << " st " << m_is_store << " amo " << m_is_amo <<
-                    std::hex << m_insn_binary << "\n";
-            else
-                std::cerr << "NOT LOAD SRC " << std::dec << src << " " << std::hex << addr <<
-                    std::dec << " ld " << m_is_load << " st " << m_is_store << " amo " << m_is_amo <<
-                    std::hex << m_insn_binary << "\n";
-            return;
+            set_dtype(DTYPE_LOAD);
+            record_data(addr, (uint8_t*)&res, size);
         }
-
-        // Limit value to the size given
-        if (size != 8)
-            res &= ((uint64_t(1) << (size * 8)) - 1);
-
-        assert(m_is_load);
-        assert(m_dtype == DTYPE_LOAD);
-        record_data(addr, (uint8_t*)&res, size);
     }
 }
 
 void proc_trace_t::record_store(reg_t addr, uint64_t val, size_t size, data_src_t src) {
     if (m_dtrace_ofs) {
-        if (!m_has_insn || m_is_amo)
-            return;
+        /* Atomic instructions also trigger this function but this needs to be
+           ignored in this case */
+        if (!m_is_amo) {
+            // Limit value to the size given
+            if (size != 8)
+                val &= ((uint64_t(1) << (size * 8)) - 1);
 
-        // Limit value to the size given
-        if (size != 8)
-            val &= ((uint64_t(1) << (size * 8)) - 1);
-
-        assert(m_is_store);
-        assert(m_dtype == DTYPE_STORE);
-        record_data(addr, (uint8_t*)&val, size);
+            set_dtype(DTYPE_STORE);
+            record_data(addr, (uint8_t*)&val, size);
+        }
     }
 }
 
@@ -195,18 +181,6 @@ void proc_trace_t::record_store(reg_t addr, uint64_t val, size_t size, data_src_
    the load data or operand in the MSBs. */
 void proc_trace_t::record_amo(reg_t addr, uint64_t load_data, uint64_t store_data, size_t size) {
     if (m_dtrace_ofs) {
-        reg_t insn_31_27 = (m_insn_binary >> 27) & ((insn_bits_t(1) << 5) - 1);
-        switch (insn_31_27) {
-        case 0: set_dtype(DTYPE_ATOMIC_ADD); break;
-        case 1: set_dtype(DTYPE_ATOMIC_SWAP); break;
-        case 4: set_dtype(DTYPE_ATOMIC_XOR); break;
-        case 8: set_dtype(DTYPE_ATOMIC_OR); break;
-        case 12: set_dtype(DTYPE_ATOMIC_AND); break;
-        case 16: case 24: set_dtype(DTYPE_ATOMIC_MIN); break;
-        case 20: case 28: set_dtype(DTYPE_ATOMIC_MAX); break;
-        default: assert(0); break;
-        }
-
         uint64_t pair[2] = {load_data, store_data};
         record_data(addr, (uint8_t*)pair, 2 * size);
     }
@@ -219,23 +193,16 @@ void proc_trace_t::record_csr_get(int which, insn_t insn, bool write, reg_t load
     m_csr_load_data = load_data;
     m_csr_size = size;
 
-    reg_t func3 = insn.rm();
-    switch (func3) {
-    case 1: // CSRRW
-    case 5: // CSRRWI
-        set_dtype(DTYPE_CSR_READ_WRITE);
-        break;
-    case 2: // CSRRS
-    case 6: // CSRRSI
-        set_dtype(DTYPE_CSR_READ_SET);
-        break;
-    case 3: // CSRRC
-    case 7: // CSRRCI
-        set_dtype(DTYPE_CSR_READ_CLEAR);
-        break;
-    default:
-        break;
-    }
+    assert(insn.bits() == m_insn.bits());
+    bool is_csrrw = ((m_insn_binary & MASK_CSRRW) == MATCH_CSRRW);
+    bool is_csrrwi = ((m_insn_binary & MASK_CSRRWI) == MATCH_CSRRWI);
+    bool is_csrrs = ((m_insn_binary & MASK_CSRRS) == MATCH_CSRRS);
+    bool is_csrrsi = ((m_insn_binary & MASK_CSRRSI) == MATCH_CSRRSI);
+    bool is_csrrc = ((m_insn_binary & MASK_CSRRC) == MATCH_CSRRC);
+    bool is_csrrci = ((m_insn_binary & MASK_CSRRCI) == MATCH_CSRRCI);
+    if (is_csrrw || is_csrrwi) set_dtype(DTYPE_CSR_READ_WRITE);
+    if (is_csrrs || is_csrrsi) set_dtype(DTYPE_CSR_READ_SET);
+    if (is_csrrc || is_csrrci) set_dtype(DTYPE_CSR_READ_CLEAR);
 
     // If not being written then the trace must be written here
     if (!m_csr_write) {
@@ -247,8 +214,9 @@ void proc_trace_t::record_csr_get(int which, insn_t insn, bool write, reg_t load
 
 void proc_trace_t::record_csr_set(int which, reg_t store_data) {
     // mret is a special case where there is no call to csr_get to go with this.
-    // In this case the csr must be MSTATUS and it does not get recorded.
-    if (m_insn_binary == 0x30200073) {
+    // In this case the csr is guaranteed to be MSTATUS and it does not get recorded
+    // because the trace decoder can determine this information.
+    if (m_insn_binary == MATCH_MRET) {
         assert(which == CSR_MSTATUS);
         return;
     } else {
@@ -259,35 +227,6 @@ void proc_trace_t::record_csr_set(int which, reg_t store_data) {
     assert(m_csr_size != 0);
     uint64_t pair[2] = {m_csr_load_data, store_data};
     record_data(m_csr_which, (uint8_t*)pair, 2 * m_csr_size);
-}
-
-void proc_trace_t::check_data_trace(void) {
-    m_has_insn = false;
-    if (m_dtrace_ofs) {
-        if (!m_is_amo) {
-            bool check_passed = true;
-            if (m_is_load && m_recorded_dtype != DTYPE_LOAD) {
-                fprintf(stderr, "Expected load but not recorded @0x%lx insn:%lx\n", m_addr, m_insn_binary);
-                check_passed = false;
-            }
-            if (m_is_store && (m_recorded_dtype != DTYPE_STORE)) {
-                fprintf(stderr, "Expected store but not recorded @0x%lx insn:%lx\n", m_addr, m_insn_binary);
-                check_passed = false;
-            }
-            if (!m_is_load && (m_recorded_dtype == DTYPE_LOAD)) {
-                fprintf(stderr, "Load recorded but not expected @0x%lx insn:%lx\n", m_addr, m_insn_binary);
-                check_passed = false;
-            }
-            if (!m_is_store && (m_recorded_dtype == DTYPE_STORE)) {
-                fprintf(stderr, "Store recorded but not expected @0x%lx insn:%lx\n", m_addr, m_insn_binary);
-                check_passed = false;
-            }
-            assert(check_passed);
-        }
-
-        assert((m_csr_which == CSR_INVALID) || (m_recorded_dtype == DTYPE_CSR_READ_WRITE) ||
-               (m_recorded_dtype == DTYPE_CSR_READ_SET) || (m_recorded_dtype == DTYPE_CSR_READ_CLEAR));
-    }
 }
 
 void proc_trace_t::close(void) {
@@ -304,15 +243,6 @@ void proc_trace_t::set_dtype(dtype_t dtype) {
 
 void proc_trace_t::record_data(reg_t addr, uint8_t* data, size_t size) {
     assert(m_dtype != DTYPE_INVALID);
-    if (m_recorded_dtype != DTYPE_INVALID) {
-        if (m_recorded_dtype == m_dtype)
-            fprintf(stderr, "Already recorded dtype %d duplicate\n", m_recorded_dtype);
-        else
-            fprintf(stderr, "Already recorded dtype %d now attempting %d\n", m_recorded_dtype, m_dtype);
-        assert(0);
-        return;
-    }
-    m_recorded_dtype = m_dtype;
 
     if (m_is_32bit_isa) {
         addr &= 0xffffffff;
