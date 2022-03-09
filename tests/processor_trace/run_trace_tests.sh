@@ -116,7 +116,7 @@ mkdir -p $regression_dir
 pushd $regression_dir
 
 # 64-bit binaries
-tests="vvadd pmp br_j_asm"
+tests="vvadd pmp br_j_asm mt-matmul"
 for t in $tests; do
     echo "Run 64-bit test $t"
     run_test $t
