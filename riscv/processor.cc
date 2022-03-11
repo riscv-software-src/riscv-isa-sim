@@ -26,7 +26,7 @@
 processor_t::processor_t(const char* isa, const char* priv, const char* varch,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
                          FILE* log_file, std::ostream& sout_)
-  : isa_parser_t(isa), debug(false), halt_request(HR_NONE), sim(sim), id(id), xlen(0),
+  : isa_parser_t(isa, priv), debug(false), halt_request(HR_NONE), sim(sim), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), sout_(sout_.rdbuf()), halt_on_reset(halt_on_reset),
   impl_table(256, false), last_pc(1), executions(1)
@@ -40,7 +40,6 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
   }
 #endif
 
-  parse_priv_string(priv);
   parse_varch_string(varch);
 
   register_base_instructions();
@@ -175,32 +174,7 @@ void processor_t::parse_varch_string(const char* s)
   VU.vstart_alu = vstart_alu;
 }
 
-void processor_t::parse_priv_string(const char* str)
-{
-  std::string lowercase = strtolower(str);
-  bool user = false, supervisor = false;
-
-  if (lowercase == "m")
-    ;
-  else if (lowercase == "mu")
-    user = true;
-  else if (lowercase == "msu")
-    user = supervisor = true;
-  else
-    bad_priv_string(str);
-
-  if (user) {
-    max_isa |= reg_t(user) << ('u' - 'a');
-    extension_table['U'] = true;
-  }
-
-  if (supervisor) {
-    max_isa |= reg_t(supervisor) << ('s' - 'a');
-    extension_table['S'] = true;
-  }
-}
-
-isa_parser_t::isa_parser_t(const char* str)
+isa_parser_t::isa_parser_t(const char* str, const char *priv)
   : extension_table(256, false)
 {
   isa_string = strtolower(str);
@@ -393,6 +367,28 @@ isa_parser_t::isa_parser_t(const char* str)
   }
   if (*p) {
     bad_isa_string(str, ("can't parse: " + std::string(p)).c_str());
+  }
+
+  std::string lowercase = strtolower(priv);
+  bool user = false, supervisor = false;
+
+  if (lowercase == "m")
+    ;
+  else if (lowercase == "mu")
+    user = true;
+  else if (lowercase == "msu")
+    user = supervisor = true;
+  else
+    bad_priv_string(priv);
+
+  if (user) {
+    max_isa |= reg_t(user) << ('u' - 'a');
+    extension_table['U'] = true;
+  }
+
+  if (supervisor) {
+    max_isa |= reg_t(supervisor) << ('s' - 'a');
+    extension_table['S'] = true;
   }
 }
 
