@@ -20,18 +20,18 @@ typedef enum
   ACTION_TRACE_EMIT = MCONTROL_ACTION_TRACE_EMIT
 } action_t;
 
-typedef enum
-{
-  MATCH_EQUAL = MCONTROL_MATCH_EQUAL,
-  MATCH_NAPOT = MCONTROL_MATCH_NAPOT,
-  MATCH_GE = MCONTROL_MATCH_GE,
-  MATCH_LT = MCONTROL_MATCH_LT,
-  MATCH_MASK_LOW = MCONTROL_MATCH_MASK_LOW,
-  MATCH_MASK_HIGH = MCONTROL_MATCH_MASK_HIGH
-} mcontrol_match_t;
+class mcontrol_t {
+public:
+  typedef enum
+  {
+    MATCH_EQUAL = MCONTROL_MATCH_EQUAL,
+    MATCH_NAPOT = MCONTROL_MATCH_NAPOT,
+    MATCH_GE = MCONTROL_MATCH_GE,
+    MATCH_LT = MCONTROL_MATCH_LT,
+    MATCH_MASK_LOW = MCONTROL_MATCH_MASK_LOW,
+    MATCH_MASK_HIGH = MCONTROL_MATCH_MASK_HIGH
+  } match_t;
 
-typedef struct
-{
   uint8_t type;
   bool dmode;
   uint8_t maskmax;
@@ -39,7 +39,7 @@ typedef struct
   bool timing;
   triggers::action_t action;
   bool chain;
-  mcontrol_match_t match;
+  match_t match;
   bool m;
   bool h;
   bool s;
@@ -47,7 +47,7 @@ typedef struct
   bool execute;
   bool store;
   bool load;
-} mcontrol_t;
+};
 
 };
 

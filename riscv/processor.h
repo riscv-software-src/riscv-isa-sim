@@ -355,33 +355,33 @@ public:
 
       auto tdata2 = state.tdata2->read(i);
       switch (state.mcontrol[i].match) {
-        case triggers::MATCH_EQUAL:
+        case triggers::mcontrol_t::MATCH_EQUAL:
           if (value != tdata2)
             continue;
           break;
-        case triggers::MATCH_NAPOT:
+        case triggers::mcontrol_t::MATCH_NAPOT:
           {
             reg_t mask = ~((1 << (cto(tdata2)+1)) - 1);
             if ((value & mask) != (tdata2 & mask))
               continue;
           }
           break;
-        case triggers::MATCH_GE:
+        case triggers::mcontrol_t::MATCH_GE:
           if (value < tdata2)
             continue;
           break;
-        case triggers::MATCH_LT:
+        case triggers::mcontrol_t::MATCH_LT:
           if (value >= tdata2)
             continue;
           break;
-        case triggers::MATCH_MASK_LOW:
+        case triggers::mcontrol_t::MATCH_MASK_LOW:
           {
             reg_t mask = tdata2 >> (xlen/2);
             if ((value & mask) != (tdata2 & mask))
               continue;
           }
           break;
-        case triggers::MATCH_MASK_HIGH:
+        case triggers::mcontrol_t::MATCH_MASK_HIGH:
           {
             reg_t mask = tdata2 >> (xlen/2);
             if (((value >> (xlen/2)) & mask) != (tdata2 & mask))
