@@ -20,7 +20,16 @@ typedef enum
   ACTION_TRACE_EMIT = MCONTROL_ACTION_TRACE_EMIT
 } action_t;
 
-class mcontrol_t {
+class trigger_t {
+public:
+  bool dmode;
+  action_t action;
+
+protected:
+  trigger_t() : dmode(false), action(ACTION_DEBUG_EXCEPTION) {};
+};
+
+class mcontrol_t : public trigger_t {
 public:
   typedef enum
   {
@@ -33,11 +42,9 @@ public:
   } match_t;
 
   uint8_t type;
-  bool dmode;
   uint8_t maskmax;
   bool select;
   bool timing;
-  triggers::action_t action;
   bool chain;
   match_t match;
   bool m;
