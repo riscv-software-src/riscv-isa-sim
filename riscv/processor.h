@@ -15,6 +15,7 @@
 #include "entropy_source.h"
 #include "csrs.h"
 #include "isa_parser.h"
+#include "triggers.h"
 
 class processor_t;
 class mmu_t;
@@ -355,7 +356,7 @@ public:
   } halt_request;
 
   // Return the index of a trigger that matched, or -1.
-  inline int trigger_match(trigger_operation_t operation, reg_t address, reg_t data)
+  inline int trigger_match(triggers::operation_t operation, reg_t address, reg_t data)
   {
     if (state.debug_mode)
       return -1;
@@ -368,9 +369,9 @@ public:
         continue;
       }
 
-      if ((operation == OPERATION_EXECUTE && !state.mcontrol[i].execute) ||
-          (operation == OPERATION_STORE && !state.mcontrol[i].store) ||
-          (operation == OPERATION_LOAD && !state.mcontrol[i].load) ||
+      if ((operation == triggers::OPERATION_EXECUTE && !state.mcontrol[i].execute) ||
+          (operation == triggers::OPERATION_STORE && !state.mcontrol[i].store) ||
+          (operation == triggers::OPERATION_LOAD && !state.mcontrol[i].load) ||
           (state.prv == PRV_M && !state.mcontrol[i].m) ||
           (state.prv == PRV_S && !state.mcontrol[i].s) ||
           (state.prv == PRV_U && !state.mcontrol[i].u)) {
