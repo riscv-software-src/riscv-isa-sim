@@ -304,8 +304,8 @@ reg_t cause_csr_t::read() const noexcept {
   // When reading, the interrupt bit needs to adjust to xlen. Spike does
   // not generally support dynamic xlen, but this code was (partly)
   // there since at least 2015 (ea58df8 and c4350ef).
-  if (proc->get_max_xlen() > proc->get_xlen()) // Move interrupt bit to top of xlen
-    return val | ((val >> (proc->get_max_xlen()-1)) << (proc->get_xlen()-1));
+  if (proc->get_isa().get_max_xlen() > proc->get_xlen()) // Move interrupt bit to top of xlen
+    return val | ((val >> (proc->get_isa().get_max_xlen()-1)) << (proc->get_xlen()-1));
   return val;
 }
 

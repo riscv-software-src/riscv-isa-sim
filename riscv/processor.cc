@@ -23,10 +23,10 @@
 #undef STATE
 #define STATE state
 
-processor_t::processor_t(const char* isa, const char* priv, const char* varch,
+processor_t::processor_t(isa_parser_t isa, const char* varch,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
                          FILE* log_file, std::ostream& sout_)
-  : isa_parser_t(isa, priv), debug(false), halt_request(HR_NONE), sim(sim), id(id), xlen(0),
+  : debug(false), halt_request(HR_NONE), isa(isa), sim(sim), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), sout_(sout_.rdbuf()), halt_on_reset(halt_on_reset),
   impl_table(256, false), last_pc(1), executions(1)
@@ -45,16 +45,16 @@ processor_t::processor_t(const char* isa, const char* priv, const char* varch,
   register_base_instructions();
   mmu = new mmu_t(sim, this);
 
-  disassembler = new disassembler_t(this);
-  for (auto e : isa_extensions)
+  disassembler = new disassembler_t(&isa);
+  for (auto e : isa.get_extensions())
     register_extension(e.second);
 
   set_pmp_granularity(1 << PMP_SHIFT);
   set_pmp_num(state.max_pmp);
 
-  if (max_xlen == 32)
+  if (isa.get_max_xlen() == 32)
     set_mmu_capability(IMPL_MMU_SV32);
-  else if (max_xlen == 64)
+  else if (isa.get_max_xlen() == 64)
     set_mmu_capability(IMPL_MMU_SV48);
 
   reset();
@@ -355,7 +355,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
         bad_isa_string(str, "single 'X' is not a proper name");
       } else if (ext_str != "xdummy") {
         extension_t* x = find_extension(ext_str.substr(1).c_str())();
-        if (!isa_extensions.insert(std::make_pair(x->name(), x)).second) {
+        if (!extensions.insert(std::make_pair(x->name(), x)).second) {
           fprintf(stderr, "extensions must have unique names (got two named \"%s\"!)\n", x->name());
           abort();
         }
@@ -411,7 +411,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   // This assumes xlen is always max_xlen, which is true today (see
   // mstatus_csr_t::unlogged_write()):
-  auto xlen = proc->get_max_xlen();
+  auto xlen = proc->get_isa().get_max_xlen();
 
   prv = PRV_M;
   v = false;
@@ -716,8 +716,8 @@ void processor_t::enable_log_commits()
 
 void processor_t::reset()
 {
-  xlen = max_xlen;
-  state.reset(this, max_isa);
+  xlen = isa.get_max_xlen();
+  state.reset(this, isa.get_max_isa());
   state.dcsr->halt = halt_on_reset;
   halt_on_reset = false;
   VU.reset();
@@ -852,7 +852,7 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     else
       abort();
 
-    throw trap_t(((reg_t)1 << (max_xlen-1)) | ctz(enabled_interrupts));
+    throw trap_t(((reg_t)1 << (isa.get_max_xlen()-1)) | ctz(enabled_interrupts));
   }
 }
 
@@ -916,6 +916,8 @@ void processor_t::debug_output_log(std::stringstream *s)
 
 void processor_t::take_trap(trap_t& t, reg_t epc)
 {
+  unsigned max_xlen = isa.get_max_xlen();
+
   if (debug) {
     std::stringstream s; // first put everything in a string, later send it to output
     s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
@@ -1039,6 +1041,8 @@ void processor_t::disasm(insn_t insn)
         << ": Executed " << executions << " times" << std::endl;
     }
 
+    unsigned max_xlen = isa.get_max_xlen();
+
     s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
       << std::hex << ": 0x" << std::setfill('0') << std::setw(max_xlen/4)
       << zext(state.pc, max_xlen) << " (0x" << std::setw(8) << bits << ") "
@@ -1056,6 +1060,7 @@ void processor_t::disasm(insn_t insn)
 
 int processor_t::paddr_bits()
 {
+  unsigned max_xlen = isa.get_max_xlen();
   assert(xlen == max_xlen);
   return max_xlen == 64 ? 50 : 34;
 }

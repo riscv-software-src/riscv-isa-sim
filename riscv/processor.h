@@ -322,22 +322,27 @@ public:
     else
       return extension_table[ext];
   }
+  const std::unordered_map<std::string, extension_t*> &
+  get_extensions() const { return extensions; }
+
 protected:
   unsigned max_xlen;
   reg_t max_isa;
   std::vector<bool> extension_table;
   std::string isa_string;
-  std::unordered_map<std::string, extension_t*> isa_extensions;
+  std::unordered_map<std::string, extension_t*> extensions;
 };
 
 // this class represents one processor in a RISC-V machine.
-class processor_t : public abstract_device_t, public isa_parser_t
+class processor_t : public abstract_device_t
 {
 public:
-  processor_t(const char* isa, const char* priv, const char* varch,
+  processor_t(isa_parser_t isa, const char* varch,
               simif_t* sim, uint32_t id, bool halt_on_reset,
               FILE *log_file, std::ostream& sout_); // because of command line option --log and -s we need both
   ~processor_t();
+
+  const isa_parser_t &get_isa() { return isa; }
 
   void set_debug(bool value);
   void set_histogram(bool value);
@@ -374,7 +379,7 @@ public:
     if (ext >= 'A' && ext <= 'Z')
       return state.misa->extension_enabled(ext);
     else
-      return extension_table[ext];
+      return isa.extension_enabled(ext);
   }
   // Is this extension enabled? and abort if this extension can
   // possibly be disabled dynamically. Useful for documenting
@@ -383,7 +388,7 @@ public:
     if (ext >= 'A' && ext <= 'Z')
       return state.misa->extension_enabled_const(ext);
     else
-      return extension_table[ext];  // assume this can't change
+      return isa.extension_enabled(ext);  // assume this can't change
   }
   void set_impl(uint8_t impl, bool val) { impl_table[impl] = val; }
   bool supports_impl(uint8_t impl) const {
@@ -512,6 +517,8 @@ public:
   const char* get_symbol(uint64_t addr);
 
 private:
+  isa_parser_t isa;
+
   simif_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
   std::unordered_map<std::string, extension_t*> custom_extensions;
