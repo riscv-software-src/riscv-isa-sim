@@ -58,15 +58,6 @@ typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
 
 typedef enum
 {
-  ACTION_DEBUG_EXCEPTION = MCONTROL_ACTION_DEBUG_EXCEPTION,
-  ACTION_DEBUG_MODE = MCONTROL_ACTION_DEBUG_MODE,
-  ACTION_TRACE_START = MCONTROL_ACTION_TRACE_START,
-  ACTION_TRACE_STOP = MCONTROL_ACTION_TRACE_STOP,
-  ACTION_TRACE_EMIT = MCONTROL_ACTION_TRACE_EMIT
-} mcontrol_action_t;
-
-typedef enum
-{
   MATCH_EQUAL = MCONTROL_MATCH_EQUAL,
   MATCH_NAPOT = MCONTROL_MATCH_NAPOT,
   MATCH_GE = MCONTROL_MATCH_GE,
@@ -82,7 +73,7 @@ typedef struct
   uint8_t maskmax;
   bool select;
   bool timing;
-  mcontrol_action_t action;
+  triggers::action_t action;
   bool chain;
   mcontrol_match_t match;
   bool m;

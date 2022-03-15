@@ -1021,7 +1021,7 @@ bool tdata1_csr_t::unlogged_write(const reg_t val) noexcept {
   mc->dmode = get_field(val, MCONTROL_DMODE(xlen));
   mc->select = get_field(val, MCONTROL_SELECT);
   mc->timing = get_field(val, MCONTROL_TIMING);
-  mc->action = (mcontrol_action_t) get_field(val, MCONTROL_ACTION);
+  mc->action = (triggers::action_t) get_field(val, MCONTROL_ACTION);
   mc->chain = get_field(val, MCONTROL_CHAIN);
   mc->match = (mcontrol_match_t) get_field(val, MCONTROL_MATCH);
   mc->m = get_field(val, MCONTROL_M);
