@@ -8,6 +8,7 @@
 #include <memory>
 // For access_type:
 #include "memtracer.h"
+#include <cassert>
 
 class processor_t;
 struct state_t;
@@ -61,7 +62,11 @@ typedef std::shared_ptr<csr_t> csr_t_p;
 class basic_csr_t: public csr_t {
  public:
   basic_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
-  virtual reg_t read() const noexcept override;
+
+  virtual reg_t read() const noexcept override {
+    return val;
+  }
+
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -263,10 +268,15 @@ class sstatus_csr_t: public virtualized_csr_t {
 typedef std::shared_ptr<sstatus_csr_t> sstatus_csr_t_p;
 
 
-class misa_csr_t: public basic_csr_t {
+class misa_csr_t final: public basic_csr_t {
  public:
   misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa);
-  bool extension_enabled(unsigned char ext) const noexcept;
+
+  bool extension_enabled(unsigned char ext) const noexcept {
+    assert(ext >= 'A' && ext <= 'Z');
+    return (read() >> (ext - 'A')) & 1;
+  }
+
   bool extension_enabled_const(unsigned char ext) const noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;

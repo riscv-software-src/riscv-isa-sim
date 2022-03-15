@@ -75,10 +75,6 @@ basic_csr_t::basic_csr_t(processor_t* const proc, const reg_t addr, const reg_t 
   val(init) {
 }
 
-reg_t basic_csr_t::read() const noexcept {
-  return val;
-}
-
 bool basic_csr_t::unlogged_write(const reg_t val) noexcept {
   this->val = val;
   return true;
@@ -542,11 +538,6 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   }
 
   return basic_csr_t::unlogged_write(new_misa);
-}
-
-bool misa_csr_t::extension_enabled(unsigned char ext) const noexcept {
-  assert(ext >= 'A' && ext <= 'Z');
-  return (read() >> (ext - 'A')) & 1;
 }
 
 bool misa_csr_t::extension_enabled_const(unsigned char ext) const noexcept {
