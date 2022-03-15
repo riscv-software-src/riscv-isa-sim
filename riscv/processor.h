@@ -352,7 +352,7 @@ public:
         value &= 0xffffffff;
       }
 
-      auto tdata2 = state.tdata2->read(i);
+      auto tdata2 = TM.triggers[i]->tdata2;
       switch (TM.triggers[i]->match) {
         case triggers::mcontrol_t::MATCH_EQUAL:
           if (value != tdata2)

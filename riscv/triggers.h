@@ -58,6 +58,7 @@ public:
   bool execute;
   bool store;
   bool load;
+  reg_t tdata2;
 };
 
 class module_t {
