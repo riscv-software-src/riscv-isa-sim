@@ -993,7 +993,7 @@ tdata1_csr_t::tdata1_csr_t(processor_t* const proc, const reg_t addr):
 reg_t tdata1_csr_t::read() const noexcept {
   reg_t v = 0;
   auto xlen = proc->get_xlen();
-  mcontrol_t *mc = &state->mcontrol[state->tselect->read()];
+  triggers::mcontrol_t *mc = &state->mcontrol[state->tselect->read()];
   v = set_field(v, MCONTROL_TYPE(xlen), mc->type);
   v = set_field(v, MCONTROL_DMODE(xlen), mc->dmode);
   v = set_field(v, MCONTROL_MASKMAX(xlen), mc->maskmax);
@@ -1013,7 +1013,7 @@ reg_t tdata1_csr_t::read() const noexcept {
 }
 
 bool tdata1_csr_t::unlogged_write(const reg_t val) noexcept {
-  mcontrol_t *mc = &state->mcontrol[state->tselect->read()];
+  triggers::mcontrol_t *mc = &state->mcontrol[state->tselect->read()];
   if (mc->dmode && !state->debug_mode) {
     return false;
   }
@@ -1023,7 +1023,7 @@ bool tdata1_csr_t::unlogged_write(const reg_t val) noexcept {
   mc->timing = get_field(val, MCONTROL_TIMING);
   mc->action = (triggers::action_t) get_field(val, MCONTROL_ACTION);
   mc->chain = get_field(val, MCONTROL_CHAIN);
-  mc->match = (mcontrol_match_t) get_field(val, MCONTROL_MATCH);
+  mc->match = (triggers::mcontrol_match_t) get_field(val, MCONTROL_MATCH);
   mc->m = get_field(val, MCONTROL_M);
   mc->h = get_field(val, MCONTROL_H);
   mc->s = get_field(val, MCONTROL_S);

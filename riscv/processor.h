@@ -56,35 +56,6 @@ typedef std::unordered_map<reg_t, freg_t> commit_log_reg_t;
 // addr, value, size
 typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
 
-typedef enum
-{
-  MATCH_EQUAL = MCONTROL_MATCH_EQUAL,
-  MATCH_NAPOT = MCONTROL_MATCH_NAPOT,
-  MATCH_GE = MCONTROL_MATCH_GE,
-  MATCH_LT = MCONTROL_MATCH_LT,
-  MATCH_MASK_LOW = MCONTROL_MATCH_MASK_LOW,
-  MATCH_MASK_HIGH = MCONTROL_MATCH_MASK_HIGH
-} mcontrol_match_t;
-
-typedef struct
-{
-  uint8_t type;
-  bool dmode;
-  uint8_t maskmax;
-  bool select;
-  bool timing;
-  triggers::action_t action;
-  bool chain;
-  mcontrol_match_t match;
-  bool m;
-  bool h;
-  bool s;
-  bool u;
-  bool execute;
-  bool store;
-  bool load;
-} mcontrol_t;
-
 enum VRM{
   RNU = 0,
   RNE,
@@ -203,7 +174,7 @@ struct state_t
   csr_t_p dpc;
   dcsr_csr_t_p dcsr;
   csr_t_p tselect;
-  mcontrol_t mcontrol[num_triggers];
+  triggers::mcontrol_t mcontrol[num_triggers];
   tdata2_csr_t_p tdata2;
   bool debug_mode;
 
@@ -384,33 +355,33 @@ public:
 
       auto tdata2 = state.tdata2->read(i);
       switch (state.mcontrol[i].match) {
-        case MATCH_EQUAL:
+        case triggers::MATCH_EQUAL:
           if (value != tdata2)
             continue;
           break;
-        case MATCH_NAPOT:
+        case triggers::MATCH_NAPOT:
           {
             reg_t mask = ~((1 << (cto(tdata2)+1)) - 1);
             if ((value & mask) != (tdata2 & mask))
               continue;
           }
           break;
-        case MATCH_GE:
+        case triggers::MATCH_GE:
           if (value < tdata2)
             continue;
           break;
-        case MATCH_LT:
+        case triggers::MATCH_LT:
           if (value >= tdata2)
             continue;
           break;
-        case MATCH_MASK_LOW:
+        case triggers::MATCH_MASK_LOW:
           {
             reg_t mask = tdata2 >> (xlen/2);
             if ((value & mask) != (tdata2 & mask))
               continue;
           }
           break;
-        case MATCH_MASK_HIGH:
+        case triggers::MATCH_MASK_HIGH:
           {
             reg_t mask = tdata2 >> (xlen/2);
             if (((value >> (xlen/2)) & mask) != (tdata2 & mask))
