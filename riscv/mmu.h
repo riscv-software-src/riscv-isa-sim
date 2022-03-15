@@ -491,7 +491,7 @@ private:
     int match = proc->trigger_match(operation, address, data);
     if (match == -1)
       return NULL;
-    if (proc->state.mcontrol[match].timing == 0) {
+    if (proc->TM.triggers[match]->timing == 0) {
       throw trigger_matched_t(match, operation, address, data);
     }
     return new trigger_matched_t(match, operation, address, data);

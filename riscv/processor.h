@@ -174,7 +174,6 @@ struct state_t
   csr_t_p dpc;
   dcsr_csr_t_p dcsr;
   csr_t_p tselect;
-  triggers::mcontrol_t mcontrol[num_triggers];
   tdata2_csr_t_p tdata2;
   bool debug_mode;
 
@@ -327,21 +326,21 @@ public:
 
     for (unsigned int i = 0; i < state.num_triggers; i++) {
       if (!chain_ok) {
-        chain_ok |= !state.mcontrol[i].chain;
+        chain_ok |= !TM.triggers[i]->chain;
         continue;
       }
 
-      if ((operation == triggers::OPERATION_EXECUTE && !state.mcontrol[i].execute) ||
-          (operation == triggers::OPERATION_STORE && !state.mcontrol[i].store) ||
-          (operation == triggers::OPERATION_LOAD && !state.mcontrol[i].load) ||
-          (state.prv == PRV_M && !state.mcontrol[i].m) ||
-          (state.prv == PRV_S && !state.mcontrol[i].s) ||
-          (state.prv == PRV_U && !state.mcontrol[i].u)) {
+      if ((operation == triggers::OPERATION_EXECUTE && !TM.triggers[i]->execute) ||
+          (operation == triggers::OPERATION_STORE && !TM.triggers[i]->store) ||
+          (operation == triggers::OPERATION_LOAD && !TM.triggers[i]->load) ||
+          (state.prv == PRV_M && !TM.triggers[i]->m) ||
+          (state.prv == PRV_S && !TM.triggers[i]->s) ||
+          (state.prv == PRV_U && !TM.triggers[i]->u)) {
         continue;
       }
 
       reg_t value;
-      if (state.mcontrol[i].select) {
+      if (TM.triggers[i]->select) {
         value = data;
       } else {
         value = address;
@@ -354,7 +353,7 @@ public:
       }
 
       auto tdata2 = state.tdata2->read(i);
-      switch (state.mcontrol[i].match) {
+      switch (TM.triggers[i]->match) {
         case triggers::mcontrol_t::MATCH_EQUAL:
           if (value != tdata2)
             continue;
@@ -390,7 +389,7 @@ public:
           break;
       }
 
-      if (!state.mcontrol[i].chain) {
+      if (!TM.triggers[i]->chain) {
         return i;
       }
       chain_ok = true;
@@ -541,6 +540,7 @@ public:
   };
 
   vectorUnit_t VU;
+  triggers::module_t TM;
 };
 
 #endif

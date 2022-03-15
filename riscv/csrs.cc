@@ -993,7 +993,7 @@ tdata1_csr_t::tdata1_csr_t(processor_t* const proc, const reg_t addr):
 reg_t tdata1_csr_t::read() const noexcept {
   reg_t v = 0;
   auto xlen = proc->get_xlen();
-  triggers::mcontrol_t *mc = &state->mcontrol[state->tselect->read()];
+  triggers::mcontrol_t *mc = proc->TM.triggers[state->tselect->read()];
   v = set_field(v, MCONTROL_TYPE(xlen), mc->type);
   v = set_field(v, MCONTROL_DMODE(xlen), mc->dmode);
   v = set_field(v, MCONTROL_MASKMAX(xlen), mc->maskmax);
@@ -1013,7 +1013,7 @@ reg_t tdata1_csr_t::read() const noexcept {
 }
 
 bool tdata1_csr_t::unlogged_write(const reg_t val) noexcept {
-  triggers::mcontrol_t *mc = &state->mcontrol[state->tselect->read()];
+  triggers::mcontrol_t *mc = proc->TM.triggers[state->tselect->read()];
   if (mc->dmode && !state->debug_mode) {
     return false;
   }
@@ -1053,7 +1053,7 @@ reg_t tdata2_csr_t::read(const size_t idx) const noexcept {
 }
 
 bool tdata2_csr_t::unlogged_write(const reg_t val) noexcept {
-  if (state->mcontrol[state->tselect->read()].dmode && !state->debug_mode) {
+  if (proc->TM.triggers[state->tselect->read()]->dmode && !state->debug_mode) {
     return false;
   }
   vals[state->tselect->read()] = val;

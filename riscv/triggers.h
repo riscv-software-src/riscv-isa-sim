@@ -1,6 +1,8 @@
 #ifndef _RISCV_TRIGGERS_H
 #define _RISCV_TRIGGERS_H
 
+#include <vector>
+
 #include "decode.h"
 
 namespace triggers {
@@ -41,6 +43,8 @@ public:
     MATCH_MASK_HIGH = MCONTROL_MATCH_MASK_HIGH
   } match_t;
 
+  mcontrol_t();
+
   uint8_t type;
   uint8_t maskmax;
   bool select;
@@ -54,6 +58,13 @@ public:
   bool execute;
   bool store;
   bool load;
+};
+
+class module_t {
+public:
+  module_t(unsigned count);
+
+  std::vector<mcontrol_t *> triggers;
 };
 
 };
