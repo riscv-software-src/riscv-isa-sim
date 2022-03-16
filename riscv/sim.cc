@@ -30,7 +30,7 @@ static void handle_signal(int sig)
 
 sim_t::sim_t(const cfg_t *cfg,
              const char* isa_string, const char* priv, const char* varch,
-             size_t nprocs, bool halted, bool real_time_clint,
+             bool halted, bool real_time_clint,
              reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
@@ -47,7 +47,7 @@ sim_t::sim_t(const cfg_t *cfg,
     cfg(cfg),
     mems(mems),
     plugin_devices(plugin_devices),
-    procs(std::max(nprocs, size_t(1))),
+    procs(std::max(cfg->nprocs(), size_t(1))),
     start_pc(start_pc),
     dtb_file(dtb_file ? dtb_file : ""),
     dtb_enabled(dtb_enabled),
@@ -80,15 +80,15 @@ sim_t::sim_t(const cfg_t *cfg,
 
   debug_mmu = new mmu_t(this, NULL);
 
-  if (! (hartids.empty() || hartids.size() == nprocs)) {
+  if (! (hartids.empty() || hartids.size() == nprocs())) {
       std::cerr << "Number of specified hartids ("
                 << hartids.size()
                 << ") doesn't match number of processors ("
-                << nprocs << ").\n";
+                << nprocs() << ").\n";
       exit(1);
   }
 
-  for (size_t i = 0; i < nprocs; i++) {
+  for (size_t i = 0; i < nprocs(); i++) {
     int hart_id = hartids.empty() ? i : hartids[i];
     procs[i] = new processor_t(isa, varch, this, hart_id, halted,
                                log_file.get(), sout_);
@@ -121,7 +121,7 @@ sim_t::sim_t(const cfg_t *cfg,
   for (cpu_offset = fdt_get_first_subnode(fdt, cpu_offset); cpu_offset >= 0;
        cpu_offset = fdt_get_next_subnode(fdt, cpu_offset)) {
 
-    if (cpu_idx >= nprocs)
+    if (cpu_idx >= nprocs())
       break;
 
     //handle pmp
@@ -171,11 +171,11 @@ sim_t::sim_t(const cfg_t *cfg,
     cpu_idx++;
   }
 
-  if (cpu_idx != nprocs) {
+  if (cpu_idx != nprocs()) {
       std::cerr << "core number in dts ("
                 <<  cpu_idx
                 << ") doesn't match it in command line ("
-                << nprocs << ").\n";
+                << nprocs() << ").\n";
       exit(1);
   }
 }

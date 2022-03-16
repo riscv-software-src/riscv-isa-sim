@@ -219,7 +219,6 @@ int main(int argc, char** argv)
   bool dump_dts = false;
   bool dtb_enabled = true;
   bool real_time_clint = false;
-  size_t nprocs = 1;
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
   reg_t start_pc = reg_t(-1);
@@ -253,7 +252,8 @@ int main(int argc, char** argv)
   };
   std::vector<int> hartids;
   cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0),
-            /*default_bootargs=*/nullptr);
+            /*default_bootargs=*/nullptr,
+            /*default_nprocs=*/1);
 
   auto const hartids_parser = [&](const char *s) {
     std::string const str(s);
@@ -319,7 +319,7 @@ int main(int argc, char** argv)
 #ifdef HAVE_BOOST_ASIO
   parser.option('s', 0, 0, [&](const char* s){socket = true;});
 #endif
-  parser.option('p', 0, 1, [&](const char* s){nprocs = atoul_nonzero_safe(s);});
+  parser.option('p', 0, 1, [&](const char* s){cfg.nprocs = atoul_nonzero_safe(s);});
   parser.option('m', 0, 1, [&](const char* s){mems = make_mems(s);});
   // I wanted to use --halted, but for some reason that doesn't work.
   parser.option('H', 0, 0, [&](const char* s){halted = true;});
@@ -444,7 +444,7 @@ int main(int argc, char** argv)
   }
 #endif
 
-  sim_t s(&cfg, isa, priv, varch, nprocs, halted, real_time_clint,
+  sim_t s(&cfg, isa, priv, varch, halted, real_time_clint,
       start_pc, mems, plugin_devices, htif_args,
       std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file,
 #ifdef HAVE_BOOST_ASIO
@@ -468,7 +468,7 @@ int main(int argc, char** argv)
   if (dc && l2) dc->set_miss_handler(&*l2);
   if (ic) ic->set_log(log_cache);
   if (dc) dc->set_log(log_cache);
-  for (size_t i = 0; i < nprocs; i++)
+  for (size_t i = 0; i < cfg.nprocs(); i++)
   {
     if (ic) s.get_core(i)->get_mmu()->register_memtracer(&*ic);
     if (dc) s.get_core(i)->get_mmu()->register_memtracer(&*dc);
