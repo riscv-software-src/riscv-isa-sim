@@ -995,29 +995,7 @@ reg_t tdata1_csr_t::read() const noexcept {
 }
 
 bool tdata1_csr_t::unlogged_write(const reg_t val) noexcept {
-  triggers::mcontrol_t *mc = proc->TM.triggers[state->tselect->read()];
-  if (mc->dmode && !state->debug_mode) {
-    return false;
-  }
-  auto xlen = proc->get_xlen();
-  mc->dmode = get_field(val, MCONTROL_DMODE(xlen));
-  mc->select = get_field(val, MCONTROL_SELECT);
-  mc->timing = get_field(val, MCONTROL_TIMING);
-  mc->action = (triggers::action_t) get_field(val, MCONTROL_ACTION);
-  mc->chain = get_field(val, MCONTROL_CHAIN);
-  mc->match = (triggers::mcontrol_t::match_t) get_field(val, MCONTROL_MATCH);
-  mc->m = get_field(val, MCONTROL_M);
-  mc->h = get_field(val, MCONTROL_H);
-  mc->s = get_field(val, MCONTROL_S);
-  mc->u = get_field(val, MCONTROL_U);
-  mc->execute = get_field(val, MCONTROL_EXECUTE);
-  mc->store = get_field(val, MCONTROL_STORE);
-  mc->load = get_field(val, MCONTROL_LOAD);
-  // Assume we're here because of csrw.
-  if (mc->execute)
-    mc->timing = 0;
-  proc->trigger_updated();
-  return true;
+  return proc->TM.triggers[state->tselect->read()]->tdata1_write(proc, val);
 }
 
 

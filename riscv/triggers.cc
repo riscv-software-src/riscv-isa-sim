@@ -31,6 +31,31 @@ reg_t mcontrol_t::tdata1_read(const processor_t *proc) const noexcept {
   return v;
 }
 
+bool mcontrol_t::tdata1_write(processor_t *proc, const reg_t val) noexcept {
+  if (dmode && !proc->get_state()->debug_mode) {
+    return false;
+  }
+  auto xlen = proc->get_xlen();
+  dmode = get_field(val, MCONTROL_DMODE(xlen));
+  select = get_field(val, MCONTROL_SELECT);
+  timing = get_field(val, MCONTROL_TIMING);
+  action = (triggers::action_t) get_field(val, MCONTROL_ACTION);
+  chain = get_field(val, MCONTROL_CHAIN);
+  match = (triggers::mcontrol_t::match_t) get_field(val, MCONTROL_MATCH);
+  m = get_field(val, MCONTROL_M);
+  h = get_field(val, MCONTROL_H);
+  s = get_field(val, MCONTROL_S);
+  u = get_field(val, MCONTROL_U);
+  execute = get_field(val, MCONTROL_EXECUTE);
+  store = get_field(val, MCONTROL_STORE);
+  load = get_field(val, MCONTROL_LOAD);
+  // Assume we're here because of csrw.
+  if (execute)
+    timing = 0;
+  proc->trigger_updated();
+  return true;
+}
+
 module_t::module_t(unsigned count) : triggers(count) {
   for (unsigned i = 0; i < count; i++) {
     triggers[i] = new mcontrol_t();

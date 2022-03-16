@@ -45,6 +45,7 @@ public:
 
   mcontrol_t();
   reg_t tdata1_read(const processor_t *proc) const noexcept;
+  bool tdata1_write(processor_t *proc, const reg_t val) noexcept;
 
   uint8_t type;
   uint8_t maskmax;
