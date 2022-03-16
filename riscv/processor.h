@@ -247,14 +247,14 @@ public:
   reg_t get_csr(int which) { return get_csr(which, insn_t(0), false, true); }
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
-  unsigned get_xlen() { return xlen; }
-  unsigned get_const_xlen() {
+  unsigned get_xlen() const { return xlen; }
+  unsigned get_const_xlen() const {
     // Any code that assumes a const xlen should use this method to
     // document that assumption. If Spike ever changes to allow
     // variable xlen, this method should be removed.
     return xlen;
   }
-  unsigned get_flen() {
+  unsigned get_flen() const {
     return extension_enabled('Q') ? 128 :
            extension_enabled('D') ? 64 :
            extension_enabled('F') ? 32 : 0;
