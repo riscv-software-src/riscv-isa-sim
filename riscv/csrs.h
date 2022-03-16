@@ -263,18 +263,19 @@ class sstatus_proxy_csr_t final: public base_status_csr_t {
   csr_t_p mstatus;
 };
 
+typedef std::shared_ptr<sstatus_proxy_csr_t> sstatus_proxy_csr_t_p;
 
 class sstatus_csr_t: public virtualized_csr_t {
  public:
-  sstatus_csr_t(processor_t* const proc, base_status_csr_t_p orig, base_status_csr_t_p virt);
+  sstatus_csr_t(processor_t* const proc, sstatus_proxy_csr_t_p orig, vsstatus_csr_t_p virt);
 
   // Set FS, VS, or XS bits to dirty
   void dirty(const reg_t dirties);
   // Return true if the specified bits are not 00 (Off)
   bool enabled(const reg_t which);
  private:
-  base_status_csr_t_p orig_sstatus;
-  base_status_csr_t_p virt_sstatus;
+  sstatus_proxy_csr_t_p orig_sstatus;
+  vsstatus_csr_t_p virt_sstatus;
 };
 
 typedef std::shared_ptr<sstatus_csr_t> sstatus_csr_t_p;

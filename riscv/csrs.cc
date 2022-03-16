@@ -453,7 +453,7 @@ bool mstatush_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 // implement class sstatus_csr_t
-sstatus_csr_t::sstatus_csr_t(processor_t* const proc, base_status_csr_t_p orig, base_status_csr_t_p virt):
+sstatus_csr_t::sstatus_csr_t(processor_t* const proc, sstatus_proxy_csr_t_p orig, vsstatus_csr_t_p virt):
   virtualized_csr_t(proc, orig, virt),
   orig_sstatus(orig),
   virt_sstatus(virt) {
