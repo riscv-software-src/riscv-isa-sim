@@ -464,9 +464,9 @@ void sstatus_csr_t::dirty(const reg_t dirties) {
   // checking for mstatus.VS!=Off:
   if (!enabled(dirties)) abort();
 
-  orig_csr->write(orig_csr->read() | dirties);
+  orig_sstatus->write(orig_sstatus->read() | dirties);
   if (state->v) {
-    virt_csr->write(virt_csr->read() | dirties);
+    virt_sstatus->write(virt_sstatus->read() | dirties);
   }
 }
 
