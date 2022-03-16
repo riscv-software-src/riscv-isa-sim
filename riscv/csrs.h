@@ -202,10 +202,14 @@ typedef std::shared_ptr<base_status_csr_t> base_status_csr_t_p;
 
 // For vsstatus, which is its own separate architectural register
 // (unlike sstatus)
-class vsstatus_csr_t: public base_status_csr_t {
+class vsstatus_csr_t final: public base_status_csr_t {
  public:
   vsstatus_csr_t(processor_t* const proc, const reg_t addr);
-  virtual reg_t read() const noexcept override;
+
+  reg_t read() const noexcept override {
+    return val;
+  }
+
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:

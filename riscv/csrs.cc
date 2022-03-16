@@ -380,10 +380,6 @@ vsstatus_csr_t::vsstatus_csr_t(processor_t* const proc, const reg_t addr):
   val(proc->get_state()->mstatus->read() & sstatus_read_mask) {
 }
 
-reg_t vsstatus_csr_t::read() const noexcept {
-  return val;
-}
-
 bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t newval = (this->val & ~sstatus_write_mask) | (val & sstatus_write_mask);
   if (state->v) maybe_flush_tlb(newval);
