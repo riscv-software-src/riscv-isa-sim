@@ -28,11 +28,14 @@ private:
 class cfg_t
 {
 public:
-  cfg_t(std::pair<reg_t, reg_t> default_initrd_bounds)
-    : initrd_bounds(default_initrd_bounds)
+  cfg_t(std::pair<reg_t, reg_t> default_initrd_bounds,
+        const char *default_bootargs)
+    : initrd_bounds(default_initrd_bounds),
+      bootargs(default_bootargs)
   {}
 
   cfg_arg_t<std::pair<reg_t, reg_t>> initrd_bounds;
+  cfg_arg_t<const char *>            bootargs;
 };
 
 #endif

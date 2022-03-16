@@ -222,7 +222,6 @@ int main(int argc, char** argv)
   size_t nprocs = 1;
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
-  const char* bootargs = NULL;
   reg_t start_pc = reg_t(-1);
   std::vector<std::pair<reg_t, mem_t*>> mems;
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
@@ -253,7 +252,8 @@ int main(int argc, char** argv)
     .support_impebreak = true
   };
   std::vector<int> hartids;
-  cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0));
+  cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0),
+            /*default_bootargs=*/nullptr);
 
   auto const hartids_parser = [&](const char *s) {
     std::string const str(s);
@@ -340,7 +340,7 @@ int main(int argc, char** argv)
   parser.option(0, "dtb", 1, [&](const char *s){dtb_file = s;});
   parser.option(0, "kernel", 1, [&](const char* s){kernel = s;});
   parser.option(0, "initrd", 1, [&](const char* s){initrd = s;});
-  parser.option(0, "bootargs", 1, [&](const char* s){bootargs = s;});
+  parser.option(0, "bootargs", 1, [&](const char* s){cfg.bootargs = s;});
   parser.option(0, "real-time-clint", 0, [&](const char *s){real_time_clint = true;});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
@@ -445,7 +445,7 @@ int main(int argc, char** argv)
 #endif
 
   sim_t s(&cfg, isa, priv, varch, nprocs, halted, real_time_clint,
-      bootargs, start_pc, mems, plugin_devices, htif_args,
+      start_pc, mems, plugin_devices, htif_args,
       std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file,
 #ifdef HAVE_BOOST_ASIO
       io_service_ptr, acceptor_ptr,

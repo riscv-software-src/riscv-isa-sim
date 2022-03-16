@@ -30,7 +30,7 @@ static void handle_signal(int sig)
 
 sim_t::sim_t(const cfg_t *cfg,
              const char* isa_string, const char* priv, const char* varch,
-             size_t nprocs, bool halted, bool real_time_clint, const char* bootargs,
+             size_t nprocs, bool halted, bool real_time_clint,
              reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
@@ -48,7 +48,6 @@ sim_t::sim_t(const cfg_t *cfg,
     mems(mems),
     plugin_devices(plugin_devices),
     procs(std::max(nprocs, size_t(1))),
-    bootargs(bootargs),
     start_pc(start_pc),
     dtb_file(dtb_file ? dtb_file : ""),
     dtb_enabled(dtb_enabled),
@@ -314,7 +313,7 @@ void sim_t::make_dtb()
     std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds();
     dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
                    initrd_bounds.first, initrd_bounds.second,
-                   bootargs, procs, mems);
+                   cfg->bootargs(), procs, mems);
     dtb = dts_compile(dts);
   }
 

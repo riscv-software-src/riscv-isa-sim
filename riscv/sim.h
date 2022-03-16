@@ -34,7 +34,7 @@ class sim_t : public htif_t, public simif_t
 public:
   sim_t(const cfg_t *cfg,
         const char* isa, const char* priv, const char* varch, size_t _nprocs,
-        bool halted, bool real_time_clint, const char* bootargs,
+        bool halted, bool real_time_clint,
         reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
         std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
         const std::vector<std::string>& args, const std::vector<int> hartids,
@@ -78,7 +78,6 @@ private:
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
   std::pair<reg_t, reg_t> initrd_range;
-  const char* bootargs;
   reg_t start_pc;
   std::string dts;
   std::string dtb;
