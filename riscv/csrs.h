@@ -249,10 +249,14 @@ class mstatush_csr_t: public csr_t {
 };
 
 
-class sstatus_proxy_csr_t: public base_status_csr_t {
+class sstatus_proxy_csr_t final: public base_status_csr_t {
  public:
   sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mstatus);
-  virtual reg_t read() const noexcept override;
+
+  reg_t read() const noexcept override {
+    return mstatus->read() & sstatus_read_mask;
+  }
+
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:

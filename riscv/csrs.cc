@@ -394,10 +394,6 @@ sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t ad
   mstatus(mstatus) {
 }
 
-reg_t sstatus_proxy_csr_t::read() const noexcept {
-  return mstatus->read() & sstatus_read_mask;
-}
-
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t new_mstatus = (mstatus->read() & ~sstatus_write_mask) | (val & sstatus_write_mask);
 
