@@ -621,13 +621,15 @@ class dcsr_csr_t: public csr_t {
 typedef std::shared_ptr<dcsr_csr_t> dcsr_csr_t_p;
 
 
-class float_csr_t: public masked_csr_t {
+class float_csr_t final: public masked_csr_t {
  public:
   float_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
   virtual void verify_permissions(insn_t insn, bool write) const override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
+
+typedef std::shared_ptr<float_csr_t> float_csr_t_p;
 
 
 // For a CSR like FCSR, that is actually a view into multiple
