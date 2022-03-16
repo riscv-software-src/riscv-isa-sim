@@ -316,12 +316,6 @@ base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 
-bool base_status_csr_t::enabled(const reg_t which) {
-  // If the field doesn't exist, it is always enabled. See #823.
-  if ((sstatus_write_mask & which) == 0) return true;
-  return (read() & which) != 0;
-}
-
 reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
   // If a configuration has FS bits, they will always be accessible no
   // matter the state of misa.
@@ -471,11 +465,16 @@ void sstatus_csr_t::dirty(const reg_t dirties) {
 }
 
 bool sstatus_csr_t::enabled(const reg_t which) {
-  if (!orig_sstatus->enabled(which))
-    return false;
-  if (state->v && !virt_sstatus->enabled(which))
-    return false;
-  return true;
+  if ((orig_sstatus->read() & which) != 0) {
+    if (!state->v || (virt_sstatus->read() & which) != 0)
+      return true;
+  }
+
+  // If the field doesn't exist, it is always enabled. See #823.
+  if (!orig_sstatus->field_exists(which))
+    return true;
+
+  return false;
 }
 
 
