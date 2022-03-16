@@ -219,10 +219,14 @@ class vsstatus_csr_t final: public base_status_csr_t {
 typedef std::shared_ptr<vsstatus_csr_t> vsstatus_csr_t_p;
 
 
-class mstatus_csr_t: public base_status_csr_t {
+class mstatus_csr_t final: public base_status_csr_t {
  public:
   mstatus_csr_t(processor_t* const proc, const reg_t addr);
-  virtual reg_t read() const noexcept override;
+
+  reg_t read() const noexcept override {
+    return val;
+  }
+
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
