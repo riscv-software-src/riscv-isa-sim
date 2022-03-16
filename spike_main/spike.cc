@@ -232,7 +232,6 @@ int main(int argc, char** argv)
   const char *log_path = nullptr;
   std::vector<std::function<extension_t*()>> extensions;
   const char* initrd = NULL;
-  const char* isa = DEFAULT_ISA;
   const char* priv = DEFAULT_PRIV;
   const char* varch = DEFAULT_VARCH;
   const char* dtb_file = NULL;
@@ -253,7 +252,8 @@ int main(int argc, char** argv)
   std::vector<int> hartids;
   cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0),
             /*default_bootargs=*/nullptr,
-            /*default_nprocs=*/1);
+            /*default_nprocs=*/1,
+            /*default_isa=*/DEFAULT_ISA);
 
   auto const hartids_parser = [&](const char *s) {
     std::string const str(s);
@@ -330,7 +330,7 @@ int main(int argc, char** argv)
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
   parser.option(0, "log-cache-miss", 0, [&](const char* s){log_cache = true;});
-  parser.option(0, "isa", 1, [&](const char* s){isa = s;});
+  parser.option(0, "isa", 1, [&](const char* s){cfg.isa = s;});
   parser.option(0, "priv", 1, [&](const char* s){priv = s;});
   parser.option(0, "varch", 1, [&](const char* s){varch = s;});
   parser.option(0, "device", 1, device_parser);
@@ -395,6 +395,7 @@ int main(int argc, char** argv)
     help();
 
   if (kernel && check_file_exists(kernel)) {
+    const char *isa = cfg.isa();
     kernel_size = get_file_size(kernel);
     if (isa[2] == '6' && isa[3] == '4')
       kernel_offset = 0x200000;
@@ -444,7 +445,7 @@ int main(int argc, char** argv)
   }
 #endif
 
-  sim_t s(&cfg, isa, priv, varch, halted, real_time_clint,
+  sim_t s(&cfg, priv, varch, halted, real_time_clint,
       start_pc, mems, plugin_devices, htif_args,
       std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file,
 #ifdef HAVE_BOOST_ASIO

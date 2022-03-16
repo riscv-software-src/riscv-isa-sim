@@ -32,8 +32,7 @@ class remote_bitbang_t;
 class sim_t : public htif_t, public simif_t
 {
 public:
-  sim_t(const cfg_t *cfg,
-        const char* isa, const char* priv, const char* varch,
+  sim_t(const cfg_t *cfg, const char* priv, const char* varch,
         bool halted, bool real_time_clint,
         reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
         std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
