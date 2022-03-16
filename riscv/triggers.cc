@@ -69,6 +69,18 @@ bool mcontrol_t::tdata1_write(processor_t *proc, const reg_t val) noexcept {
   return true;
 }
 
+reg_t mcontrol_t::tdata2_read(const processor_t *proc) const noexcept {
+  return tdata2;
+}
+
+bool mcontrol_t::tdata2_write(processor_t *proc, const reg_t val) noexcept {
+  if (dmode && !proc->get_state()->debug_mode) {
+    return false;
+  }
+  tdata2 = val;
+  return true;
+}
+
 module_t::module_t(unsigned count) : triggers(count) {
   for (unsigned i = 0; i < count; i++) {
     triggers[i] = new mcontrol_t();

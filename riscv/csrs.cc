@@ -1004,15 +1004,11 @@ tdata2_csr_t::tdata2_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 reg_t tdata2_csr_t::read() const noexcept {
-  return proc->TM.triggers[state->tselect->read()]->tdata2;
+  return proc->TM.triggers[state->tselect->read()]->tdata2_read(proc);
 }
 
 bool tdata2_csr_t::unlogged_write(const reg_t val) noexcept {
-  if (proc->TM.triggers[state->tselect->read()]->dmode && !state->debug_mode) {
-    return false;
-  }
-  proc->TM.triggers[state->tselect->read()]->tdata2 = val;
-  return true;
+  return proc->TM.triggers[state->tselect->read()]->tdata2_write(proc, val);
 }
 
 
