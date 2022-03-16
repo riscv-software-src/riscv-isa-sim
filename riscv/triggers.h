@@ -69,6 +69,9 @@ class module_t {
 public:
   module_t(unsigned count);
 
+  // Return the index of a trigger that matched, or -1.
+  int trigger_match(processor_t *proc, triggers::operation_t operation, reg_t address, reg_t data);
+
   std::vector<mcontrol_t *> triggers;
 };
 

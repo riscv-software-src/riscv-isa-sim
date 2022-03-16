@@ -87,4 +87,88 @@ module_t::module_t(unsigned count) : triggers(count) {
   }
 }
 
+// Return the index of a trigger that matched, or -1.
+int module_t::trigger_match(processor_t *proc, triggers::operation_t operation, reg_t address, reg_t data)
+{
+  state_t *state = proc->get_state();
+  if (state->debug_mode)
+    return -1;
+
+  bool chain_ok = true;
+  auto xlen = proc->get_xlen();
+
+  for (unsigned int i = 0; i < triggers.size(); i++) {
+    if (!chain_ok) {
+      chain_ok |= !triggers[i]->chain;
+      continue;
+    }
+
+    if ((operation == triggers::OPERATION_EXECUTE && !triggers[i]->execute) ||
+        (operation == triggers::OPERATION_STORE && !triggers[i]->store) ||
+        (operation == triggers::OPERATION_LOAD && !triggers[i]->load) ||
+        (state->prv == PRV_M && !triggers[i]->m) ||
+        (state->prv == PRV_S && !triggers[i]->s) ||
+        (state->prv == PRV_U && !triggers[i]->u)) {
+      continue;
+    }
+
+    reg_t value;
+    if (triggers[i]->select) {
+      value = data;
+    } else {
+      value = address;
+    }
+
+    // We need this because in 32-bit mode sometimes the PC bits get sign
+    // extended.
+    if (xlen == 32) {
+      value &= 0xffffffff;
+    }
+
+    auto tdata2 = triggers[i]->tdata2;
+    switch (triggers[i]->match) {
+      case triggers::mcontrol_t::MATCH_EQUAL:
+        if (value != tdata2)
+          continue;
+        break;
+      case triggers::mcontrol_t::MATCH_NAPOT:
+        {
+          reg_t mask = ~((1 << (cto(tdata2)+1)) - 1);
+          if ((value & mask) != (tdata2 & mask))
+            continue;
+        }
+        break;
+      case triggers::mcontrol_t::MATCH_GE:
+        if (value < tdata2)
+          continue;
+        break;
+      case triggers::mcontrol_t::MATCH_LT:
+        if (value >= tdata2)
+          continue;
+        break;
+      case triggers::mcontrol_t::MATCH_MASK_LOW:
+        {
+          reg_t mask = tdata2 >> (xlen/2);
+          if ((value & mask) != (tdata2 & mask))
+            continue;
+        }
+        break;
+      case triggers::mcontrol_t::MATCH_MASK_HIGH:
+        {
+          reg_t mask = tdata2 >> (xlen/2);
+          if (((value >> (xlen/2)) & mask) != (tdata2 & mask))
+            continue;
+        }
+        break;
+    }
+
+    if (!triggers[i]->chain) {
+      return i;
+    }
+    chain_ok = true;
+  }
+  return -1;
+}
+
+
 };
