@@ -32,6 +32,7 @@ processor_t::processor_t(isa_parser_t isa, const char* varch,
   impl_table(256, false), last_pc(1), executions(1), TM(state.num_triggers)
 {
   VU.p = this;
+  TM.proc = this;
 
 #ifndef __SIZEOF_INT128__
   if (extension_enabled('V')) {

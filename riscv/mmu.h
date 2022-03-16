@@ -470,7 +470,7 @@ private:
     }
     if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
       target_endian<uint16_t>* ptr = (target_endian<uint16_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
-      int match = proc->TM.trigger_match(proc, triggers::OPERATION_EXECUTE, addr, from_target(*ptr));
+      int match = proc->TM.trigger_match(triggers::OPERATION_EXECUTE, addr, from_target(*ptr));
       if (match >= 0) {
         throw trigger_matched_t(match, triggers::OPERATION_EXECUTE, addr, from_target(*ptr));
       }
@@ -488,7 +488,7 @@ private:
     if (!proc) {
       return NULL;
     }
-    int match = proc->TM.trigger_match(proc, operation, address, data);
+    int match = proc->TM.trigger_match(operation, address, data);
     if (match == -1)
       return NULL;
     if (proc->TM.triggers[match]->timing == 0) {
