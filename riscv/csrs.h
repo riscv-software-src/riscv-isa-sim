@@ -215,17 +215,6 @@ class vsstatus_csr_t: public base_status_csr_t {
 typedef std::shared_ptr<vsstatus_csr_t> vsstatus_csr_t_p;
 
 
-class sstatus_proxy_csr_t: public base_status_csr_t {
- public:
-  sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mstatus);
-  virtual reg_t read() const noexcept override;
- protected:
-  virtual bool unlogged_write(const reg_t val) noexcept override;
- private:
-  csr_t_p mstatus;
-};
-
-
 class mstatus_csr_t: public base_status_csr_t {
  public:
   mstatus_csr_t(processor_t* const proc, const reg_t addr);
@@ -249,6 +238,17 @@ class mstatush_csr_t: public csr_t {
  private:
   mstatus_csr_t_p mstatus;
   const reg_t mask;
+};
+
+
+class sstatus_proxy_csr_t: public base_status_csr_t {
+ public:
+  sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mstatus);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  csr_t_p mstatus;
 };
 
 
