@@ -991,25 +991,7 @@ tdata1_csr_t::tdata1_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 reg_t tdata1_csr_t::read() const noexcept {
-  reg_t v = 0;
-  auto xlen = proc->get_xlen();
-  triggers::mcontrol_t *mc = proc->TM.triggers[state->tselect->read()];
-  v = set_field(v, MCONTROL_TYPE(xlen), mc->type);
-  v = set_field(v, MCONTROL_DMODE(xlen), mc->dmode);
-  v = set_field(v, MCONTROL_MASKMAX(xlen), mc->maskmax);
-  v = set_field(v, MCONTROL_SELECT, mc->select);
-  v = set_field(v, MCONTROL_TIMING, mc->timing);
-  v = set_field(v, MCONTROL_ACTION, mc->action);
-  v = set_field(v, MCONTROL_CHAIN, mc->chain);
-  v = set_field(v, MCONTROL_MATCH, mc->match);
-  v = set_field(v, MCONTROL_M, mc->m);
-  v = set_field(v, MCONTROL_H, mc->h);
-  v = set_field(v, MCONTROL_S, mc->s);
-  v = set_field(v, MCONTROL_U, mc->u);
-  v = set_field(v, MCONTROL_EXECUTE, mc->execute);
-  v = set_field(v, MCONTROL_STORE, mc->store);
-  v = set_field(v, MCONTROL_LOAD, mc->load);
-  return v;
+  return proc->TM.triggers[state->tselect->read()]->tdata1_read(proc);
 }
 
 bool tdata1_csr_t::unlogged_write(const reg_t val) noexcept {

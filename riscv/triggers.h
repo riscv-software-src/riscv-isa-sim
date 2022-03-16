@@ -44,6 +44,7 @@ public:
   } match_t;
 
   mcontrol_t();
+  reg_t tdata1_read(const processor_t *proc) const noexcept;
 
   uint8_t type;
   uint8_t maskmax;
