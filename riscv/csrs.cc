@@ -914,7 +914,7 @@ void counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
   const bool hctr_ok = state->v ? myenable(state->hcounteren) : true;
   const bool sctr_ok = (proc->extension_enabled('S') && state->prv < PRV_S) ? myenable(state->scounteren) : true;
 
-  if (!mctr_ok)
+  if (write || !mctr_ok)
     throw trap_illegal_instruction(insn.bits());
   if (!hctr_ok)
       throw trap_virtual_instruction(insn.bits());
@@ -924,9 +924,6 @@ void counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
     else
       throw trap_illegal_instruction(insn.bits());
   }
-
-  if (write)
-    throw trap_illegal_instruction(insn.bits());
 }
 
 
