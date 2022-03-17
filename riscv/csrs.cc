@@ -316,12 +316,6 @@ base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 
-bool base_status_csr_t::enabled(const reg_t which) {
-  // If the field doesn't exist, it is always enabled. See #823.
-  if ((sstatus_write_mask & which) == 0) return true;
-  return (read() & which) != 0;
-}
-
 reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
   // If a configuration has FS bits, they will always be accessible no
   // matter the state of misa.
@@ -380,10 +374,6 @@ vsstatus_csr_t::vsstatus_csr_t(processor_t* const proc, const reg_t addr):
   val(proc->get_state()->mstatus->read() & sstatus_read_mask) {
 }
 
-reg_t vsstatus_csr_t::read() const noexcept {
-  return val;
-}
-
 bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t newval = (this->val & ~sstatus_write_mask) | (val & sstatus_write_mask);
   if (state->v) maybe_flush_tlb(newval);
@@ -393,13 +383,9 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 
 
 // implement class sstatus_proxy_csr_t
-sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mstatus):
+sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr, mstatus_csr_t_p mstatus):
   base_status_csr_t(proc, addr),
   mstatus(mstatus) {
-}
-
-reg_t sstatus_proxy_csr_t::read() const noexcept {
-  return mstatus->read() & sstatus_read_mask;
 }
 
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
@@ -422,11 +408,6 @@ mstatus_csr_t::mstatus_csr_t(processor_t* const proc, const reg_t addr):
 #endif
       | 0  // initial value for mstatus
   ) {
-}
-
-
-reg_t mstatus_csr_t::read() const noexcept {
-  return val;
 }
 
 
@@ -466,29 +447,40 @@ bool mstatush_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 // implement class sstatus_csr_t
-sstatus_csr_t::sstatus_csr_t(processor_t* const proc, base_status_csr_t_p orig, base_status_csr_t_p virt):
+sstatus_csr_t::sstatus_csr_t(processor_t* const proc, sstatus_proxy_csr_t_p orig, vsstatus_csr_t_p virt):
   virtualized_csr_t(proc, orig, virt),
   orig_sstatus(orig),
   virt_sstatus(virt) {
 }
 
 void sstatus_csr_t::dirty(const reg_t dirties) {
+  // As an optimization, return early if already dirty.
+  if ((orig_sstatus->read() & dirties) == dirties) {
+    if (likely(!state->v || (virt_sstatus->read() & dirties) == dirties))
+      return;
+  }
+
   // Catch problems like #823 where P-extension instructions were not
   // checking for mstatus.VS!=Off:
   if (!enabled(dirties)) abort();
 
-  orig_csr->write(orig_csr->read() | dirties);
+  orig_sstatus->write(orig_sstatus->read() | dirties);
   if (state->v) {
-    virt_csr->write(virt_csr->read() | dirties);
+    virt_sstatus->write(virt_sstatus->read() | dirties);
   }
 }
 
 bool sstatus_csr_t::enabled(const reg_t which) {
-  if (!orig_sstatus->enabled(which))
-    return false;
-  if (state->v && !virt_sstatus->enabled(which))
-    return false;
-  return true;
+  if ((orig_sstatus->read() & which) != 0) {
+    if (!state->v || (virt_sstatus->read() & which) != 0)
+      return true;
+  }
+
+  // If the field doesn't exist, it is always enabled. See #823.
+  if (!orig_sstatus->field_exists(which))
+    return true;
+
+  return false;
 }
 
 
