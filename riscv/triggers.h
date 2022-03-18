@@ -37,6 +37,10 @@ class matched_t
 
 class trigger_t {
 public:
+  virtual bool memory_access_match(processor_t *proc,
+      operation_t operation, reg_t address, reg_t data) = 0;
+
+public:
   bool dmode;
   action_t action;
 
@@ -57,10 +61,14 @@ public:
   } match_t;
 
   mcontrol_t();
+
   reg_t tdata1_read(const processor_t *proc) const noexcept;
   bool tdata1_write(processor_t *proc, const reg_t val) noexcept;
   reg_t tdata2_read(const processor_t *proc) const noexcept;
   bool tdata2_write(processor_t *proc, const reg_t val) noexcept;
+
+  virtual bool memory_access_match(processor_t *proc,
+      operation_t operation, reg_t address, reg_t data) override;
 
   uint8_t type;
   uint8_t maskmax;
