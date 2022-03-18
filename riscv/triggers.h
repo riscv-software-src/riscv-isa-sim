@@ -91,7 +91,7 @@ public:
   module_t(unsigned count);
 
   // Return the index of a trigger that matched, or -1.
-  int trigger_match(triggers::operation_t operation, reg_t address, reg_t data);
+  int memory_access_match(triggers::operation_t operation, reg_t address, reg_t data);
 
   processor_t *proc;
   std::vector<mcontrol_t *> triggers;

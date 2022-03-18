@@ -139,7 +139,7 @@ module_t::module_t(unsigned count) : triggers(count) {
 }
 
 // Return the index of a trigger that matched, or -1.
-int module_t::trigger_match(triggers::operation_t operation, reg_t address, reg_t data)
+int module_t::memory_access_match(triggers::operation_t operation, reg_t address, reg_t data)
 {
   state_t *state = proc->get_state();
   if (state->debug_mode)
