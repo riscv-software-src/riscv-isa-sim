@@ -309,7 +309,7 @@ void processor_t::step(size_t n)
         enter_debug_mode(DCSR_CAUSE_STEP);
       }
     }
-    catch (trigger_matched_t& t)
+    catch (triggers::matched_t& t)
     {
       if (mmu->matched_trigger) {
         // This exception came from the MMU. That means the instruction hasn't

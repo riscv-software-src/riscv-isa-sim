@@ -22,6 +22,19 @@ typedef enum
   ACTION_TRACE_EMIT = MCONTROL_ACTION_TRACE_EMIT
 } action_t;
 
+class matched_t
+{
+  public:
+    matched_t(int index,
+        triggers::operation_t operation, reg_t address, reg_t data) :
+      index(index), operation(operation), address(address), data(data) {}
+
+    int index;
+    triggers::operation_t operation;
+    reg_t address;
+    reg_t data;
+};
+
 class trigger_t {
 public:
   bool dmode;

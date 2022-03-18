@@ -38,19 +38,6 @@ struct tlb_entry_t {
   reg_t target_offset;
 };
 
-class trigger_matched_t
-{
-  public:
-    trigger_matched_t(int index,
-        triggers::operation_t operation, reg_t address, reg_t data) :
-      index(index), operation(operation), address(address), data(data) {}
-
-    int index;
-    triggers::operation_t operation;
-    reg_t address;
-    reg_t data;
-};
-
 // this class implements a processor's port into the virtual memory system.
 // an MMU and instruction cache are maintained for simulator performance.
 class mmu_t
@@ -472,7 +459,7 @@ private:
       target_endian<uint16_t>* ptr = (target_endian<uint16_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
       int match = proc->TM.trigger_match(triggers::OPERATION_EXECUTE, addr, from_target(*ptr));
       if (match >= 0) {
-        throw trigger_matched_t(match, triggers::OPERATION_EXECUTE, addr, from_target(*ptr));
+        throw triggers::matched_t(match, triggers::OPERATION_EXECUTE, addr, from_target(*ptr));
       }
     }
     return result;
@@ -482,7 +469,7 @@ private:
     return (uint16_t*)(translate_insn_addr(addr).host_offset + addr);
   }
 
-  inline trigger_matched_t *trigger_exception(triggers::operation_t operation,
+  inline triggers::matched_t *trigger_exception(triggers::operation_t operation,
       reg_t address, reg_t data)
   {
     if (!proc) {
@@ -492,9 +479,9 @@ private:
     if (match == -1)
       return NULL;
     if (proc->TM.triggers[match]->timing == 0) {
-      throw trigger_matched_t(match, operation, address, data);
+      throw triggers::matched_t(match, operation, address, data);
     }
-    return new trigger_matched_t(match, operation, address, data);
+    return new triggers::matched_t(match, operation, address, data);
   }
 
   reg_t pmp_homogeneous(reg_t addr, reg_t len);
@@ -509,7 +496,7 @@ private:
   bool check_triggers_load;
   bool check_triggers_store;
   // The exception describing a matched trigger, or NULL.
-  trigger_matched_t *matched_trigger;
+  triggers::matched_t *matched_trigger;
 
   friend class processor_t;
 };
