@@ -28,9 +28,7 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-sim_t::sim_t(const char* isa_string, const char* priv, const char* varch,
-             size_t nprocs, bool halted, bool real_time_clint,
-             reg_t initrd_start, reg_t initrd_end, const char* bootargs,
+sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_clint,
              reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
@@ -43,13 +41,11 @@ sim_t::sim_t(const char* isa_string, const char* priv, const char* varch,
 #endif
              FILE *cmd_file) // needed for command line option --cmd
   : htif_t(args),
-    isa(isa_string, priv),
+    isa(cfg->isa(), cfg->priv()),
+    cfg(cfg),
     mems(mems),
     plugin_devices(plugin_devices),
-    procs(std::max(nprocs, size_t(1))),
-    initrd_start(initrd_start),
-    initrd_end(initrd_end),
-    bootargs(bootargs),
+    procs(std::max(cfg->nprocs(), size_t(1))),
     start_pc(start_pc),
     dtb_file(dtb_file ? dtb_file : ""),
     dtb_enabled(dtb_enabled),
@@ -82,15 +78,15 @@ sim_t::sim_t(const char* isa_string, const char* priv, const char* varch,
 
   debug_mmu = new mmu_t(this, NULL);
 
-  if (! (hartids.empty() || hartids.size() == nprocs)) {
+  if (! (hartids.empty() || hartids.size() == nprocs())) {
       std::cerr << "Number of specified hartids ("
                 << hartids.size()
                 << ") doesn't match number of processors ("
-                << nprocs << ").\n";
+                << nprocs() << ").\n";
       exit(1);
   }
 
-  for (size_t i = 0; i < nprocs; i++) {
+  for (size_t i = 0; i < nprocs(); i++) {
     int hart_id = hartids.empty() ? i : hartids[i];
     procs[i] = new processor_t(isa, varch, this, hart_id, halted,
                                log_file.get(), sout_);
@@ -123,7 +119,7 @@ sim_t::sim_t(const char* isa_string, const char* priv, const char* varch,
   for (cpu_offset = fdt_get_first_subnode(fdt, cpu_offset); cpu_offset >= 0;
        cpu_offset = fdt_get_next_subnode(fdt, cpu_offset)) {
 
-    if (cpu_idx >= nprocs)
+    if (cpu_idx >= nprocs())
       break;
 
     //handle pmp
@@ -173,11 +169,11 @@ sim_t::sim_t(const char* isa_string, const char* priv, const char* varch,
     cpu_idx++;
   }
 
-  if (cpu_idx != nprocs) {
+  if (cpu_idx != nprocs()) {
       std::cerr << "core number in dts ("
                 <<  cpu_idx
                 << ") doesn't match it in command line ("
-                << nprocs << ").\n";
+                << nprocs() << ").\n";
       exit(1);
   }
 }
@@ -312,7 +308,10 @@ void sim_t::make_dtb()
 
     dtb = strstream.str();
   } else {
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, bootargs, procs, mems);
+    std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds();
+    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
+                   initrd_bounds.first, initrd_bounds.second,
+                   cfg->bootargs(), procs, mems);
     dtb = dts_compile(dts);
   }
 
