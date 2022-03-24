@@ -65,7 +65,6 @@ bool mcontrol_t::tdata1_write(processor_t *proc, const reg_t val) noexcept {
   // Assume we're here because of csrw.
   if (execute)
     timing = 0;
-  proc->trigger_updated();
   return true;
 }
 
@@ -180,7 +179,9 @@ reg_t module_t::tdata1_read(const processor_t *proc, unsigned index) const noexc
 
 bool module_t::tdata1_write(processor_t *proc, unsigned index, const reg_t val) noexcept
 {
-  return triggers[index]->tdata1_write(proc, val);
+  bool result = triggers[index]->tdata1_write(proc, val);
+  proc->trigger_updated(&triggers);
+  return result;
 }
 
 reg_t module_t::tdata2_read(const processor_t *proc, unsigned index) const noexcept
@@ -190,7 +191,9 @@ reg_t module_t::tdata2_read(const processor_t *proc, unsigned index) const noexc
 
 bool module_t::tdata2_write(processor_t *proc, unsigned index, const reg_t val) noexcept
 {
-  return triggers[index]->tdata2_write(proc, val);
+  bool result = triggers[index]->tdata2_write(proc, val);
+  proc->trigger_updated(&triggers);
+  return result;
 }
 
 

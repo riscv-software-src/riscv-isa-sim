@@ -111,6 +111,7 @@ public:
   bool tdata2_write(processor_t *proc, unsigned index, const reg_t val) noexcept;
 
   processor_t *proc;
+private:
   std::vector<mcontrol_t *> triggers;
 };
 

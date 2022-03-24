@@ -314,7 +314,7 @@ public:
     HR_GROUP    /* Halt requested due to halt group. */
   } halt_request;
 
-  void trigger_updated();
+  void trigger_updated(const std::vector<triggers::mcontrol_t *> *triggers);
 
   void set_pmp_num(reg_t pmp_num);
   void set_pmp_granularity(reg_t pmp_granularity);

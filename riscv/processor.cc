@@ -988,14 +988,14 @@ bool processor_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   return false;
 }
 
-void processor_t::trigger_updated()
+void processor_t::trigger_updated(const std::vector<triggers::mcontrol_t *> *triggers)
 {
   mmu->flush_tlb();
   mmu->check_triggers_fetch = false;
   mmu->check_triggers_load = false;
   mmu->check_triggers_store = false;
 
-  for (auto trigger : TM.triggers) {
+  for (auto trigger : *triggers) {
     if (trigger->execute) {
       mmu->check_triggers_fetch = true;
     }
