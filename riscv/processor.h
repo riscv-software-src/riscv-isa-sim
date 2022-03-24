@@ -224,12 +224,12 @@ static int cto(reg_t val)
 class processor_t : public abstract_device_t
 {
 public:
-  processor_t(isa_parser_t isa, const char* varch,
+  processor_t(const isa_parser_t *isa, const char* varch,
               simif_t* sim, uint32_t id, bool halt_on_reset,
               FILE *log_file, std::ostream& sout_); // because of command line option --log and -s we need both
   ~processor_t();
 
-  const isa_parser_t &get_isa() { return isa; }
+  const isa_parser_t &get_isa() { return *isa; }
 
   void set_debug(bool value);
   void set_histogram(bool value);
@@ -266,7 +266,7 @@ public:
     if (ext >= 'A' && ext <= 'Z')
       return state.misa->extension_enabled(ext);
     else
-      return isa.extension_enabled(ext);
+      return isa->extension_enabled(ext);
   }
   // Is this extension enabled? and abort if this extension can
   // possibly be disabled dynamically. Useful for documenting
@@ -275,7 +275,7 @@ public:
     if (ext >= 'A' && ext <= 'Z')
       return state.misa->extension_enabled_const(ext);
     else
-      return isa.extension_enabled(ext);  // assume this can't change
+      return isa->extension_enabled(ext);  // assume this can't change
   }
   void set_impl(uint8_t impl, bool val) { impl_table[impl] = val; }
   bool supports_impl(uint8_t impl) const {
@@ -323,7 +323,7 @@ public:
   const char* get_symbol(uint64_t addr);
 
 private:
-  isa_parser_t isa;
+  const isa_parser_t * const isa;
 
   simif_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
