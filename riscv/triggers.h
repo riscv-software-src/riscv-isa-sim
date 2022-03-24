@@ -45,6 +45,8 @@ public:
   virtual match_result_t memory_access_match(processor_t *proc,
       operation_t operation, reg_t address, reg_t data) = 0;
 
+  virtual bool chain() const { return false; }
+
 public:
   bool dmode;
   action_t action;
@@ -72,6 +74,8 @@ public:
   reg_t tdata2_read(const processor_t *proc) const noexcept;
   bool tdata2_write(processor_t *proc, const reg_t val) noexcept;
 
+  virtual bool chain() const override { return chain_bit; }
+
   virtual match_result_t memory_access_match(processor_t *proc,
       operation_t operation, reg_t address, reg_t data) override;
 
@@ -83,7 +87,7 @@ public:
   uint8_t maskmax;
   bool select;
   bool timing;
-  bool chain;
+  bool chain_bit;
   match_t match;
   bool m;
   bool h;

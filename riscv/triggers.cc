@@ -4,7 +4,7 @@
 namespace triggers {
 
 mcontrol_t::mcontrol_t() :
-  type(2), maskmax(0), select(false), timing(false), chain(false),
+  type(2), maskmax(0), select(false), timing(false), chain_bit(false),
   match(MATCH_EQUAL), m(false), h(false), s(false), u(false), execute(false),
   store(false), load(false)
 {
@@ -19,7 +19,7 @@ reg_t mcontrol_t::tdata1_read(const processor_t *proc) const noexcept {
   v = set_field(v, MCONTROL_SELECT, select);
   v = set_field(v, MCONTROL_TIMING, timing);
   v = set_field(v, MCONTROL_ACTION, action);
-  v = set_field(v, MCONTROL_CHAIN, chain);
+  v = set_field(v, MCONTROL_CHAIN, chain_bit);
   v = set_field(v, MCONTROL_MATCH, match);
   v = set_field(v, MCONTROL_M, m);
   v = set_field(v, MCONTROL_H, h);
@@ -40,7 +40,7 @@ bool mcontrol_t::tdata1_write(processor_t *proc, const reg_t val) noexcept {
   select = get_field(val, MCONTROL_SELECT);
   timing = get_field(val, MCONTROL_TIMING);
   action = (triggers::action_t) get_field(val, MCONTROL_ACTION);
-  chain = get_field(val, MCONTROL_CHAIN);
+  chain_bit = get_field(val, MCONTROL_CHAIN);
   unsigned match_value = get_field(val, MCONTROL_MATCH);
   switch (match_value) {
     case MATCH_EQUAL:
@@ -157,12 +157,12 @@ match_result_t module_t::memory_access_match(action_t *action, operation_t opera
 
   for (unsigned int i = 0; i < triggers.size(); i++) {
     if (!chain_ok) {
-      chain_ok |= !triggers[i]->chain;
+      chain_ok |= !triggers[i]->chain();
       continue;
     }
 
     match_result_t result = triggers[i]->memory_access_match(proc, operation, address, data);
-    if (result != MATCH_NONE && !triggers[i]->chain) {
+    if (result != MATCH_NONE && !triggers[i]->chain()) {
       *action = triggers[i]->action;
       return result;
     }
