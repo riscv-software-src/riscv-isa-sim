@@ -173,5 +173,25 @@ match_result_t module_t::memory_access_match(action_t *action, operation_t opera
   return MATCH_NONE;
 }
 
+reg_t module_t::tdata1_read(const processor_t *proc, unsigned index) const noexcept
+{
+  return triggers[index]->tdata1_read(proc);
+}
+
+bool module_t::tdata1_write(processor_t *proc, unsigned index, const reg_t val) noexcept
+{
+  return triggers[index]->tdata1_write(proc, val);
+}
+
+reg_t module_t::tdata2_read(const processor_t *proc, unsigned index) const noexcept
+{
+  return triggers[index]->tdata2_read(proc);
+}
+
+bool module_t::tdata2_write(processor_t *proc, unsigned index, const reg_t val) noexcept
+{
+  return triggers[index]->tdata2_write(proc, val);
+}
+
 
 };

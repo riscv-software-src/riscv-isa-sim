@@ -103,6 +103,11 @@ public:
   match_result_t memory_access_match(action_t *action,
       operation_t operation, reg_t address, reg_t data);
 
+  reg_t tdata1_read(const processor_t *proc, unsigned index) const noexcept;
+  bool tdata1_write(processor_t *proc, unsigned index, const reg_t val) noexcept;
+  reg_t tdata2_read(const processor_t *proc, unsigned index) const noexcept;
+  bool tdata2_write(processor_t *proc, unsigned index, const reg_t val) noexcept;
+
   processor_t *proc;
   std::vector<mcontrol_t *> triggers;
 };
