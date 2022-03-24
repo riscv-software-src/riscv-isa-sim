@@ -22,22 +22,27 @@ typedef enum
   ACTION_TRACE_EMIT = MCONTROL_ACTION_TRACE_EMIT
 } action_t;
 
+typedef enum {
+  MATCH_NONE,
+  MATCH_FIRE_BEFORE,
+  MATCH_FIRE_AFTER
+} match_result_t;
+
 class matched_t
 {
   public:
-    matched_t(int index,
-        triggers::operation_t operation, reg_t address, reg_t data) :
-      index(index), operation(operation), address(address), data(data) {}
+    matched_t(triggers::operation_t operation, reg_t address, reg_t data, action_t action) :
+      operation(operation), address(address), data(data), action(action) {}
 
-    int index;
     triggers::operation_t operation;
     reg_t address;
     reg_t data;
+    action_t action;
 };
 
 class trigger_t {
 public:
-  virtual bool memory_access_match(processor_t *proc,
+  virtual match_result_t memory_access_match(processor_t *proc,
       operation_t operation, reg_t address, reg_t data) = 0;
 
 public:
@@ -67,9 +72,13 @@ public:
   reg_t tdata2_read(const processor_t *proc) const noexcept;
   bool tdata2_write(processor_t *proc, const reg_t val) noexcept;
 
-  virtual bool memory_access_match(processor_t *proc,
+  virtual match_result_t memory_access_match(processor_t *proc,
       operation_t operation, reg_t address, reg_t data) override;
 
+private:
+  bool simple_match(unsigned xlen, reg_t value) const;
+
+public:
   uint8_t type;
   uint8_t maskmax;
   bool select;
@@ -84,14 +93,15 @@ public:
   bool store;
   bool load;
   reg_t tdata2;
+
 };
 
 class module_t {
 public:
   module_t(unsigned count);
 
-  // Return the index of a trigger that matched, or -1.
-  int memory_access_match(triggers::operation_t operation, reg_t address, reg_t data);
+  match_result_t memory_access_match(action_t *action,
+      operation_t operation, reg_t address, reg_t data);
 
   processor_t *proc;
   std::vector<mcontrol_t *> triggers;

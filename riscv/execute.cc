@@ -324,7 +324,7 @@ void processor_t::step(size_t n)
         delete mmu->matched_trigger;
         mmu->matched_trigger = NULL;
       }
-      switch (TM.triggers[t.index]->action) {
+      switch (t.action) {
         case triggers::ACTION_DEBUG_MODE:
           enter_debug_mode(DCSR_CAUSE_HWBP);
           break;

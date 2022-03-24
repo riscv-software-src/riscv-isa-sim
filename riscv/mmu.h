@@ -457,9 +457,10 @@ private:
     }
     if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
       target_endian<uint16_t>* ptr = (target_endian<uint16_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
-      int match = proc->TM.memory_access_match(triggers::OPERATION_EXECUTE, addr, from_target(*ptr));
-      if (match >= 0) {
-        throw triggers::matched_t(match, triggers::OPERATION_EXECUTE, addr, from_target(*ptr));
+      triggers::action_t action;
+      auto match = proc->TM.memory_access_match(&action, triggers::OPERATION_EXECUTE, addr, from_target(*ptr));
+      if (match != triggers::MATCH_NONE) {
+        throw triggers::matched_t(triggers::OPERATION_EXECUTE, addr, from_target(*ptr), action);
       }
     }
     return result;
@@ -475,13 +476,14 @@ private:
     if (!proc) {
       return NULL;
     }
-    int match = proc->TM.memory_access_match(operation, address, data);
-    if (match == -1)
+    triggers::action_t action;
+    auto match = proc->TM.memory_access_match(&action, operation, address, data);
+    if (match == triggers::MATCH_NONE)
       return NULL;
-    if (proc->TM.triggers[match]->timing == 0) {
-      throw triggers::matched_t(match, operation, address, data);
+    if (match == triggers::MATCH_FIRE_BEFORE) {
+      throw triggers::matched_t(operation, address, data, action);
     }
-    return new triggers::matched_t(match, operation, address, data);
+    return new triggers::matched_t(operation, address, data, action);
   }
 
   reg_t pmp_homogeneous(reg_t addr, reg_t len);

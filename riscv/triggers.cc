@@ -81,31 +81,7 @@ bool mcontrol_t::tdata2_write(processor_t *proc, const reg_t val) noexcept {
   return true;
 }
 
-bool mcontrol_t::memory_access_match(processor_t *proc, operation_t operation, reg_t address, reg_t data) {
-  state_t *state = proc->get_state();
-  if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
-      (operation == triggers::OPERATION_STORE && !store) ||
-      (operation == triggers::OPERATION_LOAD && !load) ||
-      (state->prv == PRV_M && !m) ||
-      (state->prv == PRV_S && !s) ||
-      (state->prv == PRV_U && !u)) {
-    return false;
-  }
-
-  reg_t value;
-  if (select) {
-    value = data;
-  } else {
-    value = address;
-  }
-
-  // We need this because in 32-bit mode sometimes the PC bits get sign
-  // extended.
-  auto xlen = proc->get_xlen();
-  if (xlen == 32) {
-    value &= 0xffffffff;
-  }
-
+bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
   switch (match) {
     case triggers::mcontrol_t::MATCH_EQUAL:
       return value == tdata2;
@@ -132,18 +108,51 @@ bool mcontrol_t::memory_access_match(processor_t *proc, operation_t operation, r
   assert(0);
 }
 
+match_result_t mcontrol_t::memory_access_match(processor_t *proc, operation_t operation, reg_t address, reg_t data) {
+  state_t *state = proc->get_state();
+  if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
+      (operation == triggers::OPERATION_STORE && !store) ||
+      (operation == triggers::OPERATION_LOAD && !load) ||
+      (state->prv == PRV_M && !m) ||
+      (state->prv == PRV_S && !s) ||
+      (state->prv == PRV_U && !u)) {
+    return MATCH_NONE;
+  }
+
+  reg_t value;
+  if (select) {
+    value = data;
+  } else {
+    value = address;
+  }
+
+  // We need this because in 32-bit mode sometimes the PC bits get sign
+  // extended.
+  auto xlen = proc->get_xlen();
+  if (xlen == 32) {
+    value &= 0xffffffff;
+  }
+
+  if (simple_match(xlen, value)) {
+    if (timing)
+      return MATCH_FIRE_AFTER;
+    else
+      return MATCH_FIRE_BEFORE;
+  }
+  return MATCH_NONE;
+}
+
 module_t::module_t(unsigned count) : triggers(count) {
   for (unsigned i = 0; i < count; i++) {
     triggers[i] = new mcontrol_t();
   }
 }
 
-// Return the index of a trigger that matched, or -1.
-int module_t::memory_access_match(triggers::operation_t operation, reg_t address, reg_t data)
+match_result_t module_t::memory_access_match(action_t *action, operation_t operation, reg_t address, reg_t data)
 {
   state_t *state = proc->get_state();
   if (state->debug_mode)
-    return -1;
+    return MATCH_NONE;
 
   bool chain_ok = true;
 
@@ -153,14 +162,15 @@ int module_t::memory_access_match(triggers::operation_t operation, reg_t address
       continue;
     }
 
-    if (triggers[i]->memory_access_match(proc, operation, address, data) &&
-        !triggers[i]->chain) {
-      return i;
+    match_result_t result = triggers[i]->memory_access_match(proc, operation, address, data);
+    if (result != MATCH_NONE && !triggers[i]->chain) {
+      *action = triggers[i]->action;
+      return result;
     }
 
     chain_ok = true;
   }
-  return -1;
+  return MATCH_NONE;
 }
 
 
