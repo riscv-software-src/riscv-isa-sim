@@ -29,7 +29,7 @@ static void handle_signal(int sig)
 }
 
 sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_clint,
-             reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
+             std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
              std::vector<int> const hartids,
@@ -46,7 +46,6 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
     mems(mems),
     plugin_devices(plugin_devices),
     procs(std::max(cfg->nprocs(), size_t(1))),
-    start_pc(start_pc),
     dtb_file(dtb_file ? dtb_file : ""),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
@@ -334,7 +333,7 @@ void sim_t::set_rom()
 {
   const int reset_vec_size = 8;
 
-  start_pc = start_pc == reg_t(-1) ? get_entry_point() : start_pc;
+  reg_t start_pc = cfg->start_pc.value_or(get_entry_point());
 
   uint32_t reset_vec[reset_vec_size] = {
     0x297,                                      // auipc  t0,0x0

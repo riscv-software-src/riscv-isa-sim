@@ -2,6 +2,7 @@
 #ifndef _RISCV_CFG_H
 #define _RISCV_CFG_H
 
+#include <optional>
 #include "decode.h"
 #include "mmu.h"
 #include <cassert>
@@ -70,6 +71,7 @@ public:
   cfg_arg_t<const char *>            isa;
   cfg_arg_t<const char *>            priv;
   cfg_arg_t<std::vector<mem_cfg_t>>  mem_layout;
+  std::optional<reg_t>               start_pc;
 };
 
 #endif

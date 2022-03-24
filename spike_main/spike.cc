@@ -232,7 +232,6 @@ int main(int argc, char** argv)
   bool real_time_clint = false;
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
-  reg_t start_pc = reg_t(-1);
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
   std::unique_ptr<icache_sim_t> ic;
   std::unique_ptr<dcache_sim_t> dc;
@@ -335,7 +334,7 @@ int main(int argc, char** argv)
   // I wanted to use --halted, but for some reason that doesn't work.
   parser.option('H', 0, 0, [&](const char* s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
-  parser.option(0, "pc", 1, [&](const char* s){start_pc = strtoull(s, 0, 0);});
+  parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc = strtoull(s, 0, 0);});
   parser.option(0, "hartids", 1, hartids_parser);
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
@@ -457,7 +456,7 @@ int main(int argc, char** argv)
 #endif
 
   sim_t s(&cfg, varch, halted, real_time_clint,
-      start_pc, mems, plugin_devices, htif_args,
+      mems, plugin_devices, htif_args,
       std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file,
 #ifdef HAVE_BOOST_ASIO
       io_service_ptr, acceptor_ptr,
