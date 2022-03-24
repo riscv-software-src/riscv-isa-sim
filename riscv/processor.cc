@@ -310,6 +310,12 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str == "zkr") {
       extension_table[EXT_ZKR] = true;
     } else if (ext_str == "zkt") {
+    } else if (ext_str == "zbpbo") {
+      extension_table[EXT_ZBPBO] = true;
+    } else if (ext_str == "zpn") {
+      extension_table[EXT_ZPN] = true;
+    } else if (ext_str == "zpsfoperand") {
+      extension_table[EXT_ZPSFOPERAND] = true;
     } else if (ext_str == "svnapot") {
       extension_table[EXT_SVNAPOT] = true;
     } else if (ext_str == "svpbmt") {
@@ -364,6 +370,16 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       bad_isa_string(str, ("unsupported extension: " + ext_str).c_str());
     }
     p = end;
+  }
+  if (extension_table[EXT_ZBPBO] ||
+      extension_table[EXT_ZPN] ||
+      extension_table[EXT_ZPSFOPERAND]) {
+    if (!extension_table[EXT_ZBPBO] ||
+        !extension_table[EXT_ZPN] ||
+        (!extension_table[EXT_ZPSFOPERAND] && (max_xlen == 64)) ||
+        (!extension_table[EXT_ZMMUL] && !extension_table['M'])) {
+      bad_isa_string(str, "Illegal p-ext combination");
+    }
   }
   if (*p) {
     bad_isa_string(str, ("can't parse: " + std::string(p)).c_str());
