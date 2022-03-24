@@ -58,7 +58,8 @@ public:
         const char *default_isa, const char *default_priv,
         const char *default_varch,
         const std::vector<mem_cfg_t> &default_mem_layout,
-        const std::vector<int> default_hartids)
+        const std::vector<int> default_hartids,
+        bool default_real_time_clint)
     : initrd_bounds(default_initrd_bounds),
       bootargs(default_bootargs),
       isa(default_isa),
@@ -66,7 +67,8 @@ public:
       varch(default_varch),
       mem_layout(default_mem_layout),
       hartids(default_hartids),
-      explicit_hartids(false)
+      explicit_hartids(false),
+      real_time_clint(default_real_time_clint)
   {}
 
   cfg_arg_t<std::pair<reg_t, reg_t>> initrd_bounds;
@@ -78,6 +80,7 @@ public:
   std::optional<reg_t>               start_pc;
   cfg_arg_t<std::vector<int>>        hartids;
   bool                               explicit_hartids;
+  cfg_arg_t<bool>                    real_time_clint;
 
   size_t nprocs() const { return hartids().size(); }
 };

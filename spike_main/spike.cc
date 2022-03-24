@@ -244,7 +244,6 @@ int main(int argc, char** argv)
   bool socket = false;  // command line option -s
   bool dump_dts = false;
   bool dtb_enabled = true;
-  bool real_time_clint = false;
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
@@ -279,7 +278,8 @@ int main(int argc, char** argv)
             /*default_priv=*/DEFAULT_PRIV,
             /*default_varch=*/DEFAULT_VARCH,
             /*default_mem_layout=*/parse_mem_layout("2048"),
-            /*default_hartids=*/std::vector<int>());
+            /*default_hartids=*/std::vector<int>(),
+            /*default_real_time_clint=*/false);
 
   auto const device_parser = [&plugin_devices](const char *s) {
     const std::string str(s);
@@ -358,7 +358,7 @@ int main(int argc, char** argv)
   parser.option(0, "kernel", 1, [&](const char* s){kernel = s;});
   parser.option(0, "initrd", 1, [&](const char* s){initrd = s;});
   parser.option(0, "bootargs", 1, [&](const char* s){cfg.bootargs = s;});
-  parser.option(0, "real-time-clint", 0, [&](const char *s){real_time_clint = true;});
+  parser.option(0, "real-time-clint", 0, [&](const char *s){cfg.real_time_clint = true;});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
     if (lib == NULL) {
@@ -482,7 +482,7 @@ int main(int argc, char** argv)
     cfg.hartids = default_hartids;
   }
 
-  sim_t s(&cfg, halted, real_time_clint,
+  sim_t s(&cfg, halted,
       mems, plugin_devices, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
 #ifdef HAVE_BOOST_ASIO
       io_service_ptr, acceptor_ptr,
