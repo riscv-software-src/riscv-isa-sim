@@ -29,7 +29,7 @@ processor_t::processor_t(isa_parser_t isa, const char* varch,
   : debug(false), halt_request(HR_NONE), isa(isa), sim(sim), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), sout_(sout_.rdbuf()), halt_on_reset(halt_on_reset),
-  impl_table(256, false), last_pc(1), executions(1), TM(state.num_triggers)
+  impl_table(256, false), last_pc(1), executions(1), TM(4)
 {
   VU.p = this;
   TM.proc = this;
@@ -172,8 +172,6 @@ static int xlen_to_uxl(int xlen)
     return 2;
   abort();
 }
-
-const int state_t::num_triggers;
 
 void state_t::reset(processor_t* const proc, reg_t max_isa)
 {
@@ -997,14 +995,14 @@ void processor_t::trigger_updated()
   mmu->check_triggers_load = false;
   mmu->check_triggers_store = false;
 
-  for (unsigned i = 0; i < state.num_triggers; i++) {
-    if (TM.triggers[i]->execute) {
+  for (auto trigger : TM.triggers) {
+    if (trigger->execute) {
       mmu->check_triggers_fetch = true;
     }
-    if (TM.triggers[i]->load) {
+    if (trigger->load) {
       mmu->check_triggers_load = true;
     }
-    if (TM.triggers[i]->store) {
+    if (trigger->store) {
       mmu->check_triggers_store = true;
     }
   }

@@ -100,6 +100,8 @@ class module_t {
 public:
   module_t(unsigned count);
 
+  unsigned count() const { return triggers.size(); }
+
   match_result_t memory_access_match(action_t *action,
       operation_t operation, reg_t address, reg_t data);
 

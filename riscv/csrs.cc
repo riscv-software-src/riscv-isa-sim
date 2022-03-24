@@ -982,7 +982,7 @@ tselect_csr_t::tselect_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 bool tselect_csr_t::unlogged_write(const reg_t val) noexcept {
-  return basic_csr_t::unlogged_write((val < state->num_triggers) ? val : read());
+  return basic_csr_t::unlogged_write((val < proc->TM.count()) ? val : read());
 }
 
 
