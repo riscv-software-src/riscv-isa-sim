@@ -256,7 +256,6 @@ int main(int argc, char** argv)
   const char *log_path = nullptr;
   std::vector<std::function<extension_t*()>> extensions;
   const char* initrd = NULL;
-  const char* varch = DEFAULT_VARCH;
   const char* dtb_file = NULL;
   uint16_t rbb_port = 0;
   bool use_rbb = false;
@@ -278,6 +277,7 @@ int main(int argc, char** argv)
             /*default_bootargs=*/nullptr,
             /*default_isa=*/DEFAULT_ISA,
             /*default_priv=*/DEFAULT_PRIV,
+            /*default_varch=*/DEFAULT_VARCH,
             /*default_mem_layout=*/parse_mem_layout("2048"),
             /*default_hartids=*/std::vector<int>());
 
@@ -349,7 +349,7 @@ int main(int argc, char** argv)
   parser.option(0, "log-cache-miss", 0, [&](const char* s){log_cache = true;});
   parser.option(0, "isa", 1, [&](const char* s){cfg.isa = s;});
   parser.option(0, "priv", 1, [&](const char* s){cfg.priv = s;});
-  parser.option(0, "varch", 1, [&](const char* s){varch = s;});
+  parser.option(0, "varch", 1, [&](const char* s){cfg.varch = s;});
   parser.option(0, "device", 1, device_parser);
   parser.option(0, "extension", 1, [&](const char* s){extensions.push_back(find_extension(s));});
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
@@ -482,7 +482,7 @@ int main(int argc, char** argv)
     cfg.hartids = default_hartids;
   }
 
-  sim_t s(&cfg, varch, halted, real_time_clint,
+  sim_t s(&cfg, halted, real_time_clint,
       mems, plugin_devices, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
 #ifdef HAVE_BOOST_ASIO
       io_service_ptr, acceptor_ptr,

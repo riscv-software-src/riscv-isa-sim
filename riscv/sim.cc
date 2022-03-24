@@ -28,7 +28,7 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_clint,
+sim_t::sim_t(const cfg_t *cfg, bool halted, bool real_time_clint,
              std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
@@ -77,7 +77,7 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
   debug_mmu = new mmu_t(this, NULL);
 
   for (size_t i = 0; i < cfg->nprocs(); i++) {
-    procs[i] = new processor_t(&isa, varch, this, cfg->hartids()[i], halted,
+    procs[i] = new processor_t(&isa, cfg->varch(), this, cfg->hartids()[i], halted,
                                log_file.get(), sout_);
   }
 
