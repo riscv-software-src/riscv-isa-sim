@@ -45,6 +45,11 @@ public:
   virtual match_result_t memory_access_match(processor_t *proc,
       operation_t operation, reg_t address, reg_t data) = 0;
 
+  virtual reg_t tdata1_read(const processor_t *proc) const noexcept = 0;
+  virtual bool tdata1_write(processor_t *proc, const reg_t val) noexcept = 0;
+  virtual reg_t tdata2_read(const processor_t *proc) const noexcept = 0;
+  virtual bool tdata2_write(processor_t *proc, const reg_t val) noexcept = 0;
+
   virtual bool chain() const { return false; }
 
 public:
@@ -69,10 +74,10 @@ public:
 
   mcontrol_t();
 
-  reg_t tdata1_read(const processor_t *proc) const noexcept;
-  bool tdata1_write(processor_t *proc, const reg_t val) noexcept;
-  reg_t tdata2_read(const processor_t *proc) const noexcept;
-  bool tdata2_write(processor_t *proc, const reg_t val) noexcept;
+  virtual reg_t tdata1_read(const processor_t *proc) const noexcept override;
+  virtual bool tdata1_write(processor_t *proc, const reg_t val) noexcept override;
+  virtual reg_t tdata2_read(const processor_t *proc) const noexcept override;
+  virtual bool tdata2_write(processor_t *proc, const reg_t val) noexcept override;
 
   virtual bool chain() const override { return chain_bit; }
 
