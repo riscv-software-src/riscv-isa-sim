@@ -433,6 +433,8 @@ int main(int argc, char** argv)
     }
   }
 
+  const cfg_t &frozen_cfg = cfg.freeze();
+
 #ifdef HAVE_BOOST_ASIO
   boost::asio::io_service *io_service_ptr = NULL; // needed for socket command interface option -s
   boost::asio::ip::tcp::acceptor *acceptor_ptr = NULL;
@@ -456,7 +458,7 @@ int main(int argc, char** argv)
   }
 #endif
 
-  sim_t s(&cfg, varch, halted, real_time_clint,
+  sim_t s(&frozen_cfg, varch, halted, real_time_clint,
       start_pc, mems, plugin_devices, htif_args,
       std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file,
 #ifdef HAVE_BOOST_ASIO
@@ -480,7 +482,7 @@ int main(int argc, char** argv)
   if (dc && l2) dc->set_miss_handler(&*l2);
   if (ic) ic->set_log(log_cache);
   if (dc) dc->set_log(log_cache);
-  for (size_t i = 0; i < cfg.nprocs(); i++)
+  for (size_t i = 0; i < frozen_cfg.nprocs(); i++)
   {
     if (ic) s.get_core(i)->get_mmu()->register_memtracer(&*ic);
     if (dc) s.get_core(i)->get_mmu()->register_memtracer(&*dc);

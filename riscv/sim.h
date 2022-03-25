@@ -69,7 +69,6 @@ public:
   void proc_reset(unsigned id);
 
 private:
-  isa_parser_t isa;
   const cfg_t * const cfg;
   std::vector<std::pair<reg_t, mem_t*>> mems;
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;

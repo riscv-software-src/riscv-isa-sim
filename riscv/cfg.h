@@ -5,6 +5,7 @@
 #include "decode.h"
 #include "mmu.h"
 #include <cassert>
+#include <memory>
 
 template <typename T>
 class cfg_arg_t {
@@ -13,6 +14,7 @@ public:
     : value(default_val), was_set(false) {}
 
   bool overridden() const { return was_set; }
+  void set_overridden() { was_set = true; }
 
   T operator()() const { return value; }
 
@@ -26,6 +28,8 @@ private:
   T value;
   bool was_set;
 };
+
+class isa_parser_t;
 
 // Configuration that describes a memory region
 class mem_cfg_t
@@ -61,8 +65,11 @@ public:
       nprocs(default_nprocs),
       isa(default_isa),
       priv(default_priv),
-      mem_layout(default_mem_layout)
+      mem_layout(default_mem_layout),
+      frozen(false)
   {}
+
+  ~cfg_t();
 
   cfg_arg_t<std::pair<reg_t, reg_t>> initrd_bounds;
   cfg_arg_t<const char *>            bootargs;
@@ -70,6 +77,22 @@ public:
   cfg_arg_t<const char *>            isa;
   cfg_arg_t<const char *>            priv;
   cfg_arg_t<std::vector<mem_cfg_t>>  mem_layout;
+
+  // A function to fill out the private members that are derived from the
+  // cfg_arg_t<...> members above.
+  //
+  // Call this once after filling those out and then don't touch the
+  // configuration again.
+  const cfg_t &freeze();
+
+  // An isa_parser_t representing the isa/priv configuration parameters. This
+  // will be marked as overridden if either isa or priv is. This can only be
+  // called after freeze().
+  cfg_arg_t<const isa_parser_t *> get_isa_parser() const;
+
+private:
+  bool frozen;
+  std::unique_ptr<isa_parser_t> isa_parser;
 };
 
 #endif

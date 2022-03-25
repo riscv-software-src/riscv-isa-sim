@@ -41,7 +41,6 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
 #endif
              FILE *cmd_file) // needed for command line option --cmd
   : htif_t(args),
-    isa(cfg->isa(), cfg->priv()),
     cfg(cfg),
     mems(mems),
     plugin_devices(plugin_devices),
@@ -88,7 +87,7 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
 
   for (size_t i = 0; i < nprocs(); i++) {
     int hart_id = hartids.empty() ? i : hartids[i];
-    procs[i] = new processor_t(&isa, varch, this, hart_id, halted,
+    procs[i] = new processor_t(cfg->get_isa_parser()(), varch, this, hart_id, halted,
                                log_file.get(), sout_);
   }
 
