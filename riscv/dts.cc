@@ -11,12 +11,14 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
-std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
-                     reg_t initrd_start, reg_t initrd_end,
-                     const char* bootargs,
-                     std::vector<processor_t*> procs,
-                     std::vector<std::pair<reg_t, mem_t*>> mems)
+std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz, const cfg_t &cfg)
 {
+  std::pair<reg_t, reg_t> initrd_bounds = cfg.initrd_bounds();
+  reg_t initrd_start = initrd_bounds.first;
+  reg_t initrd_end = initrd_bounds.second;
+  const char *bootargs = cfg.bootargs();
+  const isa_parser_t *isa = cfg.get_isa_parser()();
+
   std::stringstream s;
   s << std::dec <<
          "/dts-v1/;\n"
@@ -30,10 +32,10 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
   if (initrd_start < initrd_end) {
     s << "    linux,initrd-start = <" << (size_t)initrd_start << ">;\n"
          "    linux,initrd-end = <" << (size_t)initrd_end << ">;\n";
-    if (!bootargs)
+    if (!cfg.bootargs.overridden())
       bootargs = "root=/dev/ram console=hvc0 earlycon=sbi";
   } else {
-    if (!bootargs)
+    if (!cfg.bootargs.overridden())
       bootargs = "console=hvc0 earlycon=sbi";
   }
     s << "    bootargs = \"";
@@ -49,14 +51,14 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "    #address-cells = <1>;\n"
          "    #size-cells = <0>;\n"
          "    timebase-frequency = <" << (cpu_hz/insns_per_rtc_tick) << ">;\n";
-  for (size_t i = 0; i < procs.size(); i++) {
+  for (size_t i = 0; i < cfg.nprocs(); i++) {
     s << "    CPU" << i << ": cpu@" << i << " {\n"
          "      device_type = \"cpu\";\n"
          "      reg = <" << i << ">;\n"
          "      status = \"okay\";\n"
          "      compatible = \"riscv\";\n"
-         "      riscv,isa = \"" << procs[i]->get_isa().get_isa_string() << "\";\n"
-         "      mmu-type = \"riscv," << (procs[i]->get_isa().get_max_xlen() <= 32 ? "sv32" : "sv57") << "\";\n"
+         "      riscv,isa = \"" << isa->get_isa_string() << "\";\n"
+         "      mmu-type = \"riscv," << (isa->get_max_xlen() <= 32 ? "sv32" : "sv48") << "\";\n"
          "      riscv,pmpregions = <16>;\n"
          "      riscv,pmpgranularity = <4>;\n"
          "      clock-frequency = <" << cpu_hz << ">;\n"
@@ -69,12 +71,12 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "    };\n";
   }
   s <<   "  };\n";
-  for (auto& m : mems) {
+  for (const auto &m : cfg.mem_layout()) {
     s << std::hex <<
-         "  memory@" << m.first << " {\n"
+         "  memory@" << m.base << " {\n"
          "    device_type = \"memory\";\n"
-         "    reg = <0x" << (m.first >> 32) << " 0x" << (m.first & (uint32_t)-1) <<
-                   " 0x" << (m.second->size() >> 16 >> 16) << " 0x" << (m.second->size() & (uint32_t)-1) << ">;\n"
+         "    reg = <0x" << (m.base >> 32) << " 0x" << (m.base & (uint32_t)-1) <<
+                   " 0x" << (m.size >> 16 >> 16) << " 0x" << (m.size & (uint32_t)-1) << ">;\n"
          "  };\n";
   }
   s <<   "  soc {\n"
@@ -85,7 +87,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "    clint@" << CLINT_BASE << " {\n"
          "      compatible = \"riscv,clint0\";\n"
          "      interrupts-extended = <" << std::dec;
-  for (size_t i = 0; i < procs.size(); i++)
+  for (size_t i = 0; i < cfg.nprocs(); i++)
     s << "&CPU" << i << "_intc 3 &CPU" << i << "_intc 7 ";
   reg_t clintbs = CLINT_BASE;
   reg_t clintsz = CLINT_SIZE;

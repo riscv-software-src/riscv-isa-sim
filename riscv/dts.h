@@ -2,16 +2,11 @@
 #ifndef _RISCV_DTS_H
 #define _RISCV_DTS_H
 
-#include "devices.h"
-#include "processor.h"
-#include "mmu.h"
+#include "cfg.h"
+#include "isa_parser.h"
 #include <string>
 
-std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
-                     reg_t initrd_start, reg_t initrd_end,
-                     const char* bootargs,
-                     std::vector<processor_t*> procs,
-                     std::vector<std::pair<reg_t, mem_t*>> mems);
+std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz, const cfg_t &cfg);
 
 std::string dts_compile(const std::string& dts);
 
