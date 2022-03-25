@@ -107,35 +107,33 @@ static void read_file_bytes(const char *filename,size_t fileoff,
   mem->store(memoff, read_sz, (uint8_t*)&read_buf[0]);
 }
 
-bool sort_mem_region(const std::pair<reg_t, mem_t*> &a,
-                       const std::pair<reg_t, mem_t*> &b)
+bool sort_mem_region(const mem_cfg_t &a, const mem_cfg_t &b)
 {
-  if (a.first == b.first)
-    return (a.second->size() < b.second->size());
+  if (a.base == b.base)
+    return (a.size < b.size);
   else
-    return (a.first < b.first);
+    return (a.base < b.base);
 }
 
-void merge_overlapping_memory_regions(std::vector<std::pair<reg_t, mem_t*>>& mems)
+void merge_overlapping_memory_regions(std::vector<mem_cfg_t> &mems)
 {
   // check the user specified memory regions and merge the overlapping or
   // eliminate the containing parts
-  std::sort(mems.begin(), mems.end(), sort_mem_region);
-  std::vector<std::pair<reg_t, mem_t*>>::iterator it = mems.begin() + 1;
+  assert(!mems.empty());
 
-  while (it != mems.end()) {
-    reg_t start = prev(it)->first;
-    reg_t end = prev(it)->first + prev(it)->second->size();
-    reg_t start2 = it->first;
-    reg_t end2 = it->first + it->second->size();
+  std::sort(mems.begin(), mems.end(), sort_mem_region);
+  for (auto it = mems.begin() + 1; it != mems.end(); ) {
+    reg_t start = prev(it)->base;
+    reg_t end = prev(it)->base + prev(it)->size;
+    reg_t start2 = it->base;
+    reg_t end2 = it->base + it->size;
 
     //contains -> remove
     if (start2 >= start && end2 <= end) {
       it = mems.erase(it);
-    //parital overlapped -> extend
+    //partial overlapped -> extend
     } else if (start2 >= start && start2 < end) {
-      delete prev(it)->second;
-      prev(it)->second = new mem_t(std::max(end, end2) - start);
+      prev(it)->size = std::max(end, end2) - start;
       it = mems.erase(it);
     // no overlapping -> keep it
     } else {
@@ -144,8 +142,10 @@ void merge_overlapping_memory_regions(std::vector<std::pair<reg_t, mem_t*>>& mem
   }
 }
 
-static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
+static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
 {
+  std::vector<mem_cfg_t> res;
+
   // handle legacy mem argument
   char* p;
   auto mb = strtoull(arg, &p, 0);
@@ -153,11 +153,11 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
     reg_t size = reg_t(mb) << 20;
     if (size != (size_t)size)
       throw std::runtime_error("Size would overflow size_t");
-    return std::vector<std::pair<reg_t, mem_t*>>(1, std::make_pair(reg_t(DRAM_BASE), new mem_t(size)));
+    res.push_back(mem_cfg_t(reg_t(DRAM_BASE), size));
+    return res;
   }
 
   // handle base/size tuples
-  std::vector<std::pair<reg_t, mem_t*>> res;
   while (true) {
     auto base = strtoull(arg, &p, 0);
     if (!*p || *p != ':')
@@ -180,7 +180,7 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
               base0, base0 + size0 - 1, long(PGSIZE / 1024), base, base + size - 1);
     }
 
-    res.push_back(std::make_pair(reg_t(base), new mem_t(size)));
+    res.push_back(mem_cfg_t(reg_t(base), reg_t(size)));
     if (!*p)
       break;
     if (*p != ',')
@@ -189,7 +189,18 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
   }
 
   merge_overlapping_memory_regions(res);
+
   return res;
+}
+
+static std::vector<std::pair<reg_t, mem_t*>> make_mems(const std::vector<mem_cfg_t> &layout)
+{
+  std::vector<std::pair<reg_t, mem_t*>> mems;
+  mems.reserve(layout.size());
+  for (const auto &cfg : layout) {
+    mems.push_back(std::make_pair(cfg.base, new mem_t(cfg.size)));
+  }
+  return mems;
 }
 
 static unsigned long atoul_safe(const char* s)
@@ -222,7 +233,6 @@ int main(int argc, char** argv)
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
   reg_t start_pc = reg_t(-1);
-  std::vector<std::pair<reg_t, mem_t*>> mems;
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
   std::unique_ptr<icache_sim_t> ic;
   std::unique_ptr<dcache_sim_t> dc;
@@ -253,7 +263,8 @@ int main(int argc, char** argv)
             /*default_bootargs=*/nullptr,
             /*default_nprocs=*/1,
             /*default_isa=*/DEFAULT_ISA,
-            /*default_priv=*/DEFAULT_PRIV);
+            /*default_priv=*/DEFAULT_PRIV,
+            /*default_mem_layout=*/parse_mem_layout("2048"));
 
   auto const hartids_parser = [&](const char *s) {
     std::string const str(s);
@@ -320,7 +331,7 @@ int main(int argc, char** argv)
   parser.option('s', 0, 0, [&](const char* s){socket = true;});
 #endif
   parser.option('p', 0, 1, [&](const char* s){cfg.nprocs = atoul_nonzero_safe(s);});
-  parser.option('m', 0, 1, [&](const char* s){mems = make_mems(s);});
+  parser.option('m', 0, 1, [&](const char* s){cfg.mem_layout = parse_mem_layout(s);});
   // I wanted to use --halted, but for some reason that doesn't work.
   parser.option('H', 0, 0, [&](const char* s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
@@ -388,11 +399,11 @@ int main(int argc, char** argv)
 
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
-  if (mems.empty())
-    mems = make_mems("2048");
 
   if (!*argv1)
     help();
+
+  std::vector<std::pair<reg_t, mem_t*>> mems = make_mems(cfg.mem_layout());
 
   if (kernel && check_file_exists(kernel)) {
     const char *isa = cfg.isa();
