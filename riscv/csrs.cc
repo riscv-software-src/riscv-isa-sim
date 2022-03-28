@@ -968,8 +968,8 @@ bool hgatp_csr_t::unlogged_write(const reg_t val) noexcept {
     mask = HGATP64_PPN & ((reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1);
 
     if (get_field(val, HGATP64_MODE) == HGATP_MODE_OFF ||
-        get_field(val, HGATP64_MODE) == HGATP_MODE_SV39X4 ||
-        get_field(val, HGATP64_MODE) == HGATP_MODE_SV48X4)
+        (proc->supports_impl(IMPL_MMU_SV39) && get_field(val, HGATP64_MODE) == HGATP_MODE_SV39X4) ||
+        (proc->supports_impl(IMPL_MMU_SV48) && get_field(val, HGATP64_MODE) == HGATP_MODE_SV48X4))
       mask |= HGATP64_MODE;
   }
   mask &= ~(reg_t)3;
