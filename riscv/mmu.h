@@ -551,6 +551,7 @@ inline vm_info decode_vm_info(int xlen, bool stage2, reg_t prv, reg_t satp)
       case HGATP_MODE_OFF: return {0, 0, 0, 0, 0};
       case HGATP_MODE_SV39X4: return {3, 9, 2, 8, (satp & HGATP64_PPN) << PGSHIFT};
       case HGATP_MODE_SV48X4: return {4, 9, 2, 8, (satp & HGATP64_PPN) << PGSHIFT};
+      case HGATP_MODE_SV57X4: return {5, 9, 2, 8, (satp & HGATP64_PPN) << PGSHIFT};
       default: abort();
     }
   } else {

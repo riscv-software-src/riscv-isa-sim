@@ -764,6 +764,7 @@ bool base_atp_csr_t::satp_valid(reg_t val) const noexcept {
     switch (get_field(val, SATP64_MODE)) {
       case SATP_MODE_SV39: return proc->supports_impl(IMPL_MMU_SV39);
       case SATP_MODE_SV48: return proc->supports_impl(IMPL_MMU_SV48);
+      case SATP_MODE_SV57: return proc->supports_impl(IMPL_MMU_SV57);
       case SATP_MODE_OFF: return true;
       default: return false;
     }
@@ -969,7 +970,8 @@ bool hgatp_csr_t::unlogged_write(const reg_t val) noexcept {
 
     if (get_field(val, HGATP64_MODE) == HGATP_MODE_OFF ||
         (proc->supports_impl(IMPL_MMU_SV39) && get_field(val, HGATP64_MODE) == HGATP_MODE_SV39X4) ||
-        (proc->supports_impl(IMPL_MMU_SV48) && get_field(val, HGATP64_MODE) == HGATP_MODE_SV48X4))
+        (proc->supports_impl(IMPL_MMU_SV48) && get_field(val, HGATP64_MODE) == HGATP_MODE_SV48X4) ||
+        (proc->supports_impl(IMPL_MMU_SV57) && get_field(val, HGATP64_MODE) == HGATP_MODE_SV57X4))
       mask |= HGATP64_MODE;
   }
   mask &= ~(reg_t)3;

@@ -212,6 +212,7 @@
 #define HGATP_MODE_SV32X4 1
 #define HGATP_MODE_SV39X4 8
 #define HGATP_MODE_SV48X4 9
+#define HGATP_MODE_SV57X4 10
 
 #define PMP_R     0x01
 #define PMP_W     0x02
