@@ -551,15 +551,13 @@ void processor_t::set_mmu_capability(int cap)
 {
   switch (cap) {
     case IMPL_MMU_SV32:
-      set_impl(cap, true);
-      set_impl(IMPL_MMU, true);
-      break;
-    case IMPL_MMU_SV39:
-      set_impl(cap, true);
+      set_impl(IMPL_MMU_SV32, true);
       set_impl(IMPL_MMU, true);
       break;
     case IMPL_MMU_SV48:
-      set_impl(cap, true);
+      set_impl(IMPL_MMU_SV48, true);
+      // Fall through
+    case IMPL_MMU_SV39:
       set_impl(IMPL_MMU_SV39, true);
       set_impl(IMPL_MMU, true);
       break;
