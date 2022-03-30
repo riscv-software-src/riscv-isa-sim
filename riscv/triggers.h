@@ -127,7 +127,7 @@ public:
 
   processor_t *proc;
 private:
-  std::vector<mcontrol_t *> triggers;
+  std::vector<trigger_t *> triggers;
 };
 
 };
