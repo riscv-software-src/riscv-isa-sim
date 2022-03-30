@@ -12,6 +12,9 @@ public:
   // port.
   remote_bitbang_t(uint16_t port, jtag_dtm_t *tap);
 
+  // Listen to Unix socket
+  remote_bitbang_t(const char *unix_socket_addr, jtag_dtm_t *tap);
+
   // Do a bit of work.
   void tick();
 
