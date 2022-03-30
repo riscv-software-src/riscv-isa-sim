@@ -996,13 +996,13 @@ void processor_t::trigger_updated(const std::vector<triggers::mcontrol_t *> *tri
   mmu->check_triggers_store = false;
 
   for (auto trigger : *triggers) {
-    if (trigger->execute) {
+    if (trigger->execute()) {
       mmu->check_triggers_fetch = true;
     }
-    if (trigger->load) {
+    if (trigger->load()) {
       mmu->check_triggers_load = true;
     }
-    if (trigger->store) {
+    if (trigger->store()) {
       mmu->check_triggers_store = true;
     }
   }

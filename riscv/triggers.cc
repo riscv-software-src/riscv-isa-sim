@@ -5,8 +5,8 @@ namespace triggers {
 
 mcontrol_t::mcontrol_t() :
   type(2), maskmax(0), select(false), timing(false), chain_bit(false),
-  match(MATCH_EQUAL), m(false), h(false), s(false), u(false), execute(false),
-  store(false), load(false)
+  match(MATCH_EQUAL), m(false), h(false), s(false), u(false),
+  execute_bit(false), store_bit(false), load_bit(false)
 {
 }
 
@@ -25,9 +25,9 @@ reg_t mcontrol_t::tdata1_read(const processor_t *proc) const noexcept {
   v = set_field(v, MCONTROL_H, h);
   v = set_field(v, MCONTROL_S, s);
   v = set_field(v, MCONTROL_U, u);
-  v = set_field(v, MCONTROL_EXECUTE, execute);
-  v = set_field(v, MCONTROL_STORE, store);
-  v = set_field(v, MCONTROL_LOAD, load);
+  v = set_field(v, MCONTROL_EXECUTE, execute_bit);
+  v = set_field(v, MCONTROL_STORE, store_bit);
+  v = set_field(v, MCONTROL_LOAD, load_bit);
   return v;
 }
 
@@ -59,11 +59,11 @@ bool mcontrol_t::tdata1_write(processor_t *proc, const reg_t val) noexcept {
   h = get_field(val, MCONTROL_H);
   s = get_field(val, MCONTROL_S);
   u = get_field(val, MCONTROL_U);
-  execute = get_field(val, MCONTROL_EXECUTE);
-  store = get_field(val, MCONTROL_STORE);
-  load = get_field(val, MCONTROL_LOAD);
+  execute_bit = get_field(val, MCONTROL_EXECUTE);
+  store_bit = get_field(val, MCONTROL_STORE);
+  load_bit = get_field(val, MCONTROL_LOAD);
   // Assume we're here because of csrw.
-  if (execute)
+  if (execute_bit)
     timing = 0;
   return true;
 }
@@ -109,9 +109,9 @@ bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
 
 match_result_t mcontrol_t::memory_access_match(processor_t *proc, operation_t operation, reg_t address, reg_t data) {
   state_t *state = proc->get_state();
-  if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
-      (operation == triggers::OPERATION_STORE && !store) ||
-      (operation == triggers::OPERATION_LOAD && !load) ||
+  if ((operation == triggers::OPERATION_EXECUTE && !execute_bit) ||
+      (operation == triggers::OPERATION_STORE && !store_bit) ||
+      (operation == triggers::OPERATION_LOAD && !load_bit) ||
       (state->prv == PRV_M && !m) ||
       (state->prv == PRV_S && !s) ||
       (state->prv == PRV_U && !u)) {

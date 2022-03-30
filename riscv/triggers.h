@@ -51,6 +51,9 @@ public:
   virtual bool tdata2_write(processor_t *proc, const reg_t val) noexcept = 0;
 
   virtual bool chain() const { return false; }
+  virtual bool execute() const { return false; }
+  virtual bool store() const { return false; }
+  virtual bool load() const { return false; }
 
 public:
   bool dmode;
@@ -80,6 +83,9 @@ public:
   virtual bool tdata2_write(processor_t *proc, const reg_t val) noexcept override;
 
   virtual bool chain() const override { return chain_bit; }
+  virtual bool execute() const override { return execute_bit; }
+  virtual bool store() const override { return store_bit; }
+  virtual bool load() const override { return load_bit; }
 
   virtual match_result_t memory_access_match(processor_t *proc,
       operation_t operation, reg_t address, reg_t data) override;
@@ -98,9 +104,9 @@ public:
   bool h;
   bool s;
   bool u;
-  bool execute;
-  bool store;
-  bool load;
+  bool execute_bit;
+  bool store_bit;
+  bool load_bit;
   reg_t tdata2;
 
 };
