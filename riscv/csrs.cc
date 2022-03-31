@@ -499,14 +499,17 @@ misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t ma
              ) {
 }
 
+const reg_t misa_csr_t::dependency(const reg_t val, const char feature, const char depends_on) const noexcept {
+  return (val & (1L << (depends_on - 'A'))) ? val : (val & ~(1L << (feature - 'A')));
+}
+
 bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   // the write is ignored if increasing IALIGN would misalign the PC
   if (!(val & (1L << ('C' - 'A'))) && (state->pc & 2))
     return false;
 
-  const bool val_supports_f = val & (1L << ('F' - 'A'));
-  const reg_t val_without_d = val & ~(1L << ('D' - 'A'));
-  const reg_t adjusted_val = val_supports_f ? val : val_without_d;
+  reg_t adjusted_val = val;
+  adjusted_val = dependency(adjusted_val, 'D', 'F');
 
   const reg_t old_misa = read();
   const bool prev_h = old_misa & (1L << ('H' - 'A'));
