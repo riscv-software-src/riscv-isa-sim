@@ -155,7 +155,7 @@ static void set_cfg() {
      * set MSECCFG_RLB to avoid locked
      */
     unsigned rlb_value = MSECCFG_RLB;
-    asm volatile ("csrs 0x390, %0 \n"::"r"(rlb_value));
+    asm volatile ("csrs 0x747, %0 \n"::"r"(rlb_value));
 #endif
     
     /*
@@ -202,7 +202,7 @@ static void set_cfg() {
                 : "memory");
     // set proc->state.mseccfg, for MML/MMWP
     const unsigned seccfg_bits = MSECCFG_MML | MSECCFG_MMWP;
-    asm volatile ("csrs 0x390, %0 \n"::"r"(seccfg_bits));
+    asm volatile ("csrs 0x747, %0 \n"::"r"(seccfg_bits));
     
     // after set MML, RW=01 is possible
     cfg0 |= (PMP_R | PMP_W | PMP_X | PMP_TOR) << 24;    // for U_MEM

@@ -11,7 +11,7 @@ default:
 gen:
 	-rm -rf outputs; mkdir outputs
 	g++ -g3 -O2 gen_pmp_test.cc -o a.out
-	a.out
+	./a.out
 	
 clean: 
 	rm -rf test_*.h a.out outputs/*
