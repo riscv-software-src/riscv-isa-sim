@@ -129,7 +129,7 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
         procs[cpu_idx]->set_pmp_num(pmp_num);
       } else {
         std::cerr << "core ("
-                  << hartids.size()
+                  << cpu_idx
                   << ") doesn't have valid 'riscv,pmpregions'"
                   << pmp_num << ").\n";
         exit(1);
@@ -159,7 +159,7 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
         //has been set in the beginning
       } else {
         std::cerr << "core ("
-                  << hartids.size()
+                  << cpu_idx
                   << ") has an invalid 'mmu-type': "
                   << mmu_type << ").\n";
         exit(1);
