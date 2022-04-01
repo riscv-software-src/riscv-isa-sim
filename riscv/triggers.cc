@@ -41,7 +41,20 @@ bool mcontrol_t::tdata1_write(processor_t *proc, const reg_t val) noexcept {
   timing = get_field(val, MCONTROL_TIMING);
   action = (triggers::action_t) get_field(val, MCONTROL_ACTION);
   chain = get_field(val, MCONTROL_CHAIN);
-  match = (triggers::mcontrol_t::match_t) get_field(val, MCONTROL_MATCH);
+  unsigned match_value = get_field(val, MCONTROL_MATCH);
+  switch (match_value) {
+    case MATCH_EQUAL:
+    case MATCH_NAPOT:
+    case MATCH_GE:
+    case MATCH_LT:
+    case MATCH_MASK_LOW:
+    case MATCH_MASK_HIGH:
+      match = (triggers::mcontrol_t::match_t) match_value;
+      break;
+    default:
+      match = MATCH_EQUAL;
+      break;
+  }
   m = get_field(val, MCONTROL_M);
   h = get_field(val, MCONTROL_H);
   s = get_field(val, MCONTROL_S);
