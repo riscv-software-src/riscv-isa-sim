@@ -10,7 +10,7 @@ mcontrol_t::mcontrol_t() :
 {
 }
 
-reg_t mcontrol_t::tdata1_read(const processor_t *proc) const noexcept {
+reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   reg_t v = 0;
   auto xlen = proc->get_xlen();
   v = set_field(v, MCONTROL_TYPE(xlen), type);
@@ -31,7 +31,7 @@ reg_t mcontrol_t::tdata1_read(const processor_t *proc) const noexcept {
   return v;
 }
 
-bool mcontrol_t::tdata1_write(processor_t *proc, const reg_t val) noexcept {
+bool mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcept {
   if (dmode && !proc->get_state()->debug_mode) {
     return false;
   }
@@ -68,11 +68,11 @@ bool mcontrol_t::tdata1_write(processor_t *proc, const reg_t val) noexcept {
   return true;
 }
 
-reg_t mcontrol_t::tdata2_read(const processor_t *proc) const noexcept {
+reg_t mcontrol_t::tdata2_read(const processor_t * const proc) const noexcept {
   return tdata2;
 }
 
-bool mcontrol_t::tdata2_write(processor_t *proc, const reg_t val) noexcept {
+bool mcontrol_t::tdata2_write(processor_t * const proc, const reg_t val) noexcept {
   if (dmode && !proc->get_state()->debug_mode) {
     return false;
   }
@@ -107,8 +107,8 @@ bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
   assert(0);
 }
 
-match_result_t mcontrol_t::memory_access_match(processor_t *proc, operation_t operation, reg_t address, reg_t data) {
-  state_t *state = proc->get_state();
+match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operation_t operation, reg_t address, reg_t data) {
+  state_t * const state = proc->get_state();
   if ((operation == triggers::OPERATION_EXECUTE && !execute_bit) ||
       (operation == triggers::OPERATION_STORE && !store_bit) ||
       (operation == triggers::OPERATION_LOAD && !load_bit) ||
@@ -153,9 +153,9 @@ module_t::~module_t() {
   }
 }
 
-match_result_t module_t::memory_access_match(action_t *action, operation_t operation, reg_t address, reg_t data)
+match_result_t module_t::memory_access_match(action_t * const action, operation_t operation, reg_t address, reg_t data)
 {
-  state_t *state = proc->get_state();
+  state_t * const state = proc->get_state();
   if (state->debug_mode)
     return MATCH_NONE;
 
@@ -178,24 +178,24 @@ match_result_t module_t::memory_access_match(action_t *action, operation_t opera
   return MATCH_NONE;
 }
 
-reg_t module_t::tdata1_read(const processor_t *proc, unsigned index) const noexcept
+reg_t module_t::tdata1_read(const processor_t * const proc, unsigned index) const noexcept
 {
   return triggers[index]->tdata1_read(proc);
 }
 
-bool module_t::tdata1_write(processor_t *proc, unsigned index, const reg_t val) noexcept
+bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept
 {
   bool result = triggers[index]->tdata1_write(proc, val);
   proc->trigger_updated(&triggers);
   return result;
 }
 
-reg_t module_t::tdata2_read(const processor_t *proc, unsigned index) const noexcept
+reg_t module_t::tdata2_read(const processor_t * const proc, unsigned index) const noexcept
 {
   return triggers[index]->tdata2_read(proc);
 }
 
-bool module_t::tdata2_write(processor_t *proc, unsigned index, const reg_t val) noexcept
+bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_t val) noexcept
 {
   bool result = triggers[index]->tdata2_write(proc, val);
   proc->trigger_updated(&triggers);

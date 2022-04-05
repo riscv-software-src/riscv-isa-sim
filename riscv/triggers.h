@@ -42,13 +42,13 @@ class matched_t
 
 class trigger_t {
 public:
-  virtual match_result_t memory_access_match(processor_t *proc,
+  virtual match_result_t memory_access_match(processor_t * const proc,
       operation_t operation, reg_t address, reg_t data) = 0;
 
-  virtual reg_t tdata1_read(const processor_t *proc) const noexcept = 0;
-  virtual bool tdata1_write(processor_t *proc, const reg_t val) noexcept = 0;
-  virtual reg_t tdata2_read(const processor_t *proc) const noexcept = 0;
-  virtual bool tdata2_write(processor_t *proc, const reg_t val) noexcept = 0;
+  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept = 0;
+  virtual bool tdata1_write(processor_t * const proc, const reg_t val) noexcept = 0;
+  virtual reg_t tdata2_read(const processor_t * const proc) const noexcept = 0;
+  virtual bool tdata2_write(processor_t * const proc, const reg_t val) noexcept = 0;
 
   virtual bool chain() const { return false; }
   virtual bool execute() const { return false; }
@@ -79,17 +79,17 @@ public:
 
   mcontrol_t();
 
-  virtual reg_t tdata1_read(const processor_t *proc) const noexcept override;
-  virtual bool tdata1_write(processor_t *proc, const reg_t val) noexcept override;
-  virtual reg_t tdata2_read(const processor_t *proc) const noexcept override;
-  virtual bool tdata2_write(processor_t *proc, const reg_t val) noexcept override;
+  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  virtual bool tdata1_write(processor_t * const proc, const reg_t val) noexcept override;
+  virtual reg_t tdata2_read(const processor_t * const proc) const noexcept override;
+  virtual bool tdata2_write(processor_t * const proc, const reg_t val) noexcept override;
 
   virtual bool chain() const override { return chain_bit; }
   virtual bool execute() const override { return execute_bit; }
   virtual bool store() const override { return store_bit; }
   virtual bool load() const override { return load_bit; }
 
-  virtual match_result_t memory_access_match(processor_t *proc,
+  virtual match_result_t memory_access_match(processor_t * const proc,
       operation_t operation, reg_t address, reg_t data) override;
 
 private:
@@ -120,13 +120,13 @@ public:
 
   unsigned count() const { return triggers.size(); }
 
-  match_result_t memory_access_match(action_t *action,
+  match_result_t memory_access_match(action_t * const action,
       operation_t operation, reg_t address, reg_t data);
 
-  reg_t tdata1_read(const processor_t *proc, unsigned index) const noexcept;
-  bool tdata1_write(processor_t *proc, unsigned index, const reg_t val) noexcept;
-  reg_t tdata2_read(const processor_t *proc, unsigned index) const noexcept;
-  bool tdata2_write(processor_t *proc, unsigned index, const reg_t val) noexcept;
+  reg_t tdata1_read(const processor_t * const proc, unsigned index) const noexcept;
+  bool tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept;
+  reg_t tdata2_read(const processor_t * const proc, unsigned index) const noexcept;
+  bool tdata2_write(processor_t * const proc, unsigned index, const reg_t val) noexcept;
 
   processor_t *proc;
 private:
