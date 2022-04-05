@@ -320,8 +320,8 @@ reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
   // If a configuration has FS bits, they will always be accessible no
   // matter the state of misa.
   const bool has_fs = proc->extension_enabled('S') || proc->extension_enabled('F')
-              || proc->extension_enabled_const('V');
-  const bool has_vs = proc->extension_enabled_const('V');
+              || proc->extension_enabled('V');
+  const bool has_vs = proc->extension_enabled('V');
   return 0
     | (proc->extension_enabled('S') ? (SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP) : 0)
     | (has_page ? (SSTATUS_SUM | SSTATUS_MXR) : 0)
@@ -488,15 +488,21 @@ bool sstatus_csr_t::enabled(const reg_t which) {
 misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa):
   basic_csr_t(proc, addr, max_isa),
   max_isa(max_isa),
-  write_mask(max_isa & (0  // allow MAFDCH bits in MISA to be modified
+  write_mask(max_isa & (0  // allow MAFDQCHV bits in MISA to be modified
                         | (1L << ('M' - 'A'))
                         | (1L << ('A' - 'A'))
                         | (1L << ('F' - 'A'))
                         | (1L << ('D' - 'A'))
+                        | (1L << ('Q' - 'A'))
                         | (1L << ('C' - 'A'))
                         | (1L << ('H' - 'A'))
+                        | (1L << ('V' - 'A'))
                         )
              ) {
+}
+
+const reg_t misa_csr_t::dependency(const reg_t val, const char feature, const char depends_on) const noexcept {
+  return (val & (1L << (depends_on - 'A'))) ? val : (val & ~(1L << (feature - 'A')));
 }
 
 bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
@@ -504,9 +510,10 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   if (!(val & (1L << ('C' - 'A'))) && (state->pc & 2))
     return false;
 
-  const bool val_supports_f = val & (1L << ('F' - 'A'));
-  const reg_t val_without_d = val & ~(1L << ('D' - 'A'));
-  const reg_t adjusted_val = val_supports_f ? val : val_without_d;
+  reg_t adjusted_val = val;
+  adjusted_val = dependency(adjusted_val, 'D', 'F');
+  adjusted_val = dependency(adjusted_val, 'Q', 'D');
+  adjusted_val = dependency(adjusted_val, 'V', 'D');
 
   const reg_t old_misa = read();
   const bool prev_h = old_misa & (1L << ('H' - 'A'));
