@@ -147,6 +147,12 @@ module_t::module_t(unsigned count) : triggers(count) {
   }
 }
 
+module_t::~module_t() {
+  for (auto trigger : triggers) {
+    delete trigger;
+  }
+}
+
 match_result_t module_t::memory_access_match(action_t *action, operation_t operation, reg_t address, reg_t data)
 {
   state_t *state = proc->get_state();

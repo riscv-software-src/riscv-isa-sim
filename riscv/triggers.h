@@ -59,6 +59,8 @@ public:
   bool dmode;
   action_t action;
 
+  virtual ~trigger_t() {};
+
 protected:
   trigger_t() : dmode(false), action(ACTION_DEBUG_EXCEPTION) {};
 };
@@ -114,6 +116,7 @@ public:
 class module_t {
 public:
   module_t(unsigned count);
+  ~module_t();
 
   unsigned count() const { return triggers.size(); }
 
