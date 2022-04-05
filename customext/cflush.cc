@@ -1,3 +1,4 @@
+#include "insn_macros.h"
 #include "extension.h"
 #include <cstring>
 
@@ -23,9 +24,9 @@ class cflush_t : public extension_t
 
   std::vector<insn_desc_t> get_instructions() {
     std::vector<insn_desc_t> insns;
-    insns.push_back((insn_desc_t){0xFC000073, 0xFFF07FFF, custom_cflush, custom_cflush});
-    insns.push_back((insn_desc_t){0xFC200073, 0xFFF07FFF, custom_cflush, custom_cflush});
-    insns.push_back((insn_desc_t){0xFC100073, 0xFFF07FFF, custom_cflush, custom_cflush});
+    insns.push_back((insn_desc_t){0xFC000073, 0xFFF07FFF, custom_cflush, custom_cflush, custom_cflush, custom_cflush});
+    insns.push_back((insn_desc_t){0xFC200073, 0xFFF07FFF, custom_cflush, custom_cflush, custom_cflush, custom_cflush});
+    insns.push_back((insn_desc_t){0xFC100073, 0xFFF07FFF, custom_cflush, custom_cflush, custom_cflush, custom_cflush});
     return insns;
   }
 

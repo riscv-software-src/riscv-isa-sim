@@ -1,4 +1,4 @@
-require_extension(EXT_ZFH);
+require_extension(EXT_ZFHMIN);
 require_extension('Q');
 require_fp;
 softfloat_roundingMode = RM;

@@ -3,32 +3,59 @@
 /* Define if building universal (internal helper macro) */
 #undef AC_APPLE_UNIVERSAL_BUILD
 
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef CUSTOMEXT_ENABLED
+
 /* Default value for --isa switch */
 #undef DEFAULT_ISA
 
 /* Default value for --priv switch */
 #undef DEFAULT_PRIV
 
-/* Default value for --vector switch */
+/* Default value for --varch switch */
 #undef DEFAULT_VARCH
 
-/* Path to the device-tree-compiler */
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef DISASM_ENABLED
+
+/* Executable name of device-tree-compiler */
 #undef DTC
 
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
-#undef DUMMY_ROCC_ENABLED
+#undef FDT_ENABLED
+
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef FESVR_ENABLED
+
+/* define if the Boost library is available */
+#undef HAVE_BOOST
+
+/* define if the Boost::ASIO library is available */
+#undef HAVE_BOOST_ASIO
+
+/* Dynamic library loading is supported */
+#undef HAVE_DLOPEN
 
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the `fesvr' library (-lfesvr). */
-#undef HAVE_LIBFESVR
+/* Define to 1 if you have the `boost_regex' library (-lboost_regex). */
+#undef HAVE_LIBBOOST_REGEX
+
+/* Define to 1 if you have the `boost_system' library (-lboost_system). */
+#undef HAVE_LIBBOOST_SYSTEM
 
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
 
 /* Define to 1 if you have the <memory.h> header file. */
 #undef HAVE_MEMORY_H
+
+/* Define to 1 if struct statx exists. */
+#undef HAVE_STATX
+
+/* Define to 1 if struct statx has stx_mnt_id. */
+#undef HAVE_STATX_MNT_ID
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
@@ -78,6 +105,9 @@
 /* Enable hardware management of PTE accessed and dirty bits */
 #undef RISCV_ENABLE_DIRTY
 
+/* Enable support for running target in either endianness */
+#undef RISCV_ENABLE_DUAL_ENDIAN
+
 /* Enable PC histogram generation */
 #undef RISCV_ENABLE_HISTOGRAM
 
@@ -88,10 +118,16 @@
 #undef SOFTFLOAT_ENABLED
 
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
+#undef SPIKE_DASM_ENABLED
+
+/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SPIKE_MAIN_ENABLED
 
 /* Define to 1 if you have the ANSI C header files. */
 #undef STDC_HEADERS
+
+/* Default value for --with-target switch */
+#undef TARGET_ARCH
 
 /* Define WORDS_BIGENDIAN to 1 if your processor stores words with the most
    significant byte first (like Motorola and SPARC, unlike Intel). */

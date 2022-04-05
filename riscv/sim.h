@@ -3,6 +3,15 @@
 #ifndef _RISCV_SIM_H
 #define _RISCV_SIM_H
 
+#include "config.h"
+
+#ifdef HAVE_BOOST_ASIO
+#include <boost/algorithm/string.hpp>
+#include <boost/regex.hpp>
+#include <boost/asio.hpp>
+#endif
+
+#include "cfg.h"
 #include "debug_module.h"
 #include "devices.h"
 #include "log_file.h"
@@ -23,14 +32,16 @@ class remote_bitbang_t;
 class sim_t : public htif_t, public simif_t
 {
 public:
-  sim_t(const char* isa, const char* priv, const char* varch, size_t _nprocs,
-        bool halted, bool real_time_clint,
-        reg_t initrd_start, reg_t initrd_end, const char* bootargs,
+  sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_clint,
         reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
         std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
         const std::vector<std::string>& args, const std::vector<int> hartids,
         const debug_module_config_t &dm_config, const char *log_path,
-        bool dtb_enabled, const char *dtb_file);
+        bool dtb_enabled, const char *dtb_file,
+#ifdef HAVE_BOOST_ASIO
+        boost::asio::io_service *io_service_ptr_ctor, boost::asio::ip::tcp::acceptor *acceptor_ptr_ctor,  // option -s
+#endif
+        FILE *cmd_file); // needed for command line option --cmd
   ~sim_t();
 
   // run the simulation to completion
@@ -58,13 +69,13 @@ public:
   void proc_reset(unsigned id);
 
 private:
+  isa_parser_t isa;
+  const cfg_t * const cfg;
   std::vector<std::pair<reg_t, mem_t*>> mems;
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
-  reg_t initrd_start;
-  reg_t initrd_end;
-  const char* bootargs;
+  std::pair<reg_t, reg_t> initrd_range;
   reg_t start_pc;
   std::string dts;
   std::string dtb;
@@ -74,6 +85,18 @@ private:
   std::unique_ptr<clint_t> clint;
   bus_t bus;
   log_file_t log_file;
+
+  FILE *cmd_file; // pointer to debug command input file
+
+#ifdef HAVE_BOOST_ASIO
+  // the following are needed for command socket interface
+  boost::asio::io_service *io_service_ptr;
+  boost::asio::ip::tcp::acceptor *acceptor_ptr;
+  std::unique_ptr<boost::asio::ip::tcp::socket> socket_ptr;
+  std::string rin(boost::asio::streambuf *bout_ptr); // read input command string
+  void wout(boost::asio::streambuf *bout_ptr); // write output to socket
+#endif
+  std::ostream sout_; // used for socket and terminal interface
 
   processor_t* get_core(const std::string& i);
   void step(size_t n); // step through simulation
@@ -93,6 +116,8 @@ private:
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
   void make_dtb();
   void set_rom();
+
+  const char* get_symbol(uint64_t addr);
 
   // presents a prompt for introspection into the simulation
   void interactive();
@@ -136,6 +161,8 @@ private:
   void write_chunk(addr_t taddr, size_t len, const void* src);
   size_t chunk_align() { return 8; }
   size_t chunk_max_size() { return 8; }
+  void set_target_endianness(memif_endianness_t endianness);
+  memif_endianness_t get_target_endianness() const;
 
 public:
   // Initialize this after procs, because in debug_module_t::reset() we

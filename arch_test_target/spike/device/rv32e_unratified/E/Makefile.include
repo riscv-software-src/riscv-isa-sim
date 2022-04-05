@@ -1,0 +1,7 @@
+include $(TARGETDIR)/spike/device/Makefile_common.inc
+RUN_CMD = $(TARGET_SIM) $(TARGET_FLAGS) --isa=rv32e \
+        +signature=$(*).signature.output +signature-granularity=4\
+        $< 
+
+RUN_TARGET=\
+	$(RUN_CMD) 

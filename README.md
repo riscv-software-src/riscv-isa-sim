@@ -10,6 +10,7 @@ completion of the US transcontinental railway.
 
 Spike supports the following RISC-V ISA features:
   - RV32I and RV64I base ISAs, v2.1
+  - RV32E and RV64E base ISAs, v1.9
   - Zifencei extension, v2.0
   - Zicsr extension, v2.0
   - M extension, v2.0
@@ -18,10 +19,36 @@ Spike supports the following RISC-V ISA features:
   - D extension, v2.2
   - Q extension, v2.2
   - C extension, v2.0
-  - V extension, v0.9, w/ Zvlsseg/Zvamo/Zvqmac, w/o Zvediv, (_requires a 64-bit host_)
+  - Zbkb, Zbkc, Zbkx, Zknd, Zkne, Zknh, Zksed, Zksh scalar cryptography extensions (Zk, Zkn, and Zks groups), v1.0
+  - Zkr virtual entropy source emulation, v1.0
+  - V extension, v1.0 (_requires a 64-bit host_)
+  - P extension, v0.9.2
+  - Zba extension, v1.0
+  - Zbb extension, v1.0
+  - Zbc extension, v1.0
+  - Zbs extension, v1.0
   - Conformance to both RVWMO and RVTSO (Spike is sequentially consistent)
   - Machine, Supervisor, and User modes, v1.11
+  - Hypervisor extension, v1.0
+  - Svnapot extension, v1.0
+  - Svpbmt extension, v1.0
+  - Svinval extension, v1.0
+  - CMO extension, v1.0
   - Debug v0.14
+
+As a Spike extension, the remainder of the proposed
+[Bit-Manipulation Extensions](https://github.com/riscv/riscv-bitmanip)
+is provided under the Spike-custom extension name _Xbitmanip_.
+These instructions (and, of course, the extension name) are not RISC-V
+standards.
+
+These proposed bit-manipulation extensions can be split into further
+groups: Zbp, Zbs, Zbe, Zbf, Zbc, Zbm, Zbr, Zbt. Note that Zbc is
+ratified, but the original proposal contained some extra instructions
+(64-bit carryless multiplies) which are captured here.
+
+To enable these extensions individually, use the Spike-custom
+extension names _XZbp_, _XZbs_, _XZbc_, and so on.
 
 Versioning and APIs
 -------------------
@@ -51,6 +78,9 @@ install path.
     $ ../configure --prefix=$RISCV
     $ make
     $ [sudo] make install
+
+If your system uses the `yum` package manager, you can substitute
+`yum install dtc` for the first step.
 
 Build Steps on OpenBSD
 ----------------------
@@ -132,6 +162,7 @@ You can advance by one instruction by pressing the enter key. You can also
 execute until a desired equality is reached:
 
     : until pc 0 2020                   (stop when pc=2020)
+    : until reg 0 mie a                 (stop when register mie=0xa)
     : until mem 2020 50a9907311096993   (stop when mem[2020]=50a9907311096993)
 
 Alternatively, you can execute as long as an equality is true:

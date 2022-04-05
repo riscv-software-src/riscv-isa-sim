@@ -1,13 +1,14 @@
 // See LICENSE for license details.
 
+#include "sim.h"
 #include "decode.h"
 #include "disasm.h"
-#include "sim.h"
 #include "mmu.h"
 #include <sys/mman.h>
 #include <termios.h>
 #include <map>
 #include <iostream>
+#include <iomanip>
 #include <climits>
 #include <cinttypes>
 #include <assert.h>
@@ -18,6 +19,11 @@
 #include <vector>
 #include <algorithm>
 #include <math.h>
+
+#define MAX_CMD_STR 40 // maximum possible size of a command line
+
+#define STR_(X) #X      // these definitions allow to use a macro as a string
+#define STR(X) STR_(X)
 
 DECLARE_TRAP(-1, interactive)
 
@@ -44,11 +50,9 @@ static std::string readline(int fd)
         continue;
       s.erase(s.end()-1);
 
-      if (noncanonical && write(fd, "\b \b", 3) != 3)
-        ; // shut up gcc
+      if (noncanonical && write(fd, "\b \b", 3) != 3) {}
     }
-    else if (noncanonical && write(fd, &ch, 1) != 1)
-      ; // shut up gcc
+    else if (noncanonical && write(fd, &ch, 1) != 1) {}
 
     if (ch == '\n')
       break;
@@ -57,6 +61,59 @@ static std::string readline(int fd)
   }
   return s;
 }
+
+#ifdef HAVE_BOOST_ASIO
+// read input command string
+std::string sim_t::rin(boost::asio::streambuf *bout_ptr) {
+  std::string s;
+  if (acceptor_ptr) { // if we are listening, get commands from socket
+    try {
+      socket_ptr.reset(new boost::asio::ip::tcp::socket(*io_service_ptr));
+      acceptor_ptr->accept(*socket_ptr); // wait for someone to open connection
+      boost::asio::streambuf buf;
+      boost::asio::read_until(*socket_ptr, buf, "\n"); // wait for command
+      s = boost::asio::buffer_cast<const char*>(buf.data());
+      boost::erase_all(s, "\r");  // get rid off any cr and lf
+      boost::erase_all(s, "\n");
+      // The socket client is a web server and it appends the IP of the computer
+      // that sent the command from its web browser.
+
+      // For now, erase the IP if it is there.
+      boost::regex re(" ((25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])\\.){3}"
+                      "(25[0-5]|2[0-4][0-9]|[01]?[0-9]?[0-9])$");
+      s = boost::regex_replace(s, re, (std::string)"");
+
+      // TODO: check the IP against the IP used to upload RISC-V source files
+    } catch (std::exception& e) {
+      std::cerr << e.what() << std::endl;
+    }
+    // output goes to socket
+    sout_.rdbuf(bout_ptr);
+  } else { // if we are not listening on a socket, get commands from terminal
+    std::cerr << ": " << std::flush;
+    s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
+    // output goes to stderr
+    sout_.rdbuf(std::cerr.rdbuf());
+  }
+  return s;
+}
+
+// write sout_ to socket (via bout)
+void sim_t::wout(boost::asio::streambuf *bout_ptr) {
+  if (!cmd_file && acceptor_ptr) { // only if  we are not getting command inputs from a file
+                                   // and if a socket has been created
+    try {
+      boost::system::error_code ignored_error;
+      boost::asio::write(*socket_ptr, *bout_ptr, boost::asio::transfer_all(), ignored_error);
+      socket_ptr->close(); // close the socket after each command input/ouput
+                           //  This is need to in order to make the socket interface
+                           //  acessible by HTTP GET via a socket client in a web server.
+    } catch (std::exception& e) {
+      std::cerr << e.what() << std::endl;
+    }
+  }
+}
+#endif
 
 void sim_t::interactive()
 {
@@ -85,8 +142,27 @@ void sim_t::interactive()
 
   while (!done())
   {
-    std::cerr << ": " << std::flush;
-    std::string s = readline(2);
+#ifdef HAVE_BOOST_ASIO
+    boost::asio::streambuf bout; // socket output
+#endif
+    std::string s;
+    char cmd_str[MAX_CMD_STR+1]; // only used for following fscanf
+    // first get commands from file, if cmd_file has been set
+    if (cmd_file && !feof(cmd_file) && fscanf(cmd_file,"%" STR(MAX_CMD_STR) "[^\n]\n", cmd_str)==1) {
+                                                      // up to MAX_CMD_STR characters before \n, skipping \n
+       s = cmd_str;
+       // while we get input from file, output goes to stderr
+       sout_.rdbuf(std::cerr.rdbuf());
+    } else {
+       // when there are no commands left from file or if there was no file from the beginning
+       cmd_file = NULL; // mark file pointer as being not valid, so any method can test this easily
+#ifdef HAVE_BOOST_ASIO
+       s = rin(&bout); // get command string from socket or terminal
+#else
+       std::cerr << ": " << std::flush;
+       s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
+#endif
+    }
 
     std::stringstream ss(s);
     std::string cmd, tmp;
@@ -96,36 +172,47 @@ void sim_t::interactive()
     {
       set_procs_debug(true);
       step(1);
+#ifdef HAVE_BOOST_ASIO
+      wout(&bout); // socket output, if required
+#endif
       continue;
     }
 
     while (ss >> tmp)
       args.push_back(tmp);
 
+    std::ostream out(sout_.rdbuf());
+
     try
     {
-      if(funcs.count(cmd))
+      if (funcs.count(cmd))
         (this->*funcs[cmd])(cmd, args);
       else
-        fprintf(stderr, "Unknown command %s\n", cmd.c_str());
+        out << "Unknown command " << cmd << std::endl;
+    } catch(trap_t& t) {
+      out << "Bad or missing arguments for command " << cmd << std::endl;
     }
-    catch(trap_t& t) {}
+#ifdef HAVE_BOOST_ASIO
+    wout(&bout); // socket output, if required
+#endif
   }
   ctrlc_pressed = false;
 }
 
 void sim_t::interactive_help(const std::string& cmd, const std::vector<std::string>& args)
 {
-  std::cerr <<
+  std::ostream out(sout_.rdbuf());
+  out <<
     "Interactive commands:\n"
     "reg <core> [reg]                # Display [reg] (all if omitted) in <core>\n"
+    "freg <core> <reg>               # Display float <reg> in <core> as hex\n"
     "fregh <core> <reg>              # Display half precision <reg> in <core>\n"
     "fregs <core> <reg>              # Display single precision <reg> in <core>\n"
     "fregd <core> <reg>              # Display double precision <reg> in <core>\n"
     "vreg <core> [reg]               # Display vector [reg] (all if omitted) in <core>\n"
     "pc <core>                       # Show current PC in <core>\n"
     "mem <hex addr>                  # Show contents of physical memory\n"
-    "str <hex addr>                  # Show NUL-terminated C string\n"
+    "str <core> <hex addr>           # Show NUL-terminated C string at <hex addr> in core <core>\n"
     "until reg <core> <reg> <val>    # Stop when <reg> in <core> hits <val>\n"
     "until pc <core> <val>           # Stop when PC in <core> hits <val>\n"
     "untiln pc <core> <val>          # Run noisy and stop when PC in <core> hits <val>\n"
@@ -140,8 +227,8 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "q                                 Alias for quit\n"
     "help                            # This screen!\n"
     "h                                 Alias for help\n"
-    "Note: Hitting enter is the same as: run 1\n"
-    << std::flush;
+    "Note: Hitting enter is the same as: run 1"
+    << std::endl;
 }
 
 void sim_t::interactive_run_noisy(const std::string& cmd, const std::vector<std::string>& args)
@@ -161,6 +248,9 @@ void sim_t::interactive_run(const std::string& cmd, const std::vector<std::strin
   set_procs_debug(noisy);
   for (size_t i = 0; i < steps && !ctrlc_pressed && !done(); i++)
     step(1);
+
+  std::ostream out(sout_.rdbuf());
+  if (!noisy) out << ":" << std::endl;
 }
 
 void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::string>& args)
@@ -170,7 +260,7 @@ void sim_t::interactive_quit(const std::string& cmd, const std::vector<std::stri
 
 reg_t sim_t::get_pc(const std::vector<std::string>& args)
 {
-  if(args.size() != 1)
+  if (args.size() != 1)
     throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
@@ -179,12 +269,20 @@ reg_t sim_t::get_pc(const std::vector<std::string>& args)
 
 void sim_t::interactive_pc(const std::string& cmd, const std::vector<std::string>& args)
 {
-  fprintf(stderr, "0x%016" PRIx64 "\n", get_pc(args));
+  if(args.size() != 1)
+    throw trap_interactive();
+
+  processor_t *p = get_core(args[0]);
+  int max_xlen = p->get_isa().get_max_xlen();
+
+  std::ostream out(sout_.rdbuf());
+  out << std::hex << std::setfill('0') << "0x" << std::setw(max_xlen/4)
+      << zext(get_pc(args), max_xlen) << std::endl;
 }
 
 reg_t sim_t::get_reg(const std::vector<std::string>& args)
 {
-  if(args.size() != 2)
+  if (args.size() != 2)
     throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
@@ -224,6 +322,9 @@ freg_t sim_t::get_freg(const std::vector<std::string>& args)
 
 void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::string>& args)
 {
+  if (args.size() < 1)
+    throw trap_interactive();
+
   int rstart = 0;
   int rend = NVPR;
   if (args.size() >= 2) {
@@ -240,49 +341,63 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
   const int vlen = (int)(p->VU.get_vlen()) >> 3;
   const int elen = (int)(p->VU.get_elen()) >> 3;
   const int num_elem = vlen/elen;
-  fprintf(stderr, "VLEN=%d bits; ELEN=%d bits\n", vlen << 3, elen << 3);
+
+  std::ostream out(sout_.rdbuf());
+  out << std::dec << "VLEN=" << (vlen << 3) << " bits; ELEN=" << (elen << 3) << " bits" << std::endl;
 
   for (int r = rstart; r < rend; ++r) {
-    fprintf(stderr, "%-4s: ", vr_name[r]);
+    out << std::setfill (' ') << std::left << std::setw(4) << vr_name[r] << std::right << ": ";
     for (int e = num_elem-1; e >= 0; --e){
       uint64_t val;
       switch(elen){
         case 8:
-          val = P.VU.elt<uint64_t>(r, e);
-          fprintf(stderr, "[%d]: 0x%016" PRIx64 "  ", e, val);
+          val = p->VU.elt<uint64_t>(r, e);
+          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(16) << val << "  ";
           break;
         case 4:
-          val = P.VU.elt<uint32_t>(r, e);
-          fprintf(stderr, "[%d]: 0x%08" PRIx32 "  ", e, (uint32_t)val);
+          val = p->VU.elt<uint32_t>(r, e);
+          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (uint32_t)val << "  ";
           break;
         case 2:
-          val = P.VU.elt<uint16_t>(r, e);
-          fprintf(stderr, "[%d]: 0x%08" PRIx16 "  ", e, (uint16_t)val);
+          val = p->VU.elt<uint16_t>(r, e);
+          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (uint16_t)val << "  ";
           break;
         case 1:
-          val = P.VU.elt<uint8_t>(r, e);
-          fprintf(stderr, "[%d]: 0x%08" PRIx8 "  ", e, (uint8_t)val);
+          val = p->VU.elt<uint8_t>(r, e);
+          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (int)(uint8_t)val << "  ";
           break;
       }
     }
-    fprintf(stderr, "\n");
+    out << std::endl;
   }
 }
 
 
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
 {
+  if (args.size() < 1)
+     throw trap_interactive();
+
+  processor_t *p = get_core(args[0]);
+  int max_xlen = p->get_isa().get_max_xlen();
+
+  std::ostream out(sout_.rdbuf());
+  out << std::hex;
+
   if (args.size() == 1) {
     // Show all the regs!
-    processor_t *p = get_core(args[0]);
 
     for (int r = 0; r < NXPR; ++r) {
-      fprintf(stderr, "%-4s: 0x%016" PRIx64 "  ", xpr_name[r], p->get_state()->XPR[r]);
+      out << std::setfill(' ') << std::setw(4) << xpr_name[r]
+           << ": 0x" << std::setfill('0') << std::setw(max_xlen/4)
+           << zext(p->get_state()->XPR[r], max_xlen);
       if ((r + 1) % 4 == 0)
-        fprintf(stderr, "\n");
+        out << std::endl;
     }
-  } else
-    fprintf(stderr, "0x%016" PRIx64 "\n", get_reg(args));
+  } else {
+      out << "0x" << std::setfill('0') << std::setw(max_xlen/4)
+           << zext(get_reg(args), max_xlen) << std::endl;
+  }
 }
 
 union fpr
@@ -295,38 +410,46 @@ union fpr
 void sim_t::interactive_freg(const std::string& cmd, const std::vector<std::string>& args)
 {
   freg_t r = get_freg(args);
-  fprintf(stderr, "0x%016" PRIx64 "%016" PRIx64 "\n", r.v[1], r.v[0]);
+
+  std::ostream out(sout_.rdbuf());
+  out << std::hex << "0x" << std::setfill ('0') << std::setw(16) << r.v[1] << std::setw(16) << r.v[0] << std::endl;
 }
 
 void sim_t::interactive_fregh(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = freg(f16_to_f32(f16(get_freg(args))));
-  fprintf(stderr, "%g\n", isBoxedF32(f.r) ? (double)f.s : NAN);
+
+  std::ostream out(sout_.rdbuf());
+  out << (isBoxedF32(f.r) ? (double)f.s : NAN) << std::endl;
 }
 
 void sim_t::interactive_fregs(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = get_freg(args);
-  fprintf(stderr, "%g\n", isBoxedF32(f.r) ? (double)f.s : NAN);
+
+  std::ostream out(sout_.rdbuf());
+  out << (isBoxedF32(f.r) ? (double)f.s : NAN) << std::endl;
 }
 
 void sim_t::interactive_fregd(const std::string& cmd, const std::vector<std::string>& args)
 {
   fpr f;
   f.r = get_freg(args);
-  fprintf(stderr, "%g\n", isBoxedF64(f.r) ? f.d : NAN);
+
+  std::ostream out(sout_.rdbuf());
+  out << (isBoxedF64(f.r) ? f.d : NAN) << std::endl;
 }
 
 reg_t sim_t::get_mem(const std::vector<std::string>& args)
 {
-  if(args.size() != 1 && args.size() != 2)
+  if (args.size() != 1 && args.size() != 2)
     throw trap_interactive();
 
   std::string addr_str = args[0];
   mmu_t* mmu = debug_mmu;
-  if(args.size() == 2)
+  if (args.size() == 2)
   {
     processor_t *p = get_core(args[0]);
     mmu = p->get_mmu();
@@ -334,7 +457,7 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
   }
 
   reg_t addr = strtol(addr_str.c_str(),NULL,16), val;
-  if(addr == LONG_MAX)
+  if (addr == LONG_MAX)
     addr = strtoul(addr_str.c_str(),NULL,16);
 
   switch(addr % 8)
@@ -358,21 +481,36 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
 
 void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::string>& args)
 {
-  fprintf(stderr, "0x%016" PRIx64 "\n", get_mem(args));
+  int max_xlen = procs[0]->get_isa().get_max_xlen();
+
+  std::ostream out(sout_.rdbuf());
+  out << std::hex << "0x" << std::setfill('0') << std::setw(max_xlen/4)
+      << zext(get_mem(args), max_xlen) << std::endl;
 }
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)
 {
-  if(args.size() != 1)
+  if (args.size() != 1 && args.size() != 2)
     throw trap_interactive();
 
-  reg_t addr = strtol(args[0].c_str(),NULL,16);
+  std::string addr_str = args[0];
+  mmu_t* mmu = debug_mmu;
+  if (args.size() == 2)
+  {
+    processor_t *p = get_core(args[0]);
+    mmu = p->get_mmu();
+    addr_str = args[1];
+  }
+
+  reg_t addr = strtol(addr_str.c_str(),NULL,16);
+
+  std::ostream out(sout_.rdbuf());
 
   char ch;
-  while((ch = debug_mmu->load_uint8(addr++)))
-    putchar(ch);
+  while((ch = mmu->load_uint8(addr++)))
+    out << ch;
 
-  putchar('\n');
+  out << std::endl;
 }
 
 void sim_t::interactive_until_silent(const std::string& cmd, const std::vector<std::string>& args)
@@ -389,13 +527,23 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
 {
   bool cmd_until = cmd == "until" || cmd == "untiln";
 
-  if(args.size() < 3)
-    return;
+  if (args.size() < 3)
+    throw trap_interactive();
 
-  reg_t val = strtol(args[args.size()-1].c_str(),NULL,16);
-  if(val == LONG_MAX)
-    val = strtoul(args[args.size()-1].c_str(),NULL,16);
-  
+  if (args.size() == 3)
+    get_core(args[1]); // make sure that argument is a valid core number
+
+  char *end;
+  reg_t val = strtol(args[args.size()-1].c_str(),&end,16);
+  if (val == LONG_MAX)
+    val = strtoul(args[args.size()-1].c_str(),&end,16);
+  if (args[args.size()-1].c_str() == end)  // not a valid number
+    throw trap_interactive();
+
+  // mask bits above max_xlen
+  int max_xlen = procs[strtol(args[1].c_str(),NULL,10)]->get_isa().get_max_xlen();
+  if (max_xlen == 32) val &= 0xFFFFFFFF;
+
   std::vector<std::string> args2;
   args2 = std::vector<std::string>(args.begin()+1,args.end()-1);
 
@@ -405,7 +553,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
               NULL;
 
   if (func == NULL)
-    return;
+    throw trap_interactive();
 
   ctrlc_pressed = false;
 
@@ -414,6 +562,9 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
     try
     {
       reg_t current = (this->*func)(args2);
+
+      // mask bits above max_xlen
+      if (max_xlen == 32) current &= 0xFFFFFFFF;
 
       if (cmd_until == (current == val))
         break;

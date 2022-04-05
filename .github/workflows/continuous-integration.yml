@@ -1,0 +1,28 @@
+# This file describes the GitHub Actions workflow for continuous integration of Spike.
+#
+# See
+# https://help.github.com/en/actions/reference/workflow-syntax-for-github-actions
+# for API reference documentation on this file format.
+
+name: Continuous Integration
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+
+jobs:
+  test:
+    name: Test Spike build
+    runs-on: ubuntu-20.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Dependencies
+        run: sudo xargs apt-get install -y < .github/workflows/apt-packages.txt
+
+      - run: ci-tests/test-spike

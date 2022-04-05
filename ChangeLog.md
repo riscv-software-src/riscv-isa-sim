@@ -1,3 +1,18 @@
+Version 1.1.0
+-------------
+- Zbkb, Zbkc, Zbkx, Zknd, Zkne, Zknh, Zksed, Zksh scalar cryptography extensions (Zk, Zkn, and Zks groups), v1.0
+- Zkr virtual entropy source emulation, v1.0
+- V extension, v1.0
+- P extension, v0.9.2
+- Zba extension, v1.0
+- Zbb extension, v1.0
+- Zbc extension, v1.0
+- Zbs extension, v1.0
+- Hypervisor extension, v1.0
+- Svnapot extension, v1.0
+- Svpbmt extension, v1.0
+- Svinval extension, v1.0
+
 Version 1.0.1-dev
 -----------------
 - Preliminary support for a subset of the Vector Extension, v0.7.1.

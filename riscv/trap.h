@@ -4,7 +4,7 @@
 #define _RISCV_TRAP_H
 
 #include "decode.h"
-#include <stdlib.h>
+#include <cstdio>
 
 struct state_t;
 
@@ -12,7 +12,6 @@ class trap_t
 {
  public:
   trap_t(reg_t which) : which(which) {}
-  virtual const char* name();
   virtual bool has_gva() { return false; }
   virtual bool has_tval() { return false; }
   virtual reg_t get_tval() { return 0; }
@@ -21,6 +20,14 @@ class trap_t
   virtual bool has_tinst() { return false; }
   virtual reg_t get_tinst() { return 0; }
   reg_t cause() { return which; }
+
+  virtual const char* name()
+  {
+    const char* fmt = uint8_t(which) == which ? "trap #%u" : "interrupt #%u";
+    sprintf(_name, fmt, uint8_t(which));
+    return _name;
+  }
+
  private:
   char _name[16];
   reg_t which;
@@ -29,11 +36,13 @@ class trap_t
 class insn_trap_t : public trap_t
 {
  public:
-  insn_trap_t(reg_t which, reg_t tval)
-    : trap_t(which), tval(tval) {}
+  insn_trap_t(reg_t which, bool gva, reg_t tval)
+    : trap_t(which), gva(gva), tval(tval) {}
+  bool has_gva() override { return gva; }
   bool has_tval() override { return true; }
   reg_t get_tval() override { return tval; }
  private:
+  bool gva;
   reg_t tval;
 };
 
@@ -62,11 +71,23 @@ class mem_trap_t : public trap_t
 
 #define DECLARE_INST_TRAP(n, x) class trap_##x : public insn_trap_t { \
  public: \
-  trap_##x(reg_t tval) : insn_trap_t(n, tval) {} \
+  trap_##x(reg_t tval) : insn_trap_t(n, /*gva*/false, tval) {} \
+  const char* name() { return "trap_"#x; } \
+};
+
+#define DECLARE_INST_WITH_GVA_TRAP(n, x) class trap_##x : public insn_trap_t {  \
+ public: \
+  trap_##x(bool gva, reg_t tval) : insn_trap_t(n, gva, tval) {} \
   const char* name() { return "trap_"#x; } \
 };
 
 #define DECLARE_MEM_TRAP(n, x) class trap_##x : public mem_trap_t { \
+ public: \
+  trap_##x(bool gva, reg_t tval, reg_t tval2, reg_t tinst) : mem_trap_t(n, gva, tval, tval2, tinst) {} \
+  const char* name() { return "trap_"#x; } \
+};
+
+#define DECLARE_MEM_GVA_TRAP(n, x) class trap_##x : public mem_trap_t { \
  public: \
   trap_##x(reg_t tval, reg_t tval2, reg_t tinst) : mem_trap_t(n, true, tval, tval2, tinst) {} \
   const char* name() { return "trap_"#x; } \
@@ -75,7 +96,7 @@ class mem_trap_t : public trap_t
 DECLARE_MEM_TRAP(CAUSE_MISALIGNED_FETCH, instruction_address_misaligned)
 DECLARE_MEM_TRAP(CAUSE_FETCH_ACCESS, instruction_access_fault)
 DECLARE_INST_TRAP(CAUSE_ILLEGAL_INSTRUCTION, illegal_instruction)
-DECLARE_INST_TRAP(CAUSE_BREAKPOINT, breakpoint)
+DECLARE_INST_WITH_GVA_TRAP(CAUSE_BREAKPOINT, breakpoint)
 DECLARE_MEM_TRAP(CAUSE_MISALIGNED_LOAD, load_address_misaligned)
 DECLARE_MEM_TRAP(CAUSE_MISALIGNED_STORE, store_address_misaligned)
 DECLARE_MEM_TRAP(CAUSE_LOAD_ACCESS, load_access_fault)
@@ -87,9 +108,9 @@ DECLARE_TRAP(CAUSE_MACHINE_ECALL, machine_ecall)
 DECLARE_MEM_TRAP(CAUSE_FETCH_PAGE_FAULT, instruction_page_fault)
 DECLARE_MEM_TRAP(CAUSE_LOAD_PAGE_FAULT, load_page_fault)
 DECLARE_MEM_TRAP(CAUSE_STORE_PAGE_FAULT, store_page_fault)
-DECLARE_MEM_TRAP(CAUSE_FETCH_GUEST_PAGE_FAULT, instruction_guest_page_fault)
-DECLARE_MEM_TRAP(CAUSE_LOAD_GUEST_PAGE_FAULT, load_guest_page_fault)
+DECLARE_MEM_GVA_TRAP(CAUSE_FETCH_GUEST_PAGE_FAULT, instruction_guest_page_fault)
+DECLARE_MEM_GVA_TRAP(CAUSE_LOAD_GUEST_PAGE_FAULT, load_guest_page_fault)
 DECLARE_INST_TRAP(CAUSE_VIRTUAL_INSTRUCTION, virtual_instruction)
-DECLARE_MEM_TRAP(CAUSE_STORE_GUEST_PAGE_FAULT, store_guest_page_fault)
+DECLARE_MEM_GVA_TRAP(CAUSE_STORE_GUEST_PAGE_FAULT, store_guest_page_fault)
 
 #endif

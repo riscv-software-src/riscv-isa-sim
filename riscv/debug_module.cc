@@ -1,10 +1,10 @@
 #include <cassert>
 
+#include "sim.h"
 #include "debug_module.h"
 #include "debug_defines.h"
 #include "opcodes.h"
 #include "mmu.h"
-#include "sim.h"
 
 #include "debug_rom/debug_rom.h"
 #include "debug_rom_defines.h"
@@ -87,31 +87,31 @@ void debug_module_t::reset()
       proc->halt_request = proc->HR_NONE;
   }
 
-  dmcontrol = {0};
+  memset(&dmcontrol, 0, sizeof(dmcontrol));
 
-  dmstatus = {0};
+  memset(&dmstatus, 0, sizeof(dmstatus));
   dmstatus.impebreak = config.support_impebreak;
   dmstatus.authenticated = !config.require_authentication;
   dmstatus.version = 2;
 
-  abstractcs = {0};
+  memset(&abstractcs, 0, sizeof(abstractcs));
   abstractcs.datacount = sizeof(dmdata) / 4;
   abstractcs.progbufsize = config.progbufsize;
 
-  abstractauto = {0};
+  memset(&abstractauto, 0, sizeof(abstractauto));
 
-  sbcs = {0};
-  if (config.max_bus_master_bits > 0) {
+  memset(&sbcs, 0, sizeof(sbcs));
+  if (config.max_sba_data_width > 0) {
     sbcs.version = 1;
     sbcs.asize = sizeof(reg_t) * 8;
   }
-  if (config.max_bus_master_bits >= 64)
+  if (config.max_sba_data_width >= 64)
     sbcs.access64 = true;
-  if (config.max_bus_master_bits >= 32)
+  if (config.max_sba_data_width >= 32)
     sbcs.access32 = true;
-  if (config.max_bus_master_bits >= 16)
+  if (config.max_sba_data_width >= 16)
     sbcs.access16 = true;
-  if (config.max_bus_master_bits >= 8)
+  if (config.max_sba_data_width >= 8)
     sbcs.access8 = true;
 
   challenge = random();
@@ -295,7 +295,7 @@ unsigned debug_module_t::sb_access_bits()
 
 void debug_module_t::sb_autoincrement()
 {
-  if (!sbcs.autoincrement || !config.max_bus_master_bits)
+  if (!sbcs.autoincrement || !config.max_sba_data_width)
     return;
 
   uint64_t value = sbaddress[0] + sb_access_bits() / 8;
@@ -317,13 +317,13 @@ void debug_module_t::sb_read()
 {
   reg_t address = ((uint64_t) sbaddress[1] << 32) | sbaddress[0];
   try {
-    if (sbcs.sbaccess == 0 && config.max_bus_master_bits >= 8) {
+    if (sbcs.sbaccess == 0 && config.max_sba_data_width >= 8) {
       sbdata[0] = sim->debug_mmu->load_uint8(address);
-    } else if (sbcs.sbaccess == 1 && config.max_bus_master_bits >= 16) {
+    } else if (sbcs.sbaccess == 1 && config.max_sba_data_width >= 16) {
       sbdata[0] = sim->debug_mmu->load_uint16(address);
-    } else if (sbcs.sbaccess == 2 && config.max_bus_master_bits >= 32) {
+    } else if (sbcs.sbaccess == 2 && config.max_sba_data_width >= 32) {
       sbdata[0] = sim->debug_mmu->load_uint32(address);
-    } else if (sbcs.sbaccess == 3 && config.max_bus_master_bits >= 64) {
+    } else if (sbcs.sbaccess == 3 && config.max_sba_data_width >= 64) {
       uint64_t value = sim->debug_mmu->load_uint64(address);
       sbdata[0] = value;
       sbdata[1] = value >> 32;
@@ -339,13 +339,13 @@ void debug_module_t::sb_write()
 {
   reg_t address = ((uint64_t) sbaddress[1] << 32) | sbaddress[0];
   D(fprintf(stderr, "sb_write() 0x%x @ 0x%lx\n", sbdata[0], address));
-  if (sbcs.sbaccess == 0 && config.max_bus_master_bits >= 8) {
+  if (sbcs.sbaccess == 0 && config.max_sba_data_width >= 8) {
     sim->debug_mmu->store_uint8(address, sbdata[0]);
-  } else if (sbcs.sbaccess == 1 && config.max_bus_master_bits >= 16) {
+  } else if (sbcs.sbaccess == 1 && config.max_sba_data_width >= 16) {
     sim->debug_mmu->store_uint16(address, sbdata[0]);
-  } else if (sbcs.sbaccess == 2 && config.max_bus_master_bits >= 32) {
+  } else if (sbcs.sbaccess == 2 && config.max_sba_data_width >= 32) {
     sim->debug_mmu->store_uint32(address, sbdata[0]);
-  } else if (sbcs.sbaccess == 3 && config.max_bus_master_bits >= 64) {
+  } else if (sbcs.sbaccess == 3 && config.max_sba_data_width >= 64) {
     sim->debug_mmu->store_uint64(address,
         (((uint64_t) sbdata[1]) << 32) | sbdata[0]);
   } else {
@@ -357,8 +357,8 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 {
   uint32_t result = 0;
   D(fprintf(stderr, "dmi_read(0x%x) -> ", address));
-  if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
-    unsigned i = address - DMI_DATA0;
+  if (address >= DM_DATA0 && address < DM_DATA0 + abstractcs.datacount) {
+    unsigned i = address - DM_DATA0;
     result = read32(dmdata, i);
     if (abstractcs.busy) {
       result = -1;
@@ -372,8 +372,8 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
     if (!abstractcs.busy && ((abstractauto.autoexecdata >> i) & 1)) {
       perform_abstract_command();
     }
-  } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + config.progbufsize) {
-    unsigned i = address - DMI_PROGBUF0;
+  } else if (address >= DM_PROGBUF0 && address < DM_PROGBUF0 + config.progbufsize) {
+    unsigned i = address - DM_PROGBUF0;
     result = read32(program_buffer, i);
     if (abstractcs.busy) {
       result = -1;
@@ -385,20 +385,20 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 
   } else {
     switch (address) {
-      case DMI_DMCONTROL:
+      case DM_DMCONTROL:
         {
-          result = set_field(result, DMI_DMCONTROL_HALTREQ, dmcontrol.haltreq);
-          result = set_field(result, DMI_DMCONTROL_RESUMEREQ, dmcontrol.resumereq);
-          result = set_field(result, DMI_DMCONTROL_HARTSELHI,
-              dmcontrol.hartsel >> DMI_DMCONTROL_HARTSELLO_LENGTH);
-          result = set_field(result, DMI_DMCONTROL_HASEL, dmcontrol.hasel);
-          result = set_field(result, DMI_DMCONTROL_HARTSELLO, dmcontrol.hartsel);
-          result = set_field(result, DMI_DMCONTROL_HARTRESET, dmcontrol.hartreset);
-	  result = set_field(result, DMI_DMCONTROL_NDMRESET, dmcontrol.ndmreset);
-          result = set_field(result, DMI_DMCONTROL_DMACTIVE, dmcontrol.dmactive);
+          result = set_field(result, DM_DMCONTROL_HALTREQ, dmcontrol.haltreq);
+          result = set_field(result, DM_DMCONTROL_RESUMEREQ, dmcontrol.resumereq);
+          result = set_field(result, DM_DMCONTROL_HARTSELHI,
+              dmcontrol.hartsel >> DM_DMCONTROL_HARTSELLO_LENGTH);
+          result = set_field(result, DM_DMCONTROL_HASEL, dmcontrol.hasel);
+          result = set_field(result, DM_DMCONTROL_HARTSELLO, dmcontrol.hartsel);
+          result = set_field(result, DM_DMCONTROL_HARTRESET, dmcontrol.hartreset);
+	  result = set_field(result, DM_DMCONTROL_NDMRESET, dmcontrol.ndmreset);
+          result = set_field(result, DM_DMCONTROL_DMACTIVE, dmcontrol.dmactive);
         }
         break;
-      case DMI_DMSTATUS:
+      case DM_DMSTATUS:
         {
 	  dmstatus.allhalted = true;
           dmstatus.anyhalted = false;
@@ -433,51 +433,51 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 	  dmstatus.allunavail = false;
 	  dmstatus.anyunavail = false;
 
-          result = set_field(result, DMI_DMSTATUS_IMPEBREAK,
+          result = set_field(result, DM_DMSTATUS_IMPEBREAK,
               dmstatus.impebreak);
-          result = set_field(result, DMI_DMSTATUS_ALLHAVERESET,
+          result = set_field(result, DM_DMSTATUS_ALLHAVERESET,
               hart_state[dmcontrol.hartsel].havereset);
-          result = set_field(result, DMI_DMSTATUS_ANYHAVERESET,
+          result = set_field(result, DM_DMSTATUS_ANYHAVERESET,
               hart_state[dmcontrol.hartsel].havereset);
-	  result = set_field(result, DMI_DMSTATUS_ALLNONEXISTENT, dmstatus.allnonexistant);
-	  result = set_field(result, DMI_DMSTATUS_ALLUNAVAIL, dmstatus.allunavail);
-	  result = set_field(result, DMI_DMSTATUS_ALLRUNNING, dmstatus.allrunning);
-	  result = set_field(result, DMI_DMSTATUS_ALLHALTED, dmstatus.allhalted);
-          result = set_field(result, DMI_DMSTATUS_ALLRESUMEACK, dmstatus.allresumeack);
-	  result = set_field(result, DMI_DMSTATUS_ANYNONEXISTENT, dmstatus.anynonexistant);
-	  result = set_field(result, DMI_DMSTATUS_ANYUNAVAIL, dmstatus.anyunavail);
-	  result = set_field(result, DMI_DMSTATUS_ANYRUNNING, dmstatus.anyrunning);
-	  result = set_field(result, DMI_DMSTATUS_ANYHALTED, dmstatus.anyhalted);
-          result = set_field(result, DMI_DMSTATUS_ANYRESUMEACK, dmstatus.anyresumeack);
-          result = set_field(result, DMI_DMSTATUS_AUTHENTICATED, dmstatus.authenticated);
-          result = set_field(result, DMI_DMSTATUS_AUTHBUSY, dmstatus.authbusy);
-          result = set_field(result, DMI_DMSTATUS_VERSION, dmstatus.version);
+	  result = set_field(result, DM_DMSTATUS_ALLNONEXISTENT, dmstatus.allnonexistant);
+	  result = set_field(result, DM_DMSTATUS_ALLUNAVAIL, dmstatus.allunavail);
+	  result = set_field(result, DM_DMSTATUS_ALLRUNNING, dmstatus.allrunning);
+	  result = set_field(result, DM_DMSTATUS_ALLHALTED, dmstatus.allhalted);
+          result = set_field(result, DM_DMSTATUS_ALLRESUMEACK, dmstatus.allresumeack);
+	  result = set_field(result, DM_DMSTATUS_ANYNONEXISTENT, dmstatus.anynonexistant);
+	  result = set_field(result, DM_DMSTATUS_ANYUNAVAIL, dmstatus.anyunavail);
+	  result = set_field(result, DM_DMSTATUS_ANYRUNNING, dmstatus.anyrunning);
+	  result = set_field(result, DM_DMSTATUS_ANYHALTED, dmstatus.anyhalted);
+          result = set_field(result, DM_DMSTATUS_ANYRESUMEACK, dmstatus.anyresumeack);
+          result = set_field(result, DM_DMSTATUS_AUTHENTICATED, dmstatus.authenticated);
+          result = set_field(result, DM_DMSTATUS_AUTHBUSY, dmstatus.authbusy);
+          result = set_field(result, DM_DMSTATUS_VERSION, dmstatus.version);
         }
       	break;
-      case DMI_ABSTRACTCS:
-        result = set_field(result, DMI_ABSTRACTCS_CMDERR, abstractcs.cmderr);
-        result = set_field(result, DMI_ABSTRACTCS_BUSY, abstractcs.busy);
-        result = set_field(result, DMI_ABSTRACTCS_DATACOUNT, abstractcs.datacount);
-        result = set_field(result, DMI_ABSTRACTCS_PROGBUFSIZE,
+      case DM_ABSTRACTCS:
+        result = set_field(result, DM_ABSTRACTCS_CMDERR, abstractcs.cmderr);
+        result = set_field(result, DM_ABSTRACTCS_BUSY, abstractcs.busy);
+        result = set_field(result, DM_ABSTRACTCS_DATACOUNT, abstractcs.datacount);
+        result = set_field(result, DM_ABSTRACTCS_PROGBUFSIZE,
             abstractcs.progbufsize);
         break;
-      case DMI_ABSTRACTAUTO:
-        result = set_field(result, DMI_ABSTRACTAUTO_AUTOEXECPROGBUF, abstractauto.autoexecprogbuf);
-        result = set_field(result, DMI_ABSTRACTAUTO_AUTOEXECDATA, abstractauto.autoexecdata);
+      case DM_ABSTRACTAUTO:
+        result = set_field(result, DM_ABSTRACTAUTO_AUTOEXECPROGBUF, abstractauto.autoexecprogbuf);
+        result = set_field(result, DM_ABSTRACTAUTO_AUTOEXECDATA, abstractauto.autoexecdata);
         break;
-      case DMI_COMMAND:
+      case DM_COMMAND:
         result = 0;
         break;
-      case DMI_HARTINFO:
-        result = set_field(result, DMI_HARTINFO_NSCRATCH, 1);
-        result = set_field(result, DMI_HARTINFO_DATAACCESS, 1);
-        result = set_field(result, DMI_HARTINFO_DATASIZE, abstractcs.datacount);
-        result = set_field(result, DMI_HARTINFO_DATAADDR, debug_data_start);
+      case DM_HARTINFO:
+        result = set_field(result, DM_HARTINFO_NSCRATCH, 1);
+        result = set_field(result, DM_HARTINFO_DATAACCESS, 1);
+        result = set_field(result, DM_HARTINFO_DATASIZE, abstractcs.datacount);
+        result = set_field(result, DM_HARTINFO_DATAADDR, debug_data_start);
         break;
-      case DMI_HAWINDOWSEL:
+      case DM_HAWINDOWSEL:
         result = hawindowsel;
         break;
-      case DMI_HAWINDOW:
+      case DM_HAWINDOW:
         {
           unsigned base = hawindowsel * 32;
           for (unsigned i = 0; i < 32; i++) {
@@ -488,33 +488,33 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
           }
         }
         break;
-      case DMI_SBCS:
-        result = set_field(result, DMI_SBCS_SBVERSION, sbcs.version);
-        result = set_field(result, DMI_SBCS_SBREADONADDR, sbcs.readonaddr);
-        result = set_field(result, DMI_SBCS_SBACCESS, sbcs.sbaccess);
-        result = set_field(result, DMI_SBCS_SBAUTOINCREMENT, sbcs.autoincrement);
-        result = set_field(result, DMI_SBCS_SBREADONDATA, sbcs.readondata);
-        result = set_field(result, DMI_SBCS_SBERROR, sbcs.error);
-        result = set_field(result, DMI_SBCS_SBASIZE, sbcs.asize);
-        result = set_field(result, DMI_SBCS_SBACCESS128, sbcs.access128);
-        result = set_field(result, DMI_SBCS_SBACCESS64, sbcs.access64);
-        result = set_field(result, DMI_SBCS_SBACCESS32, sbcs.access32);
-        result = set_field(result, DMI_SBCS_SBACCESS16, sbcs.access16);
-        result = set_field(result, DMI_SBCS_SBACCESS8, sbcs.access8);
+      case DM_SBCS:
+        result = set_field(result, DM_SBCS_SBVERSION, sbcs.version);
+        result = set_field(result, DM_SBCS_SBREADONADDR, sbcs.readonaddr);
+        result = set_field(result, DM_SBCS_SBACCESS, sbcs.sbaccess);
+        result = set_field(result, DM_SBCS_SBAUTOINCREMENT, sbcs.autoincrement);
+        result = set_field(result, DM_SBCS_SBREADONDATA, sbcs.readondata);
+        result = set_field(result, DM_SBCS_SBERROR, sbcs.error);
+        result = set_field(result, DM_SBCS_SBASIZE, sbcs.asize);
+        result = set_field(result, DM_SBCS_SBACCESS128, sbcs.access128);
+        result = set_field(result, DM_SBCS_SBACCESS64, sbcs.access64);
+        result = set_field(result, DM_SBCS_SBACCESS32, sbcs.access32);
+        result = set_field(result, DM_SBCS_SBACCESS16, sbcs.access16);
+        result = set_field(result, DM_SBCS_SBACCESS8, sbcs.access8);
         break;
-      case DMI_SBADDRESS0:
+      case DM_SBADDRESS0:
         result = sbaddress[0];
         break;
-      case DMI_SBADDRESS1:
+      case DM_SBADDRESS1:
         result = sbaddress[1];
         break;
-      case DMI_SBADDRESS2:
+      case DM_SBADDRESS2:
         result = sbaddress[2];
         break;
-      case DMI_SBADDRESS3:
+      case DM_SBADDRESS3:
         result = sbaddress[3];
         break;
-      case DMI_SBDATA0:
+      case DM_SBDATA0:
         result = sbdata[0];
         if (sbcs.error == 0) {
           if (sbcs.readondata) {
@@ -525,20 +525,20 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
           }
         }
         break;
-      case DMI_SBDATA1:
+      case DM_SBDATA1:
         result = sbdata[1];
         break;
-      case DMI_SBDATA2:
+      case DM_SBDATA2:
         result = sbdata[2];
         break;
-      case DMI_SBDATA3:
+      case DM_SBDATA3:
         result = sbdata[3];
         break;
-      case DMI_AUTHDATA:
+      case DM_AUTHDATA:
         result = challenge;
         break;
-      case DMI_DMCS2:
-        result = set_field(result, DMI_DMCS2_HALTGROUP,
+      case DM_DMCS2:
+        result = set_field(result, DM_DMCS2_GROUP,
             hart_state[dmcontrol.hartsel].haltgroup);
         break;
       default:
@@ -661,6 +661,17 @@ bool debug_module_t::perform_abstract_command()
             return true;
         }
 
+        if (regno == 0x1000 + S0 && write) {
+          /*
+           * The exception handler starts out be restoring dscratch to s0,
+           * which was saved before executing the abstract memory region. Since
+           * we just wrote s0, also make sure to write that same value to
+           * dscratch in case an exception occurs in a program buffer that
+           * might be executed later.
+           */
+          write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH0));
+        }
+
       } else if (regno >= 0x1020 && regno < 0x1040) {
         unsigned fprnum = regno - 0x1020;
 
@@ -742,14 +753,14 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
 {
   D(fprintf(stderr, "dmi_write(0x%x, 0x%x)\n", address, value));
 
-  if (!dmstatus.authenticated && address != DMI_AUTHDATA &&
-      address != DMI_DMCONTROL)
+  if (!dmstatus.authenticated && address != DM_AUTHDATA &&
+      address != DM_DMCONTROL)
     return false;
 
-  if (address >= DMI_DATA0 && address < DMI_DATA0 + abstractcs.datacount) {
-    unsigned i = address - DMI_DATA0;
+  if (address >= DM_DATA0 && address < DM_DATA0 + abstractcs.datacount) {
+    unsigned i = address - DM_DATA0;
     if (!abstractcs.busy)
-      write32(dmdata, address - DMI_DATA0, value);
+      write32(dmdata, address - DM_DATA0, value);
 
     if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
       abstractcs.cmderr = CMDERR_BUSY;
@@ -760,8 +771,8 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
     }
     return true;
 
-  } else if (address >= DMI_PROGBUF0 && address < DMI_PROGBUF0 + config.progbufsize) {
-    unsigned i = address - DMI_PROGBUF0;
+  } else if (address >= DM_PROGBUF0 && address < DM_PROGBUF0 + config.progbufsize) {
+    unsigned i = address - DM_PROGBUF0;
 
     if (!abstractcs.busy)
       write32(program_buffer, i, value);
@@ -773,29 +784,29 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
 
   } else {
     switch (address) {
-      case DMI_DMCONTROL:
+      case DM_DMCONTROL:
         {
-          if (!dmcontrol.dmactive && get_field(value, DMI_DMCONTROL_DMACTIVE))
+          if (!dmcontrol.dmactive && get_field(value, DM_DMCONTROL_DMACTIVE))
             reset();
-          dmcontrol.dmactive = get_field(value, DMI_DMCONTROL_DMACTIVE);
+          dmcontrol.dmactive = get_field(value, DM_DMCONTROL_DMACTIVE);
           if (!dmstatus.authenticated || !dmcontrol.dmactive)
             return true;
 
-          dmcontrol.haltreq = get_field(value, DMI_DMCONTROL_HALTREQ);
-          dmcontrol.resumereq = get_field(value, DMI_DMCONTROL_RESUMEREQ);
-          dmcontrol.hartreset = get_field(value, DMI_DMCONTROL_HARTRESET);
-          dmcontrol.ndmreset = get_field(value, DMI_DMCONTROL_NDMRESET);
+          dmcontrol.haltreq = get_field(value, DM_DMCONTROL_HALTREQ);
+          dmcontrol.resumereq = get_field(value, DM_DMCONTROL_RESUMEREQ);
+          dmcontrol.hartreset = get_field(value, DM_DMCONTROL_HARTRESET);
+          dmcontrol.ndmreset = get_field(value, DM_DMCONTROL_NDMRESET);
           if (config.support_hasel)
-            dmcontrol.hasel = get_field(value, DMI_DMCONTROL_HASEL);
+            dmcontrol.hasel = get_field(value, DM_DMCONTROL_HASEL);
           else
             dmcontrol.hasel = 0;
-          dmcontrol.hartsel = get_field(value, DMI_DMCONTROL_HARTSELHI) <<
-            DMI_DMCONTROL_HARTSELLO_LENGTH;
-          dmcontrol.hartsel |= get_field(value, DMI_DMCONTROL_HARTSELLO);
+          dmcontrol.hartsel = get_field(value, DM_DMCONTROL_HARTSELHI) <<
+            DM_DMCONTROL_HARTSELLO_LENGTH;
+          dmcontrol.hartsel |= get_field(value, DM_DMCONTROL_HARTSELLO);
           dmcontrol.hartsel &= (1L<<hartsellen) - 1;
           for (unsigned i = 0; i < nprocs; i++) {
             if (hart_selected(i)) {
-              if (get_field(value, DMI_DMCONTROL_ACKHAVERESET)) {
+              if (get_field(value, DM_DMCONTROL_ACKHAVERESET)) {
                 hart_state[i].havereset = false;
               }
               processor_t *proc = processor(i);
@@ -825,15 +836,15 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         }
         return true;
 
-      case DMI_COMMAND:
+      case DM_COMMAND:
         command = value;
         return perform_abstract_command();
 
-      case DMI_HAWINDOWSEL:
+      case DM_HAWINDOWSEL:
         hawindowsel = value & ((1U<<field_width(nprocs))-1);
         return true;
 
-      case DMI_HAWINDOW:
+      case DM_HAWINDOW:
         {
           unsigned base = hawindowsel * 32;
           for (unsigned i = 0; i < 32; i++) {
@@ -845,40 +856,40 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         }
         return true;
 
-      case DMI_ABSTRACTCS:
-        abstractcs.cmderr = (cmderr_t) (((uint32_t) (abstractcs.cmderr)) & (~(uint32_t)(get_field(value, DMI_ABSTRACTCS_CMDERR))));
+      case DM_ABSTRACTCS:
+        abstractcs.cmderr = (cmderr_t) (((uint32_t) (abstractcs.cmderr)) & (~(uint32_t)(get_field(value, DM_ABSTRACTCS_CMDERR))));
         return true;
 
-      case DMI_ABSTRACTAUTO:
+      case DM_ABSTRACTAUTO:
         abstractauto.autoexecprogbuf = get_field(value,
-            DMI_ABSTRACTAUTO_AUTOEXECPROGBUF);
+            DM_ABSTRACTAUTO_AUTOEXECPROGBUF);
         abstractauto.autoexecdata = get_field(value,
-            DMI_ABSTRACTAUTO_AUTOEXECDATA);
+            DM_ABSTRACTAUTO_AUTOEXECDATA);
         return true;
-      case DMI_SBCS:
-        sbcs.readonaddr = get_field(value, DMI_SBCS_SBREADONADDR);
-        sbcs.sbaccess = get_field(value, DMI_SBCS_SBACCESS);
-        sbcs.autoincrement = get_field(value, DMI_SBCS_SBAUTOINCREMENT);
-        sbcs.readondata = get_field(value, DMI_SBCS_SBREADONDATA);
-        sbcs.error &= ~get_field(value, DMI_SBCS_SBERROR);
+      case DM_SBCS:
+        sbcs.readonaddr = get_field(value, DM_SBCS_SBREADONADDR);
+        sbcs.sbaccess = get_field(value, DM_SBCS_SBACCESS);
+        sbcs.autoincrement = get_field(value, DM_SBCS_SBAUTOINCREMENT);
+        sbcs.readondata = get_field(value, DM_SBCS_SBREADONDATA);
+        sbcs.error &= ~get_field(value, DM_SBCS_SBERROR);
         return true;
-      case DMI_SBADDRESS0:
+      case DM_SBADDRESS0:
         sbaddress[0] = value;
         if (sbcs.error == 0 && sbcs.readonaddr) {
           sb_read();
           sb_autoincrement();
         }
         return true;
-      case DMI_SBADDRESS1:
+      case DM_SBADDRESS1:
         sbaddress[1] = value;
         return true;
-      case DMI_SBADDRESS2:
+      case DM_SBADDRESS2:
         sbaddress[2] = value;
         return true;
-      case DMI_SBADDRESS3:
+      case DM_SBADDRESS3:
         sbaddress[3] = value;
         return true;
-      case DMI_SBDATA0:
+      case DM_SBDATA0:
         sbdata[0] = value;
         if (sbcs.error == 0) {
           sb_write();
@@ -887,16 +898,16 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           }
         }
         return true;
-      case DMI_SBDATA1:
+      case DM_SBDATA1:
         sbdata[1] = value;
         return true;
-      case DMI_SBDATA2:
+      case DM_SBDATA2:
         sbdata[2] = value;
         return true;
-      case DMI_SBDATA3:
+      case DM_SBDATA3:
         sbdata[3] = value;
         return true;
-      case DMI_AUTHDATA:
+      case DM_AUTHDATA:
         D(fprintf(stderr, "debug authentication: got 0x%x; 0x%x unlocks\n", value,
             challenge + secret));
         if (config.require_authentication) {
@@ -908,10 +919,10 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           }
         }
         return true;
-      case DMI_DMCS2:
-        if (config.support_haltgroups && get_field(value, DMI_DMCS2_HGWRITE)) {
+      case DM_DMCS2:
+        if (config.support_haltgroups && get_field(value, DM_DMCS2_HGWRITE)) {
           hart_state[dmcontrol.hartsel].haltgroup = get_field(value,
-              DMI_DMCS2_HALTGROUP);
+              DM_DMCS2_GROUP);
         }
         return true;
     }

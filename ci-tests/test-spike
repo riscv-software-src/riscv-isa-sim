@@ -1,0 +1,11 @@
+#!/bin/bash
+set -e
+
+DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+
+mkdir build
+cd build
+mkdir install
+$DIR/../configure --prefix=`pwd`/install
+make -j4
+make install

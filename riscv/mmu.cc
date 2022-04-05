@@ -1,11 +1,15 @@
 // See LICENSE for license details.
 
 #include "mmu.h"
+#include "arith.h"
 #include "simif.h"
 #include "processor.h"
 
 mmu_t::mmu_t(simif_t* sim, processor_t* proc)
  : sim(sim), proc(proc),
+#ifdef RISCV_ENABLE_DUAL_ENDIAN
+  target_big_endian(false),
+#endif
   check_triggers_fetch(false),
   check_triggers_load(false),
   check_triggers_store(false),
@@ -34,12 +38,12 @@ void mmu_t::flush_tlb()
   flush_icache();
 }
 
-static void throw_access_exception(reg_t addr, access_type type)
+static void throw_access_exception(bool virt, reg_t addr, access_type type)
 {
   switch (type) {
-    case FETCH: throw trap_instruction_access_fault(addr, 0, 0);
-    case LOAD: throw trap_load_access_fault(addr, 0, 0);
-    case STORE: throw trap_store_access_fault(addr, 0, 0);
+    case FETCH: throw trap_instruction_access_fault(virt, addr, 0, 0);
+    case LOAD: throw trap_load_access_fault(virt, addr, 0, 0);
+    case STORE: throw trap_store_access_fault(virt, addr, 0, 0);
     default: abort();
   }
 }
@@ -49,27 +53,24 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
   if (!proc)
     return addr;
 
-  bool mxr = get_field(proc->state.mstatus, MSTATUS_MXR);
   bool virt = proc->state.v;
+  bool hlvx = xlate_flags & RISCV_XLATE_VIRT_HLVX;
   reg_t mode = proc->state.prv;
   if (type != FETCH) {
-    if (!proc->state.debug_mode && get_field(proc->state.mstatus, MSTATUS_MPRV)) {
-      mode = get_field(proc->state.mstatus, MSTATUS_MPP);
-      if (get_field(proc->state.mstatus, MSTATUS_MPV))
+    if (!proc->state.debug_mode && get_field(proc->state.mstatus->read(), MSTATUS_MPRV)) {
+      mode = get_field(proc->state.mstatus->read(), MSTATUS_MPP);
+      if (get_field(proc->state.mstatus->read(), MSTATUS_MPV) && mode != PRV_M)
         virt = true;
     }
-    if (!proc->state.debug_mode && (xlate_flags & RISCV_XLATE_VIRT)) {
+    if (xlate_flags & RISCV_XLATE_VIRT) {
       virt = true;
-      mode = get_field(proc->state.hstatus, HSTATUS_SPVP);
-      if (type == LOAD && (xlate_flags & RISCV_XLATE_VIRT_MXR)) {
-        mxr = true;
-      }
+      mode = get_field(proc->state.hstatus->read(), HSTATUS_SPVP);
     }
   }
 
-  reg_t paddr = walk(addr, type, mode, virt, mxr) | (addr & (PGSIZE-1));
+  reg_t paddr = walk(addr, type, mode, virt, hlvx) | (addr & (PGSIZE-1));
   if (!pmp_ok(paddr, len, type, mode))
-    throw_access_exception(addr, type);
+    throw_access_exception(virt, addr, type);
   return paddr;
 }
 
@@ -81,7 +82,7 @@ tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
     return refill_tlb(vaddr, paddr, host_addr, FETCH);
   } else {
     if (!mmio_load(paddr, sizeof fetch_temp, (uint8_t*)&fetch_temp))
-      throw trap_instruction_access_fault(vaddr, 0, 0);
+      throw trap_instruction_access_fault(proc->state.v, vaddr, 0, 0);
     tlb_entry_t entry = {(char*)&fetch_temp - vaddr, paddr - vaddr};
     return entry;
   }
@@ -146,10 +147,10 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
     memcpy(bytes, host_addr, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
       tracer.trace(paddr, len, LOAD);
-    else
+    else if (xlate_flags == 0)
       refill_tlb(addr, paddr, host_addr, LOAD);
   } else if (!mmio_load(paddr, len, bytes)) {
-    throw trap_load_access_fault(addr, 0, 0);
+    throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
   }
 
   if (!matched_trigger) {
@@ -175,10 +176,10 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_
     memcpy(host_addr, bytes, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
       tracer.trace(paddr, len, STORE);
-    else
+    else if (xlate_flags == 0)
       refill_tlb(addr, paddr, host_addr, STORE);
   } else if (!mmio_store(paddr, len, bytes)) {
-    throw trap_store_access_fault(addr, 0, 0);
+    throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
   }
 }
 
@@ -186,6 +187,11 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
 {
   reg_t idx = (vaddr >> PGSHIFT) % TLB_ENTRIES;
   reg_t expected_tag = vaddr >> PGSHIFT;
+
+  tlb_entry_t entry = {host_addr - vaddr, paddr - vaddr};
+
+  if (proc && get_field(proc->state.mstatus->read(), MSTATUS_MPRV))
+    return entry;
 
   if ((tlb_load_tag[idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)
     tlb_load_tag[idx] = -1;
@@ -205,85 +211,34 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
     else tlb_load_tag[idx] = expected_tag;
   }
 
-  tlb_entry_t entry = {host_addr - vaddr, paddr - vaddr};
   tlb_data[idx] = entry;
   return entry;
 }
 
-reg_t mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
+bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
 {
   if (!proc || proc->n_pmp == 0)
     return true;
 
-  reg_t base = 0;
   for (size_t i = 0; i < proc->n_pmp; i++) {
-    reg_t tor = (proc->state.pmpaddr[i] & proc->pmp_tor_mask()) << PMP_SHIFT;
-    uint8_t cfg = proc->state.pmpcfg[i];
-
-    if (cfg & PMP_A) {
-      bool is_tor = (cfg & PMP_A) == PMP_TOR;
-      bool is_na4 = (cfg & PMP_A) == PMP_NA4;
-
-      reg_t mask = (proc->state.pmpaddr[i] << 1) | (!is_na4) | ~proc->pmp_tor_mask();
-      mask = ~(mask & ~(mask + 1)) << PMP_SHIFT;
-
-      // Check each 4-byte sector of the access
-      bool any_match = false;
-      bool all_match = true;
-      for (reg_t offset = 0; offset < len; offset += 1 << PMP_SHIFT) {
-        reg_t cur_addr = addr + offset;
-        bool napot_match = ((cur_addr ^ tor) & mask) == 0;
-        bool tor_match = base <= cur_addr && cur_addr < tor;
-        bool match = is_tor ? tor_match : napot_match;
-        any_match |= match;
-        all_match &= match;
-      }
-
-      if (any_match) {
-        // If the PMP matches only a strict subset of the access, fail it
-        if (!all_match)
-          return false;
-
-        // prepare to check bit MSECCFG_MML
-        bool cfgx = cfg & PMP_X;
-        bool cfgw = cfg & PMP_W;
-        bool cfgr = cfg & PMP_R;
-        bool cfgl = cfg & PMP_L;
-
-        bool prvm = mode == PRV_M;
-
-        bool typer = type == LOAD;
-        bool typex = type == FETCH;
-        bool typew = type == STORE;
-        bool normal_rwx = (typer && cfgr) || (typew && cfgw) || (typex && cfgx);
-
-        if (proc->state.mseccfg & MSECCFG_MML) {
-            if (cfgx && cfgw && cfgr && cfgl) {
-                // Locked Shared data region: Read only on both M and S/U mode.
-                return typer;
-            } else {
-              bool mml_shared_region = !cfgr && cfgw;
-              bool mml_chk_normal = (prvm == cfgl) && normal_rwx;
-              bool mml_chk_shared =
-                  (!cfgl && cfgx && (typer || typew)) ||
-                  (!cfgl && !cfgx && (typer || (typew && prvm))) ||
-                  (cfgl && typex) ||
-                  (cfgl && typer && cfgx && prvm);
-              return mml_shared_region ? mml_chk_shared : mml_chk_normal;
-            }
-        } else {
-          bool m_bypass = (prvm && !cfgl);
-          return m_bypass || normal_rwx;
-        }
-      }
+    // Check each 4-byte sector of the access
+    bool any_match = false;
+    bool all_match = true;
+    for (reg_t offset = 0; offset < len; offset += 1 << PMP_SHIFT) {
+      reg_t cur_addr = addr + offset;
+      bool match = proc->state.pmpaddr[i]->match4(cur_addr);
+      any_match |= match;
+      all_match &= match;
     }
 
-    base = tor;
-  }
+    if (any_match) {
+      // If the PMP matches only a strict subset of the access, fail it
+      if (!all_match)
+        return false;
 
-  return ((mode == PRV_M) &&
-          !(proc->state.mseccfg & MSECCFG_MMWP) &&
-          !(type == FETCH && (proc->state.mseccfg & MSECCFG_MML)));
+      return proc->state.pmpaddr[i]->access_ok(type, mode);
+    }
+  }
 }
 
 reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
@@ -294,96 +249,94 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
   if (!proc)
     return true;
 
-  reg_t base = 0;
-  for (size_t i = 0; i < proc->n_pmp; i++) {
-    reg_t tor = (proc->state.pmpaddr[i] & proc->pmp_tor_mask()) << PMP_SHIFT;
-    uint8_t cfg = proc->state.pmpcfg[i];
-
-    if (cfg & PMP_A) {
-      bool is_tor = (cfg & PMP_A) == PMP_TOR;
-      bool is_na4 = (cfg & PMP_A) == PMP_NA4;
-
-      bool begins_after_lower = addr >= base;
-      bool begins_after_upper = addr >= tor;
-      bool ends_before_lower = (addr & -len) < (base & -len);
-      bool ends_before_upper = (addr & -len) < (tor & -len);
-      bool tor_homogeneous = ends_before_lower || begins_after_upper ||
-        (begins_after_lower && ends_before_upper);
-
-      reg_t mask = (proc->state.pmpaddr[i] << 1) | (!is_na4) | ~proc->pmp_tor_mask();
-      mask = ~(mask & ~(mask + 1)) << PMP_SHIFT;
-      bool mask_homogeneous = ~(mask << 1) & len;
-      bool napot_homogeneous = mask_homogeneous || ((addr ^ tor) / len) != 0;
-
-      if (!(is_tor ? tor_homogeneous : napot_homogeneous))
-        return false;
-    }
-
-    base = tor;
-  }
+  for (size_t i = 0; i < proc->n_pmp; i++)
+    if (proc->state.pmpaddr[i]->subset_match(addr, len))
+      return false;
 
   return true;
 }
 
-reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, bool virt, bool mxr)
+reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool hlvx)
 {
   if (!virt)
     return gpa;
 
-  vm_info vm = decode_vm_info(proc->max_xlen, true, 0, proc->get_state()->hgatp);
+  vm_info vm = decode_vm_info(proc->get_const_xlen(), true, 0, proc->get_state()->hgatp->read());
   if (vm.levels == 0)
     return gpa;
 
+  int maxgpabits = vm.levels * vm.idxbits + vm.widenbits + PGSHIFT;
+  reg_t maxgpa = (1ULL << maxgpabits) - 1;
+
+  bool mxr = proc->state.sstatus->readvirt(false) & MSTATUS_MXR;
+
   reg_t base = vm.ptbase;
-  for (int i = vm.levels - 1; i >= 0; i--) {
-    int ptshift = i * vm.idxbits;
-    int idxbits = (i == (vm.levels - 1)) ? vm.idxbits + vm.widenbits : vm.idxbits;
-    reg_t idx = (gpa >> (PGSHIFT + ptshift)) & ((reg_t(1) << idxbits) - 1);
+  if ((gpa & ~maxgpa) == 0) {
+    for (int i = vm.levels - 1; i >= 0; i--) {
+      int ptshift = i * vm.idxbits;
+      int idxbits = (i == (vm.levels - 1)) ? vm.idxbits + vm.widenbits : vm.idxbits;
+      reg_t idx = (gpa >> (PGSHIFT + ptshift)) & ((reg_t(1) << idxbits) - 1);
 
-    // check that physical address of PTE is legal
-    auto pte_paddr = base + idx * vm.ptesize;
-    auto ppte = sim->addr_to_mem(pte_paddr);
-    if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S)) {
-      throw_access_exception(gva, type);
-    }
-
-    reg_t pte = vm.ptesize == 4 ? from_le(*(uint32_t*)ppte) : from_le(*(uint64_t*)ppte);
-    reg_t ppn = pte >> PTE_PPN_SHIFT;
-
-    if (PTE_TABLE(pte)) { // next level of page table
-      base = ppn << PGSHIFT;
-    } else if (!(pte & PTE_V) || (!(pte & PTE_R) && (pte & PTE_W))) {
-      break;
-    } else if (!(pte & PTE_U)) {
-      break;
-    } else if (type == FETCH ? !(pte & PTE_X) :
-               type == LOAD ?  !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
-                               !((pte & PTE_R) && (pte & PTE_W))) {
-      break;
-    } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
-      break;
-    } else {
-      reg_t ad = PTE_A | ((type == STORE) * PTE_D);
-#ifdef RISCV_ENABLE_DIRTY
-      // set accessed and possibly dirty bits.
-      if ((pte & ad) != ad) {
-        if (!pmp_ok(pte_paddr, vm.ptesize, STORE, PRV_S))
-          throw_access_exception(gva, type);
-        *(uint32_t*)ppte |= to_le((uint32_t)ad);
+      // check that physical address of PTE is legal
+      auto pte_paddr = base + idx * vm.ptesize;
+      auto ppte = sim->addr_to_mem(pte_paddr);
+      if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S)) {
+        throw_access_exception(virt, gva, trap_type);
       }
-#else
-      // take exception if access or possibly dirty bit is not set.
-      if ((pte & ad) != ad)
+
+      reg_t pte = vm.ptesize == 4 ? from_target(*(target_endian<uint32_t>*)ppte) : from_target(*(target_endian<uint64_t>*)ppte);
+      reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
+
+      if (pte & PTE_RSVD) {
         break;
+      } else if (!proc->extension_enabled(EXT_SVNAPOT) && (pte & PTE_N)) {
+        break;
+      } else if (!proc->extension_enabled(EXT_SVPBMT) && (pte & PTE_PBMT)) {
+        break;
+      } else if (PTE_TABLE(pte)) { // next level of page table
+        if (pte & (PTE_D | PTE_A | PTE_U | PTE_N | PTE_PBMT))
+          break;
+        base = ppn << PGSHIFT;
+      } else if (!(pte & PTE_V) || (!(pte & PTE_R) && (pte & PTE_W))) {
+        break;
+      } else if (!(pte & PTE_U)) {
+        break;
+      } else if (type == FETCH || hlvx ? !(pte & PTE_X) :
+                 type == LOAD          ? !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
+                                         !((pte & PTE_R) && (pte & PTE_W))) {
+        break;
+      } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
+        break;
+      } else {
+        reg_t ad = PTE_A | ((type == STORE) * PTE_D);
+#ifdef RISCV_ENABLE_DIRTY
+        // set accessed and possibly dirty bits.
+        if ((pte & ad) != ad) {
+          if (!pmp_ok(pte_paddr, vm.ptesize, STORE, PRV_S))
+            throw_access_exception(virt, gva, trap_type);
+          *(target_endian<uint32_t>*)ppte |= to_target((uint32_t)ad);
+        }
+#else
+        // take exception if access or possibly dirty bit is not set.
+        if ((pte & ad) != ad)
+          break;
 #endif
-      reg_t vpn = gpa >> PGSHIFT;
-      reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
-      reg_t page_base = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
-      return page_base | (gpa & page_mask);
+        reg_t vpn = gpa >> PGSHIFT;
+        reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
+
+        int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
+        if (((pte & PTE_N) && (ppn == 0 || i != 0)) || (napot_bits != 0 && napot_bits != 4))
+          break;
+
+        reg_t page_base = ((ppn & ~((reg_t(1) << napot_bits) - 1))
+                          | (vpn & ((reg_t(1) << napot_bits) - 1))
+                          | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
+        return page_base | (gpa & page_mask);
+      }
     }
   }
 
-  switch (type) {
+  switch (trap_type) {
     case FETCH: throw trap_instruction_guest_page_fault(gva, gpa >> 2, 0);
     case LOAD: throw trap_load_guest_page_fault(gva, gpa >> 2, 0);
     case STORE: throw trap_store_guest_page_fault(gva, gpa >> 2, 0);
@@ -391,16 +344,17 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, bool virt, bool mxr
   }
 }
 
-reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
+reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx)
 {
   reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
-  reg_t satp = (virt) ? proc->get_state()->vsatp : proc->get_state()->satp;
-  vm_info vm = decode_vm_info(proc->max_xlen, false, mode, satp);
+  reg_t satp = proc->get_state()->satp->readvirt(virt);
+  vm_info vm = decode_vm_info(proc->get_const_xlen(), false, mode, satp);
   if (vm.levels == 0)
-    return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, virt, mxr) & ~page_mask; // zero-extend from xlen
+    return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx) & ~page_mask; // zero-extend from xlen
 
   bool s_mode = mode == PRV_S;
-  bool sum = get_field(proc->state.mstatus, MSTATUS_SUM);
+  bool sum = proc->state.sstatus->readvirt(virt) & MSTATUS_SUM;
+  bool mxr = (proc->state.sstatus->readvirt(false) | proc->state.sstatus->readvirt(virt)) & MSTATUS_MXR;
 
   // verify bits xlen-1:va_bits-1 are all equal
   int va_bits = PGSHIFT + vm.levels * vm.idxbits;
@@ -415,23 +369,31 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
     reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
 
     // check that physical address of PTE is legal
-    auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, virt, false);
+    auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, type, virt, false);
     auto ppte = sim->addr_to_mem(pte_paddr);
     if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S))
-      throw_access_exception(addr, type);
+      throw_access_exception(virt, addr, type);
 
-    reg_t pte = vm.ptesize == 4 ? from_le(*(uint32_t*)ppte) : from_le(*(uint64_t*)ppte);
-    reg_t ppn = pte >> PTE_PPN_SHIFT;
+    reg_t pte = vm.ptesize == 4 ? from_target(*(target_endian<uint32_t>*)ppte) : from_target(*(target_endian<uint64_t>*)ppte);
+    reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
 
-    if (PTE_TABLE(pte)) { // next level of page table
+    if (pte & PTE_RSVD) {
+      break;
+    } else if (!proc->extension_enabled(EXT_SVNAPOT) && (pte & PTE_N)) {
+      break;
+    } else if (!proc->extension_enabled(EXT_SVPBMT) && (pte & PTE_PBMT)) {
+      break;
+    } else if (PTE_TABLE(pte)) { // next level of page table
+      if (pte & (PTE_D | PTE_A | PTE_U | PTE_N | PTE_PBMT))
+        break;
       base = ppn << PGSHIFT;
     } else if ((pte & PTE_U) ? s_mode && (type == FETCH || !sum) : !s_mode) {
       break;
     } else if (!(pte & PTE_V) || (!(pte & PTE_R) && (pte & PTE_W))) {
       break;
-    } else if (type == FETCH ? !(pte & PTE_X) :
-               type == LOAD ?  !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
-                               !((pte & PTE_R) && (pte & PTE_W))) {
+    } else if (type == FETCH || hlvx ? !(pte & PTE_X) :
+               type == LOAD          ? !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
+                                       !((pte & PTE_R) && (pte & PTE_W))) {
       break;
     } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
       break;
@@ -441,26 +403,33 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool mxr)
       // set accessed and possibly dirty bits.
       if ((pte & ad) != ad) {
         if (!pmp_ok(pte_paddr, vm.ptesize, STORE, PRV_S))
-          throw_access_exception(addr, type);
-        *(uint32_t*)ppte |= to_le((uint32_t)ad);
+          throw_access_exception(virt, addr, type);
+        *(target_endian<uint32_t>*)ppte |= to_target((uint32_t)ad);
       }
 #else
       // take exception if access or possibly dirty bit is not set.
       if ((pte & ad) != ad)
         break;
 #endif
-      // for superpage mappings, make a fake leaf PTE for the TLB's benefit.
+      // for superpage or Svnapot NAPOT mappings, make a fake leaf PTE for the TLB's benefit.
       reg_t vpn = addr >> PGSHIFT;
-      reg_t page_base = (ppn | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
+
+      int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
+      if (((pte & PTE_N) && (ppn == 0 || i != 0)) || (napot_bits != 0 && napot_bits != 4))
+        break;
+
+      reg_t page_base = ((ppn & ~((reg_t(1) << napot_bits) - 1))
+                        | (vpn & ((reg_t(1) << napot_bits) - 1))
+                        | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
       reg_t phys = page_base | (addr & page_mask);
-      return s2xlate(addr, phys, type, virt, mxr) & ~page_mask;
+      return s2xlate(addr, phys, type, type, virt, hlvx) & ~page_mask;
     }
   }
 
   switch (type) {
-    case FETCH: throw trap_instruction_page_fault(addr, 0, 0);
-    case LOAD: throw trap_load_page_fault(addr, 0, 0);
-    case STORE: throw trap_store_page_fault(addr, 0, 0);
+    case FETCH: throw trap_instruction_page_fault(virt, addr, 0, 0);
+    case LOAD: throw trap_load_page_fault(virt, addr, 0, 0);
+    case STORE: throw trap_store_page_fault(virt, addr, 0, 0);
     default: abort();
   }
 }

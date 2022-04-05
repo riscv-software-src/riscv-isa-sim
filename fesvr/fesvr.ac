@@ -1,1 +1,11 @@
 AC_CHECK_LIB(pthread, pthread_create, [], [AC_MSG_ERROR([libpthread is required])])
+
+AC_CHECK_MEMBER(struct statx.stx_ino,
+  AC_DEFINE_UNQUOTED(HAVE_STATX, 1, [Define to 1 if struct statx exists.]),
+  ,
+)
+
+AC_CHECK_MEMBER(struct statx.stx_mnt_id,
+  AC_DEFINE_UNQUOTED(HAVE_STATX_MNT_ID, 1, [Define to 1 if struct statx has stx_mnt_id.]),
+  ,
+)
