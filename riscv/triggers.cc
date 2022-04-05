@@ -186,7 +186,7 @@ reg_t module_t::tdata1_read(const processor_t * const proc, unsigned index) cons
 bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept
 {
   bool result = triggers[index]->tdata1_write(proc, val);
-  proc->trigger_updated(&triggers);
+  proc->trigger_updated(triggers);
   return result;
 }
 
@@ -198,7 +198,7 @@ reg_t module_t::tdata2_read(const processor_t * const proc, unsigned index) cons
 bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_t val) noexcept
 {
   bool result = triggers[index]->tdata2_write(proc, val);
-  proc->trigger_updated(&triggers);
+  proc->trigger_updated(triggers);
   return result;
 }
 
