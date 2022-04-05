@@ -186,11 +186,43 @@ bool pmpaddr_csr_t::subset_match(reg_t addr, reg_t len) const noexcept {
 
 
 bool pmpaddr_csr_t::access_ok(access_type type, reg_t mode) const noexcept {
-  return
-    (mode == PRV_M && !(cfg & PMP_L)) ||
-    (type == LOAD && (cfg & PMP_R)) ||
-    (type == STORE && (cfg & PMP_W)) ||
-    (type == FETCH && (cfg & PMP_X));
+	bool cfgx = cfg & PMP_X;
+  bool cfgw = cfg & PMP_W;
+  bool cfgr = cfg & PMP_R;
+  bool cfgl = cfg & PMP_L;
+
+  bool prvm = mode == PRV_M;
+
+  bool typer = type == LOAD;
+  bool typex = type == FETCH;
+  bool typew = type == STORE;
+  bool normal_rwx = (typer && cfgr) || (typew && cfgw) || (typex && cfgx);
+  reg_t mseccfg_val = proc->get_state()->mseccfg->read(); 
+  bool mseccfg_mml = mseccfg_val & MSECCFG_MML;
+  bool mseccfg_mmwp = mseccfg_val & MSECCFG_MMWP;
+
+  if (mseccfg_mml) {
+      if (cfgx && cfgw && cfgr && cfgl) {
+          // Locked Shared data region: Read only on both M and S/U mode.
+          return typer;
+      } else {
+        bool mml_shared_region = !cfgr && cfgw;
+        bool mml_chk_normal = (prvm == cfgl) && normal_rwx;
+        bool mml_chk_shared =
+            (!cfgl && cfgx && (typer || typew)) ||
+            (!cfgl && !cfgx && (typer || (typew && prvm))) ||
+            (cfgl && typex) ||
+            (cfgl && typer && cfgx && prvm);
+        return mml_shared_region ? mml_chk_shared : mml_chk_normal;
+      }
+  } else {
+    bool m_bypass = (prvm && !cfgl);
+    return m_bypass || normal_rwx;
+  }
+  return ((mode == PRV_M) &&
+  !(mseccfg_mmwp) &&
+  !(type == FETCH && mseccfg_mml));
+
 }
 
 
@@ -211,22 +243,69 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
     return false;
 
   bool write_success = false;
+  //reg_t mseccfg_val = proc->get_state()->mseccfg->read();
+  reg_t mseccfg_val = state->mseccfg->mseccfg_val;
   for (size_t i0 = (address - CSR_PMPCFG0) * 4, i = i0; i < i0 + proc->get_xlen() / 8; i++) {
     if (i < proc->n_pmp) {
-      if (!(state->pmpaddr[i]->cfg & PMP_L)) {
-        uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
-        cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1
+      if (!(state->pmpaddr[i]->cfg & PMP_L) | (mseccfg_val & MSECCFG_RLB)) { 
+        uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L); 
+        /*cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1 . */
         if (proc->lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
           cfg |= PMP_NAPOT; // Disallow A=NA4 when granularity > 4
         state->pmpaddr[i]->cfg = cfg;
       }
+
       write_success = true;
+
+      if (state->pmpaddr[i]->cfg & PMP_L) {
+        //proc->get_state()->mseccfg->pmplock_recorded= true;
+        state->mseccfg->pmplock_recorded = true;
+      }
     }
   }
   proc->get_mmu()->flush_tlb();
   return write_success;
 }
 
+// implement class mseccfg_csr_t
+mseccfg_csr_t::mseccfg_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr),
+  mseccfg_val(0),
+  pmplock_recorded(false) {
+}
+
+reg_t mseccfg_csr_t::read() const noexcept {
+  return mseccfg_val;
+}
+
+bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
+  if (proc->n_pmp == 0)
+    return false;
+
+  if (!(pmplock_recorded && ~(mseccfg_val & MSECCFG_RLB))) { //When mseccfg.RLB is 0 and pmpcfg.L is 1 in any rule or entry (including disabled entries)
+    mseccfg_val &= ~MSECCFG_RLB;
+    mseccfg_val |= (val & MSECCFG_RLB);
+  }
+  
+  mseccfg_val |= (val & MSECCFG_MMWP);  //MMWP is sticky
+  mseccfg_val |= (val & MSECCFG_MML);   //MML is sticky
+  
+  proc->get_mmu()->flush_tlb();
+  
+  return true;
+}
+
+/*bool mseccfg_csr_t::set_pmplock_record() noexcept {
+  if (proc->n_pmp == 0) {
+    return false;
+  }
+
+  if (~pmplock_recorded) {
+    pmplock_recorded = true; 
+  }
+
+  return true;
+}*/
 
 // implement class virtualized_csr_t
 virtualized_csr_t::virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):

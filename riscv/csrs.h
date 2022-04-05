@@ -73,7 +73,6 @@ class basic_csr_t: public csr_t {
   reg_t val;
 };
 
-
 class pmpaddr_csr_t: public csr_t {
  public:
   pmpaddr_csr_t(processor_t* const proc, const reg_t addr);
@@ -122,6 +121,19 @@ class pmpcfg_csr_t: public csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
+class mseccfg_csr_t: public csr_t {
+  public:
+    mseccfg_csr_t(processor_t* const proc, const reg_t addr);
+    virtual reg_t read() const noexcept override;
+  protected:
+    virtual bool unlogged_write(const reg_t val) noexcept override;
+  private:
+    reg_t mseccfg_val;
+    bool pmplock_recorded;
+    friend class pmpcfg_csr_t; //pmpcfg needs to access pmplock_recorded
+};
+
+typedef std::shared_ptr<mseccfg_csr_t> mseccfg_csr_t_p;
 
 // For CSRs that have a virtualized copy under another name. Each
 // instance of virtualized_csr_t will read/write one of two CSRs,
