@@ -245,7 +245,6 @@ int htif_t::run()
       try {
         command_t cmd(mem, tohost, fromhost_callback);
         device_list.handle_command(cmd);
-        device_list.tick();
       } catch (mem_trap_t& t) {
         std::stringstream tohost_hex;
         tohost_hex << std::hex << tohost;
@@ -254,6 +253,8 @@ int htif_t::run()
     } else {
       idle();
     }
+
+    device_list.tick();
 
     try {
       if (!fromhost_queue.empty() && !mem.read_uint64(fromhost_addr)) {
