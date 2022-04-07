@@ -57,6 +57,9 @@ processor_t::processor_t(isa_parser_t isa, const char* varch,
   else if (isa.get_max_xlen() == 64)
     set_mmu_capability(IMPL_MMU_SV48);
 
+  set_impl(IMPL_MMU_ASID, true);
+  set_impl(IMPL_MMU_VMID, true);
+
   reset();
 }
 
