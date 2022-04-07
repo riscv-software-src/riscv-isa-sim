@@ -279,7 +279,7 @@ public:
 #endif
   void reset();
   void step(size_t n); // run for n cycles
-  void set_csr(int which, reg_t val);
+  void put_csr(int which, reg_t val);
   uint32_t get_id() const { return id; }
   reg_t get_csr(int which, insn_t insn, bool write, bool peek = 0);
   reg_t get_csr(int which) { return get_csr(which, insn_t(0), false, true); }

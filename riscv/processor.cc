@@ -496,8 +496,8 @@ void processor_t::reset()
   if (n_pmp > 0) {
     // For backwards compatibility with software that is unaware of PMP,
     // initialize PMP to permit unprivileged access to all of memory.
-    set_csr(CSR_PMPADDR0, ~reg_t(0));
-    set_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
+    put_csr(CSR_PMPADDR0, ~reg_t(0));
+    put_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
   }
 
    for (auto e : custom_extensions) // reset any extensions
@@ -838,7 +838,7 @@ int processor_t::paddr_bits()
   return max_xlen == 64 ? 50 : 34;
 }
 
-void processor_t::set_csr(int which, reg_t val)
+void processor_t::put_csr(int which, reg_t val)
 {
   val = zext_xlen(val);
   auto search = state.csrmap.find(which);
