@@ -896,113 +896,34 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   }
 
 // comparision result to masking register
+#define VI_LOOP_CMP_BODY(PARAMS, BODY) \
+  VI_LOOP_CMP_BASE \
+  INSNS_BASE(PARAMS, BODY) \
+  VI_LOOP_CMP_END
+
 #define VI_VV_LOOP_CMP(BODY) \
   VI_CHECK_MSS(true); \
-  VI_LOOP_CMP_BASE \
-  if (sew == e8){ \
-    VV_CMP_PARAMS(e8); \
-    BODY; \
-  }else if(sew == e16){ \
-    VV_CMP_PARAMS(e16); \
-    BODY; \
-  }else if(sew == e32){ \
-    VV_CMP_PARAMS(e32); \
-    BODY; \
-  }else if(sew == e64){ \
-    VV_CMP_PARAMS(e64); \
-    BODY; \
-  } \
-  VI_LOOP_CMP_END
+  VI_LOOP_CMP_BODY(VV_CMP_PARAMS, BODY)
 
 #define VI_VX_LOOP_CMP(BODY) \
   VI_CHECK_MSS(false); \
-  VI_LOOP_CMP_BASE \
-  if (sew == e8){ \
-    VX_CMP_PARAMS(e8); \
-    BODY; \
-  }else if(sew == e16){ \
-    VX_CMP_PARAMS(e16); \
-    BODY; \
-  }else if(sew == e32){ \
-    VX_CMP_PARAMS(e32); \
-    BODY; \
-  }else if(sew == e64){ \
-    VX_CMP_PARAMS(e64); \
-    BODY; \
-  } \
-  VI_LOOP_CMP_END
+  VI_LOOP_CMP_BODY(VX_CMP_PARAMS, BODY)
 
 #define VI_VI_LOOP_CMP(BODY) \
   VI_CHECK_MSS(false); \
-  VI_LOOP_CMP_BASE \
-  if (sew == e8){ \
-    VI_CMP_PARAMS(e8); \
-    BODY; \
-  }else if(sew == e16){ \
-    VI_CMP_PARAMS(e16); \
-    BODY; \
-  }else if(sew == e32){ \
-    VI_CMP_PARAMS(e32); \
-    BODY; \
-  }else if(sew == e64){ \
-    VI_CMP_PARAMS(e64); \
-    BODY; \
-  } \
-  VI_LOOP_CMP_END
+  VI_LOOP_CMP_BODY(VI_CMP_PARAMS, BODY)
 
 #define VI_VV_ULOOP_CMP(BODY) \
   VI_CHECK_MSS(true); \
-  VI_LOOP_CMP_BASE \
-  if (sew == e8){ \
-    VV_UCMP_PARAMS(e8); \
-    BODY; \
-  }else if(sew == e16){ \
-    VV_UCMP_PARAMS(e16); \
-    BODY; \
-  }else if(sew == e32){ \
-    VV_UCMP_PARAMS(e32); \
-    BODY; \
-  }else if(sew == e64){ \
-    VV_UCMP_PARAMS(e64); \
-    BODY; \
-  } \
-  VI_LOOP_CMP_END
+  VI_LOOP_CMP_BODY(VV_UCMP_PARAMS, BODY)
 
 #define VI_VX_ULOOP_CMP(BODY) \
   VI_CHECK_MSS(false); \
-  VI_LOOP_CMP_BASE \
-  if (sew == e8){ \
-    VX_UCMP_PARAMS(e8); \
-    BODY; \
-  }else if(sew == e16){ \
-    VX_UCMP_PARAMS(e16); \
-    BODY; \
-  }else if(sew == e32){ \
-    VX_UCMP_PARAMS(e32); \
-    BODY; \
-  }else if(sew == e64){ \
-    VX_UCMP_PARAMS(e64); \
-    BODY; \
-  } \
-  VI_LOOP_CMP_END
+  VI_LOOP_CMP_BODY(VX_UCMP_PARAMS, BODY)
 
 #define VI_VI_ULOOP_CMP(BODY) \
   VI_CHECK_MSS(false); \
-  VI_LOOP_CMP_BASE \
-  if (sew == e8){ \
-    VI_UCMP_PARAMS(e8); \
-    BODY; \
-  }else if(sew == e16){ \
-    VI_UCMP_PARAMS(e16); \
-    BODY; \
-  }else if(sew == e32){ \
-    VI_UCMP_PARAMS(e32); \
-    BODY; \
-  }else if(sew == e64){ \
-    VI_UCMP_PARAMS(e64); \
-    BODY; \
-  } \
-  VI_LOOP_CMP_END
+  VI_LOOP_CMP_BODY(VI_UCMP_PARAMS, BODY)
 
 // merge and copy loop
 #define VI_MERGE_VARS \
