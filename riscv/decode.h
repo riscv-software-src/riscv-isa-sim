@@ -880,6 +880,21 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 // vector: integer and masking operation loop
 //
 
+#define INSNS_BASE(PARAMS, BODY) \
+  if (sew == e8){ \
+    PARAMS(e8); \
+    BODY; \
+  }else if(sew == e16){ \
+    PARAMS(e16); \
+    BODY; \
+  }else if(sew == e32){ \
+    PARAMS(e32); \
+    BODY; \
+  }else if(sew == e64){ \
+    PARAMS(e64); \
+    BODY; \
+  }
+
 // comparision result to masking register
 #define VI_VV_LOOP_CMP(BODY) \
   VI_CHECK_MSS(true); \
