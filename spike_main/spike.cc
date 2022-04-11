@@ -220,6 +220,21 @@ static unsigned long atoul_nonzero_safe(const char* s)
   return res;
 }
 
+static std::vector<int> parse_hartids(const char *s)
+{
+  std::string const str(s);
+  std::stringstream stream(str);
+  std::vector<int> hartids;
+
+  int n;
+  while (stream >> n) {
+    hartids.push_back(n);
+    if (stream.peek() == ',') stream.ignore();
+  }
+
+  return hartids;
+}
+
 int main(int argc, char** argv)
 {
   bool debug = false;
@@ -264,18 +279,6 @@ int main(int argc, char** argv)
             /*default_isa=*/DEFAULT_ISA,
             /*default_priv=*/DEFAULT_PRIV,
             /*default_mem_layout=*/parse_mem_layout("2048"));
-
-  auto const hartids_parser = [&](const char *s) {
-    std::string const str(s);
-    std::stringstream stream(str);
-
-    int n;
-    while (stream >> n)
-    {
-      hartids.push_back(n);
-      if (stream.peek() == ',') stream.ignore();
-    }
-  };
 
   auto const device_parser = [&plugin_devices](const char *s) {
     const std::string str(s);
@@ -335,7 +338,7 @@ int main(int argc, char** argv)
   parser.option('H', 0, 0, [&](const char* s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
   parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc = strtoull(s, 0, 0);});
-  parser.option(0, "hartids", 1, hartids_parser);
+  parser.option(0, "hartids", 1, [&](const char* s){hartids = parse_hartids(s);});
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
