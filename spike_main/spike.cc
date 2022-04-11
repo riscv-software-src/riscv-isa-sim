@@ -272,9 +272,10 @@ int main(int argc, char** argv)
     .support_haltgroups = true,
     .support_impebreak = true
   };
+  cfg_arg_t<size_t> nprocs(1);
+
   cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0),
             /*default_bootargs=*/nullptr,
-            /*default_nprocs=*/1,
             /*default_isa=*/DEFAULT_ISA,
             /*default_priv=*/DEFAULT_PRIV,
             /*default_mem_layout=*/parse_mem_layout("2048"),
@@ -332,7 +333,7 @@ int main(int argc, char** argv)
 #ifdef HAVE_BOOST_ASIO
   parser.option('s', 0, 0, [&](const char* s){socket = true;});
 #endif
-  parser.option('p', 0, 1, [&](const char* s){cfg.nprocs = atoul_nonzero_safe(s);});
+  parser.option('p', 0, 1, [&](const char* s){nprocs = atoul_nonzero_safe(s);});
   parser.option('m', 0, 1, [&](const char* s){cfg.mem_layout = parse_mem_layout(s);});
   // I wanted to use --halted, but for some reason that doesn't work.
   parser.option('H', 0, 0, [&](const char* s){halted = true;});
@@ -462,11 +463,11 @@ int main(int argc, char** argv)
 #endif
 
   if (cfg.explicit_hartids) {
-    if (cfg.nprocs.overridden() && (cfg.nprocs() != cfg.hartids().size())) {
+    if (nprocs.overridden() && (nprocs() != cfg.nprocs())) {
       std::cerr << "Number of specified hartids ("
-                << cfg.hartids().size()
+                << cfg.nprocs()
                 << ") doesn't match specified number of processors ("
-                << cfg.nprocs() << ").\n";
+                << nprocs() << ").\n";
       exit(1);
     }
   } else {
@@ -474,8 +475,8 @@ int main(int argc, char** argv)
     // explicit_hartids flag (which means that downstream code can know that
     // we've only set the number of harts, not explicitly chosen their IDs).
     std::vector<int> default_hartids;
-    default_hartids.reserve(cfg.nprocs());
-    for (size_t i = 0; i < cfg.nprocs(); ++i) {
+    default_hartids.reserve(nprocs());
+    for (size_t i = 0; i < nprocs(); ++i) {
       default_hartids.push_back(i);
     }
     cfg.hartids = default_hartids;

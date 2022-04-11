@@ -62,8 +62,6 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
     remote_bitbang(NULL),
     debug_module(this, dm_config)
 {
-  assert(cfg->hartids().size() == cfg->nprocs());
-
   signal(SIGINT, &handle_signal);
 
   sout_.rdbuf(std::cerr.rdbuf()); // debug output goes to stderr by default
