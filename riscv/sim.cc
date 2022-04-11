@@ -63,6 +63,8 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
     remote_bitbang(NULL),
     debug_module(this, dm_config)
 {
+  assert(hartids.size() == cfg->nprocs());
+
   signal(SIGINT, &handle_signal);
 
   sout_.rdbuf(std::cerr.rdbuf()); // debug output goes to stderr by default
@@ -77,17 +79,8 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
 
   debug_mmu = new mmu_t(this, NULL);
 
-  if (! (hartids.empty() || hartids.size() == nprocs())) {
-      std::cerr << "Number of specified hartids ("
-                << hartids.size()
-                << ") doesn't match number of processors ("
-                << nprocs() << ").\n";
-      exit(1);
-  }
-
   for (size_t i = 0; i < nprocs(); i++) {
-    int hart_id = hartids.empty() ? i : hartids[i];
-    procs[i] = new processor_t(&isa, varch, this, hart_id, halted,
+    procs[i] = new processor_t(&isa, varch, this, hartids[i], halted,
                                log_file.get(), sout_);
   }
 

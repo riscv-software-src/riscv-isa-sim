@@ -458,6 +458,22 @@ int main(int argc, char** argv)
   }
 #endif
 
+  if (!hartids.empty()) {
+    if (cfg.nprocs.overridden() && (cfg.nprocs() != hartids.size())) {
+      std::cerr << "Number of specified hartids ("
+                << hartids.size()
+                << ") doesn't match specified number of processors ("
+                << cfg.nprocs() << ").\n";
+      exit(1);
+    }
+  } else {
+    // Set default set of hartids based on nprocs
+    hartids.reserve(cfg.nprocs());
+    for (size_t i = 0; i < cfg.nprocs(); ++i) {
+      hartids.push_back(i);
+    }
+  }
+
   sim_t s(&cfg, varch, halted, real_time_clint,
       mems, plugin_devices, htif_args,
       std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file,
