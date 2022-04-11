@@ -15,6 +15,7 @@
 #include "entropy_source.h"
 #include "csrs.h"
 #include "isa_parser.h"
+#include "triggers.h"
 
 class processor_t;
 class mmu_t;
@@ -54,44 +55,6 @@ typedef std::unordered_map<reg_t, freg_t> commit_log_reg_t;
 
 // addr, value, size
 typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
-
-typedef enum
-{
-  ACTION_DEBUG_EXCEPTION = MCONTROL_ACTION_DEBUG_EXCEPTION,
-  ACTION_DEBUG_MODE = MCONTROL_ACTION_DEBUG_MODE,
-  ACTION_TRACE_START = MCONTROL_ACTION_TRACE_START,
-  ACTION_TRACE_STOP = MCONTROL_ACTION_TRACE_STOP,
-  ACTION_TRACE_EMIT = MCONTROL_ACTION_TRACE_EMIT
-} mcontrol_action_t;
-
-typedef enum
-{
-  MATCH_EQUAL = MCONTROL_MATCH_EQUAL,
-  MATCH_NAPOT = MCONTROL_MATCH_NAPOT,
-  MATCH_GE = MCONTROL_MATCH_GE,
-  MATCH_LT = MCONTROL_MATCH_LT,
-  MATCH_MASK_LOW = MCONTROL_MATCH_MASK_LOW,
-  MATCH_MASK_HIGH = MCONTROL_MATCH_MASK_HIGH
-} mcontrol_match_t;
-
-typedef struct
-{
-  uint8_t type;
-  bool dmode;
-  uint8_t maskmax;
-  bool select;
-  bool timing;
-  mcontrol_action_t action;
-  bool chain;
-  mcontrol_match_t match;
-  bool m;
-  bool h;
-  bool s;
-  bool u;
-  bool execute;
-  bool store;
-  bool load;
-} mcontrol_t;
 
 enum VRM{
   RNU = 0,
@@ -161,8 +124,6 @@ struct state_t
 {
   void reset(processor_t* const proc, reg_t max_isa);
 
-  static const int num_triggers = 4;
-
   reg_t pc;
   regfile_t<reg_t, NXPR, true> XPR;
   regfile_t<freg_t, NFPR, false> FPR;
@@ -211,7 +172,6 @@ struct state_t
   csr_t_p dpc;
   dcsr_csr_t_p dcsr;
   csr_t_p tselect;
-  mcontrol_t mcontrol[num_triggers];
   tdata2_csr_t_p tdata2;
   bool debug_mode;
 
@@ -285,14 +245,14 @@ public:
   reg_t get_csr(int which) { return get_csr(which, insn_t(0), false, true); }
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
-  unsigned get_xlen() { return xlen; }
-  unsigned get_const_xlen() {
+  unsigned get_xlen() const { return xlen; }
+  unsigned get_const_xlen() const {
     // Any code that assumes a const xlen should use this method to
     // document that assumption. If Spike ever changes to allow
     // variable xlen, this method should be removed.
     return xlen;
   }
-  unsigned get_flen() {
+  unsigned get_flen() const {
     return extension_enabled('Q') ? 128 :
            extension_enabled('D') ? 64 :
            extension_enabled('F') ? 32 : 0;
@@ -354,88 +314,7 @@ public:
     HR_GROUP    /* Halt requested due to halt group. */
   } halt_request;
 
-  // Return the index of a trigger that matched, or -1.
-  inline int trigger_match(trigger_operation_t operation, reg_t address, reg_t data)
-  {
-    if (state.debug_mode)
-      return -1;
-
-    bool chain_ok = true;
-
-    for (unsigned int i = 0; i < state.num_triggers; i++) {
-      if (!chain_ok) {
-        chain_ok |= !state.mcontrol[i].chain;
-        continue;
-      }
-
-      if ((operation == OPERATION_EXECUTE && !state.mcontrol[i].execute) ||
-          (operation == OPERATION_STORE && !state.mcontrol[i].store) ||
-          (operation == OPERATION_LOAD && !state.mcontrol[i].load) ||
-          (state.prv == PRV_M && !state.mcontrol[i].m) ||
-          (state.prv == PRV_S && !state.mcontrol[i].s) ||
-          (state.prv == PRV_U && !state.mcontrol[i].u)) {
-        continue;
-      }
-
-      reg_t value;
-      if (state.mcontrol[i].select) {
-        value = data;
-      } else {
-        value = address;
-      }
-
-      // We need this because in 32-bit mode sometimes the PC bits get sign
-      // extended.
-      if (xlen == 32) {
-        value &= 0xffffffff;
-      }
-
-      auto tdata2 = state.tdata2->read(i);
-      switch (state.mcontrol[i].match) {
-        case MATCH_EQUAL:
-          if (value != tdata2)
-            continue;
-          break;
-        case MATCH_NAPOT:
-          {
-            reg_t mask = ~((1 << (cto(tdata2)+1)) - 1);
-            if ((value & mask) != (tdata2 & mask))
-              continue;
-          }
-          break;
-        case MATCH_GE:
-          if (value < tdata2)
-            continue;
-          break;
-        case MATCH_LT:
-          if (value >= tdata2)
-            continue;
-          break;
-        case MATCH_MASK_LOW:
-          {
-            reg_t mask = tdata2 >> (xlen/2);
-            if ((value & mask) != (tdata2 & mask))
-              continue;
-          }
-          break;
-        case MATCH_MASK_HIGH:
-          {
-            reg_t mask = tdata2 >> (xlen/2);
-            if (((value >> (xlen/2)) & mask) != (tdata2 & mask))
-              continue;
-          }
-          break;
-      }
-
-      if (!state.mcontrol[i].chain) {
-        return i;
-      }
-      chain_ok = true;
-    }
-    return -1;
-  }
-
-  void trigger_updated();
+  void trigger_updated(const std::vector<triggers::trigger_t *> &triggers);
 
   void set_pmp_num(reg_t pmp_num);
   void set_pmp_granularity(reg_t pmp_granularity);
@@ -578,6 +457,7 @@ public:
   };
 
   vectorUnit_t VU;
+  triggers::module_t TM;
 };
 
 #endif

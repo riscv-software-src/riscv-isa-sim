@@ -996,7 +996,7 @@ tselect_csr_t::tselect_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 bool tselect_csr_t::unlogged_write(const reg_t val) noexcept {
-  return basic_csr_t::unlogged_write((val < state->num_triggers) ? val : read());
+  return basic_csr_t::unlogged_write((val < proc->TM.count()) ? val : read());
 }
 
 
@@ -1005,73 +1005,24 @@ tdata1_csr_t::tdata1_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 reg_t tdata1_csr_t::read() const noexcept {
-  reg_t v = 0;
-  auto xlen = proc->get_xlen();
-  mcontrol_t *mc = &state->mcontrol[state->tselect->read()];
-  v = set_field(v, MCONTROL_TYPE(xlen), mc->type);
-  v = set_field(v, MCONTROL_DMODE(xlen), mc->dmode);
-  v = set_field(v, MCONTROL_MASKMAX(xlen), mc->maskmax);
-  v = set_field(v, MCONTROL_SELECT, mc->select);
-  v = set_field(v, MCONTROL_TIMING, mc->timing);
-  v = set_field(v, MCONTROL_ACTION, mc->action);
-  v = set_field(v, MCONTROL_CHAIN, mc->chain);
-  v = set_field(v, MCONTROL_MATCH, mc->match);
-  v = set_field(v, MCONTROL_M, mc->m);
-  v = set_field(v, MCONTROL_H, mc->h);
-  v = set_field(v, MCONTROL_S, mc->s);
-  v = set_field(v, MCONTROL_U, mc->u);
-  v = set_field(v, MCONTROL_EXECUTE, mc->execute);
-  v = set_field(v, MCONTROL_STORE, mc->store);
-  v = set_field(v, MCONTROL_LOAD, mc->load);
-  return v;
+  return proc->TM.tdata1_read(proc, state->tselect->read());
 }
 
 bool tdata1_csr_t::unlogged_write(const reg_t val) noexcept {
-  mcontrol_t *mc = &state->mcontrol[state->tselect->read()];
-  if (mc->dmode && !state->debug_mode) {
-    return false;
-  }
-  auto xlen = proc->get_xlen();
-  mc->dmode = get_field(val, MCONTROL_DMODE(xlen));
-  mc->select = get_field(val, MCONTROL_SELECT);
-  mc->timing = get_field(val, MCONTROL_TIMING);
-  mc->action = (mcontrol_action_t) get_field(val, MCONTROL_ACTION);
-  mc->chain = get_field(val, MCONTROL_CHAIN);
-  mc->match = (mcontrol_match_t) get_field(val, MCONTROL_MATCH);
-  mc->m = get_field(val, MCONTROL_M);
-  mc->h = get_field(val, MCONTROL_H);
-  mc->s = get_field(val, MCONTROL_S);
-  mc->u = get_field(val, MCONTROL_U);
-  mc->execute = get_field(val, MCONTROL_EXECUTE);
-  mc->store = get_field(val, MCONTROL_STORE);
-  mc->load = get_field(val, MCONTROL_LOAD);
-  // Assume we're here because of csrw.
-  if (mc->execute)
-    mc->timing = 0;
-  proc->trigger_updated();
-  return true;
+  return proc->TM.tdata1_write(proc, state->tselect->read(), val);
 }
 
 
-tdata2_csr_t::tdata2_csr_t(processor_t* const proc, const reg_t addr, const size_t count):
-  csr_t(proc, addr),
-  vals(count, 0) {
+tdata2_csr_t::tdata2_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
 }
 
 reg_t tdata2_csr_t::read() const noexcept {
-  return read(state->tselect->read());
-}
-
-reg_t tdata2_csr_t::read(const size_t idx) const noexcept {
-  return vals[idx];
+  return proc->TM.tdata2_read(proc, state->tselect->read());
 }
 
 bool tdata2_csr_t::unlogged_write(const reg_t val) noexcept {
-  if (state->mcontrol[state->tselect->read()].dmode && !state->debug_mode) {
-    return false;
-  }
-  vals[state->tselect->read()] = val;
-  return true;
+  return proc->TM.tdata2_write(proc, state->tselect->read(), val);
 }
 
 
