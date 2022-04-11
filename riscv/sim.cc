@@ -32,7 +32,6 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
              std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
-             std::vector<int> const hartids,
              const debug_module_config_t &dm_config,
              const char *log_path,
              bool dtb_enabled, const char *dtb_file,
@@ -63,7 +62,7 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
     remote_bitbang(NULL),
     debug_module(this, dm_config)
 {
-  assert(hartids.size() == cfg->nprocs());
+  assert(cfg->hartids().size() == cfg->nprocs());
 
   signal(SIGINT, &handle_signal);
 
@@ -79,8 +78,8 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
 
   debug_mmu = new mmu_t(this, NULL);
 
-  for (size_t i = 0; i < nprocs(); i++) {
-    procs[i] = new processor_t(&isa, varch, this, hartids[i], halted,
+  for (size_t i = 0; i < cfg->nprocs(); i++) {
+    procs[i] = new processor_t(&isa, varch, this, cfg->hartids()[i], halted,
                                log_file.get(), sout_);
   }
 

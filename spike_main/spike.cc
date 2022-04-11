@@ -272,13 +272,13 @@ int main(int argc, char** argv)
     .support_haltgroups = true,
     .support_impebreak = true
   };
-  std::vector<int> hartids;
   cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0),
             /*default_bootargs=*/nullptr,
             /*default_nprocs=*/1,
             /*default_isa=*/DEFAULT_ISA,
             /*default_priv=*/DEFAULT_PRIV,
-            /*default_mem_layout=*/parse_mem_layout("2048"));
+            /*default_mem_layout=*/parse_mem_layout("2048"),
+            /*default_hartids=*/std::vector<int>());
 
   auto const device_parser = [&plugin_devices](const char *s) {
     const std::string str(s);
@@ -338,7 +338,10 @@ int main(int argc, char** argv)
   parser.option('H', 0, 0, [&](const char* s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
   parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc = strtoull(s, 0, 0);});
-  parser.option(0, "hartids", 1, [&](const char* s){hartids = parse_hartids(s);});
+  parser.option(0, "hartids", 1, [&](const char* s){
+    cfg.hartids = parse_hartids(s);
+    cfg.explicit_hartids = true;
+  });
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
@@ -458,25 +461,28 @@ int main(int argc, char** argv)
   }
 #endif
 
-  if (!hartids.empty()) {
-    if (cfg.nprocs.overridden() && (cfg.nprocs() != hartids.size())) {
+  if (cfg.explicit_hartids) {
+    if (cfg.nprocs.overridden() && (cfg.nprocs() != cfg.hartids().size())) {
       std::cerr << "Number of specified hartids ("
-                << hartids.size()
+                << cfg.hartids().size()
                 << ") doesn't match specified number of processors ("
                 << cfg.nprocs() << ").\n";
       exit(1);
     }
   } else {
-    // Set default set of hartids based on nprocs
-    hartids.reserve(cfg.nprocs());
+    // Set default set of hartids based on nprocs, but don't set the
+    // explicit_hartids flag (which means that downstream code can know that
+    // we've only set the number of harts, not explicitly chosen their IDs).
+    std::vector<int> default_hartids;
+    default_hartids.reserve(cfg.nprocs());
     for (size_t i = 0; i < cfg.nprocs(); ++i) {
-      hartids.push_back(i);
+      default_hartids.push_back(i);
     }
+    cfg.hartids = default_hartids;
   }
 
   sim_t s(&cfg, varch, halted, real_time_clint,
-      mems, plugin_devices, htif_args,
-      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file,
+      mems, plugin_devices, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
 #ifdef HAVE_BOOST_ASIO
       io_service_ptr, acceptor_ptr,
 #endif
