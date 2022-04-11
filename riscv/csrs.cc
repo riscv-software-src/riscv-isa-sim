@@ -978,7 +978,7 @@ bool hgatp_csr_t::unlogged_write(const reg_t val) noexcept {
         proc->supports_impl(IMPL_MMU_VMID) ? HGATP32_VMID : 0;
   } else {
     mask = (HGATP64_PPN & ((reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1)) |
-        proc->supports_impl(IMPL_MMU_VMID) ? HGATP64_VMID : 0;
+        (proc->supports_impl(IMPL_MMU_VMID) ? HGATP64_VMID : 0);
 
     if (get_field(val, HGATP64_MODE) == HGATP_MODE_OFF ||
         (proc->supports_impl(IMPL_MMU_SV39) && get_field(val, HGATP64_MODE) == HGATP_MODE_SV39X4) ||
