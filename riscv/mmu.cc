@@ -173,15 +173,15 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_
   }
 
   if (actually_store) {
-  if (auto host_addr = sim->addr_to_mem(paddr)) {
-    memcpy(host_addr, bytes, len);
-    if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
-      tracer.trace(paddr, len, STORE);
-    else if (xlate_flags == 0)
-      refill_tlb(addr, paddr, host_addr, STORE);
-  } else if (!mmio_store(paddr, len, bytes)) {
-    throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
-  }
+    if (auto host_addr = sim->addr_to_mem(paddr)) {
+      memcpy(host_addr, bytes, len);
+      if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
+        tracer.trace(paddr, len, STORE);
+      else if (xlate_flags == 0)
+        refill_tlb(addr, paddr, host_addr, STORE);
+    } else if (!mmio_store(paddr, len, bytes)) {
+      throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+    }
   }
 }
 

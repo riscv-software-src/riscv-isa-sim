@@ -154,19 +154,19 @@ public:
       size_t size = sizeof(type##_t); \
       if ((xlate_flags) == 0 && likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \
         if (actually_store) { \
-        if (proc) WRITE_MEM(addr, val, size); \
-        *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
+          if (proc) WRITE_MEM(addr, val, size); \
+          *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
         } \
       } \
       else if ((xlate_flags) == 0 && unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
         if (actually_store) { \
-        if (!matched_trigger) { \
-          matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, val); \
-          if (matched_trigger) \
-            throw *matched_trigger; \
-        } \
-        if (proc) WRITE_MEM(addr, val, size); \
-        *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
+          if (!matched_trigger) { \
+            matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, val); \
+            if (matched_trigger) \
+              throw *matched_trigger; \
+          } \
+          if (proc) WRITE_MEM(addr, val, size); \
+          *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
         } \
       } \
       else { \
