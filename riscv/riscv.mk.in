@@ -32,6 +32,7 @@ riscv_hdrs = \
 	remote_bitbang.h \
 	jtag_dtm.h \
 	csrs.h \
+	eviction_policies.h \
 
 riscv_install_hdrs = mmio_plugin.h
 
@@ -59,6 +60,7 @@ riscv_srcs = \
 	jtag_dtm.cc \
 	csrs.cc \
 	$(riscv_gen_srcs) \
+	eviction_policies.cc \
 
 riscv_test_srcs =
 
