@@ -149,7 +149,7 @@ void processor_t::parse_varch_string(const char* s)
   }
 
   // The integer should be the power of 2
-  if (!check_pow2(vlen) || !check_pow2(elen)){
+  if (!check_pow2(vlen) || !check_pow2(elen)) {
     bad_varch_string(s, "The integer value should be the power of 2");
   }
 
@@ -211,7 +211,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, mcycleh);
     }
   }
-  for (reg_t i=3; i<=31; ++i) {
+  for (reg_t i = 3; i <= 31; ++i) {
     const reg_t which_mevent = CSR_MHPMEVENT3 + i - 3;
     const reg_t which_mcounter = CSR_MHPMCOUNTER3 + i - 3;
     const reg_t which_mcounterh = CSR_MHPMCOUNTER3H + i - 3;
@@ -358,11 +358,11 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   debug_mode = false;
   single_step = STEP_NONE;
 
-  for (int i=0; i < max_pmp; ++i) {
+  for (int i = 0; i < max_pmp; ++i) {
     csrmap[CSR_PMPADDR0 + i] = pmpaddr[i] = std::make_shared<pmpaddr_csr_t>(proc, CSR_PMPADDR0 + i);
   }
-  for (int i=0; i < max_pmp; i += xlen/8) {
-    reg_t addr = CSR_PMPCFG0 + i/4;
+  for (int i = 0; i < max_pmp; i += xlen / 8) {
+    reg_t addr = CSR_PMPCFG0 + i / 4;
     csrmap[addr] = std::make_shared<pmpcfg_csr_t>(proc, addr);
   }
 
@@ -377,14 +377,14 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MIMPID] = std::make_shared<const_csr_t>(proc, CSR_MIMPID, 0);
   csrmap[CSR_MVENDORID] = std::make_shared<const_csr_t>(proc, CSR_MVENDORID, 0);
   csrmap[CSR_MHARTID] = std::make_shared<const_csr_t>(proc, CSR_MHARTID, proc->get_id());
-  const reg_t menvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE: 0) |
-                             (proc->extension_enabled(EXT_ZICBOZ) ? MENVCFG_CBZE: 0);
+  const reg_t menvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE : 0) |
+                             (proc->extension_enabled(EXT_ZICBOZ) ? MENVCFG_CBZE : 0);
   csrmap[CSR_MENVCFG] = menvcfg = std::make_shared<masked_csr_t>(proc, CSR_MENVCFG, menvcfg_mask, 0);
-  const reg_t senvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? SENVCFG_CBCFE | SENVCFG_CBIE: 0) |
-                             (proc->extension_enabled(EXT_ZICBOZ) ? SENVCFG_CBZE: 0);
+  const reg_t senvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? SENVCFG_CBCFE | SENVCFG_CBIE : 0) |
+                             (proc->extension_enabled(EXT_ZICBOZ) ? SENVCFG_CBZE : 0);
   csrmap[CSR_SENVCFG] = senvcfg = std::make_shared<masked_csr_t>(proc, CSR_SENVCFG, senvcfg_mask, 0);
-  const reg_t henvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? HENVCFG_CBCFE | HENVCFG_CBIE: 0) |
-                             (proc->extension_enabled(EXT_ZICBOZ) ? HENVCFG_CBZE: 0);
+  const reg_t henvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? HENVCFG_CBCFE | HENVCFG_CBIE : 0) |
+                             (proc->extension_enabled(EXT_ZICBOZ) ? HENVCFG_CBZE : 0);
   csrmap[CSR_HENVCFG] = henvcfg = std::make_shared<masked_csr_t>(proc, CSR_HENVCFG, henvcfg_mask, 0);
 
   serialized = false;
@@ -399,7 +399,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 #endif
 }
 
-void processor_t::vectorUnit_t::reset(){
+void processor_t::vectorUnit_t::reset()
+{
   free(reg_file);
   VLEN = get_vlen();
   ELEN = get_elen();
@@ -420,9 +421,10 @@ void processor_t::vectorUnit_t::reset(){
   set_vl(0, 0, 0, -1); // default to illegal configuration
 }
 
-reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newType){
+reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newType)
+{
   int new_vlmul = 0;
-  if (vtype->read() != newType){
+  if (vtype->read() != newType) {
     vtype->write_raw(newType);
     vsew = 1 << (extract64(newType, 3, 3) + 3);
     new_vlmul = int8_t(extract64(newType, 0, 3) << 5) >> 5;
@@ -536,7 +538,8 @@ void processor_t::set_pmp_num(reg_t n)
   n_pmp = n;
 }
 
-void processor_t::set_pmp_granularity(reg_t gran) {
+void processor_t::set_pmp_granularity(reg_t gran)
+{
   // check the pmp granularity is set from dtb(!=0) and is power of 2
   if (gran < (1 << PMP_SHIFT) || (gran & (gran - 1)) != 0) {
     fprintf(stderr, "error: bad pmp granularity '%ld' from the dtb\n", (unsigned long)gran);
@@ -624,7 +627,7 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     else
       abort();
 
-    throw trap_t(((reg_t)1 << (isa->get_max_xlen()-1)) | ctz(enabled_interrupts));
+    throw trap_t(((reg_t)1 << (isa->get_max_xlen() - 1)) | ctz(enabled_interrupts));
   }
 }
 
@@ -678,7 +681,7 @@ void processor_t::enter_debug_mode(uint8_t cause)
 
 void processor_t::debug_output_log(std::stringstream *s)
 {
-  if (log_file==stderr) {
+  if (log_file == stderr) {
     std::ostream out(sout_.rdbuf());
     out << s->str(); // handles command line options -d -s -l
   } else {
@@ -697,7 +700,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
       << std::hex << std::setfill('0') << std::setw(max_xlen/4) << zext(epc, max_xlen) << std::endl;
     if (t.has_tval())
        s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
-         << ":           tval 0x" << std::hex << std::setfill('0') << std::setw(max_xlen/4)
+         << ":           tval 0x" << std::hex << std::setfill('0') << std::setw(max_xlen / 4)
          << zext(t.get_tval(), max_xlen) << std::endl;
     debug_output_log(&s);
   }
@@ -723,18 +726,18 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   reg_t vsdeleg, hsdeleg;
   reg_t bit = t.cause();
   bool curr_virt = state.v;
-  bool interrupt = (bit & ((reg_t)1 << (max_xlen-1))) != 0;
+  bool interrupt = (bit & ((reg_t)1 << (max_xlen - 1))) != 0;
   if (interrupt) {
     vsdeleg = (curr_virt && state.prv <= PRV_S) ? state.hideleg->read() : 0;
     hsdeleg = (state.prv <= PRV_S) ? state.mideleg->read() : 0;
-    bit &= ~((reg_t)1 << (max_xlen-1));
+    bit &= ~((reg_t)1 << (max_xlen - 1));
   } else {
     vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.medeleg->read() & state.hedeleg->read()) : 0;
     hsdeleg = (state.prv <= PRV_S) ? state.medeleg->read() : 0;
   }
   if (state.prv <= PRV_S && bit < max_xlen && ((vsdeleg >> bit) & 1)) {
     // Handle the trap in VS-mode
-    reg_t vector = (state.vstvec->read() & 1) && interrupt ? 4*bit : 0;
+    reg_t vector = (state.vstvec->read() & 1) && interrupt ? 4 * bit : 0;
     state.pc = (state.vstvec->read() & ~(reg_t)1) + vector;
     state.vscause->write((interrupt) ? (t.cause() - 1) : t.cause());
     state.vsepc->write(epc);
@@ -749,7 +752,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   } else if (state.prv <= PRV_S && bit < max_xlen && ((hsdeleg >> bit) & 1)) {
     // Handle the trap in HS-mode
     set_virt(false);
-    reg_t vector = (state.stvec->read() & 1) && interrupt ? 4*bit : 0;
+    reg_t vector = (state.stvec->read() & 1) && interrupt ? 4 * bit : 0;
     state.pc = (state.stvec->read() & ~(reg_t)1) + vector;
     state.scause->write(t.cause());
     state.sepc->write(epc);
@@ -774,7 +777,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   } else {
     // Handle the trap in M-mode
     set_virt(false);
-    reg_t vector = (state.mtvec->read() & 1) && interrupt ? 4*bit : 0;
+    reg_t vector = (state.mtvec->read() & 1) && interrupt ? 4 * bit : 0;
     state.pc = (state.mtvec->read() & ~(reg_t)1) + vector;
     state.mepc->write(epc);
     state.mcause->write(t.cause());
@@ -816,7 +819,7 @@ void processor_t::disasm(insn_t insn)
     unsigned max_xlen = isa->get_max_xlen();
 
     s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
-      << std::hex << ": 0x" << std::setfill('0') << std::setw(max_xlen/4)
+      << std::hex << ": 0x" << std::setfill('0') << std::setw(max_xlen / 4)
       << zext(state.pc, max_xlen) << " (0x" << std::setw(8) << bits << ") "
       << disassembler->disassemble(insn) << std::endl;
 
@@ -885,10 +888,10 @@ insn_func_t processor_t::decode_insn(insn_t insn)
     desc = *p;
 
     if (p->mask != 0 && p > &instructions[0]) {
-      if (p->match != (p-1)->match && p->match != (p+1)->match) {
+      if (p->match != (p - 1)->match && p->match != (p + 1)->match) {
         // move to front of opcode list to reduce miss penalty
         while (--p >= &instructions[0])
-          *(p+1) = *p;
+          *(p + 1) = *p;
         instructions[0] = desc;
       }
     }
@@ -948,7 +951,7 @@ void processor_t::register_base_instructions()
     extern reg_t rv64i_##name(processor_t*, insn_t, reg_t); \
     extern reg_t rv32e_##name(processor_t*, insn_t, reg_t); \
     extern reg_t rv64e_##name(processor_t*, insn_t, reg_t); \
-    register_insn((insn_desc_t){ \
+    register_insn((insn_desc_t) { \
       name##_match, \
       name##_mask, \
       rv32i_##name, \
