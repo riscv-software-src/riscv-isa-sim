@@ -153,10 +153,13 @@ public:
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
       if ((xlate_flags) == 0 && likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \
+        if (actually_store) { \
         if (proc) WRITE_MEM(addr, val, size); \
         *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
+        } \
       } \
       else if ((xlate_flags) == 0 && unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
+        if (actually_store) { \
         if (!matched_trigger) { \
           matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, val); \
           if (matched_trigger) \
@@ -164,11 +167,12 @@ public:
         } \
         if (proc) WRITE_MEM(addr, val, size); \
         *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
+        } \
       } \
       else { \
         target_endian<type##_t> target_val = to_target(val); \
         store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&target_val, (xlate_flags), actually_store); \
-        if (proc) WRITE_MEM(addr, val, size); \
+        if (actually_store && proc) WRITE_MEM(addr, val, size); \
       } \
   }
 
@@ -192,6 +196,7 @@ public:
     template<typename op> \
     type##_t amo_##type(reg_t addr, op f) { \
       convert_load_traps_to_store_traps({ \
+        store_##type(addr, 0, false); \
         auto lhs = load_##type(addr, true); \
         store_##type(addr, f(lhs)); \
         return lhs; \
