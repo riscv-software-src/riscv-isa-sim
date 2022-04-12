@@ -5,39 +5,73 @@
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>
+#include <algorithm>
+
+cache_sim_t::cache_sim_t(size_t _sets, size_t _ways, size_t _linesz, const char* _name, const std::string eviction_policy)
+: sets(_sets), ways(_ways), linesz(_linesz), name(_name), log(false)
+{
+  init(eviction_policy);
+}
 
 cache_sim_t::cache_sim_t(size_t _sets, size_t _ways, size_t _linesz, const char* _name)
 : sets(_sets), ways(_ways), linesz(_linesz), name(_name), log(false)
 {
-  init();
+  init(std::string("lfsr"));
 }
 
-static void help()
+bool cache_sim_t::policy_is_valid(const std::string eviction_policy)
+{
+  return (!(eviction_policy.compare("lfsr"))) |
+         (!(eviction_policy.compare("lru"))) |
+         (!(eviction_policy.compare("fifo"))) |
+         (!(eviction_policy.compare("lip"))) |
+         (!(eviction_policy.compare("bip")));
+}
+
+eviction_policy_t* cache_sim_t::create_eviction_policy(const std::string eviction_policy)
+{
+  eviction_policy_t* policy = NULL;
+  if (!(eviction_policy.compare("lfsr")))
+    policy = new lfsr_t(sets, ways);
+  else if (!(eviction_policy.compare("lru")))
+    policy = new lru_t(sets, ways);
+  else if (!(eviction_policy.compare("fifo")))
+    policy = new fifo_t(sets, ways);
+  else if (!(eviction_policy.compare("lip")))
+    policy = new lip_t(sets, ways);
+  else if (!(eviction_policy.compare("bip")))
+    policy = new bip_t(sets, ways);
+  return policy;
+}
+
+void cache_sim_t::help()
 {
   std::cerr << "Cache configurations must be of the form" << std::endl;
-  std::cerr << "  sets:ways:blocksize" << std::endl;
+  std::cerr << "  sets:ways:blocksize:policy" << std::endl;
   std::cerr << "where sets, ways, and blocksize are positive integers, with" << std::endl;
   std::cerr << "sets and blocksize both powers of two and blocksize at least 8." << std::endl;
+  std::cerr << "Finally, policy is a string. Either 'lfsr', 'lru', 'fifo', 'lip', or 'bip'." << std::endl;
   exit(1);
 }
 
-cache_sim_t* cache_sim_t::construct(const char* config, const char* name)
+cache_sim_t::cache_sim_t(const char* config, const char* name) : name(name)
 {
   const char* wp = strchr(config, ':');
   if (!wp++) help();
   const char* bp = strchr(wp, ':');
   if (!bp++) help();
+  const char* eviction_policy = strchr(bp, ':');
+  if (!eviction_policy++) help();
+  if (!policy_is_valid(std::string(eviction_policy))) help();
 
-  size_t sets = atoi(std::string(config, wp).c_str());
-  size_t ways = atoi(std::string(wp, bp).c_str());
-  size_t linesz = atoi(bp);
+  sets = atoi(std::string(config, wp).c_str());
+  ways = atoi(std::string(wp, bp).c_str());
+  linesz = atoi(std::string(bp, eviction_policy).c_str());
 
-  if (ways > 4 /* empirical */ && sets == 1)
-    return new fa_cache_sim_t(ways, linesz, name);
-  return new cache_sim_t(sets, ways, linesz, name);
+  init(eviction_policy);
 }
 
-void cache_sim_t::init()
+void cache_sim_t::init(const std::string eviction_policy)
 {
   if(sets == 0 || (sets & (sets-1)))
     help();
@@ -58,6 +92,7 @@ void cache_sim_t::init()
   writebacks = 0;
 
   miss_handler = NULL;
+  policy = create_eviction_policy(eviction_policy);
 }
 
 cache_sim_t::cache_sim_t(const cache_sim_t& rhs)
@@ -72,6 +107,7 @@ cache_sim_t::~cache_sim_t()
 {
   print_stats();
   delete [] tags;
+  delete policy;
 }
 
 void cache_sim_t::print_stats()
@@ -82,21 +118,21 @@ void cache_sim_t::print_stats()
   float mr = 100.0f*(read_misses+write_misses)/(read_accesses+write_accesses);
 
   std::cout << std::setprecision(3) << std::fixed;
-  std::cout << name << " ";
+  std::cout << name << "\t";
   std::cout << "Bytes Read:            " << bytes_read << std::endl;
-  std::cout << name << " ";
+  std::cout << name << "\t";
   std::cout << "Bytes Written:         " << bytes_written << std::endl;
-  std::cout << name << " ";
+  std::cout << name << "\t";
   std::cout << "Read Accesses:         " << read_accesses << std::endl;
-  std::cout << name << " ";
+  std::cout << name << "\t";
   std::cout << "Write Accesses:        " << write_accesses << std::endl;
-  std::cout << name << " ";
+  std::cout << name << "\t";
   std::cout << "Read Misses:           " << read_misses << std::endl;
-  std::cout << name << " ";
+  std::cout << name << "\t";
   std::cout << "Write Misses:          " << write_misses << std::endl;
-  std::cout << name << " ";
+  std::cout << name << "\t";
   std::cout << "Writebacks:            " << writebacks << std::endl;
-  std::cout << name << " ";
+  std::cout << name << "\t";
   std::cout << "Miss Rate:             " << mr << '%' << std::endl;
 }
 
@@ -112,13 +148,26 @@ uint64_t* cache_sim_t::check_tag(uint64_t addr)
   return NULL;
 }
 
+// Returns tag of victimized cacheline AND write new cacheline tag instead of the existing one!
 uint64_t cache_sim_t::victimize(uint64_t addr)
 {
   size_t idx = (addr >> idx_shift) & (sets-1);
-  size_t way = lfsr.next() % ways;
+  size_t way = policy->next(idx);
   uint64_t victim = tags[idx*ways + way];
   tags[idx*ways + way] = (addr >> idx_shift) | VALID;
+  policy->insert(idx, way);
   return victim;
+}
+
+int cache_sim_t::get_way(uint64_t addr)
+{
+  size_t idx = (addr >> idx_shift) & (sets-1);
+  size_t tag = (addr >> idx_shift) | VALID;
+  int way = -1;
+  for (size_t i = 0; i < ways; i++)
+    if (tag == (tags[idx*ways+i] & ~DIRTY))
+      way = i;
+  return way;
 }
 
 void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
@@ -131,6 +180,9 @@ void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
   {
     if (store)
       *hit_way |= DIRTY;
+    int way = get_way(addr);
+    if (way != -1)
+        policy->update(addr, way, idx_shift);
     return;
   }
 
@@ -142,6 +194,7 @@ void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
               << std::hex << addr << std::endl;
   }
 
+  // Victimize AND insert at 'addr'
   uint64_t victim = victimize(addr);
 
   if ((victim & (VALID | DIRTY)) == (VALID | DIRTY))
@@ -160,7 +213,13 @@ void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
 }
 
 fa_cache_sim_t::fa_cache_sim_t(size_t ways, size_t linesz, const char* name)
-  : cache_sim_t(1, ways, linesz, name)
+  : fa_cache_sim_t(ways, linesz, name, std::string("lfsr"))
+{
+}
+
+
+fa_cache_sim_t::fa_cache_sim_t(size_t ways, size_t linesz, const char* name, const std::string eviction_policy)
+  : cache_sim_t(1, ways, linesz, name, eviction_policy)
 {
 }
 
@@ -176,7 +235,7 @@ uint64_t fa_cache_sim_t::victimize(uint64_t addr)
   if (tags.size() == ways)
   {
     auto it = tags.begin();
-    std::advance(it, lfsr.next() % ways);
+    std::advance(it, policy->next(0)); // TODO: temporary!!!!!
     old_tag = it->second;
     tags.erase(it);
   }
