@@ -4,25 +4,18 @@
 #define _RISCV_CACHE_SIM_H
 
 #include "memtracer.h"
+#include "eviction_policies.h"
 #include <cstring>
 #include <string>
 #include <map>
 #include <cstdint>
 
-class lfsr_t
-{
- public:
-  lfsr_t() : reg(1) {}
-  lfsr_t(const lfsr_t& lfsr) : reg(lfsr.reg) {}
-  uint32_t next() { return reg = (reg>>1)^(-(reg&1) & 0xd0000001); }
- private:
-  uint32_t reg;
-};
-
 class cache_sim_t
 {
  public:
+  cache_sim_t(const char* config, const char* name);
   cache_sim_t(size_t sets, size_t ways, size_t linesz, const char* name);
+  cache_sim_t(size_t sets, size_t ways, size_t linesz, const char* name, const std::string eviction_policy);
   cache_sim_t(const cache_sim_t& rhs);
   virtual ~cache_sim_t();
 
@@ -31,16 +24,19 @@ class cache_sim_t
   void set_miss_handler(cache_sim_t* mh) { miss_handler = mh; }
   void set_log(bool _log) { log = _log; }
 
-  static cache_sim_t* construct(const char* config, const char* name);
-
  protected:
-  static const uint64_t VALID = 1ULL << 63;
-  static const uint64_t DIRTY = 1ULL << 62;
+  const uint64_t VALID = 1ULL << 63;
+  const uint64_t DIRTY = 1ULL << 62;
+
+  eviction_policy_t* create_eviction_policy(const std::string eviction_policy);
+  bool policy_is_valid(const std::string eviction_policy);
+  void help();
+  int get_way(uint64_t addr);
 
   virtual uint64_t* check_tag(uint64_t addr);
   virtual uint64_t victimize(uint64_t addr);
 
-  lfsr_t lfsr;
+  eviction_policy_t* policy;
   cache_sim_t* miss_handler;
 
   size_t sets;
@@ -49,7 +45,7 @@ class cache_sim_t
   size_t idx_shift;
 
   uint64_t* tags;
-  
+
   uint64_t read_accesses;
   uint64_t read_misses;
   uint64_t bytes_read;
@@ -61,13 +57,14 @@ class cache_sim_t
   std::string name;
   bool log;
 
-  void init();
+  void init(const std::string eviction_policy);
 };
 
 class fa_cache_sim_t : public cache_sim_t
 {
  public:
   fa_cache_sim_t(size_t ways, size_t linesz, const char* name);
+  fa_cache_sim_t(size_t ways, size_t linesz, const char* name, const std::string eviction_policy);
   uint64_t* check_tag(uint64_t addr);
   uint64_t victimize(uint64_t addr);
  private:
@@ -80,7 +77,7 @@ class cache_memtracer_t : public memtracer_t
  public:
   cache_memtracer_t(const char* config, const char* name)
   {
-    cache = cache_sim_t::construct(config, name);
+    cache = new cache_sim_t(config, name);
   }
   ~cache_memtracer_t()
   {
