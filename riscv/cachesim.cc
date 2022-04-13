@@ -6,6 +6,7 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
+#include <math.h>
 
 cache_sim_t::cache_sim_t(size_t _sets, size_t _ways, size_t _linesz, const char* _name, const std::string eviction_policy)
 : sets(_sets), ways(_ways), linesz(_linesz), name(_name), log(false)
@@ -78,9 +79,7 @@ void cache_sim_t::init(const std::string eviction_policy)
   if(linesz < 8 || (linesz & (linesz-1)))
     help();
 
-  idx_shift = 0;
-  for (size_t x = linesz; x>1; x >>= 1)
-    idx_shift++;
+  idx_shift = std::log2(linesz);
 
   tags = new uint64_t[sets*ways]();
   read_accesses = 0;
@@ -148,13 +147,19 @@ uint64_t* cache_sim_t::check_tag(uint64_t addr)
   return NULL;
 }
 
-// Returns tag of victimized cacheline AND write new cacheline tag instead of the existing one!
+// Returns tag of victimized cacheline AND write new cacheline tag instead of
+// the existing one!
 uint64_t cache_sim_t::victimize(uint64_t addr)
 {
+  // Find set via 'idx'
   size_t idx = (addr >> idx_shift) & (sets-1);
+  // Get index of way to evict
   size_t way = policy->next(idx);
+  // Store cache-line's tag to be evicted
   uint64_t victim = tags[idx*ways + way];
+  // Replace evicted cache-line's tag with new one
   tags[idx*ways + way] = (addr >> idx_shift) | VALID;
+  // Tell the eviction policy which metadata to change
   policy->insert(idx, way);
   return victim;
 }
@@ -181,6 +186,7 @@ void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
     if (store)
       *hit_way |= DIRTY;
     int way = get_way(addr);
+    // If cache-hit (note that a hit is expected because of previous condition).
     if (way != -1)
         policy->update(addr, way, idx_shift);
     return;
@@ -210,35 +216,4 @@ void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
 
   if (store)
     *check_tag(addr) |= DIRTY;
-}
-
-fa_cache_sim_t::fa_cache_sim_t(size_t ways, size_t linesz, const char* name)
-  : fa_cache_sim_t(ways, linesz, name, std::string("lfsr"))
-{
-}
-
-
-fa_cache_sim_t::fa_cache_sim_t(size_t ways, size_t linesz, const char* name, const std::string eviction_policy)
-  : cache_sim_t(1, ways, linesz, name, eviction_policy)
-{
-}
-
-uint64_t* fa_cache_sim_t::check_tag(uint64_t addr)
-{
-  auto it = tags.find(addr >> idx_shift);
-  return it == tags.end() ? NULL : &it->second;
-}
-
-uint64_t fa_cache_sim_t::victimize(uint64_t addr)
-{
-  uint64_t old_tag = 0;
-  if (tags.size() == ways)
-  {
-    auto it = tags.begin();
-    std::advance(it, policy->next(0)); // TODO: temporary!!!!!
-    old_tag = it->second;
-    tags.erase(it);
-  }
-  tags[addr >> idx_shift] = (addr >> idx_shift) | VALID;
-  return old_tag;
 }
