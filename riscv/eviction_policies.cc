@@ -24,6 +24,8 @@ uint32_t lru_t::lowest_recency_way(size_t idx)
     return argmin;
 }
 
+// For set denoted by 'idx', give highest recency to 'way' and
+// decrement all elements accessed more recently than 'recency'.
 void lru_t::promote(size_t idx, size_t way, uint32_t recency)
 {
   this->metadata[idx*ways+way] = ways;
@@ -32,6 +34,10 @@ void lru_t::promote(size_t idx, size_t way, uint32_t recency)
       this->metadata[idx*ways+i]--;
 }
 
+// Instruments the 'promote' method to set cachline located in
+// [idx][way] as most recently accessed and decrement all other
+// cache-lines access recency (all recencies bigger than 0 but
+// for the one already at 0).
 void lru_t::set_as_mru(size_t idx, size_t way)
 {
   this->promote(idx, way, 0);
@@ -51,8 +57,7 @@ void lru_t::update(uint64_t addr, uint32_t way, const size_t idx_shift)
 
 void lru_t::insert(size_t idx, size_t way)
 {
-  uint32_t recency = this->metadata[idx*ways+way];
-  this->promote(idx, way, recency);
+  this->set_as_mru(idx, way);
 }
 
 void fifo_t::update(uint64_t addr, uint32_t way, const size_t idx_shift) {}
@@ -74,15 +79,13 @@ void lip_t::insert(size_t idx, size_t way)
 {
   // Inserted at LRU position
   this->metadata[idx*ways+way] = 0;
-  // Other recencies remain unchanged
 }
 
 void bip_t::insert(size_t idx, size_t way)
 {
-  if (rand()%8 == 0) {
+  if (!(lfsr->next(idx)%threshold)) {
     // Inserted at LRU position
     this->metadata[idx*ways+way] = 0;
-    // Other recencies remain unchanged
   }
   else {
     this->set_as_mru(idx, way);

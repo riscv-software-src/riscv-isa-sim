@@ -1,5 +1,7 @@
-#ifndef RISCV_EVICTION_POLICIES_H
-#define RISCV_EVICTION_POLICIES_H
+// See LICENSE for license details.
+
+#ifndef _RISCV_EVICTION_POLICIES_H
+#define _RISCV_EVICTION_POLICIES_H
 
 #include <stdlib.h>
 #include <cstdint>
@@ -70,10 +72,20 @@ public:
 
 class bip_t : public lip_t
 {
+private:
+  uint32_t threshold;
+  eviction_policy_t* lfsr;
 public:
-  bip_t(size_t sets, size_t ways) : lip_t(sets, ways) {}
+  bip_t(size_t sets, size_t ways, uint32_t threshold) : lip_t(sets, ways), threshold(threshold)
+  {
+    lfsr = new lfsr_t(sets, ways);
+  }
+  bip_t(size_t sets, size_t ways) : bip_t(sets, ways, 8) {}
   void insert(size_t idx, size_t way) override;
-  ~bip_t() {};
+  ~bip_t()
+  {
+    delete lfsr;
+  };
 };
 
 #endif
