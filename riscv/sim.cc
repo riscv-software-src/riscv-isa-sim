@@ -28,11 +28,10 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_clint,
-             reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
+sim_t::sim_t(const cfg_t *cfg, bool halted,
+             std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
-             std::vector<int> const hartids,
              const debug_module_config_t &dm_config,
              const char *log_path,
              bool dtb_enabled, const char *dtb_file,
@@ -46,7 +45,6 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
     mems(mems),
     plugin_devices(plugin_devices),
     procs(std::max(cfg->nprocs(), size_t(1))),
-    start_pc(start_pc),
     dtb_file(dtb_file ? dtb_file : ""),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
@@ -78,17 +76,8 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
 
   debug_mmu = new mmu_t(this, NULL);
 
-  if (! (hartids.empty() || hartids.size() == nprocs())) {
-      std::cerr << "Number of specified hartids ("
-                << hartids.size()
-                << ") doesn't match number of processors ("
-                << nprocs() << ").\n";
-      exit(1);
-  }
-
-  for (size_t i = 0; i < nprocs(); i++) {
-    int hart_id = hartids.empty() ? i : hartids[i];
-    procs[i] = new processor_t(&isa, varch, this, hart_id, halted,
+  for (size_t i = 0; i < cfg->nprocs(); i++) {
+    procs[i] = new processor_t(&isa, cfg->varch(), this, cfg->hartids()[i], halted,
                                log_file.get(), sout_);
   }
 
@@ -105,7 +94,7 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
   // setting the dtb_file argument has one.
   reg_t clint_base;
   if (fdt_parse_clint(fdt, &clint_base, "riscv,clint0") == 0) {
-    clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, real_time_clint));
+    clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, cfg->real_time_clint()));
     bus.add_device(clint_base, clint.get());
   }
 
@@ -129,7 +118,7 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
         procs[cpu_idx]->set_pmp_num(pmp_num);
       } else {
         std::cerr << "core ("
-                  << hartids.size()
+                  << cpu_idx
                   << ") doesn't have valid 'riscv,pmpregions'"
                   << pmp_num << ").\n";
         exit(1);
@@ -159,7 +148,7 @@ sim_t::sim_t(const cfg_t *cfg, const char* varch, bool halted, bool real_time_cl
         //has been set in the beginning
       } else {
         std::cerr << "core ("
-                  << hartids.size()
+                  << cpu_idx
                   << ") has an invalid 'mmu-type': "
                   << mmu_type << ").\n";
         exit(1);
@@ -334,7 +323,7 @@ void sim_t::set_rom()
 {
   const int reset_vec_size = 8;
 
-  start_pc = start_pc == reg_t(-1) ? get_entry_point() : start_pc;
+  reg_t start_pc = cfg->start_pc.value_or(get_entry_point());
 
   uint32_t reset_vec[reset_vec_size] = {
     0x297,                                      // auipc  t0,0x0

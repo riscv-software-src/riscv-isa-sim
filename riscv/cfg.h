@@ -2,6 +2,7 @@
 #ifndef _RISCV_CFG_H
 #define _RISCV_CFG_H
 
+#include <optional>
 #include "decode.h"
 #include "mmu.h"
 #include <cassert>
@@ -53,23 +54,35 @@ class cfg_t
 {
 public:
   cfg_t(std::pair<reg_t, reg_t> default_initrd_bounds,
-        const char *default_bootargs, size_t default_nprocs,
+        const char *default_bootargs,
         const char *default_isa, const char *default_priv,
-        const std::vector<mem_cfg_t> &default_mem_layout)
+        const char *default_varch,
+        const std::vector<mem_cfg_t> &default_mem_layout,
+        const std::vector<int> default_hartids,
+        bool default_real_time_clint)
     : initrd_bounds(default_initrd_bounds),
       bootargs(default_bootargs),
-      nprocs(default_nprocs),
       isa(default_isa),
       priv(default_priv),
-      mem_layout(default_mem_layout)
+      varch(default_varch),
+      mem_layout(default_mem_layout),
+      hartids(default_hartids),
+      explicit_hartids(false),
+      real_time_clint(default_real_time_clint)
   {}
 
   cfg_arg_t<std::pair<reg_t, reg_t>> initrd_bounds;
   cfg_arg_t<const char *>            bootargs;
-  cfg_arg_t<size_t>                  nprocs;
   cfg_arg_t<const char *>            isa;
   cfg_arg_t<const char *>            priv;
+  cfg_arg_t<const char *>            varch;
   cfg_arg_t<std::vector<mem_cfg_t>>  mem_layout;
+  std::optional<reg_t>               start_pc;
+  cfg_arg_t<std::vector<int>>        hartids;
+  bool                               explicit_hartids;
+  cfg_arg_t<bool>                    real_time_clint;
+
+  size_t nprocs() const { return hartids().size(); }
 };
 
 #endif
