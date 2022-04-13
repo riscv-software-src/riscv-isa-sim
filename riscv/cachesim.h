@@ -60,18 +60,6 @@ class cache_sim_t
   void init(const std::string eviction_policy);
 };
 
-class fa_cache_sim_t : public cache_sim_t
-{
- public:
-  fa_cache_sim_t(size_t ways, size_t linesz, const char* name);
-  fa_cache_sim_t(size_t ways, size_t linesz, const char* name, const std::string eviction_policy);
-  uint64_t* check_tag(uint64_t addr);
-  uint64_t victimize(uint64_t addr);
- private:
-  static bool cmp(uint64_t a, uint64_t b);
-  std::map<uint64_t, uint64_t> tags;
-};
-
 class cache_memtracer_t : public memtracer_t
 {
  public:
