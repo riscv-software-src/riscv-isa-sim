@@ -29,6 +29,7 @@ reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
 
 struct insn_desc_t
 {
+  bool supported;
   insn_bits_t match;
   insn_bits_t mask;
   insn_func_t rv32i;
@@ -38,6 +39,9 @@ struct insn_desc_t
 
   insn_func_t func(int xlen, bool rve)
   {
+    if (!supported)
+      return NULL;
+
     if (rve)
       return xlen == 64 ? rv64e : rv32e;
     else
@@ -46,7 +50,7 @@ struct insn_desc_t
 
   static insn_desc_t illegal()
   {
-    return {0, 0, &illegal_instruction, &illegal_instruction, &illegal_instruction, &illegal_instruction};
+    return {true, 0, 0, &illegal_instruction, &illegal_instruction, &illegal_instruction, &illegal_instruction};
   }
 };
 
