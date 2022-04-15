@@ -22,6 +22,11 @@ cache_sim_addr_t::cache_sim_addr_t(const uint64_t& addr, const uint32_t& sets, c
 cache_sim_addr_t::cache_sim_addr_t(const cache_sim_addr_t& addr):
   valid(addr.valid), dirty(addr.dirty), tag(addr.tag), idx(addr.idx) {};
 
+bool cache_sim_addr_t::operator==(const cache_sim_addr_t &other)
+{
+  return (this->valid & other.valid) & (this->tag == other.tag);
+}
+
 void cache_sim_addr_t::set_valid()
 {
   this->valid = true;

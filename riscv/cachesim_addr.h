@@ -14,6 +14,7 @@ public:
   cache_sim_addr_t();
   cache_sim_addr_t(const uint64_t& addr, const uint32_t& sets, const uint32_t& linesz);
   cache_sim_addr_t(const cache_sim_addr_t& addr);
+  bool operator==(const cache_sim_addr_t& other);
   void set_valid();
   bool is_valid();
   void set_dirty();
