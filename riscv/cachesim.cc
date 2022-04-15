@@ -132,12 +132,16 @@ void cache_sim_t::print_stats()
   std::cout << "Miss Rate:             " << mr << '%' << std::endl;
 }
 
-cache_sim_addr_t* cache_sim_t::check_tag(cache_sim_addr_t& addr)
+int cache_sim_t::check_tag(cache_sim_addr_t& addr)
 {
-  for (size_t i = 0; i < ways; i++)
-    if (addr.tag == tags[addr.idx][i].tag)
-      return &tags[addr.idx][i];
-  return NULL;
+//  for (size_t i = 0; i < ways; i++)
+//    if (addr.tag == tags[addr.idx][i].tag)
+//      return &tags[addr.idx][i];
+//  return NULL;
+  auto begin = tags[addr.idx].begin();
+  auto end = tags[addr.idx].end();
+  auto it = std::find(begin, end, addr);
+  return (likely(it != end))? std::distance(begin, it) : -1;
 }
 
 // Returns tag of victimized cacheline AND write new cacheline tag instead of
@@ -156,13 +160,6 @@ cache_sim_addr_t cache_sim_t::victimize(cache_sim_addr_t& addr)
   return victim;
 }
 
-uint32_t cache_sim_t::get_way(cache_sim_addr_t& addr)
-{
-  auto begin = tags[addr.idx].begin();
-  auto end = tags[addr.idx].end();
-  return std::distance(begin, std::find(begin, end, addr));
-}
-
 void cache_sim_t::access(uint64_t raw_addr, size_t bytes, bool store)
 {
   store ? write_accesses++ : read_accesses++;
@@ -170,12 +167,12 @@ void cache_sim_t::access(uint64_t raw_addr, size_t bytes, bool store)
 
   cache_sim_addr_t addr = cache_sim_addr_t(raw_addr, this->sets, this->linesz);
 
-  cache_sim_addr_t* hit_way = check_tag(addr);
-  if (likely(hit_way != NULL))
+  int hit_way_index = check_tag(addr);
+  if (likely(hit_way_index >= 0))
   {
     if (store)
-      hit_way->set_dirty();
-    policy->update(addr, get_way(addr));
+      tags[addr.idx][hit_way_index].set_dirty();
+    policy->update(addr, hit_way_index);
     return;
   }
 
@@ -205,5 +202,5 @@ void cache_sim_t::access(uint64_t raw_addr, size_t bytes, bool store)
     miss_handler->access(addr.to_uint64(this->sets, this->linesz), linesz, false);
 
   if (store)
-    check_tag(addr)->set_dirty();
+    tags[addr.idx][check_tag(addr)].set_dirty();
 }
