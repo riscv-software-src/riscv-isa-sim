@@ -39,9 +39,9 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --varch=<name>        RISC-V Vector uArch string [default %s]\n", DEFAULT_VARCH);
   fprintf(stderr, "  --pc=<address>        Override ELF entry point\n");
   fprintf(stderr, "  --hartids=<a,b,...>   Explicitly specify hartids, default is 0,1,...\n");
-  fprintf(stderr, "  --ic=<S>:<W>:<B>:<P>   Instantiate a cache model with S sets,\n");
-  fprintf(stderr, "  --dc=<S>:<W>:<B>:<P>  W ways, B-byte blocks (with S andB both powers of 2),\n");
-  fprintf(stderr, "  --l2=<S>:<W>:<B>:<P>  and an eviction policy P.\n");
+  fprintf(stderr, "  --ic=<S>:<W>:<B>:<P>    Instantiate a cache model with S sets,\n");
+  fprintf(stderr, "  --dc=<S>:<W>:<B>:<P>  W ways, B-byte blocks (with S and B both powers of 2),\n");
+  fprintf(stderr, "  --l2=<S>:<W>:<B>:<P>  and an eviction policy P (e.g., lru, lfsr, fifo, lip, and bip).\n");
   fprintf(stderr, "  --device=<P,B,A>      Attach MMIO plugin device from an --extlib library\n");
   fprintf(stderr, "                          P -- Name of the MMIO plugin\n");
   fprintf(stderr, "                          B -- Base memory address of the device\n");
