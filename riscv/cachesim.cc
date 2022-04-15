@@ -193,9 +193,11 @@ void cache_sim_t::access(uint64_t raw_addr, size_t bytes, bool store)
 
   if (victim.is_valid() & victim.is_dirty())
   {
-    uint64_t dirty_addr = victim.to_uint64(this->sets, this->linesz);
     if (miss_handler)
+    {
+      uint64_t dirty_addr = victim.to_uint64(this->sets, this->linesz);
       miss_handler->access(dirty_addr, linesz, true);
+    }
     writebacks++;
   }
 
