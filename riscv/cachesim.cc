@@ -158,11 +158,6 @@ cache_sim_addr_t cache_sim_t::victimize(cache_sim_addr_t& addr)
 
 uint32_t cache_sim_t::get_way(cache_sim_addr_t& addr)
 {
-//  int way = -1;
-//  for (size_t i = 0; i < ways; i++)
-//    if (addr.tag == tags[addr.idx][i].tag)
-//      way = i;
-//  return way;
   auto begin = tags[addr.idx].begin();
   auto end = tags[addr.idx].end();
   return std::distance(begin, std::find(begin, end, addr));
