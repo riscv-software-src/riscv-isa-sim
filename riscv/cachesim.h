@@ -5,14 +5,17 @@
 
 #include "memtracer.h"
 #include "eviction_policies.h"
+#include "cachesim_addr.h"
 #include <cstring>
 #include <string>
 #include <map>
 #include <cstdint>
+#include <math.h>
+#include <vector>
 
 class cache_sim_t
 {
- public:
+public:
   cache_sim_t(const char* config, const char* name);
   cache_sim_t(size_t sets, size_t ways, size_t linesz, const char* name);
   cache_sim_t(size_t sets, size_t ways, size_t linesz, const char* name, const std::string eviction_policy);
@@ -25,16 +28,13 @@ class cache_sim_t
   void set_log(bool _log) { log = _log; }
 
  protected:
-  const uint64_t VALID = 1ULL << 63;
-  const uint64_t DIRTY = 1ULL << 62;
-
   eviction_policy_t* create_eviction_policy(const std::string eviction_policy);
   bool policy_is_valid(const std::string eviction_policy);
   void help();
-  int get_way(uint64_t addr);
 
-  virtual uint64_t* check_tag(uint64_t addr);
-  virtual uint64_t victimize(uint64_t addr);
+  cache_sim_addr_t* check_tag(cache_sim_addr_t& addr);
+  cache_sim_addr_t victimize(cache_sim_addr_t& addr);
+  int get_way(cache_sim_addr_t& addr);
 
   eviction_policy_t* policy;
   cache_sim_t* miss_handler;
@@ -42,9 +42,8 @@ class cache_sim_t
   size_t sets;
   size_t ways;
   size_t linesz;
-  size_t idx_shift;
 
-  uint64_t* tags;
+  std::vector<std::vector<cache_sim_addr_t>> tags;
 
   uint64_t read_accesses;
   uint64_t read_misses;

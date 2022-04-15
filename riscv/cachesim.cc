@@ -6,7 +6,7 @@
 #include <iostream>
 #include <iomanip>
 #include <algorithm>
-#include <math.h>
+
 
 cache_sim_t::cache_sim_t(size_t _sets, size_t _ways, size_t _linesz, const char* _name, const std::string eviction_policy)
 : sets(_sets), ways(_ways), linesz(_linesz), name(_name), log(false)
@@ -79,9 +79,10 @@ void cache_sim_t::init(const std::string eviction_policy)
   if(linesz < 8 || (linesz & (linesz-1)))
     help();
 
-  idx_shift = std::log2(linesz);
+  tags.resize(sets);
+  for (size_t i = 0; i < tags.size(); i++)
+    tags[i].resize(ways);
 
-  tags = new uint64_t[sets*ways]();
   read_accesses = 0;
   read_misses = 0;
   bytes_read = 0;
@@ -96,16 +97,12 @@ void cache_sim_t::init(const std::string eviction_policy)
 
 cache_sim_t::cache_sim_t(const cache_sim_t& rhs)
  : sets(rhs.sets), ways(rhs.ways), linesz(rhs.linesz),
-   idx_shift(rhs.idx_shift), name(rhs.name), log(false)
-{
-  tags = new uint64_t[sets*ways];
-  memcpy(tags, rhs.tags, sets*ways*sizeof(uint64_t));
-}
+   tags(rhs.tags), name(rhs.name), log(false)
+{}
 
 cache_sim_t::~cache_sim_t()
 {
   print_stats();
-  delete [] tags;
   delete policy;
 }
 
@@ -135,60 +132,52 @@ void cache_sim_t::print_stats()
   std::cout << "Miss Rate:             " << mr << '%' << std::endl;
 }
 
-uint64_t* cache_sim_t::check_tag(uint64_t addr)
+cache_sim_addr_t* cache_sim_t::check_tag(cache_sim_addr_t& addr)
 {
-  size_t idx = (addr >> idx_shift) & (sets-1);
-  size_t tag = (addr >> idx_shift) | VALID;
-
   for (size_t i = 0; i < ways; i++)
-    if (tag == (tags[idx*ways + i] & ~DIRTY))
-      return &tags[idx*ways + i];
-
+    if (addr.tag == tags[addr.idx][i].tag)
+      return &tags[addr.idx][i];
   return NULL;
 }
 
 // Returns tag of victimized cacheline AND write new cacheline tag instead of
 // the existing one!
-uint64_t cache_sim_t::victimize(uint64_t addr)
+cache_sim_addr_t cache_sim_t::victimize(cache_sim_addr_t& addr)
 {
-  // Find set via 'idx'
-  size_t idx = (addr >> idx_shift) & (sets-1);
   // Get index of way to evict
-  size_t way = policy->next(idx);
+  size_t way = policy->next(addr.idx);
   // Store cache-line's tag to be evicted
-  uint64_t victim = tags[idx*ways + way];
+  cache_sim_addr_t victim = tags[addr.idx][way];
   // Replace evicted cache-line's tag with new one
-  tags[idx*ways + way] = (addr >> idx_shift) | VALID;
+  tags[addr.idx][way] = addr;
+  tags[addr.idx][way].set_valid();
   // Tell the eviction policy which metadata to change
-  policy->insert(idx, way);
+  policy->insert(addr.idx, way);
   return victim;
 }
 
-int cache_sim_t::get_way(uint64_t addr)
+int cache_sim_t::get_way(cache_sim_addr_t& addr)
 {
-  size_t idx = (addr >> idx_shift) & (sets-1);
-  size_t tag = (addr >> idx_shift) | VALID;
   int way = -1;
   for (size_t i = 0; i < ways; i++)
-    if (tag == (tags[idx*ways+i] & ~DIRTY))
+    if (addr.tag == tags[addr.idx][i].tag)
       way = i;
   return way;
 }
 
-void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
+void cache_sim_t::access(uint64_t raw_addr, size_t bytes, bool store)
 {
   store ? write_accesses++ : read_accesses++;
   (store ? bytes_written : bytes_read) += bytes;
 
-  uint64_t* hit_way = check_tag(addr);
+  cache_sim_addr_t addr = cache_sim_addr_t(raw_addr, this->sets, this->linesz);
+
+  cache_sim_addr_t* hit_way = check_tag(addr);
   if (likely(hit_way != NULL))
   {
     if (store)
-      *hit_way |= DIRTY;
-    int way = get_way(addr);
-    // If cache-hit (note that a hit is expected because of previous condition).
-    if (way != -1)
-        policy->update(addr, way, idx_shift);
+      hit_way->set_dirty();
+    policy->update(addr, get_way(addr));
     return;
   }
 
@@ -197,23 +186,24 @@ void cache_sim_t::access(uint64_t addr, size_t bytes, bool store)
   {
     std::cerr << name << " "
               << (store ? "write" : "read") << " miss 0x"
-              << std::hex << addr << std::endl;
+              << std::hex << addr.to_uint64(this->sets, this->linesz)
+              << std::endl;
   }
 
   // Victimize AND insert at 'addr'
-  uint64_t victim = victimize(addr);
+  cache_sim_addr_t victim = victimize(addr);
 
-  if ((victim & (VALID | DIRTY)) == (VALID | DIRTY))
+  if (victim.is_valid() & victim.is_dirty())
   {
-    uint64_t dirty_addr = (victim & ~(VALID | DIRTY)) << idx_shift;
+    uint64_t dirty_addr = victim.to_uint64(this->sets, this->linesz);
     if (miss_handler)
       miss_handler->access(dirty_addr, linesz, true);
     writebacks++;
   }
 
   if (miss_handler)
-    miss_handler->access(addr & ~(linesz-1), linesz, false);
+    miss_handler->access(addr.to_uint64(this->sets, this->linesz), linesz, false);
 
   if (store)
-    *check_tag(addr) |= DIRTY;
+    check_tag(addr)->set_dirty();
 }
