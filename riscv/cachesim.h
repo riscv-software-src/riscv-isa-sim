@@ -34,7 +34,7 @@ public:
 
   cache_sim_addr_t* check_tag(cache_sim_addr_t& addr);
   cache_sim_addr_t victimize(cache_sim_addr_t& addr);
-  int get_way(cache_sim_addr_t& addr);
+  uint32_t get_way(cache_sim_addr_t& addr);
 
   eviction_policy_t* policy;
   cache_sim_t* miss_handler;
