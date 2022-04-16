@@ -247,9 +247,11 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
   reg_t mseccfg_val = state->mseccfg->mseccfg_val;
   for (size_t i0 = (address - CSR_PMPCFG0) * 4, i = i0; i < i0 + proc->get_xlen() / 8; i++) {
     if (i < proc->n_pmp) {
-      if (!(state->pmpaddr[i]->cfg & PMP_L) | (mseccfg_val & MSECCFG_RLB)) { 
-        uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L); 
-        /*cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1 . */
+      if (!(state->pmpaddr[i]->cfg & PMP_L) || (mseccfg_val & MSECCFG_RLB)) { 
+        uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
+        if (!(mseccfg_val & MSECCFG_MML)) {
+          cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1 when MML = 0
+        }
         if (proc->lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
           cfg |= PMP_NAPOT; // Disallow A=NA4 when granularity > 4
         state->pmpaddr[i]->cfg = cfg;
@@ -258,7 +260,6 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
       write_success = true;
 
       if (state->pmpaddr[i]->cfg & PMP_L) {
-        //proc->get_state()->mseccfg->pmplock_recorded= true;
         state->mseccfg->pmplock_recorded = true;
       }
     }
@@ -282,7 +283,7 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->n_pmp == 0)
     return false;
 
-  if (!(pmplock_recorded && ~(mseccfg_val & MSECCFG_RLB))) { //When mseccfg.RLB is 0 and pmpcfg.L is 1 in any rule or entry (including disabled entries)
+  if (!(pmplock_recorded && !(mseccfg_val & MSECCFG_RLB))) { //When mseccfg.RLB is 0 and pmpcfg.L is 1 in any rule or entry (including disabled entries)
     mseccfg_val &= ~MSECCFG_RLB;
     mseccfg_val |= (val & MSECCFG_RLB);
   }
@@ -294,18 +295,6 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   
   return true;
 }
-
-/*bool mseccfg_csr_t::set_pmplock_record() noexcept {
-  if (proc->n_pmp == 0) {
-    return false;
-  }
-
-  if (~pmplock_recorded) {
-    pmplock_recorded = true; 
-  }
-
-  return true;
-}*/
 
 // implement class virtualized_csr_t
 virtualized_csr_t::virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
