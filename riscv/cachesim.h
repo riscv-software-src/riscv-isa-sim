@@ -6,6 +6,7 @@
 #include "memtracer.h"
 #include "eviction_policies.h"
 #include "cachesim_addr.h"
+#include "cachesim_perf_counter.h"
 #include <cstring>
 #include <string>
 #include <map>
@@ -22,7 +23,7 @@ public:
   cache_sim_t(const cache_sim_t& rhs);
   virtual ~cache_sim_t();
 
-  void access(uint64_t addr, size_t bytes, bool store);
+  void access(const uint64_t addr, const size_t bytes, const bool store);
   void print_stats();
   void set_miss_handler(cache_sim_t* mh) { miss_handler = mh; }
   void set_log(bool _log) { log = _log; }
@@ -33,7 +34,7 @@ public:
   void help();
 
   int check_tag(cache_sim_addr_t& addr);
-  cache_sim_addr_t victimize(cache_sim_addr_t& addr);
+  cache_sim_addr_t victimize(const cache_sim_addr_t& addr);
 
   eviction_policy_t* policy;
   cache_sim_t* miss_handler;
@@ -44,13 +45,7 @@ public:
 
   std::vector<std::vector<cache_sim_addr_t>> tags;
 
-  uint64_t read_accesses;
-  uint64_t read_misses;
-  uint64_t bytes_read;
-  uint64_t write_accesses;
-  uint64_t write_misses;
-  uint64_t bytes_written;
-  uint64_t writebacks;
+  cachesim_perf_counter perf_counter;// = cachesim_perf_counter();
 
   std::string name;
   bool log;

@@ -83,13 +83,7 @@ void cache_sim_t::init(const std::string eviction_policy)
   for (size_t i = 0; i < tags.size(); i++)
     tags[i].resize(ways);
 
-  read_accesses = 0;
-  read_misses = 0;
-  bytes_read = 0;
-  write_accesses = 0;
-  write_misses = 0;
-  bytes_written = 0;
-  writebacks = 0;
+  perf_counter.set_name(name);
 
   miss_handler = NULL;
   policy = create_eviction_policy(eviction_policy);
@@ -97,47 +91,16 @@ void cache_sim_t::init(const std::string eviction_policy)
 
 cache_sim_t::cache_sim_t(const cache_sim_t& rhs)
  : sets(rhs.sets), ways(rhs.ways), linesz(rhs.linesz),
-   tags(rhs.tags), name(rhs.name), log(false)
+   tags(rhs.tags), perf_counter(rhs.perf_counter), name(rhs.name), log(false)
 {}
 
 cache_sim_t::~cache_sim_t()
 {
-  print_stats();
   delete policy;
-}
-
-void cache_sim_t::print_stats()
-{
-  if(read_accesses + write_accesses == 0)
-    return;
-
-  float mr = 100.0f*(read_misses+write_misses)/(read_accesses+write_accesses);
-
-  std::cout << std::setprecision(3) << std::fixed;
-  std::cout << name << "\t";
-  std::cout << "Bytes Read:            " << bytes_read << std::endl;
-  std::cout << name << "\t";
-  std::cout << "Bytes Written:         " << bytes_written << std::endl;
-  std::cout << name << "\t";
-  std::cout << "Read Accesses:         " << read_accesses << std::endl;
-  std::cout << name << "\t";
-  std::cout << "Write Accesses:        " << write_accesses << std::endl;
-  std::cout << name << "\t";
-  std::cout << "Read Misses:           " << read_misses << std::endl;
-  std::cout << name << "\t";
-  std::cout << "Write Misses:          " << write_misses << std::endl;
-  std::cout << name << "\t";
-  std::cout << "Writebacks:            " << writebacks << std::endl;
-  std::cout << name << "\t";
-  std::cout << "Miss Rate:             " << mr << '%' << std::endl;
 }
 
 int cache_sim_t::check_tag(cache_sim_addr_t& addr)
 {
-//  for (size_t i = 0; i < ways; i++)
-//    if (addr.tag == tags[addr.idx][i].tag)
-//      return &tags[addr.idx][i];
-//  return NULL;
   auto begin = tags[addr.idx].begin();
   auto end = tags[addr.idx].end();
   auto it = std::find(begin, end, addr);
@@ -146,7 +109,7 @@ int cache_sim_t::check_tag(cache_sim_addr_t& addr)
 
 // Returns tag of victimized cacheline AND write new cacheline tag instead of
 // the existing one!
-cache_sim_addr_t cache_sim_t::victimize(cache_sim_addr_t& addr)
+cache_sim_addr_t cache_sim_t::victimize(const cache_sim_addr_t& addr)
 {
   // Get index of way to evict
   size_t way = policy->next(addr.idx);
@@ -160,47 +123,50 @@ cache_sim_addr_t cache_sim_t::victimize(cache_sim_addr_t& addr)
   return victim;
 }
 
-void cache_sim_t::access(uint64_t raw_addr, size_t bytes, bool store)
+void cache_sim_t::access(const uint64_t raw_addr, const size_t bytes, const bool store)
 {
-  store ? write_accesses++ : read_accesses++;
-  (store ? bytes_written : bytes_read) += bytes;
+  perf_counter.access(store, bytes);
 
   cache_sim_addr_t addr = cache_sim_addr_t(raw_addr, this->sets, this->linesz);
 
   int hit_way_index = check_tag(addr);
+
+  // If cache-hit
   if (likely(hit_way_index >= 0))
   {
     if (store)
       tags[addr.idx][hit_way_index].set_dirty();
     policy->update(addr, hit_way_index);
-    return;
   }
-
-  store ? write_misses++ : read_misses++;
-  if (log)
+  // If cache-miss
+  else
   {
-    std::cerr << name << " "
-              << (store ? "write" : "read") << " miss 0x"
-              << std::hex << addr.to_uint64(this->sets, this->linesz)
-              << std::endl;
-  }
-
-  // Victimize AND insert at 'addr'
-  cache_sim_addr_t victim = victimize(addr);
-
-  if (victim.is_valid() & victim.is_dirty())
-  {
-    if (miss_handler)
+    perf_counter.miss(store);
+    if (log)
     {
-      uint64_t dirty_addr = victim.to_uint64(this->sets, this->linesz);
-      miss_handler->access(dirty_addr, linesz, true);
+      std::cerr << name << " "
+                << (store ? "write" : "read") << " miss 0x"
+                << std::hex << addr.to_uint64(sets, linesz)
+                << std::endl;
     }
-    writebacks++;
+
+    // Victimize AND insert at 'addr'
+    cache_sim_addr_t victim = victimize(addr);
+
+    if (victim.is_valid() && victim.is_dirty())
+    {
+      if (miss_handler)
+      {
+        uint64_t dirty_addr = victim.to_uint64(sets, linesz);
+        miss_handler->access(dirty_addr, linesz, true);
+      }
+      perf_counter.writeback();
+    }
+
+    if (miss_handler)
+      miss_handler->access(addr.to_uint64(sets, linesz), linesz, false);
+
+    if (store)
+      tags[addr.idx][check_tag(addr)].set_dirty();
   }
-
-  if (miss_handler)
-    miss_handler->access(addr.to_uint64(this->sets, this->linesz), linesz, false);
-
-  if (store)
-    tags[addr.idx][check_tag(addr)].set_dirty();
 }
