@@ -34,6 +34,7 @@ riscv_hdrs = \
 	csrs.h \
 	eviction_policies.h \
 	cachesim_addr.h \
+	cachesim_perf_counter.h \
 
 riscv_install_hdrs = mmio_plugin.h
 
@@ -63,6 +64,7 @@ riscv_srcs = \
 	$(riscv_gen_srcs) \
 	eviction_policies.cc \
 	cachesim_addr.cc \
+	cachesim_perf_counter.cc \
 
 riscv_test_srcs =
 
