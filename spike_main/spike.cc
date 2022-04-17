@@ -40,9 +40,9 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --varch=<name>        RISC-V Vector uArch string [default %s]\n", DEFAULT_VARCH);
   fprintf(stderr, "  --pc=<address>        Override ELF entry point\n");
   fprintf(stderr, "  --hartids=<a,b,...>   Explicitly specify hartids, default is 0,1,...\n");
-  fprintf(stderr, "  --ic=<S>:<W>:<B>      Instantiate a cache model with S sets,\n");
-  fprintf(stderr, "  --dc=<S>:<W>:<B>        W ways, and B-byte blocks (with S and\n");
-  fprintf(stderr, "  --l2=<S>:<W>:<B>        B both powers of 2).\n");
+  fprintf(stderr, "  --ic=<S>:<W>:<B>:<P>    Instantiate a cache model with S sets,\n");
+  fprintf(stderr, "  --dc=<S>:<W>:<B>:<P>  W ways, B-byte blocks (with S and B both powers of 2),\n");
+  fprintf(stderr, "  --l2=<S>:<W>:<B>:<P>  and an eviction policy P (e.g., lru, lfsr, fifo, lip, and bip).\n");
   fprintf(stderr, "  --device=<P,B,A>      Attach MMIO plugin device from an --extlib library\n");
   fprintf(stderr, "                          P -- Name of the MMIO plugin\n");
   fprintf(stderr, "                          B -- Base memory address of the device\n");
@@ -345,7 +345,7 @@ int main(int argc, char** argv)
   });
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
-  parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
+  parser.option(0, "l2", 1, [&](const char* s){l2.reset(new cache_sim_t(s, "L2$"));});
   parser.option(0, "log-cache-miss", 0, [&](const char* s){log_cache = true;});
   parser.option(0, "isa", 1, [&](const char* s){cfg.isa = s;});
   parser.option(0, "priv", 1, [&](const char* s){cfg.priv = s;});
