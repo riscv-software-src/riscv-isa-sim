@@ -11,6 +11,7 @@
 #include <boost/asio.hpp>
 #endif
 
+#include "cfg.h"
 #include "debug_module.h"
 #include "devices.h"
 #include "log_file.h"
@@ -31,12 +32,10 @@ class remote_bitbang_t;
 class sim_t : public htif_t, public simif_t
 {
 public:
-  sim_t(const char* isa, const char* priv, const char* varch, size_t _nprocs,
-        bool halted, bool real_time_clint,
-        reg_t initrd_start, reg_t initrd_end, const char* bootargs,
-        reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
+  sim_t(const cfg_t *cfg, bool halted,
+        std::vector<std::pair<reg_t, mem_t*>> mems,
         std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
-        const std::vector<std::string>& args, const std::vector<int> hartids,
+        const std::vector<std::string>& args,
         const debug_module_config_t &dm_config, const char *log_path,
         bool dtb_enabled, const char *dtb_file,
 #ifdef HAVE_BOOST_ASIO
@@ -70,14 +69,13 @@ public:
   void proc_reset(unsigned id);
 
 private:
+  isa_parser_t isa;
+  const cfg_t * const cfg;
   std::vector<std::pair<reg_t, mem_t*>> mems;
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
-  reg_t initrd_start;
-  reg_t initrd_end;
-  const char* bootargs;
-  reg_t start_pc;
+  std::pair<reg_t, reg_t> initrd_range;
   std::string dts;
   std::string dtb;
   std::string dtb_file;

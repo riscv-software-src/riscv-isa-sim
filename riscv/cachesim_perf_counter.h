@@ -15,6 +15,7 @@ private:
   uint64_t write_misses;
   uint64_t bytes_written;
   uint64_t writebacks;
+  uint64_t cleaned;
 public:
   cachesim_perf_counter();
   cachesim_perf_counter(const std::string& name_str);
@@ -23,6 +24,7 @@ public:
   void access(const bool& store, const uint32_t& bytes);
   void miss(const bool& store);
   void writeback();
+  void clean();
   virtual ~cachesim_perf_counter();
 };
 

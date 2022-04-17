@@ -273,7 +273,7 @@ void sim_t::interactive_pc(const std::string& cmd, const std::vector<std::string
     throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
-  int max_xlen = p->get_max_xlen();
+  int max_xlen = p->get_isa().get_max_xlen();
 
   std::ostream out(sout_.rdbuf());
   out << std::hex << std::setfill('0') << "0x" << std::setw(max_xlen/4)
@@ -379,7 +379,7 @@ void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::strin
      throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
-  int max_xlen = p->get_max_xlen();
+  int max_xlen = p->get_isa().get_max_xlen();
 
   std::ostream out(sout_.rdbuf());
   out << std::hex;
@@ -481,7 +481,7 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
 
 void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::string>& args)
 {
-  int max_xlen = procs[0]->get_max_xlen();
+  int max_xlen = procs[0]->get_isa().get_max_xlen();
 
   std::ostream out(sout_.rdbuf());
   out << std::hex << "0x" << std::setfill('0') << std::setw(max_xlen/4)
@@ -541,7 +541,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
     throw trap_interactive();
 
   // mask bits above max_xlen
-  int max_xlen = procs[strtol(args[1].c_str(),NULL,10)]->get_max_xlen();
+  int max_xlen = procs[strtol(args[1].c_str(),NULL,10)]->get_isa().get_max_xlen();
   if (max_xlen == 32) val &= 0xFFFFFFFF;
 
   std::vector<std::string> args2;

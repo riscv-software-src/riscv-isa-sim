@@ -8,6 +8,7 @@
 #include <memory>
 // For access_type:
 #include "memtracer.h"
+#include <cassert>
 
 class processor_t;
 struct state_t;
@@ -61,7 +62,11 @@ typedef std::shared_ptr<csr_t> csr_t_p;
 class basic_csr_t: public csr_t {
  public:
   basic_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
-  virtual reg_t read() const noexcept override;
+
+  virtual reg_t read() const noexcept override {
+    return val;
+  }
+
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -180,8 +185,11 @@ class cause_csr_t: public basic_csr_t {
 class base_status_csr_t: public csr_t {
  public:
   base_status_csr_t(processor_t* const proc, const reg_t addr);
-  // Return true if the specified bits are not 00 (Off)
-  bool enabled(const reg_t which);
+
+  bool field_exists(const reg_t which) {
+    return (sstatus_write_mask & which) != 0;
+  }
+
  protected:
   reg_t adjust_sd(const reg_t val) const noexcept;
   void maybe_flush_tlb(const reg_t newval) noexcept;
@@ -197,10 +205,14 @@ typedef std::shared_ptr<base_status_csr_t> base_status_csr_t_p;
 
 // For vsstatus, which is its own separate architectural register
 // (unlike sstatus)
-class vsstatus_csr_t: public base_status_csr_t {
+class vsstatus_csr_t final: public base_status_csr_t {
  public:
   vsstatus_csr_t(processor_t* const proc, const reg_t addr);
-  virtual reg_t read() const noexcept override;
+
+  reg_t read() const noexcept override {
+    return val;
+  }
+
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -210,21 +222,14 @@ class vsstatus_csr_t: public base_status_csr_t {
 typedef std::shared_ptr<vsstatus_csr_t> vsstatus_csr_t_p;
 
 
-class sstatus_proxy_csr_t: public base_status_csr_t {
- public:
-  sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mstatus);
-  virtual reg_t read() const noexcept override;
- protected:
-  virtual bool unlogged_write(const reg_t val) noexcept override;
- private:
-  csr_t_p mstatus;
-};
-
-
-class mstatus_csr_t: public base_status_csr_t {
+class mstatus_csr_t final: public base_status_csr_t {
  public:
   mstatus_csr_t(processor_t* const proc, const reg_t addr);
-  virtual reg_t read() const noexcept override;
+
+  reg_t read() const noexcept override {
+    return val;
+  }
+
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -247,32 +252,54 @@ class mstatush_csr_t: public csr_t {
 };
 
 
+class sstatus_proxy_csr_t final: public base_status_csr_t {
+ public:
+  sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr, mstatus_csr_t_p mstatus);
+
+  reg_t read() const noexcept override {
+    return mstatus->read() & sstatus_read_mask;
+  }
+
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  mstatus_csr_t_p mstatus;
+};
+
+typedef std::shared_ptr<sstatus_proxy_csr_t> sstatus_proxy_csr_t_p;
+
 class sstatus_csr_t: public virtualized_csr_t {
  public:
-  sstatus_csr_t(processor_t* const proc, base_status_csr_t_p orig, base_status_csr_t_p virt);
+  sstatus_csr_t(processor_t* const proc, sstatus_proxy_csr_t_p orig, vsstatus_csr_t_p virt);
 
   // Set FS, VS, or XS bits to dirty
   void dirty(const reg_t dirties);
   // Return true if the specified bits are not 00 (Off)
   bool enabled(const reg_t which);
  private:
-  base_status_csr_t_p orig_sstatus;
-  base_status_csr_t_p virt_sstatus;
+  sstatus_proxy_csr_t_p orig_sstatus;
+  vsstatus_csr_t_p virt_sstatus;
 };
 
 typedef std::shared_ptr<sstatus_csr_t> sstatus_csr_t_p;
 
 
-class misa_csr_t: public basic_csr_t {
+class misa_csr_t final: public basic_csr_t {
  public:
   misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa);
-  bool extension_enabled(unsigned char ext) const noexcept;
+
+  bool extension_enabled(unsigned char ext) const noexcept {
+    assert(ext >= 'A' && ext <= 'Z');
+    return (read() >> (ext - 'A')) & 1;
+  }
+
   bool extension_enabled_const(unsigned char ext) const noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
   const reg_t max_isa;
   const reg_t write_mask;
+  const reg_t dependency(const reg_t val, const char feature, const char depends_on) const noexcept;
 };
 
 typedef std::shared_ptr<misa_csr_t> misa_csr_t_p;
@@ -436,12 +463,12 @@ class virtualized_satp_csr_t: public virtualized_csr_t {
 };
 
 
-// For minstret, which is always 64 bits, but in RV32 is split into
-// high and low halves. The first class always holds the full 64-bit
-// value.
-class minstret_csr_t: public csr_t {
+// For minstret and mcycle, which are always 64 bits, but in RV32 are
+// split into high and low halves. The first class always holds the
+// full 64-bit value.
+class wide_counter_csr_t: public csr_t {
  public:
-  minstret_csr_t(processor_t* const proc, const reg_t addr);
+  wide_counter_csr_t(processor_t* const proc, const reg_t addr);
   // Always returns full 64-bit value
   virtual reg_t read() const noexcept override;
   void bump(const reg_t howmuch) noexcept;
@@ -453,21 +480,21 @@ class minstret_csr_t: public csr_t {
   reg_t val;
 };
 
-typedef std::shared_ptr<minstret_csr_t> minstret_csr_t_p;
+typedef std::shared_ptr<wide_counter_csr_t> wide_counter_csr_t_p;
 
 
-// A simple proxy to read/write the upper half of minstret
-class minstreth_csr_t: public csr_t {
+// A simple proxy to read/write the upper half of minstret/mcycle
+class counter_top_csr_t: public csr_t {
  public:
-  minstreth_csr_t(processor_t* const proc, const reg_t addr, minstret_csr_t_p minstret);
+  counter_top_csr_t(processor_t* const proc, const reg_t addr, wide_counter_csr_t_p parent);
   virtual reg_t read() const noexcept override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
-  minstret_csr_t_p minstret;
+  wide_counter_csr_t_p parent;
 };
 
-typedef std::shared_ptr<minstreth_csr_t> minstreth_csr_t_p;
+typedef std::shared_ptr<counter_top_csr_t> counter_top_csr_t_p;
 
 
 // For a CSR that is an alias of another
@@ -548,13 +575,10 @@ class tdata1_csr_t: public csr_t {
 
 class tdata2_csr_t: public csr_t {
  public:
-  tdata2_csr_t(processor_t* const proc, const reg_t addr, const size_t count);
+  tdata2_csr_t(processor_t* const proc, const reg_t addr);
   virtual reg_t read() const noexcept override;
-  reg_t read(const size_t idx) const noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
- private:
-  std::vector<reg_t> vals;
 };
 
 // For CSRs that are only writable from debug mode
@@ -595,13 +619,15 @@ class dcsr_csr_t: public csr_t {
 typedef std::shared_ptr<dcsr_csr_t> dcsr_csr_t_p;
 
 
-class float_csr_t: public masked_csr_t {
+class float_csr_t final: public masked_csr_t {
  public:
   float_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
   virtual void verify_permissions(insn_t insn, bool write) const override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
+
+typedef std::shared_ptr<float_csr_t> float_csr_t_p;
 
 
 // For a CSR like FCSR, that is actually a view into multiple

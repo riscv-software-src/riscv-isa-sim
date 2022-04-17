@@ -1,4 +1,4 @@
-require_extension(EXT_XBITMANIP);
+require_extension(EXT_XZBC);
 reg_t a = zext32(RS1), b = zext32(RS2), x = 0;
 for (int i = 0; i < 32; i++)
   if ((b >> i) & 1)

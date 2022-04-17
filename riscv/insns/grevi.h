@@ -5,7 +5,7 @@ require(((shamt == xlen - 8) && (p->extension_enabled(EXT_ZBB) || p->extension_e
   || ((shamt == 7) && p->extension_enabled(EXT_ZBKB)) // rev8.b
   || ((shamt == 8) && p->extension_enabled(EXT_ZPN)) // rev8.h
   || ((shamt == xlen - 1) && p->extension_enabled(EXT_ZPN)) // rev
-  || p->extension_enabled(EXT_XBITMANIP));
+  || p->extension_enabled(EXT_XZBP));
 require(shamt < xlen);
 reg_t x = RS1;
 if (shamt &  1) x = ((x & 0x5555555555555555LL) <<  1) | ((x & 0xAAAAAAAAAAAAAAAALL) >>  1);

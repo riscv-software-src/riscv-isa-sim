@@ -1,6 +1,6 @@
 // Zbb contains orc.b but not general gorci
 require(((SHAMT == 7) && p->extension_enabled(EXT_ZBB))
-  || p->extension_enabled(EXT_XBITMANIP));
+  || p->extension_enabled(EXT_XZBP));
 require(SHAMT < xlen);
 reg_t x = RS1;
 int shamt = SHAMT;

@@ -1,5 +1,5 @@
 require_rv64;
-require_extension(EXT_XBITMANIP);
+require_extension(EXT_XZBF);
 reg_t cfg = RS2 >> 16;
 int len = (cfg >> 8) & 15;
 int off = cfg & 31;

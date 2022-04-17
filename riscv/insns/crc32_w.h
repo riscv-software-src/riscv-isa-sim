@@ -1,4 +1,4 @@
-require_extension(EXT_XBITMANIP);
+require_extension(EXT_XZBR);
 reg_t x = zext_xlen(RS1);
 for (int i = 0; i < 32; i++)
   x = (x >> 1) ^ (0xEDB88320 & ~((x&1)-1));

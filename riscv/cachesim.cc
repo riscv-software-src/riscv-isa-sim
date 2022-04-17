@@ -170,3 +170,26 @@ void cache_sim_t::access(const uint64_t raw_addr, const size_t bytes, const bool
       tags[addr.idx][check_tag(addr)].set_dirty();
   }
 }
+
+void cache_sim_t::clean_invalidate(uint64_t addr, size_t bytes, bool clean, bool inval)
+{
+  cache_sim_addr_t cur_addr = cache_sim_addr_t(addr, this->sets, this->linesz);
+  cache_sim_addr_t end_addr = cache_sim_addr_t(addr+bytes, this->sets, this->linesz);
+  while (cur_addr < end_addr) {
+    int hit_way_index = check_tag(cur_addr);
+    if (likely(hit_way_index >= 0))
+    {
+      if (clean && tags[cur_addr.idx][hit_way_index].is_dirty()) {
+        perf_counter.writeback();
+        perf_counter.clean();
+        tags[cur_addr.idx][hit_way_index].set_clean();
+      }
+
+      if (inval)
+        tags[cur_addr.idx][hit_way_index].set_invalid();
+    }
+    cur_addr.next_cacheline(sets);
+  }
+  if (miss_handler)
+    miss_handler->clean_invalidate(addr, bytes, clean, inval);
+}

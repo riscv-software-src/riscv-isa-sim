@@ -4,7 +4,7 @@
 #define _RISCV_TRAP_H
 
 #include "decode.h"
-#include <stdlib.h>
+#include <cstdio>
 
 struct state_t;
 
@@ -12,7 +12,6 @@ class trap_t
 {
  public:
   trap_t(reg_t which) : which(which) {}
-  virtual const char* name();
   virtual bool has_gva() { return false; }
   virtual bool has_tval() { return false; }
   virtual reg_t get_tval() { return 0; }
@@ -21,6 +20,14 @@ class trap_t
   virtual bool has_tinst() { return false; }
   virtual reg_t get_tinst() { return 0; }
   reg_t cause() { return which; }
+
+  virtual const char* name()
+  {
+    const char* fmt = uint8_t(which) == which ? "trap #%u" : "interrupt #%u";
+    sprintf(_name, fmt, uint8_t(which));
+    return _name;
+  }
+
  private:
   char _name[16];
   reg_t which;

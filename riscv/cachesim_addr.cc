@@ -27,6 +27,20 @@ bool cache_sim_addr_t::operator==(const cache_sim_addr_t &other)
   return (this->valid & other.valid) & (this->tag == other.tag);
 }
 
+bool cache_sim_addr_t::operator<(const cache_sim_addr_t &other)
+{
+  return (this->valid & other.valid) &
+         ((this->tag < other.tag) |
+         ((this->tag == other.tag) & (this->idx < other.idx)));
+}
+
+void cache_sim_addr_t::next_cacheline(const uint32_t& sets)
+{
+  if (this->idx == sets-1)
+    this->tag++;
+  this->idx++;
+}
+
 void cache_sim_addr_t::set_valid()
 {
   this->valid = true;
@@ -37,14 +51,24 @@ bool cache_sim_addr_t::is_valid()
   return this->valid;
 };
 
+void cache_sim_addr_t::set_invalid()
+{
+  this->valid = false;
+};
+
 void cache_sim_addr_t::set_dirty()
 {
-  this->dirty = false;
+  this->dirty = true;
 };
 
 bool cache_sim_addr_t::is_dirty()
 {
   return this->dirty;
+};
+
+void cache_sim_addr_t::set_clean()
+{
+  this->dirty = false;
 };
 
 uint64_t cache_sim_addr_t::to_uint64(const uint32_t& sets, const uint32_t& linesz)

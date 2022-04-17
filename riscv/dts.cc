@@ -3,6 +3,7 @@
 #include "dts.h"
 #include "libfdt.h"
 #include "platform.h"
+#include <cassert>
 #include <iostream>
 #include <sstream>
 #include <signal.h>
@@ -54,8 +55,8 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "      reg = <" << i << ">;\n"
          "      status = \"okay\";\n"
          "      compatible = \"riscv\";\n"
-         "      riscv,isa = \"" << procs[i]->get_isa_string() << "\";\n"
-         "      mmu-type = \"riscv," << (procs[i]->get_max_xlen() <= 32 ? "sv32" : "sv48") << "\";\n"
+         "      riscv,isa = \"" << procs[i]->get_isa().get_isa_string() << "\";\n"
+         "      mmu-type = \"riscv," << (procs[i]->get_isa().get_max_xlen() <= 32 ? "sv32" : "sv57") << "\";\n"
          "      riscv,pmpregions = <16>;\n"
          "      riscv,pmpgranularity = <4>;\n"
          "      clock-frequency = <" << cpu_hz << ">;\n"
@@ -306,8 +307,10 @@ int fdt_parse_pmp_alignment(void *fdt, int cpu_offset, reg_t *pmp_align)
   return 0;
 }
 
-int fdt_parse_mmu_type(void *fdt, int cpu_offset, char *mmu_type)
+int fdt_parse_mmu_type(void *fdt, int cpu_offset, const char **mmu_type)
 {
+  assert(mmu_type);
+
   int len, rc;
   const void *prop;
 
@@ -318,7 +321,7 @@ int fdt_parse_mmu_type(void *fdt, int cpu_offset, char *mmu_type)
   if (!prop || !len)
     return -EINVAL;
 
-  strcpy(mmu_type, (char *)prop);
+  *mmu_type = (const char *)prop;
 
   return 0;
 }

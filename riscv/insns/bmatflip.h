@@ -1,5 +1,5 @@
 require_rv64;
-require_extension(EXT_XBITMANIP);
+require_extension(EXT_XZBM);
 reg_t x = RS1;
 for (int i = 0; i < 3; i++) {
 	x = (x & 0xFFFF00000000FFFFLL) | ((x & 0x0000FFFF00000000LL) >> 16) | ((x & 0x00000000FFFF0000LL) << 16);

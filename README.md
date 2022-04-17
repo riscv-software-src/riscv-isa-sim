@@ -33,6 +33,7 @@ Spike supports the following RISC-V ISA features:
   - Svnapot extension, v1.0
   - Svpbmt extension, v1.0
   - Svinval extension, v1.0
+  - CMO extension, v1.0
   - Debug v0.14
 
 As a Spike extension, the remainder of the proposed
@@ -40,6 +41,14 @@ As a Spike extension, the remainder of the proposed
 is provided under the Spike-custom extension name _Xbitmanip_.
 These instructions (and, of course, the extension name) are not RISC-V
 standards.
+
+These proposed bit-manipulation extensions can be split into further
+groups: Zbp, Zbs, Zbe, Zbf, Zbc, Zbm, Zbr, Zbt. Note that Zbc is
+ratified, but the original proposal contained some extra instructions
+(64-bit carryless multiplies) which are captured here.
+
+To enable these extensions individually, use the Spike-custom
+extension names _XZbp_, _XZbs_, _XZbc_, and so on.
 
 Versioning and APIs
 -------------------

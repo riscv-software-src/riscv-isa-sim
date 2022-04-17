@@ -11,6 +11,7 @@
 #include "processor.h"
 #include "memtracer.h"
 #include "byteorder.h"
+#include "triggers.h"
 #include <stdlib.h>
 #include <vector>
 
@@ -35,19 +36,6 @@ struct icache_entry_t {
 struct tlb_entry_t {
   char* host_offset;
   reg_t target_offset;
-};
-
-class trigger_matched_t
-{
-  public:
-    trigger_matched_t(int index,
-        trigger_operation_t operation, reg_t address, reg_t data) :
-      index(index), operation(operation), address(address), data(data) {}
-
-    int index;
-    trigger_operation_t operation;
-    reg_t address;
-    reg_t data;
 };
 
 // this class implements a processor's port into the virtual memory system.
@@ -111,7 +99,7 @@ public:
       if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
         type##_t data = from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
         if (!matched_trigger) { \
-          matched_trigger = trigger_exception(OPERATION_LOAD, addr, data); \
+          matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, data); \
           if (matched_trigger) \
             throw *matched_trigger; \
         } \
@@ -159,52 +147,60 @@ public:
 
   // template for functions that store an aligned value to memory
   #define store_func(type, prefix, xlate_flags) \
-    void prefix##_##type(reg_t addr, type##_t val) { \
+    void prefix##_##type(reg_t addr, type##_t val, bool actually_store=true) {   \
       if (unlikely(addr & (sizeof(type##_t)-1))) \
         return misaligned_store(addr, val, sizeof(type##_t), xlate_flags); \
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
       if ((xlate_flags) == 0 && likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \
-        if (proc) WRITE_MEM(addr, val, size); \
-        *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
+        if (actually_store) { \
+          if (proc) WRITE_MEM(addr, val, size); \
+          *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
+        } \
       } \
       else if ((xlate_flags) == 0 && unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
-        if (!matched_trigger) { \
-          matched_trigger = trigger_exception(OPERATION_STORE, addr, val); \
-          if (matched_trigger) \
-            throw *matched_trigger; \
+        if (actually_store) { \
+          if (!matched_trigger) { \
+            matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, val); \
+            if (matched_trigger) \
+              throw *matched_trigger; \
+          } \
+          if (proc) WRITE_MEM(addr, val, size); \
+          *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
         } \
-        if (proc) WRITE_MEM(addr, val, size); \
-        *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
       } \
       else { \
         target_endian<type##_t> target_val = to_target(val); \
-        store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&target_val, (xlate_flags)); \
-        if (proc) WRITE_MEM(addr, val, size); \
+        store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&target_val, (xlate_flags), actually_store); \
+        if (actually_store && proc) WRITE_MEM(addr, val, size); \
       } \
   }
+
+  // AMO/Zicbom faults should be reported as store faults
+  #define convert_load_traps_to_store_traps(BODY) \
+    try { \
+      BODY \
+    } catch (trap_load_address_misaligned& t) { \
+      /* Misaligned fault will not be triggered by Zicbom */ \
+      throw trap_store_address_misaligned(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
+    } catch (trap_load_page_fault& t) { \
+      throw trap_store_page_fault(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
+    } catch (trap_load_access_fault& t) { \
+      throw trap_store_access_fault(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
+    } catch (trap_load_guest_page_fault& t) { \
+      throw trap_store_guest_page_fault(t.get_tval(), t.get_tval2(), t.get_tinst()); \
+    }
 
   // template for functions that perform an atomic memory operation
   #define amo_func(type) \
     template<typename op> \
     type##_t amo_##type(reg_t addr, op f) { \
-      try { \
+      convert_load_traps_to_store_traps({ \
+        store_##type(addr, 0, false); \
         auto lhs = load_##type(addr, true); \
         store_##type(addr, f(lhs)); \
         return lhs; \
-      } catch (trap_load_address_misaligned& t) { \
-        /* AMO faults should be reported as store faults */ \
-        throw trap_store_address_misaligned(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
-      } catch (trap_load_page_fault& t) { \
-        /* AMO faults should be reported as store faults */ \
-        throw trap_store_page_fault(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
-      } catch (trap_load_access_fault& t) { \
-        /* AMO faults should be reported as store faults */ \
-        throw trap_store_access_fault(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
-      } catch (trap_load_guest_page_fault& t) { \
-        /* AMO faults should be reported as store faults */ \
-        throw trap_store_guest_page_fault(t.get_tval(), t.get_tval2(), t.get_tinst()); \
-      } \
+      }) \
     }
 
   void store_float128(reg_t addr, float128_t val)
@@ -241,6 +237,25 @@ public:
   // perform an atomic memory operation at an aligned address
   amo_func(uint32)
   amo_func(uint64)
+
+  void cbo_zero(reg_t addr) {
+    auto base = addr & ~(blocksz - 1);
+    for (size_t offset = 0; offset < blocksz; offset += 1)
+      store_uint8(base + offset, 0);
+  }
+
+  void clean_inval(reg_t addr, bool clean, bool inval) {
+    convert_load_traps_to_store_traps({
+      reg_t paddr = addr & ~(blocksz - 1);
+      paddr = translate(paddr, blocksz, LOAD, 0);
+      if (auto host_addr = sim->addr_to_mem(paddr)) {
+        if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
+          tracer.clean_invalidate(paddr, blocksz, clean, inval);
+      } else {
+        throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+      }
+    })
+  }
 
   inline void yield_load_reservation()
   {
@@ -389,12 +404,18 @@ public:
     return target_big_endian? target_endian<T>::to_be(n) : target_endian<T>::to_le(n);
   }
 
+  void set_cache_blocksz(uint64_t size)
+  {
+    blocksz = size;
+  }
+
 private:
   simif_t* sim;
   processor_t* proc;
   memtracer_list_t tracer;
   reg_t load_reservation_address;
   uint16_t fetch_temp;
+  uint64_t blocksz;
 
   // implement an instruction cache for simulator performance
   icache_entry_t icache[ICACHE_ENTRIES];
@@ -422,7 +443,7 @@ private:
   // handle uncommon cases: TLB misses, page faults, MMIO
   tlb_entry_t fetch_slow_path(reg_t addr);
   void load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags);
-  void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags);
+  void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store);
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
   bool mmio_ok(reg_t addr, access_type type);
@@ -441,9 +462,10 @@ private:
     }
     if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
       target_endian<uint16_t>* ptr = (target_endian<uint16_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
-      int match = proc->trigger_match(OPERATION_EXECUTE, addr, from_target(*ptr));
-      if (match >= 0) {
-        throw trigger_matched_t(match, OPERATION_EXECUTE, addr, from_target(*ptr));
+      triggers::action_t action;
+      auto match = proc->TM.memory_access_match(&action, triggers::OPERATION_EXECUTE, addr, from_target(*ptr));
+      if (match != triggers::MATCH_NONE) {
+        throw triggers::matched_t(triggers::OPERATION_EXECUTE, addr, from_target(*ptr), action);
       }
     }
     return result;
@@ -453,19 +475,20 @@ private:
     return (uint16_t*)(translate_insn_addr(addr).host_offset + addr);
   }
 
-  inline trigger_matched_t *trigger_exception(trigger_operation_t operation,
+  inline triggers::matched_t *trigger_exception(triggers::operation_t operation,
       reg_t address, reg_t data)
   {
     if (!proc) {
       return NULL;
     }
-    int match = proc->trigger_match(operation, address, data);
-    if (match == -1)
+    triggers::action_t action;
+    auto match = proc->TM.memory_access_match(&action, operation, address, data);
+    if (match == triggers::MATCH_NONE)
       return NULL;
-    if (proc->state.mcontrol[match].timing == 0) {
-      throw trigger_matched_t(match, operation, address, data);
+    if (match == triggers::MATCH_FIRE_BEFORE) {
+      throw triggers::matched_t(operation, address, data, action);
     }
-    return new trigger_matched_t(match, operation, address, data);
+    return new triggers::matched_t(operation, address, data, action);
   }
 
   reg_t pmp_homogeneous(reg_t addr, reg_t len);
@@ -480,7 +503,7 @@ private:
   bool check_triggers_load;
   bool check_triggers_store;
   // The exception describing a matched trigger, or NULL.
-  trigger_matched_t *matched_trigger;
+  triggers::matched_t *matched_trigger;
 
   friend class processor_t;
 };
@@ -523,6 +546,7 @@ inline vm_info decode_vm_info(int xlen, bool stage2, reg_t prv, reg_t satp)
       case HGATP_MODE_OFF: return {0, 0, 0, 0, 0};
       case HGATP_MODE_SV39X4: return {3, 9, 2, 8, (satp & HGATP64_PPN) << PGSHIFT};
       case HGATP_MODE_SV48X4: return {4, 9, 2, 8, (satp & HGATP64_PPN) << PGSHIFT};
+      case HGATP_MODE_SV57X4: return {5, 9, 2, 8, (satp & HGATP64_PPN) << PGSHIFT};
       default: abort();
     }
   } else {

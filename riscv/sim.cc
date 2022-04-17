@@ -6,6 +6,7 @@
 #include "remote_bitbang.h"
 #include "byteorder.h"
 #include "platform.h"
+#include "libfdt.h"
 #include <fstream>
 #include <map>
 #include <iostream>
@@ -27,13 +28,10 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-sim_t::sim_t(const char* isa, const char* priv, const char* varch,
-             size_t nprocs, bool halted, bool real_time_clint,
-             reg_t initrd_start, reg_t initrd_end, const char* bootargs,
-             reg_t start_pc, std::vector<std::pair<reg_t, mem_t*>> mems,
+sim_t::sim_t(const cfg_t *cfg, bool halted,
+             std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
              const std::vector<std::string>& args,
-             std::vector<int> const hartids,
              const debug_module_config_t &dm_config,
              const char *log_path,
              bool dtb_enabled, const char *dtb_file,
@@ -42,13 +40,11 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
 #endif
              FILE *cmd_file) // needed for command line option --cmd
   : htif_t(args),
+    isa(cfg->isa(), cfg->priv()),
+    cfg(cfg),
     mems(mems),
     plugin_devices(plugin_devices),
-    procs(std::max(nprocs, size_t(1))),
-    initrd_start(initrd_start),
-    initrd_end(initrd_end),
-    bootargs(bootargs),
-    start_pc(start_pc),
+    procs(std::max(cfg->nprocs(), size_t(1))),
     dtb_file(dtb_file ? dtb_file : ""),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
@@ -80,29 +76,25 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
 
   debug_mmu = new mmu_t(this, NULL);
 
-  if (! (hartids.empty() || hartids.size() == nprocs)) {
-      std::cerr << "Number of specified hartids ("
-                << hartids.size()
-                << ") doesn't match number of processors ("
-                << nprocs << ").\n";
-      exit(1);
-  }
-
-  for (size_t i = 0; i < nprocs; i++) {
-    int hart_id = hartids.empty() ? i : hartids[i];
-    procs[i] = new processor_t(isa, priv, varch, this, hart_id, halted,
+  for (size_t i = 0; i < cfg->nprocs(); i++) {
+    procs[i] = new processor_t(&isa, cfg->varch(), this, cfg->hartids()[i], halted,
                                log_file.get(), sout_);
   }
 
   make_dtb();
 
   void *fdt = (void *)dtb.c_str();
-  //handle clic
-  clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, real_time_clint));
+
+  // Only make a CLINT (Core-Local INTerrupt controller) if one is specified in
+  // the device tree configuration.
+  //
+  // This isn't *quite* as general as we could get (because you might have one
+  // that's not bus-accessible), but it should handle the normal use cases. In
+  // particular, the default device tree configuration that you get without
+  // setting the dtb_file argument has one.
   reg_t clint_base;
-  if (fdt_parse_clint(fdt, &clint_base, "riscv,clint0")) {
-    bus.add_device(CLINT_BASE, clint.get());
-  } else {
+  if (fdt_parse_clint(fdt, &clint_base, "riscv,clint0") == 0) {
+    clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, cfg->real_time_clint()));
     bus.add_device(clint_base, clint.get());
   }
 
@@ -116,13 +108,23 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
   for (cpu_offset = fdt_get_first_subnode(fdt, cpu_offset); cpu_offset >= 0;
        cpu_offset = fdt_get_next_subnode(fdt, cpu_offset)) {
 
-    if (cpu_idx >= nprocs)
+    if (cpu_idx >= nprocs())
       break;
 
     //handle pmp
     reg_t pmp_num = 0, pmp_granularity = 0;
     if (fdt_parse_pmp_num(fdt, cpu_offset, &pmp_num) == 0) {
-      procs[cpu_idx]->set_pmp_num(pmp_num);
+      if (pmp_num <= 64) {
+        procs[cpu_idx]->set_pmp_num(pmp_num);
+      } else {
+        std::cerr << "core ("
+                  << cpu_idx
+                  << ") doesn't have valid 'riscv,pmpregions'"
+                  << pmp_num << ").\n";
+        exit(1);
+      }
+    } else {
+      procs[cpu_idx]->set_pmp_num(0);
     }
 
     if (fdt_parse_pmp_alignment(fdt, cpu_offset, &pmp_granularity) == 0) {
@@ -130,8 +132,8 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
     }
 
     //handle mmu-type
-    char mmu_type[256] = "";
-    rc = fdt_parse_mmu_type(fdt, cpu_offset, mmu_type);
+    const char *mmu_type;
+    rc = fdt_parse_mmu_type(fdt, cpu_offset, &mmu_type);
     if (rc == 0) {
       procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
       if (strncmp(mmu_type, "riscv,sv32", strlen("riscv,sv32")) == 0) {
@@ -140,25 +142,29 @@ sim_t::sim_t(const char* isa, const char* priv, const char* varch,
         procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV39);
       } else if (strncmp(mmu_type, "riscv,sv48", strlen("riscv,sv48")) == 0) {
         procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV48);
+      } else if (strncmp(mmu_type, "riscv,sv57", strlen("riscv,sv57")) == 0) {
+        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV57);
       } else if (strncmp(mmu_type, "riscv,sbare", strlen("riscv,sbare")) == 0) {
         //has been set in the beginning
       } else {
         std::cerr << "core ("
-                  << hartids.size()
-                  << ") doesn't have valid 'mmu-type'"
+                  << cpu_idx
+                  << ") has an invalid 'mmu-type': "
                   << mmu_type << ").\n";
         exit(1);
       }
+    } else {
+      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
     }
 
     cpu_idx++;
   }
 
-  if (cpu_idx != nprocs) {
+  if (cpu_idx != nprocs()) {
       std::cerr << "core number in dts ("
                 <<  cpu_idx
                 << ") doesn't match it in command line ("
-                << nprocs << ").\n";
+                << nprocs() << ").\n";
       exit(1);
   }
 }
@@ -213,7 +219,7 @@ void sim_t::step(size_t n)
       procs[current_proc]->get_mmu()->yield_load_reservation();
       if (++current_proc == procs.size()) {
         current_proc = 0;
-        clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
+        if (clint) clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
       }
 
       host->switch_to();
@@ -293,8 +299,23 @@ void sim_t::make_dtb()
 
     dtb = strstream.str();
   } else {
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, bootargs, procs, mems);
+    std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds();
+    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
+                   initrd_bounds.first, initrd_bounds.second,
+                   cfg->bootargs(), procs, mems);
     dtb = dts_compile(dts);
+  }
+
+  int fdt_code = fdt_check_header(dtb.c_str());
+  if (fdt_code) {
+    std::cerr << "Failed to read DTB from ";
+    if (dtb_file.empty()) {
+      std::cerr << "auto-generated DTS string";
+    } else {
+      std::cerr << "`" << dtb_file << "'";
+    }
+    std::cerr << ": " << fdt_strerror(fdt_code) << ".\n";
+    exit(-1);
   }
 }
 
@@ -302,7 +323,7 @@ void sim_t::set_rom()
 {
   const int reset_vec_size = 8;
 
-  start_pc = start_pc == reg_t(-1) ? get_entry_point() : start_pc;
+  reg_t start_pc = cfg->start_pc.value_or(get_entry_point());
 
   uint32_t reset_vec[reset_vec_size] = {
     0x297,                                      // auipc  t0,0x0
@@ -334,23 +355,6 @@ void sim_t::set_rom()
   }
 
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
-
-  std::string dtb;
-  if (!dtb_file.empty()) {
-    std::ifstream fin(dtb_file.c_str(), std::ios::binary);
-    if (!fin.good()) {
-      std::cerr << "can't find dtb file: " << dtb_file << std::endl;
-      exit(-1);
-    }
-
-    std::stringstream strstream;
-    strstream << fin.rdbuf();
-
-    dtb = strstream.str();
-  } else {
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, initrd_start, initrd_end, bootargs, procs, mems);
-    dtb = dts_compile(dts);
-  }
 
   rom.insert(rom.end(), dtb.begin(), dtb.end());
   const int align = 0x1000;

@@ -12,6 +12,7 @@ cachesim_perf_counter::cachesim_perf_counter()
   write_misses   = 0;
   bytes_written  = 0;
   writebacks     = 0;
+  cleaned        = 0;
 }
 
 cachesim_perf_counter::cachesim_perf_counter(const cachesim_perf_counter& perf):
@@ -52,6 +53,11 @@ void cachesim_perf_counter::writeback()
   writebacks++;
 }
 
+void cachesim_perf_counter::clean()
+{
+  cleaned++;
+}
+
 cachesim_perf_counter::~cachesim_perf_counter()
 {
   if((read_accesses+write_accesses) > 0)
@@ -65,6 +71,7 @@ cachesim_perf_counter::~cachesim_perf_counter()
     std::cout << name << "\tRead Misses:\t"    << read_misses    << std::endl;
     std::cout << name << "\tWrite Misses:\t"   << write_misses   << std::endl;
     std::cout << name << "\tWritebacks:\t"     << writebacks     << std::endl;
+    std::cout << name << "\tLines cleaned:\t"  << cleaned        << std::endl;
     std::cout << name << "\tMiss Rate:\t"      << mr << '%'      << std::endl;
   }
 }

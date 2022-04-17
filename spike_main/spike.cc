@@ -1,5 +1,6 @@
 // See LICENSE for license details.
 
+#include "cfg.h"
 #include "sim.h"
 #include "mmu.h"
 #include "remote_bitbang.h"
@@ -72,6 +73,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --dm-no-abstract-csr  Debug module won't support abstract to authenticate\n");
   fprintf(stderr, "  --dm-no-halt-groups   Debug module won't support halt groups\n");
   fprintf(stderr, "  --dm-no-impebreak     Debug module won't support implicit ebreak in program buffer\n");
+  fprintf(stderr, "  --blocksz=<size>      Cache block size (B) for CMO operations(powers of 2) [default 64]\n");
 
   exit(exit_code);
 }
@@ -105,35 +107,33 @@ static void read_file_bytes(const char *filename,size_t fileoff,
   mem->store(memoff, read_sz, (uint8_t*)&read_buf[0]);
 }
 
-bool sort_mem_region(const std::pair<reg_t, mem_t*> &a,
-                       const std::pair<reg_t, mem_t*> &b)
+bool sort_mem_region(const mem_cfg_t &a, const mem_cfg_t &b)
 {
-  if (a.first == b.first)
-    return (a.second->size() < b.second->size());
+  if (a.base == b.base)
+    return (a.size < b.size);
   else
-    return (a.first < b.first);
+    return (a.base < b.base);
 }
 
-void merge_overlapping_memory_regions(std::vector<std::pair<reg_t, mem_t*>>& mems)
+void merge_overlapping_memory_regions(std::vector<mem_cfg_t> &mems)
 {
   // check the user specified memory regions and merge the overlapping or
   // eliminate the containing parts
-  std::sort(mems.begin(), mems.end(), sort_mem_region);
-  std::vector<std::pair<reg_t, mem_t*>>::iterator it = mems.begin() + 1;
+  assert(!mems.empty());
 
-  while (it != mems.end()) {
-    reg_t start = prev(it)->first;
-    reg_t end = prev(it)->first + prev(it)->second->size();
-    reg_t start2 = it->first;
-    reg_t end2 = it->first + it->second->size();
+  std::sort(mems.begin(), mems.end(), sort_mem_region);
+  for (auto it = mems.begin() + 1; it != mems.end(); ) {
+    reg_t start = prev(it)->base;
+    reg_t end = prev(it)->base + prev(it)->size;
+    reg_t start2 = it->base;
+    reg_t end2 = it->base + it->size;
 
     //contains -> remove
     if (start2 >= start && end2 <= end) {
       it = mems.erase(it);
-    //parital overlapped -> extend
+    //partial overlapped -> extend
     } else if (start2 >= start && start2 < end) {
-      delete prev(it)->second;
-      prev(it)->second = new mem_t(std::max(end, end2) - start);
+      prev(it)->size = std::max(end, end2) - start;
       it = mems.erase(it);
     // no overlapping -> keep it
     } else {
@@ -142,8 +142,10 @@ void merge_overlapping_memory_regions(std::vector<std::pair<reg_t, mem_t*>>& mem
   }
 }
 
-static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
+static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
 {
+  std::vector<mem_cfg_t> res;
+
   // handle legacy mem argument
   char* p;
   auto mb = strtoull(arg, &p, 0);
@@ -151,11 +153,11 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
     reg_t size = reg_t(mb) << 20;
     if (size != (size_t)size)
       throw std::runtime_error("Size would overflow size_t");
-    return std::vector<std::pair<reg_t, mem_t*>>(1, std::make_pair(reg_t(DRAM_BASE), new mem_t(size)));
+    res.push_back(mem_cfg_t(reg_t(DRAM_BASE), size));
+    return res;
   }
 
   // handle base/size tuples
-  std::vector<std::pair<reg_t, mem_t*>> res;
   while (true) {
     auto base = strtoull(arg, &p, 0);
     if (!*p || *p != ':')
@@ -178,7 +180,7 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
               base0, base0 + size0 - 1, long(PGSIZE / 1024), base, base + size - 1);
     }
 
-    res.push_back(std::make_pair(reg_t(base), new mem_t(size)));
+    res.push_back(mem_cfg_t(reg_t(base), reg_t(size)));
     if (!*p)
       break;
     if (*p != ',')
@@ -187,7 +189,18 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const char* arg)
   }
 
   merge_overlapping_memory_regions(res);
+
   return res;
+}
+
+static std::vector<std::pair<reg_t, mem_t*>> make_mems(const std::vector<mem_cfg_t> &layout)
+{
+  std::vector<std::pair<reg_t, mem_t*>> mems;
+  mems.reserve(layout.size());
+  for (const auto &cfg : layout) {
+    mems.push_back(std::make_pair(cfg.base, new mem_t(cfg.size)));
+  }
+  return mems;
 }
 
 static unsigned long atoul_safe(const char* s)
@@ -207,6 +220,21 @@ static unsigned long atoul_nonzero_safe(const char* s)
   return res;
 }
 
+static std::vector<int> parse_hartids(const char *s)
+{
+  std::string const str(s);
+  std::stringstream stream(str);
+  std::vector<int> hartids;
+
+  int n;
+  while (stream >> n) {
+    hartids.push_back(n);
+    if (stream.peek() == ',') stream.ignore();
+  }
+
+  return hartids;
+}
+
 int main(int argc, char** argv)
 {
   bool debug = false;
@@ -216,15 +244,8 @@ int main(int argc, char** argv)
   bool socket = false;  // command line option -s
   bool dump_dts = false;
   bool dtb_enabled = true;
-  bool real_time_clint = false;
-  size_t nprocs = 1;
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
-  size_t initrd_size;
-  reg_t initrd_start = 0, initrd_end = 0;
-  const char* bootargs = NULL;
-  reg_t start_pc = reg_t(-1);
-  std::vector<std::pair<reg_t, mem_t*>> mems;
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
   std::unique_ptr<icache_sim_t> ic;
   std::unique_ptr<dcache_sim_t> dc;
@@ -234,13 +255,11 @@ int main(int argc, char** argv)
   const char *log_path = nullptr;
   std::vector<std::function<extension_t*()>> extensions;
   const char* initrd = NULL;
-  const char* isa = DEFAULT_ISA;
-  const char* priv = DEFAULT_PRIV;
-  const char* varch = DEFAULT_VARCH;
   const char* dtb_file = NULL;
   uint16_t rbb_port = 0;
   bool use_rbb = false;
   unsigned dmi_rti = 0;
+  reg_t blocksz = 64;
   debug_module_config_t dm_config = {
     .progbufsize = 2,
     .max_sba_data_width = 0,
@@ -251,19 +270,16 @@ int main(int argc, char** argv)
     .support_haltgroups = true,
     .support_impebreak = true
   };
-  std::vector<int> hartids;
+  cfg_arg_t<size_t> nprocs(1);
 
-  auto const hartids_parser = [&](const char *s) {
-    std::string const str(s);
-    std::stringstream stream(str);
-
-    int n;
-    while (stream >> n)
-    {
-      hartids.push_back(n);
-      if (stream.peek() == ',') stream.ignore();
-    }
-  };
+  cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0),
+            /*default_bootargs=*/nullptr,
+            /*default_isa=*/DEFAULT_ISA,
+            /*default_priv=*/DEFAULT_PRIV,
+            /*default_varch=*/DEFAULT_VARCH,
+            /*default_mem_layout=*/parse_mem_layout("2048"),
+            /*default_hartids=*/std::vector<int>(),
+            /*default_real_time_clint=*/false);
 
   auto const device_parser = [&plugin_devices](const char *s) {
     const std::string str(s);
@@ -318,19 +334,22 @@ int main(int argc, char** argv)
   parser.option('s', 0, 0, [&](const char* s){socket = true;});
 #endif
   parser.option('p', 0, 1, [&](const char* s){nprocs = atoul_nonzero_safe(s);});
-  parser.option('m', 0, 1, [&](const char* s){mems = make_mems(s);});
+  parser.option('m', 0, 1, [&](const char* s){cfg.mem_layout = parse_mem_layout(s);});
   // I wanted to use --halted, but for some reason that doesn't work.
   parser.option('H', 0, 0, [&](const char* s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
-  parser.option(0, "pc", 1, [&](const char* s){start_pc = strtoull(s, 0, 0);});
-  parser.option(0, "hartids", 1, hartids_parser);
+  parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc = strtoull(s, 0, 0);});
+  parser.option(0, "hartids", 1, [&](const char* s){
+    cfg.hartids = parse_hartids(s);
+    cfg.explicit_hartids = true;
+  });
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(new cache_sim_t(s, "L2$"));});
   parser.option(0, "log-cache-miss", 0, [&](const char* s){log_cache = true;});
-  parser.option(0, "isa", 1, [&](const char* s){isa = s;});
-  parser.option(0, "priv", 1, [&](const char* s){priv = s;});
-  parser.option(0, "varch", 1, [&](const char* s){varch = s;});
+  parser.option(0, "isa", 1, [&](const char* s){cfg.isa = s;});
+  parser.option(0, "priv", 1, [&](const char* s){cfg.priv = s;});
+  parser.option(0, "varch", 1, [&](const char* s){cfg.varch = s;});
   parser.option(0, "device", 1, device_parser);
   parser.option(0, "extension", 1, [&](const char* s){extensions.push_back(find_extension(s));});
   parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
@@ -338,8 +357,8 @@ int main(int argc, char** argv)
   parser.option(0, "dtb", 1, [&](const char *s){dtb_file = s;});
   parser.option(0, "kernel", 1, [&](const char* s){kernel = s;});
   parser.option(0, "initrd", 1, [&](const char* s){initrd = s;});
-  parser.option(0, "bootargs", 1, [&](const char* s){bootargs = s;});
-  parser.option(0, "real-time-clint", 0, [&](const char *s){real_time_clint = true;});
+  parser.option(0, "bootargs", 1, [&](const char* s){cfg.bootargs = s;});
+  parser.option(0, "real-time-clint", 0, [&](const char *s){cfg.real_time_clint = true;});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
     if (lib == NULL) {
@@ -376,16 +395,24 @@ int main(int argc, char** argv)
         exit(-1);
      }
   });
+  parser.option(0, "blocksz", 1, [&](const char* s){
+    blocksz = strtoull(s, 0, 0);
+    if (((blocksz & (blocksz - 1))) != 0) {
+      fprintf(stderr, "--blocksz should be power of 2\n");
+      exit(-1);
+    }
+  });
 
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
-  if (mems.empty())
-    mems = make_mems("2048");
 
   if (!*argv1)
     help();
 
+  std::vector<std::pair<reg_t, mem_t*>> mems = make_mems(cfg.mem_layout());
+
   if (kernel && check_file_exists(kernel)) {
+    const char *isa = cfg.isa();
     kernel_size = get_file_size(kernel);
     if (isa[2] == '6' && isa[3] == '4')
       kernel_offset = 0x200000;
@@ -400,11 +427,12 @@ int main(int argc, char** argv)
   }
 
   if (initrd && check_file_exists(initrd)) {
-    initrd_size = get_file_size(initrd);
+    size_t initrd_size = get_file_size(initrd);
     for (auto& m : mems) {
       if (initrd_size && (initrd_size + 0x1000) < m.second->size()) {
-         initrd_end = m.first + m.second->size() - 0x1000;
-         initrd_start = initrd_end - initrd_size;
+         reg_t initrd_end = m.first + m.second->size() - 0x1000;
+         reg_t initrd_start = initrd_end - initrd_size;
+         cfg.initrd_bounds = std::make_pair(initrd_start, initrd_end);
          read_file_bytes(initrd, 0, m.second, initrd_start - m.first, initrd_size);
          break;
       }
@@ -434,9 +462,28 @@ int main(int argc, char** argv)
   }
 #endif
 
-  sim_t s(isa, priv, varch, nprocs, halted, real_time_clint,
-      initrd_start, initrd_end, bootargs, start_pc, mems, plugin_devices, htif_args,
-      std::move(hartids), dm_config, log_path, dtb_enabled, dtb_file,
+  if (cfg.explicit_hartids) {
+    if (nprocs.overridden() && (nprocs() != cfg.nprocs())) {
+      std::cerr << "Number of specified hartids ("
+                << cfg.nprocs()
+                << ") doesn't match specified number of processors ("
+                << nprocs() << ").\n";
+      exit(1);
+    }
+  } else {
+    // Set default set of hartids based on nprocs, but don't set the
+    // explicit_hartids flag (which means that downstream code can know that
+    // we've only set the number of harts, not explicitly chosen their IDs).
+    std::vector<int> default_hartids;
+    default_hartids.reserve(nprocs());
+    for (size_t i = 0; i < nprocs(); ++i) {
+      default_hartids.push_back(i);
+    }
+    cfg.hartids = default_hartids;
+  }
+
+  sim_t s(&cfg, halted,
+      mems, plugin_devices, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
 #ifdef HAVE_BOOST_ASIO
       io_service_ptr, acceptor_ptr,
 #endif
@@ -458,12 +505,13 @@ int main(int argc, char** argv)
   if (dc && l2) dc->set_miss_handler(&*l2);
   if (ic) ic->set_log(log_cache);
   if (dc) dc->set_log(log_cache);
-  for (size_t i = 0; i < nprocs; i++)
+  for (size_t i = 0; i < cfg.nprocs(); i++)
   {
     if (ic) s.get_core(i)->get_mmu()->register_memtracer(&*ic);
     if (dc) s.get_core(i)->get_mmu()->register_memtracer(&*dc);
     for (auto e : extensions)
       s.get_core(i)->register_extension(e());
+    s.get_core(i)->get_mmu()->set_cache_blocksz(blocksz);
   }
 
   s.set_debug(debug);
