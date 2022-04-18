@@ -1,6 +1,5 @@
 #include "dtm.h"
 #include "debug_defines.h"
-#include "encoding.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>

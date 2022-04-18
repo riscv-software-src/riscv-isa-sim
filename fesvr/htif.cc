@@ -241,18 +241,19 @@ int htif_t::run()
       bad_address("accessing tohost", t.get_tval());
     }
 
-    if (tohost != 0) {
-      try {
+    try {
+      if (tohost != 0) {
         command_t cmd(mem, tohost, fromhost_callback);
         device_list.handle_command(cmd);
-        device_list.tick();
-      } catch (mem_trap_t& t) {
-        std::stringstream tohost_hex;
-        tohost_hex << std::hex << tohost;
-        bad_address("host was accessing memory on behalf of target (tohost = 0x" + tohost_hex.str() + ")", t.get_tval());
+      } else {
+        idle();
       }
-    } else {
-      idle();
+
+      device_list.tick();
+    } catch (mem_trap_t& t) {
+      std::stringstream tohost_hex;
+      tohost_hex << std::hex << tohost;
+      bad_address("host was accessing memory on behalf of target (tohost = 0x" + tohost_hex.str() + ")", t.get_tval());
     }
 
     try {
