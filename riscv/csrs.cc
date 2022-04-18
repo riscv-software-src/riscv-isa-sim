@@ -117,7 +117,9 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->n_pmp == 0)
     return false;
 
-  bool locked = cfg & PMP_L;
+  bool lock_bypass = state->mseccfg->get_rlb();  
+  bool locked = (cfg & PMP_L) && !lock_bypass;
+
   if (pmpidx < proc->n_pmp && !locked && !next_locked_and_tor()) {
     this->val = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
   }
@@ -129,7 +131,8 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
 
 bool pmpaddr_csr_t::next_locked_and_tor() const noexcept {
   if (pmpidx+1 >= state->max_pmp) return false;  // this is the last entry
-  bool next_locked = state->pmpaddr[pmpidx+1]->cfg & PMP_L;
+  bool lock_bypass = state->mseccfg->get_rlb();
+  bool next_locked = (state->pmpaddr[pmpidx+1]->cfg & PMP_L) && !lock_bypass;
   bool next_tor = (state->pmpaddr[pmpidx+1]->cfg & PMP_A) == PMP_TOR;
   return next_locked && next_tor;
 }
@@ -197,9 +200,7 @@ bool pmpaddr_csr_t::access_ok(access_type type, reg_t mode) const noexcept {
   bool typex = type == FETCH;
   bool typew = type == STORE;
   bool normal_rwx = (typer && cfgr) || (typew && cfgw) || (typex && cfgx);
-  reg_t mseccfg_val = proc->get_state()->mseccfg->read(); 
-  bool mseccfg_mml = mseccfg_val & MSECCFG_MML;
-  bool mseccfg_mmwp = mseccfg_val & MSECCFG_MMWP;
+  bool mseccfg_mml = state->mseccfg->get_mml();
 
   if (mseccfg_mml) {
       if (cfgx && cfgw && cfgr && cfgl) {
@@ -219,10 +220,6 @@ bool pmpaddr_csr_t::access_ok(access_type type, reg_t mode) const noexcept {
     bool m_bypass = (prvm && !cfgl);
     return m_bypass || normal_rwx;
   }
-  return ((mode == PRV_M) &&
-  !(mseccfg_mmwp) &&
-  !(type == FETCH && mseccfg_mml));
-
 }
 
 
@@ -243,14 +240,19 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
     return false;
 
   bool write_success = false;
-  //reg_t mseccfg_val = proc->get_state()->mseccfg->read();
-  reg_t mseccfg_val = state->mseccfg->mseccfg_val;
+  bool lock_bypass = state->mseccfg->get_rlb();
+  bool mml = state->mseccfg->get_mml();
   for (size_t i0 = (address - CSR_PMPCFG0) * 4, i = i0; i < i0 + proc->get_xlen() / 8; i++) {
     if (i < proc->n_pmp) {
-      if (!(state->pmpaddr[i]->cfg & PMP_L) || (mseccfg_val & MSECCFG_RLB)) { 
+      bool locked = (state->pmpaddr[i]->cfg & PMP_L) && !lock_bypass;
+      bool next_locked = (i+1 < proc->n_pmp) && (state->pmpaddr[i+1]->cfg & PMP_L) && !lock_bypass;
+      bool next_tor = (i+1 < proc->n_pmp) && (state->pmpaddr[i+1]->cfg & PMP_A) == PMP_TOR;
+      if (!locked && !(next_locked && next_tor)) { 
         uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
-        if (!(mseccfg_val & MSECCFG_MML)) {
-          cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1 when MML = 0
+        // Disallow R=0 W=1 when MML = 0
+        // Remove the restriction when MML = 1
+        if (!mml) {
+          cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); 
         }
         if (proc->lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
           cfg |= PMP_NAPOT; // Disallow A=NA4 when granularity > 4
@@ -259,8 +261,9 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
 
       write_success = true;
 
+      state->mseccfg->pmplock_recorded &= ~(1ULL << i);
       if (state->pmpaddr[i]->cfg & PMP_L) {
-        state->mseccfg->pmplock_recorded = true;
+        state->mseccfg->pmplock_recorded |= (1ULL << i);
       }
     }
   }
@@ -272,7 +275,19 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
 mseccfg_csr_t::mseccfg_csr_t(processor_t* const proc, const reg_t addr):
   csr_t(proc, addr),
   mseccfg_val(0),
-  pmplock_recorded(false) {
+  pmplock_recorded(0) {
+}
+
+bool mseccfg_csr_t::get_mml() const noexcept {
+  return (mseccfg_val & MSECCFG_MML); 
+}
+
+bool mseccfg_csr_t::get_mmwp() const noexcept {
+  return (mseccfg_val & MSECCFG_MMWP);
+}
+
+bool mseccfg_csr_t::get_rlb() const noexcept {
+  return (mseccfg_val & MSECCFG_RLB);
 }
 
 reg_t mseccfg_csr_t::read() const noexcept {
@@ -283,10 +298,12 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->n_pmp == 0)
     return false;
 
-  if (!(pmplock_recorded && !(mseccfg_val & MSECCFG_RLB))) { //When mseccfg.RLB is 0 and pmpcfg.L is 1 in any rule or entry (including disabled entries)
+  //When mseccfg.RLB is 0 and pmpcfg.L is 1 in any rule or entry (including disabled entries)
+  //Otherwise drop the write
+  if (!(pmplock_recorded && (mseccfg_val & MSECCFG_RLB)==0)) { 
     mseccfg_val &= ~MSECCFG_RLB;
     mseccfg_val |= (val & MSECCFG_RLB);
-  }
+  } 
   
   mseccfg_val |= (val & MSECCFG_MMWP);  //MMWP is sticky
   mseccfg_val |= (val & MSECCFG_MML);   //MML is sticky

@@ -125,12 +125,16 @@ class mseccfg_csr_t: public csr_t {
   public:
     mseccfg_csr_t(processor_t* const proc, const reg_t addr);
     virtual reg_t read() const noexcept override;
+    bool get_mml() const noexcept;
+    bool get_mmwp() const noexcept;
+    bool get_rlb() const noexcept; 
   protected:
     virtual bool unlogged_write(const reg_t val) noexcept override;
   private:
     reg_t mseccfg_val;
-    bool pmplock_recorded;
+    reg_t pmplock_recorded;
     friend class pmpcfg_csr_t; //pmpcfg needs to access pmplock_recorded
+    //friend class pmpaddr_csr_t;
 };
 
 typedef std::shared_ptr<mseccfg_csr_t> mseccfg_csr_t_p;
