@@ -32,6 +32,7 @@ riscv_hdrs = \
 	remote_bitbang.h \
 	jtag_dtm.h \
 	csrs.h \
+	triggers.h \
 
 riscv_install_hdrs = mmio_plugin.h
 
@@ -57,6 +58,7 @@ riscv_srcs = \
 	remote_bitbang.cc \
 	jtag_dtm.cc \
 	csrs.cc \
+	triggers.cc \
 	$(riscv_gen_srcs) \
 
 riscv_test_srcs =

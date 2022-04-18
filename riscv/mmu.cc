@@ -155,31 +155,33 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
 
   if (!matched_trigger) {
     reg_t data = reg_from_bytes(len, bytes);
-    matched_trigger = trigger_exception(OPERATION_LOAD, addr, data);
+    matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, data);
     if (matched_trigger)
       throw *matched_trigger;
   }
 }
 
-void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags)
+void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store)
 {
   reg_t paddr = translate(addr, len, STORE, xlate_flags);
 
   if (!matched_trigger) {
     reg_t data = reg_from_bytes(len, bytes);
-    matched_trigger = trigger_exception(OPERATION_STORE, addr, data);
+    matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, data);
     if (matched_trigger)
       throw *matched_trigger;
   }
 
-  if (auto host_addr = sim->addr_to_mem(paddr)) {
-    memcpy(host_addr, bytes, len);
-    if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
-      tracer.trace(paddr, len, STORE);
-    else if (xlate_flags == 0)
-      refill_tlb(addr, paddr, host_addr, STORE);
-  } else if (!mmio_store(paddr, len, bytes)) {
-    throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+  if (actually_store) {
+    if (auto host_addr = sim->addr_to_mem(paddr)) {
+      memcpy(host_addr, bytes, len);
+      if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
+        tracer.trace(paddr, len, STORE);
+      else if (xlate_flags == 0)
+        refill_tlb(addr, paddr, host_addr, STORE);
+    } else if (!mmio_store(paddr, len, bytes)) {
+      throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+    }
   }
 }
 

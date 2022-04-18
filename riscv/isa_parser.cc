@@ -81,6 +81,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
                 extension_table[EXT_ZPN] = true;
                 extension_table[EXT_ZPSFOPERAND] = true;
                 extension_table[EXT_ZMMUL] = true; break;
+      case 'v': // even rv32iv implies double float
       case 'q': max_isa |= 1L << ('d' - 'a');
                 // Fall through
       case 'd': max_isa |= 1L << ('f' - 'a');
