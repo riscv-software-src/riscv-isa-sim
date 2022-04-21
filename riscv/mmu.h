@@ -150,7 +150,7 @@ public:
     void prefix##_##type(reg_t addr, type##_t val, bool actually_store=true, bool require_alignment=false) { \
       if (unlikely(addr & (sizeof(type##_t)-1))) { \
         if (require_alignment) store_conditional_address_misaligned(addr); \
-        else return misaligned_store(addr, val, sizeof(type##_t), xlate_flags); \
+        else return misaligned_store(addr, val, sizeof(type##_t), xlate_flags, actually_store); \
       } \
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
