@@ -196,7 +196,7 @@ public:
     template<typename op> \
     type##_t amo_##type(reg_t addr, op f) { \
       convert_load_traps_to_store_traps({ \
-        store_##type(addr, 0, false); \
+        store_##type(addr, 0, false, true); \
         auto lhs = load_##type(addr, true); \
         store_##type(addr, f(lhs)); \
         return lhs; \
