@@ -65,11 +65,11 @@ public:
 #endif
   }
 
-  inline void misaligned_store(reg_t addr, reg_t data, size_t size, uint32_t xlate_flags)
+  inline void misaligned_store(reg_t addr, reg_t data, size_t size, uint32_t xlate_flags, bool actually_store=true)
   {
 #ifdef RISCV_ENABLE_MISALIGNED
     for (size_t i = 0; i < size; i++)
-      store_uint8(addr + (target_big_endian? size-1-i : i), data >> (i * 8));
+      store_uint8(addr + (target_big_endian? size-1-i : i), data >> (i * 8), actually_store);
 #else
     bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
     throw trap_store_address_misaligned(gva, addr, 0, 0);
