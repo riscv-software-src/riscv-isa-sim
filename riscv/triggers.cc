@@ -4,7 +4,7 @@
 namespace triggers {
 
 mcontrol_t::mcontrol_t() :
-  maskmax(0), select(false), timing(false), chain_bit(false),
+  select(false), timing(false), chain_bit(false),
   match(MATCH_EQUAL), m(false), h(false), s(false), u(false),
   execute_bit(false), store_bit(false), load_bit(false)
 {
@@ -15,7 +15,7 @@ reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   auto xlen = proc->get_xlen();
   v = set_field(v, MCONTROL_TYPE(xlen), 2);
   v = set_field(v, MCONTROL_DMODE(xlen), dmode);
-  v = set_field(v, MCONTROL_MASKMAX(xlen), maskmax);
+  v = set_field(v, MCONTROL_MASKMAX(xlen), 0);
   v = set_field(v, MCONTROL_SELECT, select);
   v = set_field(v, MCONTROL_TIMING, timing);
   v = set_field(v, MCONTROL_ACTION, action);

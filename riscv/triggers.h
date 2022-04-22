@@ -96,7 +96,6 @@ private:
   bool simple_match(unsigned xlen, reg_t value) const;
 
 public:
-  uint8_t maskmax;
   bool select;
   bool timing;
   bool chain_bit;
