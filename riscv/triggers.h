@@ -110,7 +110,6 @@ public:
   bool store_bit;
   bool load_bit;
   reg_t tdata2;
-
 };
 
 class module_t {
