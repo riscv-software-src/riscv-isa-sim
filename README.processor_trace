@@ -104,11 +104,22 @@ Each run of the script will remove any previously run tests.
 
 Note that the test binaries were built from the following sources:
 
-vvadd/pmp source is from https://github.com/riscv-software-src/riscv-tests/tree/master/benchmarks
+vvadd/pmp/mt-matmul source is from:
+  https://github.com/riscv-software-src/riscv-tests/tree/master/benchmarks
 
-embench-statemate source is from https://github.com/embench/embench-iot/tree/master/src
+embench-statemate source is from:
+  https://github.com/embench/embench-iot/tree/master/src
 
-br_j_asm is from https://github.com/riscv-non-isa/riscv-trace-spec/tree/main/referenceFlow/tests/examples/br_j_asm (written by Bill McSpadden, Seagate Technology)
+  In order to build these tests for RISCV a bash script was written to setup the compile options, prior to calling
+  the standard build_all.py script from the embench-iot repository. In addition, a spike entry point was written to work with
+  embench. These files, and information on building embench, can be found in
+    tests/processor_trace/build_files
+
+br_j_asm is from:
+  https://github.com/riscv-non-isa/riscv-trace-spec/tree/main/referenceFlow/tests/examples/br_j_asm (written by Bill McSpadden, Seagate Technology)
+
+  This test can be rebuilt by running cmake (version >= 3.10) on this file:
+  https://github.com/riscv-non-isa/riscv-trace-spec/blob/main/referenceFlow/tests/examples/br_j_asm/CMakeLists.txt
 
 Although these tests could be recompiled using the latest RISCV toolchain, this may well break these
 tests as they are against expected output files. If the tests were recompiled then the expected
