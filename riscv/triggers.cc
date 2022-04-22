@@ -5,7 +5,7 @@ namespace triggers {
 
 mcontrol_t::mcontrol_t() :
   select(false), timing(false), chain_bit(false),
-  match(MATCH_EQUAL), m(false), h(false), s(false), u(false),
+  match(MATCH_EQUAL), m(false), s(false), u(false),
   execute_bit(false), store_bit(false), load_bit(false)
 {
 }
@@ -22,7 +22,6 @@ reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   v = set_field(v, MCONTROL_CHAIN, chain_bit);
   v = set_field(v, MCONTROL_MATCH, match);
   v = set_field(v, MCONTROL_M, m);
-  v = set_field(v, MCONTROL_H, h);
   v = set_field(v, MCONTROL_S, s);
   v = set_field(v, MCONTROL_U, u);
   v = set_field(v, MCONTROL_EXECUTE, execute_bit);
@@ -56,7 +55,6 @@ bool mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcep
       break;
   }
   m = get_field(val, MCONTROL_M);
-  h = get_field(val, MCONTROL_H);
   s = get_field(val, MCONTROL_S);
   u = get_field(val, MCONTROL_U);
   execute_bit = get_field(val, MCONTROL_EXECUTE);

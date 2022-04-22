@@ -101,7 +101,6 @@ public:
   bool chain_bit;
   match_t match;
   bool m;
-  bool h;
   bool s;
   bool u;
   bool execute_bit;
