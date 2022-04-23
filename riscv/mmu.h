@@ -65,11 +65,11 @@ public:
 #endif
   }
 
-  inline void misaligned_store(reg_t addr, reg_t data, size_t size, uint32_t xlate_flags)
+  inline void misaligned_store(reg_t addr, reg_t data, size_t size, uint32_t xlate_flags, bool actually_store=true)
   {
 #ifdef RISCV_ENABLE_MISALIGNED
     for (size_t i = 0; i < size; i++)
-      store_uint8(addr + (target_big_endian? size-1-i : i), data >> (i * 8));
+      store_uint8(addr + (target_big_endian? size-1-i : i), data >> (i * 8), actually_store);
 #else
     bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
     throw trap_store_address_misaligned(gva, addr, 0, 0);
@@ -147,9 +147,11 @@ public:
 
   // template for functions that store an aligned value to memory
   #define store_func(type, prefix, xlate_flags) \
-    void prefix##_##type(reg_t addr, type##_t val, bool actually_store=true) {   \
-      if (unlikely(addr & (sizeof(type##_t)-1))) \
-        return misaligned_store(addr, val, sizeof(type##_t), xlate_flags); \
+    void prefix##_##type(reg_t addr, type##_t val, bool actually_store=true, bool require_alignment=false) { \
+      if (unlikely(addr & (sizeof(type##_t)-1))) { \
+        if (require_alignment) store_conditional_address_misaligned(addr); \
+        else return misaligned_store(addr, val, sizeof(type##_t), xlate_flags, actually_store); \
+      } \
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
       if ((xlate_flags) == 0 && likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \
@@ -196,7 +198,7 @@ public:
     template<typename op> \
     type##_t amo_##type(reg_t addr, op f) { \
       convert_load_traps_to_store_traps({ \
-        store_##type(addr, 0, false); \
+        store_##type(addr, 0, false, true); \
         auto lhs = load_##type(addr, true); \
         store_##type(addr, f(lhs)); \
         return lhs; \
