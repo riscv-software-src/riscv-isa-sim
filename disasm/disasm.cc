@@ -415,6 +415,18 @@ struct : public arg_t {
   }
 } p_imm6;
 
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.bs());
+  }
+} bs;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.rcon());
+  }
+} rcon;
+
 typedef struct {
   reg_t match;
   reg_t mask;
@@ -2022,6 +2034,64 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
   if (isa->extension_enabled(EXT_ZICBOZ)) {
     DISASM_INSN("cbo.zero", cbo_zero, 0, {&xrs1});
   }
+
+  if (isa->extension_enabled(EXT_ZKND) ||
+      isa->extension_enabled(EXT_ZKNE)) {
+    DISASM_INSN("aes64ks1i", aes64ks1i, 0, {&xrd, &xrs1, &rcon});
+    DEFINE_RTYPE(aes64ks2);
+  }
+
+  if (isa->extension_enabled(EXT_ZKND)) {
+    if(isa->get_max_xlen() == 64) {
+      DEFINE_RTYPE(aes64ds);
+      DEFINE_RTYPE(aes64dsm);
+      DEFINE_R1TYPE(aes64im);
+    } else if (isa->get_max_xlen() == 32) {
+      DISASM_INSN("aes32dsi", aes32dsi, 0, {&xrd, &xrs1, &xrs2, &bs});
+      DISASM_INSN("aes32dsmi", aes32dsmi, 0, {&xrd, &xrs1, &xrs2, &bs});
+    }
+  }
+
+  if (isa->extension_enabled(EXT_ZKNE)) {
+    if(isa->get_max_xlen() == 64) {
+      DEFINE_RTYPE(aes64es);
+      DEFINE_RTYPE(aes64esm);
+    } else if (isa->get_max_xlen() == 32) {
+      DISASM_INSN("aes32esi", aes32esi, 0, {&xrd, &xrs1, &xrs2, &bs});
+      DISASM_INSN("aes32esmi", aes32esmi, 0, {&xrd, &xrs1, &xrs2, &bs});
+    }
+  }
+
+  if (isa->extension_enabled(EXT_ZKNH)) {
+    DEFINE_R1TYPE(sha256sig0);
+    DEFINE_R1TYPE(sha256sig1);
+    DEFINE_R1TYPE(sha256sum0);
+    DEFINE_R1TYPE(sha256sum1);
+    if(isa->get_max_xlen() == 64) {
+      DEFINE_R1TYPE(sha512sig0);
+      DEFINE_R1TYPE(sha512sig1);
+      DEFINE_R1TYPE(sha512sum0);
+      DEFINE_R1TYPE(sha512sum1);
+    } else if (isa->get_max_xlen() == 32) {
+      DEFINE_RTYPE(sha512sig0h);
+      DEFINE_RTYPE(sha512sig0l);
+      DEFINE_RTYPE(sha512sig1h);
+      DEFINE_RTYPE(sha512sig1l);
+      DEFINE_RTYPE(sha512sum0r);
+      DEFINE_RTYPE(sha512sum1r);
+    }
+  }
+
+  if (isa->extension_enabled(EXT_ZKSED)) {
+    DISASM_INSN("sm4ed", sm4ed, 0, {&xrd, &xrs1, &xrs2, &bs});
+    DISASM_INSN("sm4ks", sm4ks, 0, {&xrd, &xrs1, &xrs2, &bs});
+  }
+
+  if (isa->extension_enabled(EXT_ZKSH)) {
+    DEFINE_R1TYPE(sm3p0);
+    DEFINE_R1TYPE(sm3p1);
+  }
+
 }
 
 disassembler_t::disassembler_t(const isa_parser_t *isa)
