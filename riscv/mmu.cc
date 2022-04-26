@@ -221,6 +221,9 @@ bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
 {
   if (!proc || proc->n_pmp == 0)
     return true;
+  
+  bool mseccfg_mml = proc->state.mseccfg->get_mml();
+  bool mseccfg_mmwp = proc->state.mseccfg->get_mmwp();
 
   for (size_t i = 0; i < proc->n_pmp; i++) {
     // Check each 4-byte sector of the access
@@ -241,8 +244,7 @@ bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
       return proc->state.pmpaddr[i]->access_ok(type, mode);
     }
   }
-
-  return mode == PRV_M;
+  return ((mode == PRV_M) && !mseccfg_mmwp && (!mseccfg_mml || ((type == LOAD) || (type == STORE))));
 }
 
 reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
