@@ -89,6 +89,10 @@ class pmpaddr_csr_t: public csr_t {
   // Is the specified access allowed given the pmpcfg privileges?
   bool access_ok(access_type type, reg_t mode) const noexcept;
 
+  bool is_locked() const noexcept {
+    return cfg & PMP_L;
+  }
+
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -133,9 +137,6 @@ class mseccfg_csr_t: public csr_t {
     virtual bool unlogged_write(const reg_t val) noexcept override;
   private:
     reg_t mseccfg_val;
-    reg_t pmplock_recorded;
-    friend class pmpcfg_csr_t; //pmpcfg needs to access pmplock_recorded
-    //friend class pmpaddr_csr_t;
 };
 
 typedef std::shared_ptr<mseccfg_csr_t> mseccfg_csr_t_p;
