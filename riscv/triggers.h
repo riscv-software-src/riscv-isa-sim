@@ -58,11 +58,12 @@ public:
 public:
   bool dmode;
   action_t action;
+  bool hit;
 
   virtual ~trigger_t() {};
 
 protected:
-  trigger_t() : dmode(false), action(ACTION_DEBUG_EXCEPTION) {};
+  trigger_t() : dmode(false), action(ACTION_DEBUG_EXCEPTION), hit(false) {};
 };
 
 class mcontrol_t : public trigger_t {
