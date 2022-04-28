@@ -256,12 +256,19 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
         if (proc->lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
           cfg |= PMP_NAPOT; 
         /*
-        Adding a rule with executable privileges that either is M-mode-only or a locked Shared-Region is not possible 
-        and such pmpcfg writes are ignored, leaving pmpcfg unchanged. 
-        This restriction can be temporarily lifted e.g. during the boot process, by setting mseccfg.RLB.
-        */ 
-        if (rlb || !(mml && ((cfg & PMP_L) && ((cfg & PMP_X) || ((cfg & PMP_W) && !(cfg & PMP_R)))))) 
+         * Adding a rule with executable privileges that either is M-mode-only or a locked Shared-Region
+         * is not possible and such pmpcfg writes are ignored, leaving pmpcfg unchanged.
+         * This restriction can be temporarily lifted e.g. during the boot process, by setting mseccfg.RLB.
+         */
+        const bool cfgx = cfg & PMP_X;
+        const bool cfgw = cfg & PMP_W;
+        const bool cfgr = cfg & PMP_R;
+        if (rlb || !(mml && ((cfg & PMP_L)      // M-mode-only or a locked Shared-Region
+                && !(cfgx && cfgw && cfgr)      // RWX = 111 is allowed
+                && (cfgx || (cfgw && !cfgr))    // X=1 or RW=01 is not allowed
+        ))) {
           state->pmpaddr[i]->cfg = cfg;
+        }
       }
 
       write_success = true;
@@ -297,13 +304,8 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->n_pmp == 0)
     return false;
 
-  bool pmplock_recorded = false;
-  for (size_t i = 0; i < proc->n_pmp; i++) {
-    if (state->pmpaddr[i]->is_locked()) {
-      pmplock_recorded = true;
-      break;
-    }
-  }
+  bool pmplock_recorded = std::any_of(state->pmpaddr, state->pmpaddr + proc->n_pmp,
+          [](pmpaddr_csr_t_p & c) { return c->is_locked(); } );
 
   //When mseccfg.RLB is 0 and pmpcfg.L is 1 in any rule or entry (including disabled entries)
   if (!(pmplock_recorded && (mseccfg_val & MSECCFG_RLB)==0)) { 
