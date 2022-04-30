@@ -56,6 +56,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "                        This flag can be used multiple times.\n");
   fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
   fprintf(stderr, "  --dump-dts            Print device tree string and exit\n");
+  fprintf(stderr, "  --dtb=<path>          Use specified device tree blob [default: auto-generate]\n");
   fprintf(stderr, "  --disable-dtb         Don't write the device tree blob into memory\n");
   fprintf(stderr, "  --kernel=<path>       Load kernel flat image into memory\n");
   fprintf(stderr, "  --initrd=<path>       Load kernel initrd into memory\n");
