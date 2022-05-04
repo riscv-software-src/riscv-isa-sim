@@ -58,11 +58,12 @@ public:
 public:
   bool dmode;
   action_t action;
+  bool hit;
 
   virtual ~trigger_t() {};
 
 protected:
-  trigger_t() : dmode(false), action(ACTION_DEBUG_EXCEPTION) {};
+  trigger_t() : dmode(false), action(ACTION_DEBUG_EXCEPTION), hit(false) {};
 };
 
 class mcontrol_t : public trigger_t {
@@ -96,21 +97,17 @@ private:
   bool simple_match(unsigned xlen, reg_t value) const;
 
 public:
-  uint8_t type;
-  uint8_t maskmax;
   bool select;
   bool timing;
   bool chain_bit;
   match_t match;
   bool m;
-  bool h;
   bool s;
   bool u;
   bool execute_bit;
   bool store_bit;
   bool load_bit;
   reg_t tdata2;
-
 };
 
 class module_t {
