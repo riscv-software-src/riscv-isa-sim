@@ -192,11 +192,37 @@ bool pmpaddr_csr_t::subset_match(reg_t addr, reg_t len) const noexcept {
 
 
 bool pmpaddr_csr_t::access_ok(access_type type, reg_t mode) const noexcept {
-  return
-    (mode == PRV_M && !(cfg & PMP_L)) ||
-    (type == LOAD && (cfg & PMP_R)) ||
-    (type == STORE && (cfg & PMP_W)) ||
-    (type == FETCH && (cfg & PMP_X));
+  const bool cfgx = cfg & PMP_X;
+  const bool cfgw = cfg & PMP_W;
+  const bool cfgr = cfg & PMP_R;
+  const bool cfgl = cfg & PMP_L;
+
+  const bool prvm = mode == PRV_M;
+
+  const bool typer = type == LOAD;
+  const bool typex = type == FETCH;
+  const bool typew = type == STORE;
+  const bool normal_rwx = (typer && cfgr) || (typew && cfgw) || (typex && cfgx);
+  const bool mseccfg_mml = state->mseccfg->get_mml();
+
+  if (mseccfg_mml) {
+    if (cfgx && cfgw && cfgr && cfgl) {
+      // Locked Shared data region: Read only on both M and S/U mode.
+      return typer;
+    } else {
+      const bool mml_shared_region = !cfgr && cfgw;
+      const bool mml_chk_normal = (prvm == cfgl) && normal_rwx;
+      const bool mml_chk_shared =
+              (!cfgl && cfgx && (typer || typew)) ||
+              (!cfgl && !cfgx && (typer || (typew && prvm))) ||
+              (cfgl && typex) ||
+              (cfgl && typer && cfgx && prvm);
+      return mml_shared_region ? mml_chk_shared : mml_chk_normal;
+    }
+  } else {
+    const bool m_bypass = (prvm && !cfgl);
+    return m_bypass || normal_rwx;
+  }
 }
 
 
