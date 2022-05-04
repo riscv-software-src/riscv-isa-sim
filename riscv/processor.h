@@ -179,6 +179,8 @@ struct state_t
   tdata2_csr_t_p tdata2;
   bool debug_mode;
 
+  mseccfg_csr_t_p mseccfg;
+
   static const int max_pmp = 16;
   pmpaddr_csr_t_p pmpaddr[max_pmp];
 

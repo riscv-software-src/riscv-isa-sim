@@ -1,5 +1,8 @@
 // See LICENSE for license details.
 
+// For std::any_of
+#include <algorithm>
+
 #include "csrs.h"
 // For processor_t:
 #include "processor.h"
@@ -227,6 +230,46 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
   return write_success;
 }
 
+// implement class mseccfg_csr_t
+mseccfg_csr_t::mseccfg_csr_t(processor_t* const proc, const reg_t addr):
+    basic_csr_t(proc, addr, 0) {
+}
+
+bool mseccfg_csr_t::get_mml() const noexcept {
+  return (read() & MSECCFG_MML);
+}
+
+bool mseccfg_csr_t::get_mmwp() const noexcept {
+  return (read() & MSECCFG_MMWP);
+}
+
+bool mseccfg_csr_t::get_rlb() const noexcept {
+  return (read() & MSECCFG_RLB);
+}
+
+bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
+  if (proc->n_pmp == 0)
+    return false;
+
+  // pmpcfg.L is 1 in any rule or entry (including disabled entries)
+  const bool pmplock_recorded = std::any_of(state->pmpaddr, state->pmpaddr + proc->n_pmp,
+          [](const pmpaddr_csr_t_p & c) { return c->is_locked(); } );
+  reg_t new_val = read();
+
+  // When RLB is 0 and pmplock_recorded, RLB is locked to 0.
+  // Otherwise set the RLB bit according val
+  if (!(pmplock_recorded && (read() & MSECCFG_RLB) == 0)) {
+    new_val &= ~MSECCFG_RLB;
+    new_val |= (val & MSECCFG_RLB);
+  }
+
+  new_val |= (val & MSECCFG_MMWP);  //MMWP is sticky
+  new_val |= (val & MSECCFG_MML);   //MML is sticky
+
+  proc->get_mmu()->flush_tlb();
+
+  return basic_csr_t::unlogged_write(new_val);
+}
 
 // implement class virtualized_csr_t
 virtualized_csr_t::virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):

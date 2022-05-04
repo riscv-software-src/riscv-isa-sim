@@ -89,6 +89,11 @@ class pmpaddr_csr_t: public csr_t {
   // Is the specified access allowed given the pmpcfg privileges?
   bool access_ok(access_type type, reg_t mode) const noexcept;
 
+  // To check lock bit status from outside like mseccfg
+  bool is_locked() const noexcept {
+    return cfg & PMP_L;
+  }
+
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -122,6 +127,17 @@ class pmpcfg_csr_t: public csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
+class mseccfg_csr_t: public basic_csr_t {
+ public:
+  mseccfg_csr_t(processor_t* const proc, const reg_t addr);
+  bool get_mml() const noexcept;
+  bool get_mmwp() const noexcept;
+  bool get_rlb() const noexcept;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+typedef std::shared_ptr<mseccfg_csr_t> mseccfg_csr_t_p;
 
 // For CSRs that have a virtualized copy under another name. Each
 // instance of virtualized_csr_t will read/write one of two CSRs,
