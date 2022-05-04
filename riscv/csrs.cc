@@ -120,7 +120,9 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->n_pmp == 0)
     return false;
 
-  bool locked = cfg & PMP_L;
+  const bool lock_bypass = state->mseccfg->get_rlb();
+  const bool locked = !lock_bypass && (cfg & PMP_L);
+
   if (pmpidx < proc->n_pmp && !locked && !next_locked_and_tor()) {
     this->val = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
   }
@@ -132,8 +134,9 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
 
 bool pmpaddr_csr_t::next_locked_and_tor() const noexcept {
   if (pmpidx+1 >= state->max_pmp) return false;  // this is the last entry
-  bool next_locked = state->pmpaddr[pmpidx+1]->cfg & PMP_L;
-  bool next_tor = (state->pmpaddr[pmpidx+1]->cfg & PMP_A) == PMP_TOR;
+  const bool lock_bypass = state->mseccfg->get_rlb();
+  const bool next_locked = !lock_bypass && (state->pmpaddr[pmpidx+1]->cfg & PMP_L);
+  const bool next_tor = (state->pmpaddr[pmpidx+1]->cfg & PMP_A) == PMP_TOR;
   return next_locked && next_tor;
 }
 
@@ -214,14 +217,35 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
     return false;
 
   bool write_success = false;
+  const bool rlb = state->mseccfg->get_rlb();
+  const bool mml = state->mseccfg->get_mml();
   for (size_t i0 = (address - CSR_PMPCFG0) * 4, i = i0; i < i0 + proc->get_xlen() / 8; i++) {
     if (i < proc->n_pmp) {
-      if (!(state->pmpaddr[i]->cfg & PMP_L)) {
+      const bool locked = (state->pmpaddr[i]->cfg & PMP_L);
+      if (rlb || (!locked && !state->pmpaddr[i]->next_locked_and_tor())) {
         uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
-        cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1
+        // Drop R=0 W=1 when MML = 0
+        // Remove the restriction when MML = 1
+        if (!mml) {
+          cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0);
+        }
+        // Disallow A=NA4 when granularity > 4
         if (proc->lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
-          cfg |= PMP_NAPOT; // Disallow A=NA4 when granularity > 4
-        state->pmpaddr[i]->cfg = cfg;
+          cfg |= PMP_NAPOT;
+        /*
+         * Adding a rule with executable privileges that either is M-mode-only or a locked Shared-Region
+         * is not possible and such pmpcfg writes are ignored, leaving pmpcfg unchanged.
+         * This restriction can be temporarily lifted e.g. during the boot process, by setting mseccfg.RLB.
+         */
+        const bool cfgx = cfg & PMP_X;
+        const bool cfgw = cfg & PMP_W;
+        const bool cfgr = cfg & PMP_R;
+        if (rlb || !(mml && ((cfg & PMP_L)      // M-mode-only or a locked Shared-Region
+                && !(cfgx && cfgw && cfgr)      // RWX = 111 is allowed
+                && (cfgx || (cfgw && !cfgr))    // X=1 or RW=01 is not allowed
+        ))) {
+          state->pmpaddr[i]->cfg = cfg;
+        }
       }
       write_success = true;
     }
