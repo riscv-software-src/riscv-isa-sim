@@ -1,5 +1,8 @@
 // See LICENSE for license details.
 
+// For std::any_of
+#include <algorithm>
+
 #include "csrs.h"
 // For processor_t:
 #include "processor.h"
@@ -117,7 +120,9 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->n_pmp == 0)
     return false;
 
-  bool locked = cfg & PMP_L;
+  const bool lock_bypass = state->mseccfg->get_rlb();
+  const bool locked = !lock_bypass && (cfg & PMP_L);
+
   if (pmpidx < proc->n_pmp && !locked && !next_locked_and_tor()) {
     this->val = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
   }
@@ -129,8 +134,9 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
 
 bool pmpaddr_csr_t::next_locked_and_tor() const noexcept {
   if (pmpidx+1 >= state->max_pmp) return false;  // this is the last entry
-  bool next_locked = state->pmpaddr[pmpidx+1]->cfg & PMP_L;
-  bool next_tor = (state->pmpaddr[pmpidx+1]->cfg & PMP_A) == PMP_TOR;
+  const bool lock_bypass = state->mseccfg->get_rlb();
+  const bool next_locked = !lock_bypass && (state->pmpaddr[pmpidx+1]->cfg & PMP_L);
+  const bool next_tor = (state->pmpaddr[pmpidx+1]->cfg & PMP_A) == PMP_TOR;
   return next_locked && next_tor;
 }
 
@@ -186,11 +192,37 @@ bool pmpaddr_csr_t::subset_match(reg_t addr, reg_t len) const noexcept {
 
 
 bool pmpaddr_csr_t::access_ok(access_type type, reg_t mode) const noexcept {
-  return
-    (mode == PRV_M && !(cfg & PMP_L)) ||
-    (type == LOAD && (cfg & PMP_R)) ||
-    (type == STORE && (cfg & PMP_W)) ||
-    (type == FETCH && (cfg & PMP_X));
+  const bool cfgx = cfg & PMP_X;
+  const bool cfgw = cfg & PMP_W;
+  const bool cfgr = cfg & PMP_R;
+  const bool cfgl = cfg & PMP_L;
+
+  const bool prvm = mode == PRV_M;
+
+  const bool typer = type == LOAD;
+  const bool typex = type == FETCH;
+  const bool typew = type == STORE;
+  const bool normal_rwx = (typer && cfgr) || (typew && cfgw) || (typex && cfgx);
+  const bool mseccfg_mml = state->mseccfg->get_mml();
+
+  if (mseccfg_mml) {
+    if (cfgx && cfgw && cfgr && cfgl) {
+      // Locked Shared data region: Read only on both M and S/U mode.
+      return typer;
+    } else {
+      const bool mml_shared_region = !cfgr && cfgw;
+      const bool mml_chk_normal = (prvm == cfgl) && normal_rwx;
+      const bool mml_chk_shared =
+              (!cfgl && cfgx && (typer || typew)) ||
+              (!cfgl && !cfgx && (typer || (typew && prvm))) ||
+              (cfgl && typex) ||
+              (cfgl && typer && cfgx && prvm);
+      return mml_shared_region ? mml_chk_shared : mml_chk_normal;
+    }
+  } else {
+    const bool m_bypass = (prvm && !cfgl);
+    return m_bypass || normal_rwx;
+  }
 }
 
 
@@ -211,14 +243,35 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
     return false;
 
   bool write_success = false;
+  const bool rlb = state->mseccfg->get_rlb();
+  const bool mml = state->mseccfg->get_mml();
   for (size_t i0 = (address - CSR_PMPCFG0) * 4, i = i0; i < i0 + proc->get_xlen() / 8; i++) {
     if (i < proc->n_pmp) {
-      if (!(state->pmpaddr[i]->cfg & PMP_L)) {
+      const bool locked = (state->pmpaddr[i]->cfg & PMP_L);
+      if (rlb || (!locked && !state->pmpaddr[i]->next_locked_and_tor())) {
         uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
-        cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0); // Disallow R=0 W=1
+        // Drop R=0 W=1 when MML = 0
+        // Remove the restriction when MML = 1
+        if (!mml) {
+          cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0);
+        }
+        // Disallow A=NA4 when granularity > 4
         if (proc->lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
-          cfg |= PMP_NAPOT; // Disallow A=NA4 when granularity > 4
-        state->pmpaddr[i]->cfg = cfg;
+          cfg |= PMP_NAPOT;
+        /*
+         * Adding a rule with executable privileges that either is M-mode-only or a locked Shared-Region
+         * is not possible and such pmpcfg writes are ignored, leaving pmpcfg unchanged.
+         * This restriction can be temporarily lifted e.g. during the boot process, by setting mseccfg.RLB.
+         */
+        const bool cfgx = cfg & PMP_X;
+        const bool cfgw = cfg & PMP_W;
+        const bool cfgr = cfg & PMP_R;
+        if (rlb || !(mml && ((cfg & PMP_L)      // M-mode-only or a locked Shared-Region
+                && !(cfgx && cfgw && cfgr)      // RWX = 111 is allowed
+                && (cfgx || (cfgw && !cfgr))    // X=1 or RW=01 is not allowed
+        ))) {
+          state->pmpaddr[i]->cfg = cfg;
+        }
       }
       write_success = true;
     }
@@ -227,6 +280,46 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
   return write_success;
 }
 
+// implement class mseccfg_csr_t
+mseccfg_csr_t::mseccfg_csr_t(processor_t* const proc, const reg_t addr):
+    basic_csr_t(proc, addr, 0) {
+}
+
+bool mseccfg_csr_t::get_mml() const noexcept {
+  return (read() & MSECCFG_MML);
+}
+
+bool mseccfg_csr_t::get_mmwp() const noexcept {
+  return (read() & MSECCFG_MMWP);
+}
+
+bool mseccfg_csr_t::get_rlb() const noexcept {
+  return (read() & MSECCFG_RLB);
+}
+
+bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
+  if (proc->n_pmp == 0)
+    return false;
+
+  // pmpcfg.L is 1 in any rule or entry (including disabled entries)
+  const bool pmplock_recorded = std::any_of(state->pmpaddr, state->pmpaddr + proc->n_pmp,
+          [](const pmpaddr_csr_t_p & c) { return c->is_locked(); } );
+  reg_t new_val = read();
+
+  // When RLB is 0 and pmplock_recorded, RLB is locked to 0.
+  // Otherwise set the RLB bit according val
+  if (!(pmplock_recorded && (read() & MSECCFG_RLB) == 0)) {
+    new_val &= ~MSECCFG_RLB;
+    new_val |= (val & MSECCFG_RLB);
+  }
+
+  new_val |= (val & MSECCFG_MMWP);  //MMWP is sticky
+  new_val |= (val & MSECCFG_MML);   //MML is sticky
+
+  proc->get_mmu()->flush_tlb();
+
+  return basic_csr_t::unlogged_write(new_val);
+}
 
 // implement class virtualized_csr_t
 virtualized_csr_t::virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
