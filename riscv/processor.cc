@@ -380,14 +380,18 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MVENDORID] = std::make_shared<const_csr_t>(proc, CSR_MVENDORID, 0);
   csrmap[CSR_MHARTID] = std::make_shared<const_csr_t>(proc, CSR_MHARTID, proc->get_id());
   const reg_t menvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE : 0) |
-                             (proc->extension_enabled(EXT_ZICBOZ) ? MENVCFG_CBZE : 0);
-  csrmap[CSR_MENVCFG] = menvcfg = std::make_shared<masked_csr_t>(proc, CSR_MENVCFG, menvcfg_mask, 0);
+                             (proc->extension_enabled(EXT_ZICBOZ) ? MENVCFG_CBZE : 0) |
+                             (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0);
+  const reg_t menvcfg_init = (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0);
+  csrmap[CSR_MENVCFG] = menvcfg = std::make_shared<masked_csr_t>(proc, CSR_MENVCFG, menvcfg_mask, menvcfg_init);
   const reg_t senvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? SENVCFG_CBCFE | SENVCFG_CBIE : 0) |
                              (proc->extension_enabled(EXT_ZICBOZ) ? SENVCFG_CBZE : 0);
   csrmap[CSR_SENVCFG] = senvcfg = std::make_shared<masked_csr_t>(proc, CSR_SENVCFG, senvcfg_mask, 0);
   const reg_t henvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? HENVCFG_CBCFE | HENVCFG_CBIE : 0) |
-                             (proc->extension_enabled(EXT_ZICBOZ) ? HENVCFG_CBZE : 0);
-  csrmap[CSR_HENVCFG] = henvcfg = std::make_shared<henvcfg_csr_t>(proc, CSR_HENVCFG, henvcfg_mask, 0, menvcfg);
+                             (proc->extension_enabled(EXT_ZICBOZ) ? HENVCFG_CBZE : 0) |
+                             (proc->extension_enabled(EXT_SVPBMT) ? HENVCFG_PBMTE : 0);
+  const reg_t henvcfg_init = (proc->extension_enabled(EXT_SVPBMT) ? HENVCFG_PBMTE : 0);
+  csrmap[CSR_HENVCFG] = henvcfg = std::make_shared<henvcfg_csr_t>(proc, CSR_HENVCFG, henvcfg_mask, henvcfg_init, menvcfg);
 
   serialized = false;
 
