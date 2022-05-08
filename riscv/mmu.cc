@@ -302,6 +302,8 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
         break;
       } else if (!pbmte && (pte & PTE_PBMT)) {
         break;
+      } else if ((pte & PTE_PBMT) == PTE_PBMT) {
+        break;
       } else if (PTE_TABLE(pte)) { // next level of page table
         if (pte & (PTE_D | PTE_A | PTE_U | PTE_N | PTE_PBMT))
           break;
@@ -392,6 +394,8 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
     } else if (!proc->extension_enabled(EXT_SVNAPOT) && (pte & PTE_N)) {
       break;
     } else if (!pbmte && (pte & PTE_PBMT)) {
+      break;
+    } else if ((pte & PTE_PBMT) == PTE_PBMT) {
       break;
     } else if (PTE_TABLE(pte)) { // next level of page table
       if (pte & (PTE_D | PTE_A | PTE_U | PTE_N | PTE_PBMT))
