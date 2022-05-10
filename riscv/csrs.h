@@ -448,6 +448,20 @@ class masked_csr_t: public basic_csr_t {
 };
 
 
+// henvcfg.pbmte is read_only 0 when menvcfg.pbmte = 0
+class henvcfg_csr_t final: public masked_csr_t {
+ public:
+  henvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init, csr_t_p menvcfg);
+
+  reg_t read() const noexcept override {
+    return (menvcfg->read() | ~MENVCFG_PBMTE) & masked_csr_t::read();
+  }
+
+ private:
+  csr_t_p menvcfg;
+};
+
+
 // For satp and vsatp
 // These are three classes in order to handle the [V]TVM bits permission checks
 class base_atp_csr_t: public basic_csr_t {

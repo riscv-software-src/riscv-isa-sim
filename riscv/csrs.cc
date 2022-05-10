@@ -840,6 +840,13 @@ bool masked_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 
+// implement class henvcfg_csr_t
+henvcfg_csr_t::henvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init, csr_t_p menvcfg):
+  masked_csr_t(proc, addr, mask, init),
+  menvcfg(menvcfg) {
+}
+
+
 // implement class base_atp_csr_t and family
 base_atp_csr_t::base_atp_csr_t(processor_t* const proc, const reg_t addr):
   basic_csr_t(proc, addr, 0) {
