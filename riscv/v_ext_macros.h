@@ -84,6 +84,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_CHECK_ST_INDEX(elt_width) \
   require_vector(false); \
+  require(elt_width <= P.VU.ELEN); \
   float vemul = ((float)elt_width / P.VU.vsew * P.VU.vflmul); \
   require(vemul >= 0.125 && vemul <= 8); \
   reg_t emul = vemul < 1 ? 1 : vemul; \
