@@ -38,7 +38,7 @@ void mmu_t::flush_tlb()
   flush_icache();
 }
 
-static void throw_access_exception(bool virt, reg_t addr, access_type type)
+static void NORETURN throw_access_exception(bool virt, reg_t addr, access_type type)
 {
   switch (type) {
     case FETCH: throw trap_instruction_access_fault(virt, addr, 0, 0);
@@ -440,12 +440,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
     }
   }
 
-  switch (type) {
-    case FETCH: throw trap_instruction_page_fault(virt, addr, 0, 0);
-    case LOAD: throw trap_load_page_fault(virt, addr, 0, 0);
-    case STORE: throw trap_store_page_fault(virt, addr, 0, 0);
-    default: abort();
-  }
+  throw_access_exception(virt, addr, type);
 }
 
 void mmu_t::register_memtracer(memtracer_t* t)
