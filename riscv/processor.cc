@@ -907,6 +907,8 @@ insn_func_t processor_t::decode_insn(insn_t insn)
 
 void processor_t::register_insn(insn_desc_t desc)
 {
+  assert(desc.rv32i && desc.rv64i && desc.rv32e && desc.rv64e);
+
   instructions.push_back(desc);
 }
 
