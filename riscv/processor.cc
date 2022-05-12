@@ -959,14 +959,16 @@ void processor_t::register_base_instructions()
     extern reg_t rv64i_##name(processor_t*, insn_t, reg_t); \
     extern reg_t rv32e_##name(processor_t*, insn_t, reg_t); \
     extern reg_t rv64e_##name(processor_t*, insn_t, reg_t); \
-    register_insn((insn_desc_t) { \
-      name##_supported, \
-      name##_match, \
-      name##_mask, \
-      rv32i_##name, \
-      rv64i_##name, \
-      rv32e_##name, \
-      rv64e_##name});
+    if (name##_supported) { \
+      register_insn((insn_desc_t) { \
+        name##_supported, \
+        name##_match, \
+        name##_mask, \
+        rv32i_##name, \
+        rv64i_##name, \
+        rv32e_##name, \
+        rv64e_##name}); \
+    }
   #include "insn_list.h"
   #undef DEFINE_INSN
 
