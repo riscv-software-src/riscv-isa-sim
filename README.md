@@ -27,6 +27,9 @@ Spike supports the following RISC-V ISA features:
   - Zbb extension, v1.0
   - Zbc extension, v1.0
   - Zbs extension, v1.0
+  - Zfh and Zfhmin half-precision floating-point extensions, v1.0
+  - Zmmul integer multiplication extension, v1.0
+  - Zicbom, Zicbop, Zicboz cache-block maintenance extensions, v1.0
   - Conformance to both RVWMO and RVTSO (Spike is sequentially consistent)
   - Machine, Supervisor, and User modes, v1.11
   - Hypervisor extension, v1.0
