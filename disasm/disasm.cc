@@ -670,6 +670,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
   #define DEFINE_I0TYPE(name, code) DISASM_INSN(name, code, mask_rs1, {&xrd, &imm})
   #define DEFINE_I1TYPE(name, code) DISASM_INSN(name, code, mask_imm, {&xrd, &xrs1})
   #define DEFINE_I2TYPE(name, code) DISASM_INSN(name, code, mask_rd | mask_imm, {&xrs1})
+  #define DEFINE_PREFETCH(code) DISASM_INSN(#code, code, 0, {&store_address})
   #define DEFINE_LTYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &bigimm})
   #define DEFINE_BTYPE(code) add_btype_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_B1TYPE(name, code) add_b1type_insn(this, name, match_##code, mask_##code);
@@ -690,6 +691,14 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
 
   add_insn(new disasm_insn_t("unimp", match_csrrw|(CSR_CYCLE<<20), 0xffffffff, {}));
   add_insn(new disasm_insn_t("c.unimp", 0, 0xffff, {}));
+
+  // Following are HINTs, so they must precede their corresponding base-ISA
+  // instructions.  We do not condition them on Zicbop/Zihintpause because,
+  // definitionally, all implementations provide them.
+  DEFINE_PREFETCH(prefetch_r);
+  DEFINE_PREFETCH(prefetch_w);
+  DEFINE_PREFETCH(prefetch_i);
+  DEFINE_NOARG(pause);
 
   DEFINE_XLOAD(lb)
   DEFINE_XLOAD(lbu)
