@@ -889,7 +889,7 @@ insn_func_t processor_t::decode_insn(insn_t insn)
     // fall back to linear search
     int cnt = 0;
     insn_desc_t* p = &instructions[0];
-    while ((insn.bits() & p->mask) != p->match || !desc.func(xlen, rve))
+    while ((insn.bits() & p->mask) != p->match || !p->func(xlen, rve))
       p++, cnt++;
     desc = *p;
 
