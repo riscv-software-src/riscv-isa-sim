@@ -961,7 +961,6 @@ void processor_t::register_base_instructions()
     extern reg_t rv64e_##name(processor_t*, insn_t, reg_t); \
     if (name##_supported) { \
       register_insn((insn_desc_t) { \
-        name##_supported, \
         name##_match, \
         name##_mask, \
         rv32i_##name, \
