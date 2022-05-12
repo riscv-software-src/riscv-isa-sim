@@ -2098,9 +2098,12 @@ disassembler_t::disassembler_t(const isa_parser_t *isa)
 {
   // highest priority: instructions explicitly enabled
   add_instructions(isa);
+}
 
+void disassembler_t::add_other_insns(unsigned xlen)
+{
   // next-highest priority: other instructions in same base ISA
-  std::string fallback_isa_string = std::string("rv") + std::to_string(isa->get_max_xlen()) +
+  std::string fallback_isa_string = std::string("rv") + std::to_string(xlen) +
     "gcv_zfh_zba_zbb_zbc_zbs_zkn_zkr_zks_xbitmanip";
   isa_parser_t fallback_isa(fallback_isa_string.c_str(), DEFAULT_PRIV);
   add_instructions(&fallback_isa);

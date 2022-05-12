@@ -34,6 +34,7 @@ int main(int argc, char** argv)
       disassembler->add_insn(disasm_insn);
     }
   }
+  disassembler->add_other_insns(isa_parser.get_max_xlen());
 
   while (getline(cin, s))
   {

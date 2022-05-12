@@ -88,6 +88,7 @@ class disassembler_t
   const disasm_insn_t* lookup(insn_t insn) const;
 
   void add_insn(disasm_insn_t* insn);
+  void add_other_insns(unsigned xlen);
 
  private:
   static const int HASH_SIZE = 255;
