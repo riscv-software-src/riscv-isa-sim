@@ -885,11 +885,11 @@ insn_func_t processor_t::decode_insn(insn_t insn)
 
   bool rve = extension_enabled('E');
 
-  if (unlikely(insn.bits() != desc.match || !desc.func(xlen, rve))) {
+  if (unlikely(insn.bits() != desc.match)) {
     // fall back to linear search
     int cnt = 0;
     insn_desc_t* p = &instructions[0];
-    while ((insn.bits() & p->mask) != p->match || !desc.func(xlen, rve))
+    while ((insn.bits() & p->mask) != p->match)
       p++, cnt++;
     desc = *p;
 
@@ -911,6 +911,8 @@ insn_func_t processor_t::decode_insn(insn_t insn)
 
 void processor_t::register_insn(insn_desc_t desc)
 {
+  assert(desc.rv32i && desc.rv64i && desc.rv32e && desc.rv64e);
+
   instructions.push_back(desc);
 }
 
@@ -963,14 +965,15 @@ void processor_t::register_base_instructions()
     extern reg_t rv64i_##name(processor_t*, insn_t, reg_t); \
     extern reg_t rv32e_##name(processor_t*, insn_t, reg_t); \
     extern reg_t rv64e_##name(processor_t*, insn_t, reg_t); \
-    register_insn((insn_desc_t) { \
-      name##_supported, \
-      name##_match, \
-      name##_mask, \
-      rv32i_##name, \
-      rv64i_##name, \
-      rv32e_##name, \
-      rv64e_##name});
+    if (name##_supported) { \
+      register_insn((insn_desc_t) { \
+        name##_match, \
+        name##_mask, \
+        rv32i_##name, \
+        rv64i_##name, \
+        rv32e_##name, \
+        rv64e_##name}); \
+    }
   #include "insn_list.h"
   #undef DEFINE_INSN
 
