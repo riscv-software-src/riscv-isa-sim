@@ -7,6 +7,8 @@
 #include <cstdarg>
 #include <sstream>
 #include <stdlib.h>
+// For std::reverse:
+#include <algorithm>
 
 // Indicates that the next arg (only) is optional.
 // If the result of converting the next arg to a string is ""
@@ -2116,13 +2118,18 @@ disassembler_t::disassembler_t(const isa_parser_t *isa)
 
   // finally: instructions with known opcodes but unknown arguments
   add_unknown_insns(this);
+
+  // Now, reverse the lists, because we search them back-to-front (so that
+  // custom instructions later added with add_insn have highest priority).
+  for (size_t i = 0; i < HASH_SIZE+1; i++)
+    std::reverse(chain[i].begin(), chain[i].end());
 }
 
 const disasm_insn_t* disassembler_t::probe_once(insn_t insn, size_t idx) const
 {
-  for (size_t j = 0; j < chain[idx].size(); j++)
-    if(*chain[idx][j] == insn)
-      return chain[idx][j];
+  for (auto it = chain[idx].rbegin(); it != chain[idx].rend(); ++it)
+    if (*(*it) == insn)
+      return *it;
 
   return NULL;
 }
