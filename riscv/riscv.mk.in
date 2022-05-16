@@ -13,9 +13,12 @@ riscv_hdrs = \
 	decode.h \
 	devices.h \
 	dts.h \
+	isa_parser.h \
 	mmu.h \
 	cfg.h \
 	processor.h \
+	p_ext_macros.h \
+	v_ext_macros.h \
 	sim.h \
 	simif.h \
 	trap.h \
