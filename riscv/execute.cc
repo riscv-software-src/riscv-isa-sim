@@ -337,6 +337,10 @@ void processor_t::step(size_t n)
           abort();
       }
     }
+    catch(trap_debug_mode&)
+    {
+      enter_debug_mode(DCSR_CAUSE_SWBP);
+    }
     catch (wait_for_interrupt_t &t)
     {
       // Return to the outer simulation loop, which gives other devices/harts a
