@@ -419,7 +419,7 @@ reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
     | (proc->extension_enabled('S') ? (SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP) : 0)
     | (has_page ? (SSTATUS_SUM | SSTATUS_MXR) : 0)
     | (has_fs ? SSTATUS_FS : 0)
-    | (proc->any_custom_extensions() ? SSTATUS_XS : 0)
+    | (proc->extension_enabled('X') ? SSTATUS_XS : 0)
     | (has_vs ? SSTATUS_VS : 0)
     ;
 }
@@ -689,7 +689,7 @@ mie_csr_t::mie_csr_t(processor_t* const proc, const reg_t addr):
 reg_t mie_csr_t::write_mask() const noexcept {
   const reg_t supervisor_ints = proc->extension_enabled('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
   const reg_t hypervisor_ints = proc->extension_enabled('H') ? MIP_HS_MASK : 0;
-  const reg_t coprocessor_ints = (reg_t)proc->any_custom_extensions() << IRQ_COP;
+  const reg_t coprocessor_ints = (reg_t)proc->extension_enabled('X') << IRQ_COP;
   const reg_t delegable_ints = supervisor_ints | coprocessor_ints;
   const reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP | MIP_MEIP;
   return all_ints;
@@ -789,7 +789,7 @@ void mideleg_csr_t::verify_permissions(insn_t insn, bool write) const {
 
 bool mideleg_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t supervisor_ints = proc->extension_enabled('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
-  const reg_t coprocessor_ints = (reg_t)proc->any_custom_extensions() << IRQ_COP;
+  const reg_t coprocessor_ints = (reg_t)proc->extension_enabled('X') << IRQ_COP;
   const reg_t delegable_ints = supervisor_ints | coprocessor_ints;
 
   return basic_csr_t::unlogged_write(val & delegable_ints);
