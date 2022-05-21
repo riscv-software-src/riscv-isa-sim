@@ -12,7 +12,7 @@ static reg_t custom_cflush(processor_t* p, insn_t insn, reg_t pc)
 {
   require_privilege(PRV_M);
 
-  return pc + 4; \
+  return pc + 4;
 }
 
 class cflush_t : public extension_t
@@ -20,7 +20,7 @@ class cflush_t : public extension_t
  public:
   const char* name() { return "cflush"; }
 
-  cflush_t() {}
+  cflush_t() : extension_t(true) {}
 
   std::vector<insn_desc_t> get_instructions() {
     std::vector<insn_desc_t> insns;

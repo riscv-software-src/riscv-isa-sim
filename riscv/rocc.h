@@ -24,6 +24,7 @@ union rocc_insn_union_t
 class rocc_t : public extension_t
 {
  public:
+  rocc_t(): extension_t(true) {}
   virtual reg_t custom0(rocc_insn_t insn, reg_t xs1, reg_t xs2);
   virtual reg_t custom1(rocc_insn_t insn, reg_t xs1, reg_t xs2);
   virtual reg_t custom2(rocc_insn_t insn, reg_t xs1, reg_t xs2);
