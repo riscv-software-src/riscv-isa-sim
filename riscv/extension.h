@@ -5,6 +5,8 @@
 
 #include "processor.h"
 #include "disasm.h"
+#include "insn_macros.h"
+#include "decode.h"
 #include <vector>
 #include <functional>
 
