@@ -64,6 +64,10 @@ public:
   bool any_custom_extensions() const {
     return !custom_extensions.empty();
   }
+  void set_debug(bool value) {
+    for (auto e : custom_extensions)
+      e.second->set_debug(value);
+  };
 protected:
   processor_t* p;
   std::unordered_map<std::string, extension_t*> custom_extensions;

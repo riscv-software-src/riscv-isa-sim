@@ -472,6 +472,7 @@ void processor_t::set_debug(bool value)
 {
   debug = value;
 
+  xs_gatherer->set_debug(value);
   for (auto e : custom_extensions)
     e.second->set_debug(value);
 }
