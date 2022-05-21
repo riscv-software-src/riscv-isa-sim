@@ -13,6 +13,8 @@
 #include "trap.h"
 // For require():
 #include "insn_macros.h"
+// For xs_gatherer_t
+#include "extension.h"
 
 // STATE macro used by require_privilege() macro:
 #undef STATE
@@ -405,9 +407,15 @@ base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
   has_page(proc->extension_enabled_const('S') && proc->supports_impl(IMPL_MMU)),
   sstatus_write_mask(compute_sstatus_write_mask()),
   sstatus_read_mask(sstatus_write_mask | SSTATUS_UBE | SSTATUS_UXL
+                    | (proc->extension_enabled('X') ? SSTATUS_XS : 0)
                     | (proc->get_const_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD)) {
 }
 
+bool base_status_csr_t::field_exists(const reg_t which) {
+  return ((sstatus_write_mask 
+            | (proc->extension_enabled('X') ? SSTATUS_XS : 0))
+          & which) != 0;
+}
 
 reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
   // If a configuration has FS bits, they will always be accessible no
@@ -419,7 +427,6 @@ reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
     | (proc->extension_enabled('S') ? (SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP) : 0)
     | (has_page ? (SSTATUS_SUM | SSTATUS_MXR) : 0)
     | (has_fs ? SSTATUS_FS : 0)
-    | (proc->extension_enabled('X') ? SSTATUS_XS : 0)
     | (has_vs ? SSTATUS_VS : 0)
     ;
 }
@@ -467,6 +474,11 @@ vsstatus_csr_t::vsstatus_csr_t(processor_t* const proc, const reg_t addr):
   val(proc->get_state()->mstatus->read() & sstatus_read_mask) {
 }
 
+reg_t vsstatus_csr_t::read() const noexcept {
+  return val
+         | adjust_sd(set_field((reg_t)0, SSTATUS_XS, proc->get_xs_gatherer()->get_xs()));
+}
+
 bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t newval = (this->val & ~sstatus_write_mask) | (val & sstatus_write_mask);
   if (state->v) maybe_flush_tlb(newval);
@@ -503,6 +515,11 @@ mstatus_csr_t::mstatus_csr_t(processor_t* const proc, const reg_t addr):
   ) {
 }
 
+reg_t mstatus_csr_t::read() const noexcept {
+  return val 
+         | adjust_sd(set_field((reg_t)0, SSTATUS_XS, proc->get_xs_gatherer()->get_xs()));
+  
+}
 
 bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const bool has_mpv = proc->extension_enabled('S') && proc->extension_enabled('H');

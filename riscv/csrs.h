@@ -202,9 +202,7 @@ class base_status_csr_t: public csr_t {
  public:
   base_status_csr_t(processor_t* const proc, const reg_t addr);
 
-  bool field_exists(const reg_t which) {
-    return (sstatus_write_mask & which) != 0;
-  }
+  bool field_exists(const reg_t which);
 
  protected:
   reg_t adjust_sd(const reg_t val) const noexcept;
@@ -225,9 +223,7 @@ class vsstatus_csr_t final: public base_status_csr_t {
  public:
   vsstatus_csr_t(processor_t* const proc, const reg_t addr);
 
-  reg_t read() const noexcept override {
-    return val;
-  }
+  reg_t read() const noexcept override;
 
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
@@ -242,9 +238,7 @@ class mstatus_csr_t final: public base_status_csr_t {
  public:
   mstatus_csr_t(processor_t* const proc, const reg_t addr);
 
-  reg_t read() const noexcept override {
-    return val;
-  }
+  reg_t read() const noexcept override;
 
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;

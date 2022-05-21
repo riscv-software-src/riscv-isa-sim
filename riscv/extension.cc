@@ -28,6 +28,25 @@ void xs_gatherer_t::reset() {
   }
 }
 
+extension_state_t xs_gatherer_t::get_xs()
+{
+  bool clean = false, init = false;
+  for (auto e : custom_extensions) {
+      extension_state_t state = e.second->get_state();
+      if (state == EXT_STATE_DIRTY)
+        return EXT_STATE_DIRTY;
+      clean = (state == EXT_STATE_CLEAN) || clean;
+      init  = (state == EXT_STATE_INIT)  || init;
+  }
+
+  if (clean)
+    return EXT_STATE_CLEAN;
+  else if (init)
+    return EXT_STATE_INIT;
+  else
+    return EXT_STATE_OFF;
+}
+
 void xs_gatherer_t::register_extension(extension_t* x)
 {
   for (auto insn : x->get_instructions())
