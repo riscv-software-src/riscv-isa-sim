@@ -47,6 +47,7 @@ processor_t::processor_t(const isa_parser_t *isa, const char* varch,
   mmu = new mmu_t(sim, this);
 
   disassembler = new disassembler_t(isa);
+  xs_gatherer = new xs_gatherer_t(this);
   for (auto e : isa->get_extensions())
     register_extension(e.second);
 
@@ -507,7 +508,8 @@ void processor_t::reset()
     put_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
   }
 
-   for (auto e : custom_extensions) // reset any extensions
+  xs_gatherer->reset();
+  for (auto e : custom_extensions) // reset any extensions
     e.second->reset();
 
   if (sim)

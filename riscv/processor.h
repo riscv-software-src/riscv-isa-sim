@@ -24,6 +24,7 @@ class simif_t;
 class trap_t;
 class extension_t;
 class disassembler_t;
+class xs_gatherer_t;
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
 
@@ -264,6 +265,7 @@ public:
   bool any_custom_extensions() const {
     return !custom_extensions.empty();
   }
+  xs_gatherer_t* get_xs_gatherer() { return xs_gatherer; }
   bool extension_enabled(unsigned char ext) const {
     if (ext >= 'A' && ext <= 'Z')
       return state.misa->extension_enabled(ext);
@@ -330,6 +332,7 @@ private:
   simif_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
   std::unordered_map<std::string, extension_t*> custom_extensions;
+  xs_gatherer_t* xs_gatherer;
   disassembler_t* disassembler;
   state_t state;
   uint32_t id;
@@ -360,6 +363,7 @@ private:
   friend class mmu_t;
   friend class clint_t;
   friend class extension_t;
+  friend class xs_gatherer_t;
 
   void parse_varch_string(const char*);
   void parse_priv_string(const char*);

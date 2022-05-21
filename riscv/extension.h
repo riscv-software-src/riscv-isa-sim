@@ -51,4 +51,16 @@ void register_extension(const char* name, std::function<extension_t*()> f);
     public: register_##name() { register_extension(#name, constructor); } \
   }; static register_##name dummy_##name;
 
+class xs_gatherer_t
+{
+public:
+  xs_gatherer_t(processor_t* proc) : p(proc) {}
+  void reset() {}
+
+  extension_state_t get_xs();
+
+protected:
+  processor_t* p;
+};
+
 #endif
