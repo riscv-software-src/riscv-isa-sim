@@ -55,12 +55,13 @@ class xs_gatherer_t
 {
 public:
   xs_gatherer_t(processor_t* proc) : p(proc) {}
-  void reset() {}
+  void reset();
 
   extension_state_t get_xs();
-
+  void register_extension(extension_t*);
 protected:
   processor_t* p;
+  std::unordered_map<std::string, extension_t*> custom_extensions;
 };
 
 #endif

@@ -48,8 +48,10 @@ processor_t::processor_t(const isa_parser_t *isa, const char* varch,
 
   disassembler = new disassembler_t(isa);
   xs_gatherer = new xs_gatherer_t(this);
-  for (auto e : isa->get_extensions())
+  for (auto e : isa->get_extensions()) {
     register_extension(e.second);
+    xs_gatherer->register_extension(e.second);
+  }
 
   set_pmp_granularity(1 << PMP_SHIFT);
   set_pmp_num(state.max_pmp);
