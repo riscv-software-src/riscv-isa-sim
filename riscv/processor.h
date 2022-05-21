@@ -260,9 +260,6 @@ public:
            extension_enabled('D') ? 64 :
            extension_enabled('F') ? 32 : 0;
   }
-  bool any_custom_extensions() const {
-    return !custom_extensions.empty();
-  }
   xs_gatherer_t* get_xs_gatherer() { return xs_gatherer; }
   bool extension_enabled(unsigned char ext) const {
     if (ext >= 'A' && ext <= 'Z')
