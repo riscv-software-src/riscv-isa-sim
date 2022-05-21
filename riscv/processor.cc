@@ -48,10 +48,8 @@ processor_t::processor_t(const isa_parser_t *isa, const char* varch,
 
   disassembler = new disassembler_t(isa);
   xs_gatherer = new xs_gatherer_t(this);
-  for (auto e : isa->get_extensions()) {
-    register_extension(e.second);
+  for (auto e : isa->get_extensions())
     xs_gatherer->register_extension(e.second);
-  }
 
   set_pmp_granularity(1 << PMP_SHIFT);
   set_pmp_num(state.max_pmp);
@@ -473,8 +471,6 @@ void processor_t::set_debug(bool value)
   debug = value;
 
   xs_gatherer->set_debug(value);
-  for (auto e : custom_extensions)
-    e.second->set_debug(value);
 }
 
 void processor_t::set_histogram(bool value)
@@ -511,9 +507,8 @@ void processor_t::reset()
     put_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
   }
 
+  // reset any extensions
   xs_gatherer->reset();
-  for (auto e : custom_extensions) // reset any extensions
-    e.second->reset();
 
   if (sim)
     sim->proc_reset(id);
@@ -906,22 +901,6 @@ void processor_t::build_opcode_map()
 
   for (size_t i = 0; i < OPCODE_CACHE_SIZE; i++)
     opcode_cache[i] = insn_desc_t::illegal();
-}
-
-void processor_t::register_extension(extension_t* x)
-{
-  for (auto insn : x->get_instructions())
-    register_insn(insn);
-  build_opcode_map();
-
-  for (auto disasm_insn : x->get_disasms())
-    disassembler->add_insn(disasm_insn);
-
-  if (!custom_extensions.insert(std::make_pair(x->name(), x)).second) {
-    fprintf(stderr, "extensions must have unique names (got two named \"%s\"!)\n", x->name());
-    abort();
-  }
-  x->set_processor(this);
 }
 
 void processor_t::register_base_instructions()

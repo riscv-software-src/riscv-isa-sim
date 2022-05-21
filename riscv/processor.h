@@ -296,7 +296,6 @@ public:
   FILE *get_log_file() { return log_file; }
 
   void register_insn(insn_desc_t);
-  void register_extension(extension_t*);
 
   // MMIO slave interface
   bool load(reg_t addr, size_t len, uint8_t* bytes);
@@ -326,7 +325,6 @@ private:
 
   simif_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
-  std::unordered_map<std::string, extension_t*> custom_extensions;
   xs_gatherer_t* xs_gatherer;
   disassembler_t* disassembler;
   state_t state;

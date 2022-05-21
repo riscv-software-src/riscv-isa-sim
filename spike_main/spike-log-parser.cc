@@ -30,7 +30,7 @@ int main(int argc, char** argv)
   isa_parser_t isa(isa_string, DEFAULT_PRIV);
   processor_t p(&isa, DEFAULT_VARCH, 0, 0, false, nullptr, cerr);
   if (extension) {
-    p.register_extension(extension());
+    p.get_xs_gatherer()->register_extension(extension());
   }
 
   std::regex reg("^core\\s+\\d+:\\s+0x[0-9a-f]+\\s+\\(0x([0-9a-f]+)\\)", std::regex_constants::icase);
