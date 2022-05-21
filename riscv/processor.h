@@ -260,8 +260,6 @@ public:
            extension_enabled('D') ? 64 :
            extension_enabled('F') ? 32 : 0;
   }
-  extension_t* get_extension();
-  extension_t* get_extension(const char* name);
   bool any_custom_extensions() const {
     return !custom_extensions.empty();
   }

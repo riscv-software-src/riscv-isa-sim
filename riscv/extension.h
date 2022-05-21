@@ -59,6 +59,8 @@ public:
 
   extension_state_t get_xs();
   void register_extension(extension_t*);
+  extension_t* get_extension();
+  extension_t* get_extension(const char* name);
 protected:
   processor_t* p;
   std::unordered_map<std::string, extension_t*> custom_extensions;

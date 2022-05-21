@@ -43,3 +43,23 @@ void xs_gatherer_t::register_extension(extension_t* x)
   }
   x->set_processor(p);
 }
+
+extension_t* xs_gatherer_t::get_extension()
+{
+  switch (custom_extensions.size()) {
+    case 0: return NULL;
+    case 1: return custom_extensions.begin()->second;
+    default:
+      fprintf(stderr, "xs_gatherer_t::get_extension() is ambiguous when multiple extensions\n");
+      fprintf(stderr, "are present!\n");
+      abort();
+  }
+}
+
+extension_t* xs_gatherer_t::get_extension(const char* name)
+{
+  auto it = custom_extensions.find(name);
+  if (it == custom_extensions.end())
+    abort();
+  return it->second;
+}

@@ -518,26 +518,6 @@ void processor_t::reset()
     sim->proc_reset(id);
 }
 
-extension_t* processor_t::get_extension()
-{
-  switch (custom_extensions.size()) {
-    case 0: return NULL;
-    case 1: return custom_extensions.begin()->second;
-    default:
-      fprintf(stderr, "processor_t::get_extension() is ambiguous when multiple extensions\n");
-      fprintf(stderr, "are present!\n");
-      abort();
-  }
-}
-
-extension_t* processor_t::get_extension(const char* name)
-{
-  auto it = custom_extensions.find(name);
-  if (it == custom_extensions.end())
-    abort();
-  return it->second;
-}
-
 void processor_t::set_pmp_num(reg_t n)
 {
   // check the number of pmp is in a reasonable range
