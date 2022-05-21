@@ -8,23 +8,39 @@
 #include <vector>
 #include <functional>
 
+typedef enum {
+  EXT_STATE_OFF,
+  EXT_STATE_INIT,
+  EXT_STATE_CLEAN,
+  EXT_STATE_DIRTY,
+
+  MAX_EXT_STATE
+} extension_state_t;
+
 class extension_t
 {
  public:
+  extension_t(bool always_dirty=false) : always_dirty(always_dirty) {}
   virtual std::vector<insn_desc_t> get_instructions() = 0;
   virtual std::vector<disasm_insn_t*> get_disasms() = 0;
   virtual const char* name() = 0;
-  virtual void reset() {};
+  virtual void reset() { state = always_dirty ? EXT_STATE_DIRTY : EXT_STATE_OFF; }
   virtual void set_debug(bool value) {};
   virtual ~extension_t();
 
   void set_processor(processor_t* _p) { p = _p; }
+  extension_state_t get_state() const { return state; }
+  void set_state(extension_state_t s) { state = s; }
  protected:
   processor_t* p;
 
   void illegal_instruction();
   void raise_interrupt();
   void clear_interrupt();
+
+ private:
+  const bool always_dirty;
+  extension_state_t state;
 };
 
 std::function<extension_t*()> find_extension(const char* name);
