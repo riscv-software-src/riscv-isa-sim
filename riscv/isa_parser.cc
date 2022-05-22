@@ -31,7 +31,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   : extension_table(256, false)
 {
   isa_string = strtolower(str);
-  const char* all_subsets = "mafdqchpv";
+  const char* all_subsets = "mafdqcpvh";
 
   max_isa = reg_t(2) << 62;
   // enable zicntr and zihpm unconditionally for backward compatibility
