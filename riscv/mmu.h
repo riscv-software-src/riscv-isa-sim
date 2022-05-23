@@ -87,11 +87,18 @@ public:
   #define load_func(type, prefix, xlate_flags) \
     inline type##_t prefix##_##type(reg_t addr, bool require_alignment = false) { \
       const size_t size = sizeof(type##_t); \
+      const reg_t vpn = addr >> PGSHIFT; \
+      if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
+        if (!matched_trigger) { \
+          matched_trigger = check_trigger_address_before(triggers::OPERATION_LOAD, addr); \
+          if (matched_trigger) \
+            throw *matched_trigger; \
+        } \
+      } \
       if (unlikely(addr & (size-1))) { \
         if (require_alignment) load_reserved_address_misaligned(addr); \
         else return misaligned_load(addr, size, xlate_flags); \
       } \
-      reg_t vpn = addr >> PGSHIFT; \
       if ((xlate_flags) == 0 && likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) { \
         if (proc) READ_MEM(addr, size); \
         return from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
