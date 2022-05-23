@@ -165,9 +165,9 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
 
   bool chain_ok = true;
 
-  for (unsigned int i = 0; i < triggers.size(); i++) {
+  for (auto trigger : triggers) {
     if (!chain_ok) {
-      chain_ok |= !triggers[i]->chain();
+      chain_ok |= !trigger->chain();
       continue;
     }
 
@@ -177,9 +177,9 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
      * entire chain did not match. This is allowed by the spec, because the final
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
-    match_result_t result = triggers[i]->memory_access_match(proc, operation, address, data);
-    if (result != MATCH_NONE && !triggers[i]->chain()) {
-      *action = triggers[i]->action;
+    match_result_t result = trigger->memory_access_match(proc, operation, address, data);
+    if (result != MATCH_NONE && !trigger->chain()) {
+      *action = trigger->action;
       return result;
     }
 
