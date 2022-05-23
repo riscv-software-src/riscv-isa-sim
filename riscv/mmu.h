@@ -477,6 +477,22 @@ private:
     return (uint16_t*)(translate_insn_addr(addr).host_offset + addr);
   }
 
+  inline triggers::matched_t *check_trigger_address_before(triggers::operation_t operation,
+      reg_t address)
+  {
+    if (!proc) {
+      return NULL;
+    }
+    triggers::action_t action;
+    auto match = proc->TM.address_match(&action, operation, address);
+    if (match == triggers::MATCH_NONE)
+      return NULL;
+    if (match == triggers::MATCH_FIRE_BEFORE) {
+      throw triggers::matched_t(operation, address, 0, action);
+    }
+    return new triggers::matched_t(operation, address, 0, action);
+  }
+
   inline triggers::matched_t *trigger_exception(triggers::operation_t operation,
       reg_t address, reg_t data)
   {
