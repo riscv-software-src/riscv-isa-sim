@@ -203,9 +203,9 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
 
   bool chain_ok = true;
 
-  for (unsigned int i = 0; i < triggers.size(); i++) {
+  for (auto trigger : triggers) {
     if (!chain_ok) {
-      chain_ok |= !triggers[i]->chain();
+      chain_ok |= !trigger->chain();
       continue;
     }
 
