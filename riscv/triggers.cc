@@ -108,6 +108,13 @@ bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
   assert(0);
 }
 
+match_result_t mcontrol_t::address_match(processor_t * const proc, operation_t operation, reg_t address) {
+  if (select) {
+    return MATCH_NONE;
+  }
+  return memory_access_match(proc, operation, address, 0);
+}
+
 match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operation_t operation, reg_t address, reg_t data) {
   state_t * const state = proc->get_state();
   if ((operation == triggers::OPERATION_EXECUTE && !execute_bit) ||
@@ -157,6 +164,37 @@ module_t::~module_t() {
   }
 }
 
+match_result_t module_t::address_match(action_t * const action, operation_t operation, reg_t address)
+{
+  state_t * const state = proc->get_state();
+  if (state->debug_mode)
+    return MATCH_NONE;
+
+  bool chain_ok = true;
+
+  for (auto trigger : triggers) {
+    if (!chain_ok) {
+      chain_ok |= !trigger->chain();
+      continue;
+    }
+
+    /* Note: We call memory_access_match for each trigger in a chain as long as
+     * the triggers are matching. This results in "temperature coding" so that
+     * `hit` is set on each of the consecutive triggeratched, even if the
+     * entire chain did not match. This is allowed by the spec, because the final
+     * trigger in the chain will never get `hit` set unless the entire chain
+     * matches. */
+    match_result_t result = trigger->address_match(proc, operation, address);
+    if (result != MATCH_NONE && !trigger->chain()) {
+      *action = trigger->action;
+      return result;
+    }
+
+    chain_ok = true;
+  }
+  return MATCH_NONE;
+}
+
 match_result_t module_t::memory_access_match(action_t * const action, operation_t operation, reg_t address, reg_t data)
 {
   state_t * const state = proc->get_state();
@@ -177,9 +215,9 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
      * entire chain did not match. This is allowed by the spec, because the final
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
-    match_result_t result = triggers[i]->memory_access_match(proc, operation, address, data);
-    if (result != MATCH_NONE && !triggers[i]->chain()) {
-      *action = triggers[i]->action;
+    match_result_t result = trigger->memory_access_match(proc, operation, address, data);
+    if (result != MATCH_NONE && !trigger->chain()) {
+      *action = trigger->action;
       return result;
     }
 
