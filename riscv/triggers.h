@@ -42,6 +42,8 @@ class matched_t
 
 class trigger_t {
 public:
+  virtual match_result_t address_match(processor_t * const proc,
+      operation_t operation, reg_t address) = 0;
   virtual match_result_t memory_access_match(processor_t * const proc,
       operation_t operation, reg_t address, reg_t data) = 0;
 
@@ -90,6 +92,8 @@ public:
   virtual bool store() const override { return store_bit; }
   virtual bool load() const override { return load_bit; }
 
+  virtual match_result_t address_match(processor_t * const proc,
+      operation_t operation, reg_t address) override;
   virtual match_result_t memory_access_match(processor_t * const proc,
       operation_t operation, reg_t address, reg_t data) override;
 
@@ -117,6 +121,8 @@ public:
 
   unsigned count() const { return triggers.size(); }
 
+  match_result_t address_match(action_t * const action,
+      operation_t operation, reg_t address);
   match_result_t memory_access_match(action_t * const action,
       operation_t operation, reg_t address, reg_t data);
 
