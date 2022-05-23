@@ -83,40 +83,45 @@ public:
   proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, size));
 #endif
 
+  template<class T, unsigned xlate_flags>
+  inline T load_fast(reg_t addr, bool require_alignment = false) {
+    const size_t size = sizeof(T);
+    const reg_t vpn = addr >> PGSHIFT;
+    if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
+      if (!matched_trigger) {
+        matched_trigger = check_trigger_address_before(triggers::OPERATION_LOAD, addr);
+        if (matched_trigger)
+          throw *matched_trigger;
+      }
+    }
+    if (unlikely(addr & (size-1))) {
+      if (require_alignment) load_reserved_address_misaligned(addr);
+      else return misaligned_load(addr, size, xlate_flags);
+    }
+    if ((xlate_flags) == 0 && likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) {
+      if (proc) READ_MEM(addr, size);
+      return from_target(*(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr));
+    }
+    if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
+      T data = from_target(*(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr));
+      if (!matched_trigger) {
+        matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, data);
+        if (matched_trigger)
+          throw *matched_trigger;
+      }
+      if (proc) READ_MEM(addr, size);
+      return data;
+    }
+    target_endian<T> res;
+    load_slow_path(addr, size, (uint8_t*)&res, (xlate_flags));
+    if (proc) READ_MEM(addr, size);
+    return from_target(res);
+  };
+
   // template for functions that load an aligned value from memory
   #define load_func(type, prefix, xlate_flags) \
     inline type##_t prefix##_##type(reg_t addr, bool require_alignment = false) { \
-      const size_t size = sizeof(type##_t); \
-      const reg_t vpn = addr >> PGSHIFT; \
-      if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
-        if (!matched_trigger) { \
-          matched_trigger = check_trigger_address_before(triggers::OPERATION_LOAD, addr); \
-          if (matched_trigger) \
-            throw *matched_trigger; \
-        } \
-      } \
-      if (unlikely(addr & (size-1))) { \
-        if (require_alignment) load_reserved_address_misaligned(addr); \
-        else return misaligned_load(addr, size, xlate_flags); \
-      } \
-      if ((xlate_flags) == 0 && likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) { \
-        if (proc) READ_MEM(addr, size); \
-        return from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
-      } \
-      if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
-        type##_t data = from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
-        if (!matched_trigger) { \
-          matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, data); \
-          if (matched_trigger) \
-            throw *matched_trigger; \
-        } \
-        if (proc) READ_MEM(addr, size); \
-        return data; \
-      } \
-      target_endian<type##_t> res; \
-      load_slow_path(addr, size, (uint8_t*)&res, (xlate_flags)); \
-      if (proc) READ_MEM(addr, size); \
-      return from_target(res); \
+      return load_fast<type##_t, xlate_flags>(addr, require_alignment); \
     }
 
   // load value from memory at aligned address; zero extend to register width
