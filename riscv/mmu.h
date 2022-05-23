@@ -86,12 +86,12 @@ public:
   // template for functions that load an aligned value from memory
   #define load_func(type, prefix, xlate_flags) \
     inline type##_t prefix##_##type(reg_t addr, bool require_alignment = false) { \
-      if (unlikely(addr & (sizeof(type##_t)-1))) { \
+      const size_t size = sizeof(type##_t); \
+      if (unlikely(addr & (size-1))) { \
         if (require_alignment) load_reserved_address_misaligned(addr); \
-        else return misaligned_load(addr, sizeof(type##_t), xlate_flags); \
+        else return misaligned_load(addr, size, xlate_flags); \
       } \
       reg_t vpn = addr >> PGSHIFT; \
-      size_t size = sizeof(type##_t); \
       if ((xlate_flags) == 0 && likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) { \
         if (proc) READ_MEM(addr, size); \
         return from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
@@ -107,7 +107,7 @@ public:
         return data; \
       } \
       target_endian<type##_t> res; \
-      load_slow_path(addr, sizeof(type##_t), (uint8_t*)&res, (xlate_flags)); \
+      load_slow_path(addr, size, (uint8_t*)&res, (xlate_flags)); \
       if (proc) READ_MEM(addr, size); \
       return from_target(res); \
     }
@@ -148,12 +148,12 @@ public:
   // template for functions that store an aligned value to memory
   #define store_func(type, prefix, xlate_flags) \
     void prefix##_##type(reg_t addr, type##_t val, bool actually_store=true, bool require_alignment=false) { \
-      if (unlikely(addr & (sizeof(type##_t)-1))) { \
+      const size_t size = sizeof(type##_t); \
+      if (unlikely(addr & (size-1))) { \
         if (require_alignment) store_conditional_address_misaligned(addr); \
-        else return misaligned_store(addr, val, sizeof(type##_t), xlate_flags, actually_store); \
+        else return misaligned_store(addr, val, size, xlate_flags, actually_store); \
       } \
       reg_t vpn = addr >> PGSHIFT; \
-      size_t size = sizeof(type##_t); \
       if ((xlate_flags) == 0 && likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \
         if (actually_store) { \
           if (proc) WRITE_MEM(addr, val, size); \
@@ -173,7 +173,7 @@ public:
       } \
       else { \
         target_endian<type##_t> target_val = to_target(val); \
-        store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&target_val, (xlate_flags), actually_store); \
+        store_slow_path(addr, size, (const uint8_t*)&target_val, (xlate_flags), actually_store); \
         if (actually_store && proc) WRITE_MEM(addr, val, size); \
       } \
   }
