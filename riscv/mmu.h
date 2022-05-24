@@ -161,38 +161,48 @@ public:
   proc->state.log_mem_write.push_back(std::make_tuple(addr, val, size));
 #endif
 
+  template<class T, unsigned xlate_flags>
+  inline void store_fast(reg_t addr, T val, bool actually_store=true, bool require_alignment=false) {
+    const size_t size = sizeof(T);
+    if (unlikely(addr & (size-1))) {
+      if (require_alignment)
+        store_conditional_address_misaligned(addr);
+      else
+        return misaligned_store(addr, val, size, xlate_flags, actually_store);
+    }
+    reg_t vpn = addr >> PGSHIFT;
+    if (xlate_flags == 0 && likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) {
+      if (actually_store) {
+        if (proc)
+          WRITE_MEM(addr, val, size);
+        *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val);
+      }
+    }
+    else if (xlate_flags == 0 && unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
+      if (actually_store) {
+        if (!matched_trigger) {
+          matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, val);
+          if (matched_trigger)
+            throw *matched_trigger;
+        }
+        if (proc)
+          WRITE_MEM(addr, val, size);
+        *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val);
+      }
+    }
+    else {
+      target_endian<T> target_val = to_target(val);
+      store_slow_path(addr, size, (const uint8_t*)&target_val, xlate_flags, actually_store);
+      if (actually_store && proc)
+        WRITE_MEM(addr, val, size);
+    }
+  }
+
   // template for functions that store an aligned value to memory
   #define store_func(type, prefix, xlate_flags) \
     void prefix##_##type(reg_t addr, type##_t val, bool actually_store=true, bool require_alignment=false) { \
-      const size_t size = sizeof(type##_t); \
-      if (unlikely(addr & (size-1))) { \
-        if (require_alignment) store_conditional_address_misaligned(addr); \
-        else return misaligned_store(addr, val, size, xlate_flags, actually_store); \
-      } \
-      reg_t vpn = addr >> PGSHIFT; \
-      if ((xlate_flags) == 0 && likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) { \
-        if (actually_store) { \
-          if (proc) WRITE_MEM(addr, val, size); \
-          *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
-        } \
-      } \
-      else if ((xlate_flags) == 0 && unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
-        if (actually_store) { \
-          if (!matched_trigger) { \
-            matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, val); \
-            if (matched_trigger) \
-              throw *matched_trigger; \
-          } \
-          if (proc) WRITE_MEM(addr, val, size); \
-          *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
-        } \
-      } \
-      else { \
-        target_endian<type##_t> target_val = to_target(val); \
-        store_slow_path(addr, size, (const uint8_t*)&target_val, (xlate_flags), actually_store); \
-        if (actually_store && proc) WRITE_MEM(addr, val, size); \
-      } \
-  }
+      store_fast<type##_t, (xlate_flags)>(addr, val, actually_store, require_alignment); \
+    }
 
   // AMO/Zicbom faults should be reported as store faults
   #define convert_load_traps_to_store_traps(BODY) \
