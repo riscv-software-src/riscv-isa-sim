@@ -94,15 +94,19 @@ public:
           throw *matched_trigger;
       }
     }
-    if (unlikely(addr & (size-1))) {
-      if (require_alignment) load_reserved_address_misaligned(addr);
-      else return misaligned_load(addr, size, xlate_flags);
-    }
     if ((xlate_flags) == 0 && likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) {
+      if (unlikely(addr & (size-1))) {
+        if (require_alignment) load_reserved_address_misaligned(addr);
+        else return misaligned_load(addr, size, xlate_flags);
+      }
       if (proc) READ_MEM(addr, size);
       return from_target(*(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr));
     }
     if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
+      if (unlikely(addr & (size-1))) {
+        if (require_alignment) load_reserved_address_misaligned(addr);
+        else return misaligned_load(addr, size, xlate_flags);
+      }
       T data = from_target(*(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr));
       if (!matched_trigger) {
         matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, data);
@@ -113,8 +117,7 @@ public:
       return data;
     }
     target_endian<T> res;
-    load_slow_path(addr, size, (uint8_t*)&res, (xlate_flags));
-    if (proc) READ_MEM(addr, size);
+    load_slow_path(addr, size, (uint8_t*)&res, xlate_flags, require_alignment);
     return from_target(res);
   };
 
@@ -456,7 +459,7 @@ private:
 
   // handle uncommon cases: TLB misses, page faults, MMIO
   tlb_entry_t fetch_slow_path(reg_t addr);
-  void load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags);
+  void load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags, bool require_alignment);
   void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store);
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);

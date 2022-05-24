@@ -139,7 +139,7 @@ bool mmu_t::mmio_store(reg_t addr, size_t len, const uint8_t* bytes)
   return sim->mmio_store(addr, len, bytes);
 }
 
-void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags)
+void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags, bool require_alignment)
 {
   reg_t paddr = translate(addr, len, LOAD, xlate_flags);
 
@@ -149,8 +149,26 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
       throw *matched_trigger;
   }
 
+  if (unlikely(addr & (len-1))) {
+    if (require_alignment) {
+      load_reserved_address_misaligned(addr);
+    } else {
+      reg_t value = misaligned_load(addr, len, xlate_flags);
+      for (size_t i = 0; i < len; i++) {
+        if (target_big_endian) {
+          bytes[len - i - 1] = value & 0xff;
+        } else {
+          bytes[i] = value & 0xff;
+        }
+        value >>= 8;
+      }
+      return;
+    }
+  }
+
   if (auto host_addr = sim->addr_to_mem(paddr)) {
     memcpy(bytes, host_addr, len);
+    if (proc) READ_MEM(addr, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
       tracer.trace(paddr, len, LOAD);
     else if (xlate_flags == 0)
