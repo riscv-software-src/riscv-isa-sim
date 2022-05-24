@@ -94,15 +94,19 @@ public:
           throw *matched_trigger;
       }
     }
-    if (unlikely(addr & (size-1))) {
-      if (require_alignment) load_reserved_address_misaligned(addr);
-      else return misaligned_load(addr, size, xlate_flags);
-    }
     if ((xlate_flags) == 0 && likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) {
+      if (unlikely(addr & (size-1))) {
+        if (require_alignment) load_reserved_address_misaligned(addr);
+        else return misaligned_load(addr, size, xlate_flags);
+      }
       if (proc) READ_MEM(addr, size);
       return from_target(*(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr));
     }
     if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
+      if (unlikely(addr & (size-1))) {
+        if (require_alignment) load_reserved_address_misaligned(addr);
+        else return misaligned_load(addr, size, xlate_flags);
+      }
       T data = from_target(*(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr));
       if (!matched_trigger) {
         matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, data);
