@@ -184,7 +184,8 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
   }
 }
 
-void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store)
+void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store,
+    bool require_alignment)
 {
   reg_t paddr = translate(addr, len, STORE, xlate_flags);
 
@@ -193,6 +194,15 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_
     matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, data);
     if (matched_trigger)
       throw *matched_trigger;
+  }
+
+  if (unlikely(addr & (len-1))) {
+    if (require_alignment) {
+      store_conditional_address_misaligned(addr);
+    } else {
+      reg_t val = reg_from_bytes(len, bytes);
+      return misaligned_store(addr, val, len, xlate_flags);
+    }
   }
 
   if (actually_store) {

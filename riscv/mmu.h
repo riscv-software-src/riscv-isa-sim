@@ -164,14 +164,23 @@ public:
   template<class T, unsigned xlate_flags>
   inline void store_fast(reg_t addr, T val, bool actually_store=true, bool require_alignment=false) {
     const size_t size = sizeof(T);
-    if (unlikely(addr & (size-1))) {
-      if (require_alignment)
-        store_conditional_address_misaligned(addr);
-      else
-        return misaligned_store(addr, val, size, xlate_flags, actually_store);
+    const reg_t vpn = addr >> PGSHIFT;
+    if (xlate_flags == 0 &&
+        unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS)) &&
+        actually_store) {
+      if (!matched_trigger) {
+        matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, val);
+        if (matched_trigger)
+          throw *matched_trigger;
+      }
     }
-    reg_t vpn = addr >> PGSHIFT;
     if (xlate_flags == 0 && likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) {
+      if (unlikely(addr & (size-1))) {
+        if (require_alignment)
+          store_conditional_address_misaligned(addr);
+        else
+          return misaligned_store(addr, val, size, xlate_flags, actually_store);
+      }
       if (actually_store) {
         if (proc)
           WRITE_MEM(addr, val, size);
@@ -179,12 +188,13 @@ public:
       }
     }
     else if (xlate_flags == 0 && unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
+      if (unlikely(addr & (size-1))) {
+        if (require_alignment)
+          store_conditional_address_misaligned(addr);
+        else
+          return misaligned_store(addr, val, size, xlate_flags, actually_store);
+      }
       if (actually_store) {
-        if (!matched_trigger) {
-          matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, val);
-          if (matched_trigger)
-            throw *matched_trigger;
-        }
         if (proc)
           WRITE_MEM(addr, val, size);
         *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val);
@@ -192,7 +202,8 @@ public:
     }
     else {
       target_endian<T> target_val = to_target(val);
-      store_slow_path(addr, size, (const uint8_t*)&target_val, xlate_flags, actually_store);
+      store_slow_path(addr, size, (const uint8_t*)&target_val, xlate_flags, actually_store,
+          require_alignment);
       if (actually_store && proc)
         WRITE_MEM(addr, val, size);
     }
@@ -471,7 +482,8 @@ private:
   // handle uncommon cases: TLB misses, page faults, MMIO
   tlb_entry_t fetch_slow_path(reg_t addr);
   void load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags, bool require_alignment);
-  void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store);
+  void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store,
+      bool require_alignment);
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
   bool mmio_ok(reg_t addr, access_type type);
