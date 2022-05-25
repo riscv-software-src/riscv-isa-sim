@@ -185,7 +185,8 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
   }
 }
 
-void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store)
+void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store,
+    bool require_alignment)
 {
   reg_t paddr = translate(addr, len, STORE, xlate_flags);
 
@@ -196,9 +197,21 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_
       throw *matched_trigger;
   }
 
+  if (unlikely(addr & (len-1))) {
+    if (require_alignment) {
+      store_conditional_address_misaligned(addr);
+    } else if (actually_store) {
+      reg_t val = reg_from_bytes(len, bytes);
+      misaligned_store(addr, val, len, xlate_flags);
+    }
+    return;
+  }
+
   if (actually_store) {
     if (auto host_addr = sim->addr_to_mem(paddr)) {
       memcpy(host_addr, bytes, len);
+      if (proc)
+        WRITE_MEM(addr, reg_from_bytes(len, bytes), len);
       if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
         tracer.trace(paddr, len, STORE);
       else if (xlate_flags == 0)
