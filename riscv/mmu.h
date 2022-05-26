@@ -87,32 +87,31 @@ public:
   inline T load_fast(reg_t addr, bool require_alignment = false) {
     const size_t size = sizeof(T);
     const reg_t vpn = addr >> PGSHIFT;
-    if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
-      if (!matched_trigger)
-        check_trigger_address_before(triggers::OPERATION_LOAD, addr);
-    }
-    if ((xlate_flags) == 0 && likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) {
-      if (unlikely(addr & (size-1))) {
-        if (require_alignment) load_reserved_address_misaligned(addr);
-        else return misaligned_load(addr, size, xlate_flags);
+    const bool normal_tlb_hit = likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn);
+    const bool misaligned = unlikely((addr & (size-1)) != 0);
+
+    if (xlate_flags == 0 && !misaligned) {
+      if (normal_tlb_hit) {
+        if (proc) READ_MEM(addr, size);
+        return from_target(*(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr));
       }
-      if (proc) READ_MEM(addr, size);
-      return from_target(*(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr));
-    }
-    if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
-      if (unlikely(addr & (size-1))) {
-        if (require_alignment) load_reserved_address_misaligned(addr);
-        else return misaligned_load(addr, size, xlate_flags);
+
+      if (unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
+        if (!matched_trigger)
+          check_trigger_address_before(triggers::OPERATION_LOAD, addr);
+
+        T data = from_target(*(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr));
+        if (!matched_trigger) {
+          matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, data);
+          if (matched_trigger)
+            throw *matched_trigger;
+        }
+
+        if (proc) READ_MEM(addr, size);
+        return data;
       }
-      T data = from_target(*(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr));
-      if (!matched_trigger) {
-        matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, data);
-        if (matched_trigger)
-          throw *matched_trigger;
-      }
-      if (proc) READ_MEM(addr, size);
-      return data;
     }
+
     target_endian<T> res;
     load_slow_path(addr, size, (uint8_t*)&res, xlate_flags, require_alignment);
     return from_target(res);
@@ -161,42 +160,29 @@ public:
   inline void store_fast(reg_t addr, T val, bool actually_store=true, bool require_alignment=false) {
     const size_t size = sizeof(T);
     const reg_t vpn = addr >> PGSHIFT;
+    const bool misaligned = unlikely((addr & (size-1)) != 0);
+
     if (xlate_flags == 0 &&
-        unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS)) &&
-        actually_store) {
-      if (!matched_trigger) {
-        matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, val);
-        if (matched_trigger)
-          throw *matched_trigger;
-      }
-    }
-    if (xlate_flags == 0 && likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn)) {
-      if (unlikely(addr & (size-1))) {
-        if (require_alignment)
-          store_conditional_address_misaligned(addr);
-        else
-          return misaligned_store(addr, val, size, xlate_flags, actually_store);
-      }
+        likely(tlb_store_tag[vpn % TLB_ENTRIES] == vpn) && !misaligned) {
       if (actually_store) {
         if (proc)
           WRITE_MEM(addr, val, size);
         *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val);
       }
-    }
-    else if (xlate_flags == 0 && unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
-      if (unlikely(addr & (size-1))) {
-        if (require_alignment)
-          store_conditional_address_misaligned(addr);
-        else
-          return misaligned_store(addr, val, size, xlate_flags, actually_store);
-      }
+    } else if (xlate_flags == 0 && !misaligned &&
+               unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
       if (actually_store) {
+        if (!matched_trigger) {
+          matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, val);
+          if (matched_trigger)
+            throw *matched_trigger;
+        }
+
         if (proc)
           WRITE_MEM(addr, val, size);
         *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val);
       }
-    }
-    else {
+    } else {
       target_endian<T> target_val = to_target(val);
       store_slow_path(addr, size, (const uint8_t*)&target_val, xlate_flags, actually_store,
           require_alignment);
