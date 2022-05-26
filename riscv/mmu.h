@@ -84,7 +84,7 @@ public:
 #endif
 
   template<class T, unsigned xlate_flags>
-  inline T load_fast(reg_t addr, bool require_alignment = false) {
+  ALWAYS_INLINE T load_fast(reg_t addr, bool require_alignment = false) {
     const size_t size = sizeof(T);
     const reg_t vpn = addr >> PGSHIFT;
     const bool normal_tlb_hit = likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn);
@@ -123,7 +123,7 @@ public:
 
   // template for functions that load an aligned value from memory
   #define load_func(type, prefix, xlate_flags) \
-    inline type##_t prefix##_##type(reg_t addr, bool require_alignment = false) { \
+    ALWAYS_INLINE type##_t prefix##_##type(reg_t addr, bool require_alignment = false) { \
       return load_fast<type##_t, xlate_flags>(addr, require_alignment); \
     }
 
@@ -161,7 +161,7 @@ public:
 #endif
 
   template<class T, unsigned xlate_flags>
-  inline void store_fast(reg_t addr, T val, bool actually_store=true, bool require_alignment=false) {
+  ALWAYS_INLINE void store_fast(reg_t addr, T val, bool actually_store=true, bool require_alignment=false) {
     const size_t size = sizeof(T);
     const reg_t vpn = addr >> PGSHIFT;
     const bool misaligned = unlikely((addr & (size-1)) != 0);
@@ -197,7 +197,7 @@ public:
 
   // template for functions that store an aligned value to memory
   #define store_func(type, prefix, xlate_flags) \
-    void prefix##_##type(reg_t addr, type##_t val, bool actually_store=true, bool require_alignment=false) { \
+    ALWAYS_INLINE void prefix##_##type(reg_t addr, type##_t val, bool actually_store=true, bool require_alignment=false) { \
       store_fast<type##_t, (xlate_flags)>(addr, val, actually_store, require_alignment); \
     }
 
