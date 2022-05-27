@@ -88,11 +88,8 @@ public:
     const size_t size = sizeof(T);
     const reg_t vpn = addr >> PGSHIFT;
     if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
-      if (!matched_trigger) {
-        matched_trigger = check_trigger_address_before(triggers::OPERATION_LOAD, addr);
-        if (matched_trigger)
-          throw *matched_trigger;
-      }
+      if (!matched_trigger)
+        check_trigger_address_before(triggers::OPERATION_LOAD, addr);
     }
     if ((xlate_flags) == 0 && likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) {
       if (unlikely(addr & (size-1))) {
@@ -512,20 +509,20 @@ private:
     return (uint16_t*)(translate_insn_addr(addr).host_offset + addr);
   }
 
-  inline triggers::matched_t *check_trigger_address_before(triggers::operation_t operation,
+  inline void check_trigger_address_before(triggers::operation_t operation,
       reg_t address)
   {
-    if (!proc) {
-      return NULL;
-    }
+    if (!proc)
+      return;
+
     triggers::action_t action;
     auto match = proc->TM.address_match(&action, operation, address);
-    if (match == triggers::MATCH_NONE)
-      return NULL;
-    if (match == triggers::MATCH_FIRE_BEFORE) {
+    if (match == triggers::MATCH_FIRE_BEFORE)
       throw triggers::matched_t(operation, address, 0, action);
+    if (match == triggers::MATCH_FIRE_AFTER) {
+      matched_trigger = new triggers::matched_t(operation, address, 0, action);
+      throw *matched_trigger;
     }
-    return new triggers::matched_t(operation, address, 0, action);
   }
 
   inline triggers::matched_t *trigger_exception(triggers::operation_t operation,

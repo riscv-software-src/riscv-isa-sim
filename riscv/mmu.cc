@@ -143,11 +143,8 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
 {
   reg_t paddr = translate(addr, len, LOAD, xlate_flags);
 
-  if (!matched_trigger) {
-    matched_trigger = check_trigger_address_before(triggers::OPERATION_LOAD, addr);
-    if (matched_trigger)
-      throw *matched_trigger;
-  }
+  if (!matched_trigger)
+    check_trigger_address_before(triggers::OPERATION_LOAD, addr);
 
   if (unlikely(addr & (len-1))) {
     if (require_alignment) {
