@@ -315,8 +315,7 @@ private:
 class wait_for_interrupt_t {};
 
 #define wfi() \
-  do { set_pc_and_serialize(npc); \
-       npc = PC_SERIALIZE_WFI; \
+  do { STATE.pc = npc; \
        throw wait_for_interrupt_t(); \
      } while (0)
 
@@ -325,7 +324,6 @@ class wait_for_interrupt_t {};
 /* Sentinel PC values to serialize simulator pipeline */
 #define PC_SERIALIZE_BEFORE 3
 #define PC_SERIALIZE_AFTER 5
-#define PC_SERIALIZE_WFI 7
 #define invalid_pc(pc) ((pc) & 1)
 
 /* Convenience wrappers to simplify softfloat code sequences */

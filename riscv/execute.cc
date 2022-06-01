@@ -242,7 +242,6 @@ void processor_t::step(size_t n)
        switch (pc) { \
          case PC_SERIALIZE_BEFORE: state.serialized = true; break; \
          case PC_SERIALIZE_AFTER: ++instret; break; \
-         case PC_SERIALIZE_WFI: n = ++instret; break; \
          default: abort(); \
        } \
        pc = state.pc; \
