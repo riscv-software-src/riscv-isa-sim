@@ -241,18 +241,18 @@ public:
   amo_func(uint64)
 
   void cbo_zero(reg_t addr) {
-    auto base = addr & ~(blocksz - 1);
-    for (size_t offset = 0; offset < blocksz; offset += 1)
+    auto base = addr & ~(zicboz_blocksz - 1);
+    for (size_t offset = 0; offset < zicboz_blocksz; offset += 1)
       store_uint8(base + offset, 0);
   }
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
     convert_load_traps_to_store_traps({
-      reg_t paddr = addr & ~(blocksz - 1);
-      paddr = translate(paddr, blocksz, LOAD, 0);
+      reg_t paddr = addr & ~(zicbom_blocksz - 1);
+      paddr = translate(paddr, zicbom_blocksz, LOAD, 0);
       if (auto host_addr = sim->addr_to_mem(paddr)) {
         if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
-          tracer.clean_invalidate(paddr, blocksz, clean, inval);
+          tracer.clean_invalidate(paddr, zicbom_blocksz, clean, inval);
       } else {
         throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
       }
@@ -406,9 +406,14 @@ public:
     return target_big_endian? target_endian<T>::to_be(n) : target_endian<T>::to_le(n);
   }
 
-  void set_cache_blocksz(uint64_t size)
+  void set_zicbom_cache_blocksz(uint64_t size)
   {
-    blocksz = size;
+    zicbom_blocksz = size;
+  }
+
+  void set_zicboz_cache_blocksz(uint64_t size)
+  {
+    zicboz_blocksz = size;
   }
 
 private:
@@ -417,7 +422,8 @@ private:
   memtracer_list_t tracer;
   reg_t load_reservation_address;
   uint16_t fetch_temp;
-  uint64_t blocksz;
+  uint64_t zicbom_blocksz;
+  uint64_t zicboz_blocksz;
 
   // implement an instruction cache for simulator performance
   icache_entry_t icache[ICACHE_ENTRIES];

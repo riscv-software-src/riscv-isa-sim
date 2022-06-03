@@ -74,7 +74,8 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --dm-no-abstract-csr  Debug module won't support abstract to authenticate\n");
   fprintf(stderr, "  --dm-no-halt-groups   Debug module won't support halt groups\n");
   fprintf(stderr, "  --dm-no-impebreak     Debug module won't support implicit ebreak in program buffer\n");
-  fprintf(stderr, "  --blocksz=<size>      Cache block size (B) for CMO operations(powers of 2) [default 64]\n");
+  fprintf(stderr, "  --zicbom_blocksz=<size>      Cache block size (B) for zicbom operations(powers of 2) [default 64]\n");
+  fprintf(stderr, "  --zicboz_blocksz=<size>      Cache block size (B) for zicboz operations(powers of 2) [default 64]\n");
 
   exit(exit_code);
 }
@@ -260,7 +261,8 @@ int main(int argc, char** argv)
   uint16_t rbb_port = 0;
   bool use_rbb = false;
   unsigned dmi_rti = 0;
-  reg_t blocksz = 64;
+  reg_t zicbom_blocksz = 64;
+  reg_t zicboz_blocksz = 64;
   debug_module_config_t dm_config = {
     .progbufsize = 2,
     .max_sba_data_width = 0,
@@ -396,10 +398,17 @@ int main(int argc, char** argv)
         exit(-1);
      }
   });
-  parser.option(0, "blocksz", 1, [&](const char* s){
-    blocksz = strtoull(s, 0, 0);
-    if (((blocksz & (blocksz - 1))) != 0) {
-      fprintf(stderr, "--blocksz should be power of 2\n");
+  parser.option(0, "zicbom_blocksz", 1, [&](const char* s){
+    zicbom_blocksz = strtoull(s, 0, 0);
+    if (((zicbom_blocksz & (zicbom_blocksz - 1))) != 0) {
+      fprintf(stderr, "--zicbom_blocksz should be power of 2\n");
+      exit(-1);
+    }
+  });
+  parser.option(0, "zicboz_blocksz", 1, [&](const char* s){
+    zicboz_blocksz = strtoull(s, 0, 0);
+    if (((zicboz_blocksz & (zicboz_blocksz - 1))) != 0) {
+      fprintf(stderr, "--zicboz_blocksz should be power of 2\n");
       exit(-1);
     }
   });
@@ -512,7 +521,8 @@ int main(int argc, char** argv)
     if (dc) s.get_core(i)->get_mmu()->register_memtracer(&*dc);
     for (auto e : extensions)
       s.get_core(i)->register_extension(e());
-    s.get_core(i)->get_mmu()->set_cache_blocksz(blocksz);
+    s.get_core(i)->get_mmu()->set_zicbom_cache_blocksz(zicbom_blocksz);
+    s.get_core(i)->get_mmu()->set_zicboz_cache_blocksz(zicboz_blocksz);
   }
 
   s.set_debug(debug);
