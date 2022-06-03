@@ -150,16 +150,7 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
     if (require_alignment) {
       load_reserved_address_misaligned(addr);
     } else {
-      reg_t value = misaligned_load(addr, len, xlate_flags);
-      for (size_t i = 0; i < len; i++) {
-        if (target_big_endian) {
-          bytes[len - i - 1] = value & 0xff;
-        } else {
-          bytes[i] = value & 0xff;
-        }
-        value >>= 8;
-      }
-      return;
+      return misaligned_load(addr, len, bytes, xlate_flags);
     }
   }
 

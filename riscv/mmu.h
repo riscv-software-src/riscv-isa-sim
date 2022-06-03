@@ -52,13 +52,11 @@ public:
 #define RISCV_XLATE_VIRT (1U << 0)
 #define RISCV_XLATE_VIRT_HLVX (1U << 1)
 
-  inline reg_t misaligned_load(reg_t addr, size_t size, uint32_t xlate_flags)
+  inline void misaligned_load(reg_t addr, reg_t len, uint8_t *bytes, uint32_t xlate_flags)
   {
 #ifdef RISCV_ENABLE_MISALIGNED
-    reg_t res = 0;
-    for (size_t i = 0; i < size; i++)
-      res += (reg_t)load_uint8(addr + (target_big_endian? size-1-i : i)) << (i * 8);
-    return res;
+    for (size_t i = 0; i < len; i++)
+      bytes[i] = load_uint8(addr + i);
 #else
     bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
     throw trap_load_address_misaligned(gva, addr, 0, 0);
