@@ -69,7 +69,6 @@ const int NCSR = 4096;
   (((x) & 0x03) < 0x03 ? 2 : \
    ((x) & 0x1f) < 0x1f ? 4 : \
    ((x) & 0x3f) < 0x3f ? 6 : \
-   ((x) & 0x7f) == 0x7f ? 4 : \
    8)
 #define MAX_INSN_LENGTH 8
 #define PC_ALIGN 2
