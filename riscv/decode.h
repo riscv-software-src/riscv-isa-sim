@@ -79,7 +79,7 @@ class insn_t
 public:
   insn_t() = default;
   insn_t(insn_bits_t bits) : b(bits) {}
-  insn_bits_t bits() { return b & ~((UINT64_MAX) << (length() * 8)); }
+  insn_bits_t bits() { return b; }
   int length() { return insn_length(b); }
   int64_t i_imm() { return xs(20, 12); }
   int64_t shamt() { return x(20, 6); }
