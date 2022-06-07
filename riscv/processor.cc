@@ -796,7 +796,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
 
 void processor_t::disasm(insn_t insn)
 {
-  uint64_t bits = insn.bits() & ((1ULL << (8 * insn_length(insn.bits()))) - 1);
+  uint64_t bits = insn.bits();
   if (last_pc != state.pc || last_bits != bits) {
     std::stringstream s;  // first put everything in a string, later send it to output
 
