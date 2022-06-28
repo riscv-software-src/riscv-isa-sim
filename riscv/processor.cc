@@ -1072,7 +1072,7 @@ void processor_t::register_base_instructions()
   #include "encoding.h"
   #undef DECLARE_INSN
 
-  #define DECLARE_OVERLAP_INSN(name, ext) { name##_supported &= isa->extension_enabled(ext); }
+  #define DECLARE_OVERLAP_INSN(name, ext) { name##_supported = isa->extension_enabled(ext); }
   #include "overlap_list.h"
   #undef DECLARE_OVERLAP_INSN
 
