@@ -257,6 +257,13 @@ public:
     return (addr / PC_ALIGN) % ICACHE_ENTRIES;
   }
 
+  template<typename T>
+  T ALWAYS_INLINE fetch_jump_table(reg_t addr) {
+    target_endian<T> res;
+    load_slow_path_intrapage(addr, sizeof(T), (uint8_t*)&res, 0);
+    return from_target(res);
+  }
+
   inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
   {
     if (matched_trigger)

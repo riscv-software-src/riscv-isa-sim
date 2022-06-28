@@ -1318,9 +1318,13 @@ riscv_insn_ext_zcmp = \
 	cm_mva01s \
 	cm_mvsa01 \
 
+riscv_insn_ext_zcmt = \
+	cm_jalt \
+
 riscv_insn_ext_zce = \
 	$(riscv_insn_ext_zcb) \
 	$(riscv_insn_ext_zcmp) \
+	$(riscv_insn_ext_zcmt) \
 
 riscv_insn_ext_cmo = \
 	cbo_clean \
