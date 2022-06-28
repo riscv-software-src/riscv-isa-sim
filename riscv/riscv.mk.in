@@ -1310,8 +1310,17 @@ riscv_insn_ext_zcb = \
 	c_sb \
 	c_sh \
 
+riscv_insn_ext_zcmp = \
+	cm_push \
+	cm_pop \
+	cm_popret \
+	cm_popretz \
+	cm_mva01s \
+	cm_mvsa01 \
+
 riscv_insn_ext_zce = \
 	$(riscv_insn_ext_zcb) \
+	$(riscv_insn_ext_zcmp) \
 
 riscv_insn_ext_cmo = \
 	cbo_clean \

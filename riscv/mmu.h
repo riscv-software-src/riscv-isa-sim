@@ -186,6 +186,38 @@ public:
     })
   }
 
+  template<typename T>
+  void ALWAYS_INLINE zcmp_push(reg_t xreg_mask, reg_t stack_adjust) {
+    processor_t *p = proc;
+    reg_t bytes = sizeof(T);
+    reg_t addr = SP - bytes;
+
+    for (int i = Sn(11); i >= 0; i--) {
+      if (xreg_mask & (1 << i)) {
+        store<T>(addr, READ_REG(i));
+        addr -= bytes;
+      }
+    }
+
+    WRITE_REG(X_SP, SP - stack_adjust);
+  }
+
+  template<typename T>
+  void ALWAYS_INLINE  zcmp_pop(reg_t xreg_mask, reg_t stack_adjust) {
+    processor_t *p = proc;
+    reg_t bytes = sizeof(T);
+    reg_t addr = SP + stack_adjust- bytes;
+
+    for (int i = Sn(11); i >= 0; i--) {
+      if (xreg_mask & (1 << i)) {
+        WRITE_REG(i, load<T>(addr));
+        addr -= bytes;
+      }
+    }
+
+    WRITE_REG(X_SP, SP + stack_adjust);
+  }
+
   inline void yield_load_reservation()
   {
     load_reservation_address = (reg_t)-1;
