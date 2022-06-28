@@ -450,7 +450,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     }
   }
   if (proc->extension_enabled_const(EXT_SMSTATEEN)) {
-    const reg_t sstateen0_mask = (proc->extension_enabled(EXT_ZFINX) ? SSTATEEN0_FCSR : 0) | SSTATEEN0_CS;
+    const reg_t sstateen0_mask = (proc->extension_enabled(EXT_ZFINX) ? SSTATEEN0_FCSR : 0) |
+                                 (proc->extension_enabled(EXT_ZCMT) ? SSTATEEN0_JVT : 0) |
+                                 SSTATEEN0_CS;
     const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN;
     const reg_t mstateen0_mask = hstateen0_mask;
     for (int i = 0; i < 4; i++) {
@@ -491,6 +493,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       csrmap[CSR_VSTIMECMP] = vstimecmp;
     }
   }
+
+  if (proc->extension_enabled_const(EXT_ZCMT))
+    csrmap[CSR_JVT] = jvt = std::make_shared<jvt_csr_t>(proc, CSR_JVT, 0);
 
   serialized = false;
 

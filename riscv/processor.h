@@ -175,6 +175,9 @@ struct state_t
   dcsr_csr_t_p dcsr;
   csr_t_p tselect;
   tdata2_csr_t_p tdata2;
+
+  csr_t_p jvt;
+
   bool debug_mode;
 
   mseccfg_csr_t_p mseccfg;
