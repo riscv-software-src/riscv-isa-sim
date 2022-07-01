@@ -372,7 +372,6 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
   }
 }
 
-
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
 {
   if (args.size() < 1)

@@ -57,7 +57,6 @@ class csr_t {
 
 typedef std::shared_ptr<csr_t> csr_t_p;
 
-
 // Basic CSRs, with XLEN bits fully readable and writable.
 class basic_csr_t: public csr_t {
  public:
@@ -72,7 +71,6 @@ class basic_csr_t: public csr_t {
  private:
   reg_t val;
 };
-
 
 class pmpaddr_csr_t: public csr_t {
  public:
@@ -174,7 +172,6 @@ class epc_csr_t: public csr_t {
   reg_t val;
 };
 
-
 // For mtvec, stvec, and vstvec
 class tvec_csr_t: public csr_t {
  public:
@@ -187,7 +184,6 @@ class tvec_csr_t: public csr_t {
   reg_t val;
 };
 
-
 // For mcause, scause, and vscause
 class cause_csr_t: public basic_csr_t {
  public:
@@ -195,7 +191,6 @@ class cause_csr_t: public basic_csr_t {
 
   virtual reg_t read() const noexcept override;
 };
-
 
 // For *status family of CSRs
 class base_status_csr_t: public csr_t {
@@ -218,7 +213,6 @@ class base_status_csr_t: public csr_t {
 
 typedef std::shared_ptr<base_status_csr_t> base_status_csr_t_p;
 
-
 // For vsstatus, which is its own separate architectural register
 // (unlike sstatus)
 class vsstatus_csr_t final: public base_status_csr_t {
@@ -237,7 +231,6 @@ class vsstatus_csr_t final: public base_status_csr_t {
 
 typedef std::shared_ptr<vsstatus_csr_t> vsstatus_csr_t_p;
 
-
 class mstatus_csr_t final: public base_status_csr_t {
  public:
   mstatus_csr_t(processor_t* const proc, const reg_t addr);
@@ -255,7 +248,6 @@ class mstatus_csr_t final: public base_status_csr_t {
 
 typedef std::shared_ptr<mstatus_csr_t> mstatus_csr_t_p;
 
-
 class mstatush_csr_t: public csr_t {
  public:
   mstatush_csr_t(processor_t* const proc, const reg_t addr, mstatus_csr_t_p mstatus);
@@ -266,7 +258,6 @@ class mstatush_csr_t: public csr_t {
   mstatus_csr_t_p mstatus;
   const reg_t mask;
 };
-
 
 class sstatus_proxy_csr_t final: public base_status_csr_t {
  public:
@@ -299,7 +290,6 @@ class sstatus_csr_t: public virtualized_csr_t {
 
 typedef std::shared_ptr<sstatus_csr_t> sstatus_csr_t_p;
 
-
 class misa_csr_t final: public basic_csr_t {
  public:
   misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa);
@@ -320,7 +310,6 @@ class misa_csr_t final: public basic_csr_t {
 
 typedef std::shared_ptr<misa_csr_t> misa_csr_t_p;
 
-
 class mip_or_mie_csr_t: public csr_t {
  public:
   mip_or_mie_csr_t(processor_t* const proc, const reg_t addr);
@@ -335,7 +324,6 @@ class mip_or_mie_csr_t: public csr_t {
   virtual reg_t write_mask() const noexcept = 0;
 };
 
-
 // mip is special because some of the bits are driven by hardware pins
 class mip_csr_t: public mip_or_mie_csr_t {
  public:
@@ -349,7 +337,6 @@ class mip_csr_t: public mip_or_mie_csr_t {
 
 typedef std::shared_ptr<mip_csr_t> mip_csr_t_p;
 
-
 class mie_csr_t: public mip_or_mie_csr_t {
  public:
   mie_csr_t(processor_t* const proc, const reg_t addr);
@@ -358,7 +345,6 @@ class mie_csr_t: public mip_or_mie_csr_t {
 };
 
 typedef std::shared_ptr<mie_csr_t> mie_csr_t_p;
-
 
 // For sip, hip, hvip, vsip, sie, hie, vsie which are all just (masked
 // & shifted) views into mip or mie. Each pair will have one of these
@@ -391,7 +377,6 @@ class generic_int_accessor_t {
 
 typedef std::shared_ptr<generic_int_accessor_t> generic_int_accessor_t_p;
 
-
 // For all CSRs that are simply (masked & shifted) views into mip
 class mip_proxy_csr_t: public csr_t {
  public:
@@ -414,8 +399,6 @@ class mie_proxy_csr_t: public csr_t {
   generic_int_accessor_t_p accr;
 };
 
-
-
 class mideleg_csr_t: public basic_csr_t {
  public:
   mideleg_csr_t(processor_t* const proc, const reg_t addr);
@@ -424,7 +407,6 @@ class mideleg_csr_t: public basic_csr_t {
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
-
 
 class medeleg_csr_t: public basic_csr_t {
  public:
@@ -436,7 +418,6 @@ class medeleg_csr_t: public basic_csr_t {
   const reg_t hypervisor_exceptions;
 };
 
-
 // For CSRs with certain bits hardwired
 class masked_csr_t: public basic_csr_t {
  public:
@@ -446,7 +427,6 @@ class masked_csr_t: public basic_csr_t {
  private:
   const reg_t mask;
 };
-
 
 // henvcfg.pbmte is read_only 0 when menvcfg.pbmte = 0
 class henvcfg_csr_t final: public masked_csr_t {
@@ -460,7 +440,6 @@ class henvcfg_csr_t final: public masked_csr_t {
  private:
   csr_t_p menvcfg;
 };
-
 
 // For satp and vsatp
 // These are three classes in order to handle the [V]TVM bits permission checks
@@ -492,7 +471,6 @@ class virtualized_satp_csr_t: public virtualized_csr_t {
   satp_csr_t_p orig_satp;
 };
 
-
 // For minstret and mcycle, which are always 64 bits, but in RV32 are
 // split into high and low halves. The first class always holds the
 // full 64-bit value.
@@ -512,7 +490,6 @@ class wide_counter_csr_t: public csr_t {
 
 typedef std::shared_ptr<wide_counter_csr_t> wide_counter_csr_t_p;
 
-
 // A simple proxy to read/write the upper half of minstret/mcycle
 class counter_top_csr_t: public csr_t {
  public:
@@ -526,7 +503,6 @@ class counter_top_csr_t: public csr_t {
 
 typedef std::shared_ptr<counter_top_csr_t> counter_top_csr_t_p;
 
-
 // For a CSR that is an alias of another
 class proxy_csr_t: public csr_t {
  public:
@@ -537,7 +513,6 @@ class proxy_csr_t: public csr_t {
  private:
   csr_t_p delegate;
 };
-
 
 // For a CSR with a fixed, unchanging value
 class const_csr_t: public csr_t {
@@ -550,7 +525,6 @@ class const_csr_t: public csr_t {
   const reg_t val;
 };
 
-
 // For a CSR that is an unprivileged accessor of a privileged counter
 class counter_proxy_csr_t: public proxy_csr_t {
  public:
@@ -560,14 +534,12 @@ class counter_proxy_csr_t: public proxy_csr_t {
   bool myenable(csr_t_p counteren) const noexcept;
 };
 
-
 // For machine-level CSRs that only exist with Hypervisor
 class hypervisor_csr_t: public basic_csr_t {
  public:
   hypervisor_csr_t(processor_t* const proc, const reg_t addr);
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
-
 
 class hideleg_csr_t: public masked_csr_t {
  public:
@@ -577,7 +549,6 @@ class hideleg_csr_t: public masked_csr_t {
   csr_t_p mideleg;
 };
 
-
 class hgatp_csr_t: public basic_csr_t {
  public:
   hgatp_csr_t(processor_t* const proc, const reg_t addr);
@@ -586,14 +557,12 @@ class hgatp_csr_t: public basic_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
-
 class tselect_csr_t: public basic_csr_t {
  public:
   tselect_csr_t(processor_t* const proc, const reg_t addr);
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
-
 
 class tdata1_csr_t: public csr_t {
  public:
@@ -619,7 +588,6 @@ class debug_mode_csr_t: public basic_csr_t {
 };
 
 typedef std::shared_ptr<tdata2_csr_t> tdata2_csr_t_p;
-
 
 class dpc_csr_t: public epc_csr_t {
  public:
@@ -648,7 +616,6 @@ class dcsr_csr_t: public csr_t {
 
 typedef std::shared_ptr<dcsr_csr_t> dcsr_csr_t_p;
 
-
 class float_csr_t final: public masked_csr_t {
  public:
   float_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
@@ -658,7 +625,6 @@ class float_csr_t final: public masked_csr_t {
 };
 
 typedef std::shared_ptr<float_csr_t> float_csr_t_p;
-
 
 // For a CSR like FCSR, that is actually a view into multiple
 // underlying registers.
@@ -676,7 +642,6 @@ class composite_csr_t: public csr_t {
   const unsigned upper_lsb;
 };
 
-
 class seed_csr_t: public csr_t {
  public:
   seed_csr_t(processor_t* const proc, const reg_t addr);
@@ -685,7 +650,6 @@ class seed_csr_t: public csr_t {
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
-
 
 class vector_csr_t: public basic_csr_t {
  public:
@@ -700,7 +664,6 @@ class vector_csr_t: public basic_csr_t {
 };
 
 typedef std::shared_ptr<vector_csr_t> vector_csr_t_p;
-
 
 // For CSRs shared between Vector and P extensions (vxsat)
 class vxsat_csr_t: public masked_csr_t {

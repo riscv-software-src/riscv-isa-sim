@@ -201,7 +201,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   if (is_over) \
     require(insn.rd() != insn.rs2()); \
 
-
 //
 // vector: loop header and end helper
 //
@@ -290,7 +289,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   VI_LOOP_ELEMENT_SKIP({ \
     require(!(insn.rd() == 0 && P.VU.vflmul > 1)); \
   });
-
 
 #define INT_ROUNDING(result, xrm, gb) \
   do { \
@@ -655,7 +653,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   } else if (sew == e64) { \
     REDUCTION_ULOOP(e64, BODY) \
   }
-
 
 // genearl VXI signed/unsigned loop
 #define VI_VV_ULOOP(BODY) \
@@ -1824,7 +1821,6 @@ reg_t index[P.VU.vlmax]; \
   }; \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
-
 
 #define VI_VFP_VV_LOOP_WIDE(BODY16, BODY32) \
   VI_CHECK_DSS(true); \

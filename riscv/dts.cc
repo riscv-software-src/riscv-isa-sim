@@ -183,7 +183,6 @@ std::string dts_compile(const std::string& dts)
   return dtb.str();
 }
 
-
 static int fdt_get_node_addr_size(void *fdt, int node, reg_t *addr,
                                   unsigned long *size, const char *field)
 {
@@ -244,7 +243,6 @@ static int check_cpu_node(void *fdt, int cpu_offset)
 
   return 0;
 }
-
 
 int fdt_get_offset(void *fdt, const char *field)
 {

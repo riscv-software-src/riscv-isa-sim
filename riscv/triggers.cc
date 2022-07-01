@@ -212,5 +212,4 @@ bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_
   return result;
 }
 
-
 };

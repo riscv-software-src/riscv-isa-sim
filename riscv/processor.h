@@ -118,7 +118,6 @@ struct type_sew_t<64>
   using type=int64_t;
 };
 
-
 // architectural state of a RISC-V hart
 struct state_t
 {
