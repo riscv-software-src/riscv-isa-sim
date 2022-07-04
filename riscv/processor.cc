@@ -228,13 +228,15 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   }
   for (reg_t i = 3; i <= 31; ++i) {
     const reg_t which_mevent = CSR_MHPMEVENT3 + i - 3;
+    const reg_t which_meventh = CSR_MHPMEVENT3H + i - 3;
     const reg_t which_mcounter = CSR_MHPMCOUNTER3 + i - 3;
     const reg_t which_mcounterh = CSR_MHPMCOUNTER3H + i - 3;
     const reg_t which_counter = CSR_HPMCOUNTER3 + i - 3;
     const reg_t which_counterh = CSR_HPMCOUNTER3H + i - 3;
-    auto mevent = std::make_shared<const_csr_t>(proc, which_mevent, 0);
+    const reg_t mevent_mask = proc->extension_enabled_const(EXT_SSCOFPMF) ? MHPMEVENT_VUINH | MHPMEVENT_VSINH | MHPMEVENTH_UINH |
+                                                                            MHPMEVENT_UINH | MHPMEVENT_MINH | MHPMEVENT_OF : 0;
+    mevent[i - 3] = std::make_shared<masked_csr_t>(proc, which_mevent, mevent_mask, 0);
     auto mcounter = std::make_shared<const_csr_t>(proc, which_mcounter, 0);
-    csrmap[which_mevent] = mevent;
     csrmap[which_mcounter] = mcounter;
 
     if (proc->extension_enabled_const(EXT_ZICNTR) && proc->extension_enabled_const(EXT_ZIHPM)) {
@@ -242,21 +244,30 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       csrmap[which_counter] = counter;
     }
     if (xlen == 32) {
+      csrmap[which_mevent] = std::make_shared<rv32_low_csr_t>(proc, which_mevent, mevent[i - 3]);;
       auto mcounterh = std::make_shared<const_csr_t>(proc, which_mcounterh, 0);
       csrmap[which_mcounterh] = mcounterh;
       if (proc->extension_enabled_const(EXT_ZICNTR) && proc->extension_enabled_const(EXT_ZIHPM)) {
         auto counterh = std::make_shared<counter_proxy_csr_t>(proc, which_counterh, mcounterh);
         csrmap[which_counterh] = counterh;
       }
+      if (proc->extension_enabled_const(EXT_SSCOFPMF)) {
+        auto meventh = std::make_shared<rv32_high_csr_t>(proc, which_meventh, mevent[i - 3]);
+        csrmap[which_meventh] = meventh;
+      }
+    } else {
+      csrmap[which_mevent] = mevent[i - 3];
     }
   }
   csrmap[CSR_MCOUNTINHIBIT] = std::make_shared<const_csr_t>(proc, CSR_MCOUNTINHIBIT, 0);
+  if (proc->extension_enabled_const(EXT_SSCOFPMF))
+    csrmap[CSR_SCOUNTOVF] = std::make_shared<scountovf_csr_t>(proc, CSR_SCOUNTOVF);
   csrmap[CSR_MIE] = mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
   csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(
     this,
     ~MIP_HS_MASK,  // read_mask
-    MIP_SSIP,      // ip_write_mask
+    MIP_SSIP | MIP_LCOFIP,  // ip_write_mask
     ~MIP_HS_MASK,  // ie_write_mask
     generic_int_accessor_t::mask_mode_t::MIDELEG,
     0              // shiftamt
