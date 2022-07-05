@@ -716,6 +716,8 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
       enabled_interrupts = MIP_SSIP;
     else if (enabled_interrupts & MIP_STIP)
       enabled_interrupts = MIP_STIP;
+    else if (enabled_interrupts & MIP_LCOFIP)
+      enabled_interrupts = MIP_LCOFIP;
     else if (enabled_interrupts & MIP_VSEIP)
       enabled_interrupts = MIP_VSEIP;
     else if (enabled_interrupts & MIP_VSSIP)
