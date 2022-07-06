@@ -1311,8 +1311,48 @@ fcsr_csr_t::fcsr_csr_t(processor_t* const proc, const reg_t addr, csr_t_p upper_
   composite_csr_t(proc, addr, upper_csr, lower_csr, upper_lsb) {
 }
 
+void fcsr_csr_t::verify_permissions(insn_t insn, bool write) const {
+  composite_csr_t::verify_permissions(insn, write);
+
+  if (proc->extension_enabled(EXT_SMSTATEEN) && proc->extension_enabled(EXT_ZFINX)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_FCSR))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_FCSR))
+      throw trap_virtual_instruction(insn.bits());
+
+    if ((proc->extension_enabled('S') && state->prv < PRV_S) && !(state->sstateen[0]->read() & SSTATEEN0_FCSR)) {
+      if (state->v)
+        throw trap_virtual_instruction(insn.bits());
+      else
+        throw trap_illegal_instruction(insn.bits());
+    }
+  }
+}
+
 // implement class senvcfg_csr_t
 senvcfg_csr_t::senvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask,
                              const reg_t init):
   masked_csr_t(proc, addr, mask, init) {
+}
+
+void senvcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
+  masked_csr_t::verify_permissions(insn, write);
+
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_HENVCFG))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_SENVCFG))
+      throw trap_virtual_instruction(insn.bits());
+  }
+}
+
+void henvcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
+  masked_csr_t::verify_permissions(insn, write);
+
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_HENVCFG))
+      throw trap_illegal_instruction(insn.bits());
+  }
 }

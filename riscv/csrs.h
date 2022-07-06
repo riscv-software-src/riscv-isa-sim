@@ -439,6 +439,8 @@ class henvcfg_csr_t final: public masked_csr_t {
     return (menvcfg->read() | ~MENVCFG_PBMTE) & masked_csr_t::read();
   }
 
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+
  private:
   csr_t_p menvcfg;
 };
@@ -699,11 +701,13 @@ class sstateen_csr_t: public hstateen_csr_t {
 class fcsr_csr_t: public composite_csr_t {
  public:
   fcsr_csr_t(processor_t* const proc, const reg_t addr, csr_t_p upper_csr, csr_t_p lower_csr, const unsigned upper_lsb);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
 };
 
 class senvcfg_csr_t final: public masked_csr_t {
  public:
   senvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
 };
 
 #endif
