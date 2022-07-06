@@ -53,6 +53,8 @@ class csr_t {
  private:
   const unsigned csr_priv;
   const bool csr_read_only;
+
+  friend class rv32_high_csr_t;
 };
 
 typedef std::shared_ptr<csr_t> csr_t_p;
@@ -243,19 +245,19 @@ class mstatus_csr_t final: public base_status_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
   reg_t val;
-  friend class mstatush_csr_t;
 };
 
 typedef std::shared_ptr<mstatus_csr_t> mstatus_csr_t_p;
 
-class mstatush_csr_t: public csr_t {
+class rv32_high_csr_t: public csr_t {
  public:
-  mstatush_csr_t(processor_t* const proc, const reg_t addr, mstatus_csr_t_p mstatus);
+  rv32_high_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, csr_t_p orig);
   virtual reg_t read() const noexcept override;
+  virtual void verify_permissions(insn_t insn, bool write) const override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
-  mstatus_csr_t_p mstatus;
+  csr_t_p orig;
   const reg_t mask;
 };
 

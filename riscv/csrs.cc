@@ -493,19 +493,23 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   return true;
 }
 
-// implement class mstatush_csr_t
-mstatush_csr_t::mstatush_csr_t(processor_t* const proc, const reg_t addr, mstatus_csr_t_p mstatus):
+// implement class rv32_high_csr_t
+rv32_high_csr_t::rv32_high_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, csr_t_p orig):
   csr_t(proc, addr),
-  mstatus(mstatus),
-  mask(MSTATUSH_MPV | MSTATUSH_GVA | MSTATUSH_SBE | MSTATUSH_MBE) {
+  orig(orig),
+  mask(mask) {
 }
 
-reg_t mstatush_csr_t::read() const noexcept {
-  return (mstatus->read() >> 32) & mask;
+reg_t rv32_high_csr_t::read() const noexcept {
+  return (orig->read() >> 32) & mask;
 }
 
-bool mstatush_csr_t::unlogged_write(const reg_t val) noexcept {
-  return mstatus->unlogged_write((mstatus->written_value() & ~(mask << 32)) | ((val & mask) << 32));
+void rv32_high_csr_t::verify_permissions(insn_t insn, bool write) const {
+  orig->verify_permissions(insn, write);
+}
+
+bool rv32_high_csr_t::unlogged_write(const reg_t val) noexcept {
+  return orig->unlogged_write((orig->written_value() & ~(mask << 32)) | ((val & mask) << 32));
 }
 
 // implement class sstatus_csr_t

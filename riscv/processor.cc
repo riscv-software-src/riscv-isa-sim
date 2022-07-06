@@ -190,7 +190,11 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   v = false;
   csrmap[CSR_MISA] = misa = std::make_shared<misa_csr_t>(proc, CSR_MISA, max_isa);
   csrmap[CSR_MSTATUS] = mstatus = std::make_shared<mstatus_csr_t>(proc, CSR_MSTATUS);
-  if (xlen == 32) csrmap[CSR_MSTATUSH] = std::make_shared<mstatush_csr_t>(proc, CSR_MSTATUSH, mstatus);
+
+  if (xlen == 32) {
+    const reg_t mstatush_mask = MSTATUSH_MPV | MSTATUSH_GVA | MSTATUSH_SBE | MSTATUSH_MBE;
+    csrmap[CSR_MSTATUSH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MSTATUSH, mstatush_mask, mstatus);
+  }
   csrmap[CSR_MEPC] = mepc = std::make_shared<epc_csr_t>(proc, CSR_MEPC);
   csrmap[CSR_MTVAL] = mtval = std::make_shared<basic_csr_t>(proc, CSR_MTVAL, 0);
   csrmap[CSR_MSCRATCH] = std::make_shared<basic_csr_t>(proc, CSR_MSCRATCH, 0);
