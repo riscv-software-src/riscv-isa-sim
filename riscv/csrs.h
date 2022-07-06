@@ -695,4 +695,15 @@ class sstateen_csr_t: public hstateen_csr_t {
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
+
+class fcsr_csr_t: public composite_csr_t {
+ public:
+  fcsr_csr_t(processor_t* const proc, const reg_t addr, csr_t_p upper_csr, csr_t_p lower_csr, const unsigned upper_lsb);
+};
+
+class senvcfg_csr_t final: public masked_csr_t {
+ public:
+  senvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+};
+
 #endif

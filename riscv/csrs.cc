@@ -1305,3 +1305,14 @@ void sstateen_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (state->v && !(state->hstateen[index]->read() & HSTATEEN_SSTATEEN))
       throw trap_virtual_instruction(insn.bits());
 }
+
+// implement class fcsr_csr_t
+fcsr_csr_t::fcsr_csr_t(processor_t* const proc, const reg_t addr, csr_t_p upper_csr, csr_t_p lower_csr, const unsigned upper_lsb):
+  composite_csr_t(proc, addr, upper_csr, lower_csr, upper_lsb) {
+}
+
+// implement class senvcfg_csr_t
+senvcfg_csr_t::senvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask,
+                             const reg_t init):
+  masked_csr_t(proc, addr, mask, init) {
+}
