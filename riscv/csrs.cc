@@ -1244,3 +1244,64 @@ bool vxsat_csr_t::unlogged_write(const reg_t val) noexcept {
   dirty_vs_state;
   return masked_csr_t::unlogged_write(val);
 }
+
+// implement class hstateen_csr_t
+hstateen_csr_t::hstateen_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask,
+                               const reg_t init, uint8_t index):
+  masked_csr_t(proc, addr, mask, init),
+  index(index) {
+}
+
+reg_t hstateen_csr_t::read() const noexcept {
+  // For every bit in an mstateen CSR that is zero (whether read-only zero or set to zero),
+  // the same bit appears as read-only zero in the matching hstateen and sstateen CSRs
+  return masked_csr_t::read() & state->mstateen[index]->read();
+}
+
+bool hstateen_csr_t::unlogged_write(const reg_t val) noexcept {
+  // For every bit in an mstateen CSR that is zero (whether read-only zero or set to zero),
+  // the same bit appears as read-only zero in the matching hstateen and sstateen CSRs
+  return masked_csr_t::unlogged_write(val & state->mstateen[index]->read());
+}
+
+void hstateen_csr_t::verify_permissions(insn_t insn, bool write) const {
+  masked_csr_t::verify_permissions(insn, write);
+
+  if ((state->prv < PRV_M) && !(state->mstateen[index]->read() & MSTATEEN_HSTATEEN))
+    throw trap_illegal_instruction(insn.bits());
+}
+
+// implement class sstateen_csr_t
+sstateen_csr_t::sstateen_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask,
+                               const reg_t init, uint8_t index):
+  hstateen_csr_t(proc, addr, mask, init, index) {
+}
+
+reg_t sstateen_csr_t::read() const noexcept {
+  // For every bit in an mstateen CSR that is zero (whether read-only zero or set to zero),
+  // the same bit appears as read-only zero in the matching hstateen and sstateen CSRs
+  // For every bit in an hstateen CSR that is zero (whether read-only zero or set to zero),
+  // the same bit appears as read-only zero in sstateen when accessed in VS-mode
+  if (state->v)
+    return hstateen_csr_t::read() & state->hstateen[index]->read();
+  else
+    return hstateen_csr_t::read();
+}
+
+bool sstateen_csr_t::unlogged_write(const reg_t val) noexcept {
+  // For every bit in an mstateen CSR that is zero (whether read-only zero or set to zero),
+  // the same bit appears as read-only zero in the matching hstateen and sstateen CSRs
+  // For every bit in an hstateen CSR that is zero (whether read-only zero or set to zero),
+  // the same bit appears as read-only zero in sstateen when accessed in VS-mode
+  if (state->v)
+    return hstateen_csr_t::unlogged_write(val & state->hstateen[index]->read());
+  else
+    return hstateen_csr_t::unlogged_write(val);
+}
+
+void sstateen_csr_t::verify_permissions(insn_t insn, bool write) const {
+  hstateen_csr_t::verify_permissions(insn, write);
+
+  if (state->v && !(state->hstateen[index]->read() & HSTATEEN_SSTATEEN))
+      throw trap_virtual_instruction(insn.bits());
+}

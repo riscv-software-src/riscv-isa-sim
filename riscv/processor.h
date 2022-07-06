@@ -186,6 +186,10 @@ struct state_t
   csr_t_p senvcfg;
   csr_t_p henvcfg;
 
+  csr_t_p mstateen[4];
+  csr_t_p sstateen[4];
+  csr_t_p hstateen[4];
+
   bool serialized; // whether timer CSRs are in a well-defined state
 
   // When true, execute a single instruction and then enter debug mode.  This

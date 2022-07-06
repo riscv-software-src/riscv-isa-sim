@@ -397,6 +397,28 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   const reg_t henvcfg_init = (proc->extension_enabled(EXT_SVPBMT) ? HENVCFG_PBMTE : 0);
   csrmap[CSR_HENVCFG] = henvcfg = std::make_shared<henvcfg_csr_t>(proc, CSR_HENVCFG, henvcfg_mask, henvcfg_init, menvcfg);
 
+  if (proc->extension_enabled_const(EXT_SMSTATEEN)) {
+    const reg_t sstateen0_mask = (proc->extension_enabled(EXT_ZFINX) ? SSTATEEN0_FCSR : 0) | SSTATEEN0_CS;
+    const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN;
+    const reg_t mstateen0_mask = hstateen0_mask;
+    for (int i = 0; i < 4; i++) {
+      const reg_t mstateen_mask = i == 0 ? mstateen0_mask : MSTATEEN_HSTATEEN;
+      csrmap[CSR_MSTATEEN0 + i] = mstateen[i] = std::make_shared<masked_csr_t>(proc, CSR_MSTATEEN0 + i, mstateen_mask, 0);
+      if (xlen == 32) {
+        csrmap[CSR_MSTATEEN0H + i] = std::make_shared<rv32_high_csr_t>(proc, CSR_MSTATEEN0H + i, -1, mstateen[i]);
+      }
+
+      const reg_t hstateen_mask = i == 0 ? hstateen0_mask : HSTATEEN_SSTATEEN;
+      csrmap[CSR_HSTATEEN0 + i] = hstateen[i] = std::make_shared<hstateen_csr_t>(proc, CSR_HSTATEEN0 + i, hstateen_mask, 0, i);
+      if (xlen == 32) {
+        csrmap[CSR_HSTATEEN0H + i] = std::make_shared<rv32_high_csr_t>(proc, CSR_HSTATEEN0H + i, -1, hstateen[i]);
+      }
+
+      const reg_t sstateen_mask = i == 0 ? sstateen0_mask : 0;
+      csrmap[CSR_SSTATEEN0 + i] = sstateen[i] = std::make_shared<sstateen_csr_t>(proc, CSR_HSTATEEN0 + i, sstateen_mask, 0, i);
+    }
+  }
+
   serialized = false;
 
 #ifdef RISCV_ENABLE_COMMITLOG
