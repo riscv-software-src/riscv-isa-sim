@@ -385,7 +385,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MIMPID] = std::make_shared<const_csr_t>(proc, CSR_MIMPID, 0);
   csrmap[CSR_MVENDORID] = std::make_shared<const_csr_t>(proc, CSR_MVENDORID, 0);
   csrmap[CSR_MHARTID] = std::make_shared<const_csr_t>(proc, CSR_MHARTID, proc->get_id());
-
+  csrmap[CSR_MCONFIGPTR] = std::make_shared<const_csr_t>(proc, CSR_MCONFIGPTR, 0);
   const reg_t menvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE : 0) |
                              (proc->extension_enabled(EXT_ZICBOZ) ? MENVCFG_CBZE : 0) |
                              (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0);
