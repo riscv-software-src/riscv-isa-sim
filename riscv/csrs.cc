@@ -946,6 +946,25 @@ reg_t wide_counter_csr_t::written_value() const noexcept {
   return this->val + 1;
 }
 
+// implement class time_counter_csr_t
+time_counter_csr_t::time_counter_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr),
+  shadow_val(0) {
+}
+
+reg_t time_counter_csr_t::read() const noexcept {
+  // reading the time CSR in VS or VU mode returns the sum of the contents of
+  // htimedelta and the actual value of time.
+  if (state->v)
+    return shadow_val + state->htimedelta->read();
+  else
+    return shadow_val;
+}
+
+void time_counter_csr_t::sync(const reg_t val) noexcept {
+  shadow_val = val;
+}
+
 proxy_csr_t::proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate):
   csr_t(proc, addr),
   delegate(delegate) {

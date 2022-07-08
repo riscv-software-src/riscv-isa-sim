@@ -509,6 +509,21 @@ class wide_counter_csr_t: public csr_t {
 
 typedef std::shared_ptr<wide_counter_csr_t> wide_counter_csr_t_p;
 
+class time_counter_csr_t: public csr_t {
+ public:
+  time_counter_csr_t(processor_t* const proc, const reg_t addr);
+  virtual reg_t read() const noexcept override;
+
+  void sync(const reg_t val) noexcept;
+
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override { return false; };
+ private:
+  reg_t shadow_val;
+};
+
+typedef std::shared_ptr<time_counter_csr_t> time_counter_csr_t_p;
+
 // For a CSR that is an alias of another
 class proxy_csr_t: public csr_t {
  public:

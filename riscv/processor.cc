@@ -204,9 +204,11 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE);
   minstret = std::make_shared<wide_counter_csr_t>(proc, CSR_MINSTRET);
   mcycle = std::make_shared<wide_counter_csr_t>(proc, CSR_MCYCLE);
+  time = std::make_shared<time_counter_csr_t>(proc, CSR_TIME);
   if (proc->extension_enabled_const(EXT_ZICNTR)) {
     csrmap[CSR_INSTRET] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRET, minstret);
     csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, mcycle);
+    csrmap[CSR_TIME] = std::make_shared<counter_proxy_csr_t>(proc, CSR_TIME, time);
   }
   if (xlen == 32) {
     csr_t_p minstreth, mcycleh;
@@ -215,8 +217,10 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     csrmap[CSR_MCYCLE] = std::make_shared<rv32_low_csr_t>(proc, CSR_MCYCLE, mcycle);
     csrmap[CSR_MCYCLEH] = mcycleh = std::make_shared<rv32_high_csr_t>(proc, CSR_MCYCLEH, mcycle);
     if (proc->extension_enabled_const(EXT_ZICNTR)) {
+      auto timeh = std::make_shared<rv32_high_csr_t>(proc, CSR_TIMEH, time);
       csrmap[CSR_INSTRETH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRETH, minstreth);
       csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, mcycleh);
+      csrmap[CSR_TIMEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_TIMEH, timeh);
     }
   } else {
     csrmap[CSR_MINSTRET] = minstret;
@@ -349,6 +353,13 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     (1 << CAUSE_STORE_PAGE_FAULT);
   csrmap[CSR_HEDELEG] = hedeleg = std::make_shared<masked_csr_t>(proc, CSR_HEDELEG, hedeleg_mask, 0);
   csrmap[CSR_HCOUNTEREN] = hcounteren = std::make_shared<masked_csr_t>(proc, CSR_HCOUNTEREN, counteren_mask, 0);
+  htimedelta = std::make_shared<basic_csr_t>(proc, CSR_HTIMEDELTA, 0);
+  if (xlen == 32) {
+    csrmap[CSR_HTIMEDELTA] = std::make_shared<rv32_low_csr_t>(proc, CSR_HTIMEDELTA, htimedelta);
+    csrmap[CSR_HTIMEDELTAH] = std::make_shared<rv32_high_csr_t>(proc, CSR_HTIMEDELTAH, htimedelta);
+  } else {
+    csrmap[CSR_HTIMEDELTA] = htimedelta;
+  }
   csrmap[CSR_HTVAL] = htval = std::make_shared<basic_csr_t>(proc, CSR_HTVAL, 0);
   csrmap[CSR_HTINST] = htinst = std::make_shared<basic_csr_t>(proc, CSR_HTINST, 0);
   csrmap[CSR_HGATP] = hgatp = std::make_shared<hgatp_csr_t>(proc, CSR_HGATP);
