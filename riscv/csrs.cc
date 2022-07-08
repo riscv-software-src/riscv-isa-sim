@@ -515,6 +515,10 @@ bool rv32_low_csr_t::unlogged_write(const reg_t val) noexcept {
   return orig->unlogged_write((orig->written_value() >> 32 << 32) | (val & 0xffffffffU));
 }
 
+reg_t rv32_low_csr_t::written_value() const noexcept {
+  return orig->written_value() & 0xffffffffU;
+}
+
 // implement class rv32_high_csr_t
 rv32_high_csr_t::rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig):
   csr_t(proc, addr),
@@ -531,6 +535,10 @@ void rv32_high_csr_t::verify_permissions(insn_t insn, bool write) const {
 
 bool rv32_high_csr_t::unlogged_write(const reg_t val) noexcept {
   return orig->unlogged_write((orig->written_value() << 32 >> 32) | ((val & 0xffffffffU) << 32));
+}
+
+reg_t rv32_high_csr_t::written_value() const noexcept {
+  return (orig->written_value() >> 32) & 0xffffffffU;
 }
 
 // implement class sstatus_csr_t
@@ -924,10 +932,7 @@ void wide_counter_csr_t::bump(const reg_t howmuch) noexcept {
 }
 
 bool wide_counter_csr_t::unlogged_write(const reg_t val) noexcept {
-  if (proc->get_xlen() == 32)
-    this->val = (this->val >> 32 << 32) | (val & 0xffffffffU);
-  else
-    this->val = val;
+  this->val = val;
   // The ISA mandates that if an instruction writes instret, the write
   // takes precedence over the increment to instret.  However, Spike
   // unconditionally increments instret after executing an instruction.
@@ -939,27 +944,6 @@ bool wide_counter_csr_t::unlogged_write(const reg_t val) noexcept {
 reg_t wide_counter_csr_t::written_value() const noexcept {
   // Re-adjust for upcoming bump()
   return this->val + 1;
-}
-
-void wide_counter_csr_t::write_upper_half(const reg_t val) noexcept {
-  this->val = (val << 32) | (this->val << 32 >> 32);
-  this->val--; // See comment above.
-  // Log upper half only.
-  log_special_write(address + (CSR_MINSTRETH - CSR_MINSTRET), written_value() >> 32);
-}
-
-counter_top_csr_t::counter_top_csr_t(processor_t* const proc, const reg_t addr, wide_counter_csr_t_p parent):
-  csr_t(proc, addr),
-  parent(parent) {
-}
-
-reg_t counter_top_csr_t::read() const noexcept {
-  return parent->read() >> 32;
-}
-
-bool counter_top_csr_t::unlogged_write(const reg_t val) noexcept {
-  parent->write_upper_half(val);
-  return true;
 }
 
 proxy_csr_t::proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate):

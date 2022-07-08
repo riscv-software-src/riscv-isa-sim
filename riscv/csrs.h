@@ -260,6 +260,7 @@ class rv32_low_csr_t: public csr_t {
   virtual void verify_permissions(insn_t insn, bool write) const override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
+  virtual reg_t written_value() const noexcept override;
  private:
   csr_t_p orig;
 };
@@ -271,6 +272,7 @@ class rv32_high_csr_t: public csr_t {
   virtual void verify_permissions(insn_t insn, bool write) const override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
+  virtual reg_t written_value() const noexcept override;
  private:
   csr_t_p orig;
 };
@@ -498,7 +500,6 @@ class wide_counter_csr_t: public csr_t {
   // Always returns full 64-bit value
   virtual reg_t read() const noexcept override;
   void bump(const reg_t howmuch) noexcept;
-  void write_upper_half(const reg_t val) noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
   virtual reg_t written_value() const noexcept override;
@@ -507,19 +508,6 @@ class wide_counter_csr_t: public csr_t {
 };
 
 typedef std::shared_ptr<wide_counter_csr_t> wide_counter_csr_t_p;
-
-// A simple proxy to read/write the upper half of minstret/mcycle
-class counter_top_csr_t: public csr_t {
- public:
-  counter_top_csr_t(processor_t* const proc, const reg_t addr, wide_counter_csr_t_p parent);
-  virtual reg_t read() const noexcept override;
- protected:
-  virtual bool unlogged_write(const reg_t val) noexcept override;
- private:
-  wide_counter_csr_t_p parent;
-};
-
-typedef std::shared_ptr<counter_top_csr_t> counter_top_csr_t_p;
 
 // For a CSR that is an alias of another
 class proxy_csr_t: public csr_t {
