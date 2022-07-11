@@ -36,7 +36,6 @@ public:
     // to handle the side-effect of the changing seed value on a read.
   }
 
-
   //
   // The format of seed is described in Section 4.1 of
   // the scalar cryptography specification.
