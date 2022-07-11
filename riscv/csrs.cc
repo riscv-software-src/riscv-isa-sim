@@ -248,7 +248,7 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
   for (size_t i0 = (address - CSR_PMPCFG0) * 4, i = i0; i < i0 + proc->get_xlen() / 8; i++) {
     if (i < proc->n_pmp) {
       const bool locked = (state->pmpaddr[i]->cfg & PMP_L);
-      if (rlb || (!locked && !state->pmpaddr[i]->next_locked_and_tor())) {
+      if (rlb || !locked) {
         uint8_t cfg = (val >> (8 * (i - i0))) & (PMP_R | PMP_W | PMP_X | PMP_A | PMP_L);
         // Drop R=0 W=1 when MML = 0
         // Remove the restriction when MML = 1
