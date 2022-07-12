@@ -885,7 +885,7 @@ satp_csr_t::satp_csr_t(processor_t* const proc, const reg_t addr):
 void satp_csr_t::verify_permissions(insn_t insn, bool write) const {
   base_atp_csr_t::verify_permissions(insn, write);
   if (get_field(state->mstatus->read(), MSTATUS_TVM))
-    require(state->prv >= PRV_M);
+    require(state->prv == PRV_M);
 }
 
 virtualized_satp_csr_t::virtualized_satp_csr_t(processor_t* const proc, satp_csr_t_p orig, csr_t_p virt):
