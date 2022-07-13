@@ -192,8 +192,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MSTATUS] = mstatus = std::make_shared<mstatus_csr_t>(proc, CSR_MSTATUS);
 
   if (xlen == 32) {
-    const reg_t mstatush_mask = -1;
-    csrmap[CSR_MSTATUSH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MSTATUSH, mstatush_mask, mstatus);
+    csrmap[CSR_MSTATUSH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MSTATUSH, mstatus);
   }
   csrmap[CSR_MEPC] = mepc = std::make_shared<epc_csr_t>(proc, CSR_MEPC);
   csrmap[CSR_MTVAL] = mtval = std::make_shared<basic_csr_t>(proc, CSR_MTVAL, 0);
@@ -405,13 +404,13 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       const reg_t mstateen_mask = i == 0 ? mstateen0_mask : MSTATEEN_HSTATEEN;
       csrmap[CSR_MSTATEEN0 + i] = mstateen[i] = std::make_shared<masked_csr_t>(proc, CSR_MSTATEEN0 + i, mstateen_mask, 0);
       if (xlen == 32) {
-        csrmap[CSR_MSTATEEN0H + i] = std::make_shared<rv32_high_csr_t>(proc, CSR_MSTATEEN0H + i, -1, mstateen[i]);
+        csrmap[CSR_MSTATEEN0H + i] = std::make_shared<rv32_high_csr_t>(proc, CSR_MSTATEEN0H + i, mstateen[i]);
       }
 
       const reg_t hstateen_mask = i == 0 ? hstateen0_mask : HSTATEEN_SSTATEEN;
       csrmap[CSR_HSTATEEN0 + i] = hstateen[i] = std::make_shared<hstateen_csr_t>(proc, CSR_HSTATEEN0 + i, hstateen_mask, 0, i);
       if (xlen == 32) {
-        csrmap[CSR_HSTATEEN0H + i] = std::make_shared<rv32_high_csr_t>(proc, CSR_HSTATEEN0H + i, -1, hstateen[i]);
+        csrmap[CSR_HSTATEEN0H + i] = std::make_shared<rv32_high_csr_t>(proc, CSR_HSTATEEN0H + i, hstateen[i]);
       }
 
       const reg_t sstateen_mask = i == 0 ? sstateen0_mask : 0;

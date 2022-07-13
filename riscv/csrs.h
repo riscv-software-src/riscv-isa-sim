@@ -251,14 +251,14 @@ typedef std::shared_ptr<mstatus_csr_t> mstatus_csr_t_p;
 
 class rv32_high_csr_t: public csr_t {
  public:
-  rv32_high_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, csr_t_p orig);
+  rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig);
   virtual reg_t read() const noexcept override;
   virtual void verify_permissions(insn_t insn, bool write) const override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
   csr_t_p orig;
-  const reg_t mask;
+  const reg_t mask = -1;
 };
 
 class sstatus_proxy_csr_t final: public base_status_csr_t {

@@ -494,10 +494,9 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 // implement class rv32_high_csr_t
-rv32_high_csr_t::rv32_high_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, csr_t_p orig):
+rv32_high_csr_t::rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig):
   csr_t(proc, addr),
-  orig(orig),
-  mask(mask) {
+  orig(orig) {
 }
 
 reg_t rv32_high_csr_t::read() const noexcept {
