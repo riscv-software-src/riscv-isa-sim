@@ -193,7 +193,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   if (xlen == 32) {
     csrmap[CSR_MSTATUS] = std::make_shared<rv32_low_csr_t>(proc, CSR_MSTATUS, mstatus);
-    csrmap[CSR_MSTATUSH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MSTATUSH, mstatus);
+    csrmap[CSR_MSTATUSH] = mstatush = std::make_shared<rv32_high_csr_t>(proc, CSR_MSTATUSH, mstatus);
   } else {
     csrmap[CSR_MSTATUS] = mstatus;
   }
@@ -824,6 +824,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_MPV, curr_virt);
     s = set_field(s, MSTATUS_GVA, t.has_gva());
     state.mstatus->write(s);
+    if (state.mstatush) state.mstatush->write(s >> 32);  // log mstatush change
     set_privilege(PRV_M);
   }
 }
