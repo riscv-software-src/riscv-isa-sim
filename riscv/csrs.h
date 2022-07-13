@@ -258,7 +258,6 @@ class rv32_high_csr_t: public csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
   csr_t_p orig;
-  const reg_t mask = -1;
 };
 
 class sstatus_proxy_csr_t final: public base_status_csr_t {
