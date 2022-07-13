@@ -455,6 +455,10 @@ sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t ad
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t new_mstatus = (mstatus->read() & ~sstatus_write_mask) | (val & sstatus_write_mask);
 
+  // On RV32 this will only log the low 32 bits, so make sure we're
+  // not modifying anything in the upper 32 bits.
+  assert((sstatus_write_mask & 0xffffffffU) == sstatus_write_mask);
+
   mstatus->write(new_mstatus);
   return false; // avoid double logging: already logged by mstatus->write()
 }
