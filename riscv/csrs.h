@@ -130,6 +130,7 @@ class pmpcfg_csr_t: public csr_t {
 class mseccfg_csr_t: public basic_csr_t {
  public:
   mseccfg_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
   bool get_mml() const noexcept;
   bool get_mmwp() const noexcept;
   bool get_rlb() const noexcept;

@@ -272,6 +272,12 @@ mseccfg_csr_t::mseccfg_csr_t(processor_t* const proc, const reg_t addr):
     basic_csr_t(proc, addr, 0) {
 }
 
+void mseccfg_csr_t::verify_permissions(insn_t insn, bool write) const {
+  basic_csr_t::verify_permissions(insn, write);
+  if (!proc->extension_enabled(EXT_SMEPMP))
+    throw trap_illegal_instruction(insn.bits());
+}
+
 bool mseccfg_csr_t::get_mml() const noexcept {
   return (read() & MSECCFG_MML);
 }
