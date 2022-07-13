@@ -493,6 +493,24 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   return true;
 }
 
+// implement class rv32_low_csr_t
+rv32_low_csr_t::rv32_low_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig):
+  csr_t(proc, addr),
+  orig(orig) {
+}
+
+reg_t rv32_low_csr_t::read() const noexcept {
+  return orig->read() & 0xffffffffU;
+}
+
+void rv32_low_csr_t::verify_permissions(insn_t insn, bool write) const {
+  orig->verify_permissions(insn, write);
+}
+
+bool rv32_low_csr_t::unlogged_write(const reg_t val) noexcept {
+  return orig->unlogged_write((orig->written_value() >> 32 << 32) | (val & 0xffffffffU));
+}
+
 // implement class rv32_high_csr_t
 rv32_high_csr_t::rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig):
   csr_t(proc, addr),
