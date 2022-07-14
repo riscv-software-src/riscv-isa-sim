@@ -455,6 +455,10 @@ sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t ad
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t new_mstatus = (mstatus->read() & ~sstatus_write_mask) | (val & sstatus_write_mask);
 
+  // On RV32 this will only log the low 32 bits, so make sure we're
+  // not modifying anything in the upper 32 bits.
+  assert((sstatus_write_mask & 0xffffffffU) == sstatus_write_mask);
+
   mstatus->write(new_mstatus);
   return false; // avoid double logging: already logged by mstatus->write()
 }
@@ -493,15 +497,32 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   return true;
 }
 
-// implement class rv32_high_csr_t
-rv32_high_csr_t::rv32_high_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, csr_t_p orig):
+// implement class rv32_low_csr_t
+rv32_low_csr_t::rv32_low_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig):
   csr_t(proc, addr),
-  orig(orig),
-  mask(mask) {
+  orig(orig) {
+}
+
+reg_t rv32_low_csr_t::read() const noexcept {
+  return orig->read() & 0xffffffffU;
+}
+
+void rv32_low_csr_t::verify_permissions(insn_t insn, bool write) const {
+  orig->verify_permissions(insn, write);
+}
+
+bool rv32_low_csr_t::unlogged_write(const reg_t val) noexcept {
+  return orig->unlogged_write((orig->written_value() >> 32 << 32) | (val & 0xffffffffU));
+}
+
+// implement class rv32_high_csr_t
+rv32_high_csr_t::rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig):
+  csr_t(proc, addr),
+  orig(orig) {
 }
 
 reg_t rv32_high_csr_t::read() const noexcept {
-  return (orig->read() >> 32) & mask;
+  return (orig->read() >> 32) & 0xffffffffU;
 }
 
 void rv32_high_csr_t::verify_permissions(insn_t insn, bool write) const {
@@ -509,7 +530,7 @@ void rv32_high_csr_t::verify_permissions(insn_t insn, bool write) const {
 }
 
 bool rv32_high_csr_t::unlogged_write(const reg_t val) noexcept {
-  return orig->unlogged_write((orig->written_value() & ~(mask << 32)) | ((val & mask) << 32));
+  return orig->unlogged_write((orig->written_value() << 32 >> 32) | ((val & 0xffffffffU) << 32));
 }
 
 // implement class sstatus_csr_t
@@ -595,7 +616,9 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
       | (1 << CAUSE_STORE_GUEST_PAGE_FAULT)
       ;
     state->medeleg->write(state->medeleg->read() & ~hypervisor_exceptions);
-    state->mstatus->write(state->mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV));
+    const reg_t new_mstatus = state->mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV);
+    state->mstatus->write(new_mstatus);
+    if (state->mstatush) state->mstatush->write(new_mstatus >> 32);  // log mstatush change
     state->mie->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hie, sie
     state->mip->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hip, sip, hvip
     state->hstatus->write(0);
