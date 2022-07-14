@@ -474,7 +474,7 @@ mstatus_csr_t::mstatus_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
-  const bool has_mpv = proc->extension_enabled('S') && proc->extension_enabled('H');
+  const bool has_mpv = proc->extension_enabled('H');
   const bool has_gva = has_mpv;
 
   const reg_t mask = sstatus_write_mask

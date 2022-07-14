@@ -246,4 +246,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     max_isa |= reg_t(supervisor) << ('s' - 'a');
     extension_table['S'] = true;
   }
+
+  if (((max_isa >> ('h' - 'a')) & 1) && !supervisor)
+    bad_isa_string(str, "'H' extension requires S mode");
 }
