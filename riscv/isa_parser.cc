@@ -164,6 +164,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str == "zkr") {
       extension_table[EXT_ZKR] = true;
     } else if (ext_str == "zkt") {
+    } else if (ext_str == "smepmp") {
+      extension_table[EXT_SMEPMP] = true;
     } else if (ext_str == "smstateen") {
       extension_table[EXT_SMSTATEEN] = true;
     } else if (ext_str == "svnapot") {
