@@ -56,8 +56,11 @@ public:
   {
 #ifdef RISCV_ENABLE_MISALIGNED
     reg_t res = 0;
-    for (size_t i = 0; i < size; i++)
-      res += (reg_t)load_uint8(addr + (target_big_endian? size-1-i : i)) << (i * 8);
+    for (size_t i = 0; i < size; i++) {
+      const reg_t byteaddr = addr + (target_big_endian? size-1-i : i);
+      const reg_t bytedata = (reg_t)load_uint8(byteaddr);
+      res += bytedata << (i * 8);
+    }
     return res;
 #else
     bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
