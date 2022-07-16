@@ -78,7 +78,11 @@ public:
     for (size_t i = 0; i < size; i++) {
       const reg_t byteaddr = addr + (target_big_endian? size-1-i : i);
       const reg_t bytedata = data >> (i * 8);
-      store_uint8(byteaddr, bytedata, actually_store);
+      if (RISCV_XLATE_VIRT & xlate_flags) {
+        guest_store_uint8(byteaddr, bytedata, actually_store);
+      } else {
+        store_uint8(byteaddr, bytedata, actually_store);
+      }
     }
 #else
     bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
