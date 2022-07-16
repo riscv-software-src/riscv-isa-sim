@@ -58,7 +58,11 @@ public:
     reg_t res = 0;
     for (size_t i = 0; i < size; i++) {
       const reg_t byteaddr = addr + (target_big_endian? size-1-i : i);
-      const reg_t bytedata = load_uint8(byteaddr);
+      const reg_t bytedata
+        = (RISCV_XLATE_VIRT_HLVX & xlate_flags) ? guest_load_x_uint8(byteaddr)
+        : (RISCV_XLATE_VIRT & xlate_flags)      ? guest_load_uint8(byteaddr)
+        :                                         load_uint8(byteaddr)
+        ;
       res += bytedata << (i * 8);
     }
     return res;
@@ -129,6 +133,7 @@ public:
   load_func(uint16, guest_load, RISCV_XLATE_VIRT)
   load_func(uint32, guest_load, RISCV_XLATE_VIRT)
   load_func(uint64, guest_load, RISCV_XLATE_VIRT)
+  load_func(uint8, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX)  // only for use by misaligned HLVX
   load_func(uint16, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX)
   load_func(uint32, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX)
 
