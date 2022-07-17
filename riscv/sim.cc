@@ -425,11 +425,7 @@ void sim_t::set_target_endianness(memif_endianness_t endianness)
 
 memif_endianness_t sim_t::get_target_endianness() const
 {
-#ifdef RISCV_ENABLE_DUAL_ENDIAN
   return debug_mmu->is_target_big_endian()? memif_endianness_big : memif_endianness_little;
-#else
-  return memif_endianness_little;
-#endif
 }
 
 void sim_t::proc_reset(unsigned id)

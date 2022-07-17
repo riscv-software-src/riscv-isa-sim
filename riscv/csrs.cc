@@ -493,9 +493,7 @@ reg_t mstatus_csr_t::compute_mstatus_initial_value() const noexcept {
   return 0
          | (proc->extension_enabled_const('U') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
          | (proc->extension_enabled_const('S') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_SXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
-#ifdef RISCV_ENABLE_DUAL_ENDIAN
          | (proc->get_mmu()->is_target_big_endian() ? MSTATUS_UBE | MSTATUS_SBE | MSTATUS_MBE : 0)
-#endif
          | 0;  // initial value for mstatus
 }
 
