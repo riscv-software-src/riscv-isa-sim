@@ -474,7 +474,8 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const bool has_gva = has_mpv;
 
   const reg_t mask = sstatus_write_mask
-                   | MSTATUS_MIE | MSTATUS_MPIE | MSTATUS_MPRV
+                   | MSTATUS_MIE | MSTATUS_MPIE
+                   | (proc->extension_enabled('U') ? MSTATUS_MPRV : 0)
                    | MSTATUS_MPP | MSTATUS_TW
                    | (proc->extension_enabled('S') ? MSTATUS_TSR : 0)
                    | (has_page ? MSTATUS_TVM : 0)
@@ -490,10 +491,13 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 reg_t mstatus_csr_t::compute_mstatus_initial_value() const noexcept {
+  const reg_t big_endian_bits = (proc->extension_enabled_const('U') ? MSTATUS_UBE : 0)
+                              | (proc->extension_enabled_const('S') ? MSTATUS_SBE : 0)
+                              | MSTATUS_MBE;
   return 0
          | (proc->extension_enabled_const('U') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
          | (proc->extension_enabled_const('S') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_SXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
-         | (proc->get_mmu()->is_target_big_endian() ? MSTATUS_UBE | MSTATUS_SBE | MSTATUS_MBE : 0)
+         | (proc->get_mmu()->is_target_big_endian() ? big_endian_bits : 0)
          | 0;  // initial value for mstatus
 }
 
