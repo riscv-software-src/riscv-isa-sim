@@ -246,6 +246,7 @@ class mstatus_csr_t final: public base_status_csr_t {
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
+  reg_t compute_mstatus_initial_value() const noexcept;
   reg_t val;
 };
 
