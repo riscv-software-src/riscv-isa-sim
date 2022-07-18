@@ -8,11 +8,13 @@
 # define unlikely(x) __builtin_expect(x, 0)
 # define NOINLINE __attribute__ ((noinline))
 # define NORETURN __attribute__ ((noreturn))
+# define ALWAYS_INLINE __attribute__ ((always_inline))
 #else
 # define   likely(x) (x)
 # define unlikely(x) (x)
 # define NOINLINE
 # define NORETURN
+# define ALWAYS_INLINE
 #endif
 
 #endif
