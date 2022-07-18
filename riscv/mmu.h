@@ -56,8 +56,15 @@ public:
   {
 #ifdef RISCV_ENABLE_MISALIGNED
     reg_t res = 0;
-    for (size_t i = 0; i < size; i++)
-      res += (reg_t)load_uint8(addr + (target_big_endian? size-1-i : i)) << (i * 8);
+    for (size_t i = 0; i < size; i++) {
+      const reg_t byteaddr = addr + (target_big_endian? size-1-i : i);
+      const reg_t bytedata
+        = (RISCV_XLATE_VIRT_HLVX & xlate_flags) ? guest_load_x_uint8(byteaddr)
+        : (RISCV_XLATE_VIRT & xlate_flags)      ? guest_load_uint8(byteaddr)
+        :                                         load_uint8(byteaddr)
+        ;
+      res += bytedata << (i * 8);
+    }
     return res;
 #else
     bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
@@ -68,8 +75,15 @@ public:
   inline void misaligned_store(reg_t addr, reg_t data, size_t size, uint32_t xlate_flags, bool actually_store=true)
   {
 #ifdef RISCV_ENABLE_MISALIGNED
-    for (size_t i = 0; i < size; i++)
-      store_uint8(addr + (target_big_endian? size-1-i : i), data >> (i * 8), actually_store);
+    for (size_t i = 0; i < size; i++) {
+      const reg_t byteaddr = addr + (target_big_endian? size-1-i : i);
+      const reg_t bytedata = data >> (i * 8);
+      if (RISCV_XLATE_VIRT & xlate_flags) {
+        guest_store_uint8(byteaddr, bytedata, actually_store);
+      } else {
+        store_uint8(byteaddr, bytedata, actually_store);
+      }
+    }
 #else
     bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
     throw trap_store_address_misaligned(gva, addr, 0, 0);
@@ -123,6 +137,7 @@ public:
   load_func(uint16, guest_load, RISCV_XLATE_VIRT)
   load_func(uint32, guest_load, RISCV_XLATE_VIRT)
   load_func(uint64, guest_load, RISCV_XLATE_VIRT)
+  load_func(uint8, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX)  // only for use by misaligned HLVX
   load_func(uint16, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX)
   load_func(uint32, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX)
 
