@@ -58,7 +58,7 @@ public:
     reg_t res = 0;
     for (size_t i = 0; i < size; i++) {
       const reg_t byteaddr = addr + (target_big_endian? size-1-i : i);
-      const reg_t bytedata = (reg_t)load_uint8(byteaddr);
+      const reg_t bytedata = load_uint8(byteaddr);
       res += bytedata << (i * 8);
     }
     return res;
