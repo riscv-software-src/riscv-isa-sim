@@ -920,7 +920,9 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         }
         return true;
       case DM_DMCS2:
-        if (config.support_haltgroups && get_field(value, DM_DMCS2_HGWRITE)) {
+        if (config.support_haltgroups &&
+            get_field(value, DM_DMCS2_HGWRITE) &&
+            get_field(value, DM_DMCS2_GROUPTYPE) == 0) {
           hart_state[dmcontrol.hartsel].haltgroup = get_field(value,
               DM_DMCS2_GROUP);
         }
