@@ -1,3 +1,3 @@
 P_MUL_CROSS_ULOOP(8, {
-  pd = ps1 * ps2;
+  pd = (uint16_t)ps1 * (uint16_t)ps2;
 })
