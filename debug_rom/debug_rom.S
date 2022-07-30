@@ -20,9 +20,6 @@ exception:
        jal zero, _exception
 
 _entry:
-        // This fence is required because the execution may have written something
-        // into the Abstract Data or Program Buffer registers.
-        fence
         csrw CSR_DSCRATCH0, s0  // Save s0 to allow signaling MHARTID
 
         // We continue to let the hart know that we are halted in order that
@@ -30,6 +27,8 @@ _entry:
         // We keep checking both whether there is something the debugger wants
         // us to do, or whether we should resume.
 entry_loop:
+	// Make sure that we don't access a cached version of DEBUG_ROM_FLAGS
+        fence
         csrr s0, CSR_MHARTID
         sw   s0, DEBUG_ROM_HALTED(zero)
         lbu  s0, DEBUG_ROM_FLAGS(s0) // 1 byte flag per hart. Only one hart advances here.
