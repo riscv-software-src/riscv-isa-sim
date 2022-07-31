@@ -51,25 +51,25 @@ public:
 
     if(return_status == OPST_ES16) {
 
-        // Add some sampled entropy into the low 16 bits
-        uint16_t entropy = this -> get_two_random_bytes();
-        result |= entropy;
+      // Add some sampled entropy into the low 16 bits
+      uint16_t entropy = this -> get_two_random_bytes();
+      result |= entropy;
 
     } else if(return_status == OPST_BIST) {
 
-        // Do nothing.
+      // Do nothing.
 
     } else if(return_status == OPST_WAIT) {
 
-        // Do nothing.
+      // Do nothing.
 
     } else if(return_status == OPST_DEAD) {
 
-        // Do nothing. Stay dead.
+      // Do nothing. Stay dead.
 
     } else {
 
-        // Unreachable.
+      // Unreachable.
 
     }
 
@@ -92,25 +92,25 @@ public:
   // Read two random bytes from the entropy source file.
   uint16_t get_two_random_bytes() {
 
-      std::ifstream fh(this -> randomness_source, std::ios::binary);
+    std::ifstream fh(this -> randomness_source, std::ios::binary);
 
-      if(fh.is_open()) {
+    if(fh.is_open()) {
 
-          uint16_t random_bytes;
+      uint16_t random_bytes;
 
-          fh.read((char*)(&random_bytes), 2);
+      fh.read((char*)(&random_bytes), 2);
 
-          fh.close();
+      fh.close();
 
-          return random_bytes;
+      return random_bytes;
 
-      } else {
+    } else {
 
-          fprintf(stderr, "Could not open randomness source file:\n\t");
-          fprintf(stderr, "%s", randomness_source.c_str());
-          abort();
+      fprintf(stderr, "Could not open randomness source file:\n\t");
+      fprintf(stderr, "%s", randomness_source.c_str());
+      abort();
 
-      }
+    }
 
   }
 

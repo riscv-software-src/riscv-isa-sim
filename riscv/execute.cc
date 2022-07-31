@@ -240,18 +240,18 @@ void processor_t::step(size_t n)
     mmu_t* _mmu = mmu;
 
     #define advance_pc() \
-     if (unlikely(invalid_pc(pc))) { \
-       switch (pc) { \
-         case PC_SERIALIZE_BEFORE: state.serialized = true; break; \
-         case PC_SERIALIZE_AFTER: ++instret; break; \
-         default: abort(); \
-       } \
-       pc = state.pc; \
-       break; \
-     } else { \
-       state.pc = pc; \
-       instret++; \
-     }
+      if (unlikely(invalid_pc(pc))) { \
+        switch (pc) { \
+          case PC_SERIALIZE_BEFORE: state.serialized = true; break; \
+          case PC_SERIALIZE_AFTER: ++instret; break; \
+          default: abort(); \
+        } \
+        pc = state.pc; \
+        break; \
+      } else { \
+        state.pc = pc; \
+        instret++; \
+      }
 
     try
     {

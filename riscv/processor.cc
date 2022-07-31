@@ -588,7 +588,7 @@ void processor_t::reset()
     put_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
   }
 
-   for (auto e : custom_extensions) // reset any extensions
+  for (auto e : custom_extensions) // reset any extensions
     e.second->reset();
 
   if (sim)

@@ -150,17 +150,17 @@ void sim_t::interactive()
     // first get commands from file, if cmd_file has been set
     if (cmd_file && !feof(cmd_file) && fscanf(cmd_file,"%" STR(MAX_CMD_STR) "[^\n]\n", cmd_str)==1) {
                                                       // up to MAX_CMD_STR characters before \n, skipping \n
-       s = cmd_str;
-       // while we get input from file, output goes to stderr
-       sout_.rdbuf(std::cerr.rdbuf());
+      s = cmd_str;
+      // while we get input from file, output goes to stderr
+      sout_.rdbuf(std::cerr.rdbuf());
     } else {
-       // when there are no commands left from file or if there was no file from the beginning
-       cmd_file = NULL; // mark file pointer as being not valid, so any method can test this easily
+      // when there are no commands left from file or if there was no file from the beginning
+      cmd_file = NULL; // mark file pointer as being not valid, so any method can test this easily
 #ifdef HAVE_BOOST_ASIO
-       s = rin(&bout); // get command string from socket or terminal
+      s = rin(&bout); // get command string from socket or terminal
 #else
-       std::cerr << ": " << std::flush;
-       s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
+      std::cerr << ": " << std::flush;
+      s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
 #endif
     }
 
@@ -391,7 +391,7 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
 {
   if (args.size() < 1)
-     throw trap_interactive();
+    throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
   int max_xlen = p->get_isa().get_max_xlen();
@@ -404,14 +404,14 @@ void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::strin
 
     for (int r = 0; r < NXPR; ++r) {
       out << std::setfill(' ') << std::setw(4) << xpr_name[r]
-           << ": 0x" << std::setfill('0') << std::setw(max_xlen/4)
-           << zext(p->get_state()->XPR[r], max_xlen);
+          << ": 0x" << std::setfill('0') << std::setw(max_xlen/4)
+          << zext(p->get_state()->XPR[r], max_xlen);
       if ((r + 1) % 4 == 0)
         out << std::endl;
     }
   } else {
-      out << "0x" << std::setfill('0') << std::setw(max_xlen/4)
-           << zext(get_reg(args), max_xlen) << std::endl;
+    out << "0x" << std::setfill('0') << std::setw(max_xlen/4)
+        << zext(get_reg(args), max_xlen) << std::endl;
   }
 }
 
