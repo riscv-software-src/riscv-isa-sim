@@ -5,7 +5,9 @@ if (STATE.v && STATE.prv == PRV_U) {
 } else if (STATE.v) { // VS-mode
   if (get_field(STATE.hstatus->read(), HSTATUS_VTW))
     require_novirt();
-} else {
+} else if (p->extension_enabled('S')) {
+  // When S-mode is implemented, then executing WFI in
+  // U-mode causes an illegal instruction exception.
   require_privilege(PRV_S);
 }
 wfi();
