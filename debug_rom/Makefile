@@ -18,7 +18,7 @@ all: $(patsubst %,%.h,$(ELFS))
 	$(OBJCOPY) -O binary --only-section .text $^ $@
 
 debug_rom:	$(DEPS)
-	$(COMPILE) -o $@ $^
+	$(COMPILE) -o $@ $<
 
 clean:
 	rm -f $(ELFS) debug_rom*.raw debug_rom.h
