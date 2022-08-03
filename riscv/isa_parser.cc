@@ -181,6 +181,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str == "zicbop") {
     } else if (ext_str == "zicntr") {
     } else if (ext_str == "zihpm") {
+    } else if (ext_str == "sstc") {
+        extension_table[EXT_SSTC] = true;
     } else if (ext_str[0] == 'x') {
       max_isa |= 1L << ('x' - 'a');
       extension_table[toupper('x')] = true;
