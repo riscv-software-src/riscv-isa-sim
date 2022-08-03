@@ -393,7 +393,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_FFLAGS] = fflags = std::make_shared<float_csr_t>(proc, CSR_FFLAGS, FSR_AEXC >> FSR_AEXC_SHIFT, 0);
   csrmap[CSR_FRM] = frm = std::make_shared<float_csr_t>(proc, CSR_FRM, FSR_RD >> FSR_RD_SHIFT, 0);
   assert(FSR_AEXC_SHIFT == 0);  // composite_csr_t assumes fflags begins at bit 0
-  csrmap[CSR_FCSR] = std::make_shared<fcsr_csr_t>(proc, CSR_FCSR, frm, fflags, FSR_RD_SHIFT);
+  csrmap[CSR_FCSR] = std::make_shared<composite_csr_t>(proc, CSR_FCSR, frm, fflags, FSR_RD_SHIFT);
 
   csrmap[CSR_SEED] = std::make_shared<seed_csr_t>(proc, CSR_SEED);
 
