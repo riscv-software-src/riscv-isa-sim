@@ -208,7 +208,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   if (proc->extension_enabled_const(EXT_ZICNTR)) {
     csrmap[CSR_INSTRET] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRET, minstret);
     csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, mcycle);
-    csrmap[CSR_TIME] = std::make_shared<counter_proxy_csr_t>(proc, CSR_TIME, time);
+    csrmap[CSR_TIME] = time_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_TIME, time);
   }
   if (xlen == 32) {
     csr_t_p minstreth, mcycleh;
@@ -405,7 +405,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   if (proc->extension_enabled_const('U')) {
     const reg_t menvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE : 0) |
                               (proc->extension_enabled(EXT_ZICBOZ) ? MENVCFG_CBZE : 0) |
-                              (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0);
+                              (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0) |
+                              (proc->extension_enabled(EXT_SSTC) ? MENVCFG_STCE : 0);
     const reg_t menvcfg_init = (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0);
     menvcfg = std::make_shared<masked_csr_t>(proc, CSR_MENVCFG, menvcfg_mask, menvcfg_init);
     if (xlen == 32) {
@@ -419,7 +420,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     csrmap[CSR_SENVCFG] = senvcfg = std::make_shared<senvcfg_csr_t>(proc, CSR_SENVCFG, senvcfg_mask, 0);
     const reg_t henvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? HENVCFG_CBCFE | HENVCFG_CBIE : 0) |
                               (proc->extension_enabled(EXT_ZICBOZ) ? HENVCFG_CBZE : 0) |
-                              (proc->extension_enabled(EXT_SVPBMT) ? HENVCFG_PBMTE : 0);
+                              (proc->extension_enabled(EXT_SVPBMT) ? HENVCFG_PBMTE : 0) |
+                              (proc->extension_enabled(EXT_SSTC) ? HENVCFG_STCE : 0);
     const reg_t henvcfg_init = (proc->extension_enabled(EXT_SVPBMT) ? HENVCFG_PBMTE : 0);
     henvcfg = std::make_shared<henvcfg_csr_t>(proc, CSR_HENVCFG, henvcfg_mask, henvcfg_init, menvcfg);
     if (xlen == 32) {
@@ -454,6 +456,21 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
       const reg_t sstateen_mask = i == 0 ? sstateen0_mask : 0;
       csrmap[CSR_SSTATEEN0 + i] = sstateen[i] = std::make_shared<sstateen_csr_t>(proc, CSR_HSTATEEN0 + i, sstateen_mask, 0, i);
+    }
+  }
+
+  if (proc->extension_enabled_const(EXT_SSTC)) {
+    stimecmp = std::make_shared<stimecmp_csr_t>(proc, CSR_STIMECMP, MIP_STIP);
+    vstimecmp = std::make_shared<stimecmp_csr_t>(proc, CSR_VSTIMECMP, MIP_VSTIP);
+    auto virtualized_stimecmp = std::make_shared<virtualized_stimecmp_csr_t>(proc, stimecmp, vstimecmp);
+    if (xlen == 32) {
+      csrmap[CSR_STIMECMP] = std::make_shared<rv32_low_csr_t>(proc, CSR_STIMECMP, virtualized_stimecmp);
+      csrmap[CSR_STIMECMPH] = std::make_shared<rv32_high_csr_t>(proc, CSR_STIMECMPH, virtualized_stimecmp);
+      csrmap[CSR_VSTIMECMP] = std::make_shared<rv32_low_csr_t>(proc, CSR_VSTIMECMP, vstimecmp);
+      csrmap[CSR_VSTIMECMPH] = std::make_shared<rv32_high_csr_t>(proc, CSR_VSTIMECMPH, vstimecmp);
+    } else {
+      csrmap[CSR_STIMECMP] = virtualized_stimecmp;
+      csrmap[CSR_VSTIMECMP] = vstimecmp;
     }
   }
 

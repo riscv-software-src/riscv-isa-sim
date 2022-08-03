@@ -679,7 +679,8 @@ void mip_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noex
 }
 
 reg_t mip_csr_t::write_mask() const noexcept {
-  const reg_t supervisor_ints = proc->extension_enabled('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
+  // MIP_STIP is writable unless SSTC exists and STCE is set in MENVCFG
+  const reg_t supervisor_ints = proc->extension_enabled('S') ? MIP_SSIP | ((state->menvcfg->read() &  MENVCFG_STCE) ? 0 : MIP_STIP) | MIP_SEIP : 0;
   const reg_t vssip_int = proc->extension_enabled('H') ? MIP_VSSIP : 0;
   const reg_t hypervisor_ints = proc->extension_enabled('H') ? MIP_HS_MASK : 0;
   // We must mask off sgeip, vstip, and vseip. All three of these
@@ -979,6 +980,11 @@ reg_t time_counter_csr_t::read() const noexcept {
 
 void time_counter_csr_t::sync(const reg_t val) noexcept {
   shadow_val = val;
+  if (proc->extension_enabled(EXT_SSTC)) {
+    const reg_t mip_val = (shadow_val >= state->stimecmp->read() ? MIP_STIP : 0) |
+      (shadow_val + state->htimedelta->read() >= state->vstimecmp->read() ? MIP_VSTIP : 0);
+    state->mip->backdoor_write_with_mask(MIP_STIP | MIP_VSTIP, mip_val);
+  }
 }
 
 proxy_csr_t::proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate):
@@ -1398,5 +1404,34 @@ void henvcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (proc->extension_enabled(EXT_SMSTATEEN)) {
     if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_HENVCFG))
       throw trap_illegal_instruction(insn.bits());
+  }
+}
+
+stimecmp_csr_t::stimecmp_csr_t(processor_t* const proc, const reg_t addr, const reg_t imask):
+  basic_csr_t(proc, addr, 0), intr_mask(imask) {
+}
+
+bool stimecmp_csr_t::unlogged_write(const reg_t val) noexcept {
+  state->mip->backdoor_write_with_mask(intr_mask, state->time->read() >= val ? intr_mask : 0);
+  return basic_csr_t::unlogged_write(val);
+}
+
+virtualized_stimecmp_csr_t::virtualized_stimecmp_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
+  virtualized_csr_t(proc, orig, virt) {
+}
+
+void virtualized_stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
+  virtualized_csr_t::verify_permissions(insn, write);
+
+  // check for read permission to time as enabled by xcounteren
+  state->time_proxy->verify_permissions(insn, false);
+
+  if (!(state->menvcfg->read() & MENVCFG_STCE)) {
+    // access to (v)stimecmp with MENVCFG.STCE = 0
+    if (state->prv < PRV_M)
+      throw trap_illegal_instruction(insn.bits());
+  } else if (state->v && !(state->henvcfg->read() & HENVCFG_STCE)) {
+    // access to vstimecmp with MENVCFG.STCE = 1 and HENVCFG.STCE = 0 when V = 1
+    throw trap_virtual_instruction(insn.bits());
   }
 }

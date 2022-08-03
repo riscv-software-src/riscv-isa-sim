@@ -193,6 +193,10 @@ struct state_t
 
   csr_t_p htimedelta;
   time_counter_csr_t_p time;
+  csr_t_p time_proxy;
+
+  csr_t_p stimecmp;
+  csr_t_p vstimecmp;
 
   bool serialized; // whether timer CSRs are in a well-defined state
 
