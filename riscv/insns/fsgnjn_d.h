@@ -1,3 +1,3 @@
-require_extension('D');
+require_either_extension('D', EXT_ZDINX);
 require_fp;
-WRITE_FRD(fsgnj64(FRS1, FRS2, true, false));
+WRITE_FRD_D(fsgnj64(freg(FRS1_D), freg(FRS2_D), true, false));

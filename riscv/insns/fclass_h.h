@@ -1,3 +1,3 @@
-require_extension(EXT_ZFH);
+require_either_extension(EXT_ZFH, EXT_ZHINX);
 require_fp;
-WRITE_RD(f16_classify(f16(FRS1)));
+WRITE_RD(f16_classify(FRS1_H));

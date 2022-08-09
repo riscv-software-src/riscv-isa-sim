@@ -1802,7 +1802,7 @@ reg_t index[P.VU.vlmax]; \
     case e16: { \
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
       float32_t vs2 = f16_to_f32(P.VU.elt<float16_t>(rs2_num, i)); \
-      float32_t rs1 = f16_to_f32(f16(READ_FREG(rs1_num))); \
+      float32_t rs1 = f16_to_f32(FRS1_H); \
       BODY16; \
       set_fp_exceptions; \
       break; \
@@ -1810,7 +1810,7 @@ reg_t index[P.VU.vlmax]; \
     case e32: { \
       float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
       float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
-      float64_t rs1 = f32_to_f64(f32(READ_FREG(rs1_num))); \
+      float64_t rs1 = f32_to_f64(FRS1_F); \
       BODY32; \
       set_fp_exceptions; \
       break; \
@@ -1856,7 +1856,7 @@ reg_t index[P.VU.vlmax]; \
     case e16: { \
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
       float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
-      float32_t rs1 = f16_to_f32(f16(READ_FREG(rs1_num))); \
+      float32_t rs1 = f16_to_f32(FRS1_H); \
       BODY16; \
       set_fp_exceptions; \
       break; \
@@ -1864,7 +1864,7 @@ reg_t index[P.VU.vlmax]; \
     case e32: { \
       float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
       float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
-      float64_t rs1 = f32_to_f64(f32(READ_FREG(rs1_num))); \
+      float64_t rs1 = f32_to_f64(FRS1_F); \
       BODY32; \
       set_fp_exceptions; \
       break; \
