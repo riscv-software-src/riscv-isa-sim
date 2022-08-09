@@ -1204,6 +1204,21 @@ void float_csr_t::verify_permissions(insn_t insn, bool write) const {
   require_fp;
   if (!proc->extension_enabled('F'))
     throw trap_illegal_instruction(insn.bits());
+
+  if (proc->extension_enabled(EXT_SMSTATEEN) && proc->extension_enabled(EXT_ZFINX)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_FCSR))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_FCSR))
+      throw trap_virtual_instruction(insn.bits());
+
+    if ((proc->extension_enabled('S') && state->prv < PRV_S) && !(state->sstateen[0]->read() & SSTATEEN0_FCSR)) {
+      if (state->v)
+        throw trap_virtual_instruction(insn.bits());
+      else
+        throw trap_illegal_instruction(insn.bits());
+    }
+  }
 }
 
 bool float_csr_t::unlogged_write(const reg_t val) noexcept {
@@ -1315,10 +1330,9 @@ bool hstateen_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 void hstateen_csr_t::verify_permissions(insn_t insn, bool write) const {
-  masked_csr_t::verify_permissions(insn, write);
-
   if ((state->prv < PRV_M) && !(state->mstateen[index]->read() & MSTATEEN_HSTATEEN))
     throw trap_illegal_instruction(insn.bits());
+  masked_csr_t::verify_permissions(insn, write);
 }
 
 // implement class sstateen_csr_t
@@ -1356,30 +1370,6 @@ void sstateen_csr_t::verify_permissions(insn_t insn, bool write) const {
       throw trap_virtual_instruction(insn.bits());
 }
 
-// implement class fcsr_csr_t
-fcsr_csr_t::fcsr_csr_t(processor_t* const proc, const reg_t addr, csr_t_p upper_csr, csr_t_p lower_csr, const unsigned upper_lsb):
-  composite_csr_t(proc, addr, upper_csr, lower_csr, upper_lsb) {
-}
-
-void fcsr_csr_t::verify_permissions(insn_t insn, bool write) const {
-  composite_csr_t::verify_permissions(insn, write);
-
-  if (proc->extension_enabled(EXT_SMSTATEEN) && proc->extension_enabled(EXT_ZFINX)) {
-    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_FCSR))
-      throw trap_illegal_instruction(insn.bits());
-
-    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_FCSR))
-      throw trap_virtual_instruction(insn.bits());
-
-    if ((proc->extension_enabled('S') && state->prv < PRV_S) && !(state->sstateen[0]->read() & SSTATEEN0_FCSR)) {
-      if (state->v)
-        throw trap_virtual_instruction(insn.bits());
-      else
-        throw trap_illegal_instruction(insn.bits());
-    }
-  }
-}
-
 // implement class senvcfg_csr_t
 senvcfg_csr_t::senvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask,
                              const reg_t init):
@@ -1387,8 +1377,6 @@ senvcfg_csr_t::senvcfg_csr_t(processor_t* const proc, const reg_t addr, const re
 }
 
 void senvcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
-  masked_csr_t::verify_permissions(insn, write);
-
   if (proc->extension_enabled(EXT_SMSTATEEN)) {
     if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_HENVCFG))
       throw trap_illegal_instruction(insn.bits());
@@ -1396,15 +1384,17 @@ void senvcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
     if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_SENVCFG))
       throw trap_virtual_instruction(insn.bits());
   }
+
+  masked_csr_t::verify_permissions(insn, write);
 }
 
 void henvcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
-  masked_csr_t::verify_permissions(insn, write);
-
   if (proc->extension_enabled(EXT_SMSTATEEN)) {
     if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_HENVCFG))
       throw trap_illegal_instruction(insn.bits());
   }
+
+  masked_csr_t::verify_permissions(insn, write);
 }
 
 stimecmp_csr_t::stimecmp_csr_t(processor_t* const proc, const reg_t addr, const reg_t imask):
