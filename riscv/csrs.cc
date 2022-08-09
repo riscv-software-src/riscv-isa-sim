@@ -1411,17 +1411,18 @@ virtualized_stimecmp_csr_t::virtualized_stimecmp_csr_t(processor_t* const proc, 
 }
 
 void virtualized_stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
-  virtualized_csr_t::verify_permissions(insn, write);
-
-  // check for read permission to time as enabled by xcounteren
-  state->time_proxy->verify_permissions(insn, false);
-
   if (!(state->menvcfg->read() & MENVCFG_STCE)) {
     // access to (v)stimecmp with MENVCFG.STCE = 0
     if (state->prv < PRV_M)
       throw trap_illegal_instruction(insn.bits());
-  } else if (state->v && !(state->henvcfg->read() & HENVCFG_STCE)) {
+  }
+
+  state->time_proxy->verify_permissions(insn, false);
+
+  if (state->v && !(state->henvcfg->read() & HENVCFG_STCE)) {
     // access to vstimecmp with MENVCFG.STCE = 1 and HENVCFG.STCE = 0 when V = 1
     throw trap_virtual_instruction(insn.bits());
   }
+
+  virtualized_csr_t::verify_permissions(insn, write);
 }
