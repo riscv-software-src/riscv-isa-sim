@@ -512,7 +512,6 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
 {
   int new_vlmul = 0;
   if (vtype->read() != newType) {
-    vtype->write_raw(newType);
     vsew = 1 << (extract64(newType, 3, 3) + 3);
     new_vlmul = int8_t(extract64(newType, 0, 3) << 5) >> 5;
     vflmul = new_vlmul >= 0 ? 1 << new_vlmul : 1.0 / (1 << -new_vlmul);
@@ -527,6 +526,8 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
     if (vill) {
       vlmax = 0;
       vtype->write_raw(UINT64_MAX << (p->get_xlen() - 1));
+    } else {
+      vtype->write_raw(newType);
     }
   }
 
