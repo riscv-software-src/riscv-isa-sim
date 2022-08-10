@@ -56,7 +56,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   if (astart < bstart &&
       is_overlapped(astart, asize, bstart, bsize) &&
       !is_overlapped(astart, asize, bstart + bsize, bsize)) {
-      return false;
+    return false;
   } else  {
     return std::max(aend, bend) - std::min(astart, bstart) < asize + bsize;
   }

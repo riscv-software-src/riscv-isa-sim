@@ -172,8 +172,10 @@ inline void processor_t::update_histogram(reg_t pc)
 // function calls.
 static inline reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
+#ifdef RISCV_ENABLE_COMMITLOG
   commit_log_reset(p);
   commit_log_stash_privilege(p);
+#endif
   reg_t npc;
 
   try {
@@ -238,18 +240,18 @@ void processor_t::step(size_t n)
     mmu_t* _mmu = mmu;
 
     #define advance_pc() \
-     if (unlikely(invalid_pc(pc))) { \
-       switch (pc) { \
-         case PC_SERIALIZE_BEFORE: state.serialized = true; break; \
-         case PC_SERIALIZE_AFTER: ++instret; break; \
-         default: abort(); \
-       } \
-       pc = state.pc; \
-       break; \
-     } else { \
-       state.pc = pc; \
-       instret++; \
-     }
+      if (unlikely(invalid_pc(pc))) { \
+        switch (pc) { \
+          case PC_SERIALIZE_BEFORE: state.serialized = true; break; \
+          case PC_SERIALIZE_AFTER: ++instret; break; \
+          default: abort(); \
+        } \
+        pc = state.pc; \
+        break; \
+      } else { \
+        state.pc = pc; \
+        instret++; \
+      }
 
     try
     {

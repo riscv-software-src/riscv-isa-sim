@@ -10,7 +10,7 @@ uint8_t     round_consts [10] = {
 
 uint8_t     enc_rcon          = insn.rcon() ;
 
-if(enc_rcon > 0xA) {
+if (enc_rcon > 0xA) {
     // Invalid opcode.
     throw trap_illegal_instruction(0);
 }
@@ -19,7 +19,7 @@ uint32_t    temp              = (RS1 >> 32) & 0xFFFFFFFF  ;
 uint8_t     rcon              = 0            ;
 uint64_t    result                           ;
 
-if(enc_rcon != 0xA) {
+if (enc_rcon != 0xA) {
     temp    = (temp >> 8) | (temp << 24); // Rotate right by 8
     rcon    = round_consts[enc_rcon];
 }

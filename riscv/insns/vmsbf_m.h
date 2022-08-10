@@ -24,7 +24,7 @@ for (reg_t i = P.VU.vstart->read(); i < vl; ++i) {
     uint64_t res = 0;
     if (!has_one && !vs2_lsb) {
       res = 1;
-    } else if(!has_one && vs2_lsb) {
+    } else if (!has_one && vs2_lsb) {
       has_one = true;
     }
     vd = (vd & ~mmask) | ((res << mpos) & mmask);

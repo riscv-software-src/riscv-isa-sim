@@ -6,7 +6,7 @@ reg_t rs1 = RS1;
 reg_t sew = P.VU.vsew;
 reg_t rs2_num = insn.rs2();
 
-switch(sew) {
+switch (sew) {
 case e8:
   WRITE_RD(P.VU.elt<int8_t>(rs2_num, 0));
   break;

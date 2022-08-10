@@ -150,17 +150,17 @@ void sim_t::interactive()
     // first get commands from file, if cmd_file has been set
     if (cmd_file && !feof(cmd_file) && fscanf(cmd_file,"%" STR(MAX_CMD_STR) "[^\n]\n", cmd_str)==1) {
                                                       // up to MAX_CMD_STR characters before \n, skipping \n
-       s = cmd_str;
-       // while we get input from file, output goes to stderr
-       sout_.rdbuf(std::cerr.rdbuf());
+      s = cmd_str;
+      // while we get input from file, output goes to stderr
+      sout_.rdbuf(std::cerr.rdbuf());
     } else {
-       // when there are no commands left from file or if there was no file from the beginning
-       cmd_file = NULL; // mark file pointer as being not valid, so any method can test this easily
+      // when there are no commands left from file or if there was no file from the beginning
+      cmd_file = NULL; // mark file pointer as being not valid, so any method can test this easily
 #ifdef HAVE_BOOST_ASIO
-       s = rin(&bout); // get command string from socket or terminal
+      s = rin(&bout); // get command string from socket or terminal
 #else
-       std::cerr << ": " << std::flush;
-       s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
+      std::cerr << ": " << std::flush;
+      s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
 #endif
     }
 
@@ -211,15 +211,17 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "fregd <core> <reg>              # Display double precision <reg> in <core>\n"
     "vreg <core> [reg]               # Display vector [reg] (all if omitted) in <core>\n"
     "pc <core>                       # Show current PC in <core>\n"
-    "mem <hex addr>                  # Show contents of physical memory\n"
-    "str <core> <hex addr>           # Show NUL-terminated C string at <hex addr> in core <core>\n"
+    "mem [core] <hex addr>           # Show contents of virtual memory <hex addr> in [core] (physical memory <hex addr> if omitted)\n"
+    "str [core] <hex addr>           # Show NUL-terminated C string at virtual address <hex addr> in [core] (physical address <hex addr> if omitted)\n"
     "until reg <core> <reg> <val>    # Stop when <reg> in <core> hits <val>\n"
+    "untiln reg <core> <reg> <val>   # Run noisy and stop when <reg> in <core> hits <val>\n"
     "until pc <core> <val>           # Stop when PC in <core> hits <val>\n"
     "untiln pc <core> <val>          # Run noisy and stop when PC in <core> hits <val>\n"
-    "until mem <addr> <val>          # Stop when memory <addr> becomes <val>\n"
+    "until mem [core] <addr> <val>   # Stop when virtual memory <addr> in [core] (physical address <addr> if omitted) becomes <val>\n"
+    "untiln mem [core] <addr> <val>  # Run noisy and stop when virtual memory <addr> in [core] (physical address <addr> if omitted) becomes <val>\n"
     "while reg <core> <reg> <val>    # Run while <reg> in <core> is <val>\n"
     "while pc <core> <val>           # Run while PC in <core> is <val>\n"
-    "while mem <addr> <val>          # Run while memory <addr> is <val>\n"
+    "while mem [core] <addr> <val>   # Run while virtual memory <addr> in [core] (physical memory <addr> if omitted) is <val>\n"
     "run [count]                     # Resume noisy execution (until CTRL+C, or [count] insns)\n"
     "r [count]                         Alias for run\n"
     "rs [count]                      # Resume silent execution (until CTRL+C, or [count] insns)\n"
@@ -269,7 +271,7 @@ reg_t sim_t::get_pc(const std::vector<std::string>& args)
 
 void sim_t::interactive_pc(const std::string& cmd, const std::vector<std::string>& args)
 {
-  if(args.size() != 1)
+  if (args.size() != 1)
     throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
@@ -307,7 +309,7 @@ reg_t sim_t::get_reg(const std::vector<std::string>& args)
 
 freg_t sim_t::get_freg(const std::vector<std::string>& args, int size)
 {
-  if(args.size() != 2)
+  if (args.size() != 2)
     throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
@@ -361,9 +363,9 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
 
   for (int r = rstart; r < rend; ++r) {
     out << std::setfill (' ') << std::left << std::setw(4) << vr_name[r] << std::right << ": ";
-    for (int e = num_elem-1; e >= 0; --e){
+    for (int e = num_elem-1; e >= 0; --e) {
       uint64_t val;
-      switch(elen){
+      switch (elen) {
         case 8:
           val = p->VU.elt<uint64_t>(r, e);
           out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(16) << val << "  ";
@@ -389,7 +391,7 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
 void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::string>& args)
 {
   if (args.size() < 1)
-     throw trap_interactive();
+    throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
   int max_xlen = p->get_isa().get_max_xlen();
@@ -402,14 +404,14 @@ void sim_t::interactive_reg(const std::string& cmd, const std::vector<std::strin
 
     for (int r = 0; r < NXPR; ++r) {
       out << std::setfill(' ') << std::setw(4) << xpr_name[r]
-           << ": 0x" << std::setfill('0') << std::setw(max_xlen/4)
-           << zext(p->get_state()->XPR[r], max_xlen);
+          << ": 0x" << std::setfill('0') << std::setw(max_xlen/4)
+          << zext(p->get_state()->XPR[r], max_xlen);
       if ((r + 1) % 4 == 0)
         out << std::endl;
     }
   } else {
-      out << "0x" << std::setfill('0') << std::setw(max_xlen/4)
-           << zext(get_reg(args), max_xlen) << std::endl;
+    out << "0x" << std::setfill('0') << std::setw(max_xlen/4)
+        << zext(get_reg(args), max_xlen) << std::endl;
   }
 }
 
@@ -473,7 +475,7 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
   if (addr == LONG_MAX)
     addr = strtoul(addr_str.c_str(),NULL,16);
 
-  switch(addr % 8)
+  switch (addr % 8)
   {
     case 0:
       val = mmu->load_uint64(addr);
@@ -520,7 +522,7 @@ void sim_t::interactive_str(const std::string& cmd, const std::vector<std::strin
   std::ostream out(sout_.rdbuf());
 
   char ch;
-  while((ch = mmu->load_uint8(addr++)))
+  while ((ch = mmu->load_uint8(addr++)))
     out << ch;
 
   out << std::endl;

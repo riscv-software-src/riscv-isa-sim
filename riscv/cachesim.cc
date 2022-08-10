@@ -39,9 +39,9 @@ cache_sim_t* cache_sim_t::construct(const char* config, const char* name)
 
 void cache_sim_t::init()
 {
-  if(sets == 0 || (sets & (sets-1)))
+  if (sets == 0 || (sets & (sets-1)))
     help();
-  if(linesz < 8 || (linesz & (linesz-1)))
+  if (linesz < 8 || (linesz & (linesz-1)))
     help();
 
   idx_shift = 0;
@@ -76,7 +76,7 @@ cache_sim_t::~cache_sim_t()
 
 void cache_sim_t::print_stats()
 {
-  if(read_accesses + write_accesses == 0)
+  if (read_accesses + write_accesses == 0)
     return;
 
   float mr = 100.0f*(read_misses+write_misses)/(read_accesses+write_accesses);

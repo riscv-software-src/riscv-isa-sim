@@ -251,7 +251,7 @@ do { \
   else { \
     WRITE_FRD(value); \
   } \
-} while(0)
+} while (0)
 #define WRITE_FRD_F(value) \
 do { \
   if (p->extension_enabled(EXT_ZFINX)) \
@@ -259,7 +259,7 @@ do { \
   else { \
     WRITE_FRD(value); \
   } \
-} while(0)
+} while (0)
 #define WRITE_FRD_D(value) \
 do { \
   if (p->extension_enabled(EXT_ZFINX)) { \
@@ -272,7 +272,7 @@ do { \
   } else { \
     WRITE_FRD(value); \
   } \
-} while(0)
+} while (0)
  
 #define SHAMT (insn.i_imm() & 0x3F)
 #define BRANCH_TARGET (pc + insn.sb_imm())
