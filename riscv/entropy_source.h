@@ -49,21 +49,21 @@ public:
     // the bare minimum.
     uint32_t return_status = OPST_ES16;
 
-    if(return_status == OPST_ES16) {
+    if (return_status == OPST_ES16) {
 
       // Add some sampled entropy into the low 16 bits
       uint16_t entropy = this -> get_two_random_bytes();
       result |= entropy;
 
-    } else if(return_status == OPST_BIST) {
+    } else if (return_status == OPST_BIST) {
 
       // Do nothing.
 
-    } else if(return_status == OPST_WAIT) {
+    } else if (return_status == OPST_WAIT) {
 
       // Do nothing.
 
-    } else if(return_status == OPST_DEAD) {
+    } else if (return_status == OPST_DEAD) {
 
       // Do nothing. Stay dead.
 
@@ -94,7 +94,7 @@ public:
 
     std::ifstream fh(this -> randomness_source, std::ios::binary);
 
-    if(fh.is_open()) {
+    if (fh.is_open()) {
 
       uint16_t random_bytes;
 

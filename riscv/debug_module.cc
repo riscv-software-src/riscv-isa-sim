@@ -215,7 +215,7 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
       }
     }
     if (dmcontrol.hartsel == id) {
-      if (0 == (debug_rom_flags[id] & (1 << DEBUG_ROM_FLAG_GO))){
+      if (0 == (debug_rom_flags[id] & (1 << DEBUG_ROM_FLAG_GO))) {
         if (dmcontrol.hartsel == id) {
           abstract_command_completed = true;
         }

@@ -271,7 +271,7 @@ reg_t sim_t::get_pc(const std::vector<std::string>& args)
 
 void sim_t::interactive_pc(const std::string& cmd, const std::vector<std::string>& args)
 {
-  if(args.size() != 1)
+  if (args.size() != 1)
     throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
@@ -309,7 +309,7 @@ reg_t sim_t::get_reg(const std::vector<std::string>& args)
 
 freg_t sim_t::get_freg(const std::vector<std::string>& args, int size)
 {
-  if(args.size() != 2)
+  if (args.size() != 2)
     throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
@@ -363,9 +363,9 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
 
   for (int r = rstart; r < rend; ++r) {
     out << std::setfill (' ') << std::left << std::setw(4) << vr_name[r] << std::right << ": ";
-    for (int e = num_elem-1; e >= 0; --e){
+    for (int e = num_elem-1; e >= 0; --e) {
       uint64_t val;
-      switch(elen){
+      switch (elen) {
         case 8:
           val = p->VU.elt<uint64_t>(r, e);
           out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(16) << val << "  ";
@@ -475,7 +475,7 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
   if (addr == LONG_MAX)
     addr = strtoul(addr_str.c_str(),NULL,16);
 
-  switch(addr % 8)
+  switch (addr % 8)
   {
     case 0:
       val = mmu->load_uint64(addr);
@@ -522,7 +522,7 @@ void sim_t::interactive_str(const std::string& cmd, const std::vector<std::strin
   std::ostream out(sout_.rdbuf());
 
   char ch;
-  while((ch = mmu->load_uint8(addr++)))
+  while ((ch = mmu->load_uint8(addr++)))
     out << ch;
 
   out << std::endl;
