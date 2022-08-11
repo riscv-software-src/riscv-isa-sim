@@ -218,6 +218,16 @@ pmpcfg_csr_t::pmpcfg_csr_t(processor_t* const proc, const reg_t addr):
   csr_t(proc, addr) {
 }
 
+void pmpcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
+  csr_t::verify_permissions(insn, write);
+  // If n_pmp is zero, that means pmp is not implemented hence raise
+  // trap if it tries to access the csr. I would prefer to implement
+  // this by not instantiating any pmpcfg_csr_t for these regs, but
+  // n_pmp can change after reset() is run.
+  if (proc->n_pmp == 0)
+    throw trap_illegal_instruction(insn.bits());
+}
+
 reg_t pmpcfg_csr_t::read() const noexcept {
   reg_t cfg_res = 0;
   for (size_t i0 = (address - CSR_PMPCFG0) * 4, i = i0; i < i0 + proc->get_xlen() / 8 && i < state->max_pmp; i++)
