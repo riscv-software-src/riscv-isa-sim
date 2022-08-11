@@ -1468,9 +1468,6 @@ reg_t index[P.VU.vlmax]; \
       case 0x84: \
         P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##32_t>(rs2_num, i); \
         break; \
-      case 0x88: \
-        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##32_t>(rs2_num, i); \
-        break; \
       default: \
         break; \
     } \
