@@ -124,6 +124,7 @@ typedef std::shared_ptr<pmpaddr_csr_t> pmpaddr_csr_t_p;
 class pmpcfg_csr_t: public csr_t {
  public:
   pmpcfg_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
   virtual reg_t read() const noexcept override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
