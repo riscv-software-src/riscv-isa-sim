@@ -7,10 +7,6 @@ require_vm;
 reg_t zimm5 = insn.v_zimm5();
 
 VI_LOOP_BASE
-
-for (reg_t i = P.VU.vstart->read(); i < vl; ++i) {
-  VI_LOOP_ELEMENT_SKIP();
-
   switch (sew) {
   case e8:
     P.VU.elt<uint8_t>(rd_num, i, true) = zimm5 >= P.VU.vlmax ? 0 : P.VU.elt<uint8_t>(rs2_num, zimm5);
@@ -25,6 +21,4 @@ for (reg_t i = P.VU.vstart->read(); i < vl; ++i) {
     P.VU.elt<uint64_t>(rd_num, i, true) = zimm5 >= P.VU.vlmax ? 0 : P.VU.elt<uint64_t>(rs2_num, zimm5);
     break;
   }
-}
-
 VI_LOOP_END;
