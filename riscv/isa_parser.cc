@@ -114,6 +114,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       // unconditionally include FENCE.I, so Zifencei adds nothing more.
     } else if (ext_str == "zihintpause") {
       // HINTs encoded in base-ISA instructions are always present.
+    } else if (ext_str == "zihintntl") {
+      // HINTs encoded in base-ISA instructions are always present.
     } else if (ext_str == "zmmul") {
       extension_table[EXT_ZMMUL] = true;
     } else if (ext_str == "zba") {
