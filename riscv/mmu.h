@@ -263,8 +263,8 @@ public:
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
     convert_load_traps_to_store_traps({
-      reg_t paddr = addr & ~(blocksz - 1);
-      paddr = translate(paddr, blocksz, LOAD, 0);
+      reg_t vaddr = addr & ~(blocksz - 1);
+      reg_t paddr = translate(vaddr, blocksz, LOAD, 0);
       if (auto host_addr = sim->addr_to_mem(paddr)) {
         if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
           tracer.clean_invalidate(paddr, blocksz, clean, inval);
