@@ -889,6 +889,12 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     }
   }
 
+  if (isa->extension_enabled(EXT_ZBC)) {
+    DEFINE_RTYPE(clmul);
+    DEFINE_RTYPE(clmulh);
+    DEFINE_RTYPE(clmulr);
+  }
+
   if (isa->extension_enabled(EXT_ZBS)) { 
     DEFINE_RTYPE(bclr);
     DEFINE_RTYPE(binv);
