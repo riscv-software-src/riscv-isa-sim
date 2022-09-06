@@ -218,12 +218,6 @@ struct state_t
 #endif
 };
 
-typedef enum {
-  OPERATION_EXECUTE,
-  OPERATION_STORE,
-  OPERATION_LOAD,
-} trigger_operation_t;
-
 // Count number of contiguous 1 bits starting from the LSB.
 static int cto(reg_t val)
 {
