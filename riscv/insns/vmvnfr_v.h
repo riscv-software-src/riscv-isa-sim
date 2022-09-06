@@ -1,4 +1,4 @@
-// vmv1r.v vd, vs2
+// vmv<nf>r.v vd, vs2
 require_vector(true);
 const reg_t baseAddr = RS1;
 const reg_t vd = insn.rd();
