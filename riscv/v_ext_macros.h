@@ -1079,7 +1079,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   VI_LOOP_CARRY_END
 
 #define VI_VV_LOOP_WITH_CARRY(BODY) \
-  require_vm; \
   VI_CHECK_SSS(true); \
   VI_LOOP_WITH_CARRY_BASE \
     if (sew == e8) { \
@@ -1098,7 +1097,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   VI_LOOP_END
 
 #define VI_XI_LOOP_WITH_CARRY(BODY) \
-  require_vm; \
   VI_CHECK_SSS(false); \
   VI_LOOP_WITH_CARRY_BASE \
     if (sew == e8) { \
