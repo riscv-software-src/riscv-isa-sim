@@ -517,7 +517,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   bool use_first = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
 
 #define VI_MERGE_LOOP_BASE \
-  require_vector(true); \
   VI_GENERAL_LOOP_BASE \
   VI_MERGE_VARS
 
