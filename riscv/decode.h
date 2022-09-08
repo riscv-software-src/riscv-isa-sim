@@ -306,12 +306,10 @@ do { \
     WRITE_VSTATUS; \
     dirty_vs_state; \
   } while (0);
-#define require_vector_novtype(is_log, alu) \
+#define require_vector_novtype(is_log) \
   do { \
     require_vector_vs; \
     require_extension('V'); \
-    if (alu && !P.VU.vstart_alu) \
-      require(P.VU.vstart->read() == 0); \
     if (is_log) \
       WRITE_VSTATUS; \
     dirty_vs_state; \

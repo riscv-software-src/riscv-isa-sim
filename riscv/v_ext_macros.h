@@ -1317,7 +1317,7 @@ reg_t index[P.VU.vlmax]; \
   p->VU.vstart->write(0);
 
 #define VI_LD_WHOLE(elt_width) \
-  require_vector_novtype(true, false); \
+  require_vector_novtype(true); \
   require(sizeof(elt_width ## _t) * 8 <= P.VU.ELEN); \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
@@ -1349,7 +1349,7 @@ reg_t index[P.VU.vlmax]; \
   P.VU.vstart->write(0);
 
 #define VI_ST_WHOLE \
-  require_vector_novtype(true, false); \
+  require_vector_novtype(true); \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
   const reg_t len = insn.v_nf() + 1; \
