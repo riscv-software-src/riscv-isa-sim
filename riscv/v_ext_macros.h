@@ -517,7 +517,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   bool use_first = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
 
 #define VI_MERGE_LOOP_BASE \
-  require_vector(true); \
   VI_GENERAL_LOOP_BASE \
   VI_MERGE_VARS
 
@@ -1080,7 +1079,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   VI_LOOP_CARRY_END
 
 #define VI_VV_LOOP_WITH_CARRY(BODY) \
-  require_vm; \
   VI_CHECK_SSS(true); \
   VI_LOOP_WITH_CARRY_BASE \
     if (sew == e8) { \
@@ -1099,7 +1097,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   VI_LOOP_END
 
 #define VI_XI_LOOP_WITH_CARRY(BODY) \
-  require_vm; \
   VI_CHECK_SSS(false); \
   VI_LOOP_WITH_CARRY_BASE \
     if (sew == e8) { \
@@ -1318,7 +1315,7 @@ reg_t index[P.VU.vlmax]; \
   p->VU.vstart->write(0);
 
 #define VI_LD_WHOLE(elt_width) \
-  require_vector_novtype(true, false); \
+  require_vector_novtype(true); \
   require(sizeof(elt_width ## _t) * 8 <= P.VU.ELEN); \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
@@ -1350,7 +1347,7 @@ reg_t index[P.VU.vlmax]; \
   P.VU.vstart->write(0);
 
 #define VI_ST_WHOLE \
-  require_vector_novtype(true, false); \
+  require_vector_novtype(true); \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
   const reg_t len = insn.v_nf() + 1; \
