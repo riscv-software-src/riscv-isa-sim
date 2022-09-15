@@ -4,13 +4,6 @@
 
 namespace triggers {
 
-mcontrol_t::mcontrol_t() :
-  select(false), timing(false), chain_bit(false),
-  match(MATCH_EQUAL), m(false), s(false), u(false),
-  execute_bit(false), store_bit(false), load_bit(false)
-{
-}
-
 reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   reg_t v = 0;
   auto xlen = proc->get_xlen();
