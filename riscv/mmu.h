@@ -477,13 +477,11 @@ private:
     } else {
       result = tlb_data[vpn % TLB_ENTRIES];
     }
-    if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) {
-      target_endian<uint16_t>* ptr = (target_endian<uint16_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
-      triggers::action_t action;
-      auto match = proc->TM.memory_access_match(&action, triggers::OPERATION_EXECUTE, addr, from_target(*ptr));
-      if (match != triggers::MATCH_NONE) {
-        throw triggers::matched_t(triggers::OPERATION_EXECUTE, addr, from_target(*ptr), action);
-      }
+    target_endian<uint16_t>* ptr = (target_endian<uint16_t>*)(result.host_offset + addr);
+    triggers::action_t action;
+    auto match = proc->TM.memory_access_match(&action, triggers::OPERATION_EXECUTE, addr, from_target(*ptr));
+    if (match != triggers::MATCH_NONE) {
+      throw triggers::matched_t(triggers::OPERATION_EXECUTE, addr, from_target(*ptr), action);
     }
     return result;
   }
