@@ -739,4 +739,13 @@ class virtualized_stimecmp_csr_t: public virtualized_csr_t {
   virtualized_stimecmp_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
+
+class scountovf_csr_t: public csr_t {
+ public:
+  scountovf_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
 #endif

@@ -145,6 +145,7 @@ struct state_t
   csr_t_p medeleg;
   csr_t_p mideleg;
   csr_t_p mcounteren;
+  csr_t_p mevent[29];
   csr_t_p scounteren;
   csr_t_p sepc;
   csr_t_p stval;
