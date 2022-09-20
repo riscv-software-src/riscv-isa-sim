@@ -82,8 +82,14 @@ htif_t::~htif_t()
 
 void htif_t::start()
 {
-  if (!targs.empty() && targs[0] != "none")
+  if (!targs.empty() && targs[0] != "none") {
+    try {
       load_program();
+    } catch (const incompat_xlen & err) {
+      fprintf(stderr, "Error: cannot execute %d-bit program on RV%d hart\n", err.actual_xlen, err.expected_xlen);
+      exit(1);
+    }
+  }
 
   reset();
 }
@@ -129,7 +135,7 @@ std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload,
   } preload_aware_memif(this);
 
   try {
-    return load_elf(path.c_str(), &preload_aware_memif, entry);
+    return load_elf(path.c_str(), &preload_aware_memif, entry, expected_xlen);
   } catch (mem_trap_t& t) {
     bad_address("loading payload " + payload, t.get_tval());
     abort();

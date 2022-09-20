@@ -16,7 +16,7 @@
 #include <vector>
 #include <map>
 
-std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* entry)
+std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* entry, unsigned required_xlen = 0)
 {
   int fd = open(fn, O_RDONLY);
   struct stat s;
@@ -32,6 +32,10 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
   assert(size >= sizeof(Elf64_Ehdr));
   const Elf64_Ehdr* eh64 = (const Elf64_Ehdr*)buf;
   assert(IS_ELF32(*eh64) || IS_ELF64(*eh64));
+  unsigned xlen = IS_ELF32(*eh64) ? 32 : 64;
+  if (required_xlen != 0 && required_xlen != xlen) {
+    throw incompat_xlen(required_xlen, xlen);
+  }
   assert(IS_ELFLE(*eh64) || IS_ELFBE(*eh64));
   assert(IS_ELF_EXEC(*eh64));
   assert(IS_ELF_RISCV(*eh64) || IS_ELF_EM_NONE(*eh64));

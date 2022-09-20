@@ -202,6 +202,7 @@ int sim_t::run()
 {
   host = context_t::current();
   target.init(sim_thread_main, this);
+  htif_t::set_expected_xlen(isa.get_max_xlen());
   return htif_t::run();
 }
 
