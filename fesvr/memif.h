@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdexcept>
 #include "byteorder.h"
 
 typedef uint64_t reg_t;
@@ -77,6 +78,13 @@ public:
 
 protected:
   chunked_memif_t* cmemif;
+};
+
+class incompat_xlen : public std::exception {
+public:
+  const unsigned expected_xlen;
+  const unsigned actual_xlen;
+  incompat_xlen(unsigned _expected_xlen, unsigned _actual_xlen) : expected_xlen(_expected_xlen), actual_xlen(_actual_xlen) {}
 };
 
 #endif // __MEMIF_H
