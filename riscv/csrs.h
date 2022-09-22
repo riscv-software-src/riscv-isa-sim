@@ -326,7 +326,7 @@ class misa_csr_t final: public basic_csr_t {
  private:
   const reg_t max_isa;
   const reg_t write_mask;
-  const reg_t dependency(const reg_t val, const char feature, const char depends_on) const noexcept;
+  reg_t dependency(const reg_t val, const char feature, const char depends_on) const noexcept;
 };
 
 typedef std::shared_ptr<misa_csr_t> misa_csr_t_p;

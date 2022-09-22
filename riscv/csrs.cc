@@ -615,7 +615,7 @@ misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t ma
              ) {
 }
 
-const reg_t misa_csr_t::dependency(const reg_t val, const char feature, const char depends_on) const noexcept {
+reg_t misa_csr_t::dependency(const reg_t val, const char feature, const char depends_on) const noexcept {
   return (val & (1L << (depends_on - 'A'))) ? val : (val & ~(1L << (feature - 'A')));
 }
 
