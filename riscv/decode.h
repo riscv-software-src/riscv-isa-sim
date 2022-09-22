@@ -19,6 +19,7 @@
 #include "p_ext_macros.h"
 #include "v_ext_macros.h"
 #include <cinttypes>
+#include <type_traits>
 
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
@@ -282,8 +283,11 @@ do { \
               if (rm > 4) throw trap_illegal_instruction(insn.bits()); \
               rm; })
 
-#define get_field(reg, mask) (((reg) & (decltype(reg))(mask)) / ((mask) & ~((mask) << 1)))
-#define set_field(reg, mask, val) (((reg) & ~(decltype(reg))(mask)) | (((decltype(reg))(val) * ((mask) & ~((mask) << 1))) & (decltype(reg))(mask)))
+#define get_field(reg, mask) \
+  (((reg) & (std::remove_cv<decltype(reg)>::type)(mask)) / ((mask) & ~((mask) << 1)))
+
+#define set_field(reg, mask, val) \
+  (((reg) & ~(std::remove_cv<decltype(reg)>::type)(mask)) | (((std::remove_cv<decltype(reg)>::type)(val) * ((mask) & ~((mask) << 1))) & (std::remove_cv<decltype(reg)>::type)(mask)))
 
 #define require_privilege(p) require(STATE.prv >= (p))
 #define require_novirt() if (unlikely(STATE.v)) throw trap_virtual_instruction(insn.bits())
