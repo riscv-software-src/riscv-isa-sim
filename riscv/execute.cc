@@ -154,10 +154,6 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
   }
   fprintf(log_file, "\n");
 }
-#else
-static void commit_log_reset(processor_t* p) {}
-static void commit_log_stash_privilege(processor_t* p) {}
-static void commit_log_print_insn(processor_t* p, reg_t pc, insn_t insn) {}
 #endif
 
 inline void processor_t::update_histogram(reg_t pc)
