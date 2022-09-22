@@ -177,7 +177,7 @@ private:
 #define STATE (*p->get_state())
 #define FLEN (p->get_flen())
 #define CHECK_REG(reg) ((void) 0)
-#define READ_REG(reg) ({ CHECK_REG(reg); STATE.XPR[reg]; })
+#define READ_REG(reg) (CHECK_REG(reg), STATE.XPR[reg])
 #define READ_FREG(reg) STATE.FPR[reg]
 #define RD READ_REG(insn.rd())
 #define RS1 READ_REG(insn.rs1())
