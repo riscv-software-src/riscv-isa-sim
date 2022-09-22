@@ -220,7 +220,7 @@ struct state_t
 };
 
 // Count number of contiguous 1 bits starting from the LSB.
-static int cto(reg_t val)
+static inline int cto(reg_t val)
 {
   int res = 0;
   while ((val & 1) == 1)
