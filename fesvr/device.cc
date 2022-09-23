@@ -35,6 +35,7 @@ void device_t::handle_command(command_t cmd)
 
 void device_t::handle_null_command(command_t cmd)
 {
+  (void) cmd;
 }
 
 void device_t::handle_identify(command_t cmd)

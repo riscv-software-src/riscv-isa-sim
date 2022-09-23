@@ -21,7 +21,10 @@ protected:
 
   void read_chunk(addr_t taddr, size_t len, void* dst);
   void write_chunk(addr_t taddr, size_t len, const void* src);
-  void clear_chunk(addr_t taddr, size_t len) {}
+  void clear_chunk(addr_t taddr, size_t len) {
+    (void) taddr;
+    (void) len;
+  }
 
   size_t chunk_max_size() { return width; }
   size_t chunk_align() { return width; }
