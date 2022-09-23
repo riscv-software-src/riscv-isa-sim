@@ -12,3 +12,11 @@ make install
 
 # check that help message prints without error
 install/bin/spike -h
+
+
+# run a program and check for correct output
+mkdir run
+cd run
+wget https://github.com/riscv-software-src/riscv-isa-sim/releases/download/dummy-tag-for-ci-storage/spike-ci.tar
+tar xf spike-ci.tar
+time ../install/bin/spike --isa=rv64gc pk hello | grep "Hello, world!  Pi is approximately 3.141588."
