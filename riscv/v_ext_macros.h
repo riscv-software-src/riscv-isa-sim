@@ -87,7 +87,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require(elt_width <= P.VU.ELEN); \
   float vemul = ((float)elt_width / P.VU.vsew * P.VU.vflmul); \
   require(vemul >= 0.125 && vemul <= 8); \
-  reg_t emul = vemul < 1 ? 1 : vemul; \
+  reg_t UNUSED emul = vemul < 1 ? 1 : vemul; \
   reg_t flmul = P.VU.vflmul < 1 ? 1 : P.VU.vflmul; \
   require_align(insn.rd(), P.VU.vflmul); \
   require_align(insn.rs2(), vemul); \
@@ -208,9 +208,9 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require(P.VU.vsew >= e8 && P.VU.vsew <= e64); \
   require_vector(true); \
   reg_t vl = P.VU.vl->read(); \
-  reg_t sew = P.VU.vsew; \
+  reg_t UNUSED sew = P.VU.vsew; \
   reg_t rd_num = insn.rd(); \
-  reg_t rs1_num = insn.rs1(); \
+  reg_t UNUSED rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) {
 
@@ -255,8 +255,8 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   require_vector(true); \
   reg_t vl = P.VU.vl->read(); \
   reg_t sew = P.VU.vsew; \
-  reg_t rd_num = insn.rd(); \
-  reg_t rs1_num = insn.rs1(); \
+  reg_t UNUSED rd_num = insn.rd(); \
+  reg_t UNUSED rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
@@ -335,23 +335,23 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_U_PARAMS(x) \
   type_usew_t<x>::type &vd = P.VU.elt<type_usew_t<x>::type>(rd_num, i, true); \
-  type_usew_t<x>::type zimm5 = (type_usew_t<x>::type)insn.v_zimm5(); \
+  type_usew_t<x>::type UNUSED zimm5 = (type_usew_t<x>::type)insn.v_zimm5(); \
   type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
 
 #define VV_PARAMS(x) \
-  type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
+  type_sew_t<x>::type UNUSED &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
   type_sew_t<x>::type vs1 = P.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
-  type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
+  type_sew_t<x>::type UNUSED vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
 
 #define VX_PARAMS(x) \
-  type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
+  type_sew_t<x>::type UNUSED &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
   type_sew_t<x>::type rs1 = (type_sew_t<x>::type)RS1; \
-  type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
+  type_sew_t<x>::type UNUSED vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
 
 #define VI_PARAMS(x) \
   type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
   type_sew_t<x>::type simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
-  type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
+  type_sew_t<x>::type UNUSED vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
 
 #define XV_PARAMS(x) \
   type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
@@ -400,26 +400,26 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define VI_NARROW_PARAMS(sew1, sew2) \
   auto &vd = P.VU.elt<type_usew_t<sew1>::type>(rd_num, i, true); \
-  auto vs2_u = P.VU.elt<type_usew_t<sew2>::type>(rs2_num, i); \
-  auto vs2 = P.VU.elt<type_sew_t<sew2>::type>(rs2_num, i); \
+  auto UNUSED vs2_u = P.VU.elt<type_usew_t<sew2>::type>(rs2_num, i); \
+  auto UNUSED vs2 = P.VU.elt<type_sew_t<sew2>::type>(rs2_num, i); \
   auto zimm5 = (type_usew_t<sew1>::type)insn.v_zimm5();
 
 #define VX_NARROW_PARAMS(sew1, sew2) \
   auto &vd = P.VU.elt<type_usew_t<sew1>::type>(rd_num, i, true); \
-  auto vs2_u = P.VU.elt<type_usew_t<sew2>::type>(rs2_num, i); \
-  auto vs2 = P.VU.elt<type_sew_t<sew2>::type>(rs2_num, i); \
+  auto UNUSED vs2_u = P.VU.elt<type_usew_t<sew2>::type>(rs2_num, i); \
+  auto UNUSED vs2 = P.VU.elt<type_sew_t<sew2>::type>(rs2_num, i); \
   auto rs1 = (type_sew_t<sew1>::type)RS1;
 
 #define VV_NARROW_PARAMS(sew1, sew2) \
   auto &vd = P.VU.elt<type_usew_t<sew1>::type>(rd_num, i, true); \
-  auto vs2_u = P.VU.elt<type_usew_t<sew2>::type>(rs2_num, i); \
-  auto vs2 = P.VU.elt<type_sew_t<sew2>::type>(rs2_num, i); \
+  auto UNUSED vs2_u = P.VU.elt<type_usew_t<sew2>::type>(rs2_num, i); \
+  auto UNUSED vs2 = P.VU.elt<type_sew_t<sew2>::type>(rs2_num, i); \
   auto vs1 = P.VU.elt<type_sew_t<sew1>::type>(rs1_num, i);
 
 #define XI_CARRY_PARAMS(x) \
   auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
-  auto rs1 = (type_sew_t<x>::type)RS1; \
-  auto simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
+  auto UNUSED rs1 = (type_sew_t<x>::type)RS1; \
+  auto UNUSED simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
 
 #define VV_CARRY_PARAMS(x) \
   auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
@@ -427,8 +427,8 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define XI_WITH_CARRY_PARAMS(x) \
   auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
-  auto rs1 = (type_sew_t<x>::type)RS1; \
-  auto simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
+  auto UNUSED rs1 = (type_sew_t<x>::type)RS1; \
+  auto UNUSED simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
   auto &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true);
 
 #define VV_WITH_CARRY_PARAMS(x) \
@@ -441,12 +441,12 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i);
 
 #define VFP_VV_PARAMS(width) \
-  float##width##_t &vd = P.VU.elt<float##width##_t>(rd_num, i, true); \
+  float##width##_t UNUSED &vd = P.VU.elt<float##width##_t>(rd_num, i, true); \
   float##width##_t vs1 = P.VU.elt<float##width##_t>(rs1_num, i); \
   float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i);
 
 #define VFP_VF_PARAMS(width) \
-  float##width##_t &vd = P.VU.elt<float##width##_t>(rd_num, i, true); \
+  float##width##_t UNUSED &vd = P.VU.elt<float##width##_t>(rd_num, i, true); \
   float##width##_t rs1 = f##width(READ_FREG(rs1_num)); \
   float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i);
 
@@ -514,7 +514,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 // merge and copy loop
 #define VI_MERGE_VARS \
   VI_MASK_VARS \
-  bool use_first = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
+  bool UNUSED use_first = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
 
 #define VI_MERGE_LOOP_BASE \
   VI_GENERAL_LOOP_BASE \
@@ -922,19 +922,19 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define VI_WIDE_OP_AND_ASSIGN(var0, var1, var2, op0, op1, sign) \
   switch (P.VU.vsew) { \
   case e8: { \
-    sign##16_t vd_w = P.VU.elt<sign##16_t>(rd_num, i); \
+    sign##16_t UNUSED vd_w = P.VU.elt<sign##16_t>(rd_num, i); \
     P.VU.elt<uint16_t>(rd_num, i, true) = \
       op1((sign##16_t)(sign##8_t)var0 op0 (sign##16_t)(sign##8_t)var1) + var2; \
     } \
     break; \
   case e16: { \
-    sign##32_t vd_w = P.VU.elt<sign##32_t>(rd_num, i); \
+    sign##32_t UNUSED vd_w = P.VU.elt<sign##32_t>(rd_num, i); \
     P.VU.elt<uint32_t>(rd_num, i, true) = \
       op1((sign##32_t)(sign##16_t)var0 op0 (sign##32_t)(sign##16_t)var1) + var2; \
     } \
     break; \
   default: { \
-    sign##64_t vd_w = P.VU.elt<sign##64_t>(rd_num, i); \
+    sign##64_t UNUSED vd_w = P.VU.elt<sign##64_t>(rd_num, i); \
     P.VU.elt<uint64_t>(rd_num, i, true) = \
       op1((sign##64_t)(sign##32_t)var0 op0 (sign##64_t)(sign##32_t)var1) + var2; \
     } \
@@ -944,19 +944,19 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define VI_WIDE_OP_AND_ASSIGN_MIX(var0, var1, var2, op0, op1, sign_d, sign_1, sign_2) \
   switch (P.VU.vsew) { \
   case e8: { \
-    sign_d##16_t vd_w = P.VU.elt<sign_d##16_t>(rd_num, i); \
+    sign_d##16_t UNUSED vd_w = P.VU.elt<sign_d##16_t>(rd_num, i); \
     P.VU.elt<uint16_t>(rd_num, i, true) = \
       op1((sign_1##16_t)(sign_1##8_t)var0 op0 (sign_2##16_t)(sign_2##8_t)var1) + var2; \
     } \
     break; \
   case e16: { \
-    sign_d##32_t vd_w = P.VU.elt<sign_d##32_t>(rd_num, i); \
+    sign_d##32_t UNUSED vd_w = P.VU.elt<sign_d##32_t>(rd_num, i); \
     P.VU.elt<uint32_t>(rd_num, i, true) = \
       op1((sign_1##32_t)(sign_1##16_t)var0 op0 (sign_2##32_t)(sign_2##16_t)var1) + var2; \
     } \
     break; \
   default: { \
-    sign_d##64_t vd_w = P.VU.elt<sign_d##64_t>(rd_num, i); \
+    sign_d##64_t UNUSED vd_w = P.VU.elt<sign_d##64_t>(rd_num, i); \
     P.VU.elt<uint64_t>(rd_num, i, true) = \
       op1((sign_1##64_t)(sign_1##32_t)var0 op0 (sign_2##64_t)(sign_2##32_t)var1) + var2; \
     } \
@@ -1282,7 +1282,6 @@ reg_t index[P.VU.vlmax]; \
 
 #define VI_LDST_FF(elt_width) \
   const reg_t nf = insn.v_nf() + 1; \
-  const reg_t sew = p->VU.vsew; \
   const reg_t vl = p->VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t rd_num = insn.rd(); \
@@ -1480,10 +1479,10 @@ reg_t index[P.VU.vlmax]; \
           (P.VU.vsew == e64 && p->extension_enabled('D'))); \
   require_vector(true); \
   require(STATE.frm->read() < 0x5); \
-  reg_t vl = P.VU.vl->read(); \
-  reg_t rd_num = insn.rd(); \
-  reg_t rs1_num = insn.rs1(); \
-  reg_t rs2_num = insn.rs2(); \
+  reg_t UNUSED vl = P.VU.vl->read(); \
+  reg_t UNUSED rd_num = insn.rd(); \
+  reg_t UNUSED rs1_num = insn.rs1(); \
+  reg_t UNUSED rs2_num = insn.rs2(); \
   softfloat_roundingMode = STATE.frm->read();
 
 #define VI_VFP_LOOP_BASE \
@@ -1901,7 +1900,7 @@ reg_t index[P.VU.vlmax]; \
   require(STATE.frm->read() < 0x5); \
   reg_t vl = P.VU.vl->read(); \
   reg_t rd_num = insn.rd(); \
-  reg_t rs1_num = insn.rs1(); \
+  reg_t UNUSED rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   softfloat_roundingMode = STATE.frm->read(); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
