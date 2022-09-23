@@ -243,7 +243,7 @@ int main(int argc, char** argv)
   bool halted = false;
   bool histogram = false;
   bool log = false;
-  bool socket = false;  // command line option -s
+  bool UNUSED socket = false;  // command line option -s
   bool dump_dts = false;
   bool dtb_enabled = true;
   const char* kernel = NULL;
