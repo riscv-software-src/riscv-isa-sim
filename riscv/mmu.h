@@ -91,7 +91,7 @@ public:
   }
 
 #ifndef RISCV_ENABLE_COMMITLOG
-# define READ_MEM(addr, size) ({})
+# define READ_MEM(addr, size) ((void)(addr), (void)(size))
 #else
 # define READ_MEM(addr, size) \
   proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, size));
@@ -154,7 +154,7 @@ public:
   load_func(int64, guest_load, RISCV_XLATE_VIRT)
 
 #ifndef RISCV_ENABLE_COMMITLOG
-# define WRITE_MEM(addr, value, size) ({})
+# define WRITE_MEM(addr, value, size) ((void)(addr), (void)(value), (void)(size))
 #else
 # define WRITE_MEM(addr, val, size) \
   proc->state.log_mem_write.push_back(std::make_tuple(addr, val, size));
@@ -265,7 +265,7 @@ public:
     convert_load_traps_to_store_traps({
       const reg_t vaddr = addr & ~(blocksz - 1);
       const reg_t paddr = translate(vaddr, blocksz, LOAD, 0);
-      if (auto host_addr = sim->addr_to_mem(paddr)) {
+      if (sim->addr_to_mem(paddr)) {
         if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
           tracer.clean_invalidate(paddr, blocksz, clean, inval);
       } else {
