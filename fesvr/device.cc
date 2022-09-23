@@ -33,7 +33,7 @@ void device_t::handle_command(command_t cmd)
   command_handlers[cmd.cmd()](cmd);
 }
 
-void device_t::handle_null_command(command_t cmd)
+void device_t::handle_null_command(command_t)
 {
 }
 
