@@ -12,6 +12,7 @@ class option_parser_t
   option_parser_t() : helpmsg(0) {}
   void help(void (*helpm)(void)) { helpmsg = helpm; }
   void option(char c, const char* s, int arg, std::function<void(const char*)> action);
+  void option(char c, const char* s, int arg, std::function<void()> action);
   const char* const* parse(const char* const* argv0);
  private:
   struct option_t

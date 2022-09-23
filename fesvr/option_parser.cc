@@ -11,6 +11,11 @@ void option_parser_t::option(char c, const char* s, int arg, std::function<void(
   opts.push_back(option_t(c, s, arg, action));
 }
 
+void option_parser_t::option(char c, const char* s, int arg, std::function<void()> action)
+{
+  opts.push_back(option_t(c, s, arg, [&](const char *s){ (void) s; action(); }));
+}
+
 const char* const* option_parser_t::parse(const char* const* argv0)
 {
   assert(argv0);
