@@ -531,7 +531,7 @@ reg_t processor_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newT
     vma = extract64(newType, 7, 1);
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
-           || vsew > std::min(vflmul, 1.0f) * ELEN
+           || vsew > std::min(vflmul, 1.0f) * VLEN
            || (newType >> 8) != 0;
 
     if (vill) {
