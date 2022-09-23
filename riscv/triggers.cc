@@ -62,7 +62,7 @@ bool mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcep
   return true;
 }
 
-reg_t mcontrol_t::tdata2_read(const processor_t * const proc) const noexcept {
+reg_t mcontrol_t::tdata2_read(const processor_t UNUSED * const proc) const noexcept {
   return tdata2;
 }
 

@@ -52,7 +52,7 @@ public:
 #define RISCV_XLATE_VIRT (1U << 0)
 #define RISCV_XLATE_VIRT_HLVX (1U << 1)
 
-  inline reg_t misaligned_load(reg_t addr, size_t size, uint32_t xlate_flags)
+  inline reg_t misaligned_load(reg_t addr, size_t UNUSED size, uint32_t xlate_flags)
   {
 #ifdef RISCV_ENABLE_MISALIGNED
     reg_t res = 0;
@@ -72,7 +72,7 @@ public:
 #endif
   }
 
-  inline void misaligned_store(reg_t addr, reg_t data, size_t size, uint32_t xlate_flags, bool actually_store=true)
+  inline void misaligned_store(reg_t addr, reg_t UNUSED data, size_t UNUSED size, uint32_t xlate_flags, bool UNUSED actually_store=true)
   {
 #ifdef RISCV_ENABLE_MISALIGNED
     for (size_t i = 0; i < size; i++) {

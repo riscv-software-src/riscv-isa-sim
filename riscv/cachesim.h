@@ -4,6 +4,7 @@
 #define _RISCV_CACHE_SIM_H
 
 #include "memtracer.h"
+#include "common.h"
 #include <cstring>
 #include <string>
 #include <map>
@@ -108,7 +109,7 @@ class icache_sim_t : public cache_memtracer_t
 {
  public:
   icache_sim_t(const char* config) : cache_memtracer_t(config, "I$") {}
-  bool interested_in_range(uint64_t begin, uint64_t end, access_type type)
+  bool interested_in_range(uint64_t UNUSED begin, uint64_t UNUSED end, access_type type)
   {
     return type == FETCH;
   }
@@ -122,7 +123,7 @@ class dcache_sim_t : public cache_memtracer_t
 {
  public:
   dcache_sim_t(const char* config) : cache_memtracer_t(config, "D$") {}
-  bool interested_in_range(uint64_t begin, uint64_t end, access_type type)
+  bool interested_in_range(uint64_t UNUSED begin, uint64_t UNUSED end, access_type type)
   {
     return type == LOAD || type == STORE;
   }

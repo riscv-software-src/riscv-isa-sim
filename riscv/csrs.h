@@ -521,7 +521,7 @@ class time_counter_csr_t: public csr_t {
   void sync(const reg_t val) noexcept;
 
  protected:
-  virtual bool unlogged_write(const reg_t val) noexcept override { return false; };
+  virtual bool unlogged_write(const reg_t UNUSED val) noexcept override { return false; };
  private:
   reg_t shadow_val;
 };

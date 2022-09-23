@@ -401,7 +401,7 @@ public:
 
       // vector element for varies SEW
       template<class T>
-        T& elt(reg_t vReg, reg_t n, bool is_write = false) {
+        T& elt(reg_t vReg, reg_t n, bool UNUSED is_write = false) {
           assert(vsew != 0);
           assert((VLEN >> 3)/sizeof(T) > 0);
           reg_t elts_per_reg = (VLEN >> 3) / (sizeof(T));

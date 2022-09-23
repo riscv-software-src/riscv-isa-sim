@@ -180,7 +180,7 @@ struct : public arg_t {
 } rvc_fp_rs2s;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t UNUSED insn) const {
     return xpr_name[X_SP];
   }
 } rvc_sp;
@@ -314,7 +314,7 @@ struct : public arg_t {
 } vm;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t UNUSED insn) const {
     return "v0";
   }
 } v0;
@@ -358,7 +358,7 @@ struct : public arg_t {
 } v_vtype;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t UNUSED insn) const {
     return "x0";
   }
 } x0;

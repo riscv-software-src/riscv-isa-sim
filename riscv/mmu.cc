@@ -114,7 +114,7 @@ reg_t reg_from_bytes(size_t len, const uint8_t* bytes)
   abort();
 }
 
-bool mmu_t::mmio_ok(reg_t addr, access_type type)
+bool mmu_t::mmio_ok(reg_t addr, access_type UNUSED type)
 {
   // Disallow access to debug region when not in debug mode
   if (addr >= DEBUG_START && addr <= DEBUG_END && proc && !proc->state.debug_mode)

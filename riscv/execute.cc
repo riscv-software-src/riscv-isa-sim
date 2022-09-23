@@ -156,7 +156,7 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
 }
 #endif
 
-inline void processor_t::update_histogram(reg_t pc)
+inline void processor_t::update_histogram(reg_t UNUSED pc)
 {
 #ifdef RISCV_ENABLE_HISTOGRAM
   pc_histogram[pc]++;
