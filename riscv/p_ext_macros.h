@@ -91,7 +91,7 @@
   reg_t rd_tmp = RD; \
   reg_t rs1 = RS1; \
   type_usew_t<BIT>::type sa = RS2 & ((uint64_t(1) << LOWBIT) - 1); \
-  type_sew_t<BIT>::type ssa = int64_t(RS2) << (64 - LOWBIT) >> (64 - LOWBIT); \
+  type_sew_t<BIT>::type UNUSED ssa = int64_t(RS2) << (64 - LOWBIT) >> (64 - LOWBIT); \
   sreg_t len = xlen / BIT; \
   for (sreg_t i = len - 1; i >= 0; --i) {
 
@@ -140,8 +140,8 @@
 
 #define P_CORSS_PARAMS(BIT) \
   auto pd = P_FIELD(rd_tmp, i, BIT); \
-  auto ps1 = P_FIELD(rs1, i, BIT); \
-  auto ps2 = P_FIELD(rs2, (i ^ 1), BIT);
+  auto UNUSED ps1 = P_FIELD(rs1, i, BIT); \
+  auto UNUSED ps2 = P_FIELD(rs2, (i ^ 1), BIT);
 
 #define P_CORSS_UPARAMS(BIT) \
   auto pd = P_UFIELD(rd_tmp, i, BIT); \
@@ -436,7 +436,7 @@
 #define P_PK(BIT, X, Y) \
   require_extension(EXT_ZPN); \
   require(BIT == e16 || BIT == e32); \
-  reg_t rd_tmp = 0, rs1 = RS1, rs2 = RS2; \
+  reg_t rd_tmp = 0, UNUSED rs1 = RS1, UNUSED rs2 = RS2; \
   for (sreg_t i = 0; i < xlen / BIT / 2; i++) { \
     rd_tmp = set_field(rd_tmp, make_mask64(i * 2 * BIT, BIT), \
       P_UFIELD(RS2, i * 2 + Y, BIT)); \
