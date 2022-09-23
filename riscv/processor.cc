@@ -20,6 +20,10 @@
 #include <string>
 #include <algorithm>
 
+#ifdef __GNUC__
+# pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+
 #undef STATE
 #define STATE state
 

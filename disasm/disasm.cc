@@ -10,6 +10,10 @@
 // For std::reverse:
 #include <algorithm>
 
+#ifdef __GNUC__
+# pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+
 // Indicates that the next arg (only) is optional.
 // If the result of converting the next arg to a string is ""
 // then it will not be printed.
