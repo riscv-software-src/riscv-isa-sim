@@ -2,7 +2,6 @@
 require_vector(true);
 require(insn.v_vm() == 1);
 uint64_t xmask = UINT64_MAX >> (64 - P.get_isa().get_max_xlen());
-reg_t rs1 = RS1;
 reg_t sew = P.VU.vsew;
 reg_t rs2_num = insn.rs2();
 

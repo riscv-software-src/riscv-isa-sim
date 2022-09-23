@@ -4,7 +4,6 @@ require_vector(true);
 reg_t vl = P.VU.vl->read();
 reg_t sew = P.VU.vsew;
 reg_t rd_num = insn.rd();
-reg_t rs1_num = insn.rs1();
 reg_t rs2_num = insn.rs2();
 require(P.VU.vstart->read() == 0);
 require_vm;
