@@ -9,3 +9,6 @@ mkdir install
 CFLAGS="-Werror" $DIR/../configure --prefix=`pwd`/install
 make -j4
 make install
+
+# check that help message prints without error
+install/bin/spike -h
