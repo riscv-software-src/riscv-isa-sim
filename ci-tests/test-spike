@@ -6,6 +6,6 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 mkdir build
 cd build
 mkdir install
-CFLAGS="-Werror -Wignored-qualifiers -Wunused-function -Wunused-parameter -Wunused-variable" $DIR/../configure --prefix=`pwd`/install
+CFLAGS="-Werror -Wignored-qualifiers -Wunused-function -Wunused-parameter -Wunused-variable -Wnon-virtual-dtor" $DIR/../configure --prefix=`pwd`/install
 make -j4
 make install
