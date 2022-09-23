@@ -17,6 +17,10 @@ using namespace std::placeholders;
 
 #define RISCV_AT_FDCWD -100
 
+#ifdef __GNUC__
+# pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 struct riscv_stat
 {
   target_endian<uint64_t> dev;
