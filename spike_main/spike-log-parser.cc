@@ -16,7 +16,7 @@
 
 using namespace std;
 
-int main(int argc, char** argv)
+int main(int UNUSED argc, char** argv)
 {
   string s;
   const char* isa_string = DEFAULT_ISA;
