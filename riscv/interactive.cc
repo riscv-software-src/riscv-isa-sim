@@ -20,6 +20,10 @@
 #include <algorithm>
 #include <math.h>
 
+#ifdef __GNUC__
+# pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 #define MAX_CMD_STR 40 // maximum possible size of a command line
 
 #define STR_(X) #X      // these definitions allow to use a macro as a string
