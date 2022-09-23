@@ -960,7 +960,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
   throw trap_illegal_instruction(insn.bits());
 }
 
-reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)
+reg_t illegal_instruction(processor_t UNUSED *p, insn_t insn, reg_t UNUSED pc)
 {
   // The illegal instruction can be longer than ILEN bits, where the tval will
   // contain the first ILEN bits of the faulting instruction. We hard-code the

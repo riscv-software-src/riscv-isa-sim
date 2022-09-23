@@ -3,6 +3,7 @@
 #include <iostream>
 
 #include "internals.h"
+#include "common.h"
 
 //
 // Used to model the cryptography extension entropy source.
@@ -30,7 +31,7 @@ public:
   // seed register
   // ------------------------------------------------------------
 
-  void set_seed(reg_t val) {
+  void set_seed(reg_t UNUSED val) {
     // Always ignore writes to seed.
     // This CSR is strictly read only. It occupies a RW CSR address
     // to handle the side-effect of the changing seed value on a read.

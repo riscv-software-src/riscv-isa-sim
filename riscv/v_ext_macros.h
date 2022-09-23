@@ -1410,14 +1410,14 @@ reg_t index[P.VU.vlmax]; \
     switch (P.VU.vsew) { \
     case e32: { \
       auto vs3 = P.VU.elt< type ## 32_t>(vd, vreg_inx); \
-      auto val = MMU.amo_uint32(baseAddr + index[i], [&](type ## 32_t lhs) { op }); \
+      auto val = MMU.amo_uint32(baseAddr + index[i], [&](type ## 32_t UNUSED lhs) { op }); \
       if (insn.v_wd()) \
         P.VU.elt< type ## 32_t>(vd, vreg_inx, true) = val; \
       } \
       break; \
     case e64: { \
       auto vs3 = P.VU.elt< type ## 64_t>(vd, vreg_inx); \
-      auto val = MMU.amo_uint64(baseAddr + index[i], [&](type ## 64_t lhs) { op }); \
+      auto val = MMU.amo_uint64(baseAddr + index[i], [&](type ## 64_t UNUSED lhs) { op }); \
       if (insn.v_wd()) \
         P.VU.elt< type ## 64_t>(vd, vreg_inx, true) = val; \
       } \
