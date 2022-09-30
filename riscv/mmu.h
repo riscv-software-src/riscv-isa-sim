@@ -471,6 +471,11 @@ private:
     reg_t vpn = addr >> PGSHIFT;
     if (likely(tlb_insn_tag[vpn % TLB_ENTRIES] == vpn))
       return tlb_data[vpn % TLB_ENTRIES];
+    triggers::action_t action;
+    auto match = proc->TM.memory_access_match(&action, triggers::OPERATION_EXECUTE, addr, false);
+    if (match != triggers::MATCH_NONE) {
+      throw triggers::matched_t(triggers::OPERATION_EXECUTE, addr, 0, action);
+    }
     tlb_entry_t result;
     if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] != (vpn | TLB_CHECK_TRIGGERS))) {
       result = fetch_slow_path(addr);
@@ -478,8 +483,7 @@ private:
       result = tlb_data[vpn % TLB_ENTRIES];
     }
     target_endian<uint16_t>* ptr = (target_endian<uint16_t>*)(result.host_offset + addr);
-    triggers::action_t action;
-    auto match = proc->TM.memory_access_match(&action, triggers::OPERATION_EXECUTE, addr, true, from_target(*ptr));
+    match = proc->TM.memory_access_match(&action, triggers::OPERATION_EXECUTE, addr, true, from_target(*ptr));
     if (match != triggers::MATCH_NONE) {
       throw triggers::matched_t(triggers::OPERATION_EXECUTE, addr, from_target(*ptr), action);
     }
