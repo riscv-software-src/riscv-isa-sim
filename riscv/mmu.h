@@ -113,7 +113,7 @@ public:
       if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
         type##_t data = from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
         if (!matched_trigger) { \
-          matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, data); \
+          matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, true, data); \
           if (matched_trigger) \
             throw *matched_trigger; \
         } \
@@ -178,7 +178,7 @@ public:
       else if ((xlate_flags) == 0 && unlikely(tlb_store_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
         if (actually_store) { \
           if (!matched_trigger) { \
-            matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, val); \
+            matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, true, val); \
             if (matched_trigger) \
               throw *matched_trigger; \
           } \
@@ -479,7 +479,7 @@ private:
     }
     target_endian<uint16_t>* ptr = (target_endian<uint16_t>*)(result.host_offset + addr);
     triggers::action_t action;
-    auto match = proc->TM.memory_access_match(&action, triggers::OPERATION_EXECUTE, addr, from_target(*ptr));
+    auto match = proc->TM.memory_access_match(&action, triggers::OPERATION_EXECUTE, addr, true, from_target(*ptr));
     if (match != triggers::MATCH_NONE) {
       throw triggers::matched_t(triggers::OPERATION_EXECUTE, addr, from_target(*ptr), action);
     }
@@ -491,13 +491,13 @@ private:
   }
 
   inline triggers::matched_t *trigger_exception(triggers::operation_t operation,
-      reg_t address, reg_t data)
+      reg_t address, bool has_data, reg_t data=0)
   {
     if (!proc) {
       return NULL;
     }
     triggers::action_t action;
-    auto match = proc->TM.memory_access_match(&action, operation, address, data);
+    auto match = proc->TM.memory_access_match(&action, operation, address, has_data, data);
     if (match == triggers::MATCH_NONE)
       return NULL;
     if (match == triggers::MATCH_FIRE_BEFORE) {
