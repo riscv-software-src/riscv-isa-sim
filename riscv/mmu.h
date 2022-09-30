@@ -169,6 +169,13 @@ public:
   #define store_func(type, prefix, xlate_flags) \
     void ALWAYS_INLINE prefix##_##type(reg_t addr, type##_t val, bool actually_store=true, bool require_alignment=false) { \
       if (unlikely(addr & (sizeof(type##_t)-1))) { \
+        if (actually_store) { \
+          if (!matched_trigger) { \
+            matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, true, val); \
+            if (matched_trigger) \
+              throw *matched_trigger; \
+          } \
+        } \
         if (require_alignment) store_conditional_address_misaligned(addr); \
         else return misaligned_store(addr, val, sizeof(type##_t), xlate_flags, actually_store); \
       } \
