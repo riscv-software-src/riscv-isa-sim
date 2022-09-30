@@ -101,6 +101,11 @@ public:
   #define load_func(type, prefix, xlate_flags) \
     type##_t ALWAYS_INLINE prefix##_##type(reg_t addr, bool require_alignment = false) { \
       if (unlikely(addr & (sizeof(type##_t)-1))) { \
+        if (!matched_trigger) { \
+          matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, false); \
+          if (matched_trigger) \
+            throw *matched_trigger; \
+        } \
         if (require_alignment) load_reserved_address_misaligned(addr); \
         else return misaligned_load(addr, sizeof(type##_t), xlate_flags); \
       } \
