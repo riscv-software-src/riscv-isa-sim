@@ -14,6 +14,8 @@ riscv_install_shared_lib = yes
 riscv_install_prog_srcs = \
 
 riscv_hdrs = \
+	proc_trace.h \
+	data_tracer.h \
 	abstract_device.h \
 	common.h \
 	decode.h \
@@ -74,6 +76,7 @@ riscv_precompiled_hdrs = \
 
 riscv_srcs = \
 	isa_parser.cc \
+	proc_trace.cc \
 	processor.cc \
 	execute.cc \
 	dts.cc \

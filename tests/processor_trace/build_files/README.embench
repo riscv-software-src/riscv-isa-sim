@@ -1,0 +1,18 @@
+Building embench tests for use with spike
+-----------------------------------------
+
+The embench tests can be obtained from this github repiository:
+git clone https://github.com/embench/embench-iot.git
+
+Only two additional files are required to build these tests for use with spike:
+- a build script
+- a crt0 source code file
+
+The crt0-spike.c file needs to be put into the directory:
+  config/riscv32/boards/ri5cyverilator/
+within the embench-iot repository.
+
+Note that the build script requires access to a 32-bit RISCV compiler. The embench_build.sh needs to be modified to be able
+to locate this compiler.
+
+The embench_build.sh needs to be put into the top level directory of embench-iot. This script will build all of the embench tests.

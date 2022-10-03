@@ -217,7 +217,7 @@ static inline reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 
 bool processor_t::slow_path()
 {
-  return debug || state.single_step != state.STEP_NONE || state.debug_mode;
+  return i_trace || d_trace || debug || state.single_step != state.STEP_NONE || state.debug_mode;
 }
 
 // fetch/decode/execute loop
@@ -276,7 +276,7 @@ void processor_t::step(size_t n)
           }
 
           insn_fetch_t fetch = mmu->load_insn(pc);
-          if (debug && !state.serialized)
+          if ((i_trace || d_trace || debug) && !state.serialized)
             disasm(fetch.insn);
           pc = execute_insn(this, pc, fetch);
           advance_pc();
