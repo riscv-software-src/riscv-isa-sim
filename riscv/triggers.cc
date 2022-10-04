@@ -176,7 +176,7 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
       return result;
     }
 
-    chain_ok = true;
+    chain_ok = result != MATCH_NONE || !triggers[i]->chain();
   }
   return MATCH_NONE;
 }
