@@ -267,9 +267,43 @@ void sim_t::set_procs_debug(bool value)
     procs[i]->set_debug(value);
 }
 
-static bool paddr_ok(reg_t addr)
+static bool is_ascending(const std::pair<reg_t, mem_t*> &L,
+                         const std::pair<reg_t, mem_t*> &R)
 {
-  return (addr >> MAX_PADDR_BITS) == 0;
+  return L.first < R.first;
+}
+
+bool sim_t::paddr_ok(reg_t addr) const
+{
+  // TODO: this implementation erroneously assumes that a maximum physical
+  // address is limited to (1 << MAX_PADDR_BITS).
+  // There are a few issues with this assumption:
+  // 1. if satp.MODE == Bare, then virtual addresses are equal to physical
+  //    and there are no limitations on the number of bits one may use.
+  // 2. the actual limit can only be derived from the current privilege
+  //    mode and CSR configuration and thus can be determined only in runtime.
+  //
+  // To do such a check properly the translation routine must return some
+  // auxiliary attributes, like translation mode, memory attributes, etc.
+  // These could be later consumed by routines like paddr_ok.
+  //
+  // In the meantime, to allow access to large physical addresses and to
+  // minimize the scope of changes we implement a small add-hoc solution to
+  // lookup platform configuration and figure out if we have any memory
+  // above (1 << MAX_PADDR_BITS)
+  if ((addr >> MAX_PADDR_BITS) == 0)
+    return true;
+
+  if (mems.empty())
+    return false;
+
+  assert(std::is_sorted(mems.begin(), mems.end(), is_ascending));
+  // last-ditch effort to detect if the platform has physical memory
+  // at the addresses greater than (1 << MAX_PADDR_BITS)
+  reg_t base_addr = mems.back().first;
+  reg_t size = mems.back().second->size();
+  reg_t last_available_pa = base_addr + size - 1;
+  return (last_available_pa >= (1ull << MAX_PADDR_BITS));
 }
 
 bool sim_t::mmio_load(reg_t addr, size_t len, uint8_t* bytes)

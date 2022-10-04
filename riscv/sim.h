@@ -68,6 +68,8 @@ public:
   // Callback for processors to let the simulation know they were reset.
   void proc_reset(unsigned id);
 
+  bool paddr_ok(reg_t addr) const;
+
 private:
   isa_parser_t isa;
   const cfg_t * const cfg;
