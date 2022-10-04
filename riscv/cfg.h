@@ -29,21 +29,37 @@ private:
 };
 
 // Configuration that describes a memory region
-class mem_cfg_t
-{
-public:
-  mem_cfg_t(reg_t base, reg_t size)
-    : base(base), size(size)
-  {
-    // The truth of these assertions should be ensured by whatever is creating
-    // the regions in the first place, but we have them here to make sure that
-    // we can't end up describing memory regions that don't make sense. They
-    // ask that the page size is a multiple of the minimum page size, that the
-    // page is aligned to the minimum page size, that the page is non-empty and
-    // that the top address is still representable in a reg_t.
-    assert((size % PGSIZE == 0) &&
-           (base % PGSIZE == 0) &&
-           (base + size > base));
+// Note: the current implementation does not support the size of 2^64
+// (such a region still can be representsd as 2 adjacents mem_cfg_t objects).
+struct mem_cfg_t {
+  bool is_valid_region() const {
+    // For a memory region to be valid it should have:
+    // * size is a multiple of the minimum page size
+    // * base is aligned to the minimum page size
+    // * memory region should be non-empty
+    // * the last accessible address should still be representable in a reg_t
+
+    // [(base + size) > base] - means that we don't have 64-bit overflow
+    // [(base + size) == 0] - allows for overflow, but only if we exactly
+    // 1 bit short -  this is to allow regions like:
+    //  { base = 0xffff_ffff_ffff_f000, size: 0x1000 }
+    return (size % PGSIZE == 0) && (base % PGSIZE == 0) &&
+      ((base + size > base) || (base + size == 0));
+  }
+
+  reg_t get_base() const {
+    assert(is_valid_region());
+    return base;
+  }
+
+  reg_t get_size() const {
+    assert(is_valid_region());
+    return size;
+  }
+
+  reg_t get_inclusive_end() const {
+    assert(is_valid_region());
+    return base + size - 1;
   }
 
   reg_t base;

@@ -8,6 +8,7 @@
 #include "extension.h"
 #include <dlfcn.h>
 #include <fesvr/option_parser.h>
+#include <limits>
 #include <stdio.h>
 #include <stdlib.h>
 #include <vector>
@@ -109,39 +110,86 @@ static void read_file_bytes(const char *filename,size_t fileoff,
   mem->store(memoff, read_sz, (uint8_t*)&read_buf[0]);
 }
 
-bool sort_mem_region(const mem_cfg_t &a, const mem_cfg_t &b)
+static bool sort_mem_region(const mem_cfg_t &a, const mem_cfg_t &b)
 {
-  if (a.base == b.base)
-    return (a.size < b.size);
+  if (a.get_base() == b.get_base())
+    return (a.get_size() < b.get_size());
   else
-    return (a.base < b.base);
+    return (a.get_base() < b.get_base());
 }
 
-void merge_overlapping_memory_regions(std::vector<mem_cfg_t> &mems)
+static bool check_mem_overlap(const mem_cfg_t& L, const mem_cfg_t& R)
 {
-  // check the user specified memory regions and merge the overlapping or
-  // eliminate the containing parts
-  assert(!mems.empty());
+  assert(L.is_valid_region());
+  assert(R.is_valid_region());
+
+  reg_t L_start = L.get_base();
+  reg_t L_end   = L.get_inclusive_end();
+
+  reg_t R_start = R.get_base();
+  reg_t R_end   = R.get_inclusive_end();
+
+  return std::max(L_start, R_start) <= std::min(L_end, R_end);
+}
+
+// there is a weird corner-case preventing two memory regions to be merged -
+// this can happen when the resulting size of a region is 2^64.
+// such regions are not representable with mem_cfg_t class
+static bool check_if_merge_covers_64bit_space(const mem_cfg_t& L,
+                                              const mem_cfg_t& R)
+{
+  if (!check_mem_overlap(L, R))
+    return false;
+
+  reg_t start = std::min(L.get_base(), R.get_base());
+  reg_t end = std::max(L.get_inclusive_end(), R.get_inclusive_end());
+
+  // if [base == 0] and [inclusive_end == (2 ^ 64 - 1)] - we can't merge such
+  // regions, since the mem_cfg_t does not support the resulting size
+  return (start == 0ull) && (end == std::numeric_limits<uint64_t>::max());
+}
+
+// one can merge only intersecting regions
+static mem_cfg_t merge_mem_regions(const mem_cfg_t& L, const mem_cfg_t& R)
+{
+  assert(check_mem_overlap(L, R));
+
+  reg_t merged_base = std::min(L.get_base(), R.get_base());
+  reg_t merged_end_incl = std::max(L.get_inclusive_end(), R.get_inclusive_end());
+  reg_t merged_size = merged_end_incl - merged_base + 1;
+
+  mem_cfg_t result{merged_base, merged_size};
+  assert(result.is_valid_region());
+  return result;
+}
+
+static void merge_overlapping_memory_regions(std::vector<mem_cfg_t> &mems)
+{
+  if (mems.empty())
+    return;
 
   std::sort(mems.begin(), mems.end(), sort_mem_region);
-  for (auto it = mems.begin() + 1; it != mems.end(); ) {
-    reg_t start = prev(it)->base;
-    reg_t end = prev(it)->base + prev(it)->size;
-    reg_t start2 = it->base;
-    reg_t end2 = it->base + it->size;
 
-    //contains -> remove
-    if (start2 >= start && end2 <= end) {
-      it = mems.erase(it);
-    //partial overlapped -> extend
-    } else if (start2 >= start && start2 < end) {
-      prev(it)->size = std::max(end, end2) - start;
-      it = mems.erase(it);
-    // no overlapping -> keep it
-    } else {
-      it++;
+  std::vector<mem_cfg_t> merged_mem;
+  merged_mem.push_back(mems.front());
+
+  for (auto mem_it = std::next(mems.begin()); mem_it != mems.end(); ++mem_it) {
+    const auto& mem_int = *mem_it;
+    if (!check_mem_overlap(merged_mem.back(), mem_int)) {
+      merged_mem.push_back(mem_int);
+      continue;
     }
+    if (check_if_merge_covers_64bit_space(merged_mem.back(), mem_int)) {
+      merged_mem.clear();
+      merged_mem.push_back(mem_cfg_t{0ull, 0ull - PGSIZE});
+      merged_mem.push_back(mem_cfg_t{0ull - PGSIZE, PGSIZE});
+      break;
+    }
+    merged_mem.back() = merge_mem_regions(merged_mem.back(), mem_int);
   }
+  assert(std::all_of(merged_mem.begin(), merged_mem.end(),
+                     [](const auto& Itm) { return Itm.is_valid_region(); }));
+  mems.swap(merged_mem);
 }
 
 static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
@@ -155,7 +203,7 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
     reg_t size = reg_t(mb) << 20;
     if (size != (size_t)size)
       throw std::runtime_error("Size would overflow size_t");
-    res.push_back(mem_cfg_t(reg_t(DRAM_BASE), size));
+    res.push_back(mem_cfg_t{reg_t(DRAM_BASE), size});
     return res;
   }
 
@@ -173,16 +221,22 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
     if (size % PGSIZE != 0)
       size += PGSIZE - size % PGSIZE;
 
-    if (base + size < base)
-      help();
-
     if (size != size0) {
       fprintf(stderr, "Warning: the memory at  [0x%llX, 0x%llX] has been realigned\n"
                       "to the %ld KiB page size: [0x%llX, 0x%llX]\n",
               base0, base0 + size0 - 1, long(PGSIZE / 1024), base, base + size - 1);
     }
 
-    res.push_back(mem_cfg_t(reg_t(base), reg_t(size)));
+    mem_cfg_t mem_region{base, size};
+    if (!mem_region.is_valid_region()) {
+      fprintf(stderr, "unsupported memory region "
+                      "{base = 0x%llX, size = 0x%llX} specified\n",
+                      (unsigned long long)mem_region.base,
+                      (unsigned long long)mem_region.size);
+      exit(EXIT_FAILURE);
+    }
+
+    res.push_back(mem_region);
     if (!*p)
       break;
     if (*p != ',')
@@ -199,9 +253,11 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const std::vector<mem_cfg
 {
   std::vector<std::pair<reg_t, mem_t*>> mems;
   mems.reserve(layout.size());
-  for (const auto &cfg : layout) {
-    mems.push_back(std::make_pair(cfg.base, new mem_t(cfg.size)));
-  }
+  std::transform(layout.begin(), layout.end(), std::back_inserter(mems),
+                 [](const auto& cfg) {
+                   // TODO: we should use std::unique_ptr here
+                   return std::make_pair(cfg.get_base(), new mem_t(cfg.get_size()));
+                 });
   return mems;
 }
 
