@@ -243,7 +243,7 @@ int main(int argc, char** argv)
   bool halted = false;
   bool histogram = false;
   bool log = false;
-  bool socket = false;  // command line option -s
+  bool UNUSED socket = false;  // command line option -s
   bool dump_dts = false;
   bool dtb_enabled = true;
   const char* kernel = NULL;
@@ -328,17 +328,17 @@ int main(int argc, char** argv)
 
   option_parser_t parser;
   parser.help(&suggest_help);
-  parser.option('h', "help", 0, [&](const char* s){help(0);});
-  parser.option('d', 0, 0, [&](const char* s){debug = true;});
-  parser.option('g', 0, 0, [&](const char* s){histogram = true;});
-  parser.option('l', 0, 0, [&](const char* s){log = true;});
+  parser.option('h', "help", 0, [&](const char UNUSED *s){help(0);});
+  parser.option('d', 0, 0, [&](const char UNUSED *s){debug = true;});
+  parser.option('g', 0, 0, [&](const char UNUSED *s){histogram = true;});
+  parser.option('l', 0, 0, [&](const char UNUSED *s){log = true;});
 #ifdef HAVE_BOOST_ASIO
-  parser.option('s', 0, 0, [&](const char* s){socket = true;});
+  parser.option('s', 0, 0, [&](const char UNUSED *s){socket = true;});
 #endif
   parser.option('p', 0, 1, [&](const char* s){nprocs = atoul_nonzero_safe(s);});
   parser.option('m', 0, 1, [&](const char* s){cfg.mem_layout = parse_mem_layout(s);});
   // I wanted to use --halted, but for some reason that doesn't work.
-  parser.option('H', 0, 0, [&](const char* s){halted = true;});
+  parser.option('H', 0, 0, [&](const char UNUSED *s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
   parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc = strtoull(s, 0, 0);});
   parser.option(0, "hartids", 1, [&](const char* s){
@@ -348,19 +348,19 @@ int main(int argc, char** argv)
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
-  parser.option(0, "log-cache-miss", 0, [&](const char* s){log_cache = true;});
+  parser.option(0, "log-cache-miss", 0, [&](const char UNUSED *s){log_cache = true;});
   parser.option(0, "isa", 1, [&](const char* s){cfg.isa = s;});
   parser.option(0, "priv", 1, [&](const char* s){cfg.priv = s;});
   parser.option(0, "varch", 1, [&](const char* s){cfg.varch = s;});
   parser.option(0, "device", 1, device_parser);
   parser.option(0, "extension", 1, [&](const char* s){extensions.push_back(find_extension(s));});
-  parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
-  parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
+  parser.option(0, "dump-dts", 0, [&](const char UNUSED *s){dump_dts = true;});
+  parser.option(0, "disable-dtb", 0, [&](const char UNUSED *s){dtb_enabled = false;});
   parser.option(0, "dtb", 1, [&](const char *s){dtb_file = s;});
   parser.option(0, "kernel", 1, [&](const char* s){kernel = s;});
   parser.option(0, "initrd", 1, [&](const char* s){initrd = s;});
   parser.option(0, "bootargs", 1, [&](const char* s){cfg.bootargs = s;});
-  parser.option(0, "real-time-clint", 0, [&](const char *s){cfg.real_time_clint = true;});
+  parser.option(0, "real-time-clint", 0, [&](const char UNUSED *s){cfg.real_time_clint = true;});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
     if (lib == NULL) {
@@ -371,23 +371,23 @@ int main(int argc, char** argv)
   parser.option(0, "dm-progsize", 1,
       [&](const char* s){dm_config.progbufsize = atoul_safe(s);});
   parser.option(0, "dm-no-impebreak", 0,
-      [&](const char* s){dm_config.support_impebreak = false;});
+      [&](const char UNUSED *s){dm_config.support_impebreak = false;});
   parser.option(0, "dm-sba", 1,
       [&](const char* s){dm_config.max_sba_data_width = atoul_safe(s);});
   parser.option(0, "dm-auth", 0,
-      [&](const char* s){dm_config.require_authentication = true;});
+      [&](const char UNUSED *s){dm_config.require_authentication = true;});
   parser.option(0, "dmi-rti", 1,
       [&](const char* s){dmi_rti = atoul_safe(s);});
   parser.option(0, "dm-abstract-rti", 1,
       [&](const char* s){dm_config.abstract_rti = atoul_safe(s);});
   parser.option(0, "dm-no-hasel", 0,
-      [&](const char* s){dm_config.support_hasel = false;});
+      [&](const char UNUSED *s){dm_config.support_hasel = false;});
   parser.option(0, "dm-no-abstract-csr", 0,
-      [&](const char* s){dm_config.support_abstract_csr_access = false;});
+      [&](const char UNUSED *s){dm_config.support_abstract_csr_access = false;});
   parser.option(0, "dm-no-halt-groups", 0,
-      [&](const char* s){dm_config.support_haltgroups = false;});
+      [&](const char UNUSED *s){dm_config.support_haltgroups = false;});
   parser.option(0, "log-commits", 0,
-                [&](const char* s){log_commits = true;});
+                [&](const char UNUSED *s){log_commits = true;});
   parser.option(0, "log", 1,
                 [&](const char* s){log_path = s;});
   FILE *cmd_file = NULL;

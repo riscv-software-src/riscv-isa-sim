@@ -1,7 +1,6 @@
 // vmv_x_s: rd = vs2[0]
 require_vector(true);
 require(insn.v_vm() == 1);
-reg_t rs1 = RS1;
 reg_t sew = P.VU.vsew;
 reg_t rs2_num = insn.rs2();
 reg_t res;

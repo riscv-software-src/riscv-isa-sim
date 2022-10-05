@@ -19,6 +19,8 @@ public:
 
   virtual const char* get_symbol(uint64_t addr) = 0;
 
+  virtual ~simif_t() = default;
+
 };
 
 #endif

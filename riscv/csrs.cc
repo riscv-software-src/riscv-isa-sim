@@ -60,7 +60,7 @@ void csr_t::log_write() const noexcept {
   log_special_write(address, written_value());
 }
 
-void csr_t::log_special_write(const reg_t address, const reg_t val) const noexcept {
+void csr_t::log_special_write(const reg_t UNUSED address, const reg_t UNUSED val) const noexcept {
 #if defined(RISCV_ENABLE_COMMITLOG)
   proc->get_state()->log_reg_write[((address) << 4) | 4] = {val, 0};
 #endif
@@ -615,7 +615,7 @@ misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t ma
              ) {
 }
 
-const reg_t misa_csr_t::dependency(const reg_t val, const char feature, const char depends_on) const noexcept {
+reg_t misa_csr_t::dependency(const reg_t val, const char feature, const char depends_on) const noexcept {
   return (val & (1L << (depends_on - 'A'))) ? val : (val & ~(1L << (feature - 'A')));
 }
 
@@ -1023,7 +1023,7 @@ reg_t const_csr_t::read() const noexcept {
   return val;
 }
 
-bool const_csr_t::unlogged_write(const reg_t val) noexcept {
+bool const_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
   return false;
 }
 
@@ -1466,7 +1466,7 @@ reg_t scountovf_csr_t::read() const noexcept {
   return val;
 }
 
-bool scountovf_csr_t::unlogged_write(const reg_t val) noexcept {
+bool scountovf_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
   /* this function is unused */
   return false;
 }

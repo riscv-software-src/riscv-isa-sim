@@ -20,6 +20,10 @@
 #include <algorithm>
 #include <math.h>
 
+#ifdef __GNUC__
+# pragma GCC diagnostic ignored "-Wunused-parameter"
+#endif
+
 #define MAX_CMD_STR 40 // maximum possible size of a command line
 #define BITS_PER_CHAR 8
 

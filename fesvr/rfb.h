@@ -25,7 +25,7 @@ class rfb_t : public device_t
   void thread_main();
   friend void* rfb_thread_main(void*);
   std::string pixel_format();
-  void fb_update(const std::string& s);
+  void fb_update();
   void set_encodings(const std::string& s);
   void set_pixel_format(const std::string& s);
   void write(const std::string& s);
