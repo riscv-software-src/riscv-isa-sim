@@ -194,15 +194,13 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
   }
 }
 
-void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store)
+void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store)
 {
-  if (actually_store) {
-    if (!matched_trigger) {
-      reg_t data = reg_from_bytes(len, bytes);
-      matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, true, data);
-      if (matched_trigger)
-        throw *matched_trigger;
-    }
+  reg_t vpn = addr >> PGSHIFT;
+  if (xlate_flags == 0 && vpn == (tlb_store_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
+    auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
+    memcpy(host_addr, bytes, len);
+    return;
   }
 
   reg_t paddr = translate(addr, len, STORE, xlate_flags);
@@ -217,6 +215,35 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_
     } else if (!mmio_store(paddr, len, bytes)) {
       throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
     }
+  }
+}
+
+void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store, bool UNUSED require_alignment)
+{
+  if (actually_store) {
+    if (!matched_trigger) {
+      reg_t data = reg_from_bytes(len, bytes);
+      matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, true, data);
+      if (matched_trigger)
+        throw *matched_trigger;
+    }
+  }
+
+  if (addr & (len - 1)) {
+    bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
+#ifndef RISCV_ENABLE_MISALIGNED
+    throw trap_store_address_misaligned(gva, addr, 0, 0);
+#else
+    if (require_alignment)
+      throw trap_store_access_fault(gva, addr, 0, 0);
+
+    reg_t len_page0 = std::min(len, PGSIZE - addr % PGSIZE);
+    store_slow_path_intrapage(addr, len_page0, bytes, xlate_flags, actually_store);
+    if (len_page0 != len)
+      store_slow_path_intrapage(addr + len_page0, len - len_page0, bytes + len_page0, xlate_flags, actually_store);
+#endif
+  } else {
+    store_slow_path_intrapage(addr, len, bytes, xlate_flags, actually_store);
   }
 }
 
