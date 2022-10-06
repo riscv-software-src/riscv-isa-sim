@@ -142,7 +142,6 @@ bool mmu_t::mmio_store(reg_t addr, size_t len, const uint8_t* bytes)
 void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags)
 {
   if (!matched_trigger) {
-    reg_t data = reg_from_bytes(len, bytes);
     matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, false);
     if (matched_trigger)
       throw *matched_trigger;
