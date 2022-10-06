@@ -139,12 +139,13 @@ bool mmu_t::mmio_store(reg_t addr, size_t len, const uint8_t* bytes)
   return sim->mmio_store(addr, len, bytes);
 }
 
-void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags)
+void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags)
 {
-  if (!matched_trigger) {
-    matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, false);
-    if (matched_trigger)
-      throw *matched_trigger;
+  reg_t vpn = addr >> PGSHIFT;
+  if (xlate_flags == 0 && vpn == (tlb_load_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
+    auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
+    memcpy(bytes, host_addr, len);
+    return;
   }
 
   reg_t paddr = translate(addr, len, LOAD, xlate_flags);
@@ -157,6 +158,32 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
       refill_tlb(addr, paddr, host_addr, LOAD);
   } else if (!mmio_load(paddr, len, bytes)) {
     throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+  }
+}
+
+void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags, bool UNUSED require_alignment)
+{
+  if (!matched_trigger) {
+    matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, false);
+    if (matched_trigger)
+      throw *matched_trigger;
+  }
+
+  if ((addr & (len - 1)) == 0) {
+    load_slow_path_intrapage(addr, len, bytes, xlate_flags);
+  } else {
+    bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
+#ifndef RISCV_ENABLE_MISALIGNED
+    throw trap_load_address_misaligned(gva, addr, 0, 0);
+#else
+    if (require_alignment)
+      throw trap_load_access_fault(gva, addr, 0, 0);
+
+    reg_t len_page0 = std::min(len, PGSIZE - addr % PGSIZE);
+    load_slow_path_intrapage(addr, len_page0, bytes, xlate_flags);
+    if (len_page0 != len)
+      load_slow_path_intrapage(addr + len_page0, len - len_page0, bytes + len_page0, xlate_flags);
+#endif
   }
 
   if (!matched_trigger) {

@@ -52,26 +52,6 @@ public:
 #define RISCV_XLATE_VIRT (1U << 0)
 #define RISCV_XLATE_VIRT_HLVX (1U << 1)
 
-  inline reg_t misaligned_load(reg_t addr, size_t UNUSED size, uint32_t xlate_flags)
-  {
-#ifdef RISCV_ENABLE_MISALIGNED
-    reg_t res = 0;
-    for (size_t i = 0; i < size; i++) {
-      const reg_t byteaddr = addr + (target_big_endian? size-1-i : i);
-      const reg_t bytedata
-        = (RISCV_XLATE_VIRT_HLVX & xlate_flags) ? guest_load_x_uint8(byteaddr)
-        : (RISCV_XLATE_VIRT & xlate_flags)      ? guest_load_uint8(byteaddr)
-        :                                         load_uint8(byteaddr)
-        ;
-      res += bytedata << (i * 8);
-    }
-    return res;
-#else
-    bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
-    throw trap_load_address_misaligned(gva, addr, 0, 0);
-#endif
-  }
-
   inline void misaligned_store(reg_t addr, reg_t UNUSED data, size_t UNUSED size, uint32_t xlate_flags, bool UNUSED actually_store=true)
   {
 #ifdef RISCV_ENABLE_MISALIGNED
@@ -100,35 +80,19 @@ public:
   // template for functions that load an aligned value from memory
   #define load_func(type, prefix, xlate_flags) \
     type##_t ALWAYS_INLINE prefix##_##type(reg_t addr, bool require_alignment = false) { \
-      if (unlikely(addr & (sizeof(type##_t)-1))) { \
-        if (!matched_trigger) { \
-          matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, false); \
-          if (matched_trigger) \
-            throw *matched_trigger; \
-        } \
-        if (require_alignment) load_reserved_address_misaligned(addr); \
-        else return misaligned_load(addr, sizeof(type##_t), xlate_flags); \
-      } \
       reg_t vpn = addr >> PGSHIFT; \
       size_t size = sizeof(type##_t); \
-      if ((xlate_flags) == 0 && likely(tlb_load_tag[vpn % TLB_ENTRIES] == vpn)) { \
+      bool aligned = (addr & (size - 1)) == 0; \
+      bool tlb_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn; \
+      if (likely((xlate_flags) == 0 && aligned && tlb_hit)) { \
         if (proc) READ_MEM(addr, size); \
         return from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
-      } \
-      if ((xlate_flags) == 0 && unlikely(tlb_load_tag[vpn % TLB_ENTRIES] == (vpn | TLB_CHECK_TRIGGERS))) { \
-        type##_t data = from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
-        if (!matched_trigger) { \
-          matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, true, data); \
-          if (matched_trigger) \
-            throw *matched_trigger; \
-        } \
+      } else { \
+        target_endian<type##_t> res; \
+        load_slow_path(addr, sizeof(type##_t), (uint8_t*)&res, (xlate_flags), require_alignment); \
         if (proc) READ_MEM(addr, size); \
-        return data; \
+        return from_target(res); \
       } \
-      target_endian<type##_t> res; \
-      load_slow_path(addr, sizeof(type##_t), (uint8_t*)&res, (xlate_flags)); \
-      if (proc) READ_MEM(addr, size); \
-      return from_target(res); \
     }
 
   // load value from memory at aligned address; zero extend to register width
@@ -142,7 +106,6 @@ public:
   load_func(uint16, guest_load, RISCV_XLATE_VIRT)
   load_func(uint32, guest_load, RISCV_XLATE_VIRT)
   load_func(uint64, guest_load, RISCV_XLATE_VIRT)
-  load_func(uint8, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX)  // only for use by misaligned HLVX
   load_func(uint16, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX)
   load_func(uint32, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX)
 
@@ -298,16 +261,6 @@ public:
       load_reservation_address = refill_tlb(vaddr, paddr, host_addr, LOAD).target_offset + vaddr;
     else
       throw trap_load_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0); // disallow LR to I/O space
-  }
-
-  inline void load_reserved_address_misaligned(reg_t vaddr)
-  {
-    bool gva = proc ? proc->state.v : false;
-#ifdef RISCV_ENABLE_MISALIGNED
-    throw trap_load_access_fault(gva, vaddr, 0, 0);
-#else
-    throw trap_load_address_misaligned(gva, vaddr, 0, 0);
-#endif
   }
 
   inline void store_conditional_address_misaligned(reg_t vaddr)
@@ -471,7 +424,8 @@ private:
 
   // handle uncommon cases: TLB misses, page faults, MMIO
   tlb_entry_t fetch_slow_path(reg_t addr);
-  void load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags);
+  void load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags, bool require_alignment);
+  void load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags);
   void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store);
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
