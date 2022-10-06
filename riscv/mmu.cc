@@ -93,8 +93,7 @@ tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
     result = tlb_data[vpn % TLB_ENTRIES];
   }
 
-  target_endian<uint16_t>* ptr = (target_endian<uint16_t>*)(result.host_offset + vaddr);
-  check_triggers(triggers::OPERATION_EXECUTE, vaddr, true, from_target(*ptr));
+  check_triggers(triggers::OPERATION_EXECUTE, vaddr, true, from_le(*(const uint16_t*)(result.host_offset + vaddr)));
 
   return result;
 }
