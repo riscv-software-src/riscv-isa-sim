@@ -76,16 +76,32 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
 
 tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
-  reg_t paddr = translate(vaddr, sizeof(fetch_temp), FETCH, 0);
+  triggers::action_t action;
+  auto match = proc->TM.memory_access_match(&action, triggers::OPERATION_EXECUTE, vaddr, false);
+  if (match != triggers::MATCH_NONE)
+    throw triggers::matched_t(triggers::OPERATION_EXECUTE, vaddr, 0, action);
 
-  if (auto host_addr = sim->addr_to_mem(paddr)) {
-    return refill_tlb(vaddr, paddr, host_addr, FETCH);
+  tlb_entry_t result;
+  reg_t vpn = vaddr >> PGSHIFT;
+  if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] != (vpn | TLB_CHECK_TRIGGERS))) {
+    reg_t paddr = translate(vaddr, sizeof(fetch_temp), FETCH, 0);
+    if (auto host_addr = sim->addr_to_mem(paddr)) {
+      result = refill_tlb(vaddr, paddr, host_addr, FETCH);
+    } else {
+      if (!mmio_load(paddr, sizeof fetch_temp, (uint8_t*)&fetch_temp))
+        throw trap_instruction_access_fault(proc->state.v, vaddr, 0, 0);
+      result = {(char*)&fetch_temp - vaddr, paddr - vaddr};
+    }
   } else {
-    if (!mmio_load(paddr, sizeof fetch_temp, (uint8_t*)&fetch_temp))
-      throw trap_instruction_access_fault(proc->state.v, vaddr, 0, 0);
-    tlb_entry_t entry = {(char*)&fetch_temp - vaddr, paddr - vaddr};
-    return entry;
+    result = tlb_data[vpn % TLB_ENTRIES];
   }
+
+  target_endian<uint16_t>* ptr = (target_endian<uint16_t>*)(result.host_offset + vaddr);
+  match = proc->TM.memory_access_match(&action, triggers::OPERATION_EXECUTE, vaddr, true, from_target(*ptr));
+  if (match != triggers::MATCH_NONE)
+    throw triggers::matched_t(triggers::OPERATION_EXECUTE, vaddr, from_target(*ptr), action);
+
+  return result;
 }
 
 reg_t reg_from_bytes(size_t len, const uint8_t* bytes)
