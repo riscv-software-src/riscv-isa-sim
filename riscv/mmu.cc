@@ -76,10 +76,7 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
 
 tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
-  triggers::action_t action;
-  auto match = proc->TM.memory_access_match(&action, triggers::OPERATION_EXECUTE, vaddr, false);
-  if (match != triggers::MATCH_NONE)
-    throw triggers::matched_t(triggers::OPERATION_EXECUTE, vaddr, 0, action);
+  check_triggers(triggers::OPERATION_EXECUTE, vaddr, false);
 
   tlb_entry_t result;
   reg_t vpn = vaddr >> PGSHIFT;
@@ -97,9 +94,7 @@ tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
   }
 
   target_endian<uint16_t>* ptr = (target_endian<uint16_t>*)(result.host_offset + vaddr);
-  match = proc->TM.memory_access_match(&action, triggers::OPERATION_EXECUTE, vaddr, true, from_target(*ptr));
-  if (match != triggers::MATCH_NONE)
-    throw triggers::matched_t(triggers::OPERATION_EXECUTE, vaddr, from_target(*ptr), action);
+  check_triggers(triggers::OPERATION_EXECUTE, vaddr, true, from_target(*ptr));
 
   return result;
 }
@@ -155,6 +150,27 @@ bool mmu_t::mmio_store(reg_t addr, size_t len, const uint8_t* bytes)
   return sim->mmio_store(addr, len, bytes);
 }
 
+void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool has_data, reg_t data)
+{
+  if (matched_trigger || !proc)
+    return;
+
+  triggers::action_t action;
+  auto match = proc->TM.memory_access_match(&action, operation, address, has_data, data);
+
+  switch (match) {
+    case triggers::MATCH_NONE:
+      return;
+
+    case triggers::MATCH_FIRE_BEFORE:
+      throw triggers::matched_t(operation, address, data, action);
+
+    case triggers::MATCH_FIRE_AFTER:
+      matched_trigger = new triggers::matched_t(operation, address, data, action);
+      throw *matched_trigger;
+  }
+}
+
 void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags)
 {
   reg_t vpn = addr >> PGSHIFT;
@@ -179,11 +195,7 @@ void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint
 
 void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags, bool UNUSED require_alignment)
 {
-  if (!matched_trigger) {
-    matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, false);
-    if (matched_trigger)
-      throw *matched_trigger;
-  }
+  check_triggers(triggers::OPERATION_LOAD, addr, false);
 
   if ((addr & (len - 1)) == 0) {
     load_slow_path_intrapage(addr, len, bytes, xlate_flags);
@@ -202,12 +214,7 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
 #endif
   }
 
-  if (!matched_trigger) {
-    reg_t data = reg_from_bytes(len, bytes);
-    matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, true, data);
-    if (matched_trigger)
-      throw *matched_trigger;
-  }
+  check_triggers(triggers::OPERATION_LOAD, addr, true, reg_from_bytes(len, bytes));
 }
 
 void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store)
@@ -236,14 +243,8 @@ void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* byte
 
 void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store, bool UNUSED require_alignment)
 {
-  if (actually_store) {
-    if (!matched_trigger) {
-      reg_t data = reg_from_bytes(len, bytes);
-      matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, true, data);
-      if (matched_trigger)
-        throw *matched_trigger;
-    }
-  }
+  if (actually_store)
+    check_triggers(triggers::OPERATION_STORE, addr, true, reg_from_bytes(len, bytes));
 
   if (addr & (len - 1)) {
     bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);

@@ -384,6 +384,7 @@ private:
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
   bool mmio_ok(reg_t addr, access_type type);
+  void check_triggers(triggers::operation_t operation, reg_t address, bool has_data, reg_t data = 0);
   reg_t translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_flags);
 
   // ITLB lookup
@@ -396,22 +397,6 @@ private:
 
   inline const uint16_t* translate_insn_addr_to_host(reg_t addr) {
     return (uint16_t*)(translate_insn_addr(addr).host_offset + addr);
-  }
-
-  inline triggers::matched_t *trigger_exception(triggers::operation_t operation,
-      reg_t address, bool has_data, reg_t data=0)
-  {
-    if (!proc) {
-      return NULL;
-    }
-    triggers::action_t action;
-    auto match = proc->TM.memory_access_match(&action, operation, address, has_data, data);
-    if (match == triggers::MATCH_NONE)
-      return NULL;
-    if (match == triggers::MATCH_FIRE_BEFORE) {
-      throw triggers::matched_t(operation, address, data, action);
-    }
-    return new triggers::matched_t(operation, address, data, action);
   }
 
   reg_t pmp_homogeneous(reg_t addr, reg_t len);
