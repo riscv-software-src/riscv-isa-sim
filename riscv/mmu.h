@@ -247,6 +247,9 @@ public:
 
   inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
   {
+    if (matched_trigger)
+      throw *matched_trigger;
+
     auto tlb_entry = translate_insn_addr(addr);
     insn_bits_t insn = from_le(*(uint16_t*)(tlb_entry.host_offset + addr));
     int length = insn_length(insn);
