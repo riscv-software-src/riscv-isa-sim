@@ -19,6 +19,7 @@ typedef struct {
   unsigned abstract_rti;
   bool support_hasel;
   bool support_abstract_csr_access;
+  bool support_abstract_fpr_access;
   bool support_haltgroups;
   bool support_impebreak;
 } debug_module_config_t;

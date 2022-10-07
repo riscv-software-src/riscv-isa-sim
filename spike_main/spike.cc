@@ -72,7 +72,8 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --dm-abstract-rti=<n> Number of Run-Test/Idle cycles "
       "required for an abstract command to execute [default 0]\n");
   fprintf(stderr, "  --dm-no-hasel         Debug module supports hasel\n");
-  fprintf(stderr, "  --dm-no-abstract-csr  Debug module won't support abstract to authenticate\n");
+  fprintf(stderr, "  --dm-no-abstract-csr  Debug module won't support abstract CSR access\n");
+  fprintf(stderr, "  --dm-no-abstract-fpr  Debug module won't support abstract FPR access\n");
   fprintf(stderr, "  --dm-no-halt-groups   Debug module won't support halt groups\n");
   fprintf(stderr, "  --dm-no-impebreak     Debug module won't support implicit ebreak in program buffer\n");
   fprintf(stderr, "  --blocksz=<size>      Cache block size (B) for CMO operations(powers of 2) [default 64]\n");
@@ -269,6 +270,7 @@ int main(int argc, char** argv)
     .abstract_rti = 0,
     .support_hasel = true,
     .support_abstract_csr_access = true,
+    .support_abstract_fpr_access = true,
     .support_haltgroups = true,
     .support_impebreak = true
   };
@@ -384,6 +386,8 @@ int main(int argc, char** argv)
       [&](const char UNUSED *s){dm_config.support_hasel = false;});
   parser.option(0, "dm-no-abstract-csr", 0,
       [&](const char UNUSED *s){dm_config.support_abstract_csr_access = false;});
+  parser.option(0, "dm-no-abstract-fpr", 0,
+      [&](const char UNUSED *s){dm_config.support_abstract_fpr_access = false;});
   parser.option(0, "dm-no-halt-groups", 0,
       [&](const char UNUSED *s){dm_config.support_haltgroups = false;});
   parser.option(0, "log-commits", 0,
