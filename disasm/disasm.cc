@@ -572,6 +572,11 @@ static void NOINLINE add_pitype5_insn(disassembler_t* d, const char* name, uint3
   d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &xrs1, &p_imm5}));
 }
 
+static void NOINLINE add_pitype6_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &xrs1, &p_imm6}));
+}
+
 static void NOINLINE add_vector_v_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &vs2, opt, &vm}));
@@ -1683,6 +1688,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
 #define DEFINE_PI3TYPE(code) add_pitype3_insn(this, #code, match_##code, mask_##code);
 #define DEFINE_PI4TYPE(code) add_pitype4_insn(this, #code, match_##code, mask_##code);
 #define DEFINE_PI5TYPE(code) add_pitype5_insn(this, #code, match_##code, mask_##code);
+#define DEFINE_PI6TYPE(code) add_pitype6_insn(this, #code, match_##code, mask_##code);
 
 #define DISASM_8_AND_16_RINSN(code) \
   DEFINE_RTYPE(code##8); \
@@ -1921,7 +1927,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_RTYPE(msubr32);
     DEFINE_RTYPE(ave);
     DEFINE_RTYPE(sra_u);
-    DEFINE_PI5TYPE(srai_u);
+    DEFINE_PI6TYPE(srai_u);
     DEFINE_PI3TYPE(insb);
     DEFINE_RTYPE(maddr32)
 
