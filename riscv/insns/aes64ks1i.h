@@ -12,7 +12,7 @@ uint8_t     enc_rcon          = insn.rcon() ;
 
 if (enc_rcon > 0xA) {
     // Invalid opcode.
-    throw trap_illegal_instruction(0);
+    throw trap_illegal_instruction(insn.bits());
 }
 
 uint32_t    temp              = (RS1 >> 32) & 0xFFFFFFFF  ;
