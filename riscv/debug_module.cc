@@ -672,7 +672,7 @@ bool debug_module_t::perform_abstract_command()
           write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH0));
         }
 
-      } else if (regno >= 0x1020 && regno < 0x1040) {
+      } else if (regno >= 0x1020 && regno < 0x1040 && config.support_abstract_fpr_access) {
         unsigned fprnum = regno - 0x1020;
 
         if (write) {
