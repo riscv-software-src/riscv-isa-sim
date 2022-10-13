@@ -2,6 +2,7 @@
 #define _RISCV_TRIGGERS_H
 
 #include <vector>
+#include <optional>
 
 #include "decode.h"
 
@@ -42,7 +43,7 @@ class matched_t
 class trigger_t {
 public:
   virtual match_result_t memory_access_match(processor_t * const proc,
-      operation_t operation, reg_t address, bool has_data, reg_t data=0) = 0;
+      operation_t operation, reg_t address, std::optional<reg_t> data) = 0;
 
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept = 0;
   virtual bool tdata1_write(processor_t * const proc, const reg_t val) noexcept = 0;
@@ -87,7 +88,7 @@ public:
   virtual bool load() const override { return load_bit; }
 
   virtual match_result_t memory_access_match(processor_t * const proc,
-      operation_t operation, reg_t address, bool has_data, reg_t data=0) override;
+      operation_t operation, reg_t address, std::optional<reg_t> data) override;
 
 private:
   bool simple_match(unsigned xlen, reg_t value) const;
@@ -114,7 +115,7 @@ public:
   unsigned count() const { return triggers.size(); }
 
   match_result_t memory_access_match(action_t * const action,
-      operation_t operation, reg_t address, bool has_data, reg_t data=0);
+      operation_t operation, reg_t address, std::optional<reg_t> data);
 
   reg_t tdata1_read(const processor_t * const proc, unsigned index) const noexcept;
   bool tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept;

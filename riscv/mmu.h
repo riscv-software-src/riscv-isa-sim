@@ -387,7 +387,7 @@ private:
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
   bool mmio_ok(reg_t addr, access_type type);
-  void check_triggers(triggers::operation_t operation, reg_t address, bool has_data, reg_t data = 0);
+  void check_triggers(triggers::operation_t operation, reg_t address, std::optional<reg_t> data = std::nullopt);
   reg_t translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_flags);
 
   // ITLB lookup
