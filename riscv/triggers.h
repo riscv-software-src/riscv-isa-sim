@@ -31,12 +31,11 @@ typedef enum {
 class matched_t
 {
   public:
-    matched_t(triggers::operation_t operation, reg_t address, reg_t data, action_t action) :
-      operation(operation), address(address), data(data), action(action) {}
+    matched_t(triggers::operation_t operation, reg_t address, action_t action) :
+      operation(operation), address(address), action(action) {}
 
     triggers::operation_t operation;
     reg_t address;
-    reg_t data;
     action_t action;
 };
 

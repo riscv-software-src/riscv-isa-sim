@@ -162,13 +162,13 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool 
       return;
 
     case triggers::MATCH_FIRE_BEFORE:
-      throw triggers::matched_t(operation, address, data, action);
+      throw triggers::matched_t(operation, address, action);
 
     case triggers::MATCH_FIRE_AFTER:
       // We want to take this exception on the next instruction.  We check
       // whether to do so in the I$ refill path, so flush the I$.
       flush_icache();
-      matched_trigger = new triggers::matched_t(operation, address, data, action);
+      matched_trigger = new triggers::matched_t(operation, address, action);
       return;
   }
 }
