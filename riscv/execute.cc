@@ -309,15 +309,6 @@ void processor_t::step(size_t n)
     catch (triggers::matched_t& t)
     {
       if (mmu->matched_trigger) {
-        // This exception came from the MMU. That means the instruction hasn't
-        // fully executed yet. We start it again, but this time it won't throw
-        // an exception because matched_trigger is already set. (All memory
-        // instructions are idempotent so restarting is safe.)
-
-        insn_fetch_t fetch = mmu->load_insn(pc);
-        pc = execute_insn(this, pc, fetch);
-        advance_pc();
-
         delete mmu->matched_trigger;
         mmu->matched_trigger = NULL;
       }
