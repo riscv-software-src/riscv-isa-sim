@@ -315,6 +315,8 @@ void sim_t::interactive()
   funcs["pc"] = &sim_t::interactive_pc;
   funcs["mem"] = &sim_t::interactive_mem;
   funcs["str"] = &sim_t::interactive_str;
+  funcs["mtime"] = &sim_t::interactive_mtime;
+  funcs["mtimecmp"] = &sim_t::interactive_mtimecmp;
   funcs["until"] = &sim_t::interactive_until_silent;
   funcs["untiln"] = &sim_t::interactive_until_noisy;
   funcs["while"] = &sim_t::interactive_until_silent;
@@ -397,6 +399,8 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "mem [core] <hex addr>           # Show contents of virtual memory <hex addr> in [core] (physical memory <hex addr> if omitted)\n"
     "str [core] <hex addr>           # Show NUL-terminated C string at virtual address <hex addr> in [core] (physical address <hex addr> if omitted)\n"
     "dump                            # Dump physical memory to binary files\n"
+    "mtime                           # Show mtime\n"
+    "mtimecmp <core>                 # Show mtimecmp for <core>\n"
     "until reg <core> <reg> <val>    # Stop when <reg> in <core> hits <val>\n"
     "untiln reg <core> <reg> <val>   # Run noisy and stop when <reg> in <core> hits <val>\n"
     "until pc <core> <val>           # Stop when PC in <core> hits <val>\n"
@@ -788,3 +792,22 @@ void sim_t::interactive_dumpmems(const std::string& cmd, const std::vector<std::
     mem_file.close();
   }
 }
+
+void sim_t::interactive_mtime(const std::string& cmd, const std::vector<std::string>& args)
+{
+  std::ostream out(sout_.rdbuf());
+  out << std::hex << std::setfill('0') << "0x" << std::setw(16)
+      << clint->get_mtime() << std::endl;
+}
+
+void sim_t::interactive_mtimecmp(const std::string& cmd, const std::vector<std::string>& args)
+{
+  if (args.size() != 1)
+    throw trap_interactive();
+
+  processor_t *p = get_core(args[0]);
+  std::ostream out(sout_.rdbuf());
+  out << std::hex << std::setfill('0') << "0x" << std::setw(16)
+      << clint->get_mtimecmp(p->get_id()) << std::endl;
+}
+
