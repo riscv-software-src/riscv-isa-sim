@@ -59,6 +59,8 @@ class clint_t : public abstract_device_t {
   bool store(reg_t addr, size_t len, const uint8_t* bytes);
   size_t size() { return CLINT_SIZE; }
   void increment(reg_t inc);
+  uint64_t get_mtimecmp(reg_t hartid) { return mtimecmp[hartid]; }
+  uint64_t get_mtime() { return mtime; }
  private:
   typedef uint64_t mtime_t;
   typedef uint64_t mtimecmp_t;
