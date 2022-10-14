@@ -137,3 +137,16 @@ char* mem_t::contents(reg_t addr) {
   }
   return search->second + pgoff;
 }
+
+void mem_t::dump(std::ostream& o) {
+  const char empty[PGSIZE] = {0};
+  for (reg_t i = 0; i < sz; i += PGSIZE) {
+    reg_t ppn = i >> PGSHIFT;
+    auto search = sparse_memory_map.find(ppn);
+    if (search == sparse_memory_map.end()) {
+      o.write(empty, PGSIZE);
+    } else {
+      o.write(sparse_memory_map[ppn], PGSIZE);
+    }
+  }
+}

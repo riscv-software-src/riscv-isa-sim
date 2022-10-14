@@ -318,6 +318,7 @@ void sim_t::interactive()
   funcs["until"] = &sim_t::interactive_until_silent;
   funcs["untiln"] = &sim_t::interactive_until_noisy;
   funcs["while"] = &sim_t::interactive_until_silent;
+  funcs["dump"] = &sim_t::interactive_dumpmems;
   funcs["quit"] = &sim_t::interactive_quit;
   funcs["q"] = funcs["quit"];
   funcs["help"] = &sim_t::interactive_help;
@@ -395,6 +396,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "pc <core>                       # Show current PC in <core>\n"
     "mem [core] <hex addr>           # Show contents of virtual memory <hex addr> in [core] (physical memory <hex addr> if omitted)\n"
     "str [core] <hex addr>           # Show NUL-terminated C string at virtual address <hex addr> in [core] (physical address <hex addr> if omitted)\n"
+    "dump                            # Dump physical memory to binary files\n"
     "until reg <core> <reg> <val>    # Stop when <reg> in <core> hits <val>\n"
     "untiln reg <core> <reg> <val>   # Run noisy and stop when <reg> in <core> hits <val>\n"
     "until pc <core> <val>           # Stop when PC in <core> hits <val>\n"
@@ -772,5 +774,17 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
 
     set_procs_debug(noisy);
     step(1);
+  }
+}
+
+void sim_t::interactive_dumpmems(const std::string& cmd, const std::vector<std::string>& args)
+{
+  for (unsigned i = 0; i < mems.size(); i++) {
+    std::stringstream mem_fname;
+    mem_fname << "mem.0x" << std::hex << mems[i].first << ".bin";
+
+    std::ofstream mem_file(mem_fname.str());
+    mems[i].second->dump(mem_file);
+    mem_file.close();
   }
 }
