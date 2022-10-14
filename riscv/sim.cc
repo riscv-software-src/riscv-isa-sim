@@ -303,7 +303,7 @@ void sim_t::make_dtb()
     std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds();
     dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
                    initrd_bounds.first, initrd_bounds.second,
-                   cfg->bootargs(), procs, mems);
+                   cfg->bootargs(), cfg->pmpregions, procs, mems);
     dtb = dts_compile(dts);
   }
 
