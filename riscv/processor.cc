@@ -755,6 +755,24 @@ void processor_t::set_privilege(reg_t prv)
   state.prv = legalize_privilege(prv);
 }
 
+const char* processor_t::get_privilege_string()
+{
+  if (state.v) {
+    switch (state.prv) {
+    case 0x0: return "VU";
+    case 0x1: return "VS";
+    }
+  } else {
+    switch (state.prv) {
+    case 0x0: return "U";
+    case 0x1: return "S";
+    case 0x3: return "M";
+    }
+  }
+  fprintf(stderr, "Invalid prv=%lx v=%x\n", state.prv, state.v);
+  abort();
+}
+
 void processor_t::set_virt(bool virt)
 {
   reg_t tmp, mask;

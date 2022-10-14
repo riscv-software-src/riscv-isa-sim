@@ -299,6 +299,7 @@ public:
   reg_t legalize_privilege(reg_t);
   void set_privilege(reg_t);
   void set_virt(bool);
+  const char* get_privilege_string();
   void update_histogram(reg_t pc);
   const disassembler_t* get_disassembler() { return disassembler; }
 
