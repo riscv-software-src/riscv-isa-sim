@@ -101,7 +101,7 @@ bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
   assert(0);
 }
 
-match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operation_t operation, reg_t address, bool has_data, reg_t data) {
+match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) {
   state_t * const state = proc->get_state();
   if ((operation == triggers::OPERATION_EXECUTE && !execute_bit) ||
       (operation == triggers::OPERATION_STORE && !store_bit) ||
@@ -114,9 +114,9 @@ match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operati
 
   reg_t value;
   if (select) {
-    value = data;
-    if (!has_data)
+    if (!data.has_value())
       return MATCH_NONE;
+    value = *data;
   } else {
     value = address;
   }
@@ -152,7 +152,7 @@ module_t::~module_t() {
   }
 }
 
-match_result_t module_t::memory_access_match(action_t * const action, operation_t operation, reg_t address, bool has_data, reg_t data)
+match_result_t module_t::memory_access_match(action_t * const action, operation_t operation, reg_t address, std::optional<reg_t> data)
 {
   state_t * const state = proc->get_state();
   if (state->debug_mode)
@@ -172,7 +172,7 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
      * entire chain did not match. This is allowed by the spec, because the final
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
-    match_result_t result = triggers[i]->memory_access_match(proc, operation, address, has_data, data);
+    match_result_t result = triggers[i]->memory_access_match(proc, operation, address, data);
     if (result != MATCH_NONE && !triggers[i]->chain()) {
       *action = triggers[i]->action;
       return result;
