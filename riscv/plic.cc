@@ -69,9 +69,7 @@
 plic_t::plic_t(std::vector<processor_t*>& procs, bool smode, uint32_t ndev)
   : procs(procs), contexts(procs.size() * (smode ? 2 : 1))
 {
-  size_t i;
   size_t contexts_per_hart = smode ? 2 : 1;
-  plic_context_t *c;
 
   num_ids = ndev + 1;
   num_ids_word = num_ids / 32;
@@ -81,8 +79,8 @@ plic_t::plic_t(std::vector<processor_t*>& procs, bool smode, uint32_t ndev)
   memset(priority, 0, sizeof(priority));
   memset(level, 0, sizeof(level));
 
-  for (i = 0; i < contexts.size(); i++) {
-    c = &contexts[i];
+  for (size_t i = 0; i < contexts.size(); i++) {
+    plic_context_t* c = &contexts[i];
     c->num = i;
     c->proc = procs[i / contexts_per_hart];
     if (smode) {
@@ -97,18 +95,18 @@ plic_t::plic_t(std::vector<processor_t*>& procs, bool smode, uint32_t ndev)
   }
 }
 
-uint32_t plic_t::context_best_pending(plic_context_t *c)
+uint32_t plic_t::context_best_pending(const plic_context_t *c)
 {
   uint8_t best_id_prio = 0;
-  uint32_t i, j, id, best_id = 0;
+  uint32_t best_id = 0;
 
-  for (i = 0; i < num_ids_word; i++) {
+  for (uint32_t i = 0; i < num_ids_word; i++) {
     if (!c->pending[i]) {
       continue;
     }
 
-    for (j = 0; j < 32; j++) {
-      id = i * 32 + j;
+    for (uint32_t j = 0; j < 32; j++) {
+      uint32_t id = i * 32 + j;
       if ((num_ids <= id) ||
           !(c->pending[i] & (1 << j)) ||
           (c->claimed[i] & (1 << j))) {
@@ -126,7 +124,7 @@ uint32_t plic_t::context_best_pending(plic_context_t *c)
   return best_id;
 }
 
-void plic_t::context_update(plic_context_t *c)
+void plic_t::context_update(const plic_context_t *c)
 {
   uint32_t best_id = context_best_pending(c);
   reg_t mask = c->mmode ? MIP_MEIP : MIP_SEIP;
@@ -173,7 +171,7 @@ bool plic_t::priority_write(reg_t offset, uint32_t val)
   return true;
 }
 
-bool plic_t::context_enable_read(plic_context_t *c,
+bool plic_t::context_enable_read(const plic_context_t *c,
                                  reg_t offset, uint32_t *val)
 {
   uint32_t id_word = offset >> 2;
@@ -189,29 +187,22 @@ bool plic_t::context_enable_read(plic_context_t *c,
 bool plic_t::context_enable_write(plic_context_t *c,
                                   reg_t offset, uint32_t val)
 {
-  uint8_t id_prio;
-  uint32_t i, id, id_mask;
   uint32_t id_word = offset >> 2;
-  uint32_t old_val, new_val, xor_val;
 
   if (num_ids_word < id_word) {
     return false;
   }
 
-  old_val = c->enable[id_word];
-  new_val = val;
-
-  if (id_word == 0) {
-    new_val &= ~0x1;
-  }
+  uint32_t old_val = c->enable[id_word];
+  uint32_t new_val = id_word == 0 ? val & ~(uint32_t)1 : val;
+  uint32_t xor_val = old_val ^ new_val;
 
   c->enable[id_word] = new_val;
 
-  xor_val = old_val ^ new_val;
-  for (i = 0; i < 32; i++) {
-    id = id_word * 32 + i;
-    id_mask = 1 << i;
-    id_prio = priority[id];
+  for (uint32_t i = 0; i < 32; i++) {
+    uint32_t id = id_word * 32 + i;
+    uint32_t id_mask = 1 << i;
+    uint8_t id_prio = priority[id];
     if (!(xor_val & id_mask)) {
       continue;
     }
@@ -233,50 +224,45 @@ bool plic_t::context_enable_write(plic_context_t *c,
 bool plic_t::context_read(plic_context_t *c,
                           reg_t offset, uint32_t *val)
 {
-  bool ret = true;
-
   switch (offset) {
-  case CONTEXT_THRESHOLD:
-    *val = c->priority_threshold;
-    break;
-  case CONTEXT_CLAIM:
-    *val = context_claim(c);
-    break;
-  default:
-    ret = false;
-    break;
+    case CONTEXT_THRESHOLD:
+      *val = c->priority_threshold;
+      return true;
+    case CONTEXT_CLAIM:
+      *val = context_claim(c);
+      return true;
+    default:
+      return false;
   };
-
-  return ret;
 }
 
 bool plic_t::context_write(plic_context_t *c,
                            reg_t offset, uint32_t val)
 {
-  uint32_t id_word, id_mask;
   bool ret = true, update = false;
 
   switch (offset) {
-  case CONTEXT_THRESHOLD:
-    val &= ((1 << PLIC_PRIO_BITS) - 1);
-    if (val <= max_prio)
-      c->priority_threshold = val;
-    else
-      update = true;
-    break;
-  case CONTEXT_CLAIM:
-    id_word = val / 32;
-    id_mask = 1 << (val % 32);
-    if ((val < num_ids) &&
-        (c->enable[id_word] & id_mask)) {
-      c->claimed[id_word] &= ~id_mask;
-      update = true;
+    case CONTEXT_THRESHOLD:
+      val &= ((1 << PLIC_PRIO_BITS) - 1);
+      if (val <= max_prio)
+        c->priority_threshold = val;
+      else
+        update = true;
+      break;
+    case CONTEXT_CLAIM: {
+      uint32_t id_word = val / 32;
+      uint32_t id_mask = 1 << (val % 32);
+      if ((val < num_ids) &&
+          (c->enable[id_word] & id_mask)) {
+        c->claimed[id_word] &= ~id_mask;
+        update = true;
+      }
+      break;
     }
-    break;
-  default:
-    ret = false;
-    update = true;
-    break;
+    default:
+      ret = false;
+      update = true;
+      break;
   };
 
   if (update) {
@@ -288,17 +274,13 @@ bool plic_t::context_write(plic_context_t *c,
 
 void plic_t::set_interrupt_level(uint32_t id, int lvl)
 {
-  uint8_t i, id_prio, id_word;
-  uint32_t id_mask;
-  plic_context_t *c = NULL;
-
   if (id <= 0 || num_ids <= id) {
     return;
   }
 
-  id_prio = priority[id];
-  id_word = id / 32;
-  id_mask = 1 << (id % 32);
+  uint8_t id_prio = priority[id];
+  uint32_t id_word = id / 32;
+  uint32_t id_mask = 1 << (id % 32);
 
   if (lvl) {
     level[id_word] |= id_mask;
@@ -312,8 +294,8 @@ void plic_t::set_interrupt_level(uint32_t id, int lvl)
    * handle this we auto-clear edge-triggered interrupts
    * when PLIC context CLAIM register is read.
    */
-  for (i = 0; i < contexts.size(); i++) {
-    c = &contexts[i];
+  for (size_t i = 0; i < contexts.size(); i++) {
+    plic_context_t* c = &contexts[i];
 
     if (c->enable[id_word] & id_mask) {
       if (lvl) {
@@ -333,7 +315,7 @@ void plic_t::set_interrupt_level(uint32_t id, int lvl)
 bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
   bool ret = false;
-  uint32_t cntx, val = 0;
+  uint32_t val = 0;
 
   /* Only 32bit loads supported */
   if (len != 4) {
@@ -343,13 +325,13 @@ bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes)
   if (PRIORITY_BASE <= addr && addr < ENABLE_BASE) {
     ret = priority_read(addr, &val);
   } else if (ENABLE_BASE <= addr && addr < CONTEXT_BASE) {
-    cntx = (addr - ENABLE_BASE) / ENABLE_PER_HART;
+    uint32_t cntx = (addr - ENABLE_BASE) / ENABLE_PER_HART;
     addr -= cntx * ENABLE_PER_HART + ENABLE_BASE;
     if (cntx < contexts.size()) {
       ret = context_enable_read(&contexts[cntx], addr, &val);
     }
   } else if (CONTEXT_BASE <= addr && addr < REG_SIZE) {
-    cntx = (addr - CONTEXT_BASE) / CONTEXT_PER_HART;
+    uint32_t cntx = (addr - CONTEXT_BASE) / CONTEXT_PER_HART;
     addr -= cntx * CONTEXT_PER_HART + CONTEXT_BASE;
     if (cntx < contexts.size()) {
       ret = context_read(&contexts[cntx], addr, &val);
@@ -366,7 +348,7 @@ bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes)
 bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
   bool ret = false;
-  uint32_t cntx, val;
+  uint32_t val;
 
   /* Only 32bit stores supported */
   if (len != 4) {
@@ -378,12 +360,12 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   if (PRIORITY_BASE <= addr && addr < ENABLE_BASE) {
     ret = priority_write(addr, val);
   } else if (ENABLE_BASE <= addr && addr < CONTEXT_BASE) {
-    cntx = (addr - ENABLE_BASE) / ENABLE_PER_HART;
+    uint32_t cntx = (addr - ENABLE_BASE) / ENABLE_PER_HART;
     addr -= cntx * ENABLE_PER_HART + ENABLE_BASE;
     if (cntx < contexts.size())
       ret = context_enable_write(&contexts[cntx], addr, val);
   } else if (CONTEXT_BASE <= addr && addr < REG_SIZE) {
-    cntx = (addr - CONTEXT_BASE) / CONTEXT_PER_HART;
+    uint32_t cntx = (addr - CONTEXT_BASE) / CONTEXT_PER_HART;
     addr -= cntx * CONTEXT_PER_HART + CONTEXT_BASE;
     if (cntx < contexts.size())
       ret = context_write(&contexts[cntx], addr, val);

@@ -133,8 +133,6 @@ void ns16550_t::update_interrupt(void)
 
 uint8_t ns16550_t::rx_byte(void)
 {
-  uint8_t ret = 0;
-
   if (rx_queue.empty()) {
     lsr &= ~UART_LSR_DR;
     return 0;
@@ -146,7 +144,7 @@ uint8_t ns16550_t::rx_byte(void)
     return 0;
   }
 
-  ret = rx_queue.front();
+  uint8_t ret = rx_queue.front();
   rx_queue.pop();
   if (rx_queue.empty()) {
     lsr &= ~UART_LSR_DR;
@@ -296,15 +294,13 @@ bool ns16550_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 
 void ns16550_t::tick(void)
 {
-  int rc;
-
   if (!(fcr & UART_FCR_ENABLE_FIFO) ||
       (mcr & UART_MCR_LOOP) ||
       (UART_QUEUE_SIZE <= rx_queue.size())) {
     return;
   }
 
-  rc = canonical_terminal_t::read();
+  int rc = canonical_terminal_t::read();
   if (rc < 0) {
     return;
   }
