@@ -45,6 +45,7 @@ class mem_t : public abstract_device_t {
   bool store(reg_t addr, size_t len, const uint8_t* bytes) { return load_store(addr, len, const_cast<uint8_t*>(bytes), true); }
   char* contents(reg_t addr);
   reg_t size() { return sz; }
+  void dump(std::ostream& o);
 
  private:
   bool load_store(reg_t addr, size_t len, uint8_t* bytes, bool store);
@@ -60,6 +61,8 @@ class clint_t : public abstract_device_t {
   bool store(reg_t addr, size_t len, const uint8_t* bytes);
   size_t size() { return CLINT_SIZE; }
   void increment(reg_t inc);
+  uint64_t get_mtimecmp(reg_t hartid) { return mtimecmp[hartid]; }
+  uint64_t get_mtime() { return mtime; }
  private:
   typedef uint64_t mtime_t;
   typedef uint64_t mtimecmp_t;

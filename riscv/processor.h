@@ -29,7 +29,6 @@ reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
 
 struct insn_desc_t
 {
-  bool supported;
   insn_bits_t match;
   insn_bits_t mask;
   insn_func_t rv32i;
@@ -39,9 +38,6 @@ struct insn_desc_t
 
   insn_func_t func(int xlen, bool rve)
   {
-    if (!supported)
-      return NULL;
-
     if (rve)
       return xlen == 64 ? rv64e : rv32e;
     else
@@ -50,7 +46,7 @@ struct insn_desc_t
 
   static insn_desc_t illegal()
   {
-    return {true, 0, 0, &illegal_instruction, &illegal_instruction, &illegal_instruction, &illegal_instruction};
+    return {0, 0, &illegal_instruction, &illegal_instruction, &illegal_instruction, &illegal_instruction};
   }
 };
 
@@ -122,7 +118,6 @@ struct type_sew_t<64>
   using type=int64_t;
 };
 
-
 // architectural state of a RISC-V hart
 struct state_t
 {
@@ -138,6 +133,7 @@ struct state_t
   bool v;
   misa_csr_t_p misa;
   mstatus_csr_t_p mstatus;
+  csr_t_p mstatush;
   csr_t_p mepc;
   csr_t_p mtval;
   csr_t_p mtvec;
@@ -149,6 +145,7 @@ struct state_t
   csr_t_p medeleg;
   csr_t_p mideleg;
   csr_t_p mcounteren;
+  csr_t_p mevent[29];
   csr_t_p scounteren;
   csr_t_p sepc;
   csr_t_p stval;
@@ -179,6 +176,8 @@ struct state_t
   tdata2_csr_t_p tdata2;
   bool debug_mode;
 
+  mseccfg_csr_t_p mseccfg;
+
   static const int max_pmp = 16;
   pmpaddr_csr_t_p pmpaddr[max_pmp];
 
@@ -188,6 +187,17 @@ struct state_t
   csr_t_p menvcfg;
   csr_t_p senvcfg;
   csr_t_p henvcfg;
+
+  csr_t_p mstateen[4];
+  csr_t_p sstateen[4];
+  csr_t_p hstateen[4];
+
+  csr_t_p htimedelta;
+  time_counter_csr_t_p time;
+  csr_t_p time_proxy;
+
+  csr_t_p stimecmp;
+  csr_t_p vstimecmp;
 
   bool serialized; // whether timer CSRs are in a well-defined state
 
@@ -209,14 +219,8 @@ struct state_t
 #endif
 };
 
-typedef enum {
-  OPERATION_EXECUTE,
-  OPERATION_STORE,
-  OPERATION_LOAD,
-} trigger_operation_t;
-
 // Count number of contiguous 1 bits starting from the LSB.
-static int cto(reg_t val)
+static inline int cto(reg_t val)
 {
   int res = 0;
   while ((val & 1) == 1)
@@ -398,7 +402,7 @@ public:
 
       // vector element for varies SEW
       template<class T>
-        T& elt(reg_t vReg, reg_t n, bool is_write = false){
+        T& elt(reg_t vReg, reg_t n, bool UNUSED is_write = false) {
           assert(vsew != 0);
           assert((VLEN >> 3)/sizeof(T) > 0);
           reg_t elts_per_reg = (VLEN >> 3) / (sizeof(T));
@@ -445,7 +449,7 @@ public:
         vstart_alu(false) {
       }
 
-      ~vectorUnit_t(){
+      ~vectorUnit_t() {
         free(reg_file);
         reg_file = 0;
       }

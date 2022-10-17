@@ -1,28 +1,22 @@
+#include "debug_defines.h"
 #include "processor.h"
 #include "triggers.h"
 
 namespace triggers {
 
-mcontrol_t::mcontrol_t() :
-  type(2), maskmax(0), select(false), timing(false), chain_bit(false),
-  match(MATCH_EQUAL), m(false), h(false), s(false), u(false),
-  execute_bit(false), store_bit(false), load_bit(false)
-{
-}
-
 reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   reg_t v = 0;
   auto xlen = proc->get_xlen();
-  v = set_field(v, MCONTROL_TYPE(xlen), type);
+  v = set_field(v, MCONTROL_TYPE(xlen), MCONTROL_TYPE_MATCH);
   v = set_field(v, MCONTROL_DMODE(xlen), dmode);
-  v = set_field(v, MCONTROL_MASKMAX(xlen), maskmax);
+  v = set_field(v, MCONTROL_MASKMAX(xlen), 0);
+  v = set_field(v, CSR_MCONTROL_HIT, hit);
   v = set_field(v, MCONTROL_SELECT, select);
   v = set_field(v, MCONTROL_TIMING, timing);
   v = set_field(v, MCONTROL_ACTION, action);
   v = set_field(v, MCONTROL_CHAIN, chain_bit);
   v = set_field(v, MCONTROL_MATCH, match);
   v = set_field(v, MCONTROL_M, m);
-  v = set_field(v, MCONTROL_H, h);
   v = set_field(v, MCONTROL_S, s);
   v = set_field(v, MCONTROL_U, u);
   v = set_field(v, MCONTROL_EXECUTE, execute_bit);
@@ -37,6 +31,7 @@ bool mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcep
   }
   auto xlen = proc->get_xlen();
   dmode = get_field(val, MCONTROL_DMODE(xlen));
+  hit = get_field(val, CSR_MCONTROL_HIT);
   select = get_field(val, MCONTROL_SELECT);
   timing = get_field(val, MCONTROL_TIMING);
   action = (triggers::action_t) get_field(val, MCONTROL_ACTION);
@@ -56,7 +51,6 @@ bool mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcep
       break;
   }
   m = get_field(val, MCONTROL_M);
-  h = get_field(val, MCONTROL_H);
   s = get_field(val, MCONTROL_S);
   u = get_field(val, MCONTROL_U);
   execute_bit = get_field(val, MCONTROL_EXECUTE);
@@ -68,7 +62,7 @@ bool mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcep
   return true;
 }
 
-reg_t mcontrol_t::tdata2_read(const processor_t * const proc) const noexcept {
+reg_t mcontrol_t::tdata2_read(const processor_t UNUSED * const proc) const noexcept {
   return tdata2;
 }
 
@@ -107,7 +101,7 @@ bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
   assert(0);
 }
 
-match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operation_t operation, reg_t address, reg_t data) {
+match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) {
   state_t * const state = proc->get_state();
   if ((operation == triggers::OPERATION_EXECUTE && !execute_bit) ||
       (operation == triggers::OPERATION_STORE && !store_bit) ||
@@ -120,7 +114,9 @@ match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operati
 
   reg_t value;
   if (select) {
-    value = data;
+    if (!data.has_value())
+      return MATCH_NONE;
+    value = *data;
   } else {
     value = address;
   }
@@ -133,6 +129,9 @@ match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operati
   }
 
   if (simple_match(xlen, value)) {
+    /* This is OK because this function is only called if the trigger was not
+     * inhibited by the previous trigger in the chain. */
+    hit = true;
     if (timing)
       return MATCH_FIRE_AFTER;
     else
@@ -153,7 +152,7 @@ module_t::~module_t() {
   }
 }
 
-match_result_t module_t::memory_access_match(action_t * const action, operation_t operation, reg_t address, reg_t data)
+match_result_t module_t::memory_access_match(action_t * const action, operation_t operation, reg_t address, std::optional<reg_t> data)
 {
   state_t * const state = proc->get_state();
   if (state->debug_mode)
@@ -167,13 +166,19 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
       continue;
     }
 
+    /* Note: We call memory_access_match for each trigger in a chain as long as
+     * the triggers are matching. This results in "temperature coding" so that
+     * `hit` is set on each of the consecutive triggers that matched, even if the
+     * entire chain did not match. This is allowed by the spec, because the final
+     * trigger in the chain will never get `hit` set unless the entire chain
+     * matches. */
     match_result_t result = triggers[i]->memory_access_match(proc, operation, address, data);
     if (result != MATCH_NONE && !triggers[i]->chain()) {
       *action = triggers[i]->action;
       return result;
     }
 
-    chain_ok = true;
+    chain_ok = result != MATCH_NONE || !triggers[i]->chain();
   }
   return MATCH_NONE;
 }
@@ -201,6 +206,5 @@ bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_
   proc->trigger_updated(triggers);
   return result;
 }
-
 
 };

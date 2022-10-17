@@ -225,6 +225,7 @@ int sim_t::run()
 {
   host = context_t::current();
   target.init(sim_thread_main, this);
+  htif_t::set_expected_xlen(isa.get_max_xlen());
   return htif_t::run();
 }
 
@@ -326,7 +327,7 @@ void sim_t::make_dtb()
     std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds();
     dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
                    initrd_bounds.first, initrd_bounds.second,
-                   cfg->bootargs(), procs, mems);
+                   cfg->bootargs(), cfg->pmpregions, procs, mems);
     dtb = dts_compile(dts);
   }
 
@@ -449,11 +450,7 @@ void sim_t::set_target_endianness(memif_endianness_t endianness)
 
 memif_endianness_t sim_t::get_target_endianness() const
 {
-#ifdef RISCV_ENABLE_DUAL_ENDIAN
   return debug_mmu->is_target_big_endian()? memif_endianness_big : memif_endianness_little;
-#else
-  return memif_endianness_little;
-#endif
 }
 
 void sim_t::proc_reset(unsigned id)

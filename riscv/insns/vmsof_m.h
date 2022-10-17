@@ -21,7 +21,7 @@ for (reg_t i = P.VU.vstart->read() ; i < vl; ++i) {
   if (insn.v_vm() == 1 || (insn.v_vm() == 0 && do_mask)) {
     uint64_t &vd = P.VU.elt<uint64_t>(rd_num, midx, true);
     uint64_t res = 0;
-    if(!has_one && vs2_lsb) {
+    if (!has_one && vs2_lsb) {
       has_one = true;
       res = 1;
     }

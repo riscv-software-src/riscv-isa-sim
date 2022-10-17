@@ -2,6 +2,7 @@
 #define _RISCV_TRIGGERS_H
 
 #include <vector>
+#include <optional>
 
 #include "decode.h"
 
@@ -31,19 +32,18 @@ typedef enum {
 class matched_t
 {
   public:
-    matched_t(triggers::operation_t operation, reg_t address, reg_t data, action_t action) :
-      operation(operation), address(address), data(data), action(action) {}
+    matched_t(triggers::operation_t operation, reg_t address, action_t action) :
+      operation(operation), address(address), action(action) {}
 
     triggers::operation_t operation;
     reg_t address;
-    reg_t data;
     action_t action;
 };
 
 class trigger_t {
 public:
   virtual match_result_t memory_access_match(processor_t * const proc,
-      operation_t operation, reg_t address, reg_t data) = 0;
+      operation_t operation, reg_t address, std::optional<reg_t> data) = 0;
 
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept = 0;
   virtual bool tdata1_write(processor_t * const proc, const reg_t val) noexcept = 0;
@@ -55,14 +55,14 @@ public:
   virtual bool store() const { return false; }
   virtual bool load() const { return false; }
 
-public:
-  bool dmode;
-  action_t action;
+  bool dmode = false;
+  action_t action = ACTION_DEBUG_EXCEPTION;
+  bool hit = false;
 
   virtual ~trigger_t() {};
 
 protected:
-  trigger_t() : dmode(false), action(ACTION_DEBUG_EXCEPTION) {};
+  trigger_t() {}
 };
 
 class mcontrol_t : public trigger_t {
@@ -77,8 +77,6 @@ public:
     MATCH_MASK_HIGH = MCONTROL_MATCH_MASK_HIGH
   } match_t;
 
-  mcontrol_t();
-
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual bool tdata1_write(processor_t * const proc, const reg_t val) noexcept override;
   virtual reg_t tdata2_read(const processor_t * const proc) const noexcept override;
@@ -90,27 +88,23 @@ public:
   virtual bool load() const override { return load_bit; }
 
   virtual match_result_t memory_access_match(processor_t * const proc,
-      operation_t operation, reg_t address, reg_t data) override;
+      operation_t operation, reg_t address, std::optional<reg_t> data) override;
 
 private:
   bool simple_match(unsigned xlen, reg_t value) const;
 
 public:
-  uint8_t type;
-  uint8_t maskmax;
-  bool select;
-  bool timing;
-  bool chain_bit;
-  match_t match;
-  bool m;
-  bool h;
-  bool s;
-  bool u;
-  bool execute_bit;
-  bool store_bit;
-  bool load_bit;
+  bool select = false;
+  bool timing = false;
+  bool chain_bit = false;
+  match_t match = MATCH_EQUAL;
+  bool m = false;
+  bool s = false;
+  bool u = false;
+  bool execute_bit = false;
+  bool store_bit = false;
+  bool load_bit = false;
   reg_t tdata2;
-
 };
 
 class module_t {
@@ -121,7 +115,7 @@ public:
   unsigned count() const { return triggers.size(); }
 
   match_result_t memory_access_match(action_t * const action,
-      operation_t operation, reg_t address, reg_t data);
+      operation_t operation, reg_t address, std::optional<reg_t> data);
 
   reg_t tdata1_read(const processor_t * const proc, unsigned index) const noexcept;
   bool tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept;

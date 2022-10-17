@@ -1,3 +1,3 @@
 P_MUL_ULOOP(16, {
-  pd = ps1 * ps2;
+  pd = (uint32_t)ps1 * (uint32_t)ps2;
 })

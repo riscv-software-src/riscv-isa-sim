@@ -1,3 +1,3 @@
 P_MUL_LOOP(16, {
-  pd = ps1 * ps2;
+  pd = (int32_t)ps1 * (int32_t)ps2;
 })

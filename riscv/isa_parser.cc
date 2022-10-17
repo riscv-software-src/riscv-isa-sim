@@ -114,6 +114,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       // unconditionally include FENCE.I, so Zifencei adds nothing more.
     } else if (ext_str == "zihintpause") {
       // HINTs encoded in base-ISA instructions are always present.
+    } else if (ext_str == "zihintntl") {
+      // HINTs encoded in base-ISA instructions are always present.
     } else if (ext_str == "zmmul") {
       extension_table[EXT_ZMMUL] = true;
     } else if (ext_str == "zba") {
@@ -130,6 +132,18 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZBKC] = true;
     } else if (ext_str == "zbkx") {
       extension_table[EXT_ZBKX] = true;
+    } else if (ext_str == "zdinx") {
+      extension_table[EXT_ZFINX] = true;
+      extension_table[EXT_ZDINX] = true;
+    } else if (ext_str == "zfinx") {
+      extension_table[EXT_ZFINX] = true;
+    } else if (ext_str == "zhinx") {
+      extension_table[EXT_ZFINX] = true;
+      extension_table[EXT_ZHINX] = true;
+      extension_table[EXT_ZHINXMIN] = true;
+    } else if (ext_str == "zhinxmin") {
+      extension_table[EXT_ZFINX] = true;
+      extension_table[EXT_ZHINXMIN] = true;
     } else if (ext_str == "zk") {
       extension_table[EXT_ZBKB] = true;
       extension_table[EXT_ZBKC] = true;
@@ -164,6 +178,12 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str == "zkr") {
       extension_table[EXT_ZKR] = true;
     } else if (ext_str == "zkt") {
+    } else if (ext_str == "smepmp") {
+      extension_table[EXT_SMEPMP] = true;
+    } else if (ext_str == "smstateen") {
+      extension_table[EXT_SMSTATEEN] = true;
+    } else if (ext_str == "sscofpmf") {
+      extension_table[EXT_SSCOFPMF] = true;
     } else if (ext_str == "svnapot") {
       extension_table[EXT_SVNAPOT] = true;
     } else if (ext_str == "svpbmt") {
@@ -177,6 +197,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str == "zicbop") {
     } else if (ext_str == "zicntr") {
     } else if (ext_str == "zihpm") {
+    } else if (ext_str == "sstc") {
+        extension_table[EXT_SSTC] = true;
     } else if (ext_str[0] == 'x') {
       max_isa |= 1L << ('x' - 'a');
       extension_table[toupper('x')] = true;
@@ -223,6 +245,10 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     bad_isa_string(str, ("can't parse: " + std::string(p)).c_str());
   }
 
+  if (extension_table[EXT_ZFINX] && ((max_isa >> ('f' - 'a')) & 1)) {
+    bad_isa_string(str, ("Zfinx/ZDinx/Zhinx{min} extensions conflict with Base 'F/D/Q/Zfh{min}' extensions"));
+  }
+
   std::string lowercase = strtolower(priv);
   bool user = false, supervisor = false;
 
@@ -244,4 +270,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     max_isa |= reg_t(supervisor) << ('s' - 'a');
     extension_table['S'] = true;
   }
+
+  if (((max_isa >> ('h' - 'a')) & 1) && !supervisor)
+    bad_isa_string(str, "'H' extension requires S mode");
 }

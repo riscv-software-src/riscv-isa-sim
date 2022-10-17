@@ -1,3 +1,3 @@
-require_extension('F');
+require_either_extension('F', EXT_ZFINX);
 require_fp;
-WRITE_RD(f32_classify(f32(FRS1)));
+WRITE_RD(f32_classify(FRS1_F));

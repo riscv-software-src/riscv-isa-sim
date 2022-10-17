@@ -3,6 +3,7 @@
 // xspike forks an xterm for spike's target machine console,
 // preserving the current terminal for debugging.
 
+#include "common.h"
 #include <unistd.h>
 #include <fcntl.h>
 #include <signal.h>
@@ -12,10 +13,10 @@
 #include <cstring>
 #include <stdexcept>
 
-static pid_t fork_spike(int tty_fd, int argc, char** argv);
+static pid_t fork_spike(int tty_fd, char** argv);
 static pid_t fork_xterm(int* tty_fd);
 
-int main(int argc, char** argv)
+int main(int UNUSED argc, char** argv)
 {
   int tty_fd, wait_status, ret = -1;
   pid_t xterm, spike;
@@ -31,7 +32,7 @@ int main(int argc, char** argv)
 
   signal(SIGINT, handle_signal);
 
-  if ((spike = fork_spike(tty_fd, argc, argv)) < 0)
+  if ((spike = fork_spike(tty_fd, argv)) < 0)
   {
     fprintf(stderr, "could not open spike\n");
     goto close_xterm;
@@ -52,7 +53,7 @@ out:
   return ret;
 }
 
-static pid_t fork_spike(int tty_fd, int argc, char** argv)
+static pid_t fork_spike(int tty_fd, char** argv)
 {
   pid_t pid = fork();
   if (pid < 0)

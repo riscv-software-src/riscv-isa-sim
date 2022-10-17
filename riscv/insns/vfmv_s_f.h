@@ -11,7 +11,7 @@ reg_t vl = P.VU.vl->read();
 if (vl > 0 && P.VU.vstart->read() < vl) {
   reg_t rd_num = insn.rd();
 
-  switch(P.VU.vsew) {
+  switch (P.VU.vsew) {
     case e16:
       P.VU.elt<uint16_t>(rd_num, 0, true) = f16(FRS1).v;
       break;

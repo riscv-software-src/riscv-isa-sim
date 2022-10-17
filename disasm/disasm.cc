@@ -7,6 +7,12 @@
 #include <cstdarg>
 #include <sstream>
 #include <stdlib.h>
+// For std::reverse:
+#include <algorithm>
+
+#ifdef __GNUC__
+# pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
 
 // Indicates that the next arg (only) is optional.
 // If the result of converting the next arg to a string is ""
@@ -178,7 +184,7 @@ struct : public arg_t {
 } rvc_fp_rs2s;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t UNUSED insn) const {
     return xpr_name[X_SP];
   }
 } rvc_sp;
@@ -312,7 +318,7 @@ struct : public arg_t {
 } vm;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t UNUSED insn) const {
     return "v0";
   }
 } v0;
@@ -356,7 +362,7 @@ struct : public arg_t {
 } v_vtype;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t UNUSED insn) const {
     return "x0";
   }
 } x0;
@@ -414,6 +420,18 @@ struct : public arg_t {
     return std::to_string((int)insn.p_imm6());
   }
 } p_imm6;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.bs());
+  }
+} bs;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.rcon());
+  }
+} rcon;
 
 typedef struct {
   reg_t match;
@@ -658,6 +676,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
   #define DEFINE_I0TYPE(name, code) DISASM_INSN(name, code, mask_rs1, {&xrd, &imm})
   #define DEFINE_I1TYPE(name, code) DISASM_INSN(name, code, mask_imm, {&xrd, &xrs1})
   #define DEFINE_I2TYPE(name, code) DISASM_INSN(name, code, mask_rd | mask_imm, {&xrs1})
+  #define DEFINE_PREFETCH(code) DISASM_INSN(#code, code, 0, {&store_address})
   #define DEFINE_LTYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &bigimm})
   #define DEFINE_BTYPE(code) add_btype_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_B1TYPE(name, code) add_b1type_insn(this, name, match_##code, mask_##code);
@@ -678,6 +697,14 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
 
   add_insn(new disasm_insn_t("unimp", match_csrrw|(CSR_CYCLE<<20), 0xffffffff, {}));
   add_insn(new disasm_insn_t("c.unimp", 0, 0xffff, {}));
+
+  // Following are HINTs, so they must precede their corresponding base-ISA
+  // instructions.  We do not condition them on Zicbop/Zihintpause because,
+  // definitionally, all implementations provide them.
+  DEFINE_PREFETCH(prefetch_r);
+  DEFINE_PREFETCH(prefetch_w);
+  DEFINE_PREFETCH(prefetch_i);
+  DEFINE_NOARG(pause);
 
   DEFINE_XLOAD(lb)
   DEFINE_XLOAD(lbu)
@@ -864,6 +891,12 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
       DEFINE_R1TYPE(clzw);
       DEFINE_R1TYPE(cpopw);
     }
+  }
+
+  if (isa->extension_enabled(EXT_ZBC)) {
+    DEFINE_RTYPE(clmul);
+    DEFINE_RTYPE(clmulh);
+    DEFINE_RTYPE(clmulr);
   }
 
   if (isa->extension_enabled(EXT_ZBS)) { 
@@ -1894,7 +1927,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_RTYPE(msubr32);
     DEFINE_RTYPE(ave);
     DEFINE_RTYPE(sra_u);
-    DEFINE_PI5TYPE(srai_u);
+    DEFINE_PI6TYPE(srai_u);
     DEFINE_PI3TYPE(insb);
     DEFINE_RTYPE(maddr32)
 
@@ -2014,14 +2047,72 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
   }
 
   if (isa->extension_enabled(EXT_ZICBOM)) {
-    DISASM_INSN("cbo.clean", cbo_clean, 0, {&xrs1});
-    DISASM_INSN("cbo.flush", cbo_flush, 0, {&xrs1});
-    DISASM_INSN("cbo.inval", cbo_inval, 0, {&xrs1});
+    DISASM_INSN("cbo.clean", cbo_clean, 0, {&base_only_address});
+    DISASM_INSN("cbo.flush", cbo_flush, 0, {&base_only_address});
+    DISASM_INSN("cbo.inval", cbo_inval, 0, {&base_only_address});
   }
 
   if (isa->extension_enabled(EXT_ZICBOZ)) {
-    DISASM_INSN("cbo.zero", cbo_zero, 0, {&xrs1});
+    DISASM_INSN("cbo.zero", cbo_zero, 0, {&base_only_address});
   }
+
+  if (isa->extension_enabled(EXT_ZKND) ||
+      isa->extension_enabled(EXT_ZKNE)) {
+    DISASM_INSN("aes64ks1i", aes64ks1i, 0, {&xrd, &xrs1, &rcon});
+    DEFINE_RTYPE(aes64ks2);
+  }
+
+  if (isa->extension_enabled(EXT_ZKND)) {
+    if(isa->get_max_xlen() == 64) {
+      DEFINE_RTYPE(aes64ds);
+      DEFINE_RTYPE(aes64dsm);
+      DEFINE_R1TYPE(aes64im);
+    } else if (isa->get_max_xlen() == 32) {
+      DISASM_INSN("aes32dsi", aes32dsi, 0, {&xrd, &xrs1, &xrs2, &bs});
+      DISASM_INSN("aes32dsmi", aes32dsmi, 0, {&xrd, &xrs1, &xrs2, &bs});
+    }
+  }
+
+  if (isa->extension_enabled(EXT_ZKNE)) {
+    if(isa->get_max_xlen() == 64) {
+      DEFINE_RTYPE(aes64es);
+      DEFINE_RTYPE(aes64esm);
+    } else if (isa->get_max_xlen() == 32) {
+      DISASM_INSN("aes32esi", aes32esi, 0, {&xrd, &xrs1, &xrs2, &bs});
+      DISASM_INSN("aes32esmi", aes32esmi, 0, {&xrd, &xrs1, &xrs2, &bs});
+    }
+  }
+
+  if (isa->extension_enabled(EXT_ZKNH)) {
+    DEFINE_R1TYPE(sha256sig0);
+    DEFINE_R1TYPE(sha256sig1);
+    DEFINE_R1TYPE(sha256sum0);
+    DEFINE_R1TYPE(sha256sum1);
+    if(isa->get_max_xlen() == 64) {
+      DEFINE_R1TYPE(sha512sig0);
+      DEFINE_R1TYPE(sha512sig1);
+      DEFINE_R1TYPE(sha512sum0);
+      DEFINE_R1TYPE(sha512sum1);
+    } else if (isa->get_max_xlen() == 32) {
+      DEFINE_RTYPE(sha512sig0h);
+      DEFINE_RTYPE(sha512sig0l);
+      DEFINE_RTYPE(sha512sig1h);
+      DEFINE_RTYPE(sha512sig1l);
+      DEFINE_RTYPE(sha512sum0r);
+      DEFINE_RTYPE(sha512sum1r);
+    }
+  }
+
+  if (isa->extension_enabled(EXT_ZKSED)) {
+    DISASM_INSN("sm4ed", sm4ed, 0, {&xrd, &xrs1, &xrs2, &bs});
+    DISASM_INSN("sm4ks", sm4ks, 0, {&xrd, &xrs1, &xrs2, &bs});
+  }
+
+  if (isa->extension_enabled(EXT_ZKSH)) {
+    DEFINE_R1TYPE(sm3p0);
+    DEFINE_R1TYPE(sm3p1);
+  }
+
 }
 
 disassembler_t::disassembler_t(const isa_parser_t *isa)
@@ -2031,19 +2122,24 @@ disassembler_t::disassembler_t(const isa_parser_t *isa)
 
   // next-highest priority: other instructions in same base ISA
   std::string fallback_isa_string = std::string("rv") + std::to_string(isa->get_max_xlen()) +
-    "gcv_zfh_zba_zbb_zbc_zbs_zkn_zkr_zks_xbitmanip";
+    "gqchv_zfh_zba_zbb_zbc_zbs_zicbom_zicboz_zkn_zkr_zks_svinval_xbitmanip";
   isa_parser_t fallback_isa(fallback_isa_string.c_str(), DEFAULT_PRIV);
   add_instructions(&fallback_isa);
 
   // finally: instructions with known opcodes but unknown arguments
   add_unknown_insns(this);
+
+  // Now, reverse the lists, because we search them back-to-front (so that
+  // custom instructions later added with add_insn have highest priority).
+  for (size_t i = 0; i < HASH_SIZE+1; i++)
+    std::reverse(chain[i].begin(), chain[i].end());
 }
 
 const disasm_insn_t* disassembler_t::probe_once(insn_t insn, size_t idx) const
 {
-  for (size_t j = 0; j < chain[idx].size(); j++)
-    if(*chain[idx][j] == insn)
-      return chain[idx][j];
+  for (auto it = chain[idx].rbegin(); it != chain[idx].rend(); ++it)
+    if (*(*it) == insn)
+      return *it;
 
   return NULL;
 }

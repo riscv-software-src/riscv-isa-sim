@@ -8,6 +8,11 @@
 
 struct state_t;
 
+class trap_debug_mode
+{
+  /* Used to enter debug mode, which isn't quite a normal trap. */
+};
+
 class trap_t
 {
  public:
@@ -27,6 +32,8 @@ class trap_t
     sprintf(_name, fmt, uint8_t(which));
     return _name;
   }
+
+  virtual ~trap_t() = default;
 
  private:
   char _name[16];

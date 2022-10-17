@@ -18,7 +18,7 @@
     return pc+4; \
   } \
   \
-  reg_t rocc_t::custom##n(rocc_insn_t insn, reg_t xs1, reg_t xs2) \
+  reg_t rocc_t::custom##n(rocc_insn_t UNUSED insn, reg_t UNUSED xs1, reg_t UNUSED xs2) \
   { \
     illegal_instruction(); \
     return 0; \
@@ -32,10 +32,10 @@ customX(3)
 std::vector<insn_desc_t> rocc_t::get_instructions()
 {
   std::vector<insn_desc_t> insns;
-  insns.push_back((insn_desc_t){true, 0x0b, 0x7f, &::illegal_instruction, c0, &::illegal_instruction, c0});
-  insns.push_back((insn_desc_t){true, 0x2b, 0x7f, &::illegal_instruction, c1, &::illegal_instruction, c1});
-  insns.push_back((insn_desc_t){true, 0x5b, 0x7f, &::illegal_instruction, c2, &::illegal_instruction, c2});
-  insns.push_back((insn_desc_t){true, 0x7b, 0x7f, &::illegal_instruction, c3, &::illegal_instruction, c3});
+  insns.push_back((insn_desc_t){0x0b, 0x7f, &::illegal_instruction, c0, &::illegal_instruction, c0});
+  insns.push_back((insn_desc_t){0x2b, 0x7f, &::illegal_instruction, c1, &::illegal_instruction, c1});
+  insns.push_back((insn_desc_t){0x5b, 0x7f, &::illegal_instruction, c2, &::illegal_instruction, c2});
+  insns.push_back((insn_desc_t){0x7b, 0x7f, &::illegal_instruction, c3, &::illegal_instruction, c3});
   return insns;
 }
 

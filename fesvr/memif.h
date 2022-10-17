@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdexcept>
 #include "byteorder.h"
 
 typedef uint64_t reg_t;
@@ -27,10 +28,13 @@ public:
   virtual size_t chunk_align() = 0;
   virtual size_t chunk_max_size() = 0;
 
-  virtual void set_target_endianness(memif_endianness_t endianness) {}
+  virtual void set_target_endianness(memif_endianness_t) {}
+
   virtual memif_endianness_t get_target_endianness() const {
     return memif_endianness_undecided;
   }
+
+  virtual ~chunked_memif_t() = default;
 };
 
 class memif_t
@@ -77,6 +81,13 @@ public:
 
 protected:
   chunked_memif_t* cmemif;
+};
+
+class incompat_xlen : public std::exception {
+public:
+  const unsigned expected_xlen;
+  const unsigned actual_xlen;
+  incompat_xlen(unsigned _expected_xlen, unsigned _actual_xlen) : expected_xlen(_expected_xlen), actual_xlen(_actual_xlen) {}
 };
 
 #endif // __MEMIF_H

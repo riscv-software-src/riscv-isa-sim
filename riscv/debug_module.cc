@@ -165,18 +165,18 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
   D(
-      switch (len) {
-        case 4:
-          fprintf(stderr, "store(addr=0x%lx, len=%d, bytes=0x%08x); "
-              "hartsel=0x%x\n", addr, (unsigned) len, *(uint32_t *) bytes,
-              dmcontrol.hartsel);
-          break;
-        default:
-          fprintf(stderr, "store(addr=0x%lx, len=%d, bytes=...); "
-              "hartsel=0x%x\n", addr, (unsigned) len, dmcontrol.hartsel);
-          break;
-      }
-   );
+    switch (len) {
+      case 4:
+        fprintf(stderr, "store(addr=0x%lx, len=%d, bytes=0x%08x); "
+            "hartsel=0x%x\n", addr, (unsigned) len, *(uint32_t *) bytes,
+            dmcontrol.hartsel);
+        break;
+      default:
+        fprintf(stderr, "store(addr=0x%lx, len=%d, bytes=...); "
+            "hartsel=0x%x\n", addr, (unsigned) len, dmcontrol.hartsel);
+        break;
+    }
+  );
 
   uint8_t id_bytes[4];
   uint32_t id = 0;
@@ -215,11 +215,11 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
       }
     }
     if (dmcontrol.hartsel == id) {
-        if (0 == (debug_rom_flags[id] & (1 << DEBUG_ROM_FLAG_GO))){
-          if (dmcontrol.hartsel == id) {
-              abstract_command_completed = true;
-          }
+      if (0 == (debug_rom_flags[id] & (1 << DEBUG_ROM_FLAG_GO))) {
+        if (dmcontrol.hartsel == id) {
+          abstract_command_completed = true;
         }
+      }
     }
     return true;
   }
@@ -394,15 +394,15 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
           result = set_field(result, DM_DMCONTROL_HASEL, dmcontrol.hasel);
           result = set_field(result, DM_DMCONTROL_HARTSELLO, dmcontrol.hartsel);
           result = set_field(result, DM_DMCONTROL_HARTRESET, dmcontrol.hartreset);
-	  result = set_field(result, DM_DMCONTROL_NDMRESET, dmcontrol.ndmreset);
+          result = set_field(result, DM_DMCONTROL_NDMRESET, dmcontrol.ndmreset);
           result = set_field(result, DM_DMCONTROL_DMACTIVE, dmcontrol.dmactive);
         }
         break;
       case DM_DMSTATUS:
         {
-	  dmstatus.allhalted = true;
+          dmstatus.allhalted = true;
           dmstatus.anyhalted = false;
-	  dmstatus.allrunning = true;
+          dmstatus.allrunning = true;
           dmstatus.anyrunning = false;
           dmstatus.allnonexistant = true;
           dmstatus.allresumeack = true;
@@ -430,8 +430,8 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
           // non-existant hartsel.
           dmstatus.anynonexistant = (dmcontrol.hartsel >= nprocs);
 
-	  dmstatus.allunavail = false;
-	  dmstatus.anyunavail = false;
+          dmstatus.allunavail = false;
+          dmstatus.anyunavail = false;
 
           result = set_field(result, DM_DMSTATUS_IMPEBREAK,
               dmstatus.impebreak);
@@ -439,15 +439,15 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
               hart_state[dmcontrol.hartsel].havereset);
           result = set_field(result, DM_DMSTATUS_ANYHAVERESET,
               hart_state[dmcontrol.hartsel].havereset);
-	  result = set_field(result, DM_DMSTATUS_ALLNONEXISTENT, dmstatus.allnonexistant);
-	  result = set_field(result, DM_DMSTATUS_ALLUNAVAIL, dmstatus.allunavail);
-	  result = set_field(result, DM_DMSTATUS_ALLRUNNING, dmstatus.allrunning);
-	  result = set_field(result, DM_DMSTATUS_ALLHALTED, dmstatus.allhalted);
+          result = set_field(result, DM_DMSTATUS_ALLNONEXISTENT, dmstatus.allnonexistant);
+          result = set_field(result, DM_DMSTATUS_ALLUNAVAIL, dmstatus.allunavail);
+          result = set_field(result, DM_DMSTATUS_ALLRUNNING, dmstatus.allrunning);
+          result = set_field(result, DM_DMSTATUS_ALLHALTED, dmstatus.allhalted);
           result = set_field(result, DM_DMSTATUS_ALLRESUMEACK, dmstatus.allresumeack);
-	  result = set_field(result, DM_DMSTATUS_ANYNONEXISTENT, dmstatus.anynonexistant);
-	  result = set_field(result, DM_DMSTATUS_ANYUNAVAIL, dmstatus.anyunavail);
-	  result = set_field(result, DM_DMSTATUS_ANYRUNNING, dmstatus.anyrunning);
-	  result = set_field(result, DM_DMSTATUS_ANYHALTED, dmstatus.anyhalted);
+          result = set_field(result, DM_DMSTATUS_ANYNONEXISTENT, dmstatus.anynonexistant);
+          result = set_field(result, DM_DMSTATUS_ANYUNAVAIL, dmstatus.anyunavail);
+          result = set_field(result, DM_DMSTATUS_ANYRUNNING, dmstatus.anyrunning);
+          result = set_field(result, DM_DMSTATUS_ANYHALTED, dmstatus.anyhalted);
           result = set_field(result, DM_DMSTATUS_ANYRESUMEACK, dmstatus.anyresumeack);
           result = set_field(result, DM_DMSTATUS_AUTHENTICATED, dmstatus.authenticated);
           result = set_field(result, DM_DMSTATUS_AUTHBUSY, dmstatus.authbusy);
@@ -672,7 +672,7 @@ bool debug_module_t::perform_abstract_command()
           write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH0));
         }
 
-      } else if (regno >= 0x1020 && regno < 0x1040) {
+      } else if (regno >= 0x1020 && regno < 0x1040 && config.support_abstract_fpr_access) {
         unsigned fprnum = regno - 0x1020;
 
         if (write) {
@@ -920,7 +920,9 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         }
         return true;
       case DM_DMCS2:
-        if (config.support_haltgroups && get_field(value, DM_DMCS2_HGWRITE)) {
+        if (config.support_haltgroups &&
+            get_field(value, DM_DMCS2_HGWRITE) &&
+            get_field(value, DM_DMCS2_GROUPTYPE) == 0) {
           hart_state[dmcontrol.hartsel].haltgroup = get_field(value,
               DM_DMCS2_GROUP);
         }

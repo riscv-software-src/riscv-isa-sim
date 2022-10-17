@@ -76,16 +76,26 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
 
 tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
-  reg_t paddr = translate(vaddr, sizeof(fetch_temp), FETCH, 0);
+  check_triggers(triggers::OPERATION_EXECUTE, vaddr);
 
-  if (auto host_addr = sim->addr_to_mem(paddr)) {
-    return refill_tlb(vaddr, paddr, host_addr, FETCH);
+  tlb_entry_t result;
+  reg_t vpn = vaddr >> PGSHIFT;
+  if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] != (vpn | TLB_CHECK_TRIGGERS))) {
+    reg_t paddr = translate(vaddr, sizeof(fetch_temp), FETCH, 0);
+    if (auto host_addr = sim->addr_to_mem(paddr)) {
+      result = refill_tlb(vaddr, paddr, host_addr, FETCH);
+    } else {
+      if (!mmio_load(paddr, sizeof fetch_temp, (uint8_t*)&fetch_temp))
+        throw trap_instruction_access_fault(proc->state.v, vaddr, 0, 0);
+      result = {(char*)&fetch_temp - vaddr, paddr - vaddr};
+    }
   } else {
-    if (!mmio_load(paddr, sizeof fetch_temp, (uint8_t*)&fetch_temp))
-      throw trap_instruction_access_fault(proc->state.v, vaddr, 0, 0);
-    tlb_entry_t entry = {(char*)&fetch_temp - vaddr, paddr - vaddr};
-    return entry;
+    result = tlb_data[vpn % TLB_ENTRIES];
   }
+
+  check_triggers(triggers::OPERATION_EXECUTE, vaddr, from_le(*(const uint16_t*)(result.host_offset + vaddr)));
+
+  return result;
 }
 
 reg_t reg_from_bytes(size_t len, const uint8_t* bytes)
@@ -114,7 +124,7 @@ reg_t reg_from_bytes(size_t len, const uint8_t* bytes)
   abort();
 }
 
-bool mmu_t::mmio_ok(reg_t addr, access_type type)
+bool mmu_t::mmio_ok(reg_t addr, access_type UNUSED type)
 {
   // Disallow access to debug region when not in debug mode
   if (addr >= DEBUG_START && addr <= DEBUG_END && proc && !proc->state.debug_mode)
@@ -139,8 +149,39 @@ bool mmu_t::mmio_store(reg_t addr, size_t len, const uint8_t* bytes)
   return sim->mmio_store(addr, len, bytes);
 }
 
-void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags)
+void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, std::optional<reg_t> data)
 {
+  if (matched_trigger || !proc)
+    return;
+
+  triggers::action_t action;
+  auto match = proc->TM.memory_access_match(&action, operation, address, data);
+
+  switch (match) {
+    case triggers::MATCH_NONE:
+      return;
+
+    case triggers::MATCH_FIRE_BEFORE:
+      throw triggers::matched_t(operation, address, action);
+
+    case triggers::MATCH_FIRE_AFTER:
+      // We want to take this exception on the next instruction.  We check
+      // whether to do so in the I$ refill path, so flush the I$.
+      flush_icache();
+      matched_trigger = new triggers::matched_t(operation, address, action);
+      return;
+  }
+}
+
+void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags)
+{
+  reg_t vpn = addr >> PGSHIFT;
+  if (xlate_flags == 0 && vpn == (tlb_load_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
+    auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
+    memcpy(bytes, host_addr, len);
+    return;
+  }
+
   reg_t paddr = translate(addr, len, LOAD, xlate_flags);
 
   if (auto host_addr = sim->addr_to_mem(paddr)) {
@@ -152,25 +193,42 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
   } else if (!mmio_load(paddr, len, bytes)) {
     throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
   }
-
-  if (!matched_trigger) {
-    reg_t data = reg_from_bytes(len, bytes);
-    matched_trigger = trigger_exception(triggers::OPERATION_LOAD, addr, data);
-    if (matched_trigger)
-      throw *matched_trigger;
-  }
 }
 
-void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store)
+void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags, bool UNUSED require_alignment)
 {
-  reg_t paddr = translate(addr, len, STORE, xlate_flags);
+  check_triggers(triggers::OPERATION_LOAD, addr);
 
-  if (!matched_trigger) {
-    reg_t data = reg_from_bytes(len, bytes);
-    matched_trigger = trigger_exception(triggers::OPERATION_STORE, addr, data);
-    if (matched_trigger)
-      throw *matched_trigger;
+  if ((addr & (len - 1)) == 0) {
+    load_slow_path_intrapage(addr, len, bytes, xlate_flags);
+  } else {
+    bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
+#ifndef RISCV_ENABLE_MISALIGNED
+    throw trap_load_address_misaligned(gva, addr, 0, 0);
+#else
+    if (require_alignment)
+      throw trap_load_access_fault(gva, addr, 0, 0);
+
+    reg_t len_page0 = std::min(len, PGSIZE - addr % PGSIZE);
+    load_slow_path_intrapage(addr, len_page0, bytes, xlate_flags);
+    if (len_page0 != len)
+      load_slow_path_intrapage(addr + len_page0, len - len_page0, bytes + len_page0, xlate_flags);
+#endif
   }
+
+  check_triggers(triggers::OPERATION_LOAD, addr, reg_from_bytes(len, bytes));
+}
+
+void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store)
+{
+  reg_t vpn = addr >> PGSHIFT;
+  if (xlate_flags == 0 && vpn == (tlb_store_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
+    auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
+    memcpy(host_addr, bytes, len);
+    return;
+  }
+
+  reg_t paddr = translate(addr, len, STORE, xlate_flags);
 
   if (actually_store) {
     if (auto host_addr = sim->addr_to_mem(paddr)) {
@@ -182,6 +240,29 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_
     } else if (!mmio_store(paddr, len, bytes)) {
       throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
     }
+  }
+}
+
+void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store, bool UNUSED require_alignment)
+{
+  if (actually_store)
+    check_triggers(triggers::OPERATION_STORE, addr, reg_from_bytes(len, bytes));
+
+  if (addr & (len - 1)) {
+    bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
+#ifndef RISCV_ENABLE_MISALIGNED
+    throw trap_store_address_misaligned(gva, addr, 0, 0);
+#else
+    if (require_alignment)
+      throw trap_store_access_fault(gva, addr, 0, 0);
+
+    reg_t len_page0 = std::min(len, PGSIZE - addr % PGSIZE);
+    store_slow_path_intrapage(addr, len_page0, bytes, xlate_flags, actually_store);
+    if (len_page0 != len)
+      store_slow_path_intrapage(addr + len_page0, len - len_page0, bytes + len_page0, xlate_flags, actually_store);
+#endif
+  } else {
+    store_slow_path_intrapage(addr, len, bytes, xlate_flags, actually_store);
   }
 }
 
@@ -242,7 +323,11 @@ bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
     }
   }
 
-  return mode == PRV_M;
+  // in case matching region is not found
+  const bool mseccfg_mml = proc->state.mseccfg->get_mml();
+  const bool mseccfg_mmwp = proc->state.mseccfg->get_mmwp();
+  return ((mode == PRV_M) && !mseccfg_mmwp
+          && (!mseccfg_mml || ((type == LOAD) || (type == STORE))));
 }
 
 reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
@@ -290,12 +375,15 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
 
       reg_t pte = vm.ptesize == 4 ? from_target(*(target_endian<uint32_t>*)ppte) : from_target(*(target_endian<uint64_t>*)ppte);
       reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
+      bool pbmte = proc->get_state()->menvcfg->read() & MENVCFG_PBMTE;
 
       if (pte & PTE_RSVD) {
         break;
       } else if (!proc->extension_enabled(EXT_SVNAPOT) && (pte & PTE_N)) {
         break;
-      } else if (!proc->extension_enabled(EXT_SVPBMT) && (pte & PTE_PBMT)) {
+      } else if (!pbmte && (pte & PTE_PBMT)) {
+        break;
+      } else if ((pte & PTE_PBMT) == PTE_PBMT) {
         break;
       } else if (PTE_TABLE(pte)) { // next level of page table
         if (pte & (PTE_D | PTE_A | PTE_U | PTE_N | PTE_PBMT))
@@ -380,12 +468,15 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
 
     reg_t pte = vm.ptesize == 4 ? from_target(*(target_endian<uint32_t>*)ppte) : from_target(*(target_endian<uint64_t>*)ppte);
     reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
+    bool pbmte = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_PBMTE) : (proc->get_state()->menvcfg->read() & MENVCFG_PBMTE);
 
     if (pte & PTE_RSVD) {
       break;
     } else if (!proc->extension_enabled(EXT_SVNAPOT) && (pte & PTE_N)) {
       break;
-    } else if (!proc->extension_enabled(EXT_SVPBMT) && (pte & PTE_PBMT)) {
+    } else if (!pbmte && (pte & PTE_PBMT)) {
+      break;
+    } else if ((pte & PTE_PBMT) == PTE_PBMT) {
       break;
     } else if (PTE_TABLE(pte)) { // next level of page table
       if (pte & (PTE_D | PTE_A | PTE_U | PTE_N | PTE_PBMT))

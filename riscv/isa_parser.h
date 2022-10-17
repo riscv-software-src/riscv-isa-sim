@@ -31,6 +31,9 @@ typedef enum {
   EXT_ZBPBO,
   EXT_ZPN,
   EXT_ZPSFOPERAND,
+  EXT_SMEPMP,
+  EXT_SMSTATEEN,
+  EXT_SSCOFPMF,
   EXT_SVNAPOT,
   EXT_SVPBMT,
   EXT_SVINVAL,
@@ -50,6 +53,7 @@ typedef enum {
   EXT_XZBM,
   EXT_XZBR,
   EXT_XZBT,
+  EXT_SSTC,
 } isa_extension_t;
 
 typedef enum {
@@ -66,7 +70,7 @@ typedef enum {
 class isa_parser_t {
 public:
   isa_parser_t(const char* str, const char *priv);
-  ~isa_parser_t(){};
+  ~isa_parser_t() {};
   unsigned get_max_xlen() const { return max_xlen; }
   reg_t get_max_isa() const { return max_isa; }
   std::string get_isa_string() const { return isa_string; }

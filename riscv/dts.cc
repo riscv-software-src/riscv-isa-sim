@@ -14,6 +14,7 @@
 std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
                      reg_t initrd_start, reg_t initrd_end,
                      const char* bootargs,
+                     size_t pmpregions,
                      std::vector<processor_t*> procs,
                      std::vector<std::pair<reg_t, mem_t*>> mems)
 {
@@ -58,7 +59,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "      compatible = \"riscv\";\n"
          "      riscv,isa = \"" << procs[i]->get_isa().get_isa_string() << "\";\n"
          "      mmu-type = \"riscv," << (procs[i]->get_isa().get_max_xlen() <= 32 ? "sv32" : "sv57") << "\";\n"
-         "      riscv,pmpregions = <16>;\n"
+         "      riscv,pmpregions = <" << pmpregions << ">;\n"
          "      riscv,pmpgranularity = <4>;\n"
          "      clock-frequency = <" << cpu_hz << ">;\n"
          "      CPU" << i << "_intc: interrupt-controller {\n"
@@ -212,7 +213,6 @@ std::string dts_compile(const std::string& dts)
   return dtb.str();
 }
 
-
 static int fdt_get_node_addr_size(void *fdt, int node, reg_t *addr,
                                   unsigned long *size, const char *field)
 {
@@ -273,7 +273,6 @@ static int check_cpu_node(void *fdt, int cpu_offset)
 
   return 0;
 }
-
 
 int fdt_get_offset(void *fdt, const char *field)
 {

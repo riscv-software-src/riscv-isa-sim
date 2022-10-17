@@ -82,6 +82,7 @@ void clint_t::increment(reg_t inc)
     mtime += inc;
   }
   for (size_t i = 0; i < procs.size(); i++) {
+    procs[i]->state.time->sync(mtime);
     procs[i]->state.mip->backdoor_write_with_mask(MIP_MTIP, 0);
     if (mtime >= mtimecmp[i])
       procs[i]->state.mip->backdoor_write_with_mask(MIP_MTIP, MIP_MTIP);

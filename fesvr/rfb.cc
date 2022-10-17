@@ -119,7 +119,7 @@ void rfb_t::set_pixel_format(const std::string& s)
     throw std::runtime_error("bad pixel format");
 }
 
-void rfb_t::fb_update(const std::string& s)
+void rfb_t::fb_update()
 {
   std::string u;
   u += str(uint8_t(0));
@@ -153,7 +153,7 @@ void rfb_t::tick()
     std::swap(fb1, fb2);
     if (pthread_mutex_trylock(&lock) == 0)
     {
-      fb_update("");
+      fb_update();
       pthread_mutex_unlock(&lock);
     }
   }
