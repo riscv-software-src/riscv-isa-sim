@@ -13,7 +13,6 @@ typedef int64_t sreg_t;
 typedef reg_t addr_t;
 
 typedef enum {
-  memif_endianness_undecided,
   memif_endianness_little,
   memif_endianness_big
 } memif_endianness_t;
@@ -31,7 +30,7 @@ public:
   virtual void set_target_endianness(memif_endianness_t) {}
 
   virtual memif_endianness_t get_target_endianness() const {
-    return memif_endianness_undecided;
+    return memif_endianness_little;
   }
 
   virtual ~chunked_memif_t() = default;
