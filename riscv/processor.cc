@@ -769,7 +769,7 @@ const char* processor_t::get_privilege_string()
     case 0x3: return "M";
     }
   }
-  fprintf(stderr, "Invalid prv=%lx v=%x\n", state.prv, state.v);
+  fprintf(stderr, "Invalid prv=%lx v=%x\n", (unsigned long)state.prv, state.v);
   abort();
 }
 
