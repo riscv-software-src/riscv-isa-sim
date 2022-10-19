@@ -148,7 +148,7 @@ public:
     type##_t amo_##type(reg_t addr, op f) { \
       convert_load_traps_to_store_traps({ \
         store_slow_path(addr, sizeof(type##_t), nullptr, 0, false, true); \
-        auto lhs = load_##type(addr, true); \
+        auto lhs = load_##type(addr); \
         store_##type(addr, f(lhs)); \
         return lhs; \
       }) \
