@@ -110,22 +110,26 @@ public:
   proc->state.log_mem_write.push_back(std::make_tuple(addr, val, size));
 #endif
 
+  template<typename T>
+  void ALWAYS_INLINE store(reg_t addr, T val, uint32_t xlate_flags = 0) {
+    reg_t vpn = addr >> PGSHIFT;
+    bool aligned = (addr & (sizeof(T) - 1)) == 0;
+    bool tlb_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn;
+
+    if (xlate_flags == 0 && likely(aligned && tlb_hit)) {
+      *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val);
+    } else {
+      target_endian<T> target_val = to_target(val);
+      store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);
+    }
+
+    if (proc)
+      WRITE_MEM(addr, val, sizeof(T));
+  }
+
   // template for functions that store an aligned value to memory
   #define store_func(type, prefix, xlate_flags) \
-    void ALWAYS_INLINE prefix##_##type(reg_t addr, type##_t val) { \
-      reg_t vpn = addr >> PGSHIFT; \
-      size_t size = sizeof(type##_t); \
-      bool aligned = (addr & (size - 1)) == 0; \
-      bool tlb_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn; \
-      if ((xlate_flags) == 0 && likely(aligned && tlb_hit)) { \
-        if (proc) WRITE_MEM(addr, val, size); \
-        *(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val); \
-      } else { \
-        target_endian<type##_t> target_val = to_target(val); \
-        store_slow_path(addr, sizeof(type##_t), (const uint8_t*)&target_val, (xlate_flags), true, false); \
-        if (proc) WRITE_MEM(addr, val, size); \
-      } \
-  }
+    void ALWAYS_INLINE prefix##_##type(reg_t addr, type##_t val) { store(addr, val, xlate_flags); }
 
   // AMO/Zicbom faults should be reported as store faults
   #define convert_load_traps_to_store_traps(BODY) \
