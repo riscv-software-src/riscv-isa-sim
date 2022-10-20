@@ -223,8 +223,10 @@ void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* byte
 {
   reg_t vpn = addr >> PGSHIFT;
   if (xlate_flags == 0 && vpn == (tlb_store_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
-    auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
-    memcpy(host_addr, bytes, len);
+    if (actually_store) {
+      auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
+      memcpy(host_addr, bytes, len);
+    }
     return;
   }
 
