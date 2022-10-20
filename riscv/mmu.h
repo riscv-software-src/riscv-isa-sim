@@ -237,6 +237,19 @@ public:
       throw trap_store_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0); // disallow SC to I/O space
   }
 
+  template<typename T>
+  bool store_conditional(reg_t addr, T val)
+  {
+    bool have_reservation = check_load_reservation(addr, sizeof(T));
+
+    if (have_reservation)
+      store(addr, val);
+
+    yield_load_reservation();
+
+    return have_reservation;
+  }
+
   static const reg_t ICACHE_ENTRIES = 1024;
 
   inline size_t icache_index(reg_t addr)
