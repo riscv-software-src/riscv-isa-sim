@@ -199,7 +199,7 @@ void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint
   }
 }
 
-void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags, bool UNUSED require_alignment)
+void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags)
 {
   check_triggers(triggers::OPERATION_LOAD, addr);
 
@@ -210,7 +210,7 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
 #ifndef RISCV_ENABLE_MISALIGNED
     throw trap_load_address_misaligned(gva, addr, 0, 0);
 #else
-    if (require_alignment)
+    if (xlate_flags & RISCV_XLATE_LR)
       throw trap_load_access_fault(gva, addr, 0, 0);
 
     reg_t len_page0 = std::min(len, PGSIZE - addr % PGSIZE);

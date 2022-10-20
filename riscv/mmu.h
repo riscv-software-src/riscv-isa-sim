@@ -61,7 +61,7 @@ public:
 #endif
 
   template<typename T>
-  T ALWAYS_INLINE load(reg_t addr, bool require_alignment = false, uint32_t xlate_flags = 0) {
+  T ALWAYS_INLINE load(reg_t addr, uint32_t xlate_flags = 0) {
     target_endian<T> res;
     reg_t vpn = addr >> PGSHIFT;
     bool aligned = (addr & (sizeof(T) - 1)) == 0;
@@ -70,7 +70,7 @@ public:
     if (likely(xlate_flags == 0 && aligned && tlb_hit)) {
       res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
     } else {
-      load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags, require_alignment);
+      load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags);
     }
 
     if (proc)
@@ -81,12 +81,12 @@ public:
 
   template<typename T>
   T load_reserved(reg_t addr) {
-    return load<T>(addr, true, RISCV_XLATE_LR);
+    return load<T>(addr, RISCV_XLATE_LR);
   }
 
   // template for functions that load an aligned value from memory
   #define load_func(type, prefix, xlate_flags) \
-    type##_t ALWAYS_INLINE prefix##_##type(reg_t addr, bool require_alignment = false) { return load<type##_t>(addr, require_alignment, xlate_flags); }
+    type##_t ALWAYS_INLINE prefix##_##type(reg_t addr) { return load<type##_t>(addr, xlate_flags); }
 
   // load value from memory at aligned address; zero extend to register width
   load_func(uint8, load, 0)
@@ -384,7 +384,7 @@ private:
 
   // handle uncommon cases: TLB misses, page faults, MMIO
   tlb_entry_t fetch_slow_path(reg_t addr);
-  void load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags, bool require_alignment);
+  void load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags);
   void load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags);
   void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store, bool require_alignment);
   void store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store);
