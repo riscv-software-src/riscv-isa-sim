@@ -1,3 +1,4 @@
+#include "arith.h"
 #include "debug_defines.h"
 #include "processor.h"
 #include "triggers.h"
