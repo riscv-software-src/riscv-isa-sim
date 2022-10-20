@@ -429,7 +429,7 @@ void sim_t::write_chunk(addr_t taddr, size_t len, const void* src)
   assert(len == 8);
   target_endian<uint64_t> data;
   memcpy(&data, src, sizeof data);
-  debug_mmu->store_uint64(taddr, debug_mmu->from_target(data));
+  debug_mmu->store<uint64_t>(taddr, debug_mmu->from_target(data));
 }
 
 void sim_t::set_target_endianness(memif_endianness_t endianness)

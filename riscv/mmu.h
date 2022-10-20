@@ -123,10 +123,6 @@ public:
     store(addr, val, RISCV_XLATE_VIRT);
   }
 
-  // template for functions that store an aligned value to memory
-  #define store_func(type, prefix, xlate_flags) \
-    void ALWAYS_INLINE prefix##_##type(reg_t addr, type##_t val) { store(addr, val, xlate_flags); }
-
   // AMO/Zicbom faults should be reported as store faults
   #define convert_load_traps_to_store_traps(BODY) \
     try { \
@@ -159,8 +155,8 @@ public:
     if (unlikely(addr & (sizeof(float128_t)-1)))
       throw trap_store_address_misaligned((proc) ? proc->state.v : false, addr, 0, 0);
 #endif
-    store_uint64(addr, val.v[0]);
-    store_uint64(addr + 8, val.v[1]);
+    store<uint64_t>(addr, val.v[0]);
+    store<uint64_t>(addr + 8, val.v[1]);
   }
 
   float128_t load_float128(reg_t addr)
@@ -172,16 +168,10 @@ public:
     return (float128_t){load<uint64_t>(addr), load<uint64_t>(addr + 8)};
   }
 
-  // store value to memory at aligned address
-  store_func(uint8, store, 0)
-  store_func(uint16, store, 0)
-  store_func(uint32, store, 0)
-  store_func(uint64, store, 0)
-
   void cbo_zero(reg_t addr) {
     auto base = addr & ~(blocksz - 1);
     for (size_t offset = 0; offset < blocksz; offset += 1)
-      store_uint8(base + offset, 0);
+      store<uint8_t>(base + offset, 0);
   }
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
