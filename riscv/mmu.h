@@ -231,8 +231,8 @@ public:
     }
 
     reg_t paddr = translate(vaddr, 1, STORE, 0);
-    if (auto host_addr = sim->addr_to_mem(paddr))
-      return load_reservation_address == refill_tlb(vaddr, paddr, host_addr, STORE).target_offset + vaddr;
+    if (sim->addr_to_mem(paddr))
+      return load_reservation_address == paddr;
     else
       throw trap_store_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0); // disallow SC to I/O space
   }
