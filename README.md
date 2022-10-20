@@ -37,7 +37,6 @@ Spike supports the following RISC-V ISA features:
   - Svnapot extension, v1.0
   - Svpbmt extension, v1.0
   - Svinval extension, v1.0
-  - CMO extension, v1.0
   - Debug v0.14
   - Smepmp extension v1.0
   - Smstateen extension, v1.0
