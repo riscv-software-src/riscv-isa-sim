@@ -219,15 +219,6 @@ struct state_t
 #endif
 };
 
-// Count number of contiguous 1 bits starting from the LSB.
-static inline int cto(reg_t val)
-{
-  int res = 0;
-  while ((val & 1) == 1)
-    val >>= 1, res++;
-  return res;
-}
-
 // this class represents one processor in a RISC-V machine.
 class processor_t : public abstract_device_t
 {
