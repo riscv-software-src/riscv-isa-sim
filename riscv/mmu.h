@@ -84,6 +84,16 @@ public:
     return load<T>(addr, RISCV_XLATE_LR);
   }
 
+  template<typename T>
+  T guest_load(reg_t addr) {
+    return load<T>(addr, RISCV_XLATE_VIRT);
+  }
+
+  template<typename T>
+  T guest_load_x(reg_t addr) {
+    return load<T>(addr, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX);
+  }
+
   // template for functions that load an aligned value from memory
   #define load_func(type, prefix, xlate_flags) \
     type##_t ALWAYS_INLINE prefix##_##type(reg_t addr) { return load<type##_t>(addr, xlate_flags); }
@@ -94,25 +104,11 @@ public:
   load_func(uint32, load, 0)
   load_func(uint64, load, 0)
 
-  // load value from guest memory at aligned address; zero extend to register width
-  load_func(uint8, guest_load, RISCV_XLATE_VIRT)
-  load_func(uint16, guest_load, RISCV_XLATE_VIRT)
-  load_func(uint32, guest_load, RISCV_XLATE_VIRT)
-  load_func(uint64, guest_load, RISCV_XLATE_VIRT)
-  load_func(uint16, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX)
-  load_func(uint32, guest_load_x, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX)
-
   // load value from memory at aligned address; sign extend to register width
   load_func(int8, load, 0)
   load_func(int16, load, 0)
   load_func(int32, load, 0)
   load_func(int64, load, 0)
-
-  // load value from guest memory at aligned address; sign extend to register width
-  load_func(int8, guest_load, RISCV_XLATE_VIRT)
-  load_func(int16, guest_load, RISCV_XLATE_VIRT)
-  load_func(int32, guest_load, RISCV_XLATE_VIRT)
-  load_func(int64, guest_load, RISCV_XLATE_VIRT)
 
 #ifndef RISCV_ENABLE_COMMITLOG
 # define WRITE_MEM(addr, value, size) ((void)(addr), (void)(value), (void)(size))
@@ -136,6 +132,11 @@ public:
 
     if (proc)
       WRITE_MEM(addr, val, sizeof(T));
+  }
+
+  template<typename T>
+  void guest_store(reg_t addr, T val) {
+    store(addr, val, RISCV_XLATE_VIRT);
   }
 
   // template for functions that store an aligned value to memory
@@ -193,12 +194,6 @@ public:
   store_func(uint16, store, 0)
   store_func(uint32, store, 0)
   store_func(uint64, store, 0)
-
-  // store value to guest memory at aligned address
-  store_func(uint8, guest_store, RISCV_XLATE_VIRT)
-  store_func(uint16, guest_store, RISCV_XLATE_VIRT)
-  store_func(uint32, guest_store, RISCV_XLATE_VIRT)
-  store_func(uint64, guest_store, RISCV_XLATE_VIRT)
 
   // perform an atomic memory operation at an aligned address
   amo_func(uint32)
