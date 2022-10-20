@@ -59,23 +59,28 @@ public:
   proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, size));
 #endif
 
+  template<typename T>
+  T ALWAYS_INLINE load(reg_t addr, bool require_alignment = false, uint32_t xlate_flags = 0) {
+    target_endian<T> res;
+    reg_t vpn = addr >> PGSHIFT;
+    bool aligned = (addr & (sizeof(T) - 1)) == 0;
+    bool tlb_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn;
+
+    if (likely(xlate_flags == 0 && aligned && tlb_hit)) {
+      res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
+    } else {
+      load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags, require_alignment);
+    }
+
+    if (proc)
+      READ_MEM(addr, sizeof(T));
+
+    return from_target(res);
+  }
+
   // template for functions that load an aligned value from memory
   #define load_func(type, prefix, xlate_flags) \
-    type##_t ALWAYS_INLINE prefix##_##type(reg_t addr, bool require_alignment = false) { \
-      reg_t vpn = addr >> PGSHIFT; \
-      size_t size = sizeof(type##_t); \
-      bool aligned = (addr & (size - 1)) == 0; \
-      bool tlb_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn; \
-      if (likely((xlate_flags) == 0 && aligned && tlb_hit)) { \
-        if (proc) READ_MEM(addr, size); \
-        return from_target(*(target_endian<type##_t>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr)); \
-      } else { \
-        target_endian<type##_t> res; \
-        load_slow_path(addr, sizeof(type##_t), (uint8_t*)&res, (xlate_flags), require_alignment); \
-        if (proc) READ_MEM(addr, size); \
-        return from_target(res); \
-      } \
-    }
+    type##_t ALWAYS_INLINE prefix##_##type(reg_t addr, bool require_alignment = false) { return load<type##_t>(addr, require_alignment, xlate_flags); }
 
   // load value from memory at aligned address; zero extend to register width
   load_func(uint8, load, 0)
