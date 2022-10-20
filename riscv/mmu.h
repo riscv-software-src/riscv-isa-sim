@@ -49,8 +49,9 @@ public:
   mmu_t(simif_t* sim, processor_t* proc);
   ~mmu_t();
 
-#define RISCV_XLATE_VIRT (1U << 0)
+#define RISCV_XLATE_VIRT      (1U << 0)
 #define RISCV_XLATE_VIRT_HLVX (1U << 1)
+#define RISCV_XLATE_LR        (1U << 2)
 
 #ifndef RISCV_ENABLE_COMMITLOG
 # define READ_MEM(addr, size) ((void)(addr), (void)(size))
@@ -76,6 +77,11 @@ public:
       READ_MEM(addr, sizeof(T));
 
     return from_target(res);
+  }
+
+  template<typename T>
+  T load_reserved(reg_t addr) {
+    return load<T>(addr, true, RISCV_XLATE_LR);
   }
 
   // template for functions that load an aligned value from memory
@@ -220,15 +226,6 @@ public:
   inline void yield_load_reservation()
   {
     load_reservation_address = (reg_t)-1;
-  }
-
-  inline void acquire_load_reservation(reg_t vaddr)
-  {
-    reg_t paddr = translate(vaddr, 1, LOAD, 0);
-    if (auto host_addr = sim->addr_to_mem(paddr))
-      load_reservation_address = refill_tlb(vaddr, paddr, host_addr, LOAD).target_offset + vaddr;
-    else
-      throw trap_load_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0); // disallow LR to I/O space
   }
 
   inline bool check_load_reservation(reg_t vaddr, size_t size)

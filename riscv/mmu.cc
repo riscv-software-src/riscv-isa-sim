@@ -190,7 +190,11 @@ void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint
       tracer.trace(paddr, len, LOAD);
     else if (xlate_flags == 0)
       refill_tlb(addr, paddr, host_addr, LOAD);
-  } else if (!mmio_load(paddr, len, bytes)) {
+
+    if (xlate_flags & RISCV_XLATE_LR) {
+      load_reservation_address = paddr;
+    }
+  } else if ((xlate_flags & RISCV_XLATE_LR) || !mmio_load(paddr, len, bytes)) {
     throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
   }
 }
