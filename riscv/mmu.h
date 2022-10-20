@@ -199,8 +199,7 @@ public:
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
     convert_load_traps_to_store_traps({
-      const reg_t vaddr = addr & ~(blocksz - 1);
-      const reg_t paddr = translate(vaddr, blocksz, LOAD, 0);
+      const reg_t paddr = translate(addr, blocksz, LOAD, 0) & ~(blocksz - 1);
       if (sim->addr_to_mem(paddr)) {
         if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
           tracer.clean_invalidate(paddr, blocksz, clean, inval);
@@ -342,7 +341,7 @@ public:
     return target_big_endian? target_endian<T>::to_be(n) : target_endian<T>::to_le(n);
   }
 
-  void set_cache_blocksz(uint64_t size)
+  void set_cache_blocksz(reg_t size)
   {
     blocksz = size;
   }
@@ -353,7 +352,7 @@ private:
   memtracer_list_t tracer;
   reg_t load_reservation_address;
   uint16_t fetch_temp;
-  uint64_t blocksz;
+  reg_t blocksz;
 
   // implement an instruction cache for simulator performance
   icache_entry_t icache[ICACHE_ENTRIES];
