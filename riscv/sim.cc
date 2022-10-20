@@ -420,7 +420,7 @@ void sim_t::idle()
 void sim_t::read_chunk(addr_t taddr, size_t len, void* dst)
 {
   assert(len == 8);
-  auto data = debug_mmu->to_target(debug_mmu->load_uint64(taddr));
+  auto data = debug_mmu->to_target(debug_mmu->load<uint64_t>(taddr));
   memcpy(dst, &data, sizeof data);
 }
 

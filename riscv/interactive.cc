@@ -678,17 +678,17 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
   switch (addr % 8)
   {
     case 0:
-      val = mmu->load_uint64(addr);
+      val = mmu->load<uint64_t>(addr);
       break;
     case 4:
-      val = mmu->load_uint32(addr);
+      val = mmu->load<uint32_t>(addr);
       break;
     case 2:
     case 6:
-      val = mmu->load_uint16(addr);
+      val = mmu->load<uint16_t>(addr);
       break;
     default:
-      val = mmu->load_uint8(addr);
+      val = mmu->load<uint8_t>(addr);
       break;
   }
   return val;
@@ -722,7 +722,7 @@ void sim_t::interactive_str(const std::string& cmd, const std::vector<std::strin
   std::ostream out(sout_.rdbuf());
 
   char ch;
-  while ((ch = mmu->load_uint8(addr++)))
+  while ((ch = mmu->load<uint8_t>(addr++)))
     out << ch;
 
   out << std::endl;

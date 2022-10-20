@@ -1183,7 +1183,7 @@ reg_t index[P.VU.vlmax]; \
     VI_STRIP(i); \
     P.VU.vstart->write(i); \
     for (reg_t fn = 0; fn < nf; ++fn) { \
-      elt_width##_t val = MMU.load_##elt_width( \
+      elt_width##_t val = MMU.load<elt_width##_t>( \
         baseAddr + (stride) + (offset) * sizeof(elt_width##_t)); \
       P.VU.elt<elt_width##_t>(vd + fn * emul, vreg_inx, true) = val; \
     } \
@@ -1207,19 +1207,19 @@ reg_t index[P.VU.vlmax]; \
       switch (P.VU.vsew) { \
         case e8: \
           P.VU.elt<uint8_t>(vd + fn * flmul, vreg_inx, true) = \
-            MMU.load_uint8(baseAddr + index[i] + fn * 1); \
+            MMU.load<uint8_t>(baseAddr + index[i] + fn * 1); \
           break; \
         case e16: \
           P.VU.elt<uint16_t>(vd + fn * flmul, vreg_inx, true) = \
-            MMU.load_uint16(baseAddr + index[i] + fn * 2); \
+            MMU.load<uint16_t>(baseAddr + index[i] + fn * 2); \
           break; \
         case e32: \
           P.VU.elt<uint32_t>(vd + fn * flmul, vreg_inx, true) = \
-            MMU.load_uint32(baseAddr + index[i] + fn * 4); \
+            MMU.load<uint32_t>(baseAddr + index[i] + fn * 4); \
           break; \
         default: \
           P.VU.elt<uint64_t>(vd + fn * flmul, vreg_inx, true) = \
-            MMU.load_uint64(baseAddr + index[i] + fn * 8); \
+            MMU.load<uint64_t>(baseAddr + index[i] + fn * 8); \
           break; \
       } \
     } \
@@ -1294,7 +1294,7 @@ reg_t index[P.VU.vlmax]; \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       uint64_t val; \
       try { \
-        val = MMU.load_##elt_width( \
+        val = MMU.load<elt_width##_t>( \
           baseAddr + (i * nf + fn) * sizeof(elt_width##_t)); \
       } catch (trap_t& t) { \
         if (i == 0) \
@@ -1327,7 +1327,7 @@ reg_t index[P.VU.vlmax]; \
     reg_t off = P.VU.vstart->read() % elt_per_reg; \
     if (off) { \
       for (reg_t pos = off; pos < elt_per_reg; ++pos) { \
-        auto val = MMU.load_## elt_width(baseAddr + \
+        auto val = MMU.load<elt_width##_t>(baseAddr + \
           P.VU.vstart->read() * sizeof(elt_width ## _t)); \
         P.VU.elt<elt_width ## _t>(vd + i, pos, true) = val; \
         P.VU.vstart->write(P.VU.vstart->read() + 1); \
@@ -1336,7 +1336,7 @@ reg_t index[P.VU.vlmax]; \
     } \
     for (; i < len; ++i) { \
       for (reg_t pos = 0; pos < elt_per_reg; ++pos) { \
-        auto val = MMU.load_## elt_width(baseAddr + \
+        auto val = MMU.load<elt_width##_t>(baseAddr + \
           P.VU.vstart->read() * sizeof(elt_width ## _t)); \
         P.VU.elt<elt_width ## _t>(vd + i, pos, true) = val; \
         P.VU.vstart->write(P.VU.vstart->read() + 1); \

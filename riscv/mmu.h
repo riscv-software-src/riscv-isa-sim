@@ -94,22 +94,6 @@ public:
     return load<T>(addr, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX);
   }
 
-  // template for functions that load an aligned value from memory
-  #define load_func(type, prefix, xlate_flags) \
-    type##_t ALWAYS_INLINE prefix##_##type(reg_t addr) { return load<type##_t>(addr, xlate_flags); }
-
-  // load value from memory at aligned address; zero extend to register width
-  load_func(uint8, load, 0)
-  load_func(uint16, load, 0)
-  load_func(uint32, load, 0)
-  load_func(uint64, load, 0)
-
-  // load value from memory at aligned address; sign extend to register width
-  load_func(int8, load, 0)
-  load_func(int16, load, 0)
-  load_func(int32, load, 0)
-  load_func(int64, load, 0)
-
 #ifndef RISCV_ENABLE_COMMITLOG
 # define WRITE_MEM(addr, value, size) ((void)(addr), (void)(value), (void)(size))
 #else
@@ -185,7 +169,7 @@ public:
     if (unlikely(addr & (sizeof(float128_t)-1)))
       throw trap_load_address_misaligned((proc) ? proc->state.v : false, addr, 0, 0);
 #endif
-    return (float128_t){load_uint64(addr), load_uint64(addr + 8)};
+    return (float128_t){load<uint64_t>(addr), load<uint64_t>(addr + 8)};
   }
 
   // store value to memory at aligned address

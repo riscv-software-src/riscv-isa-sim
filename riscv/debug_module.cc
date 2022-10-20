@@ -318,13 +318,13 @@ void debug_module_t::sb_read()
   reg_t address = ((uint64_t) sbaddress[1] << 32) | sbaddress[0];
   try {
     if (sbcs.sbaccess == 0 && config.max_sba_data_width >= 8) {
-      sbdata[0] = sim->debug_mmu->load_uint8(address);
+      sbdata[0] = sim->debug_mmu->load<uint8_t>(address);
     } else if (sbcs.sbaccess == 1 && config.max_sba_data_width >= 16) {
-      sbdata[0] = sim->debug_mmu->load_uint16(address);
+      sbdata[0] = sim->debug_mmu->load<uint16_t>(address);
     } else if (sbcs.sbaccess == 2 && config.max_sba_data_width >= 32) {
-      sbdata[0] = sim->debug_mmu->load_uint32(address);
+      sbdata[0] = sim->debug_mmu->load<uint32_t>(address);
     } else if (sbcs.sbaccess == 3 && config.max_sba_data_width >= 64) {
-      uint64_t value = sim->debug_mmu->load_uint64(address);
+      uint64_t value = sim->debug_mmu->load<uint64_t>(address);
       sbdata[0] = value;
       sbdata[1] = value >> 32;
     } else {
