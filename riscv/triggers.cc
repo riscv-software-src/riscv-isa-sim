@@ -5,6 +5,18 @@
 
 namespace triggers {
 
+reg_t tdata2_csr_t::tdata2_read(const processor_t UNUSED * const proc) const noexcept {
+  return tdata2;
+}
+
+bool tdata2_csr_t::tdata2_write(processor_t * const proc, const reg_t val) noexcept {
+  if (dmode && !proc->get_state()->debug_mode) {
+    return false;
+  }
+  tdata2 = val;
+  return true;
+}
+
 reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   reg_t v = 0;
   auto xlen = proc->get_xlen();
@@ -60,18 +72,6 @@ bool mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcep
   // Assume we're here because of csrw.
   if (execute_bit)
     timing = 0;
-  return true;
-}
-
-reg_t mcontrol_t::tdata2_read(const processor_t UNUSED * const proc) const noexcept {
-  return tdata2;
-}
-
-bool mcontrol_t::tdata2_write(processor_t * const proc, const reg_t val) noexcept {
-  if (dmode && !proc->get_state()->debug_mode) {
-    return false;
-  }
-  tdata2 = val;
   return true;
 }
 

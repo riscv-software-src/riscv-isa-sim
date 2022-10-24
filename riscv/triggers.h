@@ -65,7 +65,16 @@ protected:
   trigger_t() {}
 };
 
-class mcontrol_t : public trigger_t {
+class tdata2_csr_t : public virtual trigger_t {
+public:
+  reg_t tdata2_read(const processor_t * const proc) const noexcept override;
+  bool tdata2_write(processor_t * const proc, const reg_t val) noexcept override;
+
+protected:
+  reg_t tdata2;
+};
+
+class mcontrol_t : public tdata2_csr_t {
 public:
   typedef enum
   {
@@ -79,8 +88,6 @@ public:
 
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual bool tdata1_write(processor_t * const proc, const reg_t val) noexcept override;
-  virtual reg_t tdata2_read(const processor_t * const proc) const noexcept override;
-  virtual bool tdata2_write(processor_t * const proc, const reg_t val) noexcept override;
 
   virtual bool chain() const override { return chain_bit; }
   virtual bool execute() const override { return execute_bit; }
@@ -104,7 +111,6 @@ public:
   bool execute_bit = false;
   bool store_bit = false;
   bool load_bit = false;
-  reg_t tdata2;
 };
 
 class module_t {
