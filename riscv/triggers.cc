@@ -17,6 +17,22 @@ bool tdata2_csr_t::tdata2_write(processor_t * const proc, const reg_t val) noexc
   return true;
 }
 
+reg_t disabled_trigger_t::tdata1_read(const processor_t * const proc) const noexcept
+{
+  auto xlen = proc->get_xlen();
+  reg_t tdata1 = 0;
+  tdata1 = set_field(tdata1, CSR_TDATA1_TYPE(xlen), 15);
+  tdata1 = set_field(tdata1, CSR_TDATA1_DMODE(xlen), dmode);
+  return tdata1;
+}
+
+bool disabled_trigger_t::tdata1_write(processor_t * const proc, const reg_t val) noexcept
+{
+  auto xlen = proc->get_xlen();
+  dmode = proc->get_state()->debug_mode ? get_field(val, CSR_TDATA1_DMODE(xlen)) : 0;
+  return true;
+}
+
 reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   reg_t v = 0;
   auto xlen = proc->get_xlen();

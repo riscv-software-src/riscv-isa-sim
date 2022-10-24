@@ -69,6 +69,17 @@ protected:
   reg_t tdata2;
 };
 
+class disabled_trigger_t : public tdata2_csr_t {
+public:
+  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  virtual bool tdata1_write(processor_t * const proc, const reg_t val) noexcept override;
+
+  virtual bool get_dmode() const override { return dmode; }
+
+private:
+  bool dmode;
+};
+
 class mcontrol_t : public tdata2_csr_t {
 public:
   typedef enum
