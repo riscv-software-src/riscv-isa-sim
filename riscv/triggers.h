@@ -173,16 +173,16 @@ public:
   module_t(unsigned count);
   ~module_t();
 
+  reg_t tdata1_read(const processor_t * const proc, unsigned index) const noexcept;
+  bool tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept;
+  reg_t tdata2_read(const processor_t * const proc, unsigned index) const noexcept;
+  bool tdata2_write(processor_t * const proc, unsigned index, const reg_t val) noexcept;
+
   unsigned count() const { return triggers.size(); }
 
   match_result_t memory_access_match(action_t * const action,
       operation_t operation, reg_t address, std::optional<reg_t> data);
   match_result_t trap_taking_match(action_t * const action, trap_t& t);
-
-  reg_t tdata1_read(const processor_t * const proc, unsigned index) const noexcept;
-  bool tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept;
-  reg_t tdata2_read(const processor_t * const proc, unsigned index) const noexcept;
-  bool tdata2_write(processor_t * const proc, unsigned index, const reg_t val) noexcept;
 
   processor_t *proc;
 private:

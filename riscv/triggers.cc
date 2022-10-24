@@ -10,9 +10,6 @@ reg_t tdata2_csr_t::tdata2_read(const processor_t UNUSED * const proc) const noe
 }
 
 bool tdata2_csr_t::tdata2_write(processor_t * const proc, const reg_t val) noexcept {
-  if (get_dmode() && !proc->get_state()->debug_mode) {
-    return false;
-  }
   tdata2 = val;
   return true;
 }
@@ -262,7 +259,7 @@ match_result_t etrigger_t::trap_taking_match(processor_t * const proc, trap_t& t
 
 module_t::module_t(unsigned count) : triggers(count) {
   for (unsigned i = 0; i < count; i++) {
-    triggers[i] = new mcontrol_t();
+    triggers[i] = new disabled_trigger_t();
   }
 }
 
@@ -270,6 +267,71 @@ module_t::~module_t() {
   for (auto trigger : triggers) {
     delete trigger;
   }
+}
+
+reg_t module_t::tdata1_read(const processor_t * const proc, unsigned index) const noexcept
+{
+  return triggers[index]->tdata1_read(proc);
+}
+
+bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept
+{
+  if (triggers[index]->get_dmode() && !proc->get_state()->debug_mode) {
+    return false;
+  }
+
+  auto xlen = proc->get_xlen();
+
+  // hardware should ignore writes that set dmode to 1 if the previous trigger has both dmode of 0 and chain of 1
+  if (index > 0)
+    if (!triggers[index-1]->get_dmode() && triggers[index-1]->get_chain())
+      if (get_field(val, CSR_TDATA1_DMODE(xlen)))
+        return true; // Andes: behave as writting the same value
+
+  unsigned type = get_field(val, CSR_TDATA1_TYPE(xlen));
+  reg_t tdata1 = val;
+  reg_t tdata2 = triggers[index]->tdata2_read(proc);
+
+  // hardware must zero chain in writes that set dmode to 0 if the next trigger has dmode of 1
+  if (index+1 < triggers.size())
+    if (triggers[index+1]->get_dmode())
+      if (!get_field(val, CSR_TDATA1_DMODE(xlen)))
+        if (type == 2 || type == 6) {
+          assert(CSR_MCONTROL_CHAIN == CSR_MCONTROL6_CHAIN);
+          tdata1 = set_field(tdata1, CSR_MCONTROL_CHAIN, 0);
+        }
+
+  // dmode only writable from debug mode
+  if (!proc->get_state()->debug_mode)
+    tdata1 = set_field(tdata1, CSR_TDATA1_DMODE(xlen), 0);
+
+  delete triggers[index];
+  switch (type) {
+    case 2: triggers[index] = new mcontrol_t(); break;
+    case 4: triggers[index] = new itrigger_t(); break;
+    case 5: triggers[index] = new etrigger_t(); break;
+    default: triggers[index] = new disabled_trigger_t(); break;
+  }
+
+  bool result = triggers[index]->tdata1_write(proc, tdata1);
+  result &= triggers[index]->tdata2_write(proc, tdata2);
+  proc->trigger_updated(triggers);
+  return result;
+}
+
+reg_t module_t::tdata2_read(const processor_t * const proc, unsigned index) const noexcept
+{
+  return triggers[index]->tdata2_read(proc);
+}
+
+bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_t val) noexcept
+{
+  if (triggers[index]->get_dmode() && !proc->get_state()->debug_mode) {
+    return false;
+  }
+  bool result = triggers[index]->tdata2_write(proc, val);
+  proc->trigger_updated(triggers);
+  return result;
 }
 
 match_result_t module_t::memory_access_match(action_t * const action, operation_t operation, reg_t address, std::optional<reg_t> data)
@@ -303,31 +365,20 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
   return MATCH_NONE;
 }
 
-reg_t module_t::tdata1_read(const processor_t * const proc, unsigned index) const noexcept
+match_result_t module_t::trap_taking_match(action_t * const action, trap_t& t)
 {
-  return triggers[index]->tdata1_read(proc);
-}
+  state_t * const state = proc->get_state();
+  if (state->debug_mode)
+    return MATCH_NONE;
 
-bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept
-{
-  if (triggers[index]->get_dmode() && !proc->get_state()->debug_mode) {
-    return false;
+  for (unsigned int i = 0; i < triggers.size(); i++) {
+    match_result_t result = triggers[i]->trap_taking_match(proc, t);
+    if (result != MATCH_NONE) {
+      *action = triggers[i]->get_action();
+      return result;
+    }
   }
-  bool result = triggers[index]->tdata1_write(proc, val);
-  proc->trigger_updated(triggers);
-  return result;
-}
-
-reg_t module_t::tdata2_read(const processor_t * const proc, unsigned index) const noexcept
-{
-  return triggers[index]->tdata2_read(proc);
-}
-
-bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_t val) noexcept
-{
-  bool result = triggers[index]->tdata2_write(proc, val);
-  proc->trigger_updated(triggers);
-  return result;
+  return MATCH_NONE;
 }
 
 };
