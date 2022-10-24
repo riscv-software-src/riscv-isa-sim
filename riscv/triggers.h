@@ -57,7 +57,8 @@ public:
   virtual action_t get_action() const { return ACTION_DEBUG_EXCEPTION; }
 
   virtual match_result_t memory_access_match(processor_t * const proc,
-      operation_t operation, reg_t address, std::optional<reg_t> data) = 0;
+      operation_t operation, reg_t address, std::optional<reg_t> data) { return MATCH_NONE; }
+  virtual match_result_t trap_taking_match(processor_t * const proc, trap_t& t) { return MATCH_NONE; }
 };
 
 class tdata2_csr_t : public virtual trigger_t {
@@ -78,6 +79,50 @@ public:
 
 private:
   bool dmode;
+};
+
+class itrigger_t : public tdata2_csr_t {
+public:
+  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  virtual bool tdata1_write(processor_t * const proc, const reg_t val) noexcept override;
+
+  bool get_dmode() const override { return dmode; }
+  virtual action_t get_action() const override { return action; }
+
+  virtual match_result_t trap_taking_match(processor_t * const proc,
+      trap_t& t) override;
+
+private:
+  bool dmode;
+  bool hit;
+  bool vs;
+  bool vu;
+  bool nmi;
+  bool m;
+  bool s;
+  bool u;
+  action_t action;
+};
+
+class etrigger_t : public tdata2_csr_t {
+public:
+  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  virtual bool tdata1_write(processor_t * const proc, const reg_t val) noexcept override;
+
+  bool get_dmode() const override { return dmode; }
+  virtual action_t get_action() const override { return action; }
+
+  virtual match_result_t trap_taking_match(processor_t * const proc, trap_t& t) override;
+
+private:
+  bool dmode;
+  bool hit;
+  bool vs;
+  bool vu;
+  bool m;
+  bool s;
+  bool u;
+  action_t action;
 };
 
 class mcontrol_t : public tdata2_csr_t {
@@ -132,6 +177,7 @@ public:
 
   match_result_t memory_access_match(action_t * const action,
       operation_t operation, reg_t address, std::optional<reg_t> data);
+  match_result_t trap_taking_match(action_t * const action, trap_t& t);
 
   reg_t tdata1_read(const processor_t * const proc, unsigned index) const noexcept;
   bool tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept;

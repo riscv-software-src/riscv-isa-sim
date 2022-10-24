@@ -154,6 +154,112 @@ match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operati
   return MATCH_NONE;
 }
 
+reg_t itrigger_t::tdata1_read(const processor_t * const proc) const noexcept
+{
+  auto xlen = proc->get_xlen();
+  reg_t tdata1 = 0;
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_TYPE(xlen), 4);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_DMODE(xlen), dmode);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_HIT(xlen), hit);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_VS, vs);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_VU, vu);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_NMI, nmi);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_M, m);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_S, s);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_U, u);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_ACTION, action);
+  return tdata1;
+}
+
+bool itrigger_t::tdata1_write(processor_t * const proc, const reg_t val) noexcept
+{
+  auto xlen = proc->get_xlen();
+  assert(get_field(val, CSR_ITRIGGER_TYPE(xlen)) == 4);
+  dmode = proc->get_state()->debug_mode ? get_field(val, CSR_ITRIGGER_DMODE(xlen)) : 0;
+  hit = get_field(val, CSR_ITRIGGER_HIT(xlen));
+  vs = proc->extension_enabled('H') ? get_field(val, CSR_ITRIGGER_VS) : 0;
+  vu = proc->extension_enabled('H') ? get_field(val, CSR_ITRIGGER_VU) : 0;
+  nmi = get_field(val, CSR_ITRIGGER_NMI);
+  m = get_field(val, CSR_ITRIGGER_M);
+  s = proc->extension_enabled('S') ? get_field(val, CSR_ITRIGGER_S) : 0;
+  u = proc->extension_enabled('U') ? get_field(val, CSR_ITRIGGER_U) : 0;
+  action = (action_t)get_field(val, CSR_ITRIGGER_ACTION);
+  if (action > 4 || (action==1 && dmode==0))
+    action = ACTION_DEBUG_EXCEPTION;
+  return true;
+}
+
+match_result_t itrigger_t::trap_taking_match(processor_t * const proc, trap_t& t)
+{
+  state_t * const state = proc->get_state();
+  if ((state->prv == PRV_M && !m) ||
+      (state->prv == PRV_S && !s) ||
+      (state->prv == PRV_U && !u)) {
+    return MATCH_NONE;
+  }
+
+  bool interrupt = (t.cause() & ((reg_t)1 << (proc->get_const_xlen() - 1))) != 0;
+  reg_t bit = t.cause() & 0xff;
+  assert(bit < proc->get_const_xlen());
+  if (interrupt && ((bit == 0 && nmi) || ((tdata2 >> bit) & 1))) { // Assume NMI's exception code is 0
+    hit = true;
+    return MATCH_FIRE_AFTER;
+  }
+  return MATCH_NONE;
+}
+
+reg_t etrigger_t::tdata1_read(const processor_t * const proc) const noexcept
+{
+  auto xlen = proc->get_xlen();
+  reg_t tdata1 = 0;
+  tdata1 = set_field(tdata1, CSR_ETRIGGER_TYPE(xlen), 5);
+  tdata1 = set_field(tdata1, CSR_ETRIGGER_DMODE(xlen), dmode);
+  tdata1 = set_field(tdata1, CSR_ETRIGGER_HIT(xlen), hit);
+  tdata1 = set_field(tdata1, CSR_ETRIGGER_VS, vs);
+  tdata1 = set_field(tdata1, CSR_ETRIGGER_VU, vu);
+  tdata1 = set_field(tdata1, CSR_ETRIGGER_M, m);
+  tdata1 = set_field(tdata1, CSR_ETRIGGER_S, s);
+  tdata1 = set_field(tdata1, CSR_ETRIGGER_U, u);
+  tdata1 = set_field(tdata1, CSR_ETRIGGER_ACTION, action);
+  return tdata1;
+}
+
+bool etrigger_t::tdata1_write(processor_t * const proc, const reg_t val) noexcept
+{
+  auto xlen = proc->get_xlen();
+  assert(get_field(val, CSR_ETRIGGER_TYPE(xlen)) == 5);
+  dmode = proc->get_state()->debug_mode ? get_field(val, CSR_ETRIGGER_DMODE(xlen)) : 0;
+  hit = get_field(val, CSR_ETRIGGER_HIT(xlen));
+  vs = proc->extension_enabled('H') ? get_field(val, CSR_ETRIGGER_VS) : 0;
+  vu = proc->extension_enabled('H') ? get_field(val, CSR_ETRIGGER_VU) : 0;
+  m = get_field(val, CSR_ETRIGGER_M);
+  s = proc->extension_enabled('S') ? get_field(val, CSR_ETRIGGER_S) : 0;
+  u = proc->extension_enabled('U') ? get_field(val, CSR_ETRIGGER_U) : 0;
+  action = (action_t)get_field(val, CSR_ETRIGGER_ACTION);
+  if (action > 4 || (action==1 && dmode==0))
+    action = ACTION_DEBUG_EXCEPTION;
+  return true;
+}
+
+match_result_t etrigger_t::trap_taking_match(processor_t * const proc, trap_t& t)
+{
+  state_t * const state = proc->get_state();
+  if ((state->prv == PRV_M && !m) ||
+      (state->prv == PRV_S && !s) ||
+      (state->prv == PRV_U && !u)) {
+    return MATCH_NONE;
+  }
+
+  reg_t bit = t.cause();
+  bool interrupt = (bit & ((reg_t)1 << (proc->get_const_xlen() - 1))) != 0;
+  assert((bit&0xff) < proc->get_const_xlen());
+  if (!interrupt && ((tdata2 >> bit) & 1)) {
+    hit = true;
+    return MATCH_FIRE_AFTER;
+  }
+  return MATCH_NONE;
+}
+
 module_t::module_t(unsigned count) : triggers(count) {
   for (unsigned i = 0; i < count; i++) {
     triggers[i] = new mcontrol_t();
