@@ -25,27 +25,14 @@ static void commit_log_print_value(FILE *log_file, int width, const void *data)
 {
   assert(log_file);
 
-  if ((width&7) == 0 && width <= 64) {
-    // width is 8, 16, 24, 32, 40, 48, 56, or 64
-    const uint8_t *arr = (const uint8_t *)data;
+  if (((width - 1) & width) && ((width & 7) || width > 64))
+    abort(); // disallow non-power-of-2, except 24, 40, 48, 56
 
-    fprintf(log_file, "0x");
-    for (int idx = width / 8 - 1; idx >= 0; --idx) {
-      fprintf(log_file, "%02" PRIx8, arr[idx]);
-    }
-  } else {
-    // max lengh of vector
-    if (((width - 1) & width) == 0) {
-      const uint64_t *arr = (const uint64_t *)data;
+  const uint8_t *arr = (const uint8_t *)data;
 
-      fprintf(log_file, "0x");
-      for (int idx = width / 64 - 1; idx >= 0; --idx) {
-        fprintf(log_file, "%016" PRIx64, arr[idx]);
-      }
-    } else {
-      abort();
-    }
-  }
+  fprintf(log_file, "0x");
+  for (int idx = width / 8 - 1; idx >= 0; --idx)
+    fprintf(log_file, "%02" PRIx8, arr[idx]);
 }
 
 static void commit_log_print_value(FILE *log_file, int width, uint64_t val)
