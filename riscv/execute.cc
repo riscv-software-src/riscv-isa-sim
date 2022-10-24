@@ -25,44 +25,26 @@ static void commit_log_print_value(FILE *log_file, int width, const void *data)
 {
   assert(log_file);
 
-  switch (width) {
-    case 8:
-      fprintf(log_file, "0x%02" PRIx8, *(const uint8_t *)data);
-      break;
-    case 16:
-      fprintf(log_file, "0x%04" PRIx16, *(const uint16_t *)data);
-      break;
-    case 24:
-      fprintf(log_file, "0x%06" PRIx32, *(const uint32_t *)data & ((uint32_t(1)<<width)-1));
-      break;
-    case 32:
-      fprintf(log_file, "0x%08" PRIx32, *(const uint32_t *)data);
-      break;
-    case 40:
-      fprintf(log_file, "0x%010" PRIx64, *(const uint64_t *)data & ((uint64_t(1)<<width)-1));
-      break;
-    case 48:
-      fprintf(log_file, "0x%012" PRIx64, *(const uint64_t *)data & ((uint64_t(1)<<width)-1));
-      break;
-    case 56:
-      fprintf(log_file, "0x%014" PRIx64, *(const uint64_t *)data & ((uint64_t(1)<<width)-1));
-      break;
-    case 64:
-      fprintf(log_file, "0x%016" PRIx64, *(const uint64_t *)data);
-      break;
-    default:
-      // max lengh of vector
-      if (((width - 1) & width) == 0) {
-        const uint64_t *arr = (const uint64_t *)data;
+  if ((width&7) == 0 && width <= 64) {
+    // width is 8, 16, 24, 32, 40, 48, 56, or 64
+    const uint8_t *arr = (const uint8_t *)data;
 
-        fprintf(log_file, "0x");
-        for (int idx = width / 64 - 1; idx >= 0; --idx) {
-          fprintf(log_file, "%016" PRIx64, arr[idx]);
-        }
-      } else {
-        abort();
+    fprintf(log_file, "0x");
+    for (int idx = width / 8 - 1; idx >= 0; --idx) {
+      fprintf(log_file, "%02" PRIx8, arr[idx]);
+    }
+  } else {
+    // max lengh of vector
+    if (((width - 1) & width) == 0) {
+      const uint64_t *arr = (const uint64_t *)data;
+
+      fprintf(log_file, "0x");
+      for (int idx = width / 64 - 1; idx >= 0; --idx) {
+        fprintf(log_file, "%016" PRIx64, arr[idx]);
       }
-      break;
+    } else {
+      abort();
+    }
   }
 }
 
