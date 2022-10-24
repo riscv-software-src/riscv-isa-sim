@@ -25,8 +25,8 @@ static void commit_log_print_value(FILE *log_file, int width, const void *data)
 {
   assert(log_file);
 
-  if (((width - 1) & width) && ((width & 7) || width > 64))
-    abort(); // disallow non-power-of-2, except 24, 40, 48, 56
+  if (width & 7)
+    abort(); // non-byte-addressable
 
   const uint8_t *arr = (const uint8_t *)data;
 
