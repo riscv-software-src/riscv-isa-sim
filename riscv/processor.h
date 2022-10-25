@@ -16,6 +16,7 @@
 #include "csrs.h"
 #include "isa_parser.h"
 #include "triggers.h"
+#include "memif.h"
 
 class processor_t;
 class mmu_t;
@@ -225,6 +226,7 @@ class processor_t : public abstract_device_t
 public:
   processor_t(const isa_parser_t *isa, const char* varch,
               simif_t* sim, uint32_t id, bool halt_on_reset,
+              memif_endianness_t endianness,
               FILE *log_file, std::ostream& sout_); // because of command line option --log and -s we need both
   ~processor_t();
 

@@ -5,16 +5,19 @@
 #include "simif.h"
 #include "processor.h"
 
-mmu_t::mmu_t(simif_t* sim, processor_t* proc)
+mmu_t::mmu_t(simif_t* sim, memif_endianness_t endianness, processor_t* proc)
  : sim(sim), proc(proc),
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
-  target_big_endian(false),
+  target_big_endian(endianness == memif_endianness_big),
 #endif
   check_triggers_fetch(false),
   check_triggers_load(false),
   check_triggers_store(false),
   matched_trigger(NULL)
 {
+#ifndef RISCV_ENABLE_DUAL_ENDIAN
+  assert(endianness == memif_endianness_little);
+#endif
   flush_tlb();
   yield_load_reservation();
 }
