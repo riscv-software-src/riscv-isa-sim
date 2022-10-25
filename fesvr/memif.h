@@ -27,8 +27,6 @@ public:
   virtual size_t chunk_align() = 0;
   virtual size_t chunk_max_size() = 0;
 
-  virtual void set_target_endianness(memif_endianness_t) {}
-
   virtual memif_endianness_t get_target_endianness() const {
     return memif_endianness_little;
   }
@@ -71,9 +69,6 @@ public:
   virtual void write_int64(addr_t addr, target_endian<int64_t> val);
 
   // endianness
-  virtual void set_target_endianness(memif_endianness_t endianness) {
-    cmemif->set_target_endianness(endianness);
-  }
   virtual memif_endianness_t get_target_endianness() const {
     return cmemif->get_target_endianness();
   }

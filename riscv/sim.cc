@@ -74,11 +74,21 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 
   debug_module.add_device(&bus);
 
-  debug_mmu = new mmu_t(this, NULL);
+#ifndef RISCV_ENABLE_DUAL_ENDIAN
+  if (cfg->endianness != memif_endianness_little) {
+    fputs("Big-endian support has not been prroperly enabled; "
+	  "please rebuild the riscv-isa-sim project using "
+	  "\"configure --enable-dual-endian\".\n",
+	  stderr);
+    abort();
+  }
+#endif
+
+  debug_mmu = new mmu_t(this, cfg->endianness, NULL);
 
   for (size_t i = 0; i < cfg->nprocs(); i++) {
     procs[i] = new processor_t(&isa, cfg->varch(), this, cfg->hartids()[i], halted,
-                               log_file.get(), sout_);
+                               cfg->endianness, log_file.get(), sout_);
   }
 
   make_dtb();
@@ -430,22 +440,6 @@ void sim_t::write_chunk(addr_t taddr, size_t len, const void* src)
   target_endian<uint64_t> data;
   memcpy(&data, src, sizeof data);
   debug_mmu->store<uint64_t>(taddr, debug_mmu->from_target(data));
-}
-
-void sim_t::set_target_endianness(memif_endianness_t endianness)
-{
-#ifdef RISCV_ENABLE_DUAL_ENDIAN
-  assert(endianness == memif_endianness_little || endianness == memif_endianness_big);
-
-  bool enable = endianness == memif_endianness_big;
-  debug_mmu->set_target_big_endian(enable);
-  for (size_t i = 0; i < procs.size(); i++) {
-    procs[i]->get_mmu()->set_target_big_endian(enable);
-    procs[i]->reset();
-  }
-#else
-  assert(endianness == memif_endianness_little);
-#endif
 }
 
 memif_endianness_t sim_t::get_target_endianness() const

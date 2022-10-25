@@ -29,6 +29,7 @@
 
 processor_t::processor_t(const isa_parser_t *isa, const char* varch,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
+                         memif_endianness_t endianness,
                          FILE* log_file, std::ostream& sout_)
   : debug(false), halt_request(HR_NONE), isa(isa), sim(sim), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
@@ -48,7 +49,7 @@ processor_t::processor_t(const isa_parser_t *isa, const char* varch,
   parse_varch_string(varch);
 
   register_base_instructions();
-  mmu = new mmu_t(sim, this);
+  mmu = new mmu_t(sim, endianness, this);
 
   disassembler = new disassembler_t(isa);
   for (auto e : isa->get_extensions())
