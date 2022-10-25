@@ -56,9 +56,9 @@ public:
   virtual bool get_load() const { return false; }
   virtual action_t get_action() const { return ACTION_DEBUG_EXCEPTION; }
 
-  virtual match_result_t memory_access_match(processor_t * const proc,
-      operation_t operation, reg_t address, std::optional<reg_t> data) { return MATCH_NONE; }
-  virtual match_result_t trap_taking_match(processor_t * const proc, trap_t& t) { return MATCH_NONE; }
+  virtual match_result_t memory_access_match(processor_t UNUSED * const proc,
+      operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) { return MATCH_NONE; }
+  virtual match_result_t trap_taking_match(processor_t UNUSED * const proc, trap_t UNUSED & t) { return MATCH_NONE; }
 };
 
 class tdata2_csr_t : public virtual trigger_t {

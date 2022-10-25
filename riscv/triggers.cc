@@ -9,7 +9,7 @@ reg_t tdata2_csr_t::tdata2_read(const processor_t UNUSED * const proc) const noe
   return tdata2;
 }
 
-bool tdata2_csr_t::tdata2_write(processor_t * const proc, const reg_t val) noexcept {
+bool tdata2_csr_t::tdata2_write(processor_t UNUSED * const UNUSED proc, const reg_t UNUSED val) noexcept {
   tdata2 = val;
   return true;
 }
