@@ -312,18 +312,7 @@ void processor_t::step(size_t n)
         delete mmu->matched_trigger;
         mmu->matched_trigger = NULL;
       }
-      switch (t.action) {
-        case triggers::ACTION_DEBUG_MODE:
-          enter_debug_mode(DCSR_CAUSE_HWBP);
-          break;
-        case triggers::ACTION_DEBUG_EXCEPTION: {
-          trap_breakpoint trap(state.v, t.address);
-          take_trap(trap, pc);
-          break;
-        }
-        default:
-          abort();
-      }
+      take_trigger_action(t.action, t.address, pc);
     }
     catch(trap_debug_mode&)
     {
