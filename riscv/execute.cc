@@ -27,7 +27,7 @@ static void commit_log_print_value(FILE *log_file, int width, const void *data)
 
   switch (width) {
     case 8:
-      fprintf(log_file, "0x%01" PRIx8, *(const uint8_t *)data);
+      fprintf(log_file, "0x%02" PRIx8, *(const uint8_t *)data);
       break;
     case 16:
       fprintf(log_file, "0x%04" PRIx16, *(const uint16_t *)data);
