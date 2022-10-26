@@ -181,7 +181,7 @@ bool itrigger_t::tdata1_write(processor_t * const proc, const reg_t val) noexcep
   s = proc->extension_enabled('S') ? get_field(val, CSR_ITRIGGER_S) : 0;
   u = proc->extension_enabled('U') ? get_field(val, CSR_ITRIGGER_U) : 0;
   action = (action_t)get_field(val, CSR_ITRIGGER_ACTION);
-  if (action > 4 || (action==1 && dmode==0))
+  if (action > 4 || (action==ACTION_DEBUG_MODE && dmode==0))
     action = ACTION_DEBUG_EXCEPTION;
   return true;
 }
