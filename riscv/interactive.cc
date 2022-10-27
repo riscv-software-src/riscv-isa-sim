@@ -98,8 +98,10 @@ static void send_key(bool noncanonical, int fd, keybuffer_t key_code, const int 
   }
 }
 
-static std::string readline(int fd)
+static std::string readline()
 {
+  int input_fd = STDIN_FILENO;
+  int fd = STDERR_FILENO;
   struct termios tios;
   // try to make sure the terminal is noncanonical and nonecho
   if (tcgetattr(fd, &tios) == 0)
@@ -119,7 +121,7 @@ static std::string readline(int fd)
   size_t cursor_pos = s.size();
   const size_t initial_s_len = cursor_pos;
   std::cerr << s << std::flush;
-  for (char ch; read(fd, &ch, 1) == 1; )
+  for (char ch; read(input_fd, &ch, 1) == 1; )
   {
     uint32_t keycode = key_buffer << BITS_PER_CHAR | ch;
     switch (keycode)
@@ -274,7 +276,7 @@ std::string sim_t::rin(boost::asio::streambuf *bout_ptr) {
     // output goes to socket
     sout_.rdbuf(bout_ptr);
   } else { // if we are not listening on a socket, get commands from terminal
-    s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
+    s = readline();
     // output goes to stderr
     sout_.rdbuf(std::cerr.rdbuf());
   }
@@ -346,7 +348,7 @@ void sim_t::interactive()
 #ifdef HAVE_BOOST_ASIO
       s = rin(&bout); // get command string from socket or terminal
 #else
-      s = readline(2); // 2 is stderr, but when doing reads it reverts to stdin
+      s = readline();
 #endif
     }
 
