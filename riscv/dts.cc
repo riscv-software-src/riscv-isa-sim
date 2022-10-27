@@ -97,6 +97,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "    };\n"
          "    PLIC: plic@" << PLIC_BASE << " {\n"
          "      compatible = \"riscv,plic0\";\n"
+         "      #address-cells = <2>;\n"
          "      interrupts-extended = <" << std::dec;
   for (size_t i = 0; i < procs.size(); i++)
     s << "&CPU" << i << "_intc 11 &CPU" << i << "_intc 9 ";
