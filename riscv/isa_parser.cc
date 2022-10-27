@@ -106,6 +106,17 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZFHMIN] = true;
       if (ext_str == "zfh")
         extension_table[EXT_ZFH] = true;
+    } else if (ext_str == "zvfh" || ext_str == "zvfhmin") {
+      if (!((max_isa >> ('v' - 'a')) & 1))
+        bad_isa_string(str, ("'" + ext_str + "' extension requires 'V'").c_str());
+
+      extension_table[EXT_ZVFHMIN] = true;
+
+      if (ext_str == "zvfh") {
+        extension_table[EXT_ZVFH] = true;
+        // Zvfh implies Zfhmin
+        extension_table[EXT_ZFHMIN] = true;
+      }
     } else if (ext_str == "zicsr") {
       // Spike necessarily has Zicsr, because
       // Zicsr is implied by the privileged architecture

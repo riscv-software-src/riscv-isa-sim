@@ -1474,7 +1474,7 @@ reg_t index[P.VU.vlmax]; \
 //
 #define VI_VFP_COMMON \
   require_fp; \
-  require((P.VU.vsew == e16 && p->extension_enabled(EXT_ZFH)) || \
+  require((P.VU.vsew == e16 && p->extension_enabled(EXT_ZVFH)) || \
           (P.VU.vsew == e32 && p->extension_enabled('F')) || \
           (P.VU.vsew == e64 && p->extension_enabled('D'))); \
   require_vector(true); \
@@ -1920,7 +1920,7 @@ reg_t index[P.VU.vlmax]; \
   switch (P.VU.vsew) { \
     case e16: \
       { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(16, 16, sign), \
-        { p->extension_enabled(EXT_ZFH); }, \
+        { p->extension_enabled(EXT_ZVFH); }, \
         BODY16); } \
       break; \
     case e32: \
@@ -1944,7 +1944,7 @@ reg_t index[P.VU.vlmax]; \
   switch (P.VU.vsew) { \
     case e16: \
       { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(16, 16, sign), \
-        { p->extension_enabled(EXT_ZFH); }, \
+        { p->extension_enabled(EXT_ZVFH); }, \
         BODY16); } \
       break; \
     case e32: \
