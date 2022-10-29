@@ -98,7 +98,7 @@ default-CXXFLAGS := $(default-CFLAGS) -std=c++17
 
 mcppbs-CPPFLAGS := @CPPFLAGS@
 mcppbs-CFLAGS   := $(default-CFLAGS) @CFLAGS@
-mcppbs-CXXFLAGS := $(default-CXXFLAGS) @CXXFLAGS@
+mcppbs-CXXFLAGS := $(mcppbs-CFLAGS) $(default-CXXFLAGS) @CXXFLAGS@
 
 CC            := @CC@
 CXX           := @CXX@
@@ -219,7 +219,7 @@ $(2)_deps := $$(patsubst %.o, %.d, $$($(2)_objs))
 $(2)_deps += $$(patsubst %.o, %.d, $$($(2)_c_objs))
 $(2)_deps += $$(patsubst %.h, %.h.d, $$($(2)_precompiled_hdrs))
 $$($(2)_pch) : %.h.gch : %.h
-	$(COMPILE) -x c++-header $$< -o $$@
+	$(COMPILE) -x c++-header $$< -c -o $$@
 $$($(2)_objs) : %.o : %.cc $$($(2)_gen_hdrs) $$($(2)_pch)
 	$(COMPILE) $(if $(HAVE_CLANG_PCH), $$(if $$($(2)_pch), -include-pch $$($(2)_pch))) $$($(2)_CFLAGS) -c $$<
 $$($(2)_c_objs) : %.o : %.c $$($(2)_gen_hdrs)
@@ -241,7 +241,7 @@ $(2)_lib_libnames   := $$(patsubst %, lib%.a, $$($(2)_lib_libs))
 $(2)_lib_libarg     := $$(patsubst %, -l%, $$($(2)_lib_libs))
 $(2)_lib_libnames_shared	:= $$(if $$($(2)_install_shared_lib),lib$(1).so,)
 
-lib$(1).a : $$($(2)_objs) $$($(2)_c_objs) $$($(2)_lib_libnames)
+lib$(1).a : $$($(2)_objs) $$($(2)_c_objs)
 	$(AR) rcs $$@ $$^
 lib$(1).so : $$($(2)_objs) $$($(2)_c_objs) $$($(2)_lib_libnames_shared) $$($(2)_lib_libnames)
 	$(LINK) -shared -o $$@ $(if $(filter Darwin,$(shell uname -s)),-install_name $(install_libs_dir)/$$@) $$^ $$($(2)_lib_libnames) $(LIBS)

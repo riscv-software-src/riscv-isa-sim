@@ -238,4 +238,11 @@ softfloat_install_shared_lib = yes
 
 softfloat_test_srcs =
 
-softfloat_install_prog_srcs =
+softfloat_install_hdrs = \
+	softfloat.h \
+	softfloat_types.h \
+	primitives.h \
+	internals.h \
+	platform.h \
+	primitiveTypes.h \
+	specialize.h \

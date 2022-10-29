@@ -82,6 +82,8 @@ private:
   bool dtb_enabled;
   std::unique_ptr<rom_device_t> boot_rom;
   std::unique_ptr<clint_t> clint;
+  std::unique_ptr<plic_t> plic;
+  std::unique_ptr<ns16550_t> ns16550;
   bus_t bus;
   log_file_t log_file;
 
@@ -134,8 +136,12 @@ private:
   void interactive_fregs(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_fregd(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_pc(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_priv(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_mem(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_str(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_dumpmems(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_mtime(const std::string& cmd, const std::vector<std::string>& args);
+  void interactive_mtimecmp(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_until(const std::string& cmd, const std::vector<std::string>& args, bool noisy);
   void interactive_until_silent(const std::string& cmd, const std::vector<std::string>& args);
   void interactive_until_noisy(const std::string& cmd, const std::vector<std::string>& args);
@@ -160,7 +166,6 @@ private:
   void write_chunk(addr_t taddr, size_t len, const void* src);
   size_t chunk_align() { return 8; }
   size_t chunk_max_size() { return 8; }
-  void set_target_endianness(memif_endianness_t endianness);
   memif_endianness_t get_target_endianness() const;
 
 public:

@@ -16,6 +16,7 @@
 #include "csrs.h"
 #include "isa_parser.h"
 #include "triggers.h"
+#include "memif.h"
 
 class processor_t;
 class mmu_t;
@@ -145,6 +146,7 @@ struct state_t
   csr_t_p medeleg;
   csr_t_p mideleg;
   csr_t_p mcounteren;
+  csr_t_p mevent[29];
   csr_t_p scounteren;
   csr_t_p sepc;
   csr_t_p stval;
@@ -218,21 +220,13 @@ struct state_t
 #endif
 };
 
-// Count number of contiguous 1 bits starting from the LSB.
-static int cto(reg_t val)
-{
-  int res = 0;
-  while ((val & 1) == 1)
-    val >>= 1, res++;
-  return res;
-}
-
 // this class represents one processor in a RISC-V machine.
 class processor_t : public abstract_device_t
 {
 public:
   processor_t(const isa_parser_t *isa, const char* varch,
               simif_t* sim, uint32_t id, bool halt_on_reset,
+              memif_endianness_t endianness,
               FILE *log_file, std::ostream& sout_); // because of command line option --log and -s we need both
   ~processor_t();
 
@@ -298,6 +292,7 @@ public:
   reg_t legalize_privilege(reg_t);
   void set_privilege(reg_t);
   void set_virt(bool);
+  const char* get_privilege_string();
   void update_histogram(reg_t pc, insn_t instr_name);
   const disassembler_t* get_disassembler() { return disassembler; }
 
@@ -365,6 +360,7 @@ private:
 
   friend class mmu_t;
   friend class clint_t;
+  friend class plic_t;
   friend class extension_t;
 
   void parse_varch_string(const char*);
@@ -401,7 +397,7 @@ public:
 
       // vector element for varies SEW
       template<class T>
-        T& elt(reg_t vReg, reg_t n, bool is_write = false) {
+        T& elt(reg_t vReg, reg_t n, bool UNUSED is_write = false) {
           assert(vsew != 0);
           assert((VLEN >> 3)/sizeof(T) > 0);
           reg_t elts_per_reg = (VLEN >> 3) / (sizeof(T));

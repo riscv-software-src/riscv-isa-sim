@@ -20,11 +20,16 @@
 #include <string>
 #include <algorithm>
 
+#ifdef __GNUC__
+# pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+
 #undef STATE
 #define STATE state
 
 processor_t::processor_t(const isa_parser_t *isa, const char* varch,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
+                         memif_endianness_t endianness,
                          FILE* log_file, std::ostream& sout_)
   : debug(false), halt_request(HR_NONE), isa(isa), sim(sim), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
@@ -44,7 +49,7 @@ processor_t::processor_t(const isa_parser_t *isa, const char* varch,
   parse_varch_string(varch);
 
   register_base_instructions();
-  mmu = new mmu_t(sim, this);
+  mmu = new mmu_t(sim, endianness, this);
 
   disassembler = new disassembler_t(isa);
   for (auto e : isa->get_extensions())
@@ -235,13 +240,17 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   }
   for (reg_t i = 3; i <= 31; ++i) {
     const reg_t which_mevent = CSR_MHPMEVENT3 + i - 3;
+    const reg_t which_meventh = CSR_MHPMEVENT3H + i - 3;
     const reg_t which_mcounter = CSR_MHPMCOUNTER3 + i - 3;
     const reg_t which_mcounterh = CSR_MHPMCOUNTER3H + i - 3;
     const reg_t which_counter = CSR_HPMCOUNTER3 + i - 3;
     const reg_t which_counterh = CSR_HPMCOUNTER3H + i - 3;
-    auto mevent = std::make_shared<const_csr_t>(proc, which_mevent, 0);
+    const reg_t mevent_mask = proc->extension_enabled_const(EXT_SSCOFPMF) ? MHPMEVENT_OF | MHPMEVENT_MINH
+      | (proc->extension_enabled_const('U') ? MHPMEVENT_UINH : 0)
+      | (proc->extension_enabled_const('S') ? MHPMEVENT_SINH : 0)
+      | (proc->extension_enabled_const('H') ? MHPMEVENT_VUINH | MHPMEVENT_VSINH : 0) : 0;
+    mevent[i - 3] = std::make_shared<masked_csr_t>(proc, which_mevent, mevent_mask, 0);
     auto mcounter = std::make_shared<const_csr_t>(proc, which_mcounter, 0);
-    csrmap[which_mevent] = mevent;
     csrmap[which_mcounter] = mcounter;
 
     if (proc->extension_enabled_const(EXT_ZICNTR) && proc->extension_enabled_const(EXT_ZIHPM)) {
@@ -249,21 +258,30 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       csrmap[which_counter] = counter;
     }
     if (xlen == 32) {
+      csrmap[which_mevent] = std::make_shared<rv32_low_csr_t>(proc, which_mevent, mevent[i - 3]);;
       auto mcounterh = std::make_shared<const_csr_t>(proc, which_mcounterh, 0);
       csrmap[which_mcounterh] = mcounterh;
       if (proc->extension_enabled_const(EXT_ZICNTR) && proc->extension_enabled_const(EXT_ZIHPM)) {
         auto counterh = std::make_shared<counter_proxy_csr_t>(proc, which_counterh, mcounterh);
         csrmap[which_counterh] = counterh;
       }
+      if (proc->extension_enabled_const(EXT_SSCOFPMF)) {
+        auto meventh = std::make_shared<rv32_high_csr_t>(proc, which_meventh, mevent[i - 3]);
+        csrmap[which_meventh] = meventh;
+      }
+    } else {
+      csrmap[which_mevent] = mevent[i - 3];
     }
   }
   csrmap[CSR_MCOUNTINHIBIT] = std::make_shared<const_csr_t>(proc, CSR_MCOUNTINHIBIT, 0);
+  if (proc->extension_enabled_const(EXT_SSCOFPMF))
+    csrmap[CSR_SCOUNTOVF] = std::make_shared<scountovf_csr_t>(proc, CSR_SCOUNTOVF);
   csrmap[CSR_MIE] = mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
   csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(
     this,
     ~MIP_HS_MASK,  // read_mask
-    MIP_SSIP,      // ip_write_mask
+    MIP_SSIP | MIP_LCOFIP,  // ip_write_mask
     ~MIP_HS_MASK,  // ie_write_mask
     generic_int_accessor_t::mask_mode_t::MIDELEG,
     0              // shiftamt
@@ -713,6 +731,8 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
       enabled_interrupts = MIP_SSIP;
     else if (enabled_interrupts & MIP_STIP)
       enabled_interrupts = MIP_STIP;
+    else if (enabled_interrupts & MIP_LCOFIP)
+      enabled_interrupts = MIP_LCOFIP;
     else if (enabled_interrupts & MIP_VSEIP)
       enabled_interrupts = MIP_VSEIP;
     else if (enabled_interrupts & MIP_VSSIP)
@@ -743,6 +763,24 @@ void processor_t::set_privilege(reg_t prv)
 {
   mmu->flush_tlb();
   state.prv = legalize_privilege(prv);
+}
+
+const char* processor_t::get_privilege_string()
+{
+  if (state.v) {
+    switch (state.prv) {
+    case 0x0: return "VU";
+    case 0x1: return "VS";
+    }
+  } else {
+    switch (state.prv) {
+    case 0x0: return "U";
+    case 0x1: return "S";
+    case 0x3: return "M";
+    }
+  }
+  fprintf(stderr, "Invalid prv=%lx v=%x\n", (unsigned long)state.prv, state.v);
+  abort();
 }
 
 void processor_t::set_virt(bool virt)
@@ -954,7 +992,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
   throw trap_illegal_instruction(insn.bits());
 }
 
-reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc)
+reg_t illegal_instruction(processor_t UNUSED *p, insn_t insn, reg_t UNUSED pc)
 {
   // The illegal instruction can be longer than ILEN bits, where the tval will
   // contain the first ILEN bits of the faulting instruction. We hard-code the

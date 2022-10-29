@@ -60,7 +60,7 @@ void csr_t::log_write() const noexcept {
   log_special_write(address, written_value());
 }
 
-void csr_t::log_special_write(const reg_t address, const reg_t val) const noexcept {
+void csr_t::log_special_write(const reg_t UNUSED address, const reg_t UNUSED val) const noexcept {
 #if defined(RISCV_ENABLE_COMMITLOG)
   proc->get_state()->log_reg_write[((address) << 4) | 4] = {val, 0};
 #endif
@@ -615,7 +615,7 @@ misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t ma
              ) {
 }
 
-const reg_t misa_csr_t::dependency(const reg_t val, const char feature, const char depends_on) const noexcept {
+reg_t misa_csr_t::dependency(const reg_t val, const char feature, const char depends_on) const noexcept {
   return (val & (1L << (depends_on - 'A'))) ? val : (val & ~(1L << (feature - 'A')));
 }
 
@@ -691,6 +691,7 @@ void mip_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noex
 reg_t mip_csr_t::write_mask() const noexcept {
   // MIP_STIP is writable unless SSTC exists and STCE is set in MENVCFG
   const reg_t supervisor_ints = proc->extension_enabled('S') ? MIP_SSIP | ((state->menvcfg->read() &  MENVCFG_STCE) ? 0 : MIP_STIP) | MIP_SEIP : 0;
+  const reg_t lscof_int = proc->extension_enabled(EXT_SSCOFPMF) ? MIP_LCOFIP : 0;
   const reg_t vssip_int = proc->extension_enabled('H') ? MIP_VSSIP : 0;
   const reg_t hypervisor_ints = proc->extension_enabled('H') ? MIP_HS_MASK : 0;
   // We must mask off sgeip, vstip, and vseip. All three of these
@@ -698,8 +699,8 @@ reg_t mip_csr_t::write_mask() const noexcept {
   //  * sgeip is read-only -- write hgeip instead
   //  * vseip is read-only -- write hvip instead
   //  * vstip is read-only -- write hvip instead
-  return (supervisor_ints | hypervisor_ints) &
-         (MIP_SEIP | MIP_SSIP | MIP_STIP | vssip_int);
+  return (supervisor_ints | hypervisor_ints | lscof_int) &
+         (MIP_SEIP | MIP_SSIP | MIP_STIP | MIP_LCOFIP | vssip_int);
 }
 
 mie_csr_t::mie_csr_t(processor_t* const proc, const reg_t addr):
@@ -708,9 +709,10 @@ mie_csr_t::mie_csr_t(processor_t* const proc, const reg_t addr):
 
 reg_t mie_csr_t::write_mask() const noexcept {
   const reg_t supervisor_ints = proc->extension_enabled('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
+  const reg_t lscof_int = proc->extension_enabled(EXT_SSCOFPMF) ? MIP_LCOFIP : 0;
   const reg_t hypervisor_ints = proc->extension_enabled('H') ? MIP_HS_MASK : 0;
   const reg_t coprocessor_ints = (reg_t)proc->any_custom_extensions() << IRQ_COP;
-  const reg_t delegable_ints = supervisor_ints | coprocessor_ints;
+  const reg_t delegable_ints = supervisor_ints | coprocessor_ints | lscof_int;
   const reg_t all_ints = delegable_ints | hypervisor_ints | MIP_MSIP | MIP_MTIP | MIP_MEIP;
   return all_ints;
 }
@@ -806,8 +808,9 @@ void mideleg_csr_t::verify_permissions(insn_t insn, bool write) const {
 
 bool mideleg_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t supervisor_ints = proc->extension_enabled('S') ? MIP_SSIP | MIP_STIP | MIP_SEIP : 0;
+  const reg_t lscof_int = proc->extension_enabled(EXT_SSCOFPMF) ? MIP_LCOFIP : 0;
   const reg_t coprocessor_ints = (reg_t)proc->any_custom_extensions() << IRQ_COP;
-  const reg_t delegable_ints = supervisor_ints | coprocessor_ints;
+  const reg_t delegable_ints = supervisor_ints | coprocessor_ints | lscof_int;
 
   return basic_csr_t::unlogged_write(val & delegable_ints);
 }
@@ -1020,7 +1023,7 @@ reg_t const_csr_t::read() const noexcept {
   return val;
 }
 
-bool const_csr_t::unlogged_write(const reg_t val) noexcept {
+bool const_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
   return false;
 }
 
@@ -1435,4 +1438,35 @@ void virtualized_stimecmp_csr_t::verify_permissions(insn_t insn, bool write) con
   }
 
   virtualized_csr_t::verify_permissions(insn, write);
+}
+
+scountovf_csr_t::scountovf_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+void scountovf_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (!proc->extension_enabled(EXT_SSCOFPMF))
+    throw trap_illegal_instruction(insn.bits());
+  csr_t::verify_permissions(insn, write);
+}
+
+reg_t scountovf_csr_t::read() const noexcept {
+  reg_t val = 0;
+  for (reg_t i = 3; i <= 31; ++i) {
+    bool of = state->mevent[i - 3]->read() & MHPMEVENT_OF;
+    val |= of << i;
+  }
+
+  /* In M and S modes, scountovf bit X is readable when mcounteren bit X is set, */
+  /* and otherwise reads as zero. Similarly, in VS mode, scountovf bit X is readable */
+  /* when mcounteren bit X and hcounteren bit X are both set, and otherwise reads as zero. */
+  val &= state->mcounteren->read();
+  if (state->v)
+    val &= state->hcounteren->read();
+  return val;
+}
+
+bool scountovf_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
+  /* this function is unused */
+  return false;
 }

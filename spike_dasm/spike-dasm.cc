@@ -14,7 +14,7 @@
 #include <fesvr/option_parser.h>
 using namespace std;
 
-int main(int argc, char** argv)
+int main(int UNUSED argc, char** argv)
 {
   string s;
   const char* isa = DEFAULT_ISA;

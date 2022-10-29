@@ -33,6 +33,8 @@ class trap_t
     return _name;
   }
 
+  virtual ~trap_t() = default;
+
  private:
   char _name[16];
   reg_t which;

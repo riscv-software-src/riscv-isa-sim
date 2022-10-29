@@ -326,7 +326,7 @@ class misa_csr_t final: public basic_csr_t {
  private:
   const reg_t max_isa;
   const reg_t write_mask;
-  const reg_t dependency(const reg_t val, const char feature, const char depends_on) const noexcept;
+  reg_t dependency(const reg_t val, const char feature, const char depends_on) const noexcept;
 };
 
 typedef std::shared_ptr<misa_csr_t> misa_csr_t_p;
@@ -521,7 +521,7 @@ class time_counter_csr_t: public csr_t {
   void sync(const reg_t val) noexcept;
 
  protected:
-  virtual bool unlogged_write(const reg_t val) noexcept override { return false; };
+  virtual bool unlogged_write(const reg_t UNUSED val) noexcept override { return false; };
  private:
   reg_t shadow_val;
 };
@@ -738,5 +738,14 @@ class virtualized_stimecmp_csr_t: public virtualized_csr_t {
  public:
   virtualized_stimecmp_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
   virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class scountovf_csr_t: public csr_t {
+ public:
+  scountovf_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 #endif

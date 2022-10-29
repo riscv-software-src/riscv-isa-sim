@@ -14,6 +14,7 @@
 std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
                      reg_t initrd_start, reg_t initrd_end,
                      const char* bootargs,
+                     size_t pmpregions,
                      std::vector<processor_t*> procs,
                      std::vector<std::pair<reg_t, mem_t*>> mems)
 {
@@ -26,15 +27,16 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "  #size-cells = <2>;\n"
          "  compatible = \"ucbbar,spike-bare-dev\";\n"
          "  model = \"ucbbar,spike-bare\";\n"
-         "  chosen {\n";
+         "  chosen {\n"
+         "    stdout-path = &SERIAL0;\n";
   if (initrd_start < initrd_end) {
     s << "    linux,initrd-start = <" << (size_t)initrd_start << ">;\n"
          "    linux,initrd-end = <" << (size_t)initrd_end << ">;\n";
     if (!bootargs)
-      bootargs = "root=/dev/ram console=hvc0 earlycon=sbi";
+      bootargs = "root=/dev/ram console=ttyS0 earlycon";
   } else {
     if (!bootargs)
-      bootargs = "console=hvc0 earlycon=sbi";
+      bootargs = "console=ttyS0 earlycon";
   }
     s << "    bootargs = \"";
   for (size_t i = 0; i < strlen(bootargs); i++) {
@@ -57,7 +59,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "      compatible = \"riscv\";\n"
          "      riscv,isa = \"" << procs[i]->get_isa().get_isa_string() << "\";\n"
          "      mmu-type = \"riscv," << (procs[i]->get_isa().get_max_xlen() <= 32 ? "sv32" : "sv57") << "\";\n"
-         "      riscv,pmpregions = <16>;\n"
+         "      riscv,pmpregions = <" << pmpregions << ">;\n"
          "      riscv,pmpgranularity = <4>;\n"
          "      clock-frequency = <" << cpu_hz << ">;\n"
          "      CPU" << i << "_intc: interrupt-controller {\n"
@@ -92,6 +94,35 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
   s << std::hex << ">;\n"
          "      reg = <0x" << (clintbs >> 32) << " 0x" << (clintbs & (uint32_t)-1) <<
                      " 0x" << (clintsz >> 32) << " 0x" << (clintsz & (uint32_t)-1) << ">;\n"
+         "    };\n"
+         "    PLIC: plic@" << PLIC_BASE << " {\n"
+         "      compatible = \"riscv,plic0\";\n"
+         "      #address-cells = <2>;\n"
+         "      interrupts-extended = <" << std::dec;
+  for (size_t i = 0; i < procs.size(); i++)
+    s << "&CPU" << i << "_intc 11 &CPU" << i << "_intc 9 ";
+  reg_t plicbs = PLIC_BASE;
+  reg_t plicsz = PLIC_SIZE;
+  s << std::hex << ">;\n"
+         "      reg = <0x" << (plicbs >> 32) << " 0x" << (plicbs & (uint32_t)-1) <<
+                     " 0x" << (plicsz >> 32) << " 0x" << (plicsz & (uint32_t)-1) << ">;\n"
+         "      riscv,ndev = <0x" << PLIC_NDEV << ">;\n"
+         "      riscv,max-priority = <0x" << ((1U << PLIC_PRIO_BITS) - 1) << ">;\n"
+         "      #interrupt-cells = <1>;\n"
+         "      interrupt-controller;\n"
+         "    };\n"
+         "    SERIAL0: ns16550@" << NS16550_BASE << " {\n"
+         "      compatible = \"ns16550a\";\n"
+         "      clock-frequency = <" << std::dec << (cpu_hz/insns_per_rtc_tick) << ">;\n"
+         "      interrupt-parent = <&PLIC>;\n"
+         "      interrupts = <" << std::dec << NS16550_INTERRUPT_ID;
+  reg_t ns16550bs = NS16550_BASE;
+  reg_t ns16550sz = NS16550_SIZE;
+  s << std::hex << ">;\n"
+         "      reg = <0x" << (ns16550bs >> 32) << " 0x" << (ns16550bs & (uint32_t)-1) <<
+                     " 0x" << (ns16550sz >> 32) << " 0x" << (ns16550sz & (uint32_t)-1) << ">;\n"
+         "      reg-shift = <0x" << NS16550_REG_SHIFT << ">;\n"
+         "      reg-io-width = <0x" << NS16550_REG_IO_WIDTH << ">;\n"
          "    };\n"
          "  };\n"
          "  htif {\n"
@@ -144,7 +175,7 @@ std::string dts_compile(const std::string& dts)
     close(dts_pipe[1]);
     close(dtb_pipe[0]);
     close(dtb_pipe[1]);
-    execlp(DTC, DTC, "-O", "dtb", 0);
+    execlp(DTC, DTC, "-O", "dtb", (char *)0);
     std::cerr << "Failed to run " DTC ": " << strerror(errno) << std::endl;
     exit(1);
   }
@@ -271,6 +302,64 @@ int fdt_parse_clint(void *fdt, reg_t *clint_addr,
   rc = fdt_get_node_addr_size(fdt, nodeoffset, clint_addr, NULL, "reg");
   if (rc < 0 || !clint_addr)
     return -ENODEV;
+
+  return 0;
+}
+
+int fdt_parse_plic(void *fdt, reg_t *plic_addr, uint32_t *ndev,
+                   const char *compatible)
+{
+  int nodeoffset, len, rc;
+  const fdt32_t *ndev_p;
+
+  nodeoffset = fdt_node_offset_by_compatible(fdt, -1, compatible);
+  if (nodeoffset < 0)
+    return nodeoffset;
+
+  rc = fdt_get_node_addr_size(fdt, nodeoffset, plic_addr, NULL, "reg");
+  if (rc < 0 || !plic_addr)
+    return -ENODEV;
+
+  ndev_p = (fdt32_t *)fdt_getprop(fdt, nodeoffset, "riscv,ndev", &len);
+  if (!ndev || !ndev_p)
+    return -ENODEV;
+  *ndev = fdt32_to_cpu(*ndev_p);
+
+  return 0;
+}
+
+int fdt_parse_ns16550(void *fdt, reg_t *ns16550_addr,
+                      uint32_t *reg_shift, uint32_t *reg_io_width,
+                      const char *compatible)
+{
+  int nodeoffset, len, rc;
+  const fdt32_t *reg_p;
+
+  nodeoffset = fdt_node_offset_by_compatible(fdt, -1, compatible);
+  if (nodeoffset < 0)
+    return nodeoffset;
+
+  rc = fdt_get_node_addr_size(fdt, nodeoffset, ns16550_addr, NULL, "reg");
+  if (rc < 0 || !ns16550_addr)
+    return -ENODEV;
+
+  reg_p = (fdt32_t *)fdt_getprop(fdt, nodeoffset, "reg-shift", &len);
+  if (reg_shift) {
+    if (reg_p) {
+      *reg_shift = fdt32_to_cpu(*reg_p);
+    } else {
+      *reg_shift = NS16550_REG_SHIFT;
+    }
+  }
+
+  reg_p = (fdt32_t *)fdt_getprop(fdt, nodeoffset, "reg-io-width", &len);
+  if (reg_io_width) {
+    if (reg_p) {
+      *reg_io_width = fdt32_to_cpu(*reg_p);
+    } else {
+      *reg_io_width = NS16550_REG_IO_WIDTH;
+    }
+  }
 
   return 0;
 }

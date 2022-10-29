@@ -4,8 +4,10 @@
 #include "decode.h"
 #include "mmio_plugin.h"
 #include "abstract_device.h"
+#include "abstract_interrupt_controller.h"
 #include "platform.h"
 #include <map>
+#include <queue>
 #include <vector>
 #include <utility>
 
@@ -43,6 +45,7 @@ class mem_t : public abstract_device_t {
   bool store(reg_t addr, size_t len, const uint8_t* bytes) { return load_store(addr, len, const_cast<uint8_t*>(bytes), true); }
   char* contents(reg_t addr);
   reg_t size() { return sz; }
+  void dump(std::ostream& o);
 
  private:
   bool load_store(reg_t addr, size_t len, uint8_t* bytes, bool store);
@@ -58,6 +61,8 @@ class clint_t : public abstract_device_t {
   bool store(reg_t addr, size_t len, const uint8_t* bytes);
   size_t size() { return CLINT_SIZE; }
   void increment(reg_t inc);
+  uint64_t get_mtimecmp(reg_t hartid) { return mtimecmp[hartid]; }
+  uint64_t get_mtime() { return mtime; }
  private:
   typedef uint64_t mtime_t;
   typedef uint64_t mtimecmp_t;
@@ -69,6 +74,80 @@ class clint_t : public abstract_device_t {
   uint64_t real_time_ref_usecs;
   mtime_t mtime;
   std::vector<mtimecmp_t> mtimecmp;
+};
+
+#define PLIC_MAX_DEVICES 1024
+
+struct plic_context_t {
+	uint32_t num;
+	processor_t *proc;
+	bool mmode;
+
+	uint8_t priority_threshold;
+	uint32_t enable[PLIC_MAX_DEVICES/32];
+	uint32_t pending[PLIC_MAX_DEVICES/32];
+	uint8_t pending_priority[PLIC_MAX_DEVICES];
+	uint32_t claimed[PLIC_MAX_DEVICES/32];
+};
+
+class plic_t : public abstract_device_t, public abstract_interrupt_controller_t {
+ public:
+  plic_t(std::vector<processor_t*>&, bool smode, uint32_t ndev);
+  bool load(reg_t addr, size_t len, uint8_t* bytes);
+  bool store(reg_t addr, size_t len, const uint8_t* bytes);
+  void set_interrupt_level(uint32_t id, int lvl);
+  size_t size() { return PLIC_SIZE; }
+ private:
+  std::vector<processor_t*>& procs;
+  std::vector<plic_context_t> contexts;
+  uint32_t num_ids;
+  uint32_t num_ids_word;
+  uint32_t max_prio;
+  uint8_t priority[PLIC_MAX_DEVICES];
+  uint32_t level[PLIC_MAX_DEVICES/32];
+  uint32_t context_best_pending(const plic_context_t *c);
+  void context_update(const plic_context_t *context);
+  uint32_t context_claim(plic_context_t *c);
+  bool priority_read(reg_t offset, uint32_t *val);
+  bool priority_write(reg_t offset, uint32_t val);
+  bool context_enable_read(const plic_context_t *context,
+                           reg_t offset, uint32_t *val);
+  bool context_enable_write(plic_context_t *context,
+                            reg_t offset, uint32_t val);
+  bool context_read(plic_context_t *context,
+                    reg_t offset, uint32_t *val);
+  bool context_write(plic_context_t *context,
+                     reg_t offset, uint32_t val);
+};
+
+class ns16550_t : public abstract_device_t {
+ public:
+  ns16550_t(class bus_t *bus, abstract_interrupt_controller_t *intctrl,
+            uint32_t interrupt_id, uint32_t reg_shift, uint32_t reg_io_width);
+  bool load(reg_t addr, size_t len, uint8_t* bytes);
+  bool store(reg_t addr, size_t len, const uint8_t* bytes);
+  void tick(void);
+  size_t size() { return NS16550_SIZE; }
+ private:
+  class bus_t *bus;
+  abstract_interrupt_controller_t *intctrl;
+  uint32_t interrupt_id;
+  uint32_t reg_shift;
+  uint32_t reg_io_width;
+  std::queue<uint8_t> rx_queue;
+  uint8_t dll;
+  uint8_t dlm;
+  uint8_t iir;
+  uint8_t ier;
+  uint8_t fcr;
+  uint8_t lcr;
+  uint8_t mcr;
+  uint8_t lsr;
+  uint8_t msr;
+  uint8_t scr;
+  void update_interrupt(void);
+  uint8_t rx_byte(void);
+  void tx_byte(uint8_t val);
 };
 
 class mmio_plugin_device_t : public abstract_device_t {

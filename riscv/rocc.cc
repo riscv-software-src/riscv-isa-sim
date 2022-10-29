@@ -18,7 +18,7 @@
     return pc+4; \
   } \
   \
-  reg_t rocc_t::custom##n(rocc_insn_t insn, reg_t xs1, reg_t xs2) \
+  reg_t rocc_t::custom##n(rocc_insn_t UNUSED insn, reg_t UNUSED xs1, reg_t UNUSED xs2) \
   { \
     illegal_instruction(); \
     return 0; \

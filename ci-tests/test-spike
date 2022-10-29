@@ -6,6 +6,17 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 mkdir build
 cd build
 mkdir install
-$DIR/../configure --prefix=`pwd`/install
+CXXFLAGS="-Wnon-virtual-dtor" CFLAGS="-Werror -Wignored-qualifiers -Wunused-function -Wunused-parameter -Wunused-variable" $DIR/../configure --prefix=`pwd`/install
 make -j4
 make install
+
+# check that help message prints without error
+install/bin/spike -h
+
+
+# run a program and check for correct output
+mkdir run
+cd run
+wget https://github.com/riscv-software-src/riscv-isa-sim/releases/download/dummy-tag-for-ci-storage/spike-ci.tar
+tar xf spike-ci.tar
+time ../install/bin/spike --isa=rv64gc pk hello | grep "Hello, world!  Pi is approximately 3.141588."

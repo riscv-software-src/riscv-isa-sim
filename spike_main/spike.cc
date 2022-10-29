@@ -36,6 +36,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --log=<name>          File name for option -l\n");
   fprintf(stderr, "  --debug-cmd=<name>    Read commands from file (use with -d)\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
+  fprintf(stderr, "  --pmpregions=<n>      Number of PMP regions [default 16]\n");
   fprintf(stderr, "  --priv=<m|mu|msu>     RISC-V privilege modes supported [default %s]\n", DEFAULT_PRIV);
   fprintf(stderr, "  --varch=<name>        RISC-V Vector uArch string [default %s]\n", DEFAULT_VARCH);
   fprintf(stderr, "  --pc=<address>        Override ELF entry point\n");
@@ -43,6 +44,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --ic=<S>:<W>:<B>      Instantiate a cache model with S sets,\n");
   fprintf(stderr, "  --dc=<S>:<W>:<B>        W ways, and B-byte blocks (with S and\n");
   fprintf(stderr, "  --l2=<S>:<W>:<B>        B both powers of 2).\n");
+  fprintf(stderr, "  --big-endian          Use a big-endian memory system.\n");
   fprintf(stderr, "  --device=<P,B,A>      Attach MMIO plugin device from an --extlib library\n");
   fprintf(stderr, "                          P -- Name of the MMIO plugin\n");
   fprintf(stderr, "                          B -- Base memory address of the device\n");
@@ -72,7 +74,8 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --dm-abstract-rti=<n> Number of Run-Test/Idle cycles "
       "required for an abstract command to execute [default 0]\n");
   fprintf(stderr, "  --dm-no-hasel         Debug module supports hasel\n");
-  fprintf(stderr, "  --dm-no-abstract-csr  Debug module won't support abstract to authenticate\n");
+  fprintf(stderr, "  --dm-no-abstract-csr  Debug module won't support abstract CSR access\n");
+  fprintf(stderr, "  --dm-no-abstract-fpr  Debug module won't support abstract FPR access\n");
   fprintf(stderr, "  --dm-no-halt-groups   Debug module won't support halt groups\n");
   fprintf(stderr, "  --dm-no-impebreak     Debug module won't support implicit ebreak in program buffer\n");
   fprintf(stderr, "  --blocksz=<size>      Cache block size (B) for CMO operations(powers of 2) [default 64]\n");
@@ -173,13 +176,18 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
     if (size % PGSIZE != 0)
       size += PGSIZE - size % PGSIZE;
 
-    if (base + size < base)
-      help();
-
     if (size != size0) {
       fprintf(stderr, "Warning: the memory at  [0x%llX, 0x%llX] has been realigned\n"
                       "to the %ld KiB page size: [0x%llX, 0x%llX]\n",
               base0, base0 + size0 - 1, long(PGSIZE / 1024), base, base + size - 1);
+    }
+
+    if (!mem_cfg_t::check_if_supported(base, size)) {
+      fprintf(stderr, "unsupported memory region "
+                      "{base = 0x%llX, size = 0x%llX} specified\n",
+                      (unsigned long long)base,
+                      (unsigned long long)size);
+      exit(EXIT_FAILURE);
     }
 
     res.push_back(mem_cfg_t(reg_t(base), reg_t(size)));
@@ -243,7 +251,7 @@ int main(int argc, char** argv)
   bool halted = false;
   bool histogram = false;
   bool log = false;
-  bool socket = false;  // command line option -s
+  bool UNUSED socket = false;  // command line option -s
   bool dump_dts = false;
   bool dtb_enabled = true;
   const char* kernel = NULL;
@@ -269,6 +277,7 @@ int main(int argc, char** argv)
     .abstract_rti = 0,
     .support_hasel = true,
     .support_abstract_csr_access = true,
+    .support_abstract_fpr_access = true,
     .support_haltgroups = true,
     .support_impebreak = true
   };
@@ -279,6 +288,8 @@ int main(int argc, char** argv)
             /*default_isa=*/DEFAULT_ISA,
             /*default_priv=*/DEFAULT_PRIV,
             /*default_varch=*/DEFAULT_VARCH,
+            /*default_endianness*/memif_endianness_little,
+            /*default_pmpregions=*/16,
             /*default_mem_layout=*/parse_mem_layout("2048"),
             /*default_hartids=*/std::vector<int>(),
             /*default_real_time_clint=*/false);
@@ -328,17 +339,17 @@ int main(int argc, char** argv)
 
   option_parser_t parser;
   parser.help(&suggest_help);
-  parser.option('h', "help", 0, [&](const char* s){help(0);});
-  parser.option('d', 0, 0, [&](const char* s){debug = true;});
-  parser.option('g', 0, 0, [&](const char* s){histogram = true;});
-  parser.option('l', 0, 0, [&](const char* s){log = true;});
+  parser.option('h', "help", 0, [&](const char UNUSED *s){help(0);});
+  parser.option('d', 0, 0, [&](const char UNUSED *s){debug = true;});
+  parser.option('g', 0, 0, [&](const char UNUSED *s){histogram = true;});
+  parser.option('l', 0, 0, [&](const char UNUSED *s){log = true;});
 #ifdef HAVE_BOOST_ASIO
-  parser.option('s', 0, 0, [&](const char* s){socket = true;});
+  parser.option('s', 0, 0, [&](const char UNUSED *s){socket = true;});
 #endif
   parser.option('p', 0, 1, [&](const char* s){nprocs = atoul_nonzero_safe(s);});
   parser.option('m', 0, 1, [&](const char* s){cfg.mem_layout = parse_mem_layout(s);});
   // I wanted to use --halted, but for some reason that doesn't work.
-  parser.option('H', 0, 0, [&](const char* s){halted = true;});
+  parser.option('H', 0, 0, [&](const char UNUSED *s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
   parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc = strtoull(s, 0, 0);});
   parser.option(0, "hartids", 1, [&](const char* s){
@@ -348,19 +359,21 @@ int main(int argc, char** argv)
   parser.option(0, "ic", 1, [&](const char* s){ic.reset(new icache_sim_t(s));});
   parser.option(0, "dc", 1, [&](const char* s){dc.reset(new dcache_sim_t(s));});
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
-  parser.option(0, "log-cache-miss", 0, [&](const char* s){log_cache = true;});
+  parser.option(0, "big-endian", 0, [&](const char UNUSED *s){cfg.endianness = memif_endianness_big;});
+  parser.option(0, "log-cache-miss", 0, [&](const char UNUSED *s){log_cache = true;});
   parser.option(0, "isa", 1, [&](const char* s){cfg.isa = s;});
+  parser.option(0, "pmpregions", 1, [&](const char* s){cfg.pmpregions = atoul_safe(s);});
   parser.option(0, "priv", 1, [&](const char* s){cfg.priv = s;});
   parser.option(0, "varch", 1, [&](const char* s){cfg.varch = s;});
   parser.option(0, "device", 1, device_parser);
   parser.option(0, "extension", 1, [&](const char* s){extensions.push_back(find_extension(s));});
-  parser.option(0, "dump-dts", 0, [&](const char *s){dump_dts = true;});
-  parser.option(0, "disable-dtb", 0, [&](const char *s){dtb_enabled = false;});
+  parser.option(0, "dump-dts", 0, [&](const char UNUSED *s){dump_dts = true;});
+  parser.option(0, "disable-dtb", 0, [&](const char UNUSED *s){dtb_enabled = false;});
   parser.option(0, "dtb", 1, [&](const char *s){dtb_file = s;});
   parser.option(0, "kernel", 1, [&](const char* s){kernel = s;});
   parser.option(0, "initrd", 1, [&](const char* s){initrd = s;});
   parser.option(0, "bootargs", 1, [&](const char* s){cfg.bootargs = s;});
-  parser.option(0, "real-time-clint", 0, [&](const char *s){cfg.real_time_clint = true;});
+  parser.option(0, "real-time-clint", 0, [&](const char UNUSED *s){cfg.real_time_clint = true;});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
     if (lib == NULL) {
@@ -371,23 +384,25 @@ int main(int argc, char** argv)
   parser.option(0, "dm-progsize", 1,
       [&](const char* s){dm_config.progbufsize = atoul_safe(s);});
   parser.option(0, "dm-no-impebreak", 0,
-      [&](const char* s){dm_config.support_impebreak = false;});
+      [&](const char UNUSED *s){dm_config.support_impebreak = false;});
   parser.option(0, "dm-sba", 1,
       [&](const char* s){dm_config.max_sba_data_width = atoul_safe(s);});
   parser.option(0, "dm-auth", 0,
-      [&](const char* s){dm_config.require_authentication = true;});
+      [&](const char UNUSED *s){dm_config.require_authentication = true;});
   parser.option(0, "dmi-rti", 1,
       [&](const char* s){dmi_rti = atoul_safe(s);});
   parser.option(0, "dm-abstract-rti", 1,
       [&](const char* s){dm_config.abstract_rti = atoul_safe(s);});
   parser.option(0, "dm-no-hasel", 0,
-      [&](const char* s){dm_config.support_hasel = false;});
+      [&](const char UNUSED *s){dm_config.support_hasel = false;});
   parser.option(0, "dm-no-abstract-csr", 0,
-      [&](const char* s){dm_config.support_abstract_csr_access = false;});
+      [&](const char UNUSED *s){dm_config.support_abstract_csr_access = false;});
+  parser.option(0, "dm-no-abstract-fpr", 0,
+      [&](const char UNUSED *s){dm_config.support_abstract_fpr_access = false;});
   parser.option(0, "dm-no-halt-groups", 0,
-      [&](const char* s){dm_config.support_haltgroups = false;});
+      [&](const char UNUSED *s){dm_config.support_haltgroups = false;});
   parser.option(0, "log-commits", 0,
-                [&](const char* s){log_commits = true;});
+                [&](const char UNUSED *s){log_commits = true;});
   parser.option(0, "log", 1,
                 [&](const char* s){log_path = s;});
   FILE *cmd_file = NULL;
@@ -399,8 +414,11 @@ int main(int argc, char** argv)
   });
   parser.option(0, "blocksz", 1, [&](const char* s){
     blocksz = strtoull(s, 0, 0);
-    if (((blocksz & (blocksz - 1))) != 0) {
-      fprintf(stderr, "--blocksz should be power of 2\n");
+    const unsigned min_blocksz = 16;
+    const unsigned max_blocksz = PGSIZE;
+    if (blocksz < min_blocksz || blocksz > max_blocksz || ((blocksz & (blocksz - 1))) != 0) {
+      fprintf(stderr, "--blocksz must be a power of 2 between %u and %u\n",
+        min_blocksz, max_blocksz);
       exit(-1);
     }
   });

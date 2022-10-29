@@ -188,6 +188,15 @@ static inline int clz(uint64_t val)
   return res;
 }
 
+// Count number of contiguous 1 bits starting from the LSB.
+static inline int cto(uint64_t val)
+{
+  int res = 0;
+  while ((val & 1) == 1)
+    val >>= 1, res++;
+  return res;
+}
+
 static inline int log2(uint64_t val)
 {
   if (!val)

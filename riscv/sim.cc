@@ -74,11 +74,21 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 
   debug_module.add_device(&bus);
 
-  debug_mmu = new mmu_t(this, NULL);
+#ifndef RISCV_ENABLE_DUAL_ENDIAN
+  if (cfg->endianness != memif_endianness_little) {
+    fputs("Big-endian support has not been prroperly enabled; "
+	  "please rebuild the riscv-isa-sim project using "
+	  "\"configure --enable-dual-endian\".\n",
+	  stderr);
+    abort();
+  }
+#endif
+
+  debug_mmu = new mmu_t(this, cfg->endianness, NULL);
 
   for (size_t i = 0; i < cfg->nprocs(); i++) {
     procs[i] = new processor_t(&isa, cfg->varch(), this, cfg->hartids()[i], halted,
-                               log_file.get(), sout_);
+                               cfg->endianness, log_file.get(), sout_);
   }
 
   make_dtb();
@@ -96,6 +106,29 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   if (fdt_parse_clint(fdt, &clint_base, "riscv,clint0") == 0) {
     clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, cfg->real_time_clint()));
     bus.add_device(clint_base, clint.get());
+  }
+
+  // pointer to wired interrupt controller
+  abstract_interrupt_controller_t *intctrl = NULL;
+
+  // create plic
+  reg_t plic_base;
+  uint32_t plic_ndev;
+  if (fdt_parse_plic(fdt, &plic_base, &plic_ndev, "riscv,plic0") == 0) {
+    plic.reset(new plic_t(procs, true, plic_ndev));
+    bus.add_device(plic_base, plic.get());
+    intctrl = plic.get();
+  }
+
+  // create ns16550
+  reg_t ns16550_base;
+  uint32_t ns16550_shift, ns16550_io_width;
+  if (fdt_parse_ns16550(fdt, &ns16550_base,
+                        &ns16550_shift, &ns16550_io_width, "ns16550a") == 0) {
+    assert(intctrl);
+    ns16550.reset(new ns16550_t(&bus, intctrl, NS16550_INTERRUPT_ID,
+                                ns16550_shift, ns16550_io_width));
+    bus.add_device(ns16550_base, ns16550.get());
   }
 
   //per core attribute
@@ -202,6 +235,7 @@ int sim_t::run()
 {
   host = context_t::current();
   target.init(sim_thread_main, this);
+  htif_t::set_expected_xlen(isa.get_max_xlen());
   return htif_t::run();
 }
 
@@ -220,6 +254,7 @@ void sim_t::step(size_t n)
       if (++current_proc == procs.size()) {
         current_proc = 0;
         if (clint) clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
+        if (ns16550) ns16550->tick();
       }
 
       host->switch_to();
@@ -302,7 +337,7 @@ void sim_t::make_dtb()
     std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds();
     dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
                    initrd_bounds.first, initrd_bounds.second,
-                   cfg->bootargs(), procs, mems);
+                   cfg->bootargs(), cfg->pmpregions, procs, mems);
     dtb = dts_compile(dts);
   }
 
@@ -395,7 +430,7 @@ void sim_t::idle()
 void sim_t::read_chunk(addr_t taddr, size_t len, void* dst)
 {
   assert(len == 8);
-  auto data = debug_mmu->to_target(debug_mmu->load_uint64(taddr));
+  auto data = debug_mmu->to_target(debug_mmu->load<uint64_t>(taddr));
   memcpy(dst, &data, sizeof data);
 }
 
@@ -404,23 +439,7 @@ void sim_t::write_chunk(addr_t taddr, size_t len, const void* src)
   assert(len == 8);
   target_endian<uint64_t> data;
   memcpy(&data, src, sizeof data);
-  debug_mmu->store_uint64(taddr, debug_mmu->from_target(data));
-}
-
-void sim_t::set_target_endianness(memif_endianness_t endianness)
-{
-#ifdef RISCV_ENABLE_DUAL_ENDIAN
-  assert(endianness == memif_endianness_little || endianness == memif_endianness_big);
-
-  bool enable = endianness == memif_endianness_big;
-  debug_mmu->set_target_big_endian(enable);
-  for (size_t i = 0; i < procs.size(); i++) {
-    procs[i]->get_mmu()->set_target_big_endian(enable);
-    procs[i]->reset();
-  }
-#else
-  assert(endianness == memif_endianness_little);
-#endif
+  debug_mmu->store<uint64_t>(taddr, debug_mmu->from_target(data));
 }
 
 memif_endianness_t sim_t::get_target_endianness() const

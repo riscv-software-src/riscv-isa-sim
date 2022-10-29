@@ -1,3 +1,4 @@
+#include "arith.h"
 #include "debug_defines.h"
 #include "processor.h"
 #include "triggers.h"
@@ -62,7 +63,7 @@ bool mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcep
   return true;
 }
 
-reg_t mcontrol_t::tdata2_read(const processor_t * const proc) const noexcept {
+reg_t mcontrol_t::tdata2_read(const processor_t UNUSED * const proc) const noexcept {
   return tdata2;
 }
 
@@ -101,7 +102,7 @@ bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
   assert(0);
 }
 
-match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operation_t operation, reg_t address, reg_t data) {
+match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) {
   state_t * const state = proc->get_state();
   if ((operation == triggers::OPERATION_EXECUTE && !execute_bit) ||
       (operation == triggers::OPERATION_STORE && !store_bit) ||
@@ -114,7 +115,9 @@ match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operati
 
   reg_t value;
   if (select) {
-    value = data;
+    if (!data.has_value())
+      return MATCH_NONE;
+    value = *data;
   } else {
     value = address;
   }
@@ -150,7 +153,7 @@ module_t::~module_t() {
   }
 }
 
-match_result_t module_t::memory_access_match(action_t * const action, operation_t operation, reg_t address, reg_t data)
+match_result_t module_t::memory_access_match(action_t * const action, operation_t operation, reg_t address, std::optional<reg_t> data)
 {
   state_t * const state = proc->get_state();
   if (state->debug_mode)
@@ -176,7 +179,7 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
       return result;
     }
 
-    chain_ok = true;
+    chain_ok = result != MATCH_NONE || !triggers[i]->chain();
   }
   return MATCH_NONE;
 }

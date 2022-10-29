@@ -5,6 +5,7 @@
 
 #include <stdint.h>
 #include <stddef.h>
+#include <stdexcept>
 #include "byteorder.h"
 
 typedef uint64_t reg_t;
@@ -12,7 +13,6 @@ typedef int64_t sreg_t;
 typedef reg_t addr_t;
 
 typedef enum {
-  memif_endianness_undecided,
   memif_endianness_little,
   memif_endianness_big
 } memif_endianness_t;
@@ -27,10 +27,11 @@ public:
   virtual size_t chunk_align() = 0;
   virtual size_t chunk_max_size() = 0;
 
-  virtual void set_target_endianness(memif_endianness_t endianness) {}
   virtual memif_endianness_t get_target_endianness() const {
-    return memif_endianness_undecided;
+    return memif_endianness_little;
   }
+
+  virtual ~chunked_memif_t() = default;
 };
 
 class memif_t
@@ -68,15 +69,19 @@ public:
   virtual void write_int64(addr_t addr, target_endian<int64_t> val);
 
   // endianness
-  virtual void set_target_endianness(memif_endianness_t endianness) {
-    cmemif->set_target_endianness(endianness);
-  }
   virtual memif_endianness_t get_target_endianness() const {
     return cmemif->get_target_endianness();
   }
 
 protected:
   chunked_memif_t* cmemif;
+};
+
+class incompat_xlen : public std::exception {
+public:
+  const unsigned expected_xlen;
+  const unsigned actual_xlen;
+  incompat_xlen(unsigned _expected_xlen, unsigned _actual_xlen) : expected_xlen(_expected_xlen), actual_xlen(_actual_xlen) {}
 };
 
 #endif // __MEMIF_H

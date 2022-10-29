@@ -10,6 +10,10 @@
 // For std::reverse:
 #include <algorithm>
 
+#ifdef __GNUC__
+# pragma GCC diagnostic ignored "-Wunused-variable"
+#endif
+
 // Indicates that the next arg (only) is optional.
 // If the result of converting the next arg to a string is ""
 // then it will not be printed.
@@ -180,7 +184,7 @@ struct : public arg_t {
 } rvc_fp_rs2s;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t UNUSED insn) const {
     return xpr_name[X_SP];
   }
 } rvc_sp;
@@ -314,7 +318,7 @@ struct : public arg_t {
 } vm;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t UNUSED insn) const {
     return "v0";
   }
 } v0;
@@ -358,7 +362,7 @@ struct : public arg_t {
 } v_vtype;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t UNUSED insn) const {
     return "x0";
   }
 } x0;
@@ -1929,7 +1933,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_RTYPE(msubr32);
     DEFINE_RTYPE(ave);
     DEFINE_RTYPE(sra_u);
-    DEFINE_PI5TYPE(srai_u);
+    DEFINE_PI6TYPE(srai_u);
     DEFINE_PI3TYPE(insb);
     DEFINE_RTYPE(maddr32)
 

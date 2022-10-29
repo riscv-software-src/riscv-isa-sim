@@ -1,2 +1,2 @@
 require_rv64;
-WRITE_RD(MMU.load_int64(RS1 + insn.i_imm()));
+WRITE_RD(MMU.load<int64_t>(RS1 + insn.i_imm()));
