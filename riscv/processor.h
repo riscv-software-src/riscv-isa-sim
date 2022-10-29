@@ -298,7 +298,7 @@ public:
   reg_t legalize_privilege(reg_t);
   void set_privilege(reg_t);
   void set_virt(bool);
-  void update_histogram(reg_t pc);
+  void update_histogram(reg_t pc, insn_t instr_name);
   const disassembler_t* get_disassembler() { return disassembler; }
 
   FILE *get_log_file() { return log_file; }
@@ -348,6 +348,7 @@ private:
 
   std::vector<insn_desc_t> instructions;
   std::map<reg_t,uint64_t> pc_histogram;
+  std::map<std::string,uint64_t> insn_name_histogram;
 
   static const size_t OPCODE_CACHE_SIZE = 8191;
   insn_desc_t opcode_cache[OPCODE_CACHE_SIZE];

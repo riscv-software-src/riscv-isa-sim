@@ -85,6 +85,7 @@ class disassembler_t
   ~disassembler_t();
 
   std::string disassemble(insn_t insn) const;
+  std::string disassemble_insn_name(insn_t insn) const;
   const disasm_insn_t* lookup(insn_t insn) const;
 
   void add_insn(disasm_insn_t* insn);

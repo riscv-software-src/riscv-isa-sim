@@ -442,6 +442,12 @@ std::string disassembler_t::disassemble(insn_t insn) const
   return disasm_insn ? disasm_insn->to_string(insn) : "unknown";
 }
 
+std::string disassembler_t::disassemble_insn_name(insn_t insn) const
+{
+  const disasm_insn_t* disasm_insn = lookup(insn);
+  return disasm_insn ? disasm_insn->get_name() : "unknown";
+}
+
 static void NOINLINE add_noarg_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {}));

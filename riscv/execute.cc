@@ -160,10 +160,11 @@ static void commit_log_stash_privilege(processor_t* p) {}
 static void commit_log_print_insn(processor_t* p, reg_t pc, insn_t insn) {}
 #endif
 
-inline void processor_t::update_histogram(reg_t pc)
+inline void processor_t::update_histogram(reg_t pc, insn_t insn)
 {
 #ifdef RISCV_ENABLE_HISTOGRAM
   pc_histogram[pc]++;
+  insn_name_histogram[disassembler->disassemble_insn_name(insn)]++;
 #endif
 }
 
@@ -210,7 +211,7 @@ static inline reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
   } catch(...) {
     throw;
   }
-  p->update_histogram(pc);
+  p->update_histogram(pc, fetch.insn);
 
   return npc;
 }

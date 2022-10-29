@@ -72,6 +72,13 @@ processor_t::~processor_t()
     fprintf(stderr, "PC Histogram size:%zu\n", pc_histogram.size());
     for (auto it : pc_histogram)
       fprintf(stderr, "%0" PRIx64 " %" PRIu64 "\n", it.first, it.second);
+
+    fprintf(stderr, "Instruction Name Histogram size:%zu\n", insn_name_histogram.size());
+    for (auto it : insn_name_histogram) {
+      auto insn_name = new char[it.first.size() + 1] { '\0' };
+      std::copy(it.first.begin(), it.first.end(), insn_name);
+      fprintf(stderr, "%-16s %" PRIu64 "\n", insn_name, it.second);
+    }
   }
 #endif
 
