@@ -14,7 +14,6 @@
 #include <string>
 #include <memory>
 #include <fstream>
-#include "../VERSION"
 
 static void help(int exit_code = 1)
 {

@@ -123,4 +123,8 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([riscv-fesvr.pc])
 AC_CONFIG_FILES([riscv-disasm.pc])
+SPIKE_VERSION=`git describe --tags --dirty`
+AC_DEFINE_UNQUOTED([SPIKE_VERSION],
+                   ["$SPIKE_VERSION"],
+                   [Define version of spike installed])
 AC_OUTPUT
