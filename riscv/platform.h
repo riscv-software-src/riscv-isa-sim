@@ -18,6 +18,9 @@
 #define PLIC_SIZE          0x01000000
 #define PLIC_NDEV          31
 #define PLIC_PRIO_BITS     4
+#define APLIC_M_BASE       0x0c000000
+#define APLIC_S_BASE       0x0d000000
+#define APLIC_SIZE         0x00008000
 #define NS16550_BASE       0x10000000
 #define NS16550_SIZE       0x100
 #define NS16550_REG_SHIFT  0
