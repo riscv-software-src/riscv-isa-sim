@@ -35,6 +35,7 @@ const size_t sim_t::INTERLEAVE;
 
 extern device_factory_t* clint_factory;
 extern device_factory_t* plic_factory;
+extern device_factory_t* aplic_factory;
 extern device_factory_t* ns16550_factory;
 extern device_factory_t* imsic_mmio_factory;
 
@@ -123,6 +124,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     {clint_factory, {}}, // clint must be element 0
     {plic_factory, {}}, // plic must be element 1
     {imsic_mmio_factory, {}},
+    {aplic_factory, {}},
     {ns16550_factory, {}}};
   device_factories.insert(device_factories.end(),
                           plugin_device_factories.begin(),
@@ -140,9 +142,13 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     dtb = strstream.str();
     dts = dtb_to_dts(dtb);
   } else {
+    isa_parser_t isa(cfg->isa, cfg->priv);
     std::string device_nodes;
     for (const device_factory_sargs_t& factory_sargs: device_factories) {
       const device_factory_t* factory = factory_sargs.first;
+      // skip PLIC if SSAIA
+      if (factory == plic_factory && isa.extension_enabled(EXT_SSAIA))
+        continue;
       const std::vector<std::string>& sargs = factory_sargs.second;
       device_nodes.append(factory->generate_dts(this, sargs));
     }
@@ -269,6 +275,21 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
           }
         }
       }
+    }
+  }
+
+  // create aplic
+  reg_t aplic_m_base, aplic_s_base;
+  if (fdt_parse_aplic(fdt, &aplic_m_base, &aplic_s_base, "riscv,aplic") == 0) {
+    if (aplic_m_base) {
+      aplic_m.reset(new aplic_t(procs, nullptr));
+      bus.add_device(aplic_m_base, aplic_m.get());
+    }
+    if (aplic_s_base) {
+      aplic_s.reset(new aplic_t(procs, aplic_m.get()));
+      bus.add_device(aplic_s_base, aplic_s.get());
+      if (aplic_m)
+        aplic_m->set_child(aplic_s.get());
     }
   }
 

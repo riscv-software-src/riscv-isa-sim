@@ -446,7 +446,6 @@ int fdt_parse_imsics(const void *fdt, reg_t *imsic_m_addr, reg_t *imsic_s_addr, 
 {
   int nodeoffset = -1, len, rc;
   const fdt32_t *p;
-  reg_t addr = 0;
   int val;
 
   for (int i = 0; i < 2; i++) {
@@ -454,6 +453,7 @@ int fdt_parse_imsics(const void *fdt, reg_t *imsic_m_addr, reg_t *imsic_s_addr, 
     if (nodeoffset < 0)
       return nodeoffset;
 
+    reg_t addr = 0;
     rc = fdt_get_node_addr_size(fdt, nodeoffset, &addr, NULL, "reg");
     if (rc < 0)
       return -ENODEV;
@@ -468,5 +468,31 @@ int fdt_parse_imsics(const void *fdt, reg_t *imsic_m_addr, reg_t *imsic_s_addr, 
     if (val == IRQ_S_EXT && imsic_s_addr)
       *imsic_s_addr = addr;
   }
+  return 0;
+}
+
+int fdt_parse_aplic(const void *fdt, reg_t *aplic_m_addr, reg_t *aplic_s_addr, const char *compatible)
+{
+  int nodeoffset = -1, len, rc;
+  const fdt32_t *p;
+
+  for (int i = 0; i < 2; i++) {
+    nodeoffset = fdt_node_offset_by_compatible(fdt, nodeoffset, compatible);
+    if (nodeoffset < 0)
+      return nodeoffset;
+
+    reg_t addr = 0;
+    rc = fdt_get_node_addr_size(fdt, nodeoffset, &addr, NULL, "reg");
+    if (rc < 0)
+      return -ENODEV;
+
+    p = (fdt32_t *)fdt_getprop(fdt, nodeoffset, "riscv,children", &len);
+
+    if (p && aplic_m_addr)
+      *aplic_m_addr = addr;
+    else if (!p && aplic_s_addr)
+      *aplic_s_addr = addr;
+  }
+
   return 0;
 }
