@@ -330,13 +330,18 @@ void ns16550_t::tick(reg_t UNUSED rtc_ticks)
 
 std::string ns16550_generate_dts(const sim_t* sim, const std::vector<std::string>& sargs UNUSED)
 {
+  auto cfg = sim->get_cfg();
+  isa_parser_t isa(cfg.isa, cfg.priv);
   std::stringstream s;
   s << std::hex
     << "    SERIAL0: ns16550@" << NS16550_BASE << " {\n"
        "      compatible = \"ns16550a\";\n"
-       "      clock-frequency = <" << std::dec << (sim->CPU_HZ/sim->INSNS_PER_RTC_TICK) << ">;\n"
-       "      interrupt-parent = <&PLIC>;\n"
-       "      interrupts = <" << std::dec << NS16550_INTERRUPT_ID;
+       "      clock-frequency = <" << std::dec << (sim->CPU_HZ/sim->INSNS_PER_RTC_TICK) << ">;\n";
+  if (isa.extension_enabled(EXT_SSAIA))
+    s << "      interrupt-parent = <&APLIC_S>;\n";
+  else
+    s << "      interrupt-parent = <&PLIC>;\n";
+  s << "      interrupts = <" << std::dec << NS16550_INTERRUPT_ID;
   reg_t ns16550bs = NS16550_BASE;
   reg_t ns16550sz = NS16550_SIZE;
   s << std::hex << ">;\n"
