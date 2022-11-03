@@ -36,6 +36,8 @@ const size_t sim_t::INTERLEAVE;
 
 extern device_factory_t* clint_factory;
 extern device_factory_t* plic_factory;
+extern device_factory_t* aplic_m_factory;
+extern device_factory_t* aplic_s_factory;
 extern device_factory_t* ns16550_factory;
 extern device_factory_t* imsic_mmio_factory;
 
@@ -131,6 +133,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     {clint_factory, {}},
     {plic_factory, {}},
     {imsic_mmio_factory, {}},
+    {aplic_m_factory, {}},
+    {aplic_s_factory, {}},
     {ns16550_factory, {}}};
 
   // Load dtb_file if provided, otherwise self-generate a dts/dtb
@@ -144,9 +148,13 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     strstream << fin.rdbuf();
     dtb = strstream.str();
   } else {
+    isa_parser_t isa(cfg->isa, cfg->priv);
     std::string device_nodes;
     for (const device_factory_sargs_t& factory_sargs: device_factories) {
       const device_factory_t* factory = factory_sargs.first;
+      // skip PLIC if SSAIA
+      if (factory == plic_factory && isa.extension_enabled(EXT_SSAIA))
+        continue;
       const std::vector<std::string>& sargs = factory_sargs.second;
       device_nodes.append(factory->generate_dts(this, sargs));
     }
@@ -316,6 +324,15 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       if (dynamic_cast<plic_t*>(&*dev_ptr)) {
         assert(!plic);
         plic = std::static_pointer_cast<plic_t>(dev_ptr);
+      }
+
+      if (dynamic_cast<aplic_m_t*>(&*dev_ptr)) {
+        assert(!aplic_m);
+        aplic_m = std::static_pointer_cast<aplic_m_t>(dev_ptr);
+      }
+      if (dynamic_cast<aplic_s_t*>(&*dev_ptr)) {
+        assert(!aplic_s);
+        aplic_s = std::static_pointer_cast<aplic_s_t>(dev_ptr);
       }
     }
   }
