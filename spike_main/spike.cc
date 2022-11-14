@@ -176,16 +176,15 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
       size += PGSIZE - size % PGSIZE;
 
     if (size != size0) {
-      fprintf(stderr, "Warning: the memory at  [0x%llX, 0x%llX] has been realigned\n"
+      fprintf(stderr, "Warning: the memory at [0x%llX, 0x%llX] has been realigned\n"
                       "to the %ld KiB page size: [0x%llX, 0x%llX]\n",
               base0, base0 + size0 - 1, long(PGSIZE / 1024), base, base + size - 1);
     }
 
     if (!mem_cfg_t::check_if_supported(base, size)) {
-      fprintf(stderr, "unsupported memory region "
+      fprintf(stderr, "Unsupported memory region "
                       "{base = 0x%llX, size = 0x%llX} specified\n",
-                      (unsigned long long)base,
-                      (unsigned long long)size);
+              base, size);
       exit(EXIT_FAILURE);
     }
 
