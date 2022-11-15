@@ -55,8 +55,8 @@ public:
   virtual bool get_execute() const { return false; }
   virtual bool get_store() const { return false; }
   virtual bool get_load() const { return false; }
+  virtual action_t get_action() const { return ACTION_DEBUG_EXCEPTION; }
 
-  action_t action = ACTION_DEBUG_EXCEPTION;
   bool hit = false;
 
   virtual ~trigger_t() {};
@@ -94,6 +94,7 @@ public:
   virtual bool get_execute() const override { return execute; }
   virtual bool get_store() const override { return store; }
   virtual bool get_load() const override { return load; }
+  virtual action_t get_action() const override { return action; }
 
   virtual match_result_t memory_access_match(processor_t * const proc,
       operation_t operation, reg_t address, std::optional<reg_t> data) override;
@@ -103,6 +104,7 @@ private:
 
 public:
   bool dmode = false;
+  action_t action = ACTION_DEBUG_EXCEPTION;
   bool select = false;
   bool timing = false;
   bool chain = false;

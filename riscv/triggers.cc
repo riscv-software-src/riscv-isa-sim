@@ -172,7 +172,7 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
      * matches. */
     match_result_t result = triggers[i]->memory_access_match(proc, operation, address, data);
     if (result != MATCH_NONE && !triggers[i]->get_chain()) {
-      *action = triggers[i]->action;
+      *action = triggers[i]->get_action();
       return result;
     }
 
