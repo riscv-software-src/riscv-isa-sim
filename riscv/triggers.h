@@ -50,8 +50,8 @@ public:
   virtual reg_t tdata2_read(const processor_t * const proc) const noexcept = 0;
   virtual bool tdata2_write(processor_t * const proc, const reg_t val) noexcept = 0;
 
-  virtual bool chain() const { return false; }
   virtual bool get_dmode() const = 0;
+  virtual bool get_chain() const { return false; }
   virtual bool get_execute() const { return false; }
   virtual bool get_store() const { return false; }
   virtual bool get_load() const { return false; }
@@ -89,8 +89,8 @@ public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual bool tdata1_write(processor_t * const proc, const reg_t val) noexcept override;
 
-  virtual bool chain() const override { return chain_bit; }
   virtual bool get_dmode() const override { return dmode; }
+  virtual bool get_chain() const override { return chain; }
   virtual bool get_execute() const override { return execute; }
   virtual bool get_store() const override { return store; }
   virtual bool get_load() const override { return load; }
@@ -105,7 +105,7 @@ public:
   bool dmode = false;
   bool select = false;
   bool timing = false;
-  bool chain_bit = false;
+  bool chain = false;
   match_t match = MATCH_EQUAL;
   bool m = false;
   bool s = false;

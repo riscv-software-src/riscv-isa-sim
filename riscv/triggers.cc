@@ -27,7 +27,7 @@ reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   v = set_field(v, MCONTROL_SELECT, select);
   v = set_field(v, MCONTROL_TIMING, timing);
   v = set_field(v, MCONTROL_ACTION, action);
-  v = set_field(v, MCONTROL_CHAIN, chain_bit);
+  v = set_field(v, MCONTROL_CHAIN, chain);
   v = set_field(v, MCONTROL_MATCH, match);
   v = set_field(v, MCONTROL_M, m);
   v = set_field(v, MCONTROL_S, s);
@@ -45,7 +45,7 @@ bool mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcep
   select = get_field(val, MCONTROL_SELECT);
   timing = get_field(val, MCONTROL_TIMING);
   action = (triggers::action_t) get_field(val, MCONTROL_ACTION);
-  chain_bit = get_field(val, MCONTROL_CHAIN);
+  chain = get_field(val, MCONTROL_CHAIN);
   unsigned match_value = get_field(val, MCONTROL_MATCH);
   switch (match_value) {
     case MATCH_EQUAL:
@@ -160,7 +160,7 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
 
   for (unsigned int i = 0; i < triggers.size(); i++) {
     if (!chain_ok) {
-      chain_ok |= !triggers[i]->chain();
+      chain_ok |= !triggers[i]->get_chain();
       continue;
     }
 
@@ -171,12 +171,12 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
     match_result_t result = triggers[i]->memory_access_match(proc, operation, address, data);
-    if (result != MATCH_NONE && !triggers[i]->chain()) {
+    if (result != MATCH_NONE && !triggers[i]->get_chain()) {
       *action = triggers[i]->action;
       return result;
     }
 
-    chain_ok = result != MATCH_NONE || !triggers[i]->chain();
+    chain_ok = result != MATCH_NONE || !triggers[i]->get_chain();
   }
   return MATCH_NONE;
 }
