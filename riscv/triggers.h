@@ -42,8 +42,7 @@ class matched_t
 
 class trigger_t {
 public:
-  virtual match_result_t memory_access_match(processor_t * const proc,
-      operation_t operation, reg_t address, std::optional<reg_t> data) = 0;
+  virtual ~trigger_t() {};
 
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept = 0;
   virtual bool tdata1_write(processor_t * const proc, const reg_t val) noexcept = 0;
@@ -57,10 +56,8 @@ public:
   virtual bool get_load() const { return false; }
   virtual action_t get_action() const { return ACTION_DEBUG_EXCEPTION; }
 
-  virtual ~trigger_t() {};
-
-protected:
-  trigger_t() {}
+  virtual match_result_t memory_access_match(processor_t * const proc,
+      operation_t operation, reg_t address, std::optional<reg_t> data) = 0;
 };
 
 class trigger_with_tdata2_t : public trigger_t {
@@ -100,7 +97,6 @@ public:
 private:
   bool simple_match(unsigned xlen, reg_t value) const;
 
-public:
   bool dmode = false;
   action_t action = ACTION_DEBUG_EXCEPTION;
   bool hit = false;
