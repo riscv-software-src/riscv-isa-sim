@@ -1141,7 +1141,7 @@ void processor_t::trigger_updated(const std::vector<triggers::trigger_t *> &trig
     if (trigger->get_load()) {
       mmu->check_triggers_load = true;
     }
-    if (trigger->store()) {
+    if (trigger->get_store()) {
       mmu->check_triggers_store = true;
     }
   }
