@@ -34,7 +34,7 @@ reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   v = set_field(v, MCONTROL_U, u);
   v = set_field(v, MCONTROL_EXECUTE, execute);
   v = set_field(v, MCONTROL_STORE, store_bit);
-  v = set_field(v, MCONTROL_LOAD, load_bit);
+  v = set_field(v, MCONTROL_LOAD, load);
   return v;
 }
 
@@ -68,7 +68,7 @@ bool mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcep
   u = get_field(val, MCONTROL_U);
   execute = get_field(val, MCONTROL_EXECUTE);
   store_bit = get_field(val, MCONTROL_STORE);
-  load_bit = get_field(val, MCONTROL_LOAD);
+  load = get_field(val, MCONTROL_LOAD);
   // Assume we're here because of csrw.
   if (execute)
     timing = 0;
@@ -106,7 +106,7 @@ match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operati
   state_t * const state = proc->get_state();
   if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
       (operation == triggers::OPERATION_STORE && !store_bit) ||
-      (operation == triggers::OPERATION_LOAD && !load_bit) ||
+      (operation == triggers::OPERATION_LOAD && !load) ||
       (state->prv == PRV_M && !m) ||
       (state->prv == PRV_S && !s) ||
       (state->prv == PRV_U && !u)) {

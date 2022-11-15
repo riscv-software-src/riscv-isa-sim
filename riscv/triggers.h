@@ -53,7 +53,7 @@ public:
   virtual bool chain() const { return false; }
   virtual bool get_execute() const { return false; }
   virtual bool store() const { return false; }
-  virtual bool load() const { return false; }
+  virtual bool get_load() const { return false; }
 
   bool dmode = false;
   action_t action = ACTION_DEBUG_EXCEPTION;
@@ -92,7 +92,7 @@ public:
   virtual bool chain() const override { return chain_bit; }
   virtual bool get_execute() const override { return execute; }
   virtual bool store() const override { return store_bit; }
-  virtual bool load() const override { return load_bit; }
+  virtual bool get_load() const override { return load; }
 
   virtual match_result_t memory_access_match(processor_t * const proc,
       operation_t operation, reg_t address, std::optional<reg_t> data) override;
@@ -110,7 +110,7 @@ public:
   bool u = false;
   bool execute = false;
   bool store_bit = false;
-  bool load_bit = false;
+  bool load = false;
 };
 
 class module_t {
