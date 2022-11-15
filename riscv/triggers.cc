@@ -10,7 +10,7 @@ reg_t tdata2_csr_t::tdata2_read(const processor_t UNUSED * const proc) const noe
 }
 
 bool tdata2_csr_t::tdata2_write(processor_t * const proc, const reg_t val) noexcept {
-  if (dmode && !proc->get_state()->debug_mode) {
+  if (get_dmode() && !proc->get_state()->debug_mode) {
     return false;
   }
   tdata2 = val;
@@ -39,9 +39,6 @@ reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
 }
 
 bool mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcept {
-  if (dmode && !proc->get_state()->debug_mode) {
-    return false;
-  }
   auto xlen = proc->get_xlen();
   dmode = get_field(val, MCONTROL_DMODE(xlen));
   hit = get_field(val, CSR_MCONTROL_HIT);
@@ -191,6 +188,9 @@ reg_t module_t::tdata1_read(const processor_t * const proc, unsigned index) cons
 
 bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept
 {
+  if (triggers[index]->get_dmode() && !proc->get_state()->debug_mode) {
+    return false;
+  }
   bool result = triggers[index]->tdata1_write(proc, val);
   proc->trigger_updated(triggers);
   return result;
