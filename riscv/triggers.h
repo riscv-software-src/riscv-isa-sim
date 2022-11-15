@@ -57,8 +57,6 @@ public:
   virtual bool get_load() const { return false; }
   virtual action_t get_action() const { return ACTION_DEBUG_EXCEPTION; }
 
-  bool hit = false;
-
   virtual ~trigger_t() {};
 
 protected:
@@ -105,6 +103,7 @@ private:
 public:
   bool dmode = false;
   action_t action = ACTION_DEBUG_EXCEPTION;
+  bool hit = false;
   bool select = false;
   bool timing = false;
   bool chain = false;
