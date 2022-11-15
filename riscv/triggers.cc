@@ -10,7 +10,7 @@ reg_t trigger_with_tdata2_t::tdata2_read(const processor_t UNUSED * const proc) 
 }
 
 bool trigger_with_tdata2_t::tdata2_write(processor_t UNUSED * const proc, const reg_t UNUSED val) noexcept {
-  if (dmode && !proc->get_state()->debug_mode) {
+  if (get_dmode() && !proc->get_state()->debug_mode) {
     return false;
   }
   tdata2 = val;
@@ -39,7 +39,7 @@ reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
 }
 
 bool mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcept {
-  if (dmode && !proc->get_state()->debug_mode) {
+  if (get_dmode() && !proc->get_state()->debug_mode) {
     return false;
   }
   auto xlen = proc->get_xlen();
