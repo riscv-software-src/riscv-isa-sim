@@ -22,7 +22,7 @@ reg_t disabled_trigger_t::tdata1_read(const processor_t * const proc) const noex
   return tdata1;
 }
 
-void disabled_trigger_t::tdata1_write(processor_t * const proc, const reg_t val) noexcept
+void disabled_trigger_t::tdata1_write(processor_t * const proc, const reg_t val, const bool UNUSED allow_chain) noexcept
 {
   // Any supported tdata.type results in disabled trigger
   auto xlen = proc->get_xlen();
@@ -50,7 +50,7 @@ reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   return v;
 }
 
-void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcept {
+void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept {
   auto xlen = proc->get_xlen();
   assert(get_field(val, CSR_MCONTROL_TYPE(xlen)) == CSR_TDATA1_TYPE_MCONTROL);
   dmode = get_field(val, CSR_MCONTROL_DMODE(xlen));
@@ -58,7 +58,7 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcep
   select = get_field(val, MCONTROL_SELECT);
   timing = get_field(val, MCONTROL_TIMING);
   action = (triggers::action_t) get_field(val, MCONTROL_ACTION);
-  chain = get_field(val, MCONTROL_CHAIN);
+  chain = allow_chain ? get_field(val, MCONTROL_CHAIN) : 0;
   unsigned match_value = get_field(val, MCONTROL_MATCH);
   switch (match_value) {
     case MATCH_EQUAL:
@@ -177,6 +177,9 @@ bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_
   reg_t tdata1 = val;
   reg_t tdata2 = triggers[index]->tdata2_read(proc);
 
+  // hardware must zero chain in writes that set dmode to 0 if the next trigger has dmode of 1
+  const bool allow_chain = !(index+1 < triggers.size() && triggers[index+1]->get_dmode() && !get_field(val, CSR_TDATA1_DMODE(xlen)));
+
   // dmode only writable from debug mode
   if (!proc->get_state()->debug_mode) {
     assert(CSR_TDATA1_DMODE(xlen) == CSR_MCONTROL_DMODE(xlen));
@@ -189,7 +192,7 @@ bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_
     default: triggers[index] = new disabled_trigger_t(); break;
   }
 
-  triggers[index]->tdata1_write(proc, tdata1);
+  triggers[index]->tdata1_write(proc, tdata1, allow_chain);
   triggers[index]->tdata2_write(proc, tdata2);
   proc->trigger_updated(triggers);
   return true;

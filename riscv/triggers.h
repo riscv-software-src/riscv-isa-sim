@@ -55,7 +55,7 @@ public:
   virtual ~trigger_t() {};
 
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept = 0;
-  virtual void tdata1_write(processor_t * const proc, const reg_t val) noexcept = 0;
+  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept = 0;
   virtual reg_t tdata2_read(const processor_t * const proc) const noexcept = 0;
   virtual void tdata2_write(processor_t * const proc, const reg_t val) noexcept = 0;
 
@@ -82,7 +82,7 @@ protected:
 class disabled_trigger_t : public trigger_with_tdata2_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
-  virtual void tdata1_write(processor_t * const proc, const reg_t val) noexcept override;
+  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
   virtual bool get_dmode() const override { return dmode; }
 
@@ -103,7 +103,7 @@ public:
   } match_t;
 
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
-  virtual void tdata1_write(processor_t * const proc, const reg_t val) noexcept override;
+  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
   virtual bool get_dmode() const override { return dmode; }
   virtual bool get_chain() const override { return chain; }
