@@ -173,6 +173,10 @@ bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_
 
   auto xlen = proc->get_xlen();
 
+  // hardware should ignore writes that set dmode to 1 if the previous trigger has both dmode of 0 and chain of 1
+  if (index > 0 && !triggers[index-1]->get_dmode() && triggers[index-1]->get_chain() && get_field(val, CSR_TDATA1_DMODE(xlen)))
+    return false;
+
   unsigned type = get_field(val, CSR_TDATA1_TYPE(xlen));
   reg_t tdata1 = val;
   reg_t tdata2 = triggers[index]->tdata2_read(proc);
