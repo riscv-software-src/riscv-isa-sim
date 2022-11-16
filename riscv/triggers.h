@@ -114,6 +114,27 @@ private:
   action_t action;
 };
 
+class etrigger_t : public trigger_with_tdata2_t {
+public:
+  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
+
+  bool get_dmode() const override { return dmode; }
+  virtual action_t get_action() const override { return action; }
+
+  virtual match_result_t detect_trap_match(processor_t * const proc, const trap_t& t) override;
+
+private:
+  bool dmode;
+  bool hit;
+  bool vs;
+  bool vu;
+  bool m;
+  bool s;
+  bool u;
+  action_t action;
+};
+
 class mcontrol_t : public trigger_with_tdata2_t {
 public:
   typedef enum
