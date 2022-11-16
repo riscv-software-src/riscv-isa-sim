@@ -3,6 +3,7 @@
 #include "cfg.h"
 #include "sim.h"
 #include "mmu.h"
+#include "arith.h"
 #include "remote_bitbang.h"
 #include "cachesim.h"
 #include "extension.h"
@@ -14,6 +15,8 @@
 #include <string>
 #include <memory>
 #include <fstream>
+#include <limits>
+#include <cinttypes>
 #include "../VERSION"
 
 static void help(int exit_code = 1)
@@ -177,20 +180,36 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
       size += PGSIZE - size % PGSIZE;
 
     if (size != size0) {
-      fprintf(stderr, "Warning: the memory at  [0x%llX, 0x%llX] has been realigned\n"
+      fprintf(stderr, "Warning: the memory at [0x%llX, 0x%llX] has been realigned\n"
                       "to the %ld KiB page size: [0x%llX, 0x%llX]\n",
               base0, base0 + size0 - 1, long(PGSIZE / 1024), base, base + size - 1);
     }
 
     if (!mem_cfg_t::check_if_supported(base, size)) {
-      fprintf(stderr, "unsupported memory region "
+      fprintf(stderr, "Unsupported memory region "
                       "{base = 0x%llX, size = 0x%llX} specified\n",
-                      (unsigned long long)base,
-                      (unsigned long long)size);
+              base, size);
       exit(EXIT_FAILURE);
     }
 
-    res.push_back(mem_cfg_t(reg_t(base), reg_t(size)));
+    const unsigned long long max_allowed_pa = (1ull << MAX_PADDR_BITS) - 1ull;
+    assert(max_allowed_pa <= std::numeric_limits<reg_t>::max());
+    mem_cfg_t mem_region(base, size);
+    auto last_pa_region = mem_region.base + mem_region.size - 1;
+    if (last_pa_region > max_allowed_pa) {
+      int bits_required = 64 - clz(last_pa_region);
+      fprintf(stderr, "Unsupported memory region "
+                      "{base = 0x%" PRIX64 ", size = 0x%" PRIX64 "} specified,"
+                      " which requires %d bits of physical address\n"
+                      "    The largest accessible physical address "
+                      "is 0x%llX (defined by MAX_PADDR_BITS constant, which is %d)\n",
+              mem_region.base, mem_region.size, bits_required,
+              max_allowed_pa, MAX_PADDR_BITS);
+      exit(EXIT_FAILURE);
+    }
+
+    res.push_back(mem_region);
+
     if (!*p)
       break;
     if (*p != ',')
