@@ -13,6 +13,22 @@ void trigger_with_tdata2_t::tdata2_write(processor_t UNUSED * const proc, const 
   tdata2 = val;
 }
 
+reg_t disabled_trigger_t::tdata1_read(const processor_t * const proc) const noexcept
+{
+  auto xlen = proc->get_xlen();
+  reg_t tdata1 = 0;
+  tdata1 = set_field(tdata1, CSR_TDATA1_TYPE(xlen), CSR_TDATA1_TYPE_DISABLED);
+  tdata1 = set_field(tdata1, CSR_TDATA1_DMODE(xlen), dmode);
+  return tdata1;
+}
+
+void disabled_trigger_t::tdata1_write(processor_t * const proc, const reg_t val) noexcept
+{
+  // Any supported tdata.type results in disabled trigger
+  auto xlen = proc->get_xlen();
+  dmode = proc->get_state()->debug_mode ? get_field(val, CSR_TDATA1_DMODE(xlen)) : 0;
+}
+
 reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   reg_t v = 0;
   auto xlen = proc->get_xlen();
@@ -182,7 +198,21 @@ bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_
   if (triggers[index]->get_dmode() && !proc->get_state()->debug_mode) {
     return false;
   }
-  triggers[index]->tdata1_write(proc, val);
+
+  auto xlen = proc->get_xlen();
+
+  unsigned type = get_field(val, CSR_TDATA1_TYPE(xlen));
+  reg_t tdata1 = val;
+  reg_t tdata2 = triggers[index]->tdata2_read(proc);
+
+  delete triggers[index];
+  switch (type) {
+    case CSR_TDATA1_TYPE_MCONTROL: triggers[index] = new mcontrol_t(); break;
+    default: triggers[index] = new disabled_trigger_t(); break;
+  }
+
+  triggers[index]->tdata1_write(proc, tdata1);
+  triggers[index]->tdata2_write(proc, tdata2);
   proc->trigger_updated(triggers);
   return true;
 }
@@ -205,7 +235,7 @@ bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_
 reg_t module_t::tinfo_read(UNUSED const processor_t * const proc, unsigned UNUSED index) const noexcept
 {
   /* In spike, every trigger supports the same types. */
-  return 1<<MCONTROL_TYPE_MATCH;
+  return (1 << MCONTROL_TYPE_MATCH) | (1 << CSR_TDATA1_TYPE_DISABLED);
 }
 
 };
