@@ -177,6 +177,12 @@ bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_
   reg_t tdata1 = val;
   reg_t tdata2 = triggers[index]->tdata2_read(proc);
 
+  // dmode only writable from debug mode
+  if (!proc->get_state()->debug_mode) {
+    assert(CSR_TDATA1_DMODE(xlen) == MCONTROL_DMODE(xlen));
+    tdata1 = set_field(tdata1, CSR_TDATA1_DMODE(xlen), 0);
+  }
+
   delete triggers[index];
   switch (type) {
     case CSR_TDATA1_TYPE_MCONTROL: triggers[index] = new mcontrol_t(); break;
