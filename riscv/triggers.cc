@@ -148,6 +148,62 @@ match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operati
   return match_result_t(false);
 }
 
+reg_t itrigger_t::tdata1_read(const processor_t * const proc) const noexcept
+{
+  auto xlen = proc->get_xlen();
+  reg_t tdata1 = 0;
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_TYPE(xlen), CSR_TDATA1_TYPE_ITRIGGER);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_DMODE(xlen), dmode);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_HIT(xlen), hit);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_VS, proc->extension_enabled('H') ? vs : 0);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_VU, proc->extension_enabled('H') ? vu : 0);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_NMI, nmi);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_M, m);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_S, s);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_U, u);
+  tdata1 = set_field(tdata1, CSR_ITRIGGER_ACTION, action);
+  return tdata1;
+}
+
+void itrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const bool UNUSED allow_chain) noexcept
+{
+  auto xlen = proc->get_xlen();
+  assert(get_field(val, CSR_ITRIGGER_TYPE(xlen)) == CSR_TDATA1_TYPE_ITRIGGER);
+  dmode = get_field(val, CSR_ITRIGGER_DMODE(xlen));
+  hit = get_field(val, CSR_ITRIGGER_HIT(xlen));
+  vs = get_field(val, CSR_ITRIGGER_VS);
+  vu = get_field(val, CSR_ITRIGGER_VU);
+  nmi = get_field(val, CSR_ITRIGGER_NMI);
+  m = get_field(val, CSR_ITRIGGER_M);
+  s = proc->extension_enabled_const('S') ? get_field(val, CSR_ITRIGGER_S) : 0;
+  u = proc->extension_enabled_const('U') ? get_field(val, CSR_ITRIGGER_U) : 0;
+  action = (action_t)get_field(val, CSR_ITRIGGER_ACTION);
+  if (action > ACTION_MAXVAL || (action==ACTION_DEBUG_MODE && dmode==0))
+    action = ACTION_DEBUG_EXCEPTION;
+}
+
+match_result_t itrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t)
+{
+  state_t * const state = proc->get_state();
+  if ((state->prv == PRV_M && !m) ||
+      (!state->v && state->prv == PRV_S && !s) ||
+      (!state->v && state->prv == PRV_U && !u) ||
+      (state->v && state->prv == PRV_S && !vs) ||
+      (state->v && state->prv == PRV_U && !vu)) {
+    return match_result_t(false);
+  }
+
+  auto xlen = proc->get_xlen();
+  bool interrupt = (t.cause() & ((reg_t)1 << (xlen - 1))) != 0;
+  reg_t bit = t.cause() & ~((reg_t)1 << (xlen - 1));
+  assert(bit < xlen);
+  if (interrupt && ((bit == 0 && nmi) || ((tdata2 >> bit) & 1))) { // Assume NMI's exception code is 0
+    hit = true;
+    return match_result_t(true, TIMING_AFTER, action);
+  }
+  return match_result_t(false);
+}
+
 module_t::module_t(unsigned count) : triggers(count) {
   for (unsigned i = 0; i < count; i++) {
     triggers[i] = new disabled_trigger_t();
@@ -187,12 +243,14 @@ bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_
   // dmode only writable from debug mode
   if (!proc->get_state()->debug_mode) {
     assert(CSR_TDATA1_DMODE(xlen) == CSR_MCONTROL_DMODE(xlen));
+    assert(CSR_TDATA1_DMODE(xlen) == CSR_ITRIGGER_DMODE(xlen));
     tdata1 = set_field(tdata1, CSR_TDATA1_DMODE(xlen), 0);
   }
 
   delete triggers[index];
   switch (type) {
     case CSR_TDATA1_TYPE_MCONTROL: triggers[index] = new mcontrol_t(); break;
+    case CSR_TDATA1_TYPE_ITRIGGER: triggers[index] = new itrigger_t(); break;
     default: triggers[index] = new disabled_trigger_t(); break;
   }
 
@@ -246,10 +304,24 @@ match_result_t module_t::memory_access_match(operation_t operation, reg_t addres
   return match_result_t(false);
 }
 
+match_result_t module_t::detect_trap_match(const trap_t& t)
+{
+  state_t * const state = proc->get_state();
+  if (state->debug_mode)
+    return match_result_t(false);
+
+  for (auto trigger: triggers) {
+    match_result_t result = trigger->detect_trap_match(proc, t);
+    if (result.fire)
+      return result;
+  }
+  return match_result_t(false);
+}
+
 reg_t module_t::tinfo_read(UNUSED const processor_t * const proc, unsigned UNUSED index) const noexcept
 {
   /* In spike, every trigger supports the same types. */
-  return (1 << CSR_TDATA1_TYPE_MCONTROL) | (1 << CSR_TDATA1_TYPE_DISABLED);
+  return (1 << CSR_TDATA1_TYPE_MCONTROL) | (1 << CSR_TDATA1_TYPE_ITRIGGER) | (1 << CSR_TDATA1_TYPE_DISABLED);
 }
 
 };

@@ -69,6 +69,7 @@ public:
 
   virtual match_result_t memory_access_match(processor_t UNUSED * const proc,
       operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) { return match_result_t(false); }
+  virtual match_result_t detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) { return match_result_t(false); }
 };
 
 class trigger_with_tdata2_t : public trigger_t {
@@ -89,6 +90,28 @@ public:
 
 private:
   bool dmode;
+};
+
+class itrigger_t : public trigger_with_tdata2_t {
+public:
+  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
+
+  bool get_dmode() const override { return dmode; }
+  virtual action_t get_action() const override { return action; }
+
+  virtual match_result_t detect_trap_match(processor_t * const proc, const trap_t& t) override;
+
+private:
+  bool dmode;
+  bool hit;
+  bool vs;
+  bool vu;
+  bool nmi;
+  bool m;
+  bool s;
+  bool u;
+  action_t action;
 };
 
 class mcontrol_t : public trigger_with_tdata2_t {
@@ -148,6 +171,7 @@ public:
   unsigned count() const { return triggers.size(); }
 
   match_result_t memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data);
+  match_result_t detect_trap_match(const trap_t& t);
 
   processor_t *proc;
 private:
