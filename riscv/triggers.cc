@@ -10,9 +10,6 @@ reg_t trigger_with_tdata2_t::tdata2_read(const processor_t UNUSED * const proc) 
 }
 
 bool trigger_with_tdata2_t::tdata2_write(processor_t UNUSED * const proc, const reg_t UNUSED val) noexcept {
-  if (get_dmode() && !proc->get_state()->debug_mode) {
-    return false;
-  }
   tdata2 = val;
   return true;
 }
@@ -198,6 +195,9 @@ reg_t module_t::tdata2_read(const processor_t * const proc, unsigned index) cons
 
 bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_t val) noexcept
 {
+  if (triggers[index]->get_dmode() && !proc->get_state()->debug_mode) {
+    return false;
+  }
   bool result = triggers[index]->tdata2_write(proc, val);
   proc->trigger_updated(triggers);
   return result;
