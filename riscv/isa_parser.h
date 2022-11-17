@@ -12,7 +12,7 @@ class extension_t;
 
 typedef enum {
   // 65('A') ~ 90('Z') is reserved for standard isa in misa
-  EXT_ZFH,
+  EXT_ZFH = 'Z' + 1,
   EXT_ZFHMIN,
   EXT_ZBA,
   EXT_ZBB,
