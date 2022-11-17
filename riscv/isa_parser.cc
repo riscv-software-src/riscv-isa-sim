@@ -279,7 +279,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   }
 
   if (extension_table[EXT_ZFINX] && ((max_isa >> ('f' - 'a')) & 1)) {
-    bad_isa_string(str, ("Zfinx/ZDinx/Zhinx{min} extensions conflict with Base 'F/D/Q/Zfh{min}' extensions"));
+    bad_isa_string(str, ("Zfinx/Zdinx/Zhinx{min} extensions conflict with 'F/D/Q/Zfh{min}' extensions"));
   }
 
   if (extension_table[EXT_ZCF] && !extension_table['F']) {
