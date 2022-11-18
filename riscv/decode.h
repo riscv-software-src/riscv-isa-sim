@@ -36,6 +36,10 @@ const int NCSR = 4096;
 
 #define X_RA 1
 #define X_SP 2
+#define X_S0 8
+#define X_A0 10
+#define X_A1 11
+#define X_Sn 16
 
 #define VCSR_VXRM_SHIFT 1
 #define VCSR_VXRM  (0x3 << VCSR_VXRM_SHIFT)
@@ -73,6 +77,8 @@ const int NCSR = 4096;
    8)
 #define MAX_INSN_LENGTH 8
 #define PC_ALIGN 2
+
+#define Sn(n) ((n) < 2 ? X_S0 + (n) : X_Sn + (n))
 
 typedef uint64_t insn_bits_t;
 class insn_t
@@ -117,6 +123,16 @@ public:
   uint64_t rvc_rs1s() { return 8 + x(7, 3); }
   uint64_t rvc_rs2s() { return 8 + x(2, 3); }
 
+  uint64_t rvc_lbimm() { return (x(5, 1) << 1) + x(6, 1); }
+  uint64_t rvc_lhimm() { return (x(5, 1) << 1); }
+
+  uint64_t rvc_sreg1() { return x(7, 3); }
+  uint64_t rvc_sreg2() { return x(2, 3); }
+  uint64_t rvc_rlist() { return x(4, 4); }
+  uint64_t rvc_spimm() { return x(2, 2) << 4; }
+
+  uint64_t rvc_index() { return x(2, 8); }
+
   uint64_t v_vm() { return x(25, 1); }
   uint64_t v_wd() { return x(26, 1); }
   uint64_t v_nf() { return x(29, 3); }
@@ -140,6 +156,53 @@ public:
   uint64_t p_imm4() { return x(20, 4); }
   uint64_t p_imm5() { return x(20, 5); }
   uint64_t p_imm6() { return x(20, 6); }
+
+  uint64_t zcmp_regmask() {
+    unsigned mask = 0;
+    uint64_t rlist = rvc_rlist();
+
+    if (rlist >= 4)
+      mask |= 1U << X_RA;
+
+    for (uint i = 5; i <= rlist; i++)
+        mask |= 1U << Sn(i - 5);
+
+    if (rlist == 15)
+      mask |= 1U << Sn(11);
+
+    return mask;
+  }
+
+  uint64_t zcmp_stack_adjustment(int xlen) {
+    reg_t stack_adj_base = 0;
+    switch (rvc_rlist()) {
+    case 15:
+      stack_adj_base += 16;
+    case 14:
+      if (xlen == 64)
+        stack_adj_base += 16;
+    case 13:
+    case 12:
+      stack_adj_base += 16;
+    case 11:
+    case 10:
+      if (xlen == 64)
+        stack_adj_base += 16;
+    case 9:
+    case 8:
+      stack_adj_base += 16;
+    case 7:
+    case 6:
+      if (xlen == 64)
+        stack_adj_base += 16;
+    case 5:
+    case 4:
+      stack_adj_base += 16;
+      break;
+    }
+
+    return stack_adj_base + rvc_spimm();
+  }
 
 private:
   insn_bits_t b;
@@ -222,6 +285,12 @@ private:
 #define RVC_FRS2 READ_FREG(insn.rvc_rs2())
 #define RVC_FRS2S READ_FREG(insn.rvc_rs2s())
 #define RVC_SP READ_REG(X_SP)
+
+// Zc* macros
+#define RVC_SREG1 (Sn(insn.rvc_sreg1()))
+#define RVC_SREG2 (Sn(insn.rvc_sreg2()))
+#define SP READ_REG(X_SP)
+#define RA READ_REG(X_RA)
 
 // FPU macros
 #define READ_ZDINX_REG(reg) (xlen == 32 ? f64(READ_REG_PAIR(reg)) : f64(STATE.XPR[reg] & (uint64_t)-1))
@@ -332,6 +401,17 @@ do { \
     else if (STATE.v && ((h##field == 0) || \
                         ((STATE.prv == PRV_U) && (s##field == 0)))) \
       throw trap_virtual_instruction(insn.bits()); \
+  } while (0);
+
+#define require_zcmp_pushpop \
+  do { \
+    require_extension(EXT_ZCMP); \
+    reg_t rlist = insn.rvc_rlist(); \
+    require(rlist >= 4); \
+    \
+    if (p->extension_enabled('E')) { \
+      require(rlist <= 6); \
+    } \
   } while (0);
 
 #define set_fp_exceptions ({ if (softfloat_exceptionFlags) { \

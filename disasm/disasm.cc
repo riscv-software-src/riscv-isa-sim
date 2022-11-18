@@ -27,6 +27,18 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.rvc_lbimm()) + '(' + xpr_name[insn.rvc_rs1s()] + ')';
+  }
+} rvb_b_address;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.rvc_lhimm()) + '(' + xpr_name[insn.rvc_rs1s()] + ')';
+  }
+} rvb_h_address;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     return std::to_string((int)insn.s_imm()) + '(' + xpr_name[insn.rs1()] + ')';
   }
 } store_address;
@@ -48,6 +60,52 @@ struct : public arg_t {
     return xpr_name[insn.rs1()];
   }
 } xrs1;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((uint32_t)insn.rvc_index());
+  }
+} rvcm_jt_index;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    int rlist = insn.rvc_rlist();
+    if (rlist >= 4) {
+      switch(rlist) {
+        case 4: return "{ra}";
+        case 5: return "{ra, s0}";
+        case 15: return "{ra, s0-s11}";
+        default: return "{ra, s0-s" + std::to_string(rlist - 5)+'}';
+      }
+    } else {
+      return "unsupport rlist";
+    }
+  }
+} rvcm_pushpop_rlist;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return '-' + std::to_string(insn.zcmp_stack_adjustment(32));
+  }
+} rvcm_push_stack_adj_32;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return '-' + std::to_string(insn.zcmp_stack_adjustment(64));
+  }
+} rvcm_push_stack_adj_64;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string(insn.zcmp_stack_adjustment(32));
+  }
+} rvcm_pop_stack_adj_32;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string(insn.zcmp_stack_adjustment(64));
+  }
+} rvcm_pop_stack_adj_64;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
@@ -1203,7 +1261,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
   }
 
   // ext-c
-  if (isa->extension_enabled('C')) {
+  if (isa->extension_enabled(EXT_ZCA)) {
     DISASM_INSN("c.ebreak", c_add, mask_rd | mask_rvc_rs2, {});
     add_insn(new disasm_insn_t("ret", match_c_jr | match_rd_ra, mask_c_jr | mask_rd | mask_rvc_imm, {}));
     DISASM_INSN("c.jr", c_jr, mask_rvc_imm, {&rvc_rs1});
@@ -1227,21 +1285,13 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DISASM_INSN("c.or", c_or, 0, {&rvc_rs1s, &rvc_rs2s});
     DISASM_INSN("c.xor", c_xor, 0, {&rvc_rs1s, &rvc_rs2s});
     DISASM_INSN("c.lwsp", c_lwsp, 0, {&xrd, &rvc_lwsp_address});
-    DISASM_INSN("c.fld", c_fld, 0, {&rvc_fp_rs2s, &rvc_ld_address});
     DISASM_INSN("c.swsp", c_swsp, 0, {&rvc_rs2, &rvc_swsp_address});
     DISASM_INSN("c.lw", c_lw, 0, {&rvc_rs2s, &rvc_lw_address});
     DISASM_INSN("c.sw", c_sw, 0, {&rvc_rs2s, &rvc_lw_address});
     DISASM_INSN("c.beqz", c_beqz, 0, {&rvc_rs1s, &rvc_branch_target});
     DISASM_INSN("c.bnez", c_bnez, 0, {&rvc_rs1s, &rvc_branch_target});
     DISASM_INSN("c.j", c_j, 0, {&rvc_jump_target});
-    DISASM_INSN("c.fldsp", c_fldsp, 0, {&frd, &rvc_ldsp_address});
-    DISASM_INSN("c.fsd", c_fsd, 0, {&rvc_fp_rs2s, &rvc_ld_address});
-    DISASM_INSN("c.fsdsp", c_fsdsp, 0, {&rvc_fp_rs2, &rvc_sdsp_address});
     if (isa->get_max_xlen() == 32) {
-      DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
-      DISASM_INSN("c.flwsp", c_flwsp, 0, {&frd, &rvc_lwsp_address});
-      DISASM_INSN("c.fsw", c_fsw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
-      DISASM_INSN("c.fswsp", c_fswsp, 0, {&rvc_fp_rs2, &rvc_swsp_address});
       DISASM_INSN("c.jal", c_jal, 0, {&rvc_jump_target});
     } else {
       DISASM_INSN("c.ld", c_ld, 0, {&rvc_rs2s, &rvc_ld_address});
@@ -1250,6 +1300,59 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
       DISASM_INSN("c.sdsp", c_sdsp, 0, {&rvc_rs2, &rvc_sdsp_address});
       DISASM_INSN("c.addiw", c_addiw, 0, {&xrd, &rvc_imm});
     }
+  }
+
+  if (isa->extension_enabled(EXT_ZCD) && isa->extension_enabled('D')) {
+    DISASM_INSN("c.fld", c_fld, 0, {&rvc_fp_rs2s, &rvc_ld_address});
+    DISASM_INSN("c.fldsp", c_fldsp, 0, {&frd, &rvc_ldsp_address});
+    DISASM_INSN("c.fsd", c_fsd, 0, {&rvc_fp_rs2s, &rvc_ld_address});
+    DISASM_INSN("c.fsdsp", c_fsdsp, 0, {&rvc_fp_rs2, &rvc_sdsp_address});
+  }
+
+  if (isa->extension_enabled(EXT_ZCF) && isa->extension_enabled('F')) {
+    DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
+    DISASM_INSN("c.flwsp", c_flwsp, 0, {&frd, &rvc_lwsp_address});
+    DISASM_INSN("c.fsw", c_fsw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
+    DISASM_INSN("c.fswsp", c_fswsp, 0, {&rvc_fp_rs2, &rvc_swsp_address});
+  }
+
+  if (isa->extension_enabled(EXT_ZCB)) {
+    DISASM_INSN("c.zext.b", c_zext_b, 0, {&rvc_rs1s});
+    DISASM_INSN("c.sext.b", c_sext_b, 0, {&rvc_rs1s});
+    DISASM_INSN("c.zext.h", c_zext_h, 0, {&rvc_rs1s});
+    DISASM_INSN("c.sext.h", c_sext_h, 0, {&rvc_rs1s});
+    if (isa->get_max_xlen() == 64) {
+      DISASM_INSN("c.zext.w", c_zext_w, 0, {&rvc_rs1s});
+    }
+    DISASM_INSN("c.not", c_not, 0, {&rvc_rs1s});
+    DISASM_INSN("c.mul", c_mul, 0, {&rvc_rs1s, &rvc_rs2s});
+    DISASM_INSN("c.lbu", c_lbu, 0, {&rvc_rs2s, &rvb_b_address});
+    DISASM_INSN("c.lhu", c_lhu, 0, {&rvc_rs2s, &rvb_h_address});
+    DISASM_INSN("c.lh", c_lh, 0, {&rvc_rs2s, &rvb_h_address});
+    DISASM_INSN("c.sb", c_sb, 0, {&rvc_rs2s, &rvb_b_address});
+    DISASM_INSN("c.sh", c_sh, 0, {&rvc_rs2s, &rvb_h_address});
+  }
+
+  if (isa->extension_enabled(EXT_ZCMP)) {
+    if (isa->get_max_xlen() == 32) {
+      DISASM_INSN("cm.push", cm_push, 0, {&rvcm_pushpop_rlist, &rvcm_push_stack_adj_32});
+      DISASM_INSN("cm.pop", cm_pop, 0, {&rvcm_pushpop_rlist, &rvcm_pop_stack_adj_32});
+      DISASM_INSN("cm.popret", cm_popret, 0, {&rvcm_pushpop_rlist, &rvcm_pop_stack_adj_32});
+      DISASM_INSN("cm.popretz", cm_popretz, 0, {&rvcm_pushpop_rlist, &rvcm_pop_stack_adj_32});
+    } else {
+      DISASM_INSN("cm.push", cm_push, 0, {&rvcm_pushpop_rlist, &rvcm_push_stack_adj_64});
+      DISASM_INSN("cm.pop", cm_pop, 0, {&rvcm_pushpop_rlist, &rvcm_pop_stack_adj_64});
+      DISASM_INSN("cm.popret", cm_popret, 0, {&rvcm_pushpop_rlist, &rvcm_pop_stack_adj_64});
+      DISASM_INSN("cm.popretz", cm_popretz, 0, {&rvcm_pushpop_rlist, &rvcm_pop_stack_adj_64});
+    }
+
+    DISASM_INSN("cm.mva01s", cm_mva01s, 0, {&rvc_rs1s, &rvc_rs2s});
+    DISASM_INSN("cm.mvsa01", cm_mvsa01, 0, {&rvc_rs1s, &rvc_rs2s});
+  }
+
+  if (isa->extension_enabled(EXT_ZCMT)) {
+    DISASM_INSN("cm.jt", cm_jalt, 0x380, {&rvcm_jt_index});
+    DISASM_INSN("cm.jalt", cm_jalt, 0, {&rvcm_jt_index});
   }
 
   if (isa->extension_enabled('V')) {

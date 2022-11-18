@@ -1,4 +1,4 @@
-require_extension('C');
+require_extension(EXT_ZCA);
 if (!STATE.debug_mode &&
     ((STATE.prv == PRV_M && STATE.dcsr->ebreakm) ||
      (STATE.prv == PRV_S && STATE.dcsr->ebreaks) ||

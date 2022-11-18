@@ -175,6 +175,9 @@ struct state_t
   dcsr_csr_t_p dcsr;
   csr_t_p tselect;
   tdata2_csr_t_p tdata2;
+
+  csr_t_p jvt;
+
   bool debug_mode;
 
   mseccfg_csr_t_p mseccfg;
@@ -283,7 +286,7 @@ public:
     return impl_table[impl];
   }
   reg_t pc_alignment_mask() {
-    return ~(reg_t)(extension_enabled('C') ? 0 : 2);
+    return ~(reg_t)(extension_enabled(EXT_ZCA) ? 0 : 2);
   }
   void check_pc_alignment(reg_t pc) {
     if (unlikely(pc & ~pc_alignment_mask()))
