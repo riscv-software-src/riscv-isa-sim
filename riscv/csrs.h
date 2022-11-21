@@ -605,6 +605,14 @@ class tdata2_csr_t: public csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
+class tinfo_csr_t: public csr_t {
+ public:
+  tinfo_csr_t(processor_t* const proc, const reg_t addr);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t UNUSED val) noexcept override { return false; };
+};
+
 // For CSRs that are only writable from debug mode
 class debug_mode_csr_t: public basic_csr_t {
  public:

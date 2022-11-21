@@ -208,4 +208,10 @@ bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_
   return result;
 }
 
+reg_t module_t::tinfo_read(UNUSED const processor_t * const proc, unsigned UNUSED index) const noexcept
+{
+  /* In spike, every trigger supports the same types. */
+  return 1<<MCONTROL_TYPE_MATCH;
+}
+
 };
