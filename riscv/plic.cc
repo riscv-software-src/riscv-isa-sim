@@ -150,11 +150,11 @@ bool plic_t::priority_read(reg_t offset, uint32_t *val)
 {
   uint32_t id = (offset >> 2);
 
-  if (id == 0 || id >= num_ids) {
-    return false;
-  }
+  if (id > 0 && id < num_ids)
+    *val = priority[id];
+  else
+    *val = 0;
 
-  *val = priority[id];
   return true;
 }
 
@@ -162,12 +162,11 @@ bool plic_t::priority_write(reg_t offset, uint32_t val)
 {
   uint32_t id = (offset >> 2);
 
-  if (id == 0 || id >= num_ids) {
-    return false;
+  if (id > 0 && id < num_ids) {
+    val &= ((1 << PLIC_PRIO_BITS) - 1);
+    priority[id] = val;
   }
 
-  val &= ((1 << PLIC_PRIO_BITS) - 1);
-  priority[id] = val;
   return true;
 }
 
@@ -176,11 +175,11 @@ bool plic_t::context_enable_read(const plic_context_t *c,
 {
   uint32_t id_word = offset >> 2;
 
-  if (num_ids_word < id_word) {
-    return false;
-  }
+  if (id_word < num_ids_word)
+    *val = c->enable[id_word];
+  else
+    *val = 0;
 
-  *val = c->enable[id_word];
   return true;
 }
 
@@ -189,9 +188,8 @@ bool plic_t::context_enable_write(plic_context_t *c,
 {
   uint32_t id_word = offset >> 2;
 
-  if (num_ids_word < id_word) {
-    return false;
-  }
+  if (id_word >= num_ids_word)
+    return true;
 
   uint32_t old_val = c->enable[id_word];
   uint32_t new_val = id_word == 0 ? val & ~(uint32_t)1 : val;
@@ -232,7 +230,7 @@ bool plic_t::context_read(plic_context_t *c,
       *val = context_claim(c);
       return true;
     default:
-      return false;
+      return true;
   };
 }
 
@@ -317,9 +315,15 @@ bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes)
   bool ret = false;
   uint32_t val = 0;
 
-  /* Only 32bit loads supported */
-  if (len != 4) {
-    return false;
+  switch (len) {
+    case 4:
+      break;
+    case 8:
+      // Implement double-word loads as a pair of word loads
+      return load(addr, 4, bytes) && load(addr + 4, 4, bytes + 4);
+    default:
+      // Subword loads are not supported
+      return false;
   }
 
   if (PRIORITY_BASE <= addr && addr < ENABLE_BASE) {
@@ -350,9 +354,15 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   bool ret = false;
   uint32_t val;
 
-  /* Only 32bit stores supported */
-  if (len != 4) {
-    return false;
+  switch (len) {
+    case 4:
+      break;
+    case 8:
+      // Implement double-word stores as a pair of word stores
+      return store(addr, 4, bytes) && store(addr + 4, 4, bytes + 4);
+    default:
+      // Subword stores are not supported
+      return false;
   }
 
   memcpy((uint8_t *)&val, bytes, len);
