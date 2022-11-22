@@ -241,7 +241,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     const reg_t mevent_mask = proc->extension_enabled_const(EXT_SSCOFPMF) ? MHPMEVENT_OF | MHPMEVENT_MINH
       | (proc->extension_enabled_const('U') ? MHPMEVENT_UINH : 0)
       | (proc->extension_enabled_const('S') ? MHPMEVENT_SINH : 0)
-      | (proc->extension_enabled_const('H') ? MHPMEVENT_VUINH | MHPMEVENT_VSINH : 0) : 0;
+      | (proc->extension_enabled('H') ? MHPMEVENT_VUINH | MHPMEVENT_VSINH : 0) : 0;
     mevent[i - 3] = std::make_shared<masked_csr_t>(proc, which_mevent, mevent_mask, 0);
     auto mcounter = std::make_shared<const_csr_t>(proc, which_mcounter, 0);
     csrmap[which_mcounter] = mcounter;
