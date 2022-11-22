@@ -9,9 +9,8 @@ reg_t trigger_with_tdata2_t::tdata2_read(const processor_t UNUSED * const proc) 
   return tdata2;
 }
 
-bool trigger_with_tdata2_t::tdata2_write(processor_t UNUSED * const proc, const reg_t UNUSED val) noexcept {
+void trigger_with_tdata2_t::tdata2_write(processor_t UNUSED * const proc, const reg_t UNUSED val) noexcept {
   tdata2 = val;
-  return true;
 }
 
 reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
@@ -35,7 +34,7 @@ reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   return v;
 }
 
-bool mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcept {
+void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcept {
   auto xlen = proc->get_xlen();
   dmode = get_field(val, MCONTROL_DMODE(xlen));
   hit = get_field(val, CSR_MCONTROL_HIT);
@@ -66,7 +65,6 @@ bool mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcep
   // Assume we're here because of csrw.
   if (execute)
     timing = 0;
-  return true;
 }
 
 bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
@@ -183,9 +181,9 @@ bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_
   if (triggers[index]->get_dmode() && !proc->get_state()->debug_mode) {
     return false;
   }
-  bool result = triggers[index]->tdata1_write(proc, val);
+  triggers[index]->tdata1_write(proc, val);
   proc->trigger_updated(triggers);
-  return result;
+  return true;
 }
 
 reg_t module_t::tdata2_read(const processor_t * const proc, unsigned index) const noexcept
@@ -198,9 +196,9 @@ bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_
   if (triggers[index]->get_dmode() && !proc->get_state()->debug_mode) {
     return false;
   }
-  bool result = triggers[index]->tdata2_write(proc, val);
+  triggers[index]->tdata2_write(proc, val);
   proc->trigger_updated(triggers);
-  return result;
+  return true;
 }
 
 reg_t module_t::tinfo_read(UNUSED const processor_t * const proc, unsigned UNUSED index) const noexcept
