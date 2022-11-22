@@ -20,10 +20,10 @@
     } \
   }
 
-#define VI_ELEMENT_SKIP(inx) \
-  if (inx >= vl) { \
+#define VI_ELEMENT_SKIP \
+  if (i >= vl) { \
     continue; \
-  } else if (inx < P.VU.vstart->read()) { \
+  } else if (i < P.VU.vstart->read()) { \
     continue; \
   } else { \
     VI_LOOP_ELEMENT_SKIP(); \
@@ -1179,7 +1179,7 @@ reg_t index[P.VU.vlmax]; \
   const reg_t vd = insn.rd(); \
   VI_CHECK_LOAD(elt_width, is_mask_ldst); \
   for (reg_t i = 0; i < vl; ++i) { \
-    VI_ELEMENT_SKIP(i); \
+    VI_ELEMENT_SKIP; \
     VI_STRIP(i); \
     P.VU.vstart->write(i); \
     for (reg_t fn = 0; fn < nf; ++fn) { \
@@ -1200,7 +1200,7 @@ reg_t index[P.VU.vlmax]; \
   VI_CHECK_LD_INDEX(elt_width); \
   VI_DUPLICATE_VREG(insn.rs2(), elt_width); \
   for (reg_t i = 0; i < vl; ++i) { \
-    VI_ELEMENT_SKIP(i); \
+    VI_ELEMENT_SKIP; \
     VI_STRIP(i); \
     P.VU.vstart->write(i); \
     for (reg_t fn = 0; fn < nf; ++fn) { \
@@ -1234,7 +1234,7 @@ reg_t index[P.VU.vlmax]; \
   VI_CHECK_STORE(elt_width, is_mask_ldst); \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i) \
-    VI_ELEMENT_SKIP(i); \
+    VI_ELEMENT_SKIP; \
     P.VU.vstart->write(i); \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       elt_width##_t val = P.VU.elt<elt_width##_t>(vs3 + fn * emul, vreg_inx); \
@@ -1255,7 +1255,7 @@ reg_t index[P.VU.vlmax]; \
   VI_DUPLICATE_VREG(insn.rs2(), elt_width); \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i) \
-    VI_ELEMENT_SKIP(i); \
+    VI_ELEMENT_SKIP; \
     P.VU.vstart->write(i); \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       switch (P.VU.vsew) { \
@@ -1289,7 +1289,7 @@ reg_t index[P.VU.vlmax]; \
   bool early_stop = false; \
   for (reg_t i = p->VU.vstart->read(); i < vl; ++i) { \
     VI_STRIP(i); \
-    VI_ELEMENT_SKIP(i); \
+    VI_ELEMENT_SKIP; \
     \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       uint64_t val; \
@@ -1403,7 +1403,7 @@ reg_t index[P.VU.vlmax]; \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
-    VI_ELEMENT_SKIP(i); \
+    VI_ELEMENT_SKIP; \
     VI_STRIP(i); \
     P.VU.vstart->write(i); \
     switch (P.VU.vsew) { \
