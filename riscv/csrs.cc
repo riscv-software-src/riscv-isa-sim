@@ -650,6 +650,10 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
     state->mie->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hie, sie
     state->mip->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hip, sip, hvip
     state->hstatus->write(0);
+    for (reg_t i = 3; i < N_HPMCOUNTERS + 3; ++i) {
+      const reg_t new_mevent = state->mevent[i - 3]->read() & ~(MHPMEVENT_VUINH | MHPMEVENT_VSINH);
+      state->mevent[i - 3]->write(new_mevent);
+    }
   }
 
   return basic_csr_t::unlogged_write(new_misa);
