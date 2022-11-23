@@ -559,6 +559,13 @@ class counter_proxy_csr_t: public proxy_csr_t {
   bool myenable(csr_t_p counteren) const noexcept;
 };
 
+class mevent_csr_t: public basic_csr_t {
+ public:
+  mevent_csr_t(processor_t* const proc, const reg_t addr);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
 // For machine-level CSRs that only exist with Hypervisor
 class hypervisor_csr_t: public basic_csr_t {
  public:
