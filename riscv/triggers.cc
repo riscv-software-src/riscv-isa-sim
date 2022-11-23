@@ -32,7 +32,7 @@ void disabled_trigger_t::tdata1_write(processor_t * const proc, const reg_t val)
 reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   reg_t v = 0;
   auto xlen = proc->get_xlen();
-  v = set_field(v, MCONTROL_TYPE(xlen), MCONTROL_TYPE_MATCH);
+  v = set_field(v, MCONTROL_TYPE(xlen), CSR_TDATA1_TYPE_MCONTROL);
   v = set_field(v, MCONTROL_DMODE(xlen), dmode);
   v = set_field(v, MCONTROL_MASKMAX(xlen), 0);
   v = set_field(v, CSR_MCONTROL_HIT, hit);
@@ -236,7 +236,7 @@ bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_
 reg_t module_t::tinfo_read(UNUSED const processor_t * const proc, unsigned UNUSED index) const noexcept
 {
   /* In spike, every trigger supports the same types. */
-  return (1 << MCONTROL_TYPE_MATCH) | (1 << CSR_TDATA1_TYPE_DISABLED);
+  return (1 << CSR_TDATA1_TYPE_MCONTROL) | (1 << CSR_TDATA1_TYPE_DISABLED);
 }
 
 };
