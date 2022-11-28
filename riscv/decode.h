@@ -164,7 +164,7 @@ public:
     if (rlist >= 4)
       mask |= 1U << X_RA;
 
-    for (uint i = 5; i <= rlist; i++)
+    for (reg_t i = 5; i <= rlist; i++)
         mask |= 1U << Sn(i - 5);
 
     if (rlist == 15)
