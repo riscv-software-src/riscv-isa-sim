@@ -52,6 +52,7 @@ reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
 
 void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcept {
   auto xlen = proc->get_xlen();
+  assert(get_field(val, CSR_MCONTROL_TYPE(xlen)) == CSR_TDATA1_TYPE_MCONTROL);
   dmode = get_field(val, MCONTROL_DMODE(xlen));
   hit = get_field(val, CSR_MCONTROL_HIT);
   select = get_field(val, MCONTROL_SELECT);
