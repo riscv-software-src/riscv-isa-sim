@@ -33,7 +33,7 @@ reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   reg_t v = 0;
   auto xlen = proc->get_xlen();
   v = set_field(v, MCONTROL_TYPE(xlen), CSR_TDATA1_TYPE_MCONTROL);
-  v = set_field(v, MCONTROL_DMODE(xlen), dmode);
+  v = set_field(v, CSR_MCONTROL_DMODE(xlen), dmode);
   v = set_field(v, MCONTROL_MASKMAX(xlen), 0);
   v = set_field(v, CSR_MCONTROL_HIT, hit);
   v = set_field(v, MCONTROL_SELECT, select);
@@ -53,7 +53,7 @@ reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
 void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val) noexcept {
   auto xlen = proc->get_xlen();
   assert(get_field(val, CSR_MCONTROL_TYPE(xlen)) == CSR_TDATA1_TYPE_MCONTROL);
-  dmode = get_field(val, MCONTROL_DMODE(xlen));
+  dmode = get_field(val, CSR_MCONTROL_DMODE(xlen));
   hit = get_field(val, CSR_MCONTROL_HIT);
   select = get_field(val, MCONTROL_SELECT);
   timing = get_field(val, MCONTROL_TIMING);
@@ -179,7 +179,7 @@ bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_
 
   // dmode only writable from debug mode
   if (!proc->get_state()->debug_mode) {
-    assert(CSR_TDATA1_DMODE(xlen) == MCONTROL_DMODE(xlen));
+    assert(CSR_TDATA1_DMODE(xlen) == CSR_MCONTROL_DMODE(xlen));
     tdata1 = set_field(tdata1, CSR_TDATA1_DMODE(xlen), 0);
   }
 
