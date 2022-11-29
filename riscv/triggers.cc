@@ -150,7 +150,7 @@ match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operati
 
 module_t::module_t(unsigned count) : triggers(count) {
   for (unsigned i = 0; i < count; i++) {
-    triggers[i] = new mcontrol_t();
+    triggers[i] = new disabled_trigger_t();
   }
 }
 
