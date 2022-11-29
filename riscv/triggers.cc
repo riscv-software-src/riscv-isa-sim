@@ -26,7 +26,7 @@ void disabled_trigger_t::tdata1_write(processor_t * const proc, const reg_t val)
 {
   // Any supported tdata.type results in disabled trigger
   auto xlen = proc->get_xlen();
-  dmode = proc->get_state()->debug_mode ? get_field(val, CSR_TDATA1_DMODE(xlen)) : 0;
+  dmode = get_field(val, CSR_TDATA1_DMODE(xlen));
 }
 
 reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
