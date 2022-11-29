@@ -160,35 +160,6 @@ module_t::~module_t() {
   }
 }
 
-match_result_t module_t::memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data)
-{
-  state_t * const state = proc->get_state();
-  if (state->debug_mode)
-    return match_result_t(false);
-
-  bool chain_ok = true;
-
-  for (unsigned int i = 0; i < triggers.size(); i++) {
-    if (!chain_ok) {
-      chain_ok |= !triggers[i]->get_chain();
-      continue;
-    }
-
-    /* Note: We call memory_access_match for each trigger in a chain as long as
-     * the triggers are matching. This results in "temperature coding" so that
-     * `hit` is set on each of the consecutive triggers that matched, even if the
-     * entire chain did not match. This is allowed by the spec, because the final
-     * trigger in the chain will never get `hit` set unless the entire chain
-     * matches. */
-    match_result_t result = triggers[i]->memory_access_match(proc, operation, address, data);
-    if (result.fire && !triggers[i]->get_chain())
-      return result;
-
-    chain_ok = result.fire || !triggers[i]->get_chain();
-  }
-  return match_result_t(false);
-}
-
 reg_t module_t::tdata1_read(const processor_t * const proc, unsigned index) const noexcept
 {
   return triggers[index]->tdata1_read(proc);
@@ -231,6 +202,35 @@ bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_
   triggers[index]->tdata2_write(proc, val);
   proc->trigger_updated(triggers);
   return true;
+}
+
+match_result_t module_t::memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data)
+{
+  state_t * const state = proc->get_state();
+  if (state->debug_mode)
+    return match_result_t(false);
+
+  bool chain_ok = true;
+
+  for (unsigned int i = 0; i < triggers.size(); i++) {
+    if (!chain_ok) {
+      chain_ok |= !triggers[i]->get_chain();
+      continue;
+    }
+
+    /* Note: We call memory_access_match for each trigger in a chain as long as
+     * the triggers are matching. This results in "temperature coding" so that
+     * `hit` is set on each of the consecutive triggers that matched, even if the
+     * entire chain did not match. This is allowed by the spec, because the final
+     * trigger in the chain will never get `hit` set unless the entire chain
+     * matches. */
+    match_result_t result = triggers[i]->memory_access_match(proc, operation, address, data);
+    if (result.fire && !triggers[i]->get_chain())
+      return result;
+
+    chain_ok = result.fire || !triggers[i]->get_chain();
+  }
+  return match_result_t(false);
 }
 
 reg_t module_t::tinfo_read(UNUSED const processor_t * const proc, unsigned UNUSED index) const noexcept

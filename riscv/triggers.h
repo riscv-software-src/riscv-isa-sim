@@ -138,15 +138,15 @@ public:
   module_t(unsigned count);
   ~module_t();
 
-  unsigned count() const { return triggers.size(); }
-
-  match_result_t memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data);
-
   reg_t tdata1_read(const processor_t * const proc, unsigned index) const noexcept;
   bool tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept;
   reg_t tdata2_read(const processor_t * const proc, unsigned index) const noexcept;
   bool tdata2_write(processor_t * const proc, unsigned index, const reg_t val) noexcept;
   reg_t tinfo_read(const processor_t * const proc, unsigned index) const noexcept;
+
+  unsigned count() const { return triggers.size(); }
+
+  match_result_t memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data);
 
   processor_t *proc;
 private:
