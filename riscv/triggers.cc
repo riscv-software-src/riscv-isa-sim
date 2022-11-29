@@ -101,7 +101,8 @@ match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operati
       (operation == triggers::OPERATION_LOAD && !load) ||
       (state->prv == PRV_M && !m) ||
       (state->prv == PRV_S && !s) ||
-      (state->prv == PRV_U && !u)) {
+      (state->prv == PRV_U && !u) ||
+      (state->v)) {
     return match_result_t(false);
   }
 
