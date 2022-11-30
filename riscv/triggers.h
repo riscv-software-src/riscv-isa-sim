@@ -24,10 +24,18 @@ typedef enum
 } action_t;
 
 typedef enum {
-  MATCH_NONE,
-  MATCH_FIRE_BEFORE,
-  MATCH_FIRE_AFTER
-} match_result_t;
+  TIMING_BEFORE = 0,
+  TIMING_AFTER = 1
+} timing_t;
+
+struct match_result_t {
+  match_result_t(const bool f, const timing_t t=TIMING_BEFORE) {
+    fire = f;
+    timing = t;
+  }
+  bool fire;
+  timing_t timing;
+};
 
 class matched_t
 {

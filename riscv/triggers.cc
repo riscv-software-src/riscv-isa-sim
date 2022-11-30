@@ -107,13 +107,13 @@ match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operati
       (state->prv == PRV_M && !m) ||
       (state->prv == PRV_S && !s) ||
       (state->prv == PRV_U && !u)) {
-    return MATCH_NONE;
+    return match_result_t(false);
   }
 
   reg_t value;
   if (select) {
     if (!data.has_value())
-      return MATCH_NONE;
+      return match_result_t(false);
     value = *data;
   } else {
     value = address;
@@ -130,12 +130,9 @@ match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operati
     /* This is OK because this function is only called if the trigger was not
      * inhibited by the previous trigger in the chain. */
     hit = true;
-    if (timing)
-      return MATCH_FIRE_AFTER;
-    else
-      return MATCH_FIRE_BEFORE;
+    return match_result_t(true, timing_t(timing));
   }
-  return MATCH_NONE;
+  return match_result_t(false);
 }
 
 module_t::module_t(unsigned count) : triggers(count) {
@@ -154,7 +151,7 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
 {
   state_t * const state = proc->get_state();
   if (state->debug_mode)
-    return MATCH_NONE;
+    return match_result_t(false);
 
   bool chain_ok = true;
 
@@ -171,14 +168,14 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
     match_result_t result = triggers[i]->memory_access_match(proc, operation, address, data);
-    if (result != MATCH_NONE && !triggers[i]->get_chain()) {
+    if (result.fire && !triggers[i]->get_chain()) {
       *action = triggers[i]->get_action();
       return result;
     }
 
-    chain_ok = result != MATCH_NONE || !triggers[i]->get_chain();
+    chain_ok = result.fire || !triggers[i]->get_chain();
   }
-  return MATCH_NONE;
+  return match_result_t(false);
 }
 
 reg_t module_t::tdata1_read(const processor_t * const proc, unsigned index) const noexcept
