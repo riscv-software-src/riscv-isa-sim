@@ -67,7 +67,7 @@ public:
   virtual bool get_load() const { return false; }
   virtual action_t get_action() const { return ACTION_DEBUG_EXCEPTION; }
 
-  virtual match_result_t memory_access_match(processor_t UNUSED * const proc,
+  virtual match_result_t detect_memory_access_match(processor_t UNUSED * const proc,
       operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) { return match_result_t(false); }
   virtual match_result_t detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) { return match_result_t(false); }
 };
@@ -157,7 +157,7 @@ public:
   virtual bool get_load() const override { return load; }
   virtual action_t get_action() const override { return action; }
 
-  virtual match_result_t memory_access_match(processor_t * const proc,
+  virtual match_result_t detect_memory_access_match(processor_t * const proc,
       operation_t operation, reg_t address, std::optional<reg_t> data) override;
 
 private:
@@ -191,7 +191,7 @@ public:
 
   unsigned count() const { return triggers.size(); }
 
-  match_result_t memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data);
+  match_result_t detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data);
   match_result_t detect_trap_match(const trap_t& t);
 
   processor_t *proc;

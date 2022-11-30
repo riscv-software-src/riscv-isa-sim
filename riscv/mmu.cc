@@ -157,7 +157,7 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, std::
   if (matched_trigger || !proc)
     return;
 
-  triggers::match_result_t match = proc->TM.memory_access_match(operation, address, data);
+  triggers::match_result_t match = proc->TM.detect_memory_access_match(operation, address, data);
 
   if (match.fire)
     switch (match.timing) {

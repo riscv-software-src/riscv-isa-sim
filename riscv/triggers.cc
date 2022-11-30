@@ -111,7 +111,7 @@ bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
   assert(0);
 }
 
-match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) {
+match_result_t mcontrol_t::detect_memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) {
   state_t * const state = proc->get_state();
   if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
       (operation == triggers::OPERATION_STORE && !store) ||
@@ -331,7 +331,7 @@ bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_
   return true;
 }
 
-match_result_t module_t::memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data)
+match_result_t module_t::detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data)
 {
   state_t * const state = proc->get_state();
   if (state->debug_mode)
@@ -345,13 +345,13 @@ match_result_t module_t::memory_access_match(operation_t operation, reg_t addres
       continue;
     }
 
-    /* Note: We call memory_access_match for each trigger in a chain as long as
+    /* Note: We call detect_memory_access_match for each trigger in a chain as long as
      * the triggers are matching. This results in "temperature coding" so that
      * `hit` is set on each of the consecutive triggers that matched, even if the
      * entire chain did not match. This is allowed by the spec, because the final
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
-    match_result_t result = trigger->memory_access_match(proc, operation, address, data);
+    match_result_t result = trigger->detect_memory_access_match(proc, operation, address, data);
     if (result.fire && !trigger->get_chain())
       return result;
 
