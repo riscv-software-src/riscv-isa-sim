@@ -157,19 +157,18 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, std::
   if (matched_trigger || !proc)
     return;
 
-  triggers::action_t action;
-  auto match = proc->TM.memory_access_match(&action, operation, address, data);
+  triggers::match_result_t match = proc->TM.memory_access_match(operation, address, data);
 
   if (match.fire)
     switch (match.timing) {
       case triggers::TIMING_BEFORE:
-        throw triggers::matched_t(operation, address, action);
+        throw triggers::matched_t(operation, address, match.action);
 
       case triggers::TIMING_AFTER:
         // We want to take this exception on the next instruction.  We check
         // whether to do so in the I$ refill path, so flush the I$.
         flush_icache();
-        matched_trigger = new triggers::matched_t(operation, address, action);
+        matched_trigger = new triggers::matched_t(operation, address, match.action);
     }
 }
 

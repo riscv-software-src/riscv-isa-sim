@@ -130,7 +130,7 @@ match_result_t mcontrol_t::memory_access_match(processor_t * const proc, operati
     /* This is OK because this function is only called if the trigger was not
      * inhibited by the previous trigger in the chain. */
     hit = true;
-    return match_result_t(true, timing_t(timing));
+    return match_result_t(true, timing_t(timing), action);
   }
   return match_result_t(false);
 }
@@ -147,7 +147,7 @@ module_t::~module_t() {
   }
 }
 
-match_result_t module_t::memory_access_match(action_t * const action, operation_t operation, reg_t address, std::optional<reg_t> data)
+match_result_t module_t::memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data)
 {
   state_t * const state = proc->get_state();
   if (state->debug_mode)
@@ -168,10 +168,8 @@ match_result_t module_t::memory_access_match(action_t * const action, operation_
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
     match_result_t result = triggers[i]->memory_access_match(proc, operation, address, data);
-    if (result.fire && !triggers[i]->get_chain()) {
-      *action = triggers[i]->get_action();
+    if (result.fire && !triggers[i]->get_chain())
       return result;
-    }
 
     chain_ok = result.fire || !triggers[i]->get_chain();
   }

@@ -29,12 +29,14 @@ typedef enum {
 } timing_t;
 
 struct match_result_t {
-  match_result_t(const bool f, const timing_t t=TIMING_BEFORE) {
+  match_result_t(const bool f, const timing_t t=TIMING_BEFORE, const action_t a=ACTION_DEBUG_EXCEPTION) {
     fire = f;
     timing = t;
+    action = a;
   }
   bool fire;
   timing_t timing;
+  action_t action;
 };
 
 class matched_t
@@ -127,8 +129,7 @@ public:
 
   unsigned count() const { return triggers.size(); }
 
-  match_result_t memory_access_match(action_t * const action,
-      operation_t operation, reg_t address, std::optional<reg_t> data);
+  match_result_t memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data);
 
   reg_t tdata1_read(const processor_t * const proc, unsigned index) const noexcept;
   bool tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept;
