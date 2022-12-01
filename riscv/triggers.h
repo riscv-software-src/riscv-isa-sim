@@ -69,7 +69,7 @@ public:
 
   virtual std::optional<match_result_t> detect_memory_access_match(processor_t UNUSED * const proc,
       operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) noexcept { return std::nullopt; }
-  virtual match_result_t detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) noexcept { return match_result_t(false); }
+  virtual std::optional<match_result_t> detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) noexcept { return std::nullopt; }
 
 protected:
   action_t legalize_action(reg_t val) const noexcept;
@@ -95,7 +95,7 @@ public:
   bool get_dmode() const override { return dmode; }
   virtual action_t get_action() const override { return action; }
 
-  virtual match_result_t detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
+  virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
 
 private:
   bool dmode;
@@ -117,7 +117,7 @@ public:
   bool get_dmode() const override { return dmode; }
   virtual action_t get_action() const override { return action; }
 
-  virtual match_result_t detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
+  virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
 
 private:
   bool dmode;

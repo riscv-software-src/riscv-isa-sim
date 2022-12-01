@@ -184,7 +184,7 @@ void itrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   action = legalize_action(get_field(val, CSR_ITRIGGER_ACTION));
 }
 
-match_result_t itrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
+std::optional<match_result_t> itrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
   state_t * const state = proc->get_state();
   if ((state->prv == PRV_M && !m) ||
@@ -192,7 +192,7 @@ match_result_t itrigger_t::detect_trap_match(processor_t * const proc, const tra
       (!state->v && state->prv == PRV_U && !u) ||
       (state->v && state->prv == PRV_S && !vs) ||
       (state->v && state->prv == PRV_U && !vu)) {
-    return match_result_t(false);
+    return std::nullopt;
   }
 
   auto xlen = proc->get_xlen();
@@ -203,7 +203,7 @@ match_result_t itrigger_t::detect_trap_match(processor_t * const proc, const tra
     hit = true;
     return match_result_t(true, TIMING_AFTER, action);
   }
-  return match_result_t(false);
+  return std::nullopt;
 }
 
 reg_t etrigger_t::tdata1_read(const processor_t * const proc) const noexcept
@@ -236,7 +236,7 @@ void etrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   action = legalize_action(get_field(val, CSR_ETRIGGER_ACTION));
 }
 
-match_result_t etrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
+std::optional<match_result_t> etrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
   state_t * const state = proc->get_state();
   if ((state->prv == PRV_M && !m) ||
@@ -244,7 +244,7 @@ match_result_t etrigger_t::detect_trap_match(processor_t * const proc, const tra
       (!state->v && state->prv == PRV_U && !u) ||
       (state->v && state->prv == PRV_S && !vs) ||
       (state->v && state->prv == PRV_U && !vu)) {
-    return match_result_t(false);
+    return std::nullopt;
   }
 
   auto xlen = proc->get_xlen();
@@ -255,7 +255,7 @@ match_result_t etrigger_t::detect_trap_match(processor_t * const proc, const tra
     hit = true;
     return match_result_t(true, TIMING_AFTER, action);
   }
-  return match_result_t(false);
+  return std::nullopt;
 }
 
 module_t::module_t(unsigned count) : triggers(count) {
@@ -367,8 +367,8 @@ std::optional<match_result_t> module_t::detect_trap_match(const trap_t& t) noexc
     return std::nullopt;
 
   for (auto trigger: triggers) {
-    match_result_t result = trigger->detect_trap_match(proc, t);
-    if (result.fire)
+    auto result = trigger->detect_trap_match(proc, t);
+    if (result.has_value())
       return result;
   }
   return std::nullopt;
