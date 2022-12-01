@@ -147,7 +147,7 @@ std::optional<match_result_t> mcontrol_t::detect_memory_access_match(processor_t
     /* This is OK because this function is only called if the trigger was not
      * inhibited by the previous trigger in the chain. */
     hit = true;
-    return match_result_t(true, timing_t(timing), action);
+    return match_result_t(timing_t(timing), action);
   }
   return std::nullopt;
 }
@@ -201,7 +201,7 @@ std::optional<match_result_t> itrigger_t::detect_trap_match(processor_t * const 
   assert(bit < xlen);
   if (interrupt && ((bit == 0 && nmi) || ((tdata2 >> bit) & 1))) { // Assume NMI's exception code is 0
     hit = true;
-    return match_result_t(true, TIMING_AFTER, action);
+    return match_result_t(TIMING_AFTER, action);
   }
   return std::nullopt;
 }
@@ -253,7 +253,7 @@ std::optional<match_result_t> etrigger_t::detect_trap_match(processor_t * const 
   assert(bit < xlen);
   if (!interrupt && ((tdata2 >> bit) & 1)) {
     hit = true;
-    return match_result_t(true, TIMING_AFTER, action);
+    return match_result_t(TIMING_AFTER, action);
   }
   return std::nullopt;
 }
