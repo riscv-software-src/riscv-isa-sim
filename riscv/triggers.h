@@ -75,10 +75,7 @@ protected:
   reg_t tdata2;
 };
 
-class trigger_with_tdata2_t : public trigger_t {
-};
-
-class disabled_trigger_t : public trigger_with_tdata2_t {
+class disabled_trigger_t : public trigger_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
@@ -89,7 +86,7 @@ private:
   bool dmode;
 };
 
-class itrigger_t : public trigger_with_tdata2_t {
+class itrigger_t : public trigger_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
@@ -111,7 +108,7 @@ private:
   action_t action;
 };
 
-class etrigger_t : public trigger_with_tdata2_t {
+class etrigger_t : public trigger_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
@@ -132,7 +129,7 @@ private:
   action_t action;
 };
 
-class mcontrol_t : public trigger_with_tdata2_t {
+class mcontrol_t : public trigger_t {
 public:
   typedef enum
   {
