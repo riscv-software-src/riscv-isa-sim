@@ -302,9 +302,9 @@ void processor_t::step(size_t n)
       n = instret;
 
       // Trigger action takes priority over single step
-      triggers::match_result_t match = TM.detect_trap_match(t);
-      if (match.fire)
-        take_trigger_action(match.action, 0, state.pc);
+      auto match = TM.detect_trap_match(t);
+      if (match.has_value())
+        take_trigger_action(match->action, 0, state.pc);
       else if (unlikely(state.single_step == state.STEP_STEPPED)) {
         state.single_step = state.STEP_NONE;
         enter_debug_mode(DCSR_CAUSE_STEP);

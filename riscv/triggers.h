@@ -187,7 +187,7 @@ public:
   unsigned count() const { return triggers.size(); }
 
   std::optional<match_result_t> detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data) noexcept;
-  match_result_t detect_trap_match(const trap_t& t) noexcept;
+  std::optional<match_result_t> detect_trap_match(const trap_t& t) noexcept;
 
   processor_t *proc;
 private:

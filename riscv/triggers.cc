@@ -360,18 +360,18 @@ std::optional<match_result_t> module_t::detect_memory_access_match(operation_t o
   return std::nullopt;
 }
 
-match_result_t module_t::detect_trap_match(const trap_t& t) noexcept
+std::optional<match_result_t> module_t::detect_trap_match(const trap_t& t) noexcept
 {
   state_t * const state = proc->get_state();
   if (state->debug_mode)
-    return match_result_t(false);
+    return std::nullopt;
 
   for (auto trigger: triggers) {
     match_result_t result = trigger->detect_trap_match(proc, t);
     if (result.fire)
       return result;
   }
-  return match_result_t(false);
+  return std::nullopt;
 }
 
 reg_t module_t::tinfo_read(UNUSED const processor_t * const proc, unsigned UNUSED index) const noexcept
