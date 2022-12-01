@@ -68,8 +68,8 @@ public:
   virtual action_t get_action() const { return ACTION_DEBUG_EXCEPTION; }
 
   virtual match_result_t detect_memory_access_match(processor_t UNUSED * const proc,
-      operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) { return match_result_t(false); }
-  virtual match_result_t detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) { return match_result_t(false); }
+      operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) noexcept { return match_result_t(false); }
+  virtual match_result_t detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) noexcept { return match_result_t(false); }
 
 protected:
   reg_t tdata2;
@@ -94,7 +94,7 @@ public:
   bool get_dmode() const override { return dmode; }
   virtual action_t get_action() const override { return action; }
 
-  virtual match_result_t detect_trap_match(processor_t * const proc, const trap_t& t) override;
+  virtual match_result_t detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
 
 private:
   bool dmode;
@@ -116,7 +116,7 @@ public:
   bool get_dmode() const override { return dmode; }
   virtual action_t get_action() const override { return action; }
 
-  virtual match_result_t detect_trap_match(processor_t * const proc, const trap_t& t) override;
+  virtual match_result_t detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
 
 private:
   bool dmode;
@@ -152,7 +152,7 @@ public:
   virtual action_t get_action() const override { return action; }
 
   virtual match_result_t detect_memory_access_match(processor_t * const proc,
-      operation_t operation, reg_t address, std::optional<reg_t> data) override;
+      operation_t operation, reg_t address, std::optional<reg_t> data) noexcept override;
 
 private:
   bool simple_match(unsigned xlen, reg_t value) const;
@@ -185,8 +185,8 @@ public:
 
   unsigned count() const { return triggers.size(); }
 
-  match_result_t detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data);
-  match_result_t detect_trap_match(const trap_t& t);
+  match_result_t detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data) noexcept;
+  match_result_t detect_trap_match(const trap_t& t) noexcept;
 
   processor_t *proc;
 private:

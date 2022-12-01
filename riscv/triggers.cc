@@ -113,7 +113,7 @@ bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
   assert(0);
 }
 
-match_result_t mcontrol_t::detect_memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) {
+match_result_t mcontrol_t::detect_memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) noexcept {
   state_t * const state = proc->get_state();
   if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
       (operation == triggers::OPERATION_STORE && !store) ||
@@ -184,7 +184,7 @@ void itrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
     action = ACTION_DEBUG_EXCEPTION;
 }
 
-match_result_t itrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t)
+match_result_t itrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
   state_t * const state = proc->get_state();
   if ((state->prv == PRV_M && !m) ||
@@ -238,7 +238,7 @@ void etrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
     action = ACTION_DEBUG_EXCEPTION;
 }
 
-match_result_t etrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t)
+match_result_t etrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
   state_t * const state = proc->get_state();
   if ((state->prv == PRV_M && !m) ||
@@ -333,7 +333,7 @@ bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_
   return true;
 }
 
-match_result_t module_t::detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data)
+match_result_t module_t::detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data) noexcept
 {
   state_t * const state = proc->get_state();
   if (state->debug_mode)
@@ -362,7 +362,7 @@ match_result_t module_t::detect_memory_access_match(operation_t operation, reg_t
   return match_result_t(false);
 }
 
-match_result_t module_t::detect_trap_match(const trap_t& t)
+match_result_t module_t::detect_trap_match(const trap_t& t) noexcept
 {
   state_t * const state = proc->get_state();
   if (state->debug_mode)
