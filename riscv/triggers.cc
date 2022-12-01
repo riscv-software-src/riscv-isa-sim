@@ -58,6 +58,8 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   select = get_field(val, MCONTROL_SELECT);
   timing = get_field(val, MCONTROL_TIMING);
   action = (triggers::action_t) get_field(val, MCONTROL_ACTION);
+  if (action > ACTION_MAXVAL || (action==ACTION_DEBUG_MODE && dmode==0))
+    action = ACTION_DEBUG_EXCEPTION;
   chain = allow_chain ? get_field(val, MCONTROL_CHAIN) : 0;
   unsigned match_value = get_field(val, MCONTROL_MATCH);
   switch (match_value) {
