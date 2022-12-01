@@ -67,8 +67,8 @@ public:
   virtual bool get_load() const { return false; }
   virtual action_t get_action() const { return ACTION_DEBUG_EXCEPTION; }
 
-  virtual match_result_t detect_memory_access_match(processor_t UNUSED * const proc,
-      operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) noexcept { return match_result_t(false); }
+  virtual std::optional<match_result_t> detect_memory_access_match(processor_t UNUSED * const proc,
+      operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) noexcept { return std::nullopt; }
   virtual match_result_t detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) noexcept { return match_result_t(false); }
 
 protected:
@@ -152,7 +152,7 @@ public:
   virtual bool get_load() const override { return load; }
   virtual action_t get_action() const override { return action; }
 
-  virtual match_result_t detect_memory_access_match(processor_t * const proc,
+  virtual std::optional<match_result_t> detect_memory_access_match(processor_t * const proc,
       operation_t operation, reg_t address, std::optional<reg_t> data) noexcept override;
 
 private:

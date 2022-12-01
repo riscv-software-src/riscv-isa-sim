@@ -115,7 +115,7 @@ bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
   assert(0);
 }
 
-match_result_t mcontrol_t::detect_memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) noexcept {
+std::optional<match_result_t> mcontrol_t::detect_memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) noexcept {
   state_t * const state = proc->get_state();
   if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
       (operation == triggers::OPERATION_STORE && !store) ||
@@ -124,13 +124,13 @@ match_result_t mcontrol_t::detect_memory_access_match(processor_t * const proc, 
       (state->prv == PRV_S && !s) ||
       (state->prv == PRV_U && !u) ||
       (state->v)) {
-    return match_result_t(false);
+    return std::nullopt;
   }
 
   reg_t value;
   if (select) {
     if (!data.has_value())
-      return match_result_t(false);
+      return std::nullopt;
     value = *data;
   } else {
     value = address;
@@ -149,7 +149,7 @@ match_result_t mcontrol_t::detect_memory_access_match(processor_t * const proc, 
     hit = true;
     return match_result_t(true, timing_t(timing), action);
   }
-  return match_result_t(false);
+  return std::nullopt;
 }
 
 reg_t itrigger_t::tdata1_read(const processor_t * const proc) const noexcept
@@ -351,11 +351,11 @@ std::optional<match_result_t> module_t::detect_memory_access_match(operation_t o
      * entire chain did not match. This is allowed by the spec, because the final
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
-    match_result_t result = trigger->detect_memory_access_match(proc, operation, address, data);
-    if (result.fire && !trigger->get_chain())
+    auto result = trigger->detect_memory_access_match(proc, operation, address, data);
+    if (result.has_value() && !trigger->get_chain())
       return result;
 
-    chain_ok = result.fire || !trigger->get_chain();
+    chain_ok = result.has_value() || !trigger->get_chain();
   }
   return std::nullopt;
 }
