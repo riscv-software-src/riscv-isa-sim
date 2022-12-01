@@ -5,11 +5,11 @@
 
 namespace triggers {
 
-reg_t trigger_with_tdata2_t::tdata2_read(const processor_t UNUSED * const proc) const noexcept {
+reg_t trigger_t::tdata2_read(const processor_t UNUSED * const proc) const noexcept {
   return tdata2;
 }
 
-void trigger_with_tdata2_t::tdata2_write(processor_t UNUSED * const proc, const reg_t UNUSED val) noexcept {
+void trigger_t::tdata2_write(processor_t UNUSED * const proc, const reg_t UNUSED val) noexcept {
   tdata2 = val;
 }
 

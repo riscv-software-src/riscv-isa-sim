@@ -57,8 +57,8 @@ public:
 
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept = 0;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept = 0;
-  virtual reg_t tdata2_read(const processor_t * const proc) const noexcept = 0;
-  virtual void tdata2_write(processor_t * const proc, const reg_t val) noexcept = 0;
+  reg_t tdata2_read(const processor_t * const proc) const noexcept;
+  void tdata2_write(processor_t * const proc, const reg_t val) noexcept;
 
   virtual bool get_dmode() const = 0;
   virtual bool get_chain() const { return false; }
@@ -70,15 +70,12 @@ public:
   virtual match_result_t detect_memory_access_match(processor_t UNUSED * const proc,
       operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) { return match_result_t(false); }
   virtual match_result_t detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) { return match_result_t(false); }
-};
-
-class trigger_with_tdata2_t : public trigger_t {
-public:
-  reg_t tdata2_read(const processor_t * const proc) const noexcept override;
-  void tdata2_write(processor_t * const proc, const reg_t val) noexcept override;
 
 protected:
   reg_t tdata2;
+};
+
+class trigger_with_tdata2_t : public trigger_t {
 };
 
 class disabled_trigger_t : public trigger_with_tdata2_t {
