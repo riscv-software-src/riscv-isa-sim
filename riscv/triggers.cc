@@ -76,8 +76,8 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
       break;
   }
   m = get_field(val, MCONTROL_M);
-  s = get_field(val, MCONTROL_S);
-  u = get_field(val, MCONTROL_U);
+  s = proc->extension_enabled_const('S') ? get_field(val, CSR_MCONTROL_S) : 0;
+  u = proc->extension_enabled_const('U') ? get_field(val, CSR_MCONTROL_U) : 0;
   execute = get_field(val, MCONTROL_EXECUTE);
   store = get_field(val, MCONTROL_STORE);
   load = get_field(val, MCONTROL_LOAD);
