@@ -331,11 +331,11 @@ bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_
   return true;
 }
 
-match_result_t module_t::detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data) noexcept
+std::optional<match_result_t> module_t::detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data) noexcept
 {
   state_t * const state = proc->get_state();
   if (state->debug_mode)
-    return match_result_t(false);
+    return std::nullopt;
 
   bool chain_ok = true;
 
@@ -357,7 +357,7 @@ match_result_t module_t::detect_memory_access_match(operation_t operation, reg_t
 
     chain_ok = result.fire || !trigger->get_chain();
   }
-  return match_result_t(false);
+  return std::nullopt;
 }
 
 match_result_t module_t::detect_trap_match(const trap_t& t) noexcept
