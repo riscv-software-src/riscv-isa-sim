@@ -341,7 +341,7 @@ std::optional<match_result_t> module_t::detect_memory_access_match(operation_t o
 
   for (auto trigger: triggers) {
     if (!chain_ok) {
-      chain_ok |= !trigger->get_chain();
+      chain_ok = !trigger->get_chain();
       continue;
     }
 
