@@ -301,7 +301,11 @@ void processor_t::step(size_t n)
       take_trap(t, pc);
       n = instret;
 
-      if (unlikely(state.single_step == state.STEP_STEPPED)) {
+      // Trigger action takes priority over single step
+      triggers::match_result_t match = TM.detect_trap_match(t);
+      if (match.fire)
+        take_trigger_action(match.action, 0, state.pc);
+      else if (unlikely(state.single_step == state.STEP_STEPPED)) {
         state.single_step = state.STEP_NONE;
         enter_debug_mode(DCSR_CAUSE_STEP);
       }
@@ -312,18 +316,7 @@ void processor_t::step(size_t n)
         delete mmu->matched_trigger;
         mmu->matched_trigger = NULL;
       }
-      switch (t.action) {
-        case triggers::ACTION_DEBUG_MODE:
-          enter_debug_mode(DCSR_CAUSE_HWBP);
-          break;
-        case triggers::ACTION_DEBUG_EXCEPTION: {
-          trap_breakpoint trap(state.v, t.address);
-          take_trap(trap, pc);
-          break;
-        }
-        default:
-          abort();
-      }
+      take_trigger_action(t.action, t.address, pc);
     }
     catch(trap_debug_mode&)
     {

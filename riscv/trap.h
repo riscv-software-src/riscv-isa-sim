@@ -24,7 +24,7 @@ class trap_t
   virtual reg_t get_tval2() { return 0; }
   virtual bool has_tinst() { return false; }
   virtual reg_t get_tinst() { return 0; }
-  reg_t cause() { return which; }
+  reg_t cause() const { return which; }
 
   virtual const char* name()
   {

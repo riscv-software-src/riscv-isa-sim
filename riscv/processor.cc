@@ -921,6 +921,29 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   }
 }
 
+void processor_t::take_trigger_action(triggers::action_t action, reg_t breakpoint_tval, reg_t epc)
+{
+  if (debug) {
+    std::stringstream s; // first put everything in a string, later send it to output
+    s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
+      << ": trigger action " << (int)action << std::endl;
+    debug_output_log(&s);
+  }
+
+  switch (action) {
+    case triggers::ACTION_DEBUG_MODE:
+      enter_debug_mode(DCSR_CAUSE_HWBP);
+      break;
+    case triggers::ACTION_DEBUG_EXCEPTION: {
+      trap_breakpoint trap(state.v, breakpoint_tval);
+      take_trap(trap, epc);
+      break;
+    }
+    default:
+      abort();
+  }
+}
+
 void processor_t::disasm(insn_t insn)
 {
   uint64_t bits = insn.bits();
@@ -1144,13 +1167,13 @@ void processor_t::trigger_updated(const std::vector<triggers::trigger_t *> &trig
   mmu->check_triggers_store = false;
 
   for (auto trigger : triggers) {
-    if (trigger->execute()) {
+    if (trigger->get_execute()) {
       mmu->check_triggers_fetch = true;
     }
-    if (trigger->load()) {
+    if (trigger->get_load()) {
       mmu->check_triggers_load = true;
     }
-    if (trigger->store()) {
+    if (trigger->get_store()) {
       mmu->check_triggers_store = true;
     }
   }
