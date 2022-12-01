@@ -30,12 +30,10 @@ typedef enum {
 } timing_t;
 
 struct match_result_t {
-  match_result_t(const bool f, const timing_t t=TIMING_BEFORE, const action_t a=ACTION_DEBUG_EXCEPTION) {
-    fire = f;
+  match_result_t(const bool UNUSED f, const timing_t t=TIMING_BEFORE, const action_t a=ACTION_DEBUG_EXCEPTION) {
     timing = t;
     action = a;
   }
-  bool fire;
   timing_t timing;
   action_t action;
 };
