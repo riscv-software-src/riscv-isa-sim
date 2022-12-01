@@ -13,6 +13,10 @@ void trigger_t::tdata2_write(processor_t UNUSED * const proc, const reg_t UNUSED
   tdata2 = val;
 }
 
+action_t trigger_t::legalize_action(reg_t val) const noexcept {
+  return (val > ACTION_MAXVAL || (val == ACTION_DEBUG_MODE && get_dmode() == 0)) ? ACTION_DEBUG_EXCEPTION : (action_t)val;
+}
+
 reg_t disabled_trigger_t::tdata1_read(const processor_t * const proc) const noexcept
 {
   auto xlen = proc->get_xlen();
@@ -57,9 +61,7 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   hit = get_field(val, CSR_MCONTROL_HIT);
   select = get_field(val, MCONTROL_SELECT);
   timing = get_field(val, MCONTROL_TIMING);
-  action = (triggers::action_t) get_field(val, MCONTROL_ACTION);
-  if (action > ACTION_MAXVAL || (action==ACTION_DEBUG_MODE && dmode==0))
-    action = ACTION_DEBUG_EXCEPTION;
+  action = legalize_action(get_field(val, MCONTROL_ACTION));
   chain = allow_chain ? get_field(val, MCONTROL_CHAIN) : 0;
   unsigned match_value = get_field(val, MCONTROL_MATCH);
   switch (match_value) {
@@ -179,9 +181,7 @@ void itrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   m = get_field(val, CSR_ITRIGGER_M);
   s = proc->extension_enabled_const('S') ? get_field(val, CSR_ITRIGGER_S) : 0;
   u = proc->extension_enabled_const('U') ? get_field(val, CSR_ITRIGGER_U) : 0;
-  action = (action_t)get_field(val, CSR_ITRIGGER_ACTION);
-  if (action > ACTION_MAXVAL || (action==ACTION_DEBUG_MODE && dmode==0))
-    action = ACTION_DEBUG_EXCEPTION;
+  action = legalize_action(get_field(val, CSR_ITRIGGER_ACTION));
 }
 
 match_result_t itrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
@@ -233,9 +233,7 @@ void etrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   m = get_field(val, CSR_ETRIGGER_M);
   s = proc->extension_enabled_const('S') ? get_field(val, CSR_ETRIGGER_S) : 0;
   u = proc->extension_enabled_const('U') ? get_field(val, CSR_ETRIGGER_U) : 0;
-  action = (action_t)get_field(val, CSR_ETRIGGER_ACTION);
-  if (action > ACTION_MAXVAL || (action==ACTION_DEBUG_MODE && dmode==0))
-    action = ACTION_DEBUG_EXCEPTION;
+  action = legalize_action(get_field(val, CSR_ETRIGGER_ACTION));
 }
 
 match_result_t etrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept

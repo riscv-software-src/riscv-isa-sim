@@ -72,6 +72,7 @@ public:
   virtual match_result_t detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) noexcept { return match_result_t(false); }
 
 protected:
+  action_t legalize_action(reg_t val) const noexcept;
   reg_t tdata2;
 };
 
