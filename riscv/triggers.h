@@ -4,7 +4,7 @@
 #include <vector>
 #include <optional>
 
-#include "decode.h"
+#include "encoding.h"
 
 namespace triggers {
 
