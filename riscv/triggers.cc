@@ -5,12 +5,16 @@
 
 namespace triggers {
 
-reg_t trigger_with_tdata2_t::tdata2_read(const processor_t UNUSED * const proc) const noexcept {
+reg_t trigger_t::tdata2_read(const processor_t UNUSED * const proc) const noexcept {
   return tdata2;
 }
 
-void trigger_with_tdata2_t::tdata2_write(processor_t UNUSED * const proc, const reg_t UNUSED val) noexcept {
+void trigger_t::tdata2_write(processor_t UNUSED * const proc, const reg_t UNUSED val) noexcept {
   tdata2 = val;
+}
+
+action_t trigger_t::legalize_action(reg_t val) const noexcept {
+  return (val > ACTION_MAXVAL || (val == ACTION_DEBUG_MODE && get_dmode() == 0)) ? ACTION_DEBUG_EXCEPTION : (action_t)val;
 }
 
 reg_t disabled_trigger_t::tdata1_read(const processor_t * const proc) const noexcept
@@ -57,9 +61,7 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   hit = get_field(val, CSR_MCONTROL_HIT);
   select = get_field(val, MCONTROL_SELECT);
   timing = get_field(val, MCONTROL_TIMING);
-  action = (triggers::action_t) get_field(val, MCONTROL_ACTION);
-  if (action > ACTION_MAXVAL || (action==ACTION_DEBUG_MODE && dmode==0))
-    action = ACTION_DEBUG_EXCEPTION;
+  action = legalize_action(get_field(val, MCONTROL_ACTION));
   chain = allow_chain ? get_field(val, MCONTROL_CHAIN) : 0;
   unsigned match_value = get_field(val, MCONTROL_MATCH);
   switch (match_value) {
@@ -113,7 +115,7 @@ bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
   assert(0);
 }
 
-match_result_t mcontrol_t::detect_memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) {
+std::optional<match_result_t> mcontrol_t::detect_memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) noexcept {
   state_t * const state = proc->get_state();
   if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
       (operation == triggers::OPERATION_STORE && !store) ||
@@ -122,13 +124,13 @@ match_result_t mcontrol_t::detect_memory_access_match(processor_t * const proc, 
       (state->prv == PRV_S && !s) ||
       (state->prv == PRV_U && !u) ||
       (state->v)) {
-    return match_result_t(false);
+    return std::nullopt;
   }
 
   reg_t value;
   if (select) {
     if (!data.has_value())
-      return match_result_t(false);
+      return std::nullopt;
     value = *data;
   } else {
     value = address;
@@ -145,9 +147,9 @@ match_result_t mcontrol_t::detect_memory_access_match(processor_t * const proc, 
     /* This is OK because this function is only called if the trigger was not
      * inhibited by the previous trigger in the chain. */
     hit = true;
-    return match_result_t(true, timing_t(timing), action);
+    return match_result_t(timing_t(timing), action);
   }
-  return match_result_t(false);
+  return std::nullopt;
 }
 
 reg_t itrigger_t::tdata1_read(const processor_t * const proc) const noexcept
@@ -179,12 +181,10 @@ void itrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   m = get_field(val, CSR_ITRIGGER_M);
   s = proc->extension_enabled_const('S') ? get_field(val, CSR_ITRIGGER_S) : 0;
   u = proc->extension_enabled_const('U') ? get_field(val, CSR_ITRIGGER_U) : 0;
-  action = (action_t)get_field(val, CSR_ITRIGGER_ACTION);
-  if (action > ACTION_MAXVAL || (action==ACTION_DEBUG_MODE && dmode==0))
-    action = ACTION_DEBUG_EXCEPTION;
+  action = legalize_action(get_field(val, CSR_ITRIGGER_ACTION));
 }
 
-match_result_t itrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t)
+std::optional<match_result_t> itrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
   state_t * const state = proc->get_state();
   if ((state->prv == PRV_M && !m) ||
@@ -192,7 +192,7 @@ match_result_t itrigger_t::detect_trap_match(processor_t * const proc, const tra
       (!state->v && state->prv == PRV_U && !u) ||
       (state->v && state->prv == PRV_S && !vs) ||
       (state->v && state->prv == PRV_U && !vu)) {
-    return match_result_t(false);
+    return std::nullopt;
   }
 
   auto xlen = proc->get_xlen();
@@ -201,9 +201,9 @@ match_result_t itrigger_t::detect_trap_match(processor_t * const proc, const tra
   assert(bit < xlen);
   if (interrupt && ((bit == 0 && nmi) || ((tdata2 >> bit) & 1))) { // Assume NMI's exception code is 0
     hit = true;
-    return match_result_t(true, TIMING_AFTER, action);
+    return match_result_t(TIMING_AFTER, action);
   }
-  return match_result_t(false);
+  return std::nullopt;
 }
 
 reg_t etrigger_t::tdata1_read(const processor_t * const proc) const noexcept
@@ -233,12 +233,10 @@ void etrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   m = get_field(val, CSR_ETRIGGER_M);
   s = proc->extension_enabled_const('S') ? get_field(val, CSR_ETRIGGER_S) : 0;
   u = proc->extension_enabled_const('U') ? get_field(val, CSR_ETRIGGER_U) : 0;
-  action = (action_t)get_field(val, CSR_ETRIGGER_ACTION);
-  if (action > ACTION_MAXVAL || (action==ACTION_DEBUG_MODE && dmode==0))
-    action = ACTION_DEBUG_EXCEPTION;
+  action = legalize_action(get_field(val, CSR_ETRIGGER_ACTION));
 }
 
-match_result_t etrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t)
+std::optional<match_result_t> etrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
   state_t * const state = proc->get_state();
   if ((state->prv == PRV_M && !m) ||
@@ -246,7 +244,7 @@ match_result_t etrigger_t::detect_trap_match(processor_t * const proc, const tra
       (!state->v && state->prv == PRV_U && !u) ||
       (state->v && state->prv == PRV_S && !vs) ||
       (state->v && state->prv == PRV_U && !vu)) {
-    return match_result_t(false);
+    return std::nullopt;
   }
 
   auto xlen = proc->get_xlen();
@@ -255,9 +253,9 @@ match_result_t etrigger_t::detect_trap_match(processor_t * const proc, const tra
   assert(bit < xlen);
   if (!interrupt && ((tdata2 >> bit) & 1)) {
     hit = true;
-    return match_result_t(true, TIMING_AFTER, action);
+    return match_result_t(TIMING_AFTER, action);
   }
-  return match_result_t(false);
+  return std::nullopt;
 }
 
 module_t::module_t(unsigned count) : triggers(count) {
@@ -333,17 +331,17 @@ bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_
   return true;
 }
 
-match_result_t module_t::detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data)
+std::optional<match_result_t> module_t::detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data) noexcept
 {
   state_t * const state = proc->get_state();
   if (state->debug_mode)
-    return match_result_t(false);
+    return std::nullopt;
 
   bool chain_ok = true;
 
   for (auto trigger: triggers) {
     if (!chain_ok) {
-      chain_ok |= !trigger->get_chain();
+      chain_ok = !trigger->get_chain();
       continue;
     }
 
@@ -353,27 +351,27 @@ match_result_t module_t::detect_memory_access_match(operation_t operation, reg_t
      * entire chain did not match. This is allowed by the spec, because the final
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
-    match_result_t result = trigger->detect_memory_access_match(proc, operation, address, data);
-    if (result.fire && !trigger->get_chain())
+    auto result = trigger->detect_memory_access_match(proc, operation, address, data);
+    if (result.has_value() && !trigger->get_chain())
       return result;
 
-    chain_ok = result.fire || !trigger->get_chain();
+    chain_ok = result.has_value() || !trigger->get_chain();
   }
-  return match_result_t(false);
+  return std::nullopt;
 }
 
-match_result_t module_t::detect_trap_match(const trap_t& t)
+std::optional<match_result_t> module_t::detect_trap_match(const trap_t& t) noexcept
 {
   state_t * const state = proc->get_state();
   if (state->debug_mode)
-    return match_result_t(false);
+    return std::nullopt;
 
   for (auto trigger: triggers) {
-    match_result_t result = trigger->detect_trap_match(proc, t);
-    if (result.fire)
+    auto result = trigger->detect_trap_match(proc, t);
+    if (result.has_value())
       return result;
   }
-  return match_result_t(false);
+  return std::nullopt;
 }
 
 reg_t module_t::tinfo_read(UNUSED const processor_t * const proc, unsigned UNUSED index) const noexcept

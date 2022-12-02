@@ -30,12 +30,10 @@ typedef enum {
 } timing_t;
 
 struct match_result_t {
-  match_result_t(const bool f, const timing_t t=TIMING_BEFORE, const action_t a=ACTION_DEBUG_EXCEPTION) {
-    fire = f;
+  match_result_t(const timing_t t=TIMING_BEFORE, const action_t a=ACTION_DEBUG_EXCEPTION) {
     timing = t;
     action = a;
   }
-  bool fire;
   timing_t timing;
   action_t action;
 };
@@ -57,8 +55,8 @@ public:
 
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept = 0;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept = 0;
-  virtual reg_t tdata2_read(const processor_t * const proc) const noexcept = 0;
-  virtual void tdata2_write(processor_t * const proc, const reg_t val) noexcept = 0;
+  reg_t tdata2_read(const processor_t * const proc) const noexcept;
+  void tdata2_write(processor_t * const proc, const reg_t val) noexcept;
 
   virtual bool get_dmode() const = 0;
   virtual bool get_chain() const { return false; }
@@ -67,21 +65,16 @@ public:
   virtual bool get_load() const { return false; }
   virtual action_t get_action() const { return ACTION_DEBUG_EXCEPTION; }
 
-  virtual match_result_t detect_memory_access_match(processor_t UNUSED * const proc,
-      operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) { return match_result_t(false); }
-  virtual match_result_t detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) { return match_result_t(false); }
-};
-
-class trigger_with_tdata2_t : public trigger_t {
-public:
-  reg_t tdata2_read(const processor_t * const proc) const noexcept override;
-  void tdata2_write(processor_t * const proc, const reg_t val) noexcept override;
+  virtual std::optional<match_result_t> detect_memory_access_match(processor_t UNUSED * const proc,
+      operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) noexcept { return std::nullopt; }
+  virtual std::optional<match_result_t> detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) noexcept { return std::nullopt; }
 
 protected:
+  action_t legalize_action(reg_t val) const noexcept;
   reg_t tdata2;
 };
 
-class disabled_trigger_t : public trigger_with_tdata2_t {
+class disabled_trigger_t : public trigger_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
@@ -92,7 +85,7 @@ private:
   bool dmode;
 };
 
-class itrigger_t : public trigger_with_tdata2_t {
+class itrigger_t : public trigger_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
@@ -100,7 +93,7 @@ public:
   bool get_dmode() const override { return dmode; }
   virtual action_t get_action() const override { return action; }
 
-  virtual match_result_t detect_trap_match(processor_t * const proc, const trap_t& t) override;
+  virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
 
 private:
   bool dmode;
@@ -114,7 +107,7 @@ private:
   action_t action;
 };
 
-class etrigger_t : public trigger_with_tdata2_t {
+class etrigger_t : public trigger_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
@@ -122,7 +115,7 @@ public:
   bool get_dmode() const override { return dmode; }
   virtual action_t get_action() const override { return action; }
 
-  virtual match_result_t detect_trap_match(processor_t * const proc, const trap_t& t) override;
+  virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
 
 private:
   bool dmode;
@@ -135,7 +128,7 @@ private:
   action_t action;
 };
 
-class mcontrol_t : public trigger_with_tdata2_t {
+class mcontrol_t : public trigger_t {
 public:
   typedef enum
   {
@@ -157,8 +150,8 @@ public:
   virtual bool get_load() const override { return load; }
   virtual action_t get_action() const override { return action; }
 
-  virtual match_result_t detect_memory_access_match(processor_t * const proc,
-      operation_t operation, reg_t address, std::optional<reg_t> data) override;
+  virtual std::optional<match_result_t> detect_memory_access_match(processor_t * const proc,
+      operation_t operation, reg_t address, std::optional<reg_t> data) noexcept override;
 
 private:
   bool simple_match(unsigned xlen, reg_t value) const;
@@ -191,8 +184,8 @@ public:
 
   unsigned count() const { return triggers.size(); }
 
-  match_result_t detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data);
-  match_result_t detect_trap_match(const trap_t& t);
+  std::optional<match_result_t> detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data) noexcept;
+  std::optional<match_result_t> detect_trap_match(const trap_t& t) noexcept;
 
   processor_t *proc;
 private:
