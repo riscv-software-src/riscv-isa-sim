@@ -1062,7 +1062,7 @@ bool mevent_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t mask = proc->extension_enabled(EXT_SSCOFPMF) ? MHPMEVENT_OF | MHPMEVENT_MINH
     | (proc->extension_enabled_const('U') ? MHPMEVENT_UINH : 0)
     | (proc->extension_enabled_const('S') ? MHPMEVENT_SINH : 0)
-    | (proc->extension_enabled_const('H') ? MHPMEVENT_VUINH | MHPMEVENT_VSINH : 0) : 0;
+    | (proc->extension_enabled('H') ? MHPMEVENT_VUINH | MHPMEVENT_VSINH : 0) : 0;
   return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
 }
 
