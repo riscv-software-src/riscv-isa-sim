@@ -3,6 +3,12 @@
 #include "processor.h"
 #include "triggers.h"
 
+#define CSR_TEXTRA_MHVALUE(XLEN)   (XLEN == 32 ? CSR_TEXTRA32_MHVALUE : CSR_TEXTRA64_MHVALUE)
+#define CSR_TEXTRA_MHSELECT(XLEN)  (XLEN == 32 ? CSR_TEXTRA32_MHSELECT : CSR_TEXTRA64_MHSELECT)
+#define CSR_TEXTRA_SBYTEMASK(XLEN) (XLEN == 32 ? CSR_TEXTRA32_SBYTEMASK : CSR_TEXTRA64_SBYTEMASK)
+#define CSR_TEXTRA_SVALUE(XLEN)    (XLEN == 32 ? CSR_TEXTRA32_SVALUE : CSR_TEXTRA64_SVALUE)
+#define CSR_TEXTRA_SSELECT(XLEN)   (XLEN == 32 ? CSR_TEXTRA32_SSELECT : CSR_TEXTRA64_SSELECT)
+
 namespace triggers {
 
 reg_t trigger_t::tdata2_read(const processor_t UNUSED * const proc) const noexcept {
@@ -15,6 +21,42 @@ void trigger_t::tdata2_write(processor_t UNUSED * const proc, const reg_t UNUSED
 
 action_t trigger_t::legalize_action(reg_t val) const noexcept {
   return (val > ACTION_MAXVAL || (val == ACTION_DEBUG_MODE && get_dmode() == 0)) ? ACTION_DEBUG_EXCEPTION : (action_t)val;
+}
+
+unsigned trigger_t::legalize_mhselect(bool h_enabled) const noexcept {
+  // consider a mask with lowest bit 0
+  unsigned convert[8] = {
+    (unsigned)                 0 ,  // 0
+    (unsigned)                 0 ,  // 1
+    (unsigned)(h_enabled ? 2 : 0),  // 2
+    (unsigned)                 0 ,  // 3
+    (unsigned)                 0 ,  // 4
+    (unsigned)                 0 ,  // 5
+    (unsigned)(h_enabled ? 6 : 0),  // 6
+    (unsigned)                 0    // 7
+  };
+  assert(mhselect < 8);
+  return convert[mhselect];
+}
+
+reg_t trigger_t::tdata3_read(const processor_t * const proc) const noexcept {
+  auto xlen = proc->get_xlen();
+  reg_t tdata3 = 0;
+  tdata3 = set_field(tdata3, CSR_TEXTRA_MHVALUE(xlen), mhvalue);
+  tdata3 = set_field(tdata3, CSR_TEXTRA_MHSELECT(xlen), legalize_mhselect(proc->extension_enabled('H')));
+  tdata3 = set_field(tdata3, CSR_TEXTRA_SBYTEMASK(xlen), sbytemask);
+  tdata3 = set_field(tdata3, CSR_TEXTRA_SVALUE(xlen), svalue);
+  tdata3 = set_field(tdata3, CSR_TEXTRA_SSELECT(xlen), sselect);
+  return tdata3;
+}
+
+void trigger_t::tdata3_write(processor_t * const proc, const reg_t val) noexcept {
+  auto xlen = proc->get_xlen();
+  mhvalue = get_field(val, CSR_TEXTRA_MHVALUE(xlen));
+  mhselect = get_field(val, CSR_TEXTRA_MHSELECT(xlen));
+  sbytemask = get_field(val, CSR_TEXTRA_SBYTEMASK(xlen));
+  svalue = proc->extension_enabled_const('S') ? get_field(val, CSR_TEXTRA_SVALUE(xlen)) : 0;
+  sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) == SSELECT_ASID) ? SSELECT_ASID : SSELECT_IGNORE);
 }
 
 reg_t disabled_trigger_t::tdata1_read(const processor_t * const proc) const noexcept
@@ -290,6 +332,7 @@ bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
   unsigned type = get_field(val, CSR_TDATA1_TYPE(xlen));
   reg_t tdata1 = val;
   reg_t tdata2 = triggers[index]->tdata2_read(proc);
+  reg_t tdata3 = triggers[index]->tdata3_read(proc);
 
   // hardware must zero chain in writes that set dmode to 0 if the next trigger has dmode of 1
   const bool allow_chain = !(index+1 < triggers.size() && triggers[index+1]->get_dmode() && !get_field(val, CSR_TDATA1_DMODE(xlen)));
@@ -312,6 +355,7 @@ bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
 
   triggers[index]->tdata1_write(proc, tdata1, allow_chain);
   triggers[index]->tdata2_write(proc, tdata2);
+  triggers[index]->tdata3_write(proc, tdata3);
   proc->trigger_updated(triggers);
   return true;
 }
@@ -327,6 +371,21 @@ bool module_t::tdata2_write(unsigned index, const reg_t val) noexcept
     return false;
   }
   triggers[index]->tdata2_write(proc, val);
+  proc->trigger_updated(triggers);
+  return true;
+}
+
+reg_t module_t::tdata3_read(unsigned index) const noexcept
+{
+  return triggers[index]->tdata3_read(proc);
+}
+
+bool module_t::tdata3_write(unsigned index, const reg_t val) noexcept
+{
+  if (triggers[index]->get_dmode() && !proc->get_state()->debug_mode) {
+    return false;
+  }
+  triggers[index]->tdata3_write(proc, val);
   proc->trigger_updated(triggers);
   return true;
 }

@@ -1158,11 +1158,11 @@ tdata3_csr_t::tdata3_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 reg_t tdata3_csr_t::read() const noexcept {
-  return 0;
+  return proc->TM.tdata3_read(state->tselect->read());
 }
 
 bool tdata3_csr_t::unlogged_write(const reg_t val) noexcept {
-  return false;
+  return proc->TM.tdata3_write(state->tselect->read(), val);
 }
 
 tinfo_csr_t::tinfo_csr_t(processor_t* const proc, const reg_t addr) :

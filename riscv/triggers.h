@@ -29,6 +29,13 @@ typedef enum {
   TIMING_AFTER = 1
 } timing_t;
 
+typedef enum {
+  SSELECT_IGNORE = 0,
+  SSELECT_SCONTEXT = 1,
+  SSELECT_ASID = 2,
+  SSELECT_MAXVAL = 2
+} sselect_t;
+
 struct match_result_t {
   match_result_t(const timing_t t=TIMING_BEFORE, const action_t a=ACTION_DEBUG_EXCEPTION) {
     timing = t;
@@ -57,6 +64,8 @@ public:
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept = 0;
   reg_t tdata2_read(const processor_t * const proc) const noexcept;
   void tdata2_write(processor_t * const proc, const reg_t val) noexcept;
+  reg_t tdata3_read(const processor_t * const proc) const noexcept;
+  void tdata3_write(processor_t * const proc, const reg_t val) noexcept;
 
   virtual bool get_dmode() const = 0;
   virtual bool get_chain() const { return false; }
@@ -72,6 +81,14 @@ public:
 protected:
   action_t legalize_action(reg_t val) const noexcept;
   reg_t tdata2;
+
+private:
+  unsigned legalize_mhselect(bool h_enabled) const noexcept;
+  sselect_t sselect;
+  unsigned svalue;
+  unsigned sbytemask;
+  unsigned mhselect;
+  unsigned mhvalue;
 };
 
 class disabled_trigger_t : public trigger_t {
@@ -180,6 +197,8 @@ public:
   bool tdata1_write(unsigned index, const reg_t val) noexcept;
   reg_t tdata2_read(unsigned index) const noexcept;
   bool tdata2_write(unsigned index, const reg_t val) noexcept;
+  reg_t tdata3_read(unsigned index) const noexcept;
+  bool tdata3_write(unsigned index, const reg_t val) noexcept;
   reg_t tinfo_read(unsigned index) const noexcept;
 
   unsigned count() const { return triggers.size(); }
