@@ -3,6 +3,11 @@
 #include "processor.h"
 #include "triggers.h"
 
+#define ASIDMAX(SXLEN) (SXLEN == 32 ? 9 : 16)
+#define SATP_ASID(SXLEN) (SXLEN == 32 ? SATP32_ASID : SATP64_ASID)
+#define VMIDMAX(HSXLEN) (HSXLEN == 32 ? 7 : 14)
+#define HGATP_VMID(HSXLEN) (HSXLEN == 32 ? HGATP32_VMID : HGATP64_VMID)
+
 #define CSR_TEXTRA_MHVALUE(XLEN)   (XLEN == 32 ? CSR_TEXTRA32_MHVALUE : CSR_TEXTRA64_MHVALUE)
 #define CSR_TEXTRA_MHSELECT(XLEN)  (XLEN == 32 ? CSR_TEXTRA32_MHSELECT : CSR_TEXTRA64_MHSELECT)
 #define CSR_TEXTRA_SBYTEMASK(XLEN) (XLEN == 32 ? CSR_TEXTRA32_SBYTEMASK : CSR_TEXTRA64_SBYTEMASK)
@@ -39,6 +44,21 @@ unsigned trigger_t::legalize_mhselect(bool h_enabled) const noexcept {
   return convert[mhselect];
 }
 
+mhselect_mode_t trigger_t::mhselect_mode(bool h_enabled) const noexcept {
+  switch (legalize_mhselect(h_enabled)) {
+    case 0: // ignore mhvalue
+      return MHSELECT_MODE_IGNORE;
+    case 4: // match only if mcontext equal mhvalue
+    case 1: // match only if mcontext equal {mhvalue, 1b'0}
+    case 5: // match only if mcontext equal {mhvalue, 1b'1}
+      return MHSELECT_MODE_MCONTEXT;
+    case 2: // match only if hgapt.VMID equal {mhvalue, 1b'0}
+    case 6: // match only if hgapt.VMID equal {mhvalue, 1b'1}
+      return MHSELECT_MODE_VMID;
+    default: assert(false);
+  }
+}
+
 reg_t trigger_t::tdata3_read(const processor_t * const proc) const noexcept {
   auto xlen = proc->get_xlen();
   reg_t tdata3 = 0;
@@ -57,6 +77,30 @@ void trigger_t::tdata3_write(processor_t * const proc, const reg_t val) noexcept
   sbytemask = get_field(val, CSR_TEXTRA_SBYTEMASK(xlen));
   svalue = proc->extension_enabled_const('S') ? get_field(val, CSR_TEXTRA_SVALUE(xlen)) : 0;
   sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) == SSELECT_ASID) ? SSELECT_ASID : SSELECT_IGNORE);
+}
+
+bool trigger_t::textra_match(processor_t * const proc) const noexcept
+{
+  auto xlen = proc->get_xlen();
+  auto hsxlen = proc->get_xlen(); // use xlen since no hsxlen
+  state_t * const state = proc->get_state();
+
+  assert(sselect <= SSELECT_MAXVAL);
+  if (sselect == SSELECT_ASID) {
+    const reg_t satp = state->satp->read();
+    const reg_t asid = get_field(satp,  SATP_ASID(xlen));
+    if (asid != (svalue & ((1 << ASIDMAX(xlen)) - 1)))
+      return false;
+  }
+
+  mhselect_mode_t mode = mhselect_mode(proc->extension_enabled('H'));
+  if (mode == MHSELECT_MODE_VMID) { // 2 and 6 are vmid
+    const reg_t vmid = get_field(state->hgatp->read(), HGATP_VMID(hsxlen));
+    if (vmid != (mhselect_compare(proc->extension_enabled('H')) & ((1 << VMIDMAX(hsxlen)) - 1)))
+      return false;
+  }
+
+  return true;
 }
 
 reg_t disabled_trigger_t::tdata1_read(const processor_t * const proc) const noexcept
@@ -410,7 +454,7 @@ std::optional<match_result_t> module_t::detect_memory_access_match(operation_t o
      * entire chain did not match. This is allowed by the spec, because the final
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
-    auto result = trigger->detect_memory_access_match(proc, operation, address, data);
+    auto result = trigger->textra_match(proc) ? trigger->detect_memory_access_match(proc, operation, address, data) : std::nullopt;
     if (result.has_value() && !trigger->get_chain())
       return result;
 
@@ -426,7 +470,7 @@ std::optional<match_result_t> module_t::detect_trap_match(const trap_t& t) noexc
     return std::nullopt;
 
   for (auto trigger: triggers) {
-    auto result = trigger->detect_trap_match(proc, t);
+    auto result = trigger->textra_match(proc) ? trigger->detect_trap_match(proc, t) : std::nullopt;
     if (result.has_value())
       return result;
   }

@@ -36,6 +36,12 @@ typedef enum {
   SSELECT_MAXVAL = 2
 } sselect_t;
 
+typedef enum {
+  MHSELECT_MODE_IGNORE,
+  MHSELECT_MODE_MCONTEXT,
+  MHSELECT_MODE_VMID,
+} mhselect_mode_t;
+
 struct match_result_t {
   match_result_t(const timing_t t=TIMING_BEFORE, const action_t a=ACTION_DEBUG_EXCEPTION) {
     timing = t;
@@ -77,6 +83,7 @@ public:
   virtual std::optional<match_result_t> detect_memory_access_match(processor_t UNUSED * const proc,
       operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) noexcept { return std::nullopt; }
   virtual std::optional<match_result_t> detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) noexcept { return std::nullopt; }
+  bool textra_match(processor_t * const proc) const noexcept;
 
 protected:
   action_t legalize_action(reg_t val) const noexcept;
@@ -84,6 +91,10 @@ protected:
 
 private:
   unsigned legalize_mhselect(bool h_enabled) const noexcept;
+  mhselect_mode_t mhselect_mode(bool h_enabled) const noexcept;
+  unsigned mhselect_compare(bool h_enabled) const noexcept {
+    return legalize_mhselect(h_enabled) == 4 ? mhvalue : (mhvalue << 1) + (mhselect >> 2); // mhvalue or {mhvalue, mhselect[2]}
+  }
   sselect_t sselect;
   unsigned svalue;
   unsigned sbytemask;
