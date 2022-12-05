@@ -1289,14 +1289,12 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
                          0x10000000, 0x10005000, 0x10006000, 0x10007000};
 
       for (unsigned nf = 0; nf <= 7; ++nf) {
-        char seg_str[8] = "";
-        if (nf)
-          sprintf(seg_str, "seg%u", nf + 1);
+        const auto seg_str = nf ? "seg" + std::to_string(nf + 1) : "";
 
         for (auto item : template_insn) {
           const reg_t match_nf = nf << 29;
           char buf[128];
-          sprintf(buf, item.fmt, seg_str, 8 << elt);
+          snprintf(buf, sizeof(buf), item.fmt, seg_str.c_str(), 8 << elt);
           add_insn(new disasm_insn_t(
             buf,
             ((item.match | match_nf) & ~mask_vldst) | elt_map[elt],
@@ -1314,7 +1312,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
         for (auto item : template_insn2) {
           const reg_t match_nf = nf << 29;
           char buf[128];
-          sprintf(buf, item.fmt, nf + 1, 8 << elt);
+          snprintf(buf, sizeof(buf), item.fmt, nf + 1, 8 << elt);
           add_insn(new disasm_insn_t(
             buf,
             item.match | match_nf | elt_map[elt],
@@ -1675,7 +1673,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
       for (size_t idx = 0; idx < sizeof(amo_map) / sizeof(amo_map[0]); ++idx) {
         for (auto item : template_insn) {
           char buf[128];
-          sprintf(buf, item.fmt, amo_map[idx].first, 8 << elt);
+          snprintf(buf, sizeof(buf), item.fmt, amo_map[idx].first, 8 << elt);
           add_insn(new disasm_insn_t(buf,
                     item.match | amo_map[idx].second | elt_map[elt],
                     item.mask,
