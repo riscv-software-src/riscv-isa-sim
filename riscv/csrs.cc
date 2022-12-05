@@ -650,6 +650,10 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
     state->mie->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hie, sie
     state->mip->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hip, sip, hvip
     state->hstatus->write(0);
+    for (reg_t i = 3; i < N_HPMCOUNTERS + 3; ++i) {
+      const reg_t new_mevent = state->mevent[i - 3]->read() & ~(MHPMEVENT_VUINH | MHPMEVENT_VSINH);
+      state->mevent[i - 3]->write(new_mevent);
+    }
   }
 
   return basic_csr_t::unlogged_write(new_misa);
@@ -1052,6 +1056,18 @@ void counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
     else
       throw trap_illegal_instruction(insn.bits());
   }
+}
+
+mevent_csr_t::mevent_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, 0) {
+}
+
+bool mevent_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t mask = proc->extension_enabled(EXT_SSCOFPMF) ? MHPMEVENT_OF | MHPMEVENT_MINH
+    | (proc->extension_enabled_const('U') ? MHPMEVENT_UINH : 0)
+    | (proc->extension_enabled_const('S') ? MHPMEVENT_SINH : 0)
+    | (proc->extension_enabled('H') ? MHPMEVENT_VUINH | MHPMEVENT_VSINH : 0) : 0;
+  return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
 }
 
 hypervisor_csr_t::hypervisor_csr_t(processor_t* const proc, const reg_t addr):
@@ -1460,7 +1476,7 @@ void scountovf_csr_t::verify_permissions(insn_t insn, bool write) const {
 
 reg_t scountovf_csr_t::read() const noexcept {
   reg_t val = 0;
-  for (reg_t i = 3; i <= 31; ++i) {
+  for (reg_t i = 3; i < N_HPMCOUNTERS + 3; ++i) {
     bool of = state->mevent[i - 3]->read() & MHPMEVENT_OF;
     val |= of << i;
   }

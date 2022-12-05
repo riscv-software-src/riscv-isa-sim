@@ -18,6 +18,8 @@
 #include "triggers.h"
 #include "memif.h"
 
+#define N_HPMCOUNTERS 29
+
 class processor_t;
 class mmu_t;
 typedef reg_t (*insn_func_t)(processor_t*, insn_t, reg_t);
@@ -146,7 +148,7 @@ struct state_t
   csr_t_p medeleg;
   csr_t_p mideleg;
   csr_t_p mcounteren;
-  csr_t_p mevent[29];
+  csr_t_p mevent[N_HPMCOUNTERS];
   csr_t_p scounteren;
   csr_t_p sepc;
   csr_t_p stval;
