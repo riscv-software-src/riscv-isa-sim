@@ -290,7 +290,7 @@ do { \
   (((reg) & ~(std::remove_cv<decltype(reg)>::type)(mask)) | (((std::remove_cv<decltype(reg)>::type)(val) * ((mask) & ~((mask) << 1))) & (std::remove_cv<decltype(reg)>::type)(mask)))
 
 #define require_privilege(p) require(STATE.prv >= (p))
-#define require_novirt() if (unlikely(STATE.v)) throw trap_virtual_instruction(insn.bits())
+#define require_novirt() (unlikely(STATE.v) ? throw trap_virtual_instruction(insn.bits()) : (void) 0)
 #define require_rv64 require(xlen == 64)
 #define require_rv32 require(xlen == 32)
 #define require_extension(s) require(p->extension_enabled(s))
