@@ -231,7 +231,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     csrmap[CSR_MINSTRET] = minstret;
     csrmap[CSR_MCYCLE] = mcycle;
   }
-  for (reg_t i = 3; i <= 31; ++i) {
+  for (reg_t i = 3; i < N_HPMCOUNTERS + 3; ++i) {
     const reg_t which_mevent = CSR_MHPMEVENT3 + i - 3;
     const reg_t which_meventh = CSR_MHPMEVENT3H + i - 3;
     const reg_t which_mcounter = CSR_MHPMCOUNTER3 + i - 3;

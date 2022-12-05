@@ -1472,7 +1472,7 @@ void scountovf_csr_t::verify_permissions(insn_t insn, bool write) const {
 
 reg_t scountovf_csr_t::read() const noexcept {
   reg_t val = 0;
-  for (reg_t i = 3; i <= 31; ++i) {
+  for (reg_t i = 3; i < N_HPMCOUNTERS + 3; ++i) {
     bool of = state->mevent[i - 3]->read() & MHPMEVENT_OF;
     val |= of << i;
   }
