@@ -291,6 +291,8 @@ do { \
 
 #define require_privilege(p) require(STATE.prv >= (p))
 #define require_novirt() (unlikely(STATE.v) ? throw trap_virtual_instruction(insn.bits()) : (void) 0)
+#define require_hs_qualified(cond) (STATE.v && !(cond) ? require_novirt() : require(cond))
+#define require_privilege_hs_qualified(p) require_hs_qualified(STATE.prv >= (p))
 #define require_rv64 require(xlen == 64)
 #define require_rv32 require(xlen == 32)
 #define require_extension(s) require(p->extension_enabled(s))
