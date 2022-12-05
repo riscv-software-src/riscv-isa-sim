@@ -4,7 +4,6 @@
 #define _RISCV_TRAP_H
 
 #include "decode.h"
-#include <cstdio>
 #include <string>
 
 struct state_t;
@@ -29,15 +28,14 @@ class trap_t
 
   virtual std::string name()
   {
-    const char* fmt = uint8_t(which) == which ? "trap #%u" : "interrupt #%u";
-    sprintf(_name, fmt, uint8_t(which));
-    return _name;
+    const uint8_t code = uint8_t(which);
+    const bool is_interrupt = code != which;
+    return (is_interrupt ? "interrupt #" : "trap #") + std::to_string(code);
   }
 
   virtual ~trap_t() = default;
 
  private:
-  char _name[16];
   reg_t which;
 };
 
