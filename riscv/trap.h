@@ -4,7 +4,7 @@
 #define _RISCV_TRAP_H
 
 #include "decode.h"
-#include <cstdio>
+#include <string>
 
 struct state_t;
 
@@ -26,17 +26,16 @@ class trap_t
   virtual reg_t get_tinst() { return 0; }
   reg_t cause() const { return which; }
 
-  virtual const char* name()
+  virtual std::string name()
   {
-    const char* fmt = uint8_t(which) == which ? "trap #%u" : "interrupt #%u";
-    sprintf(_name, fmt, uint8_t(which));
-    return _name;
+    const uint8_t code = uint8_t(which);
+    const bool is_interrupt = code != which;
+    return (is_interrupt ? "interrupt #" : "trap #") + std::to_string(code);
   }
 
   virtual ~trap_t() = default;
 
  private:
-  char _name[16];
   reg_t which;
 };
 
@@ -73,31 +72,31 @@ class mem_trap_t : public trap_t
 #define DECLARE_TRAP(n, x) class trap_##x : public trap_t { \
  public: \
   trap_##x() : trap_t(n) {} \
-  const char* name() { return "trap_"#x; } \
+  std::string name() { return "trap_"#x; } \
 };
 
 #define DECLARE_INST_TRAP(n, x) class trap_##x : public insn_trap_t { \
  public: \
   trap_##x(reg_t tval) : insn_trap_t(n, /*gva*/false, tval) {} \
-  const char* name() { return "trap_"#x; } \
+  std::string name() { return "trap_"#x; } \
 };
 
 #define DECLARE_INST_WITH_GVA_TRAP(n, x) class trap_##x : public insn_trap_t {  \
  public: \
   trap_##x(bool gva, reg_t tval) : insn_trap_t(n, gva, tval) {} \
-  const char* name() { return "trap_"#x; } \
+  std::string name() { return "trap_"#x; } \
 };
 
 #define DECLARE_MEM_TRAP(n, x) class trap_##x : public mem_trap_t { \
  public: \
   trap_##x(bool gva, reg_t tval, reg_t tval2, reg_t tinst) : mem_trap_t(n, gva, tval, tval2, tinst) {} \
-  const char* name() { return "trap_"#x; } \
+  std::string name() { return "trap_"#x; } \
 };
 
 #define DECLARE_MEM_GVA_TRAP(n, x) class trap_##x : public mem_trap_t { \
  public: \
   trap_##x(reg_t tval, reg_t tval2, reg_t tinst) : mem_trap_t(n, true, tval, tval2, tinst) {} \
-  const char* name() { return "trap_"#x; } \
+  std::string name() { return "trap_"#x; } \
 };
 
 DECLARE_MEM_TRAP(CAUSE_MISALIGNED_FETCH, instruction_address_misaligned)
