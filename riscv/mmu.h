@@ -141,6 +141,7 @@ public:
   // template for functions that perform an atomic memory operation
   template<typename T, typename op>
   T amo(reg_t addr, op f) {
+    check_triggers(triggers::OPERATION_AMO, addr);
     convert_load_traps_to_store_traps({
       store_slow_path(addr, sizeof(T), nullptr, 0, false, true);
       auto lhs = load<T>(addr);

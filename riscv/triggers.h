@@ -12,6 +12,7 @@ typedef enum {
   OPERATION_EXECUTE,
   OPERATION_STORE,
   OPERATION_LOAD,
+  OPERATION_AMO // both LOAD and STORE
 } operation_t;
 
 typedef enum

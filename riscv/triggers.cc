@@ -120,6 +120,7 @@ std::optional<match_result_t> mcontrol_t::detect_memory_access_match(processor_t
   if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
       (operation == triggers::OPERATION_STORE && !store) ||
       (operation == triggers::OPERATION_LOAD && !load) ||
+      (operation == triggers::OPERATION_AMO && (!store && !load)) ||
       (state->prv == PRV_M && !m) ||
       (state->prv == PRV_S && !s) ||
       (state->prv == PRV_U && !u) ||
