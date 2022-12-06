@@ -146,6 +146,7 @@ public:
       store_slow_path(addr, sizeof(T), nullptr, 0, false, true);
       auto lhs = load<T>(addr);
       store<T>(addr, f(lhs));
+      check_triggers(triggers::OPERATION_AMO, addr, f(lhs));
       return lhs;
     })
   }
