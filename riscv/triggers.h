@@ -91,6 +91,32 @@ protected:
 
 private:
   unsigned legalize_mhselect(bool h_enabled) const noexcept;
+
+  struct mhselect_interpretation {
+    const unsigned mhselect;
+    const mhselect_mode_t mode;
+    const std::optional<bool> shift_mhvalue;
+  };
+
+  mhselect_interpretation interpret_mhselect(bool h_enabled) const noexcept {
+    static unsigned warlize_if_h[8] = { 0, 1, 2, 0, 4, 5, 6, 4 };  // 3,7 downgrade
+    static unsigned warlize_no_h[8] = { 0, 0, 0, 0, 4, 4, 4, 4 };  // only 0,4 legal
+    static std::optional<mhselect_interpretation> table[8] = {
+      mhselect_interpretation{ 0, MHSELECT_MODE_IGNORE, std::nullopt },
+      mhselect_interpretation{ 1, MHSELECT_MODE_MCONTEXT, true },
+      mhselect_interpretation{ 2, MHSELECT_MODE_VMID, true },
+      std::nullopt,
+      mhselect_interpretation{ 4, MHSELECT_MODE_MCONTEXT, false },
+      mhselect_interpretation{ 5, MHSELECT_MODE_MCONTEXT, true },
+      mhselect_interpretation{ 6, MHSELECT_MODE_VMID, true },
+      std::nullopt
+    };
+    assert(mhselect < 8);
+    unsigned legal = h_enabled ? warlize_if_h[mhselect] : warlize_no_h[mhselect];
+    assert(legal < 8);
+    return table[legal].value();
+  }
+
   mhselect_mode_t mhselect_mode(bool h_enabled) const noexcept;
   unsigned mhselect_compare(bool h_enabled) const noexcept {
     return legalize_mhselect(h_enabled) == 4 ? mhvalue : (mhvalue << 1) + (mhselect >> 2); // mhvalue or {mhvalue, mhselect[2]}

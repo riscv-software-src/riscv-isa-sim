@@ -30,18 +30,8 @@ action_t trigger_t::legalize_action(reg_t val) const noexcept {
 }
 
 unsigned trigger_t::legalize_mhselect(bool h_enabled) const noexcept {
-  unsigned convert[8] = {
-    (unsigned)                 0 ,  // 0
-    (unsigned)(h_enabled ? 1 : 0),  // 1
-    (unsigned)(h_enabled ? 2 : 0),  // 2
-    (unsigned)                 0 ,  // 3
-    (unsigned)                 4 ,  // 4
-    (unsigned)(h_enabled ? 5 : 4),  // 5
-    (unsigned)(h_enabled ? 6 : 4),  // 6
-    (unsigned)                 4    // 7
-  };
-  assert(mhselect < 8);
-  return convert[mhselect];
+  const auto interp = interpret_mhselect(h_enabled);
+  return interp.mhselect;
 }
 
 mhselect_mode_t trigger_t::mhselect_mode(bool h_enabled) const noexcept {
