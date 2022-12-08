@@ -80,11 +80,11 @@ bool trigger_t::textra_match(processor_t * const proc) const noexcept
   const mhselect_mode_t mode = mhselect_interp.mode;
   if (mode == MHSELECT_MODE_MCONTEXT) { // 4, 1, and 5 are mcontext
     reg_t mask = (1 << (CSR_TEXTRA_MHVALUE_LENGTH(xlen) + 1)) - 1;
-    if ((state->mcontext->read() & mask) != mhselect_compare(proc->extension_enabled('H')))
+    if ((state->mcontext->read() & mask) != mhselect_interp.compare_val(mhvalue))
       return false;
   } else if (mode == MHSELECT_MODE_VMID) { // 2 and 6 are vmid
     const reg_t vmid = get_field(state->hgatp->read(), HGATP_VMID(hsxlen));
-    if (vmid != (mhselect_compare(proc->extension_enabled('H')) & ((1 << VMIDMAX(hsxlen)) - 1)))
+    if (vmid != (mhselect_interp.compare_val(mhvalue) & ((1 << VMIDMAX(hsxlen)) - 1)))
       return false;
   }
 

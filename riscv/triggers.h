@@ -96,6 +96,9 @@ private:
     const unsigned mhselect;
     const mhselect_mode_t mode;
     const std::optional<bool> shift_mhvalue;
+    unsigned compare_val(const unsigned mhvalue) const {
+      return shift_mhvalue.value() ? (mhvalue << 1 | mhselect >> 2) : mhvalue;
+    };
   };
 
   mhselect_interpretation interpret_mhselect(bool h_enabled) const noexcept {
@@ -117,9 +120,6 @@ private:
     return table[legal].value();
   }
 
-  unsigned mhselect_compare(bool h_enabled) const noexcept {
-    return legalize_mhselect(h_enabled) == 4 ? mhvalue : (mhvalue << 1) + (mhselect >> 2); // mhvalue or {mhvalue, mhselect[2]}
-  }
   sselect_t sselect;
   unsigned svalue;
   unsigned sbytemask;
