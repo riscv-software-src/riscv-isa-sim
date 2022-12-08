@@ -449,5 +449,12 @@ memif_endianness_t sim_t::get_target_endianness() const
 
 void sim_t::proc_reset(unsigned id)
 {
-  debug_module.proc_reset(id);
+  int i;
+  for (int j = 0; j < cfg->nprocs(); j++)
+  {
+    if(cfg->hartids()[j] == id)
+	  i = j;
+  }
+// Each proccessor only knows and could provide it's hartid,so simulator looks up which proc it is and pass it to debug module
+  debug_module.proc_reset(i);
 }
