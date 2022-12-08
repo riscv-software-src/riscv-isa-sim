@@ -117,7 +117,6 @@ private:
     return table[legal].value();
   }
 
-  mhselect_mode_t mhselect_mode(bool h_enabled) const noexcept;
   unsigned mhselect_compare(bool h_enabled) const noexcept {
     return legalize_mhselect(h_enabled) == 4 ? mhvalue : (mhvalue << 1) + (mhselect >> 2); // mhvalue or {mhvalue, mhselect[2]}
   }

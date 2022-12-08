@@ -34,21 +34,6 @@ unsigned trigger_t::legalize_mhselect(bool h_enabled) const noexcept {
   return interp.mhselect;
 }
 
-mhselect_mode_t trigger_t::mhselect_mode(bool h_enabled) const noexcept {
-  switch (legalize_mhselect(h_enabled)) {
-    case 0: // ignore mhvalue
-      return MHSELECT_MODE_IGNORE;
-    case 4: // match only if mcontext equal mhvalue
-    case 1: // match only if mcontext equal {mhvalue, 1b'0}
-    case 5: // match only if mcontext equal {mhvalue, 1b'1}
-      return MHSELECT_MODE_MCONTEXT;
-    case 2: // match only if hgapt.VMID equal {mhvalue, 1b'0}
-    case 6: // match only if hgapt.VMID equal {mhvalue, 1b'1}
-      return MHSELECT_MODE_VMID;
-    default: assert(false);
-  }
-}
-
 reg_t trigger_t::tdata3_read(const processor_t * const proc) const noexcept {
   auto xlen = proc->get_xlen();
   reg_t tdata3 = 0;
@@ -91,7 +76,8 @@ bool trigger_t::textra_match(processor_t * const proc) const noexcept
       return false;
   }
 
-  mhselect_mode_t mode = mhselect_mode(proc->extension_enabled('H'));
+  const auto mhselect_interp = interpret_mhselect(proc->extension_enabled('H'));
+  const mhselect_mode_t mode = mhselect_interp.mode;
   if (mode == MHSELECT_MODE_MCONTEXT) { // 4, 1, and 5 are mcontext
     reg_t mask = (1 << (CSR_TEXTRA_MHVALUE_LENGTH(xlen) + 1)) - 1;
     if ((state->mcontext->read() & mask) != mhselect_compare(proc->extension_enabled('H')))
