@@ -1153,6 +1153,18 @@ bool tdata2_csr_t::unlogged_write(const reg_t val) noexcept {
   return proc->TM.tdata2_write(state->tselect->read(), val);
 }
 
+tdata3_csr_t::tdata3_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+reg_t tdata3_csr_t::read() const noexcept {
+  return 0;
+}
+
+bool tdata3_csr_t::unlogged_write(const reg_t val) noexcept {
+  return false;
+}
+
 tinfo_csr_t::tinfo_csr_t(processor_t* const proc, const reg_t addr) :
   csr_t(proc, addr) {
 }
