@@ -178,6 +178,7 @@ struct state_t
   csr_t_p tselect;
   tdata2_csr_t_p tdata2;
   csr_t_p scontext;
+  csr_t_p mcontext;
 
   csr_t_p jvt;
 

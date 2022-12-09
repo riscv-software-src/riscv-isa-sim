@@ -8,6 +8,7 @@
 #define VMIDMAX(HSXLEN) (HSXLEN == 32 ? 7 : 14)
 #define HGATP_VMID(HSXLEN) (HSXLEN == 32 ? HGATP32_VMID : HGATP64_VMID)
 
+#define CSR_TEXTRA_MHVALUE_LENGTH(XLEN) (XLEN == 32 ? CSR_TEXTRA32_MHVALUE_LENGTH : CSR_TEXTRA64_MHVALUE_LENGTH)
 #define CSR_TEXTRA_MHVALUE(XLEN)   (XLEN == 32 ? CSR_TEXTRA32_MHVALUE : CSR_TEXTRA64_MHVALUE)
 #define CSR_TEXTRA_MHSELECT(XLEN)  (XLEN == 32 ? CSR_TEXTRA32_MHSELECT : CSR_TEXTRA64_MHSELECT)
 #define CSR_TEXTRA_SBYTEMASK(XLEN) (XLEN == 32 ? CSR_TEXTRA32_SBYTEMASK : CSR_TEXTRA64_SBYTEMASK)
@@ -29,16 +30,15 @@ action_t trigger_t::legalize_action(reg_t val) const noexcept {
 }
 
 unsigned trigger_t::legalize_mhselect(bool h_enabled) const noexcept {
-  // consider a mask with lowest bit 0
   unsigned convert[8] = {
     (unsigned)                 0 ,  // 0
-    (unsigned)                 0 ,  // 1
+    (unsigned)(h_enabled ? 1 : 0),  // 1
     (unsigned)(h_enabled ? 2 : 0),  // 2
     (unsigned)                 0 ,  // 3
-    (unsigned)                 0 ,  // 4
-    (unsigned)                 0 ,  // 5
-    (unsigned)(h_enabled ? 6 : 0),  // 6
-    (unsigned)                 0    // 7
+    (unsigned)                 4 ,  // 4
+    (unsigned)(h_enabled ? 5 : 4),  // 5
+    (unsigned)(h_enabled ? 6 : 4),  // 6
+    (unsigned)                 4    // 7
   };
   assert(mhselect < 8);
   return convert[mhselect];
@@ -102,7 +102,11 @@ bool trigger_t::textra_match(processor_t * const proc) const noexcept
   }
 
   mhselect_mode_t mode = mhselect_mode(proc->extension_enabled('H'));
-  if (mode == MHSELECT_MODE_VMID) { // 2 and 6 are vmid
+  if (mode == MHSELECT_MODE_MCONTEXT) { // 4, 1, and 5 are mcontext
+    reg_t mask = (1 << (CSR_TEXTRA_MHVALUE_LENGTH(xlen) + 1)) - 1;
+    if ((state->mcontext->read() & mask) != mhselect_compare(proc->extension_enabled('H')))
+      return false;
+  } else if (mode == MHSELECT_MODE_VMID) { // 2 and 6 are vmid
     const reg_t vmid = get_field(state->hgatp->read(), HGATP_VMID(hsxlen));
     if (vmid != (mhselect_compare(proc->extension_enabled('H')) & ((1 << VMIDMAX(hsxlen)) - 1)))
       return false;
