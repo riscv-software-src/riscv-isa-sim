@@ -270,12 +270,12 @@ module_t::~module_t() {
   }
 }
 
-reg_t module_t::tdata1_read(const processor_t * const proc, unsigned index) const noexcept
+reg_t module_t::tdata1_read(unsigned index) const noexcept
 {
   return triggers[index]->tdata1_read(proc);
 }
 
-bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept
+bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
 {
   if (triggers[index]->get_dmode() && !proc->get_state()->debug_mode) {
     return false;
@@ -316,12 +316,12 @@ bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_
   return true;
 }
 
-reg_t module_t::tdata2_read(const processor_t * const proc, unsigned index) const noexcept
+reg_t module_t::tdata2_read(unsigned index) const noexcept
 {
   return triggers[index]->tdata2_read(proc);
 }
 
-bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_t val) noexcept
+bool module_t::tdata2_write(unsigned index, const reg_t val) noexcept
 {
   if (triggers[index]->get_dmode() && !proc->get_state()->debug_mode) {
     return false;
@@ -374,7 +374,7 @@ std::optional<match_result_t> module_t::detect_trap_match(const trap_t& t) noexc
   return std::nullopt;
 }
 
-reg_t module_t::tinfo_read(UNUSED const processor_t * const proc, unsigned UNUSED index) const noexcept
+reg_t module_t::tinfo_read(unsigned UNUSED index) const noexcept
 {
   /* In spike, every trigger supports the same types. */
   return (1 << CSR_TDATA1_TYPE_MCONTROL) |

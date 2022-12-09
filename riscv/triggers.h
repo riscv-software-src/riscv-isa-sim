@@ -176,11 +176,11 @@ public:
   module_t(unsigned count);
   ~module_t();
 
-  reg_t tdata1_read(const processor_t * const proc, unsigned index) const noexcept;
-  bool tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept;
-  reg_t tdata2_read(const processor_t * const proc, unsigned index) const noexcept;
-  bool tdata2_write(processor_t * const proc, unsigned index, const reg_t val) noexcept;
-  reg_t tinfo_read(const processor_t * const proc, unsigned index) const noexcept;
+  reg_t tdata1_read(unsigned index) const noexcept;
+  bool tdata1_write(unsigned index, const reg_t val) noexcept;
+  reg_t tdata2_read(unsigned index) const noexcept;
+  bool tdata2_write(unsigned index, const reg_t val) noexcept;
+  reg_t tinfo_read(unsigned index) const noexcept;
 
   unsigned count() const { return triggers.size(); }
 

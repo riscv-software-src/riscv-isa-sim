@@ -1134,11 +1134,11 @@ tdata1_csr_t::tdata1_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 reg_t tdata1_csr_t::read() const noexcept {
-  return proc->TM.tdata1_read(proc, state->tselect->read());
+  return proc->TM.tdata1_read(state->tselect->read());
 }
 
 bool tdata1_csr_t::unlogged_write(const reg_t val) noexcept {
-  return proc->TM.tdata1_write(proc, state->tselect->read(), val);
+  return proc->TM.tdata1_write(state->tselect->read(), val);
 }
 
 tdata2_csr_t::tdata2_csr_t(processor_t* const proc, const reg_t addr):
@@ -1146,11 +1146,11 @@ tdata2_csr_t::tdata2_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 reg_t tdata2_csr_t::read() const noexcept {
-  return proc->TM.tdata2_read(proc, state->tselect->read());
+  return proc->TM.tdata2_read(state->tselect->read());
 }
 
 bool tdata2_csr_t::unlogged_write(const reg_t val) noexcept {
-  return proc->TM.tdata2_write(proc, state->tselect->read(), val);
+  return proc->TM.tdata2_write(state->tselect->read(), val);
 }
 
 tinfo_csr_t::tinfo_csr_t(processor_t* const proc, const reg_t addr) :
@@ -1158,7 +1158,7 @@ tinfo_csr_t::tinfo_csr_t(processor_t* const proc, const reg_t addr) :
 }
 
 reg_t tinfo_csr_t::read() const noexcept {
-  return proc->TM.tinfo_read(proc, state->tselect->read());
+  return proc->TM.tinfo_read(state->tselect->read());
 }
 
 debug_mode_csr_t::debug_mode_csr_t(processor_t* const proc, const reg_t addr):
