@@ -76,7 +76,7 @@ void trigger_t::tdata3_write(processor_t * const proc, const reg_t val) noexcept
   mhselect = get_field(val, CSR_TEXTRA_MHSELECT(xlen));
   sbytemask = get_field(val, CSR_TEXTRA_SBYTEMASK(xlen));
   svalue = proc->extension_enabled_const('S') ? get_field(val, CSR_TEXTRA_SVALUE(xlen)) : 0;
-  sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) == SSELECT_ASID) ? SSELECT_ASID : SSELECT_IGNORE);
+  sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) <= SSELECT_MAXVAL) ? get_field(val, CSR_TEXTRA_SSELECT(xlen)) : SSELECT_IGNORE);
 }
 
 bool trigger_t::textra_match(processor_t * const proc) const noexcept
@@ -86,7 +86,15 @@ bool trigger_t::textra_match(processor_t * const proc) const noexcept
   state_t * const state = proc->get_state();
 
   assert(sselect <= SSELECT_MAXVAL);
-  if (sselect == SSELECT_ASID) {
+  if (sselect == SSELECT_SCONTEXT) {
+    reg_t mask = (reg_t(1) << ((xlen == 32) ? CSR_TEXTRA32_SVALUE_LENGTH : CSR_TEXTRA64_SVALUE_LENGTH)) - 1;
+    assert(CSR_TEXTRA32_SBYTEMASK_LENGTH < CSR_TEXTRA64_SBYTEMASK_LENGTH);
+    for (int i = 0; i < CSR_TEXTRA64_SBYTEMASK_LENGTH; i++)
+      if (sbytemask & (1 << i))
+        mask &= 0xff << (i * 8);
+    if ((state->scontext->read() & mask) != (svalue & mask))
+      return false;
+  } else if (sselect == SSELECT_ASID) {
     const reg_t satp = state->satp->read();
     const reg_t asid = get_field(satp,  SATP_ASID(xlen));
     if (asid != (svalue & ((1 << ASIDMAX(xlen)) - 1)))
