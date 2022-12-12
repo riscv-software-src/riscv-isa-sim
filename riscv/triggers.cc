@@ -3,6 +3,18 @@
 #include "processor.h"
 #include "triggers.h"
 
+#define ASIDMAX(SXLEN) (SXLEN == 32 ? 9 : 16)
+#define SATP_ASID(SXLEN) (SXLEN == 32 ? SATP32_ASID : SATP64_ASID)
+#define VMIDMAX(HSXLEN) (HSXLEN == 32 ? 7 : 14)
+#define HGATP_VMID(HSXLEN) (HSXLEN == 32 ? HGATP32_VMID : HGATP64_VMID)
+
+#define CSR_TEXTRA_MHVALUE_LENGTH(XLEN) (XLEN == 32 ? CSR_TEXTRA32_MHVALUE_LENGTH : CSR_TEXTRA64_MHVALUE_LENGTH)
+#define CSR_TEXTRA_MHVALUE(XLEN)   (XLEN == 32 ? CSR_TEXTRA32_MHVALUE : CSR_TEXTRA64_MHVALUE)
+#define CSR_TEXTRA_MHSELECT(XLEN)  (XLEN == 32 ? CSR_TEXTRA32_MHSELECT : CSR_TEXTRA64_MHSELECT)
+#define CSR_TEXTRA_SBYTEMASK(XLEN) (XLEN == 32 ? CSR_TEXTRA32_SBYTEMASK : CSR_TEXTRA64_SBYTEMASK)
+#define CSR_TEXTRA_SVALUE(XLEN)    (XLEN == 32 ? CSR_TEXTRA32_SVALUE : CSR_TEXTRA64_SVALUE)
+#define CSR_TEXTRA_SSELECT(XLEN)   (XLEN == 32 ? CSR_TEXTRA32_SSELECT : CSR_TEXTRA64_SSELECT)
+
 namespace triggers {
 
 reg_t trigger_t::tdata2_read(const processor_t UNUSED * const proc) const noexcept {
@@ -15,6 +27,68 @@ void trigger_t::tdata2_write(processor_t UNUSED * const proc, const reg_t UNUSED
 
 action_t trigger_t::legalize_action(reg_t val) const noexcept {
   return (val > ACTION_MAXVAL || (val == ACTION_DEBUG_MODE && get_dmode() == 0)) ? ACTION_DEBUG_EXCEPTION : (action_t)val;
+}
+
+unsigned trigger_t::legalize_mhselect(bool h_enabled) const noexcept {
+  const auto interp = interpret_mhselect(h_enabled);
+  return interp.mhselect;
+}
+
+reg_t trigger_t::tdata3_read(const processor_t * const proc) const noexcept {
+  auto xlen = proc->get_xlen();
+  reg_t tdata3 = 0;
+  tdata3 = set_field(tdata3, CSR_TEXTRA_MHVALUE(xlen), mhvalue);
+  tdata3 = set_field(tdata3, CSR_TEXTRA_MHSELECT(xlen), legalize_mhselect(proc->extension_enabled('H')));
+  tdata3 = set_field(tdata3, CSR_TEXTRA_SBYTEMASK(xlen), sbytemask);
+  tdata3 = set_field(tdata3, CSR_TEXTRA_SVALUE(xlen), svalue);
+  tdata3 = set_field(tdata3, CSR_TEXTRA_SSELECT(xlen), sselect);
+  return tdata3;
+}
+
+void trigger_t::tdata3_write(processor_t * const proc, const reg_t val) noexcept {
+  auto xlen = proc->get_xlen();
+  mhvalue = get_field(val, CSR_TEXTRA_MHVALUE(xlen));
+  mhselect = get_field(val, CSR_TEXTRA_MHSELECT(xlen));
+  sbytemask = get_field(val, CSR_TEXTRA_SBYTEMASK(xlen));
+  svalue = proc->extension_enabled_const('S') ? get_field(val, CSR_TEXTRA_SVALUE(xlen)) : 0;
+  sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) <= SSELECT_MAXVAL) ? get_field(val, CSR_TEXTRA_SSELECT(xlen)) : SSELECT_IGNORE);
+}
+
+bool trigger_t::textra_match(processor_t * const proc) const noexcept
+{
+  auto xlen = proc->get_xlen();
+  auto hsxlen = proc->get_xlen(); // use xlen since no hsxlen
+  state_t * const state = proc->get_state();
+
+  assert(sselect <= SSELECT_MAXVAL);
+  if (sselect == SSELECT_SCONTEXT) {
+    reg_t mask = (reg_t(1) << ((xlen == 32) ? CSR_TEXTRA32_SVALUE_LENGTH : CSR_TEXTRA64_SVALUE_LENGTH)) - 1;
+    assert(CSR_TEXTRA32_SBYTEMASK_LENGTH < CSR_TEXTRA64_SBYTEMASK_LENGTH);
+    for (int i = 0; i < CSR_TEXTRA64_SBYTEMASK_LENGTH; i++)
+      if (sbytemask & (1 << i))
+        mask &= 0xff << (i * 8);
+    if ((state->scontext->read() & mask) != (svalue & mask))
+      return false;
+  } else if (sselect == SSELECT_ASID) {
+    const reg_t satp = state->satp->read();
+    const reg_t asid = get_field(satp,  SATP_ASID(xlen));
+    if (asid != (svalue & ((1 << ASIDMAX(xlen)) - 1)))
+      return false;
+  }
+
+  const auto mhselect_interp = interpret_mhselect(proc->extension_enabled('H'));
+  const mhselect_mode_t mode = mhselect_interp.mode;
+  if (mode == MHSELECT_MODE_MCONTEXT) { // 4, 1, and 5 are mcontext
+    reg_t mask = (1 << (CSR_TEXTRA_MHVALUE_LENGTH(xlen) + 1)) - 1;
+    if ((state->mcontext->read() & mask) != mhselect_interp.compare_val(mhvalue))
+      return false;
+  } else if (mode == MHSELECT_MODE_VMID) { // 2 and 6 are vmid
+    const reg_t vmid = get_field(state->hgatp->read(), HGATP_VMID(hsxlen));
+    if (vmid != (mhselect_interp.compare_val(mhvalue) & ((1 << VMIDMAX(hsxlen)) - 1)))
+      return false;
+  }
+
+  return true;
 }
 
 reg_t disabled_trigger_t::tdata1_read(const processor_t * const proc) const noexcept
@@ -270,12 +344,12 @@ module_t::~module_t() {
   }
 }
 
-reg_t module_t::tdata1_read(const processor_t * const proc, unsigned index) const noexcept
+reg_t module_t::tdata1_read(unsigned index) const noexcept
 {
   return triggers[index]->tdata1_read(proc);
 }
 
-bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_t val) noexcept
+bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
 {
   if (triggers[index]->get_dmode() && !proc->get_state()->debug_mode) {
     return false;
@@ -290,6 +364,7 @@ bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_
   unsigned type = get_field(val, CSR_TDATA1_TYPE(xlen));
   reg_t tdata1 = val;
   reg_t tdata2 = triggers[index]->tdata2_read(proc);
+  reg_t tdata3 = triggers[index]->tdata3_read(proc);
 
   // hardware must zero chain in writes that set dmode to 0 if the next trigger has dmode of 1
   const bool allow_chain = !(index+1 < triggers.size() && triggers[index+1]->get_dmode() && !get_field(val, CSR_TDATA1_DMODE(xlen)));
@@ -312,21 +387,37 @@ bool module_t::tdata1_write(processor_t * const proc, unsigned index, const reg_
 
   triggers[index]->tdata1_write(proc, tdata1, allow_chain);
   triggers[index]->tdata2_write(proc, tdata2);
+  triggers[index]->tdata3_write(proc, tdata3);
   proc->trigger_updated(triggers);
   return true;
 }
 
-reg_t module_t::tdata2_read(const processor_t * const proc, unsigned index) const noexcept
+reg_t module_t::tdata2_read(unsigned index) const noexcept
 {
   return triggers[index]->tdata2_read(proc);
 }
 
-bool module_t::tdata2_write(processor_t * const proc, unsigned index, const reg_t val) noexcept
+bool module_t::tdata2_write(unsigned index, const reg_t val) noexcept
 {
   if (triggers[index]->get_dmode() && !proc->get_state()->debug_mode) {
     return false;
   }
   triggers[index]->tdata2_write(proc, val);
+  proc->trigger_updated(triggers);
+  return true;
+}
+
+reg_t module_t::tdata3_read(unsigned index) const noexcept
+{
+  return triggers[index]->tdata3_read(proc);
+}
+
+bool module_t::tdata3_write(unsigned index, const reg_t val) noexcept
+{
+  if (triggers[index]->get_dmode() && !proc->get_state()->debug_mode) {
+    return false;
+  }
+  triggers[index]->tdata3_write(proc, val);
   proc->trigger_updated(triggers);
   return true;
 }
@@ -351,7 +442,7 @@ std::optional<match_result_t> module_t::detect_memory_access_match(operation_t o
      * entire chain did not match. This is allowed by the spec, because the final
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
-    auto result = trigger->detect_memory_access_match(proc, operation, address, data);
+    auto result = trigger->textra_match(proc) ? trigger->detect_memory_access_match(proc, operation, address, data) : std::nullopt;
     if (result.has_value() && !trigger->get_chain())
       return result;
 
@@ -367,14 +458,14 @@ std::optional<match_result_t> module_t::detect_trap_match(const trap_t& t) noexc
     return std::nullopt;
 
   for (auto trigger: triggers) {
-    auto result = trigger->detect_trap_match(proc, t);
+    auto result = trigger->textra_match(proc) ? trigger->detect_trap_match(proc, t) : std::nullopt;
     if (result.has_value())
       return result;
   }
   return std::nullopt;
 }
 
-reg_t module_t::tinfo_read(UNUSED const processor_t * const proc, unsigned UNUSED index) const noexcept
+reg_t module_t::tinfo_read(unsigned UNUSED index) const noexcept
 {
   /* In spike, every trigger supports the same types. */
   return (1 << CSR_TDATA1_TYPE_MCONTROL) |
