@@ -282,17 +282,9 @@ void sim_t::configure_log(bool enable_log, bool enable_commitlog)
   if (!enable_commitlog)
     return;
 
-#ifndef RISCV_ENABLE_COMMITLOG
-  fputs("Commit logging support has not been properly enabled; "
-        "please re-build the riscv-isa-sim project using "
-        "\"configure --enable-commitlog\".\n",
-        stderr);
-  abort();
-#else
   for (processor_t *proc : procs) {
     proc->enable_log_commits();
   }
-#endif
 }
 
 void sim_t::set_procs_debug(bool value)
