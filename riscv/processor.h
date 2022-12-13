@@ -217,14 +217,12 @@ struct state_t
       STEP_STEPPED
   } single_step;
 
-#ifdef RISCV_ENABLE_COMMITLOG
   commit_log_reg_t log_reg_write;
   commit_log_mem_t log_mem_read;
   commit_log_mem_t log_mem_write;
   reg_t last_inst_priv;
   int last_inst_xlen;
   int last_inst_flen;
-#endif
 };
 
 // this class represents one processor in a RISC-V machine.
@@ -241,10 +239,8 @@ public:
 
   void set_debug(bool value);
   void set_histogram(bool value);
-#ifdef RISCV_ENABLE_COMMITLOG
   void enable_log_commits();
   bool get_log_commits_enabled() const { return log_commits_enabled; }
-#endif
   void reset();
   void step(size_t n); // run for n cycles
   void put_csr(int which, reg_t val);

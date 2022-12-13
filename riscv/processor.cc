@@ -592,12 +592,10 @@ void processor_t::set_histogram(bool value)
 #endif
 }
 
-#ifdef RISCV_ENABLE_COMMITLOG
 void processor_t::enable_log_commits()
 {
   log_commits_enabled = true;
 }
-#endif
 
 void processor_t::reset()
 {
