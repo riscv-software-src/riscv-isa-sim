@@ -92,6 +92,7 @@ template signed char& vectorUnit_t::elt<signed char>(reg_t, reg_t, bool);
 template short& vectorUnit_t::elt<short>(reg_t, reg_t, bool);
 template int& vectorUnit_t::elt<int>(reg_t, reg_t, bool);
 template long& vectorUnit_t::elt<long>(reg_t, reg_t, bool);
+template long long& vectorUnit_t::elt<long long>(reg_t, reg_t, bool);
 template uint8_t& vectorUnit_t::elt<uint8_t>(reg_t, reg_t, bool);
 template uint16_t& vectorUnit_t::elt<uint16_t>(reg_t, reg_t, bool);
 template uint32_t& vectorUnit_t::elt<uint32_t>(reg_t, reg_t, bool);
