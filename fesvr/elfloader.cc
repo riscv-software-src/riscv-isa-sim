@@ -98,7 +98,7 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
   } while (0)
 
   if (IS_ELFLE(*eh64)) {
-    if (memif->get_target_endianness() != memif_endianness_little) {
+    if (memif->get_target_endianness() != endianness_little) {
       throw std::invalid_argument("Specified ELF is little endian, but system uses a big-endian memory system. Rerun without --big-endian");
     }
     if (IS_ELF32(*eh64))
@@ -109,7 +109,7 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
 #ifndef RISCV_ENABLE_DUAL_ENDIAN
     throw std::invalid_argument("Specified ELF is big endian.  Configure with --enable-dual-endian to enable support");
 #else
-    if (memif->get_target_endianness() != memif_endianness_big) {
+    if (memif->get_target_endianness() != endianness_big) {
       throw std::invalid_argument("Specified ELF is big endian, but system uses a little-endian memory system. Rerun with --big-endian");
     }
     if (IS_ELF32(*eh64))

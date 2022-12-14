@@ -23,8 +23,8 @@ public:
   virtual size_t chunk_align() = 0;
   virtual size_t chunk_max_size() = 0;
 
-  virtual memif_endianness_t get_target_endianness() const {
-    return memif_endianness_little;
+  virtual endianness_t get_target_endianness() const {
+    return endianness_little;
   }
 
   virtual ~chunked_memif_t() = default;
@@ -65,7 +65,7 @@ public:
   virtual void write_int64(addr_t addr, target_endian<int64_t> val);
 
   // endianness
-  virtual memif_endianness_t get_target_endianness() const {
+  virtual endianness_t get_target_endianness() const {
     return cmemif->get_target_endianness();
   }
 
