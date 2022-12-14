@@ -4,8 +4,12 @@
 
 #include <optional>
 #include "decode.h"
-#include "mmu.h"
 #include <cassert>
+
+typedef enum {
+  memif_endianness_little,
+  memif_endianness_big
+} memif_endianness_t;
 
 template <typename T>
 class cfg_arg_t {
