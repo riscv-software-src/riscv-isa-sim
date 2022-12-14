@@ -262,10 +262,8 @@ std::optional<match_result_t> itrigger_t::detect_trap_match(processor_t * const 
 {
   state_t * const state = proc->get_state();
   if ((state->prv == PRV_M && !m) ||
-      (!state->v && state->prv == PRV_S && !s) ||
-      (!state->v && state->prv == PRV_U && !u) ||
-      (state->v && state->prv == PRV_S && !vs) ||
-      (state->v && state->prv == PRV_U && !vu)) {
+      (state->prv == PRV_S && !(state->v ? vs : s)) ||
+      (state->prv == PRV_U && !(state->v ? vu : u))) {
     return std::nullopt;
   }
 
@@ -314,10 +312,8 @@ std::optional<match_result_t> etrigger_t::detect_trap_match(processor_t * const 
 {
   state_t * const state = proc->get_state();
   if ((state->prv == PRV_M && !m) ||
-      (!state->v && state->prv == PRV_S && !s) ||
-      (!state->v && state->prv == PRV_U && !u) ||
-      (state->v && state->prv == PRV_S && !vs) ||
-      (state->v && state->prv == PRV_U && !vu)) {
+      (state->prv == PRV_S && !(state->v ? vs : s)) ||
+      (state->prv == PRV_U && !(state->v ? vu : u))) {
     return std::nullopt;
   }
 
