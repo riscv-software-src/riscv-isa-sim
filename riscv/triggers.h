@@ -219,6 +219,8 @@ private:
   bool m = false;
   bool s = false;
   bool u = false;
+  bool vs = false;
+  bool vu = false;
   bool execute = false;
   bool store = false;
   bool load = false;

@@ -195,9 +195,8 @@ std::optional<match_result_t> mcontrol_t::detect_memory_access_match(processor_t
       (operation == triggers::OPERATION_STORE && !store) ||
       (operation == triggers::OPERATION_LOAD && !load) ||
       (state->prv == PRV_M && !m) ||
-      (state->prv == PRV_S && !s) ||
-      (state->prv == PRV_U && !u) ||
-      (state->v)) {
+      (state->prv == PRV_S && !(state->v ? vs : s)) ||
+      (state->prv == PRV_U && !(state->v ? vu : u))) {
     return std::nullopt;
   }
 
