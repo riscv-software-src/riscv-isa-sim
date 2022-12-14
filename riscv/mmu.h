@@ -12,6 +12,7 @@
 #include "memtracer.h"
 #include "byteorder.h"
 #include "triggers.h"
+#include "cfg.h"
 #include <stdlib.h>
 #include <vector>
 
