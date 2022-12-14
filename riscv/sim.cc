@@ -86,7 +86,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 #endif
 
 #ifndef RISCV_ENABLE_DUAL_ENDIAN
-  if (cfg->endianness != memif_endianness_little) {
+  if (cfg->endianness != endianness_little) {
     fputs("Big-endian support has not been prroperly enabled; "
 	  "please rebuild the riscv-isa-sim project using "
 	  "\"configure --enable-dual-endian\".\n",
@@ -375,7 +375,7 @@ void sim_t::set_rom()
     (uint32_t) (start_pc & 0xffffffff),
     (uint32_t) (start_pc >> 32)
   };
-  if (get_target_endianness() == memif_endianness_big) {
+  if (get_target_endianness() == endianness_big) {
     int i;
     // Instuctions are little endian
     for (i = 0; reset_vec[i] != 0; i++)
@@ -445,9 +445,9 @@ void sim_t::write_chunk(addr_t taddr, size_t len, const void* src)
   debug_mmu->store<uint64_t>(taddr, debug_mmu->from_target(data));
 }
 
-memif_endianness_t sim_t::get_target_endianness() const
+endianness_t sim_t::get_target_endianness() const
 {
-  return debug_mmu->is_target_big_endian()? memif_endianness_big : memif_endianness_little;
+  return debug_mmu->is_target_big_endian()? endianness_big : endianness_little;
 }
 
 void sim_t::proc_reset(unsigned id)

@@ -31,18 +31,18 @@ class htif_t : public chunked_memif_t
 
   template<typename T> inline T from_target(target_endian<T> n) const
   {
-    memif_endianness_t endianness = get_target_endianness();
-    assert(endianness == memif_endianness_little || endianness == memif_endianness_big);
+    endianness_t endianness = get_target_endianness();
+    assert(endianness == endianness_little || endianness == endianness_big);
 
-    return endianness == memif_endianness_big? n.from_be() : n.from_le();
+    return endianness == endianness_big? n.from_be() : n.from_le();
   }
 
   template<typename T> inline target_endian<T> to_target(T n) const
   {
-    memif_endianness_t endianness = get_target_endianness();
-    assert(endianness == memif_endianness_little || endianness == memif_endianness_big);
+    endianness_t endianness = get_target_endianness();
+    assert(endianness == endianness_little || endianness == endianness_big);
 
-    return endianness == memif_endianness_big? target_endian<T>::to_be(n) : target_endian<T>::to_le(n);
+    return endianness == endianness_big? target_endian<T>::to_be(n) : target_endian<T>::to_le(n);
   }
 
  protected:
