@@ -17,12 +17,23 @@ on:
 
 jobs:
   test:
-    name: Test Spike build
+    name: Test Spike build (Ubuntu)
     runs-on: ubuntu-20.04
     steps:
       - uses: actions/checkout@v2
 
       - name: Install Dependencies
         run: sudo xargs apt-get install -y < .github/workflows/apt-packages.txt
+
+      - run: ci-tests/test-spike
+
+  test-macos:
+    name: Test Spike build (MacOS)
+    runs-on: macos-12
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Dependencies
+        run: xargs brew install < .github/workflows/brew-packages.txt
 
       - run: ci-tests/test-spike
