@@ -16,7 +16,7 @@
 #include "csrs.h"
 #include "isa_parser.h"
 #include "triggers.h"
-#include "memif.h"
+#include "../fesvr/memif.h"
 #include "vector_unit.h"
 
 #define N_HPMCOUNTERS 29

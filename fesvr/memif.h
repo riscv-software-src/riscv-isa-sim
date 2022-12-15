@@ -7,7 +7,7 @@
 #include <stddef.h>
 #include <stdexcept>
 #include "byteorder.h"
-#include "cfg.h"
+#include "../riscv/cfg.h"
 
 typedef uint64_t reg_t;
 typedef int64_t sreg_t;
