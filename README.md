@@ -233,7 +233,7 @@ OUTPUT_ARCH( "riscv" )
 
 SECTIONS
 {
-  . = 0x10010000;
+  . = 0x10110000;
   .text : { *(.text) }
   .data : { *(.data) }
 }
@@ -243,7 +243,7 @@ $ riscv64-unknown-elf-gcc -g -Og -T spike.lds -nostartfiles -o rot13-64 rot13-64
 
 To debug this program, first run spike telling it to listen for OpenOCD:
 ```
-$ spike --rbb-port=9824 -m0x10000000:0x20000 rot13-64
+$ spike --rbb-port=9824 -m0x10100000:0x20000 rot13-64
 Listening for remote bitbang connection on port 9824.
 ```
 
@@ -299,7 +299,7 @@ $2 = 0
 (gdb) print text
 $3 = "Vafgehpgvba frgf jnag gb or serr!"
 (gdb) b done 
-Breakpoint 1 at 0x10010064: file rot13.c, line 22.
+Breakpoint 1 at 0x10110064: file rot13.c, line 22.
 (gdb) c
 Continuing.
 Disabling abstract command writes to CSRs.
