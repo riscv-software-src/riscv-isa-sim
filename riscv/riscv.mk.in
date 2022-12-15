@@ -15,6 +15,7 @@ riscv_install_prog_srcs = \
 
 riscv_hdrs = \
 	abstract_device.h \
+	abstract_interrupt_controller.h \
 	common.h \
 	decode.h \
 	decode_macros.h \
@@ -48,6 +49,7 @@ riscv_hdrs = \
 
 riscv_install_hdrs = \
 	abstract_device.h \
+	abstract_interrupt_controller.h \
 	cachesim.h \
 	cfg.h \
 	common.h \
