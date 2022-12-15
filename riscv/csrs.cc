@@ -1,5 +1,6 @@
 // See LICENSE for license details.
 
+#include "config.h"
 // For std::any_of
 #include <algorithm>
 
