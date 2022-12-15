@@ -50,7 +50,12 @@ debug_module_t::debug_module_t(sim_t *sim, const debug_module_config_t &config) 
   D(fprintf(stderr, "debug_progbuf_start=0x%x\n", debug_progbuf_start));
   D(fprintf(stderr, "debug_abstract_start=0x%x\n", debug_abstract_start));
 
-  assert(nprocs <= 1024);
+  const unsigned max_procs = 1024;
+  if (nprocs > max_procs) {
+    fprintf(stderr, "At most %u processors are supported (%u requested)\n",
+            max_procs, nprocs);
+    exit(1);
+  }
 
   program_buffer = new uint8_t[program_buffer_bytes];
 
