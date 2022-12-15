@@ -3,6 +3,7 @@
 #define _RISCV_CFG_H
 
 #include <optional>
+#include <vector>
 #include "decode.h"
 #include <cassert>
 
