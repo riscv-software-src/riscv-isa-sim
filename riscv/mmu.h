@@ -12,6 +12,7 @@
 #include "memtracer.h"
 #include "byteorder.h"
 #include "triggers.h"
+#include "cfg.h"
 #include <stdlib.h>
 #include <vector>
 
@@ -46,7 +47,7 @@ private:
   std::map<reg_t, reg_t> alloc_cache;
   std::vector<std::pair<reg_t, reg_t >> addr_tbl;
 public:
-  mmu_t(simif_t* sim, memif_endianness_t endianness, processor_t* proc);
+  mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc);
   ~mmu_t();
 
 #define RISCV_XLATE_VIRT      (1U << 0)

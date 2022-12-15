@@ -4,8 +4,12 @@
 
 #include <optional>
 #include "decode.h"
-#include "mmu.h"
 #include <cassert>
+
+typedef enum {
+  endianness_little,
+  endianness_big
+} endianness_t;
 
 template <typename T>
 class cfg_arg_t {
@@ -32,23 +36,9 @@ private:
 class mem_cfg_t
 {
 public:
-  static bool check_if_supported(reg_t base, reg_t size) {
-    // The truth of these conditions should be ensured by whatever is creating
-    // the regions in the first place, but we have them here to make sure that
-    // we can't end up describing memory regions that don't make sense. They
-    // ask that the page size is a multiple of the minimum page size, that the
-    // page is aligned to the minimum page size, that the page is non-empty and
-    // that the top address is still representable in a reg_t.
-    return (size % PGSIZE == 0) &&
-           (base % PGSIZE == 0) &&
-           (base + size > base);
-  }
+  static bool check_if_supported(reg_t base, reg_t size);
 
-  mem_cfg_t(reg_t base, reg_t size)
-    : base(base), size(size)
-  {
-    assert(mem_cfg_t::check_if_supported(base, size));
-  }
+  mem_cfg_t(reg_t base, reg_t size);
 
   reg_t base;
   reg_t size;
@@ -61,7 +51,7 @@ public:
         const char *default_bootargs,
         const char *default_isa, const char *default_priv,
         const char *default_varch,
-        const memif_endianness_t default_endianness,
+        const endianness_t default_endianness,
         const reg_t default_pmpregions,
         const std::vector<mem_cfg_t> &default_mem_layout,
         const std::vector<int> default_hartids,
@@ -84,7 +74,7 @@ public:
   cfg_arg_t<const char *>            isa;
   cfg_arg_t<const char *>            priv;
   cfg_arg_t<const char *>            varch;
-  memif_endianness_t                 endianness;
+  endianness_t                       endianness;
   reg_t                              pmpregions;
   cfg_arg_t<std::vector<mem_cfg_t>>  mem_layout;
   std::optional<reg_t>               start_pc;
