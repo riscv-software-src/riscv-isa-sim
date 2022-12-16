@@ -70,7 +70,8 @@ riscv_install_hdrs = \
 	sim.h \
 	simif.h \
 	trap.h \
-	triggers.h
+	triggers.h \
+	vector_unit.h \
 
 riscv_precompiled_hdrs = \
 	insn_template.h \
