@@ -3,7 +3,6 @@
 #ifndef _RISCV_SIM_H
 #define _RISCV_SIM_H
 
-#include "config.h"
 #include "cfg.h"
 #include "debug_module.h"
 #include "devices.h"

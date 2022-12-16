@@ -3,7 +3,6 @@
 #define _RISCV_PROCESSOR_H
 
 #include "decode.h"
-#include "config.h"
 #include "trap.h"
 #include "abstract_device.h"
 #include <string>
@@ -16,7 +15,7 @@
 #include "csrs.h"
 #include "isa_parser.h"
 #include "triggers.h"
-#include "memif.h"
+#include "../fesvr/memif.h"
 #include "vector_unit.h"
 
 #define N_HPMCOUNTERS 29

@@ -7,7 +7,7 @@
 # error spike requires a two''s-complement c++ implementation
 #endif
 
-#include "softfloat_types.h"
+#include "../softfloat/softfloat_types.h"
 #include <algorithm>
 #include <cstdint>
 #include <string.h>
