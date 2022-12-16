@@ -3,7 +3,6 @@
 #define _RISCV_PROCESSOR_H
 
 #include "decode.h"
-#include "config.h"
 #include "trap.h"
 #include "abstract_device.h"
 #include <string>
