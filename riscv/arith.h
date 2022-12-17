@@ -20,7 +20,6 @@ inline uint64_t mulhu(uint64_t a, uint64_t b)
   y2 = t >> 32;
 
   t = a0*b1 + y1;
-  y1 = t;
 
   t = a1*b1 + y2 + (t >> 32);
   y2 = t;
