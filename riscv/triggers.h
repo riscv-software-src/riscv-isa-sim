@@ -89,6 +89,12 @@ protected:
   action_t legalize_action(reg_t val) const noexcept;
   reg_t tdata2;
 
+  bool vs = false;
+  bool vu = false;
+  bool m = false;
+  bool s = false;
+  bool u = false;
+
 private:
   unsigned legalize_mhselect(bool h_enabled) const noexcept;
 
@@ -151,12 +157,7 @@ public:
 private:
   bool dmode;
   bool hit;
-  bool vs;
-  bool vu;
   bool nmi;
-  bool m;
-  bool s;
-  bool u;
   action_t action;
 };
 
@@ -173,11 +174,6 @@ public:
 private:
   bool dmode;
   bool hit;
-  bool vs;
-  bool vu;
-  bool m;
-  bool s;
-  bool u;
   action_t action;
 };
 
@@ -216,11 +212,6 @@ private:
   bool timing = false;
   bool chain = false;
   match_t match = MATCH_EQUAL;
-  bool m = false;
-  bool s = false;
-  bool u = false;
-  bool vs = false;
-  bool vu = false;
   bool execute = false;
   bool store = false;
   bool load = false;
