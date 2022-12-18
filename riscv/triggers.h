@@ -223,6 +223,12 @@ public:
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 };
 
+class mcontrol6_t : public mcontrol_common_t {
+public:
+  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
+};
+
 class module_t {
 public:
   module_t(unsigned count);

@@ -38,7 +38,7 @@ Spike supports the following RISC-V ISA features:
   - Svpbmt extension, v1.0
   - Svinval extension, v1.0
   - Debug v0.14
-    - 4 triggers support type=2 (mcontrol), type=4 (itrigger), type=5 (etrigger), and type=15 (disabled)
+    - 4 triggers support type=2 (mcontrol), type=4 (itrigger), type=5 (etrigger), type=6 (mcontrol6), and type=15 (disabled)
   - Smepmp extension v1.0
   - Smstateen extension, v1.0
   - Sscofpmf v0.5.2
