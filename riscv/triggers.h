@@ -178,7 +178,7 @@ private:
   action_t action;
 };
 
-class mcontrol_t : public trigger_t {
+class mcontrol_common_t : public trigger_t {
 public:
   typedef enum
   {
@@ -189,9 +189,6 @@ public:
     MATCH_MASK_LOW = MCONTROL_MATCH_MASK_LOW,
     MATCH_MASK_HIGH = MCONTROL_MATCH_MASK_HIGH
   } match_t;
-
-  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
-  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
   virtual bool get_dmode() const override { return dmode; }
   virtual bool get_chain() const override { return chain; }
@@ -206,6 +203,7 @@ public:
 private:
   bool simple_match(unsigned xlen, reg_t value) const;
 
+protected:
   bool dmode = false;
   action_t action = ACTION_DEBUG_EXCEPTION;
   bool hit = false;
@@ -216,6 +214,12 @@ private:
   bool execute = false;
   bool store = false;
   bool load = false;
+};
+
+class mcontrol_t : public mcontrol_common_t {
+public:
+  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 };
 
 class module_t {

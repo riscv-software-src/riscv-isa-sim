@@ -172,7 +172,7 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
     timing = 0;
 }
 
-bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
+bool mcontrol_common_t::simple_match(unsigned xlen, reg_t value) const {
   switch (match) {
     case triggers::mcontrol_t::MATCH_EQUAL:
       return value == tdata2;
@@ -199,7 +199,7 @@ bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
   assert(0);
 }
 
-std::optional<match_result_t> mcontrol_t::detect_memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) noexcept {
+std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) noexcept {
   if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
       (operation == triggers::OPERATION_STORE && !store) ||
       (operation == triggers::OPERATION_LOAD && !load) ||
