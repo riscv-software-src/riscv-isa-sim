@@ -54,6 +54,16 @@ void trigger_t::tdata3_write(processor_t * const proc, const reg_t val) noexcept
   sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) <= SSELECT_MAXVAL) ? get_field(val, CSR_TEXTRA_SSELECT(xlen)) : SSELECT_IGNORE);
 }
 
+bool trigger_t::mode_match(state_t * const state) const noexcept
+{
+  if ((state->prv == PRV_M && !m) ||
+      (state->prv == PRV_S && !(state->v ? vs : s)) ||
+      (state->prv == PRV_U && !(state->v ? vu : u))) {
+    return false;
+  }
+  return true;
+}
+
 bool trigger_t::textra_match(processor_t * const proc) const noexcept
 {
   auto xlen = proc->get_xlen();
@@ -190,13 +200,10 @@ bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
 }
 
 std::optional<match_result_t> mcontrol_t::detect_memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) noexcept {
-  state_t * const state = proc->get_state();
   if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
       (operation == triggers::OPERATION_STORE && !store) ||
       (operation == triggers::OPERATION_LOAD && !load) ||
-      (state->prv == PRV_M && !m) ||
-      (state->prv == PRV_S && !(state->v ? vs : s)) ||
-      (state->prv == PRV_U && !(state->v ? vu : u))) {
+      !mode_match(proc->get_state())) {
     return std::nullopt;
   }
 
@@ -259,12 +266,8 @@ void itrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
 
 std::optional<match_result_t> itrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
-  state_t * const state = proc->get_state();
-  if ((state->prv == PRV_M && !m) ||
-      (state->prv == PRV_S && !(state->v ? vs : s)) ||
-      (state->prv == PRV_U && !(state->v ? vu : u))) {
+  if (!mode_match(proc->get_state()))
     return std::nullopt;
-  }
 
   auto xlen = proc->get_xlen();
   bool interrupt = (t.cause() & ((reg_t)1 << (xlen - 1))) != 0;
@@ -309,12 +312,8 @@ void etrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
 
 std::optional<match_result_t> etrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
-  state_t * const state = proc->get_state();
-  if ((state->prv == PRV_M && !m) ||
-      (state->prv == PRV_S && !(state->v ? vs : s)) ||
-      (state->prv == PRV_U && !(state->v ? vu : u))) {
+  if (!mode_match(proc->get_state()))
     return std::nullopt;
-  }
 
   auto xlen = proc->get_xlen();
   bool interrupt = (t.cause() & ((reg_t)1 << (xlen - 1))) != 0;

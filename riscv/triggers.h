@@ -87,6 +87,7 @@ public:
 
 protected:
   action_t legalize_action(reg_t val) const noexcept;
+  bool mode_match(state_t * const state) const noexcept;
   reg_t tdata2;
 
   bool vs = false;
