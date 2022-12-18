@@ -56,12 +56,12 @@ void trigger_t::tdata3_write(processor_t * const proc, const reg_t val) noexcept
 
 bool trigger_t::mode_match(state_t * const state) const noexcept
 {
-  if ((state->prv == PRV_M && !m) ||
-      (state->prv == PRV_S && !(state->v ? vs : s)) ||
-      (state->prv == PRV_U && !(state->v ? vu : u))) {
-    return false;
+  switch (state->prv) {
+    case PRV_M: return m;
+    case PRV_S: return state->v ? vs : s;
+    case PRV_U: return state->v ? vu : u;
+    default: assert(false);
   }
-  return true;
 }
 
 bool trigger_t::textra_match(processor_t * const proc) const noexcept
