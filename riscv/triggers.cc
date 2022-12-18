@@ -155,7 +155,7 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
     case MATCH_LT:
     case MATCH_MASK_LOW:
     case MATCH_MASK_HIGH:
-      match = (triggers::mcontrol_t::match_t) match_value;
+      match = (match_t) match_value;
       break;
     default:
       match = MATCH_EQUAL;
@@ -174,23 +174,23 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
 
 bool mcontrol_common_t::simple_match(unsigned xlen, reg_t value) const {
   switch (match) {
-    case triggers::mcontrol_t::MATCH_EQUAL:
+    case MATCH_EQUAL:
       return value == tdata2;
-    case triggers::mcontrol_t::MATCH_NAPOT:
+    case MATCH_NAPOT:
       {
         reg_t mask = ~((1 << (cto(tdata2)+1)) - 1);
         return (value & mask) == (tdata2 & mask);
       }
-    case triggers::mcontrol_t::MATCH_GE:
+    case MATCH_GE:
       return value >= tdata2;
-    case triggers::mcontrol_t::MATCH_LT:
+    case MATCH_LT:
       return value < tdata2;
-    case triggers::mcontrol_t::MATCH_MASK_LOW:
+    case MATCH_MASK_LOW:
       {
         reg_t mask = tdata2 >> (xlen/2);
         return (value & mask) == (tdata2 & mask);
       }
-    case triggers::mcontrol_t::MATCH_MASK_HIGH:
+    case MATCH_MASK_HIGH:
       {
         reg_t mask = tdata2 >> (xlen/2);
         return ((value >> (xlen/2)) & mask) == (tdata2 & mask);
