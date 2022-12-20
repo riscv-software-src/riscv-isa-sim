@@ -6,7 +6,6 @@
 #include "disasm.h"
 #include <cassert>
 
-#ifdef RISCV_ENABLE_COMMITLOG
 static void commit_log_reset(processor_t* p)
 {
   p->get_state()->log_reg_write.clear();
@@ -150,7 +149,6 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
   }
   fprintf(log_file, "\n");
 }
-#endif
 
 inline void processor_t::update_histogram(reg_t UNUSED pc)
 {
