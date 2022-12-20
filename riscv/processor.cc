@@ -1054,18 +1054,18 @@ void processor_t::register_base_instructions()
   #undef DECLARE_OVERLAP_INSN
 
   #define DEFINE_INSN(name) \
-    extern reg_t rv32i_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t rv64i_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t rv32e_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t rv64e_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t fast_rv32i_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t fast_rv64i_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t fast_rv32e_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t fast_rv64e_##name(processor_t*, insn_t, reg_t); \
     if (name##_supported) { \
       register_insn((insn_desc_t) { \
         name##_match, \
         name##_mask, \
-        rv32i_##name, \
-        rv64i_##name, \
-        rv32e_##name, \
-        rv64e_##name}); \
+        fast_rv32i_##name, \
+        fast_rv64i_##name, \
+        fast_rv32e_##name, \
+        fast_rv64e_##name}); \
     }
   #include "insn_list.h"
   #undef DEFINE_INSN
