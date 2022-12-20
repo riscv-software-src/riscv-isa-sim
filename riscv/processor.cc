@@ -502,14 +502,12 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   serialized = false;
 
-#ifdef RISCV_ENABLE_COMMITLOG
   log_reg_write.clear();
   log_mem_read.clear();
   log_mem_write.clear();
   last_inst_priv = 0;
   last_inst_xlen = 0;
   last_inst_flen = 0;
-#endif
 }
 
 void processor_t::set_debug(bool value)
