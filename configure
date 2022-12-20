@@ -715,7 +715,6 @@ with_isa
 with_priv
 with_varch
 with_target
-enable_commitlog
 enable_histogram
 enable_dirty
 enable_misaligned
@@ -1362,7 +1361,6 @@ Optional Features:
   --enable-stow           Enable stow-based install
   --enable-optional-subprojects
                           Enable all optional subprojects
-  --enable-commitlog      Enable commit log generation
   --enable-histogram      Enable PC histogram generation
   --enable-dirty          Enable hardware management of PTE accessed and dirty
                           bits
@@ -6051,20 +6049,6 @@ _ACEOF
 
 else
   as_fn_error $? "libpthread is required" "$LINENO" 5
-fi
-
-
-# Check whether --enable-commitlog was given.
-if test "${enable_commitlog+set}" = set; then :
-  enableval=$enable_commitlog;
-fi
-
-if test "x$enable_commitlog" = "xyes"; then :
-
-
-$as_echo "#define RISCV_ENABLE_COMMITLOG /**/" >>confdefs.h
-
-
 fi
 
 # Check whether --enable-histogram was given.

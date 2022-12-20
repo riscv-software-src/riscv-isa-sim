@@ -23,11 +23,11 @@
 #define RS3 READ_REG(insn.rs3())
 #define WRITE_RD(value) WRITE_REG(insn.rd(), value)
 
-#ifndef RISCV_ENABLE_COMMITLOG
+#if defined(DECODE_MACRO_USAGE_FAST)
 # define WRITE_REG(reg, value) ({ CHECK_REG(reg); STATE.XPR.write(reg, value); })
 # define WRITE_FREG(reg, value) DO_WRITE_FREG(reg, freg(value))
 # define WRITE_VSTATUS {}
-#else
+#elif defined(DECODE_MACRO_USAGE_LOGGED)
    /* 0 : int
     * 1 : floating
     * 2 : vector reg

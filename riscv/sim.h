@@ -43,9 +43,7 @@ public:
   // Configure logging
   //
   // If enable_log is true, an instruction trace will be generated. If
-  // enable_commitlog is true, so will the commit results (if this
-  // build was configured without support for commit logging, the
-  // function will print an error message and abort).
+  // enable_commitlog is true, so will the commit results
   void configure_log(bool enable_log, bool enable_commitlog);
 
   void set_procs_debug(bool value);
