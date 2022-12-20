@@ -6,7 +6,6 @@
 #include "decode.h"
 #include "trap.h"
 #include "common.h"
-#include "config.h"
 #include "simif.h"
 #include "processor.h"
 #include "memtracer.h"
@@ -54,13 +53,6 @@ public:
 #define RISCV_XLATE_VIRT_HLVX (1U << 1)
 #define RISCV_XLATE_LR        (1U << 2)
 
-#ifndef RISCV_ENABLE_COMMITLOG
-# define READ_MEM(addr, size) ((void)(addr), (void)(size))
-#else
-# define READ_MEM(addr, size) \
-  proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, size));
-#endif
-
   template<typename T>
   T ALWAYS_INLINE load(reg_t addr, uint32_t xlate_flags = 0) {
     target_endian<T> res;
@@ -74,8 +66,8 @@ public:
       load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags);
     }
 
-    if (proc)
-      READ_MEM(addr, sizeof(T));
+    if (unlikely(proc && proc->get_log_commits_enabled()))
+      proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, sizeof(T)));
 
     return from_target(res);
   }
@@ -95,13 +87,6 @@ public:
     return load<T>(addr, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX);
   }
 
-#ifndef RISCV_ENABLE_COMMITLOG
-# define WRITE_MEM(addr, value, size) ((void)(addr), (void)(value), (void)(size))
-#else
-# define WRITE_MEM(addr, val, size) \
-  proc->state.log_mem_write.push_back(std::make_tuple(addr, val, size));
-#endif
-
   template<typename T>
   void ALWAYS_INLINE store(reg_t addr, T val, uint32_t xlate_flags = 0) {
     reg_t vpn = addr >> PGSHIFT;
@@ -115,8 +100,8 @@ public:
       store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);
     }
 
-    if (proc)
-      WRITE_MEM(addr, val, sizeof(T));
+    if (unlikely(proc && proc->get_log_commits_enabled()))
+      proc->state.log_mem_write.push_back(std::make_tuple(addr, val, sizeof(T)));
   }
 
   template<typename T>
