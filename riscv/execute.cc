@@ -207,7 +207,7 @@ static inline reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 
 bool processor_t::slow_path()
 {
-  return debug || state.single_step != state.STEP_NONE || state.debug_mode;
+  return debug || state.single_step != state.STEP_NONE || state.debug_mode || log_commits_enabled;
 }
 
 // fetch/decode/execute loop
