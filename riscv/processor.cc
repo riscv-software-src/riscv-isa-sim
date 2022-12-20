@@ -891,20 +891,23 @@ void processor_t::take_trigger_action(triggers::action_t action, reg_t breakpoin
   }
 }
 
+const char* processor_t::get_symbol(uint64_t addr)
+{
+  return sim->get_symbol(addr);
+}
+
 void processor_t::disasm(insn_t insn)
 {
   uint64_t bits = insn.bits();
   if (last_pc != state.pc || last_bits != bits) {
     std::stringstream s;  // first put everything in a string, later send it to output
 
-#ifdef RISCV_ENABLE_COMMITLOG
     const char* sym = get_symbol(state.pc);
     if (sym != nullptr)
     {
       s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
         << ": >>>>  " << sym << std::endl;
     }
-#endif
 
     if (executions != 1) {
       s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
