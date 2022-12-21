@@ -1,6 +1,5 @@
 // See LICENSE for license details.
 
-#include "config.h"
 // For std::any_of
 #include <algorithm>
 
@@ -62,9 +61,8 @@ void csr_t::log_write() const noexcept {
 }
 
 void csr_t::log_special_write(const reg_t UNUSED address, const reg_t UNUSED val) const noexcept {
-#if defined(RISCV_ENABLE_COMMITLOG)
-  proc->get_state()->log_reg_write[((address) << 4) | 4] = {val, 0};
-#endif
+  if (proc->get_log_commits_enabled())
+    proc->get_state()->log_reg_write[((address) << 4) | 4] = {val, 0};
 }
 
 reg_t csr_t::written_value() const noexcept {

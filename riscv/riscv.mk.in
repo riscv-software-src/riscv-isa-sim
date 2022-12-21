@@ -38,6 +38,8 @@ riscv_hdrs = \
 	extension.h \
 	rocc.h \
 	insn_template.h \
+	insn_template_fast.h \
+	insn_template_logged.h \
 	debug_module.h \
 	debug_rom_defines.h \
 	remote_bitbang.h \
@@ -74,7 +76,8 @@ riscv_install_hdrs = \
 	vector_unit.h \
 
 riscv_precompiled_hdrs = \
-	insn_template.h \
+	insn_template_fast.h \
+	insn_template_logged.h \
 
 riscv_srcs = \
 	isa_parser.cc \
@@ -1358,8 +1361,10 @@ riscv_insn_list = \
 	$(riscv_insn_svinval) \
 	$(riscv_insn_ext_cmo) \
 
-riscv_gen_srcs = \
-	$(addsuffix .cc,$(riscv_insn_list))
+riscv_fast_gen_srcs = $(addsuffix _fast.cc,$(riscv_insn_list))
+riscv_logged_gen_srcs = $(addsuffix _logged.cc,$(riscv_insn_list))
+
+riscv_gen_srcs = $(riscv_fast_gen_srcs) $(riscv_logged_gen_srcs)
 
 insn_list.h: $(src_dir)/riscv/riscv.mk.in
 	for insn in $(foreach insn,$(riscv_insn_list),$(subst .,_,$(insn))) ; do \
@@ -1367,8 +1372,11 @@ insn_list.h: $(src_dir)/riscv/riscv.mk.in
 	done > $@.tmp
 	mv $@.tmp $@
 
-$(riscv_gen_srcs): %.cc: insns/%.h insn_template.cc
-	sed 's/NAME/$(subst .cc,,$@)/' $(src_dir)/riscv/insn_template.cc | sed 's/OPCODE/$(call get_opcode,$(src_dir)/riscv/encoding.h,$(subst .cc,,$@))/' > $@
+$(riscv_fast_gen_srcs): %_fast.cc: insns/%.h insn_template.cc
+	sed 's/NAME/$(subst _fast.cc,,$@)/' $(src_dir)/riscv/insn_template.cc | sed 's/TYPE/fast/' | sed 's/OPCODE/$(call get_opcode,$(src_dir)/riscv/encoding.h,$(subst _fast.cc,,$@))/' > $@
+
+$(riscv_logged_gen_srcs): %_logged.cc: insns/%.h insn_template.cc
+	sed 's/NAME/$(subst _logged.cc,,$@)/' $(src_dir)/riscv/insn_template.cc | sed 's/TYPE/logged/' | sed 's/OPCODE/$(call get_opcode,$(src_dir)/riscv/encoding.h,$(subst _logged.cc,,$@))/' > $@
 
 riscv_junk = \
 	$(riscv_gen_srcs) \

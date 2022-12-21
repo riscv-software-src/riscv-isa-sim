@@ -34,22 +34,34 @@ struct insn_desc_t
 {
   insn_bits_t match;
   insn_bits_t mask;
-  insn_func_t rv32i;
-  insn_func_t rv64i;
-  insn_func_t rv32e;
-  insn_func_t rv64e;
+  insn_func_t fast_rv32i;
+  insn_func_t fast_rv64i;
+  insn_func_t fast_rv32e;
+  insn_func_t fast_rv64e;
+  insn_func_t logged_rv32i;
+  insn_func_t logged_rv64i;
+  insn_func_t logged_rv32e;
+  insn_func_t logged_rv64e;
 
-  insn_func_t func(int xlen, bool rve)
+  insn_func_t func(int xlen, bool rve, bool logged)
   {
-    if (rve)
-      return xlen == 64 ? rv64e : rv32e;
+    if (logged)
+      if (rve)
+        return xlen == 64 ? logged_rv64e : logged_rv32e;
+      else
+        return xlen == 64 ? logged_rv64i : logged_rv32i;
     else
-      return xlen == 64 ? rv64i : rv32i;
+      if (rve)
+        return xlen == 64 ? fast_rv64e : fast_rv32e;
+      else
+        return xlen == 64 ? fast_rv64i : fast_rv32i;
   }
 
   static insn_desc_t illegal()
   {
-    return {0, 0, &illegal_instruction, &illegal_instruction, &illegal_instruction, &illegal_instruction};
+    return {0, 0,
+            &illegal_instruction, &illegal_instruction, &illegal_instruction, &illegal_instruction,
+            &illegal_instruction, &illegal_instruction, &illegal_instruction, &illegal_instruction};
   }
 };
 

@@ -502,14 +502,12 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   serialized = false;
 
-#ifdef RISCV_ENABLE_COMMITLOG
   log_reg_write.clear();
   log_mem_read.clear();
   log_mem_write.clear();
   last_inst_priv = 0;
   last_inst_xlen = 0;
   last_inst_flen = 0;
-#endif
 }
 
 void processor_t::set_debug(bool value)
@@ -534,15 +532,7 @@ void processor_t::set_histogram(bool value)
 
 void processor_t::enable_log_commits()
 {
-#ifndef RISCV_ENABLE_COMMITLOG
-  fputs("Commit logging support has not been properly enabled; "
-        "please re-build the riscv-isa-sim project using "
-        "\"configure --enable-commitlog\".\n",
-        stderr);
-  abort();
-#else
   log_commits_enabled = true;
-#endif
 }
 
 void processor_t::reset()
@@ -891,20 +881,23 @@ void processor_t::take_trigger_action(triggers::action_t action, reg_t breakpoin
   }
 }
 
+const char* processor_t::get_symbol(uint64_t addr)
+{
+  return sim->get_symbol(addr);
+}
+
 void processor_t::disasm(insn_t insn)
 {
   uint64_t bits = insn.bits();
   if (last_pc != state.pc || last_bits != bits) {
     std::stringstream s;  // first put everything in a string, later send it to output
 
-#ifdef RISCV_ENABLE_COMMITLOG
     const char* sym = get_symbol(state.pc);
     if (sym != nullptr)
     {
       s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
         << ": >>>>  " << sym << std::endl;
     }
-#endif
 
     if (executions != 1) {
       s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
@@ -998,12 +991,13 @@ insn_func_t processor_t::decode_insn(insn_t insn)
     opcode_cache[idx].match = insn.bits();
   }
 
-  return desc.func(xlen, rve);
+  return desc.func(xlen, rve, log_commits_enabled);
 }
 
 void processor_t::register_insn(insn_desc_t desc)
 {
-  assert(desc.rv32i && desc.rv64i && desc.rv32e && desc.rv64e);
+  assert(desc.fast_rv32i && desc.fast_rv64i && desc.fast_rv32e && desc.fast_rv64e &&
+         desc.logged_rv32i && desc.logged_rv64i && desc.logged_rv32e && desc.logged_rv64e);
 
   instructions.push_back(desc);
 }
@@ -1053,18 +1047,26 @@ void processor_t::register_base_instructions()
   #undef DECLARE_OVERLAP_INSN
 
   #define DEFINE_INSN(name) \
-    extern reg_t rv32i_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t rv64i_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t rv32e_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t rv64e_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t fast_rv32i_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t fast_rv64i_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t fast_rv32e_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t fast_rv64e_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t logged_rv32i_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t logged_rv64i_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t logged_rv32e_##name(processor_t*, insn_t, reg_t); \
+    extern reg_t logged_rv64e_##name(processor_t*, insn_t, reg_t); \
     if (name##_supported) { \
       register_insn((insn_desc_t) { \
         name##_match, \
         name##_mask, \
-        rv32i_##name, \
-        rv64i_##name, \
-        rv32e_##name, \
-        rv64e_##name}); \
+        fast_rv32i_##name, \
+        fast_rv64i_##name, \
+        fast_rv32e_##name, \
+        fast_rv64e_##name, \
+        logged_rv32i_##name, \
+        logged_rv64i_##name, \
+        logged_rv32e_##name, \
+        logged_rv64e_##name}); \
     }
   #include "insn_list.h"
   #undef DEFINE_INSN

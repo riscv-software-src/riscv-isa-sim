@@ -79,10 +79,8 @@ template<class T> T& vectorUnit_t::elt(reg_t vReg, reg_t n, bool UNUSED is_write
 #endif
   reg_referenced[vReg] = 1;
 
-#ifdef RISCV_ENABLE_COMMITLOG
-  if (is_write)
+  if (unlikely(p->get_log_commits_enabled() && is_write))
     p->get_state()->log_reg_write[((vReg) << 4) | 2] = {0, 0};
-#endif
 
   T *regStart = (T*)((char*)reg_file + vReg * (VLEN >> 3));
   return regStart[n];

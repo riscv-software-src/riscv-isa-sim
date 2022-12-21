@@ -6,7 +6,6 @@
 #include "disasm.h"
 #include <cassert>
 
-#ifdef RISCV_ENABLE_COMMITLOG
 static void commit_log_reset(processor_t* p)
 {
   p->get_state()->log_reg_write.clear();
@@ -58,11 +57,6 @@ static void commit_log_print_value(FILE *log_file, int width, const void *data)
 static void commit_log_print_value(FILE *log_file, int width, uint64_t val)
 {
   commit_log_print_value(log_file, width, &val);
-}
-
-const char* processor_t::get_symbol(uint64_t addr)
-{
-  return sim->get_symbol(addr);
 }
 
 static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
@@ -123,10 +117,10 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
 
     if (!show_vec && (is_vreg || is_vec)) {
         fprintf(log_file, " e%ld %s%ld l%ld",
-                p->VU.vsew,
+                (long)p->VU.vsew,
                 p->VU.vflmul < 1 ? "mf" : "m",
-                p->VU.vflmul < 1 ? (reg_t)(1 / p->VU.vflmul) : (reg_t)p->VU.vflmul,
-                p->VU.vl->read());
+                p->VU.vflmul < 1 ? (long)(1 / p->VU.vflmul) : (long)p->VU.vflmul,
+                (long)p->VU.vl->read());
         show_vec = true;
     }
 
@@ -155,7 +149,6 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
   }
   fprintf(log_file, "\n");
 }
-#endif
 
 inline void processor_t::update_histogram(reg_t UNUSED pc)
 {
@@ -164,29 +157,25 @@ inline void processor_t::update_histogram(reg_t UNUSED pc)
 #endif
 }
 
-// This is expected to be inlined by the compiler so each use of execute_insn
-// includes a duplicated body of the function to get separate fetch.func
-// function calls.
-static inline reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
+// These two functions are expected to be inlined by the compiler separately in
+// the processor_t::step() loop. The logged variant is used in the slow path
+static inline reg_t execute_insn_fast(processor_t* p, reg_t pc, insn_fetch_t fetch) {
+  p->update_histogram(pc);
+  return fetch.func(p, fetch.insn, pc);
+}
+static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
-#ifdef RISCV_ENABLE_COMMITLOG
   commit_log_reset(p);
   commit_log_stash_privilege(p);
-#endif
   reg_t npc;
 
   try {
     npc = fetch.func(p, fetch.insn, pc);
     if (npc != PC_SERIALIZE_BEFORE) {
-
-#ifdef RISCV_ENABLE_COMMITLOG
       if (p->get_log_commits_enabled()) {
         commit_log_print_insn(p, pc, fetch.insn);
       }
-#endif
-
      }
-#ifdef RISCV_ENABLE_COMMITLOG
   } catch (wait_for_interrupt_t &t) {
       if (p->get_log_commits_enabled()) {
         commit_log_print_insn(p, pc, fetch.insn);
@@ -203,7 +192,6 @@ static inline reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
         }
       }
       throw;
-#endif
   } catch(...) {
     throw;
   }
@@ -214,7 +202,7 @@ static inline reg_t execute_insn(processor_t* p, reg_t pc, insn_fetch_t fetch)
 
 bool processor_t::slow_path()
 {
-  return debug || state.single_step != state.STEP_NONE || state.debug_mode;
+  return debug || state.single_step != state.STEP_NONE || state.debug_mode || log_commits_enabled;
 }
 
 // fetch/decode/execute loop
@@ -275,7 +263,7 @@ void processor_t::step(size_t n)
           insn_fetch_t fetch = mmu->load_insn(pc);
           if (debug && !state.serialized)
             disasm(fetch.insn);
-          pc = execute_insn(this, pc, fetch);
+          pc = execute_insn_logged(this, pc, fetch);
           advance_pc();
         }
       }
@@ -284,7 +272,7 @@ void processor_t::step(size_t n)
         // Main simulation loop, fast path.
         for (auto ic_entry = _mmu->access_icache(pc); ; ) {
           auto fetch = ic_entry->data;
-          pc = execute_insn(this, pc, fetch);
+          pc = execute_insn_fast(this, pc, fetch);
           ic_entry = ic_entry->next;
           if (unlikely(ic_entry->tag != pc))
             break;
