@@ -715,7 +715,6 @@ with_isa
 with_priv
 with_varch
 with_target
-enable_histogram
 enable_dirty
 enable_misaligned
 enable_dual_endian
@@ -1361,7 +1360,6 @@ Optional Features:
   --enable-stow           Enable stow-based install
   --enable-optional-subprojects
                           Enable all optional subprojects
-  --enable-histogram      Enable PC histogram generation
   --enable-dirty          Enable hardware management of PTE accessed and dirty
                           bits
   --enable-misaligned     Enable hardware support for misaligned loads and
@@ -6051,18 +6049,6 @@ else
   as_fn_error $? "libpthread is required" "$LINENO" 5
 fi
 
-# Check whether --enable-histogram was given.
-if test "${enable_histogram+set}" = set; then :
-  enableval=$enable_histogram;
-fi
-
-if test "x$enable_histogram" = "xyes"; then :
-
-
-$as_echo "#define RISCV_ENABLE_HISTOGRAM /**/" >>confdefs.h
-
-
-fi
 
 # Check whether --enable-dirty was given.
 if test "${enable_dirty+set}" = set; then :
