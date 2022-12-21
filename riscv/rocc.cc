@@ -1,6 +1,6 @@
 // See LICENSE for license details.
 
-#define DECODE_MACRO_USAGE_LOGGED
+#define DECODE_MACRO_USAGE_LOGGED 1
 #include "decode_macros.h"
 #include "rocc.h"
 #include "trap.h"

@@ -23,30 +23,24 @@
 #define RS3 READ_REG(insn.rs3())
 #define WRITE_RD(value) WRITE_REG(insn.rd(), value)
 
-#if defined(DECODE_MACRO_USAGE_FAST)
-# define WRITE_REG(reg, value) ({ CHECK_REG(reg); STATE.XPR.write(reg, value); })
-# define WRITE_FREG(reg, value) DO_WRITE_FREG(reg, freg(value))
-# define WRITE_VSTATUS {}
-#elif defined(DECODE_MACRO_USAGE_LOGGED)
-   /* 0 : int
-    * 1 : floating
-    * 2 : vector reg
-    * 3 : vector hint
-    * 4 : csr
-    */
-# define WRITE_REG(reg, value) ({ \
+/* 0 : int
+ * 1 : floating
+ * 2 : vector reg
+ * 3 : vector hint
+ * 4 : csr
+ */
+#define WRITE_REG(reg, value) ({ \
     reg_t wdata = (value); /* value may have side effects */ \
-    STATE.log_reg_write[(reg) << 4] = {wdata, 0}; \
+    if (DECODE_MACRO_USAGE_LOGGED) STATE.log_reg_write[(reg) << 4] = {wdata, 0}; \
     CHECK_REG(reg); \
     STATE.XPR.write(reg, wdata); \
   })
-# define WRITE_FREG(reg, value) ({ \
+#define WRITE_FREG(reg, value) ({ \
     freg_t wdata = freg(value); /* value may have side effects */ \
-    STATE.log_reg_write[((reg) << 4) | 1] = wdata; \
+    if (DECODE_MACRO_USAGE_LOGGED) STATE.log_reg_write[((reg) << 4) | 1] = wdata; \
     DO_WRITE_FREG(reg, wdata); \
   })
-# define WRITE_VSTATUS STATE.log_reg_write[3] = {0, 0};
-#endif
+#define WRITE_VSTATUS STATE.log_reg_write[3] = {0, 0};
 
 // RVC macros
 #define WRITE_RVC_RS1S(value) WRITE_REG(insn.rvc_rs1s(), value)
