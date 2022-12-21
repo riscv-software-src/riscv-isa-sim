@@ -204,6 +204,7 @@ private:
   bool simple_match(unsigned xlen, reg_t value) const;
 
 protected:
+  match_t legalize_match(reg_t val) const noexcept;
   bool dmode = false;
   action_t action = ACTION_DEBUG_EXCEPTION;
   bool hit = false;

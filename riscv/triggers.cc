@@ -147,20 +147,7 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   timing = get_field(val, MCONTROL_TIMING);
   action = legalize_action(get_field(val, MCONTROL_ACTION));
   chain = allow_chain ? get_field(val, MCONTROL_CHAIN) : 0;
-  unsigned match_value = get_field(val, MCONTROL_MATCH);
-  switch (match_value) {
-    case MATCH_EQUAL:
-    case MATCH_NAPOT:
-    case MATCH_GE:
-    case MATCH_LT:
-    case MATCH_MASK_LOW:
-    case MATCH_MASK_HIGH:
-      match = (match_t) match_value;
-      break;
-    default:
-      match = MATCH_EQUAL;
-      break;
-  }
+  match = legalize_match(get_field(val, MCONTROL_MATCH));
   m = get_field(val, MCONTROL_M);
   s = proc->extension_enabled_const('S') ? get_field(val, CSR_MCONTROL_S) : 0;
   u = proc->extension_enabled_const('U') ? get_field(val, CSR_MCONTROL_U) : 0;
@@ -230,6 +217,21 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
     return match_result_t(timing_t(timing), action);
   }
   return std::nullopt;
+}
+
+mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val) const noexcept
+{
+  switch (val) {
+    case MATCH_EQUAL:
+    case MATCH_NAPOT:
+    case MATCH_GE:
+    case MATCH_LT:
+    case MATCH_MASK_LOW:
+    case MATCH_MASK_HIGH:
+      return (match_t)val;
+    default:
+      return MATCH_EQUAL;
+  }
 }
 
 reg_t itrigger_t::tdata1_read(const processor_t * const proc) const noexcept
