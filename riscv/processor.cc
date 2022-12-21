@@ -72,14 +72,12 @@ processor_t::processor_t(const isa_parser_t *isa, const char* varch,
 
 processor_t::~processor_t()
 {
-#ifdef RISCV_ENABLE_HISTOGRAM
   if (histogram_enabled)
   {
     fprintf(stderr, "PC Histogram size:%zu\n", pc_histogram.size());
     for (auto it : pc_histogram)
       fprintf(stderr, "%0" PRIx64 " %" PRIu64 "\n", it.first, it.second);
   }
-#endif
 
   delete mmu;
   delete disassembler;
