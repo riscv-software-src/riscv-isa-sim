@@ -162,8 +162,11 @@ static inline reg_t execute_insn_fast(processor_t* p, reg_t pc, insn_fetch_t fet
 }
 static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
-  commit_log_reset(p);
-  commit_log_stash_privilege(p);
+  if (p->get_log_commits_enabled()) {
+    commit_log_reset(p);
+    commit_log_stash_privilege(p);
+  }
+
   reg_t npc;
 
   try {
