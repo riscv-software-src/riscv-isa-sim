@@ -158,7 +158,6 @@ inline void processor_t::update_histogram(reg_t UNUSED pc)
 // These two functions are expected to be inlined by the compiler separately in
 // the processor_t::step() loop. The logged variant is used in the slow path
 static inline reg_t execute_insn_fast(processor_t* p, reg_t pc, insn_fetch_t fetch) {
-  p->update_histogram(pc);
   return fetch.func(p, fetch.insn, pc);
 }
 static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t fetch)
@@ -200,7 +199,8 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
 
 bool processor_t::slow_path()
 {
-  return debug || state.single_step != state.STEP_NONE || state.debug_mode || log_commits_enabled;
+  return debug || state.single_step != state.STEP_NONE || state.debug_mode ||
+         log_commits_enabled || histogram_enabled;
 }
 
 // fetch/decode/execute loop
