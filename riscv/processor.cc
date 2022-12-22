@@ -74,8 +74,12 @@ processor_t::~processor_t()
 {
   if (histogram_enabled)
   {
-    fprintf(stderr, "PC Histogram size:%zu\n", pc_histogram.size());
-    for (auto it : pc_histogram)
+    std::vector<std::pair<reg_t, uint64_t>> ordered_histo(pc_histogram.begin(), pc_histogram.end());
+    std::sort(ordered_histo.begin(), ordered_histo.end(),
+              [](auto& lhs, auto& rhs) { return lhs.second < rhs.second; });
+
+    fprintf(stderr, "PC Histogram size:%zu\n", ordered_histo.size());
+    for (auto it : ordered_histo)
       fprintf(stderr, "%0" PRIx64 " %" PRIu64 "\n", it.first, it.second);
   }
 

@@ -295,7 +295,7 @@ private:
   std::vector<bool> impl_table;
 
   std::vector<insn_desc_t> instructions;
-  std::map<reg_t,uint64_t> pc_histogram;
+  std::unordered_map<reg_t,uint64_t> pc_histogram;
 
   static const size_t OPCODE_CACHE_SIZE = 8191;
   insn_desc_t opcode_cache[OPCODE_CACHE_SIZE];
