@@ -13,40 +13,6 @@ riscv_install_shared_lib = yes
 
 riscv_install_prog_srcs = \
 
-riscv_hdrs = \
-	abstract_device.h \
-	abstract_interrupt_controller.h \
-	common.h \
-	decode.h \
-	decode_macros.h \
-	devices.h \
-	dts.h \
-	isa_parser.h \
-	mmu.h \
-	cfg.h \
-	processor.h \
-	p_ext_macros.h \
-	v_ext_macros.h \
-	sim.h \
-	simif.h \
-	trap.h \
-	encoding.h \
-	cachesim.h \
-	memtracer.h \
-	mmio_plugin.h \
-	tracer.h \
-	extension.h \
-	rocc.h \
-	insn_template.h \
-	debug_module.h \
-	debug_rom_defines.h \
-	remote_bitbang.h \
-	jtag_dtm.h \
-	csrs.h \
-	triggers.h \
-	vector_unit.h \
-	socketif.h \
-
 riscv_install_hdrs = \
 	abstract_device.h \
 	abstract_interrupt_controller.h \

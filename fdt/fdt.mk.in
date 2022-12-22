@@ -1,10 +1,5 @@
 fdt_subproject_deps = \
 
-fdt_hdrs = \
-	fdt.h \
-	libfdt.h \
-	libfdt_env.h \
-
 fdt_c_srcs = \
 	fdt.c \
 	fdt_ro.c \
