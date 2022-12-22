@@ -105,9 +105,6 @@
 /* Enable support for running target in either endianness */
 #undef RISCV_ENABLE_DUAL_ENDIAN
 
-/* Enable PC histogram generation */
-#undef RISCV_ENABLE_HISTOGRAM
-
 /* Enable hardware support for misaligned loads and stores */
 #undef RISCV_ENABLE_MISALIGNED
 
