@@ -327,10 +327,6 @@ clean-$(1) :
 
 # Update running variables
 
-libs += lib$(1).a
-objs += $$($(2)_objs)
-srcs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_srcs)) 
-hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs)) $$($(2)_gen_hdrs)
 junk += $$($(2)_junk)
 deps += $$($(2)_deps)
 
