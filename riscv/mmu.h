@@ -347,6 +347,7 @@ private:
   void load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags);
   void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store, bool require_alignment);
   void store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store);
+  bool mmio_fetch(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
   bool mmio_ok(reg_t addr, access_type type);
