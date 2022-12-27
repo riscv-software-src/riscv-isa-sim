@@ -42,7 +42,7 @@ void mmu_t::flush_tlb()
   flush_icache();
 }
 
-static void throw_access_exception(bool virt, reg_t addr, access_type type)
+void throw_access_exception(bool virt, reg_t addr, access_type type)
 {
   switch (type) {
     case FETCH: throw trap_instruction_access_fault(virt, addr, 0, 0);
@@ -382,12 +382,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
 
       // check that physical address of PTE is legal
       auto pte_paddr = base + idx * vm.ptesize;
-      auto ppte = sim->addr_to_mem(pte_paddr);
-      if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S)) {
-        throw_access_exception(virt, gva, trap_type);
-      }
-
-      reg_t pte = vm.ptesize == 4 ? from_target(*(target_endian<uint32_t>*)ppte) : from_target(*(target_endian<uint64_t>*)ppte);
+      reg_t pte = pte_load(pte_paddr, gva, virt, trap_type, vm.ptesize);
       reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
       bool pbmte = proc->get_state()->menvcfg->read() & MENVCFG_PBMTE;
 
@@ -418,9 +413,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
 #ifdef RISCV_ENABLE_DIRTY
         // set accessed and possibly dirty bits.
         if ((pte & ad) != ad) {
-          if (!pmp_ok(pte_paddr, vm.ptesize, STORE, PRV_S))
-            throw_access_exception(virt, gva, trap_type);
-          *(target_endian<uint32_t>*)ppte |= to_target((uint32_t)ad);
+          pte_store(pte_paddr, pte | ad, gva, virt, type, vm.ptesize);
         }
 #else
         // take exception if access or possibly dirty bit is not set.
@@ -476,11 +469,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
 
     // check that physical address of PTE is legal
     auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, type, virt, false);
-    auto ppte = sim->addr_to_mem(pte_paddr);
-    if (!ppte || !pmp_ok(pte_paddr, vm.ptesize, LOAD, PRV_S))
-      throw_access_exception(virt, addr, type);
-
-    reg_t pte = vm.ptesize == 4 ? from_target(*(target_endian<uint32_t>*)ppte) : from_target(*(target_endian<uint64_t>*)ppte);
+    reg_t pte = pte_load(pte_paddr, addr, virt, type, vm.ptesize);
     reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
     bool pbmte = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_PBMTE) : (proc->get_state()->menvcfg->read() & MENVCFG_PBMTE);
 
@@ -511,9 +500,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
 #ifdef RISCV_ENABLE_DIRTY
       // set accessed and possibly dirty bits.
       if ((pte & ad) != ad) {
-        if (!pmp_ok(pte_paddr, vm.ptesize, STORE, PRV_S))
-          throw_access_exception(virt, addr, type);
-        *(target_endian<uint32_t>*)ppte |= to_target((uint32_t)ad);
+        pte_store(pte_paddr, pte | ad, addr, virt, type, vm.ptesize);
       }
 #else
       // take exception if access or possibly dirty bit is not set.

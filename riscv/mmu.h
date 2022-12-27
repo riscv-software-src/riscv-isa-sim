@@ -38,6 +38,8 @@ struct tlb_entry_t {
   reg_t target_offset;
 };
 
+void throw_access_exception(bool virt, reg_t addr, access_type type);
+
 // this class implements a processor's port into the virtual memory system.
 // an MMU and instruction cache are maintained for simulator performance.
 class mmu_t
@@ -353,6 +355,53 @@ private:
   bool mmio_ok(reg_t addr, access_type type);
   void check_triggers(triggers::operation_t operation, reg_t address, std::optional<reg_t> data = std::nullopt);
   reg_t translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_flags);
+
+  reg_t pte_load(reg_t pte_paddr, reg_t addr, bool virt, access_type trap_type, size_t ptesize) {
+    if (ptesize == 4)
+      return pte_load<uint32_t>(pte_paddr, addr, virt, trap_type);
+    else
+      return pte_load<uint64_t>(pte_paddr, addr, virt, trap_type);
+  }
+
+  void pte_store(reg_t pte_paddr, reg_t new_pte, reg_t addr, bool virt, access_type trap_type, size_t ptesize) {
+    if (ptesize == 4)
+      return pte_store<uint32_t>(pte_paddr, new_pte, addr, virt, trap_type);
+    else
+      return pte_store<uint64_t>(pte_paddr, new_pte, addr, virt, trap_type);
+  }
+
+  template<typename T> inline reg_t pte_load(reg_t pte_paddr, reg_t addr, bool virt, access_type trap_type)
+  {
+    const size_t ptesize = sizeof(T);
+
+    if (!pmp_ok(pte_paddr, ptesize, LOAD, PRV_S))
+      throw_access_exception(virt, addr, trap_type);
+
+    void* host_pte_paddr = sim->addr_to_mem(pte_paddr);
+    target_endian<T> target_pte;
+    if (host_pte_paddr) {
+      memcpy(&target_pte, host_pte_paddr, ptesize);
+    } else {
+      throw_access_exception(virt, addr, trap_type);
+    }
+    return from_target(target_pte);
+  }
+
+  template<typename T> inline void pte_store(reg_t pte_paddr, reg_t new_pte, reg_t addr, bool virt, access_type trap_type)
+  {
+    const size_t ptesize = sizeof(T);
+
+    if (!pmp_ok(pte_paddr, ptesize, STORE, PRV_S))
+      throw_access_exception(virt, addr, trap_type);
+
+    void* host_pte_paddr = sim->addr_to_mem(pte_paddr);
+    target_endian<T> target_pte = to_target((T)new_pte);
+    if (host_pte_paddr) {
+      memcpy(host_pte_paddr, &target_pte, ptesize);
+    } else {
+      throw_access_exception(virt, addr, trap_type);
+    }
+  }
 
   // ITLB lookup
   inline tlb_entry_t translate_insn_addr(reg_t addr) {
