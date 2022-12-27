@@ -35,6 +35,7 @@ processor_t::processor_t(const isa_parser_t *isa, const char* varch,
   : debug(false), halt_request(HR_NONE), isa(isa), sim(sim), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), sout_(sout_.rdbuf()), halt_on_reset(halt_on_reset),
+  in_wfi(false),
   impl_table(256, false), last_pc(1), executions(1), TM(4)
 {
   VU.p = this;
@@ -626,6 +627,8 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
   if (!pending_interrupts) {
     return;
   }
+
+  in_wfi = false;
 
   // M-ints have higher priority over HS-ints and VS-ints
   const reg_t mie = get_field(state.mstatus->read(), MSTATUS_MIE);

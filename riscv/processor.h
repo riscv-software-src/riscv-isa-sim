@@ -277,6 +277,8 @@ public:
 
   const char* get_symbol(uint64_t addr);
 
+  bool is_waiting_for_interrupt() { return in_wfi; };
+
 private:
   const isa_parser_t * const isa;
 
@@ -292,6 +294,7 @@ private:
   FILE *log_file;
   std::ostream sout_; // needed for socket command interface -s, also used for -d and -l, but not for --log
   bool halt_on_reset;
+  bool in_wfi;
   std::vector<bool> impl_table;
 
   std::vector<insn_desc_t> instructions;
