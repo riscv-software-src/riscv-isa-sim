@@ -192,6 +192,10 @@ void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint
 
   reg_t paddr = translate(addr, len, LOAD, xlate_flags);
 
+  if ((xlate_flags & RISCV_XLATE_LR) && !sim->reservable(paddr)) {
+    throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+  }
+
   if (auto host_addr = sim->addr_to_mem(paddr)) {
     memcpy(bytes, host_addr, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
@@ -199,11 +203,12 @@ void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint
     else if (xlate_flags == 0)
       refill_tlb(addr, paddr, host_addr, LOAD);
 
-    if (xlate_flags & RISCV_XLATE_LR) {
-      load_reservation_address = paddr;
-    }
-  } else if ((xlate_flags & RISCV_XLATE_LR) || !mmio_load(paddr, len, bytes)) {
+  } else if (!mmio_load(paddr, len, bytes)) {
     throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+  }
+
+  if (xlate_flags & RISCV_XLATE_LR) {
+    load_reservation_address = paddr;
   }
 }
 

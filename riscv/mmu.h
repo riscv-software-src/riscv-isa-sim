@@ -163,7 +163,7 @@ public:
   void clean_inval(reg_t addr, bool clean, bool inval) {
     convert_load_traps_to_store_traps({
       const reg_t paddr = translate(addr, blocksz, LOAD, 0) & ~(blocksz - 1);
-      if (sim->addr_to_mem(paddr)) {
+      if (sim->reservable(paddr)) {
         if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
           tracer.clean_invalidate(paddr, blocksz, clean, inval);
       } else {
@@ -185,10 +185,10 @@ public:
     }
 
     reg_t paddr = translate(vaddr, 1, STORE, 0);
-    if (sim->addr_to_mem(paddr))
+    if (sim->reservable(paddr))
       return load_reservation_address == paddr;
     else
-      throw trap_store_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0); // disallow SC to I/O space
+      throw trap_store_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0);
   }
 
   template<typename T>
