@@ -28,11 +28,10 @@
 #undef STATE
 #define STATE state
 
-processor_t::processor_t(const isa_parser_t *isa, const char* varch,
+processor_t::processor_t(const isa_parser_t *isa, const cfg_t *cfg,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
-                         endianness_t endianness,
                          FILE* log_file, std::ostream& sout_)
-  : debug(false), halt_request(HR_NONE), isa(isa), sim(sim), id(id), xlen(0),
+  : debug(false), halt_request(HR_NONE), isa(isa), cfg(cfg), sim(sim), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), sout_(sout_.rdbuf()), halt_on_reset(halt_on_reset),
   in_wfi(false),
@@ -48,10 +47,10 @@ processor_t::processor_t(const isa_parser_t *isa, const char* varch,
   }
 #endif
 
-  parse_varch_string(varch);
+  parse_varch_string(cfg->varch());
 
   register_base_instructions();
-  mmu = new mmu_t(sim, endianness, this);
+  mmu = new mmu_t(sim, cfg->endianness, this);
 
   disassembler = new disassembler_t(isa);
   for (auto e : isa->get_extensions())

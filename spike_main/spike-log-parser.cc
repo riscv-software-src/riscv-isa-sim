@@ -28,8 +28,19 @@ int main(int UNUSED argc, char** argv)
   parser.option(0, "isa", 1, [&](const char* s){isa_string = s;});
   parser.parse(argv);
 
+  cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0),
+            /*default_bootargs=*/nullptr,
+            /*default_isa=*/DEFAULT_ISA,
+            /*default_priv=*/DEFAULT_PRIV,
+            /*default_varch=*/DEFAULT_VARCH,
+            /*default_endianness*/endianness_little,
+            /*default_pmpregions=*/16,
+            /*default_mem_layout=*/std::vector<mem_cfg_t>(),
+            /*default_hartids=*/std::vector<int>(),
+            /*default_real_time_clint=*/false);
+
   isa_parser_t isa(isa_string, DEFAULT_PRIV);
-  processor_t p(&isa, DEFAULT_VARCH, 0, 0, false, endianness_little, nullptr, cerr);
+  processor_t p(&isa, &cfg, 0, 0, false, nullptr, cerr);
   if (extension) {
     p.register_extension(extension());
   }

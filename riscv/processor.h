@@ -179,13 +179,13 @@ struct state_t
 class processor_t : public abstract_device_t
 {
 public:
-  processor_t(const isa_parser_t *isa, const char* varch,
+  processor_t(const isa_parser_t *isa, const cfg_t* cfg,
               simif_t* sim, uint32_t id, bool halt_on_reset,
-              endianness_t endianness,
               FILE *log_file, std::ostream& sout_); // because of command line option --log and -s we need both
   ~processor_t();
 
   const isa_parser_t &get_isa() { return *isa; }
+  const cfg_t &get_cfg() { return *cfg; }
 
   void set_debug(bool value);
   void set_histogram(bool value);
@@ -280,6 +280,7 @@ public:
 
 private:
   const isa_parser_t * const isa;
+  const cfg_t * const cfg;
 
   simif_t* sim;
   mmu_t* mmu; // main memory is always accessed via the mmu
