@@ -601,13 +601,12 @@ bool sstatus_csr_t::enabled(const reg_t which) {
 misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa):
   basic_csr_t(proc, addr, max_isa),
   max_isa(max_isa),
-  write_mask(max_isa & (0  // allow MAFDQCHV bits in MISA to be modified
+  write_mask(max_isa & (0  // allow MAFDQHV bits in MISA to be modified
                         | (1L << ('M' - 'A'))
                         | (1L << ('A' - 'A'))
                         | (1L << ('F' - 'A'))
                         | (1L << ('D' - 'A'))
                         | (1L << ('Q' - 'A'))
-                        | (1L << ('C' - 'A'))
                         | (1L << ('H' - 'A'))
                         | (1L << ('V' - 'A'))
                         )
@@ -619,10 +618,6 @@ reg_t misa_csr_t::dependency(const reg_t val, const char feature, const char dep
 }
 
 bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
-  // the write is ignored if increasing IALIGN would misalign the PC
-  if (!(val & (1L << ('C' - 'A'))) && (state->pc & 2))
-    return false;
-
   reg_t adjusted_val = val;
   adjusted_val = dependency(adjusted_val, 'D', 'F');
   adjusted_val = dependency(adjusted_val, 'Q', 'D');
