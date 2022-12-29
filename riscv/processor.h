@@ -236,7 +236,8 @@ public:
     return impl_table[impl];
   }
   reg_t pc_alignment_mask() {
-    return ~(reg_t)(extension_enabled(EXT_ZCA) ? 0 : 2);
+    const int ialign = extension_enabled(EXT_ZCA) ? 16 : 32;
+    return ~(reg_t)(ialign == 16 ? 0 : 2);
   }
   void check_pc_alignment(reg_t pc) {
     if (unlikely(pc & ~pc_alignment_mask()))
