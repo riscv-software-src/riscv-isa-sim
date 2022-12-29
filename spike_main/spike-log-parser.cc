@@ -33,6 +33,7 @@ int main(int UNUSED argc, char** argv)
             /*default_isa=*/DEFAULT_ISA,
             /*default_priv=*/DEFAULT_PRIV,
             /*default_varch=*/DEFAULT_VARCH,
+            /*default_misaligned=*/false,
             /*default_endianness*/endianness_little,
             /*default_pmpregions=*/16,
             /*default_mem_layout=*/std::vector<mem_cfg_t>(),

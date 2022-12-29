@@ -21,6 +21,7 @@ int main()
 	    "rv64gcv",
 	    "MSU",
 	    "vlen:128,elen:64",
+	    false,
 	    endianness_little,
 	    16,
 	    mem_cfg,
