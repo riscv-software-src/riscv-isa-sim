@@ -139,9 +139,9 @@ static mem_cfg_t merge_mem_regions(const mem_cfg_t& L, const mem_cfg_t& R)
   // one can merge only intersecting regions
   assert(check_mem_overlap(L, R));
 
-  const reg_t merged_base = std::min(L.get_base(), R.get_base());
-  const reg_t merged_end_incl = std::max(L.get_base() + L.get_size() - 1, R.get_base() + R.get_size() - 1);
-  const reg_t merged_size = merged_end_incl - merged_base + 1;
+  const auto merged_base = std::min(L.get_base(), R.get_base());
+  const auto merged_end_incl = std::max(L.get_inclusive_end(), R.get_inclusive_end());
+  const auto merged_size = merged_end_incl - merged_base + 1;
 
   return mem_cfg_t(merged_base, merged_size);
 }
