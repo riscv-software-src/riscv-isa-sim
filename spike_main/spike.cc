@@ -216,9 +216,8 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
     const unsigned long long max_allowed_pa = (1ull << MAX_PADDR_BITS) - 1ull;
     assert(max_allowed_pa <= std::numeric_limits<reg_t>::max());
     mem_cfg_t mem_region(base, size);
-    auto last_pa_region = mem_region.get_base() + mem_region.get_size() - 1;
-    if (last_pa_region > max_allowed_pa) {
-      int bits_required = 64 - clz(last_pa_region);
+    if (mem_region.get_inclusive_end() > max_allowed_pa) {
+      int bits_required = 64 - clz(mem_region.get_inclusive_end());
       fprintf(stderr, "Unsupported memory region "
                       "{base = 0x%" PRIX64 ", size = 0x%" PRIX64 "} specified,"
                       " which requires %d bits of physical address\n"

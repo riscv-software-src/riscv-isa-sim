@@ -49,6 +49,10 @@ public:
     return size;
   }
 
+  reg_t get_inclusive_end() const {
+    return base + size - 1;
+  }
+
 private:
   reg_t base;
   reg_t size;
