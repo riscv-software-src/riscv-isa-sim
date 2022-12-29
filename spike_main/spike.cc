@@ -128,10 +128,7 @@ bool sort_mem_region(const mem_cfg_t &a, const mem_cfg_t &b)
 
 static bool check_mem_overlap(const mem_cfg_t& L, const mem_cfg_t& R)
 {
-  const auto L_end   = L.get_base() + L.get_size() - 1;
-  const auto R_end   = R.get_base() + R.get_size() - 1;
-
-  return std::max(L.get_base(), R.get_base()) <= std::min(L_end, R_end);
+  return std::max(L.get_base(), R.get_base()) <= std::min(L.get_inclusive_end(), R.get_inclusive_end());
 }
 
 static mem_cfg_t merge_mem_regions(const mem_cfg_t& L, const mem_cfg_t& R)
