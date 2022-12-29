@@ -139,20 +139,20 @@ public:
 
   void store_float128(reg_t addr, float128_t val)
   {
-#ifndef RISCV_ENABLE_MISALIGNED
-    if (unlikely(addr & (sizeof(float128_t)-1)))
+    if (unlikely(addr & (sizeof(float128_t)-1)) && !is_misaligned_enabled()) {
       throw trap_store_address_misaligned((proc) ? proc->state.v : false, addr, 0, 0);
-#endif
+    }
+
     store<uint64_t>(addr, val.v[0]);
     store<uint64_t>(addr + 8, val.v[1]);
   }
 
   float128_t load_float128(reg_t addr)
   {
-#ifndef RISCV_ENABLE_MISALIGNED
-    if (unlikely(addr & (sizeof(float128_t)-1)))
+    if (unlikely(addr & (sizeof(float128_t)-1)) && !is_misaligned_enabled()) {
       throw trap_load_address_misaligned((proc) ? proc->state.v : false, addr, 0, 0);
-#endif
+    }
+
     return (float128_t){load<uint64_t>(addr), load<uint64_t>(addr + 8)};
   }
 
@@ -285,11 +285,7 @@ public:
 
   int is_misaligned_enabled()
   {
-#ifdef RISCV_ENABLE_MISALIGNED
-    return 1;
-#else
-    return 0;
-#endif
+    return proc && proc->get_cfg().misaligned;
   }
 
   bool is_target_big_endian()
