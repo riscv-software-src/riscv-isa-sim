@@ -207,7 +207,7 @@ bool processor_t::slow_path()
 }
 
 // fetch/decode/execute loop
-void processor_t::step(size_t n)
+void processor_t::step(size_t n, bool incr_mcycle)
 {
   if (!state.debug_mode) {
     if (halt_request == HR_REGULAR) {
@@ -331,7 +331,8 @@ void processor_t::step(size_t n)
     state.minstret->bump(instret);
 
     // Model a hart whose CPI is 1.
-    state.mcycle->bump(instret);
+    if (incr_mcycle)
+      state.mcycle->bump(instret);
 
     n -= instret;
   }

@@ -192,7 +192,7 @@ public:
   void enable_log_commits();
   bool get_log_commits_enabled() const { return log_commits_enabled; }
   void reset();
-  void step(size_t n); // run for n cycles
+  void step(size_t n, bool incr_mcycle = true); // run for n cycles
   void put_csr(int which, reg_t val);
   uint32_t get_id() const { return id; }
   reg_t get_csr(int which, insn_t insn, bool write, bool peek = 0);
