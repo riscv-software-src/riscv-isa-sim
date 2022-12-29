@@ -381,7 +381,7 @@ private:
     target_endian<T> target_pte;
     if (host_pte_paddr) {
       memcpy(&target_pte, host_pte_paddr, ptesize);
-    } else {
+    } else if (!mmio_load(pte_paddr, ptesize, (uint8_t*)&target_pte)) {
       throw_access_exception(virt, addr, trap_type);
     }
     return from_target(target_pte);
@@ -398,7 +398,7 @@ private:
     target_endian<T> target_pte = to_target((T)new_pte);
     if (host_pte_paddr) {
       memcpy(host_pte_paddr, &target_pte, ptesize);
-    } else {
+    } else if (!mmio_store(pte_paddr, ptesize, (uint8_t*)&target_pte)) {
       throw_access_exception(virt, addr, trap_type);
     }
   }
