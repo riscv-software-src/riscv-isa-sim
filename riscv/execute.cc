@@ -242,6 +242,10 @@ void processor_t::step(size_t n)
     try
     {
       take_pending_interrupt();
+      if (unlikely(in_wfi)) {
+        // No unmasked pending interrupt, so remain in wfi
+        throw wait_for_interrupt_t();
+      }
 
       if (unlikely(slow_path()))
       {
@@ -321,6 +325,7 @@ void processor_t::step(size_t n)
       // allows us to switch to other threads only once per idle loop in case
       // there is activity.
       n = ++instret;
+      in_wfi = true;
     }
 
     state.minstret->bump(instret);
