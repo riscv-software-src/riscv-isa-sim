@@ -121,15 +121,15 @@ static void read_file_bytes(const char *filename,size_t fileoff,
 bool sort_mem_region(const mem_cfg_t &a, const mem_cfg_t &b)
 {
   if (a.get_base() == b.get_base())
-    return (a.size < b.size);
+    return (a.get_size() < b.get_size());
   else
     return (a.get_base() < b.get_base());
 }
 
 static bool check_mem_overlap(const mem_cfg_t& L, const mem_cfg_t& R)
 {
-  const reg_t L_end   = L.get_base() + L.size - 1;
-  const reg_t R_end   = R.get_base() + R.size - 1;
+  const auto L_end   = L.get_base() + L.get_size() - 1;
+  const auto R_end   = R.get_base() + R.get_size() - 1;
 
   return std::max(L.get_base(), R.get_base()) <= std::min(L_end, R_end);
 }
@@ -140,7 +140,7 @@ static mem_cfg_t merge_mem_regions(const mem_cfg_t& L, const mem_cfg_t& R)
   assert(check_mem_overlap(L, R));
 
   const reg_t merged_base = std::min(L.get_base(), R.get_base());
-  const reg_t merged_end_incl = std::max(L.get_base() + L.size - 1, R.get_base() + R.size - 1);
+  const reg_t merged_end_incl = std::max(L.get_base() + L.get_size() - 1, R.get_base() + R.get_size() - 1);
   const reg_t merged_size = merged_end_incl - merged_base + 1;
 
   return mem_cfg_t(merged_base, merged_size);
@@ -216,7 +216,7 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
     const unsigned long long max_allowed_pa = (1ull << MAX_PADDR_BITS) - 1ull;
     assert(max_allowed_pa <= std::numeric_limits<reg_t>::max());
     mem_cfg_t mem_region(base, size);
-    auto last_pa_region = mem_region.get_base() + mem_region.size - 1;
+    auto last_pa_region = mem_region.get_base() + mem_region.get_size() - 1;
     if (last_pa_region > max_allowed_pa) {
       int bits_required = 64 - clz(last_pa_region);
       fprintf(stderr, "Unsupported memory region "
@@ -224,7 +224,7 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
                       " which requires %d bits of physical address\n"
                       "    The largest accessible physical address "
                       "is 0x%llX (defined by MAX_PADDR_BITS constant, which is %d)\n",
-              mem_region.get_base(), mem_region.size, bits_required,
+              mem_region.get_base(), mem_region.get_size(), bits_required,
               max_allowed_pa, MAX_PADDR_BITS);
       exit(EXIT_FAILURE);
     }
@@ -249,7 +249,7 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const std::vector<mem_cfg
   std::vector<std::pair<reg_t, mem_t*>> mems;
   mems.reserve(layout.size());
   for (const auto &cfg : layout) {
-    mems.push_back(std::make_pair(cfg.get_base(), new mem_t(cfg.size)));
+    mems.push_back(std::make_pair(cfg.get_base(), new mem_t(cfg.get_size())));
   }
   return mems;
 }

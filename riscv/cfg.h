@@ -45,6 +45,11 @@ public:
     return base;
   }
 
+  reg_t get_size() const {
+    return size;
+  }
+
+private:
   reg_t base;
   reg_t size;
 };
