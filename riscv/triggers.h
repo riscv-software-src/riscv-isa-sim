@@ -156,6 +156,7 @@ public:
   virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
 
 private:
+  bool simple_match(bool interrupt, reg_t bit) const;
   bool dmode;
   bool hit;
   bool nmi;

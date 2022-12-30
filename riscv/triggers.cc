@@ -319,11 +319,16 @@ std::optional<match_result_t> itrigger_t::detect_trap_match(processor_t * const 
   bool interrupt = (t.cause() & ((reg_t)1 << (xlen - 1))) != 0;
   reg_t bit = t.cause() & ~((reg_t)1 << (xlen - 1));
   assert(bit < xlen);
-  if (interrupt && ((bit == 0 && nmi) || ((tdata2 >> bit) & 1))) { // Assume NMI's exception code is 0
+  if (simple_match(interrupt, bit)) {
     hit = true;
     return match_result_t(TIMING_AFTER, action);
   }
   return std::nullopt;
+}
+
+bool itrigger_t::simple_match(bool interrupt, reg_t bit) const
+{
+  return interrupt && ((bit == 0 && nmi) || ((tdata2 >> bit) & 1)); // Assume NMI's exception code is 0
 }
 
 reg_t etrigger_t::tdata1_read(const processor_t * const proc) const noexcept
