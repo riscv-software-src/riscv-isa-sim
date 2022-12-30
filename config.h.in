@@ -105,9 +105,6 @@
 /* Enable support for running target in either endianness */
 #undef RISCV_ENABLE_DUAL_ENDIAN
 
-/* Enable hardware support for misaligned loads and stores */
-#undef RISCV_ENABLE_MISALIGNED
-
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SOFTFLOAT_ENABLED
 
