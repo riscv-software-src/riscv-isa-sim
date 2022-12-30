@@ -313,7 +313,7 @@ void itrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
 
 std::optional<match_result_t> trap_common_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
-  if (!mode_match(proc->get_state()))
+  if (!mode_match(proc->get_state()) || !textra_match(proc))
     return std::nullopt;
 
   auto xlen = proc->get_xlen();
@@ -494,7 +494,7 @@ std::optional<match_result_t> module_t::detect_trap_match(const trap_t& t) noexc
     return std::nullopt;
 
   for (auto trigger: triggers) {
-    auto result = trigger->textra_match(proc) ? trigger->detect_trap_match(proc, t) : std::nullopt;
+    auto result = trigger->detect_trap_match(proc, t);
     if (result.has_value())
       return result;
   }
