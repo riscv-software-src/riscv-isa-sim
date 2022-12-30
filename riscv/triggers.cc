@@ -190,7 +190,8 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
   if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
       (operation == triggers::OPERATION_STORE && !store) ||
       (operation == triggers::OPERATION_LOAD && !load) ||
-      !mode_match(proc->get_state())) {
+      !mode_match(proc->get_state()) ||
+      !textra_match(proc)) {
     return std::nullopt;
   }
 
@@ -477,7 +478,7 @@ std::optional<match_result_t> module_t::detect_memory_access_match(operation_t o
      * entire chain did not match. This is allowed by the spec, because the final
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
-    auto result = trigger->textra_match(proc) ? trigger->detect_memory_access_match(proc, operation, address, data) : std::nullopt;
+    auto result = trigger->detect_memory_access_match(proc, operation, address, data);
     if (result.has_value() && !trigger->get_chain())
       return result;
 
