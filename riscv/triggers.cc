@@ -370,11 +370,16 @@ std::optional<match_result_t> etrigger_t::detect_trap_match(processor_t * const 
   bool interrupt = (t.cause() & ((reg_t)1 << (xlen - 1))) != 0;
   reg_t bit = t.cause() & ~((reg_t)1 << (xlen - 1));
   assert(bit < xlen);
-  if (!interrupt && ((tdata2 >> bit) & 1)) {
+  if (simple_match(interrupt, bit)) {
     hit = true;
     return match_result_t(TIMING_AFTER, action);
   }
   return std::nullopt;
+}
+
+bool etrigger_t::simple_match(bool interrupt, reg_t bit) const
+{
+  return !interrupt && ((tdata2 >> bit) & 1);
 }
 
 module_t::module_t(unsigned count) : triggers(count) {
