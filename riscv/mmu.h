@@ -131,7 +131,20 @@ public:
   T amo(reg_t addr, op f) {
     convert_load_traps_to_store_traps({
       store_slow_path(addr, sizeof(T), nullptr, 0, false, true);
-      auto lhs = load<T>(addr);
+      target_endian<T> res;
+      reg_t vpn = addr >> PGSHIFT;
+      bool tlb_load_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn;
+
+      if (likely(tlb_load_hit)) {
+        res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
+      } else {
+        load_slow_path(addr, sizeof(T), (uint8_t*)&res, 0);
+      }
+
+      if (unlikely(proc && proc->get_log_commits_enabled()))
+        proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, sizeof(T)));
+
+      auto lhs = from_target(res);
       store<T>(addr, f(lhs));
       return lhs;
     })
