@@ -154,7 +154,8 @@ public:
         *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target((T)f(lhs));
       } else {
         target_endian<T> target_val = to_target((T)f(lhs));
-        store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, 0, true, false);
+        check_triggers(triggers::OPERATION_STORE, addr, reg_from_bytes(sizeof(T), (const uint8_t*)&target_val));
+        store_slow_path_intrapage(addr, sizeof(T), (const uint8_t*)&target_val, 0, true);
       }
 
       if (unlikely(proc && proc->get_log_commits_enabled()))
