@@ -148,7 +148,18 @@ public:
         proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, sizeof(T)));
 
       auto lhs = from_target(res);
-      store<T>(addr, f(lhs));
+      bool tlb_store_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn;
+
+      if (likely(tlb_store_hit)) {
+        *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target((T)f(lhs));
+      } else {
+        target_endian<T> target_val = to_target((T)f(lhs));
+        store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, 0, true, false);
+      }
+
+      if (unlikely(proc && proc->get_log_commits_enabled()))
+        proc->state.log_mem_write.push_back(std::make_tuple(addr, (T)f(lhs), sizeof(T)));
+
       return lhs;
     })
   }
