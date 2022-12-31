@@ -39,6 +39,7 @@ struct tlb_entry_t {
 };
 
 void throw_access_exception(bool virt, reg_t addr, access_type type);
+reg_t reg_from_bytes(size_t len, const uint8_t* bytes);
 
 // this class implements a processor's port into the virtual memory system.
 // an MMU and instruction cache are maintained for simulator performance.
@@ -138,7 +139,9 @@ public:
       if (likely(tlb_load_hit)) {
         res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
       } else {
-        load_slow_path(addr, sizeof(T), (uint8_t*)&res, 0);
+        check_triggers(triggers::OPERATION_LOAD, addr);
+        load_slow_path_intrapage(addr, sizeof(T), (uint8_t*)&res, 0);
+        check_triggers(triggers::OPERATION_LOAD, addr, reg_from_bytes(sizeof(T), (uint8_t*)&res));
       }
 
       if (unlikely(proc && proc->get_log_commits_enabled()))
