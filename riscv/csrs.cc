@@ -714,9 +714,25 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
 
   const reg_t old_misa = read();
   const bool prev_h = old_misa & (1L << ('H' - 'A'));
-  const reg_t new_misa = (adjusted_val & write_mask) | (old_misa & ~write_mask);
+  reg_t new_misa = (adjusted_val & write_mask) | (old_misa & ~write_mask);
   const bool new_h = new_misa & (1L << ('H' - 'A'));
   unsigned mxlen = proc->get_xlen((priv_mode_t){ PRV_M, false });
+
+  /* MXL is writable when MAX_XLEN > 32 */
+  if (((max_isa >> 62) & 3) > 1) {
+    const uint8_t old_mxl = (old_misa >> (mxlen - 2)) & 3;
+    const uint8_t new_mxl = adjusted_val >> (mxlen - 2);
+    if (is_legal_xl(new_mxl) && old_mxl != new_mxl) {
+      unsigned new_mxlen = xl_to_xlen(new_mxl);
+      proc->update_mxlen(new_mxlen);
+      /*
+       * If a write to misa causes MXLEN to change, the position of
+       * MXL moves to the most-significant two bits of misa at the new width
+       */
+      new_misa = (new_misa & ~(3 << (mxlen - 2))) | (new_mxl << (new_mxlen - 2));
+      mxlen = new_mxlen;
+    }
+  }
 
   // update the hypervisor-only bits in MEDELEG and other CSRs
   if (!new_h && prev_h) {

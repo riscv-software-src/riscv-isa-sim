@@ -1167,3 +1167,12 @@ void processor_t::update_vsxlen(unsigned val) {
   }
 }
 
+void processor_t::update_mxlen(unsigned val) {
+  if (val != mxlen) {
+    unsigned old_mxlen = mxlen;
+    mxlen = val;
+    if ((old_mxlen == 32) || (val == 32)) {
+      update_sxlen(val);
+    }
+  }
+}

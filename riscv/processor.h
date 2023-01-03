@@ -213,6 +213,7 @@ public:
   }
   unsigned get_csr_len(int csr_addr);
 
+  void update_mxlen(unsigned val);
   void update_sxlen(unsigned val);
   void update_vsxlen(unsigned val);
   void update_uxlen(unsigned val);
