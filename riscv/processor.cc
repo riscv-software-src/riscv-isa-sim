@@ -537,6 +537,7 @@ void processor_t::reset()
   state.dcsr->halt = halt_on_reset;
   halt_on_reset = false;
   VU.reset();
+  in_wfi = false;
 
   if (n_pmp > 0) {
     // For backwards compatibility with software that is unaware of PMP,
@@ -744,6 +745,7 @@ void processor_t::enter_debug_mode(uint8_t cause)
   set_privilege(PRV_M);
   state.dpc->write(state.pc);
   state.pc = DEBUG_ROM_ENTRY;
+  in_wfi = false;
 }
 
 void processor_t::debug_output_log(std::stringstream *s)

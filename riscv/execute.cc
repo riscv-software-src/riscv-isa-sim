@@ -203,7 +203,7 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
 bool processor_t::slow_path()
 {
   return debug || state.single_step != state.STEP_NONE || state.debug_mode ||
-         log_commits_enabled || histogram_enabled;
+         log_commits_enabled || histogram_enabled || in_wfi;
 }
 
 // fetch/decode/execute loop
@@ -242,10 +242,6 @@ void processor_t::step(size_t n)
     try
     {
       take_pending_interrupt();
-      if (unlikely(in_wfi)) {
-        // No unmasked pending interrupt, so remain in wfi
-        throw wait_for_interrupt_t();
-      }
 
       if (unlikely(slow_path()))
       {
@@ -265,6 +261,12 @@ void processor_t::step(size_t n)
             state.single_step = state.STEP_STEPPED;
           }
 
+          // debug mode wfis must nop
+          if (unlikely(in_wfi && !state.debug_mode)) {
+            throw wait_for_interrupt_t();
+          }
+
+          in_wfi = false;
           insn_fetch_t fetch = mmu->load_insn(pc);
           if (debug && !state.serialized)
             disasm(fetch.insn);
