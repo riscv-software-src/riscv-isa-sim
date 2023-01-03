@@ -175,15 +175,6 @@ void processor_t::parse_varch_string(const char* s)
   VU.vstart_alu = vstart_alu;
 }
 
-static int xlen_to_uxl(int xlen)
-{
-  if (xlen == 32)
-    return 1;
-  if (xlen == 64)
-    return 2;
-  abort();
-}
-
 void state_t::reset(processor_t* const proc, reg_t max_isa)
 {
   pc = DEFAULT_RSTVEC;
@@ -338,11 +329,10 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_SCAUSE] = scause = std::make_shared<virtualized_csr_t>(proc, nonvirtual_scause, vscause);
   csrmap[CSR_MTVAL2] = mtval2 = std::make_shared<hypervisor_csr_t>(proc, CSR_MTVAL2);
   csrmap[CSR_MTINST] = mtinst = std::make_shared<hypervisor_csr_t>(proc, CSR_MTINST);
-  const reg_t hstatus_init = set_field((reg_t)0, HSTATUS_VSXL, xlen_to_uxl(proc->get_const_xlen()));
   const reg_t hstatus_mask = HSTATUS_VTSR | HSTATUS_VTW
     | (proc->supports_impl(IMPL_MMU) ? HSTATUS_VTVM : 0)
     | HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
-  csrmap[CSR_HSTATUS] = hstatus = std::make_shared<masked_csr_t>(proc, CSR_HSTATUS, hstatus_mask, hstatus_init);
+  csrmap[CSR_HSTATUS] = hstatus = std::make_shared<hstatus_csr_t>(proc, CSR_HSTATUS, hstatus_mask, 0);
   csrmap[CSR_HGEIE] = std::make_shared<const_csr_t>(proc, CSR_HGEIE, 0);
   csrmap[CSR_HGEIP] = std::make_shared<const_csr_t>(proc, CSR_HGEIP, 0);
   csrmap[CSR_HIDELEG] = hideleg = std::make_shared<hideleg_csr_t>(proc, CSR_HIDELEG, mideleg);
@@ -1145,5 +1135,15 @@ void processor_t::trigger_updated(const std::vector<triggers::trigger_t *> &trig
 void processor_t::update_vuxlen(unsigned val) {
   if (val <= vsxlen)
     vuxlen = val;
+}
+
+void processor_t::update_vsxlen(unsigned val) {
+  if (val <= sxlen && val != vsxlen) {
+    unsigned old_vsxlen = vsxlen;
+    vsxlen = val;
+    if (old_vsxlen == 32 || val == 32) {  /* 32 to wider */
+      update_vuxlen(val);
+    }
+  }
 }
 

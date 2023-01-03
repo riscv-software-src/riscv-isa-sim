@@ -1600,3 +1600,24 @@ void jvt_csr_t::verify_permissions(insn_t insn, bool write) const {
     }
   }
 }
+
+// implement class hstatus_csr_t
+hstatus_csr_t::hstatus_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  masked_csr_t(proc, addr, mask, init) {
+}
+
+bool hstatus_csr_t::unlogged_write(const reg_t val) noexcept {
+  reg_t newval = val ;
+  if (proc->get_xlen((priv_mode_t){ PRV_S, false }) != 32) {
+    int new_vsxl = get_field(val, HSTATUS_VSXL);
+    if (is_legal_xl(new_vsxl))
+      proc->update_vsxlen(xl_to_xlen(new_vsxl));
+  }
+  return masked_csr_t::unlogged_write(newval);
+}
+
+reg_t hstatus_csr_t::read() const noexcept {
+  unsigned vsxlen = proc->get_xlen((priv_mode_t){ PRV_S, true } );
+
+  return set_field(masked_csr_t::read(), HSTATUS_VSXL, xlen_to_xl(vsxlen));
+}

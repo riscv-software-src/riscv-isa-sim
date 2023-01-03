@@ -108,7 +108,7 @@ struct state_t
 
   csr_t_p mtval2;
   csr_t_p mtinst;
-  csr_t_p hstatus;
+  hstatus_csr_t_p hstatus;
   csr_t_p hideleg;
   csr_t_p hedeleg;
   csr_t_p hcounteren;
@@ -218,6 +218,7 @@ public:
   }
   unsigned get_csr_len(int csr_addr);
 
+  void update_vsxlen(unsigned val);
   void update_vuxlen(unsigned val);
 
   extension_t* get_extension();

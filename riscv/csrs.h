@@ -807,4 +807,14 @@ class jvt_csr_t: public basic_csr_t {
   jvt_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
+
+class hstatus_csr_t: public masked_csr_t {
+ public:
+  hstatus_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+typedef std::shared_ptr<hstatus_csr_t> hstatus_csr_t_p;
 #endif
