@@ -321,7 +321,6 @@ private:
   void take_trap(trap_t& t, reg_t epc); // take an exception
   void take_trigger_action(triggers::action_t action, reg_t breakpoint_tval, reg_t epc);
   void disasm(insn_t insn); // disassemble and print an instruction
-  int paddr_bits();
 
   void enter_debug_mode(uint8_t cause);
 
