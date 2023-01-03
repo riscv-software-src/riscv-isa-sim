@@ -367,7 +367,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   if (!virt)
     return gpa;
 
-  vm_info vm = decode_vm_info(proc->get_const_xlen(), true, 0, proc->get_state()->hgatp->read());
+  vm_info vm = decode_vm_info(proc->get_xlen((priv_mode_t){ PRV_S, true }), true, 0, proc->get_state()->hgatp->read());
   if (vm.levels == 0)
     return gpa;
 
@@ -451,7 +451,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
 {
   reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
   reg_t satp = proc->get_state()->satp->readvirt(virt);
-  vm_info vm = decode_vm_info(proc->get_const_xlen(), false, mode, satp);
+  vm_info vm = decode_vm_info(proc->get_xlen((priv_mode_t){ PRV_S, virt }), false, mode, satp);
   if (vm.levels == 0)
     return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx) & ~page_mask; // zero-extend from xlen
 

@@ -905,10 +905,11 @@ bool base_atp_csr_t::satp_valid(reg_t val) const noexcept {
 reg_t base_atp_csr_t::compute_new_satp(reg_t val) const noexcept {
   reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
 
-  reg_t mode_mask = proc->get_xlen() == 32 ? SATP32_MODE : SATP64_MODE;
-  reg_t asid_mask_if_enabled = proc->get_xlen() == 32 ? SATP32_ASID : SATP64_ASID;
+  reg_t xlen = proc->get_xlen(prv);
+  reg_t mode_mask = xlen == 32 ? SATP32_MODE : SATP64_MODE;
+  reg_t asid_mask_if_enabled = xlen == 32 ? SATP32_ASID : SATP64_ASID;
   reg_t asid_mask = proc->supports_impl(IMPL_MMU_ASID) ? asid_mask_if_enabled : 0;
-  reg_t ppn_mask = proc->get_xlen() == 32 ? SATP32_PPN : SATP64_PPN & rv64_ppn_mask;
+  reg_t ppn_mask = xlen == 32 ? SATP32_PPN : SATP64_PPN & rv64_ppn_mask;
   reg_t new_mask = (satp_valid(val) ? mode_mask : 0) | asid_mask | ppn_mask;
   reg_t old_mask = satp_valid(val) ? 0 : mode_mask;
 
@@ -1102,7 +1103,7 @@ bool hgatp_csr_t::unlogged_write(const reg_t val) noexcept {
   proc->get_mmu()->flush_tlb();
 
   reg_t mask;
-  if (proc->get_const_xlen() == 32) {
+  if (proc->get_xlen((priv_mode_t){ PRV_S, false }) == 32) {
     mask = HGATP32_PPN |
         HGATP32_MODE |
         (proc->supports_impl(IMPL_MMU_VMID) ? HGATP32_VMID : 0);
