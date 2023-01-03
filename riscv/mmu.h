@@ -163,7 +163,7 @@ public:
   void clean_inval(reg_t addr, bool clean, bool inval) {
     convert_load_traps_to_store_traps({
       const reg_t paddr = translate(addr, blocksz, LOAD, 0) & ~(blocksz - 1);
-      if (sim->addr_to_mem(paddr)) {
+      if (sim->reservable(paddr)) {
         if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
           tracer.clean_invalidate(paddr, blocksz, clean, inval);
       } else {
@@ -185,10 +185,10 @@ public:
     }
 
     reg_t paddr = translate(vaddr, 1, STORE, 0);
-    if (sim->addr_to_mem(paddr))
+    if (sim->reservable(paddr))
       return load_reservation_address == paddr;
     else
-      throw trap_store_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0); // disallow SC to I/O space
+      throw trap_store_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0);
   }
 
   template<typename T>
@@ -347,10 +347,10 @@ private:
   void load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags);
   void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store, bool require_alignment);
   void store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store);
-  bool mmio_fetch(reg_t addr, size_t len, uint8_t* bytes);
-  bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
-  bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
-  bool mmio_ok(reg_t addr, access_type type);
+  bool mmio_fetch(reg_t paddr, size_t len, uint8_t* bytes);
+  bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes);
+  bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes);
+  bool mmio_ok(reg_t paddr, access_type type);
   void check_triggers(triggers::operation_t operation, reg_t address, std::optional<reg_t> data = std::nullopt);
   reg_t translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_flags);
 

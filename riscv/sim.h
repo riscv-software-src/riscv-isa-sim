@@ -94,13 +94,13 @@ private:
   remote_bitbang_t* remote_bitbang;
 
   // memory-mapped I/O routines
-  char* addr_to_mem(reg_t addr);
-  bool mmio_load(reg_t addr, size_t len, uint8_t* bytes);
-  bool mmio_store(reg_t addr, size_t len, const uint8_t* bytes);
+  char* addr_to_mem(reg_t paddr);
+  bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes);
+  bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes);
   void make_dtb();
   void set_rom();
 
-  const char* get_symbol(uint64_t addr);
+  const char* get_symbol(uint64_t paddr);
 
   // presents a prompt for introspection into the simulation
   void interactive();
