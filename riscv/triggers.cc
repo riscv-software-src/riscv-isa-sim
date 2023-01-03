@@ -54,6 +54,16 @@ void trigger_t::tdata3_write(processor_t * const proc, const reg_t val) noexcept
   sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) <= SSELECT_MAXVAL) ? get_field(val, CSR_TEXTRA_SSELECT(xlen)) : SSELECT_IGNORE);
 }
 
+bool trigger_t::mode_match(state_t * const state) const noexcept
+{
+  switch (state->prv) {
+    case PRV_M: return m;
+    case PRV_S: return state->v ? vs : s;
+    case PRV_U: return state->v ? vu : u;
+    default: assert(false);
+  }
+}
+
 bool trigger_t::textra_match(processor_t * const proc) const noexcept
 {
   auto xlen = proc->get_xlen();
@@ -137,20 +147,7 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   timing = get_field(val, MCONTROL_TIMING);
   action = legalize_action(get_field(val, MCONTROL_ACTION));
   chain = allow_chain ? get_field(val, MCONTROL_CHAIN) : 0;
-  unsigned match_value = get_field(val, MCONTROL_MATCH);
-  switch (match_value) {
-    case MATCH_EQUAL:
-    case MATCH_NAPOT:
-    case MATCH_GE:
-    case MATCH_LT:
-    case MATCH_MASK_LOW:
-    case MATCH_MASK_HIGH:
-      match = (triggers::mcontrol_t::match_t) match_value;
-      break;
-    default:
-      match = MATCH_EQUAL;
-      break;
-  }
+  match = legalize_match(get_field(val, MCONTROL_MATCH));
   m = get_field(val, MCONTROL_M);
   s = proc->extension_enabled_const('S') ? get_field(val, CSR_MCONTROL_S) : 0;
   u = proc->extension_enabled_const('U') ? get_field(val, CSR_MCONTROL_U) : 0;
@@ -162,25 +159,25 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
     timing = 0;
 }
 
-bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
+bool mcontrol_common_t::simple_match(unsigned xlen, reg_t value) const {
   switch (match) {
-    case triggers::mcontrol_t::MATCH_EQUAL:
+    case MATCH_EQUAL:
       return value == tdata2;
-    case triggers::mcontrol_t::MATCH_NAPOT:
+    case MATCH_NAPOT:
       {
         reg_t mask = ~((1 << (cto(tdata2)+1)) - 1);
         return (value & mask) == (tdata2 & mask);
       }
-    case triggers::mcontrol_t::MATCH_GE:
+    case MATCH_GE:
       return value >= tdata2;
-    case triggers::mcontrol_t::MATCH_LT:
+    case MATCH_LT:
       return value < tdata2;
-    case triggers::mcontrol_t::MATCH_MASK_LOW:
+    case MATCH_MASK_LOW:
       {
         reg_t mask = tdata2 >> (xlen/2);
         return (value & mask) == (tdata2 & mask);
       }
-    case triggers::mcontrol_t::MATCH_MASK_HIGH:
+    case MATCH_MASK_HIGH:
       {
         reg_t mask = tdata2 >> (xlen/2);
         return ((value >> (xlen/2)) & mask) == (tdata2 & mask);
@@ -189,15 +186,11 @@ bool mcontrol_t::simple_match(unsigned xlen, reg_t value) const {
   assert(0);
 }
 
-std::optional<match_result_t> mcontrol_t::detect_memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) noexcept {
-  state_t * const state = proc->get_state();
+std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) noexcept {
   if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
       (operation == triggers::OPERATION_STORE && !store) ||
       (operation == triggers::OPERATION_LOAD && !load) ||
-      (state->prv == PRV_M && !m) ||
-      (state->prv == PRV_S && !s) ||
-      (state->prv == PRV_U && !u) ||
-      (state->v)) {
+      !mode_match(proc->get_state())) {
     return std::nullopt;
   }
 
@@ -224,6 +217,65 @@ std::optional<match_result_t> mcontrol_t::detect_memory_access_match(processor_t
     return match_result_t(timing_t(timing), action);
   }
   return std::nullopt;
+}
+
+mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val) const noexcept
+{
+  switch (val) {
+    case MATCH_EQUAL:
+    case MATCH_NAPOT:
+    case MATCH_GE:
+    case MATCH_LT:
+    case MATCH_MASK_LOW:
+    case MATCH_MASK_HIGH:
+      return (match_t)val;
+    default:
+      return MATCH_EQUAL;
+  }
+}
+
+reg_t mcontrol6_t::tdata1_read(const processor_t * const proc) const noexcept {
+  unsigned xlen = proc->get_const_xlen();
+  reg_t tdata1 = 0;
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_TYPE(xlen), 6);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_DMODE(xlen), dmode);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_VS, proc->extension_enabled('H') ? vs : 0);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_VU, proc->extension_enabled('H') ? vu : 0);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_HIT, hit);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_SELECT, select);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_TIMING, timing);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_ACTION, action);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_CHAIN, chain);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_MATCH, match);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_M, m);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_S, s);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_U, u);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_EXECUTE, execute);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_STORE, store);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_LOAD, load);
+  return tdata1;
+}
+
+void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept {
+  auto xlen = proc->get_const_xlen();
+  assert(get_field(val, CSR_MCONTROL6_TYPE(xlen)) == CSR_TDATA1_TYPE_MCONTROL6);
+  dmode = get_field(val, CSR_MCONTROL6_DMODE(xlen));
+  vs = get_field(val, CSR_MCONTROL6_VS);
+  vu = get_field(val, CSR_MCONTROL6_VU);
+  hit = get_field(val, CSR_MCONTROL6_HIT);
+  select = get_field(val, CSR_MCONTROL6_SELECT);
+  timing = get_field(val, CSR_MCONTROL6_TIMING);
+  action = legalize_action(get_field(val, CSR_MCONTROL6_ACTION));
+  chain = allow_chain ? get_field(val, CSR_MCONTROL6_CHAIN) : 0;
+  match = legalize_match(get_field(val, CSR_MCONTROL6_MATCH));
+  m = get_field(val, CSR_MCONTROL6_M);
+  s = proc->extension_enabled_const('S') ? get_field(val, CSR_MCONTROL6_S) : 0;
+  u = proc->extension_enabled_const('U') ? get_field(val, CSR_MCONTROL6_U) : 0;
+  execute = get_field(val, CSR_MCONTROL6_EXECUTE);
+  store = get_field(val, CSR_MCONTROL6_STORE);
+  load = get_field(val, CSR_MCONTROL6_LOAD);
+  if (execute)
+    timing = 0;
 }
 
 reg_t itrigger_t::tdata1_read(const processor_t * const proc) const noexcept
@@ -260,14 +312,8 @@ void itrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
 
 std::optional<match_result_t> itrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
-  state_t * const state = proc->get_state();
-  if ((state->prv == PRV_M && !m) ||
-      (!state->v && state->prv == PRV_S && !s) ||
-      (!state->v && state->prv == PRV_U && !u) ||
-      (state->v && state->prv == PRV_S && !vs) ||
-      (state->v && state->prv == PRV_U && !vu)) {
+  if (!mode_match(proc->get_state()))
     return std::nullopt;
-  }
 
   auto xlen = proc->get_xlen();
   bool interrupt = (t.cause() & ((reg_t)1 << (xlen - 1))) != 0;
@@ -312,14 +358,8 @@ void etrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
 
 std::optional<match_result_t> etrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
-  state_t * const state = proc->get_state();
-  if ((state->prv == PRV_M && !m) ||
-      (!state->v && state->prv == PRV_S && !s) ||
-      (!state->v && state->prv == PRV_U && !u) ||
-      (state->v && state->prv == PRV_S && !vs) ||
-      (state->v && state->prv == PRV_U && !vu)) {
+  if (!mode_match(proc->get_state()))
     return std::nullopt;
-  }
 
   auto xlen = proc->get_xlen();
   bool interrupt = (t.cause() & ((reg_t)1 << (xlen - 1))) != 0;
@@ -382,6 +422,7 @@ bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
     case CSR_TDATA1_TYPE_MCONTROL: triggers[index] = new mcontrol_t(); break;
     case CSR_TDATA1_TYPE_ITRIGGER: triggers[index] = new itrigger_t(); break;
     case CSR_TDATA1_TYPE_ETRIGGER: triggers[index] = new etrigger_t(); break;
+    case CSR_TDATA1_TYPE_MCONTROL6: triggers[index] = new mcontrol6_t(); break;
     default: triggers[index] = new disabled_trigger_t(); break;
   }
 
@@ -471,6 +512,7 @@ reg_t module_t::tinfo_read(unsigned UNUSED index) const noexcept
   return (1 << CSR_TDATA1_TYPE_MCONTROL) |
          (1 << CSR_TDATA1_TYPE_ITRIGGER) |
          (1 << CSR_TDATA1_TYPE_ETRIGGER) |
+         (1 << CSR_TDATA1_TYPE_MCONTROL6) |
          (1 << CSR_TDATA1_TYPE_DISABLED);
 }
 
