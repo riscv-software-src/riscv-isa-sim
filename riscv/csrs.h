@@ -213,18 +213,16 @@ class base_status_csr_t: public csr_t {
  public:
   base_status_csr_t(processor_t* const proc, const reg_t addr);
 
-  bool field_exists(const reg_t which) {
-    return (sstatus_write_mask & which) != 0;
-  }
+  bool field_exists(const reg_t which);
 
  protected:
-  reg_t adjust_sd(const reg_t val) const noexcept;
+  reg_t adjust_sd(const reg_t val, const unsigned xlen) const noexcept;
   void maybe_flush_tlb(const reg_t newval) noexcept;
   const bool has_page;
-  const reg_t sstatus_write_mask;
-  const reg_t sstatus_read_mask;
+  const reg_t sstatus_const_write_mask;
+  const reg_t sstatus_const_read_mask;
  private:
-  reg_t compute_sstatus_write_mask() const noexcept;
+  reg_t compute_const_sstatus_write_mask() const noexcept;
 };
 
 typedef std::shared_ptr<base_status_csr_t> base_status_csr_t_p;
@@ -235,9 +233,7 @@ class vsstatus_csr_t final: public base_status_csr_t {
  public:
   vsstatus_csr_t(processor_t* const proc, const reg_t addr);
 
-  reg_t read() const noexcept override {
-    return val;
-  }
+  reg_t read() const noexcept override;
 
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
@@ -311,9 +307,7 @@ class sstatus_proxy_csr_t final: public base_status_csr_t {
  public:
   sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr, mstatus_csr_t_p mstatus);
 
-  reg_t read() const noexcept override {
-    return mstatus->read() & sstatus_read_mask;
-  }
+  reg_t read() const noexcept override;
 
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;

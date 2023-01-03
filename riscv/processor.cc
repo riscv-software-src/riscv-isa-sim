@@ -1141,3 +1141,9 @@ void processor_t::trigger_updated(const std::vector<triggers::trigger_t *> &trig
     }
   }
 }
+
+void processor_t::update_vuxlen(unsigned val) {
+  if (val <= vsxlen)
+    vuxlen = val;
+}
+

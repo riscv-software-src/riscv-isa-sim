@@ -218,6 +218,8 @@ public:
   }
   unsigned get_csr_len(int csr_addr);
 
+  void update_vuxlen(unsigned val);
+
   extension_t* get_extension();
   extension_t* get_extension(const char* name);
   bool any_custom_extensions() const {

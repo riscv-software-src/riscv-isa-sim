@@ -398,12 +398,11 @@ reg_t cause_csr_t::read() const noexcept {
 base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
   csr_t(proc, addr),
   has_page(proc->extension_enabled_const('S') && proc->supports_impl(IMPL_MMU)),
-  sstatus_write_mask(compute_sstatus_write_mask()),
-  sstatus_read_mask(sstatus_write_mask | SSTATUS_UBE | SSTATUS_UXL
-                    | (proc->get_const_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD)) {
+  sstatus_const_write_mask(compute_const_sstatus_write_mask()),
+  sstatus_const_read_mask(sstatus_const_write_mask | SSTATUS_UBE | SSTATUS_UXL) {
 }
 
-reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
+reg_t base_status_csr_t::compute_const_sstatus_write_mask() const noexcept {
   // If a configuration has FS bits, they will always be accessible no
   // matter the state of misa.
   const bool has_fs = (proc->extension_enabled('S') || proc->extension_enabled('F')
@@ -418,13 +417,14 @@ reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
     ;
 }
 
-reg_t base_status_csr_t::adjust_sd(const reg_t val) const noexcept {
-  // This uses get_const_xlen() instead of get_xlen() not only because
-  // the variable is static, so it's only called once, but also
-  // because the SD bit moves when XLEN changes, which means we would
-  // need to call adjust_sd() on every read, instead of on every
-  // write.
-  static const reg_t sd_bit = proc->get_const_xlen() == 64 ? SSTATUS64_SD : SSTATUS32_SD;
+bool base_status_csr_t::field_exists(const reg_t which) {
+  auto sstatus_write_mask = sstatus_const_write_mask |
+                            (proc->get_xlen((priv_mode_t){ PRV_S, false }) != 32 ? SSTATUS_UXL : 0);
+  return (sstatus_write_mask & which) != 0;
+}
+
+reg_t base_status_csr_t::adjust_sd(const reg_t val, const unsigned xlen) const noexcept {
+  reg_t sd_bit = xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD;
   if (((val & SSTATUS_FS) == SSTATUS_FS) ||
       ((val & SSTATUS_VS) == SSTATUS_VS) ||
       ((val & SSTATUS_XS) == SSTATUS_XS)) {
@@ -442,25 +442,52 @@ void base_status_csr_t::maybe_flush_tlb(const reg_t newval) noexcept {
 }
 
 namespace {
-  int xlen_to_uxl(int xlen) {
+  int xlen_to_xl(int xlen) {
     if (xlen == 32)
       return 1;
     if (xlen == 64)
       return 2;
     abort();
   }
+
+  unsigned xl_to_xlen(int xl) {
+    if (xl == 1)
+      return 32;
+    if (xl == 2)
+      return 64;
+    abort();
+  }
+
+  /*
+   * Only RV32 and RV64 is legal in spike currently.
+   */
+  bool is_legal_xl(int xl) {
+    return xl == 1 || xl == 2;
+  }
 }
 
 // implement class vsstatus_csr_t
 vsstatus_csr_t::vsstatus_csr_t(processor_t* const proc, const reg_t addr):
   base_status_csr_t(proc, addr),
-  val(proc->get_state()->mstatus->read() & sstatus_read_mask) {
+  val(proc->get_state()->mstatus->read() & sstatus_const_read_mask) {
+}
+
+reg_t vsstatus_csr_t::read() const noexcept {
+  unsigned vsxlen = proc->get_xlen((priv_mode_t){ PRV_S, true } );
+  unsigned vuxlen = proc->get_xlen((priv_mode_t){ PRV_U, true } );
+  return adjust_sd(set_field(val, SSTATUS_UXL, xlen_to_xl(vuxlen)), vsxlen);
 }
 
 bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
-  const reg_t newval = (this->val & ~sstatus_write_mask) | (val & sstatus_write_mask);
+  unsigned vsxlen = proc->get_xlen((priv_mode_t){ PRV_S, true });
+  reg_t newval = (this->val & ~sstatus_const_write_mask) | (val & sstatus_const_write_mask);
+  if (vsxlen != 32) {
+    int new_vuxl = get_field(val, SSTATUS_UXL);
+    if (is_legal_xl(new_vuxl))
+      proc->update_vuxlen(xl_to_xlen(new_vuxl));
+  }
   if (state->v) maybe_flush_tlb(newval);
-  this->val = adjust_sd(newval);
+  this->val = newval;
   return true;
 }
 
@@ -470,13 +497,15 @@ sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t ad
   mstatus(mstatus) {
 }
 
+reg_t sstatus_proxy_csr_t::read() const noexcept
+{
+  return adjust_sd(mstatus->read() & sstatus_const_read_mask, proc->get_xlen((priv_mode_t){ PRV_S, false }));
+}
+
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t sstatus_write_mask = sstatus_const_write_mask
+                               | (proc->get_xlen((priv_mode_t){ PRV_S, false } ) != 32 ? SSTATUS_UXL : 0);
   const reg_t new_mstatus = (mstatus->read() & ~sstatus_write_mask) | (val & sstatus_write_mask);
-
-  // On RV32 this will only log the low 32 bits, so make sure we're
-  // not modifying anything in the upper 32 bits.
-  assert((sstatus_write_mask & 0xffffffffU) == sstatus_write_mask);
-
   mstatus->write(new_mstatus);
   return false; // avoid double logging: already logged by mstatus->write()
 }
@@ -491,7 +520,7 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const bool has_mpv = proc->extension_enabled('H');
   const bool has_gva = has_mpv;
 
-  const reg_t mask = sstatus_write_mask
+  const reg_t mask = sstatus_const_write_mask
                    | MSTATUS_MIE | MSTATUS_MPIE
                    | (proc->extension_enabled('U') ? MSTATUS_MPRV : 0)
                    | MSTATUS_MPP | MSTATUS_TW
@@ -504,7 +533,7 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t adjusted_val = set_field(val, MSTATUS_MPP, requested_mpp);
   const reg_t new_mstatus = (read() & ~mask) | (adjusted_val & mask);
   maybe_flush_tlb(new_mstatus);
-  this->val = adjust_sd(new_mstatus);
+  this->val = adjust_sd(new_mstatus, proc->get_xlen((priv_mode_t){ PRV_M, false }));
   return true;
 }
 
@@ -513,8 +542,8 @@ reg_t mstatus_csr_t::compute_mstatus_initial_value() const noexcept {
                               | (proc->extension_enabled_const('S') ? MSTATUS_SBE : 0)
                               | MSTATUS_MBE;
   return 0
-         | (proc->extension_enabled_const('U') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
-         | (proc->extension_enabled_const('S') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_SXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
+         | (proc->extension_enabled_const('U') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_UXL, xlen_to_xl(proc->get_const_xlen())) : 0)
+         | (proc->extension_enabled_const('S') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_SXL, xlen_to_xl(proc->get_const_xlen())) : 0)
          | (proc->get_mmu()->is_target_big_endian() ? big_endian_bits : 0)
          | 0;  // initial value for mstatus
 }
