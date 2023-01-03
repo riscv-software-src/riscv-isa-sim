@@ -531,10 +531,40 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 
   const reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
   const reg_t adjusted_val = set_field(val, MSTATUS_MPP, requested_mpp);
-  const reg_t new_mstatus = (read() & ~mask) | (adjusted_val & mask);
+  const reg_t new_mstatus = (this->val & ~mask) | (adjusted_val & mask);
+
   maybe_flush_tlb(new_mstatus);
-  this->val = adjust_sd(new_mstatus, proc->get_xlen((priv_mode_t){ PRV_M, false }));
+
+  const unsigned mxlen = proc->get_xlen((priv_mode_t) { PRV_M, false });
+
+  if (mxlen > 32) {
+    int new_sxl = get_field(val, MSTATUS_SXL);
+    int new_uxl = get_field(val, MSTATUS_UXL);
+
+    if (is_legal_xl(new_sxl))
+      proc->update_sxlen(xl_to_xlen(new_sxl));
+
+    if (is_legal_xl(new_uxl))
+      proc->update_uxlen(xl_to_xlen(new_uxl));
+  }
+
+  this->val = new_mstatus;
+
   return true;
+}
+
+reg_t mstatus_csr_t::read() const noexcept {
+  const unsigned mxlen = proc->get_xlen((priv_mode_t) { PRV_M, false });
+  reg_t mstatus_val = val;
+
+  if (mxlen != 32) {
+    const unsigned sxlen = proc->get_xlen((priv_mode_t) { PRV_S, false });
+    const unsigned uxlen = proc->get_xlen((priv_mode_t) { PRV_U, false });
+    mstatus_val = set_field(mstatus_val, MSTATUS_SXL, xlen_to_xl(sxlen));
+    mstatus_val = set_field(mstatus_val, MSTATUS_UXL, xlen_to_xl(uxlen));
+  }
+
+  return adjust_sd(mstatus_val, mxlen);
 }
 
 reg_t mstatus_csr_t::compute_mstatus_initial_value() const noexcept {
@@ -542,8 +572,6 @@ reg_t mstatus_csr_t::compute_mstatus_initial_value() const noexcept {
                               | (proc->extension_enabled_const('S') ? MSTATUS_SBE : 0)
                               | MSTATUS_MBE;
   return 0
-         | (proc->extension_enabled_const('U') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_UXL, xlen_to_xl(proc->get_const_xlen())) : 0)
-         | (proc->extension_enabled_const('S') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_SXL, xlen_to_xl(proc->get_const_xlen())) : 0)
          | (proc->get_mmu()->is_target_big_endian() ? big_endian_bits : 0)
          | 0;  // initial value for mstatus
 }

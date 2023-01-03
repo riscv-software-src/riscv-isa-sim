@@ -1132,9 +1132,29 @@ void processor_t::trigger_updated(const std::vector<triggers::trigger_t *> &trig
   }
 }
 
+void processor_t::update_uxlen(unsigned val) {
+  if (val <= sxlen)
+    uxlen = val;
+}
+
 void processor_t::update_vuxlen(unsigned val) {
   if (val <= vsxlen)
     vuxlen = val;
+}
+
+void processor_t::update_sxlen(unsigned val) {
+  if (val <= mxlen && val != sxlen) {
+    unsigned old_sxlen = sxlen;
+    sxlen = val;
+    if (old_sxlen == 32 || val == 32) {  /* 32 to wider  or wider to 32 */
+
+      if (extension_enabled('H')) {
+        update_vsxlen(val);
+      }
+
+      update_uxlen(val);
+    }
+  }
 }
 
 void processor_t::update_vsxlen(unsigned val) {

@@ -200,12 +200,7 @@ public:
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
   unsigned get_xlen() const { return xlen; }
-  unsigned get_const_xlen() const {
-    // Any code that assumes a const xlen should use this method to
-    // document that assumption. If Spike ever changes to allow
-    // variable xlen, this method should be removed.
-    return xlen;
-  }
+
   unsigned get_flen() const {
     return extension_enabled('Q') ? 128 :
            extension_enabled('D') ? 64 :
@@ -218,7 +213,9 @@ public:
   }
   unsigned get_csr_len(int csr_addr);
 
+  void update_sxlen(unsigned val);
   void update_vsxlen(unsigned val);
+  void update_uxlen(unsigned val);
   void update_vuxlen(unsigned val);
 
   extension_t* get_extension();
