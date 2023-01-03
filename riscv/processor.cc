@@ -928,7 +928,7 @@ void processor_t::put_csr(int which, reg_t val)
   val = zext_xlen(val);
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
-    search->second->write(val);
+    search->second->write(zext(val, get_csr_len(which)));
     return;
   }
 }
@@ -942,11 +942,30 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
   if (search != state.csrmap.end()) {
     if (!peek)
       search->second->verify_permissions(insn, write);
-    return search->second->read();
+    return zext(search->second->read(), get_csr_len(which));
   }
   // If we get here, the CSR doesn't exist.  Unimplemented CSRs always throw
   // illegal-instruction exceptions, not virtual-instruction exceptions.
   throw trap_illegal_instruction(insn.bits());
+}
+
+unsigned processor_t::get_csr_len(int csr_addr)
+{
+  uint8_t csr_priv = get_field(csr_addr, 0x300);
+  switch (csr_priv) {
+  case PRV_M:
+    return mxlen;
+  case PRV_U:
+    return state.v ? vuxlen : uxlen;
+  case PRV_S:
+    return state.v ? vsxlen: sxlen;
+  default:
+    if ((csr_addr & 0x400) == 0) { /* addr for VS Registers is 0x2xx */
+      return vsxlen;
+    } else {
+      return sxlen;
+    }
+  }
 }
 
 reg_t illegal_instruction(processor_t UNUSED *p, insn_t insn, reg_t UNUSED pc)

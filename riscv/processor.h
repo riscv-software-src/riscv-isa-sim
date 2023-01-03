@@ -216,6 +216,7 @@ public:
   unsigned get_max_xlen() const {
     return isa->get_max_xlen();
   }
+  unsigned get_csr_len(int csr_addr);
 
   extension_t* get_extension();
   extension_t* get_extension(const char* name);
