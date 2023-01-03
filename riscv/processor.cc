@@ -795,7 +795,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     // Handle the trap in VS-mode
     reg_t vector = (state.vstvec->read() & 1) && interrupt ? 4 * bit : 0;
     state.pc = (state.vstvec->read() & ~(reg_t)1) + vector;
-    state.vscause->write((interrupt) ? (t.cause() - 1) : t.cause());
+    state.vscause->write(((interrupt) ? (bit - 1) : bit) | (interrupt << (vsxlen - 1)));
     state.vsepc->write(epc);
     state.vstval->write(t.get_tval());
 
@@ -810,7 +810,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     set_virt(false);
     reg_t vector = (state.stvec->read() & 1) && interrupt ? 4 * bit : 0;
     state.pc = (state.stvec->read() & ~(reg_t)1) + vector;
-    state.scause->write(t.cause());
+    state.scause->write(bit | (interrupt << (sxlen - 1)));
     state.sepc->write(epc);
     state.stval->write(t.get_tval());
     state.htval->write(t.get_tval2());
@@ -836,7 +836,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     reg_t vector = (state.mtvec->read() & 1) && interrupt ? 4 * bit : 0;
     state.pc = (state.mtvec->read() & ~(reg_t)1) + vector;
     state.mepc->write(epc);
-    state.mcause->write(t.cause());
+    state.mcause->write(bit | (interrupt << (mxlen - 1)));
     state.mtval->write(t.get_tval());
     state.mtval2->write(t.get_tval2());
     state.mtinst->write(t.get_tinst());
