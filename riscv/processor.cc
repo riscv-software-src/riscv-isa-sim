@@ -873,7 +873,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_MPV, curr_virt);
     s = set_field(s, MSTATUS_GVA, t.has_gva());
     state.mstatus->write(s);
-    if (state.mstatush) state.mstatush->write(s >> 32);  // log mstatush change
+    if (mxlen == 32) state.mstatush->write(s >> 32);  // log mstatush change
     set_privilege(PRV_M);
   }
 }

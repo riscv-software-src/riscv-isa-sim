@@ -634,6 +634,7 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   const bool prev_h = old_misa & (1L << ('H' - 'A'));
   const reg_t new_misa = (adjusted_val & write_mask) | (old_misa & ~write_mask);
   const bool new_h = new_misa & (1L << ('H' - 'A'));
+  unsigned mxlen = proc->get_xlen((priv_mode_t){ PRV_M, false });
 
   // update the hypervisor-only bits in MEDELEG and other CSRs
   if (!new_h && prev_h) {
@@ -647,7 +648,7 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
     state->medeleg->write(state->medeleg->read() & ~hypervisor_exceptions);
     const reg_t new_mstatus = state->mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV);
     state->mstatus->write(new_mstatus);
-    if (state->mstatush) state->mstatush->write(new_mstatus >> 32);  // log mstatush change
+    if (mxlen == 32) state->mstatush->write(new_mstatus >> 32);  // log mstatush change
     state->mie->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hie, sie
     state->mip->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hip, sip, hvip
     state->hstatus->write(0);
