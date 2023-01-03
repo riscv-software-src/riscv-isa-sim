@@ -190,9 +190,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   XPR.reset();
   FPR.reset();
 
-  // This assumes xlen is always max_xlen, which is true today (see
-  // mstatus_csr_t::unlogged_write()):
-  auto xlen = proc->get_isa().get_max_xlen();
+  auto xlen = proc->get_max_xlen();
 
   prv = PRV_M;
   v = false;
@@ -532,7 +530,12 @@ void processor_t::enable_log_commits()
 
 void processor_t::reset()
 {
-  xlen = isa->get_max_xlen();
+  mxlen = isa->get_max_xlen();
+  sxlen = mxlen;
+  uxlen = mxlen;
+  vsxlen = mxlen;
+  vuxlen = mxlen;
+  xlen = mxlen;
   state.reset(this, isa->get_max_isa());
   state.dcsr->halt = halt_on_reset;
   halt_on_reset = false;
@@ -694,10 +697,27 @@ reg_t processor_t::legalize_privilege(reg_t prv)
   return prv;
 }
 
+unsigned processor_t::get_xlen(const priv_mode_t prv) const
+{
+  auto xl = mxlen;
+  switch(prv.priv) {
+  case PRV_M:
+    break;
+  case PRV_S:
+    xl = prv.virt ? vsxlen : sxlen;
+    break;
+  default:
+    xl = prv.virt ? vuxlen : uxlen;
+    break;
+  }
+  return xl;
+}
+
 void processor_t::set_privilege(reg_t prv)
 {
   mmu->flush_tlb();
   state.prv = legalize_privilege(prv);
+  xlen = get_xlen((priv_mode_t){ state.prv, state.v });
 }
 
 const char* processor_t::get_privilege_string()

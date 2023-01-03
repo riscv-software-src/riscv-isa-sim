@@ -15,6 +15,11 @@
 class processor_t;
 struct state_t;
 
+struct priv_mode_t {
+  reg_t priv;
+  bool virt;
+};
+
 // Parent, abstract class for all CSRs
 class csr_t {
  public:

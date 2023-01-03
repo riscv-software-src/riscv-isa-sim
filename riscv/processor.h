@@ -211,6 +211,12 @@ public:
            extension_enabled('D') ? 64 :
            extension_enabled('F') ? 32 : 0;
   }
+
+  unsigned get_xlen(const priv_mode_t prv) const;
+  unsigned get_max_xlen() const {
+    return isa->get_max_xlen();
+  }
+
   extension_t* get_extension();
   extension_t* get_extension(const char* name);
   bool any_custom_extensions() const {
@@ -289,6 +295,11 @@ private:
   state_t state;
   uint32_t id;
   unsigned xlen;
+  unsigned mxlen;
+  unsigned sxlen;
+  unsigned uxlen;
+  unsigned vsxlen;
+  unsigned vuxlen;
   bool histogram_enabled;
   bool log_commits_enabled;
   FILE *log_file;
