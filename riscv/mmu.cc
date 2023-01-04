@@ -220,9 +220,9 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
     load_slow_path_intrapage(addr, len, bytes, xlate_flags);
   } else {
     bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
-#ifndef RISCV_ENABLE_MISALIGNED
-    throw trap_load_address_misaligned(gva, addr, 0, 0);
-#else
+    if (!is_misaligned_enabled())
+      throw trap_load_address_misaligned(gva, addr, 0, 0);
+
     if (xlate_flags & RISCV_XLATE_LR)
       throw trap_load_access_fault(gva, addr, 0, 0);
 
@@ -230,7 +230,6 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
     load_slow_path_intrapage(addr, len_page0, bytes, xlate_flags);
     if (len_page0 != len)
       load_slow_path_intrapage(addr + len_page0, len - len_page0, bytes + len_page0, xlate_flags);
-#endif
   }
 
   check_triggers(triggers::OPERATION_LOAD, addr, reg_from_bytes(len, bytes));
@@ -269,9 +268,9 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_
 
   if (addr & (len - 1)) {
     bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
-#ifndef RISCV_ENABLE_MISALIGNED
-    throw trap_store_address_misaligned(gva, addr, 0, 0);
-#else
+    if (!is_misaligned_enabled())
+      throw trap_store_address_misaligned(gva, addr, 0, 0);
+
     if (require_alignment)
       throw trap_store_access_fault(gva, addr, 0, 0);
 
@@ -279,7 +278,6 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_
     store_slow_path_intrapage(addr, len_page0, bytes, xlate_flags, actually_store);
     if (len_page0 != len)
       store_slow_path_intrapage(addr + len_page0, len - len_page0, bytes + len_page0, xlate_flags, actually_store);
-#endif
   } else {
     store_slow_path_intrapage(addr, len, bytes, xlate_flags, actually_store);
   }

@@ -98,8 +98,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   debug_mmu = new mmu_t(this, cfg->endianness, NULL);
 
   for (size_t i = 0; i < cfg->nprocs(); i++) {
-    procs[i] = new processor_t(&isa, cfg->varch(), this, cfg->hartids()[i], halted,
-                               cfg->endianness, log_file.get(), sout_);
+    procs[i] = new processor_t(&isa, cfg, this, cfg->hartids()[i], halted,
+                               log_file.get(), sout_);
   }
 
   make_dtb();

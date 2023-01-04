@@ -52,6 +52,7 @@ public:
         const char *default_bootargs,
         const char *default_isa, const char *default_priv,
         const char *default_varch,
+        const bool default_misaligned,
         const endianness_t default_endianness,
         const reg_t default_pmpregions,
         const std::vector<mem_cfg_t> &default_mem_layout,
@@ -62,6 +63,7 @@ public:
       isa(default_isa),
       priv(default_priv),
       varch(default_varch),
+      misaligned(default_misaligned),
       endianness(default_endianness),
       pmpregions(default_pmpregions),
       mem_layout(default_mem_layout),
@@ -75,6 +77,7 @@ public:
   cfg_arg_t<const char *>            isa;
   cfg_arg_t<const char *>            priv;
   cfg_arg_t<const char *>            varch;
+  bool                               misaligned;
   endianness_t                       endianness;
   reg_t                              pmpregions;
   cfg_arg_t<std::vector<mem_cfg_t>>  mem_layout;

@@ -716,7 +716,6 @@ with_priv
 with_varch
 with_target
 enable_dirty
-enable_misaligned
 enable_dual_endian
 '
       ac_precious_vars='build_alias
@@ -1362,8 +1361,6 @@ Optional Features:
                           Enable all optional subprojects
   --enable-dirty          Enable hardware management of PTE accessed and dirty
                           bits
-  --enable-misaligned     Enable hardware support for misaligned loads and
-                          stores
   --enable-dual-endian    Enable support for running target in either
                           endianness
 
@@ -6059,19 +6056,6 @@ if test "x$enable_dirty" = "xyes"; then :
 
 
 $as_echo "#define RISCV_ENABLE_DIRTY /**/" >>confdefs.h
-
-
-fi
-
-# Check whether --enable-misaligned was given.
-if test "${enable_misaligned+set}" = set; then :
-  enableval=$enable_misaligned;
-fi
-
-if test "x$enable_misaligned" = "xyes"; then :
-
-
-$as_echo "#define RISCV_ENABLE_MISALIGNED /**/" >>confdefs.h
 
 
 fi
