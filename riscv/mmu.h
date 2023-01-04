@@ -141,7 +141,6 @@ public:
       } else {
         check_triggers(triggers::OPERATION_LOAD, addr);
         load_slow_path_intrapage(addr, sizeof(T), (uint8_t*)&res, 0);
-        check_triggers(triggers::OPERATION_LOAD, addr, reg_from_bytes(sizeof(T), (uint8_t*)&res));
       }
 
       if (unlikely(proc && proc->get_log_commits_enabled()))
@@ -154,12 +153,18 @@ public:
         *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target((T)f(lhs));
       } else {
         target_endian<T> target_val = to_target((T)f(lhs));
-        check_triggers(triggers::OPERATION_STORE, addr, reg_from_bytes(sizeof(T), (const uint8_t*)&target_val));
         store_slow_path_intrapage(addr, sizeof(T), (const uint8_t*)&target_val, 0, true);
       }
 
       if (unlikely(proc && proc->get_log_commits_enabled()))
         proc->state.log_mem_write.push_back(std::make_tuple(addr, (T)f(lhs), sizeof(T)));
+
+      if (unlikely(!tlb_load_hit))
+        check_triggers(triggers::OPERATION_LOAD, addr, reg_from_bytes(sizeof(T), (uint8_t*)&res));
+      if (unlikely(!tlb_store_hit)) {
+        target_endian<T> target_val = to_target((T)f(lhs));
+        check_triggers(triggers::OPERATION_STORE, addr, reg_from_bytes(sizeof(T), (const uint8_t*)&target_val));
+      }
 
       return lhs;
     })
