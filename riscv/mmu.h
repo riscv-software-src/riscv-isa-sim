@@ -131,21 +131,21 @@ public:
   template<typename T, typename op>
   T amo(reg_t addr, op f) {
     convert_load_traps_to_store_traps({
-      store_slow_path(addr, sizeof(T), nullptr, 0, false, true);
-      target_endian<T> res;
+      store_slow_path(addr, sizeof(T), nullptr, 0, false, true); // check misaligned, access fault, and page fault
       reg_t vpn = addr >> PGSHIFT;
       bool tlb_load_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn;
       bool tlb_store_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn;
+      if (unlikely(!tlb_load_hit))
+        check_triggers(triggers::OPERATION_LOAD, addr);
 
+      // Atomic load and store. Should not throw exception nor trigger action.
+      target_endian<T> res;
       if (likely(tlb_load_hit)) {
         res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
       } else {
-        check_triggers(triggers::OPERATION_LOAD, addr);
         load_slow_path_intrapage(addr, sizeof(T), (uint8_t*)&res, 0);
       }
-
       auto lhs = from_target(res);
-
       if (likely(tlb_store_hit)) {
         *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target((T)f(lhs));
       } else {
