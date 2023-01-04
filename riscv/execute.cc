@@ -152,7 +152,8 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
 
 inline void processor_t::update_histogram(reg_t UNUSED pc)
 {
-  pc_histogram[pc]++;
+  if (histogram_enabled)
+    pc_histogram[pc]++;
 }
 
 // These two functions are expected to be inlined by the compiler separately in
