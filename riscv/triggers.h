@@ -150,6 +150,8 @@ public:
   bool get_dmode() const override { return dmode; }
   virtual action_t get_action() const override { return action; }
 
+  virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
+
 private:
   virtual bool simple_match(bool interrupt, reg_t bit) const = 0;
 
@@ -164,8 +166,6 @@ public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
-  virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
-
 private:
   virtual bool simple_match(bool interrupt, reg_t bit) const override;
   bool nmi;
@@ -175,8 +175,6 @@ class etrigger_t : public trap_common_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
-
-  virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
 
 private:
   virtual bool simple_match(bool interrupt, reg_t bit) const override;

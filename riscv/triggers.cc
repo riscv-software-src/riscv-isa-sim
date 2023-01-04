@@ -310,7 +310,7 @@ void itrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   action = legalize_action(get_field(val, CSR_ITRIGGER_ACTION));
 }
 
-std::optional<match_result_t> itrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
+std::optional<match_result_t> trap_common_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
   if (!mode_match(proc->get_state()))
     return std::nullopt;
@@ -359,22 +359,6 @@ void etrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   s = proc->extension_enabled_const('S') ? get_field(val, CSR_ETRIGGER_S) : 0;
   u = proc->extension_enabled_const('U') ? get_field(val, CSR_ETRIGGER_U) : 0;
   action = legalize_action(get_field(val, CSR_ETRIGGER_ACTION));
-}
-
-std::optional<match_result_t> etrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
-{
-  if (!mode_match(proc->get_state()))
-    return std::nullopt;
-
-  auto xlen = proc->get_xlen();
-  bool interrupt = (t.cause() & ((reg_t)1 << (xlen - 1))) != 0;
-  reg_t bit = t.cause() & ~((reg_t)1 << (xlen - 1));
-  assert(bit < xlen);
-  if (simple_match(interrupt, bit)) {
-    hit = true;
-    return match_result_t(TIMING_AFTER, action);
-  }
-  return std::nullopt;
 }
 
 bool etrigger_t::simple_match(bool interrupt, reg_t bit) const
