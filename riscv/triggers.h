@@ -148,6 +148,7 @@ private:
 class trap_common_t : public trigger_t {
 public:
   bool get_dmode() const override { return dmode; }
+  virtual action_t get_action() const override { return action; }
 
 protected:
   bool dmode;
@@ -160,8 +161,6 @@ public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
-  virtual action_t get_action() const override { return action; }
-
   virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
 
 private:
@@ -173,8 +172,6 @@ class etrigger_t : public trap_common_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
-
-  virtual action_t get_action() const override { return action; }
 
   virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
 
