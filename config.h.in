@@ -99,9 +99,6 @@
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef RISCV_ENABLED
 
-/* Enable hardware management of PTE accessed and dirty bits */
-#undef RISCV_ENABLE_DIRTY
-
 /* Enable support for running target in either endianness */
 #undef RISCV_ENABLE_DUAL_ENDIAN
 
