@@ -413,16 +413,17 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
         break;
       } else {
         reg_t ad = PTE_A | ((type == STORE) * PTE_D);
-#ifdef RISCV_ENABLE_DIRTY
-        // set accessed and possibly dirty bits.
+
         if ((pte & ad) != ad) {
-          pte_store(pte_paddr, pte | ad, gva, virt, type, vm.ptesize);
+          if (proc->cfg->dirty_enabled) {
+            // set accessed and possibly dirty bits
+            pte_store(pte_paddr, pte | ad, gva, virt, type, vm.ptesize);
+          } else {
+            // take exception if access or possibly dirty bit is not set.
+            break;
+          }
         }
-#else
-        // take exception if access or possibly dirty bit is not set.
-        if ((pte & ad) != ad)
-          break;
-#endif
+
         reg_t vpn = gpa >> PGSHIFT;
         reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
 
@@ -500,16 +501,17 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
       break;
     } else {
       reg_t ad = PTE_A | ((type == STORE) * PTE_D);
-#ifdef RISCV_ENABLE_DIRTY
-      // set accessed and possibly dirty bits.
+
       if ((pte & ad) != ad) {
-        pte_store(pte_paddr, pte | ad, addr, virt, type, vm.ptesize);
+        if (proc->cfg->dirty_enabled) {
+          // set accessed and possibly dirty bits.
+          pte_store(pte_paddr, pte | ad, addr, virt, type, vm.ptesize);
+        } else {
+          // take exception if access or possibly dirty bit is not set.
+          break;
+        }
       }
-#else
-      // take exception if access or possibly dirty bit is not set.
-      if ((pte & ad) != ad)
-        break;
-#endif
+
       // for superpage or Svnapot NAPOT mappings, make a fake leaf PTE for the TLB's benefit.
       reg_t vpn = addr >> PGSHIFT;
 

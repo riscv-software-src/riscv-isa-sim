@@ -1359,8 +1359,6 @@ Optional Features:
   --enable-stow           Enable stow-based install
   --enable-optional-subprojects
                           Enable all optional subprojects
-  --enable-dirty          Enable hardware management of PTE accessed and dirty
-                          bits
   --enable-dual-endian    Enable support for running target in either
                           endianness
 
@@ -6044,20 +6042,6 @@ _ACEOF
 
 else
   as_fn_error $? "libpthread is required" "$LINENO" 5
-fi
-
-
-# Check whether --enable-dirty was given.
-if test "${enable_dirty+set}" = set; then :
-  enableval=$enable_dirty;
-fi
-
-if test "x$enable_dirty" = "xyes"; then :
-
-
-$as_echo "#define RISCV_ENABLE_DIRTY /**/" >>confdefs.h
-
-
 fi
 
 # Check whether --enable-dual-endian was given.

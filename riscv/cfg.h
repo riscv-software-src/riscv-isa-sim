@@ -54,6 +54,7 @@ public:
         const char *default_varch,
         const bool default_misaligned,
         const endianness_t default_endianness,
+        const bool default_dirty_enabled,
         const reg_t default_pmpregions,
         const std::vector<mem_cfg_t> &default_mem_layout,
         const std::vector<int> default_hartids,
@@ -65,6 +66,7 @@ public:
       varch(default_varch),
       misaligned(default_misaligned),
       endianness(default_endianness),
+      dirty_enabled(default_dirty_enabled),
       pmpregions(default_pmpregions),
       mem_layout(default_mem_layout),
       hartids(default_hartids),
@@ -79,6 +81,7 @@ public:
   cfg_arg_t<const char *>            varch;
   bool                               misaligned;
   endianness_t                       endianness;
+  bool                               dirty_enabled;
   reg_t                              pmpregions;
   cfg_arg_t<std::vector<mem_cfg_t>>  mem_layout;
   std::optional<reg_t>               start_pc;
