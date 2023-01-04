@@ -143,9 +143,6 @@ public:
         load_slow_path_intrapage(addr, sizeof(T), (uint8_t*)&res, 0);
       }
 
-      if (unlikely(proc && proc->get_log_commits_enabled()))
-        proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, sizeof(T)));
-
       auto lhs = from_target(res);
       bool tlb_store_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn;
 
@@ -156,8 +153,10 @@ public:
         store_slow_path_intrapage(addr, sizeof(T), (const uint8_t*)&target_val, 0, true);
       }
 
-      if (unlikely(proc && proc->get_log_commits_enabled()))
+      if (unlikely(proc && proc->get_log_commits_enabled())) {
+        proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, sizeof(T)));
         proc->state.log_mem_write.push_back(std::make_tuple(addr, (T)f(lhs), sizeof(T)));
+      }
 
       if (unlikely(!tlb_load_hit))
         check_triggers(triggers::OPERATION_LOAD, addr, reg_from_bytes(sizeof(T), (uint8_t*)&res));
