@@ -54,6 +54,10 @@ void trigger_t::tdata3_write(processor_t * const proc, const reg_t val) noexcept
   sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) <= SSELECT_MAXVAL) ? get_field(val, CSR_TEXTRA_SSELECT(xlen)) : SSELECT_IGNORE);
 }
 
+bool trigger_t::common_match(processor_t * const proc) const noexcept {
+  return mode_match(proc->get_state()) && textra_match(proc);
+}
+
 bool trigger_t::mode_match(state_t * const state) const noexcept
 {
   switch (state->prv) {
@@ -190,8 +194,7 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
   if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
       (operation == triggers::OPERATION_STORE && !store) ||
       (operation == triggers::OPERATION_LOAD && !load) ||
-      !mode_match(proc->get_state()) ||
-      !textra_match(proc)) {
+      !common_match(proc)) {
     return std::nullopt;
   }
 
@@ -313,7 +316,7 @@ void itrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
 
 std::optional<match_result_t> trap_common_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
-  if (!mode_match(proc->get_state()) || !textra_match(proc))
+  if (!common_match(proc))
     return std::nullopt;
 
   auto xlen = proc->get_xlen();

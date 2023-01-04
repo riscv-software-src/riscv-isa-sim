@@ -86,6 +86,7 @@ public:
 
 protected:
   action_t legalize_action(reg_t val) const noexcept;
+  bool common_match(processor_t * const proc) const noexcept;
   bool mode_match(state_t * const state) const noexcept;
   bool textra_match(processor_t * const proc) const noexcept;
   reg_t tdata2;
