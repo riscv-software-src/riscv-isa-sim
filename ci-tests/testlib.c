@@ -23,6 +23,7 @@ int main()
             "vlen:128,elen:64",
             false,
             endianness_little,
+            false,
             16,
             mem_cfg,
             hartids,
