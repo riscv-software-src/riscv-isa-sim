@@ -17,16 +17,16 @@ int main()
   std::vector<mem_cfg_t> mem_cfg { mem_cfg_t(0x80000000, 0x10000000) };
   std::vector<int> hartids = {0};
   cfg_t cfg(std::make_pair(0, 0),
-	    nullptr,
-	    "rv64gcv",
-	    "MSU",
-	    "vlen:128,elen:64",
-	    false,
-	    endianness_little,
-	    16,
-	    mem_cfg,
-	    hartids,
-	    false);
+            nullptr,
+            "rv64gcv",
+            "MSU",
+            "vlen:128,elen:64",
+            false,
+            endianness_little,
+            16,
+            mem_cfg,
+            hartids,
+            false);
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
   std::vector<std::string> htif_args {"pk", "hello"};
   debug_module_config_t dm_config = {
@@ -42,14 +42,14 @@ int main()
   };
   std::vector<std::pair<reg_t, mem_t*>> mems = make_mems(cfg.mem_layout());
   sim_t sim(&cfg, false,
-	    mems,
-	    plugin_devices,
-	    htif_args,
-	    dm_config,
-	    nullptr,
-	    true,
-	    nullptr,
-	    false,
-	    nullptr);
+            mems,
+            plugin_devices,
+            htif_args,
+            dm_config,
+            nullptr,
+            true,
+            nullptr,
+            false,
+            nullptr);
   sim.run();
 }
