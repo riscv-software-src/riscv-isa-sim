@@ -83,11 +83,10 @@ public:
   virtual std::optional<match_result_t> detect_memory_access_match(processor_t UNUSED * const proc,
       operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) noexcept { return std::nullopt; }
   virtual std::optional<match_result_t> detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) noexcept { return std::nullopt; }
-  bool textra_match(processor_t * const proc) const noexcept;
 
 protected:
   action_t legalize_action(reg_t val) const noexcept;
-  bool mode_match(state_t * const state) const noexcept;
+  bool common_match(processor_t * const proc) const noexcept;
   reg_t tdata2;
 
   bool vs = false;
@@ -98,6 +97,8 @@ protected:
 
 private:
   unsigned legalize_mhselect(bool h_enabled) const noexcept;
+  bool mode_match(state_t * const state) const noexcept;
+  bool textra_match(processor_t * const proc) const noexcept;
 
   struct mhselect_interpretation {
     const unsigned mhselect;
@@ -145,37 +146,39 @@ private:
   bool dmode;
 };
 
-class itrigger_t : public trigger_t {
+class trap_common_t : public trigger_t {
 public:
-  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
-  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
-
   bool get_dmode() const override { return dmode; }
   virtual action_t get_action() const override { return action; }
 
   virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
 
 private:
+  virtual bool simple_match(bool interrupt, reg_t bit) const = 0;
+
+protected:
   bool dmode;
   bool hit;
-  bool nmi;
   action_t action;
 };
 
-class etrigger_t : public trigger_t {
+class itrigger_t : public trap_common_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
-  bool get_dmode() const override { return dmode; }
-  virtual action_t get_action() const override { return action; }
+private:
+  virtual bool simple_match(bool interrupt, reg_t bit) const override;
+  bool nmi;
+};
 
-  virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
+class etrigger_t : public trap_common_t {
+public:
+  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
 private:
-  bool dmode;
-  bool hit;
-  action_t action;
+  virtual bool simple_match(bool interrupt, reg_t bit) const override;
 };
 
 class mcontrol_common_t : public trigger_t {

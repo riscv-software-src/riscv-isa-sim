@@ -54,6 +54,10 @@ void trigger_t::tdata3_write(processor_t * const proc, const reg_t val) noexcept
   sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) <= SSELECT_MAXVAL) ? get_field(val, CSR_TEXTRA_SSELECT(xlen)) : SSELECT_IGNORE);
 }
 
+bool trigger_t::common_match(processor_t * const proc) const noexcept {
+  return mode_match(proc->get_state()) && textra_match(proc);
+}
+
 bool trigger_t::mode_match(state_t * const state) const noexcept
 {
   switch (state->prv) {
@@ -190,7 +194,7 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
   if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
       (operation == triggers::OPERATION_STORE && !store) ||
       (operation == triggers::OPERATION_LOAD && !load) ||
-      !mode_match(proc->get_state())) {
+      !common_match(proc)) {
     return std::nullopt;
   }
 
@@ -310,20 +314,25 @@ void itrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   action = legalize_action(get_field(val, CSR_ITRIGGER_ACTION));
 }
 
-std::optional<match_result_t> itrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
+std::optional<match_result_t> trap_common_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
-  if (!mode_match(proc->get_state()))
+  if (!common_match(proc))
     return std::nullopt;
 
   auto xlen = proc->get_xlen();
   bool interrupt = (t.cause() & ((reg_t)1 << (xlen - 1))) != 0;
   reg_t bit = t.cause() & ~((reg_t)1 << (xlen - 1));
   assert(bit < xlen);
-  if (interrupt && ((bit == 0 && nmi) || ((tdata2 >> bit) & 1))) { // Assume NMI's exception code is 0
+  if (simple_match(interrupt, bit)) {
     hit = true;
     return match_result_t(TIMING_AFTER, action);
   }
   return std::nullopt;
+}
+
+bool itrigger_t::simple_match(bool interrupt, reg_t bit) const
+{
+  return interrupt && ((bit == 0 && nmi) || ((tdata2 >> bit) & 1)); // Assume NMI's exception code is 0
 }
 
 reg_t etrigger_t::tdata1_read(const processor_t * const proc) const noexcept
@@ -356,20 +365,9 @@ void etrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   action = legalize_action(get_field(val, CSR_ETRIGGER_ACTION));
 }
 
-std::optional<match_result_t> etrigger_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
+bool etrigger_t::simple_match(bool interrupt, reg_t bit) const
 {
-  if (!mode_match(proc->get_state()))
-    return std::nullopt;
-
-  auto xlen = proc->get_xlen();
-  bool interrupt = (t.cause() & ((reg_t)1 << (xlen - 1))) != 0;
-  reg_t bit = t.cause() & ~((reg_t)1 << (xlen - 1));
-  assert(bit < xlen);
-  if (!interrupt && ((tdata2 >> bit) & 1)) {
-    hit = true;
-    return match_result_t(TIMING_AFTER, action);
-  }
-  return std::nullopt;
+  return !interrupt && ((tdata2 >> bit) & 1);
 }
 
 module_t::module_t(unsigned count) : triggers(count) {
@@ -483,7 +481,7 @@ std::optional<match_result_t> module_t::detect_memory_access_match(operation_t o
      * entire chain did not match. This is allowed by the spec, because the final
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
-    auto result = trigger->textra_match(proc) ? trigger->detect_memory_access_match(proc, operation, address, data) : std::nullopt;
+    auto result = trigger->detect_memory_access_match(proc, operation, address, data);
     if (result.has_value() && !trigger->get_chain())
       return result;
 
@@ -499,7 +497,7 @@ std::optional<match_result_t> module_t::detect_trap_match(const trap_t& t) noexc
     return std::nullopt;
 
   for (auto trigger: triggers) {
-    auto result = trigger->textra_match(proc) ? trigger->detect_trap_match(proc, t) : std::nullopt;
+    auto result = trigger->detect_trap_match(proc, t);
     if (result.has_value())
       return result;
   }
