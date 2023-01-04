@@ -149,6 +149,7 @@ class trap_common_t : public trigger_t {
 protected:
   bool dmode;
   bool hit;
+  action_t action;
 };
 
 class itrigger_t : public trap_common_t {
@@ -164,7 +165,6 @@ public:
 private:
   bool simple_match(bool interrupt, reg_t bit) const;
   bool nmi;
-  action_t action;
 };
 
 class etrigger_t : public trap_common_t {
@@ -179,7 +179,6 @@ public:
 
 private:
   bool simple_match(bool interrupt, reg_t bit) const;
-  action_t action;
 };
 
 class mcontrol_common_t : public trigger_t {
