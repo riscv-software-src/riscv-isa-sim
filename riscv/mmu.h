@@ -135,6 +135,7 @@ public:
       target_endian<T> res;
       reg_t vpn = addr >> PGSHIFT;
       bool tlb_load_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn;
+      bool tlb_store_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn;
 
       if (likely(tlb_load_hit)) {
         res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
@@ -144,7 +145,6 @@ public:
       }
 
       auto lhs = from_target(res);
-      bool tlb_store_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn;
 
       if (likely(tlb_store_hit)) {
         *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target((T)f(lhs));
