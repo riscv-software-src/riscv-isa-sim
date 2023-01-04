@@ -145,7 +145,10 @@ private:
   bool dmode;
 };
 
-class itrigger_t : public trigger_t {
+class trap_common_t : public trigger_t {
+};
+
+class itrigger_t : public trap_common_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
@@ -163,7 +166,7 @@ private:
   action_t action;
 };
 
-class etrigger_t : public trigger_t {
+class etrigger_t : public trap_common_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
