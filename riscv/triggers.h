@@ -150,6 +150,9 @@ public:
   bool get_dmode() const override { return dmode; }
   virtual action_t get_action() const override { return action; }
 
+private:
+  virtual bool simple_match(bool interrupt, reg_t bit) const = 0;
+
 protected:
   bool dmode;
   bool hit;
@@ -164,7 +167,7 @@ public:
   virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
 
 private:
-  bool simple_match(bool interrupt, reg_t bit) const;
+  virtual bool simple_match(bool interrupt, reg_t bit) const override;
   bool nmi;
 };
 
@@ -176,7 +179,7 @@ public:
   virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
 
 private:
-  bool simple_match(bool interrupt, reg_t bit) const;
+  virtual bool simple_match(bool interrupt, reg_t bit) const override;
 };
 
 class mcontrol_common_t : public trigger_t {
