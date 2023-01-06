@@ -158,7 +158,6 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   execute = get_field(val, MCONTROL_EXECUTE);
   store = get_field(val, MCONTROL_STORE);
   load = get_field(val, MCONTROL_LOAD);
-  // Assume we're here because of csrw.
 }
 
 bool mcontrol_common_t::simple_match(unsigned xlen, reg_t value) const {
