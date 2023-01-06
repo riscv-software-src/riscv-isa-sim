@@ -7,7 +7,7 @@ mkdir build
 cd build
 mkdir install
 CXXFLAGS="-Wnon-virtual-dtor" CFLAGS="-Werror -Wignored-qualifiers -Wunused-function -Wunused-parameter -Wunused-variable" $DIR/../configure --prefix=`pwd`/install
-make -j4
+make -j"$(nproc 2> /dev/null || sysctl -n hw.ncpu)"
 make install
 
 # check that help message prints without error
