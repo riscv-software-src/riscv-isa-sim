@@ -148,7 +148,7 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   dmode = get_field(val, CSR_MCONTROL_DMODE(xlen));
   hit = get_field(val, CSR_MCONTROL_HIT);
   select = get_field(val, MCONTROL_SELECT);
-  timing = get_field(val, MCONTROL_TIMING);
+  timing = legalize_timing(val, MCONTROL_TIMING, MCONTROL_EXECUTE);
   action = legalize_action(get_field(val, MCONTROL_ACTION));
   chain = allow_chain ? get_field(val, MCONTROL_CHAIN) : 0;
   match = legalize_match(get_field(val, MCONTROL_MATCH));
@@ -159,8 +159,6 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   store = get_field(val, MCONTROL_STORE);
   load = get_field(val, MCONTROL_LOAD);
   // Assume we're here because of csrw.
-  if (execute)
-    timing = 0;
 }
 
 bool mcontrol_common_t::simple_match(unsigned xlen, reg_t value) const {
@@ -238,6 +236,12 @@ mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val) const no
   }
 }
 
+bool mcontrol_common_t::legalize_timing(reg_t val, reg_t timing_mask, reg_t execute_mask) noexcept {
+  if (get_field(val, execute_mask))
+    return TIMING_BEFORE;
+  return get_field(val, timing_mask);
+}
+
 reg_t mcontrol6_t::tdata1_read(const processor_t * const proc) const noexcept {
   unsigned xlen = proc->get_const_xlen();
   reg_t tdata1 = 0;
@@ -268,7 +272,7 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   vu = get_field(val, CSR_MCONTROL6_VU);
   hit = get_field(val, CSR_MCONTROL6_HIT);
   select = get_field(val, CSR_MCONTROL6_SELECT);
-  timing = get_field(val, CSR_MCONTROL6_TIMING);
+  timing = legalize_timing(val, CSR_MCONTROL6_TIMING, CSR_MCONTROL6_EXECUTE);
   action = legalize_action(get_field(val, CSR_MCONTROL6_ACTION));
   chain = allow_chain ? get_field(val, CSR_MCONTROL6_CHAIN) : 0;
   match = legalize_match(get_field(val, CSR_MCONTROL6_MATCH));
@@ -278,8 +282,6 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   execute = get_field(val, CSR_MCONTROL6_EXECUTE);
   store = get_field(val, CSR_MCONTROL6_STORE);
   load = get_field(val, CSR_MCONTROL6_LOAD);
-  if (execute)
-    timing = 0;
 }
 
 reg_t itrigger_t::tdata1_read(const processor_t * const proc) const noexcept
