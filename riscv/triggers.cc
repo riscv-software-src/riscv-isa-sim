@@ -148,7 +148,7 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   dmode = get_field(val, CSR_MCONTROL_DMODE(xlen));
   hit = get_field(val, CSR_MCONTROL_HIT);
   select = get_field(val, MCONTROL_SELECT);
-  timing = legalize_timing(val, MCONTROL_TIMING, MCONTROL_EXECUTE);
+  timing = legalize_timing(val, MCONTROL_TIMING, MCONTROL_SELECT, MCONTROL_EXECUTE, MCONTROL_LOAD);
   action = legalize_action(get_field(val, MCONTROL_ACTION));
   chain = allow_chain ? get_field(val, MCONTROL_CHAIN) : 0;
   match = legalize_match(get_field(val, MCONTROL_MATCH));
@@ -235,7 +235,10 @@ mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val) const no
   }
 }
 
-bool mcontrol_common_t::legalize_timing(reg_t val, reg_t timing_mask, reg_t execute_mask) noexcept {
+bool mcontrol_common_t::legalize_timing(reg_t val, reg_t timing_mask, reg_t select_mask, reg_t execute_mask, reg_t load_mask) noexcept {
+  // For load data triggers, force timing=after to avoid debugger having to repeat loads which may have side effects.
+  if (get_field(val, select_mask) && get_field(val, load_mask))
+    return TIMING_AFTER;
   if (get_field(val, execute_mask))
     return TIMING_BEFORE;
   return get_field(val, timing_mask);
@@ -271,7 +274,7 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   vu = get_field(val, CSR_MCONTROL6_VU);
   hit = get_field(val, CSR_MCONTROL6_HIT);
   select = get_field(val, CSR_MCONTROL6_SELECT);
-  timing = legalize_timing(val, CSR_MCONTROL6_TIMING, CSR_MCONTROL6_EXECUTE);
+  timing = legalize_timing(val, CSR_MCONTROL6_TIMING, CSR_MCONTROL6_SELECT, CSR_MCONTROL6_EXECUTE, CSR_MCONTROL6_LOAD);
   action = legalize_action(get_field(val, CSR_MCONTROL6_ACTION));
   chain = allow_chain ? get_field(val, CSR_MCONTROL6_CHAIN) : 0;
   match = legalize_match(get_field(val, CSR_MCONTROL6_MATCH));

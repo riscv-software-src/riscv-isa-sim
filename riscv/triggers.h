@@ -208,7 +208,7 @@ private:
 
 protected:
   match_t legalize_match(reg_t val) const noexcept;
-  static bool legalize_timing(reg_t val, reg_t timing_mask, reg_t execute_mask) noexcept;
+  static bool legalize_timing(reg_t val, reg_t timing_mask, reg_t select_mask, reg_t execute_mask, reg_t load_mask) noexcept;
   bool dmode = false;
   action_t action = ACTION_DEBUG_EXCEPTION;
   bool hit = false;
