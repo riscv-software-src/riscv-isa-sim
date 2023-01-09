@@ -17,7 +17,11 @@ bool mem_cfg_t::check_if_supported(reg_t base, reg_t size)
   // ask that the page size is a multiple of the minimum page size, that the
   // page is aligned to the minimum page size, that the page is non-empty and
   // that the top address is still representable in a reg_t.
+  //
+  // Note: (base + size == 0) part of the assertion is to handle cases like
+  //   { base = 0xffff_ffff_ffff_f000, size: 0x1000 }
   return (size % PGSIZE == 0) &&
          (base % PGSIZE == 0) &&
-         (base + size > base);
+         (size > 0) &&
+         ((base + size > base) || (base + size == 0));
 }
