@@ -131,6 +131,18 @@ static bool check_mem_overlap(const mem_cfg_t& L, const mem_cfg_t& R)
   return std::max(L.get_base(), R.get_base()) <= std::min(L.get_inclusive_end(), R.get_inclusive_end());
 }
 
+static bool check_if_merge_covers_64bit_space(const mem_cfg_t& L,
+                                              const mem_cfg_t& R)
+{
+  if (!check_mem_overlap(L, R))
+    return false;
+
+  auto start = std::min(L.get_base(), R.get_base());
+  auto end = std::max(L.get_inclusive_end(), R.get_inclusive_end());
+
+  return (start == 0ull) && (end == std::numeric_limits<uint64_t>::max());
+}
+
 static mem_cfg_t merge_mem_regions(const mem_cfg_t& L, const mem_cfg_t& R)
 {
   // one can merge only intersecting regions
@@ -161,6 +173,18 @@ merge_overlapping_memory_regions(std::vector<mem_cfg_t> mems)
     if (!check_mem_overlap(merged_mem.back(), mem_int)) {
       merged_mem.push_back(mem_int);
       continue;
+    }
+    // there is a weird corner case preventing two memory regions from being
+    // merged: if the resulting size of a region is 2^64 bytes - currently,
+    // such regions are not representable by mem_cfg_t class (because the
+    // actual size field is effectively a 64 bit value)
+    // so we create two smaller memory regions that total for 2^64 bytes as
+    // a workaround
+    if (check_if_merge_covers_64bit_space(merged_mem.back(), mem_int)) {
+      merged_mem.clear();
+      merged_mem.push_back(mem_cfg_t(0ull, 0ull - PGSIZE));
+      merged_mem.push_back(mem_cfg_t(0ull - PGSIZE, PGSIZE));
+      break;
     }
     merged_mem.back() = merge_mem_regions(merged_mem.back(), mem_int);
   }
