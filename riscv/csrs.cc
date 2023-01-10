@@ -543,9 +543,10 @@ reg_t rv32_low_csr_t::written_value() const noexcept {
 }
 
 // implement class rv32_high_csr_t
-rv32_high_csr_t::rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig):
+rv32_high_csr_t::rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig, priv_mode_t prv):
   csr_t(proc, addr),
-  orig(orig) {
+  orig(orig),
+  prv(prv) {
 }
 
 reg_t rv32_high_csr_t::read() const noexcept {
@@ -553,6 +554,8 @@ reg_t rv32_high_csr_t::read() const noexcept {
 }
 
 void rv32_high_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->get_xlen(prv) != 32)
+    throw trap_illegal_instruction(insn.bits());
   orig->verify_permissions(insn, write);
 }
 

@@ -279,7 +279,7 @@ class rv32_low_csr_t: public csr_t {
 
 class rv32_high_csr_t: public csr_t {
  public:
-  rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig);
+  rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig, priv_mode_t prv);
   virtual reg_t read() const noexcept override;
   virtual void verify_permissions(insn_t insn, bool write) const override;
  protected:
@@ -287,6 +287,7 @@ class rv32_high_csr_t: public csr_t {
   virtual reg_t written_value() const noexcept override;
  private:
   csr_t_p orig;
+  priv_mode_t prv;
 };
 
 class sstatus_proxy_csr_t final: public base_status_csr_t {

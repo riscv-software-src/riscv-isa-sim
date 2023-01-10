@@ -199,7 +199,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   if (xlen == 32) {
     csrmap[CSR_MSTATUS] = std::make_shared<rv32_low_csr_t>(proc, CSR_MSTATUS, mstatus);
-    csrmap[CSR_MSTATUSH] = mstatush = std::make_shared<rv32_high_csr_t>(proc, CSR_MSTATUSH, mstatus);
+    csrmap[CSR_MSTATUSH] = mstatush = std::make_shared<rv32_high_csr_t>(proc, CSR_MSTATUSH, mstatus, (priv_mode_t){ PRV_M, false });
   } else {
     csrmap[CSR_MSTATUS] = mstatus;
   }
@@ -219,11 +219,11 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   if (xlen == 32) {
     csr_t_p minstreth, mcycleh;
     csrmap[CSR_MINSTRET] = std::make_shared<rv32_low_csr_t>(proc, CSR_MINSTRET, minstret);
-    csrmap[CSR_MINSTRETH] = minstreth = std::make_shared<rv32_high_csr_t>(proc, CSR_MINSTRETH, minstret);
+    csrmap[CSR_MINSTRETH] = minstreth = std::make_shared<rv32_high_csr_t>(proc, CSR_MINSTRETH, minstret, (priv_mode_t){ PRV_M, false });
     csrmap[CSR_MCYCLE] = std::make_shared<rv32_low_csr_t>(proc, CSR_MCYCLE, mcycle);
-    csrmap[CSR_MCYCLEH] = mcycleh = std::make_shared<rv32_high_csr_t>(proc, CSR_MCYCLEH, mcycle);
+    csrmap[CSR_MCYCLEH] = mcycleh = std::make_shared<rv32_high_csr_t>(proc, CSR_MCYCLEH, mcycle, (priv_mode_t){ PRV_M, false });
     if (proc->extension_enabled_const(EXT_ZICNTR)) {
-      auto timeh = std::make_shared<rv32_high_csr_t>(proc, CSR_TIMEH, time);
+      auto timeh = std::make_shared<rv32_high_csr_t>(proc, CSR_TIMEH, time, (priv_mode_t){ PRV_U, false });
       csrmap[CSR_INSTRETH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRETH, minstreth);
       csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, mcycleh);
       csrmap[CSR_TIMEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_TIMEH, timeh);
@@ -256,7 +256,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
         csrmap[which_counterh] = counterh;
       }
       if (proc->extension_enabled_const(EXT_SSCOFPMF)) {
-        auto meventh = std::make_shared<rv32_high_csr_t>(proc, which_meventh, mevent[i - 3]);
+        auto meventh = std::make_shared<rv32_high_csr_t>(proc, which_meventh, mevent[i - 3], (priv_mode_t){ PRV_M, false });
         csrmap[which_meventh] = meventh;
       }
     } else {
@@ -371,7 +371,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   htimedelta = std::make_shared<basic_csr_t>(proc, CSR_HTIMEDELTA, 0);
   if (xlen == 32) {
     csrmap[CSR_HTIMEDELTA] = std::make_shared<rv32_low_csr_t>(proc, CSR_HTIMEDELTA, htimedelta);
-    csrmap[CSR_HTIMEDELTAH] = std::make_shared<rv32_high_csr_t>(proc, CSR_HTIMEDELTAH, htimedelta);
+    csrmap[CSR_HTIMEDELTAH] = std::make_shared<rv32_high_csr_t>(proc, CSR_HTIMEDELTAH, htimedelta, (priv_mode_t){ PRV_S, false });
   } else {
     csrmap[CSR_HTIMEDELTA] = htimedelta;
   }
@@ -432,7 +432,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     menvcfg = std::make_shared<masked_csr_t>(proc, CSR_MENVCFG, menvcfg_mask, menvcfg_init);
     if (xlen == 32) {
       csrmap[CSR_MENVCFG] = std::make_shared<rv32_low_csr_t>(proc, CSR_MENVCFG, menvcfg);
-      csrmap[CSR_MENVCFGH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MENVCFGH, menvcfg);
+      csrmap[CSR_MENVCFGH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MENVCFGH, menvcfg, (priv_mode_t){ PRV_M, false });
     } else {
       csrmap[CSR_MENVCFG] = menvcfg;
     }
@@ -447,7 +447,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     henvcfg = std::make_shared<henvcfg_csr_t>(proc, CSR_HENVCFG, henvcfg_mask, henvcfg_init, menvcfg);
     if (xlen == 32) {
       csrmap[CSR_HENVCFG] = std::make_shared<rv32_low_csr_t>(proc, CSR_HENVCFG, henvcfg);
-      csrmap[CSR_HENVCFGH] = std::make_shared<rv32_high_csr_t>(proc, CSR_HENVCFGH, henvcfg);
+      csrmap[CSR_HENVCFGH] = std::make_shared<rv32_high_csr_t>(proc, CSR_HENVCFGH, henvcfg, (priv_mode_t){ PRV_S, false });
     } else {
       csrmap[CSR_HENVCFG] = henvcfg;
     }
@@ -463,7 +463,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       mstateen[i] = std::make_shared<masked_csr_t>(proc, CSR_MSTATEEN0 + i, mstateen_mask, 0);
       if (xlen == 32) {
         csrmap[CSR_MSTATEEN0 + i] = std::make_shared<rv32_low_csr_t>(proc, CSR_MSTATEEN0 + i, mstateen[i]);
-        csrmap[CSR_MSTATEEN0H + i] = std::make_shared<rv32_high_csr_t>(proc, CSR_MSTATEEN0H + i, mstateen[i]);
+        csrmap[CSR_MSTATEEN0H + i] = std::make_shared<rv32_high_csr_t>(proc, CSR_MSTATEEN0H + i, mstateen[i], (priv_mode_t){ PRV_M, false });
       } else {
         csrmap[CSR_MSTATEEN0 + i] = mstateen[i];
       }
@@ -472,7 +472,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       hstateen[i] = std::make_shared<hstateen_csr_t>(proc, CSR_HSTATEEN0 + i, hstateen_mask, 0, i);
       if (xlen == 32) {
         csrmap[CSR_HSTATEEN0 + i] = std::make_shared<rv32_low_csr_t>(proc, CSR_HSTATEEN0 + i, hstateen[i]);
-        csrmap[CSR_HSTATEEN0H + i] = std::make_shared<rv32_high_csr_t>(proc, CSR_HSTATEEN0H + i, hstateen[i]);
+        csrmap[CSR_HSTATEEN0H + i] = std::make_shared<rv32_high_csr_t>(proc, CSR_HSTATEEN0H + i, hstateen[i], (priv_mode_t){ PRV_S, false });
       } else {
         csrmap[CSR_HSTATEEN0 + i] = hstateen[i];
       }
@@ -488,9 +488,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     auto virtualized_stimecmp = std::make_shared<virtualized_stimecmp_csr_t>(proc, stimecmp, vstimecmp);
     if (xlen == 32) {
       csrmap[CSR_STIMECMP] = std::make_shared<rv32_low_csr_t>(proc, CSR_STIMECMP, virtualized_stimecmp);
-      csrmap[CSR_STIMECMPH] = std::make_shared<rv32_high_csr_t>(proc, CSR_STIMECMPH, virtualized_stimecmp);
+      csrmap[CSR_STIMECMPH] = std::make_shared<rv32_high_csr_t>(proc, CSR_STIMECMPH, virtualized_stimecmp, (priv_mode_t){ PRV_S, false });
       csrmap[CSR_VSTIMECMP] = std::make_shared<rv32_low_csr_t>(proc, CSR_VSTIMECMP, vstimecmp);
-      csrmap[CSR_VSTIMECMPH] = std::make_shared<rv32_high_csr_t>(proc, CSR_VSTIMECMPH, vstimecmp);
+      csrmap[CSR_VSTIMECMPH] = std::make_shared<rv32_high_csr_t>(proc, CSR_VSTIMECMPH, vstimecmp, (priv_mode_t){ PRV_S, true });
     } else {
       csrmap[CSR_STIMECMP] = virtualized_stimecmp;
       csrmap[CSR_VSTIMECMP] = vstimecmp;
