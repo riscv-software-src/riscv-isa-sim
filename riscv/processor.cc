@@ -406,7 +406,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   for (int i = 0; i < max_pmp; ++i) {
     csrmap[CSR_PMPADDR0 + i] = pmpaddr[i] = std::make_shared<pmpaddr_csr_t>(proc, CSR_PMPADDR0 + i);
   }
-  for (int i = 0; i < max_pmp; i += xlen / 8) {
+  for (int i = 0; i < max_pmp; i += 4) {
     reg_t addr = CSR_PMPCFG0 + i / 4;
     csrmap[addr] = std::make_shared<pmpcfg_csr_t>(proc, addr);
   }

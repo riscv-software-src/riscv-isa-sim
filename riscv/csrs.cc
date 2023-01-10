@@ -225,6 +225,9 @@ void pmpcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
   // n_pmp can change after reset() is run.
   if (proc->n_pmp == 0)
     throw trap_illegal_instruction(insn.bits());
+
+  if ((address & 1) && proc->get_xlen((priv_mode_t){ PRV_M, false }) != 32)
+    throw trap_illegal_instruction(insn.bits());
 }
 
 reg_t pmpcfg_csr_t::read() const noexcept {
