@@ -1073,6 +1073,18 @@ bool mevent_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
 }
 
+rv32_counter_proxy_csr_t::rv32_counter_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate,
+                                                   priv_mode_t prv):
+  counter_proxy_csr_t(proc, addr, delegate),
+  prv(prv) {
+}
+
+void rv32_counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->get_xlen(prv) != 32)
+    throw trap_virtual_instruction(insn.bits());
+  counter_proxy_csr_t::verify_permissions(insn, write);
+}
+
 hypervisor_csr_t::hypervisor_csr_t(processor_t* const proc, const reg_t addr):
   basic_csr_t(proc, addr, 0) {
 }

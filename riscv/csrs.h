@@ -577,6 +577,14 @@ class mevent_csr_t: public basic_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
+class rv32_counter_proxy_csr_t: public counter_proxy_csr_t {
+ public:
+  rv32_counter_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate, priv_mode_t prv);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+ private:
+  priv_mode_t prv;
+};
+
 // For machine-level CSRs that only exist with Hypervisor
 class hypervisor_csr_t: public basic_csr_t {
  public:

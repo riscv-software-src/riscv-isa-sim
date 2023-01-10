@@ -224,9 +224,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     csrmap[CSR_MCYCLEH] = mcycleh = std::make_shared<rv32_high_csr_t>(proc, CSR_MCYCLEH, mcycle, (priv_mode_t){ PRV_M, false });
     if (proc->extension_enabled_const(EXT_ZICNTR)) {
       auto timeh = std::make_shared<rv32_high_csr_t>(proc, CSR_TIMEH, time, (priv_mode_t){ PRV_U, false });
-      csrmap[CSR_INSTRETH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRETH, minstreth);
-      csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, mcycleh);
-      csrmap[CSR_TIMEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_TIMEH, timeh);
+      csrmap[CSR_INSTRETH] = std::make_shared<rv32_counter_proxy_csr_t>(proc, CSR_INSTRETH, minstreth, (priv_mode_t){ PRV_U, false });
+      csrmap[CSR_CYCLEH] = std::make_shared<rv32_counter_proxy_csr_t>(proc, CSR_CYCLEH, mcycleh, (priv_mode_t){ PRV_U, false });
+      csrmap[CSR_TIMEH] = std::make_shared<rv32_counter_proxy_csr_t>(proc, CSR_TIMEH, timeh, (priv_mode_t){ PRV_U, false });
     }
   } else {
     csrmap[CSR_MINSTRET] = minstret;
@@ -252,7 +252,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       auto mcounterh = std::make_shared<const_csr_t>(proc, which_mcounterh, 0);
       csrmap[which_mcounterh] = mcounterh;
       if (proc->extension_enabled_const(EXT_ZICNTR) && proc->extension_enabled_const(EXT_ZIHPM)) {
-        auto counterh = std::make_shared<counter_proxy_csr_t>(proc, which_counterh, mcounterh);
+        auto counterh = std::make_shared<rv32_counter_proxy_csr_t>(proc, which_counterh, mcounterh, (priv_mode_t){ PRV_U, false });
         csrmap[which_counterh] = counterh;
       }
       if (proc->extension_enabled_const(EXT_SSCOFPMF)) {
