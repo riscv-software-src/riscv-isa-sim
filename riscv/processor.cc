@@ -338,7 +338,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_VSTVEC] = vstvec = std::make_shared<tvec_csr_t>(proc, CSR_VSTVEC);
   csrmap[CSR_STVEC] = stvec = std::make_shared<virtualized_csr_t>(proc, nonvirtual_stvec, vstvec);
   auto nonvirtual_satp = std::make_shared<satp_csr_t>(proc, CSR_SATP);
-  csrmap[CSR_VSATP] = vsatp = std::make_shared<base_atp_csr_t>(proc, CSR_VSATP);
+  csrmap[CSR_VSATP] = vsatp = std::make_shared<base_atp_csr_t>(proc, CSR_VSATP, (priv_mode_t){ PRV_S, true });
   csrmap[CSR_SATP] = satp = std::make_shared<virtualized_satp_csr_t>(proc, nonvirtual_satp, vsatp);
   auto nonvirtual_scause = std::make_shared<cause_csr_t>(proc, CSR_SCAUSE, (priv_mode_t){ PRV_S, false });
   csrmap[CSR_VSCAUSE] = vscause = std::make_shared<cause_csr_t>(proc, CSR_VSCAUSE, (priv_mode_t){ PRV_S, true });

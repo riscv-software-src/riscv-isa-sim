@@ -872,8 +872,9 @@ henvcfg_csr_t::henvcfg_csr_t(processor_t* const proc, const reg_t addr, const re
 }
 
 // implement class base_atp_csr_t and family
-base_atp_csr_t::base_atp_csr_t(processor_t* const proc, const reg_t addr):
-  basic_csr_t(proc, addr, 0) {
+base_atp_csr_t::base_atp_csr_t(processor_t* const proc, const reg_t addr, priv_mode_t prv):
+  basic_csr_t(proc, addr, 0),
+  prv(prv) {
 }
 
 bool base_atp_csr_t::unlogged_write(const reg_t val) noexcept {
@@ -884,7 +885,7 @@ bool base_atp_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 bool base_atp_csr_t::satp_valid(reg_t val) const noexcept {
-  if (proc->get_xlen() == 32) {
+  if (proc->get_xlen(prv) == 32) {
     switch (get_field(val, SATP32_MODE)) {
       case SATP_MODE_SV32: return proc->supports_impl(IMPL_MMU_SV32);
       case SATP_MODE_OFF: return true;
@@ -915,7 +916,7 @@ reg_t base_atp_csr_t::compute_new_satp(reg_t val) const noexcept {
 }
 
 satp_csr_t::satp_csr_t(processor_t* const proc, const reg_t addr):
-  base_atp_csr_t(proc, addr) {
+  base_atp_csr_t(proc, addr, (priv_mode_t){ PRV_S, false }) {
 }
 
 void satp_csr_t::verify_permissions(insn_t insn, bool write) const {

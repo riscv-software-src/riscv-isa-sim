@@ -478,12 +478,13 @@ class henvcfg_csr_t final: public masked_csr_t {
 // These are three classes in order to handle the [V]TVM bits permission checks
 class base_atp_csr_t: public basic_csr_t {
  public:
-  base_atp_csr_t(processor_t* const proc, const reg_t addr);
+  base_atp_csr_t(processor_t* const proc, const reg_t addr, priv_mode_t prv);
   bool satp_valid(reg_t val) const noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
   reg_t compute_new_satp(reg_t val) const noexcept;
+  priv_mode_t prv;
 };
 
 class satp_csr_t: public base_atp_csr_t {
