@@ -41,6 +41,19 @@ public:
 
   mem_cfg_t(reg_t base, reg_t size);
 
+  reg_t get_base() const {
+    return base;
+  }
+
+  reg_t get_size() const {
+    return size;
+  }
+
+  reg_t get_inclusive_end() const {
+    return base + size - 1;
+  }
+
+private:
   reg_t base;
   reg_t size;
 };

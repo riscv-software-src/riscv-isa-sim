@@ -120,18 +120,27 @@ static void read_file_bytes(const char *filename,size_t fileoff,
 
 bool sort_mem_region(const mem_cfg_t &a, const mem_cfg_t &b)
 {
-  if (a.base == b.base)
-    return (a.size < b.size);
+  if (a.get_base() == b.get_base())
+    return (a.get_size() < b.get_size());
   else
-    return (a.base < b.base);
+    return (a.get_base() < b.get_base());
 }
 
 static bool check_mem_overlap(const mem_cfg_t& L, const mem_cfg_t& R)
 {
-  const reg_t L_end   = L.base + L.size - 1;
-  const reg_t R_end   = R.base + R.size - 1;
+  return std::max(L.get_base(), R.get_base()) <= std::min(L.get_inclusive_end(), R.get_inclusive_end());
+}
 
-  return std::max(L.base, R.base) <= std::min(L_end, R_end);
+static bool check_if_merge_covers_64bit_space(const mem_cfg_t& L,
+                                              const mem_cfg_t& R)
+{
+  if (!check_mem_overlap(L, R))
+    return false;
+
+  auto start = std::min(L.get_base(), R.get_base());
+  auto end = std::max(L.get_inclusive_end(), R.get_inclusive_end());
+
+  return (start == 0ull) && (end == std::numeric_limits<uint64_t>::max());
 }
 
 static mem_cfg_t merge_mem_regions(const mem_cfg_t& L, const mem_cfg_t& R)
@@ -139,9 +148,9 @@ static mem_cfg_t merge_mem_regions(const mem_cfg_t& L, const mem_cfg_t& R)
   // one can merge only intersecting regions
   assert(check_mem_overlap(L, R));
 
-  const reg_t merged_base = std::min(L.base, R.base);
-  const reg_t merged_end_incl = std::max(L.base + L.size - 1, R.base + R.size - 1);
-  const reg_t merged_size = merged_end_incl - merged_base + 1;
+  const auto merged_base = std::min(L.get_base(), R.get_base());
+  const auto merged_end_incl = std::max(L.get_inclusive_end(), R.get_inclusive_end());
+  const auto merged_size = merged_end_incl - merged_base + 1;
 
   return mem_cfg_t(merged_base, merged_size);
 }
@@ -164,6 +173,18 @@ merge_overlapping_memory_regions(std::vector<mem_cfg_t> mems)
     if (!check_mem_overlap(merged_mem.back(), mem_int)) {
       merged_mem.push_back(mem_int);
       continue;
+    }
+    // there is a weird corner case preventing two memory regions from being
+    // merged: if the resulting size of a region is 2^64 bytes - currently,
+    // such regions are not representable by mem_cfg_t class (because the
+    // actual size field is effectively a 64 bit value)
+    // so we create two smaller memory regions that total for 2^64 bytes as
+    // a workaround
+    if (check_if_merge_covers_64bit_space(merged_mem.back(), mem_int)) {
+      merged_mem.clear();
+      merged_mem.push_back(mem_cfg_t(0ull, 0ull - PGSIZE));
+      merged_mem.push_back(mem_cfg_t(0ull - PGSIZE, PGSIZE));
+      break;
     }
     merged_mem.back() = merge_mem_regions(merged_mem.back(), mem_int);
   }
@@ -216,15 +237,14 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
     const unsigned long long max_allowed_pa = (1ull << MAX_PADDR_BITS) - 1ull;
     assert(max_allowed_pa <= std::numeric_limits<reg_t>::max());
     mem_cfg_t mem_region(base, size);
-    auto last_pa_region = mem_region.base + mem_region.size - 1;
-    if (last_pa_region > max_allowed_pa) {
-      int bits_required = 64 - clz(last_pa_region);
+    if (mem_region.get_inclusive_end() > max_allowed_pa) {
+      int bits_required = 64 - clz(mem_region.get_inclusive_end());
       fprintf(stderr, "Unsupported memory region "
                       "{base = 0x%" PRIX64 ", size = 0x%" PRIX64 "} specified,"
                       " which requires %d bits of physical address\n"
                       "    The largest accessible physical address "
                       "is 0x%llX (defined by MAX_PADDR_BITS constant, which is %d)\n",
-              mem_region.base, mem_region.size, bits_required,
+              mem_region.get_base(), mem_region.get_size(), bits_required,
               max_allowed_pa, MAX_PADDR_BITS);
       exit(EXIT_FAILURE);
     }
@@ -249,7 +269,7 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const std::vector<mem_cfg
   std::vector<std::pair<reg_t, mem_t*>> mems;
   mems.reserve(layout.size());
   for (const auto &cfg : layout) {
-    mems.push_back(std::make_pair(cfg.base, new mem_t(cfg.size)));
+    mems.push_back(std::make_pair(cfg.get_base(), new mem_t(cfg.get_size())));
   }
   return mems;
 }
