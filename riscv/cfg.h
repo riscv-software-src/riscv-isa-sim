@@ -71,7 +71,8 @@ public:
         const reg_t default_pmpregions,
         const std::vector<mem_cfg_t> &default_mem_layout,
         const std::vector<int> default_hartids,
-        bool default_real_time_clint)
+        bool default_real_time_clint,
+        const reg_t default_trigger_count)
     : initrd_bounds(default_initrd_bounds),
       bootargs(default_bootargs),
       isa(default_isa),
@@ -84,7 +85,8 @@ public:
       mem_layout(default_mem_layout),
       hartids(default_hartids),
       explicit_hartids(false),
-      real_time_clint(default_real_time_clint)
+      real_time_clint(default_real_time_clint),
+      trigger_count(default_trigger_count)
   {}
 
   cfg_arg_t<std::pair<reg_t, reg_t>> initrd_bounds;
@@ -101,6 +103,7 @@ public:
   cfg_arg_t<std::vector<int>>        hartids;
   bool                               explicit_hartids;
   cfg_arg_t<bool>                    real_time_clint;
+  reg_t                              trigger_count;
 
   size_t nprocs() const { return hartids().size(); }
 };

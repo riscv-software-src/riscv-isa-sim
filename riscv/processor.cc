@@ -35,7 +35,7 @@ processor_t::processor_t(const isa_parser_t *isa, const cfg_t *cfg,
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), sout_(sout_.rdbuf()), halt_on_reset(halt_on_reset),
   in_wfi(false),
-  impl_table(256, false), last_pc(1), executions(1), TM(4)
+  impl_table(256, false), last_pc(1), executions(1), TM(cfg->trigger_count)
 {
   VU.p = this;
   TM.proc = this;
