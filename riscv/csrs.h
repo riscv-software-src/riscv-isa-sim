@@ -200,9 +200,11 @@ class tvec_csr_t: public csr_t {
 // For mcause, scause, and vscause
 class cause_csr_t: public basic_csr_t {
  public:
-  cause_csr_t(processor_t* const proc, const reg_t addr);
+  cause_csr_t(processor_t* const proc, const reg_t addr, priv_mode_t prv);
 
   virtual reg_t read() const noexcept override;
+ private:
+  priv_mode_t prv;
 };
 
 // For *status family of CSRs

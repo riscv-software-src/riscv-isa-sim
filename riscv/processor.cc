@@ -207,7 +207,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MTVAL] = mtval = std::make_shared<basic_csr_t>(proc, CSR_MTVAL, 0);
   csrmap[CSR_MSCRATCH] = std::make_shared<basic_csr_t>(proc, CSR_MSCRATCH, 0);
   csrmap[CSR_MTVEC] = mtvec = std::make_shared<tvec_csr_t>(proc, CSR_MTVEC);
-  csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE);
+  csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE, (priv_mode_t){ PRV_M, false });
   minstret = std::make_shared<wide_counter_csr_t>(proc, CSR_MINSTRET);
   mcycle = std::make_shared<wide_counter_csr_t>(proc, CSR_MCYCLE);
   time = std::make_shared<time_counter_csr_t>(proc, CSR_TIME);
@@ -340,8 +340,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   auto nonvirtual_satp = std::make_shared<satp_csr_t>(proc, CSR_SATP);
   csrmap[CSR_VSATP] = vsatp = std::make_shared<base_atp_csr_t>(proc, CSR_VSATP);
   csrmap[CSR_SATP] = satp = std::make_shared<virtualized_satp_csr_t>(proc, nonvirtual_satp, vsatp);
-  auto nonvirtual_scause = std::make_shared<cause_csr_t>(proc, CSR_SCAUSE);
-  csrmap[CSR_VSCAUSE] = vscause = std::make_shared<cause_csr_t>(proc, CSR_VSCAUSE);
+  auto nonvirtual_scause = std::make_shared<cause_csr_t>(proc, CSR_SCAUSE, (priv_mode_t){ PRV_S, false });
+  csrmap[CSR_VSCAUSE] = vscause = std::make_shared<cause_csr_t>(proc, CSR_VSCAUSE, (priv_mode_t){ PRV_S, true });
   csrmap[CSR_SCAUSE] = scause = std::make_shared<virtualized_csr_t>(proc, nonvirtual_scause, vscause);
   csrmap[CSR_MTVAL2] = mtval2 = std::make_shared<hypervisor_csr_t>(proc, CSR_MTVAL2);
   csrmap[CSR_MTINST] = mtinst = std::make_shared<hypervisor_csr_t>(proc, CSR_MTINST);

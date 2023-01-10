@@ -380,8 +380,9 @@ bool tvec_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 // implement class cause_csr_t
-cause_csr_t::cause_csr_t(processor_t* const proc, const reg_t addr):
-  basic_csr_t(proc, addr, 0) {
+cause_csr_t::cause_csr_t(processor_t* const proc, const reg_t addr, priv_mode_t prv):
+  basic_csr_t(proc, addr, 0),
+  prv(prv) {
 }
 
 reg_t cause_csr_t::read() const noexcept {
