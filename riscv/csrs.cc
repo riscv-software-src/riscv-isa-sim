@@ -542,6 +542,32 @@ reg_t rv32_low_csr_t::written_value() const noexcept {
   return orig->written_value() & 0xffffffffU;
 }
 
+// implement class rv64_rv32_low_csr_t
+rv64_rv32_low_csr_t::rv64_rv32_low_csr_t(processor_t* const proc, const reg_t addr,
+                                         csr_t_p orig, priv_mode_t prv):
+  csr_t(proc, addr),
+  orig(orig),
+  low_half(std::make_shared<rv32_low_csr_t>(proc, addr, orig)),
+  prv(prv) {
+};
+
+reg_t rv64_rv32_low_csr_t::read() const noexcept {
+  unsigned xlen = proc->get_xlen(prv);
+  return xlen == 32 ? low_half->read() : orig->read();
+}
+
+void rv64_rv32_low_csr_t::verify_permissions(insn_t insn, bool write) const {
+  orig->verify_permissions(insn, write);
+}
+
+bool rv64_rv32_low_csr_t::unlogged_write(const reg_t val) noexcept {
+  unsigned xlen = proc->get_xlen(prv);
+  if (xlen == 32)
+    return low_half->unlogged_write(val);
+  else
+    return orig->unlogged_write(val);
+}
+
 // implement class rv32_high_csr_t
 rv32_high_csr_t::rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig, priv_mode_t prv):
   csr_t(proc, addr),

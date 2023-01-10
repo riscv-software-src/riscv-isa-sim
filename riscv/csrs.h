@@ -64,6 +64,7 @@ class csr_t {
   // For access to written_value() and unlogged_write():
   friend class rv32_high_csr_t;
   friend class rv32_low_csr_t;
+  friend class rv64_rv32_low_csr_t;
 };
 
 typedef std::shared_ptr<csr_t> csr_t_p;
@@ -287,6 +288,22 @@ class rv32_high_csr_t: public csr_t {
   virtual reg_t written_value() const noexcept override;
  private:
   csr_t_p orig;
+  priv_mode_t prv;
+};
+
+class rv64_rv32_low_csr_t: public csr_t {
+ public:
+  rv64_rv32_low_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig, priv_mode_t prv);
+
+  virtual reg_t read() const noexcept override;
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+
+ private:
+  csr_t_p orig;
+  csr_t_p low_half;
   priv_mode_t prv;
 };
 
