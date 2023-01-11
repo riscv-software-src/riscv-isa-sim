@@ -25,7 +25,9 @@ jobs:
       - name: Install Dependencies
         run: sudo xargs apt-get install -y < .github/workflows/apt-packages.txt
 
-      - run: ci-tests/test-spike
+      - run: |
+          ci-tests/build-spike
+          ci-tests/test-spike
 
   test-macos:
     name: Test Spike build (MacOS)
@@ -36,4 +38,6 @@ jobs:
       - name: Install Dependencies
         run: xargs brew install < .github/workflows/brew-packages.txt
 
-      - run: ci-tests/test-spike
+      - run: |
+          ci-tests/build-spike
+          ci-tests/test-spike
