@@ -148,6 +148,9 @@ class ns16550_t : public abstract_device_t {
   void update_interrupt(void);
   uint8_t rx_byte(void);
   void tx_byte(uint8_t val);
+
+  int backoff_counter;
+  static const int MAX_BACKOFF = 16;
 };
 
 class mmio_plugin_device_t : public abstract_device_t {
