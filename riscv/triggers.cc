@@ -221,7 +221,7 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
   return std::nullopt;
 }
 
-mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val) const noexcept
+mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val) noexcept
 {
   switch (val) {
     case MATCH_EQUAL:
