@@ -390,11 +390,17 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_DCSR] = dcsr = std::make_shared<dcsr_csr_t>(proc, CSR_DCSR);
 
   csrmap[CSR_TSELECT] = tselect = std::make_shared<tselect_csr_t>(proc, CSR_TSELECT);
-
-  csrmap[CSR_TDATA1] = std::make_shared<tdata1_csr_t>(proc, CSR_TDATA1);
-  csrmap[CSR_TDATA2] = tdata2 = std::make_shared<tdata2_csr_t>(proc, CSR_TDATA2);
-  csrmap[CSR_TDATA3] = std::make_shared<tdata3_csr_t>(proc, CSR_TDATA3);
-  csrmap[CSR_TINFO] = std::make_shared<tinfo_csr_t>(proc, CSR_TINFO);
+  if (proc->get_cfg().trigger_count > 0) {
+    csrmap[CSR_TDATA1] = std::make_shared<tdata1_csr_t>(proc, CSR_TDATA1);
+    csrmap[CSR_TDATA2] = tdata2 = std::make_shared<tdata2_csr_t>(proc, CSR_TDATA2);
+    csrmap[CSR_TDATA3] = std::make_shared<tdata3_csr_t>(proc, CSR_TDATA3);
+    csrmap[CSR_TINFO] = std::make_shared<tinfo_csr_t>(proc, CSR_TINFO);
+  } else {
+    csrmap[CSR_TDATA1] = std::make_shared<const_csr_t>(proc, CSR_TDATA1, 0);
+    csrmap[CSR_TDATA2] = tdata2 = std::make_shared<const_csr_t>(proc, CSR_TDATA2, 0);
+    csrmap[CSR_TDATA3] = std::make_shared<const_csr_t>(proc, CSR_TDATA3, 0);
+    csrmap[CSR_TINFO] = std::make_shared<const_csr_t>(proc, CSR_TINFO, 0);
+  }
   unsigned scontext_length = (xlen == 32 ? 16 : 34); // debug spec suggests 16-bit for RV32 and 34-bit for RV64
   csrmap[CSR_SCONTEXT] = scontext = std::make_shared<masked_csr_t>(proc, CSR_SCONTEXT, (reg_t(1) << scontext_length) - 1, 0);
   unsigned hcontext_length = (xlen == 32 ? 6 : 13) + (proc->extension_enabled('H') ? 1 : 0); // debug spec suggest 7-bit (6-bit) for RV32 and 14-bit (13-bit) for RV64 with (without) H extension
