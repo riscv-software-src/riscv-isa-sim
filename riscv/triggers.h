@@ -233,6 +233,22 @@ public:
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 };
 
+class icount_t : public trigger_t {
+public:
+  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
+
+  bool get_dmode() const override { return dmode; }
+  virtual action_t get_action() const override { return action; }
+
+private:
+  bool dmode;
+  bool hit;
+  unsigned count;
+  bool pending;
+  action_t action;
+};
+
 class module_t {
 public:
   module_t(unsigned count);

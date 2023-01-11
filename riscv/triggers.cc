@@ -287,6 +287,40 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   load = get_field(val, CSR_MCONTROL6_LOAD);
 }
 
+reg_t icount_t::tdata1_read(const processor_t * const proc) const noexcept
+{
+  auto xlen = proc->get_xlen();
+  reg_t tdata1 = 0;
+  tdata1 = set_field(tdata1, CSR_ICOUNT_TYPE(xlen), CSR_TDATA1_TYPE_ICOUNT);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_DMODE(xlen), dmode);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_VS, proc->extension_enabled('H') ? vs : 0);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_VU, proc->extension_enabled('H') ? vu : 0);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_HIT, hit);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_COUNT, count);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_M, m);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_PENDING, pending);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_S, s);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_U, u);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_ACTION, action);
+  return tdata1;
+}
+
+void icount_t::tdata1_write(processor_t * const proc, const reg_t val, const bool UNUSED allow_chain) noexcept
+{
+  auto xlen = proc->get_xlen();
+  assert(get_field(val, CSR_ICOUNT_TYPE(xlen)) == CSR_TDATA1_TYPE_ICOUNT);
+  dmode = proc->get_state()->debug_mode ? get_field(val, CSR_ICOUNT_DMODE(xlen)) : 0;
+  vs = get_field(val, CSR_ICOUNT_VS);
+  vu = get_field(val, CSR_ICOUNT_VU);
+  hit = get_field(val, CSR_ICOUNT_HIT);
+  count = get_field(val, CSR_ICOUNT_COUNT);
+  m = get_field(val, CSR_ICOUNT_M);
+  pending = get_field(val, CSR_ICOUNT_PENDING);
+  s = proc->extension_enabled_const('S') ? get_field(val, CSR_ICOUNT_S) : 0;
+  u = proc->extension_enabled_const('U') ? get_field(val, CSR_ICOUNT_U) : 0;
+  action = legalize_action(val, CSR_ICOUNT_ACTION, CSR_ICOUNT_DMODE(xlen));
+}
+
 reg_t itrigger_t::tdata1_read(const processor_t * const proc) const noexcept
 {
   auto xlen = proc->get_xlen();
@@ -423,6 +457,7 @@ bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
   delete triggers[index];
   switch (type) {
     case CSR_TDATA1_TYPE_MCONTROL: triggers[index] = new mcontrol_t(); break;
+    case CSR_TDATA1_TYPE_ICOUNT: triggers[index] = new icount_t(); break;
     case CSR_TDATA1_TYPE_ITRIGGER: triggers[index] = new itrigger_t(); break;
     case CSR_TDATA1_TYPE_ETRIGGER: triggers[index] = new etrigger_t(); break;
     case CSR_TDATA1_TYPE_MCONTROL6: triggers[index] = new mcontrol6_t(); break;
@@ -515,6 +550,7 @@ reg_t module_t::tinfo_read(unsigned UNUSED index) const noexcept
 {
   /* In spike, every trigger supports the same types. */
   return (1 << CSR_TDATA1_TYPE_MCONTROL) |
+         (1 << CSR_TDATA1_TYPE_ICOUNT) |
          (1 << CSR_TDATA1_TYPE_ITRIGGER) |
          (1 << CSR_TDATA1_TYPE_ETRIGGER) |
          (1 << CSR_TDATA1_TYPE_MCONTROL6) |
