@@ -79,6 +79,7 @@ public:
   virtual bool get_store() const { return false; }
   virtual bool get_load() const { return false; }
   virtual action_t get_action() const { return ACTION_DEBUG_EXCEPTION; }
+  virtual bool icount_check_needed() const { return false; }
 
   virtual std::optional<match_result_t> detect_memory_access_match(processor_t UNUSED * const proc,
       operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) noexcept { return std::nullopt; }
@@ -240,6 +241,7 @@ public:
 
   bool get_dmode() const override { return dmode; }
   virtual action_t get_action() const override { return action; }
+  virtual bool icount_check_needed() const override { return true; }
 
 private:
   bool dmode;

@@ -204,7 +204,7 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
 bool processor_t::slow_path()
 {
   return debug || state.single_step != state.STEP_NONE || state.debug_mode ||
-         log_commits_enabled || histogram_enabled || in_wfi;
+         log_commits_enabled || histogram_enabled || in_wfi || check_triggers_icount;
 }
 
 // fetch/decode/execute loop
