@@ -11,7 +11,6 @@
 #include "simif.h"
 
 #include <fesvr/htif.h>
-#include <fesvr/context.h>
 #include <vector>
 #include <string>
 #include <memory>
@@ -137,11 +136,6 @@ private:
   friend class debug_module_t;
 
   // htif
-  friend void sim_thread_main(void*);
-  void main();
-
-  context_t* host;
-  context_t target;
   void reset();
   void idle();
   void read_chunk(addr_t taddr, size_t len, void* dst);
