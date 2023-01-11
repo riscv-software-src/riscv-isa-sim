@@ -80,9 +80,11 @@ public:
   virtual bool get_load() const { return false; }
   virtual action_t get_action() const { return ACTION_DEBUG_EXCEPTION; }
   virtual bool icount_check_needed() const { return false; }
+  virtual void stash_read_values() {}
 
   virtual std::optional<match_result_t> detect_memory_access_match(processor_t UNUSED * const proc,
       operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) noexcept { return std::nullopt; }
+  virtual std::optional<match_result_t> detect_icount_match(processor_t UNUSED * const proc) { return std::nullopt; }
   virtual std::optional<match_result_t> detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) noexcept { return std::nullopt; }
 
 protected:
@@ -242,12 +244,15 @@ public:
   bool get_dmode() const override { return dmode; }
   virtual action_t get_action() const override { return action; }
   virtual bool icount_check_needed() const override { return true; }
+  virtual void stash_read_values() override;
+
+  virtual std::optional<match_result_t> detect_icount_match(processor_t * const proc) noexcept override;
 
 private:
   bool dmode;
   bool hit;
-  unsigned count;
-  bool pending;
+  unsigned count, count_read_value;
+  bool pending, pending_read_value;
   action_t action;
 };
 
@@ -267,6 +272,7 @@ public:
   unsigned count() const { return triggers.size(); }
 
   std::optional<match_result_t> detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data) noexcept;
+  std::optional<match_result_t> detect_icount_match() noexcept;
   std::optional<match_result_t> detect_trap_match(const trap_t& t) noexcept;
 
   processor_t *proc;

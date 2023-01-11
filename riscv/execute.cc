@@ -262,6 +262,14 @@ void processor_t::step(size_t n)
             state.single_step = state.STEP_STEPPED;
           }
 
+          if (!state.serialized) {
+            auto match = TM.detect_icount_match();
+            if (match.has_value()) {
+              assert(match->timing == triggers::TIMING_BEFORE);
+              throw triggers::matched_t((triggers::operation_t)0, 0, match->action);
+            }
+          }
+
           // debug mode wfis must nop
           if (unlikely(in_wfi && !state.debug_mode)) {
             throw wait_for_interrupt_t();

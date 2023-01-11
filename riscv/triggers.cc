@@ -287,6 +287,27 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   load = get_field(val, CSR_MCONTROL6_LOAD);
 }
 
+std::optional<match_result_t> icount_t::detect_icount_match(processor_t * const proc) noexcept
+{
+  if (!common_match(proc))
+    return std::nullopt;
+
+  std::optional<match_result_t> ret = std::nullopt;
+  if (pending) {
+    pending = 0;
+    hit = true;
+    ret = match_result_t(TIMING_BEFORE, action);
+  }
+
+  if (count >= 1) {
+    if (count == 1)
+      pending = 1;
+    count = count - 1;
+  }
+
+  return ret;
+}
+
 reg_t icount_t::tdata1_read(const processor_t * const proc) const noexcept
 {
   auto xlen = proc->get_xlen();
@@ -296,9 +317,9 @@ reg_t icount_t::tdata1_read(const processor_t * const proc) const noexcept
   tdata1 = set_field(tdata1, CSR_ICOUNT_VS, proc->extension_enabled('H') ? vs : 0);
   tdata1 = set_field(tdata1, CSR_ICOUNT_VU, proc->extension_enabled('H') ? vu : 0);
   tdata1 = set_field(tdata1, CSR_ICOUNT_HIT, hit);
-  tdata1 = set_field(tdata1, CSR_ICOUNT_COUNT, count);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_COUNT, count_read_value);
   tdata1 = set_field(tdata1, CSR_ICOUNT_M, m);
-  tdata1 = set_field(tdata1, CSR_ICOUNT_PENDING, pending);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_PENDING, pending_read_value);
   tdata1 = set_field(tdata1, CSR_ICOUNT_S, s);
   tdata1 = set_field(tdata1, CSR_ICOUNT_U, u);
   tdata1 = set_field(tdata1, CSR_ICOUNT_ACTION, action);
@@ -313,12 +334,18 @@ void icount_t::tdata1_write(processor_t * const proc, const reg_t val, const boo
   vs = get_field(val, CSR_ICOUNT_VS);
   vu = get_field(val, CSR_ICOUNT_VU);
   hit = get_field(val, CSR_ICOUNT_HIT);
-  count = get_field(val, CSR_ICOUNT_COUNT);
+  count = count_read_value = get_field(val, CSR_ICOUNT_COUNT);
   m = get_field(val, CSR_ICOUNT_M);
-  pending = get_field(val, CSR_ICOUNT_PENDING);
+  pending = pending_read_value = get_field(val, CSR_ICOUNT_PENDING);
   s = proc->extension_enabled_const('S') ? get_field(val, CSR_ICOUNT_S) : 0;
   u = proc->extension_enabled_const('U') ? get_field(val, CSR_ICOUNT_U) : 0;
   action = legalize_action(val, CSR_ICOUNT_ACTION, CSR_ICOUNT_DMODE(xlen));
+}
+
+void icount_t::stash_read_values()
+{
+  count_read_value = count;
+  pending_read_value = pending;
 }
 
 reg_t itrigger_t::tdata1_read(const processor_t * const proc) const noexcept
@@ -527,6 +554,24 @@ std::optional<match_result_t> module_t::detect_memory_access_match(operation_t o
       ret = result;
 
     chain_ok = result.has_value() || !trigger->get_chain();
+  }
+  return ret;
+}
+
+std::optional<match_result_t> module_t::detect_icount_match() noexcept
+{
+  for (auto trigger: triggers)
+    trigger->stash_read_values();
+
+  state_t * const state = proc->get_state();
+  if (state->debug_mode)
+    return std::nullopt;
+
+  std::optional<match_result_t> ret = std::nullopt;
+  for (auto trigger: triggers) {
+    auto result = trigger->detect_icount_match(proc);
+    if (result.has_value() && (!ret.has_value() || ret->action < result->action))
+      ret = result;
   }
   return ret;
 }
