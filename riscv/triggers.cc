@@ -248,7 +248,7 @@ bool mcontrol_common_t::legalize_timing(reg_t val, reg_t timing_mask, reg_t sele
 reg_t mcontrol6_t::tdata1_read(const processor_t * const proc) const noexcept {
   unsigned xlen = proc->get_const_xlen();
   reg_t tdata1 = 0;
-  tdata1 = set_field(tdata1, CSR_MCONTROL6_TYPE(xlen), 6);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_TYPE(xlen), CSR_TDATA1_TYPE_MCONTROL6);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_DMODE(xlen), dmode);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_VS, proc->extension_enabled('H') ? vs : 0);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_VU, proc->extension_enabled('H') ? vu : 0);
