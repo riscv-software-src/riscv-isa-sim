@@ -71,7 +71,7 @@
 
 ns16550_t::ns16550_t(class bus_t *bus, abstract_interrupt_controller_t *intctrl,
                      uint32_t interrupt_id, uint32_t reg_shift, uint32_t reg_io_width)
-  : bus(bus), intctrl(intctrl), interrupt_id(interrupt_id), reg_shift(reg_shift), reg_io_width(reg_io_width)
+  : bus(bus), intctrl(intctrl), interrupt_id(interrupt_id), reg_shift(reg_shift), reg_io_width(reg_io_width), backoff_counter(0)
 {
   ier = 0;
   iir = UART_IIR_NO_INT;
@@ -300,10 +300,18 @@ void ns16550_t::tick(void)
     return;
   }
 
-  int rc = canonical_terminal_t::read();
-  if (rc < 0) {
+  if (backoff_counter > 0 && backoff_counter < MAX_BACKOFF) {
+    backoff_counter++;
     return;
   }
+
+  int rc = canonical_terminal_t::read();
+  if (rc < 0) {
+    backoff_counter = 1;
+    return;
+  }
+
+  backoff_counter = 0;
 
   rx_queue.push((uint8_t)rc);
   lsr |= UART_LSR_DR;
