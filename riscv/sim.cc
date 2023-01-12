@@ -220,33 +220,15 @@ sim_t::~sim_t()
   delete debug_mmu;
 }
 
-void sim_thread_main(void* arg)
-{
-  ((sim_t*)arg)->main();
-}
-
-void sim_t::main()
+int sim_t::run()
 {
   if (!debug && log)
     set_procs_debug(true);
 
-  while (!done())
-  {
-    if (debug || ctrlc_pressed)
-      interactive();
-    else
-      step(INTERLEAVE);
-    if (remote_bitbang) {
-      remote_bitbang->tick();
-    }
-  }
-}
-
-int sim_t::run()
-{
-  host = context_t::current();
-  target.init(sim_thread_main, this);
   htif_t::set_expected_xlen(isa.get_max_xlen());
+
+  // htif_t::run() will repeatedly call back into sim_t::idle(), each
+  // invocation of which will advance target time
   return htif_t::run();
 }
 
@@ -267,8 +249,6 @@ void sim_t::step(size_t n)
         if (clint) clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
         if (ns16550) ns16550->tick();
       }
-
-      host->switch_to();
     }
   }
 }
@@ -427,7 +407,16 @@ void sim_t::reset()
 
 void sim_t::idle()
 {
-  target.switch_to();
+  if (done())
+    return;
+
+  if (debug || ctrlc_pressed)
+    interactive();
+  else
+    step(INTERLEAVE);
+
+  if (remote_bitbang)
+    remote_bitbang->tick();
 }
 
 void sim_t::read_chunk(addr_t taddr, size_t len, void* dst)
