@@ -1305,6 +1305,10 @@ riscv_insn_ext_cmo = \
 	cbo_inval \
 	cbo_zero \
 
+riscv_insn_ext_zicond = \
+        czero_eqz \
+        czero_nez \
+
 riscv_insn_list = \
 	$(riscv_insn_ext_a) \
 	$(riscv_insn_ext_c) \
@@ -1323,6 +1327,7 @@ riscv_insn_list = \
 	$(riscv_insn_priv) \
 	$(riscv_insn_svinval) \
 	$(riscv_insn_ext_cmo) \
+	$(riscv_insn_ext_zicond) \
 
 riscv_gen_srcs = $(addsuffix .cc,$(riscv_insn_list))
 
