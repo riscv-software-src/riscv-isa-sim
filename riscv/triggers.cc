@@ -25,8 +25,9 @@ void trigger_t::tdata2_write(processor_t UNUSED * const proc, const reg_t UNUSED
   tdata2 = val;
 }
 
-action_t trigger_t::legalize_action(reg_t val) const noexcept {
-  return (val > ACTION_MAXVAL || (val == ACTION_DEBUG_MODE && get_dmode() == 0)) ? ACTION_DEBUG_EXCEPTION : (action_t)val;
+action_t trigger_t::legalize_action(reg_t val, reg_t action_mask, reg_t dmode_mask) noexcept {
+  reg_t act = get_field(val, action_mask);
+  return (act > ACTION_MAXVAL || (act == ACTION_DEBUG_MODE && get_field(val, dmode_mask) == 0)) ? ACTION_DEBUG_EXCEPTION : (action_t)act;
 }
 
 unsigned trigger_t::legalize_mhselect(bool h_enabled) const noexcept {
@@ -148,8 +149,8 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   dmode = get_field(val, CSR_MCONTROL_DMODE(xlen));
   hit = get_field(val, CSR_MCONTROL_HIT);
   select = get_field(val, MCONTROL_SELECT);
-  timing = get_field(val, MCONTROL_TIMING);
-  action = legalize_action(get_field(val, MCONTROL_ACTION));
+  timing = legalize_timing(val, MCONTROL_TIMING, MCONTROL_SELECT, MCONTROL_EXECUTE, MCONTROL_LOAD);
+  action = legalize_action(val, MCONTROL_ACTION, CSR_MCONTROL_DMODE(xlen));
   chain = allow_chain ? get_field(val, MCONTROL_CHAIN) : 0;
   match = legalize_match(get_field(val, MCONTROL_MATCH));
   m = get_field(val, MCONTROL_M);
@@ -158,9 +159,6 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   execute = get_field(val, MCONTROL_EXECUTE);
   store = get_field(val, MCONTROL_STORE);
   load = get_field(val, MCONTROL_LOAD);
-  // Assume we're here because of csrw.
-  if (execute)
-    timing = 0;
 }
 
 bool mcontrol_common_t::simple_match(unsigned xlen, reg_t value) const {
@@ -223,7 +221,7 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
   return std::nullopt;
 }
 
-mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val) const noexcept
+mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val) noexcept
 {
   switch (val) {
     case MATCH_EQUAL:
@@ -236,6 +234,15 @@ mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val) const no
     default:
       return MATCH_EQUAL;
   }
+}
+
+bool mcontrol_common_t::legalize_timing(reg_t val, reg_t timing_mask, reg_t select_mask, reg_t execute_mask, reg_t load_mask) noexcept {
+  // For load data triggers, force timing=after to avoid debugger having to repeat loads which may have side effects.
+  if (get_field(val, select_mask) && get_field(val, load_mask))
+    return TIMING_AFTER;
+  if (get_field(val, execute_mask))
+    return TIMING_BEFORE;
+  return get_field(val, timing_mask);
 }
 
 reg_t mcontrol6_t::tdata1_read(const processor_t * const proc) const noexcept {
@@ -268,8 +275,8 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   vu = get_field(val, CSR_MCONTROL6_VU);
   hit = get_field(val, CSR_MCONTROL6_HIT);
   select = get_field(val, CSR_MCONTROL6_SELECT);
-  timing = get_field(val, CSR_MCONTROL6_TIMING);
-  action = legalize_action(get_field(val, CSR_MCONTROL6_ACTION));
+  timing = legalize_timing(val, CSR_MCONTROL6_TIMING, CSR_MCONTROL6_SELECT, CSR_MCONTROL6_EXECUTE, CSR_MCONTROL6_LOAD);
+  action = legalize_action(val, CSR_MCONTROL6_ACTION, CSR_MCONTROL6_DMODE(xlen));
   chain = allow_chain ? get_field(val, CSR_MCONTROL6_CHAIN) : 0;
   match = legalize_match(get_field(val, CSR_MCONTROL6_MATCH));
   m = get_field(val, CSR_MCONTROL6_M);
@@ -278,8 +285,6 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   execute = get_field(val, CSR_MCONTROL6_EXECUTE);
   store = get_field(val, CSR_MCONTROL6_STORE);
   load = get_field(val, CSR_MCONTROL6_LOAD);
-  if (execute)
-    timing = 0;
 }
 
 reg_t itrigger_t::tdata1_read(const processor_t * const proc) const noexcept
@@ -311,7 +316,7 @@ void itrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   m = get_field(val, CSR_ITRIGGER_M);
   s = proc->extension_enabled_const('S') ? get_field(val, CSR_ITRIGGER_S) : 0;
   u = proc->extension_enabled_const('U') ? get_field(val, CSR_ITRIGGER_U) : 0;
-  action = legalize_action(get_field(val, CSR_ITRIGGER_ACTION));
+  action = legalize_action(val, CSR_ITRIGGER_ACTION, CSR_ITRIGGER_DMODE(xlen));
 }
 
 std::optional<match_result_t> trap_common_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
@@ -362,7 +367,7 @@ void etrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   m = get_field(val, CSR_ETRIGGER_M);
   s = proc->extension_enabled_const('S') ? get_field(val, CSR_ETRIGGER_S) : 0;
   u = proc->extension_enabled_const('U') ? get_field(val, CSR_ETRIGGER_U) : 0;
-  action = legalize_action(get_field(val, CSR_ETRIGGER_ACTION));
+  action = legalize_action(val, CSR_ETRIGGER_ACTION, CSR_ETRIGGER_DMODE(xlen));
 }
 
 bool etrigger_t::simple_match(bool interrupt, reg_t bit) const

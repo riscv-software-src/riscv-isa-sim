@@ -85,7 +85,7 @@ public:
   virtual std::optional<match_result_t> detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) noexcept { return std::nullopt; }
 
 protected:
-  action_t legalize_action(reg_t val) const noexcept;
+  static action_t legalize_action(reg_t val, reg_t action_mask, reg_t dmode_mask) noexcept;
   bool common_match(processor_t * const proc) const noexcept;
   reg_t tdata2;
 
@@ -207,7 +207,8 @@ private:
   bool simple_match(unsigned xlen, reg_t value) const;
 
 protected:
-  match_t legalize_match(reg_t val) const noexcept;
+  static match_t legalize_match(reg_t val) noexcept;
+  static bool legalize_timing(reg_t val, reg_t timing_mask, reg_t select_mask, reg_t execute_mask, reg_t load_mask) noexcept;
   bool dmode = false;
   action_t action = ACTION_DEBUG_EXCEPTION;
   bool hit = false;
