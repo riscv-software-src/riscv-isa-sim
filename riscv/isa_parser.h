@@ -87,10 +87,7 @@ public:
     return extension_enabled(isa_extension_t(ext));
   }
   bool extension_enabled(isa_extension_t ext) const {
-    if (ext >= 'A' && ext <= 'Z')
-      return (max_isa >> (ext - 'A')) & 1;
-    else
-      return extension_table[ext];
+    return extension_table[ext];
   }
   const std::unordered_map<std::string, extension_t*> &
   get_extensions() const { return extensions; }
