@@ -243,7 +243,7 @@ public:
 
   bool get_dmode() const override { return dmode; }
   virtual action_t get_action() const override { return action; }
-  virtual bool icount_check_needed() const override { return true; }
+  virtual bool icount_check_needed() const override { return count > 0 || pending; }
   virtual void stash_read_values() override;
 
   virtual std::optional<match_result_t> detect_icount_match(processor_t * const proc) noexcept override;
