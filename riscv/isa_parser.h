@@ -62,6 +62,7 @@ typedef enum {
   EXT_XZBR,
   EXT_XZBT,
   EXT_SSTC,
+  NUM_ISA_EXTENSIONS
 } isa_extension_t;
 
 typedef enum {
@@ -83,6 +84,9 @@ public:
   reg_t get_max_isa() const { return max_isa; }
   std::string get_isa_string() const { return isa_string; }
   bool extension_enabled(unsigned char ext) const {
+    return extension_enabled(isa_extension_t(ext));
+  }
+  bool extension_enabled(isa_extension_t ext) const {
     if (ext >= 'A' && ext <= 'Z')
       return (max_isa >> (ext - 'A')) & 1;
     else
