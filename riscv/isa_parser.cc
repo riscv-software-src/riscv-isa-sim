@@ -32,13 +32,12 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   isa_string = strtolower(str);
   const char* all_subsets = "mafdqchpv";
 
-  max_isa = reg_t(2) << 62;
   // enable zicntr and zihpm unconditionally for backward compatibility
   extension_table[EXT_ZICNTR] = true;
   extension_table[EXT_ZIHPM] = true;
 
   if (isa_string.compare(0, 4, "rv32") == 0)
-    max_xlen = 32, max_isa = reg_t(1) << 30;
+    max_xlen = 32;
   else if (isa_string.compare(0, 4, "rv64") == 0)
     max_xlen = 64;
   else
@@ -51,11 +50,11 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       isa_string = isa_string.substr(0, 4) + "imafd" + isa_string.substr(5);
       // Fall through
     case 'i':
-      max_isa |= 1L << ('i' - 'a');
+      extension_table['I'] = true;
       break;
 
     case 'e':
-      max_isa |= 1L << ('e' - 'a');
+      extension_table['E'] = true;
       break;
 
     default:
@@ -81,11 +80,10 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
                 extension_table[EXT_ZPSFOPERAND] = true;
                 extension_table[EXT_ZMMUL] = true; break;
       case 'v': // even rv32iv implies double float
-      case 'q': max_isa |= 1L << ('d' - 'a');
+      case 'q': extension_table['D'] = true;
                 // Fall through
-      case 'd': max_isa |= 1L << ('f' - 'a');
+      case 'd': extension_table['F'] = true;
     }
-    max_isa |= 1L << (*p - 'a');
     extension_table[toupper(*p)] = true;
     while (isdigit(*(p + 1))) {
       ++p; // skip major version, point, and minor version if presented
@@ -100,13 +98,13 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     do ++end; while (*end && *end != '_');
     auto ext_str = std::string(p, end);
     if (ext_str == "zfh" || ext_str == "zfhmin") {
-      if (!((max_isa >> ('f' - 'a')) & 1))
+      if (!extension_table['F'])
         bad_isa_string(str, ("'" + ext_str + "' extension requires 'F'").c_str());
       extension_table[EXT_ZFHMIN] = true;
       if (ext_str == "zfh")
         extension_table[EXT_ZFH] = true;
     } else if (ext_str == "zvfh" || ext_str == "zvfhmin") {
-      if (!((max_isa >> ('v' - 'a')) & 1))
+      if (!extension_table['V'])
         bad_isa_string(str, ("'" + ext_str + "' extension requires 'V'").c_str());
 
       extension_table[EXT_ZVFHMIN] = true;
@@ -224,8 +222,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str == "sstc") {
         extension_table[EXT_SSTC] = true;
     } else if (ext_str[0] == 'x') {
-      max_isa |= 1L << ('x' - 'a');
-      extension_table[toupper('x')] = true;
+      extension_table['X'] = true;
       if (ext_str == "xbitmanip") {
         extension_table[EXT_XZBP] = true;
         extension_table[EXT_XZBS] = true;
@@ -277,7 +274,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZCD] = true;
   }
 
-  if (extension_table[EXT_ZFINX] && ((max_isa >> ('f' - 'a')) & 1)) {
+  if (extension_table[EXT_ZFINX] && extension_table['F']) {
     bad_isa_string(str, ("Zfinx/Zdinx/Zhinx{min} extensions conflict with 'F/D/Q/Zfh{min}' extensions"));
   }
 
@@ -310,16 +307,15 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   else
     bad_priv_string(priv);
 
-  if (user) {
-    max_isa |= reg_t(user) << ('u' - 'a');
-    extension_table['U'] = true;
-  }
+  extension_table['U'] = user;
+  extension_table['S'] = supervisor;
 
-  if (supervisor) {
-    max_isa |= reg_t(supervisor) << ('s' - 'a');
-    extension_table['S'] = true;
-  }
-
-  if (((max_isa >> ('h' - 'a')) & 1) && !supervisor)
+  if (extension_table['H'] && !supervisor)
     bad_isa_string(str, "'H' extension requires S mode");
+
+  max_isa = max_xlen == 32 ? reg_t(1) << 30 : reg_t(2) << 62;
+  for (unsigned char ch = 'A'; ch <= 'Z'; ch++) {
+    if (extension_table[ch])
+      max_isa |= 1UL << (ch - 'A');
+  }
 }
