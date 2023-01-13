@@ -4,7 +4,7 @@
 
 #include "decode.h"
 
-#include <vector>
+#include <bitset>
 #include <string>
 #include <unordered_map>
 
@@ -98,7 +98,7 @@ public:
 protected:
   unsigned max_xlen;
   reg_t max_isa;
-  std::vector<bool> extension_table;
+  std::bitset<NUM_ISA_EXTENSIONS> extension_table;
   std::string isa_string;
   std::unordered_map<std::string, extension_t*> extensions;
 };
