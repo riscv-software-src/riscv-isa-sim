@@ -4,7 +4,7 @@
 
 #include "decode.h"
 
-#include <vector>
+#include <bitset>
 #include <string>
 #include <unordered_map>
 
@@ -62,6 +62,7 @@ typedef enum {
   EXT_XZBR,
   EXT_XZBT,
   EXT_SSTC,
+  NUM_ISA_EXTENSIONS
 } isa_extension_t;
 
 typedef enum {
@@ -83,10 +84,10 @@ public:
   reg_t get_max_isa() const { return max_isa; }
   std::string get_isa_string() const { return isa_string; }
   bool extension_enabled(unsigned char ext) const {
-    if (ext >= 'A' && ext <= 'Z')
-      return (max_isa >> (ext - 'A')) & 1;
-    else
-      return extension_table[ext];
+    return extension_enabled(isa_extension_t(ext));
+  }
+  bool extension_enabled(isa_extension_t ext) const {
+    return extension_table[ext];
   }
   const std::unordered_map<std::string, extension_t*> &
   get_extensions() const { return extensions; }
@@ -94,7 +95,7 @@ public:
 protected:
   unsigned max_xlen;
   reg_t max_isa;
-  std::vector<bool> extension_table;
+  std::bitset<NUM_ISA_EXTENSIONS> extension_table;
   std::string isa_string;
   std::unordered_map<std::string, extension_t*> extensions;
 };

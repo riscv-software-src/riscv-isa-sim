@@ -217,6 +217,9 @@ public:
     return !custom_extensions.empty();
   }
   bool extension_enabled(unsigned char ext) const {
+    return extension_enabled(isa_extension_t(ext));
+  }
+  bool extension_enabled(isa_extension_t ext) const {
     if (ext >= 'A' && ext <= 'Z')
       return state.misa->extension_enabled(ext);
     else
@@ -226,6 +229,9 @@ public:
   // possibly be disabled dynamically. Useful for documenting
   // assumptions about writable misa bits.
   bool extension_enabled_const(unsigned char ext) const {
+    return extension_enabled_const(isa_extension_t(ext));
+  }
+  bool extension_enabled_const(isa_extension_t ext) const {
     if (ext >= 'A' && ext <= 'Z')
       return state.misa->extension_enabled_const(ext);
     else
