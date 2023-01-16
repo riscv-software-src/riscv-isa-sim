@@ -474,6 +474,7 @@ std::optional<match_result_t> module_t::detect_memory_access_match(operation_t o
 
   bool chain_ok = true;
 
+  std::optional<match_result_t> ret = std::nullopt;
   for (auto trigger: triggers) {
     if (!chain_ok) {
       chain_ok = !trigger->get_chain();
@@ -487,12 +488,12 @@ std::optional<match_result_t> module_t::detect_memory_access_match(operation_t o
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
     auto result = trigger->detect_memory_access_match(proc, operation, address, data);
-    if (result.has_value() && !trigger->get_chain())
-      return result;
+    if (result.has_value() && !trigger->get_chain() && (!ret.has_value() || ret->action < result->action))
+      ret = result;
 
     chain_ok = result.has_value() || !trigger->get_chain();
   }
-  return std::nullopt;
+  return ret;
 }
 
 std::optional<match_result_t> module_t::detect_trap_match(const trap_t& t) noexcept
@@ -501,12 +502,13 @@ std::optional<match_result_t> module_t::detect_trap_match(const trap_t& t) noexc
   if (state->debug_mode)
     return std::nullopt;
 
+  std::optional<match_result_t> ret = std::nullopt;
   for (auto trigger: triggers) {
     auto result = trigger->detect_trap_match(proc, t);
-    if (result.has_value())
-      return result;
+    if (result.has_value() && (!ret.has_value() || ret->action < result->action))
+      ret = result;
   }
-  return std::nullopt;
+  return ret;
 }
 
 reg_t module_t::tinfo_read(unsigned UNUSED index) const noexcept
