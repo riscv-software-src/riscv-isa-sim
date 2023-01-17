@@ -69,6 +69,9 @@ class htif_t : public chunked_memif_t
 
   // Given an address, return symbol from addr2symbol map
   const char* get_symbol(uint64_t addr);
+  
+  addr_t get_tohost_addr() { return tohost_addr; }
+  addr_t get_fromhost_addr() { return fromhost_addr; }
 
  private:
   void parse_arguments(int argc, char ** argv);
