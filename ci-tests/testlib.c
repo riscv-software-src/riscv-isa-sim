@@ -27,7 +27,8 @@ int main()
             16,
             mem_cfg,
             hartids,
-            false);
+            false,
+            4);
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
   std::vector<std::string> htif_args {"pk", "hello"};
   debug_module_config_t dm_config = {
