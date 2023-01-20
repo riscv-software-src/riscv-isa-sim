@@ -156,20 +156,10 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       break;
 
     //handle pmp
-    reg_t pmp_num = 0, pmp_granularity = 0;
-    if (fdt_parse_pmp_num(fdt, cpu_offset, &pmp_num) == 0) {
-      if (pmp_num <= 64) {
-        procs[cpu_idx]->set_pmp_num(pmp_num);
-      } else {
-        std::cerr << "core ("
-                  << cpu_idx
-                  << ") doesn't have valid 'riscv,pmpregions'"
-                  << pmp_num << ").\n";
-        exit(1);
-      }
-    } else {
-      procs[cpu_idx]->set_pmp_num(0);
-    }
+    reg_t pmp_num, pmp_granularity;
+    if (fdt_parse_pmp_num(fdt, cpu_offset, &pmp_num) != 0)
+      pmp_num = 0;
+    procs[cpu_idx]->set_pmp_num(pmp_num);
 
     if (fdt_parse_pmp_alignment(fdt, cpu_offset, &pmp_granularity) == 0) {
       procs[cpu_idx]->set_pmp_granularity(pmp_granularity);
