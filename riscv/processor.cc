@@ -583,7 +583,7 @@ void processor_t::set_pmp_num(reg_t n)
 {
   // check the number of pmp is in a reasonable range
   if (n > state.max_pmp) {
-    fprintf(stderr, "error: bad number of pmp regions: '%ld' from the dtb\n", (unsigned long)n);
+    fprintf(stderr, "error: number of PMP regions requested (%" PRIu64 ") exceeds maximum (%d)\n", n, state.max_pmp);
     abort();
   }
   n_pmp = n;
@@ -592,8 +592,9 @@ void processor_t::set_pmp_num(reg_t n)
 void processor_t::set_pmp_granularity(reg_t gran)
 {
   // check the pmp granularity is set from dtb(!=0) and is power of 2
-  if (gran < (1 << PMP_SHIFT) || (gran & (gran - 1)) != 0) {
-    fprintf(stderr, "error: bad pmp granularity '%ld' from the dtb\n", (unsigned long)gran);
+  unsigned min = 1 << PMP_SHIFT;
+  if (gran < min || (gran & (gran - 1)) != 0) {
+    fprintf(stderr, "error: PMP granularity (%" PRIu64 ") must be a power of two and at least %u\n", gran, min);
     abort();
   }
 
