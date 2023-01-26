@@ -51,11 +51,11 @@ public:
     this->remote_bitbang = remote_bitbang;
   }
   const char* get_dts() { return dts.c_str(); }
-  processor_t* get_core(size_t i) { return procs.at(i); }
-  const cfg_t &get_cfg() { return *cfg; }
-  unsigned nprocs() const { return procs.size(); }
+  virtual processor_t* get_core(size_t i) override { return procs.at(i); }
+  virtual const cfg_t &get_cfg() override { return *cfg; }
+  virtual unsigned nprocs() const override { return procs.size(); }
 
-  const std::map<size_t, processor_t*>& get_harts() { return harts; }
+  virtual const std::map<size_t, processor_t*>& get_harts() override { return harts; }
 
   // Callback for processors to let the simulation know they were reset.
   virtual void proc_reset(unsigned id) override;
