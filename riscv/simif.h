@@ -8,6 +8,7 @@
 #include "cfg.h"
 
 class processor_t;
+class mmu_t;
 
 // this is the interface to the simulator used by the processors and memory
 class simif_t
@@ -31,6 +32,8 @@ public:
   virtual const char* get_symbol(uint64_t paddr) = 0;
 
   virtual ~simif_t() = default;
+
+  mmu_t* debug_mmu;  // debug port into main memory, for use by debug_module
 
 };
 
