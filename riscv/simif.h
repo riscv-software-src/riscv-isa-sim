@@ -8,6 +8,7 @@
 #include "cfg.h"
 
 class processor_t;
+class mmu_t;
 
 // this is the interface to the simulator used by the processors and memory
 class simif_t
@@ -32,6 +33,7 @@ public:
 
   unsigned nprocs() const { return get_cfg().nprocs(); }
 
+  mmu_t* debug_mmu;  // debug port into main memory, for use by debug_module
 };
 
 #endif

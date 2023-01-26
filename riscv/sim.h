@@ -64,7 +64,6 @@ private:
   const cfg_t * const cfg;
   std::vector<std::pair<reg_t, mem_t*>> mems;
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
-  mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
   std::map<size_t, processor_t*> harts;
   std::pair<reg_t, reg_t> initrd_range;
@@ -137,7 +136,6 @@ private:
 
   friend class processor_t;
   friend class mmu_t;
-  friend class debug_module_t;
 
   // htif
   virtual void reset() override;
