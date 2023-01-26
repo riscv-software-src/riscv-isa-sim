@@ -3,7 +3,11 @@
 #ifndef _RISCV_SIMIF_H
 #define _RISCV_SIMIF_H
 
+#include <map>
 #include "decode.h"
+#include "cfg.h"
+
+class processor_t;
 
 // this is the interface to the simulator used by the processors and memory
 class simif_t
@@ -19,9 +23,14 @@ public:
   // Callback for processors to let the simulation know they were reset.
   virtual void proc_reset(unsigned id) = 0;
 
+  virtual const cfg_t &get_cfg() const = 0;
+  virtual const std::map<size_t, processor_t*>& get_harts() const = 0;
+
   virtual const char* get_symbol(uint64_t paddr) = 0;
 
   virtual ~simif_t() = default;
+
+  unsigned nprocs() const { return get_cfg().nprocs(); }
 
 };
 

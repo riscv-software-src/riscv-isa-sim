@@ -52,10 +52,9 @@ public:
   }
   const char* get_dts() { return dts.c_str(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
-  const cfg_t &get_cfg() { return *cfg; }
-  unsigned nprocs() const { return procs.size(); }
+  virtual const cfg_t &get_cfg() const override { return *cfg; }
 
-  const std::map<size_t, processor_t*>& get_harts() { return harts; }
+  virtual const std::map<size_t, processor_t*>& get_harts() const override { return harts; }
 
   // Callback for processors to let the simulation know they were reset.
   virtual void proc_reset(unsigned id) override;
