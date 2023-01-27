@@ -351,7 +351,6 @@ int main(int argc, char** argv)
             /*default_varch=*/DEFAULT_VARCH,
             /*default_misaligned=*/false,
             /*default_endianness*/endianness_little,
-            /*default_dirty_enabled*/false,
             /*default_pmpregions=*/16,
             /*default_mem_layout=*/parse_mem_layout("2048"),
             /*default_hartids=*/std::vector<int>(),
