@@ -388,6 +388,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
       reg_t pte = pte_load(pte_paddr, gva, virt, trap_type, vm.ptesize);
       reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
       bool pbmte = proc->get_state()->menvcfg->read() & MENVCFG_PBMTE;
+      bool hade = proc->get_state()->menvcfg->read() & MENVCFG_HADE;
 
       if (pte & PTE_RSVD) {
         break;
@@ -415,7 +416,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
         reg_t ad = PTE_A | ((type == STORE) * PTE_D);
 
         if ((pte & ad) != ad) {
-          if (proc->cfg->dirty_enabled) {
+          if (hade) {
             // set accessed and possibly dirty bits
             pte_store(pte_paddr, pte | ad, gva, virt, type, vm.ptesize);
           } else {
@@ -476,6 +477,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
     reg_t pte = pte_load(pte_paddr, addr, virt, type, vm.ptesize);
     reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
     bool pbmte = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_PBMTE) : (proc->get_state()->menvcfg->read() & MENVCFG_PBMTE);
+    bool hade = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_HADE) : (proc->get_state()->menvcfg->read() & MENVCFG_HADE);
 
     if (pte & PTE_RSVD) {
       break;
@@ -503,7 +505,7 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
       reg_t ad = PTE_A | ((type == STORE) * PTE_D);
 
       if ((pte & ad) != ad) {
-        if (proc->cfg->dirty_enabled) {
+        if (hade) {
           // set accessed and possibly dirty bits.
           pte_store(pte_paddr, pte | ad, addr, virt, type, vm.ptesize);
         } else {
