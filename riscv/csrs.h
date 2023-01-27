@@ -453,12 +453,13 @@ class masked_csr_t: public basic_csr_t {
 
 // henvcfg.pbmte is read_only 0 when menvcfg.pbmte = 0
 // henvcfg.stce is read_only 0 when menvcfg.stce = 0
+// henvcfg.hade is read_only 0 when menvcfg.hade = 0
 class henvcfg_csr_t final: public masked_csr_t {
  public:
   henvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init, csr_t_p menvcfg);
 
   reg_t read() const noexcept override {
-    return (menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE)) & masked_csr_t::read();
+    return (menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE | MENVCFG_HADE)) & masked_csr_t::read();
   }
 
   virtual void verify_permissions(insn_t insn, bool write) const override;
