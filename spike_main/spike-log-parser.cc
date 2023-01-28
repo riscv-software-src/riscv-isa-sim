@@ -35,7 +35,6 @@ int main(int UNUSED argc, char** argv)
             /*default_varch=*/DEFAULT_VARCH,
             /*default_misaligned=*/false,
             /*default_endianness*/endianness_little,
-            /*default_dirty_enabled=*/false,
             /*default_pmpregions=*/16,
             /*default_mem_layout=*/std::vector<mem_cfg_t>(),
             /*default_hartids=*/std::vector<int>(),
