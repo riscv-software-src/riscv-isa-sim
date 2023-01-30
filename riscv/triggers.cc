@@ -248,7 +248,7 @@ bool mcontrol_common_t::legalize_timing(reg_t val, reg_t timing_mask, reg_t sele
 reg_t mcontrol6_t::tdata1_read(const processor_t * const proc) const noexcept {
   unsigned xlen = proc->get_const_xlen();
   reg_t tdata1 = 0;
-  tdata1 = set_field(tdata1, CSR_MCONTROL6_TYPE(xlen), 6);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_TYPE(xlen), CSR_TDATA1_TYPE_MCONTROL6);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_DMODE(xlen), dmode);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_VS, proc->extension_enabled('H') ? vs : 0);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_VU, proc->extension_enabled('H') ? vu : 0);
@@ -285,6 +285,67 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   execute = get_field(val, CSR_MCONTROL6_EXECUTE);
   store = get_field(val, CSR_MCONTROL6_STORE);
   load = get_field(val, CSR_MCONTROL6_LOAD);
+}
+
+std::optional<match_result_t> icount_t::detect_icount_match(processor_t * const proc) noexcept
+{
+  if (!common_match(proc))
+    return std::nullopt;
+
+  std::optional<match_result_t> ret = std::nullopt;
+  if (pending) {
+    pending = 0;
+    hit = true;
+    ret = match_result_t(TIMING_BEFORE, action);
+  }
+
+  if (count >= 1) {
+    if (count == 1)
+      pending = 1;
+    count = count - 1;
+  }
+
+  return ret;
+}
+
+reg_t icount_t::tdata1_read(const processor_t * const proc) const noexcept
+{
+  auto xlen = proc->get_xlen();
+  reg_t tdata1 = 0;
+  tdata1 = set_field(tdata1, CSR_ICOUNT_TYPE(xlen), CSR_TDATA1_TYPE_ICOUNT);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_DMODE(xlen), dmode);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_VS, proc->extension_enabled('H') ? vs : 0);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_VU, proc->extension_enabled('H') ? vu : 0);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_HIT, hit);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_COUNT, count_read_value);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_M, m);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_PENDING, pending_read_value);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_S, s);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_U, u);
+  tdata1 = set_field(tdata1, CSR_ICOUNT_ACTION, action);
+  return tdata1;
+}
+
+void icount_t::tdata1_write(processor_t * const proc, const reg_t val, const bool UNUSED allow_chain) noexcept
+{
+  auto xlen = proc->get_xlen();
+  assert(get_field(val, CSR_ICOUNT_TYPE(xlen)) == CSR_TDATA1_TYPE_ICOUNT);
+  dmode = proc->get_state()->debug_mode ? get_field(val, CSR_ICOUNT_DMODE(xlen)) : 0;
+  vs = get_field(val, CSR_ICOUNT_VS);
+  vu = get_field(val, CSR_ICOUNT_VU);
+  hit = get_field(val, CSR_ICOUNT_HIT);
+  count = count_read_value = get_field(val, CSR_ICOUNT_COUNT);
+  m = get_field(val, CSR_ICOUNT_M);
+  pending = pending_read_value = get_field(val, CSR_ICOUNT_PENDING);
+  s = proc->extension_enabled_const('S') ? get_field(val, CSR_ICOUNT_S) : 0;
+  u = proc->extension_enabled_const('U') ? get_field(val, CSR_ICOUNT_U) : 0;
+  action = legalize_action(val, CSR_ICOUNT_ACTION, CSR_ICOUNT_DMODE(xlen));
+}
+
+void icount_t::stash_read_values()
+{
+  count_read_value = count;
+  pending_read_value = pending;
 }
 
 reg_t itrigger_t::tdata1_read(const processor_t * const proc) const noexcept
@@ -423,6 +484,7 @@ bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
   delete triggers[index];
   switch (type) {
     case CSR_TDATA1_TYPE_MCONTROL: triggers[index] = new mcontrol_t(); break;
+    case CSR_TDATA1_TYPE_ICOUNT: triggers[index] = new icount_t(); break;
     case CSR_TDATA1_TYPE_ITRIGGER: triggers[index] = new itrigger_t(); break;
     case CSR_TDATA1_TYPE_ETRIGGER: triggers[index] = new etrigger_t(); break;
     case CSR_TDATA1_TYPE_MCONTROL6: triggers[index] = new mcontrol6_t(); break;
@@ -474,6 +536,7 @@ std::optional<match_result_t> module_t::detect_memory_access_match(operation_t o
 
   bool chain_ok = true;
 
+  std::optional<match_result_t> ret = std::nullopt;
   for (auto trigger: triggers) {
     if (!chain_ok) {
       chain_ok = !trigger->get_chain();
@@ -487,12 +550,30 @@ std::optional<match_result_t> module_t::detect_memory_access_match(operation_t o
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
     auto result = trigger->detect_memory_access_match(proc, operation, address, data);
-    if (result.has_value() && !trigger->get_chain())
-      return result;
+    if (result.has_value() && !trigger->get_chain() && (!ret.has_value() || ret->action < result->action))
+      ret = result;
 
     chain_ok = result.has_value() || !trigger->get_chain();
   }
-  return std::nullopt;
+  return ret;
+}
+
+std::optional<match_result_t> module_t::detect_icount_match() noexcept
+{
+  for (auto trigger: triggers)
+    trigger->stash_read_values();
+
+  state_t * const state = proc->get_state();
+  if (state->debug_mode)
+    return std::nullopt;
+
+  std::optional<match_result_t> ret = std::nullopt;
+  for (auto trigger: triggers) {
+    auto result = trigger->detect_icount_match(proc);
+    if (result.has_value() && (!ret.has_value() || ret->action < result->action))
+      ret = result;
+  }
+  return ret;
 }
 
 std::optional<match_result_t> module_t::detect_trap_match(const trap_t& t) noexcept
@@ -501,18 +582,20 @@ std::optional<match_result_t> module_t::detect_trap_match(const trap_t& t) noexc
   if (state->debug_mode)
     return std::nullopt;
 
+  std::optional<match_result_t> ret = std::nullopt;
   for (auto trigger: triggers) {
     auto result = trigger->detect_trap_match(proc, t);
-    if (result.has_value())
-      return result;
+    if (result.has_value() && (!ret.has_value() || ret->action < result->action))
+      ret = result;
   }
-  return std::nullopt;
+  return ret;
 }
 
 reg_t module_t::tinfo_read(unsigned UNUSED index) const noexcept
 {
   /* In spike, every trigger supports the same types. */
   return (1 << CSR_TDATA1_TYPE_MCONTROL) |
+         (1 << CSR_TDATA1_TYPE_ICOUNT) |
          (1 << CSR_TDATA1_TYPE_ITRIGGER) |
          (1 << CSR_TDATA1_TYPE_ETRIGGER) |
          (1 << CSR_TDATA1_TYPE_MCONTROL6) |

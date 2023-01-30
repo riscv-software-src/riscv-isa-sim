@@ -34,7 +34,7 @@ processor_t::processor_t(const isa_parser_t *isa, const cfg_t *cfg,
   : debug(false), halt_request(HR_NONE), isa(isa), cfg(cfg), sim(sim), id(id), xlen(0),
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), sout_(sout_.rdbuf()), halt_on_reset(halt_on_reset),
-  in_wfi(false),
+  in_wfi(false), check_triggers_icount(false),
   impl_table(256, false), last_pc(1), executions(1), TM(cfg->trigger_count)
 {
   VU.p = this;
@@ -1123,6 +1123,7 @@ void processor_t::trigger_updated(const std::vector<triggers::trigger_t *> &trig
   mmu->check_triggers_fetch = false;
   mmu->check_triggers_load = false;
   mmu->check_triggers_store = false;
+  check_triggers_icount = false;
 
   for (auto trigger : triggers) {
     if (trigger->get_execute()) {
@@ -1133,6 +1134,9 @@ void processor_t::trigger_updated(const std::vector<triggers::trigger_t *> &trig
     }
     if (trigger->get_store()) {
       mmu->check_triggers_store = true;
+    }
+    if (trigger->icount_check_needed()) {
+      check_triggers_icount = true;
     }
   }
 }

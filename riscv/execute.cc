@@ -204,7 +204,7 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
 bool processor_t::slow_path()
 {
   return debug || state.single_step != state.STEP_NONE || state.debug_mode ||
-         log_commits_enabled || histogram_enabled || in_wfi;
+         log_commits_enabled || histogram_enabled || in_wfi || check_triggers_icount;
 }
 
 // fetch/decode/execute loop
@@ -260,6 +260,14 @@ void processor_t::step(size_t n)
 
           if (unlikely(state.single_step == state.STEP_STEPPING)) {
             state.single_step = state.STEP_STEPPED;
+          }
+
+          if (!state.serialized) {
+            auto match = TM.detect_icount_match();
+            if (match.has_value()) {
+              assert(match->timing == triggers::TIMING_BEFORE);
+              throw triggers::matched_t((triggers::operation_t)0, 0, match->action);
+            }
           }
 
           // debug mode wfis must nop
