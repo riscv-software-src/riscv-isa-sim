@@ -223,7 +223,7 @@ public:
     if (ext >= 'A' && ext <= 'Z')
       return state.misa->extension_enabled(ext);
     else
-      return isa->extension_enabled(ext);
+      return extension_enable_table[ext];
   }
   // Is this extension enabled? and abort if this extension can
   // possibly be disabled dynamically. Useful for documenting
@@ -232,10 +232,18 @@ public:
     return extension_enabled_const(isa_extension_t(ext));
   }
   bool extension_enabled_const(isa_extension_t ext) const {
-    if (ext >= 'A' && ext <= 'Z')
+    if (ext >= 'A' && ext <= 'Z') {
       return state.misa->extension_enabled_const(ext);
-    else
-      return isa->extension_enabled(ext);  // assume this can't change
+    } else {
+      assert(!extension_dynamic[ext]);
+      extension_assumed_const[ext] = true;
+      return extension_enabled(ext);
+    }
+  }
+  void set_extension_enable(unsigned char ext, bool enable) {
+    assert(!extension_assumed_const[ext]);
+    extension_dynamic[ext] = true;
+    extension_enable_table[ext] = enable && isa->extension_enabled(ext);
   }
   void set_impl(uint8_t impl, bool val) { impl_table[impl] = val; }
   bool supports_impl(uint8_t impl) const {
@@ -303,6 +311,11 @@ private:
   bool in_wfi;
   bool check_triggers_icount;
   std::vector<bool> impl_table;
+
+  // Note: does not include single-letter extensions in misa
+  std::bitset<NUM_ISA_EXTENSIONS> extension_enable_table;
+  std::bitset<NUM_ISA_EXTENSIONS> extension_dynamic;
+  mutable std::bitset<NUM_ISA_EXTENSIONS> extension_assumed_const;
 
   std::vector<insn_desc_t> instructions;
   std::unordered_map<reg_t,uint64_t> pc_histogram;
