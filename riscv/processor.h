@@ -223,7 +223,7 @@ public:
     if (ext >= 'A' && ext <= 'Z')
       return state.misa->extension_enabled(ext);
     else
-      return isa->extension_enabled(ext);
+      return extension_enable_table[ext];
   }
   // Is this extension enabled? and abort if this extension can
   // possibly be disabled dynamically. Useful for documenting
@@ -303,6 +303,8 @@ private:
   bool in_wfi;
   bool check_triggers_icount;
   std::vector<bool> impl_table;
+
+  std::bitset<NUM_ISA_EXTENSIONS> extension_enable_table;
 
   std::vector<insn_desc_t> instructions;
   std::unordered_map<reg_t,uint64_t> pc_histogram;

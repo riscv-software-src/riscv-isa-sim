@@ -91,6 +91,9 @@ public:
   bool extension_enabled(isa_extension_t ext) const {
     return extension_table[ext];
   }
+
+  std::bitset<NUM_ISA_EXTENSIONS> get_extension_table() const { return extension_table; }
+
   const std::unordered_map<std::string, extension_t*> &
   get_extensions() const { return extensions; }
 
