@@ -628,6 +628,11 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t new_misa = (adjusted_val & write_mask) | (old_misa & ~write_mask);
   const bool new_h = new_misa & (1L << ('H' - 'A'));
 
+  proc->set_extension_enable(EXT_ZCF, (new_misa & (1L << ('F' - 'A'))) &&
+                                      proc->extension_enabled(EXT_ZCA));
+  proc->set_extension_enable(EXT_ZCD, (new_misa & (1L << ('D' - 'A'))) &&
+                                      proc->extension_enabled(EXT_ZCA));
+
   // update the hypervisor-only bits in MEDELEG and other CSRs
   if (!new_h && prev_h) {
     reg_t hypervisor_exceptions = 0
