@@ -218,7 +218,12 @@ public:
   }
   // Only the extensions supported in isa string can be changeable
   bool extension_changeable(unsigned char ext) const {
-    return isa->extension_enabled(ext) && (ext == EXT_ZCF || ext == EXT_ZCD);
+    return isa->extension_enabled(ext) &&
+           (ext == EXT_ZCF || ext == EXT_ZCD ||
+            (ext == EXT_ZCA && isa->extension_enabled('C') &&
+             !(isa->extension_enabled(EXT_ZCB) ||
+               isa->extension_enabled(EXT_ZCMP) ||
+               isa->extension_enabled(EXT_ZCMT))));
   }
   bool extension_enabled(unsigned char ext) const {
     return extension_enabled(isa_extension_t(ext));
