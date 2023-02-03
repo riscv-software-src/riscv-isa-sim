@@ -299,8 +299,26 @@ static std::vector<int> parse_hartids(const char *s)
 
   int n;
   while (stream >> n) {
+    if (n < 0) {
+      fprintf(stderr, "Negative hart ID %d is unsupported\n", n);
+      exit(-1);
+    }
+
     hartids.push_back(n);
     if (stream.peek() == ',') stream.ignore();
+  }
+
+  if (hartids.empty()) {
+    fprintf(stderr, "No hart IDs specified\n");
+    exit(-1);
+  }
+
+  std::sort(hartids.begin(), hartids.end());
+
+  const auto dup = std::adjacent_find(hartids.begin(), hartids.end());
+  if (dup != hartids.end()) {
+    fprintf(stderr, "Duplicate hart ID %d\n", *dup);
+    exit(-1);
   }
 
   return hartids;
