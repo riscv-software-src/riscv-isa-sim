@@ -216,15 +216,6 @@ public:
   bool any_custom_extensions() const {
     return !custom_extensions.empty();
   }
-  // Only the extensions supported in isa string can be changeable
-  bool extension_changeable(unsigned char ext) const {
-    return isa->extension_enabled(ext) &&
-           (ext == EXT_ZCF || ext == EXT_ZCD ||
-            (ext == EXT_ZCA && isa->extension_enabled('C') &&
-             !(isa->extension_enabled(EXT_ZCB) ||
-               isa->extension_enabled(EXT_ZCMP) ||
-               isa->extension_enabled(EXT_ZCMT))));
-  }
   bool extension_enabled(unsigned char ext) const {
     return extension_enabled(isa_extension_t(ext));
   }
@@ -244,14 +235,11 @@ public:
     if (ext >= 'A' && ext <= 'Z')
       return state.misa->extension_enabled_const(ext);
     else {
-      assert(!extension_changeable(ext));
       return isa->extension_enabled(ext);
     }
   }
-  // Only the changeable extensions can be disabled/enabled
   void set_extension_enable(unsigned char ext, bool enable) {
-    if (extension_changeable(ext))
-      extension_enable_table[ext] = enable;
+    extension_enable_table[ext] = enable && isa->extension_enabled(ext);
   }
   void set_impl(uint8_t impl, bool val) { impl_table[impl] = val; }
   bool supports_impl(uint8_t impl) const {
