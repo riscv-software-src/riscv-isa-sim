@@ -619,9 +619,10 @@ reg_t misa_csr_t::dependency(const reg_t val, const char feature, const char dep
 }
 
 bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t old_misa = read();
+
   // the write is ignored if increasing IALIGN would misalign the PC
-  if (!(val & (1L << ('C' - 'A'))) && (state->pc & 2) &&
-      proc->extension_changeable(EXT_ZCA))
+  if (!(val & (1L << ('C' - 'A'))) && (old_misa & (1L << ('C' - 'A'))) && (state->pc & 2))
     return false;
 
   reg_t adjusted_val = val;
@@ -629,16 +630,16 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   adjusted_val = dependency(adjusted_val, 'Q', 'D');
   adjusted_val = dependency(adjusted_val, 'V', 'D');
 
-  const reg_t old_misa = read();
   const bool prev_h = old_misa & (1L << ('H' - 'A'));
   const reg_t new_misa = (adjusted_val & write_mask) | (old_misa & ~write_mask);
   const bool new_h = new_misa & (1L << ('H' - 'A'));
 
-  proc->set_extension_enable(EXT_ZCA, (new_misa & (1L << ('C' - 'A'))));
-  proc->set_extension_enable(EXT_ZCF, (new_misa & (1L << ('F' - 'A'))) &&
-                                      proc->extension_enabled(EXT_ZCA));
-  proc->set_extension_enable(EXT_ZCD, (new_misa & (1L << ('D' - 'A'))) &&
-                                      proc->extension_enabled(EXT_ZCA));
+  proc->set_extension_enable(EXT_ZCA, (new_misa & (1L << ('C' - 'A'))) || !proc->get_isa().extension_enabled('C'));
+  proc->set_extension_enable(EXT_ZCF, (new_misa & (1L << ('F' - 'A'))) && proc->extension_enabled(EXT_ZCA));
+  proc->set_extension_enable(EXT_ZCD, (new_misa & (1L << ('D' - 'A'))) && proc->extension_enabled(EXT_ZCA));
+  proc->set_extension_enable(EXT_ZCB, proc->extension_enabled(EXT_ZCA));
+  proc->set_extension_enable(EXT_ZCMP, proc->extension_enabled(EXT_ZCA));
+  proc->set_extension_enable(EXT_ZCMT, proc->extension_enabled(EXT_ZCA));
 
   // update the hypervisor-only bits in MEDELEG and other CSRs
   if (!new_h && prev_h) {
