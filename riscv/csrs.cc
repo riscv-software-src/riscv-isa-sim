@@ -1509,6 +1509,9 @@ jvt_csr_t::jvt_csr_t(processor_t* const proc, const reg_t addr, const reg_t init
 void jvt_csr_t::verify_permissions(insn_t insn, bool write) const {
   basic_csr_t::verify_permissions(insn, write);
 
+  if (!proc->extension_enabled(EXT_ZCMT))
+    throw trap_illegal_instruction(insn.bits());
+
   if (proc->extension_enabled(EXT_SMSTATEEN)) {
     if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & SSTATEEN0_JVT))
       throw trap_illegal_instruction(insn.bits());
