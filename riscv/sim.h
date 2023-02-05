@@ -49,7 +49,7 @@ public:
   void set_remote_bitbang(remote_bitbang_t* remote_bitbang) {
     this->remote_bitbang = remote_bitbang;
   }
-  const char* get_dts() { if (dts.empty()) reset(); return dts.c_str(); }
+  const char* get_dts() { return dts.c_str(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
   unsigned nprocs() const { return procs.size(); }
 
