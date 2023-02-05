@@ -601,12 +601,13 @@ bool sstatus_csr_t::enabled(const reg_t which) {
 misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa):
   basic_csr_t(proc, addr, max_isa),
   max_isa(max_isa),
-  write_mask(max_isa & (0  // allow MAFDQHV bits in MISA to be modified
+  write_mask(max_isa & (0  // allow MAFDQCHV bits in MISA to be modified
                         | (1L << ('M' - 'A'))
                         | (1L << ('A' - 'A'))
                         | (1L << ('F' - 'A'))
                         | (1L << ('D' - 'A'))
                         | (1L << ('Q' - 'A'))
+                        | (1L << ('C' - 'A'))
                         | (1L << ('H' - 'A'))
                         | (1L << ('V' - 'A'))
                         )
@@ -618,15 +619,27 @@ reg_t misa_csr_t::dependency(const reg_t val, const char feature, const char dep
 }
 
 bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t old_misa = read();
+
+  // the write is ignored if increasing IALIGN would misalign the PC
+  if (!(val & (1L << ('C' - 'A'))) && (old_misa & (1L << ('C' - 'A'))) && (state->pc & 2))
+    return false;
+
   reg_t adjusted_val = val;
   adjusted_val = dependency(adjusted_val, 'D', 'F');
   adjusted_val = dependency(adjusted_val, 'Q', 'D');
   adjusted_val = dependency(adjusted_val, 'V', 'D');
 
-  const reg_t old_misa = read();
   const bool prev_h = old_misa & (1L << ('H' - 'A'));
   const reg_t new_misa = (adjusted_val & write_mask) | (old_misa & ~write_mask);
   const bool new_h = new_misa & (1L << ('H' - 'A'));
+
+  proc->set_extension_enable(EXT_ZCA, (new_misa & (1L << ('C' - 'A'))) || !proc->get_isa().extension_enabled('C'));
+  proc->set_extension_enable(EXT_ZCF, (new_misa & (1L << ('F' - 'A'))) && proc->extension_enabled(EXT_ZCA));
+  proc->set_extension_enable(EXT_ZCD, (new_misa & (1L << ('D' - 'A'))) && proc->extension_enabled(EXT_ZCA));
+  proc->set_extension_enable(EXT_ZCB, proc->extension_enabled(EXT_ZCA));
+  proc->set_extension_enable(EXT_ZCMP, proc->extension_enabled(EXT_ZCA));
+  proc->set_extension_enable(EXT_ZCMT, proc->extension_enabled(EXT_ZCA));
 
   // update the hypervisor-only bits in MEDELEG and other CSRs
   if (!new_h && prev_h) {
