@@ -9,7 +9,7 @@
 #include "simif.h"
 #include "processor.h"
 #include "memtracer.h"
-#include "byteorder.h"
+#include "../fesvr/byteorder.h"
 #include "triggers.h"
 #include "cfg.h"
 #include <stdlib.h>
