@@ -24,8 +24,10 @@ riscv_install_hdrs = \
 	debug_rom_defines.h \
 	decode.h \
 	devices.h \
+	disasm.h \
 	encoding.h \
 	entropy_source.h \
+	extension.h \
 	isa_parser.h \
 	log_file.h \
 	memtracer.h \
@@ -33,6 +35,7 @@ riscv_install_hdrs = \
 	mmu.h \
 	platform.h \
 	processor.h \
+	rocc.h \
 	sim.h \
 	simif.h \
 	trap.h \
