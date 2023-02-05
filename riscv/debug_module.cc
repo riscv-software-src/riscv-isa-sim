@@ -84,10 +84,8 @@ debug_module_t::~debug_module_t()
 
 void debug_module_t::reset()
 {
-  for (unsigned i = 0; i < hart_array_mask.size(); i++) {
-    processor_t *proc = processor(i);
-    if (proc)
-      proc->halt_request = proc->HR_NONE;
+  for (const auto& [hart_id, hart] : sim->get_harts()) {
+    hart->halt_request = hart->HR_NONE;
   }
 
   memset(&dmcontrol, 0, sizeof(dmcontrol));
@@ -206,12 +204,10 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     if (!hart_state[id].halted) {
       hart_state[id].halted = true;
       if (hart_state[id].haltgroup) {
-        for (unsigned i = 0; i < hart_array_mask.size(); i++) {
-          if (!hart_state[i].halted &&
-              hart_state[i].haltgroup == hart_state[id].haltgroup) {
-            processor_t *proc = processor(i);
-            if (proc)
-              proc->halt_request = proc->HR_GROUP;
+        for (const auto& [hart_id, hart] : sim->get_harts()) {
+          if (!hart_state[hart_id].halted &&
+              hart_state[hart_id].haltgroup == hart_state[id].haltgroup) {
+            hart->halt_request = hart->HR_GROUP;
             // TODO: What if the debugger comes and writes dmcontrol before the
             // halt occurs?
           }
@@ -271,16 +267,6 @@ uint32_t debug_module_t::read32(uint8_t *memory, unsigned int index)
     (((uint32_t) base[2]) << 16) |
     (((uint32_t) base[3]) << 24);
   return value;
-}
-
-processor_t *debug_module_t::processor(unsigned hartid) const
-{
-  processor_t *proc = NULL;
-  try {
-    proc = sim->get_core(hartid);
-  } catch (const std::out_of_range&) {
-  }
-  return proc;
 }
 
 bool debug_module_t::hart_selected(unsigned hartid) const
@@ -411,15 +397,15 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
           dmstatus.allnonexistant = true;
           dmstatus.allresumeack = true;
           dmstatus.anyresumeack = false;
-          for (unsigned i = 0; i < hart_array_mask.size(); i++) {
-            if (hart_selected(i)) {
+          for (const auto& [hart_id, hart] : sim->get_harts()) {
+            if (hart_selected(hart_id)) {
               dmstatus.allnonexistant = false;
-              if (hart_state[i].resumeack) {
+              if (hart_state[hart_id].resumeack) {
                 dmstatus.anyresumeack = true;
               } else {
                 dmstatus.allresumeack = false;
               }
-              if (hart_state[i].halted) {
+              if (hart_state[hart_id].halted) {
                 dmstatus.allrunning = false;
                 dmstatus.anyhalted = true;
               } else {
@@ -432,7 +418,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
           // We don't allow selecting non-existant harts through
           // hart_array_mask, so the only way it's possible is by writing a
           // non-existant hartsel.
-          dmstatus.anynonexistant = processor(dmcontrol.hartsel) == nullptr;
+          dmstatus.anynonexistant = sim->get_harts().find(dmcontrol.hartsel) == sim->get_harts().end();
 
           dmstatus.allunavail = false;
           dmstatus.anyunavail = false;
@@ -808,34 +794,29 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
             DM_DMCONTROL_HARTSELLO_LENGTH;
           dmcontrol.hartsel |= get_field(value, DM_DMCONTROL_HARTSELLO);
           dmcontrol.hartsel &= (1L<<hartsellen) - 1;
-          for (unsigned i = 0; i < hart_array_mask.size(); i++) {
-            if (hart_selected(i)) {
+          for (const auto& [hart_id, hart] : sim->get_harts()) {
+            if (hart_selected(hart_id)) {
               if (get_field(value, DM_DMCONTROL_ACKHAVERESET)) {
-                hart_state[i].havereset = false;
+                hart_state[hart_id].havereset = false;
               }
-              processor_t *proc = processor(i);
-              if (proc) {
-                proc->halt_request = dmcontrol.haltreq ? proc->HR_REGULAR : proc->HR_NONE;
-                if (dmcontrol.haltreq) {
-                  D(fprintf(stderr, "halt hart %d\n", i));
-                }
-                if (dmcontrol.resumereq) {
-                  D(fprintf(stderr, "resume hart %d\n", i));
-                  debug_rom_flags[i] |= (1 << DEBUG_ROM_FLAG_RESUME);
-                  hart_state[i].resumeack = false;
-                }
-                if (dmcontrol.hartreset) {
-                  proc->reset();
-                }
+              hart->halt_request = dmcontrol.haltreq ? hart->HR_REGULAR : hart->HR_NONE;
+              if (dmcontrol.haltreq) {
+                D(fprintf(stderr, "halt hart %d\n", hart_id));
+              }
+              if (dmcontrol.resumereq) {
+                D(fprintf(stderr, "resume hart %d\n", hart_id));
+                debug_rom_flags[hart_id] |= (1 << DEBUG_ROM_FLAG_RESUME);
+                hart_state[hart_id].resumeack = false;
+              }
+              if (dmcontrol.hartreset) {
+                hart->reset();
               }
             }
           }
 
           if (dmcontrol.ndmreset) {
-            for (size_t i = 0; i < hart_array_mask.size(); i++) {
-              processor_t *proc = processor(i);
-              if (proc)
-                proc->reset();
+            for (const auto& [hart_id, hart] : sim->get_harts()) {
+              hart->reset();
             }
           }
         }
@@ -854,7 +835,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           unsigned base = hawindowsel * 32;
           for (unsigned i = 0; i < 32; i++) {
             unsigned n = base + i;
-            if (n < hart_array_mask.size()) {
+            if (sim->get_harts().find(n) != sim->get_harts().end()) {
               hart_array_mask[n] = (value >> i) & 1;
             }
           }

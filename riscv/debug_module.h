@@ -182,7 +182,6 @@ class debug_module_t : public abstract_device_t
     uint32_t challenge;
     const uint32_t secret = 1;
 
-    processor_t *processor(unsigned hartid) const;
     bool hart_selected(unsigned hartid) const;
     void reset();
     bool perform_abstract_command();
