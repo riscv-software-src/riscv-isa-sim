@@ -27,18 +27,47 @@ clint_t::clint_t(std::vector<processor_t*>& procs, uint64_t freq_hz, bool real_t
 #define MTIMECMP_BASE	0x4000
 #define MTIME_BASE	0xbff8
 
+template<typename T>
+void partial_write(T* word, reg_t addr, size_t len, const uint8_t* bytes)
+{
+  for (size_t i = 0; i < len; i++) {
+    const int shift = 8 * ((addr + i) % sizeof(T));
+    *word = (*word & ~(T(0xFF) << shift)) | (T(bytes[i]) << shift);
+  }
+}
+
+template<typename T>
+void partial_read(T word, reg_t addr, size_t len, uint8_t* bytes)
+{
+  for (size_t i = 0; i < len; i++) {
+    const int shift = 8 * ((addr + i) % sizeof(T));
+    bytes[i] = word >> shift;
+  }
+}
+
 bool clint_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
+  if (len > 8)
+    return false;
+
   increment(0);
-  if (addr >= MSIP_BASE && addr + len <= MSIP_BASE + procs.size()*sizeof(msip_t)) {
-    std::vector<msip_t> msip(procs.size());
-    for (size_t i = 0; i < procs.size(); ++i)
-      msip[i] = !!(procs[i]->state.mip->read() & MIP_MSIP);
-    memcpy(bytes, (uint8_t*)&msip[0] + addr - MSIP_BASE, len);
-  } else if (addr >= MTIMECMP_BASE && addr + len <= MTIMECMP_BASE + procs.size()*sizeof(mtimecmp_t)) {
-    memcpy(bytes, (uint8_t*)&mtimecmp[0] + addr - MTIMECMP_BASE, len);
-  } else if (addr >= MTIME_BASE && addr + len <= MTIME_BASE + sizeof(mtime_t)) {
-    memcpy(bytes, (uint8_t*)&mtime + addr - MTIME_BASE, len);
+
+  const auto msip_hart_id = (addr - MSIP_BASE) / sizeof(msip_t);
+  const auto mtimecmp_hart_id = (addr - MTIMECMP_BASE) / sizeof(mtimecmp_t);
+
+  if (addr >= MSIP_BASE && msip_hart_id < procs.size()) {
+    if (len == 8) {
+      // Implement double-word loads as a pair of word loads
+      return load(addr, 4, bytes) && load(addr + 4, 4, bytes + 4);
+    }
+
+    msip_t res = !!(procs[msip_hart_id]->state.mip->read() & MIP_MSIP);
+    partial_read(res, addr, len, bytes);
+    return true;
+  } else if (addr >= MTIMECMP_BASE && mtimecmp_hart_id < procs.size()) {
+    partial_read(mtimecmp[mtimecmp_hart_id], addr, len, bytes);
+  } else if (addr >= MTIME_BASE && addr < MTIME_BASE + sizeof(mtime_t)) {
+    partial_read(mtime, addr, len, bytes);
   } else if (addr + len <= CLINT_SIZE) {
     memset(bytes, 0, len);
   } else {
@@ -49,21 +78,24 @@ bool clint_t::load(reg_t addr, size_t len, uint8_t* bytes)
 
 bool clint_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
-  if (addr >= MSIP_BASE && addr + len <= MSIP_BASE + procs.size()*sizeof(msip_t)) {
-    std::vector<msip_t> msip(procs.size());
-    std::vector<msip_t> mask(procs.size(), 0);
-    memcpy((uint8_t*)&msip[0] + addr - MSIP_BASE, bytes, len);
-    memset((uint8_t*)&mask[0] + addr - MSIP_BASE, 0xff, len);
-    for (size_t i = 0; i < procs.size(); ++i) {
-      if (!(mask[i] & 0xFF)) continue;
-      procs[i]->state.mip->backdoor_write_with_mask(MIP_MSIP, 0);
-      if (!!(msip[i] & 1))
-        procs[i]->state.mip->backdoor_write_with_mask(MIP_MSIP, MIP_MSIP);
+  if (len > 8)
+    return false;
+
+  const auto msip_hart_id = (addr - MSIP_BASE) / sizeof(msip_t);
+  const auto mtimecmp_hart_id = (addr - MTIMECMP_BASE) / sizeof(mtimecmp_t);
+
+  if (addr >= MSIP_BASE && msip_hart_id < procs.size()) {
+    if (len == 8) {
+      // Implement double-word stores as a pair of word stores
+      return store(addr, 4, bytes) && store(addr + 4, 4, bytes + 4);
     }
-  } else if (addr >= MTIMECMP_BASE && addr + len <= MTIMECMP_BASE + procs.size()*sizeof(mtimecmp_t)) {
-    memcpy((uint8_t*)&mtimecmp[0] + addr - MTIMECMP_BASE, bytes, len);
-  } else if (addr >= MTIME_BASE && addr + len <= MTIME_BASE + sizeof(mtime_t)) {
-    memcpy((uint8_t*)&mtime + addr - MTIME_BASE, bytes, len);
+
+    if (addr % sizeof(msip_t) == 0)
+      procs[msip_hart_id]->state.mip->backdoor_write_with_mask(MIP_MSIP, bytes[0] & 1 ? MIP_MSIP : 0);
+  } else if (addr >= MTIMECMP_BASE && mtimecmp_hart_id < procs.size()) {
+    partial_write(&mtimecmp[mtimecmp_hart_id], addr, len, bytes);
+  } else if (addr >= MTIME_BASE && addr < MTIME_BASE + sizeof(mtime_t)) {
+    partial_write(&mtime, addr, len, bytes);
   } else if (addr + len <= CLINT_SIZE) {
     // Do nothing
   } else {
