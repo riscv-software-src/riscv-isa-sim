@@ -3,7 +3,8 @@
 #ifndef _RISCV_DISASM_H
 #define _RISCV_DISASM_H
 
-#include "decode_macros.h"
+#include "common.h"
+#include "decode.h"
 #include "isa_parser.h"
 #include <string>
 #include <sstream>

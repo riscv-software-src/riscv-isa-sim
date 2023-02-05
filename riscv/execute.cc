@@ -4,6 +4,7 @@
 #include "processor.h"
 #include "mmu.h"
 #include "disasm.h"
+#include "decode_macros.h"
 #include <cassert>
 
 static void commit_log_reset(processor_t* p)
