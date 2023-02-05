@@ -81,16 +81,9 @@ plic_t::plic_t(std::vector<processor_t*>& procs, bool smode, uint32_t ndev)
 
   for (size_t i = 0; i < contexts.size(); i++) {
     plic_context_t* c = &contexts[i];
+    memset(c, 0, sizeof(*c));
     c->proc = procs[i / contexts_per_hart];
-    if (smode) {
-      c->mmode = (i % contexts_per_hart == 0);
-    } else {
-      c->mmode = true;
-    }
-    memset(&c->enable, 0, sizeof(c->enable));
-    memset(&c->pending, 0, sizeof(c->pending));
-    memset(&c->pending_priority, 0, sizeof(c->pending_priority));
-    memset(&c->claimed, 0, sizeof(c->claimed));
+    c->mmode = (i % contexts_per_hart == 0);
   }
 }
 
