@@ -101,6 +101,10 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
                                log_file.get(), sout_);
   }
 
+  // When running without using a dtb, skip the fdt-based configuration steps
+  if (!dtb_enabled) return;
+
+  // Load dtb_file if provided, otherwise self-generate a dts/dtb
   make_dtb(dtb_file);
 
   void *fdt = (void *)dtb.c_str();
