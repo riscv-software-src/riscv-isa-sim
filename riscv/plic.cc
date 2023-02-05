@@ -1,6 +1,7 @@
 #include <sys/time.h>
 #include "devices.h"
 #include "processor.h"
+#include "sim.h"
 
 #define PLIC_MAX_CONTEXTS 15872
 
@@ -66,11 +67,8 @@
 
 #define REG_SIZE                0x1000000
 
-plic_t::plic_t(std::vector<processor_t*>& procs, bool smode, uint32_t ndev)
-  : contexts(procs.size() * (smode ? 2 : 1))
+plic_t::plic_t(sim_t* sim, uint32_t ndev)
 {
-  size_t contexts_per_hart = smode ? 2 : 1;
-
   num_ids = ndev + 1;
   num_ids_word = num_ids / 32;
   if ((num_ids_word * 32) < num_ids)
@@ -79,11 +77,21 @@ plic_t::plic_t(std::vector<processor_t*>& procs, bool smode, uint32_t ndev)
   memset(priority, 0, sizeof(priority));
   memset(level, 0, sizeof(level));
 
-  for (size_t i = 0; i < contexts.size(); i++) {
-    plic_context_t* c = &contexts[i];
-    memset(c, 0, sizeof(*c));
-    c->proc = procs[i / contexts_per_hart];
-    c->mmode = (i % contexts_per_hart == 0);
+  // PLIC contexts are contiguous in memory even if harts are discontiguous.
+  for (const auto& [hart_id, hart] : sim->get_harts()) {
+    contexts.push_back(plic_context_t());
+    plic_context_t* m_context = &contexts.back();
+    memset(m_context, 0, sizeof(*m_context));
+    m_context->proc = hart;
+    m_context->mmode = true;
+
+    if (hart->extension_enabled_const('S')) {
+      contexts.push_back(plic_context_t());
+      plic_context_t* s_context = &contexts.back();
+      memset(s_context, 0, sizeof(*s_context));
+      s_context->proc = hart;
+      s_context->mmode = false;
+    }
   }
 }
 

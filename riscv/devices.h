@@ -12,6 +12,7 @@
 #include <utility>
 
 class processor_t;
+class sim_t;
 
 class bus_t : public abstract_device_t {
  public:
@@ -91,7 +92,7 @@ struct plic_context_t {
 
 class plic_t : public abstract_device_t, public abstract_interrupt_controller_t {
  public:
-  plic_t(std::vector<processor_t*>&, bool smode, uint32_t ndev);
+  plic_t(sim_t*, uint32_t ndev);
   bool load(reg_t addr, size_t len, uint8_t* bytes);
   bool store(reg_t addr, size_t len, const uint8_t* bytes);
   void set_interrupt_level(uint32_t id, int lvl);
