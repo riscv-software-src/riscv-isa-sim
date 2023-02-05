@@ -66,7 +66,6 @@ private:
   std::pair<reg_t, reg_t> initrd_range;
   std::string dts;
   std::string dtb;
-  std::string dtb_file;
   bool dtb_enabled;
   std::unique_ptr<rom_device_t> boot_rom;
   std::unique_ptr<clint_t> clint;
@@ -96,7 +95,7 @@ private:
   char* addr_to_mem(reg_t paddr);
   bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes);
-  void make_dtb();
+  void make_dtb(const char* dtb_file);
   void set_rom();
 
   const char* get_symbol(uint64_t paddr);
