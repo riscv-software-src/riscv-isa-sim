@@ -132,7 +132,6 @@ class debug_module_t : public abstract_device_t
 
   private:
     static const unsigned datasize = 2;
-    unsigned nprocs;
     debug_module_config_t config;
     // Actual size of the program buffer, which is 1 word bigger than we let on
     // to implement the implicit ebreak at the end.

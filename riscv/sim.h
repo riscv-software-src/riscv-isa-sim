@@ -12,6 +12,7 @@
 
 #include <fesvr/htif.h>
 #include <vector>
+#include <map>
 #include <string>
 #include <memory>
 #include <sys/types.h>
@@ -51,7 +52,10 @@ public:
   }
   const char* get_dts() { if (dts.empty()) reset(); return dts.c_str(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
+  const cfg_t &get_cfg() { return *cfg; }
   unsigned nprocs() const { return procs.size(); }
+
+  const std::map<size_t, processor_t*>& get_harts() { return harts; }
 
   // Callback for processors to let the simulation know they were reset.
   void proc_reset(unsigned id);
@@ -63,6 +67,7 @@ private:
   std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
   mmu_t* debug_mmu;  // debug port into main memory
   std::vector<processor_t*> procs;
+  std::map<size_t, processor_t*> harts;
   std::pair<reg_t, reg_t> initrd_range;
   std::string dts;
   std::string dtb;
