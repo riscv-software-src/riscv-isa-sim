@@ -98,7 +98,6 @@ class plic_t : public abstract_device_t, public abstract_interrupt_controller_t 
   void set_interrupt_level(uint32_t id, int lvl);
   size_t size() { return PLIC_SIZE; }
  private:
-  std::vector<processor_t*>& procs;
   std::vector<plic_context_t> contexts;
   uint32_t num_ids;
   uint32_t num_ids_word;

@@ -67,7 +67,7 @@
 #define REG_SIZE                0x1000000
 
 plic_t::plic_t(std::vector<processor_t*>& procs, bool smode, uint32_t ndev)
-  : procs(procs), contexts(procs.size() * (smode ? 2 : 1)),
+  : contexts(procs.size() * (smode ? 2 : 1)),
   num_ids(ndev + 1), num_ids_word(((ndev + 1) + (32 - 1)) / 32),
   max_prio((1UL << PLIC_PRIO_BITS) - 1) 
 {
