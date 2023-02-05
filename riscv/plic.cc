@@ -343,6 +343,7 @@ bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes)
   }
 
   if (ret) {
+    val = to_le(val);
     memcpy(bytes, (uint8_t *)&val, len);
   }
 
@@ -366,6 +367,7 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   }
 
   memcpy((uint8_t *)&val, bytes, len);
+  val = from_le(val);
 
   if (PRIORITY_BASE <= addr && addr < ENABLE_BASE) {
     ret = priority_write(addr, val);
