@@ -67,7 +67,7 @@
 #define REG_SIZE                0x1000000
 
 plic_t::plic_t(std::vector<processor_t*>& procs, bool smode, uint32_t ndev)
-  : procs(procs), contexts(procs.size() * (smode ? 2 : 1))
+  : contexts(procs.size() * (smode ? 2 : 1))
 {
   size_t contexts_per_hart = smode ? 2 : 1;
 
