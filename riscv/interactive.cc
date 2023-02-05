@@ -3,6 +3,7 @@
 #include "config.h"
 #include "sim.h"
 #include "decode.h"
+#include "decode_macros.h"
 #include "disasm.h"
 #include "mmu.h"
 #include "vector_unit.h"

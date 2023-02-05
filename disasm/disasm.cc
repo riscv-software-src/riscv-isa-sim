@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "disasm.h"
+#include "decode_macros.h"
 #include <cassert>
 #include <string>
 #include <vector>

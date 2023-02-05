@@ -5,6 +5,7 @@
 #include "extension.h"
 #include "common.h"
 #include "config.h"
+#include "decode_macros.h"
 #include "simif.h"
 #include "mmu.h"
 #include "disasm.h"

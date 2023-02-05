@@ -1,5 +1,6 @@
 #include "insn_macros.h"
 #include "extension.h"
+#include "decode_macros.h"
 #include <cstring>
 
 struct : public arg_t {
