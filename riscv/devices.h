@@ -79,7 +79,6 @@ class clint_t : public abstract_device_t {
 #define PLIC_MAX_DEVICES 1024
 
 struct plic_context_t {
-	uint32_t num;
 	processor_t *proc;
 	bool mmode;
 
