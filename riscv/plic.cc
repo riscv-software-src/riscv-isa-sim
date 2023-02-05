@@ -67,27 +67,14 @@
 #define REG_SIZE                0x1000000
 
 plic_t::plic_t(std::vector<processor_t*>& procs, bool smode, uint32_t ndev)
-  : contexts(procs.size() * (smode ? 2 : 1)),
-  num_ids(ndev + 1), num_ids_word(((ndev + 1) + (32 - 1)) / 32),
-  max_prio((1UL << PLIC_PRIO_BITS) - 1) 
+  : num_ids(ndev + 1), num_ids_word(((ndev + 1) + (32 - 1)) / 32),
+  max_prio((1UL << PLIC_PRIO_BITS) - 1), priority{}, level{}
 {
   size_t contexts_per_hart = smode ? 2 : 1;
+  size_t num_contexts = procs.size() * (smode ? 2 : 1);
 
-  memset(priority, 0, sizeof(priority));
-  memset(level, 0, sizeof(level));
-
-  for (size_t i = 0; i < contexts.size(); i++) {
-    plic_context_t* c = &contexts[i];
-    c->proc = procs[i / contexts_per_hart];
-    if (smode) {
-      c->mmode = (i % contexts_per_hart == 0);
-    } else {
-      c->mmode = true;
-    }
-    memset(&c->enable, 0, sizeof(c->enable));
-    memset(&c->pending, 0, sizeof(c->pending));
-    memset(&c->pending_priority, 0, sizeof(c->pending_priority));
-    memset(&c->claimed, 0, sizeof(c->claimed));
+  for (size_t i = 0; i < num_contexts; i++) {
+    contexts.push_back(plic_context_t(procs[i / contexts_per_hart], i % contexts_per_hart == 0));
   }
 }
 

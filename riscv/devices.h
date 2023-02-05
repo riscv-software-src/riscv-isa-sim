@@ -79,6 +79,11 @@ class clint_t : public abstract_device_t {
 #define PLIC_MAX_DEVICES 1024
 
 struct plic_context_t {
+  plic_context_t(processor_t* proc, bool mmode)
+    : proc(proc), mmode(mmode), priority_threshold(0), enable{}, pending{},
+      pending_priority{}, claimed{}
+  {}
+
 	processor_t *proc;
 	bool mmode;
 
