@@ -78,7 +78,6 @@ plic_t::plic_t(std::vector<processor_t*>& procs, bool smode, uint32_t ndev)
 
   for (size_t i = 0; i < contexts.size(); i++) {
     plic_context_t* c = &contexts[i];
-    c->num = i;
     c->proc = procs[i / contexts_per_hart];
     if (smode) {
       c->mmode = (i % contexts_per_hart == 0);
