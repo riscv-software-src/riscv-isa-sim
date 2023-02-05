@@ -47,7 +47,12 @@ class rocc_t : public extension_t
   } \
 
 #define push_custom_insn(insn_list, opcode, opcode_mask, func_name_32, func_name_64) \
-  insn_list.push_back((insn_desc_t){opcode, opcode_mask, func_name_32, func_name_64})
+  insn_list.push_back((insn_desc_t){opcode, opcode_mask,                \
+    func_name_32, func_name_64,                                         \
+    func_name_32, func_name_64,                                         \
+    func_name_32, func_name_64,                                         \
+    func_name_32, func_name_64,                                         \
+  })                                                                    \
 
 #define ILLEGAL_INSN_FUNC &::illegal_instruction
 
