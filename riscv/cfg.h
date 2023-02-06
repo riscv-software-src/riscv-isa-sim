@@ -69,7 +69,7 @@ public:
         const endianness_t default_endianness,
         const reg_t default_pmpregions,
         const std::vector<mem_cfg_t> &default_mem_layout,
-        const std::vector<int> default_hartids,
+        const std::vector<size_t> default_hartids,
         bool default_real_time_clint,
         const reg_t default_trigger_count)
     : initrd_bounds(default_initrd_bounds),
@@ -97,7 +97,7 @@ public:
   reg_t                              pmpregions;
   cfg_arg_t<std::vector<mem_cfg_t>>  mem_layout;
   std::optional<reg_t>               start_pc;
-  cfg_arg_t<std::vector<int>>        hartids;
+  cfg_arg_t<std::vector<size_t>>     hartids;
   bool                               explicit_hartids;
   cfg_arg_t<bool>                    real_time_clint;
   reg_t                              trigger_count;

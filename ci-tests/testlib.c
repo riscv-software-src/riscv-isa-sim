@@ -15,7 +15,7 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const std::vector<mem_cfg
 int main()
 {
   std::vector<mem_cfg_t> mem_cfg { mem_cfg_t(0x80000000, 0x10000000) };
-  std::vector<int> hartids = {0};
+  std::vector<size_t> hartids = {0};
   cfg_t cfg(std::make_pair(0, 0),
             nullptr,
             "rv64gcv",
