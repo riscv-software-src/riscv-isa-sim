@@ -103,6 +103,7 @@ public:
   reg_t                              trigger_count;
 
   size_t nprocs() const { return hartids().size(); }
+  size_t max_hartid() const { return hartids().back(); }
 };
 
 #endif
