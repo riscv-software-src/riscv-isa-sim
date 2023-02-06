@@ -99,6 +99,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   for (size_t i = 0; i < cfg->nprocs(); i++) {
     procs[i] = new processor_t(&isa, cfg, this, cfg->hartids()[i], halted,
                                log_file.get(), sout_);
+    harts[cfg->hartids()[i]] = procs[i];
   }
 
   // When running without using a dtb, skip the fdt-based configuration steps
