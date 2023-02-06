@@ -1,9 +1,10 @@
 #include <sys/time.h>
 #include "devices.h"
 #include "processor.h"
+#include "sim.h"
 
-clint_t::clint_t(std::vector<processor_t*>& procs, uint64_t freq_hz, bool real_time)
-  : procs(procs), freq_hz(freq_hz), real_time(real_time), mtime(0), mtimecmp(procs.size())
+clint_t::clint_t(sim_t* sim, uint64_t freq_hz, bool real_time)
+  : sim(sim), freq_hz(freq_hz), real_time(real_time), mtime(0)
 {
   struct timeval base;
 
@@ -11,6 +12,8 @@ clint_t::clint_t(std::vector<processor_t*>& procs, uint64_t freq_hz, bool real_t
 
   real_time_ref_secs = base.tv_sec;
   real_time_ref_usecs = base.tv_usec;
+
+  increment(0); // initializes mtimecmp as a side effect
 }
 
 /* 0000 msip hart 0
@@ -53,19 +56,21 @@ bool clint_t::load(reg_t addr, size_t len, uint8_t* bytes)
   increment(0);
 
   const auto msip_hart_id = (addr - MSIP_BASE) / sizeof(msip_t);
+  const auto msip_hart_iter = sim->get_harts().find(msip_hart_id);
   const auto mtimecmp_hart_id = (addr - MTIMECMP_BASE) / sizeof(mtimecmp_t);
+  const auto mtimecmp_iter = mtimecmp.find(mtimecmp_hart_id);
 
-  if (addr >= MSIP_BASE && msip_hart_id < procs.size()) {
+  if (addr >= MSIP_BASE && msip_hart_iter != sim->get_harts().end()) {
     if (len == 8) {
       // Implement double-word loads as a pair of word loads
       return load(addr, 4, bytes) && load(addr + 4, 4, bytes + 4);
     }
 
-    msip_t res = !!(procs[msip_hart_id]->state.mip->read() & MIP_MSIP);
+    msip_t res = !!(msip_hart_iter->second->state.mip->read() & MIP_MSIP);
     partial_read(res, addr, len, bytes);
     return true;
-  } else if (addr >= MTIMECMP_BASE && mtimecmp_hart_id < procs.size()) {
-    partial_read(mtimecmp[mtimecmp_hart_id], addr, len, bytes);
+  } else if (addr >= MTIMECMP_BASE && mtimecmp_iter != mtimecmp.end()) {
+    partial_read(mtimecmp_iter->second, addr, len, bytes);
   } else if (addr >= MTIME_BASE && addr < MTIME_BASE + sizeof(mtime_t)) {
     partial_read(mtime, addr, len, bytes);
   } else if (addr + len <= CLINT_SIZE) {
@@ -82,18 +87,20 @@ bool clint_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     return false;
 
   const auto msip_hart_id = (addr - MSIP_BASE) / sizeof(msip_t);
+  const auto msip_hart_iter = sim->get_harts().find(msip_hart_id);
   const auto mtimecmp_hart_id = (addr - MTIMECMP_BASE) / sizeof(mtimecmp_t);
+  const auto mtimecmp_iter = mtimecmp.find(mtimecmp_hart_id);
 
-  if (addr >= MSIP_BASE && msip_hart_id < procs.size()) {
+  if (addr >= MSIP_BASE && msip_hart_iter != sim->get_harts().end()) {
     if (len == 8) {
       // Implement double-word stores as a pair of word stores
       return store(addr, 4, bytes) && store(addr + 4, 4, bytes + 4);
     }
 
     if (addr % sizeof(msip_t) == 0)
-      procs[msip_hart_id]->state.mip->backdoor_write_with_mask(MIP_MSIP, bytes[0] & 1 ? MIP_MSIP : 0);
-  } else if (addr >= MTIMECMP_BASE && mtimecmp_hart_id < procs.size()) {
-    partial_write(&mtimecmp[mtimecmp_hart_id], addr, len, bytes);
+      msip_hart_iter->second->state.mip->backdoor_write_with_mask(MIP_MSIP, bytes[0] & 1 ? MIP_MSIP : 0);
+  } else if (addr >= MTIMECMP_BASE && mtimecmp_iter != mtimecmp.end()) {
+    partial_write(&mtimecmp_iter->second, addr, len, bytes);
   } else if (addr >= MTIME_BASE && addr < MTIME_BASE + sizeof(mtime_t)) {
     partial_write(&mtime, addr, len, bytes);
   } else if (addr + len <= CLINT_SIZE) {
@@ -117,10 +124,10 @@ void clint_t::increment(reg_t inc)
   } else {
     mtime += inc;
   }
-  for (size_t i = 0; i < procs.size(); i++) {
-    procs[i]->state.time->sync(mtime);
-    procs[i]->state.mip->backdoor_write_with_mask(MIP_MTIP, 0);
-    if (mtime >= mtimecmp[i])
-      procs[i]->state.mip->backdoor_write_with_mask(MIP_MTIP, MIP_MTIP);
+  for (const auto& [hart_id, hart] : sim->get_harts()) {
+    hart->state.time->sync(mtime);
+    hart->state.mip->backdoor_write_with_mask(MIP_MTIP, 0);
+    if (mtime >= mtimecmp[hart_id])
+      hart->state.mip->backdoor_write_with_mask(MIP_MTIP, MIP_MTIP);
   }
 }
