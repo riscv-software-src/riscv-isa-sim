@@ -36,7 +36,8 @@ processor_t::processor_t(const isa_parser_t *isa, const cfg_t *cfg,
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), sout_(sout_.rdbuf()), halt_on_reset(halt_on_reset),
   in_wfi(false), check_triggers_icount(false),
-  impl_table(256, false), last_pc(1), executions(1), TM(cfg->trigger_count)
+  impl_table(256, false), extension_enable_table(isa->get_extension_table()),
+  last_pc(1), executions(1), TM(cfg->trigger_count)
 {
   VU.p = this;
   TM.proc = this;
@@ -508,7 +509,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     }
   }
 
-  if (proc->extension_enabled_const(EXT_ZCMT))
+  if (proc->extension_enabled(EXT_ZCMT))
     csrmap[CSR_JVT] = jvt = std::make_shared<jvt_csr_t>(proc, CSR_JVT, 0);
 
   serialized = false;
