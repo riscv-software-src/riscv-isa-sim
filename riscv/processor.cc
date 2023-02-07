@@ -58,12 +58,12 @@ processor_t::processor_t(const isa_parser_t *isa, const cfg_t *cfg,
     register_extension(e.second);
 
   set_pmp_granularity(1 << PMP_SHIFT);
-  set_pmp_num(state.max_pmp);
+  set_pmp_num(cfg->pmpregions);
 
   if (isa->get_max_xlen() == 32)
     set_mmu_capability(IMPL_MMU_SV32);
   else if (isa->get_max_xlen() == 64)
-    set_mmu_capability(IMPL_MMU_SV48);
+    set_mmu_capability(IMPL_MMU_SV57);
 
   set_impl(IMPL_MMU_ASID, true);
   set_impl(IMPL_MMU_VMID, true);

@@ -45,7 +45,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     mems(mems),
     plugin_devices(plugin_devices),
     procs(std::max(cfg->nprocs(), size_t(1))),
-    dtb_file(dtb_file ? dtb_file : ""),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
     cmd_file(cmd_file),
@@ -102,7 +101,11 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
                                log_file.get(), sout_);
   }
 
-  make_dtb();
+  // When running without using a dtb, skip the fdt-based configuration steps
+  if (!dtb_enabled) return;
+
+  // Load dtb_file if provided, otherwise self-generate a dts/dtb
+  make_dtb(dtb_file);
 
   void *fdt = (void *)dtb.c_str();
 
@@ -293,10 +296,10 @@ bool sim_t::mmio_store(reg_t paddr, size_t len, const uint8_t* bytes)
   return bus.store(paddr, len, bytes);
 }
 
-void sim_t::make_dtb()
+void sim_t::make_dtb(const char* dtb_file)
 {
-  if (!dtb_file.empty()) {
-    std::ifstream fin(dtb_file.c_str(), std::ios::binary);
+  if (dtb_file) {
+    std::ifstream fin(dtb_file, std::ios::binary);
     if (!fin.good()) {
       std::cerr << "can't find dtb file: " << dtb_file << std::endl;
       exit(-1);
@@ -317,7 +320,7 @@ void sim_t::make_dtb()
   int fdt_code = fdt_check_header(dtb.c_str());
   if (fdt_code) {
     std::cerr << "Failed to read DTB from ";
-    if (dtb_file.empty()) {
+    if (!dtb_file) {
       std::cerr << "auto-generated DTS string";
     } else {
       std::cerr << "`" << dtb_file << "'";
