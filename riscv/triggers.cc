@@ -465,10 +465,7 @@ bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
   if (index > 0 && !triggers[index-1]->get_dmode() && triggers[index-1]->get_chain() && get_field(val, CSR_TDATA1_DMODE(xlen)))
     return false;
 
-  unsigned type = get_field(val, CSR_TDATA1_TYPE(xlen));
   reg_t tdata1 = val;
-  reg_t tdata2 = triggers[index]->tdata2_read(proc);
-  reg_t tdata3 = triggers[index]->tdata3_read(proc);
 
   // hardware must zero chain in writes that set dmode to 0 if the next trigger has dmode of 1
   const bool allow_chain = !(index+1 < triggers.size() && triggers[index+1]->get_dmode() && !get_field(val, CSR_TDATA1_DMODE(xlen)));
@@ -481,6 +478,9 @@ bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
     tdata1 = set_field(tdata1, CSR_TDATA1_DMODE(xlen), 0);
   }
 
+  unsigned type = get_field(val, CSR_TDATA1_TYPE(xlen));
+  reg_t tdata2 = triggers[index]->tdata2_read(proc);
+  reg_t tdata3 = triggers[index]->tdata3_read(proc);
   delete triggers[index];
   switch (type) {
     case CSR_TDATA1_TYPE_MCONTROL: triggers[index] = new mcontrol_t(); break;
