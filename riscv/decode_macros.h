@@ -55,8 +55,8 @@
 #define RVC_SP READ_REG(X_SP)
 
 // Zc* macros
-#define RVC_SREG1 (Sn(insn.rvc_sreg1()))
-#define RVC_SREG2 (Sn(insn.rvc_sreg2()))
+#define RVC_R1S (Sn(insn.rvc_r1sc()))
+#define RVC_R2S (Sn(insn.rvc_r2sc()))
 #define SP READ_REG(X_SP)
 #define RA READ_REG(X_RA)
 
