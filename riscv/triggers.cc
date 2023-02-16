@@ -270,7 +270,7 @@ reg_t mcontrol6_t::tdata1_read(const processor_t * const proc) const noexcept {
   tdata1 = set_field(tdata1, CSR_MCONTROL6_DMODE(xlen), dmode);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_VS, proc->extension_enabled('H') ? vs : 0);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_VU, proc->extension_enabled('H') ? vu : 0);
-  tdata1 = set_field(tdata1, CSR_MCONTROL6_HIT, hit);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_HIT0, hit);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_SELECT, select);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_ACTION, action);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_CHAIN, chain);
@@ -290,7 +290,7 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   dmode = get_field(val, CSR_MCONTROL6_DMODE(xlen));
   vs = get_field(val, CSR_MCONTROL6_VS);
   vu = get_field(val, CSR_MCONTROL6_VU);
-  hit = get_field(val, CSR_MCONTROL6_HIT);
+  hit = get_field(val, CSR_MCONTROL6_HIT0);
   select = get_field(val, CSR_MCONTROL6_SELECT);
   action = legalize_action(val, CSR_MCONTROL6_ACTION, CSR_MCONTROL6_DMODE(xlen));
   chain = allow_chain ? get_field(val, CSR_MCONTROL6_CHAIN) : 0;
