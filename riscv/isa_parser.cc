@@ -152,6 +152,13 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str == "zhinxmin") {
       extension_table[EXT_ZFINX] = true;
       extension_table[EXT_ZHINXMIN] = true;
+    } else if (ext_str == "zce") {
+      extension_table[EXT_ZCA] = true;
+      extension_table[EXT_ZCB] = true;
+      extension_table[EXT_ZCMT] = true;
+      extension_table[EXT_ZCMP] = true;
+      if (extension_table['F'])
+        extension_table[EXT_ZCF] = true;
     } else if (ext_str == "zca") {
       extension_table[EXT_ZCA] = true;
     } else if (ext_str == "zcf") {
