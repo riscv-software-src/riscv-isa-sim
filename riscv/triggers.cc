@@ -272,7 +272,6 @@ reg_t mcontrol6_t::tdata1_read(const processor_t * const proc) const noexcept {
   tdata1 = set_field(tdata1, CSR_MCONTROL6_VU, proc->extension_enabled('H') ? vu : 0);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_HIT, hit);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_SELECT, select);
-  tdata1 = set_field(tdata1, CSR_MCONTROL6_TIMING, timing);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_ACTION, action);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_CHAIN, chain);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_MATCH, match);
@@ -293,7 +292,6 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   vu = get_field(val, CSR_MCONTROL6_VU);
   hit = get_field(val, CSR_MCONTROL6_HIT);
   select = get_field(val, CSR_MCONTROL6_SELECT);
-  timing = legalize_timing(val, CSR_MCONTROL6_TIMING, CSR_MCONTROL6_SELECT, CSR_MCONTROL6_EXECUTE, CSR_MCONTROL6_LOAD);
   action = legalize_action(val, CSR_MCONTROL6_ACTION, CSR_MCONTROL6_DMODE(xlen));
   chain = allow_chain ? get_field(val, CSR_MCONTROL6_CHAIN) : 0;
   match = legalize_match(get_field(val, CSR_MCONTROL6_MATCH));
@@ -303,6 +301,11 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   execute = get_field(val, CSR_MCONTROL6_EXECUTE);
   store = get_field(val, CSR_MCONTROL6_STORE);
   load = get_field(val, CSR_MCONTROL6_LOAD);
+
+  /* GDB doesn't support setting triggers in a way that combines a data load trigger
+   * with an address trigger to trigger on a load of a value at a given address.
+   * The default timing legalization on mcontrol6 assumes no such trigger setting. */
+  timing = legalize_timing(val, 0, CSR_MCONTROL6_SELECT, CSR_MCONTROL6_EXECUTE, CSR_MCONTROL6_LOAD);
 }
 
 std::optional<match_result_t> icount_t::detect_icount_fire(processor_t * const proc) noexcept
