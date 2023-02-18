@@ -242,10 +242,12 @@ bool plic_t::context_write(plic_context_t *c,
   switch (offset) {
     case CONTEXT_THRESHOLD:
       val &= ((1 << PLIC_PRIO_BITS) - 1);
-      if (val <= max_prio)
+      if (val <= max_prio) {
         c->priority_threshold = val;
-      else
         update = true;
+      } else {
+        ret = false;
+      }
       break;
     case CONTEXT_CLAIM: {
       uint32_t id_word = val / 32;
@@ -259,7 +261,6 @@ bool plic_t::context_write(plic_context_t *c,
     }
     default:
       ret = false;
-      update = true;
       break;
   };
 
