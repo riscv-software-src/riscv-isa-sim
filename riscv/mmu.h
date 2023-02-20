@@ -364,10 +364,10 @@ private:
     if (!pmp_ok(pte_paddr, ptesize, LOAD, PRV_S))
       throw_access_exception(virt, addr, trap_type);
 
-    void* host_pte_paddr = sim->addr_to_mem(pte_paddr);
+    void* host_pte_addr = sim->addr_to_mem(pte_paddr);
     target_endian<T> target_pte;
-    if (host_pte_paddr) {
-      memcpy(&target_pte, host_pte_paddr, ptesize);
+    if (host_pte_addr) {
+      memcpy(&target_pte, host_pte_addr, ptesize);
     } else if (!mmio_load(pte_paddr, ptesize, (uint8_t*)&target_pte)) {
       throw_access_exception(virt, addr, trap_type);
     }
@@ -381,10 +381,10 @@ private:
     if (!pmp_ok(pte_paddr, ptesize, STORE, PRV_S))
       throw_access_exception(virt, addr, trap_type);
 
-    void* host_pte_paddr = sim->addr_to_mem(pte_paddr);
+    void* host_pte_addr = sim->addr_to_mem(pte_paddr);
     target_endian<T> target_pte = to_target((T)new_pte);
-    if (host_pte_paddr) {
-      memcpy(host_pte_paddr, &target_pte, ptesize);
+    if (host_pte_addr) {
+      memcpy(host_pte_addr, &target_pte, ptesize);
     } else if (!mmio_store(pte_paddr, ptesize, (uint8_t*)&target_pte)) {
       throw_access_exception(virt, addr, trap_type);
     }
