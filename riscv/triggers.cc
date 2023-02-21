@@ -233,7 +233,7 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
   if (simple_match(xlen, value) && allow_action(proc->get_state())) {
     /* This is OK because this function is only called if the trigger was not
      * inhibited by the previous trigger in the chain. */
-    hit = true;
+    set_hit(true);
     return match_result_t(timing_t(timing), action);
   }
   return std::nullopt;

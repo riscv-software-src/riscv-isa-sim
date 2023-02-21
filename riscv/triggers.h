@@ -205,6 +205,7 @@ public:
   virtual bool get_store() const override { return store; }
   virtual bool get_load() const override { return load; }
   virtual action_t get_action() const override { return action; }
+  virtual void set_hit(bool val) = 0;
 
   virtual std::optional<match_result_t> detect_memory_access_match(processor_t * const proc,
       operation_t operation, reg_t address, std::optional<reg_t> data) noexcept override;
@@ -217,7 +218,6 @@ protected:
   static bool legalize_timing(reg_t val, reg_t timing_mask, reg_t select_mask, reg_t execute_mask, reg_t load_mask) noexcept;
   bool dmode = false;
   action_t action = ACTION_DEBUG_EXCEPTION;
-  bool hit = false;
   bool select = false;
   bool timing = false;
   bool chain = false;
@@ -231,12 +231,22 @@ class mcontrol_t : public mcontrol_common_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
+
+  virtual void set_hit(bool val) override { hit = val; }
+
+private:
+  bool hit = false;
 };
 
 class mcontrol6_t : public mcontrol_common_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
+
+  virtual void set_hit(bool val) override { hit = val; }
+
+private:
+  bool hit = false;
 };
 
 class icount_t : public trigger_t {
