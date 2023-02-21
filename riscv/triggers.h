@@ -250,7 +250,7 @@ public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
-  virtual void set_hit(hit_t UNUSED val) override { hit = HIT_BEFORE; }
+  virtual void set_hit(hit_t val) override { hit = val; }
 
 private:
   hit_t hit = HIT_FALSE;
