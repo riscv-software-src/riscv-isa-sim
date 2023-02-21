@@ -51,6 +51,13 @@ struct match_result_t {
   action_t action;
 };
 
+typedef enum {
+  HIT_FALSE = 0,
+  HIT_BEFORE = 1,
+  HIT_AFTER = 2,
+  HIT_IMMEDIATELY_AFTER = 3
+} hit_t;
+
 class matched_t
 {
   public:
@@ -205,7 +212,7 @@ public:
   virtual bool get_store() const override { return store; }
   virtual bool get_load() const override { return load; }
   virtual action_t get_action() const override { return action; }
-  virtual void set_hit(bool val) = 0;
+  virtual void set_hit(hit_t val) = 0;
 
   virtual std::optional<match_result_t> detect_memory_access_match(processor_t * const proc,
       operation_t operation, reg_t address, std::optional<reg_t> data) noexcept override;
@@ -232,7 +239,7 @@ public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
-  virtual void set_hit(bool val) override { hit = val; }
+  virtual void set_hit(hit_t val) override { hit = val != HIT_FALSE; }
 
 private:
   bool hit = false;
@@ -243,10 +250,10 @@ public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
-  virtual void set_hit(bool val) override { hit = val; }
+  virtual void set_hit(hit_t UNUSED val) override { hit = HIT_BEFORE; }
 
 private:
-  bool hit = false;
+  hit_t hit = HIT_FALSE;
 };
 
 class icount_t : public trigger_t {
