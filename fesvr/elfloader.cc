@@ -21,13 +21,15 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
 {
   int fd = open(fn, O_RDONLY);
   struct stat s;
-  assert(fd != -1);
+  if (fd == -1)
+      throw std::invalid_argument(std::string("Specified ELF can't be opened: ") + strerror(errno));
   if (fstat(fd, &s) < 0)
     abort();
   size_t size = s.st_size;
 
   char* buf = (char*)mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
-  assert(buf != MAP_FAILED);
+  if (buf == MAP_FAILED)
+      throw std::invalid_argument(std::string("Specified ELF can't be mapped: ") + strerror(errno));
   close(fd);
 
   assert(size >= sizeof(Elf64_Ehdr));
