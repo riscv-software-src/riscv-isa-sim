@@ -249,11 +249,11 @@ public:
   virtual std::optional<match_result_t> detect_icount_match(processor_t * const proc) noexcept override;
 
 private:
-  bool dmode;
-  bool hit;
-  unsigned count, count_read_value;
-  bool pending, pending_read_value;
-  action_t action;
+  bool dmode = false;
+  bool hit = false;
+  unsigned count = 1, count_read_value = 1;
+  bool pending = false, pending_read_value = false;
+  action_t action = (action_t)0;
 };
 
 class module_t {
