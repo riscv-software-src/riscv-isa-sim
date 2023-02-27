@@ -252,6 +252,12 @@ static std::string readline(int fd)
 
 void sim_t::interactive()
 {
+  if (next_interactive_action.has_value()) {
+    auto f = next_interactive_action.value();
+    next_interactive_action = std::nullopt;
+    return f();
+  }
+
   typedef void (sim_t::*interactive_func)(const std::string&, const std::vector<std::string>&);
   std::map<std::string,interactive_func> funcs;
 
@@ -336,6 +342,9 @@ void sim_t::interactive()
     if (socketif)
       socketif->wout(); // socket output, if required
 #endif
+
+    if (next_interactive_action.has_value())
+      break;
   }
   ctrlc_pressed = false;
 }
