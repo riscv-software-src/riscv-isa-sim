@@ -315,7 +315,7 @@ void sim_t::interactive()
       if (socketif)
         socketif->wout(); // socket output, if required
 #endif
-      continue;
+      break;
     }
 
     while (ss >> tmp)
