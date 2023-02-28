@@ -32,18 +32,16 @@ static unsigned field_width(unsigned n)
 ///////////////////////// debug_module_t
 
 debug_module_t::debug_module_t(sim_t *sim, const debug_module_config_t &config) :
-  nprocs(sim->nprocs()),
   config(config),
   program_buffer_bytes((config.support_impebreak ? 4 : 0) + 4*config.progbufsize),
   debug_progbuf_start(debug_data_start - program_buffer_bytes),
   debug_abstract_start(debug_progbuf_start - debug_abstract_size*4),
   custom_base(0),
-  hartsellen(field_width(sim->nprocs())),
   sim(sim),
   // The spec lets a debugger select nonexistent harts. Create hart_state for
   // them because I'm too lazy to add the code to just ignore accesses.
-  hart_state(1 << field_width(sim->nprocs())),
-  hart_array_mask(sim->nprocs()),
+  hart_state(1 << field_width(sim->get_cfg().max_hartid() + 1)),
+  hart_array_mask(sim->get_cfg().max_hartid() + 1),
   rti_remaining(0)
 {
   D(fprintf(stderr, "debug_data_start=0x%x\n", debug_data_start));
@@ -51,9 +49,9 @@ debug_module_t::debug_module_t(sim_t *sim, const debug_module_config_t &config) 
   D(fprintf(stderr, "debug_abstract_start=0x%x\n", debug_abstract_start));
 
   const unsigned max_procs = 1024;
-  if (nprocs > max_procs) {
-    fprintf(stderr, "At most %u processors are supported (%u requested)\n",
-            max_procs, nprocs);
+  if (sim->get_cfg().max_hartid() >= max_procs) {
+    fprintf(stderr, "Hart IDs must not exceed %u (%zu harts with max hart ID %zu requested)\n",
+            max_procs - 1, sim->get_cfg().nprocs(), sim->get_cfg().max_hartid());
     exit(1);
   }
 
@@ -85,11 +83,8 @@ debug_module_t::~debug_module_t()
 
 void debug_module_t::reset()
 {
-  assert(sim->nprocs() > 0);
-  for (unsigned i = 0; i < sim->nprocs(); i++) {
-    processor_t *proc = sim->get_core(i);
-    if (proc)
-      proc->halt_request = proc->HR_NONE;
+  for (const auto& [hart_id, hart] : sim->get_harts()) {
+    hart->halt_request = hart->HR_NONE;
   }
 
   memset(&dmcontrol, 0, sizeof(dmcontrol));
@@ -208,22 +203,19 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     if (!hart_state[id].halted) {
       hart_state[id].halted = true;
       if (hart_state[id].haltgroup) {
-        for (unsigned i = 0; i < nprocs; i++) {
-          if (!hart_state[i].halted &&
-              hart_state[i].haltgroup == hart_state[id].haltgroup) {
-            processor_t *proc = sim->get_core(i);
-            proc->halt_request = proc->HR_GROUP;
+        for (const auto& [hart_id, hart] : sim->get_harts()) {
+          if (!hart_state[hart_id].halted &&
+              hart_state[hart_id].haltgroup == hart_state[id].haltgroup) {
+            hart->halt_request = hart->HR_GROUP;
             // TODO: What if the debugger comes and writes dmcontrol before the
             // halt occurs?
           }
         }
       }
     }
-    if (dmcontrol.hartsel == id) {
+    if (selected_hart_id() == id) {
       if (0 == (debug_rom_flags[id] & (1 << DEBUG_ROM_FLAG_GO))) {
-        if (dmcontrol.hartsel == id) {
-          abstract_command_completed = true;
-        }
+        abstract_command_completed = true;
       }
     }
     return true;
@@ -274,23 +266,9 @@ uint32_t debug_module_t::read32(uint8_t *memory, unsigned int index)
   return value;
 }
 
-processor_t *debug_module_t::processor(unsigned hartid) const
-{
-  processor_t *proc = NULL;
-  try {
-    proc = sim->get_core(hartid);
-  } catch (const std::out_of_range&) {
-  }
-  return proc;
-}
-
 bool debug_module_t::hart_selected(unsigned hartid) const
 {
-  if (dmcontrol.hasel) {
-    return hartid == dmcontrol.hartsel || hart_array_mask[hartid];
-  } else {
-    return hartid == dmcontrol.hartsel;
-  }
+  return hartid == selected_hart_id() || (dmcontrol.hasel && hart_array_mask[hartid]);
 }
 
 unsigned debug_module_t::sb_access_bits()
@@ -412,15 +390,15 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
           dmstatus.allnonexistant = true;
           dmstatus.allresumeack = true;
           dmstatus.anyresumeack = false;
-          for (unsigned i = 0; i < nprocs; i++) {
-            if (hart_selected(i)) {
+          for (const auto& [hart_id, hart] : sim->get_harts()) {
+            if (hart_selected(hart_id)) {
               dmstatus.allnonexistant = false;
-              if (hart_state[i].resumeack) {
+              if (hart_state[hart_id].resumeack) {
                 dmstatus.anyresumeack = true;
               } else {
                 dmstatus.allresumeack = false;
               }
-              if (hart_state[i].halted) {
+              if (hart_state[hart_id].halted) {
                 dmstatus.allrunning = false;
                 dmstatus.anyhalted = true;
               } else {
@@ -433,17 +411,15 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
           // We don't allow selecting non-existant harts through
           // hart_array_mask, so the only way it's possible is by writing a
           // non-existant hartsel.
-          dmstatus.anynonexistant = (dmcontrol.hartsel >= nprocs);
+          dmstatus.anynonexistant = dmcontrol.hartsel >= sim->get_cfg().nprocs();
 
           dmstatus.allunavail = false;
           dmstatus.anyunavail = false;
 
           result = set_field(result, DM_DMSTATUS_IMPEBREAK,
               dmstatus.impebreak);
-          result = set_field(result, DM_DMSTATUS_ALLHAVERESET,
-              hart_state[dmcontrol.hartsel].havereset);
-          result = set_field(result, DM_DMSTATUS_ANYHAVERESET,
-              hart_state[dmcontrol.hartsel].havereset);
+          result = set_field(result, DM_DMSTATUS_ALLHAVERESET, selected_hart_state().havereset);
+          result = set_field(result, DM_DMSTATUS_ANYHAVERESET, selected_hart_state().havereset);
           result = set_field(result, DM_DMSTATUS_ALLNONEXISTENT, dmstatus.allnonexistant);
           result = set_field(result, DM_DMSTATUS_ALLUNAVAIL, dmstatus.allunavail);
           result = set_field(result, DM_DMSTATUS_ALLRUNNING, dmstatus.allrunning);
@@ -487,7 +463,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
           unsigned base = hawindowsel * 32;
           for (unsigned i = 0; i < 32; i++) {
             unsigned n = base + i;
-            if (n < nprocs && hart_array_mask[n]) {
+            if (n < sim->get_cfg().nprocs() && hart_array_mask[sim->get_cfg().hartids()[n]]) {
               result |= 1 << i;
             }
           }
@@ -543,8 +519,7 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
         result = challenge;
         break;
       case DM_DMCS2:
-        result = set_field(result, DM_DMCS2_GROUP,
-            hart_state[dmcontrol.hartsel].haltgroup);
+        result = set_field(result, DM_DMCS2_GROUP, selected_hart_state().haltgroup);
         break;
       default:
         result = 0;
@@ -588,7 +563,7 @@ bool debug_module_t::perform_abstract_command()
     bool write = get_field(command, AC_ACCESS_REGISTER_WRITE);
     unsigned regno = get_field(command, AC_ACCESS_REGISTER_REGNO);
 
-    if (!hart_state[dmcontrol.hartsel].halted) {
+    if (!selected_hart_state().halted) {
       abstractcs.cmderr = CMDERR_HALTRESUME;
       return true;
     }
@@ -743,7 +718,7 @@ bool debug_module_t::perform_abstract_command()
       write32(debug_abstract, i++, ebreak());
     }
 
-    debug_rom_flags[dmcontrol.hartsel] |= 1 << DEBUG_ROM_FLAG_GO;
+    debug_rom_flags[selected_hart_id()] |= 1 << DEBUG_ROM_FLAG_GO;
     rti_remaining = config.abstract_rti;
     abstract_command_completed = false;
 
@@ -808,34 +783,30 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           dmcontrol.hartsel = get_field(value, DM_DMCONTROL_HARTSELHI) <<
             DM_DMCONTROL_HARTSELLO_LENGTH;
           dmcontrol.hartsel |= get_field(value, DM_DMCONTROL_HARTSELLO);
-          dmcontrol.hartsel &= (1L<<hartsellen) - 1;
-          for (unsigned i = 0; i < nprocs; i++) {
-            if (hart_selected(i)) {
+          dmcontrol.hartsel = std::min(size_t(dmcontrol.hartsel), sim->get_cfg().nprocs() - 1);
+          for (const auto& [hart_id, hart] : sim->get_harts()) {
+            if (hart_selected(hart_id)) {
               if (get_field(value, DM_DMCONTROL_ACKHAVERESET)) {
-                hart_state[i].havereset = false;
+                hart_state[hart_id].havereset = false;
               }
-              processor_t *proc = processor(i);
-              if (proc) {
-                proc->halt_request = dmcontrol.haltreq ? proc->HR_REGULAR : proc->HR_NONE;
-                if (dmcontrol.haltreq) {
-                  D(fprintf(stderr, "halt hart %d\n", i));
-                }
-                if (dmcontrol.resumereq) {
-                  D(fprintf(stderr, "resume hart %d\n", i));
-                  debug_rom_flags[i] |= (1 << DEBUG_ROM_FLAG_RESUME);
-                  hart_state[i].resumeack = false;
-                }
-                if (dmcontrol.hartreset) {
-                  proc->reset();
-                }
+              hart->halt_request = dmcontrol.haltreq ? hart->HR_REGULAR : hart->HR_NONE;
+              if (dmcontrol.haltreq) {
+                D(fprintf(stderr, "halt hart %d\n", hart_id));
+              }
+              if (dmcontrol.resumereq) {
+                D(fprintf(stderr, "resume hart %d\n", hart_id));
+                debug_rom_flags[hart_id] |= (1 << DEBUG_ROM_FLAG_RESUME);
+                hart_state[hart_id].resumeack = false;
+              }
+              if (dmcontrol.hartreset) {
+                hart->reset();
               }
             }
           }
 
           if (dmcontrol.ndmreset) {
-            for (size_t i = 0; i < sim->nprocs(); i++) {
-              processor_t *proc = sim->get_core(i);
-              proc->reset();
+            for (const auto& [hart_id, hart] : sim->get_harts()) {
+              hart->reset();
             }
           }
         }
@@ -846,7 +817,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         return perform_abstract_command();
 
       case DM_HAWINDOWSEL:
-        hawindowsel = value & ((1U<<field_width(nprocs))-1);
+        hawindowsel = value & ((1U<<field_width(hart_array_mask.size()))-1);
         return true;
 
       case DM_HAWINDOW:
@@ -854,8 +825,8 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           unsigned base = hawindowsel * 32;
           for (unsigned i = 0; i < 32; i++) {
             unsigned n = base + i;
-            if (n < nprocs) {
-              hart_array_mask[n] = (value >> i) & 1;
+            if (n < sim->get_cfg().nprocs()) {
+              hart_array_mask[sim->get_cfg().hartids()[n]] = (value >> i) & 1;
             }
           }
         }
@@ -928,8 +899,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         if (config.support_haltgroups &&
             get_field(value, DM_DMCS2_HGWRITE) &&
             get_field(value, DM_DMCS2_GROUPTYPE) == 0) {
-          hart_state[dmcontrol.hartsel].haltgroup = get_field(value,
-              DM_DMCS2_GROUP);
+          selected_hart_state().haltgroup = get_field(value, DM_DMCS2_GROUP);
         }
         return true;
     }
@@ -942,4 +912,14 @@ void debug_module_t::proc_reset(unsigned id)
   hart_state[id].havereset = true;
   hart_state[id].halted = false;
   hart_state[id].haltgroup = 0;
+}
+
+hart_debug_state_t& debug_module_t::selected_hart_state()
+{
+  return hart_state[selected_hart_id()];
+}
+
+size_t debug_module_t::selected_hart_id() const
+{
+  return sim->get_cfg().hartids().at(dmcontrol.hartsel);
 }

@@ -291,16 +291,34 @@ static unsigned long atoul_nonzero_safe(const char* s)
   return res;
 }
 
-static std::vector<int> parse_hartids(const char *s)
+static std::vector<size_t> parse_hartids(const char *s)
 {
   std::string const str(s);
   std::stringstream stream(str);
-  std::vector<int> hartids;
+  std::vector<size_t> hartids;
 
   int n;
   while (stream >> n) {
+    if (n < 0) {
+      fprintf(stderr, "Negative hart ID %d is unsupported\n", n);
+      exit(-1);
+    }
+
     hartids.push_back(n);
     if (stream.peek() == ',') stream.ignore();
+  }
+
+  if (hartids.empty()) {
+    fprintf(stderr, "No hart IDs specified\n");
+    exit(-1);
+  }
+
+  std::sort(hartids.begin(), hartids.end());
+
+  const auto dup = std::adjacent_find(hartids.begin(), hartids.end());
+  if (dup != hartids.end()) {
+    fprintf(stderr, "Duplicate hart ID %zu\n", *dup);
+    exit(-1);
   }
 
   return hartids;
@@ -353,7 +371,7 @@ int main(int argc, char** argv)
             /*default_endianness*/endianness_little,
             /*default_pmpregions=*/16,
             /*default_mem_layout=*/parse_mem_layout("2048"),
-            /*default_hartids=*/std::vector<int>(),
+            /*default_hartids=*/std::vector<size_t>(),
             /*default_real_time_clint=*/false,
             /*default_trigger_count=*/4);
 
@@ -536,7 +554,7 @@ int main(int argc, char** argv)
     // Set default set of hartids based on nprocs, but don't set the
     // explicit_hartids flag (which means that downstream code can know that
     // we've only set the number of harts, not explicitly chosen their IDs).
-    std::vector<int> default_hartids;
+    std::vector<size_t> default_hartids;
     default_hartids.reserve(nprocs());
     for (size_t i = 0; i < nprocs(); ++i) {
       default_hartids.push_back(i);
