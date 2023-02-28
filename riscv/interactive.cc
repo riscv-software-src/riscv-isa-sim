@@ -252,6 +252,12 @@ static std::string readline(int fd)
 
 void sim_t::interactive()
 {
+  if (next_interactive_action.has_value()) {
+    auto f = next_interactive_action.value();
+    next_interactive_action = std::nullopt;
+    return f();
+  }
+
   typedef void (sim_t::*interactive_func)(const std::string&, const std::vector<std::string>&);
   std::map<std::string,interactive_func> funcs;
 
@@ -315,7 +321,7 @@ void sim_t::interactive()
       if (socketif)
         socketif->wout(); // socket output, if required
 #endif
-      continue;
+      break;
     }
 
     while (ss >> tmp)
@@ -336,6 +342,9 @@ void sim_t::interactive()
     if (socketif)
       socketif->wout(); // socket output, if required
 #endif
+
+    if (next_interactive_action.has_value())
+      break;
   }
   ctrlc_pressed = false;
 }
@@ -393,8 +402,15 @@ void sim_t::interactive_run(const std::string& cmd, const std::vector<std::strin
   size_t steps = args.size() ? atoll(args[0].c_str()) : -1;
   ctrlc_pressed = false;
   set_procs_debug(noisy);
-  for (size_t i = 0; i < steps && !ctrlc_pressed && !done(); i++)
+
+  const size_t actual_steps = std::min(INTERLEAVE, steps);
+  for (size_t i = 0; i < actual_steps && !ctrlc_pressed && !done(); i++)
     step(1);
+
+  if (actual_steps < steps) {
+    next_interactive_action = [=](){ interactive_run(cmd, {std::to_string(steps - actual_steps)}, noisy); };
+    return;
+  }
 
   std::ostream out(sout_.rdbuf());
   if (!noisy) out << ":" << std::endl;
@@ -727,7 +743,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
 
   ctrlc_pressed = false;
 
-  while (1)
+  for (size_t i = 0; i < INTERLEAVE; i++)
   {
     try
     {
@@ -737,15 +753,17 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
       if (max_xlen == 32) current &= 0xFFFFFFFF;
 
       if (cmd_until == (current == val))
-        break;
+        return;
       if (ctrlc_pressed)
-        break;
+        return;
     }
     catch (trap_t& t) {}
 
     set_procs_debug(noisy);
     step(1);
   }
+
+  next_interactive_action = [=](){ interactive_until(cmd, args, noisy); };
 }
 
 void sim_t::interactive_dumpmems(const std::string& cmd, const std::vector<std::string>& args)
