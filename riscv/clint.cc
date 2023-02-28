@@ -1,9 +1,10 @@
 #include <sys/time.h>
 #include "devices.h"
 #include "processor.h"
+#include "sim.h"
 
-clint_t::clint_t(std::vector<processor_t*>& procs, uint64_t freq_hz, bool real_time)
-  : procs(procs), freq_hz(freq_hz), real_time(real_time), mtime(0), mtimecmp(procs.size())
+clint_t::clint_t(sim_t* sim, uint64_t freq_hz, bool real_time)
+  : sim(sim), freq_hz(freq_hz), real_time(real_time), mtime(0)
 {
   struct timeval base;
 
@@ -29,16 +30,27 @@ clint_t::clint_t(std::vector<processor_t*>& procs, uint64_t freq_hz, bool real_t
 
 bool clint_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
+  if (len > 8)
+    return false;
+
   increment(0);
-  if (addr >= MSIP_BASE && addr + len <= MSIP_BASE + procs.size()*sizeof(msip_t)) {
-    std::vector<msip_t> msip(procs.size());
-    for (size_t i = 0; i < procs.size(); ++i)
-      msip[i] = !!(procs[i]->state.mip->read() & MIP_MSIP);
-    memcpy(bytes, (uint8_t*)&msip[0] + addr - MSIP_BASE, len);
-  } else if (addr >= MTIMECMP_BASE && addr + len <= MTIMECMP_BASE + procs.size()*sizeof(mtimecmp_t)) {
-    memcpy(bytes, (uint8_t*)&mtimecmp[0] + addr - MTIMECMP_BASE, len);
-  } else if (addr >= MTIME_BASE && addr + len <= MTIME_BASE + sizeof(mtime_t)) {
-    memcpy(bytes, (uint8_t*)&mtime + addr - MTIME_BASE, len);
+
+  if (addr >= MSIP_BASE && addr < MTIMECMP_BASE) {
+    if (len == 8) {
+      // Implement double-word loads as a pair of word loads
+      return load(addr, 4, bytes) && load(addr + 4, 4, bytes + 4);
+    }
+
+    const auto hart_id = (addr - MSIP_BASE) / sizeof(msip_t);
+    const msip_t res = sim->get_harts().count(hart_id) && (sim->get_harts().at(hart_id)->state.mip->read() & MIP_MSIP);
+    read_little_endian_reg(res, addr, len, bytes);
+    return true;
+  } else if (addr >= MTIMECMP_BASE && addr < MTIME_BASE) {
+    const auto hart_id = (addr - MTIMECMP_BASE) / sizeof(mtimecmp_t);
+    const mtime_t res = sim->get_harts().count(hart_id) ? mtimecmp[hart_id] : 0;
+    read_little_endian_reg(res, addr, len, bytes);
+  } else if (addr >= MTIME_BASE && addr < MTIME_BASE + sizeof(mtime_t)) {
+    read_little_endian_reg(mtime, addr, len, bytes);
   } else if (addr + len <= CLINT_SIZE) {
     memset(bytes, 0, len);
   } else {
@@ -49,21 +61,27 @@ bool clint_t::load(reg_t addr, size_t len, uint8_t* bytes)
 
 bool clint_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
-  if (addr >= MSIP_BASE && addr + len <= MSIP_BASE + procs.size()*sizeof(msip_t)) {
-    std::vector<msip_t> msip(procs.size());
-    std::vector<msip_t> mask(procs.size(), 0);
-    memcpy((uint8_t*)&msip[0] + addr - MSIP_BASE, bytes, len);
-    memset((uint8_t*)&mask[0] + addr - MSIP_BASE, 0xff, len);
-    for (size_t i = 0; i < procs.size(); ++i) {
-      if (!(mask[i] & 0xFF)) continue;
-      procs[i]->state.mip->backdoor_write_with_mask(MIP_MSIP, 0);
-      if (!!(msip[i] & 1))
-        procs[i]->state.mip->backdoor_write_with_mask(MIP_MSIP, MIP_MSIP);
+  if (len > 8)
+    return false;
+
+  if (addr >= MSIP_BASE && addr < MTIMECMP_BASE) {
+    if (len == 8) {
+      // Implement double-word stores as a pair of word stores
+      return store(addr, 4, bytes) && store(addr + 4, 4, bytes + 4);
     }
-  } else if (addr >= MTIMECMP_BASE && addr + len <= MTIMECMP_BASE + procs.size()*sizeof(mtimecmp_t)) {
-    memcpy((uint8_t*)&mtimecmp[0] + addr - MTIMECMP_BASE, bytes, len);
-  } else if (addr >= MTIME_BASE && addr + len <= MTIME_BASE + sizeof(mtime_t)) {
-    memcpy((uint8_t*)&mtime + addr - MTIME_BASE, bytes, len);
+
+    msip_t msip = 0;
+    write_little_endian_reg(&msip, addr, len, bytes);
+
+    const auto hart_id = (addr - MSIP_BASE) / sizeof(msip_t);
+    if (sim->get_harts().count(hart_id))
+      sim->get_harts().at(hart_id)->state.mip->backdoor_write_with_mask(MIP_MSIP, msip & 1 ? MIP_MSIP : 0);
+  } else if (addr >= MTIMECMP_BASE && addr < MTIME_BASE) {
+    const auto hart_id = (addr - MTIMECMP_BASE) / sizeof(mtimecmp_t);
+    if (sim->get_harts().count(hart_id))
+      write_little_endian_reg(&mtimecmp[hart_id], addr, len, bytes);
+  } else if (addr >= MTIME_BASE && addr < MTIME_BASE + sizeof(mtime_t)) {
+    write_little_endian_reg(&mtime, addr, len, bytes);
   } else if (addr + len <= CLINT_SIZE) {
     // Do nothing
   } else {
@@ -85,10 +103,9 @@ void clint_t::increment(reg_t inc)
   } else {
     mtime += inc;
   }
-  for (size_t i = 0; i < procs.size(); i++) {
-    procs[i]->state.time->sync(mtime);
-    procs[i]->state.mip->backdoor_write_with_mask(MIP_MTIP, 0);
-    if (mtime >= mtimecmp[i])
-      procs[i]->state.mip->backdoor_write_with_mask(MIP_MTIP, MIP_MTIP);
+
+  for (const auto& [hart_id, hart] : sim->get_harts()) {
+    hart->state.time->sync(mtime);
+    hart->state.mip->backdoor_write_with_mask(MIP_MTIP, mtime >= mtimecmp[hart_id] ? MIP_MTIP : 0);
   }
 }

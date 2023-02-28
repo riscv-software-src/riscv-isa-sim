@@ -58,7 +58,7 @@ class mem_t : public abstract_device_t {
 
 class clint_t : public abstract_device_t {
  public:
-  clint_t(std::vector<processor_t*>&, uint64_t freq_hz, bool real_time);
+  clint_t(sim_t*, uint64_t freq_hz, bool real_time);
   bool load(reg_t addr, size_t len, uint8_t* bytes);
   bool store(reg_t addr, size_t len, const uint8_t* bytes);
   size_t size() { return CLINT_SIZE; }
@@ -69,13 +69,13 @@ class clint_t : public abstract_device_t {
   typedef uint64_t mtime_t;
   typedef uint64_t mtimecmp_t;
   typedef uint32_t msip_t;
-  std::vector<processor_t*>& procs;
+  sim_t* sim;
   uint64_t freq_hz;
   bool real_time;
   uint64_t real_time_ref_secs;
   uint64_t real_time_ref_usecs;
   mtime_t mtime;
-  std::vector<mtimecmp_t> mtimecmp;
+  std::map<size_t, mtimecmp_t> mtimecmp;
 };
 
 #define PLIC_MAX_DEVICES 1024

@@ -119,7 +119,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   // setting the dtb_file argument has one.
   reg_t clint_base;
   if (fdt_parse_clint(fdt, &clint_base, "riscv,clint0") == 0) {
-    clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, cfg->real_time_clint()));
+    clint.reset(new clint_t(this, CPU_HZ / INSNS_PER_RTC_TICK, cfg->real_time_clint()));
     bus.add_device(clint_base, clint.get());
   }
 
