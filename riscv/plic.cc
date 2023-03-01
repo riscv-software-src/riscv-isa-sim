@@ -329,9 +329,7 @@ bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes)
     }
   }
 
-  if (ret) {
-    memcpy(bytes, (uint8_t *)&val, len);
-  }
+  memcpy(bytes, (uint8_t *)&val, len);
 
   return ret;
 }
