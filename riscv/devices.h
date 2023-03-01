@@ -10,6 +10,7 @@
 #include <queue>
 #include <vector>
 #include <utility>
+#include <cassert>
 
 class processor_t;
 class sim_t;
@@ -169,5 +170,27 @@ class mmio_plugin_device_t : public abstract_device_t {
   mmio_plugin_t plugin;
   void* user_data;
 };
+
+template<typename T>
+void write_little_endian_reg(T* word, reg_t addr, size_t len, const uint8_t* bytes)
+{
+  assert(len <= sizeof(T));
+
+  for (size_t i = 0; i < len; i++) {
+    const int shift = 8 * ((addr + i) % sizeof(T));
+    *word = (*word & ~(T(0xFF) << shift)) | (T(bytes[i]) << shift);
+  }
+}
+
+template<typename T>
+void read_little_endian_reg(T word, reg_t addr, size_t len, uint8_t* bytes)
+{
+  assert(len <= sizeof(T));
+
+  for (size_t i = 0; i < len; i++) {
+    const int shift = 8 * ((addr + i) % sizeof(T));
+    bytes[i] = word >> shift;
+  }
+}
 
 #endif

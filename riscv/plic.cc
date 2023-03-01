@@ -329,7 +329,7 @@ bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes)
     }
   }
 
-  memcpy(bytes, (uint8_t *)&val, len);
+  read_little_endian_reg(val, addr, len, bytes);
 
   return ret;
 }
@@ -337,7 +337,7 @@ bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes)
 bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
   bool ret = false;
-  uint32_t val;
+  uint32_t val = 0;
 
   switch (len) {
     case 4:
@@ -350,7 +350,7 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
       return false;
   }
 
-  memcpy((uint8_t *)&val, bytes, len);
+  write_little_endian_reg(&val, addr, len, bytes);
 
   if (PRIORITY_BASE <= addr && addr < ENABLE_BASE) {
     ret = priority_write(addr, val);
