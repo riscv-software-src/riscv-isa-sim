@@ -37,7 +37,7 @@ m4_define( proj_version, [?])
 #-------------------------------------------------------------------------
 
 AC_INIT(proj_name,proj_version,proj_maintainer,proj_abbreviation)
-AC_LANG_CPLUSPLUS
+AC_LANG([C++])
 AC_CONFIG_SRCDIR([riscv/common.h])
 AC_CONFIG_AUX_DIR([scripts])
 AC_CANONICAL_BUILD
