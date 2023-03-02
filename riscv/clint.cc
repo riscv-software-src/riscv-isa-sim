@@ -12,6 +12,7 @@ clint_t::clint_t(sim_t* sim, uint64_t freq_hz, bool real_time)
 
   real_time_ref_secs = base.tv_sec;
   real_time_ref_usecs = base.tv_usec;
+  increment(0);
 }
 
 /* 0000 msip hart 0
