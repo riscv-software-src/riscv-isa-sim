@@ -30,6 +30,8 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
+const size_t sim_t::INTERLEAVE;
+
 sim_t::sim_t(const cfg_t *cfg, bool halted,
              std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
