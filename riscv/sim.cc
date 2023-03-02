@@ -119,7 +119,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   // setting the dtb_file argument has one.
   reg_t clint_base;
   if (fdt_parse_clint(fdt, &clint_base, "riscv,clint0") == 0) {
-    clint.reset(new clint_t(procs, CPU_HZ / INSNS_PER_RTC_TICK, cfg->real_time_clint()));
+    clint.reset(new clint_t(this, CPU_HZ / INSNS_PER_RTC_TICK, cfg->real_time_clint()));
     bus.add_device(clint_base, clint.get());
   }
 
@@ -130,7 +130,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   reg_t plic_base;
   uint32_t plic_ndev;
   if (fdt_parse_plic(fdt, &plic_base, &plic_ndev, "riscv,plic0") == 0) {
-    plic.reset(new plic_t(procs, true, plic_ndev));
+    plic.reset(new plic_t(this, plic_ndev));
     bus.add_device(plic_base, plic.get());
     intctrl = plic.get();
   }

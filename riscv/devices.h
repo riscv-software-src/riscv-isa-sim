@@ -10,8 +10,10 @@
 #include <queue>
 #include <vector>
 #include <utility>
+#include <cassert>
 
 class processor_t;
+class sim_t;
 
 class bus_t : public abstract_device_t {
  public:
@@ -56,7 +58,7 @@ class mem_t : public abstract_device_t {
 
 class clint_t : public abstract_device_t {
  public:
-  clint_t(std::vector<processor_t*>&, uint64_t freq_hz, bool real_time);
+  clint_t(sim_t*, uint64_t freq_hz, bool real_time);
   bool load(reg_t addr, size_t len, uint8_t* bytes);
   bool store(reg_t addr, size_t len, const uint8_t* bytes);
   size_t size() { return CLINT_SIZE; }
@@ -67,19 +69,23 @@ class clint_t : public abstract_device_t {
   typedef uint64_t mtime_t;
   typedef uint64_t mtimecmp_t;
   typedef uint32_t msip_t;
-  std::vector<processor_t*>& procs;
+  sim_t* sim;
   uint64_t freq_hz;
   bool real_time;
   uint64_t real_time_ref_secs;
   uint64_t real_time_ref_usecs;
   mtime_t mtime;
-  std::vector<mtimecmp_t> mtimecmp;
+  std::map<size_t, mtimecmp_t> mtimecmp;
 };
 
 #define PLIC_MAX_DEVICES 1024
 
 struct plic_context_t {
-	uint32_t num;
+  plic_context_t(processor_t* proc, bool mmode)
+    : proc(proc), mmode(mmode), priority_threshold(0), enable{}, pending{},
+      pending_priority{}, claimed{}
+  {}
+
 	processor_t *proc;
 	bool mmode;
 
@@ -92,13 +98,12 @@ struct plic_context_t {
 
 class plic_t : public abstract_device_t, public abstract_interrupt_controller_t {
  public:
-  plic_t(std::vector<processor_t*>&, bool smode, uint32_t ndev);
+  plic_t(sim_t*, uint32_t ndev);
   bool load(reg_t addr, size_t len, uint8_t* bytes);
   bool store(reg_t addr, size_t len, const uint8_t* bytes);
   void set_interrupt_level(uint32_t id, int lvl);
   size_t size() { return PLIC_SIZE; }
  private:
-  std::vector<processor_t*>& procs;
   std::vector<plic_context_t> contexts;
   uint32_t num_ids;
   uint32_t num_ids_word;
@@ -165,5 +170,27 @@ class mmio_plugin_device_t : public abstract_device_t {
   mmio_plugin_t plugin;
   void* user_data;
 };
+
+template<typename T>
+void write_little_endian_reg(T* word, reg_t addr, size_t len, const uint8_t* bytes)
+{
+  assert(len <= sizeof(T));
+
+  for (size_t i = 0; i < len; i++) {
+    const int shift = 8 * ((addr + i) % sizeof(T));
+    *word = (*word & ~(T(0xFF) << shift)) | (T(bytes[i]) << shift);
+  }
+}
+
+template<typename T>
+void read_little_endian_reg(T word, reg_t addr, size_t len, uint8_t* bytes)
+{
+  assert(len <= sizeof(T));
+
+  for (size_t i = 0; i < len; i++) {
+    const int shift = 8 * ((addr + i) % sizeof(T));
+    bytes[i] = word >> shift;
+  }
+}
 
 #endif

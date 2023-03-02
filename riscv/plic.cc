@@ -1,6 +1,7 @@
 #include <sys/time.h>
 #include "devices.h"
 #include "processor.h"
+#include "sim.h"
 
 #define PLIC_MAX_CONTEXTS 15872
 
@@ -66,29 +67,17 @@
 
 #define REG_SIZE                0x1000000
 
-plic_t::plic_t(std::vector<processor_t*>& procs, bool smode, uint32_t ndev)
-  : procs(procs), contexts(procs.size() * (smode ? 2 : 1)),
-  num_ids(ndev + 1), num_ids_word(((ndev + 1) + (32 - 1)) / 32),
-  max_prio((1UL << PLIC_PRIO_BITS) - 1) 
+plic_t::plic_t(sim_t* sim, uint32_t ndev)
+  : num_ids(ndev + 1), num_ids_word(((ndev + 1) + (32 - 1)) / 32),
+  max_prio((1UL << PLIC_PRIO_BITS) - 1), priority{}, level{}
 {
-  size_t contexts_per_hart = smode ? 2 : 1;
+  // PLIC contexts are contiguous in memory even if harts are discontiguous.
+  for (const auto& [hart_id, hart] : sim->get_harts()) {
+    contexts.push_back(plic_context_t(hart, true));
 
-  memset(priority, 0, sizeof(priority));
-  memset(level, 0, sizeof(level));
-
-  for (size_t i = 0; i < contexts.size(); i++) {
-    plic_context_t* c = &contexts[i];
-    c->num = i;
-    c->proc = procs[i / contexts_per_hart];
-    if (smode) {
-      c->mmode = (i % contexts_per_hart == 0);
-    } else {
-      c->mmode = true;
+    if (hart->extension_enabled_const('S')) {
+      contexts.push_back(plic_context_t(hart, false));
     }
-    memset(&c->enable, 0, sizeof(c->enable));
-    memset(&c->pending, 0, sizeof(c->pending));
-    memset(&c->pending_priority, 0, sizeof(c->pending_priority));
-    memset(&c->claimed, 0, sizeof(c->claimed));
   }
 }
 
@@ -340,9 +329,7 @@ bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes)
     }
   }
 
-  if (ret) {
-    memcpy(bytes, (uint8_t *)&val, len);
-  }
+  read_little_endian_reg(val, addr, len, bytes);
 
   return ret;
 }
@@ -350,7 +337,7 @@ bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes)
 bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
   bool ret = false;
-  uint32_t val;
+  uint32_t val = 0;
 
   switch (len) {
     case 4:
@@ -363,7 +350,7 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
       return false;
   }
 
-  memcpy((uint8_t *)&val, bytes, len);
+  write_little_endian_reg(&val, addr, len, bytes);
 
   if (PRIORITY_BASE <= addr && addr < ENABLE_BASE) {
     ret = priority_write(addr, val);
