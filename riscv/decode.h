@@ -121,8 +121,8 @@ public:
   uint64_t rvc_lbimm() { return (x(5, 1) << 1) + x(6, 1); }
   uint64_t rvc_lhimm() { return (x(5, 1) << 1); }
 
-  uint64_t rvc_sreg1() { return x(7, 3); }
-  uint64_t rvc_sreg2() { return x(2, 3); }
+  uint64_t rvc_r1sc() { return x(7, 3); }
+  uint64_t rvc_r2sc() { return x(2, 3); }
   uint64_t rvc_rlist() { return x(4, 4); }
   uint64_t rvc_spimm() { return x(2, 2) << 4; }
 
