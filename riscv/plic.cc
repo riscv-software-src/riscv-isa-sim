@@ -1,7 +1,7 @@
 #include <sys/time.h>
 #include "devices.h"
 #include "processor.h"
-#include "sim.h"
+#include "simif.h"
 
 #define PLIC_MAX_CONTEXTS 15872
 
@@ -67,7 +67,7 @@
 
 #define REG_SIZE                0x1000000
 
-plic_t::plic_t(sim_t* sim, uint32_t ndev)
+plic_t::plic_t(simif_t* sim, uint32_t ndev)
   : num_ids(ndev + 1), num_ids_word(((ndev + 1) + (32 - 1)) / 32),
   max_prio((1UL << PLIC_PRIO_BITS) - 1), priority{}, level{}
 {

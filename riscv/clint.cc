@@ -1,9 +1,9 @@
 #include <sys/time.h>
 #include "devices.h"
 #include "processor.h"
-#include "sim.h"
+#include "simif.h"
 
-clint_t::clint_t(sim_t* sim, uint64_t freq_hz, bool real_time)
+clint_t::clint_t(simif_t* sim, uint64_t freq_hz, bool real_time)
   : sim(sim), freq_hz(freq_hz), real_time(real_time), mtime(0)
 {
   struct timeval base;
