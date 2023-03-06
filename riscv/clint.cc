@@ -71,12 +71,14 @@ bool clint_t::store(reg_t addr, size_t len, const uint8_t* bytes)
       return store(addr, 4, bytes) && store(addr + 4, 4, bytes + 4);
     }
 
-    msip_t msip = 0;
-    write_little_endian_reg(&msip, addr, len, bytes);
+    if (addr % sizeof(msip_t) == 0) {  // ignore in-between bytes
+      msip_t msip = 0;
+      write_little_endian_reg(&msip, addr, len, bytes);
 
-    const auto hart_id = (addr - MSIP_BASE) / sizeof(msip_t);
-    if (sim->get_harts().count(hart_id))
-      sim->get_harts().at(hart_id)->state.mip->backdoor_write_with_mask(MIP_MSIP, msip & 1 ? MIP_MSIP : 0);
+      const auto hart_id = (addr - MSIP_BASE) / sizeof(msip_t);
+      if (sim->get_harts().count(hart_id))
+        sim->get_harts().at(hart_id)->state.mip->backdoor_write_with_mask(MIP_MSIP, msip & 1 ? MIP_MSIP : 0);
+    }
   } else if (addr >= MTIMECMP_BASE && addr < MTIME_BASE) {
     const auto hart_id = (addr - MTIMECMP_BASE) / sizeof(mtimecmp_t);
     if (sim->get_harts().count(hart_id))

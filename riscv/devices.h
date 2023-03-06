@@ -82,18 +82,17 @@ class clint_t : public abstract_device_t {
 
 struct plic_context_t {
   plic_context_t(processor_t* proc, bool mmode)
-    : proc(proc), mmode(mmode), priority_threshold(0), enable{}, pending{},
-      pending_priority{}, claimed{}
+    : proc(proc), mmode(mmode)
   {}
 
-	processor_t *proc;
-	bool mmode;
+  processor_t *proc;
+  bool mmode;
 
-	uint8_t priority_threshold;
-	uint32_t enable[PLIC_MAX_DEVICES/32];
-	uint32_t pending[PLIC_MAX_DEVICES/32];
-	uint8_t pending_priority[PLIC_MAX_DEVICES];
-	uint32_t claimed[PLIC_MAX_DEVICES/32];
+  uint8_t priority_threshold {};
+  uint32_t enable[PLIC_MAX_DEVICES/32] {};
+  uint32_t pending[PLIC_MAX_DEVICES/32] {};
+  uint8_t pending_priority[PLIC_MAX_DEVICES] {};
+  uint32_t claimed[PLIC_MAX_DEVICES/32] {};
 };
 
 class plic_t : public abstract_device_t, public abstract_interrupt_controller_t {
