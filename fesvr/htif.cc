@@ -161,26 +161,24 @@ void htif_t::load_program()
   }
 
   // detect torture tests so we can print the memory signature at the end
-  if (symbols.count("begin_signature") && symbols.count("end_signature"))
-  {
+  if (symbols.count("begin_signature") && symbols.count("end_signature")) {
     sig_addr = symbols["begin_signature"];
     sig_len = symbols["end_signature"] - sig_addr;
   }
 
-  for (auto payload : payloads)
-  {
+  for (auto payload : payloads) {
     reg_t dummy_entry;
     load_payload(payload, &dummy_entry);
   }
 
-   for (auto i : symbols)
-   {
-     auto it = addr2symbol.find(i.second);
-     if ( it == addr2symbol.end())
-       addr2symbol[i.second] = i.first;
-   }
 
-   return;
+  for (auto i : symbols) {
+    auto it = addr2symbol.find(i.second);
+    if ( it == addr2symbol.end())
+      addr2symbol[i.second] = i.first;
+  }
+
+  return;
 }
 
 const char* htif_t::get_symbol(uint64_t addr)
