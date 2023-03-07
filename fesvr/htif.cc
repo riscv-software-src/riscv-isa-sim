@@ -345,6 +345,9 @@ void htif_t::parse_arguments(int argc, char ** argv)
       case HTIF_LONG_OPTIONS_OPTIND + 6:
         targs.push_back(optarg);
         break;
+      case HTIF_LONG_OPTIONS_OPTIND + 7:
+        symbol_elfs.push_back(optarg);
+        break;
       case '?':
         if (!opterr)
           break;
@@ -387,6 +390,10 @@ void htif_t::parse_arguments(int argc, char ** argv)
 	  c = HTIF_LONG_OPTIONS_OPTIND + 6;
 	  optarg = optarg + 17;
 	}
+        else if (arg.find("+symbol-elf=") == 0) {
+          c = HTIF_LONG_OPTIONS_OPTIND + 7;
+          optarg = optarg + 12;
+        }
         else if (arg.find("+permissive-off") == 0) {
           if (opterr)
             throw std::invalid_argument("Found +permissive-off when not parsing permissively");

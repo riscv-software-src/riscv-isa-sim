@@ -128,6 +128,8 @@ class htif_t : public chunked_memif_t
        +chroot=PATH\n\
       --payload=PATH       Load PATH memory as an additional ELF payload\n\
        +payload=PATH\n\
+      --symbol-elf=PATH    Populate the symbol table with the ELF file at PATH\n\
+       +symbol-elf=PATH\n\
 \n\
 HOST OPTIONS (currently unsupported)\n\
       --disk=DISK          Add DISK device. Use a ramdisk since this isn't\n\
@@ -147,6 +149,7 @@ TARGET (RISC-V BINARY) OPTIONS\n\
 {"payload",   required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 4 },     \
 {"signature-granularity",    required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 5 },     \
 {"target-argument",          required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 6 },     \
+{"symbol-elf",               required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 7 },     \
 {0, 0, 0, 0}
 
 #endif // __HTIF_H
