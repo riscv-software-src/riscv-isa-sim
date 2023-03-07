@@ -145,6 +145,7 @@ TARGET (RISC-V BINARY) OPTIONS\n\
 {"chroot",    required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 3 },     \
 {"payload",   required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 4 },     \
 {"signature-granularity",    optional_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 5 },     \
+{"target-argument",          required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 6 },     \
 {0, 0, 0, 0}
 
 #endif // __HTIF_H
