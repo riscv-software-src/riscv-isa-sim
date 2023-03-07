@@ -63,6 +63,7 @@ class htif_t : public chunked_memif_t
   virtual void idle() {}
 
   const std::vector<std::string>& host_args() { return hargs; }
+  std::vector<std::string>& target_args() { return targs; }
 
   reg_t get_entry_point() { return entry; }
 
@@ -97,8 +98,6 @@ class htif_t : public chunked_memif_t
   bcd_t bcd;
   std::vector<device_t*> dynamic_devices;
   std::vector<std::string> payloads;
-
-  const std::vector<std::string>& target_args() { return targs; }
 
   std::map<uint64_t, std::string> addr2symbol;
 
