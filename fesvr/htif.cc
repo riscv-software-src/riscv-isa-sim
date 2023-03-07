@@ -327,7 +327,9 @@ void htif_t::parse_arguments(int argc, char ** argv)
         break;
       case HTIF_LONG_OPTIONS_OPTIND + 5:
         line_size = atoi(optarg);
-
+        break;
+      case HTIF_LONG_OPTIONS_OPTIND + 6:
+        targs.push_back(optarg);
         break;
       case '?':
         if (!opterr)
@@ -363,10 +365,14 @@ void htif_t::parse_arguments(int argc, char ** argv)
           c = HTIF_LONG_OPTIONS_OPTIND + 4;
           optarg = optarg + 9;
         }
-        else if(arg.find("+signature-granularity=")==0){
-            c = HTIF_LONG_OPTIONS_OPTIND + 5;
-            optarg = optarg + 23;
+        else if (arg.find("+signature-granularity=") == 0) {
+          c = HTIF_LONG_OPTIONS_OPTIND + 5;
+          optarg = optarg + 23;
         }
+	else if (arg.find("+target-argument=") == 0) {
+	  c = HTIF_LONG_OPTIONS_OPTIND + 6;
+	  optarg = optarg + 17;
+	}
         else if (arg.find("+permissive-off") == 0) {
           if (opterr)
             throw std::invalid_argument("Found +permissive-off when not parsing permissively");

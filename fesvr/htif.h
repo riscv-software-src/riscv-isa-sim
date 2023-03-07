@@ -63,7 +63,7 @@ class htif_t : public chunked_memif_t
   virtual void idle() {}
 
   const std::vector<std::string>& host_args() { return hargs; }
-  std::vector<std::string>& target_args() { return targs; }
+  const std::vector<std::string>& target_args() { return targs; }
 
   reg_t get_entry_point() { return entry; }
 
@@ -144,7 +144,8 @@ TARGET (RISC-V BINARY) OPTIONS\n\
 {"signature", required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 2 },     \
 {"chroot",    required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 3 },     \
 {"payload",   required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 4 },     \
-{"signature-granularity",    optional_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 5 },     \
+{"signature-granularity",    required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 5 },     \
+{"target-argument",          required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 6 },     \
 {0, 0, 0, 0}
 
 #endif // __HTIF_H
