@@ -7,6 +7,7 @@
 #include "platform.h"
 #include "byteorder.h"
 #include "trap.h"
+#include "../riscv/common.h"
 #include <algorithm>
 #include <assert.h>
 #include <vector>
@@ -171,6 +172,21 @@ void htif_t::load_program()
     load_payload(payload, &dummy_entry);
   }
 
+  class nop_memif_t : public memif_t {
+   public:
+    nop_memif_t(htif_t* htif) : memif_t(htif), htif(htif) {}
+    void read(addr_t UNUSED addr, size_t UNUSED len, void UNUSED *bytes) override {}
+    void write(addr_t UNUSED taddr, size_t UNUSED len, const void UNUSED *src) override {}
+   private:
+    htif_t* htif;
+  } nop_memif(this);
+
+  reg_t nop_entry;
+  for (auto &s : symbol_elfs) {
+    std::map<std::string, uint64_t> other_symbols = load_elf(s.c_str(), &nop_memif, &nop_entry,
+                                                             expected_xlen);
+    symbols.merge(other_symbols);
+  }
 
   for (auto i : symbols) {
     auto it = addr2symbol.find(i.second);

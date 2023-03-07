@@ -99,6 +99,7 @@ class htif_t : public chunked_memif_t
   std::vector<device_t*> dynamic_devices;
   std::vector<std::string> payloads;
 
+  std::vector<std::string> symbol_elfs;
   std::map<uint64_t, std::string> addr2symbol;
 
   friend class memif_t;
