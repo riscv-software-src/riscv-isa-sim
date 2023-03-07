@@ -63,7 +63,7 @@ class htif_t : public chunked_memif_t
   virtual void idle() {}
 
   const std::vector<std::string>& host_args() { return hargs; }
-  std::vector<std::string>& target_args() { return targs; }
+  const std::vector<std::string>& target_args() { return targs; }
 
   reg_t get_entry_point() { return entry; }
 
