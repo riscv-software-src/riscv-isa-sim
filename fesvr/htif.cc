@@ -7,6 +7,7 @@
 #include "platform.h"
 #include "byteorder.h"
 #include "trap.h"
+#include "../riscv/common.h"
 #include <algorithm>
 #include <assert.h>
 #include <vector>
@@ -161,26 +162,39 @@ void htif_t::load_program()
   }
 
   // detect torture tests so we can print the memory signature at the end
-  if (symbols.count("begin_signature") && symbols.count("end_signature"))
-  {
+  if (symbols.count("begin_signature") && symbols.count("end_signature")) {
     sig_addr = symbols["begin_signature"];
     sig_len = symbols["end_signature"] - sig_addr;
   }
 
-  for (auto payload : payloads)
-  {
+  for (auto payload : payloads) {
     reg_t dummy_entry;
     load_payload(payload, &dummy_entry);
   }
 
-   for (auto i : symbols)
-   {
-     auto it = addr2symbol.find(i.second);
-     if ( it == addr2symbol.end())
-       addr2symbol[i.second] = i.first;
-   }
+  class nop_memif_t : public memif_t {
+   public:
+    nop_memif_t(htif_t* htif) : memif_t(htif), htif(htif) {}
+    void read(addr_t UNUSED addr, size_t UNUSED len, void UNUSED *bytes) override {}
+    void write(addr_t UNUSED taddr, size_t UNUSED len, const void UNUSED *src) override {}
+   private:
+    htif_t* htif;
+  } nop_memif(this);
 
-   return;
+  reg_t nop_entry;
+  for (auto &s : symbol_elfs) {
+    std::map<std::string, uint64_t> other_symbols = load_elf(s.c_str(), &nop_memif, &nop_entry,
+                                                             expected_xlen);
+    symbols.merge(other_symbols);
+  }
+
+  for (auto i : symbols) {
+    auto it = addr2symbol.find(i.second);
+    if ( it == addr2symbol.end())
+      addr2symbol[i.second] = i.first;
+  }
+
+  return;
 }
 
 const char* htif_t::get_symbol(uint64_t addr)
@@ -331,6 +345,9 @@ void htif_t::parse_arguments(int argc, char ** argv)
       case HTIF_LONG_OPTIONS_OPTIND + 6:
         targs.push_back(optarg);
         break;
+      case HTIF_LONG_OPTIONS_OPTIND + 7:
+        symbol_elfs.push_back(optarg);
+        break;
       case '?':
         if (!opterr)
           break;
@@ -373,6 +390,10 @@ void htif_t::parse_arguments(int argc, char ** argv)
 	  c = HTIF_LONG_OPTIONS_OPTIND + 6;
 	  optarg = optarg + 17;
 	}
+        else if (arg.find("+symbol-elf=") == 0) {
+          c = HTIF_LONG_OPTIONS_OPTIND + 7;
+          optarg = optarg + 12;
+        }
         else if (arg.find("+permissive-off") == 0) {
           if (opterr)
             throw std::invalid_argument("Found +permissive-off when not parsing permissively");
