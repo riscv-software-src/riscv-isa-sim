@@ -407,7 +407,7 @@ void sim_t::interactive_run(const std::string& cmd, const std::vector<std::strin
   for (size_t i = 0; i < actual_steps && !ctrlc_pressed && !done(); i++)
     step(1);
 
-  if (actual_steps < steps) {
+  if (actual_steps < steps && !ctrlc_pressed) {
     next_interactive_action = [=](){ interactive_run(cmd, {std::to_string(steps - actual_steps)}, noisy); };
     return;
   }
