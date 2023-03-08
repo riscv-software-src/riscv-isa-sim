@@ -58,7 +58,7 @@ public:
   const std::map<size_t, processor_t*>& get_harts() { return harts; }
 
   // Callback for processors to let the simulation know they were reset.
-  void proc_reset(unsigned id);
+  virtual void proc_reset(unsigned id) override;
 
 private:
   isa_parser_t isa;
@@ -98,13 +98,13 @@ private:
   std::optional<std::function<void()>> next_interactive_action;
 
   // memory-mapped I/O routines
-  char* addr_to_mem(reg_t paddr);
-  bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes);
-  bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes);
+  virtual char* addr_to_mem(reg_t paddr) override;
+  virtual bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes) override;
+  virtual bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes) override;
   void make_dtb(const char* dtb_file);
   void set_rom();
 
-  const char* get_symbol(uint64_t paddr);
+  virtual const char* get_symbol(uint64_t paddr) override;
 
   // presents a prompt for introspection into the simulation
   void interactive();
@@ -141,13 +141,13 @@ private:
   friend class debug_module_t;
 
   // htif
-  void reset();
-  void idle();
-  void read_chunk(addr_t taddr, size_t len, void* dst);
-  void write_chunk(addr_t taddr, size_t len, const void* src);
-  size_t chunk_align() { return 8; }
-  size_t chunk_max_size() { return 8; }
-  endianness_t get_target_endianness() const;
+  virtual void reset() override;
+  virtual void idle() override;
+  virtual void read_chunk(addr_t taddr, size_t len, void* dst) override;
+  virtual void write_chunk(addr_t taddr, size_t len, const void* src) override;
+  virtual size_t chunk_align() override { return 8; }
+  virtual size_t chunk_max_size() override { return 8; }
+  virtual endianness_t get_target_endianness() const override;
 
 public:
   // Initialize this after procs, because in debug_module_t::reset() we
