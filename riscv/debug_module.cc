@@ -1,6 +1,7 @@
 #include <cassert>
 
-#include "sim.h"
+#include "simif.h"
+#include "devices.h"
 #include "debug_module.h"
 #include "debug_defines.h"
 #include "opcodes.h"
@@ -31,7 +32,7 @@ static unsigned field_width(unsigned n)
 
 ///////////////////////// debug_module_t
 
-debug_module_t::debug_module_t(sim_t *sim, const debug_module_config_t &config) :
+debug_module_t::debug_module_t(simif_t *sim, const debug_module_config_t &config) :
   config(config),
   program_buffer_bytes((config.support_impebreak ? 4 : 0) + 4*config.progbufsize),
   debug_progbuf_start(debug_data_start - program_buffer_bytes),

@@ -7,7 +7,7 @@
 
 #include "abstract_device.h"
 
-class sim_t;
+class simif_t;
 class bus_t;
 class processor_t;
 
@@ -110,7 +110,7 @@ class debug_module_t : public abstract_device_t
      * abstract_rti is extra run-test/idle cycles that each abstract command
      * takes to execute. Useful for testing OpenOCD.
      */
-    debug_module_t(sim_t *sim, const debug_module_config_t &config);
+    debug_module_t(simif_t *sim, const debug_module_config_t &config);
     ~debug_module_t();
 
     void add_device(bus_t *bus);
@@ -145,7 +145,7 @@ class debug_module_t : public abstract_device_t
     // functionality.
     unsigned custom_base;
 
-    sim_t *sim;
+    simif_t *sim;
 
     uint8_t debug_rom_whereto[4];
     uint8_t debug_abstract[debug_abstract_size * 4];
