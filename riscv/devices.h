@@ -114,6 +114,7 @@ class plic_t : public abstract_device_t, public abstract_interrupt_controller_t 
   uint32_t context_claim(plic_context_t *c);
   bool priority_read(reg_t offset, uint32_t *val);
   bool priority_write(reg_t offset, uint32_t val);
+  bool pending_read(reg_t offset, uint32_t *val);
   bool context_enable_read(const plic_context_t *context,
                            reg_t offset, uint32_t *val);
   bool context_enable_write(plic_context_t *context,
