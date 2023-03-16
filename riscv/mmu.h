@@ -403,6 +403,13 @@ private:
     return (uint16_t*)(translate_insn_addr(addr).host_offset + addr);
   }
 
+  inline bool in_mprv()
+  {
+    return proc != nullptr
+           && !proc->state.debug_mode
+           && get_field(proc->state.mstatus->read(), MSTATUS_MPRV);
+  }
+
   reg_t pmp_homogeneous(reg_t addr, reg_t len);
   bool pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode);
 
