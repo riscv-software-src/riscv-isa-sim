@@ -157,7 +157,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZCB] = true;
       extension_table[EXT_ZCMT] = true;
       extension_table[EXT_ZCMP] = true;
-      if (extension_table['F'])
+      if (extension_table['F'] && max_xlen == 32)
         extension_table[EXT_ZCF] = true;
     } else if (ext_str == "zca") {
       extension_table[EXT_ZCA] = true;
