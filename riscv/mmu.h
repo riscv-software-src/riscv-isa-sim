@@ -406,6 +406,7 @@ private:
   inline bool in_mprv()
   {
     return proc != nullptr
+           && !(proc->state.mnstatus && !get_field(proc->state.mnstatus->read(), MNSTATUS_NMIE))
            && !proc->state.debug_mode
            && get_field(proc->state.mstatus->read(), MSTATUS_MPRV);
   }

@@ -516,6 +516,24 @@ reg_t mstatus_csr_t::compute_mstatus_initial_value() const noexcept {
          | 0;  // initial value for mstatus
 }
 
+// implement class mnstatus_csr_t
+mnstatus_csr_t::mnstatus_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, 0) {
+}
+
+bool mnstatus_csr_t::unlogged_write(const reg_t val) noexcept {
+  // NMIE can be set but not cleared
+  const reg_t mask = (~read() & MNSTATUS_NMIE)
+                   | (proc->extension_enabled('H') ? MNSTATUS_MNPV : 0)
+                   | MNSTATUS_MNPP;
+
+  const reg_t requested_mnpp = proc->legalize_privilege(get_field(val, MNSTATUS_MNPP));
+  const reg_t adjusted_val = set_field(val, MNSTATUS_MNPP, requested_mnpp);
+  const reg_t new_mnstatus = (read() & ~mask) | (adjusted_val & mask);
+
+  return basic_csr_t::unlogged_write(new_mnstatus);
+}
+
 // implement class rv32_low_csr_t
 rv32_low_csr_t::rv32_low_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig):
   csr_t(proc, addr),
@@ -654,7 +672,9 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
       | (1 << CAUSE_VIRTUAL_INSTRUCTION)
       | (1 << CAUSE_STORE_GUEST_PAGE_FAULT)
       ;
+
     state->medeleg->write(state->medeleg->read() & ~hypervisor_exceptions);
+    if (state->mnstatus) state->mnstatus->write(state->mnstatus->read() & ~MNSTATUS_MNPV);
     const reg_t new_mstatus = state->mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV);
     state->mstatus->write(new_mstatus);
     if (state->mstatush) state->mstatush->write(new_mstatus >> 32);  // log mstatush change

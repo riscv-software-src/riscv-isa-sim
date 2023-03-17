@@ -256,6 +256,13 @@ class mstatus_csr_t final: public base_status_csr_t {
 
 typedef std::shared_ptr<mstatus_csr_t> mstatus_csr_t_p;
 
+class mnstatus_csr_t final: public basic_csr_t {
+ public:
+  mnstatus_csr_t(processor_t* const proc, const reg_t addr);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
 // For RV32 CSRs that are split into two, e.g. mstatus/mstatush
 // CSRW should only modify the lower half
 class rv32_low_csr_t: public csr_t {
