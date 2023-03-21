@@ -251,12 +251,12 @@ Listening for remote bitbang connection on port 9824.
 In a separate shell run OpenOCD with the appropriate configuration file:
 ```
 $ cat spike.cfg 
-interface remote_bitbang
-remote_bitbang_host localhost
-remote_bitbang_port 9824
+adapter driver remote_bitbang
+remote_bitbang host localhost
+remote_bitbang port 9824
 
 set _CHIPNAME riscv
-jtag newtap $_CHIPNAME cpu -irlen 5 -expected-id 0x10e31913
+jtag newtap $_CHIPNAME cpu -irlen 5 -expected-id 0xdeadbeef
 
 set _TARGETNAME $_CHIPNAME.cpu
 target create $_TARGETNAME riscv -chain-position $_TARGETNAME
