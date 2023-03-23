@@ -252,7 +252,13 @@ static std::string readline(int fd)
 
 void sim_t::interactive()
 {
+  if (ctrlc_pressed) {
+    next_interactive_action = std::nullopt;
+    ctrlc_pressed = false;
+  }
+
   if (next_interactive_action.has_value()) {
+    ctrlc_pressed = false;
     auto f = next_interactive_action.value();
     next_interactive_action = std::nullopt;
     return f();
@@ -400,14 +406,13 @@ void sim_t::interactive_run_silent(const std::string& cmd, const std::vector<std
 void sim_t::interactive_run(const std::string& cmd, const std::vector<std::string>& args, bool noisy)
 {
   size_t steps = args.size() ? atoll(args[0].c_str()) : -1;
-  ctrlc_pressed = false;
   set_procs_debug(noisy);
 
   const size_t actual_steps = std::min(INTERLEAVE, steps);
   for (size_t i = 0; i < actual_steps && !ctrlc_pressed && !done(); i++)
     step(1);
 
-  if (actual_steps < steps && !ctrlc_pressed) {
+  if (actual_steps < steps) {
     next_interactive_action = [=](){ interactive_run(cmd, {std::to_string(steps - actual_steps)}, noisy); };
     return;
   }
@@ -740,8 +745,6 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
 
   if (func == NULL)
     throw trap_interactive();
-
-  ctrlc_pressed = false;
 
   for (size_t i = 0; i < INTERLEAVE; i++)
   {
