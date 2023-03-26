@@ -293,6 +293,8 @@ public:
   void set_mmu_capability(int cap);
 
   const char* get_symbol(uint64_t addr);
+  
+  bool is_waiting_for_interrupt() { return in_wfi; };
 
 private:
   const isa_parser_t * const isa;
