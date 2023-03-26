@@ -225,6 +225,9 @@ void pmpcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
   // n_pmp can change after reset() is run.
   if (proc->n_pmp == 0)
     throw trap_illegal_instruction(insn.bits());
+
+  if ((address & 1) && proc->get_xlen((priv_mode_t){ PRV_M, false }) != 32)
+    throw trap_illegal_instruction(insn.bits());
 }
 
 reg_t pmpcfg_csr_t::read() const noexcept {
@@ -377,17 +380,17 @@ bool tvec_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 // implement class cause_csr_t
-cause_csr_t::cause_csr_t(processor_t* const proc, const reg_t addr):
-  basic_csr_t(proc, addr, 0) {
+cause_csr_t::cause_csr_t(processor_t* const proc, const reg_t addr, priv_mode_t prv):
+  basic_csr_t(proc, addr, 0),
+  prv(prv) {
 }
 
 reg_t cause_csr_t::read() const noexcept {
   reg_t val = basic_csr_t::read();
-  // When reading, the interrupt bit needs to adjust to xlen. Spike does
-  // not generally support dynamic xlen, but this code was (partly)
-  // there since at least 2015 (ea58df8 and c4350ef).
-  if (proc->get_isa().get_max_xlen() > proc->get_xlen()) // Move interrupt bit to top of xlen
-    return val | ((val >> (proc->get_isa().get_max_xlen()-1)) << (proc->get_xlen()-1));
+
+  unsigned xlen = proc->get_xlen(prv);
+  if (proc->get_isa().get_max_xlen() > xlen) // Move interrupt bit to top of xlen
+    return val | ((val >> (proc->get_isa().get_max_xlen() - 1)) << (xlen - 1));
   return val;
 }
 
@@ -395,12 +398,11 @@ reg_t cause_csr_t::read() const noexcept {
 base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
   csr_t(proc, addr),
   has_page(proc->extension_enabled_const('S') && proc->supports_impl(IMPL_MMU)),
-  sstatus_write_mask(compute_sstatus_write_mask()),
-  sstatus_read_mask(sstatus_write_mask | SSTATUS_UBE | SSTATUS_UXL
-                    | (proc->get_const_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD)) {
+  sstatus_const_write_mask(compute_const_sstatus_write_mask()),
+  sstatus_const_read_mask(sstatus_const_write_mask | SSTATUS_UBE | SSTATUS_UXL) {
 }
 
-reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
+reg_t base_status_csr_t::compute_const_sstatus_write_mask() const noexcept {
   // If a configuration has FS bits, they will always be accessible no
   // matter the state of misa.
   const bool has_fs = (proc->extension_enabled('S') || proc->extension_enabled('F')
@@ -415,13 +417,14 @@ reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
     ;
 }
 
-reg_t base_status_csr_t::adjust_sd(const reg_t val) const noexcept {
-  // This uses get_const_xlen() instead of get_xlen() not only because
-  // the variable is static, so it's only called once, but also
-  // because the SD bit moves when XLEN changes, which means we would
-  // need to call adjust_sd() on every read, instead of on every
-  // write.
-  static const reg_t sd_bit = proc->get_const_xlen() == 64 ? SSTATUS64_SD : SSTATUS32_SD;
+bool base_status_csr_t::field_exists(const reg_t which) {
+  auto sstatus_write_mask = sstatus_const_write_mask |
+                            (proc->get_xlen((priv_mode_t){ PRV_S, false }) != 32 ? SSTATUS_UXL : 0);
+  return (sstatus_write_mask & which) != 0;
+}
+
+reg_t base_status_csr_t::adjust_sd(const reg_t val, const unsigned xlen) const noexcept {
+  reg_t sd_bit = xlen == 64 ? SSTATUS64_SD : SSTATUS32_SD;
   if (((val & SSTATUS_FS) == SSTATUS_FS) ||
       ((val & SSTATUS_VS) == SSTATUS_VS) ||
       ((val & SSTATUS_XS) == SSTATUS_XS)) {
@@ -439,25 +442,52 @@ void base_status_csr_t::maybe_flush_tlb(const reg_t newval) noexcept {
 }
 
 namespace {
-  int xlen_to_uxl(int xlen) {
+  int xlen_to_xl(int xlen) {
     if (xlen == 32)
       return 1;
     if (xlen == 64)
       return 2;
     abort();
   }
+
+  unsigned xl_to_xlen(int xl) {
+    if (xl == 1)
+      return 32;
+    if (xl == 2)
+      return 64;
+    abort();
+  }
+
+  /*
+   * Only RV32 and RV64 is legal in spike currently.
+   */
+  bool is_legal_xl(int xl) {
+    return xl == 1 || xl == 2;
+  }
 }
 
 // implement class vsstatus_csr_t
 vsstatus_csr_t::vsstatus_csr_t(processor_t* const proc, const reg_t addr):
   base_status_csr_t(proc, addr),
-  val(proc->get_state()->mstatus->read() & sstatus_read_mask) {
+  val(proc->get_state()->mstatus->read() & sstatus_const_read_mask) {
+}
+
+reg_t vsstatus_csr_t::read() const noexcept {
+  unsigned vsxlen = proc->get_xlen((priv_mode_t){ PRV_S, true } );
+  unsigned vuxlen = proc->get_xlen((priv_mode_t){ PRV_U, true } );
+  return adjust_sd(set_field(val, SSTATUS_UXL, xlen_to_xl(vuxlen)), vsxlen);
 }
 
 bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
-  const reg_t newval = (this->val & ~sstatus_write_mask) | (val & sstatus_write_mask);
+  unsigned vsxlen = proc->get_xlen((priv_mode_t){ PRV_S, true });
+  reg_t newval = (this->val & ~sstatus_const_write_mask) | (val & sstatus_const_write_mask);
+  if (vsxlen != 32) {
+    int new_vuxl = get_field(val, SSTATUS_UXL);
+    if (is_legal_xl(new_vuxl))
+      proc->update_vuxlen(xl_to_xlen(new_vuxl));
+  }
   if (state->v) maybe_flush_tlb(newval);
-  this->val = adjust_sd(newval);
+  this->val = newval;
   return true;
 }
 
@@ -467,13 +497,15 @@ sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t ad
   mstatus(mstatus) {
 }
 
+reg_t sstatus_proxy_csr_t::read() const noexcept
+{
+  return adjust_sd(mstatus->read() & sstatus_const_read_mask, proc->get_xlen((priv_mode_t){ PRV_S, false }));
+}
+
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t sstatus_write_mask = sstatus_const_write_mask
+                               | (proc->get_xlen((priv_mode_t){ PRV_S, false } ) != 32 ? SSTATUS_UXL : 0);
   const reg_t new_mstatus = (mstatus->read() & ~sstatus_write_mask) | (val & sstatus_write_mask);
-
-  // On RV32 this will only log the low 32 bits, so make sure we're
-  // not modifying anything in the upper 32 bits.
-  assert((sstatus_write_mask & 0xffffffffU) == sstatus_write_mask);
-
   mstatus->write(new_mstatus);
   return false; // avoid double logging: already logged by mstatus->write()
 }
@@ -488,7 +520,7 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const bool has_mpv = proc->extension_enabled('H');
   const bool has_gva = has_mpv;
 
-  const reg_t mask = sstatus_write_mask
+  const reg_t mask = sstatus_const_write_mask
                    | MSTATUS_MIE | MSTATUS_MPIE
                    | (proc->extension_enabled('U') ? MSTATUS_MPRV : 0)
                    | MSTATUS_MPP | MSTATUS_TW
@@ -499,10 +531,40 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 
   const reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
   const reg_t adjusted_val = set_field(val, MSTATUS_MPP, requested_mpp);
-  const reg_t new_mstatus = (read() & ~mask) | (adjusted_val & mask);
+  const reg_t new_mstatus = (this->val & ~mask) | (adjusted_val & mask);
+
   maybe_flush_tlb(new_mstatus);
-  this->val = adjust_sd(new_mstatus);
+
+  const unsigned mxlen = proc->get_xlen((priv_mode_t) { PRV_M, false });
+
+  if (mxlen > 32) {
+    int new_sxl = get_field(val, MSTATUS_SXL);
+    int new_uxl = get_field(val, MSTATUS_UXL);
+
+    if (is_legal_xl(new_sxl))
+      proc->update_sxlen(xl_to_xlen(new_sxl));
+
+    if (is_legal_xl(new_uxl))
+      proc->update_uxlen(xl_to_xlen(new_uxl));
+  }
+
+  this->val = new_mstatus;
+
   return true;
+}
+
+reg_t mstatus_csr_t::read() const noexcept {
+  const unsigned mxlen = proc->get_xlen((priv_mode_t) { PRV_M, false });
+  reg_t mstatus_val = val;
+
+  if (mxlen != 32) {
+    const unsigned sxlen = proc->get_xlen((priv_mode_t) { PRV_S, false });
+    const unsigned uxlen = proc->get_xlen((priv_mode_t) { PRV_U, false });
+    mstatus_val = set_field(mstatus_val, MSTATUS_SXL, xlen_to_xl(sxlen));
+    mstatus_val = set_field(mstatus_val, MSTATUS_UXL, xlen_to_xl(uxlen));
+  }
+
+  return adjust_sd(mstatus_val, mxlen);
 }
 
 reg_t mstatus_csr_t::compute_mstatus_initial_value() const noexcept {
@@ -510,8 +572,6 @@ reg_t mstatus_csr_t::compute_mstatus_initial_value() const noexcept {
                               | (proc->extension_enabled_const('S') ? MSTATUS_SBE : 0)
                               | MSTATUS_MBE;
   return 0
-         | (proc->extension_enabled_const('U') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
-         | (proc->extension_enabled_const('S') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_SXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
          | (proc->get_mmu()->is_target_big_endian() ? big_endian_bits : 0)
          | 0;  // initial value for mstatus
 }
@@ -556,10 +616,37 @@ reg_t rv32_low_csr_t::written_value() const noexcept {
   return orig->written_value() & 0xffffffffU;
 }
 
-// implement class rv32_high_csr_t
-rv32_high_csr_t::rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig):
+// implement class rv64_rv32_low_csr_t
+rv64_rv32_low_csr_t::rv64_rv32_low_csr_t(processor_t* const proc, const reg_t addr,
+                                         csr_t_p orig, priv_mode_t prv):
   csr_t(proc, addr),
-  orig(orig) {
+  orig(orig),
+  low_half(std::make_shared<rv32_low_csr_t>(proc, addr, orig)),
+  prv(prv) {
+};
+
+reg_t rv64_rv32_low_csr_t::read() const noexcept {
+  unsigned xlen = proc->get_xlen(prv);
+  return xlen == 32 ? low_half->read() : orig->read();
+}
+
+void rv64_rv32_low_csr_t::verify_permissions(insn_t insn, bool write) const {
+  orig->verify_permissions(insn, write);
+}
+
+bool rv64_rv32_low_csr_t::unlogged_write(const reg_t val) noexcept {
+  unsigned xlen = proc->get_xlen(prv);
+  if (xlen == 32)
+    return low_half->unlogged_write(val);
+  else
+    return orig->unlogged_write(val);
+}
+
+// implement class rv32_high_csr_t
+rv32_high_csr_t::rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig, priv_mode_t prv):
+  csr_t(proc, addr),
+  orig(orig),
+  prv(prv) {
 }
 
 reg_t rv32_high_csr_t::read() const noexcept {
@@ -567,6 +654,8 @@ reg_t rv32_high_csr_t::read() const noexcept {
 }
 
 void rv32_high_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->get_xlen(prv) != 32)
+    throw trap_illegal_instruction(insn.bits());
   orig->verify_permissions(insn, write);
 }
 
@@ -649,8 +738,25 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   adjusted_val = dependency(adjusted_val, 'V', 'D');
 
   const bool prev_h = old_misa & (1L << ('H' - 'A'));
-  const reg_t new_misa = (adjusted_val & write_mask) | (old_misa & ~write_mask);
+  reg_t new_misa = (adjusted_val & write_mask) | (old_misa & ~write_mask);
   const bool new_h = new_misa & (1L << ('H' - 'A'));
+  unsigned mxlen = proc->get_xlen((priv_mode_t){ PRV_M, false });
+
+  /* MXL is writable when MAX_XLEN > 32 */
+  if (((max_isa >> 62) & 3) > 1) {
+    const uint8_t old_mxl = (old_misa >> (mxlen - 2)) & 3;
+    const uint8_t new_mxl = adjusted_val >> (mxlen - 2);
+    if (is_legal_xl(new_mxl) && old_mxl != new_mxl) {
+      unsigned new_mxlen = xl_to_xlen(new_mxl);
+      proc->update_mxlen(new_mxlen);
+      /*
+       * If a write to misa causes MXLEN to change, the position of
+       * MXL moves to the most-significant two bits of misa at the new width
+       */
+      new_misa = (new_misa & ~(3 << (mxlen - 2))) | (new_mxl << (new_mxlen - 2));
+      mxlen = new_mxlen;
+    }
+  }
 
   proc->set_extension_enable(EXT_ZCA, (new_misa & (1L << ('C' - 'A'))) || !proc->get_isa().extension_enabled('C'));
   proc->set_extension_enable(EXT_ZCF, (new_misa & (1L << ('F' - 'A'))) && proc->extension_enabled(EXT_ZCA));
@@ -677,7 +783,7 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
     if (state->mnstatus) state->mnstatus->write(state->mnstatus->read() & ~MNSTATUS_MNPV);
     const reg_t new_mstatus = state->mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV);
     state->mstatus->write(new_mstatus);
-    if (state->mstatush) state->mstatush->write(new_mstatus >> 32);  // log mstatush change
+    if (mxlen == 32) state->mstatush->write(new_mstatus >> 32);  // log mstatush change
     state->mie->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hie, sie
     state->mip->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hip, sip, hvip
     state->hstatus->write(0);
@@ -905,8 +1011,9 @@ henvcfg_csr_t::henvcfg_csr_t(processor_t* const proc, const reg_t addr, const re
 }
 
 // implement class base_atp_csr_t and family
-base_atp_csr_t::base_atp_csr_t(processor_t* const proc, const reg_t addr):
-  basic_csr_t(proc, addr, 0) {
+base_atp_csr_t::base_atp_csr_t(processor_t* const proc, const reg_t addr, priv_mode_t prv):
+  basic_csr_t(proc, addr, 0),
+  prv(prv) {
 }
 
 bool base_atp_csr_t::unlogged_write(const reg_t val) noexcept {
@@ -917,7 +1024,7 @@ bool base_atp_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 bool base_atp_csr_t::satp_valid(reg_t val) const noexcept {
-  if (proc->get_xlen() == 32) {
+  if (proc->get_xlen(prv) == 32) {
     switch (get_field(val, SATP32_MODE)) {
       case SATP_MODE_SV32: return proc->supports_impl(IMPL_MMU_SV32);
       case SATP_MODE_OFF: return true;
@@ -937,10 +1044,11 @@ bool base_atp_csr_t::satp_valid(reg_t val) const noexcept {
 reg_t base_atp_csr_t::compute_new_satp(reg_t val) const noexcept {
   reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
 
-  reg_t mode_mask = proc->get_xlen() == 32 ? SATP32_MODE : SATP64_MODE;
-  reg_t asid_mask_if_enabled = proc->get_xlen() == 32 ? SATP32_ASID : SATP64_ASID;
+  reg_t xlen = proc->get_xlen(prv);
+  reg_t mode_mask = xlen == 32 ? SATP32_MODE : SATP64_MODE;
+  reg_t asid_mask_if_enabled = xlen == 32 ? SATP32_ASID : SATP64_ASID;
   reg_t asid_mask = proc->supports_impl(IMPL_MMU_ASID) ? asid_mask_if_enabled : 0;
-  reg_t ppn_mask = proc->get_xlen() == 32 ? SATP32_PPN : SATP64_PPN & rv64_ppn_mask;
+  reg_t ppn_mask = xlen == 32 ? SATP32_PPN : SATP64_PPN & rv64_ppn_mask;
   reg_t new_mask = (satp_valid(val) ? mode_mask : 0) | asid_mask | ppn_mask;
   reg_t old_mask = satp_valid(val) ? 0 : mode_mask;
 
@@ -948,7 +1056,7 @@ reg_t base_atp_csr_t::compute_new_satp(reg_t val) const noexcept {
 }
 
 satp_csr_t::satp_csr_t(processor_t* const proc, const reg_t addr):
-  base_atp_csr_t(proc, addr) {
+  base_atp_csr_t(proc, addr, (priv_mode_t){ PRV_S, false }) {
 }
 
 void satp_csr_t::verify_permissions(insn_t insn, bool write) const {
@@ -1101,6 +1209,18 @@ bool mevent_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
 }
 
+rv32_counter_proxy_csr_t::rv32_counter_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate,
+                                                   priv_mode_t prv):
+  counter_proxy_csr_t(proc, addr, delegate),
+  prv(prv) {
+}
+
+void rv32_counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->get_xlen(prv) != 32)
+    throw trap_virtual_instruction(insn.bits());
+  counter_proxy_csr_t::verify_permissions(insn, write);
+}
+
 hypervisor_csr_t::hypervisor_csr_t(processor_t* const proc, const reg_t addr):
   basic_csr_t(proc, addr, 0) {
 }
@@ -1134,7 +1254,7 @@ bool hgatp_csr_t::unlogged_write(const reg_t val) noexcept {
   proc->get_mmu()->flush_tlb();
 
   reg_t mask;
-  if (proc->get_const_xlen() == 32) {
+  if (proc->get_xlen((priv_mode_t){ PRV_S, false }) == 32) {
     mask = HGATP32_PPN |
         HGATP32_MODE |
         (proc->supports_impl(IMPL_MMU_VMID) ? HGATP32_VMID : 0);
@@ -1563,4 +1683,25 @@ void jvt_csr_t::verify_permissions(insn_t insn, bool write) const {
         throw trap_illegal_instruction(insn.bits());
     }
   }
+}
+
+// implement class hstatus_csr_t
+hstatus_csr_t::hstatus_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  masked_csr_t(proc, addr, mask, init) {
+}
+
+bool hstatus_csr_t::unlogged_write(const reg_t val) noexcept {
+  reg_t newval = val ;
+  if (proc->get_xlen((priv_mode_t){ PRV_S, false }) != 32) {
+    int new_vsxl = get_field(val, HSTATUS_VSXL);
+    if (is_legal_xl(new_vsxl))
+      proc->update_vsxlen(xl_to_xlen(new_vsxl));
+  }
+  return masked_csr_t::unlogged_write(newval);
+}
+
+reg_t hstatus_csr_t::read() const noexcept {
+  unsigned vsxlen = proc->get_xlen((priv_mode_t){ PRV_S, true } );
+
+  return set_field(masked_csr_t::read(), HSTATUS_VSXL, xlen_to_xl(vsxlen));
 }

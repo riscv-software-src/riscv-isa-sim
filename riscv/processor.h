@@ -110,7 +110,7 @@ struct state_t
 
   csr_t_p mtval2;
   csr_t_p mtinst;
-  csr_t_p hstatus;
+  hstatus_csr_t_p hstatus;
   csr_t_p hideleg;
   csr_t_p hedeleg;
   csr_t_p hcounteren;
@@ -202,17 +202,25 @@ public:
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
   unsigned get_xlen() const { return xlen; }
-  unsigned get_const_xlen() const {
-    // Any code that assumes a const xlen should use this method to
-    // document that assumption. If Spike ever changes to allow
-    // variable xlen, this method should be removed.
-    return xlen;
-  }
+
   unsigned get_flen() const {
     return extension_enabled('Q') ? 128 :
            extension_enabled('D') ? 64 :
            extension_enabled('F') ? 32 : 0;
   }
+
+  unsigned get_xlen(const priv_mode_t prv) const;
+  unsigned get_max_xlen() const {
+    return isa->get_max_xlen();
+  }
+  unsigned get_csr_len(int csr_addr);
+
+  void update_mxlen(unsigned val);
+  void update_sxlen(unsigned val);
+  void update_vsxlen(unsigned val);
+  void update_uxlen(unsigned val);
+  void update_vuxlen(unsigned val);
+
   extension_t* get_extension();
   extension_t* get_extension(const char* name);
   bool any_custom_extensions() const {
@@ -307,6 +315,11 @@ private:
   state_t state;
   uint32_t id;
   unsigned xlen;
+  unsigned mxlen;
+  unsigned sxlen;
+  unsigned uxlen;
+  unsigned vsxlen;
+  unsigned vuxlen;
   bool histogram_enabled;
   bool log_commits_enabled;
   FILE *log_file;
@@ -332,7 +345,6 @@ private:
   void take_trap(trap_t& t, reg_t epc); // take an exception
   void take_trigger_action(triggers::action_t action, reg_t breakpoint_tval, reg_t epc);
   void disasm(insn_t insn); // disassemble and print an instruction
-  int paddr_bits();
 
   void enter_debug_mode(uint8_t cause);
 

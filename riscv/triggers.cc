@@ -72,7 +72,7 @@ bool trigger_t::mode_match(state_t * const state) const noexcept
 bool trigger_t::textra_match(processor_t * const proc) const noexcept
 {
   auto xlen = proc->get_xlen();
-  auto hsxlen = proc->get_xlen(); // use xlen since no hsxlen
+  auto hsxlen = proc->get_xlen((priv_mode_t){ PRV_S, false });
   state_t * const state = proc->get_state();
 
   assert(sselect <= SSELECT_MAXVAL);
@@ -246,7 +246,7 @@ bool mcontrol_common_t::legalize_timing(reg_t val, reg_t timing_mask, reg_t sele
 }
 
 reg_t mcontrol6_t::tdata1_read(const processor_t * const proc) const noexcept {
-  unsigned xlen = proc->get_const_xlen();
+  unsigned xlen = proc->get_xlen((priv_mode_t){ PRV_M, false });
   reg_t tdata1 = 0;
   tdata1 = set_field(tdata1, CSR_MCONTROL6_TYPE(xlen), CSR_TDATA1_TYPE_MCONTROL6);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_DMODE(xlen), dmode);
@@ -268,7 +268,7 @@ reg_t mcontrol6_t::tdata1_read(const processor_t * const proc) const noexcept {
 }
 
 void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept {
-  auto xlen = proc->get_const_xlen();
+  auto xlen = proc->get_xlen((priv_mode_t){ PRV_M, false });
   assert(get_field(val, CSR_MCONTROL6_TYPE(xlen)) == CSR_TDATA1_TYPE_MCONTROL6);
   dmode = get_field(val, CSR_MCONTROL6_DMODE(xlen));
   vs = get_field(val, CSR_MCONTROL6_VS);

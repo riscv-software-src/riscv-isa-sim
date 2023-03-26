@@ -15,6 +15,11 @@
 class processor_t;
 struct state_t;
 
+struct priv_mode_t {
+  reg_t priv;
+  bool virt;
+};
+
 // Parent, abstract class for all CSRs
 class csr_t {
  public:
@@ -59,6 +64,7 @@ class csr_t {
   // For access to written_value() and unlogged_write():
   friend class rv32_high_csr_t;
   friend class rv32_low_csr_t;
+  friend class rv64_rv32_low_csr_t;
 };
 
 typedef std::shared_ptr<csr_t> csr_t_p;
@@ -195,9 +201,11 @@ class tvec_csr_t: public csr_t {
 // For mcause, scause, and vscause
 class cause_csr_t: public basic_csr_t {
  public:
-  cause_csr_t(processor_t* const proc, const reg_t addr);
+  cause_csr_t(processor_t* const proc, const reg_t addr, priv_mode_t prv);
 
   virtual reg_t read() const noexcept override;
+ private:
+  priv_mode_t prv;
 };
 
 // For *status family of CSRs
@@ -205,18 +213,16 @@ class base_status_csr_t: public csr_t {
  public:
   base_status_csr_t(processor_t* const proc, const reg_t addr);
 
-  bool field_exists(const reg_t which) {
-    return (sstatus_write_mask & which) != 0;
-  }
+  bool field_exists(const reg_t which);
 
  protected:
-  reg_t adjust_sd(const reg_t val) const noexcept;
+  reg_t adjust_sd(const reg_t val, const unsigned xlen) const noexcept;
   void maybe_flush_tlb(const reg_t newval) noexcept;
   const bool has_page;
-  const reg_t sstatus_write_mask;
-  const reg_t sstatus_read_mask;
+  const reg_t sstatus_const_write_mask;
+  const reg_t sstatus_const_read_mask;
  private:
-  reg_t compute_sstatus_write_mask() const noexcept;
+  reg_t compute_const_sstatus_write_mask() const noexcept;
 };
 
 typedef std::shared_ptr<base_status_csr_t> base_status_csr_t_p;
@@ -227,9 +233,7 @@ class vsstatus_csr_t final: public base_status_csr_t {
  public:
   vsstatus_csr_t(processor_t* const proc, const reg_t addr);
 
-  reg_t read() const noexcept override {
-    return val;
-  }
+  reg_t read() const noexcept override;
 
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
@@ -243,9 +247,7 @@ class mstatus_csr_t final: public base_status_csr_t {
  public:
   mstatus_csr_t(processor_t* const proc, const reg_t addr);
 
-  reg_t read() const noexcept override {
-    return val;
-  }
+  reg_t read() const noexcept override;
 
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
@@ -279,7 +281,7 @@ class rv32_low_csr_t: public csr_t {
 
 class rv32_high_csr_t: public csr_t {
  public:
-  rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig);
+  rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig, priv_mode_t prv);
   virtual reg_t read() const noexcept override;
   virtual void verify_permissions(insn_t insn, bool write) const override;
  protected:
@@ -287,15 +289,30 @@ class rv32_high_csr_t: public csr_t {
   virtual reg_t written_value() const noexcept override;
  private:
   csr_t_p orig;
+  priv_mode_t prv;
+};
+
+class rv64_rv32_low_csr_t: public csr_t {
+ public:
+  rv64_rv32_low_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig, priv_mode_t prv);
+
+  virtual reg_t read() const noexcept override;
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+
+ private:
+  csr_t_p orig;
+  csr_t_p low_half;
+  priv_mode_t prv;
 };
 
 class sstatus_proxy_csr_t final: public base_status_csr_t {
  public:
   sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr, mstatus_csr_t_p mstatus);
 
-  reg_t read() const noexcept override {
-    return mstatus->read() & sstatus_read_mask;
-  }
+  reg_t read() const noexcept override;
 
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
@@ -479,12 +496,13 @@ class henvcfg_csr_t final: public masked_csr_t {
 // These are three classes in order to handle the [V]TVM bits permission checks
 class base_atp_csr_t: public basic_csr_t {
  public:
-  base_atp_csr_t(processor_t* const proc, const reg_t addr);
+  base_atp_csr_t(processor_t* const proc, const reg_t addr, priv_mode_t prv);
   bool satp_valid(reg_t val) const noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
   reg_t compute_new_satp(reg_t val) const noexcept;
+  priv_mode_t prv;
 };
 
 class satp_csr_t: public base_atp_csr_t {
@@ -574,6 +592,14 @@ class mevent_csr_t: public basic_csr_t {
   mevent_csr_t(processor_t* const proc, const reg_t addr);
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class rv32_counter_proxy_csr_t: public counter_proxy_csr_t {
+ public:
+  rv32_counter_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate, priv_mode_t prv);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+ private:
+  priv_mode_t prv;
 };
 
 // For machine-level CSRs that only exist with Hypervisor
@@ -785,4 +811,14 @@ class jvt_csr_t: public basic_csr_t {
   jvt_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
+
+class hstatus_csr_t: public masked_csr_t {
+ public:
+  hstatus_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+typedef std::shared_ptr<hstatus_csr_t> hstatus_csr_t_p;
 #endif
