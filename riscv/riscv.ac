@@ -9,10 +9,10 @@ AC_CHECK_LIB([boost_system], [main], [], [])
 AC_CHECK_LIB([boost_regex], [main], [], [])
 
 AC_ARG_WITH(isa,
-	[AS_HELP_STRING([--with-isa=RV64IMAFDC],
+	[AS_HELP_STRING([--with-isa=RV64IMAFDC_zicntr_zihpm],
 		[Sets the default RISC-V ISA])],
   AC_DEFINE_UNQUOTED([DEFAULT_ISA], "$withval", [Default value for --isa switch]),
-  AC_DEFINE_UNQUOTED([DEFAULT_ISA], "RV64IMAFDC", [Default value for --isa switch]))
+  AC_DEFINE_UNQUOTED([DEFAULT_ISA], "RV64IMAFDC_zicntr_zihpm", [Default value for --isa switch]))
 
 AC_ARG_WITH(priv,
 	[AS_HELP_STRING([--with-priv=MSU],
