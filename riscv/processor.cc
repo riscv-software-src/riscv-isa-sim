@@ -247,7 +247,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     auto mcounter = std::make_shared<const_csr_t>(proc, which_mcounter, 0);
     csrmap[which_mcounter] = mcounter;
 
-    if (proc->extension_enabled_const(EXT_ZICNTR) && proc->extension_enabled_const(EXT_ZIHPM)) {
+    if (proc->extension_enabled_const(EXT_ZIHPM)) {
       auto counter = std::make_shared<counter_proxy_csr_t>(proc, which_counter, mcounter);
       csrmap[which_counter] = counter;
     }
@@ -255,7 +255,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       csrmap[which_mevent] = std::make_shared<rv32_low_csr_t>(proc, which_mevent, mevent[i - 3]);;
       auto mcounterh = std::make_shared<const_csr_t>(proc, which_mcounterh, 0);
       csrmap[which_mcounterh] = mcounterh;
-      if (proc->extension_enabled_const(EXT_ZICNTR) && proc->extension_enabled_const(EXT_ZIHPM)) {
+      if (proc->extension_enabled_const(EXT_ZIHPM)) {
         auto counterh = std::make_shared<counter_proxy_csr_t>(proc, which_counterh, mcounterh);
         csrmap[which_counterh] = counterh;
       }
