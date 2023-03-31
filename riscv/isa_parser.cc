@@ -27,17 +27,36 @@ static void bad_priv_string(const char* priv)
   abort();
 }
 
+static std::string expand_rva_profile_string(const std::string& str)
+{
+  std::map<std::string, std::string> profile_choices;
+  profile_choices["rva20"] = "rv64gc_zicsr_zicntr_zifencei";
+  profile_choices["rva22"] = profile_choices["rva20"] + "_zihpm_zihintpause_zba_zbb_zbs_zicbom_zicbop_zicboz_zfhmin_zkt";
+
+  for (const auto& [name, expansion] : profile_choices) {
+    if (str.compare(0, name.length(), name) == 0) {
+      if (str.length() == name.length())
+        return expansion;
+
+      return expansion + "_" + str.substr(name.length());
+    }
+  }
+
+  return str;
+}
+
 isa_parser_t::isa_parser_t(const char* str, const char *priv)
 {
-  isa_string = strtolower(str);
   const char* all_subsets = "mafdqchpv";
+
+  isa_string = expand_rva_profile_string(strtolower(str));
 
   if (isa_string.compare(0, 4, "rv32") == 0)
     max_xlen = 32;
   else if (isa_string.compare(0, 4, "rv64") == 0)
     max_xlen = 64;
   else
-    bad_isa_string(str, "ISA strings must begin with RV32 or RV64");
+    bad_isa_string(str, "ISA strings must begin with RV32, RV64, or a valid profile name");
 
   switch (isa_string[4]) {
     case 'g':
@@ -58,38 +77,40 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   }
 
   const char* isa_str = isa_string.c_str();
-  auto p = isa_str, subset = all_subsets;
-  for (p += 5; islower(*p) && !strchr("zsx", *p); ++p) {
-    while (*subset && (*p != *subset))
-      ++subset;
+  auto p = isa_str + 5;
 
-    if (!*subset) {
-      if (strchr(all_subsets, *p))
-        bad_isa_string(str, ("Extension '" + std::string(1, *p) + "' appears too late in ISA string").c_str());
-      else
-        bad_isa_string(str, ("Unsupported extension '" + std::string(1, *p) + "'").c_str());
+  while (true) {
+    // Ignore underscores
+    while (*p == '_')
+      p++;
+
+    if (!islower(*p))
+      break;
+
+    if (strchr(all_subsets, *p)) {
+      // Handle single-letter extensions
+      switch (*p) {
+        case 'p': extension_table[EXT_ZBPBO] = true;
+                  extension_table[EXT_ZPN] = true;
+                  extension_table[EXT_ZPSFOPERAND] = true;
+                  extension_table[EXT_ZMMUL] = true; break;
+        case 'v': // even rv32iv implies double float
+        case 'q': extension_table['D'] = true;
+                  // Fall through
+        case 'd': extension_table['F'] = true;
+      }
+
+      extension_table[toupper(*p)] = true;
+
+      while (isdigit(*(p + 1))) {
+        ++p; // skip major version, point, and minor version if presented
+        if (*(p + 1) == 'p') ++p;
+      }
+
+      ++p;
+      continue;
     }
 
-    switch (*p) {
-      case 'p': extension_table[EXT_ZBPBO] = true;
-                extension_table[EXT_ZPN] = true;
-                extension_table[EXT_ZPSFOPERAND] = true;
-                extension_table[EXT_ZMMUL] = true; break;
-      case 'v': // even rv32iv implies double float
-      case 'q': extension_table['D'] = true;
-                // Fall through
-      case 'd': extension_table['F'] = true;
-    }
-    extension_table[toupper(*p)] = true;
-    while (isdigit(*(p + 1))) {
-      ++p; // skip major version, point, and minor version if presented
-      if (*(p + 1) == 'p') ++p;
-    }
-    p += *(p + 1) == '_'; // underscores may be used to improve readability
-  }
-
-  while (islower(*p) || (*p == '_')) {
-    p += *p == '_'; // first underscore is optional
     auto end = p;
     do ++end; while (*end && *end != '_');
     auto ext_str = std::string(p, end);
