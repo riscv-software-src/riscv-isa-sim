@@ -76,9 +76,6 @@ cache_sim_t::~cache_sim_t()
 
 void cache_sim_t::print_stats()
 {
-  if (read_accesses + write_accesses == 0)
-    return;
-
   float mr = 100.0f*(read_misses+write_misses)/(read_accesses+write_accesses);
 
   std::cout << std::setprecision(3) << std::fixed;
