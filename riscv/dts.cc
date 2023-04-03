@@ -34,10 +34,10 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
     s << "    linux,initrd-start = <" << (size_t)initrd_start << ">;\n"
          "    linux,initrd-end = <" << (size_t)initrd_end << ">;\n";
     if (!bootargs)
-      bootargs = "root=/dev/ram console=ttyS0 earlycon";
+      bootargs = "root=/dev/ram " DEFAULT_KERNEL_BOOTARGS;
   } else {
     if (!bootargs)
-      bootargs = "console=ttyS0 earlycon";
+      bootargs = DEFAULT_KERNEL_BOOTARGS;
   }
     s << "    bootargs = \"";
   for (size_t i = 0; i < strlen(bootargs); i++) {
