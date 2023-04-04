@@ -100,6 +100,10 @@ class cache_memtracer_t : public memtracer_t
   {
     cache->set_log(log);
   }
+  void print_stats()
+  {
+    cache->print_stats();
+  }
 
  protected:
   cache_sim_t* cache;
