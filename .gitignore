@@ -6,3 +6,4 @@ autom4te.cache/
 *.d
 .gdb_history
 .#*
+*~
