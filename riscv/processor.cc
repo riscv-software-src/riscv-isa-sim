@@ -696,6 +696,7 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     else
       abort();
 
+    if (check_triggers_icount) TM.detect_icount_match();
     throw trap_t(((reg_t)1 << (isa->get_max_xlen() - 1)) | ctz(enabled_interrupts));
   }
 }

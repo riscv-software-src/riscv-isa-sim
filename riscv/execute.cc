@@ -263,7 +263,7 @@ void processor_t::step(size_t n)
             state.single_step = state.STEP_STEPPED;
           }
 
-          if (!state.serialized) {
+          if (!state.serialized && check_triggers_icount) {
             auto match = TM.detect_icount_match();
             if (match.has_value()) {
               assert(match->timing == triggers::TIMING_BEFORE);
