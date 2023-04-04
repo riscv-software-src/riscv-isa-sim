@@ -108,7 +108,8 @@ class cache_memtracer_t : public memtracer_t
 class icache_sim_t : public cache_memtracer_t
 {
  public:
-  icache_sim_t(const char* config) : cache_memtracer_t(config, "I$") {}
+  icache_sim_t(const char* config, const char* name = "I$")
+	  : cache_memtracer_t(config, name) {}
   bool interested_in_range(uint64_t UNUSED begin, uint64_t UNUSED end, access_type type)
   {
     return type == FETCH;
@@ -122,7 +123,8 @@ class icache_sim_t : public cache_memtracer_t
 class dcache_sim_t : public cache_memtracer_t
 {
  public:
-  dcache_sim_t(const char* config) : cache_memtracer_t(config, "D$") {}
+  dcache_sim_t(const char* config, const char* name = "D$")
+	  : cache_memtracer_t(config, name) {}
   bool interested_in_range(uint64_t UNUSED begin, uint64_t UNUSED end, access_type type)
   {
     return type == LOAD || type == STORE;
