@@ -33,12 +33,18 @@ void mmu_t::flush_icache()
     icache[i].tag = -1;
 }
 
-void mmu_t::flush_tlb()
+void mmu_t::flush_tlb(enum stage_t stage)
 {
   memset(tlb_insn_tag, -1, sizeof(tlb_insn_tag));
-  memset(tlb_load_tag, -1, sizeof(tlb_load_tag));
-  memset(tlb_store_tag, -1, sizeof(tlb_store_tag));
-
+  if(stage == ALL) {
+    for(int i = 0; i < 3; i++) {
+      memset(tlb_load_tag[i], -1, sizeof(tlb_load_tag[i]));
+      memset(tlb_store_tag[i], -1, sizeof(tlb_store_tag[i]));
+    }
+  } else {
+    memset(tlb_load_tag[stage], -1, sizeof(tlb_load_tag[stage]));
+    memset(tlb_store_tag[stage], -1, sizeof(tlb_store_tag[stage]));
+  }
   flush_icache();
 }
 
@@ -87,7 +93,7 @@ tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
   if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] != (vpn | TLB_CHECK_TRIGGERS))) {
     reg_t paddr = translate(vaddr, sizeof(fetch_temp), FETCH, 0);
     if (auto host_addr = sim->addr_to_mem(paddr)) {
-      result = refill_tlb(vaddr, paddr, host_addr, FETCH);
+      result = refill_tlb(vaddr, paddr, host_addr, FETCH, ALL);
     } else {
       if (!mmio_fetch(paddr, sizeof fetch_temp, (uint8_t*)&fetch_temp))
         throw trap_instruction_access_fault(proc->state.v, vaddr, 0, 0);
@@ -200,13 +206,6 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, std::
 
 void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags)
 {
-  reg_t vpn = addr >> PGSHIFT;
-  if (xlate_flags == 0 && vpn == (tlb_load_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
-    auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
-    memcpy(bytes, host_addr, len);
-    return;
-  }
-
   reg_t paddr = translate(addr, len, LOAD, xlate_flags);
 
   if ((xlate_flags & RISCV_XLATE_LR) && !sim->reservable(paddr)) {
@@ -217,9 +216,6 @@ void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint
     memcpy(bytes, host_addr, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
       tracer.trace(paddr, len, LOAD);
-    else if (xlate_flags == 0)
-      refill_tlb(addr, paddr, host_addr, LOAD);
-
   } else if (!mmio_load(paddr, len, bytes)) {
     throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
   }
@@ -254,15 +250,6 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
 
 void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store)
 {
-  reg_t vpn = addr >> PGSHIFT;
-  if (xlate_flags == 0 && vpn == (tlb_store_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
-    if (actually_store) {
-      auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
-      memcpy(host_addr, bytes, len);
-    }
-    return;
-  }
-
   reg_t paddr = translate(addr, len, STORE, xlate_flags);
 
   if (actually_store) {
@@ -270,8 +257,6 @@ void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* byte
       memcpy(host_addr, bytes, len);
       if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
         tracer.trace(paddr, len, STORE);
-      else if (xlate_flags == 0)
-        refill_tlb(addr, paddr, host_addr, STORE);
     } else if (!mmio_store(paddr, len, bytes)) {
       throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
     }
@@ -300,20 +285,20 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_
   }
 }
 
-tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type)
+tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type, enum stage_t stage)
 {
   reg_t idx = (vaddr >> PGSHIFT) % TLB_ENTRIES;
   reg_t expected_tag = vaddr >> PGSHIFT;
 
-  tlb_entry_t entry = {host_addr - vaddr, paddr - vaddr};
+  tlb_entry_t entry = {host_addr - vaddr, (int64_t)paddr - (int64_t)vaddr};
 
   if (in_mprv())
     return entry;
 
-  if ((tlb_load_tag[idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)
-    tlb_load_tag[idx] = -1;
-  if ((tlb_store_tag[idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)
-    tlb_store_tag[idx] = -1;
+  if ((tlb_load_tag[stage][idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)
+    tlb_load_tag[stage][idx] = -1;
+  if ((tlb_store_tag[stage][idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)
+    tlb_store_tag[stage][idx] = -1;
   if ((tlb_insn_tag[idx] & ~TLB_CHECK_TRIGGERS) != expected_tag)
     tlb_insn_tag[idx] = -1;
 
@@ -324,11 +309,14 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
 
   if (pmp_homogeneous(paddr & ~reg_t(PGSIZE - 1), PGSIZE)) {
     if (type == FETCH) tlb_insn_tag[idx] = expected_tag;
-    else if (type == STORE) tlb_store_tag[idx] = expected_tag;
-    else tlb_load_tag[idx] = expected_tag;
+    else if (type == STORE) tlb_store_tag[stage][idx] = expected_tag;
+    else tlb_load_tag[stage][idx] = expected_tag;
   }
-
-  tlb_data[idx] = entry;
+  if(type == FETCH)
+    tlb_data[idx] = entry;
+  else {
+    tlb_ls_data[stage][idx] = entry;
+  }
   return entry;
 }
 
@@ -379,7 +367,7 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
   return true;
 }
 
-reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool hlvx)
+reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool hlvx, bool final)
 {
   if (!virt)
     return gpa;
@@ -387,6 +375,21 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   vm_info vm = decode_vm_info(proc->get_const_xlen(), true, 0, proc->get_state()->hgatp->read());
   if (vm.levels == 0)
     return gpa;
+
+  if(virt && final) {
+    reg_t vpn = gpa >> PGSHIFT;
+    if(type == LOAD) {
+      if(likely((tlb_load_tag[G_STAGE][vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS) == vpn)) {
+         reg_t paddr = reg_t(tlb_ls_data[G_STAGE][vpn % TLB_ENTRIES].target_offset + gpa);
+         return paddr;
+      }
+    } else if (type == STORE) {
+      if(likely((tlb_store_tag[G_STAGE][vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS) == vpn)) {
+         reg_t paddr = reg_t(tlb_ls_data[G_STAGE][vpn % TLB_ENTRIES].target_offset + gpa);
+         return paddr;
+      }
+    }
+  }
 
   int maxgpabits = vm.levels * vm.idxbits + vm.widenbits + PGSHIFT;
   reg_t maxgpa = (1ULL << maxgpabits) - 1;
@@ -452,7 +455,12 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
         reg_t page_base = ((ppn & ~((reg_t(1) << napot_bits) - 1))
                           | (vpn & ((reg_t(1) << napot_bits) - 1))
                           | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
-        return page_base | (gpa & page_mask);
+        reg_t paddr = page_base | (gpa & page_mask);
+        if (final && type != FETCH) {
+          auto host_addr = sim->addr_to_mem(paddr | (gpa & (PGSIZE-1)));
+          refill_tlb(gpa, paddr, host_addr, type, G_STAGE);
+        }
+        return paddr;
       }
     }
   }
@@ -470,8 +478,41 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
   reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
   reg_t satp = proc->get_state()->satp->readvirt(virt);
   vm_info vm = decode_vm_info(proc->get_const_xlen(), false, mode, satp);
-  if (vm.levels == 0)
-    return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx) & ~page_mask; // zero-extend from xlen
+  if (vm.levels == 0) {
+    reg_t paddr = s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx, true) & ~page_mask; // zero-extend from xlen
+    return paddr;
+  }
+  
+  if(virt) {
+    reg_t vpn = addr >> PGSHIFT;
+    if(type == LOAD) {
+      if(likely((tlb_load_tag[VS_STAGE][vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS) == vpn)) {
+         reg_t phys = reg_t(tlb_ls_data[VS_STAGE][vpn % TLB_ENTRIES].target_offset + addr);
+         reg_t paddr =  s2xlate(addr, phys, type, type, virt, hlvx, true) & ~page_mask;
+         return paddr;
+      }
+    } else if (type == STORE) {
+      if(likely((tlb_store_tag[VS_STAGE][vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS) == vpn )) {
+         reg_t phys = reg_t(tlb_ls_data[VS_STAGE][vpn % TLB_ENTRIES].target_offset + addr);
+         reg_t paddr = s2xlate(addr, phys, type, type, virt, hlvx, true) & ~page_mask;
+         return paddr;
+      }
+    }
+  } else {
+    reg_t vpn = addr >> PGSHIFT;
+    if(type == LOAD) {
+      if(likely((tlb_load_tag[HS_STAGE][vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS) == vpn )) {
+         reg_t paddr = reg_t(tlb_ls_data[HS_STAGE][vpn % TLB_ENTRIES].target_offset + addr);
+         return paddr;
+      }
+    } else if (type == STORE) {
+      if(likely((tlb_store_tag[HS_STAGE][vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS) == vpn )) {
+         reg_t paddr = reg_t(tlb_ls_data[HS_STAGE][vpn % TLB_ENTRIES].target_offset + addr);
+        //  printf("HS hit store addr 0x%lx paddr 0x%lx\n", addr, paddr);
+         return paddr;
+      }
+    }
+  }
 
   bool s_mode = mode == PRV_S;
   bool sum = proc->state.sstatus->readvirt(virt) & MSTATUS_SUM;
@@ -542,7 +583,18 @@ reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx
                         | (vpn & ((reg_t(1) << napot_bits) - 1))
                         | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
       reg_t phys = page_base | (addr & page_mask);
-      return s2xlate(addr, phys, type, type, virt, hlvx) & ~page_mask;
+      reg_t paddr = s2xlate(addr, phys, type, type, virt, hlvx, true) & ~page_mask;
+      if(type != FETCH) {
+        if(!virt) {
+          auto host_addr = sim->addr_to_mem(paddr | (addr & (PGSIZE-1)));
+          refill_tlb(addr, phys, host_addr, type, HS_STAGE);
+          // printf("fill HS_STAGE addr 0x%lx phys 0x%lx\n", addr, phys);
+        } else {
+          auto host_addr = sim->addr_to_mem(phys | (addr & (PGSIZE-1)));
+          refill_tlb(addr, phys, host_addr, type, VS_STAGE);
+        }
+      }
+      return paddr;
     }
   }
 

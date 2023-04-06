@@ -434,8 +434,10 @@ void base_status_csr_t::maybe_flush_tlb(const reg_t newval) noexcept {
   if ((newval ^ read()) &
       (MSTATUS_MPP | MSTATUS_MPRV
        | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
-      ))
-    proc->get_mmu()->flush_tlb();
+      )) {
+    if(state->v) proc->get_mmu()->flush_tlb(VS_STAGE);
+    else proc->get_mmu()->flush_tlb();
+  }
 }
 
 namespace {
@@ -911,8 +913,12 @@ base_atp_csr_t::base_atp_csr_t(processor_t* const proc, const reg_t addr):
 
 bool base_atp_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t newval = proc->supports_impl(IMPL_MMU) ? compute_new_satp(val) : 0;
-  if (newval != read())
-    proc->get_mmu()->flush_tlb();
+  if (newval != read()) {
+    if(address == CSR_VSATP || state->v)
+      proc->get_mmu()->flush_tlb(VS_STAGE);
+    else
+      proc->get_mmu()->flush_tlb(HS_STAGE);
+  }
   return basic_csr_t::unlogged_write(newval);
 }
 
@@ -1131,7 +1137,7 @@ void hgatp_csr_t::verify_permissions(insn_t insn, bool write) const {
 }
 
 bool hgatp_csr_t::unlogged_write(const reg_t val) noexcept {
-  proc->get_mmu()->flush_tlb();
+  proc->get_mmu()->flush_tlb(G_STAGE);
 
   reg_t mask;
   if (proc->get_const_xlen() == 32) {

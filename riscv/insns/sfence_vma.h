@@ -6,4 +6,8 @@ if (STATE.v) {
 } else {
   require_privilege(get_field(STATE.mstatus->read(), MSTATUS_TVM) ? PRV_M : PRV_S);
 }
-MMU.flush_tlb();
+if (STATE.v) {
+  MMU.flush_tlb(VS_STAGE);
+} else {
+  MMU.flush_tlb(HS_STAGE);
+}

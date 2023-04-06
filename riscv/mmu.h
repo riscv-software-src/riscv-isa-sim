@@ -35,7 +35,14 @@ struct icache_entry_t {
 
 struct tlb_entry_t {
   char* host_offset;
-  reg_t target_offset;
+  int64_t target_offset;
+};
+
+enum stage_t {
+  HS_STAGE = 0,
+  G_STAGE = 1,
+  VS_STAGE = 2,
+  ALL = 3,
 };
 
 void throw_access_exception(bool virt, reg_t addr, access_type type);
@@ -59,14 +66,7 @@ public:
   T ALWAYS_INLINE load(reg_t addr, uint32_t xlate_flags = 0) {
     target_endian<T> res;
     reg_t vpn = addr >> PGSHIFT;
-    bool aligned = (addr & (sizeof(T) - 1)) == 0;
-    bool tlb_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn;
-
-    if (likely(xlate_flags == 0 && aligned && tlb_hit)) {
-      res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
-    } else {
-      load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags);
-    }
+    load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags);
 
     if (unlikely(proc && proc->get_log_commits_enabled()))
       proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, sizeof(T)));
@@ -92,15 +92,9 @@ public:
   template<typename T>
   void ALWAYS_INLINE store(reg_t addr, T val, uint32_t xlate_flags = 0) {
     reg_t vpn = addr >> PGSHIFT;
-    bool aligned = (addr & (sizeof(T) - 1)) == 0;
-    bool tlb_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn;
 
-    if (xlate_flags == 0 && likely(aligned && tlb_hit)) {
-      *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val);
-    } else {
-      target_endian<T> target_val = to_target(val);
-      store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);
-    }
+    target_endian<T> target_val = to_target(val);
+    store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);
 
     if (unlikely(proc && proc->get_log_commits_enabled()))
       proc->state.log_mem_write.push_back(std::make_tuple(addr, val, sizeof(T)));
@@ -269,7 +263,7 @@ public:
     return refill_icache(addr, &entry)->data;
   }
 
-  void flush_tlb();
+  void flush_tlb(enum stage_t stage = ALL);
   void flush_icache();
 
   void register_memtracer(memtracer_t*);
@@ -317,15 +311,16 @@ private:
   static const reg_t TLB_CHECK_TRIGGERS = reg_t(1) << 63;
   tlb_entry_t tlb_data[TLB_ENTRIES];
   reg_t tlb_insn_tag[TLB_ENTRIES];
-  reg_t tlb_load_tag[TLB_ENTRIES];
-  reg_t tlb_store_tag[TLB_ENTRIES];
+  reg_t tlb_load_tag[3][TLB_ENTRIES];
+  reg_t tlb_store_tag[3][TLB_ENTRIES];
+  tlb_entry_t tlb_ls_data[3][TLB_ENTRIES];
 
   // finish translation on a TLB miss and update the TLB
-  tlb_entry_t refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type);
+  tlb_entry_t refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type, enum stage_t stage);
   const char* fill_from_mmio(reg_t vaddr, reg_t paddr);
 
   // perform a stage2 translation for a given guest address
-  reg_t s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool hlvx);
+  reg_t s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool hlvx, bool final=false);
 
   // perform a page table walk for a given VA; set referenced/dirty bits
   reg_t walk(reg_t addr, access_type type, reg_t prv, bool virt, bool hlvx);
