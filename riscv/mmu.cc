@@ -52,25 +52,16 @@ void throw_access_exception(bool virt, reg_t addr, access_type type)
   }
 }
 
-reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, xlate_flags_t xlate_flags)
+reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
 {
+  reg_t addr = access_info.vaddr;
+  access_type type = access_info.type;
   if (!proc)
     return addr;
 
-  bool virt = proc->state.v;
-  bool hlvx = xlate_flags.hlvx;
-  reg_t mode = proc->state.prv;
-  if (type != FETCH) {
-    if (in_mprv()) {
-      mode = get_field(proc->state.mstatus->read(), MSTATUS_MPP);
-      if (get_field(proc->state.mstatus->read(), MSTATUS_MPV) && mode != PRV_M)
-        virt = true;
-    }
-    if (xlate_flags.forced_virt) {
-      virt = true;
-      mode = get_field(proc->state.hstatus->read(), HSTATUS_SPVP);
-    }
-  }
+  bool virt = access_info.effective_virt;
+  bool hlvx = access_info.flags.hlvx;
+  reg_t mode = (reg_t) access_info.effective_priv;
 
   reg_t paddr = walk(addr, type, mode, virt, hlvx) | (addr & (PGSIZE-1));
   if (!pmp_ok(paddr, len, type, mode))
@@ -80,12 +71,13 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, xlate_flags_t xl
 
 tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
+  auto access_info = generate_access_info(vaddr, FETCH, {false, false, false});
   check_triggers(triggers::OPERATION_EXECUTE, vaddr);
 
   tlb_entry_t result;
   reg_t vpn = vaddr >> PGSHIFT;
   if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] != (vpn | TLB_CHECK_TRIGGERS))) {
-    reg_t paddr = translate(vaddr, sizeof(fetch_temp), FETCH, {false, false, false});
+    reg_t paddr = translate(access_info, sizeof(fetch_temp));
     if (auto host_addr = sim->addr_to_mem(paddr)) {
       result = refill_tlb(vaddr, paddr, host_addr, FETCH);
     } else {
@@ -207,7 +199,7 @@ void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, xlat
     return;
   }
 
-  reg_t paddr = translate(addr, len, LOAD, xlate_flags);
+  reg_t paddr = translate(generate_access_info(addr, LOAD, xlate_flags), len);
 
   if (xlate_flags.lr && !sim->reservable(paddr)) {
     throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
@@ -263,7 +255,7 @@ void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* byte
     return;
   }
 
-  reg_t paddr = translate(addr, len, STORE, xlate_flags);
+  reg_t paddr = translate(generate_access_info(addr, STORE, xlate_flags), len);
 
   if (actually_store) {
     if (auto host_addr = sim->addr_to_mem(paddr)) {

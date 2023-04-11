@@ -48,6 +48,14 @@ struct xlate_flags_t {
   }
 };
 
+struct mem_access_info_t {
+  const reg_t vaddr;
+  const reg_t effective_priv;
+  const bool effective_virt;
+  const xlate_flags_t flags;
+  const access_type type;
+};
+
 void throw_access_exception(bool virt, reg_t addr, access_type type);
 
 // this class implements a processor's port into the virtual memory system.
@@ -57,6 +65,26 @@ class mmu_t
 private:
   std::map<reg_t, reg_t> alloc_cache;
   std::vector<std::pair<reg_t, reg_t >> addr_tbl;
+
+  mem_access_info_t generate_access_info(reg_t addr, access_type type, xlate_flags_t xlate_flags) {
+    if (!proc)
+      return {addr, 0, false, {false, false, false}, type};
+    bool virt = proc->state.v;
+    reg_t mode = proc->state.prv;
+    if (type != FETCH) {
+      if (in_mprv()) {
+        mode = get_field(proc->state.mstatus->read(), MSTATUS_MPP);
+        if (get_field(proc->state.mstatus->read(), MSTATUS_MPV) && mode != PRV_M)
+          virt = true;
+      }
+      if (xlate_flags.forced_virt) {
+        virt = true;
+        mode = get_field(proc->state.hstatus->read(), HSTATUS_SPVP);
+      }
+    }
+    return {addr, mode, virt, xlate_flags, type};
+  }
+
 public:
   mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc);
   ~mmu_t();
@@ -182,7 +210,7 @@ public:
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
     convert_load_traps_to_store_traps({
-      const reg_t paddr = translate(addr, blocksz, LOAD, {false, false, false}) & ~(blocksz - 1);
+        const reg_t paddr = translate(generate_access_info(addr, LOAD, {false, false, false}), blocksz) & ~(blocksz - 1);
       if (sim->reservable(paddr)) {
         if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
           tracer.clean_invalidate(paddr, blocksz, clean, inval);
@@ -204,7 +232,7 @@ public:
       store_slow_path(vaddr, size, nullptr, {false, false, false}, false, true);
     }
 
-    reg_t paddr = translate(vaddr, 1, STORE, {false, false, false});
+    reg_t paddr = translate(generate_access_info(vaddr, STORE, {false, false, false}), 1);
     if (sim->reservable(paddr))
       return load_reservation_address == paddr;
     else
@@ -360,7 +388,7 @@ private:
   bool mmio(reg_t paddr, size_t len, uint8_t* bytes, access_type type);
   bool mmio_ok(reg_t paddr, access_type type);
   void check_triggers(triggers::operation_t operation, reg_t address, std::optional<reg_t> data = std::nullopt);
-  reg_t translate(reg_t addr, reg_t len, access_type type, xlate_flags_t xlate_flags);
+  reg_t translate(mem_access_info_t access_info, reg_t len);
 
   reg_t pte_load(reg_t pte_paddr, reg_t addr, bool virt, access_type trap_type, size_t ptesize) {
     if (ptesize == 4)
