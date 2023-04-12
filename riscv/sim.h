@@ -59,6 +59,17 @@ public:
   // Callback for processors to let the simulation know they were reset.
   virtual void proc_reset(unsigned id) override;
 
+  /**
+   * Add a device onto the system bus.
+   * @param baseAddress Base address of the device.
+   * @param pDevice Pointer to the device to add to the bus.
+   * @note The bus_t will not free this device. You should not free
+   * the device until the sim_t object has been deleted.
+   */
+  void add_device(reg_t baseAddress, abstract_device_t *pDevice) {
+    bus.add_device(baseAddress, pDevice);
+  }
+
 private:
   isa_parser_t isa;
   const cfg_t * const cfg;
