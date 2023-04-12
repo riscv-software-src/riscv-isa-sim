@@ -722,6 +722,8 @@ void processor_t::set_privilege(reg_t prv)
 
 const char* processor_t::get_privilege_string()
 {
+  if (state.debug_mode)
+    return "D";
   if (state.v) {
     switch (state.prv) {
     case 0x0: return "VU";
