@@ -64,6 +64,16 @@ class dtm_t : public htif_t
   virtual void reset() override;
   virtual void idle() override;
 
+  uint32_t run_abstract_command(uint32_t command, const uint32_t program[], size_t program_n,
+                                uint32_t data[], size_t data_n);
+
+  void die(uint32_t cmderr);
+  void halt(int);
+  int enumerate_harts();
+  void select_hart(int);
+  void resume(int);
+  uint32_t get_data_base() { return data_base; };
+
  private:
   context_t host;
   context_t* target;
@@ -76,14 +86,6 @@ class dtm_t : public htif_t
   resp resp_buf;
   bool running;
 
-  uint32_t run_abstract_command(uint32_t command, const uint32_t program[], size_t program_n,
-                                uint32_t data[], size_t data_n);
-
-  void die(uint32_t cmderr);
-  void halt(int);
-  int enumerate_harts();
-  void select_hart(int);
-  void resume(int);
   uint64_t save_reg(unsigned regno);
   void restore_reg(unsigned regno, uint64_t val);
   

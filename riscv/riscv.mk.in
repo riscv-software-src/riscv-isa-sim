@@ -20,6 +20,7 @@ riscv_install_hdrs = \
 	cfg.h \
 	common.h \
 	csrs.h \
+	debug_defines.h \
 	debug_module.h \
 	debug_rom_defines.h \
 	decode.h \
