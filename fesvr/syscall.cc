@@ -7,6 +7,7 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
+#include <sys/time.h>
 #include <limits.h>
 #include <errno.h>
 #include <stdlib.h>
@@ -164,6 +165,7 @@ syscall_t::syscall_t(htif_t* htif)
   table[79] = &syscall_t::sys_fstatat;
   table[80] = &syscall_t::sys_fstat;
   table[93] = &syscall_t::sys_exit;
+  table[169] = &syscall_t::sys_gettimeofday;
   table[291] = &syscall_t::sys_statx;
   table[1039] = &syscall_t::sys_lstat;
   table[2011] = &syscall_t::sys_getmainvars;
@@ -214,6 +216,14 @@ void syscall_t::handle_syscall(command_t cmd)
 reg_t syscall_t::sys_exit(reg_t code, reg_t a1, reg_t a2, reg_t a3, reg_t a4, reg_t a5, reg_t a6)
 {
   htif->exitcode = code << 1 | 1;
+  return 0;
+}
+
+reg_t syscall_t::sys_gettimeofday(reg_t buf, reg_t a1, reg_t a2, reg_t a3, reg_t a4, reg_t a5, reg_t a6)
+{
+  struct timeval tv;
+  gettimeofday(&tv, NULL);
+  memif->write(buf, sizeof(timeval), &tv);
   return 0;
 }
 
