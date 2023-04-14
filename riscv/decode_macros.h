@@ -131,6 +131,8 @@ do { \
 #define require_rv32 require(xlen == 32)
 #define require_extension(s) require(p->extension_enabled(s))
 #define require_either_extension(A,B) require(p->extension_enabled(A) || p->extension_enabled(B));
+#define require_either_extensions(A,B,C) require(p->extension_enabled(A) || p->extension_enabled(B) || \
+                                             p->extension_enabled(C));
 #define require_impl(s) require(p->supports_impl(s))
 #define require_fs          require(STATE.sstatus->enabled(SSTATUS_FS))
 #define require_fp          STATE.fflags->verify_permissions(insn, false)
