@@ -293,6 +293,10 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     bad_isa_string(str, "'Zvfbfmin/Zvfbfwma' extension requires 'V' extension");
   }
 
+  if (extension_table[EXT_ZFBFMIN] || extension_table[EXT_ZVFBFMIN] || extension_table[EXT_ZFHMIN]) {
+    extension_table[EXT_INTERNAL_ZFH_MOVE] = true;
+  }
+
   if (extension_table['C']) {
     extension_table[EXT_ZCA] = true;
     if (extension_table['F'] && max_xlen == 32)
