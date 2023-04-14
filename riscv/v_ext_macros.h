@@ -1964,8 +1964,8 @@ reg_t index[P.VU.vlmax]; \
       break; \
   }
 
-#define VI_VFP_WCVT_FP_TO_FP(BODY8, BODY16, BODY32, \
-                             CHECK8, CHECK16, CHECK32) \
+#define VI_VFP_WCVT_FP_TO_FP(BODY16, BODY32, \
+                             CHECK16, CHECK32) \
   VI_CHECK_DSS(false); \
   switch (P.VU.vsew) { \
     case e16: \
@@ -1998,8 +1998,8 @@ reg_t index[P.VU.vlmax]; \
       break; \
   }
 
-#define VI_VFP_WCVT_FP_TO_INT(BODY8, BODY16, BODY32, \
-                              CHECK8, CHECK16, CHECK32, \
+#define VI_VFP_WCVT_FP_TO_INT(BODY16, BODY32, \
+                              CHECK16, CHECK32, \
                               sign) \
   VI_CHECK_DSS(false); \
   switch (P.VU.vsew) { \
@@ -2014,8 +2014,8 @@ reg_t index[P.VU.vlmax]; \
       break; \
   }
 
-#define VI_VFP_NCVT_FP_TO_FP(BODY8, BODY16, BODY32, \
-                             CHECK8, CHECK16, CHECK32) \
+#define VI_VFP_NCVT_FP_TO_FP(BODY16, BODY32, \
+                             CHECK16, CHECK32) \
   VI_CHECK_SDS(false); \
   switch (P.VU.vsew) { \
     case e16: \
@@ -2029,8 +2029,8 @@ reg_t index[P.VU.vlmax]; \
       break; \
   }
 
-#define VI_VFP_NCVT_INT_TO_FP(BODY8, BODY16, BODY32, \
-                              CHECK8, CHECK16, CHECK32, \
+#define VI_VFP_NCVT_INT_TO_FP(BODY16, BODY32, \
+                              CHECK16, CHECK32, \
                               sign) \
   VI_CHECK_SDS(false); \
   switch (P.VU.vsew) { \
