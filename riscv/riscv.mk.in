@@ -1363,8 +1363,13 @@ riscv_insn_ext_zfbfmin = \
 	fcvt_bf16_s \
 	fcvt_s_bf16 \
 
+riscv_insn_ext_zvfbfmin = \
+	vfncvtbf16_f_f_w \
+	vfwcvtbf16_f_f_v \
+
 riscv_insn_ext_bf16 = \
 	$(riscv_insn_ext_zfbfmin) \
+	$(riscv_insn_ext_zvfbfmin) \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_a) \
