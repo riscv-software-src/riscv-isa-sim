@@ -1,4 +1,4 @@
-// vfncvt.rod.f.f.v vd, vs2, vm
+// vfncvt.rod.f.f.w vd, vs2, vm
 VI_VFP_NCVT_FP_TO_FP(
   {                                 // BODY32
     softfloat_roundingMode = softfloat_round_odd;
