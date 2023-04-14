@@ -1239,6 +1239,15 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_FX2TYPE(fle_q);
   }
 
+  if (isa->extension_enabled(EXT_ZFBFMIN)) {
+    DEFINE_FLOAD(flh)
+    DEFINE_FSTORE(fsh)
+    DEFINE_FR1TYPE(fcvt_bf16_s);
+    DEFINE_FR1TYPE(fcvt_s_bf16);
+    DEFINE_XFTYPE(fmv_h_x);
+    DEFINE_FXTYPE(fmv_x_h);
+  }
+
   // ext-h
   if (isa->extension_enabled('H')) {
     DEFINE_XLOAD_BASE(hlv_b)
@@ -1785,6 +1794,20 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
         }
       }
     }
+  }
+
+  if (isa->extension_enabled(EXT_ZVFBFMIN)) {
+    DEFINE_FLOAD(flh)
+    DEFINE_FSTORE(fsh)
+    DEFINE_VECTOR_V(vfncvtbf16_f_f_w);
+    DEFINE_VECTOR_V(vfwcvtbf16_f_f_v);
+    DEFINE_XFTYPE(fmv_h_x);
+    DEFINE_FXTYPE(fmv_x_h);
+  }
+
+  if (isa->extension_enabled(EXT_ZVFBFWMA)) {
+    DEFINE_VECTOR_VV(vfwmaccbf16_vv);
+    DEFINE_VECTOR_VF(vfwmaccbf16_vf);
   }
 
 #define DEFINE_PI3TYPE(code) add_pitype3_insn(this, #code, match_##code, mask_##code);
