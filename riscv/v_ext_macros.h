@@ -1487,8 +1487,24 @@ reg_t index[P.VU.vlmax]; \
   reg_t UNUSED rs2_num = insn.rs2(); \
   softfloat_roundingMode = STATE.frm->read();
 
+#define VI_VFP_BF16_COMMON \
+  require_fp; \
+  require((P.VU.vsew == e16 && p->extension_enabled(EXT_ZVFBFWMA))); \
+  require_vector(true); \
+  require(STATE.frm->read() < 0x5); \
+  reg_t UNUSED vl = P.VU.vl->read(); \
+  reg_t UNUSED rd_num = insn.rd(); \
+  reg_t UNUSED rs1_num = insn.rs1(); \
+  reg_t UNUSED rs2_num = insn.rs2(); \
+  softfloat_roundingMode = STATE.frm->read();
+
 #define VI_VFP_LOOP_BASE \
   VI_VFP_COMMON \
+  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
+    VI_LOOP_ELEMENT_SKIP();
+
+#define VI_VFP_BF16_LOOP_BASE \
+  VI_VFP_BF16_COMMON \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP();
 
@@ -1817,6 +1833,25 @@ reg_t index[P.VU.vlmax]; \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
 
+#define VI_VFP_BF16_VF_LOOP_WIDE(BODY) \
+  VI_CHECK_DSS(false); \
+  VI_VFP_BF16_LOOP_BASE \
+  switch (P.VU.vsew) { \
+    case e16: { \
+      float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
+      float32_t vs2 = bf16_to_f32(P.VU.elt<bfloat16_t>(rs2_num, i)); \
+      float32_t rs1 = bf16_to_f32(FRS1_BF); \
+      BODY; \
+      set_fp_exceptions; \
+      break; \
+    } \
+    default: \
+      require(0); \
+      break; \
+  }; \
+  DEBUG_RVV_FP_VV; \
+  VI_VFP_LOOP_END
+
 #define VI_VFP_VV_LOOP_WIDE(BODY16, BODY32) \
   VI_CHECK_DSS(true); \
   VI_VFP_LOOP_BASE \
@@ -1834,6 +1869,25 @@ reg_t index[P.VU.vlmax]; \
       float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
       float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
       BODY32; \
+      set_fp_exceptions; \
+      break; \
+    } \
+    default: \
+      require(0); \
+      break; \
+  }; \
+  DEBUG_RVV_FP_VV; \
+  VI_VFP_LOOP_END
+
+#define VI_VFP_BF16_VV_LOOP_WIDE(BODY) \
+  VI_CHECK_DSS(true); \
+  VI_VFP_BF16_LOOP_BASE \
+  switch (P.VU.vsew) { \
+    case e16: { \
+      float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
+      float32_t vs2 = bf16_to_f32(P.VU.elt<bfloat16_t>(rs2_num, i)); \
+      float32_t vs1 = bf16_to_f32(P.VU.elt<bfloat16_t>(rs1_num, i)); \
+      BODY; \
       set_fp_exceptions; \
       break; \
     } \
