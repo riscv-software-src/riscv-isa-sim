@@ -66,7 +66,7 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
       if (get_field(proc->state.mstatus->read(), MSTATUS_MPV) && mode != PRV_M)
         virt = true;
     }
-    if (xlate_flags & RISCV_XLATE_VIRT) {
+    if (xlate_flags & RISCV_XLATE_FORCED_VIRT) {
       virt = true;
       mode = get_field(proc->state.hstatus->read(), HSTATUS_SPVP);
     }
@@ -236,7 +236,7 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
   if ((addr & (len - 1)) == 0) {
     load_slow_path_intrapage(addr, len, bytes, xlate_flags);
   } else {
-    bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
+    bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_FORCED_VIRT & xlate_flags);
     if (!is_misaligned_enabled())
       throw trap_load_address_misaligned(gva, addr, 0, 0);
 
@@ -284,7 +284,7 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_
     check_triggers(triggers::OPERATION_STORE, addr, reg_from_bytes(len, bytes));
 
   if (addr & (len - 1)) {
-    bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_VIRT & xlate_flags);
+    bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_FORCED_VIRT & xlate_flags);
     if (!is_misaligned_enabled())
       throw trap_store_address_misaligned(gva, addr, 0, 0);
 

@@ -51,7 +51,7 @@ public:
   mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc);
   ~mmu_t();
 
-#define RISCV_XLATE_VIRT      (1U << 0)
+#define RISCV_XLATE_FORCED_VIRT (1U << 0)
 #define RISCV_XLATE_VIRT_HLVX (1U << 1)
 #define RISCV_XLATE_LR        (1U << 2)
 
@@ -81,12 +81,12 @@ public:
 
   template<typename T>
   T guest_load(reg_t addr) {
-    return load<T>(addr, RISCV_XLATE_VIRT);
+    return load<T>(addr, RISCV_XLATE_FORCED_VIRT);
   }
 
   template<typename T>
   T guest_load_x(reg_t addr) {
-    return load<T>(addr, RISCV_XLATE_VIRT|RISCV_XLATE_VIRT_HLVX);
+    return load<T>(addr, RISCV_XLATE_FORCED_VIRT|RISCV_XLATE_VIRT_HLVX);
   }
 
   template<typename T>
@@ -108,7 +108,7 @@ public:
 
   template<typename T>
   void guest_store(reg_t addr, T val) {
-    store(addr, val, RISCV_XLATE_VIRT);
+    store(addr, val, RISCV_XLATE_FORCED_VIRT);
   }
 
   // AMO/Zicbom faults should be reported as store faults
