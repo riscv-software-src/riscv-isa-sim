@@ -280,7 +280,7 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, xlate_f
     check_triggers(triggers::OPERATION_STORE, addr, reg_from_bytes(len, bytes));
 
   if (addr & (len - 1)) {
-    bool gva = ((proc) ? proc->state.v : false) || xlate_flags.forced_virt;
+    bool gva = access_info.effective_virt;
     if (!is_misaligned_enabled())
       throw trap_store_address_misaligned(gva, addr, 0, 0);
 
