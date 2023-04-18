@@ -379,7 +379,7 @@ private:
   // handle uncommon cases: TLB misses, page faults, MMIO
   tlb_entry_t fetch_slow_path(reg_t addr);
   void load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
-  void load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
+  void load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info);
   void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store, bool require_alignment);
   void store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store);
   bool mmio_fetch(reg_t paddr, size_t len, uint8_t* bytes);

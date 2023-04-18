@@ -190,18 +190,19 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, std::
     }
 }
 
-void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
+void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info)
 {
+  reg_t addr = access_info.vaddr;
   reg_t vpn = addr >> PGSHIFT;
-  if (!xlate_flags.is_special_access() && vpn == (tlb_load_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
+  if (!access_info.flags.is_special_access() && vpn == (tlb_load_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
     auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
     memcpy(bytes, host_addr, len);
     return;
   }
 
-  reg_t paddr = translate(generate_access_info(addr, LOAD, xlate_flags), len);
+  reg_t paddr = translate(access_info, len);
 
-  if (xlate_flags.lr && !sim->reservable(paddr)) {
+  if (access_info.flags.lr && !sim->reservable(paddr)) {
     throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
   }
 
@@ -209,24 +210,25 @@ void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, xlat
     memcpy(bytes, host_addr, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
       tracer.trace(paddr, len, LOAD);
-    else if (!xlate_flags.is_special_access())
+    else if (!access_info.flags.is_special_access())
       refill_tlb(addr, paddr, host_addr, LOAD);
 
   } else if (!mmio_load(paddr, len, bytes)) {
     throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
   }
 
-  if (xlate_flags.lr) {
+  if (access_info.flags.lr) {
     load_reservation_address = paddr;
   }
 }
 
 void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
 {
+  auto access_info = generate_access_info(addr, LOAD, xlate_flags);
   check_triggers(triggers::OPERATION_LOAD, addr);
 
   if ((addr & (len - 1)) == 0) {
-    load_slow_path_intrapage(addr, len, bytes, xlate_flags);
+    load_slow_path_intrapage(len, bytes, access_info);
   } else {
     bool gva = ((proc) ? proc->state.v : false) || xlate_flags.forced_virt;
     if (!is_misaligned_enabled())
@@ -236,9 +238,9 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t 
       throw trap_load_access_fault(gva, addr, 0, 0);
 
     reg_t len_page0 = std::min(len, PGSIZE - addr % PGSIZE);
-    load_slow_path_intrapage(addr, len_page0, bytes, xlate_flags);
+    load_slow_path_intrapage(len_page0, bytes, access_info);
     if (len_page0 != len)
-      load_slow_path_intrapage(addr + len_page0, len - len_page0, bytes + len_page0, xlate_flags);
+      load_slow_path_intrapage(len - len_page0, bytes + len_page0, generate_access_info(addr + len_page0, LOAD, xlate_flags));
   }
 
   check_triggers(triggers::OPERATION_LOAD, addr, reg_from_bytes(len, bytes));
