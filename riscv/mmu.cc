@@ -60,10 +60,9 @@ reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
     return addr;
 
   bool virt = access_info.effective_virt;
-  bool hlvx = access_info.flags.hlvx;
   reg_t mode = (reg_t) access_info.effective_priv;
 
-  reg_t paddr = walk(addr, type, mode, virt, hlvx) | (addr & (PGSIZE-1));
+  reg_t paddr = walk(access_info) | (addr & (PGSIZE-1));
   if (!pmp_ok(paddr, len, type, mode))
     throw_access_exception(virt, addr, type);
   return paddr;
@@ -461,8 +460,13 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   }
 }
 
-reg_t mmu_t::walk(reg_t addr, access_type type, reg_t mode, bool virt, bool hlvx)
+reg_t mmu_t::walk(mem_access_info_t access_info)
 {
+  access_type type = access_info.type;
+  reg_t addr = access_info.vaddr;
+  bool virt = access_info.effective_virt;
+  bool hlvx = access_info.flags.hlvx;
+  reg_t mode = access_info.effective_priv;
   reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
   reg_t satp = proc->get_state()->satp->readvirt(virt);
   vm_info vm = decode_vm_info(proc->get_const_xlen(), false, mode, satp);
