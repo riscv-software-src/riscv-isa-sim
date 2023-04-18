@@ -230,11 +230,11 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t 
   if ((addr & (len - 1)) == 0) {
     load_slow_path_intrapage(len, bytes, access_info);
   } else {
-    bool gva = ((proc) ? proc->state.v : false) || xlate_flags.forced_virt;
+    bool gva = access_info.effective_virt;
     if (!is_misaligned_enabled())
       throw trap_load_address_misaligned(gva, addr, 0, 0);
 
-    if (xlate_flags.lr)
+    if (access_info.flags.lr)
       throw trap_load_access_fault(gva, addr, 0, 0);
 
     reg_t len_page0 = std::min(len, PGSIZE - addr % PGSIZE);
