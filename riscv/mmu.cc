@@ -246,10 +246,11 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t 
   check_triggers(triggers::OPERATION_LOAD, addr, reg_from_bytes(len, bytes));
 }
 
-void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store)
+void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_access_info_t access_info, bool actually_store)
 {
+  reg_t addr = access_info.vaddr;
   reg_t vpn = addr >> PGSHIFT;
-  if (!xlate_flags.is_special_access() && vpn == (tlb_store_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
+  if (!access_info.flags.is_special_access() && vpn == (tlb_store_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
     if (actually_store) {
       auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
       memcpy(host_addr, bytes, len);
@@ -257,14 +258,14 @@ void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* byte
     return;
   }
 
-  reg_t paddr = translate(generate_access_info(addr, STORE, xlate_flags), len);
+  reg_t paddr = translate(access_info, len);
 
   if (actually_store) {
     if (auto host_addr = sim->addr_to_mem(paddr)) {
       memcpy(host_addr, bytes, len);
       if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
         tracer.trace(paddr, len, STORE);
-      else if (!xlate_flags.is_special_access())
+      else if (!access_info.flags.is_special_access())
         refill_tlb(addr, paddr, host_addr, STORE);
     } else if (!mmio_store(paddr, len, bytes)) {
       throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
@@ -274,6 +275,7 @@ void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* byte
 
 void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store, bool UNUSED require_alignment)
 {
+  auto access_info = generate_access_info(addr, STORE, xlate_flags);
   if (actually_store)
     check_triggers(triggers::OPERATION_STORE, addr, reg_from_bytes(len, bytes));
 
@@ -286,11 +288,11 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, xlate_f
       throw trap_store_access_fault(gva, addr, 0, 0);
 
     reg_t len_page0 = std::min(len, PGSIZE - addr % PGSIZE);
-    store_slow_path_intrapage(addr, len_page0, bytes, xlate_flags, actually_store);
+    store_slow_path_intrapage(len_page0, bytes, access_info, actually_store);
     if (len_page0 != len)
-      store_slow_path_intrapage(addr + len_page0, len - len_page0, bytes + len_page0, xlate_flags, actually_store);
+      store_slow_path_intrapage(len - len_page0, bytes + len_page0, generate_access_info(addr + len_page0, STORE, xlate_flags), actually_store);
   } else {
-    store_slow_path_intrapage(addr, len, bytes, xlate_flags, actually_store);
+    store_slow_path_intrapage(len, bytes, access_info, actually_store);
   }
 }
 
