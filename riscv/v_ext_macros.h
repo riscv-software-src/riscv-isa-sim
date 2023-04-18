@@ -341,12 +341,12 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
 
 #define VV_PARAMS(x) \
-  type_sew_t<x>::type UNUSED &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
+  type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
   type_sew_t<x>::type vs1 = P.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
   type_sew_t<x>::type UNUSED vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
 
 #define VX_PARAMS(x) \
-  type_sew_t<x>::type UNUSED &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
+  type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
   type_sew_t<x>::type rs1 = (type_sew_t<x>::type)RS1; \
   type_sew_t<x>::type UNUSED vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
 
@@ -442,15 +442,21 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   float##width##_t &vd = P.VU.elt<float##width##_t>(rd_num, i, true); \
   float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i);
 
-#define VFP_VV_PARAMS(width) \
-  float##width##_t UNUSED &vd = P.VU.elt<float##width##_t>(rd_num, i, true); \
+#define VFP_VV_CMP_PARAMS(width) \
   float##width##_t vs1 = P.VU.elt<float##width##_t>(rs1_num, i); \
   float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i);
 
-#define VFP_VF_PARAMS(width) \
-  float##width##_t UNUSED &vd = P.VU.elt<float##width##_t>(rd_num, i, true); \
+#define VFP_VV_PARAMS(width) \
+  float##width##_t &vd = P.VU.elt<float##width##_t>(rd_num, i, true); \
+  VFP_VV_CMP_PARAMS(width)
+
+#define VFP_VF_CMP_PARAMS(width) \
   float##width##_t rs1 = f##width(READ_FREG(rs1_num)); \
   float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i);
+
+#define VFP_VF_PARAMS(width) \
+  float##width##_t &vd = P.VU.elt<float##width##_t>(rd_num, i, true); \
+  VFP_VF_CMP_PARAMS(width)
 
 #define CVT_FP_TO_FP_PARAMS(from_width, to_width) \
   auto vs2 = P.VU.elt<float##from_width##_t>(rs2_num, i); \
@@ -1739,19 +1745,19 @@ reg_t index[P.VU.vlmax]; \
   VI_VFP_LOOP_CMP_BASE \
   switch (P.VU.vsew) { \
     case e16: { \
-      VFP_VV_PARAMS(16); \
+      VFP_VV_CMP_PARAMS(16); \
       BODY16; \
       set_fp_exceptions; \
       break; \
     } \
     case e32: { \
-      VFP_VV_PARAMS(32); \
+      VFP_VV_CMP_PARAMS(32); \
       BODY32; \
       set_fp_exceptions; \
       break; \
     } \
     case e64: { \
-      VFP_VV_PARAMS(64); \
+      VFP_VV_CMP_PARAMS(64); \
       BODY64; \
       set_fp_exceptions; \
       break; \
@@ -1767,19 +1773,19 @@ reg_t index[P.VU.vlmax]; \
   VI_VFP_LOOP_CMP_BASE \
   switch (P.VU.vsew) { \
     case e16: { \
-      VFP_VF_PARAMS(16); \
+      VFP_VF_CMP_PARAMS(16); \
       BODY16; \
       set_fp_exceptions; \
       break; \
     } \
     case e32: { \
-      VFP_VF_PARAMS(32); \
+      VFP_VF_CMP_PARAMS(32); \
       BODY32; \
       set_fp_exceptions; \
       break; \
     } \
     case e64: { \
-      VFP_VF_PARAMS(64); \
+      VFP_VF_CMP_PARAMS(64); \
       BODY64; \
       set_fp_exceptions; \
       break; \
