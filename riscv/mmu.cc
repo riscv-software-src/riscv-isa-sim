@@ -239,7 +239,7 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t 
     reg_t len_page0 = std::min(len, PGSIZE - addr % PGSIZE);
     load_slow_path_intrapage(len_page0, bytes, access_info);
     if (len_page0 != len)
-      load_slow_path_intrapage(len - len_page0, bytes + len_page0, generate_access_info(addr + len_page0, LOAD, xlate_flags));
+      load_slow_path_intrapage(len - len_page0, bytes + len_page0, access_info.split_misaligned_access(len_page0));
   }
 
   check_triggers(triggers::OPERATION_LOAD, addr, reg_from_bytes(len, bytes));
@@ -289,7 +289,7 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, xlate_f
     reg_t len_page0 = std::min(len, PGSIZE - addr % PGSIZE);
     store_slow_path_intrapage(len_page0, bytes, access_info, actually_store);
     if (len_page0 != len)
-      store_slow_path_intrapage(len - len_page0, bytes + len_page0, generate_access_info(addr + len_page0, STORE, xlate_flags), actually_store);
+      store_slow_path_intrapage(len - len_page0, bytes + len_page0, access_info.split_misaligned_access(len_page0), actually_store);
   } else {
     store_slow_path_intrapage(len, bytes, access_info, actually_store);
   }
