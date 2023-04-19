@@ -7,3 +7,5 @@ autom4te.cache/
 .gdb_history
 .#*
 *~
+.vscode
+
