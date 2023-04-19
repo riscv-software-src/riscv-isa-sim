@@ -107,6 +107,7 @@ softfloat_c_srcs = \
 	f64_sqrt.c \
 	f64_sub.c \
 	f64_to_f128.c \
+	f64_to_bf16.c \
 	f64_to_f16.c \
 	f64_to_f32.c \
 	f64_to_i32.c \
