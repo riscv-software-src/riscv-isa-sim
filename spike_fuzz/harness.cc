@@ -5,7 +5,7 @@
 #include "mmu.h"
 
 
-#define CONFIG_MSIZE (1024 * 1024 * 1024UL)
+extern "C" const size_t CONFIG_MSIZE = 2 * 1024 * 1024 * 1024UL;
 
 std::vector<mem_cfg_t> parse_mem_layout(const char *arg);
 std::vector<std::pair<reg_t, mem_t *>> make_mems(const std::vector<mem_cfg_t> &layout);
