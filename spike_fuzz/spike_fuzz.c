@@ -1,0 +1,10 @@
+#include <stddef.h>
+#include <stdint.h>
+
+int LLVMFuzzerTestOneInput(const uint8_t *data, size_t size);
+
+int main() {
+    const uint8_t data[32] = {
+        0x13, 0x04, 0x00, 0x00, 0x17, 0xa1, 0x00, 0x00, 0x13, 0x01, 0xc1, 0xff, 0xef, 0x00, 0x80, 0x0a};
+    LLVMFuzzerTestOneInput(data, 32);
+}
