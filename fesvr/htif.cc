@@ -49,9 +49,9 @@ htif_t::htif_t()
     tohost_addr(0), fromhost_addr(0), exitcode(0), stopped(false),
     syscall_proxy(this)
 {
-  signal(SIGINT, &handle_signal);
-  signal(SIGTERM, &handle_signal);
-  signal(SIGABRT, &handle_signal); // we still want to call static destructors
+  // signal(SIGINT, &handle_signal);
+  // signal(SIGTERM, &handle_signal);
+  // signal(SIGABRT, &handle_signal); // we still want to call static destructors
 }
 
 htif_t::htif_t(int argc, char** argv) : htif_t()
