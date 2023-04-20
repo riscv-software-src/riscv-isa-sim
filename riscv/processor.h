@@ -293,7 +293,8 @@ public:
   void set_mmu_capability(int cap);
 
   const char* get_symbol(uint64_t addr);
-  
+
+  void clear_waiting_for_interrupt() { in_wfi = false; };
   bool is_waiting_for_interrupt() { return in_wfi; };
 
 private:
