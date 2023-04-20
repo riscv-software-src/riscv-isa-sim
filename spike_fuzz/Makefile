@@ -34,8 +34,9 @@ ifneq ($(SPIKE_DEBUG),)
 CXX_FLAGS += -DLOG_PATH=\"$(BUILD_DIR)/spike.log\"
 endif
 
-SPIKE_INC  = fesvr riscv disasm customext fdt softfloat spike_main spike_dasm build
+SPIKE_INC  = fesvr riscv disasm customext fdt softfloat spike_main spike_dasm
 CXX_FLAGS += -I$(SPIKE_PATH) $(addprefix -I$(SPIKE_PATH)/, $(SPIKE_INC))
+CXX_FLAGS += -I$(BUILD_DIR)
 
 # spike_fuzz elf dependencies
 CATISS_PATH = $(abspath $(SPIKE_PATH)/..)
@@ -54,7 +55,7 @@ $(SPIKE_MAKEFILE): | $(BUILD_DIR)
 spike: $(SPIKE_MAKEFILE)
 	$(MAKE) -s -C $(BUILD_DIR)
 
-$(BUILD_DIR)/%.o: %.cc
+$(BUILD_DIR)/%.o: %.cc spike
 	$(CXX) $(CXX_FLAGS) $(INC_PATH) $< -c -o $@
 
 libfuzz: spike $(FUZZ_OBJS)
