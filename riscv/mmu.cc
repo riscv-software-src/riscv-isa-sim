@@ -52,13 +52,13 @@ void throw_access_exception(bool virt, reg_t addr, access_type type)
   }
 }
 
-reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_flags)
+reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, xlate_flags_t xlate_flags)
 {
   if (!proc)
     return addr;
 
   bool virt = proc->state.v;
-  bool hlvx = xlate_flags & RISCV_XLATE_VIRT_HLVX;
+  bool hlvx = xlate_flags.hlvx;
   reg_t mode = proc->state.prv;
   if (type != FETCH) {
     if (in_mprv()) {
@@ -66,7 +66,7 @@ reg_t mmu_t::translate(reg_t addr, reg_t len, access_type type, uint32_t xlate_f
       if (get_field(proc->state.mstatus->read(), MSTATUS_MPV) && mode != PRV_M)
         virt = true;
     }
-    if (xlate_flags & RISCV_XLATE_FORCED_VIRT) {
+    if (xlate_flags.forced_virt) {
       virt = true;
       mode = get_field(proc->state.hstatus->read(), HSTATUS_SPVP);
     }
@@ -85,7 +85,7 @@ tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
   tlb_entry_t result;
   reg_t vpn = vaddr >> PGSHIFT;
   if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] != (vpn | TLB_CHECK_TRIGGERS))) {
-    reg_t paddr = translate(vaddr, sizeof(fetch_temp), FETCH, 0);
+    reg_t paddr = translate(vaddr, sizeof(fetch_temp), FETCH, {false, false, false});
     if (auto host_addr = sim->addr_to_mem(paddr)) {
       result = refill_tlb(vaddr, paddr, host_addr, FETCH);
     } else {
@@ -198,10 +198,10 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, std::
     }
 }
 
-void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags)
+void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
 {
   reg_t vpn = addr >> PGSHIFT;
-  if (xlate_flags == 0 && vpn == (tlb_load_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
+  if (!(xlate_flags.hlvx || xlate_flags.forced_virt || xlate_flags.lr) && vpn == (tlb_load_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
     auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
     memcpy(bytes, host_addr, len);
     return;
@@ -209,7 +209,7 @@ void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint
 
   reg_t paddr = translate(addr, len, LOAD, xlate_flags);
 
-  if ((xlate_flags & RISCV_XLATE_LR) && !sim->reservable(paddr)) {
+  if (xlate_flags.lr && !sim->reservable(paddr)) {
     throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
   }
 
@@ -217,30 +217,30 @@ void mmu_t::load_slow_path_intrapage(reg_t addr, reg_t len, uint8_t* bytes, uint
     memcpy(bytes, host_addr, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
       tracer.trace(paddr, len, LOAD);
-    else if (xlate_flags == 0)
+    else if (!(xlate_flags.hlvx || xlate_flags.forced_virt || xlate_flags.lr))
       refill_tlb(addr, paddr, host_addr, LOAD);
 
   } else if (!mmio_load(paddr, len, bytes)) {
     throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
   }
 
-  if (xlate_flags & RISCV_XLATE_LR) {
+  if (xlate_flags.lr) {
     load_reservation_address = paddr;
   }
 }
 
-void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate_flags)
+void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
 {
   check_triggers(triggers::OPERATION_LOAD, addr);
 
   if ((addr & (len - 1)) == 0) {
     load_slow_path_intrapage(addr, len, bytes, xlate_flags);
   } else {
-    bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_FORCED_VIRT & xlate_flags);
+    bool gva = ((proc) ? proc->state.v : false) || xlate_flags.forced_virt;
     if (!is_misaligned_enabled())
       throw trap_load_address_misaligned(gva, addr, 0, 0);
 
-    if (xlate_flags & RISCV_XLATE_LR)
+    if (xlate_flags.lr)
       throw trap_load_access_fault(gva, addr, 0, 0);
 
     reg_t len_page0 = std::min(len, PGSIZE - addr % PGSIZE);
@@ -252,10 +252,10 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, uint32_t xlate
   check_triggers(triggers::OPERATION_LOAD, addr, reg_from_bytes(len, bytes));
 }
 
-void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store)
+void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store)
 {
   reg_t vpn = addr >> PGSHIFT;
-  if (xlate_flags == 0 && vpn == (tlb_store_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
+  if (!(xlate_flags.hlvx || xlate_flags.forced_virt || xlate_flags.lr) && vpn == (tlb_store_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
     if (actually_store) {
       auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
       memcpy(host_addr, bytes, len);
@@ -270,7 +270,7 @@ void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* byte
       memcpy(host_addr, bytes, len);
       if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
         tracer.trace(paddr, len, STORE);
-      else if (xlate_flags == 0)
+      else if (!(xlate_flags.hlvx || xlate_flags.forced_virt || xlate_flags.lr))
         refill_tlb(addr, paddr, host_addr, STORE);
     } else if (!mmio_store(paddr, len, bytes)) {
       throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
@@ -278,13 +278,13 @@ void mmu_t::store_slow_path_intrapage(reg_t addr, reg_t len, const uint8_t* byte
   }
 }
 
-void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, uint32_t xlate_flags, bool actually_store, bool UNUSED require_alignment)
+void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store, bool UNUSED require_alignment)
 {
   if (actually_store)
     check_triggers(triggers::OPERATION_STORE, addr, reg_from_bytes(len, bytes));
 
   if (addr & (len - 1)) {
-    bool gva = ((proc) ? proc->state.v : false) || (RISCV_XLATE_FORCED_VIRT & xlate_flags);
+    bool gva = ((proc) ? proc->state.v : false) || xlate_flags.forced_virt;
     if (!is_misaligned_enabled())
       throw trap_store_address_misaligned(gva, addr, 0, 0);
 
