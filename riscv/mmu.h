@@ -42,6 +42,10 @@ struct xlate_flags_t {
   const bool forced_virt : 1;
   const bool hlvx : 1;
   const bool lr : 1;
+
+  bool is_special_access() const {
+    return forced_virt || hlvx || lr;
+  }
 };
 
 void throw_access_exception(bool virt, reg_t addr, access_type type);
@@ -64,7 +68,7 @@ public:
     bool aligned = (addr & (sizeof(T) - 1)) == 0;
     bool tlb_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn;
 
-    if (likely(!(xlate_flags.hlvx || xlate_flags.forced_virt || xlate_flags.lr) && aligned && tlb_hit)) {
+    if (likely(!xlate_flags.is_special_access() && aligned && tlb_hit)) {
       res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
     } else {
       load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags);
@@ -106,7 +110,7 @@ public:
     bool aligned = (addr & (sizeof(T) - 1)) == 0;
     bool tlb_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn;
 
-    if (!(xlate_flags.hlvx || xlate_flags.forced_virt || xlate_flags.lr) && likely(aligned && tlb_hit)) {
+    if (!xlate_flags.is_special_access() && likely(aligned && tlb_hit)) {
       *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val);
     } else {
       target_endian<T> target_val = to_target(val);
