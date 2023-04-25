@@ -48,6 +48,9 @@
 #define PRIORITY_BASE           0
 #define PRIORITY_PER_ID         4
 
+/* Each interrupt source has a pending bit associated with it. */
+#define PENDING_BASE            0x1000
+
 /*
  * Each hart context has a vector of interupt enable bits associated with it.
  * There's one bit for each interrupt source.
@@ -152,6 +155,21 @@ bool plic_t::priority_write(reg_t offset, uint32_t val)
     val &= ((1 << PLIC_PRIO_BITS) - 1);
     priority[id] = val;
   }
+
+  return true;
+}
+
+bool plic_t::pending_read(reg_t offset, uint32_t *val)
+{
+  uint32_t id_word = (offset >> 2);
+
+  if (id_word < num_ids_word) {
+    *val = 0;
+    for (auto context: contexts) {
+        *val |= context.pending[id_word];
+    }
+  } else
+    *val = 0;
 
   return true;
 }
@@ -313,8 +331,10 @@ bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes)
       return false;
   }
 
-  if (PRIORITY_BASE <= addr && addr < ENABLE_BASE) {
+  if (PRIORITY_BASE <= addr && addr < PENDING_BASE) {
     ret = priority_read(addr, &val);
+  } else if (PENDING_BASE <= addr && addr < ENABLE_BASE) {
+    ret = pending_read(addr - PENDING_BASE, &val);
   } else if (ENABLE_BASE <= addr && addr < CONTEXT_BASE) {
     uint32_t cntx = (addr - ENABLE_BASE) / ENABLE_PER_HART;
     addr -= cntx * ENABLE_PER_HART + ENABLE_BASE;
