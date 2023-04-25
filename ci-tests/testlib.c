@@ -7,7 +7,7 @@ static std::vector<std::pair<reg_t, mem_t*>> make_mems(const std::vector<mem_cfg
   std::vector<std::pair<reg_t, mem_t*>> mems;
   mems.reserve(layout.size());
   for (const auto &cfg : layout) {
-    mems.push_back(std::make_pair(cfg.get_base(), new mem_t(cfg.get_size())));
+    mems.push_back(std::make_pair(cfg.get_base(), new sparse_mem_t(cfg.get_size())));
   }
   return mems;
 }
