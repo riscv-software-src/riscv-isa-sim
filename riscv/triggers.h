@@ -90,6 +90,7 @@ public:
 protected:
   static action_t legalize_action(reg_t val, reg_t action_mask, reg_t dmode_mask) noexcept;
   bool common_match(processor_t * const proc) const noexcept;
+  bool allow_action(const state_t * const state) const;
   reg_t tdata2;
 
   bool vs = false;
