@@ -878,9 +878,10 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   }
   if (state.prv <= PRV_S && bit < max_xlen && ((vsdeleg >> bit) & 1)) {
     // Handle the trap in VS-mode
+    const reg_t adjusted_cause = interrupt ? bit - 1 : bit;  // VSSIP -> SSIP, etc
     reg_t vector = (state.vstvec->read() & 1) && interrupt ? 4 * bit : 0;
     state.pc = (state.vstvec->read() & ~(reg_t)1) + vector;
-    state.vscause->write((interrupt) ? (t.cause() - 1) : t.cause());
+    state.vscause->write(adjusted_cause | (interrupt ? interrupt_bit : 0));
     state.vsepc->write(epc);
     state.vstval->write(t.get_tval());
 
