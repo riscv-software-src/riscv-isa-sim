@@ -866,7 +866,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   reg_t vsdeleg, hsdeleg;
   reg_t bit = t.cause();
   bool curr_virt = state.v;
-  bool interrupt = (bit & ((reg_t)1 << (max_xlen - 1))) != 0;
+  const reg_t interrupt_bit = (reg_t)1 << (max_xlen - 1);
+  bool interrupt = (bit & interrupt_bit) != 0;
   if (interrupt) {
     vsdeleg = (curr_virt && state.prv <= PRV_S) ? state.hideleg->read() : 0;
     hsdeleg = (state.prv <= PRV_S) ? state.mideleg->read() : 0;
