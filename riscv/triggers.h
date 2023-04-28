@@ -54,12 +54,13 @@ struct match_result_t {
 class matched_t
 {
   public:
-    matched_t(triggers::operation_t operation, reg_t address, action_t action) :
-      operation(operation), address(address), action(action) {}
+    matched_t(triggers::operation_t operation, reg_t address, action_t action, bool gva) :
+      operation(operation), address(address), action(action), gva(gva) {}
 
     triggers::operation_t operation;
     reg_t address;
     action_t action;
+    bool gva;
 };
 
 class trigger_t {

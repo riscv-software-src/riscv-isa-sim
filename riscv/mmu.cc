@@ -71,7 +71,7 @@ reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
 tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
   auto access_info = generate_access_info(vaddr, FETCH, {false, false, false});
-  check_triggers(triggers::OPERATION_EXECUTE, vaddr);
+  check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt);
 
   tlb_entry_t result;
   reg_t vpn = vaddr >> PGSHIFT;
@@ -88,7 +88,7 @@ tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
     result = tlb_data[vpn % TLB_ENTRIES];
   }
 
-  check_triggers(triggers::OPERATION_EXECUTE, vaddr, from_le(*(const uint16_t*)(result.host_offset + vaddr)));
+  check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt, from_le(*(const uint16_t*)(result.host_offset + vaddr)));
 
   return result;
 }
@@ -169,7 +169,7 @@ bool mmu_t::mmio(reg_t paddr, size_t len, uint8_t* bytes, access_type type)
   return true;
 }
 
-void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, std::optional<reg_t> data)
+void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool virt, std::optional<reg_t> data)
 {
   if (matched_trigger || !proc)
     return;
@@ -179,13 +179,13 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, std::
   if (match.has_value())
     switch (match->timing) {
       case triggers::TIMING_BEFORE:
-        throw triggers::matched_t(operation, address, match->action);
+        throw triggers::matched_t(operation, address, match->action, virt);
 
       case triggers::TIMING_AFTER:
         // We want to take this exception on the next instruction.  We check
         // whether to do so in the I$ refill path, so flush the I$.
         flush_icache();
-        matched_trigger = new triggers::matched_t(operation, address, match->action);
+        matched_trigger = new triggers::matched_t(operation, address, match->action, virt);
     }
 }
 
@@ -224,7 +224,7 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
 void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
 {
   auto access_info = generate_access_info(addr, LOAD, xlate_flags);
-  check_triggers(triggers::OPERATION_LOAD, addr);
+  check_triggers(triggers::OPERATION_LOAD, addr, access_info.effective_virt);
 
   if ((addr & (len - 1)) == 0) {
     load_slow_path_intrapage(len, bytes, access_info);
@@ -242,7 +242,7 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t 
       load_slow_path_intrapage(len - len_page0, bytes + len_page0, access_info.split_misaligned_access(len_page0));
   }
 
-  check_triggers(triggers::OPERATION_LOAD, addr, reg_from_bytes(len, bytes));
+  check_triggers(triggers::OPERATION_LOAD, addr, access_info.effective_virt, reg_from_bytes(len, bytes));
 }
 
 void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_access_info_t access_info, bool actually_store)
@@ -276,7 +276,7 @@ void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, xlate_f
 {
   auto access_info = generate_access_info(addr, STORE, xlate_flags);
   if (actually_store)
-    check_triggers(triggers::OPERATION_STORE, addr, reg_from_bytes(len, bytes));
+    check_triggers(triggers::OPERATION_STORE, addr, access_info.effective_virt, reg_from_bytes(len, bytes));
 
   if (addr & (len - 1)) {
     bool gva = access_info.effective_virt;
