@@ -899,7 +899,7 @@ void processor_t::take_trigger_action(triggers::action_t action, reg_t breakpoin
       enter_debug_mode(DCSR_CAUSE_HWBP);
       break;
     case triggers::ACTION_DEBUG_EXCEPTION: {
-      trap_breakpoint trap(state.v, breakpoint_tval);
+      trap_breakpoint trap(virt, breakpoint_tval);
       take_trap(trap, epc);
       break;
     }
