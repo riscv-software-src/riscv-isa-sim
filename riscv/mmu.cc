@@ -268,7 +268,7 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
       else if (!access_info.flags.is_special_access())
         refill_tlb(addr, paddr, host_addr, STORE);
     } else if (!mmio_store(paddr, len, bytes)) {
-      throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+      throw trap_store_access_fault(access_info.effective_virt, addr, 0, 0);
     }
   }
 }
