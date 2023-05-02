@@ -123,4 +123,5 @@ AC_CONFIG_HEADERS([config.h])
 AC_CONFIG_FILES([Makefile])
 AC_CONFIG_FILES([riscv-fesvr.pc])
 AC_CONFIG_FILES([riscv-disasm.pc])
+AC_CONFIG_FILES([riscv-riscv.pc])
 AC_OUTPUT

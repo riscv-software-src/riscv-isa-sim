@@ -19,6 +19,8 @@ fesvr_install_config_hdr = yes
 
 fesvr_install_lib = yes
 
+fesvr_install_pcs = yes
+
 fesvr_srcs = \
   elfloader.cc \
   htif.cc \
