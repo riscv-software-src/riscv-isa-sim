@@ -194,7 +194,11 @@ public:
     MATCH_GE = MCONTROL_MATCH_GE,
     MATCH_LT = MCONTROL_MATCH_LT,
     MATCH_MASK_LOW = MCONTROL_MATCH_MASK_LOW,
-    MATCH_MASK_HIGH = MCONTROL_MATCH_MASK_HIGH
+    MATCH_MASK_HIGH = MCONTROL_MATCH_MASK_HIGH,
+    MATCH_NOT_EQUAL = 8,
+    MATCH_NOT_NAPOT = 9,
+    MATCH_NOT_MASK_LOW = 12,
+    MATCH_NOT_MASK_HIGH = 13
   } match_t;
 
   virtual bool get_dmode() const override { return dmode; }
