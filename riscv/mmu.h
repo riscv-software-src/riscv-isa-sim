@@ -158,12 +158,16 @@ public:
         proc->state.log_mem_write.push_back(std::make_tuple(addr, (T)f(lhs), sizeof(T)));
       }
 
-      if (unlikely(!tlb_load_hit))
-        check_triggers(triggers::OPERATION_LOAD, addr, reg_from_bytes(sizeof(T), (uint8_t*)&res));
-      if (unlikely(!tlb_store_hit)) {
-        target_endian<T> target_val = to_target((T)f(lhs));
-        check_triggers(triggers::OPERATION_STORE, addr, reg_from_bytes(sizeof(T), (const uint8_t*)&target_val));
-      }
+      try {
+        if (unlikely(!tlb_load_hit))
+          check_triggers(triggers::OPERATION_LOAD, addr, reg_from_bytes(sizeof(T), (uint8_t*)&res));
+      } catch (triggers::matched_t& t) { /* suppress data trigger firing before AMO to avoid breaking atomicity */ }
+      try {
+        if (unlikely(!tlb_store_hit)) {
+          target_endian<T> target_val = to_target((T)f(lhs));
+          check_triggers(triggers::OPERATION_STORE, addr, reg_from_bytes(sizeof(T), (const uint8_t*)&target_val));
+        }
+      } catch (triggers::matched_t& t) { /* suppress data trigger firing before AMO to avoid breaking atomicity */ }
 
       return lhs;
     })
