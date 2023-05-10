@@ -39,6 +39,7 @@ struct tlb_entry_t {
 };
 
 void throw_access_exception(bool virt, reg_t addr, access_type type);
+reg_t reg_from_bytes(size_t len, const uint8_t* bytes);
 
 // this class implements a processor's port into the virtual memory system.
 // an MMU and instruction cache are maintained for simulator performance.
@@ -130,9 +131,44 @@ public:
   template<typename T, typename op>
   T amo(reg_t addr, op f) {
     convert_load_traps_to_store_traps({
-      store_slow_path(addr, sizeof(T), nullptr, 0, false, true);
-      auto lhs = load<T>(addr);
-      store<T>(addr, f(lhs));
+      store_slow_path(addr, sizeof(T), nullptr, 0, false, true); // check misaligned, access fault, and page fault
+      reg_t vpn = addr >> PGSHIFT;
+      bool tlb_load_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn;
+      bool tlb_store_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn;
+      if (unlikely(!tlb_load_hit))
+        check_triggers(triggers::OPERATION_LOAD, addr);
+
+      // Atomic load and store. Should not throw exception nor trigger action.
+      target_endian<T> res;
+      if (likely(tlb_load_hit)) {
+        res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
+      } else {
+        load_slow_path_intrapage(addr, sizeof(T), (uint8_t*)&res, 0);
+      }
+      auto lhs = from_target(res);
+      if (likely(tlb_store_hit)) {
+        *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target((T)f(lhs));
+      } else {
+        target_endian<T> target_val = to_target((T)f(lhs));
+        store_slow_path_intrapage(addr, sizeof(T), (const uint8_t*)&target_val, 0, true);
+      }
+
+      if (unlikely(proc && proc->get_log_commits_enabled())) {
+        proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, sizeof(T)));
+        proc->state.log_mem_write.push_back(std::make_tuple(addr, (T)f(lhs), sizeof(T)));
+      }
+
+      try {
+        if (unlikely(!tlb_load_hit))
+          check_triggers(triggers::OPERATION_LOAD, addr, reg_from_bytes(sizeof(T), (uint8_t*)&res));
+      } catch (triggers::matched_t& t) { /* suppress data trigger firing before AMO to avoid breaking atomicity */ }
+      try {
+        if (unlikely(!tlb_store_hit)) {
+          target_endian<T> target_val = to_target((T)f(lhs));
+          check_triggers(triggers::OPERATION_STORE, addr, reg_from_bytes(sizeof(T), (const uint8_t*)&target_val));
+        }
+      } catch (triggers::matched_t& t) { /* suppress data trigger firing before AMO to avoid breaking atomicity */ }
+
       return lhs;
     })
   }
