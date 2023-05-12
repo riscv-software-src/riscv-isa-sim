@@ -267,7 +267,7 @@ void processor_t::step(size_t n)
             auto match = TM.detect_icount_match();
             if (match.has_value()) {
               assert(match->timing == triggers::TIMING_BEFORE);
-              throw triggers::matched_t((triggers::operation_t)0, 0, match->action);
+              throw triggers::matched_t((triggers::operation_t)0, 0, match->action, state.v);
             }
           }
 
@@ -310,7 +310,7 @@ void processor_t::step(size_t n)
       // Trigger action takes priority over single step
       auto match = TM.detect_trap_match(t);
       if (match.has_value())
-        take_trigger_action(match->action, 0, state.pc);
+        take_trigger_action(match->action, 0, state.pc, 0);
       else if (unlikely(state.single_step == state.STEP_STEPPED)) {
         state.single_step = state.STEP_NONE;
         enter_debug_mode(DCSR_CAUSE_STEP);
@@ -322,7 +322,7 @@ void processor_t::step(size_t n)
         delete mmu->matched_trigger;
         mmu->matched_trigger = NULL;
       }
-      take_trigger_action(t.action, t.address, pc);
+      take_trigger_action(t.action, t.address, pc, t.gva);
     }
     catch(trap_debug_mode&)
     {
