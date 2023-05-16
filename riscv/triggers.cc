@@ -55,9 +55,11 @@ void trigger_t::tdata3_write(processor_t * const proc, const reg_t val) noexcept
   sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) <= SSELECT_MAXVAL) ? get_field(val, CSR_TEXTRA_SSELECT(xlen)) : SSELECT_IGNORE);
 }
 
-bool trigger_t::common_match(processor_t * const proc) const noexcept {
+bool trigger_t::common_match(processor_t * const proc, bool use_last_inst_priv) const noexcept {
   auto state = proc->get_state();
-  return mode_match(state->prv, state->v) && textra_match(proc);
+  auto prv = use_last_inst_priv ? state->last_inst_priv : state->prv;
+  auto v = use_last_inst_priv ? state->last_v : state->v;
+  return mode_match(prv, v) && textra_match(proc);
 }
 
 bool trigger_t::mode_match(reg_t prv, bool v) const noexcept
@@ -398,7 +400,8 @@ void itrigger_t::tdata1_write(processor_t * const proc, const reg_t val, const b
 
 std::optional<match_result_t> trap_common_t::detect_trap_match(processor_t * const proc, const trap_t& t) noexcept
 {
-  if (!common_match(proc))
+  // Use the previous privilege for matching
+  if (!common_match(proc, true))
     return std::nullopt;
 
   auto xlen = proc->get_xlen();
