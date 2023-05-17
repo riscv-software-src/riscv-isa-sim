@@ -102,7 +102,7 @@ protected:
 
 private:
   unsigned legalize_mhselect(bool h_enabled) const noexcept;
-  bool mode_match(state_t * const state) const noexcept;
+  bool mode_match(reg_t prv, bool v) const noexcept;
   bool textra_match(processor_t * const proc) const noexcept;
 
   struct mhselect_interpretation {
