@@ -527,6 +527,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   last_inst_priv = 0;
   last_inst_xlen = 0;
   last_inst_flen = 0;
+  last_v = false;
 }
 
 void processor_t::set_debug(bool value)

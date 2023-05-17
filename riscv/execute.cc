@@ -20,6 +20,7 @@ static void commit_log_stash_privilege(processor_t* p)
   state->last_inst_priv = state->prv;
   state->last_inst_xlen = p->get_xlen();
   state->last_inst_flen = p->get_flen();
+  state->last_v = state->v;
 }
 
 static void commit_log_print_value(FILE *log_file, int width, const void *data)
