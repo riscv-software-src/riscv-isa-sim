@@ -238,13 +238,13 @@ SECTIONS
   .text : { *(.text) }
   .data : { *(.data) }
 }
-$ riscv64-unknown-elf-gcc -g -Og -o rot13-64.o -c rot13.c
-$ riscv64-unknown-elf-gcc -g -Og -T spike.lds -nostartfiles -o rot13-64 rot13-64.o
+$ riscv64-unknown-elf-gcc -march=rv64imac -mabi=lp64 -g -Og -o rot13-64.o -c rot13.c
+$ riscv64-unknown-elf-gcc -march=rv64imac -mabi=lp64 -g -Og -T spike.lds -nostartfiles -o rot13-64 rot13-64.o
 ```
 
 To debug this program, first run spike telling it to listen for OpenOCD:
 ```
-$ spike --rbb-port=9824 -m0x10100000:0x20000 rot13-64
+$ spike --isa=rv64imac --rbb-port=9824 -m0x10100000:0x20000 rot13-64
 Listening for remote bitbang connection on port 9824.
 ```
 
