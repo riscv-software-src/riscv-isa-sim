@@ -1,4 +1,5 @@
 require(STATE.debug_mode);
+p->stash_privilege();
 set_pc_and_serialize(STATE.dpc->read());
 p->set_privilege(STATE.dcsr->prv);
 if (STATE.prv < PRV_M)

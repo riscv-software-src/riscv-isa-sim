@@ -1,4 +1,5 @@
 require_privilege(PRV_M);
+p->stash_privilege();
 set_pc_and_serialize(p->get_state()->mepc->read());
 reg_t s = STATE.mstatus->read();
 reg_t prev_prv = get_field(s, MSTATUS_MPP);

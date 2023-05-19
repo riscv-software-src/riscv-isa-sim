@@ -1,5 +1,6 @@
 require_extension(EXT_SMRNMI);
 require_privilege(PRV_M);
+p->stash_privilege();
 set_pc_and_serialize(p->get_state()->mnepc->read());
 reg_t s = STATE.mnstatus->read();
 reg_t prev_prv = get_field(s, MNSTATUS_MNPP);

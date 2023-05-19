@@ -1,4 +1,5 @@
 require_extension('S');
+p->stash_privilege();
 reg_t prev_hstatus = STATE.hstatus->read();
 if (STATE.v) {
   if (STATE.prv == PRV_U || get_field(prev_hstatus, HSTATUS_VTSR))

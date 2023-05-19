@@ -14,12 +14,12 @@ static void commit_log_reset(processor_t* p)
   p->get_state()->log_mem_write.clear();
 }
 
-static void stash_privilege(processor_t* p)
+void processor_t::stash_privilege()
 {
-  state_t* state = p->get_state();
+  state_t* state = get_state();
   state->last_inst_priv = state->prv;
-  state->last_inst_xlen = p->get_xlen();
-  state->last_inst_flen = p->get_flen();
+  state->last_inst_xlen = get_xlen();
+  state->last_inst_flen = get_flen();
   state->last_v = state->v;
 }
 
@@ -161,7 +161,6 @@ inline void processor_t::update_histogram(reg_t pc)
 // These two functions are expected to be inlined by the compiler separately in
 // the processor_t::step() loop. The logged variant is used in the slow path
 static inline reg_t execute_insn_fast(processor_t* p, reg_t pc, insn_fetch_t fetch) {
-  stash_privilege(p);
   return fetch.func(p, fetch.insn, pc);
 }
 static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t fetch)
@@ -169,7 +168,6 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
   if (p->get_log_commits_enabled()) {
     commit_log_reset(p);
   }
-  stash_privilege(p);
 
   reg_t npc;
 

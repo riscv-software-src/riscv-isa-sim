@@ -783,6 +783,8 @@ void processor_t::debug_output_log(std::stringstream *s)
 
 void processor_t::take_trap(trap_t& t, reg_t epc)
 {
+  stash_privilege();
+
   unsigned max_xlen = isa->get_max_xlen();
 
   if (debug) {
