@@ -11,6 +11,8 @@ riscv_CFLAGS = -fPIC
 
 riscv_install_shared_lib = yes
 
+riscv_install_pcs = yes
+
 riscv_install_prog_srcs = \
 
 riscv_install_hdrs = \

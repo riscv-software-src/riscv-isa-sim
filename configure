@@ -6362,6 +6362,8 @@ ac_config_files="$ac_config_files riscv-fesvr.pc"
 
 ac_config_files="$ac_config_files riscv-disasm.pc"
 
+ac_config_files="$ac_config_files riscv-riscv.pc"
+
 cat >confcache <<\_ACEOF
 # This file is a shell script that caches the results of configure
 # tests run on this system so they can be shared between configure
@@ -7065,6 +7067,7 @@ do
     "Makefile") CONFIG_FILES="$CONFIG_FILES Makefile" ;;
     "riscv-fesvr.pc") CONFIG_FILES="$CONFIG_FILES riscv-fesvr.pc" ;;
     "riscv-disasm.pc") CONFIG_FILES="$CONFIG_FILES riscv-disasm.pc" ;;
+    "riscv-riscv.pc") CONFIG_FILES="$CONFIG_FILES riscv-riscv.pc" ;;
 
   *) as_fn_error $? "invalid argument: \`$ac_config_target'" "$LINENO" 5;;
   esac
