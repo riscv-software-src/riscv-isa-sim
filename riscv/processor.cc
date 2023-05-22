@@ -196,7 +196,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   // mstatus_csr_t::unlogged_write()):
   auto xlen = proc->get_isa().get_max_xlen();
 
-  prv = PRV_M;
+  prv = prev_prv = PRV_M;
   v = prev_v = false;
   csrmap[CSR_MISA] = misa = std::make_shared<misa_csr_t>(proc, CSR_MISA, max_isa);
   mstatus = std::make_shared<mstatus_csr_t>(proc, CSR_MSTATUS);
@@ -717,6 +717,7 @@ reg_t processor_t::legalize_privilege(reg_t prv)
 void processor_t::set_privilege(reg_t prv)
 {
   mmu->flush_tlb();
+  state.prev_prv = state.prv;
   state.prv = legalize_privilege(prv);
 }
 

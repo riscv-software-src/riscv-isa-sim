@@ -83,6 +83,7 @@ struct state_t
   // control and status registers
   std::unordered_map<reg_t, csr_t_p> csrmap;
   reg_t prv;    // TODO: Can this be an enum instead?
+  reg_t prev_prv;
   bool v;
   bool prev_v;
   misa_csr_t_p misa;
