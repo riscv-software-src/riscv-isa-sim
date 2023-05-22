@@ -197,7 +197,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   auto xlen = proc->get_isa().get_max_xlen();
 
   prv = PRV_M;
-  v = false;
+  v = prev_v = false;
   csrmap[CSR_MISA] = misa = std::make_shared<misa_csr_t>(proc, CSR_MISA, max_isa);
   mstatus = std::make_shared<mstatus_csr_t>(proc, CSR_MSTATUS);
 
@@ -747,17 +747,16 @@ void processor_t::set_virt(bool virt)
   if (state.prv == PRV_M)
     return;
 
-  if (state.v != virt) {
-    /*
-     * Ideally, we should flush TLB here but we don't need it because
-     * set_virt() is always used in conjucter with set_privilege() and
-     * set_privilege() will flush TLB unconditionally.
-     *
-     * The virtualized sstatus register also relies on this TLB flush,
-     * since changing V might change sstatus.MXR and sstatus.SUM.
-     */
-    state.v = virt;
-  }
+  /*
+    * Ideally, we should flush TLB here but we don't need it because
+    * set_virt() is always used in conjucter with set_privilege() and
+    * set_privilege() will flush TLB unconditionally.
+    *
+    * The virtualized sstatus register also relies on this TLB flush,
+    * since changing V might change sstatus.MXR and sstatus.SUM.
+    */
+  state.prev_v = state.v;
+  state.v = virt;
 }
 
 void processor_t::enter_debug_mode(uint8_t cause)
