@@ -47,6 +47,11 @@ processor_t::processor_t(const isa_parser_t *isa, const cfg_t *cfg,
     fprintf(stderr, "V extension is not supported on platforms without __int128 type\n");
     abort();
   }
+
+  if (isa->extension_enabled(EXT_ZACAS) && isa->get_max_xlen() == 64) {
+    fprintf(stderr, "Zacas extension is not supported on 64-bit platforms without __int128 type\n");
+    abort();
+  }
 #endif
 
   parse_varch_string(cfg->varch());

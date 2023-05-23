@@ -120,6 +120,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       // HINTs encoded in base-ISA instructions are always present.
     } else if (ext_str == "zihintntl") {
       // HINTs encoded in base-ISA instructions are always present.
+    } else if (ext_str == "zacas") {
+      extension_table[EXT_ZACAS] = true;
     } else if (ext_str == "zmmul") {
       extension_table[EXT_ZMMUL] = true;
     } else if (ext_str == "zba") {
@@ -299,6 +301,10 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   if ((extension_table[EXT_ZCF] || extension_table[EXT_ZCD] || extension_table[EXT_ZCB] ||
        extension_table[EXT_ZCMP] || extension_table[EXT_ZCMT]) && !extension_table[EXT_ZCA]) {
     bad_isa_string(str, "'Zcf/Zcd/Zcb/Zcmp/Zcmt' extensions require 'Zca' extension");
+  }
+
+  if (extension_table[EXT_ZACAS] && !extension_table['A']) {
+    bad_isa_string(str, "'Zacas' extension requires 'A' extension");
   }
 
   std::string lowercase = strtolower(priv);

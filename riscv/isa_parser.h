@@ -61,6 +61,7 @@ typedef enum {
   EXT_ZVFBFMIN,
   EXT_ZVFBFWMA,
   EXT_SSTC,
+  EXT_ZACAS,
   EXT_INTERNAL_ZFH_MOVE,
   NUM_ISA_EXTENSIONS
 } isa_extension_t;

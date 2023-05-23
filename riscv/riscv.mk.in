@@ -1335,6 +1335,11 @@ riscv_insn_ext_bf16 = \
 	$(riscv_insn_ext_zvfbfmin) \
 	$(riscv_insn_ext_zvfbfwma) \
 
+riscv_insn_ext_zacas = \
+	amocas_w \
+	amocas_d \
+	$(if $(HAVE_INT128),amocas_q)
+
 riscv_insn_list = \
 	$(riscv_insn_ext_a) \
 	$(riscv_insn_ext_c) \
@@ -1360,6 +1365,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_cmo) \
 	$(riscv_insn_ext_zicond) \
 	$(riscv_insn_ext_bf16) \
+	$(riscv_insn_ext_zacas) \
 
 riscv_gen_srcs = $(addsuffix .cc,$(riscv_insn_list))
 
