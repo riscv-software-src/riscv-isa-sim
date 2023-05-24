@@ -1,6 +1,7 @@
 require(STATE.debug_mode);
 set_pc_and_serialize(STATE.dpc->read());
 p->set_privilege(STATE.dcsr->prv);
+p->set_virt(STATE.dcsr->v);
 if (STATE.prv < PRV_M)
   STATE.mstatus->write(STATE.mstatus->read() & ~MSTATUS_MPRV);
 

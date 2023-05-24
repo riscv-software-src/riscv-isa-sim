@@ -13,6 +13,8 @@
 #include "trap.h"
 // For require():
 #include "insn_macros.h"
+// For CSR_DCSR_V:
+#include "debug_defines.h"
 
 // STATE macro used by require_privilege() macro:
 #undef STATE
@@ -1234,6 +1236,7 @@ dcsr_csr_t::dcsr_csr_t(processor_t* const proc, const reg_t addr):
   ebreaks(false),
   ebreaku(false),
   halt(false),
+  v(false),
   cause(0) {
 }
 
@@ -1255,6 +1258,7 @@ reg_t dcsr_csr_t::read() const noexcept {
   result = set_field(result, DCSR_CAUSE, cause);
   result = set_field(result, DCSR_STEP, step);
   result = set_field(result, DCSR_PRV, prv);
+  result = set_field(result, CSR_DCSR_V, v);
   return result;
 }
 
@@ -1267,12 +1271,14 @@ bool dcsr_csr_t::unlogged_write(const reg_t val) noexcept {
   ebreaks = get_field(val, DCSR_EBREAKS);
   ebreaku = get_field(val, DCSR_EBREAKU);
   halt = get_field(val, DCSR_HALT);
+  v = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_V) : false;
   return true;
 }
 
-void dcsr_csr_t::write_cause_and_prv(uint8_t cause, reg_t prv) noexcept {
+void dcsr_csr_t::write_cause_and_prv(uint8_t cause, reg_t prv, bool v) noexcept {
   this->cause = cause;
   this->prv = prv;
+  this->v = v;
   log_write();
 }
 

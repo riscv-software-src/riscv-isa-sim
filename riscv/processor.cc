@@ -763,7 +763,7 @@ void processor_t::set_virt(bool virt)
 void processor_t::enter_debug_mode(uint8_t cause)
 {
   state.debug_mode = true;
-  state.dcsr->write_cause_and_prv(cause, state.prv);
+  state.dcsr->write_cause_and_prv(cause, state.prv, state.v);
   set_privilege(PRV_M);
   state.dpc->write(state.pc);
   state.pc = DEBUG_ROM_ENTRY;
