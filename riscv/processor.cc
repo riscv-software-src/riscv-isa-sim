@@ -861,7 +861,6 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     set_privilege(PRV_S);
   } else {
     // Handle the trap in M-mode
-    set_virt(false);
     const reg_t vector = (state.mtvec->read() & 1) && interrupt ? 4 * bit : 0;
     const reg_t trap_handler_address = (state.mtvec->read() & ~(reg_t)1) + vector;
     // RNMI exception vector is implementation-defined.  Since we don't model
@@ -883,6 +882,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_GVA, t.has_gva());
     state.mstatus->write(s);
     if (state.mstatush) state.mstatush->write(s >> 32);  // log mstatush change
+    set_virt(false);
     set_privilege(PRV_M);
   }
 }
