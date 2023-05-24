@@ -836,7 +836,6 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     set_privilege(PRV_S);
   } else if (state.prv <= PRV_S && bit < max_xlen && ((hsdeleg >> bit) & 1)) {
     // Handle the trap in HS-mode
-    set_virt(false);
     reg_t vector = (state.nonvirtual_stvec->read() & 1) && interrupt ? 4 * bit : 0;
     state.pc = (state.nonvirtual_stvec->read() & ~(reg_t)1) + vector;
     state.nonvirtual_scause->write(t.cause());
@@ -858,6 +857,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
       s = set_field(s, HSTATUS_GVA, t.has_gva());
       state.hstatus->write(s);
     }
+    set_virt(false);
     set_privilege(PRV_S);
   } else {
     // Handle the trap in M-mode
