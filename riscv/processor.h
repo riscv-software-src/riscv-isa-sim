@@ -269,8 +269,7 @@ public:
       throw trap_instruction_address_misaligned(state.v, pc, 0, 0);
   }
   reg_t legalize_privilege(reg_t);
-  void set_privilege(reg_t);
-  void set_virt(bool);
+  void set_privilege(reg_t, bool);
   const char* get_privilege_string();
   void update_histogram(reg_t pc);
   const disassembler_t* get_disassembler() { return disassembler; }

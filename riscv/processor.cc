@@ -714,11 +714,13 @@ reg_t processor_t::legalize_privilege(reg_t prv)
   return prv;
 }
 
-void processor_t::set_privilege(reg_t prv)
+void processor_t::set_privilege(reg_t prv, bool virt)
 {
   mmu->flush_tlb();
   state.prev_prv = state.prv;
+  state.prev_v = state.v;
   state.prv = legalize_privilege(prv);
+  state.v = virt && state.prv != PRV_M;
 }
 
 const char* processor_t::get_privilege_string()
@@ -741,31 +743,11 @@ const char* processor_t::get_privilege_string()
   abort();
 }
 
-void processor_t::set_virt(bool virt)
-{
-  reg_t tmp, mask;
-
-  if (state.prv == PRV_M)
-    return;
-
-  /*
-    * Ideally, we should flush TLB here but we don't need it because
-    * set_virt() is always used in conjucter with set_privilege() and
-    * set_privilege() will flush TLB unconditionally.
-    *
-    * The virtualized sstatus register also relies on this TLB flush,
-    * since changing V might change sstatus.MXR and sstatus.SUM.
-    */
-  state.prev_v = state.v;
-  state.v = virt;
-}
-
 void processor_t::enter_debug_mode(uint8_t cause)
 {
   state.debug_mode = true;
   state.dcsr->write_cause_and_prv(cause, state.prv, state.v);
-  set_virt(false);
-  set_privilege(PRV_M);
+  set_privilege(PRV_M, false);
   state.dpc->write(state.pc);
   state.pc = DEBUG_ROM_ENTRY;
   in_wfi = false;
@@ -832,8 +814,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_SPP, state.prv);
     s = set_field(s, MSTATUS_SIE, 0);
     state.sstatus->write(s);
-    set_virt(true);
-    set_privilege(PRV_S);
+    set_privilege(PRV_S, true);
   } else if (state.prv <= PRV_S && bit < max_xlen && ((hsdeleg >> bit) & 1)) {
     // Handle the trap in HS-mode
     reg_t vector = (state.nonvirtual_stvec->read() & 1) && interrupt ? 4 * bit : 0;
@@ -857,8 +838,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
       s = set_field(s, HSTATUS_GVA, t.has_gva());
       state.hstatus->write(s);
     }
-    set_virt(false);
-    set_privilege(PRV_S);
+    set_privilege(PRV_S, false);
   } else {
     // Handle the trap in M-mode
     const reg_t vector = (state.mtvec->read() & 1) && interrupt ? 4 * bit : 0;
@@ -882,8 +862,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_GVA, t.has_gva());
     state.mstatus->write(s);
     if (state.mstatush) state.mstatush->write(s >> 32);  // log mstatush change
-    set_virt(false);
-    set_privilege(PRV_M);
+    set_privilege(PRV_M, false);
   }
 }
 
