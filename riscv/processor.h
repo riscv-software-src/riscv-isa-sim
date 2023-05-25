@@ -110,6 +110,13 @@ struct state_t
   virtualized_csr_t_p satp;
   csr_t_p scause;
 
+  // When taking a trap into HS-mode, we must access the nonvirtualized HS-mode CSRs directly:
+  csr_t_p nonvirtual_stvec;
+  csr_t_p nonvirtual_scause;
+  csr_t_p nonvirtual_sepc;
+  csr_t_p nonvirtual_stval;
+  sstatus_proxy_csr_t_p nonvirtual_sstatus;
+
   csr_t_p mtval2;
   csr_t_p mtinst;
   csr_t_p hstatus;
@@ -262,8 +269,7 @@ public:
       throw trap_instruction_address_misaligned(state.v, pc, 0, 0);
   }
   reg_t legalize_privilege(reg_t);
-  void set_privilege(reg_t);
-  void set_virt(bool);
+  void set_privilege(reg_t, bool);
   const char* get_privilege_string();
   void update_histogram(reg_t pc);
   const disassembler_t* get_disassembler() { return disassembler; }
