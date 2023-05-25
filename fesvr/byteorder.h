@@ -15,6 +15,13 @@ static inline int16_t swap(int16_t n) { return int16_t(swap(uint16_t(n))); }
 static inline int32_t swap(int32_t n) { return int32_t(swap(uint32_t(n))); }
 static inline int64_t swap(int64_t n) { return int64_t(swap(uint64_t(n))); }
 
+#ifdef HAVE_INT128
+typedef __int128 int128_t;
+typedef unsigned __int128 uint128_t;
+static inline uint128_t swap(uint128_t n) { return (uint128_t(swap(uint64_t(n))) << 64) | swap(uint64_t(n >> 64)); }
+static inline int128_t swap(int128_t n) { return int128_t(swap(uint128_t(n))); }
+#endif
+
 #ifdef WORDS_BIGENDIAN
 template<typename T> static inline T from_be(T n) { return n; }
 template<typename T> static inline T to_be(T n) { return n; }
