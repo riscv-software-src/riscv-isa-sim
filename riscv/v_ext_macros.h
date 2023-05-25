@@ -64,11 +64,6 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   }
 }
 
-static inline bool is_aligned(const unsigned val, const unsigned pos)
-{
-  return pos ? (val & (pos - 1)) == 0 : true;
-}
-
 #define VI_NARROW_CHECK_COMMON \
   require_vector(true); \
   require(P.VU.vflmul <= 4); \
