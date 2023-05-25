@@ -1244,18 +1244,18 @@ void dcsr_csr_t::verify_permissions(insn_t insn, bool write) const {
 }
 
 reg_t dcsr_csr_t::read() const noexcept {
-  uint32_t v = 0;
-  v = set_field(v, DCSR_XDEBUGVER, 1);
-  v = set_field(v, DCSR_EBREAKM, ebreakm);
-  v = set_field(v, DCSR_EBREAKH, ebreakh);
-  v = set_field(v, DCSR_EBREAKS, ebreaks);
-  v = set_field(v, DCSR_EBREAKU, ebreaku);
-  v = set_field(v, DCSR_STOPCYCLE, 0);
-  v = set_field(v, DCSR_STOPTIME, 0);
-  v = set_field(v, DCSR_CAUSE, cause);
-  v = set_field(v, DCSR_STEP, step);
-  v = set_field(v, DCSR_PRV, prv);
-  return v;
+  reg_t result = 0;
+  result = set_field(result, DCSR_XDEBUGVER, 1);
+  result = set_field(result, DCSR_EBREAKM, ebreakm);
+  result = set_field(result, DCSR_EBREAKH, ebreakh);
+  result = set_field(result, DCSR_EBREAKS, ebreaks);
+  result = set_field(result, DCSR_EBREAKU, ebreaku);
+  result = set_field(result, DCSR_STOPCYCLE, 0);
+  result = set_field(result, DCSR_STOPTIME, 0);
+  result = set_field(result, DCSR_CAUSE, cause);
+  result = set_field(result, DCSR_STEP, step);
+  result = set_field(result, DCSR_PRV, prv);
+  return result;
 }
 
 bool dcsr_csr_t::unlogged_write(const reg_t val) noexcept {
