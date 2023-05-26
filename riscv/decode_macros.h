@@ -120,6 +120,10 @@ do { \
               if (rm > 4) throw trap_illegal_instruction(insn.bits()); \
               rm; })
 
+static inline bool is_aligned(const unsigned val, const unsigned pos)
+{
+  return pos ? (val & (pos - 1)) == 0 : true;
+}
 
 #define require_privilege(p) require(STATE.prv >= (p))
 #define require_novirt() (unlikely(STATE.v) ? throw trap_virtual_instruction(insn.bits()) : (void) 0)
