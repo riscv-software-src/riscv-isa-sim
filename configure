@@ -4742,6 +4742,9 @@ ac_fn_cxx_check_type "$LINENO" "__int128_t" "ac_cv_type___int128_t" "$ac_include
 if test "x$ac_cv_type___int128_t" = xyes; then :
   HAVE_INT128=yes
 
+
+$as_echo "#define HAVE_INT128 1" >>confdefs.h
+
 fi
 
 

@@ -85,7 +85,9 @@ AC_HEADER_STDC
 # Checks for type
 #-------------------------------------------------------------------------
 
-AC_CHECK_TYPE([__int128_t], AC_SUBST([HAVE_INT128],[yes]))
+AC_CHECK_TYPE([__int128_t],
+              [AC_SUBST([HAVE_INT128],[yes])
+              AC_DEFINE([HAVE_INT128], [1], [__int128_t is supported])])
 
 #-------------------------------------------------------------------------
 # Default compiler flags

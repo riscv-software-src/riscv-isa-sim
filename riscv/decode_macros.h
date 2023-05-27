@@ -10,6 +10,11 @@
 #include "softfloat_types.h"
 #include "specialize.h"
 
+#ifdef HAVE_INT128
+typedef __int128 int128_t;
+typedef unsigned __int128 uint128_t;
+#endif
+
 // helpful macros, etc
 #define MMU (*p->get_mmu())
 #define STATE (*p->get_state())
