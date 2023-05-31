@@ -1341,31 +1341,31 @@ riscv_insn_ext_zacas = \
 	$(if $(HAVE_INT128),amocas_q)
 
 riscv_insn_list = \
+	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
 	$(riscv_insn_ext_a) \
+	$(riscv_insn_ext_b) \
+	$(riscv_insn_ext_bf16) \
 	$(riscv_insn_ext_c) \
-	$(riscv_insn_ext_i) \
-	$(riscv_insn_ext_m) \
-	$(riscv_insn_ext_f) \
-	$(riscv_insn_ext_f_zfa) \
+	$(riscv_insn_ext_cmo) \
 	$(riscv_insn_ext_d) \
 	$(riscv_insn_ext_d_zfa) \
-	$(riscv_insn_ext_zfh) \
-	$(riscv_insn_ext_zfh_zfa) \
+	$(riscv_insn_ext_f) \
+	$(riscv_insn_ext_f_zfa) \
+	$(riscv_insn_ext_h) \
+	$(riscv_insn_ext_i) \
+	$(riscv_insn_ext_k) \
+	$(riscv_insn_ext_m) \
+	$(riscv_insn_ext_p) \
 	$(riscv_insn_ext_q) \
 	$(riscv_insn_ext_q_zfa) \
-	$(riscv_insn_ext_b) \
-	$(riscv_insn_ext_k) \
-	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
-	$(riscv_insn_ext_zce) \
-	$(riscv_insn_ext_h) \
-	$(riscv_insn_ext_p) \
-	$(riscv_insn_priv) \
-	$(riscv_insn_svinval) \
-	$(riscv_insn_smrnmi) \
-	$(riscv_insn_ext_cmo) \
-	$(riscv_insn_ext_zicond) \
-	$(riscv_insn_ext_bf16) \
 	$(riscv_insn_ext_zacas) \
+	$(riscv_insn_ext_zce) \
+	$(riscv_insn_ext_zfh) \
+	$(riscv_insn_ext_zfh_zfa) \
+	$(riscv_insn_ext_zicond) \
+	$(riscv_insn_priv) \
+	$(riscv_insn_smrnmi) \
+	$(riscv_insn_svinval) \
 
 riscv_gen_srcs = $(addsuffix .cc,$(riscv_insn_list))
 
