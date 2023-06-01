@@ -663,9 +663,10 @@ class dcsr_csr_t: public csr_t {
   uint8_t prv;
   bool step;
   bool ebreakm;
-  bool ebreakh;
   bool ebreaks;
   bool ebreaku;
+  bool ebreakvs;
+  bool ebreakvu;
   bool halt;
   bool v;
   uint8_t cause;

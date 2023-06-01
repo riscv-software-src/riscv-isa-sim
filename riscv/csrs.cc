@@ -1232,9 +1232,10 @@ dcsr_csr_t::dcsr_csr_t(processor_t* const proc, const reg_t addr):
   prv(0),
   step(false),
   ebreakm(false),
-  ebreakh(false),
   ebreaks(false),
   ebreaku(false),
+  ebreakvs(false),
+  ebreakvu(false),
   halt(false),
   v(false),
   cause(0) {
@@ -1250,9 +1251,10 @@ reg_t dcsr_csr_t::read() const noexcept {
   reg_t result = 0;
   result = set_field(result, DCSR_XDEBUGVER, 1);
   result = set_field(result, DCSR_EBREAKM, ebreakm);
-  result = set_field(result, DCSR_EBREAKH, ebreakh);
   result = set_field(result, DCSR_EBREAKS, ebreaks);
   result = set_field(result, DCSR_EBREAKU, ebreaku);
+  result = set_field(result, CSR_DCSR_EBREAKVS, ebreakvs);
+  result = set_field(result, CSR_DCSR_EBREAKVU, ebreakvu);
   result = set_field(result, DCSR_STOPCYCLE, 0);
   result = set_field(result, DCSR_STOPTIME, 0);
   result = set_field(result, DCSR_CAUSE, cause);
@@ -1267,9 +1269,10 @@ bool dcsr_csr_t::unlogged_write(const reg_t val) noexcept {
   step = get_field(val, DCSR_STEP);
   // TODO: ndreset and fullreset
   ebreakm = get_field(val, DCSR_EBREAKM);
-  ebreakh = get_field(val, DCSR_EBREAKH);
   ebreaks = get_field(val, DCSR_EBREAKS);
   ebreaku = get_field(val, DCSR_EBREAKU);
+  ebreakvs = get_field(val, CSR_DCSR_EBREAKVS);
+  ebreakvu = get_field(val, CSR_DCSR_EBREAKVU);
   halt = get_field(val, DCSR_HALT);
   v = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_V) : false;
   return true;
