@@ -942,8 +942,8 @@
 // Performs  "MUT_A ^= CONST_B;", i.e., xor of the bytes
 // in A (mutated) with the bytes in B (unchanged).
 #define EGU32x4_XOREQ(MUT_A, CONST_B) \
-  for (std::size_t bidx = 0; bidx < 4; ++bidx) { \
-    (MUT_A)[bidx] ^= (CONST_B)[bidx]; \
+  for (std::size_t idx = 0; idx < 4; ++idx) { \
+    (MUT_A)[idx] ^= (CONST_B)[idx]; \
   }
 
 // Performs  "DST = A ^ B;", i.e., DST (overwritten) receives
@@ -952,6 +952,18 @@
   for (std::size_t bidx = 0; bidx < 16; ++bidx) { \
     (DST)[bidx] = (A)[bidx] ^ (B)[bidx]; \
   }
+
+// Performs  "DST = A ^ B;", i.e., DST (overwritten) receives
+// the xor of the bytes in A and B (both unchanged).
+#define EGU32x4_XOR(DST, A, B) \
+  do { \
+    static_assert(std::is_same<EGU32x4_t, decltype(A)>::value); \
+    static_assert(std::is_same<EGU32x4_t, decltype(B)>::value); \
+    static_assert(std::is_same<EGU32x4_t, decltype(DST)>::value); \
+    for (std::size_t idx = 0; idx < 4; ++idx) { \
+      (DST)[idx] = (A)[idx] ^ (B)[idx]; \
+    } \
+  } while (0)
 
 //
 // Common bit manipulations logic.
