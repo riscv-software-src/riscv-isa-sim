@@ -1368,6 +1368,19 @@ riscv_insn_ext_zvkg= \
 	vghsh_vv \
 	vgmul_vv \
 
+riscv_insn_ext_zvkned = \
+	vaesdf_vs \
+	vaesdf_vv \
+	vaesdm_vs \
+	vaesdm_vv \
+	vaesef_vs \
+	vaesef_vv \
+	vaesem_vs \
+	vaesem_vv \
+	vaeskf1_vi \
+	vaeskf2_vi \
+	vaesz_vs \
+
 # Covers both Zvknha and Zvkhnb.
 riscv_insn_ext_zvknh = \
 	vsha2cl_vv \
@@ -1378,6 +1391,7 @@ riscv_insn_ext_zvk = \
 	$(riscv_insn_ext_zvbb) \
 	$(riscv_insn_ext_zvbc) \
 	$(riscv_insn_ext_zvkg) \
+	$(riscv_insn_ext_zvkned) \
 	$(riscv_insn_ext_zvknh) \
 
 riscv_insn_list = \
