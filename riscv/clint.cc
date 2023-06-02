@@ -12,7 +12,7 @@ clint_t::clint_t(simif_t* sim, uint64_t freq_hz, bool real_time)
 
   real_time_ref_secs = base.tv_sec;
   real_time_ref_usecs = base.tv_usec;
-  increment(0);
+  tick(0);
 }
 
 /* 0000 msip hart 0
@@ -34,7 +34,7 @@ bool clint_t::load(reg_t addr, size_t len, uint8_t* bytes)
   if (len > 8)
     return false;
 
-  increment(0);
+  tick(0);
 
   if (addr >= MSIP_BASE && addr < MTIMECMP_BASE) {
     if (len == 8) {
@@ -90,11 +90,11 @@ bool clint_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   } else {
     return false;
   }
-  increment(0);
+  tick(0);
   return true;
 }
 
-void clint_t::increment(reg_t inc)
+void clint_t::tick(reg_t rtc_ticks)
 {
   if (real_time) {
    struct timeval now;
@@ -104,7 +104,7 @@ void clint_t::increment(reg_t inc)
    diff_usecs = ((now.tv_sec - real_time_ref_secs) * 1000000) + (now.tv_usec - real_time_ref_usecs);
    mtime = diff_usecs * freq_hz / 1000000;
   } else {
-    mtime += inc;
+    mtime += rtc_ticks;
   }
 
   for (const auto& [hart_id, hart] : sim->get_harts()) {

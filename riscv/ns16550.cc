@@ -292,7 +292,7 @@ bool ns16550_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   return ret;
 }
 
-void ns16550_t::tick(void)
+void ns16550_t::tick(reg_t UNUSED rtc_ticks)
 {
   if (!(fcr & UART_FCR_ENABLE_FIFO) ||
       (mcr & UART_MCR_LOOP) ||

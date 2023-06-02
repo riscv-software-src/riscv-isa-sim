@@ -62,7 +62,7 @@ class clint_t : public abstract_device_t {
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
   size_t size() { return CLINT_SIZE; }
-  void increment(reg_t inc);
+  void tick(reg_t rtc_ticks) override;
   uint64_t get_mtimecmp(reg_t hartid) { return mtimecmp[hartid]; }
   uint64_t get_mtime() { return mtime; }
  private:
@@ -131,7 +131,7 @@ class ns16550_t : public abstract_device_t {
             uint32_t interrupt_id, uint32_t reg_shift, uint32_t reg_io_width);
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
-  void tick(void);
+  void tick(reg_t rtc_ticks) override;
   size_t size() { return NS16550_SIZE; }
  private:
   class bus_t *bus;

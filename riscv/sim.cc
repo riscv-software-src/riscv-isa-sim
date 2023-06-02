@@ -245,8 +245,9 @@ void sim_t::step(size_t n)
       procs[current_proc]->get_mmu()->yield_load_reservation();
       if (++current_proc == procs.size()) {
         current_proc = 0;
-        if (clint) clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
-        if (ns16550) ns16550->tick();
+        reg_t rtc_ticks = INTERLEAVE / INSNS_PER_RTC_TICK;
+        if (clint) clint->tick(rtc_ticks);
+        if (ns16550) ns16550->tick(rtc_ticks);
       }
     }
   }
