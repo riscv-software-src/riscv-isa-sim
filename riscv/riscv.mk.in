@@ -1387,12 +1387,18 @@ riscv_insn_ext_zvknh = \
 	vsha2ch_vv \
 	vsha2ms_vv \
 
+riscv_insn_ext_zvksed = \
+	vsm4k_vi \
+	vsm4r_vs \
+	vsm4r_vv \
+
 riscv_insn_ext_zvk = \
 	$(riscv_insn_ext_zvbb) \
 	$(riscv_insn_ext_zvbc) \
 	$(riscv_insn_ext_zvkg) \
 	$(riscv_insn_ext_zvkned) \
 	$(riscv_insn_ext_zvknh) \
+	$(riscv_insn_ext_zvksed) \
 
 riscv_insn_list = \
 	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
