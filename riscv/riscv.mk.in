@@ -1358,8 +1358,15 @@ riscv_insn_ext_zvbb = \
 	vwsll_vv \
 	vwsll_vx \
 
+riscv_insn_ext_zvbc = \
+	vclmul_vv \
+	vclmul_vx \
+	vclmulh_vv \
+	vclmulh_vx \
+
 riscv_insn_ext_zvk = \
 	$(riscv_insn_ext_zvbb) \
+	$(riscv_insn_ext_zvbc) \
 
 riscv_insn_list = \
 	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
