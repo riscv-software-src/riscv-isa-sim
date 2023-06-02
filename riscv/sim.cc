@@ -45,7 +45,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     isa(cfg->isa(), cfg->priv()),
     cfg(cfg),
     mems(mems),
-    plugin_devices(plugin_devices),
     procs(std::max(cfg->nprocs(), size_t(1))),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
@@ -66,8 +65,10 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   for (auto& x : mems)
     bus.add_device(x.first, x.second);
 
-  for (auto& x : plugin_devices)
+  for (auto& x : plugin_devices) {
     bus.add_device(x.first, x.second.get());
+    devices.push_back(x.second);
+  }
 
   debug_module.add_device(&bus);
 

@@ -63,7 +63,6 @@ private:
   isa_parser_t isa;
   const cfg_t * const cfg;
   std::vector<std::pair<reg_t, mem_t*>> mems;
-  std::vector<std::pair<reg_t, std::shared_ptr<abstract_device_t>>> plugin_devices;
   std::vector<processor_t*> procs;
   std::map<size_t, processor_t*> harts;
   std::pair<reg_t, reg_t> initrd_range;
