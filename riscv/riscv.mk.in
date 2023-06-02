@@ -1340,6 +1340,27 @@ riscv_insn_ext_zacas = \
 	amocas_d \
 	$(if $(HAVE_INT128),amocas_q)
 
+riscv_insn_ext_zvbb = \
+	vandn_vv \
+	vandn_vx \
+	vbrev8_v \
+	vbrev_v \
+	vclz_v \
+	vcpop_v \
+	vctz_v \
+	vrev8_v \
+	vrol_vv \
+	vrol_vx \
+	vror_vi \
+	vror_vv \
+	vror_vx \
+	vwsll_vi \
+	vwsll_vv \
+	vwsll_vx \
+
+riscv_insn_ext_zvk = \
+	$(riscv_insn_ext_zvbb) \
+
 riscv_insn_list = \
 	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
 	$(riscv_insn_ext_a) \
@@ -1363,6 +1384,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_zfh) \
 	$(riscv_insn_ext_zfh_zfa) \
 	$(riscv_insn_ext_zicond) \
+	$(riscv_insn_ext_zvk) \
 	$(riscv_insn_priv) \
 	$(riscv_insn_smrnmi) \
 	$(riscv_insn_svinval) \

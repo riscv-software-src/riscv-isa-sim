@@ -140,6 +140,7 @@ public:
   uint64_t v_vta() { return x(26, 1); }
   uint64_t v_vma() { return x(27, 1); }
   uint64_t v_mew() { return x(28, 1); }
+  uint64_t v_zimm6() { return x(15, 5) + (x(26, 1) << 5); }
 
   uint64_t p_imm2() { return x(20, 2); }
   uint64_t p_imm3() { return x(20, 3); }
