@@ -336,7 +336,7 @@ int main(int argc, char** argv)
   bool dtb_enabled = true;
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
-  std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
+  std::vector<std::pair<reg_t, std::shared_ptr<abstract_device_t>>> plugin_devices;
   std::unique_ptr<icache_sim_t> ic;
   std::unique_ptr<dcache_sim_t> dc;
   std::unique_ptr<cache_sim_t> l2;
@@ -416,7 +416,7 @@ int main(int argc, char** argv)
     std::string args(avail, '\0');
     stream.readsome(&args[0], avail);
 
-    plugin_devices.emplace_back(base, new mmio_plugin_device_t(name, args));
+    plugin_devices.emplace_back(base, std::make_shared<mmio_plugin_device_t>(name, args));
   };
 
   option_parser_t parser;
@@ -601,9 +601,6 @@ int main(int argc, char** argv)
 
   for (auto& mem : mems)
     delete mem.second;
-
-  for (auto& plugin_device : plugin_devices)
-    delete plugin_device.second;
 
   return return_code;
 }

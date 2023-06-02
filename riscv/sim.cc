@@ -34,7 +34,7 @@ const size_t sim_t::INTERLEAVE;
 
 sim_t::sim_t(const cfg_t *cfg, bool halted,
              std::vector<std::pair<reg_t, mem_t*>> mems,
-             std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
+             std::vector<std::pair<reg_t, std::shared_ptr<abstract_device_t>>> plugin_devices,
              const std::vector<std::string>& args,
              const debug_module_config_t &dm_config,
              const char *log_path,
@@ -67,7 +67,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     bus.add_device(x.first, x.second);
 
   for (auto& x : plugin_devices)
-    bus.add_device(x.first, x.second);
+    bus.add_device(x.first, x.second.get());
 
   debug_module.add_device(&bus);
 

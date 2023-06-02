@@ -27,7 +27,7 @@ class sim_t : public htif_t, public simif_t
 public:
   sim_t(const cfg_t *cfg, bool halted,
         std::vector<std::pair<reg_t, mem_t*>> mems,
-        std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
+        std::vector<std::pair<reg_t, std::shared_ptr<abstract_device_t>>> plugin_devices,
         const std::vector<std::string>& args,
         const debug_module_config_t &dm_config, const char *log_path,
         bool dtb_enabled, const char *dtb_file,
@@ -63,7 +63,7 @@ private:
   isa_parser_t isa;
   const cfg_t * const cfg;
   std::vector<std::pair<reg_t, mem_t*>> mems;
-  std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
+  std::vector<std::pair<reg_t, std::shared_ptr<abstract_device_t>>> plugin_devices;
   std::vector<processor_t*> procs;
   std::map<size_t, processor_t*> harts;
   std::pair<reg_t, reg_t> initrd_range;
