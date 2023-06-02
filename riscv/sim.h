@@ -70,10 +70,10 @@ private:
   std::string dts;
   std::string dtb;
   bool dtb_enabled;
-  std::unique_ptr<rom_device_t> boot_rom;
-  std::unique_ptr<clint_t> clint;
-  std::unique_ptr<plic_t> plic;
-  std::unique_ptr<ns16550_t> ns16550;
+  std::shared_ptr<rom_device_t> boot_rom;
+  std::shared_ptr<clint_t> clint;
+  std::shared_ptr<plic_t> plic;
+  std::shared_ptr<ns16550_t> ns16550;
   bus_t bus;
   log_file_t log_file;
 
