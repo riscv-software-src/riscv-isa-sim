@@ -238,6 +238,18 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
+    return xpr_name[RVC_R1S];
+  }
+} rvc_r1s;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return xpr_name[RVC_R2S];
+  }
+} rvc_r2s;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     return fpr_name[insn.rvc_rs2s()];
   }
 } rvc_fp_rs2s;
@@ -1347,8 +1359,8 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
       DISASM_INSN("cm.popretz", cm_popretz, 0, {&rvcm_pushpop_rlist, &rvcm_pop_stack_adj_64});
     }
 
-    DISASM_INSN("cm.mva01s", cm_mva01s, 0, {&rvc_rs1s, &rvc_rs2s});
-    DISASM_INSN("cm.mvsa01", cm_mvsa01, 0, {&rvc_rs1s, &rvc_rs2s});
+    DISASM_INSN("cm.mva01s", cm_mva01s, 0, {&rvc_r1s, &rvc_r2s});
+    DISASM_INSN("cm.mvsa01", cm_mvsa01, 0, {&rvc_r1s, &rvc_r2s});
   }
 
   if (isa->extension_enabled(EXT_ZCMT)) {
