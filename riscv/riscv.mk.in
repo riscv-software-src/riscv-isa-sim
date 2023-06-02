@@ -1368,10 +1368,17 @@ riscv_insn_ext_zvkg= \
 	vghsh_vv \
 	vgmul_vv \
 
+# Covers both Zvknha and Zvkhnb.
+riscv_insn_ext_zvknh = \
+	vsha2cl_vv \
+	vsha2ch_vv \
+	vsha2ms_vv \
+
 riscv_insn_ext_zvk = \
 	$(riscv_insn_ext_zvbb) \
 	$(riscv_insn_ext_zvbc) \
 	$(riscv_insn_ext_zvkg) \
+	$(riscv_insn_ext_zvknh) \
 
 riscv_insn_list = \
 	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
