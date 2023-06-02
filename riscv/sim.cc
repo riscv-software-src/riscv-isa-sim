@@ -246,8 +246,7 @@ void sim_t::step(size_t n)
       if (++current_proc == procs.size()) {
         current_proc = 0;
         reg_t rtc_ticks = INTERLEAVE / INSNS_PER_RTC_TICK;
-        if (clint) clint->tick(rtc_ticks);
-        if (ns16550) ns16550->tick(rtc_ticks);
+        for (auto &dev : devices) dev->tick(rtc_ticks);
       }
     }
   }
