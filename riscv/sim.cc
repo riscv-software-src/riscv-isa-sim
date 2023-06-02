@@ -123,6 +123,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   if (fdt_parse_clint(fdt, &clint_base, "riscv,clint0") == 0) {
     clint.reset(new clint_t(this, CPU_HZ / INSNS_PER_RTC_TICK, cfg->real_time_clint()));
     bus.add_device(clint_base, clint.get());
+    devices.push_back(clint);
   }
 
   // pointer to wired interrupt controller
@@ -134,6 +135,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   if (fdt_parse_plic(fdt, &plic_base, &plic_ndev, "riscv,plic0") == 0) {
     plic.reset(new plic_t(this, plic_ndev));
     bus.add_device(plic_base, plic.get());
+    devices.push_back(plic);
     intctrl = plic.get();
   }
 
@@ -146,6 +148,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     ns16550.reset(new ns16550_t(&bus, intctrl, NS16550_INTERRUPT_ID,
                                 ns16550_shift, ns16550_io_width));
     bus.add_device(ns16550_base, ns16550.get());
+    devices.push_back(ns16550);
   }
 
   //per core attribute
@@ -376,6 +379,7 @@ void sim_t::set_rom()
 
   boot_rom.reset(new rom_device_t(rom));
   bus.add_device(DEFAULT_RSTVEC, boot_rom.get());
+  devices.push_back(boot_rom);
 }
 
 char* sim_t::addr_to_mem(reg_t paddr) {
