@@ -145,8 +145,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   if (fdt_parse_ns16550(fdt, &ns16550_base,
                         &ns16550_shift, &ns16550_io_width, "ns16550a") == 0) {
     assert(intctrl);
-    ns16550.reset(new ns16550_t(&bus, intctrl, NS16550_INTERRUPT_ID,
-                                ns16550_shift, ns16550_io_width));
+    std::shared_ptr<ns16550_t> ns16550(new ns16550_t(&bus, intctrl, NS16550_INTERRUPT_ID,
+                                                     ns16550_shift, ns16550_io_width));
     bus.add_device(ns16550_base, ns16550.get());
     devices.push_back(ns16550);
   }
@@ -377,7 +377,7 @@ void sim_t::set_rom()
   const int align = 0x1000;
   rom.resize((rom.size() + align - 1) / align * align);
 
-  boot_rom.reset(new rom_device_t(rom));
+  std::shared_ptr<rom_device_t> boot_rom(new rom_device_t(rom));
   bus.add_device(DEFAULT_RSTVEC, boot_rom.get());
   devices.push_back(boot_rom);
 }
