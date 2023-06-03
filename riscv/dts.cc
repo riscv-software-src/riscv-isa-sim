@@ -215,7 +215,7 @@ std::string dts_compile(const std::string& dts)
   return dtb.str();
 }
 
-static int fdt_get_node_addr_size(void *fdt, int node, reg_t *addr,
+static int fdt_get_node_addr_size(const void *fdt, int node, reg_t *addr,
                                   unsigned long *size, const char *field)
 {
   int parent, len, i;
@@ -259,7 +259,7 @@ static int fdt_get_node_addr_size(void *fdt, int node, reg_t *addr,
   return 0;
 }
 
-static int check_cpu_node(void *fdt, int cpu_offset)
+static int check_cpu_node(const void *fdt, int cpu_offset)
 {
   int len;
   const void *prop;
@@ -276,22 +276,22 @@ static int check_cpu_node(void *fdt, int cpu_offset)
   return 0;
 }
 
-int fdt_get_offset(void *fdt, const char *field)
+int fdt_get_offset(const void *fdt, const char *field)
 {
   return fdt_path_offset(fdt, field);
 }
 
-int fdt_get_first_subnode(void *fdt, int node)
+int fdt_get_first_subnode(const void *fdt, int node)
 {
   return fdt_first_subnode(fdt, node);
 }
 
-int fdt_get_next_subnode(void *fdt, int node)
+int fdt_get_next_subnode(const void *fdt, int node)
 {
   return fdt_next_subnode(fdt, node);
 }
 
-int fdt_parse_clint(void *fdt, reg_t *clint_addr,
+int fdt_parse_clint(const void *fdt, reg_t *clint_addr,
                     const char *compatible)
 {
   int nodeoffset, rc;
@@ -307,7 +307,7 @@ int fdt_parse_clint(void *fdt, reg_t *clint_addr,
   return 0;
 }
 
-int fdt_parse_plic(void *fdt, reg_t *plic_addr, uint32_t *ndev,
+int fdt_parse_plic(const void *fdt, reg_t *plic_addr, uint32_t *ndev,
                    const char *compatible)
 {
   int nodeoffset, len, rc;
@@ -329,7 +329,7 @@ int fdt_parse_plic(void *fdt, reg_t *plic_addr, uint32_t *ndev,
   return 0;
 }
 
-int fdt_parse_ns16550(void *fdt, reg_t *ns16550_addr,
+int fdt_parse_ns16550(const void *fdt, reg_t *ns16550_addr,
                       uint32_t *reg_shift, uint32_t *reg_io_width,
                       const char *compatible)
 {
@@ -365,7 +365,7 @@ int fdt_parse_ns16550(void *fdt, reg_t *ns16550_addr,
   return 0;
 }
 
-int fdt_parse_pmp_num(void *fdt, int cpu_offset, reg_t *pmp_num)
+int fdt_parse_pmp_num(const void *fdt, int cpu_offset, reg_t *pmp_num)
 {
   int rc;
 
@@ -380,7 +380,7 @@ int fdt_parse_pmp_num(void *fdt, int cpu_offset, reg_t *pmp_num)
   return 0;
 }
 
-int fdt_parse_pmp_alignment(void *fdt, int cpu_offset, reg_t *pmp_align)
+int fdt_parse_pmp_alignment(const void *fdt, int cpu_offset, reg_t *pmp_align)
 {
   int rc;
 
@@ -395,7 +395,7 @@ int fdt_parse_pmp_alignment(void *fdt, int cpu_offset, reg_t *pmp_align)
   return 0;
 }
 
-int fdt_parse_mmu_type(void *fdt, int cpu_offset, const char **mmu_type)
+int fdt_parse_mmu_type(const void *fdt, int cpu_offset, const char **mmu_type)
 {
   assert(mmu_type);
 
