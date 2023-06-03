@@ -69,9 +69,9 @@
 
 #define UART_SCR                7 /* I/O: Scratch Register */
 
-ns16550_t::ns16550_t(class bus_t *bus, abstract_interrupt_controller_t *intctrl,
+ns16550_t::ns16550_t(abstract_interrupt_controller_t *intctrl,
                      uint32_t interrupt_id, uint32_t reg_shift, uint32_t reg_io_width)
-  : bus(bus), intctrl(intctrl), interrupt_id(interrupt_id), reg_shift(reg_shift), reg_io_width(reg_io_width), backoff_counter(0)
+  : intctrl(intctrl), interrupt_id(interrupt_id), reg_shift(reg_shift), reg_io_width(reg_io_width), backoff_counter(0)
 {
   ier = 0;
   iir = UART_IIR_NO_INT;

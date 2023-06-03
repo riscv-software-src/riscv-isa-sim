@@ -146,7 +146,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   if (fdt_parse_ns16550(fdt, &ns16550_base,
                         &ns16550_shift, &ns16550_io_width, "ns16550a") == 0) {
     assert(intctrl);
-    std::shared_ptr<ns16550_t> ns16550(new ns16550_t(&bus, intctrl, NS16550_INTERRUPT_ID,
+    std::shared_ptr<ns16550_t> ns16550(new ns16550_t(intctrl, NS16550_INTERRUPT_ID,
                                                      ns16550_shift, ns16550_io_width));
     bus.add_device(ns16550_base, ns16550.get());
     devices.push_back(ns16550);
