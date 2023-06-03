@@ -58,7 +58,7 @@ class mem_t : public abstract_device_t {
 
 class clint_t : public abstract_device_t {
  public:
-  clint_t(simif_t*, uint64_t freq_hz, bool real_time);
+  clint_t(const simif_t*, uint64_t freq_hz, bool real_time);
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
   size_t size() { return CLINT_SIZE; }
@@ -69,7 +69,7 @@ class clint_t : public abstract_device_t {
   typedef uint64_t mtime_t;
   typedef uint64_t mtimecmp_t;
   typedef uint32_t msip_t;
-  simif_t* sim;
+  const simif_t* sim;
   uint64_t freq_hz;
   bool real_time;
   uint64_t real_time_ref_secs;
@@ -97,7 +97,7 @@ struct plic_context_t {
 
 class plic_t : public abstract_device_t, public abstract_interrupt_controller_t {
  public:
-  plic_t(simif_t*, uint32_t ndev);
+  plic_t(const simif_t*, uint32_t ndev);
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
   void set_interrupt_level(uint32_t id, int lvl) override;
