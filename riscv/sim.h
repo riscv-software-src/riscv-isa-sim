@@ -52,6 +52,7 @@ public:
   }
   const char* get_dts() { return dts.c_str(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
+  abstract_interrupt_controller_t* get_intctrl() const { assert(plic.get()); return plic.get(); }
   virtual const cfg_t &get_cfg() const override { return *cfg; }
 
   virtual const std::map<size_t, processor_t*>& get_harts() const override { return harts; }
