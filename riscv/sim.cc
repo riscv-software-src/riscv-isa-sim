@@ -120,7 +120,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   // that's not bus-accessible), but it should handle the normal use cases. In
   // particular, the default device tree configuration that you get without
   // setting the dtb_file argument has one.
-  std::vector<device_factory_t*> device_factories = {
+  std::vector<const device_factory_t*> device_factories = {
     clint_factory, // clint must be element 0
     plic_factory, // plic must be element 1
     ns16550_factory};
@@ -138,7 +138,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   } else {
     std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds();
     std::string device_nodes;
-    for (device_factory_t *factory : device_factories)
+    for (const device_factory_t *factory : device_factories)
       device_nodes.append(factory->generate_dts(this));
     dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
                    initrd_bounds.first, initrd_bounds.second,
@@ -162,7 +162,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   void *fdt = (void *)dtb.c_str();
 
   for (size_t i = 0; i < device_factories.size(); i++) {
-    device_factory_t *factory = device_factories[i];
+    const device_factory_t *factory = device_factories[i];
     reg_t device_base = 0;
     abstract_device_t* device = factory->parse_from_fdt(fdt, this, &device_base);
     if (device) {
