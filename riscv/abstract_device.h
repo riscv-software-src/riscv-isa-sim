@@ -5,6 +5,9 @@
 #include "common.h"
 #include <cstdint>
 #include <cstddef>
+#include <string>
+
+class sim_t;
 
 class abstract_device_t {
  public:
@@ -13,5 +16,21 @@ class abstract_device_t {
   virtual ~abstract_device_t() {}
   virtual void tick(reg_t UNUSED rtc_ticks) {}
 };
+
+// factory for devices which should show up in the DTS, and can be
+// parameterized by parsing the DTS
+class device_factory_t {
+public:
+  virtual abstract_device_t* parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base) = 0;
+  virtual std::string generate_dts(const sim_t* sim) = 0;
+  virtual ~device_factory_t() {}
+};
+
+#define REGISTER_DEVICE(name, parse, generate) \
+  class name##_factory_t : public device_factory_t { \
+  public: \
+  name##_t* parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base) override { return parse(fdt, sim, base); } \
+  std::string generate_dts(const sim_t* sim) override { return generate(sim); } \
+  }; device_factory_t *name##_factory = new name##_factory_t();
 
 #endif
