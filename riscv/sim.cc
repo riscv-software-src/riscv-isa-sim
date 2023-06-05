@@ -32,6 +32,10 @@ static void handle_signal(int sig)
 
 const size_t sim_t::INTERLEAVE;
 
+extern device_factory_t* clint_factory;
+extern device_factory_t* plic_factory;
+extern device_factory_t* ns16550_factory;
+
 sim_t::sim_t(const cfg_t *cfg, bool halted,
              std::vector<std::pair<reg_t, mem_t*>> mems,
              std::vector<std::pair<reg_t, std::shared_ptr<abstract_device_t>>> plugin_devices,
@@ -90,9 +94,9 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 #ifndef RISCV_ENABLE_DUAL_ENDIAN
   if (cfg->endianness != endianness_little) {
     fputs("Big-endian support has not been prroperly enabled; "
-	  "please rebuild the riscv-isa-sim project using "
-	  "\"configure --enable-dual-endian\".\n",
-	  stderr);
+          "please rebuild the riscv-isa-sim project using "
+          "\"configure --enable-dual-endian\".\n",
+          stderr);
     abort();
   }
 #endif
@@ -108,6 +112,19 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   // When running without using a dtb, skip the fdt-based configuration steps
   if (!dtb_enabled) return;
 
+  // Only make a CLINT (Core-Local INTerrupt controller) and PLIC (Platform-
+  // Level-Interrupt-Controller) if they are specified in the device tree
+  // configuration.
+  //
+  // This isn't *quite* as general as we could get (because you might have one
+  // that's not bus-accessible), but it should handle the normal use cases. In
+  // particular, the default device tree configuration that you get without
+  // setting the dtb_file argument has one.
+  std::vector<device_factory_t*> device_factories = {
+    clint_factory, // clint must be element 0
+    plic_factory, // plic must be element 1
+    ns16550_factory};
+
   // Load dtb_file if provided, otherwise self-generate a dts/dtb
   if (dtb_file) {
     std::ifstream fin(dtb_file, std::ios::binary);
@@ -117,13 +134,16 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     }
     std::stringstream strstream;
     strstream << fin.rdbuf();
-
     dtb = strstream.str();
   } else {
     std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds();
+    std::string device_nodes;
+    for (device_factory_t *factory : device_factories)
+      device_nodes.append(factory->generate_dts(this));
     dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
                    initrd_bounds.first, initrd_bounds.second,
-                   cfg->bootargs(), cfg->pmpregions, procs, mems);
+                   cfg->bootargs(), cfg->pmpregions, procs, mems,
+                   device_nodes);
     dtb = dts_compile(dts);
   }
 
@@ -141,43 +161,21 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 
   void *fdt = (void *)dtb.c_str();
 
-  // Only make a CLINT (Core-Local INTerrupt controller) if one is specified in
-  // the device tree configuration.
-  //
-  // This isn't *quite* as general as we could get (because you might have one
-  // that's not bus-accessible), but it should handle the normal use cases. In
-  // particular, the default device tree configuration that you get without
-  // setting the dtb_file argument has one.
-  reg_t clint_base;
-  if (fdt_parse_clint(fdt, &clint_base, "riscv,clint0") == 0) {
-    clint.reset(new clint_t(this, CPU_HZ / INSNS_PER_RTC_TICK, cfg->real_time_clint()));
-    bus.add_device(clint_base, clint.get());
-    devices.push_back(clint);
-  }
+  for (size_t i = 0; i < device_factories.size(); i++) {
+    device_factory_t *factory = device_factories[i];
+    reg_t device_base = 0;
+    abstract_device_t* device = factory->parse_from_fdt(fdt, this, &device_base);
+    if (device) {
+      assert(device_base);
+      bus.add_device(device_base, device);
+      std::shared_ptr<abstract_device_t> dev_ptr(device);
+      devices.push_back(dev_ptr);
 
-  // pointer to wired interrupt controller
-  abstract_interrupt_controller_t *intctrl = NULL;
-
-  // create plic
-  reg_t plic_base;
-  uint32_t plic_ndev;
-  if (fdt_parse_plic(fdt, &plic_base, &plic_ndev, "riscv,plic0") == 0) {
-    plic.reset(new plic_t(this, plic_ndev));
-    bus.add_device(plic_base, plic.get());
-    devices.push_back(plic);
-    intctrl = plic.get();
-  }
-
-  // create ns16550
-  reg_t ns16550_base;
-  uint32_t ns16550_shift, ns16550_io_width;
-  if (fdt_parse_ns16550(fdt, &ns16550_base,
-                        &ns16550_shift, &ns16550_io_width, "ns16550a") == 0) {
-    assert(intctrl);
-    std::shared_ptr<ns16550_t> ns16550(new ns16550_t(intctrl, NS16550_INTERRUPT_ID,
-                                                     ns16550_shift, ns16550_io_width));
-    bus.add_device(ns16550_base, ns16550.get());
-    devices.push_back(ns16550);
+      if (i == 0) // clint_factory
+        clint = std::static_pointer_cast<clint_t>(dev_ptr);
+      else if (i == 1) // plic_factory
+        plic = std::static_pointer_cast<plic_t>(dev_ptr);
+    }
   }
 
   //per core attribute

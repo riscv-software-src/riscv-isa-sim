@@ -17,7 +17,8 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
                      const char* bootargs,
                      size_t pmpregions,
                      std::vector<processor_t*> procs,
-                     std::vector<std::pair<reg_t, mem_t*>> mems)
+                     std::vector<std::pair<reg_t, mem_t*>> mems,
+                     std::string device_nodes)
 {
   std::stringstream s;
   s << std::dec <<
@@ -85,47 +86,8 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "    #size-cells = <2>;\n"
          "    compatible = \"ucbbar,spike-bare-soc\", \"simple-bus\";\n"
          "    ranges;\n"
-         "    clint@" << CLINT_BASE << " {\n"
-         "      compatible = \"riscv,clint0\";\n"
-         "      interrupts-extended = <" << std::dec;
-  for (size_t i = 0; i < procs.size(); i++)
-    s << "&CPU" << i << "_intc 3 &CPU" << i << "_intc 7 ";
-  reg_t clintbs = CLINT_BASE;
-  reg_t clintsz = CLINT_SIZE;
-  s << std::hex << ">;\n"
-         "      reg = <0x" << (clintbs >> 32) << " 0x" << (clintbs & (uint32_t)-1) <<
-                     " 0x" << (clintsz >> 32) << " 0x" << (clintsz & (uint32_t)-1) << ">;\n"
-         "    };\n"
-         "    PLIC: plic@" << PLIC_BASE << " {\n"
-         "      compatible = \"riscv,plic0\";\n"
-         "      #address-cells = <2>;\n"
-         "      interrupts-extended = <" << std::dec;
-  for (size_t i = 0; i < procs.size(); i++)
-    s << "&CPU" << i << "_intc 11 &CPU" << i << "_intc 9 ";
-  reg_t plicbs = PLIC_BASE;
-  reg_t plicsz = PLIC_SIZE;
-  s << std::hex << ">;\n"
-         "      reg = <0x" << (plicbs >> 32) << " 0x" << (plicbs & (uint32_t)-1) <<
-                     " 0x" << (plicsz >> 32) << " 0x" << (plicsz & (uint32_t)-1) << ">;\n"
-         "      riscv,ndev = <0x" << PLIC_NDEV << ">;\n"
-         "      riscv,max-priority = <0x" << ((1U << PLIC_PRIO_BITS) - 1) << ">;\n"
-         "      #interrupt-cells = <1>;\n"
-         "      interrupt-controller;\n"
-         "    };\n"
-         "    SERIAL0: ns16550@" << NS16550_BASE << " {\n"
-         "      compatible = \"ns16550a\";\n"
-         "      clock-frequency = <" << std::dec << (cpu_hz/insns_per_rtc_tick) << ">;\n"
-         "      interrupt-parent = <&PLIC>;\n"
-         "      interrupts = <" << std::dec << NS16550_INTERRUPT_ID;
-  reg_t ns16550bs = NS16550_BASE;
-  reg_t ns16550sz = NS16550_SIZE;
-  s << std::hex << ">;\n"
-         "      reg = <0x" << (ns16550bs >> 32) << " 0x" << (ns16550bs & (uint32_t)-1) <<
-                     " 0x" << (ns16550sz >> 32) << " 0x" << (ns16550sz & (uint32_t)-1) << ">;\n"
-         "      reg-shift = <0x" << NS16550_REG_SHIFT << ">;\n"
-         "      reg-io-width = <0x" << NS16550_REG_IO_WIDTH << ">;\n"
-         "    };\n"
-         "  };\n"
+    << device_nodes
+    <<   "  };\n"
          "  htif {\n"
          "    compatible = \"ucb,htif0\";\n"
          "  };\n"
