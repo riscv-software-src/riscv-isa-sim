@@ -109,7 +109,35 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   if (!dtb_enabled) return;
 
   // Load dtb_file if provided, otherwise self-generate a dts/dtb
-  make_dtb(dtb_file);
+  if (dtb_file) {
+    std::ifstream fin(dtb_file, std::ios::binary);
+    if (!fin.good()) {
+      std::cerr << "can't find dtb file: " << dtb_file << std::endl;
+      exit(-1);
+    }
+    std::stringstream strstream;
+    strstream << fin.rdbuf();
+
+    dtb = strstream.str();
+  } else {
+    std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds();
+    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
+                   initrd_bounds.first, initrd_bounds.second,
+                   cfg->bootargs(), cfg->pmpregions, procs, mems);
+    dtb = dts_compile(dts);
+  }
+
+  int fdt_code = fdt_check_header(dtb.c_str());
+  if (fdt_code) {
+    std::cerr << "Failed to read DTB from ";
+    if (!dtb_file) {
+      std::cerr << "auto-generated DTS string";
+    } else {
+      std::cerr << "`" << dtb_file << "'";
+    }
+    std::cerr << ": " << fdt_strerror(fdt_code) << ".\n";
+    exit(-1);
+  }
 
   void *fdt = (void *)dtb.c_str();
 
@@ -301,40 +329,6 @@ bool sim_t::mmio_store(reg_t paddr, size_t len, const uint8_t* bytes)
   if (paddr + len < paddr || !paddr_ok(paddr + len - 1))
     return false;
   return bus.store(paddr, len, bytes);
-}
-
-void sim_t::make_dtb(const char* dtb_file)
-{
-  if (dtb_file) {
-    std::ifstream fin(dtb_file, std::ios::binary);
-    if (!fin.good()) {
-      std::cerr << "can't find dtb file: " << dtb_file << std::endl;
-      exit(-1);
-    }
-
-    std::stringstream strstream;
-    strstream << fin.rdbuf();
-
-    dtb = strstream.str();
-  } else {
-    std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds();
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
-                   initrd_bounds.first, initrd_bounds.second,
-                   cfg->bootargs(), cfg->pmpregions, procs, mems);
-    dtb = dts_compile(dts);
-  }
-
-  int fdt_code = fdt_check_header(dtb.c_str());
-  if (fdt_code) {
-    std::cerr << "Failed to read DTB from ";
-    if (!dtb_file) {
-      std::cerr << "auto-generated DTS string";
-    } else {
-      std::cerr << "`" << dtb_file << "'";
-    }
-    std::cerr << ": " << fdt_strerror(fdt_code) << ".\n";
-    exit(-1);
-  }
 }
 
 void sim_t::set_rom()
