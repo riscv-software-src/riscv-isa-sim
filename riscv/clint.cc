@@ -1,7 +1,10 @@
 #include <sys/time.h>
+#include <sstream>
 #include "devices.h"
 #include "processor.h"
 #include "simif.h"
+#include "sim.h"
+#include "dts.h"
 
 clint_t::clint_t(const simif_t* sim, uint64_t freq_hz, bool real_time)
   : sim(sim), freq_hz(freq_hz), real_time(real_time), mtime(0)
@@ -112,3 +115,31 @@ void clint_t::tick(reg_t rtc_ticks)
     hart->state.mip->backdoor_write_with_mask(MIP_MTIP, mtime >= mtimecmp[hart_id] ? MIP_MTIP : 0);
   }
 }
+
+clint_t* clint_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base) {
+  if (fdt_parse_clint(fdt, base, "riscv,clint0") == 0)
+    return new clint_t(sim,
+                       sim->CPU_HZ / sim->INSNS_PER_RTC_TICK,
+                       sim->get_cfg().real_time_clint());
+  else
+    return nullptr;
+}
+
+std::string clint_generate_dts(const sim_t* sim) {
+  std::stringstream s;
+  s << std::hex
+    << "    clint@" << CLINT_BASE << " {\n"
+       "      compatible = \"riscv,clint0\";\n"
+       "      interrupts-extended = <" << std::dec;
+  for (size_t i = 0; i < sim->get_cfg().nprocs(); i++)
+    s << "&CPU" << i << "_intc 3 &CPU" << i << "_intc 7 ";
+  reg_t clintbs = CLINT_BASE;
+  reg_t clintsz = CLINT_SIZE;
+  s << std::hex << ">;\n"
+    "      reg = <0x" << (clintbs >> 32) << " 0x" << (clintbs & (uint32_t)-1) <<
+    " 0x" << (clintsz >> 32) << " 0x" << (clintsz & (uint32_t)-1) << ">;\n"
+    "    };\n";
+  return s.str();
+}
+
+REGISTER_DEVICE(clint, clint_parse_from_fdt, clint_generate_dts)

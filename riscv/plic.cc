@@ -1,7 +1,10 @@
 #include <sys/time.h>
+#include <sstream>
 #include "devices.h"
 #include "processor.h"
 #include "simif.h"
+#include "sim.h"
+#include "dts.h"
 
 #define PLIC_MAX_CONTEXTS 15872
 
@@ -388,3 +391,37 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 
   return ret;
 }
+
+std::string plic_generate_dts(const sim_t* sim)
+{
+  std::stringstream s;
+  s << std::hex
+    << "    PLIC: plic@" << PLIC_BASE << " {\n"
+       "      compatible = \"riscv,plic0\";\n"
+       "      #address-cells = <2>;\n"
+       "      interrupts-extended = <" << std::dec;
+  for (size_t i = 0; i < sim->get_cfg().nprocs(); i++)
+    s << "&CPU" << i << "_intc 11 &CPU" << i << "_intc 9 ";
+  reg_t plicbs = PLIC_BASE;
+  reg_t plicsz = PLIC_SIZE;
+  s << std::hex << ">;\n"
+      "      reg = <0x" << (plicbs >> 32) << " 0x" << (plicbs & (uint32_t)-1) <<
+      " 0x" << (plicsz >> 32) << " 0x" << (plicsz & (uint32_t)-1) << ">;\n"
+      "      riscv,ndev = <0x" << PLIC_NDEV << ">;\n"
+      "      riscv,max-priority = <0x" << ((1U << PLIC_PRIO_BITS) - 1) << ">;\n"
+      "      #interrupt-cells = <1>;\n"
+      "      interrupt-controller;\n"
+      "    };\n";
+  return s.str();
+}
+
+plic_t* plic_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base)
+{
+  uint32_t plic_ndev;
+  if (fdt_parse_plic(fdt, base, &plic_ndev, "riscv,plic0") == 0)
+    return new plic_t(sim, plic_ndev);
+  else
+    return nullptr;
+}
+
+REGISTER_DEVICE(plic, plic_parse_from_fdt, plic_generate_dts)
