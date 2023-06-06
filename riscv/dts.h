@@ -16,6 +16,8 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
 
 std::string dts_compile(const std::string& dts);
 
+int fdt_get_node_addr_size(const void *fdt, int node, reg_t *addr,
+                           unsigned long *size, const char *field);
 int fdt_get_offset(const void *fdt, const char *field);
 int fdt_get_first_subnode(const void *fdt, int node);
 int fdt_get_next_subnode(const void *fdt, int node);

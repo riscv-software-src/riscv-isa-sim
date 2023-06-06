@@ -177,8 +177,8 @@ std::string dts_compile(const std::string& dts)
   return dtb.str();
 }
 
-static int fdt_get_node_addr_size(const void *fdt, int node, reg_t *addr,
-                                  unsigned long *size, const char *field)
+int fdt_get_node_addr_size(const void *fdt, int node, reg_t *addr,
+                           unsigned long *size, const char *field)
 {
   int parent, len, i;
   int cell_addr, cell_size;
