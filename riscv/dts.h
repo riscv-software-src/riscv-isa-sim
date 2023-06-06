@@ -4,7 +4,6 @@
 
 #include "devices.h"
 #include "processor.h"
-#include "mmu.h"
 #include <string>
 
 std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
