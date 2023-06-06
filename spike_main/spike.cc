@@ -50,12 +50,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --l2=<S>:<W>:<B>        B both powers of 2).\n");
   fprintf(stderr, "  --big-endian          Use a big-endian memory system.\n");
   fprintf(stderr, "  --misaligned          Support misaligned memory accesses\n");
-  fprintf(stderr, "  --device=<P,B,A>      Attach MMIO plugin device from an --extlib library\n");
-  fprintf(stderr, "                          P -- Name of the MMIO plugin\n");
-  fprintf(stderr, "                          B -- Base memory address of the device\n");
-  fprintf(stderr, "                          A -- String arguments to pass to the plugin\n");
-  fprintf(stderr, "                          This flag can be used multiple times.\n");
-  fprintf(stderr, "                          The extlib flag for the library must come first.\n");
+  fprintf(stderr, "  --device=<name>       Attach MMIO plugin device from an --extlib library\n");
   fprintf(stderr, "  --log-cache-miss      Generate a log of cache miss\n");
   fprintf(stderr, "  --log-commits         Generate a log of commits info\n");
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
@@ -336,7 +331,7 @@ int main(int argc, char** argv)
   bool dtb_enabled = true;
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
-  std::vector<std::pair<reg_t, std::shared_ptr<abstract_device_t>>> plugin_devices;
+  std::vector<const device_factory_t*> plugin_device_factories;
   std::unique_ptr<icache_sim_t> ic;
   std::unique_ptr<dcache_sim_t> dc;
   std::unique_ptr<cache_sim_t> l2;
@@ -376,47 +371,12 @@ int main(int argc, char** argv)
             /*default_real_time_clint=*/false,
             /*default_trigger_count=*/4);
 
-  auto const device_parser = [&plugin_devices](const char *s) {
-    const std::string str(s);
-    std::istringstream stream(str);
-
-    // We are parsing a string like name,base,args.
-
-    // Parse the name, which is simply all of the characters leading up to the
-    // first comma. The validity of the plugin name will be checked later.
-    std::string name;
-    std::getline(stream, name, ',');
-    if (name.empty()) {
-      throw std::runtime_error("Plugin name is empty.");
-    }
-
-    // Parse the base address. First, get all of the characters up to the next
-    // comma (or up to the end of the string if there is no comma). Then try to
-    // parse that string as an integer according to the rules of strtoull. It
-    // could be in decimal, hex, or octal. Fail if we were able to parse a
-    // number but there were garbage characters after the valid number. We must
-    // consume the entire string between the commas.
-    std::string base_str;
-    std::getline(stream, base_str, ',');
-    if (base_str.empty()) {
-      throw std::runtime_error("Device base address is empty.");
-    }
-    char* end;
-    reg_t base = static_cast<reg_t>(strtoull(base_str.c_str(), &end, 0));
-    if (end != &*base_str.cend()) {
-      throw std::runtime_error("Error parsing device base address.");
-    }
-
-    // The remainder of the string is the arguments. We could use getline, but
-    // that could ignore newline characters in the arguments. That should be
-    // rare and discouraged, but handle it here anyway with this weird in_avail
-    // technique. The arguments are optional, so if there were no arguments
-    // specified we could end up with an empty string here. That's okay.
-    auto avail = stream.rdbuf()->in_avail();
-    std::string args(avail, '\0');
-    stream.readsome(&args[0], avail);
-
-    plugin_devices.emplace_back(base, std::make_shared<mmio_plugin_device_t>(name, args));
+  auto const device_parser = [&plugin_device_factories](const char *s) {
+    const std::string name(s);
+    if (name.empty()) throw std::runtime_error("Plugin name is empty.");
+    auto it = mmio_device_map().find(name);
+    if (it == mmio_device_map().end()) throw std::runtime_error("Plugin \"" + name + "\" not found in loaded extlibs.");
+    plugin_device_factories.push_back(it->second);
   };
 
   option_parser_t parser;
@@ -564,7 +524,7 @@ int main(int argc, char** argv)
   }
 
   sim_t s(&cfg, halted,
-      mems, plugin_devices, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
+      mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
       socket,
       cmd_file);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);

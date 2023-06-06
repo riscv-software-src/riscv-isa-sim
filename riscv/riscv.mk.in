@@ -35,7 +35,6 @@ riscv_install_hdrs = \
 	isa_parser.h \
 	log_file.h \
 	memtracer.h \
-	mmio_plugin.h \
 	mmu.h \
 	platform.h \
 	processor.h \

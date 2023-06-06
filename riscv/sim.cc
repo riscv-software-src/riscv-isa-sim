@@ -38,7 +38,7 @@ extern device_factory_t* ns16550_factory;
 
 sim_t::sim_t(const cfg_t *cfg, bool halted,
              std::vector<std::pair<reg_t, mem_t*>> mems,
-             std::vector<std::pair<reg_t, std::shared_ptr<abstract_device_t>>> plugin_devices,
+             std::vector<const device_factory_t*> plugin_device_factories,
              const std::vector<std::string>& args,
              const debug_module_config_t &dm_config,
              const char *log_path,
@@ -68,11 +68,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 
   for (auto& x : mems)
     bus.add_device(x.first, x.second);
-
-  for (auto& x : plugin_devices) {
-    bus.add_device(x.first, x.second.get());
-    devices.push_back(x.second);
-  }
 
   debug_module.add_device(&bus);
 
@@ -124,6 +119,9 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     clint_factory, // clint must be element 0
     plic_factory, // plic must be element 1
     ns16550_factory};
+  device_factories.insert(device_factories.end(),
+                          plugin_device_factories.begin(),
+                          plugin_device_factories.end());
 
   // Load dtb_file if provided, otherwise self-generate a dts/dtb
   if (dtb_file) {

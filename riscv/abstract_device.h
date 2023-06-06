@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <cstddef>
 #include <string>
+#include <map>
+#include <stdexcept>
 
 class sim_t;
 
@@ -26,9 +28,18 @@ public:
   virtual ~device_factory_t() {}
 };
 
+// Type for holding all registered MMIO plugins by name.
+using mmio_device_map_t = std::map<std::string, const device_factory_t*>;
+
+mmio_device_map_t& mmio_device_map();
+
 #define REGISTER_DEVICE(name, parse, generate) \
   class name##_factory_t : public device_factory_t { \
   public: \
+  name##_factory_t() { \
+    std::string str(#name); \
+    if (!mmio_device_map().emplace(str, this).second) throw std::runtime_error("Plugin \"" + str + "\" already registered"); \
+  }; \
   name##_t* parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base) const override { return parse(fdt, sim, base); } \
   std::string generate_dts(const sim_t* sim) const override { return generate(sim); } \
   }; const device_factory_t *name##_factory = new name##_factory_t();
