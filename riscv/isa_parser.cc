@@ -139,6 +139,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str == "zdinx") {
       extension_table[EXT_ZFINX] = true;
       extension_table[EXT_ZDINX] = true;
+    } else if (ext_str == "zfbfmin") {
+      extension_table[EXT_ZFBFMIN] = true;
     } else if (ext_str == "zfinx") {
       extension_table[EXT_ZFINX] = true;
     } else if (ext_str == "zhinx") {
@@ -232,6 +234,10 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZICOND] = true;
     } else if (ext_str == "zihpm") {
       extension_table[EXT_ZIHPM] = true;
+    } else if (ext_str == "zvfbfmin") {
+      extension_table[EXT_ZVFBFMIN] = true;
+    } else if (ext_str == "zvfbfwma") {
+      extension_table[EXT_ZVFBFWMA] = true;
     } else if (ext_str == "sstc") {
         extension_table[EXT_SSTC] = true;
     } else if (ext_str[0] == 'x') {
@@ -277,6 +283,18 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   }
   if (*p) {
     bad_isa_string(str, ("can't parse: " + std::string(p)).c_str());
+  }
+
+  if (extension_table[EXT_ZFBFMIN] && !extension_table['F']) {
+    bad_isa_string(str, "'Zfbfmin' extension requires 'F' extension");
+  }
+
+  if ((extension_table[EXT_ZVFBFMIN] || extension_table[EXT_ZVFBFWMA]) && !extension_table['V']) {
+    bad_isa_string(str, "'Zvfbfmin/Zvfbfwma' extension requires 'V' extension");
+  }
+
+  if (extension_table[EXT_ZFBFMIN] || extension_table[EXT_ZVFBFMIN] || extension_table[EXT_ZFHMIN]) {
+    extension_table[EXT_INTERNAL_ZFH_MOVE] = true;
   }
 
   if (extension_table['C']) {

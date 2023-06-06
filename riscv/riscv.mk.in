@@ -1356,8 +1356,25 @@ riscv_insn_ext_cmo = \
 	cbo_zero \
 
 riscv_insn_ext_zicond = \
-        czero_eqz \
-        czero_nez \
+	czero_eqz \
+	czero_nez \
+
+riscv_insn_ext_zfbfmin = \
+	fcvt_bf16_s \
+	fcvt_s_bf16 \
+
+riscv_insn_ext_zvfbfmin = \
+	vfncvtbf16_f_f_w \
+	vfwcvtbf16_f_f_v \
+
+riscv_insn_ext_zvfbfwma = \
+	vfwmaccbf16_vv \
+	vfwmaccbf16_vf \
+
+riscv_insn_ext_bf16 = \
+	$(riscv_insn_ext_zfbfmin) \
+	$(riscv_insn_ext_zvfbfmin) \
+	$(riscv_insn_ext_zvfbfwma) \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_a) \
@@ -1383,6 +1400,7 @@ riscv_insn_list = \
 	$(riscv_insn_smrnmi) \
 	$(riscv_insn_ext_cmo) \
 	$(riscv_insn_ext_zicond) \
+	$(riscv_insn_ext_bf16) \
 
 riscv_gen_srcs = $(addsuffix .cc,$(riscv_insn_list))
 

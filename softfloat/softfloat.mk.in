@@ -45,6 +45,7 @@ softfloat_c_srcs = \
 	f16_sqrt.c \
 	f16_sub.c \
 	f16_to_f128.c \
+	bf16_to_f32.c \
 	f16_to_f32.c \
 	f16_to_f64.c \
 	f16_to_i8.c \
@@ -76,6 +77,7 @@ softfloat_c_srcs = \
 	f32_sqrt.c \
 	f32_sub.c \
 	f32_to_f128.c \
+	f32_to_bf16.c \
 	f32_to_f16.c \
 	f32_to_f64.c \
 	f32_to_i16.c \
@@ -181,6 +183,7 @@ softfloat_c_srcs = \
 	s_roundMToUI64.c \
 	s_roundPackMToI64.c \
 	s_roundPackMToUI64.c \
+	s_roundPackToBF16.c \
 	s_roundPackToF128.c \
 	s_roundPackToF16.c \
 	s_roundPackToF32.c \
