@@ -293,6 +293,7 @@ int fdt_parse_plic(const void *fdt, reg_t *plic_addr, uint32_t *ndev,
 
 int fdt_parse_ns16550(const void *fdt, reg_t *ns16550_addr,
                       uint32_t *reg_shift, uint32_t *reg_io_width,
+                      uint32_t* reg_int_id,
                       const char *compatible)
 {
   int nodeoffset, len, rc;
@@ -321,6 +322,15 @@ int fdt_parse_ns16550(const void *fdt, reg_t *ns16550_addr,
       *reg_io_width = fdt32_to_cpu(*reg_p);
     } else {
       *reg_io_width = NS16550_REG_IO_WIDTH;
+    }
+  }
+
+  reg_p = (fdt32_t *)fdt_getprop(fdt, nodeoffset, "interrupts", &len);
+  if (reg_int_id) {
+    if (reg_p) {
+      *reg_int_id = fdt32_to_cpu(*reg_p);
+    } else {
+      *reg_int_id = NS16550_INTERRUPT_ID;
     }
   }
 

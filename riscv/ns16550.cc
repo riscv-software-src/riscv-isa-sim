@@ -343,11 +343,12 @@ std::string ns16550_generate_dts(const sim_t* sim)
 
 ns16550_t* ns16550_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base)
 {
-  uint32_t ns16550_shift, ns16550_io_width;
+  uint32_t ns16550_shift, ns16550_io_width, ns16550_int_id;
   if (fdt_parse_ns16550(fdt, base,
-                        &ns16550_shift, &ns16550_io_width, "ns16550a") == 0) {
+                        &ns16550_shift, &ns16550_io_width, &ns16550_int_id,
+                        "ns16550a") == 0) {
     abstract_interrupt_controller_t* intctrl = sim->get_intctrl();
-    return new ns16550_t(intctrl, NS16550_INTERRUPT_ID, ns16550_shift, ns16550_io_width);
+    return new ns16550_t(intctrl, ns16550_int_id, ns16550_shift, ns16550_io_width);
   } else {
     return nullptr;
   }

@@ -27,7 +27,7 @@ int fdt_parse_clint(const void *fdt, reg_t *clint_addr,
 int fdt_parse_plic(const void *fdt, reg_t *plic_addr, uint32_t *ndev,
                    const char *compatible);
 int fdt_parse_ns16550(const void *fdt, reg_t *ns16550_addr,
-                      uint32_t *reg_shift, uint32_t *reg_io_width,
+                      uint32_t *reg_shift, uint32_t *reg_io_width, uint32_t* reg_int_id,
                       const char *compatible);
 int fdt_parse_pmp_num(const void *fdt, int cpu_offset, reg_t *pmp_num);
 int fdt_parse_pmp_alignment(const void *fdt, int cpu_offset, reg_t *pmp_align);
