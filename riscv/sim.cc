@@ -69,7 +69,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   for (auto& x : mems)
     bus.add_device(x.first, x.second);
 
-  debug_module.add_device(&bus);
+  bus.add_device(DEBUG_START, &debug_module);
 
   socketif = NULL;
 #ifdef HAVE_BOOST_ASIO
