@@ -214,7 +214,7 @@ public:
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
     convert_load_traps_to_store_traps({
-        const reg_t paddr = translate(generate_access_info(addr, LOAD, {false, false, false}), blocksz) & ~(blocksz - 1);
+      const reg_t paddr = translate(generate_access_info(addr, LOAD, {false, false, false}), 1);
       if (sim->reservable(paddr)) {
         if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
           tracer.clean_invalidate(paddr, blocksz, clean, inval);
