@@ -219,8 +219,15 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MSCRATCH] = std::make_shared<basic_csr_t>(proc, CSR_MSCRATCH, 0);
   csrmap[CSR_MTVEC] = mtvec = std::make_shared<tvec_csr_t>(proc, CSR_MTVEC);
   csrmap[CSR_MCAUSE] = mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE);
-  minstret = std::make_shared<wide_counter_csr_t>(proc, CSR_MINSTRET);
-  mcycle = std::make_shared<wide_counter_csr_t>(proc, CSR_MCYCLE);
+
+  auto smcntrpmf_enabled = proc->extension_enabled_const(EXT_SMCNTRPMF);
+  const reg_t mask = smcntrpmf_enabled ? MHPMEVENT_MINH | MHPMEVENT_SINH |
+                                         MHPMEVENT_UINH | MHPMEVENT_VSINH | MHPMEVENT_VUINH : 0;
+  auto minstretcfg = std::make_shared<smcntrpmf_csr_t>(proc, CSR_MINSTRETCFG, mask, 0);
+  auto mcyclecfg = std::make_shared<smcntrpmf_csr_t>(proc, CSR_MCYCLECFG, mask, 0);
+
+  minstret = std::make_shared<wide_counter_csr_t>(proc, CSR_MINSTRET, minstretcfg);
+  mcycle = std::make_shared<wide_counter_csr_t>(proc, CSR_MCYCLE, mcyclecfg);
   time = std::make_shared<time_counter_csr_t>(proc, CSR_TIME);
   if (proc->extension_enabled_const(EXT_ZICNTR)) {
     csrmap[CSR_INSTRET] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRET, minstret);
@@ -564,6 +571,18 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       csrmap[csr] = std::make_shared<virtualized_indirect_csr_t>(proc, sireg[i], vsireg[i]);
       i++;
     }
+  }
+
+  if (smcntrpmf_enabled) {
+      if (xlen == 32) {
+        csrmap[CSR_MCYCLECFG] = std::make_shared<rv32_low_csr_t>(proc, CSR_MCYCLECFG, mcyclecfg);
+        csrmap[CSR_MCYCLECFGH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MCYCLECFGH, mcyclecfg);
+        csrmap[CSR_MINSTRETCFG] = std::make_shared<rv32_low_csr_t>(proc, CSR_MINSTRETCFG, minstretcfg);
+        csrmap[CSR_MINSTRETCFGH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MINSTRETCFGH, minstretcfg);
+      } else {
+        csrmap[CSR_MCYCLECFG] = mcyclecfg;
+        csrmap[CSR_MINSTRETCFG] = minstretcfg;
+      }
   }
 
   serialized = false;
