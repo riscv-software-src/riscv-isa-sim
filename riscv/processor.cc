@@ -203,6 +203,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   prv = prev_prv = PRV_M;
   v = prev_v = false;
+  prv_changed = false;
+  v_changed = false;
   csrmap[CSR_MISA] = misa = std::make_shared<misa_csr_t>(proc, CSR_MISA, max_isa);
   mstatus = std::make_shared<mstatus_csr_t>(proc, CSR_MSTATUS);
 
@@ -766,6 +768,8 @@ void processor_t::set_privilege(reg_t prv, bool virt)
   state.prev_v = state.v;
   state.prv = legalize_privilege(prv);
   state.v = virt && state.prv != PRV_M;
+  state.prv_changed = state.prv != state.prev_prv;
+  state.v_changed = state.v != state.prev_v;
 }
 
 const char* processor_t::get_privilege_string()
