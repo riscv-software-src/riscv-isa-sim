@@ -75,7 +75,8 @@ riscv_srcs = \
 	cfg.cc \
 	$(riscv_gen_srcs) \
 
-riscv_test_srcs =
+riscv_test_srcs = \
+  check-opcode-overlap.t.cc \
 
 riscv_gen_hdrs = \
 	insn_list.h \
