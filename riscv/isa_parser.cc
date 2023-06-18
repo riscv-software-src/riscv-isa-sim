@@ -242,32 +242,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
         extension_table[EXT_SSTC] = true;
     } else if (ext_str[0] == 'x') {
       extension_table['X'] = true;
-      if (ext_str == "xbitmanip") {
-        extension_table[EXT_XZBP] = true;
-        extension_table[EXT_XZBS] = true;
-        extension_table[EXT_XZBE] = true;
-        extension_table[EXT_XZBF] = true;
-        extension_table[EXT_XZBC] = true;
-        extension_table[EXT_XZBM] = true;
-        extension_table[EXT_XZBR] = true;
-        extension_table[EXT_XZBT] = true;
-      } else if (ext_str == "xzbp") {
-        extension_table[EXT_XZBP] = true;
-      } else if (ext_str == "xzbs") {
-        extension_table[EXT_XZBS] = true;
-      } else if (ext_str == "xzbe") {
-        extension_table[EXT_XZBE] = true;
-      } else if (ext_str == "xzbf") {
-        extension_table[EXT_XZBF] = true;
-      } else if (ext_str == "xzbc") {
-        extension_table[EXT_XZBC] = true;
-      } else if (ext_str == "xzbm") {
-        extension_table[EXT_XZBM] = true;
-      } else if (ext_str == "xzbr") {
-        extension_table[EXT_XZBR] = true;
-      } else if (ext_str == "xzbt") {
-        extension_table[EXT_XZBT] = true;
-      } else if (ext_str.size() == 1) {
+      if (ext_str.size() == 1) {
         bad_isa_string(str, "single 'X' is not a proper name");
       } else if (ext_str != "xdummy") {
          extension_t* x = find_extension(ext_str.substr(1).c_str())();

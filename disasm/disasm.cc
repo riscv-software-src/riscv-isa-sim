@@ -2144,38 +2144,6 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     }
   }
 
-  if (isa->extension_enabled(EXT_XZBP)) {
-    DEFINE_ITYPE_SHIFT(grevi);
-    DEFINE_ITYPE_SHIFT(gorci);
-    DEFINE_RTYPE(pack);
-    DEFINE_RTYPE(packh);
-    DEFINE_RTYPE(packu);
-    DEFINE_RTYPE(grev);
-    DEFINE_RTYPE(gorc);
-    DEFINE_RTYPE(xperm4);
-    DEFINE_RTYPE(xperm8);
-    DEFINE_RTYPE(xperm16);
-    DEFINE_RTYPE(xperm32);
-  }
-
-  if (isa->extension_enabled(EXT_XZBP) ||
-      isa->extension_enabled(EXT_XZBE) ||
-      isa->extension_enabled(EXT_XZBF)) {
-    if(isa->get_max_xlen() == 64) {
-      DEFINE_RTYPE(packw);
-    }
-  }
-
-  if (isa->extension_enabled(EXT_XZBT)) {
-    DEFINE_R3TYPE(cmix);
-    DEFINE_R3TYPE(fsr);
-    DEFINE_R3TYPE(fsri);
-    if(isa->get_max_xlen() == 64) {
-      DEFINE_R3TYPE(fsriw);
-      DEFINE_R3TYPE(fsrw);
-    }
-  }
-
   if (isa->extension_enabled(EXT_ZICBOM)) {
     DISASM_INSN("cbo.clean", cbo_clean, 0, {&base_only_address});
     DISASM_INSN("cbo.flush", cbo_flush, 0, {&base_only_address});
@@ -2252,7 +2220,7 @@ disassembler_t::disassembler_t(const isa_parser_t *isa)
 
   // next-highest priority: other instructions in same base ISA
   std::string fallback_isa_string = std::string("rv") + std::to_string(isa->get_max_xlen()) +
-    "gqchv_zfh_zba_zbb_zbc_zbs_zcb_zicbom_zicboz_zkn_zkr_zks_svinval_xbitmanip";
+    "gqchv_zfh_zba_zbb_zbc_zbs_zcb_zicbom_zicboz_zkn_zkr_zks_svinval";
   isa_parser_t fallback_isa(fallback_isa_string.c_str(), DEFAULT_PRIV);
   add_instructions(&fallback_isa);
 
