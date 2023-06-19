@@ -319,7 +319,7 @@ $(2)_junk += \
 all-$(1) : lib$(1).a $$($(2)_install_prog_exes)
 
 check-$(1) : $$($(2)_test_outs)
-	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segementation' $$^; echo
+	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segmentation' $$^; echo
 
 clean-$(1) :
 	rm -rf $$($(2)_junk)
