@@ -2154,6 +2154,11 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DISASM_INSN("cbo.zero", cbo_zero, 0, {&base_only_address});
   }
 
+  if (isa->extension_enabled(EXT_ZICOND)) {
+    DEFINE_RTYPE(czero_eqz);
+    DEFINE_RTYPE(czero_nez);
+  }
+
   if (isa->extension_enabled(EXT_ZKND) ||
       isa->extension_enabled(EXT_ZKNE)) {
     DISASM_INSN("aes64ks1i", aes64ks1i, 0, {&xrd, &xrs1, &rcon});
