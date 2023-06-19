@@ -242,6 +242,11 @@ void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t 
       load_slow_path_intrapage(len - len_page0, bytes + len_page0, access_info.split_misaligned_access(len_page0));
   }
 
+  while (len > sizeof(reg_t)) {
+    check_triggers(triggers::OPERATION_LOAD, addr, access_info.effective_virt, reg_from_bytes(sizeof(reg_t), bytes));
+    len -= sizeof(reg_t);
+    bytes += sizeof(reg_t);
+  }
   check_triggers(triggers::OPERATION_LOAD, addr, access_info.effective_virt, reg_from_bytes(len, bytes));
 }
 
@@ -275,8 +280,16 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
 void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store, bool UNUSED require_alignment)
 {
   auto access_info = generate_access_info(addr, STORE, xlate_flags);
-  if (actually_store)
-    check_triggers(triggers::OPERATION_STORE, addr, access_info.effective_virt, reg_from_bytes(len, bytes));
+  if (actually_store) {
+    reg_t trig_len = len;
+    const uint8_t* trig_bytes = bytes;
+    while (trig_len > sizeof(reg_t)) {
+      check_triggers(triggers::OPERATION_STORE, addr, access_info.effective_virt, reg_from_bytes(sizeof(reg_t), trig_bytes));
+      trig_len -= sizeof(reg_t);
+      trig_bytes += sizeof(reg_t);
+    }
+    check_triggers(triggers::OPERATION_STORE, addr, access_info.effective_virt, reg_from_bytes(trig_len, trig_bytes));
+  }
 
   if (addr & (len - 1)) {
     bool gva = access_info.effective_virt;
