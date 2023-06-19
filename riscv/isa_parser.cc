@@ -361,7 +361,15 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       (extension_table[EXT_ZVKG] || extension_table[EXT_ZVKNED] || extension_table[EXT_ZVKSH])) {
     bad_isa_string(str, "'Zvkg', 'Zvkned', and 'Zvksh' extensions are incompatible with 'Zpn' extension in rv64");
   }
-
+#ifdef WORDS_BIGENDIAN
+  // Access to the vector registers as element groups is unimplemented on big-endian setups.
+  if (extension_table[EXT_ZVKG] || extension_table[EXT_ZVKNHA] || extension_table[EXT_ZVKNHB] ||
+      extension_table[EXT_ZVKSED] || extension_table[EXT_ZVKSH]) {
+      bad_isa_string(str,
+		     "'Zvkg', 'Zvkned', 'Zvknha', 'Zvknhb', 'Zvksed', and 'Zvksh' "
+		     "extensions are incompatible with WORDS_BIGENDIAN setups.");
+  }
+#endif
   std::string lowercase = strtolower(priv);
   bool user = false, supervisor = false;
 
