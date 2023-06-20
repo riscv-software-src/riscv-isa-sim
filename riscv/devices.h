@@ -2,7 +2,6 @@
 #define _RISCV_DEVICES_H
 
 #include "decode.h"
-#include "mmio_plugin.h"
 #include "abstract_device.h"
 #include "abstract_interrupt_controller.h"
 #include "platform.h"
@@ -17,8 +16,8 @@ class simif_t;
 
 class bus_t : public abstract_device_t {
  public:
-  bool load(reg_t addr, size_t len, uint8_t* bytes);
-  bool store(reg_t addr, size_t len, const uint8_t* bytes);
+  bool load(reg_t addr, size_t len, uint8_t* bytes) override;
+  bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
   void add_device(reg_t addr, abstract_device_t* dev);
 
   std::pair<reg_t, abstract_device_t*> find_device(reg_t addr);
@@ -30,8 +29,8 @@ class bus_t : public abstract_device_t {
 class rom_device_t : public abstract_device_t {
  public:
   rom_device_t(std::vector<char> data);
-  bool load(reg_t addr, size_t len, uint8_t* bytes);
-  bool store(reg_t addr, size_t len, const uint8_t* bytes);
+  bool load(reg_t addr, size_t len, uint8_t* bytes) override;
+  bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
   const std::vector<char>& contents() { return data; }
  private:
   std::vector<char> data;
@@ -43,8 +42,8 @@ class mem_t : public abstract_device_t {
   mem_t(const mem_t& that) = delete;
   ~mem_t();
 
-  bool load(reg_t addr, size_t len, uint8_t* bytes) { return load_store(addr, len, bytes, false); }
-  bool store(reg_t addr, size_t len, const uint8_t* bytes) { return load_store(addr, len, const_cast<uint8_t*>(bytes), true); }
+  bool load(reg_t addr, size_t len, uint8_t* bytes) override { return load_store(addr, len, bytes, false); }
+  bool store(reg_t addr, size_t len, const uint8_t* bytes) override { return load_store(addr, len, const_cast<uint8_t*>(bytes), true); }
   char* contents(reg_t addr);
   reg_t size() { return sz; }
   void dump(std::ostream& o);
@@ -58,18 +57,18 @@ class mem_t : public abstract_device_t {
 
 class clint_t : public abstract_device_t {
  public:
-  clint_t(simif_t*, uint64_t freq_hz, bool real_time);
-  bool load(reg_t addr, size_t len, uint8_t* bytes);
-  bool store(reg_t addr, size_t len, const uint8_t* bytes);
+  clint_t(const simif_t*, uint64_t freq_hz, bool real_time);
+  bool load(reg_t addr, size_t len, uint8_t* bytes) override;
+  bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
   size_t size() { return CLINT_SIZE; }
-  void increment(reg_t inc);
+  void tick(reg_t rtc_ticks) override;
   uint64_t get_mtimecmp(reg_t hartid) { return mtimecmp[hartid]; }
   uint64_t get_mtime() { return mtime; }
  private:
   typedef uint64_t mtime_t;
   typedef uint64_t mtimecmp_t;
   typedef uint32_t msip_t;
-  simif_t* sim;
+  const simif_t* sim;
   uint64_t freq_hz;
   bool real_time;
   uint64_t real_time_ref_secs;
@@ -97,10 +96,10 @@ struct plic_context_t {
 
 class plic_t : public abstract_device_t, public abstract_interrupt_controller_t {
  public:
-  plic_t(simif_t*, uint32_t ndev);
-  bool load(reg_t addr, size_t len, uint8_t* bytes);
-  bool store(reg_t addr, size_t len, const uint8_t* bytes);
-  void set_interrupt_level(uint32_t id, int lvl);
+  plic_t(const simif_t*, uint32_t ndev);
+  bool load(reg_t addr, size_t len, uint8_t* bytes) override;
+  bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
+  void set_interrupt_level(uint32_t id, int lvl) override;
   size_t size() { return PLIC_SIZE; }
  private:
   std::vector<plic_context_t> contexts;
@@ -127,14 +126,13 @@ class plic_t : public abstract_device_t, public abstract_interrupt_controller_t 
 
 class ns16550_t : public abstract_device_t {
  public:
-  ns16550_t(class bus_t *bus, abstract_interrupt_controller_t *intctrl,
+  ns16550_t(abstract_interrupt_controller_t *intctrl,
             uint32_t interrupt_id, uint32_t reg_shift, uint32_t reg_io_width);
-  bool load(reg_t addr, size_t len, uint8_t* bytes);
-  bool store(reg_t addr, size_t len, const uint8_t* bytes);
-  void tick(void);
+  bool load(reg_t addr, size_t len, uint8_t* bytes) override;
+  bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
+  void tick(reg_t rtc_ticks) override;
   size_t size() { return NS16550_SIZE; }
  private:
-  class bus_t *bus;
   abstract_interrupt_controller_t *intctrl;
   uint32_t interrupt_id;
   uint32_t reg_shift;
@@ -156,19 +154,6 @@ class ns16550_t : public abstract_device_t {
 
   int backoff_counter;
   static const int MAX_BACKOFF = 16;
-};
-
-class mmio_plugin_device_t : public abstract_device_t {
- public:
-  mmio_plugin_device_t(const std::string& name, const std::string& args);
-  virtual ~mmio_plugin_device_t() override;
-
-  virtual bool load(reg_t addr, size_t len, uint8_t* bytes) override;
-  virtual bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
-
- private:
-  mmio_plugin_t plugin;
-  void* user_data;
 };
 
 template<typename T>

@@ -28,13 +28,13 @@ riscv_install_hdrs = \
 	decode.h \
 	devices.h \
 	disasm.h \
+	dts.h \
 	encoding.h \
 	entropy_source.h \
 	extension.h \
 	isa_parser.h \
 	log_file.h \
 	memtracer.h \
-	mmio_plugin.h \
 	mmu.h \
 	platform.h \
 	processor.h \

@@ -28,7 +28,7 @@ int main()
             hartids,
             false,
             4);
-  std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
+  std::vector<const device_factory_t*> plugin_devices;
   std::vector<std::string> htif_args {"pk", "hello"};
   debug_module_config_t dm_config = {
     .progbufsize = 2,
