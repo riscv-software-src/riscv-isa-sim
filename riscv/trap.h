@@ -47,7 +47,13 @@ class insn_trap_t : public trap_t
     : trap_t(which), gva(gva), tval(tval) {}
   bool has_gva() override { return gva; }
   bool has_tval() override { return true; }
-  reg_t get_tval() override { return tval; }
+  reg_t get_tval() override {
+#ifdef CPU_ROCKET_CHIP
+    return tval;
+#else
+    return 0;
+#endif
+  }
  private:
   bool gva;
   reg_t tval;
