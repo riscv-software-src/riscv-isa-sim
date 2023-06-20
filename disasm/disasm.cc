@@ -189,6 +189,12 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
+    return std::to_string(insn.v_zimm6());
+  }
+} v_zimm6;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     int32_t target = insn.sb_imm();
     std::string s = target >= 0 ? "pc + " : "pc - ";
     s += std::to_string(abs(target));
@@ -676,6 +682,11 @@ static void NOINLINE add_vector_vi_insn(disassembler_t* d, const char* name, uin
 static void NOINLINE add_vector_viu_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &vs2, &zimm5, opt, &vm}));
+}
+
+static void NOINLINE add_vector_viu_z6_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &vs2, &v_zimm6, opt, &vm}));
 }
 
 static void NOINLINE add_vector_vvm_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
@@ -2222,6 +2233,93 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_R1TYPE(sm3p1);
   }
 
+  if (isa->extension_enabled(EXT_ZVBB)) {
+#define DEFINE_VECTOR_VIU_ZIMM6(code) \
+  add_vector_viu_z6_insn(this, #code, match_##code, mask_##code)
+#define DISASM_VECTOR_VV_VX(name) \
+  DEFINE_VECTOR_VV(name##_vv); \
+  DEFINE_VECTOR_VX(name##_vx)
+#define DISASM_VECTOR_VV_VX_VIU(name) \
+  DEFINE_VECTOR_VV(name##_vv); \
+  DEFINE_VECTOR_VX(name##_vx); \
+  DEFINE_VECTOR_VIU(name##_vx)
+#define DISASM_VECTOR_VV_VX_VIU_ZIMM6(name) \
+  DEFINE_VECTOR_VV(name##_vv); \
+  DEFINE_VECTOR_VX(name##_vx); \
+  DEFINE_VECTOR_VIU_ZIMM6(name##_vi)
+
+    DISASM_VECTOR_VV_VX(vandn);
+    DEFINE_VECTOR_V(vbrev_v);
+    DEFINE_VECTOR_V(vbrev8_v);
+    DEFINE_VECTOR_V(vrev8_v);
+    DEFINE_VECTOR_V(vclz_v);
+    DEFINE_VECTOR_V(vctz_v);
+    DEFINE_VECTOR_V(vcpop_v);
+    DISASM_VECTOR_VV_VX(vrol);
+    DISASM_VECTOR_VV_VX_VIU_ZIMM6(vror);
+    DISASM_VECTOR_VV_VX_VIU(vwsll);
+
+#undef DEFINE_VECTOR_VIU_ZIMM6
+#undef DISASM_VECTOR_VV_VX
+#undef DISASM_VECTOR_VV_VX_VIU
+#undef DISASM_VECTOR_VV_VX_VIU_ZIMM6
+    }
+
+  if (isa->extension_enabled(EXT_ZVBC)) {
+#define DISASM_VECTOR_VV_VX(name) \
+    DEFINE_VECTOR_VV(name##_vv); \
+    DEFINE_VECTOR_VX(name##_vx)
+
+    DISASM_VECTOR_VV_VX(vclmul);
+    DISASM_VECTOR_VV_VX(vclmulh);
+
+#undef DISASM_VECTOR_VV_VX
+  }
+
+  if (isa->extension_enabled(EXT_ZVKG)) {
+    // Despite its suffix, the vgmul.vv instruction
+    // is really ".v", with the form "vgmul.vv vd, vs2".
+    DEFINE_VECTOR_V(vgmul_vv);
+    DEFINE_VECTOR_VV(vghsh_vv);
+  }
+
+  if (isa->extension_enabled(EXT_ZVKNED)) {
+    // Despite their suffixes, the vaes*.{vv,vs} instructions
+    // are really ".v", with the form "<op>.{vv,vs} vd, vs2".
+#define DISASM_VECTOR_VV_VS(name) \
+    DEFINE_VECTOR_V(name##_vv); \
+    DEFINE_VECTOR_V(name##_vs)
+
+    DISASM_VECTOR_VV_VS(vaesdm);
+    DISASM_VECTOR_VV_VS(vaesdf);
+    DISASM_VECTOR_VV_VS(vaesem);
+    DISASM_VECTOR_VV_VS(vaesef);
+
+    DEFINE_VECTOR_V(vaesz_vs);
+    DEFINE_VECTOR_VIU(vaeskf1_vi);
+    DEFINE_VECTOR_VIU(vaeskf2_vi);
+#undef DISASM_VECTOR_VV_VS
+  }
+
+  if (isa->extension_enabled(EXT_ZVKNHA) ||
+      isa->extension_enabled(EXT_ZVKNHB)) {
+    DEFINE_VECTOR_VV(vsha2ms_vv);
+    DEFINE_VECTOR_VV(vsha2ch_vv);
+    DEFINE_VECTOR_VV(vsha2cl_vv);
+  }
+
+  if (isa->extension_enabled(EXT_ZVKSED)) {
+    DEFINE_VECTOR_VIU(vsm4k_vi);
+    // Despite their suffixes, the vsm4r.{vv,vs} instructions
+    // are really ".v", with the form "vsm4r.{vv,vs} vd, vs2".
+    DEFINE_VECTOR_V(vsm4r_vv);
+    DEFINE_VECTOR_V(vsm4r_vs);
+  }
+
+  if (isa->extension_enabled(EXT_ZVKSH)) {
+    DEFINE_VECTOR_VIU(vsm3c_vi);
+    DEFINE_VECTOR_VV(vsm3me_vv);
+  }
 }
 
 disassembler_t::disassembler_t(const isa_parser_t *isa)
