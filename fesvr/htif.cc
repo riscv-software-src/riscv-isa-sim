@@ -49,32 +49,39 @@ htif_t::htif_t()
     tohost_addr(0), fromhost_addr(0), exitcode(0), stopped(false),
     syscall_proxy(this)
 {
-#ifdef SPIKE_FUZZ
+#if !defined(SPIKE_FUZZ) && !defined(DIFFTEST)
   signal(SIGINT, &handle_signal);
   signal(SIGTERM, &handle_signal);
   signal(SIGABRT, &handle_signal); // we still want to call static destructors
-#endif // SPIKE_FUZZ
+#endif
 }
 
 htif_t::htif_t(int argc, char** argv) : htif_t()
 {
   //Set line size as 16 by default.
   line_size = 16;
+#ifndef DIFFTEST
   parse_arguments(argc, argv);
+#endif
   register_devices();
 }
 
 htif_t::htif_t(const std::vector<std::string>& args) : htif_t()
 {
+  // Set line size as 16 by default.
+  line_size = 16;
+#ifndef DIFFTEST
   int argc = args.size() + 1;
   char * argv[argc];
   argv[0] = (char *) "htif";
   for (unsigned int i = 0; i < args.size(); i++) {
     argv[i+1] = (char *) args[i].c_str();
   }
-  //Set line size as 16 by default.
-  line_size = 16;
   parse_arguments(argc, argv);
+#else
+  // No need for parse_arguments because the arguments are empty.
+  // Calling it will cause errors because of its usage of getopt.
+#endif
   register_devices();
 }
 

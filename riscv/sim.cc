@@ -59,9 +59,13 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     remote_bitbang(NULL),
     debug_module(this, dm_config)
 {
-  // signal(SIGINT, &handle_signal);
+#if !defined(SPIKE_FUZZ) && !defined(DIFFTEST)
+  signal(SIGINT, &handle_signal);
+#endif
 
+#ifndef DIFFTEST
   sout_.rdbuf(std::cerr.rdbuf()); // debug output goes to stderr by default
+#endif // DIFFTEST
 
   for (auto& x : mems)
     bus.add_device(x.first, x.second);
