@@ -236,10 +236,55 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZICOND] = true;
     } else if (ext_str == "zihpm") {
       extension_table[EXT_ZIHPM] = true;
+    } else if (ext_str == "zvbb") {
+      extension_table[EXT_ZVBB] = true;
+    } else if (ext_str == "zvbc") {
+      extension_table[EXT_ZVBC] = true;
     } else if (ext_str == "zvfbfmin") {
       extension_table[EXT_ZVFBFMIN] = true;
     } else if (ext_str == "zvfbfwma") {
       extension_table[EXT_ZVFBFWMA] = true;
+    } else if (ext_str == "zvkg") {
+      extension_table[EXT_ZVKG] = true;
+    } else if (ext_str == "zvkn") {
+      extension_table[EXT_ZVBB] = true;
+      extension_table[EXT_ZVKNED] = true;
+      extension_table[EXT_ZVKNHB] = true;
+    } else if (ext_str == "zvknc") {
+      extension_table[EXT_ZVBB] = true;
+      extension_table[EXT_ZVBC] = true;
+      extension_table[EXT_ZVKNED] = true;
+      extension_table[EXT_ZVKNHB] = true;
+    } else if (ext_str == "zvkng") {
+      extension_table[EXT_ZVBB] = true;
+      extension_table[EXT_ZVKG] = true;
+      extension_table[EXT_ZVKNED] = true;
+      extension_table[EXT_ZVKNHB] = true;
+    } else if (ext_str == "zvkned") {
+      extension_table[EXT_ZVKNED] = true;
+    } else if (ext_str == "zvknha") {
+      extension_table[EXT_ZVKNHA] = true;
+    } else if (ext_str == "zvknhb") {
+      extension_table[EXT_ZVKNHB] = true;
+    } else if (ext_str == "zvks") {
+      extension_table[EXT_ZVBB] = true;
+      extension_table[EXT_ZVKSED] = true;
+      extension_table[EXT_ZVKSH] = true;
+    } else if (ext_str == "zvksc") {
+      extension_table[EXT_ZVBB] = true;
+      extension_table[EXT_ZVBC] = true;
+      extension_table[EXT_ZVKSED] = true;
+      extension_table[EXT_ZVKSH] = true;
+    } else if (ext_str == "zvksg") {
+      extension_table[EXT_ZVBB] = true;
+      extension_table[EXT_ZVKG] = true;
+      extension_table[EXT_ZVKSED] = true;
+      extension_table[EXT_ZVKSH] = true;
+    } else if (ext_str == "zvksed") {
+      extension_table[EXT_ZVKSED] = true;
+    } else if (ext_str == "zvksh") {
+      extension_table[EXT_ZVKSH] = true;
+    } else if (ext_str == "zvkt") {
     } else if (ext_str == "sstc") {
         extension_table[EXT_SSTC] = true;
     } else if (ext_str[0] == 'x') {
@@ -295,7 +340,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   }
 
   if ((extension_table[EXT_ZCMP] || extension_table[EXT_ZCMT]) && extension_table[EXT_ZCD]) {
-    bad_isa_string(str, "Zcmp' and 'Zcmt' exensions are incompatible with 'Zcd' extension");
+    bad_isa_string(str, "Zcmp' and 'Zcmt' extensions are incompatible with 'Zcd' extension");
   }
 
   if ((extension_table[EXT_ZCF] || extension_table[EXT_ZCD] || extension_table[EXT_ZCB] ||
@@ -307,6 +352,24 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     bad_isa_string(str, "'Zacas' extension requires 'A' extension");
   }
 
+  // Zpn conflicts with Zvknha/Zvknhb in both rv32 and rv64
+  if (extension_table[EXT_ZPN] && (extension_table[EXT_ZVKNHA] || extension_table[EXT_ZVKNHB])) {
+    bad_isa_string(str, "'Zvkna' and 'Zvknhb' extensions are incompatible with 'Zpn' extension");
+  }
+  // In rv64 only, Zpn (rv64_zpn) conflicts with Zvkg/Zvkned/Zvksh
+  if (max_xlen == 64 && extension_table[EXT_ZPN] &&
+      (extension_table[EXT_ZVKG] || extension_table[EXT_ZVKNED] || extension_table[EXT_ZVKSH])) {
+    bad_isa_string(str, "'Zvkg', 'Zvkned', and 'Zvksh' extensions are incompatible with 'Zpn' extension in rv64");
+  }
+#ifdef WORDS_BIGENDIAN
+  // Access to the vector registers as element groups is unimplemented on big-endian setups.
+  if (extension_table[EXT_ZVKG] || extension_table[EXT_ZVKNHA] || extension_table[EXT_ZVKNHB] ||
+      extension_table[EXT_ZVKSED] || extension_table[EXT_ZVKSH]) {
+      bad_isa_string(str,
+		     "'Zvkg', 'Zvkned', 'Zvknha', 'Zvknhb', 'Zvksed', and 'Zvksh' "
+		     "extensions are incompatible with WORDS_BIGENDIAN setups.");
+  }
+#endif
   std::string lowercase = strtolower(priv);
   bool user = false, supervisor = false;
 

@@ -325,6 +325,10 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   type_usew_t<x>::type vs1 = P.VU.elt<type_usew_t<x>::type>(rs1_num, i); \
   type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
 
+#define V_U_PARAMS(x) \
+  type_usew_t<x>::type &vd = P.VU.elt<type_usew_t<x>::type>(rd_num, i, true); \
+  type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
+
 #define VX_U_PARAMS(x) \
   type_usew_t<x>::type &vd = P.VU.elt<type_usew_t<x>::type>(rd_num, i, true); \
   type_usew_t<x>::type rs1 = (type_usew_t<x>::type)RS1; \
@@ -692,6 +696,24 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     BODY; \
   } \
   VI_LOOP_END 
+
+#define VI_V_ULOOP(BODY) \
+  VI_CHECK_SSS(false) \
+  VI_LOOP_BASE \
+  if (sew == e8) { \
+    V_U_PARAMS(e8); \
+    BODY; \
+  } else if (sew == e16) { \
+    V_U_PARAMS(e16); \
+    BODY; \
+  } else if (sew == e32) { \
+    V_U_PARAMS(e32); \
+    BODY; \
+  } else if (sew == e64) { \
+    V_U_PARAMS(e64); \
+    BODY; \
+  } \
+  VI_LOOP_END
 
 #define VI_VX_ULOOP(BODY) \
   VI_CHECK_SSS(false) \

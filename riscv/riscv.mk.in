@@ -1340,32 +1340,98 @@ riscv_insn_ext_zacas = \
 	amocas_d \
 	$(if $(HAVE_INT128),amocas_q)
 
+riscv_insn_ext_zvbb = \
+	vandn_vv \
+	vandn_vx \
+	vbrev8_v \
+	vbrev_v \
+	vclz_v \
+	vcpop_v \
+	vctz_v \
+	vrev8_v \
+	vrol_vv \
+	vrol_vx \
+	vror_vi \
+	vror_vv \
+	vror_vx \
+	vwsll_vi \
+	vwsll_vv \
+	vwsll_vx \
+
+riscv_insn_ext_zvbc = \
+	vclmul_vv \
+	vclmul_vx \
+	vclmulh_vv \
+	vclmulh_vx \
+
+riscv_insn_ext_zvkg= \
+	vghsh_vv \
+	vgmul_vv \
+
+riscv_insn_ext_zvkned = \
+	vaesdf_vs \
+	vaesdf_vv \
+	vaesdm_vs \
+	vaesdm_vv \
+	vaesef_vs \
+	vaesef_vv \
+	vaesem_vs \
+	vaesem_vv \
+	vaeskf1_vi \
+	vaeskf2_vi \
+	vaesz_vs \
+
+# Covers both Zvknha and Zvkhnb.
+riscv_insn_ext_zvknh = \
+	vsha2cl_vv \
+	vsha2ch_vv \
+	vsha2ms_vv \
+
+riscv_insn_ext_zvksed = \
+	vsm4k_vi \
+	vsm4r_vs \
+	vsm4r_vv \
+
+riscv_insn_ext_zvksh = \
+	vsm3c_vi \
+	vsm3me_vv \
+
+riscv_insn_ext_zvk = \
+	$(riscv_insn_ext_zvbb) \
+	$(riscv_insn_ext_zvbc) \
+	$(riscv_insn_ext_zvkg) \
+	$(riscv_insn_ext_zvkned) \
+	$(riscv_insn_ext_zvknh) \
+	$(riscv_insn_ext_zvksed) \
+	$(riscv_insn_ext_zvksh) \
+
 riscv_insn_list = \
+	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
 	$(riscv_insn_ext_a) \
+	$(riscv_insn_ext_b) \
+	$(riscv_insn_ext_bf16) \
 	$(riscv_insn_ext_c) \
-	$(riscv_insn_ext_i) \
-	$(riscv_insn_ext_m) \
-	$(riscv_insn_ext_f) \
-	$(riscv_insn_ext_f_zfa) \
+	$(riscv_insn_ext_cmo) \
 	$(riscv_insn_ext_d) \
 	$(riscv_insn_ext_d_zfa) \
-	$(riscv_insn_ext_zfh) \
-	$(riscv_insn_ext_zfh_zfa) \
+	$(riscv_insn_ext_f) \
+	$(riscv_insn_ext_f_zfa) \
+	$(riscv_insn_ext_h) \
+	$(riscv_insn_ext_i) \
+	$(riscv_insn_ext_k) \
+	$(riscv_insn_ext_m) \
+	$(riscv_insn_ext_p) \
 	$(riscv_insn_ext_q) \
 	$(riscv_insn_ext_q_zfa) \
-	$(riscv_insn_ext_b) \
-	$(riscv_insn_ext_k) \
-	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
-	$(riscv_insn_ext_zce) \
-	$(riscv_insn_ext_h) \
-	$(riscv_insn_ext_p) \
-	$(riscv_insn_priv) \
-	$(riscv_insn_svinval) \
-	$(riscv_insn_smrnmi) \
-	$(riscv_insn_ext_cmo) \
-	$(riscv_insn_ext_zicond) \
-	$(riscv_insn_ext_bf16) \
 	$(riscv_insn_ext_zacas) \
+	$(riscv_insn_ext_zce) \
+	$(riscv_insn_ext_zfh) \
+	$(riscv_insn_ext_zfh_zfa) \
+	$(riscv_insn_ext_zicond) \
+	$(riscv_insn_ext_zvk) \
+	$(riscv_insn_priv) \
+	$(riscv_insn_smrnmi) \
+	$(riscv_insn_svinval) \
 
 riscv_gen_srcs = $(addsuffix .cc,$(riscv_insn_list))
 
