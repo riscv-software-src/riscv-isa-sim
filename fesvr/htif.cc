@@ -49,9 +49,11 @@ htif_t::htif_t()
     tohost_addr(0), fromhost_addr(0), exitcode(0), stopped(false),
     syscall_proxy(this)
 {
-  // signal(SIGINT, &handle_signal);
-  // signal(SIGTERM, &handle_signal);
-  // signal(SIGABRT, &handle_signal); // we still want to call static destructors
+#ifdef SPIKE_FUZZ
+  signal(SIGINT, &handle_signal);
+  signal(SIGTERM, &handle_signal);
+  signal(SIGABRT, &handle_signal); // we still want to call static destructors
+#endif // SPIKE_FUZZ
 }
 
 htif_t::htif_t(int argc, char** argv) : htif_t()
@@ -116,7 +118,7 @@ std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload,
     else
       throw std::runtime_error(
         "could not open " + payload + "; searched paths:\n" +
-        "\t. (current directory)\n" + 
+        "\t. (current directory)\n" +
         "\t" + PREFIX TARGET_DIR + " (based on configured --prefix and --with-target)"
       );
   }

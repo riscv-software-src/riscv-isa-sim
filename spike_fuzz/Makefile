@@ -10,8 +10,8 @@ AFL_CXX ?= $(CXX)
 SPIKE_PATH      = $(abspath ..)
 SPIKE_CONFIGURE = $(SPIKE_PATH)/configure
 
-SPIKE_CFLAGS    = -O3 -g0
-SPIKE_CXXFLAGS  = -O3 -Wno-c99-designator -g0
+SPIKE_CFLAGS    = -O3 -g0 -DSPIKE_FUZZ
+SPIKE_CXXFLAGS  = -O3 -Wno-c99-designator -g0 -DSPIKE_FUZZ
 SPIKE_LDFLAGS   =
 
 SPIKE_CONFIGURE_FLAGS = -q CC=$(CC) CXX=$(CXX) CFLAGS="$(SPIKE_CFLAGS)" \
@@ -22,7 +22,7 @@ SPIKE_MAKEFILE = $(BUILD_DIR)/Makefile
 # spike_fuzz sources
 FUZZ_SRCS  = $(shell find . -maxdepth 1 -name '*.cc')
 FUZZ_OBJS  = $(addprefix $(BUILD_DIR)/, $(patsubst %.cc, %.o, $(FUZZ_SRCS)))
-CXX_FLAGS  = -O3 --std=c++20 -fPIC
+CXX_FLAGS  = -O3 --std=c++20 -fPIC  -DSPIKE_FUZZ
 
 ifneq ($(SPIKE_DEBUG),)
 CXX_FLAGS += -DLOG_PATH=\"$(BUILD_DIR)/spike.log\"
