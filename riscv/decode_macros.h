@@ -69,6 +69,7 @@
 #define FRS2 READ_FREG(insn.rs2())
 #define FRS3 READ_FREG(insn.rs3())
 #define FRS1_H READ_FREG_H(insn.rs1())
+#define FRS1_BF FRS1_H
 #define FRS1_F READ_FREG_F(insn.rs1())
 #define FRS1_D READ_FREG_D(insn.rs1())
 #define FRS2_H READ_FREG_H(insn.rs2())
@@ -90,6 +91,7 @@ do { \
     WRITE_FRD(value); \
   } \
 } while (0)
+#define WRITE_FRD_BF WRITE_FRD_H
 #define WRITE_FRD_F(value) \
 do { \
   if (p->extension_enabled(EXT_ZFINX)) \
@@ -120,6 +122,10 @@ do { \
               if (rm > 4) throw trap_illegal_instruction(insn.bits()); \
               rm; })
 
+static inline bool is_aligned(const unsigned val, const unsigned pos)
+{
+  return pos ? (val & (pos - 1)) == 0 : true;
+}
 
 #define require_privilege(p) require(STATE.prv >= (p))
 #define require_novirt() (unlikely(STATE.v) ? throw trap_virtual_instruction(insn.bits()) : (void) 0)

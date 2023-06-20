@@ -48,6 +48,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 | (typically 'float' and 'double', and possibly 'long double').
 *----------------------------------------------------------------------------*/
 typedef struct { uint16_t v; } float16_t;
+typedef float16_t bfloat16_t;
 typedef struct { uint32_t v; } float32_t;
 typedef struct { uint64_t v; } float64_t;
 typedef struct { uint64_t v[2]; } float128_t;

@@ -42,9 +42,14 @@ processor_t::processor_t(const isa_parser_t *isa, const cfg_t *cfg,
   VU.p = this;
   TM.proc = this;
 
-#ifndef __SIZEOF_INT128__
-  if (extension_enabled('V')) {
+#ifndef HAVE_INT128
+  if (isa->extension_enabled('V')) {
     fprintf(stderr, "V extension is not supported on platforms without __int128 type\n");
+    abort();
+  }
+
+  if (isa->extension_enabled(EXT_ZACAS) && isa->get_max_xlen() == 64) {
+    fprintf(stderr, "Zacas extension is not supported on 64-bit platforms without __int128 type\n");
     abort();
   }
 #endif
@@ -196,8 +201,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   // mstatus_csr_t::unlogged_write()):
   auto xlen = proc->get_isa().get_max_xlen();
 
-  prv = PRV_M;
-  v = false;
+  prv = prev_prv = PRV_M;
+  v = prev_v = false;
   csrmap[CSR_MISA] = misa = std::make_shared<misa_csr_t>(proc, CSR_MISA, max_isa);
   mstatus = std::make_shared<mstatus_csr_t>(proc, CSR_MSTATUS);
 
@@ -327,10 +332,10 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   mcounteren = std::make_shared<masked_csr_t>(proc, CSR_MCOUNTEREN, counteren_mask, 0);
   if (proc->extension_enabled_const('U')) csrmap[CSR_MCOUNTEREN] = mcounteren;
   csrmap[CSR_SCOUNTEREN] = scounteren = std::make_shared<masked_csr_t>(proc, CSR_SCOUNTEREN, counteren_mask, 0);
-  auto nonvirtual_sepc = std::make_shared<epc_csr_t>(proc, CSR_SEPC);
+  nonvirtual_sepc = std::make_shared<epc_csr_t>(proc, CSR_SEPC);
   csrmap[CSR_VSEPC] = vsepc = std::make_shared<epc_csr_t>(proc, CSR_VSEPC);
   csrmap[CSR_SEPC] = sepc = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sepc, vsepc);
-  auto nonvirtual_stval = std::make_shared<basic_csr_t>(proc, CSR_STVAL, 0);
+  nonvirtual_stval = std::make_shared<basic_csr_t>(proc, CSR_STVAL, 0);
   csrmap[CSR_VSTVAL] = vstval = std::make_shared<basic_csr_t>(proc, CSR_VSTVAL, 0);
   csrmap[CSR_STVAL] = stval = std::make_shared<virtualized_csr_t>(proc, nonvirtual_stval, vstval);
   auto sscratch = std::make_shared<basic_csr_t>(proc, CSR_SSCRATCH, 0);
@@ -338,13 +343,13 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   // Note: if max_isa does not include H, we don't really need this virtualized_csr_t at all (though it doesn't hurt):
   csrmap[CSR_SSCRATCH] = std::make_shared<virtualized_csr_t>(proc, sscratch, vsscratch);
   csrmap[CSR_VSSCRATCH] = vsscratch;
-  auto nonvirtual_stvec = std::make_shared<tvec_csr_t>(proc, CSR_STVEC);
+  nonvirtual_stvec = std::make_shared<tvec_csr_t>(proc, CSR_STVEC);
   csrmap[CSR_VSTVEC] = vstvec = std::make_shared<tvec_csr_t>(proc, CSR_VSTVEC);
   csrmap[CSR_STVEC] = stvec = std::make_shared<virtualized_csr_t>(proc, nonvirtual_stvec, vstvec);
   auto nonvirtual_satp = std::make_shared<satp_csr_t>(proc, CSR_SATP);
   csrmap[CSR_VSATP] = vsatp = std::make_shared<base_atp_csr_t>(proc, CSR_VSATP);
   csrmap[CSR_SATP] = satp = std::make_shared<virtualized_satp_csr_t>(proc, nonvirtual_satp, vsatp);
-  auto nonvirtual_scause = std::make_shared<cause_csr_t>(proc, CSR_SCAUSE);
+  nonvirtual_scause = std::make_shared<cause_csr_t>(proc, CSR_SCAUSE);
   csrmap[CSR_VSCAUSE] = vscause = std::make_shared<cause_csr_t>(proc, CSR_VSCAUSE);
   csrmap[CSR_SCAUSE] = scause = std::make_shared<virtualized_csr_t>(proc, nonvirtual_scause, vscause);
   csrmap[CSR_MTVAL2] = mtval2 = std::make_shared<hypervisor_csr_t>(proc, CSR_MTVAL2);
@@ -382,7 +387,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_HTVAL] = htval = std::make_shared<basic_csr_t>(proc, CSR_HTVAL, 0);
   csrmap[CSR_HTINST] = htinst = std::make_shared<basic_csr_t>(proc, CSR_HTINST, 0);
   csrmap[CSR_HGATP] = hgatp = std::make_shared<hgatp_csr_t>(proc, CSR_HGATP);
-  auto nonvirtual_sstatus = std::make_shared<sstatus_proxy_csr_t>(proc, CSR_SSTATUS, mstatus);
+  nonvirtual_sstatus = std::make_shared<sstatus_proxy_csr_t>(proc, CSR_SSTATUS, mstatus);
   csrmap[CSR_VSSTATUS] = vsstatus = std::make_shared<vsstatus_csr_t>(proc, CSR_VSSTATUS);
   csrmap[CSR_SSTATUS] = sstatus = std::make_shared<sstatus_csr_t>(proc, nonvirtual_sstatus, vsstatus);
 
@@ -714,10 +719,13 @@ reg_t processor_t::legalize_privilege(reg_t prv)
   return prv;
 }
 
-void processor_t::set_privilege(reg_t prv)
+void processor_t::set_privilege(reg_t prv, bool virt)
 {
   mmu->flush_tlb();
+  state.prev_prv = state.prv;
+  state.prev_v = state.v;
   state.prv = legalize_privilege(prv);
+  state.v = virt && state.prv != PRV_M;
 }
 
 const char* processor_t::get_privilege_string()
@@ -740,31 +748,11 @@ const char* processor_t::get_privilege_string()
   abort();
 }
 
-void processor_t::set_virt(bool virt)
-{
-  reg_t tmp, mask;
-
-  if (state.prv == PRV_M)
-    return;
-
-  if (state.v != virt) {
-    /*
-     * Ideally, we should flush TLB here but we don't need it because
-     * set_virt() is always used in conjucter with set_privilege() and
-     * set_privilege() will flush TLB unconditionally.
-     *
-     * The virtualized sstatus register also relies on this TLB flush,
-     * since changing V might change sstatus.MXR and sstatus.SUM.
-     */
-    state.v = virt;
-  }
-}
-
 void processor_t::enter_debug_mode(uint8_t cause)
 {
   state.debug_mode = true;
-  state.dcsr->write_cause_and_prv(cause, state.prv);
-  set_privilege(PRV_M);
+  state.dcsr->write_cause_and_prv(cause, state.prv, state.v);
+  set_privilege(PRV_M, false);
   state.dpc->write(state.pc);
   state.pc = DEBUG_ROM_ENTRY;
   in_wfi = false;
@@ -831,23 +819,22 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_SPP, state.prv);
     s = set_field(s, MSTATUS_SIE, 0);
     state.sstatus->write(s);
-    set_privilege(PRV_S);
+    set_privilege(PRV_S, true);
   } else if (state.prv <= PRV_S && bit < max_xlen && ((hsdeleg >> bit) & 1)) {
     // Handle the trap in HS-mode
-    set_virt(false);
-    reg_t vector = (state.stvec->read() & 1) && interrupt ? 4 * bit : 0;
-    state.pc = (state.stvec->read() & ~(reg_t)1) + vector;
-    state.scause->write(t.cause());
-    state.sepc->write(epc);
-    state.stval->write(t.get_tval());
+    reg_t vector = (state.nonvirtual_stvec->read() & 1) && interrupt ? 4 * bit : 0;
+    state.pc = (state.nonvirtual_stvec->read() & ~(reg_t)1) + vector;
+    state.nonvirtual_scause->write(t.cause());
+    state.nonvirtual_sepc->write(epc);
+    state.nonvirtual_stval->write(t.get_tval());
     state.htval->write(t.get_tval2());
     state.htinst->write(t.get_tinst());
 
-    reg_t s = state.sstatus->read();
+    reg_t s = state.nonvirtual_sstatus->read();
     s = set_field(s, MSTATUS_SPIE, get_field(s, MSTATUS_SIE));
     s = set_field(s, MSTATUS_SPP, state.prv);
     s = set_field(s, MSTATUS_SIE, 0);
-    state.sstatus->write(s);
+    state.nonvirtual_sstatus->write(s);
     if (extension_enabled('H')) {
       s = state.hstatus->read();
       if (curr_virt)
@@ -856,10 +843,9 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
       s = set_field(s, HSTATUS_GVA, t.has_gva());
       state.hstatus->write(s);
     }
-    set_privilege(PRV_S);
+    set_privilege(PRV_S, false);
   } else {
     // Handle the trap in M-mode
-    set_virt(false);
     const reg_t vector = (state.mtvec->read() & 1) && interrupt ? 4 * bit : 0;
     const reg_t trap_handler_address = (state.mtvec->read() & ~(reg_t)1) + vector;
     // RNMI exception vector is implementation-defined.  Since we don't model
@@ -881,11 +867,11 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_GVA, t.has_gva());
     state.mstatus->write(s);
     if (state.mstatush) state.mstatush->write(s >> 32);  // log mstatush change
-    set_privilege(PRV_M);
+    set_privilege(PRV_M, false);
   }
 }
 
-void processor_t::take_trigger_action(triggers::action_t action, reg_t breakpoint_tval, reg_t epc)
+void processor_t::take_trigger_action(triggers::action_t action, reg_t breakpoint_tval, reg_t epc, bool virt)
 {
   if (debug) {
     std::stringstream s; // first put everything in a string, later send it to output
@@ -899,7 +885,7 @@ void processor_t::take_trigger_action(triggers::action_t action, reg_t breakpoin
       enter_debug_mode(DCSR_CAUSE_HWBP);
       break;
     case triggers::ACTION_DEBUG_EXCEPTION: {
-      trap_breakpoint trap(state.v, breakpoint_tval);
+      trap_breakpoint trap(virt, breakpoint_tval);
       take_trap(trap, epc);
       break;
     }

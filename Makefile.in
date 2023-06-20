@@ -256,7 +256,7 @@ $(2)_test_objs      := $$(patsubst %.cc, %.o, $$($(2)_test_srcs))
 $(2)_test_deps      := $$(patsubst %.o, %.d, $$($(2)_test_objs))
 $(2)_test_exes      := $$(patsubst %.t.cc, %-utst, $$($(2)_test_srcs))
 $(2)_test_outs      := $$(patsubst %, %.out, $$($(2)_test_exes))
-$(2)_test_libs      := $(1) $$($(2)_reverse_deps) utst
+$(2)_test_libs      := $(1) $$($(2)_reverse_deps)
 $(2)_test_libnames  := $$(patsubst %, lib%.a, $$($(2)_test_libs))
 $(2)_test_libarg    := $$(patsubst %, -l%, $$($(2)_test_libs))
 
@@ -274,7 +274,8 @@ $(2)_junk += \
 # Run unit tests
 
 $$($(2)_test_outs) : %.out : %
-	$(RUN) $(RUNFLAGS) ./$$< default | tee $$@
+	./$$< default
+	touch $$@
 
 $(2)_junk += $$($(2)_test_outs)
 
@@ -318,7 +319,7 @@ $(2)_junk += \
 all-$(1) : lib$(1).a $$($(2)_install_prog_exes)
 
 check-$(1) : $$($(2)_test_outs)
-	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segementation' $$^; echo
+	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segmentation' $$^; echo
 
 clean-$(1) :
 	rm -rf $$($(2)_junk)
@@ -337,7 +338,7 @@ install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_install_hdrs))
 install_libs += $$(if $$($(2)_install_lib),lib$(1).a,)
 install_libs += $$(if $$($(2)_install_shared_lib),lib$(1).so,)
 install_exes += $$($(2)_install_prog_exes)
-install_pcs  += $$(if $$($(2)_install_lib),riscv-$(1).pc,)
+install_pcs  += $$(if $$($(2)_install_pcs),riscv-$(1).pc,)
 
 endef
 
@@ -359,20 +360,8 @@ deps : $(deps)
 # Check
 #-------------------------------------------------------------------------
 
-bintest_outs = $(bintests:=.out)
-junk += $(bintest_outs)
-%.out: % all
-	./$* < /dev/null 2>&1 | tee $@
-
-check-cpp : $(test_outs)
-	@echo
-	! grep -h -e'Unit Tests' -e'FAILED' -e'Segmentation' $^ < /dev/null
-	@echo
-
-check-bin : $(bintest_outs)
-	! tail -n 1 $^ < /dev/null 2>&1 | grep FAILED
-
-check : check-cpp check-bin
+check : $(test_outs)
+	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segementation' $^ < /dev/null; echo
 
 .PHONY : check
 

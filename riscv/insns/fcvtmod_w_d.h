@@ -38,12 +38,14 @@ if (exp == 0) {
   } else {
     /* The fraction is shifted out entirely.  */
     frac = 0;
+    inexact = true;
   }
 
-  /* Notice overflow or inexact exceptions.  */
+  /* Handle overflows */
   if (true_exp > 31 || frac > (sign ? 0x80000000ull : 0x7fffffff)) {
     /* Overflow, for which this operation raises invalid.  */
     invalid = true;
+    inexact = false;  /* invalid takes precedence */
   }
 
   /* Honor the sign.  */

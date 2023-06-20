@@ -1,4 +1,5 @@
-require_either_extension(xlen == 32 ? EXT_ZBPBO : EXT_XZBT, EXT_XZBT);
+require_rv32;
+require_extension(EXT_ZBPBO);
 int shamt = RS2 & (2*xlen-1);
 reg_t a = RS1, b = RS3;
 if (shamt >= xlen) {

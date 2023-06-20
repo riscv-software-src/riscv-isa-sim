@@ -54,11 +54,11 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
   if (vlmax == 0) {
     vl->write_raw(0);
   } else if (rd == 0 && rs1 == 0) {
-    vl->write_raw(vl->read() > vlmax ? vlmax : vl->read());
+    vl->write_raw(std::min(vl->read(), vlmax));
   } else if (rd != 0 && rs1 == 0) {
     vl->write_raw(vlmax);
   } else if (rs1 != 0) {
-    vl->write_raw(reqVL > vlmax ? vlmax : reqVL);
+    vl->write_raw(std::min(reqVL, vlmax));
   }
 
   vstart->write_raw(0);

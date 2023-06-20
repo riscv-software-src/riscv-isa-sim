@@ -39,6 +39,9 @@
 /* Dynamic library loading is supported */
 #undef HAVE_DLOPEN
 
+/* __int128_t is supported */
+#undef HAVE_INT128
+
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
