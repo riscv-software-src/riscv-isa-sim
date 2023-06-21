@@ -310,7 +310,7 @@ void debug_module_t::sb_read()
     } else {
       sbcs.error = 3;
     }
-  } catch (trap_load_access_fault& t) {
+  } catch (const mem_trap_t& ) {
     sbcs.error = 2;
   }
 }
@@ -319,17 +319,21 @@ void debug_module_t::sb_write()
 {
   reg_t address = ((uint64_t) sbaddress[1] << 32) | sbaddress[0];
   D(fprintf(stderr, "sb_write() 0x%x @ 0x%lx\n", sbdata[0], address));
-  if (sbcs.sbaccess == 0 && config.max_sba_data_width >= 8) {
-    sim->debug_mmu->store<uint8_t>(address, sbdata[0]);
-  } else if (sbcs.sbaccess == 1 && config.max_sba_data_width >= 16) {
-    sim->debug_mmu->store<uint16_t>(address, sbdata[0]);
-  } else if (sbcs.sbaccess == 2 && config.max_sba_data_width >= 32) {
-    sim->debug_mmu->store<uint32_t>(address, sbdata[0]);
-  } else if (sbcs.sbaccess == 3 && config.max_sba_data_width >= 64) {
-    sim->debug_mmu->store<uint64_t>(address,
-        (((uint64_t) sbdata[1]) << 32) | sbdata[0]);
-  } else {
-    sbcs.error = 3;
+  try {
+    if (sbcs.sbaccess == 0 && config.max_sba_data_width >= 8) {
+      sim->debug_mmu->store<uint8_t>(address, sbdata[0]);
+    } else if (sbcs.sbaccess == 1 && config.max_sba_data_width >= 16) {
+      sim->debug_mmu->store<uint16_t>(address, sbdata[0]);
+    } else if (sbcs.sbaccess == 2 && config.max_sba_data_width >= 32) {
+      sim->debug_mmu->store<uint32_t>(address, sbdata[0]);
+    } else if (sbcs.sbaccess == 3 && config.max_sba_data_width >= 64) {
+      sim->debug_mmu->store<uint64_t>(address,
+          (((uint64_t) sbdata[1]) << 32) | sbdata[0]);
+    } else {
+      sbcs.error = 3;
+    }
+  } catch (const mem_trap_t& ) {
+    sbcs.error = 2;
   }
 }
 
