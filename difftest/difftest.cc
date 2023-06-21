@@ -16,7 +16,6 @@ static debug_module_config_t difftest_dm_config = {
   .support_impebreak = false
 };
 extern std::vector<std::pair<reg_t, mem_t*>> make_mems(const std::vector<mem_cfg_t> &layout);
-extern std::vector<mem_cfg_t> parse_mem_layout(const char* arg);
 
 static DifftestRef *ref = nullptr;
 
@@ -31,6 +30,15 @@ DifftestRef::DifftestRef() :
   sim(create_sim(cfg)),
   p(sim->get_core(0UL)),
   state(p->get_state()) {
+#if defined(CONFIG_FLASH_BASE) && defined(CONFIG_FLASH_SIZE)
+  // Initialize the flash with preset instructions
+  uint32_t flash_init[] = {
+    0x0010029bUL, // CONFIG_FLASH_SIZE + 0: addiw t0, zero, 1
+    0x01f29293UL, // CONFIG_FLASH_SIZE + 4: slli  t0, t0, 0x1f
+    0x00028067UL, // CONFIG_FLASH_SIZE + 8: jr    t0
+  };
+  memcpy_from_dut(CONFIG_FLASH_BASE, flash_init, sizeof(flash_init));
+#endif
 }
 
 DifftestRef::~DifftestRef() {
@@ -195,9 +203,12 @@ void DifftestRef::display() {
 }
 
 const cfg_t *DifftestRef::create_cfg() {
-  char mem_layout_str[32];
-  sprintf(mem_layout_str, "0x%x:0x%lx", DRAM_BASE, CONFIG_MEMORY_SIZE);
-  auto memory_layout = parse_mem_layout(mem_layout_str);
+  auto memory_layout = std::vector<mem_cfg_t>{
+#if defined(CONFIG_FLASH_BASE) && defined(CONFIG_FLASH_SIZE)
+    mem_cfg_t{CONFIG_FLASH_BASE, CONFIG_FLASH_SIZE},
+#endif
+    mem_cfg_t{DRAM_BASE, CONFIG_MEMORY_SIZE},
+  };
   auto const cfg = new cfg_t(
     // std::pair<reg_t, reg_t> default_initrd_bounds,
     std::make_pair(0, 0),
