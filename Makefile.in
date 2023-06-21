@@ -98,7 +98,7 @@ default-CXXFLAGS := $(default-CFLAGS) -std=c++17
 
 mcppbs-CPPFLAGS := @CPPFLAGS@
 mcppbs-CFLAGS   := $(default-CFLAGS) @CFLAGS@
-mcppbs-CXXFLAGS := $(mcppbs-CFLAGS) $(default-CXXFLAGS) @CXXFLAGS@
+mcppbs-CXXFLAGS := $(default-CXXFLAGS) @CXXFLAGS@
 
 CC            := @CC@
 CXX           := @CXX@
