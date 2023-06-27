@@ -185,6 +185,12 @@ class debug_module_t : public abstract_device_t
 
     size_t selected_hart_id() const;
     hart_debug_state_t& selected_hart_state();
+
+    /* Whether the first 2 harts are available is controllable through DMCUSTOM,
+     * where bit 0 corresponds to hart 0, etc. When a bit is one the hart
+     * available.  Otherwise it is unavailable. */
+    bool hart_available_state[2];
+    bool hart_available(unsigned hart_id) const;
 };
 
 #endif
