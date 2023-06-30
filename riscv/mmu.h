@@ -19,7 +19,13 @@
 #define PGSHIFT 12
 const reg_t PGSIZE = 1 << PGSHIFT;
 const reg_t PGMASK = ~(PGSIZE-1);
+#if defined(CPU_ROCKET_CHIP) || defined(CPU_NUTSHELL)
+#define MAX_PADDR_BITS 32
+#elif defined(CPU_XIANGSHAN)
+#define MAX_PADDR_BITS 36
+#else
 #define MAX_PADDR_BITS 56 // imposed by Sv39 / Sv48
+#endif
 
 struct insn_fetch_t
 {
