@@ -317,7 +317,7 @@ std::optional<match_result_t> icount_t::detect_icount_match(processor_t * const 
     ret = match_result_t(TIMING_BEFORE, action);
   }
 
-  if (count >= 1) {
+  if (count >= 1 && (ret == std::nullopt || action != MCONTROL_ACTION_DEBUG_MODE)) {
     if (count == 1)
       pending = 1;
     count = count - 1;
