@@ -157,6 +157,10 @@ void DifftestRef::debug_memcpy_from_dut(reg_t dest, void* src, size_t n) {
 #endif
 }
 
+int DifftestRef::store_commit(uint64_t *addr, uint64_t *data, uint8_t *mask) {
+  return sim->dut_store_commit(addr, data, mask);
+}
+
 void DifftestRef::raise_intr(uint64_t no) {
   // Debug Intr
   if (no == 0xc) {
@@ -325,7 +329,7 @@ void isa_reg_display() {
 }
 
 int difftest_store_commit(uint64_t *addr, uint64_t *data, uint8_t *mask) {
-  return 0;
+  return ref->store_commit(addr, data, mask);
 }
 
 uint64_t difftest_guided_exec(void *) {

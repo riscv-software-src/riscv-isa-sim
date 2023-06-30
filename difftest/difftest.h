@@ -85,6 +85,12 @@ typedef struct {
 #endif // CONFIG_DIFF_DEBUG_MODE
 } diff_context_t;
 
+class DifftestRefConfig {
+public:
+  bool ignore_illegal_mem_access = false;
+  bool debug_difftest = false;
+};
+
 class DifftestRef {
 public:
   DifftestRef();
@@ -94,12 +100,15 @@ public:
   void set_regs(diff_context_t *ctx);
   void memcpy_from_dut(reg_t dest, void* src, size_t n);
   void debug_memcpy_from_dut(reg_t dest, void* src, size_t n);
+  int store_commit(uint64_t *addr, uint64_t *data, uint8_t *mask);
   void raise_intr(uint64_t no);
   void display();
   void update_dynamic_config(void* config) {
 #ifdef RISCV_ENABLE_COMMITLOG
   p->enable_log_commits();
 #endif
+    auto c = (DifftestRefConfig *)config;
+    sim->enable_difftest_logs = c->debug_difftest;
   }
 
 

@@ -108,6 +108,8 @@ public:
 
     if (likely(!xlate_flags.is_special_access() && aligned && tlb_hit)) {
       res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
+      auto paddr = tlb_data[vpn % TLB_ENTRIES].target_offset + addr;
+      sim->difftest_log_mem(false, paddr, &res, sizeof(T));
     } else {
       load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags);
     }
@@ -150,6 +152,9 @@ public:
 
     if (!xlate_flags.is_special_access() && likely(aligned && tlb_hit)) {
       *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val);
+      auto paddr = tlb_data[vpn % TLB_ENTRIES].target_offset + addr;
+      auto v = to_target(val);
+      sim->difftest_log_mem(true, paddr, &v, sizeof(T));
     } else {
       target_endian<T> target_val = to_target(val);
       store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);

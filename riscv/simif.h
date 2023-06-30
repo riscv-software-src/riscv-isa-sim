@@ -6,12 +6,13 @@
 #include <map>
 #include "decode.h"
 #include "cfg.h"
+#include "difftest/difftrace.h"
 
 class processor_t;
 class mmu_t;
 
 // this is the interface to the simulator used by the processors and memory
-class simif_t
+class simif_t : public diff_trace_t
 {
 public:
   // should return NULL for MMIO addresses
