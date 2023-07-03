@@ -190,10 +190,10 @@ public:
   // template for functions that perform an atomic memory operation
   template<typename T, typename op>
   T amo(reg_t addr, op f) {
-    sim->is_amo = true;
     convert_load_traps_to_store_traps({
       store_slow_path(addr, sizeof(T), nullptr, {false, false, false}, false, true);
       auto lhs = load<T>(addr);
+      sim->is_amo = true;
       store<T>(addr, f(lhs));
       return lhs;
     })
@@ -201,12 +201,13 @@ public:
 
   template<typename T>
   T amo_compare_and_swap(reg_t addr, T comp, T swap) {
-    sim->is_amo = true;
     convert_load_traps_to_store_traps({
       store_slow_path(addr, sizeof(T), nullptr, {false, false, false}, false, true);
       auto lhs = load<T>(addr);
-      if (lhs == comp)
+      if (lhs == comp) {
+        sim->is_amo = true;
         store<T>(addr, swap);
+      }
       return lhs;
     })
   }
@@ -270,11 +271,12 @@ public:
   template<typename T>
   bool store_conditional(reg_t addr, T val)
   {
-    sim->is_amo = true;
     bool have_reservation = check_load_reservation(addr, sizeof(T));
 
-    if (have_reservation)
+    if (have_reservation) {
+      sim->is_amo = true;
       store(addr, val);
+    }
 
     yield_load_reservation();
 
