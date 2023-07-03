@@ -165,9 +165,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     abstract_device_t* device = factory->parse_from_fdt(fdt, this, &device_base);
     if (device) {
       assert(device_base);
-      bus.add_device(device_base, device);
       std::shared_ptr<abstract_device_t> dev_ptr(device);
-      devices.push_back(dev_ptr);
+      add_device(device_base, dev_ptr);
 
       if (i == 0) // clint_factory
         clint = std::static_pointer_cast<clint_t>(dev_ptr);
@@ -277,6 +276,11 @@ void sim_t::step(size_t n)
   }
 }
 
+void sim_t::add_device(reg_t addr, std::shared_ptr<abstract_device_t> dev) {
+  bus.add_device(addr, dev.get());
+  devices.push_back(dev);
+}
+
 void sim_t::set_debug(bool value)
 {
   debug = value;
@@ -369,8 +373,7 @@ void sim_t::set_rom()
   rom.resize((rom.size() + align - 1) / align * align);
 
   std::shared_ptr<rom_device_t> boot_rom(new rom_device_t(rom));
-  bus.add_device(DEFAULT_RSTVEC, boot_rom.get());
-  devices.push_back(boot_rom);
+  add_device(DEFAULT_RSTVEC, boot_rom);
 }
 
 char* sim_t::addr_to_mem(reg_t paddr) {

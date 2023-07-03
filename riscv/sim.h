@@ -39,6 +39,7 @@ public:
   int run();
   void set_debug(bool value);
   void set_histogram(bool value);
+  void add_device(reg_t addr, std::shared_ptr<abstract_device_t> dev);
 
   // Configure logging
   //
