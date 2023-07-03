@@ -46,7 +46,7 @@ enum { DIFFTEST_TO_DUT, DIFFTEST_TO_REF };
 #define CONFIG_FLASH_BASE      0x10000000UL
 #define CONFIG_FLASH_SIZE      0x100000UL
 #elif defined(CPU_ROCKET_CHIP)
-#define CONFIG_DIFF_ISA_STRING "rv64imafdczicsr_zifencei_zihpm"
+#define CONFIG_DIFF_ISA_STRING "rv64imafdczicsr_zifencei_zihpm_zicntr"
 #define CONFIG_MEMORY_SIZE     (2 * 1024 * 1024 * 1024UL)
 #define CONFIG_FLASH_BASE      0x10000000UL
 #define CONFIG_FLASH_SIZE      0x10000UL
