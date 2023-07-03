@@ -3,6 +3,7 @@
 
 #include <bits/stdc++.h>
 #include <queue>
+#include "difftest-def.h"
 
 class store_trace_t {
 public:
@@ -40,6 +41,7 @@ private:
 
 public:
   bool enable_difftest_logs = false;
+  bool is_amo = false;
 
   void difftest_log(const char *__restrict __fmt, ...) {
     if (unlikely(enable_difftest_logs)) {
@@ -57,8 +59,15 @@ public:
     auto t = is_store ? "write" : "read";
     difftest_log("mem_%s addr: 0x%lx, data: 0x%016lx, len: %d", t, paddr, data, len);
     if (is_store) {
-      store_trace_t trace{paddr, data, len};
-      store_trace.push(trace);
+      bool do_trace = !is_amo;
+#ifdef CONFIG_DIFF_AMO_STORE
+      do_trace = true;
+#endif
+      if (do_trace) {
+        store_trace_t trace{paddr, data, len};
+        store_trace.push(trace);
+      }
+      is_amo = false;
     }
   }
 
