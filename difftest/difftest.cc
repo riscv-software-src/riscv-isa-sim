@@ -22,23 +22,10 @@ static DifftestRef *ref = nullptr;
 DifftestRef::DifftestRef() :
   cfg(create_cfg()),
   mems(make_mems(cfg->mem_layout())),
-#ifdef CONFIG_DIFF_DEBUG_MODE
-  plugin_devices{std::make_pair(reg_t(DM_BASE_ADDR), new dummy_debug_t)},
-#else
-  plugin_devices{},
-#endif
+  plugin_devices(create_devices()),
   sim(create_sim(cfg)),
   p(sim->get_core(0UL)),
   state(p->get_state()) {
-#if defined(CONFIG_FLASH_BASE) && defined(CONFIG_FLASH_SIZE)
-  // Initialize the flash with preset instructions
-  uint32_t flash_init[] = {
-    0x0010029bUL, // CONFIG_FLASH_SIZE + 0: addiw t0, zero, 1
-    0x01f29293UL, // CONFIG_FLASH_SIZE + 4: slli  t0, t0, 0x1f
-    0x00028067UL, // CONFIG_FLASH_SIZE + 8: jr    t0
-  };
-  memcpy_from_dut(CONFIG_FLASH_BASE, flash_init, sizeof(flash_init));
-#endif
 }
 
 DifftestRef::~DifftestRef() {
@@ -214,9 +201,6 @@ void DifftestRef::display() {
 
 const cfg_t *DifftestRef::create_cfg() {
   auto memory_layout = std::vector<mem_cfg_t>{
-#if defined(CONFIG_FLASH_BASE) && defined(CONFIG_FLASH_SIZE)
-    mem_cfg_t{CONFIG_FLASH_BASE, CONFIG_FLASH_SIZE},
-#endif
     mem_cfg_t{DRAM_BASE, CONFIG_MEMORY_SIZE},
   };
   auto const cfg = new cfg_t(
@@ -246,6 +230,27 @@ const cfg_t *DifftestRef::create_cfg() {
     0
   );
   return cfg;
+}
+
+const std::vector<std::pair<reg_t, abstract_device_t*>> DifftestRef::create_devices() {
+#if defined(CONFIG_FLASH_BASE) && defined(CONFIG_FLASH_SIZE)
+  // Initialize the flash with preset instructions
+  const uint32_t flash_init[] = {
+    0x0010029bUL, // CONFIG_FLASH_SIZE + 0: addiw t0, zero, 1
+    0x01f29293UL, // CONFIG_FLASH_SIZE + 4: slli  t0, t0, 0x1f
+    0x00028067UL, // CONFIG_FLASH_SIZE + 8: jr    t0
+  };
+  std::vector<char> rom_data((char*)flash_init, (char*)flash_init + sizeof(flash_init));
+  rom_data.resize(CONFIG_FLASH_SIZE, 0);
+#endif
+  return std::vector<std::pair<reg_t, abstract_device_t*>>{
+#ifdef CONFIG_DIFF_DEBUG_MODE
+    std::make_pair(reg_t(DM_BASE_ADDR), new dummy_debug_t),
+#endif
+#if defined(CONFIG_FLASH_BASE) && defined(CONFIG_FLASH_SIZE)
+    std::make_pair(reg_t(0x10000000UL), new rom_device_t(rom_data)),
+#endif
+  };
 }
 
 sim_t *DifftestRef::create_sim(const cfg_t *cfg) {

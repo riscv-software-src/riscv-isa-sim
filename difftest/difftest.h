@@ -88,6 +88,7 @@ private:
   state_t * const state;
 
   const cfg_t *create_cfg();
+  const std::vector<std::pair<reg_t, abstract_device_t*>> create_devices();
   sim_t *create_sim(const cfg_t *cfg);
 };
 
