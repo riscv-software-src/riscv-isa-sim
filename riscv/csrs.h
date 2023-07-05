@@ -599,14 +599,38 @@ class hgatp_csr_t: public basic_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
-class tselect_csr_t: public basic_csr_t {
+// For CSRs that only exist if Sdtrig is enabled
+class dtrig_csr_t: public basic_csr_t {
+ public:
+  dtrig_csr_t(processor_t* const proc, const reg_t addr);
+  dtrig_csr_t(processor_t* const proc, const reg_t addr, reg_t val);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class const_dtrig_csr_t: public const_csr_t {
+ public:
+  const_dtrig_csr_t(processor_t* const proc, const reg_t addr, reg_t val);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+ protected:
+  dtrig_csr_t dtrig;
+};
+
+class masked_dtrig_csr_t: public masked_csr_t {
+ public:
+  masked_dtrig_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+ protected:
+  dtrig_csr_t dtrig;
+};
+
+class tselect_csr_t: public dtrig_csr_t {
  public:
   tselect_csr_t(processor_t* const proc, const reg_t addr);
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
-class tdata1_csr_t: public csr_t {
+class tdata1_csr_t: public dtrig_csr_t {
  public:
   tdata1_csr_t(processor_t* const proc, const reg_t addr);
   virtual reg_t read() const noexcept override;
@@ -614,7 +638,7 @@ class tdata1_csr_t: public csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
-class tdata2_csr_t: public csr_t {
+class tdata2_csr_t: public dtrig_csr_t {
  public:
   tdata2_csr_t(processor_t* const proc, const reg_t addr);
   virtual reg_t read() const noexcept override;
@@ -622,7 +646,7 @@ class tdata2_csr_t: public csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
-class tdata3_csr_t: public csr_t {
+class tdata3_csr_t: public dtrig_csr_t {
  public:
   tdata3_csr_t(processor_t* const proc, const reg_t addr);
   virtual reg_t read() const noexcept override;
@@ -630,7 +654,7 @@ class tdata3_csr_t: public csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
-class tinfo_csr_t: public csr_t {
+class tinfo_csr_t: public dtrig_csr_t {
  public:
   tinfo_csr_t(processor_t* const proc, const reg_t addr);
   virtual reg_t read() const noexcept override;

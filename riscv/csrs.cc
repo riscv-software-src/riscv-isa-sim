@@ -1182,16 +1182,46 @@ bool hgatp_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
 }
 
+dtrig_csr_t::dtrig_csr_t(processor_t* const proc, const reg_t addr):
+  dtrig_csr_t(proc, addr, 0) {
+}
+
+dtrig_csr_t::dtrig_csr_t(processor_t* const proc, const reg_t addr, reg_t val):
+  basic_csr_t(proc, addr, val) {
+}
+
+void dtrig_csr_t::verify_permissions(insn_t insn, bool write) const {
+  basic_csr_t::verify_permissions(insn, write);
+  if (!proc->extension_enabled(EXT_SDTRIG))
+    throw trap_illegal_instruction(insn.bits());
+}
+
+const_dtrig_csr_t::const_dtrig_csr_t(processor_t* const proc, const reg_t addr, reg_t val):
+  const_csr_t(proc, addr, val), dtrig(proc, addr) {
+}
+
+void const_dtrig_csr_t::verify_permissions(insn_t insn, bool write) const {
+  dtrig.verify_permissions(insn, write);
+}
+
+masked_dtrig_csr_t::masked_dtrig_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  masked_csr_t(proc, addr, mask, init), dtrig(proc, addr) {
+}
+
+void masked_dtrig_csr_t::verify_permissions(insn_t insn, bool write) const {
+  dtrig.verify_permissions(insn, write);
+}
+
 tselect_csr_t::tselect_csr_t(processor_t* const proc, const reg_t addr):
-  basic_csr_t(proc, addr, 0) {
+  dtrig_csr_t(proc, addr, 0) {
 }
 
 bool tselect_csr_t::unlogged_write(const reg_t val) noexcept {
-  return basic_csr_t::unlogged_write((val < proc->TM.count()) ? val : read());
+  return dtrig_csr_t::unlogged_write((val < proc->TM.count()) ? val : read());
 }
 
 tdata1_csr_t::tdata1_csr_t(processor_t* const proc, const reg_t addr):
-  csr_t(proc, addr) {
+  dtrig_csr_t(proc, addr) {
 }
 
 reg_t tdata1_csr_t::read() const noexcept {
@@ -1203,7 +1233,7 @@ bool tdata1_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 tdata2_csr_t::tdata2_csr_t(processor_t* const proc, const reg_t addr):
-  csr_t(proc, addr) {
+  dtrig_csr_t(proc, addr) {
 }
 
 reg_t tdata2_csr_t::read() const noexcept {
@@ -1215,7 +1245,7 @@ bool tdata2_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 tdata3_csr_t::tdata3_csr_t(processor_t* const proc, const reg_t addr):
-  csr_t(proc, addr) {
+  dtrig_csr_t(proc, addr) {
 }
 
 reg_t tdata3_csr_t::read() const noexcept {
@@ -1227,7 +1257,7 @@ bool tdata3_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 tinfo_csr_t::tinfo_csr_t(processor_t* const proc, const reg_t addr) :
-  csr_t(proc, addr) {
+  dtrig_csr_t(proc, addr) {
 }
 
 reg_t tinfo_csr_t::read() const noexcept {
