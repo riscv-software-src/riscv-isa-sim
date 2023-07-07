@@ -48,6 +48,12 @@ void mmu_t::flush_tlb()
   flush_icache();
 }
 
+void mmu_t::flush_tlb_on_sfence_vma()
+{
+  sim->on_sfence_vma();
+  flush_tlb();
+}
+
 void throw_access_exception(bool virt, reg_t addr, access_type type)
 {
   switch (type) {

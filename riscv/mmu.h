@@ -353,6 +353,7 @@ public:
   }
 
   void flush_tlb();
+  void flush_tlb_on_sfence_vma();
   void flush_icache();
   void flush_icache_on_fence_i();
 
@@ -453,6 +454,7 @@ private:
     target_endian<T> target_pte;
     if (host_pte_addr) {
       memcpy(&target_pte, host_pte_addr, ptesize);
+      sim->difftest_log_mem_ptw(pte_paddr, host_pte_addr, ptesize);
     } else if (!mmio_load(pte_paddr, ptesize, (uint8_t*)&target_pte)) {
       throw_access_exception(virt, addr, trap_type);
     }

@@ -89,7 +89,7 @@ public:
     }
   }
   inline int disambiguation_state() {
-    return sim->has_self_modified_code();
+    return sim->in_ambiguation_state();
   }
 
 private:

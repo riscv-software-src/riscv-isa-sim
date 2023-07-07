@@ -35,31 +35,31 @@ private:
   }
 };
 
-// Self-modifying code tracker
-class smc_tracker_t {
+class store_tracker_t {
 public:
-  smc_tracker_t() : has_smc(false) {}
+  store_tracker_t() : dirty_accessed(false) {}
 
-  inline bool state() { return has_smc; }
-  inline void state_reset() { has_smc = false; }
+  inline bool state() { return dirty_accessed; }
+  inline void state_reset() { dirty_accessed = false; }
   inline void reset() {
-    self_modified.clear();
+    dirty.clear();
     state_reset();
   }
   inline void on_store(uint64_t address) {
-    self_modified.insert(hash_key(address));
+    dirty.insert(hash_key(address));
   }
-  inline void on_fetch(uint64_t address) {
-    if (self_modified.count(hash_key(address)) > 0) {
-      has_smc = true;
+  inline void on_read(uint64_t address) {
+    if (dirty.count(hash_key(address)) > 0) {
+      dirty_accessed = true;
     }
   }
 
 private:
-  bool has_smc;
-  std::unordered_set<uint64_t> self_modified;
+  bool dirty_accessed;
+  std::unordered_set<uint64_t> dirty;
 
-  inline uint64_t hash_key(uint64_t address) {
+protected:
+  inline virtual uint64_t hash_key(uint64_t address) {
     return address / sizeof(uint64_t);
   }
 };
@@ -69,14 +69,18 @@ class diff_trace_t
 {
 private:
   std::queue<store_trace_t> store_trace;
-  smc_tracker_t smc_tracker;
+  // self-modified code. fence.i is the barrier
+  store_tracker_t smc_tracker;
+  // pte access. sfence.vma is the barrier
+  store_tracker_t pte_tracker;
 
-  enum class MemAccessType { INSTRUCTION, LOAD, STORE };
+  enum class MemAccessType { INSTRUCTION, LOAD, STORE, PTW };
   static const char *accessTypeString(MemAccessType value) {
     switch (value) {
       case MemAccessType::INSTRUCTION: return "instr";
       case MemAccessType::LOAD:        return "load";
       case MemAccessType::STORE:       return "store";
+      case MemAccessType::PTW:         return "ptw";
       default:                         return "unknown";
     }
   }
@@ -85,6 +89,7 @@ private:
     difftest_log("mem_%-5s addr: 0x%lx, data: 0x%016lx, len: %d", accessTypeString(t), paddr, data, len);
     if (t == MemAccessType::STORE) {
       smc_tracker.on_store(paddr);
+      pte_tracker.on_store(paddr);
       bool do_trace = !is_amo;
 #ifdef CONFIG_DIFF_AMO_STORE
       do_trace = true;
@@ -96,7 +101,10 @@ private:
       is_amo = false;
     }
     else if (t == MemAccessType::INSTRUCTION) {
-      smc_tracker.on_fetch(paddr);
+      smc_tracker.on_read(paddr);
+    }
+    else if (t == MemAccessType::PTW) {
+      pte_tracker.on_read(paddr);
     }
   }
 
@@ -129,6 +137,7 @@ public:
   __DIFFTEST_LOG_INTERFACE(instr, INSTRUCTION)
   __DIFFTEST_LOG_INTERFACE(load, LOAD)
   __DIFFTEST_LOG_INTERFACE(store, STORE)
+  __DIFFTEST_LOG_INTERFACE(ptw, PTW)
 
   int dut_store_commit(uint64_t *addr, uint64_t *data, uint8_t *mask) {
     if (store_trace.empty()) {
@@ -153,13 +162,18 @@ public:
     smc_tracker.reset();
   }
 
-  void clear_self_modified_code_state() {
-    smc_tracker.state_reset();
+  void on_sfence_vma() {
+    pte_tracker.reset();
   }
 
-  bool has_self_modified_code() {
-    bool s = smc_tracker.state();
-    clear_self_modified_code_state();
+  void clear_ambiguation_state() {
+    smc_tracker.state_reset();
+    pte_tracker.state_reset();
+  }
+
+  bool in_ambiguation_state() {
+    bool s = smc_tracker.state() || pte_tracker.state();
+    clear_ambiguation_state();
     return s;
   }
 };
