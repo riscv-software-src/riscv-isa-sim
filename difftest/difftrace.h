@@ -71,6 +71,7 @@ private:
 public:
   bool enable_difftest_logs = false;
   bool is_amo = false;
+  bool sc_failed = false;
 
   void difftest_log(const char *__restrict __fmt, ...) {
     if (unlikely(enable_difftest_logs)) {

@@ -306,8 +306,8 @@ void difftest_csrcpy(void *dut, bool direction) {
 
 }
 
-void difftest_uarchstatus_cpy(void *dut, bool direction) {
-
+void difftest_uarchstatus_sync(void *dut) {
+  ref->update_uarch_status(dut);
 }
 
 void update_dynamic_config(void* config) {

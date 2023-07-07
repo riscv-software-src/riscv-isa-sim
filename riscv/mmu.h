@@ -272,6 +272,11 @@ public:
   bool store_conditional(reg_t addr, T val)
   {
     bool have_reservation = check_load_reservation(addr, sizeof(T));
+    if (have_reservation && sim->sc_failed) {
+      sim->difftest_log("The REF is forced to have an SC failure according to the DUT.");
+      have_reservation = false;
+      sim->sc_failed = false;
+    }
 
     if (have_reservation) {
       sim->is_amo = true;

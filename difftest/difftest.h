@@ -58,6 +58,11 @@ public:
   bool debug_difftest = false;
 };
 
+class DifftestUarchStatus {
+public:
+  uint64_t sc_failed = 0;
+};
+
 class DifftestRef {
 public:
   DifftestRef();
@@ -77,7 +82,12 @@ public:
     auto c = (DifftestRefConfig *)config;
     sim->enable_difftest_logs = c->debug_difftest;
   }
-
+  void update_uarch_status(void *status) {
+    auto s = (DifftestUarchStatus *)status;
+    if (s->sc_failed) {
+      sim->sc_failed = true;
+    }
+  }
 
 private:
   const cfg_t *cfg;
