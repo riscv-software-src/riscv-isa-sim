@@ -39,6 +39,34 @@ class diff_trace_t
 private:
   std::queue<store_trace_t> store_trace;
 
+  enum class MemAccessType { LOAD, STORE };
+  static const char *accessTypeString(MemAccessType value) {
+    switch (value) {
+      case MemAccessType::LOAD:        return "load";
+      case MemAccessType::STORE:       return "store";
+      default:                         return "unknown";
+    }
+  }
+
+  void difftest_log_mem(MemAccessType t, uint64_t paddr, uint64_t data, int len) {
+    difftest_log("mem_%s addr: 0x%lx, data: 0x%016lx, len: %d", accessTypeString(t), paddr, data, len);
+    if (t == MemAccessType::STORE) {
+      bool do_trace = !is_amo;
+#ifdef CONFIG_DIFF_AMO_STORE
+      do_trace = true;
+#endif
+      if (do_trace) {
+        store_trace_t trace{paddr, data, len};
+        store_trace.push(trace);
+      }
+      is_amo = false;
+    }
+  }
+
+  void difftest_log_mem(MemAccessType t, uint64_t paddr, void *data, int len) {
+    difftest_log_mem(t, paddr, *(const uint64_t *)data, len);
+  }
+
 public:
   bool enable_difftest_logs = false;
   bool is_amo = false;
@@ -55,25 +83,13 @@ public:
     }
   }
 
-  void difftest_log_mem(bool is_store, uint64_t paddr, uint64_t data, int len) {
-    auto t = is_store ? "write" : "read";
-    difftest_log("mem_%s addr: 0x%lx, data: 0x%016lx, len: %d", t, paddr, data, len);
-    if (is_store) {
-      bool do_trace = !is_amo;
-#ifdef CONFIG_DIFF_AMO_STORE
-      do_trace = true;
-#endif
-      if (do_trace) {
-        store_trace_t trace{paddr, data, len};
-        store_trace.push(trace);
-      }
-      is_amo = false;
-    }
+#define __DIFFTEST_LOG_INTERFACE(name, type)                                      \
+  void inline difftest_log_mem_##name(uint64_t paddr, void *data, int len) {      \
+    difftest_log_mem(MemAccessType::type, paddr, *(const uint64_t *)data, len); \
   }
 
-  void difftest_log_mem(bool is_store, uint64_t paddr, void *data, int len) {
-    difftest_log_mem(is_store, paddr, *(const uint64_t *)data, len);
-  }
+  __DIFFTEST_LOG_INTERFACE(load, LOAD)
+  __DIFFTEST_LOG_INTERFACE(store, STORE)
 
   int dut_store_commit(uint64_t *addr, uint64_t *data, uint8_t *mask) {
     if (store_trace.empty()) {

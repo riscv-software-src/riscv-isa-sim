@@ -197,7 +197,7 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
     auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
     memcpy(bytes, host_addr, len);
     auto paddr = tlb_data[vpn % TLB_ENTRIES].target_offset + addr;
-    sim->difftest_log_mem(false, paddr, host_addr, len);
+    sim->difftest_log_mem_load(paddr, host_addr, len);
     return;
   }
 
@@ -209,7 +209,7 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
 
   if (auto host_addr = sim->addr_to_mem(paddr)) {
     memcpy(bytes, host_addr, len);
-    sim->difftest_log_mem(false, paddr, host_addr, len);
+    sim->difftest_log_mem_load(paddr, host_addr, len);
     if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
       tracer.trace(paddr, len, LOAD);
     else if (!access_info.flags.is_special_access())
@@ -262,7 +262,7 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
       auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
       memcpy(host_addr, bytes, len);
       auto paddr = tlb_data[vpn % TLB_ENTRIES].target_offset + addr;
-      sim->difftest_log_mem(true, paddr, host_addr, len);
+      sim->difftest_log_mem_store(paddr, host_addr, len);
     }
     return;
   }
@@ -272,7 +272,7 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
   if (actually_store) {
     if (auto host_addr = sim->addr_to_mem(paddr)) {
       memcpy(host_addr, bytes, len);
-      sim->difftest_log_mem(true, paddr, host_addr, len);
+      sim->difftest_log_mem_store(paddr, host_addr, len);
       if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
         tracer.trace(paddr, len, STORE);
       else if (!access_info.flags.is_special_access())
