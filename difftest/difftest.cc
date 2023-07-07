@@ -284,6 +284,10 @@ sim_t *DifftestRef::create_sim(const cfg_t *cfg) {
 
 extern "C" {
 
+int difftest_disambiguation_state() {
+  return ref->disambiguation_state();
+}
+
 void difftest_memcpy(uint64_t addr, void *buf, size_t n, bool direction) {
   if (direction == DIFFTEST_TO_REF) {
     ref->memcpy_from_dut(addr, buf, n);

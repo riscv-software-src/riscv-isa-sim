@@ -3,6 +3,7 @@
 
 #include <bits/stdc++.h>
 #include <queue>
+#include <unordered_set>
 #include "difftest-def.h"
 
 class store_trace_t {
@@ -34,10 +35,41 @@ private:
   }
 };
 
+// Self-modifying code tracker
+class smc_tracker_t {
+public:
+  smc_tracker_t() : has_smc(false) {}
+
+  inline bool state() { return has_smc; }
+  inline void state_reset() { has_smc = false; }
+  inline void reset() {
+    self_modified.clear();
+    state_reset();
+  }
+  inline void on_store(uint64_t address) {
+    self_modified.insert(hash_key(address));
+  }
+  inline void on_fetch(uint64_t address) {
+    if (self_modified.count(hash_key(address)) > 0) {
+      has_smc = true;
+    }
+  }
+
+private:
+  bool has_smc;
+  std::unordered_set<uint64_t> self_modified;
+
+  inline uint64_t hash_key(uint64_t address) {
+    return address / sizeof(uint64_t);
+  }
+};
+
+
 class diff_trace_t
 {
 private:
   std::queue<store_trace_t> store_trace;
+  smc_tracker_t smc_tracker;
 
   enum class MemAccessType { INSTRUCTION, LOAD, STORE };
   static const char *accessTypeString(MemAccessType value) {
@@ -52,6 +84,7 @@ private:
   void difftest_log_mem(MemAccessType t, uint64_t paddr, uint64_t data, int len) {
     difftest_log("mem_%-5s addr: 0x%lx, data: 0x%016lx, len: %d", accessTypeString(t), paddr, data, len);
     if (t == MemAccessType::STORE) {
+      smc_tracker.on_store(paddr);
       bool do_trace = !is_amo;
 #ifdef CONFIG_DIFF_AMO_STORE
       do_trace = true;
@@ -61,6 +94,9 @@ private:
         store_trace.push(trace);
       }
       is_amo = false;
+    }
+    else if (t == MemAccessType::INSTRUCTION) {
+      smc_tracker.on_fetch(paddr);
     }
   }
 
@@ -111,6 +147,20 @@ public:
 
     store_trace.pop();
     return 0;
+  }
+
+  void on_fence_i() {
+    smc_tracker.reset();
+  }
+
+  void clear_self_modified_code_state() {
+    smc_tracker.state_reset();
+  }
+
+  bool has_self_modified_code() {
+    bool s = smc_tracker.state();
+    clear_self_modified_code_state();
+    return s;
   }
 };
 

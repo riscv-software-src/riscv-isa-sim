@@ -354,6 +354,7 @@ public:
 
   void flush_tlb();
   void flush_icache();
+  void flush_icache_on_fence_i();
 
   void register_memtracer(memtracer_t*);
 

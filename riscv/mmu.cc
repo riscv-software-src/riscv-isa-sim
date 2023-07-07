@@ -33,6 +33,12 @@ void mmu_t::flush_icache()
     icache[i].tag = -1;
 }
 
+void mmu_t::flush_icache_on_fence_i()
+{
+  sim->on_fence_i();
+  flush_icache();
+}
+
 void mmu_t::flush_tlb()
 {
   memset(tlb_insn_tag, -1, sizeof(tlb_insn_tag));

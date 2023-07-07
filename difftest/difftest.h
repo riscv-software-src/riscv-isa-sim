@@ -88,6 +88,9 @@ public:
       sim->sc_failed = true;
     }
   }
+  inline int disambiguation_state() {
+    return sim->has_self_modified_code();
+  }
 
 private:
   const cfg_t *cfg;
