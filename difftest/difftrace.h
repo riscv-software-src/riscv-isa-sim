@@ -39,9 +39,10 @@ class diff_trace_t
 private:
   std::queue<store_trace_t> store_trace;
 
-  enum class MemAccessType { LOAD, STORE };
+  enum class MemAccessType { INSTRUCTION, LOAD, STORE };
   static const char *accessTypeString(MemAccessType value) {
     switch (value) {
+      case MemAccessType::INSTRUCTION: return "instr";
       case MemAccessType::LOAD:        return "load";
       case MemAccessType::STORE:       return "store";
       default:                         return "unknown";
@@ -49,7 +50,7 @@ private:
   }
 
   void difftest_log_mem(MemAccessType t, uint64_t paddr, uint64_t data, int len) {
-    difftest_log("mem_%s addr: 0x%lx, data: 0x%016lx, len: %d", accessTypeString(t), paddr, data, len);
+    difftest_log("mem_%-5s addr: 0x%lx, data: 0x%016lx, len: %d", accessTypeString(t), paddr, data, len);
     if (t == MemAccessType::STORE) {
       bool do_trace = !is_amo;
 #ifdef CONFIG_DIFF_AMO_STORE
@@ -88,6 +89,7 @@ public:
     difftest_log_mem(MemAccessType::type, paddr, *(const uint64_t *)data, len); \
   }
 
+  __DIFFTEST_LOG_INTERFACE(instr, INSTRUCTION)
   __DIFFTEST_LOG_INTERFACE(load, LOAD)
   __DIFFTEST_LOG_INTERFACE(store, STORE)
 

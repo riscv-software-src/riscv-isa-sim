@@ -325,6 +325,7 @@ public:
     entry->data = fetch;
 
     reg_t paddr = tlb_entry.target_offset + addr;;
+    sim->difftest_log_mem_instr(paddr, &insn, sizeof(insn));
     if (tracer.interested_in_range(paddr, paddr + 1, FETCH)) {
       entry->tag = -1;
       tracer.trace(paddr, length, FETCH);
