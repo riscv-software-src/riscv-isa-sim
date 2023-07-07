@@ -73,6 +73,10 @@ private:
   store_tracker_t smc_tracker;
   // pte access. sfence.vma is the barrier
   store_tracker_t pte_tracker;
+  // Writing satp does not imply any ordering constraints between
+  // page-table updates and subsequent address translations.
+  // Note: satp_written is too coarse-grained and must be optimized in the future.
+  bool satp_written = false;
 
   enum class MemAccessType { INSTRUCTION, LOAD, STORE, PTW };
   static const char *accessTypeString(MemAccessType value) {
@@ -164,15 +168,23 @@ public:
 
   void on_sfence_vma() {
     pte_tracker.reset();
+    satp_written = false;
+  }
+
+  void on_satp_update(bool is_safe) {
+    if (!is_safe) {
+      satp_written = true;
+    }
   }
 
   void clear_ambiguation_state() {
     smc_tracker.state_reset();
     pte_tracker.state_reset();
+    satp_written = false;
   }
 
   bool in_ambiguation_state() {
-    bool s = smc_tracker.state() || pte_tracker.state();
+    bool s = smc_tracker.state() || pte_tracker.state() || satp_written;
     clear_ambiguation_state();
     return s;
   }

@@ -941,8 +941,11 @@ base_atp_csr_t::base_atp_csr_t(processor_t* const proc, const reg_t addr):
 
 bool base_atp_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t newval = proc->supports_impl(IMPL_MMU) ? compute_new_satp(val) : 0;
-  if (newval != read())
-    proc->get_mmu()->flush_tlb();
+  if (newval != read()) {
+    // It should be safe to change from Bare mode (no translation)
+    bool is_safe = get_field(read(), SATP64_MODE) == SATP_MODE_OFF;
+    proc->get_mmu()->flush_tlb_on_satp_update(is_safe);
+  }
   return basic_csr_t::unlogged_write(newval);
 }
 

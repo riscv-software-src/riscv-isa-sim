@@ -354,6 +354,7 @@ public:
 
   void flush_tlb();
   void flush_tlb_on_sfence_vma();
+  void flush_tlb_on_satp_update(bool is_safe);
   void flush_icache();
   void flush_icache_on_fence_i();
 

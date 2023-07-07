@@ -54,6 +54,12 @@ void mmu_t::flush_tlb_on_sfence_vma()
   flush_tlb();
 }
 
+void mmu_t::flush_tlb_on_satp_update(bool is_safe)
+{
+  sim->on_satp_update(is_safe);
+  flush_tlb();
+}
+
 void throw_access_exception(bool virt, reg_t addr, access_type type)
 {
   switch (type) {
