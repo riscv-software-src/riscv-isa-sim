@@ -49,7 +49,8 @@ public:
     dirty.insert(hash_key(address));
   }
   inline void on_read(uint64_t address) {
-    if (dirty.count(hash_key(address)) > 0) {
+    auto key = hash_key(address);
+    if (dirty.count(key) > 0 || (check_next(address) && dirty.count(key + 1) > 0)) {
       dirty_accessed = true;
     }
   }
@@ -61,6 +62,9 @@ private:
 protected:
   inline virtual uint64_t hash_key(uint64_t address) {
     return address / sizeof(uint64_t);
+  }
+  inline virtual bool check_next(uint64_t address) {
+    return address % sizeof(uint64_t);
   }
 };
 
