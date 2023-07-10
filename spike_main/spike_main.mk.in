@@ -14,3 +14,5 @@ spike_main_install_prog_srcs = \
 spike_main_srcs = \
 
 spike_main_CFLAGS = -fPIC
+
+spike_main_LDFLAGS = -Wl,--whole-archive libriscv.a -Wl,--no-whole-archive
