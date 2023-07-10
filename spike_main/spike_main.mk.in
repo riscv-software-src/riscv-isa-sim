@@ -14,3 +14,7 @@ spike_main_install_prog_srcs = \
 spike_main_srcs = \
 
 spike_main_CFLAGS = -fPIC
+
+# This hack adds all symbols from extension.o to spike's dynamic symbol
+# table, which is required for dynamically loaded --extension libraries
+spike_main_LDFLAGS = extension.o
