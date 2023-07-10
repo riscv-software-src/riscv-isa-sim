@@ -77,6 +77,8 @@ typedef enum {
   EXT_SSTC,
   EXT_ZACAS,
   EXT_INTERNAL_ZFH_MOVE,
+  EXT_SMCSRIND,
+  EXT_SSCSRIND,
   NUM_ISA_EXTENSIONS
 } isa_extension_t;
 
