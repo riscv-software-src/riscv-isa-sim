@@ -355,11 +355,21 @@ epc_csr_t::epc_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 reg_t epc_csr_t::read() const noexcept {
+#ifdef CPU_ROCKET_CHIP
+  uint64_t r = this->val & proc->pc_alignment_mask();
+  uint64_t hi = ((r >> 39) & 0x1) ? -1UL : 0;
+  uint64_t mask = (1UL << 40) - 1;
+  return (r & mask) | (hi & (~mask));
+#else
   return val & proc->pc_alignment_mask();
+#endif
 }
 
 bool epc_csr_t::unlogged_write(const reg_t val) noexcept {
   this->val = val & ~(reg_t)1;
+#ifdef CPU_ROCKET_CHIP
+  this->val &= (1UL << 40) - 1;
+#endif
   return true;
 }
 
