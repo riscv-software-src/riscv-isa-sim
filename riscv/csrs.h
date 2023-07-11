@@ -6,8 +6,12 @@
 #include "encoding.h"
 // For reg_t:
 #include "decode.h"
+// For std::unordered_map
+#include <unordered_map>
 // For std::shared_ptr
 #include <memory>
+// For std::optional
+#include <optional>
 // For access_type:
 #include "memtracer.h"
 #include <cassert>
@@ -787,4 +791,28 @@ class jvt_csr_t: public basic_csr_t {
   jvt_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
+
+// Sscsrind registers needs permissions checked
+// (the original virtualized_csr_t does not call verify_permission of the underlying CSRs)
+class virtualized_indirect_csr_t: public virtualized_csr_t {
+ public:
+  virtualized_indirect_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class sscsrind_reg_csr_t : public csr_t {
+ public:
+  typedef std::shared_ptr<sscsrind_reg_csr_t> sscsrind_reg_csr_t_p;
+  sscsrind_reg_csr_t(processor_t* const proc, const reg_t addr, csr_t_p iselect);
+  reg_t read() const noexcept override;
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  void add_ireg_proxy(const reg_t iselect_val, csr_t_p proxy_csr);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  csr_t_p iselect;
+  std::unordered_map<reg_t, csr_t_p> ireg_proxy;
+  csr_t_p get_reg() const noexcept;
+};
+
 #endif

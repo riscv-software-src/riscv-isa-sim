@@ -524,6 +524,46 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   if (proc->extension_enabled(EXT_ZCMT))
     csrmap[CSR_JVT] = jvt = std::make_shared<jvt_csr_t>(proc, CSR_JVT, 0);
 
+
+  // Smcsrind / Sscsrind
+  csr_t_p miselect;
+  csr_t_p siselect;
+  csr_t_p vsiselect;
+  sscsrind_reg_csr_t::sscsrind_reg_csr_t_p mireg[6];
+  sscsrind_reg_csr_t::sscsrind_reg_csr_t_p sireg[6];
+  sscsrind_reg_csr_t::sscsrind_reg_csr_t_p vsireg[6];
+
+  if (proc->extension_enabled_const(EXT_SMCSRIND)) {
+    const reg_t mireg_csrs[] = { CSR_MIREG, CSR_MIREG2, CSR_MIREG3, CSR_MIREG4, CSR_MIREG5, CSR_MIREG6 };
+    auto i = 0;
+    for (auto csr : mireg_csrs) {
+      csrmap[csr] = mireg[i] = std::make_shared<sscsrind_reg_csr_t>(proc, csr, miselect);
+      i++;
+    }
+  }
+
+  if (proc->extension_enabled_const(EXT_SSCSRIND)) {
+    vsiselect = std::make_shared<basic_csr_t>(proc, CSR_VSISELECT, 0);
+    csrmap[CSR_VSISELECT] = vsiselect;
+    siselect = std::make_shared<basic_csr_t>(proc, CSR_SISELECT, 0);
+    csrmap[CSR_SISELECT] = std::make_shared<virtualized_csr_t>(proc, siselect, vsiselect);
+
+    const reg_t vsireg_csrs[] = { CSR_VSIREG, CSR_VSIREG2, CSR_VSIREG3, CSR_VSIREG4, CSR_VSIREG5, CSR_VSIREG6 };
+    auto i = 0;
+    for (auto csr : vsireg_csrs) {
+      csrmap[csr] = vsireg[i] = std::make_shared<sscsrind_reg_csr_t>(proc, csr, vsiselect);
+      i++;
+    }
+
+    const reg_t sireg_csrs[] = { CSR_SIREG, CSR_SIREG2, CSR_SIREG3, CSR_SIREG4, CSR_SIREG5, CSR_SIREG6 };
+    i = 0;
+    for (auto csr : sireg_csrs) {
+      sireg[i] = std::make_shared<sscsrind_reg_csr_t>(proc, csr, siselect);
+      csrmap[csr] = std::make_shared<virtualized_indirect_csr_t>(proc, sireg[i], vsireg[i]);
+      i++;
+    }
+  }
+
   serialized = false;
 
   log_reg_write.clear();
