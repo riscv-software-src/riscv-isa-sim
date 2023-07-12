@@ -224,6 +224,7 @@ public:
   }
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
+    check_triggers(triggers::OPERATION_STORE, addr, false);
     convert_load_traps_to_store_traps({
       const reg_t paddr = translate(generate_access_info(addr, LOAD, {false, false, false}), 1);
       if (sim->reservable(paddr)) {
