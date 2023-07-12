@@ -61,7 +61,7 @@ processor_t::processor_t(const isa_parser_t *isa, const cfg_t *cfg,
 
   disassembler = new disassembler_t(isa);
   for (auto e : isa->get_extensions())
-    register_extension(e.second);
+    register_extension(find_extension(e.c_str())());
 
   set_pmp_granularity(1 << PMP_SHIFT);
   set_pmp_num(cfg->pmpregions);

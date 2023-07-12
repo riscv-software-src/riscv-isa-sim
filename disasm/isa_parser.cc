@@ -1,5 +1,4 @@
 #include "isa_parser.h"
-#include "extension.h"
 
 static std::string strtolower(const char* str)
 {
@@ -292,11 +291,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       if (ext_str.size() == 1) {
         bad_isa_string(str, "single 'X' is not a proper name");
       } else if (ext_str != "xdummy") {
-         extension_t* x = find_extension(ext_str.substr(1).c_str())();
-         if (!extensions.insert(std::make_pair(x->name(), x)).second) {
-           fprintf(stderr, "extensions must have unique names (got two named \"%s\"!)\n", x->name());
-           abort();
-         }
+        extensions.insert(ext_str.substr(1));
       }
     } else {
       bad_isa_string(str, ("unsupported extension: " + ext_str).c_str());
