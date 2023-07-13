@@ -49,7 +49,6 @@ riscv_precompiled_hdrs = \
 	insn_template.h \
 
 riscv_srcs = \
-	isa_parser.cc \
 	processor.cc \
 	execute.cc \
 	dts.cc \
