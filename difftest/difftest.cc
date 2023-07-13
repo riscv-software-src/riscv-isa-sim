@@ -33,9 +33,9 @@ DifftestRef::~DifftestRef() {
   for (const auto& pair : mems) {
     delete pair.second;
   }
-#ifdef CONFIG_DIFF_DEBUG_MODE
-  delete plugin_devices.front().second;
-#endif
+  for (const auto& pair : plugin_devices) {
+    delete pair.second;
+  }
   delete sim;
 }
 
