@@ -248,7 +248,7 @@ const std::vector<std::pair<reg_t, abstract_device_t*>> DifftestRef::create_devi
     std::make_pair(reg_t(DM_BASE_ADDR), new dummy_debug_t),
 #endif
 #if defined(CONFIG_FLASH_BASE) && defined(CONFIG_FLASH_SIZE)
-    std::make_pair(reg_t(0x10000000UL), new rom_device_t(rom_data)),
+    std::make_pair(reg_t(CONFIG_FLASH_BASE), new rom_device_t(rom_data)),
 #endif
   };
 }
