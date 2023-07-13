@@ -219,8 +219,10 @@ public:
 
   void cbo_zero(reg_t addr) {
     auto base = addr & ~(blocksz - 1);
-    for (size_t offset = 0; offset < blocksz; offset += 1)
+    for (size_t offset = 0; offset < blocksz; offset += 1) {
+      check_triggers(triggers::OPERATION_STORE, base + offset, false, addr, std::nullopt);
       store<uint8_t>(base + offset, 0);
+    }
   }
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
