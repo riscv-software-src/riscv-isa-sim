@@ -441,7 +441,11 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   csrmap[CSR_SEED] = std::make_shared<seed_csr_t>(proc, CSR_SEED);
 
+#ifdef CPU_ROCKET_CHIP
+  csrmap[CSR_MARCHID] = std::make_shared<const_csr_t>(proc, CSR_MARCHID, 1);
+#else
   csrmap[CSR_MARCHID] = std::make_shared<const_csr_t>(proc, CSR_MARCHID, 5);
+#endif
   csrmap[CSR_MIMPID] = std::make_shared<const_csr_t>(proc, CSR_MIMPID, 0);
   csrmap[CSR_MVENDORID] = std::make_shared<const_csr_t>(proc, CSR_MVENDORID, 0);
   csrmap[CSR_MHARTID] = std::make_shared<const_csr_t>(proc, CSR_MHARTID, proc->get_id());
