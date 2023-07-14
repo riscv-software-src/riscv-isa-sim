@@ -227,7 +227,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   if (proc->extension_enabled_const(EXT_ZICNTR)) {
     csrmap[CSR_INSTRET] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRET, minstret);
     csrmap[CSR_CYCLE] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, mcycle);
+#ifndef DIFFTEST
     csrmap[CSR_TIME] = time_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_TIME, time);
+#endif
   }
   if (xlen == 32) {
     csr_t_p minstreth, mcycleh;
@@ -239,7 +241,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       auto timeh = std::make_shared<rv32_high_csr_t>(proc, CSR_TIMEH, time);
       csrmap[CSR_INSTRETH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRETH, minstreth);
       csrmap[CSR_CYCLEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, mcycleh);
+#ifndef DIFFTEST
       csrmap[CSR_TIMEH] = std::make_shared<counter_proxy_csr_t>(proc, CSR_TIMEH, timeh);
+#endif
     }
   } else {
     csrmap[CSR_MINSTRET] = minstret;
