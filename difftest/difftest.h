@@ -69,7 +69,7 @@ public:
   ~DifftestRef();
   void step(uint64_t n);
   void get_regs(diff_context_t *ctx);
-  void set_regs(diff_context_t *ctx);
+  void set_regs(diff_context_t *ctx, bool on_demand);
   void memcpy_from_dut(reg_t dest, void* src, size_t n);
   void debug_memcpy_from_dut(reg_t dest, void* src, size_t n);
   int store_commit(uint64_t *addr, uint64_t *data, uint8_t *mask);

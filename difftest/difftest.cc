@@ -80,40 +80,92 @@ void DifftestRef::get_regs(diff_context_t *ctx) {
 #endif // DIFF_DEBUG_MODE
 }
 
-void DifftestRef::set_regs(diff_context_t *ctx) {
+void DifftestRef::set_regs(diff_context_t *ctx, bool on_demand) {
   for (int i = 0; i < NXPR; i++) {
-    state->XPR.write(i, ctx->gpr[i]);
+    if (!on_demand || state->XPR[i] != ctx->gpr[i]) {
+      state->XPR.write(i, ctx->gpr[i]);
+    }
   }
 #ifdef CONFIG_DIFF_FPU
   for (int i = 0; i < NFPR; i++) {
-    state->FPR.write(i, freg(f64(ctx->fpr[i])));
+    if (!on_demand || unboxF64(state->FPR[i]) != ctx->fpr[i]) {
+      state->FPR.write(i, freg(f64(ctx->fpr[i])));
+    }
   }
 #endif
-  state->pc = ctx->pc;
-  state->mstatus->write(ctx->mstatus);
-  state->mcause->write(ctx->mcause);
-  state->mepc->write(ctx->mepc);
-  state->sstatus->write(ctx->sstatus);
-  state->scause->write(ctx->scause);
-  state->sepc->write(ctx->sepc);
-  state->satp->write(ctx->satp);
-  state->mip->write(ctx->mip);
-  state->mie->write(ctx->mie);
-  state->csrmap[CSR_MSCRATCH]->write(ctx->mscratch);
-  state->csrmap[CSR_SSCRATCH]->write(ctx->sscratch);
-  state->mideleg->write(ctx->mideleg);
-  state->medeleg->write(ctx->medeleg);
-  state->mtval->write(ctx->mtval);
-  state->stval->write(ctx->stval);
-  state->mtvec->write(ctx->mtvec);
-  state->stvec->write(ctx->stvec);
-  state->prv = ctx->priv;
+  if (!on_demand || state->pc != ctx->pc) {
+    state->pc = ctx->pc;
+  }
+  if (!on_demand || state->mstatus->read() != ctx->pc) {
+    state->mstatus->write(ctx->mstatus);
+  }
+  if (!on_demand || state->mcause->read() != ctx->mcause) {
+    state->mcause->write(ctx->mcause);
+  }
+  if (!on_demand || state->mepc->read() != ctx->mepc) {
+    state->mepc->write(ctx->mepc);
+  }
+  if (!on_demand || state->sstatus->read() != ctx->sstatus) {
+    state->sstatus->write(ctx->sstatus);
+  }
+  if (!on_demand || state->scause->read() != ctx->scause) {
+    state->scause->write(ctx->scause);
+  }
+  if (!on_demand || state->sepc->read() != ctx->sepc) {
+    state->sepc->write(ctx->sepc);
+  }
+  if (!on_demand || state->satp->read() != ctx->satp) {
+    state->satp->write(ctx->satp);
+  }
+  if (!on_demand || state->mip->read() != ctx->mip) {
+    state->mip->write(ctx->mip);
+  }
+  if (!on_demand || state->mie->read() != ctx->mie) {
+    state->mie->write(ctx->mie);
+  }
+  if (!on_demand || state->csrmap[CSR_MSCRATCH]->read() != ctx->mscratch) {
+    state->csrmap[CSR_MSCRATCH]->write(ctx->mscratch);
+  }
+  if (!on_demand || state->csrmap[CSR_SSCRATCH]->read() != ctx->sscratch) {
+    state->csrmap[CSR_SSCRATCH]->write(ctx->sscratch);
+  }
+  if (!on_demand || state->mideleg->read() != ctx->mideleg) {
+    state->mideleg->write(ctx->mideleg);
+  }
+  if (!on_demand || state->medeleg->read() != ctx->medeleg) {
+    state->medeleg->write(ctx->medeleg);
+  }
+  if (!on_demand || state->mtval->read() != ctx->mtval) {
+    state->mtval->write(ctx->mtval);
+  }
+  if (!on_demand || state->stval->read() != ctx->stval) {
+    state->stval->write(ctx->stval);
+  }
+  if (!on_demand || state->mtvec->read() != ctx->mtvec) {
+    state->mtvec->write(ctx->mtvec);
+  }
+  if (!on_demand || state->stvec->read() != ctx->stvec) {
+    state->stvec->write(ctx->stvec);
+  }
+  if (!on_demand || state->prv != ctx->priv) {
+    state->prv = ctx->priv;
+  }
 #ifdef DIFF_DEBUG_MODE
-  state->debug_mode = ctx->debugMode;
-  state->dcsr->write(ctx->dcsr);
-  state->dpc->write(ctx->dpc);
-  state->csrmap[CSR_DSCRATCH0]->write(ctx->dscratch0);
-  state->csrmap[CSR_DSCRATCH1]->write(ctx->dscratch1);
+  if (!on_demand || state->debug_mode->read() != ctx->debugMode) {
+    state->debug_mode = ctx->debugMode;
+  }
+  if (!on_demand || state->dcsr->read() != ctx->dcsr) {
+    state->dcsr->write(ctx->dcsr);
+  }
+  if (!on_demand || state->dpc->read() != ctx->dpc) {
+    state->dpc->write(ctx->dpc);
+  }
+  if (!on_demand || state->csrmap[CSR_DSCRATCH0]->read() != ctx->dscratch0) {
+    state->csrmap[CSR_DSCRATCH0]->write(ctx->dscratch0);
+  }
+  if (!on_demand || state->csrmap[CSR_DSCRATCH1]->read() != ctx->dscratch1) {
+    state->csrmap[CSR_DSCRATCH1]->write(ctx->dscratch1);
+  }
 #endif // DIFF_DEBUG_MODE
 }
 
@@ -298,9 +350,9 @@ void difftest_memcpy(uint64_t addr, void *buf, size_t n, bool direction) {
   }
 }
 
-void difftest_regcpy(diff_context_t* dut, bool direction) {
+void difftest_regcpy(diff_context_t* dut, bool direction, bool on_demand) {
   if (direction == DIFFTEST_TO_REF) {
-    ref->set_regs(dut);
+    ref->set_regs(dut, on_demand);
   } else {
     ref->get_regs(dut);
   }
