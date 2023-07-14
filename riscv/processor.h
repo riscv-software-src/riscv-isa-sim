@@ -261,7 +261,11 @@ public:
     return impl_table[impl];
   }
   reg_t pc_alignment_mask() {
+#ifdef CPU_ROCKET_CHIP
+    const int ialign = extension_enabled('C') ? 16 : 32;
+#else
     const int ialign = extension_enabled(EXT_ZCA) ? 16 : 32;
+#endif
     return ~(reg_t)(ialign == 16 ? 0 : 2);
   }
   void check_pc_alignment(reg_t pc) {
