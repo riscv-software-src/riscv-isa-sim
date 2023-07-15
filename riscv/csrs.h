@@ -623,6 +623,14 @@ class masked_dtrig_csr_t: public masked_csr_t {
   dtrig_csr_t dtrig;
 };
 
+class proxy_dtrig_csr_t: public proxy_csr_t {
+ public:
+  proxy_dtrig_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+ protected:
+  dtrig_csr_t dtrig;
+};
+
 class tselect_csr_t: public dtrig_csr_t {
  public:
   tselect_csr_t(processor_t* const proc, const reg_t addr);

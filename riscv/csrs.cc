@@ -1218,6 +1218,7 @@ const_dtrig_csr_t::const_dtrig_csr_t(processor_t* const proc, const reg_t addr, 
 }
 
 void const_dtrig_csr_t::verify_permissions(insn_t insn, bool write) const {
+  const_csr_t::verify_permissions(insn, write);
   dtrig.verify_permissions(insn, write);
 }
 
@@ -1226,6 +1227,16 @@ masked_dtrig_csr_t::masked_dtrig_csr_t(processor_t* const proc, const reg_t addr
 }
 
 void masked_dtrig_csr_t::verify_permissions(insn_t insn, bool write) const {
+  masked_csr_t::verify_permissions(insn, write);
+  dtrig.verify_permissions(insn, write);
+}
+
+proxy_dtrig_csr_t::proxy_dtrig_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate):
+  proxy_csr_t(proc, addr, delegate), dtrig(proc, addr) {
+}
+
+void proxy_dtrig_csr_t::verify_permissions(insn_t insn, bool write) const {
+  proxy_csr_t::verify_permissions(insn, write);
   dtrig.verify_permissions(insn, write);
 }
 
