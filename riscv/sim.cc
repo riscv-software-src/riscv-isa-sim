@@ -37,7 +37,7 @@ extern device_factory_t* plic_factory;
 extern device_factory_t* ns16550_factory;
 
 sim_t::sim_t(const cfg_t *cfg, bool halted,
-             std::vector<std::pair<reg_t, mem_t*>> mems,
+             std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
              std::vector<const device_factory_t*> plugin_device_factories,
              const std::vector<std::string>& args,
              const debug_module_config_t &dm_config,
@@ -380,7 +380,7 @@ char* sim_t::addr_to_mem(reg_t paddr) {
   if (!paddr_ok(paddr))
     return NULL;
   auto desc = bus.find_device(paddr);
-  if (auto mem = dynamic_cast<mem_t*>(desc.second))
+  if (auto mem = dynamic_cast<abstract_mem_t*>(desc.second))
     if (paddr - desc.first < mem->size())
       return mem->contents(paddr - desc.first);
   return NULL;

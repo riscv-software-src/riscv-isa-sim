@@ -104,7 +104,7 @@ static std::ifstream::pos_type get_file_size(const char *filename)
 }
 
 static void read_file_bytes(const char *filename,size_t fileoff,
-                            mem_t* mem, size_t memoff, size_t read_sz)
+                            abstract_mem_t* mem, size_t memoff, size_t read_sz)
 {
   std::ifstream in(filename, std::ios::in | std::ios::binary);
   in.seekg(fileoff, std::ios::beg);
@@ -260,9 +260,9 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
   return merged_mem;
 }
 
-static std::vector<std::pair<reg_t, mem_t*>> make_mems(const std::vector<mem_cfg_t> &layout)
+static std::vector<std::pair<reg_t, abstract_mem_t*>> make_mems(const std::vector<mem_cfg_t> &layout)
 {
-  std::vector<std::pair<reg_t, mem_t*>> mems;
+  std::vector<std::pair<reg_t, abstract_mem_t*>> mems;
   mems.reserve(layout.size());
   for (const auto &cfg : layout) {
     mems.push_back(std::make_pair(cfg.get_base(), new mem_t(cfg.get_size())));
@@ -473,7 +473,8 @@ int main(int argc, char** argv)
   if (!*argv1)
     help();
 
-  std::vector<std::pair<reg_t, mem_t*>> mems = make_mems(cfg.mem_layout());
+  std::vector<std::pair<reg_t, abstract_mem_t*>> mems =
+      make_mems(cfg.mem_layout());
 
   if (kernel && check_file_exists(kernel)) {
     const char *isa = cfg.isa();

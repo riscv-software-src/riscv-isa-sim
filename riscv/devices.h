@@ -36,17 +36,26 @@ class rom_device_t : public abstract_device_t {
   std::vector<char> data;
 };
 
-class mem_t : public abstract_device_t {
+class abstract_mem_t : public abstract_device_t {
+ public:
+  virtual ~abstract_mem_t() = default;
+
+  virtual char* contents(reg_t addr) = 0;
+  virtual reg_t size() = 0;
+  virtual void dump(std::ostream& o) = 0;
+};
+
+class mem_t : public abstract_mem_t {
  public:
   mem_t(reg_t size);
   mem_t(const mem_t& that) = delete;
-  ~mem_t();
+  ~mem_t() override;
 
   bool load(reg_t addr, size_t len, uint8_t* bytes) override { return load_store(addr, len, bytes, false); }
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override { return load_store(addr, len, const_cast<uint8_t*>(bytes), true); }
-  char* contents(reg_t addr);
-  reg_t size() { return sz; }
-  void dump(std::ostream& o);
+  char* contents(reg_t addr) override;
+  reg_t size() override { return sz; }
+  void dump(std::ostream& o) override;
 
  private:
   bool load_store(reg_t addr, size_t len, uint8_t* bytes, bool store);
