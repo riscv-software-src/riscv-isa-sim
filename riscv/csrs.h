@@ -468,7 +468,7 @@ class envcfg_csr_t: public masked_csr_t {
 // henvcfg.pbmte is read_only 0 when menvcfg.pbmte = 0
 // henvcfg.stce is read_only 0 when menvcfg.stce = 0
 // henvcfg.hade is read_only 0 when menvcfg.hade = 0
-class henvcfg_csr_t final: public masked_csr_t {
+class henvcfg_csr_t final: public envcfg_csr_t {
  public:
   henvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init, csr_t_p menvcfg);
 
