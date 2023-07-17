@@ -458,6 +458,13 @@ class masked_csr_t: public basic_csr_t {
   const reg_t mask;
 };
 
+class envcfg_csr_t: public masked_csr_t {
+ public:
+  envcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
 // henvcfg.pbmte is read_only 0 when menvcfg.pbmte = 0
 // henvcfg.stce is read_only 0 when menvcfg.stce = 0
 // henvcfg.hade is read_only 0 when menvcfg.hade = 0
