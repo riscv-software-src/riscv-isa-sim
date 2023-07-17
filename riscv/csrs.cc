@@ -1476,7 +1476,7 @@ void sstateen_csr_t::verify_permissions(insn_t insn, bool write) const {
 // implement class senvcfg_csr_t
 senvcfg_csr_t::senvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask,
                              const reg_t init):
-  masked_csr_t(proc, addr, mask, init) {
+  envcfg_csr_t(proc, addr, mask, init) {
 }
 
 void senvcfg_csr_t::verify_permissions(insn_t insn, bool write) const {

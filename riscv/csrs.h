@@ -759,7 +759,7 @@ class sstateen_csr_t: public hstateen_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
-class senvcfg_csr_t final: public masked_csr_t {
+class senvcfg_csr_t final: public envcfg_csr_t {
  public:
   senvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
   virtual void verify_permissions(insn_t insn, bool write) const override;
