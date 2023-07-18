@@ -521,6 +521,9 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   if (fs == 0x1 || fs == 0x2) {
     new_mstatus |= 0x3 << 13;
   }
+#elif defined(CPU_NUTSHELL)
+  reg_t new_mstatus = (read() & ~mask) | (adjusted_val & mask);
+  new_mstatus ^= new_mstatus & (0x3 << 13); // FS is always zero
 #else
   const reg_t new_mstatus = (read() & ~mask) | (adjusted_val & mask);
 #endif
