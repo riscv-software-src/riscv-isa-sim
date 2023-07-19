@@ -226,6 +226,9 @@ public:
   }
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
+    auto base = addr & ~(blocksz - 1);
+    for (size_t offset = 0; offset < blocksz; offset += 1)
+      check_triggers(triggers::OPERATION_STORE, base + offset, false, addr, std::nullopt);
     convert_load_traps_to_store_traps({
       const reg_t paddr = translate(generate_access_info(addr, LOAD, {false, false, false}), 1);
       if (sim->reservable(paddr)) {
