@@ -11,7 +11,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
                      const char* bootargs,
                      size_t pmpregions,
                      std::vector<processor_t*> procs,
-                     std::vector<std::pair<reg_t, mem_t*>> mems,
+                     std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
                      std::string device_nodes);
 
 std::string dts_compile(const std::string& dts);
