@@ -389,6 +389,10 @@ void isa_reg_display() {
   ref->display();
 }
 
+void difftest_display() {
+  ref->display();
+}
+
 int difftest_store_commit(uint64_t *addr, uint64_t *data, uint8_t *mask) {
   return ref->store_commit(addr, data, mask);
 }
