@@ -24,6 +24,12 @@ SPIKE_CFLAGS   += -g0
 SPIKE_CXXFLAGS += -g0
 endif
 
+ifeq ($(SANCOV),1)
+SPIKE_CFLAGS   += -fsanitize-coverage=trace-pc-guard -fsanitize-coverage=pc-table -g
+SPIKE_CXXFLAGS += -fsanitize-coverage=trace-pc-guard -fsanitize-coverage=pc-table -g
+SPIKE_LDFLAGS  += -fsanitize-coverage=trace-pc-guard -fsanitize-coverage=pc-table -g
+endif
+
 CONFIGURE_FLAGS = -q CC=$(CC) CXX=$(CXX)         \
     --with-boost=no	--with-boost-asio=no --with-boost-regex=no \
     CFLAGS="$(SPIKE_CFLAGS)" CXXFLAGS="$(SPIKE_CXXFLAGS)"      \
@@ -48,7 +54,10 @@ $(CXX_UTILS): $(SPIKE_PATH)/spike_main/spike.cc
 # Dependencies for building the difftest dynamic library
 DIFFTEST_SOURCES = $(shell find . -maxdepth 1 -name '*.cc') $(CXX_UTILS)
 DIFFTEST_HEADERS = $(shell find . -maxdepth 1 -name '*.h')
-CXXFLAGS = $(SPIKE_CXXFLAGS) --std=c++17 -shared -fPIC -flto
+CXXFLAGS = $(SPIKE_CXXFLAGS) --std=c++17 -shared -fPIC
+ifneq ($(SANCOV),1)
+CXXFLAGS += -flto
+endif
 
 ifneq ($(DEBUG),)
 CONFIGURE_FLAGS += --enable-commitlog
