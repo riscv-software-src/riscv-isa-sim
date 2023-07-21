@@ -85,7 +85,7 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
     if (item.first == 0)
       continue;
 
-    char prefix;
+    char prefix = ' ';
     int size;
     int rd = item.first >> 4;
     bool is_vec = false;
