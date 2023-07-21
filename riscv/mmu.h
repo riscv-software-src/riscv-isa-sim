@@ -262,8 +262,15 @@ public:
     }
 
     reg_t paddr = translate(generate_access_info(vaddr, STORE, {false, false, false}), 1);
-    if (sim->reservable(paddr))
+    if (sim->reservable(paddr)) {
+#ifdef DIFFTEST
+      // We assume practical hardware designs would have 64-byte (1 << 6 bytes) reservation sets.
+      auto index = [](reg_t addr) { return addr >> 6; };
+      return index(load_reservation_address) == index(paddr);
+#else
       return load_reservation_address == paddr;
+#endif
+    }
     else
       throw trap_store_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0);
   }
