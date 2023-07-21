@@ -19,6 +19,7 @@ extern std::vector<std::pair<reg_t, mem_t*>> make_mems(const std::vector<mem_cfg
 
 static DifftestRef *ref = nullptr;
 static size_t overrided_mem_size = 0;
+static size_t overrided_mhartid = 0;
 
 DifftestRef::DifftestRef() :
   cfg(create_cfg()),
@@ -277,7 +278,7 @@ const cfg_t *DifftestRef::create_cfg() {
     // const std::vector<mem_cfg_t> &default_mem_layout,
     memory_layout,
     // const std::vector<size_t> default_hartids,
-    std::vector<size_t>{0},
+    std::vector<size_t>{overrided_mhartid},
     // bool default_real_time_clint,
     false,
     // const reg_t default_trigger_count
@@ -412,6 +413,9 @@ void difftest_load_flash(void *flash_bin, size_t size) {
 
 }
 
+void difftest_set_mhartid(int mhartid) {
+  overrided_mhartid = mhartid;
+}
 
 void difftest_close() {
   delete ref;
