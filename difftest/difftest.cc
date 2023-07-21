@@ -18,6 +18,7 @@ static debug_module_config_t difftest_dm_config = {
 extern std::vector<std::pair<reg_t, mem_t*>> make_mems(const std::vector<mem_cfg_t> &layout);
 
 static DifftestRef *ref = nullptr;
+static size_t overrided_mem_size = 0;
 
 DifftestRef::DifftestRef() :
   cfg(create_cfg()),
@@ -252,8 +253,9 @@ void DifftestRef::display() {
 }
 
 const cfg_t *DifftestRef::create_cfg() {
+  auto mem_size = overrided_mem_size ? overrided_mem_size : CONFIG_MEMORY_SIZE;
   auto memory_layout = std::vector<mem_cfg_t>{
-    mem_cfg_t{DRAM_BASE, CONFIG_MEMORY_SIZE},
+    mem_cfg_t{DRAM_BASE, mem_size},
   };
   auto const cfg = new cfg_t(
     // std::pair<reg_t, reg_t> default_initrd_bounds,
@@ -413,6 +415,10 @@ void difftest_load_flash(void *flash_bin, size_t size) {
 
 void difftest_close() {
   delete ref;
+}
+
+void difftest_set_ramsize(size_t size) {
+  overrided_mem_size = size;
 }
 
 }
