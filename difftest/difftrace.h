@@ -122,6 +122,7 @@ private:
 
 public:
   bool enable_difftest_logs = false;
+  bool has_touched_vm = false;
   bool is_amo = false;
   bool sc_failed = false;
 
@@ -176,7 +177,7 @@ public:
   }
 
   void on_satp_update(bool is_safe) {
-    if (!is_safe) {
+    if (!is_safe && has_touched_vm) {
       satp_written = true;
     }
   }
