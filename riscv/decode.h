@@ -60,12 +60,18 @@ const int NCSR = 4096;
 #define FSR_NXA  (FPEXC_NX << FSR_AEXC_SHIFT)
 #define FSR_AEXC (FSR_NVA | FSR_OFA | FSR_UFA | FSR_DZA | FSR_NXA)
 
-#define insn_length(x) \
+#define insn_length_all(x) \
   (((x) & 0x03) < 0x03 ? 2 : \
    ((x) & 0x1f) < 0x1f ? 4 : \
    ((x) & 0x3f) < 0x3f ? 6 : \
    8)
+#define insn_length(x) \
+  (insn_length_all(x) > MAX_INSN_LENGTH ? MAX_INSN_LENGTH : insn_length_all(x))
+#ifdef DIFFTEST
+#define MAX_INSN_LENGTH 4
+#else
 #define MAX_INSN_LENGTH 8
+#endif
 #define PC_ALIGN 2
 
 #define Sn(n) ((n) < 2 ? X_S0 + (n) : X_Sn + (n))
