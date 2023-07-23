@@ -68,6 +68,7 @@ public:
   DifftestRef();
   ~DifftestRef();
   void step(uint64_t n);
+  void skip_one(bool isRVC, bool wen, uint32_t wdest, uint64_t wdata);
   void get_regs(diff_context_t *ctx);
   void set_regs(diff_context_t *ctx, bool on_demand);
   void memcpy_from_dut(reg_t dest, void* src, size_t n);

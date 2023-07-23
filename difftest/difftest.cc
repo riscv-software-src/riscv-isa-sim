@@ -45,6 +45,17 @@ void DifftestRef::step(uint64_t n) {
   sim->step(n);
 }
 
+void DifftestRef::skip_one(bool isRVC, bool wen, uint32_t wdest, uint64_t wdata) {
+  state->pc += isRVC ? 2 : 4;
+  // TODO: what if skip with fpwen?
+  if (wen) {
+    state->XPR.write(wdest, wdata);
+  }
+  // minstret decrements itself when written to match Spike's automated increment.
+  // Therefore, we need to add + 2 here.
+  state->minstret->write(state->minstret->read() + 2);
+}
+
 void DifftestRef::get_regs(diff_context_t *ctx) {
   for (int i = 0; i < NXPR; i++) {
     ctx->gpr[i] = state->XPR[i];
@@ -375,6 +386,10 @@ void update_dynamic_config(void* config) {
 
 void difftest_exec(uint64_t n) {
   ref->step(n);
+}
+
+void difftest_skip_one(bool isRVC, bool wen, uint32_t wdest, uint64_t wdata) {
+  ref->skip_one(isRVC, wen, wdest, wdata);
 }
 
 void difftest_init(int port) {
