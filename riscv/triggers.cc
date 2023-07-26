@@ -84,7 +84,7 @@ bool trigger_t::textra_match(processor_t * const proc) const noexcept
     assert(CSR_TEXTRA32_SBYTEMASK_LENGTH < CSR_TEXTRA64_SBYTEMASK_LENGTH);
     for (int i = 0; i < CSR_TEXTRA64_SBYTEMASK_LENGTH; i++)
       if (sbytemask & (1 << i))
-        mask &= 0xff << (i * 8);
+        mask &= ~(reg_t(0xff) << (i * 8));
     if ((state->scontext->read() & mask) != (svalue & mask))
       return false;
   } else if (sselect == SSELECT_ASID) {
