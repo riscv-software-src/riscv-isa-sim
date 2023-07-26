@@ -15,6 +15,8 @@
 // For access_type:
 #include "memtracer.h"
 #include <cassert>
+// For std::optional
+#include <optional>
 
 class processor_t;
 struct state_t;
@@ -516,12 +518,16 @@ class virtualized_satp_csr_t: public virtualized_csr_t {
   satp_csr_t_p orig_satp;
 };
 
+// Forward declaration
+class smcntrpmf_csr_t;
+typedef std::shared_ptr<smcntrpmf_csr_t> smcntrpmf_csr_t_p;
+
 // For minstret and mcycle, which are always 64 bits, but in RV32 are
 // split into high and low halves. The first class always holds the
 // full 64-bit value.
 class wide_counter_csr_t: public csr_t {
  public:
-  wide_counter_csr_t(processor_t* const proc, const reg_t addr);
+  wide_counter_csr_t(processor_t* const proc, const reg_t addr, smcntrpmf_csr_t_p config_csr);
   // Always returns full 64-bit value
   virtual reg_t read() const noexcept override;
   void bump(const reg_t howmuch) noexcept;
@@ -529,7 +535,9 @@ class wide_counter_csr_t: public csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
   virtual reg_t written_value() const noexcept override;
  private:
+  bool is_counting_enabled() const noexcept;
   reg_t val;
+  smcntrpmf_csr_t_p config_csr;
 };
 
 typedef std::shared_ptr<wide_counter_csr_t> wide_counter_csr_t_p;
@@ -822,4 +830,16 @@ class sscsrind_reg_csr_t : public csr_t {
   csr_t_p get_reg() const noexcept;
 };
 
+// smcntrpmf_csr_t caches the previous state of the CSR in case a CSRW instruction
+// modifies the state that should not be immediately visible to bump()
+class smcntrpmf_csr_t : public masked_csr_t {
+ public:
+  smcntrpmf_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  reg_t read_prev() const noexcept;
+  void reset_prev() noexcept;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  std::optional<reg_t> prev_val;
+};
 #endif
