@@ -595,11 +595,12 @@ std::optional<match_result_t> module_t::detect_icount_match() noexcept
   std::optional<match_result_t> ret = std::nullopt;
   for (auto trigger: triggers) {
     auto result = trigger->detect_icount_fire(proc);
-    if (result == std::nullopt || result->action != MCONTROL_ACTION_DEBUG_MODE)
-      trigger->detect_icount_decrement(proc);
     if (result.has_value() && (!ret.has_value() || ret->action < result->action))
       ret = result;
   }
+  if (ret == std::nullopt || ret->action != MCONTROL_ACTION_DEBUG_MODE)
+    for (auto trigger: triggers)
+      trigger->detect_icount_decrement(proc);
   return ret;
 }
 
