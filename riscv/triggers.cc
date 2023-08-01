@@ -305,7 +305,7 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   load = get_field(val, CSR_MCONTROL6_LOAD);
 }
 
-std::optional<match_result_t> icount_t::detect_icount_match(processor_t * const proc) noexcept
+std::optional<match_result_t> icount_t::detect_icount_fire(processor_t * const proc) noexcept
 {
   if (!common_match(proc) || !allow_action(proc->get_state()))
     return std::nullopt;
@@ -317,13 +317,19 @@ std::optional<match_result_t> icount_t::detect_icount_match(processor_t * const 
     ret = match_result_t(TIMING_BEFORE, action);
   }
 
-  if (count >= 1 && (ret == std::nullopt || action != MCONTROL_ACTION_DEBUG_MODE)) {
+  return ret;
+}
+
+void icount_t::detect_icount_decrement(processor_t * const proc) noexcept
+{
+  if (!common_match(proc) || !allow_action(proc->get_state()))
+    return;
+
+  if (count >= 1) {
     if (count == 1)
       pending = 1;
     count = count - 1;
   }
-
-  return ret;
 }
 
 reg_t icount_t::tdata1_read(const processor_t * const proc) const noexcept
@@ -588,7 +594,9 @@ std::optional<match_result_t> module_t::detect_icount_match() noexcept
 
   std::optional<match_result_t> ret = std::nullopt;
   for (auto trigger: triggers) {
-    auto result = trigger->detect_icount_match(proc);
+    auto result = trigger->detect_icount_fire(proc);
+    if (result == std::nullopt || result->action != MCONTROL_ACTION_DEBUG_MODE)
+      trigger->detect_icount_decrement(proc);
     if (result.has_value() && (!ret.has_value() || ret->action < result->action))
       ret = result;
   }

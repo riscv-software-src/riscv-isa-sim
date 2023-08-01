@@ -85,7 +85,8 @@ public:
 
   virtual std::optional<match_result_t> detect_memory_access_match(processor_t UNUSED * const proc,
       operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) noexcept { return std::nullopt; }
-  virtual std::optional<match_result_t> detect_icount_match(processor_t UNUSED * const proc) { return std::nullopt; }
+  virtual std::optional<match_result_t> detect_icount_fire(processor_t UNUSED * const proc) { return std::nullopt; }
+  virtual void detect_icount_decrement(processor_t UNUSED * const proc) {}
   virtual std::optional<match_result_t> detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) noexcept { return std::nullopt; }
 
 protected:
@@ -248,7 +249,8 @@ public:
   virtual bool icount_check_needed() const override { return count > 0 || pending; }
   virtual void stash_read_values() override;
 
-  virtual std::optional<match_result_t> detect_icount_match(processor_t * const proc) noexcept override;
+  virtual std::optional<match_result_t> detect_icount_fire(processor_t * const proc) noexcept override;
+  virtual void detect_icount_decrement(processor_t * const proc) noexcept override;
 
 private:
   bool dmode = false;
