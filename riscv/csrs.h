@@ -479,7 +479,7 @@ class henvcfg_csr_t final: public envcfg_csr_t {
   henvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init, csr_t_p menvcfg);
 
   reg_t read() const noexcept override {
-    return (menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE | MENVCFG_HADE)) & masked_csr_t::read();
+    return (menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE | MENVCFG_ADUE)) & masked_csr_t::read();
   }
 
   virtual void verify_permissions(insn_t insn, bool write) const override;

@@ -450,7 +450,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   if (proc->extension_enabled_const('U')) {
     const reg_t menvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE : 0) |
                               (proc->extension_enabled(EXT_ZICBOZ) ? MENVCFG_CBZE : 0) |
-                              (proc->extension_enabled(EXT_SVADU) ? MENVCFG_HADE: 0) |
+                              (proc->extension_enabled(EXT_SVADU) ? MENVCFG_ADUE: 0) |
                               (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0) |
                               (proc->extension_enabled(EXT_SSTC) ? MENVCFG_STCE : 0);
     const reg_t menvcfg_init = (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0);
@@ -466,7 +466,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     csrmap[CSR_SENVCFG] = senvcfg = std::make_shared<senvcfg_csr_t>(proc, CSR_SENVCFG, senvcfg_mask, 0);
     const reg_t henvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? HENVCFG_CBCFE | HENVCFG_CBIE : 0) |
                               (proc->extension_enabled(EXT_ZICBOZ) ? HENVCFG_CBZE : 0) |
-                              (proc->extension_enabled(EXT_SVADU) ? HENVCFG_HADE: 0) |
+                              (proc->extension_enabled(EXT_SVADU) ? HENVCFG_ADUE: 0) |
                               (proc->extension_enabled(EXT_SVPBMT) ? HENVCFG_PBMTE : 0) |
                               (proc->extension_enabled(EXT_SSTC) ? HENVCFG_STCE : 0);
     const reg_t henvcfg_init = (proc->extension_enabled(EXT_SVPBMT) ? HENVCFG_PBMTE : 0);
