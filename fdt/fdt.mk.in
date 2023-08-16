@@ -4,6 +4,8 @@ fdt_install_shared_lib = yes
 
 fdt_install_hdrs = \
 	libfdt.h \
+	fdt.h \
+	libfdt_env.h
 
 fdt_c_srcs = \
 	fdt.c \
