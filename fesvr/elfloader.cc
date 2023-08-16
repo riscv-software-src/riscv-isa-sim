@@ -16,6 +16,7 @@
 #include <stdio.h>
 #include <vector>
 #include <map>
+#include <cerrno>
 
 std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* entry, unsigned required_xlen = 0)
 {
