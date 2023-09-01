@@ -46,7 +46,7 @@ jobs:
           fetch-depth: 0
 
       - name: Install Dependencies
-        run: xargs brew install < .github/workflows/brew-packages.txt
+        run: xargs brew install --overwrite < .github/workflows/brew-packages.txt
 
       - run: |
           for commit in $(git rev-list origin/master..HEAD); do
