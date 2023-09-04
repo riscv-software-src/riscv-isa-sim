@@ -28,6 +28,9 @@ DifftestRef::DifftestRef() :
   sim(create_sim(cfg)),
   p(sim->get_core(0UL)),
   state(p->get_state()) {
+#if CONFIG_PMP_NUM > 0
+  p->set_pmp_granularity(1 << CONFIG_PMP_GRAN);
+#endif
 }
 
 DifftestRef::~DifftestRef() {
@@ -285,7 +288,7 @@ const cfg_t *DifftestRef::create_cfg() {
     // const endianness_t default_endianness,
     endianness_little,
     // const reg_t default_pmpregions,
-    0,
+    CONFIG_PMP_NUM,
     // const std::vector<mem_cfg_t> &default_mem_layout,
     memory_layout,
     // const std::vector<size_t> default_hartids,
