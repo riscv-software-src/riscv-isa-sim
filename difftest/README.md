@@ -11,7 +11,7 @@ without errors, we have to align their behaviors on the undefined or design-spec
 
 Currently we are supporting CPUs including:
 - [XiangShan](https://github.com/OpenXiangShan/XiangShan)
-- - [NutShell](https://github.com/OSCPU/NutShell)
+- [NutShell](https://github.com/OSCPU/NutShell)
 - [Rocket Chip](https://github.com/chipsalliance/rocket-chip)
 
 ## How to Compile
