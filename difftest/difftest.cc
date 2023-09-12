@@ -264,6 +264,16 @@ void DifftestRef::display() {
   printf("mtval: " FMT_WORD " stval: " FMT_WORD " mtvec: " FMT_WORD " stvec: " FMT_WORD "\n",
       state->mtval->read(), state->stval->read(), state->mtvec->read(), state->stvec->read());
   printf("privilege mode:%ld\n", state->prv);
+  for (int i = 0; i < CONFIG_PMP_NUM; i++) {
+    auto cfgidx = i / 4;
+    if (p->get_xlen() == 64) {
+      cfgidx -= cfgidx % 2;
+    }
+    unsigned pmpcfg = (state->csrmap[CSR_PMPCFG0 + cfgidx]->read() >> (i % (p->get_xlen() / 8)) * 8) & 0xffU;
+    printf("%2d: cfg:0x%02x addr:0x%016lx", i, pmpcfg, state->pmpaddr[i]->read());
+    if (i % 2 == 1) printf("\n");
+    else printf(" | ");
+  }
   fflush(stdout);
 }
 
