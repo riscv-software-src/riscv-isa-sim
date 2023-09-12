@@ -581,12 +581,14 @@ void processor_t::reset()
   VU.reset();
   in_wfi = false;
 
+#ifndef DIFFTEST
   if (n_pmp > 0) {
     // For backwards compatibility with software that is unaware of PMP,
     // initialize PMP to permit unprivileged access to all of memory.
     put_csr(CSR_PMPADDR0, ~reg_t(0));
     put_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
   }
+#endif
 
   for (auto e : custom_extensions) // reset any extensions
     e.second->reset();
