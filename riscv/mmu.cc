@@ -70,11 +70,10 @@ reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
 
 tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
-  auto access_info = generate_access_info(vaddr, FETCH, {false, false, false});
-
   tlb_entry_t result;
   reg_t vpn = vaddr >> PGSHIFT;
   if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] != (vpn | TLB_CHECK_TRIGGERS))) {
+    auto access_info = generate_access_info(vaddr, FETCH, {false, false, false});
     reg_t paddr = translate(access_info, sizeof(fetch_temp));
     if (auto host_addr = sim->addr_to_mem(paddr)) {
       result = refill_tlb(vaddr, paddr, host_addr, FETCH);
