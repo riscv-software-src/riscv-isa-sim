@@ -291,6 +291,7 @@ public:
       throw *matched_trigger;
 
     auto access_info = generate_access_info(addr, FETCH, {false, false, false});
+    check_triggers(triggers::OPERATION_EXECUTE, addr, access_info.effective_virt);
     auto tlb_entry = translate_insn_addr(addr);
     insn_bits_t insn = from_le(*(uint16_t*)(tlb_entry.host_offset + addr));
     int length = insn_length(insn);
