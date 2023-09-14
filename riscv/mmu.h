@@ -290,6 +290,7 @@ public:
     if (matched_trigger)
       throw *matched_trigger;
 
+    auto access_info = generate_access_info(addr, FETCH, {false, false, false});
     auto tlb_entry = translate_insn_addr(addr);
     insn_bits_t insn = from_le(*(uint16_t*)(tlb_entry.host_offset + addr));
     int length = insn_length(insn);
@@ -307,6 +308,7 @@ public:
       insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 4)) << 32;
       insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 6)) << 48;
     }
+    check_triggers(triggers::OPERATION_EXECUTE, addr, access_info.effective_virt, insn);
 
     insn_fetch_t fetch = {proc->decode_insn(insn), insn};
     entry->tag = addr;
