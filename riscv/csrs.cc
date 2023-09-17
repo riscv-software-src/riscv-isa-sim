@@ -656,7 +656,7 @@ misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t ma
                         | (1L << ('C' - 'A'))
                         | (1L << ('V' - 'A'))
                         )
-#elif defined(CPU_NUTSHELL)
+#elif defined(CPU_NUTSHELL) || defined (CPU_XIANGSHAN)
   write_mask(0 // not allowed
 #else
   write_mask(max_isa & (0  // allow MAFDQCHV bits in MISA to be modified
