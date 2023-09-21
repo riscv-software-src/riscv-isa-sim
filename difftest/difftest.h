@@ -19,6 +19,7 @@ enum { DIFFTEST_TO_DUT, DIFFTEST_TO_REF };
 #define DIFFTEST_LOG_FILE nullptr
 #endif
 
+/***************DON'T CHANGE ORDER****************************/
 typedef struct {
   uint64_t gpr[32];
 #ifdef CONFIG_DIFF_FPU
@@ -43,6 +44,29 @@ typedef struct {
   uint64_t mideleg;
   uint64_t medeleg;
   uint64_t pc;
+#ifdef CONFIG_DIFF_RVV
+  #define VLEN 128
+  #define VENUM64 (VLEN/64)
+  #define VENUM32 (VLEN/32)
+  #define VENUM16 (VLEN/16)
+  #define VENUM8  (VLEN/8)
+
+  union {
+    uint64_t _64[VENUM64];
+    uint32_t _32[VENUM32];
+    uint16_t _16[VENUM16];
+    uint8_t  _8[VENUM8];
+  } vr[32];
+
+  uint64_t vstart;
+  uint64_t vxsat;
+  uint64_t vxrm;
+  uint64_t vcsr;
+  uint64_t vl;
+  uint64_t vtype;
+  uint64_t vlenb;
+#endif // CONFIG_DIFF_RVV
+
 #ifdef CONFIG_DIFF_DEBUG_MODE
   uint64_t debugMode;
   uint64_t dcsr;

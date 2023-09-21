@@ -94,6 +94,25 @@ void DifftestRef::get_regs(diff_context_t *ctx) {
   ctx->dscratch0 = state->csrmap[CSR_DSCRATCH0]->read();
   ctx->dscratch1 = state->csrmap[CSR_DSCRATCH1]->read();
 #endif // DIFF_DEBUG_MODE
+
+#ifdef CONFIG_DIFF_RVV
+  auto& vstate = p->VU;
+  /*******************************ONLY FOR VLEN=128,ELEN=64*******************************************/
+  for(int i = 0; i < NVPR; i++){
+    auto vReg_Val0 = vstate.elt<uint64_t>(i, 0,false);
+    auto vReg_Val1 = vstate.elt<uint64_t>(i, 1,false);
+    ctx->vr[i]._64[0] = vReg_Val0;
+    ctx->vr[i]._64[1] = vReg_Val1;
+  }
+  /***************************************************************************************************/
+  ctx->vstart     = vstate.vstart->read();
+  ctx->vxsat      = vstate.vxsat->read();
+  ctx->vxrm       = vstate.vxrm->read();
+  ctx->vcsr       = state->csrmap[CSR_VCSR]->read();
+  ctx->vl         = vstate.vl->read();
+  ctx->vtype      = vstate.vtype->read();
+  ctx->vlenb      = vstate.vlenb;
+#endif // CONFIG_DIFF_RVV
 }
 
 void DifftestRef::set_regs(diff_context_t *ctx, bool on_demand) {
@@ -183,6 +202,45 @@ void DifftestRef::set_regs(diff_context_t *ctx, bool on_demand) {
     state->csrmap[CSR_DSCRATCH1]->write(ctx->dscratch1);
   }
 #endif // DIFF_DEBUG_MODE
+
+#ifdef CONFIG_DIFF_RVV
+  auto& vstate = p->VU;
+  /**********************ONLY FOR VLEN=128,ELEN=64************************************/
+  for (int i = 0; i < NVPR; i++) {
+    auto &vReg_Val0 = p->VU.elt<uint64_t>(i, 0, true);
+    auto &vReg_Val1 = p->VU.elt<uint64_t>(i, 1, true);
+    if (!on_demand || vReg_Val0 != ctx->vr[i]._64[0]) {
+      vReg_Val0 = ctx->vr[i]._64[0];
+    }
+    if(!on_demand || vReg_Val1 != ctx->vr[i]._64[1]){
+      vReg_Val1 = ctx->vr[i]._64[1];
+    }
+  } 
+  /***********************************************************************************/
+  if (!on_demand || vstate.vstart->read() != ctx->vstart) {
+    vstate.vstart->write_raw(ctx->vstart);
+  }
+  /**********************NEED TO ADD WRITE*********************************************/
+  if (!on_demand || vstate.vxsat->read() != ctx->vxsat) {
+    // vstate.vxsat->write(ctx->vxsat);
+  }
+  if (!on_demand || vstate.vxrm->read() != ctx->vxrm) {
+    vstate.vxrm->write_raw(ctx->vxrm);
+  }
+  /******************************Don't need write vcsr**********************************/
+  // if (!on_demand || state->csrmap[CSR_VCSR]->read() !=ctx->vcsr) {
+  //   csrmap[CSR_VCSR]->write(ctx->vcsr);
+  // }
+  if (!on_demand || vstate.vl->read() != ctx->vl) {
+    vstate.vl->write_raw(ctx->vl);
+  }
+  if (!on_demand || vstate.vtype->read() != ctx->vtype) {
+    vstate.vtype->write_raw(ctx->vtype);
+  }
+  if (!on_demand || vstate.vlenb != ctx->vlenb) {
+    vstate.vlenb = ctx->vlenb;
+  }
+#endif // CONFIG_DIFF_RVV
 }
 
 void DifftestRef::memcpy_from_dut(reg_t dest, void* src, size_t n) {
