@@ -80,6 +80,7 @@ typedef enum {
   EXT_SMCSRIND,
   EXT_SSCSRIND,
   EXT_SMCNTRPMF,
+  EXT_ZIMOP,
   NUM_ISA_EXTENSIONS
 } isa_extension_t;
 
