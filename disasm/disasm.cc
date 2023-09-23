@@ -2176,6 +2176,17 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_RTYPE(czero_nez);
   }
 
+  if (isa->extension_enabled(EXT_ZCMOP)) {
+      DISASM_INSN("c.mop.1", c_mop_1, 0, {});
+      DISASM_INSN("c.mop.3", c_mop_3, 0, {});
+      DISASM_INSN("c.mop.5", c_mop_5, 0, {});
+      DISASM_INSN("c.mop.7", c_mop_7, 0, {});
+      DISASM_INSN("c.mop.9", c_mop_9, 0, {});
+      DISASM_INSN("c.mop.11", c_mop_11, 0, {});
+      DISASM_INSN("c.mop.13", c_mop_13, 0, {});
+      DISASM_INSN("c.mop.15", c_mop_15, 0, {});
+  }
+
   if (isa->extension_enabled(EXT_ZKND) ||
       isa->extension_enabled(EXT_ZKNE)) {
     DISASM_INSN("aes64ks1i", aes64ks1i, 0, {&xrd, &xrs1, &rcon});
@@ -2329,7 +2340,7 @@ disassembler_t::disassembler_t(const isa_parser_t *isa)
 
   // next-highest priority: other instructions in same base ISA
   std::string fallback_isa_string = std::string("rv") + std::to_string(isa->get_max_xlen()) +
-    "gqchv_zfh_zba_zbb_zbc_zbs_zcb_zicbom_zicboz_zicond_zkn_zkr_zks_svinval";
+    "gqchv_zfh_zba_zbb_zbc_zbs_zcb_zicbom_zicboz_zicond_zkn_zkr_zks_svinval_zcmop";
   isa_parser_t fallback_isa(fallback_isa_string.c_str(), DEFAULT_PRIV);
   add_instructions(&fallback_isa);
 
