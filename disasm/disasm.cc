@@ -413,27 +413,35 @@ struct : public arg_t {
     int lmul = insn.v_lmul();
     auto vta = insn.v_vta() == 1 ? "ta" : "tu";
     auto vma = insn.v_vma() == 1 ? "ma" : "mu";
-    s << "e" << sew;
-    if(insn.v_frac_lmul()) {
-      std::string lmul_str = "";
-      switch(lmul){
-        case 3:
-          lmul_str = "f2";
-          break;
-        case 2:
-          lmul_str = "f4";
-          break;
-        case 1:
-          lmul_str = "f8";
-          break;
-        default:
-          assert(true && "unsupport fractional LMUL");
-      }
-      s << ", m" << lmul_str;
+    int newType = (insn.bits() & 0x80000000) ? insn.v_zimm10() : insn.v_zimm11();
+    // if bit 31 is set, this is vsetivli and there is a 10-bit vtype, else this is vsetvli and there is an 11-bit vtype
+    // If the provided vtype has reserved bits, display the hex version of the vtype instead
+    if ((newType >> 8) != 0) {
+      s << "0x" << std::hex << newType;
     } else {
-      s << ", m" << (1 << lmul);
+      s << "e" << sew;
+      if(insn.v_frac_lmul()) {
+        std::string lmul_str = "";
+        switch(lmul){
+          case 3:
+            lmul_str = "f2";
+            break;
+          case 2:
+            lmul_str = "f4";
+            break;
+          case 1:
+            lmul_str = "f8";
+            break;
+          default:
+            assert(true && "unsupport fractional LMUL");
+        }
+        s << ", m" << lmul_str;
+      } else {
+        s << ", m" << (1 << lmul);
+      }
+      s << ", " << vta << ", " << vma;
     }
-    s << ", " << vta << ", " << vma;
+
     return s.str();
   }
 } v_vtype;
