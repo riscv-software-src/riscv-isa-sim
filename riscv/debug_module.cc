@@ -579,6 +579,10 @@ bool debug_module_t::perform_abstract_command()
     abstractcs.cmderr = CMDERR_BUSY;
     return true;
   }
+  if (!hart_available(dmcontrol.hartsel)) {
+    abstractcs.cmderr = CMDERR_HALTRESUME;
+    return true;
+  }
 
   if ((command >> 24) == 0) {
     // register access
