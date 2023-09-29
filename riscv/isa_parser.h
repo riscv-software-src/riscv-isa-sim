@@ -59,6 +59,7 @@ typedef enum {
   EXT_ZVBC,
   EXT_ZVFBFMIN,
   EXT_ZVFBFWMA,
+  EXT_ZVKB,
   EXT_ZVKG,
   EXT_ZVKNED,
   EXT_ZVKNHA,
