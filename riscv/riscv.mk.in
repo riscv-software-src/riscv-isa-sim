@@ -1017,7 +1017,7 @@ riscv_insn_ext_zvkb = \
 	vror_vx \
 
 riscv_insn_ext_zvbb = \
-    $(riscv_insn_ext_zvkb) \
+	$(riscv_insn_ext_zvkb) \
 	vbrev_v \
 	vclz_v \
 	vcpop_v \
