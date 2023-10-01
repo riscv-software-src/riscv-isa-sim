@@ -250,7 +250,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str == "zcmlsd") {
       extension_table[EXT_ZCMLSD] = true;
     } else if (ext_str == "zvbb") {
-      extension_table[EXT_ZVBB] = true;
+      extension_table[EXT_ZVKB] = true;
     } else if (ext_str == "zvbc") {
       extension_table[EXT_ZVBC] = true;
     } else if (ext_str == "zvfbfmin") {
@@ -262,16 +262,16 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str == "zvkg") {
       extension_table[EXT_ZVKG] = true;
     } else if (ext_str == "zvkn") {
-      extension_table[EXT_ZVBB] = true;
+      extension_table[EXT_ZVKB] = true;
       extension_table[EXT_ZVKNED] = true;
       extension_table[EXT_ZVKNHB] = true;
     } else if (ext_str == "zvknc") {
-      extension_table[EXT_ZVBB] = true;
+      extension_table[EXT_ZVKB] = true;
       extension_table[EXT_ZVBC] = true;
       extension_table[EXT_ZVKNED] = true;
       extension_table[EXT_ZVKNHB] = true;
     } else if (ext_str == "zvkng") {
-      extension_table[EXT_ZVBB] = true;
+      extension_table[EXT_ZVKB] = true;
       extension_table[EXT_ZVKG] = true;
       extension_table[EXT_ZVKNED] = true;
       extension_table[EXT_ZVKNHB] = true;
@@ -282,16 +282,16 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str == "zvknhb") {
       extension_table[EXT_ZVKNHB] = true;
     } else if (ext_str == "zvks") {
-      extension_table[EXT_ZVBB] = true;
+      extension_table[EXT_ZVKB] = true;
       extension_table[EXT_ZVKSED] = true;
       extension_table[EXT_ZVKSH] = true;
     } else if (ext_str == "zvksc") {
-      extension_table[EXT_ZVBB] = true;
+      extension_table[EXT_ZVKB] = true;
       extension_table[EXT_ZVBC] = true;
       extension_table[EXT_ZVKSED] = true;
       extension_table[EXT_ZVKSH] = true;
     } else if (ext_str == "zvksg") {
-      extension_table[EXT_ZVBB] = true;
+      extension_table[EXT_ZVKB] = true;
       extension_table[EXT_ZVKG] = true;
       extension_table[EXT_ZVKSED] = true;
       extension_table[EXT_ZVKSH] = true;
