@@ -2125,7 +2125,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_R1TYPE(sm3p1);
   }
 
-  if (isa->extension_enabled(EXT_ZVKB) || isa->extension_enabled(EXT_ZVBB)) {
+  if (isa->extension_enabled(EXT_ZVKB)) {
 #define DEFINE_VECTOR_VIU_ZIMM6(code) \
   add_vector_viu_z6_insn(this, #code, match_##code, mask_##code)
 #define DISASM_VECTOR_VV_VX(name) \
