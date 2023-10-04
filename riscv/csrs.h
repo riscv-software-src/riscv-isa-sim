@@ -871,4 +871,11 @@ class hvip_csr_t : public basic_csr_t {
 };
 
 typedef std::shared_ptr<hvip_csr_t> hvip_csr_t_p;
+
+// ssp CSR provided by CFI Zicfiss extension
+class ssp_csr_t final : public masked_csr_t {
+ public:
+  ssp_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
 #endif

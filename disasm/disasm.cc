@@ -267,6 +267,18 @@ struct : public arg_t {
 } rvc_sp;
 
 struct : public arg_t {
+  std::string to_string(insn_t UNUSED insn) const {
+    return xpr_name[X_RA];
+  }
+} rvc_ra;
+
+struct : public arg_t {
+  std::string to_string(insn_t UNUSED insn) const {
+    return xpr_name[X_T0];
+  }
+} rvc_t0;
+
+struct : public arg_t {
   std::string to_string(insn_t insn) const {
     return std::to_string((int)insn.rvc_imm());
   }
@@ -2184,6 +2196,13 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
   }
 
   if (isa->extension_enabled(EXT_ZIMOP)) {
+    #define DISASM_MOP_R(name, rs1, rd) \
+      add_insn(new disasm_insn_t(#name, match_##name | (rs1 << 15) | (rd << 7), \
+                                        0xFFFFFFFF, {&xrd, &xrs1}));
+
+    #define DISASM_MOP_RR(name, rs1, rd, rs2) \
+      add_insn(new disasm_insn_t(#name, match_##name | (rs1 << 15) | (rd << 7) | (rs2 << 20), \
+                                        0xFFFFFFFF, {&xrd, &xrs1, &xrs2}));
     DEFINE_R1TYPE(mop_r_0);
     DEFINE_R1TYPE(mop_r_1);
     DEFINE_R1TYPE(mop_r_2);
@@ -2212,7 +2231,15 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_R1TYPE(mop_r_25);
     DEFINE_R1TYPE(mop_r_26);
     DEFINE_R1TYPE(mop_r_27);
-    DEFINE_R1TYPE(mop_r_28);
+    if (!isa->extension_enabled(EXT_ZICFISS)) {
+      DEFINE_R1TYPE(mop_r_28);
+    } else {
+      // Add code points of mop_r_28 not used by Zicfiss
+      for (unsigned rd_val = 0; rd_val <= 31; ++rd_val)
+        for (unsigned rs1_val = 0; rs1_val <= 31; ++rs1_val)
+          if ((rd_val != 0 && rs1_val !=0) || (rd_val == 0 && !(rs1_val == 1 || rs1_val == 5)))
+            DISASM_MOP_R(mop_r_28, rs1_val, rd_val);
+    }
     DEFINE_R1TYPE(mop_r_29);
     DEFINE_R1TYPE(mop_r_30);
     DEFINE_R1TYPE(mop_r_31);
@@ -2224,12 +2251,24 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_RTYPE(mop_rr_5);
     DEFINE_RTYPE(mop_rr_6);
     DEFINE_RTYPE(mop_rr_7);
+    if (!isa->extension_enabled(EXT_ZICFISS)) {
+      DEFINE_RTYPE(mop_rr_7);
+    } else {
+      // Add code points of mop_rr_7 not used by Zicfiss
+      for (unsigned rd_val = 0; rd_val <= 31; ++rd_val)
+        for (unsigned rs1_val = 0; rs1_val <= 31; ++rs1_val)
+          for (unsigned rs2_val = 0; rs2_val <= 31; ++rs2_val)
+            if ((rs2_val != 1 && rs2_val != 5) || rd_val != 0 || rs1_val != 0)
+              DISASM_MOP_RR(mop_rr_7, rs1_val, rd_val, rs2_val);
+    }
   }
 
   if (isa->extension_enabled(EXT_ZCMOP)) {
-    DISASM_INSN("c.mop.1", c_mop_1, 0, {});
+    if (!isa->extension_enabled(EXT_ZICFISS))
+      DISASM_INSN("c.mop.1", c_mop_1, 0, {});
     DISASM_INSN("c.mop.3", c_mop_3, 0, {});
-    DISASM_INSN("c.mop.5", c_mop_5, 0, {});
+    if (!isa->extension_enabled(EXT_ZICFISS))
+      DISASM_INSN("c.mop.5", c_mop_5, 0, {});
     DISASM_INSN("c.mop.7", c_mop_7, 0, {});
     DISASM_INSN("c.mop.9", c_mop_9, 0, {});
     DISASM_INSN("c.mop.11", c_mop_11, 0, {});
@@ -2391,6 +2430,23 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_XSTORE_BASE(sh_rl);
     DEFINE_XSTORE_BASE(sw_rl);
     DEFINE_XSTORE_BASE(sd_rl);
+  }
+
+  if(isa->extension_enabled(EXT_ZICFISS)) {
+    DISASM_INSN("sspush", sspush_x1, 0, {&xrs2});
+    DISASM_INSN("sspush", sspush_x5, 0, {&xrs2});
+    DISASM_INSN("sspopchk", sspopchk_x1, 0, {&xrs1});
+    DISASM_INSN("sspopchk", sspopchk_x5, 0, {&xrs1});
+    DISASM_INSN("ssrdp", ssrdp, 0, {&xrd});
+    DEFINE_XAMO(ssamoswap_w);
+
+    if(isa->get_max_xlen() == 64)
+      DEFINE_XAMO(ssamoswap_d)
+
+    if (isa->extension_enabled(EXT_ZCA)) {
+      DISASM_INSN("c.sspush", c_sspush_x1, 0, {&rvc_ra});
+      DISASM_INSN("c.sspopchk", c_sspopchk_x5, 0, {&rvc_t0});
+    }
   }
 }
 
