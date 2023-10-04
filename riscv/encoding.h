@@ -348,6 +348,7 @@
 
 /* software check exception xtval codes */
 #define LANDING_PAD_FAULT 2
+#define SHADOW_STACK_FAULT 3
 
 #ifdef __riscv
 

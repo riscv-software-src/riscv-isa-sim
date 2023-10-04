@@ -42,9 +42,10 @@ struct xlate_flags_t {
   const bool forced_virt : 1 {false};
   const bool hlvx : 1 {false};
   const bool lr : 1 {false};
+  const bool ss_access : 1 {false};
 
   bool is_special_access() const {
-    return forced_virt || hlvx || lr;
+    return forced_virt || hlvx || lr || ss_access;
   }
 };
 
@@ -127,6 +128,14 @@ public:
     return load<T>(addr, {.forced_virt=true, .hlvx=true});
   }
 
+  // shadow stack load
+  template<typename T>
+  T ss_load(reg_t addr) {
+    if ((addr & (sizeof(T) - 1)) != 0)
+      throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+    return load<T>(addr, {.forced_virt=false, .hlvx=false, .lr=false, .ss_access=true});
+  }
+
   template<typename T>
   void ALWAYS_INLINE store(reg_t addr, T val, xlate_flags_t xlate_flags = {}) {
     reg_t vpn = addr >> PGSHIFT;
@@ -147,6 +156,14 @@ public:
   template<typename T>
   void guest_store(reg_t addr, T val) {
     store(addr, val, {.forced_virt=true});
+  }
+
+  // shadow stack store
+  template<typename T>
+  void ss_store(reg_t addr, T val) {
+    if ((addr & (sizeof(T) - 1)) != 0)
+      throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+    store<T>(addr, val, {.forced_virt=false, .hlvx=false, .lr=false, .ss_access=true});
   }
 
   // AMO/Zicbom faults should be reported as store faults
@@ -173,6 +190,19 @@ public:
       store<T>(addr, f(lhs));
       return lhs;
     })
+  }
+
+  // for shadow stack amoswap
+  template<typename T>
+  T ssamoswap(reg_t addr, reg_t value) {
+      bool forced_virt = false;
+      bool hlvx = false;
+      bool lr = false;
+      bool ss_access = true;
+      store_slow_path(addr, sizeof(T), nullptr, {forced_virt, hlvx, lr, ss_access}, false, true);
+      auto data = load<T>(addr, {forced_virt, hlvx, lr, ss_access});
+      store<T>(addr, value, {forced_virt, hlvx, lr, ss_access});
+      return data;
   }
 
   template<typename T>

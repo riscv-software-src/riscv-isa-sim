@@ -26,6 +26,7 @@ const int NCSR = 4096;
 
 #define X_RA 1
 #define X_SP 2
+#define X_T0 5
 #define X_S0 8
 #define X_A0 10
 #define X_A1 11
