@@ -55,6 +55,12 @@ class dtm_t : public htif_t
 
   void producer_thread();
 
+  void switch_to_host() {
+    // update the target with the current context
+    target = context_t::current();
+    host.switch_to();
+  }
+
  protected:
   virtual void read_chunk(addr_t taddr, size_t len, void* dst) override;
   virtual void write_chunk(addr_t taddr, size_t len, const void* src) override;
@@ -73,6 +79,10 @@ class dtm_t : public htif_t
   void select_hart(int);
   void resume(int);
   uint32_t get_data_base() { return data_base; };
+
+  void switch_to_target() {
+    target->switch_to();
+  }
 
  private:
   context_t host;
