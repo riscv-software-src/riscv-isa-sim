@@ -70,7 +70,7 @@ reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
 
 tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
-  auto access_info = generate_access_info(vaddr, FETCH, {false, false, false});
+  auto access_info = generate_access_info(vaddr, FETCH, {});
   check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt);
 
   tlb_entry_t result;
