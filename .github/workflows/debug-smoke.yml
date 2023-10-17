@@ -25,7 +25,7 @@ jobs:
         run: |
           git clone --recurse-submodules https://github.com/riscv/riscv-openocd.git
           cd riscv-openocd
-          git checkout 43ea20dfbb6c815004a51106a3b2009d7f6c4940
+          git checkout a495dd854ce2e857a583125a31527a47320ec6b9
 
       - name: Build OpenOCD
         run: |
@@ -47,7 +47,7 @@ jobs:
         run: |
           git clone --recurse-submodules https://github.com/riscv-software-src/riscv-tests.git
           cd riscv-tests
-          git checkout c84daca8824635b7d896003c78f9c6245997cf7a
+          git checkout d020e2069a9f6a9c0e875f23f0f4aababea9fbf0
 
       - name: Run Tests
         run: |
