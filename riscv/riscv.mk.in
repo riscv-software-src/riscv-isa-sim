@@ -795,44 +795,6 @@ riscv_insn_ext_v_alu_fp = \
 	vmfne_vf \
 	vmfne_vv \
 
-riscv_insn_ext_v_amo = \
-	vamoswapei8_v \
-	vamoaddei8_v \
-	vamoandei8_v \
-	vamomaxei8_v \
-	vamomaxuei8_v \
-	vamominei8_v \
-	vamominuei8_v \
-	vamoorei8_v \
-	vamoxorei8_v \
-	vamoswapei16_v \
-	vamoaddei16_v \
-	vamoandei16_v \
-	vamomaxei16_v \
-	vamomaxuei16_v \
-	vamominei16_v \
-	vamominuei16_v \
-	vamoorei16_v \
-	vamoxorei16_v \
-	vamoswapei32_v \
-	vamoaddei32_v \
-	vamoandei32_v \
-	vamomaxei32_v \
-	vamomaxuei32_v \
-	vamominei32_v \
-	vamominuei32_v \
-	vamoorei32_v \
-	vamoxorei32_v \
-	vamoswapei64_v \
-	vamoaddei64_v \
-	vamoandei64_v \
-	vamomaxei64_v \
-	vamomaxuei64_v \
-	vamominei64_v \
-	vamominuei64_v \
-	vamoorei64_v \
-	vamoxorei64_v \
-
 riscv_insn_ext_v_ldst = \
 	vlm_v \
 	vle8_v \
@@ -901,7 +863,6 @@ riscv_insn_ext_v_ctrl = \
 riscv_insn_ext_v = \
 	$(riscv_insn_ext_v_alu_fp) \
 	$(riscv_insn_ext_v_alu_int) \
-	$(riscv_insn_ext_v_amo) \
 	$(riscv_insn_ext_v_ctrl) \
 	$(riscv_insn_ext_v_ldst) \
 

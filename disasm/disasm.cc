@@ -1795,41 +1795,6 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     #undef DISASM_OPIV_S__INSN
     #undef DISASM_OPIV_W__INSN
     #undef DISASM_VFUNARY0_INSN
-
-    // vector amo
-    std::vector<const arg_t *> v_fmt_amo_wd = {&vd, &v_address, &vs2, &vd, opt, &vm};
-    std::vector<const arg_t *> v_fmt_amo = {&x0, &v_address, &vs2, &vd, opt, &vm};
-    for (size_t elt = 0; elt <= 3; ++elt) {
-      const custom_fmt_t template_insn[] = {
-        {match_vamoaddei8_v | mask_wd,   mask_vamoaddei8_v | mask_wd,
-          "%sei%d.v", v_fmt_amo_wd},
-        {match_vamoaddei8_v,   mask_vamoaddei8_v | mask_wd,
-          "%sei%d.v", v_fmt_amo},
-      };
-      std::pair<const char*, reg_t> amo_map[] = {
-          {"vamoswap", 0x01ul << 27},
-          {"vamoadd",  0x00ul << 27},
-          {"vamoxor",  0x04ul << 27},
-          {"vamoand",  0x0cul << 27},
-          {"vamoor",   0x08ul << 27},
-          {"vamomin",  0x10ul << 27},
-          {"vamomax",  0x14ul << 27},
-          {"vamominu", 0x18ul << 27},
-          {"vamomaxu", 0x1cul << 27}};
-      const reg_t elt_map[] = {0x0ul << 12,  0x5ul << 12,
-                               0x6ul <<12, 0x7ul << 12};
-
-      for (size_t idx = 0; idx < sizeof(amo_map) / sizeof(amo_map[0]); ++idx) {
-        for (auto item : template_insn) {
-          char buf[128];
-          snprintf(buf, sizeof(buf), item.fmt, amo_map[idx].first, 8 << elt);
-          add_insn(new disasm_insn_t(buf,
-                    item.match | amo_map[idx].second | elt_map[elt],
-                    item.mask,
-                    item.arg));
-        }
-      }
-    }
   }
 
   if (isa->extension_enabled(EXT_ZVFBFMIN)) {
