@@ -2304,6 +2304,17 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_VECTOR_VIU(vsm3c_vi);
     DEFINE_VECTOR_VV(vsm3me_vv);
   }
+
+  if (isa->extension_enabled(EXT_ZALASR)) {
+    DEFINE_XLOAD_BASE(lb_aq);
+    DEFINE_XLOAD_BASE(lh_aq);
+    DEFINE_XLOAD_BASE(lw_aq);
+    DEFINE_XLOAD_BASE(ld_aq);
+    DEFINE_XSTORE_BASE(sb_rl);
+    DEFINE_XSTORE_BASE(sh_rl);
+    DEFINE_XSTORE_BASE(sw_rl);
+    DEFINE_XSTORE_BASE(sd_rl);
+  }
 }
 
 disassembler_t::disassembler_t(const isa_parser_t *isa)
