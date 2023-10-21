@@ -294,6 +294,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_SMCNTRPMF] = true;
     } else if (ext_str == "zcmop") {
       extension_table[EXT_ZCMOP] = true;
+    } else if (ext_str == "zalasr") {
+      extension_table[EXT_ZALASR] = true;
     } else if (ext_str[0] == 'x') {
       extension_table['X'] = true;
       if (ext_str.size() == 1) {

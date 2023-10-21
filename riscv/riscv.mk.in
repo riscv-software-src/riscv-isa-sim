@@ -1300,6 +1300,16 @@ riscv_insn_ext_zacas = \
 	amocas_d \
 	$(if $(HAVE_INT128),amocas_q)
 
+riscv_insn_ext_zalasr = \
+	lb_aq \
+	lh_aq \
+	lw_aq \
+	ld_aq \
+	sb_rl \
+	sh_rl \
+	sw_rl \
+	sd_rl \
+
 riscv_insn_ext_zvbb = \
 	vandn_vv \
 	vandn_vx \
@@ -1384,6 +1394,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_q) \
 	$(riscv_insn_ext_q_zfa) \
 	$(riscv_insn_ext_zacas) \
+	$(riscv_insn_ext_zalasr) \
 	$(riscv_insn_ext_zce) \
 	$(riscv_insn_ext_zfh) \
 	$(riscv_insn_ext_zfh_zfa) \

@@ -81,6 +81,7 @@ typedef enum {
   EXT_SSCSRIND,
   EXT_SMCNTRPMF,
   EXT_ZCMOP,
+  EXT_ZALASR,
   NUM_ISA_EXTENSIONS
 } isa_extension_t;
 
