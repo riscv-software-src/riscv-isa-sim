@@ -282,6 +282,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZVBB] = true;
     } else if (ext_str == "zvbc") {
       extension_table[EXT_ZVBC] = true;
+    } else if (ext_str == "zvbc32e") {
+      extension_table[EXT_ZVBC32E] = true;
     } else if (ext_str == "zvfbfmin") {
       extension_table[EXT_ZVFBFMIN] = true;
     } else if (ext_str == "zvfbfwma") {

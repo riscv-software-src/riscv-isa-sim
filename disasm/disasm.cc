@@ -2184,7 +2184,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
 #undef DISASM_VECTOR_VV_VX_VIU_ZIMM6
     }
 
-  if (ext_enabled(EXT_ZVBC)) {
+  if (ext_enabled(EXT_ZVBC) || ext_enabled(EXT_ZVBC32E)) {
 #define DISASM_VECTOR_VV_VX(name) \
     DEFINE_VECTOR_VV(name##_vv); \
     DEFINE_VECTOR_VX(name##_vx)

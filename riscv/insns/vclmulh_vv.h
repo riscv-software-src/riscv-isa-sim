@@ -2,8 +2,8 @@
 
 #include "zvk_ext_macros.h"
 
-require_zvbc;
-require(P.VU.vsew == 64);
+require_any_zvbc;
+require_either_extension_condition(EXT_ZVBC, P.VU.vsew == 64, EXT_ZVBC32E, P.VU.vsew == 32);
 
 VI_VV_ULOOP
 ({
