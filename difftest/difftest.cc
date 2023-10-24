@@ -131,7 +131,7 @@ void DifftestRef::set_regs(diff_context_t *ctx, bool on_demand) {
   if (!on_demand || state->pc != ctx->pc) {
     state->pc = ctx->pc;
   }
-  if (!on_demand || state->mstatus->read() != ctx->pc) {
+  if (!on_demand || state->mstatus->read() != ctx->mstatus) {
     state->mstatus->write(ctx->mstatus);
   }
   if (!on_demand || state->mcause->read() != ctx->mcause) {
