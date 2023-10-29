@@ -10,17 +10,20 @@ reg_t rd_num = insn.rd();
 reg_t rs2_num = insn.rs2();
 
 bool has_one = false;
-for (reg_t i = P.VU.vstart->read(); i < vl; ++i) {
+V_EXT_VSTART_CHECK;
+for (reg_t i = P.VU.vstart->read(); i < P.VU.VLEN; ++i) {
   const int midx = i / 64;
   const int mpos = i % 64;
   const uint64_t mmask = UINT64_C(1) << mpos; \
 
   bool vs2_lsb = ((P.VU.elt<uint64_t>(rs2_num, midx) >> mpos) & 0x1) == 1;
   bool do_mask = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
+  auto &vd = P.VU.elt<uint64_t>(rd_num, midx, true);
 
-
-  if (insn.v_vm() == 1 || (insn.v_vm() == 0 && do_mask)) {
-    auto &vd = P.VU.elt<uint64_t>(rd_num, midx, true);
+  if ((i >= vl) || (insn.v_vm() == 0 && 1 == P.VU.vma && !do_mask && i < vl)) {
+    vd = (vd & ~mmask) | ((UINT64_C(1) << mpos) & mmask);
+  }
+  if ((insn.v_vm() == 1 || (insn.v_vm() == 0 && do_mask)) && i < vl) {
     uint64_t res = 0;
     if (!has_one && !vs2_lsb) {
       res = 1;

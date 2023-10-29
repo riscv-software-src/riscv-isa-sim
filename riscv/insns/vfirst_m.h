@@ -6,7 +6,9 @@ reg_t rs2_num = insn.rs2();
 require(P.VU.vstart->read() == 0);
 reg_t pos = -1;
 for (reg_t i=P.VU.vstart->read(); i < vl; ++i) {
-  VI_LOOP_ELEMENT_SKIP()
+  VI_LOOP_ELEMENT_SKIP_NO_VMA_CHECK()
+  if(skip)
+    continue;
 
   bool vs2_lsb = ((P.VU.elt<uint64_t>(rs2_num, midx ) >> mpos) & 0x1) == 1;
   if (vs2_lsb) {

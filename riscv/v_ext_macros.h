@@ -5,6 +5,14 @@
 
 #include "vector_unit.h"
 
+template <typename T>
+T setAllBitsToOne(T value) {
+    unsigned char* bytes = reinterpret_cast<unsigned char*>(&value);
+    for (std::size_t i = 0; i < sizeof(T); ++i) {
+        bytes[i] = 0xFF;
+    }
+    return value;
+}
 //
 // vector: masking skip helper
 //
@@ -12,14 +20,28 @@
   const int midx = i / 64; \
   const int mpos = i % 64;
 
+#define V_EXT_VSTART_CHECK do { if(P.VU.vstart->read() >= P.VU.vl->read()) return npc;  } while (0)
+
+//mata_action 0:origin, 1:calculate, 2:pad 1s
 #define VI_LOOP_ELEMENT_SKIP(BODY) \
   VI_MASK_VARS \
+  __attribute__((unused)) int mata_action = 0; \
+  bool skip = false; \
+  mata_action = 0; \
   if (insn.v_vm() == 0) { \
     BODY; \
-    bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
-    if (skip) { \
+    skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
+    if (skip && 0 == P.VU.vma && i<P.VU.vl->read()) { \
         continue; \
     } \
+  }
+
+#define VI_LOOP_ELEMENT_SKIP_NO_VMA_CHECK(BODY) \
+  VI_MASK_VARS \
+  bool skip = false; \
+  if (insn.v_vm() == 0) { \
+    BODY; \
+    skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
   }
 
 #define VI_ELEMENT_SKIP \
@@ -209,8 +231,22 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rd_num = insn.rd(); \
   reg_t UNUSED rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) {
+  V_EXT_VSTART_CHECK; \
+  for (reg_t i = P.VU.vstart->read(); i < std::max(P.VU.vlmax, P.VU.VLEN/P.VU.vsew); ++i) {
 
+//
+// vector: loop carry header and end helper
+//
+#define VI_GENERAL_LOOP_CARRY_BASE \
+  require(P.VU.vsew >= e8 && P.VU.vsew <= e64); \
+  require_vector(true); \
+  reg_t vl = P.VU.vl->read(); \
+  reg_t UNUSED sew = P.VU.vsew; \
+  reg_t rd_num = insn.rd(); \
+  reg_t UNUSED rs1_num = insn.rs1(); \
+  reg_t rs2_num = insn.rs2(); \
+  V_EXT_VSTART_CHECK; \
+  for (reg_t i = P.VU.vstart->read(); i < P.VU.VLEN; ++i) {
 #define VI_LOOP_BASE \
     VI_GENERAL_LOOP_BASE \
     VI_LOOP_ELEMENT_SKIP();
@@ -227,8 +263,9 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   P.VU.vstart->write(0);
 
 #define VI_LOOP_CARRY_BASE \
-  VI_GENERAL_LOOP_BASE \
+  VI_GENERAL_LOOP_CARRY_BASE \
   VI_MASK_VARS \
+  int mata_action = 0; \
   auto v0 = P.VU.elt<uint64_t>(0, midx); \
   const uint64_t mmask = UINT64_C(1) << mpos; \
   const uint128_t op_mask = (UINT64_MAX >> (64 - sew)); \
@@ -243,6 +280,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 #define VI_LOOP_WITH_CARRY_BASE \
   VI_GENERAL_LOOP_BASE \
   VI_MASK_VARS \
+  int mata_action = 0; \
   auto &v0 = P.VU.elt<uint64_t>(0, midx); \
   const uint128_t op_mask = (UINT64_MAX >> (64 - sew)); \
   uint64_t carry = (v0 >> mpos) & 0x1;
@@ -255,7 +293,8 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t UNUSED rd_num = insn.rd(); \
   reg_t UNUSED rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
+  V_EXT_VSTART_CHECK; \
+  for (reg_t i = P.VU.vstart->read(); i < P.VU.VLEN; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
     uint64_t mmask = UINT64_C(1) << mpos; \
     uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx, true); \
@@ -270,14 +309,18 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   require(P.VU.vsew <= e64); \
   require_vector(true); \
   reg_t vl = P.VU.vl->read(); \
-  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
+  V_EXT_VSTART_CHECK; \
+  for (reg_t i = P.VU.vstart->read(); i < P.VU.VLEN; ++i) { \
     int midx = i / 64; \
     int mpos = i % 64; \
     uint64_t mmask = UINT64_C(1) << mpos; \
     uint64_t vs2 = P.VU.elt<uint64_t>(insn.rs2(), midx); \
     uint64_t vs1 = P.VU.elt<uint64_t>(insn.rs1(), midx); \
     uint64_t &res = P.VU.elt<uint64_t>(insn.rd(), midx, true); \
-    res = (res & ~mmask) | ((op) & (1ULL << mpos)); \
+    if(i < vl) \
+      res = (res & ~mmask) | ((op) & (1ULL << mpos)); \
+    if (i >= vl) \
+      res = (res & ~mmask) | ((1ULL << mpos)); \
   } \
   P.VU.vstart->write(0);
 
@@ -474,18 +517,38 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 //
 
 #define INSNS_BASE(PARAMS, BODY) \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
-    PARAMS(e8); \
-    BODY; \
+    if (1 == mata_action) { \
+      PARAMS(e8); \
+      BODY; \
+    } \
+    else \
+      res = 1; \
   } else if (sew == e16) { \
-    PARAMS(e16); \
-    BODY; \
+    if (1 == mata_action) { \
+      PARAMS(e16); \
+      BODY; \
+    } \
+    else \
+      res = 1; \
   } else if (sew == e32) { \
-    PARAMS(e32); \
-    BODY; \
+    if (1 == mata_action) { \
+      PARAMS(e32); \
+      BODY; \
+    } \
+    else \
+      res = 1; \
   } else if (sew == e64) { \
-    PARAMS(e64); \
-    BODY; \
+    if (1 == mata_action) { \
+      PARAMS(e64); \
+      BODY; \
+    } \
+    else \
+      res = 1; \
   }
 
 // comparision result to masking register
@@ -521,27 +584,51 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 // merge and copy loop
 #define VI_MERGE_VARS \
   VI_MASK_VARS \
+  int mata_action = 0; \
   bool UNUSED use_first = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
 
 #define VI_MERGE_LOOP_BASE \
   VI_GENERAL_LOOP_BASE \
-  VI_MERGE_VARS
+  VI_MERGE_VARS \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if (1 == P.VU.vta && i >= vl) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
 
 #define VI_VV_MERGE_LOOP(BODY) \
   VI_CHECK_SSS(true); \
   VI_MERGE_LOOP_BASE \
   if (sew == e8) { \
     VV_PARAMS(e8); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VV_PARAMS(e16); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VV_PARAMS(e32); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFF; \
   } else if (sew == e64) { \
     VV_PARAMS(e64); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFFFFFFFFFF; \
   } \
   VI_LOOP_END
 
@@ -550,16 +637,32 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   VI_MERGE_LOOP_BASE \
   if (sew == e8) { \
     VX_PARAMS(e8); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VX_PARAMS(e16); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VX_PARAMS(e32); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFF; \
   } else if (sew == e64) { \
     VX_PARAMS(e64); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFFFFFFFFFF; \
   } \
   VI_LOOP_END 
 
@@ -568,33 +671,68 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   VI_MERGE_LOOP_BASE \
   if (sew == e8) { \
     VI_PARAMS(e8); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VI_PARAMS(e16); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VI_PARAMS(e32); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFF; \
   } else if (sew == e64) { \
     VI_PARAMS(e64); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFFFFFFFFFF; \
   } \
   VI_LOOP_END
 
 #define VI_VF_MERGE_LOOP(BODY) \
   VI_CHECK_SSS(false); \
   VI_VFP_COMMON \
-  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
+  for (reg_t i = P.VU.vstart->read(); i < std::max(P.VU.vlmax, P.VU.VLEN/P.VU.vsew); ++i) { \
   VI_MERGE_VARS \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if (1 == P.VU.vta && i >= vl) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (P.VU.vsew == e16) { \
     VFP_VF_PARAMS(16); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      *((type_sew_t<e16>::type *)&vd) = 0xFFFF; \
   } else if (P.VU.vsew == e32) { \
     VFP_VF_PARAMS(32); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      *((type_sew_t<e32>::type *)&vd) = 0xFFFFFFFF; \
   } else if (P.VU.vsew == e64) { \
     VFP_VF_PARAMS(64); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      *((type_sew_t<e64>::type *)&vd) = 0xFFFFFFFFFFFFFFFF; \
   } \
   VI_LOOP_END
 
@@ -607,13 +745,18 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rs2_num = insn.rs2(); \
   auto &vd_0_des = P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true); \
   auto vd_0_res = P.VU.elt<type_sew_t<x>::type>(rs1_num, 0); \
-  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
-    VI_LOOP_ELEMENT_SKIP(); \
+  V_EXT_VSTART_CHECK; \
+  for (reg_t i = P.VU.vstart->read(); i < std::max(P.VU.vlmax, P.VU.VLEN/P.VU.vsew); ++i) { \
+    VI_LOOP_ELEMENT_SKIP_NO_VMA_CHECK(); \
     auto vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i); \
 
 #define REDUCTION_LOOP(x, BODY) \
   VI_LOOP_REDUCTION_BASE(x) \
-  BODY; \
+  if(1 == P.VU.vta && i > P.VU.vstart->read()) \
+    P.VU.elt<type_sew_t<x>::type>(rd_num, i, true) = ((type_sew_t<x>::type)~0); \
+  if(false == skip && i < vl) { \
+    BODY; \
+  } \
   VI_LOOP_REDUCTION_END(x)
 
 #define VI_VV_LOOP_REDUCTION(BODY) \
@@ -638,13 +781,17 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rs2_num = insn.rs2(); \
   auto &vd_0_des = P.VU.elt<type_usew_t<x>::type>(rd_num, 0, true); \
   auto vd_0_res = P.VU.elt<type_usew_t<x>::type>(rs1_num, 0); \
-  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
-    VI_LOOP_ELEMENT_SKIP(); \
+  for (reg_t i = P.VU.vstart->read(); i < std::max(P.VU.vlmax, P.VU.VLEN/P.VU.vsew); ++i) { \
+    VI_LOOP_ELEMENT_SKIP_NO_VMA_CHECK(); \
     auto vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
 
 #define REDUCTION_ULOOP(x, BODY) \
   VI_ULOOP_REDUCTION_BASE(x) \
-  BODY; \
+  if(1 == P.VU.vta && i > P.VU.vstart->read()) \
+    P.VU.elt<type_sew_t<x>::type>(rd_num, i, true) = ((type_sew_t<x>::type)~0); \
+  if(false == skip && i < vl) { \
+    BODY; \
+  } \
   VI_LOOP_REDUCTION_END(x)
 
 #define VI_VV_ULOOP_REDUCTION(BODY) \
@@ -664,36 +811,82 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 #define VI_VV_ULOOP(BODY) \
   VI_CHECK_SSS(true) \
   VI_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VV_U_PARAMS(e8); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VV_U_PARAMS(e16); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VV_U_PARAMS(e32); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFF; \
   } else if (sew == e64) { \
     VV_U_PARAMS(e64); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFFFFFFFFFF; \
   } \
   VI_LOOP_END 
 
 #define VI_VV_LOOP(BODY) \
   VI_CHECK_SSS(true) \
   VI_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VV_PARAMS(e8); \
-    BODY; \
+	if (1 == mata_action) { \
+		BODY; \
+	} \
+	else \
+		vd = 0xFF; \
   } else if (sew == e16) { \
     VV_PARAMS(e16); \
-    BODY; \
+	if (1 == mata_action) { \
+		BODY; \
+	} \
+	else \
+		vd = 0xFFFF; \
   } else if (sew == e32) { \
     VV_PARAMS(e32); \
-    BODY; \
+	if (1 == mata_action) { \
+		BODY; \
+	} \
+	else \
+		vd = 0xFFFFFFFF; \
   } else if (sew == e64) { \
     VV_PARAMS(e64); \
-    BODY; \
+	if (1 == mata_action) { \
+		BODY; \
+	} \
+	else \
+		vd = 0xFFFFFFFFFFFFFFFF; \
   } \
   VI_LOOP_END 
 
@@ -718,72 +911,164 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 #define VI_VX_ULOOP(BODY) \
   VI_CHECK_SSS(false) \
   VI_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VX_U_PARAMS(e8); \
-    BODY; \
-  } else if (sew == e16) { \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFF; \
+    } else if (sew == e16) { \
     VX_U_PARAMS(e16); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VX_U_PARAMS(e32); \
-    BODY; \
+    if (1 == mata_action) { \
+        BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFF; \
   } else if (sew == e64) { \
     VX_U_PARAMS(e64); \
-    BODY; \
+    if (1 == mata_action) { \
+        BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFFFFFFFFFF; \
   } \
   VI_LOOP_END 
 
 #define VI_VX_LOOP(BODY) \
   VI_CHECK_SSS(false) \
   VI_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VX_PARAMS(e8); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VX_PARAMS(e16); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VX_PARAMS(e32); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFF; \
   } else if (sew == e64) { \
     VX_PARAMS(e64); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFFFFFFFFFF; \
   } \
   VI_LOOP_END 
 
 #define VI_VI_ULOOP(BODY) \
   VI_CHECK_SSS(false) \
   VI_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VI_U_PARAMS(e8); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VI_U_PARAMS(e16); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VI_U_PARAMS(e32); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFF; \
   } else if (sew == e64) { \
     VI_U_PARAMS(e64); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFFFFFFFFFF; \
   } \
   VI_LOOP_END 
 
 #define VI_VI_LOOP(BODY) \
   VI_CHECK_SSS(false) \
   VI_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VI_PARAMS(e8); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VI_PARAMS(e16); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VI_PARAMS(e32); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFF; \
   } else if (sew == e64) { \
     VI_PARAMS(e64); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFFFFFFFFFF; \
   } \
   VI_LOOP_END 
 
@@ -791,36 +1076,82 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 #define VI_VV_SU_LOOP(BODY) \
   VI_CHECK_SSS(true) \
   VI_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VV_SU_PARAMS(e8); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VV_SU_PARAMS(e16); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VV_SU_PARAMS(e32); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFF; \
   } else if (sew == e64) { \
     VV_SU_PARAMS(e64); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFFFFFFFFFF; \
   } \
   VI_LOOP_END 
 
 #define VI_VX_SU_LOOP(BODY) \
   VI_CHECK_SSS(false) \
   VI_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VX_SU_PARAMS(e8); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VX_SU_PARAMS(e16); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VX_SU_PARAMS(e32); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFF; \
   } else if (sew == e64) { \
     VX_SU_PARAMS(e64); \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFFFFFFFFFF; \
   } \
   VI_LOOP_END 
 
@@ -828,96 +1159,208 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 #define VI_VV_LOOP_NARROW(BODY) \
   VI_CHECK_SDS(true); \
   VI_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VV_NARROW_PARAMS(e8, e16) \
-    BODY; \
+    if (1 == mata_action) \
+      {BODY;} \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VV_NARROW_PARAMS(e16, e32) \
-    BODY; \
+    if (1 == mata_action) \
+      {BODY;} \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VV_NARROW_PARAMS(e32, e64) \
-    BODY; \
+    if (1 == mata_action) \
+      {BODY;} \
+    else \
+      vd = 0xFFFFFFFF; \
   } \
   VI_LOOP_END
 
 #define VI_VX_LOOP_NARROW(BODY) \
   VI_CHECK_SDS(false); \
   VI_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VX_NARROW_PARAMS(e8, e16) \
-    BODY; \
+    if (1 == mata_action) \
+      {BODY;} \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VX_NARROW_PARAMS(e16, e32) \
-    BODY; \
+    if (1 == mata_action) \
+      {BODY;} \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VX_NARROW_PARAMS(e32, e64) \
-    BODY; \
+    if (1 == mata_action) \
+      {BODY;} \
+    else \
+      vd = 0xFFFFFFFF; \
   } \
   VI_LOOP_END
 
 #define VI_VI_LOOP_NARROW(BODY) \
   VI_CHECK_SDS(false); \
   VI_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VI_NARROW_PARAMS(e8, e16) \
-    BODY; \
+    if (1 == mata_action) \
+      {BODY;} \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VI_NARROW_PARAMS(e16, e32) \
-    BODY; \
+    if (1 == mata_action) \
+      {BODY;} \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VI_NARROW_PARAMS(e32, e64) \
-    BODY; \
+    if (1 == mata_action) \
+      {BODY;} \
+    else \
+      vd = 0xFFFFFFFF; \
   } \
   VI_LOOP_END
 
 #define VI_VI_LOOP_NSHIFT(BODY) \
   VI_CHECK_SDS(false); \
   VI_LOOP_NSHIFT_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VI_NARROW_PARAMS(e8, e16) \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VI_NARROW_PARAMS(e16, e32) \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VI_NARROW_PARAMS(e32, e64) \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFF; \
   } \
   VI_LOOP_END
 
 #define VI_VX_LOOP_NSHIFT(BODY) \
   VI_CHECK_SDS(false); \
   VI_LOOP_NSHIFT_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VX_NARROW_PARAMS(e8, e16) \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VX_NARROW_PARAMS(e16, e32) \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VX_NARROW_PARAMS(e32, e64) \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFF; \
   } \
   VI_LOOP_END
 
 #define VI_VV_LOOP_NSHIFT(BODY) \
   VI_CHECK_SDS(true); \
   VI_LOOP_NSHIFT_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VV_NARROW_PARAMS(e8, e16) \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFF; \
   } else if (sew == e16) { \
     VV_NARROW_PARAMS(e16, e32) \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFF; \
   } else if (sew == e32) { \
     VV_NARROW_PARAMS(e32, e64) \
-    BODY; \
+    if (1 == mata_action) { \
+      BODY; \
+    } \
+    else \
+      vd = 0xFFFFFFFF; \
   } \
   VI_LOOP_END
 
 // widen operation loop
 #define VI_VV_LOOP_WIDEN(BODY) \
   VI_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VV_PARAMS(e8); \
     BODY; \
@@ -932,6 +1375,13 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 
 #define VI_VX_LOOP_WIDEN(BODY) \
   VI_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   if (sew == e8) { \
     VX_PARAMS(e8); \
     BODY; \
@@ -948,20 +1398,29 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   switch (P.VU.vsew) { \
   case e8: { \
     sign##16_t UNUSED vd_w = P.VU.elt<sign##16_t>(rd_num, i); \
-    P.VU.elt<uint16_t>(rd_num, i, true) = \
-      op1((sign##16_t)(sign##8_t)var0 op0 (sign##16_t)(sign##8_t)var1) + var2; \
+    if (1 == mata_action) \
+      P.VU.elt<uint16_t>(rd_num, i, true) = \
+        op1((sign##16_t)(sign##8_t)var0 op0 (sign##16_t)(sign##8_t)var1) + var2; \
+    else \
+      P.VU.elt<uint16_t>(rd_num, i, true) = 0xFFFF; \
     } \
     break; \
   case e16: { \
     sign##32_t UNUSED vd_w = P.VU.elt<sign##32_t>(rd_num, i); \
-    P.VU.elt<uint32_t>(rd_num, i, true) = \
-      op1((sign##32_t)(sign##16_t)var0 op0 (sign##32_t)(sign##16_t)var1) + var2; \
+    if (1 == mata_action) \
+      P.VU.elt<uint32_t>(rd_num, i, true) = \
+        op1((sign##32_t)(sign##16_t)var0 op0 (sign##32_t)(sign##16_t)var1) + var2; \
+    else \
+      P.VU.elt<uint32_t>(rd_num, i, true) = 0xFFFFFFFF; \
     } \
     break; \
   default: { \
     sign##64_t UNUSED vd_w = P.VU.elt<sign##64_t>(rd_num, i); \
-    P.VU.elt<uint64_t>(rd_num, i, true) = \
-      op1((sign##64_t)(sign##32_t)var0 op0 (sign##64_t)(sign##32_t)var1) + var2; \
+    if (1 == mata_action) \
+      P.VU.elt<uint64_t>(rd_num, i, true) = \
+        op1((sign##64_t)(sign##32_t)var0 op0 (sign##64_t)(sign##32_t)var1) + var2; \
+    else \
+      P.VU.elt<uint64_t>(rd_num, i, true) = 0xFFFFFFFFFFFFFFFF; \
     } \
     break; \
   }
@@ -970,20 +1429,29 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   switch (P.VU.vsew) { \
   case e8: { \
     sign_d##16_t UNUSED vd_w = P.VU.elt<sign_d##16_t>(rd_num, i); \
-    P.VU.elt<uint16_t>(rd_num, i, true) = \
-      op1((sign_1##16_t)(sign_1##8_t)var0 op0 (sign_2##16_t)(sign_2##8_t)var1) + var2; \
+    if (1 == mata_action) \
+      P.VU.elt<uint16_t>(rd_num, i, true) = \
+        op1((sign_1##16_t)(sign_1##8_t)var0 op0 (sign_2##16_t)(sign_2##8_t)var1) + var2; \
+    else \
+      P.VU.elt<uint16_t>(rd_num, i, true) = 0xFFFF; \
     } \
     break; \
   case e16: { \
     sign_d##32_t UNUSED vd_w = P.VU.elt<sign_d##32_t>(rd_num, i); \
-    P.VU.elt<uint32_t>(rd_num, i, true) = \
-      op1((sign_1##32_t)(sign_1##16_t)var0 op0 (sign_2##32_t)(sign_2##16_t)var1) + var2; \
+    if (1 == mata_action) \
+      P.VU.elt<uint32_t>(rd_num, i, true) = \
+        op1((sign_1##32_t)(sign_1##16_t)var0 op0 (sign_2##32_t)(sign_2##16_t)var1) + var2; \
+    else \
+      P.VU.elt<uint32_t>(rd_num, i, true) = 0xFFFFFFFF; \
     } \
     break; \
   default: { \
     sign_d##64_t UNUSED vd_w = P.VU.elt<sign_d##64_t>(rd_num, i); \
-    P.VU.elt<uint64_t>(rd_num, i, true) = \
-      op1((sign_1##64_t)(sign_1##32_t)var0 op0 (sign_2##64_t)(sign_2##32_t)var1) + var2; \
+    if (1 == mata_action) \
+      P.VU.elt<uint64_t>(rd_num, i, true) = \
+        op1((sign_1##64_t)(sign_1##32_t)var0 op0 (sign_2##64_t)(sign_2##32_t)var1) + var2; \
+    else \
+      P.VU.elt<uint64_t>(rd_num, i, true) = 0xFFFFFFFFFFFFFFFF; \
     } \
     break; \
   }
@@ -993,19 +1461,28 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   case e8: { \
     sign##16_t &vd_w = P.VU.elt<sign##16_t>(rd_num, i, true); \
     sign##16_t vs2_w = P.VU.elt<sign##16_t>(rs2_num, i); \
-    vd_w = vs2_w op0 (sign##16_t)(sign##8_t)var0; \
+    if (1 == mata_action) \
+      vd_w = vs2_w op0 (sign##16_t)(sign##8_t)var0; \
+    else \
+      vd_w = 0xFFFF; \
     } \
     break; \
   case e16: { \
     sign##32_t &vd_w = P.VU.elt<sign##32_t>(rd_num, i, true); \
     sign##32_t vs2_w = P.VU.elt<sign##32_t>(rs2_num, i); \
-    vd_w = vs2_w op0 (sign##32_t)(sign##16_t)var0; \
+    if (1 == mata_action) \
+      vd_w = vs2_w op0 (sign##32_t)(sign##16_t)var0; \
+    else \
+      vd_w = 0xFFFFFFFF; \
     } \
     break; \
   default: { \
     sign##64_t &vd_w = P.VU.elt<sign##64_t>(rd_num, i, true); \
     sign##64_t vs2_w = P.VU.elt<sign##64_t>(rs2_num, i); \
-    vd_w = vs2_w op0 (sign##64_t)(sign##32_t)var0; \
+    if (1 == mata_action) \
+      vd_w = vs2_w op0 (sign##64_t)(sign##32_t)var0; \
+    else \
+      vd_w = 0xFFFFFFFFFFFFFFFF; \
     } \
     break; \
   }
@@ -1018,13 +1495,18 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rs2_num = insn.rs2(); \
   auto &vd_0_des = P.VU.elt<type_sew_t<sew2>::type>(rd_num, 0, true); \
   auto vd_0_res = P.VU.elt<type_sew_t<sew2>::type>(rs1_num, 0); \
-  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
-    VI_LOOP_ELEMENT_SKIP(); \
+  V_EXT_VSTART_CHECK; \
+  for (reg_t i = P.VU.vstart->read(); i < std::max(P.VU.vlmax, P.VU.VLEN/P.VU.vsew); ++i) { \
+    VI_LOOP_ELEMENT_SKIP_NO_VMA_CHECK(); \
     auto vs2 = P.VU.elt<type_sew_t<sew1>::type>(rs2_num, i);
 
 #define WIDE_REDUCTION_LOOP(sew1, sew2, BODY) \
   VI_LOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
-  BODY; \
+  if(1 == P.VU.vta && i > P.VU.vstart->read()) \
+		P.VU.elt<type_sew_t<sew2>::type>(rd_num, i, true) = ((type_sew_t<sew2>::type)~0); \
+	if(false == skip && i < vl) { \
+    BODY; \
+  } \
   VI_LOOP_REDUCTION_END(sew2)
 
 #define VI_VV_LOOP_WIDE_REDUCTION(BODY) \
@@ -1046,13 +1528,18 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rs2_num = insn.rs2(); \
   auto &vd_0_des = P.VU.elt<type_usew_t<sew2>::type>(rd_num, 0, true); \
   auto vd_0_res = P.VU.elt<type_usew_t<sew2>::type>(rs1_num, 0); \
-  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
-    VI_LOOP_ELEMENT_SKIP(); \
+  V_EXT_VSTART_CHECK; \
+  for (reg_t i = P.VU.vstart->read(); i < std::max(P.VU.vlmax, P.VU.VLEN/P.VU.vsew); ++i) { \
+    VI_LOOP_ELEMENT_SKIP_NO_VMA_CHECK(); \
     auto vs2 = P.VU.elt<type_usew_t<sew1>::type>(rs2_num, i);
 
 #define WIDE_REDUCTION_ULOOP(sew1, sew2, BODY) \
   VI_ULOOP_WIDE_REDUCTION_BASE(sew1, sew2) \
-  BODY; \
+  if(1 == P.VU.vta && i > P.VU.vstart->read()) \
+		P.VU.elt<type_sew_t<sew2>::type>(rd_num, i, true) = ((type_sew_t<sew2>::type)~0); \
+	if(false == skip && i < vl) { \
+    BODY; \
+  } \
   VI_LOOP_REDUCTION_END(sew2)
 
 #define VI_VV_ULOOP_WIDE_REDUCTION(BODY) \
@@ -1070,72 +1557,158 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 #define VI_VV_LOOP_CARRY(BODY) \
   VI_CHECK_MSS(true); \
   VI_LOOP_CARRY_BASE \
+    if (i >= vl) \
+      mata_action = 2; \
+    else \
+      mata_action = 1; \
     if (sew == e8) { \
-      VV_CARRY_PARAMS(e8) \
-      BODY; \
+      if (1 == mata_action) { \
+        VV_CARRY_PARAMS(e8) \
+        BODY; \
+      } \
+      else \
+        res = 1; \
     } else if (sew == e16) { \
-      VV_CARRY_PARAMS(e16) \
-      BODY; \
+      if (1 == mata_action) { \
+        VV_CARRY_PARAMS(e16) \
+        BODY; \
+      } \
+      else \
+        res = 1; \
     } else if (sew == e32) { \
-      VV_CARRY_PARAMS(e32) \
-      BODY; \
+      if (1 == mata_action) { \
+        VV_CARRY_PARAMS(e32) \
+        BODY; \
+      } \
+      else \
+        res = 1; \
     } else if (sew == e64) { \
-      VV_CARRY_PARAMS(e64) \
-      BODY; \
+      if (1 == mata_action) { \
+        VV_CARRY_PARAMS(e64) \
+        BODY; \
+      } \
+      else \
+        res = 1; \
     } \
   VI_LOOP_CARRY_END
 
 #define VI_XI_LOOP_CARRY(BODY) \
   VI_CHECK_MSS(false); \
   VI_LOOP_CARRY_BASE \
+    if (i >= vl) \
+      mata_action = 2; \
+    else \
+      mata_action = 1; \
     if (sew == e8) { \
-      XI_CARRY_PARAMS(e8) \
-      BODY; \
+      if (1 == mata_action) { \
+        XI_CARRY_PARAMS(e8) \
+        BODY; \
+      } \
+      else \
+        res = 1; \
     } else if (sew == e16) { \
-      XI_CARRY_PARAMS(e16) \
-      BODY; \
+      if (1 == mata_action) { \
+        XI_CARRY_PARAMS(e16) \
+        BODY; \
+      } \
+      else \
+        res = 1; \
     } else if (sew == e32) { \
-      XI_CARRY_PARAMS(e32) \
-      BODY; \
+      if (1 == mata_action) { \
+        XI_CARRY_PARAMS(e32) \
+        BODY; \
+      } \
+      else \
+        res = 1; \
     } else if (sew == e64) { \
-      XI_CARRY_PARAMS(e64) \
-      BODY; \
+      if (1 == mata_action) { \
+        XI_CARRY_PARAMS(e64) \
+        BODY; \
+      } \
+      else \
+        res = 1; \
     } \
   VI_LOOP_CARRY_END
 
 #define VI_VV_LOOP_WITH_CARRY(BODY) \
   VI_CHECK_SSS(true); \
   VI_LOOP_WITH_CARRY_BASE \
+    if (0 == P.VU.vta && i >= vl) { \
+      continue; \
+    } \
+    if (1 == P.VU.vta && i >= vl) \
+      mata_action = 2; \
+    else \
+      mata_action = 1; \
     if (sew == e8) { \
       VV_WITH_CARRY_PARAMS(e8) \
-      BODY; \
+      if (1 == mata_action) { \
+        BODY; \
+      } \
+      else \
+        vd = 0xFF; \
     } else if (sew == e16) { \
       VV_WITH_CARRY_PARAMS(e16) \
-      BODY; \
+      if (1 == mata_action) { \
+        BODY; \
+      } \
+      else \
+        vd = 0xFFFF; \
     } else if (sew == e32) { \
       VV_WITH_CARRY_PARAMS(e32) \
-      BODY; \
+      if (1 == mata_action) { \
+        BODY; \
+      } \
+      else \
+        vd = 0xFFFFFFFF; \
     } else if (sew == e64) { \
       VV_WITH_CARRY_PARAMS(e64) \
-      BODY; \
+      if (1 == mata_action) { \
+        BODY; \
+      } \
+      else \
+        vd = 0xFFFFFFFFFFFFFFFF; \
     } \
   VI_LOOP_END
 
 #define VI_XI_LOOP_WITH_CARRY(BODY) \
   VI_CHECK_SSS(false); \
   VI_LOOP_WITH_CARRY_BASE \
+    if (0 == P.VU.vta && i >= vl) { \
+      continue; \
+    } \
+    if (1 == P.VU.vta && i >= vl) \
+      mata_action = 2; \
+    else \
+      mata_action = 1; \
     if (sew == e8) { \
       XI_WITH_CARRY_PARAMS(e8) \
-      BODY; \
+      if (1 == mata_action) { \
+        BODY; \
+      } \
+      else \
+        vd = 0xFF; \
     } else if (sew == e16) { \
       XI_WITH_CARRY_PARAMS(e16) \
-      BODY; \
+      if (1 == mata_action) { \
+        BODY; \
+      } \
+      else \
+        vd = 0xFFFF; \
     } else if (sew == e32) { \
       XI_WITH_CARRY_PARAMS(e32) \
-      BODY; \
+      if (1 == mata_action) { \
+        BODY; \
+      } \
+      else \
+        vd = 0xFFFFFFFF; \
     } else if (sew == e64) { \
       XI_WITH_CARRY_PARAMS(e64) \
-      BODY; \
+      if (1 == mata_action) { \
+        BODY; \
+      } \
+      else \
+        vd = 0xFFFFFFFFFFFFFFFF; \
     } \
   VI_LOOP_END
 
@@ -1416,24 +1989,49 @@ reg_t index[P.VU.vlmax]; \
   reg_t pat = (((P.VU.vsew >> 3) << 4) | from >> 3); \
   VI_GENERAL_LOOP_BASE \
   VI_LOOP_ELEMENT_SKIP(); \
+    if (0 == P.VU.vta && i >= vl) { \
+      continue; \
+    } \
+    if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+      mata_action = 2; \
+    else \
+      mata_action = 1; \
     switch (pat) { \
       case 0x21: \
-        P.VU.elt<type##16_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
+        if (1 == mata_action) \
+          P.VU.elt<type##16_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
+        else \
+          P.VU.elt<type##16_t>(rd_num, i, true) = 0xFFFF; \
         break; \
       case 0x41: \
-        P.VU.elt<type##32_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
+        if (1 == mata_action) \
+          P.VU.elt<type##32_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
+        else \
+          P.VU.elt<type##32_t>(rd_num, i, true) = 0xFFFFFFFF; \
         break; \
       case 0x81: \
-        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
+        if (1 == mata_action) \
+          P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##8_t>(rs2_num, i); \
+        else \
+          P.VU.elt<type##64_t>(rd_num, i, true) = 0xFFFFFFFFFFFFFFFF; \
         break; \
       case 0x42: \
-        P.VU.elt<type##32_t>(rd_num, i, true) = P.VU.elt<type##16_t>(rs2_num, i); \
+        if (1 == mata_action) \
+          P.VU.elt<type##32_t>(rd_num, i, true) = P.VU.elt<type##16_t>(rs2_num, i); \
+        else \
+          P.VU.elt<type##32_t>(rd_num, i, true) = 0xFFFFFFFF; \
         break; \
       case 0x82: \
-        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##16_t>(rs2_num, i); \
+        if (1 == mata_action) \
+          P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##16_t>(rs2_num, i); \
+        else \
+          P.VU.elt<type##64_t>(rd_num, i, true) = 0xFFFFFFFFFFFFFFFF; \
         break; \
       case 0x84: \
-        P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##32_t>(rs2_num, i); \
+        if (1 == mata_action) \
+          P.VU.elt<type##64_t>(rd_num, i, true) = P.VU.elt<type##32_t>(rs2_num, i); \
+        else \
+          P.VU.elt<type##64_t>(rd_num, i, true) = 0xFFFFFFFFFFFFFFFF; \
         break; \
       default: \
         break; \
@@ -1469,7 +2067,7 @@ reg_t index[P.VU.vlmax]; \
 
 #define VI_VFP_LOOP_BASE \
   VI_VFP_COMMON \
-  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
+  for (reg_t i = P.VU.vstart->read(); i < std::max(P.VU.vlmax, P.VU.VLEN/P.VU.vsew); ++i) { \
     VI_LOOP_ELEMENT_SKIP();
 
 #define VI_VFP_BF16_LOOP_BASE \
@@ -1479,7 +2077,7 @@ reg_t index[P.VU.vlmax]; \
 
 #define VI_VFP_LOOP_CMP_BASE \
   VI_VFP_COMMON \
-  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
+  for (reg_t i = P.VU.vstart->read(); i < P.VU.VLEN; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
     uint64_t mmask = UINT64_C(1) << mpos; \
     uint64_t &vd = P.VU.elt<uint64_t>(rd_num, midx, true); \
@@ -1490,15 +2088,15 @@ reg_t index[P.VU.vlmax]; \
   float##width##_t vs1_0 = P.VU.elt<float##width##_t>(rs1_num, 0); \
   vd_0 = vs1_0; \
   bool is_active = false; \
-  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
-    VI_LOOP_ELEMENT_SKIP(); \
+  for (reg_t i = P.VU.vstart->read(); i < std::max(P.VU.vlmax, P.VU.VLEN/P.VU.vsew); ++i) { \
+    VI_LOOP_ELEMENT_SKIP_NO_VMA_CHECK(); \
     float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i); \
     is_active = true; \
 
 #define VI_VFP_LOOP_WIDE_REDUCTION_BASE \
   VI_VFP_COMMON \
   float64_t vd_0 = f64(P.VU.elt<float64_t>(rs1_num, 0).v); \
-  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
+  for (reg_t i = P.VU.vstart->read(); i < std::max(P.VU.vlmax, P.VU.VLEN/P.VU.vsew); ++i) { \
     VI_LOOP_ELEMENT_SKIP();
 
 #define VI_VFP_LOOP_END \
@@ -1574,23 +2172,42 @@ reg_t index[P.VU.vlmax]; \
 #define VI_VFP_VV_LOOP(BODY16, BODY32, BODY64) \
   VI_CHECK_SSS(true); \
   VI_VFP_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   switch (P.VU.vsew) { \
     case e16: { \
       VFP_VV_PARAMS(16); \
-      BODY16; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        BODY16; \
+        set_fp_exceptions; \
+      } \
+      else \
+        *((type_sew_t<16>::type *)&vd) = 0xFFFF; \
       break; \
     } \
     case e32: { \
       VFP_VV_PARAMS(32); \
-      BODY32; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        BODY32; \
+        set_fp_exceptions; \
+      } \
+      else \
+        *((type_sew_t<32>::type *)&vd) = 0xFFFFFFFF; \
       break; \
     } \
     case e64: { \
       VFP_VV_PARAMS(64); \
-      BODY64; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        BODY64; \
+        set_fp_exceptions; \
+      } \
+      else \
+        *((type_sew_t<64>::type *)&vd) = 0xFFFFFFFFFFFFFFFF; \
       break; \
     } \
     default: \
@@ -1603,27 +2220,48 @@ reg_t index[P.VU.vlmax]; \
 #define VI_VFP_V_LOOP(BODY16, BODY32, BODY64) \
   VI_CHECK_SSS(false); \
   VI_VFP_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   switch (P.VU.vsew) { \
     case e16: { \
       VFP_V_PARAMS(16); \
-      BODY16; \
+      if (1 == mata_action) { \
+        BODY16; \
+        set_fp_exceptions; \
+      } \
+      else \
+        *((type_sew_t<16>::type *)&vd) = 0xFFFF; \
       break; \
     } \
     case e32: { \
       VFP_V_PARAMS(32); \
-      BODY32; \
+      if (1 == mata_action) { \
+        BODY32; \
+        set_fp_exceptions; \
+      } \
+      else \
+        *((type_sew_t<32>::type *)&vd) = 0xFFFFFFFF; \
       break; \
     } \
     case e64: { \
       VFP_V_PARAMS(64); \
-      BODY64; \
+      if (1 == mata_action) { \
+        BODY64; \
+        set_fp_exceptions; \
+      } \
+      else \
+        *((type_sew_t<e64>::type *)&vd)  = 0xFFFFFFFFFFFFFFFF; \
       break; \
     } \
     default: \
       require(0); \
       break; \
   }; \
-  set_fp_exceptions; \
   VI_VFP_LOOP_END
 
 #define VI_VFP_VV_LOOP_REDUCTION(BODY16, BODY32, BODY64) \
@@ -1632,22 +2270,34 @@ reg_t index[P.VU.vlmax]; \
   switch (P.VU.vsew) { \
     case e16: { \
       VI_VFP_LOOP_REDUCTION_BASE(16) \
-        BODY16; \
-        set_fp_exceptions; \
+        if(1 == P.VU.vta && i > P.VU.vstart->read()) \
+          P.VU.elt<type_sew_t<16>::type>(rd_num, i, true) = ((type_sew_t<16>::type)~0); \
+        if(false == skip && i < vl) { \
+          BODY16; \
+          set_fp_exceptions; \
+        } \
       VI_VFP_LOOP_REDUCTION_END(e16) \
       break; \
     } \
     case e32: { \
       VI_VFP_LOOP_REDUCTION_BASE(32) \
-        BODY32; \
-        set_fp_exceptions; \
+        if(1 == P.VU.vta && i > P.VU.vstart->read()) \
+          P.VU.elt<type_sew_t<32>::type>(rd_num, i, true) = ((type_sew_t<32>::type)~0); \
+        if(false == skip && i < vl) { \
+          BODY32; \
+          set_fp_exceptions; \
+        } \
       VI_VFP_LOOP_REDUCTION_END(e32) \
       break; \
     } \
     case e64: { \
       VI_VFP_LOOP_REDUCTION_BASE(64) \
-        BODY64; \
-        set_fp_exceptions; \
+        if(1 == P.VU.vta && i > P.VU.vstart->read()) \
+          P.VU.elt<type_sew_t<64>::type>(rd_num, i, true) = ((type_sew_t<64>::type)~0); \
+        if(false == skip && i < vl) { \
+          BODY64; \
+          set_fp_exceptions; \
+        } \
       VI_VFP_LOOP_REDUCTION_END(e64) \
       break; \
     } \
@@ -1665,23 +2315,31 @@ reg_t index[P.VU.vlmax]; \
   switch (P.VU.vsew) { \
     case e16: { \
       float32_t vd_0 = P.VU.elt<float32_t>(rs1_num, 0); \
-      for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
-        VI_LOOP_ELEMENT_SKIP(); \
+      for (reg_t i = P.VU.vstart->read(); i < std::max(P.VU.vlmax, P.VU.VLEN/P.VU.vsew); ++i) { \
+        VI_LOOP_ELEMENT_SKIP_NO_VMA_CHECK(); \
         is_active = true; \
         float32_t vs2 = f16_to_f32(P.VU.elt<float16_t>(rs2_num, i)); \
-        BODY16; \
-        set_fp_exceptions; \
+        if(1 == P.VU.vta && i > P.VU.vstart->read()) \
+          P.VU.elt<type_sew_t<e32>::type>(rd_num, i, true) = ((type_sew_t<e32>::type)~0); \
+        if(false == skip && i < vl) { \
+          BODY16; \
+          set_fp_exceptions; \
+        } \
       VI_VFP_LOOP_REDUCTION_END(e32) \
       break; \
     } \
     case e32: { \
       float64_t vd_0 = P.VU.elt<float64_t>(rs1_num, 0); \
-      for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
-        VI_LOOP_ELEMENT_SKIP(); \
+      for (reg_t i = P.VU.vstart->read(); i < std::max(P.VU.vlmax, P.VU.VLEN/P.VU.vsew); ++i) { \
+        VI_LOOP_ELEMENT_SKIP_NO_VMA_CHECK(); \
         is_active = true; \
         float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
-        BODY32; \
-        set_fp_exceptions; \
+        if(1 == P.VU.vta && i > P.VU.vstart->read()) \
+          P.VU.elt<type_sew_t<e64>::type>(rd_num, i, true) = ((type_sew_t<e64>::type)~0); \
+        if(false == skip && i < vl) { \
+          BODY32; \
+          set_fp_exceptions; \
+        } \
       VI_VFP_LOOP_REDUCTION_END(e64) \
       break; \
     } \
@@ -1693,23 +2351,47 @@ reg_t index[P.VU.vlmax]; \
 #define VI_VFP_VF_LOOP(BODY16, BODY32, BODY64) \
   VI_CHECK_SSS(false); \
   VI_VFP_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) { \
+    mata_action = 2; \
+  } \
+  else { \
+    mata_action = 1; \
+  } \
   switch (P.VU.vsew) { \
     case e16: { \
       VFP_VF_PARAMS(16); \
-      BODY16; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        BODY16; \
+        set_fp_exceptions; \
+      } \
+      else { \
+        *((type_sew_t<16>::type *)&vd) = 0xFFFF; \
+      } \
       break; \
     } \
     case e32: { \
-      VFP_VF_PARAMS(32); \
-      BODY32; \
-      set_fp_exceptions; \
+        VFP_VF_PARAMS(32); \
+      if (1 == mata_action) { \
+        BODY32; \
+        set_fp_exceptions; \
+      } \
+      else { \
+        *((type_sew_t<32>::type *)&vd) = 0xFFFFFFFF; \
+      } \
       break; \
     } \
     case e64: { \
       VFP_VF_PARAMS(64); \
-      BODY64; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        BODY64; \
+        set_fp_exceptions; \
+      } \
+      else { \
+        *((type_sew_t<64>::type *)&vd) = 0xFFFFFFFFFFFFFFFF; \
+      } \
       break; \
     } \
     default: \
@@ -1722,23 +2404,39 @@ reg_t index[P.VU.vlmax]; \
 #define VI_VFP_VV_LOOP_CMP(BODY16, BODY32, BODY64) \
   VI_CHECK_MSS(true); \
   VI_VFP_LOOP_CMP_BASE \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   switch (P.VU.vsew) { \
     case e16: { \
-      VFP_VV_CMP_PARAMS(16); \
-      BODY16; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        VFP_VV_PARAMS(16); \
+        BODY16; \
+        set_fp_exceptions; \
+      } \
+      else \
+        res = 1; \
       break; \
     } \
     case e32: { \
-      VFP_VV_CMP_PARAMS(32); \
-      BODY32; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        VFP_VV_PARAMS(32); \
+        BODY32; \
+        set_fp_exceptions; \
+      } \
+      else \
+        res = 1; \
       break; \
     } \
     case e64: { \
-      VFP_VV_CMP_PARAMS(64); \
-      BODY64; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        VFP_VV_PARAMS(64); \
+        BODY64; \
+        set_fp_exceptions; \
+      } \
+      else \
+        res = 1; \
       break; \
     } \
     default: \
@@ -1750,23 +2448,39 @@ reg_t index[P.VU.vlmax]; \
 #define VI_VFP_VF_LOOP_CMP(BODY16, BODY32, BODY64) \
   VI_CHECK_MSS(false); \
   VI_VFP_LOOP_CMP_BASE \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   switch (P.VU.vsew) { \
     case e16: { \
-      VFP_VF_CMP_PARAMS(16); \
-      BODY16; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        VFP_VF_PARAMS(16); \
+        BODY16; \
+        set_fp_exceptions; \
+      } \
+      else \
+        res = 1; \
       break; \
     } \
     case e32: { \
-      VFP_VF_CMP_PARAMS(32); \
-      BODY32; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        VFP_VF_PARAMS(32); \
+        BODY32; \
+        set_fp_exceptions; \
+      } \
+      else \
+        res = 1; \
       break; \
     } \
     case e64: { \
-      VFP_VF_CMP_PARAMS(64); \
-      BODY64; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        VFP_VF_PARAMS(64); \
+        BODY64; \
+        set_fp_exceptions; \
+      } \
+      else \
+        res = 1; \
       break; \
     } \
     default: \
@@ -1778,21 +2492,34 @@ reg_t index[P.VU.vlmax]; \
 #define VI_VFP_VF_LOOP_WIDE(BODY16, BODY32) \
   VI_CHECK_DSS(false); \
   VI_VFP_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   switch (P.VU.vsew) { \
     case e16: { \
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
       float32_t vs2 = f16_to_f32(P.VU.elt<float16_t>(rs2_num, i)); \
       float32_t rs1 = f16_to_f32(FRS1_H); \
-      BODY16; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        BODY16; \
+        set_fp_exceptions; \
+      } else \
+        P.VU.elt<uint32_t>(rd_num, i, true) = 0xFFFFFFFF; \
       break; \
     } \
     case e32: { \
       float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
       float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
       float64_t rs1 = f32_to_f64(FRS1_F); \
-      BODY32; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        BODY32; \
+        set_fp_exceptions; \
+      } else \
+        P.VU.elt<uint64_t>(rd_num, i, true) = 0xFFFFFFFFFFFFFFFF; \
       break; \
     } \
     default: \
@@ -1824,21 +2551,34 @@ reg_t index[P.VU.vlmax]; \
 #define VI_VFP_VV_LOOP_WIDE(BODY16, BODY32) \
   VI_CHECK_DSS(true); \
   VI_VFP_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   switch (P.VU.vsew) { \
     case e16: { \
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
       float32_t vs2 = f16_to_f32(P.VU.elt<float16_t>(rs2_num, i)); \
       float32_t vs1 = f16_to_f32(P.VU.elt<float16_t>(rs1_num, i)); \
-      BODY16; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        BODY16; \
+        set_fp_exceptions; \
+      } else \
+        P.VU.elt<uint32_t>(rd_num, i, true) = 0xFFFFFFFF; \
       break; \
     } \
     case e32: { \
       float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
       float64_t vs2 = f32_to_f64(P.VU.elt<float32_t>(rs2_num, i)); \
       float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
-      BODY32; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        BODY32; \
+        set_fp_exceptions; \
+      } else \
+        P.VU.elt<uint64_t>(rd_num, i, true) = 0xFFFFFFFFFFFFFFFF; \
       break; \
     } \
     default: \
@@ -1870,21 +2610,36 @@ reg_t index[P.VU.vlmax]; \
 #define VI_VFP_WF_LOOP_WIDE(BODY16, BODY32) \
   VI_CHECK_DDS(false); \
   VI_VFP_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   switch (P.VU.vsew) { \
     case e16: { \
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
       float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
       float32_t rs1 = f16_to_f32(FRS1_H); \
-      BODY16; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        BODY16; \
+        set_fp_exceptions; \
+      } \
+      else \
+        *((type_sew_t<32>::type *)&vd) = 0xFFFFFFFF; \
       break; \
     } \
     case e32: { \
       float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
       float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
       float64_t rs1 = f32_to_f64(FRS1_F); \
-      BODY32; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        BODY32; \
+        set_fp_exceptions; \
+      } \
+      else \
+        *((type_sew_t<64>::type *)&vd) = 0xFFFFFFFFFFFFFFFF; \
       break; \
     } \
     default: \
@@ -1896,21 +2651,36 @@ reg_t index[P.VU.vlmax]; \
 #define VI_VFP_WV_LOOP_WIDE(BODY16, BODY32) \
   VI_CHECK_DDS(true); \
   VI_VFP_LOOP_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   switch (P.VU.vsew) { \
     case e16: { \
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
       float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
       float32_t vs1 = f16_to_f32(P.VU.elt<float16_t>(rs1_num, i)); \
-      BODY16; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        BODY16; \
+        set_fp_exceptions; \
+      } \
+      else \
+        *((type_sew_t<32>::type *)&vd) = 0xFFFFFFFF; \
       break; \
     } \
     case e32: { \
       float64_t &vd = P.VU.elt<float64_t>(rd_num, i, true); \
       float64_t vs2 = P.VU.elt<float64_t>(rs2_num, i); \
       float64_t vs1 = f32_to_f64(P.VU.elt<float32_t>(rs1_num, i)); \
-      BODY32; \
-      set_fp_exceptions; \
+      if (1 == mata_action) { \
+        BODY32; \
+        set_fp_exceptions; \
+      } \
+      else \
+        *((type_sew_t<64>::type *)&vd) = 0xFFFFFFFFFFFFFFFF; \
       break; \
     } \
     default: \
@@ -1928,15 +2698,26 @@ reg_t index[P.VU.vlmax]; \
   reg_t UNUSED rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   softfloat_roundingMode = STATE.frm->read(); \
-  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
+  for (reg_t i = P.VU.vstart->read(); i < std::max(P.VU.vlmax, P.VU.VLEN/P.VU.vsew); ++i) { \
     VI_LOOP_ELEMENT_SKIP();
 
 #define VI_VFP_CVT_LOOP(CVT_PARAMS, CHECK, BODY) \
   CHECK \
   VI_VFP_LOOP_SCALE_BASE \
+  if (0 == P.VU.vta && i >= vl) { \
+    continue; \
+  } \
+  if ((true == skip && 1 == P.VU.vma && i < vl) || (1 == P.VU.vta && i >= vl)) \
+    mata_action = 2; \
+  else \
+    mata_action = 1; \
   CVT_PARAMS \
-  BODY \
-  set_fp_exceptions; \
+  if (1 == mata_action) { \
+    BODY; \
+    set_fp_exceptions; \
+  } \
+  else \
+    vd=setAllBitsToOne(vd); \
   VI_VFP_LOOP_END
 
 #define VI_VFP_CVT_INT_TO_FP(BODY16, BODY32, BODY64, sign) \
