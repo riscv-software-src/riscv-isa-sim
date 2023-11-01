@@ -11,6 +11,7 @@ require_align(rd_num, P.VU.vflmul);
 require_noover(rd_num, P.VU.vflmul, rs2_num, 1);
 
 int cnt = 0;
+V_EXT_VSTART_CHECK;
 for (reg_t i = 0; i < std::max(P.VU.vlmax, P.VU.VLEN/P.VU.vsew); ++i) {
   const int midx = i / 64;
   const int mpos = i % 64;
