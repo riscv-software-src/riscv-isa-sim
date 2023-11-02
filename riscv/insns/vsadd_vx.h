@@ -1,6 +1,6 @@
 // vsadd.vx vd, vs2, rs1
 VI_CHECK_SSS(false);
-VI_LOOP_BASE
+VI_LOOP_BASE(1)
 bool sat = false;
 if (0 == P.VU.vta && i >= vl) { \
   continue; \

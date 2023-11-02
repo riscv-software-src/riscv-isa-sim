@@ -1,6 +1,6 @@
 // vssub.vv vd, vs2, vs1
 VI_CHECK_SSS(true);
-VI_LOOP_BASE
+VI_LOOP_BASE(1)
 bool sat = false;
 
 if (0 == P.VU.vta && i >= vl) { \

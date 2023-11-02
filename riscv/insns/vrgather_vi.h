@@ -6,7 +6,7 @@ require_vm;
 
 reg_t zimm5 = insn.v_zimm5();
 
-VI_LOOP_BASE
+VI_LOOP_BASE(1)
   if (0 == P.VU.vta && i >= vl) { \
     continue; \
   } \

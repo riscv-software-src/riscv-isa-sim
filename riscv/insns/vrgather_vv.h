@@ -5,7 +5,7 @@ require_align(insn.rs1(), P.VU.vflmul);
 require(insn.rd() != insn.rs2() && insn.rd() != insn.rs1());
 require_vm;
 
-VI_LOOP_BASE
+VI_LOOP_BASE(1)
   if (0 == P.VU.vta && i >= vl) { \
     continue; \
   } \

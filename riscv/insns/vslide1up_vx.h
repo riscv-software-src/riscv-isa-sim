@@ -1,7 +1,7 @@
 //vslide1up.vx vd, vs2, rs1
 VI_CHECK_SLIDE(true);
 
-VI_LOOP_BASE
+VI_LOOP_BASE(1)
 if (0 == P.VU.vta && i >= vl) { \
   continue; \
 } \

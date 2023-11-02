@@ -8,7 +8,7 @@ require_noover(insn.rd(), P.VU.vflmul, insn.rs1(), vemul);
 require(insn.rd() != insn.rs2());
 require_vm;
 
-VI_LOOP_BASE
+VI_LOOP_BASE(1)
   if (0 == P.VU.vta && i >= vl) { \
     continue; \
   } \

@@ -1,7 +1,7 @@
 //vfslide1down.vf vd, vs2, rs1
 VI_CHECK_SLIDE(false);
 
-VI_VFP_LOOP_BASE
+VI_VFP_LOOP_BASE(1)
 if (0 == P.VU.vta && i >= vl) { \
   continue; \
 } \

@@ -7,7 +7,7 @@ require_noover(insn.rd(), P.VU.vflmul, insn.rs1(), 1);
 
 reg_t pos = 0;
 
-VI_GENERAL_LOOP_BASE
+VI_GENERAL_LOOP_BASE(1)
   const int midx = i / 64;
   const int mpos = i % 64;
 
