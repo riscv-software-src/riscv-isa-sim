@@ -840,6 +840,29 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_XAMO(amocas_q)
   }
 
+  if (isa->extension_enabled(EXT_ZABHA)) {
+    DEFINE_XAMO(amoadd_b)
+    DEFINE_XAMO(amoswap_b)
+    DEFINE_XAMO(amoand_b)
+    DEFINE_XAMO(amoor_b)
+    DEFINE_XAMO(amoxor_b)
+    DEFINE_XAMO(amomin_b)
+    DEFINE_XAMO(amomax_b)
+    DEFINE_XAMO(amominu_b)
+    DEFINE_XAMO(amomaxu_b)
+    DEFINE_XAMO(amocas_b)
+    DEFINE_XAMO(amoadd_h)
+    DEFINE_XAMO(amoswap_h)
+    DEFINE_XAMO(amoand_h)
+    DEFINE_XAMO(amoor_h)
+    DEFINE_XAMO(amoxor_h)
+    DEFINE_XAMO(amomin_h)
+    DEFINE_XAMO(amomax_h)
+    DEFINE_XAMO(amominu_h)
+    DEFINE_XAMO(amomaxu_h)
+    DEFINE_XAMO(amocas_h)
+  }
+
   add_insn(new disasm_insn_t("j", match_jal, mask_jal | mask_rd, {&jump_target}));
   add_insn(new disasm_insn_t("jal", match_jal | match_rd_ra, mask_jal | mask_rd, {&jump_target}));
   add_insn(new disasm_insn_t("jal", match_jal, mask_jal, {&xrd, &jump_target}));
