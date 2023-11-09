@@ -16,6 +16,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
                      reg_t initrd_start, reg_t initrd_end,
                      const char* bootargs,
                      size_t pmpregions,
+                     size_t pmpgranularity,
                      std::vector<processor_t*> procs,
                      std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
                      std::string device_nodes)
@@ -62,7 +63,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "      riscv,isa = \"" << procs[i]->get_isa().get_isa_string() << "\";\n"
          "      mmu-type = \"riscv," << (procs[i]->get_isa().get_max_xlen() <= 32 ? "sv32" : "sv57") << "\";\n"
          "      riscv,pmpregions = <" << pmpregions << ">;\n"
-         "      riscv,pmpgranularity = <" << (1 << PMP_SHIFT) << ">;\n"
+         "      riscv,pmpgranularity = <" << pmpgranularity << ">;\n"
          "      clock-frequency = <" << cpu_hz << ">;\n"
          "      CPU" << i << "_intc: interrupt-controller {\n"
          "        #address-cells = <2>;\n"

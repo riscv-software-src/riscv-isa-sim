@@ -36,6 +36,7 @@ int main(int UNUSED argc, char** argv)
             /*default_misaligned=*/false,
             /*default_endianness*/endianness_little,
             /*default_pmpregions=*/16,
+            /*default_pmpgranularity=*/(1 << PMP_SHIFT),
             /*default_mem_layout=*/std::vector<mem_cfg_t>(),
             /*default_hartids=*/std::vector<size_t>(),
             /*default_real_time_clint=*/false,

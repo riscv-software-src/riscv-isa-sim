@@ -68,6 +68,7 @@ public:
         const bool default_misaligned,
         const endianness_t default_endianness,
         const reg_t default_pmpregions,
+        const reg_t default_pmpgranularity,
         const std::vector<mem_cfg_t> &default_mem_layout,
         const std::vector<size_t> default_hartids,
         bool default_real_time_clint,
@@ -80,6 +81,7 @@ public:
       misaligned(default_misaligned),
       endianness(default_endianness),
       pmpregions(default_pmpregions),
+      pmpgranularity(default_pmpgranularity),
       mem_layout(default_mem_layout),
       hartids(default_hartids),
       explicit_hartids(false),
@@ -95,6 +97,7 @@ public:
   bool                               misaligned;
   endianness_t                       endianness;
   reg_t                              pmpregions;
+  reg_t                              pmpgranularity;
   cfg_arg_t<std::vector<mem_cfg_t>>  mem_layout;
   std::optional<reg_t>               start_pc;
   cfg_arg_t<std::vector<size_t>>     hartids;

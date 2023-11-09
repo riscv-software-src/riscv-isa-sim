@@ -24,6 +24,7 @@ int main()
             false,
             endianness_little,
             16,
+            (1 << PMP_SHIFT),
             mem_cfg,
             hartids,
             false,
