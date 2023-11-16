@@ -327,7 +327,8 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
 
   if ((check_triggers_fetch && type == FETCH) ||
       (check_triggers_load && type == LOAD) ||
-      (check_triggers_store && type == STORE))
+      (check_triggers_store && type == STORE) ||
+      (proc && proc->get_log_commits_enabled()))
     expected_tag |= TLB_CHECK_TRIGGERS;
 
   if (pmp_homogeneous(paddr & ~reg_t(PGSIZE - 1), PGSIZE)) {

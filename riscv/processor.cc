@@ -611,6 +611,9 @@ void processor_t::set_histogram(bool value)
 void processor_t::enable_log_commits()
 {
   log_commits_enabled = true;
+
+  // commit logging occurs on the TLB-miss path
+  mmu->flush_tlb();
 }
 
 void processor_t::reset()

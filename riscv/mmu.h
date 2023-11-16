@@ -104,10 +104,10 @@ public:
       res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
     } else {
       load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags);
-    }
 
-    if (unlikely(proc && proc->get_log_commits_enabled()))
-      proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, sizeof(T)));
+      if (unlikely(proc && proc->get_log_commits_enabled()))
+        proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, sizeof(T)));
+    }
 
     return from_target(res);
   }
@@ -147,10 +147,10 @@ public:
     } else {
       target_endian<T> target_val = to_target(val);
       store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);
-    }
 
-    if (unlikely(proc && proc->get_log_commits_enabled()))
-      proc->state.log_mem_write.push_back(std::make_tuple(addr, val, sizeof(T)));
+      if (unlikely(proc && proc->get_log_commits_enabled()))
+        proc->state.log_mem_write.push_back(std::make_tuple(addr, val, sizeof(T)));
+    }
   }
 
   template<typename T>
