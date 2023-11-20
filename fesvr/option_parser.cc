@@ -6,6 +6,7 @@
 #include <cstring>
 #include <cassert>
 
+
 void option_parser_t::option(char c, const char* s, int arg, std::function<void(const char*)> action)
 {
   opts.push_back(option_t(c, s, arg, action));
