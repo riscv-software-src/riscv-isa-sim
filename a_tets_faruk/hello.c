@@ -1,20 +1,13 @@
-#include <stdio.h>
 
-int array[10];
+#include <stdint.h>
 
-int main() {
+
+volatile uint64_t tohost __attribute__((section(".htif"))) = 0;
+volatile uint64_t fromhost __attribute__((section(".htif"))) = 0;
+
+
+void _start() {
     int a = 0;
+    for(;;a++);
 
-    FILE* read_write = fopen("floating_file","r+");
-    fprintf(read_write,"5\n");
-    fflush(read_write);
-    rewind(read_write);
-    scanf("%d\n",&a);
-    printf("a after first scan: %d\n",a);
-    fflush(stdin);
-    fflush(stdout);
-    fscanf(read_write,"%d\n",&a);
-    printf("a after second scan: %d\n",a);
-
-    return a;
 }
