@@ -1535,7 +1535,7 @@ virtualized_stimecmp_csr_t::virtualized_stimecmp_csr_t(processor_t* const proc, 
   virtualized_csr_t(proc, orig, virt) {
 }
 
-void virtualized_stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
+void stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (!(state->menvcfg->read() & MENVCFG_STCE)) {
     // access to (v)stimecmp with MENVCFG.STCE = 0
     if (state->prv < PRV_M)
@@ -1549,7 +1549,11 @@ void virtualized_stimecmp_csr_t::verify_permissions(insn_t insn, bool write) con
     throw trap_virtual_instruction(insn.bits());
   }
 
-  virtualized_csr_t::verify_permissions(insn, write);
+  basic_csr_t::verify_permissions(insn, write);
+}
+
+void virtualized_stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
+  orig_csr->verify_permissions(insn, write);
 }
 
 scountovf_csr_t::scountovf_csr_t(processor_t* const proc, const reg_t addr):
