@@ -336,6 +336,8 @@ void sim_t::set_rom()
   const int reset_vec_size = 8;
 
   reg_t start_pc = cfg->start_pc.value_or(get_entry_point());
+  uint64_t val =(uint64_t) start_pc;
+  std::cout  << "sim.cc/ sim_t::set_rom()/ start pc val: " << val << std::endl;
 
   uint32_t reset_vec[reset_vec_size] = {
     0x297,                                      // auipc  t0,0x0

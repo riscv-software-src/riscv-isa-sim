@@ -252,6 +252,7 @@ int htif_t::run()
   std::function<void(reg_t)> fromhost_callback =
     std::bind(enq_func, &fromhost_queue, std::placeholders::_1);
 
+  std::cout << "after start() call in htif_t::run() tohost_addr: " << tohost_addr << std::endl;
   if (tohost_addr == 0) {
     while (!signal_exit)
       idle();
