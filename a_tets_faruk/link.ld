@@ -1,36 +1,20 @@
-ENTRY(_start)
-
-MEMORY
-{
-    RAM (wxa!ri) : ORIGIN = 0x81000000, LENGTH = 128K
-    ROM (rx)     : ORIGIN = 0x80000000, LENGTH = 128K
-}
+OUTPUT_ARCH( "riscv" )
+ENTRY(main)
 
 SECTIONS
 {
-    .text : {
-        *(.text)
-    } > ROM
-
-    .rodata : {
-        *(.rodata*)
-    } > ROM
-
-    .data : {
-        *(.data)
-    } > RAM
-
-    .bss : {
-        *(.bss)
-    } > RAM
-
-    .htif : {
-        PROVIDE_HIDDEN(tohost = .);
-        . += 8;
-        PROVIDE_HIDDEN(fromhost = .);
-        . += 8;
-    } > RAM
-
-    . = ALIGN(8);
-    _end = .;
+  . = 0x80000000;
+  .text.init : { *(.text.init) }
+  . = ALIGN(0x1000);
+  .tohost : { *(.tohost) }
+  . = ALIGN(0x1000);
+  .fromhost : { *(.fromhost) }
+  . = ALIGN(0x1000);
+  .text : { *(.text) }
+  . = ALIGN(0x1000);
+  .data : { *(.data) }
+  .data.string : { *(.data.string)}
+  .bss : { *(.bss) }
+  _end = .;
 }
+

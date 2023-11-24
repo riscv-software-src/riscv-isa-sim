@@ -1,13 +1,11 @@
 
-#include <stdint.h>
 
 
-volatile uint64_t tohost __attribute__((section(".htif"))) = 0;
-volatile uint64_t fromhost __attribute__((section(".htif"))) = 0;
+char tohost[1000];
+char fromhost[1000];
+// #include <stdio.h>
 
-
-void _start() {
+void main() {
     int a = 0;
-    for(;;a++);
-
+    // scanf("%d",&a);
 }
