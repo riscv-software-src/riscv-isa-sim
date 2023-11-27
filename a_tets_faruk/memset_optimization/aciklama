@@ -1,0 +1,10 @@
+
+
+riscv64-unknown-elf-gcc -S -Os -fno-tree-loop-distribute-patterns large_memory_set.c -o large_memor
+y_set.S
+
+riscv64-unknown-elf-gcc -S -Os large_memory_set.c -o large_memor
+y_set.S
+
+-Os yerine -O3 ve -O2 de olabilir.
+2. ile derlengiginde memset diye bir fonksiyon kullaniyor assembly'de.
