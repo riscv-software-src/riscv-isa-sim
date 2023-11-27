@@ -44,7 +44,7 @@ debug_module_t::debug_module_t(simif_t *sim, const debug_module_config_t &config
   hart_state(1 << field_width(sim->get_cfg().max_hartid() + 1)),
   hart_array_mask(sim->get_cfg().max_hartid() + 1),
   rti_remaining(0),
-  sb_read_wait(0)
+  sb_read_wait(0), sb_write_wait(0)
 {
   D(fprintf(stderr, "debug_data_start=0x%x\n", debug_data_start));
   D(fprintf(stderr, "debug_progbuf_start=0x%x\n", debug_progbuf_start));
@@ -300,7 +300,7 @@ void debug_module_t::sb_autoincrement()
 
 bool debug_module_t::sb_busy() const
 {
-  return sb_read_wait > 0;
+  return sb_read_wait > 0 || sb_write_wait > 0;
 }
 
 void debug_module_t::sb_read_start()
@@ -337,6 +337,19 @@ void debug_module_t::sb_read()
   } catch (const mem_trap_t& ) {
     sbcs.error = 2;
   }
+}
+
+void debug_module_t::sb_write_start()
+{
+  if (sb_busy() || sbcs.sbbusyerror) {
+    if (!sbcs.sbbusyerror)
+      D(fprintf(stderr, "Set sbbusyerror because write start while busy\n"));
+    sbcs.sbbusyerror = true;
+    return;
+  }
+  /* Insert artificial delay, so debuggers can test how they handle that
+   * sbbusyerror being set. */
+  sb_write_wait = 20;
 }
 
 void debug_module_t::sb_write()
@@ -597,6 +610,15 @@ void debug_module_t::run_test_idle()
     sb_read_wait--;
     if (sb_read_wait == 0) {
       sb_read();
+      if (sbcs.error == 0) {
+        sb_autoincrement();
+      }
+    }
+  }
+  if (sb_write_wait > 0) {
+    sb_write_wait--;
+    if (sb_write_wait == 0) {
+      sb_write();
       if (sbcs.error == 0) {
         sb_autoincrement();
       }
@@ -950,10 +972,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
             case DM_SBDATA0:
               sbdata[0] = value;
               if (sbcs.error == 0) {
-                sb_write();
-                if (sbcs.error == 0) {
-                  sb_autoincrement();
-                }
+                sb_write_start();
               }
               return true;
             case DM_SBDATA1:

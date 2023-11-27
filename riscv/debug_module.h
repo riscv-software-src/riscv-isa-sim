@@ -159,9 +159,10 @@ class debug_module_t : public abstract_device_t
 
     void sb_autoincrement();
 
-    /* Start a system bus read. (It could be instantaneous, but to help test
+    /* Start a system bus access. (It could be instantaneous, but to help test
      * OpenOCD a delay can be added.) */
     void sb_read_start();
+    void sb_write_start();
 
     /* Actually read/write. */
     void sb_read();
@@ -203,7 +204,7 @@ class debug_module_t : public abstract_device_t
     bool hart_available_state[2];
     bool hart_available(unsigned hart_id) const;
 
-    unsigned sb_read_wait;
+    unsigned sb_read_wait, sb_write_wait;
 };
 
 #endif
