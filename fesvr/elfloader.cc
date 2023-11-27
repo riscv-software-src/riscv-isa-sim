@@ -33,13 +33,18 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
       throw std::invalid_argument(std::string("Specified ELF can't be mapped: ") + strerror(errno));
   close(fd);
 
+  // size'in elf header size'indan buyuk oldugunu emin ol
   assert(size >= sizeof(Elf64_Ehdr));
+
   const Elf64_Ehdr* eh64 = (const Elf64_Ehdr*)buf;
+
   assert(IS_ELF32(*eh64) || IS_ELF64(*eh64));
   unsigned xlen = IS_ELF32(*eh64) ? 32 : 64;
   if (required_xlen != 0 && required_xlen != xlen) {
     throw incompat_xlen(required_xlen, xlen);
   }
+
+  // elf file dogrulama
   assert(IS_ELFLE(*eh64) || IS_ELFBE(*eh64));
   assert(IS_ELF_EXEC(*eh64));
   assert(IS_ELF_RISCV(*eh64) || IS_ELF_EM_NONE(*eh64));
@@ -47,12 +52,13 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
 
   std::vector<uint8_t> zeros;
   std::map<std::string, uint64_t> symbols;
-
+                // elfh   progh  secth   symbolh
 #define LOAD_ELF(ehdr_t, phdr_t, shdr_t, sym_t, bswap)                         \
   do {                                                                         \
     ehdr_t* eh = (ehdr_t*)buf;                                                 \
     phdr_t* ph = (phdr_t*)(buf + bswap(eh->e_phoff));                          \
     *entry = bswap(eh->e_entry);                                               \
+    /*asagida header'de belirtilen programi sigdirabilecegimiz yer var mi */   \
     assert(size >= bswap(eh->e_phoff) + bswap(eh->e_phnum) * sizeof(*ph));     \
     for (unsigned i = 0; i < bswap(eh->e_phnum); i++) {                        \
       if (bswap(ph[i].p_type) == PT_LOAD && bswap(ph[i].p_memsz)) {            \
