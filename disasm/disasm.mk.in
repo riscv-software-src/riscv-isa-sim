@@ -1,3 +1,6 @@
+disasm_install_hdrs = \
+  isa_parser.h \
+
 disasm_srcs = \
   disasm.cc \
   isa_parser.cc \

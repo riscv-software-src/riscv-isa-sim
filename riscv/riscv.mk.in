@@ -32,7 +32,6 @@ riscv_install_hdrs = \
 	encoding.h \
 	entropy_source.h \
 	extension.h \
-	isa_parser.h \
 	log_file.h \
 	memtracer.h \
 	mmu.h \
