@@ -21,7 +21,7 @@ compile-maildeki:
 # -lgcc'de bu islemleri integer instruction'larla yapabilen fonksiyonlarla degistiriyor.
 # veya 128 bit operasyonlar.
 # exception handling
-# 
+# https://gcc.gnu.org/onlinedocs/gccint/Libgcc.html
 # 
 .PHONY: compile-kirpilmis compile-ek-macrolar-sifir compile-maildeki
 
