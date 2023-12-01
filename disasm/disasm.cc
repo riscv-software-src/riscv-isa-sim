@@ -2249,7 +2249,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
 #define DISASM_VECTOR_VV_VX_VIU(name) \
   DEFINE_VECTOR_VV(name##_vv); \
   DEFINE_VECTOR_VX(name##_vx); \
-  DEFINE_VECTOR_VIU(name##_vx)
+  DEFINE_VECTOR_VIU(name##_vi)
 #define DISASM_VECTOR_VV_VX_VIU_ZIMM6(name) \
   DEFINE_VECTOR_VV(name##_vv); \
   DEFINE_VECTOR_VX(name##_vx); \
