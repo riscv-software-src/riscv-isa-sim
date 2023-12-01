@@ -62,7 +62,8 @@ void __attribute__((noreturn)) tohost_exit(uintptr_t code)
 uintptr_t __attribute__((weak)) handle_trap(uintptr_t cause, uintptr_t epc, uintptr_t regs[32])
 {
   tohost_exit(1337);
-  // burayi bi denemek istiyorum, ne yapiyor, bi integer division by 0 hatasi ile deneyeyim.
+  // ve exit 1337 ne
+  #warning burayi bi denemek istiyorum, ne yapiyor, bi integer division by 0 hatasi ile deneyeyim.
 }
 
 void exit(int code)
@@ -318,7 +319,8 @@ static void vprintfmt(void (*putch)(int, void**), void **putdat, const char *fmt
 
     // pointer
     case 'p':
-    #warning "static_assert kaldirildi, pointer ile long'un size'i esit mi diye bakiyor, zaten biz -mabi=lp64 diye belirtiyoruz"
+    #warning "static_assert kaldirildi, pointer ile long'un size'i esit mi diye bakiyor, 
+    // zaten biz -mabi=lp64 diye belirtiyoruz"
       // static_assert(sizeof(long) == sizeof(void*));
       lflag = 1;
       putch('0', putdat);

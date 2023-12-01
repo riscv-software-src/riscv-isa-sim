@@ -23,6 +23,8 @@ compile-maildeki:
 # exception handling
 # 
 # 
+.PHONY: compile-kirpilmis compile-ek-macrolar-sifir compile-maildeki
+
 
 compile-kirpilmis:
 	riscv64-unknown-elf-gcc -march=rv64gc -mabi=lp64 -static -fno-common -fno-builtin-printf -fno-tree-loop-distribute-patterns  -o outputs/main.elf  src/main.c src/syscalls.c src/crt.S -nostdlib -nostartfiles -lgcc -T test.ld
