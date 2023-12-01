@@ -62,6 +62,7 @@ void __attribute__((noreturn)) tohost_exit(uintptr_t code)
 uintptr_t __attribute__((weak)) handle_trap(uintptr_t cause, uintptr_t epc, uintptr_t regs[32])
 {
   tohost_exit(1337);
+  // burayi bi denemek istiyorum, ne yapiyor, bi integer division by 0 hatasi ile deneyeyim.
 }
 
 void exit(int code)
@@ -95,6 +96,7 @@ int __attribute__((weak)) main(int argc, char** argv)
 
 static void init_tls()
 {
+  #warning ne bu. init_tls ne demek
   register void* thread_pointer asm("tp");
   extern char _tdata_begin, _tdata_end, _tbss_end;
   size_t tdata_size = &_tdata_end - &_tdata_begin;
@@ -316,7 +318,7 @@ static void vprintfmt(void (*putch)(int, void**), void **putdat, const char *fmt
 
     // pointer
     case 'p':
-    #warning "static_assert kaldirildi"
+    #warning "static_assert kaldirildi, pointer ile long'un size'i esit mi diye bakiyor, zaten biz -mabi=lp64 diye belirtiyoruz"
       // static_assert(sizeof(long) == sizeof(void*));
       lflag = 1;
       putch('0', putdat);

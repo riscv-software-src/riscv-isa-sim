@@ -48,20 +48,20 @@ _start:
   li  x31,0
 
 
-# warning buralar yoruma cevrildi
+# warning buralar yoruma cevrildi, illegal operands diyor, derleme sirasinda MSTATUS_VS gibi macrolar tanimlanmadigi icin. 
   # enable VPU if present
 
-  # li t0, MSTATUS_VS
-  # csrs mstatus, t0
-  # # initialize VPU if we have one
-  # la t0, 1f
-  # csrw mtvec, t0
+  li t0, MSTATUS_VS
+  csrs mstatus, t0
+  # initialize VPU if we have one
+  la t0, 1f
+  csrw mtvec, t0
   
-  # # enable VPU if present
+  # enable VPU if present
   
-  # # enable FPU and accelerator if present
-  # li t0, MSTATUS_FS | MSTATUS_XS
-  # csrs mstatus, t0
+  # enable FPU and accelerator if present
+  li t0, MSTATUS_FS | MSTATUS_XS
+  csrs mstatus, t0
 
   # make sure XLEN agrees with compilation choice
   li t0, 1
@@ -119,6 +119,8 @@ _start:
 #endif
 
   # initialize trap vector
+  # trap oldugunda trape (handle_trap label'i) gitmeden once (ve donduken sonra) yapmasi gereken seyler var
+  # diger special registerler (mepc, mcause) ile birlikte mtvec buralarda kontrolu sagliyor.
   la t0, trap_entry
   csrw mtvec, t0
 
@@ -132,7 +134,7 @@ _start:
   and tp, tp, -64
   
   ## User code should be added here (below)
-  
+#warning galiba buraya jal main eklemem gerekiyor (j main de olabilir)
   ## User code should be added here (above)
 
   # get core id
@@ -190,13 +192,20 @@ trap_entry:
   csrr a0, mcause
   csrr a1, mepc
   mv a2, sp
+  # simdi bu handle_trap nerde
   jal handle_trap
   csrw mepc, a0
 
 # warning buralar yoruma cevrildi
-  # # Remain in M-mode after eret
-  # li t0, MSTATUS_MPP
-  # csrs mstatus, t0
+  # Remain in M-mode after eret
+
+  # bu MSTATUS_MPP'yi anlamadim,
+  # chatGPT machine previous privilege diyor
+  # eger derlenidcen -DMSTATUS_MPP=value diye tanimlanan bir macro ise,
+  # ne onemi var?
+
+  li t0, MSTATUS_MPP
+  csrs mstatus, t0
 
   LREG x1, 1*REGBYTES(sp)
   LREG x2, 2*REGBYTES(sp)
