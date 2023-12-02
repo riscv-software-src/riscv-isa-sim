@@ -89,6 +89,7 @@ typedef struct {
   bool access32;
   bool access16;
   bool access8;
+  bool sbbusyerror;
 } sbcs_t;
 
 typedef struct {
@@ -157,8 +158,19 @@ class debug_module_t : public abstract_device_t
     uint32_t read32(uint8_t *rom, unsigned int index);
 
     void sb_autoincrement();
+
+    /* Start a system bus access. (It could be instantaneous, but to help test
+     * OpenOCD a delay can be added.) */
+    void sb_read_start();
+    void sb_write_start();
+
+    /* Actually read/write. */
     void sb_read();
     void sb_write();
+
+    /* Return true iff a system bus access is in progress. */
+    bool sb_busy() const;
+
     unsigned sb_access_bits();
 
     dmcontrol_t dmcontrol;
@@ -191,6 +203,8 @@ class debug_module_t : public abstract_device_t
      * available.  Otherwise it is unavailable. */
     bool hart_available_state[2];
     bool hart_available(unsigned hart_id) const;
+
+    unsigned sb_read_wait, sb_write_wait;
 };
 
 #endif
