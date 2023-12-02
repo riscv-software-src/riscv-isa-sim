@@ -64,6 +64,7 @@ riscv_srcs = \
 	clint.cc \
 	plic.cc \
 	ns16550.cc \
+	blkdev.cc \
 	debug_module.cc \
 	remote_bitbang.cc \
 	jtag_dtm.cc \

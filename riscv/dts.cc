@@ -338,6 +338,33 @@ int fdt_parse_ns16550(const void *fdt, reg_t *ns16550_addr,
   return 0;
 }
 
+int fdt_parse_blkdev(
+    const void *fdt,
+    reg_t* blkdev_addr,
+    uint32_t* blkdev_int_id,
+    const char *compatible) {
+  int nodeoffset, rc, len;
+  const fdt32_t *reg_p;
+
+  nodeoffset = fdt_node_offset_by_compatible(fdt, -1, compatible);
+  if (nodeoffset < 0)
+    return nodeoffset;
+
+  rc = fdt_get_node_addr_size(fdt, nodeoffset, blkdev_addr, NULL, "reg");
+  if (rc < 0 || !blkdev_addr)
+    return -ENODEV;
+
+  reg_p = (fdt32_t *)fdt_getprop(fdt, nodeoffset, "interrupts", &len);
+  if (blkdev_int_id) {
+    if (reg_p)
+      *blkdev_int_id = fdt32_to_cpu(*reg_p);
+    else
+      *blkdev_int_id = BLKDEV_INTERRUPT_ID;
+  }
+
+  return 0;
+}
+
 int fdt_parse_pmp_num(const void *fdt, int cpu_offset, reg_t *pmp_num)
 {
   int rc;

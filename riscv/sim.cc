@@ -35,6 +35,7 @@ const size_t sim_t::INTERLEAVE;
 extern device_factory_t* clint_factory;
 extern device_factory_t* plic_factory;
 extern device_factory_t* ns16550_factory;
+extern device_factory_t* blockdev_factory;
 
 sim_t::sim_t(const cfg_t *cfg, bool halted,
              std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
@@ -44,7 +45,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
              const char *log_path,
              bool dtb_enabled, const char *dtb_file,
              bool socket_enabled,
-             FILE *cmd_file) // needed for command line option --cmd
+             FILE *cmd_file,
+             const char* img_path) // needed for command line option --cmd
   : htif_t(args),
     isa(cfg->isa(), cfg->priv()),
     cfg(cfg),
@@ -60,7 +62,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     histogram_enabled(false),
     log(false),
     remote_bitbang(NULL),
-    debug_module(this, dm_config)
+    debug_module(this, dm_config),
+    img_path(img_path)
 {
   signal(SIGINT, &handle_signal);
 
@@ -118,7 +121,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   std::vector<const device_factory_t*> device_factories = {
     clint_factory, // clint must be element 0
     plic_factory, // plic must be element 1
-    ns16550_factory};
+    ns16550_factory,
+    blockdev_factory};
   device_factories.insert(device_factories.end(),
                           plugin_device_factories.begin(),
                           plugin_device_factories.end());

@@ -165,6 +165,50 @@ class ns16550_t : public abstract_device_t {
   static const int MAX_BACKOFF = 16;
 };
 
+
+class blockdev_t : public abstract_device_t {
+public:
+  blockdev_t(
+      const simif_t* sim,
+      abstract_interrupt_controller_t *intctrl,
+      uint32_t interrupt_id,
+      const char* img_path);
+  ~blockdev_t();
+  bool load(reg_t addr, size_t len, uint8_t* bytes) override;
+  bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
+  void tick(reg_t rtc_ticks) override;
+
+private:
+  void post_request();
+  void handle_request();
+  void handle_read_request();
+  void handle_write_request();
+
+  void read_blockdevice_u64(uint64_t* data, reg_t sector_idx, reg_t byte_offset);
+  void write_blockdevice_u64(uint64_t data, reg_t sector_idx, reg_t byte_offset);
+
+private:
+  uint64_t blockdevice_latency = 500;
+  uint64_t cur_tick = 0;
+  uint64_t* blockdevice;
+  uint64_t blockdevice_size;
+
+  const simif_t* sim;
+  abstract_interrupt_controller_t *intctrl;
+  uint32_t interrupt_id;
+
+  int trackers = 1;
+  std::queue<unsigned int> idle_tags;
+  std::queue<unsigned int> pending_tags;
+  std::queue<unsigned int> cmpl_tags;
+
+  // FIXME : When tracker > 1, need to change these to queues as well
+  reg_t req_addr   = 0;
+  reg_t req_offset = 0;
+  reg_t req_len    = 0;
+  reg_t req_write  = 0;
+};
+
 template<typename T>
 void write_little_endian_reg(T* word, reg_t addr, size_t len, const uint8_t* bytes)
 {

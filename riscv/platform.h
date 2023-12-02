@@ -15,6 +15,9 @@
 #define NS16550_REG_SHIFT  0
 #define NS16550_REG_IO_WIDTH 1
 #define NS16550_INTERRUPT_ID 1
+#define BLKDEV_BASE         0x10015000
+#define BLKDEV_SIZE         0x1000
+#define BLKDEV_INTERRUPT_ID 2
 #define EXT_IO_BASE        0x40000000
 #define DRAM_BASE          0x80000000
 
