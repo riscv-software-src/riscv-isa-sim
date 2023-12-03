@@ -374,7 +374,8 @@ reg_t tvec_csr_t::read() const noexcept {
 }
 
 bool tvec_csr_t::unlogged_write(const reg_t val) noexcept {
-  this->val = val & ~(reg_t)2;
+  //Preserve the MODE field and adhere to a 4-byte aligned BASE field.
+  this->val = val & ~(reg_t)0xe;
   return true;
 }
 
