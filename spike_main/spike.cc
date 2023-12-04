@@ -52,6 +52,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --big-endian          Use a big-endian memory system.\n");
   fprintf(stderr, "  --misaligned          Support misaligned memory accesses\n");
   fprintf(stderr, "  --device=<name>       Attach MMIO plugin device from an --extlib library\n");
+  fprintf(stderr, "                          Device-specific flags can also be passed with --device=<name>,args\n");
   fprintf(stderr, "  --log-cache-miss      Generate a log of cache miss\n");
   fprintf(stderr, "  --log-commits         Generate a log of commits info\n");
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
@@ -374,11 +375,22 @@ int main(int argc, char** argv)
             /*default_trigger_count=*/4);
 
   auto const device_parser = [&plugin_device_factories](const char *s) {
-    const std::string name(s);
-    if (name.empty()) throw std::runtime_error("Plugin name is empty.");
-    auto it = mmio_device_map().find(name);
-    if (it == mmio_device_map().end()) throw std::runtime_error("Plugin \"" + name + "\" not found in loaded extlibs.");
+    const std::string arg(s);
+    std::string device_name;
+    std::string device_flags;
+    size_t comma_idx = arg.find(',');
+    if (comma_idx != std::string::npos) {
+      device_name = arg;
+      device_flags = "";
+    } else {
+      device_name = arg.substr(0, comma_idx);
+      device_flags = arg.substr(comma_idx + 1);
+    }
+    if (device_name.empty()) throw std::runtime_error("Plugin name is empty.");
+    auto it = mmio_device_map().find(device_name);
+    if (it == mmio_device_map().end()) throw std::runtime_error("Plugin \"" + device_name + "\" not found in loaded extlibs.");
     plugin_device_factories.push_back(it->second);
+    it->second->set_flags(device_flags);
   };
 
   option_parser_t parser;

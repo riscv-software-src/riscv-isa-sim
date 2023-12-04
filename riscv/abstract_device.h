@@ -26,6 +26,12 @@ public:
   virtual abstract_device_t* parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base) const = 0;
   virtual std::string generate_dts(const sim_t* sim) const = 0;
   virtual ~device_factory_t() {}
+  virtual void set_flags(const std::string flags) {
+    if (flags.size() > 0) {
+      fprintf(stderr, "Flags were passed to a device_factory which does not support flags\n");
+      exit(-1);
+    }
+  };
 };
 
 // Type for holding all registered MMIO plugins by name.
