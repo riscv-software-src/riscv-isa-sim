@@ -29,7 +29,7 @@ public:
 };
 
 // Type for holding all registered MMIO plugins by name.
-using mmio_device_map_t = std::map<std::string, const device_factory_t*>;
+using mmio_device_map_t = std::map<std::string, device_factory_t*>;
 
 mmio_device_map_t& mmio_device_map();
 
@@ -42,6 +42,6 @@ mmio_device_map_t& mmio_device_map();
   }; \
   name##_t* parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base) const override { return parse(fdt, sim, base); } \
   std::string generate_dts(const sim_t* sim) const override { return generate(sim); } \
-  }; const device_factory_t *name##_factory = new name##_factory_t();
+  }; device_factory_t *name##_factory = new name##_factory_t();
 
 #endif
