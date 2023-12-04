@@ -16,7 +16,7 @@ if (i != 0) {
       if (1 == mata_action) \
         vd = vs2;
       else \
-        *((type_sew_t<e16>::type *)&vd)  = 0xFFFF; \
+        vd = vector_agnostic(vd);
     }
     break;
     case e32: {
@@ -24,7 +24,7 @@ if (i != 0) {
       if (1 == mata_action) \
         vd = vs2;
       else \
-        *((type_sew_t<e32>::type *)&vd)  = 0xFFFFFFFF; \
+        vd = vector_agnostic(vd);
     }
     break;
     case e64: {
@@ -32,7 +32,7 @@ if (i != 0) {
       if (1 == mata_action) \
         vd = vs2;
       else \
-        *((type_sew_t<e64>::type *)&vd)  = 0xFFFFFFFFFFFFFFFF; \
+        vd = vector_agnostic(vd);
     }
     break;
   }
@@ -42,19 +42,19 @@ if (i != 0) {
       if (1 == mata_action) \
         P.VU.elt<float16_t>(rd_num, 0, true) = FRS1_H;
       else \
-        P.VU.elt<type_sew_t<e16>::type>(rd_num, 0, true) = 0xFFFF; \
+        P.VU.elt<float16_t>(rd_num, 0, true) = vector_agnostic(P.VU.elt<float16_t>(rd_num, 0, false)); \
       break;
     case e32:
       if (1 == mata_action) \
         P.VU.elt<float32_t>(rd_num, 0, true) = FRS1_F;
       else \
-        P.VU.elt<type_sew_t<e32>::type>(rd_num, 0, true) = 0xFFFFFFFF; \
+        P.VU.elt<float32_t>(rd_num, 0, true) = vector_agnostic(P.VU.elt<float32_t>(rd_num, 0, false)); \
       break;
     case e64:
       if (1 == mata_action) \
         P.VU.elt<float64_t>(rd_num, 0, true) = FRS1_D;
       else \
-        P.VU.elt<type_sew_t<e64>::type>(rd_num, 0, true) = 0xFFFFFFFFFFFFFFFF; \
+        P.VU.elt<float64_t>(rd_num, 0, true) = vector_agnostic(P.VU.elt<float64_t>(rd_num, 0, false)); \
       break;
   }
 }

@@ -16,7 +16,7 @@ VI_GENERAL_LOOP_BASE(1)
   switch (sew) {
   case e8:
     if (1 == P.VU.vta) {
-      P.VU.elt<uint8_t>(rd_num, i) = 0xFF;
+      P.VU.elt<uint8_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint8_t>(rd_num, i, false)); \
     }
     if (do_mask && i < vl) {
       P.VU.elt<uint8_t>(rd_num, pos, true) = P.VU.elt<uint8_t>(rs2_num, i);
@@ -24,19 +24,19 @@ VI_GENERAL_LOOP_BASE(1)
     break;
   case e16:
     if (1 == P.VU.vta)
-      P.VU.elt<uint16_t>(rd_num, i) = 0xFFFF;
+      P.VU.elt<uint16_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint16_t>(rd_num, i, false)); \
     if (do_mask && i < vl)
       P.VU.elt<uint16_t>(rd_num, pos, true) = P.VU.elt<uint16_t>(rs2_num, i);
     break;
   case e32:
     if (1 == P.VU.vta)
-      P.VU.elt<uint32_t>(rd_num, i) = 0xFFFFFFFF;
+      P.VU.elt<uint32_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint32_t>(rd_num, i, false)); \
     if (do_mask && i < vl)
       P.VU.elt<uint32_t>(rd_num, pos, true) = P.VU.elt<uint32_t>(rs2_num, i);
     break;
   default:
     if (1 == P.VU.vta)
-      P.VU.elt<uint64_t>(rd_num, i) = 0xFFFFFFFFFFFFFFFF;
+      P.VU.elt<uint64_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint64_t>(rd_num, i, false)); \
     if (do_mask && i < vl)
       P.VU.elt<uint64_t>(rd_num, pos, true) = P.VU.elt<uint64_t>(rs2_num, i);
     break;

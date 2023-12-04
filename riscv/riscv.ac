@@ -43,3 +43,8 @@ AC_ARG_ENABLE([dual-endian], AS_HELP_STRING([--enable-dual-endian], [Enable supp
 AS_IF([test "x$enable_dual_endian" = "xyes"], [
   AC_DEFINE([RISCV_ENABLE_DUAL_ENDIAN],,[Enable support for running target in either endianness])
 ])
+
+AC_ARG_ENABLE([varith-agnostic-write-ones], AS_HELP_STRING([--enable-varith-agnostic-write-ones], [Change vector arithmetic insns agnostisc policy to writing ones]))
+AS_IF([test "x$enable_varith_agnostic_write_ones" = "xyes"], [
+  AC_DEFINE([VARITH_AGNOSTIC_WRITE_ONE],,[Change vector arithmetic insns agnostisc policy to writing ones])
+])

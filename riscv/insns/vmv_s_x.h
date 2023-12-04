@@ -28,16 +28,16 @@ if (vl > 0 && P.VU.vstart->read() < vl) {
     for (reg_t i = std::max(P.VU.vstart->read(), (long unsigned int)1); i < P.VU.VLEN/P.VU.vsew; ++i) {
       switch (sew) {
       case e8:
-        P.VU.elt<uint8_t>(rd_num, i, true) = 0xFF;
+        P.VU.elt<uint8_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint8_t>(rd_num, i, false));
         break;
       case e16:
-        P.VU.elt<uint16_t>(rd_num, i, true) = 0xFFFF;
+        P.VU.elt<uint16_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint16_t>(rd_num, i, false));
         break;
       case e32:
-        P.VU.elt<uint32_t>(rd_num, i, true) = 0xFFFFFFFF;
+        P.VU.elt<uint32_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint32_t>(rd_num, i, false));
         break;
       default:
-        P.VU.elt<uint64_t>(rd_num, i, true) = 0xFFFFFFFFFFFFFFFF;
+        P.VU.elt<uint64_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint64_t>(rd_num, i, false));
         break;
       }
     }

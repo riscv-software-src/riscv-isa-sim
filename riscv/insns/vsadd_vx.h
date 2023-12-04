@@ -15,7 +15,7 @@ case e8: {
   if (1 == mata_action) \
     vd = sat_add<int8_t, uint8_t>(vs2, rs1, sat);
   else \
-    vd = 0xFF; \
+    vd = vector_agnostic(vd); \
   break;
 }
 case e16: {
@@ -23,7 +23,7 @@ case e16: {
   if (1 == mata_action) \
     vd = sat_add<int16_t, uint16_t>(vs2, rs1, sat);
   else \
-    vd = 0xFFFF; \
+    vd = vector_agnostic(vd); \
   break;
 }
 case e32: {
@@ -31,7 +31,7 @@ case e32: {
   if (1 == mata_action) \
     vd = sat_add<int32_t, uint32_t>(vs2, rs1, sat);
   else \
-    vd = 0xFFFFFFFF; \
+    vd = vector_agnostic(vd); \
   break;
 }
 default: {
@@ -39,7 +39,7 @@ default: {
   if (1 == mata_action) \
     vd = sat_add<int64_t, uint64_t>(vs2, rs1, sat);
   else \
-    vd = 0xFFFFFFFFFFFFFFFF; \
+    vd = vector_agnostic(vd); \
   break;
 }
 }

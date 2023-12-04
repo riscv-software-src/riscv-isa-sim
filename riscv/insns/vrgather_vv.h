@@ -20,7 +20,7 @@ VI_LOOP_BASE(1)
     if (1 == mata_action) \
       P.VU.elt<uint8_t>(rd_num, i, true) = vs1 >= P.VU.vlmax ? 0 : P.VU.elt<uint8_t>(rs2_num, vs1);
     else \
-      P.VU.elt<uint8_t>(rd_num, i, true) = 0xFF; \
+      P.VU.elt<uint8_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint8_t>(rd_num, i, false)); \
     break;
   }
   case e16: {
@@ -28,7 +28,7 @@ VI_LOOP_BASE(1)
     if (1 == mata_action) \
       P.VU.elt<uint16_t>(rd_num, i, true) = vs1 >= P.VU.vlmax ? 0 : P.VU.elt<uint16_t>(rs2_num, vs1);
     else \
-      P.VU.elt<uint16_t>(rd_num, i, true) = 0xFFFF; \
+      P.VU.elt<uint16_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint16_t>(rd_num, i, false)); \
     break;
   }
   case e32: {
@@ -36,7 +36,7 @@ VI_LOOP_BASE(1)
     if (1 == mata_action) \
       P.VU.elt<uint32_t>(rd_num, i, true) = vs1 >= P.VU.vlmax ? 0 : P.VU.elt<uint32_t>(rs2_num, vs1);
     else \
-      P.VU.elt<uint32_t>(rd_num, i, true) = 0xFFFFFFFF; \
+      P.VU.elt<uint32_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint32_t>(rd_num, i, false)); \
     break;
   }
   default: {
@@ -44,7 +44,7 @@ VI_LOOP_BASE(1)
     if (1 == mata_action) \
       P.VU.elt<uint64_t>(rd_num, i, true) = vs1 >= P.VU.vlmax ? 0 : P.VU.elt<uint64_t>(rs2_num, vs1);
     else \
-      P.VU.elt<uint64_t>(rd_num, i, true) = 0xFFFFFFFFFFFFFFFF; \
+      P.VU.elt<uint64_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint64_t>(rd_num, i, false)); \
     break;
   }
   }

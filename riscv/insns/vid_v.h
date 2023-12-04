@@ -23,25 +23,25 @@ for (reg_t i = P.VU.vstart->read() ; i < std::max(P.VU.vlmax, P.VU.VLEN/P.VU.vse
     if (1 == mata_action)
       P.VU.elt<uint8_t>(rd_num, i, true) = i;
     else
-      P.VU.elt<uint8_t>(rd_num, i, true) = 0xFF;
+      P.VU.elt<uint8_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint8_t>(rd_num, i, false));
     break;
   case e16:
     if (1 == mata_action)
       P.VU.elt<uint16_t>(rd_num, i, true) = i;
     else
-      P.VU.elt<uint16_t>(rd_num, i, true) = 0xFFFF;
+      P.VU.elt<uint16_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint16_t>(rd_num, i, false));
     break;
   case e32:
     if (1 == mata_action)
       P.VU.elt<uint32_t>(rd_num, i, true) = i;
     else
-      P.VU.elt<uint32_t>(rd_num, i, true) = 0xFFFFFFFF;
+      P.VU.elt<uint32_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint32_t>(rd_num, i, false));
     break;
   default:
     if (1 == mata_action)
       P.VU.elt<uint64_t>(rd_num, i, true) = i;
     else
-      P.VU.elt<uint64_t>(rd_num, i, true) = 0xFFFFFFFFFFFFFFFF;
+      P.VU.elt<uint64_t>(rd_num, i, true) = vector_agnostic(P.VU.elt<uint64_t>(rd_num, i, false));
     break;
   }
 }
