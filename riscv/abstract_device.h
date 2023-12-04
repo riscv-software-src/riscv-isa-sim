@@ -8,6 +8,7 @@
 #include <string>
 #include <map>
 #include <stdexcept>
+#include <vector>
 
 class sim_t;
 
@@ -26,10 +27,12 @@ public:
   virtual abstract_device_t* parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base) const = 0;
   virtual std::string generate_dts(const sim_t* sim) const = 0;
   virtual ~device_factory_t() {}
+  void set_sargs(std::vector<std::string> sargs) { _sargs = sargs; }
+  std::vector<std::string> _sargs;
 };
 
 // Type for holding all registered MMIO plugins by name.
-using mmio_device_map_t = std::map<std::string, const device_factory_t*>;
+using mmio_device_map_t = std::map<std::string, device_factory_t*>;
 
 mmio_device_map_t& mmio_device_map();
 
@@ -40,8 +43,8 @@ mmio_device_map_t& mmio_device_map();
     std::string str(#name); \
     if (!mmio_device_map().emplace(str, this).second) throw std::runtime_error("Plugin \"" + str + "\" already registered"); \
   }; \
-  name##_t* parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base) const override { return parse(fdt, sim, base); } \
+  name##_t* parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base) const override { return parse(fdt, sim, base, _sargs); } \
   std::string generate_dts(const sim_t* sim) const override { return generate(sim); } \
-  }; const device_factory_t *name##_factory = new name##_factory_t();
+  }; device_factory_t *name##_factory = new name##_factory_t();
 
 #endif
