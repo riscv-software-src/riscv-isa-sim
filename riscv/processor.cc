@@ -543,6 +543,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   sscsrind_reg_csr_t::sscsrind_reg_csr_t_p vsireg[6];
 
   if (proc->extension_enabled_const(EXT_SMCSRIND)) {
+    miselect = std::make_shared<basic_csr_t>(proc, CSR_MISELECT, 0);
+    csrmap[CSR_MISELECT] = miselect;
+
     const reg_t mireg_csrs[] = { CSR_MIREG, CSR_MIREG2, CSR_MIREG3, CSR_MIREG4, CSR_MIREG5, CSR_MIREG6 };
     auto i = 0;
     for (auto csr : mireg_csrs) {
