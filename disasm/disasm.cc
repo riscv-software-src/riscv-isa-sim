@@ -413,27 +413,35 @@ struct : public arg_t {
     int lmul = insn.v_lmul();
     auto vta = insn.v_vta() == 1 ? "ta" : "tu";
     auto vma = insn.v_vma() == 1 ? "ma" : "mu";
-    s << "e" << sew;
-    if(insn.v_frac_lmul()) {
-      std::string lmul_str = "";
-      switch(lmul){
-        case 3:
-          lmul_str = "f2";
-          break;
-        case 2:
-          lmul_str = "f4";
-          break;
-        case 1:
-          lmul_str = "f8";
-          break;
-        default:
-          assert(true && "unsupport fractional LMUL");
-      }
-      s << ", m" << lmul_str;
+    int newType = (insn.bits() & 0x80000000) ? insn.v_zimm10() : insn.v_zimm11();
+    // if bit 31 is set, this is vsetivli and there is a 10-bit vtype, else this is vsetvli and there is an 11-bit vtype
+    // If the provided vtype has reserved bits, display the hex version of the vtype instead
+    if ((newType >> 8) != 0) {
+      s << "0x" << std::hex << newType;
     } else {
-      s << ", m" << (1 << lmul);
+      s << "e" << sew;
+      if(insn.v_frac_lmul()) {
+        std::string lmul_str = "";
+        switch(lmul){
+          case 3:
+            lmul_str = "f2";
+            break;
+          case 2:
+            lmul_str = "f4";
+            break;
+          case 1:
+            lmul_str = "f8";
+            break;
+          default:
+            assert(true && "unsupport fractional LMUL");
+        }
+        s << ", m" << lmul_str;
+      } else {
+        s << ", m" << (1 << lmul);
+      }
+      s << ", " << vta << ", " << vma;
     }
-    s << ", " << vta << ", " << vma;
+
     return s.str();
   }
 } v_vtype;
@@ -830,6 +838,29 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_XAMO(amocas_w)
     DEFINE_XAMO(amocas_d)
     DEFINE_XAMO(amocas_q)
+  }
+
+  if (isa->extension_enabled(EXT_ZABHA)) {
+    DEFINE_XAMO(amoadd_b)
+    DEFINE_XAMO(amoswap_b)
+    DEFINE_XAMO(amoand_b)
+    DEFINE_XAMO(amoor_b)
+    DEFINE_XAMO(amoxor_b)
+    DEFINE_XAMO(amomin_b)
+    DEFINE_XAMO(amomax_b)
+    DEFINE_XAMO(amominu_b)
+    DEFINE_XAMO(amomaxu_b)
+    DEFINE_XAMO(amocas_b)
+    DEFINE_XAMO(amoadd_h)
+    DEFINE_XAMO(amoswap_h)
+    DEFINE_XAMO(amoand_h)
+    DEFINE_XAMO(amoor_h)
+    DEFINE_XAMO(amoxor_h)
+    DEFINE_XAMO(amomin_h)
+    DEFINE_XAMO(amomax_h)
+    DEFINE_XAMO(amominu_h)
+    DEFINE_XAMO(amomaxu_h)
+    DEFINE_XAMO(amocas_h)
   }
 
   add_insn(new disasm_insn_t("j", match_jal, mask_jal | mask_rd, {&jump_target}));
@@ -1787,41 +1818,6 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     #undef DISASM_OPIV_S__INSN
     #undef DISASM_OPIV_W__INSN
     #undef DISASM_VFUNARY0_INSN
-
-    // vector amo
-    std::vector<const arg_t *> v_fmt_amo_wd = {&vd, &v_address, &vs2, &vd, opt, &vm};
-    std::vector<const arg_t *> v_fmt_amo = {&x0, &v_address, &vs2, &vd, opt, &vm};
-    for (size_t elt = 0; elt <= 3; ++elt) {
-      const custom_fmt_t template_insn[] = {
-        {match_vamoaddei8_v | mask_wd,   mask_vamoaddei8_v | mask_wd,
-          "%sei%d.v", v_fmt_amo_wd},
-        {match_vamoaddei8_v,   mask_vamoaddei8_v | mask_wd,
-          "%sei%d.v", v_fmt_amo},
-      };
-      std::pair<const char*, reg_t> amo_map[] = {
-          {"vamoswap", 0x01ul << 27},
-          {"vamoadd",  0x00ul << 27},
-          {"vamoxor",  0x04ul << 27},
-          {"vamoand",  0x0cul << 27},
-          {"vamoor",   0x08ul << 27},
-          {"vamomin",  0x10ul << 27},
-          {"vamomax",  0x14ul << 27},
-          {"vamominu", 0x18ul << 27},
-          {"vamomaxu", 0x1cul << 27}};
-      const reg_t elt_map[] = {0x0ul << 12,  0x5ul << 12,
-                               0x6ul <<12, 0x7ul << 12};
-
-      for (size_t idx = 0; idx < sizeof(amo_map) / sizeof(amo_map[0]); ++idx) {
-        for (auto item : template_insn) {
-          char buf[128];
-          snprintf(buf, sizeof(buf), item.fmt, amo_map[idx].first, 8 << elt);
-          add_insn(new disasm_insn_t(buf,
-                    item.match | amo_map[idx].second | elt_map[elt],
-                    item.mask,
-                    item.arg));
-        }
-      }
-    }
   }
 
   if (isa->extension_enabled(EXT_ZVFBFMIN)) {
@@ -2219,6 +2215,17 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_RTYPE(mop_rr_7);
   }
 
+  if (isa->extension_enabled(EXT_ZCMOP)) {
+    DISASM_INSN("c.mop.1", c_mop_1, 0, {});
+    DISASM_INSN("c.mop.3", c_mop_3, 0, {});
+    DISASM_INSN("c.mop.5", c_mop_5, 0, {});
+    DISASM_INSN("c.mop.7", c_mop_7, 0, {});
+    DISASM_INSN("c.mop.9", c_mop_9, 0, {});
+    DISASM_INSN("c.mop.11", c_mop_11, 0, {});
+    DISASM_INSN("c.mop.13", c_mop_13, 0, {});
+    DISASM_INSN("c.mop.15", c_mop_15, 0, {});
+  }
+
   if (isa->extension_enabled(EXT_ZKND) ||
       isa->extension_enabled(EXT_ZKNE)) {
     DISASM_INSN("aes64ks1i", aes64ks1i, 0, {&xrd, &xrs1, &rcon});
@@ -2285,7 +2292,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
 #define DISASM_VECTOR_VV_VX_VIU(name) \
   DEFINE_VECTOR_VV(name##_vv); \
   DEFINE_VECTOR_VX(name##_vx); \
-  DEFINE_VECTOR_VIU(name##_vx)
+  DEFINE_VECTOR_VIU(name##_vi)
 #define DISASM_VECTOR_VV_VX_VIU_ZIMM6(name) \
   DEFINE_VECTOR_VV(name##_vv); \
   DEFINE_VECTOR_VX(name##_vx); \
@@ -2363,6 +2370,17 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_VECTOR_VIU(vsm3c_vi);
     DEFINE_VECTOR_VV(vsm3me_vv);
   }
+
+  if (isa->extension_enabled(EXT_ZALASR)) {
+    DEFINE_XLOAD_BASE(lb_aq);
+    DEFINE_XLOAD_BASE(lh_aq);
+    DEFINE_XLOAD_BASE(lw_aq);
+    DEFINE_XLOAD_BASE(ld_aq);
+    DEFINE_XSTORE_BASE(sb_rl);
+    DEFINE_XSTORE_BASE(sh_rl);
+    DEFINE_XSTORE_BASE(sw_rl);
+    DEFINE_XSTORE_BASE(sd_rl);
+  }
 }
 
 disassembler_t::disassembler_t(const isa_parser_t *isa)
@@ -2372,7 +2390,7 @@ disassembler_t::disassembler_t(const isa_parser_t *isa)
 
   // next-highest priority: other instructions in same base ISA
   std::string fallback_isa_string = std::string("rv") + std::to_string(isa->get_max_xlen()) +
-    "gqchv_zfh_zba_zbb_zbc_zbs_zcb_zicbom_zicboz_zicond_zkn_zkr_zks_svinval_zimop";
+    "gqchv_zfh_zba_zbb_zbc_zbs_zcb_zicbom_zicboz_zicond_zkn_zkr_zks_svinval_zcmop_zimop";
   isa_parser_t fallback_isa(fallback_isa_string.c_str(), DEFAULT_PRIV);
   add_instructions(&fallback_isa);
 

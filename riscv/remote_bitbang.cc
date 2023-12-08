@@ -106,7 +106,6 @@ void remote_bitbang_t::tick()
 
 void remote_bitbang_t::execute_commands()
 {
-  static char send_buf[buf_size];
   unsigned total_processed = 0;
   bool quit = false;
   bool in_rti = tap->state() == RUN_TEST_IDLE;

@@ -1304,10 +1304,10 @@ bool dcsr_csr_t::unlogged_write(const reg_t val) noexcept {
   step = get_field(val, DCSR_STEP);
   // TODO: ndreset and fullreset
   ebreakm = get_field(val, DCSR_EBREAKM);
-  ebreaks = get_field(val, DCSR_EBREAKS);
-  ebreaku = get_field(val, DCSR_EBREAKU);
-  ebreakvs = get_field(val, CSR_DCSR_EBREAKVS);
-  ebreakvu = get_field(val, CSR_DCSR_EBREAKVU);
+  ebreaks = proc->extension_enabled('S') ? get_field(val, DCSR_EBREAKS) : false;
+  ebreaku = proc->extension_enabled('U') ? get_field(val, DCSR_EBREAKU) : false;
+  ebreakvs = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_EBREAKVS) : false;
+  ebreakvu = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_EBREAKVU) : false;
   halt = get_field(val, DCSR_HALT);
   v = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_V) : false;
   return true;
@@ -1535,7 +1535,7 @@ virtualized_stimecmp_csr_t::virtualized_stimecmp_csr_t(processor_t* const proc, 
   virtualized_csr_t(proc, orig, virt) {
 }
 
-void virtualized_stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
+void stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (!(state->menvcfg->read() & MENVCFG_STCE)) {
     // access to (v)stimecmp with MENVCFG.STCE = 0
     if (state->prv < PRV_M)
@@ -1549,7 +1549,11 @@ void virtualized_stimecmp_csr_t::verify_permissions(insn_t insn, bool write) con
     throw trap_virtual_instruction(insn.bits());
   }
 
-  virtualized_csr_t::verify_permissions(insn, write);
+  basic_csr_t::verify_permissions(insn, write);
+}
+
+void virtualized_stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
+  orig_csr->verify_permissions(insn, write);
 }
 
 scountovf_csr_t::scountovf_csr_t(processor_t* const proc, const reg_t addr):

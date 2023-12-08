@@ -253,7 +253,7 @@ int htif_t::run()
     std::bind(enq_func, &fromhost_queue, std::placeholders::_1);
 
   if (tohost_addr == 0) {
-    while (true)
+    while (!signal_exit)
       idle();
   }
 

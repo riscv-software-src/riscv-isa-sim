@@ -121,6 +121,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       // HINTs encoded in base-ISA instructions are always present.
     } else if (ext_str == "zacas") {
       extension_table[EXT_ZACAS] = true;
+    } else if (ext_str == "zabha") {
+      extension_table[EXT_ZABHA] = true;
     } else if (ext_str == "zmmul") {
       extension_table[EXT_ZMMUL] = true;
     } else if (ext_str == "zba") {
@@ -294,6 +296,10 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_SMCNTRPMF] = true;
     } else if (ext_str == "zimop") {
       extension_table[EXT_ZIMOP] = true;
+    } else if (ext_str == "zcmop") {
+      extension_table[EXT_ZCMOP] = true;
+    } else if (ext_str == "zalasr") {
+      extension_table[EXT_ZALASR] = true;
     } else if (ext_str[0] == 'x') {
       extension_table['X'] = true;
       if (ext_str.size() == 1) {
@@ -353,6 +359,10 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
 
   if (extension_table[EXT_ZACAS] && !extension_table['A']) {
     bad_isa_string(str, "'Zacas' extension requires 'A' extension");
+  }
+
+  if (extension_table[EXT_ZABHA] && !extension_table['A']) {
+    bad_isa_string(str, "'Zabha' extension requires 'A' extension");
   }
 
   // Zpn conflicts with Zvknha/Zvknhb in both rv32 and rv64

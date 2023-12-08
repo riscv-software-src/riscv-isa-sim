@@ -140,8 +140,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       device_nodes.append(factory->generate_dts(this));
     dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
                    initrd_bounds.first, initrd_bounds.second,
-                   cfg->bootargs(), cfg->pmpregions, procs, mems,
-                   device_nodes);
+                   cfg->bootargs(), cfg->pmpregions, cfg->pmpgranularity,
+                   procs, mems, device_nodes);
     dtb = dts_compile(dts);
   }
 

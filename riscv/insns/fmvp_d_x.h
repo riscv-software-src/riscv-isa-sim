@@ -4,5 +4,5 @@ require_extension(EXT_ZFA);
 require_fp;
 ui64_f64 ui;
 ui.ui = ((uint64_t)RS2) << 32;
-ui.ui |= RS1;
+ui.ui |= zext32(RS1);
 WRITE_FRD_D(f64(ui.ui));
