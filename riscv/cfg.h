@@ -61,52 +61,26 @@ private:
 class cfg_t
 {
 public:
-  cfg_t(std::pair<reg_t, reg_t> default_initrd_bounds,
-        const char *default_bootargs,
-        const char *default_isa, const char *default_priv,
-        const char *default_varch,
-        const bool default_misaligned,
-        const endianness_t default_endianness,
-        const reg_t default_pmpregions,
-        const reg_t default_pmpgranularity,
-        const std::vector<mem_cfg_t> &default_mem_layout,
-        const std::vector<size_t> default_hartids,
-        bool default_real_time_clint,
-        const reg_t default_trigger_count)
-    : initrd_bounds(default_initrd_bounds),
-      bootargs(default_bootargs),
-      isa(default_isa),
-      priv(default_priv),
-      varch(default_varch),
-      misaligned(default_misaligned),
-      endianness(default_endianness),
-      pmpregions(default_pmpregions),
-      pmpgranularity(default_pmpgranularity),
-      mem_layout(default_mem_layout),
-      hartids(default_hartids),
-      explicit_hartids(false),
-      real_time_clint(default_real_time_clint),
-      trigger_count(default_trigger_count)
-  {}
+  cfg_t();
 
-  cfg_arg_t<std::pair<reg_t, reg_t>> initrd_bounds;
-  cfg_arg_t<const char *>            bootargs;
-  cfg_arg_t<const char *>            isa;
-  cfg_arg_t<const char *>            priv;
-  cfg_arg_t<const char *>            varch;
-  bool                               misaligned;
-  endianness_t                       endianness;
-  reg_t                              pmpregions;
-  reg_t                              pmpgranularity;
-  cfg_arg_t<std::vector<mem_cfg_t>>  mem_layout;
-  std::optional<reg_t>               start_pc;
-  cfg_arg_t<std::vector<size_t>>     hartids;
-  bool                               explicit_hartids;
-  cfg_arg_t<bool>                    real_time_clint;
-  reg_t                              trigger_count;
+  std::pair<reg_t, reg_t> initrd_bounds;
+  const char *            bootargs;
+  const char *            isa;
+  const char *            priv;
+  const char *            varch;
+  bool                    misaligned;
+  endianness_t            endianness;
+  reg_t                   pmpregions;
+  reg_t                   pmpgranularity;
+  std::vector<mem_cfg_t>  mem_layout;
+  std::optional<reg_t>    start_pc;
+  std::vector<size_t>     hartids;
+  bool                    explicit_hartids;
+  bool                    real_time_clint;
+  reg_t                   trigger_count;
 
-  size_t nprocs() const { return hartids().size(); }
-  size_t max_hartid() const { return hartids().back(); }
+  size_t nprocs() const { return hartids.size(); }
+  size_t max_hartid() const { return hartids.back(); }
 };
 
 #endif
