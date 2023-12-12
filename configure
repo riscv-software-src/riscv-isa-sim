@@ -5869,6 +5869,46 @@ _ACEOF
 fi
 
 
+{ $as_echo "$as_me:${as_lineno-$LINENO}: checking for main in -lfdt" >&5
+$as_echo_n "checking for main in -lfdt... " >&6; }
+if ${ac_cv_lib_fdt_main+:} false; then :
+  $as_echo_n "(cached) " >&6
+else
+  ac_check_lib_save_LIBS=$LIBS
+LIBS="-lfdt  $LIBS"
+cat confdefs.h - <<_ACEOF >conftest.$ac_ext
+/* end confdefs.h.  */
+
+
+int
+main ()
+{
+return main ();
+  ;
+  return 0;
+}
+_ACEOF
+if ac_fn_cxx_try_link "$LINENO"; then :
+  ac_cv_lib_fdt_main=yes
+else
+  ac_cv_lib_fdt_main=no
+fi
+rm -f core conftest.err conftest.$ac_objext \
+    conftest$ac_exeext conftest.$ac_ext
+LIBS=$ac_check_lib_save_LIBS
+fi
+{ $as_echo "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_fdt_main" >&5
+$as_echo "$ac_cv_lib_fdt_main" >&6; }
+if test "x$ac_cv_lib_fdt_main" = xyes; then :
+  cat >>confdefs.h <<_ACEOF
+#define HAVE_LIBFDT 1
+_ACEOF
+
+  LIBS="-lfdt $LIBS"
+
+fi
+
+
 
 # Check whether --with-isa was given.
 if test "${with_isa+set}" = set; then :
@@ -6149,51 +6189,6 @@ $as_echo "$as_me: configuring default subproject : customext" >&6;}
       subprojects_enabled="$subprojects_enabled customext"
 
 $as_echo "#define CUSTOMEXT_ENABLED /**/" >>confdefs.h
-
-
-
-
-
-
-    # Determine if this is a required or an optional subproject
-
-
-
-    # Determine if there is a group with the same name
-
-
-
-    # Create variations of the subproject name suitable for use as a CPP
-    # enabled define, a shell enabled variable, and a shell function
-
-
-
-
-
-
-
-
-
-
-
-    # Add subproject to our running list
-
-    subprojects="$subprojects fdt"
-
-    # Process the subproject appropriately. If enabled add it to the
-    # $enabled_subprojects running shell variable, set a
-    # SUBPROJECT_ENABLED C define, and include the appropriate
-    # 'subproject.ac'.
-
-
-      { $as_echo "$as_me:${as_lineno-$LINENO}: configuring default subproject : fdt" >&5
-$as_echo "$as_me: configuring default subproject : fdt" >&6;}
-      ac_config_files="$ac_config_files fdt.mk:fdt/fdt.mk.in"
-
-      enable_fdt_sproj="yes"
-      subprojects_enabled="$subprojects_enabled fdt"
-
-$as_echo "#define FDT_ENABLED /**/" >>confdefs.h
 
 
 
@@ -7062,7 +7057,6 @@ do
     "riscv.mk") CONFIG_FILES="$CONFIG_FILES riscv.mk:riscv/riscv.mk.in" ;;
     "disasm.mk") CONFIG_FILES="$CONFIG_FILES disasm.mk:disasm/disasm.mk.in" ;;
     "customext.mk") CONFIG_FILES="$CONFIG_FILES customext.mk:customext/customext.mk.in" ;;
-    "fdt.mk") CONFIG_FILES="$CONFIG_FILES fdt.mk:fdt/fdt.mk.in" ;;
     "softfloat.mk") CONFIG_FILES="$CONFIG_FILES softfloat.mk:softfloat/softfloat.mk.in" ;;
     "spike_main.mk") CONFIG_FILES="$CONFIG_FILES spike_main.mk:spike_main/spike_main.mk.in" ;;
     "spike_dasm.mk") CONFIG_FILES="$CONFIG_FILES spike_dasm.mk:spike_dasm/spike_dasm.mk.in" ;;

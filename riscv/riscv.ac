@@ -8,6 +8,8 @@ AC_CHECK_LIB([boost_system], [main], [], [])
 
 AC_CHECK_LIB([boost_regex], [main], [], [])
 
+AC_CHECK_LIB([fdt], [main], [], [])
+
 AC_ARG_WITH(isa,
 	[AS_HELP_STRING([--with-isa=RV64IMAFDC_zicntr_zihpm],
 		[Sets the default RISC-V ISA])],
