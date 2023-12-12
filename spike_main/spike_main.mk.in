@@ -1,5 +1,4 @@
 spike_main_subproject_deps = \
-	fdt \
 	fesvr \
 	softfloat \
 	disasm \

@@ -22,9 +22,6 @@
 #undef DTC
 
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
-#undef FDT_ENABLED
-
-/* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef FESVR_ENABLED
 
 /* define if the Boost library is available */
@@ -50,6 +47,9 @@
 
 /* Define to 1 if you have the `boost_system' library (-lboost_system). */
 #undef HAVE_LIBBOOST_SYSTEM
+
+/* Define to 1 if you have the `fdt' library (-lfdt). */
+#undef HAVE_LIBFDT
 
 /* Define to 1 if you have the `pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
