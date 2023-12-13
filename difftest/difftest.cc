@@ -245,9 +245,19 @@ void DifftestRef::set_regs(diff_context_t *ctx, bool on_demand) {
 
 void DifftestRef::memcpy_from_dut(reg_t dest, void* src, size_t n) {
   while (n) {
-    char *base = sim->addr_to_mem(dest);
+    bool is_zero = true;
+    for (int i=0; i < (PGSIZE/sizeof(uint64_t)); i++) {
+      if (((uint64_t*)src)[i] != 0) {
+        is_zero = false;
+        break;
+      }
+    }
+
     size_t n_bytes = (n > PGSIZE) ? PGSIZE : n;
-    memcpy(base, src, n_bytes);
+    if (!is_zero) {
+      char *base = sim->addr_to_mem(dest);
+      memcpy(base, src, n_bytes);
+    }
     dest += PGSIZE;
     src = (char *)src + PGSIZE;
     n -= n_bytes;
