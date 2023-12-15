@@ -40,5 +40,15 @@ create-objdump-readelf: $(EXE)
 clean:
 	rm -f $(TEMPDIR)/*.o $(OUTDIR)/*
 
+# SEARCH_DIR = ../../
+# EXTENSIONS = .cc .h .c
+
 find-function-calls-defs:
-	@grep --color=always -Ern '\b$(filter-out $@,$(MAKECMDGOALS))\(' ../../../**
+	@grep --color=always -Ern '\b$(filter-out $@,$(MAKECMDGOALS))\(' ../../**
+
+#	($(patsubst %,*%,$(EXTENSIONS)) | xargs find $(SEARCH_DIR)) 
+	 
+# 
+# | xargs grep --color=always -En "\b$(filter-out $@,$(MAKECMDGOALS))\("
+
+# -exec grep --color=always -Ern "\b$(filter-out $@,$(MAKECMDGOALS))\(" {} +

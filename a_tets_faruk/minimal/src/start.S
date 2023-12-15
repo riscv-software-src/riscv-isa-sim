@@ -5,4 +5,6 @@
 _start:
   # stack pointer'i ayarla
   # main'i cagir
+  la sp, _end
+  j main
     
