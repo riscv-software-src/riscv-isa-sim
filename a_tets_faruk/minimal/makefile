@@ -4,17 +4,32 @@ OUTDIR = outputs
 TEMPDIR = temp
 INCDIR = inc
 
-# Define object files and executable names based on source files
-SOURCES = $(wildcard $(SRCDIR)/*.c)
-OBJS = $(patsubst $(SRCDIR)/%.c,$(TEMPDIR)/%.o,$(SOURCES))
+# # Define paths
+SRCDIR = src
+OUTDIR = outputs
+TEMPDIR = temp
+INCDIR = inc
+
+# Include both .c and .s files
+SOURCES_C = $(wildcard $(SRCDIR)/*.c)
+SOURCES_S = $(wildcard $(SRCDIR)/*.S)
+SOURCES = $(SOURCES_C) $(SOURCES_S)
+
+# Object files for both .c and .s files
+OBJS_C = $(patsubst $(SRCDIR)/%.c,$(TEMPDIR)/%.o,$(SOURCES_C))
+OBJS_S = $(patsubst $(SRCDIR)/%.S,$(TEMPDIR)/%.o,$(SOURCES_S))
+OBJS = $(OBJS_C) $(OBJS_S)
+
 EXE = $(OUTDIR)/hello.elf
 
 # Compiler and Linker options
 CC = riscv64-unknown-elf-gcc
+AS = riscv64-unknown-elf-as # Assembler for .S files
 LD = riscv64-unknown-elf-ld
 OBJDUMP = riscv64-unknown-elf-objdump
 READELF = riscv64-unknown-elf-readelf
 CFLAGS = -I$(INCDIR) -c
+ASFLAGS = # Add any assembler flags if needed
 LDFLAGS = -T link.ld
 DUMPFLAGS = -D
 READFLAGS = -a
@@ -24,8 +39,13 @@ READFLAGS = -a
 
 all: $(EXE)
 
+# Compilation rule for .c files
 $(TEMPDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) -o $@ $<
+
+# Assembly rule for .S files
+$(TEMPDIR)/%.o: $(SRCDIR)/%.S
+	$(AS) $(ASFLAGS) -o $@ $<
 
 $(EXE): $(OBJS)
 	$(LD) $(LDFLAGS) -o $@ $(OBJS)
@@ -40,11 +60,12 @@ create-objdump-readelf: $(EXE)
 clean:
 	rm -f $(TEMPDIR)/*.o $(OUTDIR)/*
 
-# SEARCH_DIR = ../../
-# EXTENSIONS = .cc .h .c
-
 find-function-calls-defs:
 	@grep --color=always -Ern '\b$(filter-out $@,$(MAKECMDGOALS))\(' ../../**
+
+
+# SEARCH_DIR = ../../
+# EXTENSIONS = .cc .h .c
 
 #	($(patsubst %,*%,$(EXTENSIONS)) | xargs find $(SEARCH_DIR)) 
 	 
