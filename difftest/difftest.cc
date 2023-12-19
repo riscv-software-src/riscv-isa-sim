@@ -38,9 +38,6 @@ DifftestRef::~DifftestRef() {
   for (const auto& pair : mems) {
     delete pair.second;
   }
-  for (const auto& pair : plugin_devices) {
-    delete pair.second;
-  }
   delete sim;
 }
 
