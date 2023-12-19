@@ -23,7 +23,7 @@ static size_t overrided_mhartid = 0;
 
 DifftestRef::DifftestRef() :
   cfg(create_cfg()),
-  mems(make_mems(cfg->mem_layout())),
+  mems(make_mems(cfg->mem_layout)),
   plugin_devices(create_devices()),
   sim(create_sim(cfg)),
   p(sim->get_core(0UL)),
@@ -215,7 +215,7 @@ void DifftestRef::set_regs(diff_context_t *ctx, bool on_demand) {
     if(!on_demand || vReg_Val1 != ctx->vr[i]._64[1]){
       vReg_Val1 = ctx->vr[i]._64[1];
     }
-  } 
+  }
   /***********************************************************************************/
   if (!on_demand || vstate.vstart->read() != ctx->vstart) {
     vstate.vstart->write_raw(ctx->vstart);
@@ -340,32 +340,20 @@ const cfg_t *DifftestRef::create_cfg() {
   auto memory_layout = std::vector<mem_cfg_t>{
     mem_cfg_t{DRAM_BASE, mem_size},
   };
-  auto const cfg = new cfg_t(
-    // std::pair<reg_t, reg_t> default_initrd_bounds,
-    std::make_pair(0, 0),
-    // const char *default_bootargs,
-    nullptr,
-    // const char *default_isa,
-    CONFIG_DIFF_ISA_STRING,
-    // const char *default_priv
-    DEFAULT_PRIV,
-    // const char *default_varch,
-    DEFAULT_VARCH,
-    // const bool default_misaligned,
-    false,
+  auto const cfg = new cfg_t();
+  cfg->initrd_bounds = std::make_pair(0, 0);
+  cfg->bootargs = nullptr;
+  cfg->isa = CONFIG_DIFF_ISA_STRING;
+  cfg->priv = DEFAULT_PRIV;
+  cfg->varch = DEFAULT_VARCH;
+  cfg->misaligned = false;
     // const endianness_t default_endianness,
-    endianness_little,
-    // const reg_t default_pmpregions,
-    CONFIG_PMP_NUM,
-    // const std::vector<mem_cfg_t> &default_mem_layout,
-    memory_layout,
-    // const std::vector<size_t> default_hartids,
-    std::vector<size_t>{overrided_mhartid},
-    // bool default_real_time_clint,
-    false,
-    // const reg_t default_trigger_count
-    0
-  );
+  cfg->endianness = endianness_little;
+  cfg->pmpregions = CONFIG_PMP_NUM;
+  cfg->mem_layout = memory_layout;
+  cfg->hartids = std::vector<size_t>{overrided_mhartid};
+  cfg->real_time_clint = false;
+  cfg->trigger_count = 0;
   return cfg;
 }
 
