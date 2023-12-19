@@ -187,7 +187,7 @@ bool mmu_t::mmio(reg_t paddr, size_t len, uint8_t* bytes, access_type type)
   return true;
 }
 
-void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool virt, std::optional<reg_t> data)
+void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool virt, reg_t tval, std::optional<reg_t> data)
 {
   if (matched_trigger || !proc)
     return;
@@ -197,13 +197,13 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool 
   if (match.has_value())
     switch (match->timing) {
       case triggers::TIMING_BEFORE:
-        throw triggers::matched_t(operation, address, match->action, virt);
+        throw triggers::matched_t(operation, tval, match->action, virt);
 
       case triggers::TIMING_AFTER:
         // We want to take this exception on the next instruction.  We check
         // whether to do so in the I$ refill path, so flush the I$.
         flush_icache();
-        matched_trigger = new triggers::matched_t(operation, address, match->action, virt);
+        matched_trigger = new triggers::matched_t(operation, tval, match->action, virt);
     }
 }
 
@@ -411,7 +411,7 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
   return true;
 }
 
-reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool hlvx)
+reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool hlvx, bool is_for_vs_pt_addr)
 {
   if (!virt)
     return gpa;
@@ -424,6 +424,14 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   reg_t maxgpa = (1ULL << maxgpabits) - 1;
 
   bool mxr = proc->state.sstatus->readvirt(false) & MSTATUS_MXR;
+  // tinst is set to 0x3000/0x3020 - for RV64 read/write respectively for
+  // VS-stage address translation (for spike HSXLEN == VSXLEN always) else
+  // tinst is set to 0x2000/0x2020 - for RV32 read/write respectively for
+  // VS-stage address translation else set to 0
+  int tinst = 0;
+  tinst |= (is_for_vs_pt_addr == true) ? 0x2000 : 0;
+  tinst |= ((proc->get_const_xlen() == 64) && (is_for_vs_pt_addr == true)) ? 0x1000 : 0;
+  tinst |= ((type == STORE) && (is_for_vs_pt_addr == true)) ? 0x0020 : 0;
 
   reg_t base = vm.ptbase;
   if ((gpa & ~maxgpa) == 0) {
@@ -437,7 +445,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
       reg_t pte = pte_load(pte_paddr, gva, virt, trap_type, vm.ptesize);
       reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
       bool pbmte = proc->get_state()->menvcfg->read() & MENVCFG_PBMTE;
-      bool hade = proc->get_state()->menvcfg->read() & MENVCFG_HADE;
+      bool hade = proc->get_state()->menvcfg->read() & MENVCFG_ADUE;
 
       if (pte & PTE_RSVD) {
         break;
@@ -490,9 +498,9 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   }
 
   switch (trap_type) {
-    case FETCH: throw trap_instruction_guest_page_fault(gva, gpa >> 2, 0);
-    case LOAD: throw trap_load_guest_page_fault(gva, gpa >> 2, 0);
-    case STORE: throw trap_store_guest_page_fault(gva, gpa >> 2, 0);
+    case FETCH: throw trap_instruction_guest_page_fault(gva, gpa >> 2, tinst);
+    case LOAD: throw trap_load_guest_page_fault(gva, gpa >> 2, tinst);
+    case STORE: throw trap_store_guest_page_fault(gva, gpa >> 2, tinst);
     default: abort();
   }
 }
@@ -508,7 +516,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
   reg_t satp = proc->get_state()->satp->readvirt(virt);
   vm_info vm = decode_vm_info(proc->get_const_xlen(), false, mode, satp);
   if (vm.levels == 0)
-    return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx) & ~page_mask; // zero-extend from xlen
+    return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx, false) & ~page_mask; // zero-extend from xlen
 
   sim->has_touched_vm = true;
 
@@ -529,12 +537,12 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
 
     // check that physical address of PTE is legal
-    auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, type, virt, false);
+    auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, type, virt, false, true);
     reg_t pte = pte_load(pte_paddr, addr, virt, type, vm.ptesize);
     sim->difftest_log("ptw: level %d, vaddr 0x%lx, pg_base 0x%lx, p_pte 0x%lx, pte.val 0x%lx", i, addr, base, pte_paddr, pte);
     reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
     bool pbmte = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_PBMTE) : (proc->get_state()->menvcfg->read() & MENVCFG_PBMTE);
-    bool hade = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_HADE) : (proc->get_state()->menvcfg->read() & MENVCFG_HADE);
+    bool hade = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_ADUE) : (proc->get_state()->menvcfg->read() & MENVCFG_ADUE);
 
     if (pte & PTE_RSVD) {
       break;
@@ -563,6 +571,9 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
 
       if ((pte & ad) != ad) {
         if (hade) {
+          // Check for write permission to the first-stage PT in second-stage
+          // PTE and set the D bit in the second-stage PTE if needed
+          s2xlate(addr, base + idx * vm.ptesize, STORE, type, virt, false, true);
           // set accessed and possibly dirty bits.
           pte_store(pte_paddr, pte | ad, addr, virt, type, vm.ptesize);
         } else {
@@ -582,7 +593,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
                         | (vpn & ((reg_t(1) << napot_bits) - 1))
                         | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
       reg_t phys = page_base | (addr & page_mask);
-      return s2xlate(addr, phys, type, type, virt, hlvx) & ~page_mask;
+      return s2xlate(addr, phys, type, type, virt, hlvx, false) & ~page_mask;
     }
   }
 

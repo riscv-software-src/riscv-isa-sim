@@ -6,11 +6,17 @@
 #include "encoding.h"
 // For reg_t:
 #include "decode.h"
+// For std::unordered_map
+#include <unordered_map>
 // For std::shared_ptr
 #include <memory>
+// For std::optional
+#include <optional>
 // For access_type:
 #include "memtracer.h"
 #include <cassert>
+// For std::optional
+#include <optional>
 
 class processor_t;
 struct state_t;
@@ -458,15 +464,22 @@ class masked_csr_t: public basic_csr_t {
   const reg_t mask;
 };
 
+class envcfg_csr_t: public masked_csr_t {
+ public:
+  envcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
 // henvcfg.pbmte is read_only 0 when menvcfg.pbmte = 0
 // henvcfg.stce is read_only 0 when menvcfg.stce = 0
 // henvcfg.hade is read_only 0 when menvcfg.hade = 0
-class henvcfg_csr_t final: public masked_csr_t {
+class henvcfg_csr_t final: public envcfg_csr_t {
  public:
   henvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init, csr_t_p menvcfg);
 
   reg_t read() const noexcept override {
-    return (menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE | MENVCFG_HADE)) & masked_csr_t::read();
+    return (menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE | MENVCFG_ADUE)) & masked_csr_t::read();
   }
 
   virtual void verify_permissions(insn_t insn, bool write) const override;
@@ -505,12 +518,16 @@ class virtualized_satp_csr_t: public virtualized_csr_t {
   satp_csr_t_p orig_satp;
 };
 
+// Forward declaration
+class smcntrpmf_csr_t;
+typedef std::shared_ptr<smcntrpmf_csr_t> smcntrpmf_csr_t_p;
+
 // For minstret and mcycle, which are always 64 bits, but in RV32 are
 // split into high and low halves. The first class always holds the
 // full 64-bit value.
 class wide_counter_csr_t: public csr_t {
  public:
-  wide_counter_csr_t(processor_t* const proc, const reg_t addr);
+  wide_counter_csr_t(processor_t* const proc, const reg_t addr, smcntrpmf_csr_t_p config_csr);
   // Always returns full 64-bit value
   virtual reg_t read() const noexcept override;
   void bump(const reg_t howmuch) noexcept;
@@ -518,7 +535,9 @@ class wide_counter_csr_t: public csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
   virtual reg_t written_value() const noexcept override;
  private:
+  bool is_counting_enabled() const noexcept;
   reg_t val;
+  smcntrpmf_csr_t_p config_csr;
 };
 
 typedef std::shared_ptr<wide_counter_csr_t> wide_counter_csr_t_p;
@@ -784,7 +803,7 @@ class sstateen_csr_t: public hstateen_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
-class senvcfg_csr_t final: public masked_csr_t {
+class senvcfg_csr_t final: public envcfg_csr_t {
  public:
   senvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
   virtual void verify_permissions(insn_t insn, bool write) const override;
@@ -793,6 +812,7 @@ class senvcfg_csr_t final: public masked_csr_t {
 class stimecmp_csr_t: public basic_csr_t {
  public:
   stimecmp_csr_t(processor_t* const proc, const reg_t addr, const reg_t imask);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -818,5 +838,41 @@ class jvt_csr_t: public basic_csr_t {
  public:
   jvt_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
   virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+// Sscsrind registers needs permissions checked
+// (the original virtualized_csr_t does not call verify_permission of the underlying CSRs)
+class virtualized_indirect_csr_t: public virtualized_csr_t {
+ public:
+  virtualized_indirect_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class sscsrind_reg_csr_t : public csr_t {
+ public:
+  typedef std::shared_ptr<sscsrind_reg_csr_t> sscsrind_reg_csr_t_p;
+  sscsrind_reg_csr_t(processor_t* const proc, const reg_t addr, csr_t_p iselect);
+  reg_t read() const noexcept override;
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  void add_ireg_proxy(const reg_t iselect_val, csr_t_p proxy_csr);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  csr_t_p iselect;
+  std::unordered_map<reg_t, csr_t_p> ireg_proxy;
+  csr_t_p get_reg() const noexcept;
+};
+
+// smcntrpmf_csr_t caches the previous state of the CSR in case a CSRW instruction
+// modifies the state that should not be immediately visible to bump()
+class smcntrpmf_csr_t : public masked_csr_t {
+ public:
+  smcntrpmf_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  reg_t read_prev() const noexcept;
+  void reset_prev() noexcept;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  std::optional<reg_t> prev_val;
 };
 #endif

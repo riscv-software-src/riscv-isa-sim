@@ -15,7 +15,7 @@ static debug_module_config_t difftest_dm_config = {
   .support_haltgroups = true,
   .support_impebreak = false
 };
-extern std::vector<std::pair<reg_t, mem_t*>> make_mems(const std::vector<mem_cfg_t> &layout);
+extern std::vector<std::pair<reg_t, abstract_mem_t*>> make_mems(const std::vector<mem_cfg_t> &layout);
 
 static DifftestRef *ref = nullptr;
 static size_t overrided_mem_size = 0;
@@ -23,7 +23,7 @@ static size_t overrided_mhartid = 0;
 
 DifftestRef::DifftestRef() :
   cfg(create_cfg()),
-  mems(make_mems(cfg->mem_layout())),
+  mems(make_mems(cfg->mem_layout)),
   plugin_devices(create_devices()),
   sim(create_sim(cfg)),
   p(sim->get_core(0UL)),
@@ -36,9 +36,6 @@ DifftestRef::DifftestRef() :
 DifftestRef::~DifftestRef() {
   delete cfg;
   for (const auto& pair : mems) {
-    delete pair.second;
-  }
-  for (const auto& pair : plugin_devices) {
     delete pair.second;
   }
   delete sim;
@@ -215,7 +212,7 @@ void DifftestRef::set_regs(diff_context_t *ctx, bool on_demand) {
     if(!on_demand || vReg_Val1 != ctx->vr[i]._64[1]){
       vReg_Val1 = ctx->vr[i]._64[1];
     }
-  } 
+  }
   /***********************************************************************************/
   if (!on_demand || vstate.vstart->read() != ctx->vstart) {
     vstate.vstart->write_raw(ctx->vstart);
@@ -340,32 +337,20 @@ const cfg_t *DifftestRef::create_cfg() {
   auto memory_layout = std::vector<mem_cfg_t>{
     mem_cfg_t{DRAM_BASE, mem_size},
   };
-  auto const cfg = new cfg_t(
-    // std::pair<reg_t, reg_t> default_initrd_bounds,
-    std::make_pair(0, 0),
-    // const char *default_bootargs,
-    nullptr,
-    // const char *default_isa,
-    CONFIG_DIFF_ISA_STRING,
-    // const char *default_priv
-    DEFAULT_PRIV,
-    // const char *default_varch,
-    DEFAULT_VARCH,
-    // const bool default_misaligned,
-    false,
+  auto const cfg = new cfg_t();
+  cfg->initrd_bounds = std::make_pair(0, 0);
+  cfg->bootargs = nullptr;
+  cfg->isa = CONFIG_DIFF_ISA_STRING;
+  cfg->priv = DEFAULT_PRIV;
+  cfg->varch = DEFAULT_VARCH;
+  cfg->misaligned = false;
     // const endianness_t default_endianness,
-    endianness_little,
-    // const reg_t default_pmpregions,
-    CONFIG_PMP_NUM,
-    // const std::vector<mem_cfg_t> &default_mem_layout,
-    memory_layout,
-    // const std::vector<size_t> default_hartids,
-    std::vector<size_t>{overrided_mhartid},
-    // bool default_real_time_clint,
-    false,
-    // const reg_t default_trigger_count
-    0
-  );
+  cfg->endianness = endianness_little;
+  cfg->pmpregions = CONFIG_PMP_NUM;
+  cfg->mem_layout = memory_layout;
+  cfg->hartids = std::vector<size_t>{overrided_mhartid};
+  cfg->real_time_clint = false;
+  cfg->trigger_count = 0;
   return cfg;
 }
 
@@ -396,10 +381,10 @@ sim_t *DifftestRef::create_sim(const cfg_t *cfg) {
     cfg,
     // bool halted,
     false,
-    // std::vector<std::pair<reg_t, mem_t*>> mems
+    // std::vector<std::pair<reg_t, abstract_mem_t*>> mems
     mems,
-    // std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices
-    plugin_devices,
+    // std::vector<device_factory_t*> plugin_device_factories
+    std::vector<device_factory_t*>{},
     // const std::vector<std::string>& args
     std::vector<std::string>{},
     // const debug_module_config_t &dm_config
@@ -413,6 +398,10 @@ sim_t *DifftestRef::create_sim(const cfg_t *cfg) {
     //bool dtb_enabled, const char *dtb_file, bool socket_enabled, FILE *cmd_file
     false, nullptr, false, nullptr
   );
+
+  for (const auto& pair : plugin_devices) {
+    s->add_device(pair.first, std::shared_ptr<abstract_device_t>(pair.second));
+  }
 
   return s;
 }

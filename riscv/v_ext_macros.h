@@ -325,6 +325,10 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   type_usew_t<x>::type vs1 = P.VU.elt<type_usew_t<x>::type>(rs1_num, i); \
   type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
 
+#define V_U_PARAMS(x) \
+  type_usew_t<x>::type &vd = P.VU.elt<type_usew_t<x>::type>(rd_num, i, true); \
+  type_usew_t<x>::type vs2 = P.VU.elt<type_usew_t<x>::type>(rs2_num, i);
+
 #define VX_U_PARAMS(x) \
   type_usew_t<x>::type &vd = P.VU.elt<type_usew_t<x>::type>(rd_num, i, true); \
   type_usew_t<x>::type rs1 = (type_usew_t<x>::type)RS1; \
@@ -692,6 +696,24 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     BODY; \
   } \
   VI_LOOP_END 
+
+#define VI_V_ULOOP(BODY) \
+  VI_CHECK_SSS(false) \
+  VI_LOOP_BASE \
+  if (sew == e8) { \
+    V_U_PARAMS(e8); \
+    BODY; \
+  } else if (sew == e16) { \
+    V_U_PARAMS(e16); \
+    BODY; \
+  } else if (sew == e32) { \
+    V_U_PARAMS(e32); \
+    BODY; \
+  } else if (sew == e64) { \
+    V_U_PARAMS(e64); \
+    BODY; \
+  } \
+  VI_LOOP_END
 
 #define VI_VX_ULOOP(BODY) \
   VI_CHECK_SSS(false) \
@@ -1373,60 +1395,6 @@ reg_t index[P.VU.vlmax]; \
         MMU.store<uint8_t>(baseAddr + P.VU.vstart->read(), val); \
         P.VU.vstart->write(P.VU.vstart->read() + 1); \
       } \
-    } \
-  } \
-  P.VU.vstart->write(0);
-
-//
-// vector: amo 
-//
-#define VI_AMO(op, type, idx_type) \
-  require_vector(false); \
-  require_align(insn.rd(), P.VU.vflmul); \
-  require(P.VU.vsew <= P.get_xlen() && P.VU.vsew >= 32); \
-  require_align(insn.rd(), P.VU.vflmul); \
-  float vemul = ((float)idx_type / P.VU.vsew * P.VU.vflmul); \
-  require(vemul >= 0.125 && vemul <= 8); \
-  require_align(insn.rs2(), vemul); \
-  if (insn.v_wd()) { \
-    require_vm; \
-    if (idx_type > P.VU.vsew) { \
-      if (insn.rd() != insn.rs2()) \
-        require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), vemul); \
-    } else if (idx_type < P.VU.vsew) { \
-      if (vemul < 1) { \
-        require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), vemul); \
-      } else { \
-        require_noover_widen(insn.rd(), P.VU.vflmul, insn.rs2(), vemul); \
-      } \
-    } \
-  } \
-  VI_DUPLICATE_VREG(insn.rs2(), idx_type); \
-  const reg_t vl = P.VU.vl->read(); \
-  const reg_t baseAddr = RS1; \
-  const reg_t vd = insn.rd(); \
-  for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
-    VI_ELEMENT_SKIP; \
-    VI_STRIP(i); \
-    P.VU.vstart->write(i); \
-    switch (P.VU.vsew) { \
-    case e32: { \
-      auto vs3 = P.VU.elt< type ## 32_t>(vd, vreg_inx); \
-      auto val = MMU.amo<uint32_t>(baseAddr + index[i], [&](type ## 32_t UNUSED lhs) { op }); \
-      if (insn.v_wd()) \
-        P.VU.elt< type ## 32_t>(vd, vreg_inx, true) = val; \
-      } \
-      break; \
-    case e64: { \
-      auto vs3 = P.VU.elt< type ## 64_t>(vd, vreg_inx); \
-      auto val = MMU.amo<uint64_t>(baseAddr + index[i], [&](type ## 64_t UNUSED lhs) { op }); \
-      if (insn.v_wd()) \
-        P.VU.elt< type ## 64_t>(vd, vreg_inx, true) = val; \
-      } \
-      break; \
-    default: \
-      require(0); \
-      break; \
     } \
   } \
   P.VU.vstart->write(0);

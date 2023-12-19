@@ -119,7 +119,7 @@ public:
 
 private:
   const cfg_t *cfg;
-  const std::vector<std::pair<reg_t, mem_t*>> mems;
+  const std::vector<std::pair<reg_t, abstract_mem_t*>> mems;
   const std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
   sim_t * const sim;
   processor_t * const p;
