@@ -85,7 +85,7 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
     if (item.first == 0)
       continue;
 
-    char prefix;
+    char prefix = ' ';
     int size;
     int rd = item.first >> 4;
     bool is_vec = false;
@@ -226,6 +226,8 @@ void processor_t::step(size_t n)
     size_t instret = 0;
     reg_t pc = state.pc;
     mmu_t* _mmu = mmu;
+    state.prv_changed = false;
+    state.v_changed = false;
 
     #define advance_pc() \
       if (unlikely(invalid_pc(pc))) { \

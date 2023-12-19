@@ -1,9 +1,12 @@
 #include <sys/time.h>
+#include <sstream>
 #include "devices.h"
 #include "processor.h"
 #include "simif.h"
+#include "sim.h"
+#include "dts.h"
 
-clint_t::clint_t(simif_t* sim, uint64_t freq_hz, bool real_time)
+clint_t::clint_t(const simif_t* sim, uint64_t freq_hz, bool real_time)
   : sim(sim), freq_hz(freq_hz), real_time(real_time), mtime(0)
 {
   struct timeval base;
@@ -12,7 +15,7 @@ clint_t::clint_t(simif_t* sim, uint64_t freq_hz, bool real_time)
 
   real_time_ref_secs = base.tv_sec;
   real_time_ref_usecs = base.tv_usec;
-  increment(0);
+  tick(0);
 }
 
 /* 0000 msip hart 0
@@ -34,7 +37,7 @@ bool clint_t::load(reg_t addr, size_t len, uint8_t* bytes)
   if (len > 8)
     return false;
 
-  increment(0);
+  tick(0);
 
   if (addr >= MSIP_BASE && addr < MTIMECMP_BASE) {
     if (len == 8) {
@@ -90,11 +93,11 @@ bool clint_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   } else {
     return false;
   }
-  increment(0);
+  tick(0);
   return true;
 }
 
-void clint_t::increment(reg_t inc)
+void clint_t::tick(reg_t rtc_ticks)
 {
   if (real_time) {
    struct timeval now;
@@ -104,7 +107,7 @@ void clint_t::increment(reg_t inc)
    diff_usecs = ((now.tv_sec - real_time_ref_secs) * 1000000) + (now.tv_usec - real_time_ref_usecs);
    mtime = diff_usecs * freq_hz / 1000000;
   } else {
-    mtime += inc;
+    mtime += rtc_ticks;
   }
 
   for (const auto& [hart_id, hart] : sim->get_harts()) {
@@ -112,3 +115,32 @@ void clint_t::increment(reg_t inc)
     hart->state.mip->backdoor_write_with_mask(MIP_MTIP, mtime >= mtimecmp[hart_id] ? MIP_MTIP : 0);
   }
 }
+
+clint_t* clint_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base,
+    const std::vector<std::string>& sargs) {
+  if (fdt_parse_clint(fdt, base, "riscv,clint0") == 0 || fdt_parse_clint(fdt, base, "sifive,clint0") == 0)
+    return new clint_t(sim,
+                       sim->CPU_HZ / sim->INSNS_PER_RTC_TICK,
+                       sim->get_cfg().real_time_clint);
+  else
+    return nullptr;
+}
+
+std::string clint_generate_dts(const sim_t* sim) {
+  std::stringstream s;
+  s << std::hex
+    << "    clint@" << CLINT_BASE << " {\n"
+       "      compatible = \"riscv,clint0\";\n"
+       "      interrupts-extended = <" << std::dec;
+  for (size_t i = 0; i < sim->get_cfg().nprocs(); i++)
+    s << "&CPU" << i << "_intc 3 &CPU" << i << "_intc 7 ";
+  reg_t clintbs = CLINT_BASE;
+  reg_t clintsz = CLINT_SIZE;
+  s << std::hex << ">;\n"
+    "      reg = <0x" << (clintbs >> 32) << " 0x" << (clintbs & (uint32_t)-1) <<
+    " 0x" << (clintsz >> 32) << " 0x" << (clintsz & (uint32_t)-1) << ">;\n"
+    "    };\n";
+  return s.str();
+}
+
+REGISTER_DEVICE(clint, clint_parse_from_fdt, clint_generate_dts)

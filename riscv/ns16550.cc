@@ -1,7 +1,10 @@
 #include <sys/time.h>
+#include <sstream>
 #include "devices.h"
 #include "processor.h"
 #include "term.h"
+#include "sim.h"
+#include "dts.h"
 
 #define UART_QUEUE_SIZE         64
 
@@ -69,9 +72,9 @@
 
 #define UART_SCR                7 /* I/O: Scratch Register */
 
-ns16550_t::ns16550_t(class bus_t *bus, abstract_interrupt_controller_t *intctrl,
+ns16550_t::ns16550_t(abstract_interrupt_controller_t *intctrl,
                      uint32_t interrupt_id, uint32_t reg_shift, uint32_t reg_io_width)
-  : bus(bus), intctrl(intctrl), interrupt_id(interrupt_id), reg_shift(reg_shift), reg_io_width(reg_io_width), backoff_counter(0)
+  : intctrl(intctrl), interrupt_id(interrupt_id), reg_shift(reg_shift), reg_io_width(reg_io_width), backoff_counter(0)
 {
   ier = 0;
   iir = UART_IIR_NO_INT;
@@ -292,7 +295,7 @@ bool ns16550_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   return ret;
 }
 
-void ns16550_t::tick(void)
+void ns16550_t::tick(reg_t UNUSED rtc_ticks)
 {
   if (!(fcr & UART_FCR_ENABLE_FIFO) ||
       (mcr & UART_MCR_LOOP) ||
@@ -317,3 +320,38 @@ void ns16550_t::tick(void)
   lsr |= UART_LSR_DR;
   update_interrupt();
 }
+
+std::string ns16550_generate_dts(const sim_t* sim)
+{
+  std::stringstream s;
+  s << std::hex
+    << "    SERIAL0: ns16550@" << NS16550_BASE << " {\n"
+       "      compatible = \"ns16550a\";\n"
+       "      clock-frequency = <" << std::dec << (sim->CPU_HZ/sim->INSNS_PER_RTC_TICK) << ">;\n"
+       "      interrupt-parent = <&PLIC>;\n"
+       "      interrupts = <" << std::dec << NS16550_INTERRUPT_ID;
+  reg_t ns16550bs = NS16550_BASE;
+  reg_t ns16550sz = NS16550_SIZE;
+  s << std::hex << ">;\n"
+       "      reg = <0x" << (ns16550bs >> 32) << " 0x" << (ns16550bs & (uint32_t)-1) <<
+                   " 0x" << (ns16550sz >> 32) << " 0x" << (ns16550sz & (uint32_t)-1) << ">;\n"
+       "      reg-shift = <0x" << NS16550_REG_SHIFT << ">;\n"
+       "      reg-io-width = <0x" << NS16550_REG_IO_WIDTH << ">;\n"
+       "    };\n";
+  return s.str();
+}
+
+ns16550_t* ns16550_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& sargs)
+{
+  uint32_t ns16550_shift, ns16550_io_width, ns16550_int_id;
+  if (fdt_parse_ns16550(fdt, base,
+                        &ns16550_shift, &ns16550_io_width, &ns16550_int_id,
+                        "ns16550a") == 0) {
+    abstract_interrupt_controller_t* intctrl = sim->get_intctrl();
+    return new ns16550_t(intctrl, ns16550_int_id, ns16550_shift, ns16550_io_width);
+  } else {
+    return nullptr;
+  }
+}
+
+REGISTER_DEVICE(ns16550, ns16550_parse_from_fdt, ns16550_generate_dts)

@@ -22,6 +22,7 @@ private:
   int client_fd;
 
   static const ssize_t buf_size = 64 * 1024;
+  char send_buf[buf_size];
   char recv_buf[buf_size];
   ssize_t recv_start, recv_end;
 

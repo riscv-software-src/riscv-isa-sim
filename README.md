@@ -130,7 +130,10 @@ Adding an instruction to the simulator requires two steps:
          $ make install
         ```
 
-  3.  Rebuild the simulator.
+  3.  Add the instruction to riscv/riscv.mk.in. Otherwise, the instruction
+      will not be included in the build and will be treated as an illegal instruction.
+
+  4.  Rebuild the simulator.
 
 Interactive Debug Mode
 ---------------------------

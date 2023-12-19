@@ -2,6 +2,9 @@
 #ifndef _RISCV_VECTOR_UNIT_H
 #define _RISCV_VECTOR_UNIT_H
 
+#include <array>
+#include <cstdint>
+
 #include "decode.h"
 #include "csrs.h"
 
@@ -69,6 +72,17 @@ struct type_sew_t<64>
   using type=int64_t;
 };
 
+// Element Group of 4 32 bits elements (128b total).
+using EGU32x4_t = std::array<uint32_t, 4>;
+
+// Element Group of 8 32 bits elements (256b total).
+using EGU32x8_t = std::array<uint32_t, 8>;
+
+// Element Group of 4 64 bits elements (256b total).
+using EGU64x4_t = std::array<uint64_t, 4>;
+
+// Element Group of 16 8 bits elements (128b total).
+using EGU8x16_t = std::array<uint8_t, 16>;
 
 class vectorUnit_t
 {
@@ -88,8 +102,11 @@ public:
   bool vill;
   bool vstart_alu;
 
-  // vector element for varies SEW
+  // vector element for various SEW
   template<class T> T& elt(reg_t vReg, reg_t n, bool is_write = false);
+  // vector element group access, where EG is a std::array<T, N>.
+  template<typename EG> EG&
+  elt_group(reg_t vReg, reg_t n, bool is_write = false);
 
 public:
 

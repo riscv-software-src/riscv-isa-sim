@@ -233,11 +233,16 @@ public:
 
   void cbo_zero(reg_t addr) {
     auto base = addr & ~(blocksz - 1);
-    for (size_t offset = 0; offset < blocksz; offset += 1)
+    for (size_t offset = 0; offset < blocksz; offset += 1) {
+      check_triggers(triggers::OPERATION_STORE, base + offset, false, addr, std::nullopt);
       store<uint8_t>(base + offset, 0);
+    }
   }
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
+    auto base = addr & ~(blocksz - 1);
+    for (size_t offset = 0; offset < blocksz; offset += 1)
+      check_triggers(triggers::OPERATION_STORE, base + offset, false, addr, std::nullopt);
     convert_load_traps_to_store_traps({
       const reg_t paddr = translate(generate_access_info(addr, LOAD, {false, false, false}), 1);
       if (sim->reservable(paddr)) {
@@ -418,7 +423,7 @@ private:
   const char* fill_from_mmio(reg_t vaddr, reg_t paddr);
 
   // perform a stage2 translation for a given guest address
-  reg_t s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool hlvx);
+  reg_t s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool hlvx, bool is_for_vs_pt_addr);
 
   // perform a page table walk for a given VA; set referenced/dirty bits
   reg_t walk(mem_access_info_t access_info);
@@ -434,7 +439,10 @@ private:
   bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes);
   bool mmio(reg_t paddr, size_t len, uint8_t* bytes, access_type type);
   bool mmio_ok(reg_t paddr, access_type type);
-  void check_triggers(triggers::operation_t operation, reg_t address, bool virt, std::optional<reg_t> data = std::nullopt);
+  void check_triggers(triggers::operation_t operation, reg_t address, bool virt, std::optional<reg_t> data = std::nullopt) {
+    check_triggers(operation, address, virt, address, data);
+  }
+  void check_triggers(triggers::operation_t operation, reg_t address, bool virt, reg_t tval, std::optional<reg_t> data);
   reg_t translate(mem_access_info_t access_info, reg_t len);
 
   reg_t pte_load(reg_t pte_paddr, reg_t addr, bool virt, access_type trap_type, size_t ptesize) {

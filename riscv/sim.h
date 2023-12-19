@@ -26,8 +26,8 @@ class sim_t : public htif_t, public simif_t
 {
 public:
   sim_t(const cfg_t *cfg, bool halted,
-        std::vector<std::pair<reg_t, mem_t*>> mems,
-        std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
+        std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
+        std::vector<device_factory_t*> plugin_device_factories,
         const std::vector<std::string>& args,
         const debug_module_config_t &dm_config, const char *log_path,
         bool dtb_enabled, const char *dtb_file,
@@ -39,6 +39,7 @@ public:
   int run();
   void set_debug(bool value);
   void set_histogram(bool value);
+  void add_device(reg_t addr, std::shared_ptr<abstract_device_t> dev);
 
   // Configure logging
   //
@@ -52,6 +53,7 @@ public:
   }
   const char* get_dts() { return dts.c_str(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
+  abstract_interrupt_controller_t* get_intctrl() const { assert(plic.get()); return plic.get(); }
   virtual const cfg_t &get_cfg() const override { return *cfg; }
 
   virtual const std::map<size_t, processor_t*>& get_harts() const override { return harts; }
@@ -59,21 +61,27 @@ public:
   // Callback for processors to let the simulation know they were reset.
   virtual void proc_reset(unsigned id) override;
 
+#if defined(SPIKE_FUZZ) || defined(DIFFTEST)
+  static const size_t INTERLEAVE = -1ULL; // disable the timer
+#else
+  static const size_t INTERLEAVE = 5000;
+#endif
+  static const size_t INSNS_PER_RTC_TICK = 100; // 10 MHz clock for 1 BIPS core
+  static const size_t CPU_HZ = 1000000000; // 1GHz CPU
+
 private:
   isa_parser_t isa;
   const cfg_t * const cfg;
-  std::vector<std::pair<reg_t, mem_t*>> mems;
-  std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices;
+  std::vector<std::pair<reg_t, abstract_mem_t*>> mems;
   std::vector<processor_t*> procs;
   std::map<size_t, processor_t*> harts;
   std::pair<reg_t, reg_t> initrd_range;
   std::string dts;
   std::string dtb;
   bool dtb_enabled;
-  std::unique_ptr<rom_device_t> boot_rom;
-  std::unique_ptr<clint_t> clint;
-  std::unique_ptr<plic_t> plic;
-  std::unique_ptr<ns16550_t> ns16550;
+  std::vector<std::shared_ptr<abstract_device_t>> devices;
+  std::shared_ptr<clint_t> clint;
+  std::shared_ptr<plic_t> plic;
   bus_t bus;
   log_file_t log_file;
 
@@ -87,14 +95,6 @@ private:
 public:
 #endif
   void step(size_t n); // step through simulation
-#if defined(SPIKE_FUZZ) || defined(DIFFTEST)
-private:
-  static const size_t INTERLEAVE = -1ULL; // disable the timer
-#else
-  static const size_t INTERLEAVE = 5000;
-#endif
-  static const size_t INSNS_PER_RTC_TICK = 100; // 10 MHz clock for 1 BIPS core
-  static const size_t CPU_HZ = 1000000000; // 1GHz CPU
   size_t current_step;
   size_t current_proc;
   bool debug;
@@ -113,7 +113,6 @@ private:
 #endif
   virtual bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes) override;
   virtual bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes) override;
-  void make_dtb(const char* dtb_file);
   void set_rom();
 
   virtual const char* get_symbol(uint64_t paddr) override;

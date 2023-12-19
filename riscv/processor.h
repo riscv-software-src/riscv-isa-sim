@@ -84,6 +84,8 @@ struct state_t
   std::unordered_map<reg_t, csr_t_p> csrmap;
   reg_t prv;    // TODO: Can this be an enum instead?
   reg_t prev_prv;
+  bool prv_changed;
+  bool v_changed;
   bool v;
   bool prev_v;
   misa_csr_t_p misa;

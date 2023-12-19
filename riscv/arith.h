@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <climits>
 #include <cstddef>
+#include <type_traits>
 
 inline uint64_t mulhu(uint64_t a, uint64_t b)
 {
@@ -32,7 +33,7 @@ inline int64_t mulh(int64_t a, int64_t b)
 {
   int negate = (a < 0) != (b < 0);
   uint64_t res = mulhu(a < 0 ? -a : a, b < 0 ? -b : b);
-  return negate ? ~res + (a * b == 0) : res;
+  return negate ? ~res + ((uint64_t)a * (uint64_t)b == 0) : res;
 }
 
 inline int64_t mulhsu(int64_t a, uint64_t b)
@@ -219,6 +220,26 @@ static inline uint64_t xperm(uint64_t rs1, uint64_t rs2, size_t sz_log2, size_t 
   }
 
   return r;
+}
+
+// Rotates right an unsigned integer by the given number of bits.
+template <typename T>
+static inline T rotate_right(T x, std::size_t shiftamt) {
+  static_assert(std::is_unsigned<T>::value);
+  static constexpr T mask = (8 * sizeof(T)) - 1;
+  const std::size_t rshift = shiftamt & mask;
+  const std::size_t lshift = (-rshift) & mask;
+  return (x << lshift) | (x >> rshift);
+}
+
+// Rotates right an unsigned integer by the given number of bits.
+template <typename T>
+static inline T rotate_left(T x, std::size_t shiftamt) {
+  static_assert(std::is_unsigned<T>::value);
+  static constexpr T mask = (8 * sizeof(T)) - 1;
+  const std::size_t lshift = shiftamt & mask;
+  const std::size_t rshift = (-lshift) & mask;
+  return (x << lshift) | (x >> rshift);
 }
 
 #endif

@@ -947,9 +947,22 @@ bool masked_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
 }
 
+envcfg_csr_t::envcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask,
+                             const reg_t init):
+  masked_csr_t(proc, addr, mask, init) {
+  // In unlogged_write() we WARLize this field for all three of [msh]envcfg
+  assert(MENVCFG_CBIE == SENVCFG_CBIE && MENVCFG_CBIE == HENVCFG_CBIE);
+}
+
+bool envcfg_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t cbie_reserved = 2; // Reserved value of xenvcfg.CBIE
+  const reg_t adjusted_val = get_field(val, MENVCFG_CBIE) != cbie_reserved ? val : set_field(val, MENVCFG_CBIE, 0);
+  return masked_csr_t::unlogged_write(adjusted_val);
+}
+
 // implement class henvcfg_csr_t
 henvcfg_csr_t::henvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init, csr_t_p menvcfg):
-  masked_csr_t(proc, addr, mask, init),
+  envcfg_csr_t(proc, addr, mask, init),
   menvcfg(menvcfg) {
 }
 
@@ -1035,9 +1048,10 @@ bool virtualized_satp_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 // implement class wide_counter_csr_t
-wide_counter_csr_t::wide_counter_csr_t(processor_t* const proc, const reg_t addr):
+wide_counter_csr_t::wide_counter_csr_t(processor_t* const proc, const reg_t addr, smcntrpmf_csr_t_p config_csr):
   csr_t(proc, addr),
-  val(0) {
+  val(0),
+  config_csr(config_csr) {
 }
 
 reg_t wide_counter_csr_t::read() const noexcept {
@@ -1045,7 +1059,11 @@ reg_t wide_counter_csr_t::read() const noexcept {
 }
 
 void wide_counter_csr_t::bump(const reg_t howmuch) noexcept {
-  val += howmuch;  // to keep log reasonable size, don't log every bump
+  if (is_counting_enabled()) {
+    val += howmuch;  // to keep log reasonable size, don't log every bump
+  }
+  // Clear cached value
+  config_csr->reset_prev();
 }
 
 bool wide_counter_csr_t::unlogged_write(const reg_t val) noexcept {
@@ -1054,13 +1072,30 @@ bool wide_counter_csr_t::unlogged_write(const reg_t val) noexcept {
   // takes precedence over the increment to instret.  However, Spike
   // unconditionally increments instret after executing an instruction.
   // Correct for this artifact by decrementing instret here.
-  this->val--;
+  // Ensure that Smctrpmf hasn't disabled counting.
+  if (is_counting_enabled()) {
+    this->val--;
+  }
   return true;
 }
 
 reg_t wide_counter_csr_t::written_value() const noexcept {
   // Re-adjust for upcoming bump()
   return this->val + 1;
+}
+
+// Returns true if counting is not inhibited by Smcntrpmf.
+// Note that minstretcfg / mcyclecfg / mhpmevent* share the same inhibit bits.
+bool wide_counter_csr_t::is_counting_enabled() const noexcept {
+  auto prv = state->prv_changed ? state->prev_prv : state->prv;
+  auto v = state->v_changed ? state->v : state->prev_v;
+  auto mask = MHPMEVENT_MINH;
+  if (prv == PRV_S) {
+    mask = v ? MHPMEVENT_VSINH : MHPMEVENT_SINH;
+  } else if (prv == PRV_U) {
+    mask = v ? MHPMEVENT_VUINH : MHPMEVENT_UINH;
+  }
+  return (config_csr->read_prev() & mask) == 0;
 }
 
 // implement class time_counter_csr_t
@@ -1359,10 +1394,10 @@ bool dcsr_csr_t::unlogged_write(const reg_t val) noexcept {
   step = get_field(val, DCSR_STEP);
   // TODO: ndreset and fullreset
   ebreakm = get_field(val, DCSR_EBREAKM);
-  ebreaks = get_field(val, DCSR_EBREAKS);
-  ebreaku = get_field(val, DCSR_EBREAKU);
-  ebreakvs = get_field(val, CSR_DCSR_EBREAKVS);
-  ebreakvu = get_field(val, CSR_DCSR_EBREAKVU);
+  ebreaks = proc->extension_enabled('S') ? get_field(val, DCSR_EBREAKS) : false;
+  ebreaku = proc->extension_enabled('U') ? get_field(val, DCSR_EBREAKU) : false;
+  ebreakvs = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_EBREAKVS) : false;
+  ebreakvu = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_EBREAKVU) : false;
   halt = get_field(val, DCSR_HALT);
   v = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_V) : false;
   return true;
@@ -1553,7 +1588,7 @@ void sstateen_csr_t::verify_permissions(insn_t insn, bool write) const {
 // implement class senvcfg_csr_t
 senvcfg_csr_t::senvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask,
                              const reg_t init):
-  masked_csr_t(proc, addr, mask, init) {
+  envcfg_csr_t(proc, addr, mask, init) {
 }
 
 void senvcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
@@ -1590,7 +1625,7 @@ virtualized_stimecmp_csr_t::virtualized_stimecmp_csr_t(processor_t* const proc, 
   virtualized_csr_t(proc, orig, virt) {
 }
 
-void virtualized_stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
+void stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (!(state->menvcfg->read() & MENVCFG_STCE)) {
     // access to (v)stimecmp with MENVCFG.STCE = 0
     if (state->prv < PRV_M)
@@ -1604,7 +1639,11 @@ void virtualized_stimecmp_csr_t::verify_permissions(insn_t insn, bool write) con
     throw trap_virtual_instruction(insn.bits());
   }
 
-  virtualized_csr_t::verify_permissions(insn, write);
+  basic_csr_t::verify_permissions(insn, write);
+}
+
+void virtualized_stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
+  orig_csr->verify_permissions(insn, write);
 }
 
 scountovf_csr_t::scountovf_csr_t(processor_t* const proc, const reg_t addr):
@@ -1663,4 +1702,83 @@ void jvt_csr_t::verify_permissions(insn_t insn, bool write) const {
         throw trap_illegal_instruction(insn.bits());
     }
   }
+}
+
+virtualized_indirect_csr_t::virtualized_indirect_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
+  virtualized_csr_t(proc, orig, virt) {
+}
+
+void virtualized_indirect_csr_t::verify_permissions(insn_t insn, bool write) const {
+  virtualized_csr_t::verify_permissions(insn, write);
+  if (state->v)
+    virt_csr->verify_permissions(insn, write);
+  else
+    orig_csr->verify_permissions(insn, write);
+}
+
+sscsrind_reg_csr_t::sscsrind_reg_csr_t(processor_t* const proc, const reg_t addr, csr_t_p iselect) :
+  csr_t(proc, addr),
+  iselect(iselect) {
+}
+
+void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
+  // Don't call base verify_permission for VS registers remapped to S-mode
+  if (insn.csr() == address)
+    csr_t::verify_permissions(insn, write);
+
+  csr_t_p proxy_csr = get_reg();
+  if (proxy_csr == nullptr) {
+    if (!state->v) {
+      throw trap_illegal_instruction(insn.bits());
+    } else {
+      throw trap_virtual_instruction(insn.bits());
+    }
+  }
+  proxy_csr->verify_permissions(insn, write);
+}
+
+
+reg_t sscsrind_reg_csr_t::read() const noexcept {
+  csr_t_p target_csr = get_reg();
+  if (target_csr != nullptr) {
+    return target_csr->read();
+  }
+  return 0;
+}
+
+bool sscsrind_reg_csr_t::unlogged_write(const reg_t val) noexcept {
+  csr_t_p proxy_csr = get_reg();
+  if (proxy_csr != nullptr) {
+    proxy_csr->write(val);
+  }
+  return false;
+}
+
+// Returns the actual CSR that maps to value in *siselect or nullptr if no mapping exists
+csr_t_p sscsrind_reg_csr_t::get_reg() const noexcept {
+  auto proxy = ireg_proxy;
+  auto isel = iselect->read();
+  auto it = proxy.find(isel);
+  return it != proxy.end() ? it->second : nullptr;
+}
+
+void sscsrind_reg_csr_t::add_ireg_proxy(const reg_t iselect_value, csr_t_p csr) {
+  ireg_proxy[iselect_value] = csr;
+}
+
+smcntrpmf_csr_t::smcntrpmf_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init) : masked_csr_t(proc, addr, mask, init) {
+}
+
+reg_t smcntrpmf_csr_t::read_prev() const noexcept {
+  reg_t val = prev_val.value_or(read());
+  return val;
+}
+
+void smcntrpmf_csr_t::reset_prev() noexcept {
+  prev_val.reset();
+}
+
+bool smcntrpmf_csr_t::unlogged_write(const reg_t val) noexcept {
+  prev_val = read();
+  return masked_csr_t::unlogged_write(val);
 }

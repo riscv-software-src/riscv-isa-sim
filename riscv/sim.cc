@@ -32,9 +32,13 @@ static void handle_signal(int sig)
 
 const size_t sim_t::INTERLEAVE;
 
+extern device_factory_t* clint_factory;
+extern device_factory_t* plic_factory;
+extern device_factory_t* ns16550_factory;
+
 sim_t::sim_t(const cfg_t *cfg, bool halted,
-             std::vector<std::pair<reg_t, mem_t*>> mems,
-             std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices,
+             std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
+             std::vector<device_factory_t*> plugin_device_factories,
              const std::vector<std::string>& args,
              const debug_module_config_t &dm_config,
              const char *log_path,
@@ -42,10 +46,9 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
              bool socket_enabled,
              FILE *cmd_file) // needed for command line option --cmd
   : htif_t(args),
-    isa(cfg->isa(), cfg->priv()),
+    isa(cfg->isa, cfg->priv),
     cfg(cfg),
     mems(mems),
-    plugin_devices(plugin_devices),
     procs(std::max(cfg->nprocs(), size_t(1))),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
@@ -70,10 +73,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   for (auto& x : mems)
     bus.add_device(x.first, x.second);
 
-  for (auto& x : plugin_devices)
-    bus.add_device(x.first, x.second);
-
-  debug_module.add_device(&bus);
+  bus.add_device(DEBUG_START, &debug_module);
 
   socketif = NULL;
 #ifdef HAVE_BOOST_ASIO
@@ -93,9 +93,9 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 #ifndef RISCV_ENABLE_DUAL_ENDIAN
   if (cfg->endianness != endianness_little) {
     fputs("Big-endian support has not been prroperly enabled; "
-	  "please rebuild the riscv-isa-sim project using "
-	  "\"configure --enable-dual-endian\".\n",
-	  stderr);
+          "please rebuild the riscv-isa-sim project using "
+          "\"configure --enable-dual-endian\".\n",
+          stderr);
     abort();
   }
 #endif
@@ -103,53 +103,80 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   debug_mmu = new mmu_t(this, cfg->endianness, NULL);
 
   for (size_t i = 0; i < cfg->nprocs(); i++) {
-    procs[i] = new processor_t(&isa, cfg, this, cfg->hartids()[i], halted,
+    procs[i] = new processor_t(&isa, cfg, this, cfg->hartids[i], halted,
                                log_file.get(), sout_);
-    harts[cfg->hartids()[i]] = procs[i];
+    harts[cfg->hartids[i]] = procs[i];
   }
 
   // When running without using a dtb, skip the fdt-based configuration steps
   if (!dtb_enabled) return;
 
-  // Load dtb_file if provided, otherwise self-generate a dts/dtb
-  make_dtb(dtb_file);
-
-  void *fdt = (void *)dtb.c_str();
-
-  // Only make a CLINT (Core-Local INTerrupt controller) if one is specified in
-  // the device tree configuration.
+  // Only make a CLINT (Core-Local INTerrupt controller) and PLIC (Platform-
+  // Level-Interrupt-Controller) if they are specified in the device tree
+  // configuration.
   //
   // This isn't *quite* as general as we could get (because you might have one
   // that's not bus-accessible), but it should handle the normal use cases. In
   // particular, the default device tree configuration that you get without
   // setting the dtb_file argument has one.
-  reg_t clint_base;
-  if (fdt_parse_clint(fdt, &clint_base, "riscv,clint0") == 0) {
-    clint.reset(new clint_t(this, CPU_HZ / INSNS_PER_RTC_TICK, cfg->real_time_clint()));
-    bus.add_device(clint_base, clint.get());
+  std::vector<const device_factory_t*> device_factories = {
+    clint_factory, // clint must be element 0
+    plic_factory, // plic must be element 1
+    ns16550_factory};
+  device_factories.insert(device_factories.end(),
+                          plugin_device_factories.begin(),
+                          plugin_device_factories.end());
+
+  // Load dtb_file if provided, otherwise self-generate a dts/dtb
+  if (dtb_file) {
+    std::ifstream fin(dtb_file, std::ios::binary);
+    if (!fin.good()) {
+      std::cerr << "can't find dtb file: " << dtb_file << std::endl;
+      exit(-1);
+    }
+    std::stringstream strstream;
+    strstream << fin.rdbuf();
+    dtb = strstream.str();
+  } else {
+    std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds;
+    std::string device_nodes;
+    for (const device_factory_t *factory : device_factories)
+      device_nodes.append(factory->generate_dts(this));
+    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
+                   initrd_bounds.first, initrd_bounds.second,
+                   cfg->bootargs, cfg->pmpregions, cfg->pmpgranularity,
+                   procs, mems, device_nodes);
+    dtb = dts_compile(dts);
   }
 
-  // pointer to wired interrupt controller
-  abstract_interrupt_controller_t *intctrl = NULL;
-
-  // create plic
-  reg_t plic_base;
-  uint32_t plic_ndev;
-  if (fdt_parse_plic(fdt, &plic_base, &plic_ndev, "riscv,plic0") == 0) {
-    plic.reset(new plic_t(this, plic_ndev));
-    bus.add_device(plic_base, plic.get());
-    intctrl = plic.get();
+  int fdt_code = fdt_check_header(dtb.c_str());
+  if (fdt_code) {
+    std::cerr << "Failed to read DTB from ";
+    if (!dtb_file) {
+      std::cerr << "auto-generated DTS string";
+    } else {
+      std::cerr << "`" << dtb_file << "'";
+    }
+    std::cerr << ": " << fdt_strerror(fdt_code) << ".\n";
+    exit(-1);
   }
 
-  // create ns16550
-  reg_t ns16550_base;
-  uint32_t ns16550_shift, ns16550_io_width;
-  if (fdt_parse_ns16550(fdt, &ns16550_base,
-                        &ns16550_shift, &ns16550_io_width, "ns16550a") == 0) {
-    assert(intctrl);
-    ns16550.reset(new ns16550_t(&bus, intctrl, NS16550_INTERRUPT_ID,
-                                ns16550_shift, ns16550_io_width));
-    bus.add_device(ns16550_base, ns16550.get());
+  void *fdt = (void *)dtb.c_str();
+
+  for (size_t i = 0; i < device_factories.size(); i++) {
+    const device_factory_t *factory = device_factories[i];
+    reg_t device_base = 0;
+    abstract_device_t* device = factory->parse_from_fdt(fdt, this, &device_base);
+    if (device) {
+      assert(device_base);
+      std::shared_ptr<abstract_device_t> dev_ptr(device);
+      add_device(device_base, dev_ptr);
+
+      if (i == 0) // clint_factory
+        clint = std::static_pointer_cast<clint_t>(dev_ptr);
+      else if (i == 1) // plic_factory
+        plic = std::static_pointer_cast<plic_t>(dev_ptr);
+    }
   }
 
   //per core attribute
@@ -246,11 +273,16 @@ void sim_t::step(size_t n)
       procs[current_proc]->get_mmu()->yield_load_reservation();
       if (++current_proc == procs.size()) {
         current_proc = 0;
-        if (clint) clint->increment(INTERLEAVE / INSNS_PER_RTC_TICK);
-        if (ns16550) ns16550->tick();
+        reg_t rtc_ticks = INTERLEAVE / INSNS_PER_RTC_TICK;
+        for (auto &dev : devices) dev->tick(rtc_ticks);
       }
     }
   }
+}
+
+void sim_t::add_device(reg_t addr, std::shared_ptr<abstract_device_t> dev) {
+  bus.add_device(addr, dev.get());
+  devices.push_back(dev);
 }
 
 void sim_t::set_debug(bool value)
@@ -303,40 +335,6 @@ bool sim_t::mmio_store(reg_t paddr, size_t len, const uint8_t* bytes)
   return bus.store(paddr, len, bytes);
 }
 
-void sim_t::make_dtb(const char* dtb_file)
-{
-  if (dtb_file) {
-    std::ifstream fin(dtb_file, std::ios::binary);
-    if (!fin.good()) {
-      std::cerr << "can't find dtb file: " << dtb_file << std::endl;
-      exit(-1);
-    }
-
-    std::stringstream strstream;
-    strstream << fin.rdbuf();
-
-    dtb = strstream.str();
-  } else {
-    std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds();
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
-                   initrd_bounds.first, initrd_bounds.second,
-                   cfg->bootargs(), cfg->pmpregions, procs, mems);
-    dtb = dts_compile(dts);
-  }
-
-  int fdt_code = fdt_check_header(dtb.c_str());
-  if (fdt_code) {
-    std::cerr << "Failed to read DTB from ";
-    if (!dtb_file) {
-      std::cerr << "auto-generated DTS string";
-    } else {
-      std::cerr << "`" << dtb_file << "'";
-    }
-    std::cerr << ": " << fdt_strerror(fdt_code) << ".\n";
-    exit(-1);
-  }
-}
-
 void sim_t::set_rom()
 {
   const int reset_vec_size = 8;
@@ -378,15 +376,15 @@ void sim_t::set_rom()
   const int align = 0x1000;
   rom.resize((rom.size() + align - 1) / align * align);
 
-  boot_rom.reset(new rom_device_t(rom));
-  bus.add_device(DEFAULT_RSTVEC, boot_rom.get());
+  std::shared_ptr<rom_device_t> boot_rom(new rom_device_t(rom));
+  add_device(DEFAULT_RSTVEC, boot_rom);
 }
 
 char* sim_t::addr_to_mem(reg_t paddr) {
   if (!paddr_ok(paddr))
     return NULL;
   auto desc = bus.find_device(paddr);
-  if (auto mem = dynamic_cast<mem_t*>(desc.second))
+  if (auto mem = dynamic_cast<abstract_mem_t*>(desc.second))
     if (paddr - desc.first < mem->size())
       return mem->contents(paddr - desc.first);
   return NULL;

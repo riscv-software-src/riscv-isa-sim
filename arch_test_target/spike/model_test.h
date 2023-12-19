@@ -49,16 +49,50 @@
 //RVTEST_IO_ASSERT_DFPR_EQ
 #define RVMODEL_IO_ASSERT_DFPR_EQ(_D, _R, _I)
 
-#define RVMODEL_SET_MSW_INT       \
- li t1, 1;                         \
- li t2, 0x2000000;                 \
- sw t1, 0(t2);
+#ifndef RVMODEL_MCLINTBASE    
+        #define RVMODEL_MCLINTBASE 0x02000000
+#endif
 
-#define RVMODEL_CLEAR_MSW_INT     \
- li t2, 0x2000000;                 \
- sw x0, 0(t2);
+#ifndef RVMODEL_MSIP_OFFSET    
+        #define RVMODEL_MSIP_OFFSET 0x0
+#endif
 
-#define RVMODEL_CLEAR_MTIMER_INT
+#ifndef RVMODEL_MTIMECMP_OFFSET    
+        #define RVMODEL_MTIMECMP_OFFSET 0x4000
+#endif
+
+#ifndef RVMODEL_MTIMECMPH_OFFSET    
+        #define RVMODEL_MTIMECMPH_OFFSET 0x4004
+#endif
+
+#define RVMODEL_SET_MSW_INT                                                           \
+    lui t0,      ((RVMODEL_MCLINTBASE + RVMODEL_MSIP_OFFSET)>> 12);         \
+    addi t0, t0, ((RVMODEL_MCLINTBASE + RVMODEL_MSIP_OFFSET) & 0xFFF);      \
+    li t1, 1;                                                                         \
+    sw t1, (t0);                                                                      \
+
+#define RVMODEL_CLEAR_MSW_INT                                                         \
+    lui t0,      ((RVMODEL_MCLINTBASE + RVMODEL_MSIP_OFFSET)>> 12);         \
+    addi t0, t0, ((RVMODEL_MCLINTBASE + RVMODEL_MSIP_OFFSET) & 0xFFF);      \
+    sw x0, (t0);                                                                      \
+
+#define RVMODEL_SET_MTIMER_INT                                                        \
+    lui t0,      ((RVMODEL_MCLINTBASE + RVMODEL_MTIMECMP_OFFSET)>> 12);     \
+    addi t0, t0, ((RVMODEL_MCLINTBASE + RVMODEL_MTIMECMP_OFFSET) & 0xFFF);  \
+    sw x0, (t0);                                                                      \
+    lui t0,      ((RVMODEL_MCLINTBASE + RVMODEL_MTIMECMPH_OFFSET)>> 12);    \
+    addi t0, t0, ((RVMODEL_MCLINTBASE + RVMODEL_MTIMECMPH_OFFSET) & 0xFFF); \
+    sw x0, (t0);                                                                      \
+
+#define RVMODEL_CLEAR_MTIMER_INT                                                      \
+    addi t1,x0,1;                                                          \
+    neg t1,t1;                                                                         \
+    lui t0,      ((RVMODEL_MCLINTBASE + RVMODEL_MTIMECMPH_OFFSET)>> 12);    \
+    addi t0, t0, ((RVMODEL_MCLINTBASE + RVMODEL_MTIMECMPH_OFFSET) & 0xFFF); \
+    sw t1, (t0);                                                                      \
+    lui t0,      ((RVMODEL_MCLINTBASE + RVMODEL_MTIMECMP_OFFSET)>> 12);     \
+    addi t0, t0, ((RVMODEL_MCLINTBASE + RVMODEL_MTIMECMP_OFFSET) & 0xFFF);  \
+    sw t1, (t0);                                                                      \
 
 #define RVMODEL_CLEAR_MEXT_INT
 
