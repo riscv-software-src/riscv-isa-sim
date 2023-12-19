@@ -59,7 +59,7 @@ static void commit_log_print_value(FILE *log_file, int width, uint64_t val)
 {
   commit_log_print_value(log_file, width, &val);
 }
-
+// !!! bu son instruction'un etkilerini dosyaya yazdirmak icin. log_reg_write'dan sadece okuma yapiliyor.
 static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
 {
   FILE *log_file = p->get_log_file();
@@ -160,7 +160,9 @@ inline void processor_t::update_histogram(reg_t pc)
 // These two functions are expected to be inlined by the compiler separately in
 // the processor_t::step() loop. The logged variant is used in the slow path
 static inline reg_t execute_insn_fast(processor_t* p, reg_t pc, insn_fetch_t fetch) {
-  return fetch.func(p, fetch.insn, pc);
+  reg_t npc = fetch.func(p, fetch.insn, pc);
+  // !!! p->get_state()->log_reg_write verilog tarafina gonderilecek
+  return npc;
 }
 static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {

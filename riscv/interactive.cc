@@ -416,8 +416,8 @@ void sim_t::interactive_run(const std::string& cmd, const std::vector<std::strin
     next_interactive_action = [=](){ interactive_run(cmd, {std::to_string(steps - actual_steps)}, noisy); };
     return;
   }
-
   std::ostream out(sout_.rdbuf());
+  // !!! burada bir seyler yazdiriliyor. ama sout_'un buffer'ina kim ne ekledi. processor'ler?
   if (!noisy) out << ":" << std::endl;
 }
 

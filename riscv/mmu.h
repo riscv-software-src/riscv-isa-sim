@@ -64,7 +64,7 @@ void throw_access_exception(bool virt, reg_t addr, access_type type);
 
 // this class implements a processor's port into the virtual memory system.
 // an MMU and instruction cache are maintained for simulator performance.
-class mmu_t
+class mmu_t // !!! memory management unit
 {
 private:
   std::map<reg_t, reg_t> alloc_cache;
