@@ -9,6 +9,9 @@
 _start:
   # stack pointer'i ayarla
   # main'i cagir
+  nop
+  nop
+  nop
   la sp, _end
   call main
 infinity_loop:

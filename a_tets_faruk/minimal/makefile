@@ -28,7 +28,7 @@ AS = riscv64-unknown-elf-as # Assembler for .S files
 LD = riscv64-unknown-elf-ld
 OBJDUMP = riscv64-unknown-elf-objdump
 READELF = riscv64-unknown-elf-readelf
-CFLAGS = -I$(INCDIR) -c
+CFLAGS = -I$(INCDIR) -c -fPIC
 ASFLAGS = # Add any assembler flags if needed
 LDFLAGS = -T link.ld
 DUMPFLAGS = -D
@@ -60,8 +60,6 @@ create-objdump-readelf: $(EXE)
 clean:
 	rm -f $(TEMPDIR)/*.o $(OUTDIR)/*
 
-find-function-calls-defs:
-	@grep --color=always -Ern '\b$(filter-out $@,$(MAKECMDGOALS))\(' ../../**
 
 
 # SEARCH_DIR = ../../
