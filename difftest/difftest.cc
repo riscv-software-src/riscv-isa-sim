@@ -15,7 +15,7 @@ static debug_module_config_t difftest_dm_config = {
   .support_haltgroups = true,
   .support_impebreak = false
 };
-extern std::vector<std::pair<reg_t, mem_t*>> make_mems(const std::vector<mem_cfg_t> &layout);
+extern std::vector<std::pair<reg_t, abstract_mem_t*>> make_mems(const std::vector<mem_cfg_t> &layout);
 
 static DifftestRef *ref = nullptr;
 static size_t overrided_mem_size = 0;
@@ -384,10 +384,10 @@ sim_t *DifftestRef::create_sim(const cfg_t *cfg) {
     cfg,
     // bool halted,
     false,
-    // std::vector<std::pair<reg_t, mem_t*>> mems
+    // std::vector<std::pair<reg_t, abstract_mem_t*>> mems
     mems,
-    // std::vector<std::pair<reg_t, abstract_device_t*>> plugin_devices
-    plugin_devices,
+    // std::vector<device_factory_t*> plugin_device_factories
+    std::vector<device_factory_t*>{},
     // const std::vector<std::string>& args
     std::vector<std::string>{},
     // const debug_module_config_t &dm_config
@@ -401,6 +401,10 @@ sim_t *DifftestRef::create_sim(const cfg_t *cfg) {
     //bool dtb_enabled, const char *dtb_file, bool socket_enabled, FILE *cmd_file
     false, nullptr, false, nullptr
   );
+
+  for (const auto& pair : plugin_devices) {
+    s->add_device(pair.first, std::shared_ptr<abstract_device_t>(pair.second));
+  }
 
   return s;
 }
