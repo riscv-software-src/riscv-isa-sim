@@ -40,7 +40,7 @@ inline int64_t mulhsu(int64_t a, uint64_t b)
 {
   int negate = a < 0;
   uint64_t res = mulhu(a < 0 ? -(uint64_t)a : a, b);
-  return negate ? ~res + (a * b == 0) : res;
+  return negate ? ~res + ((uint64_t)a * b == 0) : res;
 }
 
 //ref:  https://locklessinc.com/articles/sat_arithmetic/
