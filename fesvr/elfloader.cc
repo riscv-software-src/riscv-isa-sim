@@ -33,7 +33,7 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
       throw std::invalid_argument(std::string("Specified ELF can't be mapped: ") + strerror(errno));
   close(fd);
 
-  // size'in elf header size'indan buyuk oldugunu emin ol
+  // !!! size'in elf header size'indan buyuk oldugunu emin ol
   assert(size >= sizeof(Elf64_Ehdr));
 
   const Elf64_Ehdr* eh64 = (const Elf64_Ehdr*)buf;
@@ -44,7 +44,7 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
     throw incompat_xlen(required_xlen, xlen);
   }
 
-  // elf file dogrulama
+  // !!! elf file dogrulama
   assert(IS_ELFLE(*eh64) || IS_ELFBE(*eh64));
   assert(IS_ELF_EXEC(*eh64));
   assert(IS_ELF_RISCV(*eh64) || IS_ELF_EM_NONE(*eh64));
@@ -52,7 +52,7 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
 
   std::vector<uint8_t> zeros;
   std::map<std::string, uint64_t> symbols;
-                // elfh   progh  secth   symbolh
+            // !!! elfh   progh  secth   symbolh
 #define LOAD_ELF(ehdr_t, phdr_t, shdr_t, sym_t, bswap)                         \
   do {                                                                         \
     ehdr_t* eh = (ehdr_t*)buf;                                                 \

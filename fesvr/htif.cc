@@ -253,7 +253,7 @@ int htif_t::run()
     std::bind(enq_func, &fromhost_queue, std::placeholders::_1);
 
   std::cout << "after start() call in htif_t::run() tohost_addr: " << tohost_addr << std::endl;
-  // elf dosyasinda to host adres initlenmedigi zaman (satir 161) bu kisim calisiyor.
+  // !!! elf dosyasinda to host adres initlenmedigi zaman (satir 161) bu kisim calisiyor.
   if (tohost_addr == 0) {
     while (!signal_exit)
       idle();
@@ -263,7 +263,7 @@ int htif_t::run()
   {
     uint64_t tohost;
 
-    // to host diye bir mesaj okunup sifirlaniyor
+    // !!! to host diye bir mesaj okunup sifirlaniyor
     try {
       if ((tohost = from_target(mem.read_uint64(tohost_addr))) != 0)
         mem.write_uint64(tohost_addr, target_endian<uint64_t>::zero);
@@ -292,8 +292,8 @@ int htif_t::run()
         fromhost_queue.pop();
       }
     } catch (mem_trap_t& t) {
-      // burda fromhost, tohost tanimlamadan bir elf dosyasi olusturup 
-      // sonra debug modda core'umuza bir seyler gondererek? bu hatayi almayi deneyebilirim
+      // !!!  burda fromhost, tohost tanimlamadan bir elf dosyasi olusturup 
+      // !!! sonra debug modda core'umuza bir seyler gondererek? bu hatayi almayi deneyebilirim
       bad_address("accessing fromhost", t.get_tval());
     }
   }
