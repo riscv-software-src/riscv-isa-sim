@@ -418,9 +418,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     csrmap[CSR_TINFO] = std::make_shared<const_csr_t>(proc, CSR_TINFO, 0);
   }
   unsigned scontext_length = (xlen == 32 ? 16 : 34); // debug spec suggests 16-bit for RV32 and 34-bit for RV64
-  csrmap[CSR_SCONTEXT] = scontext = std::make_shared<masked_csr_t>(proc, CSR_SCONTEXT, (reg_t(1) << scontext_length) - 1, 0);
+  csrmap[CSR_SCONTEXT] = scontext = std::make_shared<context_csr_t>(proc, CSR_SCONTEXT, (reg_t(1) << scontext_length) - 1, 0);
   unsigned hcontext_length = (xlen == 32 ? 6 : 13) + (proc->extension_enabled('H') ? 1 : 0); // debug spec suggest 7-bit (6-bit) for RV32 and 14-bit (13-bit) for RV64 with (without) H extension
-  csrmap[CSR_HCONTEXT] = std::make_shared<masked_csr_t>(proc, CSR_HCONTEXT, (reg_t(1) << hcontext_length) - 1, 0);
+  csrmap[CSR_HCONTEXT] = std::make_shared<context_csr_t>(proc, CSR_HCONTEXT, (reg_t(1) << hcontext_length) - 1, 0);
   csrmap[CSR_MCONTEXT] = mcontext = std::make_shared<proxy_csr_t>(proc, CSR_MCONTEXT, csrmap[CSR_HCONTEXT]);
   debug_mode = false;
   single_step = STEP_NONE;
@@ -482,7 +482,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     const reg_t sstateen0_mask = (proc->extension_enabled(EXT_ZFINX) ? SSTATEEN0_FCSR : 0) |
                                  (proc->extension_enabled(EXT_ZCMT) ? SSTATEEN0_JVT : 0) |
                                  SSTATEEN0_CS;
-    const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN;
+    const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_SCONTEXT | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN;
     const reg_t mstateen0_mask = hstateen0_mask;
     for (int i = 0; i < 4; i++) {
       const reg_t mstateen_mask = i == 0 ? mstateen0_mask : MSTATEEN_HSTATEEN;
