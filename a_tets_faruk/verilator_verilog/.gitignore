@@ -1,0 +1,2 @@
+obj_dir/*
+!obj_dir/**__Dpi.h
