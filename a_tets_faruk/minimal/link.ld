@@ -10,7 +10,8 @@ SECTIONS
   .data : { *(.data) }
   .data.string : { *(.data.string)}
   .bss : { *(.bss) }
-  . = ALIGN(0x1000);
-  . = ALIGN(0x1000);
   _end = .;
+  . = ALIGN(0x1000);
+  . = ALIGN(0x1000);
+  _stack_end = .;
 }

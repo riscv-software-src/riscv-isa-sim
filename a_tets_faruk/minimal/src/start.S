@@ -1,8 +1,4 @@
 
-
-
-#warning bu kod _end'i nereden bilecek? diger start dosyasincan bak.
-
 .global _start
 .type   _start, @function
 
@@ -12,7 +8,7 @@ _start:
   nop
   nop
   nop
-  la sp, _end
+  la sp, _stack_end
   call main
 infinity_loop:
   j infinity_loop
