@@ -1268,6 +1268,31 @@ void debug_mode_csr_t::verify_permissions(insn_t insn, bool write) const {
     throw trap_illegal_instruction(insn.bits());
 }
 
+mscontext_csr_t::mscontext_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate):
+  proxy_csr_t(proc, addr, delegate) {
+}
+
+void mscontext_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_HCONTEXT))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_SCONTEXT))
+      throw trap_virtual_instruction(insn.bits());
+  }
+
+  // Address of mscontext does not conform to the CSR conventions, i.e., csr_priv == PRV_S
+  if (!proc->extension_enabled('S'))
+    throw trap_illegal_instruction(insn.bits());
+
+  unsigned priv = state->prv == PRV_S && !state->v ? PRV_HS : state->prv;
+  if (priv < PRV_S) {
+    if (state->v)
+      throw trap_virtual_instruction(insn.bits());
+    throw trap_illegal_instruction(insn.bits());
+  }
+}
+
 dpc_csr_t::dpc_csr_t(processor_t* const proc, const reg_t addr):
   epc_csr_t(proc, addr) {
 }

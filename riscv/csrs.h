@@ -670,6 +670,12 @@ class debug_mode_csr_t: public basic_csr_t {
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
 
+class mscontext_csr_t: public proxy_csr_t {
+ public:
+  mscontext_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
 class dpc_csr_t: public epc_csr_t {
  public:
   dpc_csr_t(processor_t* const proc, const reg_t addr);
