@@ -1127,6 +1127,22 @@ void counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
   }
 }
 
+context_proxy_csr_t::context_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate):
+  proxy_csr_t(proc, addr, delegate) {
+}
+
+void context_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_HCONTEXT))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_SCONTEXT))
+      throw trap_virtual_instruction(insn.bits());
+  }
+
+  proxy_csr_t::verify_permissions(insn, write);
+}
+
 mevent_csr_t::mevent_csr_t(processor_t* const proc, const reg_t addr):
   basic_csr_t(proc, addr, 0) {
 }

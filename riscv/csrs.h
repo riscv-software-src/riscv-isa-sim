@@ -588,6 +588,12 @@ class counter_proxy_csr_t: public proxy_csr_t {
   bool myenable(csr_t_p counteren) const noexcept;
 };
 
+class context_proxy_csr_t: public proxy_csr_t {
+ public:
+  context_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
 class mevent_csr_t: public basic_csr_t {
  public:
   mevent_csr_t(processor_t* const proc, const reg_t addr);

@@ -421,7 +421,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_SCONTEXT] = scontext = std::make_shared<context_csr_t>(proc, CSR_SCONTEXT, (reg_t(1) << scontext_length) - 1, 0);
   unsigned hcontext_length = (xlen == 32 ? 6 : 13) + (proc->extension_enabled('H') ? 1 : 0); // debug spec suggest 7-bit (6-bit) for RV32 and 14-bit (13-bit) for RV64 with (without) H extension
   csrmap[CSR_HCONTEXT] = std::make_shared<context_csr_t>(proc, CSR_HCONTEXT, (reg_t(1) << hcontext_length) - 1, 0);
-  csrmap[CSR_MCONTEXT] = mcontext = std::make_shared<proxy_csr_t>(proc, CSR_MCONTEXT, csrmap[CSR_HCONTEXT]);
+  csrmap[CSR_MCONTEXT] = mcontext = std::make_shared<context_proxy_csr_t>(proc, CSR_MCONTEXT, csrmap[CSR_HCONTEXT]);
   debug_mode = false;
   single_step = STEP_NONE;
 
