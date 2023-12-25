@@ -588,6 +588,12 @@ class counter_proxy_csr_t: public proxy_csr_t {
   bool myenable(csr_t_p counteren) const noexcept;
 };
 
+class context_proxy_csr_t: public proxy_csr_t {
+ public:
+  context_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
 class mevent_csr_t: public basic_csr_t {
  public:
   mevent_csr_t(processor_t* const proc, const reg_t addr);
@@ -661,6 +667,12 @@ class tinfo_csr_t: public csr_t {
 class debug_mode_csr_t: public basic_csr_t {
  public:
   debug_mode_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class mscontext_csr_t: public proxy_csr_t {
+ public:
+  mscontext_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate);
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
 
@@ -805,6 +817,12 @@ class scountovf_csr_t: public csr_t {
 class jvt_csr_t: public basic_csr_t {
  public:
   jvt_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class context_csr_t: public masked_csr_t {
+ public:
+  context_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
 
