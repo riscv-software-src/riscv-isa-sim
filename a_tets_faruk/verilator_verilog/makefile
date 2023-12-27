@@ -4,7 +4,7 @@
 TB_MODULES := $(notdir $(basename $(wildcard src/rtl/tb/*.sv)))
 
 # Source and C++ files
-SRC_FILES := $(wildcard src/rtl/src/*.sv)
+SRC_FILES := $(wildcard src/rtl/design/*.sv)
 CPP_FILES := $(wildcard src/cpp/*.cc)
 
 
