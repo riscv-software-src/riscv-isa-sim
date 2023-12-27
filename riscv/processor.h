@@ -65,6 +65,7 @@ struct insn_desc_t
   }
 };
 
+// !!! unordered_map burada
 // regnum, data
 typedef std::unordered_map<reg_t, freg_t> commit_log_reg_t;
 
