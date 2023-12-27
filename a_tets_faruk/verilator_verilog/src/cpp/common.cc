@@ -45,9 +45,9 @@ void init_out_err_files()
   char time_str[100];
   time_t now = time(NULL);
   strftime(time_str, sizeof(time_str), "%H:%M:%S", localtime(&now));
-  fprintf(out_logs, "---------------------------------\n");
+  // fprintf(out_logs, "---------------------------------\n");
   fprintf(out_logs, "[%s] out_logs ve err_logs olusturuldu\n", time_str);
-  fflush(out_logs);
+  // fflush(out_logs);
 }
 
 int get_last_commit()
