@@ -4,7 +4,7 @@
 // long int tohost;
 // long int fromhost;
 
-#define SIZE 10
+#define SIZE 1000
 
 long int modular_random() {
     static long int state = -1;  // Static state variable
