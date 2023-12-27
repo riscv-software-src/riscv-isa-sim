@@ -43,10 +43,11 @@ module tb_2;
 
   import "DPI-C" function int get_last_commit();
   import "DPI-C" function void step();
-  // import "DPI-C" function void c_init(
-  //   input logic [] src1[0:MEM_DEPTH-1],
-  //   input logic [] src2[0:MEM_DEPTH-1]
-  // );
+  import "DPI-C" function void c_init(
+    input logic [MEM_WIDTH-1:0] src1[],
+    input logic [MEM_WIDTH-1:0] src2[]
+  );
+
 
   initial begin:initialization
   
@@ -66,7 +67,7 @@ module tb_2;
 
 
     for (int ii= 0;ii<MEM_DEPTH;ii = ii + 1) begin
-      #40 wait(clk_i);
+      wait(clk_i);
       step();
       if (mem_inst.mem[ii] != get_last_commit())begin
         $display("mismatch detected %d: mem: %d;", ii,mem_inst.mem[ii]);

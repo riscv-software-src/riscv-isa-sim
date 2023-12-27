@@ -46,8 +46,8 @@ module tb_3
   import "DPI-C" function int get_last_commit();
   import "DPI-C" function void step_dynamic();
   import "DPI-C" function void c_init_dynamic(
-    input logic [] src1[0:MEM_DEPTH-1],
-    input logic [] src2[0:MEM_DEPTH-1]
+    input logic [MEM_WIDTH-1:0] src1[],
+    input logic [MEM_WIDTH-1:0] src2[]
   );
 
   initial begin:initialization
