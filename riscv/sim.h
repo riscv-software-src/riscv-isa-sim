@@ -37,6 +37,14 @@ public:
 
   // run the simulation to completion
   int run();
+
+  // !!! M run'un implementasyonuna bak.
+  void pre_htif_run();
+  // !!! M
+  void htif_start();
+  // !!! M
+  void step_without_clear_commit(size_t n);
+
   void set_debug(bool value);
   void set_histogram(bool value);
   void add_device(reg_t addr, std::shared_ptr<abstract_device_t> dev);
