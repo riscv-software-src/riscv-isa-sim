@@ -31,6 +31,8 @@
  */
 #define WRITE_REG(reg, value) ({ \
     reg_t wdata = (value); /* value may have side effects */ \
+    /* // !!! burada {wdata, 0} yapisi, uint64_t[2] arrayin 0. indeksine  */\
+    /* // !!! uint64_t[2] icin bkz. riscv-isa-sim/riscv/decode.h:20 */\
     if (DECODE_MACRO_USAGE_LOGGED) STATE.log_reg_write[(reg) << 4] = {wdata, 0}; \
     CHECK_REG(reg); \
     STATE.XPR.write(reg, wdata); \

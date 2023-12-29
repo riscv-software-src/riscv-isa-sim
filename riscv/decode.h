@@ -17,6 +17,7 @@
 
 typedef int64_t sreg_t;
 typedef uint64_t reg_t;
+// !!! freg_t float128_t (bkz riscv-isa-sim/softfloat/softfloat_types.h:54)
 typedef float128_t freg_t;
 
 const int NXPR = 32;
