@@ -529,7 +529,8 @@ int init(int argc, char** argv){
     cfg.hartids = default_hartids;
   }
 
-  
+  // !!! burayi obje fonksiyon cagrilari arasinda kullanilabilir olacak sekilde
+  // degistir. dynamic memory allocation, global pointer falan
   sim_t s(&cfg, halted,
       mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
       socket,
