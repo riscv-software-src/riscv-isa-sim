@@ -21,7 +21,7 @@ module tb;
 
   initial begin:some_dummy_operations
     verilog_side_data[1235] = 112312;
-    verilog_side_data[123544] = 456;
+    verilog_side_data[123544] = 11 << 32;
     verilog_side_data[1231] = 11 << 64;
   end
 

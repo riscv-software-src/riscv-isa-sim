@@ -24,11 +24,11 @@ typedef struct
 #define DPI_WIDTH 32
 #endif
 
-const reg_t x1 = 1235, x2 = 123544, x3 = 1231, x4 = 1111;
+const reg_t x1 = 1235lu, x2 = 123544lu, x3 = 1231lu, x4 = 1111lu;
 const freg_t
-    d1 = {{4123415, 0}},
-    d2 = {{5856856, 0}},
-    d3 = {{0, 11}};
+    d1 = {{4123415lu, 0}},
+    d2 = {{11lu << 32lu, 0}},
+    d3 = {{0, 11lu}};
 
 const std::unordered_map<reg_t, freg_t> map_from_c_side = {
     {x1, d1},
