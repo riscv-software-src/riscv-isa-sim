@@ -149,7 +149,11 @@ struct state_t
 
   mseccfg_csr_t_p mseccfg;
 
+#ifdef CONFIG_PMP_MAX_NUM
+  static const int max_pmp = CONFIG_PMP_MAX_NUM;
+#else
   static const int max_pmp = 64;
+#endif
   pmpaddr_csr_t_p pmpaddr[max_pmp];
 
   float_csr_t_p fflags;
