@@ -93,6 +93,7 @@ struct state_t
   csr_t_p mstatush;
   csr_t_p mepc;
   csr_t_p mtval;
+  csr_t_p mscratch;                 // ADD by XiangShan
   csr_t_p mtvec;
   csr_t_p mcause;
   wide_counter_csr_t_p minstret;
@@ -108,15 +109,18 @@ struct state_t
   csr_t_p scounteren;
   csr_t_p sepc;
   csr_t_p stval;
+  csr_t_p sscratch;                 // ADD by XiangShan
   csr_t_p stvec;
   virtualized_csr_t_p satp;
   csr_t_p scause;
 
   // When taking a trap into HS-mode, we must access the nonvirtualized HS-mode CSRs directly:
   csr_t_p nonvirtual_stvec;
+  satp_csr_t_p nonvirtual_satp;     // ADD by XiangShan
   csr_t_p nonvirtual_scause;
   csr_t_p nonvirtual_sepc;
   csr_t_p nonvirtual_stval;
+  csr_t_p nonvirtual_sscratch;      // ADD by XiangShan
   sstatus_proxy_csr_t_p nonvirtual_sstatus;
 
   csr_t_p mtval2;
@@ -132,6 +136,7 @@ struct state_t
   vsstatus_csr_t_p vsstatus;
   csr_t_p vstvec;
   csr_t_p vsepc;
+  csr_t_p vsscratch;                // ADD by XiangShan
   csr_t_p vscause;
   csr_t_p vstval;
   csr_t_p vsatp;

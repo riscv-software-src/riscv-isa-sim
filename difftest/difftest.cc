@@ -57,6 +57,7 @@ void DifftestRef::skip_one(bool isRVC, bool wen, uint32_t wdest, uint64_t wdata)
 }
 
 void DifftestRef::get_regs(diff_context_t *ctx) {
+  // INFO: SPIKE's state_t struct and its reset function sucks.
   for (int i = 0; i < NXPR; i++) {
     ctx->gpr[i] = state->XPR[i];
   }
@@ -69,21 +70,25 @@ void DifftestRef::get_regs(diff_context_t *ctx) {
   ctx->mstatus = state->mstatus->read();
   ctx->mcause = state->mcause->read();
   ctx->mepc = state->mepc->read();
-  ctx->sstatus = state->sstatus->read();
-  ctx->scause = state->scause->read();
-  ctx->sepc = state->sepc->read();
-  ctx->satp = state->satp->read();
+  ctx->sstatus = state->nonvirtual_sstatus->read();
+  ctx->scause = state->nonvirtual_scause->read();
+  ctx->sepc = state->nonvirtual_sepc->read();
+  ctx->satp = state->nonvirtual_satp->read();
   ctx->mip = state->mip->read();
   ctx->mie = state->mie->read();
-  ctx->mscratch = state->csrmap[CSR_MSCRATCH]->read();
-  ctx->sscratch = state->csrmap[CSR_SSCRATCH]->read();
+  ctx->mscratch = state->mscratch->read();
+  ctx->sscratch = state->nonvirtual_sscratch->read();
   ctx->mideleg = state->mideleg->read();
   ctx->medeleg = state->medeleg->read();
   ctx->mtval = state->mtval->read();
-  ctx->stval = state->stval->read();
+  ctx->stval = state->nonvirtual_stval->read();
   ctx->mtvec = state->mtvec->read();
-  ctx->stvec = state->stvec->read();
+  ctx->stvec = state->nonvirtual_stvec->read();
   ctx->priv = state->prv;
+  // Some of above CSRs need to use nonvirtual_ type, as SPIKE redirect them
+  // when virtualization is on (V = 1).
+  // Some nonvirtual_ CSRs are added by XiangShan Difftest.
+
 #ifdef DIFF_DEBUG_MODE
   ctx->debugMode = state->debug_mode;
   ctx->dcsr = state->dcsr->read();
@@ -91,6 +96,26 @@ void DifftestRef::get_regs(diff_context_t *ctx) {
   ctx->dscratch0 = state->csrmap[CSR_DSCRATCH0]->read();
   ctx->dscratch1 = state->csrmap[CSR_DSCRATCH1]->read();
 #endif // DIFF_DEBUG_MODE
+
+#ifdef CONFIG_DIFF_RVH
+  ctx->v = state->v;
+  ctx->mtval2 = state->mtval2->read();
+  ctx->mtinst = state->mtinst->read();
+  ctx->hstatus = state->hstatus->read();
+  ctx->hideleg = state->hideleg->read();
+  ctx->hedeleg = state->hedeleg->read();
+  ctx->hcounteren = state->hcounteren->read();
+  ctx->htval = state->htval->read();
+  ctx->htinst = state->htinst->read();
+  ctx->hgatp = state->hgatp->read();
+  ctx->vsstatus = state->vsstatus->read();
+  ctx->vstvec = state->vstvec->read();
+  ctx->vsepc = state->vsepc->read();
+  ctx->vscause = state->vscause->read();
+  ctx->vstval = state->vstval->read();
+  ctx->vsatp = state->vsatp->read();
+  ctx->vsscratch = state->vsscratch->read();
+#endif
 
 #ifdef CONFIG_DIFF_RVV
   auto& vstate = p->VU;
@@ -137,17 +162,17 @@ void DifftestRef::set_regs(diff_context_t *ctx, bool on_demand) {
   if (!on_demand || state->mepc->read() != ctx->mepc) {
     state->mepc->write(ctx->mepc);
   }
-  if (!on_demand || state->sstatus->read() != ctx->sstatus) {
-    state->sstatus->write(ctx->sstatus);
+  if (!on_demand || state->nonvirtual_sstatus->read() != ctx->sstatus) {
+    state->nonvirtual_sstatus->write(ctx->sstatus);
   }
-  if (!on_demand || state->scause->read() != ctx->scause) {
-    state->scause->write(ctx->scause);
+  if (!on_demand || state->nonvirtual_scause->read() != ctx->scause) {
+    state->nonvirtual_scause->write(ctx->scause);
   }
-  if (!on_demand || state->sepc->read() != ctx->sepc) {
-    state->sepc->write(ctx->sepc);
+  if (!on_demand || state->nonvirtual_sepc->read() != ctx->sepc) {
+    state->nonvirtual_sepc->write(ctx->sepc);
   }
-  if (!on_demand || state->satp->read() != ctx->satp) {
-    state->satp->write(ctx->satp);
+  if (!on_demand || state->nonvirtual_satp->read() != ctx->satp) {
+    state->nonvirtual_satp->write(ctx->satp);
   }
   if (!on_demand || state->mip->read() != ctx->mip) {
     state->mip->write(ctx->mip);
@@ -155,11 +180,11 @@ void DifftestRef::set_regs(diff_context_t *ctx, bool on_demand) {
   if (!on_demand || state->mie->read() != ctx->mie) {
     state->mie->write(ctx->mie);
   }
-  if (!on_demand || state->csrmap[CSR_MSCRATCH]->read() != ctx->mscratch) {
-    state->csrmap[CSR_MSCRATCH]->write(ctx->mscratch);
+  if (!on_demand || state->mscratch->read() != ctx->mscratch) {
+    state->mscratch->write(ctx->mscratch);
   }
-  if (!on_demand || state->csrmap[CSR_SSCRATCH]->read() != ctx->sscratch) {
-    state->csrmap[CSR_SSCRATCH]->write(ctx->sscratch);
+  if (!on_demand || state->nonvirtual_sscratch->read() != ctx->sscratch) {
+    state->nonvirtual_sscratch->write(ctx->sscratch);
   }
   if (!on_demand || state->mideleg->read() != ctx->mideleg) {
     state->mideleg->write(ctx->mideleg);
@@ -176,8 +201,8 @@ void DifftestRef::set_regs(diff_context_t *ctx, bool on_demand) {
   if (!on_demand || state->mtvec->read() != ctx->mtvec) {
     state->mtvec->write(ctx->mtvec);
   }
-  if (!on_demand || state->stvec->read() != ctx->stvec) {
-    state->stvec->write(ctx->stvec);
+  if (!on_demand || state->nonvirtual_stvec->read() != ctx->stvec) {
+    state->nonvirtual_stvec->write(ctx->stvec);
   }
   if (!on_demand || state->prv != ctx->priv) {
     state->prv = ctx->priv;
@@ -199,6 +224,60 @@ void DifftestRef::set_regs(diff_context_t *ctx, bool on_demand) {
     state->csrmap[CSR_DSCRATCH1]->write(ctx->dscratch1);
   }
 #endif // DIFF_DEBUG_MODE
+
+#ifdef CONFIG_DIFF_RVH
+  if (!on_demand || state->v != ctx->v) {
+    state->v = ctx->v;
+  }
+  if (!on_demand || state->mtval2->read() != ctx->mtval2) {
+    state->mtval2->write(ctx->mtval2);
+  }
+  if (!on_demand || state->mtinst->read() != ctx->mtinst) {
+    state->mtinst->write(ctx->mtinst);
+  }
+  if (!on_demand || state->hstatus->read() != ctx->hstatus) {
+    state->hstatus->write(ctx->hstatus);
+  }
+  if (!on_demand || state->hideleg->read() != ctx->hideleg) {
+    state->hideleg->write(ctx->hideleg);
+  }
+  if (!on_demand || state->hedeleg->read() != ctx->hedeleg) {
+    state->hedeleg->write(ctx->hedeleg);
+  }
+  if (!on_demand || state->hcounteren->read() != ctx->hcounteren) {
+    state->hcounteren->write(ctx->hcounteren);
+  }
+  if (!on_demand || state->htval->read() != ctx->htval) {
+    state->htval->write(ctx->htval);
+  }
+  if (!on_demand || state->htinst->read() != ctx->htinst) {
+    state->htinst->write(ctx->htinst);
+  }
+  if (!on_demand || state->hgatp->read() != ctx->hgatp) {
+    state->hgatp->write(ctx->hgatp);
+  }
+  if (!on_demand || state->vsstatus->read() != ctx->vsstatus) {
+    state->vsstatus->write(ctx->vsstatus);
+  }
+  if (!on_demand || state->vstvec->read() != ctx->vstvec) {
+    state->vstvec->write(ctx->vstvec);
+  }
+  if (!on_demand || state->vsepc->read() != ctx->vsepc) {
+    state->vsepc->write(ctx->vsepc);
+  }
+  if (!on_demand || state->vscause->read() != ctx->vscause) {
+    state->vscause->write(ctx->vscause);
+  }
+  if (!on_demand || state->vstval->read() != ctx->vstval) {
+    state->vstval->write(ctx->vstval);
+  }
+  if (!on_demand || state->vsatp->read() != ctx->vsatp) {
+    state->vsatp->write(ctx->vsatp);
+  }
+  if (!on_demand || state->csrmap[CSR_VSSCRATCH]->read() != ctx->vsscratch) {
+    state->csrmap[CSR_VSSCRATCH]->write(ctx->vsscratch);
+  }
+#endif // CONFIG_DIFF_RVH
 
 #ifdef CONFIG_DIFF_RVV
   auto& vstate = p->VU;

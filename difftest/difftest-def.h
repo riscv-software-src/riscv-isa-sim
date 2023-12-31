@@ -15,6 +15,7 @@
 
 #if defined(CPU_XIANGSHAN)
 #define CONFIG_DIFF_DEBUG_MODE
+// #define CONFIG_DIFF_RVH  // Default off
 // #define CONFIG_DIFF_RVV  // Default off
 #endif
 
@@ -26,7 +27,9 @@
 #define CONFIG_PMP_NUM         0
 #define CONFIG_PMP_MAX_NUM     0
 #elif defined(CPU_XIANGSHAN)
-    #if defined(CONFIG_DIFF_RVV)
+    #if defined(CONFIG_DIFF_RVH)
+    #define CONFIG_DIFF_ISA_STRING "RV64IMAFDCH_zba_zbb_zbc_zbs_zbkb_zbkc_zbkx_zknd_zkne_zknh_zksed_zksh_svinval"
+    #elif defined(CONFIG_DIFF_RVV)
     #define CONFIG_DIFF_ISA_STRING "RV64IMAFDCV_zba_zbb_zbc_zbs_zbkb_zbkc_zbkx_zknd_zkne_zknh_zksed_zksh_svinval"
     #else
     #define CONFIG_DIFF_ISA_STRING "RV64IMAFDC_zba_zbb_zbc_zbs_zbkb_zbkc_zbkx_zknd_zkne_zknh_zksed_zksh_svinval"
