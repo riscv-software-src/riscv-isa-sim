@@ -1,5 +1,7 @@
-.PHONY: all clean $(MAIN_TARGETS)
+# this makefile prepared by chatGPT:
+# https://chat.openai.com/share/93d10b9a-8b83-4276-9686-f887e9c3c9a3
 
+.PHONY: all clean $(MAIN_TARGETS)
 # Directories
 SRC_DIR := src
 INC_DIR := inc
@@ -31,7 +33,7 @@ clean:
 $(TEMP_DIR) $(OUTPUT_DIR):
 	mkdir -p $@
 
-# faruk:
+# :
 # .d dosyalari gnu compiler tarafindan dinamik olarak olusturuluyor.
 # ilk compile ettigimizde .d dosyasi olmadigindan 
 # butun dosyalar compile ediliyor.
@@ -42,11 +44,11 @@ $(TEMP_DIR) $(OUTPUT_DIR):
 # ../riscv/insn_macros.h:
 # ../riscv/insns/add_uw.h:
 # bu asagidaki include statement, d dosyalarinin icerigini
-# bu makefile scriptine kopyaliyor. ~faruk
+# bu makefile scriptine kopyaliyor. ~
 # Include dynamically generated dependencies
 -include $(OBJ_FILES:.o=.d)
 
-# faruk: gnu compiler'a dependency dosyasi olusturtmak icin. ~faruk
+# : gnu compiler'a dependency dosyasi olusturtmak icin. ~
 # Rule to generate dependencies
 $(TEMP_DIR)/%.d: $(SRC_DIR)/%.c | $(TEMP_DIR)
 	$(CC) $(CFLAGS) -MM -MT $(@:.d=.o) $< > $@

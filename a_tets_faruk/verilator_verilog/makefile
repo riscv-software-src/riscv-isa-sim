@@ -1,4 +1,6 @@
-".PHONY: clean $(TB_MODULES:%=compile_%) $(TB_MODULES:%=run_%)
+# this makefile prepared by chatGPT:
+# https://chat.openai.com/share/93d10b9a-8b83-4276-9686-f887e9c3c9a3
+# .PHONY: $(TB_MODULES:%=compile_%) $(TB_MODULES:%=run_%)
 
 # Automatically detect top module names from the tb directory
 TB_MODULES := $(notdir $(basename $(wildcard src/rtl/tb/*.sv)))
