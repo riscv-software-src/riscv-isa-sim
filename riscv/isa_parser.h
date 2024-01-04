@@ -87,6 +87,7 @@ typedef enum {
   EXT_ZCMOP,
   EXT_ZALASR,
   EXT_SSQOSID,
+  EXT_ZICFILP,
   NUM_ISA_EXTENSIONS
 } isa_extension_t;
 
