@@ -33,6 +33,7 @@
 #define DPI_WIDTH 32
 #endif
 
+#define FORCE_LOG_COMMITS
 
 static void help(int exit_code = 1)
 {
@@ -67,7 +68,11 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --misaligned          Support misaligned memory accesses\n");
   fprintf(stderr, "  --device=<name>       Attach MMIO plugin device from an --extlib library\n");
   fprintf(stderr, "  --log-cache-miss      Generate a log of cache miss\n");
-  fprintf(stderr, "  --log-commits         Generate a log of commits info\n");
+  #ifndef FORCE_LOG_COMMITS
+  fprintf(stderr, "  --log-commits         Generate a log of commits info");
+  #else
+  fprintf(stderr, "  --log-commits         Generate a log of commits info\n (faruk: !!! ben bunu her zaman true yapiyorum.)\n");
+  #endif
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
   fprintf(stderr, "                          This flag can be used multiple times.\n");
   fprintf(stderr, "  --extlib=<name>       Shared library to load\n");
@@ -521,6 +526,10 @@ int init(int argc, char **argv)
   parser.option(0, "dm-no-halt-groups", 0,
                 [&](const char UNUSED *s)
                 { dm_config.support_haltgroups = false; });
+#ifdef FORCE_LOG_COMMITS  
+  // !!! log_commits'i her turlu aktiflestiriyorum
+  log_commits = true;
+#endif
   parser.option(0, "log-commits", 0,
                 [&](const char UNUSED *s)
                 { log_commits = true; });
@@ -663,14 +672,14 @@ int init(int argc, char **argv)
   simulation_object->htif_start();
 }
 
+// !!! burasi export'lanacak
 void step()
 {
   simulation_object->step_without_clear_commit(1);
   // sim_obj->step_without_clear_commit(1);
 }
 
-
-
+// !!! burasi export'lanacak
 /// @brief for key and value arrays: packed dimension size: dim0; num entries: dim1; entry size in packets: dim2
 /// @param key_array the keys of the unordered_map is written to this array
 /// @param value_array the values of the unordered_map is written to this array in same order with keys written in the key_array
@@ -722,6 +731,7 @@ void get_last_commit(const svOpenArrayHandle key_array, const svOpenArrayHandle 
 #undef NUM_ENTRIES
 }
 
+// !!! burasi export'lanacak
 void clear_last_commit()
 {
   auto processor_state = simulation_object->get_core(0)->get_state();

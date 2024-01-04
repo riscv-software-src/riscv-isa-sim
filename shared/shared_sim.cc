@@ -34,7 +34,9 @@ void sim_t::htif_start()
   htif_t::start();
 }
 
-
+// !!! muhtemelen bunu yapmama gerek yoktu. 
+// cunku commit'ler zaten execution'dan cikarken degil
+// exectuion'a girerken temizleniyor. 
 void sim_t::step_without_clear_commit(size_t n)
 {
   for (size_t i = 0, steps = 0; i < n; i += steps)
