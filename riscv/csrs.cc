@@ -285,7 +285,8 @@ mseccfg_csr_t::mseccfg_csr_t(processor_t* const proc, const reg_t addr):
 
 void mseccfg_csr_t::verify_permissions(insn_t insn, bool write) const {
   basic_csr_t::verify_permissions(insn, write);
-  if (!proc->extension_enabled(EXT_SMEPMP))
+  if (!proc->extension_enabled(EXT_SMEPMP) &&
+      !proc->extension_enabled(EXT_ZICFILP))
     throw trap_illegal_instruction(insn.bits());
 }
 
@@ -321,6 +322,11 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   new_val |= (val & MSECCFG_MML);   //MML is sticky
 
   proc->get_mmu()->flush_tlb();
+
+  if (proc->extension_enabled(EXT_ZICFILP)) {
+    new_val &= ~MSECCFG_MLPE;
+    new_val |= (val & MSECCFG_MLPE);
+  }
 
   return basic_csr_t::unlogged_write(new_val);
 }
@@ -414,6 +420,7 @@ reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
     | (has_fs ? SSTATUS_FS : 0)
     | (proc->any_custom_extensions() ? SSTATUS_XS : 0)
     | (has_vs ? SSTATUS_VS : 0)
+    | (proc->extension_enabled(EXT_ZICFILP) ? SSTATUS_SPELP : 0)
     ;
 }
 
@@ -497,7 +504,9 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
                    | (proc->extension_enabled('S') ? MSTATUS_TSR : 0)
                    | (has_page ? MSTATUS_TVM : 0)
                    | (has_gva ? MSTATUS_GVA : 0)
-                   | (has_mpv ? MSTATUS_MPV : 0);
+                   | (has_mpv ? MSTATUS_MPV : 0)
+                   | (proc->extension_enabled(EXT_ZICFILP) ? (MSTATUS_SPELP | MSTATUS_MPELP) : 0)
+                   ;
 
   const reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
   const reg_t adjusted_val = set_field(val, MSTATUS_MPP, requested_mpp);
@@ -1284,7 +1293,8 @@ dcsr_csr_t::dcsr_csr_t(processor_t* const proc, const reg_t addr):
   ebreakvu(false),
   halt(false),
   v(false),
-  cause(0) {
+  cause(0),
+  pelp(elp_t::NO_LP_EXPECTED) {
 }
 
 void dcsr_csr_t::verify_permissions(insn_t insn, bool write) const {
@@ -1307,6 +1317,7 @@ reg_t dcsr_csr_t::read() const noexcept {
   result = set_field(result, DCSR_STEP, step);
   result = set_field(result, DCSR_PRV, prv);
   result = set_field(result, CSR_DCSR_V, v);
+  result = set_field(result, DCSR_PELP, pelp);
   return result;
 }
 
@@ -1321,6 +1332,8 @@ bool dcsr_csr_t::unlogged_write(const reg_t val) noexcept {
   ebreakvu = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_EBREAKVU) : false;
   halt = get_field(val, DCSR_HALT);
   v = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_V) : false;
+  pelp = proc->extension_enabled(EXT_ZICFILP) ?
+         static_cast<elp_t>(get_field(val, DCSR_PELP)) : elp_t::NO_LP_EXPECTED;
   return true;
 }
 
