@@ -189,6 +189,8 @@ struct state_t
   reg_t last_inst_priv;
   int last_inst_xlen;
   int last_inst_flen;
+
+  elp_t elp;
 };
 
 // this class represents one processor in a RISC-V machine.
