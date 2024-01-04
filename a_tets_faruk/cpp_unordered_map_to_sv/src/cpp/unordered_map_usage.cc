@@ -75,7 +75,7 @@ void write_unordered_map_to_sv_open_arrays(const svOpenArrayHandle key_array, co
     // value'yu part part gonder
     for (int part_ind = 0; part_ind < VALUE_WIDTH / DPI_WIDTH; part_ind++)
     {
-      // value_array[NUM_ENTRIES][part_ind] = *(((uint32_t *)&(x.first)) + part_ind);
+      // value_array[NUM_ENTRIES][part_ind] = *(((uint32_t *)&(x.second)) + part_ind);
       svBitVec32 temp = *(((uint32_t *)&(x.second)) + part_ind);
       svPutBitArrElemVecVal(value_array, &temp, NUM_ENTRIES, part_ind);
     }
