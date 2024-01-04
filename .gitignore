@@ -8,3 +8,4 @@ autom4te.cache/
 .#*
 *~
 .vscode
+build2/

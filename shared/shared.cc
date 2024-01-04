@@ -1,5 +1,5 @@
 // See LICENSE for license details.
-
+#include "/home/usr1/riscv-isa-sim/a_tets_faruk/spike_link/obj_dir_tb_1/tb_1__Dpi.h"
 #include "config.h"
 #include "cfg.h"
 #include "sim.h"
@@ -357,8 +357,10 @@ static std::vector<size_t> parse_hartids(const char *s)
 sim_t *simulation_object;
 
 // !!! burasi export'lanacak
-int init(int argc, char **argv)
+int init(int argc, const svOpenArrayHandle areegv)
 {
+  // !!! korleme yontem
+  char** argv;
   bool debug = false;
   bool halted = false;
   bool histogram = false;
@@ -670,6 +672,7 @@ int init(int argc, char **argv)
   simulation_object->pre_htif_run();
 
   simulation_object->htif_start();
+  return 0;
 }
 
 // !!! burasi export'lanacak

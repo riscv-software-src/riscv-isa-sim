@@ -160,6 +160,16 @@ static inline reg_t execute_insn_fast_without_clear_commit(processor_t* p, reg_t
   // !!! p->get_state()->log_reg_write verilog tarafina gonderilecek
   return npc;
 }
+
+
+inline void processor_t::update_histogram(reg_t pc)
+{
+  if (histogram_enabled)
+    pc_histogram[pc]++;
+}
+
+
+
 static inline reg_t execute_insn_logged_without_clear_commit(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
   if (p->get_log_commits_enabled()) {
