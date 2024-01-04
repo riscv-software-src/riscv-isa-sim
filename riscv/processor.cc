@@ -94,6 +94,14 @@ processor_t::~processor_t()
   delete disassembler;
 }
 
+static void zicfilp_check_if_lpad_required(const elp_t elp, insn_t insn)
+{
+  if (unlikely(elp == elp_t::LP_EXPECTED)) {
+    // also see riscv/lpad.h for more checks performed
+    software_check((insn.bits() & MASK_LPAD) == MATCH_LPAD, LANDING_PAD_FAULT);
+  }
+}
+
 static void bad_option_string(const char *option, const char *value,
                               const char *msg)
 {
@@ -964,6 +972,13 @@ void processor_t::take_trigger_action(triggers::action_t action, reg_t breakpoin
 const char* processor_t::get_symbol(uint64_t addr)
 {
   return sim->get_symbol(addr);
+}
+
+void processor_t::execute_insn_prehook(insn_t insn)
+{
+  if (extension_enabled(EXT_ZICFILP)) {
+    zicfilp_check_if_lpad_required(state.elp, insn);
+  }
 }
 
 void processor_t::disasm(insn_t insn)
