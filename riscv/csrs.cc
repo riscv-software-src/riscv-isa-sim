@@ -1039,7 +1039,7 @@ reg_t wide_counter_csr_t::written_value() const noexcept {
 // Note that minstretcfg / mcyclecfg / mhpmevent* share the same inhibit bits.
 bool wide_counter_csr_t::is_counting_enabled() const noexcept {
   auto prv = state->prv_changed ? state->prev_prv : state->prv;
-  auto v = state->v_changed ? state->v : state->prev_v;
+  auto v = state->v_changed ? state->prev_v : state->v;
   auto mask = MHPMEVENT_MINH;
   if (prv == PRV_S) {
     mask = v ? MHPMEVENT_VSINH : MHPMEVENT_SINH;
