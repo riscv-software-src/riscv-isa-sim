@@ -1337,10 +1337,12 @@ bool dcsr_csr_t::unlogged_write(const reg_t val) noexcept {
   return true;
 }
 
-void dcsr_csr_t::write_cause_and_prv(uint8_t cause, reg_t prv, bool v) noexcept {
+void dcsr_csr_t::update_fields(const uint8_t cause, const reg_t prv,
+                               const bool v, const elp_t pelp) noexcept {
   this->cause = cause;
   this->prv = prv;
   this->v = v;
+  this->pelp = pelp;
   log_write();
 }
 
