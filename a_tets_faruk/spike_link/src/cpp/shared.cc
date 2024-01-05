@@ -1,5 +1,5 @@
 // See LICENSE for license details.
-#include "/home/usr1/riscv-isa-sim/a_tets_faruk/spike_link/obj_dir_tb_spike_link/tb_spike_link__Dpi.h"
+#include "../../obj_dir_tb_spike_link/tb_spike_link__Dpi.h"
 #include "args_reader.h"
 #include "debug_header.h"
 #include "config.h"
