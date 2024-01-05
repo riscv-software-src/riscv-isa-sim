@@ -705,17 +705,7 @@ void get_last_commit(const svOpenArrayHandle key_array, const svOpenArrayHandle 
 {
   auto map_from_c_side = simulation_object->get_core(0)->get_state()->log_reg_write;
 
-  printf("==============================\n");
-  printf("==============================\n");
-  printf("burada iki tarafin boyutlari icin asertion konulabilir\n");
-  printf("key_array.entry_width: %d\n", 
-    (svSize(key_array, 0) * svSize(key_array, 2)));
-  printf("value_array.entry_width: %d\n", 
-    (svSize(value_array, 0)*svSize(value_array,2)));
-
-  printf("key_array.entry_count: %d\n", svSize(key_array, 1));
-  printf("value_array.entry_count: %d\n", svSize(value_array, 1));
-  // fflush(stdout);
+  DEBUG_PRINT_WARN("burada iki tarafin boyutlari icin asertion konulabilir\n");
 
 #define NUM_ENTRIES (*num_entries_inserted)
 

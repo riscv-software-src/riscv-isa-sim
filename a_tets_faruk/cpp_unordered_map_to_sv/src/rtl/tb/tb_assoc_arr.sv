@@ -42,10 +42,10 @@ module tb;
     /* verilator lint_off WIDTHTRUNC */
     // bu yukardaki yorum truncation error'u gormezden geliyor
     if (verilog_side_data.first(k))
-    /* lint_on */
     do
       $display("%10d: %0d", k, verilog_side_data[k]);
     while (verilog_side_data.next(k)); // 7.9.6
+    /* verilator lint_on WIDTHTRUNC */
 
     // !!! verilog_side_data'nin icerigini yazdir. exists surekli false vermis.
     write_unordered_map_to_sv_open_arrays(
@@ -55,14 +55,16 @@ module tb;
     );
 
     $display("\n");
-    for (int ii = 0; ii < num_elements_inserted_from_c_side; ii = ii + 1) begin: itr
+    for (int ii = 0; ii < num_elements_inserted_from_c_side; ii = ii + 1) begin: comparison_itr
 
       key_t key = packed_key(key_array_from_c_side[ii]);
 
       // $display("key exists: %b", (verilog_side_data.exists(key)));
 
       // key doesn't exist
+    /* verilator lint_off WIDTHTRUNC */
       if ((!(verilog_side_data.exists(key)))) begin
+    /* verilator lint_on WIDTHTRUNC */
 
         $display(
           "key: %0d inserted from c side not in verilog side\n", key

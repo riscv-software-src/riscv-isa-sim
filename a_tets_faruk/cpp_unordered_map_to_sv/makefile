@@ -15,13 +15,13 @@ define TB_RULES
 clean_$(1):
 	@find obj_dir_$(1) -type f ! -name "$(1)__Dpi.h" -exec rm -f {} +
 
-compile_$(1): obj_dir_$(1)/$(1).exe
-
-obj_dir_$(1)/$(1).exe: src/rtl/tb/$(1).sv $(SRC_FILES) $(CPP_FILES)
+compile_$(1): src/rtl/tb/$(1).sv $(SRC_FILES) $(CPP_FILES)
 	verilator --Mdir obj_dir_$(1) --binary +1800-2017ext+sv $$< $(SRC_FILES) $(CPP_FILES) --prefix $(1)  -o $(1).exe
 
-run_$(1): compile_$(1)
+run_$(1):
 	./obj_dir_$(1)/$(1).exe
+
+run_with_compile_$(1): compile_$(1) run_$(1)
 endef
 
 # Generate rules
