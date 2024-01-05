@@ -322,6 +322,7 @@ inline long double to_f(float128_t f) { long double r; memcpy(&r, &f, sizeof(r))
 
 #endif
 
+#define software_check(x, tval) (unlikely(!(x)) ? throw trap_software_check(tval) : (void) 0)
 #define ZICFILP_xLPE(v, prv) \
   ({ \
     reg_t lpe = 0ULL; \
