@@ -6,7 +6,7 @@
 #define DEBUG_WARN 2
 #define DEBUG_ERROR 3
 #define DEBUG_FATAL 4
-#define DEBUG_LEVEL DEBUG_INFO
+#define DEBUG_LEVEL DEBUG_NONE
 
 // instead of doing a runtime if, we do a compile time if
 // using preprocessor macros.
