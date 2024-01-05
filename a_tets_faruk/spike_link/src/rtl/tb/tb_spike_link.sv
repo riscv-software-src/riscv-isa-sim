@@ -44,7 +44,7 @@ module tb_spike_link;
     /* verilator lint_off IGNOREDRETURN */
     init();
     /*lint_on*/
-
+    step();
     $finish();
     // !!! daha sonra bunu daha kullanilabilir hale getirmek icin bu sekile donust
     // init(0, {"spike", "-d", "hello.elf"});
