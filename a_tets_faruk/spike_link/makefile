@@ -3,7 +3,8 @@
 # .PHONY: $(TB_MODULES:%=compile_%) $(TB_MODULES:%=run_%)
 
 # Automatically detect top module names from the tb directory
-TB_MODULES := $(notdir $(basename $(wildcard src/rtl/tb/*.sv)))
+TB_DIR := src/rtl/tb
+TB_MODULES := $(notdir $(basename $(wildcard $(TB_DIR)/*.sv)))
 
 # Source and C++ files
 SRC_FILES := $(wildcard src/rtl/design/*.sv)
@@ -25,13 +26,17 @@ define TB_RULES
 clean_$(1):
 	@find obj_dir_$(1) -type f ! -name "$(1)__Dpi.h" -exec rm -f {} +
 
-compile_$(1): obj_dir_$(1)/$(1).exe
+compile_$(1):
+	verilator -CFLAGS "$(INC_DIRS)" --Mdir obj_dir_$(1) --MMD --binary +1800-2017ext+sv $(TB_DIR)/$(1).sv $(SRC_FILES) $(CPP_FILES) $(OBJ_FILES) $(LIBRARIES) --prefix $(1)  -o $(1).exe
 
-obj_dir_$(1)/$(1).exe: src/rtl/tb/$(1).sv $(SRC_FILES) $(CPP_FILES)
-	verilator -CFLAGS "$(INC_DIRS)" --Mdir obj_dir_$(1) --binary +1800-2017ext+sv $$< $(SRC_FILES) $(CPP_FILES) $(OBJ_FILES) $(LIBRARIES) --prefix $(1)  -o $(1).exe
+.PHONY: compile_$(1)
 
-run_$(1): compile_$(1)
+run_with_compile_$(1): compile_$(1)
 	./obj_dir_$(1)/$(1).exe
+
+run_$(1):
+	./obj_dir_$(1)/$(1).exe
+
 endef
 
 # Generate rules
