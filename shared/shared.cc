@@ -1,5 +1,7 @@
 // See LICENSE for license details.
-#include "/home/usr1/riscv-isa-sim/a_tets_faruk/spike_link/obj_dir_tb_1/tb_1__Dpi.h"
+#include "/home/usr1/riscv-isa-sim/a_tets_faruk/spike_link/obj_dir_tb_spike_link/tb_spike_link__Dpi.h"
+#include "args_reader.h"
+#include "debug_header.h"
 #include "config.h"
 #include "cfg.h"
 #include "sim.h"
@@ -357,10 +359,10 @@ static std::vector<size_t> parse_hartids(const char *s)
 sim_t *simulation_object;
 
 // !!! burasi export'lanacak
-int init(int argc, const svOpenArrayHandle areegv)
+// !!! korleme yontem
+int init()
 {
   // !!! korleme yontem
-  char** argv;
   bool debug = false;
   bool halted = false;
   bool histogram = false;
@@ -556,8 +558,19 @@ int init(int argc, const svOpenArrayHandle areegv)
       exit(-1);
     } });
 
-  auto argv1 = parser.parse(argv);
-  std::vector<std::string> htif_args(argv1, (const char *const *)argv + argc);
+  DEBUG_PRINT("argc_argv okunmadan once\n");
+  auto argc_argv = read_args_from_file("/home/usr1/riscv-isa-sim/a_tets_faruk/spike_link/log/args.txt");
+  DEBUG_PRINT("argc_argv okunduktan sonra\n");
+  #if DEBUG_LEVEL > 0
+  for (int i = 0; i < argc_argv->argc; i++)
+  {
+    DEBUG_PRINT("argv[%d]: %s\n", i, argc_argv->argv[i]);
+  }
+  #endif
+  auto argv1 = parser.parse(argc_argv->argv);
+  DEBUG_PRINT("argumanlar parser'a verildikten sonra\n");
+
+  std::vector<std::string> htif_args(argv1, (const char *const *)argc_argv->argv + argc_argv->argc);
 
   if (!*argv1)
     help();
