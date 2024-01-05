@@ -558,17 +558,17 @@ int init()
       exit(-1);
     } });
 
-  DEBUG_PRINT("argc_argv okunmadan once\n");
+  DEBUG_PRINT_WARN("argc_argv okunmadan once\n");
   auto argc_argv = read_args_from_file("/home/usr1/riscv-isa-sim/a_tets_faruk/spike_link/log/args.txt");
-  DEBUG_PRINT("argc_argv okunduktan sonra\n");
+  DEBUG_PRINT_WARN("argc_argv okunduktan sonra\n");
   #if DEBUG_LEVEL > 0
   for (int i = 0; i < argc_argv->argc; i++)
   {
-    DEBUG_PRINT("argv[%d]: %s\n", i, argc_argv->argv[i]);
+    DEBUG_PRINT_WARN("argv[%d]: %s\n", i, argc_argv->argv[i]);
   }
   #endif
   auto argv1 = parser.parse(argc_argv->argv);
-  DEBUG_PRINT("argumanlar parser'a verildikten sonra\n");
+  DEBUG_PRINT_WARN("argumanlar parser'a verildikten sonra\n");
 
   std::vector<std::string> htif_args(argv1, (const char *const *)argc_argv->argv + argc_argv->argc);
 
@@ -692,6 +692,7 @@ int init()
 void step()
 {
   simulation_object->step_without_clear_commit(1);
+  DEBUG_PRINT_INFO("step\n");
   // sim_obj->step_without_clear_commit(1);
 }
 

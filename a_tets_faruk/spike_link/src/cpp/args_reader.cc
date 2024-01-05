@@ -33,10 +33,10 @@ argv_argc_t *read_args_from_file(const char *filename)
     FILE *file = fopen(filename, "r");
     if (!file)
     {
-        DEBUG_PRINT("Failed to open file %s\n", filename);
+        DEBUG_PRINT_WARN("Failed to open file %s\n", filename);
         return NULL;
     }
-    DEBUG_PRINT("filename = %s, file pointer = %p\n", filename, file);
+    DEBUG_PRINT_WARN("filename = %s, file pointer = %p\n", filename, file);
 
     // Read file content
     fseek(file, 0, SEEK_END);
@@ -45,7 +45,7 @@ argv_argc_t *read_args_from_file(const char *filename)
     char *content = (char *)malloc(length + 1);
     if (!content)
     {
-        DEBUG_PRINT("couldn't allocate space to read file content\n");
+        DEBUG_PRINT_WARN("couldn't allocate space to read file content\n");
         fclose(file);
         return NULL;
     }
@@ -55,12 +55,12 @@ argv_argc_t *read_args_from_file(const char *filename)
 
     // Count arguments
     int argc = count_args(content);
-    DEBUG_PRINT("argc = %d\n", argc);
+    DEBUG_PRINT_WARN("argc = %d\n", argc);
 
     char **argv = (char **)malloc(sizeof(char *) * argc);
     if (!argv)
     {
-        DEBUG_PRINT("couldn't allocate space for argv pointers\n");
+        DEBUG_PRINT_WARN("couldn't allocate space for argv pointers\n");
         free(content);
         return NULL;
     }
@@ -70,7 +70,7 @@ argv_argc_t *read_args_from_file(const char *filename)
     int i = 0;
     while (token)
     {
-        DEBUG_PRINT("token[%d] = %s\n",i, token);
+        DEBUG_PRINT_WARN("token[%d] = %s\n",i, token);
         argv[i++] = strdup(token);
         token = strtok(NULL, " ");
     }
