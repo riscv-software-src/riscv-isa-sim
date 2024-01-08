@@ -1401,6 +1401,9 @@ riscv_insn_ext_zvk = \
 	$(riscv_insn_ext_zvksed) \
 	$(riscv_insn_ext_zvksh) \
 
+riscv_insn_ext_zvkk = \
+	vkeccak_vi \
+
 riscv_insn_list = \
 	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
 	$(riscv_insn_ext_a) \
@@ -1427,6 +1430,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_zfh_zfa) \
 	$(riscv_insn_ext_zicond) \
 	$(riscv_insn_ext_zvk) \
+	$(riscv_insn_ext_zvkk) \
 	$(riscv_insn_priv) \
 	$(riscv_insn_smrnmi) \
 	$(riscv_insn_svinval) \

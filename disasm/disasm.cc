@@ -2386,6 +2386,10 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_XSTORE_BASE(sw_rl);
     DEFINE_XSTORE_BASE(sd_rl);
   }
+
+  if (isa->extension_enabled(EXT_ZVKK)) {
+    DEFINE_VECTOR_VIU(vkeccak_vi);
+  }
 }
 
 disassembler_t::disassembler_t(const isa_parser_t *isa)

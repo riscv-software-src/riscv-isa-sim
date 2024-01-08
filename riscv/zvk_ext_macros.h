@@ -103,6 +103,16 @@
     require(vl % 4 == 0); \
   } while (0)
 
+#define require_element_groups_64x32 \
+  do { \
+    /* 'vstart' must be a multiple of EGS */ \
+    const reg_t vstart = P.VU.vstart->read(); \
+    require(vstart % 32 == 0); \
+    /* 'vl' must be a multiple of EGS */ \
+    const reg_t vl = P.VU.vl->read(); \
+    require(vl % 32 == 0); \
+  } while (0)
+
 // Checks that the vector unit state (vtype and vl) can be interpreted
 // as element groups with EEW=32, EGS=8 (eight 32-bits elements per group),
 // for an effective element group width of EGW=256 bits.
@@ -1031,5 +1041,32 @@
     X[0] = dword & UINT32_MAX; \
     X[1] = dword >> 32; \
   } while (0)
+
+// VECTOR KECCAK SPECIFIC MACRI
+#define VI_ZVK_VD_VS2_NOOPERANDS_PRELOOP_EGU64x32_NOVM_LOOP(PRELUDE, \
+                                                        PRELOOP, \
+                                                        EG_BODY) \
+  do { \
+    require_element_groups_64x32; \
+    require_no_vmask; \
+    const reg_t vd_num = insn.rd(); \
+    const reg_t zimm5 = insn.vs2(); \
+    const reg_t vstart_eg = P.VU.vstart->read() / 4; \
+    const reg_t vl_eg = P.VU.vl->read() / 4; \
+    do { PRELUDE } while (0); \
+    if (vstart_eg < vl_eg) { \
+      PRELOOP \
+      for (reg_t idx_eg = vstart_eg; idx_eg < vl_eg; ++idx_eg) { \
+        EG_BODY \
+      } \
+    } \
+    P.VU.vstart->write(0); \
+  } while (0)
+
+// Copies a EGU8x16_t value from 'SRC' into 'DST'.
+#define EGU64x32_COPY(DST, SRC) \
+  for (std::size_t bidx = 0; bidx < 32; ++bidx) { \
+    (DST)[bidx] = (SRC)[bidx]; \
+  }
 
 #endif  // RISCV_ZVK_EXT_MACROS_H_
