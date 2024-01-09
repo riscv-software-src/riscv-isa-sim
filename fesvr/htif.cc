@@ -154,13 +154,6 @@ void htif_t::load_program()
 {
   std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry, load_offset);
 
-  if (symbols.count("tohost") && symbols.count("fromhost")) {
-    tohost_addr = symbols["tohost"];
-    fromhost_addr = symbols["fromhost"];
-  } else {
-    fprintf(stderr, "warning: tohost and fromhost symbols not in ELF; can't communicate with target\n");
-  }
-
   // detect torture tests so we can print the memory signature at the end
   if (symbols.count("begin_signature") && symbols.count("end_signature")) {
     sig_addr = symbols["begin_signature"];
@@ -186,6 +179,13 @@ void htif_t::load_program()
     std::map<std::string, uint64_t> other_symbols = load_elf(s.c_str(), &nop_memif, &nop_entry,
                                                              expected_xlen);
     symbols.merge(other_symbols);
+  }
+
+  if (symbols.count("tohost") && symbols.count("fromhost")) {
+    tohost_addr = symbols["tohost"];
+    fromhost_addr = symbols["fromhost"];
+  } else {
+    fprintf(stderr, "warning: tohost and fromhost symbols not in ELF; can't communicate with target\n");
   }
 
   for (auto i : symbols) {
