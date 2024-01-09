@@ -29,7 +29,7 @@ static void bad_priv_string(const char* priv)
 isa_parser_t::isa_parser_t(const char* str, const char *priv)
 {
   isa_string = strtolower(str);
-  const char* all_subsets = "mafdqchpv";
+  const char* all_subsets = "mafdqcpvh";
 
   if (isa_string.compare(0, 4, "rv32") == 0)
     max_xlen = 32;
