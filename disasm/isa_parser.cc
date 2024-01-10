@@ -29,7 +29,7 @@ static void bad_priv_string(const char* priv)
 isa_parser_t::isa_parser_t(const char* str, const char *priv)
 {
   isa_string = strtolower(str);
-  const char* all_subsets = "mafdqchpv";
+  const char* all_subsets = "mafdqcpvh";
 
   if (isa_string.compare(0, 4, "rv32") == 0)
     max_xlen = 32;
@@ -119,6 +119,10 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       // HINTs encoded in base-ISA instructions are always present.
     } else if (ext_str == "zihintntl") {
       // HINTs encoded in base-ISA instructions are always present.
+    } else if (ext_str == "zaamo") {
+      extension_table[EXT_ZAAMO] = true;
+    } else if (ext_str == "zalrsc") {
+      extension_table[EXT_ZALRSC] = true;
     } else if (ext_str == "zacas") {
       extension_table[EXT_ZACAS] = true;
     } else if (ext_str == "zabha") {
@@ -330,6 +334,17 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     extension_table[EXT_INTERNAL_ZFH_MOVE] = true;
   }
 
+  if (extension_table['A']) {
+    extension_table[EXT_ZAAMO] = true;
+    extension_table[EXT_ZALRSC] = true;
+  }
+
+  if (extension_table['B']) {
+    extension_table[EXT_ZBA] = true;
+    extension_table[EXT_ZBB] = true;
+    extension_table[EXT_ZBS] = true;
+  }
+
   if (extension_table['C']) {
     extension_table[EXT_ZCA] = true;
     if (extension_table['F'] && max_xlen == 32)
@@ -359,12 +374,12 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     bad_isa_string(str, "'Zcf/Zcd/Zcb/Zcmp/Zcmt' extensions require 'Zca' extension");
   }
 
-  if (extension_table[EXT_ZACAS] && !extension_table['A']) {
-    bad_isa_string(str, "'Zacas' extension requires 'A' extension");
+  if (extension_table[EXT_ZACAS] && !extension_table['A'] && !extension_table[EXT_ZAAMO]) {
+    bad_isa_string(str, "'Zacas' extension requires either the 'A' or the 'Zaamo' extension");
   }
 
-  if (extension_table[EXT_ZABHA] && !extension_table['A']) {
-    bad_isa_string(str, "'Zabha' extension requires 'A' extension");
+  if (extension_table[EXT_ZABHA] && !extension_table['A'] && !extension_table[EXT_ZAAMO]) {
+    bad_isa_string(str, "'Zabha' extension requires either the 'A' or the 'Zaamo' extension");
   }
 
   // Zpn conflicts with Zvknha/Zvknhb in both rv32 and rv64
