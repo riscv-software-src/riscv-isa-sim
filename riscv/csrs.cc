@@ -668,7 +668,6 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   proc->set_extension_enable(EXT_ZVFHMIN, new_misa & (1L << ('V' - 'A')));
   proc->set_extension_enable(EXT_ZAAMO, (new_misa & (1L << ('A' - 'A'))) || !proc->get_isa().extension_enabled('A'));
   proc->set_extension_enable(EXT_ZALRSC, (new_misa & (1L << ('A' - 'A'))) || !proc->get_isa().extension_enabled('A'));
-
   proc->set_extension_enable(EXT_ZBA, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
   proc->set_extension_enable(EXT_ZBB, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
   proc->set_extension_enable(EXT_ZBS, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
