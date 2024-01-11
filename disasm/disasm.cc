@@ -809,7 +809,8 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
   DEFINE_XSTORE(sw)
   DEFINE_XSTORE(sd)
 
-  if (isa->extension_enabled('A')) {
+  if (isa->extension_enabled('A') ||
+      isa->extension_enabled(EXT_ZAAMO)) {
     DEFINE_XAMO(amoadd_w)
     DEFINE_XAMO(amoswap_w)
     DEFINE_XAMO(amoand_w)
@@ -828,6 +829,10 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_XAMO(amomax_d)
     DEFINE_XAMO(amominu_d)
     DEFINE_XAMO(amomaxu_d)
+  }
+
+  if (isa->extension_enabled('A') ||
+      isa->extension_enabled(EXT_ZALRSC)) {
     DEFINE_XLOAD_BASE(lr_w)
     DEFINE_XAMO(sc_w)
     DEFINE_XLOAD_BASE(lr_d)
