@@ -247,6 +247,8 @@ VI_ZVK_VD_VS2_NOOPERANDS_PRELOOP_EGU64x32_NOVM_LOOP(
     keccak_state[4 + 5 * 3] = A_4_3;
     keccak_state[4 + 5 * 4] = A_4_4;
 
+    // Update the destination register.
+    EGU64x32_t &vd = P.VU.elt_group<EGU64x32_t>(vd_num, idx_eg, true);
     EGU64x32_COPY(vd, keccak_state);
   }
 );

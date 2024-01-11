@@ -29,7 +29,7 @@
     require_extension(EXT_ZVBC); \
   } while (0)
 
-// Ensures that the ZVKG extension (vector Galois Field Multiplication)
+// Ensures that the ZVKG extension (vector Gallois Field Multiplication)
 // is present, and the vector unit is enabled and in a valid state.
 #define require_zvkg \
   do { \
@@ -77,6 +77,12 @@
   do { \
     require_vector(true); \
     require_extension(EXT_ZVKSH); \
+  } while (0)
+
+#define require_zvkk \
+  do { \
+    require_vector(true); \
+    require_extension(EXT_ZVKK); \
   } while (0)
 
 // Ensures that the vector instruction is not using a mask.
@@ -760,7 +766,7 @@
 //  - 'rs1', unsigned, SEW width, by value, constant.
 #define VI_ZVK_VX_WIDENING_ULOOP(BODY) \
   do { \
-    VI_CHECK_DSS(false); \
+    VI_CHECK_DSS(true); \
     VI_LOOP_BASE \
       switch (sew) { \
         case e8: { \
@@ -798,7 +804,7 @@
 //  - 'zimm5', unsigned, SEW width, by value, constant.
 #define VI_ZVK_VI_WIDENING_ULOOP(BODY) \
   do { \
-    VI_CHECK_DSS(false); \
+    VI_CHECK_DSS(true); \
     VI_LOOP_BASE \
       switch (sew) { \
         case e8: { \
@@ -1042,7 +1048,7 @@
     X[1] = dword >> 32; \
   } while (0)
 
-// VECTOR KECCAK SPECIFIC MACRI
+// VECTOR KECCAK SPECIFIC MACRO
 #define VI_ZVK_VD_VS2_NOOPERANDS_PRELOOP_EGU64x32_NOVM_LOOP(PRELUDE, \
                                                         PRELOOP, \
                                                         EG_BODY) \
@@ -1050,7 +1056,7 @@
     require_element_groups_64x32; \
     require_no_vmask; \
     const reg_t vd_num = insn.rd(); \
-    const reg_t zimm5 = insn.vs2(); \
+    const reg_t zimm5 = insn.rs2(); \
     const reg_t vstart_eg = P.VU.vstart->read() / 4; \
     const reg_t vl_eg = P.VU.vl->read() / 4; \
     do { PRELUDE } while (0); \
