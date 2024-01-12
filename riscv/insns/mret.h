@@ -9,5 +9,5 @@ s = set_field(s, MSTATUS_MIE, get_field(s, MSTATUS_MPIE));
 s = set_field(s, MSTATUS_MPIE, 1);
 s = set_field(s, MSTATUS_MPP, p->extension_enabled('U') ? PRV_U : PRV_M);
 s = set_field(s, MSTATUS_MPV, 0);
-p->put_csr(CSR_MSTATUS, s);
+STATE.mstatus->write(s);
 p->set_privilege(prev_prv, prev_virt);
