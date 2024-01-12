@@ -10,4 +10,5 @@ s = set_field(s, MSTATUS_MPIE, 1);
 s = set_field(s, MSTATUS_MPP, p->extension_enabled('U') ? PRV_U : PRV_M);
 s = set_field(s, MSTATUS_MPV, 0);
 STATE.mstatus->write(s);
+if (STATE.mstatush) STATE.mstatush->write(s >> 32); // log mstatush change
 p->set_privilege(prev_prv, prev_virt);
