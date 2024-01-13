@@ -1057,8 +1057,8 @@
     require_no_vmask; \
     const reg_t vd_num = insn.rd(); \
     const reg_t zimm5 = insn.rs2(); \
-    const reg_t vstart_eg = P.VU.vstart->read() / 4; \
-    const reg_t vl_eg = P.VU.vl->read() / 4; \
+    const reg_t vstart_eg = P.VU.vstart->read() / 32; \
+    const reg_t vl_eg = P.VU.vl->read() / 32; \
     do { PRELUDE } while (0); \
     if (vstart_eg < vl_eg) { \
       PRELOOP \
@@ -1069,7 +1069,7 @@
     P.VU.vstart->write(0); \
   } while (0)
 
-// Copies a EGU8x16_t value from 'SRC' into 'DST'.
+// Copies a EGU64x32_t value from 'SRC' into 'DST'.
 #define EGU64x32_COPY(DST, SRC) \
   for (std::size_t bidx = 0; bidx < 32; ++bidx) { \
     (DST)[bidx] = (SRC)[bidx]; \
