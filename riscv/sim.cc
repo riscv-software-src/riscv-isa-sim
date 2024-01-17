@@ -259,10 +259,14 @@ void sim_t::step(size_t n)
 {
   for (size_t i = 0, steps = 0; i < n; i += steps)
   {
+    // n interleave'den kucukse n kadar step'liyor current_proc'u
+    // n interleave'den buyukse current_proc interleave stepliyor
+    // !!! current step her zaman interleave'e denk gelsin, hic atlamasin.
     steps = std::min(n - i, INTERLEAVE - current_step);
     procs[current_proc]->step(steps);
 
     current_step += steps;
+    // current_step her interleave oldugunda bir takim isler yapiyor
     if (current_step == INTERLEAVE)
     {
       current_step = 0;
