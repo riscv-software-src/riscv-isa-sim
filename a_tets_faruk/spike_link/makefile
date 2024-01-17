@@ -6,9 +6,19 @@ TB_MODULES := $(notdir $(basename $(wildcard $(TB_DIR)/*.sv)))
 # Source and C++ files
 SRC_FILES := $(wildcard src/rtl/design/*.sv)
 CPP_FILES := $(wildcard src/cpp/*.cc)
-LIBRARIES := $(wildcard /home/usr1/riscv-isa-sim/build/*.a)
-LIBRARIES += $(wildcard /home/usr1/riscv-isa-sim/build/*.so)
-# OBJ_FILES := /home/usr1/riscv-isa-sim/build2/execute.o
+LIBRARIES :=
+# LIBRARIES += $(wildcard /home/usr1/riscv-isa-sim/build/*.a)
+# LIBRARIES += $(wildcard /home/usr1/riscv-isa-sim/build/*.so)
+# LIBRARIES := /home/usr1/riscv-isa-sim/build/libfesvr.a
+# LIBRARIES += /home/usr1/riscv-isa-sim/build/libriscv.a
+# LIBRARIES += /home/usr1/riscv-isa-sim/build/libsoftfloat.a
+LIBRARIES += /home/usr1/riscv-isa-sim/build/libspike_dasm.a
+# LIBRARIES += /home/usr1/riscv-isa-sim/build/libfdt.a
+# LIBRARIES += /home/usr1/riscv-isa-sim/build/libfdt.so
+# LIBRARIES += /home/usr1/riscv-isa-sim/build/libcustomext.so
+# LIBRARIES += /home/usr1/riscv-isa-sim/build/libsoftfloat.so
+LIBRARIES += /home/usr1/riscv-isa-sim/build/libriscv.so
+
 INC_DIRS := -I/home/usr1/riscv-isa-sim/build2
 INC_DIRS += -I/home/usr1/riscv-isa-sim/riscv
 INC_DIRS += -I/home/usr1/riscv-isa-sim/fesvr
