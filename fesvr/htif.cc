@@ -265,6 +265,7 @@ int htif_t::run()
 
     // !!! to host diye bir mesaj okunup sifirlaniyor
     try {
+    // tohost, printf kismi.
       if ((tohost = from_target(mem.read_uint64(tohost_addr))) != 0)
         mem.write_uint64(tohost_addr, target_endian<uint64_t>::zero);
     } catch (mem_trap_t& t) {
@@ -273,6 +274,7 @@ int htif_t::run()
 
     try {
       if (tohost != 0) {
+        // std::cout << "faruk: tohost: " << tohost << std::endl;
         command_t cmd(mem, tohost, fromhost_callback);
         device_list.handle_command(cmd);
       } else {
@@ -288,6 +290,7 @@ int htif_t::run()
 
     try {
       if (!fromhost_queue.empty() && !mem.read_uint64(fromhost_addr)) {
+        // std::cout << "faruk: fromhost: " << fromhost_queue.front() << std::endl;
         mem.write_uint64(fromhost_addr, to_target(fromhost_queue.front()));
         fromhost_queue.pop();
       }
