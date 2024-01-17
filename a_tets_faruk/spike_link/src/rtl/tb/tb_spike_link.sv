@@ -38,7 +38,6 @@ module tb_spike_link;
   import "DPI-C" function void clear_last_commit();
 
 
-
   reg                     clk_i;
   reg                     rst_ni;
   wire  [KEY_WIDTH-1:0]   last_wa1_o;
@@ -47,7 +46,7 @@ module tb_spike_link;
   wire  [KEY_WIDTH-1:0]   last_wa2_o;
   wire  [VALUE_WIDTH-1:0] last_wd2_o;
   wire                    last_we2_o;
-  
+
   rng #(
     .DPI_WIDTH   (DPI_WIDTH),
     .KEY_WIDTH   (KEY_WIDTH),
@@ -62,8 +61,6 @@ module tb_spike_link;
     .last_wd2_o  (last_wd2_o),
     .last_we2_o  (last_we2_o)
   );
-
-
 
   value_t verilog_side_data [key_t];
 

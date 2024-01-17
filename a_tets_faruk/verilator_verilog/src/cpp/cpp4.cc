@@ -24,7 +24,10 @@ void init(svOpenArrayHandle target1, svOpenArrayHandle target2)
 
   int size = svSize(target1, 1);
   // print_flush_out("size: %d\n",size);
-
+  // svLogicVecVal temp;
+  // svGetLogicArrElemVecVal(&temp,target1,0);
+  // printf("target1[%d]: %d\n",0,temp.aval);
+  // fflush(stdout);
   int edge_case_size = sizeof(edge_cases) / (sizeof(data_t) * 2);
   int num_remaining_slots = size - edge_case_size;
   if (edge_case_size > size)

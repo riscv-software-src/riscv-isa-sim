@@ -46,11 +46,12 @@ module tb_4
   import "DPI-C" function int get_last_commit();
   import "DPI-C" function void step_glob();
   import "DPI-C" function void init(
-    inout logic [MEM_WIDTH-1:0] target1[],
-    inout logic [MEM_WIDTH-1:0] target2[]
+    output logic [MEM_WIDTH-1:0] target1[],
+    output logic [MEM_WIDTH-1:0] target2[]
   );
 
   initial begin:initialization
+    // operand1_mem[0] =8888;
     init(operand1_mem, operand2_mem);
   end
 

@@ -161,14 +161,11 @@ static inline reg_t execute_insn_fast_without_clear_commit(processor_t* p, reg_t
   return npc;
 }
 
-
 inline void processor_t::update_histogram(reg_t pc)
 {
   if (histogram_enabled)
     pc_histogram[pc]++;
 }
-
-
 
 static inline reg_t execute_insn_logged_without_clear_commit(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {

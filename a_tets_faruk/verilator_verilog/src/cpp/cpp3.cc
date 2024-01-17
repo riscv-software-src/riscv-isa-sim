@@ -27,6 +27,10 @@ void c_init_dynamic(const svOpenArrayHandle src1, const svOpenArrayHandle src2)
     svGetBitArrElem1VecVal(&temp,src2, ii);
     src2_copy_dynamic[ii] = temp;
   }
+  // svLogicVecVal temp;
+  // temp.aval = -1;
+  // temp.bval = 0;
+  // svPutLogicArrElemVecVal(src1,&temp,0);
 }
 
 void step_dynamic()
