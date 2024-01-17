@@ -6,8 +6,8 @@ TB_MODULES := $(notdir $(basename $(wildcard $(TB_DIR)/*.sv)))
 # Source and C++ files
 SRC_FILES := $(wildcard src/rtl/design/*.sv)
 CPP_FILES := $(wildcard src/cpp/*.cc)
-LIBRARIES := $(wildcard /home/usr1/riscv-isa-sim/build2/*.a)
-LIBRARIES += $(wildcard /home/usr1/riscv-isa-sim/build2/*.so)
+LIBRARIES := $(wildcard /home/usr1/riscv-isa-sim/build/*.a)
+LIBRARIES += $(wildcard /home/usr1/riscv-isa-sim/build/*.so)
 # OBJ_FILES := /home/usr1/riscv-isa-sim/build2/execute.o
 INC_DIRS := -I/home/usr1/riscv-isa-sim/build2
 INC_DIRS += -I/home/usr1/riscv-isa-sim/riscv
