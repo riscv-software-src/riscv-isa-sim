@@ -37,20 +37,20 @@ const std::unordered_map<reg_t, freg_t> map_from_c_side = {
     {x4, d1},
 };
 
-
 /// @brief for key and value arrays: packed dimension size: dim0; num entries: dim1; entry size in packets: dim2
 /// @param key_array the keys of the unordered_map is written to this array
 /// @param value_array the values of the unordered_map is written to this array in same order with keys written in the key_array
 /// @param num_entries_inserted is the output parameter to specify the caller how many elements are valid in the output
 void write_unordered_map_to_sv_open_arrays(const svOpenArrayHandle key_array, const svOpenArrayHandle value_array, int *num_entries_inserted)
 {
+
   printf("==============================\n");
   printf("==============================\n");
   printf("burada iki tarafin boyutlari icin asertion konulabilir\n");
-  printf("key_array.entry_width: %d\n", 
-    (svSize(key_array, 0) * svSize(key_array, 2)));
-  printf("value_array.entry_width: %d\n", 
-    (svSize(value_array, 0)*svSize(value_array,2)));
+  printf("key_array.entry_width: %d\n",
+         (svSize(key_array, 0) * svSize(key_array, 2)));
+  printf("value_array.entry_width: %d\n",
+         (svSize(value_array, 0) * svSize(value_array, 2)));
 
   printf("key_array.entry_count: %d\n", svSize(key_array, 1));
   printf("value_array.entry_count: %d\n", svSize(value_array, 1));
@@ -83,4 +83,35 @@ void write_unordered_map_to_sv_open_arrays(const svOpenArrayHandle key_array, co
   }
 
 #undef NUM_ENTRIES
+}
+
+// verilog tarafinda import "DPI-C" function void example(
+//            input [DATA_WIDTH-1:0] input_array [][][],
+//            output [DATA_WIDTH-1:0] output_array [][][]
+//            );
+void example(const svOpenArrayHandle input_array, const svOpenArrayHandle output_array)
+{
+  int pk_dim_size = svSize(input_array, 0);
+  int unpk_dim1_size = svSize(input_array, 1);
+  int unpk_dim2_size = svSize(input_array, 2);
+  int unpk_dim3_size = svSize(input_array, 3);
+  int unpk_dim1_ind = unpk_dim1_size - 1;
+  int unpk_dim2_ind = unpk_dim2_size - 1;
+  int unpk_dim3_ind = unpk_dim3_size - 1;
+  svBitVec32 source, destination; // svBitVecVal aynisi
+  // input_array'den destination icine pk data oku
+  svGetBitArrElemVecVal(&destination, input_array, unpk_dim1_ind, unpk_dim2_ind, unpk_dim3_ind);
+  source = destination;
+  // output_array'ye source'dan pk data yaz
+  svPutBitArrElemVecVal(output_array, &source, unpk_dim1_ind, unpk_dim2_ind, unpk_dim3_ind);
+  svLogicVecVal source_logic, destination_logic; // 32 bit. 0,1,X,Z
+  // read pk data from array into destination
+  svGetLogicArrElemVecVal(&destination_logic, input_array, unpk_dim1_ind, unpk_dim2_ind, unpk_dim3_ind);
+  source_logic = destination_logic;
+  // bval 0 olan bitler valid.
+  // bval 1 olan bitler icin aval = 0 -> x, aval = 1 -> z temsil ediyor
+  int bit_degerleri = source_logic.aval;
+  int invalid_bitler = source_logic.bval;
+  // write pk data from source into array
+  svPutLogicArrElemVecVal(output_array, &source_logic, unpk_dim1_ind, unpk_dim2_ind, unpk_dim3_ind);
 }
