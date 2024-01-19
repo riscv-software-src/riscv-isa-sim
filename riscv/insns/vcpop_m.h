@@ -17,5 +17,4 @@ for (reg_t i=P.VU.vstart->read(); i<vl; ++i) {
     popcount += (vs2_lsb && do_mask);
   }
 }
-P.VU.vstart->write(0);
 WRITE_RD(popcount);
