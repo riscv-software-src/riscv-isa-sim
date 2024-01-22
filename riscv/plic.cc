@@ -113,6 +113,15 @@ uint32_t plic_t::context_best_pending(const plic_context_t *c)
     }
   }
 
+  /*
+  From Spec 1.0.0: 6. Priority Thresholds
+  The PLIC will mask all PLIC interrupts of a priority less than or equal to
+  threshold.
+  */
+  if (best_id_prio <= c->priority_threshold) {
+    return 0;
+  }
+
   return best_id;
 }
 
