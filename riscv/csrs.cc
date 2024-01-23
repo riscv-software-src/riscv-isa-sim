@@ -1038,7 +1038,7 @@ bool wide_counter_csr_t::unlogged_write(const reg_t val) noexcept {
 
 reg_t wide_counter_csr_t::written_value() const noexcept {
   // Re-adjust for upcoming bump()
-  return this->val + 1;
+  return val + (is_counting_enabled() ? 1 : 0);
 }
 
 // Returns true if counting is not inhibited by Smcntrpmf.
