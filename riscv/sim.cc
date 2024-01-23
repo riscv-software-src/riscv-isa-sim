@@ -375,6 +375,8 @@ void sim_t::set_rom()
   std::vector<char> rom((char*)reset_vec, (char*)reset_vec + sizeof(reset_vec));
 
   rom.insert(rom.end(), dtb.begin(), dtb.end());
+  // !!! dtb content
+  // std::cout << "dtb: " << std::endl << dtb << std::endl;
   const int align = 0x1000;
   rom.resize((rom.size() + align - 1) / align * align);
 
@@ -412,8 +414,10 @@ void sim_t::idle()
 
   if (debug || ctrlc_pressed)
     interactive();
-  else
+  else{
+    // std::cout << "sim.cc/ sim_t::idle()/ step(INTERLEAVE)" << std::endl;
     step(INTERLEAVE);
+  }
 
   if (remote_bitbang)
     remote_bitbang->tick();

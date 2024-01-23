@@ -9,6 +9,10 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
+
+// !!! M
+// #include "syscall.h"
+
 using namespace std::placeholders;
 
 device_t::device_t()
@@ -144,6 +148,12 @@ void device_list_t::register_device(device_t* dev)
 
 void device_list_t::handle_command(command_t cmd)
 {
+  // auto device = devices[cmd.device()];
+  // syscall_t *device_as_syscall_prox = dynamic_cast<syscall_t*>(device);
+  // if (device_as_syscall_prox){
+  // }
+
+  // std::cout <<__func__ << " device identity: " << device->identity()<<std::endl;
   devices[cmd.device()]->handle_command(cmd);
 }
 

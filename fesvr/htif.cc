@@ -152,6 +152,7 @@ std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload,
 
 void htif_t::load_program()
 {
+  // !!! sunuma ekle. gerek yok
   std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry);
 
   if (symbols.count("tohost") && symbols.count("fromhost")) {
@@ -249,9 +250,14 @@ int htif_t::run()
 
   auto enq_func = [](std::queue<reg_t>* q, uint64_t x) { q->push(x); };
   std::queue<reg_t> fromhost_queue;
+  // !!! fromhost_calback is an std::function that takes a reg_t and returns void
+  // first argument is bind to fromhost_queue
+  // second argument is a placeholder for the reg_t argument of fromhost_callback
+  // caller passes an actual argument to the first (_1) argument of the bind function
   std::function<void(reg_t)> fromhost_callback =
     std::bind(enq_func, &fromhost_queue, std::placeholders::_1);
-
+  // !!! yani fromhost_callback, fromhost_queue'ye
+  // reg_t turunden bir seyler push'lamaya yariyor
   std::cout << "after start() call in htif_t::run() tohost_addr: " << tohost_addr << std::endl;
   // !!! elf dosyasinda to host adres initlenmedigi zaman (satir 161) bu kisim calisiyor.
   if (tohost_addr == 0) {
@@ -259,6 +265,8 @@ int htif_t::run()
       idle();
   }
 
+  // !!! exitcode sadece burada kontrol ediliyor. yukarda edilmiyor.
+  // demek exitcode fromhost, tohost'la alakali bir sey olabilir.
   while (!signal_exit && exitcode == 0)
   {
     uint64_t tohost;
@@ -285,6 +293,11 @@ int htif_t::run()
     } catch (mem_trap_t& t) {
       std::stringstream tohost_hex;
       tohost_hex << std::hex << tohost;
+      // !!! ben tohost'a rastgele bir sey yazdigimda, 
+      // device.cc'de handle command'de syscall_proxy'ye giden
+      // command'de, syscall'i bulamiyor. cmd.device() = syscall_proxy
+      // 
+      
       bad_address("host was accessing memory on behalf of target (tohost = 0x" + tohost_hex.str() + ")", t.get_tval());
     }
 

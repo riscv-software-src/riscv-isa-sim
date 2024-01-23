@@ -16,6 +16,12 @@ typedef reg_t addr_t;
 class chunked_memif_t
 {
 public:
+// !!! chunked_memif_t, htif_t tarafindan kalitiliyor.
+// htif_t, sim_t tarafindan kalitiliyor.
+// read_chunk ve write_chunk, sim_t'de implement ediliyor.
+// clear_chunk, htif_t tarafindan implement ediliyor.
+// memif_t, htif_t'nin bir field'i.
+// chunked_memif_t, memif_t'nin bir field'i
   virtual void read_chunk(addr_t taddr, size_t len, void* dst) = 0;
   virtual void write_chunk(addr_t taddr, size_t len, const void* src) = 0;
   virtual void clear_chunk(addr_t taddr, size_t len) = 0;
