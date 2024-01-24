@@ -32,6 +32,7 @@ public:
         const debug_module_config_t &dm_config, const char *log_path,
         bool dtb_enabled, const char *dtb_file,
         bool socket_enabled,
+        bool custom_config,
         FILE *cmd_file); // needed for command line option --cmd
   ~sim_t();
 
@@ -65,7 +66,7 @@ public:
   static const size_t INSNS_PER_RTC_TICK = 100; // 10 MHz clock for 1 BIPS core
   static const size_t CPU_HZ = 1000000000; // 1GHz CPU
 
-private:
+protected:
   isa_parser_t isa;
   const cfg_t * const cfg;
   std::vector<std::pair<reg_t, abstract_mem_t*>> mems;

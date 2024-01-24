@@ -44,6 +44,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
              const char *log_path,
              bool dtb_enabled, const char *dtb_file,
              bool socket_enabled,
+             bool custom_config,
              FILE *cmd_file) // needed for command line option --cmd
   : htif_t(args),
     isa(cfg->isa, cfg->priv),
@@ -65,6 +66,9 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   signal(SIGINT, &handle_signal);
 
   sout_.rdbuf(std::cerr.rdbuf()); // debug output goes to stderr by default
+
+  if (custom_config)
+    return;
 
   for (auto& x : mems)
     bus.add_device(x.first, x.second);

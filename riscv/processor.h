@@ -309,7 +309,7 @@ public:
   void clear_waiting_for_interrupt() { in_wfi = false; };
   bool is_waiting_for_interrupt() { return in_wfi; };
 
-private:
+protected:
   const isa_parser_t * const isa;
   const cfg_t * const cfg;
 

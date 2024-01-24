@@ -78,6 +78,9 @@ class basic_csr_t: public csr_t {
     return val;
   }
 
+  void set_val(reg_t v) { val = v; }
+  reg_t get_val() { return val; }
+
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -103,6 +106,11 @@ class pmpaddr_csr_t: public csr_t {
   bool is_locked() const noexcept {
     return cfg & PMP_L;
   }
+
+  void set_val(reg_t v) { val = v; }
+  reg_t get_val() { return val; }
+  void set_cfg(uint8_t c) { cfg = c; }
+  uint8_t get_cfg() { return cfg; }
 
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
@@ -166,6 +174,8 @@ class virtualized_csr_t: public csr_t {
   virtual reg_t read() const noexcept override;
   // Instead of using state.v, explicitly request original or virtual:
   reg_t readvirt(bool virt) const noexcept;
+  csr_t_p get_orig_csr() { return orig_csr; }
+  csr_t_p get_virt_csr() { return virt_csr; }
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
   csr_t_p orig_csr;
@@ -180,6 +190,8 @@ class epc_csr_t: public csr_t {
   epc_csr_t(processor_t* const proc, const reg_t addr);
 
   virtual reg_t read() const noexcept override;
+  void set_val(reg_t v) { val = v; }
+  reg_t get_val() { return val; }
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -192,6 +204,8 @@ class tvec_csr_t: public csr_t {
   tvec_csr_t(processor_t* const proc, const reg_t addr);
 
   virtual reg_t read() const noexcept override;
+  void set_val(reg_t v) { val = v; }
+  reg_t get_val() { return val; }
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -237,6 +251,9 @@ class vsstatus_csr_t final: public base_status_csr_t {
     return val;
   }
 
+  void set_val(reg_t v) { val = v; }
+  reg_t get_val() { return val; }
+
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -252,6 +269,9 @@ class mstatus_csr_t final: public base_status_csr_t {
   reg_t read() const noexcept override {
     return val;
   }
+
+  reg_t get_val() { return val; }
+  void set_val(reg_t v) { val = v; }
 
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
@@ -303,6 +323,8 @@ class sstatus_proxy_csr_t final: public base_status_csr_t {
     return mstatus->read() & sstatus_read_mask;
   }
 
+  mstatus_csr_t_p get_mstatus() { return mstatus; }
+
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -319,6 +341,9 @@ class sstatus_csr_t: public virtualized_csr_t {
   void dirty(const reg_t dirties);
   // Return true if the specified bits are not 00 (Off)
   bool enabled(const reg_t which);
+
+  sstatus_proxy_csr_t_p get_orig_sstatus() { return orig_sstatus; }
+  vsstatus_csr_t_p get_virt_sstatus() { return virt_sstatus; }
  private:
   sstatus_proxy_csr_t_p orig_sstatus;
   vsstatus_csr_t_p virt_sstatus;
@@ -352,6 +377,8 @@ class mip_or_mie_csr_t: public csr_t {
   virtual reg_t read() const noexcept override final;
 
   void write_with_mask(const reg_t mask, const reg_t val) noexcept;
+  void set_val(reg_t v) { val = v; }
+  reg_t get_val() { return val; }
 
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override final;
@@ -484,6 +511,8 @@ class henvcfg_csr_t final: public envcfg_csr_t {
 
   virtual void verify_permissions(insn_t insn, bool write) const override;
 
+  csr_t_p get_menvcfg() { return menvcfg; }
+
  private:
   csr_t_p menvcfg;
 };
@@ -531,6 +560,10 @@ class wide_counter_csr_t: public csr_t {
   // Always returns full 64-bit value
   virtual reg_t read() const noexcept override;
   void bump(const reg_t howmuch) noexcept;
+
+  void set_val(reg_t v) { val = v; }
+  reg_t get_val() { return val; }
+  smcntrpmf_csr_t_p get_config_csr() { return config_csr; }
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
   virtual reg_t written_value() const noexcept override;
@@ -548,6 +581,8 @@ class time_counter_csr_t: public csr_t {
   virtual reg_t read() const noexcept override;
 
   void sync(const reg_t val) noexcept;
+  void set_shadow_val(reg_t v) { shadow_val = v; }
+  reg_t get_shadow_val() { return shadow_val; }
 
  protected:
   virtual bool unlogged_write(const reg_t UNUSED val) noexcept override { return false; };
@@ -562,6 +597,7 @@ class proxy_csr_t: public csr_t {
  public:
   proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate);
   virtual reg_t read() const noexcept override;
+  csr_t_p get_delegate() { return delegate; }
  protected:
   bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -606,6 +642,8 @@ class hideleg_csr_t: public masked_csr_t {
  public:
   hideleg_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mideleg);
   virtual reg_t read() const noexcept override;
+
+  csr_t_p get_mideleg() { return mideleg; }
  private:
   csr_t_p mideleg;
 };
@@ -756,6 +794,8 @@ class hstateen_csr_t: public masked_csr_t {
   hstateen_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init, uint8_t index);
   virtual reg_t read() const noexcept override;
   virtual void verify_permissions(insn_t insn, bool write) const override;
+  void set_index(uint8_t idx) { index = idx; }
+  uint8_t get_index() { return index; }
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 protected:
@@ -781,6 +821,8 @@ class stimecmp_csr_t: public basic_csr_t {
  public:
   stimecmp_csr_t(processor_t* const proc, const reg_t addr, const reg_t imask);
   virtual void verify_permissions(insn_t insn, bool write) const override;
+  void set_intr_mask(reg_t m) { intr_mask = m; }
+  reg_t get_intr_mask() { return intr_mask; }
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
@@ -838,6 +880,8 @@ class smcntrpmf_csr_t : public masked_csr_t {
   smcntrpmf_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
   reg_t read_prev() const noexcept;
   void reset_prev() noexcept;
+  void set_prev_val(std::optional<reg_t> v) { prev_val = v; }
+  std::optional<reg_t> get_prev_val() { return prev_val; }
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
