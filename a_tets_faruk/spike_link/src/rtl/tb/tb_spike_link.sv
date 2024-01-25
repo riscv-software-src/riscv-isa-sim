@@ -22,8 +22,8 @@ module tb_spike_link;
     output int num_elements_inserted
   );
 
-  // int init(int argc, char **argv)
-  import "DPI-C" function int init();
+  // void init()
+  import "DPI-C" function void init();
   // !!! daha sonra bunu daha kullanilabilir hale getirmek icin bu sekile donust
   // import "DPI-C" function int init(input int argc, input string argv[]);
 

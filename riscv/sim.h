@@ -38,12 +38,13 @@ public:
   // run the simulation to completion
   int run();
 
-  // !!! M run'un implementasyonuna bak.
-  void pre_htif_run();
-  // !!! M
+  // !!! ekleme
+  // !!! run'un implementasyonuna bak.
+  void htif_prerun();
   void htif_start();
-  // !!! M
-  void step_without_clear_commit(size_t n);
+  bool htif_communication_available();
+  void htif_single_step_without_communication();
+  void htif_single_step_with_communication(std::queue<reg_t> *fromhost_queue, std::function<void(reg_t)> fromhost_callback);
 
   void set_debug(bool value);
   void set_histogram(bool value);
@@ -148,6 +149,9 @@ private:
   // htif
   virtual void reset() override;
   virtual void idle() override;
+#ifdef COSIMIF
+  virtual void idle_single_step() override; // ekleme
+#endif
   virtual void read_chunk(addr_t taddr, size_t len, void* dst) override;
   virtual void write_chunk(addr_t taddr, size_t len, const void* src) override;
   virtual size_t chunk_align() override { return 8; }

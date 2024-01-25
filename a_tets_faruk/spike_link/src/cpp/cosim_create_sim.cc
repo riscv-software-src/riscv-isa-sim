@@ -1,6 +1,4 @@
 // See LICENSE for license details.
-#include "../../obj_dir_tb_spike_link/tb_spike_link__Dpi.h"
-#include "args_reader.h"
 #include "debug_header.h"
 #include "config.h"
 #include "cfg.h"
@@ -23,19 +21,9 @@
 #include "../VERSION"
 #include <svdpi.h>
 
-#ifndef KEY_WIDTH
-#define KEY_WIDTH 64
-#endif
-
-#ifndef VALUE_WIDTH
-#define VALUE_WIDTH 128
-#endif
-
-#ifndef DPI_WIDTH
-#define DPI_WIDTH 32
-#endif
-
 #define FORCE_LOG_COMMITS
+#define USE_DUMP_DTS_FLAG
+#define DISABLE_INTERACTIVE_MODE
 
 static void help(int exit_code = 1)
 {
@@ -46,7 +34,9 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  -m<n>                 Provide <n> MiB of target memory [default 2048]\n");
   fprintf(stderr, "  -m<a:m,b:n,...>       Provide memory regions of size m and n bytes\n");
   fprintf(stderr, "                          at base addresses a and b (with 4 KiB alignment)\n");
+#ifndef DISABLE_INTERACTIVE_MODE
   fprintf(stderr, "  -d                    Interactive debug mode\n");
+#endif
   fprintf(stderr, "  -g                    Track histogram of PCs\n");
   fprintf(stderr, "  -l                    Generate a log of execution\n");
 #ifdef HAVE_BOOST_ASIO
@@ -55,7 +45,9 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  -h, --help            Print this help message\n");
   fprintf(stderr, "  -H                    Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --log=<name>          File name for option -l\n");
+#ifndef DISABLE_INTERACTIVE_MODE
   fprintf(stderr, "  --debug-cmd=<name>    Read commands from file (use with -d)\n");
+#endif
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
   fprintf(stderr, "  --pmpregions=<n>      Number of PMP regions [default 16]\n");
   fprintf(stderr, "  --pmpgranularity=<n>  PMP Granularity in bytes [default 4]\n");
@@ -70,17 +62,19 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --misaligned          Support misaligned memory accesses\n");
   fprintf(stderr, "  --device=<name>       Attach MMIO plugin device from an --extlib library\n");
   fprintf(stderr, "  --log-cache-miss      Generate a log of cache miss\n");
-  #ifndef FORCE_LOG_COMMITS
+#ifndef FORCE_LOG_COMMITS
   fprintf(stderr, "  --log-commits         Generate a log of commits info");
-  #else
+#else
   fprintf(stderr, "  --log-commits         Generate a log of commits info\n (faruk: !!! ben bunu her zaman true yapiyorum.)\n");
-  #endif
+#endif
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
   fprintf(stderr, "                          This flag can be used multiple times.\n");
   fprintf(stderr, "  --extlib=<name>       Shared library to load\n");
   fprintf(stderr, "                        This flag can be used multiple times.\n");
   fprintf(stderr, "  --rbb-port=<port>     Listen on <port> for remote bitbang connection\n");
+#ifdef USE_DUMP_DTS_FLAG
   fprintf(stderr, "  --dump-dts            Print device tree string and exit\n");
+#endif
   fprintf(stderr, "  --dtb=<path>          Use specified device tree blob [default: auto-generate]\n");
   fprintf(stderr, "  --disable-dtb         Don't write the device tree blob into memory\n");
   fprintf(stderr, "  --kernel=<path>       Load kernel flat image into memory\n");
@@ -356,11 +350,7 @@ static std::vector<size_t> parse_hartids(const char *s)
   return hartids;
 }
 
-sim_t *simulation_object;
-
-// !!! burasi export'lanacak
-// !!! korleme yontem
-int init()
+sim_t *create_sim_with_args(int argc, char **argv)
 {
   // !!! korleme yontem
   bool debug = false;
@@ -368,7 +358,9 @@ int init()
   bool histogram = false;
   bool log = false;
   bool UNUSED socket = false; // command line option -s
+#ifdef USE_DUMP_DTS_FLAG
   bool dump_dts = false;
+#endif
   bool dtb_enabled = true;
   const char *kernel = NULL;
   reg_t kernel_offset, kernel_size;
@@ -427,8 +419,10 @@ int init()
   parser.help(&suggest_help);
   parser.option('h', "help", 0, [&](const char UNUSED *s)
                 { help(0); });
+#ifndef DISABLE_INTERACTIVE_MODE
   parser.option('d', 0, 0, [&](const char UNUSED *s)
                 { debug = true; });
+#endif
   parser.option('g', 0, 0, [&](const char UNUSED *s)
                 { histogram = true; });
   parser.option('l', 0, 0, [&](const char UNUSED *s)
@@ -477,8 +471,10 @@ int init()
   parser.option(0, "device", 1, device_parser);
   parser.option(0, "extension", 1, [&](const char *s)
                 { extensions.push_back(find_extension(s)); });
+#ifdef USE_DUMP_DTS_FLAG
   parser.option(0, "dump-dts", 0, [&](const char UNUSED *s)
                 { dump_dts = true; });
+#endif
   parser.option(0, "disable-dtb", 0, [&](const char UNUSED *s)
                 { dtb_enabled = false; });
   parser.option(0, "dtb", 1, [&](const char *s)
@@ -530,7 +526,7 @@ int init()
   parser.option(0, "dm-no-halt-groups", 0,
                 [&](const char UNUSED *s)
                 { dm_config.support_haltgroups = false; });
-#ifdef FORCE_LOG_COMMITS  
+#ifdef FORCE_LOG_COMMITS
   // !!! log_commits'i her turlu aktiflestiriyorum
   log_commits = true;
 #endif
@@ -541,12 +537,14 @@ int init()
                 [&](const char *s)
                 { log_path = s; });
   FILE *cmd_file = NULL;
+#ifndef DISABLE_INTERACTIVE_MODE
   parser.option(0, "debug-cmd", 1, [&](const char *s)
                 {
-     if ((cmd_file = fopen(s, "r"))==NULL) {
+      if ((cmd_file = fopen(s, "r"))==NULL) {
         fprintf(stderr, "Unable to open command file '%s'\n", s);
         exit(-1);
-     } });
+      } });
+#endif
   parser.option(0, "blocksz", 1, [&](const char *s)
                 {
     blocksz = strtoull(s, 0, 0);
@@ -558,19 +556,9 @@ int init()
       exit(-1);
     } });
 
-  DEBUG_PRINT_WARN("argc_argv okunmadan once\n");
-  auto argc_argv = read_args_from_file("/home/usr1/riscv-isa-sim/a_tets_faruk/spike_link/log/args.txt");
-  DEBUG_PRINT_WARN("argc_argv okunduktan sonra\n");
-  #if DEBUG_LEVEL > 0
-  for (int i = 0; i < argc_argv->argc; i++)
-  {
-    DEBUG_PRINT_WARN("argv[%d]: %s\n", i, argc_argv->argv[i]);
-  }
-  #endif
-  auto argv1 = parser.parse(argc_argv->argv);
-  DEBUG_PRINT_WARN("argumanlar parser'a verildikten sonra\n");
-
-  std::vector<std::string> htif_args(argv1, (const char *const *)argc_argv->argv + argc_argv->argc);
+  
+  auto argv1 = parser.parse(argv);
+  std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
 
   if (!*argv1)
     help();
@@ -640,10 +628,10 @@ int init()
   // !!! burayi obje fonksiyon cagrilari arasinda kullanilabilir olacak sekilde
   // !!! degistir. dynamic memory allocation, global pointer falan
 
-  simulation_object = new sim_t(&cfg, halted,
-                                mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
-                                socket,
-                                cmd_file);
+  auto simulation_object = new sim_t(&cfg, halted,
+                                     mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
+                                     socket,
+                                     cmd_file);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *)NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&(simulation_object->debug_module), dmi_rti));
@@ -653,11 +641,14 @@ int init()
     simulation_object->set_remote_bitbang(&(*remote_bitbang));
   }
 
+#ifdef USE_DUMP_DTS_FLAG
   if (dump_dts)
   {
     printf("%s", simulation_object->get_dts());
-    return 0;
+    // return 0;
+    exit(0);
   }
+#endif
 
   if (ic && l2)
     ic->set_miss_handler(&*l2);
@@ -682,67 +673,5 @@ int init()
   simulation_object->configure_log(log, log_commits);
   simulation_object->set_histogram(histogram);
 
-  simulation_object->pre_htif_run();
-
-  simulation_object->htif_start();
-  return 0;
-}
-
-// !!! burasi export'lanacak
-void step()
-{
-  simulation_object->step_without_clear_commit(1);
-  DEBUG_PRINT_INFO("step\n");
-  // sim_obj->step_without_clear_commit(1);
-}
-
-// !!! burasi export'lanacak
-/// @brief for key and value arrays: packed dimension size: dim0; num entries: dim1; entry size in packets: dim2
-/// @param key_array the keys of the unordered_map is written to this array
-/// @param value_array the values of the unordered_map is written to this array in same order with keys written in the key_array
-/// @param num_entries_inserted is the output parameter to specify the caller how many elements are valid in the output
-void get_last_commit(const svOpenArrayHandle key_array, const svOpenArrayHandle value_array, int *num_entries_inserted)
-{
-  auto map_from_c_side = simulation_object->get_core(0)->get_state()->log_reg_write;
-
-  DEBUG_PRINT_WARN("burada iki tarafin boyutlari icin asertion konulabilir\n");
-
-#define NUM_ENTRIES (*num_entries_inserted)
-
-  NUM_ENTRIES = 0;
-  // Traversing an unordered map
-  for (auto x : map_from_c_side)
-  {
-    // x.first // 64 bit, int32 cinsinden 2 tane
-    // x.second // 128 bit, int32 cinsinden 4 tane
-    // key'i part part gonder
-    for (int part_ind = 0; part_ind < KEY_WIDTH / DPI_WIDTH; part_ind++)
-    {
-      // key_array[NUM_ENTRIES][part_ind] = *(((uint32_t *)&(x.first)) + part_ind);
-      auto base_ptr =(uint32_t *)&(x.first);
-      svBitVec32 temp = base_ptr[part_ind];
-      svPutBitArrElemVecVal(key_array, &temp, NUM_ENTRIES, part_ind);
-    }
-
-    // value'yu part part gonder
-    for (int part_ind = 0; part_ind < VALUE_WIDTH / DPI_WIDTH; part_ind++)
-    {
-      // value_array[NUM_ENTRIES][part_ind] = *(((uint32_t *)&(x.second)) + part_ind);
-      auto base_ptr = (uint32_t *)&(x.second);
-      svBitVec32 temp = base_ptr[part_ind];
-      svPutBitArrElemVecVal(value_array, &temp, NUM_ENTRIES, part_ind);
-    }
-    NUM_ENTRIES++;
-  }
-
-#undef NUM_ENTRIES
-}
-
-// !!! burasi export'lanacak
-void clear_last_commit()
-{
-  auto processor_state = simulation_object->get_core(0)->get_state();
-  processor_state->log_mem_read.clear();
-  processor_state->log_mem_write.clear();
-  processor_state->log_reg_write.clear();
+  return simulation_object;
 }

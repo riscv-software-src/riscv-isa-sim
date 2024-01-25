@@ -34,7 +34,7 @@ clean_$(1):
 
 compile_$(1):
 	verilator -CFLAGS "$(INC_DIRS)" --Mdir obj_dir_$(1) --binary +1800-2017ext+sv $(TB_DIR)/$(1).sv $(SRC_FILES) $(CPP_FILES) $(OBJ_FILES) $(LIBRARIES) --prefix $(1)  -o $(1).exe
-
+	@echo "--compilation done--"
 .PHONY: compile_$(1)
 
 run_with_compile_$(1): compile_$(1)

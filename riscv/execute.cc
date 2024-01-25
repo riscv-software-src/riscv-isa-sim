@@ -63,7 +63,7 @@ static void commit_log_print_value(FILE *log_file, int width, uint64_t val)
 static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
 {
   FILE *log_file = p->get_log_file();
-
+  // std::cout << "logfile is stderr: " << (log_file == stderr) << "\n";
   auto& reg = p->get_state()->log_reg_write;
   auto& load = p->get_state()->log_mem_read;
   auto& store = p->get_state()->log_mem_write;
