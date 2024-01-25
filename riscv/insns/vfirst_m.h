@@ -14,5 +14,4 @@ for (reg_t i=P.VU.vstart->read(); i < vl; ++i) {
     break;
   }
 }
-P.VU.vstart->write(0);
 WRITE_RD(pos);
