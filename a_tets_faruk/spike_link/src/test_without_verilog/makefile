@@ -1,11 +1,7 @@
 
-# Automatically detect top module names from the tb directory
-TB_DIR := src/rtl/tb
-TB_MODULES := $(notdir $(basename $(wildcard $(TB_DIR)/*.sv)))
 
 # Source and C++ files
-SRC_FILES := $(wildcard src/rtl/design/*.sv)
-CPP_FILES := $(wildcard src/cpp/*.cc)
+CPP_FILES := $(wildcard ../cpp/*.cc)
 LIBRARIES :=
 # LIBRARIES += $(wildcard /home/usr1/riscv-isa-sim/build/*.a)
 # LIBRARIES += $(wildcard /home/usr1/riscv-isa-sim/build/*.so)
@@ -27,25 +23,6 @@ INC_DIRS += -I/home/usr1/riscv-isa-sim/
 INC_DIRS += -I/home/usr1/riscv-isa-sim/softfloat
 INC_DIRS += -I/home/usr1/riscv-isa-sim/fdt
 
-# Define compile and run rules for each module dynamically
-define TB_RULES
-
-clean_$(1):
-	@find obj_dir_$(1) -type f ! -name "$(1)__Dpi.h" -exec rm -f {} +
-
-compile_$(1):
-	verilator -CFLAGS "$(INC_DIRS)" --Mdir obj_dir_$(1) --binary +1800-2017ext+sv $(TB_DIR)/$(1).sv $(SRC_FILES) $(CPP_FILES) $(OBJ_FILES) $(LIBRARIES) --prefix $(1)  -o $(1).exe
-	@echo "--compilation done--"
-.PHONY: compile_$(1)
-
-run_with_compile_$(1): compile_$(1)
-	./obj_dir_$(1)/$(1).exe
-
-run_$(1):
-	./obj_dir_$(1)/$(1).exe
-
-endef
-
-# Generate rules
-$(foreach tb,$(TB_MODULES),$(eval $(call TB_RULES,$(tb))))
-
+# compile main.cc
+a.out: $(SRC_FILES) $(CPP_FILES) $(LIBRARIES)
+	g++  $(INC_DIRS) main.cc $(CPP_FILES) $(LIBRARIES)

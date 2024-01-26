@@ -527,6 +527,9 @@ int main(int argc, char** argv)
     cfg.hartids = default_hartids;
   }
 
+  // bu asagidakini cfg degisiyor mu diye bakmak icin koymustum
+  // start_pc yanlis deger hatasi icin
+  std::cout << "cfg start_pc has value: " << cfg.start_pc.has_value();
   sim_t s(&cfg, halted,
       mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
       socket,

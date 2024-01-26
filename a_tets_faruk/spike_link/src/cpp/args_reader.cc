@@ -50,6 +50,10 @@ argv_argc_t *read_args_from_file(const char *filename)
         return NULL;
     }
     fread(content, 1, length, file);
+    // print the content that is read from the file
+    printf("\n--running cosim with arguments:--\n %s\n"
+    "------------------------------------------\n",
+    content);
     fclose(file);
     content[length] = '\0';
 

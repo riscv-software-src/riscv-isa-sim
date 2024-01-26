@@ -19,7 +19,7 @@ long int modular_random()
 
     return state;
 }
-
+ 
 void main()
 {
     // tohost = 2; // !!! tohost'a 1 yazince direkt programi bitiriyor.
@@ -28,6 +28,9 @@ void main()
     // on behalf of target (tohost = 0x2):
     // Memory address 0x0 is invalid
 
+//   int a[261878];
+//   (*(void (*)())(&(a[261878])))(); // stack end
+//   (*(void (*)())(&(a[259857])))(); // bu da calisiyor, text'te bir yere denk geliyor
     int a[SIZE];
     for (int ii = 0; ii < SIZE; ii++)
     {

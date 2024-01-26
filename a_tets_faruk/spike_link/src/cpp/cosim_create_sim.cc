@@ -1,7 +1,9 @@
 // See LICENSE for license details.
+#include "cosim_create_sim.h"
 #include "debug_header.h"
 #include "config.h"
 #include "cfg.h"
+#define COSIMIF
 #include "sim.h"
 #include "mmu.h"
 #include "arith.h"
@@ -19,11 +21,10 @@
 #include <limits>
 #include <cinttypes>
 #include "../VERSION"
-#include <svdpi.h>
 
 #define FORCE_LOG_COMMITS
 #define USE_DUMP_DTS_FLAG
-#define DISABLE_INTERACTIVE_MODE
+// #define DISABLE_INTERACTIVE_MODE
 
 static void help(int exit_code = 1)
 {
@@ -441,7 +442,11 @@ sim_t *create_sim_with_args(int argc, char **argv)
   parser.option(0, "rbb-port", 1, [&](const char *s)
                 {use_rbb = true; rbb_port = atoul_safe(s); });
   parser.option(0, "pc", 1, [&](const char *s)
-                { cfg.start_pc = strtoull(s, 0, 0); });
+                { 
+                  // bu asagidakini cfg degisiyor mu diye bakmak icin koymustum
+                  // start_pc yanlis deger hatasi icin
+                  // printf("****cosim_create found pc in args: %s\n", s);
+                  cfg.start_pc = strtoull(s, 0, 0); });
   parser.option(0, "hartids", 1, [&](const char *s)
                 {
     cfg.hartids = parse_hartids(s);
@@ -625,10 +630,11 @@ sim_t *create_sim_with_args(int argc, char **argv)
     cfg.hartids = default_hartids;
   }
 
-  // !!! burayi obje fonksiyon cagrilari arasinda kullanilabilir olacak sekilde
-  // !!! degistir. dynamic memory allocation, global pointer falan
-
-  auto simulation_object = new sim_t(&cfg, halted,
+  // bu asagidakini cfg degisiyor mu diye bakmak icin koymustum
+  // start_pc yanlis deger hatasi icin
+  // printf("****cosim_create found pc in args: %s\n", s);
+  // std::cout << "cfg start_pc has value: " << cfg.start_pc.has_value() << "\n";
+  sim_t *simulation_object = new sim_t(&cfg, halted,
                                      mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
                                      socket,
                                      cmd_file);

@@ -1,5 +1,3 @@
-
-
 #include "config.h"
 #define COSIMIF
 #include "sim.h"
@@ -31,6 +29,13 @@
 //   signal(sig, &cosim_handle_signal);
 // }
 
+// bu asagidakini cfg degisiyor mu diye bakmak icin koymustum
+// start_pc yanlis deger hatasi icin
+
+reg_t sim_t::htif_get_entry_point()
+{
+  return htif_t::get_entry_point();
+}
 
 void sim_t::htif_prerun()
 {
@@ -58,6 +63,8 @@ void sim_t::idle_single_step(){
 
   if (remote_bitbang)
     remote_bitbang->tick();
+  // polimorfizm hatasi icin
+  // std::cout << "sim_t::idle_single_step" << std::endl;
 }
 
 bool sim_t::htif_communication_available()

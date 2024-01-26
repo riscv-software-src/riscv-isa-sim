@@ -98,6 +98,8 @@ void htif_t::single_step_with_communication(std::queue<reg_t> *fromhost_queue, s
 
 void htif_t::single_step_without_communication()
 {
+  //polimorfizm hatasi icin
+  // idle();
   idle_single_step();
 }
 

@@ -1,20 +1,17 @@
-// #include <stdio.h>
-// volatile long unsigned int tohost;
-// volatile long unsigned int fromhost;
+#include <stdio.h>
+
 int main(int argc, char **argv)
 {
-  // for (int i = 0; i < 10; i++)
-  //   fromhost = 2;
-  // printf("Hello World!\n");
-  // printf("a icin deger girin\n");
+  printf("Hello World!\n");
+  printf("a icin deger girin\n");
 
-  // int a;
-  // scanf("%d", &a);
+  int a;
+  scanf("%d", &a);
 
 
-  // FILE *fp;
-  // fp = fopen("dummy.txt", "w");
-  // printf("%p\n", fp);
-  // fprintf(fp, "%d", a);
-  // fclose(fp);
+  FILE *fp;
+  fp = fopen("/home/usr1/riscv-isa-sim/a_tets_faruk/spike_link/log/dummy.txt", "w");
+  printf("%p\n", fp);
+  fprintf(fp, "%d", a);
+  fclose(fp);
 }

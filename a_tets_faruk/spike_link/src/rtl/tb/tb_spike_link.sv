@@ -35,9 +35,6 @@ module tb_spike_link;
     output int num_elements_inserted
   );
 
-  import "DPI-C" function void clear_last_commit();
-
-
   reg                     clk_i;
   reg                     rst_ni;
   wire  [KEY_WIDTH-1:0]   last_wa1_o;
@@ -82,10 +79,9 @@ module tb_spike_link;
     init();
     /* verilator lint_on IGNOREDRETURN */
 
-    for (int ii = 0; ii < 5; ii = ii + 1) begin: simulation_loop
+    for (int ii = 0;; ii = ii + 1) begin: simulation_loop
       #CLK_PERIOD;
       verilog_side_data.delete();
-      clear_last_commit();
       step();
       get_last_commit(
         key_array_from_c_side,

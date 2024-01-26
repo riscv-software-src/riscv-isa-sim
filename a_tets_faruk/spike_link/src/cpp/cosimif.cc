@@ -1,5 +1,5 @@
 #include "cosim_create_sim.h"
-#include "../../obj_dir_tb_spike_link/tb_spike_link__Dpi.h"
+// #include "../../obj_dir_tb_spike_link/tb_spike_link__Dpi.h"
 #include "args_reader.h"
 #include "debug_header.h"
 
@@ -32,10 +32,16 @@ void init()
   auto argc_argv = read_args_from_file("/home/usr1/riscv-isa-sim/a_tets_faruk/spike_link/log/args.txt");
 
   simulation_object = create_sim_with_args(argc_argv->argc, argc_argv->argv);
-
+  // bunlar start_pc yanlis deger hatasi icin
+  printf("%s:%d sim.cfg.startpc.hasval: %d\n", __FILE__, __LINE__, simulation_object->get_cfg().start_pc.has_value());
+  fflush(stdout);
   simulation_object->htif_prerun();
+  printf("%s:%d sim.cfg.startpc.hasval: %d\n", __FILE__, __LINE__, simulation_object->get_cfg().start_pc.has_value());
+  fflush(stdout);
 
   simulation_object->htif_start();
+  printf("%s:%d sim.cfg.startpc.hasval: %d\n", __FILE__, __LINE__, simulation_object->get_cfg().start_pc.has_value());
+  fflush(stdout);
 
   auto enq_func = [](std::queue<reg_t> *q, uint64_t x)
   { q->push(x); };
@@ -53,6 +59,7 @@ void init()
   }
   else
   {
+    printf("htif_communication_available() is false\n");
     step_callback = std::bind(&sim_t::htif_single_step_without_communication, simulation_object);
   }
 }
@@ -62,43 +69,43 @@ void step()
   step_callback();
 }
 
-/// @brief for key and value arrays: packed dimension size: dim0; num entries: dim1; entry size in packets: dim2
-/// @param key_array the keys of the unordered_map is written to this array
-/// @param value_array the values of the unordered_map is written to this array in same order with keys written in the key_array
-/// @param num_entries_inserted is the output parameter to specify the caller how many elements are valid in the output
-void get_last_commit(const svOpenArrayHandle key_array, const svOpenArrayHandle value_array, int *num_entries_inserted)
-{
-  auto map_from_c_side = simulation_object->get_core(0)->get_state()->log_reg_write;
+// /// @brief for key and value arrays: packed dimension size: dim0; num entries: dim1; entry size in packets: dim2
+// /// @param key_array the keys of the unordered_map is written to this array
+// /// @param value_array the values of the unordered_map is written to this array in same order with keys written in the key_array
+// /// @param num_entries_inserted is the output parameter to specify the caller how many elements are valid in the output
+// void get_last_commit(const svOpenArrayHandle key_array, const svOpenArrayHandle value_array, int *num_entries_inserted)
+// {
+//   auto map_from_c_side = simulation_object->get_core(0)->get_state()->log_reg_write;
 
-  DEBUG_PRINT_WARN("burada iki tarafin boyutlari icin asertion konulabilir\n");
+//   DEBUG_PRINT_WARN("burada iki tarafin boyutlari icin asertion konulabilir\n");
 
-#define NUM_ENTRIES (*num_entries_inserted)
+// #define NUM_ENTRIES (*num_entries_inserted)
 
-  NUM_ENTRIES = 0;
-  // Traversing an unordered map
-  for (auto x : map_from_c_side)
-  {
-    // x.first // 64 bit, int32 cinsinden 2 tane
-    // x.second // 128 bit, int32 cinsinden 4 tane
-    // key'i part part gonder
-    for (int part_ind = 0; part_ind < KEY_WIDTH / DPI_WIDTH; part_ind++)
-    {
-      // key_array[NUM_ENTRIES][part_ind] = *(((uint32_t *)&(x.first)) + part_ind);
-      auto base_ptr = (uint32_t *)&(x.first);
-      svBitVec32 temp = base_ptr[part_ind];
-      svPutBitArrElemVecVal(key_array, &temp, NUM_ENTRIES, part_ind);
-    }
+//   NUM_ENTRIES = 0;
+//   // Traversing an unordered map
+//   for (auto x : map_from_c_side)
+//   {
+//     // x.first // 64 bit, int32 cinsinden 2 tane
+//     // x.second // 128 bit, int32 cinsinden 4 tane
+//     // key'i part part gonder
+//     for (int part_ind = 0; part_ind < KEY_WIDTH / DPI_WIDTH; part_ind++)
+//     {
+//       // key_array[NUM_ENTRIES][part_ind] = *(((uint32_t *)&(x.first)) + part_ind);
+//       auto base_ptr = (uint32_t *)&(x.first);
+//       svBitVec32 temp = base_ptr[part_ind];
+//       svPutBitArrElemVecVal(key_array, &temp, NUM_ENTRIES, part_ind);
+//     }
 
-    // value'yu part part gonder
-    for (int part_ind = 0; part_ind < VALUE_WIDTH / DPI_WIDTH; part_ind++)
-    {
-      // value_array[NUM_ENTRIES][part_ind] = *(((uint32_t *)&(x.second)) + part_ind);
-      auto base_ptr = (uint32_t *)&(x.second);
-      svBitVec32 temp = base_ptr[part_ind];
-      svPutBitArrElemVecVal(value_array, &temp, NUM_ENTRIES, part_ind);
-    }
-    NUM_ENTRIES++;
-  }
+//     // value'yu part part gonder
+//     for (int part_ind = 0; part_ind < VALUE_WIDTH / DPI_WIDTH; part_ind++)
+//     {
+//       // value_array[NUM_ENTRIES][part_ind] = *(((uint32_t *)&(x.second)) + part_ind);
+//       auto base_ptr = (uint32_t *)&(x.second);
+//       svBitVec32 temp = base_ptr[part_ind];
+//       svPutBitArrElemVecVal(value_array, &temp, NUM_ENTRIES, part_ind);
+//     }
+//     NUM_ENTRIES++;
+//   }
 
-#undef NUM_ENTRIES
-}
+// #undef NUM_ENTRIES
+// }

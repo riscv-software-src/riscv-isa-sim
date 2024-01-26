@@ -39,6 +39,11 @@ public:
   int run();
 
   // !!! ekleme
+  
+  // bu asagidakini cfg degisiyor mu diye bakmak icin koymustum
+  // start_pc yanlis deger hatasi icin
+  reg_t htif_get_entry_point();
+  
   // !!! run'un implementasyonuna bak.
   void htif_prerun();
   void htif_start();
@@ -150,6 +155,7 @@ private:
   virtual void reset() override;
   virtual void idle() override;
 #ifdef COSIMIF
+#warning "idle_single_step() is added to sim_t"
   virtual void idle_single_step() override; // ekleme
 #endif
   virtual void read_chunk(addr_t taddr, size_t len, void* dst) override;

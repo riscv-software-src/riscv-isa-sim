@@ -154,7 +154,7 @@ void htif_t::load_program()
 {
   // !!! sunuma ekle. gerek yok
   std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry);
-
+  std::cout << "targs[0]: " << targs[0] << " entry: " << entry << std::endl;
   if (symbols.count("tohost") && symbols.count("fromhost")) {
     tohost_addr = symbols["tohost"];
     fromhost_addr = symbols["fromhost"];
