@@ -35,7 +35,7 @@ DUMPFLAGS = -D
 READFLAGS = -a
 
 # Targets
-.PHONY: all run create-objdump-readelf clean find-function-calls-defs
+.PHONY: all run create-objdump-readelf clean
 
 all: $(EXE)
 
