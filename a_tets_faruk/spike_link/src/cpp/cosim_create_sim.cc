@@ -1,9 +1,9 @@
 // See LICENSE for license details.
+#define COSIMIF
 #include "cosim_create_sim.h"
 #include "debug_header.h"
 #include "config.h"
 #include "cfg.h"
-#define COSIMIF
 #include "sim.h"
 #include "mmu.h"
 #include "arith.h"
@@ -351,6 +351,8 @@ static std::vector<size_t> parse_hartids(const char *s)
   return hartids;
 }
 
+cfg_t *cfg_ptr;
+
 sim_t *create_sim_with_args(int argc, char **argv)
 {
   // !!! korleme yontem
@@ -391,7 +393,7 @@ sim_t *create_sim_with_args(int argc, char **argv)
       .support_impebreak = true};
   cfg_arg_t<size_t> nprocs(1);
 
-  cfg_t cfg(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0),
+  cfg_ptr = new cfg_t(/*default_initrd_bounds=*/std::make_pair((reg_t)0, (reg_t)0),
             /*default_bootargs=*/nullptr,
             /*default_isa=*/DEFAULT_ISA,
             /*default_priv=*/DEFAULT_PRIV,
@@ -404,7 +406,7 @@ sim_t *create_sim_with_args(int argc, char **argv)
             /*default_hartids=*/std::vector<size_t>(),
             /*default_real_time_clint=*/false,
             /*default_trigger_count=*/4);
-
+  #define cfg (*cfg_ptr)
   auto const device_parser = [&plugin_device_factories](const char *s)
   {
     const std::string name(s);
@@ -633,11 +635,18 @@ sim_t *create_sim_with_args(int argc, char **argv)
   // bu asagidakini cfg degisiyor mu diye bakmak icin koymustum
   // start_pc yanlis deger hatasi icin
   // printf("****cosim_create found pc in args: %s\n", s);
-  // std::cout << "cfg start_pc has value: " << cfg.start_pc.has_value() << "\n";
+  std::cout <<__FILE__<<":"<<__LINE__<< "cfg start_pc has value: " << cfg.start_pc.has_value() <<std::endl;
+  
   sim_t *simulation_object = new sim_t(&cfg, halted,
                                      mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
                                      socket,
                                      cmd_file);
+                                     
+  std::cout << __FILE__<<":"<<__LINE__<< "object at:" << simulation_object << 
+  " sim.cfg.startpc.hasval: " << simulation_object->get_cfg().start_pc.has_value() << std::endl;
+
+  std::cout <<__FILE__<<":"<<__LINE__<< "cfg start_pc has value: " << cfg.start_pc.has_value() <<std::endl;
+  
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *)NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&(simulation_object->debug_module), dmi_rti));
