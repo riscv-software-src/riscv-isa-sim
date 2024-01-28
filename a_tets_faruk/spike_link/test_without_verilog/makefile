@@ -1,7 +1,7 @@
 
 
 # Source and C++ files
-CPP_FILES := $(wildcard ../cpp/*.cc)
+CPP_FILES := $(wildcard /home/usr1/riscv-isa-sim/a_tets_faruk/spike_link/src/cpp/*.cc)
 LIBRARIES :=
 # LIBRARIES += $(wildcard /home/usr1/riscv-isa-sim/build/*.a)
 # LIBRARIES += $(wildcard /home/usr1/riscv-isa-sim/build/*.so)
@@ -31,9 +31,5 @@ INC_DIRS += -I/home/usr1/riscv-isa-sim/fdt
 -include .dependencies.d
 
 # compile main.cc
-a.out: $(CPP_FILES) $(LIBRARIES)
-	g++ -o test_wo_ver.exe -DDONT_USE_VERILATOR $(INC_DIRS) main.cc $(CPP_FILES) $(LIBRARIES)
-
-# main with only htif.h
-only_htif.out: $(CPP_FILES) $(LIBRARIES)
-	g++  $(INC_DIRS) main.cc  $(LIBRARIES)
+compile: $(CPP_FILES) $(LIBRARIES)
+	g++ -o test_wo_ver.exe -DDONT_USE_VERILATOR $(INC_DIRS)  main.cc  $(CPP_FILES) $(LIBRARIES)
