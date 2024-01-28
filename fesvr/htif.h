@@ -33,12 +33,6 @@ class htif_t : public chunked_memif_t
   void single_step_without_communication();
   void single_step_with_communication(std::queue<reg_t> *fromhost_queue, std::function<void(reg_t)> fromhost_callback);
   
-  #ifdef COSIMIF_POLIMORPH_TEST
-  protected:
-  void use_idle();
-  #warning htif_t::use_idle() is added
-  public:
-  #endif
   bool done();
   int exit_code();
   void set_expected_xlen(unsigned int m) { expected_xlen = m; }

@@ -2,17 +2,18 @@
 #define COSIMIF_POLIMORPH_TEST
 #include "htif.h"
 
-void htif_t::use_idle(){
+
+void htif_t::single_step_without_communication(){
   // std::cout << "htif_t::use_idle calling idle" << std::endl;
   // idle();
 
-  std::cout << "htif_t::use_idle calling idle_single_step" << std::endl;
+  std::cout << "pm_bug/htif_t::single_step_without_communication calling idle_single_step" << std::endl;
   idle_single_step();
 }
 
 class expose_t : public htif_t{
   public: 
-    void use_idle();
+    void single_step_without_communication();
 
     ~expose_t();
     expose_t() : htif_t() {}
@@ -30,11 +31,11 @@ class expose_t : public htif_t{
     virtual void reset() override;
 };
 
-void expose_t::use_idle(){ //boyle tanimlayince T oluyor.
-  std::cout<<"expose_t::use_idle:";
+void expose_t::single_step_without_communication(){ //boyle tanimlayince T oluyor.
+  std::cout<<"expose_t::single_step_without_communication:";
   std::cout << " object at "<<this<<" of type expose_t.\n"
-  " calling htif_t::use_idle" << std::endl;
-  htif_t::use_idle();
+  " calling htif_t::single_step_without_communication" << std::endl;
+  htif_t::single_step_without_communication();
 }
 
 void expose_t::idle(){
@@ -51,8 +52,7 @@ void init(){
   ex = new expose_t();
   std::cout << "init:\n"
   " expose_t object created at   "<<ex<<std::endl;
-  use_idle_callback = std::bind(&expose_t::use_idle, ex);
-  
+  use_idle_callback = std::bind(&expose_t::single_step_without_communication, ex);
 }
 
 void step(){
