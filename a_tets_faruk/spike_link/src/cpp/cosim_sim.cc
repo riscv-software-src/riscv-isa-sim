@@ -32,7 +32,7 @@
 // bu asagidakini cfg degisiyor mu diye bakmak icin koymustum
 // start_pc yanlis deger hatasi icin
 
-reg_t sim_t::htif_get_entry_point()
+reg_t sim_t::get_entry_point()
 {
   return htif_t::get_entry_point();
 }

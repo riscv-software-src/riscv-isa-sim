@@ -42,7 +42,7 @@ public:
   
   // bu asagidakini cfg degisiyor mu diye bakmak icin koymustum
   // start_pc yanlis deger hatasi icin
-  reg_t htif_get_entry_point();
+  reg_t get_entry_point();
   
   // !!! run'un implementasyonuna bak.
   void htif_prerun();
