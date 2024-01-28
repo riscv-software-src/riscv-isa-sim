@@ -428,6 +428,24 @@ void sim_t::idle()
     remote_bitbang->tick();
 }
 
+void sim_t::idle_single_step(){
+  std::cout << "sim_t::idle_single_step" << std::endl;
+  if (done())
+    return;
+
+  // once cosim_ctrlc_pressed kismini duzeltmem gerekiyor.
+  if (debug /*|| ctrlc_pressed*/)
+    interactive();
+  else{
+    step(1);
+  }
+
+  if (remote_bitbang)
+    remote_bitbang->tick();
+  // polimorfizm hatasi icin
+  // std::cout << "sim_t::idle_single_step" << std::endl;
+}
+
 void sim_t::read_chunk(addr_t taddr, size_t len, void* dst)
 {
   assert(len == 8);

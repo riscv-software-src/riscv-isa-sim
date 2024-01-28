@@ -154,10 +154,10 @@ private:
   // htif
   virtual void reset() override;
   virtual void idle() override;
-#ifdef COSIMIF
+// #ifdef COSIMIF
   virtual void idle_single_step() override; // ekleme
-#warning "idle_single_step() is added to sim_t"
-#endif
+// #warning "idle_single_step() is added to sim_t"
+// #endif
   virtual void read_chunk(addr_t taddr, size_t len, void* dst) override;
   virtual void write_chunk(addr_t taddr, size_t len, const void* src) override;
   virtual size_t chunk_align() override { return 8; }
