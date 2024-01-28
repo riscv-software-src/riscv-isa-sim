@@ -79,7 +79,7 @@ module tb_spike_link;
     init();
     /* verilator lint_on IGNOREDRETURN */
 
-    for (int ii = 0;; ii = ii + 1) begin: simulation_loop
+    for (int ii = 0;ii < 5; ii = ii + 1) begin: simulation_loop
       #CLK_PERIOD;
       verilog_side_data.delete();
       step();

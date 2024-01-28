@@ -20,7 +20,7 @@ LIBRARIES += /home/usr1/riscv-isa-sim/build/libspike_dasm.a
 LIBRARIES += /home/usr1/riscv-isa-sim/build/libriscv.so
 
 # precompiled header'lar icin miydi bu asagidaki?
-INC_DIRS := -I/home/usr1/riscv-isa-sim/build2
+INC_DIRS := -I/home/usr1/riscv-isa-sim/build
 INC_DIRS += -I/home/usr1/riscv-isa-sim/riscv
 INC_DIRS += -I/home/usr1/riscv-isa-sim/fesvr
 INC_DIRS += -I/home/usr1/riscv-isa-sim/
@@ -34,7 +34,7 @@ clean_$(1):
 	@find obj_dir_$(1) -type f ! -name "$(1)__Dpi.h" -exec rm -f {} +
 
 compile_$(1):
-	verilator -CFLAGS "$(INC_DIRS)" --Mdir obj_dir_$(1) --binary +1800-2017ext+sv $(TB_DIR)/$(1).sv $(SRC_FILES) $(CPP_FILES) $(OBJ_FILES) $(LIBRARIES) --prefix $(1)  -o $(1).exe
+	verilator -O2 -CFLAGS "$(INC_DIRS)" --Mdir obj_dir_$(1) --binary +1800-2017ext+sv $(TB_DIR)/$(1).sv $(SRC_FILES) $(CPP_FILES) $(OBJ_FILES) $(LIBRARIES) --prefix $(1)  -o $(1).exe
 	@echo "--compilation done--"
 .PHONY: compile_$(1)
 

@@ -341,8 +341,8 @@ void sim_t::set_rom()
 
 // bu asagidakini cfg degisiyor mu diye bakmak icin koymustum
 // start_pc yanlis deger hatasi icin
-  printf("%s:%d sim.cfg.startpc.hasval: %d\n", __FILE__, __LINE__, get_cfg().start_pc.has_value());
-  fflush(stdout);
+  std::cout << __FILE__<<":"<<__LINE__<< " object at:" << this << 
+  " sim.cfg.startpc.hasval: " << get_cfg().start_pc.has_value() << std::endl;
 
   reg_t start_pc = cfg->start_pc.value_or(get_entry_point());
   uint64_t val =(uint64_t) start_pc;

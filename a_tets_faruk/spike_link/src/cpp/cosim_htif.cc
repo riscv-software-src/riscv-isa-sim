@@ -1,7 +1,7 @@
 // See LICENSE for license details.
 
-#include "config.h"
 #define COSIMIF
+#include "config.h"
 #include "htif.h"
 #include "rfb.h"
 #include "elfloader.h"
@@ -68,6 +68,7 @@ void htif_t::single_step_with_communication(std::queue<reg_t> *fromhost_queue, s
         command_t cmd(mem, tohost, fromhost_callback);
         device_list.handle_command(cmd);
       } else {
+        // htif_t::idle_single_step();
         idle_single_step();
       }
 
@@ -100,6 +101,8 @@ void htif_t::single_step_without_communication()
 {
   //polimorfizm hatasi icin
   // idle();
+  std::cout << "htif_t::single_step_without_communication" << std::endl;
+  // htif_t::idle_single_step();
   idle_single_step();
 }
 

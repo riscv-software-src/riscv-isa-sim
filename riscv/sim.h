@@ -47,9 +47,9 @@ public:
   // !!! run'un implementasyonuna bak.
   void htif_prerun();
   void htif_start();
-  bool htif_communication_available();
-  void htif_single_step_without_communication();
-  void htif_single_step_with_communication(std::queue<reg_t> *fromhost_queue, std::function<void(reg_t)> fromhost_callback);
+  bool communication_available();
+  void single_step_without_communication();
+  void single_step_with_communication(std::queue<reg_t> *fromhost_queue, std::function<void(reg_t)> fromhost_callback);
 
   void set_debug(bool value);
   void set_histogram(bool value);
@@ -155,8 +155,8 @@ private:
   virtual void reset() override;
   virtual void idle() override;
 #ifdef COSIMIF
-#warning "idle_single_step() is added to sim_t"
   virtual void idle_single_step() override; // ekleme
+#warning "idle_single_step() is added to sim_t"
 #endif
   virtual void read_chunk(addr_t taddr, size_t len, void* dst) override;
   virtual void write_chunk(addr_t taddr, size_t len, const void* src) override;

@@ -25,15 +25,11 @@ INC_DIRS += -I/home/usr1/riscv-isa-sim/fdt
 
 # add dependency creation rule 
 .dependencies.d: $(CPP_FILES)
-	g++ -DDONT_USE_VERILATOR -MM $(INC_DIRS) $(CPP_FILES) > .dependencies.d
+	g++ -MM $(INC_DIRS) $(CPP_FILES) > .dependencies.d
 
 # include dependencies
 -include .dependencies.d
 
-# compile main.cc
-a.out: $(CPP_FILES) $(LIBRARIES)
-	g++ -o test_wo_ver.exe -DDONT_USE_VERILATOR $(INC_DIRS) main.cc $(CPP_FILES) $(LIBRARIES)
-
 # main with only htif.h
-only_htif.out: $(CPP_FILES) $(LIBRARIES)
-	g++  $(INC_DIRS) main.cc  $(LIBRARIES)
+compile: $(CPP_FILES) $(LIBRARIES)
+	g++  -o polm_bug.exe -O2 $(INC_DIRS) main.cc  $(LIBRARIES)

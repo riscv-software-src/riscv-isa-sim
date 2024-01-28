@@ -1,5 +1,5 @@
-#include "config.h"
 #define COSIMIF
+#include "config.h"
 #include "sim.h"
 #include "mmu.h"
 #include "dts.h"
@@ -51,6 +51,7 @@ void sim_t::htif_start()
 }
 
 void sim_t::idle_single_step(){
+  std::cout << "sim_t::idle_single_step" << std::endl;
   if (done())
     return;
 
@@ -67,17 +68,18 @@ void sim_t::idle_single_step(){
   // std::cout << "sim_t::idle_single_step" << std::endl;
 }
 
-bool sim_t::htif_communication_available()
+bool sim_t::communication_available()
 {
   return htif_t::communication_available();
 }
 
-void sim_t::htif_single_step_without_communication()
+void sim_t::single_step_without_communication()
 {
+  std::cout << "sim_t::single_step_without_communication. object at: " << this << std::endl;
   htif_t::single_step_without_communication();
 }
 
-void sim_t::htif_single_step_with_communication(std::queue<reg_t> *fromhost_queue, std::function<void(reg_t)> fromhost_callback)
+void sim_t::single_step_with_communication(std::queue<reg_t> *fromhost_queue, std::function<void(reg_t)> fromhost_callback)
 {
   htif_t::single_step_with_communication(fromhost_queue, fromhost_callback);
 }

@@ -11,6 +11,9 @@
 #include <map>
 #include <vector>
 #include <assert.h>
+#ifdef COSIMIF
+#include <iostream>
+#endif
 
 class htif_t : public chunked_memif_t
 {
@@ -24,6 +27,18 @@ class htif_t : public chunked_memif_t
   virtual void stop();
 
   int run();
+
+  // ekleme
+  bool communication_available();
+  void single_step_without_communication();
+  void single_step_with_communication(std::queue<reg_t> *fromhost_queue, std::function<void(reg_t)> fromhost_callback);
+  
+  #ifdef COSIMIF_POLIMORPH_TEST
+  protected:
+  void use_idle();
+  #warning htif_t::use_idle() is added
+  public:
+  #endif
   bool done();
   int exit_code();
   void set_expected_xlen(unsigned int m) { expected_xlen = m; }
@@ -60,13 +75,11 @@ class htif_t : public chunked_memif_t
 
   virtual std::map<std::string, uint64_t> load_payload(const std::string& payload, reg_t* entry);
   virtual void load_program();
-  virtual void idle() {}
+  virtual void idle() { }
 #ifdef COSIMIF
-  virtual void idle_single_step() {} // !!! ekleme
+  virtual void idle_single_step() {std::cout << "htif_t::idle_single_step"<<std::endl;} // !!! ekleme
+#warning htif_t::idle_single_step() is addded
 #endif
-  bool communication_available();
-  void single_step_without_communication();
-  void single_step_with_communication(std::queue<reg_t> *fromhost_queue, std::function<void(reg_t)> fromhost_callback);
   
 
   const std::vector<std::string>& host_args() { return hargs; }
