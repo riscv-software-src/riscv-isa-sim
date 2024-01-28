@@ -38,11 +38,11 @@ void init()
   std::cout <<__FILE__ <<":" <<__LINE__<< " sim.cfg.startpc.hasval: " << simulation_object->get_cfg().start_pc.has_value() << std::endl;
   std::cout << "simulation object created at: " << simulation_object << std::endl;
   
-  simulation_object->htif_prerun();
+  simulation_object->prerun();
   std::cout <<__FILE__ <<":" <<__LINE__<< " sim.cfg.startpc.hasval: " << simulation_object->get_cfg().start_pc.has_value() << std::endl;
 
 
-  simulation_object->htif_start();
+  ((htif_t*)simulation_object)->start();
   std::cout <<__FILE__ <<":" <<__LINE__<< " sim.cfg.startpc.hasval: " << simulation_object->get_cfg().start_pc.has_value() << std::endl;
 
 

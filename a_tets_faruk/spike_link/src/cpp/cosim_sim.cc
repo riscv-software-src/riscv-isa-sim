@@ -32,12 +32,12 @@
 // bu asagidakini cfg degisiyor mu diye bakmak icin koymustum
 // start_pc yanlis deger hatasi icin
 
-reg_t sim_t::get_entry_point()
-{
-  return htif_t::get_entry_point();
-}
+// reg_t sim_t::htif_get_entry_point()
+// {
+//   return htif_t::get_entry_point();
+// }
 
-void sim_t::htif_prerun()
+void sim_t::prerun()
 {
   if (!debug && log)
     set_procs_debug(true);
@@ -45,10 +45,10 @@ void sim_t::htif_prerun()
   htif_t::set_expected_xlen(isa.get_max_xlen());
 }
 
-void sim_t::htif_start()
-{
-  htif_t::start();
-}
+// void sim_t::htif_start()
+// {
+//   htif_t::start();
+// }
 
 void sim_t::idle_single_step(){
   std::cout << "sim_t::idle_single_step" << std::endl;

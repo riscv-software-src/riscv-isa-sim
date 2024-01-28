@@ -40,13 +40,13 @@ public:
 
   // !!! ekleme
   
-  // bu asagidakini cfg degisiyor mu diye bakmak icin koymustum
-  // start_pc yanlis deger hatasi icin
-  reg_t get_entry_point();
+  // // bu asagidakini cfg degisiyor mu diye bakmak icin koymustum
+  // // start_pc yanlis deger hatasi icin
+  // reg_t htif_get_entry_point();
   
   // !!! run'un implementasyonuna bak.
-  void htif_prerun();
-  void htif_start();
+  void prerun();
+  // void htif_start();
   bool communication_available();
   void single_step_without_communication();
   void single_step_with_communication(std::queue<reg_t> *fromhost_queue, std::function<void(reg_t)> fromhost_callback);
