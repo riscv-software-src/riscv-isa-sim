@@ -9,3 +9,4 @@ autom4te.cache/
 *~
 .vscode
 build2/
+build_sim_modified/
