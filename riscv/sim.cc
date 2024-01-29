@@ -326,6 +326,7 @@ bool sim_t::mmio_load(reg_t paddr, size_t len, uint8_t* bytes)
   if (paddr + len < paddr || !paddr_ok(paddr + len - 1))
     return false;
   return bus.load(paddr, len, bytes);
+  
 }
 
 bool sim_t::mmio_store(reg_t paddr, size_t len, const uint8_t* bytes)
@@ -335,14 +336,18 @@ bool sim_t::mmio_store(reg_t paddr, size_t len, const uint8_t* bytes)
   return bus.store(paddr, len, bytes);
 }
 
+
+
 void sim_t::set_rom()
 {
   const int reset_vec_size = 8;
 
 // bu asagidakini cfg degisiyor mu diye bakmak icin koymustum
 // start_pc yanlis deger hatasi icin
+#if DEBUG_LEVEL >= DEBUG_WARN
   std::cout << __FILE__<<":"<<__LINE__<< " object at:" << this << 
   " sim.cfg.startpc.hasval: " << get_cfg().start_pc.has_value() << std::endl;
+#endif
 
   reg_t start_pc = cfg->start_pc.value_or(get_entry_point());
   uint64_t val =(uint64_t) start_pc;

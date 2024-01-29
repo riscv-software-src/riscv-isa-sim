@@ -100,8 +100,10 @@ void htif_t::single_step_without_communication()
 {
   //polimorfizm hatasi icin
   // idle();
+  #if DEBUG_LEVEL >= DEBUG_WARN
   std::cout << "htif_t::single_step_without_communication" 
   " object at "<< this << " calling idle_single_step" <<std::endl;
+  #endif
   // htif_t::idle_single_step();
   idle_single_step();
 }

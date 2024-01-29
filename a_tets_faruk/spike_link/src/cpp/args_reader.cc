@@ -37,7 +37,7 @@ argv_argc_t *read_args_from_file(const char *filename)
         return NULL;
     }
     DEBUG_PRINT_WARN("filename = %s, file pointer = %p\n", filename, file);
-
+    printf("reading args from file: %s\n", filename);
     // Read file content
     fseek(file, 0, SEEK_END);
     long length = ftell(file);

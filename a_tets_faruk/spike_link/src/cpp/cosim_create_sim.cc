@@ -635,18 +635,20 @@ sim_t *create_sim_with_args(int argc, char **argv)
   // bu asagidakini cfg degisiyor mu diye bakmak icin koymustum
   // start_pc yanlis deger hatasi icin
   // printf("****cosim_create found pc in args: %s\n", s);
-  std::cout <<__FILE__<<":"<<__LINE__<< "cfg start_pc has value: " << cfg.start_pc.has_value() <<std::endl;
-  
+  #if DEBUG_LEVEL >= DEBUG_WARN
+  std::cout <<__FILE__<<":"<<__LINE__<< " cfg start_pc has value: " << cfg.start_pc.has_value() <<std::endl;
+  #endif
   sim_t *simulation_object = new sim_t(&cfg, halted,
                                      mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
                                      socket,
                                      cmd_file);
                                      
-  std::cout << __FILE__<<":"<<__LINE__<< "object at:" << simulation_object << 
+  #if DEBUG_LEVEL >= DEBUG_WARN
+  std::cout << __FILE__<<":"<<__LINE__<< " object at:" << simulation_object << 
   " sim.cfg.startpc.hasval: " << simulation_object->get_cfg().start_pc.has_value() << std::endl;
 
-  std::cout <<__FILE__<<":"<<__LINE__<< "cfg start_pc has value: " << cfg.start_pc.has_value() <<std::endl;
-  
+  std::cout <<__FILE__<<":"<<__LINE__<< " cfg start_pc has value: " << cfg.start_pc.has_value() <<std::endl;
+  #endif
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *)NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&(simulation_object->debug_module), dmi_rti));

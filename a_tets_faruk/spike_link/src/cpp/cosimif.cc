@@ -35,15 +35,23 @@ void init()
   auto argc_argv = read_args_from_file("/home/usr1/riscv-isa-sim/a_tets_faruk/spike_link/log/args.txt");
 
   simulation_object = create_sim_with_args(argc_argv->argc, argc_argv->argv);
+
+  #if DEBUG_LEVEL >= DEBUG_WARN
   std::cout <<__FILE__ <<":" <<__LINE__<< " sim.cfg.startpc.hasval: " << simulation_object->get_cfg().start_pc.has_value() << std::endl;
   std::cout << "simulation object created at: " << simulation_object << std::endl;
-  
+  #endif
   simulation_object->prerun();
+
+  #if DEBUG_LEVEL >= DEBUG_WARN
   std::cout <<__FILE__ <<":" <<__LINE__<< " sim.cfg.startpc.hasval: " << simulation_object->get_cfg().start_pc.has_value() << std::endl;
+  #endif
 
 
   ((htif_t*)simulation_object)->start();
+
+  #if DEBUG_LEVEL >= DEBUG_WARN
   std::cout <<__FILE__ <<":" <<__LINE__<< " sim.cfg.startpc.hasval: " << simulation_object->get_cfg().start_pc.has_value() << std::endl;
+  #endif
 
 
   auto enq_func = [](std::queue<reg_t> *q, uint64_t x)
@@ -58,6 +66,7 @@ void init()
 
   if (simulation_object->communication_available())
   {
+    printf("communication_available() is true\n");
     step_callback = std::bind(&sim_t::single_step_with_communication, simulation_object, &fromhost_queue, fromhost_callback);
   }
   else
@@ -69,7 +78,9 @@ void init()
 
 void step()
 {
+  #if DEBUG_LEVEL >= DEBUG_WARN
   std::cout << "cosimif.cc: step. callback address: " << &step_callback << std::endl;
+  #endif
   step_callback();
 }
 
