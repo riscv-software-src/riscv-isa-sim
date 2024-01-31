@@ -21,6 +21,13 @@
     require(insn.rd() != insn.rs2()); \
   } while (false)
 
+#define require_vkeccak_vi_constraints \
+  do { \
+    require_zvkk; \
+    require(P.VU.vsew == 64); \
+    require_egw_fits(2048); \
+  } while (false)
+
 // vaes*.vv instruction constraints. Those are the same as the .vs ones,
 // except for the overlap constraint that is not present for .vv variants.
 //  - Zvkned is enabled

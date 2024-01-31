@@ -84,6 +84,10 @@ using EGU64x4_t = std::array<uint64_t, 4>;
 // Element Group of 16 8 bits elements (128b total).
 using EGU8x16_t = std::array<uint8_t, 16>;
 
+
+// Element Group of 32 64 bits elements (2048 total).
+using EGU64x32_t = std::array<uint64_t, 32>;
+
 class vectorUnit_t
 {
 public:
