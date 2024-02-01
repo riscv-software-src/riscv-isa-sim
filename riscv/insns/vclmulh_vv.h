@@ -7,8 +7,8 @@ require_either_extension_condition(EXT_ZVBC, P.VU.vsew == 64, EXT_ZVBC32E, P.VU.
 
 VI_VV_ULOOP
 ({
-  // Perform a carryless multiplication 64bx64b on each 64b element,
-  // return the high 64b of the 128b product.
+  // Perform a carryless multiplication SEW-bit x SEW-bit on each SEW-bit element,
+  // return the high SEW bits of the (2.SEW)-bit product.
   //   <https://en.wikipedia.org/wiki/Carry-less_product>
   vd = 0;
   for (std::size_t bit_idx = 1; bit_idx < sew; ++bit_idx) {
