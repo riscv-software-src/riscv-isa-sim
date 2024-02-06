@@ -76,6 +76,8 @@ typedef enum {
   EXT_XZBR,
   EXT_XZBT,
   EXT_SSTC,
+  EXT_ZAAMO,
+  EXT_ZALRSC,
   EXT_ZACAS,
   EXT_ZABHA,
   EXT_INTERNAL_ZFH_MOVE,
@@ -85,6 +87,7 @@ typedef enum {
   EXT_ZIMOP,
   EXT_ZCMOP,
   EXT_ZALASR,
+  EXT_SSQOSID,
   NUM_ISA_EXTENSIONS
 } isa_extension_t;
 

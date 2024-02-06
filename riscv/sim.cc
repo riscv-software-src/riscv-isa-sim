@@ -180,14 +180,18 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   }
 
   //per core attribute
-  int cpu_offset = 0, rc;
+  int cpu_offset = 0, cpu_map_offset, rc;
   size_t cpu_idx = 0;
   cpu_offset = fdt_get_offset(fdt, "/cpus");
+  cpu_map_offset = fdt_get_offset(fdt, "/cpus/cpu-map");
   if (cpu_offset < 0)
     return;
 
   for (cpu_offset = fdt_get_first_subnode(fdt, cpu_offset); cpu_offset >= 0;
        cpu_offset = fdt_get_next_subnode(fdt, cpu_offset)) {
+
+    if (!(cpu_map_offset < 0) && cpu_offset == cpu_map_offset)
+      continue;
 
     if (cpu_idx >= nprocs())
       break;

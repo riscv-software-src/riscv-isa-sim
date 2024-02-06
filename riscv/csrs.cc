@@ -648,7 +648,7 @@ misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t ma
   basic_csr_t(proc, addr, max_isa),
   max_isa(max_isa),
 #if defined(CPU_ROCKET_CHIP)
-  write_mask(max_isa & (0  // allow MAFDQCHV bits in MISA to be modified
+  write_mask(max_isa & (0  // allow MAFDCV bits in MISA to be modified
                         | (1L << ('M' - 'A'))
                         | (1L << ('A' - 'A'))
                         | (1L << ('F' - 'A'))
@@ -659,9 +659,10 @@ misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t ma
 #elif defined(CPU_NUTSHELL) || defined (CPU_XIANGSHAN)
   write_mask(0 // not allowed
 #else
-  write_mask(max_isa & (0  // allow MAFDQCHV bits in MISA to be modified
+  write_mask(max_isa & (0  // allow MABFDQCHV bits in MISA to be modified
                         | (1L << ('M' - 'A'))
                         | (1L << ('A' - 'A'))
+                        | (1L << ('B' - 'A'))
                         | (1L << ('F' - 'A'))
                         | (1L << ('D' - 'A'))
                         | (1L << ('Q' - 'A'))
@@ -703,6 +704,11 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   proc->set_extension_enable(EXT_ZFHMIN, new_misa & (1L << ('F' - 'A')));
   proc->set_extension_enable(EXT_ZVFH, (new_misa & (1L << ('V' - 'A'))) && proc->extension_enabled(EXT_ZFHMIN));
   proc->set_extension_enable(EXT_ZVFHMIN, new_misa & (1L << ('V' - 'A')));
+  proc->set_extension_enable(EXT_ZAAMO, (new_misa & (1L << ('A' - 'A'))) || !proc->get_isa().extension_enabled('A'));
+  proc->set_extension_enable(EXT_ZALRSC, (new_misa & (1L << ('A' - 'A'))) || !proc->get_isa().extension_enabled('A'));
+  proc->set_extension_enable(EXT_ZBA, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
+  proc->set_extension_enable(EXT_ZBB, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
+  proc->set_extension_enable(EXT_ZBS, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
 
   // update the hypervisor-only bits in MEDELEG and other CSRs
   if (!new_h && prev_h) {
@@ -1088,7 +1094,7 @@ reg_t wide_counter_csr_t::written_value() const noexcept {
 // Note that minstretcfg / mcyclecfg / mhpmevent* share the same inhibit bits.
 bool wide_counter_csr_t::is_counting_enabled() const noexcept {
   auto prv = state->prv_changed ? state->prev_prv : state->prv;
-  auto v = state->v_changed ? state->v : state->prev_v;
+  auto v = state->v_changed ? state->prev_v : state->v;
   auto mask = MHPMEVENT_MINH;
   if (prv == PRV_S) {
     mask = v ? MHPMEVENT_VSINH : MHPMEVENT_SINH;
@@ -1781,4 +1787,23 @@ void smcntrpmf_csr_t::reset_prev() noexcept {
 bool smcntrpmf_csr_t::unlogged_write(const reg_t val) noexcept {
   prev_val = read();
   return masked_csr_t::unlogged_write(val);
+}
+
+srmcfg_csr_t::srmcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  masked_csr_t(proc, addr, mask, init) {
+}
+
+void srmcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
+  csr_t::verify_permissions(insn, write);
+
+  if (!proc->extension_enabled(EXT_SSQOSID))
+    throw trap_illegal_instruction(insn.bits());
+
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_PRIV114))
+      throw trap_illegal_instruction(insn.bits());
+  }
+
+  if (state->v)
+      throw trap_virtual_instruction(insn.bits());
 }
