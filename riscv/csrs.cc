@@ -1079,7 +1079,8 @@ void time_counter_csr_t::sync(const reg_t val) noexcept {
   if (proc->extension_enabled(EXT_SSTC)) {
     const reg_t mip_val = (shadow_val >= state->stimecmp->read() ? MIP_STIP : 0) |
       (shadow_val + state->htimedelta->read() >= state->vstimecmp->read() ? MIP_VSTIP : 0);
-    state->mip->backdoor_write_with_mask(MIP_STIP | MIP_VSTIP, mip_val);
+    const reg_t mask = ((state->menvcfg->read() & MENVCFG_STCE) ? MIP_STIP : 0) | ((state->henvcfg->read() & HENVCFG_STCE) ? MIP_VSTIP : 0);
+    state->mip->backdoor_write_with_mask(mask, mip_val);
   }
 }
 
@@ -1537,7 +1538,8 @@ stimecmp_csr_t::stimecmp_csr_t(processor_t* const proc, const reg_t addr, const 
 }
 
 bool stimecmp_csr_t::unlogged_write(const reg_t val) noexcept {
-  state->mip->backdoor_write_with_mask(intr_mask, state->time->read() >= val ? intr_mask : 0);
+  const reg_t mask = ((state->menvcfg->read() & MENVCFG_STCE) ? MIP_STIP : 0) | ((state->henvcfg->read() & HENVCFG_STCE) ? MIP_VSTIP : 0);
+  state->mip->backdoor_write_with_mask(mask, state->time->read() >= val ? intr_mask : 0);
   return basic_csr_t::unlogged_write(val);
 }
 
