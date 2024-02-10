@@ -82,7 +82,7 @@ public:
   int64_t shamt() { return x(20, 6); }
   int64_t s_imm() { return x(7, 5) + (xs(25, 7) << 5); }
   int64_t sb_imm() { return (x(8, 4) << 1) + (x(25, 6) << 5) + (x(7, 1) << 11) + (imm_sign() << 12); }
-  int64_t u_imm() { return xs(12, 20) << 12; }
+  int64_t u_imm() { return int64_t(b) & 0xfffff000; }
   int64_t uj_imm() { return (x(21, 10) << 1) + (x(20, 1) << 11) + (x(12, 8) << 12) + (imm_sign() << 20); }
   uint64_t rd() { return x(7, 5); }
   uint64_t rs1() { return x(15, 5); }
