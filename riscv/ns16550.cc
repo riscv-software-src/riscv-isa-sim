@@ -2,6 +2,7 @@
 #include <sstream>
 #include "devices.h"
 #include "processor.h"
+#include "mmu.h"
 #include "term.h"
 #include "sim.h"
 #include "dts.h"
@@ -170,6 +171,9 @@ bool ns16550_t::load(reg_t addr, size_t len, uint8_t* bytes)
   if (reg_io_width != len) {
     return false;
   }
+  if (addr + len > PGSIZE) {
+    return false;
+  }
   addr >>= reg_shift;
   addr &= 7;
 
@@ -228,6 +232,9 @@ bool ns16550_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   bool ret = true, update = false;
 
   if (reg_io_width != len) {
+    return false;
+  }
+  if (addr + len > PGSIZE) {
     return false;
   }
   addr >>= reg_shift;
