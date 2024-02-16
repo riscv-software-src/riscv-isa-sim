@@ -1,0 +1,84 @@
+softfloat_8_subproject_deps = \
+  softfloat
+
+softfloat_8_hdrs = \
+  internals.h \
+  primitives.h \
+  softfloat.h \
+  softfloat_types.h \
+  specialize.h \
+
+softfloat_8_c_srcs = \
+  bf16_to_f8_1.c \
+  bf16_to_f8_2.c \
+  bf16_to_i8.c \
+  bf16_to_ui8.c \
+	f8_1_2_recip7_rsqrte7.c \
+  f8_1_add.c \
+	f8_1_div.c \
+	f8_1_sqrt.c \
+	f8_1_classify.c \
+  f8_1_eq.c \
+	f8_1_le.c \
+	f8_1_lt.c \
+  f8_1_lt_quiet.c \
+  f8_1_max_min.c \
+  f8_1_mul.c \
+  f8_1_mulAdd.c \
+  f8_1_sub.c \
+  f8_1_to_bf16.c \
+  f8_1_to_f8_2.c \
+  f8_1_to_i8.c \
+  f8_1_to_i16.c \
+  f8_1_to_i32.c \
+  f8_1_to_ui8.c \
+  f8_1_to_ui16.c \
+  f8_1_to_ui32.c \
+  f8_2_add.c \
+ 	f8_2_div.c \
+	f8_2_sqrt.c \
+	f8_2_classify.c \
+  f8_2_eq.c \
+	f8_2_le.c \
+	f8_2_lt.c \
+  f8_2_lt_quiet.c \
+  f8_2_max_min.c \
+  f8_2_mul.c \
+  f8_2_mulAdd.c \
+  f8_2_sub.c \
+  f8_2_to_bf16.c \
+  f8_2_to_f8_1.c \
+  f8_2_to_i8.c \
+  f8_2_to_i16.c \
+  f8_2_to_i32.c \
+  f8_2_to_ui8.c \
+  f8_2_to_ui16.c \
+  f8_2_to_ui32.c \
+  i8_to_bf16.c \
+	i32_to_f8_1.c \
+	i32_to_f8_2.c \
+  s_addMagsF8_1.c \
+  s_addMagsF8_2.c \
+  s_mulAddF8_1.c \
+  s_mulAddF8_2.c \
+  s_normSubnormalF8_1Sig.c \
+  s_normSubnormalF8_2Sig.c \
+  s_propagateNaNF8_1UI.c \
+  s_propagateNaNF8_2UI.c \
+  s_roundPackToF8_1.c \
+  s_roundPackToF8_2.c \
+  s_subMagsF8_1.c \
+  s_subMagsF8_2.c \
+  ui8_to_bf16.c \
+  ui16_to_f8_1.c \
+  ui16_to_f8_2.c \
+  ui32_to_f8_1.c \
+  ui32_to_f8_2.c \
+
+softfloat_8_CFLAGS = -fPIC
+
+softfloat_8_install_shared_lib = yes
+
+softfloat_8_test_srcs =
+
+softfloat_8_install_prog_srcs =
