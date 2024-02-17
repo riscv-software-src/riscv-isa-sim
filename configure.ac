@@ -104,7 +104,7 @@ AX_CHECK_COMPILE_FLAG([-relocatable-pch], AC_SUBST([HAVE_CLANG_PCH],[yes]))
 # The '*' suffix indicates an optional subproject. The '**' suffix
 # indicates an optional subproject which is also the name of a group.
 
-MCPPBS_SUBPROJECTS([ fesvr, riscv, disasm, customext, fdt, softfloat, spike_main, spike_dasm ])
+MCPPBS_SUBPROJECTS([ fesvr, riscv, disasm, customext, fdt, softfloat, softfloat_8, spike_main, spike_dasm ])
 
 #-------------------------------------------------------------------------
 # MCPPBS subproject groups
