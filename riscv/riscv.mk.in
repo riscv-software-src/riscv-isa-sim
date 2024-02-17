@@ -6,6 +6,7 @@ riscv_subproject_deps = \
 	disasm \
 	fesvr \
 	softfloat \
+	softfloat_8 \
 
 riscv_CFLAGS = -fPIC
 

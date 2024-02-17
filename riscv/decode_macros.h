@@ -8,6 +8,8 @@
 #include "encoding.h"
 #include "common.h"
 #include "softfloat_types.h"
+#include "softfloat_8/softfloat_types.h"
+#include "softfloat_8/specialize.h"
 #include "specialize.h"
 
 // helpful macros, etc
@@ -223,6 +225,10 @@ class wait_for_interrupt_t {};
 #define invalid_pc(pc) ((pc) & 1)
 
 /* Convenience wrappers to simplify softfloat code sequences */
+#define isBoxedF8_1(r) (isBoxedF16(r) && ((uint64_t)((r.v[0] >> 8) + 1) == ((uint64_t)1 << 56)))
+#define unboxF8_1(r) (isBoxedF8_1(r) ? (uint8_t)r.v[0] : defaultNaNF8_1UI)
+#define isBoxedF8_2(r) (isBoxedF16(r) && ((uint64_t)((r.v[0] >> 8) + 1) == ((uint64_t)1 << 56)))
+#define unboxF8_2(r) (isBoxedF8_2(r) ? (uint8_t)r.v[0] : defaultNaNF8_2UI)
 #define isBoxedF16(r) (isBoxedF32(r) && ((uint64_t)((r.v[0] >> 16) + 1) == ((uint64_t)1 << 48)))
 #define unboxF16(r) (isBoxedF16(r) ? (uint16_t)r.v[0] : defaultNaNF16UI)
 #define isBoxedBF16(r) isBoxedF16(r)
@@ -231,10 +237,14 @@ class wait_for_interrupt_t {};
 #define unboxF32(r) (isBoxedF32(r) ? (uint32_t)r.v[0] : defaultNaNF32UI)
 #define isBoxedF64(r) ((r.v[1] + 1) == 0)
 #define unboxF64(r) (isBoxedF64(r) ? r.v[0] : defaultNaNF64UI)
+inline float8_1_t f8_1(uint8_t v) { return { v }; }
+inline float8_2_t f8_2(uint8_t v) { return { v }; }
 inline float16_t f16(uint16_t v) { return { v }; }
 inline bfloat16_t bf16(uint16_t v) { return { v }; }
 inline float32_t f32(uint32_t v) { return { v }; }
 inline float64_t f64(uint64_t v) { return { v }; }
+inline float8_1_t f8_1(freg_t r) { return f8_1(unboxF8_1(r)); }
+inline float8_2_t f8_2(freg_t r) { return f8_2(unboxF8_2(r)); }
 inline float16_t f16(freg_t r) { return f16(unboxF16(r)); }
 inline bfloat16_t bf16(freg_t r) { return bf16(unboxBF16(r)); }
 inline float32_t f32(freg_t r) { return f32(unboxF32(r)); }
@@ -244,9 +254,14 @@ inline freg_t freg(float16_t f) { return { ((uint64_t)-1 << 16) | f.v, (uint64_t
 inline freg_t freg(float32_t f) { return { ((uint64_t)-1 << 32) | f.v, (uint64_t)-1 }; }
 inline freg_t freg(float64_t f) { return { f.v, (uint64_t)-1 }; }
 inline freg_t freg(float128_t f) { return f; }
+#define F8_SIGN ((uint8_t)1 << 7)
 #define F16_SIGN ((uint16_t)1 << 15)
 #define F32_SIGN ((uint32_t)1 << 31)
 #define F64_SIGN ((uint64_t)1 << 63)
+#define fsgnj8_1(a, b, n, x) \
+  f8_1((f8_1(a).v & ~F8_SIGN) | ((((x) ? f8_1(a).v : (n) ? F8_SIGN : 0) ^ f8_1(b).v) & F8_SIGN))
+#define fsgnj8_2(a, b, n, x) \
+  f8_2((f8_2(a).v & ~F8_SIGN) | ((((x) ? f8_2(a).v : (n) ? F8_SIGN : 0) ^ f8_2(b).v) & F8_SIGN))
 #define fsgnj16(a, b, n, x) \
   f16((f16(a).v & ~F16_SIGN) | ((((x) ? f16(a).v : (n) ? F16_SIGN : 0) ^ f16(b).v) & F16_SIGN))
 #define fsgnj32(a, b, n, x) \
@@ -286,6 +301,8 @@ inline long double to_f(float128_t f) { long double r; memcpy(&r, &f, sizeof(r))
 
 // Vector macros
 #define e8 8      // 8b elements
+#define e8_1 0    // 1-4-3 subsets of e8
+#define e8_2 1    // 1-5-2 subsets of e8
 #define e16 16    // 16b elements
 #define e32 32    // 32b elements
 #define e64 64    // 64b elements

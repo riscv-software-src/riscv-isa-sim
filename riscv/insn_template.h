@@ -4,6 +4,8 @@
 #include "arith.h"
 #include "mmu.h"
 #include "softfloat.h"
+#include "softfloat_8/softfloat_types.h"
+#include "softfloat_8/specialize.h"
 #include "internals.h"
 #include "specialize.h"
 #include "tracer.h"

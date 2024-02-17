@@ -2,6 +2,12 @@
 bool is_propagate = false;
 VI_VFP_VV_LOOP_REDUCTION
 ({
+  vd_0 = f8_1_add(vd_0, vs2);
+},
+{
+  vd_0 = f8_2_add(vd_0, vs2);
+},
+{
   vd_0 = f16_add(vd_0, vs2);
 },
 {

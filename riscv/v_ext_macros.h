@@ -1443,9 +1443,11 @@ reg_t index[P.VU.vlmax]; \
 //
 // vector: vfp helper
 //
+// AAA check whether to add extensions
 #define VI_VFP_COMMON \
   require_fp; \
-  require((P.VU.vsew == e16 && p->extension_enabled(EXT_ZVFH)) || \
+  require((P.VU.vsew == e8) || \
+          (P.VU.vsew == e16 && p->extension_enabled(EXT_ZVFH)) || \
           (P.VU.vsew == e32 && p->extension_enabled('F')) || \
           (P.VU.vsew == e64 && p->extension_enabled('D'))); \
   require_vector(true); \
@@ -1571,10 +1573,27 @@ reg_t index[P.VU.vlmax]; \
   } \
   P.VU.vstart->write(0);
 
-#define VI_VFP_VV_LOOP(BODY16, BODY32, BODY64) \
+#define VI_VFP_VV_LOOP(BODY8_1, BODY8_2, BODY16, BODY32, BODY64) \
   VI_CHECK_SSS(true); \
   VI_VFP_LOOP_BASE \
   switch (P.VU.vsew) { \
+    case e8: { \
+      switch(P.VU.altfp) { \
+        case e8_1: { \
+          VFP_VV_PARAMS(8_1); \
+          BODY8_1; \
+          set_fp_exceptions; \
+          break; \
+         } \
+         case e8_2: {\
+           VFP_VV_PARAMS(8_2); \
+           BODY8_2; \
+           set_fp_exceptions; \
+           break; \
+         } \
+       } \
+       break;\
+    } \
     case e16: { \
       VFP_VV_PARAMS(16); \
       BODY16; \
@@ -1600,10 +1619,25 @@ reg_t index[P.VU.vlmax]; \
   DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
 
-#define VI_VFP_V_LOOP(BODY16, BODY32, BODY64) \
+#define VI_VFP_V_LOOP(BODY8_1, BODY8_2, BODY16, BODY32, BODY64) \
   VI_CHECK_SSS(false); \
   VI_VFP_LOOP_BASE \
   switch (P.VU.vsew) { \
+    case e8: { \
+      switch(P.VU.altfp) { \
+        case e8_1: { \
+          VFP_V_PARAMS(8_1); \
+          BODY8_1; \
+          break; \
+        } \
+        case e8_2: { \
+          VFP_V_PARAMS(8_2); \
+          BODY8_2; \
+          break; \
+        } \
+      } \
+      break; \
+    } \
     case e16: { \
       VFP_V_PARAMS(16); \
       BODY16; \
@@ -1626,10 +1660,29 @@ reg_t index[P.VU.vlmax]; \
   set_fp_exceptions; \
   VI_VFP_LOOP_END
 
-#define VI_VFP_VV_LOOP_REDUCTION(BODY16, BODY32, BODY64) \
+#define VI_VFP_VV_LOOP_REDUCTION(BODY8_1, BODY8_2, BODY16, BODY32, BODY64) \
   VI_CHECK_REDUCTION(false) \
   VI_VFP_COMMON \
   switch (P.VU.vsew) { \
+    case e8: { \
+      switch(P.VU.altfp) { \
+        case e8_1: { \
+          VI_VFP_LOOP_REDUCTION_BASE(8_1) \
+          BODY8_1; \
+          set_fp_exceptions; \
+          VI_VFP_LOOP_REDUCTION_END(e8) \
+          break; \
+        } \
+        case e8_2: { \
+          VI_VFP_LOOP_REDUCTION_BASE(8_2) \
+          BODY8_2; \
+          set_fp_exceptions; \
+          VI_VFP_LOOP_REDUCTION_END(e8) \
+          break; \
+        } \
+      } \
+      break; \
+    } \
     case e16: { \
       VI_VFP_LOOP_REDUCTION_BASE(16) \
         BODY16; \
@@ -1690,10 +1743,27 @@ reg_t index[P.VU.vlmax]; \
       break; \
   }; \
 
-#define VI_VFP_VF_LOOP(BODY16, BODY32, BODY64) \
+#define VI_VFP_VF_LOOP(BODY8_1, BODY8_2, BODY16, BODY32, BODY64) \
   VI_CHECK_SSS(false); \
   VI_VFP_LOOP_BASE \
   switch (P.VU.vsew) { \
+    case e8: { \
+      switch(P.VU.altfp) { \
+        case e8_1: { \
+          VFP_VF_PARAMS(8_1); \
+          BODY8_1; \
+          set_fp_exceptions; \
+          break; \
+        } \
+        case e8_2: { \
+          VFP_VF_PARAMS(8_2); \
+          BODY8_2; \
+          set_fp_exceptions; \
+          break; \
+        } \
+      } \
+      break; \
+    } \
     case e16: { \
       VFP_VF_PARAMS(16); \
       BODY16; \
@@ -1719,10 +1789,27 @@ reg_t index[P.VU.vlmax]; \
   DEBUG_RVV_FP_VF; \
   VI_VFP_LOOP_END
 
-#define VI_VFP_VV_LOOP_CMP(BODY16, BODY32, BODY64) \
+#define VI_VFP_VV_LOOP_CMP(BODY8_1, BODY8_2, BODY16, BODY32, BODY64) \
   VI_CHECK_MSS(true); \
   VI_VFP_LOOP_CMP_BASE \
   switch (P.VU.vsew) { \
+    case e8: { \
+      switch(P.VU.altfp) { \
+        case e8_1: { \
+          VFP_VV_CMP_PARAMS(8_1); \
+          BODY8_1; \
+          set_fp_exceptions; \
+          break; \
+        } \
+        case e8_2: { \
+          VFP_VV_CMP_PARAMS(8_2); \
+          BODY8_2; \
+          set_fp_exceptions; \
+          break; \
+        } \
+      } \
+      break; \
+    } \
     case e16: { \
       VFP_VV_CMP_PARAMS(16); \
       BODY16; \
@@ -1747,10 +1834,27 @@ reg_t index[P.VU.vlmax]; \
   }; \
   VI_VFP_LOOP_CMP_END \
 
-#define VI_VFP_VF_LOOP_CMP(BODY16, BODY32, BODY64) \
+#define VI_VFP_VF_LOOP_CMP(BODY8_1, BODY8_2, BODY16, BODY32, BODY64) \
   VI_CHECK_MSS(false); \
   VI_VFP_LOOP_CMP_BASE \
   switch (P.VU.vsew) { \
+    case e8: { \
+      switch(P.VU.altfp) { \
+        case e8_1: { \
+          VFP_VF_CMP_PARAMS(8_1); \
+          BODY8_1; \
+          set_fp_exceptions; \
+          break; \
+        } \
+        case e8_2: { \
+          VFP_VF_CMP_PARAMS(8_2); \
+          BODY8_2; \
+          set_fp_exceptions; \
+          break; \
+        } \
+      } \
+      break; \
+    } \
     case e16: { \
       VFP_VF_CMP_PARAMS(16); \
       BODY16; \
@@ -1939,10 +2043,30 @@ reg_t index[P.VU.vlmax]; \
   set_fp_exceptions; \
   VI_VFP_LOOP_END
 
-#define VI_VFP_CVT_INT_TO_FP(BODY16, BODY32, BODY64, sign) \
+// AAA insert extension if extension was added
+#define VI_VFP_CVT_INT_TO_FP(BODY8_1, BODY8_2, BODY16, BODY32, BODY64, sign) \
   VI_CHECK_SSS(false); \
   VI_VFP_COMMON \
   switch (P.VU.vsew) { \
+    case e8: { \
+      switch(P.VU.altfp) { \
+        case e8_1: { \
+        { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(8, 8_1, sign), \
+          , \
+          BODY8_1); \
+          } \
+          break; \
+        } \
+        case e8_2: { \
+          { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(8, 8_2, sign), \
+          , \
+          BODY8_2); \
+          } \
+          break; \
+        } \
+      } \
+      break; \
+    } \
     case e16: \
       { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(16, 16, sign), \
         { p->extension_enabled(EXT_ZVFH); }, \
@@ -1963,10 +2087,29 @@ reg_t index[P.VU.vlmax]; \
       break; \
   }
 
-#define VI_VFP_CVT_FP_TO_INT(BODY16, BODY32, BODY64, sign) \
+#define VI_VFP_CVT_FP_TO_INT(BODY8_1, BODY8_2, BODY16, BODY32, BODY64, sign) \
   VI_CHECK_SSS(false); \
   VI_VFP_COMMON \
   switch (P.VU.vsew) { \
+    case e8: { \
+      switch(P.VU.altfp) { \
+        case e8_1: { \
+        { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(8_1, 8, sign), \
+          , \
+          BODY8_1); \
+          } \
+          break; \
+        } \
+        case e8_2: { \
+          { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(8_2, 8, sign), \
+          , \
+          BODY8_2); \
+          } \
+          break; \
+        } \
+      } \
+      break; \
+    } \
     case e16: \
       { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(16, 16, sign), \
         { p->extension_enabled(EXT_ZVFH); }, \

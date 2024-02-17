@@ -8,6 +8,8 @@
 #endif
 
 #include "../softfloat/softfloat_types.h"
+#include "../softfloat_8/softfloat_types.h"
+#include "../softfloat_8/specialize.h"
 #include <algorithm>
 #include <cstdint>
 #include <string.h>

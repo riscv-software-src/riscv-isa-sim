@@ -1,6 +1,12 @@
 // vfnmacc: vd[i] = -(f[rs1] * vs2[i]) - vd[i]
 VI_VFP_VF_LOOP
 ({
+  vd = f8_1_mulAdd(rs1, f8_1(vs2.v ^ F8_SIGN), f8_1(vd.v ^ F8_SIGN));
+},
+{
+  vd = f8_2_mulAdd(rs1, f8_2(vs2.v ^ F8_SIGN), f8_2(vd.v ^ F8_SIGN));
+},
+{
   vd = f16_mulAdd(rs1, f16(vs2.v ^ F16_SIGN), f16(vd.v ^ F16_SIGN));
 },
 {

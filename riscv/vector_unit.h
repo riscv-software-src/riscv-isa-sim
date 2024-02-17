@@ -95,6 +95,7 @@ public:
   reg_t vlenb;
   csr_t_p vxsat;
   vector_csr_t_p vxrm, vstart, vl, vtype;
+  int altfp;
   reg_t vma, vta;
   reg_t vsew;
   float vflmul;
