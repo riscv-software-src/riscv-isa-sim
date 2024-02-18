@@ -55,6 +55,8 @@ softfloat_8_c_srcs = \
   f8_2_to_ui16.c \
   f8_2_to_ui32.c \
   i8_to_bf16.c \
+  i16_to_f8_1.c \
+  i16_to_f8_2.c \
 	i32_to_f8_1.c \
 	i32_to_f8_2.c \
   s_addMagsF8_1.c \

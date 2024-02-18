@@ -586,7 +586,20 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   VI_VFP_COMMON \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
   VI_MERGE_VARS \
-  if (P.VU.vsew == e16) { \
+  if (P.VU.vsew == e8) { \
+    switch(P.VU.altfp) { \
+      case e8_1: { \
+        VFP_VF_PARAMS(8_1); \
+        BODY; \
+        break; \
+      } \
+      case e8_2: { \
+        VFP_VF_PARAMS(8_2); \
+        BODY; \
+        break; \
+      } \
+    } \
+  } else if (P.VU.vsew == e16) { \
     VFP_VF_PARAMS(16); \
     BODY; \
   } else if (P.VU.vsew == e32) { \
@@ -2145,6 +2158,26 @@ reg_t index[P.VU.vlmax]; \
       break; \
   }
 
+#define VI_VFP_WCVT_FP8_TO_BF16(BODY8_1, BODY8_2, CHECK) \
+  VI_CHECK_DSS(false); \
+  switch (P.VU.vsew) { \
+    case e8: \
+      switch(P.VU.altfp) { \
+        case e8_1: { \
+          { VI_VFP_CVT_LOOP(CVT_FP_TO_FP_PARAMS(8_1, 16), CHECK, BODY8_1); } \
+          break; \
+        } \
+        case e8_2: { \
+          { VI_VFP_CVT_LOOP(CVT_FP_TO_FP_PARAMS(8_2, 16), CHECK, BODY8_2); } \
+          break; \
+        } \
+      } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
+
 #define VI_VFP_WCVT_FP_TO_BF16(BODY, CHECK) \
   VI_CHECK_DSS(false); \
   switch (P.VU.vsew) { \
@@ -2175,11 +2208,23 @@ reg_t index[P.VU.vlmax]; \
       break; \
   }
 
-#define VI_VFP_WCVT_FP_TO_INT(BODY16, BODY32, \
+#define VI_VFP_WCVT_FP_TO_INT(BODY8_1, BODY8_2, BODY16, BODY32, \
                               CHECK16, CHECK32, \
                               sign) \
   VI_CHECK_DSS(false); \
   switch (P.VU.vsew) { \
+    case e8: \
+      switch(P.VU.altfp) { \
+        case e8_1: { \
+          { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(8_1, 16, sign), CHECK16, BODY8_1); } \
+          break; \
+        } \
+        case e8_2: { \
+          { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(8_2, 16, sign), CHECK16, BODY8_2); } \
+          break; \
+        } \
+      } \
+      break; \
     case e16: \
       { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(16, 32, sign), CHECK16, BODY16); } \
       break; \
@@ -2206,6 +2251,26 @@ reg_t index[P.VU.vlmax]; \
       break; \
   }
 
+#define VI_VFP_NCVT_BF16_TO_F8(BODY8_1, BODY8_2, CHECK) \
+  VI_CHECK_SDS(false); \
+  switch (P.VU.vsew) { \
+    case e8: \
+      switch(P.VU.altfp) { \
+        case e8_1: { \
+          { VI_VFP_CVT_LOOP(CVT_FP_TO_FP_PARAMS(16, 8_1), CHECK, BODY8_1); } \
+          break; \
+        } \
+        case e8_2: { \
+          { VI_VFP_CVT_LOOP(CVT_FP_TO_FP_PARAMS(16, 8_2), CHECK, BODY8_2); } \
+          break; \
+        } \
+      } \
+      break; \
+    default: \
+      require(0); \
+      break; \
+  }
+
 #define VI_VFP_NCVT_BF16_TO_FP(BODY, CHECK) \
   VI_CHECK_SDS(false); \
   switch (P.VU.vsew) { \
@@ -2217,11 +2282,24 @@ reg_t index[P.VU.vlmax]; \
       break; \
   }
 
-#define VI_VFP_NCVT_INT_TO_FP(BODY32, BODY64, \
+#define VI_VFP_NCVT_INT_TO_FP(BODY8_1, BODY8_2, \
+                              BODY32, BODY64, \
                               CHECK32, CHECK64, \
                               sign) \
   VI_CHECK_SDS(false); \
   switch (P.VU.vsew) { \
+    case e8: \
+      switch(P.VU.altfp) { \
+        case e8_1: { \
+          { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(16, 8_1, sign), CHECK32, BODY8_1); } \
+          break; \
+        } \
+        case e8_2: {\
+          { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(16, 8_1, sign), CHECK32, BODY8_1); } \
+          break; \
+        } \
+      } \
+      break; \
     case e16: \
       { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(32, 16, sign), CHECK32, BODY32); } \
       break; \

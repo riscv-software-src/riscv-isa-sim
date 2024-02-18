@@ -1,7 +1,8 @@
 // vfmv_f_s: rd = vs2[0] (rs1=0)
 require_vector(true);
 require_fp;
-require((P.VU.vsew == e16 && p->extension_enabled(EXT_ZVFH)) ||
+require((P.VU.vsew == e8) ||
+        (P.VU.vsew == e16 && p->extension_enabled(EXT_ZVFH)) ||
         (P.VU.vsew == e32 && p->extension_enabled('F')) ||
         (P.VU.vsew == e64 && p->extension_enabled('D')));
 require(STATE.frm->read() < 0x5);
@@ -10,6 +11,9 @@ reg_t rs2_num = insn.rs2();
 uint64_t vs2_0 = 0;
 const reg_t sew = P.VU.vsew;
 switch (sew) {
+  case e8:
+    vs2_0 = P.VU.elt<uint8_t>(rs2_num, 0);
+    break;
   case e16:
     vs2_0 = P.VU.elt<uint16_t>(rs2_num, 0);
     break;
