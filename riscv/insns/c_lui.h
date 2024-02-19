@@ -4,7 +4,7 @@ if (insn.rvc_rd() == 2) { // c.addi16sp
   WRITE_REG(X_SP, sext_xlen(RVC_SP + insn.rvc_addi16sp_imm()));
 } else if (insn.rvc_imm() != 0) { // c.lui
   WRITE_RD(insn.rvc_imm() << 12);
-} else if ((insn.rvc_rd() & 1) != 0) { // c.mop.N
+} else if ((insn.rvc_rd() & 0x11) == 1) { // c.mop.N
   #include "c_mop_N.h"
 } else {
   require(false);
