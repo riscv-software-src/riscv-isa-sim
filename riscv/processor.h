@@ -321,6 +321,8 @@ public:
 
   void execute_insn_prehook(insn_t insn);
 
+  reg_t select_an_interrupt_with_default_priority(reg_t enabled_interrupts) const;
+
 private:
   const isa_parser_t * const isa;
   const cfg_t * const cfg;
