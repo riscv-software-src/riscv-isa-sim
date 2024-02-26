@@ -241,6 +241,38 @@ void processor_t::set_mmu_capability(int cap)
   }
 }
 
+reg_t processor_t::select_an_interrupt_with_default_priority(reg_t enabled_interrupts) const
+{
+  // nonstandard interrupts have highest priority
+  if (enabled_interrupts >> (IRQ_M_EXT + 1))
+    enabled_interrupts = enabled_interrupts >> (IRQ_M_EXT + 1) << (IRQ_M_EXT + 1);
+  // standard interrupt priority is MEI, MSI, MTI, SEI, SSI, STI
+  else if (enabled_interrupts & MIP_MEIP)
+    enabled_interrupts = MIP_MEIP;
+  else if (enabled_interrupts & MIP_MSIP)
+    enabled_interrupts = MIP_MSIP;
+  else if (enabled_interrupts & MIP_MTIP)
+    enabled_interrupts = MIP_MTIP;
+  else if (enabled_interrupts & MIP_SEIP)
+    enabled_interrupts = MIP_SEIP;
+  else if (enabled_interrupts & MIP_SSIP)
+    enabled_interrupts = MIP_SSIP;
+  else if (enabled_interrupts & MIP_STIP)
+    enabled_interrupts = MIP_STIP;
+  else if (enabled_interrupts & MIP_LCOFIP)
+    enabled_interrupts = MIP_LCOFIP;
+  else if (enabled_interrupts & MIP_VSEIP)
+    enabled_interrupts = MIP_VSEIP;
+  else if (enabled_interrupts & MIP_VSSIP)
+    enabled_interrupts = MIP_VSSIP;
+  else if (enabled_interrupts & MIP_VSTIP)
+    enabled_interrupts = MIP_VSTIP;
+  else
+    abort();
+
+  return enabled_interrupts;
+}
+
 void processor_t::take_interrupt(reg_t pending_interrupts)
 {
   // Do nothing if no pending interrupts
@@ -271,32 +303,7 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
 
   const bool nmie = !(state.mnstatus && !get_field(state.mnstatus->read(), MNSTATUS_NMIE));
   if (!state.debug_mode && nmie && enabled_interrupts) {
-    // nonstandard interrupts have highest priority
-    if (enabled_interrupts >> (IRQ_LCOF + 1))
-      enabled_interrupts = enabled_interrupts >> (IRQ_LCOF + 1) << (IRQ_LCOF + 1);
-    // standard interrupt priority is MEI, MSI, MTI, SEI, SSI, STI
-    else if (enabled_interrupts & MIP_MEIP)
-      enabled_interrupts = MIP_MEIP;
-    else if (enabled_interrupts & MIP_MSIP)
-      enabled_interrupts = MIP_MSIP;
-    else if (enabled_interrupts & MIP_MTIP)
-      enabled_interrupts = MIP_MTIP;
-    else if (enabled_interrupts & MIP_SEIP)
-      enabled_interrupts = MIP_SEIP;
-    else if (enabled_interrupts & MIP_SSIP)
-      enabled_interrupts = MIP_SSIP;
-    else if (enabled_interrupts & MIP_STIP)
-      enabled_interrupts = MIP_STIP;
-    else if (enabled_interrupts & MIP_LCOFIP)
-      enabled_interrupts = MIP_LCOFIP;
-    else if (enabled_interrupts & MIP_VSEIP)
-      enabled_interrupts = MIP_VSEIP;
-    else if (enabled_interrupts & MIP_VSSIP)
-      enabled_interrupts = MIP_VSSIP;
-    else if (enabled_interrupts & MIP_VSTIP)
-      enabled_interrupts = MIP_VSTIP;
-    else
-      abort();
+    enabled_interrupts = select_an_interrupt_with_default_priority(enabled_interrupts);
 
     if (check_triggers_icount) TM.detect_icount_match();
     throw trap_t(((reg_t)1 << (isa.get_max_xlen() - 1)) | ctz(enabled_interrupts));
