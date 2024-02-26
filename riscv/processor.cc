@@ -637,14 +637,18 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   }
 
   mvien = std::make_shared<const_csr_t>(proc, CSR_MVIEN, 0);
+  mvip = std::make_shared<mvip_csr_t>(proc, CSR_MVIP, 0);
   if (proc->extension_enabled_const(EXT_SMAIA)) {
     csrmap[CSR_MTOPI] = std::make_shared<mtopi_csr_t>(proc, CSR_MTOPI);
     if (proc->extension_enabled_const('S')) {
       if (xlen == 32) {
         csrmap[CSR_MVIEN] = std::make_shared<rv32_low_csr_t>(proc, CSR_MVIEN, mvien);
         csrmap[CSR_MVIENH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MVIENH, mvien);
+        csrmap[CSR_MVIP] = std::make_shared<rv32_low_csr_t>(proc, CSR_MVIP, mvip);
+        csrmap[CSR_MVIPH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MVIPH, mvip);
       } else {
         csrmap[CSR_MVIEN] = mvien;
+        csrmap[CSR_MVIP] = mvip;
       }
     }
   }
