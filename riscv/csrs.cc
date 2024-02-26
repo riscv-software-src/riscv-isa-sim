@@ -1993,3 +1993,26 @@ reg_t mtopi_csr_t::read() const noexcept {
 bool mtopi_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
   return false;
 }
+
+mvip_csr_t::mvip_csr_t(processor_t* const proc, const reg_t addr, const reg_t init):
+  basic_csr_t(proc, addr, init) {
+}
+
+reg_t mvip_csr_t::read() const noexcept {
+  const reg_t mip = state->mip->read();
+  const reg_t menvcfg = state->menvcfg->read();
+  return 0
+    | (mip & MIP_SEIP)
+    | ((menvcfg & MENVCFG_STCE) ? 0 : (mip & MIP_STIP))
+    | (mip & MIP_SSIP)
+    ;
+}
+
+bool mvip_csr_t::unlogged_write(const reg_t val) noexcept {
+  state->mip->write_with_mask(MIP_SEIP, val);
+  if (!(state->menvcfg->read() & MENVCFG_STCE))
+    state->mip->write_with_mask(MIP_STIP, val); // mvip.STIP is an alias of mip.STIP when mip.STIP is writable
+  state->mip->write_with_mask(MIP_SSIP, val);
+
+  return false;
+}

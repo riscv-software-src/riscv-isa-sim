@@ -175,6 +175,7 @@ struct state_t
   csr_t_p ssp;
 
   csr_t_p mvien;
+  mvip_csr_t_p mvip;
 
   bool serialized; // whether timer CSRs are in a well-defined state
 
