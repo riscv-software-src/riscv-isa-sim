@@ -368,6 +368,8 @@ public:
 
   void check_if_lpad_required();
 
+  reg_t select_an_interrupt_with_default_priority(reg_t enabled_interrupts) const;
+
 private:
   const isa_parser_t isa;
   const cfg_t * const cfg;
