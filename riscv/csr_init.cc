@@ -418,13 +418,17 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   add_const_ext_csr(EXT_SSQOSID, CSR_SRMCFG, std::make_shared<srmcfg_csr_t>(proc, CSR_SRMCFG, srmcfg_mask, 0));
 
   mvien = std::make_shared<const_csr_t>(proc, CSR_MVIEN, 0);
+  mvip = std::make_shared<mvip_csr_t>(proc, CSR_MVIP, 0);
   if (proc->extension_enabled_const(EXT_SMAIA)) {
     add_csr(CSR_MTOPI, std::make_shared<mtopi_csr_t>(proc, CSR_MTOPI));
     if (xlen == 32) {
       add_supervisor_csr(CSR_MVIEN, std::make_shared<rv32_low_csr_t>(proc, CSR_MVIEN, mvien));
       add_supervisor_csr(CSR_MVIENH, std::make_shared<rv32_high_csr_t>(proc, CSR_MVIENH, mvien));
+      add_supervisor_csr(CSR_MVIP, std::make_shared<rv32_low_csr_t>(proc, CSR_MVIP, mvip));
+      add_supervisor_csr(CSR_MVIPH, std::make_shared<rv32_high_csr_t>(proc, CSR_MVIPH, mvip));
     } else {
       add_supervisor_csr(CSR_MVIEN, mvien);
+      add_supervisor_csr(CSR_MVIEN, mvip);
     }
   }
 }

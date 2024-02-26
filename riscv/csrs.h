@@ -907,4 +907,14 @@ class mtopi_csr_t: public csr_t {
  protected:
   bool unlogged_write(const reg_t val) noexcept override;
 };
+
+class mvip_csr_t : public basic_csr_t {
+ public:
+  mvip_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
+  reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+typedef std::shared_ptr<mvip_csr_t> mvip_csr_t_p;
 #endif
