@@ -303,10 +303,10 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
 
   const bool nmie = !(state.mnstatus && !get_field(state.mnstatus->read(), MNSTATUS_NMIE));
   if (!state.debug_mode && nmie && enabled_interrupts) {
-    enabled_interrupts = select_an_interrupt_with_default_priority(enabled_interrupts);
+    reg_t selected_interrupt = select_an_interrupt_with_default_priority(enabled_interrupts);
 
     if (check_triggers_icount) TM.detect_icount_match();
-    throw trap_t(((reg_t)1 << (isa.get_max_xlen() - 1)) | ctz(enabled_interrupts));
+    throw trap_t(((reg_t)1 << (isa.get_max_xlen() - 1)) | ctz(selected_interrupt));
   }
 }
 
