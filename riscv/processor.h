@@ -174,6 +174,8 @@ struct state_t
 
   csr_t_p ssp;
 
+  csr_t_p mvien;
+
   bool serialized; // whether timer CSRs are in a well-defined state
 
   // When true, execute a single instruction and then enter debug mode.  This
