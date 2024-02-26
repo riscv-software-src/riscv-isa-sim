@@ -636,8 +636,18 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     csrmap[CSR_SRMCFG] = srmcfg;
   }
 
-  if (proc->extension_enabled_const(EXT_SMAIA))
+  mvien = std::make_shared<const_csr_t>(proc, CSR_MVIEN, 0);
+  if (proc->extension_enabled_const(EXT_SMAIA)) {
     csrmap[CSR_MTOPI] = std::make_shared<mtopi_csr_t>(proc, CSR_MTOPI);
+    if (proc->extension_enabled_const('S')) {
+      if (xlen == 32) {
+        csrmap[CSR_MVIEN] = std::make_shared<rv32_low_csr_t>(proc, CSR_MVIEN, mvien);
+        csrmap[CSR_MVIENH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MVIENH, mvien);
+      } else {
+        csrmap[CSR_MVIEN] = mvien;
+      }
+    }
+  }
 
   serialized = false;
 
