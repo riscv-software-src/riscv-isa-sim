@@ -15,6 +15,8 @@
 #include "insn_macros.h"
 // For CSR_DCSR_V:
 #include "debug_defines.h"
+// For ctz:
+#include "arith.h"
 
 // STATE macro used by require_privilege() macro:
 #undef STATE
@@ -1876,4 +1878,22 @@ bool hstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   if (get_field(new_hstatus, HSTATUS_HUPMM) != get_field(read(), HSTATUS_HUPMM))
     proc->get_mmu()->flush_tlb();
   return basic_csr_t::unlogged_write(new_hstatus);
+}
+
+mtopi_csr_t::mtopi_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+reg_t mtopi_csr_t::read() const noexcept {
+  reg_t enabled_interrupts = state->mip->read() & state->mie->read() & ~state->mideleg->read();
+  if (!enabled_interrupts)
+    return 0; // no enabled pending interrupt to M-mode
+
+  reg_t selected_interrupt = proc->select_an_interrupt_with_default_priority(enabled_interrupts);
+  reg_t identity = ctz(selected_interrupt);
+  return set_field((reg_t)1, MTOPI_IID, identity); // IPRIO always 1 if iprio array is RO0
+}
+
+bool mtopi_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
+  return false;
 }

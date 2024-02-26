@@ -899,4 +899,12 @@ class hstatus_csr_t final: public basic_csr_t {
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
+
+class mtopi_csr_t: public csr_t {
+ public:
+  mtopi_csr_t(processor_t* const proc, const reg_t addr);
+  virtual reg_t read() const noexcept override;
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override;
+};
 #endif
