@@ -636,6 +636,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     csrmap[CSR_SRMCFG] = srmcfg;
   }
 
+  if (proc->extension_enabled_const(EXT_SMAIA))
+    csrmap[CSR_MTOPI] = std::make_shared<mtopi_csr_t>(proc, CSR_MTOPI);
+
   serialized = false;
 
   log_reg_write.clear();
