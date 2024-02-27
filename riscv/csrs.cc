@@ -2062,3 +2062,21 @@ void mvip_csr_t::write_with_mask(const reg_t mask, const reg_t val) noexcept {
   basic_csr_t::unlogged_write((basic_csr_t::read() & ~mask) | (val & mask));
   log_write();
 }
+
+nonvirtual_stopi_csr_t::nonvirtual_stopi_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+reg_t nonvirtual_stopi_csr_t::read() const noexcept {
+  reg_t enabled_interrupts = state->nonvirtual_sip->read() & state->nonvirtual_sie->read() & ~state->hideleg->read();
+  if (!enabled_interrupts)
+    return 0; // no enabled pending interrupt to S-mode
+
+  reg_t selected_interrupt = proc->select_an_interrupt_with_default_priority(enabled_interrupts);
+  reg_t identity = ctz(selected_interrupt);
+  return set_field((reg_t)1, MTOPI_IID, identity); // IPRIO always 1 if iprio array is RO0
+}
+
+bool nonvirtual_stopi_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
+  return false;
+}
