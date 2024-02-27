@@ -470,11 +470,19 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   if (proc->extension_enabled_const(EXT_SSAIA)) { // Included by EXT_SMAIA
     add_supervisor_csr(CSR_STOPI, std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI));
     auto hvien = std::make_shared<const_csr_t>(proc, CSR_HVIEN, 0);
+    auto hviprio1 = std::make_shared<const_csr_t>(proc, CSR_HVIPRIO1, 0);
+    auto hviprio2 = std::make_shared<const_csr_t>(proc, CSR_HVIPRIO2, 0);
     if (xlen == 32) {
       add_hypervisor_csr(CSR_HVIEN, std::make_shared<rv32_low_csr_t>(proc, CSR_HVIEN, hvien));
       add_hypervisor_csr(CSR_HVIENH, std::make_shared<rv32_high_csr_t>(proc, CSR_HVIENH, hvien));
+      add_hypervisor_csr(CSR_HVIPRIO1, std::make_shared<rv32_low_csr_t>(proc, CSR_HVIPRIO1, hviprio1));
+      add_hypervisor_csr(CSR_HVIPRIO1H, std::make_shared<rv32_high_csr_t>(proc, CSR_HVIPRIO1H, hviprio1));
+      add_hypervisor_csr(CSR_HVIPRIO2, std::make_shared<rv32_low_csr_t>(proc, CSR_HVIPRIO2, hviprio2));
+      add_hypervisor_csr(CSR_HVIPRIO2H, std::make_shared<rv32_high_csr_t>(proc, CSR_HVIPRIO2H, hviprio2));
     } else {
       add_hypervisor_csr(CSR_HVIEN, hvien);
+      add_hypervisor_csr(CSR_HVIPRIO1, hviprio1);
+      add_hypervisor_csr(CSR_HVIPRIO2, hviprio2);
     }
   }
 }
