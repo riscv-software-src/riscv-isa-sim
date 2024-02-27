@@ -636,7 +636,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     csrmap[CSR_SRMCFG] = srmcfg;
   }
 
-  mvien = std::make_shared<const_csr_t>(proc, CSR_MVIEN, 0);
+  mvien = std::make_shared<masked_csr_t>(proc, CSR_MVIEN, MIP_SSIP, 0);
   mvip = std::make_shared<mvip_csr_t>(proc, CSR_MVIP, 0);
   if (proc->extension_enabled_const(EXT_SMAIA)) {
     csrmap[CSR_MTOPI] = std::make_shared<mtopi_csr_t>(proc, CSR_MTOPI);
