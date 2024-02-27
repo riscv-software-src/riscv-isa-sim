@@ -666,6 +666,10 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     }
   }
 
+  if (proc->extension_enabled_const(EXT_SSAIA)) { // Included by EXT_SMAIA
+    csrmap[CSR_STOPI] = std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI);
+  }
+
   serialized = false;
 
   log_reg_write.clear();
