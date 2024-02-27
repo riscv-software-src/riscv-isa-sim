@@ -1999,12 +1999,14 @@ mvip_csr_t::mvip_csr_t(processor_t* const proc, const reg_t addr, const reg_t in
 }
 
 reg_t mvip_csr_t::read() const noexcept {
+  const reg_t val = basic_csr_t::read();
+  const reg_t mvien = state->mvien->read();
   const reg_t mip = state->mip->read();
   const reg_t menvcfg = state->menvcfg->read();
   return 0
     | (mip & MIP_SEIP)
     | ((menvcfg & MENVCFG_STCE) ? 0 : (mip & MIP_STIP))
-    | (mip & MIP_SSIP)
+    | (((mvien & MIP_SSIP) ? val : mip) & MIP_SSIP)
     ;
 }
 
@@ -2012,7 +2014,9 @@ bool mvip_csr_t::unlogged_write(const reg_t val) noexcept {
   state->mip->write_with_mask(MIP_SEIP, val);
   if (!(state->menvcfg->read() & MENVCFG_STCE))
     state->mip->write_with_mask(MIP_STIP, val); // mvip.STIP is an alias of mip.STIP when mip.STIP is writable
-  state->mip->write_with_mask(MIP_SSIP, val);
+  if (!(state->mvien->read() & MIP_SSIP))
+    state->mip->write_with_mask(MIP_SSIP, val); // mvip.SSIP is an alias of mip.SSIP when mvien.SSIP=0
 
-  return false;
+  const reg_t new_val = ((state->mvien->read() & MIP_SSIP) ? val : basic_csr_t::read()) & MIP_SSIP;
+  return basic_csr_t::unlogged_write(new_val);
 }
