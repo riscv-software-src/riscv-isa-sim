@@ -940,4 +940,12 @@ class mvip_csr_t : public basic_csr_t {
 };
 
 typedef std::shared_ptr<mvip_csr_t> mvip_csr_t_p;
+
+class nonvirtual_stopi_csr_t: public csr_t {
+ public:
+  nonvirtual_stopi_csr_t(processor_t* const proc, const reg_t addr);
+  virtual reg_t read() const noexcept override;
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override;
+};
 #endif
