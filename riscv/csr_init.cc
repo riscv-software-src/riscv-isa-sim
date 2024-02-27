@@ -527,5 +527,12 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
 
   if (proc->extension_enabled_const(EXT_SSAIA)) { // Included by EXT_SMAIA
     add_supervisor_csr(CSR_STOPI, std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI));
+    auto hvien = std::make_shared<const_csr_t>(proc, CSR_HVIEN, 0);
+    if (xlen == 32) {
+      add_hypervisor_csr(CSR_HVIEN, std::make_shared<rv32_low_csr_t>(proc, CSR_HVIEN, hvien));
+      add_hypervisor_csr(CSR_HVIENH, std::make_shared<rv32_high_csr_t>(proc, CSR_HVIENH, hvien));
+    } else {
+      add_hypervisor_csr(CSR_HVIEN, hvien);
+    }
   }
 }
