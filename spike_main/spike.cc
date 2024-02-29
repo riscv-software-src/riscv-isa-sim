@@ -53,7 +53,8 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --l2=<S>:<W>:<B>        B both powers of 2).\n");
   fprintf(stderr, "  --big-endian          Use a big-endian memory system.\n");
   fprintf(stderr, "  --misaligned          Support misaligned memory accesses\n");
-  fprintf(stderr, "  --device=<name>       Attach MMIO plugin device from an --extlib library\n");
+  fprintf(stderr, "  --device=<name>       Attach MMIO plugin device from an --extlib library,\n");
+  fprintf(stderr, "                          specify --device=<name>,<args> to pass down extra args.\n");
   fprintf(stderr, "  --log-cache-miss      Generate a log of cache miss\n");
   fprintf(stderr, "  --log-commits         Generate a log of commits info\n");
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
