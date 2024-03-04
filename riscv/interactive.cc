@@ -413,7 +413,7 @@ void sim_t::interactive_run(const std::string& cmd, const std::vector<std::strin
     step(1);
 
   if (actual_steps < steps) {
-    next_interactive_action = [=](){ interactive_run(cmd, {std::to_string(steps - actual_steps)}, noisy); };
+    next_interactive_action = [=, this](){ interactive_run(cmd, {std::to_string(steps - actual_steps)}, noisy); };
     return;
   }
 
@@ -766,7 +766,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
     step(1);
   }
 
-  next_interactive_action = [=](){ interactive_until(cmd, args, noisy); };
+  next_interactive_action = [=, this](){ interactive_until(cmd, args, noisy); };
 }
 
 void sim_t::interactive_dumpmems(const std::string& cmd, const std::vector<std::string>& args)
