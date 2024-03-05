@@ -1037,6 +1037,24 @@ reg_t illegal_instruction(processor_t UNUSED *p, insn_t insn, reg_t UNUSED pc)
   throw trap_illegal_instruction(insn.bits() & 0xffffffffULL);
 }
 
+static insn_desc_t
+propagate_instruction_in_vector(std::vector<insn_desc_t> &instructions,
+                                std::vector<insn_desc_t>::iterator it) {
+  assert(it != instructions.end());
+  insn_desc_t desc = *it;
+  if (it->mask != 0 && it != instructions.begin() &&
+      std::next(it) != instructions.end()) {
+    if (it->match != std::prev(it)->match &&
+        it->match != std::next(it)->match) {
+      // move to front of opcode list to reduce miss penalty
+      while (--it >= instructions.begin())
+        *std::next(it) = *it;
+      instructions[0] = desc;
+    }
+  }
+  return desc;
+}
+
 insn_func_t processor_t::decode_insn(insn_t insn)
 {
   // look up opcode in hash table
@@ -1047,21 +1065,18 @@ insn_func_t processor_t::decode_insn(insn_t insn)
 
   if (unlikely(insn.bits() != desc.match)) {
     // fall back to linear search
-    int cnt = 0;
-    insn_desc_t* p = &instructions[0];
-    while ((insn.bits() & p->mask) != p->match)
-      p++, cnt++;
-    desc = *p;
-
-    if (p->mask != 0 && p > &instructions[0]) {
-      if (p->match != (p - 1)->match && p->match != (p + 1)->match) {
-        // move to front of opcode list to reduce miss penalty
-        while (--p >= &instructions[0])
-          *(p + 1) = *p;
-        instructions[0] = desc;
-      }
+    auto matching = [insn_bits = insn.bits()](const insn_desc_t &d) {
+      return (insn_bits & d.mask) == d.match;
+    };
+    auto p = std::find_if(custom_instructions.begin(),
+                          custom_instructions.end(), matching);
+    if (p != custom_instructions.end()) {
+      desc = propagate_instruction_in_vector(custom_instructions, p);
+    } else {
+      p = std::find_if(instructions.begin(), instructions.end(), matching);
+      assert(p != instructions.end());
+      desc = propagate_instruction_in_vector(instructions, p);
     }
-
     opcode_cache[idx] = desc;
     opcode_cache[idx].match = insn.bits();
   }
@@ -1069,12 +1084,14 @@ insn_func_t processor_t::decode_insn(insn_t insn)
   return desc.func(xlen, rve, log_commits_enabled);
 }
 
-void processor_t::register_insn(insn_desc_t desc)
-{
+void processor_t::register_insn(insn_desc_t desc, bool is_custom) {
   assert(desc.fast_rv32i && desc.fast_rv64i && desc.fast_rv32e && desc.fast_rv64e &&
          desc.logged_rv32i && desc.logged_rv64i && desc.logged_rv32e && desc.logged_rv64e);
 
-  instructions.push_back(desc);
+  if (is_custom)
+    custom_instructions.push_back(desc);
+  else
+    instructions.push_back(desc);
 }
 
 void processor_t::build_opcode_map()
@@ -1086,16 +1103,17 @@ void processor_t::build_opcode_map()
       return lhs.match > rhs.match;
     }
   };
+
   std::sort(instructions.begin(), instructions.end(), cmp());
+  std::sort(custom_instructions.begin(), custom_instructions.end(), cmp());
 
   for (size_t i = 0; i < OPCODE_CACHE_SIZE; i++)
     opcode_cache[i] = insn_desc_t::illegal();
 }
 
-void processor_t::register_extension(extension_t* x)
-{
+void processor_t::register_extension(extension_t *x) {
   for (auto insn : x->get_instructions())
-    register_insn(insn);
+    register_custom_insn(insn);
   build_opcode_map();
 
   for (auto disasm_insn : x->get_disasms())
@@ -1131,7 +1149,7 @@ void processor_t::register_base_instructions()
     extern reg_t logged_rv32e_##name(processor_t*, insn_t, reg_t); \
     extern reg_t logged_rv64e_##name(processor_t*, insn_t, reg_t); \
     if (name##_supported) { \
-      register_insn((insn_desc_t) { \
+      register_base_insn((insn_desc_t) { \
         name##_match, \
         name##_mask, \
         fast_rv32i_##name, \
@@ -1144,10 +1162,8 @@ void processor_t::register_base_instructions()
         logged_rv64e_##name}); \
     }
   #include "insn_list.h"
-  #undef DEFINE_INSN
-
   // terminate instruction list with a catch-all
-  register_insn(insn_desc_t::illegal());
+  register_base_insn(insn_desc_t::illegal());
 
   build_opcode_map();
 }

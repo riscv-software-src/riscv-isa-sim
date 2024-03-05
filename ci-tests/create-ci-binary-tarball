@@ -12,9 +12,13 @@ mkdir -p build/hello && cd "$_"
 riscv64-unknown-elf-gcc -O2 -o hello `git rev-parse --show-toplevel`/ci-tests/hello.c
 cd -
 
+mkdir -p build/dummy-slliuw && cd "$_"
+riscv64-unknown-elf-gcc -O2 -o dummy-slliuw `git rev-parse --show-toplevel`/ci-tests/dummy-slliuw.c
+cd -
+
 mv build/pk/pk .
 mv build/hello/hello .
+mv build/dummy-slliuw/dummy-slliuw .
+tar -cf spike-ci.tar pk hello dummy-slliuw
 
-tar -cf spike-ci.tar pk hello
-
-rm pk hello
+rm pk hello dummy-slliuw
