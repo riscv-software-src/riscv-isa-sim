@@ -683,8 +683,10 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   }
 
   hvictl = std::make_shared<masked_csr_t>(proc, CSR_HVICTL, HVICTL_VTI, set_field((reg_t)0, HVICTL_IID, IRQ_S_EXT)); // no interrupt in hvictl
+  vstopi = csrmap[CSR_VSTOPI] = std::make_shared<vstopi_csr_t>(proc, CSR_VSTOPI);
   if (proc->extension_enabled_const(EXT_SSAIA)) { // Included by EXT_SMAIA
-    csrmap[CSR_STOPI] = std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI);
+    csr_t_p nonvirtual_stopi = std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI);
+    csrmap[CSR_STOPI] = std::make_shared<virtualized_csr_t>(proc, nonvirtual_stopi, vstopi);
     csrmap[CSR_STOPEI] = std::make_shared<inaccessible_csr_t>(proc, CSR_STOPEI);
     auto hvien = std::make_shared<const_csr_t>(proc, CSR_HVIEN, 0);
     auto hviprio1 = std::make_shared<const_csr_t>(proc, CSR_HVIPRIO1, 0);
