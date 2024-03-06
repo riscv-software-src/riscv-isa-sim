@@ -2010,3 +2010,22 @@ void inaccessible_csr_t::verify_permissions(insn_t insn, bool write) const {
   else
     throw trap_illegal_instruction(insn.bits());
 }
+
+vstopi_csr_t::vstopi_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+reg_t vstopi_csr_t::read() const noexcept {
+  reg_t enabled_interrupts = state->mip->read() & state->mie->read() & state->hideleg->read();
+  enabled_interrupts >>= 1; // VSSIP -> SSIP, etc
+  if (!enabled_interrupts)
+    return 0; // no enabled pending interrupt to VS-mode
+
+  reg_t selected_interrupt = proc->select_an_interrupt_with_default_priority(enabled_interrupts);
+  reg_t identity = ctz(selected_interrupt);
+  return set_field((reg_t)1, MTOPI_IID, identity); // vstopi.IPRIO is 1 if hvictl.IPRIOM is 0
+}
+
+bool vstopi_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
+  return false;
+}

@@ -468,8 +468,10 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   }
 
   hvictl = std::make_shared<masked_csr_t>(proc, CSR_HVICTL, HVICTL_VTI, set_field((reg_t)0, HVICTL_IID, IRQ_S_EXT)); // no interrupt in hvictl
+  vstopi = std::make_shared<vstopi_csr_t>(proc, CSR_VSTOPI);
   if (proc->extension_enabled_const(EXT_SSAIA)) { // Included by EXT_SMAIA
-    add_supervisor_csr(CSR_STOPI, std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI));
+    csr_t_p nonvirtual_stopi = std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI);
+    add_supervisor_csr(CSR_STOPI, std::make_shared<virtualized_csr_t>(proc, nonvirtual_stopi, vstopi));
     add_supervisor_csr(CSR_STOPEI, std::make_shared<inaccessible_csr_t>(proc, CSR_STOPEI));
     auto hvien = std::make_shared<const_csr_t>(proc, CSR_HVIEN, 0);
     auto hviprio1 = std::make_shared<const_csr_t>(proc, CSR_HVIPRIO1, 0);
@@ -487,5 +489,6 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
       add_hypervisor_csr(CSR_HVIPRIO2, hviprio2);
     }
     add_hypervisor_csr(CSR_HVICTL, hvictl);
+    add_hypervisor_csr(CSR_VSTOPI, vstopi);
   }
 }
