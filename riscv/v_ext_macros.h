@@ -215,8 +215,11 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     VI_GENERAL_LOOP_BASE \
     VI_LOOP_ELEMENT_SKIP();
 
+#define VI_LOOP_END_BASE \
+ }
+
 #define VI_LOOP_END \
-  } \
+  VI_LOOP_END_BASE \
   P.VU.vstart->write(0);
 
 #define VI_LOOP_REDUCTION_END(x) \
