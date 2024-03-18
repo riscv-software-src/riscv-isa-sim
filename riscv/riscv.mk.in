@@ -7,7 +7,7 @@ riscv_subproject_deps = \
 	fesvr \
 	softfloat \
 
-riscv_CFLAGS = -fPIC
+riscv_CFLAGS = -fPIC -I$(src_dir)/fdt
 
 riscv_install_shared_lib = yes
 

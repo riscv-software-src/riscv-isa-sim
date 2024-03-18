@@ -14,4 +14,7 @@ time ../install/bin/spike --isa=rv64gc pk hello | grep "Hello, world!  Pi is app
 
 # check that including sim.h in an external project works
 g++ -std=c++17 -I../install/include -L../install/lib $DIR/testlib.c -lriscv -o test-libriscv
-LD_LIBRARY_PATH=../install/lib ./test-libriscv | grep "Hello, world!  Pi is approximately 3.141588."
+g++ -std=c++17 -I../install/include -L../install/lib $DIR/test-customext.cc -lriscv -o test-customext
+
+LD_LIBRARY_PATH=../install/lib ./test-libriscv pk hello| grep "Hello, world!  Pi is approximately 3.141588."
+LD_LIBRARY_PATH=../install/lib ./test-customext pk dummy-slliuw | grep "Executed successfully"
