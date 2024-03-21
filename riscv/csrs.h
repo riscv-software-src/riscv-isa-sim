@@ -21,6 +21,11 @@
 class processor_t;
 struct state_t;
 
+enum struct elp_t {
+  NO_LP_EXPECTED = 0,
+  LP_EXPECTED = 1,
+};
+
 // Parent, abstract class for all CSRs
 class csr_t {
  public:
@@ -676,7 +681,8 @@ class dcsr_csr_t: public csr_t {
   dcsr_csr_t(processor_t* const proc, const reg_t addr);
   virtual void verify_permissions(insn_t insn, bool write) const override;
   virtual reg_t read() const noexcept override;
-  void write_cause_and_prv(uint8_t cause, reg_t prv, bool v) noexcept;
+  void update_fields(const uint8_t cause, const reg_t prv,
+                     const bool v, const elp_t pelp) noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  public:
@@ -690,6 +696,7 @@ class dcsr_csr_t: public csr_t {
   bool halt;
   bool v;
   uint8_t cause;
+  elp_t pelp;
 };
 
 typedef std::shared_ptr<dcsr_csr_t> dcsr_csr_t_p;

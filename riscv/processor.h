@@ -189,6 +189,8 @@ struct state_t
   reg_t last_inst_priv;
   int last_inst_xlen;
   int last_inst_flen;
+
+  elp_t elp;
 };
 
 // this class represents one processor in a RISC-V machine.
@@ -314,6 +316,8 @@ public:
 
   void clear_waiting_for_interrupt() { in_wfi = false; };
   bool is_waiting_for_interrupt() { return in_wfi; };
+
+  void execute_insn_prehook(insn_t insn);
 
 private:
   const isa_parser_t * const isa;

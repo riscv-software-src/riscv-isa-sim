@@ -321,3 +321,23 @@ inline long double to_f(float128_t f) { long double r; memcpy(&r, &f, sizeof(r))
   reg_t h##field = get_field(STATE.henvcfg->read(), HENVCFG_##field)
 
 #endif
+
+#define software_check(x, tval) (unlikely(!(x)) ? throw trap_software_check(tval) : (void) 0)
+#define ZICFILP_xLPE(v, prv) \
+  ({ \
+    reg_t lpe = 0ULL; \
+    if (p->extension_enabled(EXT_ZICFILP)) { \
+      DECLARE_XENVCFG_VARS(LPE); \
+      const reg_t msecLPE = get_field(STATE.mseccfg->read(), MSECCFG_MLPE); \
+      switch (prv) { \
+      case PRV_U: lpe = p->extension_enabled('S') ? sLPE : mLPE; break; \
+      case PRV_S: lpe = (v) ? hLPE : mLPE; break; \
+      case PRV_M: lpe = msecLPE; break; \
+      default: abort(); \
+      } \
+    } \
+    lpe; \
+  })
+#define ZICFILP_IS_LP_EXPECTED(reg_num) \
+  (((reg_num) != 1 && (reg_num) != 5 && (reg_num) != 7) ? \
+   elp_t::LP_EXPECTED : elp_t::NO_LP_EXPECTED)

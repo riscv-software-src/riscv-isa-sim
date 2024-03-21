@@ -13,7 +13,6 @@ reg_t prev_prv = get_field(s, MSTATUS_SPP);
 s = set_field(s, MSTATUS_SIE, get_field(s, MSTATUS_SPIE));
 s = set_field(s, MSTATUS_SPIE, 1);
 s = set_field(s, MSTATUS_SPP, PRV_U);
-STATE.sstatus->write(s);
 bool prev_virt = STATE.v;
 if (!STATE.v) {
   if (p->extension_enabled('H')) {
@@ -24,4 +23,9 @@ if (!STATE.v) {
 
   STATE.mstatus->write(set_field(STATE.mstatus->read(), MSTATUS_MPRV, 0));
 }
+if (ZICFILP_xLPE(prev_virt, prev_prv)) {
+  STATE.elp = static_cast<elp_t>(get_field(s, SSTATUS_SPELP));
+  s = set_field(s, SSTATUS_SPELP, elp_t::NO_LP_EXPECTED);
+}
+STATE.sstatus->write(s);
 p->set_privilege(prev_prv, prev_virt);

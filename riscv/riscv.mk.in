@@ -1392,6 +1392,9 @@ riscv_insn_ext_zimop = \
 	mop_r_N \
 	mop_rr_N \
 
+riscv_insn_ext_zicfilp = \
+	lpad
+
 riscv_insn_ext_zvk = \
 	$(riscv_insn_ext_zvbb) \
 	$(riscv_insn_ext_zvbc) \
@@ -1431,6 +1434,7 @@ riscv_insn_list = \
 	$(riscv_insn_smrnmi) \
 	$(riscv_insn_svinval) \
 	$(riscv_insn_ext_zimop) \
+	$(riscv_insn_ext_zicfilp) \
 
 riscv_gen_srcs = $(addsuffix .cc,$(riscv_insn_list))
 
