@@ -276,9 +276,11 @@ reg_t processor_t::select_an_interrupt_with_default_priority(reg_t enabled_inter
 void processor_t::take_interrupt(reg_t pending_interrupts)
 {
   const reg_t s_pending_interrupts = state.nonvirtual_sip->read() & state.nonvirtual_sie->read();
+  const reg_t vstopi = state.vstopi->read();
+  const reg_t vs_pending_interrupt = vstopi ? (reg_t(1) << get_field(vstopi, MTOPI_IID)) : 0;
 
   // Do nothing if no pending interrupts
-  if (!pending_interrupts && !s_pending_interrupts) {
+  if (!pending_interrupts && !s_pending_interrupts && !vs_pending_interrupt) {
     return;
   }
 
@@ -297,9 +299,8 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     enabled_interrupts = ((pending_interrupts & deleg_to_hs) | (s_pending_interrupts & ~state.hideleg->read())) & -hs_enabled;
     if (state.v && enabled_interrupts == 0) {
       // VS-ints have least priority and can only be taken with virt enabled
-      const reg_t deleg_to_vs = state.hideleg->read();
       const reg_t vs_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
-      enabled_interrupts = pending_interrupts & deleg_to_vs & -vs_enabled;
+      enabled_interrupts = vs_pending_interrupt & -vs_enabled;
     }
   }
 
@@ -431,7 +432,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   }
   if (state.prv <= PRV_S && bit < max_xlen && ((vsdeleg >> bit) & 1)) {
     // Handle the trap in VS-mode
-    const reg_t adjusted_cause = interrupt ? bit - 1 : bit;  // VSSIP -> SSIP, etc
+    const reg_t adjusted_cause = bit;
     reg_t vector = (state.vstvec->read() & 1) && interrupt ? 4 * adjusted_cause : 0;
     state.pc = (state.vstvec->read() & ~(reg_t)1) + vector;
     state.vscause->write(adjusted_cause | (interrupt ? interrupt_bit : 0));
