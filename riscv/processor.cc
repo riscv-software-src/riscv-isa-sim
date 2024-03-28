@@ -682,6 +682,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     }
   }
 
+  hvictl = std::make_shared<const_csr_t>(proc, CSR_HVICTL, set_field((reg_t)0, HVICTL_IID, IRQ_S_EXT)); // no interrupt in hvictl
   if (proc->extension_enabled_const(EXT_SSAIA)) { // Included by EXT_SMAIA
     csrmap[CSR_STOPI] = std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI);
     csrmap[CSR_STOPEI] = std::make_shared<inaccessible_csr_t>(proc, CSR_STOPEI);
@@ -700,6 +701,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       csrmap[CSR_HVIPRIO1] = hviprio1;
       csrmap[CSR_HVIPRIO2] = hviprio2;
     }
+    csrmap[CSR_HVICTL] = hvictl;
   }
 
   serialized = false;
