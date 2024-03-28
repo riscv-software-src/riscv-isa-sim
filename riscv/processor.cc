@@ -292,8 +292,17 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MCOUNTINHIBIT] = std::make_shared<const_csr_t>(proc, CSR_MCOUNTINHIBIT, 0);
   if (proc->extension_enabled_const(EXT_SSCOFPMF))
     csrmap[CSR_SCOUNTOVF] = std::make_shared<scountovf_csr_t>(proc, CSR_SCOUNTOVF);
-  csrmap[CSR_MIE] = mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
-  csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
+  mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
+  mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SMAIA)) {
+    csrmap[CSR_MIE] = std::make_shared<rv32_low_csr_t>(proc, CSR_MIE, mie);
+    csrmap[CSR_MIEH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MIEH, mie);
+    csrmap[CSR_MIP] = std::make_shared<rv32_low_csr_t>(proc, CSR_MIP, mip);
+    csrmap[CSR_MIPH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MIPH, mip);
+  } else {
+    csrmap[CSR_MIE] = mie;
+    csrmap[CSR_MIP] = mip;
+  }
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(
     this,
     ~MIP_HS_MASK,  // read_mask
@@ -335,7 +344,13 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_HIE] = std::make_shared<mie_proxy_csr_t>(proc, CSR_HIE, hip_hie_accr);
 
   csrmap[CSR_MEDELEG] = medeleg = std::make_shared<medeleg_csr_t>(proc, CSR_MEDELEG);
-  csrmap[CSR_MIDELEG] = mideleg = std::make_shared<mideleg_csr_t>(proc, CSR_MIDELEG);
+  mideleg = std::make_shared<mideleg_csr_t>(proc, CSR_MIDELEG);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SMAIA)) {
+    csrmap[CSR_MIDELEG] = std::make_shared<rv32_low_csr_t>(proc, CSR_MIDELEG, mideleg);
+    csrmap[CSR_MIDELEGH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MIDELEGH, mideleg);
+  } else {
+    csrmap[CSR_MIDELEG] = mideleg;
+  }
   const reg_t counteren_mask = (proc->extension_enabled_const(EXT_ZICNTR) ? 0x7UL : 0x0) | (proc->extension_enabled_const(EXT_ZIHPM) ? 0xfffffff8ULL : 0x0);
   mcounteren = std::make_shared<masked_csr_t>(proc, CSR_MCOUNTEREN, counteren_mask, 0);
   if (proc->extension_enabled_const('U')) csrmap[CSR_MCOUNTEREN] = mcounteren;
