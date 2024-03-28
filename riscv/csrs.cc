@@ -2018,16 +2018,18 @@ vstopi_csr_t::vstopi_csr_t(processor_t* const proc, const reg_t addr):
 reg_t vstopi_csr_t::read() const noexcept {
   reg_t hvictl = state->hvictl->read();
   bool vti = hvictl & HVICTL_VTI;
+  reg_t iid = get_field(hvictl, HVICTL_IID);
+  bool dpr = hvictl & HVICTL_DPR;
 
   reg_t enabled_interrupts = state->mip->read() & state->mie->read() & state->hideleg->read();
   enabled_interrupts >>= 1; // VSSIP -> SSIP, etc
 
   reg_t identity;
   if (vti) {
-    if (!(enabled_interrupts & MIP_SEIP))
+    if (!(enabled_interrupts & MIP_SEIP) && iid == IRQ_S_EXT)
       return 0;
 
-    identity = IRQ_S_EXT;
+    identity = ((enabled_interrupts & MIP_SEIP) && (iid == IRQ_S_EXT || dpr)) ? IRQ_S_EXT : iid;
   } else {
     if (!enabled_interrupts)
       return 0; // no enabled pending interrupt to VS-mode
