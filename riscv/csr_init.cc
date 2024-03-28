@@ -525,7 +525,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     }
   }
 
-  hvictl = std::make_shared<masked_csr_t>(proc, CSR_HVICTL, HVICTL_VTI | HVICTL_IID | HVICTL_DPR, 0);
+  hvictl = std::make_shared<masked_csr_t>(proc, CSR_HVICTL, HVICTL_VTI | HVICTL_IID | HVICTL_DPR | HVICTL_IPRIOM | HVICTL_IPRIO, 0);
   vstopi = std::make_shared<vstopi_csr_t>(proc, CSR_VSTOPI);
   if (proc->extension_enabled_const(EXT_SSAIA)) { // Included by EXT_SMAIA
     csr_t_p nonvirtual_stopi = std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI);
