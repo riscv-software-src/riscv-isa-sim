@@ -1734,6 +1734,9 @@ void stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
   }
 
   basic_csr_t::verify_permissions(insn, write);
+
+  if ((state->csrmap[CSR_HVICTL]->read() & HVICTL_VTI) && state->v && write)
+    throw trap_virtual_instruction(insn.bits());
 }
 
 void virtualized_with_special_permission_csr_t::verify_permissions(insn_t insn, bool write) const {
