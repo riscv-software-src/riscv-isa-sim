@@ -146,14 +146,26 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   auto nonvirtual_sip = std::make_shared<sip_csr_t>(proc, CSR_SIP, sip_sie_accr);
   auto vsip = std::make_shared<mip_proxy_csr_t>(proc, CSR_VSIP, vsip_vsie_accr);
   add_hypervisor_csr(CSR_VSIP, vsip);
-  add_supervisor_csr(CSR_SIP, std::make_shared<virtualized_csr_t>(proc, nonvirtual_sip, vsip));
+  auto sip = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sip, vsip);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
+    add_supervisor_csr(CSR_SIP, std::make_shared<rv32_low_csr_t>(proc, CSR_SIP, sip));
+    add_supervisor_csr(CSR_SIPH, std::make_shared<rv32_high_csr_t>(proc, CSR_SIPH, sip));
+  } else {
+    add_supervisor_csr(CSR_SIP, sip);
+  }
   add_hypervisor_csr(CSR_HIP, std::make_shared<mip_proxy_csr_t>(proc, CSR_HIP, hip_hie_accr));
   add_hypervisor_csr(CSR_HVIP, hvip = std::make_shared<hvip_csr_t>(proc, CSR_HVIP, 0));
 
   auto nonvirtual_sie = std::make_shared<sie_csr_t>(proc, CSR_SIE, sip_sie_accr);
   auto vsie = std::make_shared<mie_proxy_csr_t>(proc, CSR_VSIE, vsip_vsie_accr);
   add_hypervisor_csr(CSR_VSIE, vsie);
-  add_supervisor_csr(CSR_SIE, std::make_shared<virtualized_csr_t>(proc, nonvirtual_sie, vsie));
+  auto sie = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sie, vsie);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
+    add_supervisor_csr(CSR_SIE, std::make_shared<rv32_low_csr_t>(proc, CSR_SIE, sie));
+    add_supervisor_csr(CSR_SIEH, std::make_shared<rv32_high_csr_t>(proc, CSR_SIEH, sie));
+  } else {
+    add_supervisor_csr(CSR_SIE, sie);
+  }
   add_hypervisor_csr(CSR_HIE, std::make_shared<mie_proxy_csr_t>(proc, CSR_HIE, hip_hie_accr));
 
   add_supervisor_csr(CSR_MEDELEG, medeleg = std::make_shared<medeleg_csr_t>(proc, CSR_MEDELEG));
