@@ -199,6 +199,24 @@ static int xlen_to_uxl(int xlen)
   abort();
 }
 
+void state_t::add_ireg_proxy(processor_t* const proc, sscsrind_reg_csr_t::sscsrind_reg_csr_t_p ireg)
+{
+  // This assumes xlen is always max_xlen, which is true today (see
+  // mstatus_csr_t::unlogged_write()):
+  auto xlen = proc->get_isa().get_max_xlen();
+
+  const reg_t iprio0_addr = 0x30;
+  for (int i=0; i<16; i+=2) {
+    csr_t_p iprio = std::make_shared<const_csr_t>(proc, iprio0_addr + i, 0);
+    if (xlen == 32) {
+      ireg->add_ireg_proxy(iprio0_addr + i, std::make_shared<rv32_low_csr_t>(proc, iprio0_addr + i, iprio));
+      ireg->add_ireg_proxy(iprio0_addr + i + 1, std::make_shared<rv32_high_csr_t>(proc, iprio0_addr + i + 1, iprio));
+    } else {
+      ireg->add_ireg_proxy(iprio0_addr + i, iprio);
+    }
+  }
+}
+
 void state_t::reset(processor_t* const proc, reg_t max_isa)
 {
   pc = DEFAULT_RSTVEC;
@@ -575,6 +593,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       csrmap[csr] = mireg[i] = std::make_shared<sscsrind_reg_csr_t>(proc, csr, miselect);
       i++;
     }
+    add_ireg_proxy(proc, mireg[0]);
   }
 
   if (proc->extension_enabled_const(EXT_SSCSRIND)) {
