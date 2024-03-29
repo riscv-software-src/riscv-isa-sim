@@ -12,6 +12,24 @@ void state_t::add_csr(reg_t addr, const csr_t_p& csr)
 #define add_supervisor_csr(addr, csr) add_const_ext_csr('S', addr, csr)
 #define add_hypervisor_csr(addr, csr) add_ext_csr('H', addr, csr)
 
+void state_t::add_ireg_proxy(processor_t* const proc, sscsrind_reg_csr_t::sscsrind_reg_csr_t_p ireg)
+{
+  // This assumes xlen is always max_xlen, which is true today (see
+  // mstatus_csr_t::unlogged_write()):
+  auto xlen = proc->get_isa().get_max_xlen();
+
+  const reg_t iprio0_addr = 0x30;
+  for (int i=0; i<16; i+=2) {
+    csr_t_p iprio = std::make_shared<const_csr_t>(proc, iprio0_addr + i, 0);
+    if (xlen == 32) {
+      ireg->add_ireg_proxy(iprio0_addr + i, std::make_shared<rv32_low_csr_t>(proc, iprio0_addr + i, iprio));
+      ireg->add_ireg_proxy(iprio0_addr + i + 1, std::make_shared<rv32_high_csr_t>(proc, iprio0_addr + i + 1, iprio));
+    } else {
+      ireg->add_ireg_proxy(iprio0_addr + i, iprio);
+    }
+  }
+}
+
 void state_t::csr_init(processor_t* const proc, reg_t max_isa)
 {
   // This assumes xlen is always max_xlen, which is true today (see
@@ -363,7 +381,10 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     csr_t_p miselect = std::make_shared<basic_csr_t>(proc, CSR_MISELECT, 0);
     add_csr(CSR_MISELECT, miselect);
 
-    const reg_t mireg_csrs[] = { CSR_MIREG, CSR_MIREG2, CSR_MIREG3, CSR_MIREG4, CSR_MIREG5, CSR_MIREG6 };
+    sscsrind_reg_csr_t::sscsrind_reg_csr_t_p mireg;
+    add_csr(CSR_MIREG, mireg = std::make_shared<sscsrind_reg_csr_t>(proc, CSR_MIREG, miselect));
+    add_ireg_proxy(proc, mireg);
+    const reg_t mireg_csrs[] = { CSR_MIREG2, CSR_MIREG3, CSR_MIREG4, CSR_MIREG5, CSR_MIREG6 };
     for (auto csr : mireg_csrs)
       add_csr(csr, std::make_shared<sscsrind_reg_csr_t>(proc, csr, miselect));
   }
