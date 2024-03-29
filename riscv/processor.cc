@@ -628,6 +628,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       csrmap[csr] = std::make_shared<virtualized_indirect_csr_t>(proc, sireg[i], vsireg[i]);
       i++;
     }
+    add_ireg_proxy(proc, sireg[0]);
   }
 
   if (smcntrpmf_enabled) {
