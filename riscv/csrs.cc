@@ -783,8 +783,14 @@ mip_csr_t::mip_csr_t(processor_t* const proc, const reg_t addr):
   mip_or_mie_csr_t(proc, addr) {
 }
 
+void mip_csr_t::write_with_mask(const reg_t mask, const reg_t val) noexcept {
+  if (mask & MIP_SEIP)
+    state->mvip->write_with_mask(MIP_SEIP, val); // mvip.SEIP is an alias of mip.SEIP when mvien.SEIP=0
+  mip_or_mie_csr_t::write_with_mask(mask & ~MIP_SEIP, val);
+}
+
 reg_t mip_csr_t::read() const noexcept {
-  return val | state->hvip->basic_csr_t::read();
+  return val | state->hvip->basic_csr_t::read() | (state->mvip->basic_csr_t::read() & MIP_SEIP);
 }
 
 void mip_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept {
@@ -1908,19 +1914,23 @@ reg_t mvip_csr_t::read() const noexcept {
   const reg_t mip = state->mip->read();
   const reg_t menvcfg = state->menvcfg->read();
   return 0
-    | (mip & MIP_SEIP)
+    | (val & MIP_SEIP)
     | ((menvcfg & MENVCFG_STCE) ? 0 : (mip & MIP_STIP))
     | (((mvien & MIP_SSIP) ? val : mip) & MIP_SSIP)
     ;
 }
 
 bool mvip_csr_t::unlogged_write(const reg_t val) noexcept {
-  state->mip->write_with_mask(MIP_SEIP, val);
   if (!(state->menvcfg->read() & MENVCFG_STCE))
     state->mip->write_with_mask(MIP_STIP, val); // mvip.STIP is an alias of mip.STIP when mip.STIP is writable
   if (!(state->mvien->read() & MIP_SSIP))
     state->mip->write_with_mask(MIP_SSIP, val); // mvip.SSIP is an alias of mip.SSIP when mvien.SSIP=0
 
-  const reg_t new_val = ((state->mvien->read() & MIP_SSIP) ? val : basic_csr_t::read()) & MIP_SSIP;
+  const reg_t new_val = (val & MIP_SEIP) | (((state->mvien->read() & MIP_SSIP) ? val : basic_csr_t::read()) & MIP_SSIP);
   return basic_csr_t::unlogged_write(new_val);
+}
+
+void mvip_csr_t::write_with_mask(const reg_t mask, const reg_t val) noexcept {
+  basic_csr_t::unlogged_write((basic_csr_t::read() & ~mask) | (val & mask));
+  log_write();
 }
