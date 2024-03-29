@@ -417,7 +417,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   const reg_t srmcfg_mask = SRMCFG_MCID | SRMCFG_RCID;
   add_const_ext_csr(EXT_SSQOSID, CSR_SRMCFG, std::make_shared<srmcfg_csr_t>(proc, CSR_SRMCFG, srmcfg_mask, 0));
 
-  mvien = std::make_shared<masked_csr_t>(proc, CSR_MVIEN, MIP_SSIP, 0);
+  mvien = std::make_shared<masked_csr_t>(proc, CSR_MVIEN, MIP_SEIP | MIP_SSIP, 0);
   mvip = std::make_shared<mvip_csr_t>(proc, CSR_MVIP, 0);
   if (proc->extension_enabled_const(EXT_SMAIA)) {
     add_csr(CSR_MTOPI, std::make_shared<mtopi_csr_t>(proc, CSR_MTOPI));
