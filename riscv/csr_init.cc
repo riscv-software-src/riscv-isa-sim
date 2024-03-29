@@ -403,8 +403,15 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     csr_t_p siselect = std::make_shared<basic_csr_t>(proc, CSR_SISELECT, 0);
     add_supervisor_csr(CSR_SISELECT, std::make_shared<virtualized_csr_t>(proc, siselect, vsiselect));
 
-    const reg_t vsireg_csrs[] = { CSR_VSIREG, CSR_VSIREG2, CSR_VSIREG3, CSR_VSIREG4, CSR_VSIREG5, CSR_VSIREG6 };
-    const reg_t sireg_csrs[] = { CSR_SIREG, CSR_SIREG2, CSR_SIREG3, CSR_SIREG4, CSR_SIREG5, CSR_SIREG6 };
+    auto vsireg = std::make_shared<sscsrind_reg_csr_t>(proc, CSR_VSIREG, vsiselect);
+    add_hypervisor_csr(CSR_VSIREG, vsireg);
+
+    auto sireg = std::make_shared<sscsrind_reg_csr_t>(proc, CSR_SIREG, siselect);
+    add_ireg_proxy(proc, sireg);
+    add_supervisor_csr(CSR_SIREG, std::make_shared<virtualized_indirect_csr_t>(proc, sireg, vsireg));
+
+    const reg_t vsireg_csrs[] = { CSR_VSIREG2, CSR_VSIREG3, CSR_VSIREG4, CSR_VSIREG5, CSR_VSIREG6 };
+    const reg_t sireg_csrs[] = { CSR_SIREG2, CSR_SIREG3, CSR_SIREG4, CSR_SIREG5, CSR_SIREG6 };
     for (size_t i = 0; i < std::size(vsireg_csrs); i++) {
       auto vsireg = std::make_shared<sscsrind_reg_csr_t>(proc, vsireg_csrs[i], vsiselect);
       add_hypervisor_csr(vsireg_csrs[i], vsireg);
