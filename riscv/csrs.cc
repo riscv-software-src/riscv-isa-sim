@@ -784,13 +784,13 @@ mip_csr_t::mip_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 void mip_csr_t::write_with_mask(const reg_t mask, const reg_t val) noexcept {
-  if (mask & MIP_SEIP)
+  if (!(state->mvien->read() & MIP_SEIP) && (mask & MIP_SEIP))
     state->mvip->write_with_mask(MIP_SEIP, val); // mvip.SEIP is an alias of mip.SEIP when mvien.SEIP=0
   mip_or_mie_csr_t::write_with_mask(mask & ~MIP_SEIP, val);
 }
 
 reg_t mip_csr_t::read() const noexcept {
-  return val | state->hvip->basic_csr_t::read() | (state->mvip->basic_csr_t::read() & MIP_SEIP);
+  return val | state->hvip->basic_csr_t::read() | ((state->mvien->read() & MIP_SEIP) ? 0 : (state->mvip->basic_csr_t::read() & MIP_SEIP));
 }
 
 void mip_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept {
