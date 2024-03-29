@@ -1984,3 +1984,14 @@ reg_t nonvirtual_stopi_csr_t::read() const noexcept {
 bool nonvirtual_stopi_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
   return false;
 }
+
+inaccessible_csr_t::inaccessible_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+void inaccessible_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (state->v)
+    throw trap_virtual_instruction(insn.bits());
+  else
+    throw trap_illegal_instruction(insn.bits());
+}
