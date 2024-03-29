@@ -527,6 +527,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
 
   if (proc->extension_enabled_const(EXT_SSAIA)) { // Included by EXT_SMAIA
     add_supervisor_csr(CSR_STOPI, std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI));
+    add_supervisor_csr(CSR_STOPEI, std::make_shared<inaccessible_csr_t>(proc, CSR_STOPEI));
     auto hvien = std::make_shared<const_csr_t>(proc, CSR_HVIEN, 0);
     auto hviprio1 = std::make_shared<const_csr_t>(proc, CSR_HVIPRIO1, 0);
     auto hviprio2 = std::make_shared<const_csr_t>(proc, CSR_HVIPRIO2, 0);

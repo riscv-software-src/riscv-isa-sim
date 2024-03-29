@@ -957,4 +957,13 @@ class nonvirtual_stopi_csr_t: public csr_t {
  protected:
   bool unlogged_write(const reg_t val) noexcept override;
 };
+
+class inaccessible_csr_t: public csr_t {
+ public:
+  inaccessible_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  reg_t read() const noexcept override { return 0; }
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override { return false; }
+};
 #endif
