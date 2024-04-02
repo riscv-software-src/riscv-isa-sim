@@ -348,7 +348,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     1              // shiftamt
   );
 
-  auto nonvirtual_sip = std::make_shared<mip_proxy_csr_t>(proc, CSR_SIP, sip_sie_accr);
+  auto nonvirtual_sip = std::make_shared<sip_csr_t>(proc, CSR_SIP, sip_sie_accr);
   auto vsip = std::make_shared<mip_proxy_csr_t>(proc, CSR_VSIP, vsip_vsie_accr);
   csrmap[CSR_VSIP] = vsip;
   csrmap[CSR_SIP] = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sip, vsip);
