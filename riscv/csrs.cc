@@ -979,6 +979,23 @@ bool sip_csr_t::unlogged_write(const reg_t val) noexcept {
   return mip_proxy_csr_t::unlogged_write(val & ~mask);
 }
 
+sie_csr_t::sie_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr):
+  mie_proxy_csr_t(proc, addr, accr),
+  val(0) {
+}
+
+reg_t sie_csr_t::read() const noexcept {
+  const reg_t mask = ~state->mideleg->read() & state->mvien->read();
+  return (mie_proxy_csr_t::read() & ~mask) | (val & mask);
+}
+
+bool sie_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t mask = ~state->mideleg->read() & state->mvien->read();
+  this->val = (this->val & ~mask) | (val & mask);
+  mie_proxy_csr_t::unlogged_write(val & ~mask);
+  return true;
+}
+
 // implement class masked_csr_t
 masked_csr_t::masked_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
   basic_csr_t(proc, addr, init),
