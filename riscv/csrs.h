@@ -408,6 +408,7 @@ class generic_int_accessor_t {
   void ip_write(const reg_t val) noexcept;
   reg_t ie_read() const noexcept;
   void ie_write(const reg_t val) noexcept;
+  reg_t get_ip_write_mask() { return ip_write_mask; }
  private:
   state_t* const state;
   const reg_t read_mask;
@@ -428,7 +429,6 @@ class mip_proxy_csr_t: public csr_t {
   virtual reg_t read() const noexcept override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
- private:
   generic_int_accessor_t_p accr;
 };
 
@@ -460,6 +460,14 @@ class medeleg_csr_t: public basic_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
   const reg_t hypervisor_exceptions;
+};
+
+class sip_csr_t: public mip_proxy_csr_t {
+ public:
+  sip_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
 // For CSRs with certain bits hardwired
