@@ -470,6 +470,16 @@ class sip_csr_t: public mip_proxy_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
+class sie_csr_t: public mie_proxy_csr_t {
+ public:
+  sie_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  reg_t val;
+};
+
 // For CSRs with certain bits hardwired
 class masked_csr_t: public basic_csr_t {
  public:
