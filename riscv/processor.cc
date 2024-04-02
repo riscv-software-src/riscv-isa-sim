@@ -275,8 +275,10 @@ reg_t processor_t::select_an_interrupt_with_default_priority(reg_t enabled_inter
 
 void processor_t::take_interrupt(reg_t pending_interrupts)
 {
+  const reg_t s_pending_interrupts = state.nonvirtual_sip->read() & state.nonvirtual_sie->read();
+
   // Do nothing if no pending interrupts
-  if (!pending_interrupts) {
+  if (!pending_interrupts && !s_pending_interrupts) {
     return;
   }
 
@@ -292,7 +294,7 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     const reg_t deleg_to_hs = state.mideleg->read() & ~state.hideleg->read();
     const reg_t sie = get_field(state.sstatus->read(), MSTATUS_SIE);
     const reg_t hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && sie);
-    enabled_interrupts = pending_interrupts & deleg_to_hs & -hs_enabled;
+    enabled_interrupts = ((pending_interrupts & deleg_to_hs) | (s_pending_interrupts & ~state.hideleg->read())) & -hs_enabled;
     if (state.v && enabled_interrupts == 0) {
       // VS-ints have least priority and can only be taken with virt enabled
       const reg_t deleg_to_vs = state.hideleg->read();
