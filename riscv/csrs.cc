@@ -964,6 +964,21 @@ bool medeleg_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
 }
 
+sip_csr_t::sip_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr):
+  mip_proxy_csr_t(proc, addr, accr) {
+}
+
+reg_t sip_csr_t::read() const noexcept {
+  const reg_t mask = ~state->mideleg->read() & state->mvien->read();
+  return (mip_proxy_csr_t::read() & ~mask) | (state->mvip->read() & mask);
+}
+
+bool sip_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t mask = ~state->mideleg->read() & state->mvien->read();
+  state->mvip->write_with_mask(mask & accr->get_ip_write_mask(), val);
+  return mip_proxy_csr_t::unlogged_write(val & ~mask);
+}
+
 // implement class masked_csr_t
 masked_csr_t::masked_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
   basic_csr_t(proc, addr, init),
