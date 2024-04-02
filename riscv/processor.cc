@@ -348,7 +348,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     1              // shiftamt
   );
 
-  auto nonvirtual_sip = std::make_shared<sip_csr_t>(proc, CSR_SIP, sip_sie_accr);
+  nonvirtual_sip = std::make_shared<sip_csr_t>(proc, CSR_SIP, sip_sie_accr);
   auto vsip = std::make_shared<mip_proxy_csr_t>(proc, CSR_VSIP, vsip_vsie_accr);
   csrmap[CSR_VSIP] = vsip;
   auto sip = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sip, vsip);
@@ -361,7 +361,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_HIP] = std::make_shared<mip_proxy_csr_t>(proc, CSR_HIP, hip_hie_accr);
   csrmap[CSR_HVIP] = hvip = std::make_shared<hvip_csr_t>(proc, CSR_HVIP, 0);
 
-  auto nonvirtual_sie = std::make_shared<sie_csr_t>(proc, CSR_SIE, sip_sie_accr);
+  nonvirtual_sie = std::make_shared<sie_csr_t>(proc, CSR_SIE, sip_sie_accr);
   auto vsie = std::make_shared<mie_proxy_csr_t>(proc, CSR_VSIE, vsip_vsie_accr);
   csrmap[CSR_VSIE] = vsie;
   auto sie = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sie, vsie);
