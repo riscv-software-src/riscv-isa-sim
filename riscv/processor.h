@@ -97,6 +97,8 @@ struct state_t
   wide_counter_csr_t_p mcycle;
   mie_csr_t_p mie;
   mip_csr_t_p mip;
+  csr_t_p nonvirtual_sip;
+  csr_t_p nonvirtual_sie;
   csr_t_p medeleg;
   csr_t_p mideleg;
   csr_t_p mcounteren;
