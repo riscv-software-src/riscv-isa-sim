@@ -350,7 +350,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   nonvirtual_sip = std::make_shared<sip_csr_t>(proc, CSR_SIP, sip_sie_accr);
   auto vsip = std::make_shared<mip_proxy_csr_t>(proc, CSR_VSIP, vsip_vsie_accr);
-  auto sip = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sip, vsip);
+  auto sip = std::make_shared<virtualized_stimecmp_csr_t>(proc, nonvirtual_sip, vsip);
   if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
     csrmap[CSR_VSIP] = std::make_shared<rv32_low_csr_t>(proc, CSR_VSIP, vsip);
     csrmap[CSR_VSIPH] = std::make_shared<rv32_high_csr_t>(proc, CSR_VSIPH, vsip);
@@ -371,7 +371,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   nonvirtual_sie = std::make_shared<sie_csr_t>(proc, CSR_SIE, sip_sie_accr);
   auto vsie = std::make_shared<mie_proxy_csr_t>(proc, CSR_VSIE, vsip_vsie_accr);
-  auto sie = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sie, vsie);
+  auto sie = std::make_shared<virtualized_stimecmp_csr_t>(proc, nonvirtual_sie, vsie);
   if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
     csrmap[CSR_VSIE] = std::make_shared<rv32_low_csr_t>(proc, CSR_VSIE, vsie);
     csrmap[CSR_VSIEH] = std::make_shared<rv32_high_csr_t>(proc, CSR_VSIEH, vsie);
