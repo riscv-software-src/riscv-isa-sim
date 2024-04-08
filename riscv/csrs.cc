@@ -872,6 +872,12 @@ mip_proxy_csr_t::mip_proxy_csr_t(processor_t* const proc, const reg_t addr, gene
   accr(accr) {
 }
 
+void mip_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
+  csr_t::verify_permissions(insn, write);
+  if ((state->csrmap[CSR_HVICTL]->read() & HVICTL_VTI) && state->v)
+    throw trap_virtual_instruction(insn.bits()); // VS-mode attempts to access sip when hvictl.VTI=1
+}
+
 reg_t mip_proxy_csr_t::read() const noexcept {
   return accr->ip_read();
 }
@@ -885,6 +891,12 @@ bool mip_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
 mie_proxy_csr_t::mie_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr):
   csr_t(proc, addr),
   accr(accr) {
+}
+
+void mie_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
+  csr_t::verify_permissions(insn, write);
+  if ((state->csrmap[CSR_HVICTL]->read() & HVICTL_VTI) && state->v)
+    throw trap_virtual_instruction(insn.bits()); // VS-mode attempts to access sie when hvictl.VTI=1
 }
 
 reg_t mie_proxy_csr_t::read() const noexcept {
