@@ -432,6 +432,7 @@ typedef std::shared_ptr<generic_int_accessor_t> generic_int_accessor_t_p;
 class mip_proxy_csr_t: public csr_t {
  public:
   mip_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
   virtual reg_t read() const noexcept override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
@@ -442,6 +443,7 @@ class mip_proxy_csr_t: public csr_t {
 class mie_proxy_csr_t: public csr_t {
  public:
   mie_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
   virtual reg_t read() const noexcept override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
