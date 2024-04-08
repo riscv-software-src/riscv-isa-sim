@@ -467,7 +467,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     }
   }
 
-  hvictl = std::make_shared<const_csr_t>(proc, CSR_HVICTL, set_field((reg_t)0, HVICTL_IID, IRQ_S_EXT)); // no interrupt in hvictl
+  hvictl = std::make_shared<masked_csr_t>(proc, CSR_HVICTL, HVICTL_VTI, set_field((reg_t)0, HVICTL_IID, IRQ_S_EXT)); // no interrupt in hvictl
   if (proc->extension_enabled_const(EXT_SSAIA)) { // Included by EXT_SMAIA
     add_supervisor_csr(CSR_STOPI, std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI));
     add_supervisor_csr(CSR_STOPEI, std::make_shared<inaccessible_csr_t>(proc, CSR_STOPEI));
