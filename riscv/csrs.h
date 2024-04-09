@@ -490,6 +490,9 @@ class henvcfg_csr_t final: public envcfg_csr_t {
 
   virtual void verify_permissions(insn_t insn, bool write) const override;
 
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+
  private:
   csr_t_p menvcfg;
 };
