@@ -1549,6 +1549,11 @@ void henvcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
   masked_csr_t::verify_permissions(insn, write);
 }
 
+bool henvcfg_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t mask = menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE | MENVCFG_ADUE);
+  return envcfg_csr_t::unlogged_write((masked_csr_t::read() & ~mask) | (val & mask));
+}
+
 stimecmp_csr_t::stimecmp_csr_t(processor_t* const proc, const reg_t addr, const reg_t imask):
   basic_csr_t(proc, addr, 0), intr_mask(imask) {
 }
