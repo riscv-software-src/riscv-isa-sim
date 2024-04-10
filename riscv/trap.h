@@ -56,7 +56,18 @@ class insn_trap_t : public trap_t
   }
  private:
   bool gva;
+ protected:
   reg_t tval;
+};
+
+class breakpoint_trap_t : public insn_trap_t
+{
+ public:
+  breakpoint_trap_t(reg_t which, bool gva, reg_t tval)
+    : insn_trap_t(which, gva, tval) {}
+  reg_t get_tval() override {
+    return tval;
+  }
 };
 
 class mem_trap_t : public trap_t
@@ -88,9 +99,9 @@ class mem_trap_t : public trap_t
   std::string name() { return "trap_"#x; } \
 };
 
-#define DECLARE_INST_WITH_GVA_TRAP(n, x) class trap_##x : public insn_trap_t {  \
+#define DECLARE_INST_WITH_GVA_TRAP(n, x) class trap_##x : public breakpoint_trap_t {  \
  public: \
-  trap_##x(bool gva, reg_t tval) : insn_trap_t(n, gva, tval) {} \
+  trap_##x(bool gva, reg_t tval) : breakpoint_trap_t(n, gva, tval) {} \
   std::string name() { return "trap_"#x; } \
 };
 
