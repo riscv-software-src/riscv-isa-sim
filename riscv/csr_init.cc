@@ -346,7 +346,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     const reg_t sstateen0_mask = (proc->extension_enabled(EXT_ZFINX) ? SSTATEEN0_FCSR : 0) |
                                  (proc->extension_enabled(EXT_ZCMT) ? SSTATEEN0_JVT : 0) |
                                  SSTATEEN0_CS;
-    const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN;
+    const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_CSRIND | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN;
     const reg_t mstateen0_mask = hstateen0_mask | (proc->extension_enabled(EXT_SSQOSID) ?  MSTATEEN0_PRIV114 : 0);
     for (int i = 0; i < 4; i++) {
       const reg_t mstateen_mask = i == 0 ? mstateen0_mask : MSTATEEN_HSTATEEN;
@@ -418,11 +418,11 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   }
 
   if (proc->extension_enabled_const(EXT_SSCSRIND)) {
-    csr_t_p vsiselect = std::make_shared<basic_csr_t>(proc, CSR_VSISELECT, 0);
+    csr_t_p vsiselect = std::make_shared<siselect_csr_t>(proc, CSR_VSISELECT, 0);
     add_hypervisor_csr(CSR_VSISELECT, vsiselect);
 
-    csr_t_p siselect = std::make_shared<basic_csr_t>(proc, CSR_SISELECT, 0);
-    add_supervisor_csr(CSR_SISELECT, std::make_shared<virtualized_csr_t>(proc, siselect, vsiselect));
+    csr_t_p siselect = std::make_shared<siselect_csr_t>(proc, CSR_SISELECT, 0);
+    add_supervisor_csr(CSR_SISELECT, std::make_shared<virtualized_with_special_permission_csr_t>(proc, siselect, vsiselect));
 
     auto vsireg = std::make_shared<sscsrind_reg_csr_t>(proc, CSR_VSIREG, vsiselect);
     add_hypervisor_csr(CSR_VSIREG, vsireg);
