@@ -2148,3 +2148,19 @@ void siselect_csr_t::verify_permissions(insn_t insn, bool write) const {
 
   basic_csr_t::verify_permissions(insn, write);
 }
+
+aia_csr_t::aia_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  masked_csr_t(proc, addr, mask, init) {
+}
+
+void aia_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_AIA))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_AIA))
+      throw trap_virtual_instruction(insn.bits());
+  }
+
+  basic_csr_t::verify_permissions(insn, write);
+}
