@@ -353,9 +353,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   auto sip = std::make_shared<virtualized_stimecmp_csr_t>(proc, nonvirtual_sip, vsip);
   if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
     csrmap[CSR_VSIP] = std::make_shared<rv32_low_csr_t>(proc, CSR_VSIP, vsip);
-    csrmap[CSR_VSIPH] = std::make_shared<rv32_high_csr_t>(proc, CSR_VSIPH, vsip);
+    csrmap[CSR_VSIPH] = std::make_shared<aia_rv32_high_csr_t>(proc, CSR_VSIPH, vsip);
     csrmap[CSR_SIP] = std::make_shared<rv32_low_csr_t>(proc, CSR_SIP, sip);
-    csrmap[CSR_SIPH] = std::make_shared<rv32_high_csr_t>(proc, CSR_SIPH, sip);
+    csrmap[CSR_SIPH] = std::make_shared<aia_rv32_high_csr_t>(proc, CSR_SIPH, sip);
   } else {
     csrmap[CSR_VSIP] = vsip;
     csrmap[CSR_SIP] = sip;
@@ -364,7 +364,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   hvip = std::make_shared<hvip_csr_t>(proc, CSR_HVIP, 0);
   if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
     csrmap[CSR_HVIP] = std::make_shared<rv32_low_csr_t>(proc, CSR_HVIP, hvip);
-    csrmap[CSR_HVIPH] = std::make_shared<rv32_high_csr_t>(proc, CSR_HVIPH, hvip);
+    csrmap[CSR_HVIPH] = std::make_shared<aia_rv32_high_csr_t>(proc, CSR_HVIPH, hvip);
   } else {
     csrmap[CSR_HVIP] = hvip;
   }
@@ -374,9 +374,9 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   auto sie = std::make_shared<virtualized_stimecmp_csr_t>(proc, nonvirtual_sie, vsie);
   if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
     csrmap[CSR_VSIE] = std::make_shared<rv32_low_csr_t>(proc, CSR_VSIE, vsie);
-    csrmap[CSR_VSIEH] = std::make_shared<rv32_high_csr_t>(proc, CSR_VSIEH, vsie);
+    csrmap[CSR_VSIEH] = std::make_shared<aia_rv32_high_csr_t>(proc, CSR_VSIEH, vsie);
     csrmap[CSR_SIE] = std::make_shared<rv32_low_csr_t>(proc, CSR_SIE, sie);
-    csrmap[CSR_SIEH] = std::make_shared<rv32_high_csr_t>(proc, CSR_SIEH, sie);
+    csrmap[CSR_SIEH] = std::make_shared<aia_rv32_high_csr_t>(proc, CSR_SIEH, sie);
   } else {
     csrmap[CSR_VSIE] = vsie;
     csrmap[CSR_SIE] = sie;
@@ -427,7 +427,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   hideleg = std::make_shared<hideleg_csr_t>(proc, CSR_HIDELEG, mideleg);
   if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
     csrmap[CSR_HIDELEG] = std::make_shared<rv32_low_csr_t>(proc, CSR_HIDELEG, hideleg);
-    csrmap[CSR_HIDELEGH] = std::make_shared<rv32_high_csr_t>(proc, CSR_HIDELEGH, hideleg);
+    csrmap[CSR_HIDELEGH] = std::make_shared<aia_rv32_high_csr_t>(proc, CSR_HIDELEGH, hideleg);
   } else {
     csrmap[CSR_HIDELEG] = hideleg;
   }
