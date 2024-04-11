@@ -207,7 +207,7 @@ void state_t::add_ireg_proxy(processor_t* const proc, sscsrind_reg_csr_t::sscsri
 
   const reg_t iprio0_addr = 0x30;
   for (int i=0; i<16; i+=2) {
-    csr_t_p iprio = std::make_shared<const_csr_t>(proc, iprio0_addr + i, 0);
+    csr_t_p iprio = std::make_shared<aia_csr_t>(proc, iprio0_addr + i, 0, 0);
     if (xlen == 32) {
       ireg->add_ireg_proxy(iprio0_addr + i, std::make_shared<rv32_low_csr_t>(proc, iprio0_addr + i, iprio));
       ireg->add_ireg_proxy(iprio0_addr + i + 1, std::make_shared<rv32_high_csr_t>(proc, iprio0_addr + i + 1, iprio));
@@ -682,15 +682,15 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     }
   }
 
-  hvictl = std::make_shared<masked_csr_t>(proc, CSR_HVICTL, HVICTL_VTI | HVICTL_IID | HVICTL_DPR | HVICTL_IPRIOM | HVICTL_IPRIO, 0);
+  hvictl = std::make_shared<aia_csr_t>(proc, CSR_HVICTL, HVICTL_VTI | HVICTL_IID | HVICTL_DPR | HVICTL_IPRIOM | HVICTL_IPRIO, 0);
   vstopi = std::make_shared<vstopi_csr_t>(proc, CSR_VSTOPI);
   if (proc->extension_enabled_const(EXT_SSAIA)) { // Included by EXT_SMAIA
     csr_t_p nonvirtual_stopi = std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI);
     csrmap[CSR_STOPI] = std::make_shared<virtualized_csr_t>(proc, nonvirtual_stopi, vstopi);
     csrmap[CSR_STOPEI] = std::make_shared<inaccessible_csr_t>(proc, CSR_STOPEI);
-    auto hvien = std::make_shared<const_csr_t>(proc, CSR_HVIEN, 0);
-    auto hviprio1 = std::make_shared<const_csr_t>(proc, CSR_HVIPRIO1, 0);
-    auto hviprio2 = std::make_shared<const_csr_t>(proc, CSR_HVIPRIO2, 0);
+    auto hvien = std::make_shared<aia_csr_t>(proc, CSR_HVIEN, 0, 0);
+    auto hviprio1 = std::make_shared<aia_csr_t>(proc, CSR_HVIPRIO1, 0, 0);
+    auto hviprio2 = std::make_shared<aia_csr_t>(proc, CSR_HVIPRIO2, 0, 0);
     if (xlen == 32) {
       csrmap[CSR_HVIEN] = std::make_shared<rv32_low_csr_t>(proc, CSR_HVIEN, hvien);
       csrmap[CSR_HVIENH] = std::make_shared<rv32_high_csr_t>(proc, CSR_HVIENH, hvien);
