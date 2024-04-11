@@ -148,9 +148,9 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   auto sip = std::make_shared<virtualized_with_special_permission_csr_t>(proc, nonvirtual_sip, vsip);
   if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
     add_hypervisor_csr(CSR_VSIP, std::make_shared<rv32_low_csr_t>(proc, CSR_VSIP, vsip));
-    add_hypervisor_csr(CSR_VSIPH, std::make_shared<rv32_high_csr_t>(proc, CSR_VSIPH, vsip));
+    add_hypervisor_csr(CSR_VSIPH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_VSIPH, vsip));
     add_supervisor_csr(CSR_SIP, std::make_shared<rv32_low_csr_t>(proc, CSR_SIP, sip));
-    add_supervisor_csr(CSR_SIPH, std::make_shared<rv32_high_csr_t>(proc, CSR_SIPH, sip));
+    add_supervisor_csr(CSR_SIPH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_SIPH, sip));
   } else {
     add_hypervisor_csr(CSR_VSIP, vsip);
     add_supervisor_csr(CSR_SIP, sip);
@@ -159,7 +159,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   hvip = std::make_shared<hvip_csr_t>(proc, CSR_HVIP, 0);
   if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
     add_hypervisor_csr(CSR_HVIP, std::make_shared<rv32_low_csr_t>(proc, CSR_HVIP, hvip));
-    add_hypervisor_csr(CSR_HVIPH, std::make_shared<rv32_high_csr_t>(proc, CSR_HVIPH, hvip));
+    add_hypervisor_csr(CSR_HVIPH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_HVIPH, hvip));
   } else {
     add_hypervisor_csr(CSR_HVIP, hvip);
   }
@@ -169,9 +169,9 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   auto sie = std::make_shared<virtualized_with_special_permission_csr_t>(proc, nonvirtual_sie, vsie);
   if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
     add_hypervisor_csr(CSR_VSIE, std::make_shared<rv32_low_csr_t>(proc, CSR_VSIE, vsie));
-    add_hypervisor_csr(CSR_VSIEH, std::make_shared<rv32_high_csr_t>(proc, CSR_VSIEH, vsie));
+    add_hypervisor_csr(CSR_VSIEH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_VSIEH, vsie));
     add_supervisor_csr(CSR_SIE, std::make_shared<rv32_low_csr_t>(proc, CSR_SIE, sie));
-    add_supervisor_csr(CSR_SIEH, std::make_shared<rv32_high_csr_t>(proc, CSR_SIEH, sie));
+    add_supervisor_csr(CSR_SIEH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_SIEH, sie));
   } else {
     add_hypervisor_csr(CSR_VSIE, vsie);
     add_supervisor_csr(CSR_SIE, sie);
@@ -182,7 +182,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   mideleg = std::make_shared<mideleg_csr_t>(proc, CSR_MIDELEG);
   if (xlen == 32 && proc->extension_enabled_const(EXT_SMAIA)) {
     add_supervisor_csr(CSR_MIDELEG, std::make_shared<rv32_low_csr_t>(proc, CSR_MIDELEG, mideleg));
-    add_supervisor_csr(CSR_MIDELEGH, std::make_shared<rv32_high_csr_t>(proc, CSR_MIDELEGH, mideleg));
+    add_supervisor_csr(CSR_MIDELEGH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_MIDELEGH, mideleg));
   } else {
     add_supervisor_csr(CSR_MIDELEG, mideleg);
   }

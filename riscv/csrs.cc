@@ -641,6 +641,22 @@ reg_t rv32_high_csr_t::written_value() const noexcept {
   return (orig->written_value() >> 32) & 0xffffffffU;
 }
 
+aia_rv32_high_csr_t::aia_rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig):
+  rv32_high_csr_t(proc, addr, orig) {
+}
+
+void aia_rv32_high_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_AIA))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_AIA))
+      throw trap_virtual_instruction(insn.bits());
+  }
+
+  aia_rv32_high_csr_t::verify_permissions(insn, write);
+}
+
 // implement class sstatus_csr_t
 sstatus_csr_t::sstatus_csr_t(processor_t* const proc, sstatus_proxy_csr_t_p orig, vsstatus_csr_t_p virt):
   virtualized_csr_t(proc, orig, virt),
