@@ -967,4 +967,10 @@ class vstopi_csr_t: public csr_t {
  protected:
   bool unlogged_write(const reg_t val) noexcept override;
 };
+
+class siselect_csr_t: public basic_csr_t {
+ public:
+  siselect_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
 #endif
