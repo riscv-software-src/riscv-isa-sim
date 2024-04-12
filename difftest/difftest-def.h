@@ -15,7 +15,7 @@
 
 #if defined(CPU_XIANGSHAN)
 #define CONFIG_DIFF_DEBUG_MODE
-// #define CONFIG_DIFF_RVH  // Default off
+#define CONFIG_DIFF_RVH
 // #define CONFIG_DIFF_RVV  // Default off
 #endif
 
