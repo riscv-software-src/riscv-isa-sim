@@ -721,7 +721,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
   if (args.size() < 3)
     throw trap_interactive();
 
-  if (args.size() == 3)
+  if (args.size() == 4 || (args[0] == "pc" && args.size() == 3)) //dont check mem with arg len = 3
     get_core(args[1]); // make sure that argument is a valid core number
 
   char *end;
@@ -732,7 +732,9 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
     throw trap_interactive();
 
   // mask bits above max_xlen
-  int max_xlen = procs[strtol(args[1].c_str(),NULL,10)]->get_isa().get_max_xlen();
+  bool until_mem_paddr = args[0] == "mem" && args.size() == 3;
+  size_t procnum = until_mem_paddr ? 0 : strtol(args[1].c_str(), NULL, 10);
+  int max_xlen = procs[procnum]->get_isa().get_max_xlen();
   if (max_xlen == 32) val &= 0xFFFFFFFF;
 
   std::vector<std::string> args2;
