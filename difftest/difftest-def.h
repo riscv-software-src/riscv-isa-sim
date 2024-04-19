@@ -34,7 +34,7 @@
     #define RVH_ISA_STRING ""
 #endif
 #ifdef CONFIG_DIFF_RVV
-    #define RVV_ISA_STRING "H"
+    #define RVV_ISA_STRING "V"
 #else
     #define RVV_ISA_STRING ""
 #endif
