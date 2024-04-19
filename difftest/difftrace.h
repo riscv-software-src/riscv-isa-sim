@@ -102,6 +102,9 @@ private:
 #ifdef CONFIG_DIFF_AMO_STORE
       do_trace = true;
 #endif
+#ifdef CONFIG_DIFF_NO_TRACE
+      do_trace = false;
+#endif
       if (do_trace) {
         store_trace_t trace{paddr, data, len};
         store_trace.push(trace);
