@@ -339,6 +339,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   if (extension_table['A']) {
     extension_table[EXT_ZAAMO] = true;
     extension_table[EXT_ZALRSC] = true;
+  } else if (extension_table[EXT_ZAAMO] && extension_table[EXT_ZALRSC]) {
+    extension_table['A'] = true;
   }
 
   if (extension_table['B']) {
