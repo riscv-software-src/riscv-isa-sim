@@ -339,12 +339,16 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   if (extension_table['A']) {
     extension_table[EXT_ZAAMO] = true;
     extension_table[EXT_ZALRSC] = true;
+  } else if (extension_table[EXT_ZAAMO] && extension_table[EXT_ZALRSC]) {
+    extension_table['A'] = true;
   }
 
   if (extension_table['B']) {
     extension_table[EXT_ZBA] = true;
     extension_table[EXT_ZBB] = true;
     extension_table[EXT_ZBS] = true;
+  } else if (extension_table[EXT_ZBA] && extension_table[EXT_ZBB] && extension_table[EXT_ZBS]) {
+    extension_table['B'] = true;
   }
 
   if (extension_table['C']) {
