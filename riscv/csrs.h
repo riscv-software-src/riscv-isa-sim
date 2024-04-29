@@ -102,7 +102,7 @@ class pmpaddr_csr_t: public csr_t {
   bool subset_match(reg_t addr, reg_t len) const noexcept;
 
   // Is the specified access allowed given the pmpcfg privileges?
-  bool access_ok(access_type type, reg_t mode) const noexcept;
+  bool access_ok(access_type type, reg_t mode, bool hlvx) const noexcept;
 
   // To check lock bit status from outside like mseccfg
   bool is_locked() const noexcept {

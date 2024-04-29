@@ -449,7 +449,7 @@ private:
   {
     const size_t ptesize = sizeof(T);
 
-    if (!pmp_ok(pte_paddr, ptesize, LOAD, PRV_S))
+    if (!pmp_ok(pte_paddr, ptesize, LOAD, PRV_S, false))
       throw_access_exception(virt, addr, trap_type);
 
     void* host_pte_addr = sim->addr_to_mem(pte_paddr);
@@ -466,7 +466,7 @@ private:
   {
     const size_t ptesize = sizeof(T);
 
-    if (!pmp_ok(pte_paddr, ptesize, STORE, PRV_S))
+    if (!pmp_ok(pte_paddr, ptesize, STORE, PRV_S, false))
       throw_access_exception(virt, addr, trap_type);
 
     void* host_pte_addr = sim->addr_to_mem(pte_paddr);
@@ -499,7 +499,7 @@ private:
   }
 
   reg_t pmp_homogeneous(reg_t addr, reg_t len);
-  bool pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode);
+  bool pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlvx);
 
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
   bool target_big_endian;
