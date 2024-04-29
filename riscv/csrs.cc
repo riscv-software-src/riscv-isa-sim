@@ -1757,3 +1757,13 @@ bool hvip_csr_t::unlogged_write(const reg_t val) noexcept {
   state->mip->write_with_mask(MIP_VSSIP, val); // hvip.VSSIP is an alias of mip.VSSIP
   return basic_csr_t::unlogged_write(val & (MIP_VSEIP | MIP_VSTIP));
 }
+
+ssp_csr_t::ssp_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  masked_csr_t(proc, addr, mask, init) {
+}
+
+void ssp_csr_t::verify_permissions(insn_t insn, bool write) const {
+  masked_csr_t::verify_permissions(insn, write);
+  DECLARE_XENVCFG_VARS(SSE);
+  require_envcfg(SSE);
+}
