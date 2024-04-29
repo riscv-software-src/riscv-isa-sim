@@ -1465,26 +1465,28 @@ bool vxsat_csr_t::unlogged_write(const reg_t val) noexcept {
 // implement class hstateen_csr_t
 hstateen_csr_t::hstateen_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask,
                                const reg_t init, uint8_t index):
-  masked_csr_t(proc, addr, mask, init),
-  index(index) {
+  basic_csr_t(proc, addr, init),
+  index(index),
+  mask(mask) {
 }
 
 reg_t hstateen_csr_t::read() const noexcept {
   // For every bit in an mstateen CSR that is zero (whether read-only zero or set to zero),
   // the same bit appears as read-only zero in the matching hstateen and sstateen CSRs
-  return masked_csr_t::read() & state->mstateen[index]->read();
+  return basic_csr_t::read() & state->mstateen[index]->read();
 }
 
 bool hstateen_csr_t::unlogged_write(const reg_t val) noexcept {
   // For every bit in an mstateen CSR that is zero (whether read-only zero or set to zero),
   // the same bit appears as read-only zero in the matching hstateen and sstateen CSRs
-  return masked_csr_t::unlogged_write(val & state->mstateen[index]->read());
+  const reg_t mask = this->mask & state->mstateen[index]->read();
+  return basic_csr_t::unlogged_write((basic_csr_t::read() & ~mask) | (val & mask));
 }
 
 void hstateen_csr_t::verify_permissions(insn_t insn, bool write) const {
   if ((state->prv < PRV_M) && !(state->mstateen[index]->read() & MSTATEEN_HSTATEEN))
     throw trap_illegal_instruction(insn.bits());
-  masked_csr_t::verify_permissions(insn, write);
+  basic_csr_t::verify_permissions(insn, write);
 }
 
 // implement class sstateen_csr_t

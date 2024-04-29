@@ -762,7 +762,7 @@ class vxsat_csr_t: public masked_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
-class hstateen_csr_t: public masked_csr_t {
+class hstateen_csr_t: public basic_csr_t {
  public:
   hstateen_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init, uint8_t index);
   virtual reg_t read() const noexcept override;
@@ -771,6 +771,8 @@ class hstateen_csr_t: public masked_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 protected:
   uint8_t index;
+ private:
+  const reg_t mask;
 };
 
 class sstateen_csr_t: public hstateen_csr_t {
