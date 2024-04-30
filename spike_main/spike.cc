@@ -335,7 +335,7 @@ int main(int argc, char** argv)
   bool dtb_enabled = true;
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
-  std::vector<device_factory_t*> plugin_device_factories;
+  std::vector<device_factory_sargs_t> plugin_device_factories;
   std::unique_ptr<icache_sim_t> ic;
   std::unique_ptr<dcache_sim_t> dc;
   std::unique_ptr<cache_sim_t> l2;
@@ -372,8 +372,7 @@ int main(int argc, char** argv)
     if (it == mmio_device_map().end()) throw std::runtime_error("Plugin \"" + name + "\" not found in loaded extlibs.");
 
     parsed_args.erase(parsed_args.begin());
-    it->second->set_sargs(parsed_args);
-    plugin_device_factories.push_back(it->second);
+    plugin_device_factories.push_back(std::make_pair(it->second, parsed_args));
   };
 
   option_parser_t parser;

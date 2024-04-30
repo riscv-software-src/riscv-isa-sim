@@ -63,7 +63,7 @@ make_mems(const std::vector<mem_cfg_t> &layout) {
 int main(int argc, char **argv) {
   cfg_t cfg;
   cfg.isa = "RV64IMAFDCV_xdummyslliuw";
-  std::vector<device_factory_t *> plugin_devices;
+  std::vector<device_factory_sargs_t> plugin_devices;
   if (argc != 3) {
     std::cerr << "Error: invalid arguments\n";
     exit(1);

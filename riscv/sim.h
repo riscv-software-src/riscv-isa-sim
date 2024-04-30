@@ -21,13 +21,16 @@ class mmu_t;
 class remote_bitbang_t;
 class socketif_t;
 
+// Type for holding a pair of device factory and device specialization arguments.
+using device_factory_sargs_t = std::pair<const device_factory_t*, std::vector<std::string>>;
+
 // this class encapsulates the processors and memory in a RISC-V machine.
 class sim_t : public htif_t, public simif_t
 {
 public:
   sim_t(const cfg_t *cfg, bool halted,
         std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
-        std::vector<device_factory_t*> plugin_device_factories,
+        const std::vector<device_factory_sargs_t>& plugin_device_factories,
         const std::vector<std::string>& args,
         const debug_module_config_t &dm_config, const char *log_path,
         bool dtb_enabled, const char *dtb_file,
