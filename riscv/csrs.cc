@@ -1171,7 +1171,7 @@ void hypervisor_csr_t::verify_permissions(insn_t insn, bool write) const {
 }
 
 hideleg_csr_t::hideleg_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mideleg):
-  masked_csr_t(proc, addr, MIP_VS_MASK, 0),
+  masked_csr_t(proc, addr, MIP_VS_MASK | (proc->extension_enabled(EXT_SSCOFPMF) ? MIP_LCOFIP : 0), 0),
   mideleg(mideleg) {
 }
 
