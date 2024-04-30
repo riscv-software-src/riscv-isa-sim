@@ -1716,6 +1716,9 @@ smcntrpmf_csr_t::smcntrpmf_csr_t(processor_t* const proc, const reg_t addr, cons
 
 reg_t smcntrpmf_csr_t::read_prev() const noexcept {
   reg_t val = prev_val.value_or(read());
+  if (state->prv < PRV_M)
+    return val & ~MHPMEVENT_MINH;
+
   return val;
 }
 
@@ -1725,6 +1728,9 @@ void smcntrpmf_csr_t::reset_prev() noexcept {
 
 bool smcntrpmf_csr_t::unlogged_write(const reg_t val) noexcept {
   prev_val = read();
+  if (state->prv < PRV_M)
+    return masked_csr_t::unlogged_write(val & ~MHPMEVENT_MINH);
+
   return masked_csr_t::unlogged_write(val);
 }
 
