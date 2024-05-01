@@ -14,7 +14,7 @@ static std::vector<std::pair<reg_t, abstract_mem_t*>> make_mems(const std::vecto
 
 int main(int argc, char **argv) {
   cfg_t cfg;
-  std::vector<device_factory_t*> plugin_devices;
+  std::vector<device_factory_sargs_t> plugin_devices;
 
   if (argc != 3) {
     std::cerr << "Error: invalid arguments\n";
