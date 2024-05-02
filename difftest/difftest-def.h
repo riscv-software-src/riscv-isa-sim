@@ -17,6 +17,7 @@
 #define CONFIG_DIFF_DEBUG_MODE
 #define CONFIG_DIFF_RVH
 #define CONFIG_DIFF_RVV
+#define CONFIG_DIFF_ZICOND
 #endif
 
 #if defined(CPU_NUTSHELL)
@@ -38,11 +39,17 @@
 #else
     #define RVV_ISA_STRING ""
 #endif
+#ifdef CONFIG_DIFF_ZICOND
+    #define ZICOND_ISA_STRING "_zicond"
+#else
+    #define ZICOND_ISA_STRING ""
+#endif
 
 #define CONFIG_DIFF_ISA_STRING \
     "RV64IMAFDC" \
     RVV_ISA_STRING \
     RVH_ISA_STRING \
+    ZICOND_ISA_STRING \
     "_zba_zbb_zbc_zbs_zbkb_zbkc_zbkx_zknd_zkne_zknh_zksed_zksh_svinval"
 
 #define CONFIG_MEMORY_SIZE     (16 * 1024 * 1024 * 1024UL)
