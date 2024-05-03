@@ -2098,6 +2098,18 @@ vstopi_csr_t::vstopi_csr_t(processor_t* const proc, const reg_t addr):
   csr_t(proc, addr) {
 }
 
+void vstopi_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_AIA))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_AIA))
+      throw trap_virtual_instruction(insn.bits());
+  }
+
+  csr_t::verify_permissions(insn, write);
+}
+
 reg_t vstopi_csr_t::read() const noexcept {
   reg_t hvictl = state->hvictl->read();
   bool vti = hvictl & HVICTL_VTI;
