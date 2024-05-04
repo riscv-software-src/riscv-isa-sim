@@ -123,6 +123,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZACAS] = true;
     } else if (ext_str == "zabha") {
       extension_table[EXT_ZABHA] = true;
+    } else if (ext_str == "zawrs") {
+      extension_table[EXT_ZAWRS] = true;
     } else if (ext_str == "zmmul") {
       extension_table[EXT_ZMMUL] = true;
     } else if (ext_str == "zba") {
@@ -378,12 +380,16 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     bad_isa_string(str, "'Zcf/Zcd/Zcb/Zcmp/Zcmt' extensions require 'Zca' extension");
   }
 
-  if (extension_table[EXT_ZACAS] && !extension_table['A'] && !extension_table[EXT_ZAAMO]) {
+  if (extension_table[EXT_ZACAS] && !extension_table[EXT_ZAAMO]) {
     bad_isa_string(str, "'Zacas' extension requires either the 'A' or the 'Zaamo' extension");
   }
 
-  if (extension_table[EXT_ZABHA] && !extension_table['A'] && !extension_table[EXT_ZAAMO]) {
+  if (extension_table[EXT_ZABHA] && !extension_table[EXT_ZAAMO]) {
     bad_isa_string(str, "'Zabha' extension requires either the 'A' or the 'Zaamo' extension");
+  }
+
+  if (extension_table[EXT_ZAWRS] && !extension_table[EXT_ZALRSC]) {
+    bad_isa_string(str, "'Zabha' extension requires either the 'A' or the 'Zalrsc' extension");
   }
 
   // When SSE is 0, Zicfiss behavior is defined by Zicmop

@@ -987,6 +987,10 @@ riscv_insn_ext_zabha = \
 	amoxor_h \
 	amocas_h \
 
+riscv_insn_ext_zawrs = \
+	wrs_sto \
+	wrs_nto \
+
 riscv_insn_ext_zalasr = \
 	lb_aq \
 	lh_aq \
@@ -1099,6 +1103,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_q_zfa) \
 	$(riscv_insn_ext_zacas) \
 	$(riscv_insn_ext_zabha) \
+	$(riscv_insn_ext_zawrs) \
 	$(riscv_insn_ext_zalasr) \
 	$(riscv_insn_ext_zce) \
 	$(riscv_insn_ext_zfh) \
