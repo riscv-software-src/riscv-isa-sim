@@ -880,6 +880,11 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_XAMO(amocas_h)
   }
 
+  if (isa->extension_enabled(EXT_ZAWRS)) {
+    DEFINE_NOARG(wrs_sto);
+    DEFINE_NOARG(wrs_nto);
+  }
+
   if (isa->extension_enabled(EXT_ZICFILP)) {
     // lpad encodes as `auipc x0, label`, so it needs to be added before auipc
     // for higher disassembling priority
