@@ -222,12 +222,12 @@ private:
 
 protected:
   static match_t legalize_match(reg_t val) noexcept;
-  static bool legalize_timing(reg_t val, reg_t timing_mask, reg_t select_mask, reg_t execute_mask, reg_t load_mask) noexcept;
+  static timing_t legalize_timing(reg_t val, reg_t timing_mask, reg_t select_mask, reg_t execute_mask, reg_t load_mask) noexcept;
   bool dmode = false;
   action_t action = ACTION_DEBUG_EXCEPTION;
   hit_t hit = HIT_FALSE;
   bool select = false;
-  bool timing = false;
+  timing_t timing = TIMING_BEFORE;
   bool chain = false;
   match_t match = MATCH_EQUAL;
   bool execute = false;

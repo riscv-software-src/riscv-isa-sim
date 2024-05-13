@@ -239,7 +239,7 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
       /* In this implementation, every hit after is immediately after. */
       hit = HIT_IMMEDIATELY_AFTER;
     }
-    return match_result_t(timing_t(timing), action);
+    return match_result_t(timing, action);
   }
   return std::nullopt;
 }
@@ -259,13 +259,15 @@ mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val) noexcept
   }
 }
 
-bool mcontrol_common_t::legalize_timing(reg_t val, reg_t timing_mask, reg_t select_mask, reg_t execute_mask, reg_t load_mask) noexcept {
+timing_t mcontrol_common_t::legalize_timing(reg_t val, reg_t timing_mask, reg_t select_mask, reg_t execute_mask, reg_t load_mask) noexcept {
   // For load data triggers, force timing=after to avoid debugger having to repeat loads which may have side effects.
   if (get_field(val, select_mask) && get_field(val, load_mask))
     return TIMING_AFTER;
   if (get_field(val, execute_mask))
     return TIMING_BEFORE;
-  return get_field(val, timing_mask);
+  if (get_field(val, timing_mask))
+    return TIMING_AFTER;
+  return TIMING_BEFORE;
 }
 
 reg_t mcontrol6_t::tdata1_read(const processor_t * const proc) const noexcept {
