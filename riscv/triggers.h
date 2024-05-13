@@ -199,6 +199,14 @@ public:
     MATCH_MASK_HIGH = MCONTROL_MATCH_MASK_HIGH
   } match_t;
 
+  typedef enum
+  {
+    HIT_FALSE,
+    HIT_BEFORE,
+    HIT_AFTER,
+    HIT_IMMEDIATELY_AFTER,
+  } hit_t;
+
   virtual bool get_dmode() const override { return dmode; }
   virtual bool get_chain() const override { return chain; }
   virtual bool get_execute() const override { return execute; }
@@ -217,7 +225,7 @@ protected:
   static bool legalize_timing(reg_t val, reg_t timing_mask, reg_t select_mask, reg_t execute_mask, reg_t load_mask) noexcept;
   bool dmode = false;
   action_t action = ACTION_DEBUG_EXCEPTION;
-  bool hit = false;
+  hit_t hit = HIT_FALSE;
   bool select = false;
   bool timing = false;
   bool chain = false;

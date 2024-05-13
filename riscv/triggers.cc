@@ -165,7 +165,7 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   auto xlen = proc->get_xlen();
   assert(get_field(val, CSR_MCONTROL_TYPE(xlen)) == CSR_TDATA1_TYPE_MCONTROL);
   dmode = get_field(val, CSR_MCONTROL_DMODE(xlen));
-  hit = get_field(val, CSR_MCONTROL_HIT);
+  hit = get_field(val, CSR_MCONTROL_HIT) ? HIT_AFTER : HIT_FALSE;
   select = get_field(val, MCONTROL_SELECT);
   timing = legalize_timing(val, MCONTROL_TIMING, MCONTROL_SELECT, MCONTROL_EXECUTE, MCONTROL_LOAD);
   action = legalize_action(val, MCONTROL_ACTION, CSR_MCONTROL_DMODE(xlen));
@@ -233,7 +233,12 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
   if (simple_match(xlen, value) && allow_action(proc->get_state())) {
     /* This is OK because this function is only called if the trigger was not
      * inhibited by the previous trigger in the chain. */
-    hit = true;
+    if (timing == TIMING_BEFORE) {
+      hit = HIT_BEFORE;
+    } else {
+      /* In this implementation, every hit after is immediately after. */
+      hit = HIT_IMMEDIATELY_AFTER;
+    }
     return match_result_t(timing_t(timing), action);
   }
   return std::nullopt;
@@ -270,7 +275,7 @@ reg_t mcontrol6_t::tdata1_read(const processor_t * const proc) const noexcept {
   tdata1 = set_field(tdata1, CSR_MCONTROL6_DMODE(xlen), dmode);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_VS, proc->extension_enabled('H') ? vs : 0);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_VU, proc->extension_enabled('H') ? vu : 0);
-  tdata1 = set_field(tdata1, CSR_MCONTROL6_HIT, hit);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_HIT, hit != HIT_FALSE);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_SELECT, select);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_TIMING, timing);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_ACTION, action);
@@ -291,7 +296,7 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   dmode = get_field(val, CSR_MCONTROL6_DMODE(xlen));
   vs = get_field(val, CSR_MCONTROL6_VS);
   vu = get_field(val, CSR_MCONTROL6_VU);
-  hit = get_field(val, CSR_MCONTROL6_HIT);
+  hit = get_field(val, CSR_MCONTROL6_HIT) ? HIT_BEFORE : HIT_FALSE;
   select = get_field(val, CSR_MCONTROL6_SELECT);
   timing = legalize_timing(val, CSR_MCONTROL6_TIMING, CSR_MCONTROL6_SELECT, CSR_MCONTROL6_EXECUTE, CSR_MCONTROL6_LOAD);
   action = legalize_action(val, CSR_MCONTROL6_ACTION, CSR_MCONTROL6_DMODE(xlen));
