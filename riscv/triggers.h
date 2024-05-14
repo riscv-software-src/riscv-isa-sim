@@ -199,12 +199,22 @@ public:
     MATCH_MASK_HIGH = MCONTROL_MATCH_MASK_HIGH
   } match_t;
 
+  typedef enum
+  {
+    HIT_FALSE,
+    HIT_BEFORE,
+    HIT_AFTER,
+    HIT_IMMEDIATELY_AFTER,
+  } hit_t;
+
   virtual bool get_dmode() const override { return dmode; }
   virtual bool get_chain() const override { return chain; }
   virtual bool get_execute() const override { return execute; }
   virtual bool get_store() const override { return store; }
   virtual bool get_load() const override { return load; }
   virtual action_t get_action() const override { return action; }
+  virtual timing_t get_timing() const { return timing; }
+  virtual void set_timing(timing_t t) { timing = t; }
 
   virtual std::optional<match_result_t> detect_memory_access_match(processor_t * const proc,
       operation_t operation, reg_t address, std::optional<reg_t> data) noexcept override;
@@ -214,12 +224,11 @@ private:
 
 protected:
   static match_t legalize_match(reg_t val) noexcept;
-  static bool legalize_timing(reg_t val, reg_t timing_mask, reg_t select_mask, reg_t execute_mask, reg_t load_mask) noexcept;
   bool dmode = false;
   action_t action = ACTION_DEBUG_EXCEPTION;
-  bool hit = false;
+  hit_t hit = HIT_FALSE;
   bool select = false;
-  bool timing = false;
+  timing_t timing = TIMING_BEFORE;
   bool chain = false;
   match_t match = MATCH_EQUAL;
   bool execute = false;
@@ -231,6 +240,8 @@ class mcontrol_t : public mcontrol_common_t {
 public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
+protected:
+  static timing_t legalize_timing(reg_t val) noexcept;
 };
 
 class mcontrol6_t : public mcontrol_common_t {
@@ -274,6 +285,11 @@ public:
   reg_t tinfo_read(unsigned index) const noexcept;
 
   unsigned count() const { return triggers.size(); }
+
+  // Update timing on mcontrol6 trigger chains.
+  void update_timing() noexcept;
+  // Set timing on mcontrol6 trigger chains starting at the given index.
+  void set_timing(size_t start, timing_t timing) noexcept;
 
   std::optional<match_result_t> detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data) noexcept;
   std::optional<match_result_t> detect_icount_match() noexcept;
