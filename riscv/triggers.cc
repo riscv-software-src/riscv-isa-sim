@@ -167,7 +167,7 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
   dmode = get_field(val, CSR_MCONTROL_DMODE(xlen));
   hit = get_field(val, CSR_MCONTROL_HIT) ? HIT_AFTER : HIT_FALSE;
   select = get_field(val, MCONTROL_SELECT);
-  timing = legalize_timing(val, MCONTROL_TIMING, MCONTROL_SELECT, MCONTROL_EXECUTE, MCONTROL_LOAD);
+  timing = legalize_timing(val);
   action = legalize_action(val, MCONTROL_ACTION, CSR_MCONTROL_DMODE(xlen));
   chain = allow_chain ? get_field(val, MCONTROL_CHAIN) : 0;
   match = legalize_match(get_field(val, MCONTROL_MATCH));
@@ -259,13 +259,13 @@ mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val) noexcept
   }
 }
 
-timing_t mcontrol_common_t::legalize_timing(reg_t val, reg_t timing_mask, reg_t select_mask, reg_t execute_mask, reg_t load_mask) noexcept {
+timing_t mcontrol_t::legalize_timing(reg_t val) noexcept {
   // For load data triggers, force timing=after to avoid debugger having to repeat loads which may have side effects.
-  if (get_field(val, select_mask) && get_field(val, load_mask))
+  if (get_field(val, MCONTROL_SELECT) && get_field(val, MCONTROL_LOAD))
     return TIMING_AFTER;
-  if (get_field(val, execute_mask))
+  if (get_field(val, MCONTROL_EXECUTE))
     return TIMING_BEFORE;
-  if (get_field(val, timing_mask))
+  if (get_field(val, MCONTROL_TIMING))
     return TIMING_AFTER;
   return TIMING_BEFORE;
 }
@@ -300,7 +300,6 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   vu = get_field(val, CSR_MCONTROL6_VU);
   hit = get_field(val, CSR_MCONTROL6_HIT) ? HIT_BEFORE : HIT_FALSE;
   select = get_field(val, CSR_MCONTROL6_SELECT);
-  timing = legalize_timing(val, CSR_MCONTROL6_TIMING, CSR_MCONTROL6_SELECT, CSR_MCONTROL6_EXECUTE, CSR_MCONTROL6_LOAD);
   action = legalize_action(val, CSR_MCONTROL6_ACTION, CSR_MCONTROL6_DMODE(xlen));
   chain = allow_chain ? get_field(val, CSR_MCONTROL6_CHAIN) : 0;
   match = legalize_match(get_field(val, CSR_MCONTROL6_MATCH));
@@ -310,6 +309,61 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   execute = get_field(val, CSR_MCONTROL6_EXECUTE);
   store = get_field(val, CSR_MCONTROL6_STORE);
   load = get_field(val, CSR_MCONTROL6_LOAD);
+
+  // Now choose timing based on table 15 (suggested trigger timings) of the
+  // debug spec.
+  // Every trigger should be before, except for data load triggers, and chains
+  // that involve a data load trigger.
+  if (select && load) {
+    timing = TIMING_AFTER;
+  }
+  timing = TIMING_BEFORE;
+  // If this trigger is part of a chain that includes a data load trigger, then
+  // update the timing to be after.
+  proc->TM.update_timing();
+}
+
+void module_t::set_timing(size_t start, timing_t timing) noexcept
+{
+  for (size_t i = start; i < triggers.size(); i++) {
+    auto mcontrol6 = dynamic_cast<mcontrol6_t*>(triggers[i]);
+    if (mcontrol6) {
+      mcontrol6->set_timing(timing);
+    }
+    if (!triggers[i]->get_chain()) {
+      break;
+    }
+  }
+}
+
+void module_t::update_timing() noexcept {
+  size_t chain_start = 0;
+  timing_t timing = TIMING_BEFORE;
+
+  for (size_t i = 0; i < triggers.size(); i++) {
+    auto trigger = triggers[i];
+
+    if (trigger->get_chain()) {
+      // Chain continues.
+      // If it's an mcontrol6_t trigger, we have to check the timing.
+      auto mcontrol6 = dynamic_cast<mcontrol6_t*>(trigger);
+      if (mcontrol6 && mcontrol6->get_timing() == TIMING_AFTER) {
+        timing = TIMING_AFTER;
+      }
+    } else {
+      // New chain starts.
+      if (timing == TIMING_AFTER) {
+        set_timing(chain_start, TIMING_AFTER);
+      }
+
+      chain_start = i;
+      timing = TIMING_BEFORE;
+    }
+  }
+
+  if (timing == TIMING_AFTER) {
+    set_timing(chain_start, TIMING_AFTER);
+  }
 }
 
 std::optional<match_result_t> icount_t::detect_icount_fire(processor_t * const proc) noexcept
