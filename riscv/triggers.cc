@@ -82,7 +82,7 @@ bool trigger_t::textra_match(processor_t * const proc) const noexcept
   if (sselect == SSELECT_SCONTEXT) {
     reg_t mask = (reg_t(1) << ((xlen == 32) ? CSR_TEXTRA32_SVALUE_LENGTH : CSR_TEXTRA64_SVALUE_LENGTH)) - 1;
     assert(CSR_TEXTRA32_SBYTEMASK_LENGTH < CSR_TEXTRA64_SBYTEMASK_LENGTH);
-    for (int i = 0; i < CSR_TEXTRA64_SBYTEMASK_LENGTH; i++)
+    for (unsigned long long i = 0; i < CSR_TEXTRA64_SBYTEMASK_LENGTH; i++)
       if (sbytemask & (1 << i))
         mask &= ~(reg_t(0xff) << (i * 8));
     if ((state->scontext->read() & mask) != (svalue & mask))
@@ -277,9 +277,9 @@ reg_t mcontrol6_t::tdata1_read(const processor_t * const proc) const noexcept {
   tdata1 = set_field(tdata1, CSR_MCONTROL6_DMODE(xlen), dmode);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_VS, proc->extension_enabled('H') ? vs : 0);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_VU, proc->extension_enabled('H') ? vu : 0);
-  tdata1 = set_field(tdata1, CSR_MCONTROL6_HIT, hit != HIT_FALSE);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_HIT0, hit == HIT_BEFORE || hit == HIT_IMMEDIATELY_AFTER);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_HIT1, hit == HIT_AFTER || hit == HIT_IMMEDIATELY_AFTER);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_SELECT, select);
-  tdata1 = set_field(tdata1, CSR_MCONTROL6_TIMING, timing);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_ACTION, action);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_CHAIN, chain);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_MATCH, match);
@@ -298,7 +298,14 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   dmode = get_field(val, CSR_MCONTROL6_DMODE(xlen));
   vs = get_field(val, CSR_MCONTROL6_VS);
   vu = get_field(val, CSR_MCONTROL6_VU);
-  hit = get_field(val, CSR_MCONTROL6_HIT) ? HIT_BEFORE : HIT_FALSE;
+  switch (get_field(val, CSR_MCONTROL6_HIT1) << 1 | get_field(val, CSR_MCONTROL6_HIT0))
+  {
+    case CSR_MCONTROL6_HIT0_FALSE: hit = HIT_FALSE; break;
+    case CSR_MCONTROL6_HIT0_BEFORE: hit = HIT_BEFORE; break;
+    case CSR_MCONTROL6_HIT0_AFTER: hit = HIT_AFTER; break;
+    case CSR_MCONTROL6_HIT0_IMMEDIATELY_AFTER: hit = HIT_IMMEDIATELY_AFTER; break;
+    default: assert(false);
+  }
   select = get_field(val, CSR_MCONTROL6_SELECT);
   action = legalize_action(val, CSR_MCONTROL6_ACTION, CSR_MCONTROL6_DMODE(xlen));
   chain = allow_chain ? get_field(val, CSR_MCONTROL6_CHAIN) : 0;
@@ -688,7 +695,8 @@ reg_t module_t::tinfo_read(unsigned UNUSED index) const noexcept
          (1 << CSR_TDATA1_TYPE_ITRIGGER) |
          (1 << CSR_TDATA1_TYPE_ETRIGGER) |
          (1 << CSR_TDATA1_TYPE_MCONTROL6) |
-         (1 << CSR_TDATA1_TYPE_DISABLED);
+         (1 << CSR_TDATA1_TYPE_DISABLED) |
+         (CSR_TINFO_VERSION_1 << CSR_TINFO_VERSION_OFFSET);
 }
 
 };
