@@ -462,8 +462,8 @@ sim_t *DifftestRef::create_sim(const cfg_t *cfg) {
     false,
     // std::vector<std::pair<reg_t, abstract_mem_t*>> mems
     mems,
-    // std::vector<device_factory_t*> plugin_device_factories
-    std::vector<device_factory_t*>{},
+    // const std::vector<device_factory_sargs_t>& plugin_device_factories
+    std::vector<device_factory_sargs_t>{},
     // const std::vector<std::string>& args
     std::vector<std::string>{},
     // const debug_module_config_t &dm_config
