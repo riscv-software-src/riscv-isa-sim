@@ -81,14 +81,14 @@ reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
   reg_t mode = (reg_t) access_info.effective_priv;
 
   reg_t paddr = walk(access_info) | (addr & (PGSIZE-1));
-  if (!pmp_ok(paddr, len, type, mode))
+  if (!pmp_ok(paddr, len, access_info.flags.ss_access ? STORE : type, mode, access_info.flags.hlvx))
     throw_access_exception(virt, addr, type);
   return paddr;
 }
 
 tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
-  auto access_info = generate_access_info(vaddr, FETCH, {false, false, false});
+  auto access_info = generate_access_info(vaddr, FETCH, {});
   check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt);
 
   tlb_entry_t result;
@@ -364,7 +364,7 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
   return entry;
 }
 
-bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
+bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlvx)
 {
   if (!proc || proc->n_pmp == 0)
     return true;
@@ -385,7 +385,7 @@ bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
       if (!all_match)
         return false;
 
-      return proc->state.pmpaddr[i]->access_ok(type, mode);
+      return proc->state.pmpaddr[i]->access_ok(type, mode, hlvx);
     }
   }
 
@@ -515,6 +515,15 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
   reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
   reg_t satp = proc->get_state()->satp->readvirt(virt);
   vm_info vm = decode_vm_info(proc->get_const_xlen(), false, mode, satp);
+
+  bool ss_access = access_info.flags.ss_access;
+
+  if (ss_access) {
+    if (vm.levels == 0)
+      trap_store_access_fault(virt, addr, 0, 0);
+    type = STORE;
+  }
+
   if (vm.levels == 0)
     return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx, false) & ~page_mask; // zero-extend from xlen
 
@@ -543,6 +552,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
     bool pbmte = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_PBMTE) : (proc->get_state()->menvcfg->read() & MENVCFG_PBMTE);
     bool hade = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_ADUE) : (proc->get_state()->menvcfg->read() & MENVCFG_ADUE);
+    bool sse = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_SSE) : (proc->get_state()->menvcfg->read() & MENVCFG_SSE);
 
     if (pte & PTE_RSVD) {
       break;
@@ -558,11 +568,24 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
       base = ppn << PGSHIFT;
     } else if ((pte & PTE_U) ? s_mode && (type == FETCH || !sum) : !s_mode) {
       break;
-    } else if (!(pte & PTE_V) || (!(pte & PTE_R) && (pte & PTE_W))) {
+    } else if (!(pte & PTE_V) ||
+              (!(pte & PTE_R) && (pte & PTE_W) && ((!sse && !(pte & PTE_X)) || (pte & PTE_X)))) {
+      // invalid
+      // not shadow stack access xwr=110 or xwr=010 page cause page fault
+      // shadow stack access with PTE_X moved to following check
       break;
+    } else if ((!(pte & PTE_R) && (pte & PTE_W) && !(pte & PTE_X)) && (type == STORE && !ss_access)) {
+      // not shadow stack store and  xwr = 010 cause access-fault
+      throw trap_store_access_fault(virt, addr, 0, 0);
+    } else if ((!(pte & PTE_R) && (pte & PTE_W) && !(pte & PTE_X)) && type == FETCH) {
+      // fetch from shadow stack pages cause instruction access-fault
+      throw trap_instruction_access_fault(virt, addr, 0, 0);
+    } else if ((((pte & PTE_R) && (pte & PTE_W)) || (pte & PTE_X)) && ss_access) {
+      // shadow stack access cause store access fault if xwr!=010 and xwr!=001
+      throw trap_store_access_fault(virt, addr, 0, 0);
     } else if (type == FETCH || hlvx ? !(pte & PTE_X) :
                type == LOAD          ? !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
-                                       !((pte & PTE_R) && (pte & PTE_W))) {
+                                       !(pte & PTE_W)) {
       break;
     } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
       break;

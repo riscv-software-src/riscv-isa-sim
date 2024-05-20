@@ -132,6 +132,7 @@ struct state_t
   csr_t_p htval;
   csr_t_p htinst;
   csr_t_p hgatp;
+  hvip_csr_t_p hvip;
   sstatus_csr_t_p sstatus;
   vsstatus_csr_t_p vsstatus;
   csr_t_p vstvec;
@@ -181,6 +182,8 @@ struct state_t
 
   csr_t_p srmcfg;
 
+  csr_t_p ssp;
+
   bool serialized; // whether timer CSRs are in a well-defined state
 
   // When true, execute a single instruction and then enter debug mode.  This
@@ -197,6 +200,8 @@ struct state_t
   reg_t last_inst_priv;
   int last_inst_xlen;
   int last_inst_flen;
+
+  elp_t elp;
 };
 
 // this class represents one processor in a RISC-V machine.
@@ -297,7 +302,12 @@ public:
 
   FILE *get_log_file() { return log_file; }
 
-  void register_insn(insn_desc_t);
+  void register_base_insn(insn_desc_t insn) {
+    register_insn(insn, false /* is_custom */);
+  }
+  void register_custom_insn(insn_desc_t insn) {
+    register_insn(insn, true /* is_custom */);
+  }
   void register_extension(extension_t*);
 
   // MMIO slave interface
@@ -326,6 +336,8 @@ public:
   void clear_waiting_for_interrupt() { in_wfi = false; };
   bool is_waiting_for_interrupt() { return in_wfi; };
 
+  void execute_insn_prehook(insn_t insn);
+
 private:
   const isa_parser_t * const isa;
   const cfg_t * const cfg;
@@ -352,6 +364,7 @@ private:
   mutable std::bitset<NUM_ISA_EXTENSIONS> extension_assumed_const;
 
   std::vector<insn_desc_t> instructions;
+  std::vector<insn_desc_t> custom_instructions;
   std::unordered_map<reg_t,uint64_t> pc_histogram;
 
   static const size_t OPCODE_CACHE_SIZE = 8191;
@@ -362,6 +375,7 @@ private:
   void take_trap(trap_t& t, reg_t epc); // take an exception
   void take_trigger_action(triggers::action_t action, reg_t breakpoint_tval, reg_t epc, bool virt);
   void disasm(insn_t insn); // disassemble and print an instruction
+  void register_insn(insn_desc_t, bool);
   int paddr_bits();
 
   void enter_debug_mode(uint8_t cause);

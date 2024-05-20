@@ -60,6 +60,23 @@
 #define SP READ_REG(X_SP)
 #define RA READ_REG(X_RA)
 
+// Zdinx macros
+#define READ_REG_PAIR(reg) ({ \
+  require((reg) % 2 == 0); \
+  (reg) == 0 ? reg_t(0) : \
+  (READ_REG((reg) + 1) << 32) + zext32(READ_REG(reg)); })
+
+#define RS1_PAIR READ_REG_PAIR(insn.rs1())
+#define RS2_PAIR READ_REG_PAIR(insn.rs2())
+#define RD_PAIR READ_REG_PAIR(insn.rd())
+
+#define WRITE_RD_PAIR(value) \
+  if (insn.rd() != 0) { \
+    require(insn.rd() % 2 == 0); \
+    WRITE_REG(insn.rd(), sext32(value)); \
+    WRITE_REG(insn.rd() + 1, (sreg_t(value)) >> 32); \
+  }
+
 // FPU macros
 #define READ_ZDINX_REG(reg) (xlen == 32 ? f64(READ_REG_PAIR(reg)) : f64(STATE.XPR[reg] & (uint64_t)-1))
 #define READ_FREG_H(reg) (p->extension_enabled(EXT_ZFINX) ? f16(STATE.XPR[reg] & (uint16_t)-1) : f16(READ_FREG(reg)))
@@ -321,3 +338,23 @@ inline long double to_f(float128_t f) { long double r; memcpy(&r, &f, sizeof(r))
   reg_t h##field = get_field(STATE.henvcfg->read(), HENVCFG_##field)
 
 #endif
+
+#define software_check(x, tval) (unlikely(!(x)) ? throw trap_software_check(tval) : (void) 0)
+#define ZICFILP_xLPE(v, prv) \
+  ({ \
+    reg_t lpe = 0ULL; \
+    if (p->extension_enabled(EXT_ZICFILP)) { \
+      DECLARE_XENVCFG_VARS(LPE); \
+      const reg_t msecLPE = get_field(STATE.mseccfg->read(), MSECCFG_MLPE); \
+      switch (prv) { \
+      case PRV_U: lpe = p->extension_enabled('S') ? sLPE : mLPE; break; \
+      case PRV_S: lpe = (v) ? hLPE : mLPE; break; \
+      case PRV_M: lpe = msecLPE; break; \
+      default: abort(); \
+      } \
+    } \
+    lpe; \
+  })
+#define ZICFILP_IS_LP_EXPECTED(reg_num) \
+  (((reg_num) != 1 && (reg_num) != 5 && (reg_num) != 7) ? \
+   elp_t::LP_EXPECTED : elp_t::NO_LP_EXPECTED)

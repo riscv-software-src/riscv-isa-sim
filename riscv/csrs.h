@@ -21,6 +21,11 @@
 class processor_t;
 struct state_t;
 
+enum struct elp_t {
+  NO_LP_EXPECTED = 0,
+  LP_EXPECTED = 1,
+};
+
 // Parent, abstract class for all CSRs
 class csr_t {
  public:
@@ -97,7 +102,7 @@ class pmpaddr_csr_t: public csr_t {
   bool subset_match(reg_t addr, reg_t len) const noexcept;
 
   // Is the specified access allowed given the pmpcfg privileges?
-  bool access_ok(access_type type, reg_t mode) const noexcept;
+  bool access_ok(access_type type, reg_t mode, bool hlvx) const noexcept;
 
   // To check lock bit status from outside like mseccfg
   bool is_locked() const noexcept {
@@ -349,7 +354,7 @@ typedef std::shared_ptr<misa_csr_t> misa_csr_t_p;
 class mip_or_mie_csr_t: public csr_t {
  public:
   mip_or_mie_csr_t(processor_t* const proc, const reg_t addr);
-  virtual reg_t read() const noexcept override final;
+  virtual reg_t read() const noexcept override;
 
   void write_with_mask(const reg_t mask, const reg_t val) noexcept;
 
@@ -364,6 +369,7 @@ class mip_or_mie_csr_t: public csr_t {
 class mip_csr_t: public mip_or_mie_csr_t {
  public:
   mip_csr_t(processor_t* const proc, const reg_t addr);
+  virtual reg_t read() const noexcept override final;
 
   // Does not log. Used by external things (clint) that wiggle bits in mip.
   void backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept;
@@ -483,6 +489,9 @@ class henvcfg_csr_t final: public envcfg_csr_t {
   }
 
   virtual void verify_permissions(insn_t insn, bool write) const override;
+
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
 
  private:
   csr_t_p menvcfg;
@@ -707,7 +716,8 @@ class dcsr_csr_t: public csr_t {
   dcsr_csr_t(processor_t* const proc, const reg_t addr);
   virtual void verify_permissions(insn_t insn, bool write) const override;
   virtual reg_t read() const noexcept override;
-  void write_cause_and_prv(uint8_t cause, reg_t prv, bool v) noexcept;
+  void update_fields(const uint8_t cause, const reg_t prv,
+                     const bool v, const elp_t pelp) noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  public:
@@ -721,6 +731,7 @@ class dcsr_csr_t: public csr_t {
   bool halt;
   bool v;
   uint8_t cause;
+  elp_t pelp;
 };
 
 typedef std::shared_ptr<dcsr_csr_t> dcsr_csr_t_p;
@@ -783,7 +794,7 @@ class vxsat_csr_t: public masked_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
-class hstateen_csr_t: public masked_csr_t {
+class hstateen_csr_t: public basic_csr_t {
  public:
   hstateen_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init, uint8_t index);
   virtual reg_t read() const noexcept override;
@@ -792,6 +803,8 @@ class hstateen_csr_t: public masked_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 protected:
   uint8_t index;
+ private:
+  const reg_t mask;
 };
 
 class sstateen_csr_t: public hstateen_csr_t {
@@ -880,6 +893,23 @@ class smcntrpmf_csr_t : public masked_csr_t {
 class srmcfg_csr_t: public masked_csr_t {
  public:
   srmcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class hvip_csr_t : public basic_csr_t {
+ public:
+  hvip_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
+  reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+typedef std::shared_ptr<hvip_csr_t> hvip_csr_t_p;
+
+// ssp CSR provided by CFI Zicfiss extension
+class ssp_csr_t final : public masked_csr_t {
+ public:
+  ssp_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
 #endif

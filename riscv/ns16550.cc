@@ -2,6 +2,7 @@
 #include <sstream>
 #include "devices.h"
 #include "processor.h"
+#include "mmu.h"
 #include "term.h"
 #include "sim.h"
 #include "dts.h"
@@ -170,6 +171,9 @@ bool ns16550_t::load(reg_t addr, size_t len, uint8_t* bytes)
   if (reg_io_width != len) {
     return false;
   }
+  if (addr + len > PGSIZE) {
+    return false;
+  }
   addr >>= reg_shift;
   addr &= 7;
 
@@ -228,6 +232,9 @@ bool ns16550_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   bool ret = true, update = false;
 
   if (reg_io_width != len) {
+    return false;
+  }
+  if (addr + len > PGSIZE) {
     return false;
   }
   addr >>= reg_shift;
@@ -321,7 +328,7 @@ void ns16550_t::tick(reg_t UNUSED rtc_ticks)
   update_interrupt();
 }
 
-std::string ns16550_generate_dts(const sim_t* sim)
+std::string ns16550_generate_dts(const sim_t* sim, const std::vector<std::string>& UNUSED sargs)
 {
   std::stringstream s;
   s << std::hex
@@ -341,7 +348,7 @@ std::string ns16550_generate_dts(const sim_t* sim)
   return s.str();
 }
 
-ns16550_t* ns16550_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& sargs)
+ns16550_t* ns16550_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& UNUSED sargs)
 {
   uint32_t ns16550_shift, ns16550_io_width, ns16550_int_id;
   if (fdt_parse_ns16550(fdt, base,

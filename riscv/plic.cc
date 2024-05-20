@@ -113,6 +113,15 @@ uint32_t plic_t::context_best_pending(const plic_context_t *c)
     }
   }
 
+  /*
+  From Spec 1.0.0: 6. Priority Thresholds
+  The PLIC will mask all PLIC interrupts of a priority less than or equal to
+  threshold.
+  */
+  if (best_id_prio <= c->priority_threshold) {
+    return 0;
+  }
+
   return best_id;
 }
 
@@ -392,7 +401,7 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   return ret;
 }
 
-std::string plic_generate_dts(const sim_t* sim)
+std::string plic_generate_dts(const sim_t* sim, const std::vector<std::string>& UNUSED sargs)
 {
   std::stringstream s;
   s << std::hex
@@ -415,7 +424,7 @@ std::string plic_generate_dts(const sim_t* sim)
   return s.str();
 }
 
-plic_t* plic_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& sargs)
+plic_t* plic_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& UNUSED sargs)
 {
   uint32_t plic_ndev;
   if (fdt_parse_plic(fdt, base, &plic_ndev, "riscv,plic0") == 0 ||
