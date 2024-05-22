@@ -631,7 +631,8 @@ reg_t module_t::tinfo_read(unsigned UNUSED index) const noexcept
          (1 << CSR_TDATA1_TYPE_ITRIGGER) |
          (1 << CSR_TDATA1_TYPE_ETRIGGER) |
          (1 << CSR_TDATA1_TYPE_MCONTROL6) |
-         (1 << CSR_TDATA1_TYPE_DISABLED);
+         (1 << CSR_TDATA1_TYPE_DISABLED) |
+         (CSR_TINFO_VERSION_1 << CSR_TINFO_VERSION_OFFSET);
 }
 
 };
