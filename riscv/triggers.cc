@@ -233,7 +233,7 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
   if (simple_match(xlen, value) && allow_action(proc->get_state())) {
     /* This is OK because this function is only called if the trigger was not
      * inhibited by the previous trigger in the chain. */
-    hit = true;
+    set_hit(timing ? HIT_IMMEDIATELY_AFTER : HIT_BEFORE);
     return match_result_t(timing_t(timing), action);
   }
   return std::nullopt;
@@ -268,11 +268,11 @@ reg_t mcontrol6_t::tdata1_read(const processor_t * const proc) const noexcept {
   reg_t tdata1 = 0;
   tdata1 = set_field(tdata1, CSR_MCONTROL6_TYPE(xlen), CSR_TDATA1_TYPE_MCONTROL6);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_DMODE(xlen), dmode);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_HIT1, hit >> 1); // MSB of 2-bit field
   tdata1 = set_field(tdata1, CSR_MCONTROL6_VS, proc->extension_enabled('H') ? vs : 0);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_VU, proc->extension_enabled('H') ? vu : 0);
-  tdata1 = set_field(tdata1, CSR_MCONTROL6_HIT, hit);
+  tdata1 = set_field(tdata1, CSR_MCONTROL6_HIT0, hit & 1); // LSB of 2-bit field
   tdata1 = set_field(tdata1, CSR_MCONTROL6_SELECT, select);
-  tdata1 = set_field(tdata1, CSR_MCONTROL6_TIMING, timing);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_ACTION, action);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_CHAIN, chain);
   tdata1 = set_field(tdata1, CSR_MCONTROL6_MATCH, match);
@@ -291,9 +291,8 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   dmode = get_field(val, CSR_MCONTROL6_DMODE(xlen));
   vs = get_field(val, CSR_MCONTROL6_VS);
   vu = get_field(val, CSR_MCONTROL6_VU);
-  hit = get_field(val, CSR_MCONTROL6_HIT);
+  hit = hit_t(2 * get_field(val, CSR_MCONTROL6_HIT1) + get_field(val, CSR_MCONTROL6_HIT0)); // 2-bit field {hit1,hit0}
   select = get_field(val, CSR_MCONTROL6_SELECT);
-  timing = legalize_timing(val, CSR_MCONTROL6_TIMING, CSR_MCONTROL6_SELECT, CSR_MCONTROL6_EXECUTE, CSR_MCONTROL6_LOAD);
   action = legalize_action(val, CSR_MCONTROL6_ACTION, CSR_MCONTROL6_DMODE(xlen));
   chain = allow_chain ? get_field(val, CSR_MCONTROL6_CHAIN) : 0;
   match = legalize_match(get_field(val, CSR_MCONTROL6_MATCH));
@@ -303,6 +302,11 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   execute = get_field(val, CSR_MCONTROL6_EXECUTE);
   store = get_field(val, CSR_MCONTROL6_STORE);
   load = get_field(val, CSR_MCONTROL6_LOAD);
+
+  /* GDB doesn't support setting triggers in a way that combines a data load trigger
+   * with an address trigger to trigger on a load of a value at a given address.
+   * The default timing legalization on mcontrol6 assumes no such trigger setting. */
+  timing = legalize_timing(val, 0, CSR_MCONTROL6_SELECT, CSR_MCONTROL6_EXECUTE, CSR_MCONTROL6_LOAD);
 }
 
 std::optional<match_result_t> icount_t::detect_icount_fire(processor_t * const proc) noexcept
@@ -627,7 +631,8 @@ reg_t module_t::tinfo_read(unsigned UNUSED index) const noexcept
          (1 << CSR_TDATA1_TYPE_ITRIGGER) |
          (1 << CSR_TDATA1_TYPE_ETRIGGER) |
          (1 << CSR_TDATA1_TYPE_MCONTROL6) |
-         (1 << CSR_TDATA1_TYPE_DISABLED);
+         (1 << CSR_TDATA1_TYPE_DISABLED) |
+         (CSR_TINFO_VERSION_1 << CSR_TINFO_VERSION_OFFSET);
 }
 
 };
