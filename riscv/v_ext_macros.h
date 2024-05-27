@@ -608,7 +608,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  auto &vd_0_des = P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true); \
+  auto &vd_0_des = P.VU.elt<type_sew_t<x>::type>(rd_num, 0, vl > 0); \
   auto vd_0_res = P.VU.elt<type_sew_t<x>::type>(rs1_num, 0); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
@@ -639,7 +639,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  auto &vd_0_des = P.VU.elt<type_usew_t<x>::type>(rd_num, 0, true); \
+  auto &vd_0_des = P.VU.elt<type_usew_t<x>::type>(rd_num, 0, vl > 0); \
   auto vd_0_res = P.VU.elt<type_usew_t<x>::type>(rs1_num, 0); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
@@ -1019,7 +1019,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  auto &vd_0_des = P.VU.elt<type_sew_t<sew2>::type>(rd_num, 0, true); \
+  auto &vd_0_des = P.VU.elt<type_sew_t<sew2>::type>(rd_num, 0, vl > 0); \
   auto vd_0_res = P.VU.elt<type_sew_t<sew2>::type>(rs1_num, 0); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
@@ -1047,7 +1047,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  auto &vd_0_des = P.VU.elt<type_usew_t<sew2>::type>(rd_num, 0, true); \
+  auto &vd_0_des = P.VU.elt<type_usew_t<sew2>::type>(rd_num, 0, vl > 0); \
   auto vd_0_res = P.VU.elt<type_usew_t<sew2>::type>(rs1_num, 0); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
