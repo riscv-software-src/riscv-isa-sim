@@ -7,6 +7,7 @@
 #include "syscall.h"
 #include "device.h"
 #include "byteorder.h"
+#include "../riscv/platform.h"
 #include <string.h>
 #include <map>
 #include <vector>
@@ -58,7 +59,8 @@ class htif_t : public chunked_memif_t
   virtual size_t chunk_align() = 0;
   virtual size_t chunk_max_size() = 0;
 
-  virtual std::map<std::string, uint64_t> load_payload(const std::string& payload, reg_t* entry);
+  virtual std::map<std::string, uint64_t> load_payload(const std::string& payload, reg_t* entry,
+                                                       reg_t load_addr);
   virtual void load_program();
   virtual void idle() {}
 
@@ -79,6 +81,7 @@ class htif_t : public chunked_memif_t
   void register_devices();
   void usage(const char * program_name);
   unsigned int expected_xlen = 0;
+  const reg_t load_offset = DRAM_BASE;
   memif_t mem;
   reg_t entry;
   bool writezeros;

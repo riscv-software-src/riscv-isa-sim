@@ -103,7 +103,7 @@ static void bad_address(const std::string& situation, reg_t addr)
   exit(-1);
 }
 
-std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload, reg_t* entry)
+std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload, reg_t* entry, reg_t load_offset)
 {
   std::string path;
   if (access(payload.c_str(), F_OK) == 0)
@@ -143,7 +143,7 @@ std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload,
   } preload_aware_memif(this);
 
   try {
-    return load_elf(path.c_str(), &preload_aware_memif, entry, expected_xlen);
+    return load_elf(path.c_str(), &preload_aware_memif, entry, load_offset, expected_xlen);
   } catch (mem_trap_t& t) {
     bad_address("loading payload " + payload, t.get_tval());
     abort();
@@ -152,7 +152,7 @@ std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload,
 
 void htif_t::load_program()
 {
-  std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry);
+  std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry, load_offset);
 
   if (symbols.count("tohost") && symbols.count("fromhost")) {
     tohost_addr = symbols["tohost"];
@@ -169,7 +169,7 @@ void htif_t::load_program()
 
   for (auto payload : payloads) {
     reg_t dummy_entry;
-    load_payload(payload, &dummy_entry);
+    load_payload(payload, &dummy_entry, 0);
   }
 
   class nop_memif_t : public memif_t {
