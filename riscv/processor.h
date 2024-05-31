@@ -319,7 +319,7 @@ public:
   void clear_waiting_for_interrupt() { in_wfi = false; };
   bool is_waiting_for_interrupt() { return in_wfi; };
 
-  void execute_insn_prehook(insn_t insn);
+  void check_if_lpad_required();
 
 private:
   const isa_parser_t * const isa;

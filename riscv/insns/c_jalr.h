@@ -6,4 +6,5 @@ WRITE_REG(X_RA, tmp);
 
 if (ZICFILP_xLPE(STATE.v, STATE.prv)) {
   STATE.elp = ZICFILP_IS_LP_EXPECTED(insn.rvc_rs1());
+  serialize();
 }
