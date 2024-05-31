@@ -993,9 +993,7 @@ const char* processor_t::get_symbol(uint64_t addr)
 
 void processor_t::execute_insn_prehook(insn_t insn)
 {
-  if (extension_enabled(EXT_ZICFILP)) {
-    zicfilp_check_if_lpad_required(state.elp, insn);
-  }
+  zicfilp_check_if_lpad_required(state.elp, insn);
 }
 
 void processor_t::disasm(insn_t insn)
