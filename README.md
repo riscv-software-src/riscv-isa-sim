@@ -61,6 +61,8 @@ Spike supports the following RISC-V ISA features:
   - Zvkt  extension, v1.0
   - Zvkn, Zvknc, Zvkng extension, v1.0
   - Zvks, Zvksc, Zvksg extension, v1.0 
+  - Zilsd extension, v0.9.0
+  - Zcmlsd extension, v0.9.0
 
 Versioning and APIs
 -------------------
