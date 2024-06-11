@@ -1064,6 +1064,12 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
   throw trap_illegal_instruction(insn.bits());
 }
 
+const insn_desc_t insn_desc_t::illegal_instruction = {
+  0, 0,
+  &::illegal_instruction, &::illegal_instruction, &::illegal_instruction, &::illegal_instruction,
+  &::illegal_instruction, &::illegal_instruction, &::illegal_instruction, &::illegal_instruction
+};
+
 reg_t illegal_instruction(processor_t UNUSED *p, insn_t insn, reg_t UNUSED pc)
 {
   // The illegal instruction can be longer than ILEN bits, where the tval will
@@ -1076,11 +1082,11 @@ insn_func_t processor_t::decode_insn(insn_t insn)
 {
   // look up opcode in hash table
   size_t idx = insn.bits() % OPCODE_CACHE_SIZE;
-  insn_desc_t desc = opcode_cache[idx];
+  auto [hit, desc] = opcode_cache[idx].lookup(insn.bits());
 
   bool rve = extension_enabled('E');
 
-  if (unlikely(insn.bits() != desc.match)) {
+  if (unlikely(!hit)) {
     // fall back to linear search
     auto matching = [insn_bits = insn.bits()](const insn_desc_t &d) {
       return (insn_bits & d.mask) == d.match;
@@ -1091,12 +1097,11 @@ insn_func_t processor_t::decode_insn(insn_t insn)
       p = std::find_if(instructions.begin(), instructions.end(), matching);
       assert(p != instructions.end());
     }
-    desc = *p;
-    opcode_cache[idx] = desc;
-    opcode_cache[idx].match = insn.bits();
+    desc = &*p;
+    opcode_cache[idx].replace(insn.bits(), desc);
   }
 
-  return desc.func(xlen, rve, log_commits_enabled);
+  return desc->func(xlen, rve, log_commits_enabled);
 }
 
 void processor_t::register_insn(insn_desc_t desc, bool is_custom) {
@@ -1112,7 +1117,7 @@ void processor_t::register_insn(insn_desc_t desc, bool is_custom) {
 void processor_t::build_opcode_map()
 {
   for (size_t i = 0; i < OPCODE_CACHE_SIZE; i++)
-    opcode_cache[i] = insn_desc_t::illegal();
+    opcode_cache[i].reset();
 }
 
 void processor_t::register_extension(extension_t *x) {
@@ -1190,7 +1195,7 @@ void processor_t::register_base_instructions()
   #undef DEFINE_INSN
 
   // terminate instruction list with a catch-all
-  register_base_insn(insn_desc_t::illegal());
+  register_base_insn(insn_desc_t::illegal_instruction);
 
   build_opcode_map();
 }
