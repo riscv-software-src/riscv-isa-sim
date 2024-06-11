@@ -141,6 +141,7 @@ struct state_t
   dcsr_csr_t_p dcsr;
   csr_t_p tselect;
   csr_t_p tdata2;
+  csr_t_p tcontrol;
   csr_t_p scontext;
   csr_t_p mcontext;
 
