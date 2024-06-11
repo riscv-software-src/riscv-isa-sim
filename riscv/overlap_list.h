@@ -1,3 +1,9 @@
+// these overlap c.ld[sp]/c.sd[sp]
+DECLARE_OVERLAP_INSN(c_flw, EXT_ZCF)
+DECLARE_OVERLAP_INSN(c_flwsp, EXT_ZCF)
+DECLARE_OVERLAP_INSN(c_fsw, EXT_ZCF)
+DECLARE_OVERLAP_INSN(c_fswsp, EXT_ZCF)
+
 // these overlap c.fsdsp
 DECLARE_OVERLAP_INSN(cm_push, EXT_ZCMP)
 DECLARE_OVERLAP_INSN(cm_pop, EXT_ZCMP)

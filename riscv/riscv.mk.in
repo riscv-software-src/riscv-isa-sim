@@ -182,6 +182,8 @@ riscv_insn_ext_c = \
 	c_jr \
 	c_li \
 	c_lui \
+	c_ld \
+	c_ldsp \
 	c_lw \
 	c_lwsp \
 	c_mv \
@@ -191,6 +193,8 @@ riscv_insn_ext_c = \
 	c_srli \
 	c_sub \
 	c_subw \
+	c_sd \
+	c_sdsp \
 	c_sw \
 	c_swsp \
 	c_xor \
