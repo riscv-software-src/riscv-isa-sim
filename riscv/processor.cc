@@ -1072,24 +1072,6 @@ reg_t illegal_instruction(processor_t UNUSED *p, insn_t insn, reg_t UNUSED pc)
   throw trap_illegal_instruction(insn.bits() & 0xffffffffULL);
 }
 
-static insn_desc_t
-propagate_instruction_in_vector(std::vector<insn_desc_t> &instructions,
-                                std::vector<insn_desc_t>::iterator it) {
-  assert(it != instructions.end());
-  insn_desc_t desc = *it;
-  if (it->mask != 0 && it != instructions.begin() &&
-      std::next(it) != instructions.end()) {
-    if (it->match != std::prev(it)->match &&
-        it->match != std::next(it)->match) {
-      // move to front of opcode list to reduce miss penalty
-      while (--it >= instructions.begin())
-        *std::next(it) = *it;
-      instructions[0] = desc;
-    }
-  }
-  return desc;
-}
-
 insn_func_t processor_t::decode_insn(insn_t insn)
 {
   // look up opcode in hash table
@@ -1105,13 +1087,11 @@ insn_func_t processor_t::decode_insn(insn_t insn)
     };
     auto p = std::find_if(custom_instructions.begin(),
                           custom_instructions.end(), matching);
-    if (p != custom_instructions.end()) {
-      desc = propagate_instruction_in_vector(custom_instructions, p);
-    } else {
+    if (p == custom_instructions.end()) {
       p = std::find_if(instructions.begin(), instructions.end(), matching);
       assert(p != instructions.end());
-      desc = propagate_instruction_in_vector(instructions, p);
     }
+    desc = *p;
     opcode_cache[idx] = desc;
     opcode_cache[idx].match = insn.bits();
   }
