@@ -1,6 +1,6 @@
 #include "decode.h"
 #include "common.h"
-#include <unordered_set>
+#include <unordered_map>
 #include <vector>
 #include <string>
 #include <cstdio>
@@ -11,13 +11,9 @@ struct opcode {
   std::string name;
 };
 
-static void check_overlap(const opcode& a, const opcode& b)
+static bool overlaps(const opcode& a, const opcode& b)
 {
-  if ((a.match & b.mask) == b.match) {
-    fprintf(stderr, "Instruction %s (%" PRIx64 ") overlaps instruction %s (%" PRIx64 ", mask %" PRIx64 ")\n",
-            a.name.c_str(), a.match, b.name.c_str(), b.match, b.mask);
-    exit(-1);
-  }
+  return (a.mask & b.mask & (a.match ^ b.match)) == 0;
 }
 
 int main()
@@ -34,24 +30,47 @@ int main()
     #undef DEFINE_INSN
   };
 
-  std::unordered_set<std::string> overlap_list;
+  std::unordered_map<std::string, bool> overlap_list;
   #define DECLARE_OVERLAP_INSN(name, ext) \
-    overlap_list.insert(std::string(#name));
+    overlap_list[std::string(#name)] = false;
     #include "overlap_list.h"
   #undef DECLARE_OVERLAP_INSN
 
   std::vector<const opcode*> list;
-  for (size_t i = 0; i < sizeof(static_list) / sizeof(static_list[0]); i++) {
+  for (size_t i = 0; i < std::size(static_list); i++) {
     if (!overlap_list.count(static_list[i].name))
       list.push_back(&static_list[i]);
   }
 
+  bool ok = true;
+
   for (size_t i = 1; i < list.size(); i++) {
     for (size_t j = 0; j < i; j++) {
-      check_overlap(*list[i], *list[j]);
-      check_overlap(*list[j], *list[i]);
+      if (overlaps(*list[i], *list[j])) {
+        fprintf(stderr, "Instruction %s (%" PRIx64 ") overlaps instruction %s (%" PRIx64 ", mask %" PRIx64 ")\n",
+                list[i]->name.c_str(), list[i]->match, list[j]->name.c_str(), list[j]->match, list[j]->mask);
+        ok = false;
+      }
     }
   }
 
-  return 0;
+  // make sure nothing in the overlap list is unused
+  for (size_t i = 1; i < std::size(static_list); i++) {
+    for (size_t j = 0; j < i; j++) {
+      if (overlaps(static_list[i], static_list[j])) {
+        overlap_list[static_list[i].name] = true;
+        overlap_list[static_list[j].name] = true;
+      }
+    }
+  }
+
+  for (auto const& [name, used] : overlap_list) {
+    if (!used) {
+      fprintf(stderr, "Instruction %s overlaps nothing, so overlap list entry has no effect\n",
+              name.c_str());
+      ok = false;
+    }
+  }
+
+  return ok ? 0 : -1;
 }
