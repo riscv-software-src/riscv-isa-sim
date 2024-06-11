@@ -11,6 +11,7 @@
 #include "disasm.h"
 #include "platform.h"
 #include "vector_unit.h"
+#include "debug_defines.h"
 #include <cinttypes>
 #include <cmath>
 #include <cstdlib>
@@ -403,11 +404,13 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     csrmap[CSR_TDATA2] = tdata2 = std::make_shared<tdata2_csr_t>(proc, CSR_TDATA2);
     csrmap[CSR_TDATA3] = std::make_shared<tdata3_csr_t>(proc, CSR_TDATA3);
     csrmap[CSR_TINFO] = std::make_shared<tinfo_csr_t>(proc, CSR_TINFO);
+    csrmap[CSR_TCONTROL] = tcontrol = std::make_shared<masked_csr_t>(proc, CSR_TCONTROL, CSR_TCONTROL_MPTE | CSR_TCONTROL_MTE, 0);
   } else {
     csrmap[CSR_TDATA1] = std::make_shared<const_csr_t>(proc, CSR_TDATA1, 0);
     csrmap[CSR_TDATA2] = tdata2 = std::make_shared<const_csr_t>(proc, CSR_TDATA2, 0);
     csrmap[CSR_TDATA3] = std::make_shared<const_csr_t>(proc, CSR_TDATA3, 0);
     csrmap[CSR_TINFO] = std::make_shared<const_csr_t>(proc, CSR_TINFO, 0);
+    csrmap[CSR_TCONTROL] = tcontrol = std::make_shared<const_csr_t>(proc, CSR_TCONTROL, 0);
   }
   unsigned scontext_length = (xlen == 32 ? 16 : 32); // debug spec suggests 16-bit for RV32 and 32-bit for RV64
   csrmap[CSR_SCONTEXT] = scontext = std::make_shared<masked_csr_t>(proc, CSR_SCONTEXT, (reg_t(1) << scontext_length) - 1, 0);
@@ -951,6 +954,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.elp = elp_t::NO_LP_EXPECTED;
     state.mstatus->write(s);
     if (state.mstatush) state.mstatush->write(s >> 32);  // log mstatush change
+    state.tcontrol->write((state.tcontrol->read() & CSR_TCONTROL_MTE) ? CSR_TCONTROL_MPTE : 0);
     set_privilege(PRV_M, false);
   }
 }

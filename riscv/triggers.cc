@@ -59,7 +59,8 @@ bool trigger_t::common_match(processor_t * const proc, bool use_prev_prv) const 
   auto state = proc->get_state();
   auto prv = use_prev_prv ? state->prev_prv : state->prv;
   auto v = use_prev_prv ? state->prev_v : state->v;
-  return mode_match(prv, v) && textra_match(proc);
+  auto m_enabled = get_action() != 0 || (state->tcontrol->read() & CSR_TCONTROL_MTE);
+  return (prv < PRV_M || m_enabled) && mode_match(prv, v) && textra_match(proc);
 }
 
 bool trigger_t::mode_match(reg_t prv, bool v) const noexcept
