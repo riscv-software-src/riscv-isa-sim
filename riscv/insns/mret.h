@@ -15,4 +15,5 @@ if (ZICFILP_xLPE(prev_virt, prev_prv)) {
 s = set_field(s, MSTATUS_MPELP, elp_t::NO_LP_EXPECTED);
 STATE.mstatus->write(s);
 if (STATE.mstatush) STATE.mstatush->write(s >> 32); // log mstatush change
+STATE.tcontrol->write((STATE.tcontrol->read() & CSR_TCONTROL_MPTE) ? (CSR_TCONTROL_MPTE | CSR_TCONTROL_MTE) : 0);
 p->set_privilege(prev_prv, prev_virt);

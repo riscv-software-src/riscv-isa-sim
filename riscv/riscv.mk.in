@@ -182,6 +182,8 @@ riscv_insn_ext_c = \
 	c_jr \
 	c_li \
 	c_lui \
+	c_ld \
+	c_ldsp \
 	c_lw \
 	c_lwsp \
 	c_mv \
@@ -191,6 +193,8 @@ riscv_insn_ext_c = \
 	c_srli \
 	c_sub \
 	c_subw \
+	c_sd \
+	c_sdsp \
 	c_sw \
 	c_swsp \
 	c_xor \
@@ -1061,6 +1065,9 @@ riscv_insn_ext_zimop = \
 	mop_r_N \
 	mop_rr_N \
 
+riscv_insn_ext_zcmop = \
+	c_mop_N \
+
 riscv_insn_ext_zicfilp = \
 	lpad
 
@@ -1085,20 +1092,20 @@ riscv_insn_ext_zvk = \
 	$(riscv_insn_ext_zvksh) \
 
 riscv_insn_list = \
-	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
-	$(riscv_insn_ext_a) \
-	$(riscv_insn_ext_b) \
-	$(riscv_insn_ext_bf16) \
+	$(riscv_insn_ext_i) \
 	$(riscv_insn_ext_c) \
-	$(riscv_insn_ext_cmo) \
-	$(riscv_insn_ext_d) \
-	$(riscv_insn_ext_d_zfa) \
 	$(riscv_insn_ext_f) \
+	$(riscv_insn_ext_d) \
+	$(riscv_insn_ext_m) \
+	$(riscv_insn_ext_b) \
+	$(riscv_insn_ext_a) \
+	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
+	$(riscv_insn_ext_bf16) \
+	$(riscv_insn_ext_cmo) \
+	$(riscv_insn_ext_d_zfa) \
 	$(riscv_insn_ext_f_zfa) \
 	$(riscv_insn_ext_h) \
-	$(riscv_insn_ext_i) \
 	$(riscv_insn_ext_k) \
-	$(riscv_insn_ext_m) \
 	$(riscv_insn_ext_q) \
 	$(riscv_insn_ext_q_zfa) \
 	$(riscv_insn_ext_zacas) \
@@ -1114,6 +1121,7 @@ riscv_insn_list = \
 	$(riscv_insn_smrnmi) \
 	$(riscv_insn_svinval) \
 	$(riscv_insn_ext_zimop) \
+	$(riscv_insn_ext_zcmop) \
 	$(riscv_insn_ext_zicfilp) \
 	$(riscv_insn_ext_zicfiss) \
 
