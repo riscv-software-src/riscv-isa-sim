@@ -50,8 +50,11 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 #include "softfloat_types.h"
 
-#ifndef THREAD_LOCAL
-#define THREAD_LOCAL
+#if __has_include(<threads.h>)
+# include <threads.h>
+# define THREAD_LOCAL thread_local
+#else
+# define THREAD_LOCAL _Thread_local
 #endif
 
 #ifdef __cplusplus
