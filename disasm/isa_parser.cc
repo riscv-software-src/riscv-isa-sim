@@ -239,6 +239,12 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZICOND] = true;
     } else if (ext_str == "zihpm") {
       extension_table[EXT_ZIHPM] = true;
+    } else if (ext_str == "zilsd") {
+      if (max_xlen != 32)
+        bad_isa_string(str, "'Zilsd' requires RV32");
+      extension_table[EXT_ZILSD] = true;
+    } else if (ext_str == "zcmlsd") {
+      extension_table[EXT_ZCMLSD] = true;
     } else if (ext_str == "zvbb") {
       extension_table[EXT_ZVBB] = true;
     } else if (ext_str == "zvbc") {
@@ -322,6 +328,14 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   }
   if (*p) {
     bad_isa_string(str, ("can't parse: " + std::string(p)).c_str());
+  }
+
+  if (extension_table[EXT_ZCMLSD] && extension_table[EXT_ZCF]) {
+    bad_isa_string(str, "'Zcmlsd' extension conflicts with 'Zcf' extensions");
+  }
+
+  if (extension_table[EXT_ZCMLSD] && (!extension_table[EXT_ZCA] || !extension_table[EXT_ZILSD])) {
+    bad_isa_string(str, "'Zcmlsd' extension requires 'Zca' and 'Zilsd' extensions");
   }
 
   if (extension_table[EXT_ZFBFMIN] && !extension_table['F']) {
