@@ -157,7 +157,6 @@ uint_fast64_t f16_to_ui64_r_minMag( float16_t, bool );
 int_fast32_t f16_to_i32_r_minMag( float16_t, bool );
 int_fast64_t f16_to_i64_r_minMag( float16_t, bool );
 float32_t f16_to_f32( float16_t );
-float32_t bf16_to_f32( bfloat16_t );
 float64_t f16_to_f64( float16_t );
 #ifdef SOFTFLOAT_FAST_INT64
 extFloat80_t f16_to_extF80( float16_t );
@@ -187,6 +186,11 @@ float16_t f16_rsqrte7( float16_t );
 float16_t f16_recip7( float16_t );
 
 /*----------------------------------------------------------------------------
+| BFloat16 operations.
+*----------------------------------------------------------------------------*/
+float32_t bf16_to_f32( bfloat16_t );
+
+/*----------------------------------------------------------------------------
 | 32-bit (single-precision) floating-point operations.
 *----------------------------------------------------------------------------*/
 uint_fast16_t f32_to_ui16( float32_t, uint_fast8_t, bool );
@@ -199,8 +203,8 @@ uint_fast32_t f32_to_ui32_r_minMag( float32_t, bool );
 uint_fast64_t f32_to_ui64_r_minMag( float32_t, bool );
 int_fast32_t f32_to_i32_r_minMag( float32_t, bool );
 int_fast64_t f32_to_i64_r_minMag( float32_t, bool );
-float16_t f32_to_f16( float32_t );
 bfloat16_t f32_to_bf16( float32_t );
+float16_t f32_to_f16( float32_t );
 float64_t f32_to_f64( float32_t );
 #ifdef SOFTFLOAT_FAST_INT64
 extFloat80_t f32_to_extF80( float32_t );
