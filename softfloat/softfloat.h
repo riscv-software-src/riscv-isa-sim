@@ -54,7 +54,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 # include <threads.h>
 # define THREAD_LOCAL thread_local
 #else
-# define THREAD_LOCAL _Thread_local
+
+#ifdef __cplusplus
+#define THREAD_LOCAL thread_local
+#else
+#define THREAD_LOCAL _Thread_local
+#endif
+
 #endif
 
 #ifdef __cplusplus
