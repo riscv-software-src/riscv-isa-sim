@@ -1,7 +1,14 @@
 softfloat_subproject_deps =
 
 softfloat_c_srcs = \
+	bf16_add.c \
+	bf16_div.c \
+	bf16_mul.c \
+	bf16_mulAdd.c \
+	bf16_sqrt.c \
+	bf16_sub.c \
 	bf16_to_f32.c \
+	bf16_to_f64.c \
 	f128_add.c \
 	f128_classify.c \
 	f128_div.c \
@@ -106,6 +113,7 @@ softfloat_c_srcs = \
 	f64_roundToInt.c \
 	f64_sqrt.c \
 	f64_sub.c \
+	f64_to_bf16.c \
 	f64_to_f128.c \
 	f64_to_f16.c \
 	f64_to_f32.c \
