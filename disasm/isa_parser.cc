@@ -101,9 +101,6 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       if (ext_str == "zfh")
         extension_table[EXT_ZFH] = true;
     } else if (ext_str == "zvfh" || ext_str == "zvfhmin") {
-      if (!extension_table['V'])
-        bad_isa_string(str, ("'" + ext_str + "' extension requires 'V'").c_str());
-
       extension_table[EXT_ZVFHMIN] = true;
 
       if (ext_str == "zvfh") {
