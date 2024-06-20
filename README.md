@@ -42,6 +42,7 @@ Spike supports the following RISC-V ISA features:
   - Smepmp extension v1.0
   - Smstateen extension, v1.0
   - Sscofpmf v0.5.2
+  - Ssdtso v1.0
   - Zca extension, v1.0
   - Zcb extension, v1.0
   - Zcf extension, v1.0
