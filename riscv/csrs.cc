@@ -1428,8 +1428,6 @@ vector_csr_t::vector_csr_t(processor_t* const proc, const reg_t addr, const reg_
 
 void vector_csr_t::verify_permissions(insn_t insn, bool write) const {
   require_vector_vs;
-  if (!proc->extension_enabled('V'))
-    throw trap_illegal_instruction(insn.bits());
   basic_csr_t::verify_permissions(insn, write);
 }
 
@@ -1451,8 +1449,6 @@ vxsat_csr_t::vxsat_csr_t(processor_t* const proc, const reg_t addr):
 
 void vxsat_csr_t::verify_permissions(insn_t insn, bool write) const {
   require_vector_vs;
-  if (!proc->extension_enabled('V'))
-    throw trap_illegal_instruction(insn.bits());
   masked_csr_t::verify_permissions(insn, write);
 }
 
