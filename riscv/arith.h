@@ -32,15 +32,15 @@ inline uint64_t mulhu(uint64_t a, uint64_t b)
 inline int64_t mulh(int64_t a, int64_t b)
 {
   int negate = (a < 0) != (b < 0);
-  uint64_t res = mulhu(a < 0 ? -a : a, b < 0 ? -b : b);
+  uint64_t res = mulhu(a < 0 ? -(uint64_t)a : a, b < 0 ? -(uint64_t)b : b);
   return negate ? ~res + ((uint64_t)a * (uint64_t)b == 0) : res;
 }
 
 inline int64_t mulhsu(int64_t a, uint64_t b)
 {
   int negate = a < 0;
-  uint64_t res = mulhu(a < 0 ? -a : a, b);
-  return negate ? ~res + (a * b == 0) : res;
+  uint64_t res = mulhu(a < 0 ? -(uint64_t)a : a, b);
+  return negate ? ~res + ((uint64_t)a * b == 0) : res;
 }
 
 //ref:  https://locklessinc.com/articles/sat_arithmetic/
