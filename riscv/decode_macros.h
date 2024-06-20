@@ -171,7 +171,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define require_vector(alu) \
   do { \
     require_vector_vs; \
-    require_extension('V'); \
     require(!P.VU.vill); \
     if (alu && !P.VU.vstart_alu) \
       require(P.VU.vstart->read() == 0); \
@@ -181,7 +180,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define require_vector_novtype(is_log) \
   do { \
     require_vector_vs; \
-    require_extension('V'); \
     if (is_log) \
       WRITE_VSTATUS; \
     dirty_vs_state; \
