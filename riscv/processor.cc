@@ -44,7 +44,7 @@ processor_t::processor_t(const isa_parser_t *isa, const cfg_t *cfg,
   TM.proc = this;
 
 #ifndef HAVE_INT128
-  if (isa->extension_enabled('V')) {
+  if (isa->has_any_vector()) {
     fprintf(stderr, "V extension is not supported on platforms without __int128 type\n");
     abort();
   }
