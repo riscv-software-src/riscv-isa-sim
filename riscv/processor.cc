@@ -55,7 +55,10 @@ processor_t::processor_t(const isa_parser_t *isa, const cfg_t *cfg,
   }
 #endif
 
-  parse_varch_string(cfg->varch);
+  VU.VLEN = isa->get_vlen();
+  VU.ELEN = isa->get_elen();
+  VU.vlenb = isa->get_vlen() / 8;
+  VU.vstart_alu = 0;
 
   register_base_instructions();
   mmu = new mmu_t(sim, cfg->endianness, this);
