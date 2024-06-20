@@ -116,6 +116,10 @@ public:
 protected:
   unsigned max_xlen;
   reg_t max_isa;
+  reg_t vlen;
+  reg_t elen;
+  bool zvf;
+  bool zvd;
   std::bitset<NUM_ISA_EXTENSIONS> extension_table;
   std::string isa_string;
   std::set<std::string> extensions;

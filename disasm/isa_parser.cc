@@ -38,6 +38,11 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   else
     bad_isa_string(str, "ISA strings must begin with RV32 or RV64");
 
+  vlen = 0;
+  elen = 0;
+  zvf = false;
+  zvd = false;
+
   switch (isa_string[4]) {
     case 'g':
       // G = IMAFD_Zicsr_Zifencei, but Spike includes the latter two
@@ -70,7 +75,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     }
 
     switch (*p) {
-      case 'v': // even rv32iv implies double float
+      case 'v': vlen = 128; elen = 64; zvf = true; zvd = true;
+                // even rv32iv implies double float
       case 'q': extension_table['D'] = true;
                 // Fall through
       case 'd': extension_table['F'] = true;
@@ -314,6 +320,35 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZICFILP] = true;
     } else if (ext_str == "zicfiss") {
       extension_table[EXT_ZICFISS] = true;
+    } else if (ext_str.substr(0, 3) == "zvl") {
+      reg_t new_vlen;
+      try {
+        new_vlen = std::stol(ext_str.substr(3, ext_str.size() - 4));
+      } catch (std::logic_error& e) {
+        new_vlen = 0;
+      }
+      if ((new_vlen & (new_vlen - 1)) != 0 || new_vlen < 32)
+        bad_isa_string(str, ("Invalid Zvl string: " + ext_str).c_str());
+      vlen = std::max(vlen, new_vlen);
+    } else if (ext_str.substr(0, 3) == "zve") {
+      reg_t new_elen;
+      try {
+        new_elen = std::stol(ext_str.substr(3, ext_str.size() - 4));
+      } catch (std::logic_error& e) {
+        new_elen = 0;
+      }
+      if (ext_str.substr(5) == "d") {
+        zvd |= true; zvf |= true;
+      } else if (ext_str.substr(5) == "f") {
+        zvf |= true;
+      } else if (ext_str.substr(5) == "x") {
+        /* do nothing */
+      } else {
+        new_elen = 0;
+      }
+      if (new_elen != 32 && new_elen != 64)
+        bad_isa_string(str, ("Invalid Zve string: " + ext_str).c_str());
+      elen = std::max(elen, new_elen);
     } else if (ext_str[0] == 'x') {
       extension_table['X'] = true;
       if (ext_str.size() == 1) {
