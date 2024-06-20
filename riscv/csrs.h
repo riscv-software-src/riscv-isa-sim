@@ -234,13 +234,12 @@ typedef std::shared_ptr<base_status_csr_t> base_status_csr_t_p;
 
 // For vsstatus, which is its own separate architectural register
 // (unlike sstatus)
+// vstatus.sdt is read_only 0 when henvcfg.dte = 0
 class vsstatus_csr_t final: public base_status_csr_t {
  public:
   vsstatus_csr_t(processor_t* const proc, const reg_t addr);
 
-  reg_t read() const noexcept override {
-    return val;
-  }
+  virtual reg_t read() const noexcept override;
 
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
@@ -300,13 +299,12 @@ class rv32_high_csr_t: public csr_t {
   csr_t_p orig;
 };
 
+// sstatus.sdt is read_only 0 when menvcfg.dte = 0
 class sstatus_proxy_csr_t final: public base_status_csr_t {
  public:
   sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr, mstatus_csr_t_p mstatus);
 
-  reg_t read() const noexcept override {
-    return mstatus->read() & sstatus_read_mask;
-  }
+  virtual reg_t read() const noexcept override;
 
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
@@ -480,12 +478,13 @@ class envcfg_csr_t: public masked_csr_t {
 // henvcfg.pbmte is read_only 0 when menvcfg.pbmte = 0
 // henvcfg.stce is read_only 0 when menvcfg.stce = 0
 // henvcfg.hade is read_only 0 when menvcfg.hade = 0
+// henvcfg.dte is read_only 0 when menvcfg.dte = 0
 class henvcfg_csr_t final: public envcfg_csr_t {
  public:
   henvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init, csr_t_p menvcfg);
 
   reg_t read() const noexcept override {
-    return (menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE | MENVCFG_ADUE)) & masked_csr_t::read();
+    return (menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE | MENVCFG_ADUE | MENVCFG_DTE)) & masked_csr_t::read();
   }
 
   virtual void verify_permissions(insn_t insn, bool write) const override;
@@ -878,6 +877,13 @@ typedef std::shared_ptr<hvip_csr_t> hvip_csr_t_p;
 class ssp_csr_t final : public masked_csr_t {
  public:
   ssp_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+// mtval2 CSR provided by H extension - but required if Ssdbltrp is  implemented
+class mtval2_csr_t: public hypervisor_csr_t {
+ public:
+  mtval2_csr_t(processor_t* const proc, const reg_t addr);
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
 #endif
