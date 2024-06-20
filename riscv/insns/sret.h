@@ -13,6 +13,7 @@ reg_t prev_prv = get_field(s, MSTATUS_SPP);
 s = set_field(s, MSTATUS_SIE, get_field(s, MSTATUS_SPIE));
 s = set_field(s, MSTATUS_SPIE, 1);
 s = set_field(s, MSTATUS_SPP, PRV_U);
+s = set_field(s, MSTATUS_SDT, 0);
 bool prev_virt = STATE.v;
 if (!STATE.v) {
   if (p->extension_enabled('H')) {

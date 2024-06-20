@@ -368,3 +368,5 @@ inline long double to_f(float128_t f) { long double r; memcpy(&r, &f, sizeof(r))
 #define ZICFILP_IS_LP_EXPECTED(reg_num) \
   (((reg_num) != 1 && (reg_num) != 5 && (reg_num) != 7) ? \
    elp_t::LP_EXPECTED : elp_t::NO_LP_EXPECTED)
+
+#define double_trap()
