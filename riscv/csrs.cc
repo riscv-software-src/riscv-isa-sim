@@ -411,8 +411,7 @@ base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
 reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
   // If a configuration has FS bits, they will always be accessible no
   // matter the state of misa.
-  const bool has_fs = (proc->extension_enabled('S') || proc->extension_enabled('F')
-              || proc->extension_enabled('V')) && !proc->extension_enabled(EXT_ZFINX);
+  const bool has_fs = (proc->extension_enabled('S') || proc->extension_enabled('F')) && !proc->extension_enabled(EXT_ZFINX);
   const bool has_vs = proc->extension_enabled('V');
   return 0
     | (proc->extension_enabled('S') ? (SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP) : 0)
