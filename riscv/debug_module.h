@@ -11,7 +11,7 @@ class simif_t;
 class bus_t;
 class processor_t;
 
-typedef struct {
+struct debug_module_config_t {
   // Size of program_buffer in 32-bit words, as exposed to the rest of the
   // world.
   unsigned progbufsize = 2;
@@ -23,9 +23,9 @@ typedef struct {
   bool support_abstract_fpr_access = true;
   bool support_haltgroups = true;
   bool support_impebreak = true;
-} debug_module_config_t;
+};
 
-typedef struct {
+struct dmcontrol_t {
   bool haltreq;
   bool resumereq;
   bool hasel;
@@ -33,9 +33,9 @@ typedef struct {
   bool hartreset;
   bool dmactive;
   bool ndmreset;
-} dmcontrol_t;
+};
 
-typedef struct {
+struct dmstatus_t {
   bool impebreak;
   bool allhavereset;
   bool anyhavereset;
@@ -53,30 +53,30 @@ typedef struct {
   bool authbusy;
   bool cfgstrvalid;
   unsigned version;
-} dmstatus_t;
+};
 
-typedef enum cmderr {
+enum cmderr_t {
   CMDERR_NONE = 0,
   CMDERR_BUSY = 1,
   CMDERR_NOTSUP = 2,
   CMDERR_EXCEPTION = 3,
   CMDERR_HALTRESUME = 4,
   CMDERR_OTHER = 7
-} cmderr_t;
+};
 
-typedef struct {
+struct abstractcs_t {
   bool busy;
   unsigned datacount;
   unsigned progbufsize;
   cmderr_t cmderr;
-} abstractcs_t;
+};
 
-typedef struct {
+struct abstractauto_t {
   unsigned autoexecprogbuf;
   unsigned autoexecdata;
-} abstractauto_t;
+};
 
-typedef struct {
+struct sbcs_t {
   unsigned version;
   bool readonaddr;
   unsigned sbaccess;
@@ -90,14 +90,14 @@ typedef struct {
   bool access16;
   bool access8;
   bool sbbusyerror;
-} sbcs_t;
+};
 
-typedef struct {
+struct hart_debug_state_t {
   bool halted;
   bool resumeack;
   bool havereset;
   uint8_t haltgroup;
-} hart_debug_state_t;
+};
 
 class debug_module_t : public abstract_device_t
 {
