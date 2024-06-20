@@ -459,6 +459,27 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
 		     "extensions are incompatible with WORDS_BIGENDIAN setups.");
   }
 #endif
+
+  if ((vlen != 0) ^ (elen != 0)) {
+    bad_isa_string(str, "Invalid Zvl/Zve configuration");
+  }
+
+  if (extension_table[EXT_ZVFHMIN] && (vlen == 0 || elen == 0 || !zvf)) {
+    bad_isa_string(str, "'Zvfhmin' extension requires Zve32f");
+  }
+
+  if (extension_table[EXT_ZVFH] && (vlen == 0 || elen == 0 || !zvf || !extension_table[EXT_ZVFHMIN])) {
+    bad_isa_string(str, "'Zvfh' extension requires Zve32f and 'Zvfhmin'");
+  }
+
+  if (zvd && !extension_table['D'] && elen < 64) {
+    bad_isa_string(str, "'ZveXXd' extension requires D");
+  }
+
+  if (zvf && !extension_table['F']) {
+    bad_isa_string(str, "'ZveXXf' extension requires F");
+  }
+
   std::string lowercase = strtolower(priv);
   bool user = false, supervisor = false;
 
