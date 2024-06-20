@@ -12,9 +12,6 @@
 /* Default value for --priv switch */
 #undef DEFAULT_PRIV
 
-/* Default value for --varch switch */
-#undef DEFAULT_VARCH
-
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef DISASM_ENABLED
 

@@ -410,7 +410,6 @@ private:
   friend class plic_t;
   friend class extension_t;
 
-  void parse_varch_string(const char*);
   void parse_priv_string(const char*);
   void build_opcode_map();
   void register_base_instructions();

@@ -67,7 +67,6 @@ public:
   const char *            bootargs;
   const char *            isa;
   const char *            priv;
-  const char *            varch;
   bool                    misaligned;
   endianness_t            endianness;
   reg_t                   pmpregions;
