@@ -314,6 +314,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZICFILP] = true;
     } else if (ext_str == "zicfiss") {
       extension_table[EXT_ZICFISS] = true;
+    } else if (ext_str == "ssdbltrp") {
+      extension_table[EXT_SSDBLTRP] = true;
     } else if (ext_str[0] == 'x') {
       extension_table['X'] = true;
       if (ext_str.size() == 1) {
