@@ -330,26 +330,6 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     bad_isa_string(str, ("can't parse: " + std::string(p)).c_str());
   }
 
-  if (extension_table[EXT_ZCMLSD] && extension_table[EXT_ZCF]) {
-    bad_isa_string(str, "'Zcmlsd' extension conflicts with 'Zcf' extensions");
-  }
-
-  if (extension_table[EXT_ZCMLSD] && (!extension_table[EXT_ZCA] || !extension_table[EXT_ZILSD])) {
-    bad_isa_string(str, "'Zcmlsd' extension requires 'Zca' and 'Zilsd' extensions");
-  }
-
-  if (extension_table[EXT_ZFBFMIN] && !extension_table['F']) {
-    bad_isa_string(str, "'Zfbfmin' extension requires 'F' extension");
-  }
-
-  if ((extension_table[EXT_ZVFBFMIN] || extension_table[EXT_ZVFBFWMA]) && !extension_table['V']) {
-    bad_isa_string(str, "'Zvfbfmin/Zvfbfwma' extension requires 'V' extension");
-  }
-
-  if (extension_table[EXT_ZFBFMIN] || extension_table[EXT_ZVFBFMIN] || extension_table[EXT_ZFHMIN]) {
-    extension_table[EXT_INTERNAL_ZFH_MOVE] = true;
-  }
-
   if (extension_table['A']) {
     extension_table[EXT_ZAAMO] = true;
     extension_table[EXT_ZALRSC] = true;
@@ -371,6 +351,26 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZCF] = true;
     if (extension_table['D'])
       extension_table[EXT_ZCD] = true;
+  }
+
+  if (extension_table[EXT_ZCMLSD] && extension_table[EXT_ZCF]) {
+    bad_isa_string(str, "'Zcmlsd' extension conflicts with 'Zcf' extensions");
+  }
+
+  if (extension_table[EXT_ZCMLSD] && (!extension_table[EXT_ZCA] || !extension_table[EXT_ZILSD])) {
+    bad_isa_string(str, "'Zcmlsd' extension requires 'Zca' and 'Zilsd' extensions");
+  }
+
+  if (extension_table[EXT_ZFBFMIN] && !extension_table['F']) {
+    bad_isa_string(str, "'Zfbfmin' extension requires 'F' extension");
+  }
+
+  if ((extension_table[EXT_ZVFBFMIN] || extension_table[EXT_ZVFBFWMA]) && !extension_table['V']) {
+    bad_isa_string(str, "'Zvfbfmin/Zvfbfwma' extension requires 'V' extension");
+  }
+
+  if (extension_table[EXT_ZFBFMIN] || extension_table[EXT_ZVFBFMIN] || extension_table[EXT_ZFHMIN]) {
+    extension_table[EXT_INTERNAL_ZFH_MOVE] = true;
   }
 
   if (extension_table[EXT_ZFINX] && extension_table['F']) {
