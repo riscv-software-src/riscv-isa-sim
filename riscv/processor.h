@@ -69,6 +69,7 @@ typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
 // architectural state of a RISC-V hart
 struct state_t
 {
+  void add_ireg_proxy(processor_t* const proc, sscsrind_reg_csr_t::sscsrind_reg_csr_t_p ireg);
   void reset(processor_t* const proc, reg_t max_isa);
 
   reg_t pc;
@@ -94,6 +95,8 @@ struct state_t
   wide_counter_csr_t_p mcycle;
   mie_csr_t_p mie;
   mip_csr_t_p mip;
+  csr_t_p nonvirtual_sip;
+  csr_t_p nonvirtual_sie;
   csr_t_p medeleg;
   csr_t_p mideleg;
   csr_t_p mcounteren;
@@ -170,6 +173,11 @@ struct state_t
   csr_t_p srmcfg;
 
   csr_t_p ssp;
+
+  csr_t_p mvien;
+  mvip_csr_t_p mvip;
+  csr_t_p hvictl;
+  csr_t_p vstopi;
 
   bool serialized; // whether timer CSRs are in a well-defined state
 
@@ -357,6 +365,8 @@ public:
   bool is_waiting_for_interrupt() { return in_wfi; };
 
   void check_if_lpad_required();
+
+  reg_t select_an_interrupt_with_default_priority(reg_t enabled_interrupts) const;
 
 private:
   const isa_parser_t * const isa;

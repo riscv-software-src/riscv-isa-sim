@@ -192,6 +192,24 @@ static int xlen_to_uxl(int xlen)
   abort();
 }
 
+void state_t::add_ireg_proxy(processor_t* const proc, sscsrind_reg_csr_t::sscsrind_reg_csr_t_p ireg)
+{
+  // This assumes xlen is always max_xlen, which is true today (see
+  // mstatus_csr_t::unlogged_write()):
+  auto xlen = proc->get_isa().get_max_xlen();
+
+  const reg_t iprio0_addr = 0x30;
+  for (int i=0; i<16; i+=2) {
+    csr_t_p iprio = std::make_shared<aia_csr_t>(proc, iprio0_addr + i, 0, 0);
+    if (xlen == 32) {
+      ireg->add_ireg_proxy(iprio0_addr + i, std::make_shared<rv32_low_csr_t>(proc, iprio0_addr + i, iprio));
+      ireg->add_ireg_proxy(iprio0_addr + i + 1, std::make_shared<rv32_high_csr_t>(proc, iprio0_addr + i + 1, iprio));
+    } else {
+      ireg->add_ireg_proxy(iprio0_addr + i, iprio);
+    }
+  }
+}
+
 void state_t::reset(processor_t* const proc, reg_t max_isa)
 {
   pc = DEFAULT_RSTVEC;
@@ -285,8 +303,17 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_MCOUNTINHIBIT] = std::make_shared<const_csr_t>(proc, CSR_MCOUNTINHIBIT, 0);
   if (proc->extension_enabled_const(EXT_SSCOFPMF))
     csrmap[CSR_SCOUNTOVF] = std::make_shared<scountovf_csr_t>(proc, CSR_SCOUNTOVF);
-  csrmap[CSR_MIE] = mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
-  csrmap[CSR_MIP] = mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
+  mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
+  mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SMAIA)) {
+    csrmap[CSR_MIE] = std::make_shared<rv32_low_csr_t>(proc, CSR_MIE, mie);
+    csrmap[CSR_MIEH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MIEH, mie);
+    csrmap[CSR_MIP] = std::make_shared<rv32_low_csr_t>(proc, CSR_MIP, mip);
+    csrmap[CSR_MIPH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MIPH, mip);
+  } else {
+    csrmap[CSR_MIE] = mie;
+    csrmap[CSR_MIP] = mip;
+  }
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(
     this,
     ~MIP_HS_MASK,  // read_mask
@@ -314,21 +341,49 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     1              // shiftamt
   );
 
-  auto nonvirtual_sip = std::make_shared<mip_proxy_csr_t>(proc, CSR_SIP, sip_sie_accr);
+  nonvirtual_sip = std::make_shared<sip_csr_t>(proc, CSR_SIP, sip_sie_accr);
   auto vsip = std::make_shared<mip_proxy_csr_t>(proc, CSR_VSIP, vsip_vsie_accr);
-  csrmap[CSR_VSIP] = vsip;
-  csrmap[CSR_SIP] = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sip, vsip);
+  auto sip = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sip, vsip);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
+    csrmap[CSR_VSIP] = std::make_shared<rv32_low_csr_t>(proc, CSR_VSIP, vsip);
+    csrmap[CSR_VSIPH] = std::make_shared<aia_rv32_high_csr_t>(proc, CSR_VSIPH, vsip);
+    csrmap[CSR_SIP] = std::make_shared<rv32_low_csr_t>(proc, CSR_SIP, sip);
+    csrmap[CSR_SIPH] = std::make_shared<aia_rv32_high_csr_t>(proc, CSR_SIPH, sip);
+  } else {
+    csrmap[CSR_VSIP] = vsip;
+    csrmap[CSR_SIP] = sip;
+  }
   csrmap[CSR_HIP] = std::make_shared<mip_proxy_csr_t>(proc, CSR_HIP, hip_hie_accr);
-  csrmap[CSR_HVIP] = hvip = std::make_shared<hvip_csr_t>(proc, CSR_HVIP, 0);
+  hvip = std::make_shared<hvip_csr_t>(proc, CSR_HVIP, 0);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
+    csrmap[CSR_HVIP] = std::make_shared<rv32_low_csr_t>(proc, CSR_HVIP, hvip);
+    csrmap[CSR_HVIPH] = std::make_shared<aia_rv32_high_csr_t>(proc, CSR_HVIPH, hvip);
+  } else {
+    csrmap[CSR_HVIP] = hvip;
+  }
 
-  auto nonvirtual_sie = std::make_shared<mie_proxy_csr_t>(proc, CSR_SIE, sip_sie_accr);
+  nonvirtual_sie = std::make_shared<sie_csr_t>(proc, CSR_SIE, sip_sie_accr);
   auto vsie = std::make_shared<mie_proxy_csr_t>(proc, CSR_VSIE, vsip_vsie_accr);
-  csrmap[CSR_VSIE] = vsie;
-  csrmap[CSR_SIE] = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sie, vsie);
+  auto sie = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sie, vsie);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
+    csrmap[CSR_VSIE] = std::make_shared<rv32_low_csr_t>(proc, CSR_VSIE, vsie);
+    csrmap[CSR_VSIEH] = std::make_shared<aia_rv32_high_csr_t>(proc, CSR_VSIEH, vsie);
+    csrmap[CSR_SIE] = std::make_shared<rv32_low_csr_t>(proc, CSR_SIE, sie);
+    csrmap[CSR_SIEH] = std::make_shared<aia_rv32_high_csr_t>(proc, CSR_SIEH, sie);
+  } else {
+    csrmap[CSR_VSIE] = vsie;
+    csrmap[CSR_SIE] = sie;
+  }
   csrmap[CSR_HIE] = std::make_shared<mie_proxy_csr_t>(proc, CSR_HIE, hip_hie_accr);
 
   csrmap[CSR_MEDELEG] = medeleg = std::make_shared<medeleg_csr_t>(proc, CSR_MEDELEG);
-  csrmap[CSR_MIDELEG] = mideleg = std::make_shared<mideleg_csr_t>(proc, CSR_MIDELEG);
+  mideleg = std::make_shared<mideleg_csr_t>(proc, CSR_MIDELEG);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SMAIA)) {
+    csrmap[CSR_MIDELEG] = std::make_shared<rv32_low_csr_t>(proc, CSR_MIDELEG, mideleg);
+    csrmap[CSR_MIDELEGH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MIDELEGH, mideleg);
+  } else {
+    csrmap[CSR_MIDELEG] = mideleg;
+  }
   const reg_t counteren_mask = (proc->extension_enabled_const(EXT_ZICNTR) ? 0x7UL : 0x0) | (proc->extension_enabled_const(EXT_ZIHPM) ? 0xfffffff8ULL : 0x0);
   mcounteren = std::make_shared<masked_csr_t>(proc, CSR_MCOUNTEREN, counteren_mask, 0);
   if (proc->extension_enabled_const('U')) csrmap[CSR_MCOUNTEREN] = mcounteren;
@@ -362,7 +417,13 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   csrmap[CSR_HSTATUS] = hstatus = std::make_shared<masked_csr_t>(proc, CSR_HSTATUS, hstatus_mask, hstatus_init);
   csrmap[CSR_HGEIE] = std::make_shared<const_csr_t>(proc, CSR_HGEIE, 0);
   csrmap[CSR_HGEIP] = std::make_shared<const_csr_t>(proc, CSR_HGEIP, 0);
-  csrmap[CSR_HIDELEG] = hideleg = std::make_shared<hideleg_csr_t>(proc, CSR_HIDELEG, mideleg);
+  hideleg = std::make_shared<hideleg_csr_t>(proc, CSR_HIDELEG, mideleg);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
+    csrmap[CSR_HIDELEG] = std::make_shared<rv32_low_csr_t>(proc, CSR_HIDELEG, hideleg);
+    csrmap[CSR_HIDELEGH] = std::make_shared<aia_rv32_high_csr_t>(proc, CSR_HIDELEGH, hideleg);
+  } else {
+    csrmap[CSR_HIDELEG] = hideleg;
+  }
   const reg_t hedeleg_mask =
     (1 << CAUSE_MISALIGNED_FETCH) |
     (1 << CAUSE_FETCH_ACCESS) |
@@ -483,7 +544,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     const reg_t sstateen0_mask = (proc->extension_enabled(EXT_ZFINX) ? SSTATEEN0_FCSR : 0) |
                                  (proc->extension_enabled(EXT_ZCMT) ? SSTATEEN0_JVT : 0) |
                                  SSTATEEN0_CS;
-    const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN;
+    const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_CSRIND | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN;
     const reg_t mstateen0_mask = hstateen0_mask | (proc->extension_enabled(EXT_SSQOSID) ?  MSTATEEN0_PRIV114 : 0);
     for (int i = 0; i < 4; i++) {
       const reg_t mstateen_mask = i == 0 ? mstateen0_mask : MSTATEEN_HSTATEEN;
@@ -555,13 +616,14 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       csrmap[csr] = mireg[i] = std::make_shared<sscsrind_reg_csr_t>(proc, csr, miselect);
       i++;
     }
+    add_ireg_proxy(proc, mireg[0]);
   }
 
   if (proc->extension_enabled_const(EXT_SSCSRIND)) {
-    csr_t_p vsiselect = std::make_shared<basic_csr_t>(proc, CSR_VSISELECT, 0);
+    csr_t_p vsiselect = std::make_shared<siselect_csr_t>(proc, CSR_VSISELECT, 0);
     csrmap[CSR_VSISELECT] = vsiselect;
-    csr_t_p siselect = std::make_shared<basic_csr_t>(proc, CSR_SISELECT, 0);
-    csrmap[CSR_SISELECT] = std::make_shared<virtualized_csr_t>(proc, siselect, vsiselect);
+    csr_t_p siselect = std::make_shared<siselect_csr_t>(proc, CSR_SISELECT, 0);
+    csrmap[CSR_SISELECT] = std::make_shared<virtualized_stimecmp_csr_t>(proc, siselect, vsiselect);
 
     const reg_t vsireg_csrs[] = { CSR_VSIREG, CSR_VSIREG2, CSR_VSIREG3, CSR_VSIREG4, CSR_VSIREG5, CSR_VSIREG6 };
     auto i = 0;
@@ -577,6 +639,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
       csrmap[csr] = std::make_shared<virtualized_indirect_csr_t>(proc, sireg[i], vsireg[i]);
       i++;
     }
+    add_ireg_proxy(proc, sireg[0]);
   }
 
   if (smcntrpmf_enabled) {
@@ -595,6 +658,47 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     const reg_t srmcfg_mask = SRMCFG_MCID | SRMCFG_RCID;
     srmcfg = std::make_shared<srmcfg_csr_t>(proc, CSR_SRMCFG, srmcfg_mask, 0);
     csrmap[CSR_SRMCFG] = srmcfg;
+  }
+
+  mvien = std::make_shared<masked_csr_t>(proc, CSR_MVIEN, MIP_SEIP | MIP_SSIP, 0);
+  mvip = std::make_shared<mvip_csr_t>(proc, CSR_MVIP, 0);
+  if (proc->extension_enabled_const(EXT_SMAIA)) {
+    csrmap[CSR_MTOPI] = std::make_shared<mtopi_csr_t>(proc, CSR_MTOPI);
+    if (proc->extension_enabled_const('S')) {
+      if (xlen == 32) {
+        csrmap[CSR_MVIEN] = std::make_shared<rv32_low_csr_t>(proc, CSR_MVIEN, mvien);
+        csrmap[CSR_MVIENH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MVIENH, mvien);
+        csrmap[CSR_MVIP] = std::make_shared<rv32_low_csr_t>(proc, CSR_MVIP, mvip);
+        csrmap[CSR_MVIPH] = std::make_shared<rv32_high_csr_t>(proc, CSR_MVIPH, mvip);
+      } else {
+        csrmap[CSR_MVIEN] = mvien;
+        csrmap[CSR_MVIP] = mvip;
+      }
+    }
+  }
+
+  hvictl = std::make_shared<aia_csr_t>(proc, CSR_HVICTL, HVICTL_VTI | HVICTL_IID | HVICTL_DPR | HVICTL_IPRIOM | HVICTL_IPRIO, 0);
+  vstopi = csrmap[CSR_VSTOPI] = std::make_shared<vstopi_csr_t>(proc, CSR_VSTOPI);
+  if (proc->extension_enabled_const(EXT_SSAIA)) { // Included by EXT_SMAIA
+    csr_t_p nonvirtual_stopi = std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI);
+    csrmap[CSR_STOPI] = std::make_shared<virtualized_stimecmp_csr_t>(proc, nonvirtual_stopi, vstopi);
+    csrmap[CSR_STOPEI] = std::make_shared<inaccessible_csr_t>(proc, CSR_STOPEI);
+    auto hvien = std::make_shared<aia_csr_t>(proc, CSR_HVIEN, 0, 0);
+    auto hviprio1 = std::make_shared<aia_csr_t>(proc, CSR_HVIPRIO1, 0, 0);
+    auto hviprio2 = std::make_shared<aia_csr_t>(proc, CSR_HVIPRIO2, 0, 0);
+    if (xlen == 32) {
+      csrmap[CSR_HVIEN] = std::make_shared<rv32_low_csr_t>(proc, CSR_HVIEN, hvien);
+      csrmap[CSR_HVIENH] = std::make_shared<rv32_high_csr_t>(proc, CSR_HVIENH, hvien);
+      csrmap[CSR_HVIPRIO1] = std::make_shared<rv32_low_csr_t>(proc, CSR_HVIPRIO1, hviprio1);
+      csrmap[CSR_HVIPRIO1H] = std::make_shared<rv32_high_csr_t>(proc, CSR_HVIPRIO1H, hviprio1);
+      csrmap[CSR_HVIPRIO2] = std::make_shared<rv32_low_csr_t>(proc, CSR_HVIPRIO2, hviprio2);
+      csrmap[CSR_HVIPRIO2H] = std::make_shared<rv32_high_csr_t>(proc, CSR_HVIPRIO2H, hviprio2);
+    } else {
+      csrmap[CSR_HVIEN] = hvien;
+      csrmap[CSR_HVIPRIO1] = hviprio1;
+      csrmap[CSR_HVIPRIO2] = hviprio2;
+    }
+    csrmap[CSR_HVICTL] = hvictl;
   }
 
   serialized = false;
@@ -719,10 +823,46 @@ void processor_t::set_mmu_capability(int cap)
   }
 }
 
+reg_t processor_t::select_an_interrupt_with_default_priority(reg_t enabled_interrupts) const
+{
+  // nonstandard interrupts have highest priority
+  if (enabled_interrupts >> (IRQ_M_EXT + 1))
+    enabled_interrupts = enabled_interrupts >> (IRQ_M_EXT + 1) << (IRQ_M_EXT + 1);
+  // standard interrupt priority is MEI, MSI, MTI, SEI, SSI, STI
+  else if (enabled_interrupts & MIP_MEIP)
+    enabled_interrupts = MIP_MEIP;
+  else if (enabled_interrupts & MIP_MSIP)
+    enabled_interrupts = MIP_MSIP;
+  else if (enabled_interrupts & MIP_MTIP)
+    enabled_interrupts = MIP_MTIP;
+  else if (enabled_interrupts & MIP_SEIP)
+    enabled_interrupts = MIP_SEIP;
+  else if (enabled_interrupts & MIP_SSIP)
+    enabled_interrupts = MIP_SSIP;
+  else if (enabled_interrupts & MIP_STIP)
+    enabled_interrupts = MIP_STIP;
+  else if (enabled_interrupts & MIP_LCOFIP)
+    enabled_interrupts = MIP_LCOFIP;
+  else if (enabled_interrupts & MIP_VSEIP)
+    enabled_interrupts = MIP_VSEIP;
+  else if (enabled_interrupts & MIP_VSSIP)
+    enabled_interrupts = MIP_VSSIP;
+  else if (enabled_interrupts & MIP_VSTIP)
+    enabled_interrupts = MIP_VSTIP;
+  else
+    abort();
+
+  return enabled_interrupts;
+}
+
 void processor_t::take_interrupt(reg_t pending_interrupts)
 {
+  const reg_t s_pending_interrupts = state.nonvirtual_sip->read() & state.nonvirtual_sie->read();
+  const reg_t vstopi = state.vstopi->read();
+  const reg_t vs_pending_interrupt = vstopi ? ((reg_t(1) << get_field(vstopi, MTOPI_IID)) << 1) : 0; // SSIP -> VSSIP, etc
+
   // Do nothing if no pending interrupts
-  if (!pending_interrupts) {
+  if (!pending_interrupts && !s_pending_interrupts && !vs_pending_interrupt) {
     return;
   }
 
@@ -738,46 +878,20 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     const reg_t deleg_to_hs = state.mideleg->read() & ~state.hideleg->read();
     const reg_t sie = get_field(state.sstatus->read(), MSTATUS_SIE);
     const reg_t hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && sie);
-    enabled_interrupts = pending_interrupts & deleg_to_hs & -hs_enabled;
+    enabled_interrupts = s_pending_interrupts & deleg_to_hs & -hs_enabled;
     if (state.v && enabled_interrupts == 0) {
       // VS-ints have least priority and can only be taken with virt enabled
-      const reg_t deleg_to_vs = state.hideleg->read();
       const reg_t vs_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
-      enabled_interrupts = pending_interrupts & deleg_to_vs & -vs_enabled;
+      enabled_interrupts = vs_pending_interrupt & -vs_enabled;
     }
   }
 
   const bool nmie = !(state.mnstatus && !get_field(state.mnstatus->read(), MNSTATUS_NMIE));
   if (!state.debug_mode && nmie && enabled_interrupts) {
-    // nonstandard interrupts have highest priority
-    if (enabled_interrupts >> (IRQ_M_EXT + 1))
-      enabled_interrupts = enabled_interrupts >> (IRQ_M_EXT + 1) << (IRQ_M_EXT + 1);
-    // standard interrupt priority is MEI, MSI, MTI, SEI, SSI, STI
-    else if (enabled_interrupts & MIP_MEIP)
-      enabled_interrupts = MIP_MEIP;
-    else if (enabled_interrupts & MIP_MSIP)
-      enabled_interrupts = MIP_MSIP;
-    else if (enabled_interrupts & MIP_MTIP)
-      enabled_interrupts = MIP_MTIP;
-    else if (enabled_interrupts & MIP_SEIP)
-      enabled_interrupts = MIP_SEIP;
-    else if (enabled_interrupts & MIP_SSIP)
-      enabled_interrupts = MIP_SSIP;
-    else if (enabled_interrupts & MIP_STIP)
-      enabled_interrupts = MIP_STIP;
-    else if (enabled_interrupts & MIP_LCOFIP)
-      enabled_interrupts = MIP_LCOFIP;
-    else if (enabled_interrupts & MIP_VSEIP)
-      enabled_interrupts = MIP_VSEIP;
-    else if (enabled_interrupts & MIP_VSSIP)
-      enabled_interrupts = MIP_VSSIP;
-    else if (enabled_interrupts & MIP_VSTIP)
-      enabled_interrupts = MIP_VSTIP;
-    else
-      abort();
+    reg_t selected_interrupt = select_an_interrupt_with_default_priority(enabled_interrupts);
 
     if (check_triggers_icount) TM.detect_icount_match();
-    throw trap_t(((reg_t)1 << (isa->get_max_xlen() - 1)) | ctz(enabled_interrupts));
+    throw trap_t(((reg_t)1 << (isa->get_max_xlen() - 1)) | ctz(selected_interrupt));
   }
 }
 
