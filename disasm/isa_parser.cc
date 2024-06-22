@@ -1,4 +1,5 @@
 #include "isa_parser.h"
+#include <stdexcept>
 
 static std::string strtolower(const char* str)
 {
