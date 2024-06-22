@@ -273,6 +273,9 @@ public:
   bool any_custom_extensions() const {
     return !custom_extensions.empty();
   }
+  bool any_vector_extensions() const {
+    return VU.VLEN > 0;
+  }
   bool extension_enabled(unsigned char ext) const {
     return extension_enabled(isa_extension_t(ext));
   }
@@ -407,7 +410,6 @@ private:
   friend class plic_t;
   friend class extension_t;
 
-  void parse_varch_string(const char*);
   void parse_priv_string(const char*);
   void build_opcode_map();
   void register_base_instructions();

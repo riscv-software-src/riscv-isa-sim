@@ -1449,8 +1449,8 @@ reg_t index[P.VU.vlmax]; \
 #define VI_VFP_COMMON \
   require_fp; \
   require((P.VU.vsew == e16 && p->extension_enabled(EXT_ZVFH)) || \
-          (P.VU.vsew == e32 && p->extension_enabled('F')) || \
-          (P.VU.vsew == e64 && p->extension_enabled('D'))); \
+          (P.VU.vsew == e32 && p->get_isa().get_zvf()) || \
+          (P.VU.vsew == e64 && p->get_isa().get_zvd())); \
   require_vector(true); \
   require(STATE.frm->read() < 0x5); \
   reg_t UNUSED vl = P.VU.vl->read(); \
@@ -1662,8 +1662,8 @@ reg_t index[P.VU.vlmax]; \
 #define VI_VFP_VV_LOOP_WIDE_REDUCTION(BODY16, BODY32) \
   VI_CHECK_REDUCTION(true) \
   VI_VFP_COMMON \
-  require((P.VU.vsew == e16 && p->extension_enabled('F')) || \
-          (P.VU.vsew == e32 && p->extension_enabled('D'))); \
+  require((P.VU.vsew == e16 && p->get_isa().get_zvf()) || \
+          (P.VU.vsew == e32 && p->get_isa().get_zvd())); \
   bool is_active = false; \
   switch (P.VU.vsew) { \
     case e16: { \
@@ -1948,17 +1948,17 @@ reg_t index[P.VU.vlmax]; \
   switch (P.VU.vsew) { \
     case e16: \
       { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(16, 16, sign), \
-        { p->extension_enabled(EXT_ZVFH); }, \
+        { require(p->extension_enabled(EXT_ZVFH)); },   \
         BODY16); } \
       break; \
     case e32: \
       { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(32, 32, sign), \
-        { p->extension_enabled('F'); }, \
+        { require(p->get_isa().get_zvf()); },  \
         BODY32); } \
       break; \
     case e64: \
       { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(64, 64, sign), \
-        { p->extension_enabled('D'); }, \
+        { require(p->get_isa().get_zvd()); },  \
         BODY64); } \
       break; \
     default: \
@@ -1972,17 +1972,17 @@ reg_t index[P.VU.vlmax]; \
   switch (P.VU.vsew) { \
     case e16: \
       { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(16, 16, sign), \
-        { p->extension_enabled(EXT_ZVFH); }, \
+        { require(p->extension_enabled(EXT_ZVFH)); },   \
         BODY16); } \
       break; \
     case e32: \
       { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(32, 32, sign), \
-        { p->extension_enabled('F'); }, \
+        { require(p->get_isa().get_zvf()); },  \
         BODY32); } \
       break; \
     case e64: \
       { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(64, 64, sign), \
-        { p->extension_enabled('D'); }, \
+        { require(p->get_isa().get_zvd()); },  \
         BODY64); } \
       break; \
     default: \

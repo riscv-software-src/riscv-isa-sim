@@ -739,7 +739,6 @@ with_boost_asio
 with_boost_regex
 with_isa
 with_priv
-with_varch
 with_target
 enable_dual_endian
 '
@@ -1407,8 +1406,6 @@ Optional Packages:
   --with-isa=RV64IMAFDC_zicntr_zihpm
                           Sets the default RISC-V ISA
   --with-priv=MSU         Sets the default RISC-V privilege modes supported
-  --with-varch=vlen:128,elen:64
-                          Sets the default vector config
   --with-target=riscv64-unknown-elf
                           Sets the default target config
 
@@ -6588,20 +6585,6 @@ printf "%s\n" "#define DEFAULT_PRIV \"$withval\"" >>confdefs.h
 else $as_nop
 
 printf "%s\n" "#define DEFAULT_PRIV \"MSU\"" >>confdefs.h
-
-fi
-
-
-
-# Check whether --with-varch was given.
-if test ${with_varch+y}
-then :
-  withval=$with_varch;
-printf "%s\n" "#define DEFAULT_VARCH \"$withval\"" >>confdefs.h
-
-else $as_nop
-
-printf "%s\n" "#define DEFAULT_VARCH \"vlen:128,elen:64\"" >>confdefs.h
 
 fi
 

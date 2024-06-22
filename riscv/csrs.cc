@@ -411,9 +411,9 @@ base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
 reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
   // If a configuration has FS bits, they will always be accessible no
   // matter the state of misa.
-  const bool has_fs = (proc->extension_enabled('S') || proc->extension_enabled('F')
-              || proc->extension_enabled('V')) && !proc->extension_enabled(EXT_ZFINX);
-  const bool has_vs = proc->extension_enabled('V');
+  const bool has_fs = (proc->extension_enabled('S') || proc->extension_enabled('F')) && !proc->extension_enabled(EXT_ZFINX);
+  // Implementations w/o V may still have mstatus.vs,
+  const bool has_vs = proc->any_vector_extensions();
   return 0
     | (proc->extension_enabled('S') ? (SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP) : 0)
     | (has_page ? (SSTATUS_SUM | SSTATUS_MXR) : 0)
@@ -1429,8 +1429,6 @@ vector_csr_t::vector_csr_t(processor_t* const proc, const reg_t addr, const reg_
 
 void vector_csr_t::verify_permissions(insn_t insn, bool write) const {
   require_vector_vs;
-  if (!proc->extension_enabled('V'))
-    throw trap_illegal_instruction(insn.bits());
   basic_csr_t::verify_permissions(insn, write);
 }
 
@@ -1452,8 +1450,6 @@ vxsat_csr_t::vxsat_csr_t(processor_t* const proc, const reg_t addr):
 
 void vxsat_csr_t::verify_permissions(insn_t insn, bool write) const {
   require_vector_vs;
-  if (!proc->extension_enabled('V'))
-    throw trap_illegal_instruction(insn.bits());
   masked_csr_t::verify_permissions(insn, write);
 }
 

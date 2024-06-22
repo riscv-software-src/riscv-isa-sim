@@ -35,7 +35,6 @@ cfg_t::cfg_t()
   bootargs         = nullptr;
   isa              = DEFAULT_ISA;
   priv             = DEFAULT_PRIV;
-  varch            = DEFAULT_VARCH;
   misaligned       = false;
   endianness       = endianness_little;
   pmpregions       = 16;

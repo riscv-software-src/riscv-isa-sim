@@ -44,7 +44,7 @@ processor_t::processor_t(const isa_parser_t *isa, const cfg_t *cfg,
   TM.proc = this;
 
 #ifndef HAVE_INT128
-  if (isa->extension_enabled('V')) {
+  if (isa->has_any_vector()) {
     fprintf(stderr, "V extension is not supported on platforms without __int128 type\n");
     abort();
   }
@@ -55,7 +55,10 @@ processor_t::processor_t(const isa_parser_t *isa, const cfg_t *cfg,
   }
 #endif
 
-  parse_varch_string(cfg->varch);
+  VU.VLEN = isa->get_vlen();
+  VU.ELEN = isa->get_elen();
+  VU.vlenb = isa->get_vlen() / 8;
+  VU.vstart_alu = 0;
 
   register_base_instructions();
   mmu = new mmu_t(sim, cfg->endianness, this);
@@ -102,27 +105,11 @@ static void bad_option_string(const char *option, const char *value,
   abort();
 }
 
-static void bad_varch_string(const char* varch, const char *msg)
-{
-  bad_option_string("--varch", varch, msg);
-}
-
 static std::string get_string_token(std::string str, const char delimiter, size_t& pos)
 {
   size_t _pos = pos;
   while (pos < str.length() && str[pos] != delimiter) ++pos;
   return str.substr(_pos, pos - _pos);
-}
-
-static int get_int_token(std::string str, const char delimiter, size_t& pos)
-{
-  size_t _pos = pos;
-  while (pos < str.length() && str[pos] != delimiter) {
-    if (!isdigit(str[pos]))
-      bad_varch_string(str.c_str(), "Unsupported value"); // An integer is expected
-    ++pos;
-  }
-  return (pos == _pos) ? 0 : stoi(str.substr(_pos, pos - _pos));
 }
 
 static bool check_pow2(int val)
@@ -136,51 +123,6 @@ static std::string strtolower(const char* str)
   for (const char *r = str; *r; r++)
     res += std::tolower(*r);
   return res;
-}
-
-void processor_t::parse_varch_string(const char* s)
-{
-  std::string str = strtolower(s);
-  size_t pos = 0;
-  size_t len = str.length();
-  int vlen = 0;
-  int elen = 0;
-  int vstart_alu = 0;
-
-  while (pos < len) {
-    std::string attr = get_string_token(str, ':', pos);
-
-    ++pos;
-
-    if (attr == "vlen")
-      vlen = get_int_token(str, ',', pos);
-    else if (attr == "elen")
-      elen = get_int_token(str, ',', pos);
-    else if (attr == "vstartalu")
-      vstart_alu = get_int_token(str, ',', pos);
-    else
-      bad_varch_string(s, "Unsupported token");
-
-    ++pos;
-  }
-
-  // The integer should be the power of 2
-  if (!check_pow2(vlen) || !check_pow2(elen)) {
-    bad_varch_string(s, "The integer value should be the power of 2");
-  }
-
-  /* Vector spec requirements. */
-  if (vlen < elen)
-    bad_varch_string(s, "vlen must be >= elen");
-
-  /* spike requirements. */
-  if (vlen > 4096)
-    bad_varch_string(s, "vlen must be <= 4096");
-
-  VU.VLEN = vlen;
-  VU.ELEN = elen;
-  VU.vlenb = vlen / 8;
-  VU.vstart_alu = vstart_alu;
 }
 
 static int xlen_to_uxl(int xlen)

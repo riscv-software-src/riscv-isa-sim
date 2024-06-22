@@ -1455,7 +1455,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DISASM_INSN("cm.jalt", cm_jalt, 0, {&rvcm_jt_index});
   }
 
-  if (isa->extension_enabled('V')) {
+  if (isa->has_any_vector()) {
     DISASM_INSN("vsetivli", vsetivli, 0, {&xrd, &zimm5, &v_vtype});
     DISASM_INSN("vsetvli", vsetvli, 0, {&xrd, &xrs1, &v_vtype});
     DEFINE_RTYPE(vsetvl);
