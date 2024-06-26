@@ -94,6 +94,11 @@ extern "C" {
 struct commonNaN { char _unused; };
 
 /*----------------------------------------------------------------------------
+| The bit pattern for a default generated 8-bit floating-point NaN.
+*----------------------------------------------------------------------------*/
+#define defaultNaNF8UI 0x80
+
+/*----------------------------------------------------------------------------
 | The bit pattern for a default generated 16-bit floating-point NaN.
 *----------------------------------------------------------------------------*/
 #define defaultNaNF16UI 0x7E00
