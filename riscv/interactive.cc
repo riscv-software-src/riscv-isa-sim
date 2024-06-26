@@ -277,6 +277,7 @@ void sim_t::interactive()
   funcs["fregs"] = &sim_t::interactive_fregs;
   funcs["fregd"] = &sim_t::interactive_fregd;
   funcs["pc"] = &sim_t::interactive_pc;
+  funcs["insn"] = &sim_t::interactive_insn;
   funcs["priv"] = &sim_t::interactive_priv;
   funcs["mem"] = &sim_t::interactive_mem;
   funcs["str"] = &sim_t::interactive_str;
@@ -367,6 +368,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "fregd <core> <reg>              # Display double precision <reg> in <core>\n"
     "vreg <core> [reg]               # Display vector [reg] (all if omitted) in <core>\n"
     "pc <core>                       # Show current PC in <core>\n"
+    "insn <core>                     # Show current instruction corresponding to PC in <core>\n"
     "priv <core>                     # Show current privilege level in <core>\n"
     "mem [core] <hex addr>           # Show contents of virtual memory <hex addr> in [core] (physical memory <hex addr> if omitted)\n"
     "str [core] <hex addr>           # Show NUL-terminated C string at virtual address <hex addr> in [core] (physical address <hex addr> if omitted)\n"
@@ -377,6 +379,8 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "untiln reg <core> <reg> <val>   # Run noisy and stop when <reg> in <core> hits <val>\n"
     "until pc <core> <val>           # Stop when PC in <core> hits <val>\n"
     "untiln pc <core> <val>          # Run noisy and stop when PC in <core> hits <val>\n"
+    "until insn <core> <val>         # Stop when instruction corresponding to PC in <core> hits <val>\n"
+    "untiln insn <core> <val>        # Run noisy and stop when instruction corresponding to PC in <core> hits <val>\n"
     "until mem [core] <addr> <val>   # Stop when virtual memory <addr> in [core] (physical address <addr> if omitted) becomes <val>\n"
     "untiln mem [core] <addr> <val>  # Run noisy and stop when virtual memory <addr> in [core] (physical address <addr> if omitted) becomes <val>\n"
     "while reg <core> <reg> <val>    # Run while <reg> in <core> is <val>\n"
@@ -446,6 +450,54 @@ void sim_t::interactive_pc(const std::string& cmd, const std::vector<std::string
   std::ostream out(sout_.rdbuf());
   out << std::hex << std::setfill('0') << "0x" << std::setw(max_xlen/4)
       << zext(get_pc(args), max_xlen) << std::endl;
+}
+
+static reg_t load(mmu_t* mmu, reg_t addr) {
+  reg_t val;
+
+  switch (addr % 8)
+  {
+    case 0:
+      val = mmu->load<uint64_t>(addr);
+      break;
+    case 4:
+      val = mmu->load<uint32_t>(addr);
+      break;
+    case 2:
+    case 6:
+      val = mmu->load<uint16_t>(addr);
+      break;
+    default:
+      val = mmu->load<uint8_t>(addr);
+      break;
+  }
+  return val;
+}
+
+reg_t sim_t::get_insn(const std::vector<std::string>& args)
+{
+  if (args.size() != 1)
+    throw trap_interactive();
+
+  processor_t *p = get_core(args[0]);
+  reg_t addr = p->get_state()->pc;
+  mmu_t* mmu = p->get_mmu();
+  return load(mmu, addr);
+}
+
+void sim_t::interactive_insn(const std::string& cmd, const std::vector<std::string>& args)
+{
+  if (args.size() != 1)
+    throw trap_interactive();
+
+  processor_t *p = get_core(args[0]);
+  int max_xlen = p->get_isa().get_max_xlen();
+
+  insn_t insn(get_insn(args));
+
+  std::ostream out(sout_.rdbuf());
+  out << std::hex << std::setfill('0') << "0x" << std::setw(max_xlen/4)
+      << zext(insn.bits(), max_xlen) << " " << p->get_disassembler()->disassemble(insn) << std::endl;
 }
 
 void sim_t::interactive_priv(const std::string& cmd, const std::vector<std::string>& args)
@@ -647,27 +699,11 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
     addr_str = args[1];
   }
 
-  reg_t addr = strtol(addr_str.c_str(),NULL,16), val;
+  reg_t addr = strtol(addr_str.c_str(),NULL,16);
   if (addr == LONG_MAX)
     addr = strtoul(addr_str.c_str(),NULL,16);
 
-  switch (addr % 8)
-  {
-    case 0:
-      val = mmu->load<uint64_t>(addr);
-      break;
-    case 4:
-      val = mmu->load<uint32_t>(addr);
-      break;
-    case 2:
-    case 6:
-      val = mmu->load<uint16_t>(addr);
-      break;
-    default:
-      val = mmu->load<uint8_t>(addr);
-      break;
-  }
-  return val;
+  return load(mmu, addr);
 }
 
 void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::string>& args)
@@ -743,6 +779,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
   auto func = args[0] == "reg" ? &sim_t::get_reg :
               args[0] == "pc"  ? &sim_t::get_pc :
               args[0] == "mem" ? &sim_t::get_mem :
+              args[0] == "insn" ? &sim_t::get_insn :
               NULL;
 
   if (func == NULL)
@@ -800,4 +837,3 @@ void sim_t::interactive_mtimecmp(const std::string& cmd, const std::vector<std::
   out << std::hex << std::setfill('0') << "0x" << std::setw(16)
       << clint->get_mtimecmp(p->get_id()) << std::endl;
 }
-
