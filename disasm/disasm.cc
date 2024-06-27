@@ -195,6 +195,47 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
+    static const char* table[32] = {
+      "-1.0",
+      "min",
+      "1.52587890625e-05",
+      "3.0517578125e-05",
+      "0.00390625",
+      "0.0078125",
+      "0.0625",
+      "0.125",
+      "0.25",
+      "0.3125",
+      "0.375",
+      "0.4375",
+      "0.5",
+      "0.625",
+      "0.75",
+      "0.875",
+      "1.0",
+      "1.25",
+      "1.5",
+      "1.75",
+      "2.0",
+      "2.5",
+      "3.0",
+      "4.0",
+      "8.0",
+      "16.0",
+      "128.0",
+      "256.0",
+      "32768.0",
+      "65536.0",
+      "inf",
+      "nan"
+    };
+
+    return table[insn.rs1()];
+  }
+} fli_imm;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     int32_t target = insn.sb_imm();
     std::string s = target >= 0 ? "pc + " : "pc - ";
     s += std::to_string(abs(target));
@@ -644,9 +685,19 @@ static void NOINLINE add_xftype_insn(disassembler_t* d, const char* name, uint32
   d->add_insn(new disasm_insn_t(name, match, mask, {&frd, &xrs1}));
 }
 
+static void NOINLINE add_xf2type_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&frd, &xrs1, &xrs2}));
+}
+
 static void NOINLINE add_fx2type_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &frs1, &frs2}));
+}
+
+static void NOINLINE add_flitype_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &fli_imm}));
 }
 
 static void NOINLINE add_sfence_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
@@ -794,7 +845,9 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
   #define DEFINE_FR3TYPE(code) add_fr3type_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FXTYPE(code) add_fxtype_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FX2TYPE(code) add_fx2type_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_FLITYPE(code) add_flitype_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_XFTYPE(code) add_xftype_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_XF2TYPE(code) add_xf2type_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_SFENCE_TYPE(code) add_sfence_insn(this, #code, match_##code, mask_##code);
 
   add_insn(new disasm_insn_t("unimp", match_csrrw|(CSR_CYCLE<<20), 0xffffffff, {}));
@@ -1177,6 +1230,56 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_FX2TYPE(feq_d);
     DEFINE_FX2TYPE(flt_d);
     DEFINE_FX2TYPE(fle_d);
+  }
+
+  if (isa->extension_enabled(EXT_ZFA)) {
+    DEFINE_FLITYPE(fli_s);
+    DEFINE_FRTYPE(fminm_s);
+    DEFINE_FRTYPE(fmaxm_s);
+    DEFINE_FR1TYPE(fround_s);
+    DEFINE_FR1TYPE(froundnx_s);
+    DEFINE_FX2TYPE(fleq_s);
+    DEFINE_FX2TYPE(fltq_s);
+
+    if (isa->extension_enabled(EXT_ZFH) || isa->extension_enabled(EXT_ZVFH)) {
+      DEFINE_FLITYPE(fli_h);
+      DEFINE_FRTYPE(fminm_h);
+      DEFINE_FRTYPE(fmaxm_h);
+      DEFINE_FR1TYPE(fround_h);
+      DEFINE_FR1TYPE(froundnx_h);
+      DEFINE_FX2TYPE(fleq_h);
+      DEFINE_FX2TYPE(fltq_h);
+    }
+
+    if (isa->extension_enabled('D')) {
+      DEFINE_FLITYPE(fli_d);
+      DEFINE_FRTYPE(fminm_d);
+      DEFINE_FRTYPE(fmaxm_d);
+      DEFINE_FR1TYPE(fround_d);
+      DEFINE_FR1TYPE(froundnx_d);
+      DEFINE_FX2TYPE(fleq_d);
+      DEFINE_FX2TYPE(fltq_d);
+
+      if (isa->get_max_xlen() == 32) {
+        DEFINE_XF2TYPE(fmvp_d_x);
+        DEFINE_FXTYPE(fmvh_x_d);
+      }
+    }
+
+    if (isa->extension_enabled('Q')) {
+      DEFINE_FLITYPE(fli_q);
+      DEFINE_FRTYPE(fminm_q);
+      DEFINE_FRTYPE(fmaxm_q);
+      DEFINE_FR1TYPE(fround_q);
+      DEFINE_FR1TYPE(froundnx_q);
+      DEFINE_FX2TYPE(fleq_q);
+      DEFINE_FX2TYPE(fltq_q);
+
+      if (isa->get_max_xlen() == 64) {
+        DEFINE_XF2TYPE(fmvp_q_x);
+        DEFINE_FXTYPE(fmvh_x_q);
+      }
+    }
   }
 
   if (isa->extension_enabled(EXT_ZDINX)) {
@@ -2146,7 +2249,8 @@ disassembler_t::disassembler_t(const isa_parser_t *isa)
 
   // next-highest priority: other instructions in same base ISA
   std::string fallback_isa_string = std::string("rv") + std::to_string(isa->get_max_xlen()) +
-    "gqcvh_zfh_zba_zbb_zbc_zbs_zcb_zicbom_zicboz_zicond_zkn_zkr_zks_svinval_zcmop_zimop";
+    "gqcvh_zfh_zfa_zba_zbb_zbc_zbs_zcb_zicbom_zicboz_zicond_zk_zks_svinval_"
+    "zcmop_zimop_zawrs_zicfiss_zicfilp_zvknc_zvkg_zvfbfmin_zvfbfwma_zfbfmin";
   isa_parser_t fallback_isa(fallback_isa_string.c_str(), DEFAULT_PRIV);
   add_instructions(&fallback_isa);
 
