@@ -43,6 +43,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
              const debug_module_config_t &dm_config,
              const char *log_path,
              bool dtb_enabled, const char *dtb_file,
+             bool disable_ns16550,
              bool socket_enabled,
              FILE *cmd_file) // needed for command line option --cmd
   : htif_t(args),
@@ -117,8 +118,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   // setting the dtb_file argument has one.
   std::vector<device_factory_sargs_t> device_factories = {
     {clint_factory, {}}, // clint must be element 0
-    {plic_factory, {}}, // plic must be element 1
-    {ns16550_factory, {}}};
+    {plic_factory, {}}}; // plic must be element 1
+  if (!disable_ns16550) device_factories.push_back({ns16550_factory, {}});
   device_factories.insert(device_factories.end(),
                           plugin_device_factories.begin(),
                           plugin_device_factories.end());
@@ -142,6 +143,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       device_nodes.append(factory->generate_dts(this, sargs));
     }
     dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
+                   disable_ns16550,
                    initrd_bounds.first, initrd_bounds.second,
                    cfg->bootargs, cfg->pmpregions, cfg->pmpgranularity,
                    procs, mems, device_nodes);

@@ -7,6 +7,7 @@
 #include <string>
 
 std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
+                     bool disable_ns16550,
                      reg_t initrd_start, reg_t initrd_end,
                      const char* bootargs,
                      size_t pmpregions,

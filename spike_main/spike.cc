@@ -64,6 +64,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --dump-dts            Print device tree string and exit\n");
   fprintf(stderr, "  --dtb=<path>          Use specified device tree blob [default: auto-generate]\n");
   fprintf(stderr, "  --disable-dtb         Don't write the device tree blob into memory\n");
+  fprintf(stderr, "  --disable-ns16550     Disable default ns16550 UART device\n");
   fprintf(stderr, "  --kernel=<path>       Load kernel flat image into memory\n");
   fprintf(stderr, "  --initrd=<path>       Load kernel initrd into memory\n");
   fprintf(stderr, "  --bootargs=<args>     Provide custom bootargs for kernel [default: %s]\n",
@@ -332,6 +333,7 @@ int main(int argc, char** argv)
   bool UNUSED socket = false;  // command line option -s
   bool dump_dts = false;
   bool dtb_enabled = true;
+  bool disable_ns16550 = false;
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
   std::vector<device_factory_sargs_t> plugin_device_factories;
@@ -408,6 +410,7 @@ int main(int argc, char** argv)
   parser.option(0, "dump-dts", 0, [&](const char UNUSED *s){dump_dts = true;});
   parser.option(0, "disable-dtb", 0, [&](const char UNUSED *s){dtb_enabled = false;});
   parser.option(0, "dtb", 1, [&](const char *s){dtb_file = s;});
+  parser.option(0, "disable-ns16550", 0, [&](const char UNUSED *s){disable_ns16550 = true;});
   parser.option(0, "kernel", 1, [&](const char* s){kernel = s;});
   parser.option(0, "initrd", 1, [&](const char* s){initrd = s;});
   parser.option(0, "bootargs", 1, [&](const char* s){cfg.bootargs = s;});
@@ -520,7 +523,7 @@ int main(int argc, char** argv)
   }
 
   sim_t s(&cfg, halted,
-      mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
+      mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file, disable_ns16550,
       socket,
       cmd_file);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);

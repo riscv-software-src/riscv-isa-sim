@@ -13,6 +13,7 @@
 #include <sys/types.h>
 
 std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
+                     bool disable_ns16550,
                      reg_t initrd_start, reg_t initrd_end,
                      const char* bootargs,
                      size_t pmpregions,
@@ -30,8 +31,11 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "  #size-cells = <2>;\n"
          "  compatible = \"ucbbar,spike-bare-dev\";\n"
          "  model = \"ucbbar,spike-bare\";\n"
-         "  chosen {\n"
-         "    stdout-path = &SERIAL0;\n";
+         "  chosen {\n";
+  if (!disable_ns16550)
+    s << "    stdout-path = &SERIAL0;\n";
+  else
+    s << "    stdout-path = &HTIF;\n";
   if (initrd_start < initrd_end) {
     s << "    linux,initrd-start = <" << (size_t)initrd_start << ">;\n"
          "    linux,initrd-end = <" << (size_t)initrd_end << ">;\n";
@@ -89,7 +93,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "    ranges;\n"
     << device_nodes
     <<   "  };\n"
-         "  htif {\n"
+         "  HTIF: htif {\n"
          "    compatible = \"ucb,htif0\";\n"
          "  };\n"
          "};\n";

@@ -34,6 +34,7 @@ public:
         const std::vector<std::string>& args,
         const debug_module_config_t &dm_config, const char *log_path,
         bool dtb_enabled, const char *dtb_file,
+        bool disable_ns16550,
         bool socket_enabled,
         FILE *cmd_file); // needed for command line option --cmd
   ~sim_t();
