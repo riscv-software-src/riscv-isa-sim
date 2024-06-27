@@ -2249,7 +2249,8 @@ disassembler_t::disassembler_t(const isa_parser_t *isa)
 
   // next-highest priority: other instructions in same base ISA
   std::string fallback_isa_string = std::string("rv") + std::to_string(isa->get_max_xlen()) +
-    "gqcvh_zfh_zba_zbb_zbc_zbs_zcb_zicbom_zicboz_zicond_zkn_zkr_zks_svinval_zcmop_zimop";
+    "gqcvh_zfh_zfa_zba_zbb_zbc_zbs_zcb_zicbom_zicboz_zicond_zk_zks_svinval_"
+    "zcmop_zimop_zawrs_zicfiss_zicfilp_zvknc_zvkg_zvfbfmin_zvfbfwma_zfbfmin";
   isa_parser_t fallback_isa(fallback_isa_string.c_str(), DEFAULT_PRIV);
   add_instructions(&fallback_isa);
 
