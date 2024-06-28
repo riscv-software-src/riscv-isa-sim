@@ -452,37 +452,16 @@ void sim_t::interactive_pc(const std::string& cmd, const std::vector<std::string
       << zext(get_pc(args), max_xlen) << std::endl;
 }
 
-static reg_t load(mmu_t* mmu, reg_t addr) {
-  reg_t val;
-
-  switch (addr % 8)
-  {
-    case 0:
-      val = mmu->load<uint64_t>(addr);
-      break;
-    case 4:
-      val = mmu->load<uint32_t>(addr);
-      break;
-    case 2:
-    case 6:
-      val = mmu->load<uint16_t>(addr);
-      break;
-    default:
-      val = mmu->load<uint8_t>(addr);
-      break;
-  }
-  return val;
-}
-
 reg_t sim_t::get_insn(const std::vector<std::string>& args)
 {
   if (args.size() != 1)
     throw trap_interactive();
 
   processor_t *p = get_core(args[0]);
-  reg_t addr = p->get_state()->pc;
+  reg_t pc = p->get_state()->pc;
   mmu_t* mmu = p->get_mmu();
-  return load(mmu, addr);
+  icache_entry_t* ic_entry = mmu->access_icache(pc);
+  return ic_entry->data.insn.bits();
 }
 
 void sim_t::interactive_insn(const std::string& cmd, const std::vector<std::string>& args)
@@ -493,11 +472,16 @@ void sim_t::interactive_insn(const std::string& cmd, const std::vector<std::stri
   processor_t *p = get_core(args[0]);
   int max_xlen = p->get_isa().get_max_xlen();
 
-  insn_t insn(get_insn(args));
-
   std::ostream out(sout_.rdbuf());
-  out << std::hex << std::setfill('0') << "0x" << std::setw(max_xlen/4)
-      << zext(insn.bits(), max_xlen) << " " << p->get_disassembler()->disassemble(insn) << std::endl;
+  try
+  {
+    insn_t insn(get_insn(args));
+    out << std::hex << std::setfill('0') << "0x" << std::setw(max_xlen/4)
+        << zext(insn.bits(), max_xlen) << " " << p->get_disassembler()->disassemble(insn) << std::endl;
+  }
+  catch (trap_t& t) {
+    out << "Unable to obtain insn due to " << t.name() << std::endl;
+  }
 }
 
 void sim_t::interactive_priv(const std::string& cmd, const std::vector<std::string>& args)
@@ -703,7 +687,24 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
   if (addr == LONG_MAX)
     addr = strtoul(addr_str.c_str(),NULL,16);
 
-  return load(mmu, addr);
+  reg_t val;
+  switch (addr % 8)
+  {
+    case 0:
+      val = mmu->load<uint64_t>(addr);
+      break;
+    case 4:
+      val = mmu->load<uint32_t>(addr);
+      break;
+    case 2:
+    case 6:
+      val = mmu->load<uint16_t>(addr);
+      break;
+    default:
+      val = mmu->load<uint8_t>(addr);
+      break;
+  }
+  return val;
 }
 
 void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::string>& args)
