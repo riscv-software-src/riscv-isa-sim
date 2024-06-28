@@ -580,39 +580,44 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
     }
   }
 
+  std::ostream out(sout_.rdbuf());
+
   // Show all the regs!
   processor_t *p = get_core(args[0]);
-  const int vlen = (int)(p->VU.get_vlen()) >> 3;
-  const int elen = (int)(p->VU.get_elen()) >> 3;
-  const int num_elem = vlen/elen;
+  if (p->any_vector_extensions()) {
+    const int vlen = (int)(p->VU.get_vlen()) >> 3;
+    const int elen = (int)(p->VU.get_elen()) >> 3;
+    const int num_elem = vlen/elen;
 
-  std::ostream out(sout_.rdbuf());
-  out << std::dec << "VLEN=" << (vlen << 3) << " bits; ELEN=" << (elen << 3) << " bits" << std::endl;
+    out << std::dec << "VLEN=" << (vlen << 3) << " bits; ELEN=" << (elen << 3) << " bits" << std::endl;
 
-  for (int r = rstart; r < rend; ++r) {
-    out << std::setfill (' ') << std::left << std::setw(4) << vr_name[r] << std::right << ": ";
-    for (int e = num_elem-1; e >= 0; --e) {
-      uint64_t val;
-      switch (elen) {
-        case 8:
-          val = p->VU.elt<uint64_t>(r, e);
-          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(16) << val << "  ";
-          break;
-        case 4:
-          val = p->VU.elt<uint32_t>(r, e);
-          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (uint32_t)val << "  ";
-          break;
-        case 2:
-          val = p->VU.elt<uint16_t>(r, e);
-          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (uint16_t)val << "  ";
-          break;
-        case 1:
-          val = p->VU.elt<uint8_t>(r, e);
-          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (int)(uint8_t)val << "  ";
-          break;
+    for (int r = rstart; r < rend; ++r) {
+      out << std::setfill (' ') << std::left << std::setw(4) << vr_name[r] << std::right << ": ";
+      for (int e = num_elem-1; e >= 0; --e) {
+        uint64_t val;
+        switch (elen) {
+          case 8:
+            val = p->VU.elt<uint64_t>(r, e);
+            out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(16) << val << "  ";
+            break;
+          case 4:
+            val = p->VU.elt<uint32_t>(r, e);
+            out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (uint32_t)val << "  ";
+            break;
+          case 2:
+            val = p->VU.elt<uint16_t>(r, e);
+            out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (uint16_t)val << "  ";
+            break;
+          case 1:
+            val = p->VU.elt<uint8_t>(r, e);
+            out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (int)(uint8_t)val << "  ";
+            break;
+        }
       }
+      out << std::endl;
     }
-    out << std::endl;
+  } else {
+    out << "Processor selected does not support any vector extensions" << std::endl;
   }
 }
 
