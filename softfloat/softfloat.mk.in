@@ -52,7 +52,9 @@ softfloat_c_srcs = \
 	f16_roundToInt.c \
 	f16_sqrt.c \
 	f16_sub.c \
+	f16_to_f8.c \
 	f16_to_f128.c \
+	f8_to_f16.c \
 	f16_to_f32.c \
 	f16_to_f64.c \
 	f16_to_i8.c \

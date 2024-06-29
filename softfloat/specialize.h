@@ -104,6 +104,12 @@ struct commonNaN { char _unused; };
 #define defaultNaNBF16UI 0x7FC0
 
 /*----------------------------------------------------------------------------
+| Converts the common NaN pointed to by `aPtr' into a 8-bit floating-point
+| NaN, and returns the bit pattern of this value as an unsigned integer.
+*----------------------------------------------------------------------------*/
+#define softfloat_commonNaNToF8UI( aPtr ) ((uint_fast8_t) defaultNaNF8UI)
+
+/*----------------------------------------------------------------------------
 | Returns true when 16-bit unsigned integer `uiA' has the bit pattern of a
 | 16-bit floating-point signaling NaN.
 | Note:  This macro evaluates its argument more than once.

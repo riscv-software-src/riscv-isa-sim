@@ -141,6 +141,11 @@ void i64_to_extF80M( int64_t, extFloat80_t * );
 void i64_to_f128M( int64_t, float128_t * );
 
 /*----------------------------------------------------------------------------
+| 8-bit (half-precision) floating-point operations.
+*----------------------------------------------------------------------------*/
+float16_t f8_to_f16( float8_t );
+
+/*----------------------------------------------------------------------------
 | 16-bit (half-precision) floating-point operations.
 *----------------------------------------------------------------------------*/
 uint_fast8_t f16_to_ui8( float16_t, uint_fast8_t, bool );
@@ -155,6 +160,7 @@ uint_fast32_t f16_to_ui32_r_minMag( float16_t, bool );
 uint_fast64_t f16_to_ui64_r_minMag( float16_t, bool );
 int_fast32_t f16_to_i32_r_minMag( float16_t, bool );
 int_fast64_t f16_to_i64_r_minMag( float16_t, bool );
+float8_t f16_to_f8( float16_t );
 float32_t f16_to_f32( float16_t );
 float64_t f16_to_f64( float16_t );
 #ifdef SOFTFLOAT_FAST_INT64
