@@ -7,11 +7,8 @@
 #include <string>
 
 std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
-                     reg_t initrd_start, reg_t initrd_end,
-                     const char* bootargs,
-                     size_t pmpregions,
-                     size_t pmpgranularity,
-                     std::vector<processor_t*> procs,
+                     const cfg_t* cfg,
+                     const isa_parser_t* isa,
                      std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
                      std::string device_nodes);
 

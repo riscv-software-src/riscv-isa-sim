@@ -141,10 +141,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       const std::vector<std::string>& sargs = factory_sargs.second;
       device_nodes.append(factory->generate_dts(this, sargs));
     }
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
-                   initrd_bounds.first, initrd_bounds.second,
-                   cfg->bootargs, cfg->pmpregions, cfg->pmpgranularity,
-                   procs, mems, device_nodes);
+    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, cfg, &isa, mems, device_nodes);
     dtb = dts_compile(dts);
   }
 
