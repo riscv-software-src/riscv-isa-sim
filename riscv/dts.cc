@@ -14,7 +14,6 @@
 
 std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
                      const cfg_t* cfg,
-                     const isa_parser_t* isa,
                      std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
                      std::string device_nodes)
 {
@@ -23,6 +22,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
   const char* bootargs = cfg->bootargs;
   reg_t pmpregions = cfg->pmpregions;
   reg_t pmpgranularity = cfg->pmpgranularity;
+  isa_parser_t isa(cfg->isa, cfg->priv);
 
   std::stringstream s;
   s << std::dec <<
@@ -63,8 +63,8 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "      reg = <" << cfg->hartids[i] << ">;\n"
          "      status = \"okay\";\n"
          "      compatible = \"riscv\";\n"
-         "      riscv,isa = \"" << isa->get_isa_string() << "\";\n"
-         "      mmu-type = \"riscv," << (isa->get_max_xlen() <= 32 ? "sv32" : "sv57") << "\";\n"
+         "      riscv,isa = \"" << isa.get_isa_string() << "\";\n"
+         "      mmu-type = \"riscv," << (isa.get_max_xlen() <= 32 ? "sv32" : "sv57") << "\";\n"
          "      riscv,pmpregions = <" << pmpregions << ">;\n"
          "      riscv,pmpgranularity = <" << pmpgranularity << ">;\n"
          "      clock-frequency = <" << cpu_hz << ">;\n"

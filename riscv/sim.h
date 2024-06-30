@@ -69,7 +69,6 @@ public:
   static const size_t CPU_HZ = 1000000000; // 1GHz CPU
 
 private:
-  isa_parser_t isa;
   const cfg_t * const cfg;
   std::vector<std::pair<reg_t, abstract_mem_t*>> mems;
   std::vector<processor_t*> procs;
