@@ -46,7 +46,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
              bool socket_enabled,
              FILE *cmd_file) // needed for command line option --cmd
   : htif_t(args),
-    isa(cfg->isa, cfg->priv),
     cfg(cfg),
     mems(mems),
     procs(std::max(cfg->nprocs(), size_t(1))),
@@ -99,7 +98,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   debug_mmu = new mmu_t(this, cfg->endianness, NULL);
 
   for (size_t i = 0; i < cfg->nprocs(); i++) {
-    procs[i] = new processor_t(&isa, cfg, this, cfg->hartids[i], halted,
+    procs[i] = new processor_t(cfg->isa, cfg->priv,
+                               cfg, this, cfg->hartids[i], halted,
                                log_file.get(), sout_);
     harts[cfg->hartids[i]] = procs[i];
   }
@@ -141,7 +141,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       const std::vector<std::string>& sargs = factory_sargs.second;
       device_nodes.append(factory->generate_dts(this, sargs));
     }
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, cfg, &isa, mems, device_nodes);
+    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, cfg, mems, device_nodes);
     dtb = dts_compile(dts);
   }
 
@@ -253,7 +253,7 @@ int sim_t::run()
   if (!debug && log)
     set_procs_debug(true);
 
-  htif_t::set_expected_xlen(isa.get_max_xlen());
+  htif_t::set_expected_xlen(harts[0]->get_isa().get_max_xlen());
 
   // htif_t::run() will repeatedly call back into sim_t::idle(), each
   // invocation of which will advance target time

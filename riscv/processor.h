@@ -236,12 +236,13 @@ class opcode_cache_entry_t {
 class processor_t : public abstract_device_t
 {
 public:
-  processor_t(const isa_parser_t *isa, const cfg_t* cfg,
+  processor_t(const char* isa_str, const char* priv_str,
+              const cfg_t* cfg,
               simif_t* sim, uint32_t id, bool halt_on_reset,
               FILE *log_file, std::ostream& sout_); // because of command line option --log and -s we need both
   ~processor_t();
 
-  const isa_parser_t &get_isa() { return *isa; }
+  const isa_parser_t &get_isa() { return isa; }
   const cfg_t &get_cfg() { return *cfg; }
 
   void set_debug(bool value);
@@ -303,7 +304,7 @@ public:
   void set_extension_enable(unsigned char ext, bool enable) {
     assert(!extension_assumed_const[ext]);
     extension_dynamic[ext] = true;
-    extension_enable_table[ext] = enable && isa->extension_enabled(ext);
+    extension_enable_table[ext] = enable && isa.extension_enabled(ext);
   }
   void set_impl(uint8_t impl, bool val) { impl_table[impl] = val; }
   bool supports_impl(uint8_t impl) const {
@@ -362,7 +363,7 @@ public:
   void check_if_lpad_required();
 
 private:
-  const isa_parser_t * const isa;
+  const isa_parser_t isa;
   const cfg_t * const cfg;
 
   simif_t* sim;
