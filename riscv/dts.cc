@@ -389,3 +389,44 @@ int fdt_parse_mmu_type(const void *fdt, int cpu_offset, const char **mmu_type)
 
   return 0;
 }
+
+int fdt_parse_isa(const void *fdt, int cpu_offset, const char **isa)
+{
+  assert(isa);
+
+  int len, rc;
+  const void *prop;
+
+  if ((rc = check_cpu_node(fdt, cpu_offset)) < 0)
+    return rc;
+
+  prop = fdt_getprop(fdt, cpu_offset, "riscv,isa", &len);
+  if (!prop || !len)
+    return -EINVAL;
+
+  *isa = (const char *)prop;
+
+  return 0;
+}
+
+int fdt_parse_hartid(const void *fdt, int cpu_offset, uint32_t *hartid)
+{
+  int len, rc;
+  const void *prop;
+  const fdt32_t *val;
+
+  if ((rc = check_cpu_node(fdt, cpu_offset)) < 0)
+    return rc;
+
+  val = (fdt32_t*) fdt_getprop(fdt, cpu_offset, "reg", &len);
+  if (!val || len < (int) sizeof(fdt32_t))
+    return -EINVAL;
+
+  if (len > (int) sizeof(fdt32_t))
+    val++;
+
+  if (hartid)
+    *hartid = fdt32_to_cpu(*val);
+
+  return 0;
+}

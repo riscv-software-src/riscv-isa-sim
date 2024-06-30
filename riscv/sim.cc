@@ -48,7 +48,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   : htif_t(args),
     cfg(cfg),
     mems(mems),
-    procs(std::max(cfg->nprocs(), size_t(1))),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
     cmd_file(cmd_file),
@@ -97,15 +96,16 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 
   debug_mmu = new mmu_t(this, cfg->endianness, NULL);
 
-  for (size_t i = 0; i < cfg->nprocs(); i++) {
-    procs[i] = new processor_t(cfg->isa, cfg->priv,
-                               cfg, this, cfg->hartids[i], halted,
-                               log_file.get(), sout_);
-    harts[cfg->hartids[i]] = procs[i];
-  }
-
   // When running without using a dtb, skip the fdt-based configuration steps
-  if (!dtb_enabled) return;
+  if (!dtb_enabled) {
+    for (size_t i = 0; i < cfg->nprocs(); i++) {
+      procs.push_back(new processor_t(cfg->isa, cfg->priv,
+                                      cfg, this, cfg->hartids[i], halted,
+                                      log_file.get(), sout_));
+      harts[cfg->hartids[i]] = procs[i];
+      return;
+    }
+  } // otherwise, generate the procs by parsing the DTS
 
   // Only make a CLINT (Core-Local INTerrupt controller) and PLIC (Platform-
   // Level-Interrupt-Controller) if they are specified in the device tree
@@ -176,7 +176,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     }
   }
 
-  //per core attribute
+  // per core attribute
   int cpu_offset = 0, cpu_map_offset, rc;
   size_t cpu_idx = 0;
   cpu_offset = fdt_get_offset(fdt, "/cpus");
@@ -190,10 +190,33 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     if (!(cpu_map_offset < 0) && cpu_offset == cpu_map_offset)
       continue;
 
-    if (cpu_idx >= nprocs())
-      break;
+    if (cpu_idx != procs.size()) {
+      std::cerr << "Spike only supports contiguous CPU IDs in the DTS" << std::endl;
+      exit(1);
+    }
 
-    //handle pmp
+    // handle isa string
+    const char* isa_str;
+    rc = fdt_parse_isa(fdt, cpu_offset, &isa_str);
+    if (rc != 0) {
+      std::cerr << "core (" << cpu_idx << ") has an invalid or missing 'riscv,isa'\n";
+      exit(1);
+    }
+
+    // handle hartid
+    uint32_t hartid;
+    rc = fdt_parse_hartid(fdt, cpu_offset, &hartid);
+    if (rc != 0) {
+      std::cerr << "core (" << cpu_idx << ") has an invalid or missing `reg` (hartid)\n";
+      exit(1);
+    }
+
+    procs.push_back(new processor_t(isa_str, DEFAULT_PRIV,
+                                    cfg, this, hartid, halted,
+                                    log_file.get(), sout_));
+    harts[hartid] = procs[cpu_idx];
+
+    // handle pmp
     reg_t pmp_num, pmp_granularity;
     if (fdt_parse_pmp_num(fdt, cpu_offset, &pmp_num) != 0)
       pmp_num = 0;
@@ -203,7 +226,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       procs[cpu_idx]->set_pmp_granularity(pmp_granularity);
     }
 
-    //handle mmu-type
+    // handle mmu-type
     const char *mmu_type;
     rc = fdt_parse_mmu_type(fdt, cpu_offset, &mmu_type);
     if (rc == 0) {
@@ -217,7 +240,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       } else if (strncmp(mmu_type, "riscv,sv57", strlen("riscv,sv57")) == 0) {
         procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV57);
       } else if (strncmp(mmu_type, "riscv,sbare", strlen("riscv,sbare")) == 0) {
-        //has been set in the beginning
+        // has been set in the beginning
       } else {
         std::cerr << "core ("
                   << cpu_idx
@@ -230,14 +253,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     }
 
     cpu_idx++;
-  }
-
-  if (cpu_idx != nprocs()) {
-      std::cerr << "core number in dts ("
-                <<  cpu_idx
-                << ") doesn't match it in command line ("
-                << nprocs() << ").\n";
-      exit(1);
   }
 }
 
