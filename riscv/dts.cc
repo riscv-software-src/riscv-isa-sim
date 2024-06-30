@@ -13,14 +13,17 @@
 #include <sys/types.h>
 
 std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
-                     reg_t initrd_start, reg_t initrd_end,
-                     const char* bootargs,
-                     size_t pmpregions,
-                     size_t pmpgranularity,
-                     std::vector<processor_t*> procs,
+                     const cfg_t* cfg,
+                     const isa_parser_t* isa,
                      std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
                      std::string device_nodes)
 {
+  reg_t initrd_start = cfg->initrd_bounds.first;
+  reg_t initrd_end = cfg->initrd_bounds.second;
+  const char* bootargs = cfg->bootargs;
+  reg_t pmpregions = cfg->pmpregions;
+  reg_t pmpgranularity = cfg->pmpgranularity;
+
   std::stringstream s;
   s << std::dec <<
          "/dts-v1/;\n"
@@ -54,14 +57,14 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "    #address-cells = <1>;\n"
          "    #size-cells = <0>;\n"
          "    timebase-frequency = <" << (cpu_hz/insns_per_rtc_tick) << ">;\n";
-  for (size_t i = 0; i < procs.size(); i++) {
+    for (size_t i = 0; i < cfg->nprocs(); i++) {
     s << "    CPU" << i << ": cpu@" << i << " {\n"
          "      device_type = \"cpu\";\n"
-         "      reg = <" << i << ">;\n"
+         "      reg = <" << cfg->hartids[i] << ">;\n"
          "      status = \"okay\";\n"
          "      compatible = \"riscv\";\n"
-         "      riscv,isa = \"" << procs[i]->get_isa().get_isa_string() << "\";\n"
-         "      mmu-type = \"riscv," << (procs[i]->get_isa().get_max_xlen() <= 32 ? "sv32" : "sv57") << "\";\n"
+         "      riscv,isa = \"" << isa->get_isa_string() << "\";\n"
+         "      mmu-type = \"riscv," << (isa->get_max_xlen() <= 32 ? "sv32" : "sv57") << "\";\n"
          "      riscv,pmpregions = <" << pmpregions << ">;\n"
          "      riscv,pmpgranularity = <" << pmpgranularity << ">;\n"
          "      clock-frequency = <" << cpu_hz << ">;\n"
