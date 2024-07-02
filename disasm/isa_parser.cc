@@ -318,6 +318,12 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZICFILP] = true;
     } else if (ext_str == "zicfiss") {
       extension_table[EXT_ZICFISS] = true;
+    } else if (ext_str == "smmpm") {
+      extension_table[EXT_SMMPM] = true;
+    } else if (ext_str == "smnpm") {
+      extension_table[EXT_SMNPM] = true;
+    } else if (ext_str == "ssnpm") {
+      extension_table[EXT_SSNPM] = true;
     } else if (ext_str.substr(0, 3) == "zvl") {
       reg_t new_vlen;
       try {
