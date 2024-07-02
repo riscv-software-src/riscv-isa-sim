@@ -221,9 +221,12 @@ public:
   }
 
   void cbo_zero(reg_t addr) {
-    auto base = addr & ~(blocksz - 1);
+    auto access_info = generate_access_info(addr, STORE, {});
+    reg_t transformed_addr = access_info.transformed_vaddr;
+
+    auto base = transformed_addr & ~(blocksz - 1);
     for (size_t offset = 0; offset < blocksz; offset += 1) {
-      check_triggers(triggers::OPERATION_STORE, base + offset, false, addr, std::nullopt);
+      check_triggers(triggers::OPERATION_STORE, base + offset, false, transformed_addr, std::nullopt);
       store<uint8_t>(base + offset, 0);
     }
   }
