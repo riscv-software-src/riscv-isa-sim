@@ -1312,7 +1312,7 @@ reg_t dcsr_csr_t::read() const noexcept {
   result = set_field(result, DCSR_EBREAKU, ebreaku);
   result = set_field(result, CSR_DCSR_EBREAKVS, ebreakvs);
   result = set_field(result, CSR_DCSR_EBREAKVU, ebreakvu);
-  result = set_field(result, DCSR_STOPCYCLE, 0);
+  result = set_field(result, DCSR_STOPCOUNT, 0);
   result = set_field(result, DCSR_STOPTIME, 0);
   result = set_field(result, DCSR_CAUSE, cause);
   result = set_field(result, DCSR_STEP, step);
@@ -1331,7 +1331,7 @@ bool dcsr_csr_t::unlogged_write(const reg_t val) noexcept {
   ebreaku = proc->extension_enabled('U') ? get_field(val, DCSR_EBREAKU) : false;
   ebreakvs = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_EBREAKVS) : false;
   ebreakvu = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_EBREAKVU) : false;
-  halt = get_field(val, DCSR_HALT);
+  halt = get_field(val, DCSR_NMIP);
   v = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_V) : false;
   pelp = proc->extension_enabled(EXT_ZICFILP) ?
          static_cast<elp_t>(get_field(val, DCSR_PELP)) : elp_t::NO_LP_EXPECTED;
