@@ -533,6 +533,8 @@ private:
     reg_t pmm = 0;
     if (access_info.effective_priv == PRV_M)
       pmm = get_field(proc->state.mseccfg->read(), MSECCFG_PMM);
+    else if (!access_info.effective_virt && (access_info.effective_priv == PRV_S || (!proc->extension_enabled('S') && access_info.effective_priv == PRV_U)))
+      pmm = get_field(proc->state.menvcfg->read(), MENVCFG_PMM);
 
     switch (pmm) {
       case 2: return 7;
