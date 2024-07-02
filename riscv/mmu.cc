@@ -557,7 +557,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
       // shadow stack access cause store access fault if xwr!=010 and xwr!=001
       throw trap_store_access_fault(virt, addr, 0, 0);
     } else if (type == FETCH || hlvx ? !(pte & PTE_X) :
-               type == LOAD          ? !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
+               type == LOAD          ? !(pte & PTE_R) && !(sse && (pte & PTE_W)) && !(mxr && (pte & PTE_X)) :
                                        !(pte & PTE_W)) {
       break;
     } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
