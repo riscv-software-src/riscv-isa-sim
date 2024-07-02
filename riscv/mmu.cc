@@ -624,8 +624,12 @@ reg_t mmu_t::get_pmlen(bool effective_virt, reg_t effective_priv, xlate_flags_t 
     pmm = get_field(proc->state.menvcfg->read(), MENVCFG_PMM);
   else if (effective_virt && effective_priv == PRV_S)
     pmm = get_field(proc->state.henvcfg->read(), HENVCFG_PMM);
+  else if (proc->state.prv == PRV_U && flags.forced_virt)
+    pmm = get_field(proc->state.hstatus->read(), HSTATUS_HUPMM);
   else if (effective_priv == PRV_U)
     pmm = get_field(proc->state.senvcfg->read(), SENVCFG_PMM);
+  else
+    assert(false);
 
   switch (pmm) {
     case 2: return 7;
