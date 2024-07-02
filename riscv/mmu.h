@@ -4,6 +4,7 @@
 #define _RISCV_MMU_H
 
 #include "decode.h"
+#include "decode_macros.h"
 #include "trap.h"
 #include "common.h"
 #include "simif.h"
@@ -96,19 +97,25 @@ public:
 
   template<typename T>
   T ALWAYS_INLINE load(reg_t addr, xlate_flags_t xlate_flags = {}) {
+    auto access_info = generate_access_info(addr, LOAD, xlate_flags);
+    reg_t pmlen = get_pmlen(access_info);
+    reg_t satp = proc->state.satp->readvirt(access_info.effective_virt);
+    bool is_physical_addr = access_info.effective_priv == PRV_M || get_field(satp, SATP64_MODE) == SATP_MODE_OFF;
+    reg_t transformed_addr = is_physical_addr ? zext(addr, 64 - pmlen) : sext(addr, 64 - pmlen);
+
     target_endian<T> res;
-    reg_t vpn = addr >> PGSHIFT;
-    bool aligned = (addr & (sizeof(T) - 1)) == 0;
+    reg_t vpn = transformed_addr >> PGSHIFT;
+    bool aligned = (transformed_addr & (sizeof(T) - 1)) == 0;
     bool tlb_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn;
 
     if (likely(!xlate_flags.is_special_access() && aligned && tlb_hit)) {
-      res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
+      res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + transformed_addr);
     } else {
-      load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags);
+      load_slow_path(transformed_addr, sizeof(T), (uint8_t*)&res, xlate_flags);
     }
 
     if (unlikely(proc && proc->get_log_commits_enabled()))
-      proc->state.log_mem_read.push_back(std::make_tuple(addr, 0, sizeof(T)));
+      proc->state.log_mem_read.push_back(std::make_tuple(transformed_addr, 0, sizeof(T)));
 
     return from_target(res);
   }
@@ -138,19 +145,25 @@ public:
 
   template<typename T>
   void ALWAYS_INLINE store(reg_t addr, T val, xlate_flags_t xlate_flags = {}) {
-    reg_t vpn = addr >> PGSHIFT;
-    bool aligned = (addr & (sizeof(T) - 1)) == 0;
+    auto access_info = generate_access_info(addr, STORE, xlate_flags);
+    reg_t pmlen = get_pmlen(access_info);
+    reg_t satp = proc->state.satp->readvirt(access_info.effective_virt);
+    bool is_physical_addr = access_info.effective_priv == PRV_M || get_field(satp, SATP64_MODE) == SATP_MODE_OFF;
+    reg_t transformed_addr = is_physical_addr ? zext(addr, 64 - pmlen) : sext(addr, 64 - pmlen);
+
+    reg_t vpn = transformed_addr >> PGSHIFT;
+    bool aligned = (transformed_addr & (sizeof(T) - 1)) == 0;
     bool tlb_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn;
 
     if (!xlate_flags.is_special_access() && likely(aligned && tlb_hit)) {
-      *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val);
+      *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + transformed_addr) = to_target(val);
     } else {
       target_endian<T> target_val = to_target(val);
-      store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);
+      store_slow_path(transformed_addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);
     }
 
     if (unlikely(proc && proc->get_log_commits_enabled()))
-      proc->state.log_mem_write.push_back(std::make_tuple(addr, val, sizeof(T)));
+      proc->state.log_mem_write.push_back(std::make_tuple(transformed_addr, val, sizeof(T)));
   }
 
   template<typename T>
@@ -500,6 +513,21 @@ private:
 
   reg_t pmp_homogeneous(reg_t addr, reg_t len);
   bool pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlvx);
+
+  reg_t get_pmlen(mem_access_info_t access_info) {
+    if (!proc || proc->get_xlen() != 64 || access_info.flags.hlvx)
+      return 0;
+
+    reg_t pmm = 0;
+    if (access_info.effective_priv == PRV_M)
+      pmm = get_field(proc->state.mseccfg->read(), MSECCFG_PMM);
+
+    switch (pmm) {
+      case 2: return 7;
+      case 3: return 16;
+    }
+    return 0;
+  }
 
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
   bool target_big_endian;
