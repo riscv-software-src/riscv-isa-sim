@@ -40,7 +40,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "specialize.h"
 #include "softfloat.h"
 
-float8_t f8_mul( float8_t a, float8_t b )
-{
-  return f8_emulation_2_operands(a, b, f16_mul);
+float8_t f8_emulation_2_operands(float8_t a8, float8_t b8, float16_t (*operation)(float16_t, float16_t)) {
+  uint_fast8_t roundingMode = softfloat_roundingMode;
+  softfloat_roundingMode = softfloat_round_odd;
+  float16_t a16 = f8_to_f16(a8);
+  float16_t b16 = f8_to_f16(b8);
+  float16_t z16 = operation(a16, b16);
+  softfloat_roundingMode = roundingMode;
+  float8_t z = f16_to_f8(z16);
+  return z;
 }

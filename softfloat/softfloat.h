@@ -146,6 +146,8 @@ void i64_to_f128M( int64_t, float128_t * );
 float8_t f8_mul( float8_t, float8_t );
 float16_t f8_to_f16( float8_t );
 
+float8_t f8_emulation_2_operands(float8_t a8, float8_t b8, float16_t (*operation)(float16_t, float16_t));
+
 /*----------------------------------------------------------------------------
 | 16-bit (half-precision) floating-point operations.
 *----------------------------------------------------------------------------*/
