@@ -218,8 +218,9 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define sext32(x) ((sreg_t)(int32_t)(x))
 #define zext32(x) ((reg_t)(uint32_t)(x))
-#define sext_xlen(x) (((sreg_t)(x) << (64 - xlen)) >> (64 - xlen))
+#define sext(x, pos) (((sreg_t)(x) << (64 - (pos))) >> (64 - (pos)))
 #define zext(x, pos) (((reg_t)(x) << (64 - (pos))) >> (64 - (pos)))
+#define sext_xlen(x) sext(x, xlen)
 #define zext_xlen(x) zext(x, xlen)
 
 #define set_pc(x) \
