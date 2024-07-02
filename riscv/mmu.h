@@ -249,24 +249,36 @@ public:
   }
 
   void cbo_zero(reg_t addr) {
-    auto base = addr & ~(blocksz - 1);
+    auto access_info = generate_access_info(addr, STORE, {});
+    reg_t pmlen = get_pmlen(access_info);
+    reg_t satp = proc->state.satp->readvirt(access_info.effective_virt);
+    bool is_physical_addr = access_info.effective_priv == PRV_M || get_field(satp, SATP64_MODE) == SATP_MODE_OFF;
+    reg_t transformed_addr = is_physical_addr ? zext(addr, 64 - pmlen) : sext(addr, 64 - pmlen);
+
+    auto base = transformed_addr & ~(blocksz - 1);
     for (size_t offset = 0; offset < blocksz; offset += 1) {
-      check_triggers(triggers::OPERATION_STORE, base + offset, false, addr, std::nullopt);
+      check_triggers(triggers::OPERATION_STORE, base + offset, false, transformed_addr, std::nullopt);
       store<uint8_t>(base + offset, 0);
     }
   }
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
-    auto base = addr & ~(blocksz - 1);
+    auto access_info = generate_access_info(addr, LOAD, {});
+    reg_t pmlen = get_pmlen(access_info);
+    reg_t satp = proc->state.satp->readvirt(access_info.effective_virt);
+    bool is_physical_addr = access_info.effective_priv == PRV_M || get_field(satp, SATP64_MODE) == SATP_MODE_OFF;
+    reg_t transformed_addr = is_physical_addr ? zext(addr, 64 - pmlen) : sext(addr, 64 - pmlen);
+
+    auto base = transformed_addr & ~(blocksz - 1);
     for (size_t offset = 0; offset < blocksz; offset += 1)
-      check_triggers(triggers::OPERATION_STORE, base + offset, false, addr, std::nullopt);
+      check_triggers(triggers::OPERATION_STORE, base + offset, false, transformed_addr, std::nullopt);
     convert_load_traps_to_store_traps({
-      const reg_t paddr = translate(generate_access_info(addr, LOAD, {}), 1);
+      const reg_t paddr = translate(generate_access_info(transformed_addr, LOAD, {}), 1);
       if (sim->reservable(paddr)) {
         if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
           tracer.clean_invalidate(paddr, blocksz, clean, inval);
       } else {
-        throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+        throw trap_store_access_fault((proc) ? proc->state.v : false, transformed_addr, 0, 0);
       }
     })
   }
