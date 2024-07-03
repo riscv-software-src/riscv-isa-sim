@@ -11,7 +11,7 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
                      std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
                      std::string device_nodes);
 
-std::string dts_compile(const std::string& dts);
+std::string dtc_compile(const std::string& dtc_input, const std::string& input_type, const std::string& output_type);
 
 int fdt_get_node_addr_size(const void *fdt, int node, reg_t *addr,
                            unsigned long *size, const char *field);

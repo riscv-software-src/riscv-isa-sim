@@ -133,6 +133,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     std::stringstream strstream;
     strstream << fin.rdbuf();
     dtb = strstream.str();
+    dts = dtc_compile(dtb, "dtb", "dts");
   } else {
     std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds;
     std::string device_nodes;
@@ -142,7 +143,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       device_nodes.append(factory->generate_dts(this, sargs));
     }
     dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, cfg, mems, device_nodes);
-    dtb = dts_compile(dts);
+    dtb = dtc_compile(dts, "dts", "dtb");
   }
 
   int fdt_code = fdt_check_header(dtb.c_str());
