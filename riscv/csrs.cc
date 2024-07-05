@@ -286,6 +286,7 @@ mseccfg_csr_t::mseccfg_csr_t(processor_t* const proc, const reg_t addr):
 void mseccfg_csr_t::verify_permissions(insn_t insn, bool write) const {
   basic_csr_t::verify_permissions(insn, write);
   if (!proc->extension_enabled(EXT_SMEPMP) &&
+      !proc->extension_enabled(EXT_SMMPM) &&
       !proc->extension_enabled(EXT_ZICFILP) &&
       !proc->extension_enabled(EXT_ZKR))
     throw trap_illegal_instruction(insn.bits());
@@ -340,6 +341,12 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->extension_enabled(EXT_ZICFILP)) {
     new_val &= ~MSECCFG_MLPE;
     new_val |= (val & MSECCFG_MLPE);
+  }
+
+  if (proc->extension_enabled(EXT_SMMPM)) {
+    const reg_t pmm_reserved = 1; // Reserved value of mseccfg.PMM
+    reg_t pmm = get_field(val, MSECCFG_PMM);
+    new_val = set_field(new_val, MSECCFG_PMM, pmm != pmm_reserved ? pmm : 0);
   }
 
   return basic_csr_t::unlogged_write(new_val);
