@@ -981,6 +981,9 @@ bool envcfg_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t pmm = get_field(adjusted_val, MENVCFG_PMM);
   adjusted_val = set_field(adjusted_val, MENVCFG_PMM, pmm != pmm_reserved ? pmm : 0);
 
+  if (get_field(adjusted_val, MENVCFG_PMM) != get_field(read(), MENVCFG_PMM))
+    proc->get_mmu()->flush_tlb();
+
   return masked_csr_t::unlogged_write(adjusted_val);
 }
 

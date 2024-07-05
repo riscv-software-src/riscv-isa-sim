@@ -620,6 +620,8 @@ reg_t mmu_t::get_pmlen(bool effective_virt, reg_t effective_priv, xlate_flags_t 
   reg_t pmm = 0;
   if (effective_priv == PRV_M)
     pmm = get_field(proc->state.mseccfg->read(), MSECCFG_PMM);
+  else if (!effective_virt && (effective_priv == PRV_S || (!proc->extension_enabled('S') && effective_priv == PRV_U)))
+    pmm = get_field(proc->state.menvcfg->read(), MENVCFG_PMM);
 
   switch (pmm) {
     case 2: return 7;
