@@ -388,6 +388,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   if (proc->extension_enabled_const('U')) {
     const reg_t menvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE : 0) |
                               (proc->extension_enabled(EXT_ZICBOZ) ? MENVCFG_CBZE : 0) |
+                              (proc->extension_enabled(EXT_SMNPM) ? MENVCFG_PMM : 0) |
                               (proc->extension_enabled(EXT_SVADU) ? MENVCFG_ADUE: 0) |
                               (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0) |
                               (proc->extension_enabled(EXT_SSTC) ? MENVCFG_STCE : 0) |
