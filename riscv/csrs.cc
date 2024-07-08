@@ -421,6 +421,7 @@ reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
     | (proc->any_custom_extensions() ? SSTATUS_XS : 0)
     | (has_vs ? SSTATUS_VS : 0)
     | (proc->extension_enabled(EXT_ZICFILP) ? SSTATUS_SPELP : 0)
+    | (proc->extension_enabled(EXT_SSDBLTRP) ? SSTATUS_SDT : 0)
     ;
 }
 
@@ -464,10 +465,21 @@ vsstatus_csr_t::vsstatus_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
-  const reg_t newval = (this->val & ~sstatus_write_mask) | (val & sstatus_write_mask);
+  const reg_t hDTE = (state->henvcfg->read() & HENVCFG_DTE);
+  const reg_t adj_write_mask = sstatus_write_mask & ~(hDTE ? 0 : SSTATUS_SDT);
+  reg_t newval = (this->val & ~adj_write_mask) | (val & adj_write_mask);
+
+  newval = (newval & SSTATUS_SDT) ? (newval & ~SSTATUS_SIE) : newval;
+
   if (state->v) maybe_flush_tlb(newval);
   this->val = adjust_sd(newval);
   return true;
+}
+
+reg_t vsstatus_csr_t::read() const noexcept {
+  const reg_t hDTE = state->henvcfg->read() & HENVCFG_DTE;
+  const reg_t adj_read_mask = sstatus_read_mask & ~(hDTE ? 0 : SSTATUS_SDT);
+  return this->val & adj_read_mask;
 }
 
 // implement class sstatus_proxy_csr_t
@@ -477,14 +489,24 @@ sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t ad
 }
 
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
-  const reg_t new_mstatus = (mstatus->read() & ~sstatus_write_mask) | (val & sstatus_write_mask);
+  const reg_t mDTE = (state->menvcfg->read() & MENVCFG_DTE);
+  const reg_t adj_write_mask = sstatus_write_mask & ~(mDTE ? 0 : SSTATUS_SDT);
+  reg_t new_mstatus = (mstatus->read() & ~adj_write_mask) | (val & adj_write_mask);
+
+  new_mstatus = (new_mstatus & SSTATUS_SDT) ? (new_mstatus & ~SSTATUS_SIE) : new_mstatus;
 
   // On RV32 this will only log the low 32 bits, so make sure we're
   // not modifying anything in the upper 32 bits.
-  assert((sstatus_write_mask & 0xffffffffU) == sstatus_write_mask);
+  assert((adj_write_mask & 0xffffffffU) == adj_write_mask);
 
   mstatus->write(new_mstatus);
   return false; // avoid double logging: already logged by mstatus->write()
+}
+
+reg_t sstatus_proxy_csr_t::read() const noexcept {
+  const reg_t mDTE = state->menvcfg->read() & MENVCFG_DTE;
+  const reg_t adj_read_mask = sstatus_read_mask & ~(mDTE ? 0 : SSTATUS_SDT);
+  return mstatus->read() & adj_read_mask;
 }
 
 // implement class mstatus_csr_t
@@ -506,6 +528,7 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
                    | (has_gva ? MSTATUS_GVA : 0)
                    | (has_mpv ? MSTATUS_MPV : 0)
                    | (proc->extension_enabled(EXT_ZICFILP) ? (MSTATUS_SPELP | MSTATUS_MPELP) : 0)
+                   | (proc->extension_enabled(EXT_SSDBLTRP) ? SSTATUS_SDT : 0)
                    ;
 
   const reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
@@ -1548,7 +1571,7 @@ void henvcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
 }
 
 bool henvcfg_csr_t::unlogged_write(const reg_t val) noexcept {
-  const reg_t mask = menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE | MENVCFG_ADUE);
+  const reg_t mask = menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE | MENVCFG_ADUE | MENVCFG_DTE);
   return envcfg_csr_t::unlogged_write((masked_csr_t::read() & ~mask) | (val & mask));
 }
 
@@ -1764,4 +1787,14 @@ void ssp_csr_t::verify_permissions(insn_t insn, bool write) const {
   masked_csr_t::verify_permissions(insn, write);
   DECLARE_XENVCFG_VARS(SSE);
   require_envcfg(SSE);
+}
+
+mtval2_csr_t::mtval2_csr_t(processor_t* const proc, const reg_t addr):
+  hypervisor_csr_t(proc, addr) {
+}
+
+void mtval2_csr_t::verify_permissions(insn_t insn, bool write) const {
+  basic_csr_t::verify_permissions(insn, write);
+  if (!proc->extension_enabled('H') && !proc->extension_enabled(EXT_SSDBLTRP))
+    throw trap_illegal_instruction(insn.bits());
 }

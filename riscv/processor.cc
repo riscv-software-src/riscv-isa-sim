@@ -295,7 +295,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   nonvirtual_scause = std::make_shared<cause_csr_t>(proc, CSR_SCAUSE);
   csrmap[CSR_VSCAUSE] = vscause = std::make_shared<cause_csr_t>(proc, CSR_VSCAUSE);
   csrmap[CSR_SCAUSE] = scause = std::make_shared<virtualized_csr_t>(proc, nonvirtual_scause, vscause);
-  csrmap[CSR_MTVAL2] = mtval2 = std::make_shared<hypervisor_csr_t>(proc, CSR_MTVAL2);
+  csrmap[CSR_MTVAL2] = mtval2 = std::make_shared<mtval2_csr_t>(proc, CSR_MTVAL2);
   csrmap[CSR_MTINST] = mtinst = std::make_shared<hypervisor_csr_t>(proc, CSR_MTINST);
   const reg_t hstatus_init = set_field((reg_t)0, HSTATUS_VSXL, xlen_to_uxl(proc->get_const_xlen()));
   const reg_t hstatus_mask = HSTATUS_VTSR | HSTATUS_VTW
@@ -391,7 +391,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
                               (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0) |
                               (proc->extension_enabled(EXT_SSTC) ? MENVCFG_STCE : 0) |
                               (proc->extension_enabled(EXT_ZICFILP) ? MENVCFG_LPE : 0) |
-                              (proc->extension_enabled(EXT_ZICFISS) ? MENVCFG_SSE : 0);
+                              (proc->extension_enabled(EXT_ZICFISS) ? MENVCFG_SSE : 0) |
+                              (proc->extension_enabled(EXT_SSDBLTRP) ? MENVCFG_DTE : 0);
     const reg_t menvcfg_init = (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0);
     menvcfg = std::make_shared<envcfg_csr_t>(proc, CSR_MENVCFG, menvcfg_mask, menvcfg_init);
     if (xlen == 32) {
@@ -411,7 +412,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
                               (proc->extension_enabled(EXT_SVPBMT) ? HENVCFG_PBMTE : 0) |
                               (proc->extension_enabled(EXT_SSTC) ? HENVCFG_STCE : 0) |
                               (proc->extension_enabled(EXT_ZICFILP) ? HENVCFG_LPE : 0) |
-                              (proc->extension_enabled(EXT_ZICFISS) ? HENVCFG_SSE : 0);
+                              (proc->extension_enabled(EXT_ZICFISS) ? HENVCFG_SSE : 0) |
+                              (proc->extension_enabled(EXT_SSDBLTRP) ? HENVCFG_DTE : 0);
     const reg_t henvcfg_init = (proc->extension_enabled(EXT_SVPBMT) ? HENVCFG_PBMTE : 0);
     henvcfg = std::make_shared<henvcfg_csr_t>(proc, CSR_HENVCFG, henvcfg_mask, henvcfg_init, menvcfg);
     if (xlen == 32) {
@@ -820,6 +822,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   bool curr_virt = state.v;
   const reg_t interrupt_bit = (reg_t)1 << (max_xlen - 1);
   bool interrupt = (bit & interrupt_bit) != 0;
+  bool supv_double_trap = false;
   if (interrupt) {
     vsdeleg = (curr_virt && state.prv <= PRV_S) ? state.hideleg->read() : 0;
     hsdeleg = (state.prv <= PRV_S) ? state.mideleg->read() : 0;
@@ -827,6 +830,14 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   } else {
     vsdeleg = (curr_virt && state.prv <= PRV_S) ? (state.medeleg->read() & state.hedeleg->read()) : 0;
     hsdeleg = (state.prv <= PRV_S) ? state.medeleg->read() : 0;
+  }
+  // An unexpected trap - a trap when SDT is 1 - traps to M-mode
+  if ((state.prv <= PRV_S && bit < max_xlen) &&
+      (((vsdeleg >> bit) & 1)  || ((hsdeleg >> bit) & 1))) {
+    reg_t s = curr_virt ? state.nonvirtual_sstatus->read() : state.sstatus->read();
+    supv_double_trap = get_field(s, MSTATUS_SDT);
+    if (supv_double_trap)
+      vsdeleg = hsdeleg = 0;
   }
   if (state.prv <= PRV_S && bit < max_xlen && ((vsdeleg >> bit) & 1)) {
     // Handle the trap in VS-mode
@@ -842,6 +853,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_SPP, state.prv);
     s = set_field(s, MSTATUS_SIE, 0);
     s = set_field(s, MSTATUS_SPELP, state.elp);
+    if ((state.menvcfg->read() & MENVCFG_DTE) && (state.henvcfg->read() & HENVCFG_DTE))
+      s = set_field(s, MSTATUS_SDT, 1);
     state.elp = elp_t::NO_LP_EXPECTED;
     state.sstatus->write(s);
     set_privilege(PRV_S, true);
@@ -860,6 +873,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     s = set_field(s, MSTATUS_SPP, state.prv);
     s = set_field(s, MSTATUS_SIE, 0);
     s = set_field(s, MSTATUS_SPELP, state.elp);
+    if (state.menvcfg->read() & MENVCFG_DTE)
+      s = set_field(s, MSTATUS_SDT, 1);
     state.elp = elp_t::NO_LP_EXPECTED;
     state.nonvirtual_sstatus->write(s);
     if (extension_enabled('H')) {
@@ -881,9 +896,9 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     const bool nmie = !(state.mnstatus && !get_field(state.mnstatus->read(), MNSTATUS_NMIE));
     state.pc = !nmie ? rnmi_trap_handler_address : trap_handler_address;
     state.mepc->write(epc);
-    state.mcause->write(t.cause());
+    state.mcause->write(supv_double_trap ? CAUSE_DOUBLE_TRAP : t.cause());
     state.mtval->write(t.get_tval());
-    state.mtval2->write(t.get_tval2());
+    state.mtval2->write(supv_double_trap ? t.cause() : t.get_tval2());
     state.mtinst->write(t.get_tinst());
 
     reg_t s = state.mstatus->read();

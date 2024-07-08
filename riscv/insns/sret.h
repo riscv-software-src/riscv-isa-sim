@@ -27,5 +27,12 @@ if (ZICFILP_xLPE(prev_virt, prev_prv)) {
   STATE.elp = static_cast<elp_t>(get_field(s, SSTATUS_SPELP));
 }
 s = set_field(s, SSTATUS_SPELP, elp_t::NO_LP_EXPECTED);
+
+if (STATE.prv == PRV_S) {
+  s = set_field(s, SSTATUS_SDT, 0);
+  if (!STATE.v && prev_virt && prev_prv == PRV_U)
+    STATE.vsstatus->write(STATE.vsstatus->read() & ~SSTATUS_SDT);
+}
+
 STATE.sstatus->write(s);
 p->set_privilege(prev_prv, prev_virt);

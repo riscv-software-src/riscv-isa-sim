@@ -347,6 +347,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       if (new_elen != 32 && new_elen != 64)
         bad_isa_string(str, ("Invalid Zve string: " + ext_str).c_str());
       elen = std::max(elen, new_elen);
+    } else if (ext_str == "ssdbltrp") {
+      extension_table[EXT_SSDBLTRP] = true;
     } else if (ext_str[0] == 'x') {
       extension_table['X'] = true;
       if (ext_str.size() == 1) {
