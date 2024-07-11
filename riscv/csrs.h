@@ -479,14 +479,13 @@ class envcfg_csr_t: public masked_csr_t {
 // henvcfg.stce is read_only 0 when menvcfg.stce = 0
 // henvcfg.hade is read_only 0 when menvcfg.hade = 0
 // henvcfg.dte is read_only 0 when menvcfg.dte = 0
+// henvcfg.sse is read_only 0 when menvcfg.sse = 0
 class henvcfg_csr_t final: public envcfg_csr_t {
  public:
   henvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init, csr_t_p menvcfg);
-
   reg_t read() const noexcept override {
-    return (menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE | MENVCFG_ADUE | MENVCFG_DTE)) & masked_csr_t::read();
+    return (menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE | MENVCFG_ADUE | MENVCFG_DTE | MENVCFG_SSE)) & masked_csr_t::read();
   }
-
   virtual void verify_permissions(insn_t insn, bool write) const override;
 
  protected:
@@ -786,7 +785,11 @@ class sstateen_csr_t: public hstateen_csr_t {
 class senvcfg_csr_t final: public envcfg_csr_t {
  public:
   senvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  reg_t read() const noexcept override;
   virtual void verify_permissions(insn_t insn, bool write) const override;
+
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
 class stimecmp_csr_t: public basic_csr_t {
