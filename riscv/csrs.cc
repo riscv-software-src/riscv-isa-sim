@@ -303,6 +303,14 @@ bool mseccfg_csr_t::get_rlb() const noexcept {
   return (read() & MSECCFG_RLB);
 }
 
+bool mseccfg_csr_t::get_useed() const noexcept {
+  return (read() & MSECCFG_USEED);
+}
+
+bool mseccfg_csr_t::get_sseed() const noexcept {
+  return (read() & MSECCFG_SSEED);
+}
+
 bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->n_pmp == 0)
     return false;
@@ -1440,6 +1448,16 @@ void seed_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (!proc->extension_enabled(EXT_ZKR) || !write)
     throw trap_illegal_instruction(insn.bits());
   csr_t::verify_permissions(insn, write);
+
+  if (state->v) {
+    if (state->mseccfg->get_sseed() && write)
+      throw trap_virtual_instruction(insn.bits());
+    else
+      throw trap_illegal_instruction(insn.bits());
+  } else if ((state->prv == PRV_U && !state->mseccfg->get_useed()) ||
+             (state->prv == PRV_S && !state->mseccfg->get_sseed())) {
+      throw trap_illegal_instruction(insn.bits());
+  }
 }
 
 reg_t seed_csr_t::read() const noexcept {
