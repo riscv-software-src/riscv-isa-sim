@@ -496,7 +496,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
 
   if (ss_access) {
     if (vm.levels == 0)
-      trap_store_access_fault(virt, addr, 0, 0);
+      throw trap_store_access_fault(virt, addr, 0, 0);
     type = STORE;
   }
 
