@@ -70,6 +70,16 @@ enum {
 };
 
 /*----------------------------------------------------------------------------
+| Software floating-point 8-bit mode.
+*----------------------------------------------------------------------------*/
+extern THREAD_LOCAL uint_fast8_t softfloat_fp8Mode;
+enum {
+    softfloat_fp8_8p5 = 0,
+    softfloat_fp8_8p4 = 1,
+    softfloat_fp8_8p3 = 2
+};
+
+/*----------------------------------------------------------------------------
 | Software floating-point rounding mode.  (Mode "odd" is supported only if
 | SoftFloat is compiled with macro 'SOFTFLOAT_ROUND_ODD' defined.)
 *----------------------------------------------------------------------------*/
