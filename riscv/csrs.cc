@@ -322,6 +322,11 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   new_val |= (val & MSECCFG_MMWP);  //MMWP is sticky
   new_val |= (val & MSECCFG_MML);   //MML is sticky
 
+  if (proc->extension_enabled(EXT_ZKR)) {
+    uint64_t mask = MSECCFG_USEED | MSECCFG_SSEED;
+    new_val = (new_val & ~mask) | (val & mask);
+  }
+
   proc->get_mmu()->flush_tlb();
 
   if (proc->extension_enabled(EXT_ZICFILP)) {
