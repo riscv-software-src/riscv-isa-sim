@@ -318,7 +318,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
     (1 << CAUSE_FETCH_PAGE_FAULT) |
     (1 << CAUSE_LOAD_PAGE_FAULT) |
     (1 << CAUSE_STORE_PAGE_FAULT) |
-    (1 << CAUSE_SOFTWARE_CHECK_FAULT);
+    (1 << CAUSE_SOFTWARE_CHECK_FAULT) |
+    (1 << CAUSE_HARDWARE_ERROR_FAULT);
   csrmap[CSR_HEDELEG] = hedeleg = std::make_shared<masked_csr_t>(proc, CSR_HEDELEG, hedeleg_mask, 0);
   csrmap[CSR_HCOUNTEREN] = hcounteren = std::make_shared<masked_csr_t>(proc, CSR_HCOUNTEREN, counteren_mask, 0);
   htimedelta = std::make_shared<basic_csr_t>(proc, CSR_HTIMEDELTA, 0);

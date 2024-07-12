@@ -930,6 +930,7 @@ bool medeleg_csr_t::unlogged_write(const reg_t val) noexcept {
     | (1 << CAUSE_STORE_PAGE_FAULT)
     | (proc->extension_enabled('H') ? hypervisor_exceptions : 0)
     | (1 << CAUSE_SOFTWARE_CHECK_FAULT)
+    | (1 << CAUSE_HARDWARE_ERROR_FAULT)
     ;
   return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
 }
