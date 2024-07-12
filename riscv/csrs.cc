@@ -286,7 +286,8 @@ mseccfg_csr_t::mseccfg_csr_t(processor_t* const proc, const reg_t addr):
 void mseccfg_csr_t::verify_permissions(insn_t insn, bool write) const {
   basic_csr_t::verify_permissions(insn, write);
   if (!proc->extension_enabled(EXT_SMEPMP) &&
-      !proc->extension_enabled(EXT_ZICFILP))
+      !proc->extension_enabled(EXT_ZICFILP) &&
+      !proc->extension_enabled(EXT_ZKR))
     throw trap_illegal_instruction(insn.bits());
 }
 
