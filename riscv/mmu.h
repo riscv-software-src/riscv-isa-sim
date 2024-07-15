@@ -81,18 +81,15 @@ public:
 
   template<typename T>
   T ALWAYS_INLINE load(reg_t addr, xlate_flags_t xlate_flags = {}) {
-    auto access_info = generate_access_info(addr, LOAD, xlate_flags);
-    reg_t transformed_addr = access_info.transformed_vaddr;
-
     target_endian<T> res;
-    reg_t vpn = transformed_addr >> PGSHIFT;
-    bool aligned = (transformed_addr & (sizeof(T) - 1)) == 0;
+    reg_t vpn = addr >> PGSHIFT;
+    bool aligned = (addr & (sizeof(T) - 1)) == 0;
     bool tlb_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn;
 
     if (likely(!xlate_flags.is_special_access() && aligned && tlb_hit)) {
-      res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + transformed_addr);
+      res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
     } else {
-      load_slow_path(transformed_addr, sizeof(T), (uint8_t*)&res, xlate_flags);
+      load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags);
     }
 
     if (unlikely(proc && proc->get_log_commits_enabled()))

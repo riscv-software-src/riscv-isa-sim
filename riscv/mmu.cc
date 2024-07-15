@@ -55,7 +55,7 @@ void throw_access_exception(bool virt, reg_t addr, access_type type)
 
 reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
 {
-  reg_t addr = access_info.vaddr;
+  reg_t addr = access_info.transformed_vaddr;
   access_type type = access_info.type;
   if (!proc)
     return addr;
@@ -193,9 +193,10 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool 
 void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info)
 {
   reg_t addr = access_info.vaddr;
-  reg_t vpn = addr >> PGSHIFT;
+  reg_t transformed_addr = access_info.transformed_vaddr;
+  reg_t vpn = transformed_addr >> PGSHIFT;
   if (!access_info.flags.is_special_access() && vpn == (tlb_load_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
-    auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
+    auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + transformed_addr;
     memcpy(bytes, host_addr, len);
     return;
   }
@@ -203,7 +204,7 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
   reg_t paddr = translate(access_info, len);
 
   if (access_info.flags.lr && !sim->reservable(paddr)) {
-    throw trap_load_access_fault(access_info.effective_virt, addr, 0, 0);
+    throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
   }
 
   if (auto host_addr = sim->addr_to_mem(paddr)) {
@@ -214,7 +215,7 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
       refill_tlb(addr, paddr, host_addr, LOAD);
 
   } else if (!mmio_load(paddr, len, bytes)) {
-    throw trap_load_access_fault(access_info.effective_virt, addr, 0, 0);
+    throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
   }
 
   if (access_info.flags.lr) {
@@ -225,30 +226,31 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
 void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
 {
   auto access_info = generate_access_info(addr, LOAD, xlate_flags);
-  check_triggers(triggers::OPERATION_LOAD, addr, access_info.effective_virt);
+  reg_t transformed_addr = access_info.transformed_vaddr;
+  check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt);
 
-  if ((addr & (len - 1)) == 0) {
+  if ((transformed_addr & (len - 1)) == 0) {
     load_slow_path_intrapage(len, bytes, access_info);
   } else {
     bool gva = access_info.effective_virt;
     if (!is_misaligned_enabled())
-      throw trap_load_address_misaligned(gva, addr, 0, 0);
+      throw trap_load_address_misaligned(gva, transformed_addr, 0, 0);
 
     if (access_info.flags.lr)
-      throw trap_load_access_fault(gva, addr, 0, 0);
+      throw trap_load_access_fault(gva, transformed_addr, 0, 0);
 
-    reg_t len_page0 = std::min(len, PGSIZE - addr % PGSIZE);
+    reg_t len_page0 = std::min(len, PGSIZE - transformed_addr % PGSIZE);
     load_slow_path_intrapage(len_page0, bytes, access_info);
     if (len_page0 != len)
       load_slow_path_intrapage(len - len_page0, bytes + len_page0, access_info.split_misaligned_access(len_page0));
   }
 
   while (len > sizeof(reg_t)) {
-    check_triggers(triggers::OPERATION_LOAD, addr, access_info.effective_virt, reg_from_bytes(sizeof(reg_t), bytes));
+    check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt, reg_from_bytes(sizeof(reg_t), bytes));
     len -= sizeof(reg_t);
     bytes += sizeof(reg_t);
   }
-  check_triggers(triggers::OPERATION_LOAD, addr, access_info.effective_virt, reg_from_bytes(len, bytes));
+  check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt, reg_from_bytes(len, bytes));
 }
 
 void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_access_info_t access_info, bool actually_store)
@@ -485,7 +487,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
 reg_t mmu_t::walk(mem_access_info_t access_info)
 {
   access_type type = access_info.type;
-  reg_t addr = access_info.vaddr;
+  reg_t addr = access_info.transformed_vaddr;
   bool virt = access_info.effective_virt;
   bool hlvx = access_info.flags.hlvx;
   reg_t mode = access_info.effective_priv;
