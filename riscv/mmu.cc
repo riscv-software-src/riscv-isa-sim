@@ -256,10 +256,11 @@ void mmu_t::load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate
 void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_access_info_t access_info, bool actually_store)
 {
   reg_t addr = access_info.vaddr;
-  reg_t vpn = addr >> PGSHIFT;
+  reg_t transformed_addr = access_info.transformed_vaddr;
+  reg_t vpn = transformed_addr >> PGSHIFT;
   if (!access_info.flags.is_special_access() && vpn == (tlb_store_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
     if (actually_store) {
-      auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + addr;
+      auto host_addr = tlb_data[vpn % TLB_ENTRIES].host_offset + transformed_addr;
       memcpy(host_addr, bytes, len);
     }
     return;
@@ -275,7 +276,7 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
       else if (!access_info.flags.is_special_access())
         refill_tlb(addr, paddr, host_addr, STORE);
     } else if (!mmio_store(paddr, len, bytes)) {
-      throw trap_store_access_fault(access_info.effective_virt, addr, 0, 0);
+      throw trap_store_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
     }
   }
 }
@@ -283,26 +284,27 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
 void mmu_t::store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store, bool UNUSED require_alignment)
 {
   auto access_info = generate_access_info(addr, STORE, xlate_flags);
+  reg_t transformed_addr = access_info.transformed_vaddr;
   if (actually_store) {
     reg_t trig_len = len;
     const uint8_t* trig_bytes = bytes;
     while (trig_len > sizeof(reg_t)) {
-      check_triggers(triggers::OPERATION_STORE, addr, access_info.effective_virt, reg_from_bytes(sizeof(reg_t), trig_bytes));
+      check_triggers(triggers::OPERATION_STORE, transformed_addr, access_info.effective_virt, reg_from_bytes(sizeof(reg_t), trig_bytes));
       trig_len -= sizeof(reg_t);
       trig_bytes += sizeof(reg_t);
     }
-    check_triggers(triggers::OPERATION_STORE, addr, access_info.effective_virt, reg_from_bytes(trig_len, trig_bytes));
+    check_triggers(triggers::OPERATION_STORE, transformed_addr, access_info.effective_virt, reg_from_bytes(trig_len, trig_bytes));
   }
 
-  if (addr & (len - 1)) {
+  if (transformed_addr & (len - 1)) {
     bool gva = access_info.effective_virt;
     if (!is_misaligned_enabled())
-      throw trap_store_address_misaligned(gva, addr, 0, 0);
+      throw trap_store_address_misaligned(gva, transformed_addr, 0, 0);
 
     if (require_alignment)
-      throw trap_store_access_fault(gva, addr, 0, 0);
+      throw trap_store_access_fault(gva, transformed_addr, 0, 0);
 
-    reg_t len_page0 = std::min(len, PGSIZE - addr % PGSIZE);
+    reg_t len_page0 = std::min(len, PGSIZE - transformed_addr % PGSIZE);
     store_slow_path_intrapage(len_page0, bytes, access_info, actually_store);
     if (len_page0 != len)
       store_slow_path_intrapage(len - len_page0, bytes + len_page0, access_info.split_misaligned_access(len_page0), actually_store);
