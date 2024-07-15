@@ -123,15 +123,18 @@ public:
 
   template<typename T>
   void ALWAYS_INLINE store(reg_t addr, T val, xlate_flags_t xlate_flags = {}) {
-    reg_t vpn = addr >> PGSHIFT;
-    bool aligned = (addr & (sizeof(T) - 1)) == 0;
+    auto access_info = generate_access_info(addr, STORE, xlate_flags);
+    reg_t transformed_addr = access_info.transformed_vaddr;
+
+    reg_t vpn = transformed_addr >> PGSHIFT;
+    bool aligned = (transformed_addr & (sizeof(T) - 1)) == 0;
     bool tlb_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn;
 
     if (!xlate_flags.is_special_access() && likely(aligned && tlb_hit)) {
-      *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val);
+      *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + transformed_addr) = to_target(val);
     } else {
       target_endian<T> target_val = to_target(val);
-      store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);
+      store_slow_path(transformed_addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);
     }
 
     if (unlikely(proc && proc->get_log_commits_enabled()))
