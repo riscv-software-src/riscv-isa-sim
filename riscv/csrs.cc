@@ -197,13 +197,13 @@ bool pmpaddr_csr_t::access_ok(access_type type, reg_t mode, bool hlvx) const noe
   if (mseccfg_mml) {
     if (cfgx && cfgw && cfgr && cfgl) {
       // Locked Shared data region: Read only on both M and S/U mode.
-      return typer;
+      return typer && !hlvx;
     } else {
       const bool mml_shared_region = !cfgr && cfgw;
       const bool mml_chk_normal = (prvm == cfgl) && normal_rwx;
       const bool mml_chk_shared =
-              (!cfgl && cfgx && (typer || typew)) ||
-              (!cfgl && !cfgx && (typer || (typew && prvm))) ||
+              (!cfgl && cfgx && ((typer && !hlvx) || typew)) ||
+              (!cfgl && !cfgx && ((typer && !hlvx) || (typew && prvm))) ||
               (cfgl && typex) ||
               (cfgl && typer && cfgx && prvm);
       return mml_shared_region ? mml_chk_shared : mml_chk_normal;
