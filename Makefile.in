@@ -385,6 +385,15 @@ install-hdrs : $(install_hdrs)
     $(INSTALL_HDR) $(src_dir)/$$file $(install_hdrs_dir)/`dirname $$file`; \
   done
 
+install-hdrs-list.h: $(install_hdrs)
+	rm -f $@.tmp
+	for file in $(subst $(src_dir)/,,$^); \
+	do \
+		$(MKINSTALLDIRS) $(install_hdrs_dir)/`dirname $$file`; \
+		echo "#include <$(src_dir)/$$file>" >> $@.tmp; \
+	done
+	mv $@.tmp $@
+
 install-libs : $(install_libs)
 	$(MKINSTALLDIRS) $(install_libs_dir)
 	for file in $^; \
