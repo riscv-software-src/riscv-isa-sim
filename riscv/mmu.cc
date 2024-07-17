@@ -496,7 +496,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
 
   if (ss_access) {
     if (vm.levels == 0)
-      trap_store_access_fault(virt, addr, 0, 0);
+      throw trap_store_access_fault(virt, addr, 0, 0);
     type = STORE;
   }
 
@@ -526,6 +526,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     bool pbmte = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_PBMTE) : (proc->get_state()->menvcfg->read() & MENVCFG_PBMTE);
     bool hade = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_ADUE) : (proc->get_state()->menvcfg->read() & MENVCFG_ADUE);
     bool sse = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_SSE) : (proc->get_state()->menvcfg->read() & MENVCFG_SSE);
+    bool ss_page = !(pte & PTE_R) && (pte & PTE_W) && !(pte & PTE_X);
 
     if (pte & PTE_RSVD) {
       break;
@@ -547,17 +548,17 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
       // not shadow stack access xwr=110 or xwr=010 page cause page fault
       // shadow stack access with PTE_X moved to following check
       break;
-    } else if ((!(pte & PTE_R) && (pte & PTE_W) && !(pte & PTE_X)) && (type == STORE && !ss_access)) {
+    } else if (ss_page && (type == STORE && !ss_access)) {
       // not shadow stack store and  xwr = 010 cause access-fault
       throw trap_store_access_fault(virt, addr, 0, 0);
-    } else if ((!(pte & PTE_R) && (pte & PTE_W) && !(pte & PTE_X)) && type == FETCH) {
+    } else if (ss_page && type == FETCH) {
       // fetch from shadow stack pages cause instruction access-fault
       throw trap_instruction_access_fault(virt, addr, 0, 0);
     } else if ((((pte & PTE_R) && (pte & PTE_W)) || (pte & PTE_X)) && ss_access) {
       // shadow stack access cause store access fault if xwr!=010 and xwr!=001
       throw trap_store_access_fault(virt, addr, 0, 0);
     } else if (type == FETCH || hlvx ? !(pte & PTE_X) :
-               type == LOAD          ? !(pte & PTE_R) && !(sse && (pte & PTE_W)) && !(mxr && (pte & PTE_X)) :
+               type == LOAD          ? !(sse && ss_page) && !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
                                        !(pte & PTE_W)) {
       break;
     } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
