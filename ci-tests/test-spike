@@ -13,8 +13,11 @@ tar xf spike-ci.tar
 time ../install/bin/spike --isa=rv64gc pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 
 # check that including sim.h in an external project works
-g++ -std=c++17 -I../install/include -L../install/lib $DIR/testlib.c -lriscv -o test-libriscv
-g++ -std=c++17 -I../install/include -L../install/lib $DIR/test-customext.cc -lriscv -o test-customext
+g++ -std=c++2a -I../install/include -L../install/lib $DIR/testlib.cc -lriscv -o test-libriscv
+g++ -std=c++2a -I../install/include -L../install/lib $DIR/test-customext.cc -lriscv -o test-customext
+
+# check that all installed headers are functional
+g++ -std=c++2a -I../install/include -L../install/lib $DIR/testlib.cc -lriscv -o /dev/null -include ../install-hdrs-list.h
 
 LD_LIBRARY_PATH=../install/lib ./test-libriscv pk hello| grep "Hello, world!  Pi is approximately 3.141588."
 LD_LIBRARY_PATH=../install/lib ./test-customext pk dummy-slliuw | grep "Executed successfully"

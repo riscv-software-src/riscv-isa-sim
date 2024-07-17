@@ -4,6 +4,7 @@
 #define _ELFLOADER_H
 
 #include "elf.h"
+#include "memif.h"
 #include <map>
 #include <string>
 
