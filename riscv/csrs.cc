@@ -642,11 +642,6 @@ bool sstatus_csr_t::enabled(const reg_t which) {
     if (!state->v || (virt_sstatus->read() & which) != 0)
       return true;
   }
-
-  // If the field doesn't exist, it is always enabled. See #823.
-  if (!orig_sstatus->field_exists(which))
-    return true;
-
   return false;
 }
 
