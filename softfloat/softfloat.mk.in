@@ -243,8 +243,3 @@ softfloat_test_srcs =
 softfloat_install_hdrs = \
 	softfloat.h \
 	softfloat_types.h \
-	primitives.h \
-	internals.h \
-	platform.h \
-	primitiveTypes.h \
-	specialize.h \
