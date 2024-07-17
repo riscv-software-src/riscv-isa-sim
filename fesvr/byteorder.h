@@ -3,8 +3,8 @@
 #ifndef _RISCV_BYTEORDER_H
 #define _RISCV_BYTEORDER_H
 
-#include "config.h"
 #include <stdint.h>
+#include <arpa/inet.h>
 
 static inline uint8_t swap(uint8_t n) { return n; }
 static inline uint16_t swap(uint16_t n) { return (n >> 8) | (n << 8); }
@@ -22,17 +22,11 @@ static inline uint128_t swap(uint128_t n) { return (uint128_t(swap(uint64_t(n)))
 static inline int128_t swap(int128_t n) { return int128_t(swap(uint128_t(n))); }
 #endif
 
-#ifdef WORDS_BIGENDIAN
-template<typename T> static inline T from_be(T n) { return n; }
-template<typename T> static inline T to_be(T n) { return n; }
-template<typename T> static inline T from_le(T n) { return swap(n); }
-template<typename T> static inline T to_le(T n) { return swap(n); }
-#else
-template<typename T> static inline T from_le(T n) { return n; }
-template<typename T> static inline T to_le(T n) { return n; }
-template<typename T> static inline T from_be(T n) { return swap(n); }
-template<typename T> static inline T to_be(T n) { return swap(n); }
-#endif
+static inline bool is_be() { return htonl(1) == 1; }
+template<typename T> static inline T from_be(T n) { return is_be() ? n : swap(n); }
+template<typename T> static inline T to_be(T n) { return from_be(n); }
+template<typename T> static inline T from_le(T n) { return is_be() ? swap(n) : n; }
+template<typename T> static inline T to_le(T n) { return from_le(n); }
 
 // Wrapper to mark a value as target endian, to guide conversion code
 
