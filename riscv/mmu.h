@@ -51,13 +51,14 @@ struct xlate_flags_t {
 
 struct mem_access_info_t {
   const reg_t vaddr;
+  const reg_t transformed_vaddr;
   const reg_t effective_priv;
   const bool effective_virt;
   const xlate_flags_t flags;
   const access_type type;
 
   mem_access_info_t split_misaligned_access(reg_t offset) const {
-    return {vaddr + offset, effective_priv, effective_virt, flags, type};
+    return {vaddr + offset, transformed_vaddr + offset, effective_priv, effective_virt, flags, type};
   }
 };
 
@@ -71,6 +72,7 @@ private:
   std::map<reg_t, reg_t> alloc_cache;
   std::vector<std::pair<reg_t, reg_t >> addr_tbl;
 
+  reg_t get_pmlen(bool effective_virt, reg_t effective_priv) const;
   mem_access_info_t generate_access_info(reg_t addr, access_type type, xlate_flags_t xlate_flags);
 
 public:
@@ -79,15 +81,18 @@ public:
 
   template<typename T>
   T ALWAYS_INLINE load(reg_t addr, xlate_flags_t xlate_flags = {}) {
+    auto access_info = generate_access_info(addr, LOAD, xlate_flags);
+    reg_t transformed_addr = access_info.transformed_vaddr;
+
     target_endian<T> res;
-    reg_t vpn = addr >> PGSHIFT;
-    bool aligned = (addr & (sizeof(T) - 1)) == 0;
+    reg_t vpn = transformed_addr >> PGSHIFT;
+    bool aligned = (transformed_addr & (sizeof(T) - 1)) == 0;
     bool tlb_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn;
 
     if (likely(!xlate_flags.is_special_access() && aligned && tlb_hit)) {
-      res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
+      res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + transformed_addr);
     } else {
-      load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags);
+      load_slow_path(transformed_addr, sizeof(T), (uint8_t*)&res, xlate_flags);
     }
 
     if (unlikely(proc && proc->get_log_commits_enabled()))

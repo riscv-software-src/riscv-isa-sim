@@ -5,6 +5,7 @@
 #include "arith.h"
 #include "simif.h"
 #include "processor.h"
+#include "decode_macros.h"
 
 mmu_t::mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc)
  : sim(sim), proc(proc),
@@ -608,9 +609,24 @@ void mmu_t::register_memtracer(memtracer_t* t)
   tracer.hook(t);
 }
 
+reg_t mmu_t::get_pmlen(bool effective_virt, reg_t effective_priv) const {
+  if (!proc || proc->get_xlen() != 64)
+    return 0;
+
+  reg_t pmm = 0;
+  if (effective_priv == PRV_M)
+    pmm = get_field(proc->state.mseccfg->read(), MSECCFG_PMM);
+
+  switch (pmm) {
+    case 2: return 7;
+    case 3: return 16;
+  }
+  return 0;
+}
+
 mem_access_info_t mmu_t::generate_access_info(reg_t addr, access_type type, xlate_flags_t xlate_flags) {
   if (!proc)
-    return {addr, 0, false, {}, type};
+    return {addr, addr, 0, false, {}, type};
   bool virt = proc->state.v;
   reg_t mode = proc->state.prv;
   if (type != FETCH) {
@@ -624,5 +640,9 @@ mem_access_info_t mmu_t::generate_access_info(reg_t addr, access_type type, xlat
       mode = get_field(proc->state.hstatus->read(), HSTATUS_SPVP);
     }
   }
-  return {addr, mode, virt, xlate_flags, type};
+  reg_t pmlen = get_pmlen(virt, mode);
+  reg_t satp = proc->state.satp->readvirt(virt);
+  bool is_physical_addr = mode == PRV_M || get_field(satp, SATP64_MODE) == SATP_MODE_OFF;
+  reg_t transformed_addr = is_physical_addr ? zext(addr, 64 - pmlen) : sext(addr, 64 - pmlen);
+  return {addr, transformed_addr, mode, virt, xlate_flags, type};
 }
