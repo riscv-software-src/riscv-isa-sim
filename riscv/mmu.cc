@@ -614,7 +614,7 @@ void mmu_t::register_memtracer(memtracer_t* t)
 }
 
 reg_t mmu_t::get_pmlen(bool effective_virt, reg_t effective_priv) const {
-  if (!proc || proc->get_xlen() != 64)
+  if (!proc || proc->get_xlen() != 64 || (in_mprv() && (proc->state.sstatus->read() & MSTATUS_MXR)))
     return 0;
 
   reg_t pmm = 0;
