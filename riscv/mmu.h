@@ -481,7 +481,7 @@ private:
     return (uint16_t*)(translate_insn_addr(addr).host_offset + addr);
   }
 
-  inline bool in_mprv()
+  inline bool in_mprv() const
   {
     return proc != nullptr
            && !(proc->state.mnstatus && !get_field(proc->state.mnstatus->read(), MNSTATUS_NMIE))
