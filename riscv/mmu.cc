@@ -223,9 +223,9 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
   }
 }
 
-void mmu_t::load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
+void mmu_t::load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
 {
-  auto access_info = generate_access_info(addr, LOAD, xlate_flags);
+  auto access_info = generate_access_info(original_addr, LOAD, xlate_flags);
   reg_t transformed_addr = access_info.transformed_vaddr;
   check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt);
 
