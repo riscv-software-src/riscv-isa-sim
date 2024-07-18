@@ -607,3 +607,22 @@ void mmu_t::register_memtracer(memtracer_t* t)
   flush_tlb();
   tracer.hook(t);
 }
+
+mem_access_info_t mmu_t::generate_access_info(reg_t addr, access_type type, xlate_flags_t xlate_flags) {
+  if (!proc)
+    return {addr, 0, false, {}, type};
+  bool virt = proc->state.v;
+  reg_t mode = proc->state.prv;
+  if (type != FETCH) {
+    if (in_mprv()) {
+      mode = get_field(proc->state.mstatus->read(), MSTATUS_MPP);
+      if (get_field(proc->state.mstatus->read(), MSTATUS_MPV) && mode != PRV_M)
+        virt = true;
+    }
+    if (xlate_flags.forced_virt) {
+      virt = true;
+      mode = get_field(proc->state.hstatus->read(), HSTATUS_SPVP);
+    }
+  }
+  return {addr, mode, virt, xlate_flags, type};
+}
