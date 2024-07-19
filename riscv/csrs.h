@@ -150,6 +150,8 @@ class mseccfg_csr_t: public basic_csr_t {
   bool get_mml() const noexcept;
   bool get_mmwp() const noexcept;
   bool get_rlb() const noexcept;
+  bool get_useed() const noexcept;
+  bool get_sseed() const noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
