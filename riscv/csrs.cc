@@ -1585,6 +1585,18 @@ void senvcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
   masked_csr_t::verify_permissions(insn, write);
 }
 
+// senvcfg.sse is read_only 0 when menvcfg.sse = 0
+reg_t senvcfg_csr_t::read() const noexcept {
+  reg_t envcfg = state->v ? state->henvcfg->read() : state->menvcfg->read();
+  return masked_csr_t::read() & ~(envcfg & MENVCFG_SSE ? 0 : MENVCFG_SSE);
+}
+
+bool senvcfg_csr_t::unlogged_write(const reg_t val) noexcept {
+  reg_t envcfg = state->v ? state->henvcfg->read() : state->menvcfg->read();
+  const reg_t mask = envcfg | ~MENVCFG_SSE;
+  return envcfg_csr_t::unlogged_write((masked_csr_t::read() & ~mask) | (val & mask));
+}
+
 void henvcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (proc->extension_enabled(EXT_SMSTATEEN)) {
     if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_HENVCFG))
@@ -1595,7 +1607,7 @@ void henvcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
 }
 
 bool henvcfg_csr_t::unlogged_write(const reg_t val) noexcept {
-  const reg_t mask = menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE | MENVCFG_ADUE | MENVCFG_DTE);
+  const reg_t mask = menvcfg->read() | ~(MENVCFG_PBMTE | MENVCFG_STCE | MENVCFG_ADUE | MENVCFG_DTE | MENVCFG_SSE);
   return envcfg_csr_t::unlogged_write((masked_csr_t::read() & ~mask) | (val & mask));
 }
 
