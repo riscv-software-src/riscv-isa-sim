@@ -577,7 +577,8 @@ void processor_t::reset()
   state.reset(this, isa->get_max_isa());
   state.dcsr->halt = halt_on_reset;
   halt_on_reset = false;
-  VU.reset();
+  if (any_vector_extensions())
+    VU.reset();
   in_wfi = false;
 
   if (n_pmp > 0) {
