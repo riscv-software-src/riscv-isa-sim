@@ -1446,7 +1446,7 @@ vector_csr_t::vector_csr_t(processor_t* const proc, const reg_t addr, const reg_
 }
 
 void vector_csr_t::verify_permissions(insn_t insn, bool write) const {
-  require_vector_vs;
+  require(proc->any_vector_extensions() && STATE.sstatus->enabled(SSTATUS_VS));
   basic_csr_t::verify_permissions(insn, write);
 }
 
@@ -1467,7 +1467,7 @@ vxsat_csr_t::vxsat_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 void vxsat_csr_t::verify_permissions(insn_t insn, bool write) const {
-  require_vector_vs;
+  require(proc->any_vector_extensions() && STATE.sstatus->enabled(SSTATUS_VS));
   masked_csr_t::verify_permissions(insn, write);
 }
 
