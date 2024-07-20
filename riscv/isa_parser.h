@@ -82,6 +82,9 @@ typedef enum {
   EXT_ZICFILP,
   EXT_ZICFISS,
   EXT_SSDBLTRP,
+  EXT_SMMPM,
+  EXT_SMNPM,
+  EXT_SSNPM,
   NUM_ISA_EXTENSIONS
 } isa_extension_t;
 

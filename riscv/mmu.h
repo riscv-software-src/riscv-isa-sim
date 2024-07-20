@@ -51,13 +51,14 @@ struct xlate_flags_t {
 
 struct mem_access_info_t {
   const reg_t vaddr;
+  const reg_t transformed_vaddr;
   const reg_t effective_priv;
   const bool effective_virt;
   const xlate_flags_t flags;
   const access_type type;
 
   mem_access_info_t split_misaligned_access(reg_t offset) const {
-    return {vaddr + offset, effective_priv, effective_virt, flags, type};
+    return {vaddr + offset, transformed_vaddr + offset, effective_priv, effective_virt, flags, type};
   }
 };
 
@@ -71,24 +72,8 @@ private:
   std::map<reg_t, reg_t> alloc_cache;
   std::vector<std::pair<reg_t, reg_t >> addr_tbl;
 
-  mem_access_info_t generate_access_info(reg_t addr, access_type type, xlate_flags_t xlate_flags) {
-    if (!proc)
-      return {addr, 0, false, {}, type};
-    bool virt = proc->state.v;
-    reg_t mode = proc->state.prv;
-    if (type != FETCH) {
-      if (in_mprv()) {
-        mode = get_field(proc->state.mstatus->read(), MSTATUS_MPP);
-        if (get_field(proc->state.mstatus->read(), MSTATUS_MPV) && mode != PRV_M)
-          virt = true;
-      }
-      if (xlate_flags.forced_virt) {
-        virt = true;
-        mode = get_field(proc->state.hstatus->read(), HSTATUS_SPVP);
-      }
-    }
-    return {addr, mode, virt, xlate_flags, type};
-  }
+  reg_t get_pmlen(bool effective_virt, reg_t effective_priv, xlate_flags_t flags) const;
+  mem_access_info_t generate_access_info(reg_t addr, access_type type, xlate_flags_t xlate_flags);
 
 public:
   mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc);
@@ -236,24 +221,30 @@ public:
   }
 
   void cbo_zero(reg_t addr) {
-    auto base = addr & ~(blocksz - 1);
+    auto access_info = generate_access_info(addr, STORE, {});
+    reg_t transformed_addr = access_info.transformed_vaddr;
+
+    auto base = transformed_addr & ~(blocksz - 1);
     for (size_t offset = 0; offset < blocksz; offset += 1) {
-      check_triggers(triggers::OPERATION_STORE, base + offset, false, addr, std::nullopt);
+      check_triggers(triggers::OPERATION_STORE, base + offset, false, transformed_addr, std::nullopt);
       store<uint8_t>(base + offset, 0);
     }
   }
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
-    auto base = addr & ~(blocksz - 1);
+    auto access_info = generate_access_info(addr, LOAD, {});
+    reg_t transformed_addr = access_info.transformed_vaddr;
+
+    auto base = transformed_addr & ~(blocksz - 1);
     for (size_t offset = 0; offset < blocksz; offset += 1)
-      check_triggers(triggers::OPERATION_STORE, base + offset, false, addr, std::nullopt);
+      check_triggers(triggers::OPERATION_STORE, base + offset, false, transformed_addr, std::nullopt);
     convert_load_traps_to_store_traps({
-      const reg_t paddr = translate(generate_access_info(addr, LOAD, {}), 1);
+      const reg_t paddr = translate(generate_access_info(transformed_addr, LOAD, {}), 1);
       if (sim->reservable(paddr)) {
         if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
           tracer.clean_invalidate(paddr, blocksz, clean, inval);
       } else {
-        throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+        throw trap_store_access_fault((proc) ? proc->state.v : false, transformed_addr, 0, 0);
       }
     })
   }
@@ -416,9 +407,9 @@ private:
 
   // handle uncommon cases: TLB misses, page faults, MMIO
   tlb_entry_t fetch_slow_path(reg_t addr);
-  void load_slow_path(reg_t addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
+  void load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
   void load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info);
-  void store_slow_path(reg_t addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store, bool require_alignment);
+  void store_slow_path(reg_t original_addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store, bool require_alignment);
   void store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_access_info_t access_info, bool actually_store);
   bool mmio_fetch(reg_t paddr, size_t len, uint8_t* bytes);
   bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes);
@@ -490,7 +481,7 @@ private:
     return (uint16_t*)(translate_insn_addr(addr).host_offset + addr);
   }
 
-  inline bool in_mprv()
+  inline bool in_mprv() const
   {
     return proc != nullptr
            && !(proc->state.mnstatus && !get_field(proc->state.mnstatus->read(), MNSTATUS_NMIE))

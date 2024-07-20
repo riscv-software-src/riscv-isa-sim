@@ -286,6 +286,7 @@ mseccfg_csr_t::mseccfg_csr_t(processor_t* const proc, const reg_t addr):
 void mseccfg_csr_t::verify_permissions(insn_t insn, bool write) const {
   basic_csr_t::verify_permissions(insn, write);
   if (!proc->extension_enabled(EXT_SMEPMP) &&
+      !proc->extension_enabled(EXT_SMMPM) &&
       !proc->extension_enabled(EXT_ZICFILP) &&
       !proc->extension_enabled(EXT_ZKR))
     throw trap_illegal_instruction(insn.bits());
@@ -340,6 +341,12 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->extension_enabled(EXT_ZICFILP)) {
     new_val &= ~MSECCFG_MLPE;
     new_val |= (val & MSECCFG_MLPE);
+  }
+
+  if (proc->extension_enabled(EXT_SMMPM)) {
+    const reg_t pmm_reserved = 1; // Reserved value of mseccfg.PMM
+    reg_t pmm = get_field(val, MSECCFG_PMM);
+    new_val = set_field(new_val, MSECCFG_PMM, pmm != pmm_reserved ? pmm : 0);
   }
 
   return basic_csr_t::unlogged_write(new_val);
@@ -968,7 +975,15 @@ envcfg_csr_t::envcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_
 
 bool envcfg_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t cbie_reserved = 2; // Reserved value of xenvcfg.CBIE
-  const reg_t adjusted_val = get_field(val, MENVCFG_CBIE) != cbie_reserved ? val : set_field(val, MENVCFG_CBIE, 0);
+  reg_t adjusted_val = get_field(val, MENVCFG_CBIE) != cbie_reserved ? val : set_field(val, MENVCFG_CBIE, 0);
+
+  const reg_t pmm_reserved = 1; // Reserved value of xseccfg.PMM
+  const reg_t pmm = get_field(adjusted_val, MENVCFG_PMM);
+  adjusted_val = set_field(adjusted_val, MENVCFG_PMM, pmm != pmm_reserved ? pmm : 0);
+
+  if (get_field(adjusted_val, MENVCFG_PMM) != get_field(read(), MENVCFG_PMM))
+    proc->get_mmu()->flush_tlb();
+
   return masked_csr_t::unlogged_write(adjusted_val);
 }
 
@@ -1835,4 +1850,24 @@ void mtval2_csr_t::verify_permissions(insn_t insn, bool write) const {
   basic_csr_t::verify_permissions(insn, write);
   if (!proc->extension_enabled('H') && !proc->extension_enabled(EXT_SSDBLTRP))
     throw trap_illegal_instruction(insn.bits());
+}
+
+hstatus_csr_t::hstatus_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, set_field((reg_t)0, HSTATUS_VSXL, xlen_to_uxl(proc->get_const_xlen()))) {
+}
+
+bool hstatus_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t mask = HSTATUS_VTSR | HSTATUS_VTW
+    | (proc->supports_impl(IMPL_MMU) ? HSTATUS_VTVM : 0)
+    | (proc->extension_enabled(EXT_SSNPM) ? HSTATUS_HUPMM : 0)
+    | HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
+
+  const reg_t pmm_reserved = 1; // Reserved value of mseccfg.PMM
+  reg_t pmm = get_field(val, HSTATUS_HUPMM);
+  const reg_t adjusted_val = set_field(val, HSTATUS_HUPMM, pmm != pmm_reserved ? pmm : 0);
+
+  const reg_t new_hstatus = (read() & ~mask) | (adjusted_val & mask);
+  if (get_field(new_hstatus, HSTATUS_HUPMM) != get_field(read(), HSTATUS_HUPMM))
+    proc->get_mmu()->flush_tlb();
+  return basic_csr_t::unlogged_write(new_hstatus);
 }
