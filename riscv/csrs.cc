@@ -663,11 +663,6 @@ bool sstatus_csr_t::enabled(const reg_t which) {
     if (!state->v || (virt_sstatus->read() & which) != 0)
       return true;
   }
-
-  // If the field doesn't exist, it is always enabled. See #823.
-  if (!orig_sstatus->field_exists(which))
-    return true;
-
   return false;
 }
 
@@ -1490,7 +1485,7 @@ vector_csr_t::vector_csr_t(processor_t* const proc, const reg_t addr, const reg_
 }
 
 void vector_csr_t::verify_permissions(insn_t insn, bool write) const {
-  require_vector_vs;
+  require(proc->any_vector_extensions() && STATE.sstatus->enabled(SSTATUS_VS));
   basic_csr_t::verify_permissions(insn, write);
 }
 
@@ -1511,7 +1506,7 @@ vxsat_csr_t::vxsat_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 void vxsat_csr_t::verify_permissions(insn_t insn, bool write) const {
-  require_vector_vs;
+  require(proc->any_vector_extensions() && STATE.sstatus->enabled(SSTATUS_VS));
   masked_csr_t::verify_permissions(insn, write);
 }
 
