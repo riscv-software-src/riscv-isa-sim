@@ -55,6 +55,5 @@ if (exp == 0) {
 }
 
 WRITE_RD(sext32(frac));
-STATE.fflags->write(STATE.fflags->read() |
-		    (inexact ? softfloat_flag_inexact : 0) |
+raise_fp_exceptions((inexact ? softfloat_flag_inexact : 0) |
 		    (invalid ? softfloat_flag_invalid : 0));
