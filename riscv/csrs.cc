@@ -934,7 +934,7 @@ bool medeleg_csr_t::unlogged_write(const reg_t val) noexcept {
     | (1 << CAUSE_MISALIGNED_FETCH)
     | (1 << CAUSE_FETCH_ACCESS)
     | (1 << CAUSE_ILLEGAL_INSTRUCTION)
-    | (1 << CAUSE_BREAKPOINT)
+    | (proc->extension_enabled(EXT_SDTRIG) ? 0 : (1 << CAUSE_BREAKPOINT))
     | (1 << CAUSE_MISALIGNED_LOAD)
     | (1 << CAUSE_LOAD_ACCESS)
     | (1 << CAUSE_MISALIGNED_STORE) 
