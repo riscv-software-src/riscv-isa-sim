@@ -290,6 +290,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZVFBFWMA] = true;
     } else if (ext_str == "zvkg") {
       extension_table[EXT_ZVKG] = true;
+    } else if (ext_str == "zvkgs") {
+      extension_table[EXT_ZVKGS] = true;
     } else if (ext_str == "zvkn") {
       extension_table[EXT_ZVBB] = true;
       extension_table[EXT_ZVKNED] = true;

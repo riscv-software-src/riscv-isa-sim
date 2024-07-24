@@ -983,6 +983,13 @@
     (DST)[bidx] = (SRC)[bidx]; \
   }
 
+// Copies a EGU32x4_t value from 'SRC' into 'DST'.
+#define EGU32x4_COPY(DST, SRC) \
+  for (std::size_t bidx = 0; bidx < 4; ++bidx) { \
+    (DST)[bidx] = (SRC)[bidx]; \
+  }
+
+
 // Performs  "MUT_A ^= CONST_B;", i.e., xor of the bytes
 // in A (mutated) with the bytes in B (unchanged).
 #define EGU8x16_XOREQ(MUT_A, CONST_B) \
