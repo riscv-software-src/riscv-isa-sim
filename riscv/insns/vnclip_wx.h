@@ -1,9 +1,9 @@
 // vnclip: vd[i] = clip(round(vs2[i] + rnd) >> rs1[i])
-VRM xrm = P.VU.get_vround_mode();
-int64_t int_max = INT64_MAX >> (64 - P.VU.vsew);
-int64_t int_min = INT64_MIN >> (64 - P.VU.vsew);
 VI_VX_LOOP_NARROW
 ({
+  VRM xrm = P.VU.get_vround_mode();
+  int64_t int_max = INT64_MAX >> (64 - P.VU.vsew);
+  int64_t int_min = INT64_MIN >> (64 - P.VU.vsew);
   int128_t result = vs2;
   unsigned shift = rs1 & ((sew * 2) - 1);
 
