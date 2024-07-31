@@ -1144,32 +1144,32 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 
 // average loop
 #define VI_VV_LOOP_AVG(op) \
-VRM xrm = p->VU.get_vround_mode(); \
 VI_VV_LOOP({ \
+  VRM xrm = p->VU.get_vround_mode(); \
   uint128_t res = ((uint128_t)vs2) op vs1; \
   INT_ROUNDING(res, xrm, 1); \
   vd = res >> 1; \
 })
 
 #define VI_VX_LOOP_AVG(op) \
-VRM xrm = p->VU.get_vround_mode(); \
 VI_VX_LOOP({ \
+  VRM xrm = p->VU.get_vround_mode(); \
   uint128_t res = ((uint128_t)vs2) op rs1; \
   INT_ROUNDING(res, xrm, 1); \
   vd = res >> 1; \
 })
 
 #define VI_VV_ULOOP_AVG(op) \
-VRM xrm = p->VU.get_vround_mode(); \
 VI_VV_ULOOP({ \
+  VRM xrm = p->VU.get_vround_mode(); \
   uint128_t res = ((uint128_t)vs2) op vs1; \
   INT_ROUNDING(res, xrm, 1); \
   vd = res >> 1; \
 })
 
 #define VI_VX_ULOOP_AVG(op) \
-VRM xrm = p->VU.get_vround_mode(); \
 VI_VX_ULOOP({ \
+  VRM xrm = p->VU.get_vround_mode(); \
   uint128_t res = ((uint128_t)vs2) op rs1; \
   INT_ROUNDING(res, xrm, 1); \
   vd = res >> 1; \
