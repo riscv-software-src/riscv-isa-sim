@@ -303,6 +303,35 @@ reg_t processor_t::select_an_interrupt_with_default_priority(reg_t enabled_inter
   return enabled_interrupts;
 }
 
+bool processor_t::is_handled_in_vs()
+{
+  reg_t pending_interrupts = state.mip->read() & state.mie->read();
+
+  const reg_t s_pending_interrupts = state.nonvirtual_sip->read() & state.nonvirtual_sie->read();
+  const reg_t vstopi = state.vstopi->read();
+  const reg_t vs_pending_interrupt = vstopi ? (reg_t(1) << get_field(vstopi, MTOPI_IID)) : 0; // SSIP -> VSSIP, etc
+
+  // M-ints have higher priority over HS-ints and VS-ints
+  const reg_t mie = get_field(state.mstatus->read(), MSTATUS_MIE);
+  const reg_t m_enabled = state.prv < PRV_M || (state.prv == PRV_M && mie);
+  reg_t enabled_interrupts = pending_interrupts & ~state.mideleg->read() & -m_enabled;
+  if (enabled_interrupts == 0) {
+    // HS-ints have higher priority over VS-ints
+    const reg_t deleg_to_hs = state.mideleg->read() & ~state.hideleg->read();
+    const reg_t sie = get_field(state.sstatus->read(), MSTATUS_SIE);
+    const reg_t hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && sie);
+    enabled_interrupts = ((pending_interrupts & deleg_to_hs) | (s_pending_interrupts & ~state.hideleg->read())) & -hs_enabled;
+    if (state.v && enabled_interrupts == 0) {
+      // VS-ints have least priority and can only be taken with virt enabled
+      const reg_t vs_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
+      enabled_interrupts = vs_pending_interrupt & -vs_enabled;
+      if (enabled_interrupts)
+        return true;
+    }
+  }
+  return false;
+}
+
 void processor_t::take_interrupt(reg_t pending_interrupts)
 {
   const reg_t s_pending_interrupts = state.nonvirtual_sip->read() & state.nonvirtual_sie->read();
@@ -457,7 +486,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     if (supv_double_trap)
       vsdeleg = hsdeleg = 0;
   }
-  if (state.prv <= PRV_S && bit < max_xlen && ((vsdeleg >> bit) & 1)) {
+  if ((state.prv <= PRV_S && bit < max_xlen && ((vsdeleg >> bit) & 1)) || (state.v && interrupt && is_handled_in_vs())) {
     // Handle the trap in VS-mode
     const reg_t adjusted_cause = bit;
     reg_t vector = (state.vstvec->read() & 1) && interrupt ? 4 * adjusted_cause : 0;
