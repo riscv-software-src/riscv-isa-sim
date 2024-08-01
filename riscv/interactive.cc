@@ -342,8 +342,10 @@ void sim_t::interactive()
         (this->*funcs[cmd])(cmd, args);
       else
         out << "Unknown command " << cmd << std::endl;
-    } catch(trap_t& t) {
+    } catch(trap_interactive& t) {
       out << "Bad or missing arguments for command " << cmd << std::endl;
+    } catch(trap_t& t){
+      out << "Received trap: " << t.name() << std::endl;
     }
 #ifdef HAVE_BOOST_ASIO
     if (socketif)
@@ -473,15 +475,9 @@ void sim_t::interactive_insn(const std::string& cmd, const std::vector<std::stri
   int max_xlen = p->get_isa().get_max_xlen();
 
   std::ostream out(sout_.rdbuf());
-  try
-  {
-    insn_t insn(get_insn(args));
-    out << std::hex << std::setfill('0') << "0x" << std::setw(max_xlen/4)
-        << zext(insn.bits(), max_xlen) << " " << p->get_disassembler()->disassemble(insn) << std::endl;
-  }
-  catch (trap_t& t) {
-    out << "Unable to obtain insn due to " << t.name() << std::endl;
-  }
+  insn_t insn(get_insn(args)); // ensure this is outside of ostream to not pollute output on non-interactive trap
+  out << std::hex << std::setfill('0') << "0x" << std::setw(max_xlen/4)
+      << zext(insn.bits(), max_xlen) << " " << p->get_disassembler()->disassemble(insn) << std::endl;
 }
 
 void sim_t::interactive_priv(const std::string& cmd, const std::vector<std::string>& args)
@@ -717,8 +713,9 @@ void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::strin
   int max_xlen = procs[0]->get_isa().get_max_xlen();
 
   std::ostream out(sout_.rdbuf());
+  reg_t mem_val = get_mem(args); // ensure this is outside of ostream to not pollute output on non-interactive trap
   out << std::hex << "0x" << std::setfill('0') << std::setw(max_xlen/4)
-      << zext(get_mem(args), max_xlen) << std::endl;
+      << zext(mem_val, max_xlen) << std::endl;
 }
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)

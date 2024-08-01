@@ -31,7 +31,7 @@ int main(int UNUSED argc, char** argv)
   cfg_t cfg;
 
   isa_parser_t isa(isa_string, DEFAULT_PRIV);
-  processor_t p(&isa, &cfg, 0, 0, false, nullptr, cerr);
+  processor_t p(isa_string, DEFAULT_PRIV, &cfg, 0, 0, false, nullptr, cerr);
   if (extension) {
     p.register_extension(extension());
   }

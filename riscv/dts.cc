@@ -13,14 +13,17 @@
 #include <sys/types.h>
 
 std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
-                     reg_t initrd_start, reg_t initrd_end,
-                     const char* bootargs,
-                     size_t pmpregions,
-                     size_t pmpgranularity,
-                     std::vector<processor_t*> procs,
+                     const cfg_t* cfg,
                      std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
                      std::string device_nodes)
 {
+  reg_t initrd_start = cfg->initrd_bounds.first;
+  reg_t initrd_end = cfg->initrd_bounds.second;
+  const char* bootargs = cfg->bootargs;
+  reg_t pmpregions = cfg->pmpregions;
+  reg_t pmpgranularity = cfg->pmpgranularity;
+  isa_parser_t isa(cfg->isa, cfg->priv);
+
   std::stringstream s;
   s << std::dec <<
          "/dts-v1/;\n"
@@ -54,14 +57,14 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "    #address-cells = <1>;\n"
          "    #size-cells = <0>;\n"
          "    timebase-frequency = <" << (cpu_hz/insns_per_rtc_tick) << ">;\n";
-  for (size_t i = 0; i < procs.size(); i++) {
+    for (size_t i = 0; i < cfg->nprocs(); i++) {
     s << "    CPU" << i << ": cpu@" << i << " {\n"
          "      device_type = \"cpu\";\n"
-         "      reg = <" << i << ">;\n"
+         "      reg = <" << cfg->hartids[i] << ">;\n"
          "      status = \"okay\";\n"
          "      compatible = \"riscv\";\n"
-         "      riscv,isa = \"" << procs[i]->get_isa().get_isa_string() << "\";\n"
-         "      mmu-type = \"riscv," << (procs[i]->get_isa().get_max_xlen() <= 32 ? "sv32" : "sv57") << "\";\n"
+         "      riscv,isa = \"" << isa.get_isa_string() << "\";\n"
+         "      mmu-type = \"riscv," << (isa.get_max_xlen() <= 32 ? "sv32" : "sv57") << "\";\n"
          "      riscv,pmpregions = <" << pmpregions << ">;\n"
          "      riscv,pmpgranularity = <" << pmpgranularity << ">;\n"
          "      clock-frequency = <" << cpu_hz << ">;\n"
@@ -96,86 +99,91 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
   return s.str();
 }
 
-std::string dts_compile(const std::string& dts)
+std::string dtc_compile(const std::string& dtc_input, const std::string& input_type, const std::string& output_type)
 {
-  // Convert the DTS to DTB
-  int dts_pipe[2];
-  pid_t dts_pid;
+  if (input_type == output_type)
+    std::cerr << "Must have differing {in,out}put types for running " DTC << std::endl;
+
+  if (!((input_type == "dts" && output_type == "dtb") || (input_type == "dtb" && output_type == "dts")))
+    std::cerr << "Invalid {in,out}put types for running " DTC ": Must convert from 'dts' to 'dtb' (or vice versa)" << std::endl;
+
+  int dtc_input_pipe[2];
+  pid_t dtc_input_pid;
 
   fflush(NULL); // flush stdout/stderr before forking
-  if (pipe(dts_pipe) != 0 || (dts_pid = fork()) < 0) {
-    std::cerr << "Failed to fork dts child: " << strerror(errno) << std::endl;
+  if (pipe(dtc_input_pipe) != 0 || (dtc_input_pid = fork()) < 0) {
+    std::cerr << "Failed to fork dtc_input child: " << strerror(errno) << std::endl;
     exit(1);
   }
 
-  // Child process to output dts
-  if (dts_pid == 0) {
-    close(dts_pipe[0]);
-    int step, len = dts.length();
-    const char *buf = dts.c_str();
+  // Child process to output dtc_input
+  if (dtc_input_pid == 0) {
+    close(dtc_input_pipe[0]);
+    int step, len = dtc_input.length();
+    const char *buf = dtc_input.c_str();
     for (int done = 0; done < len; done += step) {
-      step = write(dts_pipe[1], buf+done, len-done);
+      step = write(dtc_input_pipe[1], buf+done, len-done);
       if (step == -1) {
-        std::cerr << "Failed to write dts: " << strerror(errno) << std::endl;
+        std::cerr << "Failed to write dtc_input: " << strerror(errno) << std::endl;
         exit(1);
       }
     }
-    close(dts_pipe[1]);
+    close(dtc_input_pipe[1]);
     exit(0);
   }
 
-  pid_t dtb_pid;
-  int dtb_pipe[2];
-  if (pipe(dtb_pipe) != 0 || (dtb_pid = fork()) < 0) {
-    std::cerr << "Failed to fork dtb child: " << strerror(errno) << std::endl;
+  pid_t dtc_output_pid;
+  int dtc_output_pipe[2];
+  if (pipe(dtc_output_pipe) != 0 || (dtc_output_pid = fork()) < 0) {
+    std::cerr << "Failed to fork dtc_output child: " << strerror(errno) << std::endl;
     exit(1);
   }
 
-  // Child process to output dtb
-  if (dtb_pid == 0) {
-    dup2(dts_pipe[0], 0);
-    dup2(dtb_pipe[1], 1);
-    close(dts_pipe[0]);
-    close(dts_pipe[1]);
-    close(dtb_pipe[0]);
-    close(dtb_pipe[1]);
-    execlp(DTC, DTC, "-O", "dtb", (char *)0);
+  // Child process to output dtc_output
+  if (dtc_output_pid == 0) {
+    dup2(dtc_input_pipe[0], 0);
+    dup2(dtc_output_pipe[1], 1);
+    close(dtc_input_pipe[0]);
+    close(dtc_input_pipe[1]);
+    close(dtc_output_pipe[0]);
+    close(dtc_output_pipe[1]);
+    execlp(DTC, DTC, "-O", output_type.c_str(), "-I", input_type.c_str(), (char *)0);
     std::cerr << "Failed to run " DTC ": " << strerror(errno) << std::endl;
     exit(1);
   }
 
-  close(dts_pipe[1]);
-  close(dts_pipe[0]);
-  close(dtb_pipe[1]);
+  close(dtc_input_pipe[1]);
+  close(dtc_input_pipe[0]);
+  close(dtc_output_pipe[1]);
 
-  // Read-out dtb
-  std::stringstream dtb;
+  // Read-out dtc_output
+  std::stringstream dtc_output;
 
   int got;
   char buf[4096];
-  while ((got = read(dtb_pipe[0], buf, sizeof(buf))) > 0) {
-    dtb.write(buf, got);
+  while ((got = read(dtc_output_pipe[0], buf, sizeof(buf))) > 0) {
+    dtc_output.write(buf, got);
   }
   if (got == -1) {
-    std::cerr << "Failed to read dtb: " << strerror(errno) << std::endl;
+    std::cerr << "Failed to read dtc_output: " << strerror(errno) << std::endl;
     exit(1);
   }
-  close(dtb_pipe[0]);
+  close(dtc_output_pipe[0]);
 
   // Reap children
   int status;
-  waitpid(dts_pid, &status, 0);
+  waitpid(dtc_input_pid, &status, 0);
   if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-    std::cerr << "Child dts process failed" << std::endl;
+    std::cerr << "Child dtc_input process failed" << std::endl;
     exit(1);
   }
-  waitpid(dtb_pid, &status, 0);
+  waitpid(dtc_output_pid, &status, 0);
   if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-    std::cerr << "Child dtb process failed" << std::endl;
+    std::cerr << "Child dtc_output process failed" << std::endl;
     exit(1);
   }
 
-  return dtb.str();
+  return dtc_output.str();
 }
 
 int fdt_get_node_addr_size(const void *fdt, int node, reg_t *addr,
@@ -383,6 +391,47 @@ int fdt_parse_mmu_type(const void *fdt, int cpu_offset, const char **mmu_type)
     return -EINVAL;
 
   *mmu_type = (const char *)prop;
+
+  return 0;
+}
+
+int fdt_parse_isa(const void *fdt, int cpu_offset, const char **isa)
+{
+  assert(isa);
+
+  int len, rc;
+  const void *prop;
+
+  if ((rc = check_cpu_node(fdt, cpu_offset)) < 0)
+    return rc;
+
+  prop = fdt_getprop(fdt, cpu_offset, "riscv,isa", &len);
+  if (!prop || !len)
+    return -EINVAL;
+
+  *isa = (const char *)prop;
+
+  return 0;
+}
+
+int fdt_parse_hartid(const void *fdt, int cpu_offset, uint32_t *hartid)
+{
+  int len, rc;
+  const void *prop;
+  const fdt32_t *val;
+
+  if ((rc = check_cpu_node(fdt, cpu_offset)) < 0)
+    return rc;
+
+  val = (fdt32_t*) fdt_getprop(fdt, cpu_offset, "reg", &len);
+  if (!val || len < (int) sizeof(fdt32_t))
+    return -EINVAL;
+
+  if (len > (int) sizeof(fdt32_t))
+    val++;
+
+  if (hartid)
+    *hartid = fdt32_to_cpu(*val);
 
   return 0;
 }

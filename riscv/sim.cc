@@ -46,10 +46,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
              bool socket_enabled,
              FILE *cmd_file) // needed for command line option --cmd
   : htif_t(args),
-    isa(cfg->isa, cfg->priv),
     cfg(cfg),
     mems(mems),
-    procs(std::max(cfg->nprocs(), size_t(1))),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
     cmd_file(cmd_file),
@@ -98,14 +96,16 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 
   debug_mmu = new mmu_t(this, cfg->endianness, NULL);
 
-  for (size_t i = 0; i < cfg->nprocs(); i++) {
-    procs[i] = new processor_t(&isa, cfg, this, cfg->hartids[i], halted,
-                               log_file.get(), sout_);
-    harts[cfg->hartids[i]] = procs[i];
-  }
-
   // When running without using a dtb, skip the fdt-based configuration steps
-  if (!dtb_enabled) return;
+  if (!dtb_enabled) {
+    for (size_t i = 0; i < cfg->nprocs(); i++) {
+      procs.push_back(new processor_t(cfg->isa, cfg->priv,
+                                      cfg, this, cfg->hartids[i], halted,
+                                      log_file.get(), sout_));
+      harts[cfg->hartids[i]] = procs[i];
+      return;
+    }
+  } // otherwise, generate the procs by parsing the DTS
 
   // Only make a CLINT (Core-Local INTerrupt controller) and PLIC (Platform-
   // Level-Interrupt-Controller) if they are specified in the device tree
@@ -133,6 +133,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     std::stringstream strstream;
     strstream << fin.rdbuf();
     dtb = strstream.str();
+    dts = dtc_compile(dtb, "dtb", "dts");
   } else {
     std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds;
     std::string device_nodes;
@@ -141,11 +142,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       const std::vector<std::string>& sargs = factory_sargs.second;
       device_nodes.append(factory->generate_dts(this, sargs));
     }
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
-                   initrd_bounds.first, initrd_bounds.second,
-                   cfg->bootargs, cfg->pmpregions, cfg->pmpgranularity,
-                   procs, mems, device_nodes);
-    dtb = dts_compile(dts);
+    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, cfg, mems, device_nodes);
+    dtb = dtc_compile(dts, "dts", "dtb");
   }
 
   int fdt_code = fdt_check_header(dtb.c_str());
@@ -162,6 +160,86 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 
   void *fdt = (void *)dtb.c_str();
 
+  // per core attribute
+  int cpu_offset = 0, cpu_map_offset, rc;
+  size_t cpu_idx = 0;
+  cpu_offset = fdt_get_offset(fdt, "/cpus");
+  cpu_map_offset = fdt_get_offset(fdt, "/cpus/cpu-map");
+  if (cpu_offset < 0)
+    return;
+
+  for (cpu_offset = fdt_get_first_subnode(fdt, cpu_offset); cpu_offset >= 0;
+       cpu_offset = fdt_get_next_subnode(fdt, cpu_offset)) {
+
+    if (!(cpu_map_offset < 0) && cpu_offset == cpu_map_offset)
+      continue;
+
+    if (cpu_idx != procs.size()) {
+      std::cerr << "Spike only supports contiguous CPU IDs in the DTS" << std::endl;
+      exit(1);
+    }
+
+    // handle isa string
+    const char* isa_str;
+    rc = fdt_parse_isa(fdt, cpu_offset, &isa_str);
+    if (rc != 0) {
+      std::cerr << "core (" << cpu_idx << ") has an invalid or missing 'riscv,isa'\n";
+      exit(1);
+    }
+
+    // handle hartid
+    uint32_t hartid;
+    rc = fdt_parse_hartid(fdt, cpu_offset, &hartid);
+    if (rc != 0) {
+      std::cerr << "core (" << cpu_idx << ") has an invalid or missing `reg` (hartid)\n";
+      exit(1);
+    }
+
+    procs.push_back(new processor_t(isa_str, DEFAULT_PRIV,
+                                    cfg, this, hartid, halted,
+                                    log_file.get(), sout_));
+    harts[hartid] = procs[cpu_idx];
+
+    // handle pmp
+    reg_t pmp_num, pmp_granularity;
+    if (fdt_parse_pmp_num(fdt, cpu_offset, &pmp_num) != 0)
+      pmp_num = 0;
+    procs[cpu_idx]->set_pmp_num(pmp_num);
+
+    if (fdt_parse_pmp_alignment(fdt, cpu_offset, &pmp_granularity) == 0) {
+      procs[cpu_idx]->set_pmp_granularity(pmp_granularity);
+    }
+
+    // handle mmu-type
+    const char *mmu_type;
+    rc = fdt_parse_mmu_type(fdt, cpu_offset, &mmu_type);
+    if (rc == 0) {
+      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
+      if (strncmp(mmu_type, "riscv,sv32", strlen("riscv,sv32")) == 0) {
+        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV32);
+      } else if (strncmp(mmu_type, "riscv,sv39", strlen("riscv,sv39")) == 0) {
+        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV39);
+      } else if (strncmp(mmu_type, "riscv,sv48", strlen("riscv,sv48")) == 0) {
+        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV48);
+      } else if (strncmp(mmu_type, "riscv,sv57", strlen("riscv,sv57")) == 0) {
+        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV57);
+      } else if (strncmp(mmu_type, "riscv,sbare", strlen("riscv,sbare")) == 0) {
+        // has been set in the beginning
+      } else {
+        std::cerr << "core ("
+                  << cpu_idx
+                  << ") has an invalid 'mmu-type': "
+                  << mmu_type << ").\n";
+        exit(1);
+      }
+    } else {
+      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
+    }
+
+    cpu_idx++;
+  }
+
+  // must be located after procs/harts are set (devices might use sim_t get_* member functions)
   for (size_t i = 0; i < device_factories.size(); i++) {
     const device_factory_t* factory = device_factories[i].first;
     const std::vector<std::string>& sargs = device_factories[i].second;
@@ -178,70 +256,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
         plic = std::static_pointer_cast<plic_t>(dev_ptr);
     }
   }
-
-  //per core attribute
-  int cpu_offset = 0, cpu_map_offset, rc;
-  size_t cpu_idx = 0;
-  cpu_offset = fdt_get_offset(fdt, "/cpus");
-  cpu_map_offset = fdt_get_offset(fdt, "/cpus/cpu-map");
-  if (cpu_offset < 0)
-    return;
-
-  for (cpu_offset = fdt_get_first_subnode(fdt, cpu_offset); cpu_offset >= 0;
-       cpu_offset = fdt_get_next_subnode(fdt, cpu_offset)) {
-
-    if (!(cpu_map_offset < 0) && cpu_offset == cpu_map_offset)
-      continue;
-
-    if (cpu_idx >= nprocs())
-      break;
-
-    //handle pmp
-    reg_t pmp_num, pmp_granularity;
-    if (fdt_parse_pmp_num(fdt, cpu_offset, &pmp_num) != 0)
-      pmp_num = 0;
-    procs[cpu_idx]->set_pmp_num(pmp_num);
-
-    if (fdt_parse_pmp_alignment(fdt, cpu_offset, &pmp_granularity) == 0) {
-      procs[cpu_idx]->set_pmp_granularity(pmp_granularity);
-    }
-
-    //handle mmu-type
-    const char *mmu_type;
-    rc = fdt_parse_mmu_type(fdt, cpu_offset, &mmu_type);
-    if (rc == 0) {
-      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
-      if (strncmp(mmu_type, "riscv,sv32", strlen("riscv,sv32")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV32);
-      } else if (strncmp(mmu_type, "riscv,sv39", strlen("riscv,sv39")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV39);
-      } else if (strncmp(mmu_type, "riscv,sv48", strlen("riscv,sv48")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV48);
-      } else if (strncmp(mmu_type, "riscv,sv57", strlen("riscv,sv57")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV57);
-      } else if (strncmp(mmu_type, "riscv,sbare", strlen("riscv,sbare")) == 0) {
-        //has been set in the beginning
-      } else {
-        std::cerr << "core ("
-                  << cpu_idx
-                  << ") has an invalid 'mmu-type': "
-                  << mmu_type << ").\n";
-        exit(1);
-      }
-    } else {
-      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
-    }
-
-    cpu_idx++;
-  }
-
-  if (cpu_idx != nprocs()) {
-      std::cerr << "core number in dts ("
-                <<  cpu_idx
-                << ") doesn't match it in command line ("
-                << nprocs() << ").\n";
-      exit(1);
-  }
 }
 
 sim_t::~sim_t()
@@ -256,7 +270,7 @@ int sim_t::run()
   if (!debug && log)
     set_procs_debug(true);
 
-  htif_t::set_expected_xlen(isa.get_max_xlen());
+  htif_t::set_expected_xlen(harts[0]->get_isa().get_max_xlen());
 
   // htif_t::run() will repeatedly call back into sim_t::idle(), each
   // invocation of which will advance target time
