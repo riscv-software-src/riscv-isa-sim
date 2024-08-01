@@ -6,6 +6,12 @@ void state_t::add_csr(reg_t addr, const csr_t_p& csr)
   csrmap[addr] = csr;
 }
 
+#define add_const_ext_csr(ext, addr, csr) do { auto csr__ = (csr); if (proc->extension_enabled_const(ext)) { add_csr(addr, csr__); } } while (0)
+#define add_ext_csr(ext, addr, csr) do { auto csr__ = (csr); if (proc->extension_enabled(ext)) { add_csr(addr, csr__); } } while (0)
+#define add_user_csr(addr, csr) add_const_ext_csr('U', addr, csr)
+#define add_supervisor_csr(addr, csr) add_const_ext_csr('S', addr, csr)
+#define add_hypervisor_csr(addr, csr) add_ext_csr('H', addr, csr)
+
 void state_t::csr_init(processor_t* const proc, reg_t max_isa)
 {
   // This assumes xlen is always max_xlen, which is true today (see
@@ -136,9 +142,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   add_csr(CSR_MEDELEG, medeleg = std::make_shared<medeleg_csr_t>(proc, CSR_MEDELEG));
   add_csr(CSR_MIDELEG, mideleg = std::make_shared<mideleg_csr_t>(proc, CSR_MIDELEG));
   const reg_t counteren_mask = (proc->extension_enabled_const(EXT_ZICNTR) ? 0x7UL : 0x0) | (proc->extension_enabled_const(EXT_ZIHPM) ? 0xfffffff8ULL : 0x0);
-  mcounteren = std::make_shared<masked_csr_t>(proc, CSR_MCOUNTEREN, counteren_mask, 0);
-  if (proc->extension_enabled_const('U'))
-    add_csr(CSR_MCOUNTEREN, mcounteren);
+  add_user_csr(CSR_MCOUNTEREN, mcounteren = std::make_shared<masked_csr_t>(proc, CSR_MCOUNTEREN, counteren_mask, 0));
   add_csr(CSR_SCOUNTEREN, scounteren = std::make_shared<masked_csr_t>(proc, CSR_SCOUNTEREN, counteren_mask, 0));
   nonvirtual_sepc = std::make_shared<epc_csr_t>(proc, CSR_SEPC);
   add_csr(CSR_VSEPC, vsepc = std::make_shared<epc_csr_t>(proc, CSR_VSEPC));
@@ -254,22 +258,18 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
                             (proc->extension_enabled(EXT_ZICFISS) ? MENVCFG_SSE : 0) |
                             (proc->extension_enabled(EXT_SSDBLTRP) ? MENVCFG_DTE : 0);
   menvcfg = std::make_shared<envcfg_csr_t>(proc, CSR_MENVCFG, menvcfg_mask, 0);
-  if (proc->extension_enabled_const('U')) {
-    if (xlen == 32) {
-      add_csr(CSR_MENVCFG, std::make_shared<rv32_low_csr_t>(proc, CSR_MENVCFG, menvcfg));
-      add_csr(CSR_MENVCFGH, std::make_shared<rv32_high_csr_t>(proc, CSR_MENVCFGH, menvcfg));
-    } else {
-      add_csr(CSR_MENVCFG, menvcfg);
-    }
+  if (xlen == 32) {
+    add_user_csr(CSR_MENVCFG, std::make_shared<rv32_low_csr_t>(proc, CSR_MENVCFG, menvcfg));
+    add_user_csr(CSR_MENVCFGH, std::make_shared<rv32_high_csr_t>(proc, CSR_MENVCFGH, menvcfg));
+  } else {
+    add_user_csr(CSR_MENVCFG, menvcfg);
   }
   const reg_t senvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? SENVCFG_CBCFE | SENVCFG_CBIE : 0) |
                             (proc->extension_enabled(EXT_ZICBOZ) ? SENVCFG_CBZE : 0) |
                             (proc->extension_enabled(EXT_SSNPM) ? SENVCFG_PMM : 0) |
                             (proc->extension_enabled(EXT_ZICFILP) ? SENVCFG_LPE : 0) |
                             (proc->extension_enabled(EXT_ZICFISS) ? SENVCFG_SSE : 0);
-  senvcfg = std::make_shared<senvcfg_csr_t>(proc, CSR_SENVCFG, senvcfg_mask, 0);
-  if (proc->extension_enabled_const('S'))
-    add_csr(CSR_SENVCFG, senvcfg);
+  add_supervisor_csr(CSR_SENVCFG, senvcfg = std::make_shared<senvcfg_csr_t>(proc, CSR_SENVCFG, senvcfg_mask, 0));
   const reg_t henvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? HENVCFG_CBCFE | HENVCFG_CBIE : 0) |
                             (proc->extension_enabled(EXT_ZICBOZ) ? HENVCFG_CBZE : 0) |
                             (proc->extension_enabled(EXT_SSNPM) ? HENVCFG_PMM : 0) |
@@ -280,13 +280,11 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
                             (proc->extension_enabled(EXT_ZICFISS) ? HENVCFG_SSE : 0) |
                             (proc->extension_enabled(EXT_SSDBLTRP) ? HENVCFG_DTE : 0);
   henvcfg = std::make_shared<henvcfg_csr_t>(proc, CSR_HENVCFG, henvcfg_mask, 0, menvcfg);
-  if (proc->extension_enabled('H')) {
-    if (xlen == 32) {
-      add_csr(CSR_HENVCFG, std::make_shared<rv32_low_csr_t>(proc, CSR_HENVCFG, henvcfg));
-      add_csr(CSR_HENVCFGH, std::make_shared<rv32_high_csr_t>(proc, CSR_HENVCFGH, henvcfg));
-    } else {
-      add_csr(CSR_HENVCFG, henvcfg);
-    }
+  if (xlen == 32) {
+    add_hypervisor_csr(CSR_HENVCFG, std::make_shared<rv32_low_csr_t>(proc, CSR_HENVCFG, henvcfg));
+    add_hypervisor_csr(CSR_HENVCFGH, std::make_shared<rv32_high_csr_t>(proc, CSR_HENVCFGH, henvcfg));
+  } else {
+    add_hypervisor_csr(CSR_HENVCFG, henvcfg);
   }
   if (proc->extension_enabled_const(EXT_SMSTATEEN)) {
     const reg_t sstateen0_mask = (proc->extension_enabled(EXT_ZFINX) ? SSTATEEN0_FCSR : 0) |
