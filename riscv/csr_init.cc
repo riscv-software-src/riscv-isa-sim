@@ -33,11 +33,10 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   add_csr(CSR_MTVEC, mtvec = std::make_shared<tvec_csr_t>(proc, CSR_MTVEC));
   add_csr(CSR_MCAUSE, mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE));
 
-  auto smcntrpmf_enabled = proc->extension_enabled_const(EXT_SMCNTRPMF);
-  const reg_t mask = smcntrpmf_enabled ? MHPMEVENT_MINH | MHPMEVENT_SINH |
-                                         MHPMEVENT_UINH | MHPMEVENT_VSINH | MHPMEVENT_VUINH : 0;
-  auto minstretcfg = std::make_shared<smcntrpmf_csr_t>(proc, CSR_MINSTRETCFG, mask, 0);
-  auto mcyclecfg = std::make_shared<smcntrpmf_csr_t>(proc, CSR_MCYCLECFG, mask, 0);
+  const reg_t minstretcfg_mask = !proc->extension_enabled_const(EXT_SMCNTRPMF) ? 0 :
+    MHPMEVENT_MINH | MHPMEVENT_SINH | MHPMEVENT_UINH | MHPMEVENT_VSINH | MHPMEVENT_VUINH;
+  auto minstretcfg = std::make_shared<smcntrpmf_csr_t>(proc, CSR_MINSTRETCFG, minstretcfg_mask, 0);
+  auto mcyclecfg = std::make_shared<smcntrpmf_csr_t>(proc, CSR_MCYCLECFG, minstretcfg_mask, 0);
 
   minstret = std::make_shared<wide_counter_csr_t>(proc, CSR_MINSTRET, minstretcfg);
   mcycle = std::make_shared<wide_counter_csr_t>(proc, CSR_MCYCLE, mcyclecfg);
@@ -74,29 +73,21 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     auto mcounter = std::make_shared<const_csr_t>(proc, which_mcounter, 0);
     add_csr(which_mcounter, mcounter);
 
-    if (proc->extension_enabled_const(EXT_ZIHPM)) {
-      auto counter = std::make_shared<counter_proxy_csr_t>(proc, which_counter, mcounter);
-      add_csr(which_counter, counter);
-    }
+    auto counter = std::make_shared<counter_proxy_csr_t>(proc, which_counter, mcounter);
+    add_const_ext_csr(EXT_ZIHPM, which_counter, counter);
+
     if (xlen == 32) {
       add_csr(which_mevent, std::make_shared<rv32_low_csr_t>(proc, which_mevent, mevent[i]));
       auto mcounterh = std::make_shared<const_csr_t>(proc, which_mcounterh, 0);
       add_csr(which_mcounterh, mcounterh);
-      if (proc->extension_enabled_const(EXT_ZIHPM)) {
-        auto counterh = std::make_shared<counter_proxy_csr_t>(proc, which_counterh, mcounterh);
-        add_csr(which_counterh, counterh);
-      }
-      if (proc->extension_enabled_const(EXT_SSCOFPMF)) {
-        auto meventh = std::make_shared<rv32_high_csr_t>(proc, which_meventh, mevent[i]);
-        add_csr(which_meventh, meventh);
-      }
+      add_const_ext_csr(EXT_ZIHPM, which_counterh, std::make_shared<counter_proxy_csr_t>(proc, which_counterh, mcounterh));
+      add_const_ext_csr(EXT_SSCOFPMF, which_meventh, std::make_shared<rv32_high_csr_t>(proc, which_meventh, mevent[i]));
     } else {
       add_csr(which_mevent, mevent[i]);
     }
   }
   add_csr(CSR_MCOUNTINHIBIT, std::make_shared<const_csr_t>(proc, CSR_MCOUNTINHIBIT, 0));
-  if (proc->extension_enabled_const(EXT_SSCOFPMF))
-    add_csr(CSR_SCOUNTOVF, std::make_shared<scountovf_csr_t>(proc, CSR_SCOUNTOVF));
+  add_const_ext_csr(EXT_SSCOFPMF, CSR_SCOUNTOVF, std::make_shared<scountovf_csr_t>(proc, CSR_SCOUNTOVF));
   add_csr(CSR_MIE, mie = std::make_shared<mie_csr_t>(proc, CSR_MIE));
   add_csr(CSR_MIP, mip = std::make_shared<mip_csr_t>(proc, CSR_MIP));
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(
@@ -338,69 +329,52 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     }
   }
 
-  if (proc->extension_enabled(EXT_ZCMT))
-    add_csr(CSR_JVT, jvt = std::make_shared<jvt_csr_t>(proc, CSR_JVT, 0));
+  add_ext_csr(EXT_ZCMT, CSR_JVT, jvt = std::make_shared<jvt_csr_t>(proc, CSR_JVT, 0));
 
-  if (proc->extension_enabled(EXT_ZICFISS)) {
-    reg_t ssp_mask = -reg_t(xlen / 8);
-    add_csr(CSR_SSP, ssp = std::make_shared<ssp_csr_t>(proc, CSR_SSP, ssp_mask, 0));
-  }
+  const reg_t ssp_mask = -reg_t(xlen / 8);
+  add_ext_csr(EXT_ZICFISS, CSR_SSP, ssp = std::make_shared<ssp_csr_t>(proc, CSR_SSP, ssp_mask, 0));
 
 
   // Smcsrind / Sscsrind
-  sscsrind_reg_csr_t::sscsrind_reg_csr_t_p mireg[6];
-  sscsrind_reg_csr_t::sscsrind_reg_csr_t_p sireg[6];
-  sscsrind_reg_csr_t::sscsrind_reg_csr_t_p vsireg[6];
-
   if (proc->extension_enabled_const(EXT_SMCSRIND)) {
     csr_t_p miselect = std::make_shared<basic_csr_t>(proc, CSR_MISELECT, 0);
     add_csr(CSR_MISELECT, miselect);
 
     const reg_t mireg_csrs[] = { CSR_MIREG, CSR_MIREG2, CSR_MIREG3, CSR_MIREG4, CSR_MIREG5, CSR_MIREG6 };
-    auto i = 0;
-    for (auto csr : mireg_csrs) {
-      add_csr(csr, mireg[i] = std::make_shared<sscsrind_reg_csr_t>(proc, csr, miselect));
-      i++;
-    }
+    for (auto csr : mireg_csrs)
+      add_csr(csr, std::make_shared<sscsrind_reg_csr_t>(proc, csr, miselect));
   }
 
   if (proc->extension_enabled_const(EXT_SSCSRIND)) {
     csr_t_p vsiselect = std::make_shared<basic_csr_t>(proc, CSR_VSISELECT, 0);
     add_csr(CSR_VSISELECT, vsiselect);
+
     csr_t_p siselect = std::make_shared<basic_csr_t>(proc, CSR_SISELECT, 0);
     add_csr(CSR_SISELECT, std::make_shared<virtualized_csr_t>(proc, siselect, vsiselect));
 
     const reg_t vsireg_csrs[] = { CSR_VSIREG, CSR_VSIREG2, CSR_VSIREG3, CSR_VSIREG4, CSR_VSIREG5, CSR_VSIREG6 };
-    auto i = 0;
-    for (auto csr : vsireg_csrs) {
-      add_csr(csr, vsireg[i] = std::make_shared<sscsrind_reg_csr_t>(proc, csr, vsiselect));
-      i++;
-    }
-
     const reg_t sireg_csrs[] = { CSR_SIREG, CSR_SIREG2, CSR_SIREG3, CSR_SIREG4, CSR_SIREG5, CSR_SIREG6 };
-    i = 0;
-    for (auto csr : sireg_csrs) {
-      sireg[i] = std::make_shared<sscsrind_reg_csr_t>(proc, csr, siselect);
-      add_csr(csr, std::make_shared<virtualized_indirect_csr_t>(proc, sireg[i], vsireg[i]));
-      i++;
+    for (size_t i = 0; i < std::size(vsireg_csrs); i++) {
+      auto vsireg = std::make_shared<sscsrind_reg_csr_t>(proc, vsireg_csrs[i], vsiselect);
+      add_csr(vsireg_csrs[i], vsireg);
+
+      auto sireg = std::make_shared<sscsrind_reg_csr_t>(proc, sireg_csrs[i], siselect);
+      add_csr(sireg_csrs[i], std::make_shared<virtualized_indirect_csr_t>(proc, sireg, vsireg));
     }
   }
 
-  if (smcntrpmf_enabled) {
-      if (xlen == 32) {
-        add_csr(CSR_MCYCLECFG, std::make_shared<rv32_low_csr_t>(proc, CSR_MCYCLECFG, mcyclecfg));
-        add_csr(CSR_MCYCLECFGH, std::make_shared<rv32_high_csr_t>(proc, CSR_MCYCLECFGH, mcyclecfg));
-        add_csr(CSR_MINSTRETCFG, std::make_shared<rv32_low_csr_t>(proc, CSR_MINSTRETCFG, minstretcfg));
-        add_csr(CSR_MINSTRETCFGH, std::make_shared<rv32_high_csr_t>(proc, CSR_MINSTRETCFGH, minstretcfg));
-      } else {
-        add_csr(CSR_MCYCLECFG, mcyclecfg);
-        add_csr(CSR_MINSTRETCFG, minstretcfg);
-      }
+  if (proc->extension_enabled_const(EXT_SMCNTRPMF)) {
+    if (xlen == 32) {
+      add_csr(CSR_MCYCLECFG, std::make_shared<rv32_low_csr_t>(proc, CSR_MCYCLECFG, mcyclecfg));
+      add_csr(CSR_MCYCLECFGH, std::make_shared<rv32_high_csr_t>(proc, CSR_MCYCLECFGH, mcyclecfg));
+      add_csr(CSR_MINSTRETCFG, std::make_shared<rv32_low_csr_t>(proc, CSR_MINSTRETCFG, minstretcfg));
+      add_csr(CSR_MINSTRETCFGH, std::make_shared<rv32_high_csr_t>(proc, CSR_MINSTRETCFGH, minstretcfg));
+    } else {
+      add_csr(CSR_MCYCLECFG, mcyclecfg);
+      add_csr(CSR_MINSTRETCFG, minstretcfg);
+    }
   }
 
-  if (proc->extension_enabled_const(EXT_SSQOSID)) {
-    const reg_t srmcfg_mask = SRMCFG_MCID | SRMCFG_RCID;
-    srmcfg = std::make_shared<srmcfg_csr_t>(proc, CSR_SRMCFG, srmcfg_mask, 0);
-    add_csr(CSR_SRMCFG, srmcfg);
-  }
+  const reg_t srmcfg_mask = SRMCFG_MCID | SRMCFG_RCID;
+  add_const_ext_csr(EXT_SSQOSID, CSR_SRMCFG, std::make_shared<srmcfg_csr_t>(proc, CSR_SRMCFG, srmcfg_mask, 0));
 }
