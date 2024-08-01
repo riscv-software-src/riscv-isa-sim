@@ -190,6 +190,9 @@ struct state_t
   int last_inst_flen;
 
   elp_t elp;
+
+ private:
+  void csr_init(processor_t* const proc, reg_t max_isa);
 };
 
 class opcode_cache_entry_t {
