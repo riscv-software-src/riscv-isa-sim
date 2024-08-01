@@ -417,7 +417,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
                             (proc->extension_enabled(EXT_ZICFISS) ? HENVCFG_SSE : 0) |
                             (proc->extension_enabled(EXT_SSDBLTRP) ? HENVCFG_DTE : 0);
   henvcfg = std::make_shared<henvcfg_csr_t>(proc, CSR_HENVCFG, henvcfg_mask, 0, menvcfg);
-  if (proc->extension_enabled_const('H')) {
+  if (proc->extension_enabled('H')) {
     if (xlen == 32) {
       csrmap[CSR_HENVCFG] = std::make_shared<rv32_low_csr_t>(proc, CSR_HENVCFG, henvcfg);
       csrmap[CSR_HENVCFGH] = std::make_shared<rv32_high_csr_t>(proc, CSR_HENVCFGH, henvcfg);
