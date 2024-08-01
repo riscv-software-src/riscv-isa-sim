@@ -738,9 +738,9 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
     state->mie->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hie, sie
     state->mip->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hip, sip, hvip
     state->hstatus->write(0);
-    for (reg_t i = 3; i < N_HPMCOUNTERS + 3; ++i) {
-      const reg_t new_mevent = state->mevent[i - 3]->read() & ~(MHPMEVENT_VUINH | MHPMEVENT_VSINH);
-      state->mevent[i - 3]->write(new_mevent);
+    for (reg_t i = 0; i < N_HPMCOUNTERS; ++i) {
+      const reg_t new_mevent = state->mevent[i]->read() & ~(MHPMEVENT_VUINH | MHPMEVENT_VSINH);
+      state->mevent[i]->write(new_mevent);
     }
   }
 
@@ -1668,9 +1668,9 @@ void scountovf_csr_t::verify_permissions(insn_t insn, bool write) const {
 
 reg_t scountovf_csr_t::read() const noexcept {
   reg_t val = 0;
-  for (reg_t i = 3; i < N_HPMCOUNTERS + 3; ++i) {
-    bool of = state->mevent[i - 3]->read() & MHPMEVENT_OF;
-    val |= of << i;
+  for (reg_t i = 0; i < N_HPMCOUNTERS; ++i) {
+    bool of = state->mevent[i]->read() & MHPMEVENT_OF;
+    val |= of << (i + FIRST_HPMCOUNTER);
   }
 
   /* In M and S modes, scountovf bit X is readable when mcounteren bit X is set, */

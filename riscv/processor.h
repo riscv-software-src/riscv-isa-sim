@@ -18,6 +18,7 @@
 #include "../fesvr/memif.h"
 #include "vector_unit.h"
 
+#define FIRST_HPMCOUNTER 3
 #define N_HPMCOUNTERS 29
 
 class processor_t;
