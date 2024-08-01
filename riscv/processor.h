@@ -71,6 +71,7 @@ typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
 struct state_t
 {
   void reset(processor_t* const proc, reg_t max_isa);
+  void add_csr(reg_t addr, const csr_t_p& csr);
 
   reg_t pc;
   regfile_t<reg_t, NXPR, true> XPR;
