@@ -299,8 +299,6 @@ reg_t processor_t::select_an_interrupt_with_default_priority(reg_t enabled_inter
     enabled_interrupts = MIP_VSSIP;
   else if (enabled_interrupts & MIP_VSTIP)
     enabled_interrupts = MIP_VSTIP;
-  else
-    abort();
 
   return enabled_interrupts;
 }
