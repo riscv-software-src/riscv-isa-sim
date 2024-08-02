@@ -101,8 +101,8 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
 
 static std::string dtc_compile(const std::string& dtc_input, bool compile)
 {
-  const std::string input_type = compile ? "dts" : "dtb";
-  const std::string output_type = compile ? "dtb" : "dts";
+  const char* input_type = compile ? "dts" : "dtb";
+  const char* output_type = compile ? "dtb" : "dts";
 
   int dtc_input_pipe[2];
   pid_t dtc_input_pid;
@@ -144,7 +144,7 @@ static std::string dtc_compile(const std::string& dtc_input, bool compile)
     close(dtc_input_pipe[1]);
     close(dtc_output_pipe[0]);
     close(dtc_output_pipe[1]);
-    execlp(DTC, DTC, "-O", output_type.c_str(), "-I", input_type.c_str(), (char *)0);
+    execlp(DTC, DTC, "-O", output_type, "-I", input_type, nullptr);
     std::cerr << "Failed to run " DTC ": " << strerror(errno) << std::endl;
     exit(1);
   }
