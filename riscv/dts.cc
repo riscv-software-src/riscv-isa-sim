@@ -99,13 +99,10 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
   return s.str();
 }
 
-std::string dtc_compile(const std::string& dtc_input, const std::string& input_type, const std::string& output_type)
+static std::string dtc_compile(const std::string& dtc_input, bool compile)
 {
-  if (input_type == output_type)
-    std::cerr << "Must have differing {in,out}put types for running " DTC << std::endl;
-
-  if (!((input_type == "dts" && output_type == "dtb") || (input_type == "dtb" && output_type == "dts")))
-    std::cerr << "Invalid {in,out}put types for running " DTC ": Must convert from 'dts' to 'dtb' (or vice versa)" << std::endl;
+  const std::string input_type = compile ? "dts" : "dtb";
+  const std::string output_type = compile ? "dtb" : "dts";
 
   int dtc_input_pipe[2];
   pid_t dtc_input_pid;
@@ -184,6 +181,16 @@ std::string dtc_compile(const std::string& dtc_input, const std::string& input_t
   }
 
   return dtc_output.str();
+}
+
+std::string dtb_to_dts(const std::string& dtc_input)
+{
+  return dtc_compile(dtc_input, false);
+}
+
+std::string dts_to_dtb(const std::string& dtc_input)
+{
+  return dtc_compile(dtc_input, true);
 }
 
 int fdt_get_node_addr_size(const void *fdt, int node, reg_t *addr,
