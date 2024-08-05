@@ -71,6 +71,7 @@ typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
 struct state_t
 {
   void reset(processor_t* const proc, reg_t max_isa);
+  void add_csr(reg_t addr, const csr_t_p& csr);
 
   reg_t pc;
   regfile_t<reg_t, NXPR, true> XPR;
@@ -168,8 +169,6 @@ struct state_t
   csr_t_p stimecmp;
   csr_t_p vstimecmp;
 
-  csr_t_p srmcfg;
-
   csr_t_p ssp;
 
   bool serialized; // whether timer CSRs are in a well-defined state
@@ -190,6 +189,9 @@ struct state_t
   int last_inst_flen;
 
   elp_t elp;
+
+ private:
+  void csr_init(processor_t* const proc, reg_t max_isa);
 };
 
 class opcode_cache_entry_t {
