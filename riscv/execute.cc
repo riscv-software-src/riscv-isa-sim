@@ -213,12 +213,11 @@ void processor_t::step(size_t n)
 {
   if (!state.debug_mode) {
     if (halt_request == HR_REGULAR) {
-      enter_debug_mode(DCSR_CAUSE_DEBUGINT);
+      enter_debug_mode(DCSR_CAUSE_DEBUGINT, 0);
     } else if (halt_request == HR_GROUP) {
-      enter_debug_mode(DCSR_CAUSE_GROUP);
-    }
-    else if (state.dcsr->halt) {
-      enter_debug_mode(DCSR_CAUSE_HALT);
+      enter_debug_mode(DCSR_CAUSE_GROUP, 0);
+    } else if (state.dcsr->halt) {
+      enter_debug_mode(DCSR_CAUSE_HALT, 0);
     }
   }
 
@@ -257,7 +256,7 @@ void processor_t::step(size_t n)
           if (unlikely(!state.serialized && state.single_step == state.STEP_STEPPED)) {
             state.single_step = state.STEP_NONE;
             if (!state.debug_mode) {
-              enter_debug_mode(DCSR_CAUSE_STEP);
+              enter_debug_mode(DCSR_CAUSE_STEP, 0);
               // enter_debug_mode changed state.pc, so we can't just continue.
               break;
             }
@@ -286,6 +285,17 @@ void processor_t::step(size_t n)
             disasm(fetch.insn);
           pc = execute_insn_logged(this, pc, fetch);
           advance_pc();
+
+          // Resume from debug mode in critical error
+          if (state.critical_error && !state.debug_mode) {
+            if (state.dcsr->read() & DCSR_CETRIG) {
+              enter_debug_mode(DCSR_CAUSE_EXTCAUSE, DCSR_EXTCAUSE_CRITERR);
+            } else {
+              // Handling of critical error is implementation defined
+              // For now just enter debug mode
+              enter_debug_mode(DCSR_CAUSE_HALT, 0);
+            }
+          }
         }
       }
       else while (instret < n)
@@ -311,13 +321,23 @@ void processor_t::step(size_t n)
       take_trap(t, pc);
       n = instret;
 
+      // If critical error then enter debug mode critical error trigger enabled
+      if (state.critical_error) {
+        if (state.dcsr->read() & DCSR_CETRIG) {
+          enter_debug_mode(DCSR_CAUSE_EXTCAUSE, DCSR_EXTCAUSE_CRITERR);
+        } else {
+          // Handling of critical error is implementation defined
+          // For now just enter debug mode
+          enter_debug_mode(DCSR_CAUSE_HALT, 0);
+        }
+      }
       // Trigger action takes priority over single step
       auto match = TM.detect_trap_match(t);
       if (match.has_value())
         take_trigger_action(match->action, 0, state.pc, 0);
       else if (unlikely(state.single_step == state.STEP_STEPPED)) {
         state.single_step = state.STEP_NONE;
-        enter_debug_mode(DCSR_CAUSE_STEP);
+        enter_debug_mode(DCSR_CAUSE_STEP, 0);
       }
     }
     catch (triggers::matched_t& t)
@@ -330,7 +350,7 @@ void processor_t::step(size_t n)
     }
     catch(trap_debug_mode&)
     {
-      enter_debug_mode(DCSR_CAUSE_SWBP);
+      enter_debug_mode(DCSR_CAUSE_SWBP, 0);
     }
     catch (wait_for_interrupt_t &t)
     {

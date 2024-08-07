@@ -684,7 +684,7 @@ class dcsr_csr_t: public csr_t {
   dcsr_csr_t(processor_t* const proc, const reg_t addr);
   virtual void verify_permissions(insn_t insn, bool write) const override;
   virtual reg_t read() const noexcept override;
-  void update_fields(const uint8_t cause, const reg_t prv,
+  void update_fields(const uint8_t cause, const uint8_t ext_cause, const reg_t prv,
                      const bool v, const elp_t pelp) noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
@@ -699,6 +699,8 @@ class dcsr_csr_t: public csr_t {
   bool halt;
   bool v;
   uint8_t cause;
+  uint8_t ext_cause;
+  bool cetrig;
   elp_t pelp;
 };
 

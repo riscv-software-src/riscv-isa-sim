@@ -548,13 +548,17 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
                    | (has_page ? MSTATUS_TVM : 0)
                    | (has_gva ? MSTATUS_GVA : 0)
                    | (has_mpv ? MSTATUS_MPV : 0)
+                   | (proc->extension_enabled(EXT_SMDBLTRP) ? MSTATUS_MDT : 0)
                    | (proc->extension_enabled(EXT_ZICFILP) ? (MSTATUS_SPELP | MSTATUS_MPELP) : 0)
                    | (proc->extension_enabled(EXT_SSDBLTRP) ? SSTATUS_SDT : 0)
                    ;
 
   const reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
   const reg_t adjusted_val = set_field(val, MSTATUS_MPP, requested_mpp);
-  const reg_t new_mstatus = (read() & ~mask) | (adjusted_val & mask);
+  reg_t new_mstatus = (read() & ~mask) | (adjusted_val & mask);
+  if (new_mstatus & MSTATUS_MDT) {
+    new_mstatus = new_mstatus & ~MSTATUS_MIE;
+  }
   maybe_flush_tlb(new_mstatus);
   this->val = adjust_sd(new_mstatus);
   return true;
@@ -569,6 +573,7 @@ reg_t mstatus_csr_t::compute_mstatus_initial_value() const noexcept {
          | (proc->extension_enabled_const('U') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_UXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
          | (proc->extension_enabled_const('S') && (proc->get_const_xlen() != 32) ? set_field((reg_t)0, MSTATUS_SXL, xlen_to_uxl(proc->get_const_xlen())) : 0)
          | (proc->get_mmu()->is_target_big_endian() ? big_endian_bits : 0)
+         | (proc->extension_enabled(EXT_SMDBLTRP) ? MSTATUS_MDT : 0)
          | 0;  // initial value for mstatus
 }
 
@@ -1343,6 +1348,8 @@ dcsr_csr_t::dcsr_csr_t(processor_t* const proc, const reg_t addr):
   halt(false),
   v(false),
   cause(0),
+  ext_cause(0),
+  cetrig(0),
   pelp(elp_t::NO_LP_EXPECTED) {
 }
 
@@ -1363,6 +1370,9 @@ reg_t dcsr_csr_t::read() const noexcept {
   result = set_field(result, DCSR_STOPCOUNT, 0);
   result = set_field(result, DCSR_STOPTIME, 0);
   result = set_field(result, DCSR_CAUSE, cause);
+  result = set_field(result, DCSR_EXTCAUSE, ext_cause);
+  if (proc->extension_enabled(EXT_SMDBLTRP))
+    result = set_field(result, DCSR_CETRIG, cetrig);
   result = set_field(result, DCSR_STEP, step);
   result = set_field(result, DCSR_PRV, prv);
   result = set_field(result, CSR_DCSR_V, v);
@@ -1382,12 +1392,14 @@ bool dcsr_csr_t::unlogged_write(const reg_t val) noexcept {
   v = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_V) : false;
   pelp = proc->extension_enabled(EXT_ZICFILP) ?
          static_cast<elp_t>(get_field(val, DCSR_PELP)) : elp_t::NO_LP_EXPECTED;
+  cetrig = proc->extension_enabled(EXT_SMDBLTRP) ? get_field(val, DCSR_CETRIG) : false;
   return true;
 }
 
-void dcsr_csr_t::update_fields(const uint8_t cause, const reg_t prv,
+void dcsr_csr_t::update_fields(const uint8_t cause, uint8_t ext_cause, const reg_t prv,
                                const bool v, const elp_t pelp) noexcept {
   this->cause = cause;
+  this->ext_cause = ext_cause;
   this->prv = prv;
   this->v = v;
   this->pelp = pelp;

@@ -190,6 +190,8 @@ struct state_t
 
   elp_t elp;
 
+  bool critical_error;
+
  private:
   void csr_init(processor_t* const proc, reg_t max_isa);
 };
@@ -405,7 +407,7 @@ private:
   void register_insn(insn_desc_t, bool);
   int paddr_bits();
 
-  void enter_debug_mode(uint8_t cause);
+  void enter_debug_mode(uint8_t cause, uint8_t ext_cause);
 
   void debug_output_log(std::stringstream *s); // either output to interactive user or write to log file
 
