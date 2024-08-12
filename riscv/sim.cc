@@ -103,8 +103,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
                                       cfg, this, cfg->hartids[i], halted,
                                       log_file.get(), sout_));
       harts[cfg->hartids[i]] = procs[i];
-      return;
     }
+    return;
   } // otherwise, generate the procs by parsing the DTS
 
   // Only make a CLINT (Core-Local INTerrupt controller) and PLIC (Platform-
