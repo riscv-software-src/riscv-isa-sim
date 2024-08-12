@@ -195,13 +195,17 @@ bool mcontrol_common_t::simple_match(unsigned xlen, reg_t value) const {
       return value < tdata2;
     case MATCH_MASK_LOW:
       {
-        reg_t mask = tdata2 >> (xlen/2);
-        return (value & mask) == (tdata2 & mask);
+        reg_t tdata2_high = tdata2 >> (xlen/2);
+        reg_t tdata2_low = tdata2 & ((reg_t(1) << (xlen/2)) - 1);
+        reg_t value_low = value & ((reg_t(1) << (xlen/2)) - 1);
+        return (value_low & tdata2_high) == tdata2_low;
       }
     case MATCH_MASK_HIGH:
       {
-        reg_t mask = tdata2 >> (xlen/2);
-        return ((value >> (xlen/2)) & mask) == (tdata2 & mask);
+        reg_t tdata2_high = tdata2 >> (xlen/2);
+        reg_t tdata2_low = tdata2 & ((reg_t(1) << (xlen/2)) - 1);
+        reg_t value_high = value >> (xlen/2);
+        return (value_high & tdata2_high) == tdata2_low;
       }
   }
   assert(0);
