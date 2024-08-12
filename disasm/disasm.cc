@@ -2157,7 +2157,8 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
 #undef DISASM_VECTOR_VV_VX_VIU_ZIMM6
     }
 
-  if (isa->extension_enabled(EXT_ZVBC)) {
+  if (isa->extension_enabled(EXT_ZVBC) ||
+      isa->extension_enabled(EXT_ZVBC32E)) {
 #define DISASM_VECTOR_VV_VX(name) \
     DEFINE_VECTOR_VV(name##_vv); \
     DEFINE_VECTOR_VX(name##_vx)
@@ -2173,6 +2174,13 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     // is really ".v", with the form "vgmul.vv vd, vs2".
     DEFINE_VECTOR_V(vgmul_vv);
     DEFINE_VECTOR_VV(vghsh_vv);
+  }
+
+  if (isa->extension_enabled(EXT_ZVKGS)) {
+    // Despite its suffix, the vgmul.vv instruction
+    // is really ".v", with the form "vgmul.vv vd, vs2".
+    DEFINE_VECTOR_V(vgmul_vs); 
+    DEFINE_VECTOR_VV(vghsh_vs);
   }
 
   if (isa->extension_enabled(EXT_ZVKNED)) {
