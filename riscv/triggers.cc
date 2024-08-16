@@ -118,7 +118,8 @@ bool trigger_t::allow_action(const state_t * const state) const
     const bool vsstatus_sie = state->vsstatus->read() & MSTATUS_SIE;
     const bool medeleg_breakpoint = (state->medeleg->read() >> CAUSE_BREAKPOINT) & 1;
     const bool hedeleg_breakpoint = (state->hedeleg->read() >> CAUSE_BREAKPOINT) & 1;
-    return (state->prv != PRV_M || mstatus_mie) &&
+    const bool mte = state->tcontrol->read() & CSR_TCONTROL_MTE;
+    return (state->prv != PRV_M || mstatus_mie || mte) &&
            (state->prv != PRV_S || state->v || !medeleg_breakpoint || sstatus_sie) &&
            (state->prv != PRV_S || !state->v || !medeleg_breakpoint || !hedeleg_breakpoint || vsstatus_sie);
   }
