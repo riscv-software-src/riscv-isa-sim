@@ -643,6 +643,7 @@ mem_access_info_t mmu_t::generate_access_info(reg_t addr, access_type type, xlat
     return {addr, addr, 0, false, {}, type};
   bool virt = proc->state.v;
   reg_t mode = proc->state.prv;
+  reg_t transformed_addr = addr;
   if (type != FETCH) {
     if (in_mprv()) {
       mode = get_field(proc->state.mstatus->read(), MSTATUS_MPP);
@@ -653,10 +654,10 @@ mem_access_info_t mmu_t::generate_access_info(reg_t addr, access_type type, xlat
       virt = true;
       mode = get_field(proc->state.hstatus->read(), HSTATUS_SPVP);
     }
+    reg_t pmlen = get_pmlen(virt, mode, xlate_flags);
+    reg_t satp = proc->state.satp->readvirt(virt);
+    bool is_physical_addr = mode == PRV_M || get_field(satp, SATP64_MODE) == SATP_MODE_OFF;
+    transformed_addr = is_physical_addr ? zext(addr, 64 - pmlen) : sext(addr, 64 - pmlen);
   }
-  reg_t pmlen = get_pmlen(virt, mode, xlate_flags);
-  reg_t satp = proc->state.satp->readvirt(virt);
-  bool is_physical_addr = mode == PRV_M || get_field(satp, SATP64_MODE) == SATP_MODE_OFF;
-  reg_t transformed_addr = is_physical_addr ? zext(addr, 64 - pmlen) : sext(addr, 64 - pmlen);
   return {addr, transformed_addr, mode, virt, xlate_flags, type};
 }
