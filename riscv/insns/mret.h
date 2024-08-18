@@ -13,6 +13,7 @@ if (ZICFILP_xLPE(prev_virt, prev_prv)) {
   STATE.elp = static_cast<elp_t>(get_field(s, MSTATUS_MPELP));
 }
 s = set_field(s, MSTATUS_MPELP, elp_t::NO_LP_EXPECTED);
+s = set_field(s, MSTATUS_MDT, 0);
 if (prev_prv == PRV_U || prev_virt)
   s = set_field(s, MSTATUS_SDT, 0);
 if (prev_virt && prev_prv == PRV_U)

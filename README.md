@@ -44,6 +44,7 @@ Spike supports the following RISC-V ISA features:
   - Sdtrig extension, v1.0-STABLE
   - Smepmp extension v1.0
   - Smstateen extension, v1.0
+  - Smdbltrp extension, v1.0
   - Sscofpmf v0.5.2
   - Ssdbltrp extension, v1.0
   - Ssqosid extension, v1.0

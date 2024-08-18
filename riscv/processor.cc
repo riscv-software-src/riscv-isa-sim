@@ -159,6 +159,8 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 
   elp = elp_t::NO_LP_EXPECTED;
 
+  critical_error = false;
+
   csr_init(proc, max_isa);
 }
 
@@ -379,11 +381,11 @@ const char* processor_t::get_privilege_string()
   abort();
 }
 
-void processor_t::enter_debug_mode(uint8_t cause)
+void processor_t::enter_debug_mode(uint8_t cause, uint8_t extcause)
 {
   const bool has_zicfilp = extension_enabled(EXT_ZICFILP);
   state.debug_mode = true;
-  state.dcsr->update_fields(cause, state.prv, state.v, state.elp);
+  state.dcsr->update_fields(cause, extcause, state.prv, state.v, state.elp);
   state.elp = elp_t::NO_LP_EXPECTED;
   set_privilege(PRV_M, false);
   state.dpc->write(state.pc);
@@ -500,10 +502,23 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     // Handle the trap in M-mode
     const reg_t vector = (state.mtvec->read() & 1) && interrupt ? 4 * bit : 0;
     const reg_t trap_handler_address = (state.mtvec->read() & ~(reg_t)1) + vector;
-    // RNMI exception vector is implementation-defined.  Since we don't model
     // RNMI sources, the feature isn't very useful, so pick an invalid address.
+    // RNMI exception vector is implementation-defined.  Since we don't model
     const reg_t rnmi_trap_handler_address = 0;
     const bool nmie = !(state.mnstatus && !get_field(state.mnstatus->read(), MNSTATUS_NMIE));
+
+    reg_t s = state.mstatus->read();
+    if ( extension_enabled(EXT_SMDBLTRP)) {
+      if (get_field(s, MSTATUS_MDT) || !nmie) {
+        // Critical error - Double trap in M-mode or trap when nmie is 0
+        // RNMI is not modeled else double trap in M-mode would trap to
+        // RNMI handler instead of leading to a critical error
+        state.critical_error = 1;
+        return;
+      }
+      s = set_field(s, MSTATUS_MDT, 1);
+    }
+
     state.pc = !nmie ? rnmi_trap_handler_address : trap_handler_address;
     state.mepc->write(epc);
     state.mcause->write(supv_double_trap ? CAUSE_DOUBLE_TRAP : t.cause());
@@ -511,7 +526,6 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.mtval2->write(supv_double_trap ? t.cause() : t.get_tval2());
     state.mtinst->write(t.get_tinst());
 
-    reg_t s = state.mstatus->read();
     s = set_field(s, MSTATUS_MPIE, get_field(s, MSTATUS_MIE));
     s = set_field(s, MSTATUS_MPP, state.prv);
     s = set_field(s, MSTATUS_MIE, 0);
@@ -537,7 +551,7 @@ void processor_t::take_trigger_action(triggers::action_t action, reg_t breakpoin
 
   switch (action) {
     case triggers::ACTION_DEBUG_MODE:
-      enter_debug_mode(DCSR_CAUSE_HWBP);
+      enter_debug_mode(DCSR_CAUSE_HWBP, 0);
       break;
     case triggers::ACTION_DEBUG_EXCEPTION: {
       trap_breakpoint trap(virt, breakpoint_tval);
