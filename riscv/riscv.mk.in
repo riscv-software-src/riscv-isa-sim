@@ -16,6 +16,7 @@ riscv_install_pcs = yes
 riscv_install_prog_srcs = \
 
 riscv_install_hdrs = \
+	ma_soft_register.h \
 	abstract_device.h \
 	abstract_interrupt_controller.h \
 	cachesim.h \
@@ -83,6 +84,25 @@ riscv_gen_hdrs = \
 
 riscv_insn_ext_i = \
 	add \
+	v2ddef8   \
+	v2ddefu8  \
+	v2ddef16  \
+	v2ddefu16 \
+	v2ddef32  \
+	v2ddefu32 \
+	v2dld \
+	v2dst \
+	v2dadd_vv  \
+	v2dsub_vv  \
+	v2dcnv_vv  \
+	v2ddiv_vv  \
+	v2dmul_vv  \
+	v2dsmul_vv \
+	v2dadd_vs \
+	v2dsub_vs \
+	v2ddiv_vs \
+	v2dmul_vs \
+	v2dsync \
 	addi \
 	addiw \
 	addw \

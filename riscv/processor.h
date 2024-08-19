@@ -17,6 +17,7 @@
 #include "triggers.h"
 #include "../fesvr/memif.h"
 #include "vector_unit.h"
+#include "ma_soft_register.h"
 
 #define N_HPMCOUNTERS 29
 
@@ -426,6 +427,9 @@ public:
 
   vectorUnit_t VU;
   triggers::module_t TM;
+
+  // matrix accelerator
+  MASoftRegister softRegisters[32];
 };
 
 #endif
