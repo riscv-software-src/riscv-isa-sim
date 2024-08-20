@@ -265,7 +265,14 @@ bool mcontrol_common_t::legalize_timing(reg_t val, reg_t timing_mask, reg_t sele
     return TIMING_AFTER;
   if (get_field(val, execute_mask))
     return TIMING_BEFORE;
-  return get_field(val, timing_mask);
+  if (timing_mask) {
+    // Use the requested timing.
+    return get_field(val, timing_mask);
+  } else {
+    // For mcontrol6 you can't request a timing. Default to before since that's
+    // most useful to the user.
+    return TIMING_BEFORE;
+  }
 }
 
 reg_t mcontrol6_t::tdata1_read(const processor_t * const proc) const noexcept {
