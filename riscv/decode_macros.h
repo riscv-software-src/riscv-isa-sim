@@ -22,6 +22,7 @@
 #define RS2 READ_REG(insn.rs2())
 #define RS3 READ_REG(insn.rs3())
 #define WRITE_RD(value) WRITE_REG(insn.rd(), value)
+#define CHECK_RD() CHECK_REG(insn.rd())
 
 /* 0 : int
  * 1 : floating
@@ -30,9 +31,9 @@
  * 4 : csr
  */
 #define WRITE_REG(reg, value) ({ \
+    CHECK_REG(reg); \
     reg_t wdata = (value); /* value may have side effects */ \
     if (DECODE_MACRO_USAGE_LOGGED) STATE.log_reg_write[(reg) << 4] = {wdata, 0}; \
-    CHECK_REG(reg); \
     STATE.XPR.write(reg, wdata); \
   })
 #define WRITE_FREG(reg, value) ({ \
