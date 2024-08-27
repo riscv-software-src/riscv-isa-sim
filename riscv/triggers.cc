@@ -146,7 +146,7 @@ reg_t mcontrol_t::tdata1_read(const processor_t * const proc) const noexcept {
   auto xlen = proc->get_xlen();
   v = set_field(v, MCONTROL_TYPE(xlen), CSR_TDATA1_TYPE_MCONTROL);
   v = set_field(v, CSR_MCONTROL_DMODE(xlen), dmode);
-  v = set_field(v, MCONTROL_MASKMAX(xlen), 0);
+  v = set_field(v, MCONTROL_MASKMAX(xlen), maskmax);
   v = set_field(v, CSR_MCONTROL_HIT, hit);
   v = set_field(v, MCONTROL_SELECT, select);
   v = set_field(v, MCONTROL_TIMING, timing);

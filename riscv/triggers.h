@@ -243,6 +243,7 @@ public:
 
 private:
   bool hit = false;
+  const reg_t maskmax = 0;
 };
 
 class mcontrol6_t : public mcontrol_common_t {
