@@ -240,9 +240,9 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
   auto mb = strtoull(arg, &p, 0);
   if (*p == 0) {
     reg_t size = reg_t(mb) << 20;
-    if (size != (size_t)size)
-      throw std::runtime_error("Size would overflow size_t");
-    res.push_back(mem_cfg_t(reg_t(DRAM_BASE), size));
+    if ((size >> 20) != mb)
+      throw std::runtime_error("Memory size too large");
+    res.push_back(create_mem_region(DRAM_BASE, size));
     return res;
   }
 
