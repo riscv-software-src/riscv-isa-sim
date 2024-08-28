@@ -213,22 +213,7 @@ static mem_cfg_t create_mem_region(unsigned long long base, unsigned long long s
     exit(EXIT_FAILURE);
   }
 
-  const unsigned long long max_allowed_pa = (1ull << MAX_PADDR_BITS) - 1ull;
-  assert(max_allowed_pa <= std::numeric_limits<reg_t>::max());
-  mem_cfg_t mem_region(base, size);
-  if (mem_region.get_inclusive_end() > max_allowed_pa) {
-    int bits_required = 64 - clz(mem_region.get_inclusive_end());
-    fprintf(stderr, "Unsupported memory region "
-                    "{base = 0x%" PRIX64 ", size = 0x%" PRIX64 "} specified,"
-                    " which requires %d bits of physical address\n"
-                    "    The largest accessible physical address "
-                    "is 0x%llX (defined by MAX_PADDR_BITS constant, which is %d)\n",
-            mem_region.get_base(), mem_region.get_size(), bits_required,
-            max_allowed_pa, MAX_PADDR_BITS);
-    exit(EXIT_FAILURE);
-  }
-
-  return mem_region;
+  return mem_cfg_t(base, size);
 }
 
 static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
