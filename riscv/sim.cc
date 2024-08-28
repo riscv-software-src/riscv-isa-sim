@@ -195,7 +195,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       exit(1);
     }
 
-    procs.push_back(new processor_t(isa_str, DEFAULT_PRIV,
+    procs.push_back(new processor_t(isa_str, cfg->priv,
                                     cfg, this, hartid, halted,
                                     log_file.get(), sout_));
     harts[hartid] = procs[cpu_idx];
