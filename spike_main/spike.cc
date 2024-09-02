@@ -191,6 +191,31 @@ merge_overlapping_memory_regions(std::vector<mem_cfg_t> mems)
   return merged_mem;
 }
 
+static mem_cfg_t create_mem_region(unsigned long long base, unsigned long long size)
+{
+  // page-align base and size
+  auto base0 = base, size0 = size;
+  size += base0 % PGSIZE;
+  base -= base0 % PGSIZE;
+  if (size % PGSIZE != 0)
+    size += PGSIZE - size % PGSIZE;
+
+  if (size != size0) {
+    fprintf(stderr, "Warning: the memory at [0x%llX, 0x%llX] has been realigned\n"
+                    "to the %ld KiB page size: [0x%llX, 0x%llX]\n",
+            base0, base0 + size0 - 1, long(PGSIZE / 1024), base, base + size - 1);
+  }
+
+  if (!mem_cfg_t::check_if_supported(base, size)) {
+    fprintf(stderr, "Unsupported memory region "
+                    "{base = 0x%llX, size = 0x%llX} specified\n",
+            base, size);
+    exit(EXIT_FAILURE);
+  }
+
+  return mem_cfg_t(base, size);
+}
+
 static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
 {
   std::vector<mem_cfg_t> res;
@@ -200,9 +225,9 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
   auto mb = strtoull(arg, &p, 0);
   if (*p == 0) {
     reg_t size = reg_t(mb) << 20;
-    if (size != (size_t)size)
-      throw std::runtime_error("Size would overflow size_t");
-    res.push_back(mem_cfg_t(reg_t(DRAM_BASE), size));
+    if ((size >> 20) != mb)
+      throw std::runtime_error("Memory size too large");
+    res.push_back(create_mem_region(DRAM_BASE, size));
     return res;
   }
 
@@ -213,42 +238,7 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
       help();
     auto size = strtoull(p + 1, &p, 0);
 
-    // page-align base and size
-    auto base0 = base, size0 = size;
-    size += base0 % PGSIZE;
-    base -= base0 % PGSIZE;
-    if (size % PGSIZE != 0)
-      size += PGSIZE - size % PGSIZE;
-
-    if (size != size0) {
-      fprintf(stderr, "Warning: the memory at [0x%llX, 0x%llX] has been realigned\n"
-                      "to the %ld KiB page size: [0x%llX, 0x%llX]\n",
-              base0, base0 + size0 - 1, long(PGSIZE / 1024), base, base + size - 1);
-    }
-
-    if (!mem_cfg_t::check_if_supported(base, size)) {
-      fprintf(stderr, "Unsupported memory region "
-                      "{base = 0x%llX, size = 0x%llX} specified\n",
-              base, size);
-      exit(EXIT_FAILURE);
-    }
-
-    const unsigned long long max_allowed_pa = (1ull << MAX_PADDR_BITS) - 1ull;
-    assert(max_allowed_pa <= std::numeric_limits<reg_t>::max());
-    mem_cfg_t mem_region(base, size);
-    if (mem_region.get_inclusive_end() > max_allowed_pa) {
-      int bits_required = 64 - clz(mem_region.get_inclusive_end());
-      fprintf(stderr, "Unsupported memory region "
-                      "{base = 0x%" PRIX64 ", size = 0x%" PRIX64 "} specified,"
-                      " which requires %d bits of physical address\n"
-                      "    The largest accessible physical address "
-                      "is 0x%llX (defined by MAX_PADDR_BITS constant, which is %d)\n",
-              mem_region.get_base(), mem_region.get_size(), bits_required,
-              max_allowed_pa, MAX_PADDR_BITS);
-      exit(EXIT_FAILURE);
-    }
-
-    res.push_back(mem_region);
+    res.push_back(create_mem_region(base, size));
 
     if (!*p)
       break;
