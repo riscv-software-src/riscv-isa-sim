@@ -755,6 +755,11 @@ static void NOINLINE add_vector_vf_insn(disassembler_t* d, const char* name, uin
   d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &vs2, &frs1, opt, &vm}));
 }
 
+static void NOINLINE add_vector_multiplyadd_vf_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &frs1, &vs2, opt, &vm}));
+}
+
 static void NOINLINE add_vector_vi_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &vs2, &v_simm5, opt, &vm}));
@@ -1656,6 +1661,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     #define DEFINE_VECTOR_VX(code) add_vector_vx_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_MULTIPLYADD_VX(code) add_vector_multiplyadd_vx_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VF(code) add_vector_vf_insn(this, #code, match_##code, mask_##code)
+    #define DEFINE_VECTOR_MULTIPLYADD_VF(code) add_vector_multiplyadd_vf_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VI(code) add_vector_vi_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VIU(code) add_vector_viu_insn(this, #code, match_##code, mask_##code)
 
@@ -1876,6 +1882,10 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
       DEFINE_VECTOR_VV(name##_vv); \
       DEFINE_VECTOR_VF(name##_vf)
 
+    #define DISASM_OPIV_MULTIPLYADD_VF_INSN(name) \
+      DEFINE_VECTOR_MULTIPLYADD_VV(name##_vv); \
+      DEFINE_VECTOR_MULTIPLYADD_VF(name##_vf)
+
     #define DISASM_OPIV_WF_INSN(name) \
       DEFINE_VECTOR_VV(name##_wv); \
       DEFINE_VECTOR_VF(name##_wf)
@@ -1943,14 +1953,14 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
 
     DISASM_OPIV_VF_INSN(vfmul);
     DISASM_OPIV__F_INSN(vfrsub);
-    DISASM_OPIV_VF_INSN(vfmadd);
-    DISASM_OPIV_VF_INSN(vfnmadd);
-    DISASM_OPIV_VF_INSN(vfmsub);
-    DISASM_OPIV_VF_INSN(vfnmsub);
-    DISASM_OPIV_VF_INSN(vfmacc);
-    DISASM_OPIV_VF_INSN(vfnmacc);
-    DISASM_OPIV_VF_INSN(vfmsac);
-    DISASM_OPIV_VF_INSN(vfnmsac);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfmadd);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfnmadd);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfmsub);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfnmsub);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfmacc);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfnmacc);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfmsac);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfnmsac);
 
     //0b11_0000
     DISASM_OPIV_VF_INSN(vfwadd);
