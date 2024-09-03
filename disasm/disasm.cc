@@ -735,9 +735,19 @@ static void NOINLINE add_vector_vv_insn(disassembler_t* d, const char* name, uin
   d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &vs2, &vs1, opt, &vm}));
 }
 
+static void NOINLINE add_vector_multiplyadd_vv_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &vs1, &vs2, opt, &vm}));
+}
+
 static void NOINLINE add_vector_vx_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &vs2, &xrs1, opt, &vm}));
+}
+
+static void NOINLINE add_vector_multiplyadd_vx_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &xrs1, &vs2, opt, &vm}));
 }
 
 static void NOINLINE add_vector_vf_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
@@ -1642,7 +1652,9 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
 
     #define DEFINE_VECTOR_V(code) add_vector_v_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VV(code) add_vector_vv_insn(this, #code, match_##code, mask_##code)
+    #define DEFINE_VECTOR_MULTIPLYADD_VV(code) add_vector_multiplyadd_vv_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VX(code) add_vector_vx_insn(this, #code, match_##code, mask_##code)
+    #define DEFINE_VECTOR_MULTIPLYADD_VX(code) add_vector_multiplyadd_vx_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VF(code) add_vector_vf_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VI(code) add_vector_vi_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VIU(code) add_vector_viu_insn(this, #code, match_##code, mask_##code)
@@ -1658,6 +1670,10 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     #define DISASM_OPIV_VX__INSN(name, sign) \
       DEFINE_VECTOR_VV(name##_vv); \
       DEFINE_VECTOR_VX(name##_vx)
+
+    #define DISASM_OPIV_MULTIPLYADD_VX__INSN(name, sign) \
+      DEFINE_VECTOR_MULTIPLYADD_VV(name##_vv); \
+      DEFINE_VECTOR_MULTIPLYADD_VX(name##_vx)
 
     #define DISASM_OPIV__XI_INSN(name, sign) \
       DEFINE_VECTOR_VX(name##_vx); \
@@ -1821,10 +1837,10 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DISASM_OPIV_VX__INSN(vmul,      1);
     DISASM_OPIV_VX__INSN(vmulhsu,   0);
     DISASM_OPIV_VX__INSN(vmulh,     1);
-    DISASM_OPIV_VX__INSN(vmadd,     1);
-    DISASM_OPIV_VX__INSN(vnmsub,    1);
-    DISASM_OPIV_VX__INSN(vmacc,     1);
-    DISASM_OPIV_VX__INSN(vnmsac,    1);
+    DISASM_OPIV_MULTIPLYADD_VX__INSN(vmadd,     1);
+    DISASM_OPIV_MULTIPLYADD_VX__INSN(vnmsub,    1);
+    DISASM_OPIV_MULTIPLYADD_VX__INSN(vmacc,     1);
+    DISASM_OPIV_MULTIPLYADD_VX__INSN(vnmsac,    1);
 
     //0b11_0000
     DISASM_OPIV_VX__INSN(vwaddu,    0);
