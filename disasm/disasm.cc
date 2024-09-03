@@ -1970,10 +1970,10 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DISASM_OPIV_WF_INSN(vfwadd);
     DISASM_OPIV_WF_INSN(vfwsub);
     DISASM_OPIV_VF_INSN(vfwmul);
-    DISASM_OPIV_VF_INSN(vfwmacc);
-    DISASM_OPIV_VF_INSN(vfwnmacc);
-    DISASM_OPIV_VF_INSN(vfwmsac);
-    DISASM_OPIV_VF_INSN(vfwnmsac);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfwmacc);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfwnmacc);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfwmsac);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfwnmsac);
 
     #undef DISASM_OPIV_VF_INSN
     #undef DISASM_OPIV__F_INSN
