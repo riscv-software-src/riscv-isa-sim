@@ -117,8 +117,9 @@ bool trigger_t::textra_match(processor_t * const proc) const noexcept
   return true;
 }
 
-bool trigger_t::allow_action(const state_t * const state) const
+bool trigger_t::allow_action(processor_t * const proc) const
 {
+  const state_t *state = proc->get_state();
   if (get_action() == ACTION_DEBUG_EXCEPTION) {
     const bool mstatus_mie = state->mstatus->read() & MSTATUS_MIE;
     const bool sstatus_sie = state->sstatus->read() & MSTATUS_SIE;
@@ -242,7 +243,7 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
     value &= 0xffffffff;
   }
 
-  if (simple_match(xlen, value) && allow_action(proc->get_state())) {
+  if (simple_match(xlen, value) && allow_action(proc)) {
     /* This is OK because this function is only called if the trigger was not
      * inhibited by the previous trigger in the chain. */
     set_hit(timing ? HIT_IMMEDIATELY_AFTER : HIT_BEFORE);
@@ -331,7 +332,7 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
 
 std::optional<match_result_t> icount_t::detect_icount_fire(processor_t * const proc) noexcept
 {
-  if (!common_match(proc) || !allow_action(proc->get_state()))
+  if (!common_match(proc) || !allow_action(proc))
     return std::nullopt;
 
   std::optional<match_result_t> ret = std::nullopt;
@@ -346,7 +347,7 @@ std::optional<match_result_t> icount_t::detect_icount_fire(processor_t * const p
 
 void icount_t::detect_icount_decrement(processor_t * const proc) noexcept
 {
-  if (!common_match(proc) || !allow_action(proc->get_state()))
+  if (!common_match(proc) || !allow_action(proc))
     return;
 
   if (count >= 1) {
@@ -438,7 +439,7 @@ std::optional<match_result_t> trap_common_t::detect_trap_match(processor_t * con
   bool interrupt = (t.cause() & ((reg_t)1 << (xlen - 1))) != 0;
   reg_t bit = t.cause() & ~((reg_t)1 << (xlen - 1));
   assert(bit < xlen);
-  if (simple_match(interrupt, bit) && allow_action(proc->get_state())) {
+  if (simple_match(interrupt, bit) && allow_action(proc)) {
     hit = true;
     return match_result_t(TIMING_AFTER, action);
   }
