@@ -55,11 +55,18 @@ void trigger_t::tdata3_write(processor_t * const proc, const reg_t val) noexcept
   sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) <= SSELECT_MAXVAL) ? get_field(val, CSR_TEXTRA_SSELECT(xlen)) : SSELECT_IGNORE);
 }
 
+static reg_t tcontrol_value(const state_t * state) {
+  if (state->tcontrol)
+    return state->tcontrol->read();
+  else
+    return 0;
+}
+
 bool trigger_t::common_match(processor_t * const proc, bool use_prev_prv) const noexcept {
   auto state = proc->get_state();
   auto prv = use_prev_prv ? state->prev_prv : state->prv;
   auto v = use_prev_prv ? state->prev_v : state->v;
-  auto m_enabled = get_action() != 0 || (state->tcontrol->read() & CSR_TCONTROL_MTE);
+  auto m_enabled = get_action() != 0 || (tcontrol_value(state) & CSR_TCONTROL_MTE);
   return (prv < PRV_M || m_enabled) && mode_match(prv, v) && textra_match(proc);
 }
 
