@@ -74,19 +74,32 @@ bool trigger_t::common_match(processor_t * const proc, bool use_prev_prv) const 
     return false;
 
   if (get_action() == ACTION_DEBUG_EXCEPTION) {
-    const bool mstatus_mie = state->mstatus->read() & MSTATUS_MIE;
-    if (prv == PRV_M && !mstatus_mie)
-      return false;
+    if (proc->extension_enabled('S')) {
+      // The hardware prevents triggers with action=0 from matching or firing
+      // while in M-mode and while MIE in mstatus is 0. If medeleg [3]=1 then it
+      // prevents triggers with action=0 from matching or firing while in S-mode
+      // and while SIE in sstatus is 0. If medeleg [3]=1 and hedeleg [3]=1 then
+      // it prevents triggers with action=0 from matching or firing while in
+      // VS-mode and while SIE in vstatus is 0.
 
-    const bool sstatus_sie = state->sstatus->read() & MSTATUS_SIE;
-    const bool medeleg_breakpoint = (state->medeleg->read() >> CAUSE_BREAKPOINT) & 1;
-    if (prv == PRV_S && !v && medeleg_breakpoint && !sstatus_sie)
-      return false;
+      const bool mstatus_mie = state->mstatus->read() & MSTATUS_MIE;
+      if (prv == PRV_M && !mstatus_mie)
+        return false;
 
-    const bool vsstatus_sie = state->vsstatus->read() & MSTATUS_SIE;
-    const bool hedeleg_breakpoint = (state->hedeleg->read() >> CAUSE_BREAKPOINT) & 1;
-    if (prv == PRV_S && v && medeleg_breakpoint && hedeleg_breakpoint && !vsstatus_sie)
-      return false;
+      const bool sstatus_sie = state->sstatus->read() & MSTATUS_SIE;
+      const bool medeleg_breakpoint = (state->medeleg->read() >> CAUSE_BREAKPOINT) & 1;
+      if (prv == PRV_S && !v && medeleg_breakpoint && !sstatus_sie)
+        return false;
+
+      const bool vsstatus_sie = state->vsstatus->read() & MSTATUS_SIE;
+      const bool hedeleg_breakpoint = (state->hedeleg->read() >> CAUSE_BREAKPOINT) & 1;
+      if (prv == PRV_S && v && medeleg_breakpoint && hedeleg_breakpoint && !vsstatus_sie)
+        return false;
+    } else {
+      // mte and mpte in tcontrol is implemented. medeleg [3] is hard-wired to 0.
+      if (prv == PRV_M && !(tcontrol_value(state) & CSR_TCONTROL_MTE))
+        return false;
+    }
   }
 
   return true;
