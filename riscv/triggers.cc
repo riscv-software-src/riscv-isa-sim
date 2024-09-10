@@ -55,12 +55,54 @@ void trigger_t::tdata3_write(processor_t * const proc, const reg_t val) noexcept
   sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) <= SSELECT_MAXVAL) ? get_field(val, CSR_TEXTRA_SSELECT(xlen)) : SSELECT_IGNORE);
 }
 
+static reg_t tcontrol_value(const state_t * state) {
+  if (state->tcontrol)
+    return state->tcontrol->read();
+  else
+    return 0;
+}
+
 bool trigger_t::common_match(processor_t * const proc, bool use_prev_prv) const noexcept {
   auto state = proc->get_state();
   auto prv = use_prev_prv ? state->prev_prv : state->prv;
   auto v = use_prev_prv ? state->prev_v : state->v;
-  auto m_enabled = get_action() != 0 || (state->tcontrol->read() & CSR_TCONTROL_MTE);
-  return (prv < PRV_M || m_enabled) && mode_match(prv, v) && textra_match(proc);
+
+  if (!mode_match(prv, v))
+    return false;
+
+  if (!textra_match(proc))
+    return false;
+
+  if (get_action() == ACTION_DEBUG_EXCEPTION) {
+    if (proc->extension_enabled('S')) {
+      // The hardware prevents triggers with action=0 from matching or firing
+      // while in M-mode and while MIE in mstatus is 0. If medeleg [3]=1 then it
+      // prevents triggers with action=0 from matching or firing while in S-mode
+      // and while SIE in sstatus is 0. If medeleg [3]=1 and hedeleg [3]=1 then
+      // it prevents triggers with action=0 from matching or firing while in
+      // VS-mode and while SIE in vstatus is 0.
+
+      const bool mstatus_mie = state->mstatus->read() & MSTATUS_MIE;
+      if (prv == PRV_M && !mstatus_mie)
+        return false;
+
+      const bool sstatus_sie = state->sstatus->read() & MSTATUS_SIE;
+      const bool medeleg_breakpoint = (state->medeleg->read() >> CAUSE_BREAKPOINT) & 1;
+      if (prv == PRV_S && !v && medeleg_breakpoint && !sstatus_sie)
+        return false;
+
+      const bool vsstatus_sie = state->vsstatus->read() & MSTATUS_SIE;
+      const bool hedeleg_breakpoint = (state->hedeleg->read() >> CAUSE_BREAKPOINT) & 1;
+      if (prv == PRV_S && v && medeleg_breakpoint && hedeleg_breakpoint && !vsstatus_sie)
+        return false;
+    } else {
+      // mte and mpte in tcontrol is implemented. medeleg [3] is hard-wired to 0.
+      if (prv == PRV_M && !(tcontrol_value(state) & CSR_TCONTROL_MTE))
+        return false;
+    }
+  }
+
+  return true;
 }
 
 bool trigger_t::mode_match(reg_t prv, bool v) const noexcept
@@ -107,21 +149,6 @@ bool trigger_t::textra_match(processor_t * const proc) const noexcept
       return false;
   }
 
-  return true;
-}
-
-bool trigger_t::allow_action(const state_t * const state) const
-{
-  if (get_action() == ACTION_DEBUG_EXCEPTION) {
-    const bool mstatus_mie = state->mstatus->read() & MSTATUS_MIE;
-    const bool sstatus_sie = state->sstatus->read() & MSTATUS_SIE;
-    const bool vsstatus_sie = state->vsstatus->read() & MSTATUS_SIE;
-    const bool medeleg_breakpoint = (state->medeleg->read() >> CAUSE_BREAKPOINT) & 1;
-    const bool hedeleg_breakpoint = (state->hedeleg->read() >> CAUSE_BREAKPOINT) & 1;
-    return (state->prv != PRV_M || mstatus_mie) &&
-           (state->prv != PRV_S || state->v || !medeleg_breakpoint || sstatus_sie) &&
-           (state->prv != PRV_S || !state->v || !medeleg_breakpoint || !hedeleg_breakpoint || vsstatus_sie);
-  }
   return true;
 }
 
@@ -235,7 +262,7 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
     value &= 0xffffffff;
   }
 
-  if (simple_match(xlen, value) && allow_action(proc->get_state())) {
+  if (simple_match(xlen, value)) {
     /* This is OK because this function is only called if the trigger was not
      * inhibited by the previous trigger in the chain. */
     set_hit(timing ? HIT_IMMEDIATELY_AFTER : HIT_BEFORE);
@@ -324,7 +351,7 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
 
 std::optional<match_result_t> icount_t::detect_icount_fire(processor_t * const proc) noexcept
 {
-  if (!common_match(proc) || !allow_action(proc->get_state()))
+  if (!common_match(proc))
     return std::nullopt;
 
   std::optional<match_result_t> ret = std::nullopt;
@@ -339,7 +366,7 @@ std::optional<match_result_t> icount_t::detect_icount_fire(processor_t * const p
 
 void icount_t::detect_icount_decrement(processor_t * const proc) noexcept
 {
-  if (!common_match(proc) || !allow_action(proc->get_state()))
+  if (!common_match(proc))
     return;
 
   if (count >= 1) {
@@ -431,7 +458,7 @@ std::optional<match_result_t> trap_common_t::detect_trap_match(processor_t * con
   bool interrupt = (t.cause() & ((reg_t)1 << (xlen - 1))) != 0;
   reg_t bit = t.cause() & ~((reg_t)1 << (xlen - 1));
   assert(bit < xlen);
-  if (simple_match(interrupt, bit) && allow_action(proc->get_state())) {
+  if (simple_match(interrupt, bit)) {
     hit = true;
     return match_result_t(TIMING_AFTER, action);
   }

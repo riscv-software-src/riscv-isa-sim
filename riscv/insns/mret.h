@@ -20,5 +20,5 @@ if (prev_virt && prev_prv == PRV_U)
   STATE.vsstatus->write(STATE.vsstatus->read() & ~SSTATUS_SDT);
 STATE.mstatus->write(s);
 if (STATE.mstatush) STATE.mstatush->write(s >> 32); // log mstatush change
-STATE.tcontrol->write((STATE.tcontrol->read() & CSR_TCONTROL_MPTE) ? (CSR_TCONTROL_MPTE | CSR_TCONTROL_MTE) : 0);
+if (STATE.tcontrol) STATE.tcontrol->write((STATE.tcontrol->read() & CSR_TCONTROL_MPTE) ? (CSR_TCONTROL_MPTE | CSR_TCONTROL_MTE) : 0);
 p->set_privilege(prev_prv, prev_virt);
