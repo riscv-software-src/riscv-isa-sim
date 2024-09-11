@@ -86,7 +86,6 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
       add_csr(which_mevent, mevent[i]);
     }
   }
-  add_csr(CSR_MCOUNTINHIBIT, std::make_shared<const_csr_t>(proc, CSR_MCOUNTINHIBIT, 0));
   add_const_ext_csr(EXT_SSCOFPMF, CSR_SCOUNTOVF, std::make_shared<scountovf_csr_t>(proc, CSR_SCOUNTOVF));
   add_csr(CSR_MIE, mie = std::make_shared<mie_csr_t>(proc, CSR_MIE));
   add_csr(CSR_MIP, mip = std::make_shared<mip_csr_t>(proc, CSR_MIP));
@@ -134,6 +133,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   add_supervisor_csr(CSR_MIDELEG, mideleg = std::make_shared<mideleg_csr_t>(proc, CSR_MIDELEG));
   const reg_t counteren_mask = (proc->extension_enabled_const(EXT_ZICNTR) ? 0x7UL : 0x0) | (proc->extension_enabled_const(EXT_ZIHPM) ? 0xfffffff8ULL : 0x0);
   add_user_csr(CSR_MCOUNTEREN, mcounteren = std::make_shared<masked_csr_t>(proc, CSR_MCOUNTEREN, counteren_mask, 0));
+  add_csr(CSR_MCOUNTINHIBIT, mcountinhibit = std::make_shared<masked_csr_t>(proc, CSR_MCOUNTINHIBIT, counteren_mask & (~MCOUNTEREN_TIME), 0));
   add_supervisor_csr(CSR_SCOUNTEREN, scounteren = std::make_shared<masked_csr_t>(proc, CSR_SCOUNTEREN, counteren_mask, 0));
   nonvirtual_sepc = std::make_shared<epc_csr_t>(proc, CSR_SEPC);
   add_hypervisor_csr(CSR_VSEPC, vsepc = std::make_shared<epc_csr_t>(proc, CSR_VSEPC));

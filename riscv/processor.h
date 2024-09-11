@@ -99,6 +99,7 @@ struct state_t
   csr_t_p medeleg;
   csr_t_p mideleg;
   csr_t_p mcounteren;
+  csr_t_p mcountinhibit;
   csr_t_p mevent[N_HPMCOUNTERS];
   csr_t_p mnstatus;
   csr_t_p mnepc;
