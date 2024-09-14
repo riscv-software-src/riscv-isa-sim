@@ -14,6 +14,7 @@
 
 #include "disasm.h"
 #include "extension.h"
+#include "platform.h"
 
 using namespace std;
 
