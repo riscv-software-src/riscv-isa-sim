@@ -8,18 +8,6 @@ AC_CHECK_LIB([boost_system], [main], [], [])
 
 AC_CHECK_LIB([boost_regex], [main], [], [])
 
-AC_ARG_WITH(isa,
-	[AS_HELP_STRING([--with-isa=RV64IMAFDC_zicntr_zihpm],
-		[Sets the default RISC-V ISA])],
-  AC_DEFINE_UNQUOTED([DEFAULT_ISA], "$withval", [Default value for --isa switch]),
-  AC_DEFINE_UNQUOTED([DEFAULT_ISA], "RV64IMAFDC_zicntr_zihpm", [Default value for --isa switch]))
-
-AC_ARG_WITH(priv,
-	[AS_HELP_STRING([--with-priv=MSU],
-		[Sets the default RISC-V privilege modes supported])],
-  AC_DEFINE_UNQUOTED([DEFAULT_PRIV], "$withval", [Default value for --priv switch]),
-  AC_DEFINE_UNQUOTED([DEFAULT_PRIV], "MSU", [Default value for --priv switch]))
-
 AC_ARG_WITH(target,
 	[AS_HELP_STRING([--with-target=riscv64-unknown-elf],
 		[Sets the default target config])],

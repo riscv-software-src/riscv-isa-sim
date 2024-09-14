@@ -6,9 +6,9 @@
 // enclosed hexadecimal number, interpreted as a RISC-V
 // instruction.
 
-#include "config.h"
 #include "disasm.h"
 #include "extension.h"
+#include "platform.h"
 #include <iostream>
 #include <string>
 #include <cstdint>

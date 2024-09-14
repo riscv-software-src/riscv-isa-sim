@@ -6,12 +6,6 @@
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef CUSTOMEXT_ENABLED
 
-/* Default value for --isa switch */
-#undef DEFAULT_ISA
-
-/* Default value for --priv switch */
-#undef DEFAULT_PRIV
-
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef DISASM_ENABLED
 

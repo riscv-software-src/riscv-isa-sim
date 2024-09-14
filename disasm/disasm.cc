@@ -2,6 +2,7 @@
 
 #include "disasm.h"
 #include "decode_macros.h"
+#include "platform.h"
 #include <cassert>
 #include <string>
 #include <vector>

@@ -5,7 +5,6 @@
 // in its inputs, then output the RISC-V instruction with the disassembly
 // enclosed hexadecimal number.
 
-#include "config.h"
 #include <iostream>
 #include <string>
 #include <cstdint>
@@ -14,6 +13,7 @@
 
 #include "disasm.h"
 #include "extension.h"
+#include "platform.h"
 
 using namespace std;
 
