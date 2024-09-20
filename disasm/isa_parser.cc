@@ -327,7 +327,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str.substr(0, 3) == "zvl") {
       reg_t new_vlen;
       try {
-        new_vlen = std::stol(ext_str.substr(3, ext_str.size() - 4));
+        new_vlen = std::stol(ext_str.substr(3, ext_str.size() - 3));
       } catch (std::logic_error& e) {
         new_vlen = 0;
       }
