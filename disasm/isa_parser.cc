@@ -331,7 +331,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       } catch (std::logic_error& e) {
         new_vlen = 0;
       }
-      if ((new_vlen & (new_vlen - 1)) != 0 || new_vlen < 32)
+      if ((new_vlen & (new_vlen - 1)) != 0 || new_vlen < 32 || ext_str.back() != 'b')
         bad_isa_string(str, ("Invalid Zvl string: " + ext_str).c_str());
       vlen = std::max(vlen, new_vlen);
     } else if (ext_str.substr(0, 3) == "zve") {
