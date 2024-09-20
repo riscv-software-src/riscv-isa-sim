@@ -9,6 +9,26 @@ static std::string strtolower(const char* str)
   return res;
 }
 
+static unsigned long safe_stoul(const std::string& s)
+{
+  int old_errno = errno;
+  errno = 0;
+
+  char* endp;
+  unsigned long ret = strtoul(s.c_str(), &endp, 10);
+
+  int new_errno = errno;
+  errno = old_errno;
+
+  if (endp == s.c_str() || *endp)
+    throw std::invalid_argument("stoul");
+
+  if (new_errno)
+    throw std::out_of_range("stoul");
+
+  return ret;
+}
+
 static void bad_option_string(const char *option, const char *value,
                               const char *msg)
 {
@@ -327,7 +347,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str.substr(0, 3) == "zvl") {
       reg_t new_vlen;
       try {
-        new_vlen = std::stol(ext_str.substr(3, ext_str.size() - 4));
+        new_vlen = safe_stoul(ext_str.substr(3, ext_str.size() - 4));
       } catch (std::logic_error& e) {
         new_vlen = 0;
       }
@@ -337,7 +357,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str.substr(0, 3) == "zve") {
       reg_t new_elen;
       try {
-        new_elen = std::stol(ext_str.substr(3, ext_str.size() - 4));
+        new_elen = safe_stoul(ext_str.substr(3, ext_str.size() - 4));
       } catch (std::logic_error& e) {
         new_elen = 0;
       }
