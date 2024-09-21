@@ -6,6 +6,9 @@ require_zvkg;
 require(P.VU.vsew == 32);
 require_egw_fits(128);
 
+require_vd_align_lmul;
+require_vs2_align_lmul;
+
 VI_ZVK_VD_VS1_VS2_EGU32x4_NOVM_LOOP(
   {},
   {

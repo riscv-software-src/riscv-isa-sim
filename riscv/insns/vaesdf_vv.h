@@ -5,6 +5,9 @@
 
 require_vaes_vv_constraints;
 
+require_vd_align_lmul;
+require_vs2_align_lmul;
+
 VI_ZVK_VD_VS2_NOOPERANDS_PRELOOP_EGU32x4_NOVM_LOOP(
   {},
   {},  // No PRELOOP.

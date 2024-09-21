@@ -5,6 +5,9 @@
 
 require_vaeskf_vi_constraints;
 
+require_vd_align_lmul;
+require_vs2_align_lmul;
+
 // There is one round constant for each round number
 // between 1 and 10. We index using 'round# -1'.
 static constexpr uint8_t kRoundConstants[10] = {

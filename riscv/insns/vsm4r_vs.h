@@ -6,6 +6,10 @@ require_vsm4_constraints;
 // No overlap of vd and vs2.
 require(insn.rd() != insn.rs2());
 
+require_vd_align_lmul;
+// FIXME: it is unclear what vs2 should be aligned to, spec does not mandate clear
+// alignment but it could be said that vs2 should be aligned to EGW / VLEN
+
 VI_ZVK_VD_VS2_NOOPERANDS_PRELOOP_EGU32x4_NOVM_LOOP(
   {},
   // This statement will be executed before the first execution
