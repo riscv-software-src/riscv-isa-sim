@@ -82,6 +82,15 @@
 // Ensures that the vector instruction is not using a mask.
 #define require_no_vmask  require(insn.v_vm() == 1)
 
+#define VI_CHECK_SSS_NO_MASK_CHECK(is_vs1) \
+  if (P.VU.vflmul > 1) { \
+    require_align(insn.rd(), P.VU.vflmul); \
+    require_align(insn.rs2(), P.VU.vflmul); \
+    if (is_vs1) { \
+      require_align(insn.rs1(), P.VU.vflmul); \
+    } \
+  }
+
 // Ensures that an element group can fit in a register group. That is,
 //    (LMUL * VLEN) <= EGW
 #define require_egw_fits(EGW)  require((EGW) <= (P.VU.VLEN * P.VU.vflmul))
@@ -278,6 +287,7 @@
   do { \
     require_element_groups_32x4; \
     require_no_vmask; \
+    VI_CHECK_SSS_NO_MASK_CHECK(true); \
     const reg_t vd_num = insn.rd(); \
     const reg_t vs1_num = insn.rs1(); \
     const reg_t vs2_num = insn.rs2(); \
@@ -333,6 +343,7 @@
   do { \
     require_element_groups_32x8;; \
     require_no_vmask; \
+    VI_CHECK_SSS_NO_MASK_CHECK(true); \
     const reg_t vd_num = insn.rd(); \
     const reg_t vs1_num = insn.rs1(); \
     const reg_t vs2_num = insn.rs2(); \
@@ -399,6 +410,7 @@
   do { \
     require_element_groups_32x4; \
     require_no_vmask; \
+    VI_CHECK_SSS_NO_MASK_CHECK(true); \
     const reg_t vd_num = insn.rd(); \
     const reg_t vs1_num = insn.rs1(); \
     const reg_t vs2_num = insn.rs2(); \
@@ -468,6 +480,7 @@
   do { \
     require_element_groups_32x4; \
     require_no_vmask; \
+    VI_CHECK_SSS_NO_MASK_CHECK(false); \
     const reg_t vd_num = insn.rd(); \
     const reg_t vs2_num = insn.rs2(); \
     const reg_t vstart_eg = P.VU.vstart->read() / 4; \
@@ -517,6 +530,7 @@
   do { \
     require_element_groups_32x4; \
     require_no_vmask; \
+    VI_CHECK_SSS_NO_MASK_CHECK(false); \
     const reg_t vd_num = insn.rd(); \
     const reg_t vs2_num = insn.rs2(); \
     const reg_t vstart_eg = P.VU.vstart->read() / 4; \
@@ -569,6 +583,7 @@
   do { \
     require_element_groups_32x4; \
     require_no_vmask; \
+    VI_CHECK_SSS_NO_MASK_CHECK(false); \
     const reg_t vd_num = insn.rd(); \
     const reg_t vs2_num = insn.rs2(); \
     const reg_t zimm5 = insn.v_zimm5(); \
@@ -625,6 +640,7 @@
   do { \
     require_element_groups_32x8; \
     require_no_vmask; \
+    VI_CHECK_SSS_NO_MASK_CHECK(false); \
     const reg_t vd_num = insn.rd(); \
     const reg_t vs2_num = insn.rs2(); \
     const reg_t zimm5 = insn.v_zimm5(); \
@@ -682,6 +698,7 @@
   do { \
     require_element_groups_64x4; \
     require_no_vmask; \
+    VI_CHECK_SSS_NO_MASK_CHECK(false); \
     const reg_t vd_num = insn.rd(); \
     const reg_t vs1_num = insn.rs1(); \
     const reg_t vs2_num = insn.rs2(); \
