@@ -2,6 +2,8 @@
 
 #include "config.h"
 #include "processor.h"
+#include "trace_ingress.h"
+#include "trace_encoder_n.h"
 #include "mmu.h"
 #include "disasm.h"
 #include "decode_macros.h"
@@ -173,6 +175,13 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
 
   try {
     npc = fetch.func(p, fetch.insn, pc);
+
+    if (p->get_log_commits_enabled()) {
+      hart_to_encoder_ingress_t packet;
+      hart_to_encoder_ingress_init(p, &packet, &fetch.insn, npc);
+      p->get_trace_encoder()->trace_encoder_push_commit(&packet);
+    }
+
     if (npc != PC_SERIALIZE_BEFORE) {
       if (p->get_log_commits_enabled()) {
         commit_log_print_insn(p, pc, fetch.insn);

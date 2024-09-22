@@ -17,6 +17,7 @@
 #include "triggers.h"
 #include "../fesvr/memif.h"
 #include "vector_unit.h"
+#include "trace_encoder_n.h"
 
 #define FIRST_HPMCOUNTER 3
 #define N_HPMCOUNTERS 29
@@ -28,6 +29,7 @@ class simif_t;
 class trap_t;
 class extension_t;
 class disassembler_t;
+class trace_encoder_n;
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
 
@@ -367,6 +369,8 @@ public:
 
   void check_if_lpad_required();
 
+  trace_encoder_n* get_trace_encoder() { return trace_encoder; }
+
 private:
   const isa_parser_t isa;
   const cfg_t * const cfg;
@@ -381,6 +385,7 @@ private:
   bool histogram_enabled;
   bool log_commits_enabled;
   FILE *log_file;
+  trace_encoder_n *trace_encoder;
   std::ostream sout_; // needed for socket command interface -s, also used for -d and -l, but not for --log
   bool halt_on_reset;
   bool in_wfi;

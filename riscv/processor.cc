@@ -63,6 +63,7 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
 
   register_base_instructions();
   mmu = new mmu_t(sim, cfg->endianness, this);
+  trace_encoder = new trace_encoder_n();
 
   disassembler = new disassembler_t(&isa);
   for (auto e : isa.get_extensions())
