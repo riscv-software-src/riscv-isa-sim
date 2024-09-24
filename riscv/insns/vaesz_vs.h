@@ -4,10 +4,6 @@
 #include "zvkned_ext_macros.h"
 
 require_vaes_vs_constraints;
-require_vd_align_lmul;
-// it is unclear what vs2 should be aligned to for vector-scalar-elt-group,
-// vector crypto specification does not mandate clear alignment
-// but it could be argued that vs2 should be aligned to EGW / VLEN
 
 VI_ZVK_VD_VS2_NOOPERANDS_PRELOOP_EGU32x4_NOVM_LOOP(
   {},

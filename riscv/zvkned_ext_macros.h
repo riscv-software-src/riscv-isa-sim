@@ -10,21 +10,30 @@
 //  - Zvkned is enabled
 //  - EGW (128) <= LMUL * VLEN
 //  - vd and vs2 cannot overlap
+//  - vd is LMUL aligned
+//  - vs2 is ceil(EGW / VLEN) aligned
 //
 // The constraint that vstart and vl are both EGS (4) aligned
 // is checked in the VI_ZVK_..._EGU32x4_..._LOOP macros.
+// it is unclear what vs2 should be aligned to for vector-scalar-elt-group,
+// vector crypto specification does not mandate clear alignment
+// but it could be argued that vs2 should be aligned to EGW / VLEN
 #define require_vaes_vs_constraints \
   do { \
     require_zvkned; \
     require(P.VU.vsew == 32); \
     require_egw_fits(128); \
     require(insn.rd() != insn.rs2()); \
+    require_vd_align_lmul; \
+    require_vs2_align_eglmul(128); \
   } while (false)
 
 // vaes*.vv instruction constraints. Those are the same as the .vs ones,
 // except for the overlap constraint that is not present for .vv variants.
 //  - Zvkned is enabled
 //  - EGW (128) <= LMUL * VLEN
+//  - vd is LMUL aligned
+//  - vs2 is ceil(EGW / VLEN) aligned
 //
 // The constraint that vstart and vl are both EGS (4) aligned
 // is checked in the VI_ZVK_..._EGU32x4_..._LOOP macros.
@@ -33,6 +42,8 @@
     require_zvkned; \
     require(P.VU.vsew == 32); \
     require_egw_fits(128); \
+    require_vd_align_lmul; \
+    require_vs2_align_lmul; \
   } while (false)
 
 // vaeskf*.vi instruction constraints. Those are the same as the .vv ones.
@@ -41,6 +52,8 @@
     require_zvkned; \
     require(P.VU.vsew == 32); \
     require_egw_fits(128); \
+    require_vd_align_lmul; \
+    require_vs2_align_lmul; \
   } while (false)
 
 #define VAES_XTIME(A) (((A) << 1) ^ (((A) & 0x80) ? 0x1b : 0))

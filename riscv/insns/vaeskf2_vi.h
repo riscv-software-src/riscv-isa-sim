@@ -4,8 +4,6 @@
 #include "zvkned_ext_macros.h"
 
 require_vaeskf_vi_constraints;
-require_vd_align_lmul;
-require_vs2_align_lmul;
 
 // Round Constants
 //
