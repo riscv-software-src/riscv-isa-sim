@@ -30,7 +30,7 @@
 //  - Zvkned is enabled
 //  - EGW (128) <= LMUL * VLEN
 //  - vd is LMUL aligned
-//  - vs2 is ceil(EGW / VLEN) aligned
+//  - vs2 is LMUL aligned
 //
 // The constraint that vstart and vl are both EGS (4) aligned
 // is checked in the VI_ZVK_..._EGU32x4_..._LOOP macros.
