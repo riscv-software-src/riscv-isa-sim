@@ -8,6 +8,7 @@ require_egw_fits(128);
 
 require_vd_align_lmul;
 require_vs2_align_lmul;
+require_vs1_align_lmul;
 
 VI_ZVK_VD_VS1_VS2_EGU32x4_NOVM_LOOP(
   {},
