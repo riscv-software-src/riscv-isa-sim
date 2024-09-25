@@ -15,9 +15,6 @@
 //
 // The constraint that vstart and vl are both EGS (4) aligned
 // is checked in the VI_ZVK_..._EGU32x4_..._LOOP macros.
-// it is unclear what vs2 should be aligned to for vector-scalar-elt-group,
-// vector crypto specification does not mandate clear alignment
-// but it could be argued that vs2 should be aligned to EGW / VLEN
 #define require_vaes_vs_constraints \
   do { \
     require_zvkned; \
