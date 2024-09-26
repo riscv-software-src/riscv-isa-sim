@@ -329,3 +329,5 @@ $4 = 0
 (gdb) print text
 ...
 ```
+Note: 100% cpu utilization is expected when spike is started in remote bitbang mode (-rbb-port=). The core runs a loop in the Debug ROM waiting for debugger commands even if started with the -H option ("Start halted, allowing a debugger to connect"). 
+
