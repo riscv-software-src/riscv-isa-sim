@@ -95,7 +95,7 @@
 // Ensures that a register index is aligned to EMUL
 // evaluated as EGW / VLEN.
 // The check is only enabled if this value is greater
-// than one (no index alignment check required for fraction EMUL)
+// than one (no index alignment check required for fractional EMUL)
 #define require_vreg_align_eglmul(EGW, VREG_NUM) \
   do { \
   float vfeglmul = EGW / P.VU.VLEN; \
