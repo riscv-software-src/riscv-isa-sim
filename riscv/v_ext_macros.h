@@ -1331,6 +1331,13 @@ reg_t index[P.VU.vlmax]; \
         early_stop = true; \
         P.VU.vl->write_raw(i); \
         break; \
+      } catch (triggers::matched_t& t) { \
+        if (i == 0) \
+          throw; /* Only take exception on zeroth element */ \
+        /* Reduce VL if an exception occurs on a later element */ \
+        early_stop = true; \
+        P.VU.vl->write_raw(i); \
+        break; \
       } \
       p->VU.elt<elt_width##_t>(rd_num + fn * emul, vreg_inx, true) = val; \
     } \
