@@ -553,8 +553,8 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
       // not shadow stack access xwr=110 or xwr=010 page cause page fault
       // shadow stack access with PTE_X moved to following check
       break;
-    } else if (ss_page && (type == STORE && !ss_access)) {
-      // not shadow stack store and  xwr = 010 cause access-fault
+    } else if (ss_page && ((type == STORE && !ss_access) || access_info.flags.clean_inval)) {
+      // non-shadow-stack store or CBO with xwr = 010 causes access-fault
       throw trap_store_access_fault(virt, addr, 0, 0);
     } else if (ss_page && type == FETCH) {
       // fetch from shadow stack pages cause instruction access-fault
