@@ -42,14 +42,28 @@ void trace_encoder_n::trace_encoder_push_commit(hart_to_encoder_ingress_t* packe
     } 
 }
 
+void print_packet(trace_encoder_n_packet_t* packet) {
+    printf("[trace_encoder_n] printing packet: tcode: %lx, src: %lx, icnt: %lx, f_addr: %lx, u_addr: %lx, b_type: %lx\n", packet->tcode, packet->src, packet->icnt, packet->f_addr, packet->u_addr, packet->b_type);
+}
+
+void print_encoded_packet(uint8_t* buffer, int num_bytes) {
+    printf("[trace_encoder_n] encoded packet: ");
+    for (int i = 0; i < num_bytes; i++) {
+        printf("%lx ", buffer[i]);
+    }
+    printf("\n");
+}
+
 void trace_encoder_n::trace_encoder_generate_packet(tcode_t tcode) {
     trace_encoder_n_packet_t packet;
     int num_bytes;
     switch (tcode) {
         case TCODE_PROG_TRACE_SYNC:
             _set_program_trace_sync_packet(&packet);
+            print_packet(&packet);
             num_bytes = packet_to_buffer(&packet);
             fwrite(this->buffer, 1, num_bytes, this->trace_sink);
+            print_encoded_packet(this->buffer, num_bytes);
             break;
         case TCODE_DBR:
             _set_direct_branch_packet(&packet);

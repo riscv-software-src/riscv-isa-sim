@@ -22,10 +22,10 @@ enum tcode_t {
 };
 
 enum b_type_t {
-    B_INDIRECT = 0, // indirect branch
-    B_TRAP = 1, // trap
+    B_INDIRECT = 0,  // indirect branch
+    B_TRAP = 1,      // trap
     B_EXCEPTION = 2, // exception
-    B_INTERRUPT = 3 // interrupt
+    B_INTERRUPT = 3  // interrupt
 };
 
 enum sync_t {
@@ -33,16 +33,19 @@ enum sync_t {
 };
 
 struct trace_encoder_n_packet_t {
-    uint8_t size;       // 8 bits
-    tcode_t tcode;      // 6 bits
-    uint16_t src;       // unused for now
-    uint8_t sync;       // 4 bit
-    uint8_t b_type;     // 2 bits
-    uint16_t icnt;      // 16 bits
-    uint64_t f_addr;    // 64 bits
-    uint64_t u_addr;    // 64 bits
-    uint64_t tstamp;    // unused for now
+    uint8_t size;    // 8 bits
+    tcode_t tcode;   // 6 bits
+    uint16_t src;    // unused for now
+    uint8_t sync;    // 4 bit
+    uint8_t b_type;  // 2 bits
+    uint16_t icnt;   // 16 bits
+    uint64_t f_addr; // 64 bits
+    uint64_t u_addr; // 64 bits
+    uint64_t tstamp; // unused for now
 };
+
+void print_packet(trace_encoder_n_packet_t* packet);
+void print_encoded_packet(uint8_t* buffer, int num_bytes);
 
 int find_msb(uint64_t x);
 int ceil_div(int a, int b);
