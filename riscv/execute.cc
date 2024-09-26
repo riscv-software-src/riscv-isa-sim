@@ -217,6 +217,7 @@ void processor_t::step(size_t n)
     } else if (halt_request == HR_GROUP) {
       enter_debug_mode(DCSR_CAUSE_GROUP, 0);
     } else if (state.dcsr->halt) {
+      state.dcsr->halt = false;
       enter_debug_mode(DCSR_CAUSE_HALT, 0);
     }
   }
