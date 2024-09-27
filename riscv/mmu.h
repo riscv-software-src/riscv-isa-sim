@@ -43,9 +43,10 @@ struct xlate_flags_t {
   const bool hlvx : 1 {false};
   const bool lr : 1 {false};
   const bool ss_access : 1 {false};
+  const bool clean_inval : 1 {false};
 
   bool is_special_access() const {
-    return forced_virt || hlvx || lr || ss_access;
+    return forced_virt || hlvx || lr || ss_access || clean_inval;
   }
 };
 
@@ -232,14 +233,14 @@ public:
   }
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
-    auto access_info = generate_access_info(addr, LOAD, {});
+    auto access_info = generate_access_info(addr, LOAD, {.clean_inval = true});
     reg_t transformed_addr = access_info.transformed_vaddr;
 
     auto base = transformed_addr & ~(blocksz - 1);
     for (size_t offset = 0; offset < blocksz; offset += 1)
       check_triggers(triggers::OPERATION_STORE, base + offset, false, transformed_addr, std::nullopt);
     convert_load_traps_to_store_traps({
-      const reg_t paddr = translate(generate_access_info(transformed_addr, LOAD, {}), 1);
+      const reg_t paddr = translate(access_info, 1);
       if (sim->reservable(paddr)) {
         if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
           tracer.clean_invalidate(paddr, blocksz, clean, inval);
