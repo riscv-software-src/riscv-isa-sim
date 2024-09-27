@@ -186,7 +186,7 @@ void processor_t::reset()
 {
   xlen = isa.get_max_xlen();
   state.reset(this, isa.get_max_isa());
-  state.dcsr->halt = halt_on_reset;
+  halt = halt_on_reset;
   halt_on_reset = false;
   if (any_vector_extensions())
     VU.reset();
