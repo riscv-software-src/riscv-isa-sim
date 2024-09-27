@@ -384,7 +384,6 @@ private:
   FILE *log_file;
   std::ostream sout_; // needed for socket command interface -s, also used for -d and -l, but not for --log
   bool halt_on_reset;
-  bool halt;
   bool in_wfi;
   bool check_triggers_icount;
   std::vector<bool> impl_table;

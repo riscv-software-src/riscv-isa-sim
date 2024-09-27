@@ -186,8 +186,6 @@ void processor_t::reset()
 {
   xlen = isa.get_max_xlen();
   state.reset(this, isa.get_max_isa());
-  halt = halt_on_reset;
-  halt_on_reset = false;
   if (any_vector_extensions())
     VU.reset();
   in_wfi = false;
