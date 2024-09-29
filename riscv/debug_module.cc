@@ -462,9 +462,9 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
             }
           }
 
-          // We don't allow selecting non-existant harts through
+          // We don't allow selecting non-existent harts through
           // hart_array_mask, so the only way it's possible is by writing a
-          // non-existant hartsel.
+          // non-existent hartsel.
           dmstatus.anynonexistant = dmcontrol.hartsel >= sim->get_cfg().nprocs();
 
           result = set_field(result, DM_DMSTATUS_IMPEBREAK,

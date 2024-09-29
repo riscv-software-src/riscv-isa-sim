@@ -491,7 +491,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     BODY; \
   }
 
-// comparision result to masking register
+// comparison result to masking register
 #define VI_LOOP_CMP_BODY(PARAMS, BODY) \
   VI_LOOP_CMP_BASE \
   INSNS_BASE(PARAMS, BODY) \
