@@ -6,6 +6,7 @@ trace_encoder_n::trace_encoder_n() {
     this->enabled = false;
     this->src = 0;
     this->state = TRACE_ENCODER_N_IDLE;
+    this->icnt = 0;
 }
 
 void trace_encoder_n::set_enable(bool enabled) {
@@ -24,6 +25,7 @@ void trace_encoder_n::trace_encoder_push_commit(hart_to_encoder_ingress_t* packe
        if (this->state == TRACE_ENCODER_N_IDLE) {
             trace_encoder_generate_packet(TCODE_PROG_TRACE_SYNC);
             this->state = TRACE_ENCODER_N_DATA;
+            this->icnt += this->packet->ilastsize;
        } else if (this->state == TRACE_ENCODER_N_DATA) {
             this->icnt += this->packet->ilastsize;
             if (this->packet->i_type == I_BRANCH_TAKEN) {
@@ -67,11 +69,17 @@ void trace_encoder_n::trace_encoder_generate_packet(tcode_t tcode) {
             break;
         case TCODE_DBR:
             _set_direct_branch_packet(&packet);
+            print_packet(&packet);
             num_bytes = packet_to_buffer(&packet);
             fwrite(this->buffer, 1, num_bytes, this->trace_sink);
+            print_encoded_packet(this->buffer, num_bytes);
             break;
         case TCODE_IBR:
             _set_indirect_branch_packet(&packet);
+            print_packet(&packet);
+            num_bytes = packet_to_buffer(&packet);
+            fwrite(this->buffer, 1, num_bytes, this->trace_sink);
+            print_encoded_packet(this->buffer, num_bytes);
             break;
         default:
             break;
