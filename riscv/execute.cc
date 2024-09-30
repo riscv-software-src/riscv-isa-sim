@@ -177,9 +177,9 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
     npc = fetch.func(p, fetch.insn, pc);
 
     if (p->get_log_commits_enabled()) {
-      hart_to_encoder_ingress_t packet;
-      hart_to_encoder_ingress_init(p, &packet, &fetch.insn, npc);
-      p->get_trace_encoder()->trace_encoder_push_commit(&packet);
+      hart_to_encoder_ingress_t* packet = (hart_to_encoder_ingress_t*) malloc(sizeof(hart_to_encoder_ingress_t));
+      hart_to_encoder_ingress_init(p, packet, &fetch.insn, npc);
+      p->get_trace_encoder()->trace_encoder_push_commit(packet);
     }
 
     if (npc != PC_SERIALIZE_BEFORE) {

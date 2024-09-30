@@ -78,7 +78,11 @@ public:
 private:
     FILE* trace_sink;
 
-    hart_to_encoder_ingress_t* packet;
+    bool updesc;
+
+    hart_to_encoder_ingress_t* packet_0; // the newer packet
+    hart_to_encoder_ingress_t* packet_1; // the older packet
+
     bool active;
     bool enabled;
     uint16_t src;

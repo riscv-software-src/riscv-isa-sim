@@ -7,6 +7,9 @@ trace_encoder_n::trace_encoder_n() {
     this->src = 0;
     this->state = TRACE_ENCODER_N_IDLE;
     this->icnt = 0;
+    this->updesc = false;
+    this->packet_0 = (hart_to_encoder_ingress_t*) malloc(sizeof(hart_to_encoder_ingress_t)); // create empty packet
+    this->packet_1 = (hart_to_encoder_ingress_t*) malloc(sizeof(hart_to_encoder_ingress_t)); // create empty packet
 }
 
 void trace_encoder_n::set_enable(bool enabled) {
@@ -20,20 +23,25 @@ void trace_encoder_n::set_enable(bool enabled) {
 
 void trace_encoder_n::trace_encoder_push_commit(hart_to_encoder_ingress_t* packet) {
     printf("[trace_encoder_n] pushed commit packet at i_addr: %lx\n", packet->i_addr);
-    this->packet = packet;
+    free(this->packet_1);
+    this->packet_1 = this->packet_0;
+    this->packet_0 = packet;
     if (this->enabled) {
        if (this->state == TRACE_ENCODER_N_IDLE) {
             trace_encoder_generate_packet(TCODE_PROG_TRACE_SYNC);
             this->state = TRACE_ENCODER_N_DATA;
-            this->icnt += this->packet->ilastsize;
+            this->icnt += this->packet_0->ilastsize;
        } else if (this->state == TRACE_ENCODER_N_DATA) {
-            this->icnt += this->packet->ilastsize;
-            if (this->packet->i_type == I_BRANCH_TAKEN) {
+            this->icnt += this->packet_0->ilastsize;
+            if (this->packet_0->i_type == I_BRANCH_TAKEN) {
                 trace_encoder_generate_packet(TCODE_DBR);
                 this->icnt = 0;
-            } else if (this->packet->i_type == I_JUMP_INFERABLE || this->packet->i_type == I_JUMP_UNINFERABLE) {
+            } else if (this->packet_0->i_type == I_JUMP_INFERABLE || this->packet_0->i_type == I_JUMP_UNINFERABLE) {
+                this->updesc = true;
+            } else if (this->updesc) {
                 trace_encoder_generate_packet(TCODE_IBR);
-                this->icnt = 0;
+                this->icnt = this->packet_0->ilastsize;
+                this->updesc = false;
             }
             this->state = this->icnt >= MAX_ICNT ? TRACE_ENCODER_N_FULL : TRACE_ENCODER_N_DATA;
        } else if (this->state == TRACE_ENCODER_N_FULL) {
@@ -91,7 +99,8 @@ void trace_encoder_n::_set_program_trace_sync_packet(trace_encoder_n_packet_t* p
     packet->src = this->src;
     packet->sync = SYNC_TRACE_EN;
     packet->icnt = 0;
-    packet->f_addr = this->packet->i_addr >> 1;
+    packet->f_addr = this->packet_0->i_addr >> 1;
+    this->prev_addr = packet->f_addr;
 }
 
 void trace_encoder_n::_set_direct_branch_packet(trace_encoder_n_packet_t* packet){
@@ -104,8 +113,8 @@ void trace_encoder_n::_set_indirect_branch_packet(trace_encoder_n_packet_t* pack
     packet->tcode = TCODE_IBR;
     packet->src = this->src;
     packet->b_type = B_INDIRECT;
-    packet->icnt = this->icnt;
-    uint64_t e_addr = this->packet->i_addr >> 1;
+    packet->icnt = this->icnt - this->packet_0->ilastsize; // 
+    uint64_t e_addr = this->packet_0->i_addr >> 1;
     packet->u_addr = e_addr ^ this->prev_addr;
     this->prev_addr = e_addr;
 }
@@ -158,13 +167,12 @@ int trace_encoder_n::_packet_to_buffer_direct_branch_packet(trace_encoder_n_pack
 }
 
 int trace_encoder_n::_packet_to_buffer_indirect_branch_packet(trace_encoder_n_packet_t* packet) {
-    printf("[trace_encoder_n] _packet_to_buffer_indirect_branch_packet: packet->icnt: %lx\n", packet->icnt);
     this->buffer[0] = packet->tcode << MDO_OFFSET | MSEO_IDLE;
     this->buffer[1] = packet->b_type << MDO_OFFSET | MSEO_IDLE;
     // icnt
     int icnt_msb = find_msb(packet->icnt);
-    int icnt_num_bytes = ceil_div(icnt_msb, 6);
-    this->buffer[1] |= (packet->u_addr & 0xF) << 4;
+    int icnt_num_bytes = 0;
+    this->buffer[1] |= (packet->icnt & 0xF) << 4;
     if (icnt_msb < 4) {
         this->buffer[1] |= MSEO_EOF;
     } else {
@@ -181,6 +189,7 @@ int trace_encoder_n::_packet_to_buffer_indirect_branch_packet(trace_encoder_n_pa
     int u_addr_start = 2 + icnt_num_bytes;
     int u_addr_msb = find_msb(packet->u_addr);
     int u_addr_num_bytes = ceil_div(u_addr_msb, 6);
+    printf("[trace_encoder_n] _packet_to_buffer_indirect_branch_packet: u_addr_start: %d, u_addr_msb: %d, u_addr_num_bytes: %d\n", u_addr_start, u_addr_msb, u_addr_num_bytes);
     for (int iter = 0; iter < u_addr_num_bytes; iter++) {
         this->buffer[u_addr_start + iter] = ((packet->u_addr & 0x3F) << MDO_OFFSET) | MSEO_IDLE;
         packet->u_addr >>= 6;
