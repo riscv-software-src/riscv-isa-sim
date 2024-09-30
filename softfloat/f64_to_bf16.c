@@ -43,12 +43,44 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 bfloat16_t f64_to_bf16( float64_t a )
 {
-    uint_fast8_t roundingMode = softfloat_roundingMode;
-    softfloat_roundingMode = softfloat_round_odd;
+    union ui64_f64 uA;
+    uint_fast64_t uiA;
+    bool sign;
+    int_fast16_t exp;
+    uint_fast64_t frac;
+    struct commonNaN commonNaN;
+    uint_fast16_t uiZ, frac16;
+    union ui16_f16 uZ;
 
-    float32_t f32A = f64_to_f32( a );
-
-    softfloat_roundingMode = roundingMode;
-
-    return f32_to_bf16( f32A );
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
+    uA.f = a;
+    uiA = uA.ui;
+    sign = signF64UI( uiA );
+    exp  = expF64UI( uiA );
+    frac = fracF64UI( uiA );
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
+    if ( exp == 0x7FF ) {
+        if ( frac ) {
+            softfloat_f64UIToCommonNaN( uiA, &commonNaN );
+            uiZ = softfloat_commonNaNToBF16UI( &commonNaN );
+        } else {
+            uiZ = packToBF16UI( sign, 0xFF, 0 );
+        }
+        goto uiZ;
+    }
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
+    frac16 = softfloat_shortShiftRightJam64( frac, 38 );
+    if ( ! (exp | frac16) ) {
+        uiZ = packToBF16UI( sign, 0, 0 );
+        goto uiZ;
+    }
+    /*------------------------------------------------------------------------
+    *------------------------------------------------------------------------*/
+    return softfloat_roundPackToBF16( sign, exp - 0x381, frac16 | 0x4000 );
+ uiZ:
+    uZ.ui = uiZ;
+    return uZ.f;
 }
