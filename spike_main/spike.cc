@@ -38,7 +38,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  -s                    Command I/O via socket (use with -d)\n");
 #endif
   fprintf(stderr, "  -h, --help            Print this help message\n");
-  fprintf(stderr, "  -H                    Start halted, allowing a debugger to connect\n");
+  fprintf(stderr, "  --halted              Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --log=<name>          File name for option -l\n");
   fprintf(stderr, "  --debug-cmd=<name>    Read commands from file (use with -d)\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
@@ -375,8 +375,7 @@ int main(int argc, char** argv)
 #endif
   parser.option('p', 0, 1, [&](const char* s){nprocs = atoul_nonzero_safe(s);});
   parser.option('m', 0, 1, [&](const char* s){cfg.mem_layout = parse_mem_layout(s);});
-  // I wanted to use --halted, but for some reason that doesn't work.
-  parser.option('H', 0, 0, [&](const char UNUSED *s){halted = true;});
+  parser.option(0, "halted", 0, [&](const char UNUSED *s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
   parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc = strtoull(s, 0, 0);});
   parser.option(0, "hartids", 1, [&](const char* s){
