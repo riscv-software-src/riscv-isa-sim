@@ -2,6 +2,7 @@
 
 trace_encoder_n::trace_encoder_n() {
   this->trace_sink= fopen("trace_n.bin", "wb");
+  this->debug_reference = fopen("trace_n_ref_debug.log", "wb");
   this->active = true;
   this->enabled = false;
   this->src = 0;
@@ -28,6 +29,7 @@ void trace_encoder_n::trace_encoder_push_commit(hart_to_encoder_ingress_t* packe
   this->packet_0 = packet;
   printf("[trace_encoder_n] new packet tcode: %lx\n", this->packet_0->i_type);
   if (this->enabled) {
+    fprintf(this->debug_reference, "%lx\n", packet->i_addr);
     if (this->state == TRACE_ENCODER_N_IDLE) {
       trace_encoder_generate_packet(TCODE_PROG_TRACE_SYNC);
       this->state = TRACE_ENCODER_N_DATA;
@@ -116,7 +118,8 @@ void trace_encoder_n::_set_indirect_branch_packet(trace_encoder_n_packet_t* pack
   packet->tcode = TCODE_IBR;
   packet->src = this->src;
   packet->b_type = B_INDIRECT;
-  packet->icnt = this->icnt - this->packet_0->ilastsize; // 
+  printf("[trace_encoder_n] _set_indirect_branch_packet: this->icnt: %lx, this->packet_0->ilastsize: %lx\n", this->icnt, this->packet_0->ilastsize);
+  packet->icnt = this->icnt - this->packet_0->ilastsize; 
   uint64_t e_addr = this->packet_0->i_addr >> 1;
   packet->u_addr = e_addr ^ this->prev_addr;
   this->prev_addr = e_addr;

@@ -77,6 +77,7 @@ public:
   void set_enable(bool enabled);
 private:
   FILE* trace_sink;
+  FILE* debug_reference;
 
   bool updesc;
 
