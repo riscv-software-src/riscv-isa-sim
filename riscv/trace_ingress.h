@@ -1,9 +1,9 @@
 #ifndef _RISCV_TRACE_INGRESS_H
 #define _RISCV_TRACE_INGRESS_H
 
+#include <cstdint>
 #include "encoding.h"
 #include "decode.h"
-#include <cstdint>
 
 enum trace_encoder_type {
   N_TRACE_ENCODER,
