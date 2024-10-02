@@ -8,7 +8,6 @@ trace_encoder_n::trace_encoder_n() {
   this->src = 0;
   this->state = TRACE_ENCODER_N_IDLE;
   this->icnt = 0;
-  this->updesc = false;
   this->packet_0 = (hart_to_encoder_ingress_t*) malloc(sizeof(hart_to_encoder_ingress_t)); // create empty packet
   this->packet_1 = (hart_to_encoder_ingress_t*) malloc(sizeof(hart_to_encoder_ingress_t)); // create empty packet
 }
@@ -37,16 +36,12 @@ void trace_encoder_n::trace_encoder_push_commit(hart_to_encoder_ingress_t* packe
     } else if (this->state == TRACE_ENCODER_N_DATA) {
       this->icnt += this->packet_0->ilastsize;
       printf("[trace_encoder_n] icnt: %lx\n", this->icnt);
-      if (this->packet_0->i_type == I_BRANCH_TAKEN) {
+      if (this->packet_1->i_type == I_BRANCH_TAKEN) {
         trace_encoder_generate_packet(TCODE_DBR);
-        this->icnt = 0;
-      } else if (this->packet_0->i_type == I_JUMP_INFERABLE || this->packet_0->i_type == I_JUMP_UNINFERABLE) {
-        this->updesc = true;
-      } else if (this->updesc) {
+        this->icnt = this->packet_0->ilastsize;
+      } else if (this->packet_1->i_type == I_JUMP_INFERABLE || this->packet_1->i_type == I_JUMP_UNINFERABLE) {
         trace_encoder_generate_packet(TCODE_IBR);
         this->icnt = this->packet_0->ilastsize;
-        printf("[trace_encoder_n] icnt: %lx\n", this->icnt);
-        this->updesc = false;
       }
       this->state = this->icnt >= MAX_ICNT ? TRACE_ENCODER_N_FULL : TRACE_ENCODER_N_DATA;
   } else if (this->state == TRACE_ENCODER_N_FULL) {
@@ -111,7 +106,7 @@ void trace_encoder_n::_set_program_trace_sync_packet(trace_encoder_n_packet_t* p
 void trace_encoder_n::_set_direct_branch_packet(trace_encoder_n_packet_t* packet){
   packet->tcode = TCODE_DBR;
   packet->src = this->src;
-  packet->icnt = this->icnt;
+  packet->icnt = this->icnt - this->packet_0->ilastsize;
 }
 
 void trace_encoder_n::_set_indirect_branch_packet(trace_encoder_n_packet_t* packet){

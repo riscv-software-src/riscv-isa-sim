@@ -79,8 +79,6 @@ private:
   FILE* trace_sink;
   FILE* debug_reference;
 
-  bool updesc;
-
   hart_to_encoder_ingress_t* packet_0; // the newer packet
   hart_to_encoder_ingress_t* packet_1; // the older packet
 
