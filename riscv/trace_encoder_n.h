@@ -110,9 +110,6 @@ private:
   int _packet_to_buffer_program_trace_sync(trace_encoder_n_packet_t* packet);
   int _packet_to_buffer_direct_branch_packet(trace_encoder_n_packet_t* packet);
   int _packet_to_buffer_indirect_branch_packet(trace_encoder_n_packet_t* packet);
-
-  inline hart_to_encoder_ingress_t* _get_packet_0() { return &packet_0; }
-  inline hart_to_encoder_ingress_t* _get_packet_1() { return &packet_1; }
 };
 
 
