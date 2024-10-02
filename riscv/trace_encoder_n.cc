@@ -17,27 +17,27 @@ void trace_encoder_n::set_enable(bool enabled) {
   }
 }
 
-void trace_encoder_n::trace_encoder_push_commit(hart_to_encoder_ingress_t packet) {
+void trace_encoder_n::push_commit(hart_to_encoder_ingress_t packet) {
   this->packet_1 = this->packet_0;
   this->packet_0 = packet;
   if (this->enabled) {
     fprintf(this->debug_reference, "%lx\n", packet.i_addr);
     if (this->state == TRACE_ENCODER_N_IDLE) {
-      trace_encoder_generate_packet(TCODE_PROG_TRACE_SYNC);
+      generate_packet(TCODE_PROG_TRACE_SYNC);
       this->state = TRACE_ENCODER_N_DATA;
-      this->icnt += _get_packet_0()->ilastsize;
+      this->icnt += this->packet_0.ilastsize;
     } else if (this->state == TRACE_ENCODER_N_DATA) {
-      this->icnt += _get_packet_0()->ilastsize;
-      if (_get_packet_1()->i_type == I_BRANCH_TAKEN) {
-        trace_encoder_generate_packet(TCODE_DBR);
-        this->icnt = _get_packet_0()->ilastsize;
-      } else if (_get_packet_1()->i_type == I_JUMP_INFERABLE || _get_packet_1()->i_type == I_JUMP_UNINFERABLE) {
-        trace_encoder_generate_packet(TCODE_IBR);
-        this->icnt = _get_packet_0()->ilastsize;
+      this->icnt += this->packet_0.ilastsize;
+      if (this->packet_1.i_type == I_BRANCH_TAKEN) {
+        generate_packet(TCODE_DBR);
+        this->icnt = this->packet_0.ilastsize;
+      } else if (this->packet_1.i_type == I_JUMP_INFERABLE || this->packet_1.i_type == I_JUMP_UNINFERABLE) {
+        generate_packet(TCODE_IBR);
+        this->icnt = this->packet_0.ilastsize;
       }
       this->state = this->icnt >= MAX_ICNT ? TRACE_ENCODER_N_FULL : TRACE_ENCODER_N_DATA;
   } else if (this->state == TRACE_ENCODER_N_FULL) {
-      trace_encoder_generate_packet(TCODE_FULL);
+      generate_packet(TCODE_FULL);
       this->state = TRACE_ENCODER_N_DATA;
       this->icnt = 0;
     }
@@ -56,7 +56,7 @@ void print_encoded_packet(uint8_t* buffer, int num_bytes) {
   printf("\n");
 }
 
-void trace_encoder_n::trace_encoder_generate_packet(tcode_t tcode) {
+void trace_encoder_n::generate_packet(tcode_t tcode) {
   trace_encoder_n_packet_t packet;
   int num_bytes;
   switch (tcode) {
@@ -91,22 +91,22 @@ void trace_encoder_n::_set_program_trace_sync_packet(trace_encoder_n_packet_t* p
   packet->src = this->src;
   packet->sync = SYNC_TRACE_EN;
   packet->icnt = 0;
-  packet->f_addr = _get_packet_0()->i_addr >> 1;
+  packet->f_addr = this->packet_0.i_addr >> 1;
   this->prev_addr = packet->f_addr;
 }
 
 void trace_encoder_n::_set_direct_branch_packet(trace_encoder_n_packet_t* packet){
   packet->tcode = TCODE_DBR;
   packet->src = this->src;
-  packet->icnt = this->icnt - _get_packet_0()->ilastsize;
+  packet->icnt = this->icnt - this->packet_0.ilastsize;
 }
 
 void trace_encoder_n::_set_indirect_branch_packet(trace_encoder_n_packet_t* packet){
   packet->tcode = TCODE_IBR;
   packet->src = this->src;
   packet->b_type = B_INDIRECT;
-  packet->icnt = this->icnt - _get_packet_0()->ilastsize; 
-  uint64_t e_addr = _get_packet_0()->i_addr >> 1;
+  packet->icnt = this->icnt - this->packet_0.ilastsize; 
+  uint64_t e_addr = this->packet_0.i_addr >> 1;
   packet->u_addr = e_addr ^ this->prev_addr;
   this->prev_addr = e_addr;
 }

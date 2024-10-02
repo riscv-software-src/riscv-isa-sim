@@ -188,7 +188,7 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
         .iretire = 1,
         .ilastsize = insn_length(fetch.insn.bits())/2,
       };
-      p->trace_encoder.trace_encoder_push_commit(packet);
+      p->trace_encoder.push_commit(packet);
     }
 
     if (npc != PC_SERIALIZE_BEFORE) {

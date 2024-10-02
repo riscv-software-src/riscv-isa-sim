@@ -82,8 +82,8 @@ public:
     this->packet_0 = hart_to_encoder_ingress_t(); // create empty packet
     this->packet_1 = hart_to_encoder_ingress_t(); // create empty packet
   }
-  void trace_encoder_push_commit(hart_to_encoder_ingress_t packet);
-  void trace_encoder_generate_packet(tcode_t tcode);
+  void push_commit(hart_to_encoder_ingress_t packet);
+  void generate_packet(tcode_t tcode);
 
   void set_enable(bool enabled);
   void reset();
