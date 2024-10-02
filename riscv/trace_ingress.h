@@ -1,8 +1,9 @@
 #ifndef _RISCV_TRACE_INGRESS_H
 #define _RISCV_TRACE_INGRESS_H
 
-#include "processor.h"
 #include "encoding.h"
+#include "decode.h"
+#include <cstdint>
 
 enum trace_encoder_type {
   N_TRACE_ENCODER,
@@ -63,8 +64,6 @@ struct hart_to_encoder_ingress_t {
   int ilastsize;          // 2 or 4, 2 bits
 };
 
-void hart_to_encoder_ingress_init(processor_t* p, hart_to_encoder_ingress_t* packet, insn_t* insn, reg_t npc);
-
 #define CHECK_INSN(name)  ((insn->bits() & MASK_##name) == MATCH_##name)
 
 static inline bool _is_branch(insn_t* insn) {
@@ -77,6 +76,22 @@ static inline bool _is_jal(insn_t* insn) {
 
 static inline bool _is_jalr(insn_t* insn) {
   return CHECK_INSN(JALR) || CHECK_INSN(C_JALR) || CHECK_INSN(C_JR);
+}
+
+static inline insn_type _get_insn_type(insn_t* insn, bool taken) {
+  if (_is_branch(insn)) {
+    return taken ? I_BRANCH_TAKEN : I_BRANCH_NON_TAKEN;
+  }
+  else if (_is_jal(insn)) {
+    return I_JUMP_INFERABLE;
+  }
+  else if (_is_jalr(insn)) {
+    return I_JUMP_UNINFERABLE;
+  }
+  // TODO: further categorization is not implemented for now
+  else {
+    return I_NONE;
+  }
 }
 
 #endif // _RISCV_TRACE_INGRESS_H

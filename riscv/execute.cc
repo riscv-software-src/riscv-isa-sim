@@ -7,6 +7,7 @@
 #include "mmu.h"
 #include "disasm.h"
 #include "decode_macros.h"
+#include "trace_ingress.h"
 #include <cassert>
 
 static void commit_log_reset(processor_t* p)
@@ -164,6 +165,7 @@ inline void processor_t::update_histogram(reg_t pc)
 static inline reg_t execute_insn_fast(processor_t* p, reg_t pc, insn_fetch_t fetch) {
   return fetch.func(p, fetch.insn, pc);
 }
+
 static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
   if (p->get_log_commits_enabled()) {
@@ -177,9 +179,16 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
     npc = fetch.func(p, fetch.insn, pc);
 
     if (p->get_log_commits_enabled()) {
-      hart_to_encoder_ingress_t* packet = (hart_to_encoder_ingress_t*) malloc(sizeof(hart_to_encoder_ingress_t));
-      hart_to_encoder_ingress_init(p, packet, &fetch.insn, npc);
-      p->get_trace_encoder()->trace_encoder_push_commit(packet);
+      hart_to_encoder_ingress_t packet {
+        .i_type = _get_insn_type(&fetch.insn, npc != p->get_state()->pc + insn_length(fetch.insn.bits())),
+        .exc_cause = 0,
+        .tval = 0,
+        .priv = P_M, // TODO: check for processor privilege level
+        .i_addr = pc,
+        .iretire = 1,
+        .ilastsize = insn_length(fetch.insn.bits())/2,
+      };
+      p->trace_encoder.trace_encoder_push_commit(packet);
     }
 
     if (npc != PC_SERIALIZE_BEFORE) {

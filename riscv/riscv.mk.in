@@ -41,18 +41,16 @@ riscv_install_hdrs = \
 	rocc.h \
 	sim.h \
 	simif.h \
-	trace_encoder_n.h \
-	trace_ingress.h \
 	trap.h \
 	triggers.h \
 	vector_unit.h \
+	trace_ingress.h \
+	trace_encoder_n.h \
 
 riscv_precompiled_hdrs = \
 	insn_template.h \
 
 riscv_srcs = \
-	trace_encoder_n.cc \
-	trace_ingress.cc \
 	processor.cc \
 	execute.cc \
 	dts.cc \
@@ -77,6 +75,7 @@ riscv_srcs = \
 	vector_unit.cc \
 	socketif.cc \
 	cfg.cc \
+	trace_encoder_n.cc \
 	$(riscv_gen_srcs) \
 
 riscv_test_srcs = \

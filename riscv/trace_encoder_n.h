@@ -4,7 +4,7 @@
 #include "trace_ingress.h"
 #include <stdio.h>
 
-class hart_to_encoder_ingress_t;
+class processor_t;
 
 enum tcode_t {
   TCODE_OWN = 2, // ownership
@@ -70,17 +70,30 @@ enum trace_encoder_n_state_t {
 
 class trace_encoder_n {
 public:
-  trace_encoder_n();
-  void trace_encoder_push_commit(hart_to_encoder_ingress_t* packet);
+
+  trace_encoder_n() {
+    printf("[trace_encoder_n] trace_encoder_n() constructor evaluated\n");
+    this->trace_sink= fopen("trace_n.bin", "wb");
+    this->debug_reference = fopen("trace_n_ref_debug.log", "wb");
+    this->active = true;
+    this->enabled = false;
+    this->src = 0;
+    this->state = TRACE_ENCODER_N_IDLE;
+    this->icnt = 0;
+    this->packet_0 = hart_to_encoder_ingress_t(); // create empty packet
+    this->packet_1 = hart_to_encoder_ingress_t(); // create empty packet
+  }
+  void trace_encoder_push_commit(hart_to_encoder_ingress_t packet);
   void trace_encoder_generate_packet(tcode_t tcode);
 
   void set_enable(bool enabled);
+  void reset();
 private:
   FILE* trace_sink;
   FILE* debug_reference;
 
-  hart_to_encoder_ingress_t* packet_0; // the newer packet
-  hart_to_encoder_ingress_t* packet_1; // the older packet
+  hart_to_encoder_ingress_t packet_0; // the newer packet
+  hart_to_encoder_ingress_t packet_1; // the older packet
 
   bool active;
   bool enabled;
@@ -98,6 +111,9 @@ private:
   int _packet_to_buffer_program_trace_sync(trace_encoder_n_packet_t* packet);
   int _packet_to_buffer_direct_branch_packet(trace_encoder_n_packet_t* packet);
   int _packet_to_buffer_indirect_branch_packet(trace_encoder_n_packet_t* packet);
+
+  inline hart_to_encoder_ingress_t* _get_packet_0() { return &packet_0; }
+  inline hart_to_encoder_ingress_t* _get_packet_1() { return &packet_1; }
 };
 
 

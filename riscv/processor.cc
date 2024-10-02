@@ -12,6 +12,7 @@
 #include "platform.h"
 #include "vector_unit.h"
 #include "debug_defines.h"
+#include "trace_encoder_n.h"
 #include <cinttypes>
 #include <cmath>
 #include <cstdlib>
@@ -39,7 +40,7 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
   log_file(log_file), sout_(sout_.rdbuf()), halt_on_reset(halt_on_reset),
   in_wfi(false), check_triggers_icount(false),
   impl_table(256, false), extension_enable_table(isa.get_extension_table()),
-  last_pc(1), executions(1), TM(cfg->trigger_count)
+  last_pc(1), executions(1), TM(cfg->trigger_count), trace_encoder()
 {
   VU.p = this;
   TM.proc = this;
@@ -63,7 +64,6 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
 
   register_base_instructions();
   mmu = new mmu_t(sim, cfg->endianness, this);
-  trace_encoder = new trace_encoder_n();
 
   disassembler = new disassembler_t(&isa);
   for (auto e : isa.get_extensions())
@@ -205,6 +205,8 @@ void processor_t::reset()
 
   if (sim)
     sim->proc_reset(id);
+
+  trace_encoder.reset();
 }
 
 extension_t* processor_t::get_extension()

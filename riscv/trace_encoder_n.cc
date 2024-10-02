@@ -1,47 +1,43 @@
 #include "trace_encoder_n.h"
 
-trace_encoder_n::trace_encoder_n() {
-  this->trace_sink= fopen("trace_n.bin", "wb");
-  this->debug_reference = fopen("trace_n_ref_debug.log", "wb");
-  this->active = true;
-  this->enabled = false;
-  this->src = 0;
+void trace_encoder_n::reset() {
   this->state = TRACE_ENCODER_N_IDLE;
   this->icnt = 0;
-  this->packet_0 = (hart_to_encoder_ingress_t*) malloc(sizeof(hart_to_encoder_ingress_t)); // create empty packet
-  this->packet_1 = (hart_to_encoder_ingress_t*) malloc(sizeof(hart_to_encoder_ingress_t)); // create empty packet
+  this->packet_0 = hart_to_encoder_ingress_t(); // create empty packet
+  this->packet_1 = hart_to_encoder_ingress_t(); // create empty packet
+  this->enabled = false;
+  this->active = true;
 }
 
 void trace_encoder_n::set_enable(bool enabled) {
   bool was_enabled = this->enabled;
-  printf("[trace_encoder_n] setting enable to %d\n", enabled);
+  printf("[trace_encoder_n] QAQ setting enable to %d\n", enabled);
   this->enabled = enabled;
   if (!was_enabled && enabled) {
     this->state = TRACE_ENCODER_N_IDLE;
   }
 }
 
-void trace_encoder_n::trace_encoder_push_commit(hart_to_encoder_ingress_t* packet) {
-  printf("[trace_encoder_n] pushed commit packet at i_addr: %lx\n", packet->i_addr);
-  free(this->packet_1);
+void trace_encoder_n::trace_encoder_push_commit(hart_to_encoder_ingress_t packet) {
+  printf("[trace_encoder_n] pushed commit packet at i_addr: %lx\n", packet.i_addr);
   this->packet_1 = this->packet_0;
   this->packet_0 = packet;
-  printf("[trace_encoder_n] new packet tcode: %lx\n", this->packet_0->i_type);
+  printf("[trace_encoder_n] new packet tcode: %lx\n", _get_packet_0()->i_type);
   if (this->enabled) {
-    fprintf(this->debug_reference, "%lx\n", packet->i_addr);
+    fprintf(this->debug_reference, "%lx\n", packet.i_addr);
     if (this->state == TRACE_ENCODER_N_IDLE) {
       trace_encoder_generate_packet(TCODE_PROG_TRACE_SYNC);
       this->state = TRACE_ENCODER_N_DATA;
-      this->icnt += this->packet_0->ilastsize;
+      this->icnt += _get_packet_0()->ilastsize;
     } else if (this->state == TRACE_ENCODER_N_DATA) {
-      this->icnt += this->packet_0->ilastsize;
+      this->icnt += _get_packet_0()->ilastsize;
       printf("[trace_encoder_n] icnt: %lx\n", this->icnt);
-      if (this->packet_1->i_type == I_BRANCH_TAKEN) {
+      if (_get_packet_1()->i_type == I_BRANCH_TAKEN) {
         trace_encoder_generate_packet(TCODE_DBR);
-        this->icnt = this->packet_0->ilastsize;
-      } else if (this->packet_1->i_type == I_JUMP_INFERABLE || this->packet_1->i_type == I_JUMP_UNINFERABLE) {
+        this->icnt = _get_packet_0()->ilastsize;
+      } else if (_get_packet_1()->i_type == I_JUMP_INFERABLE || _get_packet_1()->i_type == I_JUMP_UNINFERABLE) {
         trace_encoder_generate_packet(TCODE_IBR);
-        this->icnt = this->packet_0->ilastsize;
+        this->icnt = _get_packet_0()->ilastsize;
       }
       this->state = this->icnt >= MAX_ICNT ? TRACE_ENCODER_N_FULL : TRACE_ENCODER_N_DATA;
   } else if (this->state == TRACE_ENCODER_N_FULL) {
@@ -99,23 +95,23 @@ void trace_encoder_n::_set_program_trace_sync_packet(trace_encoder_n_packet_t* p
   packet->src = this->src;
   packet->sync = SYNC_TRACE_EN;
   packet->icnt = 0;
-  packet->f_addr = this->packet_0->i_addr >> 1;
+  packet->f_addr = _get_packet_0()->i_addr >> 1;
   this->prev_addr = packet->f_addr;
 }
 
 void trace_encoder_n::_set_direct_branch_packet(trace_encoder_n_packet_t* packet){
   packet->tcode = TCODE_DBR;
   packet->src = this->src;
-  packet->icnt = this->icnt - this->packet_0->ilastsize;
+  packet->icnt = this->icnt - _get_packet_0()->ilastsize;
 }
 
 void trace_encoder_n::_set_indirect_branch_packet(trace_encoder_n_packet_t* packet){
   packet->tcode = TCODE_IBR;
   packet->src = this->src;
   packet->b_type = B_INDIRECT;
-  printf("[trace_encoder_n] _set_indirect_branch_packet: this->icnt: %lx, this->packet_0->ilastsize: %lx\n", this->icnt, this->packet_0->ilastsize);
-  packet->icnt = this->icnt - this->packet_0->ilastsize; 
-  uint64_t e_addr = this->packet_0->i_addr >> 1;
+  printf("[trace_encoder_n] _set_indirect_branch_packet: this->icnt: %lx, _get_packet_0()->ilastsize: %lx\n", this->icnt, _get_packet_0()->ilastsize);
+  packet->icnt = this->icnt - _get_packet_0()->ilastsize; 
+  uint64_t e_addr = _get_packet_0()->i_addr >> 1;
   packet->u_addr = e_addr ^ this->prev_addr;
   this->prev_addr = e_addr;
 }
