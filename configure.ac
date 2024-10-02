@@ -1,7 +1,7 @@
 #=========================================================================
 # Toplevel configure.ac for the Modular C++ Build System
 #=========================================================================
-# Please read the documenation in 'mcppbs-doc.txt' for more details on
+# Please read the documentation in 'mcppbs-doc.txt' for more details on
 # how the Modular C++ Build System works. For most new projects, a
 # developer will only need to make the following changes:
 #

@@ -55,7 +55,7 @@
 #define PENDING_BASE            0x1000
 
 /*
- * Each hart context has a vector of interupt enable bits associated with it.
+ * Each hart context has a vector of interrupt enable bits associated with it.
  * There's one bit for each interrupt source.
  */
 #define ENABLE_BASE             0x2000
