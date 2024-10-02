@@ -72,7 +72,6 @@ class trace_encoder_n {
 public:
 
   trace_encoder_n() {
-    printf("[trace_encoder_n] trace_encoder_n() constructor evaluated\n");
     this->trace_sink= fopen("trace_n.bin", "wb");
     this->debug_reference = fopen("trace_n_ref_debug.log", "wb");
     this->active = true;

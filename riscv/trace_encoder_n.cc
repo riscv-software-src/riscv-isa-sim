@@ -11,7 +11,6 @@ void trace_encoder_n::reset() {
 
 void trace_encoder_n::set_enable(bool enabled) {
   bool was_enabled = this->enabled;
-  printf("[trace_encoder_n] QAQ setting enable to %d\n", enabled);
   this->enabled = enabled;
   if (!was_enabled && enabled) {
     this->state = TRACE_ENCODER_N_IDLE;
@@ -19,10 +18,8 @@ void trace_encoder_n::set_enable(bool enabled) {
 }
 
 void trace_encoder_n::trace_encoder_push_commit(hart_to_encoder_ingress_t packet) {
-  printf("[trace_encoder_n] pushed commit packet at i_addr: %lx\n", packet.i_addr);
   this->packet_1 = this->packet_0;
   this->packet_0 = packet;
-  printf("[trace_encoder_n] new packet tcode: %lx\n", _get_packet_0()->i_type);
   if (this->enabled) {
     fprintf(this->debug_reference, "%lx\n", packet.i_addr);
     if (this->state == TRACE_ENCODER_N_IDLE) {
@@ -31,7 +28,6 @@ void trace_encoder_n::trace_encoder_push_commit(hart_to_encoder_ingress_t packet
       this->icnt += _get_packet_0()->ilastsize;
     } else if (this->state == TRACE_ENCODER_N_DATA) {
       this->icnt += _get_packet_0()->ilastsize;
-      printf("[trace_encoder_n] icnt: %lx\n", this->icnt);
       if (_get_packet_1()->i_type == I_BRANCH_TAKEN) {
         trace_encoder_generate_packet(TCODE_DBR);
         this->icnt = _get_packet_0()->ilastsize;
@@ -66,24 +62,24 @@ void trace_encoder_n::trace_encoder_generate_packet(tcode_t tcode) {
   switch (tcode) {
       case TCODE_PROG_TRACE_SYNC:
           _set_program_trace_sync_packet(&packet);
-          print_packet(&packet);
+          // print_packet(&packet);
           num_bytes = packet_to_buffer(&packet);
           fwrite(this->buffer, 1, num_bytes, this->trace_sink);
-          print_encoded_packet(this->buffer, num_bytes);
+          // print_encoded_packet(this->buffer, num_bytes);
           break;
       case TCODE_DBR:
           _set_direct_branch_packet(&packet);
-          print_packet(&packet);
+          // print_packet(&packet);
           num_bytes = packet_to_buffer(&packet);
           fwrite(this->buffer, 1, num_bytes, this->trace_sink);
-          print_encoded_packet(this->buffer, num_bytes);
+          // print_encoded_packet(this->buffer, num_bytes);
           break;
       case TCODE_IBR:
           _set_indirect_branch_packet(&packet);
-          print_packet(&packet);
+          // print_packet(&packet);
           num_bytes = packet_to_buffer(&packet);
           fwrite(this->buffer, 1, num_bytes, this->trace_sink);
-          print_encoded_packet(this->buffer, num_bytes);
+          // print_encoded_packet(this->buffer, num_bytes);
           break;
       default:
           break;
@@ -109,7 +105,6 @@ void trace_encoder_n::_set_indirect_branch_packet(trace_encoder_n_packet_t* pack
   packet->tcode = TCODE_IBR;
   packet->src = this->src;
   packet->b_type = B_INDIRECT;
-  printf("[trace_encoder_n] _set_indirect_branch_packet: this->icnt: %lx, _get_packet_0()->ilastsize: %lx\n", this->icnt, _get_packet_0()->ilastsize);
   packet->icnt = this->icnt - _get_packet_0()->ilastsize; 
   uint64_t e_addr = _get_packet_0()->i_addr >> 1;
   packet->u_addr = e_addr ^ this->prev_addr;
@@ -186,7 +181,6 @@ int trace_encoder_n::_packet_to_buffer_indirect_branch_packet(trace_encoder_n_pa
   int u_addr_start = 2 + icnt_num_bytes;
   int u_addr_msb = find_msb(packet->u_addr);
   int u_addr_num_bytes = ceil_div(u_addr_msb, 6);
-  printf("[trace_encoder_n] _packet_to_buffer_indirect_branch_packet: u_addr_start: %d, u_addr_msb: %d, u_addr_num_bytes: %d\n", u_addr_start, u_addr_msb, u_addr_num_bytes);
   for (int iter = 0; iter < u_addr_num_bytes; iter++) {
       this->buffer[u_addr_start + iter] = ((packet->u_addr & 0x3F) << MDO_OFFSET) | MSEO_IDLE;
       packet->u_addr >>= 6;

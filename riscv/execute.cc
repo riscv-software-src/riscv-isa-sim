@@ -179,7 +179,6 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
     npc = fetch.func(p, fetch.insn, pc);
 
     if (p->get_trace_enabled()) {
-      printf("[execute.cc] trace enabled\n");
       hart_to_encoder_ingress_t packet {
         .i_type = _get_insn_type(&fetch.insn, npc != p->get_state()->pc + insn_length(fetch.insn.bits())),
         .exc_cause = 0,
