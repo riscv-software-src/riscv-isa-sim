@@ -178,7 +178,8 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
   try {
     npc = fetch.func(p, fetch.insn, pc);
 
-    if (p->get_log_commits_enabled()) {
+    if (p->get_trace_enabled()) {
+      printf("[execute.cc] trace enabled\n");
       hart_to_encoder_ingress_t packet {
         .i_type = _get_insn_type(&fetch.insn, npc != p->get_state()->pc + insn_length(fetch.insn.bits())),
         .exc_cause = 0,
@@ -223,7 +224,7 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
 bool processor_t::slow_path()
 {
   return debug || state.single_step != state.STEP_NONE || state.debug_mode ||
-         log_commits_enabled || histogram_enabled || in_wfi || check_triggers_icount;
+         log_commits_enabled || histogram_enabled || in_wfi || check_triggers_icount || trace_enabled;
 }
 
 // fetch/decode/execute loop

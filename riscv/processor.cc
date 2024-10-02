@@ -183,6 +183,11 @@ void processor_t::enable_log_commits()
   log_commits_enabled = true;
 }
 
+void processor_t::enable_trace()
+{
+  trace_enabled = true;
+}
+
 void processor_t::reset()
 {
   xlen = isa.get_max_xlen();
