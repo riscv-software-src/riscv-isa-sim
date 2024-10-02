@@ -102,14 +102,14 @@ private:
   uint16_t icnt;
   uint64_t prev_addr;
 
-  void _set_direct_branch_packet(trace_encoder_n_packet_t* packet);
-  void _set_indirect_branch_packet(trace_encoder_n_packet_t* packet);
-  void _set_program_trace_sync_packet(trace_encoder_n_packet_t* packet);
+  void set_direct_branch_packet(trace_encoder_n_packet_t* packet);
+  void set_indirect_branch_packet(trace_encoder_n_packet_t* packet);
+  void set_program_trace_sync_packet(trace_encoder_n_packet_t* packet);
 
   int packet_to_buffer(trace_encoder_n_packet_t* packet);
-  int _packet_to_buffer_program_trace_sync(trace_encoder_n_packet_t* packet);
-  int _packet_to_buffer_direct_branch_packet(trace_encoder_n_packet_t* packet);
-  int _packet_to_buffer_indirect_branch_packet(trace_encoder_n_packet_t* packet);
+  int packet_to_buffer_program_trace_sync(trace_encoder_n_packet_t* packet);
+  int packet_to_buffer_direct_branch_packet(trace_encoder_n_packet_t* packet);
+  int packet_to_buffer_indirect_branch_packet(trace_encoder_n_packet_t* packet);
 };
 
 
