@@ -68,15 +68,15 @@ void hart_to_encoder_ingress_init(processor_t* p, hart_to_encoder_ingress_t* pac
 #define CHECK_INSN(name)  ((insn->bits() & MASK_##name) == MATCH_##name)
 
 static inline bool _is_branch(insn_t* insn) {
-  return CHECK_INSN(BEQ) || CHECK_INSN(BNE) || CHECK_INSN(BLT) || CHECK_INSN(BGE) || CHECK_INSN(BLTU) || CHECK_INSN(BGEU);
+  return CHECK_INSN(BEQ) || CHECK_INSN(BNE) || CHECK_INSN(BLT) || CHECK_INSN(BGE) || CHECK_INSN(BLTU) || CHECK_INSN(BGEU) || CHECK_INSN(C_BEQZ) || CHECK_INSN(C_BNEZ);
 }
 
 static inline bool _is_jal(insn_t* insn) {
-  return CHECK_INSN(JAL);
+  return CHECK_INSN(JAL) || CHECK_INSN(C_JAL) || CHECK_INSN(C_J);
 }
 
 static inline bool _is_jalr(insn_t* insn) {
-  return CHECK_INSN(JALR);
+  return CHECK_INSN(JALR) || CHECK_INSN(C_JALR) || CHECK_INSN(C_JR);
 }
 
 #endif // _RISCV_TRACE_INGRESS_H
