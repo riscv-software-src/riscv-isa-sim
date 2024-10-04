@@ -1,5 +1,5 @@
 require_extension(EXT_ZCA);
-require((xlen == 64) || p->extension_enabled(EXT_ZCMLSD));
+require((xlen == 64) || p->extension_enabled(EXT_ZCLSD));
 require(insn.rvc_rd() != 0);
 
 if (xlen == 32) {
