@@ -1513,7 +1513,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
       DISASM_INSN("c.addiw", c_addiw, 0, {&xrd, &rvc_imm});
     }
 
-    if (isa->get_max_xlen() == 64 || isa->extension_enabled(EXT_ZCMLSD)) {
+    if (isa->get_max_xlen() == 64 || isa->extension_enabled(EXT_ZCLSD)) {
       DISASM_INSN("c.ld", c_ld, 0, {&rvc_rs2s, &rvc_ld_address});
       DISASM_INSN("c.ldsp", c_ldsp, 0, {&xrd, &rvc_ldsp_address});
       DISASM_INSN("c.sd", c_sd, 0, {&rvc_rs2s, &rvc_ld_address});

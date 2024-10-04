@@ -84,7 +84,7 @@
 // Zilsd macros
 #define WRITE_RD_D(value) (xlen == 32 ? WRITE_RD_PAIR(value) : WRITE_RD(value))
 
-// Zcmlsd macros
+// Zclsd macros
 #define WRITE_RVC_RS2S_PAIR(value) WRITE_REG_PAIR(insn.rvc_rs2s(), value)
 #define RVC_RS2S_PAIR READ_REG_PAIR(insn.rvc_rs2s())
 #define RVC_RS2_PAIR READ_REG_PAIR(insn.rvc_rs2())
