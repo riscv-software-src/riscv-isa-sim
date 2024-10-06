@@ -86,6 +86,29 @@
 //    (LMUL * VLEN) <= EGW
 #define require_egw_fits(EGW)  require((EGW) <= (P.VU.VLEN * P.VU.vflmul))
 
+// Ensures that a register index is aligned with LMUL
+#define require_vreg_align_lmul(VREG_NUM) \
+  if (P.VU.vflmul > 1) { \
+    require_align(VREG_NUM, P.VU.vflmul); \
+  }
+
+// Ensures that a register index is aligned to EMUL
+// evaluated as EGW / VLEN.
+// The check is only enabled if this value is greater
+// than one (no index alignment check required for fractional EMUL)
+#define require_vreg_align_eglmul(EGW, VREG_NUM) \
+  do { \
+  float vfeglmul = EGW / P.VU.VLEN; \
+    if (vfeglmul > 1) { \
+      require_align(VREG_NUM, vfeglmul); \
+    }\
+  } while (0)
+
+#define require_vd_align_lmul require_vreg_align_lmul(insn.rd())
+#define require_vs2_align_lmul require_vreg_align_lmul(insn.rs2())
+#define require_vs1_align_lmul require_vreg_align_lmul(insn.rs1())
+#define require_vs2_align_eglmul(EGW) require_vreg_align_eglmul(EGW, insn.rs2())
+
 // Checks that the vector unit state (vtype and vl) can be interpreted
 // as element groups with EEW=32, EGS=4 (four 32-bits elements per group),
 // for an effective element group width of EGW=128 bits.
