@@ -825,9 +825,9 @@ class stimecmp_csr_t: public basic_csr_t {
   reg_t intr_mask;
 };
 
-class virtualized_stimecmp_csr_t: public virtualized_csr_t {
+class virtualized_with_special_permission_csr_t: public virtualized_csr_t {
  public:
-  virtualized_stimecmp_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
+  virtualized_with_special_permission_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
 

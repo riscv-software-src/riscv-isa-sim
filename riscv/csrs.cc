@@ -1685,7 +1685,7 @@ bool stimecmp_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write(val);
 }
 
-virtualized_stimecmp_csr_t::virtualized_stimecmp_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
+virtualized_with_special_permission_csr_t::virtualized_with_special_permission_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
   virtualized_csr_t(proc, orig, virt) {
 }
 
@@ -1706,7 +1706,7 @@ void stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
   basic_csr_t::verify_permissions(insn, write);
 }
 
-void virtualized_stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
+void virtualized_with_special_permission_csr_t::verify_permissions(insn_t insn, bool write) const {
   orig_csr->verify_permissions(insn, write);
 }
 

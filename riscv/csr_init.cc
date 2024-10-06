@@ -382,7 +382,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   if (proc->extension_enabled_const(EXT_SSTC)) {
     stimecmp = std::make_shared<stimecmp_csr_t>(proc, CSR_STIMECMP, MIP_STIP);
     vstimecmp = std::make_shared<stimecmp_csr_t>(proc, CSR_VSTIMECMP, MIP_VSTIP);
-    auto virtualized_stimecmp = std::make_shared<virtualized_stimecmp_csr_t>(proc, stimecmp, vstimecmp);
+    auto virtualized_stimecmp = std::make_shared<virtualized_with_special_permission_csr_t>(proc, stimecmp, vstimecmp);
     if (xlen == 32) {
       add_supervisor_csr(CSR_STIMECMP, std::make_shared<rv32_low_csr_t>(proc, CSR_STIMECMP, virtualized_stimecmp));
       add_supervisor_csr(CSR_STIMECMPH, std::make_shared<rv32_high_csr_t>(proc, CSR_STIMECMPH, virtualized_stimecmp));
