@@ -187,6 +187,7 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
         .i_addr = pc,
         .iretire = 1,
         .ilastsize = insn_length(fetch.insn.bits())/2,
+        .i_timestamp = p->get_state()->mcycle->read(),
       };
       p->trace_encoder.push_commit(packet);
     }

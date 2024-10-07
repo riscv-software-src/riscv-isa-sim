@@ -46,7 +46,7 @@ struct trace_encoder_n_packet_t {
   uint16_t icnt;   // 16 bits
   uint64_t f_addr; // 64 bits
   uint64_t u_addr; // 64 bits
-  uint64_t tstamp; // unused for now
+  uint64_t tstamp; 
 };
 
 void print_packet(trace_encoder_n_packet_t* packet);
@@ -108,7 +108,8 @@ private:
   uint8_t buffer[MAX_TRACE_BUFFER_SIZE];
   uint16_t icnt;
   uint64_t prev_addr;
-
+  uint64_t prev_timestamp;
+  
   void set_direct_branch_packet(trace_encoder_n_packet_t* packet);
   void set_indirect_branch_packet(trace_encoder_n_packet_t* packet);
   void set_program_trace_sync_packet(trace_encoder_n_packet_t* packet);

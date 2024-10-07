@@ -107,12 +107,16 @@ void trace_encoder_n::set_program_trace_sync_packet(trace_encoder_n_packet_t* pa
   packet->icnt = 0;
   packet->f_addr = this->packet_0.i_addr >> 1;
   this->prev_addr = packet->f_addr;
+  packet->tstamp = this->packet_0.i_timestamp;
+  this->prev_timestamp = this->packet_0.i_timestamp;
 }
 
 void trace_encoder_n::set_direct_branch_packet(trace_encoder_n_packet_t* packet){
   packet->tcode = TCODE_DBR;
   packet->src = this->src;
   packet->icnt = this->icnt - this->packet_0.ilastsize;
+  packet->tstamp = this->packet_1.i_timestamp;
+  this->prev_timestamp = this->packet_1.i_timestamp;
 }
 
 void trace_encoder_n::set_indirect_branch_packet(trace_encoder_n_packet_t* packet){
@@ -123,13 +127,17 @@ void trace_encoder_n::set_indirect_branch_packet(trace_encoder_n_packet_t* packe
   uint64_t e_addr = this->packet_0.i_addr >> 1;
   packet->u_addr = e_addr ^ this->prev_addr;
   this->prev_addr = e_addr;
+  packet->tstamp = this->packet_1.i_timestamp;
+  this->prev_timestamp = this->packet_1.i_timestamp;
 }
 
 void trace_encoder_n::set_program_trace_corr_packet(trace_encoder_n_packet_t* packet) {
   packet->tcode = TCODE_PROG_TRACE_CORR;
   packet->src = this->src;
   packet->icnt = this->icnt;
-  packet->evcode = this->evcode;
+  packet->evcode = EVCODE_DISA;
+  packet->tstamp = this->packet_1.i_timestamp;
+  this->prev_timestamp = this->packet_1.i_timestamp;
 }
 
 // returns the number of bytes written to the buffer
@@ -151,11 +159,13 @@ int trace_encoder_n::packet_to_buffer(trace_encoder_n_packet_t* packet){
 int trace_encoder_n::packet_to_buffer_program_trace_sync_packet(trace_encoder_n_packet_t* packet) {
   int msb = find_msb(packet->f_addr);
   this->buffer[0] = packet->tcode << MDO_OFFSET | MSEO_IDLE;
+  // handling sync
   this->buffer[1] = packet->sync << MDO_OFFSET | MSEO_IDLE;
+  // handling f_addr
   this->buffer[1] |= (packet->f_addr & 0b11) << 6;
   int num_bytes = 0;
   if (msb < 2) {
-    this->buffer[1] |= MSEO_LAST;
+    this->buffer[1] |= MSEO_EOF;
   } else {
     packet->f_addr >>= 2;
     msb -= 2;
@@ -164,21 +174,38 @@ int trace_encoder_n::packet_to_buffer_program_trace_sync_packet(trace_encoder_n_
       this->buffer[2 + iter] = ((packet->f_addr & 0x3F) << MDO_OFFSET) | MSEO_IDLE;
       packet->f_addr >>= 6;
     }
-    this->buffer[2 + num_bytes - 1] |= MSEO_LAST;
+    this->buffer[2 + num_bytes - 1] |= MSEO_EOF;
   }
-  return 2 + num_bytes;
+  // handling tstamp
+  int tmsb = find_msb(packet->tstamp);
+  int tnum_bytes = ceil_div(tmsb, 6);
+  for (int iter = 0; iter < tnum_bytes; iter++) {
+    this->buffer[2 + num_bytes + iter] = ((packet->tstamp & 0x3F) << MDO_OFFSET) | MSEO_IDLE;
+    packet->tstamp >>= 6;
+  }
+  this->buffer[2 + num_bytes + tnum_bytes - 1] |= MSEO_LAST;
+  return 2 + num_bytes + tnum_bytes;
 }
 
 int trace_encoder_n::packet_to_buffer_direct_branch_packet(trace_encoder_n_packet_t* packet) {
   this->buffer[0] = packet->tcode << MDO_OFFSET | MSEO_IDLE;
   int msb = find_msb(packet->icnt);
   int num_bytes = ceil_div(msb, 6);
+  // handling icnt
   for (int iter = 0; iter < num_bytes; iter++) {
     this->buffer[1 + iter] = ((packet->icnt & 0x3F) << MDO_OFFSET) | MSEO_IDLE;
     packet->icnt >>= 6;
   }
-  this->buffer[1 + num_bytes - 1] |= MSEO_LAST;
-  return 1 + num_bytes;
+  this->buffer[1 + num_bytes - 1] |= MSEO_EOF;
+  // handling tstamp
+  int tmsb = find_msb(packet->tstamp);
+  int tnum_bytes = ceil_div(tmsb, 6);
+  for (int iter = 0; iter < tnum_bytes; iter++) {
+    this->buffer[1 + num_bytes + iter] = ((packet->tstamp & 0x3F) << MDO_OFFSET) | MSEO_IDLE;
+    packet->tstamp >>= 6;
+  }
+  this->buffer[1 + num_bytes + tnum_bytes - 1] |= MSEO_LAST;
+  return 1 + num_bytes + tnum_bytes;
 }
 
 int trace_encoder_n::packet_to_buffer_indirect_branch_packet(trace_encoder_n_packet_t* packet) {
@@ -208,8 +235,16 @@ int trace_encoder_n::packet_to_buffer_indirect_branch_packet(trace_encoder_n_pac
     this->buffer[u_addr_start + iter] = ((packet->u_addr & 0x3F) << MDO_OFFSET) | MSEO_IDLE;
     packet->u_addr >>= 6;
   }
-  this->buffer[u_addr_start + u_addr_num_bytes - 1] |= MSEO_LAST;
-  return u_addr_start + u_addr_num_bytes;
+  this->buffer[u_addr_start + u_addr_num_bytes - 1] |= MSEO_EOF;
+  // handling tstamp
+  int tmsb = find_msb(packet->tstamp);
+  int tnum_bytes = ceil_div(tmsb, 6);
+  for (int iter = 0; iter < tnum_bytes; iter++) {
+    this->buffer[u_addr_start + u_addr_num_bytes + iter] = ((packet->tstamp & 0x3F) << MDO_OFFSET) | MSEO_IDLE;
+    packet->tstamp >>= 6;
+  }
+  this->buffer[u_addr_start + u_addr_num_bytes + tnum_bytes - 1] |= MSEO_LAST;
+  return u_addr_start + u_addr_num_bytes + tnum_bytes;
 }
 
 int trace_encoder_n::packet_to_buffer_program_trace_corr_packet(trace_encoder_n_packet_t* packet) {
@@ -219,7 +254,7 @@ int trace_encoder_n::packet_to_buffer_program_trace_corr_packet(trace_encoder_n_
   this->buffer[1] |= (packet->icnt & 0b11) << 6;
   int num_bytes = 0;
   if (msb < 2) {
-    this->buffer[1] |= MSEO_LAST;
+    this->buffer[1] |= MSEO_EOF;
   } else {
     packet->icnt >>= 2;
     msb -= 2;
@@ -228,9 +263,17 @@ int trace_encoder_n::packet_to_buffer_program_trace_corr_packet(trace_encoder_n_
       this->buffer[2 + iter] = ((packet->icnt & 0x3F) << MDO_OFFSET) | MSEO_IDLE;
       packet->icnt >>= 6;
     }
-    this->buffer[2 + num_bytes - 1] |= MSEO_LAST;
+    this->buffer[2 + num_bytes - 1] |= MSEO_EOF;
   }
-  return 2 + num_bytes;
+  // handling tstamp
+  int tmsb = find_msb(packet->tstamp);
+  int tnum_bytes = ceil_div(tmsb, 6);
+  for (int iter = 0; iter < tnum_bytes; iter++) {
+    this->buffer[2 + num_bytes + iter] = ((packet->tstamp & 0x3F) << MDO_OFFSET) | MSEO_IDLE;
+    packet->tstamp >>= 6;
+  }
+  this->buffer[2 + num_bytes + tnum_bytes - 1] |= MSEO_LAST;
+  return 2 + num_bytes + tnum_bytes;
 }
 
 // returns the 0-index of the most significant bit

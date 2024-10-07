@@ -62,6 +62,8 @@ struct hart_to_encoder_ingress_t {
   bool iretire;           // 1 bit
   // ilastsize
   int ilastsize;          // 2 or 4, 2 bits
+  // timestamp
+  uint64_t i_timestamp;   // 64 bits
 };
 
 #define CHECK_INSN(name)  ((insn->bits() & MASK_##name) == MATCH_##name)
