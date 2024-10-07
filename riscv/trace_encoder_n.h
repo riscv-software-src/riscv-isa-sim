@@ -32,12 +32,17 @@ enum sync_t {
   SYNC_TRACE_EN = 5,
 };
 
+enum evcode_t {
+  EVCODE_DISA = 4,
+};
+
 struct trace_encoder_n_packet_t {
   uint8_t size;    // 8 bits
   tcode_t tcode;   // 6 bits
   uint16_t src;    // unused for now
   uint8_t sync;    // 4 bit
   uint8_t b_type;  // 2 bits
+  uint8_t evcode; // 4 bits
   uint16_t icnt;   // 16 bits
   uint64_t f_addr; // 64 bits
   uint64_t u_addr; // 64 bits
@@ -81,6 +86,7 @@ public:
     this->icnt = 0;
     this->packet_0 = hart_to_encoder_ingress_t(); // create empty packet
     this->packet_1 = hart_to_encoder_ingress_t(); // create empty packet
+    this->packet_count = 0;
   }
   void push_commit(hart_to_encoder_ingress_t packet);
   void generate_packet(tcode_t tcode);
@@ -93,6 +99,7 @@ private:
 
   hart_to_encoder_ingress_t packet_0; // the newer packet
   hart_to_encoder_ingress_t packet_1; // the older packet
+  uint64_t packet_count;
 
   bool active;
   bool enabled;
@@ -105,11 +112,13 @@ private:
   void set_direct_branch_packet(trace_encoder_n_packet_t* packet);
   void set_indirect_branch_packet(trace_encoder_n_packet_t* packet);
   void set_program_trace_sync_packet(trace_encoder_n_packet_t* packet);
+  void set_program_trace_corr_packet(trace_encoder_n_packet_t* packet);
 
   int packet_to_buffer(trace_encoder_n_packet_t* packet);
-  int packet_to_buffer_program_trace_sync(trace_encoder_n_packet_t* packet);
+  int packet_to_buffer_program_trace_sync_packet(trace_encoder_n_packet_t* packet);
   int packet_to_buffer_direct_branch_packet(trace_encoder_n_packet_t* packet);
   int packet_to_buffer_indirect_branch_packet(trace_encoder_n_packet_t* packet);
+  int packet_to_buffer_program_trace_corr_packet(trace_encoder_n_packet_t* packet);
 };
 
 
