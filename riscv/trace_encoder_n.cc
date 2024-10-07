@@ -115,7 +115,7 @@ void trace_encoder_n::set_direct_branch_packet(trace_encoder_n_packet_t* packet)
   packet->tcode = TCODE_DBR;
   packet->src = this->src;
   packet->icnt = this->icnt - this->packet_0.ilastsize;
-  packet->tstamp = this->packet_1.i_timestamp;
+  packet->tstamp = this->packet_1.i_timestamp ^ this->prev_timestamp;
   this->prev_timestamp = this->packet_1.i_timestamp;
 }
 
@@ -127,7 +127,7 @@ void trace_encoder_n::set_indirect_branch_packet(trace_encoder_n_packet_t* packe
   uint64_t e_addr = this->packet_0.i_addr >> 1;
   packet->u_addr = e_addr ^ this->prev_addr;
   this->prev_addr = e_addr;
-  packet->tstamp = this->packet_1.i_timestamp;
+  packet->tstamp = this->packet_1.i_timestamp ^ this->prev_timestamp;
   this->prev_timestamp = this->packet_1.i_timestamp;
 }
 
@@ -136,7 +136,7 @@ void trace_encoder_n::set_program_trace_corr_packet(trace_encoder_n_packet_t* pa
   packet->src = this->src;
   packet->icnt = this->icnt;
   packet->evcode = EVCODE_DISA;
-  packet->tstamp = this->packet_1.i_timestamp;
+  packet->tstamp = this->packet_1.i_timestamp ^ this->prev_timestamp;
   this->prev_timestamp = this->packet_1.i_timestamp;
 }
 
