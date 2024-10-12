@@ -4,7 +4,7 @@
 
 require_vsm4_constraints;
 // No overlap of vd and vs2.
-require(insn.rd() != insn.rs2());
+require_no_overlap_eglmul(insn.rd(), insn.rs2()); \
 // vd and vs2 are LMUL (resp. EGW / VLEN) aligned
 require_vd_align_lmul;
 require_vs2_align_eglmul(128);

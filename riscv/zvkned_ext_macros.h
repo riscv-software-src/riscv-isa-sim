@@ -20,7 +20,7 @@
     require_zvkned; \
     require(P.VU.vsew == 32); \
     require_egw_fits(128); \
-    require(insn.rd() != insn.rs2()); \
+    require_no_overlap_eglmul(insn.rd(), insn.rs2()); \
     require_vd_align_lmul; \
     require_vs2_align_eglmul(128); \
   } while (false)
