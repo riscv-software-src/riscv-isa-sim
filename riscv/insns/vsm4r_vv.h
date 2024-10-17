@@ -4,6 +4,9 @@
 
 require_vsm4_constraints;
 
+require_vd_align_lmul;
+require_vs2_align_lmul;
+
 VI_ZVK_VD_VS2_EGU32x4_NOVM_LOOP(
   {},
   {
