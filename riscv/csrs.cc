@@ -556,9 +556,8 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
   const reg_t adjusted_val = set_field(val, MSTATUS_MPP, requested_mpp);
   reg_t new_mstatus = (read() & ~mask) | (adjusted_val & mask);
-  if (new_mstatus & MSTATUS_MDT) {
-    new_mstatus = new_mstatus & ~MSTATUS_MIE;
-  }
+  new_mstatus = (new_mstatus & MSTATUS_MDT) ? (new_mstatus & ~MSTATUS_MIE) : new_mstatus;
+  new_mstatus = (new_mstatus & MSTATUS_SDT) ? (new_mstatus & ~MSTATUS_SIE) : new_mstatus;
   maybe_flush_tlb(new_mstatus);
   this->val = adjust_sd(new_mstatus);
   return true;
