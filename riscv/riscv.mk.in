@@ -16,6 +16,7 @@ riscv_install_pcs = yes
 riscv_install_prog_srcs = \
 
 riscv_install_hdrs = \
+	crc_dev.h \
 	abstract_device.h \
 	abstract_interrupt_controller.h \
 	cachesim.h \
@@ -49,6 +50,7 @@ riscv_precompiled_hdrs = \
 	insn_template.h \
 
 riscv_srcs = \
+	crc_dev.cc \
 	processor.cc \
 	execute.cc \
 	dts.cc \

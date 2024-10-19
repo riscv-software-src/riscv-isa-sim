@@ -21,6 +21,8 @@
 #include <sys/wait.h>
 #include <sys/types.h>
 
+#include "crc_dev.h"
+
 volatile bool ctrlc_pressed = false;
 static void handle_signal(int sig)
 {
@@ -68,7 +70,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     bus.add_device(x.first, x.second);
 
   bus.add_device(DEBUG_START, &debug_module);
-
+  bus.add_device(CRC_DEV_MMIO_BASE, &crc_module);
   socketif = NULL;
 #ifdef HAVE_BOOST_ASIO
   if (socket_enabled) {

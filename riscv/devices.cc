@@ -8,6 +8,7 @@ mmio_device_map_t& mmio_device_map()
   return device_map;
 }
 
+#include <stdio.h>
 void bus_t::add_device(reg_t addr, abstract_device_t* dev)
 {
   // Searching devices via lower_bound/upper_bound
@@ -15,6 +16,7 @@ void bus_t::add_device(reg_t addr, abstract_device_t* dev)
   // container to sort the keys and provide ordered
   // iteration over this sort, which it does. (python's
   // SortedDict is a good analogy)
+  printf( "Add Device 0x%lx\n", addr);
   devices[addr] = dev;
 }
 
