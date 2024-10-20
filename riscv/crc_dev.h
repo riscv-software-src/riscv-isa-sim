@@ -7,13 +7,14 @@
 #include <fesvr/term.h>
 #include <fdt/libfdt.h>
 
-#define CRC_DEV_MMIO_BASE 0x41000000
+#define CRC_DEV_MMIO_BASE 0x4535FF00
 
-#define MMIO_CRC_CR CRC_DEV_MMIO_BASE + 0       // W Access to Control Register
-#define MMIO_CRC_SR CRC_DEV_MMIO_BASE + 1       // R/W Access Status register; only intr flag is writable to clear it post serving of interrupt
-#define MMIO_CRC_DATA CRC_DEV_MMIO_BASE + 2     // W Access Data pointer Register
-#define MMIO_CRC_RESULT CRC_DEV_MMIO_BASE + 3   // R Access Result Register
-#define MMIO_CRC_SET_POLY CRC_DEV_MMIO_BASE + 4 // R/W Save u32_polynomial value
+#define MMIO_CRC_CR CRC_DEV_MMIO_BASE + 0x0            // W Access to Control Register
+#define MMIO_CRC_SR CRC_DEV_MMIO_BASE + 0x4            // R/W Access Status register; only intr flag is writable to clear it post serving of interrupt
+#define MMIO_CRC_RESULT CRC_DEV_MMIO_BASE + 0x8        // R Access Result Register
+#define MMIO_CRC_SET_POLY CRC_DEV_MMIO_BASE + 0xC      // R/W Save u32_polynomial value
+#define MMIO_CRC_DATA CRC_DEV_MMIO_BASE + 0x10         // W Access Data pointer Register
+#define MMIO_CRC_SET_DATA_LEN CRC_DEV_MMIO_BASE + 0x14 // R/W Save u32_data_len value
 
 typedef uint32_t crc_t;
 
@@ -37,7 +38,7 @@ class crc_dev_t : public abstract_device_t
 {
 private:
     crc_t u32_polynomial;
-    crc_t *u8p_data;
+    uint8_t *u8p_data;
     crc_t u32_data_length;
     crc_t u32_crc_res;
     union crc_csr_u

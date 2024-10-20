@@ -1,0 +1,8 @@
+{
+    "files.associations": {
+        "*.ipp": "cpp",
+        "atomic": "cpp",
+        "memory_resource": "cpp",
+        "stop_token": "cpp"
+    }
+}
