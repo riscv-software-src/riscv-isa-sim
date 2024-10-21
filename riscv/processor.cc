@@ -396,6 +396,7 @@ void processor_t::debug_output_log(std::stringstream *s)
   if (log_file == stderr) {
     std::ostream out(sout_.rdbuf());
     out << s->str(); // handles command line options -d -s -l
+    // out << "hello world4\n";
   } else {
     fputs(s->str().c_str(), log_file); // handles command line option --log
   }
@@ -575,6 +576,15 @@ void processor_t::check_if_lpad_required()
   }
 }
 
+int is_a_register(std::string reg_str){
+  for(int i=0;i<32;i++){
+    if(reg_str==xpr_name[i]){
+      return i;
+    }
+  }
+  return 255;
+}
+
 void processor_t::disasm(insn_t insn)
 {
   uint64_t bits = insn.bits();
@@ -586,16 +596,78 @@ void processor_t::disasm(insn_t insn)
     {
       s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
         << ": >>>>  " << sym << std::endl;
+      s<<"hello world\n";
     }
 
     if (executions != 1) {
       s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
         << ": Executed " << executions << " times" << std::endl;
+      s<<"hello world2\n";
     }
 
     unsigned max_xlen = isa.get_max_xlen();
+    // s<<"hello world3\n";
+   
+    // s<<"rd= "<<insn.rd() <<" rs1= "<<insn.rs1() <<" \n";
 
-    s << "core " << std::dec << std::setfill(' ') << std::setw(3) << id
+    // for(int i=0;i<32;i+=4){
+    //   s << std::dec << std::setfill(' ') << std::setw(4) << i <<  std::hex << ": 0x" << std::setfill('0')<< std::setw(max_xlen / 4) << state.XPR[i]  <<"\t" 
+    //     << std::dec << std::setfill(' ') << std::setw(4) << i+1 <<  std::hex << ": 0x" << std::setfill('0')<< std::setw(max_xlen / 4) << state.XPR[i+1]<<"\t"  
+    //     << std::dec << std::setfill(' ') << std::setw(4) << i+2 <<  std::hex << ": 0x" << std::setfill('0')<< std::setw(max_xlen / 4) << state.XPR[i+2]<<"\t" 
+    //     << std::dec << std::setfill(' ') << std::setw(4) << i+3 <<  std::hex << ": 0x" << std::setfill('0')<< std::setw(max_xlen / 4) << state.XPR[i+3]<< "\n";
+    // }
+
+    #include <functional>
+    std::function is_a_reg = [](std::string reg_str)->std::tuple<int,int>{
+      for(int i=0;i<32;i++){
+        if(reg_str==xpr_name[i]){
+          return {0,i};
+        }
+        else if(reg_str==fpr_name[i]){
+          return {1,i};
+        }
+        else if(reg_str==vr_name[i]){
+          return {2,i};
+        }
+      }
+      return {255,255};
+    };
+    
+    std::function float128_to_double=[](const float128_t& f) -> double {
+      double high = static_cast<double>(f.v[1]);
+      double low = static_cast<double>(f.v[0]) / (1ULL << 64);
+      return high + low; // This won't give you correct float128 representation!
+    };
+    
+    const disasm_insn_t* disasm_insn = disassembler->lookup(insn);
+    // s<<"insn name = "<<disasm_insn->get_name()<<"\n";
+    // s<<"insn mask = "<<disasm_insn->get_mask()<<"\n";
+    // s<<"insn match = "<<disasm_insn->get_match()<<"\n";
+    
+    for(auto arg : disasm_insn->args){
+        auto reg_str=arg->to_string(insn);
+        int reg_num= is_a_register(reg_str);
+        // s<<state.XPR[reg_num];
+        auto [t,n]= is_a_reg(reg_str);
+        switch (t)
+        {
+        case 0:
+          s<<"\n"<<reg_str<<std::hex<<" 0x"<<state.XPR[n]<<"\n";
+          break;
+        case 1:
+          s<<"\n"<<reg_str<<" "<<std::setprecision(30)<<float128_to_double( state.FPR[n])<<"\n"<<"\n";
+          break;
+        // case 2:
+        //   s<<state.[n];
+        //   break;
+        
+        default:
+          break;
+        }
+    };
+    
+
+    s << "mycore " << std::dec << std::setfill(' ') << std::setw(3) << id
       << std::hex << ": 0x" << std::setfill('0') << std::setw(max_xlen / 4)
       << zext(state.pc, max_xlen) << " (0x" << std::setw(8) << bits << ") "
       << disassembler->disassemble(insn) << std::endl;
