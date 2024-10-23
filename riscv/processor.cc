@@ -576,15 +576,6 @@ void processor_t::check_if_lpad_required()
   }
 }
 
-int is_a_register(std::string reg_str){
-  for(int i=0;i<32;i++){
-    if(reg_str==xpr_name[i]){
-      return i;
-    }
-  }
-  return 255;
-}
-
 void processor_t::disasm(insn_t insn)
 {
   uint64_t bits = insn.bits();

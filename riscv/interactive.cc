@@ -114,7 +114,7 @@ static std::string readline(int fd)
   }
   bool noncanonical = tcgetattr(fd, &tios) == 0 && (tios.c_lflag & ICANON) == 0;
 
-  std::string s_head = std::string("(myspike) ");
+  std::string s_head = std::string("(spike) ");
   std::string s = s_head;
   keybuffer_t key_buffer = 0;
   // index for up/down arrow
@@ -739,6 +739,7 @@ void sim_t::interactive_str(const std::string& cmd, const std::vector<std::strin
   char ch;
   while ((ch = mmu->load<uint8_t>(addr++)))
     out << ch;
+    
   out << std::endl;
 }
 
