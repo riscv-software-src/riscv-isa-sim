@@ -405,6 +405,8 @@ private:
   void take_trap(trap_t& t, reg_t epc); // take an exception
   void take_trigger_action(triggers::action_t action, reg_t breakpoint_tval, reg_t epc, bool virt);
   void disasm(insn_t insn); // disassemble and print an instruction
+  void print_all_regs(); // print values of all registers
+  void print_involved_regs(insn_t insn); // print values of registers involved
   void register_insn(insn_desc_t, bool);
   int paddr_bits();
 

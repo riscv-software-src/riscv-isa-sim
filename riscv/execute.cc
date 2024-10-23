@@ -284,9 +284,18 @@ void processor_t::step(size_t n)
 
           in_wfi = false;
           insn_fetch_t fetch = mmu->load_insn(pc);
-          if (debug && !state.serialized)
+          if (debug && !state.serialized){
+            std::stringstream s{"before:\t"};
+            debug_output_log(&s);
+            print_involved_regs(fetch.insn);
             disasm(fetch.insn);
+          }
           pc = execute_insn_logged(this, pc, fetch);
+          if (debug && !state.serialized){
+            std::stringstream s{"after:\t"};
+            debug_output_log(&s);
+            print_involved_regs(fetch.insn);
+          }
           advance_pc();
 
           // Resume from debug mode in critical error
