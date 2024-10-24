@@ -276,6 +276,7 @@
 //
 #define VI_ZVK_VD_VS1_VS2_EGU32x4_NOVM_LOOP(PRELUDE, EG_BODY) \
   do { \
+    VI_CHECK_SSS(true); \
     require_element_groups_32x4; \
     require_no_vmask; \
     const reg_t vd_num = insn.rd(); \
@@ -331,6 +332,7 @@
 //
 #define VI_ZVK_VD_VS1_VS2_EGU32x8_NOVM_LOOP(PRELUDE, EG_BODY) \
   do { \
+    VI_CHECK_SSS(true); \
     require_element_groups_32x8;; \
     require_no_vmask; \
     const reg_t vd_num = insn.rd(); \
@@ -397,6 +399,7 @@
                                                                PRELOOP, \
                                                                EG_BODY) \
   do { \
+    VI_CHECK_SSS(true); \
     require_element_groups_32x4; \
     require_no_vmask; \
     const reg_t vd_num = insn.rd(); \
@@ -466,6 +469,7 @@
                                                            PRELOOP, \
                                                            EG_BODY) \
   do { \
+    VI_CHECK_SSS(false); \
     require_element_groups_32x4; \
     require_no_vmask; \
     const reg_t vd_num = insn.rd(); \
@@ -515,6 +519,7 @@
 //
 #define VI_ZVK_VD_VS2_EGU32x4_NOVM_LOOP(PRELUDE, EG_BODY) \
   do { \
+    VI_CHECK_SSS(false); \
     require_element_groups_32x4; \
     require_no_vmask; \
     const reg_t vd_num = insn.rd(); \
@@ -567,6 +572,7 @@
 //
 #define VI_ZVK_VD_VS2_ZIMM5_EGU32x4_NOVM_LOOP(PRELUDE, PRELOOP, EG_BODY) \
   do { \
+    VI_CHECK_SSS(false); \
     require_element_groups_32x4; \
     require_no_vmask; \
     const reg_t vd_num = insn.rd(); \
@@ -623,6 +629,7 @@
 //
 #define VI_ZVK_VD_VS2_ZIMM5_EGU32x8_NOVM_LOOP(PRELUDE, PRELOOP, EG_BODY) \
   do { \
+    VI_CHECK_SSS(false); \
     require_element_groups_32x8; \
     require_no_vmask; \
     const reg_t vd_num = insn.rd(); \
@@ -680,6 +687,7 @@
 //         in the 'vs2' vector register / vector register group.
 #define VI_ZVK_VD_VS1_VS2_EGU64x4_NOVM_LOOP(PRELUDE, EG_BODY) \
   do { \
+    VI_CHECK_SSS(true); \
     require_element_groups_64x4; \
     require_no_vmask; \
     const reg_t vd_num = insn.rd(); \
