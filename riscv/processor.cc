@@ -304,8 +304,8 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
   const bool nmie = !(state.mnstatus && !get_field(state.mnstatus->read(), MNSTATUS_NMIE));
   if (!state.debug_mode && nmie && enabled_interrupts) {
     // nonstandard interrupts have highest priority
-    if (enabled_interrupts >> (IRQ_M_EXT + 1))
-      enabled_interrupts = enabled_interrupts >> (IRQ_M_EXT + 1) << (IRQ_M_EXT + 1);
+    if (enabled_interrupts >> (IRQ_LCOF + 1))
+      enabled_interrupts = enabled_interrupts >> (IRQ_LCOF + 1) << (IRQ_LCOF + 1);
     // standard interrupt priority is MEI, MSI, MTI, SEI, SSI, STI
     else if (enabled_interrupts & MIP_MEIP)
       enabled_interrupts = MIP_MEIP;
