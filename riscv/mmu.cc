@@ -662,3 +662,39 @@ mem_access_info_t mmu_t::generate_access_info(reg_t addr, access_type type, xlat
   }
   return {addr, transformed_addr, mode, virt, xlate_flags, type};
 }
+
+icache_entry_t* mmu_t::refill_icache(reg_t addr, icache_entry_t* entry)
+{
+  if (matched_trigger)
+    throw *matched_trigger;
+
+  auto tlb_entry = translate_insn_addr(addr);
+  insn_bits_t insn = from_le(*(uint16_t*)(tlb_entry.host_offset + addr));
+  int length = insn_length(insn);
+
+  if (likely(length == 4)) {
+    insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 2)) << 16;
+  } else if (length == 2) {
+    // entire instruction already fetched
+  } else if (length == 6) {
+    insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 2)) << 16;
+    insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 4)) << 32;
+  } else {
+    static_assert(sizeof(insn_bits_t) == 8, "insn_bits_t must be uint64_t");
+    insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 2)) << 16;
+    insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 4)) << 32;
+    insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 6)) << 48;
+  }
+
+  insn_fetch_t fetch = {proc->decode_insn(insn), insn};
+  entry->tag = addr;
+  entry->next = &icache[icache_index(addr + length)];
+  entry->data = fetch;
+
+  reg_t paddr = tlb_entry.target_offset + addr;;
+  if (tracer.interested_in_range(paddr, paddr + 1, FETCH)) {
+    entry->tag = -1;
+    tracer.trace(paddr, length, FETCH);
+  }
+  return entry;
+}
