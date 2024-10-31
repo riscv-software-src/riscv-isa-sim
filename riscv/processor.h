@@ -420,7 +420,7 @@ private:
   void parse_priv_string(const char*);
   void build_opcode_map();
   void register_base_instructions();
-  insn_func_t decode_insn(insn_t insn);
+  insn_func_t decode_insn(insn_bits_t insn_bits);
 
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;

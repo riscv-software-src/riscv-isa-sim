@@ -669,24 +669,24 @@ icache_entry_t* mmu_t::refill_icache(reg_t addr, icache_entry_t* entry)
     throw *matched_trigger;
 
   auto tlb_entry = translate_insn_addr(addr);
-  insn_bits_t insn = from_le(*(uint16_t*)(tlb_entry.host_offset + addr));
-  int length = insn_length(insn);
+  insn_bits_t insn_bits = from_le(*(uint16_t*)(tlb_entry.host_offset + addr));
+  int length = insn_length(insn_bits);
 
   if (likely(length == 4)) {
-    insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 2)) << 16;
+    insn_bits |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 2)) << 16;
   } else if (length == 2) {
     // entire instruction already fetched
   } else if (length == 6) {
-    insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 2)) << 16;
-    insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 4)) << 32;
+    insn_bits |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 2)) << 16;
+    insn_bits |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 4)) << 32;
   } else {
     static_assert(sizeof(insn_bits_t) == 8, "insn_bits_t must be uint64_t");
-    insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 2)) << 16;
-    insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 4)) << 32;
-    insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 6)) << 48;
+    insn_bits |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 2)) << 16;
+    insn_bits |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 4)) << 32;
+    insn_bits |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 6)) << 48;
   }
 
-  insn_fetch_t fetch = {proc->decode_insn(insn), insn};
+  insn_fetch_t fetch = {proc->decode_insn(insn_bits), insn_t(insn_bits)};
   entry->tag = addr;
   entry->next = &icache[icache_index(addr + length)];
   entry->data = fetch;

@@ -657,17 +657,17 @@ reg_t illegal_instruction(processor_t UNUSED *p, insn_t insn, reg_t UNUSED pc)
   throw trap_illegal_instruction(insn.bits() & 0xffffffffULL);
 }
 
-insn_func_t processor_t::decode_insn(insn_t insn)
+insn_func_t processor_t::decode_insn(insn_bits_t insn_bits)
 {
   // look up opcode in hash table
-  size_t idx = insn.bits() % OPCODE_CACHE_SIZE;
-  auto [hit, desc] = opcode_cache[idx].lookup(insn.bits());
+  size_t idx = insn_bits % OPCODE_CACHE_SIZE;
+  auto [hit, desc] = opcode_cache[idx].lookup(insn_bits);
 
   bool rve = extension_enabled('E');
 
   if (unlikely(!hit)) {
     // fall back to linear search
-    auto matching = [insn_bits = insn.bits()](const insn_desc_t &d) {
+    auto matching = [insn_bits](const insn_desc_t &d) {
       return (insn_bits & d.mask) == d.match;
     };
     auto p = std::find_if(custom_instructions.begin(),
@@ -677,7 +677,7 @@ insn_func_t processor_t::decode_insn(insn_t insn)
       assert(p != instructions.end());
     }
     desc = &*p;
-    opcode_cache[idx].replace(insn.bits(), desc);
+    opcode_cache[idx].replace(insn_bits, desc);
   }
 
   return desc->func(xlen, rve, log_commits_enabled);
