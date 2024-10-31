@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension('M');
 require_rv64;
 reg_t lhs = zext32(RS1);
@@ -6,3 +7,5 @@ if (rhs == 0)
   WRITE_RD(sext32(lhs));
 else
   WRITE_RD(sext32(lhs % rhs));
+
+#endif

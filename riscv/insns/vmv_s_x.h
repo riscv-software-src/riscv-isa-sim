@@ -1,3 +1,4 @@
+#ifdef BODY
 // vmv_s_x: vd[0] = rs1
 require_vector(true);
 require(insn.v_vm() == 1);
@@ -27,3 +28,5 @@ if (vl > 0 && P.VU.vstart->read() < vl) {
 }
 
 P.VU.vstart->write(0);
+
+#endif

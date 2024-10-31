@@ -1,3 +1,4 @@
+#ifdef BODY
 
 require_extension(EXT_ZKNH);
 
@@ -11,3 +12,5 @@ WRITE_RD(
 
 #undef ROR32
 
+
+#endif

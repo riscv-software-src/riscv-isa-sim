@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension('Q');
 require_fp;
 bool less = f128_lt_quiet(f128(FRS1), f128(FRS2)) ||
@@ -7,3 +8,5 @@ if (isNaNF128(f128(FRS1)) && isNaNF128(f128(FRS2)))
 else
   WRITE_FRD(less || isNaNF128(f128(FRS2)) ? FRS1 : FRS2);
 set_fp_exceptions;
+
+#endif

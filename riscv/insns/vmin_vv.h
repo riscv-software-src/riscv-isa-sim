@@ -1,3 +1,4 @@
+#ifdef BODY
 // vmin.vv vd, vs2, vs1, vm   # Vector-vector
 VI_VV_LOOP
 ({
@@ -9,3 +10,5 @@ VI_VV_LOOP
 
 
 })
+
+#endif

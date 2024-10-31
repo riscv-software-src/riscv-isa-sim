@@ -1,3 +1,4 @@
+#ifdef BODY
 require_either_extension('D', EXT_ZDINX);
 require_fp;
 bool less = f64_lt_quiet(FRS1_D, FRS2_D) ||
@@ -7,3 +8,5 @@ if (isNaNF64UI(FRS1_D.v) && isNaNF64UI(FRS2_D.v))
 else
   WRITE_FRD_D((less || isNaNF64UI(FRS2_D.v) ? FRS1_D : FRS2_D));
 set_fp_exceptions;
+
+#endif

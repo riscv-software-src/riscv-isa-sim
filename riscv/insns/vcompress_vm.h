@@ -1,3 +1,4 @@
+#ifdef BODY
 // vcompress vd, vs2, vs1
 require(insn.rd() != insn.rs2());
 
@@ -32,3 +33,5 @@ VI_GENERAL_LOOP_BASE
     ++pos;
   }
 VI_LOOP_END_BASE;
+
+#endif

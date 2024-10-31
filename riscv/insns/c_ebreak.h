@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension(EXT_ZCA);
 if (!STATE.debug_mode && (
         (!STATE.v && STATE.prv == PRV_M && STATE.dcsr->ebreakm) ||
@@ -9,3 +10,5 @@ if (!STATE.debug_mode && (
 } else {
 	throw trap_breakpoint(STATE.v, pc);
 }
+
+#endif

@@ -1,3 +1,4 @@
+#ifdef BODY
 // vsmul.vv vd, vs2, vs1
 VI_VV_LOOP
 ({
@@ -22,3 +23,5 @@ VI_VV_LOOP
 
   vd = result;
 })
+
+#endif

@@ -1,3 +1,4 @@
+#ifdef BODY
 // vfsgnn
 VI_VFP_VV_LOOP
 ({
@@ -9,3 +10,5 @@ VI_VFP_VV_LOOP
 {
   vd = fsgnj64(vs2.v, vs1.v, true, false);
 })
+
+#endif

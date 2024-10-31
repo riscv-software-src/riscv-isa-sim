@@ -1,3 +1,4 @@
+#ifdef BODY
 
 require_extension(EXT_ZKSH);
 
@@ -12,3 +13,5 @@ WRITE_RD(
 
 #undef ROL32
 
+
+#endif

@@ -1,3 +1,4 @@
+#ifdef BODY
 // vsm4k.vi vd, vs2, round#
 
 #include "zvksed_ext_macros.h"
@@ -50,3 +51,5 @@ VI_ZVK_VD_VS2_ZIMM5_EGU32x4_NOVM_LOOP(
     SET_EGU32x4_LE(vd, rk4, rk5, rk6, rk7);
   }
 );
+
+#endif

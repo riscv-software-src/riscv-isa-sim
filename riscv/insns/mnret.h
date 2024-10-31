@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension(EXT_SMRNMI);
 require_privilege(PRV_M);
 set_pc_and_serialize(p->get_state()->mnepc->read());
@@ -12,3 +13,5 @@ if (prev_prv != PRV_M) {
 s = set_field(s, MNSTATUS_NMIE, 1);
 STATE.mnstatus->write(s);
 p->set_privilege(prev_prv, prev_virt);
+
+#endif

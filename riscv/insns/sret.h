@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension('S');
 reg_t prev_hstatus = STATE.hstatus->read();
 if (STATE.v) {
@@ -45,3 +46,5 @@ if (STATE.prv == PRV_S) {
 
 STATE.sstatus->write(s);
 p->set_privilege(prev_prv, prev_virt);
+
+#endif

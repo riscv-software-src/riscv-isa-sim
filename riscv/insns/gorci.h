@@ -1,3 +1,4 @@
+#ifdef BODY
 // Zbb contains orc.b but not general gorci
 require(((SHAMT == 7) && p->extension_enabled(EXT_ZBB)));
 require(SHAMT < xlen);
@@ -10,3 +11,5 @@ if (shamt &  8) x |= ((x & 0x00FF00FF00FF00FFLL) <<  8) | ((x & 0xFF00FF00FF00FF
 if (shamt & 16) x |= ((x & 0x0000FFFF0000FFFFLL) << 16) | ((x & 0xFFFF0000FFFF0000LL) >> 16);
 if (shamt & 32) x |= ((x & 0x00000000FFFFFFFFLL) << 32) | ((x & 0xFFFFFFFF00000000LL) >> 32);
 WRITE_RD(sext_xlen(x));
+
+#endif

@@ -1,3 +1,4 @@
+#ifdef BODY
 // vfwcvt.f.f.v vd, vs2, vm
 VI_VFP_WCVT_FP_TO_FP(
   { vd = f16_to_f32(vs2); },           // BODY16
@@ -5,3 +6,5 @@ VI_VFP_WCVT_FP_TO_FP(
   { require_extension(EXT_ZVFHMIN); }, // CHECK16
   { require_extension('D'); }          // CHECK32
 )
+
+#endif

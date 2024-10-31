@@ -1,3 +1,4 @@
+#ifdef BODY
 // vandn.vx vd, vs2, rs1, vm
 
 #include "zvk_ext_macros.h"
@@ -8,3 +9,5 @@ VI_VX_LOOP
 ({
   vd = vs2 & (~rs1);
 })
+
+#endif

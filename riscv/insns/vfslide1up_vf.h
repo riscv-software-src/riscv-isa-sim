@@ -1,3 +1,4 @@
+#ifdef BODY
 //vfslide1up.vf vd, vs2, rs1
 VI_CHECK_SLIDE(true);
 
@@ -34,3 +35,5 @@ if (i != 0) {
   }
 }
 VI_VFP_LOOP_END
+
+#endif

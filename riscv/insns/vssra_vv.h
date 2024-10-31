@@ -1,3 +1,4 @@
+#ifdef BODY
 // vssra.vv vd, vs2, vs1
 VI_VV_LOOP
 ({
@@ -8,3 +9,5 @@ VI_VV_LOOP
   INT_ROUNDING(val, xrm, sh);
   vd = val >> sh;
 })
+
+#endif

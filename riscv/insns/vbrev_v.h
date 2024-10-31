@@ -1,3 +1,4 @@
+#ifdef BODY
 // vbrev.v vd, vs2
 
 #include "zvk_ext_macros.h"
@@ -22,3 +23,5 @@ VI_V_ULOOP
 
   vd = x;
 })
+
+#endif

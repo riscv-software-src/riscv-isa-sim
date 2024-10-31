@@ -1,3 +1,4 @@
+#ifdef BODY
 // vrgatherei16.vv vd, vs2, vs1, vm # vd[i] = (vs1[i] >= VLMAX) ? 0 : vs2[vs1[i]];
 float vemul = (16.0 / P.VU.vsew * P.VU.vflmul);
 require(vemul >= 0.125 && vemul <= 8);
@@ -32,3 +33,5 @@ VI_LOOP_BASE
   }
   }
 VI_LOOP_END;
+
+#endif

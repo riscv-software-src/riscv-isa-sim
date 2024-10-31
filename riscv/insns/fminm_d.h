@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension('D');
 require_extension(EXT_ZFA);
 require_fp;
@@ -8,3 +9,5 @@ if (isNaNF64UI(FRS1_D.v) || isNaNF64UI(FRS2_D.v))
 else
   WRITE_FRD_D(less ? FRS1_D : FRS2_D);
 set_fp_exceptions;
+
+#endif

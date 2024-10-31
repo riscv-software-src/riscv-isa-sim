@@ -1,3 +1,4 @@
+#ifdef BODY
 // vrgather.vi vd, vs2, zimm5 vm # vd[i] = (zimm5 >= VLMAX) ? 0 : vs2[zimm5];
 require_align(insn.rd(), P.VU.vflmul);
 require_align(insn.rs2(), P.VU.vflmul);
@@ -22,3 +23,5 @@ VI_LOOP_BASE
     break;
   }
 VI_LOOP_END;
+
+#endif

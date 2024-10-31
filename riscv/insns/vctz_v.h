@@ -1,3 +1,4 @@
+#ifdef BODY
 // vctz.v vd, vs2
 
 #include "zvk_ext_macros.h"
@@ -14,3 +15,5 @@ VI_V_ULOOP
   }
   vd = i;
 })
+
+#endif

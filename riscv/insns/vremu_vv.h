@@ -1,3 +1,4 @@
+#ifdef BODY
 // vremu.vv vd, vs2, vs1
 VI_VV_ULOOP
 ({
@@ -6,3 +7,5 @@ VI_VV_ULOOP
   else
     vd = vs2 % vs1;
 })
+
+#endif

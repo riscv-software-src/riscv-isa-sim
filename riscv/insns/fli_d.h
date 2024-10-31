@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension('D');
 require_extension(EXT_ZFA);
 require_fp;
@@ -38,3 +39,5 @@ require_fp;
   };
   WRITE_FRD_D(f64(bits[insn.rs1()]));
 }
+
+#endif

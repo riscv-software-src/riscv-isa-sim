@@ -1,3 +1,4 @@
+#ifdef BODY
 // vfmv_s_f: vd[0] = rs1 (vs2=0)
 require_vector(true);
 require_fp;
@@ -27,3 +28,5 @@ if (vl > 0 && P.VU.vstart->read() < vl) {
   }
 }
 P.VU.vstart->write(0);
+
+#endif

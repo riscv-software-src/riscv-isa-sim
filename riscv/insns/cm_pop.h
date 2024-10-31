@@ -1,3 +1,4 @@
+#ifdef BODY
 require_zcmp_pushpop;
 
 const auto new_sp = SP + insn.zcmp_stack_adjustment(xlen);
@@ -15,3 +16,5 @@ for (int i = Sn(11); i >= 0; i--) {
 }
 
 WRITE_REG(X_SP, new_sp);
+
+#endif

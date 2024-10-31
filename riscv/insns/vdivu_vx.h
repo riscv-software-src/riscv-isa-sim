@@ -1,3 +1,4 @@
+#ifdef BODY
 // vdivu.vx vd, vs2, rs1
 VI_VX_ULOOP
 ({
@@ -6,3 +7,5 @@ VI_VX_ULOOP
   else
     vd = vs2 / rs1;
 })
+
+#endif

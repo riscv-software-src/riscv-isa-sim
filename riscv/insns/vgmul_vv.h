@@ -1,3 +1,4 @@
+#ifdef BODY
 // vgmul.vv vd, vs2
 
 #include "zvk_ext_macros.h"
@@ -30,3 +31,5 @@ VI_ZVK_VD_VS2_EGU32x4_NOVM_LOOP(
     vd = Z;
   }
 );
+
+#endif

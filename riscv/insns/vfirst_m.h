@@ -1,3 +1,4 @@
+#ifdef BODY
 // vmfirst rd, vs2
 require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
 require_vector(true);
@@ -15,3 +16,5 @@ for (reg_t i=P.VU.vstart->read(); i < vl; ++i) {
   }
 }
 WRITE_RD(pos);
+
+#endif

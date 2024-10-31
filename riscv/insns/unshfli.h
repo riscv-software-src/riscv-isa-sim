@@ -1,3 +1,4 @@
+#ifdef BODY
 // Zbkb contains unzip but not general unshfli
 require_rv32;
 require(((insn.rs2() == (xlen / 2 - 1)) && p->extension_enabled(EXT_ZBKB)));
@@ -10,3 +11,5 @@ if (shamt &  4) x = (x & 0xF00FF00FF00FF00FLL) | ((x & 0x0F000F000F000F00LL) >> 
 if (shamt &  8) x = (x & 0xFF0000FFFF0000FFLL) | ((x & 0x00FF000000FF0000LL) >>  8) | ((x & 0x0000FF000000FF00LL) <<  8);
 if (shamt & 16) x = (x & 0xFFFF00000000FFFFLL) | ((x & 0x0000FFFF00000000LL) >> 16) | ((x & 0x00000000FFFF0000LL) << 16);
 WRITE_RD(sext_xlen(x));
+
+#endif

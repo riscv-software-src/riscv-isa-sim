@@ -1,3 +1,4 @@
+#ifdef BODY
 require_either_extension('F', EXT_ZFINX);
 require_fp;
 bool greater = f32_lt_quiet(FRS2_F, FRS1_F) ||
@@ -7,3 +8,5 @@ if (isNaNF32UI(FRS1_F.v) && isNaNF32UI(FRS2_F.v))
 else
   WRITE_FRD_F((greater || isNaNF32UI(FRS2_F.v) ? FRS1_F : FRS2_F));
 set_fp_exceptions;
+
+#endif

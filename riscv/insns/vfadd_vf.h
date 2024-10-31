@@ -1,3 +1,4 @@
+#ifdef BODY
 // vfadd.vf vd, vs2, rs1
 VI_VFP_VF_LOOP
 ({
@@ -9,3 +10,5 @@ VI_VFP_VF_LOOP
 {
   vd = f64_add(rs1, vs2);
 })
+
+#endif

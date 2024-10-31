@@ -1,3 +1,4 @@
+#ifdef BODY
 // vrol.vv vd, vs2, vs1, vm
 
 #include "zvk_ext_macros.h"
@@ -15,3 +16,5 @@ VI_VV_ULOOP
   const reg_t rshift = (-lshift) & mask;
   vd = (vs2 << lshift) | (vs2 >> rshift);
 })
+
+#endif

@@ -1,3 +1,4 @@
+#ifdef BODY
 // vssubu.vx vd, vs2, rs1
 VI_CHECK_SSS(false);
 VI_LOOP_BASE
@@ -27,3 +28,5 @@ default: {
 }
 P_SET_OV(sat);
 VI_LOOP_END
+
+#endif

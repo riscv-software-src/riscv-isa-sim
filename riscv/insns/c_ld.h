@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension(EXT_ZCA);
 require((xlen == 64) || p->extension_enabled(EXT_ZCLSD));
 
@@ -6,3 +7,5 @@ if (xlen == 32) {
 } else {
   WRITE_RVC_RS2S(MMU.load<int64_t>(RVC_RS1S + insn.rvc_ld_imm()));
 }
+
+#endif

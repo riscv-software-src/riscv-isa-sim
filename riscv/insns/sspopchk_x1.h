@@ -1,3 +1,4 @@
+#ifdef BODY
 #include "zicfiss.h"
 
 if (xSSE()) {
@@ -5,3 +6,5 @@ if (xSSE()) {
 } else {
   #include "mop_r_N.h"
 }
+
+#endif

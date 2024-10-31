@@ -1,3 +1,4 @@
+#ifdef BODY
 // vsm4r.vs vd, vs2
 
 #include "zvksed_ext_macros.h"
@@ -49,3 +50,5 @@ VI_ZVK_VD_VS2_NOOPERANDS_PRELOOP_EGU32x4_NOVM_LOOP(
     SET_EGU32x4_LE(state, x4, x5, x6, x7);
   }
 );
+
+#endif

@@ -1,3 +1,4 @@
+#ifdef BODY
 if (!STATE.debug_mode && (
         (!STATE.v && STATE.prv == PRV_M && STATE.dcsr->ebreakm) ||
         (!STATE.v && STATE.prv == PRV_S && STATE.dcsr->ebreaks) ||
@@ -8,3 +9,5 @@ if (!STATE.debug_mode && (
 } else {
 	throw trap_breakpoint(STATE.v, pc);
 }
+
+#endif

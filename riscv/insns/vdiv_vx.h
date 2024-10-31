@@ -1,3 +1,4 @@
+#ifdef BODY
 // vdiv.vx vd, vs2, rs1
 VI_VX_LOOP
 ({
@@ -8,3 +9,5 @@ VI_VX_LOOP
   else
     vd = vs2 / rs1;
 })
+
+#endif

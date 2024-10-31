@@ -1,3 +1,4 @@
+#ifdef BODY
 // vsm3me.vv vd, vs2, vs1
 
 #include "zvk_ext_macros.h"
@@ -37,3 +38,5 @@ VI_ZVK_VD_VS1_VS2_EGU32x8_NOVM_LOOP(
     SET_EGU32x8_WORDS_BE_BSWAP(vd, w23, w22, w21, w20, w19, w18, w17, w16);
   }
 );
+
+#endif

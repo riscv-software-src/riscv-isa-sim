@@ -1,3 +1,4 @@
+#ifdef BODY
 
 #include "aes_common.h"
 
@@ -14,3 +15,5 @@ u = (u << (8*bs)) | (u >> (32-8*bs));
 
 WRITE_RD(sext_xlen(u ^ RS1));
 
+
+#endif

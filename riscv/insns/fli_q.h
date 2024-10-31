@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension('Q');
 require_extension(EXT_ZFA);
 require_fp;
@@ -44,3 +45,5 @@ require_fp;
   ui.ui.v0 = 0;
   WRITE_FRD(f128(ui.f));
 }
+
+#endif

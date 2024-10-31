@@ -1,3 +1,4 @@
+#ifdef BODY
 
 require_extension(EXT_ZKSED);
 
@@ -20,3 +21,5 @@ uint32_t result = rotl ^ RS1;
 
 WRITE_RD(sext32(result));
 
+
+#endif

@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension('D');
 require_extension(EXT_ZFA);
 require_fp;
@@ -57,3 +58,5 @@ if (exp == 0) {
 WRITE_RD(sext32(frac));
 raise_fp_exceptions((inexact ? softfloat_flag_inexact : 0) |
 		    (invalid ? softfloat_flag_invalid : 0));
+
+#endif

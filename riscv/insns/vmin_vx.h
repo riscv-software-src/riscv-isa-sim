@@ -1,3 +1,4 @@
+#ifdef BODY
 // vminx.vx vd, vs2, rs1, vm   # vector-scalar
 VI_VX_LOOP
 ({
@@ -9,3 +10,5 @@ VI_VX_LOOP
 
 
 })
+
+#endif

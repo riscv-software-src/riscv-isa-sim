@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension(EXT_ZCMT);
 STATE.jvt->verify_permissions(insn, false);
 reg_t jvt = STATE.jvt->read();
@@ -21,3 +22,5 @@ default:
   require(0);
   break;
 }
+
+#endif

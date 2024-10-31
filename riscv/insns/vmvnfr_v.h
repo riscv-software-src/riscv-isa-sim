@@ -1,3 +1,4 @@
+#ifdef BODY
 // vmv<nf>r.v vd, vs2
 require_vector(true);
 const reg_t vd = insn.rd();
@@ -25,3 +26,5 @@ if (vd != vs2 && start < size) {
 }
 
 P.VU.vstart->write(0);
+
+#endif

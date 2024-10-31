@@ -1,3 +1,4 @@
+#ifdef BODY
 // vbrev8.v vd, vs2, vm
 
 #include "zvk_ext_macros.h"
@@ -11,3 +12,5 @@ VI_V_ULOOP
   vd = ((vd & 0x3333333333333333llu) <<  2) | ((vd & 0xCCCCCCCCCCCCCCCCllu) >>  2);
   vd = ((vd & 0x0F0F0F0F0F0F0F0Fllu) <<  4) | ((vd & 0xF0F0F0F0F0F0F0F0llu) >>  4);
 })
+
+#endif

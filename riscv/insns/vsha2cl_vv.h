@@ -1,3 +1,4 @@
+#ifdef BODY
 // vsha2cl.vv vd, vs2, vs1
 
 #include "zvknh_ext_macros.h"
@@ -60,3 +61,5 @@ switch (P.VU.vsew) {
     require(false);
 }
 
+
+#endif

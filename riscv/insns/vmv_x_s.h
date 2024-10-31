@@ -1,3 +1,4 @@
+#ifdef BODY
 // vmv_x_s: rd = vs2[0]
 require_vector(true);
 require(insn.v_vm() == 1);
@@ -25,3 +26,5 @@ default:
 WRITE_RD(sext_xlen(res));
 
 P.VU.vstart->write(0);
+
+#endif

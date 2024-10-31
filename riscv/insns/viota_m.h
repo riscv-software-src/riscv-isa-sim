@@ -1,3 +1,4 @@
+#ifdef BODY
 // vmpopc rd, vs2, vm
 require(P.VU.vsew >= e8 && P.VU.vsew <= e64);
 require_vector(true);
@@ -50,3 +51,5 @@ for (reg_t i = 0; i < vl; ++i) {
   }
 }
 
+
+#endif

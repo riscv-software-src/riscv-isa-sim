@@ -1,3 +1,4 @@
+#ifdef BODY
 // vfwcvt.xu.f.v vd, vs2, vm
 VI_VFP_WCVT_FP_TO_INT(
   { vd = f16_to_ui32(vs2, softfloat_roundingMode, true); }, // BODY16
@@ -6,3 +7,5 @@ VI_VFP_WCVT_FP_TO_INT(
   { require_extension('F'); },                              // CHECK32
   uint                                                      // sign
 )
+
+#endif

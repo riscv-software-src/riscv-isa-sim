@@ -1,3 +1,4 @@
+#ifdef BODY
 // vsadd.vi vd, vs2 simm5
 VI_CHECK_SSS(false);
 VI_LOOP_BASE
@@ -26,3 +27,5 @@ default: {
 }
 P_SET_OV(sat);
 VI_LOOP_END
+
+#endif

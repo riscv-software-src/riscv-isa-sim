@@ -1,3 +1,4 @@
+#ifdef BODY
 // vsm3c.vi vd, vs2, rnd
 
 #include "zvksh_ext_macros.h"
@@ -58,3 +59,5 @@ VI_ZVK_VD_VS2_ZIMM5_EGU32x8_NOVM_LOOP(
     SET_EGU32x8_WORDS_BE_BSWAP(vd, G1, G2, E1, E2, C1, C2, A1, A2);
   }
 );
+
+#endif

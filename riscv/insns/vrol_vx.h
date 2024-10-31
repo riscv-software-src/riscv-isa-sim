@@ -1,3 +1,4 @@
+#ifdef BODY
 // vrol.vx vd, vs2, rs1, vm
 
 #include "zvk_ext_macros.h"
@@ -16,3 +17,5 @@ VI_V_ULOOP
 ({
   vd = (vs2 << lshift) | (vs2 >> rshift);
 })
+
+#endif

@@ -1,3 +1,4 @@
+#ifdef BODY
 // vfcvt.rtz.xu.f.v vd, vd2, vm
 VI_VFP_CVT_FP_TO_INT(
   { vd = f16_to_ui16(vs2, softfloat_round_minMag, true); }, // BODY16
@@ -5,3 +6,5 @@ VI_VFP_CVT_FP_TO_INT(
   { vd = f64_to_ui64(vs2, softfloat_round_minMag, true); }, // BODY64
   uint                                                      // sign
 )
+
+#endif

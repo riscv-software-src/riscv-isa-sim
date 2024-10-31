@@ -1,3 +1,4 @@
+#ifdef BODY
 // vmaxu.vx vd, vs2, rs1, vm   # vector-scalar
 VI_VX_ULOOP
 ({
@@ -7,3 +8,5 @@ VI_VX_ULOOP
     vd = vs2;
   }
 })
+
+#endif

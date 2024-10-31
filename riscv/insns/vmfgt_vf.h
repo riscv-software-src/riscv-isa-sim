@@ -1,3 +1,4 @@
+#ifdef BODY
 // vmfgt.vf vd, vs2, rs1
 VI_VFP_VF_LOOP_CMP
 ({
@@ -9,3 +10,5 @@ VI_VFP_VF_LOOP_CMP
 {
   res = f64_lt(rs1, vs2);
 })
+
+#endif

@@ -1,3 +1,4 @@
+#ifdef BODY
 // vnclip: vd[i] = clip(round(vs2[i] + rnd) >> rs1[i])
 VI_VX_LOOP_NARROW
 ({
@@ -23,3 +24,5 @@ VI_VX_LOOP_NARROW
 
   vd = result;
 })
+
+#endif

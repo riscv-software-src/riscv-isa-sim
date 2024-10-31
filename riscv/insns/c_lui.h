@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension(EXT_ZCA);
 if (insn.rvc_rd() == 2) { // c.addi16sp
   require(insn.rvc_addi16sp_imm() != 0);
@@ -15,3 +16,5 @@ if (insn.rvc_rd() == 2) { // c.addi16sp
 } else {
   require(false);
 }
+
+#endif

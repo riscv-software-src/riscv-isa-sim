@@ -1,3 +1,4 @@
+#ifdef BODY
 // vsaddu vd, vs2, vs1
 VI_VV_ULOOP
 ({
@@ -9,3 +10,5 @@ VI_VV_ULOOP
 
   P_SET_OV(sat);
 })
+
+#endif

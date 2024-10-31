@@ -1,3 +1,4 @@
+#ifdef BODY
 // vfncvt.rod.f.f.w vd, vs2, vm
 VI_VFP_NCVT_FP_TO_FP(
   {                                 // BODY32
@@ -11,3 +12,5 @@ VI_VFP_NCVT_FP_TO_FP(
   { require_extension(EXT_ZVFH); }, // CHECK32
   { require_extension('F'); }       // CHECK64
 )
+
+#endif

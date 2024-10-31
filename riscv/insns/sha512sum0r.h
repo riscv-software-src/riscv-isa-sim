@@ -1,3 +1,4 @@
+#ifdef BODY
 
 require_rv32;
 require_extension(EXT_ZKNH);
@@ -7,3 +8,5 @@ reg_t result =
     (zext32(RS2) >>  7) ^ (zext32(RS2) >>  2) ^ (zext32(RS2) <<  4);
 
 WRITE_RD(sext_xlen(result));
+
+#endif

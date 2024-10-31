@@ -1,3 +1,4 @@
+#ifdef BODY
 
 #include "aes_common.h"
 
@@ -19,3 +20,5 @@ uint64_t temp = AES_SHIFROWS_LO(RS1,RS2);
 
 WRITE_RD(temp);
 
+
+#endif

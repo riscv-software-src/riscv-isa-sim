@@ -1,3 +1,4 @@
+#ifdef BODY
 // vssrl.vx vd, vs2, rs1
 VI_VX_ULOOP
 ({
@@ -8,3 +9,5 @@ VI_VX_ULOOP
   INT_ROUNDING(val, xrm, sh);
   vd = val >> sh;
 })
+
+#endif

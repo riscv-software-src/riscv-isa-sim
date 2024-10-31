@@ -1,3 +1,4 @@
+#ifdef BODY
 // Zbkb contains zip but not general shfli
 require_rv32;
 require(((insn.rs2() == (xlen / 2 - 1)) && p->extension_enabled(EXT_ZBKB)));
@@ -10,3 +11,5 @@ if (shamt &  4) x = (x & 0xF00FF00FF00FF00FLL) | ((x & 0x0F000F000F000F00LL) >> 
 if (shamt &  2) x = (x & 0xC3C3C3C3C3C3C3C3LL) | ((x & 0x3030303030303030LL) >>  2) | ((x & 0x0C0C0C0C0C0C0C0CLL) <<  2);
 if (shamt &  1) x = (x & 0x9999999999999999LL) | ((x & 0x4444444444444444LL) >>  1) | ((x & 0x2222222222222222LL) <<  1);
 WRITE_RD(sext_xlen(x));
+
+#endif

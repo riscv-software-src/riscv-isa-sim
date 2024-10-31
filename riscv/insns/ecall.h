@@ -1,3 +1,4 @@
+#ifdef BODY
 switch (STATE.prv)
 {
   case PRV_U: throw trap_user_ecall();
@@ -9,3 +10,5 @@ switch (STATE.prv)
   case PRV_M: throw trap_machine_ecall();
   default: abort();
 }
+
+#endif

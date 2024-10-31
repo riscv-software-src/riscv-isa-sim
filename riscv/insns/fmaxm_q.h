@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension('Q');
 require_extension(EXT_ZFA);
 require_fp;
@@ -15,3 +16,5 @@ if (isNaNF128UI(ui1.ui.v64, ui1.ui.v0) || isNaNF128UI(ui2.ui.v64, ui2.ui.v0)) {
  } else
   WRITE_FRD(greater ? f128(FRS1) : f128(FRS2));
 set_fp_exceptions;
+
+#endif

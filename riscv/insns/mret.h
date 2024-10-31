@@ -1,3 +1,4 @@
+#ifdef BODY
 require_privilege(PRV_M);
 set_pc_and_serialize(p->get_state()->mepc->read());
 reg_t s = STATE.mstatus->read();
@@ -22,3 +23,5 @@ STATE.mstatus->write(s);
 if (STATE.mstatush) STATE.mstatush->write(s >> 32); // log mstatush change
 if (STATE.tcontrol) STATE.tcontrol->write((STATE.tcontrol->read() & CSR_TCONTROL_MPTE) ? (CSR_TCONTROL_MPTE | CSR_TCONTROL_MTE) : 0);
 p->set_privilege(prev_prv, prev_virt);
+
+#endif

@@ -1,3 +1,4 @@
+#ifdef BODY
 // vslidedown.vi vd, vs2, rs1
 VI_CHECK_SLIDE(false);
 
@@ -34,3 +35,5 @@ default: {
 break;
 }
 VI_LOOP_END
+
+#endif

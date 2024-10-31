@@ -1,6 +1,9 @@
+#ifdef BODY
 // vwsubu.vv vd, vs2, vs1
 VI_CHECK_DSS(true);
 VI_VV_LOOP_WIDEN
 ({
   VI_WIDE_OP_AND_ASSIGN(vs2, vs1, 0, -, +, uint);
 })
+
+#endif

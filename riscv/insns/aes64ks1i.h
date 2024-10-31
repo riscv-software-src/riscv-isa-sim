@@ -1,3 +1,4 @@
+#ifdef BODY
 
 #include "aes_common.h"
 
@@ -33,3 +34,5 @@ result      = ((uint64_t)temp << 32) | temp;
 
 WRITE_RD(result);
 
+
+#endif

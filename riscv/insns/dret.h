@@ -1,3 +1,4 @@
+#ifdef BODY
 require(STATE.debug_mode);
 set_pc_and_serialize(STATE.dpc->read());
 if (ZICFILP_xLPE(STATE.dcsr->v, STATE.dcsr->prv)) {
@@ -26,3 +27,5 @@ STATE.debug_mode = false;
 
 if (STATE.dcsr->step)
   STATE.single_step = STATE.STEP_STEPPING;
+
+#endif

@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension(EXT_ZACAS);
 
 if (xlen == 32) {
@@ -35,3 +36,5 @@ if (xlen == 32) {
   // RV64
   WRITE_RD(MMU.amo_compare_and_swap<uint64_t>(RS1, RD, RS2));
 }
+
+#endif

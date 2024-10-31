@@ -1,3 +1,4 @@
+#ifdef BODY
 require_extension(EXT_ZACAS);
 require_rv64;
 require_align(insn.rd(), 2);
@@ -32,3 +33,5 @@ if (insn.rd() != 0) {
     WRITE_REG(insn.rd() + 1, res >> 64);
   }
 }
+
+#endif

@@ -1,3 +1,4 @@
+#ifdef BODY
 // vaesef.vv vd, vs2
 
 #include "zvkned_ext_macros.h"
@@ -35,3 +36,5 @@ VI_ZVK_VD_VS2_NOOPERANDS_PRELOOP_EGU32x4_NOVM_LOOP(
     EGU8x16_COPY(vd, aes_state);
   }
 );
+
+#endif

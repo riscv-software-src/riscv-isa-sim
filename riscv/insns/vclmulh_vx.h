@@ -1,3 +1,4 @@
+#ifdef BODY
 // vclmulh.vx vd, vs2, rs1, vm
 
 #include "zvk_ext_macros.h"
@@ -18,3 +19,5 @@ VI_VX_ULOOP
     }
   }
 })
+
+#endif

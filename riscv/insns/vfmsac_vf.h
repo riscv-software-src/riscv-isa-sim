@@ -1,3 +1,4 @@
+#ifdef BODY
 // vfmsac: vd[i] = +(f[rs1] * vs2[i]) - vd[i]
 VI_VFP_VF_LOOP
 ({
@@ -9,3 +10,5 @@ VI_VFP_VF_LOOP
 {
   vd = f64_mulAdd(rs1, vs2, f64(vd.v ^ F64_SIGN));
 })
+
+#endif

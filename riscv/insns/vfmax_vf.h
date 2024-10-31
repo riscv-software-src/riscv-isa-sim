@@ -1,3 +1,4 @@
+#ifdef BODY
 // vfmax
 VI_VFP_VF_LOOP
 ({
@@ -9,3 +10,5 @@ VI_VFP_VF_LOOP
 {
   vd = f64_max(vs2, rs1);
 })
+
+#endif

@@ -1,3 +1,4 @@
+#ifdef BODY
 // vfncvt.f.x.w vd, vs2, vm
 VI_VFP_NCVT_INT_TO_FP(
   { vd = i32_to_f16(vs2); },        // BODY32
@@ -6,3 +7,5 @@ VI_VFP_NCVT_INT_TO_FP(
   { require_extension('F'); },      // CHECK64
   int                               // sign
 )
+
+#endif

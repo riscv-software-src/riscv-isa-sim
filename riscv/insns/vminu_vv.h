@@ -1,3 +1,4 @@
+#ifdef BODY
 // vminu.vv vd, vs2, vs1, vm   # Vector-vector
 VI_VV_ULOOP
 ({
@@ -7,3 +8,5 @@ VI_VV_ULOOP
     vd = vs2;
   }
 })
+
+#endif

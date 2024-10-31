@@ -1,3 +1,4 @@
+#ifdef BODY
 // vfmin vd, vs2, vs1
 VI_VFP_VV_LOOP
 ({
@@ -9,3 +10,5 @@ VI_VFP_VV_LOOP
 {
   vd = f64_min(vs2, vs1);
 })
+
+#endif

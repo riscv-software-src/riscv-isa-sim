@@ -1,3 +1,4 @@
+#ifdef BODY
 require((xlen == 64) || p->extension_enabled(EXT_ZILSD));
 
 if (xlen == 32) {
@@ -5,3 +6,5 @@ if (xlen == 32) {
 } else {
   MMU.store<uint64_t>(RS1 + insn.s_imm(), RS2);
 }
+
+#endif

@@ -1,3 +1,4 @@
+#ifdef BODY
 
 #include "aes_common.h"
 
@@ -27,3 +28,5 @@ uint64_t result= ((uint64_t)col_1 << 32) | col_0;
 
 WRITE_RD(result);
 
+
+#endif

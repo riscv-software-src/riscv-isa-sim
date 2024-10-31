@@ -1,3 +1,4 @@
+#ifdef BODY
 
 static uint8_t UNUSED AES_ENC_SBOX[]= {
   0x63, 0x7C, 0x77, 0x7B, 0xF2, 0x6B, 0x6F, 0xC5,
@@ -154,3 +155,5 @@ static uint8_t UNUSED AES_DEC_SBOX[] = {
     AES_INVMIXBYTE(COL,0,1,2,3) <<  0   \
 )
 
+
+#endif

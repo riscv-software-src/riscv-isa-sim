@@ -1,3 +1,4 @@
+#ifdef BODY
 // vfwcvt.f.xu.v vd, vs2, vm
 VI_VFP_WCVT_INT_TO_FP(
   { vd = ui32_to_f16(vs2); },                    // BODY8
@@ -8,3 +9,5 @@ VI_VFP_WCVT_INT_TO_FP(
   { require_extension('D'); },                   // CHECK32
   uint                                           // sign
 )
+
+#endif

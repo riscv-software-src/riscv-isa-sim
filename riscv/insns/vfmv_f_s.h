@@ -1,3 +1,4 @@
+#ifdef BODY
 // vfmv_f_s: rd = vs2[0] (rs1=0)
 require_vector(true);
 require_fp;
@@ -36,3 +37,5 @@ if (FLEN == 64) {
 }
 
 P.VU.vstart->write(0);
+
+#endif

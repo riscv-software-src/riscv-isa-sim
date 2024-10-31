@@ -16,7 +16,9 @@ reg_t fast_rv32i_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 32
   PROLOGUE;
+  #define BODY
   #include "insns/NAME.h"
+  #undef BODY
   EPILOGUE;
   #undef xlen
 }
@@ -25,7 +27,9 @@ reg_t fast_rv64i_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 64
   PROLOGUE;
+  #define BODY
   #include "insns/NAME.h"
+  #undef BODY
   EPILOGUE;
   #undef xlen
 }
@@ -37,7 +41,9 @@ reg_t logged_rv32i_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 32
   PROLOGUE;
+  #define BODY
   #include "insns/NAME.h"
+  #undef BODY
   EPILOGUE;
   #undef xlen
 }
@@ -46,7 +52,9 @@ reg_t logged_rv64i_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 64
   PROLOGUE;
+  #define BODY
   #include "insns/NAME.h"
+  #undef BODY
   EPILOGUE;
   #undef xlen
 }
@@ -61,7 +69,9 @@ reg_t fast_rv32e_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 32
   PROLOGUE;
+  #define BODY
   #include "insns/NAME.h"
+  #undef BODY
   EPILOGUE;
   #undef xlen
 }
@@ -70,7 +80,9 @@ reg_t fast_rv64e_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 64
   PROLOGUE;
+  #define BODY
   #include "insns/NAME.h"
+  #undef BODY
   EPILOGUE;
   #undef xlen
 }
@@ -82,7 +94,9 @@ reg_t logged_rv32e_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 32
   PROLOGUE;
+  #define BODY
   #include "insns/NAME.h"
+  #undef BODY
   EPILOGUE;
   #undef xlen
 }
@@ -91,7 +105,9 @@ reg_t logged_rv64e_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 64
   PROLOGUE;
+  #define BODY
   #include "insns/NAME.h"
+  #undef BODY
   EPILOGUE;
   #undef xlen
 }

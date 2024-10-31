@@ -1,3 +1,4 @@
+#ifdef BODY
 // vsqrt.v vd, vd2, vm
 VI_VFP_V_LOOP
 ({
@@ -9,3 +10,5 @@ VI_VFP_V_LOOP
 {
   vd = f64_sqrt(vs2);
 })
+
+#endif

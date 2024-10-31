@@ -1,3 +1,4 @@
+#ifdef BODY
 // vrev8.v vd, vs2, vm
 
 #include "zvk_ext_macros.h"
@@ -14,3 +15,5 @@ VI_V_ULOOP
   if (P.VU.vsew > 32)
     vd = ((vd & 0x00000000FFFFFFFFllu) << 32) | ((vd & 0xFFFFFFFF00000000llu) >> 32);
 })
+
+#endif
