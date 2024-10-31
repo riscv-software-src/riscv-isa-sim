@@ -14,12 +14,26 @@
   trace_opcode(p, OPCODE, insn); \
   return npc
 
+
 #if defined(RTYPE_INSN)
 insn_type_t NAME_insn_type = RTYPE;
 #include "rtype_decode_macros.h"
+#elif defined(ITYPE_INSN)
+insn_type_t NAME_insn_type = ITYPE;
+#include "itype_decode_macros.h"
+#elif defined(UTYPE_INSN)
+insn_type_t NAME_insn_type = UTYPE;
+#include "utype_decode_macros.h"
+#elif defined(SBTYPE_INSN)
+insn_type_t NAME_insn_type = SBTYPE;
+#include "sbtype_decode_macros.h"
+#elif defined(UJTYPE_INSN)
+insn_type_t NAME_insn_type = UJTYPE;
+#include "ujtype_decode_macros.h"
 #else
 insn_type_t NAME_insn_type = GENERIC;
 #endif
+
 
 reg_t fast_rv32i_NAME(processor_t* p, insn_t insn, reg_t pc)
 {

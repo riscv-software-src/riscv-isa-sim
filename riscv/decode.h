@@ -73,6 +73,11 @@ const int NCSR = 4096;
 
 enum insn_type_t {
   RTYPE,
+  ITYPE,
+  UTYPE,
+  SBTYPE,
+  UJTYPE,
+  STYPE,
   GENERIC
 };
 
@@ -80,6 +85,34 @@ struct rtype_fields_t {
   uint64_t rs1;
   uint64_t rs2;
   uint64_t rd;
+};
+
+struct itype_fields_t {
+  uint64_t rs1;
+  uint64_t rd;
+  int64_t i_imm;
+};
+
+struct utype_fields_t {
+  uint64_t rd;
+  int64_t u_imm;
+};
+
+struct sbtype_fields_t {
+  uint64_t rs1;
+  uint64_t rs2;
+  int64_t sb_imm;
+};
+
+struct ujtype_fields_t {
+  uint64_t rd;
+  int64_t uj_imm;
+};
+
+struct stype_fields_t {
+  uint64_t rs1;
+  uint64_t rs2;
+  int64_t s_imm;
 };
 
 typedef uint64_t insn_bits_t;
@@ -91,6 +124,11 @@ public:
   insn_t(insn_bits_t bits, insn_type_t type) : b(bits), t(type) {
     switch (type) {
     case RTYPE: this->rtype = {rs1(), rs2(), rd()}; break;
+    case ITYPE: this->itype = {rs1(), rd(), i_imm()}; break;
+    case UTYPE: this->utype = {rd(), u_imm()}; break;
+    case SBTYPE: this->sbtype = {rs1(), rs2(), sb_imm()}; break;
+    case UJTYPE: this->ujtype = {rd(), uj_imm()}; break;
+    case STYPE: this->stype = {rs1(), rs2(), s_imm()}; break;
     case GENERIC: break;
     }
   }
@@ -216,6 +254,11 @@ public:
 
   const union {
     rtype_fields_t rtype;
+    itype_fields_t itype;
+    utype_fields_t utype;
+    sbtype_fields_t sbtype;
+    ujtype_fields_t ujtype;
+    stype_fields_t stype;
   };
 
 private:

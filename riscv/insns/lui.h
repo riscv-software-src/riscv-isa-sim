@@ -1,4 +1,6 @@
 #ifdef BODY
-WRITE_RD(insn.u_imm());
+WRITE_RD(U_IMM);
 
 #endif
+
+#define UTYPE_INSN

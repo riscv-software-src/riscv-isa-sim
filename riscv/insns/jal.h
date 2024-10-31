@@ -5,3 +5,5 @@ set_pc(JUMP_TARGET);
 WRITE_RD(tmp);
 
 #endif
+
+#define UJTYPE_INSN

@@ -23,6 +23,9 @@
 #define RS3 READ_REG(insn.rs3())
 #define WRITE_RD(value) WRITE_REG(insn.rd(), value)
 #define CHECK_RD() CHECK_REG(insn.rd())
+#define I_IMM (insn.i_imm())
+#define U_IMM (insn.u_imm())
+#define S_IMM (insn.s_imm())
 
 /* 0 : int
  * 1 : floating
@@ -143,7 +146,7 @@ do { \
   } \
 } while (0)
  
-#define SHAMT (insn.i_imm() & 0x3F)
+#define SHAMT (I_IMM & 0x3F)
 #define BRANCH_TARGET (pc + insn.sb_imm())
 #define JUMP_TARGET (pc + insn.uj_imm())
 #define RM ({ int rm = insn.rm(); \

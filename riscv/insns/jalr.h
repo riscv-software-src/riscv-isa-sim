@@ -1,7 +1,7 @@
 #ifdef BODY
 CHECK_RD();
 reg_t tmp = npc;
-set_pc((RS1 + insn.i_imm()) & ~reg_t(1));
+set_pc((RS1 + I_IMM) & ~reg_t(1));
 WRITE_RD(tmp);
 
 if (ZICFILP_xLPE(STATE.v, STATE.prv)) {
@@ -10,3 +10,5 @@ if (ZICFILP_xLPE(STATE.v, STATE.prv)) {
 }
 
 #endif
+
+#define ITYPE_INSN

@@ -1,4 +1,4 @@
 #ifdef BODY
-WRITE_RD(sext_xlen(insn.u_imm() + pc));
+WRITE_RD(sext_xlen(U_IMM + pc));
 
 #endif

@@ -4,3 +4,5 @@ WRITE_RD(sext32(RS1 - RS2));
 
 
 #endif
+
+#define RTYPE_INSN
