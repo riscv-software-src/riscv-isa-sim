@@ -723,7 +723,8 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   proc->set_extension_enable(EXT_ZBA, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
   proc->set_extension_enable(EXT_ZBB, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
   proc->set_extension_enable(EXT_ZBS, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
-
+  // Flush the ICache since it may contain instructions that become illegal
+  proc->mmu->flush_icache();
   // update the hypervisor-only bits in MEDELEG and other CSRs
   if (!new_h && prev_h) {
     reg_t hypervisor_exceptions = 0

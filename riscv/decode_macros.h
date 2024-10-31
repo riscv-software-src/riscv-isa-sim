@@ -66,6 +66,17 @@
 #define RVC_FRS2 READ_FREG(insn.rvc_rs2())
 #define RVC_FRS2S READ_FREG(insn.rvc_rs2s())
 #define RVC_SP READ_REG(X_SP)
+#define RVC_IMM (insn.rvc_imm())
+#define RVC_ZIMM (insn.rvc_zimm())
+#define RVC_B_IMM (insn.rvc_b_imm())
+#define RVC_LD_IMM (insn.rvc_ld_imm())
+#define RVC_LW_IMM (insn.rvc_lw_imm())
+#define RVC_LDSP_IMM (insn.rvc_ldsp_imm())
+#define RVC_LWSP_IMM (insn.rvc_lwsp_imm())
+#define RVC_SDSP_IMM (insn.rvc_sdsp_imm())
+#define RVC_SWSP_IMM (insn.rvc_swsp_imm())
+#define RVC_J_IMM (insn.rvc_j_imm())
+#define RVC_ADDI16SP_IMM (insn.rvc_addi16sp_imm())
 
 // Zc* macros
 #define RVC_R1S (Sn(insn.rvc_r1sc()))

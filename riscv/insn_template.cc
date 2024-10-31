@@ -30,6 +30,48 @@ insn_type_t NAME_insn_type = SBTYPE;
 #elif defined(UJTYPE_INSN)
 insn_type_t NAME_insn_type = UJTYPE;
 #include "ujtype_decode_macros.h"
+#elif defined(CRTYPE_INSN)
+insn_type_t NAME_insn_type = CRTYPE;
+#include "crtype_decode_macros.h"
+#elif defined(CITYPE_INSN)
+insn_type_t NAME_insn_type = CITYPE;
+#include "citype_decode_macros.h"
+#elif defined(CIWTYPE_INSN)
+insn_type_t NAME_insn_type = CIWTYPE;
+#include "ciwtype_decode_macros.h"
+#elif defined(CSDTYPE_INSN)
+insn_type_t NAME_insn_type = CSDTYPE;
+#include "csdtype_decode_macros.h"
+#elif defined(CSWTYPE_INSN)
+insn_type_t NAME_insn_type = CSWTYPE;
+#include "cswtype_decode_macros.h"
+#elif defined(CBTYPE_INSN)
+insn_type_t NAME_insn_type = CBTYPE;
+#include "cbtype_decode_macros.h"
+#elif defined(CBBTYPE_INSN)
+insn_type_t NAME_insn_type = CBBTYPE;
+#include "cbbtype_decode_macros.h"
+#elif defined(CLDTYPE_INSN)
+insn_type_t NAME_insn_type = CLDTYPE;
+#include "cldtype_decode_macros.h"
+#elif defined(CLWTYPE_INSN)
+insn_type_t NAME_insn_type = CLWTYPE;
+#include "clwtype_decode_macros.h"
+#elif defined(CILDTYPE_INSN)
+insn_type_t NAME_insn_type = CILDTYPE;
+#include "cildtype_decode_macros.h"
+#elif defined(CILWTYPE_INSN)
+insn_type_t NAME_insn_type = CILWTYPE;
+#include "cilwtype_decode_macros.h"
+#elif defined(CSSSDTYPE_INSN)
+insn_type_t NAME_insn_type = CSSSDTYPE;
+#include "csssdtype_decode_macros.h"
+#elif defined(CSSSWTYPE_INSN)
+insn_type_t NAME_insn_type = CSSSWTYPE;
+#include "cssswtype_decode_macros.h"
+#elif defined(CJTYPE_INSN)
+insn_type_t NAME_insn_type = CJTYPE;
+#include "cjtype_decode_macros.h"
 #else
 insn_type_t NAME_insn_type = GENERIC;
 #endif

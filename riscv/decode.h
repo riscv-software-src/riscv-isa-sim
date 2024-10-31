@@ -78,6 +78,20 @@ enum insn_type_t {
   SBTYPE,
   UJTYPE,
   STYPE,
+  CRTYPE,
+  CITYPE,
+  CIWTYPE,
+  CSDTYPE,
+  CSWTYPE,
+  CBTYPE,
+  CBBTYPE,
+  CLDTYPE,
+  CLWTYPE,
+  CILDTYPE,
+  CILWTYPE,
+  CSSSDTYPE,
+  CSSSWTYPE,
+  CJTYPE,
   GENERIC
 };
 
@@ -115,6 +129,87 @@ struct stype_fields_t {
   int64_t s_imm;
 };
 
+struct crtype_fields_t {
+  uint64_t rvc_rs1;
+  uint64_t rvc_rs2;
+  uint64_t rd;
+};
+
+struct citype_fields_t {
+  uint64_t rvc_rs1;
+  uint64_t rvc_rs1s;
+  uint64_t rvc_rd;
+  int64_t rvc_imm;
+  int64_t rvc_zimm;
+  int64_t rvc_addi16sp_imm;
+};
+
+struct ciwtype_fields_t {
+  uint64_t rvc_rs2s;
+  int64_t rvc_addi4spn_imm;
+};
+
+struct csdtype_fields_t {
+  uint64_t rvc_rs1s;
+  uint64_t rvc_rs2s;
+  int64_t rvc_ld_imm;
+};
+
+struct cswtype_fields_t {
+  uint64_t rvc_rs1s;
+  uint64_t rvc_rs2s;
+  int64_t rvc_lw_imm;
+};
+
+struct cbtype_fields_t {
+  uint64_t rvc_rs1s;
+  int64_t rvc_imm;
+};
+
+struct cbbtype_fields_t {
+  uint64_t rvc_rs1s;
+  int64_t rvc_b_imm;
+};
+
+struct cldtype_fields_t {
+  uint64_t rvc_rs1s;
+  uint64_t rvc_rs2s;
+  int64_t rvc_ld_imm;
+};
+
+struct clwtype_fields_t {
+  uint64_t rvc_rs1s;
+  uint64_t rvc_rs2s;
+  int64_t rvc_lw_imm;
+};
+
+struct cildtype_fields_t {
+  uint64_t rvc_rd;
+  int64_t rvc_ldsp_imm;
+};
+
+struct cilwtype_fields_t {
+  uint64_t rvc_rd;
+  int64_t rvc_lwsp_imm;
+};
+
+struct csssdtype_fields_t {
+  uint64_t rvc_rs2;
+  int64_t rvc_sdsp_imm;
+};
+
+struct cssswtype_fields_t {
+  uint64_t rvc_rs2;
+  int64_t rvc_swsp_imm;
+};
+
+struct cjtype_fields_t {
+  uint64_t rvc_rs1;
+  uint64_t rvc_rd;
+  int64_t rvc_j_imm;
+  int64_t rvc_imm;
+};
+
 typedef uint64_t insn_bits_t;
 class insn_t
 {
@@ -129,6 +224,20 @@ public:
     case SBTYPE: this->sbtype = {rs1(), rs2(), sb_imm()}; break;
     case UJTYPE: this->ujtype = {rd(), uj_imm()}; break;
     case STYPE: this->stype = {rs1(), rs2(), s_imm()}; break;
+    case CRTYPE: this->crtype = {rvc_rs1(), rvc_rs2(), rvc_rd()}; break;
+    case CITYPE: this->citype = {rvc_rs1(), rvc_rs1s(), rvc_rd(), rvc_imm(), rvc_zimm(), rvc_addi16sp_imm()}; break;
+    case CIWTYPE: this->ciwtype = {rvc_rs2s(), rvc_addi4spn_imm()}; break;
+    case CSDTYPE: this->csdtype = {rvc_rs1s(), rvc_rs2s(), rvc_ld_imm()}; break;
+    case CSWTYPE: this->cswtype = {rvc_rs1s(), rvc_rs2s(), rvc_lw_imm()}; break;
+    case CBTYPE: this->cbtype = {rvc_rs1s(), rvc_imm()}; break;
+    case CBBTYPE: this->cbbtype = {rvc_rs1s(), rvc_b_imm()}; break;
+    case CLDTYPE: this->cldtype = {rvc_rs1s(), rvc_rs2s(), rvc_ld_imm()}; break;
+    case CLWTYPE: this->clwtype = {rvc_rs1s(), rvc_rs2s(), rvc_lw_imm()}; break;
+    case CILDTYPE: this->cildtype = {rvc_rd(), rvc_ldsp_imm()}; break;
+    case CILWTYPE: this->cilwtype = {rvc_rd(), rvc_lwsp_imm()}; break;
+    case CSSSDTYPE: this->csssdtype = {rvc_rs2(), rvc_sdsp_imm()}; break;
+    case CSSSWTYPE: this->cssswtype = {rvc_rs2(), rvc_swsp_imm()}; break;
+    case CJTYPE: this->cjtype = {rvc_rs1(), rvc_rd(), rvc_j_imm(), rvc_imm()}; break;
     case GENERIC: break;
     }
   }
@@ -259,6 +368,20 @@ public:
     sbtype_fields_t sbtype;
     ujtype_fields_t ujtype;
     stype_fields_t stype;
+    crtype_fields_t crtype;
+    citype_fields_t citype;
+    ciwtype_fields_t ciwtype;
+    csdtype_fields_t csdtype;
+    cswtype_fields_t cswtype;
+    cbtype_fields_t cbtype;
+    cbbtype_fields_t cbbtype;
+    cldtype_fields_t cldtype;
+    clwtype_fields_t clwtype;
+    cildtype_fields_t cildtype;
+    cilwtype_fields_t cilwtype;
+    csssdtype_fields_t csssdtype;
+    cssswtype_fields_t cssswtype;
+    cjtype_fields_t cjtype;
   };
 
 private:

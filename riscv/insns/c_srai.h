@@ -1,6 +1,8 @@
 #ifdef BODY
 require_extension(EXT_ZCA);
-require(insn.rvc_zimm() < xlen);
-WRITE_RVC_RS1S(sext_xlen(sext_xlen(RVC_RS1S) >> insn.rvc_zimm()));
+require(RVC_ZIMM < xlen);
+WRITE_RVC_RS1S(sext_xlen(sext_xlen(RVC_RS1S) >> RVC_ZIMM));
 
 #endif
+
+#define CITYPE_INSN
