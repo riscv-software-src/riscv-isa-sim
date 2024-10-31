@@ -644,7 +644,7 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 }
 
 const insn_desc_t insn_desc_t::illegal_instruction = {
-  0, 0,
+  0, 0, GENERIC,
   &::illegal_instruction, &::illegal_instruction, &::illegal_instruction, &::illegal_instruction,
   &::illegal_instruction, &::illegal_instruction, &::illegal_instruction, &::illegal_instruction
 };
@@ -657,7 +657,7 @@ reg_t illegal_instruction(processor_t UNUSED *p, insn_t insn, reg_t UNUSED pc)
   throw trap_illegal_instruction(insn.bits() & 0xffffffffULL);
 }
 
-insn_func_t processor_t::decode_insn(insn_bits_t insn_bits)
+insn_fetch_t processor_t::decode_insn(insn_bits_t insn_bits)
 {
   // look up opcode in hash table
   size_t idx = insn_bits % OPCODE_CACHE_SIZE;
@@ -680,7 +680,7 @@ insn_func_t processor_t::decode_insn(insn_bits_t insn_bits)
     opcode_cache[idx].replace(insn_bits, desc);
   }
 
-  return desc->func(xlen, rve, log_commits_enabled);
+  return { desc->func(xlen, rve, log_commits_enabled), insn_t(insn_bits, desc->type) };
 }
 
 void processor_t::register_insn(insn_desc_t desc, bool is_custom) {
@@ -725,6 +725,7 @@ void processor_t::register_base_instructions()
   #undef DECLARE_INSN
 
   #define DEFINE_INSN(name) \
+    extern insn_type_t name##_insn_type;                         \
     extern reg_t fast_rv32i_##name(processor_t*, insn_t, reg_t); \
     extern reg_t fast_rv64i_##name(processor_t*, insn_t, reg_t); \
     extern reg_t fast_rv32e_##name(processor_t*, insn_t, reg_t); \
@@ -743,6 +744,7 @@ void processor_t::register_base_instructions()
       register_base_insn((insn_desc_t) { \
         name##_match, \
         name##_mask, \
+        name##_insn_type, \
         fast_rv32i_##name, \
         fast_rv64i_##name, \
         fast_rv32e_##name, \
@@ -762,6 +764,7 @@ void processor_t::register_base_instructions()
       register_base_insn((insn_desc_t) { \
         name##_match, \
         name##_mask, \
+        name##_insn_type, \
         fast_rv32i_##name, \
         fast_rv64i_##name, \
         fast_rv32e_##name, \

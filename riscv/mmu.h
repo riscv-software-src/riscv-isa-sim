@@ -21,12 +21,6 @@ const reg_t PGSIZE = 1 << PGSHIFT;
 const reg_t PGMASK = ~(PGSIZE-1);
 #define MAX_PADDR_BITS 64
 
-struct insn_fetch_t
-{
-  insn_func_t func;
-  insn_t insn;
-};
-
 struct icache_entry_t {
   reg_t tag;
   struct icache_entry_t* next;

@@ -34,16 +34,16 @@ customX(3)
 std::vector<insn_desc_t> rocc_t::get_instructions()
 {
   std::vector<insn_desc_t> insns;
-  insns.push_back((insn_desc_t){0x0b, 0x7f,
+  insns.push_back((insn_desc_t){0x0b, 0x7f, GENERIC,
                                 &::illegal_instruction, c0, &::illegal_instruction, c0,
                                 &::illegal_instruction, c0, &::illegal_instruction, c0});
-  insns.push_back((insn_desc_t){0x2b, 0x7f,
+  insns.push_back((insn_desc_t){0x2b, 0x7f, GENERIC,
                                 &::illegal_instruction, c1, &::illegal_instruction, c1,
                                 &::illegal_instruction, c1, &::illegal_instruction, c1});
-  insns.push_back((insn_desc_t){0x5b, 0x7f,
+  insns.push_back((insn_desc_t){0x5b, 0x7f, GENERIC,
                                 &::illegal_instruction, c2, &::illegal_instruction, c2,
                                 &::illegal_instruction, c2, &::illegal_instruction, c2});
-  insns.push_back((insn_desc_t){0x7b, 0x7f,
+  insns.push_back((insn_desc_t){0x7b, 0x7f, GENERIC,
                                 &::illegal_instruction, c3, &::illegal_instruction, c3,
                                 &::illegal_instruction, c0, &::illegal_instruction, c3});
   return insns;

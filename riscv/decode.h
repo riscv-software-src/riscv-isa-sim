@@ -71,12 +71,30 @@ const int NCSR = 4096;
 
 #define Sn(n) ((n) < 2 ? X_S0 + (n) : X_Sn + (n))
 
+enum insn_type_t {
+  RTYPE,
+  GENERIC
+};
+
+struct rtype_fields_t {
+  uint64_t rs1;
+  uint64_t rs2;
+  uint64_t rd;
+};
+
 typedef uint64_t insn_bits_t;
 class insn_t
 {
 public:
   insn_t() = default;
-  insn_t(insn_bits_t bits) : b(bits) {}
+  insn_t(insn_bits_t bits) : insn_t(bits, GENERIC) { }
+  insn_t(insn_bits_t bits, insn_type_t type) : b(bits), t(type) {
+    switch (type) {
+    case RTYPE: this->rtype = {rs1(), rs2(), rd()}; break;
+    case GENERIC: break;
+    }
+  }
+
   insn_bits_t bits() { return b; }
   int length() { return insn_length(b); }
   int64_t i_imm() { return xs(20, 12); }
@@ -196,8 +214,14 @@ public:
     return stack_adj_base + rvc_spimm();
   }
 
+  const union {
+    rtype_fields_t rtype;
+  };
+
 private:
   insn_bits_t b;
+  insn_type_t t;
+
   uint64_t x(int lo, int len) { return (b >> lo) & ((insn_bits_t(1) << len) - 1); }
   uint64_t xs(int lo, int len) { return int64_t(b) << (64 - lo - len) >> (64 - len); }
   uint64_t imm_sign() { return xs(31, 1); }

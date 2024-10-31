@@ -31,10 +31,17 @@ class disassembler_t;
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
 
+struct insn_fetch_t
+{
+  insn_func_t func;
+  insn_t insn;
+};
+
 struct insn_desc_t
 {
   insn_bits_t match;
   insn_bits_t mask;
+  insn_type_t type;
   insn_func_t fast_rv32i;
   insn_func_t fast_rv64i;
   insn_func_t fast_rv32e;
@@ -420,7 +427,7 @@ private:
   void parse_priv_string(const char*);
   void build_opcode_map();
   void register_base_instructions();
-  insn_func_t decode_insn(insn_bits_t insn_bits);
+  insn_fetch_t decode_insn(insn_bits_t insn_bits);
 
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;

@@ -5,12 +5,21 @@
 
 #define DECODE_MACRO_USAGE_LOGGED 0
 
+#include "insns/NAME.h"
+
 #define PROLOGUE \
   reg_t npc = sext_xlen(pc + insn_length(OPCODE))
 
 #define EPILOGUE \
   trace_opcode(p, OPCODE, insn); \
   return npc
+
+#if defined(RTYPE_INSN)
+insn_type_t NAME_insn_type = RTYPE;
+#include "rtype_decode_macros.h"
+#else
+insn_type_t NAME_insn_type = GENERIC;
+#endif
 
 reg_t fast_rv32i_NAME(processor_t* p, insn_t insn, reg_t pc)
 {

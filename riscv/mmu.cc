@@ -686,7 +686,7 @@ icache_entry_t* mmu_t::refill_icache(reg_t addr, icache_entry_t* entry)
     insn_bits |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 6)) << 48;
   }
 
-  insn_fetch_t fetch = {proc->decode_insn(insn_bits), insn_t(insn_bits)};
+  insn_fetch_t fetch = proc->decode_insn(insn_bits);
   entry->tag = addr;
   entry->next = &icache[icache_index(addr + length)];
   entry->data = fetch;
