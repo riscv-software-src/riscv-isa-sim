@@ -2,9 +2,13 @@
 
 #include "zvk_ext_macros.h"
 
+const uint32_t EGS = 4;
+
 require_zvkg;
 require(P.VU.vsew == 32);
 require_egw_fits(128);
+require(P.VU.vl->read() % EGS == 0);
+VI_CHECK_SSS(true)
 
 VI_ZVK_VD_VS1_VS2_EGU32x4_NOVM_LOOP(
   {},

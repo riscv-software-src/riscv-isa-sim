@@ -2,9 +2,12 @@
 
 #include "zvksed_ext_macros.h"
 
+const uint32_t EGS = 4;
+
 require_vsm4_constraints;
+require_align(insn.rd(), P.VU.vflmul);
 // No overlap of vd and vs2.
-require(insn.rd() != insn.rs2());
+require_noover(insn.rs2(), 1, insn.rd(), P.VU.vflmul);
 
 VI_ZVK_VD_VS2_NOOPERANDS_PRELOOP_EGU32x4_NOVM_LOOP(
   {},
