@@ -214,35 +214,35 @@ class opcode_cache_set_t {
   void reset()
   {
     for (size_t i = 0; i < associativity; i++) {
-      tag[i] = 0;
-      contents[i] = &insn_desc_t::illegal_instruction;
+      bits[i] = 0;
+      descs[i] = &insn_desc_t::illegal_instruction;
     }
   }
 
   void replace(insn_bits_t opcode, const insn_desc_t* desc)
   {
     for (size_t i = associativity - 1; i > 0; i--) {
-      tag[i] = tag[i-1];
-      contents[i] = contents[i-1];
+      bits[i] = bits[i-1];
+      descs[i] = descs[i-1];
     }
 
-    tag[0] = opcode;
-    contents[0] = desc;
+    bits[0] = opcode;
+    descs[0] = desc;
   }
 
   std::tuple<bool, const insn_desc_t*> lookup(insn_bits_t opcode)
   {
     for (size_t i = 0; i < associativity; i++)
-      if (tag[i] == opcode)
-        return std::tuple(true, contents[i]);
+      if (bits[i] == opcode)
+        return std::tuple(true, descs[i]);
 
     return std::tuple(false, nullptr);
   }
 
  private:
   static const size_t associativity = 4;
-  insn_bits_t tag[associativity];
-  const insn_desc_t* contents[associativity];
+  insn_bits_t bits[associativity];
+  const insn_desc_t* descs[associativity];
 };
 
 // this class represents one processor in a RISC-V machine.
