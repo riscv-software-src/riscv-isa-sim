@@ -8,6 +8,7 @@
 #endif
 
 #include "../softfloat/softfloat_types.h"
+#include "encoding.h"
 #include <algorithm>
 #include <cstdint>
 #include <string.h>
@@ -96,118 +97,116 @@ enum insn_type_t {
 };
 
 struct rtype_fields_t {
-  uint64_t rs1;
-  uint64_t rs2;
-  uint64_t rd;
+  uint8_t rs1;
+  uint8_t rs2;
+  uint8_t rd;
 };
 
 struct itype_fields_t {
-  uint64_t rs1;
-  uint64_t rd;
-  int64_t i_imm;
+  uint8_t rs1;
+  uint8_t rd;
+  int16_t i_imm;
 };
 
 struct utype_fields_t {
-  uint64_t rd;
-  int64_t u_imm;
+  uint8_t rd;
+  int32_t u_imm;
 };
 
 struct sbtype_fields_t {
-  uint64_t rs1;
-  uint64_t rs2;
-  int64_t sb_imm;
+  uint8_t rs1;
+  uint8_t rs2;
+  int16_t sb_imm;
 };
 
 struct ujtype_fields_t {
-  uint64_t rd;
-  int64_t uj_imm;
+  uint8_t rd;
+  int32_t uj_imm;
 };
 
 struct stype_fields_t {
-  uint64_t rs1;
-  uint64_t rs2;
-  int64_t s_imm;
+  uint8_t rs1;
+  uint8_t rs2;
+  int16_t s_imm;
 };
 
 struct crtype_fields_t {
-  uint64_t rvc_rs1;
-  uint64_t rvc_rs2;
-  uint64_t rd;
+  uint8_t rvc_rs1;
+  uint8_t rvc_rs2;
+  uint8_t rd;
 };
 
 struct citype_fields_t {
-  uint64_t rvc_rs1;
-  uint64_t rvc_rs1s;
-  uint64_t rvc_rd;
-  int64_t rvc_imm;
-  int64_t rvc_zimm;
-  int64_t rvc_addi16sp_imm;
+  uint8_t rvc_rs1;
+  uint8_t rvc_rs1s;
+  uint8_t rvc_rd;
+  int16_t rvc_multi_imm;
 };
 
 struct ciwtype_fields_t {
-  uint64_t rvc_rs2s;
-  int64_t rvc_addi4spn_imm;
+  uint8_t rvc_rs2s;
+  int16_t rvc_addi4spn_imm;
 };
 
 struct csdtype_fields_t {
-  uint64_t rvc_rs1s;
-  uint64_t rvc_rs2s;
-  int64_t rvc_ld_imm;
+  uint8_t rvc_rs1s;
+  uint8_t rvc_rs2s;
+  int16_t rvc_ld_imm;
 };
 
 struct cswtype_fields_t {
-  uint64_t rvc_rs1s;
-  uint64_t rvc_rs2s;
-  int64_t rvc_lw_imm;
+  uint8_t rvc_rs1s;
+  uint8_t rvc_rs2s;
+  int16_t rvc_lw_imm;
 };
 
 struct cbtype_fields_t {
-  uint64_t rvc_rs1s;
-  int64_t rvc_imm;
+  uint8_t rvc_rs1s;
+  int16_t rvc_imm;
 };
 
 struct cbbtype_fields_t {
-  uint64_t rvc_rs1s;
-  int64_t rvc_b_imm;
+  uint8_t rvc_rs1s;
+  int16_t rvc_b_imm;
 };
 
 struct cldtype_fields_t {
-  uint64_t rvc_rs1s;
-  uint64_t rvc_rs2s;
-  int64_t rvc_ld_imm;
+  uint8_t rvc_rs1s;
+  uint8_t rvc_rs2s;
+  int16_t rvc_ld_imm;
 };
 
 struct clwtype_fields_t {
-  uint64_t rvc_rs1s;
-  uint64_t rvc_rs2s;
-  int64_t rvc_lw_imm;
+  uint8_t rvc_rs1s;
+  uint8_t rvc_rs2s;
+  int16_t rvc_lw_imm;
 };
 
 struct cildtype_fields_t {
-  uint64_t rvc_rd;
-  int64_t rvc_ldsp_imm;
+  uint8_t rvc_rd;
+  int16_t rvc_ldsp_imm;
 };
 
 struct cilwtype_fields_t {
-  uint64_t rvc_rd;
-  int64_t rvc_lwsp_imm;
+  uint8_t rvc_rd;
+  int16_t rvc_lwsp_imm;
 };
 
 struct csssdtype_fields_t {
-  uint64_t rvc_rs2;
-  int64_t rvc_sdsp_imm;
+  uint8_t rvc_rs2;
+  int16_t rvc_sdsp_imm;
 };
 
 struct cssswtype_fields_t {
-  uint64_t rvc_rs2;
-  int64_t rvc_swsp_imm;
+  uint8_t rvc_rs2;
+  int16_t rvc_swsp_imm;
 };
 
 struct cjtype_fields_t {
-  uint64_t rvc_rs1;
-  uint64_t rvc_rd;
-  int64_t rvc_j_imm;
-  int64_t rvc_imm;
+  uint8_t rvc_rs1;
+  uint8_t rvc_rd;
+  int16_t rvc_j_imm;
+  int16_t rvc_imm;
 };
 
 typedef uint64_t insn_bits_t;
@@ -216,7 +215,7 @@ class insn_t
 public:
   insn_t() = default;
   insn_t(insn_bits_t bits) : insn_t(bits, GENERIC) { }
-  insn_t(insn_bits_t bits, insn_type_t type) : b(bits), t(type) {
+  insn_t(insn_bits_t bits, insn_type_t type) : b(bits) {
     switch (type) {
     case RTYPE: this->rtype = {rs1(), rs2(), rd()}; break;
     case ITYPE: this->itype = {rs1(), rd(), i_imm()}; break;
@@ -225,7 +224,11 @@ public:
     case UJTYPE: this->ujtype = {rd(), uj_imm()}; break;
     case STYPE: this->stype = {rs1(), rs2(), s_imm()}; break;
     case CRTYPE: this->crtype = {rvc_rs1(), rvc_rs2(), rvc_rd()}; break;
-    case CITYPE: this->citype = {rvc_rs1(), rvc_rs1s(), rvc_rd(), rvc_imm(), rvc_zimm(), rvc_addi16sp_imm()}; break;
+    case CITYPE: {
+      bool addi16spn = (bits & MASK_C_ADDI16SP) == MATCH_C_ADDI16SP;
+      int16_t imm = addi16spn ? rvc_addi16sp_imm() : rvc_imm();
+      this->citype = {rvc_rs1(), rvc_rs1s(), rvc_rd(), imm}; break;
+    }
     case CIWTYPE: this->ciwtype = {rvc_rs2s(), rvc_addi4spn_imm()}; break;
     case CSDTYPE: this->csdtype = {rvc_rs1s(), rvc_rs2s(), rvc_ld_imm()}; break;
     case CSWTYPE: this->cswtype = {rvc_rs1s(), rvc_rs2s(), rvc_lw_imm()}; break;
@@ -244,40 +247,40 @@ public:
 
   insn_bits_t bits() { return b; }
   int length() { return insn_length(b); }
-  int64_t i_imm() { return xs(20, 12); }
-  int64_t shamt() { return x(20, 6); }
-  int64_t s_imm() { return x(7, 5) + (xs(25, 7) << 5); }
-  int64_t sb_imm() { return (x(8, 4) << 1) + (x(25, 6) << 5) + (x(7, 1) << 11) + (imm_sign() << 12); }
-  int64_t u_imm() { return xs(12, 20) << 12; }
-  int64_t uj_imm() { return (x(21, 10) << 1) + (x(20, 1) << 11) + (x(12, 8) << 12) + (imm_sign() << 20); }
-  uint64_t rd() { return x(7, 5); }
-  uint64_t rs1() { return x(15, 5); }
-  uint64_t rs2() { return x(20, 5); }
-  uint64_t rs3() { return x(27, 5); }
+  int16_t i_imm() { return xs(20, 12); }
+  int8_t shamt() { return x(20, 6); }
+  int16_t s_imm() { return x(7, 5) + (xs(25, 7) << 5); }
+  int16_t sb_imm() { return (x(8, 4) << 1) + (x(25, 6) << 5) + (x(7, 1) << 11) + (imm_sign() << 12); }
+  int32_t u_imm() { return xs(12, 20) << 12; }
+  int32_t uj_imm() { return (x(21, 10) << 1) + (x(20, 1) << 11) + (x(12, 8) << 12) + (imm_sign() << 20); }
+  uint8_t rd() { return x(7, 5); }
+  uint8_t rs1() { return x(15, 5); }
+  uint8_t rs2() { return x(20, 5); }
+  uint8_t rs3() { return x(27, 5); }
   uint64_t rm() { return x(12, 3); }
   uint64_t csr() { return x(20, 12); }
   uint64_t iorw() { return x(20, 8); }
   uint64_t bs() { return x(30, 2); } // Crypto ISE - SM4/AES32 byte select.
   uint64_t rcon() { return x(20, 4); } // Crypto ISE - AES64 round const.
 
-  int64_t rvc_imm() { return x(2, 5) + (xs(12, 1) << 5); }
-  int64_t rvc_zimm() { return x(2, 5) + (x(12, 1) << 5); }
-  int64_t rvc_addi4spn_imm() { return (x(6, 1) << 2) + (x(5, 1) << 3) + (x(11, 2) << 4) + (x(7, 4) << 6); }
-  int64_t rvc_addi16sp_imm() { return (x(6, 1) << 4) + (x(2, 1) << 5) + (x(5, 1) << 6) + (x(3, 2) << 7) + (xs(12, 1) << 9); }
-  int64_t rvc_lwsp_imm() { return (x(4, 3) << 2) + (x(12, 1) << 5) + (x(2, 2) << 6); }
-  int64_t rvc_ldsp_imm() { return (x(5, 2) << 3) + (x(12, 1) << 5) + (x(2, 3) << 6); }
-  int64_t rvc_swsp_imm() { return (x(9, 4) << 2) + (x(7, 2) << 6); }
-  int64_t rvc_sdsp_imm() { return (x(10, 3) << 3) + (x(7, 3) << 6); }
-  int64_t rvc_lw_imm() { return (x(6, 1) << 2) + (x(10, 3) << 3) + (x(5, 1) << 6); }
-  int64_t rvc_ld_imm() { return (x(10, 3) << 3) + (x(5, 2) << 6); }
-  int64_t rvc_j_imm() { return (x(3, 3) << 1) + (x(11, 1) << 4) + (x(2, 1) << 5) + (x(7, 1) << 6) + (x(6, 1) << 7) + (x(9, 2) << 8) + (x(8, 1) << 10) + (xs(12, 1) << 11); }
-  int64_t rvc_b_imm() { return (x(3, 2) << 1) + (x(10, 2) << 3) + (x(2, 1) << 5) + (x(5, 2) << 6) + (xs(12, 1) << 8); }
+  int8_t rvc_imm() { return x(2, 5) + (xs(12, 1) << 5); }
+  int8_t rvc_zimm() { return x(2, 5) + (x(12, 1) << 5); }
+  int16_t rvc_addi4spn_imm() { return (x(6, 1) << 2) + (x(5, 1) << 3) + (x(11, 2) << 4) + (x(7, 4) << 6); }
+  int16_t rvc_addi16sp_imm() { return (x(6, 1) << 4) + (x(2, 1) << 5) + (x(5, 1) << 6) + (x(3, 2) << 7) + (xs(12, 1) << 9); }
+  int16_t rvc_lwsp_imm() { return (x(4, 3) << 2) + (x(12, 1) << 5) + (x(2, 2) << 6); }
+  int16_t rvc_ldsp_imm() { return (x(5, 2) << 3) + (x(12, 1) << 5) + (x(2, 3) << 6); }
+  int16_t rvc_swsp_imm() { return (x(9, 4) << 2) + (x(7, 2) << 6); }
+  int16_t rvc_sdsp_imm() { return (x(10, 3) << 3) + (x(7, 3) << 6); }
+  int16_t rvc_lw_imm() { return (x(6, 1) << 2) + (x(10, 3) << 3) + (x(5, 1) << 6); }
+  int16_t rvc_ld_imm() { return (x(10, 3) << 3) + (x(5, 2) << 6); }
+  int16_t rvc_j_imm() { return (x(3, 3) << 1) + (x(11, 1) << 4) + (x(2, 1) << 5) + (x(7, 1) << 6) + (x(6, 1) << 7) + (x(9, 2) << 8) + (x(8, 1) << 10) + (xs(12, 1) << 11); }
+  int16_t rvc_b_imm() { return (x(3, 2) << 1) + (x(10, 2) << 3) + (x(2, 1) << 5) + (x(5, 2) << 6) + (xs(12, 1) << 8); }
   int64_t rvc_simm3() { return x(10, 3); }
-  uint64_t rvc_rd() { return rd(); }
-  uint64_t rvc_rs1() { return rd(); }
-  uint64_t rvc_rs2() { return x(2, 5); }
-  uint64_t rvc_rs1s() { return 8 + x(7, 3); }
-  uint64_t rvc_rs2s() { return 8 + x(2, 3); }
+  uint8_t rvc_rd() { return rd(); }
+  uint8_t rvc_rs1() { return rd(); }
+  uint8_t rvc_rs2() { return x(2, 5); }
+  uint8_t rvc_rs1s() { return 8 + x(7, 3); }
+  uint8_t rvc_rs2s() { return 8 + x(2, 3); }
 
   uint64_t rvc_lbimm() { return (x(5, 1) << 1) + x(6, 1); }
   uint64_t rvc_lhimm() { return (x(5, 1) << 1); }
@@ -361,6 +364,10 @@ public:
     return stack_adj_base + rvc_spimm();
   }
 
+private:
+  insn_bits_t b;
+
+public:
   const union {
     rtype_fields_t rtype;
     itype_fields_t itype;
@@ -385,9 +392,6 @@ public:
   };
 
 private:
-  insn_bits_t b;
-  insn_type_t t;
-
   uint64_t x(int lo, int len) { return (b >> lo) & ((insn_bits_t(1) << len) - 1); }
   uint64_t xs(int lo, int len) { return int64_t(b) << (64 - lo - len) >> (64 - len); }
   uint64_t imm_sign() { return xs(31, 1); }
