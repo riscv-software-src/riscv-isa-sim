@@ -204,9 +204,9 @@ struct state_t
   void csr_init(processor_t* const proc, reg_t max_isa);
 };
 
-class opcode_cache_entry_t {
+class opcode_cache_set_t {
  public:
-  opcode_cache_entry_t()
+  opcode_cache_set_t()
   {
     reset();
   }
@@ -405,7 +405,7 @@ private:
   std::unordered_map<reg_t,uint64_t> pc_histogram;
 
   static const size_t OPCODE_CACHE_SIZE = 4095;
-  opcode_cache_entry_t opcode_cache[OPCODE_CACHE_SIZE];
+  opcode_cache_set_t opcode_cache[OPCODE_CACHE_SIZE];
 
   void take_pending_interrupt() { take_interrupt(state.mip->read() & state.mie->read()); }
   void take_interrupt(reg_t mask); // take first enabled interrupt in mask
