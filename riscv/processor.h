@@ -204,6 +204,11 @@ struct state_t
   void csr_init(processor_t* const proc, reg_t max_isa);
 };
 
+struct opcode_cache_entry_t {
+  insn_bits_t bits;
+  const insn_desc_t* desc;
+};
+
 class opcode_cache_set_t {
  public:
   opcode_cache_set_t()
@@ -214,35 +219,33 @@ class opcode_cache_set_t {
   void reset()
   {
     for (size_t i = 0; i < associativity; i++) {
-      bits[i] = 0;
-      descs[i] = &insn_desc_t::illegal_instruction;
+      entries[i].bits = 0;
+      entries[i].desc = &insn_desc_t::illegal_instruction;
     }
   }
 
   void replace(insn_bits_t opcode, const insn_desc_t* desc)
   {
     for (size_t i = associativity - 1; i > 0; i--) {
-      bits[i] = bits[i-1];
-      descs[i] = descs[i-1];
+      entries[i] = entries[i-1];
     }
 
-    bits[0] = opcode;
-    descs[0] = desc;
+    entries[0].bits = opcode;
+    entries[0].desc = desc;
   }
 
   std::tuple<bool, const insn_desc_t*> lookup(insn_bits_t opcode)
   {
     for (size_t i = 0; i < associativity; i++)
-      if (bits[i] == opcode)
-        return std::tuple(true, descs[i]);
+      if (entries[i].bits == opcode)
+        return std::tuple(true, entries[i].desc);
 
     return std::tuple(false, nullptr);
   }
 
  private:
   static const size_t associativity = 4;
-  insn_bits_t bits[associativity];
-  const insn_desc_t* descs[associativity];
+  opcode_cache_entry_t entries[associativity];
 };
 
 // this class represents one processor in a RISC-V machine.
