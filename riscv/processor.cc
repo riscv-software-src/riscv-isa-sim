@@ -711,6 +711,8 @@ void processor_t::register_extension(extension_t *x) {
     fprintf(stderr, "extensions must have unique names (got two named \"%s\"!)\n", x->name());
     abort();
   }
+  for (auto &csr: x->get_csrs(*this))
+    state.add_csr(csr->address, csr);
   x->set_processor(this);
 }
 

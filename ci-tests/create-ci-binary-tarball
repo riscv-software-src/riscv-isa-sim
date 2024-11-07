@@ -4,7 +4,7 @@ set -e
 rm -rf build
 
 mkdir -p build/pk && cd "$_"
-`git rev-parse --show-toplevel`/../riscv-pk/configure --host=riscv64-unknown-elf
+`git rev-parse --show-toplevel`/../riscv-pk/configure --host=riscv64-unknown-elf --with-arch=rv64gc_zifencei
 make -j4
 cd -
 
@@ -16,9 +16,14 @@ mkdir -p build/dummy-slliuw && cd "$_"
 riscv64-unknown-elf-gcc -O2 -o dummy-slliuw `git rev-parse --show-toplevel`/ci-tests/dummy-slliuw.c
 cd -
 
+mkdir -p build/dummycsr && cd "$_"
+riscv64-unknown-elf-gcc -O2 -o customcsr `git rev-parse --show-toplevel`/ci-tests/customcsr.c
+cd -
+
 mv build/pk/pk .
 mv build/hello/hello .
 mv build/dummy-slliuw/dummy-slliuw .
-tar -cf spike-ci.tar pk hello dummy-slliuw
+mv build/dummycsr/customcsr .
+tar -cf spike-ci.tar pk hello dummy-slliuw customcsr
 
-rm pk hello dummy-slliuw
+rm pk hello dummy-slliuw customcsr
