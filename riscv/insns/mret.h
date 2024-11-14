@@ -14,7 +14,7 @@ if (ZICFILP_xLPE(prev_virt, prev_prv)) {
 }
 s = set_field(s, MSTATUS_MPELP, elp_t::NO_LP_EXPECTED);
 s = set_field(s, MSTATUS_MDT, 0);
-if (prev_prv == PRV_U || prev_virt)
+if (prev_prv == PRV_U || (prev_virt && prev_prv != PRV_M))
   s = set_field(s, MSTATUS_SDT, 0);
 if (prev_virt && prev_prv == PRV_U)
   STATE.vsstatus->write(STATE.vsstatus->read() & ~SSTATUS_SDT);
