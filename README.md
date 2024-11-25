@@ -215,23 +215,21 @@ Debugging With Gdb
 ------------------
 
 An alternative to interactive debug mode is to attach using gdb. Because spike
-tries to be like real hardware, you also need OpenOCD to do that. OpenOCD
-doesn't currently know about address translation, so it's not possible to
-easily debug programs that are run under `pk`. We'll use the following test
-program:
-```
-$ cat rot13.c 
-char text[] = "Vafgehpgvba frgf jnag gb or serr!";
+tries to be like real hardware, you also need OpenOCD v0.11.0-2 or later
+which knows about address translation, so it is possible to
+easily debug programs that are run under `pk`. We'll use the following test program:
 
-// Don't use the stack, because sp isn't set up.
-volatile int wait = 1;
+```
+$ cat rot13.c
+char text[] = "Vafgehpgvba frgf jnag gb or serr!";
 
 int main()
 {
+    // Wait for gdb to connect
+    volatile int wait = 1;
     while (wait)
         ;
 
-    // Doesn't actually go on the stack, because there are lots of GPRs.
     int i = 0;
     while (text[i]) {
         char lower = text[i] | 32;
@@ -246,28 +244,18 @@ done:
     while (!wait)
         ;
 }
-$ cat spike.lds 
-OUTPUT_ARCH( "riscv" )
-
-SECTIONS
-{
-  . = 0x10110000;
-  .text : { *(.text) }
-  .data : { *(.data) }
-}
-$ riscv64-unknown-elf-gcc -g -Og -o rot13-64.o -c rot13.c
-$ riscv64-unknown-elf-gcc -g -Og -T spike.lds -nostartfiles -o rot13-64 rot13-64.o
+$ riscv64-unknown-elf-gcc -g -Og -o rot13 rot13.c
 ```
 
 To debug this program, first run spike telling it to listen for OpenOCD:
 ```
-$ spike --rbb-port=9824 -m0x10100000:0x20000 rot13-64
+$ spike --rbb-port=9824 pk rot13
 Listening for remote bitbang connection on port 9824.
 ```
 
 In a separate shell run OpenOCD with the appropriate configuration file:
 ```
-$ cat spike.cfg 
+$ cat spike.cfg
 adapter driver remote_bitbang
 remote_bitbang host localhost
 remote_bitbang port 9824
@@ -283,49 +271,39 @@ gdb_report_data_abort enable
 init
 halt
 $ openocd -f spike.cfg
-Open On-Chip Debugger 0.10.0-dev-00002-gc3b344d (2017-06-08-12:14)
+Open On-Chip Debugger 0.12.0
 ...
-riscv.cpu: target state: halted
+Info : starting gdb server for riscv.cpu on 3333
+Info : Listening on port 3333 for gdb connections
+...
 ```
 
 In yet another shell, start your gdb debug session:
 ```
-tnewsome@compy-vm:~/SiFive/spike-test$ riscv64-unknown-elf-gdb rot13-64
-GNU gdb (GDB) 8.0.50.20170724-git
-Copyright (C) 2017 Free Software Foundation, Inc.
-License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
-and "show warranty" for details.
-This GDB was configured as "--host=x86_64-pc-linux-gnu --target=riscv64-unknown-elf".
-Type "show configuration" for configuration details.
-For bug reporting instructions, please see:
-<http://www.gnu.org/software/gdb/bugs/>.
-Find the GDB manual and other documentation resources online at:
-<http://www.gnu.org/software/gdb/documentation/>.
-For help, type "help".
-Type "apropos word" to search for commands related to "word"...
-Reading symbols from rot13-64...done.
+$ riscv64-unknown-elf-gdb rot13
+...
+Reading symbols from rot13...
 (gdb) target remote localhost:3333
 Remote debugging using localhost:3333
-0x0000000010010004 in main () at rot13.c:8
-8	    while (wait)
+0x000101d0 in main () at rot13.c:7
+7           while (wait)
 (gdb) print wait
 $1 = 1
 (gdb) print wait=0
 $2 = 0
-(gdb) print text
-$3 = "Vafgehpgvba frgf jnag gb or serr!"
-(gdb) b done 
-Breakpoint 1 at 0x10110064: file rot13.c, line 22.
+(gdb) printf "%s\n", text
+Vafgehpgvba frgf jnag gb or serr!
+(gdb) b done
+Breakpoint 1 at 0x10222: file rot13.c, line 20.
 (gdb) c
 Continuing.
-Disabling abstract command writes to CSRs.
 
-Breakpoint 1, main () at rot13.c:23
-23	    while (!wait)
+Breakpoint 1, main () at rot13.c:21
+21          while (!wait)
 (gdb) print wait
-$4 = 0
-(gdb) print text
+$3 = 0
+(gdb) printf "%s\n", text
+Instruction sets want to be free!
+(gdb) 
 ...
 ```
