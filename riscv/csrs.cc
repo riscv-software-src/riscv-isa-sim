@@ -1836,7 +1836,8 @@ reg_t hvip_csr_t::read() const noexcept {
 
 bool hvip_csr_t::unlogged_write(const reg_t val) noexcept {
   state->mip->write_with_mask(MIP_VSSIP, val); // hvip.VSSIP is an alias of mip.VSSIP
-  return basic_csr_t::unlogged_write(val & (MIP_VSEIP | MIP_VSTIP));
+  const reg_t lscof_int = proc->extension_enabled(EXT_SSCOFPMF) ? MIP_LCOFIP : 0;
+  return basic_csr_t::unlogged_write(val & (lscof_int | MIP_VSEIP | MIP_VSTIP));
 }
 
 ssp_csr_t::ssp_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
