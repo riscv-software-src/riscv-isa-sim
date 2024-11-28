@@ -344,6 +344,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_SMNPM] = true;
     } else if (ext_str == "ssnpm") {
       extension_table[EXT_SSNPM] = true;
+    } else if (ext_str == "shlcofideleg") {
+      extension_table[EXT_SHLCOFIDELEG] = true;
     } else if (ext_str.substr(0, 3) == "zvl") {
       reg_t new_vlen;
       try {
