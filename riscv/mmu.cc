@@ -553,6 +553,8 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
       // not shadow stack access xwr=110 or xwr=010 page cause page fault
       // shadow stack access with PTE_X moved to following check
       break;
+    } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
+      break;
     } else if (ss_page && ((type == STORE && !ss_access) || access_info.flags.clean_inval)) {
       // non-shadow-stack store or CBO with xwr = 010 causes access-fault
       throw trap_store_access_fault(virt, addr, 0, 0);
@@ -565,8 +567,6 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     } else if (type == FETCH || hlvx ? !(pte & PTE_X) :
                type == LOAD          ? !(sse && ss_page) && !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
                                        !(pte & PTE_W)) {
-      break;
-    } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
       break;
     } else {
       reg_t ad = PTE_A | ((type == STORE) * PTE_D);
