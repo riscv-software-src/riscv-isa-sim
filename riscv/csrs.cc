@@ -781,7 +781,7 @@ mip_csr_t::mip_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 reg_t mip_csr_t::read() const noexcept {
-  return val | state->hvip->basic_csr_t::read();
+  return val | (state->hvip->basic_csr_t::read() & (MIP_VSEIP | MIP_VSTIP));
 }
 
 void mip_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept {
