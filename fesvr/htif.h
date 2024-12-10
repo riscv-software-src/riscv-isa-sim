@@ -65,6 +65,7 @@ class htif_t : public chunked_memif_t
   virtual std::map<std::string, uint64_t> load_payload(const std::string& payload, reg_t* entry,
                                                        reg_t load_addr);
   virtual void load_program();
+  virtual void load_symbols(std::map<std::string, uint64_t>&);
   virtual void idle() {}
 
   const std::vector<std::string>& host_args() { return hargs; }
