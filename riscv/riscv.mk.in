@@ -1006,20 +1006,23 @@ riscv_insn_ext_zalasr = \
 	sw_rl \
 	sd_rl \
 
-riscv_insn_ext_zvbb = \
+riscv_insn_ext_zvkb = \
 	vandn_vv \
 	vandn_vx \
 	vbrev8_v \
-	vbrev_v \
-	vclz_v \
-	vcpop_v \
-	vctz_v \
 	vrev8_v \
 	vrol_vv \
 	vrol_vx \
 	vror_vi \
 	vror_vv \
 	vror_vx \
+
+riscv_insn_ext_zvbb = \
+	$(riscv_insn_ext_zvkb) \
+	vbrev_v \
+	vclz_v \
+	vcpop_v \
+	vctz_v \
 	vwsll_vi \
 	vwsll_vv \
 	vwsll_vx \

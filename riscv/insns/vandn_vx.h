@@ -2,7 +2,7 @@
 
 #include "zvk_ext_macros.h"
 
-require_zvbb;
+require_zvkb;
 
 VI_VX_LOOP
 ({
