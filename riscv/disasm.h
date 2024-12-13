@@ -52,6 +52,7 @@ class disasm_insn_t
     {
       bool next_arg_optional  = false;
       s += std::string(std::max(1, 8 - int(name.size())), ' ');
+
       for (size_t i = 0; i < args.size(); i++) {
         if (args[i] == nullptr) {
           next_arg_optional = true;
@@ -75,8 +76,9 @@ class disasm_insn_t
  private:
   uint32_t match;
   uint32_t mask;
-  std::vector<const arg_t*> args;
   std::string name;
+ public:
+  std::vector<const arg_t*> args;
 };
 
 class disassembler_t
