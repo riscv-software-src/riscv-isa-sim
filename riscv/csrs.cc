@@ -120,6 +120,7 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
 
   if (pmpidx < proc->n_pmp && !locked && !next_locked_and_tor()) {
     this->val = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
+    this->val &= proc->pmp_tor_mask();
   }
   else
     return false;
