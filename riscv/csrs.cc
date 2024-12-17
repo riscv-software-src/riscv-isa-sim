@@ -1359,7 +1359,7 @@ void dcsr_csr_t::verify_permissions(insn_t insn, bool write) const {
 
 reg_t dcsr_csr_t::read() const noexcept {
   reg_t result = 0;
-  result = set_field(result, DCSR_XDEBUGVER, 1);
+  result = set_field(result, DCSR_XDEBUGVER, 4);
   result = set_field(result, DCSR_EBREAKM, ebreakm);
   result = set_field(result, DCSR_EBREAKS, ebreaks);
   result = set_field(result, DCSR_EBREAKU, ebreaku);
