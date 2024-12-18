@@ -19,6 +19,7 @@ int main(int UNUSED argc, char** argv)
 {
   string s;
   const char* isa = DEFAULT_ISA;
+  bool strict = false;
 
   std::function<extension_t*()> extension;
   option_parser_t parser;
@@ -26,10 +27,11 @@ int main(int UNUSED argc, char** argv)
   parser.option(0, "extension", 1, [&](const char* s){extension = find_extension(s);});
 #endif
   parser.option(0, "isa", 1, [&](const char* s){isa = s;});
+  parser.option(0, "strict", 0, [&](const char UNUSED *s){strict = true;});
   parser.parse(argv);
 
   isa_parser_t isa_parser(isa, DEFAULT_PRIV);
-  disassembler_t* disassembler = new disassembler_t(&isa_parser);
+  disassembler_t* disassembler = new disassembler_t(&isa_parser, strict);
   if (extension) {
     for (auto disasm_insn : extension()->get_disasms()) {
       disassembler->add_insn(disasm_insn);
