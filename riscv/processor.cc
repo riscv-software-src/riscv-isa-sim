@@ -197,8 +197,11 @@ void processor_t::reset()
     put_csr(CSR_PMPCFG0, PMP_R | PMP_W | PMP_X | PMP_NAPOT);
   }
 
-  for (auto e : custom_extensions) // reset any extensions
+  for (auto e : custom_extensions) { // reset any extensions
+    for (auto &csr: e.second->get_csrs(*this))
+      state.add_csr(csr->address, csr);
     e.second->reset();
+  }
 
   if (sim)
     sim->proc_reset(id);
@@ -711,8 +714,6 @@ void processor_t::register_extension(extension_t *x) {
     fprintf(stderr, "extensions must have unique names (got two named \"%s\"!)\n", x->name());
     abort();
   }
-  for (auto &csr: x->get_csrs(*this))
-    state.add_csr(csr->address, csr);
   x->set_processor(this);
 }
 
