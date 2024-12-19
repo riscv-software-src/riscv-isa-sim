@@ -16,6 +16,9 @@ static constexpr uint32_t zvksed_ck[32] = {
 
 require_vsm4_constraints;
 
+require_vd_align_lmul;
+require_vs2_align_lmul;
+
 VI_ZVK_VD_VS2_ZIMM5_EGU32x4_NOVM_LOOP(
   {},
   // The following statements will be executed before the first execution

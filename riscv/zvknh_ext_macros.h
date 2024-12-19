@@ -9,6 +9,9 @@
 // Constraints common to all vsha* instructions, across all VSEW:
 //  - VSEW is 32 (SHA-256) or 64 (SHA-512)
 //  - No overlap of vd with vs1 or vs2.
+//  - vd is LMUL aligned
+//  - vs1 is LMUL aligned
+//  - vs2 is LMUL aligned
 //
 // The constraint that vstart and vl are both EGS (4) aligned
 // is checked in the VI_..._EGU32x4_..._LOOP and VI_..._EGU64x4_..._LOOP
@@ -18,6 +21,9 @@
     require(P.VU.vsew == 32 || P.VU.vsew == 64); \
     require(insn.rd() != insn.rs1()); \
     require(insn.rd() != insn.rs2()); \
+    require_vd_align_lmul; \
+    require_vs2_align_lmul; \
+    require_vs1_align_lmul; \
   } while (false)
 
 // Constraints on vsha2 instructions that must be verified when VSEW==32.
