@@ -453,6 +453,10 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
       } else {
         reg_t ad = PTE_A | ((type == STORE) * PTE_D);
 
+        int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
+        if (((pte & PTE_N) && (ppn == 0 || i != 0)) || (napot_bits != 0 && napot_bits != 4))
+          break;
+
         if ((pte & ad) != ad) {
           if (hade) {
             // set accessed and possibly dirty bits
@@ -465,10 +469,6 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
 
         reg_t vpn = gpa >> PGSHIFT;
         reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
-
-        int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
-        if (((pte & PTE_N) && (ppn == 0 || i != 0)) || (napot_bits != 0 && napot_bits != 4))
-          break;
 
         reg_t page_base = ((ppn & ~((reg_t(1) << napot_bits) - 1))
                           | (vpn & ((reg_t(1) << napot_bits) - 1))
@@ -571,6 +571,10 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     } else {
       reg_t ad = PTE_A | ((type == STORE) * PTE_D);
 
+      int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
+      if (((pte & PTE_N) && (ppn == 0 || i != 0)) || (napot_bits != 0 && napot_bits != 4))
+        break;
+
       if ((pte & ad) != ad) {
         if (hade) {
           // Check for write permission to the first-stage PT in second-stage
@@ -586,10 +590,6 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
 
       // for superpage or Svnapot NAPOT mappings, make a fake leaf PTE for the TLB's benefit.
       reg_t vpn = addr >> PGSHIFT;
-
-      int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
-      if (((pte & PTE_N) && (ppn == 0 || i != 0)) || (napot_bits != 0 && napot_bits != 4))
-        break;
 
       reg_t page_base = ((ppn & ~((reg_t(1) << napot_bits) - 1))
                         | (vpn & ((reg_t(1) << napot_bits) - 1))
