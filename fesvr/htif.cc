@@ -92,13 +92,12 @@ void htif_t::start()
         fprintf(stderr, "Error: cannot execute %d-bit program on RV%d hart\n", err.actual_xlen, err.expected_xlen);
         exit(1);
       }
+      reset();
     } else {
       auto empty_symbols = std::map<std::string, uint64_t>();
       load_symbols(empty_symbols);
     }
   }
-
-  reset();
 }
 
 static void bad_address(const std::string& situation, reg_t addr)
