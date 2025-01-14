@@ -1731,11 +1731,29 @@ virtualized_indirect_csr_t::virtualized_indirect_csr_t(processor_t* const proc, 
 }
 
 void virtualized_indirect_csr_t::verify_permissions(insn_t insn, bool write) const {
-  virtualized_csr_t::verify_permissions(insn, write);
   if (state->v)
     virt_csr->verify_permissions(insn, write);
   else
     orig_csr->verify_permissions(insn, write);
+  virtualized_csr_t::verify_permissions(insn, write);
+}
+
+virtualized_select_indirect_csr_t::virtualized_select_indirect_csr_t(processor_t *const proc,
+                                                       csr_t_p orig,
+                                                       csr_t_p virt)
+    : virtualized_csr_t(proc, orig, virt) {}
+
+void virtualized_select_indirect_csr_t::verify_permissions(insn_t insn,
+                                                    bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) &&
+        !(state->mstateen[0]->read() & MSTATEEN0_CSRIND))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_CSRIND))
+      throw trap_virtual_instruction(insn.bits());
+  }
+  virtualized_csr_t::verify_permissions(insn, write);
 }
 
 sscsrind_reg_csr_t::sscsrind_reg_csr_t(processor_t* const proc, const reg_t addr, csr_t_p iselect) :
@@ -1744,19 +1762,43 @@ sscsrind_reg_csr_t::sscsrind_reg_csr_t(processor_t* const proc, const reg_t addr
 }
 
 void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
+  const auto csr_priv = get_field(insn.csr(), 0x300);
+  const bool is_vsi   = csr_priv == PRV_HS;
+  // csr_priv checked due to mireg using the same class
+  if (csr_priv < PRV_M && state->prv < PRV_M){
+    // The CSRIND bit in mstateen0 controls access to the siselect, sireg*, vsiselect, and the vsireg*
+    // Stateen takes precedence over general sscsrind rules
+    if (proc->extension_enabled(EXT_SMSTATEEN)) {
+      const bool m_csrind = state->mstateen[0]->read() & MSTATEEN0_CSRIND;
+      const bool h_csrind = state->hstateen[0]->read() & HSTATEEN0_CSRIND;
+      if (!m_csrind)
+        throw trap_illegal_instruction(insn.bits());
+
+      if (state->v && !h_csrind)
+        throw trap_virtual_instruction(insn.bits());
+    }
+  }
+
+  // A virtual instruction exception is raised for attempts from VS-mode or VU-mode to directly access
+  // vsiselect or vsireg*, or attempts from VU-mode to access siselect or sireg*.
+  if (state->v and csr_priv < PRV_M){
+    if (is_vsi)
+      throw trap_virtual_instruction(insn.bits());
+    else if (state->prv == PRV_U)
+      throw trap_virtual_instruction(insn.bits());
+  }
+
+  csr_t_p proxy_csr = get_reg();
+  if (proxy_csr == nullptr) {
+    // The spec recomends raising illegal if the proxy csr is not implemented.
+    throw trap_illegal_instruction(insn.bits());
+  }
+  proxy_csr->verify_permissions(insn, write);
+
   // Don't call base verify_permission for VS registers remapped to S-mode
   if (insn.csr() == address)
     csr_t::verify_permissions(insn, write);
 
-  csr_t_p proxy_csr = get_reg();
-  if (proxy_csr == nullptr) {
-    if (!state->v) {
-      throw trap_illegal_instruction(insn.bits());
-    } else {
-      throw trap_virtual_instruction(insn.bits());
-    }
-  }
-  proxy_csr->verify_permissions(insn, write);
 }
 
 
@@ -1777,6 +1819,36 @@ bool sscsrind_reg_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 // Returns the actual CSR that maps to value in *siselect or nullptr if no mapping exists
+sscsrind_select_csr_t::sscsrind_select_csr_t(processor_t *const proc, const reg_t addr,
+                     const reg_t init)
+    : basic_csr_t(proc, addr, init) {}
+
+void sscsrind_select_csr_t::verify_permissions(insn_t insn, bool write) const {
+  const auto csr_priv = get_field(insn.csr(), 0x300);
+  const bool is_vsi   = csr_priv == PRV_HS;
+  // The CSRIND bit in mstateen0 controls access to the siselect, sireg*, vsiselect, and the vsireg*
+  if (proc->extension_enabled(EXT_SMSTATEEN) && state->prv < PRV_M) {
+    const bool m_csrind = state->mstateen[0]->read() & MSTATEEN0_CSRIND;
+    const bool h_csrind = state->hstateen[0]->read() & HSTATEEN0_CSRIND;
+    if (!m_csrind)
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !h_csrind)
+        throw trap_virtual_instruction(insn.bits());
+  }
+  // A virtual instruction exception is raised for attempts from VS-mode or VU-mode to directly access
+  // vsiselect or vsireg*, or attempts from VU-mode to access siselect or sireg*.
+  if (state->v){
+    if (is_vsi){
+      throw trap_virtual_instruction(insn.bits());
+    } else if (state->prv == PRV_U)
+      throw trap_virtual_instruction(insn.bits());
+  }
+  basic_csr_t::verify_permissions(insn, write);
+};
+
+// Returns the actual CSR that maps to value in *siselect or nullptr if no
+// mapping exists
 csr_t_p sscsrind_reg_csr_t::get_reg() const noexcept {
   auto proxy = ireg_proxy;
   auto isel = iselect->read();
@@ -1877,4 +1949,32 @@ bool hstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   if (get_field(new_hstatus, HSTATUS_HUPMM) != get_field(read(), HSTATUS_HUPMM))
     proc->get_mmu()->flush_tlb();
   return basic_csr_t::unlogged_write(new_hstatus);
+}
+
+scontext_csr_t::scontext_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init) :
+masked_csr_t(proc, addr, mask, init){};
+void scontext_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) &&
+        !(state->mstateen[0]->read() & MSTATEEN0_HCONTEXT))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_SCONTEXT))
+      throw trap_virtual_instruction(insn.bits());
+  }
+  masked_csr_t::verify_permissions(insn, write);
+
+}
+
+hcontext_csr_t::hcontext_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init) :
+masked_csr_t(proc, addr, mask, init){};
+void hcontext_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) &&
+        !(state->mstateen[0]->read() & MSTATEEN0_HCONTEXT))
+      throw trap_illegal_instruction(insn.bits());
+
+  }
+  masked_csr_t::verify_permissions(insn, write);
+
 }

@@ -215,9 +215,9 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     add_csr(CSR_TINFO, std::make_shared<const_csr_t>(proc, CSR_TINFO, 0));
   }
   unsigned scontext_length = (xlen == 32 ? 16 : 32); // debug spec suggests 16-bit for RV32 and 32-bit for RV64
-  add_supervisor_csr(CSR_SCONTEXT, scontext = std::make_shared<masked_csr_t>(proc, CSR_SCONTEXT, (reg_t(1) << scontext_length) - 1, 0));
+  add_supervisor_csr(CSR_SCONTEXT, scontext = std::make_shared<scontext_csr_t>(proc, CSR_SCONTEXT, (reg_t(1) << scontext_length) - 1, 0));
   unsigned hcontext_length = (xlen == 32 ? 6 : 13) + (proc->extension_enabled('H') ? 1 : 0); // debug spec suggest 7-bit (6-bit) for RV32 and 14-bit (13-bit) for RV64 with (without) H extension
-  auto hcontext = std::make_shared<masked_csr_t>(proc, CSR_HCONTEXT, (reg_t(1) << hcontext_length) - 1, 0);
+  auto hcontext = std::make_shared<hcontext_csr_t>(proc, CSR_HCONTEXT, (reg_t(1) << hcontext_length) - 1, 0);
   add_hypervisor_csr(CSR_HCONTEXT, hcontext);
   add_csr(CSR_MCONTEXT, mcontext = std::make_shared<proxy_csr_t>(proc, CSR_MCONTEXT, hcontext));
   add_csr(CSR_MSECCFG, mseccfg = std::make_shared<mseccfg_csr_t>(proc, CSR_MSECCFG));
@@ -284,7 +284,8 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     const reg_t sstateen0_mask = (proc->extension_enabled(EXT_ZFINX) ? SSTATEEN0_FCSR : 0) |
                                  (proc->extension_enabled(EXT_ZCMT) ? SSTATEEN0_JVT : 0) |
                                  SSTATEEN0_CS;
-    const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN;
+    const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN |
+                                (proc->extension_enabled(EXT_SSCSRIND) ? HSTATEEN0_CSRIND : 0);
     const reg_t mstateen0_mask = hstateen0_mask | (proc->extension_enabled(EXT_SSQOSID) ?  MSTATEEN0_PRIV114 : 0);
     for (int i = 0; i < 4; i++) {
       const reg_t mstateen_mask = i == 0 ? mstateen0_mask : MSTATEEN_HSTATEEN;
@@ -349,11 +350,12 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   }
 
   if (proc->extension_enabled_const(EXT_SSCSRIND)) {
-    csr_t_p vsiselect = std::make_shared<basic_csr_t>(proc, CSR_VSISELECT, 0);
+    auto vsiselect = std::make_shared<sscsrind_select_csr_t>(proc, CSR_VSISELECT, 0);
     add_hypervisor_csr(CSR_VSISELECT, vsiselect);
 
-    csr_t_p siselect = std::make_shared<basic_csr_t>(proc, CSR_SISELECT, 0);
-    add_supervisor_csr(CSR_SISELECT, std::make_shared<virtualized_csr_t>(proc, siselect, vsiselect));
+    auto siselect = std::make_shared<sscsrind_select_csr_t>(proc, CSR_SISELECT, 0);
+    // Correct virtualized type?
+    add_supervisor_csr(CSR_SISELECT, std::make_shared<virtualized_select_indirect_csr_t>(proc, siselect, vsiselect));
 
     const reg_t vsireg_csrs[] = { CSR_VSIREG, CSR_VSIREG2, CSR_VSIREG3, CSR_VSIREG4, CSR_VSIREG5, CSR_VSIREG6 };
     const reg_t sireg_csrs[] = { CSR_SIREG, CSR_SIREG2, CSR_SIREG3, CSR_SIREG4, CSR_SIREG5, CSR_SIREG6 };
