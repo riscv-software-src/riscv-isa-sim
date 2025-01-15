@@ -34,7 +34,7 @@ struct icache_entry_t {
 };
 
 struct tlb_entry_t {
-  char* host_offset;
+  uintptr_t host_offset;
   reg_t target_offset;
 };
 
