@@ -34,8 +34,8 @@ struct icache_entry_t {
 };
 
 struct tlb_entry_t {
-  uintptr_t host_offset;
-  reg_t target_offset;
+  uintptr_t host_addr;
+  reg_t target_addr;
 };
 
 struct xlate_flags_t {
@@ -88,7 +88,7 @@ public:
     bool tlb_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn;
 
     if (likely(!xlate_flags.is_special_access() && aligned && tlb_hit)) {
-      res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
+      res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_addr + (addr & (PGSIZE-1)));
     } else {
       load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags);
     }
@@ -129,7 +129,7 @@ public:
     bool tlb_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn;
 
     if (!xlate_flags.is_special_access() && likely(aligned && tlb_hit)) {
-      *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val);
+      *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_addr + (addr & (PGSIZE-1))) = to_target(val);
     } else {
       target_endian<T> target_val = to_target(val);
       store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);
@@ -292,7 +292,7 @@ public:
   template<typename T>
   T ALWAYS_INLINE fetch_jump_table(reg_t addr) {
     auto tlb_entry = translate_insn_addr(addr);
-    return from_target(*(target_endian<T>*)(tlb_entry.host_offset + addr));
+    return from_target(*(target_endian<T>*)(tlb_entry.host_addr + (addr & (PGSIZE-1))));
   }
 
   inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
@@ -301,7 +301,7 @@ public:
       throw *matched_trigger;
 
     auto tlb_entry = translate_insn_addr(addr);
-    insn_bits_t insn = from_le(*(uint16_t*)(tlb_entry.host_offset + addr));
+    insn_bits_t insn = from_le(*(uint16_t*)(tlb_entry.host_addr + (addr & (PGSIZE-1))));
     int length = insn_length(insn);
 
     if (likely(length == 4)) {
@@ -323,7 +323,7 @@ public:
     entry->next = &icache[icache_index(addr + length)];
     entry->data = fetch;
 
-    reg_t paddr = tlb_entry.target_offset + addr;;
+    reg_t paddr = tlb_entry.target_addr + (addr & (PGSIZE - 1));
     if (tracer.interested_in_range(paddr, paddr + 1, FETCH)) {
       entry->tag = -1;
       tracer.trace(paddr, length, FETCH);
@@ -380,7 +380,6 @@ private:
   processor_t* proc;
   memtracer_list_t tracer;
   reg_t load_reservation_address;
-  uint16_t fetch_temp;
   reg_t blocksz;
 
   // implement an instruction cache for simulator performance
@@ -395,6 +394,9 @@ private:
   reg_t tlb_insn_tag[TLB_ENTRIES];
   reg_t tlb_load_tag[TLB_ENTRIES];
   reg_t tlb_store_tag[TLB_ENTRIES];
+
+  // temporary location to store instructions fetched from an MMIO region
+  uint16_t fetch_temp[PGSIZE / sizeof(uint16_t)];
 
   // finish translation on a TLB miss and update the TLB
   tlb_entry_t refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type);
@@ -479,7 +481,7 @@ private:
   }
 
   inline const uint16_t* translate_insn_addr_to_host(reg_t addr) {
-    return (uint16_t*)(translate_insn_addr(addr).host_offset + addr);
+    return (uint16_t*)(translate_insn_addr(addr).host_addr + (addr & (PGSIZE-1)));
   }
 
   inline bool in_mprv() const

@@ -77,19 +77,19 @@ tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
   tlb_entry_t result;
   reg_t vpn = vaddr >> PGSHIFT;
   if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] != (vpn | TLB_CHECK_TRIGGERS))) {
-    reg_t paddr = translate(access_info, sizeof(fetch_temp));
+    reg_t paddr = translate(access_info, sizeof(fetch_temp[0]));
     if (auto host_addr = sim->addr_to_mem(paddr)) {
       result = refill_tlb(vaddr, paddr, host_addr, FETCH);
     } else {
-      if (!mmio_fetch(paddr, sizeof fetch_temp, (uint8_t*)&fetch_temp))
+      if (!mmio_fetch(paddr, sizeof(fetch_temp[0]), (uint8_t*)&fetch_temp + (vaddr & (PGSIZE-1))))
         throw trap_instruction_access_fault(proc->state.v, vaddr, 0, 0);
-      result = {uintptr_t(&fetch_temp) - vaddr, paddr - vaddr};
+      result = {uintptr_t(&fetch_temp), paddr - (vaddr & (PGSIZE-1))};
     }
   } else {
     result = tlb_data[vpn % TLB_ENTRIES];
   }
 
-  check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt, from_le(*(const uint16_t*)(result.host_offset + vaddr)));
+  check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt, from_le(*(const uint16_t*)(result.host_addr + (vaddr & (PGSIZE-1)))));
 
   return result;
 }
@@ -196,7 +196,7 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
   reg_t transformed_addr = access_info.transformed_vaddr;
   reg_t vpn = transformed_addr >> PGSHIFT;
   if (!access_info.flags.is_special_access() && vpn == (tlb_load_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
-    auto host_addr = (const void*)(tlb_data[vpn % TLB_ENTRIES].host_offset + transformed_addr);
+    auto host_addr = (const void*)(tlb_data[vpn % TLB_ENTRIES].host_addr + (transformed_addr & (PGSIZE-1)));
     memcpy(bytes, host_addr, len);
     return;
   }
@@ -260,7 +260,7 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
   reg_t vpn = transformed_addr >> PGSHIFT;
   if (!access_info.flags.is_special_access() && vpn == (tlb_store_tag[vpn % TLB_ENTRIES] & ~TLB_CHECK_TRIGGERS)) {
     if (actually_store) {
-      auto host_addr = (void*)(tlb_data[vpn % TLB_ENTRIES].host_offset + transformed_addr);
+      auto host_addr = (void*)(tlb_data[vpn % TLB_ENTRIES].host_addr + (transformed_addr & (PGSIZE-1)));
       memcpy(host_addr, bytes, len);
     }
     return;
@@ -318,7 +318,7 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
   reg_t idx = (vaddr >> PGSHIFT) % TLB_ENTRIES;
   reg_t expected_tag = vaddr >> PGSHIFT;
 
-  tlb_entry_t entry = {uintptr_t(host_addr) - vaddr, paddr - vaddr};
+  tlb_entry_t entry = {uintptr_t(host_addr) - (vaddr & (PGSIZE-1)), paddr - (vaddr & (PGSIZE-1))};
 
   if (in_mprv())
     return entry;
