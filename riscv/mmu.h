@@ -70,9 +70,6 @@ void throw_access_exception(bool virt, reg_t addr, access_type type);
 class mmu_t
 {
 private:
-  std::map<reg_t, reg_t> alloc_cache;
-  std::vector<std::pair<reg_t, reg_t >> addr_tbl;
-
   reg_t get_pmlen(bool effective_virt, reg_t effective_priv, xlate_flags_t flags) const;
   mem_access_info_t generate_access_info(reg_t addr, access_type type, xlate_flags_t xlate_flags);
 
