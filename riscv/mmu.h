@@ -38,6 +38,11 @@ struct tlb_entry_t {
   reg_t target_addr;
 };
 
+struct dtlb_entry_t {
+  tlb_entry_t data;
+  reg_t tag;
+};
+
 struct xlate_flags_t {
   const bool forced_virt : 1 {false};
   const bool hlvx : 1 {false};
@@ -82,10 +87,10 @@ public:
     target_endian<T> res;
     reg_t vpn = addr >> PGSHIFT;
     bool aligned = (addr & (sizeof(T) - 1)) == 0;
-    bool tlb_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn;
+    bool tlb_hit = tlb_load[vpn % TLB_ENTRIES].tag == vpn;
 
     if (likely(!xlate_flags.is_special_access() && aligned && tlb_hit)) {
-      res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_addr + (addr & (PGSIZE-1)));
+      res = *(target_endian<T>*)(tlb_load[vpn % TLB_ENTRIES].data.host_addr + (addr & (PGSIZE-1)));
     } else {
       load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags);
     }
@@ -123,10 +128,10 @@ public:
   void ALWAYS_INLINE store(reg_t addr, T val, xlate_flags_t xlate_flags = {}) {
     reg_t vpn = addr >> PGSHIFT;
     bool aligned = (addr & (sizeof(T) - 1)) == 0;
-    bool tlb_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn;
+    bool tlb_hit = tlb_store[vpn % TLB_ENTRIES].tag == vpn;
 
     if (!xlate_flags.is_special_access() && likely(aligned && tlb_hit)) {
-      *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_addr + (addr & (PGSIZE-1))) = to_target(val);
+      *(target_endian<T>*)(tlb_store[vpn % TLB_ENTRIES].data.host_addr + (addr & (PGSIZE-1))) = to_target(val);
     } else {
       target_endian<T> target_val = to_target(val);
       store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);
@@ -387,10 +392,9 @@ private:
   // If a TLB tag has TLB_CHECK_TRIGGERS set, then the MMU must check for a
   // trigger match before completing an access.
   static const reg_t TLB_CHECK_TRIGGERS = reg_t(1) << 63;
-  tlb_entry_t tlb_data[TLB_ENTRIES];
-  reg_t tlb_insn_tag[TLB_ENTRIES];
-  reg_t tlb_load_tag[TLB_ENTRIES];
-  reg_t tlb_store_tag[TLB_ENTRIES];
+  dtlb_entry_t tlb_load[TLB_ENTRIES];
+  dtlb_entry_t tlb_store[TLB_ENTRIES];
+  dtlb_entry_t tlb_insn[TLB_ENTRIES];
 
   // temporary location to store instructions fetched from an MMIO region
   uint16_t fetch_temp[PGSIZE / sizeof(uint16_t)];
@@ -472,8 +476,8 @@ private:
   // ITLB lookup
   inline tlb_entry_t translate_insn_addr(reg_t addr) {
     reg_t vpn = addr >> PGSHIFT;
-    if (likely(tlb_insn_tag[vpn % TLB_ENTRIES] == vpn))
-      return tlb_data[vpn % TLB_ENTRIES];
+    if (likely(tlb_insn[vpn % TLB_ENTRIES].tag == vpn))
+      return tlb_insn[vpn % TLB_ENTRIES].data;
     return fetch_slow_path(addr);
   }
 
