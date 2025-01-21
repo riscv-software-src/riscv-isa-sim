@@ -86,6 +86,20 @@
 //    (LMUL * VLEN) <= EGW
 #define require_egw_fits(EGW)  require((EGW) <= (P.VU.VLEN * P.VU.vflmul))
 
+// Ensures that a register index is aligned to EMUL
+// evaluated as EGW / VLEN.
+// The check is only enabled if this value is greater
+// than one (no index alignment check required for fractional EMUL)
+#define require_vreg_align_eglmul(EGW, VREG_NUM) \
+  do { \
+    float vfeglmul = EGW / P.VU.VLEN; \
+    if (vfeglmul > 1) { \
+      require_align(VREG_NUM, vfeglmul); \
+    }\
+  } while (0)
+
+#define require_vs2_align_eglmul(EGW) require_vreg_align_eglmul(EGW, insn.rs2())
+
 // ensure that rs2 and rd do not overlap, assuming rd encodes an LMUL wide
 // vector register group and rs2 encodes an vs2_EMUL=ceil(EGW / VLEN) vector register
 // group.
