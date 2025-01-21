@@ -2,6 +2,7 @@
 // the RISC-V Zvkned extension (vector AES single round).
 
 #include "insns/aes_common.h"
+#include "zvk_ext_macros.h"
 
 #ifndef RISCV_ZVKNED_EXT_MACROS_H_
 #define RISCV_ZVKNED_EXT_MACROS_H_
@@ -21,7 +22,7 @@
     require(P.VU.vsew == 32); \
     require_egw_fits(128); \
     require_align(insn.rd(), P.VU.vflmul); \
-    require_noover(insn.rs2(), 1, insn.rd(), P.VU.vflmul); \
+    require_noover_eglmul(insn.rd(), insn.rs2()); \
   } while (false)
 
 // vaes*.vv instruction constraints. Those are the same as the .vs ones,
