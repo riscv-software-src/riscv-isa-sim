@@ -86,6 +86,18 @@
 //    (LMUL * VLEN) <= EGW
 #define require_egw_fits(EGW)  require((EGW) <= (P.VU.VLEN * P.VU.vflmul))
 
+// ensure that rs2 and rd do not overlap, assuming rd encodes an LMUL wide
+// vector register group and rs2 encodes an vs2_EMUL=ceil(EGW / VLEN) vector register
+// group.
+// Assumption: LMUL >= vs2_EMUL which is enforced independently through require_egw_fits.
+#define require_noover_eglmul(vd, vs2) \
+  do { \
+    int vd_emul = P.VU.vflmul < 1.f ? 1 : (int) P.VU.vflmul; \
+    int aligned_vd = vd / vd_emul; \
+    int aligned_vs2 = vs2 / vd_emul; \
+    require(aligned_vd != aligned_vs2); \
+  } while (0)
+
 // Checks that the vector unit state (vtype and vl) can be interpreted
 // as element groups with EEW=32, EGS=4 (four 32-bits elements per group),
 // for an effective element group width of EGW=128 bits.

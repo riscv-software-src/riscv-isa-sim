@@ -7,7 +7,7 @@ const uint32_t EGS = 4;
 require_vsm4_constraints;
 require_align(insn.rd(), P.VU.vflmul);
 // No overlap of vd and vs2.
-require_noover(insn.rs2(), 1, insn.rd(), P.VU.vflmul);
+require_noover_eglmul(insn.rd(), insn.rs2());
 
 VI_ZVK_VD_VS2_NOOPERANDS_PRELOOP_EGU32x4_NOVM_LOOP(
   {},
