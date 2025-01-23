@@ -105,6 +105,13 @@ struct commonNaN { char _unused; };
 
 /*----------------------------------------------------------------------------
 | Returns true when 16-bit unsigned integer `uiA' has the bit pattern of a
+| 16-bit bfloating-point signaling NaN.
+| Note:  This macro evaluates its argument more than once.
+*----------------------------------------------------------------------------*/
+#define softfloat_isSigNaNBF16UI( uiA ) ((((uiA) & 0x7FC0) == 0x7F80) && ((uiA) & 0x007F))
+
+/*----------------------------------------------------------------------------
+| Returns true when 16-bit unsigned integer `uiA' has the bit pattern of a
 | 16-bit floating-point signaling NaN.
 | Note:  This macro evaluates its argument more than once.
 *----------------------------------------------------------------------------*/
