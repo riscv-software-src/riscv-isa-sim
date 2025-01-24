@@ -57,10 +57,6 @@ struct mem_access_info_t {
   const bool effective_virt;
   const xlate_flags_t flags;
   const access_type type;
-
-  mem_access_info_t split_misaligned_access(reg_t offset) const {
-    return {vaddr + offset, transformed_vaddr + offset, effective_priv, effective_virt, flags, type};
-  }
 };
 
 void throw_access_exception(bool virt, reg_t addr, access_type type);
