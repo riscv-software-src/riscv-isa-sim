@@ -113,6 +113,8 @@ struct commonNaN { char _unused; };
 | NaN, and returns the bit pattern of this value as an unsigned integer.
 *----------------------------------------------------------------------------*/
 #define softfloat_commonNaNToF8UI( aPtr ) ((uint_fast8_t) defaultNaNF8UI)
+#define softfloat_commonNaNToE4M3F8UI( aPtr ) ((uint_fast8_t) 0xFF)
+#define softfloat_commonNaNToE5M2F8UI( aPtr ) ((uint_fast8_t) 0XFF)
 
 /*----------------------------------------------------------------------------
 | Returns true when 16-bit unsigned integer `uiA' has the bit pattern of a

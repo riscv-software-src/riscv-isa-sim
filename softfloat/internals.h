@@ -86,6 +86,10 @@ int_fast64_t softfloat_roundMToI64( bool, uint32_t *, uint_fast8_t, bool );
 /*----------------------------------------------------------------------------
 *---------------------------------------------------------------------------*/
 #define f8ExpWidth softfloat_fp8ExpWidths[softfloat_fp8Mode]
+#define isE4M3NaNF8UI( a ) ((bool) ((((uint8_t) a) & 0x7F)  == 0x7F))
+#define isE5M2NaNF8UI( a ) ((bool) ((((uint8_t) a) & 0x7C) > 0x7C))
+#define isE5M2InfF8UI( a ) ((bool) ((((uint8_t) a) & 0x7C)  == 0x7C))
+#define signInfE5M2F8UI( sign ) (((uint8_t) (sign)<<7) | 0x7C)
 
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
