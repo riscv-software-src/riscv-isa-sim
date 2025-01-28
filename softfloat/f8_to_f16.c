@@ -56,18 +56,37 @@ float16_t f8_to_f16( float8_t a )
     *------------------------------------------------------------------------*/
     uA.f = a;
     uiA = uA.ui;
+
     sign = signF8UI( uiA );
     exp  = expF8UI( uiA );
     frac = fracF8UI( uiA );
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
-    if ( isNaNF8UI(uiA) ) {
-      uiZ = defaultNaNF16UI;
-      goto uiZ;
-    }
-    if ( isInfF8UI(uiA) ) {
-      uiZ = packToF16UI( sign, 0x1F, 0 );
-      goto uiZ;
+    switch ( softfloat_fp8Mode ) {
+        case softfloat_fp8_e4m3:
+            // No Infinity in E4M3 mode.
+            if ( isE4M3NaNF8UI( uiA ) ) {
+                uiZ = defaultNaNF16UI;
+                goto uiZ;
+            }
+        case softfloat_fp8_e5m2:
+            if ( isE5M2NaNF8UI( uiA ) ) {
+                uiZ = defaultNaNF16UI;
+                goto uiZ;
+            }
+            if ( isE5M2InfF8UI( uiA ) ) {
+                uiZ = packToF16UI( sign, 0x1F, 0 );
+                goto uiZ;
+            }
+        default:
+            if ( isNaNF8UI(uiA) ) {
+                uiZ = defaultNaNF16UI;
+                goto uiZ;
+            }
+            if ( isInfF8UI(uiA) ) {
+                uiZ = packToF16UI( sign, 0x1F, 0 );
+                goto uiZ;
+            }
     }
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
