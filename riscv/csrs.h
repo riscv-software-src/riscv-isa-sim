@@ -924,4 +924,10 @@ class hcontext_csr_t: public masked_csr_t {
   hcontext_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
+
+class hedelegh_csr_t: public const_csr_t {
+ public:
+  hedelegh_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
 #endif

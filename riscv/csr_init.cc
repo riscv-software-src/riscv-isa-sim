@@ -179,6 +179,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     (1 << CAUSE_SOFTWARE_CHECK_FAULT) |
     (1 << CAUSE_HARDWARE_ERROR_FAULT);
   add_hypervisor_csr(CSR_HEDELEG, hedeleg = std::make_shared<masked_csr_t>(proc, CSR_HEDELEG, hedeleg_mask, 0));
+  add_hypervisor_csr(CSR_HEDELEGH, std::make_shared<hedelegh_csr_t>(proc, CSR_HEDELEGH, 0));
   add_hypervisor_csr(CSR_HCOUNTEREN, hcounteren = std::make_shared<masked_csr_t>(proc, CSR_HCOUNTEREN, counteren_mask, 0));
   htimedelta = std::make_shared<basic_csr_t>(proc, CSR_HTIMEDELTA, 0);
   if (xlen == 32) {
@@ -285,8 +286,10 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
                                  (proc->extension_enabled(EXT_ZCMT) ? SSTATEEN0_JVT : 0) |
                                  SSTATEEN0_CS;
     const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN |
-                                (proc->extension_enabled(EXT_SSCSRIND) ? HSTATEEN0_CSRIND : 0);
-    const reg_t mstateen0_mask = hstateen0_mask | (proc->extension_enabled(EXT_SSQOSID) ?  MSTATEEN0_PRIV114 : 0);
+                                 (proc->extension_enabled(EXT_SSCSRIND) ? HSTATEEN0_CSRIND : 0) |
+                                 (proc->get_cfg().trigger_count > 0 ? HSTATEEN0_SCONTEXT : 0);
+    const reg_t mstateen0_mask = hstateen0_mask | MSTATEEN0_PRIV113 |
+                                 (proc->extension_enabled(EXT_SSQOSID) ?  MSTATEEN0_PRIV114 : 0);
     for (int i = 0; i < 4; i++) {
       const reg_t mstateen_mask = i == 0 ? mstateen0_mask : MSTATEEN_HSTATEEN;
       mstateen[i] = std::make_shared<masked_csr_t>(proc, CSR_MSTATEEN0 + i, mstateen_mask, 0);

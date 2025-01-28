@@ -1978,3 +1978,18 @@ void hcontext_csr_t::verify_permissions(insn_t insn, bool write) const {
   masked_csr_t::verify_permissions(insn, write);
 
 }
+
+hedelegh_csr_t::hedelegh_csr_t(processor_t* const proc, const reg_t addr, const reg_t init) :
+const_csr_t(proc, addr, init){};
+void hedelegh_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->get_const_xlen() != 32)
+    throw trap_illegal_instruction(insn.bits());
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) &&
+        !(state->mstateen[0]->read() & MSTATEEN0_PRIV113))
+      throw trap_illegal_instruction(insn.bits());
+
+  }
+  const_csr_t::verify_permissions(insn, write);
+
+}
