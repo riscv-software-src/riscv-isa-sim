@@ -74,12 +74,14 @@ enum {
 *----------------------------------------------------------------------------*/
 extern THREAD_LOCAL uint_fast8_t softfloat_fp8Mode;
 enum {
-    softfloat_fp8_8p5 = 0,
-    softfloat_fp8_8p4 = 1,
-    softfloat_fp8_8p3 = 2
+    softfloat_fp8_8p5   = 0,
+    softfloat_fp8_8p4   = 1,
+    softfloat_fp8_8p3   = 2,
+    softfloat_fp8_e4m3  = 3,
+    softfloat_fp8_e5m2  = 4
 };
 
-extern THREAD_LOCAL uint_fast8_t softfloat_fp8ExpWidths[3];
+extern THREAD_LOCAL uint_fast8_t softfloat_fp8ExpWidths[5];
 
 /*----------------------------------------------------------------------------
 | Software floating-point rounding mode.  (Mode "odd" is supported only if

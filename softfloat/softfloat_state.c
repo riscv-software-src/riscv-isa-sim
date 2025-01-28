@@ -45,7 +45,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #endif
 
 THREAD_LOCAL uint_fast8_t softfloat_fp8Mode = softfloat_fp8_8p5;
-THREAD_LOCAL uint_fast8_t softfloat_fp8ExpWidths[3] = {3, 4, 5};
+THREAD_LOCAL uint_fast8_t softfloat_fp8ExpWidths[5] = {3, 4, 5, 4, 5};
 THREAD_LOCAL uint_fast8_t softfloat_roundingMode = softfloat_round_near_even;
 THREAD_LOCAL uint_fast8_t softfloat_detectTininess = init_detectTininess;
 THREAD_LOCAL uint_fast8_t softfloat_exceptionFlags = 0;
