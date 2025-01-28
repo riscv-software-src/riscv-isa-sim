@@ -65,9 +65,24 @@ float8_t f16_to_f8( float16_t a )
   if ( exp == 0xFF ) {
     if ( frac ) {
       softfloat_f16UIToCommonNaN( uiA, &commonNaN );
-      uiZ = softfloat_commonNaNToF8UI( &commonNaN );
+      switch ( softfloat_fp8Mode ) {
+          case softfloat_fp8_e4m3:
+              uiZ = softfloat_commonNaNToE4M3F8UI( &commonNaN );
+          case softfloat_fp8_e5m2:
+              uiZ = softfloat_commonNaNToE5M2F8UI( &commonNaN );
+          default:
+              uiZ = softfloat_commonNaNToF8UI( &commonNaN );
+      }
     } else {
-      uiZ = signInfF8UI( sign );
+        switch ( softfloat_fp8Mode ) {
+          case softfloat_fp8_e4m3:
+              // Assuming overflow mode (Inf --> NaN)
+              uiZ = softfloat_commonNaNToE4M3F8UI( &commonNaN );
+          case softfloat_fp8_e5m2:
+              uiZ = signInfE5M2F8UI( sign );
+          default:
+              uiZ = signInfF8UI( sign );
+        }
     }
     goto uiZ;
   }
