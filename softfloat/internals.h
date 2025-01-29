@@ -84,12 +84,16 @@ int_fast64_t softfloat_roundMToI64( bool, uint32_t *, uint_fast8_t, bool );
 #endif
 
 /*----------------------------------------------------------------------------
+*---------------------------------------------------------------------------*/
+#define f8ExpWidth softfloat_fp8ExpWidths[softfloat_fp8Mode]
+
+/*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
 #define isNaNF8UI( a ) ((bool) (((uint8_t) a) == defaultNaNF8UI))
 #define isInfF8UI( a ) ((bool) ((((uint8_t) a) & 0x7F)  == 0x7F))
 #define signF8UI( a ) ((bool) ((uint16_t) (a)>>7))
-#define expF8UI( a ) ((int_fast8_t) ((a)>>4) & 0x7)
-#define fracF8UI( a ) ((a) & 0xF)
+#define expF8UI( a ) ((int_fast8_t) ((a)>>(7-f8ExpWidth)) & ((0x1<<f8ExpWidth)-1))
+#define fracF8UI( a ) ((a) & ((0x1<<(f8ExpWidth+1))-1))
 #define defaultInfF8UI 0x7F
 #define signInfF8UI( sign ) (((uint8_t) (sign)<<7) | defaultInfF8UI)
 #define packToF8UI( sign, exp, sig ) (((uint8_t) (sign)<<7) + ((uint8_t) (exp)<<4) + (sig))

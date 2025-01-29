@@ -79,6 +79,8 @@ enum {
     softfloat_fp8_8p3 = 2
 };
 
+extern THREAD_LOCAL uint_fast8_t softfloat_fp8ExpWidths[3];
+
 /*----------------------------------------------------------------------------
 | Software floating-point rounding mode.  (Mode "odd" is supported only if
 | SoftFloat is compiled with macro 'SOFTFLOAT_ROUND_ODD' defined.)
