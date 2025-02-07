@@ -1,4 +1,5 @@
 // See LICENSE for license details.
+// clang-format off
 
 // For std::any_of
 #include <algorithm>
@@ -1675,7 +1676,11 @@ scountovf_csr_t::scountovf_csr_t(processor_t* const proc, const reg_t addr):
 void scountovf_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (!proc->extension_enabled(EXT_SSCOFPMF))
     throw trap_illegal_instruction(insn.bits());
+
   csr_t::verify_permissions(insn, write);
+
+  if (proc->extension_enabled_const(EXT_SMCDELEG) && state->menvcfg->read() & MENVCFG_CDE && state->v)
+    throw trap_virtual_instruction(insn.bits());
 }
 
 reg_t scountovf_csr_t::read() const noexcept {
@@ -1949,6 +1954,89 @@ bool hstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   if (get_field(new_hstatus, HSTATUS_HUPMM) != get_field(read(), HSTATUS_HUPMM))
     proc->get_mmu()->flush_tlb();
   return basic_csr_t::unlogged_write(new_hstatus);
+}
+
+smcdeleg_indir_csr_t::smcdeleg_indir_csr_t(processor_t* const proc, const reg_t addr, const reg_t select, const csr_t_p csr, bool missing) :
+  csr_t(proc,addr), addr(addr), select(select), orig_csr(csr), missing(missing){
+  assert (select >= SISELECT_SMCDELEG_START and select <= SISELECT_SMCDELEG_END);
+}
+
+bool smcdeleg_indir_csr_t::unlogged_write(const reg_t val) noexcept {
+  reg_t write_val = 0;
+  if (addr == CSR_SIREG2 || addr == CSR_SIREG5){
+    write_val = (orig_csr->read() & MHPMEVENT_MINH) | (val & ~MHPMEVENT_MINH);
+  } else {
+    write_val = val;
+  }
+  return orig_csr->unlogged_write(write_val);
+}
+
+reg_t smcdeleg_indir_csr_t::read() const noexcept {
+  // MINH masking
+  if (addr == CSR_SIREG2 || addr == CSR_SIREG5){
+    return orig_csr->read() & ~MHPMEVENT_MINH;
+  }
+  return orig_csr->read();
+}
+void
+smcdeleg_indir_csr_t::verify_permissions(insn_t insn, bool write) const{
+  bool is_vsi          = get_field(addr, 0x300) == PRV_HS;
+  auto counter_offset  = select - SISELECT_SMCDELEG_START;
+  auto counter_enabled = (state->mcounteren->read() >> counter_offset) & 1;
+  const bool cde = state->menvcfg->read() & MENVCFG_CDE;
+
+  assert(counter_offset >= 0);
+
+  // Counter must be active and mencfg.cde must be set (when access comes from M or HS)
+  if ((state->prv >= PRV_S && !state->v) && (missing || !cde || !counter_enabled)){
+    throw trap_illegal_instruction(insn.bits());
+  }
+
+  if (is_vsi){
+    if (state->prv >= PRV_S && !state->v){
+      throw trap_illegal_instruction(insn.bits());
+    }
+    else if (state->prv == PRV_S and state->v){
+      if (cde){
+        throw trap_virtual_instruction(insn.bits());
+      } else {
+        throw trap_illegal_instruction(insn.bits());
+      }
+    }
+  } else { // Sireg*
+  // An attempt from VS-mode to access any sireg* (really vsireg*) raises an illegal instruction
+  // exception if menvcfg.CDE = 0, or a virtual instruction exception if menvcfg.CDE = 1
+    if (state->v && state->prv == PRV_S){
+      assert(missing);
+      if (cde)
+        throw trap_virtual_instruction(insn.bits());
+      else
+        throw trap_illegal_instruction(insn.bits());
+    }
+  }
+}
+
+scountinhibit_csr_t::scountinhibit_csr_t(processor_t* const proc, const reg_t addr) : csr_t(proc, addr){}
+void scountinhibit_csr_t::verify_permissions(insn_t insn, bool write) const {
+  // menvcfg.cde can only be set if smcdeleg is present
+  if (!(state->menvcfg->read() & MENVCFG_CDE))
+    throw trap_illegal_instruction(insn.bits());
+
+  csr_t::verify_permissions(insn, write);
+
+  if (state->v)
+    throw trap_virtual_instruction(insn.bits());
+}
+
+reg_t scountinhibit_csr_t::read() const noexcept {
+  const auto mask = state->mcounteren->read();
+  return state->mcountinhibit->read() & mask;
+}
+
+bool scountinhibit_csr_t::unlogged_write(const reg_t val)  noexcept {
+  const auto masked_val = state->mcounteren->read() & val;
+  state->mcountinhibit->write(val);
+  return false;
 }
 
 scontext_csr_t::scontext_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init) :
