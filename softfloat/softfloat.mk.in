@@ -49,6 +49,7 @@ softfloat_c_srcs = \
 	f16_mulAdd.c \
 	f16_mul.c \
 	f8_mul.c \
+	f8_sqrt.c \
 	f8_emulation.c \
 	f16_rem.c \
 	f16_roundToInt.c \

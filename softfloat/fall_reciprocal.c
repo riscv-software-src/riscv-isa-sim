@@ -93,6 +93,11 @@ static inline uint64_t rsqrte7(uint64_t val, int e, int s, bool sub) {
   return (sign << (s+e)) | (out_exp << s) | out_sig;
 }
 
+float8_t f8_rsqrte7(float8_t in)
+{
+  return f8_emulation_1_operand(in, f16_rsqrte7);
+}
+
 float16_t f16_rsqrte7(float16_t in)
 {
     union ui16_f16 uA;
@@ -260,6 +265,11 @@ static inline uint64_t recip7(uint64_t val, int e, int s, int rm, bool sub,
     }
 
     return (sign << (s+e)) | (out_exp << s) | out_sig;
+}
+
+float8_t f8_recip7(float8_t in)
+{
+  return f8_emulation_1_operand(in, f16_recip7);
 }
 
 float16_t f16_recip7(float16_t in)
