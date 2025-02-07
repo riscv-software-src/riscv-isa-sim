@@ -149,6 +149,8 @@ float8_t f8_rsqrte7( float8_t );
 float8_t f8_recip7( float8_t );
 float8_t f8_sqrt( float8_t );
 float16_t f8_to_f16( float8_t );
+int_fast8_t f8_to_i8( float8_t, uint_fast8_t, bool );
+uint_fast8_t f8_to_ui8( float8_t, uint_fast8_t, bool );
 int_fast16_t f8_to_i16( float8_t, uint_fast8_t, bool );
 uint_fast16_t f8_to_ui16( float8_t, uint_fast8_t, bool );
 float8_t f8_sub( float8_t, float8_t );

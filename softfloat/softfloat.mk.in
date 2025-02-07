@@ -61,6 +61,8 @@ softfloat_c_srcs = \
 	f16_sub.c \
 	f16_to_f8.c \
 	f16_to_f128.c \
+	f8_to_i8.c \
+	f8_to_ui8.c \
 	f8_to_f16.c \
 	f8_to_i16.c \
 	f8_to_ui16.c \
