@@ -140,6 +140,7 @@ softfloat_c_srcs = \
 	f64_to_ui64_r_minMag.c \
 	fall_maxmin.c \
 	fall_reciprocal.c \
+	i32_to_f8.c \
 	i32_to_f128.c \
 	i32_to_f16.c \
 	i32_to_f32.c \
@@ -242,6 +243,8 @@ softfloat_c_srcs = \
 	s_subMagsF32.c \
 	s_subMagsF64.c \
 	s_subM.c \
+	sign_ui32_to_f8.c \
+	ui32_to_f8.c \
 	ui32_to_f128.c \
 	ui32_to_f16.c \
 	ui32_to_f32.c \
