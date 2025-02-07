@@ -1,5 +1,6 @@
-#include "processor.h"
 #include "debug_defines.h"
+#include "processor.h"
+// clang-format off
 
 void state_t::add_csr(reg_t addr, const csr_t_p& csr)
 {
@@ -35,11 +36,11 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
 
   const reg_t minstretcfg_mask = !proc->extension_enabled_const(EXT_SMCNTRPMF) ? 0 :
     MHPMEVENT_MINH | MHPMEVENT_SINH | MHPMEVENT_UINH | MHPMEVENT_VSINH | MHPMEVENT_VUINH;
-  auto minstretcfg = std::make_shared<smcntrpmf_csr_t>(proc, CSR_MINSTRETCFG, minstretcfg_mask, 0);
-  auto mcyclecfg = std::make_shared<smcntrpmf_csr_t>(proc, CSR_MCYCLECFG, minstretcfg_mask, 0);
+  auto _minstretcfg = std::make_shared<smcntrpmf_csr_t>(proc, CSR_MINSTRETCFG, minstretcfg_mask, 0);
+  auto _mcyclecfg = std::make_shared<smcntrpmf_csr_t>(proc, CSR_MCYCLECFG, minstretcfg_mask, 0);
 
-  minstret = std::make_shared<wide_counter_csr_t>(proc, CSR_MINSTRET, minstretcfg);
-  mcycle = std::make_shared<wide_counter_csr_t>(proc, CSR_MCYCLE, mcyclecfg);
+  minstret = std::make_shared<wide_counter_csr_t>(proc, CSR_MINSTRET, _minstretcfg);
+  mcycle = std::make_shared<wide_counter_csr_t>(proc, CSR_MCYCLE, _mcyclecfg);
   time = std::make_shared<time_counter_csr_t>(proc, CSR_TIME);
   if (proc->extension_enabled_const(EXT_ZICNTR)) {
     add_csr(CSR_INSTRET, std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRET, minstret));
@@ -251,7 +252,8 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
                             (proc->extension_enabled(EXT_SSTC) ? MENVCFG_STCE : 0) |
                             (proc->extension_enabled(EXT_ZICFILP) ? MENVCFG_LPE : 0) |
                             (proc->extension_enabled(EXT_ZICFISS) ? MENVCFG_SSE : 0) |
-                            (proc->extension_enabled(EXT_SSDBLTRP) ? MENVCFG_DTE : 0);
+                            (proc->extension_enabled(EXT_SSDBLTRP) ? MENVCFG_DTE : 0) |
+                            (proc->extension_enabled(EXT_SMCDELEG) ? MENVCFG_CDE : 0);
   menvcfg = std::make_shared<envcfg_csr_t>(proc, CSR_MENVCFG, menvcfg_mask, 0);
   if (xlen == 32) {
     add_user_csr(CSR_MENVCFG, std::make_shared<rv32_low_csr_t>(proc, CSR_MENVCFG, menvcfg));
@@ -373,16 +375,78 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
 
   if (proc->extension_enabled_const(EXT_SMCNTRPMF)) {
     if (xlen == 32) {
-      add_csr(CSR_MCYCLECFG, std::make_shared<rv32_low_csr_t>(proc, CSR_MCYCLECFG, mcyclecfg));
-      add_csr(CSR_MCYCLECFGH, std::make_shared<rv32_high_csr_t>(proc, CSR_MCYCLECFGH, mcyclecfg));
-      add_csr(CSR_MINSTRETCFG, std::make_shared<rv32_low_csr_t>(proc, CSR_MINSTRETCFG, minstretcfg));
-      add_csr(CSR_MINSTRETCFGH, std::make_shared<rv32_high_csr_t>(proc, CSR_MINSTRETCFGH, minstretcfg));
+      add_csr(CSR_MCYCLECFG, mcyclecfg = std::make_shared<rv32_low_csr_t>(proc, CSR_MCYCLECFG, _mcyclecfg));
+      add_csr(CSR_MCYCLECFGH, std::make_shared<rv32_high_csr_t>(proc, CSR_MCYCLECFGH, _mcyclecfg));
+      add_csr(CSR_MINSTRETCFG, minstretcfg = std::make_shared<rv32_low_csr_t>(proc, CSR_MINSTRETCFG, _minstretcfg));
+      add_csr(CSR_MINSTRETCFGH, std::make_shared<rv32_high_csr_t>(proc, CSR_MINSTRETCFGH, _minstretcfg));
     } else {
-      add_csr(CSR_MCYCLECFG, mcyclecfg);
-      add_csr(CSR_MINSTRETCFG, minstretcfg);
+      add_csr(CSR_MCYCLECFG, mcyclecfg = _mcyclecfg);
+      add_csr(CSR_MINSTRETCFG, minstretcfg = _minstretcfg);
     }
   }
 
   const reg_t srmcfg_mask = SRMCFG_MCID | SRMCFG_RCID;
   add_const_ext_csr(EXT_SSQOSID, CSR_SRMCFG, std::make_shared<srmcfg_csr_t>(proc, CSR_SRMCFG, srmcfg_mask, 0));
+
+  if (proc->extension_enabled_const(EXT_SMCDELEG) && proc->extension_enabled_const(EXT_SSCSRIND)) {
+    add_supervisor_csr(CSR_SCOUNTINHIBIT, std::make_shared<scountinhibit_csr_t>(proc, CSR_SCOUNTINHIBIT));
+    auto sireg     = std::dynamic_pointer_cast<virtualized_indirect_csr_t>(csrmap.at(CSR_SIREG));
+    auto sireg2    = std::dynamic_pointer_cast<virtualized_indirect_csr_t>(csrmap.at(CSR_SIREG2));
+    auto sireg3    = std::dynamic_pointer_cast<virtualized_indirect_csr_t>(csrmap.at(CSR_SIREG3));
+    auto sireg4    = std::dynamic_pointer_cast<virtualized_indirect_csr_t>(csrmap.at(CSR_SIREG4));
+    auto sireg5    = std::dynamic_pointer_cast<virtualized_indirect_csr_t>(csrmap.at(CSR_SIREG5));
+    auto sireg6    = std::dynamic_pointer_cast<virtualized_indirect_csr_t>(csrmap.at(CSR_SIREG6));
+    auto add_proxy = [&proc, this](std::shared_ptr<virtualized_indirect_csr_t> ireg,
+                                   reg_t                                       select,
+                                   reg_t                                       csr_proxy) {
+      assert(ireg);
+      const auto exists = csrmap.find(csr_proxy) != csrmap.end();
+      const auto dummy = std::make_shared<basic_csr_t>(proc, 0xdeafbeef, 0);
+
+      auto smc_obj_orig = std::make_shared<smcdeleg_indir_csr_t>(
+          proc, ireg->address, select, exists ? csrmap.at(csr_proxy) : dummy , !exists);
+      auto orig_csr = std::dynamic_pointer_cast<sscsrind_reg_csr_t>(ireg->get_orig_csr());
+      assert(orig_csr);
+      orig_csr->add_ireg_proxy(select, smc_obj_orig);
+
+      auto smc_obj_virt = std::make_shared<smcdeleg_indir_csr_t>(
+        proc, ireg->address + 0x100, select, exists ? csrmap.at(csr_proxy) : dummy, !exists);
+      auto virt_csr = std::dynamic_pointer_cast<sscsrind_reg_csr_t>(ireg->get_virt_csr());
+      assert(virt_csr);
+      virt_csr->add_ireg_proxy(select, smc_obj_virt);
+    };
+
+    // We need to add all CSRs to be able to throw virtual on them, otherwise when csrind
+    // looks for the select value it won't find any csr and thus throw illegal.
+    // The spec states that an access to any sireg* in VS mode should raise virtual if menvcfg.cde = 1.
+    // Most likely the motivation for this is to not leak information about which extensions the
+    // underlying machine has implemented.
+    add_proxy(sireg, SISELECT_SMCDELEG_START, CSR_MCYCLE);
+    add_proxy(sireg, SISELECT_SMCDELEG_UNUSED, 0xDEADBEEF);
+    add_proxy(sireg, SISELECT_SMCDELEG_INSTRET, CSR_MINSTRET);
+
+    add_proxy(sireg2, SISELECT_SMCDELEG_START, CSR_MCYCLECFG);
+    add_proxy(sireg2, SISELECT_SMCDELEG_UNUSED, 0xDEADBEEF);
+    add_proxy(sireg2, SISELECT_SMCDELEG_INSTRETCFG, CSR_MINSTRETCFG);
+
+    add_proxy(sireg4, SISELECT_SMCDELEG_START, CSR_MCYCLEH);
+    add_proxy(sireg4, SISELECT_SMCDELEG_UNUSED, 0xDEADBEEF);
+    add_proxy(sireg4, SISELECT_SMCDELEG_INSTRET, CSR_MINSTRETH);
+
+    add_proxy(sireg5, SISELECT_SMCDELEG_START, CSR_MCYCLECFGH);
+    add_proxy(sireg5, SISELECT_SMCDELEG_UNUSED, 0xDEADBEEF);
+    add_proxy(sireg5, SISELECT_SMCDELEG_INSTRETCFG, CSR_MINSTRETCFGH);
+
+    // Dummies...
+    for (auto i = 0; i < 32; i++){
+      add_proxy(sireg3, SISELECT_SMCDELEG_START+i, 0xDEADBEEF);
+      add_proxy(sireg6, SISELECT_SMCDELEG_START+i, 0xDEADBEEF);
+    }
+    for (auto cnt = 0; cnt < 29; cnt++) {
+      add_proxy(sireg, SISELECT_SMCDELEG_HPMCOUNTER_3 + cnt, CSR_HPMCOUNTER3 + cnt);
+      add_proxy(sireg2, SISELECT_SMCDELEG_HPMEVENT_3 + cnt, CSR_MHPMEVENT3 + cnt);
+      add_proxy(sireg4, SISELECT_SMCDELEG_HPMCOUNTER_3 + cnt, CSR_HPMCOUNTER3H + cnt);
+      add_proxy(sireg5, SISELECT_SMCDELEG_HPMEVENT_3 + cnt, CSR_MHPMEVENT3H + cnt);
+    }
+  }
 }
