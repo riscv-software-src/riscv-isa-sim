@@ -48,6 +48,8 @@ softfloat_c_srcs = \
 	f16_lt_quiet.c \
 	f16_mulAdd.c \
 	f16_mul.c \
+	f8_add.c \
+	f8_sub.c \
 	f8_mul.c \
 	f8_div.c \
 	f8_sqrt.c \
