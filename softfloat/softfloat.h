@@ -151,7 +151,9 @@ float8_t f8_sqrt( float8_t );
 float16_t f8_to_f16( float8_t );
 float8_t f8_sub( float8_t, float8_t );
 float8_t f8_add( float8_t, float8_t );
+float8_t f8_mulAdd( float8_t, float8_t , float8_t );
 
+float8_t f8_emulation_3_operands(float8_t a8, float8_t b8, float8_t c8, float16_t (*operation)(float16_t, float16_t, float16_t));
 float8_t f8_emulation_2_operands(float8_t a8, float8_t b8, float16_t (*operation)(float16_t, float16_t));
 float8_t f8_emulation_1_operand(float8_t a8, float16_t (*operation)(float16_t));
 

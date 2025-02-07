@@ -51,6 +51,7 @@ softfloat_c_srcs = \
 	f8_add.c \
 	f8_sub.c \
 	f8_mul.c \
+	f8_mulAdd.c \
 	f8_div.c \
 	f8_sqrt.c \
 	f8_emulation.c \
