@@ -144,6 +144,7 @@ void i64_to_f128M( int64_t, float128_t * );
 | 8-bit (half-precision) floating-point operations.
 *----------------------------------------------------------------------------*/
 float8_t f8_mul( float8_t, float8_t );
+float8_t f8_div( float8_t, float8_t );
 float8_t f8_rsqrte7( float8_t );
 float8_t f8_recip7( float8_t );
 float8_t f8_sqrt( float8_t );
