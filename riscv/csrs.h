@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 #ifndef _RISCV_CSRS_H
 #define _RISCV_CSRS_H
+// clang-format off
 
 #include "common.h"
 #include "encoding.h"
@@ -70,6 +71,7 @@ class csr_t {
   // For access to written_value() and unlogged_write():
   friend class rv32_high_csr_t;
   friend class rv32_low_csr_t;
+  friend class smcdeleg_indir_csr_t;
 };
 
 typedef std::shared_ptr<csr_t> csr_t_p;
@@ -832,6 +834,8 @@ class virtualized_indirect_csr_t: public virtualized_csr_t {
  public:
   virtualized_indirect_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
   virtual void verify_permissions(insn_t insn, bool write) const override;
+  auto get_orig_csr(){return virtualized_csr_t::orig_csr;}
+  auto get_virt_csr(){return virtualized_csr_t::virt_csr;}
 };
 
 class sscsrind_reg_csr_t : public csr_t {
@@ -847,6 +851,19 @@ class sscsrind_reg_csr_t : public csr_t {
   csr_t_p iselect;
   std::unordered_map<reg_t, csr_t_p> ireg_proxy;
   csr_t_p get_reg() const noexcept;
+};
+
+class sscsrind_select_csr_t: public basic_csr_t {
+ public:
+  sscsrind_select_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
+ protected:
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class virtualized_select_indirect_csr_t: public virtualized_csr_t {
+ public:
+  virtualized_select_indirect_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
 };
 
 // smcntrpmf_csr_t caches the previous state of the CSR in case a CSRW instruction
@@ -898,5 +915,46 @@ class hstatus_csr_t final: public basic_csr_t {
   hstatus_csr_t(processor_t* const proc, const reg_t addr);
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class smcdeleg_indir_csr_t : public csr_t {
+ public:
+  smcdeleg_indir_csr_t(processor_t* const proc, const reg_t addr, const reg_t select, const csr_t_p csr, bool missing);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept;
+  virtual void verify_permissions(insn_t insn, bool write) const;
+  virtual reg_t read() const noexcept;
+protected:
+  reg_t addr;
+  reg_t select;
+  csr_t_p orig_csr;
+  bool missing;
+};
+
+class scountinhibit_csr_t: public csr_t {
+ public:
+  scountinhibit_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class scontext_csr_t: public masked_csr_t {
+ public:
+  scontext_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class hcontext_csr_t: public masked_csr_t {
+ public:
+  hcontext_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class hedelegh_csr_t: public const_csr_t {
+ public:
+  hedelegh_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
 };
 #endif
