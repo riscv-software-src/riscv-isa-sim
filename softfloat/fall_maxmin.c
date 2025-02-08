@@ -79,3 +79,19 @@ COMPARE_MAX(a, b, 64);
 COMPARE_MIN(a, b, 16);
 COMPARE_MIN(a, b, 32);
 COMPARE_MIN(a, b, 64);
+
+bfloat16_t bf16_max( bfloat16_t a, bfloat16_t b )
+{
+    float32_t f32A = { (uint32_t)a.v << 16 };
+    float32_t f32B = { (uint32_t)b.v << 16 };
+
+    return f32_to_bf16 ( f32_max( f32A, f32B ) );
+}
+
+bfloat16_t bf16_min( bfloat16_t a, bfloat16_t b )
+{
+    float32_t f32A = { (uint32_t)a.v << 16 };
+    float32_t f32B = { (uint32_t)b.v << 16 };
+
+    return f32_to_bf16 ( f32_min( f32A, f32B ) );
+}

@@ -6,21 +6,20 @@
 #include "specialize.h"
 #include "softfloat.h"
 
-uint_fast16_t f128_classify( float128_t a )
+uint_fast16_t bf16_classify( bfloat16_t a )
 {
-    union ui128_f128 uA;
-    uint_fast64_t uiA64, uiA0;
+    union ui16_f16 uA;
+    uint_fast16_t uiA;
 
     uA.f = a;
-    uiA64 = uA.ui.v64;
-    uiA0  = uA.ui.v0;
+    uiA = uA.ui;
 
-    uint_fast16_t infOrNaN = expF128UI64( uiA64 ) == 0x7FFF;
-    uint_fast16_t subnormalOrZero = expF128UI64( uiA64 ) == 0;
-    bool sign = signF128UI64( uiA64 );
-    bool fracZero = fracF128UI64( uiA64 ) == 0 && uiA0 == 0;
-    bool isNaN = isNaNF128UI( uiA64, uiA0 );
-    bool isSNaN = softfloat_isSigNaNF128UI( uiA64, uiA0 );
+    uint_fast16_t infOrNaN = expBF16UI( uiA ) == 0xFF;
+    uint_fast16_t subnormalOrZero = expBF16UI( uiA ) == 0;
+    bool sign = signBF16UI( uiA );
+    bool fracZero = fracBF16UI( uiA ) == 0;
+    bool isNaN = isNaNBF16UI( uiA );
+    bool isSNaN = softfloat_isSigNaNBF16UI( uiA );
 
     return
         (  sign && infOrNaN && fracZero )          << 0 |
