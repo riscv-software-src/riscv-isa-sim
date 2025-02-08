@@ -1,11 +1,10 @@
-
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
 Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
-California.  All Rights Reserved.
+Copyright 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
+University of California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -34,21 +33,14 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "platform.h"
 #include "internals.h"
 #include "specialize.h"
 #include "softfloat.h"
 
-#ifndef THREAD_LOCAL
-#define THREAD_LOCAL
-#endif
-
-THREAD_LOCAL uint_fast8_t softfloat_fp8Mode = softfloat_fp8_8p5;
-THREAD_LOCAL uint_fast8_t softfloat_fp8ExpWidths[5] = {3, 4, 5, 4, 5};
-THREAD_LOCAL uint_fast8_t softfloat_roundingMode = softfloat_round_near_even;
-THREAD_LOCAL uint_fast8_t softfloat_detectTininess = init_detectTininess;
-THREAD_LOCAL uint_fast8_t softfloat_exceptionFlags = 0;
-
-THREAD_LOCAL uint_fast8_t extF80_roundingPrecision = 80;
-
+int_fast16_t f8_to_i16( float8_t a, uint_fast8_t roundingMode, bool exact )
+{
+  return f16_to_i16(f8_to_f16(a), roundingMode, exact);
+}

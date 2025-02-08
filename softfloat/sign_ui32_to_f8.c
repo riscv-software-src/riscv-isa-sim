@@ -1,11 +1,10 @@
-
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
 Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
-California.  All Rights Reserved.
+Copyright 2011, 2012, 2013, 2014 The Regents of the University of California.
+All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -34,21 +33,31 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "platform.h"
 #include "internals.h"
-#include "specialize.h"
 #include "softfloat.h"
 
-#ifndef THREAD_LOCAL
-#define THREAD_LOCAL
-#endif
+float8_t sign_ui32_to_f8( uint32_t absA, bool sign )
+{
+  union ui8_f8 uZ;
+  uint_fast8_t leading_zeros;
+  uint_fast8_t shift_amnt;
+  uint_fast8_t exp;
 
-THREAD_LOCAL uint_fast8_t softfloat_fp8Mode = softfloat_fp8_8p5;
-THREAD_LOCAL uint_fast8_t softfloat_fp8ExpWidths[5] = {3, 4, 5, 4, 5};
-THREAD_LOCAL uint_fast8_t softfloat_roundingMode = softfloat_round_near_even;
-THREAD_LOCAL uint_fast8_t softfloat_detectTininess = init_detectTininess;
-THREAD_LOCAL uint_fast8_t softfloat_exceptionFlags = 0;
-
-THREAD_LOCAL uint_fast8_t extF80_roundingPrecision = 80;
-
+  if ( ! absA ) {
+    uZ.ui = 0;
+    return uZ.f;
+  }
+  if (absA >= 0x10) {
+    softfloat_raiseFlags(softfloat_flag_overflow | softfloat_flag_inexact );
+    uZ.ui = signInfF8UI(sign);
+    return uZ.f;
+  }
+  leading_zeros = softfloat_countLeadingZeros8[absA];
+  exp = 11 - leading_zeros;
+  shift_amnt = 5 - leading_zeros;
+  uZ.ui = packToF8UI( sign, 0x7, (absA << shift_amnt) & 0xF );
+  return uZ.f;
+}

@@ -1,11 +1,10 @@
-
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
 Package, Release 3d, by John R. Hauser.
 
 Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
-California.  All Rights Reserved.
+California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -34,21 +33,42 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "platform.h"
 #include "internals.h"
 #include "specialize.h"
 #include "softfloat.h"
 
-#ifndef THREAD_LOCAL
-#define THREAD_LOCAL
-#endif
+float8_t f8_emulation_3_operands(float8_t a8, float8_t b8, float8_t c8, float16_t (*operation)(float16_t, float16_t, float16_t)) {
+  uint_fast8_t roundingMode = softfloat_roundingMode;
+  softfloat_roundingMode = softfloat_round_odd;
+  float16_t a16 = f8_to_f16(a8);
+  float16_t b16 = f8_to_f16(b8);
+  float16_t c16 = f8_to_f16(c8);
+  float16_t z16 = operation(a16, b16, c16);
+  softfloat_roundingMode = roundingMode;
+  float8_t z = f16_to_f8(z16);
+  return z;
+}
 
-THREAD_LOCAL uint_fast8_t softfloat_fp8Mode = softfloat_fp8_8p5;
-THREAD_LOCAL uint_fast8_t softfloat_fp8ExpWidths[5] = {3, 4, 5, 4, 5};
-THREAD_LOCAL uint_fast8_t softfloat_roundingMode = softfloat_round_near_even;
-THREAD_LOCAL uint_fast8_t softfloat_detectTininess = init_detectTininess;
-THREAD_LOCAL uint_fast8_t softfloat_exceptionFlags = 0;
+float8_t f8_emulation_2_operands(float8_t a8, float8_t b8, float16_t (*operation)(float16_t, float16_t)) {
+  uint_fast8_t roundingMode = softfloat_roundingMode;
+  softfloat_roundingMode = softfloat_round_odd;
+  float16_t a16 = f8_to_f16(a8);
+  float16_t b16 = f8_to_f16(b8);
+  float16_t z16 = operation(a16, b16);
+  softfloat_roundingMode = roundingMode;
+  float8_t z = f16_to_f8(z16);
+  return z;
+}
 
-THREAD_LOCAL uint_fast8_t extF80_roundingPrecision = 80;
-
+float8_t f8_emulation_1_operand(float8_t a8, float16_t (*operation)(float16_t)) {
+  uint_fast8_t roundingMode = softfloat_roundingMode;
+  softfloat_roundingMode = softfloat_round_odd;
+  float16_t a16 = f8_to_f16(a8);
+  float16_t z16 = operation(a16);
+  softfloat_roundingMode = roundingMode;
+  float8_t z = f16_to_f8(z16);
+  return z;
+}

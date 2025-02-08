@@ -72,10 +72,12 @@ float ## bits ## _t f ## bits ## _min( float ## bits ## _t a, float ## bits ## _
     }                                                                                          \
 }
 
+COMPARE_MAX(a, b, 8);
 COMPARE_MAX(a, b, 16);
 COMPARE_MAX(a, b, 32);
 COMPARE_MAX(a, b, 64);
 
+COMPARE_MIN(a, b, 8);
 COMPARE_MIN(a, b, 16);
 COMPARE_MIN(a, b, 32);
 COMPARE_MIN(a, b, 64);

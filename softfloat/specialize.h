@@ -94,6 +94,11 @@ extern "C" {
 struct commonNaN { char _unused; };
 
 /*----------------------------------------------------------------------------
+| The bit pattern for a default generated 8-bit floating-point NaN.
+*----------------------------------------------------------------------------*/
+#define defaultNaNF8UI 0x80
+
+/*----------------------------------------------------------------------------
 | The bit pattern for a default generated 16-bit floating-point NaN.
 *----------------------------------------------------------------------------*/
 #define defaultNaNF16UI 0x7E00
@@ -102,6 +107,14 @@ struct commonNaN { char _unused; };
 | The bit pattern for a default generated binary 16-bit floating-point NaN.
 *----------------------------------------------------------------------------*/
 #define defaultNaNBF16UI 0x7FC0
+
+/*----------------------------------------------------------------------------
+| Converts the common NaN pointed to by `aPtr' into a 8-bit floating-point
+| NaN, and returns the bit pattern of this value as an unsigned integer.
+*----------------------------------------------------------------------------*/
+#define softfloat_commonNaNToF8UI( aPtr ) ((uint_fast8_t) defaultNaNF8UI)
+#define softfloat_commonNaNToE4M3F8UI( aPtr ) ((uint_fast8_t) 0xFF)
+#define softfloat_commonNaNToE5M2F8UI( aPtr ) ((uint_fast8_t) 0XFF)
 
 /*----------------------------------------------------------------------------
 | Returns true when 16-bit unsigned integer `uiA' has the bit pattern of a

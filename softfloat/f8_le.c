@@ -1,11 +1,10 @@
-
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
 Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
-California.  All Rights Reserved.
+Copyright 2011, 2012, 2013, 2014, 2015 The Regents of the University of
+California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -34,21 +33,32 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 =============================================================================*/
 
+#include <stdbool.h>
 #include <stdint.h>
 #include "platform.h"
 #include "internals.h"
-#include "specialize.h"
 #include "softfloat.h"
+#include "specialize.h"
 
-#ifndef THREAD_LOCAL
-#define THREAD_LOCAL
-#endif
+bool f8_le( float8_t a, float8_t b )
+{
+  union ui8_f8 uA;
+  uint_fast8_t uiA;
+  union ui8_f8 uB;
+  uint_fast8_t uiB;
+  bool signA, signB;
 
-THREAD_LOCAL uint_fast8_t softfloat_fp8Mode = softfloat_fp8_8p5;
-THREAD_LOCAL uint_fast8_t softfloat_fp8ExpWidths[5] = {3, 4, 5, 4, 5};
-THREAD_LOCAL uint_fast8_t softfloat_roundingMode = softfloat_round_near_even;
-THREAD_LOCAL uint_fast8_t softfloat_detectTininess = init_detectTininess;
-THREAD_LOCAL uint_fast8_t softfloat_exceptionFlags = 0;
-
-THREAD_LOCAL uint_fast8_t extF80_roundingPrecision = 80;
-
+  uA.f = a;
+  uiA = uA.ui;
+  uB.f = b;
+  uiB = uB.ui;
+  if ( isNaNF8UI( uiA ) || isNaNF8UI( uiB ) ) {
+    softfloat_raiseFlags( softfloat_flag_invalid );
+    return false;
+  }
+  signA = signF8UI( uiA );
+  signB = signF8UI( uiB );
+  return
+    (signA != signB) ? signA
+    : (uiA == uiB) || (signA ^ (uiA < uiB));
+}
