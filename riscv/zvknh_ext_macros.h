@@ -15,6 +15,7 @@
 // macros.
 #define require_vsha2_common_constraints \
   do { \
+    VI_CHECK_SSS(true) \
     require(P.VU.vsew == 32 || P.VU.vsew == 64); \
     require(insn.rd() != insn.rs1()); \
     require(insn.rd() != insn.rs2()); \
