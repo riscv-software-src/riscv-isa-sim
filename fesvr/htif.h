@@ -24,6 +24,9 @@ class htif_t : public chunked_memif_t
   virtual void start();
   virtual void stop();
 
+  // Cause the simulation to exit with the given exit code.
+  void htif_exit(int exit_code);
+
   int run();
   bool done();
   int exit_code();
@@ -76,6 +79,10 @@ class htif_t : public chunked_memif_t
   // Given an address, return symbol from addr2symbol map
   const char* get_symbol(uint64_t addr);
 
+  // Return true if the simulation should exit due to a signal,
+  // or end-of-test from HTIF, or an instruction limit.
+  bool should_exit() const;
+
  private:
   void parse_arguments(int argc, char ** argv);
   void register_devices();
@@ -93,7 +100,8 @@ class htif_t : public chunked_memif_t
   addr_t sig_len; // torture
   addr_t tohost_addr;
   addr_t fromhost_addr;
-  int exitcode;
+  // Set to a value by htif_exit() when the simulation should exit.
+  std::optional<int> exitcode;
   bool stopped;
 
   device_list_t device_list;

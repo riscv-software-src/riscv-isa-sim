@@ -46,7 +46,7 @@ static void handle_signal(int sig)
 
 htif_t::htif_t()
   : mem(this), entry(DRAM_BASE), sig_addr(0), sig_len(0),
-    tohost_addr(0), fromhost_addr(0), exitcode(0), stopped(false),
+    tohost_addr(0), fromhost_addr(0), stopped(false),
     syscall_proxy(this)
 {
   signal(SIGINT, &handle_signal);
@@ -116,7 +116,7 @@ std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload,
     else
       throw std::runtime_error(
         "could not open " + payload + "; searched paths:\n" +
-        "\t. (current directory)\n" + 
+        "\t. (current directory)\n" +
         "\t" + PREFIX TARGET_DIR + " (based on configured --prefix and --with-target)"
       );
   }
@@ -207,6 +207,14 @@ const char* htif_t::get_symbol(uint64_t addr)
   return it->second.c_str();
 }
 
+bool htif_t::should_exit() const {
+  return signal_exit || exitcode.has_value();
+}
+
+void htif_t::htif_exit(int exit_code) {
+  exitcode = exit_code;
+}
+
 void htif_t::stop()
 {
   if (!sig_file.empty() && sig_len) // print final torture test signature
@@ -253,11 +261,11 @@ int htif_t::run()
     std::bind(enq_func, &fromhost_queue, std::placeholders::_1);
 
   if (tohost_addr == 0) {
-    while (!signal_exit)
+    while (!should_exit())
       idle();
   }
 
-  while (!signal_exit && exitcode == 0)
+  while (!should_exit())
   {
     uint64_t tohost;
 
@@ -305,7 +313,7 @@ bool htif_t::done()
 
 int htif_t::exit_code()
 {
-  return exitcode >> 1;
+  return exitcode.value_or(0) >> 1;
 }
 
 void htif_t::parse_arguments(int argc, char ** argv)

@@ -44,13 +44,15 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
              const char *log_path,
              bool dtb_enabled, const char *dtb_file,
              bool socket_enabled,
-             FILE *cmd_file) // needed for command line option --cmd
+             FILE *cmd_file, // needed for command line option --cmd
+             std::optional<unsigned long long> instruction_limit)
   : htif_t(args),
     cfg(cfg),
     mems(mems),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
     cmd_file(cmd_file),
+    instruction_limit(instruction_limit),
     sout_(nullptr),
     current_step(0),
     current_proc(0),
@@ -429,8 +431,19 @@ void sim_t::idle()
 
   if (debug || ctrlc_pressed)
     interactive();
-  else
+  else {
+    if (instruction_limit.has_value()) {
+      if (*instruction_limit < INTERLEAVE) {
+        // Final step.
+        step(*instruction_limit);
+        htif_exit(0);
+        *instruction_limit = 0;
+        return;
+      }
+      *instruction_limit -= INTERLEAVE;
+    }
     step(INTERLEAVE);
+  }
 
   if (remote_bitbang)
     remote_bitbang->tick();
