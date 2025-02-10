@@ -103,6 +103,7 @@ void softfloat_raiseFlags( uint_fast8_t );
 /*----------------------------------------------------------------------------
 | Integer-to-floating-point conversion routines.
 *----------------------------------------------------------------------------*/
+bfloat16_t ui32_to_bf16( uint32_t );
 float16_t ui32_to_f16( uint32_t );
 float32_t ui32_to_f32( uint32_t );
 float64_t ui32_to_f64( uint32_t );
@@ -121,6 +122,7 @@ float128_t ui64_to_f128( uint64_t );
 #endif
 void ui64_to_extF80M( uint64_t, extFloat80_t * );
 void ui64_to_f128M( uint64_t, float128_t * );
+bfloat16_t i32_to_bf16( int32_t );
 float16_t i32_to_f16( int32_t );
 float32_t i32_to_f32( int32_t );
 float64_t i32_to_f64( int32_t );
@@ -180,6 +182,7 @@ bool f16_eq_signaling( float16_t, float16_t );
 bool f16_le_quiet( float16_t, float16_t );
 bool f16_lt_quiet( float16_t, float16_t );
 bool f16_isSignalingNaN( float16_t );
+bool f16_sign( float16_t );
 uint_fast16_t f16_classify( float16_t );
 float16_t f16_rsqrte7( float16_t );
 float16_t f16_recip7( float16_t );
@@ -187,6 +190,10 @@ float16_t f16_recip7( float16_t );
 /*----------------------------------------------------------------------------
 | BFloat16 operations.
 *----------------------------------------------------------------------------*/
+uint_fast8_t bf16_to_ui8( bfloat16_t, uint_fast8_t, bool );
+uint_fast32_t bf16_to_ui32( bfloat16_t, uint_fast8_t, bool );
+int_fast8_t bf16_to_i8( bfloat16_t, uint_fast8_t, bool );
+int_fast32_t bf16_to_i32( bfloat16_t, uint_fast8_t, bool );
 float32_t bf16_to_f32( bfloat16_t );
 float64_t bf16_to_f64( bfloat16_t );
 bfloat16_t bf16_add( bfloat16_t, bfloat16_t );
@@ -195,6 +202,15 @@ bfloat16_t bf16_mul( bfloat16_t, bfloat16_t );
 bfloat16_t bf16_mulAdd( bfloat16_t, bfloat16_t, bfloat16_t );
 bfloat16_t bf16_div( bfloat16_t, bfloat16_t );
 bfloat16_t bf16_sqrt( bfloat16_t );
+bfloat16_t bf16_max( bfloat16_t, bfloat16_t );
+bfloat16_t bf16_min( bfloat16_t, bfloat16_t );
+bool bf16_eq( bfloat16_t, bfloat16_t );
+bool bf16_le( bfloat16_t, bfloat16_t );
+bool bf16_lt( bfloat16_t, bfloat16_t );
+bool bf16_sign( bfloat16_t );
+uint_fast16_t bf16_classify( bfloat16_t );
+bfloat16_t bf16_rsqrte7( bfloat16_t );
+bfloat16_t bf16_recip7( bfloat16_t );
 
 /*----------------------------------------------------------------------------
 | 32-bit (single-precision) floating-point operations.
@@ -235,6 +251,7 @@ bool f32_eq_signaling( float32_t, float32_t );
 bool f32_le_quiet( float32_t, float32_t );
 bool f32_lt_quiet( float32_t, float32_t );
 bool f32_isSignalingNaN( float32_t );
+bool f32_sign( float32_t );
 uint_fast16_t f32_classify( float32_t );
 float32_t f32_rsqrte7( float32_t );
 float32_t f32_recip7( float32_t );
@@ -276,6 +293,7 @@ bool f64_eq_signaling( float64_t, float64_t );
 bool f64_le_quiet( float64_t, float64_t );
 bool f64_lt_quiet( float64_t, float64_t );
 bool f64_isSignalingNaN( float64_t );
+bool f64_sign( float64_t );
 uint_fast16_t f64_classify( float64_t );
 float64_t f64_rsqrte7( float64_t );
 float64_t f64_recip7( float64_t );

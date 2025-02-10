@@ -46,6 +46,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
+union ui16_bf16 { uint16_t ui; bfloat16_t f; };
 union ui16_f16 { uint16_t ui; float16_t f; };
 union ui32_f32 { uint32_t ui; float32_t f; };
 union ui64_f64 { uint64_t ui; float64_t f; };
@@ -84,15 +85,19 @@ int_fast64_t softfloat_roundMToI64( bool, uint32_t *, uint_fast8_t, bool );
 
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
-#define signF16UI( a ) ((bool) ((uint16_t) (a)>>15))
-#define expF16UI( a ) ((int_fast8_t) ((a)>>10) & 0x1F)
-#define fracF16UI( a ) ((a) & 0x03FF)
-#define packToF16UI( sign, exp, sig ) (((uint16_t) (sign)<<15) + ((uint16_t) (exp)<<10) + (sig))
-
 #define signBF16UI( a ) ((bool) ((uint16_t) (a)>>15))
 #define expBF16UI( a ) ((int_fast16_t) ((a)>>7) & 0xFF)
 #define fracBF16UI( a ) ((a) & 0x07F)
 #define packToBF16UI( sign, exp, sig ) (((uint16_t) (sign)<<15) + ((uint16_t) (exp)<<7) + (sig))
+
+#define isNaNBF16UI( a ) (((~(a) & 0x7F80) == 0) && ((a) & 0x007F))
+
+/*----------------------------------------------------------------------------
+*----------------------------------------------------------------------------*/
+#define signF16UI( a ) ((bool) ((uint16_t) (a)>>15))
+#define expF16UI( a ) ((int_fast8_t) ((a)>>10) & 0x1F)
+#define fracF16UI( a ) ((a) & 0x03FF)
+#define packToF16UI( sign, exp, sig ) (((uint16_t) (sign)<<15) + ((uint16_t) (exp)<<10) + (sig))
 
 #define isNaNF16UI( a ) (((~(a) & 0x7C00) == 0) && ((a) & 0x03FF))
 
