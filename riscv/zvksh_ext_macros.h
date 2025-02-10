@@ -11,6 +11,8 @@
 //  - VSEW == 32
 //  - EGW (256) <= LMUL * VLEN
 //  - No overlap of vd and vs2.
+//  - vd is LMUL aligned
+//  - vs2 is LMUL aligned
 //
 // The constraint that vstart and vl are both EGS (8) aligned
 // is checked in the VI_ZVK_..._EGU32x8_..._LOOP macros.
@@ -20,6 +22,8 @@
     require(P.VU.vsew == 32); \
     require_egw_fits(256); \
     require(insn.rd() != insn.rs2()); \
+    require_vd_align_lmul; \
+    require_vs2_align_lmul; \
   } while (false)
 
 #define FF1(X, Y, Z) ((X) ^ (Y) ^ (Z))
