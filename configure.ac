@@ -43,14 +43,14 @@ AC_CONFIG_AUX_DIR([scripts])
 AC_CANONICAL_BUILD
 AC_CANONICAL_HOST
 
-m4_include(ax_require_defined.m4)
-m4_include(ax_append_flag.m4)
-m4_include(ax_check_compile_flag.m4)
-m4_include(ax_check_link_flag.m4)
-m4_include(ax_append_link_flags.m4)
-m4_include(ax_boost_base.m4)
-m4_include(ax_boost_asio.m4)
-m4_include(ax_boost_regex.m4)
+m4_include(m4/ax_require_defined.m4)
+m4_include(m4/ax_append_flag.m4)
+m4_include(m4/ax_check_compile_flag.m4)
+m4_include(m4/ax_check_link_flag.m4)
+m4_include(m4/ax_append_link_flags.m4)
+m4_include(m4/ax_boost_base.m4)
+m4_include(m4/ax_boost_asio.m4)
+m4_include(m4/ax_boost_regex.m4)
 
 #-------------------------------------------------------------------------
 # Checks for programs
