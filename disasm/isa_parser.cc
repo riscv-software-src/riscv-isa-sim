@@ -317,6 +317,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZVKSED] = true;
     } else if (ext_str == "zvksh") {
       extension_table[EXT_ZVKSH] = true;
+    } else if (ext_str == "zvqdotq") {
+      extension_table[EXT_ZVQDOTQ] = true;
     } else if (ext_str == "zvkt") {
     } else if (ext_str == "sstc") {
         extension_table[EXT_SSTC] = true;
