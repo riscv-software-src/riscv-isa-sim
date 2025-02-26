@@ -36,17 +36,14 @@
 /* Define to 1 if you have the <inttypes.h> header file. */
 #undef HAVE_INTTYPES_H
 
-/* Define to 1 if you have the `boost_regex' library (-lboost_regex). */
+/* Define to 1 if you have the 'boost_regex' library (-lboost_regex). */
 #undef HAVE_LIBBOOST_REGEX
 
-/* Define to 1 if you have the `boost_system' library (-lboost_system). */
+/* Define to 1 if you have the 'boost_system' library (-lboost_system). */
 #undef HAVE_LIBBOOST_SYSTEM
 
-/* Define to 1 if you have the `pthread' library (-lpthread). */
+/* Define to 1 if you have the 'pthread' library (-lpthread). */
 #undef HAVE_LIBPTHREAD
-
-/* Define to 1 if you have the <memory.h> header file. */
-#undef HAVE_MEMORY_H
 
 /* Define to 1 if struct statx exists. */
 #undef HAVE_STATX
@@ -56,6 +53,9 @@
 
 /* Define to 1 if you have the <stdint.h> header file. */
 #undef HAVE_STDINT_H
+
+/* Define to 1 if you have the <stdio.h> header file. */
+#undef HAVE_STDIO_H
 
 /* Define to 1 if you have the <stdlib.h> header file. */
 #undef HAVE_STDLIB_H
@@ -108,7 +108,9 @@
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef SPIKE_MAIN_ENABLED
 
-/* Define to 1 if you have the ANSI C header files. */
+/* Define to 1 if all of the C89 standard headers exist (not just the ones
+   required in a freestanding environment). This macro is provided for
+   backward compatibility; new code need not use it. */
 #undef STDC_HEADERS
 
 /* Default value for --target switch */

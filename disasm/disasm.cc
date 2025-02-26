@@ -1844,6 +1844,13 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     DISASM_OPIV_MULTIPLYADD__X__INSN(vwmaccus,  1);
     DISASM_OPIV_MULTIPLYADD_VX__INSN(vwmaccsu,  0);
 
+    if (ext_enabled(EXT_ZVQDOTQ)) {
+      DISASM_OPIV_VX__INSN(vqdot,   0);
+      DISASM_OPIV_VX__INSN(vqdotu,  0);
+      DISASM_OPIV_VX__INSN(vqdotsu, 0);
+      DISASM_OPIV__X__INSN(vqdotus, 0);
+    }
+
     #undef DISASM_OPIV_VXI_INSN
     #undef DISASM_OPIV_VX__INSN
     #undef DISASM_OPIV__XI_INSN
