@@ -431,6 +431,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
       reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
       bool pbmte = proc->get_state()->menvcfg->read() & MENVCFG_PBMTE;
       bool hade = proc->get_state()->menvcfg->read() & MENVCFG_ADUE;
+      int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
 
       if (pte & PTE_RSVD) {
         break;
@@ -446,6 +447,8 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
         base = ppn << PGSHIFT;
       } else if (!(pte & PTE_V) || (!(pte & PTE_R) && (pte & PTE_W))) {
         break;
+      } else if (((pte & PTE_N) && (ppn == 0 || i != 0)) || (napot_bits != 0 && napot_bits != 4)) {
+        break;
       } else if (!(pte & PTE_U)) {
         break;
       } else if (type == FETCH || hlvx ? !(pte & PTE_X) :
@@ -456,10 +459,6 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
         break;
       } else {
         reg_t ad = PTE_A | ((type == STORE) * PTE_D);
-
-        int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
-        if (((pte & PTE_N) && (ppn == 0 || i != 0)) || (napot_bits != 0 && napot_bits != 4))
-          break;
 
         if ((pte & ad) != ad) {
           if (hade) {
@@ -536,6 +535,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     bool hade = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_ADUE) : (proc->get_state()->menvcfg->read() & MENVCFG_ADUE);
     bool sse = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_SSE) : (proc->get_state()->menvcfg->read() & MENVCFG_SSE);
     bool ss_page = !(pte & PTE_R) && (pte & PTE_W) && !(pte & PTE_X);
+    int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
 
     if (pte & PTE_RSVD) {
       break;
@@ -557,6 +557,8 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
       // not shadow stack access xwr=110 or xwr=010 page cause page fault
       // shadow stack access with PTE_X moved to following check
       break;
+    } else if (((pte & PTE_N) && (ppn == 0 || i != 0)) || (napot_bits != 0 && napot_bits != 4)) {
+      break;
     } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
       break;
     } else if (ss_page && ((type == STORE && !ss_access) || access_info.flags.clean_inval)) {
@@ -574,10 +576,6 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
       break;
     } else {
       reg_t ad = PTE_A | ((type == STORE) * PTE_D);
-
-      int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
-      if (((pte & PTE_N) && (ppn == 0 || i != 0)) || (napot_bits != 0 && napot_bits != 4))
-        break;
 
       if ((pte & ad) != ad) {
         if (hade) {
