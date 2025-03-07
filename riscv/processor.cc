@@ -78,8 +78,6 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
 
   set_impl(IMPL_MMU_ASID, true);
   set_impl(IMPL_MMU_VMID, true);
-
-  reset();
 }
 
 processor_t::~processor_t()
