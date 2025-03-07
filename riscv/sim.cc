@@ -238,6 +238,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
     }
 
+    procs[cpu_idx]->reset();
+
     cpu_idx++;
   }
 
