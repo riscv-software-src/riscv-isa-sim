@@ -35,6 +35,7 @@ int main(int UNUSED argc, char** argv)
   if (extension) {
     p.register_extension(extension());
   }
+  p.reset();
 
   std::regex reg("^core\\s+\\d+:\\s+0x[0-9a-f]+\\s+\\(0x([0-9a-f]+)\\)", std::regex_constants::icase);
   std::smatch m;

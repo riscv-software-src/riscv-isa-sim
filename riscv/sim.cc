@@ -105,6 +105,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
                                       cfg, this, cfg->hartids[i], halted,
                                       log_file.get(), sout_));
       harts[cfg->hartids[i]] = procs[i];
+      procs[i]->reset();
     }
     return;
   } // otherwise, generate the procs by parsing the DTS
@@ -237,6 +238,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     } else {
       procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
     }
+
+    procs[cpu_idx]->reset();
 
     cpu_idx++;
   }
