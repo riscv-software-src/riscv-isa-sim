@@ -65,7 +65,7 @@ reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
 
   reg_t paddr = walk(access_info) | (addr & (PGSIZE-1));
   if (!pmp_ok(paddr, len, access_info.flags.ss_access ? STORE : type, mode, access_info.flags.hlvx))
-    throw_access_exception(virt, addr, type);
+    throw_access_exception(virt, addr, access_info.flags.ss_access ? STORE : type);
   return paddr;
 }
 
