@@ -215,7 +215,9 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
       refill_tlb(addr, paddr, host_addr, LOAD);
 
   } else if (!mmio_load(paddr, len, bytes)) {
-    throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
+    (access_info.flags.ss_access)?
+      throw trap_store_access_fault(access_info.effective_virt, transformed_addr, 0, 0) :
+      throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
   }
 
   if (access_info.flags.lr) {

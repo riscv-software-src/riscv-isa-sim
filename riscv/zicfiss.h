@@ -25,7 +25,7 @@
     shadow_return_addr = MMU.ss_load<uint32_t>(STATE.ssp->read()); \
   else \
     shadow_return_addr = MMU.ss_load<uint64_t>(STATE.ssp->read()); \
-  software_check(value == shadow_return_addr, SHADOW_STACK_FAULT); \
+  software_check(zext_xlen(value) == shadow_return_addr, SHADOW_STACK_FAULT); \
   STATE.ssp->write(STATE.ssp->read() + xlen / 8);
 
 #endif
