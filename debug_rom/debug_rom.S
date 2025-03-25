@@ -23,7 +23,12 @@ _entry:
         // This fence is required because the execution may have written something
         // into the Abstract Data or Program Buffer registers.
         fence
-        csrw CSR_DSCRATCH0, s0  // Save s0 to allow signaling MHARTID
+        csrw   CSR_DSCRATCH0, s0         // Save s0 to allow signaling MHARTID
+
+        // We need to disable privilege modification to avoid
+        // address translation in debug_rom memory accesses
+        csrw   CSR_DSCRATCH1, s1         // Save s1
+        csrrci s1, CSR_DCSR, DCSR_MPRVEN // Save DCSR and clear MPRVEN
 
         // We continue to let the hart know that we are halted in order that
         // a DM which was reset is still made aware that a hart is halted.
@@ -47,6 +52,7 @@ _exception:
         // We need this in case the user tried an abstract write to a
         // non-existent CSR.
         csrr    s0, CSR_DSCRATCH0
+        csrr    s1, CSR_DSCRATCH1 // Restore s1
         sw      zero, DEBUG_ROM_EXCEPTION(zero) // Let debug module know you got an exception.
         ebreak
 
@@ -54,6 +60,8 @@ going:
         csrr s0, CSR_MHARTID
         sw s0, DEBUG_ROM_GOING(zero)     // When debug module sees this write, the GO flag is reset.
         csrr s0, CSR_DSCRATCH0            // Restore s0 here
+        csrw    CSR_DCSR, s1      // Restore DSCR
+        csrr    s1, CSR_DSCRATCH1 // Restore s1
         fence
         fence.i
         jalr zero, zero, %lo(whereto)    // Debug module will put different instructions and data in the RAM, 
@@ -64,6 +72,8 @@ _resume:
         csrr s0, CSR_MHARTID
         sw   s0, DEBUG_ROM_RESUMING(zero) // When Debug Module sees this write, the RESUME flag is reset.
         csrr s0, CSR_DSCRATCH0   // Restore s0
+        csrw CSR_DCSR, s1        // Restore DSCR
+        csrr s1, CSR_DSCRATCH1   // Restore s1
         dret
 
         // END OF ACTUAL "ROM" CONTENTS. BELOW IS JUST FOR LINKER SCRIPT.
