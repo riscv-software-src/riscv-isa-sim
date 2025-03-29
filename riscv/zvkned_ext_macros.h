@@ -2,6 +2,7 @@
 // the RISC-V Zvkned extension (vector AES single round).
 
 #include "insns/aes_common.h"
+#include "zvk_ext_macros.h"
 
 #ifndef RISCV_ZVKNED_EXT_MACROS_H_
 #define RISCV_ZVKNED_EXT_MACROS_H_
@@ -9,16 +10,22 @@
 // vaes*.vs instruction constraints:
 //  - Zvkned is enabled
 //  - EGW (128) <= LMUL * VLEN
+//  - vd is LMUL aligned
+//  - vs2 is ceil(EGW / VLEN) aligned
 //  - vd and vs2 cannot overlap
 //
 // The constraint that vstart and vl are both EGS (4) aligned
 // is checked in the VI_ZVK_..._EGU32x4_..._LOOP macros.
 #define require_vaes_vs_constraints \
   do { \
+    const uint32_t EGS = 4; \
     require_zvkned; \
+    require(P.VU.vl->read() % EGS == 0); \
     require(P.VU.vsew == 32); \
     require_egw_fits(128); \
-    require(insn.rd() != insn.rs2()); \
+    require_align(insn.rd(), P.VU.vflmul); \
+    require_vs2_align_eglmul(128); \
+    require_noover_eglmul(insn.rd(), insn.rs2()); \
   } while (false)
 
 // vaes*.vv instruction constraints. Those are the same as the .vs ones,
@@ -30,17 +37,24 @@
 // is checked in the VI_ZVK_..._EGU32x4_..._LOOP macros.
 #define require_vaes_vv_constraints \
   do { \
+    const uint32_t EGS = 4; \
     require_zvkned; \
+    require(P.VU.vl->read() % EGS == 0); \
     require(P.VU.vsew == 32); \
     require_egw_fits(128); \
+    VI_CHECK_SSS(false) \
   } while (false)
 
 // vaeskf*.vi instruction constraints. Those are the same as the .vv ones.
 #define require_vaeskf_vi_constraints \
   do { \
+    const uint32_t EGS = 4; \
     require_zvkned; \
+    require(P.VU.vstart->read() % EGS == 0); \
+    require(P.VU.vl->read() % EGS == 0); \
     require(P.VU.vsew == 32); \
     require_egw_fits(128); \
+    VI_CHECK_SSS(false) \
   } while (false)
 
 #define VAES_XTIME(A) (((A) << 1) ^ (((A) & 0x80) ? 0x1b : 0))

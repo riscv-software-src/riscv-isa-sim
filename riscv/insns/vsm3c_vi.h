@@ -3,6 +3,7 @@
 #include "zvksh_ext_macros.h"
 
 require_vsm3_constraints;
+VI_CHECK_SSS(false)
 
 VI_ZVK_VD_VS2_ZIMM5_EGU32x8_NOVM_LOOP(
   {},
