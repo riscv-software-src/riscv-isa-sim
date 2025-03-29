@@ -647,6 +647,7 @@ riscv_insn_ext_v_alu_int = \
 	vsext_vf8 \
 	vslide1down_vx \
 	vslide1up_vx \
+	vslide1band_vx \
 	vslidedown_vi \
 	vslidedown_vx \
 	vslideup_vi \
