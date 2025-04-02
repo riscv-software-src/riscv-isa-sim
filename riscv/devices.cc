@@ -51,7 +51,10 @@ std::pair<reg_t, abstract_device_t*> bus_t::find_device(reg_t addr)
 
 std::pair<reg_t, abstract_device_t*> bus_t::find_device(reg_t addr, size_t len)
 {
-  return find_device(addr);
+  if (auto [base, dev] = find_device(addr); addr - base + len - 1 < dev->size())
+    return std::make_pair(base, dev);
+
+  return std::make_pair(0, nullptr);
 }
 
 mem_t::mem_t(reg_t size)
