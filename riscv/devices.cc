@@ -27,6 +27,13 @@ bool bus_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   return false;
 }
 
+reg_t bus_t::size()
+{
+  if (auto last = devices.rbegin(); last != devices.rend())
+    return last->first + last->second->size();
+  return 0;
+}
+
 std::pair<reg_t, abstract_device_t*> bus_t::find_device(reg_t addr)
 {
   // Obtain iterator to device immediately after the one that might match
