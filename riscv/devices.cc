@@ -10,6 +10,27 @@ mmio_device_map_t& mmio_device_map()
 
 void bus_t::add_device(reg_t addr, abstract_device_t* dev)
 {
+  // Allow empty devices by omitting them
+  auto size = dev->size();
+  if (size == 0)
+    return;
+
+  // Reject devices that overflow address size
+  if (addr + size - 1 < addr) {
+    fprintf(stderr, "device at [%" PRIx64 ", %" PRIx64 ") overflows address size\n",
+            addr, addr + size);
+    abort();
+  }
+
+  // Reject devices that overlap other devices
+  if (auto it = devices.upper_bound(addr);
+      (it != devices.end() && addr + size - 1 >= it->first) ||
+      (it != devices.begin() && (it--, it->first + it->second->size() - 1 >= addr))) {
+    fprintf(stderr, "devices at [%" PRIx64 ", %" PRIx64 ") and [%" PRIx64 ", %" PRIx64 ") overlap\n",
+            it->first, it->first + it->second->size(), addr, addr + size);
+    abort();
+  }
+
   devices[addr] = dev;
 }
 
