@@ -69,7 +69,7 @@ install_exes_dir := $(INSTALLDIR)/bin
 sprojs         := @subprojects@
 sprojs_enabled := @subprojects_enabled@
 
-sprojs_include := -I. -I$(src_dir) $(addprefix -I$(src_dir)/, $(sprojs_enabled))
+sprojs_include := -iquote . -I$(src_dir) $(addprefix -iquote $(src_dir)/, $(sprojs_enabled))
 VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 
 #-------------------------------------------------------------------------
@@ -94,11 +94,11 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 # highest.
 
 default-CFLAGS   := -DPREFIX=\"$(prefix)\" -Wall -Wno-unused -Wno-nonportable-include-path -g -O2 -fPIC
-default-CXXFLAGS := $(default-CFLAGS) -std=c++17
+default-CXXFLAGS := $(default-CFLAGS) -std=c++2a
 
 mcppbs-CPPFLAGS := @CPPFLAGS@
 mcppbs-CFLAGS   := $(default-CFLAGS) @CFLAGS@
-mcppbs-CXXFLAGS := $(mcppbs-CFLAGS) $(default-CXXFLAGS) @CXXFLAGS@
+mcppbs-CXXFLAGS := $(default-CXXFLAGS) @CXXFLAGS@
 
 CC            := @CC@
 CXX           := @CXX@
@@ -219,7 +219,7 @@ $(2)_deps := $$(patsubst %.o, %.d, $$($(2)_objs))
 $(2)_deps += $$(patsubst %.o, %.d, $$($(2)_c_objs))
 $(2)_deps += $$(patsubst %.h, %.h.d, $$($(2)_precompiled_hdrs))
 $$($(2)_pch) : %.h.gch : %.h
-	$(COMPILE) -x c++-header $$< -o $$@
+	$(COMPILE) -x c++-header $$< -c -o $$@
 $$($(2)_objs) : %.o : %.cc $$($(2)_gen_hdrs) $$($(2)_pch)
 	$(COMPILE) $(if $(HAVE_CLANG_PCH), $$(if $$($(2)_pch), -include-pch $$($(2)_pch))) $$($(2)_CFLAGS) -c $$<
 $$($(2)_c_objs) : %.o : %.c $$($(2)_gen_hdrs)
@@ -242,6 +242,7 @@ $(2)_lib_libarg     := $$(patsubst %, -l%, $$($(2)_lib_libs))
 $(2)_lib_libnames_shared	:= $$(if $$($(2)_install_shared_lib),lib$(1).so,)
 
 lib$(1).a : $$($(2)_objs) $$($(2)_c_objs)
+	rm -f $$@
 	$(AR) rcs $$@ $$^
 lib$(1).so : $$($(2)_objs) $$($(2)_c_objs) $$($(2)_lib_libnames_shared) $$($(2)_lib_libnames)
 	$(LINK) -shared -o $$@ $(if $(filter Darwin,$(shell uname -s)),-install_name $(install_libs_dir)/$$@) $$^ $$($(2)_lib_libnames) $(LIBS)
@@ -255,7 +256,7 @@ $(2)_test_objs      := $$(patsubst %.cc, %.o, $$($(2)_test_srcs))
 $(2)_test_deps      := $$(patsubst %.o, %.d, $$($(2)_test_objs))
 $(2)_test_exes      := $$(patsubst %.t.cc, %-utst, $$($(2)_test_srcs))
 $(2)_test_outs      := $$(patsubst %, %.out, $$($(2)_test_exes))
-$(2)_test_libs      := $(1) $$($(2)_reverse_deps) utst
+$(2)_test_libs      := $(1) $$($(2)_reverse_deps)
 $(2)_test_libnames  := $$(patsubst %, lib%.a, $$($(2)_test_libs))
 $(2)_test_libarg    := $$(patsubst %, -l%, $$($(2)_test_libs))
 
@@ -263,7 +264,7 @@ $$($(2)_test_objs) : %.o : %.cc
 	$(COMPILE) -c $$<
 
 $$($(2)_test_exes) : %-utst : %.t.o $$($(2)_test_libnames)
-	$(LINK) -o $$@ $$< $$($(2)_test_libnames) $(LIBS)
+	$(LINK) $$($(2)_LDFLAGS) -o $$@ $$< $$($(2)_test_libnames) $(LIBS)
 
 $(2)_deps += $$($(2)_test_deps)
 $(2)_junk += \
@@ -273,7 +274,8 @@ $(2)_junk += \
 # Run unit tests
 
 $$($(2)_test_outs) : %.out : %
-	$(RUN) $(RUNFLAGS) ./$$< default | tee $$@
+	./$$< default
+	touch $$@
 
 $(2)_junk += $$($(2)_test_outs)
 
@@ -290,7 +292,7 @@ $$($(2)_prog_objs) : %.o : %.cc
 	$(COMPILE) -c $$<
 
 $$($(2)_prog_exes) : % : %.o $$($(2)_prog_libnames)
-	$(LINK) -o $$@ $$< $$($(2)_prog_libnames) $(LIBS)
+	$(LINK) $$($(2)_LDFLAGS) -o $$@ $$< $$($(2)_prog_libnames) $(LIBS)
 
 $(2)_deps += $$($(2)_prog_deps)
 $(2)_junk += $$($(2)_prog_objs) $$($(2)_prog_deps) $$($(2)_prog_exes)
@@ -305,7 +307,7 @@ $$($(2)_install_prog_objs) : %.o : %.cc $$($(2)_gen_hdrs)
 	$(COMPILE) -c $$<
 
 $$($(2)_install_prog_exes) : % : %.o $$($(2)_prog_libnames)
-	$(LINK) -o $$@ $$< $$($(2)_prog_libnames) $(LIBS)
+	$(LINK) $$($(2)_LDFLAGS) -o $$@ $$< $$($(2)_prog_libnames) $(LIBS)
 
 $(2)_deps += $$($(2)_install_prog_deps)
 $(2)_junk += \
@@ -317,7 +319,7 @@ $(2)_junk += \
 all-$(1) : lib$(1).a $$($(2)_install_prog_exes)
 
 check-$(1) : $$($(2)_test_outs)
-	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segementation' $$^; echo
+	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segmentation' $$^; echo
 
 clean-$(1) :
 	rm -rf $$($(2)_junk)
@@ -326,10 +328,6 @@ clean-$(1) :
 
 # Update running variables
 
-libs += lib$(1).a
-objs += $$($(2)_objs)
-srcs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_srcs)) 
-hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_hdrs)) $$($(2)_gen_hdrs)
 junk += $$($(2)_junk)
 deps += $$($(2)_deps)
 
@@ -340,7 +338,7 @@ install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_install_hdrs))
 install_libs += $$(if $$($(2)_install_lib),lib$(1).a,)
 install_libs += $$(if $$($(2)_install_shared_lib),lib$(1).so,)
 install_exes += $$($(2)_install_prog_exes)
-install_pcs  += $$(if $$($(2)_install_lib),riscv-$(1).pc,)
+install_pcs  += $$(if $$($(2)_install_pcs),riscv-$(1).pc,)
 
 endef
 
@@ -362,20 +360,8 @@ deps : $(deps)
 # Check
 #-------------------------------------------------------------------------
 
-bintest_outs = $(bintests:=.out)
-junk += $(bintest_outs)
-%.out: % all
-	./$* < /dev/null 2>&1 | tee $@
-
-check-cpp : $(test_outs)
-	@echo
-	! grep -h -e'Unit Tests' -e'FAILED' -e'Segmentation' $^ < /dev/null
-	@echo
-
-check-bin : $(bintest_outs)
-	! tail -n 1 $^ < /dev/null 2>&1 | grep FAILED
-
-check : check-cpp check-bin
+check : $(test_outs)
+	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segementation' $^ < /dev/null; echo
 
 .PHONY : check
 
@@ -398,6 +384,15 @@ install-hdrs : $(install_hdrs)
 		$(MKINSTALLDIRS) $(install_hdrs_dir)/`dirname $$file`; \
     $(INSTALL_HDR) $(src_dir)/$$file $(install_hdrs_dir)/`dirname $$file`; \
   done
+
+install-hdrs-list.h: $(install_hdrs)
+	rm -f $@.tmp
+	for file in $(subst $(src_dir)/,,$^); \
+	do \
+		$(MKINSTALLDIRS) $(install_hdrs_dir)/`dirname $$file`; \
+		echo "#include <$(src_dir)/$$file>" >> $@.tmp; \
+	done
+	mv $@.tmp $@
 
 install-libs : $(install_libs)
 	$(MKINSTALLDIRS) $(install_libs_dir)

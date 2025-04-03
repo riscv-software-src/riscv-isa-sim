@@ -13,6 +13,7 @@
 
 #include "disasm.h"
 #include "extension.h"
+#include "platform.h"
 
 using namespace std;
 
@@ -27,8 +28,10 @@ int main(int UNUSED argc, char** argv)
   parser.option(0, "isa", 1, [&](const char* s){isa_string = s;});
   parser.parse(argv);
 
+  cfg_t cfg;
+
   isa_parser_t isa(isa_string, DEFAULT_PRIV);
-  processor_t p(&isa, DEFAULT_VARCH, 0, 0, false, nullptr, cerr);
+  processor_t p(isa_string, DEFAULT_PRIV, &cfg, 0, 0, false, nullptr, cerr);
   if (extension) {
     p.register_extension(extension());
   }

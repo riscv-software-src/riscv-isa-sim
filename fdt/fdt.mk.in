@@ -1,9 +1,9 @@
 fdt_subproject_deps = \
 
-fdt_hdrs = \
-	fdt.h \
+fdt_install_hdrs = \
 	libfdt.h \
-	libfdt_env.h \
+	fdt.h \
+	libfdt_env.h
 
 fdt_c_srcs = \
 	fdt.c \
@@ -15,3 +15,5 @@ fdt_c_srcs = \
 	fdt_empty_tree.c \
 	fdt_addresses.c \
 	fdt_overlay.c \
+
+fdt_CFLAGS = -I$(src_dir)/fdt

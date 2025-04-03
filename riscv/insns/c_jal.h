@@ -1,4 +1,4 @@
-require_extension('C');
+require_extension(EXT_ZCA);
 if (xlen == 32) {
   reg_t tmp = npc;
   set_pc(pc + insn.rvc_j_imm());

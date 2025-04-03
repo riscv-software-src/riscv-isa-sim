@@ -1,5 +1,6 @@
 // See LICENSE for license details.
 
+#include "config.h"
 #include "syscall.h"
 #include "htif.h"
 #include "byteorder.h"
@@ -136,7 +137,7 @@ struct riscv_statx
       __spare2(), __spare3()
 #else
       __spare2()
-#endif      
+#endif
       {}
 };
 #endif
@@ -160,6 +161,7 @@ syscall_t::syscall_t(htif_t* htif)
   table[64] = &syscall_t::sys_write;
   table[67] = &syscall_t::sys_pread;
   table[68] = &syscall_t::sys_pwrite;
+  table[78] = &syscall_t::sys_readlinkat;
   table[79] = &syscall_t::sys_fstatat;
   table[80] = &syscall_t::sys_fstat;
   table[93] = &syscall_t::sys_exit;
@@ -173,9 +175,16 @@ syscall_t::syscall_t(htif_t* htif)
   if (stdin_fd < 0 || stdout_fd0 < 0 || stdout_fd1 < 0)
     throw std::runtime_error("could not dup stdin/stdout");
 
-  fds.alloc(stdin_fd); // stdin -> stdin
-  fds.alloc(stdout_fd0); // stdout -> stdout
-  fds.alloc(stdout_fd1); // stderr -> stdout
+  fds_index.push_back(fds.alloc(stdin_fd)); // stdin -> stdin
+  fds_index.push_back(fds.alloc(stdout_fd0)); // stdout -> stdout
+  fds_index.push_back(fds.alloc(stdout_fd1)); // stderr -> stdout
+}
+
+syscall_t::~syscall_t() {
+  for (auto i: fds_index) {
+    close(fds.lookup(i));
+    fds.dealloc(i);
+  }
 }
 
 std::string syscall_t::do_chroot(const char* fn)
@@ -212,7 +221,7 @@ void syscall_t::handle_syscall(command_t cmd)
 
 reg_t syscall_t::sys_exit(reg_t code, reg_t a1, reg_t a2, reg_t a3, reg_t a4, reg_t a5, reg_t a6)
 {
-  htif->exitcode = code << 1 | 1;
+  htif->htif_exit(code << 1 | 1);
   return 0;
 }
 
@@ -503,4 +512,17 @@ void syscall_t::set_chroot(const char* where)
   }
 
   chroot = buf2;
+}
+
+reg_t syscall_t::sys_readlinkat(reg_t dirfd, reg_t ppathname, reg_t ppathname_size,
+                                reg_t pbuf, reg_t bufsiz, reg_t a5, reg_t a6)
+{
+  std::vector<char> pathname(ppathname_size);
+  memif->read(ppathname, ppathname_size, pathname.data());
+
+  std::vector<char> buf(bufsiz);
+  ssize_t ret = sysret_errno(AT_SYSCALL(readlinkat, dirfd, pathname.data(), buf.data(), bufsiz));
+  if (ret > 0)
+    memif->write(pbuf, ret, buf.data());
+  return ret;
 }

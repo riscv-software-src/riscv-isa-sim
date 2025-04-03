@@ -93,6 +93,43 @@ static inline uint64_t rsqrte7(uint64_t val, int e, int s, bool sub) {
   return (sign << (s+e)) | (out_exp << s) | out_sig;
 }
 
+bfloat16_t bf16_rsqrte7(bfloat16_t in)
+{
+    union ui16_bf16 uA;
+
+    uA.f = in;
+    unsigned int ret = bf16_classify(in);
+    bool sub = false;
+    switch(ret) {
+    case 0x001: // -inf
+    case 0x002: // -normal
+    case 0x004: // -subnormal
+    case 0x100: // sNaN
+        softfloat_exceptionFlags |= softfloat_flag_invalid;
+    case 0x200: //qNaN
+        uA.ui = defaultNaNBF16UI;
+        break;
+    case 0x008: // -0
+        uA.ui = 0xff80;
+        softfloat_exceptionFlags |= softfloat_flag_infinite;
+        break;
+    case 0x010: // +0
+        uA.ui = 0x7f80;
+        softfloat_exceptionFlags |= softfloat_flag_infinite;
+        break;
+    case 0x080: //+inf
+        uA.ui = 0x0;
+        break;
+    case 0x020: //+ sub
+        sub = true;
+    default: // +num
+        uA.ui = rsqrte7(uA.ui, 8, 7, sub);
+        break;
+    }
+
+    return uA.f;
+}
+
 float16_t f16_rsqrte7(float16_t in)
 {
     union ui16_f16 uA;
@@ -260,6 +297,49 @@ static inline uint64_t recip7(uint64_t val, int e, int s, int rm, bool sub,
     }
 
     return (sign << (s+e)) | (out_exp << s) | out_sig;
+}
+
+bfloat16_t bf16_recip7(bfloat16_t in)
+{
+    union ui16_bf16 uA;
+
+    uA.f = in;
+    unsigned int ret = bf16_classify(in);
+    bool sub = false;
+    bool round_abnormal = false;
+    switch(ret) {
+    case 0x001: // -inf
+        uA.ui = 0x8000;
+        break;
+    case 0x080: //+inf
+        uA.ui = 0x0;
+        break;
+    case 0x008: // -0
+        uA.ui = 0xff80;
+        softfloat_exceptionFlags |= softfloat_flag_infinite;
+        break;
+    case 0x010: // +0
+        uA.ui = 0x7f80;
+        softfloat_exceptionFlags |= softfloat_flag_infinite;
+        break;
+    case 0x100: // sNaN
+        softfloat_exceptionFlags |= softfloat_flag_invalid;
+    case 0x200: //qNaN
+        uA.ui = defaultNaNBF16UI;
+        break;
+    case 0x004: // -subnormal
+    case 0x020: //+ sub
+        sub = true;
+    default: // +- normal
+        uA.ui = recip7(uA.ui, 8, 7,
+                       softfloat_roundingMode, sub, &round_abnormal);
+        if (round_abnormal)
+            softfloat_exceptionFlags |= softfloat_flag_inexact |
+                                        softfloat_flag_overflow;
+        break;
+    }
+
+    return uA.f;
 }
 
 float16_t f16_recip7(float16_t in)

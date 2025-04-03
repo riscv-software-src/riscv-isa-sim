@@ -28,6 +28,7 @@ class syscall_t : public device_t
 {
  public:
   syscall_t(htif_t*);
+  ~syscall_t();
 
   void set_chroot(const char* where);
   
@@ -38,6 +39,7 @@ class syscall_t : public device_t
   memif_t* memif;
   std::vector<syscall_func_t> table;
   fds_t fds;
+  std::vector<reg_t> fds_index;
 
   void handle_syscall(command_t cmd);
   void dispatch(addr_t mm);
@@ -68,6 +70,7 @@ class syscall_t : public device_t
   reg_t sys_getcwd(reg_t, reg_t, reg_t, reg_t, reg_t, reg_t, reg_t);
   reg_t sys_getmainvars(reg_t, reg_t, reg_t, reg_t, reg_t, reg_t, reg_t);
   reg_t sys_chdir(reg_t, reg_t, reg_t, reg_t, reg_t, reg_t, reg_t);
+  reg_t sys_readlinkat(reg_t, reg_t, reg_t, reg_t, reg_t, reg_t, reg_t);
 };
 
 #endif

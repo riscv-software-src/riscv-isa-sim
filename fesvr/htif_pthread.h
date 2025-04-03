@@ -13,7 +13,7 @@ class htif_pthread_t : public htif_t
   htif_pthread_t(int argc, char** argv);
   virtual ~htif_pthread_t();
 
-  // target inteface
+  // target interface
   void send(const void* buf, size_t size);
   void recv(void* buf, size_t size);
   bool recv_nonblocking(void* buf, size_t size);

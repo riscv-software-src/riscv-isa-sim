@@ -1,4 +1,4 @@
-fesvr_hdrs = \
+fesvr_install_hdrs = \
   byteorder.h \
   elf.h \
   elfloader.h \
@@ -15,11 +15,11 @@ fesvr_hdrs = \
   rfb.h \
   tsi.h \
 
-fesvr_install_hdrs = $(fesvr_hdrs)
-
 fesvr_install_config_hdr = yes
 
 fesvr_install_lib = yes
+
+fesvr_install_pcs = yes
 
 fesvr_srcs = \
   elfloader.cc \

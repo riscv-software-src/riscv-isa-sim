@@ -1,5 +1,6 @@
 // See LICENSE for license details.
 
+#include "config.h"
 #include "elf.h"
 #include "memif.h"
 #include "byteorder.h"
@@ -15,18 +16,22 @@
 #include <stdio.h>
 #include <vector>
 #include <map>
+#include <cerrno>
 
-std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* entry, unsigned required_xlen = 0)
+std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* entry,
+                                         reg_t load_offset, unsigned required_xlen = 0)
 {
   int fd = open(fn, O_RDONLY);
   struct stat s;
-  assert(fd != -1);
+  if (fd == -1)
+      throw std::invalid_argument(std::string("Specified ELF can't be opened: ") + strerror(errno));
   if (fstat(fd, &s) < 0)
     abort();
   size_t size = s.st_size;
 
   char* buf = (char*)mmap(NULL, size, PROT_READ, MAP_PRIVATE, fd, 0);
-  assert(buf != MAP_FAILED);
+  if (buf == MAP_FAILED)
+      throw std::invalid_argument(std::string("Specified ELF can't be mapped: ") + strerror(errno));
   close(fd);
 
   assert(size >= sizeof(Elf64_Ehdr));
@@ -37,9 +42,13 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
     throw incompat_xlen(required_xlen, xlen);
   }
   assert(IS_ELFLE(*eh64) || IS_ELFBE(*eh64));
-  assert(IS_ELF_EXEC(*eh64));
+  assert(IS_ELF_EXEC(*eh64) || IS_ELF_DYN(*eh64));
   assert(IS_ELF_RISCV(*eh64) || IS_ELF_EM_NONE(*eh64));
   assert(IS_ELF_VCURRENT(*eh64));
+
+  if (IS_ELF_EXEC(*eh64)) {
+    load_offset = 0;
+  }
 
   std::vector<uint8_t> zeros;
   std::map<std::string, uint64_t> symbols;
@@ -48,19 +57,19 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
   do {                                                                         \
     ehdr_t* eh = (ehdr_t*)buf;                                                 \
     phdr_t* ph = (phdr_t*)(buf + bswap(eh->e_phoff));                          \
-    *entry = bswap(eh->e_entry);                                               \
+    *entry = bswap(eh->e_entry) + load_offset;                                 \
     assert(size >= bswap(eh->e_phoff) + bswap(eh->e_phnum) * sizeof(*ph));     \
     for (unsigned i = 0; i < bswap(eh->e_phnum); i++) {                        \
       if (bswap(ph[i].p_type) == PT_LOAD && bswap(ph[i].p_memsz)) {            \
+        reg_t load_addr = bswap(ph[i].p_paddr) + load_offset;                  \
         if (bswap(ph[i].p_filesz)) {                                           \
           assert(size >= bswap(ph[i].p_offset) + bswap(ph[i].p_filesz));       \
-          memif->write(bswap(ph[i].p_paddr), bswap(ph[i].p_filesz),            \
+          memif->write(load_addr, bswap(ph[i].p_filesz),                       \
                        (uint8_t*)buf + bswap(ph[i].p_offset));                 \
         }                                                                      \
         if (size_t pad = bswap(ph[i].p_memsz) - bswap(ph[i].p_filesz)) {       \
           zeros.resize(pad);                                                   \
-          memif->write(bswap(ph[i].p_paddr) + bswap(ph[i].p_filesz), pad,      \
-                       zeros.data());                                          \
+          memif->write(load_addr + bswap(ph[i].p_filesz), pad, zeros.data());  \
         }                                                                      \
       }                                                                        \
     }                                                                          \
@@ -92,13 +101,15 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
             bswap(sh[strtabidx].sh_size) - bswap(sym[i].st_name);              \
         assert(bswap(sym[i].st_name) < bswap(sh[strtabidx].sh_size));          \
         assert(strnlen(strtab + bswap(sym[i].st_name), max_len) < max_len);    \
-        symbols[strtab + bswap(sym[i].st_name)] = bswap(sym[i].st_value);      \
+        symbols[strtab + bswap(sym[i].st_name)] = bswap(sym[i].st_value) + load_offset;      \
       }                                                                        \
     }                                                                          \
   } while (0)
 
   if (IS_ELFLE(*eh64)) {
-    memif->set_target_endianness(memif_endianness_little);
+    if (memif->get_target_endianness() != endianness_little) {
+      throw std::invalid_argument("Specified ELF is little endian, but system uses a big-endian memory system. Rerun without --big-endian");
+    }
     if (IS_ELF32(*eh64))
       LOAD_ELF(Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym, from_le);
     else
@@ -107,7 +118,9 @@ std::map<std::string, uint64_t> load_elf(const char* fn, memif_t* memif, reg_t* 
 #ifndef RISCV_ENABLE_DUAL_ENDIAN
     throw std::invalid_argument("Specified ELF is big endian.  Configure with --enable-dual-endian to enable support");
 #else
-    memif->set_target_endianness(memif_endianness_big);
+    if (memif->get_target_endianness() != endianness_big) {
+      throw std::invalid_argument("Specified ELF is big endian, but system uses a little-endian memory system. Rerun with --big-endian");
+    }
     if (IS_ELF32(*eh64))
       LOAD_ELF(Elf32_Ehdr, Elf32_Phdr, Elf32_Shdr, Elf32_Sym, from_be);
     else

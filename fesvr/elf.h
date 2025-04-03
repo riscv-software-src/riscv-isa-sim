@@ -6,6 +6,7 @@
 #include <stdint.h>
 
 #define ET_EXEC 2
+#define ET_DYN 3
 #define EM_RISCV 243
 #define EM_NONE 0
 #define EV_CURRENT 1
@@ -21,6 +22,7 @@
 #define IS_ELFLE(hdr) (IS_ELF(hdr) && (hdr).e_ident[5] == 1)
 #define IS_ELFBE(hdr) (IS_ELF(hdr) && (hdr).e_ident[5] == 2)
 #define IS_ELF_EXEC(hdr) (IS_ELF(hdr) && ELF_SWAP((hdr), (hdr).e_type) == ET_EXEC)
+#define IS_ELF_DYN(hdr) (IS_ELF(hdr) && ELF_SWAP((hdr), (hdr).e_type) == ET_DYN)
 #define IS_ELF_RISCV(hdr) (IS_ELF(hdr) && ELF_SWAP((hdr), (hdr).e_machine) == EM_RISCV)
 #define IS_ELF_EM_NONE(hdr) (IS_ELF(hdr) && ELF_SWAP((hdr), (hdr).e_machine) == EM_NONE)
 #define IS_ELF_VCURRENT(hdr) (IS_ELF(hdr) && ELF_SWAP((hdr), (hdr).e_version) == EV_CURRENT)

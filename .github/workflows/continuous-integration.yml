@@ -17,12 +17,41 @@ on:
 
 jobs:
   test:
-    name: Test Spike build
-    runs-on: ubuntu-20.04
+    name: Test Spike build (Ubuntu)
+    runs-on: ubuntu-22.04
     steps:
       - uses: actions/checkout@v2
+        with:
+          # checkout full tree
+          fetch-depth: 0
 
       - name: Install Dependencies
         run: sudo xargs apt-get install -y < .github/workflows/apt-packages.txt
 
-      - run: ci-tests/test-spike
+      - run: |
+          for commit in $(git rev-list origin/master..HEAD | tac); do
+            git checkout $commit
+            echo "Checking commit $commit"
+            ci-tests/build-spike
+            ci-tests/test-spike
+          done
+
+  test-macos:
+    name: Test Spike build (MacOS)
+    runs-on: macos-13
+    steps:
+      - uses: actions/checkout@v2
+        with:
+          # checkout full tree
+          fetch-depth: 0
+
+      - name: Install Dependencies
+        run: xargs brew install --overwrite < .github/workflows/brew-packages.txt
+
+      - run: |
+          for commit in $(git rev-list origin/master..HEAD | tail -r); do
+            git checkout $commit
+            echo "Checking commit $commit"
+            ci-tests/build-spike
+            ci-tests/test-spike
+          done

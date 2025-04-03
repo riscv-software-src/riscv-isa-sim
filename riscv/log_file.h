@@ -31,7 +31,7 @@ public:
   FILE *get() { return wrapped_file ? wrapped_file.get() : stderr; }
 
 private:
-  std::unique_ptr<FILE, decltype(&fclose)> wrapped_file;
+  std::unique_ptr<FILE, int(*)(FILE*)> wrapped_file;
 };
 
 #endif

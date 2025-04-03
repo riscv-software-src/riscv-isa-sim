@@ -9,6 +9,16 @@ s = set_field(s, MSTATUS_MIE, get_field(s, MSTATUS_MPIE));
 s = set_field(s, MSTATUS_MPIE, 1);
 s = set_field(s, MSTATUS_MPP, p->extension_enabled('U') ? PRV_U : PRV_M);
 s = set_field(s, MSTATUS_MPV, 0);
-p->put_csr(CSR_MSTATUS, s);
-p->set_privilege(prev_prv);
-p->set_virt(prev_virt);
+if (ZICFILP_xLPE(prev_virt, prev_prv)) {
+  STATE.elp = static_cast<elp_t>(get_field(s, MSTATUS_MPELP));
+}
+s = set_field(s, MSTATUS_MPELP, elp_t::NO_LP_EXPECTED);
+s = set_field(s, MSTATUS_MDT, 0);
+if (prev_prv == PRV_U || (prev_virt && prev_prv != PRV_M))
+  s = set_field(s, MSTATUS_SDT, 0);
+if (prev_virt && prev_prv == PRV_U)
+  STATE.vsstatus->write(STATE.vsstatus->read() & ~SSTATUS_SDT);
+STATE.mstatus->write(s);
+if (STATE.mstatush) STATE.mstatush->write(s >> 32); // log mstatush change
+if (STATE.tcontrol) STATE.tcontrol->write((STATE.tcontrol->read() & CSR_TCONTROL_MPTE) ? (CSR_TCONTROL_MPTE | CSR_TCONTROL_MTE) : 0);
+p->set_privilege(prev_prv, prev_virt);

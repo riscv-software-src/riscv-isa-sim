@@ -1,0 +1,64 @@
+# Build spike and run a couple of debug tests.
+
+name: Debug Quick Test
+
+on:
+  push:
+    branches:
+      - master
+  pull_request:
+    branches:
+      - master
+
+jobs:
+  test:
+    name: Test debug (Ubuntu)
+    runs-on: ubuntu-22.04
+    steps:
+      - uses: actions/checkout@v2
+
+      - name: Install Dependencies
+        run: |
+          sudo xargs apt-get install -y < .github/workflows/apt-packages.txt
+
+      - name: Download OpenOCD
+        run: |
+          git clone --recurse-submodules https://github.com/riscv/riscv-openocd.git
+          cd riscv-openocd
+          git checkout d4c5d2657074613d429f57f60e939ca151ed4f32
+
+      - name: Build OpenOCD
+        run: |
+          cd riscv-openocd
+          ./bootstrap
+          ./configure
+          make -j"$(nproc 2> /dev/null || sysctl -n hw.ncpu)"
+
+      - name: Download Toolchain
+        run: wget --progress=dot:giga https://github.com/xpack-dev-tools/riscv-none-elf-gcc-xpack/releases/download/v12.2.0-1/xpack-riscv-none-elf-gcc-12.2.0-1-linux-x64.tar.gz
+
+      - name: Install Toolchain
+        run: tar zxf xpack-riscv-none-elf-gcc-12.2.0-1-linux-x64.tar.gz
+
+      - name: Build Spike
+        run: ci-tests/build-spike
+
+      - name: Download Tests
+        run: |
+          git clone --recurse-submodules https://github.com/riscv-software-src/riscv-tests.git
+          cd riscv-tests
+          git checkout e06a435c1e545def71e833031356372f0828f165
+
+      - name: Run Tests
+        run: |
+          cd riscv-tests/debug
+          ./gdbserver.py targets/RISC-V/spike32.py --print-failures \
+              --gcc $GITHUB_WORKSPACE/xpack-riscv-none-elf-gcc-12.2.0-1/bin/riscv-none-elf-gcc \
+              --gdb $GITHUB_WORKSPACE/xpack-riscv-none-elf-gcc-12.2.0-1/bin/riscv-none-elf-gdb \
+              --sim_cmd $GITHUB_WORKSPACE/build/install/bin/spike \
+              --server_cmd $GITHUB_WORKSPACE/riscv-openocd/src/openocd
+          ./gdbserver.py targets/RISC-V/spike64-2.py --print-failures \
+              --gcc $GITHUB_WORKSPACE/xpack-riscv-none-elf-gcc-12.2.0-1/bin/riscv-none-elf-gcc \
+              --gdb $GITHUB_WORKSPACE/xpack-riscv-none-elf-gcc-12.2.0-1/bin/riscv-none-elf-gdb \
+              --sim_cmd $GITHUB_WORKSPACE/build/install/bin/spike \
+              --server_cmd $GITHUB_WORKSPACE/riscv-openocd/src/openocd

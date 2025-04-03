@@ -1,5 +1,5 @@
 #include "dtm.h"
-#include "debug_defines.h"
+#include "riscv/debug_defines.h"
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
@@ -37,15 +37,12 @@
 #define S1 9
 
 #define AC_AR_REGNO(x) ((0x1000 | x) << AC_ACCESS_REGISTER_REGNO_OFFSET)
-#define AC_AR_SIZE(x)  (((x == 128)? 4 : (x == 64 ? 3 : 2)) << AC_ACCESS_REGISTER_SIZE_OFFSET)
+#define AC_AR_SIZE(x)  (((x == 128)? 4 : (x == 64 ? 3 : 2)) << AC_ACCESS_REGISTER_AARSIZE_OFFSET)
 
 #define WRITE 1
 #define SET 2
 #define CLEAR 3
 #define CSRRx(type, dst, csr, src) (0x73 | ((type) << 12) | ((dst) << 7) | ((src) << 15) | (uint32_t)((csr) << 20))
-
-#define get_field(reg, mask) (((reg) & (mask)) / ((mask) & ~((mask) << 1)))
-#define set_field(reg, mask, val) (((reg) & ~(mask)) | (((val) * ((mask) & ~((mask) << 1))) & (mask)))
 
 #define RUN_AC_OR_DIE(a, b, c, d, e) { \
     uint32_t cmderr = run_abstract_command(a, b, c, d, e);      \
@@ -78,22 +75,22 @@ void dtm_t::nop()
 }
 
 void dtm_t::select_hart(int hartsel) {
-  int dmcontrol = read(DMI_DMCONTROL);
-  write (DMI_DMCONTROL, set_field(dmcontrol, DMI_DMCONTROL_HARTSEL, hartsel));
+  int dmcontrol = read(DM_DMCONTROL);
+  write (DM_DMCONTROL, set_field(dmcontrol, DM_DMCONTROL_HASEL, hartsel));
   current_hart = hartsel;
 }
 
 int dtm_t::enumerate_harts() {
-  int max_hart = (1 << DMI_DMCONTROL_HARTSEL_LENGTH) - 1;
-  write(DMI_DMCONTROL, set_field(read(DMI_DMCONTROL), DMI_DMCONTROL_HARTSEL, max_hart));
-  read(DMI_DMSTATUS);
-  max_hart = get_field(read(DMI_DMCONTROL), DMI_DMCONTROL_HARTSEL);
+  int max_hart = (1 << DM_DMCONTROL_HASEL_LENGTH) - 1;
+  write(DM_DMCONTROL, set_field(read(DM_DMCONTROL), DM_DMCONTROL_HASEL, max_hart));
+  read(DM_DMSTATUS);
+  max_hart = get_field(read(DM_DMCONTROL), DM_DMCONTROL_HASEL);
 
   int hartsel;
   for (hartsel = 0; hartsel <= max_hart; hartsel++) {
     select_hart(hartsel);
-    int dmstatus = read(DMI_DMSTATUS);
-    if (get_field(dmstatus, DMI_DMSTATUS_ANYNONEXISTENT))
+    int dmstatus = read(DM_DMSTATUS);
+    if (get_field(dmstatus, DM_DMSTATUS_ANYNONEXISTENT))
       break;
   }
   return hartsel;
@@ -102,44 +99,44 @@ int dtm_t::enumerate_harts() {
 void dtm_t::halt(int hartsel)
 {
   if (running) {
-    write(DMI_DMCONTROL, DMI_DMCONTROL_DMACTIVE);
+    write(DM_DMCONTROL, DM_DMCONTROL_DMACTIVE);
     // Read dmstatus to avoid back-to-back writes to dmcontrol.
-    read(DMI_DMSTATUS);
+    read(DM_DMSTATUS);
   }
 
-  int dmcontrol = DMI_DMCONTROL_HALTREQ | DMI_DMCONTROL_DMACTIVE;
-  dmcontrol = set_field(dmcontrol, DMI_DMCONTROL_HARTSEL, hartsel);
-  write(DMI_DMCONTROL, dmcontrol);
+  int dmcontrol = DM_DMCONTROL_HALTREQ | DM_DMCONTROL_DMACTIVE;
+  dmcontrol = set_field(dmcontrol, DM_DMCONTROL_HASEL, hartsel);
+  write(DM_DMCONTROL, dmcontrol);
   int dmstatus;
   do {
-    dmstatus = read(DMI_DMSTATUS);
-  } while(get_field(dmstatus, DMI_DMSTATUS_ALLHALTED) == 0);
-  dmcontrol &= ~DMI_DMCONTROL_HALTREQ;
-  write(DMI_DMCONTROL, dmcontrol);
+    dmstatus = read(DM_DMSTATUS);
+  } while(get_field(dmstatus, DM_DMSTATUS_ALLHALTED) == 0);
+  dmcontrol &= ~DM_DMCONTROL_HALTREQ;
+  write(DM_DMCONTROL, dmcontrol);
   // Read dmstatus to avoid back-to-back writes to dmcontrol.
-  read(DMI_DMSTATUS);
+  read(DM_DMSTATUS);
   current_hart = hartsel;
 }
 
 void dtm_t::resume(int hartsel)
 {
-  int dmcontrol = DMI_DMCONTROL_RESUMEREQ | DMI_DMCONTROL_DMACTIVE;
-  dmcontrol = set_field(dmcontrol, DMI_DMCONTROL_HARTSEL, hartsel);
-  write(DMI_DMCONTROL, dmcontrol);
+  int dmcontrol = DM_DMCONTROL_RESUMEREQ | DM_DMCONTROL_DMACTIVE;
+  dmcontrol = set_field(dmcontrol, DM_DMCONTROL_HASEL, hartsel);
+  write(DM_DMCONTROL, dmcontrol);
   int dmstatus;
   do {
-    dmstatus = read(DMI_DMSTATUS);
-  } while (get_field(dmstatus, DMI_DMSTATUS_ALLRESUMEACK) == 0);
-  dmcontrol &= ~DMI_DMCONTROL_RESUMEREQ;
-  write(DMI_DMCONTROL, dmcontrol);
+    dmstatus = read(DM_DMSTATUS);
+  } while (get_field(dmstatus, DM_DMSTATUS_ALLRESUMEACK) == 0);
+  dmcontrol &= ~DM_DMCONTROL_RESUMEREQ;
+  write(DM_DMCONTROL, dmcontrol);
   // Read dmstatus to avoid back-to-back writes to dmcontrol.
-  read(DMI_DMSTATUS);
+  read(DM_DMSTATUS);
   current_hart = hartsel;
 
   if (running) {
-    write(DMI_DMCONTROL, DMI_DMCONTROL_DMACTIVE);
+    write(DM_DMCONTROL, DM_DMCONTROL_DMACTIVE);
     // Read dmstatus to avoid back-to-back writes to dmcontrol.
-    read(DMI_DMSTATUS);
+    read(DM_DMSTATUS);
   }
 }
 
@@ -181,32 +178,32 @@ uint32_t dtm_t::run_abstract_command(uint32_t command,
   assert(data_n    <= data_words);
   
   for (size_t i = 0; i < program_n; i++) {
-    write(DMI_PROGBUF0 + i, program[i]);
+    write(DM_PROGBUF0 + i, program[i]);
   }
 
   if (get_field(command, AC_ACCESS_REGISTER_WRITE) &&
       get_field(command, AC_ACCESS_REGISTER_TRANSFER)) {
     for (size_t i = 0; i < data_n; i++) {
-      write(DMI_DATA0 + i, data[i]);
+      write(DM_DATA0 + i, data[i]);
     }
   }
   
-  write(DMI_COMMAND, command);
+  write(DM_COMMAND, command);
   
   // Wait for not busy and then check for error.
   uint32_t abstractcs;
   do {
-    abstractcs = read(DMI_ABSTRACTCS);
-  } while (abstractcs & DMI_ABSTRACTCS_BUSY);
+    abstractcs = read(DM_ABSTRACTCS);
+  } while (abstractcs & DM_ABSTRACTCS_BUSY);
 
   if ((get_field(command, AC_ACCESS_REGISTER_WRITE) == 0) &&
       get_field(command, AC_ACCESS_REGISTER_TRANSFER)) {
     for (size_t i = 0; i < data_n; i++){
-      data[i] = read(DMI_DATA0 + i);
+      data[i] = read(DM_DATA0 + i);
     }
   }
   
-  return get_field(abstractcs, DMI_ABSTRACTCS_CMDERR);
+  return get_field(abstractcs, DM_ABSTRACTCS_CMDERR);
 
 }
 
@@ -316,24 +313,24 @@ void dtm_t::write_chunk(uint64_t taddr, size_t len, const void* src)
   uint32_t abstractcs;
   for (size_t i = 1; i < (len * 8 / xlen); i++){
     if (i == 1) {
-      write(DMI_ABSTRACTAUTO, 1 << DMI_ABSTRACTAUTO_AUTOEXECDATA_OFFSET);
+      write(DM_ABSTRACTAUTO, 1 << DM_ABSTRACTAUTO_AUTOEXECDATA_OFFSET);
     }
     memcpy(data, curr, xlen/8);
     curr += xlen/8;
     if (xlen == 64) {
-      write(DMI_DATA0 + 1, data[1]);
+      write(DM_DATA0 + 1, data[1]);
     }
-    write(DMI_DATA0, data[0]); //Triggers a command w/ autoexec.
+    write(DM_DATA0, data[0]); //Triggers a command w/ autoexec.
     
     do {
-      abstractcs = read(DMI_ABSTRACTCS);
-    } while (abstractcs & DMI_ABSTRACTCS_BUSY);
-    if ( get_field(abstractcs, DMI_ABSTRACTCS_CMDERR)) {
-      die(get_field(abstractcs, DMI_ABSTRACTCS_CMDERR));
+      abstractcs = read(DM_ABSTRACTCS);
+    } while (abstractcs & DM_ABSTRACTCS_BUSY);
+    if ( get_field(abstractcs, DM_ABSTRACTCS_CMDERR)) {
+      die(get_field(abstractcs, DM_ABSTRACTCS_CMDERR));
     }
   }
   if ((len * 8 / xlen) > 1) {
-    write(DMI_ABSTRACTAUTO, 0);
+    write(DM_ABSTRACTAUTO, 0);
   }
   
   restore_reg(S0, s0);
@@ -359,7 +356,7 @@ void dtm_t::die(uint32_t cmderr)
   //throw std::runtime_error("Debug Abstract Command Error #" + std::to_string(cmderr) + "(" +  msg + ")");
   printf("ERROR: %s:%d, Debug Abstract Command Error #%d (%s)", __FILE__, __LINE__, cmderr, msg);
   printf("ERROR: %s:%d, Should die, but allowing simulation to continue and fail.", __FILE__, __LINE__);
-  write(DMI_ABSTRACTCS, DMI_ABSTRACTCS_CMDERR);
+  write(DM_ABSTRACTCS, DM_ABSTRACTCS_CMDERR);
 
 }
 
@@ -457,9 +454,9 @@ uint64_t dtm_t::modify_csr(unsigned which, uint64_t data, uint32_t type)
   
   RUN_AC_OR_DIE(command, prog, sizeof(prog) / sizeof(*prog), adata, xlen/(4*8));
   
-  uint64_t res = read(DMI_DATA0);//adata[0];
+  uint64_t res = read(DM_DATA0);//adata[0];
   if (xlen == 64)
-    res |= read(DMI_DATA0 + 1);//((uint64_t) adata[1]) << 32;
+    res |= read(DM_DATA0 + 1);//((uint64_t) adata[1]) << 32;
   
   resume(current_hart);
   return res;  
@@ -489,13 +486,13 @@ uint32_t dtm_t::get_xlen()
     abort();
     return 128;
   }
-  write(DMI_ABSTRACTCS, DMI_ABSTRACTCS_CMDERR);
+  write(DM_ABSTRACTCS, DM_ABSTRACTCS_CMDERR);
 
   cmderr = run_abstract_command(command | AC_AR_SIZE(64), prog, 0, data, 0);
   if (cmderr == 0){
     return 64;
   }
-  write(DMI_ABSTRACTCS, DMI_ABSTRACTCS_CMDERR);
+  write(DM_ABSTRACTCS, DM_ABSTRACTCS_CMDERR);
 
   cmderr = run_abstract_command(command | AC_AR_SIZE(32), prog, 0, data, 0);
   if (cmderr == 0){
@@ -544,7 +541,7 @@ void dtm_t::reset()
   // In theory any hart can handle the memory accesses,
   // this will enforce that hart 0 handles them.
   select_hart(0);
-  read(DMI_DMSTATUS);
+  read(DM_DMSTATUS);
 } 
 
 void dtm_t::idle()
@@ -559,23 +556,23 @@ void dtm_t::producer_thread()
   // depend on in this code.
 
   // Enable the debugger.
-  write(DMI_DMCONTROL, DMI_DMCONTROL_DMACTIVE);
+  write(DM_DMCONTROL, DM_DMCONTROL_DMACTIVE);
   // Poll until the debugger agrees it's enabled.
-  while ((read(DMI_DMCONTROL) & DMI_DMCONTROL_DMACTIVE) == 0) ;
+  while ((read(DM_DMCONTROL) & DM_DMCONTROL_DMACTIVE) == 0) ;
     
   // These are checked every time we run an abstract command.
-  uint32_t abstractcs = read(DMI_ABSTRACTCS);
-  ram_words = get_field(abstractcs, DMI_ABSTRACTCS_PROGSIZE);
-  data_words = get_field(abstractcs, DMI_ABSTRACTCS_DATACOUNT);
+  uint32_t abstractcs = read(DM_ABSTRACTCS);
+  ram_words = get_field(abstractcs, DM_ABSTRACTCS_PROGBUFSIZE);
+  data_words = get_field(abstractcs, DM_ABSTRACTCS_DATACOUNT);
 
   // These things are only needed for the 'modify_csr' function.
   // That could be re-written to not use these at some performance
   // overhead.
-  uint32_t hartinfo = read(DMI_HARTINFO);
-  assert(get_field(hartinfo, DMI_HARTINFO_NSCRATCH) > 0);
-  assert(get_field(hartinfo, DMI_HARTINFO_DATAACCESS));
+  uint32_t hartinfo = read(DM_HARTINFO);
+  assert(get_field(hartinfo, DM_HARTINFO_NSCRATCH) > 0);
+  assert(get_field(hartinfo, DM_HARTINFO_DATAACCESS));
 
-  data_base = get_field(hartinfo, DMI_HARTINFO_DATAADDR);
+  data_base = get_field(hartinfo, DM_HARTINFO_DATAADDR);
   
   num_harts = enumerate_harts();
   halt(0);

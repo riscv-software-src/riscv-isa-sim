@@ -1,1 +1,1 @@
-WRITE_RD(MMU.load_uint8(RS1 + insn.i_imm()));
+WRITE_RD(MMU.load<uint8_t>(RS1 + insn.i_imm()));

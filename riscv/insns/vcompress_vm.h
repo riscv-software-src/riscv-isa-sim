@@ -1,4 +1,5 @@
 // vcompress vd, vs2, vs1
+require(P.any_vector_extensions());
 require(P.VU.vstart->read() == 0);
 require_align(insn.rd(), P.VU.vflmul);
 require_align(insn.rs2(), P.VU.vflmul);
@@ -30,4 +31,4 @@ VI_GENERAL_LOOP_BASE
 
     ++pos;
   }
-VI_LOOP_END;
+VI_LOOP_END_BASE;

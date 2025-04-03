@@ -7,73 +7,48 @@ riscv_subproject_deps = \
 	fesvr \
 	softfloat \
 
-riscv_CFLAGS = -fPIC
+riscv_CFLAGS = -fPIC -I$(src_dir)/fdt
 
 riscv_install_shared_lib = yes
 
-riscv_install_prog_srcs = \
+riscv_install_pcs = yes
 
-riscv_hdrs = \
-	abstract_device.h \
-	common.h \
-	decode.h \
-	devices.h \
-	dts.h \
-	isa_parser.h \
-	mmu.h \
-	cfg.h \
-	processor.h \
-	p_ext_macros.h \
-	v_ext_macros.h \
-	sim.h \
-	simif.h \
-	trap.h \
-	encoding.h \
-	cachesim.h \
-	memtracer.h \
-	mmio_plugin.h \
-	tracer.h \
-	extension.h \
-	rocc.h \
-	insn_template.h \
-	debug_module.h \
-	debug_rom_defines.h \
-	remote_bitbang.h \
-	jtag_dtm.h \
-	csrs.h \
-	triggers.h \
+riscv_install_prog_srcs = \
 
 riscv_install_hdrs = \
 	abstract_device.h \
+	abstract_interrupt_controller.h \
 	cachesim.h \
 	cfg.h \
 	common.h \
 	csrs.h \
+	debug_defines.h \
 	debug_module.h \
 	debug_rom_defines.h \
 	decode.h \
 	devices.h \
+	disasm.h \
+	dts.h \
 	encoding.h \
 	entropy_source.h \
+	extension.h \
 	isa_parser.h \
 	log_file.h \
 	memtracer.h \
-	mmio_plugin.h \
 	mmu.h \
-	p_ext_macros.h \
 	platform.h \
 	processor.h \
+	rocc.h \
 	sim.h \
 	simif.h \
 	trap.h \
 	triggers.h \
-	v_ext_macros.h \
+	vector_unit.h \
 
 riscv_precompiled_hdrs = \
 	insn_template.h \
 
 riscv_srcs = \
-	isa_parser.cc \
 	processor.cc \
 	execute.cc \
 	dts.cc \
@@ -87,14 +62,21 @@ riscv_srcs = \
 	devices.cc \
 	rom.cc \
 	clint.cc \
+	plic.cc \
+	ns16550.cc \
 	debug_module.cc \
 	remote_bitbang.cc \
 	jtag_dtm.cc \
 	csrs.cc \
+	csr_init.cc \
 	triggers.cc \
+	vector_unit.cc \
+	socketif.cc \
+	cfg.cc \
 	$(riscv_gen_srcs) \
 
-riscv_test_srcs =
+riscv_test_srcs = \
+  check-opcode-overlap.t.cc \
 
 riscv_gen_hdrs = \
 	insn_list.h \
@@ -201,6 +183,8 @@ riscv_insn_ext_c = \
 	c_jr \
 	c_li \
 	c_lui \
+	c_ld \
+	c_ldsp \
 	c_lw \
 	c_lwsp \
 	c_mv \
@@ -210,6 +194,8 @@ riscv_insn_ext_c = \
 	c_srli \
 	c_sub \
 	c_subw \
+	c_sd \
+	c_sdsp \
 	c_sw \
 	c_swsp \
 	c_xor \
@@ -261,6 +247,15 @@ riscv_insn_ext_f = \
 	fsub_s \
 	fsw \
 
+riscv_insn_ext_f_zfa= \
+	fli_s \
+	fmaxm_s \
+	fminm_s \
+	fround_s \
+	froundnx_s \
+	fleq_s \
+	fltq_s
+
 riscv_insn_ext_d = \
 	fadd_d \
 	fclass_d \
@@ -295,6 +290,18 @@ riscv_insn_ext_d = \
 	fsgnjx_d \
 	fsqrt_d \
 	fsub_d \
+
+riscv_insn_ext_d_zfa = \
+	fli_d \
+	fmaxm_d \
+	fminm_d \
+	fround_d \
+	froundnx_d \
+	fmvh_x_d \
+	fmvp_d_x \
+	fcvtmod_w_d \
+	fleq_d \
+	fltq_d
 
 riscv_insn_ext_zfh = \
 	fadd_h \
@@ -334,6 +341,15 @@ riscv_insn_ext_zfh = \
 	fsqrt_h \
 	fsub_h \
 
+riscv_insn_ext_zfh_zfa = \
+	fli_h \
+	fmaxm_h \
+	fminm_h \
+	fround_h \
+	froundnx_h \
+	fleq_h \
+	fltq_h
+
 riscv_insn_ext_q = \
 	fadd_q \
 	fclass_q \
@@ -367,18 +383,20 @@ riscv_insn_ext_q = \
 	fsqrt_q \
 	fsub_q \
 
+riscv_insn_ext_q_zfa = \
+	fli_q \
+	fmaxm_q \
+	fminm_q \
+	fround_q \
+	froundnx_q \
+	fmvh_x_q \
+	fmvp_q_x \
+	fleq_q \
+	fltq_q
+
 riscv_insn_ext_b = \
 	add_uw \
 	andn \
-	bdecompress \
-	bdecompressw \
-	bcompress \
-	bcompressw \
-	bfp \
-	bfpw \
-	bmatflip \
-	bmator \
-	bmatxor \
 	sh1add \
 	sh1add_uw \
 	sh2add \
@@ -390,32 +408,10 @@ riscv_insn_ext_b = \
 	clmulr \
 	clz \
 	clzw \
-	cmix \
-	cmov \
-	crc32_b \
-	crc32c_b \
-	crc32c_d \
-	crc32c_h \
-	crc32c_w \
-	crc32_d \
-	crc32_h \
-	crc32_w \
 	ctz \
 	ctzw \
-	fsl \
-	fslw \
-	fsr \
-	fsri \
-	fsriw \
-	fsrw \
-	gorc \
 	gorci \
-	gorciw \
-	gorcw \
-	grev \
 	grevi \
-	greviw \
-	grevw \
 	max \
 	maxu \
 	min \
@@ -423,8 +419,6 @@ riscv_insn_ext_b = \
 	orn \
 	pack \
 	packh \
-	packu \
-	packuw \
 	packw \
 	cpop \
 	cpopw \
@@ -444,26 +438,12 @@ riscv_insn_ext_b = \
 	bseti \
 	sext_b \
 	sext_h \
-	shfl \
 	shfli \
-	shflw \
 	slli_uw \
-	slo \
-	sloi \
-	sloiw \
-	slow \
-	sro \
-	sroi \
-	sroiw \
-	srow \
-	unshfl \
 	unshfli \
-	unshflw \
 	xnor \
 	xperm4 \
 	xperm8 \
-	xperm16 \
-	xperm32 \
 
 # Scalar Crypto ISE
 riscv_insn_ext_k = \
@@ -819,44 +799,6 @@ riscv_insn_ext_v_alu_fp = \
 	vmfne_vf \
 	vmfne_vv \
 
-riscv_insn_ext_v_amo = \
-	vamoswapei8_v \
-	vamoaddei8_v \
-	vamoandei8_v \
-	vamomaxei8_v \
-	vamomaxuei8_v \
-	vamominei8_v \
-	vamominuei8_v \
-	vamoorei8_v \
-	vamoxorei8_v \
-	vamoswapei16_v \
-	vamoaddei16_v \
-	vamoandei16_v \
-	vamomaxei16_v \
-	vamomaxuei16_v \
-	vamominei16_v \
-	vamominuei16_v \
-	vamoorei16_v \
-	vamoxorei16_v \
-	vamoswapei32_v \
-	vamoaddei32_v \
-	vamoandei32_v \
-	vamomaxei32_v \
-	vamomaxuei32_v \
-	vamominei32_v \
-	vamominuei32_v \
-	vamoorei32_v \
-	vamoxorei32_v \
-	vamoswapei64_v \
-	vamoaddei64_v \
-	vamoandei64_v \
-	vamomaxei64_v \
-	vamomaxuei64_v \
-	vamominei64_v \
-	vamominuei64_v \
-	vamoorei64_v \
-	vamoxorei64_v \
-
 riscv_insn_ext_v_ldst = \
 	vlm_v \
 	vle8_v \
@@ -922,12 +864,21 @@ riscv_insn_ext_v_ctrl = \
 	vsetvli \
 	vsetvl \
 
+riscv_insn_ext_zvqdotq = \
+	vqdot_vv \
+	vqdot_vx \
+	vqdotu_vv \
+	vqdotu_vx \
+	vqdotsu_vv \
+	vqdotsu_vx \
+	vqdotus_vx \
+
 riscv_insn_ext_v = \
 	$(riscv_insn_ext_v_alu_fp) \
 	$(riscv_insn_ext_v_alu_int) \
-	$(riscv_insn_ext_v_amo) \
 	$(riscv_insn_ext_v_ctrl) \
 	$(riscv_insn_ext_v_ldst) \
+	$(riscv_insn_ext_zvqdotq) \
 
 riscv_insn_ext_h = \
 	hfence_gvma \
@@ -946,336 +897,6 @@ riscv_insn_ext_h = \
 	hsv_w \
 	hsv_d \
 
-riscv_insn_ext_p_simd = \
-	add16 \
-	radd16 \
-	uradd16 \
-	kadd16 \
-	ukadd16 \
-	sub16 \
-	rsub16 \
-	ursub16 \
-	ksub16 \
-	uksub16 \
-	cras16 \
-	rcras16 \
-	urcras16 \
-	kcras16 \
-	ukcras16 \
-	crsa16 \
-	rcrsa16 \
-	urcrsa16 \
-	kcrsa16 \
-	ukcrsa16 \
-	stas16 \
-	rstas16 \
-	urstas16 \
-	kstas16 \
-	ukstas16 \
-	stsa16 \
-	rstsa16 \
-	urstsa16 \
-	kstsa16 \
-	ukstsa16 \
-	add8 \
-	radd8 \
-	uradd8 \
-	kadd8 \
-	ukadd8 \
-	sub8 \
-	rsub8 \
-	ursub8 \
-	ksub8 \
-	uksub8 \
-	sra16 \
-	srai16 \
-	sra16_u \
-	srai16_u \
-	srl16 \
-	srli16 \
-	srl16_u \
-	srli16_u \
-	sll16 \
-	slli16 \
-	ksll16 \
-	kslli16 \
-	kslra16 \
-	kslra16_u \
-	sra8 \
-	srai8 \
-	sra8_u \
-	srai8_u \
-	srl8 \
-	srli8 \
-	srl8_u \
-	srli8_u \
-	sll8 \
-	slli8 \
-	ksll8 \
-	kslli8 \
-	kslra8 \
-	kslra8_u \
-	cmpeq16 \
-	scmplt16 \
-	scmple16 \
-	ucmplt16 \
-	ucmple16 \
-	cmpeq8 \
-	scmplt8 \
-	scmple8 \
-	ucmplt8 \
-	ucmple8 \
-	smul16 \
-	smulx16 \
-	umul16 \
-	umulx16 \
-	khm16 \
-	khmx16 \
-	smul8 \
-	smulx8 \
-	umul8 \
-	umulx8 \
-	khm8 \
-	khmx8 \
-	smin16 \
-	umin16 \
-	smax16 \
-	umax16 \
-	sclip16 \
-	uclip16 \
-	kabs16 \
-	clrs16 \
-	clz16 \
-	smin8 \
-	umin8 \
-	smax8 \
-	umax8 \
-	sclip8 \
-	uclip8 \
-	kabs8 \
-	clrs8 \
-	clz8 \
-	sunpkd810 \
-	sunpkd820 \
-	sunpkd830 \
-	sunpkd831 \
-	sunpkd832 \
-	zunpkd810 \
-	zunpkd820 \
-	zunpkd830 \
-	zunpkd831 \
-	zunpkd832 \
-
-riscv_insn_ext_p_partial_simd = \
-	pkbb16 \
-	pkbt16 \
-	pktb16 \
-	pktt16 \
-	smmul \
-	smmul_u \
-	kmmac \
-	kmmac_u \
-	kmmsb \
-	kmmsb_u \
-	kwmmul \
-	kwmmul_u \
-	smmwb \
-	smmwb_u \
-	smmwt \
-	smmwt_u \
-	kmmawb \
-	kmmawb_u \
-	kmmawt \
-	kmmawt_u \
-	kmmwb2 \
-	kmmwb2_u \
-	kmmwt2 \
-	kmmwt2_u \
-	kmmawb2 \
-	kmmawb2_u \
-	kmmawt2 \
-	kmmawt2_u \
-	smbb16 \
-	smbt16 \
-	smtt16 \
-	kmda \
-	kmxda \
-	smds \
-	smdrs \
-	smxds \
-	kmabb \
-	kmabt \
-	kmatt \
-	kmada \
-	kmaxda \
-	kmads \
-	kmadrs \
-	kmaxds \
-	kmsda \
-	kmsxda \
-	smal \
-	sclip32 \
-	uclip32 \
-	clrs32 \
-	pbsad \
-	pbsada \
-	smaqa \
-	umaqa \
-	smaqa_su \
-
-riscv_insn_ext_p_64_bit_profile = \
-	add64 \
-	radd64 \
-	uradd64 \
-	kadd64 \
-	ukadd64 \
-	sub64 \
-	rsub64 \
-	ursub64 \
-	ksub64 \
-	uksub64 \
-	smar64 \
-	smsr64 \
-	umar64 \
-	umsr64 \
-	kmar64 \
-	kmsr64 \
-	ukmar64 \
-	ukmsr64 \
-	smalbb \
-	smalbt \
-	smaltt \
-	smalda \
-	smalxda \
-	smalds \
-	smaldrs \
-	smalxds \
-	smslda \
-	smslxda \
-
-riscv_insn_ext_p_non_simd = \
-	kaddh \
-	ksubh \
-	khmbb \
-	khmbt \
-	khmtt \
-	ukaddh \
-	uksubh \
-	kaddw \
-	ukaddw \
-	ksubw \
-	uksubw \
-	kdmbb \
-	kdmbt \
-	kdmtt \
-	kslraw \
-	kslraw_u \
-	ksllw \
-	kslliw \
-	kdmabb \
-	kdmabt \
-	kdmatt \
-	kabsw \
-	raddw \
-	uraddw \
-	rsubw \
-	ursubw \
-	mulr64 \
-	mulsr64 \
-	msubr32 \
-	ave \
-	sra_u \
-	srai_u \
-	insb \
-	maddr32 \
-
-riscv_insn_ext_p_rv64_only = \
-	add32 \
-	radd32 \
-	uradd32 \
-	kadd32 \
-	ukadd32 \
-	sub32 \
-	rsub32 \
-	ursub32 \
-	ksub32 \
-	uksub32 \
-	cras32 \
-	rcras32 \
-	urcras32 \
-	kcras32 \
-	ukcras32 \
-	crsa32 \
-	rcrsa32 \
-	urcrsa32 \
-	kcrsa32 \
-	ukcrsa32 \
-	stas32 \
-	rstas32 \
-	urstas32 \
-	kstas32 \
-	ukstas32 \
-	stsa32 \
-	rstsa32 \
-	urstsa32 \
-	kstsa32 \
-	ukstsa32 \
-	sra32 \
-	srai32 \
-	sra32_u \
-	srai32_u \
-	srl32 \
-	srli32 \
-	srl32_u \
-	srli32_u \
-	sll32 \
-	slli32 \
-	ksll32 \
-	kslli32 \
-	kslra32 \
-	kslra32_u \
-	smin32 \
-	umin32 \
-	smax32 \
-	umax32 \
-	kabs32 \
-	khmbb16 \
-	khmbt16 \
-	khmtt16 \
-	kdmbb16 \
-	kdmbt16 \
-	kdmtt16 \
-	kdmabb16 \
-	kdmabt16 \
-	kdmatt16 \
-	smbt32 \
-	smtt32 \
-	kmabb32 \
-	kmabt32 \
-	kmatt32 \
-	kmda32 \
-	kmxda32 \
-	kmaxda32 \
-	kmads32 \
-	kmadrs32 \
-	kmaxds32 \
-	kmsda32 \
-	kmsxda32 \
-	smds32 \
-	smdrs32 \
-	smxds32 \
-	sraiw_u \
-	pkbt32 \
-	pktb32 \
-	clz32 \
-
-riscv_insn_ext_p = \
-	$(riscv_insn_ext_p_simd) \
-	$(riscv_insn_ext_p_partial_simd) \
-	$(riscv_insn_ext_p_64_bit_profile) \
-	$(riscv_insn_ext_p_non_simd) \
-	$(riscv_insn_ext_p_rv64_only) \
-
 riscv_insn_priv = \
 	csrrc \
 	csrrci \
@@ -1291,6 +912,9 @@ riscv_insn_priv = \
 	sret \
 	wfi \
 
+riscv_insn_smrnmi = \
+	mnret \
+
 riscv_insn_svinval = \
 	sfence_w_inval \
 	sfence_inval_ir \
@@ -1298,32 +922,225 @@ riscv_insn_svinval = \
 	hinval_vvma \
 	hinval_gvma \
 
+riscv_insn_ext_zcb = \
+	c_zext_b \
+	c_zext_h \
+	c_zext_w \
+	c_sext_b \
+	c_sext_h \
+	c_not \
+	c_mul \
+	c_lbu \
+	c_lhu \
+	c_lh \
+	c_sb \
+	c_sh \
+
+riscv_insn_ext_zcmp = \
+	cm_push \
+	cm_pop \
+	cm_popret \
+	cm_popretz \
+	cm_mva01s \
+	cm_mvsa01 \
+
+riscv_insn_ext_zcmt = \
+	cm_jalt \
+
+riscv_insn_ext_zce = \
+	$(riscv_insn_ext_zcb) \
+	$(riscv_insn_ext_zcmp) \
+	$(riscv_insn_ext_zcmt) \
+
 riscv_insn_ext_cmo = \
 	cbo_clean \
 	cbo_flush \
 	cbo_inval \
 	cbo_zero \
 
+riscv_insn_ext_zicond = \
+	czero_eqz \
+	czero_nez \
+
+riscv_insn_ext_zfbfmin = \
+	fcvt_bf16_s \
+	fcvt_s_bf16 \
+
+riscv_insn_ext_zvfbfmin = \
+	vfncvtbf16_f_f_w \
+	vfwcvtbf16_f_f_v \
+
+riscv_insn_ext_zvfbfwma = \
+	vfwmaccbf16_vv \
+	vfwmaccbf16_vf \
+
+riscv_insn_ext_bf16 = \
+	$(riscv_insn_ext_zfbfmin) \
+	$(riscv_insn_ext_zvfbfmin) \
+	$(riscv_insn_ext_zvfbfwma) \
+
+riscv_insn_ext_zacas = \
+	amocas_w \
+	amocas_d \
+	$(if $(HAVE_INT128),amocas_q)
+
+riscv_insn_ext_zabha = \
+	amoadd_b \
+	amoand_b \
+	amomax_b \
+	amomaxu_b \
+	amomin_b \
+	amominu_b \
+	amoor_b \
+	amoswap_b \
+	amoxor_b \
+	amocas_b \
+	amoadd_h \
+	amoand_h \
+	amomax_h \
+	amomaxu_h \
+	amomin_h \
+	amominu_h \
+	amoor_h \
+	amoswap_h \
+	amoxor_h \
+	amocas_h \
+
+riscv_insn_ext_zawrs = \
+	wrs_sto \
+	wrs_nto \
+
+riscv_insn_ext_zalasr = \
+	lb_aq \
+	lh_aq \
+	lw_aq \
+	ld_aq \
+	sb_rl \
+	sh_rl \
+	sw_rl \
+	sd_rl \
+
+riscv_insn_ext_zvbb = \
+	vandn_vv \
+	vandn_vx \
+	vbrev8_v \
+	vbrev_v \
+	vclz_v \
+	vcpop_v \
+	vctz_v \
+	vrev8_v \
+	vrol_vv \
+	vrol_vx \
+	vror_vi \
+	vror_vv \
+	vror_vx \
+	vwsll_vi \
+	vwsll_vv \
+	vwsll_vx \
+
+riscv_insn_ext_zvbc = \
+	vclmul_vv \
+	vclmul_vx \
+	vclmulh_vv \
+	vclmulh_vx \
+
+riscv_insn_ext_zvkg= \
+	vghsh_vv \
+	vgmul_vv \
+
+riscv_insn_ext_zvkned = \
+	vaesdf_vs \
+	vaesdf_vv \
+	vaesdm_vs \
+	vaesdm_vv \
+	vaesef_vs \
+	vaesef_vv \
+	vaesem_vs \
+	vaesem_vv \
+	vaeskf1_vi \
+	vaeskf2_vi \
+	vaesz_vs \
+
+# Covers both Zvknha and Zvkhnb.
+riscv_insn_ext_zvknh = \
+	vsha2cl_vv \
+	vsha2ch_vv \
+	vsha2ms_vv \
+
+riscv_insn_ext_zvksed = \
+	vsm4k_vi \
+	vsm4r_vs \
+	vsm4r_vv \
+
+riscv_insn_ext_zvksh = \
+	vsm3c_vi \
+	vsm3me_vv \
+
+riscv_insn_ext_zimop = \
+	mop_r_N \
+	mop_rr_N \
+
+riscv_insn_ext_zcmop = \
+	c_mop_N \
+
+riscv_insn_ext_zicfilp = \
+	lpad
+
+riscv_insn_ext_zicfiss = \
+	sspush_x1 \
+	sspush_x5 \
+	sspopchk_x1 \
+	sspopchk_x5 \
+	ssrdp \
+	ssamoswap_w \
+	ssamoswap_d \
+	c_sspush_x1 \
+	c_sspopchk_x5 \
+
+riscv_insn_ext_zvk = \
+	$(riscv_insn_ext_zvbb) \
+	$(riscv_insn_ext_zvbc) \
+	$(riscv_insn_ext_zvkg) \
+	$(riscv_insn_ext_zvkned) \
+	$(riscv_insn_ext_zvknh) \
+	$(riscv_insn_ext_zvksed) \
+	$(riscv_insn_ext_zvksh) \
+
 riscv_insn_list = \
-	$(riscv_insn_ext_a) \
-	$(riscv_insn_ext_c) \
 	$(riscv_insn_ext_i) \
-	$(riscv_insn_ext_m) \
+	$(riscv_insn_ext_c) \
 	$(riscv_insn_ext_f) \
 	$(riscv_insn_ext_d) \
-	$(riscv_insn_ext_zfh) \
-	$(riscv_insn_ext_q) \
+	$(riscv_insn_ext_m) \
 	$(riscv_insn_ext_b) \
-    $(riscv_insn_ext_k) \
+	$(riscv_insn_ext_a) \
 	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
-	$(riscv_insn_ext_h) \
-	$(riscv_insn_ext_p) \
-	$(riscv_insn_priv) \
-	$(riscv_insn_svinval) \
+	$(riscv_insn_ext_bf16) \
 	$(riscv_insn_ext_cmo) \
+	$(riscv_insn_ext_d_zfa) \
+	$(riscv_insn_ext_f_zfa) \
+	$(riscv_insn_ext_h) \
+	$(riscv_insn_ext_k) \
+	$(riscv_insn_ext_q) \
+	$(riscv_insn_ext_q_zfa) \
+	$(riscv_insn_ext_zacas) \
+	$(riscv_insn_ext_zabha) \
+	$(riscv_insn_ext_zawrs) \
+	$(riscv_insn_ext_zalasr) \
+	$(riscv_insn_ext_zce) \
+	$(riscv_insn_ext_zfh) \
+	$(riscv_insn_ext_zfh_zfa) \
+	$(riscv_insn_ext_zicond) \
+	$(riscv_insn_ext_zvk) \
+	$(riscv_insn_priv) \
+	$(riscv_insn_smrnmi) \
+	$(riscv_insn_svinval) \
+	$(riscv_insn_ext_zimop) \
+	$(riscv_insn_ext_zcmop) \
+	$(riscv_insn_ext_zicfilp) \
+	$(riscv_insn_ext_zicfiss) \
 
-riscv_gen_srcs = \
-	$(addsuffix .cc,$(riscv_insn_list))
+riscv_gen_srcs = $(addsuffix .cc,$(riscv_insn_list))
 
 insn_list.h: $(src_dir)/riscv/riscv.mk.in
 	for insn in $(foreach insn,$(riscv_insn_list),$(subst .,_,$(insn))) ; do \

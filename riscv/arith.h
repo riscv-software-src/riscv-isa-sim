@@ -7,6 +7,7 @@
 #include <cstdint>
 #include <climits>
 #include <cstddef>
+#include <type_traits>
 
 inline uint64_t mulhu(uint64_t a, uint64_t b)
 {
@@ -20,7 +21,6 @@ inline uint64_t mulhu(uint64_t a, uint64_t b)
   y2 = t >> 32;
 
   t = a0*b1 + y1;
-  y1 = t;
 
   t = a1*b1 + y2 + (t >> 32);
   y2 = t;
@@ -32,15 +32,15 @@ inline uint64_t mulhu(uint64_t a, uint64_t b)
 inline int64_t mulh(int64_t a, int64_t b)
 {
   int negate = (a < 0) != (b < 0);
-  uint64_t res = mulhu(a < 0 ? -a : a, b < 0 ? -b : b);
-  return negate ? ~res + (a * b == 0) : res;
+  uint64_t res = mulhu(a < 0 ? -(uint64_t)a : a, b < 0 ? -(uint64_t)b : b);
+  return negate ? ~res + ((uint64_t)a * (uint64_t)b == 0) : res;
 }
 
 inline int64_t mulhsu(int64_t a, uint64_t b)
 {
   int negate = a < 0;
-  uint64_t res = mulhu(a < 0 ? -a : a, b);
-  return negate ? ~res + (a * b == 0) : res;
+  uint64_t res = mulhu(a < 0 ? -(uint64_t)a : a, b);
+  return negate ? ~res + ((uint64_t)a * b == 0) : res;
 }
 
 //ref:  https://locklessinc.com/articles/sat_arithmetic/
@@ -188,6 +188,15 @@ static inline int clz(uint64_t val)
   return res;
 }
 
+// Count number of contiguous 1 bits starting from the LSB.
+static inline int cto(uint64_t val)
+{
+  int res = 0;
+  while ((val & 1) == 1)
+    val >>= 1, res++;
+  return res;
+}
+
 static inline int log2(uint64_t val)
 {
   if (!val)
@@ -211,6 +220,26 @@ static inline uint64_t xperm(uint64_t rs1, uint64_t rs2, size_t sz_log2, size_t 
   }
 
   return r;
+}
+
+// Rotates right an unsigned integer by the given number of bits.
+template <typename T>
+static inline T rotate_right(T x, std::size_t shiftamt) {
+  static_assert(std::is_unsigned<T>::value);
+  static constexpr T mask = (8 * sizeof(T)) - 1;
+  const std::size_t rshift = shiftamt & mask;
+  const std::size_t lshift = (-rshift) & mask;
+  return (x << lshift) | (x >> rshift);
+}
+
+// Rotates right an unsigned integer by the given number of bits.
+template <typename T>
+static inline T rotate_left(T x, std::size_t shiftamt) {
+  static_assert(std::is_unsigned<T>::value);
+  static constexpr T mask = (8 * sizeof(T)) - 1;
+  const std::size_t lshift = shiftamt & mask;
+  const std::size_t rshift = (-lshift) & mask;
+  return (x << lshift) | (x >> rshift);
 }
 
 #endif
