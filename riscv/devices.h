@@ -24,8 +24,6 @@ class bus_t : public abstract_device_t {
   std::pair<reg_t, abstract_device_t*> find_device(reg_t addr, size_t len);
 
  private:
-  std::pair<reg_t, abstract_device_t*> find_device(reg_t addr);
-
   std::map<reg_t, abstract_device_t*> devices;
 };
 

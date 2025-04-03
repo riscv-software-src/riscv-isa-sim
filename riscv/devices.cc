@@ -55,26 +55,26 @@ reg_t bus_t::size()
   return 0;
 }
 
-std::pair<reg_t, abstract_device_t*> bus_t::find_device(reg_t addr)
-{
-  // Obtain iterator to device immediately after the one that might match
-  auto it = devices.upper_bound(addr);
-  if (devices.empty() || it == devices.begin()) {
-    // No devices with base address <= addr
-    return std::make_pair((reg_t)0, (abstract_device_t*)NULL);
-  }
-
-  // Rewind to device that will match if its size suffices
-  it--;
-
-  return std::make_pair(it->first, it->second);
-}
-
 std::pair<reg_t, abstract_device_t*> bus_t::find_device(reg_t addr, size_t len)
 {
-  if (auto [base, dev] = find_device(addr); addr - base + len - 1 < dev->size())
-    return std::make_pair(base, dev);
+  if (!len || addr + len - 1 < addr)
+    return std::make_pair(0, nullptr);
 
+  // Obtain iterator to device immediately after the one that might match
+  auto it_after = devices.upper_bound(addr);
+  reg_t base, size;
+  if (it_after != devices.begin()) {
+    // Obtain iterator to device that might match
+    auto it = std::prev(it_after);
+    base = it->first;
+    size = it->second->size();
+    if (addr - base + len - 1 < size) {
+      // it fully contains [addr, addr + len)
+      return std::make_pair(it->first, it->second);
+    }
+  }
+
+  // No matching device
   return std::make_pair(0, nullptr);
 }
 
