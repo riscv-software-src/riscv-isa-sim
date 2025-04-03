@@ -45,7 +45,6 @@ class abstract_mem_t : public abstract_device_t {
   virtual ~abstract_mem_t() = default;
 
   virtual char* contents(reg_t addr) = 0;
-  virtual reg_t size() = 0;
   virtual void dump(std::ostream& o) = 0;
 };
 
