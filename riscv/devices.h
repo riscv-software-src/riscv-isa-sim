@@ -21,10 +21,11 @@ class bus_t : public abstract_device_t {
   reg_t size() override;
   void add_device(reg_t addr, abstract_device_t* dev);
 
-  std::pair<reg_t, abstract_device_t*> find_device(reg_t addr);
   std::pair<reg_t, abstract_device_t*> find_device(reg_t addr, size_t len);
 
  private:
+  std::pair<reg_t, abstract_device_t*> find_device(reg_t addr);
+
   std::map<reg_t, abstract_device_t*> devices;
 };
 
