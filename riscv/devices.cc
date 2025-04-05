@@ -8,6 +8,18 @@ mmio_device_map_t& mmio_device_map()
   return device_map;
 }
 
+static auto empty_device = rom_device_t(std::vector<char>());
+
+bus_t::bus_t()
+  : bus_t(&empty_device)
+{
+}
+
+bus_t::bus_t(abstract_device_t* fallback)
+  : fallback(fallback)
+{
+}
+
 void bus_t::add_device(reg_t addr, abstract_device_t* dev)
 {
   // Allow empty devices by omitting them
@@ -74,8 +86,14 @@ std::pair<reg_t, abstract_device_t*> bus_t::find_device(reg_t addr, size_t len)
     }
   }
 
+  if ((it_after != devices.end() && addr + len - 1 >= it_after->first)
+      || (it_after != devices.begin() && addr - base < size)) {
+    // it_after or it contains part of, but not all of, [addr, add + len)
+    return std::make_pair(0, nullptr);
+  }
+
   // No matching device
-  return std::make_pair(0, nullptr);
+  return std::make_pair(0, fallback);
 }
 
 mem_t::mem_t(reg_t size)

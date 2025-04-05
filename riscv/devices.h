@@ -16,6 +16,11 @@ class simif_t;
 
 class bus_t : public abstract_device_t {
  public:
+  bus_t();
+
+  // the fallback device owns all addresses not owned by other devices
+  bus_t(abstract_device_t* fallback);
+
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
   reg_t size() override;
@@ -25,6 +30,7 @@ class bus_t : public abstract_device_t {
 
  private:
   std::map<reg_t, abstract_device_t*> devices;
+  abstract_device_t* fallback;
 };
 
 class rom_device_t : public abstract_device_t {
