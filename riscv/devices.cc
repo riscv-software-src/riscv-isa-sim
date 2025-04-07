@@ -69,25 +69,25 @@ reg_t bus_t::size()
 
 std::pair<reg_t, abstract_device_t*> bus_t::find_device(reg_t addr, size_t len)
 {
-  if (!len || addr + len - 1 < addr)
+  if (unlikely(!len || addr + len - 1 < addr))
     return std::make_pair(0, nullptr);
 
   // Obtain iterator to device immediately after the one that might match
   auto it_after = devices.upper_bound(addr);
   reg_t base, size;
-  if (it_after != devices.begin()) {
+  if (likely(it_after != devices.begin())) {
     // Obtain iterator to device that might match
     auto it = std::prev(it_after);
     base = it->first;
     size = it->second->size();
-    if (addr - base + len - 1 < size) {
+    if (likely(addr - base + len - 1 < size)) {
       // it fully contains [addr, addr + len)
       return std::make_pair(it->first, it->second);
     }
   }
 
-  if ((it_after != devices.end() && addr + len - 1 >= it_after->first)
-      || (it_after != devices.begin() && addr - base < size)) {
+  if (unlikely((it_after != devices.end() && addr + len - 1 >= it_after->first)
+      || (it_after != devices.begin() && addr - base < size))) {
     // it_after or it contains part of, but not all of, [addr, add + len)
     return std::make_pair(0, nullptr);
   }
