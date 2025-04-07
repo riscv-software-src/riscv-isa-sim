@@ -26,11 +26,11 @@ static reg_t do_nop4([[maybe_unused]] processor_t *p,
 
 // dummy extension that uses the same prefix as standard zba extension
 struct xslliuw_dummy_t : public extension_t {
-  const char *name() { return "dummyslliuw"; }
+  const char *name() const { return "dummyslliuw"; }
 
   xslliuw_dummy_t() {}
 
-  std::vector<insn_desc_t> get_instructions() {
+  std::vector<insn_desc_t> get_instructions(const processor_t &) {
     std::vector<insn_desc_t> insns;
     insns.push_back(insn_desc_t{MATCH_SLLI_UW, MASK_SLLI_UW, do_nop4, do_nop4,
                                 do_nop4, do_nop4, do_nop4, do_nop4, do_nop4,
@@ -38,7 +38,7 @@ struct xslliuw_dummy_t : public extension_t {
     return insns;
   }
 
-  std::vector<disasm_insn_t *> get_disasms() {
+  std::vector<disasm_insn_t *> get_disasms(const processor_t *) {
     std::vector<disasm_insn_t *> insns;
     insns.push_back(new disasm_insn_t("dummy_slliuw", MATCH_SLLI_UW,
                                       MASK_SLLI_UW, {&xrd, &xrs1, &shamt}));
