@@ -365,12 +365,10 @@ void processor_t::step(size_t n)
       in_wfi = true;
     }
 
-    if (!(state.mcountinhibit->read() & MCOUNTINHIBIT_IR))
-      state.minstret->bump(instret);
+    state.minstret->bump((state.mcountinhibit->read() & MCOUNTINHIBIT_IR) ? 0 : instret);
 
     // Model a hart whose CPI is 1.
-    if (!(state.mcountinhibit->read() & MCOUNTINHIBIT_CY))
-      state.mcycle->bump(instret);
+    state.mcycle->bump((state.mcountinhibit->read() & MCOUNTINHIBIT_CY) ? 0 : instret);
 
     n -= instret;
   }
