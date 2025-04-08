@@ -57,10 +57,6 @@ struct mem_access_info_t {
   const bool effective_virt;
   const xlate_flags_t flags;
   const access_type type;
-
-  mem_access_info_t split_misaligned_access(reg_t offset) const {
-    return {vaddr + offset, transformed_vaddr + offset, effective_priv, effective_virt, flags, type};
-  }
 };
 
 void throw_access_exception(bool virt, reg_t addr, access_type type);
@@ -291,8 +287,15 @@ public:
 
   template<typename T>
   T ALWAYS_INLINE fetch_jump_table(reg_t addr) {
-    auto tlb_entry = translate_insn_addr(addr);
-    return from_target(*(target_endian<T>*)(tlb_entry.host_offset + addr));
+    typedef std::remove_const<std::remove_pointer<decltype(translate_insn_addr_to_host(addr))>::type>::type U;
+    U parcels[sizeof(T) / sizeof(U)];
+
+    for (size_t i = 0; i < std::size(parcels); i++)
+      parcels[i] = *translate_insn_addr_to_host(addr + i * sizeof(U));
+
+    target_endian<T> res;
+    memcpy(&res, parcels, sizeof(T));
+    return from_target(res);
   }
 
   inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)

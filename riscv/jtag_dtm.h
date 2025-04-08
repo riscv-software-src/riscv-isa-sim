@@ -51,7 +51,9 @@ class jtag_dtm_t
 
     // abits must come before dtmcontrol so it can easily be used in the
     // constructor.
-    const unsigned abits = 6;
+    // From RISC-V Debug Spec (both 0.13.2 and 1.0):
+    // The DMI uses between 7 and 32 address bits.
+    const unsigned abits = 7;
     uint32_t dtmcontrol;
     uint64_t dmi;
     unsigned bypass;

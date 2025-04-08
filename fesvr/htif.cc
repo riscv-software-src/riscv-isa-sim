@@ -46,7 +46,7 @@ static void handle_signal(int sig)
 
 htif_t::htif_t()
   : mem(this), entry(DRAM_BASE), sig_addr(0), sig_len(0),
-    tohost_addr(0), fromhost_addr(0), exitcode(0), stopped(false),
+    tohost_addr(0), fromhost_addr(0), stopped(false),
     syscall_proxy(this)
 {
   signal(SIGINT, &handle_signal);
@@ -84,16 +84,20 @@ htif_t::~htif_t()
 
 void htif_t::start()
 {
-  if (!targs.empty() && targs[0] != "none") {
-    try {
-      load_program();
-    } catch (const incompat_xlen & err) {
-      fprintf(stderr, "Error: cannot execute %d-bit program on RV%d hart\n", err.actual_xlen, err.expected_xlen);
-      exit(1);
+  if (!targs.empty()) {
+    if (targs[0] != "none") {
+      try {
+        load_program();
+      } catch (const incompat_xlen & err) {
+        fprintf(stderr, "Error: cannot execute %d-bit program on RV%d hart\n", err.actual_xlen, err.expected_xlen);
+        exit(1);
+      }
+      reset();
+    } else {
+      auto empty_symbols = std::map<std::string, uint64_t>();
+      load_symbols(empty_symbols);
     }
   }
-
-  reset();
 }
 
 static void bad_address(const std::string& situation, reg_t addr)
@@ -116,7 +120,7 @@ std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload,
     else
       throw std::runtime_error(
         "could not open " + payload + "; searched paths:\n" +
-        "\t. (current directory)\n" + 
+        "\t. (current directory)\n" +
         "\t" + PREFIX TARGET_DIR + " (based on configured --prefix and --with-target)"
       );
   }
@@ -150,28 +154,8 @@ std::map<std::string, uint64_t> htif_t::load_payload(const std::string& payload,
   }
 }
 
-void htif_t::load_program()
+void htif_t::load_symbols(std::map<std::string, uint64_t>& symbols)
 {
-  std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry, load_offset);
-
-  if (symbols.count("tohost") && symbols.count("fromhost")) {
-    tohost_addr = symbols["tohost"];
-    fromhost_addr = symbols["fromhost"];
-  } else {
-    fprintf(stderr, "warning: tohost and fromhost symbols not in ELF; can't communicate with target\n");
-  }
-
-  // detect torture tests so we can print the memory signature at the end
-  if (symbols.count("begin_signature") && symbols.count("end_signature")) {
-    sig_addr = symbols["begin_signature"];
-    sig_len = symbols["end_signature"] - sig_addr;
-  }
-
-  for (auto payload : payloads) {
-    reg_t dummy_entry;
-    load_payload(payload, &dummy_entry, 0);
-  }
-
   class nop_memif_t : public memif_t {
    public:
     nop_memif_t(htif_t* htif) : memif_t(htif), htif(htif) {}
@@ -188,10 +172,35 @@ void htif_t::load_program()
     symbols.merge(other_symbols);
   }
 
+  // detect torture tests so we can print the memory signature at the end
+  if (symbols.count("begin_signature") && symbols.count("end_signature")) {
+    sig_addr = symbols["begin_signature"];
+    sig_len = symbols["end_signature"] - sig_addr;
+  }
+
+  if (symbols.count("tohost") && symbols.count("fromhost")) {
+    tohost_addr = symbols["tohost"];
+    fromhost_addr = symbols["fromhost"];
+  } else {
+    fprintf(stderr, "warning: tohost and fromhost symbols not in ELF; can't communicate with target\n");
+  }
+
   for (auto i : symbols) {
     auto it = addr2symbol.find(i.second);
     if ( it == addr2symbol.end())
       addr2symbol[i.second] = i.first;
+  }
+}
+
+void htif_t::load_program()
+{
+  std::map<std::string, uint64_t> symbols = load_payload(targs[0], &entry, load_offset);
+
+  load_symbols(symbols);
+
+  for (auto payload : payloads) {
+    reg_t dummy_entry;
+    load_payload(payload, &dummy_entry, 0);
   }
 
   return;
@@ -205,6 +214,14 @@ const char* htif_t::get_symbol(uint64_t addr)
       return nullptr;
 
   return it->second.c_str();
+}
+
+bool htif_t::should_exit() const {
+  return signal_exit || exitcode.has_value();
+}
+
+void htif_t::htif_exit(int exit_code) {
+  exitcode = exit_code;
 }
 
 void htif_t::stop()
@@ -253,11 +270,11 @@ int htif_t::run()
     std::bind(enq_func, &fromhost_queue, std::placeholders::_1);
 
   if (tohost_addr == 0) {
-    while (!signal_exit)
+    while (!should_exit())
       idle();
   }
 
-  while (!signal_exit && exitcode == 0)
+  while (!should_exit())
   {
     uint64_t tohost;
 
@@ -305,7 +322,7 @@ bool htif_t::done()
 
 int htif_t::exit_code()
 {
-  return exitcode >> 1;
+  return exitcode.value_or(0) >> 1;
 }
 
 void htif_t::parse_arguments(int argc, char ** argv)

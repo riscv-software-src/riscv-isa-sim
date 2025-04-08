@@ -78,12 +78,13 @@ static void help(int exit_code = 1)
       "required for a DMI access [default 0]\n");
   fprintf(stderr, "  --dm-abstract-rti=<n> Number of Run-Test/Idle cycles "
       "required for an abstract command to execute [default 0]\n");
-  fprintf(stderr, "  --dm-no-hasel         Debug module supports hasel\n");
+  fprintf(stderr, "  --dm-no-hasel         Debug module won't support hasel\n");
   fprintf(stderr, "  --dm-no-abstract-csr  Debug module won't support abstract CSR access\n");
   fprintf(stderr, "  --dm-no-abstract-fpr  Debug module won't support abstract FPR access\n");
   fprintf(stderr, "  --dm-no-halt-groups   Debug module won't support halt groups\n");
   fprintf(stderr, "  --dm-no-impebreak     Debug module won't support implicit ebreak in program buffer\n");
   fprintf(stderr, "  --blocksz=<size>      Cache block size (B) for CMO operations(powers of 2) [default 64]\n");
+  fprintf(stderr, "  --instructions=<n>    Stop after n instructions\n");
 
   exit(exit_code);
 }
@@ -338,6 +339,7 @@ int main(int argc, char** argv)
   bool use_rbb = false;
   unsigned dmi_rti = 0;
   reg_t blocksz = 64;
+  std::optional<unsigned long long> instructions;
   debug_module_config_t dm_config;
   cfg_arg_t<size_t> nprocs(1);
 
@@ -450,6 +452,9 @@ int main(int argc, char** argv)
       exit(-1);
     }
   });
+  parser.option(0, "instructions", 1, [&](const char* s){
+    instructions = strtoull(s, 0, 0);
+  });
 
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
@@ -511,7 +516,8 @@ int main(int argc, char** argv)
   sim_t s(&cfg, halted,
       mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
       socket,
-      cmd_file);
+      cmd_file,
+      instructions);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));

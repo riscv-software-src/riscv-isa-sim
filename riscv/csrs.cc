@@ -585,6 +585,7 @@ bool mnstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   // NMIE can be set but not cleared
   const reg_t mask = (~read() & MNSTATUS_NMIE)
                    | (proc->extension_enabled('H') ? MNSTATUS_MNPV : 0)
+                   | (proc->extension_enabled(EXT_ZICFILP) ? MNSTATUS_MNPELP : 0)
                    | MNSTATUS_MNPP;
 
   const reg_t requested_mnpp = proc->legalize_privilege(get_field(val, MNSTATUS_MNPP));

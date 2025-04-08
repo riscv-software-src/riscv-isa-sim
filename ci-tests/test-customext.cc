@@ -85,6 +85,7 @@ int main(int argc, char **argv) {
             true,     // dtb_enabled
             nullptr,  // dtb_file
             false,    // socket_enabled
-            nullptr); // cmd_file
+            nullptr,  // cmd_file
+            std::nullopt); // instruction_limit
   sim.run();
 }
