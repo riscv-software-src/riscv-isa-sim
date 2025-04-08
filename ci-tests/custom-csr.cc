@@ -20,15 +20,15 @@ class dummycsr_t: public csr_t {
 
 // dummy extension with dummy CSRs. Nice.
 struct xdummycsr_t : public extension_t {
-  const char *name() { return "dummycsr"; }
+  const char *name() const override { return "dummycsr"; }
 
   xdummycsr_t() {}
 
-  std::vector<insn_desc_t> get_instructions() override {
+  std::vector<insn_desc_t> get_instructions(const processor_t &) override {
     return {};
   }
 
-  std::vector<disasm_insn_t *> get_disasms() override {
+  std::vector<disasm_insn_t *> get_disasms(const processor_t *) override {
     return {};
   }
 

@@ -14,15 +14,15 @@
     u.i = insn; \
     reg_t xs1 = u.r.xs1 ? RS1 : -1; \
     reg_t xs2 = u.r.xs2 ? RS2 : -1; \
-    reg_t xd = rocc->custom##n(u.r, xs1, xs2); \
+    reg_t xd = rocc->custom##n(p, u.r, xs1, xs2); \
     if (u.r.xd) \
       WRITE_RD(xd); \
     return pc+4; \
   } \
   \
-  reg_t rocc_t::custom##n(rocc_insn_t UNUSED insn, reg_t UNUSED xs1, reg_t UNUSED xs2) \
+  reg_t rocc_t::custom##n(processor_t *p, rocc_insn_t UNUSED insn, reg_t UNUSED xs1, reg_t UNUSED xs2) \
   { \
-    illegal_instruction(); \
+    illegal_instruction(*p); \
     return 0; \
   }
 
@@ -31,7 +31,7 @@ customX(1)
 customX(2)
 customX(3)
 
-std::vector<insn_desc_t> rocc_t::get_instructions()
+std::vector<insn_desc_t> rocc_t::get_instructions(const processor_t &)
 {
   std::vector<insn_desc_t> insns;
   insns.push_back((insn_desc_t){0x0b, 0x7f,
@@ -49,7 +49,7 @@ std::vector<insn_desc_t> rocc_t::get_instructions()
   return insns;
 }
 
-std::vector<disasm_insn_t*> rocc_t::get_disasms()
+std::vector<disasm_insn_t *> rocc_t::get_disasms(const processor_t *)
 {
   std::vector<disasm_insn_t*> insns;
   return insns;
