@@ -542,10 +542,10 @@ class wide_counter_csr_t: public csr_t {
   void bump(const reg_t howmuch) noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
-  virtual reg_t written_value() const noexcept override;
  private:
   bool is_counting_enabled() const noexcept;
   reg_t val;
+  bool written;
   smcntrpmf_csr_t_p config_csr;
 };
 
