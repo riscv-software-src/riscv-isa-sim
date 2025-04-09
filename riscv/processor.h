@@ -341,8 +341,9 @@ public:
   void register_extension(extension_t*);
 
   // MMIO slave interface
-  bool load(reg_t addr, size_t len, uint8_t* bytes);
-  bool store(reg_t addr, size_t len, const uint8_t* bytes);
+  bool load(reg_t addr, size_t len, uint8_t* bytes) override;
+  bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
+  reg_t size() override;
 
   // When true, display disassembly of each instruction that's executed.
   bool debug;

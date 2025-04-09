@@ -406,10 +406,9 @@ void sim_t::set_rom()
 char* sim_t::addr_to_mem(reg_t paddr) {
   if (!paddr_ok(paddr))
     return NULL;
-  auto desc = bus.find_device(paddr);
+  auto desc = bus.find_device(paddr >> PGSHIFT << PGSHIFT, PGSIZE);
   if (auto mem = dynamic_cast<abstract_mem_t*>(desc.second))
-    if (paddr - desc.first < mem->size())
-      return mem->contents(paddr - desc.first);
+    return mem->contents(paddr - desc.first);
   return NULL;
 }
 

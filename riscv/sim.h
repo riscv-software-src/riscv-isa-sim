@@ -100,8 +100,13 @@ private:
   remote_bitbang_t* remote_bitbang;
   std::optional<std::function<void()>> next_interactive_action;
 
-  // memory-mapped I/O routines
+  // If padd corresponds to memory (as opposed to an I/O device), return a
+  // host pointer corresponding to paddr.
+  // For these purposes, only memories that include the entire base page
+  // surrounding paddr are considered; smaller memories are treated as I/O.
   virtual char* addr_to_mem(reg_t paddr) override;
+
+  // memory-mapped I/O routines
   virtual bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes) override;
   virtual bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes) override;
   void set_rom();

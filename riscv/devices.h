@@ -16,14 +16,21 @@ class simif_t;
 
 class bus_t : public abstract_device_t {
  public:
+  bus_t();
+
+  // the fallback device owns all addresses not owned by other devices
+  bus_t(abstract_device_t* fallback);
+
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
+  reg_t size() override;
   void add_device(reg_t addr, abstract_device_t* dev);
 
-  std::pair<reg_t, abstract_device_t*> find_device(reg_t addr);
+  std::pair<reg_t, abstract_device_t*> find_device(reg_t addr, size_t len);
 
  private:
   std::map<reg_t, abstract_device_t*> devices;
+  abstract_device_t* fallback;
 };
 
 class rom_device_t : public abstract_device_t {
@@ -31,6 +38,7 @@ class rom_device_t : public abstract_device_t {
   rom_device_t(std::vector<char> data);
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
+  reg_t size() override { return data.size(); }
   const std::vector<char>& contents() { return data; }
  private:
   std::vector<char> data;
@@ -41,7 +49,6 @@ class abstract_mem_t : public abstract_device_t {
   virtual ~abstract_mem_t() = default;
 
   virtual char* contents(reg_t addr) = 0;
-  virtual reg_t size() = 0;
   virtual void dump(std::ostream& o) = 0;
 };
 
@@ -69,7 +76,7 @@ class clint_t : public abstract_device_t {
   clint_t(const simif_t*, uint64_t freq_hz, bool real_time);
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
-  size_t size() { return CLINT_SIZE; }
+  reg_t size() override { return CLINT_SIZE; }
   void tick(reg_t rtc_ticks) override;
   uint64_t get_mtimecmp(reg_t hartid) { return mtimecmp[hartid]; }
   uint64_t get_mtime() { return mtime; }
@@ -109,7 +116,7 @@ class plic_t : public abstract_device_t, public abstract_interrupt_controller_t 
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
   void set_interrupt_level(uint32_t id, int lvl) override;
-  size_t size() { return PLIC_SIZE; }
+  reg_t size() override { return PLIC_SIZE; }
  private:
   std::vector<plic_context_t> contexts;
   uint32_t num_ids;
@@ -140,7 +147,7 @@ class ns16550_t : public abstract_device_t {
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
   void tick(reg_t rtc_ticks) override;
-  size_t size() { return NS16550_SIZE; }
+  reg_t size() override { return NS16550_SIZE; }
  private:
   abstract_interrupt_controller_t *intctrl;
   uint32_t interrupt_id;

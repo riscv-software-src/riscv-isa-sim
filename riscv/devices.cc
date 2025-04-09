@@ -8,53 +8,92 @@ mmio_device_map_t& mmio_device_map()
   return device_map;
 }
 
+static auto empty_device = rom_device_t(std::vector<char>());
+
+bus_t::bus_t()
+  : bus_t(&empty_device)
+{
+}
+
+bus_t::bus_t(abstract_device_t* fallback)
+  : fallback(fallback)
+{
+}
+
 void bus_t::add_device(reg_t addr, abstract_device_t* dev)
 {
-  // Searching devices via lower_bound/upper_bound
-  // implicitly relies on the underlying std::map 
-  // container to sort the keys and provide ordered
-  // iteration over this sort, which it does. (python's
-  // SortedDict is a good analogy)
+  // Allow empty devices by omitting them
+  auto size = dev->size();
+  if (size == 0)
+    return;
+
+  // Reject devices that overflow address size
+  if (addr + size - 1 < addr) {
+    fprintf(stderr, "device at [%" PRIx64 ", %" PRIx64 ") overflows address size\n",
+            addr, addr + size);
+    abort();
+  }
+
+  // Reject devices that overlap other devices
+  if (auto it = devices.upper_bound(addr);
+      (it != devices.end() && addr + size - 1 >= it->first) ||
+      (it != devices.begin() && (it--, it->first + it->second->size() - 1 >= addr))) {
+    fprintf(stderr, "devices at [%" PRIx64 ", %" PRIx64 ") and [%" PRIx64 ", %" PRIx64 ") overlap\n",
+            it->first, it->first + it->second->size(), addr, addr + size);
+    abort();
+  }
+
   devices[addr] = dev;
 }
 
 bool bus_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
-  // Find the device with the base address closest to but
-  // less than addr (price-is-right search)
-  auto it = devices.upper_bound(addr);
-  if (devices.empty() || it == devices.begin()) {
-    // Either the bus is empty, or there weren't 
-    // any items with a base address <= addr
-    return false;
-  }
-  // Found at least one item with base address <= addr
-  // The iterator points to the device after this, so
-  // go back by one item.
-  it--;
-  return it->second->load(addr - it->first, len, bytes);
+  if (auto [base, dev] = find_device(addr, len); dev)
+    return dev->load(addr - base, len, bytes);
+  return false;
 }
 
 bool bus_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 {
-  // See comments in bus_t::load
-  auto it = devices.upper_bound(addr);
-  if (devices.empty() || it == devices.begin()) {
-    return false;
-  }
-  it--;
-  return it->second->store(addr - it->first, len, bytes);
+  if (auto [base, dev] = find_device(addr, len); dev)
+    return dev->store(addr - base, len, bytes);
+  return false;
 }
 
-std::pair<reg_t, abstract_device_t*> bus_t::find_device(reg_t addr)
+reg_t bus_t::size()
 {
-  // See comments in bus_t::load
-  auto it = devices.upper_bound(addr);
-  if (devices.empty() || it == devices.begin()) {
-    return std::make_pair((reg_t)0, (abstract_device_t*)NULL);
+  if (auto last = devices.rbegin(); last != devices.rend())
+    return last->first + last->second->size();
+  return 0;
+}
+
+std::pair<reg_t, abstract_device_t*> bus_t::find_device(reg_t addr, size_t len)
+{
+  if (unlikely(!len || addr + len - 1 < addr))
+    return std::make_pair(0, nullptr);
+
+  // Obtain iterator to device immediately after the one that might match
+  auto it_after = devices.upper_bound(addr);
+  reg_t base, size;
+  if (likely(it_after != devices.begin())) {
+    // Obtain iterator to device that might match
+    auto it = std::prev(it_after);
+    base = it->first;
+    size = it->second->size();
+    if (likely(addr - base + len - 1 < size)) {
+      // it fully contains [addr, addr + len)
+      return std::make_pair(it->first, it->second);
+    }
   }
-  it--;
-  return std::make_pair(it->first, it->second);
+
+  if (unlikely((it_after != devices.end() && addr + len - 1 >= it_after->first)
+      || (it_after != devices.begin() && addr - base < size))) {
+    // it_after or it contains part of, but not all of, [addr, add + len)
+    return std::make_pair(0, nullptr);
+  }
+
+  // No matching device
+  return std::make_pair(0, fallback);
 }
 
 mem_t::mem_t(reg_t size)
