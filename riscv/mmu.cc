@@ -618,12 +618,14 @@ void mmu_t::register_memtracer(memtracer_t* t)
 }
 
 reg_t mmu_t::get_pmlen(bool effective_virt, reg_t effective_priv, xlate_flags_t flags) const {
-  if (!proc || proc->get_xlen() != 64 || ((proc->state.sstatus->readvirt(false) | proc->state.sstatus->readvirt(effective_virt)) & MSTATUS_MXR) || flags.hlvx)
+  if (!proc || proc->get_xlen() != 64 || flags.hlvx)
     return 0;
 
   reg_t pmm = 0;
   if (effective_priv == PRV_M)
     pmm = get_field(proc->state.mseccfg->read(), MSECCFG_PMM);
+  else if ((proc->state.sstatus->readvirt(false) | proc->state.sstatus->readvirt(effective_virt)) & MSTATUS_MXR)
+    pmm = 0;
   else if (!effective_virt && (effective_priv == PRV_S || (!proc->extension_enabled('S') && effective_priv == PRV_U)))
     pmm = get_field(proc->state.menvcfg->read(), MENVCFG_PMM);
   else if (effective_virt && effective_priv == PRV_S)
