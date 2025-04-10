@@ -71,6 +71,13 @@ class mem_t : public abstract_mem_t {
   reg_t sz;
 };
 
+class abstract_sim_if_t {
+public:
+  virtual ~abstract_sim_if_t() = default;
+  virtual bool do_load(reg_t addr, size_t len, uint8_t* bytes) = 0;
+  virtual bool do_store(reg_t addr, size_t len, const uint8_t* bytes) = 0;
+};
+
 class clint_t : public abstract_device_t {
  public:
   clint_t(const simif_t*, uint64_t freq_hz, bool real_time);
