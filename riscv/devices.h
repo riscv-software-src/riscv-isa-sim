@@ -78,6 +78,18 @@ public:
   virtual bool do_store(reg_t addr, size_t len, const uint8_t* bytes) = 0;
 };
 
+class external_sim_device_t : public abstract_device_t {
+public:
+  external_sim_device_t(void* sim);
+  void set_simulator(void* sim);
+  bool load(reg_t addr, size_t len, uint8_t* bytes) override;
+  bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
+  reg_t size() override;
+
+private:
+  void* external_simulator;
+};
+
 class clint_t : public abstract_device_t {
  public:
   clint_t(const simif_t*, uint64_t freq_hz, bool real_time);
