@@ -447,7 +447,10 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   // An unexpected trap - a trap when SDT is 1 - traps to M-mode
   if ((state.prv <= PRV_S && bit < max_xlen) &&
       (((vsdeleg >> bit) & 1)  || ((hsdeleg >> bit) & 1))) {
-    reg_t s = state.sstatus->read();
+    // Trap is handled in VS-mode or HS-mode. Read the sstatus of the
+    // mode that will handle the trap based on the delegation control
+    reg_t s = (((vsdeleg >> bit) & 1)) ? state.sstatus->read() :
+                                         state.nonvirtual_sstatus->read();
     supv_double_trap = get_field(s, MSTATUS_SDT);
     if (supv_double_trap)
       vsdeleg = hsdeleg = 0;
