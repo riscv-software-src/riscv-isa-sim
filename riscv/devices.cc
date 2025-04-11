@@ -165,12 +165,12 @@ void external_sim_device_t::set_simulator(void* sim) {
 
 bool external_sim_device_t::load(reg_t addr, size_t len, uint8_t* bytes) {
   if (unlikely(external_simulator == nullptr)) return false;
-  return static_cast<abstract_sim_if_t*>(external_simulator)->do_load(addr, len, bytes);
+  return static_cast<abstract_sim_if_t*>(external_simulator)->load(addr, len, bytes);
 }
 
 bool external_sim_device_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
   if (unlikely(external_simulator == nullptr)) return false;
-  return static_cast<abstract_sim_if_t*>(external_simulator)->do_store(addr, len, bytes);
+  return static_cast<abstract_sim_if_t*>(external_simulator)->store(addr, len, bytes);
 }
 
 reg_t external_sim_device_t::size() {
