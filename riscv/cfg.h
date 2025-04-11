@@ -6,6 +6,7 @@
 #include <vector>
 #include "decode.h"
 #include <cassert>
+class abstract_sim_if_t;
 
 typedef enum {
   endianness_little,
@@ -77,6 +78,7 @@ public:
   bool                    explicit_hartids;
   bool                    real_time_clint;
   reg_t                   trigger_count;
+  std::optional<abstract_sim_if_t*> external_simulator;
 
   size_t nprocs() const { return hartids.size(); }
   size_t max_hartid() const { return hartids.back(); }

@@ -155,3 +155,25 @@ void mem_t::dump(std::ostream& o) {
     }
   }
 }
+
+external_sim_device_t::external_sim_device_t(void* sim) 
+  : external_simulator(sim) {}
+
+void external_sim_device_t::set_simulator(void* sim) {
+  external_simulator = sim;
+}
+
+bool external_sim_device_t::load(reg_t addr, size_t len, uint8_t* bytes) {
+  if (unlikely(external_simulator == nullptr)) return false;
+  return static_cast<abstract_sim_if_t*>(external_simulator)->load(addr, len, bytes);
+}
+
+bool external_sim_device_t::store(reg_t addr, size_t len, const uint8_t* bytes) {
+  if (unlikely(external_simulator == nullptr)) return false;
+  return static_cast<abstract_sim_if_t*>(external_simulator)->store(addr, len, bytes);
+}
+
+reg_t external_sim_device_t::size() {
+  if (unlikely(external_simulator == nullptr)) return 0;
+  return PGSIZE; // TODO: proper size
+}
