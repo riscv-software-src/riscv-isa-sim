@@ -576,6 +576,8 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
                type == LOAD          ? !(sse && ss_page) && !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
                                        !(pte & PTE_W)) {
       break;
+    } else if (proc->extension_enabled(EXT_SVADE) && (proc->get_state()->menvcfg->read() & MENVCFG_ADUE)) {
+        break;
     } else {
       reg_t ad = PTE_A | ((type == STORE) * PTE_D);
 
