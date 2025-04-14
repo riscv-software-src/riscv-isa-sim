@@ -1677,6 +1677,14 @@ scountovf_csr_t::scountovf_csr_t(processor_t* const proc, const reg_t addr):
 void scountovf_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (!proc->extension_enabled(EXT_SSCOFPMF))
     throw trap_illegal_instruction(insn.bits());
+
+  if (proc->extension_enabled('H') &&
+     (proc->extension_enabled_const(EXT_SMCDELEG) || proc->extension_enabled(EXT_SSCCFG))
+  ) {
+    if (state->v && (state->menvcfg->read() & MENVCFG_CDE)) {
+      throw trap_virtual_instruction(insn.bits());
+    }
+  }
   csr_t::verify_permissions(insn, write);
 }
 
@@ -1749,6 +1757,68 @@ void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
   // Don't call base verify_permission for VS registers remapped to S-mode
   if (insn.csr() == address)
     csr_t::verify_permissions(insn, write);
+
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_CSRIND))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_CSRIND))
+      throw trap_virtual_instruction(insn.bits());
+  }
+
+  if (proc->extension_enabled(EXT_SMCDELEG)) {
+    if (insn.csr() >= CSR_VSIREG && insn.csr() <= CSR_VSIREG6) {
+      if (!state->v) {
+        // An attempt to access any vsireg* from M or S mode raises an illegal instruction exception.
+        throw trap_illegal_instruction(insn.bits());
+      } else {
+        if (state->prv == PRV_S) {
+          // An attempt from VS-mode to access any vsireg raises an illegal instruction
+          // exception if menvcfg.CDE = 0, or a virtual instruction exception if menvcfg.CDE = 1
+          if ((state->menvcfg->read() & MENVCFG_CDE) != MENVCFG_CDE) {
+            throw trap_illegal_instruction(insn.bits());
+          } else {
+            throw trap_virtual_instruction(insn.bits());
+          }
+        } else {
+          throw trap_virtual_instruction(insn.bits());
+        }
+      }
+    }
+    if (insn.csr() >= CSR_SIREG && insn.csr() <= CSR_SIREG6) {
+      // attempts to access any sireg* when menvcfg.CDE = 0;
+      if ((state->menvcfg->read() & MENVCFG_CDE) != MENVCFG_CDE) {
+        if (!state->v) {
+          throw trap_illegal_instruction(insn.bits());
+        } else {
+          if (state->prv == PRV_S) {
+            // An attempt from VS-mode to access any sireg* causes illegal instruction exception if menvcfg.CDE = 0
+            throw trap_illegal_instruction(insn.bits());
+          } else {
+            throw trap_virtual_instruction(insn.bits());
+          }
+        }
+      } else {
+        // menvcfg.CDE = 1;
+        if (state->v) {
+          // An attempt from VS-mode to access any sireg* causes a virtual instruction exception if menvcfg.CDE = 1
+          throw trap_virtual_instruction(insn.bits());
+        }
+        // counter selected by siselect is not delegated to S-mode (the corresponding bit in mcounteren = 0).
+        auto iselect_addr = iselect->read();
+        if (iselect_addr >= SISELECT_SMCDELEG_START && iselect_addr <= SISELECT_SMCDELEG_END) {
+          reg_t counter_id_offset = iselect_addr - SISELECT_SMCDELEG_START;
+          if (!(state->mcounteren->read() & (1U << counter_id_offset))) {
+            if (!state->v) {
+              throw trap_illegal_instruction(insn.bits());
+            } else {
+              throw trap_virtual_instruction(insn.bits());
+            }
+          }
+        }
+      }
+    }
+  }
 
   csr_t_p proxy_csr = get_reg();
   if (proxy_csr == nullptr) {
@@ -1879,4 +1949,27 @@ bool hstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   if (get_field(new_hstatus, HSTATUS_HUPMM) != get_field(read(), HSTATUS_HUPMM))
     proc->get_mmu()->flush_tlb();
   return basic_csr_t::unlogged_write(new_hstatus);
+}
+
+scntinhibit_csr_t::scntinhibit_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mcountinhibit):
+  basic_csr_t(proc, addr, mcountinhibit->read()) {
+}
+
+void scntinhibit_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (insn.csr() == address) {
+    csr_t::verify_permissions(insn, write);
+  }
+
+  if ((state->menvcfg->read() & MENVCFG_CDE) != MENVCFG_CDE) {
+    throw trap_illegal_instruction(insn.bits());
+  }
+}
+
+bool scntinhibit_csr_t::unlogged_write(const reg_t val) noexcept {
+  state->mcountinhibit->write(state->mcounteren->read() & val);
+  return true;
+}
+
+reg_t scntinhibit_csr_t::read() const noexcept {
+  return state->mcounteren->read() & state->mcountinhibit->read();
 }
