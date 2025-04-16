@@ -38,7 +38,6 @@ int main(int UNUSED argc, char** argv)
 
   std::regex reg("^core\\s+\\d+:\\s+0x[0-9a-f]+\\s+\\(0x([0-9a-f]+)\\)", std::regex_constants::icase);
   std::smatch m;
-  std::ssub_match sm ;
 
   while (getline(cin,s)){
     if (regex_search(s, m, reg)){

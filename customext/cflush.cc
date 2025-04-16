@@ -19,7 +19,7 @@ static reg_t custom_cflush(processor_t* p, insn_t insn, reg_t pc)
 class cflush_t : public extension_t
 {
  public:
-  const char* name() const { return "cflush"; }
+  const char* name() const override { return "cflush"; }
 
   cflush_t() {}
 
