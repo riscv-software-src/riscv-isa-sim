@@ -109,8 +109,6 @@ class dtm_t : public htif_t
 
   static const int max_idle_cycles = 10000;
 
-  size_t ram_words;
-  size_t data_words;
   int num_harts;
   int current_hart;
   
