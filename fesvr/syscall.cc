@@ -114,19 +114,23 @@ struct riscv_statx
       attributes_mask(htif->to_target<uint64_t>(s.stx_attributes_mask)),
       atime {
         htif->to_target<int64_t>(s.stx_atime.tv_sec),
-        htif->to_target<uint32_t>(s.stx_atime.tv_nsec)
+        htif->to_target<uint32_t>(s.stx_atime.tv_nsec),
+        htif->to_target<int32_t>(0)
       },
       btime {
         htif->to_target<int64_t>(s.stx_btime.tv_sec),
-        htif->to_target<uint32_t>(s.stx_btime.tv_nsec)
+        htif->to_target<uint32_t>(s.stx_btime.tv_nsec),
+        htif->to_target<int32_t>(0)
       },
       ctime {
         htif->to_target<int64_t>(s.stx_ctime.tv_sec),
-        htif->to_target<uint32_t>(s.stx_ctime.tv_nsec)
+        htif->to_target<uint32_t>(s.stx_ctime.tv_nsec),
+        htif->to_target<int32_t>(0)
       },
       mtime {
         htif->to_target<int64_t>(s.stx_mtime.tv_sec),
-        htif->to_target<uint32_t>(s.stx_mtime.tv_nsec)
+        htif->to_target<uint32_t>(s.stx_mtime.tv_nsec),
+        htif->to_target<int32_t>(0)
       },
       rdev_major(htif->to_target<uint32_t>(s.stx_rdev_major)),
       rdev_minor(htif->to_target<uint32_t>(s.stx_rdev_minor)),
