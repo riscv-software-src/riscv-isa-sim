@@ -343,7 +343,8 @@ bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes)
       return false;
   }
 
-  if (PRIORITY_BASE <= addr && addr < PENDING_BASE) {
+  static_assert(PRIORITY_BASE == 0);
+  if (/* PRIORITY_BASE <= addr && */ addr < PENDING_BASE) {
     ret = priority_read(addr, &val);
   } else if (PENDING_BASE <= addr && addr < ENABLE_BASE) {
     ret = pending_read(addr - PENDING_BASE, &val);
@@ -384,7 +385,8 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 
   write_little_endian_reg(&val, addr, len, bytes);
 
-  if (PRIORITY_BASE <= addr && addr < ENABLE_BASE) {
+  static_assert(PRIORITY_BASE == 0);
+  if (/* PRIORITY_BASE <= addr && */ addr < ENABLE_BASE) {
     ret = priority_write(addr, val);
   } else if (ENABLE_BASE <= addr && addr < CONTEXT_BASE) {
     uint32_t cntx = (addr - ENABLE_BASE) / ENABLE_PER_HART;

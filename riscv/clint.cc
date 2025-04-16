@@ -39,7 +39,8 @@ bool clint_t::load(reg_t addr, size_t len, uint8_t* bytes)
 
   tick(0);
 
-  if (addr >= MSIP_BASE && addr < MTIMECMP_BASE) {
+  static_assert(MSIP_BASE == 0);
+  if (/* addr >= MSIP_BASE && */ addr < MTIMECMP_BASE) {
     if (len == 8) {
       // Implement double-word loads as a pair of word loads
       return load(addr, 4, bytes) && load(addr + 4, 4, bytes + 4);
@@ -68,7 +69,8 @@ bool clint_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   if (len > 8)
     return false;
 
-  if (addr >= MSIP_BASE && addr < MTIMECMP_BASE) {
+  static_assert(MSIP_BASE == 0);
+  if (/* addr >= MSIP_BASE && */ addr < MTIMECMP_BASE) {
     if (len == 8) {
       // Implement double-word stores as a pair of word stores
       return store(addr, 4, bytes) && store(addr + 4, 4, bytes + 4);
