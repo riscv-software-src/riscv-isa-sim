@@ -1,11 +1,12 @@
 #include "isa_parser.h"
+#include <cstring>
 #include <stdexcept>
 
 static std::string strtolower(const char* str)
 {
-  std::string res;
-  for (const char *r = str; *r; r++)
-    res += std::tolower(*r);
+  std::string res(str);
+  for (char &c : res)
+    c = std::tolower(c);
   return res;
 }
 
