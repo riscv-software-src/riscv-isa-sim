@@ -52,7 +52,7 @@ void trigger_t::tdata3_write(processor_t * const proc, const reg_t val) noexcept
   mhselect = get_field(val, CSR_TEXTRA_MHSELECT(xlen));
   sbytemask = get_field(val, CSR_TEXTRA_SBYTEMASK(xlen));
   svalue = proc->extension_enabled_const('S') ? get_field(val, CSR_TEXTRA_SVALUE(xlen)) : 0;
-  sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) <= SSELECT_MAXVAL) ? get_field(val, CSR_TEXTRA_SSELECT(xlen)) : SSELECT_IGNORE);
+  sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) <= SSELECT_MAXVAL) ? get_field(val, CSR_TEXTRA_SSELECT(xlen)) : (reg_t)SSELECT_IGNORE);
 }
 
 static reg_t tcontrol_value(const state_t * state) {
