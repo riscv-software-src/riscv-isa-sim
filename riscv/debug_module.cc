@@ -450,7 +450,6 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
               } else {
                 dmstatus.allresumeack = false;
               }
-              auto hart = sim->get_harts().at(hart_id);
               if (!hart_available(hart_id)) {
                 dmstatus.allrunning = false;
                 dmstatus.allhalted = false;

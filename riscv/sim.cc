@@ -137,7 +137,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     dtb = strstream.str();
     dts = dtb_to_dts(dtb);
   } else {
-    std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds;
     std::string device_nodes;
     for (const device_factory_sargs_t& factory_sargs: device_factories) {
       const device_factory_t* factory = factory_sargs.first;
