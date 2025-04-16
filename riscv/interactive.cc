@@ -229,7 +229,6 @@ static std::string readline(int fd)
         }
         return s.substr(initial_s_len);
       default:
-      DEFAULT_KEY:
         // unknown buffered key, do nothing
         if (key_buffer != 0) {
           key_buffer = 0;
