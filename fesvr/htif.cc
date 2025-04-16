@@ -65,14 +65,14 @@ htif_t::htif_t(int argc, char** argv) : htif_t()
 htif_t::htif_t(const std::vector<std::string>& args) : htif_t()
 {
   int argc = args.size() + 1;
-  char * argv[argc];
+  std::vector<char*>argv(argc);
   argv[0] = (char *) "htif";
   for (unsigned int i = 0; i < args.size(); i++) {
     argv[i+1] = (char *) args[i].c_str();
   }
   //Set line size as 16 by default.
   line_size = 16;
-  parse_arguments(argc, argv);
+  parse_arguments(argc, &argv[0]);
   register_devices();
 }
 
@@ -253,11 +253,10 @@ void htif_t::stop()
 
 void htif_t::clear_chunk(addr_t taddr, size_t len)
 {
-  char zeros[chunk_max_size()];
-  memset(zeros, 0, chunk_max_size());
+  std::vector<uint8_t> zeros(chunk_max_size(), 0);
 
   for (size_t pos = 0; pos < len; pos += chunk_max_size())
-    write_chunk(taddr + pos, std::min(len - pos, chunk_max_size()), zeros);
+    write_chunk(taddr + pos, std::min(len - pos, chunk_max_size()), &zeros[0]);
 }
 
 int htif_t::run()
