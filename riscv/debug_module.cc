@@ -13,7 +13,7 @@
 #if 0
 #  define D(x) x
 #else
-#  define D(x)
+#  define D(x) (void) 0
 #endif
 
 // Return the number of bits wide that a field has to be to encode up to n
