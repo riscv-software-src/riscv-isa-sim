@@ -222,10 +222,10 @@ void processor_t::set_mmu_capability(int cap)
       break;
     case IMPL_MMU_SV57:
       set_impl(IMPL_MMU_SV57, true);
-      // Fall through
+      [[fallthrough]];
     case IMPL_MMU_SV48:
       set_impl(IMPL_MMU_SV48, true);
-      // Fall through
+      [[fallthrough]];
     case IMPL_MMU_SV39:
       set_impl(IMPL_MMU_SV39, true);
       set_impl(IMPL_MMU, true);

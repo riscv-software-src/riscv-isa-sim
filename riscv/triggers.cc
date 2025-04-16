@@ -274,7 +274,10 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
 mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val, reg_t maskmax) noexcept
 {
   switch (val) {
-    case MATCH_NAPOT: if (maskmax == 0) return MATCH_EQUAL;
+    case MATCH_NAPOT:
+      if (maskmax == 0)
+        return MATCH_EQUAL;
+      [[fallthrough]];
     case MATCH_EQUAL:
     case MATCH_GE:
     case MATCH_LT:
