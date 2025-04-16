@@ -477,8 +477,8 @@ uint32_t dtm_t::get_xlen()
   uint32_t command = AC_ACCESS_REGISTER_TRANSFER | AC_AR_REGNO(S0);
   uint32_t cmderr;
   
-  const uint32_t prog[] = {};
-  uint32_t data[] = {};
+  const uint32_t prog[1] = {};
+  uint32_t data[1] = {};
 
   cmderr = run_abstract_command(command | AC_AR_SIZE(128), prog, 0, data, 0);
   if (cmderr == 0){
