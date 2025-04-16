@@ -1811,7 +1811,7 @@ srmcfg_csr_t::srmcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_
   masked_csr_t(proc, addr, mask, init) {
 }
 
-void srmcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
+void srmcfg_csr_t::verify_permissions(insn_t insn, bool write UNUSED) const {
   if (!proc->extension_enabled(EXT_SSQOSID))
     throw trap_illegal_instruction(insn.bits());
 
