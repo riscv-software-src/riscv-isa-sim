@@ -107,7 +107,7 @@ void dtm_t::halt(int hartsel)
     read(DM_DMSTATUS);
   }
 
-  int dmcontrol = DM_DMCONTROL_HALTREQ | DM_DMCONTROL_DMACTIVE;
+  reg_t dmcontrol = DM_DMCONTROL_HALTREQ | DM_DMCONTROL_DMACTIVE;
   dmcontrol = set_field(dmcontrol, DM_DMCONTROL_HASEL, hartsel);
   write(DM_DMCONTROL, dmcontrol);
   int dmstatus;
