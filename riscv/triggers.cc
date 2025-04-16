@@ -675,4 +675,4 @@ reg_t module_t::tinfo_read(unsigned UNUSED index) const noexcept
          (CSR_TINFO_VERSION_1 << CSR_TINFO_VERSION_OFFSET);
 }
 
-};
+}
