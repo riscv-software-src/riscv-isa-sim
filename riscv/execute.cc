@@ -45,7 +45,7 @@ static void commit_log_print_value(FILE *log_file, int width, const void *data)
 
         fprintf(log_file, "0x");
         for (int idx = width / 8 - 1; idx >= 0; --idx) {
-          fprintf(log_file, "%002" PRIx8, arr[idx]);
+          fprintf(log_file, "%02" PRIx8, arr[idx]);
         }
       } else {
         abort();
