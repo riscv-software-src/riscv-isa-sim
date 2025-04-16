@@ -15,7 +15,6 @@
 #include <cinttypes>
 #include <cmath>
 #include <cstdlib>
-#include <cstring>
 #include <iostream>
 #include <iomanip>
 #include <assert.h>
@@ -98,42 +97,6 @@ processor_t::~processor_t()
 
   delete mmu;
   delete disassembler;
-}
-
-static void bad_option_string(const char *option, const char *value,
-                              const char *msg)
-{
-  fprintf(stderr, "error: bad %s option '%s'. %s\n", option, value, msg);
-  abort();
-}
-
-static std::string get_string_token(std::string str, const char delimiter, size_t& pos)
-{
-  size_t _pos = pos;
-  while (pos < str.length() && str[pos] != delimiter) ++pos;
-  return str.substr(_pos, pos - _pos);
-}
-
-static bool check_pow2(int val)
-{
-  return ((val & (val - 1))) == 0;
-}
-
-static std::string strtolower(const char* str)
-{
-  std::string res(str);
-  for (char &c : res)
-    c = std::tolower(c);
-  return res;
-}
-
-static int xlen_to_uxl(int xlen)
-{
-  if (xlen == 32)
-    return 1;
-  if (xlen == 64)
-    return 2;
-  abort();
 }
 
 void state_t::reset(processor_t* const proc, reg_t max_isa)
