@@ -705,21 +705,27 @@ void processor_t::register_base_instructions()
   #include "insn_list.h"
   #undef DEFINE_INSN
 
+  #define DEFINE_INSN_UNCOND(name) { \
+    insn_desc_t insn = { \
+      name##_match, \
+      name##_mask, \
+      fast_rv32i_##name, \
+      fast_rv64i_##name, \
+      fast_rv32e_##name, \
+      fast_rv64e_##name, \
+      logged_rv32i_##name, \
+      logged_rv64i_##name, \
+      logged_rv32e_##name, \
+      logged_rv64e_##name \
+    }; \
+    register_base_insn(insn); \
+  }
+
   // add overlapping instructions first, in order
   #define DECLARE_OVERLAP_INSN(name, ext) \
     name##_overlapping = true; \
     if (isa.extension_enabled(ext)) \
-      register_base_insn((insn_desc_t) { \
-        name##_match, \
-        name##_mask, \
-        fast_rv32i_##name, \
-        fast_rv64i_##name, \
-        fast_rv32e_##name, \
-        fast_rv64e_##name, \
-        logged_rv32i_##name, \
-        logged_rv64i_##name, \
-        logged_rv32e_##name, \
-        logged_rv64e_##name});
+      DEFINE_INSN_UNCOND(name);
   #include "overlap_list.h"
   #undef DECLARE_OVERLAP_INSN
 
@@ -728,19 +734,10 @@ void processor_t::register_base_instructions()
   // appear earlier to improve search time on opcode_cache misses.
   #define DEFINE_INSN(name) \
     if (!name##_overlapping) \
-      register_base_insn((insn_desc_t) { \
-        name##_match, \
-        name##_mask, \
-        fast_rv32i_##name, \
-        fast_rv64i_##name, \
-        fast_rv32e_##name, \
-        fast_rv64e_##name, \
-        logged_rv32i_##name, \
-        logged_rv64i_##name, \
-        logged_rv32e_##name, \
-        logged_rv64e_##name});
+      DEFINE_INSN_UNCOND(name);
   #include "insn_list.h"
   #undef DEFINE_INSN
+  #undef DEFINE_INSN_UNCOND
 
   // terminate instruction list with a catch-all
   register_base_insn(insn_desc_t::illegal_instruction);

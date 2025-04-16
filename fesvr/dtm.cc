@@ -61,17 +61,20 @@ uint32_t dtm_t::do_command(dtm_t::req r)
 
 uint32_t dtm_t::read(uint32_t addr)
 {
-  return do_command((req){addr, 1, 0});
+  req r = {addr, 1, 0};
+  return do_command(r);
 }
 
 uint32_t dtm_t::write(uint32_t addr, uint32_t data)
 {
-  return do_command((req){addr, 2, data});
+  req r = {addr, 2, data};
+  return do_command(r);
 }
 
 void dtm_t::nop()
 {
-  do_command((req){0, 0, 0});
+  req r = {0, 0, 0};
+  do_command(r);
 }
 
 void dtm_t::select_hart(int hartsel) {
