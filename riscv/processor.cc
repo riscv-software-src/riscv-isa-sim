@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <string>
 #include <algorithm>
+#include <functional>
 
 #ifdef __GNUC__
 # pragma GCC diagnostic ignored "-Wunused-variable"
@@ -580,6 +581,65 @@ void processor_t::disasm(insn_t insn)
   }
 }
 
+void processor_t::print_all_regs(){
+  std::stringstream s;
+  unsigned max_xlen = isa.get_max_xlen();
+    for(int i=0;i<32;i+=4){
+      s << std::dec << std::setfill(' ') << std::setw(4) << i <<  std::hex << ": 0x" << std::setfill('0')<< std::setw(max_xlen / 4) << state.XPR[i]  <<"\t" 
+        << std::dec << std::setfill(' ') << std::setw(4) << i+1 <<  std::hex << ": 0x" << std::setfill('0')<< std::setw(max_xlen / 4) << state.XPR[i+1]<<"\t"  
+        << std::dec << std::setfill(' ') << std::setw(4) << i+2 <<  std::hex << ": 0x" << std::setfill('0')<< std::setw(max_xlen / 4) << state.XPR[i+2]<<"\t" 
+        << std::dec << std::setfill(' ') << std::setw(4) << i+3 <<  std::hex << ": 0x" << std::setfill('0')<< std::setw(max_xlen / 4) << state.XPR[i+3]<< "\n";
+    }
+  debug_output_log(&s);
+}
+
+void processor_t::print_involved_regs(insn_t insn)
+{
+  std::stringstream s;
+  std::function is_a_reg = [](std::string reg_str)->std::tuple<int,int>{
+    for(int i=0;i<32;i++){
+      if(reg_str==xpr_name[i]){
+        return {0,i};
+      }
+      else if(reg_str==fpr_name[i]){
+        return {1,i};
+      }
+      else if(reg_str==vr_name[i]){
+        return {2,i};
+      }
+    }
+    return {255,255};
+  };
+  
+  std::function float128_to_double=[](const float128_t& f) -> double {
+    double high = static_cast<double>(f.v[1]);
+    double low = static_cast<double>(f.v[0]) / (1ULL << 64);
+    return high + low; // This won't give you correct float128 representation!
+  };
+  
+  const disasm_insn_t* disasm_insn = disassembler->lookup(insn);
+
+  for(auto arg : disasm_insn->args){
+      auto reg_str=arg->to_string(insn);
+      int reg_num= is_a_register(reg_str);
+      // s<<state.XPR[reg_num];
+      auto [t,n]= is_a_reg(reg_str);
+      switch (t)
+      {
+      case 0:
+        s<<reg_str<<std::hex<<"=0x"<<state.XPR[n]<<"  ";
+        break;
+      case 1:
+        s<<reg_str<<" "<<std::setprecision(30)<<float128_to_double( state.FPR[n])<<"\t";
+        break;
+
+      default:
+        break;
+      }
+  };
+  s<<std::endl;
+  debug_output_log(&s);
+}
 int processor_t::paddr_bits()
 {
   unsigned max_xlen = isa.get_max_xlen();

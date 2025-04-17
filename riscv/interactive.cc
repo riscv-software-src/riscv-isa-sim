@@ -736,7 +736,7 @@ void sim_t::interactive_str(const std::string& cmd, const std::vector<std::strin
   char ch;
   while ((ch = mmu->load<uint8_t>(addr++)))
     out << ch;
-
+    
   out << std::endl;
 }
 
