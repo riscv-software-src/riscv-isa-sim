@@ -198,35 +198,49 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool 
     }
 }
 
+bool mmu_t::perform_intrapage_load(uintptr_t host_addr, reg_t paddr, reg_t len, uint8_t* bytes)
+{
+  if (host_addr) {
+    memcpy(bytes, (char*)host_addr, len);
+  } else if (!mmio_load(paddr, len, bytes)) {
+    return false;
+  }
+
+  if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
+    tracer.trace(paddr, len, LOAD);
+
+  return true;
+}
+
+static void throw_load_access_fault(mem_access_info_t access_info)
+{
+  if (access_info.flags.ss_access)
+    throw trap_store_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
+  else
+    throw trap_load_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
+}
+
 void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info)
 {
   reg_t addr = access_info.vaddr;
   reg_t transformed_addr = access_info.transformed_vaddr;
-  reg_t vpn = transformed_addr >> PGSHIFT;
-  if (!access_info.flags.is_special_access() && vpn == (tlb_load[vpn % TLB_ENTRIES].tag & ~TLB_CHECK_TRIGGERS)) {
-    auto host_addr = (const void*)(tlb_load[vpn % TLB_ENTRIES].data.host_addr + (transformed_addr % PGSIZE));
-    memcpy(bytes, host_addr, len);
-    return;
-  }
 
-  reg_t paddr = translate(access_info, len);
+  auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_load, addr, TLB_CHECK_TRIGGERS | TLB_CHECK_TRACER | TLB_MMIO);
+  if (!tlb_hit || access_info.flags.is_special_access()) {
+    paddr = translate(access_info, len);
+    host_addr = (uintptr_t)sim->addr_to_mem(paddr);
 
-  if (access_info.flags.lr && !sim->reservable(paddr)) {
-    throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
-  }
+    if (!access_info.flags.is_special_access()) {
+      refill_tlb(addr, paddr, (char*)host_addr, LOAD);
+    }
 
-  if (auto host_addr = sim->addr_to_mem(paddr)) {
-    memcpy(bytes, host_addr, len);
-    if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
-      tracer.trace(paddr, len, LOAD);
-    else if (!access_info.flags.is_special_access())
-      refill_tlb(addr, paddr, host_addr, LOAD);
-
-  } else if (!mmio_load(paddr, len, bytes)) {
-    (access_info.flags.ss_access)?
-      throw trap_store_access_fault(access_info.effective_virt, transformed_addr, 0, 0) :
+    if (access_info.flags.lr && !sim->reservable(paddr)) {
       throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
+    }
   }
+
+  if (!perform_intrapage_load(host_addr, paddr, len, bytes))
+    throw_load_access_fault(access_info);
 
   if (access_info.flags.lr) {
     load_reservation_address = paddr;
@@ -235,6 +249,20 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
 
 void mmu_t::load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
 {
+  // Short-circuit the easy cases
+  if (likely(!xlate_flags.is_special_access())) {
+    auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_load, original_addr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS);
+    bool intrapage = (original_addr % PGSIZE) + len <= PGSIZE;
+    bool aligned = (original_addr & (len - 1)) == 0;
+
+    if (likely(tlb_hit && (aligned || (intrapage && is_misaligned_enabled())))) {
+      if (likely(perform_intrapage_load(host_addr, paddr, len, bytes)))
+        return;
+
+      throw_load_access_fault(generate_access_info(original_addr, LOAD, {}));
+    }
+  }
+
   auto access_info = generate_access_info(original_addr, LOAD, xlate_flags);
   reg_t transformed_addr = access_info.transformed_vaddr;
   check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt);
@@ -337,26 +365,30 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
 {
   reg_t idx = (vaddr >> PGSHIFT) % TLB_ENTRIES;
   reg_t expected_tag = vaddr >> PGSHIFT;
+  reg_t base_paddr = paddr & ~reg_t(PGSIZE - 1);
 
   tlb_entry_t entry = {uintptr_t(host_addr) - (vaddr % PGSIZE), paddr - (vaddr % PGSIZE)};
 
   if (in_mprv()
-      || !pmp_homogeneous(paddr & ~reg_t(PGSIZE - 1), PGSIZE)
+      || !pmp_homogeneous(base_paddr, PGSIZE)
       || (proc && proc->get_log_commits_enabled()))
     return entry;
+
+  bool trace = tracer.interested_in_range(base_paddr, base_paddr + PGSIZE, type);
+  bool mmio = host_addr == nullptr;
 
   switch (type) {
     case FETCH:
       tlb_insn[idx].data = entry;
-      tlb_insn[idx].tag = expected_tag | (check_triggers_fetch ? TLB_CHECK_TRIGGERS : 0);
+      tlb_insn[idx].tag = expected_tag | (check_triggers_fetch ? TLB_CHECK_TRIGGERS : 0) | (mmio ? TLB_MMIO : 0);
       break;
     case LOAD:
       tlb_load[idx].data = entry;
-      tlb_load[idx].tag = expected_tag | (check_triggers_load ? TLB_CHECK_TRIGGERS : 0);
+      tlb_load[idx].tag = expected_tag | (check_triggers_load ? TLB_CHECK_TRIGGERS : 0) | (trace ? TLB_CHECK_TRACER : 0) | (mmio ? TLB_MMIO : 0);
       break;
     case STORE:
       tlb_store[idx].data = entry;
-      tlb_store[idx].tag = expected_tag | (check_triggers_store ? TLB_CHECK_TRIGGERS : 0);
+      tlb_store[idx].tag = expected_tag | (check_triggers_store ? TLB_CHECK_TRIGGERS : 0) | (trace ? TLB_CHECK_TRACER : 0) | (mmio ? TLB_MMIO : 0);
       break;
     default:
       abort();

@@ -344,7 +344,8 @@ public:
     auto vpn = vaddr / PGSIZE, pgoff = vaddr % PGSIZE;
     auto& entry = tlb[vpn % TLB_ENTRIES];
     auto hit = likely((entry.tag & ~allowed_flags) == vpn);
-    auto host_addr = entry.data.host_addr + pgoff;
+    bool mmio = allowed_flags & TLB_MMIO & entry.tag;
+    auto host_addr = mmio ? 0 : entry.data.host_addr + pgoff;
     auto paddr = entry.data.target_addr + pgoff;
     return std::make_tuple(hit, host_addr, paddr);
   }
@@ -394,6 +395,9 @@ private:
   // If a TLB tag has TLB_CHECK_TRIGGERS set, then the MMU must check for a
   // trigger match before completing an access.
   static const reg_t TLB_CHECK_TRIGGERS = reg_t(1) << 63;
+  static const reg_t TLB_CHECK_TRACER = reg_t(1) << 62;
+  static const reg_t TLB_MMIO = reg_t(1) << 61;
+  static const reg_t TLB_FLAGS = TLB_CHECK_TRIGGERS | TLB_CHECK_TRACER | TLB_MMIO;
   dtlb_entry_t tlb_load[TLB_ENTRIES];
   dtlb_entry_t tlb_store[TLB_ENTRIES];
   dtlb_entry_t tlb_insn[TLB_ENTRIES];
@@ -413,6 +417,7 @@ private:
   std::pair<insn_parcel_t, reg_t> fetch_slow_path(reg_t addr);
   void load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
   void load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info);
+  bool perform_intrapage_load(uintptr_t host_addr, reg_t paddr, reg_t len, uint8_t* bytes);
   void store_slow_path(reg_t original_addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store, bool require_alignment);
   void store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_access_info_t access_info, bool actually_store);
   bool mmio_fetch(reg_t paddr, size_t len, uint8_t* bytes);
