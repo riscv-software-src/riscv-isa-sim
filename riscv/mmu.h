@@ -293,8 +293,11 @@ public:
 
   inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
   {
-    if (matched_trigger)
-      throw *matched_trigger;
+    if (matched_trigger) {
+      auto trig = matched_trigger.value();
+      matched_trigger.reset();
+      throw trig;
+    }
 
     auto [first_parcel, paddr] = fetch_insn_parcel_and_paddr(addr);
     insn_bits_t insn = first_parcel;
@@ -507,8 +510,7 @@ private:
   bool check_triggers_fetch;
   bool check_triggers_load;
   bool check_triggers_store;
-  // The exception describing a matched trigger, or NULL.
-  triggers::matched_t *matched_trigger;
+  std::optional<triggers::matched_t> matched_trigger;
 
   friend class processor_t;
 };

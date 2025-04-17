@@ -14,8 +14,7 @@ mmu_t::mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc)
 #endif
   check_triggers_fetch(false),
   check_triggers_load(false),
-  check_triggers_store(false),
-  matched_trigger(NULL)
+  check_triggers_store(false)
 {
 #ifndef RISCV_ENABLE_DUAL_ENDIAN
   assert(endianness == endianness_little);
@@ -188,7 +187,7 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool 
         // We want to take this exception on the next instruction.  We check
         // whether to do so in the I$ refill path, so flush the I$.
         flush_icache();
-        matched_trigger = new triggers::matched_t(operation, tval, match->action, virt);
+        matched_trigger = triggers::matched_t(operation, tval, match->action, virt);
     }
 }
 
