@@ -244,6 +244,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_SSCOFPMF] = true;
     } else if (ext_str == "svadu") {
       extension_table[EXT_SVADU] = true;
+    } else if (ext_str == "svade") {
+      extension_table[EXT_SVADE] = true;
     } else if (ext_str == "svnapot") {
       extension_table[EXT_SVNAPOT] = true;
     } else if (ext_str == "svpbmt") {
