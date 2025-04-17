@@ -80,12 +80,11 @@ public:
   template<typename T>
   T ALWAYS_INLINE load(reg_t addr, xlate_flags_t xlate_flags = {}) {
     target_endian<T> res;
-    reg_t vpn = addr >> PGSHIFT;
     bool aligned = (addr & (sizeof(T) - 1)) == 0;
-    bool tlb_hit = tlb_load[vpn % TLB_ENTRIES].tag == vpn;
+    auto [tlb_hit, host_addr, _] = access_tlb(tlb_load, addr);
 
     if (likely(!xlate_flags.is_special_access() && aligned && tlb_hit)) {
-      res = *(target_endian<T>*)(tlb_load[vpn % TLB_ENTRIES].data.host_addr + (addr % PGSIZE));
+      res = *(target_endian<T>*)host_addr;
     } else {
       load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags);
     }
@@ -118,12 +117,11 @@ public:
 
   template<typename T>
   void ALWAYS_INLINE store(reg_t addr, T val, xlate_flags_t xlate_flags = {}) {
-    reg_t vpn = addr >> PGSHIFT;
     bool aligned = (addr & (sizeof(T) - 1)) == 0;
-    bool tlb_hit = tlb_store[vpn % TLB_ENTRIES].tag == vpn;
+    auto [tlb_hit, host_addr, _] = access_tlb(tlb_store, addr);
 
     if (!xlate_flags.is_special_access() && likely(aligned && tlb_hit)) {
-      *(target_endian<T>*)(tlb_store[vpn % TLB_ENTRIES].data.host_addr + (addr % PGSIZE)) = to_target(val);
+      *(target_endian<T>*)host_addr = to_target(val);
     } else {
       target_endian<T> target_val = to_target(val);
       store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);
@@ -344,6 +342,16 @@ public:
   {
     icache_entry_t entry;
     return refill_icache(addr, &entry)->data;
+  }
+
+  std::tuple<bool, uintptr_t, reg_t> ALWAYS_INLINE access_tlb(const dtlb_entry_t* tlb, reg_t vaddr)
+  {
+    auto vpn = vaddr / PGSIZE, pgoff = vaddr % PGSIZE;
+    auto& entry = tlb[vpn % TLB_ENTRIES];
+    auto hit = likely(entry.tag == vpn);
+    auto host_addr = entry.data.host_addr + pgoff;
+    auto paddr = entry.data.target_addr + pgoff;
+    return std::make_tuple(hit, host_addr, paddr);
   }
 
   void flush_tlb();
