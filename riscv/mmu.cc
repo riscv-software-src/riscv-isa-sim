@@ -77,11 +77,11 @@ tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
   tlb_entry_t result;
   reg_t vpn = vaddr >> PGSHIFT;
   if (unlikely(tlb_insn_tag[vpn % TLB_ENTRIES] != (vpn | TLB_CHECK_TRIGGERS))) {
-    reg_t paddr = translate(access_info, sizeof(fetch_temp));
+    reg_t paddr = translate(access_info, sizeof(fetch_temp[0]));
     if (auto host_addr = sim->addr_to_mem(paddr)) {
       result = refill_tlb(vaddr, paddr, host_addr, FETCH);
     } else {
-      if (!mmio_fetch(paddr, sizeof fetch_temp, (uint8_t*)&fetch_temp))
+      if (!mmio_fetch(paddr, sizeof(fetch_temp[0]), (uint8_t*)&fetch_temp))
         throw trap_instruction_access_fault(proc->state.v, vaddr, 0, 0);
       result = {(char*)&fetch_temp - vaddr, paddr - vaddr};
     }
