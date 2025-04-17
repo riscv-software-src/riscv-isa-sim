@@ -256,6 +256,9 @@ void mmu_t::load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate
     bytes += sizeof(reg_t);
   }
   check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt, reg_from_bytes(len, bytes));
+
+  if (proc && unlikely(proc->get_log_commits_enabled()))
+    proc->state.log_mem_read.push_back(std::make_tuple(original_addr, 0, len));
 }
 
 void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_access_info_t access_info, bool actually_store)
@@ -318,6 +321,9 @@ void mmu_t::store_slow_path(reg_t original_addr, reg_t len, const uint8_t* bytes
   } else {
     store_slow_path_intrapage(len, bytes, access_info, actually_store);
   }
+
+  if (proc && unlikely(proc->get_log_commits_enabled()))
+    proc->state.log_mem_write.push_back(std::make_tuple(original_addr, reg_from_bytes(len, bytes), len));
 }
 
 tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type)
@@ -327,7 +333,9 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
 
   tlb_entry_t entry = {uintptr_t(host_addr) - (vaddr % PGSIZE), paddr - (vaddr % PGSIZE)};
 
-  if (in_mprv() || !pmp_homogeneous(paddr & ~reg_t(PGSIZE - 1), PGSIZE))
+  if (in_mprv()
+      || !pmp_homogeneous(paddr & ~reg_t(PGSIZE - 1), PGSIZE)
+      || (proc && proc->get_log_commits_enabled()))
     return entry;
 
   switch (type) {
