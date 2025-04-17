@@ -70,6 +70,12 @@ reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
 
 std::pair<mmu_t::insn_parcel_t, reg_t> mmu_t::fetch_slow_path(reg_t vaddr)
 {
+  if (matched_trigger) {
+    auto trig = matched_trigger.value();
+    matched_trigger.reset();
+    throw trig;
+  }
+
   insn_parcel_t res;
 
   auto access_info = generate_access_info(vaddr, FETCH, {});
@@ -185,8 +191,9 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool 
 
       case triggers::TIMING_AFTER:
         // We want to take this exception on the next instruction.  We check
-        // whether to do so in the I$ refill path, so flush the I$.
-        flush_icache();
+        // whether to do so in the I$ refill slow path, which we can force by
+        // flushing the TLB.
+        flush_tlb();
         matched_trigger = triggers::matched_t(operation, tval, match->action, virt);
     }
 }
