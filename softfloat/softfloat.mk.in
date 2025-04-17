@@ -252,3 +252,5 @@ softfloat_test_srcs =
 softfloat_install_hdrs = \
 	softfloat.h \
 	softfloat_types.h \
+
+softfloat_CFLAGS = -Wno-sign-compare -Wno-implicit-fallthrough

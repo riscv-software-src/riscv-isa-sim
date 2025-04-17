@@ -70,7 +70,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       // G = IMAFD_Zicsr_Zifencei, but Spike includes the latter two
       // unconditionally, so they need not be explicitly added here.
       isa_string = isa_string.substr(0, 4) + "imafd" + isa_string.substr(5);
-      // Fall through
+      [[fallthrough]];
     case 'i':
       extension_table['I'] = true;
       break;
@@ -98,9 +98,9 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
 
     switch (*p) {
       case 'v': vlen = 128; elen = 64; zvf = true; zvd = true;
-                // even rv32iv implies double float
+                [[fallthrough]];
       case 'q': extension_table['D'] = true;
-                // Fall through
+                [[fallthrough]];
       case 'd': extension_table['F'] = true;
     }
     extension_table[toupper(*p)] = true;

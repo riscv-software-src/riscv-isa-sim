@@ -301,6 +301,6 @@ private:
   std::vector<trigger_t *> triggers;
 };
 
-};
+}
 
 #endif

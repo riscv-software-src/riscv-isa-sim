@@ -454,7 +454,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 
 #define VFP_VF_CMP_PARAMS(width) \
   float##width##_t rs1 = f##width(READ_FREG(rs1_num)); \
-  float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i);
+  float##width##_t UNUSED vs2 = P.VU.elt<float##width##_t>(rs2_num, i);
 
 #define VFP_VF_PARAMS(width) \
   float##width##_t &vd = P.VU.elt<float##width##_t>(rd_num, i, true); \
@@ -1181,25 +1181,6 @@ VI_VX_ULOOP({ \
 #define VI_STRIP(inx) \
   reg_t vreg_inx = inx;
 
-#define VI_DUPLICATE_VREG(reg_num, idx_sew) \
-reg_t index[P.VU.vlmax]; \
- for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl->read() != 0; ++i) { \
-  switch (idx_sew) { \
-    case e8: \
-      index[i] = P.VU.elt<uint8_t>(reg_num, i); \
-      break; \
-    case e16: \
-      index[i] = P.VU.elt<uint16_t>(reg_num, i); \
-      break; \
-    case e32: \
-      index[i] = P.VU.elt<uint32_t>(reg_num, i); \
-      break; \
-    case e64: \
-      index[i] = P.VU.elt<uint64_t>(reg_num, i); \
-      break; \
-  } \
-}
-
 #define VI_LD(stride, offset, elt_width, is_mask_ldst) \
   const reg_t nf = insn.v_nf() + 1; \
   VI_CHECK_LOAD(elt_width, is_mask_ldst); \
@@ -1218,6 +1199,23 @@ reg_t index[P.VU.vlmax]; \
   } \
   P.VU.vstart->write(0);
 
+#define VI_LDST_GET_INDEX(elt_width) \
+  reg_t index; \
+  switch (elt_width) { \
+    case e8: \
+      index = P.VU.elt<uint8_t>(insn.rs2(), i); \
+      break; \
+    case e16: \
+      index = P.VU.elt<uint16_t>(insn.rs2(), i); \
+      break; \
+    case e32: \
+      index = P.VU.elt<uint32_t>(insn.rs2(), i); \
+      break; \
+    case e64: \
+      index = P.VU.elt<uint64_t>(insn.rs2(), i); \
+      break; \
+  } \
+
 #define VI_LD_INDEX(elt_width, is_seg) \
   const reg_t nf = insn.v_nf() + 1; \
   VI_CHECK_LD_INDEX(elt_width); \
@@ -1226,8 +1224,8 @@ reg_t index[P.VU.vlmax]; \
   const reg_t vd = insn.rd(); \
   if (!is_seg) \
     require(nf == 1); \
-  VI_DUPLICATE_VREG(insn.rs2(), elt_width); \
   for (reg_t i = 0; i < vl; ++i) { \
+    VI_LDST_GET_INDEX(elt_width); \
     VI_ELEMENT_SKIP; \
     VI_STRIP(i); \
     P.VU.vstart->write(i); \
@@ -1235,19 +1233,19 @@ reg_t index[P.VU.vlmax]; \
       switch (P.VU.vsew) { \
         case e8: \
           P.VU.elt<uint8_t>(vd + fn * flmul, vreg_inx, true) = \
-            MMU.load<uint8_t>(baseAddr + index[i] + fn * 1); \
+            MMU.load<uint8_t>(baseAddr + index + fn * 1); \
           break; \
         case e16: \
           P.VU.elt<uint16_t>(vd + fn * flmul, vreg_inx, true) = \
-            MMU.load<uint16_t>(baseAddr + index[i] + fn * 2); \
+            MMU.load<uint16_t>(baseAddr + index + fn * 2); \
           break; \
         case e32: \
           P.VU.elt<uint32_t>(vd + fn * flmul, vreg_inx, true) = \
-            MMU.load<uint32_t>(baseAddr + index[i] + fn * 4); \
+            MMU.load<uint32_t>(baseAddr + index + fn * 4); \
           break; \
         default: \
           P.VU.elt<uint64_t>(vd + fn * flmul, vreg_inx, true) = \
-            MMU.load<uint64_t>(baseAddr + index[i] + fn * 8); \
+            MMU.load<uint64_t>(baseAddr + index + fn * 8); \
           break; \
       } \
     } \
@@ -1280,27 +1278,27 @@ reg_t index[P.VU.vlmax]; \
   const reg_t vs3 = insn.rd(); \
   if (!is_seg) \
     require(nf == 1); \
-  VI_DUPLICATE_VREG(insn.rs2(), elt_width); \
   for (reg_t i = 0; i < vl; ++i) { \
+    VI_LDST_GET_INDEX(elt_width); \
     VI_STRIP(i) \
     VI_ELEMENT_SKIP; \
     P.VU.vstart->write(i); \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       switch (P.VU.vsew) { \
       case e8: \
-        MMU.store<uint8_t>(baseAddr + index[i] + fn * 1, \
+        MMU.store<uint8_t>(baseAddr + index + fn * 1, \
           P.VU.elt<uint8_t>(vs3 + fn * flmul, vreg_inx)); \
         break; \
       case e16: \
-        MMU.store<uint16_t>(baseAddr + index[i] + fn * 2, \
+        MMU.store<uint16_t>(baseAddr + index + fn * 2, \
           P.VU.elt<uint16_t>(vs3 + fn * flmul, vreg_inx)); \
         break; \
       case e32: \
-        MMU.store<uint32_t>(baseAddr + index[i] + fn * 4, \
+        MMU.store<uint32_t>(baseAddr + index + fn * 4, \
           P.VU.elt<uint32_t>(vs3 + fn * flmul, vreg_inx)); \
         break; \
       default: \
-        MMU.store<uint64_t>(baseAddr + index[i] + fn * 8, \
+        MMU.store<uint64_t>(baseAddr + index + fn * 8, \
           P.VU.elt<uint64_t>(vs3 + fn * flmul, vreg_inx)); \
         break; \
       } \

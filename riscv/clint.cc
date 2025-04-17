@@ -39,7 +39,8 @@ bool clint_t::load(reg_t addr, size_t len, uint8_t* bytes)
 
   tick(0);
 
-  if (addr >= MSIP_BASE && addr < MTIMECMP_BASE) {
+  static_assert(MSIP_BASE == 0);
+  if (/* addr >= MSIP_BASE && */ addr < MTIMECMP_BASE) {
     if (len == 8) {
       // Implement double-word loads as a pair of word loads
       return load(addr, 4, bytes) && load(addr + 4, 4, bytes + 4);
@@ -68,7 +69,8 @@ bool clint_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   if (len > 8)
     return false;
 
-  if (addr >= MSIP_BASE && addr < MTIMECMP_BASE) {
+  static_assert(MSIP_BASE == 0);
+  if (/* addr >= MSIP_BASE && */ addr < MTIMECMP_BASE) {
     if (len == 8) {
       // Implement double-word stores as a pair of word stores
       return store(addr, 4, bytes) && store(addr + 4, 4, bytes + 4);
@@ -117,7 +119,7 @@ void clint_t::tick(reg_t rtc_ticks)
 }
 
 clint_t* clint_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base,
-    const std::vector<std::string>& UNUSED sargs) {
+    const std::vector<std::string>& sargs UNUSED) {
   if (fdt_parse_clint(fdt, base, "riscv,clint0") == 0 || fdt_parse_clint(fdt, base, "sifive,clint0") == 0)
     return new clint_t(sim,
                        sim->CPU_HZ / sim->INSNS_PER_RTC_TICK,
@@ -126,7 +128,7 @@ clint_t* clint_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base,
     return nullptr;
 }
 
-std::string clint_generate_dts(const sim_t* sim, const std::vector<std::string>& UNUSED sargs) {
+std::string clint_generate_dts(const sim_t* sim, const std::vector<std::string>& sargs UNUSED) {
   std::stringstream s;
   s << std::hex
     << "    clint@" << CLINT_BASE << " {\n"

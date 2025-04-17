@@ -52,7 +52,7 @@ void trigger_t::tdata3_write(processor_t * const proc, const reg_t val) noexcept
   mhselect = get_field(val, CSR_TEXTRA_MHSELECT(xlen));
   sbytemask = get_field(val, CSR_TEXTRA_SBYTEMASK(xlen));
   svalue = proc->extension_enabled_const('S') ? get_field(val, CSR_TEXTRA_SVALUE(xlen)) : 0;
-  sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) <= SSELECT_MAXVAL) ? get_field(val, CSR_TEXTRA_SSELECT(xlen)) : SSELECT_IGNORE);
+  sselect = (sselect_t)((proc->extension_enabled_const('S') && get_field(val, CSR_TEXTRA_SSELECT(xlen)) <= SSELECT_MAXVAL) ? get_field(val, CSR_TEXTRA_SSELECT(xlen)) : (reg_t)SSELECT_IGNORE);
 }
 
 static reg_t tcontrol_value(const state_t * state) {
@@ -274,7 +274,10 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
 mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val, reg_t maskmax) noexcept
 {
   switch (val) {
-    case MATCH_NAPOT: if (maskmax == 0) return MATCH_EQUAL;
+    case MATCH_NAPOT:
+      if (maskmax == 0)
+        return MATCH_EQUAL;
+      [[fallthrough]];
     case MATCH_EQUAL:
     case MATCH_GE:
     case MATCH_LT:
@@ -675,4 +678,4 @@ reg_t module_t::tinfo_read(unsigned UNUSED index) const noexcept
          (CSR_TINFO_VERSION_1 << CSR_TINFO_VERSION_OFFSET);
 }
 
-};
+}

@@ -214,7 +214,10 @@ public:
       throw trap_load_address_misaligned((proc) ? proc->state.v : false, addr, 0, 0);
     }
 
-    return (float128_t){load<uint64_t>(addr), load<uint64_t>(addr + 8)};
+    float128_t res;
+    res.v[0] = load<uint64_t>(addr);
+    res.v[1] = load<uint64_t>(addr + 8);
+    return res;
   }
 
   void cbo_zero(reg_t addr) {

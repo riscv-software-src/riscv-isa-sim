@@ -337,10 +337,10 @@ inline long double to_f(float128_t f) { long double r; memcpy(&r, &f, sizeof(r))
 #define DEBUG_RVV_FMA_VF \
   printf("vfma(%lu) vd=%f vs1=%f vs2=%f vd_old=%f\n", i, to_f(vd), to_f(rs1), to_f(vs2), to_f(vd_old));
 #else
-#define DEBUG_RVV_FP_VV 0
-#define DEBUG_RVV_FP_VF 0
-#define DEBUG_RVV_FMA_VV 0
-#define DEBUG_RVV_FMA_VF 0
+#define DEBUG_RVV_FP_VV (void) 0
+#define DEBUG_RVV_FP_VF (void) 0
+#define DEBUG_RVV_FMA_VV (void) 0
+#define DEBUG_RVV_FMA_VF (void) 0
 #endif
 
 #define DECLARE_XENVCFG_VARS(field) \

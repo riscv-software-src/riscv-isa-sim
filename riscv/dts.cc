@@ -424,7 +424,6 @@ int fdt_parse_isa(const void *fdt, int cpu_offset, const char **isa)
 int fdt_parse_hartid(const void *fdt, int cpu_offset, uint32_t *hartid)
 {
   int len, rc;
-  const void *prop;
   const fdt32_t *val;
 
   if ((rc = check_cpu_node(fdt, cpu_offset)) < 0)

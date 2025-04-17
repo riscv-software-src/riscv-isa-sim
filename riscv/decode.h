@@ -170,23 +170,29 @@ public:
     switch (rvc_rlist()) {
     case 15:
       stack_adj_base += 16;
+      [[fallthrough]];
     case 14:
       if (xlen == 64)
         stack_adj_base += 16;
+      [[fallthrough]];
     case 13:
     case 12:
       stack_adj_base += 16;
+      [[fallthrough]];
     case 11:
     case 10:
       if (xlen == 64)
         stack_adj_base += 16;
+      [[fallthrough]];
     case 9:
     case 8:
       stack_adj_base += 16;
+      [[fallthrough]];
     case 7:
     case 6:
       if (xlen == 64)
         stack_adj_base += 16;
+      [[fallthrough]];
     case 5:
     case 4:
       stack_adj_base += 16;

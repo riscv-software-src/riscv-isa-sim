@@ -343,7 +343,8 @@ bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes)
       return false;
   }
 
-  if (PRIORITY_BASE <= addr && addr < PENDING_BASE) {
+  static_assert(PRIORITY_BASE == 0);
+  if (/* PRIORITY_BASE <= addr && */ addr < PENDING_BASE) {
     ret = priority_read(addr, &val);
   } else if (PENDING_BASE <= addr && addr < ENABLE_BASE) {
     ret = pending_read(addr - PENDING_BASE, &val);
@@ -384,7 +385,8 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 
   write_little_endian_reg(&val, addr, len, bytes);
 
-  if (PRIORITY_BASE <= addr && addr < ENABLE_BASE) {
+  static_assert(PRIORITY_BASE == 0);
+  if (/* PRIORITY_BASE <= addr && */ addr < ENABLE_BASE) {
     ret = priority_write(addr, val);
   } else if (ENABLE_BASE <= addr && addr < CONTEXT_BASE) {
     uint32_t cntx = (addr - ENABLE_BASE) / ENABLE_PER_HART;
@@ -401,7 +403,7 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   return ret;
 }
 
-std::string plic_generate_dts(const sim_t* sim, const std::vector<std::string>& UNUSED sargs)
+std::string plic_generate_dts(const sim_t* sim, const std::vector<std::string>& sargs UNUSED)
 {
   std::stringstream s;
   s << std::hex
@@ -424,7 +426,7 @@ std::string plic_generate_dts(const sim_t* sim, const std::vector<std::string>& 
   return s.str();
 }
 
-plic_t* plic_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& UNUSED sargs)
+plic_t* plic_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& sargs UNUSED)
 {
   uint32_t plic_ndev;
   if (fdt_parse_plic(fdt, base, &plic_ndev, "riscv,plic0") == 0 ||

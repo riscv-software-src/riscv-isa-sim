@@ -12,10 +12,10 @@ void memif_t::read(addr_t addr, size_t len, void* bytes)
   if (len && (addr & (align-1)))
   {
     size_t this_len = std::min(len, align - size_t(addr & (align-1)));
-    uint8_t chunk[align];
+    std::vector<uint8_t> chunk(align);
 
-    cmemif->read_chunk(addr & ~(align-1), align, chunk);
-    memcpy(bytes, chunk + (addr & (align-1)), this_len);
+    cmemif->read_chunk(addr & ~(align-1), align, &chunk[0]);
+    memcpy(bytes, &chunk[addr & (align-1)], this_len);
 
     bytes = (char*)bytes + this_len;
     addr += this_len;
@@ -26,10 +26,10 @@ void memif_t::read(addr_t addr, size_t len, void* bytes)
   {
     size_t this_len = len & (align-1);
     size_t start = len - this_len;
-    uint8_t chunk[align];
+    std::vector<uint8_t> chunk(align);
 
-    cmemif->read_chunk(addr + start, align, chunk);
-    memcpy((char*)bytes + start, chunk, this_len);
+    cmemif->read_chunk(addr + start, align, &chunk[0]);
+    memcpy((char*)bytes + start, &chunk[0], this_len);
 
     len -= this_len;
   }
@@ -45,11 +45,11 @@ void memif_t::write(addr_t addr, size_t len, const void* bytes)
   if (len && (addr & (align-1)))
   {
     size_t this_len = std::min(len, align - size_t(addr & (align-1)));
-    uint8_t chunk[align];
+    std::vector<uint8_t> chunk(align);
 
-    cmemif->read_chunk(addr & ~(align-1), align, chunk);
-    memcpy(chunk + (addr & (align-1)), bytes, this_len);
-    cmemif->write_chunk(addr & ~(align-1), align, chunk);
+    cmemif->read_chunk(addr & ~(align-1), align, &chunk[0]);
+    memcpy(&chunk[addr & (align-1)], bytes, this_len);
+    cmemif->write_chunk(addr & ~(align-1), align, &chunk[0]);
 
     bytes = (char*)bytes + this_len;
     addr += this_len;
@@ -60,11 +60,11 @@ void memif_t::write(addr_t addr, size_t len, const void* bytes)
   {
     size_t this_len = len & (align-1);
     size_t start = len - this_len;
-    uint8_t chunk[align];
+    std::vector<uint8_t> chunk(align);
 
-    cmemif->read_chunk(addr + start, align, chunk);
-    memcpy(chunk, (char*)bytes + start, this_len);
-    cmemif->write_chunk(addr + start, align, chunk);
+    cmemif->read_chunk(addr + start, align, &chunk[0]);
+    memcpy(&chunk[0], (char*)bytes + start, this_len);
+    cmemif->write_chunk(addr + start, align, &chunk[0]);
 
     len -= this_len;
   }
