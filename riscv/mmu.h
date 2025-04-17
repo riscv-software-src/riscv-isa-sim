@@ -386,7 +386,6 @@ private:
   processor_t* proc;
   memtracer_list_t tracer;
   reg_t load_reservation_address;
-  uint16_t fetch_temp;
   reg_t blocksz;
 
   // implement an instruction cache for simulator performance
@@ -401,6 +400,9 @@ private:
   reg_t tlb_insn_tag[TLB_ENTRIES];
   reg_t tlb_load_tag[TLB_ENTRIES];
   reg_t tlb_store_tag[TLB_ENTRIES];
+
+  // temporary location to store instructions fetched from an MMIO region
+  uint16_t fetch_temp[PGSIZE / sizeof(uint16_t)];
 
   // finish translation on a TLB miss and update the TLB
   tlb_entry_t refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type);
