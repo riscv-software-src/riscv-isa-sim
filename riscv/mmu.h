@@ -283,15 +283,12 @@ public:
 
   template<typename T>
   T ALWAYS_INLINE fetch_jump_table(reg_t addr) {
-    typedef std::remove_const<std::remove_pointer<decltype(translate_insn_addr_to_host(addr))>::type>::type U;
-    U parcels[sizeof(T) / sizeof(U)];
+    T res = 0;
+    for (size_t i = 0; i < sizeof(T) / sizeof(insn_parcel_t); i++)
+      res |= (T)fetch_insn_parcel(addr + i * sizeof(insn_parcel_t)) << (i * sizeof(insn_parcel_t));
 
-    for (size_t i = 0; i < std::size(parcels); i++)
-      parcels[i] = *translate_insn_addr_to_host(addr + i * sizeof(U));
-
-    target_endian<T> res;
-    memcpy(&res, parcels, sizeof(T));
-    return from_target(res);
+    // table accesses use data endianness, not instruction (little) endianness
+    return target_big_endian ? to_be(res) : res;
   }
 
   inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
@@ -299,22 +296,23 @@ public:
     if (matched_trigger)
       throw *matched_trigger;
 
-    auto tlb_entry = translate_insn_addr(addr);
-    insn_bits_t insn = from_le(*(uint16_t*)(tlb_entry.host_addr + (addr % PGSIZE)));
+    auto [first_parcel, paddr] = fetch_insn_parcel_and_paddr(addr);
+    insn_bits_t insn = first_parcel;
+
     int length = insn_length(insn);
 
     if (likely(length == 4)) {
-      insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 2)) << 16;
+      insn |= (insn_bits_t)fetch_insn_parcel(addr + 2) << 16;
     } else if (length == 2) {
       // entire instruction already fetched
     } else if (length == 6) {
-      insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 2)) << 16;
-      insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 4)) << 32;
+      insn |= (insn_bits_t)fetch_insn_parcel(addr + 2) << 16;
+      insn |= (insn_bits_t)fetch_insn_parcel(addr + 4) << 32;
     } else {
       static_assert(sizeof(insn_bits_t) == 8, "insn_bits_t must be uint64_t");
-      insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 2)) << 16;
-      insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 4)) << 32;
-      insn |= (insn_bits_t)from_le(*(const uint16_t*)translate_insn_addr_to_host(addr + 6)) << 48;
+      insn |= (insn_bits_t)fetch_insn_parcel(addr + 2) << 16;
+      insn |= (insn_bits_t)fetch_insn_parcel(addr + 4) << 32;
+      insn |= (insn_bits_t)fetch_insn_parcel(addr + 6) << 48;
     }
 
     insn_fetch_t fetch = {proc->decode_insn(insn), insn};
@@ -322,11 +320,11 @@ public:
     entry->next = &icache[icache_index(addr + length)];
     entry->data = fetch;
 
-    reg_t paddr = tlb_entry.target_addr + (addr % PGSIZE);
     if (tracer.interested_in_range(paddr, paddr + 1, FETCH)) {
       entry->tag = -1;
       tracer.trace(paddr, length, FETCH);
     }
+
     return entry;
   }
 
@@ -344,11 +342,11 @@ public:
     return refill_icache(addr, &entry)->data;
   }
 
-  std::tuple<bool, uintptr_t, reg_t> ALWAYS_INLINE access_tlb(const dtlb_entry_t* tlb, reg_t vaddr)
+  std::tuple<bool, uintptr_t, reg_t> ALWAYS_INLINE access_tlb(const dtlb_entry_t* tlb, reg_t vaddr, reg_t allowed_flags = 0)
   {
     auto vpn = vaddr / PGSIZE, pgoff = vaddr % PGSIZE;
     auto& entry = tlb[vpn % TLB_ENTRIES];
-    auto hit = likely(entry.tag == vpn);
+    auto hit = likely((entry.tag & ~allowed_flags) == vpn);
     auto host_addr = entry.data.host_addr + pgoff;
     auto paddr = entry.data.target_addr + pgoff;
     return std::make_tuple(hit, host_addr, paddr);
@@ -403,9 +401,6 @@ private:
   dtlb_entry_t tlb_store[TLB_ENTRIES];
   dtlb_entry_t tlb_insn[TLB_ENTRIES];
 
-  // temporary location to store instructions fetched from an MMIO region
-  uint16_t fetch_temp[PGSIZE / sizeof(uint16_t)];
-
   // finish translation on a TLB miss and update the TLB
   tlb_entry_t refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type);
   const char* fill_from_mmio(reg_t vaddr, reg_t paddr);
@@ -417,7 +412,8 @@ private:
   reg_t walk(mem_access_info_t access_info);
 
   // handle uncommon cases: TLB misses, page faults, MMIO
-  tlb_entry_t fetch_slow_path(reg_t addr);
+  typedef uint16_t insn_parcel_t;
+  std::pair<insn_parcel_t, reg_t> fetch_slow_path(reg_t addr);
   void load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
   void load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info);
   void store_slow_path(reg_t original_addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store, bool require_alignment);
@@ -480,16 +476,16 @@ private:
     }
   }
 
-  // ITLB lookup
-  inline tlb_entry_t translate_insn_addr(reg_t addr) {
-    reg_t vpn = addr >> PGSHIFT;
-    if (likely(tlb_insn[vpn % TLB_ENTRIES].tag == vpn))
-      return tlb_insn[vpn % TLB_ENTRIES].data;
-    return fetch_slow_path(addr);
+  inline std::pair<insn_parcel_t, reg_t> fetch_insn_parcel_and_paddr(reg_t addr) {
+    if (auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, addr); tlb_hit)
+      return std::make_pair(from_le(*(insn_parcel_t*)host_addr), paddr);
+
+    auto [res, paddr] = fetch_slow_path(addr);
+    return std::make_pair(from_le(res), paddr);
   }
 
-  inline const uint16_t* translate_insn_addr_to_host(reg_t addr) {
-    return (uint16_t*)(translate_insn_addr(addr).host_addr + (addr % PGSIZE));
+  inline insn_parcel_t fetch_insn_parcel(reg_t addr) {
+    return fetch_insn_parcel_and_paddr(addr).first;
   }
 
   inline bool in_mprv() const

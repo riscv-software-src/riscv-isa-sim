@@ -69,29 +69,30 @@ reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
   return paddr;
 }
 
-tlb_entry_t mmu_t::fetch_slow_path(reg_t vaddr)
+std::pair<mmu_t::insn_parcel_t, reg_t> mmu_t::fetch_slow_path(reg_t vaddr)
 {
+  insn_parcel_t res;
+
   auto access_info = generate_access_info(vaddr, FETCH, {});
   check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt);
 
-  tlb_entry_t result;
-  reg_t vpn = vaddr >> PGSHIFT;
-  if (unlikely(tlb_insn[vpn % TLB_ENTRIES].tag != (vpn | TLB_CHECK_TRIGGERS))) {
-    reg_t paddr = translate(access_info, sizeof(fetch_temp[0]));
-    if (auto host_addr = sim->addr_to_mem(paddr)) {
-      result = refill_tlb(vaddr, paddr, host_addr, FETCH);
-    } else {
-      if (!mmio_fetch(paddr, sizeof(fetch_temp[0]), (uint8_t*)&fetch_temp + (vaddr % PGSIZE)))
-        throw trap_instruction_access_fault(proc->state.v, vaddr, 0, 0);
-      result = {uintptr_t(&fetch_temp), paddr - (vaddr % PGSIZE)};
-    }
-  } else {
-    result = tlb_insn[vpn % TLB_ENTRIES].data;
+  auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_CHECK_TRIGGERS);
+  if (!tlb_hit) {
+    paddr = translate(access_info, sizeof(res));
+    host_addr = (uintptr_t)sim->addr_to_mem(paddr);
+
+    if (host_addr)
+      refill_tlb(vaddr, paddr, (char*)host_addr, FETCH);
   }
 
-  check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt, from_le(*(const uint16_t*)(result.host_addr + (vaddr % PGSIZE))));
+  if (host_addr)
+    memcpy(&res, (char*)host_addr, sizeof(res));
+  else if (!mmio_fetch(paddr, sizeof(res), (uint8_t*)&res))
+    throw trap_instruction_access_fault(proc->state.v, vaddr, 0, 0);
 
-  return result;
+  check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt, from_le(res));
+
+  return std::make_pair(res, paddr);
 }
 
 reg_t reg_from_bytes(size_t len, const uint8_t* bytes)
