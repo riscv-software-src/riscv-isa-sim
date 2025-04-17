@@ -34,8 +34,8 @@ struct icache_entry_t {
 };
 
 struct tlb_entry_t {
-  char* host_offset;
-  reg_t target_offset;
+  uintptr_t host_addr;
+  reg_t target_addr;
 };
 
 struct xlate_flags_t {
@@ -84,7 +84,7 @@ public:
     bool tlb_hit = tlb_load_tag[vpn % TLB_ENTRIES] == vpn;
 
     if (likely(!xlate_flags.is_special_access() && aligned && tlb_hit)) {
-      res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr);
+      res = *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_addr + (addr % PGSIZE));
     } else {
       load_slow_path(addr, sizeof(T), (uint8_t*)&res, xlate_flags);
     }
@@ -125,7 +125,7 @@ public:
     bool tlb_hit = tlb_store_tag[vpn % TLB_ENTRIES] == vpn;
 
     if (!xlate_flags.is_special_access() && likely(aligned && tlb_hit)) {
-      *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_offset + addr) = to_target(val);
+      *(target_endian<T>*)(tlb_data[vpn % TLB_ENTRIES].host_addr + (addr % PGSIZE)) = to_target(val);
     } else {
       target_endian<T> target_val = to_target(val);
       store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);
@@ -307,7 +307,7 @@ public:
       throw *matched_trigger;
 
     auto tlb_entry = translate_insn_addr(addr);
-    insn_bits_t insn = from_le(*(uint16_t*)(tlb_entry.host_offset + addr));
+    insn_bits_t insn = from_le(*(uint16_t*)(tlb_entry.host_addr + (addr % PGSIZE)));
     int length = insn_length(insn);
 
     if (likely(length == 4)) {
@@ -329,7 +329,7 @@ public:
     entry->next = &icache[icache_index(addr + length)];
     entry->data = fetch;
 
-    reg_t paddr = tlb_entry.target_offset + addr;;
+    reg_t paddr = tlb_entry.target_addr + (addr % PGSIZE);
     if (tracer.interested_in_range(paddr, paddr + 1, FETCH)) {
       entry->tag = -1;
       tracer.trace(paddr, length, FETCH);
@@ -487,7 +487,7 @@ private:
   }
 
   inline const uint16_t* translate_insn_addr_to_host(reg_t addr) {
-    return (uint16_t*)(translate_insn_addr(addr).host_offset + addr);
+    return (uint16_t*)(translate_insn_addr(addr).host_addr + (addr % PGSIZE));
   }
 
   inline bool in_mprv() const
