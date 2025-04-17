@@ -144,6 +144,7 @@ void processor_t::set_histogram(bool value)
 void processor_t::enable_log_commits()
 {
   log_commits_enabled = true;
+  mmu->flush_tlb(); // the TLB caches this setting
 }
 
 void processor_t::reset()
