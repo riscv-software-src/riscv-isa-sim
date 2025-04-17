@@ -16,9 +16,12 @@
 // is checked in the VI_ZVK_..._EGU32x8_..._LOOP macros.
 #define require_vsm3_constraints \
   do { \
+    const uint32_t EGS = 8; \
     require_zvksh; \
     require(P.VU.vsew == 32); \
     require_egw_fits(256); \
+    require(P.VU.vstart->read() % EGS == 0); \
+    require(P.VU.vl->read() % EGS == 0); \
     require(insn.rd() != insn.rs2()); \
   } while (false)
 
