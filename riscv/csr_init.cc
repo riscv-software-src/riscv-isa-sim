@@ -250,7 +250,8 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
                             (proc->extension_enabled(EXT_SSTC) ? MENVCFG_STCE : 0) |
                             (proc->extension_enabled(EXT_ZICFILP) ? MENVCFG_LPE : 0) |
                             (proc->extension_enabled(EXT_ZICFISS) ? MENVCFG_SSE : 0) |
-                            (proc->extension_enabled(EXT_SSDBLTRP) ? MENVCFG_DTE : 0);
+                            (proc->extension_enabled(EXT_SSDBLTRP) ? MENVCFG_DTE : 0)|
+                            (proc->extension_enabled(EXT_SMCSRIND) ? MENVCFG_CDE : 0);
   menvcfg = std::make_shared<envcfg_csr_t>(proc, CSR_MENVCFG, menvcfg_mask, 0);
   if (xlen == 32) {
     add_user_csr(CSR_MENVCFG, std::make_shared<rv32_low_csr_t>(proc, CSR_MENVCFG, menvcfg));
@@ -337,6 +338,10 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   const reg_t ssp_mask = -reg_t(xlen / 8);
   add_ext_csr(EXT_ZICFISS, CSR_SSP, ssp = std::make_shared<ssp_csr_t>(proc, CSR_SSP, ssp_mask, 0));
 
+  // Smcdeleg
+  if (proc->extension_enabled_const(EXT_SMCDELEG) || proc->extension_enabled_const(EXT_SSCCFG)) {
+    add_supervisor_csr(CSR_SCOUNTINHIBIT, scountinhibit = std::make_shared<scntinhibit_csr_t>(proc, CSR_SCOUNTINHIBIT, mcountinhibit));
+  }
 
   // Smcsrind / Sscsrind
   if (proc->extension_enabled_const(EXT_SMCSRIND)) {
@@ -363,6 +368,59 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
 
       auto sireg = std::make_shared<sscsrind_reg_csr_t>(proc, sireg_csrs[i], siselect);
       add_supervisor_csr(sireg_csrs[i], std::make_shared<virtualized_indirect_csr_t>(proc, sireg, vsireg));
+
+      // Smcdeleg
+      if (proc->extension_enabled(EXT_SSCCFG) || proc->extension_enabled(EXT_SMCDELEG)) {
+        switch (sireg_csrs[i]) {
+          case CSR_SIREG:
+            if (proc->extension_enabled_const(EXT_ZICNTR)) {
+              sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, mcycle);
+              sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, minstret);
+            }
+            if (proc->extension_enabled_const(EXT_ZIHPM)) {
+              for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3 + 1); j++)
+                sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMCOUNTER_3 + j, csrmap[CSR_HPMCOUNTER3 + j]);
+            }
+            break;
+          case CSR_SIREG4:
+          if (xlen == 32) {
+            if (proc->extension_enabled_const(EXT_ZICNTR)) {
+              sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, csrmap[CSR_CYCLEH]);
+              sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, csrmap[CSR_INSTRETH]);
+            }
+            if (proc->extension_enabled_const(EXT_ZIHPM)) {
+              for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3 + 1); j++)
+                sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMCOUNTER_3 + j, csrmap[CSR_HPMCOUNTER3H + j]);
+            }
+          }
+          break;
+          case CSR_SIREG2:
+            if (proc->extension_enabled_const(EXT_ZICNTR)) {
+                sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, mcyclecfg);
+                sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRETCFG, minstretcfg);
+            }
+            if (proc->extension_enabled_const(EXT_ZIHPM)) {
+              for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3 + 1); j++)
+                sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMEVENT_3 + j, csrmap[CSR_MHPMEVENT3H + j]);
+            }
+            break;
+          case CSR_SIREG5:
+            if (xlen == 32) {
+              if (proc->extension_enabled_const(EXT_ZICNTR)) {
+                sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, mcycle);
+                sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, minstret);
+              }
+              if (proc->extension_enabled_const(EXT_ZIHPM)) {
+                for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3); j++)
+                  sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMCOUNTER_3 + j, csrmap[CSR_HPMCOUNTER3 + j]);
+              }
+            }
+          case CSR_SIREG3:
+          case CSR_SIREG6:
+          default:
+            break;
+        }
+      }
     }
   }
 
