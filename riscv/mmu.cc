@@ -81,13 +81,12 @@ std::pair<mmu_t::insn_parcel_t, reg_t> mmu_t::fetch_slow_path(reg_t vaddr)
   auto access_info = generate_access_info(vaddr, FETCH, {});
   check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt);
 
-  auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_CHECK_TRIGGERS);
+  auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_FLAGS);
   if (!tlb_hit) {
     paddr = translate(access_info, sizeof(res));
     host_addr = (uintptr_t)sim->addr_to_mem(paddr);
 
-    if (host_addr)
-      refill_tlb(vaddr, paddr, (char*)host_addr, FETCH);
+    refill_tlb(vaddr, paddr, (char*)host_addr, FETCH);
   }
 
   if (host_addr)
@@ -222,11 +221,8 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
     paddr = translate(access_info, len);
     host_addr = (uintptr_t)sim->addr_to_mem(paddr);
 
-    if (host_addr) {
-      if (!access_info.flags.is_special_access()) {
-        refill_tlb(vaddr, paddr, (char*)host_addr, LOAD);
-      }
-    }
+    if (!access_info.flags.is_special_access())
+      refill_tlb(vaddr, paddr, (char*)host_addr, LOAD);
 
     if (access_info.flags.lr && !sim->reservable(paddr)) {
       throw trap_load_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
@@ -296,11 +292,8 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
     paddr = translate(access_info, len);
     host_addr = (uintptr_t)sim->addr_to_mem(paddr);
 
-    if (actually_store && host_addr) {
-      if (!access_info.flags.is_special_access()) {
-        refill_tlb(vaddr, paddr, (char*)host_addr, STORE);
-      }
-    }
+    if (!access_info.flags.is_special_access())
+      refill_tlb(vaddr, paddr, (char*)host_addr, STORE);
   }
 
   if (actually_store)
@@ -358,19 +351,20 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
     return entry;
 
   auto trace_flag = tracer.interested_in_range(base_paddr, base_paddr + PGSIZE, type) ? TLB_CHECK_TRACER : 0;
+  auto mmio_flag = host_addr ? 0 : TLB_MMIO;
 
   switch (type) {
     case FETCH:
       tlb_insn[idx].data = entry;
-      tlb_insn[idx].tag = expected_tag | (check_triggers_fetch ? TLB_CHECK_TRIGGERS : 0);
+      tlb_insn[idx].tag = expected_tag | (check_triggers_fetch ? TLB_CHECK_TRIGGERS : 0) | mmio_flag;
       break;
     case LOAD:
       tlb_load[idx].data = entry;
-      tlb_load[idx].tag = expected_tag | (check_triggers_load ? TLB_CHECK_TRIGGERS : 0) | trace_flag;
+      tlb_load[idx].tag = expected_tag | (check_triggers_load ? TLB_CHECK_TRIGGERS : 0) | trace_flag | mmio_flag;
       break;
     case STORE:
       tlb_store[idx].data = entry;
-      tlb_store[idx].tag = expected_tag | (check_triggers_store ? TLB_CHECK_TRIGGERS : 0) | trace_flag;
+      tlb_store[idx].tag = expected_tag | (check_triggers_store ? TLB_CHECK_TRIGGERS : 0) | trace_flag | mmio_flag;
       break;
     default:
       abort();

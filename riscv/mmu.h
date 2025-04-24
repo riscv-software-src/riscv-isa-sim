@@ -344,7 +344,8 @@ public:
     auto vpn = vaddr / PGSIZE, pgoff = vaddr % PGSIZE;
     auto& entry = tlb[vpn % TLB_ENTRIES];
     auto hit = likely((entry.tag & ~allowed_flags) == vpn);
-    auto host_addr = entry.data.host_addr + pgoff;
+    bool mmio = allowed_flags & TLB_MMIO & entry.tag;
+    auto host_addr = mmio ? 0 : entry.data.host_addr + pgoff;
     auto paddr = entry.data.target_addr + pgoff;
     return std::make_tuple(hit, host_addr, paddr);
   }
@@ -395,7 +396,8 @@ private:
   // trigger match before completing an access.
   static const reg_t TLB_CHECK_TRIGGERS = reg_t(1) << 63;
   static const reg_t TLB_CHECK_TRACER = reg_t(1) << 62;
-  static const reg_t TLB_FLAGS = TLB_CHECK_TRIGGERS | TLB_CHECK_TRACER;
+  static const reg_t TLB_MMIO = reg_t(1) << 61;
+  static const reg_t TLB_FLAGS = TLB_CHECK_TRIGGERS | TLB_CHECK_TRACER | TLB_MMIO;
   dtlb_entry_t tlb_load[TLB_ENTRIES];
   dtlb_entry_t tlb_store[TLB_ENTRIES];
   dtlb_entry_t tlb_insn[TLB_ENTRIES];
