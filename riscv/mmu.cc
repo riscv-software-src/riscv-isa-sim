@@ -198,35 +198,41 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool 
     }
 }
 
+inline void mmu_t::perform_intrapage_load(reg_t vaddr, uintptr_t host_addr, reg_t paddr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
+{
+  if (host_addr) {
+    memcpy(bytes, (char*)host_addr, len);
+  } else if (!mmio_load(paddr, len, bytes)) {
+    auto access_info = generate_access_info(vaddr, LOAD, xlate_flags);
+    if (access_info.flags.ss_access)
+      throw trap_store_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
+    else
+      throw trap_load_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
+  }
+}
+
 void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info)
 {
-  reg_t addr = access_info.vaddr;
-  reg_t transformed_addr = access_info.transformed_vaddr;
-  reg_t vpn = transformed_addr >> PGSHIFT;
-  if (!access_info.flags.is_special_access() && vpn == (tlb_load[vpn % TLB_ENTRIES].tag & ~TLB_CHECK_TRIGGERS)) {
-    auto host_addr = (const void*)(tlb_load[vpn % TLB_ENTRIES].data.host_addr + (transformed_addr % PGSIZE));
-    memcpy(bytes, host_addr, len);
-    return;
+  reg_t vaddr = access_info.vaddr;
+  auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_load, vaddr, TLB_FLAGS);
+  if (!tlb_hit || access_info.flags.is_special_access()) {
+    paddr = translate(access_info, len);
+    host_addr = (uintptr_t)sim->addr_to_mem(paddr);
+
+    if (host_addr) {
+      if (tracer.interested_in_range(paddr, paddr + len, LOAD)) {
+        tracer.trace(paddr, len, LOAD);
+      } else if (!access_info.flags.is_special_access()) {
+        refill_tlb(vaddr, paddr, (char*)host_addr, LOAD);
+      }
+    }
+
+    if (access_info.flags.lr && !sim->reservable(paddr)) {
+      throw trap_load_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
+    }
   }
 
-  reg_t paddr = translate(access_info, len);
-
-  if (access_info.flags.lr && !sim->reservable(paddr)) {
-    throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
-  }
-
-  if (auto host_addr = sim->addr_to_mem(paddr)) {
-    memcpy(bytes, host_addr, len);
-    if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
-      tracer.trace(paddr, len, LOAD);
-    else if (!access_info.flags.is_special_access())
-      refill_tlb(addr, paddr, host_addr, LOAD);
-
-  } else if (!mmio_load(paddr, len, bytes)) {
-    (access_info.flags.ss_access)?
-      throw trap_store_access_fault(access_info.effective_virt, transformed_addr, 0, 0) :
-      throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
-  }
+  perform_intrapage_load(vaddr, host_addr, paddr, len, bytes, access_info.flags);
 
   if (access_info.flags.lr) {
     load_reservation_address = paddr;
@@ -268,32 +274,35 @@ void mmu_t::load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate
     proc->state.log_mem_read.push_back(std::make_tuple(original_addr, 0, len));
 }
 
+inline void mmu_t::perform_intrapage_store(reg_t vaddr, uintptr_t host_addr, reg_t paddr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags)
+{
+  if (host_addr) {
+     memcpy((char*)host_addr, bytes, len);
+  } else if (!mmio_store(paddr, len, bytes)) {
+    auto access_info = generate_access_info(vaddr, STORE, xlate_flags);
+    throw trap_store_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
+  }
+}
+
 void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_access_info_t access_info, bool actually_store)
 {
-  reg_t addr = access_info.vaddr;
-  reg_t transformed_addr = access_info.transformed_vaddr;
-  reg_t vpn = transformed_addr >> PGSHIFT;
-  if (!access_info.flags.is_special_access() && vpn == (tlb_store[vpn % TLB_ENTRIES].tag & ~TLB_CHECK_TRIGGERS)) {
-    if (actually_store) {
-      auto host_addr = (void*)(tlb_store[vpn % TLB_ENTRIES].data.host_addr + (transformed_addr % PGSIZE));
-      memcpy(host_addr, bytes, len);
-    }
-    return;
-  }
+  reg_t vaddr = access_info.vaddr;
+  auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_store, vaddr, TLB_FLAGS);
+  if (!tlb_hit || access_info.flags.is_special_access()) {
+    paddr = translate(access_info, len);
+    host_addr = (uintptr_t)sim->addr_to_mem(paddr);
 
-  reg_t paddr = translate(access_info, len);
-
-  if (actually_store) {
-    if (auto host_addr = sim->addr_to_mem(paddr)) {
-      memcpy(host_addr, bytes, len);
-      if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
+    if (actually_store && host_addr) {
+      if (tracer.interested_in_range(paddr, paddr + len, STORE)) {
         tracer.trace(paddr, len, STORE);
-      else if (!access_info.flags.is_special_access())
-        refill_tlb(addr, paddr, host_addr, STORE);
-    } else if (!mmio_store(paddr, len, bytes)) {
-      throw trap_store_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
+      } else if (!access_info.flags.is_special_access()) {
+        refill_tlb(vaddr, paddr, (char*)host_addr, STORE);
+      }
     }
   }
+
+  if (actually_store)
+    perform_intrapage_store(vaddr, host_addr, paddr, len, bytes, access_info.flags);
 }
 
 void mmu_t::store_slow_path(reg_t original_addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store, bool UNUSED require_alignment)

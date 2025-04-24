@@ -394,6 +394,7 @@ private:
   // If a TLB tag has TLB_CHECK_TRIGGERS set, then the MMU must check for a
   // trigger match before completing an access.
   static const reg_t TLB_CHECK_TRIGGERS = reg_t(1) << 63;
+  static const reg_t TLB_FLAGS = TLB_CHECK_TRIGGERS;
   dtlb_entry_t tlb_load[TLB_ENTRIES];
   dtlb_entry_t tlb_store[TLB_ENTRIES];
   dtlb_entry_t tlb_insn[TLB_ENTRIES];
@@ -413,8 +414,10 @@ private:
   std::pair<insn_parcel_t, reg_t> fetch_slow_path(reg_t addr);
   void load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
   void load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info);
+  void perform_intrapage_load(reg_t vaddr, uintptr_t host_addr, reg_t paddr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
   void store_slow_path(reg_t original_addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store, bool require_alignment);
   void store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_access_info_t access_info, bool actually_store);
+  void perform_intrapage_store(reg_t vaddr, uintptr_t host_addr, reg_t paddr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags);
   bool mmio_fetch(reg_t paddr, size_t len, uint8_t* bytes);
   bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes);
