@@ -394,7 +394,8 @@ private:
   // If a TLB tag has TLB_CHECK_TRIGGERS set, then the MMU must check for a
   // trigger match before completing an access.
   static const reg_t TLB_CHECK_TRIGGERS = reg_t(1) << 63;
-  static const reg_t TLB_FLAGS = TLB_CHECK_TRIGGERS;
+  static const reg_t TLB_CHECK_TRACER = reg_t(1) << 62;
+  static const reg_t TLB_FLAGS = TLB_CHECK_TRIGGERS | TLB_CHECK_TRACER;
   dtlb_entry_t tlb_load[TLB_ENTRIES];
   dtlb_entry_t tlb_store[TLB_ENTRIES];
   dtlb_entry_t tlb_insn[TLB_ENTRIES];

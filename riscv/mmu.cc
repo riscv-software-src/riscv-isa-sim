@@ -209,6 +209,9 @@ inline void mmu_t::perform_intrapage_load(reg_t vaddr, uintptr_t host_addr, reg_
     else
       throw trap_load_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
   }
+
+  if (tracer.interested_in_range(paddr, paddr + len, LOAD))
+    tracer.trace(paddr, len, LOAD);
 }
 
 void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info)
@@ -220,9 +223,7 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
     host_addr = (uintptr_t)sim->addr_to_mem(paddr);
 
     if (host_addr) {
-      if (tracer.interested_in_range(paddr, paddr + len, LOAD)) {
-        tracer.trace(paddr, len, LOAD);
-      } else if (!access_info.flags.is_special_access()) {
+      if (!access_info.flags.is_special_access()) {
         refill_tlb(vaddr, paddr, (char*)host_addr, LOAD);
       }
     }
@@ -282,6 +283,9 @@ inline void mmu_t::perform_intrapage_store(reg_t vaddr, uintptr_t host_addr, reg
     auto access_info = generate_access_info(vaddr, STORE, xlate_flags);
     throw trap_store_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
   }
+
+  if (tracer.interested_in_range(paddr, paddr + len, STORE))
+    tracer.trace(paddr, len, STORE);
 }
 
 void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_access_info_t access_info, bool actually_store)
@@ -293,9 +297,7 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
     host_addr = (uintptr_t)sim->addr_to_mem(paddr);
 
     if (actually_store && host_addr) {
-      if (tracer.interested_in_range(paddr, paddr + len, STORE)) {
-        tracer.trace(paddr, len, STORE);
-      } else if (!access_info.flags.is_special_access()) {
+      if (!access_info.flags.is_special_access()) {
         refill_tlb(vaddr, paddr, (char*)host_addr, STORE);
       }
     }
@@ -346,13 +348,16 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
 {
   reg_t idx = (vaddr >> PGSHIFT) % TLB_ENTRIES;
   reg_t expected_tag = vaddr >> PGSHIFT;
+  reg_t base_paddr = paddr & ~reg_t(PGSIZE - 1);
 
   tlb_entry_t entry = {uintptr_t(host_addr) - (vaddr % PGSIZE), paddr - (vaddr % PGSIZE)};
 
   if (in_mprv()
-      || !pmp_homogeneous(paddr & ~reg_t(PGSIZE - 1), PGSIZE)
+      || !pmp_homogeneous(base_paddr, PGSIZE)
       || (proc && proc->get_log_commits_enabled()))
     return entry;
+
+  auto trace_flag = tracer.interested_in_range(base_paddr, base_paddr + PGSIZE, type) ? TLB_CHECK_TRACER : 0;
 
   switch (type) {
     case FETCH:
@@ -361,11 +366,11 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
       break;
     case LOAD:
       tlb_load[idx].data = entry;
-      tlb_load[idx].tag = expected_tag | (check_triggers_load ? TLB_CHECK_TRIGGERS : 0);
+      tlb_load[idx].tag = expected_tag | (check_triggers_load ? TLB_CHECK_TRIGGERS : 0) | trace_flag;
       break;
     case STORE:
       tlb_store[idx].data = entry;
-      tlb_store[idx].tag = expected_tag | (check_triggers_store ? TLB_CHECK_TRIGGERS : 0);
+      tlb_store[idx].tag = expected_tag | (check_triggers_store ? TLB_CHECK_TRIGGERS : 0) | trace_flag;
       break;
     default:
       abort();
