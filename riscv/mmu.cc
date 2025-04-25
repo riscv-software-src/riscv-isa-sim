@@ -88,6 +88,11 @@ mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
     throw trig;
   }
 
+  if  (auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS); tlb_hit) {
+    // Fast path for simple cases
+    return perform_intrapage_fetch(vaddr, host_addr, paddr);
+  }
+
   auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_FLAGS);
   auto access_info = generate_access_info(vaddr, FETCH, {});
   check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt);
@@ -245,6 +250,17 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
 
 void mmu_t::load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
 {
+  if (likely(!xlate_flags.is_special_access())) {
+    // Fast path for simple cases
+    auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_load, original_addr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS);
+    bool intrapage = (original_addr % PGSIZE) + len <= PGSIZE;
+    bool aligned = (original_addr & (len - 1)) == 0;
+
+    if (likely(tlb_hit && (aligned || (intrapage && is_misaligned_enabled())))) {
+      return perform_intrapage_load(original_addr, host_addr, paddr, len, bytes, xlate_flags);
+    }
+  }
+
   auto access_info = generate_access_info(original_addr, LOAD, xlate_flags);
   reg_t transformed_addr = access_info.transformed_vaddr;
   check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt);
@@ -309,6 +325,19 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
 
 void mmu_t::store_slow_path(reg_t original_addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store, bool UNUSED require_alignment)
 {
+  if (likely(!xlate_flags.is_special_access())) {
+    // Fast path for simple cases
+    auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_store, original_addr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS);
+    bool intrapage = (original_addr % PGSIZE) + len <= PGSIZE;
+    bool aligned = (original_addr & (len - 1)) == 0;
+
+    if (likely(tlb_hit && (aligned || (intrapage && is_misaligned_enabled())))) {
+      if (actually_store)
+        perform_intrapage_store(original_addr, host_addr, paddr, len, bytes, xlate_flags);
+      return;
+    }
+  }
+
   auto access_info = generate_access_info(original_addr, STORE, xlate_flags);
   reg_t transformed_addr = access_info.transformed_vaddr;
   if (actually_store) {
