@@ -293,8 +293,7 @@ public:
 
   inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
   {
-    auto [first_parcel, paddr] = fetch_insn_parcel_and_paddr(addr);
-    insn_bits_t insn = first_parcel;
+    insn_bits_t insn = fetch_insn_parcel(addr);
 
     int length = insn_length(insn);
 
@@ -317,9 +316,12 @@ public:
     entry->next = &icache[icache_index(addr + length)];
     entry->data = fetch;
 
-    if (tracer.interested_in_range(paddr, paddr + 1, FETCH)) {
-      entry->tag = -1;
-      tracer.trace(paddr, length, FETCH);
+    auto [check_tracer, _, paddr] = access_tlb(tlb_insn, addr, TLB_FLAGS, TLB_CHECK_TRACER);
+    if (unlikely(check_tracer)) {
+      if (tracer.interested_in_range(paddr, paddr + 1, FETCH)) {
+        entry->tag = -1;
+        tracer.trace(paddr, paddr + length, FETCH);
+      }
     }
 
     return entry;
@@ -339,11 +341,11 @@ public:
     return refill_icache(addr, &entry)->data;
   }
 
-  std::tuple<bool, uintptr_t, reg_t> ALWAYS_INLINE access_tlb(const dtlb_entry_t* tlb, reg_t vaddr, reg_t allowed_flags = 0)
+  std::tuple<bool, uintptr_t, reg_t> ALWAYS_INLINE access_tlb(const dtlb_entry_t* tlb, reg_t vaddr, reg_t allowed_flags = 0, reg_t required_flags = 0)
   {
     auto vpn = vaddr / PGSIZE, pgoff = vaddr % PGSIZE;
     auto& entry = tlb[vpn % TLB_ENTRIES];
-    auto hit = likely((entry.tag & ~allowed_flags) == vpn);
+    auto hit = likely((entry.tag & (~allowed_flags | required_flags)) == (vpn | required_flags));
     bool mmio = allowed_flags & TLB_MMIO & entry.tag;
     auto host_addr = mmio ? 0 : entry.data.host_addr + pgoff;
     auto paddr = entry.data.target_addr + pgoff;
@@ -414,7 +416,8 @@ private:
 
   // handle uncommon cases: TLB misses, page faults, MMIO
   typedef uint16_t insn_parcel_t;
-  std::pair<insn_parcel_t, reg_t> fetch_slow_path(reg_t addr);
+  insn_parcel_t fetch_slow_path(reg_t addr);
+  insn_parcel_t perform_intrapage_fetch(reg_t vaddr, uintptr_t host_addr, reg_t paddr);
   void load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
   void load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info);
   void perform_intrapage_load(reg_t vaddr, uintptr_t host_addr, reg_t paddr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
@@ -479,16 +482,11 @@ private:
     }
   }
 
-  inline std::pair<insn_parcel_t, reg_t> fetch_insn_parcel_and_paddr(reg_t addr) {
-    if (auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, addr); tlb_hit)
-      return std::make_pair(from_le(*(insn_parcel_t*)host_addr), paddr);
-
-    auto [res, paddr] = fetch_slow_path(addr);
-    return std::make_pair(from_le(res), paddr);
-  }
-
   inline insn_parcel_t fetch_insn_parcel(reg_t addr) {
-    return fetch_insn_parcel_and_paddr(addr).first;
+    if (auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, addr); tlb_hit)
+      return from_le(*(insn_parcel_t*)host_addr);
+
+    return from_le(fetch_slow_path(addr));
   }
 
   inline bool in_mprv() const

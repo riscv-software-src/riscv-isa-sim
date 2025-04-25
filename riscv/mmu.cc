@@ -68,7 +68,19 @@ reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
   return paddr;
 }
 
-std::pair<mmu_t::insn_parcel_t, reg_t> mmu_t::fetch_slow_path(reg_t vaddr)
+inline mmu_t::insn_parcel_t mmu_t::perform_intrapage_fetch(reg_t vaddr, uintptr_t host_addr, reg_t paddr)
+{
+  insn_parcel_t res;
+
+  if (host_addr)
+    memcpy(&res, (char*)host_addr, sizeof(res));
+  else if (!mmio_fetch(paddr, sizeof(res), (uint8_t*)&res))
+    throw trap_instruction_access_fault(proc->state.v, vaddr, 0, 0);
+
+  return res;
+}
+
+mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
   if (matched_trigger) {
     auto trig = matched_trigger.value();
@@ -76,27 +88,22 @@ std::pair<mmu_t::insn_parcel_t, reg_t> mmu_t::fetch_slow_path(reg_t vaddr)
     throw trig;
   }
 
-  insn_parcel_t res;
-
+  auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_FLAGS);
   auto access_info = generate_access_info(vaddr, FETCH, {});
   check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt);
 
-  auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_FLAGS);
   if (!tlb_hit) {
-    paddr = translate(access_info, sizeof(res));
+    paddr = translate(access_info, sizeof(insn_parcel_t));
     host_addr = (uintptr_t)sim->addr_to_mem(paddr);
 
     refill_tlb(vaddr, paddr, (char*)host_addr, FETCH);
   }
 
-  if (host_addr)
-    memcpy(&res, (char*)host_addr, sizeof(res));
-  else if (!mmio_fetch(paddr, sizeof(res), (uint8_t*)&res))
-    throw trap_instruction_access_fault(proc->state.v, vaddr, 0, 0);
+  auto res = perform_intrapage_fetch(vaddr, host_addr, paddr);
 
   check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt, from_le(res));
 
-  return std::make_pair(res, paddr);
+  return res;
 }
 
 reg_t reg_from_bytes(size_t len, const uint8_t* bytes)
@@ -356,7 +363,7 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
   switch (type) {
     case FETCH:
       tlb_insn[idx].data = entry;
-      tlb_insn[idx].tag = expected_tag | (check_triggers_fetch ? TLB_CHECK_TRIGGERS : 0) | mmio_flag;
+      tlb_insn[idx].tag = expected_tag | (check_triggers_fetch ? TLB_CHECK_TRIGGERS : 0) | trace_flag | mmio_flag;
       break;
     case LOAD:
       tlb_load[idx].data = entry;
