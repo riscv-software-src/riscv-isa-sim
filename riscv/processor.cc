@@ -244,8 +244,8 @@ void processor_t::set_mmu_capability(int cap)
 reg_t processor_t::select_an_interrupt_with_default_priority(reg_t enabled_interrupts) const
 {
   // nonstandard interrupts have highest priority
-  if (enabled_interrupts >> (IRQ_M_EXT + 1))
-    enabled_interrupts = enabled_interrupts >> (IRQ_M_EXT + 1) << (IRQ_M_EXT + 1);
+  if (enabled_interrupts >> (IRQ_LCOF + 1))
+    enabled_interrupts = enabled_interrupts >> (IRQ_LCOF + 1) << (IRQ_LCOF + 1);
   // standard interrupt priority is MEI, MSI, MTI, SEI, SSI, STI
   else if (enabled_interrupts & MIP_MEIP)
     enabled_interrupts = MIP_MEIP;
