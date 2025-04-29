@@ -56,7 +56,7 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
   if (vlmax == 0) {
     vl->write_raw(0);
   } else if (rd == 0 && rs1 == 0) {
-    vl->write_raw(std::min(vl->read(), vlmax));
+    ; // retain current VL
   } else if (rd != 0 && rs1 == 0) {
     vl->write_raw(vlmax);
   } else if (rs1 != 0) {
