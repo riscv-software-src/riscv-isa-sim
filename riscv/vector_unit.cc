@@ -68,8 +68,8 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
 
 template<class T> T& vectorUnit_t::elt(reg_t vReg, reg_t n, bool UNUSED is_write) {
   assert(vsew != 0);
-  assert((VLEN >> 3)/sizeof(T) > 0);
-  reg_t elts_per_reg = (VLEN >> 3) / (sizeof(T));
+  assert(((VLEN >> 3)/sizeof(T) > 0) || (VLEN == 32));
+  reg_t elts_per_reg = std::min((VLEN >> 3) / (sizeof(T)), (reg_t)1);
   vReg += n / elts_per_reg;
   n = n % elts_per_reg;
 #ifdef WORDS_BIGENDIAN
