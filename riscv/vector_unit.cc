@@ -29,10 +29,11 @@ void vectorUnit_t::vectorUnit_t::reset()
 
 reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newType)
 {
-  int new_vlmul = 0;
   if (vtype->read() != newType) {
+    int new_vlmul = int8_t(extract64(newType, 0, 3) << 5) >> 5;
+    auto old_vlmax = vlmax;
+
     vsew = 1 << (extract64(newType, 3, 3) + 3);
-    new_vlmul = int8_t(extract64(newType, 0, 3) << 5) >> 5;
     vflmul = new_vlmul >= 0 ? 1 << new_vlmul : 1.0 / (1 << -new_vlmul);
     vlmax = (VLEN/vsew) * vflmul;
     vta = extract64(newType, 6, 1);
@@ -40,7 +41,8 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
            || vsew > std::min(vflmul, 1.0f) * ELEN
-           || (newType >> 8) != 0;
+           || (newType >> 8) != 0
+           || (rd == 0 && rs1 == 0 && old_vlmax != vlmax);
 
     if (vill) {
       vlmax = 0;
@@ -54,7 +56,7 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
   if (vlmax == 0) {
     vl->write_raw(0);
   } else if (rd == 0 && rs1 == 0) {
-    vl->write_raw(std::min(vl->read(), vlmax));
+    ; // retain current VL
   } else if (rd != 0 && rs1 == 0) {
     vl->write_raw(vlmax);
   } else if (rs1 != 0) {
