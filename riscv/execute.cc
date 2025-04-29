@@ -342,10 +342,6 @@ void processor_t::step(size_t n)
     }
     catch (triggers::matched_t& t)
     {
-      if (mmu->matched_trigger) {
-        delete mmu->matched_trigger;
-        mmu->matched_trigger = NULL;
-      }
       take_trigger_action(t.action, t.address, pc, t.gva);
     }
     catch(trap_debug_mode&)
