@@ -12,15 +12,11 @@ require_noover(rd_num, P.VU.vflmul, rs2_num, 1);
 
 int cnt = 0;
 for (reg_t i = 0; i < vl; ++i) {
-  const int midx = i / 64;
-  const int mpos = i % 64;
-
-  bool vs2_lsb = ((P.VU.elt<uint64_t>(rs2_num, midx) >> mpos) & 0x1) == 1;
-  bool do_mask = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
+  bool do_mask = P.VU.mask_elt(0, i);
 
   bool has_one = false;
   if (insn.v_vm() == 1 || (insn.v_vm() == 0 && do_mask)) {
-    if (vs2_lsb) {
+    if (P.VU.mask_elt(rs2_num, i)) {
       has_one = true;
     }
   }
