@@ -29,10 +29,10 @@ void vectorUnit_t::vectorUnit_t::reset()
 
 reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newType)
 {
-  int new_vlmul = 0;
   if (vtype->read() != newType) {
+    int new_vlmul = int8_t(extract64(newType, 0, 3) << 5) >> 5;
+
     vsew = 1 << (extract64(newType, 3, 3) + 3);
-    new_vlmul = int8_t(extract64(newType, 0, 3) << 5) >> 5;
     vflmul = new_vlmul >= 0 ? 1 << new_vlmul : 1.0 / (1 << -new_vlmul);
     vlmax = (VLEN/vsew) * vflmul;
     vta = extract64(newType, 6, 1);
