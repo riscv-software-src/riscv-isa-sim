@@ -8,16 +8,10 @@
 //
 // vector: masking skip helper
 //
-#define VI_MASK_VARS \
-  const int midx = i / 64; \
-  const int mpos = i % 64;
-
 #define VI_LOOP_ELEMENT_SKIP(BODY) \
-  VI_MASK_VARS \
   if (insn.v_vm() == 0) { \
     BODY; \
-    bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
-    if (skip) { \
+    if (!P.VU.mask_elt(0, i)) { \
         continue; \
     } \
   }
@@ -231,24 +225,18 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 
 #define VI_LOOP_CARRY_BASE \
   VI_GENERAL_LOOP_BASE \
-  VI_MASK_VARS \
-  auto v0 = P.VU.elt<uint64_t>(0, midx); \
-  const uint64_t mmask = UINT64_C(1) << mpos; \
   const uint128_t op_mask = (UINT64_MAX >> (64 - sew)); \
-  uint64_t carry = insn.v_vm() == 0 ? (v0 >> mpos) & 0x1 : 0; \
-  uint128_t res = 0; \
-  auto &vd = P.VU.elt<uint64_t>(rd_num, midx, true);
+  uint64_t carry = insn.v_vm() == 0 ? P.VU.mask_elt(0, i) : 0; \
+  bool res = false;
 
 #define VI_LOOP_CARRY_END \
-    vd = (vd & ~mmask) | (((res) << mpos) & mmask); \
+    P.VU.set_mask_elt(insn.rd(), i, res); \
   } \
   P.VU.vstart->write(0);
 #define VI_LOOP_WITH_CARRY_BASE \
   VI_GENERAL_LOOP_BASE \
-  VI_MASK_VARS \
-  auto &v0 = P.VU.elt<uint64_t>(0, midx); \
   const uint128_t op_mask = (UINT64_MAX >> (64 - sew)); \
-  uint64_t carry = (v0 >> mpos) & 0x1;
+  uint64_t carry = P.VU.mask_elt(0, i);
 
 #define VI_LOOP_CMP_BASE \
   require(P.VU.vsew >= e8 && P.VU.vsew <= e64); \
@@ -260,12 +248,10 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rs2_num = insn.rs2(); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
-    uint64_t mmask = UINT64_C(1) << mpos; \
-    uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx, true); \
-    uint64_t res = 0;
+    bool res = false;
 
 #define VI_LOOP_CMP_END \
-    vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
+    P.VU.set_mask_elt(insn.rd(), i, res); \
   } \
   P.VU.vstart->write(0);
 
@@ -274,13 +260,9 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   require_vector(true); \
   reg_t vl = P.VU.vl->read(); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
-    int midx = i / 64; \
-    int mpos = i % 64; \
-    uint64_t mmask = UINT64_C(1) << mpos; \
-    uint64_t vs2 = P.VU.elt<uint64_t>(insn.rs2(), midx); \
-    uint64_t vs1 = P.VU.elt<uint64_t>(insn.rs1(), midx); \
-    uint64_t &res = P.VU.elt<uint64_t>(insn.rd(), midx, true); \
-    res = (res & ~mmask) | ((op) & (1ULL << mpos)); \
+    bool vs2 = P.VU.mask_elt(insn.rs2(), i); \
+    bool vs1 = P.VU.mask_elt(insn.rs1(), i); \
+    P.VU.set_mask_elt(insn.rd(), i, (op)); \
   } \
   P.VU.vstart->write(0);
 
@@ -523,8 +505,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 
 // merge and copy loop
 #define VI_MERGE_VARS \
-  VI_MASK_VARS \
-  bool UNUSED use_first = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
+  bool UNUSED use_first = P.VU.mask_elt(0, i);
 
 #define VI_MERGE_LOOP_BASE \
   VI_GENERAL_LOOP_BASE \
@@ -1482,9 +1463,7 @@ VI_VX_ULOOP({ \
   VI_VFP_COMMON \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
-    uint64_t mmask = UINT64_C(1) << mpos; \
-    uint64_t &vd = P.VU.elt<uint64_t>(rd_num, midx, true); \
-    uint64_t res = 0;
+    bool res = false;
 
 #define VI_VFP_LOOP_REDUCTION_BASE(width) \
   float##width##_t vd_0 = P.VU.elt<float##width##_t>(rd_num, 0); \
@@ -1562,7 +1541,7 @@ VI_VX_ULOOP({ \
     case e16: \
     case e32: \
     case e64: { \
-      vd = (vd & ~mmask) | (((res) << mpos) & mmask); \
+      P.VU.set_mask_elt(insn.rd(), i, res); \
       break; \
     } \
     default: \

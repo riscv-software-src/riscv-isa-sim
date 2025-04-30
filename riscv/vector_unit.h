@@ -108,6 +108,17 @@ public:
   template<typename EG> EG&
   elt_group(reg_t vReg, reg_t n, bool is_write = false);
 
+  bool mask_elt(reg_t vReg, reg_t n)
+  {
+    return (elt<uint8_t>(vReg, n / 8) >> (n % 8)) & 1;
+  }
+
+  void set_mask_elt(reg_t vReg, reg_t n, bool value)
+  {
+    auto& e = elt<uint8_t>(vReg, n / 8, true);
+    e = (e & ~(1U << (n % 8))) | (value << (n % 8));
+  }
+
 public:
 
   void reset();
