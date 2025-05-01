@@ -205,7 +205,7 @@ static const extension_info_t extension_infos[] = {
   {"zvfwdota16bf", {EXT_ZVFWDOTA16BF}},
   {"zvkt"},
   {"zvzip", {EXT_ZVZIP}},
-  {"sstc", {EXT_SSTC}},
+  {"sstc", {EXT_SSTC, EXT_ZICNTR}},
   {"smcsrind", {EXT_SMCSRIND}},
   {"sscsrind", {EXT_SSCSRIND}},
   {"smcntrpmf", {EXT_SMCNTRPMF}},
