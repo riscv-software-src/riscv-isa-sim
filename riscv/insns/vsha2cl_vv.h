@@ -2,7 +2,6 @@
 
 #include "zvknh_ext_macros.h"
 
-// Ensures VSEW is 32 or 64, and vd doesn't overlap with either vs1 or vs2.
 require_vsha2_common_constraints;
 
 switch (P.VU.vsew) {
