@@ -344,7 +344,7 @@ std::string ns16550_generate_dts(const sim_t* sim, const std::vector<std::string
   s << "      interrupts = <" << std::dec << NS16550_INTERRUPT_ID;
   reg_t ns16550bs = NS16550_BASE;
   reg_t ns16550sz = NS16550_SIZE;
-  s << std::hex << ">;\n"
+  s << std::hex << " 0x4>;\n"
        "      reg = <0x" << (ns16550bs >> 32) << " 0x" << (ns16550bs & (uint32_t)-1) <<
                    " 0x" << (ns16550sz >> 32) << " 0x" << (ns16550sz & (uint32_t)-1) << ">;\n"
        "      reg-shift = <0x" << NS16550_REG_SHIFT << ">;\n"
