@@ -3,6 +3,7 @@
 #include "zvk_ext_macros.h"
 
 require_zvbb;
+VI_CHECK_DSS(false);
 
 VI_ZVK_VX_WIDENING_ULOOP({
   const reg_t shift = (rs1 & ((2 * sew) - 1));

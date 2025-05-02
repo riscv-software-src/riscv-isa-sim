@@ -16,9 +16,12 @@
 // is checked in the VI_ZVK_..._EGU32x4_..._LOOP macros.
 #define require_vsm4_constraints \
   do { \
+    const uint32_t EGS = 4; \
     require_zvksed; \
     require(P.VU.vsew == 32); \
     require_egw_fits(128); \
+    require(P.VU.vstart->read() % EGS == 0); \
+    require(P.VU.vl->read() % EGS == 0); \
   } while (false)
 
 // Returns a uint32_t value constructed from the 4 bytes (uint8_t)
