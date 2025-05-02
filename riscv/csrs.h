@@ -414,6 +414,7 @@ class generic_int_accessor_t {
   const bool mask_mideleg;
   const bool mask_hideleg;
   const int shiftamt;
+  static const reg_t shiftamt_mask = 0xfff;
   reg_t deleg_mask() const;
 };
 

@@ -835,21 +835,23 @@ generic_int_accessor_t::generic_int_accessor_t(state_t* const state,
 }
 
 reg_t generic_int_accessor_t::ip_read() const noexcept {
-  return (state->mip->read() & deleg_mask() & read_mask) >> shiftamt;
+  const reg_t val = state->mip->read() & deleg_mask() & read_mask;
+  return ((val & shiftamt_mask) >> shiftamt) | (val & ~shiftamt_mask);
 }
 
 void generic_int_accessor_t::ip_write(const reg_t val) noexcept {
   const reg_t mask = deleg_mask() & ip_write_mask;
-  state->mip->write_with_mask(mask, val << shiftamt);
+  state->mip->write_with_mask(mask, ((val & shiftamt_mask) << shiftamt) | (val & ~shiftamt_mask));
 }
 
 reg_t generic_int_accessor_t::ie_read() const noexcept {
-  return (state->mie->read() & deleg_mask() & read_mask) >> shiftamt;
+  const reg_t val = state->mie->read() & deleg_mask() & read_mask;
+  return ((val & shiftamt_mask) >> shiftamt) | (val & ~shiftamt_mask);
 }
 
 void generic_int_accessor_t::ie_write(const reg_t val) noexcept {
   const reg_t mask = deleg_mask() & ie_write_mask;
-  state->mie->write_with_mask(mask, val << shiftamt);
+  state->mie->write_with_mask(mask, ((val & shiftamt_mask) << shiftamt) | (val & ~shiftamt_mask));
 }
 
 reg_t generic_int_accessor_t::deleg_mask() const {
@@ -1225,7 +1227,8 @@ void hypervisor_csr_t::verify_permissions(insn_t insn, bool write) const {
 }
 
 hideleg_csr_t::hideleg_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mideleg):
-  masked_csr_t(proc, addr, MIP_VS_MASK, 0),
+  masked_csr_t(proc, addr, MIP_VS_MASK |
+    (proc->extension_enabled(EXT_SHLCOFIDELEG) ? MIP_LCOFIP : 0), 0),
   mideleg(mideleg) {
 }
 

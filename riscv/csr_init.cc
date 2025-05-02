@@ -109,11 +109,11 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
 
   auto vsip_vsie_accr = std::make_shared<generic_int_accessor_t>(
     this,
-    MIP_VS_MASK,   // read_mask
-    MIP_VSSIP,     // ip_write_mask
-    MIP_VS_MASK,   // ie_write_mask
+    MIP_VS_MASK | MIP_LCOFIP,   // read_mask
+    MIP_VSSIP,                  // ip_write_mask
+    MIP_VS_MASK | MIP_LCOFIP,   // ie_write_mask
     generic_int_accessor_t::mask_mode_t::HIDELEG,
-    1              // shiftamt
+    1                           // shiftamt
   );
 
   auto nonvirtual_sip = std::make_shared<mip_proxy_csr_t>(proc, CSR_SIP, sip_sie_accr);
