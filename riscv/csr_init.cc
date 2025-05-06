@@ -220,7 +220,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   hideleg = std::make_shared<hideleg_csr_t>(proc, CSR_HIDELEG, mideleg);
   if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
     add_hypervisor_csr(CSR_HIDELEG, std::make_shared<rv32_low_csr_t>(proc, CSR_HIDELEG, hideleg));
-    add_hypervisor_csr(CSR_HIDELEGH, std::make_shared<rv32_high_csr_t>(proc, CSR_HIDELEGH, hideleg));
+    add_hypervisor_csr(CSR_HIDELEGH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_HIDELEGH, hideleg));
   } else {
     add_hypervisor_csr(CSR_HIDELEG, hideleg);
   }

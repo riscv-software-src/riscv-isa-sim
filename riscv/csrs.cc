@@ -1715,10 +1715,6 @@ bool stimecmp_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write(val);
 }
 
-virtualized_with_special_permission_csr_t::virtualized_with_special_permission_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
-  virtualized_csr_t(proc, orig, virt) {
-}
-
 void stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (!(state->menvcfg->read() & MENVCFG_STCE)) {
     // access to (v)stimecmp with MENVCFG.STCE = 0
@@ -1737,6 +1733,10 @@ void stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
 
   if ((state->csrmap[CSR_HVICTL]->read() & HVICTL_VTI) && state->v && write)
     throw trap_virtual_instruction(insn.bits());
+}
+
+virtualized_with_special_permission_csr_t::virtualized_with_special_permission_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
+  virtualized_csr_t(proc, orig, virt) {
 }
 
 void virtualized_with_special_permission_csr_t::verify_permissions(insn_t insn, bool write) const {
