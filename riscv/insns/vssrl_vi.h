@@ -1,4 +1,4 @@
-// vssra.vi vd, vs2, simm5
+// vssra.vi vd, vs2, zimm5
 VI_VI_ULOOP
 ({
   VRM xrm = P.VU.get_vround_mode();
