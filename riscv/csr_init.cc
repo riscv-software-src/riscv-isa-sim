@@ -521,7 +521,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
       add_supervisor_csr(CSR_MVIPH, std::make_shared<rv32_high_csr_t>(proc, CSR_MVIPH, mvip));
     } else {
       add_supervisor_csr(CSR_MVIEN, mvien);
-      add_supervisor_csr(CSR_MVIEN, mvip);
+      add_supervisor_csr(CSR_MVIP, mvip);
     }
   }
 

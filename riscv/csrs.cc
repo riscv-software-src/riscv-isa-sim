@@ -654,7 +654,7 @@ void aia_rv32_high_csr_t::verify_permissions(insn_t insn, bool write) const {
       throw trap_virtual_instruction(insn.bits());
   }
 
-  aia_rv32_high_csr_t::verify_permissions(insn, write);
+  rv32_high_csr_t::verify_permissions(insn, write);
 }
 
 // implement class sstatus_csr_t
