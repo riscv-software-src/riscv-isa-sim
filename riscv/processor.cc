@@ -327,7 +327,7 @@ void processor_t::set_privilege(reg_t prv, bool virt)
   state.v_changed = state.v != state.prev_v;
 }
 
-const char* processor_t::get_privilege_string()
+const char* processor_t::get_privilege_string() const
 {
   if (state.debug_mode)
     return "D";

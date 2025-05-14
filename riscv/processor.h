@@ -249,8 +249,8 @@ public:
               FILE *log_file, std::ostream& sout_); // because of command line option --log and -s we need both
   ~processor_t();
 
-  const isa_parser_t &get_isa() { return isa; }
-  const cfg_t &get_cfg() { return *cfg; }
+  const isa_parser_t &get_isa() const & { return isa; }
+  const cfg_t &get_cfg() const & { return *cfg; }
 
   void set_debug(bool value);
   void set_histogram(bool value);
@@ -327,7 +327,7 @@ public:
   }
   reg_t legalize_privilege(reg_t);
   void set_privilege(reg_t, bool);
-  const char* get_privilege_string();
+  const char* get_privilege_string() const;
   void update_histogram(reg_t pc);
   const disassembler_t* get_disassembler() { return disassembler; }
 
@@ -349,8 +349,8 @@ public:
   // When true, display disassembly of each instruction that's executed.
   bool debug;
   // When true, take the slow simulation path.
-  bool slow_path();
-  bool halted() { return state.debug_mode; }
+  bool slow_path() const;
+  bool halted() const { return state.debug_mode; }
   enum {
     HR_NONE,    /* Halt request is inactive. */
     HR_REGULAR, /* Regular halt request/debug interrupt. */
