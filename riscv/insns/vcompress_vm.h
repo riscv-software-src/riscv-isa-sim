@@ -9,11 +9,7 @@ require_noover(insn.rd(), P.VU.vflmul, insn.rs1(), 1);
 reg_t pos = 0;
 
 VI_GENERAL_LOOP_BASE
-  const int midx = i / 64;
-  const int mpos = i % 64;
-
-  bool do_mask = (P.VU.elt<uint64_t>(rs1_num, midx) >> mpos) & 0x1;
-  if (do_mask) {
+  if (P.VU.mask_elt(rs1_num, i)) {
     switch (sew) {
     case e8:
       P.VU.elt<uint8_t>(rd_num, pos, true) = P.VU.elt<uint8_t>(rs2_num, i);
