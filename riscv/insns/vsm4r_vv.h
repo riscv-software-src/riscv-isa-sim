@@ -2,7 +2,9 @@
 
 #include "zvksed_ext_macros.h"
 
+
 require_vsm4_constraints;
+VI_CHECK_SSS(false)
 
 VI_ZVK_VD_VS2_EGU32x4_NOVM_LOOP(
   {},
