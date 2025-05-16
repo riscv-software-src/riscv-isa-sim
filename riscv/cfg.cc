@@ -47,4 +47,5 @@ cfg_t::cfg_t()
   explicit_hartids = false;
   real_time_clint  = false;
   trigger_count    = 4;
+  cache_blocksz    = 64;
 }

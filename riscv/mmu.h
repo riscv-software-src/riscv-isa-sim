@@ -89,7 +89,7 @@ private:
   mem_access_info_t generate_access_info(reg_t addr, access_type type, xlate_flags_t xlate_flags);
 
 public:
-  mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc);
+  mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc, reg_t cache_blocksz);
   ~mmu_t();
 
   template<typename T>
@@ -395,11 +395,6 @@ public:
   template<typename T> inline target_endian<T> to_target(T n) const
   {
     return target_big_endian? target_endian<T>::to_be(n) : target_endian<T>::to_le(n);
-  }
-
-  void set_cache_blocksz(reg_t size)
-  {
-    blocksz = size;
   }
 
 private:
