@@ -96,7 +96,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   }
 #endif
 
-  debug_mmu = new mmu_t(this, cfg->endianness, NULL);
+  debug_mmu = new mmu_t(this, cfg->endianness, NULL, cfg->cache_blocksz);
 
   // When running without using a dtb, skip the fdt-based configuration steps
   if (!dtb_enabled) {

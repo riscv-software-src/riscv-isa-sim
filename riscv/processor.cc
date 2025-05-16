@@ -62,7 +62,7 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
   VU.vstart_alu = 0;
 
   register_base_instructions();
-  mmu = new mmu_t(sim, cfg->endianness, this);
+  mmu = new mmu_t(sim, cfg->endianness, this, cfg->cache_blocksz);
 
   disassembler = new disassembler_t(&isa);
   for (auto e : isa.get_extensions())
