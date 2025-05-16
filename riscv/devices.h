@@ -87,7 +87,7 @@ public:
   reg_t size() override;
 
 private:
-abstract_sim_if_t* external_simulator;
+  abstract_sim_if_t* external_simulator;
 };
 
 class clint_t : public abstract_device_t {
