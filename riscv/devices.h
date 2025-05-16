@@ -80,14 +80,14 @@ public:
 
 class external_sim_device_t : public abstract_device_t {
 public:
-  external_sim_device_t(void* sim);
-  void set_simulator(void* sim);
+  external_sim_device_t(abstract_sim_if_t* sim);
+  void set_simulator(abstract_sim_if_t* sim);
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
   reg_t size() override;
 
 private:
-  void* external_simulator;
+  abstract_sim_if_t* external_simulator;
 };
 
 class clint_t : public abstract_device_t {
