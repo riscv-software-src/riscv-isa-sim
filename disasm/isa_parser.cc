@@ -386,6 +386,14 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_SSDBLTRP] = true;
     } else if (ext_str == "smdbltrp") {
       extension_table[EXT_SMDBLTRP] = true;
+    } else if (ext_str == "smaia") {
+      extension_table[EXT_SMAIA] = true;
+      extension_table[EXT_SSAIA] = true;
+      extension_table[EXT_SMCSRIND] = true;
+      extension_table[EXT_SSCSRIND] = true;
+    } else if (ext_str == "ssaia") {
+      extension_table[EXT_SSAIA] = true;
+      extension_table[EXT_SSCSRIND] = true;
     } else if (ext_str[0] == 'x') {
       extension_table['X'] = true;
       if (ext_str.size() == 1) {

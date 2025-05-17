@@ -15,6 +15,8 @@
 #include "insn_macros.h"
 // For CSR_DCSR_V:
 #include "debug_defines.h"
+// For ctz:
+#include "arith.h"
 
 // STATE macro used by require_privilege() macro:
 #undef STATE
@@ -639,6 +641,22 @@ reg_t rv32_high_csr_t::written_value() const noexcept {
   return (orig->written_value() >> 32) & 0xffffffffU;
 }
 
+aia_rv32_high_csr_t::aia_rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig):
+  rv32_high_csr_t(proc, addr, orig) {
+}
+
+void aia_rv32_high_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_AIA))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_AIA))
+      throw trap_virtual_instruction(insn.bits());
+  }
+
+  rv32_high_csr_t::verify_permissions(insn, write);
+}
+
 // implement class sstatus_csr_t
 sstatus_csr_t::sstatus_csr_t(processor_t* const proc, sstatus_proxy_csr_t_p orig, vsstatus_csr_t_p virt):
   virtualized_csr_t(proc, orig, virt),
@@ -781,8 +799,14 @@ mip_csr_t::mip_csr_t(processor_t* const proc, const reg_t addr):
   mip_or_mie_csr_t(proc, addr) {
 }
 
+void mip_csr_t::write_with_mask(const reg_t mask, const reg_t val) noexcept {
+  if (!(state->mvien->read() & MIP_SEIP) && (mask & MIP_SEIP))
+    state->mvip->write_with_mask(MIP_SEIP, val); // mvip.SEIP is an alias of mip.SEIP when mvien.SEIP=0
+  mip_or_mie_csr_t::write_with_mask(mask & ~MIP_SEIP, val);
+}
+
 reg_t mip_csr_t::read() const noexcept {
-  return val | state->hvip->basic_csr_t::read();
+  return val | state->hvip->basic_csr_t::read() | ((state->mvien->read() & MIP_SEIP) ? 0 : (state->mvip->basic_csr_t::read() & MIP_SEIP));
 }
 
 void mip_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept {
@@ -864,6 +888,13 @@ mip_proxy_csr_t::mip_proxy_csr_t(processor_t* const proc, const reg_t addr, gene
   accr(accr) {
 }
 
+void mip_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
+  csr_t::verify_permissions(insn, write);
+  if ((state->csrmap[CSR_HVICTL]->read() & HVICTL_VTI) &&
+      proc->extension_enabled('S') && state->v)
+    throw trap_virtual_instruction(insn.bits()); // VS-mode attempts to access sip when hvictl.VTI=1
+}
+
 reg_t mip_proxy_csr_t::read() const noexcept {
   return accr->ip_read();
 }
@@ -877,6 +908,13 @@ bool mip_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
 mie_proxy_csr_t::mie_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr):
   csr_t(proc, addr),
   accr(accr) {
+}
+
+void mie_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
+  csr_t::verify_permissions(insn, write);
+  if ((state->csrmap[CSR_HVICTL]->read() & HVICTL_VTI) &&
+      proc->extension_enabled('S') && state->v)
+    throw trap_virtual_instruction(insn.bits()); // VS-mode attempts to access sie when hvictl.VTI=1
 }
 
 reg_t mie_proxy_csr_t::read() const noexcept {
@@ -954,6 +992,38 @@ bool medeleg_csr_t::unlogged_write(const reg_t val) noexcept {
     | (1 << CAUSE_HARDWARE_ERROR_FAULT)
     ;
   return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
+}
+
+sip_csr_t::sip_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr):
+  mip_proxy_csr_t(proc, addr, accr) {
+}
+
+reg_t sip_csr_t::read() const noexcept {
+  const reg_t mask = ~state->mideleg->read() & state->mvien->read();
+  return (mip_proxy_csr_t::read() & ~mask) | (state->mvip->read() & mask);
+}
+
+bool sip_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t mask = ~state->mideleg->read() & state->mvien->read();
+  state->mvip->write_with_mask(mask & accr->get_ip_write_mask(), val);
+  return mip_proxy_csr_t::unlogged_write(val & ~mask);
+}
+
+sie_csr_t::sie_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr):
+  mie_proxy_csr_t(proc, addr, accr),
+  val(0) {
+}
+
+reg_t sie_csr_t::read() const noexcept {
+  const reg_t mask = ~state->mideleg->read() & state->mvien->read();
+  return (mie_proxy_csr_t::read() & ~mask) | (val & mask);
+}
+
+bool sie_csr_t::unlogged_write(const reg_t val) noexcept {
+  const reg_t mask = ~state->mideleg->read() & state->mvien->read();
+  this->val = (this->val & ~mask) | (val & mask);
+  mie_proxy_csr_t::unlogged_write(val & ~mask);
+  return true;
 }
 
 // implement class masked_csr_t
@@ -1645,10 +1715,6 @@ bool stimecmp_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write(val);
 }
 
-virtualized_stimecmp_csr_t::virtualized_stimecmp_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
-  virtualized_csr_t(proc, orig, virt) {
-}
-
 void stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (!(state->menvcfg->read() & MENVCFG_STCE)) {
     // access to (v)stimecmp with MENVCFG.STCE = 0
@@ -1664,9 +1730,16 @@ void stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
   }
 
   basic_csr_t::verify_permissions(insn, write);
+
+  if ((state->csrmap[CSR_HVICTL]->read() & HVICTL_VTI) && state->v && write)
+    throw trap_virtual_instruction(insn.bits());
 }
 
-void virtualized_stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
+virtualized_with_special_permission_csr_t::virtualized_with_special_permission_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
+  virtualized_csr_t(proc, orig, virt) {
+}
+
+void virtualized_with_special_permission_csr_t::verify_permissions(insn_t insn, bool write) const {
   orig_csr->verify_permissions(insn, write);
 }
 
@@ -1754,14 +1827,16 @@ sscsrind_reg_csr_t::sscsrind_reg_csr_t(processor_t* const proc, const reg_t addr
 }
 
 void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_CSRIND))
+      throw trap_illegal_instruction(insn.bits());
+  }
+
   // Don't call base verify_permission for VS registers remapped to S-mode
   if (insn.csr() == address)
     csr_t::verify_permissions(insn, write);
 
   if (proc->extension_enabled(EXT_SMSTATEEN)) {
-    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_CSRIND))
-      throw trap_illegal_instruction(insn.bits());
-
     if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_CSRIND))
       throw trap_virtual_instruction(insn.bits());
   }
@@ -1972,4 +2047,177 @@ bool scntinhibit_csr_t::unlogged_write(const reg_t val) noexcept {
 
 reg_t scntinhibit_csr_t::read() const noexcept {
   return state->mcounteren->read() & state->mcountinhibit->read();
+}
+
+mtopi_csr_t::mtopi_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+reg_t mtopi_csr_t::read() const noexcept {
+  reg_t enabled_interrupts = state->mip->read() & state->mie->read() & ~state->mideleg->read();
+  if (!enabled_interrupts)
+    return 0; // no enabled pending interrupt to M-mode
+
+  reg_t selected_interrupt = proc->select_an_interrupt_with_default_priority(enabled_interrupts);
+  reg_t identity = ctz(selected_interrupt);
+  return set_field((reg_t)1, MTOPI_IID, identity); // IPRIO always 1 if iprio array is RO0
+}
+
+bool mtopi_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
+  return false;
+}
+
+mvip_csr_t::mvip_csr_t(processor_t* const proc, const reg_t addr, const reg_t init):
+  basic_csr_t(proc, addr, init) {
+}
+
+reg_t mvip_csr_t::read() const noexcept {
+  const reg_t val = basic_csr_t::read();
+  const reg_t mvien = state->mvien->read();
+  const reg_t mip = state->mip->read();
+  const reg_t menvcfg = state->menvcfg->read();
+  return 0
+    | (val & MIP_SEIP)
+    | ((menvcfg & MENVCFG_STCE) ? 0 : (mip & MIP_STIP))
+    | (((mvien & MIP_SSIP) ? val : mip) & MIP_SSIP)
+    ;
+}
+
+bool mvip_csr_t::unlogged_write(const reg_t val) noexcept {
+  if (!(state->menvcfg->read() & MENVCFG_STCE))
+    state->mip->write_with_mask(MIP_STIP, val); // mvip.STIP is an alias of mip.STIP when mip.STIP is writable
+  if (!(state->mvien->read() & MIP_SSIP))
+    state->mip->write_with_mask(MIP_SSIP, val); // mvip.SSIP is an alias of mip.SSIP when mvien.SSIP=0
+
+  const reg_t new_val = (val & MIP_SEIP) | (((state->mvien->read() & MIP_SSIP) ? val : basic_csr_t::read()) & MIP_SSIP);
+  return basic_csr_t::unlogged_write(new_val);
+}
+
+void mvip_csr_t::write_with_mask(const reg_t mask, const reg_t val) noexcept {
+  basic_csr_t::unlogged_write((basic_csr_t::read() & ~mask) | (val & mask));
+  log_write();
+}
+
+nonvirtual_stopi_csr_t::nonvirtual_stopi_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+void nonvirtual_stopi_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_AIA))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_AIA))
+      throw trap_virtual_instruction(insn.bits());
+  }
+
+  csr_t::verify_permissions(insn, write);
+}
+
+reg_t nonvirtual_stopi_csr_t::read() const noexcept {
+  reg_t enabled_interrupts = state->nonvirtual_sip->read() & state->nonvirtual_sie->read() & ~state->hideleg->read();
+  if (!enabled_interrupts)
+    return 0; // no enabled pending interrupt to S-mode
+
+  reg_t selected_interrupt = proc->select_an_interrupt_with_default_priority(enabled_interrupts);
+  reg_t identity = ctz(selected_interrupt);
+  return set_field((reg_t)1, MTOPI_IID, identity); // IPRIO always 1 if iprio array is RO0
+}
+
+bool nonvirtual_stopi_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
+  return false;
+}
+
+inaccessible_csr_t::inaccessible_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+void inaccessible_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (state->v)
+    throw trap_virtual_instruction(insn.bits());
+  else
+    throw trap_illegal_instruction(insn.bits());
+}
+
+vstopi_csr_t::vstopi_csr_t(processor_t* const proc, const reg_t addr):
+  csr_t(proc, addr) {
+}
+
+void vstopi_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_AIA))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_AIA))
+      throw trap_virtual_instruction(insn.bits());
+  }
+
+  csr_t::verify_permissions(insn, write);
+}
+
+reg_t vstopi_csr_t::read() const noexcept {
+  reg_t hvictl = state->hvictl->read();
+  bool vti = hvictl & HVICTL_VTI;
+  reg_t iid = get_field(hvictl, HVICTL_IID);
+  bool dpr = hvictl & HVICTL_DPR;
+  bool ipriom = hvictl & HVICTL_IPRIOM;
+  reg_t iprio = get_field(hvictl, HVICTL_IPRIO);
+
+  reg_t enabled_interrupts = state->mip->read() & state->mie->read() & state->hideleg->read();
+  enabled_interrupts >>= 1; // VSSIP -> SSIP, etc
+  reg_t vgein = get_field(state->hstatus->read(), HSTATUS_VGEIN);
+  reg_t virtual_sei_priority = (vgein == 0 && iid == IRQ_S_EXT && iprio != 0) ? iprio : 255; // vstopi.IPRIO is 255 for priority number 256
+
+  reg_t identity, priority;
+  if (vti) {
+    if (!(enabled_interrupts & MIP_SEIP) && iid == IRQ_S_EXT)
+      return 0;
+
+    identity = ((enabled_interrupts & MIP_SEIP) && (iid == IRQ_S_EXT || dpr)) ? IRQ_S_EXT : iid;
+    priority = (identity == IRQ_S_EXT) ? virtual_sei_priority : ((iprio != 0 || !dpr) ? iprio : 255);
+  } else {
+    if (!enabled_interrupts)
+      return 0; // no enabled pending interrupt to VS-mode
+
+    reg_t selected_interrupt = proc->select_an_interrupt_with_default_priority(enabled_interrupts);
+    identity = ctz(selected_interrupt);
+    priority = (identity == IRQ_S_EXT) ? virtual_sei_priority : 255; // vstopi.IPRIO is 255 for interrupt with default priority lower than VSEI
+  }
+  return set_field((reg_t)(ipriom ? priority : 1), MTOPI_IID, identity);
+}
+
+bool vstopi_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
+  return false;
+}
+
+siselect_csr_t::siselect_csr_t(processor_t* const proc, const reg_t addr, const reg_t init):
+  basic_csr_t(proc, addr, init) {
+}
+
+void siselect_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_CSRIND))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_CSRIND))
+      throw trap_virtual_instruction(insn.bits());
+  }
+
+  basic_csr_t::verify_permissions(insn, write);
+}
+
+aia_csr_t::aia_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  masked_csr_t(proc, addr, mask, init) {
+}
+
+void aia_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_AIA))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_AIA))
+      throw trap_virtual_instruction(insn.bits());
+  }
+
+  basic_csr_t::verify_permissions(insn, write);
 }
