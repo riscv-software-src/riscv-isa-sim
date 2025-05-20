@@ -20,10 +20,16 @@ mkdir -p build/dummycsr && cd "$_"
 riscv64-unknown-elf-gcc -O2 -o customcsr `git rev-parse --show-toplevel`/ci-tests/customcsr.c
 cd -
 
+mkdir -p build/atomics && cd "$_"
+riscv64-unknown-elf-gcc -O2 -o atomics `git rev-parse --show-toplevel`/ci-tests/atomics.c
+cd -
+
+
 mv build/pk/pk .
 mv build/hello/hello .
 mv build/dummy-slliuw/dummy-slliuw .
 mv build/dummycsr/customcsr .
-tar -cf spike-ci.tar pk hello dummy-slliuw customcsr
+mv build/atomics/atomics .
+tar -cf spike-ci.tar pk hello dummy-slliuw customcsr atomics
 
-rm pk hello dummy-slliuw customcsr
+rm pk hello dummy-slliuw customcsr atomics
