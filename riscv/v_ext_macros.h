@@ -200,7 +200,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   require_vector(true); \
   reg_t vl = P.VU.vl->read(); \
   reg_t UNUSED sew = P.VU.vsew; \
-  reg_t rd_num = insn.rd(); \
+  reg_t UNUSED rd_num = insn.rd(); \
   reg_t UNUSED rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) {
@@ -336,7 +336,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 
 #define VI_PARAMS(x) \
   type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
-  type_sew_t<x>::type simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
+  type_sew_t<x>::type UNUSED simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
   type_sew_t<x>::type UNUSED vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
 
 #define XV_PARAMS(x) \
