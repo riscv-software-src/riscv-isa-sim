@@ -247,6 +247,8 @@ softfloat_c_srcs = \
 
 softfloat_install_shared_lib = yes
 
+softfloat_install_lib = yes
+
 softfloat_test_srcs =
 
 softfloat_install_hdrs = \
