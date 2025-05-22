@@ -508,7 +508,7 @@ private:
   {
     return proc != nullptr
            && !(proc->state.mnstatus && !get_field(proc->state.mnstatus->read(), MNSTATUS_NMIE))
-           && !proc->state.debug_mode
+           && (!proc->state.debug_mode || get_field(proc->state.dcsr->read(), DCSR_MPRVEN))
            && get_field(proc->state.mstatus->read(), MSTATUS_MPRV);
   }
 
