@@ -12,6 +12,24 @@ void state_t::add_csr(reg_t addr, const csr_t_p& csr)
 #define add_supervisor_csr(addr, csr) add_const_ext_csr('S', addr, csr)
 #define add_hypervisor_csr(addr, csr) add_ext_csr('H', addr, csr)
 
+void state_t::add_ireg_proxy(processor_t* const proc, sscsrind_reg_csr_t::sscsrind_reg_csr_t_p ireg)
+{
+  // This assumes xlen is always max_xlen, which is true today (see
+  // mstatus_csr_t::unlogged_write()):
+  auto xlen = proc->get_isa().get_max_xlen();
+
+  const reg_t iprio0_addr = 0x30;
+  for (int i=0; i<16; i+=2) {
+    csr_t_p iprio = std::make_shared<aia_csr_t>(proc, iprio0_addr + i, 0, 0);
+    if (xlen == 32) {
+      ireg->add_ireg_proxy(iprio0_addr + i, std::make_shared<rv32_low_csr_t>(proc, iprio0_addr + i, iprio));
+      ireg->add_ireg_proxy(iprio0_addr + i + 1, std::make_shared<rv32_high_csr_t>(proc, iprio0_addr + i + 1, iprio));
+    } else {
+      ireg->add_ireg_proxy(iprio0_addr + i, iprio);
+    }
+  }
+}
+
 void state_t::csr_init(processor_t* const proc, reg_t max_isa)
 {
   // This assumes xlen is always max_xlen, which is true today (see
@@ -87,8 +105,17 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     }
   }
   add_const_ext_csr(EXT_SSCOFPMF, CSR_SCOUNTOVF, std::make_shared<scountovf_csr_t>(proc, CSR_SCOUNTOVF));
-  add_csr(CSR_MIE, mie = std::make_shared<mie_csr_t>(proc, CSR_MIE));
-  add_csr(CSR_MIP, mip = std::make_shared<mip_csr_t>(proc, CSR_MIP));
+  mie = std::make_shared<mie_csr_t>(proc, CSR_MIE);
+  mip = std::make_shared<mip_csr_t>(proc, CSR_MIP);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SMAIA)) {
+    add_csr(CSR_MIE, std::make_shared<rv32_low_csr_t>(proc, CSR_MIE, mie));
+    add_csr(CSR_MIEH, std::make_shared<rv32_high_csr_t>(proc, CSR_MIEH, mie));
+    add_csr(CSR_MIP, std::make_shared<rv32_low_csr_t>(proc, CSR_MIP, mip));
+    add_csr(CSR_MIPH, std::make_shared<rv32_high_csr_t>(proc, CSR_MIPH, mip));
+  } else {
+    add_csr(CSR_MIE, mie);
+    add_csr(CSR_MIP, mip);
+  }
   auto sip_sie_accr = std::make_shared<generic_int_accessor_t>(
     this,
     ~MIP_HS_MASK,  // read_mask
@@ -116,21 +143,49 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     1              // shiftamt
   );
 
-  auto nonvirtual_sip = std::make_shared<mip_proxy_csr_t>(proc, CSR_SIP, sip_sie_accr);
+  nonvirtual_sip = std::make_shared<sip_csr_t>(proc, CSR_SIP, sip_sie_accr);
   auto vsip = std::make_shared<mip_proxy_csr_t>(proc, CSR_VSIP, vsip_vsie_accr);
-  add_hypervisor_csr(CSR_VSIP, vsip);
-  add_supervisor_csr(CSR_SIP, std::make_shared<virtualized_csr_t>(proc, nonvirtual_sip, vsip));
+  auto sip = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sip, vsip);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
+    add_hypervisor_csr(CSR_VSIP, std::make_shared<rv32_low_csr_t>(proc, CSR_VSIP, vsip));
+    add_hypervisor_csr(CSR_VSIPH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_VSIPH, vsip));
+    add_supervisor_csr(CSR_SIP, std::make_shared<rv32_low_csr_t>(proc, CSR_SIP, sip));
+    add_supervisor_csr(CSR_SIPH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_SIPH, sip));
+  } else {
+    add_hypervisor_csr(CSR_VSIP, vsip);
+    add_supervisor_csr(CSR_SIP, sip);
+  }
   add_hypervisor_csr(CSR_HIP, std::make_shared<mip_proxy_csr_t>(proc, CSR_HIP, hip_hie_accr));
-  add_hypervisor_csr(CSR_HVIP, hvip = std::make_shared<hvip_csr_t>(proc, CSR_HVIP, 0));
+  hvip = std::make_shared<hvip_csr_t>(proc, CSR_HVIP, 0);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
+    add_hypervisor_csr(CSR_HVIP, std::make_shared<rv32_low_csr_t>(proc, CSR_HVIP, hvip));
+    add_hypervisor_csr(CSR_HVIPH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_HVIPH, hvip));
+  } else {
+    add_hypervisor_csr(CSR_HVIP, hvip);
+  }
 
-  auto nonvirtual_sie = std::make_shared<mie_proxy_csr_t>(proc, CSR_SIE, sip_sie_accr);
+  nonvirtual_sie = std::make_shared<sie_csr_t>(proc, CSR_SIE, sip_sie_accr);
   auto vsie = std::make_shared<mie_proxy_csr_t>(proc, CSR_VSIE, vsip_vsie_accr);
-  add_hypervisor_csr(CSR_VSIE, vsie);
-  add_supervisor_csr(CSR_SIE, std::make_shared<virtualized_csr_t>(proc, nonvirtual_sie, vsie));
+  auto sie = std::make_shared<virtualized_csr_t>(proc, nonvirtual_sie, vsie);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
+    add_hypervisor_csr(CSR_VSIE, std::make_shared<rv32_low_csr_t>(proc, CSR_VSIE, vsie));
+    add_hypervisor_csr(CSR_VSIEH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_VSIEH, vsie));
+    add_supervisor_csr(CSR_SIE, std::make_shared<rv32_low_csr_t>(proc, CSR_SIE, sie));
+    add_supervisor_csr(CSR_SIEH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_SIEH, sie));
+  } else {
+    add_hypervisor_csr(CSR_VSIE, vsie);
+    add_supervisor_csr(CSR_SIE, sie);
+  }
   add_hypervisor_csr(CSR_HIE, std::make_shared<mie_proxy_csr_t>(proc, CSR_HIE, hip_hie_accr));
 
   add_supervisor_csr(CSR_MEDELEG, medeleg = std::make_shared<medeleg_csr_t>(proc, CSR_MEDELEG));
-  add_supervisor_csr(CSR_MIDELEG, mideleg = std::make_shared<mideleg_csr_t>(proc, CSR_MIDELEG));
+  mideleg = std::make_shared<mideleg_csr_t>(proc, CSR_MIDELEG);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SMAIA)) {
+    add_supervisor_csr(CSR_MIDELEG, std::make_shared<rv32_low_csr_t>(proc, CSR_MIDELEG, mideleg));
+    add_supervisor_csr(CSR_MIDELEGH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_MIDELEGH, mideleg));
+  } else {
+    add_supervisor_csr(CSR_MIDELEG, mideleg);
+  }
   const reg_t counteren_mask = (proc->extension_enabled_const(EXT_ZICNTR) ? 0x7UL : 0x0) | (proc->extension_enabled_const(EXT_ZIHPM) ? 0xfffffff8ULL : 0x0);
   add_user_csr(CSR_MCOUNTEREN, mcounteren = std::make_shared<masked_csr_t>(proc, CSR_MCOUNTEREN, counteren_mask, 0));
   add_csr(CSR_MCOUNTINHIBIT, mcountinhibit = std::make_shared<masked_csr_t>(proc, CSR_MCOUNTINHIBIT, counteren_mask & (~MCOUNTEREN_TIME), 0));
@@ -162,7 +217,13 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   add_hypervisor_csr(CSR_HSTATUS, hstatus = std::make_shared<hstatus_csr_t>(proc, CSR_HSTATUS));
   add_hypervisor_csr(CSR_HGEIE, std::make_shared<const_csr_t>(proc, CSR_HGEIE, 0));
   add_hypervisor_csr(CSR_HGEIP, std::make_shared<const_csr_t>(proc, CSR_HGEIP, 0));
-  add_hypervisor_csr(CSR_HIDELEG, hideleg = std::make_shared<hideleg_csr_t>(proc, CSR_HIDELEG, mideleg));
+  hideleg = std::make_shared<hideleg_csr_t>(proc, CSR_HIDELEG, mideleg);
+  if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
+    add_hypervisor_csr(CSR_HIDELEG, std::make_shared<rv32_low_csr_t>(proc, CSR_HIDELEG, hideleg));
+    add_hypervisor_csr(CSR_HIDELEGH, std::make_shared<aia_rv32_high_csr_t>(proc, CSR_HIDELEGH, hideleg));
+  } else {
+    add_hypervisor_csr(CSR_HIDELEG, hideleg);
+  }
   const reg_t hedeleg_mask =
     (1 << CAUSE_MISALIGNED_FETCH) |
     (1 << CAUSE_FETCH_ACCESS) |
@@ -285,7 +346,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     const reg_t sstateen0_mask = (proc->extension_enabled(EXT_ZFINX) ? SSTATEEN0_FCSR : 0) |
                                  (proc->extension_enabled(EXT_ZCMT) ? SSTATEEN0_JVT : 0) |
                                  SSTATEEN0_CS;
-    const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN;
+    const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_CSRIND | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN;
     const reg_t mstateen0_mask = hstateen0_mask | (proc->extension_enabled(EXT_SSQOSID) ?  MSTATEEN0_PRIV114 : 0);
     for (int i = 0; i < 4; i++) {
       const reg_t mstateen_mask = i == 0 ? mstateen0_mask : MSTATEEN_HSTATEEN;
@@ -321,7 +382,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   if (proc->extension_enabled_const(EXT_SSTC)) {
     stimecmp = std::make_shared<stimecmp_csr_t>(proc, CSR_STIMECMP, MIP_STIP);
     vstimecmp = std::make_shared<stimecmp_csr_t>(proc, CSR_VSTIMECMP, MIP_VSTIP);
-    auto virtualized_stimecmp = std::make_shared<virtualized_stimecmp_csr_t>(proc, stimecmp, vstimecmp);
+    auto virtualized_stimecmp = std::make_shared<virtualized_with_special_permission_csr_t>(proc, stimecmp, vstimecmp);
     if (xlen == 32) {
       add_supervisor_csr(CSR_STIMECMP, std::make_shared<rv32_low_csr_t>(proc, CSR_STIMECMP, virtualized_stimecmp));
       add_supervisor_csr(CSR_STIMECMPH, std::make_shared<rv32_high_csr_t>(proc, CSR_STIMECMPH, virtualized_stimecmp));
@@ -348,20 +409,30 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     csr_t_p miselect = std::make_shared<basic_csr_t>(proc, CSR_MISELECT, 0);
     add_csr(CSR_MISELECT, miselect);
 
-    const reg_t mireg_csrs[] = { CSR_MIREG, CSR_MIREG2, CSR_MIREG3, CSR_MIREG4, CSR_MIREG5, CSR_MIREG6 };
+    sscsrind_reg_csr_t::sscsrind_reg_csr_t_p mireg;
+    add_csr(CSR_MIREG, mireg = std::make_shared<sscsrind_reg_csr_t>(proc, CSR_MIREG, miselect));
+    add_ireg_proxy(proc, mireg);
+    const reg_t mireg_csrs[] = { CSR_MIREG2, CSR_MIREG3, CSR_MIREG4, CSR_MIREG5, CSR_MIREG6 };
     for (auto csr : mireg_csrs)
       add_csr(csr, std::make_shared<sscsrind_reg_csr_t>(proc, csr, miselect));
   }
 
   if (proc->extension_enabled_const(EXT_SSCSRIND)) {
-    csr_t_p vsiselect = std::make_shared<basic_csr_t>(proc, CSR_VSISELECT, 0);
+    csr_t_p vsiselect = std::make_shared<siselect_csr_t>(proc, CSR_VSISELECT, 0);
     add_hypervisor_csr(CSR_VSISELECT, vsiselect);
 
-    csr_t_p siselect = std::make_shared<basic_csr_t>(proc, CSR_SISELECT, 0);
-    add_supervisor_csr(CSR_SISELECT, std::make_shared<virtualized_csr_t>(proc, siselect, vsiselect));
+    csr_t_p siselect = std::make_shared<siselect_csr_t>(proc, CSR_SISELECT, 0);
+    add_supervisor_csr(CSR_SISELECT, std::make_shared<virtualized_with_special_permission_csr_t>(proc, siselect, vsiselect));
 
-    const reg_t vsireg_csrs[] = { CSR_VSIREG, CSR_VSIREG2, CSR_VSIREG3, CSR_VSIREG4, CSR_VSIREG5, CSR_VSIREG6 };
-    const reg_t sireg_csrs[] = { CSR_SIREG, CSR_SIREG2, CSR_SIREG3, CSR_SIREG4, CSR_SIREG5, CSR_SIREG6 };
+    auto vsireg = std::make_shared<sscsrind_reg_csr_t>(proc, CSR_VSIREG, vsiselect);
+    add_hypervisor_csr(CSR_VSIREG, vsireg);
+
+    auto sireg = std::make_shared<sscsrind_reg_csr_t>(proc, CSR_SIREG, siselect);
+    add_ireg_proxy(proc, sireg);
+    add_supervisor_csr(CSR_SIREG, std::make_shared<virtualized_indirect_csr_t>(proc, sireg, vsireg));
+
+    const reg_t vsireg_csrs[] = { CSR_VSIREG2, CSR_VSIREG3, CSR_VSIREG4, CSR_VSIREG5, CSR_VSIREG6 };
+    const reg_t sireg_csrs[] = { CSR_SIREG2, CSR_SIREG3, CSR_SIREG4, CSR_SIREG5, CSR_SIREG6 };
     for (size_t i = 0; i < std::size(vsireg_csrs); i++) {
       auto vsireg = std::make_shared<sscsrind_reg_csr_t>(proc, vsireg_csrs[i], vsiselect);
       add_hypervisor_csr(vsireg_csrs[i], vsireg);
@@ -438,4 +509,44 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
 
   const reg_t srmcfg_mask = SRMCFG_MCID | SRMCFG_RCID;
   add_const_ext_csr(EXT_SSQOSID, CSR_SRMCFG, std::make_shared<srmcfg_csr_t>(proc, CSR_SRMCFG, srmcfg_mask, 0));
+
+  mvien = std::make_shared<masked_csr_t>(proc, CSR_MVIEN, MIP_SEIP | MIP_SSIP, 0);
+  mvip = std::make_shared<mvip_csr_t>(proc, CSR_MVIP, 0);
+  if (proc->extension_enabled_const(EXT_SMAIA)) {
+    add_csr(CSR_MTOPI, std::make_shared<mtopi_csr_t>(proc, CSR_MTOPI));
+    if (xlen == 32) {
+      add_supervisor_csr(CSR_MVIEN, std::make_shared<rv32_low_csr_t>(proc, CSR_MVIEN, mvien));
+      add_supervisor_csr(CSR_MVIENH, std::make_shared<rv32_high_csr_t>(proc, CSR_MVIENH, mvien));
+      add_supervisor_csr(CSR_MVIP, std::make_shared<rv32_low_csr_t>(proc, CSR_MVIP, mvip));
+      add_supervisor_csr(CSR_MVIPH, std::make_shared<rv32_high_csr_t>(proc, CSR_MVIPH, mvip));
+    } else {
+      add_supervisor_csr(CSR_MVIEN, mvien);
+      add_supervisor_csr(CSR_MVIP, mvip);
+    }
+  }
+
+  hvictl = std::make_shared<aia_csr_t>(proc, CSR_HVICTL, HVICTL_VTI | HVICTL_IID | HVICTL_DPR | HVICTL_IPRIOM | HVICTL_IPRIO, 0);
+  vstopi = std::make_shared<vstopi_csr_t>(proc, CSR_VSTOPI);
+  if (proc->extension_enabled_const(EXT_SSAIA)) { // Included by EXT_SMAIA
+    csr_t_p nonvirtual_stopi = std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI);
+    add_supervisor_csr(CSR_STOPI, std::make_shared<virtualized_with_special_permission_csr_t>(proc, nonvirtual_stopi, vstopi));
+    add_supervisor_csr(CSR_STOPEI, std::make_shared<inaccessible_csr_t>(proc, CSR_STOPEI));
+    auto hvien = std::make_shared<aia_csr_t>(proc, CSR_HVIEN, 0, 0);
+    auto hviprio1 = std::make_shared<aia_csr_t>(proc, CSR_HVIPRIO1, 0, 0);
+    auto hviprio2 = std::make_shared<aia_csr_t>(proc, CSR_HVIPRIO2, 0, 0);
+    if (xlen == 32) {
+      add_hypervisor_csr(CSR_HVIEN, std::make_shared<rv32_low_csr_t>(proc, CSR_HVIEN, hvien));
+      add_hypervisor_csr(CSR_HVIENH, std::make_shared<rv32_high_csr_t>(proc, CSR_HVIENH, hvien));
+      add_hypervisor_csr(CSR_HVIPRIO1, std::make_shared<rv32_low_csr_t>(proc, CSR_HVIPRIO1, hviprio1));
+      add_hypervisor_csr(CSR_HVIPRIO1H, std::make_shared<rv32_high_csr_t>(proc, CSR_HVIPRIO1H, hviprio1));
+      add_hypervisor_csr(CSR_HVIPRIO2, std::make_shared<rv32_low_csr_t>(proc, CSR_HVIPRIO2, hviprio2));
+      add_hypervisor_csr(CSR_HVIPRIO2H, std::make_shared<rv32_high_csr_t>(proc, CSR_HVIPRIO2H, hviprio2));
+    } else {
+      add_hypervisor_csr(CSR_HVIEN, hvien);
+      add_hypervisor_csr(CSR_HVIPRIO1, hviprio1);
+      add_hypervisor_csr(CSR_HVIPRIO2, hviprio2);
+    }
+    add_hypervisor_csr(CSR_HVICTL, hvictl);
+    add_hypervisor_csr(CSR_VSTOPI, vstopi);
+  }
 }
