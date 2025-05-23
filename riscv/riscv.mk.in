@@ -32,6 +32,7 @@ riscv_install_hdrs = \
 	encoding.h \
 	entropy_source.h \
 	extension.h \
+	imsic.h \
 	isa_parser.h \
 	log_file.h \
 	memtracer.h \
@@ -53,6 +54,7 @@ riscv_srcs = \
 	execute.cc \
 	dts.cc \
 	sim.cc \
+	imsic.cc \
 	interactive.cc \
 	cachesim.cc \
 	mmu.cc \

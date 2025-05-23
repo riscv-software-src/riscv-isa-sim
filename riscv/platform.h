@@ -11,6 +11,9 @@
 #define GEILEN             31
 #define IMSIC_M_BASE       0x24000000
 #define IMSIC_S_BASE       0x28000000
+#define IMSIC_M_FILE_REGS  IMSIC_NUM_EI_REGS
+#define IMSIC_S_FILE_REGS  IMSIC_NUM_EI_REGS
+#define IMSIC_VS_FILE_REGS IMSIC_NUM_EI_REGS
 #define PLIC_BASE          0x0c000000
 #define PLIC_SIZE          0x01000000
 #define PLIC_NDEV          31
