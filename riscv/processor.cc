@@ -80,6 +80,10 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
   set_impl(IMPL_MMU_ASID, true);
   set_impl(IMPL_MMU_VMID, true);
 
+  // construct IMSIC files
+  if (extension_enabled_const(EXT_SMAIA) || extension_enabled_const(EXT_SSAIA))
+    imsic = std::make_shared<imsic_t>(this, isa.extension_enabled('H') ? geilen : 0);
+
   reset();
 }
 

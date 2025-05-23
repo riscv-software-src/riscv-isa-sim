@@ -20,6 +20,7 @@
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/types.h>
+#include "imsic.h"
 
 volatile bool ctrlc_pressed = false;
 static void handle_signal(int sig)
@@ -35,6 +36,7 @@ const size_t sim_t::INTERLEAVE;
 extern device_factory_t* clint_factory;
 extern device_factory_t* plic_factory;
 extern device_factory_t* ns16550_factory;
+extern device_factory_t* imsic_mmio_factory;
 
 sim_t::sim_t(const cfg_t *cfg, bool halted,
              std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
@@ -120,6 +122,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   std::vector<device_factory_sargs_t> device_factories = {
     {clint_factory, {}},
     {plic_factory, {}},
+    {imsic_mmio_factory, {}},
     {ns16550_factory, {}}};
   device_factories.insert(device_factories.end(),
                           plugin_device_factories.begin(),
@@ -240,6 +243,33 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     procs[cpu_idx]->reset();
 
     cpu_idx++;
+  }
+
+  // parse IMSICs & create MMIO portions
+  reg_t imsic_m_addr = 0, imsic_s_addr = 0;
+  if (fdt_parse_imsics(fdt, &imsic_m_addr, &imsic_s_addr, "riscv,imsics") == 0) {
+    for (size_t id = 0; id < cfg->nprocs(); id++) {
+      auto proc = procs[id];
+      if (proc->extension_enabled_const(EXT_SMAIA) && imsic_m_addr) {
+        reg_t mmio_base = IMSIC_M_BASE + proc->get_id() * IMSIC_MMIO_PAGE_SIZE;
+        auto imsic = new imsic_mmio_t(proc->imsic->m);
+        bus.add_device(mmio_base, imsic);
+      }
+      if (proc->extension_enabled_const(EXT_SSAIA) && imsic_s_addr) {
+        // There are 1 S-mode and up to 63 VS-mode pages per core as defined by riscv,guest-index-bits in DTS
+        assert(proc->geilen <= 63);
+        reg_t mmio_base = IMSIC_S_BASE + proc->get_id() * IMSIC_MMIO_PAGE_SIZE * 64;
+        auto imsic = new imsic_mmio_t(proc->imsic->s);
+        bus.add_device(mmio_base, imsic);
+        // S+VS files are laid out as S, G1, G2, G3,...
+        if (proc->extension_enabled('H')) {
+          for (size_t j = 1; j <= proc->geilen; j++) {
+            auto imsic = new imsic_mmio_t(proc->imsic->vs[j]);
+            bus.add_device(mmio_base + IMSIC_MMIO_PAGE_SIZE * j, imsic);
+          }
+        }
+      }
+    }
   }
 
   // must be located after procs/harts are set (devices might use sim_t get_* member functions)
