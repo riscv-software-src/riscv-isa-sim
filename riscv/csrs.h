@@ -1039,9 +1039,24 @@ class spmpcfg_csr_t: public masked_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
+class hgeip_csr_t final: public csr_t {
+ public:
+  hgeip_csr_t(processor_t* const proc, const reg_t addr);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
 class spmpen_csr_t: public basic_csr_t {
  public:
   spmpen_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class hgeie_csr_t final: public masked_csr_t {
+ public:
+  hgeie_csr_t(processor_t* const proc, const reg_t addr, const reg_t geilen);
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
