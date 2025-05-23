@@ -448,6 +448,8 @@ public:
 
   vectorUnit_t VU;
   triggers::module_t TM;
+
+  unsigned geilen;
 };
 
 #endif
