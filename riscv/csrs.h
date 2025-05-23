@@ -1013,4 +1013,21 @@ class hgeie_csr_t final: public masked_csr_t {
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
+
+typedef std::unordered_map<reg_t, csr_t_p> csrmap_t;
+typedef csrmap_t *csrmap_t_p;
+class aia_ireg_proxy_csr_t: public csr_t {
+ public:
+  aia_ireg_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p iselect);
+  virtual reg_t read() const noexcept override;
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  csrmap_t_p get_csrmap(reg_t vgein = 0);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  csr_t_p get_reg() const noexcept;
+  csr_t_p iselect;
+  bool vs;
+  csrmap_t_p csrmap;
+};
 #endif
