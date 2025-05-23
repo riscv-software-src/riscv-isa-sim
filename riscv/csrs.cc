@@ -2031,15 +2031,32 @@ bool hstatus_csr_t::unlogged_write(const reg_t val) noexcept {
     | HSTATUS_VTSR | HSTATUS_VTW
     | (proc->supports_impl(IMPL_MMU) ? HSTATUS_VTVM : 0)
     | (proc->extension_enabled(EXT_SSNPM) ? HSTATUS_HUPMM : 0)
+    | (proc->extension_enabled_const(EXT_SSAIA) ? HSTATUS_VGEIN : 0)
     | HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
 
   const reg_t pmm_reserved = 1; // Reserved value of mseccfg.PMM
   reg_t pmm = get_field(val, HSTATUS_HUPMM);
   const reg_t adjusted_val = set_field(val, HSTATUS_HUPMM, pmm != pmm_reserved ? pmm : 0);
 
-  const reg_t new_hstatus = (read() & ~mask) | (adjusted_val & mask);
+  reg_t new_hstatus = (read() & ~mask) | (adjusted_val & mask);
   if (get_field(new_hstatus, HSTATUS_HUPMM) != get_field(read(), HSTATUS_HUPMM))
     proc->get_mmu()->flush_tlb();
+
+  // VGEIN is WLRL
+  if (proc->extension_enabled_const(EXT_SSAIA)) {
+    reg_t old_vgein = get_field(read(), HSTATUS_VGEIN);
+    reg_t new_vgein = get_field((reg_t)val, HSTATUS_VGEIN);
+    if (new_vgein && !proc->imsic->vgein_valid(new_vgein)) {
+      new_vgein = old_vgein;
+      new_hstatus = set_field(new_hstatus, HSTATUS_VGEIN, old_vgein);
+    }
+    // update_mip() needs the new VGEIN, so hstatus must be updated first
+    bool ret =  basic_csr_t::unlogged_write(new_hstatus);
+    // if vgein = 0, HS controls VSEIP; otherwise IMSIC controls it
+    if (new_vgein && new_vgein != old_vgein)
+      proc->imsic->vs[new_vgein]->update_mip();
+    return ret;
+  }
   return basic_csr_t::unlogged_write(new_hstatus);
 }
 
