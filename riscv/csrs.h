@@ -998,4 +998,19 @@ class aia_csr_t: public masked_csr_t {
   aia_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
+
+class hgeip_csr_t final: public csr_t {
+ public:
+  hgeip_csr_t(processor_t* const proc, const reg_t addr);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class hgeie_csr_t final: public masked_csr_t {
+ public:
+  hgeie_csr_t(processor_t* const proc, const reg_t addr, const reg_t geilen);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
 #endif

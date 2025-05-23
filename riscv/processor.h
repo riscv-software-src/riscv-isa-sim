@@ -17,6 +17,7 @@
 #include "triggers.h"
 #include "../fesvr/memif.h"
 #include "vector_unit.h"
+#include "imsic.h"
 
 #define FIRST_HPMCOUNTER 3
 #define N_HPMCOUNTERS 29
@@ -130,6 +131,8 @@ struct state_t
   csr_t_p htval;
   csr_t_p htinst;
   csr_t_p hgatp;
+  csr_t_p hgeie;
+  csr_t_p hgeip;
   hvip_csr_t_p hvip;
   sstatus_csr_t_p sstatus;
   vsstatus_csr_t_p vsstatus;
@@ -448,6 +451,7 @@ public:
   triggers::module_t TM;
 
   unsigned geilen;
+  imsic_t_p imsic;
 };
 
 #endif

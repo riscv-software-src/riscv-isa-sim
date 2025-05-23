@@ -2238,3 +2238,31 @@ void aia_csr_t::verify_permissions(insn_t insn, bool write) const {
 
   basic_csr_t::verify_permissions(insn, write);
 }
+
+hgeip_csr_t::hgeip_csr_t(processor_t* const proc, const reg_t addr) : csr_t(proc, addr) {
+}
+
+reg_t hgeip_csr_t::read() const noexcept {
+  // scan through all VGEINs
+  reg_t v = 0;
+  for (auto &i: proc->imsic->vs) {
+    if (i.second->topei())
+      v |= reg_t(1) << i.first;
+  }
+  return v;
+}
+
+bool hgeip_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
+  // read-only register
+  return false;
+}
+
+hgeie_csr_t::hgeie_csr_t(processor_t* const proc, const reg_t addr, const reg_t geilen) : masked_csr_t(proc, addr, ((reg_t(1) << geilen) - 1) << 1, 0) {
+}
+
+bool hgeie_csr_t::unlogged_write(const reg_t val) noexcept {
+  bool sgeip = val & proc->get_state()->hgeip->read();
+  // update mip.SGEIP if the hypervisor traps guest SEIP to itself
+  state->mip->backdoor_write_with_mask(MIP_SGEIP, sgeip ? MIP_SGEIP : 0);
+  return masked_csr_t::unlogged_write(val);
+}
