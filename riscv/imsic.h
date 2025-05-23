@@ -22,9 +22,6 @@
 #define SETEIPNUM_LE 0x0
 #define SETEIPNUM_BE 0x4
 
-typedef std::unordered_map<reg_t, csr_t_p> csrmap_t;
-typedef csrmap_t *csrmap_t_p;
-
 class imsic_file_t;
 typedef std::shared_ptr<imsic_file_t> imsic_file_t_p;
 
