@@ -8,6 +8,9 @@
 #define DEFAULT_PRIV       "MSU"
 #define CLINT_BASE         0x02000000
 #define CLINT_SIZE         0x000c0000
+#define GEILEN             31
+#define IMSIC_M_BASE       0x24000000
+#define IMSIC_S_BASE       0x28000000
 #define PLIC_BASE          0x0c000000
 #define PLIC_SIZE          0x01000000
 #define PLIC_NDEV          31
