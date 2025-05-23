@@ -215,8 +215,13 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     add_csr(CSR_MTVAL2, mtval2);
   add_hypervisor_csr(CSR_MTINST, mtinst = std::make_shared<hypervisor_csr_t>(proc, CSR_MTINST));
   add_hypervisor_csr(CSR_HSTATUS, hstatus = std::make_shared<hstatus_csr_t>(proc, CSR_HSTATUS));
-  add_hypervisor_csr(CSR_HGEIE, std::make_shared<const_csr_t>(proc, CSR_HGEIE, 0));
-  add_hypervisor_csr(CSR_HGEIP, std::make_shared<const_csr_t>(proc, CSR_HGEIP, 0));
+  if (proc->extension_enabled_const(EXT_SSAIA)) {
+    add_hypervisor_csr(CSR_HGEIE, hgeie = std::make_shared<hgeie_csr_t>(proc, CSR_HGEIE, proc->geilen));
+    add_hypervisor_csr(CSR_HGEIP, hgeip = std::make_shared<hgeip_csr_t>(proc, CSR_HGEIP));
+  } else {
+    add_hypervisor_csr(CSR_HGEIE, std::make_shared<const_csr_t>(proc, CSR_HGEIE, 0));
+    add_hypervisor_csr(CSR_HGEIP, std::make_shared<const_csr_t>(proc, CSR_HGEIP, 0));
+  }
   hideleg = std::make_shared<hideleg_csr_t>(proc, CSR_HIDELEG, mideleg);
   if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
     add_hypervisor_csr(CSR_HIDELEG, std::make_shared<rv32_low_csr_t>(proc, CSR_HIDELEG, hideleg));
