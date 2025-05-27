@@ -133,6 +133,8 @@ struct state_t
   csr_t_p hgatp;
   csr_t_p hgeie;
   csr_t_p hgeip;
+  csr_t_p hip;
+  csr_t_p hie;
   hvip_csr_t_p hvip;
   sstatus_csr_t_p sstatus;
   vsstatus_csr_t_p vsstatus;
