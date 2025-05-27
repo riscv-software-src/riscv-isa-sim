@@ -428,6 +428,18 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     const reg_t mireg_csrs[] = { CSR_MIREG2, CSR_MIREG3, CSR_MIREG4, CSR_MIREG5, CSR_MIREG6 };
     for (auto csr : mireg_csrs)
       add_csr(csr, std::make_shared<sscsrind_reg_csr_t>(proc, csr, miselect));
+
+    if (proc->extension_enabled_const(EXT_SMAIA)) {
+      // *ireg needs to be a proxy of *iselect and a CSR map keyed by the value in *iselect
+      // If address not in CSR map, throw illegal or virtual instruction trap
+      auto aia_mireg = std::make_shared<aia_ireg_proxy_csr_t>(proc, CSR_MIREG, miselect);
+      for (auto &csr : *aia_mireg->get_csrmap())
+        mireg->add_ireg_proxy(csr.first, aia_mireg);
+      // reserved range RAZ/WI
+      mireg->add_ireg_proxy(0x71, aia_mireg);
+      for (int i = 0x73; i <= 0x7f; i++)
+        mireg->add_ireg_proxy(i, aia_mireg);
+    }
   }
 
   if (proc->extension_enabled_const(EXT_SSCSRIND)) {
