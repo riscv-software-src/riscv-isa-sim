@@ -519,6 +519,25 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
         }
       }
     }
+    if (proc->extension_enabled_const(EXT_SSAIA)) {
+      auto aia_vsireg = std::make_shared<aia_ireg_proxy_csr_t>(proc, CSR_VSIREG, vsiselect);
+      // csrmaps of vs files are the same as vgein = 1
+      for (auto &csr : *aia_vsireg->get_csrmap(1))
+        vsireg->add_ireg_proxy(csr.first, aia_vsireg);
+      // reserved range RAZ/WI
+      vsireg->add_ireg_proxy(0x71, aia_vsireg);
+      for (int i = 0x73; i <= 0x7f; i++)
+        vsireg->add_ireg_proxy(i, aia_vsireg);
+
+      auto aia_sireg = std::make_shared<aia_ireg_proxy_csr_t>(proc, CSR_SIREG, siselect);
+      for (auto &csr : *aia_sireg->get_csrmap())
+        sireg->add_ireg_proxy(csr.first, aia_sireg);
+      // reserved range RAZ/WI
+      sireg->add_ireg_proxy(0x71, aia_sireg);
+      for (int i = 0x73; i <= 0x7f; i++)
+        sireg->add_ireg_proxy(i, aia_sireg);
+    }
+
   }
 
   if (proc->extension_enabled_const(EXT_SMCNTRPMF)) {
