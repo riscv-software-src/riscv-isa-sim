@@ -264,15 +264,17 @@ reg_t processor_t::select_an_interrupt_with_default_priority(reg_t enabled_inter
     enabled_interrupts = MIP_SSIP;
   else if (enabled_interrupts & MIP_STIP)
     enabled_interrupts = MIP_STIP;
-  else if (enabled_interrupts & MIP_LCOFIP)
-    enabled_interrupts = MIP_LCOFIP;
+  else if (enabled_interrupts & MIP_SGEIP)
+    enabled_interrupts = MIP_SGEIP;
   else if (enabled_interrupts & MIP_VSEIP)
     enabled_interrupts = MIP_VSEIP;
   else if (enabled_interrupts & MIP_VSSIP)
     enabled_interrupts = MIP_VSSIP;
   else if (enabled_interrupts & MIP_VSTIP)
     enabled_interrupts = MIP_VSTIP;
-
+  else if (enabled_interrupts & MIP_LCOFIP)
+    enabled_interrupts = MIP_LCOFIP;
+  else assert(0);
   return enabled_interrupts;
 }
 
