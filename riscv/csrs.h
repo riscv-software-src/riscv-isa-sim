@@ -1030,6 +1030,7 @@ class aia_ireg_proxy_csr_t: public csr_t {
   bool vs;
   csrmap_t_p csrmap;
 };
+typedef std::shared_ptr<aia_ireg_proxy_csr_t> aia_ireg_proxy_csr_t_p;
 
 class imsic_file_t;
 typedef std::shared_ptr<imsic_file_t> imsic_file_t_p;

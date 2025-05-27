@@ -12,22 +12,12 @@ void state_t::add_csr(reg_t addr, const csr_t_p& csr)
 #define add_supervisor_csr(addr, csr) add_const_ext_csr('S', addr, csr)
 #define add_hypervisor_csr(addr, csr) add_ext_csr('H', addr, csr)
 
-void state_t::add_ireg_proxy(processor_t* const proc, sscsrind_reg_csr_t::sscsrind_reg_csr_t_p ireg)
+void state_t::add_ireg_proxy(sscsrind_reg_csr_t::sscsrind_reg_csr_t_p ireg, aia_ireg_proxy_csr_t_p aia_proxy)
 {
-  // This assumes xlen is always max_xlen, which is true today (see
-  // mstatus_csr_t::unlogged_write()):
-  auto xlen = proc->get_isa().get_max_xlen();
-
-  const reg_t iprio0_addr = 0x30;
-  for (int i=0; i<16; i+=2) {
-    csr_t_p iprio = std::make_shared<aia_csr_t>(proc, iprio0_addr + i, 0, 0);
-    if (xlen == 32) {
-      ireg->add_ireg_proxy(iprio0_addr + i, std::make_shared<rv32_low_csr_t>(proc, iprio0_addr + i, iprio));
-      ireg->add_ireg_proxy(iprio0_addr + i + 1, std::make_shared<rv32_high_csr_t>(proc, iprio0_addr + i + 1, iprio));
-    } else {
-      ireg->add_ireg_proxy(iprio0_addr + i, iprio);
-    }
-  }
+  // reserved range RAZ/WI
+  ireg->add_ireg_proxy(0x71, aia_proxy);
+  for (int i = 0x73; i <= 0x7f; i++)
+    ireg->add_ireg_proxy(i, aia_proxy);
 }
 
 void state_t::csr_init(processor_t* const proc, reg_t max_isa)
@@ -424,7 +414,6 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
 
     sscsrind_reg_csr_t::sscsrind_reg_csr_t_p mireg;
     add_csr(CSR_MIREG, mireg = std::make_shared<sscsrind_reg_csr_t>(proc, CSR_MIREG, miselect));
-    add_ireg_proxy(proc, mireg);
     const reg_t mireg_csrs[] = { CSR_MIREG2, CSR_MIREG3, CSR_MIREG4, CSR_MIREG5, CSR_MIREG6 };
     for (auto csr : mireg_csrs)
       add_csr(csr, std::make_shared<sscsrind_reg_csr_t>(proc, csr, miselect));
@@ -435,10 +424,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
       auto aia_mireg = std::make_shared<aia_ireg_proxy_csr_t>(proc, CSR_MIREG, miselect);
       for (auto &csr : *aia_mireg->get_csrmap())
         mireg->add_ireg_proxy(csr.first, aia_mireg);
-      // reserved range RAZ/WI
-      mireg->add_ireg_proxy(0x71, aia_mireg);
-      for (int i = 0x73; i <= 0x7f; i++)
-        mireg->add_ireg_proxy(i, aia_mireg);
+      add_ireg_proxy(mireg, aia_mireg);
     }
   }
 
@@ -453,7 +439,6 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     add_hypervisor_csr(CSR_VSIREG, vsireg);
 
     auto sireg = std::make_shared<sscsrind_reg_csr_t>(proc, CSR_SIREG, siselect);
-    add_ireg_proxy(proc, sireg);
     add_supervisor_csr(CSR_SIREG, std::make_shared<virtualized_indirect_csr_t>(proc, sireg, vsireg));
     if (proc->extension_enabled(EXT_SSCCFG) || proc->extension_enabled(EXT_SMCDELEG)) {
       // case CSR_SIREG
@@ -524,18 +509,12 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
       // csrmaps of vs files are the same as vgein = 1
       for (auto &csr : *aia_vsireg->get_csrmap(1))
         vsireg->add_ireg_proxy(csr.first, aia_vsireg);
-      // reserved range RAZ/WI
-      vsireg->add_ireg_proxy(0x71, aia_vsireg);
-      for (int i = 0x73; i <= 0x7f; i++)
-        vsireg->add_ireg_proxy(i, aia_vsireg);
+      add_ireg_proxy(vsireg, aia_vsireg);
 
       auto aia_sireg = std::make_shared<aia_ireg_proxy_csr_t>(proc, CSR_SIREG, siselect);
       for (auto &csr : *aia_sireg->get_csrmap())
         sireg->add_ireg_proxy(csr.first, aia_sireg);
-      // reserved range RAZ/WI
-      sireg->add_ireg_proxy(0x71, aia_sireg);
-      for (int i = 0x73; i <= 0x7f; i++)
-        sireg->add_ireg_proxy(i, aia_sireg);
+      add_ireg_proxy(sireg, aia_sireg);
     }
 
   }
