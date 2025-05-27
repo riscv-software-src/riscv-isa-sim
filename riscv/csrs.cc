@@ -2149,7 +2149,11 @@ void nonvirtual_stopi_csr_t::verify_permissions(insn_t insn, bool write) const {
 }
 
 reg_t nonvirtual_stopi_csr_t::read() const noexcept {
-  reg_t enabled_interrupts = state->nonvirtual_sip->read() & state->nonvirtual_sie->read() & ~state->hideleg->read();
+  reg_t enabled_interrupts = state->nonvirtual_sip->read() & state->nonvirtual_sie->read();
+  // include hypervisor interrupts for HS stopi
+  enabled_interrupts |= state->hip->read() & state->hie->read();
+  // mask out delegated interrupts
+  enabled_interrupts &= ~state->hideleg->read();
   if (!enabled_interrupts)
     return 0; // no enabled pending interrupt to S-mode
 
