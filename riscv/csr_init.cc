@@ -155,7 +155,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     add_hypervisor_csr(CSR_VSIP, vsip);
     add_supervisor_csr(CSR_SIP, sip);
   }
-  add_hypervisor_csr(CSR_HIP, std::make_shared<mip_proxy_csr_t>(proc, CSR_HIP, hip_hie_accr));
+  add_hypervisor_csr(CSR_HIP, hip = std::make_shared<mip_proxy_csr_t>(proc, CSR_HIP, hip_hie_accr));
   hvip = std::make_shared<hvip_csr_t>(proc, CSR_HVIP, 0);
   if (xlen == 32 && proc->extension_enabled_const(EXT_SSAIA)) {
     add_hypervisor_csr(CSR_HVIP, std::make_shared<rv32_low_csr_t>(proc, CSR_HVIP, hvip));
@@ -176,7 +176,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     add_hypervisor_csr(CSR_VSIE, vsie);
     add_supervisor_csr(CSR_SIE, sie);
   }
-  add_hypervisor_csr(CSR_HIE, std::make_shared<mie_proxy_csr_t>(proc, CSR_HIE, hip_hie_accr));
+  add_hypervisor_csr(CSR_HIE, hie = std::make_shared<mie_proxy_csr_t>(proc, CSR_HIE, hip_hie_accr));
 
   add_supervisor_csr(CSR_MEDELEG, medeleg = std::make_shared<medeleg_csr_t>(proc, CSR_MEDELEG));
   mideleg = std::make_shared<mideleg_csr_t>(proc, CSR_MIDELEG);
