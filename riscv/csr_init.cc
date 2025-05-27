@@ -559,6 +559,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   mvip = std::make_shared<mvip_csr_t>(proc, CSR_MVIP, 0);
   if (proc->extension_enabled_const(EXT_SMAIA)) {
     add_csr(CSR_MTOPI, std::make_shared<mtopi_csr_t>(proc, CSR_MTOPI));
+    add_csr(CSR_MTOPEI, std::make_shared<topei_csr_t>(proc, CSR_MTOPEI, proc->imsic->m));
     if (xlen == 32) {
       add_supervisor_csr(CSR_MVIEN, std::make_shared<rv32_low_csr_t>(proc, CSR_MVIEN, mvien));
       add_supervisor_csr(CSR_MVIENH, std::make_shared<rv32_high_csr_t>(proc, CSR_MVIENH, mvien));
@@ -575,7 +576,9 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   if (proc->extension_enabled_const(EXT_SSAIA)) { // Included by EXT_SMAIA
     csr_t_p nonvirtual_stopi = std::make_shared<nonvirtual_stopi_csr_t>(proc, CSR_STOPI);
     add_supervisor_csr(CSR_STOPI, std::make_shared<virtualized_with_special_permission_csr_t>(proc, nonvirtual_stopi, vstopi));
-    add_supervisor_csr(CSR_STOPEI, std::make_shared<inaccessible_csr_t>(proc, CSR_STOPEI));
+    auto vstopei = std::make_shared<vstopei_csr_t>(proc, CSR_VSTOPEI);
+    auto nonvirtual_stopei = std::make_shared<nonvirtual_stopei_csr_t>(proc, CSR_STOPEI, proc->imsic->s);
+    add_supervisor_csr(CSR_STOPEI, std::make_shared<virtualized_with_special_permission_csr_t>(proc, nonvirtual_stopei, vstopei));
     auto hvien = std::make_shared<aia_csr_t>(proc, CSR_HVIEN, 0, 0);
     auto hviprio1 = std::make_shared<aia_csr_t>(proc, CSR_HVIPRIO1, 0, 0);
     auto hviprio2 = std::make_shared<aia_csr_t>(proc, CSR_HVIPRIO2, 0, 0);
@@ -593,5 +596,6 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     }
     add_hypervisor_csr(CSR_HVICTL, hvictl);
     add_hypervisor_csr(CSR_VSTOPI, vstopi);
+    add_hypervisor_csr(CSR_VSTOPEI, vstopei);
   }
 }

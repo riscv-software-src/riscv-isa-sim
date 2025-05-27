@@ -2385,3 +2385,71 @@ csrmap_t_p aia_ireg_proxy_csr_t::get_csrmap(reg_t vgein) {
     return csrmap;
   return proc->imsic->get_vs_csrmap(vgein ? vgein : get_field(state->hstatus->read(), HSTATUS_VGEIN));
 }
+
+topei_csr_t::topei_csr_t(processor_t* const proc, const reg_t addr, imsic_file_t_p const imsic) : csr_t(proc, addr), imsic(imsic) {
+}
+
+imsic_file_t_p topei_csr_t::get_imsic() const noexcept {
+  // non-virtualized registers have pointers to IMSIC
+  if (imsic)
+    return imsic;
+
+  // Virtualized IMSIC depends on hstatus.vgein
+  reg_t vgein = get_field(state->hstatus->read(), HSTATUS_VGEIN);
+  if (!vgein || !proc->imsic->vgein_valid(vgein))
+    return nullptr;
+  return proc->imsic->vs[vgein];
+}
+
+reg_t topei_csr_t::read() const noexcept {
+  imsic_file_t_p p = get_imsic();
+  if (!p)
+    return 0;
+
+  reg_t iid = p->topei();
+  reg_t v = 0;
+  v = set_field(v, IMSIC_TOPI_IPRIO, iid);
+  v = set_field(v, IMSIC_TOPI_IID, iid);
+  return v;
+}
+
+bool topei_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
+  imsic_file_t_p p = get_imsic();
+  if (!p)
+    return false;
+  p->claimei(p->topei());
+  return true;
+}
+
+void nonvirtual_stopei_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_IMSIC))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_IMSIC))
+      throw trap_virtual_instruction(insn.bits());
+  }
+
+  csr_t::verify_permissions(insn, write);
+}
+
+void vstopei_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_IMSIC))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_IMSIC))
+      throw trap_virtual_instruction(insn.bits());
+  }
+
+  csr_t::verify_permissions(insn, write);
+
+  // VGEIN must be valid
+  reg_t vgein = get_field(state->hstatus->read(), HSTATUS_VGEIN);
+  if (!vgein || !proc->imsic->vgein_valid(vgein)) {
+    if (state->v)
+      throw trap_virtual_instruction(insn.bits());
+    else
+      throw trap_illegal_instruction(insn.bits());
+  }
+}

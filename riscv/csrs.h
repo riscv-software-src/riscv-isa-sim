@@ -1030,4 +1030,28 @@ class aia_ireg_proxy_csr_t: public csr_t {
   bool vs;
   csrmap_t_p csrmap;
 };
+
+class imsic_file_t;
+typedef std::shared_ptr<imsic_file_t> imsic_file_t_p;
+class topei_csr_t: public csr_t {
+ public:
+  topei_csr_t(processor_t* const proc, const reg_t addr, imsic_file_t_p const imsic);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+  imsic_file_t_p get_imsic() const noexcept;
+  imsic_file_t_p const imsic;
+};
+
+class nonvirtual_stopei_csr_t: public topei_csr_t {
+ public:
+  nonvirtual_stopei_csr_t(processor_t* const proc, const reg_t addr, imsic_file_t_p const imsic) : topei_csr_t(proc, addr, imsic) {}
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class vstopei_csr_t: public topei_csr_t {
+ public:
+  vstopei_csr_t(processor_t* const proc, const reg_t addr) : topei_csr_t(proc, addr, nullptr) {}
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
 #endif
