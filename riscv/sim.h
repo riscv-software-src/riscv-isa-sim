@@ -73,6 +73,8 @@ public:
   static const size_t INSNS_PER_RTC_TICK = 100; // 10 MHz clock for 1 BIPS core
   static const size_t CPU_HZ = 1000000000; // 1GHz CPU
 
+  std::shared_ptr<aplic_t> aplic_m;
+  std::shared_ptr<aplic_t> aplic_s;
 private:
   const cfg_t * const cfg;
   std::vector<std::pair<reg_t, abstract_mem_t*>> mems;
@@ -85,8 +87,6 @@ private:
   std::vector<std::shared_ptr<abstract_device_t>> devices;
   std::shared_ptr<clint_t> clint;
   std::shared_ptr<plic_t> plic;
-  std::shared_ptr<aplic_t> aplic_m;
-  std::shared_ptr<aplic_t> aplic_s;
   bus_t bus;
   log_file_t log_file;
 

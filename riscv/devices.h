@@ -162,7 +162,7 @@ class plic_t : public abstract_device_t, public abstract_interrupt_controller_t 
 #define APLIC_MAX_DEVICES 1024
 class aplic_t : public abstract_device_t, public abstract_interrupt_controller_t {
  public:
-  aplic_t(std::vector<processor_t*>&, aplic_t *parent);
+  aplic_t(const simif_t*, aplic_t *parent);
   bool load(reg_t addr, size_t len, uint8_t* bytes);
   bool store(reg_t addr, size_t len, const uint8_t* bytes);
   void set_interrupt_level(uint32_t id, int lvl);
@@ -172,7 +172,7 @@ class aplic_t : public abstract_device_t, public abstract_interrupt_controller_t
   bool delegated(uint32_t id);
   uint32_t get_deleg_mask(uint32_t idx);
  private:
-  std::vector<processor_t*>& procs;
+  const simif_t *simif;
   class aplic_t *parent;
   class aplic_t *child;
   uint32_t domaincfg;
