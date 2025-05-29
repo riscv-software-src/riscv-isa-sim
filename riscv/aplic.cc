@@ -3,6 +3,7 @@
 #include "processor.h"
 #include "arith.h"
 #include "sim.h"
+#include "dts.h"
 
 #define DOMAINCFG       0x0
 #define SOURCECFG_BASE  0x4
@@ -39,7 +40,7 @@
 #define TARGET_GUEST_MASK       0x3f000
 #define TARGET_EIID_MASK        0x7ff
 
-aplic_t::aplic_t(std::vector<processor_t*>& procs, aplic_t *parent) : procs(procs), parent(parent), child(nullptr), domaincfg((0x80 << 24) | DOMAINCFG_DM_MASK), sourcecfg(), mmsiaddrcfgh(MMSIADDRCFGH_L_MASK), ie(), target(), level(), genmsi(0), deleg_mask()
+aplic_t::aplic_t(const simif_t *simif, aplic_t *parent) : simif(simif), parent(parent), child(nullptr), domaincfg((0x80 << 24) | DOMAINCFG_DM_MASK), sourcecfg(), mmsiaddrcfgh(MMSIADDRCFGH_L_MASK), ie(), target(), level(), genmsi(0), deleg_mask()
 {
 }
 
@@ -113,10 +114,12 @@ void aplic_t::set_interrupt_level(uint32_t id, int lvl)
 
 void aplic_t::send_msi(uint32_t proc_id, uint32_t guest, uint32_t eiid)
 {
-  if (!eiid || proc_id >= procs.size())
+  auto &procs = simif->get_harts();
+  auto it = procs.find(proc_id);
+  if (!eiid || it == procs.end())
     return;
 
-  auto proc = procs[proc_id];
+  processor_t *proc = it->second;
   if (!parent) {
     proc->imsic->m->pendei(eiid);
   } else if (guest) {
@@ -255,7 +258,7 @@ bool aplic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   return true;
 }
 
-std::string aplic_generate_dts(const sim_t* sim, const std::vector<std::string>& sargs UNUSED)
+std::string aplic_m_generate_dts(const sim_t* sim, const std::vector<std::string>& sargs UNUSED)
 {
   auto cfg = sim->get_cfg();
   isa_parser_t isa(cfg.isa, cfg.priv);
@@ -273,6 +276,14 @@ std::string aplic_generate_dts(const sim_t* sim, const std::vector<std::string>&
          "      compatible = \"riscv,aplic\";\n"
          "    };\n";
   }
+  return s.str();
+}
+
+std::string aplic_s_generate_dts(const sim_t* sim, const std::vector<std::string>& sargs UNUSED)
+{
+  auto cfg = sim->get_cfg();
+  isa_parser_t isa(cfg.isa, cfg.priv);
+  std::stringstream s;
   if (isa.extension_enabled(EXT_SSAIA)) {
     s << std::hex
       << "    APLIC_S: aplic@" << APLIC_S_BASE << " {\n"
@@ -287,9 +298,33 @@ std::string aplic_generate_dts(const sim_t* sim, const std::vector<std::string>&
   return s.str();
 }
 
-aplic_t* aplic_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& sargs UNUSED)
+typedef aplic_t aplic_m_t;
+typedef aplic_t aplic_s_t;
+aplic_m_t* aplic_m_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& sargs UNUSED)
 {
+  reg_t aplic_m_base, aplic_s_base;
+  if (fdt_parse_aplic(fdt, &aplic_m_base, &aplic_s_base, "riscv,aplic") == 0) {
+    if (aplic_m_base) {
+      *base = aplic_m_base;
+      return new aplic_t(sim, nullptr);
+    }
+  }
   return nullptr;
 }
 
-REGISTER_DEVICE(aplic, aplic_parse_from_fdt, aplic_generate_dts)
+aplic_s_t* aplic_s_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& sargs UNUSED)
+{
+  reg_t aplic_m_base, aplic_s_base;
+  if (fdt_parse_aplic(fdt, &aplic_m_base, &aplic_s_base, "riscv,aplic") == 0) {
+    if (aplic_s_base) {
+      *base = aplic_s_base;
+      auto *ptr = new aplic_t(sim, sim->aplic_m.get());
+      if (sim->aplic_m)
+        sim->aplic_m->set_child(ptr);
+      return ptr;
+    }
+  }
+  return nullptr;
+}
+REGISTER_DEVICE(aplic_m, aplic_m_parse_from_fdt, aplic_m_generate_dts)
+REGISTER_DEVICE(aplic_s, aplic_s_parse_from_fdt, aplic_s_generate_dts)

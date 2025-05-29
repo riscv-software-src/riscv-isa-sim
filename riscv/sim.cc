@@ -35,7 +35,8 @@ const size_t sim_t::INTERLEAVE;
 
 extern device_factory_t* clint_factory;
 extern device_factory_t* plic_factory;
-extern device_factory_t* aplic_factory;
+extern device_factory_t* aplic_m_factory;
+extern device_factory_t* aplic_s_factory;
 extern device_factory_t* ns16550_factory;
 extern device_factory_t* imsic_mmio_factory;
 
@@ -124,7 +125,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     {clint_factory, {}}, // clint must be element 0
     {plic_factory, {}}, // plic must be element 1
     {imsic_mmio_factory, {}},
-    {aplic_factory, {}},
+    {aplic_m_factory, {}}, // must be element 3
+    {aplic_s_factory, {}}, // must be element 4
     {ns16550_factory, {}}};
   device_factories.insert(device_factories.end(),
                           plugin_device_factories.begin(),
@@ -278,21 +280,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     }
   }
 
-  // create aplic
-  reg_t aplic_m_base, aplic_s_base;
-  if (fdt_parse_aplic(fdt, &aplic_m_base, &aplic_s_base, "riscv,aplic") == 0) {
-    if (aplic_m_base) {
-      aplic_m.reset(new aplic_t(procs, nullptr));
-      bus.add_device(aplic_m_base, aplic_m.get());
-    }
-    if (aplic_s_base) {
-      aplic_s.reset(new aplic_t(procs, aplic_m.get()));
-      bus.add_device(aplic_s_base, aplic_s.get());
-      if (aplic_m)
-        aplic_m->set_child(aplic_s.get());
-    }
-  }
-
   // must be located after procs/harts are set (devices might use sim_t get_* member functions)
   for (size_t i = 0; i < device_factories.size(); i++) {
     const device_factory_t* factory = device_factories[i].first;
@@ -308,6 +295,10 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
         clint = std::static_pointer_cast<clint_t>(dev_ptr);
       else if (i == 1) // plic_factory
         plic = std::static_pointer_cast<plic_t>(dev_ptr);
+      else if (i == 3) // aplic_m_factory
+        aplic_m = std::static_pointer_cast<aplic_t>(dev_ptr);
+      else if (i == 4) // aplic_s_factory
+        aplic_s = std::static_pointer_cast<aplic_t>(dev_ptr);
     }
   }
 }
