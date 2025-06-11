@@ -312,7 +312,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
                             (proc->extension_enabled(EXT_ZICFILP) ? MENVCFG_LPE : 0) |
                             (proc->extension_enabled(EXT_ZICFISS) ? MENVCFG_SSE : 0) |
                             (proc->extension_enabled(EXT_SSDBLTRP) ? MENVCFG_DTE : 0)|
-                            (proc->extension_enabled(EXT_SMCSRIND) ? MENVCFG_CDE : 0);
+                            (proc->extension_enabled(EXT_SMCDELEG) ? MENVCFG_CDE : 0);
   menvcfg = std::make_shared<envcfg_csr_t>(proc, CSR_MENVCFG, menvcfg_mask, 0);
   if (xlen == 32) {
     add_user_csr(CSR_MENVCFG, std::make_shared<rv32_low_csr_t>(proc, CSR_MENVCFG, menvcfg));
