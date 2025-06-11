@@ -303,7 +303,7 @@ public:
   T ALWAYS_INLINE fetch_jump_table(reg_t addr) {
     T res = 0;
     for (size_t i = 0; i < sizeof(T) / sizeof(insn_parcel_t); i++)
-      res |= (T)fetch_insn_parcel(addr + i * sizeof(insn_parcel_t)) << (i * sizeof(insn_parcel_t));
+      res |= (T)fetch_insn_parcel(addr + i * sizeof(insn_parcel_t)) << (i * sizeof(insn_parcel_t) * 8);
 
     // table accesses use data endianness, not instruction (little) endianness
     return target_big_endian ? to_be(res) : res;
