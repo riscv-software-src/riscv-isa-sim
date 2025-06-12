@@ -210,6 +210,8 @@ bool processor_t::slow_path() const
 // fetch/decode/execute loop
 void processor_t::step(size_t n)
 {
+  mmu_t* _mmu = mmu;
+
   if (!state.debug_mode) {
     if (halt_request == HR_REGULAR) {
       enter_debug_mode(DCSR_CAUSE_DEBUGINT, 0);
@@ -221,10 +223,15 @@ void processor_t::step(size_t n)
     }
   }
 
+  if (extension_enabled(EXT_ZICCID)) {
+    // Ziccid requires stores eventually become visible to instruction fetch,
+    // so periodically flush the I$
+    _mmu->flush_icache();
+  }
+
   while (n > 0) {
     size_t instret = 0;
     reg_t pc = state.pc;
-    mmu_t* _mmu = mmu;
     state.prv_changed = false;
     state.v_changed = false;
 
