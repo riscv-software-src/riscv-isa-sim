@@ -140,6 +140,10 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       // HINTs encoded in base-ISA instructions are always present.
     } else if (ext_str == "zihintntl") {
       // HINTs encoded in base-ISA instructions are always present.
+    } else if (ext_str == "ziccid") {
+      extension_table[EXT_ZICCID] = true;
+    } else if (ext_str == "ziccif") {
+      // aligned instruction fetch is always atomic in Spike
     } else if (ext_str == "zaamo") {
       extension_table[EXT_ZAAMO] = true;
     } else if (ext_str == "zalrsc") {
