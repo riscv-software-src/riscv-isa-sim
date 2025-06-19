@@ -303,9 +303,15 @@ bool processor_t::is_handled_in_vs()
 
 void processor_t::take_interrupt(reg_t pending_interrupts)
 {
-  const reg_t s_pending_interrupts = state.nonvirtual_sip->read() & state.nonvirtual_sie->read();
-  const reg_t vstopi = state.vstopi->read();
-  const reg_t vs_pending_interrupt = vstopi ? (reg_t(1) << get_field(vstopi, MTOPI_IID)) : 0;
+  reg_t s_pending_interrupts = 0;
+  reg_t vstopi = 0;
+  reg_t vs_pending_interrupt = 0;
+
+  if (extension_enable_table[EXT_SSAIA]) {
+    s_pending_interrupts = state.nonvirtual_sip->read() & state.nonvirtual_sie->read();
+    vstopi = state.vstopi->read();
+    vs_pending_interrupt = vstopi ? (reg_t(1) << get_field(vstopi, MTOPI_IID)) : 0;
+  }
 
   // Do nothing if no pending interrupts
   if (!pending_interrupts && !s_pending_interrupts && !vs_pending_interrupt) {
