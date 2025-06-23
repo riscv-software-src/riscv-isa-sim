@@ -447,6 +447,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   bool supv_double_trap = false;
   if (interrupt) {
     vsdeleg = (curr_virt && state.prv <= PRV_S) ? state.hideleg->read() : 0;
+    vsdeleg >>= 1;
     hsdeleg = (state.prv <= PRV_S) ? (state.mideleg->read() | state.nonvirtual_sip->read()) : 0;
     bit &= ~((reg_t)1 << (max_xlen - 1));
   } else {
