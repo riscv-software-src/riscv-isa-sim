@@ -315,30 +315,30 @@ bool mseccfg_csr_t::get_sseed() const noexcept {
 }
 
 bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
-  if (proc->n_pmp == 0)
-    return false;
-
-  // pmpcfg.L is 1 in any rule or entry (including disabled entries)
-  const bool pmplock_recorded = std::any_of(state->pmpaddr, state->pmpaddr + proc->n_pmp,
-          [](const pmpaddr_csr_t_p & c) { return c->is_locked(); } );
   reg_t new_val = read();
 
-  // When RLB is 0 and pmplock_recorded, RLB is locked to 0.
-  // Otherwise set the RLB bit according val
-  if (!(pmplock_recorded && (read() & MSECCFG_RLB) == 0)) {
-    new_val &= ~MSECCFG_RLB;
-    new_val |= (val & MSECCFG_RLB);
-  }
+  if (proc->n_pmp != 0) {
+    // pmpcfg.L is 1 in any rule or entry (including disabled entries)
+    const bool pmplock_recorded = std::any_of(state->pmpaddr, state->pmpaddr + proc->n_pmp,
+        [](const pmpaddr_csr_t_p & c) { return c->is_locked(); } );
 
-  new_val |= (val & MSECCFG_MMWP);  //MMWP is sticky
-  new_val |= (val & MSECCFG_MML);   //MML is sticky
+    // When RLB is 0 and pmplock_recorded, RLB is locked to 0.
+    // Otherwise set the RLB bit according val
+    if (!(pmplock_recorded && (read() & MSECCFG_RLB) == 0)) {
+      new_val &= ~MSECCFG_RLB;
+      new_val |= (val & MSECCFG_RLB);
+    }
+
+    new_val |= (val & MSECCFG_MMWP);  //MMWP is sticky
+    new_val |= (val & MSECCFG_MML);   //MML is sticky
+
+    proc->get_mmu()->flush_tlb();
+  }
 
   if (proc->extension_enabled(EXT_ZKR)) {
     uint64_t mask = MSECCFG_USEED | MSECCFG_SSEED;
     new_val = (new_val & ~mask) | (val & mask);
   }
-
-  proc->get_mmu()->flush_tlb();
 
   if (proc->extension_enabled(EXT_ZICFILP)) {
     new_val &= ~MSECCFG_MLPE;
