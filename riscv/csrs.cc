@@ -1421,6 +1421,7 @@ dcsr_csr_t::dcsr_csr_t(processor_t* const proc, const reg_t addr):
   ebreakvs(false),
   ebreakvu(false),
   v(false),
+  mprven(false),
   cause(0),
   ext_cause(0),
   cetrig(0),
@@ -1450,6 +1451,7 @@ reg_t dcsr_csr_t::read() const noexcept {
   result = set_field(result, DCSR_STEP, step);
   result = set_field(result, DCSR_PRV, prv);
   result = set_field(result, CSR_DCSR_V, v);
+  result = set_field(result, DCSR_MPRVEN, mprven);
   result = set_field(result, DCSR_PELP, pelp);
   return result;
 }
@@ -1464,6 +1466,7 @@ bool dcsr_csr_t::unlogged_write(const reg_t val) noexcept {
   ebreakvs = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_EBREAKVS) : false;
   ebreakvu = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_EBREAKVU) : false;
   v = proc->extension_enabled('H') ? get_field(val, CSR_DCSR_V) : false;
+  mprven = get_field(val, CSR_DCSR_MPRVEN);
   pelp = proc->extension_enabled(EXT_ZICFILP) ?
          static_cast<elp_t>(get_field(val, DCSR_PELP)) : elp_t::NO_LP_EXPECTED;
   cetrig = proc->extension_enabled(EXT_SMDBLTRP) ? get_field(val, DCSR_CETRIG) : false;

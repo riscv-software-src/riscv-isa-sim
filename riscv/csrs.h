@@ -725,6 +725,7 @@ class dcsr_csr_t: public csr_t {
   bool ebreakvs;
   bool ebreakvu;
   bool v;
+  bool mprven;
   uint8_t cause;
   uint8_t ext_cause;
   bool cetrig;
