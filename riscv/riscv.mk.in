@@ -90,6 +90,10 @@ riscv_insn_ext_i = \
 	v2ddefu16 \
 	v2ddef32  \
 	v2ddefu32 \
+	v2dloc_col \
+	v2dloc_rect \
+	v2dloc_row \
+	v2dloc_trect \
 	v2dld \
 	v2dst \
 	v2dadd_vv  \
@@ -102,7 +106,6 @@ riscv_insn_ext_i = \
 	v2dsub_vs \
 	v2ddiv_vs \
 	v2dmul_vs \
-	v2dsync \
 	addi \
 	addiw \
 	addw \
