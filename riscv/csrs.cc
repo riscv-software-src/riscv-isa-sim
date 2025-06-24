@@ -2267,7 +2267,7 @@ reg_t hgeip_csr_t::read() const noexcept {
   // scan through all VGEINs
   reg_t v = 0;
   for (auto &i: proc->imsic->vs) {
-    if (i.second->topei())
+    if (i.second->delivery() && i.second->topei())
       v |= reg_t(1) << i.first;
   }
   return v;
