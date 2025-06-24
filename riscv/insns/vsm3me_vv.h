@@ -13,6 +13,7 @@
   (ZVKSH_P1((M16) ^  (M9) ^ ZVK_ROL32((M3), 15)) ^ ZVK_ROL32((M13), 7) ^ (M6))
 
 require_vsm3_constraints;
+VI_CHECK_SSS(true)
 
 VI_ZVK_VD_VS1_VS2_EGU32x8_NOVM_LOOP(
   {},

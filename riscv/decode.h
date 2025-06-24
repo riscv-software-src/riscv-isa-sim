@@ -79,6 +79,10 @@ public:
   insn_t(insn_bits_t bits) : b(bits) {}
   insn_bits_t bits() { return b; }
   int length() { return insn_length(b); }
+  [[maybe_unused]] int64_t opcode() { return x(0, 7); }
+  [[maybe_unused]] int64_t funct7() { return x(25, 7); }
+  [[maybe_unused]] int64_t funct3() { return x(12, 3); }
+  [[maybe_unused]] int64_t funct2() { return x(25, 2); }
   int64_t i_imm() { return xs(20, 12); }
   int64_t shamt() { return x(20, 6); }
   int64_t s_imm() { return x(7, 5) + (xs(25, 7) << 5); }
@@ -95,6 +99,7 @@ public:
   uint64_t bs() { return x(30, 2); } // Crypto ISE - SM4/AES32 byte select.
   uint64_t rcon() { return x(20, 4); } // Crypto ISE - AES64 round const.
 
+  [[maybe_unused]] int64_t rvc_opcode() { return x(0, 2); }
   int64_t rvc_imm() { return x(2, 5) + (xs(12, 1) << 5); }
   int64_t rvc_zimm() { return x(2, 5) + (x(12, 1) << 5); }
   int64_t rvc_addi4spn_imm() { return (x(6, 1) << 2) + (x(5, 1) << 3) + (x(11, 2) << 4) + (x(7, 4) << 6); }
@@ -170,23 +175,29 @@ public:
     switch (rvc_rlist()) {
     case 15:
       stack_adj_base += 16;
+      [[fallthrough]];
     case 14:
       if (xlen == 64)
         stack_adj_base += 16;
+      [[fallthrough]];
     case 13:
     case 12:
       stack_adj_base += 16;
+      [[fallthrough]];
     case 11:
     case 10:
       if (xlen == 64)
         stack_adj_base += 16;
+      [[fallthrough]];
     case 9:
     case 8:
       stack_adj_base += 16;
+      [[fallthrough]];
     case 7:
     case 6:
       if (xlen == 64)
         stack_adj_base += 16;
+      [[fallthrough]];
     case 5:
     case 4:
       stack_adj_base += 16;

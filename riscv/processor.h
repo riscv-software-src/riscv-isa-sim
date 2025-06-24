@@ -19,6 +19,7 @@
 #include "vector_unit.h"
 #include "ma_soft_register.h"
 
+#define FIRST_HPMCOUNTER 3
 #define N_HPMCOUNTERS 29
 
 class processor_t;
@@ -62,7 +63,7 @@ struct insn_desc_t
 };
 
 // regnum, data
-typedef std::unordered_map<reg_t, freg_t> commit_log_reg_t;
+typedef std::map<reg_t, freg_t> commit_log_reg_t;
 
 // addr, value, size
 typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
@@ -70,7 +71,9 @@ typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
 // architectural state of a RISC-V hart
 struct state_t
 {
+  void add_ireg_proxy(processor_t* const proc, sscsrind_reg_csr_t::sscsrind_reg_csr_t_p ireg);
   void reset(processor_t* const proc, reg_t max_isa);
+  void add_csr(reg_t addr, const csr_t_p& csr);
 
   reg_t pc;
   regfile_t<reg_t, NXPR, true> XPR;
@@ -95,9 +98,12 @@ struct state_t
   wide_counter_csr_t_p mcycle;
   mie_csr_t_p mie;
   mip_csr_t_p mip;
+  csr_t_p nonvirtual_sip;
+  csr_t_p nonvirtual_sie;
   csr_t_p medeleg;
   csr_t_p mideleg;
   csr_t_p mcounteren;
+  csr_t_p mcountinhibit;
   csr_t_p mevent[N_HPMCOUNTERS];
   csr_t_p mnstatus;
   csr_t_p mnepc;
@@ -107,6 +113,7 @@ struct state_t
   csr_t_p stvec;
   virtualized_csr_t_p satp;
   csr_t_p scause;
+  csr_t_p scountinhibit;
 
   // When taking a trap into HS-mode, we must access the nonvirtualized HS-mode CSRs directly:
   csr_t_p nonvirtual_stvec;
@@ -168,9 +175,12 @@ struct state_t
   csr_t_p stimecmp;
   csr_t_p vstimecmp;
 
-  csr_t_p srmcfg;
-
   csr_t_p ssp;
+
+  csr_t_p mvien;
+  mvip_csr_t_p mvip;
+  csr_t_p hvictl;
+  csr_t_p vstopi;
 
   bool serialized; // whether timer CSRs are in a well-defined state
 
@@ -190,6 +200,11 @@ struct state_t
   int last_inst_flen;
 
   elp_t elp;
+
+  bool critical_error;
+
+ private:
+  void csr_init(processor_t* const proc, reg_t max_isa);
 };
 
 class opcode_cache_entry_t {
@@ -237,13 +252,14 @@ class opcode_cache_entry_t {
 class processor_t : public abstract_device_t
 {
 public:
-  processor_t(const isa_parser_t *isa, const cfg_t* cfg,
+  processor_t(const char* isa_str, const char* priv_str,
+              const cfg_t* cfg,
               simif_t* sim, uint32_t id, bool halt_on_reset,
               FILE *log_file, std::ostream& sout_); // because of command line option --log and -s we need both
   ~processor_t();
 
-  const isa_parser_t &get_isa() { return *isa; }
-  const cfg_t &get_cfg() { return *cfg; }
+  const isa_parser_t &get_isa() const & { return isa; }
+  const cfg_t &get_cfg() const & { return *cfg; }
 
   void set_debug(bool value);
   void set_histogram(bool value);
@@ -304,7 +320,7 @@ public:
   void set_extension_enable(unsigned char ext, bool enable) {
     assert(!extension_assumed_const[ext]);
     extension_dynamic[ext] = true;
-    extension_enable_table[ext] = enable && isa->extension_enabled(ext);
+    extension_enable_table[ext] = enable && isa.extension_enabled(ext);
   }
   void set_impl(uint8_t impl, bool val) { impl_table[impl] = val; }
   bool supports_impl(uint8_t impl) const {
@@ -320,7 +336,7 @@ public:
   }
   reg_t legalize_privilege(reg_t);
   void set_privilege(reg_t, bool);
-  const char* get_privilege_string();
+  const char* get_privilege_string() const;
   void update_histogram(reg_t pc);
   const disassembler_t* get_disassembler() { return disassembler; }
 
@@ -335,14 +351,15 @@ public:
   void register_extension(extension_t*);
 
   // MMIO slave interface
-  bool load(reg_t addr, size_t len, uint8_t* bytes);
-  bool store(reg_t addr, size_t len, const uint8_t* bytes);
+  bool load(reg_t addr, size_t len, uint8_t* bytes) override;
+  bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
+  reg_t size() override;
 
   // When true, display disassembly of each instruction that's executed.
   bool debug;
   // When true, take the slow simulation path.
-  bool slow_path();
-  bool halted() { return state.debug_mode; }
+  bool slow_path() const;
+  bool halted() const { return state.debug_mode; }
   enum {
     HR_NONE,    /* Halt request is inactive. */
     HR_REGULAR, /* Regular halt request/debug interrupt. */
@@ -362,8 +379,10 @@ public:
 
   void check_if_lpad_required();
 
+  reg_t select_an_interrupt_with_default_priority(reg_t enabled_interrupts) const;
+
 private:
-  const isa_parser_t * const isa;
+  const isa_parser_t isa;
   const cfg_t * const cfg;
 
   simif_t* sim;
@@ -394,6 +413,10 @@ private:
   static const size_t OPCODE_CACHE_SIZE = 4095;
   opcode_cache_entry_t opcode_cache[OPCODE_CACHE_SIZE];
 
+  unsigned ziccid_flush_count = 0;
+  static const unsigned ZICCID_FLUSH_PERIOD = 10;
+
+  bool is_handled_in_vs();
   void take_pending_interrupt() { take_interrupt(state.mip->read() & state.mie->read()); }
   void take_interrupt(reg_t mask); // take first enabled interrupt in mask
   void take_trap(trap_t& t, reg_t epc); // take an exception
@@ -402,7 +425,7 @@ private:
   void register_insn(insn_desc_t, bool);
   int paddr_bits();
 
-  void enter_debug_mode(uint8_t cause);
+  void enter_debug_mode(uint8_t cause, uint8_t ext_cause);
 
   void debug_output_log(std::stringstream *s); // either output to interactive user or write to log file
 

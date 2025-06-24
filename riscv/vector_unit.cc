@@ -13,15 +13,15 @@ void vectorUnit_t::vectorUnit_t::reset()
   reg_file = malloc(NVPR * vlenb);
   memset(reg_file, 0, NVPR * vlenb);
 
-  auto& csrmap = p->get_state()->csrmap;
-  csrmap[CSR_VXSAT] = vxsat = std::make_shared<vxsat_csr_t>(p, CSR_VXSAT);
-  csrmap[CSR_VSTART] = vstart = std::make_shared<vector_csr_t>(p, CSR_VSTART, /*mask*/ VLEN - 1);
-  csrmap[CSR_VXRM] = vxrm = std::make_shared<vector_csr_t>(p, CSR_VXRM, /*mask*/ 0x3ul);
-  csrmap[CSR_VL] = vl = std::make_shared<vector_csr_t>(p, CSR_VL, /*mask*/ 0);
-  csrmap[CSR_VTYPE] = vtype = std::make_shared<vector_csr_t>(p, CSR_VTYPE, /*mask*/ 0);
-  csrmap[CSR_VLENB] = std::make_shared<vector_csr_t>(p, CSR_VLENB, /*mask*/ 0, /*init*/ vlenb);
+  auto state = p->get_state();
+  state->add_csr(CSR_VXSAT, vxsat = std::make_shared<vxsat_csr_t>(p, CSR_VXSAT));
+  state->add_csr(CSR_VSTART, vstart = std::make_shared<vector_csr_t>(p, CSR_VSTART, /*mask*/ VLEN - 1));
+  state->add_csr(CSR_VXRM, vxrm = std::make_shared<vector_csr_t>(p, CSR_VXRM, /*mask*/ 0x3ul));
+  state->add_csr(CSR_VL, vl = std::make_shared<vector_csr_t>(p, CSR_VL, /*mask*/ 0));
+  state->add_csr(CSR_VTYPE, vtype = std::make_shared<vector_csr_t>(p, CSR_VTYPE, /*mask*/ 0));
+  state->add_csr(CSR_VLENB, std::make_shared<vector_csr_t>(p, CSR_VLENB, /*mask*/ 0, /*init*/ vlenb));
   assert(VCSR_VXSAT_SHIFT == 0);  // composite_csr_t assumes vxsat begins at bit 0
-  csrmap[CSR_VCSR] = std::make_shared<composite_csr_t>(p, CSR_VCSR, vxrm, vxsat, VCSR_VXRM_SHIFT);
+  state->add_csr(CSR_VCSR, std::make_shared<composite_csr_t>(p, CSR_VCSR, vxrm, vxsat, VCSR_VXRM_SHIFT));
 
   vtype->write_raw(0);
   set_vl(0, 0, 0, -1); // default to illegal configuration
@@ -29,10 +29,11 @@ void vectorUnit_t::vectorUnit_t::reset()
 
 reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t newType)
 {
-  int new_vlmul = 0;
   if (vtype->read() != newType) {
+    int new_vlmul = int8_t(extract64(newType, 0, 3) << 5) >> 5;
+    auto old_vlmax = vlmax;
+
     vsew = 1 << (extract64(newType, 3, 3) + 3);
-    new_vlmul = int8_t(extract64(newType, 0, 3) << 5) >> 5;
     vflmul = new_vlmul >= 0 ? 1 << new_vlmul : 1.0 / (1 << -new_vlmul);
     vlmax = (VLEN/vsew) * vflmul;
     vta = extract64(newType, 6, 1);
@@ -40,7 +41,8 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
            || vsew > std::min(vflmul, 1.0f) * ELEN
-           || (newType >> 8) != 0;
+           || (newType >> 8) != 0
+           || (rd == 0 && rs1 == 0 && old_vlmax != vlmax);
 
     if (vill) {
       vlmax = 0;
@@ -54,7 +56,7 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
   if (vlmax == 0) {
     vl->write_raw(0);
   } else if (rd == 0 && rs1 == 0) {
-    vl->write_raw(std::min(vl->read(), vlmax));
+    ; // retain current VL
   } else if (rd != 0 && rs1 == 0) {
     vl->write_raw(vlmax);
   } else if (rs1 != 0) {

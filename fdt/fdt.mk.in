@@ -16,4 +16,4 @@ fdt_c_srcs = \
 	fdt_addresses.c \
 	fdt_overlay.c \
 
-fdt_CFLAGS = -I$(src_dir)/fdt
+fdt_CFLAGS = -I$(src_dir)/fdt -Wno-sign-compare

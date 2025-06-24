@@ -83,8 +83,7 @@ static void clear_str(bool noncanonical, int fd, std::string target_str)
       clear_motion += ' ';
     }
     clear_motion += '\r';
-    if (write(fd, clear_motion.c_str(), clear_motion.size() + 1))
-      ; // shut up gcc
+    (void) write(fd, clear_motion.c_str(), clear_motion.size() + 1);
   }
 }
 
@@ -97,8 +96,7 @@ static void send_key(bool noncanonical, int fd, keybuffer_t key_code, const int 
     {
       key_motion += (char) ((key_code >> (i * BITS_PER_CHAR)) & 0xff);
     }
-    if (write(fd, key_motion.c_str(), len) != len)
-      ; // shut up gcc
+    (void) write(fd, key_motion.c_str(), len);
   }
 }
 
@@ -145,8 +143,8 @@ static std::string readline(int fd)
         clear_str(noncanonical, fd, s);
         cursor_pos--;
         s.erase(cursor_pos, 1);
-        if (noncanonical && write(fd, s.c_str(), s.size() + 1) != 1)
-          ; // shut up gcc
+        if (noncanonical)
+          (void) write(fd, s.c_str(), s.size() + 1);
         // move cursor by left arrow key
         for (unsigned i = 0; i < s.size() - cursor_pos; i++) {
           send_key(noncanonical, fd, KEYCODE_LEFT, 3);
@@ -177,8 +175,8 @@ static std::string readline(int fd)
           clear_str(noncanonical, fd, s);
           history_index = std::min(history_commands.size(), history_index + 1);
           s = history_commands[history_commands.size() - history_index];
-          if (noncanonical && write(fd, s.c_str(), s.size() + 1))
-            ; // shut up gcc
+          if (noncanonical)
+            (void) write(fd, s.c_str(), s.size() + 1);
           cursor_pos = s.size();
         }
         key_buffer = 0;
@@ -193,8 +191,8 @@ static std::string readline(int fd)
           } else {
             s = history_commands[history_commands.size() - history_index];
           }
-          if (noncanonical && write(fd, s.c_str(), s.size() + 1))
-            ; // shut up gcc
+          if (noncanonical)
+            (void) write(fd, s.c_str(), s.size() + 1);
           cursor_pos = s.size();
         }
         key_buffer = 0;
@@ -222,14 +220,13 @@ static std::string readline(int fd)
         key_buffer = 0;
         break;
       case KEYCODE_ENTER:
-        if (noncanonical && write(fd, &ch, 1) != 1)
-          ; // shut up gcc
+        if (noncanonical)
+          (void) write(fd, &ch, 1);
         if (s.size() > initial_s_len && (history_commands.size() == 0 || s != history_commands[history_commands.size() - 1])) {
           history_commands.push_back(s);
         }
         return s.substr(initial_s_len);
       default:
-      DEFAULT_KEY:
         // unknown buffered key, do nothing
         if (key_buffer != 0) {
           key_buffer = 0;
@@ -238,8 +235,8 @@ static std::string readline(int fd)
         clear_str(noncanonical, fd, s);
         s.insert(cursor_pos, 1, ch);
         cursor_pos++;
-        if (noncanonical && write(fd, s.c_str(), s.size() + 1) != 1)
-          ; // shut up gcc
+        if (noncanonical)
+          (void) write(fd, s.c_str(), s.size() + 1);
         // send left arrow key to move cursor
         for (unsigned i = 0; i < s.size() - cursor_pos; i++) {
           send_key(noncanonical, fd, KEYCODE_LEFT, 3);
@@ -342,8 +339,10 @@ void sim_t::interactive()
         (this->*funcs[cmd])(cmd, args);
       else
         out << "Unknown command " << cmd << std::endl;
-    } catch(trap_t& t) {
+    } catch(trap_interactive& t) {
       out << "Bad or missing arguments for command " << cmd << std::endl;
+    } catch(trap_t& t){
+      out << "Received trap: " << t.name() << std::endl;
     }
 #ifdef HAVE_BOOST_ASIO
     if (socketif)
@@ -473,15 +472,9 @@ void sim_t::interactive_insn(const std::string& cmd, const std::vector<std::stri
   int max_xlen = p->get_isa().get_max_xlen();
 
   std::ostream out(sout_.rdbuf());
-  try
-  {
-    insn_t insn(get_insn(args));
-    out << std::hex << std::setfill('0') << "0x" << std::setw(max_xlen/4)
-        << zext(insn.bits(), max_xlen) << " " << p->get_disassembler()->disassemble(insn) << std::endl;
-  }
-  catch (trap_t& t) {
-    out << "Unable to obtain insn due to " << t.name() << std::endl;
-  }
+  insn_t insn(get_insn(args)); // ensure this is outside of ostream to not pollute output on non-interactive trap
+  out << std::hex << std::setfill('0') << "0x" << std::setw(max_xlen/4)
+      << zext(insn.bits(), max_xlen) << " " << p->get_disassembler()->disassemble(insn) << std::endl;
 }
 
 void sim_t::interactive_priv(const std::string& cmd, const std::vector<std::string>& args)
@@ -717,8 +710,9 @@ void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::strin
   int max_xlen = procs[0]->get_isa().get_max_xlen();
 
   std::ostream out(sout_.rdbuf());
+  reg_t mem_val = get_mem(args); // ensure this is outside of ostream to not pollute output on non-interactive trap
   out << std::hex << "0x" << std::setfill('0') << std::setw(max_xlen/4)
-      << zext(get_mem(args), max_xlen) << std::endl;
+      << zext(mem_val, max_xlen) << std::endl;
 }
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)

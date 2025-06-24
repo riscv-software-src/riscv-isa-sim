@@ -114,19 +114,23 @@ struct riscv_statx
       attributes_mask(htif->to_target<uint64_t>(s.stx_attributes_mask)),
       atime {
         htif->to_target<int64_t>(s.stx_atime.tv_sec),
-        htif->to_target<uint32_t>(s.stx_atime.tv_nsec)
+        htif->to_target<uint32_t>(s.stx_atime.tv_nsec),
+        htif->to_target<int32_t>(0)
       },
       btime {
         htif->to_target<int64_t>(s.stx_btime.tv_sec),
-        htif->to_target<uint32_t>(s.stx_btime.tv_nsec)
+        htif->to_target<uint32_t>(s.stx_btime.tv_nsec),
+        htif->to_target<int32_t>(0)
       },
       ctime {
         htif->to_target<int64_t>(s.stx_ctime.tv_sec),
-        htif->to_target<uint32_t>(s.stx_ctime.tv_nsec)
+        htif->to_target<uint32_t>(s.stx_ctime.tv_nsec),
+        htif->to_target<int32_t>(0)
       },
       mtime {
         htif->to_target<int64_t>(s.stx_mtime.tv_sec),
-        htif->to_target<uint32_t>(s.stx_mtime.tv_nsec)
+        htif->to_target<uint32_t>(s.stx_mtime.tv_nsec),
+        htif->to_target<int32_t>(0)
       },
       rdev_major(htif->to_target<uint32_t>(s.stx_rdev_major)),
       rdev_minor(htif->to_target<uint32_t>(s.stx_rdev_minor)),
@@ -137,7 +141,7 @@ struct riscv_statx
       __spare2(), __spare3()
 #else
       __spare2()
-#endif      
+#endif
       {}
 };
 #endif
@@ -221,7 +225,7 @@ void syscall_t::handle_syscall(command_t cmd)
 
 reg_t syscall_t::sys_exit(reg_t code, reg_t a1, reg_t a2, reg_t a3, reg_t a4, reg_t a5, reg_t a6)
 {
-  htif->exitcode = code << 1 | 1;
+  htif->htif_exit(code << 1 | 1);
   return 0;
 }
 

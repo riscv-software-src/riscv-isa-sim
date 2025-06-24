@@ -8,8 +8,7 @@ reg_t pos = -1;
 for (reg_t i=P.VU.vstart->read(); i < vl; ++i) {
   VI_LOOP_ELEMENT_SKIP()
 
-  bool vs2_lsb = ((P.VU.elt<uint64_t>(rs2_num, midx ) >> mpos) & 0x1) == 1;
-  if (vs2_lsb) {
+  if (P.VU.mask_elt(rs2_num, i)) {
     pos = i;
     break;
   }

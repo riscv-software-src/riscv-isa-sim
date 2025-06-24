@@ -13,8 +13,10 @@ Spike supports the following RISC-V ISA features:
   - RV32E and RV64E base ISAs, v1.9
   - Zifencei extension, v2.0
   - Zicsr extension, v2.0
+  - Zicntr extension, v2.0
   - M extension, v2.0
   - A extension, v2.1
+  - B extension, v1.0
   - F extension, v2.2
   - D extension, v2.2
   - Q extension, v2.2
@@ -37,11 +39,23 @@ Spike supports the following RISC-V ISA features:
   - Svnapot extension, v1.0
   - Svpbmt extension, v1.0
   - Svinval extension, v1.0
+  - Svadu extension, v1.0
+  - Svade extension, v1.0
   - Sdext extension, v1.0-STABLE
   - Sdtrig extension, v1.0-STABLE
   - Smepmp extension v1.0
   - Smstateen extension, v1.0
+  - Smdbltrp extension, v1.0
   - Sscofpmf v0.5.2
+  - Ssdbltrp extension, v1.0
+  - Ssqosid extension, v1.0
+  - Zaamo extension, v1.0
+  - Zalrsc extension, v1.0
+  - Zabha extension, v1.0
+  - Zacas extension, v1.0
+  - Zawrs extension, v1.0
+  - Zicfiss extension, v1.0
+  - Zicfilp extension, v1.0
   - Zca extension, v1.0
   - Zcb extension, v1.0
   - Zcf extension, v1.0
@@ -61,8 +75,10 @@ Spike supports the following RISC-V ISA features:
   - Zvkt  extension, v1.0
   - Zvkn, Zvknc, Zvkng extension, v1.0
   - Zvks, Zvksc, Zvksg extension, v1.0 
-  - Zilsd extension, v0.9.0
-  - Zcmlsd extension, v0.9.0
+  - Zicond extension, v1.0
+  - Zilsd extension, v1.0
+  - Zclsd extension, v1.0
+  - Zimop extension, v1.0
 
 Versioning and APIs
 -------------------

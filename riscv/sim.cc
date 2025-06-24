@@ -44,15 +44,15 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
              const char *log_path,
              bool dtb_enabled, const char *dtb_file,
              bool socket_enabled,
-             FILE *cmd_file) // needed for command line option --cmd
+             FILE *cmd_file, // needed for command line option --cmd
+             std::optional<unsigned long long> instruction_limit)
   : htif_t(args),
-    isa(cfg->isa, cfg->priv),
     cfg(cfg),
     mems(mems),
-    procs(std::max(cfg->nprocs(), size_t(1))),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
     cmd_file(cmd_file),
+    instruction_limit(instruction_limit),
     sout_(nullptr),
     current_step(0),
     current_proc(0),
@@ -96,16 +96,18 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   }
 #endif
 
-  debug_mmu = new mmu_t(this, cfg->endianness, NULL);
-
-  for (size_t i = 0; i < cfg->nprocs(); i++) {
-    procs[i] = new processor_t(&isa, cfg, this, cfg->hartids[i], halted,
-                               log_file.get(), sout_);
-    harts[cfg->hartids[i]] = procs[i];
-  }
+  debug_mmu = new mmu_t(this, cfg->endianness, NULL, cfg->cache_blocksz);
 
   // When running without using a dtb, skip the fdt-based configuration steps
-  if (!dtb_enabled) return;
+  if (!dtb_enabled) {
+    for (size_t i = 0; i < cfg->nprocs(); i++) {
+      procs.push_back(new processor_t(cfg->isa, cfg->priv,
+                                      cfg, this, cfg->hartids[i], halted,
+                                      log_file.get(), sout_));
+      harts[cfg->hartids[i]] = procs[i];
+    }
+    return;
+  } // otherwise, generate the procs by parsing the DTS
 
   // Only make a CLINT (Core-Local INTerrupt controller) and PLIC (Platform-
   // Level-Interrupt-Controller) if they are specified in the device tree
@@ -133,19 +135,16 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     std::stringstream strstream;
     strstream << fin.rdbuf();
     dtb = strstream.str();
+    dts = dtb_to_dts(dtb);
   } else {
-    std::pair<reg_t, reg_t> initrd_bounds = cfg->initrd_bounds;
     std::string device_nodes;
     for (const device_factory_sargs_t& factory_sargs: device_factories) {
       const device_factory_t* factory = factory_sargs.first;
       const std::vector<std::string>& sargs = factory_sargs.second;
       device_nodes.append(factory->generate_dts(this, sargs));
     }
-    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ,
-                   initrd_bounds.first, initrd_bounds.second,
-                   cfg->bootargs, cfg->pmpregions, cfg->pmpgranularity,
-                   procs, mems, device_nodes);
-    dtb = dts_compile(dts);
+    dts = make_dts(INSNS_PER_RTC_TICK, CPU_HZ, cfg, mems, device_nodes);
+    dtb = dts_to_dtb(dts);
   }
 
   int fdt_code = fdt_check_header(dtb.c_str());
@@ -162,6 +161,88 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 
   void *fdt = (void *)dtb.c_str();
 
+  // per core attribute
+  int cpu_offset = 0, cpu_map_offset, rc;
+  size_t cpu_idx = 0;
+  cpu_offset = fdt_get_offset(fdt, "/cpus");
+  cpu_map_offset = fdt_get_offset(fdt, "/cpus/cpu-map");
+  if (cpu_offset < 0)
+    return;
+
+  for (cpu_offset = fdt_get_first_subnode(fdt, cpu_offset); cpu_offset >= 0;
+       cpu_offset = fdt_get_next_subnode(fdt, cpu_offset)) {
+
+    if (!(cpu_map_offset < 0) && cpu_offset == cpu_map_offset)
+      continue;
+
+    if (cpu_idx != procs.size()) {
+      std::cerr << "Spike only supports contiguous CPU IDs in the DTS" << std::endl;
+      exit(1);
+    }
+
+    // handle isa string
+    const char* isa_str;
+    rc = fdt_parse_isa(fdt, cpu_offset, &isa_str);
+    if (rc != 0) {
+      std::cerr << "core (" << cpu_idx << ") has an invalid or missing 'riscv,isa'\n";
+      exit(1);
+    }
+
+    // handle hartid
+    uint32_t hartid;
+    rc = fdt_parse_hartid(fdt, cpu_offset, &hartid);
+    if (rc != 0) {
+      std::cerr << "core (" << cpu_idx << ") has an invalid or missing `reg` (hartid)\n";
+      exit(1);
+    }
+
+    procs.push_back(new processor_t(isa_str, cfg->priv,
+                                    cfg, this, hartid, halted,
+                                    log_file.get(), sout_));
+    harts[hartid] = procs[cpu_idx];
+
+    // handle pmp
+    reg_t pmp_num, pmp_granularity;
+    if (fdt_parse_pmp_num(fdt, cpu_offset, &pmp_num) != 0)
+      pmp_num = 0;
+    procs[cpu_idx]->set_pmp_num(pmp_num);
+
+    if (fdt_parse_pmp_alignment(fdt, cpu_offset, &pmp_granularity) == 0) {
+      procs[cpu_idx]->set_pmp_granularity(pmp_granularity);
+    }
+
+    // handle mmu-type
+    const char *mmu_type;
+    rc = fdt_parse_mmu_type(fdt, cpu_offset, &mmu_type);
+    if (rc == 0) {
+      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
+      if (strncmp(mmu_type, "riscv,sv32", strlen("riscv,sv32")) == 0) {
+        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV32);
+      } else if (strncmp(mmu_type, "riscv,sv39", strlen("riscv,sv39")) == 0) {
+        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV39);
+      } else if (strncmp(mmu_type, "riscv,sv48", strlen("riscv,sv48")) == 0) {
+        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV48);
+      } else if (strncmp(mmu_type, "riscv,sv57", strlen("riscv,sv57")) == 0) {
+        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV57);
+      } else if (strncmp(mmu_type, "riscv,sbare", strlen("riscv,sbare")) == 0) {
+        // has been set in the beginning
+      } else {
+        std::cerr << "core ("
+                  << cpu_idx
+                  << ") has an invalid 'mmu-type': "
+                  << mmu_type << ").\n";
+        exit(1);
+      }
+    } else {
+      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
+    }
+
+    procs[cpu_idx]->reset();
+
+    cpu_idx++;
+  }
+
+  // must be located after procs/harts are set (devices might use sim_t get_* member functions)
   for (size_t i = 0; i < device_factories.size(); i++) {
     const device_factory_t* factory = device_factories[i].first;
     const std::vector<std::string>& sargs = device_factories[i].second;
@@ -178,70 +259,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
         plic = std::static_pointer_cast<plic_t>(dev_ptr);
     }
   }
-
-  //per core attribute
-  int cpu_offset = 0, cpu_map_offset, rc;
-  size_t cpu_idx = 0;
-  cpu_offset = fdt_get_offset(fdt, "/cpus");
-  cpu_map_offset = fdt_get_offset(fdt, "/cpus/cpu-map");
-  if (cpu_offset < 0)
-    return;
-
-  for (cpu_offset = fdt_get_first_subnode(fdt, cpu_offset); cpu_offset >= 0;
-       cpu_offset = fdt_get_next_subnode(fdt, cpu_offset)) {
-
-    if (!(cpu_map_offset < 0) && cpu_offset == cpu_map_offset)
-      continue;
-
-    if (cpu_idx >= nprocs())
-      break;
-
-    //handle pmp
-    reg_t pmp_num, pmp_granularity;
-    if (fdt_parse_pmp_num(fdt, cpu_offset, &pmp_num) != 0)
-      pmp_num = 0;
-    procs[cpu_idx]->set_pmp_num(pmp_num);
-
-    if (fdt_parse_pmp_alignment(fdt, cpu_offset, &pmp_granularity) == 0) {
-      procs[cpu_idx]->set_pmp_granularity(pmp_granularity);
-    }
-
-    //handle mmu-type
-    const char *mmu_type;
-    rc = fdt_parse_mmu_type(fdt, cpu_offset, &mmu_type);
-    if (rc == 0) {
-      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
-      if (strncmp(mmu_type, "riscv,sv32", strlen("riscv,sv32")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV32);
-      } else if (strncmp(mmu_type, "riscv,sv39", strlen("riscv,sv39")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV39);
-      } else if (strncmp(mmu_type, "riscv,sv48", strlen("riscv,sv48")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV48);
-      } else if (strncmp(mmu_type, "riscv,sv57", strlen("riscv,sv57")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV57);
-      } else if (strncmp(mmu_type, "riscv,sbare", strlen("riscv,sbare")) == 0) {
-        //has been set in the beginning
-      } else {
-        std::cerr << "core ("
-                  << cpu_idx
-                  << ") has an invalid 'mmu-type': "
-                  << mmu_type << ").\n";
-        exit(1);
-      }
-    } else {
-      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
-    }
-
-    cpu_idx++;
-  }
-
-  if (cpu_idx != nprocs()) {
-      std::cerr << "core number in dts ("
-                <<  cpu_idx
-                << ") doesn't match it in command line ("
-                << nprocs() << ").\n";
-      exit(1);
-  }
 }
 
 sim_t::~sim_t()
@@ -256,7 +273,7 @@ int sim_t::run()
   if (!debug && log)
     set_procs_debug(true);
 
-  htif_t::set_expected_xlen(isa.get_max_xlen());
+  htif_t::set_expected_xlen(harts[0]->get_isa().get_max_xlen());
 
   // htif_t::run() will repeatedly call back into sim_t::idle(), each
   // invocation of which will advance target time
@@ -322,7 +339,8 @@ void sim_t::set_procs_debug(bool value)
 
 static bool paddr_ok(reg_t addr)
 {
-  return (addr >> MAX_PADDR_BITS) == 0;
+  static_assert(MAX_PADDR_BITS == 8 * sizeof(addr));
+  return true;
 }
 
 bool sim_t::mmio_load(reg_t paddr, size_t len, uint8_t* bytes)
@@ -387,10 +405,9 @@ void sim_t::set_rom()
 char* sim_t::addr_to_mem(reg_t paddr) {
   if (!paddr_ok(paddr))
     return NULL;
-  auto desc = bus.find_device(paddr);
+  auto desc = bus.find_device(paddr >> PGSHIFT << PGSHIFT, PGSIZE);
   if (auto mem = dynamic_cast<abstract_mem_t*>(desc.second))
-    if (paddr - desc.first < mem->size())
-      return mem->contents(paddr - desc.first);
+    return mem->contents(paddr - desc.first);
   return NULL;
 }
 
@@ -414,8 +431,19 @@ void sim_t::idle()
 
   if (debug || ctrlc_pressed)
     interactive();
-  else
+  else {
+    if (instruction_limit.has_value()) {
+      if (*instruction_limit < INTERLEAVE) {
+        // Final step.
+        step(*instruction_limit);
+        htif_exit(0);
+        *instruction_limit = 0;
+        return;
+      }
+      *instruction_limit -= INTERLEAVE;
+    }
     step(INTERLEAVE);
+  }
 
   if (remote_bitbang)
     remote_bitbang->tick();

@@ -99,7 +99,6 @@ public:
 protected:
   static action_t legalize_action(reg_t val, reg_t action_mask, reg_t dmode_mask) noexcept;
   bool common_match(processor_t * const proc, bool use_prev_prv = false) const noexcept;
-  bool allow_action(const state_t * const state) const;
   reg_t tdata2;
 
   bool vs = false;
@@ -221,7 +220,7 @@ private:
   bool simple_match(unsigned xlen, reg_t value) const;
 
 protected:
-  static match_t legalize_match(reg_t val) noexcept;
+  static match_t legalize_match(reg_t val, reg_t maskmax) noexcept;
   static bool legalize_timing(reg_t val, reg_t timing_mask, reg_t select_mask, reg_t execute_mask, reg_t load_mask) noexcept;
   bool dmode = false;
   action_t action = ACTION_DEBUG_EXCEPTION;
@@ -243,6 +242,7 @@ public:
 
 private:
   bool hit = false;
+  const reg_t maskmax = 0;
 };
 
 class mcontrol6_t : public mcontrol_common_t {
@@ -301,6 +301,6 @@ private:
   std::vector<trigger_t *> triggers;
 };
 
-};
+}
 
 #endif

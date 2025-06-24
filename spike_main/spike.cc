@@ -38,7 +38,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  -s                    Command I/O via socket (use with -d)\n");
 #endif
   fprintf(stderr, "  -h, --help            Print this help message\n");
-  fprintf(stderr, "  -H                    Start halted, allowing a debugger to connect\n");
+  fprintf(stderr, "  --halted              Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --log=<name>          File name for option -l\n");
   fprintf(stderr, "  --debug-cmd=<name>    Read commands from file (use with -d)\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
@@ -78,12 +78,13 @@ static void help(int exit_code = 1)
       "required for a DMI access [default 0]\n");
   fprintf(stderr, "  --dm-abstract-rti=<n> Number of Run-Test/Idle cycles "
       "required for an abstract command to execute [default 0]\n");
-  fprintf(stderr, "  --dm-no-hasel         Debug module supports hasel\n");
+  fprintf(stderr, "  --dm-no-hasel         Debug module won't support hasel\n");
   fprintf(stderr, "  --dm-no-abstract-csr  Debug module won't support abstract CSR access\n");
   fprintf(stderr, "  --dm-no-abstract-fpr  Debug module won't support abstract FPR access\n");
   fprintf(stderr, "  --dm-no-halt-groups   Debug module won't support halt groups\n");
   fprintf(stderr, "  --dm-no-impebreak     Debug module won't support implicit ebreak in program buffer\n");
   fprintf(stderr, "  --blocksz=<size>      Cache block size (B) for CMO operations(powers of 2) [default 64]\n");
+  fprintf(stderr, "  --instructions=<n>    Stop after n instructions\n");
 
   exit(exit_code);
 }
@@ -191,6 +192,31 @@ merge_overlapping_memory_regions(std::vector<mem_cfg_t> mems)
   return merged_mem;
 }
 
+static mem_cfg_t create_mem_region(unsigned long long base, unsigned long long size)
+{
+  // page-align base and size
+  auto base0 = base, size0 = size;
+  size += base0 % PGSIZE;
+  base -= base0 % PGSIZE;
+  if (size % PGSIZE != 0)
+    size += PGSIZE - size % PGSIZE;
+
+  if (size != size0) {
+    fprintf(stderr, "Warning: the memory at [0x%llX, 0x%llX] has been realigned\n"
+                    "to the %ld KiB page size: [0x%llX, 0x%llX]\n",
+            base0, base0 + size0 - 1, long(PGSIZE / 1024), base, base + size - 1);
+  }
+
+  if (!mem_cfg_t::check_if_supported(base, size)) {
+    fprintf(stderr, "Unsupported memory region "
+                    "{base = 0x%llX, size = 0x%llX} specified\n",
+            base, size);
+    exit(EXIT_FAILURE);
+  }
+
+  return mem_cfg_t(base, size);
+}
+
 static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
 {
   std::vector<mem_cfg_t> res;
@@ -200,9 +226,9 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
   auto mb = strtoull(arg, &p, 0);
   if (*p == 0) {
     reg_t size = reg_t(mb) << 20;
-    if (size != (size_t)size)
-      throw std::runtime_error("Size would overflow size_t");
-    res.push_back(mem_cfg_t(reg_t(DRAM_BASE), size));
+    if ((size >> 20) != mb)
+      throw std::runtime_error("Memory size too large");
+    res.push_back(create_mem_region(DRAM_BASE, size));
     return res;
   }
 
@@ -213,42 +239,7 @@ static std::vector<mem_cfg_t> parse_mem_layout(const char* arg)
       help();
     auto size = strtoull(p + 1, &p, 0);
 
-    // page-align base and size
-    auto base0 = base, size0 = size;
-    size += base0 % PGSIZE;
-    base -= base0 % PGSIZE;
-    if (size % PGSIZE != 0)
-      size += PGSIZE - size % PGSIZE;
-
-    if (size != size0) {
-      fprintf(stderr, "Warning: the memory at [0x%llX, 0x%llX] has been realigned\n"
-                      "to the %ld KiB page size: [0x%llX, 0x%llX]\n",
-              base0, base0 + size0 - 1, long(PGSIZE / 1024), base, base + size - 1);
-    }
-
-    if (!mem_cfg_t::check_if_supported(base, size)) {
-      fprintf(stderr, "Unsupported memory region "
-                      "{base = 0x%llX, size = 0x%llX} specified\n",
-              base, size);
-      exit(EXIT_FAILURE);
-    }
-
-    const unsigned long long max_allowed_pa = (1ull << MAX_PADDR_BITS) - 1ull;
-    assert(max_allowed_pa <= std::numeric_limits<reg_t>::max());
-    mem_cfg_t mem_region(base, size);
-    if (mem_region.get_inclusive_end() > max_allowed_pa) {
-      int bits_required = 64 - clz(mem_region.get_inclusive_end());
-      fprintf(stderr, "Unsupported memory region "
-                      "{base = 0x%" PRIX64 ", size = 0x%" PRIX64 "} specified,"
-                      " which requires %d bits of physical address\n"
-                      "    The largest accessible physical address "
-                      "is 0x%llX (defined by MAX_PADDR_BITS constant, which is %d)\n",
-              mem_region.get_base(), mem_region.get_size(), bits_required,
-              max_allowed_pa, MAX_PADDR_BITS);
-      exit(EXIT_FAILURE);
-    }
-
-    res.push_back(mem_region);
+    res.push_back(create_mem_region(base, size));
 
     if (!*p)
       break;
@@ -348,6 +339,7 @@ int main(int argc, char** argv)
   bool use_rbb = false;
   unsigned dmi_rti = 0;
   reg_t blocksz = 64;
+  std::optional<unsigned long long> instructions;
   debug_module_config_t dm_config;
   cfg_arg_t<size_t> nprocs(1);
 
@@ -385,8 +377,7 @@ int main(int argc, char** argv)
 #endif
   parser.option('p', 0, 1, [&](const char* s){nprocs = atoul_nonzero_safe(s);});
   parser.option('m', 0, 1, [&](const char* s){cfg.mem_layout = parse_mem_layout(s);});
-  // I wanted to use --halted, but for some reason that doesn't work.
-  parser.option('H', 0, 0, [&](const char UNUSED *s){halted = true;});
+  parser.option(0, "halted", 0, [&](const char UNUSED *s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
   parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc = strtoull(s, 0, 0);});
   parser.option(0, "hartids", 1, [&](const char* s){
@@ -460,6 +451,10 @@ int main(int argc, char** argv)
         min_blocksz, max_blocksz);
       exit(-1);
     }
+    cfg.cache_blocksz = blocksz;
+  });
+  parser.option(0, "instructions", 1, [&](const char* s){
+    instructions = strtoull(s, 0, 0);
   });
 
   auto argv1 = parser.parse(argv);
@@ -522,7 +517,8 @@ int main(int argc, char** argv)
   sim_t s(&cfg, halted,
       mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
       socket,
-      cmd_file);
+      cmd_file,
+      instructions);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));
@@ -546,7 +542,6 @@ int main(int argc, char** argv)
     if (dc) s.get_core(i)->get_mmu()->register_memtracer(&*dc);
     for (auto e : extensions)
       s.get_core(i)->register_extension(e());
-    s.get_core(i)->get_mmu()->set_cache_blocksz(blocksz);
   }
 
   s.set_debug(debug);

@@ -328,7 +328,7 @@ void ns16550_t::tick(reg_t UNUSED rtc_ticks)
   update_interrupt();
 }
 
-std::string ns16550_generate_dts(const sim_t* sim, const std::vector<std::string>& UNUSED sargs)
+std::string ns16550_generate_dts(const sim_t* sim, const std::vector<std::string>& sargs UNUSED)
 {
   std::stringstream s;
   s << std::hex
@@ -348,7 +348,7 @@ std::string ns16550_generate_dts(const sim_t* sim, const std::vector<std::string
   return s.str();
 }
 
-ns16550_t* ns16550_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& UNUSED sargs)
+ns16550_t* ns16550_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& sargs UNUSED)
 {
   uint32_t ns16550_shift, ns16550_io_width, ns16550_int_id;
   if (fdt_parse_ns16550(fdt, base,
