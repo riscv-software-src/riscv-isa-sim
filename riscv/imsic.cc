@@ -48,8 +48,6 @@ imsic_file_t::imsic_file_t(processor_t* const proc, reg_t mip_mask, size_t num_r
 }
 
 reg_t imsic_file_t::topei() {
-  if (eidelivery->read() != 1)
-    return 0;
   reg_t thd = eithreshold->read();
   for (size_t i = 0; i < IMSIC_NUM_EI_REGS; i++) {
     reg_t ints = eip[i]->read() & eie[i]->read();
@@ -81,7 +79,7 @@ void imsic_file_t::pendei(reg_t intr) {
 }
 
 void imsic_file_t::update_mip() {
-  reg_t iid = topei();
+  reg_t iid = eidelivery->read() ? topei() : 0;
   if (v) {
     // Privileged 9.2.4: Register hgeie selects the subset of guest external interrupts that cause a supervisor-level (HS-level) guest external interrupt.
     bool sgeip = proc->get_state()->hgeie->read() & proc->get_state()->hgeip->read();

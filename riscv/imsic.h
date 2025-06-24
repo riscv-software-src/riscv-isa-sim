@@ -44,6 +44,7 @@ class imsic_file_t {
   void claimei(reg_t intr);
   void pendei(reg_t intr);
   void update_mip();
+  bool delivery() { return eidelivery->read(); }
   csr_t_p get_reg(reg_t reg) { return csrmap.count(reg) ? csrmap[reg] : nullptr; }
   csrmap_t csrmap;
 
