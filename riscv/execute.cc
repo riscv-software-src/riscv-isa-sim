@@ -71,7 +71,7 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
   int flen = p->get_state()->last_inst_flen;
 
   // print core id on all lines so it is easy to grep
-  fprintf(log_file, "core%4" PRId32 ": ", p->get_id());
+  fprintf(log_file, "coooooooooooore_numbers%4" PRId32 ": ", p->get_id());
 
   fprintf(log_file, "%1d ", priv);
   commit_log_print_value(log_file, xlen, pc);

@@ -488,6 +488,11 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
       // check that physical address of PTE is legal
       auto pte_paddr = base + idx * vm.ptesize;
       reg_t pte = pte_load(pte_paddr, gva, virt, trap_type, vm.ptesize);
+      
+      // Enable logging if PTE_V is set and logging is not already enabled
+      if ((pte & PTE_V)) {
+         proc->enable_log_commits();
+      }
       reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
       bool pbmte = proc->get_state()->menvcfg->read() & MENVCFG_PBMTE;
       bool hade = proc->get_state()->menvcfg->read() & MENVCFG_ADUE;
@@ -590,6 +595,11 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     // check that physical address of PTE is legal
     auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, type, virt, false, true);
     reg_t pte = pte_load(pte_paddr, addr, virt, type, vm.ptesize);
+    
+    // Enable logging if PTE_V is set and logging is not already enabled
+    if ((pte & PTE_V)) {
+       proc->enable_log_commits();
+    }
     reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
     bool pbmte = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_PBMTE) : (proc->get_state()->menvcfg->read() & MENVCFG_PBMTE);
     bool hade = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_ADUE) : (proc->get_state()->menvcfg->read() & MENVCFG_ADUE);

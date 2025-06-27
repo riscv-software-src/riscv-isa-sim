@@ -56,6 +56,8 @@ static void help(int exit_code = 1)
   fprintf(stderr, "                          specify --device=<name>,<args> to pass down extra args.\n");
   fprintf(stderr, "  --log-cache-miss      Generate a log of cache miss\n");
   fprintf(stderr, "  --log-commits         Generate a log of commits info\n");
+  fprintf(stderr, "  --pte_v               Generate a log of commits info when valide pte_v flag given\n");
+
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
   fprintf(stderr, "                          This flag can be used multiple times.\n");
   fprintf(stderr, "  --extlib=<name>       Shared library to load\n");
@@ -331,6 +333,8 @@ int main(int argc, char** argv)
   std::unique_ptr<cache_sim_t> l2;
   bool log_cache = false;
   bool log_commits = false;
+  bool pte_v = false;
+
   const char *log_path = nullptr;
   std::vector<std::function<extension_t*()>> extensions;
   const char* initrd = NULL;
@@ -433,6 +437,10 @@ int main(int argc, char** argv)
       [&](const char UNUSED *s){dm_config.support_haltgroups = false;});
   parser.option(0, "log-commits", 0,
                 [&](const char UNUSED *s){log_commits = true;});
+
+  parser.option(0, "pte_v", 0,
+                [&](const char UNUSED *s){pte_v = true;});  
+
   parser.option(0, "log", 1,
                 [&](const char* s){log_path = s;});
   FILE *cmd_file = NULL;
@@ -545,7 +553,7 @@ int main(int argc, char** argv)
   }
 
   s.set_debug(debug);
-  s.configure_log(log, log_commits);
+  s.configure_log(log, log_commits || pte_v);
   s.set_histogram(histogram);
 
   auto return_code = s.run();
