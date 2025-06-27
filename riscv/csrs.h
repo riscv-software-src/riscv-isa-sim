@@ -973,7 +973,7 @@ class inaccessible_csr_t: public csr_t {
   virtual void verify_permissions(insn_t insn, bool write) const override;
   reg_t read() const noexcept override { return 0; }
  protected:
-  bool unlogged_write(const reg_t val) noexcept override { return false; }
+  bool unlogged_write(const reg_t UNUSED val) noexcept override { return false; }
 };
 
 class vstopi_csr_t: public csr_t {
