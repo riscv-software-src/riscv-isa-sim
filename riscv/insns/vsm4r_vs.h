@@ -2,8 +2,6 @@
 
 #include "zvksed_ext_macros.h"
 
-const uint32_t EGS = 4;
-
 require_vsm4_constraints;
 require_align(insn.rd(), P.VU.vflmul);
 require_vs2_align_eglmul(128);
