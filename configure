@@ -740,6 +740,7 @@ with_boost_regex
 with_isa
 with_priv
 with_varch
+with_vfp8
 with_target
 enable_dual_endian
 '
@@ -1409,6 +1410,7 @@ Optional Packages:
   --with-priv=MSU         Sets the default RISC-V privilege modes supported
   --with-varch=vlen:128,elen:64
                           Sets the default vector config
+  --with-vfp8=1           Sets the default FP8 format (1 or 2)
   --with-target=riscv64-unknown-elf
                           Sets the default target config
 
@@ -6602,6 +6604,20 @@ printf "%s\n" "#define DEFAULT_VARCH \"$withval\"" >>confdefs.h
 else $as_nop
 
 printf "%s\n" "#define DEFAULT_VARCH \"vlen:128,elen:64\"" >>confdefs.h
+
+fi
+
+
+
+# Check whether --with-vfp8 was given.
+if test ${with_vfp8+y}
+then :
+  withval=$with_vfp8;
+printf "%s\n" "#define DEFAULT_VFP8 \"$withval\"" >>confdefs.h
+
+else $as_nop
+
+printf "%s\n" "#define DEFAULT_VFP8 \"1\"" >>confdefs.h
 
 fi
 

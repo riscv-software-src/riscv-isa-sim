@@ -68,6 +68,7 @@ public:
   const char *            isa;
   const char *            priv;
   const char *            varch;
+  const char *            vfp8;
   bool                    misaligned;
   endianness_t            endianness;
   reg_t                   pmpregions;

@@ -20,6 +20,7 @@
 
 class processor_t;
 struct state_t;
+class vectorUnit_t;
 
 // Parent, abstract class for all CSRs
 class csr_t {
@@ -742,6 +743,18 @@ class vector_csr_t: public basic_csr_t {
 };
 
 typedef std::shared_ptr<vector_csr_t> vector_csr_t_p;
+
+class vfp8_csr_t: public vector_csr_t {
+ public:
+  vfp8_csr_t(processor_t* const proc, const reg_t addr, vectorUnit_t* vu);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  vectorUnit_t* vu;
+};
+
+typedef std::shared_ptr<vfp8_csr_t> vfp8_csr_t_p;
 
 // For CSRs shared between Vector and P extensions (vxsat)
 class vxsat_csr_t: public masked_csr_t {

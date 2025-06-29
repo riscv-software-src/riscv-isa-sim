@@ -12,6 +12,7 @@ void vectorUnit_t::vectorUnit_t::reset()
   ELEN = get_elen();
   reg_file = malloc(NVPR * vlenb);
   memset(reg_file, 0, NVPR * vlenb);
+  altfp = 0;
 
   auto& csrmap = p->get_state()->csrmap;
   csrmap[CSR_VXSAT] = vxsat = std::make_shared<vxsat_csr_t>(p, CSR_VXSAT);
@@ -20,6 +21,7 @@ void vectorUnit_t::vectorUnit_t::reset()
   csrmap[CSR_VL] = vl = std::make_shared<vector_csr_t>(p, CSR_VL, /*mask*/ 0);
   csrmap[CSR_VTYPE] = vtype = std::make_shared<vector_csr_t>(p, CSR_VTYPE, /*mask*/ 0);
   csrmap[CSR_VLENB] = std::make_shared<vector_csr_t>(p, CSR_VLENB, /*mask*/ 0, /*init*/ vlenb);
+  csrmap[CSR_VFP8] = vfp8 = std::make_shared<vfp8_csr_t>(p, CSR_VFP8, this);
   assert(VCSR_VXSAT_SHIFT == 0);  // composite_csr_t assumes vxsat begins at bit 0
   csrmap[CSR_VCSR] = std::make_shared<composite_csr_t>(p, CSR_VCSR, vxrm, vxsat, VCSR_VXRM_SHIFT);
 

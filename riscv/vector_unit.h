@@ -94,7 +94,7 @@ public:
   reg_t vlmax;
   reg_t vlenb;
   csr_t_p vxsat;
-  vector_csr_t_p vxrm, vstart, vl, vtype;
+  vector_csr_t_p vxrm, vstart, vl, vtype, vfp8;
   int altfp;
   reg_t vma, vta;
   reg_t vsew;
@@ -125,6 +125,7 @@ public:
     vstart(0),
     vl(0),
     vtype(0),
+    vfp8(0),
     vma(0),
     vta(0),
     vsew(0),
@@ -132,7 +133,8 @@ public:
     ELEN(0),
     VLEN(0),
     vill(false),
-    vstart_alu(false) {
+    vstart_alu(false),
+    altfp(0) {
   }
 
   ~vectorUnit_t() {

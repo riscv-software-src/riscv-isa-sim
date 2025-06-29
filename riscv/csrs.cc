@@ -6,6 +6,7 @@
 #include "csrs.h"
 // For processor_t:
 #include "processor.h"
+#include "vector_unit.h"
 #include "mmu.h"
 // For get_field():
 #include "decode_macros.h"
@@ -1445,6 +1446,19 @@ bool vxsat_csr_t::unlogged_write(const reg_t val) noexcept {
   dirty_vs_state;
   return masked_csr_t::unlogged_write(val);
 }
+
+vfp8_csr_t::vfp8_csr_t(processor_t* const proc, const reg_t addr, vectorUnit_t* vu)
+  : vector_csr_t(proc, addr, /*mask*/ 1, /*init*/ 0), vu(vu) {}
+
+reg_t vfp8_csr_t::read() const noexcept {
+  return vu->altfp;
+}
+
+bool vfp8_csr_t::unlogged_write(const reg_t val) noexcept {
+  vu->altfp = val & 1;
+  return vector_csr_t::unlogged_write(val);
+}
+
 
 // implement class hstateen_csr_t
 hstateen_csr_t::hstateen_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask,

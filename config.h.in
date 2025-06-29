@@ -15,6 +15,9 @@
 /* Default value for --varch switch */
 #undef DEFAULT_VARCH
 
+/* Default value for --vfp8 switch */
+#undef DEFAULT_VFP8
+
 /* Define if subproject MCPPBS_SPROJ_NORM is enabled */
 #undef DISASM_ENABLED
 

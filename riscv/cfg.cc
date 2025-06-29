@@ -36,6 +36,7 @@ cfg_t::cfg_t()
   isa              = DEFAULT_ISA;
   priv             = DEFAULT_PRIV;
   varch            = DEFAULT_VARCH;
+  vfp8             = DEFAULT_VFP8;
   misaligned       = false;
   endianness       = endianness_little;
   pmpregions       = 16;
