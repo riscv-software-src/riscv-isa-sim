@@ -55,6 +55,7 @@ processor_t::processor_t(const isa_parser_t *isa, const cfg_t *cfg,
 #endif
 
   parse_varch_string(cfg->varch);
+  parse_varch_string(cfg->vfp8);
 
   register_base_instructions();
   mmu = new mmu_t(sim, cfg->endianness, this);
@@ -181,6 +182,16 @@ void processor_t::parse_varch_string(const char* s)
   VU.vlenb = vlen / 8;
   VU.vstart_alu = vstart_alu;
 }
+
+void processor_t::parse_vfp8_string(const char* s) {
+  if (strcmp(s,"1") == 0) {
+    VU.altfp == 0;  
+  }
+  else if (strcmp(s,"2") == 0) {
+    VU.altfp == 1;  
+  }
+}
+
 
 static int xlen_to_uxl(int xlen)
 {
