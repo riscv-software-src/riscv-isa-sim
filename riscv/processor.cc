@@ -190,6 +190,10 @@ void processor_t::parse_vfp8_string(const char* s) {
   else if (strcmp(s, "2") == 0) {
     VU.altfp = 1;
   }
+  else {
+    fprintf(stderr, "Error: unrecognized FP8 type, only types \"1\" (E4M3) and \"2\" (E5M2) are supported\n");
+    exit(1);
+  }
 }
 
 

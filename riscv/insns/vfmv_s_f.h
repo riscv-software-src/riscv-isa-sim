@@ -14,7 +14,7 @@ if (vl > 0 && P.VU.vstart->read() < vl) {
 
   switch (P.VU.vsew) {
     case e8:
-      if (P.VU.altfp) {
+      if (!P.VU.altfp) {
         P.VU.elt<uint8_t>(rd_num, 0, true) = f8_1(FRS1).v;
         break;
       } else {
