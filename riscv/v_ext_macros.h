@@ -1598,7 +1598,7 @@ reg_t index[P.VU.vlmax]; \
           set_fp_exceptions; \
           break; \
          } \
-         case e8_2: {\
+        case e8_2: {\
            VFP_VV_PARAMS(8_2); \
            BODY8_2; \
            set_fp_exceptions; \
