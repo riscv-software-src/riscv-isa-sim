@@ -1,0 +1,5 @@
+# Compile for Baremetal
+
+clang   --target=riscv64-unknown-elf   --sysroot=$(dirname $(which riscv64-unknown-elf-gcc))/../riscv64-unknown-elf   --gcc-toolchain=$(dirname $(which riscv64-unknown-elf-gcc))/..   -B$RISCV_BIN   -march=rv64gcv   -mcmodel=medany    src/crt.S src/syscalls.c vfpu.c   -o vfpu   -I inc   -nostartfiles   -T src/test.ld   -Wno-literal-conversion -O3
+
+spike --isa=rv64gcv --varch=vlen:4096,elen:8 --priv=msu vfpu
