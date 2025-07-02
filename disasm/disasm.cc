@@ -2,6 +2,7 @@
 
 #include "disasm.h"
 #include "decode_macros.h"
+#include "platform.h"
 #include <cassert>
 #include <string>
 #include <vector>
@@ -195,6 +196,47 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
+    static const char* table[32] = {
+      "-1.0",
+      "min",
+      "1.52587890625e-05",
+      "3.0517578125e-05",
+      "0.00390625",
+      "0.0078125",
+      "0.0625",
+      "0.125",
+      "0.25",
+      "0.3125",
+      "0.375",
+      "0.4375",
+      "0.5",
+      "0.625",
+      "0.75",
+      "0.875",
+      "1.0",
+      "1.25",
+      "1.5",
+      "1.75",
+      "2.0",
+      "2.5",
+      "3.0",
+      "4.0",
+      "8.0",
+      "16.0",
+      "128.0",
+      "256.0",
+      "32768.0",
+      "65536.0",
+      "inf",
+      "nan"
+    };
+
+    return table[insn.rs1()];
+  }
+} fli_imm;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     int32_t target = insn.sb_imm();
     std::string s = target >= 0 ? "pc + " : "pc - ";
     s += std::to_string(abs(target));
@@ -265,6 +307,18 @@ struct : public arg_t {
     return xpr_name[X_SP];
   }
 } rvc_sp;
+
+struct : public arg_t {
+  std::string to_string(insn_t UNUSED insn) const {
+    return xpr_name[X_RA];
+  }
+} rvc_ra;
+
+struct : public arg_t {
+  std::string to_string(insn_t UNUSED insn) const {
+    return xpr_name[X_T0];
+  }
+} rvc_t0;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
@@ -632,34 +686,24 @@ static void NOINLINE add_xftype_insn(disassembler_t* d, const char* name, uint32
   d->add_insn(new disasm_insn_t(name, match, mask, {&frd, &xrs1}));
 }
 
+static void NOINLINE add_xf2type_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&frd, &xrs1, &xrs2}));
+}
+
 static void NOINLINE add_fx2type_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &frs1, &frs2}));
 }
 
+static void NOINLINE add_flitype_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &fli_imm}));
+}
+
 static void NOINLINE add_sfence_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&xrs1, &xrs2}));
-}
-
-static void NOINLINE add_pitype3_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
-{
-  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &xrs1, &p_imm3}));
-}
-
-static void NOINLINE add_pitype4_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
-{
-  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &xrs1, &p_imm4}));
-}
-
-static void NOINLINE add_pitype5_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
-{
-  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &xrs1, &p_imm5}));
-}
-
-static void NOINLINE add_pitype6_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
-{
-  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &xrs1, &p_imm6}));
 }
 
 static void NOINLINE add_vector_v_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
@@ -672,14 +716,29 @@ static void NOINLINE add_vector_vv_insn(disassembler_t* d, const char* name, uin
   d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &vs2, &vs1, opt, &vm}));
 }
 
+static void NOINLINE add_vector_multiplyadd_vv_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &vs1, &vs2, opt, &vm}));
+}
+
 static void NOINLINE add_vector_vx_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &vs2, &xrs1, opt, &vm}));
 }
 
+static void NOINLINE add_vector_multiplyadd_vx_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &xrs1, &vs2, opt, &vm}));
+}
+
 static void NOINLINE add_vector_vf_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &vs2, &frs1, opt, &vm}));
+}
+
+static void NOINLINE add_vector_multiplyadd_vf_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &frs1, &vs2, opt, &vm}));
 }
 
 static void NOINLINE add_vector_vi_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
@@ -730,7 +789,12 @@ static void NOINLINE add_unknown_insns(disassembler_t* d)
   #undef DECLARE_INSN
 }
 
-void disassembler_t::add_instructions(const isa_parser_t* isa)
+#define ext_enabled_strict(x) (isa->extension_enabled(x))
+#define ext_enabled(x) (ext_enabled_strict(x) || !strict)
+#define xlen_eq(x) (xlen_eq_strict(x) || !strict)
+#define xlen_eq_strict(x) (isa->get_max_xlen() == (x))
+
+void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
 {
   const uint32_t mask_rd = 0x1fUL << 7;
   const uint32_t match_rd_ra = 1UL << 7;
@@ -782,7 +846,9 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
   #define DEFINE_FR3TYPE(code) add_fr3type_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FXTYPE(code) add_fxtype_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FX2TYPE(code) add_fx2type_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_FLITYPE(code) add_flitype_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_XFTYPE(code) add_xftype_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_XF2TYPE(code) add_xf2type_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_SFENCE_TYPE(code) add_sfence_insn(this, #code, match_##code, mask_##code);
 
   add_insn(new disasm_insn_t("unimp", match_csrrw|(CSR_CYCLE<<20), 0xffffffff, {}));
@@ -801,16 +867,19 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
   DEFINE_XLOAD(lh)
   DEFINE_XLOAD(lhu)
   DEFINE_XLOAD(lw)
-  DEFINE_XLOAD(lwu)
-  DEFINE_XLOAD(ld)
 
   DEFINE_XSTORE(sb)
   DEFINE_XSTORE(sh)
   DEFINE_XSTORE(sw)
-  DEFINE_XSTORE(sd)
 
-  if (isa->extension_enabled('A') ||
-      isa->extension_enabled(EXT_ZAAMO)) {
+  if (xlen_eq(64)) {
+    DEFINE_XLOAD(lwu)
+    DEFINE_XLOAD(ld)
+
+    DEFINE_XSTORE(sd)
+  }
+
+  if (ext_enabled(EXT_ZAAMO)) {
     DEFINE_XAMO(amoadd_w)
     DEFINE_XAMO(amoswap_w)
     DEFINE_XAMO(amoand_w)
@@ -820,32 +889,39 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_XAMO(amomax_w)
     DEFINE_XAMO(amominu_w)
     DEFINE_XAMO(amomaxu_w)
-    DEFINE_XAMO(amoadd_d)
-    DEFINE_XAMO(amoswap_d)
-    DEFINE_XAMO(amoand_d)
-    DEFINE_XAMO(amoor_d)
-    DEFINE_XAMO(amoxor_d)
-    DEFINE_XAMO(amomin_d)
-    DEFINE_XAMO(amomax_d)
-    DEFINE_XAMO(amominu_d)
-    DEFINE_XAMO(amomaxu_d)
+
+    if (xlen_eq(64)) {
+      DEFINE_XAMO(amoadd_d)
+      DEFINE_XAMO(amoswap_d)
+      DEFINE_XAMO(amoand_d)
+      DEFINE_XAMO(amoor_d)
+      DEFINE_XAMO(amoxor_d)
+      DEFINE_XAMO(amomin_d)
+      DEFINE_XAMO(amomax_d)
+      DEFINE_XAMO(amominu_d)
+      DEFINE_XAMO(amomaxu_d)
+    }
   }
 
-  if (isa->extension_enabled('A') ||
-      isa->extension_enabled(EXT_ZALRSC)) {
+  if (ext_enabled(EXT_ZALRSC)) {
     DEFINE_XLOAD_BASE(lr_w)
     DEFINE_XAMO(sc_w)
-    DEFINE_XLOAD_BASE(lr_d)
-    DEFINE_XAMO(sc_d)
+
+    if (xlen_eq(64)) {
+      DEFINE_XLOAD_BASE(lr_d)
+      DEFINE_XAMO(sc_d)
+    }
   }
 
-  if (isa->extension_enabled(EXT_ZACAS)) {
+  if (ext_enabled(EXT_ZACAS)) {
     DEFINE_XAMO(amocas_w)
     DEFINE_XAMO(amocas_d)
-    DEFINE_XAMO(amocas_q)
+
+    if (xlen_eq(64))
+      DEFINE_XAMO(amocas_q)
   }
 
-  if (isa->extension_enabled(EXT_ZABHA)) {
+  if (ext_enabled(EXT_ZABHA)) {
     DEFINE_XAMO(amoadd_b)
     DEFINE_XAMO(amoswap_b)
     DEFINE_XAMO(amoand_b)
@@ -866,6 +942,17 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_XAMO(amominu_h)
     DEFINE_XAMO(amomaxu_h)
     DEFINE_XAMO(amocas_h)
+  }
+
+  if (ext_enabled(EXT_ZAWRS)) {
+    DEFINE_NOARG(wrs_sto);
+    DEFINE_NOARG(wrs_nto);
+  }
+
+  if (ext_enabled(EXT_ZICFILP)) {
+    // lpad encodes as `auipc x0, label`, so it needs to be added before auipc
+    // for higher disassembling priority
+    DISASM_INSN("lpad", lpad, 0, {&bigimm});
   }
 
   add_insn(new disasm_insn_t("j", match_jal, mask_jal | mask_rd, {&jump_target}));
@@ -907,12 +994,21 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
 
   DEFINE_ITYPE(ori);
   DEFINE_ITYPE(andi);
-  DEFINE_I1TYPE("sext.w", addiw);
-  DEFINE_ITYPE(addiw);
 
-  DEFINE_ITYPE_SHIFT(slliw);
-  DEFINE_ITYPE_SHIFT(srliw);
-  DEFINE_ITYPE_SHIFT(sraiw);
+  if (xlen_eq(64)) {
+    DEFINE_I1TYPE("sext.w", addiw);
+    DEFINE_ITYPE(addiw);
+
+    DEFINE_ITYPE_SHIFT(slliw);
+    DEFINE_ITYPE_SHIFT(srliw);
+    DEFINE_ITYPE_SHIFT(sraiw);
+
+    DEFINE_RTYPE(addw);
+    DEFINE_RTYPE(subw);
+    DEFINE_RTYPE(sllw);
+    DEFINE_RTYPE(srlw);
+    DEFINE_RTYPE(sraw);
+  }
 
   DEFINE_RTYPE(add);
   DEFINE_RTYPE(sub);
@@ -925,11 +1021,6 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
   DEFINE_RTYPE(sra);
   DEFINE_RTYPE(or);
   DEFINE_RTYPE(and);
-  DEFINE_RTYPE(addw);
-  DEFINE_RTYPE(subw);
-  DEFINE_RTYPE(sllw);
-  DEFINE_RTYPE(srlw);
-  DEFINE_RTYPE(sraw);
 
   DEFINE_NOARG(ecall);
   DEFINE_NOARG(ebreak);
@@ -953,32 +1044,35 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
   add_insn(new disasm_insn_t("csrrsi", match_csrrsi, mask_csrrsi, {&xrd, &csr, &zimm5}));
   add_insn(new disasm_insn_t("csrrci", match_csrrci, mask_csrrci, {&xrd, &csr, &zimm5}));
 
-  if (isa->extension_enabled('S')) {
+  if (ext_enabled('S')) {
     DEFINE_NOARG(sret);
     DEFINE_SFENCE_TYPE(sfence_vma);
   }
 
-  if (isa->extension_enabled('M')) {
+  if (ext_enabled('M')) {
     DEFINE_RTYPE(mul);
     DEFINE_RTYPE(mulh);
     DEFINE_RTYPE(mulhu);
     DEFINE_RTYPE(mulhsu);
-    DEFINE_RTYPE(mulw);
     DEFINE_RTYPE(div);
     DEFINE_RTYPE(divu);
     DEFINE_RTYPE(rem);
     DEFINE_RTYPE(remu);
-    DEFINE_RTYPE(divw);
-    DEFINE_RTYPE(divuw);
-    DEFINE_RTYPE(remw);
-    DEFINE_RTYPE(remuw);
+
+    if (xlen_eq(64)) {
+      DEFINE_RTYPE(mulw);
+      DEFINE_RTYPE(divw);
+      DEFINE_RTYPE(divuw);
+      DEFINE_RTYPE(remw);
+      DEFINE_RTYPE(remuw);
+    }
   }
 
-  if (isa->extension_enabled(EXT_ZBA)) { 
+  if (ext_enabled(EXT_ZBA)) {
     DEFINE_RTYPE(sh1add);
     DEFINE_RTYPE(sh2add);
     DEFINE_RTYPE(sh3add);
-    if (isa->get_max_xlen() == 64) {
+    if (xlen_eq(64)) {
       DEFINE_ITYPE_SHIFT(slli_uw);
       add_insn(new disasm_insn_t("zext.w", match_add_uw, mask_add_uw | mask_rs2, {&xrd, &xrs1}));
       DEFINE_RTYPE(add_uw);
@@ -988,7 +1082,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     }
   }
 
-  if (isa->extension_enabled(EXT_ZBB)) { 
+  if (ext_enabled(EXT_ZBB)) {
     DEFINE_RTYPE(ror);
     DEFINE_RTYPE(rol);
     DEFINE_ITYPE_SHIFT(rori);
@@ -1007,7 +1101,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     add_insn(new disasm_insn_t("rev8", match_grevi | ((isa->get_max_xlen() - 8) << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
     add_insn(new disasm_insn_t("orc.b", match_gorci | (0x7 << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
     add_insn(new disasm_insn_t("zext.h", (isa->get_max_xlen() == 32 ? match_pack : match_packw), mask_pack | mask_rs2, {&xrd, &xrs1}));
-    if (isa->get_max_xlen() == 64) {
+    if (xlen_eq(64)) {
       DEFINE_RTYPE(rorw);
       DEFINE_RTYPE(rolw);
       DEFINE_ITYPE_SHIFT(roriw);
@@ -1017,13 +1111,13 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     }
   }
 
-  if (isa->extension_enabled(EXT_ZBC)) {
+  if (ext_enabled(EXT_ZBC)) {
     DEFINE_RTYPE(clmul);
     DEFINE_RTYPE(clmulh);
     DEFINE_RTYPE(clmulr);
   }
 
-  if (isa->extension_enabled(EXT_ZBS)) { 
+  if (ext_enabled(EXT_ZBS)) {
     DEFINE_RTYPE(bclr);
     DEFINE_RTYPE(binv);
     DEFINE_RTYPE(bset);
@@ -1034,17 +1128,17 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_ITYPE_SHIFT(bexti);
   }
 
-  if (isa->extension_enabled(EXT_ZBKB)) {
+  if (ext_enabled(EXT_ZBKB)) {
     add_insn(new disasm_insn_t("brev8", match_grevi | (0x7 << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1})); // brev8
     add_insn(new disasm_insn_t("rev8", match_grevi | ((isa->get_max_xlen() - 8) << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
     DEFINE_RTYPE(pack);
     DEFINE_RTYPE(packh);
-    if (isa->get_max_xlen() == 64) {
+    if (xlen_eq(64)) {
       DEFINE_RTYPE(packw);
     }
   }
 
-  if (isa->extension_enabled(EXT_SVINVAL)) {
+  if (ext_enabled(EXT_SVINVAL)) {
     DEFINE_NOARG(sfence_w_inval);
     DEFINE_NOARG(sfence_inval_ir);
     DEFINE_SFENCE_TYPE(sinval_vma);
@@ -1052,9 +1146,14 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_SFENCE_TYPE(hinval_gvma);
   }
 
-  if (isa->extension_enabled('F')) {
+  if (ext_enabled('F')) {
     DEFINE_FLOAD(flw)
     DEFINE_FSTORE(fsw)
+    DEFINE_XFTYPE(fmv_w_x);
+    DEFINE_FXTYPE(fmv_x_w);
+  }
+
+  if (ext_enabled('F') || ext_enabled(EXT_ZFINX)) {
     DEFINE_FRTYPE(fadd_s);
     DEFINE_FRTYPE(fsub_s);
     DEFINE_FRTYPE(fmul_s);
@@ -1071,58 +1170,35 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_FRTYPE(fsgnjx_s);
     DEFINE_FR1TYPE(fcvt_s_d);
     DEFINE_FR1TYPE(fcvt_s_q);
-    DEFINE_XFTYPE(fcvt_s_l);
-    DEFINE_XFTYPE(fcvt_s_lu);
     DEFINE_XFTYPE(fcvt_s_w);
     DEFINE_XFTYPE(fcvt_s_wu);
     DEFINE_XFTYPE(fcvt_s_wu);
-    DEFINE_XFTYPE(fmv_w_x);
-    DEFINE_FXTYPE(fcvt_l_s);
-    DEFINE_FXTYPE(fcvt_lu_s);
     DEFINE_FXTYPE(fcvt_w_s);
     DEFINE_FXTYPE(fcvt_wu_s);
     DEFINE_FXTYPE(fclass_s);
-    DEFINE_FXTYPE(fmv_x_w);
     DEFINE_FX2TYPE(feq_s);
     DEFINE_FX2TYPE(flt_s);
     DEFINE_FX2TYPE(fle_s);
+
+    if (xlen_eq(64)) {
+      DEFINE_XFTYPE(fcvt_s_l);
+      DEFINE_XFTYPE(fcvt_s_lu);
+      DEFINE_FXTYPE(fcvt_l_s);
+      DEFINE_FXTYPE(fcvt_lu_s);
+    }
   }
 
-  if (isa->extension_enabled(EXT_ZFINX)) {
-    DEFINE_RTYPE(fadd_s);
-    DEFINE_RTYPE(fsub_s);
-    DEFINE_RTYPE(fmul_s);
-    DEFINE_RTYPE(fdiv_s);
-    DEFINE_R1TYPE(fsqrt_s);
-    DEFINE_RTYPE(fmin_s);
-    DEFINE_RTYPE(fmax_s);
-    DEFINE_R3TYPE(fmadd_s);
-    DEFINE_R3TYPE(fmsub_s);
-    DEFINE_R3TYPE(fnmadd_s);
-    DEFINE_R3TYPE(fnmsub_s);
-    DEFINE_RTYPE(fsgnj_s);
-    DEFINE_RTYPE(fsgnjn_s);
-    DEFINE_RTYPE(fsgnjx_s);
-    DEFINE_R1TYPE(fcvt_s_d);
-    //DEFINE_R1TYPE(fcvt_s_q);
-    DEFINE_R1TYPE(fcvt_s_l);
-    DEFINE_R1TYPE(fcvt_s_lu);
-    DEFINE_R1TYPE(fcvt_s_w);
-    DEFINE_R1TYPE(fcvt_s_wu);
-    DEFINE_R1TYPE(fcvt_s_wu);
-    DEFINE_R1TYPE(fcvt_l_s);
-    DEFINE_R1TYPE(fcvt_lu_s);
-    DEFINE_R1TYPE(fcvt_w_s);
-    DEFINE_R1TYPE(fcvt_wu_s);
-    DEFINE_R1TYPE(fclass_s);
-    DEFINE_RTYPE(feq_s);
-    DEFINE_RTYPE(flt_s);
-    DEFINE_RTYPE(fle_s);
-  }
-
-  if (isa->extension_enabled('D')) {
+  if (ext_enabled('D')) {
     DEFINE_FLOAD(fld)
     DEFINE_FSTORE(fsd)
+
+    if (xlen_eq(64)) {
+      DEFINE_XFTYPE(fmv_d_x);
+      DEFINE_FXTYPE(fmv_x_d);
+    }
+  }
+
+  if (ext_enabled('D') || ext_enabled(EXT_ZDINX)) {
     DEFINE_FRTYPE(fadd_d);
     DEFINE_FRTYPE(fsub_d);
     DEFINE_FRTYPE(fmul_d);
@@ -1139,56 +1215,75 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_FRTYPE(fsgnjx_d);
     DEFINE_FR1TYPE(fcvt_d_s);
     DEFINE_FR1TYPE(fcvt_d_q);
-    DEFINE_XFTYPE(fcvt_d_l);
-    DEFINE_XFTYPE(fcvt_d_lu);
     DEFINE_XFTYPE(fcvt_d_w);
     DEFINE_XFTYPE(fcvt_d_wu);
     DEFINE_XFTYPE(fcvt_d_wu);
-    DEFINE_XFTYPE(fmv_d_x);
-    DEFINE_FXTYPE(fcvt_l_d);
-    DEFINE_FXTYPE(fcvt_lu_d);
     DEFINE_FXTYPE(fcvt_w_d);
     DEFINE_FXTYPE(fcvt_wu_d);
     DEFINE_FXTYPE(fclass_d);
-    DEFINE_FXTYPE(fmv_x_d);
     DEFINE_FX2TYPE(feq_d);
     DEFINE_FX2TYPE(flt_d);
     DEFINE_FX2TYPE(fle_d);
+
+    if (xlen_eq(64)) {
+      DEFINE_XFTYPE(fcvt_d_l);
+      DEFINE_XFTYPE(fcvt_d_lu);
+      DEFINE_FXTYPE(fcvt_l_d);
+      DEFINE_FXTYPE(fcvt_lu_d);
+    }
   }
 
-  if (isa->extension_enabled(EXT_ZDINX)) {
-    DEFINE_RTYPE(fadd_d);
-    DEFINE_RTYPE(fsub_d);
-    DEFINE_RTYPE(fmul_d);
-    DEFINE_RTYPE(fdiv_d);
-    DEFINE_R1TYPE(fsqrt_d);
-    DEFINE_RTYPE(fmin_d);
-    DEFINE_RTYPE(fmax_d);
-    DEFINE_R3TYPE(fmadd_d);
-    DEFINE_R3TYPE(fmsub_d);
-    DEFINE_R3TYPE(fnmadd_d);
-    DEFINE_R3TYPE(fnmsub_d);
-    DEFINE_RTYPE(fsgnj_d);
-    DEFINE_RTYPE(fsgnjn_d);
-    DEFINE_RTYPE(fsgnjx_d);
-    DEFINE_R1TYPE(fcvt_d_s);
-    //DEFINE_R1TYPE(fcvt_d_q);
-    DEFINE_R1TYPE(fcvt_d_l);
-    DEFINE_R1TYPE(fcvt_d_lu);
-    DEFINE_R1TYPE(fcvt_d_w);
-    DEFINE_R1TYPE(fcvt_d_wu);
-    DEFINE_R1TYPE(fcvt_d_wu);
-    DEFINE_R1TYPE(fcvt_l_d);
-    DEFINE_R1TYPE(fcvt_lu_d);
-    DEFINE_R1TYPE(fcvt_w_d);
-    DEFINE_R1TYPE(fcvt_wu_d);
-    DEFINE_R1TYPE(fclass_d);
-    DEFINE_RTYPE(feq_d);
-    DEFINE_RTYPE(flt_d);
-    DEFINE_RTYPE(fle_d);
+  if (ext_enabled(EXT_ZFA)) {
+    DEFINE_FLITYPE(fli_s);
+    DEFINE_FRTYPE(fminm_s);
+    DEFINE_FRTYPE(fmaxm_s);
+    DEFINE_FR1TYPE(fround_s);
+    DEFINE_FR1TYPE(froundnx_s);
+    DEFINE_FX2TYPE(fleq_s);
+    DEFINE_FX2TYPE(fltq_s);
+
+    if (ext_enabled(EXT_ZFH) || ext_enabled(EXT_ZVFH)) {
+      DEFINE_FLITYPE(fli_h);
+      DEFINE_FRTYPE(fminm_h);
+      DEFINE_FRTYPE(fmaxm_h);
+      DEFINE_FR1TYPE(fround_h);
+      DEFINE_FR1TYPE(froundnx_h);
+      DEFINE_FX2TYPE(fleq_h);
+      DEFINE_FX2TYPE(fltq_h);
+    }
+
+    if (ext_enabled('D')) {
+      DEFINE_FLITYPE(fli_d);
+      DEFINE_FRTYPE(fminm_d);
+      DEFINE_FRTYPE(fmaxm_d);
+      DEFINE_FR1TYPE(fround_d);
+      DEFINE_FR1TYPE(froundnx_d);
+      DEFINE_FX2TYPE(fleq_d);
+      DEFINE_FX2TYPE(fltq_d);
+
+      if (xlen_eq(32)) {
+        DEFINE_XF2TYPE(fmvp_d_x);
+        DEFINE_FXTYPE(fmvh_x_d);
+      }
+    }
+
+    if (ext_enabled('Q')) {
+      DEFINE_FLITYPE(fli_q);
+      DEFINE_FRTYPE(fminm_q);
+      DEFINE_FRTYPE(fmaxm_q);
+      DEFINE_FR1TYPE(fround_q);
+      DEFINE_FR1TYPE(froundnx_q);
+      DEFINE_FX2TYPE(fleq_q);
+      DEFINE_FX2TYPE(fltq_q);
+
+      if (xlen_eq(64)) {
+        DEFINE_XF2TYPE(fmvp_q_x);
+        DEFINE_FXTYPE(fmvh_x_q);
+      }
+    }
   }
 
-  if (isa->extension_enabled(EXT_ZFH)) { 
+  if (ext_enabled(EXT_ZFH)) {
     DEFINE_FRTYPE(fadd_h);
     DEFINE_FRTYPE(fsub_h);
     DEFINE_FRTYPE(fmul_h);
@@ -1218,7 +1313,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_FX2TYPE(fle_h);
   }
 
-  if (isa->extension_enabled(EXT_ZHINX)) {
+  if (ext_enabled(EXT_ZHINX)) {
     DEFINE_RTYPE(fadd_h);
     DEFINE_RTYPE(fsub_h);
     DEFINE_RTYPE(fmul_h);
@@ -1248,7 +1343,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_RTYPE(fle_h);
   }
 
-  if (isa->extension_enabled(EXT_ZFHMIN)) {
+  if (ext_enabled(EXT_ZFHMIN)) {
     DEFINE_FR1TYPE(fcvt_h_s);
     DEFINE_FR1TYPE(fcvt_h_d);
     DEFINE_FR1TYPE(fcvt_h_q);
@@ -1257,14 +1352,14 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_FR1TYPE(fcvt_q_h);
   }
 
-  if (isa->extension_enabled(EXT_INTERNAL_ZFH_MOVE)) {
+  if (ext_enabled(EXT_INTERNAL_ZFH_MOVE)) {
     DEFINE_FLOAD(flh)
     DEFINE_FSTORE(fsh)
     DEFINE_XFTYPE(fmv_h_x);
     DEFINE_FXTYPE(fmv_x_h);
   }
 
-  if (isa->extension_enabled(EXT_ZHINXMIN)) {
+  if (ext_enabled(EXT_ZHINXMIN)) {
     DEFINE_R1TYPE(fcvt_h_s);
     DEFINE_R1TYPE(fcvt_h_d);
     //DEFINE_R1TYPE(fcvt_h_q);
@@ -1273,7 +1368,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     //DEFINE_R1TYPE(fcvt_q_h);
   }
 
-  if (isa->extension_enabled('Q')) {
+  if (ext_enabled('Q')) {
     DEFINE_FLOAD(flq)
     DEFINE_FSTORE(fsq)
     DEFINE_FRTYPE(fadd_q);
@@ -1307,13 +1402,13 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_FX2TYPE(fle_q);
   }
 
-  if (isa->extension_enabled(EXT_ZFBFMIN)) {
+  if (ext_enabled(EXT_ZFBFMIN)) {
     DEFINE_FR1TYPE(fcvt_bf16_s);
     DEFINE_FR1TYPE(fcvt_s_bf16);
   }
 
   // ext-h
-  if (isa->extension_enabled('H')) {
+  if (ext_enabled('H')) {
     DEFINE_XLOAD_BASE(hlv_b)
     DEFINE_XLOAD_BASE(hlv_bu)
     DEFINE_XLOAD_BASE(hlv_h)
@@ -1335,7 +1430,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
   }
 
   // ext-c
-  if (isa->extension_enabled(EXT_ZCA)) {
+  if (ext_enabled(EXT_ZCA)) {
     DISASM_INSN("c.ebreak", c_add, mask_rd | mask_rvc_rs2, {});
     add_insn(new disasm_insn_t("ret", match_c_jr | match_rd_ra, mask_c_jr | mask_rd | mask_rvc_imm, {}));
     DISASM_INSN("c.jr", c_jr, mask_rvc_imm, {&rvc_rs1});
@@ -1352,9 +1447,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DISASM_INSN("c.andi", c_andi, 0, {&rvc_rs1s, &rvc_imm});
     DISASM_INSN("c.mv", c_mv, 0, {&xrd, &rvc_rs2});
     DISASM_INSN("c.add", c_add, 0, {&xrd, &rvc_rs2});
-    DISASM_INSN("c.addw", c_addw, 0, {&rvc_rs1s, &rvc_rs2s});
     DISASM_INSN("c.sub", c_sub, 0, {&rvc_rs1s, &rvc_rs2s});
-    DISASM_INSN("c.subw", c_subw, 0, {&rvc_rs1s, &rvc_rs2s});
     DISASM_INSN("c.and", c_and, 0, {&rvc_rs1s, &rvc_rs2s});
     DISASM_INSN("c.or", c_or, 0, {&rvc_rs1s, &rvc_rs2s});
     DISASM_INSN("c.xor", c_xor, 0, {&rvc_rs1s, &rvc_rs2s});
@@ -1365,37 +1458,45 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DISASM_INSN("c.beqz", c_beqz, 0, {&rvc_rs1s, &rvc_branch_target});
     DISASM_INSN("c.bnez", c_bnez, 0, {&rvc_rs1s, &rvc_branch_target});
     DISASM_INSN("c.j", c_j, 0, {&rvc_jump_target});
-    if (isa->get_max_xlen() == 32) {
+    if (xlen_eq_strict(32)) {
       DISASM_INSN("c.jal", c_jal, 0, {&rvc_jump_target});
     } else {
+      DISASM_INSN("c.addiw", c_addiw, 0, {&xrd, &rvc_imm});
+    }
+
+    if (xlen_eq(64)) {
+      DISASM_INSN("c.addw", c_addw, 0, {&rvc_rs1s, &rvc_rs2s});
+      DISASM_INSN("c.subw", c_subw, 0, {&rvc_rs1s, &rvc_rs2s});
+    }
+
+    if (xlen_eq_strict(64) || ext_enabled_strict(EXT_ZCLSD)) {
       DISASM_INSN("c.ld", c_ld, 0, {&rvc_rs2s, &rvc_ld_address});
       DISASM_INSN("c.ldsp", c_ldsp, 0, {&xrd, &rvc_ldsp_address});
       DISASM_INSN("c.sd", c_sd, 0, {&rvc_rs2s, &rvc_ld_address});
       DISASM_INSN("c.sdsp", c_sdsp, 0, {&rvc_rs2, &rvc_sdsp_address});
-      DISASM_INSN("c.addiw", c_addiw, 0, {&xrd, &rvc_imm});
     }
   }
 
-  if (isa->extension_enabled(EXT_ZCD) && isa->extension_enabled('D')) {
+  if (ext_enabled(EXT_ZCD)) {
     DISASM_INSN("c.fld", c_fld, 0, {&rvc_fp_rs2s, &rvc_ld_address});
     DISASM_INSN("c.fldsp", c_fldsp, 0, {&frd, &rvc_ldsp_address});
     DISASM_INSN("c.fsd", c_fsd, 0, {&rvc_fp_rs2s, &rvc_ld_address});
     DISASM_INSN("c.fsdsp", c_fsdsp, 0, {&rvc_fp_rs2, &rvc_sdsp_address});
   }
 
-  if (isa->extension_enabled(EXT_ZCF) && isa->extension_enabled('F')) {
+  if (ext_enabled(EXT_ZCF)) {
     DISASM_INSN("c.flw", c_flw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
     DISASM_INSN("c.flwsp", c_flwsp, 0, {&frd, &rvc_lwsp_address});
     DISASM_INSN("c.fsw", c_fsw, 0, {&rvc_fp_rs2s, &rvc_lw_address});
     DISASM_INSN("c.fswsp", c_fswsp, 0, {&rvc_fp_rs2, &rvc_swsp_address});
   }
 
-  if (isa->extension_enabled(EXT_ZCB)) {
+  if (ext_enabled(EXT_ZCB)) {
     DISASM_INSN("c.zext.b", c_zext_b, 0, {&rvc_rs1s});
     DISASM_INSN("c.sext.b", c_sext_b, 0, {&rvc_rs1s});
     DISASM_INSN("c.zext.h", c_zext_h, 0, {&rvc_rs1s});
     DISASM_INSN("c.sext.h", c_sext_h, 0, {&rvc_rs1s});
-    if (isa->get_max_xlen() == 64) {
+    if (xlen_eq(64)) {
       DISASM_INSN("c.zext.w", c_zext_w, 0, {&rvc_rs1s});
     }
     DISASM_INSN("c.not", c_not, 0, {&rvc_rs1s});
@@ -1407,8 +1508,8 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DISASM_INSN("c.sh", c_sh, 0, {&rvc_rs2s, &rvb_h_address});
   }
 
-  if (isa->extension_enabled(EXT_ZCMP)) {
-    if (isa->get_max_xlen() == 32) {
+  if (ext_enabled(EXT_ZCMP)) {
+    if (xlen_eq_strict(32)) {
       DISASM_INSN("cm.push", cm_push, 0, {&rvcm_pushpop_rlist, &rvcm_push_stack_adj_32});
       DISASM_INSN("cm.pop", cm_pop, 0, {&rvcm_pushpop_rlist, &rvcm_pop_stack_adj_32});
       DISASM_INSN("cm.popret", cm_popret, 0, {&rvcm_pushpop_rlist, &rvcm_pop_stack_adj_32});
@@ -1424,12 +1525,12 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DISASM_INSN("cm.mvsa01", cm_mvsa01, 0, {&rvc_r1s, &rvc_r2s});
   }
 
-  if (isa->extension_enabled(EXT_ZCMT)) {
+  if (ext_enabled(EXT_ZCMT)) {
     DISASM_INSN("cm.jt", cm_jalt, 0x380, {&rvcm_jt_index});
     DISASM_INSN("cm.jalt", cm_jalt, 0, {&rvcm_jt_index});
   }
 
-  if (isa->extension_enabled('V')) {
+  if (isa->has_any_vector() || !strict) {
     DISASM_INSN("vsetivli", vsetivli, 0, {&xrd, &zimm5, &v_vtype});
     DISASM_INSN("vsetvli", vsetvli, 0, {&xrd, &xrs1, &v_vtype});
     DEFINE_RTYPE(vsetvl);
@@ -1513,8 +1614,11 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
 
     #define DEFINE_VECTOR_V(code) add_vector_v_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VV(code) add_vector_vv_insn(this, #code, match_##code, mask_##code)
+    #define DEFINE_VECTOR_MULTIPLYADD_VV(code) add_vector_multiplyadd_vv_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VX(code) add_vector_vx_insn(this, #code, match_##code, mask_##code)
+    #define DEFINE_VECTOR_MULTIPLYADD_VX(code) add_vector_multiplyadd_vx_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VF(code) add_vector_vf_insn(this, #code, match_##code, mask_##code)
+    #define DEFINE_VECTOR_MULTIPLYADD_VF(code) add_vector_multiplyadd_vf_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VI(code) add_vector_vi_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VIU(code) add_vector_viu_insn(this, #code, match_##code, mask_##code)
 
@@ -1529,6 +1633,10 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     #define DISASM_OPIV_VX__INSN(name, sign) \
       DEFINE_VECTOR_VV(name##_vv); \
       DEFINE_VECTOR_VX(name##_vx)
+
+    #define DISASM_OPIV_MULTIPLYADD_VX__INSN(name, sign) \
+      DEFINE_VECTOR_MULTIPLYADD_VV(name##_vv); \
+      DEFINE_VECTOR_MULTIPLYADD_VX(name##_vx)
 
     #define DISASM_OPIV__XI_INSN(name, sign) \
       DEFINE_VECTOR_VX(name##_vx); \
@@ -1548,6 +1656,8 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     #define DISASM_OPIV_M___INSN(name, sign) DEFINE_VECTOR_VV(name##_mm)
 
     #define DISASM_OPIV__X__INSN(name, sign) DEFINE_VECTOR_VX(name##_vx)
+
+    #define DISASM_OPIV_MULTIPLYADD__X__INSN(name, sign) DEFINE_VECTOR_MULTIPLYADD_VX(name##_vx)
 
     #define DEFINE_VECTOR_VVM(name) \
       add_vector_vvm_insn(this, #name, match_##name, mask_##name | mask_vm)
@@ -1692,10 +1802,10 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DISASM_OPIV_VX__INSN(vmul,      1);
     DISASM_OPIV_VX__INSN(vmulhsu,   0);
     DISASM_OPIV_VX__INSN(vmulh,     1);
-    DISASM_OPIV_VX__INSN(vmadd,     1);
-    DISASM_OPIV_VX__INSN(vnmsub,    1);
-    DISASM_OPIV_VX__INSN(vmacc,     1);
-    DISASM_OPIV_VX__INSN(vnmsac,    1);
+    DISASM_OPIV_MULTIPLYADD_VX__INSN(vmadd,     1);
+    DISASM_OPIV_MULTIPLYADD_VX__INSN(vnmsub,    1);
+    DISASM_OPIV_MULTIPLYADD_VX__INSN(vmacc,     1);
+    DISASM_OPIV_MULTIPLYADD_VX__INSN(vnmsac,    1);
 
     //0b11_0000
     DISASM_OPIV_VX__INSN(vwaddu,    0);
@@ -1709,10 +1819,17 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DISASM_OPIV_VX__INSN(vwmulu,    0);
     DISASM_OPIV_VX__INSN(vwmulsu,   0);
     DISASM_OPIV_VX__INSN(vwmul,     1);
-    DISASM_OPIV_VX__INSN(vwmaccu,   0);
-    DISASM_OPIV_VX__INSN(vwmacc,    1);
-    DISASM_OPIV__X__INSN(vwmaccus,  1);
-    DISASM_OPIV_VX__INSN(vwmaccsu,  0);
+    DISASM_OPIV_MULTIPLYADD_VX__INSN(vwmaccu,   0);
+    DISASM_OPIV_MULTIPLYADD_VX__INSN(vwmacc,    1);
+    DISASM_OPIV_MULTIPLYADD__X__INSN(vwmaccus,  1);
+    DISASM_OPIV_MULTIPLYADD_VX__INSN(vwmaccsu,  0);
+
+    if (ext_enabled(EXT_ZVQDOTQ)) {
+      DISASM_OPIV_VX__INSN(vqdot,   0);
+      DISASM_OPIV_VX__INSN(vqdotu,  0);
+      DISASM_OPIV_VX__INSN(vqdotsu, 0);
+      DISASM_OPIV__X__INSN(vqdotus, 0);
+    }
 
     #undef DISASM_OPIV_VXI_INSN
     #undef DISASM_OPIV_VX__INSN
@@ -1728,6 +1845,10 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     #define DISASM_OPIV_VF_INSN(name) \
       DEFINE_VECTOR_VV(name##_vv); \
       DEFINE_VECTOR_VF(name##_vf)
+
+    #define DISASM_OPIV_MULTIPLYADD_VF_INSN(name) \
+      DEFINE_VECTOR_MULTIPLYADD_VV(name##_vv); \
+      DEFINE_VECTOR_MULTIPLYADD_VF(name##_vf)
 
     #define DISASM_OPIV_WF_INSN(name) \
       DEFINE_VECTOR_VV(name##_wv); \
@@ -1796,14 +1917,14 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
 
     DISASM_OPIV_VF_INSN(vfmul);
     DISASM_OPIV__F_INSN(vfrsub);
-    DISASM_OPIV_VF_INSN(vfmadd);
-    DISASM_OPIV_VF_INSN(vfnmadd);
-    DISASM_OPIV_VF_INSN(vfmsub);
-    DISASM_OPIV_VF_INSN(vfnmsub);
-    DISASM_OPIV_VF_INSN(vfmacc);
-    DISASM_OPIV_VF_INSN(vfnmacc);
-    DISASM_OPIV_VF_INSN(vfmsac);
-    DISASM_OPIV_VF_INSN(vfnmsac);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfmadd);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfnmadd);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfmsub);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfnmsub);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfmacc);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfnmacc);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfmsac);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfnmsac);
 
     //0b11_0000
     DISASM_OPIV_VF_INSN(vfwadd);
@@ -1813,10 +1934,10 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DISASM_OPIV_WF_INSN(vfwadd);
     DISASM_OPIV_WF_INSN(vfwsub);
     DISASM_OPIV_VF_INSN(vfwmul);
-    DISASM_OPIV_VF_INSN(vfwmacc);
-    DISASM_OPIV_VF_INSN(vfwnmacc);
-    DISASM_OPIV_VF_INSN(vfwmsac);
-    DISASM_OPIV_VF_INSN(vfwnmsac);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfwmacc);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfwnmacc);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfwmsac);
+    DISASM_OPIV_MULTIPLYADD_VF_INSN(vfwnmsac);
 
     #undef DISASM_OPIV_VF_INSN
     #undef DISASM_OPIV__F_INSN
@@ -1825,359 +1946,49 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     #undef DISASM_VFUNARY0_INSN
   }
 
-  if (isa->extension_enabled(EXT_ZVFBFMIN)) {
+  if (ext_enabled(EXT_ZVFBFMIN)) {
     DEFINE_VECTOR_V(vfncvtbf16_f_f_w);
     DEFINE_VECTOR_V(vfwcvtbf16_f_f_v);
   }
 
-  if (isa->extension_enabled(EXT_ZVFBFWMA)) {
+  if (ext_enabled(EXT_ZVFBFWMA)) {
     DEFINE_VECTOR_VV(vfwmaccbf16_vv);
     DEFINE_VECTOR_VF(vfwmaccbf16_vf);
   }
 
-#define DEFINE_PI3TYPE(code) add_pitype3_insn(this, #code, match_##code, mask_##code);
-#define DEFINE_PI4TYPE(code) add_pitype4_insn(this, #code, match_##code, mask_##code);
-#define DEFINE_PI5TYPE(code) add_pitype5_insn(this, #code, match_##code, mask_##code);
-#define DEFINE_PI6TYPE(code) add_pitype6_insn(this, #code, match_##code, mask_##code);
-
-#define DISASM_8_AND_16_RINSN(code) \
-  DEFINE_RTYPE(code##8); \
-  DEFINE_RTYPE(code##16);
-
-#define DISASM_8_AND_16_RINSN_ROUND(code) \
-  DEFINE_RTYPE(code##8_u); \
-  DEFINE_RTYPE(code##16_u);
-
-#define DISASM_8_AND_16_PIINSN(code) \
-  DEFINE_PI3TYPE(code##8); \
-  DEFINE_PI4TYPE(code##16);
-
-#define DISASM_8_AND_16_PIINSN_ROUND(code) \
-  DEFINE_PI3TYPE(code##8_u); \
-  DEFINE_PI4TYPE(code##16_u);
-
-#define DISASM_RINSN_AND_ROUND(code) \
-  DEFINE_RTYPE(code); \
-  DEFINE_RTYPE(code##_u); \
-  
-  if (isa->extension_enabled(EXT_ZMMUL)) {
+  if (ext_enabled(EXT_ZMMUL)) {
     DEFINE_RTYPE(mul);
     DEFINE_RTYPE(mulh);
     DEFINE_RTYPE(mulhu);
     DEFINE_RTYPE(mulhsu);
-    DEFINE_RTYPE(mulw);
+
+    if (xlen_eq(64))
+      DEFINE_RTYPE(mulw);
   }
 
-  if (isa->extension_enabled(EXT_ZBPBO)) {
-    DEFINE_RTYPE(min);
-    DEFINE_RTYPE(max);
-    DEFINE_R3TYPE(cmix);
-    DEFINE_RTYPE(pack);
-    DEFINE_RTYPE(packu);
-    add_insn(new disasm_insn_t("rev", match_grevi | ((isa->get_max_xlen() - 1) << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
-    add_insn(new disasm_insn_t("rev8.h", match_grevi | (0x8 << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1})); // swap16
-    if (isa->get_max_xlen() == 32) {
-      DEFINE_R1TYPE(clz);
-      DEFINE_R3TYPE(fsr);
-      DEFINE_R3TYPE(fsri);
-    } else {
-      DEFINE_R3TYPE(fsrw);
-    }
-  }
-
-  if (isa->extension_enabled(EXT_ZPSFOPERAND)) {
-    DEFINE_RTYPE(smal)
-    DEFINE_RTYPE(radd64);
-    DEFINE_RTYPE(uradd64);
-    DEFINE_RTYPE(kadd64);
-    DEFINE_RTYPE(ukadd64);
-    DEFINE_RTYPE(rsub64);
-    DEFINE_RTYPE(ursub64);
-    DEFINE_RTYPE(ksub64);
-    DEFINE_RTYPE(uksub64);
-    DEFINE_RTYPE(smar64);
-    DEFINE_RTYPE(smsr64);
-    DEFINE_RTYPE(umar64);
-    DEFINE_RTYPE(umsr64);
-    DEFINE_RTYPE(kmar64);
-    DEFINE_RTYPE(kmsr64);
-    DEFINE_RTYPE(ukmar64);
-    DEFINE_RTYPE(ukmsr64);
-    DEFINE_RTYPE(smalbb);
-    DEFINE_RTYPE(smalbt);
-    DEFINE_RTYPE(smaltt);
-    DEFINE_RTYPE(smalda);
-    DEFINE_RTYPE(smalxda);
-    DEFINE_RTYPE(smalds);
-    DEFINE_RTYPE(smaldrs);
-    DEFINE_RTYPE(smalxds);
-    DEFINE_RTYPE(smslda);
-    DEFINE_RTYPE(smslxda);
-    DEFINE_RTYPE(mulr64);
-    DEFINE_RTYPE(mulsr64);
-    if (isa->get_max_xlen() == 32) {
-      DEFINE_RTYPE(add64);
-      DEFINE_RTYPE(sub64);
-    }
-  }
-
-  if (isa->extension_enabled(EXT_ZPN)) {
-    DISASM_8_AND_16_RINSN(add);
-    DISASM_8_AND_16_RINSN(radd);
-    DISASM_8_AND_16_RINSN(uradd);
-    DISASM_8_AND_16_RINSN(kadd);
-    DISASM_8_AND_16_RINSN(ukadd);
-    DISASM_8_AND_16_RINSN(sub);
-    DISASM_8_AND_16_RINSN(rsub);
-    DISASM_8_AND_16_RINSN(ursub);
-    DISASM_8_AND_16_RINSN(ksub);
-    DISASM_8_AND_16_RINSN(uksub);
-    DEFINE_RTYPE(cras16);
-    DEFINE_RTYPE(rcras16);
-    DEFINE_RTYPE(urcras16);
-    DEFINE_RTYPE(kcras16);
-    DEFINE_RTYPE(ukcras16);
-    DEFINE_RTYPE(crsa16);
-    DEFINE_RTYPE(rcrsa16);
-    DEFINE_RTYPE(urcrsa16);
-    DEFINE_RTYPE(kcrsa16);
-    DEFINE_RTYPE(ukcrsa16);
-    DEFINE_RTYPE(stas16);
-    DEFINE_RTYPE(rstas16);
-    DEFINE_RTYPE(urstas16);
-    DEFINE_RTYPE(kstas16);
-    DEFINE_RTYPE(ukstas16);
-    DEFINE_RTYPE(stsa16);
-    DEFINE_RTYPE(rstsa16);
-    DEFINE_RTYPE(urstsa16);
-    DEFINE_RTYPE(kstsa16);
-    DEFINE_RTYPE(ukstsa16);
-    DISASM_8_AND_16_RINSN(sra);
-    DISASM_8_AND_16_RINSN(srl);
-    DISASM_8_AND_16_RINSN(sll);
-    DISASM_8_AND_16_RINSN(ksll);
-    DISASM_8_AND_16_RINSN(kslra);
-    DISASM_8_AND_16_PIINSN(srai);
-    DISASM_8_AND_16_PIINSN(srli);
-    DISASM_8_AND_16_PIINSN(slli);
-    DISASM_8_AND_16_PIINSN(kslli);
-    DISASM_8_AND_16_RINSN_ROUND(sra);
-    DISASM_8_AND_16_RINSN_ROUND(srl);
-    DISASM_8_AND_16_RINSN_ROUND(kslra);
-    DISASM_8_AND_16_PIINSN_ROUND(srai);
-    DISASM_8_AND_16_PIINSN_ROUND(srli);
-
-    DISASM_8_AND_16_RINSN(cmpeq);
-    DISASM_8_AND_16_RINSN(scmplt);
-    DISASM_8_AND_16_RINSN(scmple);
-    DISASM_8_AND_16_RINSN(ucmplt);
-    DISASM_8_AND_16_RINSN(ucmple);
-
-    DISASM_8_AND_16_RINSN(smul);
-    DISASM_8_AND_16_RINSN(smulx);
-    DISASM_8_AND_16_RINSN(umul);
-    DISASM_8_AND_16_RINSN(umulx);
-    DISASM_8_AND_16_RINSN(khm);
-    DISASM_8_AND_16_RINSN(khmx);
-
-    DISASM_8_AND_16_RINSN(smin);
-    DISASM_8_AND_16_RINSN(umin);
-    DISASM_8_AND_16_RINSN(smax);
-    DISASM_8_AND_16_RINSN(umax);
-    DISASM_8_AND_16_PIINSN(sclip);
-    DISASM_8_AND_16_PIINSN(uclip);
-    DEFINE_R1TYPE(kabs16);
-    DEFINE_R1TYPE(clrs16);
-    DEFINE_R1TYPE(clz16);
-    DEFINE_R1TYPE(kabs8);
-    DEFINE_R1TYPE(clrs8);
-    DEFINE_R1TYPE(clz8);
-
-    DEFINE_R1TYPE(sunpkd810);
-    DEFINE_R1TYPE(sunpkd820);
-    DEFINE_R1TYPE(sunpkd830);
-    DEFINE_R1TYPE(sunpkd831);
-    DEFINE_R1TYPE(sunpkd832);
-    DEFINE_R1TYPE(zunpkd810);
-    DEFINE_R1TYPE(zunpkd820);
-    DEFINE_R1TYPE(zunpkd830);
-    DEFINE_R1TYPE(zunpkd831);
-    DEFINE_R1TYPE(zunpkd832);
-
-    DEFINE_RTYPE(pkbb16);
-    DEFINE_RTYPE(pkbt16);
-    DEFINE_RTYPE(pktb16);
-    DEFINE_RTYPE(pktt16);
-    DISASM_RINSN_AND_ROUND(smmul);
-    DISASM_RINSN_AND_ROUND(kmmac);
-    DISASM_RINSN_AND_ROUND(kmmsb);
-    DISASM_RINSN_AND_ROUND(kwmmul);
-    DISASM_RINSN_AND_ROUND(smmwb);
-    DISASM_RINSN_AND_ROUND(smmwt);
-    DISASM_RINSN_AND_ROUND(kmmawb);
-    DISASM_RINSN_AND_ROUND(kmmawt);
-    DISASM_RINSN_AND_ROUND(kmmwb2);
-    DISASM_RINSN_AND_ROUND(kmmwt2);
-    DISASM_RINSN_AND_ROUND(kmmawb2);
-    DISASM_RINSN_AND_ROUND(kmmawt2);
-    DEFINE_RTYPE(smbb16)
-    DEFINE_RTYPE(smbt16)
-    DEFINE_RTYPE(smtt16)
-    DEFINE_RTYPE(kmda)
-    DEFINE_RTYPE(kmxda)
-    DEFINE_RTYPE(smds)
-    DEFINE_RTYPE(smdrs)
-    DEFINE_RTYPE(smxds)
-    DEFINE_RTYPE(kmabb)
-    DEFINE_RTYPE(kmabt)
-    DEFINE_RTYPE(kmatt)
-    DEFINE_RTYPE(kmada)
-    DEFINE_RTYPE(kmaxda)
-    DEFINE_RTYPE(kmads)
-    DEFINE_RTYPE(kmadrs)
-    DEFINE_RTYPE(kmaxds)
-    DEFINE_RTYPE(kmsda)
-    DEFINE_RTYPE(kmsxda)
-    DEFINE_RTYPE(sclip32)
-    DEFINE_RTYPE(uclip32)
-    DEFINE_R1TYPE(clrs32);
-    DEFINE_R1TYPE(clz32);
-    DEFINE_RTYPE(pbsad);
-    DEFINE_RTYPE(pbsada);
-    DEFINE_RTYPE(smaqa);
-    DEFINE_RTYPE(umaqa);
-    DEFINE_RTYPE(smaqa_su);
-
-    DEFINE_RTYPE(kaddh);
-    DEFINE_RTYPE(ksubh);
-    DEFINE_RTYPE(khmbb);
-    DEFINE_RTYPE(khmbt);
-    DEFINE_RTYPE(khmtt);
-    DEFINE_RTYPE(ukaddh);
-    DEFINE_RTYPE(uksubh);
-    DEFINE_RTYPE(kaddw);
-    DEFINE_RTYPE(ukaddw);
-    DEFINE_RTYPE(ksubw);
-    DEFINE_RTYPE(uksubw);
-    DEFINE_RTYPE(kdmbb);
-    DEFINE_RTYPE(kdmbt);
-    DEFINE_RTYPE(kdmtt);
-    DEFINE_RTYPE(kslraw);
-    DEFINE_RTYPE(kslraw_u);
-    DEFINE_RTYPE(ksllw);
-    DEFINE_PI5TYPE(kslliw);
-    DEFINE_RTYPE(kdmabb);
-    DEFINE_RTYPE(kdmabt);
-    DEFINE_RTYPE(kdmatt);
-    DEFINE_RTYPE(kabsw);
-    DEFINE_RTYPE(raddw);
-    DEFINE_RTYPE(uraddw);
-    DEFINE_RTYPE(rsubw);
-    DEFINE_RTYPE(ursubw);
-    DEFINE_RTYPE(msubr32);
-    DEFINE_RTYPE(ave);
-    DEFINE_RTYPE(sra_u);
-    DEFINE_PI6TYPE(srai_u);
-    DEFINE_PI3TYPE(insb);
-    DEFINE_RTYPE(maddr32)
-
-    if (isa->get_max_xlen() == 64) {
-      DEFINE_RTYPE(add32);
-      DEFINE_RTYPE(radd32);
-      DEFINE_RTYPE(uradd32);
-      DEFINE_RTYPE(kadd32);
-      DEFINE_RTYPE(ukadd32);
-      DEFINE_RTYPE(sub32);
-      DEFINE_RTYPE(rsub32);
-      DEFINE_RTYPE(ursub32);
-      DEFINE_RTYPE(ksub32);
-      DEFINE_RTYPE(uksub32);
-      DEFINE_RTYPE(cras32);
-      DEFINE_RTYPE(rcras32);
-      DEFINE_RTYPE(urcras32);
-      DEFINE_RTYPE(kcras32);
-      DEFINE_RTYPE(ukcras32);
-      DEFINE_RTYPE(crsa32);
-      DEFINE_RTYPE(rcrsa32);
-      DEFINE_RTYPE(urcrsa32);
-      DEFINE_RTYPE(kcrsa32);
-      DEFINE_RTYPE(ukcrsa32);
-      DEFINE_RTYPE(stas32);
-      DEFINE_RTYPE(rstas32);
-      DEFINE_RTYPE(urstas32);
-      DEFINE_RTYPE(kstas32);
-      DEFINE_RTYPE(ukstas32);
-      DEFINE_RTYPE(stsa32);
-      DEFINE_RTYPE(rstsa32);
-      DEFINE_RTYPE(urstsa32);
-      DEFINE_RTYPE(kstsa32);
-      DEFINE_RTYPE(ukstsa32);
-      DEFINE_RTYPE(sra32);
-      DEFINE_PI5TYPE(srai32);
-      DEFINE_RTYPE(sra32_u);
-      DEFINE_PI5TYPE(srai32_u);
-      DEFINE_RTYPE(srl32);
-      DEFINE_PI5TYPE(srli32);
-      DEFINE_RTYPE(srl32_u);
-      DEFINE_PI5TYPE(srli32_u);
-      DEFINE_RTYPE(sll32);
-      DEFINE_PI5TYPE(slli32);
-      DEFINE_RTYPE(ksll32);
-      DEFINE_PI5TYPE(kslli32);
-      DEFINE_RTYPE(kslra32);
-      DEFINE_RTYPE(kslra32_u);
-      DEFINE_RTYPE(smin32);
-      DEFINE_RTYPE(umin32);
-      DEFINE_RTYPE(smax32);
-      DEFINE_RTYPE(umax32);
-      DEFINE_R1TYPE(kabs32);
-      DEFINE_RTYPE(khmbb16);
-      DEFINE_RTYPE(khmbt16);
-      DEFINE_RTYPE(khmtt16);
-      DEFINE_RTYPE(kdmbb16);
-      DEFINE_RTYPE(kdmbt16);
-      DEFINE_RTYPE(kdmtt16);
-      DEFINE_RTYPE(kdmabb16);
-      DEFINE_RTYPE(kdmabt16);
-      DEFINE_RTYPE(kdmatt16);
-      DEFINE_RTYPE(smbt32);
-      DEFINE_RTYPE(smtt32);
-      DEFINE_RTYPE(kmabb32);
-      DEFINE_RTYPE(kmabt32);
-      DEFINE_RTYPE(kmatt32);
-      DEFINE_RTYPE(kmda32);
-      DEFINE_RTYPE(kmxda32);
-      DEFINE_RTYPE(kmaxda32);
-      DEFINE_RTYPE(kmads32);
-      DEFINE_RTYPE(kmadrs32);
-      DEFINE_RTYPE(kmaxds32);
-      DEFINE_RTYPE(kmsda32);
-      DEFINE_RTYPE(kmsxda32);
-      DEFINE_RTYPE(smds32);
-      DEFINE_RTYPE(smdrs32);
-      DEFINE_RTYPE(smxds32);
-      DEFINE_PI5TYPE(sraiw_u);
-      DEFINE_RTYPE(pkbt32);
-      DEFINE_RTYPE(pktb32);
-    }
-  }
-
-  if (isa->extension_enabled(EXT_ZICBOM)) {
+  if (ext_enabled(EXT_ZICBOM)) {
     DISASM_INSN("cbo.clean", cbo_clean, 0, {&base_only_address});
     DISASM_INSN("cbo.flush", cbo_flush, 0, {&base_only_address});
     DISASM_INSN("cbo.inval", cbo_inval, 0, {&base_only_address});
   }
 
-  if (isa->extension_enabled(EXT_ZICBOZ)) {
+  if (ext_enabled(EXT_ZICBOZ)) {
     DISASM_INSN("cbo.zero", cbo_zero, 0, {&base_only_address});
   }
 
-  if (isa->extension_enabled(EXT_ZICOND)) {
+  if (ext_enabled(EXT_ZICOND)) {
     DEFINE_RTYPE(czero_eqz);
     DEFINE_RTYPE(czero_nez);
   }
 
-  if (isa->extension_enabled(EXT_ZIMOP)) {
+  if (ext_enabled(EXT_ZIMOP)) {
+    #define DISASM_MOP_R(name, rs1, rd) \
+      add_insn(new disasm_insn_t(#name, match_##name | (rs1 << 15) | (rd << 7), \
+                                        0xFFFFFFFF, {&xrd, &xrs1}));
+
+    #define DISASM_MOP_RR(name, rs1, rd, rs2) \
+      add_insn(new disasm_insn_t(#name, match_##name | (rs1 << 15) | (rd << 7) | (rs2 << 20), \
+                                        0xFFFFFFFF, {&xrd, &xrs1, &xrs2}));
     DEFINE_R1TYPE(mop_r_0);
     DEFINE_R1TYPE(mop_r_1);
     DEFINE_R1TYPE(mop_r_2);
@@ -2206,7 +2017,15 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_R1TYPE(mop_r_25);
     DEFINE_R1TYPE(mop_r_26);
     DEFINE_R1TYPE(mop_r_27);
-    DEFINE_R1TYPE(mop_r_28);
+    if (!ext_enabled_strict(EXT_ZICFISS)) {
+      DEFINE_R1TYPE(mop_r_28);
+    } else {
+      // Add code points of mop_r_28 not used by Zicfiss
+      for (unsigned rd_val = 0; rd_val <= 31; ++rd_val)
+        for (unsigned rs1_val = 0; rs1_val <= 31; ++rs1_val)
+          if ((rd_val != 0 && rs1_val !=0) || (rd_val == 0 && !(rs1_val == 1 || rs1_val == 5)))
+            DISASM_MOP_R(mop_r_28, rs1_val, rd_val);
+    }
     DEFINE_R1TYPE(mop_r_29);
     DEFINE_R1TYPE(mop_r_30);
     DEFINE_R1TYPE(mop_r_31);
@@ -2218,12 +2037,24 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_RTYPE(mop_rr_5);
     DEFINE_RTYPE(mop_rr_6);
     DEFINE_RTYPE(mop_rr_7);
+    if (!ext_enabled_strict(EXT_ZICFISS)) {
+      DEFINE_RTYPE(mop_rr_7);
+    } else {
+      // Add code points of mop_rr_7 not used by Zicfiss
+      for (unsigned rd_val = 0; rd_val <= 31; ++rd_val)
+        for (unsigned rs1_val = 0; rs1_val <= 31; ++rs1_val)
+          for (unsigned rs2_val = 0; rs2_val <= 31; ++rs2_val)
+            if ((rs2_val != 1 && rs2_val != 5) || rd_val != 0 || rs1_val != 0)
+              DISASM_MOP_RR(mop_rr_7, rs1_val, rd_val, rs2_val);
+    }
   }
 
-  if (isa->extension_enabled(EXT_ZCMOP)) {
-    DISASM_INSN("c.mop.1", c_mop_1, 0, {});
+  if (ext_enabled(EXT_ZCMOP)) {
+    if (!ext_enabled_strict(EXT_ZICFISS))
+      DISASM_INSN("c.mop.1", c_mop_1, 0, {});
     DISASM_INSN("c.mop.3", c_mop_3, 0, {});
-    DISASM_INSN("c.mop.5", c_mop_5, 0, {});
+    if (!ext_enabled_strict(EXT_ZICFISS))
+      DISASM_INSN("c.mop.5", c_mop_5, 0, {});
     DISASM_INSN("c.mop.7", c_mop_7, 0, {});
     DISASM_INSN("c.mop.9", c_mop_9, 0, {});
     DISASM_INSN("c.mop.11", c_mop_11, 0, {});
@@ -2231,44 +2062,50 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DISASM_INSN("c.mop.15", c_mop_15, 0, {});
   }
 
-  if (isa->extension_enabled(EXT_ZKND) ||
-      isa->extension_enabled(EXT_ZKNE)) {
+  if (ext_enabled(EXT_ZKND) || ext_enabled(EXT_ZKNE)) {
     DISASM_INSN("aes64ks1i", aes64ks1i, 0, {&xrd, &xrs1, &rcon});
     DEFINE_RTYPE(aes64ks2);
   }
 
-  if (isa->extension_enabled(EXT_ZKND)) {
-    if(isa->get_max_xlen() == 64) {
+  if (ext_enabled(EXT_ZKND)) {
+    if (xlen_eq(64)) {
       DEFINE_RTYPE(aes64ds);
       DEFINE_RTYPE(aes64dsm);
       DEFINE_R1TYPE(aes64im);
-    } else if (isa->get_max_xlen() == 32) {
+    }
+
+    if (xlen_eq(32)) {
       DISASM_INSN("aes32dsi", aes32dsi, 0, {&xrd, &xrs1, &xrs2, &bs});
       DISASM_INSN("aes32dsmi", aes32dsmi, 0, {&xrd, &xrs1, &xrs2, &bs});
     }
   }
 
-  if (isa->extension_enabled(EXT_ZKNE)) {
-    if(isa->get_max_xlen() == 64) {
+  if (ext_enabled(EXT_ZKNE)) {
+    if (xlen_eq(64)) {
       DEFINE_RTYPE(aes64es);
       DEFINE_RTYPE(aes64esm);
-    } else if (isa->get_max_xlen() == 32) {
+    }
+
+    if (xlen_eq(32)) {
       DISASM_INSN("aes32esi", aes32esi, 0, {&xrd, &xrs1, &xrs2, &bs});
       DISASM_INSN("aes32esmi", aes32esmi, 0, {&xrd, &xrs1, &xrs2, &bs});
     }
   }
 
-  if (isa->extension_enabled(EXT_ZKNH)) {
+  if (ext_enabled(EXT_ZKNH)) {
     DEFINE_R1TYPE(sha256sig0);
     DEFINE_R1TYPE(sha256sig1);
     DEFINE_R1TYPE(sha256sum0);
     DEFINE_R1TYPE(sha256sum1);
-    if(isa->get_max_xlen() == 64) {
+
+    if (xlen_eq(64)) {
       DEFINE_R1TYPE(sha512sig0);
       DEFINE_R1TYPE(sha512sig1);
       DEFINE_R1TYPE(sha512sum0);
       DEFINE_R1TYPE(sha512sum1);
-    } else if (isa->get_max_xlen() == 32) {
+    }
+
+    if (xlen_eq(32)) {
       DEFINE_RTYPE(sha512sig0h);
       DEFINE_RTYPE(sha512sig0l);
       DEFINE_RTYPE(sha512sig1h);
@@ -2278,17 +2115,17 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     }
   }
 
-  if (isa->extension_enabled(EXT_ZKSED)) {
+  if (ext_enabled(EXT_ZKSED)) {
     DISASM_INSN("sm4ed", sm4ed, 0, {&xrd, &xrs1, &xrs2, &bs});
     DISASM_INSN("sm4ks", sm4ks, 0, {&xrd, &xrs1, &xrs2, &bs});
   }
 
-  if (isa->extension_enabled(EXT_ZKSH)) {
+  if (ext_enabled(EXT_ZKSH)) {
     DEFINE_R1TYPE(sm3p0);
     DEFINE_R1TYPE(sm3p1);
   }
 
-  if (isa->extension_enabled(EXT_ZVBB)) {
+  if (ext_enabled(EXT_ZVBB)) {
 #define DEFINE_VECTOR_VIU_ZIMM6(code) \
   add_vector_viu_z6_insn(this, #code, match_##code, mask_##code)
 #define DISASM_VECTOR_VV_VX(name) \
@@ -2320,7 +2157,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
 #undef DISASM_VECTOR_VV_VX_VIU_ZIMM6
     }
 
-  if (isa->extension_enabled(EXT_ZVBC)) {
+  if (ext_enabled(EXT_ZVBC)) {
 #define DISASM_VECTOR_VV_VX(name) \
     DEFINE_VECTOR_VV(name##_vv); \
     DEFINE_VECTOR_VX(name##_vx)
@@ -2331,14 +2168,14 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
 #undef DISASM_VECTOR_VV_VX
   }
 
-  if (isa->extension_enabled(EXT_ZVKG)) {
+  if (ext_enabled(EXT_ZVKG)) {
     // Despite its suffix, the vgmul.vv instruction
     // is really ".v", with the form "vgmul.vv vd, vs2".
     DEFINE_VECTOR_V(vgmul_vv);
     DEFINE_VECTOR_VV(vghsh_vv);
   }
 
-  if (isa->extension_enabled(EXT_ZVKNED)) {
+  if (ext_enabled(EXT_ZVKNED)) {
     // Despite their suffixes, the vaes*.{vv,vs} instructions
     // are really ".v", with the form "<op>.{vv,vs} vd, vs2".
 #define DISASM_VECTOR_VV_VS(name) \
@@ -2356,14 +2193,13 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
 #undef DISASM_VECTOR_VV_VS
   }
 
-  if (isa->extension_enabled(EXT_ZVKNHA) ||
-      isa->extension_enabled(EXT_ZVKNHB)) {
+  if (ext_enabled(EXT_ZVKNHA) || ext_enabled(EXT_ZVKNHB)) {
     DEFINE_VECTOR_VV(vsha2ms_vv);
     DEFINE_VECTOR_VV(vsha2ch_vv);
     DEFINE_VECTOR_VV(vsha2cl_vv);
   }
 
-  if (isa->extension_enabled(EXT_ZVKSED)) {
+  if (ext_enabled(EXT_ZVKSED)) {
     DEFINE_VECTOR_VIU(vsm4k_vi);
     // Despite their suffixes, the vsm4r.{vv,vs} instructions
     // are really ".v", with the form "vsm4r.{vv,vs} vd, vs2".
@@ -2371,12 +2207,12 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_VECTOR_V(vsm4r_vs);
   }
 
-  if (isa->extension_enabled(EXT_ZVKSH)) {
+  if (ext_enabled(EXT_ZVKSH)) {
     DEFINE_VECTOR_VIU(vsm3c_vi);
     DEFINE_VECTOR_VV(vsm3me_vv);
   }
 
-  if (isa->extension_enabled(EXT_ZALASR)) {
+  if (ext_enabled(EXT_ZALASR)) {
     DEFINE_XLOAD_BASE(lb_aq);
     DEFINE_XLOAD_BASE(lh_aq);
     DEFINE_XLOAD_BASE(lw_aq);
@@ -2386,21 +2222,37 @@ void disassembler_t::add_instructions(const isa_parser_t* isa)
     DEFINE_XSTORE_BASE(sw_rl);
     DEFINE_XSTORE_BASE(sd_rl);
   }
+
+  if (ext_enabled(EXT_ZICFISS)) {
+    DISASM_INSN("sspush", sspush_x1, 0, {&xrs2});
+    DISASM_INSN("sspush", sspush_x5, 0, {&xrs2});
+    DISASM_INSN("sspopchk", sspopchk_x1, 0, {&xrs1});
+    DISASM_INSN("sspopchk", sspopchk_x5, 0, {&xrs1});
+    DISASM_INSN("ssrdp", ssrdp, 0, {&xrd});
+    DEFINE_XAMO(ssamoswap_w);
+
+    if (xlen_eq(64))
+      DEFINE_XAMO(ssamoswap_d)
+
+    if (ext_enabled(EXT_ZCA)) {
+      DISASM_INSN("c.sspush", c_sspush_x1, 0, {&rvc_ra});
+      DISASM_INSN("c.sspopchk", c_sspopchk_x5, 0, {&rvc_t0});
+    }
+  }
 }
 
-disassembler_t::disassembler_t(const isa_parser_t *isa)
+disassembler_t::disassembler_t(const isa_parser_t *isa, bool strict)
 {
   // highest priority: instructions explicitly enabled
-  add_instructions(isa);
+  add_instructions(isa, true);
 
-  // next-highest priority: other instructions in same base ISA
-  std::string fallback_isa_string = std::string("rv") + std::to_string(isa->get_max_xlen()) +
-    "gqcvh_zfh_zba_zbb_zbc_zbs_zcb_zicbom_zicboz_zicond_zkn_zkr_zks_svinval_zcmop_zimop";
-  isa_parser_t fallback_isa(fallback_isa_string.c_str(), DEFAULT_PRIV);
-  add_instructions(&fallback_isa);
+  if (!strict) {
+    // next-highest priority: other instructions in same base ISA
+    add_instructions(isa, false);
 
-  // finally: instructions with known opcodes but unknown arguments
-  add_unknown_insns(this);
+    // finally: instructions with known opcodes but unknown arguments
+    add_unknown_insns(this);
+  }
 
   // Now, reverse the lists, because we search them back-to-front (so that
   // custom instructions later added with add_insn have highest priority).

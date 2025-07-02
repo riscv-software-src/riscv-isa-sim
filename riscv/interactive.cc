@@ -83,8 +83,7 @@ static void clear_str(bool noncanonical, int fd, std::string target_str)
       clear_motion += ' ';
     }
     clear_motion += '\r';
-    if (write(fd, clear_motion.c_str(), clear_motion.size() + 1))
-      ; // shut up gcc
+    (void) write(fd, clear_motion.c_str(), clear_motion.size() + 1);
   }
 }
 
@@ -97,8 +96,7 @@ static void send_key(bool noncanonical, int fd, keybuffer_t key_code, const int 
     {
       key_motion += (char) ((key_code >> (i * BITS_PER_CHAR)) & 0xff);
     }
-    if (write(fd, key_motion.c_str(), len) != len)
-      ; // shut up gcc
+    (void) write(fd, key_motion.c_str(), len);
   }
 }
 
@@ -145,8 +143,8 @@ static std::string readline(int fd)
         clear_str(noncanonical, fd, s);
         cursor_pos--;
         s.erase(cursor_pos, 1);
-        if (noncanonical && write(fd, s.c_str(), s.size() + 1) != 1)
-          ; // shut up gcc
+        if (noncanonical)
+          (void) write(fd, s.c_str(), s.size() + 1);
         // move cursor by left arrow key
         for (unsigned i = 0; i < s.size() - cursor_pos; i++) {
           send_key(noncanonical, fd, KEYCODE_LEFT, 3);
@@ -177,8 +175,8 @@ static std::string readline(int fd)
           clear_str(noncanonical, fd, s);
           history_index = std::min(history_commands.size(), history_index + 1);
           s = history_commands[history_commands.size() - history_index];
-          if (noncanonical && write(fd, s.c_str(), s.size() + 1))
-            ; // shut up gcc
+          if (noncanonical)
+            (void) write(fd, s.c_str(), s.size() + 1);
           cursor_pos = s.size();
         }
         key_buffer = 0;
@@ -193,8 +191,8 @@ static std::string readline(int fd)
           } else {
             s = history_commands[history_commands.size() - history_index];
           }
-          if (noncanonical && write(fd, s.c_str(), s.size() + 1))
-            ; // shut up gcc
+          if (noncanonical)
+            (void) write(fd, s.c_str(), s.size() + 1);
           cursor_pos = s.size();
         }
         key_buffer = 0;
@@ -222,14 +220,13 @@ static std::string readline(int fd)
         key_buffer = 0;
         break;
       case KEYCODE_ENTER:
-        if (noncanonical && write(fd, &ch, 1) != 1)
-          ; // shut up gcc
+        if (noncanonical)
+          (void) write(fd, &ch, 1);
         if (s.size() > initial_s_len && (history_commands.size() == 0 || s != history_commands[history_commands.size() - 1])) {
           history_commands.push_back(s);
         }
         return s.substr(initial_s_len);
       default:
-      DEFAULT_KEY:
         // unknown buffered key, do nothing
         if (key_buffer != 0) {
           key_buffer = 0;
@@ -238,8 +235,8 @@ static std::string readline(int fd)
         clear_str(noncanonical, fd, s);
         s.insert(cursor_pos, 1, ch);
         cursor_pos++;
-        if (noncanonical && write(fd, s.c_str(), s.size() + 1) != 1)
-          ; // shut up gcc
+        if (noncanonical)
+          (void) write(fd, s.c_str(), s.size() + 1);
         // send left arrow key to move cursor
         for (unsigned i = 0; i < s.size() - cursor_pos; i++) {
           send_key(noncanonical, fd, KEYCODE_LEFT, 3);
@@ -277,6 +274,7 @@ void sim_t::interactive()
   funcs["fregs"] = &sim_t::interactive_fregs;
   funcs["fregd"] = &sim_t::interactive_fregd;
   funcs["pc"] = &sim_t::interactive_pc;
+  funcs["insn"] = &sim_t::interactive_insn;
   funcs["priv"] = &sim_t::interactive_priv;
   funcs["mem"] = &sim_t::interactive_mem;
   funcs["str"] = &sim_t::interactive_str;
@@ -341,8 +339,10 @@ void sim_t::interactive()
         (this->*funcs[cmd])(cmd, args);
       else
         out << "Unknown command " << cmd << std::endl;
-    } catch(trap_t& t) {
+    } catch(trap_interactive& t) {
       out << "Bad or missing arguments for command " << cmd << std::endl;
+    } catch(trap_t& t){
+      out << "Received trap: " << t.name() << std::endl;
     }
 #ifdef HAVE_BOOST_ASIO
     if (socketif)
@@ -367,6 +367,7 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "fregd <core> <reg>              # Display double precision <reg> in <core>\n"
     "vreg <core> [reg]               # Display vector [reg] (all if omitted) in <core>\n"
     "pc <core>                       # Show current PC in <core>\n"
+    "insn <core>                     # Show current instruction corresponding to PC in <core>\n"
     "priv <core>                     # Show current privilege level in <core>\n"
     "mem [core] <hex addr>           # Show contents of virtual memory <hex addr> in [core] (physical memory <hex addr> if omitted)\n"
     "str [core] <hex addr>           # Show NUL-terminated C string at virtual address <hex addr> in [core] (physical address <hex addr> if omitted)\n"
@@ -377,6 +378,8 @@ void sim_t::interactive_help(const std::string& cmd, const std::vector<std::stri
     "untiln reg <core> <reg> <val>   # Run noisy and stop when <reg> in <core> hits <val>\n"
     "until pc <core> <val>           # Stop when PC in <core> hits <val>\n"
     "untiln pc <core> <val>          # Run noisy and stop when PC in <core> hits <val>\n"
+    "until insn <core> <val>         # Stop when instruction corresponding to PC in <core> hits <val>\n"
+    "untiln insn <core> <val>        # Run noisy and stop when instruction corresponding to PC in <core> hits <val>\n"
     "until mem [core] <addr> <val>   # Stop when virtual memory <addr> in [core] (physical address <addr> if omitted) becomes <val>\n"
     "untiln mem [core] <addr> <val>  # Run noisy and stop when virtual memory <addr> in [core] (physical address <addr> if omitted) becomes <val>\n"
     "while reg <core> <reg> <val>    # Run while <reg> in <core> is <val>\n"
@@ -413,7 +416,7 @@ void sim_t::interactive_run(const std::string& cmd, const std::vector<std::strin
     step(1);
 
   if (actual_steps < steps) {
-    next_interactive_action = [=](){ interactive_run(cmd, {std::to_string(steps - actual_steps)}, noisy); };
+    next_interactive_action = [=, this](){ interactive_run(cmd, {std::to_string(steps - actual_steps)}, noisy); };
     return;
   }
 
@@ -446,6 +449,32 @@ void sim_t::interactive_pc(const std::string& cmd, const std::vector<std::string
   std::ostream out(sout_.rdbuf());
   out << std::hex << std::setfill('0') << "0x" << std::setw(max_xlen/4)
       << zext(get_pc(args), max_xlen) << std::endl;
+}
+
+reg_t sim_t::get_insn(const std::vector<std::string>& args)
+{
+  if (args.size() != 1)
+    throw trap_interactive();
+
+  processor_t *p = get_core(args[0]);
+  reg_t pc = p->get_state()->pc;
+  mmu_t* mmu = p->get_mmu();
+  icache_entry_t* ic_entry = mmu->access_icache(pc);
+  return ic_entry->data.insn.bits();
+}
+
+void sim_t::interactive_insn(const std::string& cmd, const std::vector<std::string>& args)
+{
+  if (args.size() != 1)
+    throw trap_interactive();
+
+  processor_t *p = get_core(args[0]);
+  int max_xlen = p->get_isa().get_max_xlen();
+
+  std::ostream out(sout_.rdbuf());
+  insn_t insn(get_insn(args)); // ensure this is outside of ostream to not pollute output on non-interactive trap
+  out << std::hex << std::setfill('0') << "0x" << std::setw(max_xlen/4)
+      << zext(insn.bits(), max_xlen) << " " << p->get_disassembler()->disassemble(insn) << std::endl;
 }
 
 void sim_t::interactive_priv(const std::string& cmd, const std::vector<std::string>& args)
@@ -528,39 +557,44 @@ void sim_t::interactive_vreg(const std::string& cmd, const std::vector<std::stri
     }
   }
 
+  std::ostream out(sout_.rdbuf());
+
   // Show all the regs!
   processor_t *p = get_core(args[0]);
-  const int vlen = (int)(p->VU.get_vlen()) >> 3;
-  const int elen = (int)(p->VU.get_elen()) >> 3;
-  const int num_elem = vlen/elen;
+  if (p->any_vector_extensions()) {
+    const int vlen = (int)(p->VU.get_vlen()) >> 3;
+    const int elen = (int)(p->VU.get_elen()) >> 3;
+    const int num_elem = vlen/elen;
 
-  std::ostream out(sout_.rdbuf());
-  out << std::dec << "VLEN=" << (vlen << 3) << " bits; ELEN=" << (elen << 3) << " bits" << std::endl;
+    out << std::dec << "VLEN=" << (vlen << 3) << " bits; ELEN=" << (elen << 3) << " bits" << std::endl;
 
-  for (int r = rstart; r < rend; ++r) {
-    out << std::setfill (' ') << std::left << std::setw(4) << vr_name[r] << std::right << ": ";
-    for (int e = num_elem-1; e >= 0; --e) {
-      uint64_t val;
-      switch (elen) {
-        case 8:
-          val = p->VU.elt<uint64_t>(r, e);
-          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(16) << val << "  ";
-          break;
-        case 4:
-          val = p->VU.elt<uint32_t>(r, e);
-          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (uint32_t)val << "  ";
-          break;
-        case 2:
-          val = p->VU.elt<uint16_t>(r, e);
-          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (uint16_t)val << "  ";
-          break;
-        case 1:
-          val = p->VU.elt<uint8_t>(r, e);
-          out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (int)(uint8_t)val << "  ";
-          break;
+    for (int r = rstart; r < rend; ++r) {
+      out << std::setfill (' ') << std::left << std::setw(4) << vr_name[r] << std::right << ": ";
+      for (int e = num_elem-1; e >= 0; --e) {
+        uint64_t val;
+        switch (elen) {
+          case 8:
+            val = p->VU.elt<uint64_t>(r, e);
+            out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(16) << val << "  ";
+            break;
+          case 4:
+            val = p->VU.elt<uint32_t>(r, e);
+            out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (uint32_t)val << "  ";
+            break;
+          case 2:
+            val = p->VU.elt<uint16_t>(r, e);
+            out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (uint16_t)val << "  ";
+            break;
+          case 1:
+            val = p->VU.elt<uint8_t>(r, e);
+            out << std::dec << "[" << e << "]: 0x" << std::hex << std::setfill ('0') << std::setw(8) << (int)(uint8_t)val << "  ";
+            break;
+        }
       }
+      out << std::endl;
     }
-    out << std::endl;
+  } else {
+    out << "Processor selected does not support any vector extensions" << std::endl;
   }
 }
 
@@ -647,10 +681,11 @@ reg_t sim_t::get_mem(const std::vector<std::string>& args)
     addr_str = args[1];
   }
 
-  reg_t addr = strtol(addr_str.c_str(),NULL,16), val;
+  reg_t addr = strtol(addr_str.c_str(),NULL,16);
   if (addr == LONG_MAX)
     addr = strtoul(addr_str.c_str(),NULL,16);
 
+  reg_t val;
   switch (addr % 8)
   {
     case 0:
@@ -675,8 +710,9 @@ void sim_t::interactive_mem(const std::string& cmd, const std::vector<std::strin
   int max_xlen = procs[0]->get_isa().get_max_xlen();
 
   std::ostream out(sout_.rdbuf());
+  reg_t mem_val = get_mem(args); // ensure this is outside of ostream to not pollute output on non-interactive trap
   out << std::hex << "0x" << std::setfill('0') << std::setw(max_xlen/4)
-      << zext(get_mem(args), max_xlen) << std::endl;
+      << zext(mem_val, max_xlen) << std::endl;
 }
 
 void sim_t::interactive_str(const std::string& cmd, const std::vector<std::string>& args)
@@ -721,7 +757,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
   if (args.size() < 3)
     throw trap_interactive();
 
-  if (args.size() == 3)
+  if (args.size() == 4 || (args[0] == "pc" && args.size() == 3)) //dont check mem with arg len = 3
     get_core(args[1]); // make sure that argument is a valid core number
 
   char *end;
@@ -732,7 +768,9 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
     throw trap_interactive();
 
   // mask bits above max_xlen
-  int max_xlen = procs[strtol(args[1].c_str(),NULL,10)]->get_isa().get_max_xlen();
+  bool until_mem_paddr = args[0] == "mem" && args.size() == 3;
+  size_t procnum = until_mem_paddr ? 0 : strtol(args[1].c_str(), NULL, 10);
+  int max_xlen = procs[procnum]->get_isa().get_max_xlen();
   if (max_xlen == 32) val &= 0xFFFFFFFF;
 
   std::vector<std::string> args2;
@@ -741,6 +779,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
   auto func = args[0] == "reg" ? &sim_t::get_reg :
               args[0] == "pc"  ? &sim_t::get_pc :
               args[0] == "mem" ? &sim_t::get_mem :
+              args[0] == "insn" ? &sim_t::get_insn :
               NULL;
 
   if (func == NULL)
@@ -766,7 +805,7 @@ void sim_t::interactive_until(const std::string& cmd, const std::vector<std::str
     step(1);
   }
 
-  next_interactive_action = [=](){ interactive_until(cmd, args, noisy); };
+  next_interactive_action = [=, this](){ interactive_until(cmd, args, noisy); };
 }
 
 void sim_t::interactive_dumpmems(const std::string& cmd, const std::vector<std::string>& args)
@@ -798,4 +837,3 @@ void sim_t::interactive_mtimecmp(const std::string& cmd, const std::vector<std::
   out << std::hex << std::setfill('0') << "0x" << std::setw(16)
       << clint->get_mtimecmp(p->get_id()) << std::endl;
 }
-

@@ -1,5 +1,6 @@
 // See LICENSE for license details.
 
+#include "config.h"
 #include "cfg.h"
 #include "mmu.h"
 #include "decode.h"
@@ -17,13 +18,15 @@ bool mem_cfg_t::check_if_supported(reg_t base, reg_t size)
   // the regions in the first place, but we have them here to make sure that
   // we can't end up describing memory regions that don't make sense. They
   // ask that the page size is a multiple of the minimum page size, that the
-  // page is aligned to the minimum page size, that the page is non-empty and
-  // that the top address is still representable in a reg_t.
+  // page is aligned to the minimum page size, that the page is non-empty,
+  // that the size doesn't overflow size_t, and that the top address is still
+  // representable in a reg_t.
   //
   // Note: (base + size == 0) part of the assertion is to handle cases like
   //   { base = 0xffff_ffff_ffff_f000, size: 0x1000 }
   return (size % PGSIZE == 0) &&
          (base % PGSIZE == 0) &&
+         (size_t(size) == size) &&
          (size > 0) &&
          ((base + size > base) || (base + size == 0));
 }
@@ -37,6 +40,7 @@ cfg_t::cfg_t()
   priv             = DEFAULT_PRIV;
   varch            = DEFAULT_VARCH;
   vfp8             = DEFAULT_VFP8;
+
   misaligned       = false;
   endianness       = endianness_little;
   pmpregions       = 16;
@@ -46,4 +50,5 @@ cfg_t::cfg_t()
   explicit_hartids = false;
   real_time_clint  = false;
   trigger_count    = 4;
+  cache_blocksz    = 64;
 }

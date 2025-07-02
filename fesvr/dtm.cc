@@ -51,6 +51,9 @@
     }                                                           \
   }
 
+#define MAX_DATA_WORDS (1 << DM_ABSTRACTCS_DATACOUNT_LENGTH)
+#define MAX_PROG_WORDS (1 << DM_ABSTRACTCS_PROGBUFSIZE_LENGTH)
+
 uint32_t dtm_t::do_command(dtm_t::req r)
 {
   req_buf = r;
@@ -61,17 +64,20 @@ uint32_t dtm_t::do_command(dtm_t::req r)
 
 uint32_t dtm_t::read(uint32_t addr)
 {
-  return do_command((req){addr, 1, 0});
+  req r = {addr, 1, 0};
+  return do_command(r);
 }
 
 uint32_t dtm_t::write(uint32_t addr, uint32_t data)
 {
-  return do_command((req){addr, 2, data});
+  req r = {addr, 2, data};
+  return do_command(r);
 }
 
 void dtm_t::nop()
 {
-  do_command((req){0, 0, 0});
+  req r = {0, 0, 0};
+  do_command(r);
 }
 
 void dtm_t::select_hart(int hartsel) {
@@ -104,7 +110,7 @@ void dtm_t::halt(int hartsel)
     read(DM_DMSTATUS);
   }
 
-  int dmcontrol = DM_DMCONTROL_HALTREQ | DM_DMCONTROL_DMACTIVE;
+  reg_t dmcontrol = DM_DMCONTROL_HALTREQ | DM_DMCONTROL_DMACTIVE;
   dmcontrol = set_field(dmcontrol, DM_DMCONTROL_HASEL, hartsel);
   write(DM_DMCONTROL, dmcontrol);
   int dmstatus;
@@ -142,7 +148,7 @@ void dtm_t::resume(int hartsel)
 
 uint64_t dtm_t::save_reg(unsigned regno)
 {
-  uint32_t data[xlen/(8*4)];
+  uint32_t data[MAX_DATA_WORDS];
   uint32_t command = AC_ACCESS_REGISTER_TRANSFER | AC_AR_SIZE(xlen) | AC_AR_REGNO(regno);
   RUN_AC_OR_DIE(command, 0, 0, data, xlen / (8*4));
 
@@ -155,7 +161,7 @@ uint64_t dtm_t::save_reg(unsigned regno)
 
 void dtm_t::restore_reg(unsigned regno, uint64_t val)
 {
-  uint32_t data[xlen/(8*4)];
+  uint32_t data[MAX_DATA_WORDS];
   data[0] = (uint32_t) val;
   if (xlen > 32) {
     data[1] = (uint32_t) (val >> 32);
@@ -174,8 +180,8 @@ uint32_t dtm_t::run_abstract_command(uint32_t command,
                                      const uint32_t program[], size_t program_n,
                                      uint32_t data[], size_t data_n)
 { 
-  assert(program_n <= ram_words);
-  assert(data_n    <= data_words);
+  assert(program_n <= MAX_PROG_WORDS);
+  assert(data_n    <= MAX_DATA_WORDS);
   
   for (size_t i = 0; i < program_n; i++) {
     write(DM_PROGBUF0 + i, program[i]);
@@ -214,8 +220,8 @@ size_t dtm_t::chunk_align()
 
 void dtm_t::read_chunk(uint64_t taddr, size_t len, void* dst)
 {
-  uint32_t prog[ram_words];
-  uint32_t data[data_words];
+  uint32_t prog[MAX_PROG_WORDS];
+  uint32_t data[MAX_DATA_WORDS];
 
   uint8_t * curr = (uint8_t*) dst;
 
@@ -267,8 +273,8 @@ void dtm_t::read_chunk(uint64_t taddr, size_t len, void* dst)
 
 void dtm_t::write_chunk(uint64_t taddr, size_t len, const void* src)
 {  
-  uint32_t prog[ram_words];
-  uint32_t data[data_words];
+  uint32_t prog[MAX_PROG_WORDS];
+  uint32_t data[MAX_DATA_WORDS];
 
   const uint8_t * curr = (const uint8_t*) src;
 
@@ -362,8 +368,8 @@ void dtm_t::die(uint32_t cmderr)
 
 void dtm_t::clear_chunk(uint64_t taddr, size_t len)
 {
-  uint32_t prog[ram_words];
-  uint32_t data[data_words];
+  uint32_t prog[MAX_PROG_WORDS];
+  uint32_t data[MAX_DATA_WORDS];
   
   halt(current_hart);
   uint64_t s0 = save_reg(S0);
@@ -477,8 +483,8 @@ uint32_t dtm_t::get_xlen()
   uint32_t command = AC_ACCESS_REGISTER_TRANSFER | AC_AR_REGNO(S0);
   uint32_t cmderr;
   
-  const uint32_t prog[] = {};
-  uint32_t data[] = {};
+  const uint32_t prog[1] = {};
+  uint32_t data[1] = {};
 
   cmderr = run_abstract_command(command | AC_AR_SIZE(128), prog, 0, data, 0);
   if (cmderr == 0){
@@ -560,11 +566,6 @@ void dtm_t::producer_thread()
   // Poll until the debugger agrees it's enabled.
   while ((read(DM_DMCONTROL) & DM_DMCONTROL_DMACTIVE) == 0) ;
     
-  // These are checked every time we run an abstract command.
-  uint32_t abstractcs = read(DM_ABSTRACTCS);
-  ram_words = get_field(abstractcs, DM_ABSTRACTCS_PROGBUFSIZE);
-  data_words = get_field(abstractcs, DM_ABSTRACTCS_DATACOUNT);
-
   // These things are only needed for the 'modify_csr' function.
   // That could be re-written to not use these at some performance
   // overhead.

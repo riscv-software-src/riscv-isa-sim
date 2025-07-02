@@ -1,3 +1,7 @@
+// See LICENSE for license details.
+
+#ifndef _RISCV_ENTROPY_SOURCE_H
+#define _RISCV_ENTROPY_SOURCE_H
 
 #include <fstream>
 #include <iostream>
@@ -116,3 +120,4 @@ public:
 
 };
 
+#endif

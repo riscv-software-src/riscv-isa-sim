@@ -69,7 +69,7 @@ install_exes_dir := $(INSTALLDIR)/bin
 sprojs         := @subprojects@
 sprojs_enabled := @subprojects_enabled@
 
-sprojs_include := -I. -I$(src_dir) $(addprefix -I$(src_dir)/, $(sprojs_enabled))
+sprojs_include := -iquote . -I$(src_dir) $(addprefix -iquote $(src_dir)/, $(sprojs_enabled))
 VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 
 #-------------------------------------------------------------------------
@@ -93,8 +93,8 @@ VPATH := $(addprefix $(src_dir)/, $(sprojs_enabled))
 # These all appear on the command line, from lowest precedence to
 # highest.
 
-default-CFLAGS   := -DPREFIX=\"$(prefix)\" -Wall -Wno-unused -Wno-nonportable-include-path -g -O2 -fPIC
-default-CXXFLAGS := $(default-CFLAGS) -std=c++17
+default-CFLAGS   := -DPREFIX=\"$(prefix)\" -Wall -Wno-nonportable-include-path -g -O2 -fPIC
+default-CXXFLAGS := $(default-CFLAGS) -std=c++2a
 
 mcppbs-CPPFLAGS := @CPPFLAGS@
 mcppbs-CFLAGS   := $(default-CFLAGS) @CFLAGS@
@@ -384,6 +384,15 @@ install-hdrs : $(install_hdrs)
 		$(MKINSTALLDIRS) $(install_hdrs_dir)/`dirname $$file`; \
     $(INSTALL_HDR) $(src_dir)/$$file $(install_hdrs_dir)/`dirname $$file`; \
   done
+
+install-hdrs-list.h: $(install_hdrs)
+	rm -f $@.tmp
+	for file in $(subst $(src_dir)/,,$^); \
+	do \
+		$(MKINSTALLDIRS) $(install_hdrs_dir)/`dirname $$file`; \
+		echo "#include <$(src_dir)/$$file>" >> $@.tmp; \
+	done
+	mv $@.tmp $@
 
 install-libs : $(install_libs)
 	$(MKINSTALLDIRS) $(install_libs_dir)

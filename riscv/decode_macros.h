@@ -24,6 +24,7 @@
 #define RS2 READ_REG(insn.rs2())
 #define RS3 READ_REG(insn.rs3())
 #define WRITE_RD(value) WRITE_REG(insn.rd(), value)
+#define CHECK_RD() CHECK_REG(insn.rd())
 
 /* 0 : int
  * 1 : floating
@@ -32,9 +33,9 @@
  * 4 : csr
  */
 #define WRITE_REG(reg, value) ({ \
+    CHECK_REG(reg); \
     reg_t wdata = (value); /* value may have side effects */ \
     if (DECODE_MACRO_USAGE_LOGGED) STATE.log_reg_write[(reg) << 4] = {wdata, 0}; \
-    CHECK_REG(reg); \
     STATE.XPR.write(reg, wdata); \
   })
 #define WRITE_FREG(reg, value) ({ \
@@ -43,6 +44,15 @@
     DO_WRITE_FREG(reg, wdata); \
   })
 #define WRITE_VSTATUS STATE.log_reg_write[3] = {0, 0};
+
+/* the value parameter needs to be evaluated before writing to the registers */
+#define WRITE_REG_PAIR(reg, value) \
+  if (reg != 0) { \
+    require((reg) % 2 == 0); \
+    uint64_t val = (value); \
+    WRITE_REG(reg, sext32(val)); \
+    WRITE_REG((reg) + 1, (sreg_t(val)) >> 32); \
+  }
 
 // RVC macros
 #define WRITE_RVC_RS1S(value) WRITE_REG(insn.rvc_rs1s(), value)
@@ -61,6 +71,25 @@
 #define RVC_R2S (Sn(insn.rvc_r2sc()))
 #define SP READ_REG(X_SP)
 #define RA READ_REG(X_RA)
+
+// Zdinx macros
+#define READ_REG_PAIR(reg) ({ \
+  require((reg) % 2 == 0); \
+  (reg) == 0 ? reg_t(0) : \
+  (READ_REG((reg) + 1) << 32) + zext32(READ_REG(reg)); })
+
+#define RS1_PAIR READ_REG_PAIR(insn.rs1())
+#define RS2_PAIR READ_REG_PAIR(insn.rs2())
+#define RD_PAIR READ_REG_PAIR(insn.rd())
+#define WRITE_RD_PAIR(value) WRITE_REG_PAIR(insn.rd(), value)
+
+// Zilsd macros
+#define WRITE_RD_D(value) (xlen == 32 ? WRITE_RD_PAIR(value) : WRITE_RD(value))
+
+// Zclsd macros
+#define WRITE_RVC_RS2S_PAIR(value) WRITE_REG_PAIR(insn.rvc_rs2s(), value)
+#define RVC_RS2S_PAIR READ_REG_PAIR(insn.rvc_rs2s())
+#define RVC_RS2_PAIR READ_REG_PAIR(insn.rvc_rs2())
 
 // FPU macros
 #define READ_ZDINX_REG(reg) (xlen == 32 ? f64(READ_REG_PAIR(reg)) : f64(STATE.XPR[reg] & (uint64_t)-1))
@@ -107,8 +136,7 @@ do { \
 do { \
   if (p->extension_enabled(EXT_ZFINX)) { \
     if (xlen == 32) { \
-      uint64_t val = (value).v; \
-      WRITE_RD_PAIR(val); \
+      WRITE_RD_PAIR((value).v); \
     } else { \
       WRITE_REG(insn.rd(), (value).v); \
     } \
@@ -139,14 +167,12 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define require_extension(s) require(p->extension_enabled(s))
 #define require_either_extension(A,B) require(p->extension_enabled(A) || p->extension_enabled(B));
 #define require_impl(s) require(p->supports_impl(s))
-#define require_fs          require(STATE.sstatus->enabled(SSTATUS_FS))
 #define require_fp          STATE.fflags->verify_permissions(insn, false)
 #define require_accelerator require(STATE.sstatus->enabled(SSTATUS_XS))
-#define require_vector_vs   require(STATE.sstatus->enabled(SSTATUS_VS))
+#define require_vector_vs   require(p->any_vector_extensions() && STATE.sstatus->enabled(SSTATUS_VS))
 #define require_vector(alu) \
   do { \
     require_vector_vs; \
-    require_extension('V'); \
     require(!P.VU.vill); \
     if (alu && !P.VU.vstart_alu) \
       require(P.VU.vstart->read() == 0); \
@@ -156,7 +182,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define require_vector_novtype(is_log) \
   do { \
     require_vector_vs; \
-    require_extension('V'); \
     if (is_log) \
       WRITE_VSTATUS; \
     dirty_vs_state; \
@@ -188,15 +213,18 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
     } \
   } while (0);
 
-#define set_fp_exceptions ({ if (softfloat_exceptionFlags) { \
-                               STATE.fflags->write(STATE.fflags->read() | softfloat_exceptionFlags); \
-                             } \
-                             softfloat_exceptionFlags = 0; })
+#define raise_fp_exceptions(flags) do { if (flags) STATE.fflags->write(STATE.fflags->read() | (flags)); } while (0);
+#define set_fp_exceptions \
+  do { \
+    raise_fp_exceptions(softfloat_exceptionFlags); \
+    softfloat_exceptionFlags = 0; \
+  } while (0);
 
 #define sext32(x) ((sreg_t)(int32_t)(x))
 #define zext32(x) ((reg_t)(uint32_t)(x))
-#define sext_xlen(x) (((sreg_t)(x) << (64 - xlen)) >> (64 - xlen))
+#define sext(x, pos) (((sreg_t)(x) << (64 - (pos))) >> (64 - (pos)))
 #define zext(x, pos) (((reg_t)(x) << (64 - (pos))) >> (64 - (pos)))
+#define sext_xlen(x) sext(x, xlen)
 #define zext_xlen(x) zext(x, xlen)
 
 #define set_pc(x) \
@@ -326,10 +354,10 @@ inline long double to_f(float128_t f) { long double r; memcpy(&r, &f, sizeof(r))
 #define DEBUG_RVV_FMA_VF \
   printf("vfma(%lu) vd=%f vs1=%f vs2=%f vd_old=%f\n", i, to_f(vd), to_f(rs1), to_f(vs2), to_f(vd_old));
 #else
-#define DEBUG_RVV_FP_VV 0
-#define DEBUG_RVV_FP_VF 0
-#define DEBUG_RVV_FMA_VV 0
-#define DEBUG_RVV_FMA_VF 0
+#define DEBUG_RVV_FP_VV (void) 0
+#define DEBUG_RVV_FP_VF (void) 0
+#define DEBUG_RVV_FMA_VV (void) 0
+#define DEBUG_RVV_FMA_VF (void) 0
 #endif
 
 #define DECLARE_XENVCFG_VARS(field) \
@@ -338,3 +366,23 @@ inline long double to_f(float128_t f) { long double r; memcpy(&r, &f, sizeof(r))
   reg_t h##field = get_field(STATE.henvcfg->read(), HENVCFG_##field)
 
 #endif
+
+#define software_check(x, tval) (unlikely(!(x)) ? throw trap_software_check(tval) : (void) 0)
+#define ZICFILP_xLPE(v, prv) \
+  ({ \
+    reg_t lpe = 0ULL; \
+    if (p->extension_enabled(EXT_ZICFILP)) { \
+      DECLARE_XENVCFG_VARS(LPE); \
+      const reg_t msecLPE = get_field(STATE.mseccfg->read(), MSECCFG_MLPE); \
+      switch (prv) { \
+      case PRV_U: lpe = p->extension_enabled('S') ? sLPE : mLPE; break; \
+      case PRV_S: lpe = (v) ? hLPE : mLPE; break; \
+      case PRV_M: lpe = msecLPE; break; \
+      default: abort(); \
+      } \
+    } \
+    lpe; \
+  })
+#define ZICFILP_IS_LP_EXPECTED(reg_num) \
+  (((reg_num) != 1 && (reg_num) != 5 && (reg_num) != 7) ? \
+   elp_t::LP_EXPECTED : elp_t::NO_LP_EXPECTED)

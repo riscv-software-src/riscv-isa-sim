@@ -5,7 +5,6 @@
 // in its inputs, then output the RISC-V instruction with the disassembly
 // enclosed hexadecimal number.
 
-#include "config.h"
 #include <iostream>
 #include <string>
 #include <cstdint>
@@ -14,6 +13,7 @@
 
 #include "disasm.h"
 #include "extension.h"
+#include "platform.h"
 
 using namespace std;
 
@@ -31,14 +31,13 @@ int main(int UNUSED argc, char** argv)
   cfg_t cfg;
 
   isa_parser_t isa(isa_string, DEFAULT_PRIV);
-  processor_t p(&isa, &cfg, 0, 0, false, nullptr, cerr);
+  processor_t p(isa_string, DEFAULT_PRIV, &cfg, 0, 0, false, nullptr, cerr);
   if (extension) {
     p.register_extension(extension());
   }
 
   std::regex reg("^core\\s+\\d+:\\s+0x[0-9a-f]+\\s+\\(0x([0-9a-f]+)\\)", std::regex_constants::icase);
   std::smatch m;
-  std::ssub_match sm ;
 
   while (getline(cin,s)){
     if (regex_search(s, m, reg)){

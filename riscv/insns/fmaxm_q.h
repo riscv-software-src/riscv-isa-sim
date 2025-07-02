@@ -1,4 +1,4 @@
-require_extension('D');
+require_extension('Q');
 require_extension(EXT_ZFA);
 require_fp;
 ui128_f128 ui1;

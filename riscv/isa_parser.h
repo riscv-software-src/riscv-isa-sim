@@ -23,6 +23,7 @@ typedef enum {
   EXT_ZCB,
   EXT_ZCD,
   EXT_ZCF,
+  EXT_ZCLSD,
   EXT_ZCMP,
   EXT_ZCMT,
   EXT_ZKND,
@@ -32,9 +33,6 @@ typedef enum {
   EXT_ZKSH,
   EXT_ZKR,
   EXT_ZMMUL,
-  EXT_ZBPBO,
-  EXT_ZPN,
-  EXT_ZPSFOPERAND,
   EXT_ZVFH,
   EXT_ZVFHMIN,
   EXT_SMEPMP,
@@ -42,6 +40,7 @@ typedef enum {
   EXT_SMRNMI,
   EXT_SSCOFPMF,
   EXT_SVADU,
+  EXT_SVADE,
   EXT_SVNAPOT,
   EXT_SVPBMT,
   EXT_SVINVAL,
@@ -51,11 +50,13 @@ typedef enum {
   EXT_ZFINX,
   EXT_ZHINX,
   EXT_ZHINXMIN,
+  EXT_ZICCID,
   EXT_ZICBOM,
   EXT_ZICBOZ,
   EXT_ZICNTR,
   EXT_ZICOND,
   EXT_ZIHPM,
+  EXT_ZILSD,
   EXT_ZVBB,
   EXT_ZVBC,
   EXT_ZVFBFMIN,
@@ -66,27 +67,32 @@ typedef enum {
   EXT_ZVKNHB,
   EXT_ZVKSED,
   EXT_ZVKSH,
-  EXT_XZBP,
-  EXT_XZBS,
-  EXT_XZBE,
-  EXT_XZBF,
-  EXT_XZBC,
-  EXT_XZBM,
-  EXT_XZBR,
-  EXT_XZBT,
+  EXT_ZVQDOTQ,
   EXT_SSTC,
   EXT_ZAAMO,
   EXT_ZALRSC,
   EXT_ZACAS,
   EXT_ZABHA,
+  EXT_ZAWRS,
   EXT_INTERNAL_ZFH_MOVE,
   EXT_SMCSRIND,
   EXT_SSCSRIND,
+  EXT_SMCDELEG,
+  EXT_SSCCFG,
   EXT_SMCNTRPMF,
   EXT_ZIMOP,
   EXT_ZCMOP,
   EXT_ZALASR,
   EXT_SSQOSID,
+  EXT_ZICFILP,
+  EXT_ZICFISS,
+  EXT_SSDBLTRP,
+  EXT_SMDBLTRP,
+  EXT_SMMPM,
+  EXT_SMNPM,
+  EXT_SSNPM,
+  EXT_SMAIA,
+  EXT_SSAIA,
   NUM_ISA_EXTENSIONS
 } isa_extension_t;
 
@@ -108,12 +114,17 @@ public:
   unsigned get_max_xlen() const { return max_xlen; }
   reg_t get_max_isa() const { return max_isa; }
   std::string get_isa_string() const { return isa_string; }
+  reg_t get_vlen() const { return vlen; }
+  reg_t get_elen() const { return elen; }
+  bool get_zvf() const { return zvf; }
+  bool get_zvd() const { return zvd; }
   bool extension_enabled(unsigned char ext) const {
     return extension_enabled(isa_extension_t(ext));
   }
   bool extension_enabled(isa_extension_t ext) const {
     return extension_table[ext];
   }
+  bool has_any_vector() const { return vlen > 0; }
 
   std::bitset<NUM_ISA_EXTENSIONS> get_extension_table() const { return extension_table; }
 
@@ -122,6 +133,10 @@ public:
 protected:
   unsigned max_xlen;
   reg_t max_isa;
+  reg_t vlen;
+  reg_t elen;
+  bool zvf;
+  bool zvd;
   std::bitset<NUM_ISA_EXTENSIONS> extension_table;
   std::string isa_string;
   std::set<std::string> extensions;

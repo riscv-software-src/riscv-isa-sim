@@ -55,7 +55,7 @@
 #define PENDING_BASE            0x1000
 
 /*
- * Each hart context has a vector of interupt enable bits associated with it.
+ * Each hart context has a vector of interrupt enable bits associated with it.
  * There's one bit for each interrupt source.
  */
 #define ENABLE_BASE             0x2000
@@ -111,6 +111,15 @@ uint32_t plic_t::context_best_pending(const plic_context_t *c)
         best_id_prio = c->pending_priority[id];
       }
     }
+  }
+
+  /*
+  From Spec 1.0.0: 6. Priority Thresholds
+  The PLIC will mask all PLIC interrupts of a priority less than or equal to
+  threshold.
+  */
+  if (best_id_prio <= c->priority_threshold) {
+    return 0;
   }
 
   return best_id;
@@ -334,7 +343,8 @@ bool plic_t::load(reg_t addr, size_t len, uint8_t* bytes)
       return false;
   }
 
-  if (PRIORITY_BASE <= addr && addr < PENDING_BASE) {
+  static_assert(PRIORITY_BASE == 0);
+  if (/* PRIORITY_BASE <= addr && */ addr < PENDING_BASE) {
     ret = priority_read(addr, &val);
   } else if (PENDING_BASE <= addr && addr < ENABLE_BASE) {
     ret = pending_read(addr - PENDING_BASE, &val);
@@ -375,7 +385,8 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 
   write_little_endian_reg(&val, addr, len, bytes);
 
-  if (PRIORITY_BASE <= addr && addr < ENABLE_BASE) {
+  static_assert(PRIORITY_BASE == 0);
+  if (/* PRIORITY_BASE <= addr && */ addr < ENABLE_BASE) {
     ret = priority_write(addr, val);
   } else if (ENABLE_BASE <= addr && addr < CONTEXT_BASE) {
     uint32_t cntx = (addr - ENABLE_BASE) / ENABLE_PER_HART;
@@ -392,7 +403,7 @@ bool plic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   return ret;
 }
 
-std::string plic_generate_dts(const sim_t* sim)
+std::string plic_generate_dts(const sim_t* sim, const std::vector<std::string>& sargs UNUSED)
 {
   std::stringstream s;
   s << std::hex
@@ -415,7 +426,7 @@ std::string plic_generate_dts(const sim_t* sim)
   return s.str();
 }
 
-plic_t* plic_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& sargs)
+plic_t* plic_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& sargs UNUSED)
 {
   uint32_t plic_ndev;
   if (fdt_parse_plic(fdt, base, &plic_ndev, "riscv,plic0") == 0 ||

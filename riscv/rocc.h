@@ -24,12 +24,12 @@ union rocc_insn_union_t
 class rocc_t : public extension_t
 {
  public:
-  virtual reg_t custom0(rocc_insn_t insn, reg_t xs1, reg_t xs2);
-  virtual reg_t custom1(rocc_insn_t insn, reg_t xs1, reg_t xs2);
-  virtual reg_t custom2(rocc_insn_t insn, reg_t xs1, reg_t xs2);
-  virtual reg_t custom3(rocc_insn_t insn, reg_t xs1, reg_t xs2);
-  std::vector<insn_desc_t> get_instructions();
-  std::vector<disasm_insn_t*> get_disasms();
+  virtual reg_t custom0(processor_t *, rocc_insn_t insn, reg_t xs1, reg_t xs2);
+  virtual reg_t custom1(processor_t *, rocc_insn_t insn, reg_t xs1, reg_t xs2);
+  virtual reg_t custom2(processor_t *, rocc_insn_t insn, reg_t xs1, reg_t xs2);
+  virtual reg_t custom3(processor_t *, rocc_insn_t insn, reg_t xs1, reg_t xs2);
+  std::vector<insn_desc_t> get_instructions(const processor_t &proc) override;
+  std::vector<disasm_insn_t *> get_disasms(const processor_t *proc = nullptr) override;
 };
 
 #define define_custom_func(type_name, ext_name_str, func_name, method_name) \

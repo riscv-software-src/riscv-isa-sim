@@ -7,6 +7,7 @@
 #include "syscall.h"
 #include "device.h"
 #include "byteorder.h"
+#include "../riscv/platform.h"
 #include <string.h>
 #include <map>
 #include <vector>
@@ -22,6 +23,9 @@ class htif_t : public chunked_memif_t
 
   virtual void start();
   virtual void stop();
+
+  // Cause the simulation to exit with the given exit code.
+  void htif_exit(int exit_code);
 
   int run();
   bool done();
@@ -58,8 +62,10 @@ class htif_t : public chunked_memif_t
   virtual size_t chunk_align() = 0;
   virtual size_t chunk_max_size() = 0;
 
-  virtual std::map<std::string, uint64_t> load_payload(const std::string& payload, reg_t* entry);
+  virtual std::map<std::string, uint64_t> load_payload(const std::string& payload, reg_t* entry,
+                                                       reg_t load_addr);
   virtual void load_program();
+  virtual void load_symbols(std::map<std::string, uint64_t>&);
   virtual void idle() {}
 
   const std::vector<std::string>& host_args() { return hargs; }
@@ -74,11 +80,16 @@ class htif_t : public chunked_memif_t
   // Given an address, return symbol from addr2symbol map
   const char* get_symbol(uint64_t addr);
 
+  // Return true if the simulation should exit due to a signal,
+  // or end-of-test from HTIF, or an instruction limit.
+  bool should_exit() const;
+
  private:
   void parse_arguments(int argc, char ** argv);
   void register_devices();
   void usage(const char * program_name);
   unsigned int expected_xlen = 0;
+  const reg_t load_offset = DRAM_BASE;
   memif_t mem;
   reg_t entry;
   bool writezeros;
@@ -90,7 +101,8 @@ class htif_t : public chunked_memif_t
   addr_t sig_len; // torture
   addr_t tohost_addr;
   addr_t fromhost_addr;
-  int exitcode;
+  // Set to a value by htif_exit() when the simulation should exit.
+  std::optional<int> exitcode;
   bool stopped;
 
   device_list_t device_list;

@@ -82,7 +82,7 @@ class disasm_insn_t
 class disassembler_t
 {
  public:
-  disassembler_t(const isa_parser_t *isa);
+  disassembler_t(const isa_parser_t *isa, bool strict = false);
   ~disassembler_t();
 
   std::string disassemble(insn_t insn) const;
@@ -94,7 +94,7 @@ class disassembler_t
   static const int HASH_SIZE = 255;
   std::vector<const disasm_insn_t*> chain[HASH_SIZE+1];
 
-  void add_instructions(const isa_parser_t* isa);
+  void add_instructions(const isa_parser_t* isa, bool strict);
 
   const disasm_insn_t* probe_once(insn_t insn, size_t idx) const;
 

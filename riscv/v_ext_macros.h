@@ -8,16 +8,10 @@
 //
 // vector: masking skip helper
 //
-#define VI_MASK_VARS \
-  const int midx = i / 64; \
-  const int mpos = i % 64;
-
 #define VI_LOOP_ELEMENT_SKIP(BODY) \
-  VI_MASK_VARS \
   if (insn.v_vm() == 0) { \
     BODY; \
-    bool skip = ((P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1) == 0; \
-    if (skip) { \
+    if (!P.VU.mask_elt(0, i)) { \
         continue; \
     } \
   }
@@ -206,7 +200,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   require_vector(true); \
   reg_t vl = P.VU.vl->read(); \
   reg_t UNUSED sew = P.VU.vsew; \
-  reg_t rd_num = insn.rd(); \
+  reg_t UNUSED rd_num = insn.rd(); \
   reg_t UNUSED rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) {
@@ -215,8 +209,11 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     VI_GENERAL_LOOP_BASE \
     VI_LOOP_ELEMENT_SKIP();
 
+#define VI_LOOP_END_BASE \
+ }
+
 #define VI_LOOP_END \
-  } \
+  VI_LOOP_END_BASE \
   P.VU.vstart->write(0);
 
 #define VI_LOOP_REDUCTION_END(x) \
@@ -228,24 +225,18 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 
 #define VI_LOOP_CARRY_BASE \
   VI_GENERAL_LOOP_BASE \
-  VI_MASK_VARS \
-  auto v0 = P.VU.elt<uint64_t>(0, midx); \
-  const uint64_t mmask = UINT64_C(1) << mpos; \
   const uint128_t op_mask = (UINT64_MAX >> (64 - sew)); \
-  uint64_t carry = insn.v_vm() == 0 ? (v0 >> mpos) & 0x1 : 0; \
-  uint128_t res = 0; \
-  auto &vd = P.VU.elt<uint64_t>(rd_num, midx, true);
+  uint64_t carry = insn.v_vm() == 0 ? P.VU.mask_elt(0, i) : 0; \
+  bool res = false;
 
 #define VI_LOOP_CARRY_END \
-    vd = (vd & ~mmask) | (((res) << mpos) & mmask); \
+    P.VU.set_mask_elt(insn.rd(), i, res); \
   } \
   P.VU.vstart->write(0);
 #define VI_LOOP_WITH_CARRY_BASE \
   VI_GENERAL_LOOP_BASE \
-  VI_MASK_VARS \
-  auto &v0 = P.VU.elt<uint64_t>(0, midx); \
   const uint128_t op_mask = (UINT64_MAX >> (64 - sew)); \
-  uint64_t carry = (v0 >> mpos) & 0x1;
+  uint64_t carry = P.VU.mask_elt(0, i);
 
 #define VI_LOOP_CMP_BASE \
   require(P.VU.vsew >= e8 && P.VU.vsew <= e64); \
@@ -257,12 +248,10 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rs2_num = insn.rs2(); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
-    uint64_t mmask = UINT64_C(1) << mpos; \
-    uint64_t &vdi = P.VU.elt<uint64_t>(insn.rd(), midx, true); \
-    uint64_t res = 0;
+    bool res = false;
 
 #define VI_LOOP_CMP_END \
-    vdi = (vdi & ~mmask) | (((res) << mpos) & mmask); \
+    P.VU.set_mask_elt(insn.rd(), i, res); \
   } \
   P.VU.vstart->write(0);
 
@@ -271,13 +260,9 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   require_vector(true); \
   reg_t vl = P.VU.vl->read(); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
-    int midx = i / 64; \
-    int mpos = i % 64; \
-    uint64_t mmask = UINT64_C(1) << mpos; \
-    uint64_t vs2 = P.VU.elt<uint64_t>(insn.rs2(), midx); \
-    uint64_t vs1 = P.VU.elt<uint64_t>(insn.rs1(), midx); \
-    uint64_t &res = P.VU.elt<uint64_t>(insn.rd(), midx, true); \
-    res = (res & ~mmask) | ((op) & (1ULL << mpos)); \
+    bool vs2 = P.VU.mask_elt(insn.rs2(), i); \
+    bool vs1 = P.VU.mask_elt(insn.rs1(), i); \
+    P.VU.set_mask_elt(insn.rd(), i, (op)); \
   } \
   P.VU.vstart->write(0);
 
@@ -351,7 +336,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 
 #define VI_PARAMS(x) \
   type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
-  type_sew_t<x>::type simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
+  type_sew_t<x>::type UNUSED simm5 = (type_sew_t<x>::type)insn.v_simm5(); \
   type_sew_t<x>::type UNUSED vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
 
 #define XV_PARAMS(x) \
@@ -451,7 +436,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 
 #define VFP_VF_CMP_PARAMS(width) \
   float##width##_t rs1 = f##width(READ_FREG(rs1_num)); \
-  float##width##_t vs2 = P.VU.elt<float##width##_t>(rs2_num, i);
+  float##width##_t UNUSED vs2 = P.VU.elt<float##width##_t>(rs2_num, i);
 
 #define VFP_VF_PARAMS(width) \
   float##width##_t &vd = P.VU.elt<float##width##_t>(rd_num, i, true); \
@@ -488,7 +473,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     BODY; \
   }
 
-// comparision result to masking register
+// comparison result to masking register
 #define VI_LOOP_CMP_BODY(PARAMS, BODY) \
   VI_LOOP_CMP_BASE \
   INSNS_BASE(PARAMS, BODY) \
@@ -520,8 +505,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 
 // merge and copy loop
 #define VI_MERGE_VARS \
-  VI_MASK_VARS \
-  bool UNUSED use_first = (P.VU.elt<uint64_t>(0, midx) >> mpos) & 0x1;
+  bool UNUSED use_first = P.VU.mask_elt(0, i);
 
 #define VI_MERGE_LOOP_BASE \
   VI_GENERAL_LOOP_BASE \
@@ -618,7 +602,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  auto &vd_0_des = P.VU.elt<type_sew_t<x>::type>(rd_num, 0, true); \
+  auto &vd_0_des = P.VU.elt<type_sew_t<x>::type>(rd_num, 0, vl > 0); \
   auto vd_0_res = P.VU.elt<type_sew_t<x>::type>(rs1_num, 0); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
@@ -649,7 +633,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  auto &vd_0_des = P.VU.elt<type_usew_t<x>::type>(rd_num, 0, true); \
+  auto &vd_0_des = P.VU.elt<type_usew_t<x>::type>(rd_num, 0, vl > 0); \
   auto vd_0_res = P.VU.elt<type_usew_t<x>::type>(rs1_num, 0); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
@@ -1029,7 +1013,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  auto &vd_0_des = P.VU.elt<type_sew_t<sew2>::type>(rd_num, 0, true); \
+  auto &vd_0_des = P.VU.elt<type_sew_t<sew2>::type>(rd_num, 0, vl > 0); \
   auto vd_0_res = P.VU.elt<type_sew_t<sew2>::type>(rs1_num, 0); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
@@ -1057,7 +1041,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   reg_t rd_num = insn.rd(); \
   reg_t rs1_num = insn.rs1(); \
   reg_t rs2_num = insn.rs2(); \
-  auto &vd_0_des = P.VU.elt<type_usew_t<sew2>::type>(rd_num, 0, true); \
+  auto &vd_0_des = P.VU.elt<type_usew_t<sew2>::type>(rd_num, 0, vl > 0); \
   auto vd_0_res = P.VU.elt<type_usew_t<sew2>::type>(rs1_num, 0); \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
@@ -1154,32 +1138,32 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 
 // average loop
 #define VI_VV_LOOP_AVG(op) \
-VRM xrm = p->VU.get_vround_mode(); \
 VI_VV_LOOP({ \
+  VRM xrm = p->VU.get_vround_mode(); \
   uint128_t res = ((uint128_t)vs2) op vs1; \
   INT_ROUNDING(res, xrm, 1); \
   vd = res >> 1; \
 })
 
 #define VI_VX_LOOP_AVG(op) \
-VRM xrm = p->VU.get_vround_mode(); \
 VI_VX_LOOP({ \
+  VRM xrm = p->VU.get_vround_mode(); \
   uint128_t res = ((uint128_t)vs2) op rs1; \
   INT_ROUNDING(res, xrm, 1); \
   vd = res >> 1; \
 })
 
 #define VI_VV_ULOOP_AVG(op) \
-VRM xrm = p->VU.get_vround_mode(); \
 VI_VV_ULOOP({ \
+  VRM xrm = p->VU.get_vround_mode(); \
   uint128_t res = ((uint128_t)vs2) op vs1; \
   INT_ROUNDING(res, xrm, 1); \
   vd = res >> 1; \
 })
 
 #define VI_VX_ULOOP_AVG(op) \
-VRM xrm = p->VU.get_vround_mode(); \
 VI_VX_ULOOP({ \
+  VRM xrm = p->VU.get_vround_mode(); \
   uint128_t res = ((uint128_t)vs2) op rs1; \
   INT_ROUNDING(res, xrm, 1); \
   vd = res >> 1; \
@@ -1191,31 +1175,12 @@ VI_VX_ULOOP({ \
 #define VI_STRIP(inx) \
   reg_t vreg_inx = inx;
 
-#define VI_DUPLICATE_VREG(reg_num, idx_sew) \
-reg_t index[P.VU.vlmax]; \
- for (reg_t i = 0; i < P.VU.vlmax && P.VU.vl->read() != 0; ++i) { \
-  switch (idx_sew) { \
-    case e8: \
-      index[i] = P.VU.elt<uint8_t>(reg_num, i); \
-      break; \
-    case e16: \
-      index[i] = P.VU.elt<uint16_t>(reg_num, i); \
-      break; \
-    case e32: \
-      index[i] = P.VU.elt<uint32_t>(reg_num, i); \
-      break; \
-    case e64: \
-      index[i] = P.VU.elt<uint64_t>(reg_num, i); \
-      break; \
-  } \
-}
-
 #define VI_LD(stride, offset, elt_width, is_mask_ldst) \
   const reg_t nf = insn.v_nf() + 1; \
+  VI_CHECK_LOAD(elt_width, is_mask_ldst); \
   const reg_t vl = is_mask_ldst ? ((P.VU.vl->read() + 7) / 8) : P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
-  VI_CHECK_LOAD(elt_width, is_mask_ldst); \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_ELEMENT_SKIP; \
     VI_STRIP(i); \
@@ -1228,16 +1193,33 @@ reg_t index[P.VU.vlmax]; \
   } \
   P.VU.vstart->write(0);
 
+#define VI_LDST_GET_INDEX(elt_width) \
+  reg_t index; \
+  switch (elt_width) { \
+    case e8: \
+      index = P.VU.elt<uint8_t>(insn.rs2(), i); \
+      break; \
+    case e16: \
+      index = P.VU.elt<uint16_t>(insn.rs2(), i); \
+      break; \
+    case e32: \
+      index = P.VU.elt<uint32_t>(insn.rs2(), i); \
+      break; \
+    case e64: \
+      index = P.VU.elt<uint64_t>(insn.rs2(), i); \
+      break; \
+  } \
+
 #define VI_LD_INDEX(elt_width, is_seg) \
   const reg_t nf = insn.v_nf() + 1; \
+  VI_CHECK_LD_INDEX(elt_width); \
   const reg_t vl = P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
   if (!is_seg) \
     require(nf == 1); \
-  VI_CHECK_LD_INDEX(elt_width); \
-  VI_DUPLICATE_VREG(insn.rs2(), elt_width); \
   for (reg_t i = 0; i < vl; ++i) { \
+    VI_LDST_GET_INDEX(elt_width); \
     VI_ELEMENT_SKIP; \
     VI_STRIP(i); \
     P.VU.vstart->write(i); \
@@ -1245,19 +1227,19 @@ reg_t index[P.VU.vlmax]; \
       switch (P.VU.vsew) { \
         case e8: \
           P.VU.elt<uint8_t>(vd + fn * flmul, vreg_inx, true) = \
-            MMU.load<uint8_t>(baseAddr + index[i] + fn * 1); \
+            MMU.load<uint8_t>(baseAddr + index + fn * 1); \
           break; \
         case e16: \
           P.VU.elt<uint16_t>(vd + fn * flmul, vreg_inx, true) = \
-            MMU.load<uint16_t>(baseAddr + index[i] + fn * 2); \
+            MMU.load<uint16_t>(baseAddr + index + fn * 2); \
           break; \
         case e32: \
           P.VU.elt<uint32_t>(vd + fn * flmul, vreg_inx, true) = \
-            MMU.load<uint32_t>(baseAddr + index[i] + fn * 4); \
+            MMU.load<uint32_t>(baseAddr + index + fn * 4); \
           break; \
         default: \
           P.VU.elt<uint64_t>(vd + fn * flmul, vreg_inx, true) = \
-            MMU.load<uint64_t>(baseAddr + index[i] + fn * 8); \
+            MMU.load<uint64_t>(baseAddr + index + fn * 8); \
           break; \
       } \
     } \
@@ -1266,10 +1248,10 @@ reg_t index[P.VU.vlmax]; \
 
 #define VI_ST(stride, offset, elt_width, is_mask_ldst) \
   const reg_t nf = insn.v_nf() + 1; \
+  VI_CHECK_STORE(elt_width, is_mask_ldst); \
   const reg_t vl = is_mask_ldst ? ((P.VU.vl->read() + 7) / 8) : P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
-  VI_CHECK_STORE(elt_width, is_mask_ldst); \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i) \
     VI_ELEMENT_SKIP; \
@@ -1284,33 +1266,33 @@ reg_t index[P.VU.vlmax]; \
 
 #define VI_ST_INDEX(elt_width, is_seg) \
   const reg_t nf = insn.v_nf() + 1; \
+  VI_CHECK_ST_INDEX(elt_width); \
   const reg_t vl = P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
   if (!is_seg) \
     require(nf == 1); \
-  VI_CHECK_ST_INDEX(elt_width); \
-  VI_DUPLICATE_VREG(insn.rs2(), elt_width); \
   for (reg_t i = 0; i < vl; ++i) { \
+    VI_LDST_GET_INDEX(elt_width); \
     VI_STRIP(i) \
     VI_ELEMENT_SKIP; \
     P.VU.vstart->write(i); \
     for (reg_t fn = 0; fn < nf; ++fn) { \
       switch (P.VU.vsew) { \
       case e8: \
-        MMU.store<uint8_t>(baseAddr + index[i] + fn * 1, \
+        MMU.store<uint8_t>(baseAddr + index + fn * 1, \
           P.VU.elt<uint8_t>(vs3 + fn * flmul, vreg_inx)); \
         break; \
       case e16: \
-        MMU.store<uint16_t>(baseAddr + index[i] + fn * 2, \
+        MMU.store<uint16_t>(baseAddr + index + fn * 2, \
           P.VU.elt<uint16_t>(vs3 + fn * flmul, vreg_inx)); \
         break; \
       case e32: \
-        MMU.store<uint32_t>(baseAddr + index[i] + fn * 4, \
+        MMU.store<uint32_t>(baseAddr + index + fn * 4, \
           P.VU.elt<uint32_t>(vs3 + fn * flmul, vreg_inx)); \
         break; \
       default: \
-        MMU.store<uint64_t>(baseAddr + index[i] + fn * 8, \
+        MMU.store<uint64_t>(baseAddr + index + fn * 8, \
           P.VU.elt<uint64_t>(vs3 + fn * flmul, vreg_inx)); \
         break; \
       } \
@@ -1320,10 +1302,10 @@ reg_t index[P.VU.vlmax]; \
 
 #define VI_LDST_FF(elt_width) \
   const reg_t nf = insn.v_nf() + 1; \
+  VI_CHECK_LOAD(elt_width, false); \
   const reg_t vl = p->VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t rd_num = insn.rd(); \
-  VI_CHECK_LOAD(elt_width, false); \
   bool early_stop = false; \
   for (reg_t i = p->VU.vstart->read(); i < vl; ++i) { \
     VI_STRIP(i); \
@@ -1461,8 +1443,8 @@ reg_t index[P.VU.vlmax]; \
   require_fp; \
   require((P.VU.vsew == e8) || \
           (P.VU.vsew == e16 && p->extension_enabled(EXT_ZVFH)) || \
-          (P.VU.vsew == e32 && p->extension_enabled('F')) || \
-          (P.VU.vsew == e64 && p->extension_enabled('D'))); \
+          (P.VU.vsew == e32 && p->get_isa().get_zvf()) || \
+          (P.VU.vsew == e64 && p->get_isa().get_zvd())); \
   require_vector(true); \
   require(STATE.frm->read() < 0x5); \
   reg_t UNUSED vl = P.VU.vl->read(); \
@@ -1496,9 +1478,7 @@ reg_t index[P.VU.vlmax]; \
   VI_VFP_COMMON \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP(); \
-    uint64_t mmask = UINT64_C(1) << mpos; \
-    uint64_t &vd = P.VU.elt<uint64_t>(rd_num, midx, true); \
-    uint64_t res = 0;
+    bool res = false;
 
 #define VI_VFP_LOOP_REDUCTION_BASE(width) \
   float##width##_t vd_0 = P.VU.elt<float##width##_t>(rd_num, 0); \
@@ -1576,7 +1556,7 @@ reg_t index[P.VU.vlmax]; \
     case e16: \
     case e32: \
     case e64: { \
-      vd = (vd & ~mmask) | (((res) << mpos) & mmask); \
+      P.VU.set_mask_elt(insn.rd(), i, res); \
       break; \
     } \
     default: \
@@ -1725,8 +1705,8 @@ reg_t index[P.VU.vlmax]; \
 #define VI_VFP_VV_LOOP_WIDE_REDUCTION(BODY16, BODY32) \
   VI_CHECK_REDUCTION(true) \
   VI_VFP_COMMON \
-  require((P.VU.vsew == e16 && p->extension_enabled('F')) || \
-          (P.VU.vsew == e32 && p->extension_enabled('D'))); \
+  require((P.VU.vsew == e16 && p->get_isa().get_zvf()) || \
+          (P.VU.vsew == e32 && p->get_isa().get_zvd())); \
   bool is_active = false; \
   switch (P.VU.vsew) { \
     case e16: { \
@@ -2082,17 +2062,17 @@ reg_t index[P.VU.vlmax]; \
     } \
     case e16: \
       { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(16, 16, sign), \
-        { p->extension_enabled(EXT_ZVFH); }, \
+        { require(p->extension_enabled(EXT_ZVFH)); },   \
         BODY16); } \
       break; \
     case e32: \
       { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(32, 32, sign), \
-        { p->extension_enabled('F'); }, \
+        { require(p->get_isa().get_zvf()); },  \
         BODY32); } \
       break; \
     case e64: \
       { VI_VFP_CVT_LOOP(CVT_INT_TO_FP_PARAMS(64, 64, sign), \
-        { p->extension_enabled('D'); }, \
+        { require(p->get_isa().get_zvd()); },  \
         BODY64); } \
       break; \
     default: \
@@ -2125,17 +2105,17 @@ reg_t index[P.VU.vlmax]; \
     } \
     case e16: \
       { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(16, 16, sign), \
-        { p->extension_enabled(EXT_ZVFH); }, \
+        { require(p->extension_enabled(EXT_ZVFH)); },   \
         BODY16); } \
       break; \
     case e32: \
       { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(32, 32, sign), \
-        { p->extension_enabled('F'); }, \
+        { require(p->get_isa().get_zvf()); },  \
         BODY32); } \
       break; \
     case e64: \
       { VI_VFP_CVT_LOOP(CVT_FP_TO_INT_PARAMS(64, 64, sign), \
-        { p->extension_enabled('D'); }, \
+        { require(p->get_isa().get_zvd()); },  \
         BODY64); } \
       break; \
     default: \
@@ -2329,5 +2309,8 @@ reg_t index[P.VU.vlmax]; \
       require(0); \
       break; \
   }
+
+#define P_SET_OV(ov) \
+  if (ov) P.VU.vxsat->write(1);
 
 #endif

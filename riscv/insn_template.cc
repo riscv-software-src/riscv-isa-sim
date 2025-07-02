@@ -5,24 +5,29 @@
 
 #define DECODE_MACRO_USAGE_LOGGED 0
 
+#define PROLOGUE \
+  reg_t npc = sext_xlen(pc + insn_length(OPCODE))
+
+#define EPILOGUE \
+  trace_opcode(p, OPCODE, insn); \
+  return npc
+
 reg_t fast_rv32i_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 32
-  reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  PROLOGUE;
   #include "insns/NAME.h"
-  trace_opcode(p, OPCODE, insn);
+  EPILOGUE;
   #undef xlen
-  return npc;
 }
 
 reg_t fast_rv64i_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 64
-  reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  PROLOGUE;
   #include "insns/NAME.h"
-  trace_opcode(p, OPCODE, insn);
+  EPILOGUE;
   #undef xlen
-  return npc;
 }
 
 #undef DECODE_MACRO_USAGE_LOGGED
@@ -31,21 +36,19 @@ reg_t fast_rv64i_NAME(processor_t* p, insn_t insn, reg_t pc)
 reg_t logged_rv32i_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 32
-  reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  PROLOGUE;
   #include "insns/NAME.h"
-  trace_opcode(p, OPCODE, insn);
+  EPILOGUE;
   #undef xlen
-  return npc;
 }
 
 reg_t logged_rv64i_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 64
-  reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  PROLOGUE;
   #include "insns/NAME.h"
-  trace_opcode(p, OPCODE, insn);
+  EPILOGUE;
   #undef xlen
-  return npc;
 }
 
 #undef CHECK_REG
@@ -57,21 +60,19 @@ reg_t logged_rv64i_NAME(processor_t* p, insn_t insn, reg_t pc)
 reg_t fast_rv32e_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 32
-  reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  PROLOGUE;
   #include "insns/NAME.h"
-  trace_opcode(p, OPCODE, insn);
+  EPILOGUE;
   #undef xlen
-  return npc;
 }
 
 reg_t fast_rv64e_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 64
-  reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  PROLOGUE;
   #include "insns/NAME.h"
-  trace_opcode(p, OPCODE, insn);
+  EPILOGUE;
   #undef xlen
-  return npc;
 }
 
 #undef DECODE_MACRO_USAGE_LOGGED
@@ -80,19 +81,17 @@ reg_t fast_rv64e_NAME(processor_t* p, insn_t insn, reg_t pc)
 reg_t logged_rv32e_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 32
-  reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  PROLOGUE;
   #include "insns/NAME.h"
-  trace_opcode(p, OPCODE, insn);
+  EPILOGUE;
   #undef xlen
-  return npc;
 }
 
 reg_t logged_rv64e_NAME(processor_t* p, insn_t insn, reg_t pc)
 {
   #define xlen 64
-  reg_t npc = sext_xlen(pc + insn_length(OPCODE));
+  PROLOGUE;
   #include "insns/NAME.h"
-  trace_opcode(p, OPCODE, insn);
+  EPILOGUE;
   #undef xlen
-  return npc;
 }
