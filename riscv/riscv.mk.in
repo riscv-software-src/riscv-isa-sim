@@ -33,11 +33,13 @@ riscv_install_hdrs = \
 	entropy_source.h \
 	extension.h \
 	isa_parser.h \
+	jtag_dtm.h \
 	log_file.h \
 	memtracer.h \
 	mmu.h \
 	platform.h \
 	processor.h \
+	remote_bitbang.h \
 	rocc.h \
 	sim.h \
 	simif.h \
