@@ -396,11 +396,8 @@ int main(int argc, char** argv)
   parser.option(0, "pmpregions", 1, [&](const char* s){cfg.pmpregions = atoul_safe(s);});
   parser.option(0, "pmpgranularity", 1, [&](const char* s){cfg.pmpgranularity = atoul_safe(s);});
   parser.option(0, "priv", 1, [&](const char* s){cfg.priv = s;});
-<<<<<<< HEAD
   parser.option(0, "varch", 1, [&](const char* s){cfg.varch = s;});
   parser.option(0, "vfp8", 1, [&](const char* s){cfg.vfp8 = s;});
-=======
->>>>>>> upstream/master
   parser.option(0, "device", 1, device_parser);
   parser.option(0, "extension", 1, [&](const char* s){extensions.push_back(find_extension(s));});
   parser.option(0, "dump-dts", 0, [&](const char UNUSED *s){dump_dts = true;});

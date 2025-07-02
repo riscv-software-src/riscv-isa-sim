@@ -181,8 +181,8 @@ float8_2_t ui16_to_f8_2( uint16_t a );
 float16_t i8_to_bf16(  int8_t a );
 float16_t ui8_to_bf16( uint8_t a );
 
-int8_t bf16_to_i8(float16_t input, uint_fast8_t roundingMode);
-int8_t bf16_to_ui8(float16_t input, uint_fast8_t roundingMode);
+//int8_t bf16_to_i8(float16_t input, uint_fast8_t roundingMode);
+//int8_t bf16_to_ui8(float16_t input, uint_fast8_t roundingMode);
 
 #ifdef __cplusplus
 }

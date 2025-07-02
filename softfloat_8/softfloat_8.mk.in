@@ -11,8 +11,6 @@ softfloat_8_hdrs = \
 softfloat_8_c_srcs = \
   bf16_to_f8_1.c \
   bf16_to_f8_2.c \
-  bf16_to_i8.c \
-  bf16_to_ui8.c \
 	f8_1_2_recip7_rsqrte7.c \
   f8_1_add.c \
 	f8_1_div.c \
