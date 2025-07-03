@@ -171,7 +171,8 @@ bool ns16550_t::load(reg_t addr, size_t len, uint8_t* bytes)
   if (reg_io_width != len) {
     return false;
   }
-  if (addr + len > PGSIZE) {
+  //if (addr + len > PGSIZE) {
+  if (addr + len > NS16550_SIZE) {
     return false;
   }
   addr >>= reg_shift;
@@ -234,7 +235,8 @@ bool ns16550_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   if (reg_io_width != len) {
     return false;
   }
-  if (addr + len > PGSIZE) {
+  //if (addr + len > PGSIZE) {
+  if (addr + len > NS16550_SIZE) {
     return false;
   }
   addr >>= reg_shift;

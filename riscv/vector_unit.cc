@@ -21,8 +21,8 @@ void vectorUnit_t::vectorUnit_t::reset()
   state->add_csr(CSR_VL, vl = std::make_shared<vector_csr_t>(p, CSR_VL, /*mask*/ 0));
   state->add_csr(CSR_VTYPE, vtype = std::make_shared<vector_csr_t>(p, CSR_VTYPE, /*mask*/ 0));
   state->add_csr(CSR_VLENB, std::make_shared<vector_csr_t>(p, CSR_VLENB, /*mask*/ 0, /*init*/ vlenb));
-  state->add_csr(CSR_VFP8, std::make_shared<vector_csr_t>(p, CSR_VFP8, /*mask*/ 0, /*init*/ vlenb));
-
+  state->add_csr(CSR_VFP8, vfp8 = std::make_shared<vfp8_csr_t>(p, CSR_VFP8, this));
+  
   assert(VCSR_VXSAT_SHIFT == 0);  // composite_csr_t assumes vxsat begins at bit 0
   state->add_csr(CSR_VCSR, std::make_shared<composite_csr_t>(p, CSR_VCSR, vxrm, vxsat, VCSR_VXRM_SHIFT));
 
