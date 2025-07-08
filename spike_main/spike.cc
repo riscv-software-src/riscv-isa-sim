@@ -316,7 +316,7 @@ static std::vector<size_t> parse_hartids(const char *s)
   return hartids;
 }
 
-int main(int argc, char** argv)
+int spike_main(int argc, char** argv)
 {
   bool debug = false;
   bool halted = false;
@@ -558,4 +558,9 @@ int main(int argc, char** argv)
     delete mem.second;
 
   return return_code;
+}
+
+int main(int argc, char** argv)
+{
+  return spike_main(argc, argv);
 }
