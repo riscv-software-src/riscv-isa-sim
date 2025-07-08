@@ -30,6 +30,7 @@ Spike supports the following RISC-V ISA features:
   - Zbc extension, v1.0
   - Zbs extension, v1.0
   - Zfh and Zfhmin half-precision floating-point extensions, v1.0
+  - Zfa extension, v1.0
   - Zfinx extension, v1.0
   - Zmmul integer multiplication extension, v1.0
   - Zicbom, Zicbop, Zicboz cache-block maintenance extensions, v1.0
