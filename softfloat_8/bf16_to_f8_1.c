@@ -180,39 +180,107 @@ float8_1_t bf16_to_f8_1( float16_t a )
             }
         }
     }
-    else if (exp <= 0x86) {  	  // 0x86 is the biggest number in which mantissa is not overflowing
-        int mask_frac = 0x70;     // creates a mask equal to 111_0000 which enables only the mantissa in the core
-        int mask_precision = 0x8; // creates a mask equal to 000_1000 which enables only the mantissa in the core
-        int mask_inexact = 0x07;  // creates a mask equal to 000_0111 which enables only the mantissa in the core
-        precision = (frac & mask_precision) >> 3;
-        inexact   = ((frac & mask_inexact) > 0);
-        exp       = exp - 127 + 7;
-        frac      = (frac & mask_frac) >> 4;
-        uiZ = packToF8_1UI( sign, exp, frac);
-    }
-    else if ( exp < 0xFF ) {
-        exp = 0xE;
-        frac = 0x7;
-        uiZ = packToF8_1UI( sign, exp, frac);
-        inexact   = 1;
-        precision = 1;
-        overflow  = 1;
-    }
-    else if (exp == 0xFF) {
-        if (frac) {
-            softfloat_bf16UIToCommonNaN( uiA, &commonNaN );
-            uiZ = softfloat_commonNaNToF8_1UI( &commonNaN );
-            uZ.ui = uiZ;
-            return uZ.f;
-        } else {
-            exp = 0xF;
-            frac = 0x0;
+    #if E4M3_OFP8 == 1
+        else if (exp <= 0x87) {                 // 0x86 is the biggest number in which mantissa is not overflowing
+            int mask_frac = 0x70;               // creates a mask equal to 111_0000 which enables only the mantissa in the core
+            int mask_precision = 0x8;           // creates a mask equal to 000_1000 which enables only the mantissa in the core
+            int mask_inexact = 0x07;            // creates a mask equal to 000_0111 which enables only the mantissa in the core
+            precision = (frac & mask_precision) >> 3;
+            inexact   = ((frac & mask_inexact) > 0);
+            exp       = exp - 127 + 7;
+            frac      = (frac & mask_frac) >> 4;
+            
             uiZ = packToF8_1UI( sign, exp, frac);
-            uZ.ui = uiZ;
-            return uZ.f;
         }
-        goto uiZ;
-    }
+        else if ( exp < 0xFF ) {
+            #if OFP8_saturate == 1
+                exp = 0xF;
+                frac = 0x6;
+                uiZ = packToF8_1UI( sign, exp, frac);
+                inexact   = 1;
+                precision = 1;
+                #if OFP8_overflow_flag == 1
+                    overflow  = 1;
+                #else
+                    overflow  = 0;
+                #endif
+                uZ.ui = uiZ;
+                #if OFP8_overflow_flag == 1
+                    softfloat_raiseFlags(softfloat_flag_overflow | softfloat_flag_inexact);
+                #else
+                    softfloat_raiseFlags(softfloat_flag_inexact);
+                #endif
+                return uZ.f;
+            #else
+                softfloat_bf16UIToCommonNaN( uiA, &commonNaN );
+                uiZ = softfloat_commonNaNToF8_1UI( &commonNaN );
+                uZ.ui = uiZ;
+                return uZ.f;
+            #endif         
+        }
+        else if (exp == 0xFF) {
+            if (frac) {     //NaN
+                softfloat_bf16UIToCommonNaN( uiA, &commonNaN );
+                uiZ = softfloat_commonNaNToF8_1UI( &commonNaN );
+                uZ.ui = uiZ;
+                return uZ.f;
+            } else {        //inf
+                #if OFP8_saturate == 1
+                    exp = 0xF;
+                    frac = 0x6;
+                    uiZ = packToF8_1UI( sign, exp, frac); //max_value
+                    uZ.ui = uiZ;
+                    #if OFP8_overflow_flag == 1
+                        softfloat_raiseFlags(softfloat_flag_overflow | softfloat_flag_inexact);
+                    #else
+                        softfloat_raiseFlags(softfloat_flag_inexact);
+                    #endif
+                    return uZ.f;
+                #else
+                    softfloat_bf16UIToCommonNaN( uiA, &commonNaN );
+                    uiZ = softfloat_commonNaNToF8_1UI( &commonNaN );
+                    uZ.ui = uiZ;
+                    return uZ.f;
+                #endif         
+            }
+            goto uiZ;
+        }
+    #else
+        else if (exp <= 0x86) {       // 0x86 is the biggest number in which mantissa is not overflowing
+            int mask_frac = 0x70;     // creates a mask equal to 111_0000 which enables only the mantissa in the core
+            int mask_precision = 0x8; // creates a mask equal to 000_1000 which enables only the mantissa in the core
+            int mask_inexact = 0x07;  // creates a mask equal to 000_0111 which enables only the mantissa in the core
+            precision = (frac & mask_precision) >> 3;
+            inexact   = ((frac & mask_inexact) > 0);
+            exp       = exp - 127 + 7;
+            frac      = (frac & mask_frac) >> 4;
+            uiZ = packToF8_1UI( sign, exp, frac);
+        }
+        else if ( exp < 0xFF ) {
+            exp = 0xE;
+            frac = 0x7;
+            uiZ = packToF8_1UI( sign, exp, frac);
+            inexact   = 1;
+            precision = 1;
+            overflow  = 1;
+        }
+        else if (exp == 0xFF) {
+            if (frac) {
+                softfloat_bf16UIToCommonNaN( uiA, &commonNaN );
+                uiZ = softfloat_commonNaNToF8_1UI( &commonNaN );
+                uZ.ui = uiZ;
+                return uZ.f;
+            } else {
+                exp = 0xF;
+                frac = 0x0;
+                uiZ = packToF8_1UI( sign, exp, frac);
+                uZ.ui = uiZ;
+                return uZ.f;
+            }
+            goto uiZ;
+        }
+    #endif
+    
     if ((exp == 0xE && expF8_1UI(uiZ + round_f8_1(sign, frac, precision, inexact, overflow)) == 1) || overflow == 1) {
         softfloat_raiseFlags(softfloat_flag_overflow | softfloat_flag_inexact);
     }
@@ -223,10 +291,74 @@ float8_1_t bf16_to_f8_1( float16_t a )
         }
     }
  uiZ:
-    uZ.ui = uiZ + round_f8_1(sign, frac, precision, inexact, overflow);
-    if (((uZ.ui >> 3) & 0xF) == 0xF) {
-        softfloat_raiseFlags(softfloat_flag_overflow);
-    }
+
+    #if E4M3_OFP8 == 1
+        #if OFP8_saturate == 1
+            #if OFP8_overflow_flag == 1
+
+                if ((uiZ & 0x7F) == 0x7F ) {
+                    uZ.ui = uiZ;
+                    goto Jumped;
+                }
+                uZ.ui = uiZ + round_f8_1(sign, frac, precision, inexact, overflow);
+
+            Jumped:
+                if ((((uZ.ui >> 3) & 0xF) == 0xF) && (((uZ.ui >> 0) & 0x7) == 0x7)) {
+                    softfloat_raiseFlags(softfloat_flag_overflow);
+                    uZ.ui = 0x7e | sign<<7;
+                }
+            #else
+                if ((uiZ & 0x7F) == 0x7F) {
+                    uZ.ui = uiZ;
+                    goto Jumped;
+                }
+                uZ.ui = uiZ + round_f8_1(sign, frac, precision, inexact, overflow);
+
+            Jumped:
+                if ((((uZ.ui >> 3) & 0xF) == 0xF) && (((uZ.ui >> 0) & 0x7) == 0x7)) {
+                    uZ.ui = 0x7e | sign<<7;
+                }
+            #endif
+        #else
+            #if OFP8_overflow_flag == 1
+                if ((uiZ & 0x7F) == 0x7F) {
+                    uZ.ui = uiZ & 0x7F;
+                    goto Jumped;
+                }
+                uZ.ui = uiZ + round_f8_1(sign, frac, precision, inexact, overflow);
+            Jumped:
+                if ((((uZ.ui >> 3) & 0xF) == 0xF) && (((uZ.ui >> 0) & 0x7) == 0x7)) {
+                    softfloat_raiseFlags(softfloat_flag_overflow);
+                    softfloat_bf16UIToCommonNaN( uiA, &commonNaN );
+                    uiZ = softfloat_commonNaNToF8_1UI( &commonNaN );
+                    uZ.ui = uiZ;
+                }
+            #else
+                if ((uiZ & 0x7F) == 0x7F) {
+                    uZ.ui = uiZ & 0x7F;
+                    goto Jumped;
+                }
+                uZ.ui = uiZ + round_f8_1(sign, frac, precision, inexact, overflow);
+            Jumped:
+                if ((((uZ.ui >> 3) & 0xF) == 0xF) && (((uZ.ui >> 0) & 0x7) == 0x7)) {
+                    softfloat_bf16UIToCommonNaN( uiA, &commonNaN );
+                    uiZ = softfloat_commonNaNToF8_1UI( &commonNaN );
+                    uZ.ui = uiZ;
+                }
+            #endif
+        #endif
+    #else
+        //if ((uiZ & 0x7F) == 0x7F) {
+        //    uZ.ui = uiZ & 0x7F;
+        //    goto Jumped;
+        //}
+        uZ.ui = uiZ + round_f8_1(sign, frac, precision, inexact, overflow);
+    //Jumped:
+        if (((uZ.ui >> 3) & 0xF) == 0xF) {
+            softfloat_raiseFlags(softfloat_flag_overflow);
+        }
+    #endif
+
     //printf("uiZ = 0x%x, sign = %d, exp = 0x%lx, frac = 0x%x\n", uiZ, sign, exp, frac);
     return uZ.f;
 }

@@ -40,7 +40,7 @@ bool f8_1_eq( float8_1_t a, float8_1_t b )
         }
         return false;
     }
-    return (uiA == uiB) || ! (uint8_t) ((uiA | uiB)<<1);
+    return (uiA == uiB) || ! (uint8_t) ((uiA | uiB)<<1); //the second part of || is used to check if we are in the case +0 = -0
 
 }
 

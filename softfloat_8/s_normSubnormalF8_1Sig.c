@@ -18,7 +18,7 @@ limitations under the License.
 #include "platform.h"
 #include "internals.h"
 
-struct exp8_sig8_1 softfloat_normSubnormalF8_1Sig( uint_fast8_t sig )     //normalizza la mantissa di un numero denormalizzato?
+struct exp8_sig8_1 softfloat_normSubnormalF8_1Sig( uint_fast8_t sig )     //normalizza la mantissa di un numero denormalizzato
 {
     int_fast8_t shiftDist;
     struct exp8_sig8_1 z;

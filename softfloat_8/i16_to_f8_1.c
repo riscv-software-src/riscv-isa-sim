@@ -43,7 +43,7 @@ float8_1_t i16_to_f8_1( int16_t a )
                 ? absA>>(-shiftDist)
                       | ((uint32_t) (absA<<(shiftDist & 15)) != 0)
                 : (uint_fast8_t) absA<<shiftDist;
-        return softfloat_roundPackToF8_1( sign, 0x0C - shiftDist, sig );
+        return softfloat_roundPackToF8_1( sign, 0x0C - shiftDist, sig, (bool) 1 );
     }
 
 }

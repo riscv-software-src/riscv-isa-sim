@@ -38,13 +38,17 @@ union ui8_f8_2 { uint8_t  ui; float8_2_t  f; }; // 1-5-2
 #define fracF8_1UI( a ) ((a) & 0x07)
 #define packToF8_1UI( sign, exp, sig ) (((uint8_t) (sign)<<7) + ((uint8_t) (exp)<<3) + (sig))
 
-#define isNaNF8_1UI( a ) (((~(a) & 0x78) == 0) && ((a) & 0x07))
+#if E4M3_OFP8 == 1
+    #define isNaNF8_1UI( a ) (((a) & 0x7F) == 0x7F) // Only NaN is 0x7F
+#else
+    #define isNaNF8_1UI( a ) (((~(a) & 0x78) == 0) && ((a) & 0x07))
+#endif
 
 struct exp8_sig8_1 { int_fast8_t exp; uint_fast8_t sig; };    
 struct exp8_sig8_1 softfloat_normSubnormalF8_1Sig( uint_fast8_t );
 
-float8_1_t softfloat_roundPackToF8_1( bool, int_fast8_t, uint_fast8_t );
-float8_1_t softfloat_normRoundPackToF8_1( bool, int_fast8_t, uint_fast8_t );
+float8_1_t softfloat_roundPackToF8_1( bool, int_fast8_t, uint_fast8_t, bool );
+float8_1_t softfloat_normRoundPackToF8_1( bool, int_fast8_t, uint_fast8_t, bool );
 
 float8_1_t softfloat_addMagsF8_1( uint_fast8_t, uint_fast8_t );
 float8_1_t softfloat_subMagsF8_1( uint_fast8_t, uint_fast8_t );
@@ -64,8 +68,8 @@ float8_1_t
 struct exp8_sig8_2 { int_fast8_t exp; uint_fast8_t sig; };    
 struct exp8_sig8_2 softfloat_normSubnormalF8_2Sig( uint_fast8_t );
 
-float8_2_t softfloat_roundPackToF8_2( bool, int_fast8_t, uint_fast8_t );
-float8_2_t softfloat_normRoundPackToF8_2( bool, int_fast8_t, uint_fast8_t );
+float8_2_t softfloat_roundPackToF8_2( bool, int_fast8_t, uint_fast8_t, bool );
+float8_2_t softfloat_normRoundPackToF8_2( bool, int_fast8_t, uint_fast8_t, bool );
 
 float8_2_t softfloat_addMagsF8_2( uint_fast8_t, uint_fast8_t );
 float8_2_t softfloat_subMagsF8_2( uint_fast8_t, uint_fast8_t );

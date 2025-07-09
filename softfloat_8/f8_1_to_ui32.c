@@ -40,12 +40,19 @@ uint_fast32_t f8_1_to_ui32( float8_1_t a, uint_fast8_t roundingMode, bool exact 
     frac = fracF8_1UI( uiA );
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
-    if ( exp == 0x0F ) {
-        softfloat_raiseFlags( softfloat_flag_invalid );
-        return
-            frac ? ui32_fromNaN
-                : sign ? ui32_fromNegOverflow : ui32_fromPosOverflow;
-    }
+    #if E4M3_OFP8 == 1
+        if ( exp == 0x0F && frac == 0x07 ) {
+            softfloat_raiseFlags( softfloat_flag_invalid );
+            return i32_fromNaN;
+        }
+    #else
+        if ( exp == 0x0F ) {
+            softfloat_raiseFlags( softfloat_flag_invalid );
+            return
+                frac ? i32_fromNaN
+                    : sign ? i32_fromNegOverflow : i32_fromPosOverflow;
+        }
+    #endif   
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
     sig32 = frac;

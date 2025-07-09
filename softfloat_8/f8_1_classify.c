@@ -30,7 +30,12 @@ uint_fast16_t f8_1_classify( float8_1_t a )
     uA.f = a;
     uiA = uA.ui;
 
-    uint_fast16_t infOrNaN = expF8_1UI( uiA ) == 0x0F;
+    #if E4M3_OFP8 == 1
+        uint_fast16_t infOrNaN = 0;
+    #else
+        uint_fast16_t infOrNaN = expF8_1UI( uiA ) == 0x0F;
+    #endif
+
     uint_fast16_t subnormalOrZero = expF8_1UI( uiA ) == 0;
     bool sign = signF8_1UI( uiA );
     bool fracZero = fracF8_1UI( uiA ) == 0;
@@ -38,15 +43,15 @@ uint_fast16_t f8_1_classify( float8_1_t a )
     bool isSNaN = softfloat_isSigNaNF8_1UI( uiA );
 
     return
-        (  sign && infOrNaN && fracZero )          << 0 |
-        (  sign && !infOrNaN && !subnormalOrZero ) << 1 |
-        (  sign && subnormalOrZero && !fracZero )  << 2 |
-        (  sign && subnormalOrZero && fracZero )   << 3 |
-        ( !sign && infOrNaN && fracZero )          << 7 |
-        ( !sign && !infOrNaN && !subnormalOrZero ) << 6 |
-        ( !sign && subnormalOrZero && !fracZero )  << 5 |
-        ( !sign && subnormalOrZero && fracZero )   << 4 |
-        ( isNaN &&  isSNaN )                       << 8 |
-        ( isNaN && !isSNaN )                       << 9;
+        (  sign && infOrNaN && fracZero )          << 0 |   //-inf
+        (  sign && !infOrNaN && !subnormalOrZero ) << 1 |   //-normal
+        (  sign && subnormalOrZero && !fracZero )  << 2 |   //-subnormal
+        (  sign && subnormalOrZero && fracZero )   << 3 |   //-zero
+        ( !sign && infOrNaN && fracZero )          << 7 |   //+inf
+        ( !sign && !infOrNaN && !subnormalOrZero ) << 6 |   //+normal
+        ( !sign && subnormalOrZero && !fracZero )  << 5 |   //+subnormal
+        ( !sign && subnormalOrZero && fracZero )   << 4 |   //+zero
+        ( isNaN &&  isSNaN )                       << 8 |   //signaling NaN
+        ( isNaN && !isSNaN )                       << 9;    //quiet NaN
 }
 

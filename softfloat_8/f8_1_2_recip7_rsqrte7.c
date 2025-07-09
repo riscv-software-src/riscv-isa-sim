@@ -249,7 +249,7 @@ float8_1_t f8_1_recip7( float8_1_t in)
                        softfloat_roundingMode, sub, &round_abnormal);
         if (round_abnormal)
             softfloat_exceptionFlags |= softfloat_flag_inexact |
-                                        softfloat_flag_overflow;
+                                        softfloat_flag_overflow; //questa flag non so se va bene
         break;
     }
 

@@ -1,18 +1,3 @@
-/*============================================================================
-Copyright 2023 Sapienza University of Rome
-
-Licensed under the Apache License, Version 2.0 (the "License");
-you may not use this file except in compliance with the License.
-You may obtain a copy of the License at
-
- http://www.apache.org/licenses/LICENSE-2.0
-
-Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
-WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-See the License for the specific language governing permissions and
-limitations under the License.
-=============================================================================*/
   
 #include <stdbool.h>
 #include <stdint.h>
@@ -42,13 +27,34 @@ float8_1_t f8_2_to_f8_1( float8_2_t a )
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
     if ( exp == 0x1F ) {
-        if ( frac ) {
-            softfloat_f8_2UIToCommonNaN( uiA, &commonNaN );
-            uiZ = softfloat_commonNaNToF8_1UI( &commonNaN );
-        } else {
-            uiZ = packToF8_1UI( sign, 0x0F, 0 );
-        }
-        goto uiZ;
+        #if E4M3_OFP8 == 1
+
+            #if OFP8_saturate == 1
+                if ( frac ) {
+                    softfloat_f8_2UIToCommonNaN( uiA, &commonNaN );
+                    uiZ = softfloat_commonNaNToF8_1UI( &commonNaN );
+                } else {
+                    uiZ = packToF8_1UI( sign, 0x0F, 0x6 );
+                }
+                goto uiZ;
+            #else
+                softfloat_f8_2UIToCommonNaN( uiA, &commonNaN );
+                uiZ = softfloat_commonNaNToF8_1UI( &commonNaN );
+                goto uiZ;
+            #endif
+
+        #else //IEEE-like
+
+            if ( frac ) {
+                softfloat_f8_2UIToCommonNaN( uiA, &commonNaN );
+                uiZ = softfloat_commonNaNToF8_1UI( &commonNaN );
+            } else {
+                uiZ = packToF8_1UI( sign, 0x0F, 0 );
+            }
+            goto uiZ;
+
+        #endif
+        
     }
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
@@ -59,7 +65,7 @@ float8_1_t f8_2_to_f8_1( float8_2_t a )
     }
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
-    return softfloat_roundPackToF8_1( sign, exp - 0x09, frac8 | 0x40 );
+    return softfloat_roundPackToF8_1( sign, exp - 0x09, frac8 | 0x40, (bool) 1 );
     uiZ:
     uZ.ui = uiZ;
     return uZ.f;

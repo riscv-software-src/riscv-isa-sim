@@ -19,6 +19,13 @@ limitations under the License.
 
 #include <stdint.h>
 
+#define E4M3_OFP8          1 //When set to 1, the FP8 will be the OFP/Nvidia one.              	When set to 0, it will be the ieee-like one.
+#define E4M3_isSigNaN      0 //When set to 1, the FP8 OFP8 only NaN will be Signaling.         	When set to 0, it will be Quiet.
+#define OFP8_saturate      0 //When set to 1, the FP8 OFP8 will saturate on conversions.       	When set to 0, it will overflow to NaN.
+#define OFP8_saturate_op   0 //When set to 1, the FP8 OFP8 will saturate on operation also.    	When set to 0, it will overflow to NaN. 
+                             //It only work if also OFP8_saturate is set to 1, as saturation for conversion is needed by the standard.
+#define OFP8_overflow_flag 0 //When set to 1, the OFP8  set the overflow flag when saturating.  When set to 0, it will not.
+
 typedef struct { uint8_t  v; } float8_1_t;  // 1-4-3
 typedef struct { uint8_t  v; } float8_2_t;  // 1-5-2
 

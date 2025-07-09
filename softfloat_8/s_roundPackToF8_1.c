@@ -20,7 +20,7 @@ limitations under the License.
 #include "internals.h"
 #include "softfloat.h"
 
-float8_1_t softfloat_roundPackToF8_1( bool sign, int_fast8_t exp, uint_fast8_t sig )
+float8_1_t softfloat_roundPackToF8_1( bool sign, int_fast8_t exp, uint_fast8_t sig, bool conv )
 {
     uint_fast8_t roundingMode;
     bool roundNearEven;
@@ -43,32 +43,99 @@ float8_1_t softfloat_roundPackToF8_1( bool sign, int_fast8_t exp, uint_fast8_t s
     roundBits = sig & 0x7;    
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
-    if ( 0x0D <= (unsigned int) exp ) {
-        if ( exp < 0 ) {
-            /*----------------------------------------------------------------
-            *----------------------------------------------------------------*/
-            isTiny =
-                (softfloat_detectTininess == softfloat_tininess_beforeRounding)
-                    || (exp < -1) || (sig + roundIncrement < 0x80);
-            sig = softfloat_shiftRightJam32( sig, -exp );
-            exp = 0;
-            roundBits = sig & 0x7;
-            if ( isTiny && roundBits ) {
-                softfloat_raiseFlags( softfloat_flag_underflow );
+    
+    #if E4M3_OFP8 == 1
+        if ( 0x0E <= (unsigned int) exp ) { //PROVA
+            if ( exp < 0 ) {
+                /*----------------------------------------------------------------
+                *----------------------------------------------------------------*/
+                isTiny =
+                    (softfloat_detectTininess == softfloat_tininess_beforeRounding)
+                        || (exp < -1) || (sig + roundIncrement < 0x80);
+                sig = softfloat_shiftRightJam32( sig, -exp );
+                exp = 0;
+                roundBits = sig & 0x7;
+                if ( isTiny && roundBits ) {
+                    softfloat_raiseFlags( softfloat_flag_underflow );
+                }
+            //} else if ( (0x0E < exp) || (0x80 <= sig + roundIncrement) ) {  //Overflow //PROVA
+            } else if ( (0x0E < exp) || (0x79 <= sig + roundIncrement) ) {  //Overflow //PROVA //da calcoli dovrebbe essere 73, ma forse 79 funziona?
+                /*----------------------------------------------------------------
+                *----------------------------------------------------------------*/
+                #if OFP8_saturate == 1                      // Saturate on
+                    #if OFP8_saturate_op == 1               // Saturate also the operation results, not only the conversions
+                        #if OFP8_overflow_flag == 1         // The overflow flag is triggered
+                            softfloat_raiseFlags(
+                                softfloat_flag_overflow | softfloat_flag_inexact );
+                            uiZ = packToF8_1UI( sign, 0x0F, 0x06 ) - ! roundIncrement; //PROVA //Round Increment is not 0 in Round Near Even
+                            goto uiZ;
+                        #else                               // The overflow flag is not triggered
+                            softfloat_raiseFlags(
+                                softfloat_flag_inexact );
+                            uiZ = packToF8_1UI( sign, 0x0F, 0x06 ) - ! roundIncrement; //PROVA
+                            goto uiZ;
+                        #endif
+                    #else                                   // Saturate only the conversions
+                        #if OFP8_overflow_flag == 1         // The overflow flag is triggered
+                            if (conv == 1) {
+                                softfloat_raiseFlags(
+                                    softfloat_flag_overflow | softfloat_flag_inexact );
+                                uiZ = packToF8_1UI( sign, 0x0F, 0x06 ) - ! roundIncrement; //PROVA //Round Increment is not 0 in Round Near Even
+                                goto uiZ;
+                            } else {
+                                softfloat_raiseFlags(
+                                    softfloat_flag_overflow | softfloat_flag_inexact );
+                                uiZ = packToF8_1UI( sign, 0x0F, 0x07 ) - ! roundIncrement; //PROVA
+                                goto uiZ;
+                            }
+                        #else                               // The overflow flag is not triggered
+                            if (conv == 1) {
+                                softfloat_raiseFlags(
+                                    softfloat_flag_inexact );
+                                uiZ = packToF8_1UI( sign, 0x0F, 0x06 ) - ! roundIncrement; //PROVA //Round Increment is not 0 in Round Near Even
+                                goto uiZ;
+                            } else {
+                                softfloat_raiseFlags(
+                                    softfloat_flag_inexact );
+                                uiZ = packToF8_1UI( sign, 0x0F, 0x07 ) - ! roundIncrement; //PROVA
+                                goto uiZ;
+                            }
+                        #endif
+                    #endif
+                #else                                       // Saturate off
+                    softfloat_raiseFlags(
+                        softfloat_flag_overflow | softfloat_flag_inexact );
+                    uiZ = packToF8_1UI( sign, 0x0F, 0x07 ) - ! roundIncrement; //PROVA
+                    goto uiZ;
+                #endif   
             }
-        } else if ( (0x0D < exp) || (0x80 <= sig + roundIncrement) ) {
-            /*----------------------------------------------------------------
-            *----------------------------------------------------------------*/
-            softfloat_raiseFlags(
-                softfloat_flag_overflow | softfloat_flag_inexact );
-            uiZ = packToF8_1UI( sign, 0x0F, 0 ) - ! roundIncrement;
-            goto uiZ;
         }
-    }
-
-/*------------------------------------------------------------------------
+    #else
+        if ( 0x0D <= (unsigned int) exp ) {
+            if ( exp < 0 ) {
+                /*----------------------------------------------------------------
+                *----------------------------------------------------------------*/
+                isTiny =
+                    (softfloat_detectTininess == softfloat_tininess_beforeRounding)
+                        || (exp < -1) || (sig + roundIncrement < 0x80);
+                sig = softfloat_shiftRightJam32( sig, -exp );
+                exp = 0;
+                roundBits = sig & 0x7;
+                if ( isTiny && roundBits ) {
+                    softfloat_raiseFlags( softfloat_flag_underflow );
+                }
+            } else if ( (0x0D < exp) || (0x80 <= sig + roundIncrement) ) {
+                /*----------------------------------------------------------------
+                *----------------------------------------------------------------*/
+                softfloat_raiseFlags(
+                    softfloat_flag_overflow | softfloat_flag_inexact );
+                uiZ = packToF8_1UI( sign, 0x0F, 0 ) - ! roundIncrement;
+                goto uiZ;
+            }
+        }
+    #endif
+    /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
-
      sig = (sig + roundIncrement)>>3;
     if ( roundBits ) {
         softfloat_exceptionFlags |= softfloat_flag_inexact;

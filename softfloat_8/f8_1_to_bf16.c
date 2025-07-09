@@ -41,15 +41,25 @@ float16_t f8_1_to_bf16( float8_1_t a )
     frac = fracF8_1UI( uiA );
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
-    if ( exp == 0xF ) {
-        if ( frac ) {
-            softfloat_f8_1UIToCommonNaN( uiA, &commonNaN );
-            uiZ = softfloat_commonNaNToBF16UI( &commonNaN );
-        } else {
-            uiZ = packToBF16UI( sign, 0xFF, 0 );
+    #if E4M3_OFP8 == 1
+        if ( exp == 0xF ) {
+            if ( frac == 0x07 ) {
+                softfloat_f8_1UIToCommonNaN( uiA, &commonNaN );
+                uiZ = softfloat_commonNaNToBF16UI( &commonNaN );
+                goto uiZ;
+            }
         }
-        goto uiZ;
-    }
+    #else
+        if ( exp == 0xF ) {
+            if ( frac ) {
+                softfloat_f8_1UIToCommonNaN( uiA, &commonNaN );
+                uiZ = softfloat_commonNaNToBF16UI( &commonNaN );
+            } else {
+                uiZ = packToBF16UI( sign, 0xFF, 0 );
+            }
+            goto uiZ;
+        }
+    #endif
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
     if ( ! exp ) {

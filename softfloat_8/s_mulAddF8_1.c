@@ -59,24 +59,40 @@ float8_1_t softfloat_mulAddF8_1( uint_fast8_t uiA, uint_fast8_t uiB, uint_fast8_
     signProd = signA ^ signB ^ (op == softfloat_mulAdd_subProd);
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
-    if ( expA == 0x0F ) {           //controlla se è un NaN o inf
-        if ( sigA || ((expB == 0x0F) && sigB) ) goto propagateNaN_ABC;
-        magBits = expB | sigB;
-        goto infProdArg;
-    }
-    if ( expB == 0x0F ) {
-        if ( sigB ) goto propagateNaN_ABC;
-        magBits = expA | sigA;
-        goto infProdArg;
-    }
-    if ( expC == 0x0F ) {
-        if ( sigC ) {
-            uiZ = 0;
-            goto propagateNaN_ZC;
+    
+    #if E4M3_OFP8 == 1
+        if ( expA == 0x0F ) {
+            if ( (sigA == 0x07) || ((expB == 0x0F) && (sigB == 0x07)) ) goto propagateNaN_ABC;
         }
-        uiZ = uiC;
-        goto uiZ;
-    }
+        if ( expB == 0x0F ) {
+            if (sigB == 0x07) goto propagateNaN_ABC;
+        }
+        if ( expC == 0x0F ) {
+            if ( sigC == 0x07 ) {
+                uiZ = 0;
+                goto propagateNaN_ZC;
+            }
+        }
+    #else
+        if ( expA == 0x0F ) {
+            if ( sigA || ((expB == 0x0F) && sigB) ) goto propagateNaN_ABC;
+            magBits = expB | sigB;
+            goto infProdArg;
+        }
+        if ( expB == 0x0F ) {
+            if ( sigB ) goto propagateNaN_ABC;
+            magBits = expA | sigA;
+            goto infProdArg;
+        }
+        if ( expC == 0x0F ) {
+            if ( sigC ) {
+                uiZ = 0;
+                goto propagateNaN_ZC;
+            }
+            uiZ = uiC;
+            goto uiZ;
+        }
+    #endif
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
     if ( ! expA ) {
@@ -166,7 +182,7 @@ float8_1_t softfloat_mulAddF8_1( uint_fast8_t uiA, uint_fast8_t uiB, uint_fast8_
         }
     }
  roundPack:
-    return softfloat_roundPackToF8_1( signZ, expZ, sigZ );
+    return softfloat_roundPackToF8_1( signZ, expZ, sigZ, (bool) 0 );
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
     propagateNaN_ABC:
@@ -174,7 +190,10 @@ float8_1_t softfloat_mulAddF8_1( uint_fast8_t uiA, uint_fast8_t uiB, uint_fast8_
     goto propagateNaN_ZC;
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/
- infProdArg:
+#if E4M3_OFP8 == 1
+    
+#else
+infProdArg:
     if ( magBits ) {
         uiZ = packToF8_1UI( signProd, 0x0F, 0 );
         if ( expC != 0x0F ) goto uiZ;
@@ -183,6 +202,8 @@ float8_1_t softfloat_mulAddF8_1( uint_fast8_t uiA, uint_fast8_t uiB, uint_fast8_
     }
     softfloat_raiseFlags( softfloat_flag_invalid );
     uiZ = defaultNaNF8_1UI;
+#endif
+
  propagateNaN_ZC:
     uiZ = softfloat_propagateNaNF8_1UI( uiZ, uiC );
     goto uiZ;
