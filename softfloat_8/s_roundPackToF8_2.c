@@ -45,7 +45,7 @@ float8_2_t softfloat_roundPackToF8_2( bool sign, int_fast8_t exp, uint_fast8_t s
             /*----------------------------------------------------------------
             *----------------------------------------------------------------*/
             #if OFP8_saturate == 1                      // Saturate on
-                #if OFP8_saturate_op == 1               // Saturate also the operation results, not only the conversions
+                #if OFP8_saturate_arith == 1            // Saturate also the operation results, not only the conversions
                     #if OFP8_overflow_flag == 1         // The overflow flag is triggered
                         softfloat_raiseFlags(
                             softfloat_flag_overflow | softfloat_flag_inexact );
