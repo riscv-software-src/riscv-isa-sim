@@ -272,45 +272,19 @@ reg_t processor_t::select_an_interrupt_with_default_priority(reg_t enabled_inter
   return enabled_interrupts;
 }
 
-bool processor_t::is_handled_in_vs()
-{
-  reg_t pending_interrupts = state.mip->read() & state.mie->read();
-
-  const reg_t s_pending_interrupts = state.nonvirtual_sip->read() & state.nonvirtual_sie->read();
-  const reg_t vstopi = state.vstopi->read();
-  const reg_t vs_pending_interrupt = vstopi ? (reg_t(1) << get_field(vstopi, MTOPI_IID)) : 0; // SSIP -> VSSIP, etc
-
-  // M-ints have higher priority over HS-ints and VS-ints
-  const reg_t mie = get_field(state.mstatus->read(), MSTATUS_MIE);
-  const reg_t m_enabled = state.prv < PRV_M || (state.prv == PRV_M && mie);
-  reg_t enabled_interrupts = pending_interrupts & ~state.mideleg->read() & -m_enabled;
-  if (enabled_interrupts == 0) {
-    // HS-ints have higher priority over VS-ints
-    const reg_t deleg_to_hs = state.mideleg->read() & ~state.hideleg->read();
-    const reg_t sie = get_field(state.sstatus->read(), MSTATUS_SIE);
-    const reg_t hs_enabled = state.v || state.prv < PRV_S || (state.prv == PRV_S && sie);
-    enabled_interrupts = ((pending_interrupts & deleg_to_hs) | (s_pending_interrupts & ~state.hideleg->read())) & -hs_enabled;
-    if (state.v && enabled_interrupts == 0) {
-      // VS-ints have least priority and can only be taken with virt enabled
-      const reg_t vs_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
-      enabled_interrupts = vs_pending_interrupt & -vs_enabled;
-      if (enabled_interrupts)
-        return true;
-    }
-  }
-  return false;
-}
-
 void processor_t::take_interrupt(reg_t pending_interrupts)
 {
   reg_t s_pending_interrupts = 0;
   reg_t vstopi = 0;
   reg_t vs_pending_interrupt = 0;
 
-  if (extension_enable_table[EXT_SSAIA]) {
+  if (extension_enabled_const(EXT_SSAIA)) {
     s_pending_interrupts = state.nonvirtual_sip->read() & state.nonvirtual_sie->read();
     vstopi = state.vstopi->read();
+    // Legacy VS interrupts (VSEIP/VSTIP/VSSIP) come in through pending_interrupts but are shifted
+    // down 1 in vstopi. AIA-extended and VTI are not shifted. Clear S bits (VS shifted down by 1).
     vs_pending_interrupt = vstopi ? (reg_t(1) << get_field(vstopi, MTOPI_IID)) : 0;
+    vs_pending_interrupt &= ~MIP_S_MASK;
   }
 
   // Do nothing if no pending interrupts
@@ -333,15 +307,15 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
     enabled_interrupts = ((pending_interrupts & deleg_to_hs) | (s_pending_interrupts & ~state.hideleg->read())) & -hs_enabled;
     if (state.v && enabled_interrupts == 0) {
       // VS-ints have least priority and can only be taken with virt enabled
+      const reg_t deleg_to_vs = state.hideleg->read();
       const reg_t vs_enabled = state.prv < PRV_S || (state.prv == PRV_S && sie);
-      enabled_interrupts = vs_pending_interrupt & -vs_enabled;
+      enabled_interrupts = ((pending_interrupts & deleg_to_vs) | vs_pending_interrupt) & -vs_enabled;
     }
   }
 
   const bool nmie = !(state.mnstatus && !get_field(state.mnstatus->read(), MNSTATUS_NMIE));
   if (!state.debug_mode && nmie && enabled_interrupts) {
     reg_t selected_interrupt = select_an_interrupt_with_default_priority(enabled_interrupts);
-
     if (check_triggers_icount) TM.detect_icount_match();
     throw trap_t(((reg_t)1 << (isa.get_max_xlen() - 1)) | ctz(selected_interrupt));
   }
@@ -447,7 +421,6 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
   bool supv_double_trap = false;
   if (interrupt) {
     vsdeleg = (curr_virt && state.prv <= PRV_S) ? state.hideleg->read() : 0;
-    vsdeleg >>= 1;
     hsdeleg = (state.prv <= PRV_S) ? (state.mideleg->read() | state.nonvirtual_sip->read()) : 0;
     bit &= ~((reg_t)1 << (max_xlen - 1));
   } else {
@@ -465,9 +438,17 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     if (supv_double_trap)
       vsdeleg = hsdeleg = 0;
   }
-  if ((state.prv <= PRV_S && bit < max_xlen && ((vsdeleg >> bit) & 1)) || (state.v && interrupt && is_handled_in_vs())) {
+  bool vti = false;
+  if (extension_enabled_const(EXT_SSAIA)) {
+    const reg_t hvictl = state.csrmap[CSR_HVICTL]->read();
+    const reg_t iid = get_field(hvictl, HVICTL_IID);
+    // It is possible that hvictl is injecting VSEIP (10) and hvictl.DPR is causing mip.VSEIP to be picked over VTI.
+    // Check vstopi == hvictl.iid
+    vti = (hvictl & HVICTL_VTI) && iid != IRQ_S_EXT && iid == bit && get_field(state.vstopi->read(), MTOPI_IID) == iid;
+  }
+  if ((state.prv <= PRV_S && bit < max_xlen && ((vsdeleg >> bit) & 1)) || vti) {
     // Handle the trap in VS-mode
-    const reg_t adjusted_cause = bit;
+    const reg_t adjusted_cause = interrupt && bit <= IRQ_VS_EXT && !vti ? bit - 1 : bit;  // VSSIP -> SSIP, etc;
     reg_t vector = (state.vstvec->read() & 1) && interrupt ? 4 * adjusted_cause : 0;
     state.pc = (state.vstvec->read() & ~(reg_t)1) + vector;
     state.vscause->write(adjusted_cause | (interrupt ? interrupt_bit : 0));
