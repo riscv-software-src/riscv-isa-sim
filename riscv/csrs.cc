@@ -2350,9 +2350,15 @@ reg_t aia_ireg_proxy_csr_t::read() const noexcept {
 }
 
 void aia_ireg_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
+  reg_t isel = iselect->read();
   // skip verfy_permissions chaining on a VS reg because the address is remapped
-  if (!vs)
+  if (!vs) {
+    // If the hart has an IMSIC, then when bit 9 of mvien is one, attempts from S-mode to explicitly
+    // access the supervisor-level interrupt file raise an illegal instruction exception.
+    if (state->prv < PRV_M && (state->mvien->read() & MIP_SEIP) && isel >= SISELECT_IMSIC && isel <= SISELECT_IMSIC_TOP)
+      throw trap_illegal_instruction(insn.bits());
     csr_t::verify_permissions(insn, write);
+  }
   if (get_reg() == nullptr) {
     if (state->v)
       throw trap_virtual_instruction(insn.bits());
@@ -2361,7 +2367,6 @@ void aia_ireg_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
   }
   if (proc->extension_enabled(EXT_SMSTATEEN)) {
     // if iselect >= IMSIC and xSTATEEN_IMSIC not set
-    reg_t isel = iselect->read();
     if (!state->v && state->prv < PRV_M && isel >= SISELECT_IMSIC && isel <= SISELECT_IMSIC_TOP && !(state->mstateen[0]->read() & MSTATEEN0_IMSIC))
       throw trap_illegal_instruction(insn.bits());
     if (state->v && isel >= VSISELECT_IMSIC && isel <= VSISELECT_IMSIC_TOP && !(state->hstateen[0]->read() & HSTATEEN0_IMSIC))
@@ -2433,6 +2438,11 @@ void nonvirtual_stopei_csr_t::verify_permissions(insn_t insn, bool write) const 
     if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_IMSIC))
       throw trap_virtual_instruction(insn.bits());
   }
+
+  // If the hart has an IMSIC, then when bit 9 of mvien is one, attempts from S-mode to explicitly
+  // access the supervisor-level interrupt file raise an illegal instruction exception.
+  if (state->prv < PRV_M && (state->mvien->read() & MIP_SEIP))
+    throw trap_illegal_instruction(insn.bits());
 
   csr_t::verify_permissions(insn, write);
 }
