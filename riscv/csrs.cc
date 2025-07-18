@@ -1605,7 +1605,7 @@ bool vxsat_csr_t::unlogged_write(const reg_t val) noexcept {
 }
 
 vfp8_csr_t::vfp8_csr_t(processor_t* const proc, const reg_t addr, vectorUnit_t* vu)
-  : vector_csr_t(proc, addr, /*mask*/ 1, /*init*/ 0), vu(vu) {}
+  : vector_csr_t(proc, addr, /*mask*/ 7, /*init*/ 0), vu(vu) {}
 
 reg_t vfp8_csr_t::read() const noexcept {
   return vu->altfp;
