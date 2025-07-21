@@ -22,3 +22,4 @@ spike_main_CFLAGS = -fPIC -I/usr/share/verilator/include -I/usr/share/verilator/
 # This hack adds all symbols from extension.o to spike's dynamic symbol
 # table, which is required for dynamically loaded --extension libraries
 spike_main_LDFLAGS = extension.o
+spike_main_extra_libs = $(BOOST_LIBS)

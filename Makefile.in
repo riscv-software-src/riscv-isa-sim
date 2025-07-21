@@ -123,7 +123,8 @@ all-link-flags := $(mcppbs-LDFLAGS) $(LDFLAGS)
 
 comma := ,
 LD            := $(CXX)
-LIBS          := @LIBS@ @BOOST_ASIO_LIB@ @BOOST_REGEX_LIB@
+BOOST_LIBS    := @BOOST_ASIO_LIB@ @BOOST_REGEX_LIB@
+LIBS          := $(filter-out -lboost_system -lboost_regex,@LIBS@) -static-libgcc -static-libstdc++
 LINK          := $(LD) -L. $(all-link-flags) -Wl,-rpath,$(install_libs_dir) $(patsubst -L%,-Wl$(comma)-rpath$(comma)%,$(filter -L%,$(LDFLAGS)))
 
 # Library creation
@@ -264,7 +265,7 @@ $$($(2)_test_objs) : %.o : %.cc
 	$(COMPILE) -c $$<
 
 $$($(2)_test_exes) : %-utst : %.t.o $$($(2)_test_libnames)
-	$(LINK) $$($(2)_LDFLAGS) -o $$@ $$< $$($(2)_test_libnames) $(LIBS)
+	$(LINK) $$($(2)_LDFLAGS) -o $$@ $$< $$($(2)_test_libnames) $(LIBS) $$($(2)_extra_libs)
 
 $(2)_deps += $$($(2)_test_deps)
 $(2)_junk += \
@@ -287,12 +288,13 @@ $(2)_prog_exes      := $$(patsubst %.cc, %, $$($(2)_prog_srcs))
 $(2)_prog_libs      := $(1) $$($(2)_reverse_deps)
 $(2)_prog_libnames  := $$(patsubst %, lib%.a, $$($(2)_prog_libs))
 $(2)_prog_libarg    := $$(patsubst %, -l%, $$($(2)_prog_libs))
+$(2)_extra_libs     ?=
 
 $$($(2)_prog_objs) : %.o : %.cc
 	$(COMPILE) -c $$<
 
 $$($(2)_prog_exes) : % : %.o $$($(2)_prog_libnames)
-	$(LINK) $$($(2)_LDFLAGS) -o $$@ $$< $$($(2)_prog_libnames) $(LIBS)
+	$(LINK) $$($(2)_LDFLAGS) -o $$@ $$< $$($(2)_prog_libnames) $(LIBS) $$($(2)_extra_libs)
 
 $(2)_deps += $$($(2)_prog_deps)
 $(2)_junk += $$($(2)_prog_objs) $$($(2)_prog_deps) $$($(2)_prog_exes)
@@ -307,7 +309,7 @@ $$($(2)_install_prog_objs) : %.o : %.cc $$($(2)_gen_hdrs)
 	$(COMPILE) -c $$<
 
 $$($(2)_install_prog_exes) : % : %.o $$($(2)_prog_libnames)
-	$(LINK) $$($(2)_LDFLAGS) -o $$@ $$< $$($(2)_prog_libnames) $(LIBS)
+	$(LINK) $$($(2)_LDFLAGS) -o $$@ $$< $$($(2)_prog_libnames) $(LIBS) $$($(2)_extra_libs)
 
 $(2)_deps += $$($(2)_install_prog_deps)
 $(2)_junk += \
