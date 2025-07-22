@@ -416,6 +416,46 @@ const char* sim_t::get_symbol(uint64_t paddr)
   return htif_t::get_symbol(paddr);
 }
 
+std::vector<std::string> sim_t::get_all_symbols(uint64_t paddr)
+{
+  return htif_t::get_all_symbols(paddr);
+}
+
+void sim_t::process_label_intrinsic(const state_t &state, const std::string &sym) {
+  size_t dot_pos = sym.find('.');
+  auto prefix = sym.substr(0, dot_pos);
+  if (prefix == "printreg")
+    process_print_register_label_intrinsic(state, sym.substr(dot_pos + 1));
+}
+
+void sim_t::process_print_register_label_intrinsic(const state_t &state, const std::string &sym) {
+  size_t dot_pos = sym.find('.');
+  if (dot_pos != std::string::npos) {
+    std::string reg_str = sym.substr(1, dot_pos - 1);
+    std::string id_str = sym.substr(dot_pos + 1, std::string::npos - dot_pos - 1);
+  
+    int reg_num = std::stoi(reg_str);
+    if (reg_num >= 0 && reg_num < 32)
+      htif_t::log_label_intrinsic_output() << id_str << "=0x" << std::hex << state.XPR[reg_num] << std::endl;
+  }
+}
+
+void sim_t::process_intrinsic_labels_pre_addr(const state_t &state, uint64_t addr) {
+  for (const std::string &sym : get_all_symbols(addr)) {
+    std::string prefix("spike.pre.");
+    if (sym.substr(0, prefix.size()) == prefix)
+      process_label_intrinsic(state, sym.substr(prefix.size()));
+  }
+}
+
+void sim_t::process_intrinsic_labels_post_addr(const state_t &state, uint64_t addr) {
+  for (const std::string &sym : get_all_symbols(addr)) {
+    std::string prefix("spike.post.");
+    if (sym.substr(0, prefix.size()) == prefix)
+      process_label_intrinsic(state, sym.substr(prefix.size()));
+  }
+}
+
 // htif
 
 void sim_t::reset()
