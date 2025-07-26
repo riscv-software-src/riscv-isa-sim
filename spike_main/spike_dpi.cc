@@ -9,6 +9,8 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <stdexcept>
+#include <cstdlib>
 #include "decode_macros.h"
 #include "disasm.h"
 
@@ -29,6 +31,7 @@
 /* User-selected ISA string (from --isa option) */
 static std::string g_isa_override;
 static std::unique_ptr<cfg_t> g_cfg;
+static std::string g_dtb_file; /* optional precompiled DTB path */
 
 /* Simple memory allocator copied from spike_main */
 static std::vector<std::pair<reg_t, abstract_mem_t*>>
@@ -54,6 +57,8 @@ build_sim(const std::vector<std::string>& argv,
     if (!g_isa_override.empty())
         g_cfg->isa = g_isa_override.c_str();
 
+   const char* dtb_path = g_dtb_file.empty() ? nullptr : g_dtb_file.c_str();
+
     return std::make_unique<sim_t>(          // Call the sim_t constructor
         g_cfg.get(),                         // halted_at_reset = false
         false,
@@ -61,7 +66,7 @@ build_sim(const std::vector<std::string>& argv,
         std::vector<device_factory_sargs_t>{},             // no extra IO
         argv,                                // command-line arguments
         debug_module_config_t{}, nullptr,    // default DM
-        true, nullptr,                       // no DTB
+        true, dtb_path,                       // no DTB
         false, nullptr,                      // no socket server
         std::nullopt);                       // unlimited trace
 }
@@ -234,11 +239,24 @@ private:
 /* Single global instance */
 static std::unique_ptr<SpikeDpiWrapper> g_spike;
 
+extern "C" void spike_set_dtb_file(const char* path)
+{
+    if (path)
+        g_dtb_file = path;
+    else
+        g_dtb_file.clear();
+}
+
 /* ===================================================================== */
 /*                          DPI-visible shims                            */
 /* ===================================================================== */
 extern "C" void spike_setup(long long /*argc*/, const char* argv_flat)
 {
+    if (g_dtb_file.empty()) {
+        const char* env = std::getenv("SPIKE_DTB_FILE");
+        if (env && *env)
+            g_dtb_file = env;
+    }
     /* Tokenise argv_flat (space separated). */
     std::vector<std::string> toks;
     std::string cur;
@@ -269,11 +287,16 @@ extern "C" void spike_setup(long long /*argc*/, const char* argv_flat)
     for (auto& s : args)
         c_argv.push_back(s.c_str());
 
-    g_spike = std::make_unique<SpikeDpiWrapper>(c_argv.size(), c_argv.data());
+    try {
+        g_spike = std::make_unique<SpikeDpiWrapper>(c_argv.size(), c_argv.data());
+    } catch (const std::exception& e) {
+        std::cerr << "Spike setup failed: " << e.what() << std::endl;
+        g_spike.reset();
+    }
 }
 
 extern "C" void start_execution()                         { g_spike->run();            }
-extern "C" void do_step(unsigned long long n)             { g_spike->step(n);          }
+extern "C" void do_step(long long n)                      { g_spike->step(n);          }
 extern "C" int  exit_code()                               { return g_spike->exit_code(); }
 
 extern "C" uint64_t spike_get_pc(unsigned hart)
