@@ -9,6 +9,7 @@
 #include <iostream>
 #include <sstream>
 #include <iomanip>
+#include <algorithm>
 #include <stdexcept>
 #include <cstdlib>
 #include "decode_macros.h"
@@ -59,16 +60,51 @@ build_sim(const std::vector<std::string>& argv,
 
    const char* dtb_path = g_dtb_file.empty() ? nullptr : g_dtb_file.c_str();
 
-    return std::make_unique<sim_t>(          // Call the sim_t constructor
-        g_cfg.get(),                         // halted_at_reset = false
+    return std::make_unique<sim_t>(            // Call the sim_t constructor
+        g_cfg.get(),                           // halted_at_reset = false
         false,
-        std::move(mems),                    // main memory
-        std::vector<device_factory_sargs_t>{},             // no extra IO
-        argv,                                // command-line arguments
-        debug_module_config_t{}, nullptr,    // default DM
-        true, dtb_path,                       // no DTB
-        false, nullptr,                      // no socket server
-        std::nullopt);                       // unlimited trace
+        std::move(mems),                       // main memory
+        std::vector<device_factory_sargs_t>{}, // no extra IO
+        argv,                                  // command-line arguments
+        debug_module_config_t{}, nullptr,      // default DM
+        true, dtb_path,                        // no DTB
+        false, nullptr,                        // no socket server
+        std::nullopt);                         // unlimited trace
+}
+
+/* Parse a comma-separated list of hart IDs, as in spike_main */
+static std::vector<size_t> parse_hartids(const char* s)
+{
+    std::string str(s);
+    std::stringstream stream(str);
+    std::vector<size_t> hartids;
+
+    int n;
+    while (stream >> n) {
+        if (n < 0) {
+            fprintf(stderr, "Negative hart ID %d is unsupported\n", n);
+            exit(-1);
+        }
+
+        hartids.push_back(n);
+        if (stream.peek() == ',')
+            stream.ignore();
+    }
+
+    if (hartids.empty()) {
+        fprintf(stderr, "No hart IDs specified\n");
+        exit(-1);
+    }
+
+    std::sort(hartids.begin(), hartids.end());
+
+    auto dup = std::adjacent_find(hartids.begin(), hartids.end());
+    if (dup != hartids.end()) {
+        fprintf(stderr, "Duplicate hart ID %zu\n", *dup);
+        exit(-1);
+    }
+
+    return hartids;
 }
 
 /* ================================================================= */
@@ -257,6 +293,8 @@ extern "C" void spike_setup(long long /*argc*/, const char* argv_flat)
         if (env && *env)
             g_dtb_file = env;
     }
+    if (!g_cfg)
+        g_cfg = std::make_unique<cfg_t>();
     /* Tokenise argv_flat (space separated). */
     std::vector<std::string> toks;
     std::string cur;
@@ -277,10 +315,16 @@ extern "C" void spike_setup(long long /*argc*/, const char* argv_flat)
     /* Build argv for Spike.  argv[0] should always be program name so
      * that htif option parsing works.  Strip --isa here and remember it. */
     for (const auto& t : toks) {
-        if (t.rfind("--isa=", 0) == 0)
+        if (t.rfind("--isa=", 0) == 0) {
             g_isa_override = t.substr(6);
-        else
+        } else if (t.rfind("--pc=", 0) == 0) {
+            g_cfg->start_pc = strtoull(t.c_str() + 5, nullptr, 0);
+        } else if (t.rfind("--hartids=", 0) == 0) {
+            g_cfg->hartids = parse_hartids(t.c_str() + 10);
+            g_cfg->explicit_hartids = true;
+        } else {
             args.push_back(t);
+        }
     }
 
     std::vector<const char*> c_argv;
