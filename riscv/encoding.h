@@ -358,7 +358,9 @@
 #define PMP_A     0x18
 #define PMP_L     0x80
 #define PMP_SHIFT 2
+#define PMP_ADDR_BITS  54
 
+#define PMP_OFF   0x00
 #define PMP_TOR   0x08
 #define PMP_NA4   0x10
 #define PMP_NAPOT 0x18

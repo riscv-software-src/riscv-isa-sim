@@ -103,9 +103,19 @@ void pmpaddr_csr_t::verify_permissions(insn_t insn, bool write) const {
 }
 
 reg_t pmpaddr_csr_t::read() const noexcept {
-  if ((cfg & PMP_A) >= PMP_NAPOT)
-    return val | (~proc->pmp_tor_mask() >> 1);
-  return val & proc->pmp_tor_mask();
+  reg_t G = proc->lg_pmp_granularity;
+  uint8_t mode = cfg & PMP_A;
+  if (G >= 2 && mode == PMP_NAPOT) {
+    uint64_t mask =
+        make_mask64(0, std::min((unsigned int)(G - 1), proc->get_xlen()));
+    return val | mask;
+  } else if (G >= 1 && (mode == PMP_TOR | mode == PMP_OFF)) {
+    uint64_t mask =
+        make_mask64(0, std::min((unsigned int)(G), proc->get_xlen()));
+    return val & ~mask;
+  } else {
+    return val;
+  }
 }
 
 bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
@@ -121,7 +131,7 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
   const bool locked = !lock_bypass && (cfg & PMP_L);
 
   if (pmpidx < proc->n_pmp && !locked && !next_locked_and_tor()) {
-    this->val = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
+    this->val = val & ((reg_t(1) << PMP_ADDR_BITS) - 1);
   }
   else
     return false;
