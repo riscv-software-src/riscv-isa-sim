@@ -337,22 +337,16 @@ void sim_t::set_procs_debug(bool value)
     procs[i]->set_debug(value);
 }
 
-static bool paddr_ok(reg_t addr)
-{
-  static_assert(MAX_PADDR_BITS == 8 * sizeof(addr));
-  return true;
-}
-
 bool sim_t::mmio_load(reg_t paddr, size_t len, uint8_t* bytes)
 {
-  if (paddr + len < paddr || !paddr_ok(paddr + len - 1))
+  if (paddr + len < paddr)
     return false;
   return bus.load(paddr, len, bytes);
 }
 
 bool sim_t::mmio_store(reg_t paddr, size_t len, const uint8_t* bytes)
 {
-  if (paddr + len < paddr || !paddr_ok(paddr + len - 1))
+  if (paddr + len < paddr)
     return false;
   return bus.store(paddr, len, bytes);
 }
@@ -403,8 +397,6 @@ void sim_t::set_rom()
 }
 
 char* sim_t::addr_to_mem(reg_t paddr) {
-  if (!paddr_ok(paddr))
-    return NULL;
   auto desc = bus.find_device(paddr >> PGSHIFT << PGSHIFT, PGSIZE);
   if (auto mem = dynamic_cast<abstract_mem_t*>(desc.second))
     return mem->contents(paddr - desc.first);
