@@ -273,6 +273,7 @@ public:
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
   unsigned get_xlen() const { return xlen; }
+  unsigned paddr_bits() { return isa.get_max_xlen() == 64 ? 56 : 34; }
   unsigned get_const_xlen() const {
     // Any code that assumes a const xlen should use this method to
     // document that assumption. If Spike ever changes to allow
@@ -421,7 +422,6 @@ private:
   void take_trigger_action(triggers::action_t action, reg_t breakpoint_tval, reg_t epc, bool virt);
   void disasm(insn_t insn); // disassemble and print an instruction
   void register_insn(insn_desc_t, bool);
-  int paddr_bits();
 
   void enter_debug_mode(uint8_t cause, uint8_t ext_cause);
 

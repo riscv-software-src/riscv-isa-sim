@@ -121,7 +121,7 @@ bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
   const bool locked = !lock_bypass && (cfg & PMP_L);
 
   if (pmpidx < proc->n_pmp && !locked && !next_locked_and_tor()) {
-    this->val = val & ((reg_t(1) << (MAX_PADDR_BITS - PMP_SHIFT)) - 1);
+    this->val = val & ((reg_t(1) << (proc->paddr_bits() - PMP_SHIFT)) - 1);
   }
   else
     return false;
@@ -1098,7 +1098,7 @@ bool base_atp_csr_t::satp_valid(reg_t val) const noexcept {
 }
 
 reg_t base_atp_csr_t::compute_new_satp(reg_t val) const noexcept {
-  reg_t rv64_ppn_mask = (reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1;
+  reg_t rv64_ppn_mask = (reg_t(1) << (proc->paddr_bits() - PGSHIFT)) - 1;
 
   reg_t mode_mask = proc->get_xlen() == 32 ? SATP32_MODE : SATP64_MODE;
   reg_t asid_mask_if_enabled = proc->get_xlen() == 32 ? SATP32_ASID : SATP64_ASID;
@@ -1326,7 +1326,7 @@ bool hgatp_csr_t::unlogged_write(const reg_t val) noexcept {
         HGATP32_MODE |
         (proc->supports_impl(IMPL_MMU_VMID) ? HGATP32_VMID : 0);
   } else {
-    mask = (HGATP64_PPN & ((reg_t(1) << (MAX_PADDR_BITS - PGSHIFT)) - 1)) |
+    mask = (HGATP64_PPN & ((reg_t(1) << (proc->paddr_bits() - PGSHIFT)) - 1)) |
         (proc->supports_impl(IMPL_MMU_VMID) ? HGATP64_VMID : 0);
 
     if (get_field(val, HGATP64_MODE) == HGATP_MODE_OFF ||

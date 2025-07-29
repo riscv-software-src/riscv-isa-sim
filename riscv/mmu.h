@@ -18,7 +18,6 @@
 // virtual memory configuration
 #define PGSHIFT 12
 const reg_t PGSIZE = 1 << PGSHIFT;
-#define MAX_PADDR_BITS 64
 
 // observability hooks for load, store and fetch
 // intentionally empty not to cause runtime overhead
