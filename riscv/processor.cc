@@ -626,13 +626,6 @@ void processor_t::disasm(insn_t insn)
   }
 }
 
-int processor_t::paddr_bits()
-{
-  unsigned max_xlen = isa.get_max_xlen();
-  assert(xlen == max_xlen);
-  return max_xlen == 64 ? 50 : 34;
-}
-
 void processor_t::put_csr(int which, reg_t val)
 {
   val = zext_xlen(val);
