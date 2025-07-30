@@ -237,7 +237,7 @@ $(2)_reverse_deps   := $$(call reverse_list,$$($(2)_subproject_deps))
 # Build a library for this subproject
 
 $(2)_lib_libs       := $$($(2)_reverse_deps)
-$(2)_lib_libnames   := $$(patsubst %, lib%.a, $$($(2)_lib_libs))
+$(2)_lib_libnames   := $$(patsubst %, lib%.so, $$($(2)_lib_libs))
 $(2)_lib_libarg     := $$(patsubst %, -l%, $$($(2)_lib_libs))
 $(2)_lib_libnames_shared	:= $$(if $$($(2)_install_shared_lib),lib$(1).so,)
 
@@ -247,7 +247,7 @@ lib$(1).a : $$($(2)_objs) $$($(2)_c_objs)
 lib$(1).so : $$($(2)_objs) $$($(2)_c_objs) $$($(2)_lib_libnames_shared) $$($(2)_lib_libnames)
 	$(LINK) -shared -o $$@ $(if $(filter Darwin,$(shell uname -s)),-install_name $(install_libs_dir)/$$@) $$^ $$($(2)_lib_libnames) $(LIBS)
 
-$(2)_junk += lib$(1).a
+$(2)_junk += lib$(1).so
 $(2)_junk += $$(if $$($(2)_install_shared_lib),lib$(1).so,)
 
 # Build unit tests
@@ -256,8 +256,8 @@ $(2)_test_objs      := $$(patsubst %.cc, %.o, $$($(2)_test_srcs))
 $(2)_test_deps      := $$(patsubst %.o, %.d, $$($(2)_test_objs))
 $(2)_test_exes      := $$(patsubst %.t.cc, %-utst, $$($(2)_test_srcs))
 $(2)_test_outs      := $$(patsubst %, %.out, $$($(2)_test_exes))
-$(2)_test_libs      := $(1) $$($(2)_reverse_deps)
-$(2)_test_libnames  := $$(patsubst %, lib%.a, $$($(2)_test_libs))
+$(2)_test_libs      := $$($(2)_reverse_deps)
+$(2)_test_libnames  := lib%(1).a $$(patsubst %, lib%.so, $$($(2)_test_libs))
 $(2)_test_libarg    := $$(patsubst %, -l%, $$($(2)_test_libs))
 
 $$($(2)_test_objs) : %.o : %.cc
@@ -284,8 +284,8 @@ $(2)_junk += $$($(2)_test_outs)
 $(2)_prog_objs      := $$(patsubst %.cc, %.o, $$($(2)_prog_srcs))
 $(2)_prog_deps      := $$(patsubst %.o, %.d, $$($(2)_prog_objs))
 $(2)_prog_exes      := $$(patsubst %.cc, %, $$($(2)_prog_srcs))
-$(2)_prog_libs      := $(1) $$($(2)_reverse_deps)
-$(2)_prog_libnames  := $$(patsubst %, lib%.a, $$($(2)_prog_libs))
+$(2)_prog_libs      := $$($(2)_reverse_deps)
+$(2)_prog_libnames  := lib$(1).a $$(patsubst %, lib%.so, $$($(2)_prog_libs))
 $(2)_prog_libarg    := $$(patsubst %, -l%, $$($(2)_prog_libs))
 
 $$($(2)_prog_objs) : %.o : %.cc
@@ -335,8 +335,7 @@ test_outs += $$($(2)_test_outs)
 
 install_config_hdrs += $$(if $$($(2)_install_config_hdr),$(1),)
 install_hdrs += $$(addprefix $(src_dir)/$(1)/, $$($(2)_install_hdrs))
-install_libs += $$(if $$($(2)_install_lib),lib$(1).a,)
-install_libs += $$(if $$($(2)_install_shared_lib),lib$(1).so,)
+install_libs += lib$(1).so
 install_exes += $$($(2)_install_prog_exes)
 install_pcs  += $$(if $$($(2)_install_pcs),riscv-$(1).pc,)
 
