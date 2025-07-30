@@ -361,4 +361,4 @@ ns16550_t* ns16550_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base
   }
 }
 
-REGISTER_DEVICE(ns16550, ns16550_parse_from_fdt, ns16550_generate_dts)
+REGISTER_BUILTIN_DEVICE(ns16550, ns16550_parse_from_fdt, ns16550_generate_dts)

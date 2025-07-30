@@ -145,4 +145,4 @@ std::string clint_generate_dts(const sim_t* sim, const std::vector<std::string>&
   return s.str();
 }
 
-REGISTER_DEVICE(clint, clint_parse_from_fdt, clint_generate_dts)
+REGISTER_BUILTIN_DEVICE(clint, clint_parse_from_fdt, clint_generate_dts)

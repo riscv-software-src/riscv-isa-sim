@@ -46,4 +46,11 @@ mmio_device_map_t& mmio_device_map();
   std::string generate_dts(const sim_t* sim, const std::vector<std::string>& sargs) const override { return generate(sim, sargs); } \
   }; device_factory_t *name##_factory = new name##_factory_t();
 
+#define REGISTER_BUILTIN_DEVICE(name, parse, generate) \
+  class name##_factory_t : public device_factory_t { \
+  public: \
+  name##_t* parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& sargs) const override { return parse(fdt, sim, base, sargs); } \
+  std::string generate_dts(const sim_t* sim, const std::vector<std::string>& sargs) const override { return generate(sim, sargs); } \
+  }; device_factory_t *name##_factory = new name##_factory_t();
+
 #endif

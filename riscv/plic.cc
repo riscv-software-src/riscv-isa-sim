@@ -436,4 +436,4 @@ plic_t* plic_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, cons
     return nullptr;
 }
 
-REGISTER_DEVICE(plic, plic_parse_from_fdt, plic_generate_dts)
+REGISTER_BUILTIN_DEVICE(plic, plic_parse_from_fdt, plic_generate_dts)
