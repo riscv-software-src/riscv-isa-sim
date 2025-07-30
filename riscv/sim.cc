@@ -118,8 +118,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   // particular, the default device tree configuration that you get without
   // setting the dtb_file argument has one.
   std::vector<device_factory_sargs_t> device_factories = {
-    {clint_factory, {}}, // clint must be element 0
-    {plic_factory, {}}, // plic must be element 1
+    {clint_factory, {}},
+    {plic_factory, {}},
     {ns16550_factory, {}}};
   device_factories.insert(device_factories.end(),
                           plugin_device_factories.begin(),
@@ -253,10 +253,15 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       std::shared_ptr<abstract_device_t> dev_ptr(device);
       add_device(device_base, dev_ptr);
 
-      if (i == 0) // clint_factory
+      if (dynamic_cast<clint_t*>(&*dev_ptr)) {
+        assert(!clint);
         clint = std::static_pointer_cast<clint_t>(dev_ptr);
-      else if (i == 1) // plic_factory
+      }
+
+      if (dynamic_cast<plic_t*>(&*dev_ptr)) {
+        assert(!plic);
         plic = std::static_pointer_cast<plic_t>(dev_ptr);
+      }
     }
   }
 }
