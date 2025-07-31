@@ -369,8 +369,18 @@ void mmu_t::store_slow_path(reg_t original_addr, reg_t len, const uint8_t* bytes
     store_slow_path_intrapage(len, bytes, access_info, actually_store);
   }
 
-  if (actually_store && proc && unlikely(proc->get_log_commits_enabled()))
-    proc->state.log_mem_write.push_back(std::make_tuple(original_addr, reg_from_bytes(len, bytes), len));
+  if (actually_store && proc && unlikely(proc->get_log_commits_enabled())) {
+    // amocas.q sends len == 16, reg_from_bytes only supports up to 8
+    // bytes per conversion.  Make multiple entries in the log
+    reg_t offset = 0;
+    const auto reg_size = sizeof(reg_t);
+    while (unlikely(len > reg_size)) {
+      proc->state.log_mem_write.push_back(std::make_tuple(original_addr + offset, reg_from_bytes(reg_size, bytes + offset), reg_size));
+      offset += reg_size;
+      len -= reg_size;
+    }
+    proc->state.log_mem_write.push_back(std::make_tuple(original_addr + offset, reg_from_bytes(len, bytes + offset), len));
+  }
 }
 
 tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type)
