@@ -430,6 +430,17 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     auto sireg = std::make_shared<sscsrind_reg_csr_t>(proc, CSR_SIREG, siselect);
     add_ireg_proxy(proc, sireg);
     add_supervisor_csr(CSR_SIREG, std::make_shared<virtualized_indirect_csr_t>(proc, sireg, vsireg));
+    if (proc->extension_enabled(EXT_SSCCFG) || proc->extension_enabled(EXT_SMCDELEG)) {
+      // case CSR_SIREG
+      if (proc->extension_enabled_const(EXT_ZICNTR)) {
+        sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, mcycle);
+        sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, minstret);
+      }
+      if (proc->extension_enabled_const(EXT_ZIHPM)) {
+        for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3 + 1); j++)
+          sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMCOUNTER_3 + j, csrmap[CSR_HPMCOUNTER3 + j]);
+      }
+    }
 
     const reg_t vsireg_csrs[] = { CSR_VSIREG2, CSR_VSIREG3, CSR_VSIREG4, CSR_VSIREG5, CSR_VSIREG6 };
     const reg_t sireg_csrs[] = { CSR_SIREG2, CSR_SIREG3, CSR_SIREG4, CSR_SIREG5, CSR_SIREG6 };
@@ -443,16 +454,6 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
       // Smcdeleg
       if (proc->extension_enabled(EXT_SSCCFG) || proc->extension_enabled(EXT_SMCDELEG)) {
         switch (sireg_csrs[i]) {
-          case CSR_SIREG:
-            if (proc->extension_enabled_const(EXT_ZICNTR)) {
-              sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, mcycle);
-              sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, minstret);
-            }
-            if (proc->extension_enabled_const(EXT_ZIHPM)) {
-              for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3 + 1); j++)
-                sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMCOUNTER_3 + j, csrmap[CSR_HPMCOUNTER3 + j]);
-            }
-            break;
           case CSR_SIREG4:
           if (xlen == 32) {
             if (proc->extension_enabled_const(EXT_ZICNTR)) {
