@@ -93,8 +93,8 @@ void ns16550_t::update_interrupt(void)
   uint8_t interrupts = 0;
 
   /* Handle clear rx */
-  if (lcr & UART_FCR_CLEAR_RCVR) {
-    lcr &= ~UART_FCR_CLEAR_RCVR;
+  if (fcr & UART_FCR_CLEAR_RCVR) {
+    fcr &= ~UART_FCR_CLEAR_RCVR;
     while (!rx_queue.empty()) {
       rx_queue.pop();
     }
@@ -102,8 +102,8 @@ void ns16550_t::update_interrupt(void)
   }
 
   /* Handle clear tx */
-  if (lcr & UART_FCR_CLEAR_XMIT) {
-    lcr &= ~UART_FCR_CLEAR_XMIT;
+  if (fcr & UART_FCR_CLEAR_XMIT) {
+    fcr &= ~UART_FCR_CLEAR_XMIT;
     lsr |= UART_LSR_TEMT | UART_LSR_THRE;
   }
 
