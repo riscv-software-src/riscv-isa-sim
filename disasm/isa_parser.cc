@@ -368,6 +368,9 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
         bad_isa_string(str, ("Invalid Zvl string: " + ext_str).c_str());
       vlen = std::max(vlen, new_vlen);
     } else if (ext_str.substr(0, 3) == "zve") {
+      if (ext_str.size() != 6) {
+	bad_isa_string(str, ("Invalid Zve string: " + ext_str).c_str());
+      }
       reg_t new_elen;
       try {
         new_elen = safe_stoul(ext_str.substr(3, ext_str.size() - 4));
