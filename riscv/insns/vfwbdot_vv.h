@@ -3,7 +3,7 @@ require_fp;
 
 switch (P.VU.vsew) {
   case 16: {
-    if (P.VU.altfmt()) {
+    if (P.VU.altfmt) {
       // TODO replace with bulk-norm routine and invoke ZVBDOT_LOOP instead of ZVBDOT_GENERIC_LOOP
       require_extension(EXT_ZVFWBDOT16BF);
       auto macc = [](auto a, auto b, auto c) { return f32_add(c, f32_mul(bf16_to_f32(a), bf16_to_f32(b))); };
