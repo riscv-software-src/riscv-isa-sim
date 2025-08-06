@@ -64,10 +64,10 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     require(0); \
   } \
 
-  #define require_zvfbfa_sew8 \
+  #define require_zvfbfa_vsew8 \
     require((P.VU.altfmt == 1 && !p->extension_enabled(EXT_ZVFBFA) && P.VU.vsew != 8) ? false : true);
 
-  #define require_zvfbfa_sew16 \
+  #define require_zvfbfa_vsew16 \
     require((P.VU.altfmt == 1 && !p->extension_enabled(EXT_ZVFBFA) && P.VU.vsew != 16) ? false : true);
 
 

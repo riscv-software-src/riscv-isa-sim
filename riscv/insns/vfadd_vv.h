@@ -1,5 +1,5 @@
 // vfadd.vv vd, vs2, vs1
-require_zvfbfa_sew16
+require_zvfbfa_vsew16
 
 VI_VFP_VV_LOOP
 ({

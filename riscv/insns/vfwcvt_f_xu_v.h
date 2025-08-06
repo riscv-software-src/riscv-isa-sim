@@ -1,5 +1,5 @@
 // vfwcvt.f.xu.v vd, vs2, vm
-require_zvfbfa_sew8
+require_zvfbfa_vsew8
 
 VI_VFP_WCVT_INT_TO_FP(
   { vd = P.VU.altfmt ? ui32_to_bf16(vs2) : ui32_to_f16(vs2); },                    // BODY8

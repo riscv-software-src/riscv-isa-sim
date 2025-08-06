@@ -1,5 +1,5 @@
 // vfncvt.xu.f.w vd, vs2, vm
-require_zvfbfa_sew8
+require_zvfbfa_vsew8
 
 VI_VFP_NCVT_FP_TO_INT(
   { vd = P.VU.altfmt ? bf16_to_ui8(vs2, softfloat_roundingMode, true)
