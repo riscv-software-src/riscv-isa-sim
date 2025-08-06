@@ -98,6 +98,7 @@ public:
   reg_t vma, vta;
   reg_t vsew;
   float vflmul;
+  reg_t altfmt;
   reg_t ELEN, VLEN;
   bool vill;
   bool vstart_alu;
@@ -139,6 +140,7 @@ public:
     vta(0),
     vsew(0),
     vflmul(0),
+    altfmt(0),
     ELEN(0),
     VLEN(0),
     vill(false),
