@@ -64,8 +64,12 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     require(0); \
   } \
 
-  #define require_zvfbfa \
-    require((P.VU.altfmt == 1 && !p->extension_enabled(EXT_ZVFBFA)) ? false : true);
+  #define require_zvfbfa_sew8 \
+    require((P.VU.altfmt == 1 && !p->extension_enabled(EXT_ZVFBFA) && P.VU.vsew != 8) ? false : true);
+
+  #define require_zvfbfa_sew16 \
+    require((P.VU.altfmt == 1 && !p->extension_enabled(EXT_ZVFBFA) && P.VU.vsew != 16) ? false : true);
+
 
 #define VI_NARROW_CHECK_COMMON \
   require_vector(true); \
