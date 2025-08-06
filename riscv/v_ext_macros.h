@@ -1896,7 +1896,7 @@ VI_VX_ULOOP({ \
   VI_VFP_LOOP_END
 
 #define VI_VFP_LOOP_SCALE_BASE \
-  VI_VFP_COMMON \
+  VI_VFP_BASE; \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP();
 
