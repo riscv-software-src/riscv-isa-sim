@@ -101,7 +101,8 @@ public:
   reg_t ELEN, VLEN;
   bool vill;
   bool vstart_alu;
-  bool altfmt_supported = false;
+  bool altfmt_supported_sew8 = false;
+  bool altfmt_supported_sew16 = false;
 
   // vector element for various SEW
   template<class T> T& elt(reg_t vReg, reg_t n, bool is_write = false);
