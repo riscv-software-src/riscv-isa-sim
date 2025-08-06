@@ -156,6 +156,8 @@ public:
   reg_t get_elen() { return ELEN; }
   reg_t get_slen() { return VLEN; }
 
+  bool altfmt() { return vtype->read() & 0x100; }
+
   VRM get_vround_mode() {
     return (VRM)(vxrm->read());
   }

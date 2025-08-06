@@ -39,9 +39,16 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
     vta = extract64(newType, 6, 1);
     vma = extract64(newType, 7, 1);
 
+    bool altfmt_supported =
+      p->extension_enabled(EXT_ZVQBDOT8I) ||
+      p->extension_enabled(EXT_ZVQBDOT16I) ||
+      p->extension_enabled(EXT_ZVFWBDOT16BF) ||
+      false;
+
     vill = !(vflmul >= 0.125 && vflmul <= 8)
            || vsew > std::min(vflmul, 1.0f) * ELEN
-           || (newType >> 8) != 0
+           || (newType >> 9) != 0
+           || (!altfmt_supported && (newType & 0x100))
            || (rd == 0 && rs1 == 0 && old_vlmax != vlmax);
 
     if (vill) {

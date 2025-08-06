@@ -4,6 +4,7 @@
 #define _RISCV_V_EXT_MACROS_H
 
 #include "vector_unit.h"
+#include <functional>
 
 //
 // vector: masking skip helper
@@ -2088,6 +2089,50 @@ VI_VX_ULOOP({ \
       require(0); \
       break; \
   }
+
+#define ZVBDOT_INIT(widen) \
+  unsigned vd_eew = P.VU.vsew * (widen); \
+  unsigned vd_emul = std::max(1U, unsigned((8 * vd_eew) / P.VU.VLEN)); \
+  unsigned vs2 = insn.rs2() & ~7; \
+  unsigned ci = (insn.rs2() & 7) * 8; \
+  require_vector(true); \
+  require(P.VU.vstart->read() == 0); \
+  require(P.VU.vflmul == 1); \
+  require(ci * vd_eew < P.VU.VLEN); \
+  require_align(insn.rd(), vd_emul); \
+  require_vm; \
+  require_noover(insn.rd(), vd_emul, insn.rs1(), 1); \
+  require_noover(insn.rd(), vd_emul, vs2, 8)
+
+template<typename a_t, typename b_t, typename c_t>
+c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_t c, std::function<c_t(a_t, b_t, c_t)> macc)
+{
+  for (size_t i = 0; i < a.size(); i++)
+    c = macc(a[i], b[i], c);
+  return c;
+}
+
+#define ZVBDOT_LOOP(a_t, b_t, c_t, dot) \
+  for (reg_t idx = 0; idx < 8; idx++) { \
+    reg_t i = ci + idx; \
+    VI_LOOP_ELEMENT_SKIP(); \
+    std::vector<a_t> a(P.VU.vl->read(), a_t()); \
+    std::vector<b_t> b(P.VU.vl->read(), b_t()); \
+    for (reg_t k = 0; k < a.size(); k++) { \
+      a[k] = P.VU.elt<a_t>(insn.rs1(), k); \
+      b[k] = P.VU.elt<b_t>(vs2 + idx, k); \
+    } \
+    auto& acc = P.VU.elt<c_t>(insn.rd(), i, true); \
+    acc = dot(a, b, acc); \
+  }
+
+#define ZVBDOT_GENERIC_LOOP(a_t, b_t, c_t, macc) \
+  auto dot = std::bind(generic_dot_product<a_t, b_t, c_t>, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, macc); \
+  ZVBDOT_LOOP(a_t, b_t, c_t, dot)
+
+#define ZVBDOT_SIMPLE_LOOP(a_t, b_t, c_t) \
+  auto macc = [](auto a, auto b, auto c) { return c + decltype(c)(a) * decltype(c)(b); }; \
+  ZVBDOT_GENERIC_LOOP(a_t, b_t, c_t, macc)
 
 #define P_SET_OV(ov) \
   if (ov) P.VU.vxsat->write(1);
