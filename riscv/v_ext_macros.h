@@ -59,6 +59,11 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   }
 }
 
+#define VI_CHECK_ALTFMT_INSN \
+  if ( P.VU.altfmt() == 1) { \
+    require(0); \
+  } \
+
 #define VI_NARROW_CHECK_COMMON \
   require_vector(true); \
   require(P.VU.vflmul <= 4); \
@@ -546,7 +551,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     VX_PARAMS(e64); \
     BODY; \
   } \
-  VI_LOOP_END 
+  VI_LOOP_END
 
 #define VI_VI_MERGE_LOOP(BODY) \
   VI_CHECK_SSS(false); \
@@ -662,7 +667,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     VV_U_PARAMS(e64); \
     BODY; \
   } \
-  VI_LOOP_END 
+  VI_LOOP_END
 
 #define VI_VV_LOOP(BODY) \
   VI_CHECK_SSS(true) \
@@ -680,7 +685,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     VV_PARAMS(e64); \
     BODY; \
   } \
-  VI_LOOP_END 
+  VI_LOOP_END
 
 #define VI_V_ULOOP(BODY) \
   VI_CHECK_SSS(false) \
@@ -716,7 +721,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     VX_U_PARAMS(e64); \
     BODY; \
   } \
-  VI_LOOP_END 
+  VI_LOOP_END
 
 #define VI_VX_LOOP(BODY) \
   VI_CHECK_SSS(false) \
@@ -734,7 +739,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     VX_PARAMS(e64); \
     BODY; \
   } \
-  VI_LOOP_END 
+  VI_LOOP_END
 
 #define VI_VI_ULOOP(BODY) \
   VI_CHECK_SSS(false) \
@@ -752,7 +757,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     VI_U_PARAMS(e64); \
     BODY; \
   } \
-  VI_LOOP_END 
+  VI_LOOP_END
 
 #define VI_VI_LOOP(BODY) \
   VI_CHECK_SSS(false) \
@@ -770,7 +775,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     VI_PARAMS(e64); \
     BODY; \
   } \
-  VI_LOOP_END 
+  VI_LOOP_END
 
 // signed unsigned operation loop (e.g. mulhsu)
 #define VI_VV_SU_LOOP(BODY) \
@@ -789,7 +794,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     VV_SU_PARAMS(e64); \
     BODY; \
   } \
-  VI_LOOP_END 
+  VI_LOOP_END
 
 #define VI_VX_SU_LOOP(BODY) \
   VI_CHECK_SSS(false) \
@@ -807,7 +812,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     VX_SU_PARAMS(e64); \
     BODY; \
   } \
-  VI_LOOP_END 
+  VI_LOOP_END
 
 // narrow operation loop
 #define VI_VV_LOOP_NARROW(BODY) \
@@ -1158,7 +1163,7 @@ VI_VX_ULOOP({ \
 })
 
 //
-// vector: load/store helper 
+// vector: load/store helper
 //
 #define VI_STRIP(inx) \
   reg_t vreg_inx = inx;
@@ -1421,7 +1426,7 @@ VI_VX_ULOOP({ \
       default: \
         break; \
     } \
-  VI_LOOP_END 
+  VI_LOOP_END
 
 //
 // vector: vfp helper
