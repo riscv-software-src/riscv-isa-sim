@@ -13,6 +13,12 @@ void vectorUnit_t::vectorUnit_t::reset()
   reg_file = malloc(NVPR * vlenb);
   memset(reg_file, 0, NVPR * vlenb);
 
+  altfmt_supported =
+    p->extension_enabled_const(EXT_ZVQBDOT8I) ||
+    p->extension_enabled_const(EXT_ZVQBDOT16I) ||
+    p->extension_enabled_const(EXT_ZVFWBDOT16BF) ||
+    false;
+
   auto state = p->get_state();
   state->add_csr(CSR_VXSAT, vxsat = std::make_shared<vxsat_csr_t>(p, CSR_VXSAT));
   state->add_csr(CSR_VSTART, vstart = std::make_shared<vector_csr_t>(p, CSR_VSTART, /*mask*/ VLEN - 1));
@@ -38,12 +44,6 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
     vlmax = (VLEN/vsew) * vflmul;
     vta = extract64(newType, 6, 1);
     vma = extract64(newType, 7, 1);
-
-    bool altfmt_supported =
-      p->extension_enabled(EXT_ZVQBDOT8I) ||
-      p->extension_enabled(EXT_ZVQBDOT16I) ||
-      p->extension_enabled(EXT_ZVFWBDOT16BF) ||
-      false;
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
            || vsew > std::min(vflmul, 1.0f) * ELEN
