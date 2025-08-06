@@ -1429,12 +1429,11 @@ VI_VX_ULOOP({ \
 #define VI_VFP_BASE \
   require_fp; \
   require_vector(true); \
-  require(STATE.frm->read() < 0x5); \
   reg_t UNUSED vl = P.VU.vl->read(); \
   reg_t UNUSED rd_num = insn.rd(); \
   reg_t UNUSED rs1_num = insn.rs1(); \
   reg_t UNUSED rs2_num = insn.rs2(); \
-  softfloat_roundingMode = STATE.frm->read()
+  softfloat_roundingMode = VFP_RM
 
 #define VI_VFP_COMMON \
   VI_VFP_BASE; \

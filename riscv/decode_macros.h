@@ -146,10 +146,9 @@ do { \
 #define SHAMT (insn.i_imm() & 0x3F)
 #define BRANCH_TARGET (pc + insn.sb_imm())
 #define JUMP_TARGET (pc + insn.uj_imm())
-#define RM ({ int rm = insn.rm(); \
-              if (rm == 7) rm = STATE.frm->read(); \
-              if (rm > 4) throw trap_illegal_instruction(insn.bits()); \
-              rm; })
+#define validate_rm(rm) ({ require(rm < 5); rm; })
+#define VFP_RM validate_rm(STATE.frm->read())
+#define RM (insn.rm() == 7 ? VFP_RM : validate_rm(insn.rm()))
 
 static inline bool is_aligned(const unsigned val, const unsigned pos)
 {
