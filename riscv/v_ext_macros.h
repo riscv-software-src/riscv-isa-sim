@@ -1426,29 +1426,24 @@ VI_VX_ULOOP({ \
 //
 // vector: vfp helper
 //
-#define VI_VFP_COMMON \
+#define VI_VFP_BASE \
   require_fp; \
+  require_vector(true); \
+  reg_t UNUSED vl = P.VU.vl->read(); \
+  reg_t UNUSED rd_num = insn.rd(); \
+  reg_t UNUSED rs1_num = insn.rs1(); \
+  reg_t UNUSED rs2_num = insn.rs2(); \
+  softfloat_roundingMode = VFP_RM
+
+#define VI_VFP_COMMON \
+  VI_VFP_BASE; \
   require((P.VU.vsew == e16 && p->extension_enabled(EXT_ZVFH)) || \
           (P.VU.vsew == e32 && p->get_isa().get_zvf()) || \
           (P.VU.vsew == e64 && p->get_isa().get_zvd())); \
-  require_vector(true); \
-  require(STATE.frm->read() < 0x5); \
-  reg_t UNUSED vl = P.VU.vl->read(); \
-  reg_t UNUSED rd_num = insn.rd(); \
-  reg_t UNUSED rs1_num = insn.rs1(); \
-  reg_t UNUSED rs2_num = insn.rs2(); \
-  softfloat_roundingMode = STATE.frm->read();
 
 #define VI_VFP_BF16_COMMON \
-  require_fp; \
+  VI_VFP_BASE; \
   require((P.VU.vsew == e16 && p->extension_enabled(EXT_ZVFBFWMA))); \
-  require_vector(true); \
-  require(STATE.frm->read() < 0x5); \
-  reg_t UNUSED vl = P.VU.vl->read(); \
-  reg_t UNUSED rd_num = insn.rd(); \
-  reg_t UNUSED rs1_num = insn.rs1(); \
-  reg_t UNUSED rs2_num = insn.rs2(); \
-  softfloat_roundingMode = STATE.frm->read();
 
 #define VI_VFP_LOOP_BASE \
   VI_VFP_COMMON \
@@ -1901,14 +1896,7 @@ VI_VX_ULOOP({ \
   VI_VFP_LOOP_END
 
 #define VI_VFP_LOOP_SCALE_BASE \
-  require_fp; \
-  require_vector(true); \
-  require(STATE.frm->read() < 0x5); \
-  reg_t vl = P.VU.vl->read(); \
-  reg_t rd_num = insn.rd(); \
-  reg_t UNUSED rs1_num = insn.rs1(); \
-  reg_t rs2_num = insn.rs2(); \
-  softfloat_roundingMode = STATE.frm->read(); \
+  VI_VFP_COMMON \
   for (reg_t i = P.VU.vstart->read(); i < vl; ++i) { \
     VI_LOOP_ELEMENT_SKIP();
 
