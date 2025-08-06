@@ -1,5 +1,5 @@
+VI_VFP_BASE;
 ZVBDOT_INIT(1);
-require_fp;
 
 switch (P.VU.vsew) {
   case 32: {

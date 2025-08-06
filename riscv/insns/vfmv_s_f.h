@@ -1,12 +1,5 @@
 // vfmv_s_f: vd[0] = rs1 (vs2=0)
-require_vector(true);
-require_fp;
-require((P.VU.vsew == e16 && p->extension_enabled(EXT_ZVFH)) ||
-        (P.VU.vsew == e32 && p->extension_enabled('F')) ||
-        (P.VU.vsew == e64 && p->extension_enabled('D')));
-require(STATE.frm->read() < 0x5);
-
-reg_t vl = P.VU.vl->read();
+VI_VFP_COMMON;
 
 if (vl > 0 && P.VU.vstart->read() < vl) {
   reg_t rd_num = insn.rd();
