@@ -34,6 +34,7 @@ typedef enum {
   EXT_ZKR,
   EXT_ZMMUL,
   EXT_ZVFH,
+  EXT_ZVFBFA,
   EXT_ZVFHMIN,
   EXT_SMEPMP,
   EXT_SMSTATEEN,

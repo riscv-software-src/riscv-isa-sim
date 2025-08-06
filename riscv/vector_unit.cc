@@ -52,6 +52,7 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
     bool altfmt_supported_for_sew =
       (altfmt_supported_sew8 && vsew == 8) ||
       (altfmt_supported_sew16 && vsew == 16) ||
+      (p->extension_enabled_const(EXT_ZVFBFA) && vsew >= 32) ||
       false;
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
