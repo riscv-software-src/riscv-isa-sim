@@ -64,6 +64,9 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     require(0); \
   } \
 
+  #define require_zvfbfa \
+    require((P.VU.altfmt() == 1 && !p->extension_enabled(EXT_ZVFBFA)) ? false : true);
+
 #define VI_NARROW_CHECK_COMMON \
   require_vector(true); \
   require(P.VU.vflmul <= 4); \
@@ -1433,7 +1436,7 @@ VI_VX_ULOOP({ \
 //
 #define VI_VFP_COMMON \
   require_fp; \
-  require((P.VU.vsew == e16 && p->extension_enabled(EXT_ZVFH)) || \
+  require((P.VU.vsew == e16 && (p->extension_enabled(EXT_ZVFH) || P.VU.altfmt())) || \
           (P.VU.vsew == e32 && p->get_isa().get_zvf()) || \
           (P.VU.vsew == e64 && p->get_isa().get_zvd())); \
   require_vector(true); \
@@ -1614,6 +1617,7 @@ VI_VX_ULOOP({ \
 
 #define VI_VFP_VV_LOOP_REDUCTION(BODY16, BODY32, BODY64) \
   VI_CHECK_REDUCTION(false) \
+  VI_CHECK_ALTFMT_INSN \
   VI_VFP_COMMON \
   switch (P.VU.vsew) { \
     case e16: { \
@@ -1644,6 +1648,7 @@ VI_VX_ULOOP({ \
 
 #define VI_VFP_VV_LOOP_WIDE_REDUCTION(BODY16, BODY32) \
   VI_CHECK_REDUCTION(true) \
+  VI_CHECK_ALTFMT_INSN \
   VI_VFP_COMMON \
   require((P.VU.vsew == e16 && p->get_isa().get_zvf()) || \
           (P.VU.vsew == e32 && p->get_isa().get_zvd())); \
@@ -1767,8 +1772,10 @@ VI_VX_ULOOP({ \
   switch (P.VU.vsew) { \
     case e16: { \
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
-      float32_t vs2 = f16_to_f32(P.VU.elt<float16_t>(rs2_num, i)); \
-      float32_t rs1 = f16_to_f32(FRS1_H); \
+      float32_t vs2 = P.VU.altfmt() ? bf16_to_f32(P.VU.elt<bfloat16_t>(rs2_num, i)) \
+                                  :  f16_to_f32(P.VU.elt<float16_t>(rs2_num, i)); \
+      float32_t rs1 = P.VU.altfmt() ? bf16_to_f32(FRS1_BF) \
+                                  :  f16_to_f32(FRS1_H); \
       BODY16; \
       set_fp_exceptions; \
       break; \
@@ -1813,8 +1820,10 @@ VI_VX_ULOOP({ \
   switch (P.VU.vsew) { \
     case e16: { \
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
-      float32_t vs2 = f16_to_f32(P.VU.elt<float16_t>(rs2_num, i)); \
-      float32_t vs1 = f16_to_f32(P.VU.elt<float16_t>(rs1_num, i)); \
+      float32_t vs2 = P.VU.altfmt() ? bf16_to_f32(P.VU.elt<float16_t>(rs2_num, i)) \
+                                  :  f16_to_f32(P.VU.elt<float16_t>(rs2_num, i)); \
+      float32_t vs1 = P.VU.altfmt() ? bf16_to_f32(P.VU.elt<float16_t>(rs1_num, i)) \
+                                  :  f16_to_f32(P.VU.elt<float16_t>(rs1_num, i)); \
       BODY16; \
       set_fp_exceptions; \
       break; \
@@ -1860,7 +1869,8 @@ VI_VX_ULOOP({ \
     case e16: { \
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
       float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
-      float32_t rs1 = f16_to_f32(FRS1_H); \
+      float32_t rs1 = P.VU.altfmt() ? bf16_to_f32(FRS1_BF) \
+                                  :  f16_to_f32(FRS1_H); \
       BODY16; \
       set_fp_exceptions; \
       break; \
@@ -1886,7 +1896,8 @@ VI_VX_ULOOP({ \
     case e16: { \
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
       float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
-      float32_t vs1 = f16_to_f32(P.VU.elt<float16_t>(rs1_num, i)); \
+      float32_t vs1 = P.VU.altfmt() ? bf16_to_f32(P.VU.elt<bfloat16_t>(rs1_num, i)) \
+                                  :  f16_to_f32(P.VU.elt<float16_t>(rs1_num, i)); \
       BODY16; \
       set_fp_exceptions; \
       break; \
@@ -1927,6 +1938,7 @@ VI_VX_ULOOP({ \
 
 #define VI_VFP_CVT_INT_TO_FP(BODY16, BODY32, BODY64, sign) \
   VI_CHECK_SSS(false); \
+  VI_CHECK_ALTFMT_INSN \
   VI_VFP_COMMON \
   switch (P.VU.vsew) { \
     case e16: \
@@ -1951,6 +1963,7 @@ VI_VX_ULOOP({ \
 
 #define VI_VFP_CVT_FP_TO_INT(BODY16, BODY32, BODY64, sign) \
   VI_CHECK_SSS(false); \
+  VI_CHECK_ALTFMT_INSN \
   VI_VFP_COMMON \
   switch (P.VU.vsew) { \
     case e16: \
