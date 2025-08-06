@@ -142,7 +142,7 @@ do { \
     WRITE_FRD(value); \
   } \
 } while (0)
- 
+
 #define SHAMT (insn.i_imm() & 0x3F)
 #define BRANCH_TARGET (pc + insn.sb_imm())
 #define JUMP_TARGET (pc + insn.uj_imm())
@@ -273,10 +273,13 @@ inline freg_t freg(float32_t f) { return { ((uint64_t)-1 << 32) | f.v, (uint64_t
 inline freg_t freg(float64_t f) { return { f.v, (uint64_t)-1 }; }
 inline freg_t freg(float128_t f) { return f; }
 #define F16_SIGN ((uint16_t)1 << 15)
+#define BF16_SIGN ((uint16_t)1 << 15)
 #define F32_SIGN ((uint32_t)1 << 31)
 #define F64_SIGN ((uint64_t)1 << 63)
 #define fsgnj16(a, b, n, x) \
   f16((f16(a).v & ~F16_SIGN) | ((((x) ? f16(a).v : (n) ? F16_SIGN : 0) ^ f16(b).v) & F16_SIGN))
+#define bfsgnj16(a, b, n, x) \
+  bf16((bf16(a).v & ~BF16_SIGN) | ((((x) ? bf16(a).v : (n) ? BF16_SIGN : 0) ^ bf16(b).v) & BF16_SIGN))
 #define fsgnj32(a, b, n, x) \
   f32((f32(a).v & ~F32_SIGN) | ((((x) ? f32(a).v : (n) ? F32_SIGN : 0) ^ f32(b).v) & F32_SIGN))
 #define fsgnj64(a, b, n, x) \
