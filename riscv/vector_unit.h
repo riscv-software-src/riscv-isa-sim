@@ -87,19 +87,20 @@ using EGU8x16_t = std::array<uint8_t, 16>;
 class vectorUnit_t
 {
 public:
-  processor_t* p;
-  void *reg_file;
-  reg_t vlmax;
-  reg_t vlenb;
-  csr_t_p vxsat;
-  vector_csr_t_p vxrm, vstart, vl, vtype;
-  reg_t vma, vta;
-  reg_t vsew;
-  float vflmul;
-  reg_t altfmt;
-  reg_t ELEN, VLEN;
-  bool vill;
-  bool vstart_alu;
+  processor_t* p = nullptr;
+  void *reg_file = nullptr;
+  int setvl_count = 0;
+  reg_t vlmax = 0;
+  reg_t vlenb = 0;
+  csr_t_p vxsat = 0;
+  vector_csr_t_p vxrm = 0, vstart = 0, vl = 0, vtype = 0;
+  reg_t vma = 0, vta = 0;
+  reg_t vsew = 0;
+  float vflmul = 0;
+  reg_t altfmt = 0;
+  reg_t ELEN = 0, VLEN = 0;
+  bool vill = false;
+  bool vstart_alu = false;
 
   // vector element for various SEW
   template<class T> T& elt(reg_t vReg, reg_t n, bool is_write = false);
@@ -122,26 +123,7 @@ public:
 
   void reset();
 
-  vectorUnit_t():
-    p(0),
-    reg_file(0),
-    vlmax(0),
-    vlenb(0),
-    vxsat(0),
-    vxrm(0),
-    vstart(0),
-    vl(0),
-    vtype(0),
-    vma(0),
-    vta(0),
-    vsew(0),
-    vflmul(0),
-    altfmt(0),
-    ELEN(0),
-    VLEN(0),
-    vill(false),
-    vstart_alu(false) {
-  }
+  vectorUnit_t() {}
 
   ~vectorUnit_t() {
     free(reg_file);
