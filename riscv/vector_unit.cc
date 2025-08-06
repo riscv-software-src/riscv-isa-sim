@@ -13,15 +13,6 @@ void vectorUnit_t::vectorUnit_t::reset()
   reg_file = malloc(NVPR * vlenb);
   memset(reg_file, 0, NVPR * vlenb);
 
-  altfmt_supported_sew8 =
-    p->extension_enabled_const(EXT_ZVQBDOT8I) ||
-    false;
-
-  altfmt_supported_sew16 =
-    p->extension_enabled_const(EXT_ZVQBDOT16I) ||
-    p->extension_enabled_const(EXT_ZVFWBDOT16BF) ||
-    false;
-
   auto state = p->get_state();
   state->add_csr(CSR_VXSAT, vxsat = std::make_shared<vxsat_csr_t>(p, CSR_VXSAT));
   state->add_csr(CSR_VSTART, vstart = std::make_shared<vector_csr_t>(p, CSR_VSTART, /*mask*/ VLEN - 1));
