@@ -13,6 +13,15 @@ void vectorUnit_t::vectorUnit_t::reset()
   reg_file = malloc(NVPR * vlenb);
   memset(reg_file, 0, NVPR * vlenb);
 
+  altfmt_supported_sew8 =
+    p->extension_enabled_const(EXT_ZVQBDOT8I) ||
+    false;
+
+  altfmt_supported_sew16 =
+    p->extension_enabled_const(EXT_ZVQBDOT16I) ||
+    p->extension_enabled_const(EXT_ZVFWBDOT16BF) ||
+    false;
+
   auto state = p->get_state();
   state->add_csr(CSR_VXSAT, vxsat = std::make_shared<vxsat_csr_t>(p, CSR_VXSAT));
   state->add_csr(CSR_VSTART, vstart = std::make_shared<vector_csr_t>(p, CSR_VSTART, /*mask*/ VLEN - 1));
@@ -38,17 +47,17 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
     vlmax = (VLEN/vsew) * vflmul;
     vta = extract64(newType, 6, 1);
     vma = extract64(newType, 7, 1);
+    bool new_altfmt = newType & 0x100;
 
-    bool altfmt_supported =
-      p->extension_enabled(EXT_ZVQBDOT8I) ||
-      p->extension_enabled(EXT_ZVQBDOT16I) ||
-      p->extension_enabled(EXT_ZVFWBDOT16BF) ||
+    bool altfmt_supported_for_sew =
+      (altfmt_supported_sew8 && vsew == 8) ||
+      (altfmt_supported_sew16 && vsew == 16) ||
       false;
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
            || vsew > std::min(vflmul, 1.0f) * ELEN
            || (newType >> 9) != 0
-           || (!altfmt_supported && (newType & 0x100))
+           || (new_altfmt && !altfmt_supported_for_sew)
            || (rd == 0 && rs1 == 0 && old_vlmax != vlmax);
 
     if (vill) {
