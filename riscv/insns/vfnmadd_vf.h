@@ -1,8 +1,8 @@
 // vfnmadd: vd[i] = -(vd[i] * f[rs1]) - vs2[i]
 VI_VFP_VF_LOOP
 ({
-  rs1 = P.VU.altfmt() ? READ_FREG_BF(rs1_num) : rs1;
-  vd = P.VU.altfmt() ? bf16_mulAdd(bf16(vd.v ^ BF16_SIGN), rs1, bf16(vs2.v ^ BF16_SIGN))
+  rs1 = P.VU.altfmt ? READ_FREG_BF(rs1_num) : rs1;
+  vd = P.VU.altfmt ? bf16_mulAdd(bf16(vd.v ^ BF16_SIGN), rs1, bf16(vs2.v ^ BF16_SIGN))
                    :  f16_mulAdd( f16(vd.v ^  F16_SIGN), rs1,  f16(vs2.v ^  F16_SIGN));
 },
 {

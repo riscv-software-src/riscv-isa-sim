@@ -1,7 +1,7 @@
 // vfnmsub: vd[i] = -(vd[i] * vs1[i]) + vs2[i]
 VI_VFP_VV_LOOP
 ({
-  vd = P.VU.altfmt() ? bf16_mulAdd(bf16(vd.v ^ BF16_SIGN), vs1, vs2)
+  vd = P.VU.altfmt ? bf16_mulAdd(bf16(vd.v ^ BF16_SIGN), vs1, vs2)
                    :  f16_mulAdd( f16(vd.v ^  F16_SIGN), vs1, vs2);
 },
 {
