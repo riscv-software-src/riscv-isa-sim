@@ -89,8 +89,6 @@ class vectorUnit_t
 public:
   processor_t* p;
   void *reg_file;
-  char reg_referenced[NVPR];
-  int setvl_count;
   reg_t vlmax;
   reg_t vlenb;
   csr_t_p vxsat;
@@ -127,8 +125,6 @@ public:
   vectorUnit_t():
     p(0),
     reg_file(0),
-    reg_referenced{0},
-    setvl_count(0),
     vlmax(0),
     vlenb(0),
     vxsat(0),
