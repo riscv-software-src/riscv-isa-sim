@@ -326,6 +326,14 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZVKSH] = true;
     } else if (ext_str == "zvqdotq") {
       extension_table[EXT_ZVQDOTQ] = true;
+    } else if (ext_str == "zvqbdot8i") {
+      extension_table[EXT_ZVQBDOT8I] = true;
+    } else if (ext_str == "zvqbdot16i") {
+      extension_table[EXT_ZVQBDOT16I] = true;
+    } else if (ext_str == "zvfwbdot16bf") {
+      extension_table[EXT_ZVFWBDOT16BF] = true;
+    } else if (ext_str == "zvfbdot32f") {
+      extension_table[EXT_ZVFBDOT32F] = true;
     } else if (ext_str == "zvkt") {
     } else if (ext_str == "sstc") {
         extension_table[EXT_SSTC] = true;
