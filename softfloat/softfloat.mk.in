@@ -1,6 +1,10 @@
 softfloat_subproject_deps =
 
 softfloat_c_srcs = \
+	e4m3_to_f16.c \
+	e5m2_to_f16.c \
+	e4m3_to_bf16.c \
+	e5m2_to_bf16.c \
 	bf16_add.c \
 	bf16_div.c \
 	bf16_mul.c \
@@ -15,6 +19,7 @@ softfloat_c_srcs = \
 	bf16_to_i32.c \
 	bf16_to_ui8.c \
 	bf16_to_ui32.c \
+	bf16_pacc.c \
 	f128_add.c \
 	f128_classify.c \
 	f128_div.c \
@@ -61,6 +66,8 @@ softfloat_c_srcs = \
 	f16_to_f128.c \
 	f16_to_f32.c \
 	f16_to_f64.c \
+	f16_to_e4m3.c \
+	f16_to_e5m2.c \
 	f16_to_i8.c \
 	f16_to_i16.c \
 	f16_to_i32.c \
@@ -89,6 +96,8 @@ softfloat_c_srcs = \
 	f32_roundToInt.c \
 	f32_sqrt.c \
 	f32_sub.c \
+	f32_to_e4m3.c \
+	f32_to_e5m2.c \
 	f32_to_bf16.c \
 	f32_to_f128.c \
 	f32_to_f16.c \
@@ -103,6 +112,8 @@ softfloat_c_srcs = \
 	f32_to_ui32_r_minMag.c \
 	f32_to_ui64.c \
 	f32_to_ui64_r_minMag.c \
+	f32_to_i8.c \
+	f32_to_ui8.c \
 	f64_add.c \
 	f64_classify.c \
 	f64_div.c \
@@ -133,7 +144,6 @@ softfloat_c_srcs = \
 	f64_to_ui64_r_minMag.c \
 	fall_maxmin.c \
 	fall_reciprocal.c \
-	fall_sign.c \
 	i32_to_f128.c \
 	i32_to_bf16.c \
 	i32_to_f16.c \
@@ -185,6 +195,8 @@ softfloat_c_srcs = \
 	s_normRoundPackToF32.c \
 	s_normRoundPackToF64.c \
 	s_normSubnormalF128Sig.c \
+	s_normSubnormalE4M3Sig.c \
+	s_normSubnormalE5M2Sig.c \
 	s_normSubnormalF16Sig.c \
 	s_normSubnormalF32Sig.c \
 	s_normSubnormalF64Sig.c \
@@ -199,6 +211,8 @@ softfloat_c_srcs = \
 	s_roundMToUI64.c \
 	s_roundPackMToI64.c \
 	s_roundPackMToUI64.c \
+	s_roundPackToE4M3.c \
+	s_roundPackToE5M2.c \
 	s_roundPackToBF16.c \
 	s_roundPackToF128.c \
 	s_roundPackToF16.c \
@@ -245,12 +259,20 @@ softfloat_c_srcs = \
 	ui64_to_f32.c \
 	ui64_to_f64.c \
 
+
 softfloat_install_shared_lib = yes
+
+softfloat_install_lib = yes
 
 softfloat_test_srcs =
 
 softfloat_install_hdrs = \
 	softfloat.h \
 	softfloat_types.h \
+	primitives.h \
+	internals.h \
+	platform.h \
+	primitiveTypes.h \
+	specialize.h \
 
 softfloat_CFLAGS = -Wno-sign-compare -Wno-implicit-fallthrough

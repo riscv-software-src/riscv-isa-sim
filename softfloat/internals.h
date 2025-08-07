@@ -46,6 +46,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
+union ui8_f8 { uint8_t ui; float8_t f; };
+typedef union ui8_f8 ui8_e4m3;
+typedef union ui8_f8 ui8_e5m2;
 union ui16_bf16 { uint16_t ui; bfloat16_t f; };
 union ui16_f16 { uint16_t ui; float16_t f; };
 union ui32_f32 { uint32_t ui; float32_t f; };
@@ -83,6 +86,39 @@ int_fast64_t
 int_fast64_t softfloat_roundMToI64( bool, uint32_t *, uint_fast8_t, bool );
 #endif
 
+/*----------------------------------------------------------------------------
+*----------------------------------------------------------------------------*/
+
+/*
+ * OCP F8
+ * E4M3 |sign(1)|exp(4)|frac(3)|
+ * E5M2 |sign(1)|exp(5)|frac(2)|
+ */
+
+#define signF8UI( a ) ((bool) ((uint8_t) (a)>>7))
+#define signE4M3UI( a ) signF8UI( a )
+#define signE5M2UI( a ) signF8UI( a )
+#define expE4M3UI( a ) ((int_fast8_t) ((a)>>3) & 0xF)
+#define fracE4M3UI( a ) ((a) & 0x7)
+#define packToE4M3UI( sign, exp, sig ) (((uint8_t) (sign)<<7) + ((uint16_t) (exp)<<3) + (sig))
+#define expE5M2UI( a ) ((int_fast8_t) ((a)>>2) & 0x1F)
+#define fracE5M2UI( a ) ((a) & 0x3)
+#define packToE5M2UI( sign, exp, sig ) (((uint8_t) (sign)<<7) + ((uint16_t) (exp)<<2) + (sig))
+
+/*
+ * |     | E4M3       | E5M2                 |
+ * | Inf | N/A        | S.11111.00           |
+ * | NaN | S.1111.111 | S.11111.{01, 10, 11} |
+*/
+#define isNaNE4M3UI( a ) ((~(a) & 0x7F) == 0)
+#define isInfE5M2UI( a ) ((~(a) & 0x78) == 0)
+#define isNaNE5M2UI( a ) (((~(a) & 0x78) == 0) && ((a) & 0x11))
+
+struct exp8_sig8 { int_fast8_t exp; uint_fast8_t sig; };
+struct exp8_sig8 softfloat_normSubnormalE4M3Sig( uint_fast8_t );
+struct exp8_sig8 softfloat_normSubnormalE5M2Sig( uint_fast8_t );
+float8_t softfloat_roundPackToE4M3( bool, int_fast16_t, uint_fast16_t, bool );
+float8_t softfloat_roundPackToE5M2( bool, int_fast16_t, uint_fast16_t, bool );
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
 #define signBF16UI( a ) ((bool) ((uint16_t) (a)>>15))
@@ -168,6 +204,28 @@ float64_t
 
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
+
+/*this is for bf16
+ *b16 |sign(1)|exp(8)|frac(7)|
+ *f32 |sign(1)|exp(8)|fraction(23 bits)|
+ */
+#define f32_exp_bits 8
+#define f32_exp_bias ((1 << (f32_exp_bits - 1)) - 1)
+#define f32_sig_bits 23
+#define f32_exp_mask (((uint32_t)1 << f32_exp_bits) - 1)
+#define f32_sig_mask (((uint32_t)1 << f32_sig_bits) - 1)
+#define bf16_sig_bits 7
+#define bf16_exp_bias f32_exp_bias
+#define bf16_implicit_one  (1 << bf16_sig_bits)
+
+#define sig(n) (n.v & 0x7F)
+#define exp_t(n) ((n.v >>7) & (f32_exp_mask))
+#define sign(n) (n.v >> 15)
+#define special(n) (exp_t(n) == f32_exp_mask)
+#define inf(n) (special(n) && sig(n)==0)
+#define nan_t(n) (special(n) && sig(n)!=0)
+
+
 
 struct exp32_sig64 { int_fast32_t exp; uint64_t sig; };
 struct exp32_sig64 softfloat_normSubnormalExtF80Sig( uint_fast64_t );
