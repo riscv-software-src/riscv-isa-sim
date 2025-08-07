@@ -536,7 +536,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     bad_isa_string(str, "Spike does not currently support VLEN > 4096b");
   }
 
-  if ((vlen != 0) ^ (elen != 0)) {
+  if ((vlen != 0) ^ (elen != 0) || vlen < elen) {
     bad_isa_string(str, "Invalid Zvl/Zve configuration");
   }
 
