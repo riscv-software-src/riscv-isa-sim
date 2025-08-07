@@ -1,4 +1,6 @@
 // vfmadd: vd[i] = +(vd[i] * f[rs1]) + vs2[i]
+require_zvfbfa
+
 VI_VFP_VF_LOOP
 ({
   rs1 = P.VU.altfmt ? READ_FREG_BF(rs1_num) : rs1;

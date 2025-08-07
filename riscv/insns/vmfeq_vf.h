@@ -1,4 +1,7 @@
 // vmfeq.vf vd, vs2, fs1
+
+require_zvfbfa
+
 VI_VFP_VF_LOOP_CMP
 ({
   rs1 = P.VU.altfmt ? READ_FREG_BF(rs1_num) : rs1;
