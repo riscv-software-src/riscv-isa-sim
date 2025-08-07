@@ -1,4 +1,7 @@
 // vfmax
+
+require_zvfbfa
+
 VI_VFP_VV_LOOP
 ({
   vd = P.VU.altfmt ? bf16_max(vs2, vs1) : f16_max(vs2, vs1);
