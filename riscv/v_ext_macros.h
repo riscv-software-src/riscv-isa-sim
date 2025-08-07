@@ -1756,6 +1756,7 @@ VI_VX_ULOOP({ \
   VI_VFP_LOOP_CMP_BASE \
   switch (P.VU.vsew) { \
     case e16: { \
+      require_zvfbfa; \
       VFP_VF_CMP_PARAMS(16); \
       BODY16; \
       set_fp_exceptions; \
@@ -1784,6 +1785,7 @@ VI_VX_ULOOP({ \
   VI_VFP_LOOP_BASE \
   switch (P.VU.vsew) { \
     case e16: { \
+      require_zvfbfa; \
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
       float32_t vs2 = P.VU.altfmt ? bf16_to_f32(P.VU.elt<bfloat16_t>(rs2_num, i)) \
                                   :  f16_to_f32(P.VU.elt<float16_t>(rs2_num, i)); \
@@ -1832,6 +1834,7 @@ VI_VX_ULOOP({ \
   VI_VFP_LOOP_BASE \
   switch (P.VU.vsew) { \
     case e16: { \
+      require_zvfbfa; \
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
       float32_t vs2 = P.VU.altfmt ? bf16_to_f32(P.VU.elt<float16_t>(rs2_num, i)) \
                                   :  f16_to_f32(P.VU.elt<float16_t>(rs2_num, i)); \
@@ -1880,6 +1883,7 @@ VI_VX_ULOOP({ \
   VI_VFP_LOOP_BASE \
   switch (P.VU.vsew) { \
     case e16: { \
+      require_zvfbfa; \
       float32_t &vd = P.VU.elt<float32_t>(rd_num, i, true); \
       float32_t vs2 = P.VU.elt<float32_t>(rs2_num, i); \
       float32_t rs1 = P.VU.altfmt ? bf16_to_f32(FRS1_BF) \
@@ -2012,13 +2016,27 @@ VI_VX_ULOOP({ \
   VI_CHECK_DSS(false); \
   switch (P.VU.vsew) { \
     case e8: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_FP_PARAMS(8, 16), CHECK8, BODY8, true); } \
       break; \
     case e16: \
+      { VI_VFP_CVT_LOOP(CVT_FP_TO_FP_PARAMS(16, 32), CHECK16, BODY16, true); } \
       break; \
     default: \
       require(0); \
       break; \
   }
+
+// TODO: check last param of VI_VFP_CVT_LOOP
+#define VI_VFP_WCVT_FP_TO_BF16(BODY, CHECK) \
+VI_CHECK_DSS(false); \
+switch (P.VU.vsew) { \
+case e16: \
+    { VI_VFP_CVT_LOOP(CVT_FP_TO_FP_PARAMS(16, 32), CHECK, BODY, true); } \
+    break; \
+default: \
+    require(0); \
+    break; \
+}
 
 #define VI_VFP_WCVT_INT_TO_FP(BODY8, BODY16, BODY32, \
                               CHECK8, CHECK16, CHECK32, \
