@@ -1,4 +1,4 @@
-require_extension(EXT_ZFH);
+require_either_extension(EXT_ZFH, EXT_ZVFH);
 require_extension(EXT_ZFA);
 require_fp;
 {
