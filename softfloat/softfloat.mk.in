@@ -13,6 +13,8 @@ softfloat_c_srcs = \
 	bf16_sub.c \
 	bf16_cmp.c \
 	bf16_classify.c \
+	bf16_to_e4m3.c \
+    bf16_to_e5m2.c \
 	bf16_to_f32.c \
 	bf16_to_f64.c \
 	bf16_to_i8.c \

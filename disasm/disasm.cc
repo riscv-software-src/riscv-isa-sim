@@ -1946,6 +1946,16 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     #undef DISASM_VFUNARY0_INSN
   }
 
+  if (ext_enabled(EXT_ZVFOFP4MIN)) {
+    DEFINE_VECTOR_V(vfext_vf2);
+  }
+  
+  if (ext_enabled(EXT_ZVFOFP8MIN)) {
+    DEFINE_VECTOR_V(vfncvt_f_f_q);
+    DEFINE_VECTOR_V(vfncvt_sat_f_f_q);
+    DEFINE_VECTOR_V(vfncvtbf16_sat_f_f_w);
+  }
+
   if (ext_enabled(EXT_ZVFBFMIN)) {
     DEFINE_VECTOR_V(vfncvtbf16_f_f_w);
     DEFINE_VECTOR_V(vfwcvtbf16_f_f_v);

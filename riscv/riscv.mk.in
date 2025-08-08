@@ -960,6 +960,14 @@ riscv_insn_ext_zicond = \
 	czero_eqz \
 	czero_nez \
 
+riscv_insn_ext_zvfofp4min = \
+	vfext_vf2 \
+
+riscv_insn_ext_zvfofp8min = \
+	vfncvt_f_f_q \
+	vfncvt_sat_f_f_q \
+	vfncvtbf16_sat_f_f_w \
+
 riscv_insn_ext_zfbfmin = \
 	fcvt_bf16_s \
 	fcvt_s_bf16 \
