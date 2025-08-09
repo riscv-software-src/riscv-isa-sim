@@ -122,6 +122,10 @@ float128_t ui64_to_f128( uint64_t );
 #endif
 void ui64_to_extF80M( uint64_t, extFloat80_t * );
 void ui64_to_f128M( uint64_t, float128_t * );
+bfloat16_t e4m3_to_bf16( e4m3_t );
+float16_t e4m3_to_f16( e4m3_t );
+float16_t e5m2_to_f16( e5m2_t );
+bfloat16_t e5m2_to_bf16( e5m2_t );
 bfloat16_t i32_to_bf16( int32_t );
 float16_t i32_to_f16( int32_t );
 float32_t i32_to_f32( int32_t );
