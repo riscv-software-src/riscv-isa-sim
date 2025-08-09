@@ -1,4 +1,6 @@
 // vfmv_s_f: vd[0] = rs1 (vs2=0)
+require_zvfbfa
+
 VI_VFP_COMMON;
 
 if (vl > 0 && P.VU.vstart->read() < vl) {
