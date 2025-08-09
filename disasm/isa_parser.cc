@@ -134,6 +134,10 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
         if (!has_any_vector() || !extension_table[EXT_ZFBFMIN] || !get_zvf())
           bad_isa_string(str, "'zvfbfa' extension requires at least 'Zve32f', and 'Zfbfmin'");
         extension_table[EXT_ZVFBFA] = true;
+    } else if (ext_str == "zvfofp4min") {
+      extension_table[EXT_ZVFOFP4MIN] = true;
+    } else if (ext_str == "zvfofp8min") {
+      extension_table[EXT_ZVFOFP8MIN] = true;
     } else if (ext_str == "zicsr") {
       // Spike necessarily has Zicsr, because
       // Zicsr is implied by the privileged architecture
