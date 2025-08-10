@@ -1447,9 +1447,6 @@ VI_VX_ULOOP({ \
 //
 #define VI_VFP_BASE \
   require_fp; \
-  require((P.VU.vsew == e16 && (p->extension_enabled(EXT_ZVFH) || P.VU.altfmt)) || \
-          (P.VU.vsew == e32 && p->get_isa().get_zvf()) || \
-          (P.VU.vsew == e64 && p->get_isa().get_zvd())); \
   require_vector(true); \
   reg_t UNUSED vl = P.VU.vl->read(); \
   reg_t UNUSED rd_num = insn.rd(); \
