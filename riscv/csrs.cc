@@ -2173,16 +2173,16 @@ reg_t vstopi_csr_t::read() const noexcept {
   reg_t iprio = get_field(hvictl, HVICTL_IPRIO);
 
   reg_t enabled_interrupts = state->mip->read() & state->mie->read() & state->hideleg->read();
-  enabled_interrupts >>= 1; // VSSIP -> SSIP, etc
   reg_t vgein = get_field(state->hstatus->read(), HSTATUS_VGEIN);
   reg_t virtual_sei_priority = (vgein == 0 && iid == IRQ_S_EXT && iprio != 0) ? iprio : 255; // vstopi.IPRIO is 255 for priority number 256
 
   reg_t identity, priority;
   if (vti) {
-    if (!(enabled_interrupts & MIP_SEIP) && iid == IRQ_S_EXT)
+    reg_t interrupts = enabled_interrupts >> 1; // VSSIP -> SSIP, etc
+    if (!(interrupts & MIP_SEIP) && iid == IRQ_S_EXT)
       return 0;
 
-    identity = ((enabled_interrupts & MIP_SEIP) && (iid == IRQ_S_EXT || dpr)) ? IRQ_S_EXT : iid;
+    identity = ((interrupts & MIP_SEIP) && (iid == IRQ_S_EXT || dpr)) ? IRQ_S_EXT : iid;
     priority = (identity == IRQ_S_EXT) ? virtual_sei_priority : ((iprio != 0 || !dpr) ? iprio : 255);
   } else {
     if (!enabled_interrupts)
