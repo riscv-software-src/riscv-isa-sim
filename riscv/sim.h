@@ -112,6 +112,10 @@ private:
   void set_rom();
 
   virtual const char* get_symbol(uint64_t paddr) override;
+  virtual std::vector<std::string> get_all_symbols(uint64_t paddr) override;
+
+  virtual void process_intrinsic_labels_pre_addr(const state_t &state, uint64_t addr) override;
+  virtual void process_intrinsic_labels_post_addr(const state_t &state, uint64_t addr) override;
 
   // presents a prompt for introspection into the simulation
   void interactive();
@@ -156,6 +160,11 @@ private:
   virtual size_t chunk_align() override { return 8; }
   virtual size_t chunk_max_size() override { return 8; }
   virtual endianness_t get_target_endianness() const override;
+
+private:
+  // label intrinsic handling
+  void process_label_intrinsic(const state_t &state, const std::string &sym);
+  void process_print_register_label_intrinsic(const state_t &state, const std::string &sym);
 
 public:
   // Initialize this after procs, because in debug_module_t::reset() we
