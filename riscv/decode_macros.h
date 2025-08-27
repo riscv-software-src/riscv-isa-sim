@@ -15,8 +15,8 @@
 #define STATE (*p->get_state())
 #define FLEN (p->get_flen())
 #define CHECK_REG(reg) ((void) 0)
-#define READ_REG(reg) (CHECK_REG(reg), STATE.XPR[reg])
-#define READ_FREG(reg) STATE.FPR[reg]
+#define READ_REG(reg) (CHECK_REG(reg), zext(STATE.XPR[reg], p->get_const_xlen()))
+#define READ_FREG(reg) (STATE.FPR[reg])
 #define RD READ_REG(insn.rd())
 #define RS1 READ_REG(insn.rs1())
 #define RS2 READ_REG(insn.rs2())
