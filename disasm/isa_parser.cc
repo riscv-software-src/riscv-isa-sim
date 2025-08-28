@@ -456,16 +456,20 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     bad_isa_string(str, "'Zclsd' extension requires 'Zca' and 'Zilsd' extensions");
   }
 
-  if (extension_table[EXT_ZFBFMIN] && !extension_table['F']) {
+  if (extension_table[EXT_ZFBFMIN] || extension_table[EXT_ZFHMIN]) {
+    extension_table[EXT_INTERNAL_ZFH_MOVE] = true;
+  }
+
+  if (extension_table[EXT_ZFBFMIN] && (!extension_table['F'])) {
     bad_isa_string(str, "'Zfbfmin' extension requires 'F' extension");
   }
 
-  if ((extension_table[EXT_ZVFBFMIN] || extension_table[EXT_ZVFBFWMA]) && !extension_table['V']) {
-    bad_isa_string(str, "'Zvfbfmin/Zvfbfwma' extension requires 'V' extension");
+  if (extension_table[EXT_ZVFBFMIN] && (vlen == 0 || !zvf)) {
+    bad_isa_string(str, "'Zvfbfmin' extension requires 'Zve32f' extension");
   }
 
-  if (extension_table[EXT_ZFBFMIN] || extension_table[EXT_ZVFBFMIN] || extension_table[EXT_ZFHMIN]) {
-    extension_table[EXT_INTERNAL_ZFH_MOVE] = true;
+  if (extension_table[EXT_ZVFBFWMA] && (!extension_table[EXT_ZFBFMIN] || !extension_table[EXT_ZVFBFMIN])) {
+    bad_isa_string(str, "'Zvfbfwma' extension requires 'Zfbfmin' and 'Zvfbfmin' extensions");
   }
 
   if (extension_table[EXT_ZFINX] && extension_table['F']) {
