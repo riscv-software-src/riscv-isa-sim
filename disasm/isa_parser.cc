@@ -468,11 +468,11 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     extension_table[EXT_INTERNAL_ZFH_MOVE] = true;
   }
 
-  if (extension_table[EXT_ZFBFMIN] && (!extension_table['F'] || !extension_table[EXT_INTERNAL_ZFH_MOVE])) {
+  if (extension_table[EXT_ZFBFMIN] && (!extension_table['F'])) {
     bad_isa_string(str, "'Zfbfmin' extension requires 'F' extension");
   }
 
-  if (extension_table[EXT_ZVFBFMIN] && (vlen == 0 || elen == 0 || !zvf)) {
+  if (extension_table[EXT_ZVFBFMIN] && (vlen == 0 || !zvf)) {
     bad_isa_string(str, "'Zvfbfmin' extension requires 'Zve32f' extension");
   }
 
