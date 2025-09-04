@@ -2078,6 +2078,15 @@ VI_VX_ULOOP({ \
       break; \
   }
 
+#define ZVLDOT_INIT(widen) \
+  require_vector(true); \
+  require(P.VU.vstart->read() == 0); \
+  require_align(insn.rs1(), P.VU.vflmul); \
+  require_align(insn.rs2(), P.VU.vflmul); \
+  require_vm; \
+  require_noover(insn.rd(), 1, insn.rs1(), P.VU.vflmul); \
+  require_noover(insn.rd(), 1, insn.rs2(), P.VU.vflmul)
+
 #define ZVBDOT_INIT(widen) \
   unsigned vd_eew = P.VU.vsew * (widen); \
   unsigned vd_emul = std::max(1U, unsigned((8 * vd_eew) / P.VU.VLEN)); \
@@ -2100,6 +2109,25 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
   return c;
 }
 
+#define ZVLDOT_LOOP(a_t, b_t, c_t, dot) \
+  std::vector<a_t> a(P.VU.vl->read(), a_t()); \
+  std::vector<b_t> b(P.VU.vl->read(), b_t()); \
+  for (reg_t i = 0; i < a.size(); i++) { \
+    VI_LOOP_ELEMENT_SKIP(); \
+    a[i] = P.VU.elt<a_t>(insn.rs1(), i); \
+    b[i] = P.VU.elt<b_t>(insn.rs2(), i); \
+  } \
+  auto& acc = P.VU.elt<c_t>(insn.rd(), 0, true); \
+  acc = dot(a, b, acc)
+
+#define ZVLDOT_GENERIC_LOOP(a_t, b_t, c_t, macc) \
+  auto dot = std::bind(generic_dot_product<a_t, b_t, c_t>, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, macc); \
+  ZVLDOT_LOOP(a_t, b_t, c_t, dot)
+
+#define ZVLDOT_SIMPLE_LOOP(a_t, b_t, c_t) \
+  auto macc = [](auto a, auto b, auto c) { return c + decltype(c)(a) * decltype(c)(b); }; \
+  ZVLDOT_GENERIC_LOOP(a_t, b_t, c_t, macc)
+
 #define ZVBDOT_LOOP(a_t, b_t, c_t, dot) \
   for (reg_t idx = 0; idx < 8; idx++) { \
     reg_t i = ci + idx; \
@@ -2121,6 +2149,28 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
 #define ZVBDOT_SIMPLE_LOOP(a_t, b_t, c_t) \
   auto macc = [](auto a, auto b, auto c) { return c + decltype(c)(a) * decltype(c)(b); }; \
   ZVBDOT_GENERIC_LOOP(a_t, b_t, c_t, macc)
+
+static inline float32_t f32_add_bulknorm_odd(float32_t a, float32_t b)
+{
+  auto rm = softfloat_roundingMode;
+  auto flags = softfloat_exceptionFlags;
+
+  softfloat_roundingMode = softfloat_round_odd;
+  softfloat_exceptionFlags = 0;
+
+  auto res = f32_add(a, b);
+
+  if (softfloat_exceptionFlags & softfloat_flag_overflow) {
+    res.v++; // FLT_MAX -> INF
+  }
+
+  auto new_flags = softfloat_exceptionFlags & (softfloat_flag_overflow | softfloat_flag_invalid);
+
+  softfloat_roundingMode = rm;
+  softfloat_exceptionFlags = flags | new_flags;
+
+  return res;
+}
 
 #define P_SET_OV(ov) \
   if (ov) P.VU.vxsat->write(1);
