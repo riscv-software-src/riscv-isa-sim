@@ -2078,6 +2078,15 @@ VI_VX_ULOOP({ \
       break; \
   }
 
+#define ZVLDOT_INIT(widen) \
+  require_vector(true); \
+  require(P.VU.vstart->read() == 0); \
+  require_align(insn.rs1(), P.VU.vflmul); \
+  require_align(insn.rs2(), P.VU.vflmul); \
+  require_vm; \
+  require_noover(insn.rd(), 1, insn.rs1(), P.VU.vflmul); \
+  require_noover(insn.rd(), 1, insn.rs2(), P.VU.vflmul)
+
 #define ZVBDOT_INIT(widen) \
   unsigned vd_eew = P.VU.vsew * (widen); \
   unsigned vd_emul = std::max(1U, unsigned((8 * vd_eew) / P.VU.VLEN)); \
@@ -2099,6 +2108,25 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
     c = macc(a[i], b[i], c);
   return c;
 }
+
+#define ZVLDOT_LOOP(a_t, b_t, c_t, dot) \
+  std::vector<a_t> a(P.VU.vl->read(), a_t()); \
+  std::vector<b_t> b(P.VU.vl->read(), b_t()); \
+  for (reg_t i = 0; i < a.size(); i++) { \
+    VI_LOOP_ELEMENT_SKIP(); \
+    a[i] = P.VU.elt<a_t>(insn.rs1(), i); \
+    b[i] = P.VU.elt<b_t>(insn.rs2(), i); \
+  } \
+  auto& acc = P.VU.elt<c_t>(insn.rd(), 0, true); \
+  acc = dot(a, b, acc)
+
+#define ZVLDOT_GENERIC_LOOP(a_t, b_t, c_t, macc) \
+  auto dot = std::bind(generic_dot_product<a_t, b_t, c_t>, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, macc); \
+  ZVLDOT_LOOP(a_t, b_t, c_t, dot)
+
+#define ZVLDOT_SIMPLE_LOOP(a_t, b_t, c_t) \
+  auto macc = [](auto a, auto b, auto c) { return c + decltype(c)(a) * decltype(c)(b); }; \
+  ZVLDOT_GENERIC_LOOP(a_t, b_t, c_t, macc)
 
 #define ZVBDOT_LOOP(a_t, b_t, c_t, dot) \
   for (reg_t idx = 0; idx < 8; idx++) { \

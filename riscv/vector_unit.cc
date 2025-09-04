@@ -48,6 +48,12 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
         ill_altfmt = false;
       else if (p->extension_enabled(EXT_ZVFWBDOT16BF) && vsew == 16)
         ill_altfmt = false;
+      else if (p->extension_enabled(EXT_ZVQLDOT8I) && vsew == 8)
+        ill_altfmt = false;
+      else if (p->extension_enabled(EXT_ZVQLDOT16I) && vsew == 16)
+        ill_altfmt = false;
+      else if (p->extension_enabled(EXT_ZVFWLDOT16BF) && vsew == 16)
+        ill_altfmt = false;
     }
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
