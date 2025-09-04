@@ -411,6 +411,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       if (new_elen != 32 && new_elen != 64)
         bad_isa_string(str, ("Invalid Zve string: " + ext_str).c_str());
       elen = std::max(elen, new_elen);
+      vlen = std::max(vlen, new_elen);
     } else if (ext_str == "ssdbltrp") {
       extension_table[EXT_SSDBLTRP] = true;
     } else if (ext_str == "smdbltrp") {
@@ -540,10 +541,6 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
 
   if (vlen > 4096) {
     bad_isa_string(str, "Spike does not support VLEN > 4096");
-  }
-
-  if ((vlen != 0) ^ (elen != 0) || vlen < elen) {
-    bad_isa_string(str, "Invalid Zvl/Zve configuration");
   }
 
   if (extension_table[EXT_ZVFHMIN] && (vlen == 0 || elen == 0 || !zvf)) {
