@@ -30,7 +30,7 @@ if (ZICFILP_xLPE(prev_virt, prev_prv)) {
 if (STATE.prv == PRV_M) {
   STATE.mstatus->write(STATE.mstatus->read() & ~MSTATUS_MDT);
   if (prev_prv == PRV_U || prev_virt)
-    STATE.mstatus->write(STATE.mstatus->read() & ~MSTATUS_SDT);
+    s = set_field(s, SSTATUS_SDT, 0);
   if (prev_virt && prev_prv == PRV_U)
     STATE.vsstatus->write(STATE.vsstatus->read() & ~SSTATUS_SDT);
 }
