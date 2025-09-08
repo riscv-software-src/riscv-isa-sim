@@ -19,5 +19,7 @@
 #define NS16550_INTERRUPT_ID 1
 #define EXT_IO_BASE        0x40000000
 #define DRAM_BASE          0x80000000
+#define DEBUG_START        0x0
+#define DEBUG_SIZE         0x1000
 
 #endif

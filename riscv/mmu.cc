@@ -6,6 +6,7 @@
 #include "simif.h"
 #include "processor.h"
 #include "decode_macros.h"
+#include "platform.h"
 
 mmu_t::mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc, reg_t cache_blocksz)
  : sim(sim), proc(proc), blocksz(cache_blocksz),
@@ -140,8 +141,8 @@ reg_t reg_from_bytes(size_t len, const uint8_t* bytes)
 bool mmu_t::mmio_ok(reg_t paddr, access_type UNUSED type)
 {
   // Disallow access to debug region when not in debug mode
-  static_assert(DEBUG_START == 0);
-  if (/* paddr >= DEBUG_START && */ paddr <= DEBUG_END && proc && !proc->state.debug_mode)
+  reg_t debug_start = DEBUG_START; // suppress -Wtype-limits
+  if (paddr >= debug_start && paddr - debug_start < DEBUG_SIZE && proc && !proc->state.debug_mode)
     return false;
 
   return true;
