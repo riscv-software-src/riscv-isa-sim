@@ -2088,11 +2088,11 @@ VI_VX_ULOOP({ \
   require_noover(insn.rd(), 1, insn.rs2(), P.VU.vflmul)
 
 #define ZVBDOT_INIT(widen) \
+  require_vector(true); \
   unsigned vd_eew = P.VU.vsew * (widen); \
   unsigned vd_emul = std::max(1U, unsigned((8 * vd_eew) / P.VU.VLEN)); \
   unsigned vs2 = insn.rs2() & ~7; \
   unsigned ci = (insn.rs2() & 7) * 8; \
-  require_vector(true); \
   require(P.VU.vstart->read() == 0); \
   require(P.VU.vflmul == 1); \
   require(ci * vd_eew < P.VU.VLEN); \
