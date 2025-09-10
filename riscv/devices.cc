@@ -34,14 +34,18 @@ void bus_t::add_device(reg_t addr, abstract_device_t* dev)
     abort();
   }
 
-  // Reject devices that overlap other devices
-  if (auto it = devices.upper_bound(addr);
-      (it != devices.end() && addr + size - 1 >= it->first) ||
-      (it != devices.begin() && (it--, it->first + it->second->size() - 1 >= addr))) {
-    fprintf(stderr, "devices at [%" PRIx64 ", %" PRIx64 ") and [%" PRIx64 ", %" PRIx64 ") overlap\n",
-            it->first, it->first + it->second->size(), addr, addr + size);
-    abort();
-  }
+// Reject devices that overlap other devices
+if (auto it = devices.upper_bound(addr);
+    (it != devices.end() && addr + size - 1 >= it->first) ||
+    (it != devices.begin() && (it--, it->first + it->second->size() - 1 >= addr))) {
+    fprintf(stderr,
+            "Device overlap detected:\n"
+            "  %s at [0x%" PRIx64 ", 0x%" PRIx64 ")\n"
+            "  %s at [0x%" PRIx64 ", 0x%" PRIx64 ")\n",
+            typeid(*it->second).name(), it->first, it->first + it->second->size(),
+            typeid(*dev).name(), addr, addr + size);
+  abort();
+}
 
   devices[addr] = dev;
 }
