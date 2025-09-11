@@ -201,7 +201,20 @@ class debug_module_t : public abstract_device_t
 
     bool hart_selected(unsigned hartid) const;
     void reset();
+
     bool perform_abstract_command();
+    bool perform_abstract_register_access();
+    bool perform_abstract_memory_access();
+
+    unsigned arg(unsigned xlen, unsigned i);
+
+    void handle_post_increment(size_t xlen, unsigned aamsize, unsigned &offset);
+    void handle_memory_read(size_t xlen, unsigned aamsize, unsigned &offset);
+    void handle_memory_write(size_t xlen, unsigned aamsize, unsigned &offset);
+
+    void generate_initial_sequence(unsigned &offset);
+    void generate_termination_sequence(unsigned &offset);
+    void start_command_execution();
 
     bool abstract_command_completed;
     unsigned rti_remaining;
