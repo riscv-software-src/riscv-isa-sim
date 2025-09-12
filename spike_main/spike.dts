@@ -1,0 +1,71 @@
+/dts-v1/;
+
+/ {
+  #address-cells = <2>;
+  #size-cells = <2>;
+  compatible = "ucbbar,spike-bare-dev";
+  model = "ucbbar,spike-bare";
+  chosen {
+    stdout-path = &SERIAL0;
+    bootargs = "console=ttyS0 earlycon";
+  };
+  cpus {
+    #address-cells = <1>;
+    #size-cells = <0>;
+    timebase-frequency = <10000000>;
+    CPU0: cpu@0 {
+      device_type = "cpu";
+      reg = <0>;
+      status = "okay";
+      compatible = "riscv";
+      riscv,isa = "rv32ima";
+      mmu-type = "riscv,sv32";
+      riscv,pmpregions = <16>;
+      riscv,pmpgranularity = <4>;
+      clock-frequency = <1000000000>;
+      CPU0_intc: interrupt-controller {
+        #address-cells = <2>;
+        #interrupt-cells = <1>;
+        interrupt-controller;
+        compatible = "riscv,cpu-intc";
+      };
+    };
+  };
+  memory@80000000 {
+    device_type = "memory";
+    reg = <0x0 0x80000000 0x0 0x80000000>;
+  };
+  soc {
+    #address-cells = <2>;
+    #size-cells = <2>;
+    compatible = "ucbbar,spike-bare-soc", "simple-bus";
+    ranges;
+    clint@2000000 {
+      compatible = "riscv,clint0";
+      interrupts-extended = <&CPU0_intc 3 &CPU0_intc 7 >;
+      reg = <0x0 0x2000000 0x0 0xc0000>;
+    };
+    PLIC: plic@c000000 {
+      compatible = "riscv,plic0";
+      #address-cells = <2>;
+      interrupts-extended = <&CPU0_intc 11 &CPU0_intc 9 >;
+      reg = <0x0 0xc000000 0x0 0x1000000>;
+      riscv,ndev = <0x1f>;
+      riscv,max-priority = <0xf>;
+      #interrupt-cells = <1>;
+      interrupt-controller;
+    };
+    SERIAL0: ns16550@1a100000 {
+      compatible = "ns16550a";
+      clock-frequency = <10000000>;
+      interrupt-parent = <&PLIC>;
+      interrupts = <1>;
+      reg = <0x0 0x1a100000 0x0 0x8000>;
+      reg-shift = <0x2>;
+      reg-io-width = <0x4>;
+    };
+  };
+  htif {
+    compatible = "ucb,htif0";
+  };
+};
