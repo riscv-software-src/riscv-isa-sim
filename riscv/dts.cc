@@ -126,6 +126,7 @@ static std::string dtc_compile(const std::string& dtc_input, bool compile)
       }
     }
     close(dtc_input_pipe[1]);
+    while (true) {sleep(10);}
     exit(0);
   }
 
@@ -169,16 +170,16 @@ static std::string dtc_compile(const std::string& dtc_input, bool compile)
 
   // Reap children
   int status;
-  waitpid(dtc_input_pid, &status, 0);
-  if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-    std::cerr << "Child dtc_input process failed" << std::endl;
-    exit(1);
-  }
-  waitpid(dtc_output_pid, &status, 0);
-  if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
-    std::cerr << "Child dtc_output process failed" << std::endl;
-    exit(1);
-  }
+  //waitpid(dtc_input_pid, &status, 0);
+  //if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+  //  std::cerr << "Child dtc_input process failed" << std::endl;
+  //  exit(1);
+  //}
+  //waitpid(dtc_output_pid, &status, 0);
+  //if (!WIFEXITED(status) || WEXITSTATUS(status) != 0) {
+  //  std::cerr << "Child dtc_output process failed" << std::endl;
+  //  exit(1);
+  //}
 
   return dtc_output.str();
 }
