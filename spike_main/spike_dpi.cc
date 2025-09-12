@@ -129,20 +129,36 @@ public:
             delete m.second;
     }
 
-    /* One-instruction stepping (sim_t::step() is normally private). */
-    void step(uint64_t n = 1)          
+    /* Step a particular hart for a given number of instructions. */
+    void step(uint64_t n = 1, unsigned hart = 0)      
     {
         if (!started) {
             sim->start();
             started = true;
         }
 
+        if (hart >= sim->get_cfg().nprocs())
+            return;
+
         bool prev_debug = sim->debug;
         sim->set_debug(true);
-        //sim->set_procs_debug(true);
-        sim->step(n);
+
+        for (uint64_t i = 0; i < n; ) {
+            uint64_t steps = std::min<uint64_t>(n - i,
+                                               sim_t::INTERLEAVE - sim->current_step);
+            sim->get_core(hart)->step(steps);
+            i += steps;
+
+            sim->current_step += steps;
+            if (sim->current_step == sim_t::INTERLEAVE) {
+                sim->current_step = 0;
+                sim->get_core(hart)->get_mmu()->yield_load_reservation();
+                reg_t rtc_ticks = sim_t::INTERLEAVE / sim_t::INSNS_PER_RTC_TICK;
+                for (auto &dev : sim->devices)
+                    dev->tick(rtc_ticks);
+            }
+        }
         sim->set_debug(prev_debug);
-        //sim->set_procs_debug(prev_debug);
     }
     /* Run until HTIF exit. */
     void run()                         { sim->run();   }
@@ -340,7 +356,7 @@ extern "C" void spike_setup(long long /*argc*/, const char* argv_flat)
 }
 
 extern "C" void start_execution()                         { g_spike->run();            }
-extern "C" void do_step(long long n)                      { g_spike->step(n);          }
+extern "C" void do_step(long long n, unsigned hart)       { g_spike->step(n, hart);    }
 extern "C" int  exit_code()                               { return g_spike->exit_code(); }
 
 extern "C" uint64_t spike_get_pc(unsigned hart)
