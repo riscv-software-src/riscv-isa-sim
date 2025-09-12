@@ -10,6 +10,7 @@ gcc -g -L. -Wl,--export-dynamic -L/usr/lib/x86_64-linux-gnu  -Wl,-rpath,/usr/loc
 #include <cstdint>
 #include <svdpi.h>
 extern "C" {
+    void spike_set_dtb_file(const char* path);
     void spike_setup(long long, const char*);
     void start_execution();
     int  exit_code();
@@ -20,7 +21,7 @@ extern "C" {
     uint64_t spike_get_freg(unsigned, unsigned);
     void spike_get_vreg(unsigned, unsigned, const svOpenArrayHandle);
     uint64_t spike_get_csr(unsigned, const char*);
-    void do_step(unsigned long long);
+    void do_step(unsigned long long, unsigned);
 }
 int spike(int argc, char** argv);
 
@@ -37,6 +38,7 @@ int main(int argc, char** argv)
         if (i > 1) args += ' ';
         args += argv[i];
     }
+    spike_set_dtb_file("spike.dtb");
     spike_setup(0, args.c_str());
 
     //std::cout << "Initial PC: 0x" << std::hex << spike_get_pc(0) << std::dec << std::endl;
@@ -50,7 +52,11 @@ int main(int argc, char** argv)
     //std::cout << "v0[0]=0x" << std::hex << vec[0] << std::dec << std::endl;
     //std::cout << "mstatus=0x" << std::hex << spike_get_csr(0, "mstatus") << std::dec << std::endl;
 
-    do_step(-1);
+    for (int i=0; i<5000; i++) {
+        for (int j=0; j<3; j++) {
+            do_step(1, j);
+        }
+    }
     //std::cout << "After 1 step PC: 0x" << std::hex << (unsigned int) spike_get_pc(0) << std::dec << std::endl;
 
     //start_execution();
