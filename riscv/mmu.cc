@@ -534,7 +534,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
         if ((pte & ad) != ad) {
           if (hade) {
             // set accessed and possibly dirty bits
-            pte_store(pte_paddr, pte | ad, gva, virt, type, vm.ptesize);
+            pte_store(pte_paddr, pte | ad, gva, virt, trap_type, vm.ptesize);
           } else {
             // take exception if access or possibly dirty bit is not set.
             break;
