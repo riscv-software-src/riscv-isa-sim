@@ -4,13 +4,8 @@ ZVBDOT_INIT(2);
 switch (P.VU.vsew) {
   case 16: {
     if (P.VU.altfmt) {
-      // Although this implementation in IEEE 754 arithmetic is valid, most
-      // implementations will bulk-normalize on a VLEN-bit granule, then use
-      // f32_add_bulknorm_odd only for the final step.
-      // TODO: Change this implementation accordingly.
       require_extension(EXT_ZVFWBDOT16BF);
-      auto macc = [](auto a, auto b, auto c) { return f32_add_bulknorm_odd(c, f32_mul(bf16_to_f32(a), bf16_to_f32(b))); };
-      ZVBDOT_GENERIC_LOOP(bfloat16_t, bfloat16_t, float32_t, macc);
+      ZVBDOT_LOOP(uint16_t, uint16_t, float32_t, zvfwbdot16bf_dot_acc);
     } else {
       require(false);
     }
