@@ -44,4 +44,4 @@ class dummy_rocc_t : public rocc_t
   reg_t acc[num_acc];
 };
 
-REGISTER_EXTENSION(dummy_rocc, []() { return new dummy_rocc_t; })
+REGISTER_EXTENSION(dummy_rocc, []() { static dummy_rocc_t ext; return &ext; })

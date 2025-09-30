@@ -40,4 +40,4 @@ class cflush_t : public extension_t
   }
 };
 
-REGISTER_EXTENSION(cflush, []() { return new cflush_t; })
+REGISTER_EXTENSION(cflush, []() { static cflush_t ext; return &ext; })
