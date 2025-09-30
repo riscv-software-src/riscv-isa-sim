@@ -46,7 +46,7 @@ struct xslliuw_dummy_t : public extension_t {
   }
 };
 
-REGISTER_EXTENSION(dummyslliuw, []() { return new xslliuw_dummy_t; })
+REGISTER_EXTENSION(dummyslliuw, []() { static xslliuw_dummy_t ext; return &ext; })
 
 // Copied from spike main.
 // TODO: This should really be provided in libriscv
