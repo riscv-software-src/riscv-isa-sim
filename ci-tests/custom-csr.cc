@@ -37,7 +37,7 @@ struct xdummycsr_t : public extension_t {
   }
 };
 
-REGISTER_EXTENSION(dummycsr, []() { return new xdummycsr_t; })
+REGISTER_EXTENSION(dummycsr, []() { static xdummycsr_t ext; return &ext; })
 
 // Copied from spike main.
 // TODO: This should really be provided in libriscv
