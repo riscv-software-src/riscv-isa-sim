@@ -6,12 +6,15 @@ DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
 cd build
 
 # run a program and check for correct output
-mkdir run
+mkdir -p run
 cd run
 wget https://github.com/riscv-software-src/riscv-isa-sim/releases/download/dummy-tag-for-ci-storage/spike-ci.tar
 tar xf spike-ci.tar
 time ../install/bin/spike --isa=rv64gc pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 ../install/bin/spike --log-commits --isa=rv64gc pk atomics 2> /dev/null | grep "First atomic counter is 1000, second is 100"
+
+# run snippy-based tests
+`git rev-parse --show-toplevel`/ci-tests/run-snippy-tests.sh snippy-tests ../install/bin/spike
 
 # check that including sim.h in an external project works
 g++ -std=c++2a -I../install/include -L../install/lib $DIR/testlib.cc -lriscv -o test-libriscv

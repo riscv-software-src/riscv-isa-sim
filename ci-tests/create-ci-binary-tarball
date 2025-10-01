@@ -8,6 +8,16 @@ mkdir -p build/pk && cd "$_"
 make -j4
 cd -
 
+mkdir -p build/snippy && cd "$_"
+if [ ! -f ./llvm-snippy ]; then
+  wget https://github.com/syntacore/snippy/releases/download/snippy-2.0/snippy-2.0.tar.gz
+  tar xzf "snippy-2.0.tar.gz"
+fi
+# test that snippy runs
+./llvm-snippy --version | grep "Snippy version"
+`git rev-parse --show-toplevel`/ci-tests/generate-snippy-tests.sh "$(pwd)" "$(git rev-parse --show-toplevel)/ci-tests/snippy-tests"
+cd -
+
 mkdir -p build/hello && cd "$_"
 riscv64-unknown-elf-gcc -O2 -o hello `git rev-parse --show-toplevel`/ci-tests/hello.c
 cd -
@@ -26,10 +36,11 @@ cd -
 
 
 mv build/pk/pk .
+mv build/snippy/snippy-tests .
 mv build/hello/hello .
 mv build/dummy-slliuw/dummy-slliuw .
 mv build/dummycsr/customcsr .
 mv build/atomics/atomics .
-tar -cf spike-ci.tar pk hello dummy-slliuw customcsr atomics
+tar -cf spike-ci.tar pk snippy-tests hello dummy-slliuw customcsr atomics
 
-rm pk hello dummy-slliuw customcsr atomics
+rm -r pk snippy-tests hello dummy-slliuw customcsr atomics
