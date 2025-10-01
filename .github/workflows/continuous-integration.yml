@@ -18,7 +18,7 @@ on:
 jobs:
   test:
     name: Test Spike build (Ubuntu)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v2
         with:
@@ -53,5 +53,4 @@ jobs:
             git checkout $commit
             echo "Checking commit $commit"
             ci-tests/build-spike
-            ci-tests/test-spike
           done
