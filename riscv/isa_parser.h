@@ -53,6 +53,7 @@ typedef enum {
   EXT_ZFINX,
   EXT_ZHINX,
   EXT_ZHINXMIN,
+  EXT_ZIBI,
   EXT_ZICCID,
   EXT_ZICBOM,
   EXT_ZICBOZ,

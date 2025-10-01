@@ -562,6 +562,12 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.b_imm5());
+  }
+} b_imm5;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     return std::to_string((int)insn.bs());
   }
 } bs;
@@ -653,6 +659,11 @@ static void NOINLINE add_xst_insn(disassembler_t* d, const char* name, uint32_t 
 static void NOINLINE add_btype_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&xrs1, &xrs2, &branch_target}));
+}
+
+static void NOINLINE add_bimmtype_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrs1, &b_imm5, &branch_target}));
 }
 
 static void NOINLINE add_b1type_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
@@ -833,6 +844,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   #define DEFINE_PREFETCH(code) DISASM_INSN(#code, code, 0, {&store_address})
   #define DEFINE_LTYPE(code) DISASM_INSN(#code, code, 0, {&xrd, &bigimm})
   #define DEFINE_BTYPE(code) add_btype_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_BIMMTYPE(code) add_bimmtype_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_B1TYPE(name, code) add_b1type_insn(this, name, match_##code, mask_##code);
   #define DEFINE_XLOAD(code) add_xload_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_XSTORE(code) add_xstore_insn(this, #code, match_##code, mask_##code);
@@ -1366,6 +1378,11 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     DEFINE_R1TYPE(fcvt_s_h);
     DEFINE_R1TYPE(fcvt_d_h);
     //DEFINE_R1TYPE(fcvt_q_h);
+  }
+
+  if (ext_enabled(EXT_ZIBI)) {
+     DEFINE_BIMMTYPE(beqi)
+     DEFINE_BIMMTYPE(bnei)
   }
 
   if (ext_enabled('Q')) {
