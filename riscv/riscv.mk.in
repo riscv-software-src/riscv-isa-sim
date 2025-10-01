@@ -1079,6 +1079,8 @@ riscv_insn_ext_zvbdot = \
 	vqbdots_vv \
 	vfwbdot_vv \
 	vfbdot_vv \
+	vfqbdot_vv \
+	vfqbdot_alt_vv \
 
 riscv_insn_ext_zvldot = \
 	vqldotu_vv \
