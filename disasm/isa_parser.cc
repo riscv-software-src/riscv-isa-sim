@@ -340,6 +340,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZVQLDOT8I] = true;
     } else if (ext_str == "zvqldot16i") {
       extension_table[EXT_ZVQLDOT16I] = true;
+    } else if (ext_str == "zvfqldot8f") {
+      extension_table[EXT_ZVFQLDOT8F] = true;
     } else if (ext_str == "zvfwldot16bf") {
       extension_table[EXT_ZVFWLDOT16BF] = true;
     } else if (ext_str == "zvkt") {
