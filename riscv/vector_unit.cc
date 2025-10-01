@@ -54,6 +54,8 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
         ill_altfmt = false;
       else if (p->extension_enabled(EXT_ZVQLDOT16I) && vsew == 16)
         ill_altfmt = false;
+      else if (p->extension_enabled(EXT_ZVFQLDOT8F) && vsew == 8)
+        ill_altfmt = false;
       else if (p->extension_enabled(EXT_ZVFWLDOT16BF) && vsew == 16)
         ill_altfmt = false;
       else if (p->extension_enabled(EXT_ZVFBFA) && (vsew == 16 || vsew == 8))

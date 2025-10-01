@@ -1094,6 +1094,8 @@ riscv_insn_ext_zvldot = \
 	vqldotu_vv \
 	vqldots_vv \
 	vfwldot_vv \
+	vfqldot_vv \
+	vfqldot_alt_vv \
 
 riscv_insn_ext_zimop = \
 	mop_r_N \
