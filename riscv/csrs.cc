@@ -2141,7 +2141,7 @@ inaccessible_csr_t::inaccessible_csr_t(processor_t* const proc, const reg_t addr
   csr_t(proc, addr) {
 }
 
-void inaccessible_csr_t::verify_permissions(insn_t insn, bool write) const {
+void inaccessible_csr_t::verify_permissions(insn_t insn, bool UNUSED write) const {
   if (state->v)
     throw trap_virtual_instruction(insn.bits());
   else
