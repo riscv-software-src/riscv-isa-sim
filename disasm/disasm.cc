@@ -637,7 +637,17 @@ static void NOINLINE add_fstore_insn(disassembler_t* d, const char* name, uint32
 
 static void NOINLINE add_xamo_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
-  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &xrs2, &base_only_address}));
+  const char *suffix[] = {"", ".rl", ".aq", ".aqrl"};
+  char new_name[128];
+  uint32_t new_mask = mask | (0x3 << 25);
+  uint32_t new_match;
+
+  for (uint32_t idx = 0; idx < sizeof(suffix) / sizeof(suffix[0]); ++idx) {
+    snprintf(new_name, sizeof(new_name), "%s%s", name, suffix[idx]);
+    new_match = match | (idx << 25);
+
+    d->add_insn(new disasm_insn_t(new_name, new_match, new_mask, {&xrd, &xrs2, &base_only_address}));
+  }
 }
 
 static void NOINLINE add_xlr_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
