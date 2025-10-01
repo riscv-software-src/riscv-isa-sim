@@ -1093,6 +1093,10 @@ riscv_insn_ext_zimop = \
 	mop_r_N \
 	mop_rr_N \
 
+riscv_insn_ext_zibi = \
+	beqi \
+	bnei \
+
 riscv_insn_ext_zcmop = \
 	c_mop_N \
 
@@ -1150,6 +1154,7 @@ riscv_insn_list = \
 	$(riscv_insn_priv) \
 	$(riscv_insn_smrnmi) \
 	$(riscv_insn_svinval) \
+	$(riscv_insn_ext_zibi) \
 	$(riscv_insn_ext_zimop) \
 	$(riscv_insn_ext_zcmop) \
 	$(riscv_insn_ext_zicfilp) \

@@ -205,6 +205,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZCMP] = true;
     } else if (ext_str == "zcmt") {
       extension_table[EXT_ZCMT] = true;
+    } else if (ext_str == "zibi") {
+      extension_table[EXT_ZIBI] = true;
     } else if (ext_str == "zk") {
       extension_table[EXT_ZBKB] = true;
       extension_table[EXT_ZBKC] = true;

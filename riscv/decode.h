@@ -154,6 +154,8 @@ public:
   uint64_t p_imm5() { return x(20, 5); }
   uint64_t p_imm6() { return x(20, 6); }
 
+  uint64_t b_imm5() { return (x(20, 5) == 0) ? -1ul : x(20, 5); }
+
   uint64_t zcmp_regmask() {
     unsigned mask = 0;
     uint64_t rlist = rvc_rlist();
