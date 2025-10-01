@@ -13,7 +13,7 @@ on:
 jobs:
   test:
     name: Test debug (Ubuntu)
-    runs-on: ubuntu-22.04
+    runs-on: ubuntu-24.04
     steps:
       - uses: actions/checkout@v2
 
@@ -55,10 +55,10 @@ jobs:
           ./gdbserver.py targets/RISC-V/spike32.py --print-failures \
               --gcc $GITHUB_WORKSPACE/xpack-riscv-none-elf-gcc-12.2.0-1/bin/riscv-none-elf-gcc \
               --gdb $GITHUB_WORKSPACE/xpack-riscv-none-elf-gcc-12.2.0-1/bin/riscv-none-elf-gdb \
-              --sim_cmd $GITHUB_WORKSPACE/build/install/bin/spike \
+              --sim_cmd $GITHUB_WORKSPACE/install/bin/spike \
               --server_cmd $GITHUB_WORKSPACE/riscv-openocd/src/openocd
           ./gdbserver.py targets/RISC-V/spike64-2.py --print-failures \
               --gcc $GITHUB_WORKSPACE/xpack-riscv-none-elf-gcc-12.2.0-1/bin/riscv-none-elf-gcc \
               --gdb $GITHUB_WORKSPACE/xpack-riscv-none-elf-gcc-12.2.0-1/bin/riscv-none-elf-gdb \
-              --sim_cmd $GITHUB_WORKSPACE/build/install/bin/spike \
+              --sim_cmd $GITHUB_WORKSPACE/install/bin/spike \
               --server_cmd $GITHUB_WORKSPACE/riscv-openocd/src/openocd
