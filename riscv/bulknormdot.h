@@ -56,6 +56,9 @@ template <typename U, typename M, typename E> class FloatFormat {
   virtual bool nan() const = 0;
   virtual bool sigNan() const = 0;
   virtual bool special() const = 0;
+
+public:
+  virtual ~FloatFormat() = default;
 };
 
 /** Template for an IEEE-754 floating-point format class */
