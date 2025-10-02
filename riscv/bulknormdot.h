@@ -2,7 +2,7 @@
 #define _RISCV_BULKNORMDOT_H
 
 #include <cstdint>
-#include <iostream>
+#include <vector>
 #include "softfloat.h"
 
 struct bulk_norm_out_t {
@@ -56,6 +56,9 @@ template <typename U, typename M, typename E> class FloatFormat {
   virtual bool nan() const = 0;
   virtual bool sigNan() const = 0;
   virtual bool special() const = 0;
+
+public:
+  virtual ~FloatFormat() = default;
 };
 
 /** Template for an IEEE-754 floating-point format class */
@@ -178,8 +181,8 @@ class ofp8_e4m3 final : public IEEEFloatFormat<uint8_t, uint8_t, uint8_t, 4, 3> 
  */
 template<typename ValueTypeLHS, typename ValueTypeRHS, typename SigProdType> bulk_norm_out_t bulk_norm_dot_no_mult(const DotConfig cfg, const ValueTypeLHS* a, const ValueTypeRHS* b, const SigProdType* prod_sigs)
 {
-  int approx_prod_exp[cfg.n];
-  int flushed_prods[cfg.n];
+  std::vector<int> approx_prod_exp(cfg.n);
+  std::vector<int> flushed_prods(cfg.n);
 
   bool any_pos_inf     = false;
   bool any_neg_inf     = false;
@@ -299,27 +302,27 @@ template<typename ValueTypeLHS, typename ValueTypeRHS, typename SigProdType> bul
 static inline bulk_norm_out_t bulk_norm_dot_bf16(const DotConfig cfg, const bf16_t* a, const bf16_t* b)
 {
   // product are extracted so that the no-mult version can be more easily matched against the RTL implementation
-  uint16_t prod_sigs[cfg.n];
+  std::vector<uint16_t> prod_sigs(cfg.n);
 
   // compute products, normalize to largest exponent, accumulate
   for (int i = 0; i < cfg.n; i++) {
     prod_sigs[i] = a[i].sig() * (uint16_t) b[i].sig();
   }
 
-  return bulk_norm_dot_no_mult<bf16_t, bf16_t, uint16_t>(cfg, a, b, prod_sigs);
+  return bulk_norm_dot_no_mult<bf16_t, bf16_t, uint16_t>(cfg, a, b, &prod_sigs[0]);
 }
 
 template <typename L, typename R>
 bulk_norm_out_t bulk_norm_dot_ofp8(const DotConfig cfg, const L* a, const R* b)
 {
   // products are extracted so that the no-mult version can be more easily matched against the RTL implementation
-  uint16_t prod_sigs[cfg.n];
+  std::vector<uint16_t> prod_sigs(cfg.n);
 
   // compute products, normalize to largest exponent, accumulate
   for (int i = 0; i < cfg.n; i++) {
     prod_sigs[i] = a[i].sig() * (uint16_t) b[i].sig();
   }
-  return bulk_norm_dot_no_mult<L, R, uint16_t>(cfg, a, b, prod_sigs);
+  return bulk_norm_dot_no_mult<L, R, uint16_t>(cfg, a, b, &prod_sigs[0]);
 }
 
 #endif

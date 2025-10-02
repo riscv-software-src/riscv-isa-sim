@@ -8,7 +8,9 @@ rm -rf build
 mkdir build
 cd build
 mkdir install
-CXXFLAGS="-Wnon-virtual-dtor" CFLAGS="-Werror -Wall -Wextra -Wvla" $DIR/../configure --prefix=`pwd`/install
+CFLAGS="-Werror -Wall -Wextra -Wvla"
+CXXFLAGS="-Wnon-virtual-dtor $CFLAGS"
+CXXFLAGS="$CXXFLAGS" CFLAGS="$CFLAGS" $DIR/../configure --prefix=`pwd`/install
 make -j"$(nproc 2> /dev/null || sysctl -n hw.ncpu)"
 make check
 make install install-hdrs-list.h
