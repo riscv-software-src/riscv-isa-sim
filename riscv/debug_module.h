@@ -2,6 +2,7 @@
 #ifndef _RISCV_DEBUG_MODULE_H
 #define _RISCV_DEBUG_MODULE_H
 
+#include <cstddef>
 #include <set>
 #include <vector>
 
@@ -131,7 +132,7 @@ class debug_module_t : public abstract_device_t
     void proc_reset(unsigned id);
 
   private:
-    static const unsigned datasize = 2;
+    static const unsigned datasize = 8;
     debug_module_config_t config;
     // Actual size of the program buffer, which is 1 word bigger than we let on
     // to implement the implicit ebreak at the end.
@@ -191,7 +192,20 @@ class debug_module_t : public abstract_device_t
 
     bool hart_selected(unsigned hartid) const;
     void reset();
+
     bool perform_abstract_command();
+    bool perform_abstract_register_access();
+    bool perform_abstract_memory_access();
+
+    unsigned arg(unsigned xlen, unsigned i);
+
+    void handle_post_increment(size_t xlen, unsigned aamsize, unsigned &offset);
+    bool handle_memory_read(size_t xlen, unsigned aamsize, unsigned &offset);
+    bool handle_memory_write(size_t xlen, unsigned aamsize, unsigned &offset);
+
+    void generate_initial_sequence(unsigned &offset);
+    void generate_termination_sequence(unsigned &offset);
+    void start_command_execution();
 
     bool abstract_command_completed;
     unsigned rti_remaining;
