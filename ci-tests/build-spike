@@ -1,19 +1,25 @@
 #!/bin/bash
 set -e
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ROOT=`git rev-parse --show-toplevel`
+NPROCS="$(nproc 2> /dev/null || sysctl -n hw.ncpu)"
+HERE=`pwd`
+CI="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+INSTALL=$HERE/install
+BUILD=$HERE/build
 
-rm -rf build
+rm -rf $INSTALL $BUILD
+mkdir $INSTALL $BUILD
 
-mkdir build
-cd build
-mkdir install
+# build spike
+mkdir $BUILD/spike
+cd $BUILD/spike
 CFLAGS="-Werror -Wall -Wextra -Wvla"
 CXXFLAGS="-Wnon-virtual-dtor $CFLAGS"
-CXXFLAGS="$CXXFLAGS" CFLAGS="$CFLAGS" $DIR/../configure --prefix=`pwd`/install
-make -j"$(nproc 2> /dev/null || sysctl -n hw.ncpu)"
+CXXFLAGS="$CXXFLAGS" CFLAGS="$CFLAGS" $ROOT/configure --prefix=$INSTALL
+make -j$NPROCS
 make check
 make install install-hdrs-list.h
 
 # check that help message prints without error
-install/bin/spike -h
+$INSTALL/bin/spike -h

@@ -1,26 +1,43 @@
 #!/bin/bash
 set -e
 
-DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+ROOT=`git rev-parse --show-toplevel`
+NPROCS="$(nproc 2> /dev/null || sysctl -n hw.ncpu)"
+HERE=`pwd`
+CI="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
+INSTALL=$HERE/install
+BUILD=$HERE/build
+RUN=$HERE/run
 
-cd build
+# build pk
+rm -rf $BUILD/pk
+mkdir $BUILD/pk
+cd $BUILD/pk
+git clone https://github.com/riscv-software-src/riscv-pk.git
+riscv-pk/configure --host=riscv64-linux-gnu --prefix=$INSTALL
+make -j$NPROCS
+make install
 
-# run a program and check for correct output
-mkdir run
-cd run
-wget https://github.com/riscv-software-src/riscv-isa-sim/releases/download/dummy-tag-for-ci-storage/spike-ci.tar
-tar xf spike-ci.tar
-time ../install/bin/spike --isa=rv64gc pk hello | grep "Hello, world!  Pi is approximately 3.141588."
-../install/bin/spike --log-commits --isa=rv64gc pk atomics 2> /dev/null | grep "First atomic counter is 1000, second is 100"
+# build tests
+rm -rf $RUN
+mkdir $RUN
+cd $RUN
+riscv64-linux-gnu-gcc -static -O2 -o hello $CI/hello.c
+riscv64-linux-gnu-gcc -static -O2 -o dummy-slliuw $CI/dummy-slliuw.c
+riscv64-linux-gnu-gcc -static -O2 -o customcsr $CI/customcsr.c
+riscv64-linux-gnu-gcc -static -O2 -o atomics $CI/atomics.c
 
 # check that including sim.h in an external project works
-g++ -std=c++2a -I../install/include -L../install/lib $DIR/testlib.cc -lriscv -o test-libriscv
-g++ -std=c++2a -I../install/include -L../install/lib $DIR/test-customext.cc -lriscv -o test-customext
-g++ -std=c++2a -I../install/include -L../install/lib $DIR/custom-csr.cc -lriscv -o test-custom-csr
+g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o test-libriscv
+g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-customext.cc -lriscv -o test-customext
+g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/custom-csr.cc -lriscv -o test-custom-csr
 
 # check that all installed headers are functional
-g++ -std=c++2a -I../install/include -L../install/lib $DIR/testlib.cc -lriscv -o /dev/null -include ../install-hdrs-list.h
+g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o /dev/null -include $BUILD/spike/install-hdrs-list.h
 
-LD_LIBRARY_PATH=../install/lib ./test-libriscv pk hello| grep "Hello, world!  Pi is approximately 3.141588."
-LD_LIBRARY_PATH=../install/lib ./test-customext pk dummy-slliuw | grep "Executed successfully"
-LD_LIBRARY_PATH=../install/lib ./test-custom-csr pk customcsr | grep "Executed successfully"
+# run tests
+time $INSTALL/bin/spike --isa=rv64gc $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
+$INSTALL/bin/spike --log-commits --isa=rv64gc $BUILD/pk/pk atomics 2> /dev/null | grep "First atomic counter is 1000, second is 100"
+LD_LIBRARY_PATH=$INSTALL/lib ./test-libriscv $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
+LD_LIBRARY_PATH=$INSTALL/lib ./test-customext $BUILD/pk/pk dummy-slliuw | grep "Executed successfully"
+LD_LIBRARY_PATH=$INSTALL/lib ./test-custom-csr $BUILD/pk/pk customcsr | grep "Executed successfully"
