@@ -27,6 +27,14 @@ riscv64-linux-gnu-gcc -static -O2 -o dummy-slliuw $CI/dummy-slliuw.c
 riscv64-linux-gnu-gcc -static -O2 -o customcsr $CI/customcsr.c
 riscv64-linux-gnu-gcc -static -O2 -o atomics $CI/atomics.c
 
+# run snippy-based tests
+wget https://github.com/syntacore/snippy/releases/download/snippy-2.0/snippy-2.0.tar.gz
+tar xzf "snippy-2.0.tar.gz"
+# test that snippy runs
+./llvm-snippy --version | grep "Snippy version"
+"$ROOT"/ci-tests/generate-snippy-tests.sh "$RUN" "$ROOT"/ci-tests/snippy-tests
+"$ROOT"/ci-tests/run-snippy-tests.sh snippy-tests "$INSTALL"/bin/spike
+
 # check that including sim.h in an external project works
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o test-libriscv
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-customext.cc -lriscv -o test-customext

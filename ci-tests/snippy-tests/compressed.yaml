@@ -1,0 +1,76 @@
+options:
+  mattr: +c
+  num-instrs: 1000
+  entry-point: SNIPPY_ENTRY
+  model-plugin: None
+
+sections:
+  - name:        0
+    VMA:       0x80000000
+    SIZE:      0x10000
+    LMA:       0x80000000
+    ACCESS:    r
+  - name:        1
+    VMA:       0x80020000
+    SIZE:      0x20000
+    LMA:       0x80020000
+    ACCESS:    rx
+  - name:        2
+    VMA:       0x80040000
+    SIZE:      0x10000
+    LMA:       0x80040000
+    ACCESS:    rw
+  - name:      stack
+    VMA:       0x80050000
+    SIZE:      0x10000
+    LMA:       0x80050000
+    ACCESS:    rw
+
+histogram:
+  - ["C_ADD.*", 1.0]
+  - ["C_AND", 1.0]
+  - ["C_ANDI", 1.0]
+  - ["C_BEQZ", 5.0]
+  - ["C_BNEZ", 5.0]
+  - ["C_L[WD]", 1.0]
+  - ["C_S[WD]", 1.0]
+  - ["C_LI", 1.0]
+  - ["C_LUI", 1.0]
+  - ["C_MV", 1.0]
+  - ["C_OR", 1.0]
+  - ["C_SLLI", 1.0]
+  - ["C_SRAI", 1.0]
+  - ["C_SRLI", 1.0]
+  - ["C_SUB[W]?", 1.0]
+  - ["C_XOR", 1.0]
+  - ["ADD", 1.0]
+  - ["ADDI", 1.0]
+  - ["AND", 1.0]
+  - ["ANDI", 1.0]
+  - ["AUIPC", 1.0]
+  - ["BEQ", 3.0]
+  - ["BGE", 3.0]
+  - ["BGEU", 3.0]
+  - ["BLT", 3.0]
+  - ["BLTU", 3.0]
+  - ["BNE", 3.0]
+  - ["L[BHWD][U]?", 1.0]
+  - ["S[BHWD]", 1.0]
+  - ["LUI", 1.0]
+  - ["OR", 1.0]
+  - ["ORI", 1.0]
+  - ["SB", 1.0]
+  - ["SH", 1.0]
+  - ["SLL", 1.0]
+  - ["SLLI", 1.0]
+  - ["SLT", 1.0]
+  - ["SLTI", 1.0]
+  - ["SLTIU", 1.0]
+  - ["SLTU", 1.0]
+  - ["SRA", 1.0]
+  - ["SRAI", 1.0]
+  - ["SRL", 1.0]
+  - ["SRLI", 1.0]
+  - ["SUB", 1.0]
+  - ["XOR", 1.0]
+  - ["XORI", 1.0]
