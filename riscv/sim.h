@@ -56,7 +56,12 @@ public:
   }
   const char* get_dts() { return dts.c_str(); }
   processor_t* get_core(size_t i) { return procs.at(i); }
-  abstract_interrupt_controller_t* get_intctrl() const { assert(plic.get()); return plic.get(); }
+  abstract_interrupt_controller_t* get_intctrl() const {
+    if (aplic_s)
+      return aplic_s.get();
+    assert(plic.get());
+    return plic.get();
+  }
   virtual const cfg_t &get_cfg() const override { return *cfg; }
 
   virtual const std::map<size_t, processor_t*>& get_harts() const override { return harts; }
@@ -68,6 +73,8 @@ public:
   static const size_t INSNS_PER_RTC_TICK = 100; // 10 MHz clock for 1 BIPS core
   static const size_t CPU_HZ = 1000000000; // 1GHz CPU
 
+  std::shared_ptr<aplic_m_t> aplic_m;
+  std::shared_ptr<aplic_s_t> aplic_s;
 private:
   const cfg_t * const cfg;
   std::vector<std::pair<reg_t, abstract_mem_t*>> mems;
