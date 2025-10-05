@@ -35,3 +35,5 @@ generate_script=`git rev-parse --show-toplevel`/ci-tests/generate-snippy-test.sh
 "$generate_script" "$CONFIGDIR"/single-fp.yaml "$RESULTDIR"/float32.elf \
   "$CONFIGDIR"/boot-code-f.s riscv32-unknown-elf rv32if_zicsr ilp32f
 
+"$generate_script" "$CONFIGDIR"/vector.yaml "$RESULTDIR"/vector64.elf \
+  "$CONFIGDIR"/boot-code-vf.s riscv64-unknown-elf rv64gcv lp64d
