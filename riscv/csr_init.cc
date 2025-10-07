@@ -330,7 +330,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   }
 
   for (int i = 0; i < max_pmp; ++i) {
-    add_csr(CSR_PMPADDR0 + i, pmpaddr[i] = std::make_shared<pmpaddr_csr_t>(proc, CSR_PMPADDR0 + i));
+    add_csr(CSR_PMPADDR0 + i, mpmpaddr[i] = std::make_shared<pmpaddr_csr_t>(proc, CSR_PMPADDR0 + i));
   }
   for (int i = 0; i < max_pmp; i += xlen / 8) {
     reg_t addr = CSR_PMPCFG0 + i / 4;
@@ -571,5 +571,33 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     }
     add_hypervisor_csr(CSR_HVICTL, hvictl);
     add_hypervisor_csr(CSR_VSTOPI, vstopi);
+  }
+
+  if (proc->extension_enabled_const(EXT_SMPMPDELEG)) {
+    add_csr(CSR_MPMPDELEG, mpmpdeleg = std::make_shared<mpmpdeleg_csr_t>(proc, CSR_MPMPDELEG, MPMPDELEG_PMPNUM, proc->n_pmp));
+  }
+
+  if (proc->extension_enabled_const(EXT_SSPMP)) {
+    const reg_t spmp_cfg_mask = (SPMP_SHARED | SPMP_U | PMP_L | PMP_A | PMP_X | PMP_W | PMP_R);
+    // add entry registers (index: 0x0..0x3F)
+    for (size_t i = 0; i < max_pmp; ++i) {
+      spmpaddr[i] = std::make_shared<spmpaddr_csr_t>(proc, i);
+      dynamic_cast<sscsrind_reg_csr_t*>(csrmap[CSR_MIREG].get())->add_ireg_proxy(i, spmpaddr[i]);
+      dynamic_cast<sscsrind_reg_csr_t*>(csrmap[CSR_SIREG].get())->add_ireg_proxy(i, spmpaddr[i]);
+
+      csr_t_p cfg = std::make_shared<spmpcfg_csr_t>(proc, i, spmp_cfg_mask, 0);
+      dynamic_cast<sscsrind_reg_csr_t*>(csrmap[CSR_MIREG2].get())->add_ireg_proxy(i, cfg);
+      dynamic_cast<sscsrind_reg_csr_t*>(csrmap[CSR_SIREG2].get())->add_ireg_proxy(i, cfg);
+    }
+
+    if (proc->extension_enabled_const(EXT_SSPMPEN)) {
+      sspmpswitch = std::make_shared<spmpen_csr_t>(proc, CSR_SPMPEN, 0);
+      if (xlen == 32) {
+        add_supervisor_csr(CSR_SPMPEN, std::make_shared<rv32_low_csr_t>(proc, CSR_SPMPEN, sspmpswitch));
+        add_supervisor_csr(CSR_SPMPENH, std::make_shared<rv32_high_csr_t>(proc, CSR_SPMPENH, sspmpswitch));
+      } else {
+        add_supervisor_csr(CSR_SPMPEN, sspmpswitch);
+      }
+    }
   }
 }
