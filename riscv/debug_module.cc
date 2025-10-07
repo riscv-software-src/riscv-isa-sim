@@ -1,4 +1,8 @@
+#include <algorithm>
+#include <array>
 #include <cassert>
+#include <iterator>
+#include <limits>
 
 #include "simif.h"
 #include "devices.h"
@@ -32,6 +36,25 @@ static unsigned field_width(unsigned n)
 
 ///////////////////////// debug_module_t
 
+static bool region_descriptor_comparator(const region_descriptor &lhs,
+                                  const region_descriptor &rhs) {
+  return lhs.addr < rhs.addr;
+}
+
+template <typename It>
+static bool has_intersection(It begin, It end) {
+  assert(std::is_sorted(begin, end, region_descriptor_comparator));
+
+  // If current interval's end > next interval's start, they intersect
+  auto intersecion =
+      std::adjacent_find(begin, end, [](const auto &lhs, const auto &rhs) {
+        assert(std::numeric_limits<reg_t>::max() - lhs.addr >= lhs.len);
+        return lhs.addr + lhs.len > rhs.addr;
+      });
+
+  return intersecion != end;
+}
+
 debug_module_t::debug_module_t(simif_t *sim, const debug_module_config_t &config) :
   config(config),
   program_buffer_bytes((config.support_impebreak ? 4 : 0) + 4*config.progbufsize),
@@ -57,11 +80,18 @@ debug_module_t::debug_module_t(simif_t *sim, const debug_module_config_t &config
     exit(1);
   }
 
+  constexpr unsigned max_data_reg = 12;
+  constexpr unsigned min_data_reg = 1;
+  if (config.datacount < min_data_reg || config.datacount > max_data_reg) {
+    fprintf(stderr, "dm-datacount must be between 1 and 12 (got %u)\n", config.datacount);
+    exit(1);
+  }
+
+  dmdata.resize(config.datacount * dmdata_reg_size);
   program_buffer = new uint8_t[program_buffer_bytes];
 
   memset(debug_rom_flags, 0, sizeof(debug_rom_flags));
   memset(program_buffer, 0, program_buffer_bytes);
-  memset(dmdata, 0, sizeof(dmdata));
 
   if (config.support_impebreak) {
     program_buffer[4*config.progbufsize] = ebreak();
@@ -77,6 +107,20 @@ debug_module_t::debug_module_t(simif_t *sim, const debug_module_config_t &config
   for (unsigned i = 0; i < sizeof(hart_available_state) / sizeof(*hart_available_state); i++) {
     hart_available_state[i] = true;
   }
+
+  debug_memory_regions = {
+      region_descriptor{DEBUG_ROM_ENTRY, debug_rom_raw_len, debug_rom_raw},
+      region_descriptor{DEBUG_ROM_WHERETO, sizeof(debug_rom_whereto), debug_rom_whereto},
+      region_descriptor{DEBUG_ROM_FLAGS, sizeof(debug_rom_flags), debug_rom_flags},
+      region_descriptor{debug_data_start, dmdata.size(), dmdata.data()},
+      region_descriptor{debug_abstract_start, sizeof(debug_abstract), debug_abstract},
+      region_descriptor{debug_progbuf_start, program_buffer_bytes, program_buffer},
+  };
+
+  std::sort(debug_memory_regions.begin(), debug_memory_regions.end(),
+            region_descriptor_comparator);
+  assert(!has_intersection(debug_memory_regions.begin(),
+                           debug_memory_regions.end()));
 
   reset();
 }
@@ -100,7 +144,7 @@ void debug_module_t::reset()
   dmstatus.version = 2;
 
   memset(&abstractcs, 0, sizeof(abstractcs));
-  abstractcs.datacount = sizeof(dmdata) / 4;
+  abstractcs.datacount = config.datacount;
   abstractcs.progbufsize = config.progbufsize;
 
   memset(&abstractauto, 0, sizeof(abstractauto));
@@ -122,38 +166,27 @@ void debug_module_t::reset()
   challenge = random();
 }
 
+static bool belongs_to_range(reg_t access_addr, size_t access_len,
+                             reg_t range_addr, size_t range_len)
+{
+  assert(std::numeric_limits<reg_t>::max() - access_addr >= access_len);
+  assert(std::numeric_limits<reg_t>::max() - range_addr >= range_len);
+  return access_addr >= range_addr && (access_addr < range_addr + range_len) &&
+         ((access_addr + access_len) <= (range_addr + range_len));
+}
+
 bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
   addr = DEBUG_START + addr;
 
-  if (addr >= DEBUG_ROM_ENTRY &&
-      (addr + len) <= (DEBUG_ROM_ENTRY + debug_rom_raw_len)) {
-    memcpy(bytes, debug_rom_raw + addr - DEBUG_ROM_ENTRY, len);
-    return true;
-  }
+  const auto interval_ptr =
+      std::find_if(debug_memory_regions.begin(), debug_memory_regions.end(),
+                   [addr, len](const auto &range) {
+                     return belongs_to_range(addr, len, range.addr, range.len);
+                   });
 
-  if (addr >= DEBUG_ROM_WHERETO && (addr + len) <= (DEBUG_ROM_WHERETO + 4)) {
-    memcpy(bytes, debug_rom_whereto + addr - DEBUG_ROM_WHERETO, len);
-    return true;
-  }
-
-  if (addr >= DEBUG_ROM_FLAGS && ((addr + len) <= DEBUG_ROM_FLAGS + 1024)) {
-    memcpy(bytes, debug_rom_flags + addr - DEBUG_ROM_FLAGS, len);
-    return true;
-  }
-
-  if (addr >= debug_abstract_start && ((addr + len) <= (debug_abstract_start + sizeof(debug_abstract)))) {
-    memcpy(bytes, debug_abstract + addr - debug_abstract_start, len);
-    return true;
-  }
-
-  if (addr >= debug_data_start && (addr + len) <= (debug_data_start + sizeof(dmdata))) {
-    memcpy(bytes, dmdata + addr - debug_data_start, len);
-    return true;
-  }
-
-  if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + program_buffer_bytes))) {
-    memcpy(bytes, program_buffer + addr - debug_progbuf_start, len);
+  if (interval_ptr != debug_memory_regions.end()) {
+    std::copy_n(std::next(interval_ptr->bytes, addr - interval_ptr->addr), len, bytes);
     return true;
   }
 
@@ -161,6 +194,15 @@ bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
           PRIx64 "\n", len, addr));
 
   return false;
+}
+
+static bool handle_range_store(reg_t input_addr, size_t input_len, const uint8_t *bytes,
+                               reg_t range_addr, size_t range_len, uint8_t *data)
+{
+  if (!belongs_to_range(input_addr, input_len, range_addr, range_len))
+    return false;
+  std::copy_n(bytes, input_len, std::next(data, input_addr - range_addr));
+  return true;
 }
 
 bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
@@ -188,16 +230,11 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
 
   addr = DEBUG_START + addr;
 
-  if (addr >= debug_data_start && (addr + len) <= (debug_data_start + sizeof(dmdata))) {
-    memcpy(dmdata + addr - debug_data_start, bytes, len);
+  if (handle_range_store(addr, len, bytes, debug_data_start, dmdata.size(), dmdata.data()))
     return true;
-  }
 
-  if (addr >= debug_progbuf_start && ((addr + len) <= (debug_progbuf_start + program_buffer_bytes))) {
-    memcpy(program_buffer + addr - debug_progbuf_start, bytes, len);
-
+  if (handle_range_store(addr, len, bytes, debug_progbuf_start, program_buffer_bytes, program_buffer))
     return true;
-  }
 
   if (addr == DEBUG_ROM_HALTED) {
     assert (len == 4);
@@ -281,6 +318,16 @@ bool debug_module_t::hart_selected(unsigned hartid) const
 unsigned debug_module_t::sb_access_bits()
 {
   return 8 << sbcs.sbaccess;
+}
+
+uint8_t *debug_module_t::get_dmdata_checked(size_t required_size)
+{
+  if(dmdata.size() < required_size) {
+    fprintf(stderr, "dmdata size (%ld) less then required (%ld)\n",
+            dmdata.size(), required_size);
+    exit(1);
+  }
+  return dmdata.data();
 }
 
 void debug_module_t::sb_autoincrement()
@@ -392,7 +439,8 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
   D(fprintf(stderr, "dmi_read(0x%x) -> ", address));
   if (address >= DM_DATA0 && address < DM_DATA0 + abstractcs.datacount) {
     unsigned i = address - DM_DATA0;
-    result = read32(dmdata, i);
+    assert(dmdata.size() >= 4);
+    result = read32(get_dmdata_checked(i + 1), i);
     if (abstractcs.busy) {
       result = -1;
       D(fprintf(stderr, "\ndmi_read(0x%02x (data[%d]) -> -1 because abstractcs.busy==true\n", address, i));
@@ -660,6 +708,13 @@ bool debug_module_t::perform_abstract_command()
       return true;
     }
 
+    assert(size < 8);
+    // Check if register fit in dmdata
+    if ((1U << size) > dmdata.size()) {
+      abstractcs.cmderr = CMDERR_NOTSUP;
+      return true;
+    }
+
     unsigned i = 0;
     if (get_field(command, AC_ACCESS_REGISTER_TRANSFER)) {
 
@@ -781,10 +836,11 @@ bool debug_module_t::perform_abstract_command()
         if (write) {
           // Writing V to custom register N will cause future reads of N to
           // return V, reads of N-1 will return V-1, etc.
-          custom_base = read32(dmdata, 0) - custom_number;
+          assert(dmdata.size() >= 4);
+          custom_base = read32(get_dmdata_checked(1), 0) - custom_number;
         } else {
-          write32(dmdata, 0, custom_number + custom_base);
-          write32(dmdata, 1, 0);
+          write32(get_dmdata_checked(1), 0, custom_number + custom_base);
+          write32(get_dmdata_checked(2), 1, 0);
         }
         return true;
 
@@ -832,7 +888,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
   if (address >= DM_DATA0 && address < DM_DATA0 + abstractcs.datacount) {
     unsigned i = address - DM_DATA0;
     if (!abstractcs.busy)
-      write32(dmdata, address - DM_DATA0, value);
+      write32(get_dmdata_checked(address - DM_DATA0), address - DM_DATA0, value);
 
     if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
       abstractcs.cmderr = CMDERR_BUSY;
