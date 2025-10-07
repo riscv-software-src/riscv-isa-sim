@@ -1,13 +1,13 @@
 // vfncvt.rod.f.f.w vd, vs2, vm
 VI_VFP_NCVT_FP_TO_FP(
-  {                                 // BODY32
+  {                                                              // BODY32
     softfloat_roundingMode = softfloat_round_odd;
-    vd = f32_to_f16(vs2);
+    vd = P.VU.altfmt ? f32_to_bf16(vs2) : f32_to_f16(vs2);
   },
-  {                                 // BODY64
+  {                                                              // BODY64
     softfloat_roundingMode = softfloat_round_odd;
     vd = f64_to_f32(vs2);
   },
-  { require_extension(EXT_ZVFH); }, // CHECK32
-  { require_extension('F'); }       // CHECK64
+  { require_zvfbfa_or_zvfh; },                                   // CHECK32
+  { require(p->get_isa().get_zvd()); }                           // CHECK64
 )

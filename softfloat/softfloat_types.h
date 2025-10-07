@@ -4,8 +4,8 @@
 This C header file is part of the SoftFloat IEEE Floating-Point Arithmetic
 Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015, 2017 The Regents of the University of
-California.  All rights reserved.
+Copyright 2011, 2012, 2013, 2014, 2015, 2017, 2025 The Regents of the University
+of California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
 modification, are permitted provided that the following conditions are met:
@@ -40,18 +40,26 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include <stdint.h>
 
 /*----------------------------------------------------------------------------
-| Types used to pass 16-bit, 32-bit, 64-bit, and 128-bit floating-point
-| arguments and results to/from functions.  These types must be exactly
+| Types used to pass 8-bit, 16-bit, 32-bit, 64-bit, and 128-bit floating-point
+| arguments and results to/from functions.  These types must be exactly 8 bits, 
 | 16 bits, 32 bits, 64 bits, and 128 bits in size, respectively.  Where a
 | platform has "native" support for IEEE-Standard floating-point formats,
 | the types below may, if desired, be defined as aliases for the native types
 | (typically 'float' and 'double', and possibly 'long double').
 *----------------------------------------------------------------------------*/
+typedef struct { uint8_t  v; } float8_t;
 typedef struct { uint16_t v; } float16_t;
 typedef float16_t bfloat16_t;
 typedef struct { uint32_t v; } float32_t;
 typedef struct { uint64_t v; } float64_t;
 typedef struct { uint64_t v[2]; } float128_t;
+
+
+/*----------------------------------------------------------------------------
+| OCP 8-bit floating-point (OFP8) types.
+*----------------------------------------------------------------------------*/
+typedef float8_t e4m3_t;
+typedef float8_t e5m2_t;
 
 /*----------------------------------------------------------------------------
 | The format of an 80-bit extended floating-point number in memory.  This
