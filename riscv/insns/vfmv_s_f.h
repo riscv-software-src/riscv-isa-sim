@@ -1,4 +1,6 @@
 // vfmv_s_f: vd[0] = rs1 (vs2=0)
+require_zvfbfa
+
 VI_VFP_COMMON;
 
 if (vl > 0 && P.VU.vstart->read() < vl) {
@@ -6,7 +8,7 @@ if (vl > 0 && P.VU.vstart->read() < vl) {
 
   switch (P.VU.vsew) {
     case e16:
-      P.VU.elt<uint16_t>(rd_num, 0, true) = f16(FRS1).v;
+      P.VU.elt<uint16_t>(rd_num, 0, true) = P.VU.altfmt ? bf16(FRS1).v : f16(FRS1).v;
       break;
     case e32:
       P.VU.elt<uint32_t>(rd_num, 0, true) = f32(FRS1).v;

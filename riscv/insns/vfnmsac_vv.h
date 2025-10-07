@@ -1,7 +1,11 @@
 // vfnmsac.vv vd, vs1, vs2, vm   # vd[i] = -(vs2[i] * vs1[i]) + vd[i]
+
+require_zvfbfa
+
 VI_VFP_VV_LOOP
 ({
-  vd = f16_mulAdd(f16(vs1.v ^ F16_SIGN), vs2, vd);
+  vd = P.VU.altfmt ? bf16_mulAdd(bf16(vs1.v ^ BF16_SIGN), vs2, vd)
+                   :  f16_mulAdd( f16(vs1.v ^  F16_SIGN), vs2, vd);
 },
 {
   vd = f32_mulAdd(f32(vs1.v ^ F32_SIGN), vs2, vd);
