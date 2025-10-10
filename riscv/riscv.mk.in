@@ -960,6 +960,14 @@ riscv_insn_ext_zicond = \
 	czero_eqz \
 	czero_nez \
 
+riscv_insn_ext_zvfofp4min = \
+	vfext_vf2 \
+
+riscv_insn_ext_zvfofp8min = \
+	vfncvt_f_f_q \
+	vfncvt_sat_f_f_q \
+	vfncvtbf16_sat_f_f_w \
+
 riscv_insn_ext_zfbfmin = \
 	fcvt_bf16_s \
 	fcvt_s_bf16 \
@@ -1132,6 +1140,8 @@ riscv_insn_list = \
 	$(riscv_insn_ext_b) \
 	$(riscv_insn_ext_a) \
 	$(if $(HAVE_INT128),$(riscv_insn_ext_v),) \
+	$(riscv_insn_ext_zvfofp4min) \
+	$(riscv_insn_ext_zvfofp8min) \
 	$(riscv_insn_ext_bf16) \
 	$(riscv_insn_ext_cmo) \
 	$(riscv_insn_ext_d_zfa) \

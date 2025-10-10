@@ -1,4 +1,6 @@
 // vfdiv.vf vd, vs2, rs1
+VI_NON_ALTFMT_INSN
+
 VI_VFP_VF_LOOP
 ({
   vd = f16_div(vs2, rs1);

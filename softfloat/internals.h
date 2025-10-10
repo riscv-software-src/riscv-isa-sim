@@ -4,7 +4,7 @@
 This C header file is part of the SoftFloat IEEE Floating-Point Arithmetic
 Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
+Copyright 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2025 The Regents of the
 University of California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -46,6 +46,9 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 extern "C" {
 #endif
 
+union ui8_f8 { uint8_t ui; float8_t f; };
+typedef union ui8_f8 ui8_e4m3;
+typedef union ui8_f8 ui8_e5m2;
 union ui16_bf16 { uint16_t ui; bfloat16_t f; };
 union ui16_f16 { uint16_t ui; float16_t f; };
 union ui32_f32 { uint32_t ui; float32_t f; };
@@ -83,6 +86,39 @@ int_fast64_t
 int_fast64_t softfloat_roundMToI64( bool, uint32_t *, uint_fast8_t, bool );
 #endif
 
+/*----------------------------------------------------------------------------
+*----------------------------------------------------------------------------*/
+
+/*
+ * OCP F8
+ * E4M3 |sign(1)|exp(4)|frac(3)|
+ * E5M2 |sign(1)|exp(5)|frac(2)|
+ */
+
+#define signF8UI( a ) ((bool) ((uint8_t) (a)>>7))
+#define signE4M3UI( a ) signF8UI( a )
+#define signE5M2UI( a ) signF8UI( a )
+#define expE4M3UI( a ) ((int_fast8_t) ((a)>>3) & 0xF)
+#define fracE4M3UI( a ) ((a) & 0x7)
+#define packToE4M3UI( sign, exp, sig ) (((uint8_t) (sign)<<7) + ((uint16_t) (exp)<<3) + (sig))
+#define expE5M2UI( a ) ((int_fast8_t) ((a)>>2) & 0x1F)
+#define fracE5M2UI( a ) ((a) & 0x3)
+#define packToE5M2UI( sign, exp, sig ) (((uint8_t) (sign)<<7) + ((uint16_t) (exp)<<2) + (sig))
+
+/*
+ * |     | E4M3       | E5M2                 |
+ * | Inf | N/A        | S.11111.00           |
+ * | NaN | S.1111.111 | S.11111.{01, 10, 11} |
+*/
+#define isNaNE4M3UI( a ) ((~(a) & 0x7F) == 0)
+#define isInfE5M2UI( a ) ((~(a) & 0x78) == 0)
+#define isNaNE5M2UI( a ) (((~(a) & 0x78) == 0) && ((a) & 0x11))
+
+struct exp8_sig8 { int_fast8_t exp; uint_fast8_t sig; };
+struct exp8_sig8 softfloat_normSubnormalE4M3Sig( uint_fast8_t );
+struct exp8_sig8 softfloat_normSubnormalE5M2Sig( uint_fast8_t );
+float8_t softfloat_roundPackToE4M3( bool, int_fast16_t, uint_fast16_t, bool );
+float8_t softfloat_roundPackToE5M2( bool, int_fast16_t, uint_fast16_t, bool );
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
 #define signBF16UI( a ) ((bool) ((uint16_t) (a)>>15))
@@ -168,6 +204,28 @@ float64_t
 
 /*----------------------------------------------------------------------------
 *----------------------------------------------------------------------------*/
+
+/*this is for bf16
+ *b16 |sign(1)|exp(8)|frac(7)|
+ *f32 |sign(1)|exp(8)|fraction(23 bits)|
+ */
+#define F32_EXP_BITS 8
+#define F32_EXP_BIAS ((1 << (F32_EXP_BITS - 1)) - 1)
+#define F32_SIG_BITS 23
+#define F32_EXP_MASK (((uint32_t)1 << F32_EXP_BITS) - 1)
+#define F32_SIG_MASK (((uint32_t)1 << F32_SIG_BITS) - 1)
+#define BF16_SIG_BITS 7
+#define BF16_EXP_BIAS F32_EXP_BIAS
+#define BF16_IMPLICIT_ONE  (1 << BF16_SIG_BITS)
+
+#define SIG(n) (n.v & 0x7F)
+#define EXP_T(n) ((n.v >>7) & (F32_EXP_MASK))
+#define SIGN(n) (n.v >> 15)
+#define SPECIAL(n) (EXP_T(n) == F32_EXP_MASK)
+#define INF(n) (SPECIAL(n) && SIG(n)==0)
+#define NAN_T(n) (SPECIAL(n) && SIG(n)!=0)
+
+
 
 struct exp32_sig64 { int_fast32_t exp; uint64_t sig; };
 struct exp32_sig64 softfloat_normSubnormalExtF80Sig( uint_fast64_t );

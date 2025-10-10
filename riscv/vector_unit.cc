@@ -58,6 +58,10 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
         ill_altfmt = false;
       else if (p->extension_enabled(EXT_ZVFWLDOT16BF) && vsew == 16)
         ill_altfmt = false;
+      else if (p->extension_enabled(EXT_ZVFBFA) && (vsew == 16 || vsew == 8))
+        ill_altfmt = false;
+      else if (p->extension_enabled(EXT_ZVFOFP8MIN) && vsew == 8)
+        ill_altfmt = false;
     }
 
     vill = !(vflmul >= 0.125 && vflmul <= 8)
@@ -165,6 +169,7 @@ template uint8_t& vectorUnit_t::elt<uint8_t>(reg_t, reg_t, bool);
 template uint16_t& vectorUnit_t::elt<uint16_t>(reg_t, reg_t, bool);
 template uint32_t& vectorUnit_t::elt<uint32_t>(reg_t, reg_t, bool);
 template uint64_t& vectorUnit_t::elt<uint64_t>(reg_t, reg_t, bool);
+template float8_t& vectorUnit_t::elt<float8_t>(reg_t, reg_t, bool);
 template float16_t& vectorUnit_t::elt<float16_t>(reg_t, reg_t, bool);
 template float32_t& vectorUnit_t::elt<float32_t>(reg_t, reg_t, bool);
 template float64_t& vectorUnit_t::elt<float64_t>(reg_t, reg_t, bool);
