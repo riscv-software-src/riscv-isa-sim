@@ -89,23 +89,9 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
   return vl->read();
 }
 
-template<class T> T& vectorUnit_t::elt(reg_t vReg, reg_t n, bool UNUSED is_write) {
-  assert(vsew != 0);
-  assert((VLEN >> 3)/sizeof(T) > 0);
-  reg_t elts_per_reg = (VLEN >> 3) / (sizeof(T));
-  vReg += n / elts_per_reg;
-  n = n % elts_per_reg;
-#ifdef WORDS_BIGENDIAN
-  // "V" spec 0.7.1 requires lower indices to map to lower significant
-  // bits when changing SEW, thus we need to index from the end on BE.
-  n ^= elts_per_reg - 1;
-#endif
-
-  if (unlikely(p->get_log_commits_enabled() && is_write))
+void vectorUnit_t::log_elt_write_if_needed(reg_t vReg) const {
+  if (unlikely(p->get_log_commits_enabled()))
     p->get_state()->log_reg_write[((vReg) << 4) | 2] = {0, 0};
-
-  T *regStart = (T*)((char*)reg_file + vReg * (VLEN >> 3));
-  return regStart[n];
 }
 
 // The logic differences between 'elt()' and 'elt_group()' come from

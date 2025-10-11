@@ -103,7 +103,23 @@ public:
   bool vstart_alu = false;
 
   // vector element for various SEW
-  template<class T> T& elt(reg_t vReg, reg_t n, bool is_write = false);
+  template<typename T> T& elt(reg_t vReg, reg_t n, bool is_write = false) {
+    assert(vsew != 0);
+    assert((VLEN >> 3)/sizeof(T) > 0);
+    reg_t elts_per_reg = (VLEN >> 3) / (sizeof(T));
+    vReg += n / elts_per_reg;
+    n = n % elts_per_reg;
+#ifdef WORDS_BIGENDIAN
+    // "V" spec 0.7.1 requires lower indices to map to lower significant
+    // bits when changing SEW, thus we need to index from the end on BE.
+    n ^= elts_per_reg - 1;
+#endif
+    if (is_write)
+      log_elt_write_if_needed(vReg);
+
+    T *regStart = (T*)((char*)reg_file + vReg * (VLEN >> 3));
+    return regStart[n];
+  }
   // vector element group access, where EG is a std::array<T, N>.
   template<typename EG> EG&
   elt_group(reg_t vReg, reg_t n, bool is_write = false);
@@ -118,6 +134,10 @@ public:
     auto& e = elt<uint8_t>(vReg, n / 8, true);
     e = (e & ~(1U << (n % 8))) | (value << (n % 8));
   }
+
+private:
+
+  void log_elt_write_if_needed(reg_t vReg) const;
 
 public:
 
