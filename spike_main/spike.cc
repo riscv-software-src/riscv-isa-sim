@@ -71,6 +71,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --real-time-clint     Increment clint time at real-time rate\n");
   fprintf(stderr, "  --triggers=<n>        Number of supported triggers [default 4]\n");
   fprintf(stderr, "  --dm-progsize=<words> Progsize for the debug module [default 2]\n");
+  fprintf(stderr, "  --dm-datacount=<n>    Number of data registers available for the debug module [default 2]\n");
   fprintf(stderr, "  --dm-sba=<bits>       Debug system bus access supports up to "
       "<bits> wide accesses [default 0]\n");
   fprintf(stderr, "  --dm-auth             Debug module requires debugger to authenticate\n");
@@ -413,6 +414,8 @@ int main(int argc, char** argv)
   });
   parser.option(0, "dm-progsize", 1,
       [&](const char* s){dm_config.progbufsize = atoul_safe(s);});
+  parser.option(0, "dm-datacount", 1,
+      [&](const char* s){dm_config.datacount = atoul_safe(s);});
   parser.option(0, "dm-no-impebreak", 0,
       [&](const char UNUSED *s){dm_config.support_impebreak = false;});
   parser.option(0, "dm-sba", 1,

@@ -2,7 +2,7 @@
 #ifndef _RISCV_DEBUG_MODULE_H
 #define _RISCV_DEBUG_MODULE_H
 
-#include <set>
+#include <array>
 #include <vector>
 
 #include "abstract_device.h"
@@ -15,6 +15,7 @@ struct debug_module_config_t {
   // Size of program_buffer in 32-bit words, as exposed to the rest of the
   // world.
   unsigned progbufsize = 2;
+  unsigned datacount = 2;
   unsigned max_sba_data_width = 0;
   bool require_authentication = false;
   unsigned abstract_rti = 0;
@@ -99,6 +100,13 @@ struct hart_debug_state_t {
   uint8_t haltgroup;
 };
 
+// structure to describe mmio region
+struct region_descriptor {
+  reg_t addr;           // 1st addr in a range
+  size_t len;           // range size
+  const uint8_t *bytes; // data
+};
+
 class debug_module_t : public abstract_device_t
 {
   public:
@@ -131,7 +139,6 @@ class debug_module_t : public abstract_device_t
     void proc_reset(unsigned id);
 
   private:
-    static const unsigned datasize = 2;
     debug_module_config_t config;
     // Actual size of the program buffer, which is 1 word bigger than we let on
     // to implement the implicit ebreak at the end.
@@ -150,7 +157,8 @@ class debug_module_t : public abstract_device_t
     uint8_t debug_rom_whereto[4];
     uint8_t debug_abstract[debug_abstract_size * 4];
     uint8_t *program_buffer;
-    uint8_t dmdata[datasize * 4];
+    static constexpr unsigned dmdata_reg_size = 4;
+    std::vector<uint8_t> dmdata;
 
     std::vector<hart_debug_state_t> hart_state;
     uint8_t debug_rom_flags[1024];
@@ -173,6 +181,8 @@ class debug_module_t : public abstract_device_t
     bool sb_busy() const;
 
     unsigned sb_access_bits();
+
+    uint8_t *get_dmdata_checked(size_t required_size);
 
     dmcontrol_t dmcontrol;
     dmstatus_t dmstatus;
@@ -206,6 +216,8 @@ class debug_module_t : public abstract_device_t
     bool hart_available(unsigned hart_id) const;
 
     unsigned sb_read_wait, sb_write_wait;
+
+    std::array<region_descriptor, 6> debug_memory_regions;
 };
 
 #endif
