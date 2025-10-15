@@ -146,7 +146,7 @@ class debug_module_t : public abstract_device_t
     static const unsigned debug_data_start = 0x380;
     unsigned debug_progbuf_start;
 
-    static const unsigned debug_abstract_size = 12;
+    static const unsigned debug_abstract_size = 24;
     unsigned debug_abstract_start;
     // R/W this through custom registers, to allow debuggers to test that
     // functionality.
@@ -212,7 +212,7 @@ class debug_module_t : public abstract_device_t
     void handle_memory_read(size_t xlen, unsigned aamsize, unsigned &offset);
     void handle_memory_write(size_t xlen, unsigned aamsize, unsigned &offset);
 
-    void generate_initial_sequence(unsigned &offset);
+    void generate_initial_sequence(bool aamvirtual, unsigned &offset);
     void generate_termination_sequence(unsigned &offset);
     void start_command_execution();
 

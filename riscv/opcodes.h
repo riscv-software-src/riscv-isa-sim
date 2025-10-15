@@ -130,6 +130,16 @@ static uint32_t csrrs(unsigned int rd, unsigned int rs1, unsigned int csr) {
   return (csr << 20) | (rs1 << 15) | (rd << 7) | MATCH_CSRRS;
 }
 
+static uint32_t csrrc(unsigned int rd, unsigned int rs1, unsigned int csr) __attribute__ ((unused));
+static uint32_t csrrc(unsigned int rd, unsigned int rs1, unsigned int csr) {
+  return (csr << 20) | (rs1 << 15) | (rd << 7) | MATCH_CSRRC;
+}
+
+static uint32_t csrrw(unsigned int rd, unsigned int rs1, unsigned int csr) __attribute__ ((unused));
+static uint32_t csrrw(unsigned int rd, unsigned int rs1, unsigned int csr) {
+  return (csr << 20) | (rs1 << 15) | (rd << 7) | MATCH_CSRRW;
+}
+
 static uint32_t fsw(unsigned int src, unsigned int base, uint16_t offset) __attribute__ ((unused));
 static uint32_t fsw(unsigned int src, unsigned int base, uint16_t offset)
 {
