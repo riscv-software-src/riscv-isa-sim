@@ -163,6 +163,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define require_rv32 require(xlen == 32)
 #define require_extension(s) require(p->extension_enabled(s))
 #define require_either_extension(A,B) require(p->extension_enabled(A) || p->extension_enabled(B));
+#define require_either_extension_condition(A,cA, B, cB) require(p->extension_enabled(A) && (cA) || p->extension_enabled(B) && (cB));
 #define require_impl(s) require(p->supports_impl(s))
 #define require_fp          STATE.fflags->verify_permissions(insn, false)
 #define require_accelerator require(STATE.sstatus->enabled(SSTATUS_XS))
