@@ -88,7 +88,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 
 #ifndef RISCV_ENABLE_DUAL_ENDIAN
   if (cfg->endianness != endianness_little) {
-    fputs("Big-endian support has not been prroperly enabled; "
+    fputs("Big-endian support has not been properly enabled; "
           "please rebuild the riscv-isa-sim project using "
           "\"configure --enable-dual-endian\".\n",
           stderr);
