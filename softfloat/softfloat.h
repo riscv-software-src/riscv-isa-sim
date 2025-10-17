@@ -4,7 +4,7 @@
 This C header file is part of the SoftFloat IEEE Floating-Point Arithmetic
 Package, Release 3d, by John R. Hauser.
 
-Copyright 2011, 2012, 2013, 2014, 2015, 2016, 2017 The Regents of the
+Copyright 2011, 2012, 2013, 2014, 2015, 2016, 2017, 2025 The Regents of the
 University of California.  All rights reserved.
 
 Redistribution and use in source and binary forms, with or without
@@ -122,6 +122,10 @@ float128_t ui64_to_f128( uint64_t );
 #endif
 void ui64_to_extF80M( uint64_t, extFloat80_t * );
 void ui64_to_f128M( uint64_t, float128_t * );
+bfloat16_t e4m3_to_bf16( e4m3_t );
+float16_t e4m3_to_f16( e4m3_t );
+float16_t e5m2_to_f16( e5m2_t );
+bfloat16_t e5m2_to_bf16( e5m2_t );
 bfloat16_t i32_to_bf16( int32_t );
 float16_t i32_to_f16( int32_t );
 float32_t i32_to_f32( int32_t );
@@ -194,6 +198,8 @@ uint_fast8_t bf16_to_ui8( bfloat16_t, uint_fast8_t, bool );
 uint_fast32_t bf16_to_ui32( bfloat16_t, uint_fast8_t, bool );
 int_fast8_t bf16_to_i8( bfloat16_t, uint_fast8_t, bool );
 int_fast32_t bf16_to_i32( bfloat16_t, uint_fast8_t, bool );
+e4m3_t bf16_to_e4m3( float16_t, bool );
+e5m2_t bf16_to_e5m2( float16_t, bool );
 float32_t bf16_to_f32( bfloat16_t );
 float64_t bf16_to_f64( bfloat16_t );
 bfloat16_t bf16_add( bfloat16_t, bfloat16_t );
@@ -225,6 +231,8 @@ uint_fast32_t f32_to_ui32_r_minMag( float32_t, bool );
 uint_fast64_t f32_to_ui64_r_minMag( float32_t, bool );
 int_fast32_t f32_to_i32_r_minMag( float32_t, bool );
 int_fast64_t f32_to_i64_r_minMag( float32_t, bool );
+e4m3_t f32_to_e4m3( float32_t, bool );
+e5m2_t f32_to_e5m2( float32_t, bool );
 bfloat16_t f32_to_bf16( float32_t );
 float16_t f32_to_f16( float32_t );
 float64_t f32_to_f64( float32_t );
