@@ -41,7 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "specialize.h"
 #include "softfloat.h"
 
-e5m2_t bf16_to_e5m2( float16_t a, bool saturationMode )
+e5m2_t bf16_to_e5m2( bfloat16_t a, bool saturationMode )
 {
    return f32_to_e5m2( bf16_to_f32( a ), saturationMode );
 }
