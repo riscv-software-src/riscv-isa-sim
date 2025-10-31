@@ -3,6 +3,7 @@
 #ifndef _RISCV_MMU_H
 #define _RISCV_MMU_H
 
+#include "bloom_filter.h"
 #include "decode.h"
 #include "trap.h"
 #include "common.h"
@@ -405,6 +406,14 @@ private:
   dtlb_entry_t tlb_load[TLB_ENTRIES];
   dtlb_entry_t tlb_store[TLB_ENTRIES];
   dtlb_entry_t tlb_insn[TLB_ENTRIES];
+
+  typedef bloom_filter_t<reg_t, simple_hash1, simple_hash2, TLB_ENTRIES * 16, 3> reverse_tags_t;
+  reverse_tags_t tlb_store_reverse_tags;
+  reverse_tags_t tlb_insn_reverse_tags;
+
+  bool flush_tlb_ppn(reg_t ppn, dtlb_entry_t* tlb, reverse_tags_t& filter);
+  void flush_itlb_ppn(reg_t ppn);
+  void flush_stlb_ppn(reg_t ppn);
 
   // finish translation on a TLB miss and update the TLB
   tlb_entry_t refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type);

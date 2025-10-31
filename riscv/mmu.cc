@@ -102,6 +102,14 @@ mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
     paddr = translate(access_info, sizeof(insn_parcel_t));
     host_addr = (uintptr_t)sim->addr_to_mem(paddr);
 
+    if (proc->extension_enabled(EXT_ZICCID)) {
+      // Maintain exclusion with all store TLBs
+      for (auto [_, p2] : sim->get_harts())
+        p2->mmu->flush_stlb_ppn(paddr >> PGSHIFT);
+
+      tlb_insn_reverse_tags.insert(paddr >> PGSHIFT);
+    }
+
     refill_tlb(vaddr, paddr, (char*)host_addr, FETCH);
   }
 
@@ -316,6 +324,14 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
     paddr = translate(access_info, len);
     host_addr = (uintptr_t)sim->addr_to_mem(paddr);
 
+    if (proc && proc->extension_enabled(EXT_ZICCID)) {
+      // Maintain exclusion with all instruction TLBs
+      for (auto [_, p2] : sim->get_harts())
+        p2->mmu->flush_itlb_ppn(paddr >> PGSHIFT);
+
+      tlb_store_reverse_tags.insert(paddr >> PGSHIFT);
+    }
+
     if (!access_info.flags.is_special_access())
       refill_tlb(vaddr, paddr, (char*)host_addr, STORE);
   }
@@ -382,6 +398,35 @@ void mmu_t::store_slow_path(reg_t original_addr, reg_t len, const uint8_t* bytes
     }
     proc->state.log_mem_write.push_back(std::make_tuple(original_addr + offset, reg_from_bytes(len, bytes + offset), len));
   }
+}
+
+bool mmu_t::flush_tlb_ppn(reg_t ppn, dtlb_entry_t* tlb, reverse_tags_t& filter)
+{
+  if (!filter.contains(ppn))
+    return false;
+
+  filter.clear();
+
+  for (size_t i = 0; i < TLB_ENTRIES; i++) {
+    auto entry_ppn = tlb[i].data.target_addr >> PGSHIFT;
+    if (entry_ppn == ppn)
+      tlb[i].tag = -1;
+    else if (tlb[i].tag != (reg_t)-1)
+      filter.insert(entry_ppn);
+  }
+
+  return true;
+}
+
+void mmu_t::flush_stlb_ppn(reg_t ppn)
+{
+  flush_tlb_ppn(ppn, tlb_store, tlb_store_reverse_tags);
+}
+
+void mmu_t::flush_itlb_ppn(reg_t ppn)
+{
+  if (flush_tlb_ppn(ppn, tlb_insn, tlb_insn_reverse_tags))
+    flush_icache();
 }
 
 tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type)
