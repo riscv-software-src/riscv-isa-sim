@@ -223,15 +223,6 @@ void processor_t::step(size_t n)
     }
   }
 
-  if (extension_enabled(EXT_ZICCID)) {
-    // Ziccid requires stores eventually become visible to instruction fetch,
-    // so periodically flush the I$
-    if (ziccid_flush_count-- == 0) {
-      ziccid_flush_count += ZICCID_FLUSH_PERIOD;
-      _mmu->flush_icache();
-    }
-  }
-
   while (n > 0) {
     size_t instret = 0;
     reg_t pc = state.pc;
