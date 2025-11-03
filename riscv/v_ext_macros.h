@@ -89,7 +89,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 
 #define VI_CHECK_ST_INDEX(elt_width) \
   require_vector(false); \
-  require(elt_width <= P.VU.ELEN); \
+  require(elt_width <= std::min(P.VU.ELEN, (reg_t)P.get_xlen())); \
   float vemul = ((float)elt_width / P.VU.vsew * P.VU.vflmul); \
   require(vemul >= 0.125 && vemul <= 8); \
   reg_t UNUSED emul = vemul < 1 ? 1 : vemul; \
