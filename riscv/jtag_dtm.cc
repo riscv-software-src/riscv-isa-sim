@@ -199,6 +199,6 @@ void jtag_dtm_t::update_dr()
     }
     D(fprintf(stderr, "dmi=0x%lx\n", dmi));
 
-    rti_remaining = required_rti_cycles;
+    rti_remaining = op == DMI_OP_NOP ? 0 : required_rti_cycles;
   }
 }
