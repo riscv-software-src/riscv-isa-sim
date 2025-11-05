@@ -19,6 +19,7 @@ jobs:
 
       - name: Install Dependencies
         run: |
+          sudo apt-get update
           sudo xargs apt-get install -y < .github/workflows/apt-packages.txt
 
       - name: Download OpenOCD
