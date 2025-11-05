@@ -966,8 +966,11 @@ medeleg_csr_t::medeleg_csr_t(processor_t* const proc, const reg_t addr):
                         | (1 << CAUSE_FETCH_GUEST_PAGE_FAULT)
                         | (1 << CAUSE_LOAD_GUEST_PAGE_FAULT)
                         | (1 << CAUSE_VIRTUAL_INSTRUCTION)
-                        | (1 << CAUSE_STORE_GUEST_PAGE_FAULT)
-                        ) {
+                        | (1 << CAUSE_STORE_GUEST_PAGE_FAULT)),
+  mmu_exceptions(0
+                 | (1 << CAUSE_FETCH_PAGE_FAULT)
+                 | (1 << CAUSE_LOAD_PAGE_FAULT)
+                 | (1 << CAUSE_STORE_PAGE_FAULT)) {
 }
 
 void medeleg_csr_t::verify_permissions(insn_t insn, bool write) const {
@@ -988,9 +991,7 @@ bool medeleg_csr_t::unlogged_write(const reg_t val) noexcept {
     | (1 << CAUSE_STORE_ACCESS)
     | (1 << CAUSE_USER_ECALL)
     | (1 << CAUSE_SUPERVISOR_ECALL)
-    | (1 << CAUSE_FETCH_PAGE_FAULT)
-    | (1 << CAUSE_LOAD_PAGE_FAULT)
-    | (1 << CAUSE_STORE_PAGE_FAULT)
+    | (proc->supports_impl(IMPL_MMU) ? mmu_exceptions : 0)
     | (proc->extension_enabled('H') ? hypervisor_exceptions : 0)
     | (1 << CAUSE_SOFTWARE_CHECK_FAULT)
     | (1 << CAUSE_HARDWARE_ERROR_FAULT)

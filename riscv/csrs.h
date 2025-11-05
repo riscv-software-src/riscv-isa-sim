@@ -468,6 +468,7 @@ class medeleg_csr_t: public basic_csr_t {
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
   const reg_t hypervisor_exceptions;
+  const reg_t mmu_exceptions;
 };
 
 class sip_csr_t: public mip_proxy_csr_t {
