@@ -42,7 +42,6 @@ struct insn_fetch_t
 
 struct icache_entry_t {
   reg_t tag;
-  struct icache_entry_t* next;
   insn_fetch_t data;
 };
 
@@ -291,7 +290,7 @@ public:
     return have_reservation;
   }
 
-  static const reg_t ICACHE_ENTRIES = 1024;
+  static const reg_t ICACHE_ENTRIES = 4096;
 
   inline size_t icache_index(reg_t addr)
   {
@@ -311,26 +310,15 @@ public:
   inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
   {
     insn_bits_t insn = fetch_insn_parcel(addr);
+    unsigned length = insn_length(insn);
 
-    int length = insn_length(insn);
-
-    if (likely(length == 4)) {
-      insn |= (insn_bits_t)fetch_insn_parcel(addr + 2) << 16;
-    } else if (length == 2) {
-      // entire instruction already fetched
-    } else if (length == 6) {
-      insn |= (insn_bits_t)fetch_insn_parcel(addr + 2) << 16;
-      insn |= (insn_bits_t)fetch_insn_parcel(addr + 4) << 32;
-    } else {
-      static_assert(sizeof(insn_bits_t) == 8, "insn_bits_t must be uint64_t");
-      insn |= (insn_bits_t)fetch_insn_parcel(addr + 2) << 16;
-      insn |= (insn_bits_t)fetch_insn_parcel(addr + 4) << 32;
-      insn |= (insn_bits_t)fetch_insn_parcel(addr + 6) << 48;
+    for (unsigned pos = sizeof(insn_parcel_t); pos < length; pos += sizeof(insn_parcel_t)) {
+      insn |= fetch_insn_parcel(addr + pos) << (8 * pos);
+      length = insn_length(insn);
     }
 
     insn_fetch_t fetch = {proc->decode_insn(insn), insn};
     entry->tag = addr;
-    entry->next = &icache[icache_index(addr + length)];
     entry->data = fetch;
 
     auto [check_tracer, _, paddr] = access_tlb(tlb_insn, addr, TLB_FLAGS, TLB_CHECK_TRACER);
