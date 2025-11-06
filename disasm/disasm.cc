@@ -123,6 +123,12 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
+    return frm_name(insn.rm());
+  }
+} rm;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     return fpr_name[insn.rd()];
   }
 } frd;
@@ -717,6 +723,11 @@ static void NOINLINE add_fx2type_insn(disassembler_t* d, const char* name, uint3
   d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &frs1, &frs2}));
 }
 
+static void NOINLINE add_fxrtype_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &frs1, &rm}));
+}
+
 static void NOINLINE add_flitype_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &fli_imm}));
@@ -868,6 +879,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   #define DEFINE_FR3TYPE(code) add_fr3type_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FXTYPE(code) add_fxtype_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FX2TYPE(code) add_fx2type_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_FXRTYPE(code) add_fxrtype_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FLITYPE(code) add_flitype_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_XFTYPE(code) add_xftype_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_XF2TYPE(code) add_xf2type_insn(this, #code, match_##code, mask_##code);
@@ -1282,6 +1294,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
       DEFINE_FR1TYPE(froundnx_d);
       DEFINE_FX2TYPE(fleq_d);
       DEFINE_FX2TYPE(fltq_d);
+      DEFINE_FXRTYPE(fcvtmod_w_d);
 
       if (xlen_eq(32)) {
         DEFINE_XF2TYPE(fmvp_d_x);
