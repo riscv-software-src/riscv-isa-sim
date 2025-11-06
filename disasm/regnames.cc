@@ -31,3 +31,21 @@ const char* csr_name(int which) {
   }
   return "unknown-csr";
 }
+
+const char* frm_name(int which) {
+  switch (which) {
+    case 0:
+      return "rne";
+    case 1:
+      return "rtz";
+    case 2:
+      return "rdn";
+    case 3:
+      return "rup";
+    case 4:
+      return "rmm";
+    case 7:
+      return "dyn";
+  }
+  return "unknown-frm";
+}
