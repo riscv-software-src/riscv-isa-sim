@@ -26,7 +26,9 @@ jobs:
           fetch-depth: 0
 
       - name: Install Dependencies
-        run: sudo xargs apt-get install -y < .github/workflows/apt-packages.txt
+        run: |
+          sudo apt-get update
+          sudo xargs apt-get install -y < .github/workflows/apt-packages.txt
 
       - run: |
           for commit in $(git rev-list origin/master..HEAD | tac); do
