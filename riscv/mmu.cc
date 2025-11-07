@@ -53,6 +53,16 @@ void throw_access_exception(bool virt, reg_t addr, access_type type)
   }
 }
 
+[[noreturn]] void throw_page_fault_exception(bool virt, reg_t addr, access_type type)
+{
+  switch (type) {
+    case FETCH: throw trap_instruction_page_fault(virt, addr, 0, 0);
+    case LOAD: throw trap_load_page_fault(virt, addr, 0, 0);
+    case STORE: throw trap_store_page_fault(virt, addr, 0, 0);
+    default: abort();
+  }
+}
+
 reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
 {
   reg_t addr = access_info.transformed_vaddr;
@@ -560,6 +570,28 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   }
 }
 
+bool mmu_t::check_svukte_qualified(reg_t addr, reg_t mode, bool forced_virt)
+{
+  state_t* state = proc->get_state();
+
+  if (mode != PRV_U)
+    return true;
+
+  if (proc->extension_enabled('S') && get_field(state->senvcfg->read(), SENVCFG_UKTE)) {
+    if (forced_virt && state->prv == PRV_U) {
+      bool hstatus_hukte = proc->extension_enabled('H') && (get_field(state->hstatus->read(), HSTATUS_HUKTE) == 1);
+      return !hstatus_hukte;
+    }
+
+    assert(proc->get_xlen() == 64);
+    if ((addr >> 63) & 1) {
+      return (state->v || forced_virt) && ((state->vsatp->read() & SATP64_MODE) == 0);
+    }
+  }
+
+  return true;
+}
+
 reg_t mmu_t::walk(mem_access_info_t access_info)
 {
   access_type type = access_info.type;
@@ -581,6 +613,10 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
 
   if (vm.levels == 0)
     return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx, false) & ~page_mask; // zero-extend from xlen
+
+  if (proc->extension_enabled(EXT_SVUKTE) && !check_svukte_qualified(addr, mode, access_info.flags.forced_virt)) {
+    throw_page_fault_exception(virt, addr, type);
+  }
 
   bool s_mode = mode == PRV_S;
   bool sum = proc->state.sstatus->readvirt(virt) & MSTATUS_SUM;
@@ -672,12 +708,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     }
   }
 
-  switch (type) {
-    case FETCH: throw trap_instruction_page_fault(virt, addr, 0, 0);
-    case LOAD: throw trap_load_page_fault(virt, addr, 0, 0);
-    case STORE: throw trap_store_page_fault(virt, addr, 0, 0);
-    default: abort();
-  }
+  throw_page_fault_exception(virt, addr, type);
 }
 
 void mmu_t::register_memtracer(memtracer_t* t)

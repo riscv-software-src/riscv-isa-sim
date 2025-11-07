@@ -78,6 +78,7 @@ struct mem_access_info_t {
 };
 
 void throw_access_exception(bool virt, reg_t addr, access_type type);
+[[noreturn]] void throw_page_fault_exception(bool virt, reg_t addr, access_type type);
 
 // this class implements a processor's port into the virtual memory system.
 // an MMU and instruction cache are maintained for simulator performance.
@@ -447,6 +448,7 @@ private:
     check_triggers(operation, address, virt, address, data);
   }
   void check_triggers(triggers::operation_t operation, reg_t address, bool virt, reg_t tval, std::optional<reg_t> data);
+  bool check_svukte_qualified(reg_t addr, reg_t mode, bool forced_virt);
   reg_t translate(mem_access_info_t access_info, reg_t len);
 
   reg_t pte_load(reg_t pte_paddr, reg_t addr, bool virt, access_type trap_type, size_t ptesize) {
