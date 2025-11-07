@@ -8,6 +8,7 @@
 #include "cfg.h"
 
 class processor_t;
+struct state_t;
 class mmu_t;
 
 // this is the interface to the simulator used by the processors and memory
@@ -24,10 +25,15 @@ public:
   // Callback for processors to let the simulation know they were reset.
   virtual void proc_reset(unsigned id) = 0;
 
+  // used to process intrinsic labels
+  virtual void process_intrinsic_labels_pre_addr(const state_t &state, uint64_t addr) = 0;
+  virtual void process_intrinsic_labels_post_addr(const state_t &state, uint64_t addr) = 0;
+
   virtual const cfg_t &get_cfg() const = 0;
   virtual const std::map<size_t, processor_t*>& get_harts() const = 0;
 
   virtual const char* get_symbol(uint64_t paddr) = 0;
+  virtual std::vector<std::string> get_all_symbols(uint64_t paddr) = 0;
 
   virtual ~simif_t() = default;
 

@@ -289,12 +289,16 @@ void processor_t::step(size_t n)
             throw wait_for_interrupt_t();
           }
 
+          sim->process_intrinsic_labels_pre_addr(state, state.pc);
+
           in_wfi = false;
           insn_fetch_t fetch = mmu->load_insn(pc);
           if (debug && !state.serialized)
             disasm(fetch.insn);
           pc = execute_insn_logged(this, pc, fetch);
           advance_pc();
+
+          sim->process_intrinsic_labels_post_addr(state, state.pc);
 
           // Resume from debug mode in critical error
           if (state.critical_error && !state.debug_mode) {
@@ -310,6 +314,8 @@ void processor_t::step(size_t n)
       }
       else while (instret < n)
       {
+        sim->process_intrinsic_labels_pre_addr(state, state.pc);
+        
         // Main simulation loop, fast path.
         for (auto ic_entry = _mmu->access_icache(pc); ; ) {
           auto fetch = ic_entry->data;
@@ -324,6 +330,8 @@ void processor_t::step(size_t n)
         }
 
         advance_pc();
+        
+        sim->process_intrinsic_labels_post_addr(state, state.pc);
       }
     }
     catch(trap_t& t)

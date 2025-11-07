@@ -80,6 +80,22 @@ htif_t::~htif_t()
 {
   for (auto d : dynamic_devices)
     delete d;
+
+  if (intrinsic_label_log_stream) {
+    intrinsic_label_log_stream->close();
+    delete intrinsic_label_log_stream;
+  }
+}
+
+std::ostream &htif_t::log_label_intrinsic_output(void) {
+  if (intrinsic_label_log_stream)
+    return *intrinsic_label_log_stream;
+
+  if (intrinsic_label_log_file.empty())
+    return std::cout;
+
+  intrinsic_label_log_stream = new std::ofstream(intrinsic_label_log_file);
+  return *intrinsic_label_log_stream;
 }
 
 void htif_t::start()
@@ -183,11 +199,8 @@ void htif_t::load_symbols(std::map<std::string, uint64_t>& symbols)
     fprintf(stderr, "warning: tohost and fromhost symbols not in ELF; can't communicate with target\n");
   }
 
-  for (auto i : symbols) {
-    auto it = addr2symbol.find(i.second);
-    if ( it == addr2symbol.end())
-      addr2symbol[i.second] = i.first;
-  }
+  for (auto i : symbols)
+    addr2symbol[i.second].push_back(i.first);
 }
 
 void htif_t::load_program()
@@ -211,7 +224,20 @@ const char* htif_t::get_symbol(uint64_t addr)
   if(it == addr2symbol.end())
       return nullptr;
 
-  return it->second.c_str();
+  if (it->second.empty())
+    return nullptr;
+
+  return it->second[0].c_str();
+}
+
+std::vector<std::string> htif_t::get_all_symbols(uint64_t addr)
+{
+  auto it = addr2symbol.find(addr);
+
+  if(it == addr2symbol.end())
+      return std::vector<std::string>();
+
+  return it->second;
 }
 
 bool htif_t::should_exit() const {
@@ -362,6 +388,9 @@ void htif_t::parse_arguments(int argc, char ** argv)
       case HTIF_LONG_OPTIONS_OPTIND + 7:
         symbol_elfs.push_back(optarg);
         break;
+      case HTIF_LONG_OPTIONS_OPTIND + 8:
+        intrinsic_label_log_file = optarg;
+        break;
       case '?':
         if (!opterr)
           break;
@@ -407,6 +436,10 @@ void htif_t::parse_arguments(int argc, char ** argv)
         else if (arg.find("+symbol-elf=") == 0) {
           c = HTIF_LONG_OPTIONS_OPTIND + 7;
           optarg = optarg + 12;
+        }
+        else if (arg.find("+intrinsic-label-log=") == 0) {
+          c = HTIF_LONG_OPTIONS_OPTIND + 8;
+          optarg = optarg + 21;
         }
         else if (arg.find("+permissive-off") == 0) {
           if (opterr)

@@ -79,6 +79,9 @@ class htif_t : public chunked_memif_t
 
   // Given an address, return symbol from addr2symbol map
   const char* get_symbol(uint64_t addr);
+  std::vector<std::string> get_all_symbols(uint64_t addr);
+
+  std::ostream &log_label_intrinsic_output(void);
 
   // Return true if the simulation should exit due to a signal,
   // or end-of-test from HTIF, or an instruction limit.
@@ -112,7 +115,10 @@ class htif_t : public chunked_memif_t
   std::vector<std::string> payloads;
 
   std::vector<std::string> symbol_elfs;
-  std::map<uint64_t, std::string> addr2symbol;
+  std::map<uint64_t, std::vector<std::string>> addr2symbol;
+
+  std::string intrinsic_label_log_file;
+  std::ofstream *intrinsic_label_log_stream = nullptr;
 
   friend class memif_t;
   friend class syscall_t;
@@ -142,6 +148,8 @@ class htif_t : public chunked_memif_t
        +payload=PATH\n\
       --symbol-elf=PATH    Populate the symbol table with the ELF file at PATH\n\
        +symbol-elf=PATH\n\
+      --intrinsic-label-log=PATH    File for output caused by intrinsic labels\n\
+       +intrinsic-label-log=PATH\n\
 \n\
 HOST OPTIONS (currently unsupported)\n\
       --disk=DISK          Add DISK device. Use a ramdisk since this isn't\n\
@@ -162,6 +170,7 @@ TARGET (RISC-V BINARY) OPTIONS\n\
 {"signature-granularity",    required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 5 },     \
 {"target-argument",          required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 6 },     \
 {"symbol-elf",               required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 7 },     \
+{"intrinsic-label-log",      required_argument, 0, HTIF_LONG_OPTIONS_OPTIND + 8 },     \
 {0, 0, 0, 0}
 
 #endif // __HTIF_H
