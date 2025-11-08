@@ -3,6 +3,7 @@
 #ifndef _RISCV_MMU_H
 #define _RISCV_MMU_H
 
+#include "bloom_filter.h"
 #include "decode.h"
 #include "trap.h"
 #include "common.h"
@@ -42,7 +43,6 @@ struct insn_fetch_t
 
 struct icache_entry_t {
   reg_t tag;
-  struct icache_entry_t* next;
   insn_fetch_t data;
 };
 
@@ -292,7 +292,7 @@ public:
     return have_reservation;
   }
 
-  static const reg_t ICACHE_ENTRIES = 1024;
+  static const reg_t ICACHE_ENTRIES = 4096;
 
   inline size_t icache_index(reg_t addr)
   {
@@ -312,26 +312,15 @@ public:
   inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
   {
     insn_bits_t insn = fetch_insn_parcel(addr);
+    unsigned length = insn_length(insn);
 
-    int length = insn_length(insn);
-
-    if (likely(length == 4)) {
-      insn |= (insn_bits_t)fetch_insn_parcel(addr + 2) << 16;
-    } else if (length == 2) {
-      // entire instruction already fetched
-    } else if (length == 6) {
-      insn |= (insn_bits_t)fetch_insn_parcel(addr + 2) << 16;
-      insn |= (insn_bits_t)fetch_insn_parcel(addr + 4) << 32;
-    } else {
-      static_assert(sizeof(insn_bits_t) == 8, "insn_bits_t must be uint64_t");
-      insn |= (insn_bits_t)fetch_insn_parcel(addr + 2) << 16;
-      insn |= (insn_bits_t)fetch_insn_parcel(addr + 4) << 32;
-      insn |= (insn_bits_t)fetch_insn_parcel(addr + 6) << 48;
+    for (unsigned pos = sizeof(insn_parcel_t); pos < length; pos += sizeof(insn_parcel_t)) {
+      insn |= fetch_insn_parcel(addr + pos) << (8 * pos);
+      length = insn_length(insn);
     }
 
     insn_fetch_t fetch = {proc->decode_insn(insn), insn};
     entry->tag = addr;
-    entry->next = &icache[icache_index(addr + length)];
     entry->data = fetch;
 
     auto [check_tracer, _, paddr] = access_tlb(tlb_insn, addr, TLB_FLAGS, TLB_CHECK_TRACER);
@@ -418,6 +407,14 @@ private:
   dtlb_entry_t tlb_load[TLB_ENTRIES];
   dtlb_entry_t tlb_store[TLB_ENTRIES];
   dtlb_entry_t tlb_insn[TLB_ENTRIES];
+
+  typedef bloom_filter_t<reg_t, simple_hash1, simple_hash2, TLB_ENTRIES * 16, 3> reverse_tags_t;
+  reverse_tags_t tlb_store_reverse_tags;
+  reverse_tags_t tlb_insn_reverse_tags;
+
+  bool flush_tlb_ppn(reg_t ppn, dtlb_entry_t* tlb, reverse_tags_t& filter);
+  void flush_itlb_ppn(reg_t ppn);
+  void flush_stlb_ppn(reg_t ppn);
 
   // finish translation on a TLB miss and update the TLB
   tlb_entry_t refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type);
