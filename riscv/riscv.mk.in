@@ -1054,6 +1054,10 @@ riscv_insn_ext_zvkg= \
 	vghsh_vv \
 	vgmul_vv \
 
+riscv_insn_ext_zvkgs= \
+	vghsh_vs \
+	vgmul_vs \
+
 riscv_insn_ext_zvkned = \
 	vaesdf_vs \
 	vaesdf_vv \
@@ -1131,6 +1135,10 @@ riscv_insn_ext_zvk = \
 	$(riscv_insn_ext_zvksed) \
 	$(riscv_insn_ext_zvksh) \
 
+riscv_insn_ext_zvka = \
+	$(riscv_insn_ext_zvbc32e) \
+	$(riscv_insn_ext_zvkgs) \
+
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
 	$(riscv_insn_ext_c) \
@@ -1159,6 +1167,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_zfh_zfa) \
 	$(riscv_insn_ext_zicond) \
 	$(riscv_insn_ext_zvk) \
+	$(riscv_insn_ext_zvka) \
 	$(riscv_insn_ext_zvbdot) \
 	$(riscv_insn_ext_zvldot) \
 	$(riscv_insn_priv) \

@@ -29,6 +29,23 @@
     require_extension(EXT_ZVBC); \
   } while (0)
 
+// Ensures that the ZVBC32e extension (vector carryless multiplication
+// with 32-bit elements) is present, and the vector unit is enabled
+// and in a valid state.
+#define require_zvbc32e \
+  do { \
+    require_vector(true); \
+    require_extension(EXT_ZVBC32E); \
+  } while (0)
+
+// Ensures that any ZVBC extensions (vector carryless multiplication)
+// is present, and the vector unit is enabled and in a valid state.
+#define require_any_zvbc \
+  do { \
+    require_vector(true); \
+    require_either_extension(EXT_ZVBC, EXT_ZVBC32E); \
+  } while (0)
+
 // Ensures that the ZVKG extension (vector Galois Field Multiplication)
 // is present, and the vector unit is enabled and in a valid state.
 #define require_zvkg \
@@ -37,6 +54,14 @@
     require_extension(EXT_ZVKG); \
   } while (0)
 
+// Ensures that the ZVKGS extension (vector Galois Field Multiplication
+// with vector-scalar variant) is present, and the vector unit is
+// enabled and in a valid state.
+#define require_zvkgs \
+  do { \
+    require_vector(true); \
+    require_extension(EXT_ZVKGS); \
+  } while (0)
 // Ensures that a ZVK extension supporting SHA-256 is present.
 // For SHA-256, this support is present in either Zvknha or Zvknhb.
 // Also ensures that the vector unit is enabled and in a valid state.
@@ -957,6 +982,13 @@
   for (std::size_t bidx = 0; bidx < 16; ++bidx) { \
     (DST)[bidx] = (SRC)[bidx]; \
   }
+
+// Copies a EGU32x4_t value from 'SRC' into 'DST'.
+#define EGU32x4_COPY(DST, SRC) \
+  for (std::size_t bidx = 0; bidx < 4; ++bidx) { \
+    (DST)[bidx] = (SRC)[bidx]; \
+  }
+
 
 // Performs  "MUT_A ^= CONST_B;", i.e., xor of the bytes
 // in A (mutated) with the bytes in B (unchanged).
