@@ -1,9 +1,13 @@
 #include "term.h"
+#include "common.h"
 #include <termios.h>
 #include <unistd.h>
 #include <poll.h>
 #include <signal.h>
 #include <stdlib.h>
+#include <string.h>
+
+static int tcsetattr_ttou(int fd, int optional_actions, const struct termios *p);
 
 class canonical_termios_t
 {
@@ -15,7 +19,7 @@ class canonical_termios_t
     {
       struct termios new_tios = old_tios;
       new_tios.c_lflag &= ~(ICANON | ECHO);
-      if (tcsetattr(0, TCSANOW, &new_tios) == 0)
+      if (tcsetattr_ttou(0, TCSANOW, &new_tios) == 0)
         restore_tios = true;
     }
   }
@@ -23,7 +27,7 @@ class canonical_termios_t
   ~canonical_termios_t()
   {
     if (restore_tios)
-      tcsetattr(0, TCSANOW, &old_tios);
+      tcsetattr_ttou(0, TCSANOW, &old_tios);
   }
  private:
   struct termios old_tios;
@@ -50,4 +54,35 @@ void canonical_terminal_t::write(char ch)
 {
   if (::write(1, &ch, 1) != 1)
     abort();
+}
+
+static volatile sig_atomic_t sigttou_caught;
+
+static void sigttou_handler(int UNUSED signum) {
+  sigttou_caught = 1;
+}
+
+static int tcsetattr_ttou(int fd, int optional_actions, const struct termios *p)
+{
+  struct sigaction sa, old_sa;
+  memset(&sa, 0, sizeof(sa));
+  sa.sa_handler = sigttou_handler;
+  sigemptyset(&sa.sa_mask);
+
+  if (sigaction(SIGTTOU, &sa, &old_sa))
+    abort();
+
+  sigttou_caught = 0;
+
+  int result = tcsetattr(fd, optional_actions, p);
+
+  if (sigttou_caught) {
+    sigaction(SIGTTOU, &old_sa, NULL);
+    return -1;
+  }
+
+  if (sigaction(SIGTTOU, &old_sa, NULL))
+    abort();
+
+  return result;
 }
