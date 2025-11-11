@@ -18,6 +18,7 @@ riscv_install_prog_srcs = \
 riscv_install_hdrs = \
 	abstract_device.h \
 	abstract_interrupt_controller.h \
+	bloom_filter.h \
 	cachesim.h \
 	cfg.h \
 	common.h \
