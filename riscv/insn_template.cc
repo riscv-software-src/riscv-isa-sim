@@ -6,7 +6,8 @@
 #define DECODE_MACRO_USAGE_LOGGED 0
 
 #define PROLOGUE \
-  reg_t npc = sext_xlen(pc + insn_length(OPCODE))
+  reg_t npc = sext_xlen(pc + insn_length(OPCODE)); \
+  if (!p->extension_enabled(EXT_ZCA)) assume(insn_length(OPCODE) % 4 == 0)
 
 #define EPILOGUE \
   trace_opcode(p, OPCODE, insn); \
