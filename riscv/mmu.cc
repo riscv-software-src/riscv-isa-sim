@@ -106,7 +106,9 @@ mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
 
   auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_FLAGS);
   auto access_info = generate_access_info(vaddr, FETCH, {});
-  check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt);
+
+  if (check_triggers_fetch)
+    check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt);
 
   if (!tlb_hit) {
     paddr = translate(access_info, sizeof(insn_parcel_t));
@@ -125,7 +127,8 @@ mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
 
   auto res = perform_intrapage_fetch(vaddr, host_addr, paddr);
 
-  check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt, from_le(res));
+  if (check_triggers_fetch)
+    check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt, from_le(res));
 
   return res;
 }
@@ -282,7 +285,9 @@ void mmu_t::load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate
 
   auto access_info = generate_access_info(original_addr, LOAD, xlate_flags);
   reg_t transformed_addr = access_info.transformed_vaddr;
-  check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt);
+
+  if (check_triggers_load)
+    check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt);
 
   if ((transformed_addr & (len - 1)) == 0) {
     load_slow_path_intrapage(len, bytes, access_info);
@@ -302,12 +307,14 @@ void mmu_t::load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate
     }
   }
 
-  while (len > sizeof(reg_t)) {
-    check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt, reg_from_bytes(sizeof(reg_t), bytes));
-    len -= sizeof(reg_t);
-    bytes += sizeof(reg_t);
+  if (check_triggers_load) {
+    while (len > sizeof(reg_t)) {
+        check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt, reg_from_bytes(sizeof(reg_t), bytes));
+      len -= sizeof(reg_t);
+      bytes += sizeof(reg_t);
+    }
+    check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt, reg_from_bytes(len, bytes));
   }
-  check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt, reg_from_bytes(len, bytes));
 
   if (proc && unlikely(proc->get_log_commits_enabled()))
     proc->state.log_mem_read.push_back(std::make_tuple(original_addr, 0, len));
@@ -367,7 +374,8 @@ void mmu_t::store_slow_path(reg_t original_addr, reg_t len, const uint8_t* bytes
 
   auto access_info = generate_access_info(original_addr, STORE, xlate_flags);
   reg_t transformed_addr = access_info.transformed_vaddr;
-  if (actually_store) {
+
+  if (actually_store && check_triggers_store) {
     reg_t trig_len = len;
     const uint8_t* trig_bytes = bytes;
     while (trig_len > sizeof(reg_t)) {
