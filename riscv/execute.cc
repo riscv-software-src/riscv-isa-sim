@@ -304,10 +304,17 @@ void processor_t::step(size_t n)
         // Main simulation loop, fast path.
         for (auto ic_entry = _mmu->access_icache(pc); ; ) {
           auto fetch = ic_entry->data;
-          pc = execute_insn_fast(this, pc, fetch);
-          ic_entry = &_mmu->icache[_mmu->icache_index(pc)];
-          if (unlikely(ic_entry->tag != pc))
-            break;
+          ic_entry = ic_entry->next;
+          auto new_pc = execute_insn_fast(this, pc, fetch);
+          if (unlikely(ic_entry->tag != new_pc)) {
+            ic_entry = &_mmu->icache[_mmu->icache_index(new_pc)];
+            if (ic_entry->tag != new_pc) {
+              pc = new_pc;
+              break;
+            }
+            _mmu->icache[_mmu->icache_index(pc)].next = ic_entry;
+          }
+          pc = ic_entry->tag;
           if (unlikely(instret + 1 == n))
             break;
           instret++;

@@ -43,6 +43,7 @@ struct insn_fetch_t
 
 struct icache_entry_t {
   reg_t tag;
+  icache_entry_t* next;
   insn_fetch_t data;
 };
 
@@ -321,6 +322,7 @@ public:
 
     insn_fetch_t fetch = {proc->decode_insn(insn), insn};
     entry->tag = addr;
+    entry->next = &icache[icache_index(addr + length)];
     entry->data = fetch;
 
     auto [check_tracer, _, paddr] = access_tlb(tlb_insn, addr, TLB_FLAGS, TLB_CHECK_TRACER);
