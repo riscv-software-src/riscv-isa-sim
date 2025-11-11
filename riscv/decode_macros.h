@@ -225,7 +225,8 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define zext_xlen(x) zext(x, xlen)
 
 #define set_pc(x) \
-  do { p->check_pc_alignment(x); \
+  do { if (unlikely((x) & ~p->pc_alignment_mask())) \
+        return p->throw_instruction_address_misaligned(x); \
        npc = sext_xlen(x); \
      } while (0)
 
