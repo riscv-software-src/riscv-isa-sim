@@ -1,4 +1,4 @@
-require_extension('A');
+require_extension(EXT_ZALRSC);
 
 bool have_reservation = MMU.store_conditional<uint32_t>(RS1, RS2);
 
