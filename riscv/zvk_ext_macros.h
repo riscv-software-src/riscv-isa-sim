@@ -13,6 +13,14 @@
 // Predicate Macros
 //
 
+// Ensures that the ZVKB extension (vector crypto bitmanip subset) is present,
+// and the vector unit is enabled and in a valid state.
+#define require_zvkb \
+  do { \
+    require_vector(true); \
+    require_extension(EXT_ZVKB); \
+  } while (0)
+
 // Ensures that the ZVBB extension (vector crypto bitmanip) is present,
 // and the vector unit is enabled and in a valid state.
 #define require_zvbb \
