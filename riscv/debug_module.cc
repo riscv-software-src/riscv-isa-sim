@@ -1101,10 +1101,16 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         return true;
 
       case DM_ABSTRACTAUTO:
-        abstractauto.autoexecprogbuf = get_field(value,
-            DM_ABSTRACTAUTO_AUTOEXECPROGBUF);
-        abstractauto.autoexecdata = get_field(value,
-            DM_ABSTRACTAUTO_AUTOEXECDATA);
+        if (config.support_abstractauto) {
+          abstractauto.autoexecprogbuf = get_field(value,
+              DM_ABSTRACTAUTO_AUTOEXECPROGBUF);
+          abstractauto.autoexecdata = get_field(value,
+              DM_ABSTRACTAUTO_AUTOEXECDATA);
+        }
+        else {
+          abstractauto.autoexecprogbuf = 0;
+          abstractauto.autoexecdata = 0;
+        }
         return true;
       case DM_SBCS:
         sbcs.readonaddr = get_field(value, DM_SBCS_SBREADONADDR);

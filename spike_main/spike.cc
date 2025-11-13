@@ -84,6 +84,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --dm-no-abstract-fpr  Debug module won't support abstract FPR access\n");
   fprintf(stderr, "  --dm-no-halt-groups   Debug module won't support halt groups\n");
   fprintf(stderr, "  --dm-no-impebreak     Debug module won't support implicit ebreak in program buffer\n");
+  fprintf(stderr, "  --dm-no-abstractauto  Debug module won't support the abstractauto register\n");
   fprintf(stderr, "  --blocksz=<size>      Cache block size (B) for CMO operations(powers of 2) [default 64]\n");
   fprintf(stderr, "  --instructions=<n>    Stop after n instructions\n");
 
@@ -434,6 +435,8 @@ int main(int argc, char** argv)
       [&](const char UNUSED *s){dm_config.support_abstract_fpr_access = false;});
   parser.option(0, "dm-no-halt-groups", 0,
       [&](const char UNUSED *s){dm_config.support_haltgroups = false;});
+  parser.option(0, "dm-no-abstractauto", 0,
+      [&](const char UNUSED *s){dm_config.support_abstractauto = false;});
   parser.option(0, "log-commits", 0,
                 [&](const char UNUSED *s){log_commits = true;});
   parser.option(0, "log", 1,
