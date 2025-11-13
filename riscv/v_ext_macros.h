@@ -1414,12 +1414,12 @@ VI_VX_ULOOP({ \
     require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vflmul / div); \
   } else { \
     require_noover_widen(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vflmul / div); \
-  } \
-  VI_LOOP_BASE \
+  }
 
 // vector: sign/unsiged extension
 #define VI_VV_EXT(div, type) \
   VI_EXT_CHECK(div); \
+  VI_LOOP_BASE \
   reg_t pat = (((P.VU.vsew >> 3) << 4) | from >> 3); \
     switch (pat) { \
       case 0x21: \
@@ -1467,6 +1467,7 @@ VI_VX_ULOOP({ \
 #define VI_VF_EXT(div, BODY) \
   require(div == 2 && P.VU.vsew == 8); \
   VI_EXT_CHECK(div); \
+  VI_LOOP_BASE \
   BODY; \
   VI_LOOP_END
 
