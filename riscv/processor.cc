@@ -572,6 +572,14 @@ void processor_t::check_if_lpad_required()
   }
 }
 
+reg_t processor_t::set_lpad_expected(reg_t pc)
+{
+  auto p = this;
+  if (ZICFILP_xLPE(state.v, state.prv))
+    state.elp = elp_t::LP_EXPECTED;
+  return pc;
+}
+
 void processor_t::disasm(insn_t insn)
 {
   uint64_t bits = insn.bits();

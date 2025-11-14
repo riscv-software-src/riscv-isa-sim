@@ -379,6 +379,7 @@ public:
   bool is_waiting_for_interrupt() { return in_wfi; };
 
   void check_if_lpad_required();
+  reg_t set_lpad_expected(reg_t pc);
 
   reg_t select_an_interrupt_with_default_priority(reg_t enabled_interrupts) const;
 

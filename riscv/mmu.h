@@ -346,8 +346,7 @@ public:
 
   inline insn_fetch_t load_insn(reg_t addr)
   {
-    icache_entry_t entry;
-    return refill_icache(addr, &entry)->data;
+    return refill_icache(addr, &icache[icache_index(addr)])->data;
   }
 
   std::tuple<bool, uintptr_t, reg_t> ALWAYS_INLINE access_tlb(const dtlb_entry_t* tlb, reg_t vaddr, reg_t allowed_flags = 0, reg_t required_flags = 0)
