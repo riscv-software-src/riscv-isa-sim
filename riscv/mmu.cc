@@ -561,6 +561,8 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
 
       if (pte & PTE_RSVD) {
         break;
+      } else if (!proc->extension_enabled(EXT_SVRSW60T59B) && (pte & PTE_SVRSW60T59B)) {
+        break;
       } else if (!proc->extension_enabled(EXT_SVNAPOT) && (pte & PTE_N)) {
         break;
       } else if (!pbmte && (pte & PTE_PBMT)) {
@@ -691,6 +693,8 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
 
     if (pte & PTE_RSVD) {
       break;
+    } else if (!proc->extension_enabled(EXT_SVRSW60T59B) && (pte & PTE_SVRSW60T59B)) {
+        break;
     } else if (!proc->extension_enabled(EXT_SVNAPOT) && (pte & PTE_N)) {
       break;
     } else if (!pbmte && (pte & PTE_PBMT)) {
