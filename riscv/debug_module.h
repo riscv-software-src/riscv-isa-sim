@@ -24,6 +24,7 @@ struct debug_module_config_t {
   bool support_abstract_fpr_access = true;
   bool support_haltgroups = true;
   bool support_impebreak = true;
+  bool support_abstractauto = true;
 };
 
 struct dmcontrol_t {
