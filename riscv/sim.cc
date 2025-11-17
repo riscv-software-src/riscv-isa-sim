@@ -278,7 +278,7 @@ int sim_t::run()
   if (!debug && log)
     set_procs_debug(true);
 
-  htif_t::set_expected_xlen(harts[0]->get_isa().get_max_xlen());
+  htif_t::set_expected_xlen(harts.begin()->second->get_isa().get_max_xlen());
 
   // htif_t::run() will repeatedly call back into sim_t::idle(), each
   // invocation of which will advance target time
