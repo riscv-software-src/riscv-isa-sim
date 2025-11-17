@@ -1790,8 +1790,15 @@ VI_VX_ULOOP({ \
   }; \
   VI_VFP_LOOP_CMP_END \
 
+#define VI_CHECK_VFP_WIDE \
+  if (P.VU.vsew == e16) \
+    require(p->get_isa().get_zvf()); \
+  else if (P.VU.vsew == e32) \
+    require(p->get_isa().get_zvd()); \
+
 #define VI_VFP_VF_LOOP_WIDE(BODY16, BODY32) \
   VI_CHECK_DSS(false); \
+  VI_CHECK_VFP_WIDE \
   VI_VFP_LOOP_BASE \
   switch (P.VU.vsew) { \
     case e16: { \
@@ -1841,6 +1848,7 @@ VI_VX_ULOOP({ \
 
 #define VI_VFP_VV_LOOP_WIDE(BODY16, BODY32) \
   VI_CHECK_DSS(true); \
+  VI_CHECK_VFP_WIDE \
   VI_VFP_LOOP_BASE \
   switch (P.VU.vsew) { \
     case e16: { \
@@ -1890,6 +1898,7 @@ VI_VX_ULOOP({ \
 
 #define VI_VFP_WF_LOOP_WIDE(BODY16, BODY32) \
   VI_CHECK_DDS(false); \
+  VI_CHECK_VFP_WIDE \
   VI_VFP_LOOP_BASE \
   switch (P.VU.vsew) { \
     case e16: { \
@@ -1918,6 +1927,7 @@ VI_VX_ULOOP({ \
 
 #define VI_VFP_WV_LOOP_WIDE(BODY16, BODY32) \
   VI_CHECK_DDS(true); \
+  VI_CHECK_VFP_WIDE \
   VI_VFP_LOOP_BASE \
   switch (P.VU.vsew) { \
     case e16: { \
