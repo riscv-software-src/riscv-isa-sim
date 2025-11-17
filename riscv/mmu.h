@@ -315,7 +315,7 @@ public:
     unsigned length = insn_length(insn);
 
     for (unsigned pos = sizeof(insn_parcel_t); pos < length; pos += sizeof(insn_parcel_t)) {
-      insn |= fetch_insn_parcel(addr + pos) << (8 * pos);
+      insn |= (insn_bits_t)fetch_insn_parcel(addr + pos) << (8 * pos);
       length = insn_length(insn);
     }
 
