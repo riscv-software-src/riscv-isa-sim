@@ -57,6 +57,11 @@ struct dtlb_entry_t {
   reg_t tag;
 };
 
+struct pte_cache_entry_t {
+  reg_t paddr;
+  reg_t pte;
+};
+
 struct xlate_flags_t {
   const bool forced_virt : 1 {false};
   const bool hlvx : 1 {false};
@@ -409,6 +414,9 @@ private:
   dtlb_entry_t tlb_store[TLB_ENTRIES];
   dtlb_entry_t tlb_insn[TLB_ENTRIES];
 
+  static const reg_t PTE_CACHE_ENTRIES = 251;
+  pte_cache_entry_t pte_cache[PTE_CACHE_ENTRIES];
+
   typedef bloom_filter_t<reg_t, simple_hash1, simple_hash2, TLB_ENTRIES * 16, 3> reverse_tags_t;
   reverse_tags_t tlb_store_reverse_tags;
   reverse_tags_t tlb_insn_reverse_tags;
@@ -465,6 +473,9 @@ private:
 
   template<typename T> inline reg_t pte_load(reg_t pte_paddr, reg_t addr, bool virt, access_type trap_type)
   {
+    if (auto [hit, pte] = pte_cache_access(pte_paddr); hit)
+      return pte;
+
     const size_t ptesize = sizeof(T);
 
     if (!pmp_ok(pte_paddr, ptesize, LOAD, PRV_S, false))
@@ -477,7 +488,10 @@ private:
     } else if (!mmio_load(pte_paddr, ptesize, (uint8_t*)&target_pte)) {
       throw_access_exception(virt, addr, trap_type);
     }
-    return from_target(target_pte);
+
+    auto res = from_target(target_pte);
+    pte_cache_insert(pte_paddr, res);
+    return res;
   }
 
   template<typename T> inline void pte_store(reg_t pte_paddr, reg_t new_pte, reg_t addr, bool virt, access_type trap_type)
@@ -494,6 +508,20 @@ private:
     } else if (!mmio_store(pte_paddr, ptesize, (uint8_t*)&target_pte)) {
       throw_access_exception(virt, addr, trap_type);
     }
+
+    pte_cache_insert(pte_paddr, new_pte);
+  }
+
+  std::tuple<bool, reg_t> pte_cache_access(reg_t key)
+  {
+    auto e = pte_cache[key % PTE_CACHE_ENTRIES];
+    return std::make_tuple(e.paddr == key, e.pte);
+  }
+
+  void pte_cache_insert(reg_t key, reg_t value)
+  {
+    if (value & PTE_V)
+      pte_cache[key % PTE_CACHE_ENTRIES] = {key, value};
   }
 
   inline insn_parcel_t fetch_insn_parcel(reg_t addr) {
