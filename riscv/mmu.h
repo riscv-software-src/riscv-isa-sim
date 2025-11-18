@@ -135,7 +135,7 @@ public:
   T ss_load(reg_t addr) {
     if ((addr & (sizeof(T) - 1)) != 0)
       throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
-    return load<T>(addr, {.forced_virt=false, .hlvx=false, .lr=false, .ss_access=true});
+    return load<T>(addr, {.ss_access=true});
   }
 
   template<typename T>
@@ -162,7 +162,7 @@ public:
   void ss_store(reg_t addr, T val) {
     if ((addr & (sizeof(T) - 1)) != 0)
       throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
-    store<T>(addr, val, {.forced_virt=false, .hlvx=false, .lr=false, .ss_access=true});
+    store<T>(addr, val, {.ss_access=true});
   }
 
   // AMO/Zicbom faults should be reported as store faults
@@ -194,13 +194,9 @@ public:
   // for shadow stack amoswap
   template<typename T>
   T ssamoswap(reg_t addr, reg_t value) {
-      bool forced_virt = false;
-      bool hlvx = false;
-      bool lr = false;
-      bool ss_access = true;
-      store_slow_path(addr, sizeof(T), nullptr, {forced_virt, hlvx, lr, ss_access}, false, true);
-      auto data = load<T>(addr, {forced_virt, hlvx, lr, ss_access});
-      store<T>(addr, value, {forced_virt, hlvx, lr, ss_access});
+      store_slow_path(addr, sizeof(T), nullptr, {.ss_access=true}, false, true);
+      auto data = load<T>(addr, {.ss_access=true});
+      store<T>(addr, value, {.ss_access=true});
       return data;
   }
 
