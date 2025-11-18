@@ -274,7 +274,10 @@ public:
       store_slow_path(vaddr, size, nullptr, {}, false, true);
     }
 
-    reg_t paddr = translate(generate_access_info(vaddr, STORE, {}), 1);
+    auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_store, vaddr);
+    if (!tlb_hit)
+      paddr = translate(generate_access_info(vaddr, STORE, {}), 1);
+
     if (sim->reservable(paddr))
       return load_reservation_address == paddr;
     else

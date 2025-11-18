@@ -252,16 +252,17 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
 {
   reg_t vaddr = access_info.vaddr;
   auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_load, vaddr, TLB_FLAGS);
-  if (!tlb_hit || access_info.flags.is_special_access()) {
+  bool special = access_info.flags.is_special_access() && !access_info.flags.lr;
+  if (!tlb_hit || special) {
     paddr = translate(access_info, len);
     host_addr = (uintptr_t)sim->addr_to_mem(paddr);
 
-    if (!access_info.flags.is_special_access())
+    if (!special)
       refill_tlb(vaddr, paddr, (char*)host_addr, LOAD);
+  }
 
-    if (access_info.flags.lr && !sim->reservable(paddr)) {
-      throw trap_load_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
-    }
+  if (access_info.flags.lr && !sim->reservable(paddr)) {
+    throw trap_load_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
   }
 
   perform_intrapage_load(vaddr, host_addr, paddr, len, bytes, access_info.flags);
