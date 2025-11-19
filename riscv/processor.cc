@@ -655,8 +655,16 @@ reg_t illegal_instruction(processor_t UNUSED *p, insn_t insn, reg_t UNUSED pc)
   throw trap_illegal_instruction(insn.bits() & 0xffffffffULL);
 }
 
+reg_t processor_t::throw_instruction_address_misaligned(reg_t pc)
+{
+  throw trap_instruction_address_misaligned(state.v, pc, 0, 0);
+}
+
 insn_func_t processor_t::decode_insn(insn_t insn)
 {
+  if (!extension_enabled(EXT_ZCA) && insn_length(insn.bits()) % 4)
+    return &::illegal_instruction;
+
   // look up opcode in hash table
   size_t idx = insn.bits() % OPCODE_CACHE_SIZE;
   auto [hit, desc] = opcode_cache[idx].lookup(insn.bits());

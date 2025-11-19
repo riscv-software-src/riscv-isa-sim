@@ -43,6 +43,7 @@ struct insn_fetch_t
 
 struct icache_entry_t {
   reg_t tag;
+  icache_entry_t* next;
   insn_fetch_t data;
 };
 
@@ -54,6 +55,11 @@ struct tlb_entry_t {
 struct dtlb_entry_t {
   tlb_entry_t data;
   reg_t tag;
+};
+
+struct pte_cache_entry_t {
+  reg_t paddr;
+  reg_t pte;
 };
 
 struct xlate_flags_t {
@@ -129,7 +135,7 @@ public:
   T ss_load(reg_t addr) {
     if ((addr & (sizeof(T) - 1)) != 0)
       throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
-    return load<T>(addr, {.forced_virt=false, .hlvx=false, .lr=false, .ss_access=true});
+    return load<T>(addr, {.ss_access=true});
   }
 
   template<typename T>
@@ -156,7 +162,7 @@ public:
   void ss_store(reg_t addr, T val) {
     if ((addr & (sizeof(T) - 1)) != 0)
       throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
-    store<T>(addr, val, {.forced_virt=false, .hlvx=false, .lr=false, .ss_access=true});
+    store<T>(addr, val, {.ss_access=true});
   }
 
   // AMO/Zicbom faults should be reported as store faults
@@ -188,13 +194,9 @@ public:
   // for shadow stack amoswap
   template<typename T>
   T ssamoswap(reg_t addr, reg_t value) {
-      bool forced_virt = false;
-      bool hlvx = false;
-      bool lr = false;
-      bool ss_access = true;
-      store_slow_path(addr, sizeof(T), nullptr, {forced_virt, hlvx, lr, ss_access}, false, true);
-      auto data = load<T>(addr, {forced_virt, hlvx, lr, ss_access});
-      store<T>(addr, value, {forced_virt, hlvx, lr, ss_access});
+      store_slow_path(addr, sizeof(T), nullptr, {.ss_access=true}, false, true);
+      auto data = load<T>(addr, {.ss_access=true});
+      store<T>(addr, value, {.ss_access=true});
       return data;
   }
 
@@ -272,7 +274,10 @@ public:
       store_slow_path(vaddr, size, nullptr, {}, false, true);
     }
 
-    reg_t paddr = translate(generate_access_info(vaddr, STORE, {}), 1);
+    auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_store, vaddr);
+    if (!tlb_hit)
+      paddr = translate(generate_access_info(vaddr, STORE, {}), 1);
+
     if (sim->reservable(paddr))
       return load_reservation_address == paddr;
     else
@@ -321,6 +326,7 @@ public:
 
     insn_fetch_t fetch = {proc->decode_insn(insn), insn};
     entry->tag = addr;
+    entry->next = &icache[icache_index(addr + length)];
     entry->data = fetch;
 
     auto [check_tracer, _, paddr] = access_tlb(tlb_insn, addr, TLB_FLAGS, TLB_CHECK_TRACER);
@@ -407,6 +413,9 @@ private:
   dtlb_entry_t tlb_store[TLB_ENTRIES];
   dtlb_entry_t tlb_insn[TLB_ENTRIES];
 
+  static const reg_t PTE_CACHE_ENTRIES = 251;
+  pte_cache_entry_t pte_cache[PTE_CACHE_ENTRIES];
+
   typedef bloom_filter_t<reg_t, simple_hash1, simple_hash2, TLB_ENTRIES * 16, 3> reverse_tags_t;
   reverse_tags_t tlb_store_reverse_tags;
   reverse_tags_t tlb_insn_reverse_tags;
@@ -463,6 +472,9 @@ private:
 
   template<typename T> inline reg_t pte_load(reg_t pte_paddr, reg_t addr, bool virt, access_type trap_type)
   {
+    if (auto [hit, pte] = pte_cache_access(pte_paddr); hit)
+      return pte;
+
     const size_t ptesize = sizeof(T);
 
     if (!pmp_ok(pte_paddr, ptesize, LOAD, PRV_S, false))
@@ -475,7 +487,10 @@ private:
     } else if (!mmio_load(pte_paddr, ptesize, (uint8_t*)&target_pte)) {
       throw_access_exception(virt, addr, trap_type);
     }
-    return from_target(target_pte);
+
+    auto res = from_target(target_pte);
+    pte_cache_insert(pte_paddr, res);
+    return res;
   }
 
   template<typename T> inline void pte_store(reg_t pte_paddr, reg_t new_pte, reg_t addr, bool virt, access_type trap_type)
@@ -492,6 +507,20 @@ private:
     } else if (!mmio_store(pte_paddr, ptesize, (uint8_t*)&target_pte)) {
       throw_access_exception(virt, addr, trap_type);
     }
+
+    pte_cache_insert(pte_paddr, new_pte);
+  }
+
+  std::tuple<bool, reg_t> pte_cache_access(reg_t key)
+  {
+    auto e = pte_cache[key % PTE_CACHE_ENTRIES];
+    return std::make_tuple(e.paddr == key, e.pte);
+  }
+
+  void pte_cache_insert(reg_t key, reg_t value)
+  {
+    if (value & PTE_V)
+      pte_cache[key % PTE_CACHE_ENTRIES] = {key, value};
   }
 
   inline insn_parcel_t fetch_insn_parcel(reg_t addr) {

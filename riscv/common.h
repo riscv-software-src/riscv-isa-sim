@@ -19,4 +19,16 @@
 # define UNUSED
 #endif
 
+#ifndef __has_builtin
+# define __has_builtin(x) 0
+#endif
+
+#if __has_cpp_attribute(assume)
+# define assume(x) [[assume(x)]]
+#elif __has_builtin(__builtin_assume)
+# define assume(x) __builtin_assume(x)
+#else
+# define assume(x) ((void) 0)
+#endif
+
 #endif
