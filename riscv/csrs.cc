@@ -734,7 +734,7 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   const bool new_h = new_misa & (1L << ('H' - 'A'));
 
   proc->set_extension_enable(EXT_ZCA, (new_misa & (1L << ('C' - 'A'))) || !proc->get_isa().extension_enabled('C'));
-  proc->set_extension_enable(EXT_ZCF, (new_misa & (1L << ('F' - 'A'))) && proc->extension_enabled(EXT_ZCA));
+  proc->set_extension_enable(EXT_ZCF, (new_misa & (1L << ('F' - 'A'))) && proc->extension_enabled(EXT_ZCA) && proc->get_xlen() == 32);
   proc->set_extension_enable(EXT_ZCD, (new_misa & (1L << ('D' - 'A'))) && proc->extension_enabled(EXT_ZCA));
   proc->set_extension_enable(EXT_ZCB, proc->extension_enabled(EXT_ZCA));
   proc->set_extension_enable(EXT_ZCMP, proc->extension_enabled(EXT_ZCA));
