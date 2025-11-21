@@ -490,12 +490,15 @@ bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlv
   if (!proc || proc->n_pmp == 0)
     return true;
 
+  reg_t gran = reg_t(1) << proc->lg_pmp_granularity;
+  auto first_addr_aligned = addr & -gran;
+  auto last_addr_aligned = (addr + len - 1) & -gran;
+
   for (size_t i = 0; i < proc->n_pmp; i++) {
-    // Check each 4-byte sector of the access
+    // Check each PMP-granularity sector of the access
     bool any_match = false;
     bool all_match = true;
-    for (reg_t offset = 0; offset < len; offset += 1 << PMP_SHIFT) {
-      reg_t cur_addr = addr + offset;
+    for (reg_t cur_addr = first_addr_aligned; cur_addr <= last_addr_aligned; cur_addr += gran) {
       bool match = proc->state.pmpaddr[i]->match4(cur_addr);
       any_match |= match;
       all_match &= match;
