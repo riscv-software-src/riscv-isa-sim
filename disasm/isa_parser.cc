@@ -64,6 +64,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   elen = 0;
   zvf = false;
   zvd = false;
+  zve = false;
 
   switch (isa_string[4]) {
     case 'g':
@@ -431,6 +432,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
         bad_isa_string(str, ("Invalid Zve string: " + ext_str).c_str());
       elen = std::max(elen, new_elen);
       vlen = std::max(vlen, new_elen);
+      zve |= true;
     } else if (ext_str == "ssdbltrp") {
       extension_table[EXT_SSDBLTRP] = true;
     } else if (ext_str == "smdbltrp") {

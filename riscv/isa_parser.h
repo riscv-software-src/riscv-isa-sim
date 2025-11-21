@@ -133,6 +133,7 @@ public:
   std::string get_isa_string() const { return isa_string; }
   reg_t get_vlen() const { return vlen; }
   reg_t get_elen() const { return elen; }
+  bool get_zve() const { return zve; }
   bool get_zvf() const { return zvf; }
   bool get_zvd() const { return zvd; }
   bool extension_enabled(unsigned char ext) const {
@@ -154,6 +155,7 @@ protected:
   reg_t elen;
   bool zvf;
   bool zvd;
+  bool zve;
   std::bitset<NUM_ISA_EXTENSIONS> extension_table;
   std::string isa_string;
   std::set<std::string> extensions;
