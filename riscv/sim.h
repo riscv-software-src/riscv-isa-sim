@@ -13,6 +13,7 @@
 #include <fesvr/htif.h>
 #include <vector>
 #include <map>
+#include <unordered_map>
 #include <string>
 #include <memory>
 #include <sys/types.h>
@@ -73,6 +74,7 @@ private:
   std::vector<std::pair<reg_t, abstract_mem_t*>> mems;
   std::vector<processor_t*> procs;
   std::map<size_t, processor_t*> harts;
+  std::unordered_map<reg_t, char*> addr_to_mem_cache;
   std::pair<reg_t, reg_t> initrd_range;
   std::string dts;
   std::string dtb;
