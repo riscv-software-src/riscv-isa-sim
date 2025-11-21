@@ -43,6 +43,12 @@ struct insn_desc_t
   insn_func_t logged_rv64i;
   insn_func_t logged_rv32e;
   insn_func_t logged_rv64e;
+  bool overlap = true;
+
+  bool matches(insn_bits_t insn) const
+  {
+    return (insn & mask) == match;
+  }
 
   insn_func_t func(int xlen, bool rve, bool logged) const
   {
@@ -207,47 +213,6 @@ struct state_t
   void csr_init(processor_t* const proc, reg_t max_isa);
 };
 
-class opcode_cache_entry_t {
- public:
-  opcode_cache_entry_t()
-  {
-    reset();
-  }
-
-  void reset()
-  {
-    for (size_t i = 0; i < associativity; i++) {
-      tag[i] = 0;
-      contents[i] = &insn_desc_t::illegal_instruction;
-    }
-  }
-
-  void replace(insn_bits_t opcode, const insn_desc_t* desc)
-  {
-    for (size_t i = associativity - 1; i > 0; i--) {
-      tag[i] = tag[i-1];
-      contents[i] = contents[i-1];
-    }
-
-    tag[0] = opcode;
-    contents[0] = desc;
-  }
-
-  std::tuple<bool, const insn_desc_t*> lookup(insn_bits_t opcode)
-  {
-    for (size_t i = 0; i < associativity; i++)
-      if (tag[i] == opcode)
-        return std::tuple(true, contents[i]);
-
-    return std::tuple(false, nullptr);
-  }
-
- private:
-  static const size_t associativity = 4;
-  insn_bits_t tag[associativity];
-  const insn_desc_t* contents[associativity];
-};
-
 // this class represents one processor in a RISC-V machine.
 class processor_t : public abstract_device_t
 {
@@ -409,8 +374,9 @@ private:
   std::vector<insn_desc_t> custom_instructions;
   std::unordered_map<reg_t,uint64_t> pc_histogram;
 
-  static const size_t OPCODE_CACHE_SIZE = 4095;
-  opcode_cache_entry_t opcode_cache[OPCODE_CACHE_SIZE];
+  static const size_t OPCODE_CACHE_SORT_COUNT = 5000000;
+  size_t opcode_cache_sort_count = OPCODE_CACHE_SORT_COUNT;
+  std::vector<std::pair<const insn_desc_t*, reg_t>> opcode_cache[128];
 
   void take_pending_interrupt() { take_interrupt(state.mip->read() & state.mie->read()); }
   void take_interrupt(reg_t mask); // take first enabled interrupt in mask

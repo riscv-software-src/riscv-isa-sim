@@ -662,31 +662,38 @@ reg_t processor_t::throw_instruction_address_misaligned(reg_t pc)
 
 insn_func_t processor_t::decode_insn(insn_t insn)
 {
-  if (!extension_enabled(EXT_ZCA) && insn_length(insn.bits()) % 4)
-    return &::illegal_instruction;
-
-  // look up opcode in hash table
-  size_t idx = insn.bits() % OPCODE_CACHE_SIZE;
-  auto [hit, desc] = opcode_cache[idx].lookup(insn.bits());
-
   bool rve = extension_enabled('E');
 
-  if (unlikely(!hit)) {
-    // fall back to linear search
-    auto matching = [insn_bits = insn.bits()](const insn_desc_t &d) {
-      return (insn_bits & d.mask) == d.match;
-    };
-    auto p = std::find_if(custom_instructions.begin(),
-                          custom_instructions.end(), matching);
-    if (p == custom_instructions.end()) {
-      p = std::find_if(instructions.begin(), instructions.end(), matching);
-      assert(p != instructions.end());
-    }
-    desc = &*p;
-    opcode_cache[idx].replace(insn.bits(), desc);
-  }
+  if (unlikely(!extension_enabled(EXT_ZCA) && insn_length(insn.bits()) % 4))
+    return &::illegal_instruction;
 
-  return desc->func(xlen, rve, log_commits_enabled);
+  auto& oc = opcode_cache[insn.bits() % std::size(opcode_cache)];
+  if (likely(oc[0].first->matches(insn.bits())))
+    return oc[0].first->func(xlen, rve, log_commits_enabled);
+
+  // linearly search the opcode cache
+  for (size_t i = 1; i < oc.size(); i++) {
+    auto desc = oc[i].first;
+    if (desc->matches(insn.bits())) {
+      oc[i].second++;
+
+      // periodically sort the opcode cache in descending order of frequency
+      if (unlikely(--opcode_cache_sort_count == 0)) {
+        opcode_cache_sort_count = OPCODE_CACHE_SORT_COUNT;
+
+        for (auto& oc : opcode_cache) {
+          std::stable_sort(oc.begin(), oc.end(), [](auto a, auto b) {
+            if (a.first->overlap || b.first->overlap)
+              return false;
+            return a.second > b.second;
+          });
+        }
+      }
+
+      return desc->func(xlen, rve, log_commits_enabled);
+    }
+  }
+  return &::illegal_instruction;
 }
 
 void processor_t::register_insn(insn_desc_t desc, bool is_custom) {
@@ -701,8 +708,25 @@ void processor_t::register_insn(insn_desc_t desc, bool is_custom) {
 
 void processor_t::build_opcode_map()
 {
-  for (size_t i = 0; i < OPCODE_CACHE_SIZE; i++)
-    opcode_cache[i].reset();
+  const insn_bits_t N = std::size(opcode_cache);
+
+  auto insert = [&](auto& insn) {
+    auto stride = std::min(N, insn_bits_t(1) << ctz(~insn.mask));
+
+    for (size_t i = insn.match & (stride - 1); i < N; i += stride)
+      if ((insn.match % N) == (i & insn.mask))
+        opcode_cache[i].push_back({&insn, 0});
+  };
+
+  for (size_t i = 0; i < N; i++)
+    opcode_cache[i].clear();
+
+  std::for_each(custom_instructions.begin(), custom_instructions.end(), insert);
+  std::for_each(instructions.begin(), instructions.end(), insert);
+
+  for (size_t i = 0; i < N; i++)
+    if (opcode_cache[i].empty())
+      opcode_cache[i].push_back({&insn_desc_t::illegal_instruction, 0});
 }
 
 void processor_t::register_extension(extension_t *x) {
@@ -752,7 +776,8 @@ void processor_t::register_base_instructions()
       logged_rv32i_##name, \
       logged_rv64i_##name, \
       logged_rv32e_##name, \
-      logged_rv64e_##name \
+      logged_rv64e_##name, \
+      name##_overlapping \
     }; \
     register_base_insn(insn); \
   }
@@ -774,9 +799,6 @@ void processor_t::register_base_instructions()
   #include "insn_list.h"
   #undef DEFINE_INSN
   #undef DEFINE_INSN_UNCOND
-
-  // terminate instruction list with a catch-all
-  register_base_insn(insn_desc_t::illegal_instruction);
 
   build_opcode_map();
 }
