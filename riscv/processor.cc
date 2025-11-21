@@ -146,6 +146,7 @@ void processor_t::enable_log_commits()
 {
   log_commits_enabled = true;
   mmu->flush_tlb(); // the TLB caches this setting
+  build_opcode_map();
 }
 
 void processor_t::reset()
@@ -660,33 +661,31 @@ reg_t processor_t::throw_instruction_address_misaligned(reg_t pc)
   throw trap_instruction_address_misaligned(state.v, pc, 0, 0);
 }
 
-insn_func_t processor_t::decode_insn(insn_t insn)
+insn_func_t processor_t::refill_opcode_cache(insn_t insn)
 {
   if (!extension_enabled(EXT_ZCA) && insn_length(insn.bits()) % 4)
     return &::illegal_instruction;
 
-  // look up opcode in hash table
-  size_t idx = insn.bits() % OPCODE_CACHE_SIZE;
-  auto [hit, desc] = opcode_cache[idx].lookup(insn.bits());
-
-  bool rve = extension_enabled('E');
-
-  if (unlikely(!hit)) {
-    // fall back to linear search
-    auto matching = [insn_bits = insn.bits()](const insn_desc_t &d) {
-      return (insn_bits & d.mask) == d.match;
-    };
-    auto p = std::find_if(custom_instructions.begin(),
-                          custom_instructions.end(), matching);
-    if (p == custom_instructions.end()) {
-      p = std::find_if(instructions.begin(), instructions.end(), matching);
-      assert(p != instructions.end());
-    }
-    desc = &*p;
-    opcode_cache[idx].replace(insn.bits(), desc);
+  auto matches = [&](auto& d) { return d.matches(insn.bits()); };
+  auto p = std::find_if(custom_instructions.begin(), custom_instructions.end(), matches);
+  if (p == custom_instructions.end()) {
+    p = std::find_if(instructions.begin(), instructions.end(), matches);
+    if (p == instructions.end())
+      return &::illegal_instruction;
   }
 
-  return desc->func(xlen, rve, log_commits_enabled);
+  auto func = p->func(xlen, extension_enabled('E'), log_commits_enabled);
+  opcode_cache[opcode_hash(insn.bits())].push_back({p->match, p->mask, func});
+  return func;
+}
+
+insn_func_t processor_t::decode_insn(insn_t insn)
+{
+  for (auto& e : opcode_cache[opcode_hash(insn.bits())])
+    if (e.matches(insn.bits()))
+      return e.func;
+
+  return refill_opcode_cache(insn);
 }
 
 void processor_t::register_insn(insn_desc_t desc, bool is_custom) {
@@ -701,8 +700,8 @@ void processor_t::register_insn(insn_desc_t desc, bool is_custom) {
 
 void processor_t::build_opcode_map()
 {
-  for (size_t i = 0; i < OPCODE_CACHE_SIZE; i++)
-    opcode_cache[i].reset();
+  for (auto& oc : opcode_cache)
+    oc.clear();
 }
 
 void processor_t::register_extension(extension_t *x) {
@@ -774,9 +773,6 @@ void processor_t::register_base_instructions()
   #include "insn_list.h"
   #undef DEFINE_INSN
   #undef DEFINE_INSN_UNCOND
-
-  // terminate instruction list with a catch-all
-  register_base_insn(insn_desc_t::illegal_instruction);
 
   build_opcode_map();
 }

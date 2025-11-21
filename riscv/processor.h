@@ -31,6 +31,18 @@ class disassembler_t;
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
 
+struct slim_insn_desc_t
+{
+  insn_bits_t match;
+  insn_bits_t mask;
+  insn_func_t func;
+
+  bool matches(insn_bits_t insn) const
+  {
+    return (insn & mask) == match;
+  }
+};
+
 struct insn_desc_t
 {
   insn_bits_t match;
@@ -43,6 +55,11 @@ struct insn_desc_t
   insn_func_t logged_rv64i;
   insn_func_t logged_rv32e;
   insn_func_t logged_rv64e;
+
+  bool matches(insn_bits_t insn) const
+  {
+    return (insn & mask) == match;
+  }
 
   insn_func_t func(int xlen, bool rve, bool logged) const
   {
@@ -60,6 +77,8 @@ struct insn_desc_t
 
   static const insn_desc_t illegal_instruction;
 };
+
+constexpr size_t opcode_hash(insn_bits_t insn) { return ((insn >> 5) & 0x380) | (insn & 0x7f); }
 
 // regnum, data
 typedef std::map<reg_t, freg_t> commit_log_reg_t;
@@ -207,47 +226,6 @@ struct state_t
   void csr_init(processor_t* const proc, reg_t max_isa);
 };
 
-class opcode_cache_entry_t {
- public:
-  opcode_cache_entry_t()
-  {
-    reset();
-  }
-
-  void reset()
-  {
-    for (size_t i = 0; i < associativity; i++) {
-      tag[i] = 0;
-      contents[i] = &insn_desc_t::illegal_instruction;
-    }
-  }
-
-  void replace(insn_bits_t opcode, const insn_desc_t* desc)
-  {
-    for (size_t i = associativity - 1; i > 0; i--) {
-      tag[i] = tag[i-1];
-      contents[i] = contents[i-1];
-    }
-
-    tag[0] = opcode;
-    contents[0] = desc;
-  }
-
-  std::tuple<bool, const insn_desc_t*> lookup(insn_bits_t opcode)
-  {
-    for (size_t i = 0; i < associativity; i++)
-      if (tag[i] == opcode)
-        return std::tuple(true, contents[i]);
-
-    return std::tuple(false, nullptr);
-  }
-
- private:
-  static const size_t associativity = 4;
-  insn_bits_t tag[associativity];
-  const insn_desc_t* contents[associativity];
-};
-
 // this class represents one processor in a RISC-V machine.
 class processor_t : public abstract_device_t
 {
@@ -266,6 +244,7 @@ public:
   void enable_log_commits();
   bool get_log_commits_enabled() const { return log_commits_enabled; }
   void reset();
+  void build_opcode_map();
   void step(size_t n); // run for n cycles
   void put_csr(int which, reg_t val);
   uint32_t get_id() const { return id; }
@@ -409,8 +388,9 @@ private:
   std::vector<insn_desc_t> custom_instructions;
   std::unordered_map<reg_t,uint64_t> pc_histogram;
 
-  static const size_t OPCODE_CACHE_SIZE = 4095;
-  opcode_cache_entry_t opcode_cache[OPCODE_CACHE_SIZE];
+  static const size_t OPCODE_CACHE_SORT_COUNT = 5000000;
+  size_t opcode_cache_sort_count = OPCODE_CACHE_SORT_COUNT;
+  std::vector<slim_insn_desc_t> opcode_cache[opcode_hash(-1) + 1];
 
   void take_pending_interrupt() { take_interrupt(state.mip->read() & state.mie->read()); }
   void take_interrupt(reg_t mask); // take first enabled interrupt in mask
@@ -429,9 +409,9 @@ private:
   friend class extension_t;
 
   void parse_priv_string(const char*);
-  void build_opcode_map();
   void register_base_instructions();
   insn_func_t decode_insn(insn_t insn);
+  insn_func_t refill_opcode_cache(insn_t insn);
 
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;
