@@ -402,10 +402,20 @@ void sim_t::set_rom()
 }
 
 char* sim_t::addr_to_mem(reg_t paddr) {
-  auto desc = bus.find_device(paddr >> PGSHIFT << PGSHIFT, PGSIZE);
-  if (auto mem = dynamic_cast<abstract_mem_t*>(desc.second))
-    return mem->contents(paddr - desc.first);
-  return NULL;
+  auto page_offset = paddr % PGSIZE;
+  auto page_addr = paddr - page_offset;
+
+  if (auto it = addr_to_mem_cache.find(page_addr); it != addr_to_mem_cache.end())
+    return it->second + page_offset;
+
+  auto desc = bus.find_device(page_addr, PGSIZE);
+  if (auto mem = dynamic_cast<abstract_mem_t*>(desc.second)) {
+    auto res = mem->contents(page_addr - desc.first);
+    addr_to_mem_cache.insert({page_addr, res});
+    return res + page_offset;
+  }
+
+  return nullptr;
 }
 
 const char* sim_t::get_symbol(uint64_t paddr)
