@@ -38,6 +38,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  -s                    Command I/O via socket (use with -d)\n");
 #endif
   fprintf(stderr, "  -h, --help            Print this help message\n");
+  fprintf(stderr, "  --version            Print spike version\n");
   fprintf(stderr, "  --halted              Start halted, allowing a debugger to connect\n");
   fprintf(stderr, "  --log=<name>          File name for option -l\n");
   fprintf(stderr, "  --debug-cmd=<name>    Read commands from file (use with -d)\n");
@@ -95,6 +96,12 @@ static void suggest_help()
 {
   fprintf(stderr, "Try 'spike --help' for more information.\n");
   exit(1);
+}
+
+static void state_version()
+{
+  fprintf(stdout, "Spike RISC-V ISA Simulator " SPIKE_VERSION "\n\n");
+  exit(0);
 }
 
 static bool check_file_exists(const char *fileName)
@@ -391,6 +398,7 @@ int main(int argc, char** argv)
   parser.option(0, "l2", 1, [&](const char* s){l2.reset(cache_sim_t::construct(s, "L2$"));});
   parser.option(0, "big-endian", 0, [&](const char UNUSED *s){cfg.endianness = endianness_big;});
   parser.option(0, "misaligned", 0, [&](const char UNUSED *s){cfg.misaligned = true;});
+  parser.option(0, "version", 0, [&](const char UNUSED *s){state_version();});
   parser.option(0, "log-cache-miss", 0, [&](const char UNUSED *s){log_cache = true;});
   parser.option(0, "isa", 1, [&](const char* s){cfg.isa = s;});
   parser.option(0, "pmpregions", 1, [&](const char* s){cfg.pmpregions = atoul_safe(s);});
