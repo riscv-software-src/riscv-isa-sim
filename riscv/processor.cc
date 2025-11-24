@@ -146,6 +146,7 @@ void processor_t::enable_log_commits()
 {
   log_commits_enabled = true;
   mmu->flush_tlb(); // the TLB caches this setting
+  build_opcode_map();
 }
 
 void processor_t::reset()
