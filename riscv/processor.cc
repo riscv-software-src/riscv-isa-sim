@@ -664,11 +664,31 @@ reg_t processor_t::throw_instruction_address_misaligned(reg_t pc)
 
 insn_func_t processor_t::decode_insn(insn_t insn)
 {
-  const auto& pool = opcode_map[insn.bits() % std::size(opcode_map)];
+  auto& pool = opcode_map[insn.bits() % std::size(opcode_map)];
 
-  for (auto p = pool.begin(); ; ++p) {
-    if ((insn.bits() & p->mask) == p->match) {
-      return p->func;
+  if (auto p = pool.begin(); (insn.bits() & p->mask) == p->match) {
+    p->count++;
+    return p->func;
+  }
+
+  for (auto p = pool.begin() + 1; ; ++p) {
+    auto match = p->match;
+    auto mask = p->mask;
+    if ((insn.bits() & mask) == match) {
+      auto func = p->func;
+      auto count = p->count + 1;
+      p->count = count;
+      if (count < (p - 1)->count) {
+        if ((p - 1)->reorderable && p + 1 != pool.end()) {
+          std::swap(*p, *(p - 1));
+          *p = *(p - 1);
+          (p - 1)->match = match;
+          (p - 1)->mask = mask;
+          (p - 1)->func = func;
+          (p - 1)->count = count;
+        }
+      }
+      return func;
     }
   }
 }
@@ -686,7 +706,7 @@ void processor_t::build_opcode_map()
   bool zca = extension_enabled(EXT_ZCA);
   const size_t N = std::size(opcode_map);
 
-  auto build_one = [&](const insn_desc_t& desc) {
+  auto build_one = [&](const insn_desc_t& desc, bool reorderable) {
     auto func = desc.func(xlen, rve, log_commits_enabled);
     if (!zca && insn_length(desc.match) % 4)
       func = &::illegal_instruction;
@@ -694,7 +714,7 @@ void processor_t::build_opcode_map()
     auto stride = std::min(N, size_t(1) << ctz(~desc.mask));
     for (size_t i = desc.match & (stride - 1); i < N; i += stride) {
       if ((desc.match % N) == (i & desc.mask))
-        opcode_map[i].push_back({desc.match, desc.mask, func});
+        opcode_map[i].push_back({desc.match, desc.mask, func, reorderable, 0});
     }
   };
 
@@ -702,10 +722,13 @@ void processor_t::build_opcode_map()
     p.clear();
 
   for (auto& d : custom_instructions)
-    build_one(d);
+    build_one(d, false);
+
+  for (auto& d : overlapping_instructions)
+    build_one(d, false);
 
   for (auto& d : instructions)
-    build_one(d);
+    build_one(d, true);
 }
 
 void processor_t::register_extension(extension_t *x) {
@@ -744,7 +767,7 @@ void processor_t::register_base_instructions()
   #include "insn_list.h"
   #undef DEFINE_INSN
 
-  #define DEFINE_INSN_UNCOND(name) { \
+  #define DEFINE_INSN_UNCOND(name) \
     insn_desc_t insn = { \
       name##_match, \
       name##_mask, \
@@ -756,15 +779,15 @@ void processor_t::register_base_instructions()
       logged_rv64i_##name, \
       logged_rv32e_##name, \
       logged_rv64e_##name \
-    }; \
-    register_base_insn(insn); \
-  }
+    }
 
   // add overlapping instructions first, in order
   #define DECLARE_OVERLAP_INSN(name, ext) \
     name##_overlapping = true; \
-    if (isa.extension_enabled(ext)) \
-      DEFINE_INSN_UNCOND(name);
+    if (isa.extension_enabled(ext)) { \
+      DEFINE_INSN_UNCOND(name); \
+      register_overlapping_insn(insn); \
+    }
   #include "overlap_list.h"
   #undef DECLARE_OVERLAP_INSN
 
@@ -772,8 +795,10 @@ void processor_t::register_base_instructions()
   // does not affect correctness, but more frequent instructions should
   // appear earlier to improve search time on opcode_cache misses.
   #define DEFINE_INSN(name) \
-    if (!name##_overlapping) \
-      DEFINE_INSN_UNCOND(name);
+    if (!name##_overlapping) { \
+      DEFINE_INSN_UNCOND(name); \
+      register_base_insn(insn); \
+    }
   #include "insn_list.h"
   #undef DEFINE_INSN
   #undef DEFINE_INSN_UNCOND

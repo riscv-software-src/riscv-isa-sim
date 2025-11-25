@@ -66,6 +66,8 @@ struct opcode_map_entry_t
   insn_bits_t match;
   insn_bits_t mask;
   insn_func_t func;
+  uint64_t reorderable : 1;
+  uint64_t count : 63;
 };
 
 // regnum, data
@@ -309,6 +311,9 @@ public:
   void register_base_insn(insn_desc_t insn) {
     register_insn(insn, instructions);
   }
+  void register_overlapping_insn(insn_desc_t insn) {
+    register_insn(insn, overlapping_instructions);
+  }
   void register_custom_insn(insn_desc_t insn) {
     register_insn(insn, custom_instructions);
   }
@@ -374,6 +379,7 @@ private:
 
   std::vector<opcode_map_entry_t> opcode_map[128];
   std::vector<insn_desc_t> instructions;
+  std::vector<insn_desc_t> overlapping_instructions;
   std::vector<insn_desc_t> custom_instructions;
   std::unordered_map<reg_t,uint64_t> pc_histogram;
 
