@@ -5,5 +5,5 @@ VI_VFP_NCVT_FP_BF16_OFP8(
   },                                                                 // BODY16
   { vd = f32_to_bf16(vs2); },                                        // BODY32
   { require(p->extension_enabled(EXT_ZVFOFP8MIN)); },                // CHECK16
-  { require_zvfbfa; require(p->extension_enabled(EXT_ZVFBFMIN)); }   // CHECK32
+  { require_extension(EXT_ZVFBFMIN); }                               // CHECK32
 )
