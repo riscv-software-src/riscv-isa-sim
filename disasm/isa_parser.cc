@@ -548,7 +548,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   }
 
   if (extension_table[EXT_ZAWRS] && !extension_table[EXT_ZALRSC]) {
-    bad_isa_string(str, "'Zabha' extension requires either the 'A' or the 'Zalrsc' extension");
+    bad_isa_string(str, "'Zawrs' extension requires either the 'A' or the 'Zalrsc' extension");
   }
 
   // When SSE is 0, Zicfiss behavior is defined by Zicmop
