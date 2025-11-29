@@ -1860,7 +1860,7 @@ void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
   }
 
   if (proc->extension_enabled(EXT_SMCDELEG)) {
-    if (insn.csr() >= CSR_VSIREG && insn.csr() <= CSR_VSIREG6) {
+    if (address >= CSR_VSIREG && address <= CSR_VSIREG6) {
       if (!state->v) {
         // An attempt to access any vsireg* from M or S mode raises an illegal instruction exception.
         throw trap_illegal_instruction(insn.bits());
@@ -1878,7 +1878,7 @@ void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
         }
       }
     }
-    if (insn.csr() >= CSR_SIREG && insn.csr() <= CSR_SIREG6) {
+    if (address >= CSR_SIREG && address <= CSR_SIREG6) {
       // attempts to access any sireg* when menvcfg.CDE = 0;
       if ((state->menvcfg->read() & MENVCFG_CDE) != MENVCFG_CDE) {
         if (!state->v) {
