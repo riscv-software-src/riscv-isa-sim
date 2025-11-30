@@ -224,6 +224,25 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   } else {
     add_hypervisor_csr(CSR_HIDELEG, hideleg);
   }
+
+  const reg_t menvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE : 0) |
+                            (proc->extension_enabled(EXT_ZICBOZ) ? MENVCFG_CBZE : 0) |
+                            (proc->extension_enabled(EXT_SMNPM) ? MENVCFG_PMM : 0) |
+                            (proc->extension_enabled(EXT_SVADU) ? MENVCFG_ADUE: 0) |
+                            (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0) |
+                            (proc->extension_enabled(EXT_SSTC) ? MENVCFG_STCE : 0) |
+                            (proc->extension_enabled(EXT_ZICFILP) ? MENVCFG_LPE : 0) |
+                            (proc->extension_enabled(EXT_ZICFISS) ? MENVCFG_SSE : 0) |
+                            (proc->extension_enabled(EXT_SSDBLTRP) ? MENVCFG_DTE : 0)|
+                            (proc->extension_enabled(EXT_SMCDELEG) ? MENVCFG_CDE : 0);
+  menvcfg = std::make_shared<envcfg_csr_t>(proc, CSR_MENVCFG, menvcfg_mask, 0);
+  if (xlen == 32) {
+    add_user_csr(CSR_MENVCFG, std::make_shared<rv32_low_csr_t>(proc, CSR_MENVCFG, menvcfg));
+    add_user_csr(CSR_MENVCFGH, std::make_shared<rv32_high_csr_t>(proc, CSR_MENVCFGH, menvcfg));
+  } else {
+    add_user_csr(CSR_MENVCFG, menvcfg);
+  }
+
   const reg_t hedeleg_mask =
     (1 << CAUSE_MISALIGNED_FETCH) |
     (1 << CAUSE_FETCH_ACCESS) |
@@ -310,23 +329,6 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   add_csr(CSR_MVENDORID, std::make_shared<const_csr_t>(proc, CSR_MVENDORID, 0));
   add_csr(CSR_MHARTID, std::make_shared<const_csr_t>(proc, CSR_MHARTID, proc->get_id()));
   add_csr(CSR_MCONFIGPTR, std::make_shared<const_csr_t>(proc, CSR_MCONFIGPTR, 0));
-  const reg_t menvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE : 0) |
-                            (proc->extension_enabled(EXT_ZICBOZ) ? MENVCFG_CBZE : 0) |
-                            (proc->extension_enabled(EXT_SMNPM) ? MENVCFG_PMM : 0) |
-                            (proc->extension_enabled(EXT_SVADU) ? MENVCFG_ADUE: 0) |
-                            (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0) |
-                            (proc->extension_enabled(EXT_SSTC) ? MENVCFG_STCE : 0) |
-                            (proc->extension_enabled(EXT_ZICFILP) ? MENVCFG_LPE : 0) |
-                            (proc->extension_enabled(EXT_ZICFISS) ? MENVCFG_SSE : 0) |
-                            (proc->extension_enabled(EXT_SSDBLTRP) ? MENVCFG_DTE : 0)|
-                            (proc->extension_enabled(EXT_SMCDELEG) ? MENVCFG_CDE : 0);
-  menvcfg = std::make_shared<envcfg_csr_t>(proc, CSR_MENVCFG, menvcfg_mask, 0);
-  if (xlen == 32) {
-    add_user_csr(CSR_MENVCFG, std::make_shared<rv32_low_csr_t>(proc, CSR_MENVCFG, menvcfg));
-    add_user_csr(CSR_MENVCFGH, std::make_shared<rv32_high_csr_t>(proc, CSR_MENVCFGH, menvcfg));
-  } else {
-    add_user_csr(CSR_MENVCFG, menvcfg);
-  }
   const reg_t senvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? SENVCFG_CBCFE | SENVCFG_CBIE : 0) |
                             (proc->extension_enabled(EXT_ZICBOZ) ? SENVCFG_CBZE : 0) |
                             (proc->extension_enabled(EXT_SVUKTE) ? SENVCFG_UKTE : 0) |

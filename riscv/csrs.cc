@@ -544,11 +544,16 @@ mstatus_csr_t::mstatus_csr_t(processor_t* const proc, const reg_t addr):
   val(compute_mstatus_initial_value()) {
 }
 
+reg_t mstatus_csr_t::read() const noexcept {
+  return val & ~reg_t(state->menvcfg->read() & MENVCFG_DTE ? 0 : MSTATUS_SDT);
+}
+
 bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const bool has_mpv = proc->extension_enabled('H');
   const bool has_gva = has_mpv;
+  const reg_t adj_write_mask = sstatus_write_mask & ~reg_t(state->menvcfg->read() & MENVCFG_DTE ? 0 : SSTATUS_SDT);
 
-  const reg_t mask = sstatus_write_mask
+  const reg_t mask = adj_write_mask
                    | MSTATUS_MIE | MSTATUS_MPIE
                    | (proc->extension_enabled('U') ? MSTATUS_MPRV : 0)
                    | MSTATUS_MPP | MSTATUS_TW
@@ -558,12 +563,11 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
                    | (has_mpv ? MSTATUS_MPV : 0)
                    | (proc->extension_enabled(EXT_SMDBLTRP) ? MSTATUS_MDT : 0)
                    | (proc->extension_enabled(EXT_ZICFILP) ? (MSTATUS_SPELP | MSTATUS_MPELP) : 0)
-                   | (proc->extension_enabled(EXT_SSDBLTRP) ? SSTATUS_SDT : 0)
                    ;
 
   const reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
   const reg_t adjusted_val = set_field(val, MSTATUS_MPP, requested_mpp);
-  reg_t new_mstatus = (read() & ~mask) | (adjusted_val & mask);
+  reg_t new_mstatus = (this->val & ~mask) | (adjusted_val & mask);
   new_mstatus = (new_mstatus & MSTATUS_MDT) ? (new_mstatus & ~MSTATUS_MIE) : new_mstatus;
   new_mstatus = (new_mstatus & MSTATUS_SDT) ? (new_mstatus & ~MSTATUS_SIE) : new_mstatus;
   maybe_flush_tlb(new_mstatus);
