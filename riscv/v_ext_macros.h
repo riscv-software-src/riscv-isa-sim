@@ -1405,8 +1405,6 @@ VI_VX_ULOOP({ \
 #define VI_EXT_CHECK(div) \
   require(insn.rd() != insn.rs2()); \
   require_vm; \
-  reg_t from = P.VU.vsew / div; \
-  require(from >= e8 && from <= e64); \
   require(((float)P.VU.vflmul / div) >= 0.125 && ((float)P.VU.vflmul / div) <= 8 ); \
   require_align(insn.rd(), P.VU.vflmul); \
   require_align(insn.rs2(), P.VU.vflmul / div); \
@@ -1418,6 +1416,8 @@ VI_VX_ULOOP({ \
 
 // vector: sign/unsiged extension
 #define VI_VV_EXT(div, type) \
+  reg_t from = P.VU.vsew / div; \
+  require(from >= e8 && from <= e64); \
   VI_EXT_CHECK(div); \
   VI_LOOP_BASE \
   reg_t pat = (((P.VU.vsew >> 3) << 4) | from >> 3); \
