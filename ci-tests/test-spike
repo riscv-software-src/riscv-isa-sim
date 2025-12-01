@@ -20,7 +20,7 @@ make install
 
 # build tests
 rm -rf $RUN
-mkdir $RUN
+mkdir -p $RUN
 cd $RUN
 riscv64-linux-gnu-gcc -static -O2 -o hello $CI/hello.c
 riscv64-linux-gnu-gcc -static -O2 -o dummy-slliuw $CI/dummy-slliuw.c
@@ -28,12 +28,12 @@ riscv64-linux-gnu-gcc -static -O2 -o customcsr $CI/customcsr.c
 riscv64-linux-gnu-gcc -static -O2 -o atomics $CI/atomics.c
 
 # run snippy-based tests
-wget https://github.com/syntacore/snippy/releases/download/snippy-2.0/snippy-2.0.tar.gz
-tar xzf "snippy-2.0.tar.gz"
+wget https://github.com/syntacore/snippy/releases/download/snippy-2.1/snippy-x86_64-linux.tar.xz
+tar xf snippy-x86_64-linux.tar.xz
+
 # test that snippy runs
-./llvm-snippy --version | grep "Snippy version"
-"$ROOT"/ci-tests/generate-snippy-tests.sh "$RUN" "$ROOT"/ci-tests/snippy-tests
-"$ROOT"/ci-tests/run-snippy-tests.sh snippy-tests "$INSTALL"/bin/spike
+bin/llvm-snippy --version | grep "Snippy version: 2.1.0"
+PATH="$PATH:$RUN/bin" "$ROOT"/ci-tests/run-snippy-tests.sh "$RUN" "$ROOT"/ci-tests/snippy-tests "$INSTALL"/bin/spike
 
 # check that including sim.h in an external project works
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o test-libriscv

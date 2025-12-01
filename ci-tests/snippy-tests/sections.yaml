@@ -1,0 +1,22 @@
+sections:
+  - name:        0
+    VMA:       0x80000000
+    SIZE:      0x10000
+    LMA:       0x80000000
+    ACCESS:    r
+  - name:        1
+    VMA:       0x80020000
+    SIZE:      0x20000
+    LMA:       0x80020000
+    ACCESS:    rx
+  - name:        2
+    VMA:       0x80040000
+    SIZE:      0x10000
+    LMA:       0x80040000
+    ACCESS:    rw
+  - name:      stack
+    VMA:       0x80050000
+    SIZE:      0x10000
+    LMA:       0x80050000
+    ACCESS:    rw
+
