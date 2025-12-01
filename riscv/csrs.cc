@@ -736,6 +736,7 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   const bool prev_h = old_misa & (1L << ('H' - 'A'));
   const reg_t new_misa = (adjusted_val & write_mask) | (old_misa & ~write_mask);
   const bool new_h = new_misa & (1L << ('H' - 'A'));
+  const bool new_v = proc->get_isa().has_any_vector();
 
   proc->set_extension_enable(EXT_ZCA, (new_misa & (1L << ('C' - 'A'))) || !proc->get_isa().extension_enabled('C'));
   proc->set_extension_enable(EXT_ZCF, (new_misa & (1L << ('F' - 'A'))) && proc->extension_enabled(EXT_ZCA) && proc->get_xlen() == 32);
@@ -745,8 +746,8 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   proc->set_extension_enable(EXT_ZCMT, proc->extension_enabled(EXT_ZCA));
   proc->set_extension_enable(EXT_ZFH, new_misa & (1L << ('F' - 'A')));
   proc->set_extension_enable(EXT_ZFHMIN, new_misa & (1L << ('F' - 'A')));
-  proc->set_extension_enable(EXT_ZVFH, (new_misa & (1L << ('V' - 'A'))) && proc->extension_enabled(EXT_ZFHMIN));
-  proc->set_extension_enable(EXT_ZVFHMIN, new_misa & (1L << ('V' - 'A')));
+  proc->set_extension_enable(EXT_ZVFH, new_v && proc->get_isa().get_zvf() && proc->extension_enabled(EXT_ZFHMIN));
+  proc->set_extension_enable(EXT_ZVFHMIN, new_v && proc->get_isa().get_zvf());
   proc->set_extension_enable(EXT_ZAAMO, (new_misa & (1L << ('A' - 'A'))) || !proc->get_isa().extension_enabled('A'));
   proc->set_extension_enable(EXT_ZALRSC, (new_misa & (1L << ('A' - 'A'))) || !proc->get_isa().extension_enabled('A'));
   proc->set_extension_enable(EXT_ZBA, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
