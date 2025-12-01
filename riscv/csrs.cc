@@ -449,7 +449,7 @@ reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
     | (has_fs ? SSTATUS_FS : 0)
     | (proc->any_custom_extensions() ? SSTATUS_XS : 0)
     | (has_vs ? SSTATUS_VS : 0)
-    | (proc->extension_enabled(EXT_ZICFILP) ? SSTATUS_SPELP : 0)
+    | (proc->extension_enabled('S') && proc->extension_enabled(EXT_ZICFILP) ? SSTATUS_SPELP : 0)
     | (proc->extension_enabled(EXT_SSDBLTRP) ? SSTATUS_SDT : 0)
     ;
 }
@@ -562,7 +562,7 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
                    | (has_gva ? MSTATUS_GVA : 0)
                    | (has_mpv ? MSTATUS_MPV : 0)
                    | (proc->extension_enabled(EXT_SMDBLTRP) ? MSTATUS_MDT : 0)
-                   | (proc->extension_enabled(EXT_ZICFILP) ? (MSTATUS_SPELP | MSTATUS_MPELP) : 0)
+                   | (proc->extension_enabled(EXT_ZICFILP) ? (MSTATUS_MPELP | (proc->extension_enabled('S') ? MSTATUS_SPELP : 0)) : 0)
                    ;
 
   const reg_t requested_mpp = proc->legalize_privilege(get_field(val, MSTATUS_MPP));
