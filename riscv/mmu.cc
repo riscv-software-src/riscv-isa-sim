@@ -630,26 +630,33 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   }
 }
 
-bool mmu_t::check_svukte_qualified(reg_t addr, reg_t mode, bool forced_virt)
+bool mmu_t::svukte_qualified(mem_access_info_t access_info)
 {
   state_t* state = proc->get_state();
 
-  if (mode != PRV_U)
-    return true;
+  if (access_info.effective_priv != PRV_U)
+    return false;
 
-  if (proc->extension_enabled('S') && get_field(state->senvcfg->read(), SENVCFG_UKTE)) {
-    if (forced_virt && state->prv == PRV_U) {
-      bool hstatus_hukte = proc->extension_enabled('H') && (get_field(state->hstatus->read(), HSTATUS_HUKTE) == 1);
-      return !hstatus_hukte;
-    }
+  bool ukte = get_field(state->senvcfg->read(), SENVCFG_UKTE);
+  if (access_info.flags.forced_virt && state->prv == PRV_U)
+    ukte = get_field(state->hstatus->read(), HSTATUS_HUKTE);
 
-    assert(proc->get_xlen() == 64);
-    if ((addr >> 63) & 1) {
-      return (state->v || forced_virt) && ((state->vsatp->read() & SATP64_MODE) == 0);
-    }
-  }
+  if (!ukte)
+    return false;
+
+  reg_t mode_mask = proc->get_xlen() == 32 ? SATP32_MODE : SATP64_MODE;
+  if (get_field(proc->get_state()->satp->readvirt(access_info.effective_virt), mode_mask) == 0)
+    return false;
 
   return true;
+}
+
+bool mmu_t::svukte_fault(reg_t addr, mem_access_info_t access_info)
+{
+  if (!svukte_qualified(access_info))
+    return false;
+
+  return addr >> (proc->get_xlen() - 1);
 }
 
 reg_t mmu_t::walk(mem_access_info_t access_info)
@@ -674,7 +681,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
   if (vm.levels == 0)
     return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx, false) & ~page_mask; // zero-extend from xlen
 
-  if (proc->extension_enabled(EXT_SVUKTE) && !check_svukte_qualified(addr, mode, access_info.flags.forced_virt)) {
+  if (svukte_fault(addr, access_info)) {
     throw_page_fault_exception(virt, addr, type);
   }
 
