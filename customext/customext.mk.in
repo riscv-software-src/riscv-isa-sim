@@ -7,5 +7,7 @@ customext_subproject_deps = \
 customext_srcs = \
 	dummy_rocc.cc \
 	cflush.cc \
+	spikema1s.cc \
+	spiketa1s.cc \
 
 customext_install_shared_lib = yes
