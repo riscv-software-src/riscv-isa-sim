@@ -67,11 +67,7 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
   set_pmp_granularity(cfg->pmpgranularity);
   set_pmp_num(cfg->pmpregions);
 
-  if (isa.get_max_xlen() == 32)
-    set_mmu_capability(IMPL_MMU_SV32);
-  else if (isa.get_max_xlen() == 64)
-    set_mmu_capability(IMPL_MMU_SV57);
-
+  set_max_vaddr_bits(0);
   set_impl(IMPL_MMU_ASID, true);
   set_impl(IMPL_MMU_VMID, true);
 
@@ -217,31 +213,26 @@ void processor_t::set_pmp_granularity(reg_t gran)
   lg_pmp_granularity = ctz(gran);
 }
 
-void processor_t::set_mmu_capability(int cap)
+void processor_t::set_max_vaddr_bits(unsigned n)
 {
-  switch (cap) {
-    case IMPL_MMU_SV32:
-      set_impl(IMPL_MMU_SV32, true);
-      set_impl(IMPL_MMU, true);
+  switch (n) {
+    case 0:
       break;
-    case IMPL_MMU_SV57:
-      set_impl(IMPL_MMU_SV57, true);
-      [[fallthrough]];
-    case IMPL_MMU_SV48:
-      set_impl(IMPL_MMU_SV48, true);
-      [[fallthrough]];
-    case IMPL_MMU_SV39:
-      set_impl(IMPL_MMU_SV39, true);
-      set_impl(IMPL_MMU, true);
+    case 32:
+      if (isa.get_max_xlen() != 32)
+        abort();
+      break;
+    case 39:
+    case 48:
+    case 57:
+      if (isa.get_max_xlen() != 64)
+        abort();
       break;
     default:
-      set_impl(IMPL_MMU_SV32, false);
-      set_impl(IMPL_MMU_SV39, false);
-      set_impl(IMPL_MMU_SV48, false);
-      set_impl(IMPL_MMU_SV57, false);
-      set_impl(IMPL_MMU, false);
-      break;
+      abort();
   }
+
+  max_vaddr_bits = n;
 }
 
 reg_t processor_t::select_an_interrupt_with_default_priority(reg_t enabled_interrupts) const

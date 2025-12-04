@@ -290,6 +290,9 @@ public:
     extension_enable_table[ext] = enable && isa.extension_enabled(ext);
   }
   void set_impl(uint8_t impl, bool val) { impl_table[impl] = val; }
+  bool has_mmu() const { return max_vaddr_bits != 0; }
+  unsigned get_max_vaddr_bits() const { return max_vaddr_bits; }
+  void set_max_vaddr_bits(unsigned);
   bool supports_impl(uint8_t impl) const {
     return impl_table[impl];
   }
@@ -358,6 +361,7 @@ private:
   state_t state;
   uint32_t id;
   unsigned xlen;
+  unsigned max_vaddr_bits;
   bool histogram_enabled;
   bool log_commits_enabled;
   FILE *log_file;

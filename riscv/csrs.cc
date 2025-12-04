@@ -431,7 +431,7 @@ reg_t cause_csr_t::read() const noexcept {
 // implement class base_status_csr_t
 base_status_csr_t::base_status_csr_t(processor_t* const proc, const reg_t addr):
   csr_t(proc, addr),
-  has_page(proc->extension_enabled_const('S') && proc->supports_impl(IMPL_MMU)),
+  has_page(proc->extension_enabled_const('S') && proc->has_mmu()),
   sstatus_write_mask(compute_sstatus_write_mask()),
   sstatus_read_mask(sstatus_write_mask | SSTATUS_UBE | SSTATUS_UXL
                     | (proc->get_const_xlen() == 32 ? SSTATUS32_SD : SSTATUS64_SD)) {
@@ -1005,7 +1005,7 @@ bool medeleg_csr_t::unlogged_write(const reg_t val) noexcept {
     | (1 << CAUSE_STORE_ACCESS)
     | (1 << CAUSE_USER_ECALL)
     | (1 << CAUSE_SUPERVISOR_ECALL)
-    | (proc->supports_impl(IMPL_MMU) ? mmu_exceptions : 0)
+    | (proc->has_mmu() ? mmu_exceptions : 0)
     | (proc->extension_enabled('H') ? hypervisor_exceptions : 0)
     | (1 << CAUSE_SOFTWARE_CHECK_FAULT)
     | (1 << CAUSE_HARDWARE_ERROR_FAULT)
@@ -1088,7 +1088,7 @@ base_atp_csr_t::base_atp_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 bool base_atp_csr_t::unlogged_write(const reg_t val) noexcept {
-  const reg_t newval = proc->supports_impl(IMPL_MMU) ? compute_new_satp(val) : 0;
+  const reg_t newval = proc->has_mmu() ? compute_new_satp(val) : 0;
   if (newval != read())
     proc->get_mmu()->flush_tlb();
   return basic_csr_t::unlogged_write(newval);
@@ -1097,16 +1097,16 @@ bool base_atp_csr_t::unlogged_write(const reg_t val) noexcept {
 bool base_atp_csr_t::satp_valid(reg_t val) const noexcept {
   if (proc->get_xlen() == 32) {
     switch (get_field(val, SATP32_MODE)) {
-      case SATP_MODE_SV32: return proc->supports_impl(IMPL_MMU_SV32);
       case SATP_MODE_OFF: return true;
+      case SATP_MODE_SV32: return proc->get_max_vaddr_bits() >= 32;
       default: return false;
     }
   } else {
     switch (get_field(val, SATP64_MODE)) {
-      case SATP_MODE_SV39: return proc->supports_impl(IMPL_MMU_SV39);
-      case SATP_MODE_SV48: return proc->supports_impl(IMPL_MMU_SV48);
-      case SATP_MODE_SV57: return proc->supports_impl(IMPL_MMU_SV57);
       case SATP_MODE_OFF: return true;
+      case SATP_MODE_SV39: return proc->get_max_vaddr_bits() >= 39;
+      case SATP_MODE_SV48: return proc->get_max_vaddr_bits() >= 48;
+      case SATP_MODE_SV57: return proc->get_max_vaddr_bits() >= 57;
       default: return false;
     }
   }
@@ -1345,9 +1345,9 @@ bool hgatp_csr_t::unlogged_write(const reg_t val) noexcept {
         (proc->supports_impl(IMPL_MMU_VMID) ? HGATP64_VMID : 0);
 
     if (get_field(val, HGATP64_MODE) == HGATP_MODE_OFF ||
-        (proc->supports_impl(IMPL_MMU_SV39) && get_field(val, HGATP64_MODE) == HGATP_MODE_SV39X4) ||
-        (proc->supports_impl(IMPL_MMU_SV48) && get_field(val, HGATP64_MODE) == HGATP_MODE_SV48X4) ||
-        (proc->supports_impl(IMPL_MMU_SV57) && get_field(val, HGATP64_MODE) == HGATP_MODE_SV57X4))
+        (proc->get_max_vaddr_bits() >= 39 && get_field(val, HGATP64_MODE) == HGATP_MODE_SV39X4) ||
+        (proc->get_max_vaddr_bits() >= 48 && get_field(val, HGATP64_MODE) == HGATP_MODE_SV48X4) ||
+        (proc->get_max_vaddr_bits() >= 57 && get_field(val, HGATP64_MODE) == HGATP_MODE_SV57X4))
       mask |= HGATP64_MODE;
   }
   mask &= ~(reg_t)3;
@@ -2037,7 +2037,7 @@ hstatus_csr_t::hstatus_csr_t(processor_t* const proc, const reg_t addr):
 bool hstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t mask = (proc->extension_enabled(EXT_SVUKTE) ? HSTATUS_HUKTE  : 0)
     | HSTATUS_VTSR | HSTATUS_VTW
-    | (proc->supports_impl(IMPL_MMU) ? HSTATUS_VTVM : 0)
+    | (proc->has_mmu() ? HSTATUS_VTVM : 0)
     | (proc->extension_enabled(EXT_SSNPM) ? HSTATUS_HUPMM : 0)
     | HSTATUS_HU | HSTATUS_SPVP | HSTATUS_SPV | HSTATUS_GVA;
 
