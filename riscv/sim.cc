@@ -214,16 +214,16 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     // handle mmu-type
     const char *mmu_type;
     rc = fdt_parse_mmu_type(fdt, cpu_offset, &mmu_type);
+    procs[cpu_idx]->set_max_vaddr_bits(0);
     if (rc == 0) {
-      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
       if (strncmp(mmu_type, "riscv,sv32", strlen("riscv,sv32")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV32);
+        procs[cpu_idx]->set_max_vaddr_bits(32);
       } else if (strncmp(mmu_type, "riscv,sv39", strlen("riscv,sv39")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV39);
+        procs[cpu_idx]->set_max_vaddr_bits(39);
       } else if (strncmp(mmu_type, "riscv,sv48", strlen("riscv,sv48")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV48);
+        procs[cpu_idx]->set_max_vaddr_bits(48);
       } else if (strncmp(mmu_type, "riscv,sv57", strlen("riscv,sv57")) == 0) {
-        procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SV57);
+        procs[cpu_idx]->set_max_vaddr_bits(57);
       } else if (strncmp(mmu_type, "riscv,sbare", strlen("riscv,sbare")) == 0) {
         // has been set in the beginning
       } else {
@@ -233,8 +233,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
                   << mmu_type << ").\n";
         exit(1);
       }
-    } else {
-      procs[cpu_idx]->set_mmu_capability(IMPL_MMU_SBARE);
     }
 
     procs[cpu_idx]->reset();
