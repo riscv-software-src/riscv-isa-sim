@@ -1149,7 +1149,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_f_zfa) \
 	$(riscv_insn_ext_h) \
 	$(riscv_insn_ext_k) \
-	$(riscv_insn_ext_q) \
+	$(if $(HAVE_INT128),$(riscv_insn_ext_q),) \
 	$(riscv_insn_ext_q_zfa) \
 	$(riscv_insn_ext_zacas) \
 	$(riscv_insn_ext_zabha) \
