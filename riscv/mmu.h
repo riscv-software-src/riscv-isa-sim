@@ -211,28 +211,6 @@ public:
     })
   }
 
-  void store_float128(reg_t addr, float128_t val)
-  {
-    if (unlikely(addr & (sizeof(float128_t)-1)) && !is_misaligned_enabled()) {
-      throw trap_store_address_misaligned((proc) ? proc->state.v : false, addr, 0, 0);
-    }
-
-    store<uint64_t>(addr, val.v[0]);
-    store<uint64_t>(addr + 8, val.v[1]);
-  }
-
-  float128_t load_float128(reg_t addr)
-  {
-    if (unlikely(addr & (sizeof(float128_t)-1)) && !is_misaligned_enabled()) {
-      throw trap_load_address_misaligned((proc) ? proc->state.v : false, addr, 0, 0);
-    }
-
-    float128_t res;
-    res.v[0] = load<uint64_t>(addr);
-    res.v[1] = load<uint64_t>(addr + 8);
-    return res;
-  }
-
   void cbo_zero(reg_t addr) {
     auto access_info = generate_access_info(addr, STORE, {});
     reg_t transformed_addr = access_info.transformed_vaddr;
