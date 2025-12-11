@@ -40,7 +40,7 @@ jobs:
 
   test-macos:
     name: Test Spike build (MacOS)
-    runs-on: macos-13
+    runs-on: macos-15
     steps:
       - uses: actions/checkout@v2
         with:
