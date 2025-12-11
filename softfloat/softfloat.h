@@ -221,6 +221,8 @@ bfloat16_t bf16_recip7( bfloat16_t );
 /*----------------------------------------------------------------------------
 | 32-bit (single-precision) floating-point operations.
 *----------------------------------------------------------------------------*/
+int_fast8_t f32_to_i8( float32_t, uint_fast8_t, bool );
+uint_fast8_t f32_to_ui8( float32_t, uint_fast8_t, bool );
 uint_fast16_t f32_to_ui16( float32_t, uint_fast8_t, bool );
 uint_fast32_t f32_to_ui32( float32_t, uint_fast8_t, bool );
 uint_fast64_t f32_to_ui64( float32_t, uint_fast8_t, bool );
