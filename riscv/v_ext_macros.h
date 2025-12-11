@@ -1325,8 +1325,8 @@ VI_VX_ULOOP({ \
         val = MMU.load<elt_width##_t>( \
           baseAddr + (i * nf + fn) * sizeof(elt_width##_t)); \
       } catch (trap_t& t) { \
-        if (i == 0) \
-          throw; /* Only take exception on zeroth element */ \
+        if (i == p->VU.vstart->read()) \
+          throw; /* Only take exception on element 0 */ \
         /* Reduce VL if an exception occurs on a later element */ \
         early_stop = true; \
         P.VU.vl->write_raw(i); \
