@@ -209,11 +209,6 @@ struct state_t
   elp_t elp;
 
   bool critical_error;
-  // This member is needed to execute the user extension code after each
-  // instruction. Extensions that need this functionality
-  // (mask_agnostic_fill1s_t, tail_agnostic_fill1s_t) should add pointer to the
-  // function in reset method.
-  std::vector<insn_func_t> insn_postprocesses;
 
  private:
   void csr_init(processor_t* const proc, reg_t max_isa);

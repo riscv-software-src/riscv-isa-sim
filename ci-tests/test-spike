@@ -47,7 +47,7 @@ g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o /dev/
 # run tests
 time $INSTALL/bin/spike --isa=rv64gc $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 $INSTALL/bin/spike --log-commits --isa=rv64gc $BUILD/pk/pk atomics 2> /dev/null | grep "First atomic counter is 1000, second is 100"
-$INSTALL/bin/spike -l --log-commits --isa=rv64gcv_xspikema1s_xspiketa1s test-spiketama1s-ext &> spike-all-fill1s.log
+$INSTALL/bin/spike -l --log-commits --isa=rv64gcv_xspiketama_xspikema1s_xspiketa1s test-spiketama1s-ext &> spike-all-fill1s.log
 grep "v2  0x00000000ffffffffffffffff00000002" spike-all-fill1s.log
 grep "v3  0xffffffff000000000000000000000003" spike-all-fill1s.log
 grep "v4  0xffffffffffffffffffffffffff000000" spike-all-fill1s.log
@@ -77,10 +77,10 @@ grep "v28 0xffff0000000000000213550700000487" spike-all-fill1s.log
 grep "v29 0xffff00000000000000200001000002b1" spike-all-fill1s.log
 grep "v30 0xffffffffffffffff000000000c410113" spike-all-fill1s.log
 grep "v31 0xffffffffffffffff0000000002b10487" spike-all-fill1s.log
-$INSTALL/bin/spike -l --log-commits --isa=rv64gcv_xspikema1s test-spiketama1s-ext &> spike-mask-fill1s.log
+$INSTALL/bin/spike -l --log-commits --isa=rv64gcv_xspiketama_xspikema1s test-spiketama1s-ext &> spike-mask-fill1s.log
 grep "v2  0x00000000ffffffffffffffff00000002" spike-mask-fill1s.log
 grep "v3  0x00000000000000000000000000000003" spike-mask-fill1s.log
-$INSTALL/bin/spike -l --log-commits --isa=rv64gcv_xspiketa1s test-spiketama1s-ext &> spike-tail-fill1s.log
+$INSTALL/bin/spike -l --log-commits --isa=rv64gcv_xspiketama_xspiketa1s test-spiketama1s-ext &> spike-tail-fill1s.log
 grep "v2  0x00000000000000000000000000000002" spike-tail-fill1s.log
 grep "v3  0xffffffff000000000000000000000003" spike-tail-fill1s.log
 $INSTALL/bin/spike -l --log-commits --isa=rv64gcv test-spiketama1s-ext &> spike-undisturbed.log

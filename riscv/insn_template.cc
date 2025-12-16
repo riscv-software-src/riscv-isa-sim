@@ -9,10 +9,8 @@
   reg_t npc = sext_xlen(pc + insn_length(OPCODE)); \
   if (!p->extension_enabled(EXT_ZCA)) assume(insn_length(OPCODE) % 4 == 0)
 
-#define EPILOGUE                                                               \
-  for (auto postproc : P.get_state()->insn_postprocesses)                      \
-    postproc(p, insn, pc);                                                     \
-  trace_opcode(p, OPCODE, insn);                                               \
+#define EPILOGUE \
+  trace_opcode(p, OPCODE, insn); \
   return npc
 
 reg_t fast_rv32i_NAME(processor_t* p, insn_t insn, reg_t pc)

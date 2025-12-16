@@ -6,6 +6,8 @@
 #include <cmath>
 #include <numeric>
 
+extern std::vector<insn_func_t> agnostic_postprocesses;
+
 static bool is_mask_dest(insn_t insn) {
   const auto &bits = insn.bits();
   return (bits & MASK_VMAND_MM) == MATCH_VMAND_MM ||
@@ -249,8 +251,8 @@ struct tail_agnostic_fill1s_t : public extension_t {
     return {};
   }
 
-  void reset(processor_t &p) override {
-    auto &insn_postprocesses = p.get_state()->insn_postprocesses;
+  void reset(processor_t &) override {
+    auto &insn_postprocesses = agnostic_postprocesses;
     auto tail_func = std::find(insn_postprocesses.begin(),
                                insn_postprocesses.end(), &tail_agnostic_fill1s);
     if (tail_func == insn_postprocesses.end())

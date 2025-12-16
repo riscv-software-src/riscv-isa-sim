@@ -4,6 +4,8 @@
 
 #include <algorithm>
 
+extern std::vector<insn_func_t> agnostic_postprocesses;
+
 static reg_t mask_agnostic_fill1s(processor_t *p, insn_t insn, reg_t pc) {
   // rvv-spec-1.0: Vector Loads and Stores: Masked vector loads do not update
   // inactive elements in the destination vector register group, unless masked
@@ -43,8 +45,8 @@ struct mask_agnostic_fill1s_t : public extension_t {
     return {};
   }
 
-  void reset(processor_t &p) override {
-    auto &insn_postprocesses = p.get_state()->insn_postprocesses;
+  void reset(processor_t &) override {
+    auto &insn_postprocesses = agnostic_postprocesses;
     auto mask_func = std::find(insn_postprocesses.begin(),
                                insn_postprocesses.end(), &mask_agnostic_fill1s);
     if (mask_func == insn_postprocesses.end())
