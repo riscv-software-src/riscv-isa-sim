@@ -8,6 +8,8 @@
 #include "decode_macros.h"
 #include "platform.h"
 
+#include <limits>
+
 mmu_t::mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc, reg_t cache_blocksz)
  : sim(sim), proc(proc), blocksz(cache_blocksz),
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
@@ -485,6 +487,23 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
   return entry;
 }
 
+static reg_t count_affected_granules(reg_t addr, reg_t len, reg_t gran_size) {
+  // TODO: this won't work for rv32
+  auto last_addr = addr + len - 1;
+
+  reg_t first_gran = addr / gran_size;
+  reg_t last_gran = last_addr / gran_size;
+
+  if (last_addr >= addr) {
+    return last_gran - first_gran + 1;
+  } else {
+    uint64_t max_gran = std::numeric_limits<uint64_t>::max() / gran_size;
+    uint64_t granules_before_wrap = max_gran - first_gran + 1;
+    uint64_t granules_after_wrap = last_gran + 1;
+    return granules_before_wrap + granules_after_wrap;
+  }
+}
+
 bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlvx)
 {
   if (!proc || proc->n_pmp == 0)
@@ -492,13 +511,14 @@ bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlv
 
   reg_t gran = reg_t(1) << proc->lg_pmp_granularity;
   auto first_addr_aligned = addr & -gran;
-  auto last_addr_aligned = (addr + len - 1) & -gran;
+  auto granules_to_check = count_affected_granules(addr, len, gran);
 
   for (size_t i = 0; i < proc->n_pmp; i++) {
     // Check each PMP-granularity sector of the access
     bool any_match = false;
     bool all_match = true;
-    for (reg_t cur_addr = first_addr_aligned; cur_addr <= last_addr_aligned; cur_addr += gran) {
+    for (reg_t granule_index = 0; granule_index < granules_to_check; ++granule_index) {
+      auto cur_addr = first_addr_aligned + gran * granule_index;
       bool match = proc->state.pmpaddr[i]->match4(cur_addr);
       any_match |= match;
       all_match &= match;
