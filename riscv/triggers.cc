@@ -208,6 +208,8 @@ void mcontrol_t::tdata1_write(processor_t * const proc, const reg_t val, const b
 }
 
 bool mcontrol_common_t::simple_match(unsigned xlen, reg_t value) const {
+  value &= make_mask64(0, xlen);
+
   switch (match) {
     case MATCH_EQUAL:
       return value == tdata2;
@@ -238,7 +240,10 @@ bool mcontrol_common_t::simple_match(unsigned xlen, reg_t value) const {
   assert(0);
 }
 
-std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(processor_t * const proc, operation_t operation, reg_t address, std::optional<reg_t> data) noexcept {
+std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(
+    processor_t * const proc, operation_t operation, reg_t address,
+    std::size_t len, std::optional<reg_t> data) noexcept
+{
   if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
       (operation == triggers::OPERATION_STORE && !store) ||
       (operation == triggers::OPERATION_LOAD && !load) ||
@@ -246,28 +251,30 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(proc
     return std::nullopt;
   }
 
-  reg_t value;
-  if (select) {
-    if (!data.has_value())
-      return std::nullopt;
-    value = *data;
-  } else {
-    value = address;
-  }
-
-  // We need this because in 32-bit mode sometimes the PC bits get sign
-  // extended.
   auto xlen = proc->get_xlen();
-  if (xlen == 32) {
-    value &= 0xffffffff;
+
+  if (!select) {
+    for (std::size_t i = 0; i < len; ++i)
+      if (simple_match(xlen, address + i)) {
+        /* This is OK because this function is only called if the trigger was
+         * not inhibited by the previous trigger in the chain. */
+        set_hit(timing ? HIT_IMMEDIATELY_AFTER : HIT_BEFORE);
+        return match_result_t(timing_t(timing), action);
+      }
+
+    return std::nullopt;
   }
 
-  if (simple_match(xlen, value)) {
-    /* This is OK because this function is only called if the trigger was not
-     * inhibited by the previous trigger in the chain. */
+  if (len * 8 > proc->get_xlen())
+    return std::nullopt;
+
+  if (data.has_value() && simple_match(xlen, data.value())) {
+    /* This is OK because this function is only called if the trigger was
+      * not inhibited by the previous trigger in the chain. */
     set_hit(timing ? HIT_IMMEDIATELY_AFTER : HIT_BEFORE);
     return match_result_t(timing_t(timing), action);
   }
+
   return std::nullopt;
 }
 
@@ -600,7 +607,9 @@ bool module_t::tdata3_write(unsigned index, const reg_t val) noexcept
   return true;
 }
 
-std::optional<match_result_t> module_t::detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data) noexcept
+std::optional<match_result_t> module_t::detect_memory_access_match(
+    operation_t operation, reg_t address, std::size_t len,
+    std::optional<reg_t> data) noexcept
 {
   state_t * const state = proc->get_state();
   if (state->debug_mode)
@@ -621,7 +630,7 @@ std::optional<match_result_t> module_t::detect_memory_access_match(operation_t o
      * entire chain did not match. This is allowed by the spec, because the final
      * trigger in the chain will never get `hit` set unless the entire chain
      * matches. */
-    auto result = trigger->detect_memory_access_match(proc, operation, address, data);
+    auto result = trigger->detect_memory_access_match(proc, operation, address, len, data);
     if (result.has_value() && !trigger->get_chain() && (!ret.has_value() || ret->action < result->action))
       ret = result;
 
