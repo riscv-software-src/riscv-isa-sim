@@ -1239,6 +1239,27 @@ riscv_insn_ext_p = \
 	psshar_hs \
 	psshar_ws \
 	shar \
+	pmin_b \
+	pmin_h \
+	pmin_w \
+	pminu_b \
+	pminu_h \
+	pminu_w \
+	pmax_b \
+	pmax_h \
+	pmax_w \
+	pmaxu_b \
+	pmaxu_h \
+	pmaxu_w \
+	pmseq_b \
+	pmseq_h \
+	pmseq_w \
+	pmslt_b \
+	pmslt_h \
+	pmslt_w \
+	pmsltu_b \
+	pmsltu_h \
+	pmsltu_w \
 
 	
 
