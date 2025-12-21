@@ -538,33 +538,51 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return std::to_string((int)insn.p_imm2());
+    return std::to_string((int)insn.p_imm8());
   }
-} p_imm2;
+} p_imm8;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return std::to_string((int)insn.p_imm3());
+    return std::to_string((int)insn.p_imm10csl());
   }
-} p_imm3;
+} p_imm10csl;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return std::to_string((int)insn.p_imm4());
+    return std::to_string((int)insn.p_imm10csr());
   }
-} p_imm4;
+} p_imm10csr;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return std::to_string((int)insn.p_imm5());
+    return std::to_string((int)insn.p_imm10csrw());
   }
-} p_imm5;
+} p_imm10csrw;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
-    return std::to_string((int)insn.p_imm6());
+    return std::to_string((int)insn.shamtd());
   }
-} p_imm6;
+} shamtd;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.shamtw());
+  }
+} shamtw;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.shamth());
+  }
+} shamth;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return std::to_string((int)insn.shamtb());
+  }
+} shamtb;
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
