@@ -1210,6 +1210,35 @@ riscv_insn_ext_p = \
 	pusati_h \
 	pusati_w \
 	usati \
+	pslli_b \
+	pslli_h \
+	pslli_w \
+	psll_bs \
+	psll_hs \
+	psll_ws \
+	psrli_b \
+	psrli_h \
+	psrli_w \
+	psrl_bs \
+	psrl_hs \
+	psrl_ws \
+	psrai_b \
+	psrai_h \
+	psrai_w \
+	psra_bs \
+	psra_hs \
+	psra_ws \
+	psslai_h \
+	psslai_w \
+	psrari_h \
+	psrari_w \
+	srari \
+	pssha_hs \
+	pssha_ws \
+	sha \
+	psshar_hs \
+	psshar_ws \
+	shar \
 
 	
 
