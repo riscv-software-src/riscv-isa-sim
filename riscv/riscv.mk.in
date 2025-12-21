@@ -1133,6 +1133,11 @@ riscv_insn_ext_zvk = \
 	$(riscv_insn_ext_zvksh) \
 
 riscv_insn_ext_p = \
+	pli_b \
+	pli_h \
+	pli_w \
+	plui_h \
+	plui_w \
 	
 
 riscv_insn_list = \
