@@ -31,6 +31,12 @@
 #define P_RS2_UPARAMS(BIT) \
   auto p_rs2 = P_UFIELD(rs2, i, BIT);  
 
+#define P_RS2_CROSS_PARAMS(BIT) \
+  auto p_rs2 = P_FIELD(rs2, (i ^ 1), BIT); 
+ 
+#define P_RS2_CROSS_UPARAMS(BIT) \
+  auto p_rs2 = P_UFIELD(rs2, (i ^ 1), BIT);
+
 // Loop base
 #define P_RD_LOOP_BASE(BIT) \
   require_extension('P'); \
@@ -84,7 +90,23 @@
   P_RS2_UPARAMS(BIT_RS2) \
   BODY \
   WRITE_P_RD(); \
-}    
+}
+
+#define P_CROSS_LOOP_BODY(BIT, BODY) { \
+  P_RD_PARAMS(BIT) \
+  P_RS1_PARAMS(BIT) \
+  P_RS2_CROSS_PARAMS(BIT) \
+  BODY \
+  WRITE_P_RD(); \
+}
+
+#define P_CROSS_ULOOP_BODY(BIT, BODY) { \
+  P_RD_UPARAMS(BIT) \
+  P_RS1_UPARAMS(BIT) \
+  P_RS2_CROSS_UPARAMS(BIT) \
+  BODY \
+  WRITE_P_RD(); \
+}
 
 // Loop end
 #define P_RD_LOOP_END() \
@@ -110,6 +132,30 @@
 #define P_RD_RS1_RS2_ULOOP(BIT_RD, BIT_RS1, BIT_RS2, BODY) \
   P_RD_RS1_RS2_LOOP_BASE(BIT_RD) \
   P_RD_RS1_RS2_ULOOP_BODY(BIT_RD, BIT_RS1, BIT_RS2, BODY) \
+  P_RD_LOOP_END()
+
+#define P_CROSS_LOOP(BIT, BODY1, BODY2) \
+  P_RD_RS1_RS2_LOOP_BASE(BIT) \
+  P_CROSS_LOOP_BODY(BIT, BODY1) \
+  --i; \
+  if (sizeof(#BODY2) == 1) { \
+    P_CROSS_LOOP_BODY(BIT, BODY1) \
+  } \
+  else { \
+    P_CROSS_LOOP_BODY(BIT, BODY2) \
+  } \
+  P_RD_LOOP_END()
+
+#define P_CROSS_ULOOP(BIT, BODY1, BODY2) \
+  P_RD_RS1_RS2_LOOP_BASE(BIT) \
+  P_CROSS_ULOOP_BODY(BIT, BODY1) \
+  --i; \
+  if (sizeof(#BODY2) == 1) { \
+    P_CROSS_ULOOP_BODY(BIT, BODY1) \
+  } \
+  else { \
+    P_CROSS_ULOOP_BODY(BIT, BODY2) \
+  } \
   P_RD_LOOP_END()
 
 // Misc

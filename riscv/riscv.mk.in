@@ -1175,6 +1175,18 @@ riscv_insn_ext_p = \
 	psh1add_w \
 	pssh1sadd_h \
 	pssh1sadd_w \
+	pas_hx \
+	pas_wx \
+	psa_hx \
+	psa_wx \
+	psas_hx \
+	psas_wx \
+	pssa_hx \
+	pssa_wx \
+	paas_hx \
+	paas_wx \
+	pasa_hx \
+	pasa_wx \
 
 	
 
