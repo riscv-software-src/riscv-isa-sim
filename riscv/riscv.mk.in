@@ -1175,6 +1175,12 @@ riscv_insn_ext_p = \
 	pssa_hx \
 	paas_hx \
 	pasa_hx \
+	pabd_b \
+	pabd_h \
+	pabdu_b \
+	pabdu_h \
+	psabs_b \
+	psabs_h \
 
 
 riscv_insn_list = \
