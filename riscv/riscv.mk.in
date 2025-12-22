@@ -1288,6 +1288,54 @@ riscv_insn_ext_p = \
 	mvm \
 	mvmn \
 	merge \
+	pmulh_h \
+	pmulh_w \
+	pmulhr_h \
+	pmulhr_w \
+	pmulhsu_h \
+	pmulhsu_w \
+	pmulhrsu_h \
+	pmulhrsu_w \
+	pmulhu_h \
+	pmulhu_w \
+	pmulhru_h \
+	pmulhru_w \
+	pmulq_h \
+	pmulq_w \
+	pmulqr_h \
+	pmulqr_w \
+	pmul_h_b00 \
+	pmul_h_b01 \
+	pmul_h_b11 \
+	pmul_w_h00 \
+	pmul_w_h01 \
+	pmul_w_h11 \
+	pmulsu_h_b00 \
+	pmulsu_h_b11 \
+	pmulsu_w_h00 \
+	pmulsu_w_h11 \
+	pmulu_h_b00 \
+	pmulu_h_b01 \
+	pmulu_h_b11 \
+	pmulu_w_h00 \
+	pmulu_w_h01 \
+	pmulu_w_h11 \
+	mul_w00 \
+	mul_w01 \
+	mul_w11 \
+	mulsu_w00 \
+	mulsu_w11 \
+	mulu_w00 \
+	mulu_w01 \
+	mulu_w11 \
+	pmulh_h_b0 \
+	pmulh_h_b1 \
+	pmulh_w_h0 \
+	pmulh_w_h1 \
+	pmulhsu_h_b0 \
+	pmulhsu_h_b1 \
+	pmulhsu_w_h0 \
+	pmulhsu_w_h1 \
 
 	
 
