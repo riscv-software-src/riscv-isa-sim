@@ -1336,6 +1336,54 @@ riscv_insn_ext_p = \
 	pmulhsu_h_b1 \
 	pmulhsu_w_h0 \
 	pmulhsu_w_h1 \
+	pmhacc_h \
+	pmhacc_w \
+	pmhracc_h \
+	pmhracc_w \
+	pmhaccsu_h \
+	pmhaccsu_w \
+	pmhraccsu_h \
+	pmhraccsu_w \
+	pmhaccu_h \
+	pmhaccu_w \
+	pmhraccu_h \
+	pmhraccu_w \
+	pmqacc_w_h00 \
+	pmqacc_w_h01 \
+	pmqacc_w_h11 \
+	pmqracc_w_h00 \
+	pmqracc_w_h01 \
+	pmqracc_w_h11 \
+	mqacc_w00 \
+	mqacc_w01 \
+	mqacc_w11 \
+	mqracc_w00 \
+	mqracc_w01 \
+	mqracc_w11 \
+	pmacc_w_h00 \
+	pmacc_w_h01 \
+	pmacc_w_h11 \
+	pmaccsu_w_h00 \
+	pmaccsu_w_h11 \
+	pmaccu_w_h00 \
+	pmaccu_w_h01 \
+	pmaccu_w_h11 \
+	macc_w00 \
+	macc_w01 \
+	macc_w11 \
+	maccsu_w00 \
+	maccsu_w11 \
+	maccu_w00 \
+	maccu_w01 \
+	maccu_w11 \
+	pmhacc_h_b0 \
+	pmhacc_h_b1 \
+	pmhacc_w_h0 \
+	pmhacc_w_h1 \
+	pmhaccsu_h_b0 \
+	pmhaccsu_h_b1 \
+	pmhaccsu_w_h0 \
+	pmhaccsu_w_h1 \
 
 	
 

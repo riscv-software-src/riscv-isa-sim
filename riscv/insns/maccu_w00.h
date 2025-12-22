@@ -1,0 +1,3 @@
+require_extension('P');
+require_rv64;
+WRITE_RD(RD + zext32(RS1) * zext32(RS2));
