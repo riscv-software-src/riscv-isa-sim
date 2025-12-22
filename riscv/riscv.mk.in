@@ -1212,7 +1212,23 @@ riscv_insn_ext_p = \
 	srari \
 	ssha \
 	sshar \
-
+	pmin_b \
+	pmin_h \
+	pminu_b \
+	pminu_h \
+	pmax_b \
+	pmax_h \
+	pmaxu_b \
+	pmaxu_h \
+	pmseq_b \
+	pmseq_h \
+	mseq \
+	pmslt_b \
+	pmslt_h \
+	mslt \
+	pmsltu_b \
+	pmsltu_h \
+	msltu \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
