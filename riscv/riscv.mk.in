@@ -1136,6 +1136,39 @@ riscv_insn_ext_p = \
 	pli_b \
 	pli_h \
 	plui_h \
+	padd_bs \
+	padd_hs \
+	padd_b \
+	padd_h \
+	psub_b \
+	psub_h \
+	psadd_b \
+	psadd_h \
+	sadd \
+	psaddu_b \
+	psaddu_h \
+	saddu \
+	pssub_b \
+	pssub_h \
+	ssub \
+	pssubu_b \
+	pssubu_h \
+	ssubu \
+	paadd_b \
+	paadd_h \
+	aadd \
+	paaddu_b \
+	paaddu_h \
+	aaddu \
+	pasub_b \
+	pasub_h \
+	asub \
+	pasubu_b \
+	pasubu_h \
+	asubu \
+	psh1add_h \
+	pssh1sadd_h \
+	ssh1sadd \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
