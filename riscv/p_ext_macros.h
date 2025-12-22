@@ -28,6 +28,9 @@
 #define P_RS1_INNER_UPARAMS(BIT_INNER) \
   auto p_rs1 = P_UFIELD(rs1, j, BIT_INNER);
 
+#define P_RS1_ZIP_PARAMS(BIT) \
+  auto p_rs1 = P_UFIELD(rs1, i / 2 + pos, BIT);
+
 #define P_RS2_PARAMS(BIT) \
   auto p_rs2 = P_FIELD(rs2, i, BIT);  
 
@@ -42,6 +45,9 @@
 
 #define P_RS2_INNER_UPARAMS(BIT_INNER) \
   auto p_rs2 = P_UFIELD(rs2, j, BIT_INNER);
+
+#define P_RS2_ZIP_PARAMS(BIT) \
+  auto p_rs2 = P_UFIELD(rs2, i / 2 + pos, BIT);
 
 // Loop base
 #define P_RD_LOOP_BASE(BIT) \
@@ -86,6 +92,17 @@
   for (sreg_t i = len - 1; i >= 0; --i) { \
     sreg_t p_res = P_UFIELD(rd_tmp, i, BIT); \
     for (sreg_t j = i * len_inner; j < (i + 1) * len_inner; ++j) {
+
+#define P_RD_RS1_RS2_ZIP_LOOP_BASE(BIT, POS) \
+  require_rv64; \
+  require_extension('P'); \
+  require((BIT) == e8 || (BIT) == e16 || (BIT) == e32); \
+  reg_t rd_tmp = RD; \
+  reg_t rs1 = RS1; \
+  reg_t rs2 = RS2; \
+  sreg_t len = xlen / (BIT); \
+  sreg_t pos = POS * len / 2; \
+  for (sreg_t i = len - 1; i >= 0; --i) {
 
 // Loop body
 #define P_RD_LOOP_BODY(BIT, BODY) { \
@@ -136,6 +153,14 @@
   P_RD_UPARAMS(BIT) \
   P_RS1_UPARAMS(BIT) \
   P_RS2_CROSS_UPARAMS(BIT) \
+  BODY \
+  WRITE_P_RD(); \
+}
+
+#define P_RD_RS1_RS2_ZIP_LOOP_BODY(BIT_RD, BIT_RS1, BIT_RS2, BODY) { \
+  P_RD_PARAMS(BIT_RD) \
+  P_RS1_ZIP_PARAMS(BIT_RS1) \
+  P_RS2_ZIP_PARAMS(BIT_RS2) \
   BODY \
   WRITE_P_RD(); \
 }
@@ -212,6 +237,24 @@
   BODY \
   P_REDUCTION_ULOOP_END(BIT, IS_SAT)
 
+#define P_RD_RS1_RS2_ZIP_LOOP(BIT_RD, BIT_RS1, BIT_RS2, POS, BODY) \
+  P_RD_RS1_RS2_ZIP_LOOP_BASE(BIT_RD, POS) \
+  P_RD_RS1_RS2_ZIP_LOOP_BODY(BIT_RD, BIT_RS1, BIT_RS2, BODY) \
+  P_RD_LOOP_END()
+
+#define P_UNZIP(BIT, HIGH) \
+  require_rv64; \
+  require_extension('P'); \
+  require(BIT == e8 || BIT == e16); \
+  reg_t rd_tmp = 0, rs1 = RS1, rs2 = RS2; \
+  for (sreg_t i = 0; i < xlen / BIT / 2; i++) { \
+    rd_tmp = set_field(rd_tmp, make_mask64(i * BIT, BIT), \
+      P_UFIELD(RS1, i * 2 + HIGH, BIT)); \
+    rd_tmp = set_field(rd_tmp, make_mask64(i * BIT + xlen / 2, BIT), \
+      P_UFIELD(RS2, i * 2 + HIGH, BIT)); \
+  } \
+  WRITE_RD(sext_xlen(rd_tmp));
+
 // Misc
 #define P_SAT(BIT, R) ( \
   ((BIT) == 64) ? (R) : \
@@ -238,5 +281,6 @@
       P_UFIELD(RS1, i * 2 + X, BIT)); \
   } \
   WRITE_RD(sext_xlen(rd_tmp));
+
 
 #endif

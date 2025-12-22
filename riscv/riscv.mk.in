@@ -1271,6 +1271,14 @@ riscv_insn_ext_p = \
 	ppairo_b \
 	ppairo_h \
 	ppairo_w \
+	zip8p \
+	zip16p \
+	zip8hp \
+	zip16hp \
+	unzip8p \
+	unzip16p \
+	unzip8hp \
+	unzip16hp \
 
 	
 
