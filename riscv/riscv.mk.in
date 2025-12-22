@@ -1279,6 +1279,15 @@ riscv_insn_ext_p = \
 	unzip16p \
 	unzip8hp \
 	unzip16hp \
+	abs \
+	absw \
+	cls \
+	clsw \
+	slx \
+	srx \
+	mvm \
+	mvmn \
+	merge \
 
 	
 
