@@ -227,4 +227,16 @@
   (R) \
 )
 
+#define P_PACK(BIT, X, Y) \
+  require_extension('P'); \
+  require(BIT == e8 || BIT == e16 || BIT == e32); \
+  reg_t rd_tmp = 0, rs1 = RS1, rs2 = RS2; \
+  for (sreg_t i = 0; i < xlen / BIT / 2; i++) { \
+    rd_tmp = set_field(rd_tmp, make_mask64((i * 2 + 1) * BIT, BIT), \
+      P_UFIELD(RS2, i * 2 + Y, BIT)); \
+    rd_tmp = set_field(rd_tmp, make_mask64(i * 2 * BIT, BIT), \
+      P_UFIELD(RS1, i * 2 + X, BIT)); \
+  } \
+  WRITE_RD(sext_xlen(rd_tmp));
+
 #endif

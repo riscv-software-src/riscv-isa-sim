@@ -1260,6 +1260,17 @@ riscv_insn_ext_p = \
 	pmsltu_b \
 	pmsltu_h \
 	pmsltu_w \
+	ppaire_b \
+	ppaire_h \
+	ppaireo_b \
+	ppaireo_h \
+	ppaireo_w \
+	ppairoe_b \
+	ppairoe_h \
+	ppairoe_w \
+	ppairo_b \
+	ppairo_h \
+	ppairo_w \
 
 	
 
