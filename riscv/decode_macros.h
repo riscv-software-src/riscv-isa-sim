@@ -52,6 +52,23 @@
     WRITE_REG((reg) + 1, (sreg_t(val)) >> 32); \
   }
 
+// RVP macros
+#define WRITE_P_REG_PAIR(reg, value) \
+  if(reg != 0) { \
+    uint64_t val = (value); \
+    WRITE_REG(reg*2, sext32(val)); \
+    WRITE_REG((reg*2) + 1, (sreg_t(val)) >> 32); \
+  }
+
+#define P_READ_REG_PAIR(reg) ({ \
+  (reg) == 0 ? reg_t(0) : \
+  (READ_REG((reg*2) + 1) << 32) + zext32(READ_REG(reg*2)); })
+
+#define P_RS1_PAIR P_READ_REG_PAIR(insn.rs1_p())
+#define P_RS2_PAIR P_READ_REG_PAIR(insn.rs2_p())
+#define P_RD_PAIR P_READ_REG_PAIR(insn.rd_p())
+#define WRITE_P_RD_PAIR(value) WRITE_P_REG_PAIR(insn.rd_p(), value)
+
 // RVC macros
 #define WRITE_RVC_RS1S(value) WRITE_REG(insn.rvc_rs1s(), value)
 #define WRITE_RVC_RS2S(value) WRITE_REG(insn.rvc_rs2s(), value)
@@ -222,6 +239,8 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define zext(x, pos) (((reg_t)(x) << (64 - (pos))) >> (64 - (pos)))
 #define sext_xlen(x) sext(x, xlen)
 #define zext_xlen(x) zext(x, xlen)
+#define sext_xlen_pair(x) sext(x, xlen * 2)
+#define zext_xlen_pair(x) zext(x, xlen * 2)
 
 #define set_pc(x) \
   do { if (unlikely((x) & ~p->pc_alignment_mask())) \
