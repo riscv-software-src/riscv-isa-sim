@@ -1169,6 +1169,13 @@ riscv_insn_ext_p = \
 	psh1add_h \
 	pssh1sadd_h \
 	ssh1sadd \
+	pas_hx \
+	psa_hx \
+	psas_hx \
+	pssa_hx \
+	paas_hx \
+	pasa_hx \
+
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
