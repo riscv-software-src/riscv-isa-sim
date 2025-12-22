@@ -1187,6 +1187,11 @@ riscv_insn_ext_p = \
 	predsumu_hs \
 	pabdsumu_b \
 	pabdsumau_b \
+	psext_h_b \
+	psati_h \
+	sati \
+	pusati_h \
+	usati \
 
 
 riscv_insn_list = \
