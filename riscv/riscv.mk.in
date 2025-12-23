@@ -1486,6 +1486,14 @@ riscv_insn_ext_p = \
 	pmsltu_db \
 	pmsltu_dh \
 	pmsltu_dw \
+	ppaire_db \
+	ppaire_dh \
+	ppaireo_db \
+	ppaireo_dh \
+	ppairoe_db \
+	ppairoe_dh \
+	ppairo_db \
+	ppairo_dh \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \

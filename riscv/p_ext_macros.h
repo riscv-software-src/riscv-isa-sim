@@ -641,4 +641,16 @@
   } \
   WRITE_RD(sext_xlen(rd_tmp));
 
+#define P_PACK_DW(BIT, X, Y) \
+  require_extension('P'); \
+  require(BIT == e8 || BIT == e16); \
+  reg_t rd_tmp = 0, rs1 = P_RS1_PAIR, rs2 = P_RS2_PAIR; \
+  for (sreg_t i = 0; i < 64 / BIT / 2; i++) { \
+    rd_tmp = set_field(rd_tmp, make_mask64((i * 2 + 1) * BIT, BIT), \
+      P_UFIELD(rs2, i * 2 + Y, BIT)); \
+    rd_tmp = set_field(rd_tmp, make_mask64(i * 2 * BIT, BIT), \
+      P_UFIELD(rs1, i * 2 + X, BIT)); \
+  } \
+  WRITE_P_RD_PAIR(rd_tmp);
+
 #endif
