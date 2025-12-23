@@ -1427,6 +1427,44 @@ riscv_insn_ext_p = \
 	psati_dw \
 	pusati_dh \
 	pusati_dw \
+	pslli_db \
+	pslli_dh \
+	pslli_dw \
+	psrli_db \
+	psrli_dh \
+	psrli_dw \
+	psrai_db \
+	psrai_dh \
+	psrai_dw \
+	psslai_dh \
+	psslai_dw \
+	psrari_dh \
+	psrari_dw \
+	psll_dbs \
+	psll_dhs \
+	psll_dws \
+	psrl_dbs \
+	psrl_dhs \
+	psrl_dws \
+	psra_dbs \
+	psra_dhs \
+	psra_dws \
+	pssha_dhs \
+	pssha_dws \
+	psshar_dhs \
+	psshar_dws \
+	pwslli_b \
+	pwslli_h \
+	wslli \
+	pwsll_bs \
+	pwsll_hs \
+	wsll \
+	pwslai_b \
+	pwslai_h \
+	wslai \
+	pwsla_bs \
+	pwsla_hs \
+	wsla \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
