@@ -167,7 +167,7 @@
   reg_t rs2 = RS2; \
   sreg_t len = xlen / (BIT); \
   for (sreg_t i = len - 1; i >= 0; --i) {
-  
+
 #define P_RD_RS1_RS2_DW_LOOP_BASE(BIT) \
   require_extension('P'); \
   require((BIT) == e8 || (BIT) == e16 || (BIT) == e32); \
@@ -524,6 +524,11 @@
 #define P_WIDEN_RD_RS1_RS2_ULOOP(BIT_RS1, BIT_RS2, BODY) \
   P_WIDEN_RD_RS1_RS2_LOOP_BASE(BIT_RS1) \
   P_RD_RS1_RS2_ULOOP_BODY((BIT_RS1) * 2, BIT_RS1, BIT_RS2, BODY) \
+  P_RD_DW_LOOP_END()
+
+#define P_RD_RS1_DW_LOOP(BIT_RD, BIT_RS1, BODY) \
+  P_RD_RS1_DW_LOOP_BASE(BIT_RD) \
+  P_RD_RS1_LOOP_BODY(BIT_RD, BIT_RS1, BODY) \
   P_RD_DW_LOOP_END()
 
 #define P_RD_RS1_RS2_DW_LOOP(BIT_RD, BIT_RS1, BIT_RS2, BODY) \

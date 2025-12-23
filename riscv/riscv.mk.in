@@ -1410,7 +1410,13 @@ riscv_insn_ext_p = \
 	pssa_dhx \
 	paas_dhx \
 	pasa_dhx \
-
+	pabd_db \
+	pabd_dh \
+	pabdu_db \
+	pabdu_dh \
+	psabs_db \
+	psabs_dh \
+	
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
 	$(riscv_insn_ext_c) \
