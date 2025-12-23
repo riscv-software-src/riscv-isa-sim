@@ -1243,6 +1243,43 @@ riscv_insn_ext_p = \
 	mvm \
 	mvmn \
 	merge \
+	pmulh_h \
+	pmulhr_h \
+	pmulhsu_h \
+	pmulhrsu_h \
+	pmulhu_h \
+	pmulhru_h \
+	pmulq_h \
+	pmulqr_h \
+	mulhr \
+	mulhrsu \
+	mulhru \
+	mulq \
+	mulqr \
+	pmul_h_b00 \
+	pmul_h_b01 \
+	pmul_h_b11 \
+	pmulsu_h_b00 \
+	pmulsu_h_b11 \
+	pmulu_h_b00 \
+	pmulu_h_b01 \
+	pmulu_h_b11 \
+	mul_h00 \
+	mul_h01 \
+	mul_h11 \
+	mulsu_h00 \
+	mulsu_h11 \
+	mulu_h00 \
+	mulu_h01 \
+	mulu_h11 \
+	pmulh_h_b0 \
+	pmulh_h_b1 \
+	pmulhsu_h_b0 \
+	pmulhsu_h_b1 \
+	mulh_h0 \
+	mulh_h1 \
+	mulhsu_h0 \
+	mulhsu_h1 \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
