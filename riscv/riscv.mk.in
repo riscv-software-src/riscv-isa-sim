@@ -1465,6 +1465,27 @@ riscv_insn_ext_p = \
 	pwsla_bs \
 	pwsla_hs \
 	wsla \
+	pmin_db \
+	pmin_dh \
+	pmin_dw \
+	pminu_db \
+	pminu_dh \
+	pminu_dw \
+	pmax_db \
+	pmax_dh \
+	pmax_dw \
+	pmaxu_db \
+	pmaxu_dh \
+	pmaxu_dw \
+	pmseq_db \
+	pmseq_dh \
+	pmseq_dw \
+	pmslt_db \
+	pmslt_dh \
+	pmslt_dw \
+	pmsltu_db \
+	pmsltu_dh \
+	pmsltu_dw \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
