@@ -1314,6 +1314,30 @@ riscv_insn_ext_p = \
 	mhacc_h1 \
 	mhaccsu_h0 \
 	mhaccsu_h1 \
+	pmq2add_h \
+	pmq2adda_h \
+	pmqr2add_h \
+	pmqr2adda_h \
+	pm2add_h \
+	pm2adda_h \
+	pm2addsu_h \
+	pm2addasu_h \
+	pm2addu_h \
+	pm2addau_h \
+	pm2add_hx \
+	pm2adda_hx \
+	pm2sadd_h \
+	pm2sadd_hx \
+	pm2sub_h \
+	pm2suba_h \
+	pm2sub_hx \
+	pm2suba_hx \
+	pm4add_b \
+	pm4adda_b \
+	pm4addsu_b \
+	pm4addasu_b \
+	pm4addu_b \
+	pm4addau_b \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
