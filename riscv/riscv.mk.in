@@ -1404,6 +1404,12 @@ riscv_insn_ext_p = \
 	padd_dbs \
 	padd_dhs \
 	padd_dws \
+	pas_dhx \
+	psa_dhx \
+	psas_dhx \
+	pssa_dhx \
+	paas_dhx \
+	pasa_dhx \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \

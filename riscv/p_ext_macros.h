@@ -536,6 +536,30 @@
   P_RD_RS1_RS2_ULOOP_BODY(BIT_RD, BIT_RS1, BIT_RS2, BODY) \
   P_RD_DW_LOOP_END()
 
+#define P_CROSS_DW_LOOP(BIT, BODY1, BODY2) \
+  P_RD_RS1_RS2_DW_LOOP_BASE(BIT) \
+  P_CROSS_LOOP_BODY(BIT, BODY1) \
+  --i; \
+  if (sizeof(#BODY2) == 1) { \
+    P_CROSS_LOOP_BODY(BIT, BODY1) \
+  } \
+  else { \
+    P_CROSS_LOOP_BODY(BIT, BODY2) \
+  } \
+  P_RD_DW_LOOP_END()
+
+#define P_CROSS_DW_ULOOP(BIT, BODY1, BODY2) \
+  P_RD_RS1_RS2_DW_LOOP_BASE(BIT) \
+  P_CROSS_ULOOP_BODY(BIT, BODY1) \
+  --i; \
+  if (sizeof(#BODY2) == 1) { \
+    P_CROSS_ULOOP_BODY(BIT, BODY1) \
+  } \
+  else { \
+    P_CROSS_ULOOP_BODY(BIT, BODY2) \
+  } \
+  P_RD_DW_LOOP_END()
+
 // Misc
 #define P_SAT(BIT, R) ( \
   ((BIT) == 64) ? (R) : \
