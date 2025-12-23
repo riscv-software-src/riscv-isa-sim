@@ -1919,11 +1919,7 @@ void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
 
   csr_t_p proxy_csr = get_reg();
   if (proxy_csr == nullptr) {
-    if (!state->v) {
-      throw trap_illegal_instruction(insn.bits());
-    } else {
-      throw trap_virtual_instruction(insn.bits());
-    }
+    throw trap_illegal_instruction(insn.bits());
   }
   proxy_csr->verify_permissions(insn, write);
 }
