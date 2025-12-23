@@ -1338,6 +1338,9 @@ riscv_insn_ext_p = \
 	pm4addasu_b \
 	pm4addu_b \
 	pm4addau_b \
+	pli_db \
+	pli_dh \
+	plui_dh \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \

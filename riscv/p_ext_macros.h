@@ -144,6 +144,13 @@
     sreg_t p_res = P_UFIELD(rd_tmp, i, BIT); \
     for (sreg_t j = i * len_inner; j < (i + 1) * len_inner; ++j) {
 
+#define P_RD_DW_LOOP_BASE(BIT) \
+  require_extension('P'); \
+  require((BIT) == e8 || (BIT) == e16 || (BIT) == e32); \
+  reg_t rd_tmp = P_RD_PAIR; \
+  sreg_t len = xlen / (BIT) * 2; \
+  for (sreg_t i = len - 1; i >= 0; --i) {
+
 // Loop body
 #define P_RD_LOOP_BODY(BIT, BODY) { \
   P_RD_PARAMS(BIT) \
@@ -326,6 +333,10 @@
   } \
   WRITE_RD(sext_xlen(rd_tmp));
 
+#define P_RD_DW_LOOP_END() \
+  } \
+  WRITE_P_RD_PAIR(rd_tmp);
+
 // Loop
 #define P_RD_LOOP(BIT_RD, BODY) \
   P_RD_LOOP_BASE(BIT_RD) \
@@ -469,6 +480,11 @@
   BODY \
   P_REDUCTION_LOOP_END(BIT, IS_SAT)
   
+#define P_RD_DW_LOOP(BIT_RD, BODY) \
+  P_RD_DW_LOOP_BASE(BIT_RD) \
+  P_RD_LOOP_BODY(BIT_RD, BODY) \
+  P_RD_DW_LOOP_END()
+
 // Misc
 #define P_SAT(BIT, R) ( \
   ((BIT) == 64) ? (R) : \
