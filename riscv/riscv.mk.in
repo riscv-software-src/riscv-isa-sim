@@ -1229,6 +1229,13 @@ riscv_insn_ext_p = \
 	pmsltu_b \
 	pmsltu_h \
 	msltu \
+	ppaire_b \
+	ppaireo_b \
+	ppaireo_h \
+	ppairoe_b \
+	ppairoe_h \
+	ppairo_b \
+	ppairo_h \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
