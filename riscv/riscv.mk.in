@@ -1416,7 +1416,11 @@ riscv_insn_ext_p = \
 	pabdu_dh \
 	psabs_db \
 	psabs_dh \
-	
+	predsum_dbs \
+	predsum_dhs \
+	predsumu_dbs \
+	predsumu_dhs \
+
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
 	$(riscv_insn_ext_c) \
