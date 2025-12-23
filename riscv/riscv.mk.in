@@ -1420,6 +1420,13 @@ riscv_insn_ext_p = \
 	predsum_dhs \
 	predsumu_dbs \
 	predsumu_dhs \
+	psext_dh_b \
+	psext_dw_b \
+	psext_dw_h \
+	psati_dh \
+	psati_dw \
+	pusati_dh \
+	pusati_dw \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
