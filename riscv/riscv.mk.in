@@ -1280,6 +1280,40 @@ riscv_insn_ext_p = \
 	mulh_h1 \
 	mulhsu_h0 \
 	mulhsu_h1 \
+	pmhacc_h \
+	pmhracc_h \
+	pmhaccsu_h \
+	pmhraccsu_h \
+	pmhaccu_h \
+	pmhraccu_h \
+	mhacc \
+	mhracc \
+	mhaccsu \
+	mhraccsu \
+	mhaccu \
+	mhraccu \
+	mqacc_h00 \
+	mqacc_h01 \
+	mqacc_h11 \
+	mqracc_h00 \
+	mqracc_h01 \
+	mqracc_h11 \
+	macc_h00 \
+	macc_h01 \
+	macc_h11 \
+	maccsu_h00 \
+	maccsu_h11 \
+	maccu_h00 \
+	maccu_h01 \
+	maccu_h11 \
+	pmhacc_h_b0 \
+	pmhacc_h_b1 \
+	pmhaccsu_h_b0 \
+	pmhaccsu_h_b1 \
+	mhacc_h0 \
+	mhacc_h1 \
+	mhaccsu_h0 \
+	mhaccsu_h1 \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
