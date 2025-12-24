@@ -1547,6 +1547,16 @@ riscv_insn_ext_p = \
 	pwmulu_b \
 	pwmulu_h \
 	wmulu \
+	pmqwacc_h \
+	pmqwacc \
+	pmqrwacc_h \
+	pmqrwacc \
+	pwmacc_h \
+	wmacc \
+	pwmaccsu_h \
+	wmaccsu \
+	pwmaccu_h \
+	wmaccu \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
