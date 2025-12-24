@@ -1496,6 +1496,48 @@ riscv_insn_ext_p = \
 	ppairo_dh \
 	wzip8p \
 	wzip16p \
+	pnsrli_b \
+	pnsrli_h \
+	nsrli \
+	pnsrl_bs \
+	pnsrl_hs \
+	nsrl \
+	pnsrai_b \
+	pnsrai_h \
+	nsrai \
+	pnsra_bs \
+	pnsra_hs \
+	nsra \
+	pnsrari_b \
+	pnsrari_h \
+	nsrari \
+	pnsrar_bs \
+	pnsrar_hs \
+	nsrar \
+	pnclipi_b \
+	pnclipi_h \
+	nclipi \
+	pnclip_bs \
+	pnclip_hs \
+	nclip \
+	pnclipri_b \
+	pnclipri_h \
+	nclipri \
+	pnclipr_bs \
+	pnclipr_hs \
+	nclipr \
+	pnclipiu_b \
+	pnclipiu_h \
+	nclipiu \
+	pnclipu_bs \
+	pnclipu_hs \
+	nclipu \
+	pnclipriu_b \
+	pnclipriu_h \
+	nclipriu \
+	pnclipru_bs \
+	pnclipru_hs \
+	nclipru \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \

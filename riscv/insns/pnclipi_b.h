@@ -1,0 +1,4 @@
+require_rv32;
+P_NARROW_RD_RS1_LOOP(8, 16, {
+    p_rd = P_SAT(8, p_rs1 >> insn.shamth());
+})

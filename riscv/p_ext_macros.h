@@ -201,6 +201,14 @@
   sreg_t len = xlen / (BIT) * 2; \
   for (sreg_t i = len - 1; i >= 0; --i) {
 
+#define P_NARROW_RD_RS1_LOOP_BASE(BIT) \
+  require_extension('P'); \
+  require((BIT) == e8 || (BIT) == e16 || (BIT) == e32); \
+  reg_t rd_tmp = RD; \
+  reg_t rs1 = P_RS1_PAIR; \
+  sreg_t len = xlen / (BIT); \
+  for (sreg_t i = len - 1; i >= 0; --i) {
+
 // Loop body
 #define P_RD_LOOP_BODY(BIT, BODY) { \
   P_RD_PARAMS(BIT) \
@@ -612,6 +620,16 @@
   P_RD_RS1_RS2_DW_LOOP_BASE(BIT_RD) \
   P_RD_RS1_RS2_ULOOP_BODY(BIT_RD, BIT_RS1, BIT_RS2, BODY) \
   P_RD_DW_LOOP_END()
+
+#define P_NARROW_RD_RS1_LOOP(BIT_RD, BIT_RS1, BODY) \
+  P_NARROW_RD_RS1_LOOP_BASE(BIT_RD) \
+  P_RD_RS1_LOOP_BODY(BIT_RD, BIT_RS1, BODY) \
+  P_RD_LOOP_END()
+
+#define P_NARROW_RD_RS1_ULOOP(BIT_RD, BIT_RS1, BODY) \
+  P_NARROW_RD_RS1_LOOP_BASE(BIT_RD) \
+  P_RD_RS1_ULOOP_BODY(BIT_RD, BIT_RS1, BODY) \
+  P_RD_LOOP_END()
 
 #define P_CROSS_DW_LOOP(BIT, BODY1, BODY2) \
   P_RD_RS1_RS2_DW_LOOP_BASE(BIT) \
