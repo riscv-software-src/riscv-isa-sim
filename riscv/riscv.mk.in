@@ -1538,6 +1538,15 @@ riscv_insn_ext_p = \
 	pnclipru_bs \
 	pnclipru_hs \
 	nclipru \
+	pwmul_b \
+	pwmul_h \
+	wmul \
+	pwmulsu_b \
+	pwmulsu_h \
+	wmulsu \
+	pwmulu_b \
+	pwmulu_h \
+	wmulu \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
