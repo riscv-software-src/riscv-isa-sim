@@ -144,6 +144,26 @@
     sreg_t p_res = P_UFIELD(rd_tmp, i, BIT); \
     for (sreg_t j = i * len_inner; j < (i + 1) * len_inner; ++j) {
 
+#define P_WIDEN_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
+  require_extension('P'); \
+  require(BIT == e16 || BIT == e32 || BIT == e64); \
+  reg_t rd_tmp = USE_RD ? zext_xlen_pair(P_RD_PAIR) : 0; \
+  reg_t rs1 = zext_xlen(RS1); \
+  reg_t rs2 = zext_xlen(RS2); \
+  sreg_t len_inner = BIT / BIT_INNER; \
+  sreg_t p_res = P_FIELD(rd_tmp, 0, BIT * 2); \
+  for (sreg_t j = len_inner - 1; j >= 0 ; --j) {
+
+#define P_WIDEN_REDUCTION_ULOOP_BASE(BIT, BIT_INNER, USE_RD) \
+  require_extension('P'); \
+  require(BIT == e16 || BIT == e32 || BIT == e64); \
+  reg_t rd_tmp = USE_RD ? zext_xlen_pair(P_RD_PAIR) : 0; \
+  reg_t rs1 = zext_xlen(RS1); \
+  reg_t rs2 = zext_xlen(RS2); \
+  sreg_t len_inner = BIT / BIT_INNER; \
+  sreg_t p_res = P_UFIELD(rd_tmp, 0, BIT * 2); \
+  for (sreg_t j = 0; j < len_inner; ++j) {
+
 #define P_RD_DW_LOOP_BASE(BIT) \
   require_extension('P'); \
   require((BIT) == e8 || (BIT) == e16 || (BIT) == e32); \
@@ -409,6 +429,13 @@
   } \
   WRITE_RD(sext_xlen(rd_tmp));
 
+#define P_REDUCTION_DW_LOOP_END(BIT, IS_SAT) \
+    } \
+  if (IS_SAT) { \
+    p_res = P_SAT(BIT * 2, p_res); \
+  } \
+  WRITE_P_RD_PAIR(p_res);
+
 #define P_RD_DW_LOOP_END() \
   } \
   WRITE_P_RD_PAIR(rd_tmp);
@@ -605,6 +632,34 @@
   P_WIDEN_RD_RS1_RS2_LOOP_BASE(BIT_RS1) \
   P_RD_RS1_RS2_SULOOP_BODY((BIT_RS1) * 2, BIT_RS1, BIT_RS2, BODY) \
   P_RD_DW_LOOP_END()
+
+#define P_WIDEN_REDUCTION_LOOP(BIT, BIT_INNER, USE_RD, IS_SAT, BODY) \
+  P_WIDEN_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
+  P_RS1_INNER_PARAMS(BIT_INNER) \
+  P_RS2_INNER_PARAMS(BIT_INNER) \
+  BODY \
+  P_REDUCTION_DW_LOOP_END(BIT, IS_SAT)
+
+#define P_WIDEN_REDUCTION_ULOOP(BIT, BIT_INNER, USE_RD, IS_SAT, BODY) \
+  P_WIDEN_REDUCTION_ULOOP_BASE(BIT, BIT_INNER, USE_RD) \
+  P_RS1_INNER_UPARAMS(BIT_INNER) \
+  P_RS2_INNER_UPARAMS(BIT_INNER) \
+  BODY \
+  P_REDUCTION_DW_LOOP_END(BIT, IS_SAT)
+
+#define P_WIDEN_REDUCTION_SULOOP(BIT, BIT_INNER, USE_RD, IS_SAT, BODY) \
+  P_WIDEN_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
+  P_RS1_INNER_PARAMS(BIT_INNER) \
+  P_RS2_INNER_UPARAMS(BIT_INNER) \
+  BODY \
+  P_REDUCTION_DW_LOOP_END(BIT, IS_SAT)
+
+#define P_WIDEN_REDUCTION_CROSS_LOOP(BIT, BIT_INNER, USE_RD, IS_SAT, BODY) \
+  P_WIDEN_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
+  P_RS1_INNER_PARAMS(BIT_INNER) \
+  P_RS2_INNER_CROSS_PARAMS(BIT_INNER) \
+  BODY \
+  P_REDUCTION_DW_LOOP_END(BIT, IS_SAT) 
 
 #define P_RD_RS1_DW_LOOP(BIT_RD, BIT_RS1, BODY) \
   P_RD_RS1_DW_LOOP_BASE(BIT_RD) \
