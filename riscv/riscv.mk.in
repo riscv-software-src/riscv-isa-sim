@@ -1494,6 +1494,8 @@ riscv_insn_ext_p = \
 	ppairoe_dh \
 	ppairo_db \
 	ppairo_dh \
+	wzip8p \
+	wzip16p \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \

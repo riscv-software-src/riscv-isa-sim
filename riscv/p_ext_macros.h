@@ -174,6 +174,15 @@
   sreg_t len = xlen / (BIT); \
   for (sreg_t i = len - 1; i >= 0; --i) {
 
+#define P_WIDEN_RD_RS1_RS2_ZIP_LOOP_BASE(BIT) \
+  require_extension('P'); \
+  require((BIT) == e8 || (BIT) == e16 || (BIT) == e32); \
+  reg_t rd_tmp = P_RD_PAIR; \
+  reg_t rs1 = RS1; \
+  reg_t rs2 = RS2; \
+  sreg_t len = xlen / (BIT); \
+  for (sreg_t i = len - 1; i >= 0; --i) {
+
 #define P_WIDEN_RD_RS1_RS2_LOOP_BASE(BIT) \
   require_extension('P'); \
   require((BIT) == e8 || (BIT) == e16 || (BIT) == e32); \
@@ -359,6 +368,14 @@
   WRITE_P_RD(); \
 }
 
+#define P_WIDEN_RD_RS1_RS2_ZIP_LOOP_BODY(BIT_RD, BIT_RS1, BIT_RS2, BODY) { \
+  P_RD_PARAMS(BIT_RD) \
+  P_RS1_UPARAMS(BIT_RS1) \
+  P_RS2_UPARAMS(BIT_RS2) \
+  BODY \
+  WRITE_P_RD(); \
+}
+
 // Loop end
 #define P_RD_LOOP_END() \
   } \
@@ -540,6 +557,7 @@
   P_RD_RS1_DW_LOOP_BASE(BIT_RD) \
   P_RD_RS1_LOOP_BODY(BIT_RD, BIT_RS1, BODY) \
   P_RD_DW_LOOP_END()
+  
 #define P_RS1_DW_LOOP(BIT_RS1, BODY) \
   P_RS1_DW_LOOP_BASE(BIT_RS1) \
   P_RS1_LOOP_BODY(BIT_RS1, BODY) \
@@ -558,6 +576,11 @@
 #define P_WIDEN_RD_RS1_ULOOP(BIT_RS1, BODY) \
   P_WIDEN_RD_RS1_LOOP_BASE(BIT_RS1) \
   P_RD_RS1_ULOOP_BODY((BIT_RS1) * 2, BIT_RS1, BODY) \
+  P_RD_DW_LOOP_END()
+
+#define P_WIDEN_RD_RS1_RS2_ZIP_LOOP(BIT_RS1, BIT_RS2, BODY) \
+  P_WIDEN_RD_RS1_RS2_ZIP_LOOP_BASE(BIT_RS1) \
+  P_WIDEN_RD_RS1_RS2_ZIP_LOOP_BODY((BIT_RS1 * 2), BIT_RS1, BIT_RS2, BODY) \
   P_RD_DW_LOOP_END()
 
 #define P_WIDEN_RD_RS1_RS2_LOOP(BIT_RS1, BIT_RS2, BODY) \
