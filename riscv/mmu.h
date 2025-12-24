@@ -351,7 +351,7 @@ public:
 
   int is_misaligned_enabled()
   {
-    return proc && proc->get_cfg().misaligned;
+    return proc && (proc->extension_enabled(EXT_ZICCLSM) || proc->get_cfg().misaligned);
   }
 
   bool is_target_big_endian()
