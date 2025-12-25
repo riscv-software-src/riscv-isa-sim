@@ -17,6 +17,7 @@
 #include "triggers.h"
 #include "../fesvr/memif.h"
 #include "vector_unit.h"
+#include "imsic.h"
 
 #define FIRST_HPMCOUNTER 3
 #define N_HPMCOUNTERS 29
@@ -77,7 +78,7 @@ typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
 // architectural state of a RISC-V hart
 struct state_t
 {
-  void add_ireg_proxy(processor_t* const proc, sscsrind_reg_csr_t::sscsrind_reg_csr_t_p ireg);
+  void add_ireg_proxy(sscsrind_reg_csr_t::sscsrind_reg_csr_t_p ireg, aia_ireg_proxy_csr_t_p aia_proxy);
   void reset(processor_t* const proc, reg_t max_isa);
   void add_csr(reg_t addr, const csr_t_p& csr);
 
@@ -137,6 +138,10 @@ struct state_t
   csr_t_p htval;
   csr_t_p htinst;
   csr_t_p hgatp;
+  csr_t_p hgeie;
+  csr_t_p hgeip;
+  csr_t_p hip;
+  csr_t_p hie;
   hvip_csr_t_p hvip;
   sstatus_csr_t_p sstatus;
   vsstatus_csr_t_p vsstatus;
@@ -411,6 +416,9 @@ public:
 
   vectorUnit_t VU;
   triggers::module_t TM;
+
+  unsigned geilen;
+  imsic_t_p imsic;
 };
 
 #endif
