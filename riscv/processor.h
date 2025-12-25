@@ -338,7 +338,6 @@ public:
 
   void set_pmp_num(reg_t pmp_num);
   void set_pmp_granularity(reg_t pmp_granularity);
-  void set_mmu_capability(int cap);
 
   const char* get_symbol(uint64_t addr);
 
