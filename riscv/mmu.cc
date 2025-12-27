@@ -144,28 +144,12 @@ mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
 
 static reg_t reg_from_bytes(size_t len, const uint8_t* bytes)
 {
-  switch (len) {
-    case 1:
-      return bytes[0];
-    case 2:
-      return bytes[0] |
-        (((reg_t) bytes[1]) << 8);
-    case 4:
-      return bytes[0] |
-        (((reg_t) bytes[1]) << 8) |
-        (((reg_t) bytes[2]) << 16) |
-        (((reg_t) bytes[3]) << 24);
-    case 8:
-      return bytes[0] |
-        (((reg_t) bytes[1]) << 8) |
-        (((reg_t) bytes[2]) << 16) |
-        (((reg_t) bytes[3]) << 24) |
-        (((reg_t) bytes[4]) << 32) |
-        (((reg_t) bytes[5]) << 40) |
-        (((reg_t) bytes[6]) << 48) |
-        (((reg_t) bytes[7]) << 56);
-  }
-  abort();
+  assert(len <= sizeof(reg_t));
+
+  size_t res = 0;
+  for (size_t i = 0; i < len; i++)
+    res = (res << 8) | bytes[len - 1 - i];
+  return res;
 }
 
 bool mmu_t::mmio_ok(reg_t paddr, access_type UNUSED type)
