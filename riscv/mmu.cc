@@ -427,16 +427,11 @@ void mmu_t::store_slow_path(reg_t original_addr, std::size_t len,
   }
 
   if (actually_store && proc && unlikely(proc->get_log_commits_enabled())) {
-    // amocas.q sends len == 16, reg_from_bytes only supports up to 8
-    // bytes per conversion.  Make multiple entries in the log
-    reg_t offset = 0;
-    const auto reg_size = sizeof(reg_t);
-    while (unlikely(len > reg_size)) {
-      proc->state.log_mem_write.push_back(std::make_tuple(original_addr + offset, reg_from_bytes(reg_size, bytes + offset), reg_size));
-      offset += reg_size;
-      len -= reg_size;
+    for (size_t offset = 0; offset < len; offset += sizeof(reg_t)) {
+      auto this_size = std::min(len - offset, sizeof(reg_t));
+      auto this_data = reg_from_bytes(this_size, bytes + offset);
+      proc->state.log_mem_write.push_back(std::make_tuple(original_addr + offset, this_data, this_size));
     }
-    proc->state.log_mem_write.push_back(std::make_tuple(original_addr + offset, reg_from_bytes(len, bytes + offset), len));
   }
 }
 
