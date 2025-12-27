@@ -3,10 +3,14 @@
 #include "config.h"
 #include "mmu.h"
 #include "arith.h"
+#include "memif.h"
 #include "simif.h"
 #include "processor.h"
 #include "decode_macros.h"
 #include "platform.h"
+#include "triggers.h"
+
+#include <cassert>
 
 mmu_t::mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc, reg_t cache_blocksz)
  : sim(sim), proc(proc), blocksz(cache_blocksz),
@@ -109,7 +113,8 @@ mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
   auto access_info = generate_access_info(vaddr, FETCH, {});
 
   if (check_triggers_fetch)
-    check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt);
+    check_triggers(triggers::OPERATION_EXECUTE, vaddr,
+      access_info.effective_virt, sizeof(insn_parcel_t));
 
   if (!tlb_hit) {
     paddr = translate(access_info, sizeof(insn_parcel_t));
@@ -128,13 +133,16 @@ mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
 
   auto res = perform_intrapage_fetch(vaddr, host_addr, paddr);
 
-  if (check_triggers_fetch)
-    check_triggers(triggers::OPERATION_EXECUTE, vaddr, access_info.effective_virt, from_le(res));
+  if (!check_triggers_fetch)
+    return res;
+
+  check_triggers(triggers::OPERATION_EXECUTE, vaddr,
+    access_info.effective_virt, sizeof(insn_parcel_t), from_le(res));
 
   return res;
 }
 
-reg_t reg_from_bytes(size_t len, const uint8_t* bytes)
+static reg_t reg_from_bytes(size_t len, const uint8_t* bytes)
 {
   switch (len) {
     case 1:
@@ -211,25 +219,41 @@ bool mmu_t::mmio(reg_t paddr, size_t len, uint8_t* bytes, access_type type)
   return true;
 }
 
-void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool virt, reg_t tval, std::optional<reg_t> data)
+void mmu_t::check_triggers(triggers::operation_t operation,
+  reg_t addr, bool virt, std::size_t data_size, const std::uint8_t* bytes)
+{
+  assert(data_size > 0);
+  assert(data_size <= sizeof(reg_t));
+  check_triggers(operation, addr, virt,
+    data_size, reg_from_bytes(data_size, bytes));
+}
+
+void mmu_t::check_triggers(triggers::operation_t operation,
+  reg_t addr, bool virt, size_t access_len)
+{
+  check_triggers(operation, addr, virt, access_len, std::nullopt);
+}
+
+void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool virt, std::size_t size, std::optional<reg_t> data)
 {
   if (matched_trigger || !proc)
     return;
 
-  auto match = proc->TM.detect_memory_access_match(operation, address, data);
+  auto match = proc->TM.detect_memory_access_match(operation, address, size, data);
+  if (!match.has_value())
+    return;
 
-  if (match.has_value())
-    switch (match->timing) {
-      case triggers::TIMING_BEFORE:
-        throw triggers::matched_t(operation, tval, match->action, virt);
+  switch (match->timing) {
+    case triggers::TIMING_BEFORE:
+      throw triggers::matched_t(operation, address, match->action, virt);
 
-      case triggers::TIMING_AFTER:
-        // We want to take this exception on the next instruction.  We check
-        // whether to do so in the I$ refill slow path, which we can force by
-        // flushing the TLB.
-        flush_tlb();
-        matched_trigger = triggers::matched_t(operation, tval, match->action, virt);
-    }
+    case triggers::TIMING_AFTER:
+      // We want to take this exception on the next instruction.  We check
+      // whether to do so in the I$ refill slow path, which we can force by
+      // flushing the TLB.
+      flush_tlb();
+      matched_trigger = triggers::matched_t(operation, address, match->action, virt);
+  }
 }
 
 inline void mmu_t::perform_intrapage_load(reg_t vaddr, uintptr_t host_addr, reg_t paddr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
@@ -272,8 +296,11 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
   }
 }
 
-void mmu_t::load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags)
+void mmu_t::load_slow_path(reg_t original_addr, std::size_t len,
+  std::uint8_t* bytes, xlate_flags_t xlate_flags)
 {
+  assert(len > 0);
+
   if (likely(!xlate_flags.is_special_access())) {
     // Fast path for simple cases
     auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_load, original_addr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS);
@@ -289,7 +316,8 @@ void mmu_t::load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate
   reg_t transformed_addr = access_info.transformed_vaddr;
 
   if (check_triggers_load)
-    check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt);
+    check_triggers(triggers::OPERATION_LOAD,
+      transformed_addr, access_info.effective_virt, len);
 
   if ((transformed_addr & (len - 1)) == 0) {
     load_slow_path_intrapage(len, bytes, access_info);
@@ -301,7 +329,7 @@ void mmu_t::load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate
     if (access_info.flags.lr)
       throw trap_load_access_fault(gva, transformed_addr, 0, 0);
 
-    reg_t len_page0 = std::min(len, PGSIZE - transformed_addr % PGSIZE);
+    reg_t len_page0 = std::min<reg_t>(len, PGSIZE - transformed_addr % PGSIZE);
     load_slow_path_intrapage(len_page0, bytes, access_info);
     if (len_page0 != len) {
       auto tail_access_info = generate_access_info(original_addr + len_page0, LOAD, xlate_flags);
@@ -309,16 +337,14 @@ void mmu_t::load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate
     }
   }
 
-  if (check_triggers_load) {
-    while (len > sizeof(reg_t)) {
-        check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt, reg_from_bytes(sizeof(reg_t), bytes));
-      len -= sizeof(reg_t);
-      bytes += sizeof(reg_t);
-    }
-    check_triggers(triggers::OPERATION_LOAD, transformed_addr, access_info.effective_virt, reg_from_bytes(len, bytes));
-  }
+  if (!proc)
+    return;
 
-  if (proc && unlikely(proc->get_log_commits_enabled()))
+  if (check_triggers_load)
+    check_triggers(triggers::OPERATION_LOAD,
+      transformed_addr, access_info.effective_virt, len, bytes);
+
+  if (unlikely(proc->get_log_commits_enabled()))
     proc->state.log_mem_read.push_back(std::make_tuple(original_addr, 0, len));
 }
 
@@ -359,7 +385,9 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
     perform_intrapage_store(vaddr, host_addr, paddr, len, bytes, access_info.flags);
 }
 
-void mmu_t::store_slow_path(reg_t original_addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store, bool UNUSED require_alignment)
+void mmu_t::store_slow_path(reg_t original_addr, std::size_t len,
+    const std::uint8_t* bytes, xlate_flags_t xlate_flags,
+    bool actually_store, bool UNUSED require_alignment)
 {
   if (likely(!xlate_flags.is_special_access())) {
     // Fast path for simple cases
@@ -377,16 +405,9 @@ void mmu_t::store_slow_path(reg_t original_addr, reg_t len, const uint8_t* bytes
   auto access_info = generate_access_info(original_addr, STORE, xlate_flags);
   reg_t transformed_addr = access_info.transformed_vaddr;
 
-  if (actually_store && check_triggers_store) {
-    reg_t trig_len = len;
-    const uint8_t* trig_bytes = bytes;
-    while (trig_len > sizeof(reg_t)) {
-      check_triggers(triggers::OPERATION_STORE, transformed_addr, access_info.effective_virt, reg_from_bytes(sizeof(reg_t), trig_bytes));
-      trig_len -= sizeof(reg_t);
-      trig_bytes += sizeof(reg_t);
-    }
-    check_triggers(triggers::OPERATION_STORE, transformed_addr, access_info.effective_virt, reg_from_bytes(trig_len, trig_bytes));
-  }
+  if (actually_store && check_triggers_store)
+    check_triggers(triggers::OPERATION_STORE,
+      transformed_addr, access_info.effective_virt, len, bytes);
 
   if (transformed_addr & (len - 1)) {
     bool gva = access_info.effective_virt;
@@ -396,7 +417,7 @@ void mmu_t::store_slow_path(reg_t original_addr, reg_t len, const uint8_t* bytes
     if (require_alignment)
       throw trap_store_access_fault(gva, transformed_addr, 0, 0);
 
-    reg_t len_page0 = std::min(len, PGSIZE - transformed_addr % PGSIZE);
+    reg_t len_page0 = std::min<reg_t>(len, PGSIZE - transformed_addr % PGSIZE);
     store_slow_path_intrapage(len_page0, bytes, access_info, actually_store);
     if (len_page0 != len) {
       auto tail_access_info = generate_access_info(original_addr + len_page0, STORE, xlate_flags);
