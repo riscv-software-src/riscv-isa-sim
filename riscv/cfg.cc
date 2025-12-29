@@ -38,7 +38,6 @@ cfg_t::cfg_t()
   bootargs         = nullptr;
   isa              = DEFAULT_ISA;
   priv             = DEFAULT_PRIV;
-  misaligned       = false;
   endianness       = endianness_little;
   pmpregions       = 16;
   pmpgranularity   = (1 << PMP_SHIFT);
