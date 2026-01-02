@@ -371,7 +371,8 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZVFWLDOT16BF] = true;
     } else if (ext_str == "zvkt") {
     } else if (ext_str == "sstc") {
-        extension_table[EXT_SSTC] = true;
+      extension_table[EXT_SSTC] = true;
+      extension_table[EXT_ZICNTR] = true;
     } else if (ext_str == "smcsrind") {
       extension_table[EXT_SMCSRIND] = true;
     } else if (ext_str == "sscsrind") {

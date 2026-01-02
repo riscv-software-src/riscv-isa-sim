@@ -996,4 +996,61 @@ class aia_csr_t: public masked_csr_t {
   aia_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
   virtual void verify_permissions(insn_t insn, bool write) const override;
 };
+
+class hgeip_csr_t final: public csr_t {
+ public:
+  hgeip_csr_t(processor_t* const proc, const reg_t addr);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class hgeie_csr_t final: public masked_csr_t {
+ public:
+  hgeie_csr_t(processor_t* const proc, const reg_t addr, const reg_t geilen);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+typedef std::unordered_map<reg_t, csr_t_p> csrmap_t;
+typedef csrmap_t *csrmap_t_p;
+class aia_ireg_proxy_csr_t: public csr_t {
+ public:
+  aia_ireg_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p iselect);
+  virtual reg_t read() const noexcept override;
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  csrmap_t_p get_csrmap(reg_t vgein = 0);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  csr_t_p get_reg() const noexcept;
+  csr_t_p iselect;
+  bool vs;
+  csrmap_t_p csrmap;
+};
+typedef std::shared_ptr<aia_ireg_proxy_csr_t> aia_ireg_proxy_csr_t_p;
+
+class imsic_file_t;
+typedef std::shared_ptr<imsic_file_t> imsic_file_t_p;
+class topei_csr_t: public csr_t {
+ public:
+  topei_csr_t(processor_t* const proc, const reg_t addr, imsic_file_t_p const imsic);
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+  imsic_file_t_p get_imsic() const noexcept;
+  imsic_file_t_p const imsic;
+};
+
+class nonvirtual_stopei_csr_t: public topei_csr_t {
+ public:
+  nonvirtual_stopei_csr_t(processor_t* const proc, const reg_t addr, imsic_file_t_p const imsic) : topei_csr_t(proc, addr, imsic) {}
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class vstopei_csr_t: public topei_csr_t {
+ public:
+  vstopei_csr_t(processor_t* const proc, const reg_t addr) : topei_csr_t(proc, addr, nullptr) {}
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+};
 #endif
