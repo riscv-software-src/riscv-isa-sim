@@ -179,6 +179,12 @@ struct state_t
   time_counter_csr_t_p time;
   csr_t_p time_proxy;
 
+  csr_t_p instretcfg;
+  csr_t_p instretcfgh;
+
+  csr_t_p cyclecfg;
+  csr_t_p cyclecfgh;
+
   csr_t_p stimecmp;
   csr_t_p vstimecmp;
 
