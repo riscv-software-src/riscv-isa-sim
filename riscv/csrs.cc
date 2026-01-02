@@ -1919,7 +1919,16 @@ void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
 
   csr_t_p proxy_csr = get_reg();
   if (proxy_csr == nullptr) {
-    throw trap_illegal_instruction(insn.bits());
+    // An attempt from VS-mode to access any inaccessible sireg* causes virtual instruction exception when AIA is enabled
+    if (proc->extension_enabled_const(EXT_SMAIA)) {
+      if (state->prv == PRV_S && state->v) {
+        throw trap_virtual_instruction(insn.bits());
+      } else {
+        throw trap_illegal_instruction(insn.bits());
+      }
+    } else {
+      throw trap_illegal_instruction(insn.bits());
+    }
   }
   proxy_csr->verify_permissions(insn, write);
 }
