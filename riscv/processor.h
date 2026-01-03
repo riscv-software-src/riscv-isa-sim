@@ -77,7 +77,7 @@ typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
 // architectural state of a RISC-V hart
 struct state_t
 {
-  void add_ireg_proxy(processor_t* const proc, sscsrind_reg_csr_t::sscsrind_reg_csr_t_p ireg);
+  void add_iprio_proxy(processor_t* const proc, sscsrind_reg_csr_t::sscsrind_reg_csr_t_p ireg);
   void reset(processor_t* const proc, reg_t max_isa);
   void add_csr(reg_t addr, const csr_t_p& csr);
 
@@ -178,6 +178,12 @@ struct state_t
   csr_t_p htimedelta;
   time_counter_csr_t_p time;
   csr_t_p time_proxy;
+
+  csr_t_p instretcfg;
+  csr_t_p instretcfgh;
+
+  csr_t_p cyclecfg;
+  csr_t_p cyclecfgh;
 
   csr_t_p stimecmp;
   csr_t_p vstimecmp;

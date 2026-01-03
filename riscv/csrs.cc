@@ -1864,52 +1864,55 @@ void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
     csr_t::verify_permissions(insn, write);
 
   if (proc->extension_enabled(EXT_SMCDELEG)) {
-    if (address >= CSR_VSIREG && address <= CSR_VSIREG6) {
-      if (!state->v) {
-        // An attempt to access any vsireg* from M or S mode raises an illegal instruction exception.
-        throw trap_illegal_instruction(insn.bits());
-      } else {
-        if (state->prv == PRV_S) {
-          // An attempt from VS-mode to access any vsireg raises an illegal instruction
-          // exception if menvcfg.CDE = 0, or a virtual instruction exception if menvcfg.CDE = 1
-          if ((state->menvcfg->read() & MENVCFG_CDE) != MENVCFG_CDE) {
-            throw trap_illegal_instruction(insn.bits());
-          } else {
-            throw trap_virtual_instruction(insn.bits());
-          }
-        } else {
-          throw trap_virtual_instruction(insn.bits());
-        }
-      }
-    }
-    if (address >= CSR_SIREG && address <= CSR_SIREG6) {
-      // attempts to access any sireg* when menvcfg.CDE = 0;
-      if ((state->menvcfg->read() & MENVCFG_CDE) != MENVCFG_CDE) {
+    auto iselect_val = iselect->read();
+    if (iselect_val >= SISELECT_SMCDELEG_START && iselect_val <= SISELECT_SMCDELEG_END) {
+      if (address >= CSR_VSIREG && address <= CSR_VSIREG6) {
         if (!state->v) {
+          // An attempt to access any vsireg* from M or S mode raises an illegal instruction exception.
           throw trap_illegal_instruction(insn.bits());
         } else {
           if (state->prv == PRV_S) {
-            // An attempt from VS-mode to access any sireg* causes illegal instruction exception if menvcfg.CDE = 0
-            throw trap_illegal_instruction(insn.bits());
+            // An attempt from VS-mode to access any vsireg raises an illegal instruction
+            // exception if menvcfg.CDE = 0, or a virtual instruction exception if menvcfg.CDE = 1
+            if ((state->menvcfg->read() & MENVCFG_CDE) != MENVCFG_CDE) {
+              throw trap_illegal_instruction(insn.bits());
+            } else {
+              throw trap_virtual_instruction(insn.bits());
+            }
           } else {
             throw trap_virtual_instruction(insn.bits());
           }
         }
-      } else {
-        // menvcfg.CDE = 1;
-        if (state->v) {
-          // An attempt from VS-mode to access any sireg* causes a virtual instruction exception if menvcfg.CDE = 1
-          throw trap_virtual_instruction(insn.bits());
-        }
-        // counter selected by siselect is not delegated to S-mode (the corresponding bit in mcounteren = 0).
-        auto iselect_addr = iselect->read();
-        if (iselect_addr >= SISELECT_SMCDELEG_START && iselect_addr <= SISELECT_SMCDELEG_END) {
-          reg_t counter_id_offset = iselect_addr - SISELECT_SMCDELEG_START;
-          if (!(state->mcounteren->read() & (1U << counter_id_offset))) {
-            if (!state->v) {
+      }
+      if (address >= CSR_SIREG && address <= CSR_SIREG6) {
+        // attempts to access any sireg* when menvcfg.CDE = 0;
+        if ((state->menvcfg->read() & MENVCFG_CDE) != MENVCFG_CDE) {
+          if (!state->v) {
+            throw trap_illegal_instruction(insn.bits());
+          } else {
+            if (state->prv == PRV_S) {
+              // An attempt from VS-mode to access any sireg* causes illegal instruction exception if menvcfg.CDE = 0
               throw trap_illegal_instruction(insn.bits());
             } else {
               throw trap_virtual_instruction(insn.bits());
+            }
+          }
+        } else {
+          // menvcfg.CDE = 1;
+          if (state->v) {
+            // An attempt from VS-mode to access any sireg* causes a virtual instruction exception if menvcfg.CDE = 1
+            throw trap_virtual_instruction(insn.bits());
+          }
+          // counter selected by siselect is not delegated to S-mode (the corresponding bit in mcounteren = 0).
+          auto iselect_addr = iselect->read();
+          if (iselect_addr >= SISELECT_SMCDELEG_START && iselect_addr <= SISELECT_SMCDELEG_END) {
+            reg_t counter_id_offset = iselect_addr - SISELECT_SMCDELEG_START;
+            if (!(state->mcounteren->read() & (1U << counter_id_offset))) {
+              if (!state->v) {
+                throw trap_illegal_instruction(insn.bits());
+              } else {
+                throw trap_virtual_instruction(insn.bits());
+              }
             }
           }
         }
@@ -1919,7 +1922,16 @@ void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
 
   csr_t_p proxy_csr = get_reg();
   if (proxy_csr == nullptr) {
-    throw trap_illegal_instruction(insn.bits());
+    // An attempt from VS-mode to access any inaccessible sireg* causes virtual instruction exception when AIA is enabled
+    if (proc->extension_enabled_const(EXT_SMAIA)) {
+      if (state->prv == PRV_S && state->v) {
+        throw trap_virtual_instruction(insn.bits());
+      } else {
+        throw trap_illegal_instruction(insn.bits());
+      }
+    } else {
+      throw trap_illegal_instruction(insn.bits());
+    }
   }
   proxy_csr->verify_permissions(insn, write);
 }
