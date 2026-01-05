@@ -24,3 +24,5 @@ for (reg_t i = P.VU.vstart->read() ; i < vl; ++i) {
     P.VU.set_mask_elt(rd_num, i, res);
   }
 }
+
+VECTOR_END;

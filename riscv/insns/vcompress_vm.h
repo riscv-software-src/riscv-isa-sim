@@ -27,4 +27,5 @@ VI_GENERAL_LOOP_BASE
 
     ++pos;
   }
-VI_LOOP_END_BASE;
+
+VI_LOOP_END;
