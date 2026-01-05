@@ -39,6 +39,7 @@ extern device_factory_t* ns16550_factory;
 sim_t::sim_t(const cfg_t *cfg, bool halted,
              std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
              const std::vector<device_factory_sargs_t>& plugin_device_factories,
+             const bool dtb_discovery,
              const std::vector<std::string>& args,
              const debug_module_config_t &dm_config,
              const char *log_path,
@@ -49,6 +50,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   : htif_t(args),
     cfg(cfg),
     mems(mems),
+    dtb_discovery(dtb_discovery),
     dtb_enabled(dtb_enabled),
     log_file(log_path),
     cmd_file(cmd_file),
@@ -238,6 +240,48 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 
     cpu_idx++;
   }
+
+
+  std::vector<device_factory_sargs_t> plugin_device_auto_discovery_factories;
+  if (dtb_discovery)
+  {
+    // Iterate through all devices in the map
+    for (const auto &pair : mmio_device_map())
+    {
+      const std::string &device_name = pair.first;
+      int offset = -1;
+      // Find all instances of this device type
+      while ((offset = fdt_node_offset_by_compatible(fdt, offset, device_name.c_str())) >= 0)
+      {
+        // Get node name
+        const char *node_name = fdt_get_name(fdt, offset, NULL);
+
+        // Get params from spike_plugin_params dts field.
+        int spike_plugin_params_len;
+        const char* spike_plugin_params=(char*) fdt_getprop(fdt, offset, "spike,plugin-params", &spike_plugin_params_len); //todo: remove hard-coded "spike_plugin_params"
+
+        std::cout << "DTB discovered device: " << node_name << " - compatible with device type:" << device_name <<" - params: "<<spike_plugin_params<< std::endl;
+
+        //Extract params in the comma-separated format
+        const std::string device_args(spike_plugin_params);
+        std::vector<std::string> parsed_args;
+        std::stringstream sstr(device_args);
+        while (sstr.good())
+        {
+          std::string substr;
+          getline(sstr, substr, ',');
+          parsed_args.push_back(substr);
+        }
+
+        //Add device
+        plugin_device_auto_discovery_factories.push_back(std::make_pair(pair.second, parsed_args));
+      }
+    }
+  }
+
+  device_factories.insert(device_factories.end(),
+                          plugin_device_auto_discovery_factories.begin(),
+                          plugin_device_auto_discovery_factories.end());
 
   // must be located after procs/harts are set (devices might use sim_t get_* member functions)
   for (size_t i = 0; i < device_factories.size(); i++) {
