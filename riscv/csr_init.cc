@@ -471,7 +471,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
         sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, csrmap[CSR_INSTRET]);
       }
       if (proc->extension_enabled_const(EXT_ZIHPM)) {
-        for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3 + 1); j++)
+        for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMCOUNTER_3 + 1); j++)
           sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMCOUNTER_3 + j, csrmap[CSR_HPMCOUNTER3 + j]);
       }
     }
@@ -495,7 +495,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
               sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, csrmap[CSR_INSTRETH]);
             }
             if (proc->extension_enabled_const(EXT_ZIHPM)) {
-              for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3 + 1); j++)
+              for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMCOUNTER_3 + 1); j++)
                 sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMCOUNTER_3 + j, csrmap[CSR_HPMCOUNTER3H + j]);
             }
           }
@@ -507,18 +507,20 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
             }
             if (proc->extension_enabled_const(EXT_ZIHPM)) {
               for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3 + 1); j++)
-                sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMEVENT_3 + j, csrmap[CSR_MHPMEVENT3H + j]);
+                sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMEVENT_3 + j, csrmap[CSR_MHPMEVENT3 + j]);
             }
             break;
           case CSR_SIREG5:
             if (xlen == 32) {
-              if (proc->extension_enabled_const(EXT_ZICNTR)) {
+              // cyclecfgh/instretcfgh
+              if (proc->extension_enabled_const(EXT_ZICNTR) && proc->extension_enabled_const(EXT_SMCNTRPMF)) {
                 sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, cyclecfgh);
                 sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, instretcfgh);
               }
-              if (proc->extension_enabled_const(EXT_ZIHPM)) {
+              // hpmevent3h-hpmevent31h
+              if (proc->extension_enabled_const(EXT_ZIHPM) && proc->extension_enabled_const(EXT_SSCOFPMF)) {
                 for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3); j++)
-                  sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMCOUNTER_3 + j, csrmap[CSR_HPMCOUNTER3 + j]);
+                  sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMEVENT_3 + j, csrmap[CSR_MHPMEVENT3H + j]);
               }
             }
           case CSR_SIREG3:
