@@ -2,20 +2,11 @@
 #include "extension.h"
 #include "processor.h"
 
-#include <algorithm>
-
 extern std::vector<insn_func_t> agnostic_postprocesses;
 
 static reg_t mask_agnostic_fill1s(processor_t *p, insn_t insn, reg_t pc) {
-  // rvv-spec-1.0: Vector Loads and Stores: Masked vector loads do not update
-  // inactive elements in the destination vector register group, unless masked
-  // agnostic is specifed (vtype.vma=1). Masked vector stores only update active
-  // memory elements.
-  if (is_rvv_or_fp_store(insn) || is_rvv_or_fp_load(insn))
-    return pc;
-  // Belonging to the V extension is checked after loads and stores, because
-  // their opcodes do not match the opcodes of V extension.
-  if (!is_rvv(insn) || is_rvv_scalar_dest(insn))
+  // TODO: So far, only instruction vadd.vv is supported.
+  if (!is_vadd_vv(insn))
     return pc;
   // When vm==1 then instruction unmasked, therefore, the agnostic policy does
   // not apply to any elements.

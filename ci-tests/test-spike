@@ -50,42 +50,41 @@ $INSTALL/bin/spike --log-commits --isa=rv64gc $BUILD/pk/pk atomics 2> /dev/null 
 $INSTALL/bin/spike -l --log-commits --isa=rv64gcv_xspiketama_xspikema1s_xspiketa1s test-spiketama1s-ext &> spike-all-fill1s.log
 grep "v2  0x00000000ffffffffffffffff00000002" spike-all-fill1s.log
 grep "v3  0xffffffff000000000000000000000003" spike-all-fill1s.log
-grep "v4  0xffffffffffffffffffffffffff000000" spike-all-fill1s.log
-grep "v5  0xffffffffffffffffffffffffffffc000" spike-all-fill1s.log
-! grep "v6  0x" spike-all-fill1s.log
-grep "v7  0xffffffffffffffff00000000ffff0000" spike-all-fill1s.log
-grep "v8  0xffffffffffffffffffffffffffff0000" spike-all-fill1s.log
-grep "v9  0xffffffffffffffffffffffffff410113" spike-all-fill1s.log
-grep "v10 0xffffffffffff000002b1048700000113" spike-all-fill1s.log
+grep "v4  0xffffffffffffffff0000000000000000" spike-all-fill1s.log
+grep "v5  0x0000000000000000ffffffffffffffff" spike-all-fill1s.log
+grep "v6  0x00000000000000000000000000000000" spike-all-fill1s.log
+grep "v8  0x00000000000000000000000000000000" spike-all-fill1s.log
+grep "v9  0x00000000000000000000000000000000" spike-all-fill1s.log
+grep "v10 0xffffffffffffffff0000000000000000" spike-all-fill1s.log
 grep "v11 0xffffffffffffffffffffffffffffffff" spike-all-fill1s.log
-grep "v12 0xffffffff02b10487000000000c410113" spike-all-fill1s.log
-grep "v13 0xffffffffffffffffffffffffffffffff" spike-all-fill1s.log
-grep "v14 0x0c4101130c410113000000000c410113" spike-all-fill1s.log
-grep "v15 0xffffffffffffffff000000000c410113" spike-all-fill1s.log
-grep "v16 0xffffffffffffffffffff000000000000" spike-all-fill1s.log
-grep "v17 0xffffffffffffffffffffffffffffffff" spike-all-fill1s.log
-grep "v18 0xffffffffffffffffffffffffffffffff" spike-all-fill1s.log
-grep "v19 0xffffffffffffffffffffffffffffffff" spike-all-fill1s.log
-grep "v20 0xffffffff000000000206205700000113" spike-all-fill1s.log
-grep "v21 0xffffffff0000000055076e0000000c41" spike-all-fill1s.log
-grep "v22 0xffffffff000000000001b05700000487" spike-all-fill1s.log
-grep "v24 0xffffffffffffffffffffffffff000000" spike-all-fill1s.log
-grep "v25 0xffffffffffffffffffffffffff000000" spike-all-fill1s.log
-grep "v26 0xffff000000000000f557b05700000113" spike-all-fill1s.log
-grep "v27 0xffff000000000000cc81020600000c41" spike-all-fill1s.log
-grep "v28 0xffff0000000000000213550700000487" spike-all-fill1s.log
-grep "v29 0xffff00000000000000200001000002b1" spike-all-fill1s.log
-grep "v30 0xffffffffffffffff000000000c410113" spike-all-fill1s.log
-grep "v31 0xffffffffffffffff0000000002b10487" spike-all-fill1s.log
 $INSTALL/bin/spike -l --log-commits --isa=rv64gcv_xspiketama_xspikema1s test-spiketama1s-ext &> spike-mask-fill1s.log
 grep "v2  0x00000000ffffffffffffffff00000002" spike-mask-fill1s.log
 grep "v3  0x00000000000000000000000000000003" spike-mask-fill1s.log
+grep "v4  0xffffffffffffffff0000000000000000" spike-mask-fill1s.log
+grep "v5  0x0000000000000000ffffffffffffffff" spike-mask-fill1s.log
+grep "v6  0x00000000000000000000000000000000" spike-mask-fill1s.log
+grep "v8  0x00000000000000000000000000000000" spike-mask-fill1s.log
+grep "v9  0x00000000000000000000000000000000" spike-mask-fill1s.log
+grep "v10 0x00000000000000000000000000000000" spike-mask-fill1s.log
 $INSTALL/bin/spike -l --log-commits --isa=rv64gcv_xspiketama_xspiketa1s test-spiketama1s-ext &> spike-tail-fill1s.log
 grep "v2  0x00000000000000000000000000000002" spike-tail-fill1s.log
 grep "v3  0xffffffff000000000000000000000003" spike-tail-fill1s.log
+grep "v4  0x00000000000000000000000000000000" spike-tail-fill1s.log
+grep "v5  0x00000000000000000000000000000000" spike-tail-fill1s.log
+grep "v6  0x00000000000000000000000000000000" spike-tail-fill1s.log
+grep "v8  0x00000000000000000000000000000000" spike-tail-fill1s.log
+grep "v9  0x00000000000000000000000000000000" spike-tail-fill1s.log
+grep "v10 0xffffffffffffffff0000000000000000" spike-tail-fill1s.log
+grep "v11 0xffffffffffffffffffffffffffffffff" spike-tail-fill1s.log
 $INSTALL/bin/spike -l --log-commits --isa=rv64gcv test-spiketama1s-ext &> spike-undisturbed.log
 grep "v2  0x00000000000000000000000000000002" spike-undisturbed.log
 grep "v3  0x00000000000000000000000000000003" spike-undisturbed.log
+grep "v4  0x00000000000000000000000000000000" spike-undisturbed.log
+grep "v5  0x00000000000000000000000000000000" spike-undisturbed.log
+grep "v6  0x00000000000000000000000000000000" spike-undisturbed.log
+grep "v8  0x00000000000000000000000000000000" spike-undisturbed.log
+grep "v9  0x00000000000000000000000000000000" spike-undisturbed.log
+grep "v10 0x00000000000000000000000000000000" spike-undisturbed.log
 LD_LIBRARY_PATH=$INSTALL/lib ./test-libriscv $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 LD_LIBRARY_PATH=$INSTALL/lib ./test-customext $BUILD/pk/pk dummy-slliuw | grep "Executed successfully"
 LD_LIBRARY_PATH=$INSTALL/lib ./test-custom-csr $BUILD/pk/pk customcsr | grep "Executed successfully"
