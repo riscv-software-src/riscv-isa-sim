@@ -1132,8 +1132,8 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     DEFINE_RTYPE(xnor);
     DEFINE_R1TYPE(sext_b);
     DEFINE_R1TYPE(sext_h);
-    add_insn(new disasm_insn_t("rev8", match_grevi | ((isa->get_max_xlen() - 8) << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
-    add_insn(new disasm_insn_t("orc.b", match_gorci | (0x7 << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
+    DEFINE_R1TYPE(rev8);
+    DEFINE_R1TYPE(orc_b);
     add_insn(new disasm_insn_t("zext.h", (isa->get_max_xlen() == 32 ? match_pack : match_packw), mask_pack | mask_rs2, {&xrd, &xrs1}));
     if (xlen_eq(64)) {
       DEFINE_RTYPE(rorw);
@@ -1163,8 +1163,8 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   }
 
   if (ext_enabled(EXT_ZBKB)) {
-    add_insn(new disasm_insn_t("brev8", match_grevi | (0x7 << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1})); // brev8
-    add_insn(new disasm_insn_t("rev8", match_grevi | ((isa->get_max_xlen() - 8) << imm_shift), mask_grevi | mask_imm, {&xrd, &xrs1}));
+    DEFINE_R1TYPE(brev8);
+    DEFINE_R1TYPE(rev8);
     DEFINE_RTYPE(pack);
     DEFINE_RTYPE(packh);
     if (xlen_eq(64)) {
