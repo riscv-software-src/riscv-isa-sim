@@ -1,6 +1,4 @@
-// Zbkb contains unzip but not general unshfli
 require_rv32;
-require(((insn.rs2() == (xlen / 2 - 1)) && p->extension_enabled(EXT_ZBKB)));
 require(SHAMT < (xlen/2));
 reg_t x = RS1;
 if (SHAMT &  1) x = (x & 0x9999999999999999LL) | ((x & 0x4444444444444444LL) >>  1) | ((x & 0x2222222222222222LL) <<  1);

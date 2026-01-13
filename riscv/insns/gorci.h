@@ -1,5 +1,3 @@
-// Zbb contains orc.b but not general gorci
-require(((SHAMT == 7) && p->extension_enabled(EXT_ZBB)));
 require(SHAMT < xlen);
 reg_t x = RS1;
 if (SHAMT &  1) x |= ((x & 0x5555555555555555LL) <<  1) | ((x & 0xAAAAAAAAAAAAAAAALL) >>  1);
