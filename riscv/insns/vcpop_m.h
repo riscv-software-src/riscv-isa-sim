@@ -10,3 +10,5 @@ for (reg_t i=P.VU.vstart->read(); i<vl; ++i) {
   popcount += vs2_bit && (insn.v_vm() || P.VU.mask_elt(0, i));
 }
 WRITE_RD(popcount);
+
+VECTOR_END;

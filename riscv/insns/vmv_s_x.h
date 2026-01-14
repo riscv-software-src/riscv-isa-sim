@@ -26,4 +26,4 @@ if (vl > 0 && P.VU.vstart->read() < vl) {
   vl = 0;
 }
 
-P.VU.vstart->write(0);
+VECTOR_END;
