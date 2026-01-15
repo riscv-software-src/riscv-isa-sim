@@ -413,8 +413,10 @@ riscv_insn_ext_b = \
 	clzw \
 	ctz \
 	ctzw \
-	gorci \
-	grevi \
+	orc_b \
+	rev8 \
+	rev8_rv32 \
+	brev8 \
 	max \
 	maxu \
 	min \
@@ -441,9 +443,9 @@ riscv_insn_ext_b = \
 	bseti \
 	sext_b \
 	sext_h \
-	shfli \
+	zip \
 	slli_uw \
-	unshfli \
+	unzip \
 	xnor \
 	xperm4 \
 	xperm8 \
