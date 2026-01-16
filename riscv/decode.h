@@ -98,6 +98,9 @@ public:
   uint64_t iorw() { return x(20, 8); }
   uint64_t bs() { return x(30, 2); } // Crypto ISE - SM4/AES32 byte select.
   uint64_t rcon() { return x(20, 4); } // Crypto ISE - AES64 round const.
+  uint64_t rd_p() { return x(8, 4); }
+  uint64_t rs1_p() { return x(16, 4); }
+  uint64_t rs2_p() { return x(21, 4); }
 
   [[maybe_unused]] int64_t rvc_opcode() { return x(0, 2); }
   int64_t rvc_imm() { return x(2, 5) + (xs(12, 1) << 5); }
@@ -148,11 +151,14 @@ public:
   uint64_t v_mew() { return x(28, 1); }
   uint64_t v_zimm6() { return x(15, 5) + (x(26, 1) << 5); }
 
-  uint64_t p_imm2() { return x(20, 2); }
-  uint64_t p_imm3() { return x(20, 3); }
-  uint64_t p_imm4() { return x(20, 4); }
-  uint64_t p_imm5() { return x(20, 5); }
-  uint64_t p_imm6() { return x(20, 6); }
+  uint64_t p_imm8() { return x(16, 8); }
+  uint64_t p_imm10csl() { return x(16, 9) + (x(15, 1) << 9); }
+  uint64_t p_imm10csr() { return (x(24, 1) << 6) + (x(15, 9) << 7); }
+  uint64_t p_imm10csrw() { return (x(24, 1) << 22) + (x(15, 9) << 23); }
+  uint64_t shamtd() { return x(20, 6); }
+  uint64_t shamtw() { return x(20, 5); }
+  uint64_t shamth() { return x(20, 4); }
+  uint64_t shamtb() { return x(20, 3); }
 
   uint64_t b_imm5() { return (x(20, 5) == 0) ? -1ul : x(20, 5); }
 
