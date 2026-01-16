@@ -13,8 +13,11 @@
 #include "../fesvr/byteorder.h"
 #include "triggers.h"
 #include "cfg.h"
+
+#include <algorithm>
+#include <cassert>
+#include <cstddef>
 #include <stdlib.h>
-#include <vector>
 
 // virtual memory configuration
 #define PGSHIFT 12
@@ -216,10 +219,9 @@ public:
     reg_t transformed_addr = access_info.transformed_vaddr;
 
     auto base = transformed_addr & ~(blocksz - 1);
-    for (size_t offset = 0; offset < blocksz; offset += 1) {
-      check_triggers(triggers::OPERATION_STORE, base + offset, false, transformed_addr, std::nullopt);
+    check_triggers(triggers::OPERATION_STORE, base, false, blocksz);
+    for (size_t offset = 0; offset < blocksz; offset += 1)
       store<uint8_t>(base + offset, 0);
-    }
   }
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
@@ -227,8 +229,7 @@ public:
     reg_t transformed_addr = access_info.transformed_vaddr;
 
     auto base = transformed_addr & ~(blocksz - 1);
-    for (size_t offset = 0; offset < blocksz; offset += 1)
-      check_triggers(triggers::OPERATION_STORE, base + offset, false, transformed_addr, std::nullopt);
+    check_triggers(triggers::OPERATION_STORE, base, false, blocksz);
     convert_load_traps_to_store_traps({
       const reg_t paddr = translate(access_info, 1);
       if (sim->reservable(paddr)) {
@@ -351,7 +352,7 @@ public:
 
   int is_misaligned_enabled()
   {
-    return proc && proc->get_cfg().misaligned;
+    return proc && proc->extension_enabled(EXT_ZICCLSM);
   }
 
   bool is_target_big_endian()
@@ -414,23 +415,33 @@ private:
 
   // handle uncommon cases: TLB misses, page faults, MMIO
   typedef uint16_t insn_parcel_t;
+
   insn_parcel_t fetch_slow_path(reg_t addr);
   insn_parcel_t perform_intrapage_fetch(reg_t vaddr, uintptr_t host_addr, reg_t paddr);
-  void load_slow_path(reg_t original_addr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
+
+  void load_slow_path(reg_t original_addr, std::size_t len,
+    std::uint8_t* bytes, xlate_flags_t xlate_flags);
   void load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info);
   void perform_intrapage_load(reg_t vaddr, uintptr_t host_addr, reg_t paddr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
-  void store_slow_path(reg_t original_addr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags, bool actually_store, bool require_alignment);
+
+  void store_slow_path(reg_t original_addr, std::size_t len, const std::uint8_t* bytes,
+    xlate_flags_t xlate_flags, bool actually_store, bool require_alignment);
   void store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_access_info_t access_info, bool actually_store);
   void perform_intrapage_store(reg_t vaddr, uintptr_t host_addr, reg_t paddr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags);
+
   bool mmio_fetch(reg_t paddr, size_t len, uint8_t* bytes);
   bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes);
   bool mmio(reg_t paddr, size_t len, uint8_t* bytes, access_type type);
   bool mmio_ok(reg_t paddr, access_type type);
-  void check_triggers(triggers::operation_t operation, reg_t address, bool virt, std::optional<reg_t> data = std::nullopt) {
-    check_triggers(operation, address, virt, address, data);
-  }
-  void check_triggers(triggers::operation_t operation, reg_t address, bool virt, reg_t tval, std::optional<reg_t> data);
+
+  void check_triggers(triggers::operation_t operation,
+    reg_t addr, bool virt, std::size_t data_size, const std::uint8_t* bytes);
+  void check_triggers(triggers::operation_t operation,
+    reg_t addr, bool virt, std::size_t access_len);
+  void check_triggers(triggers::operation_t operation, reg_t address,
+    bool virt, std::size_t size, std::optional<reg_t> data);
+
   bool svukte_qualified(mem_access_info_t access_info);
   bool svukte_fault(reg_t addr, mem_access_info_t access_info);
   reg_t translate(mem_access_info_t access_info, reg_t len);

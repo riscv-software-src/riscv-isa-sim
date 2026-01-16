@@ -135,7 +135,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     std::stringstream strstream;
     strstream << fin.rdbuf();
     dtb = strstream.str();
-    dts = dtb_to_dts(dtb);
   } else {
     std::string device_nodes;
     for (const device_factory_sargs_t& factory_sargs: device_factories) {
@@ -303,7 +302,10 @@ void sim_t::step(size_t n)
     }
   }
 }
-
+const char* sim_t::get_dts() {
+  dts = dtb_to_dts(dtb);
+  return dts.c_str(); 
+}
 void sim_t::add_device(reg_t addr, std::shared_ptr<abstract_device_t> dev) {
   bus.add_device(addr, dev.get());
   devices.push_back(dev);
