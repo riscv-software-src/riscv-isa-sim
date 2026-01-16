@@ -91,7 +91,7 @@ public:
   virtual void stash_read_values() {}
 
   virtual std::optional<match_result_t> detect_memory_access_match(processor_t UNUSED * const proc,
-      operation_t UNUSED operation, reg_t UNUSED address, std::optional<reg_t> UNUSED data) noexcept { return std::nullopt; }
+      operation_t UNUSED operation, reg_t UNUSED address, std::size_t UNUSED len, std::optional<reg_t> UNUSED data) noexcept { return std::nullopt; }
   virtual std::optional<match_result_t> detect_icount_fire(processor_t UNUSED * const proc) { return std::nullopt; }
   virtual void detect_icount_decrement(processor_t UNUSED * const proc) {}
   virtual std::optional<match_result_t> detect_trap_match(processor_t UNUSED * const proc, const trap_t UNUSED & t) noexcept { return std::nullopt; }
@@ -214,7 +214,7 @@ public:
   virtual void set_hit(hit_t val) = 0;
 
   virtual std::optional<match_result_t> detect_memory_access_match(processor_t * const proc,
-      operation_t operation, reg_t address, std::optional<reg_t> data) noexcept override;
+      operation_t operation, reg_t address, std::size_t len, std::optional<reg_t> data) noexcept override;
 
 private:
   bool simple_match(unsigned xlen, reg_t value) const;
@@ -292,7 +292,7 @@ public:
 
   unsigned count() const { return triggers.size(); }
 
-  std::optional<match_result_t> detect_memory_access_match(operation_t operation, reg_t address, std::optional<reg_t> data) noexcept;
+  std::optional<match_result_t> detect_memory_access_match(operation_t operation, reg_t address, std::size_t len, std::optional<reg_t> data) noexcept;
   std::optional<match_result_t> detect_icount_match() noexcept;
   std::optional<match_result_t> detect_trap_match(const trap_t& t) noexcept;
 
