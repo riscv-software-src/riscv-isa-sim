@@ -3,11 +3,27 @@
 #ifndef _RISCV_ZICFISS_H
 #define _RISCV_ZICFISS_H
 
-#define xSSE() \
-  ((STATE.prv != PRV_M) && get_field(STATE.menvcfg->read(), MENVCFG_SSE) && \
-  p->extension_enabled('S') && \
-  ((STATE.v && get_field(STATE.henvcfg->read(), HENVCFG_SSE)) || !STATE.v) && \
-  (((STATE.prv == PRV_U) && get_field(STATE.senvcfg->read(), SENVCFG_SSE)) || (STATE.prv != PRV_U)))
+#define xSSE()                                                                   \
+  (                                                                              \
+    /* M-mode: xSSE = mseccfg.MSSE (RO-0 if Smcfiss not implemented) */          \
+    ((STATE.prv == PRV_M) &&                                                     \
+     get_field(STATE.mseccfg->read(), MSECCFG_MSSE)) ||                          \
+                                                                                 \
+    /* U-mode w/o S-mode: Smucfiss uses menvcfg.SSE */                           \
+    ((STATE.prv == PRV_U) &&                                                     \
+     !p->extension_enabled('S') &&                                               \
+     p->extension_enabled(EXT_SMUCFISS) &&                                       \
+     get_field(STATE.menvcfg->read(), MENVCFG_SSE)) ||                           \
+                                                                                 \
+    /* Otherwise (< M): original S-mode based gating */                          \
+    ((STATE.prv != PRV_M) &&                                                     \
+     p->extension_enabled('S') &&                                                \
+     get_field(STATE.menvcfg->read(), MENVCFG_SSE) &&                            \
+     ((STATE.v && get_field(STATE.henvcfg->read(), HENVCFG_SSE)) || !STATE.v) && \
+     (((STATE.prv == PRV_U) &&                                                   \
+       get_field(STATE.senvcfg->read(), SENVCFG_SSE)) ||                         \
+      (STATE.prv != PRV_U)))                                                     \
+  )
 
 #define PUSH_VALUE_TO_SS(value) ({ \
     reg_t push_value = (value); \

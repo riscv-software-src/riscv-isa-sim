@@ -182,17 +182,43 @@ bool pmpaddr_csr_t::subset_match(reg_t addr, reg_t len) const noexcept {
   return !(is_tor ? tor_homogeneous : napot_homogeneous);
 }
 
-bool pmpaddr_csr_t::access_ok(access_type type, reg_t mode, bool hlvx) const noexcept {
+bool pmpaddr_csr_t::access_ok(access_type type, reg_t mode, bool hlvx, bool ss_access) const noexcept {
+  const uint8_t xwr = cfg & (PMP_X | PMP_W | PMP_R);
   const bool cfgx = cfg & PMP_X;
   const bool cfgw = cfg & PMP_W;
   const bool cfgr = cfg & PMP_R;
   const bool cfgl = cfg & PMP_L;
-
-  const bool prvm = mode == PRV_M;
-
   const bool typer = type == LOAD;
   const bool typex = type == FETCH;
   const bool typew = type == STORE;
+  const bool prvm = mode == PRV_M;
+  const bool prvu = mode == PRV_U;
+  const bool msse = state->mseccfg->get_msse();
+  const bool usse = ((state->menvcfg->read() & MENVCFG_SSE) != 0) &&
+                    proc->extension_enabled(EXT_SMUCFISS);
+  const bool is_m_ss_rgn = E && (xwr == PMP_W) && msse;
+  const bool is_u_ss_rgn = E && (xwr == (PMP_W | PMP_X)) && usse;
+  /*
+   * Shadow-stack access rules (Smcfiss / Smucfiss):
+   * - Shadow-stack accesses with effective privilege mode M are permitted
+   *   only when accessing an M-mode shadow-stack region. Loads with effective
+   *   privilege mode M are permitted to read an M-mode shadow-stack region.
+   * - When Smucfiss is implemented, shadow-stack accesses with effective
+   *   privilege mode U are permitted only when accessing a U-mode shadow-stack
+   *   region. Loads with effective privilege mode U are permitted to read a
+   *   U-mode shadow-stack region.
+   * - All other accesses (stores, instruction fetches, or accesses from an
+   *   incorrect privilege mode) to M-mode or U-mode shadow-stack regions are
+   *   disallowed.
+   * - When E = 1 and the PMP entry does not denote a valid shadow-stack
+   *   region, all accesses are disallowed.
+   */
+  if (ss_access && prvm) return is_m_ss_rgn;
+  if (ss_access && prvu && proc->extension_enabled(EXT_SMUCFISS)) return is_u_ss_rgn;
+  if (is_m_ss_rgn) return prvm && typer && !hlvx;
+  if (is_u_ss_rgn) return prvu && typer && !hlvx;
+  if (E) return false;
+
   const bool normal_rwx = (typer && cfgr && (!hlvx || cfgx)) || (typew && cfgw) || (typex && cfgx);
   const bool mseccfg_mml = state->mseccfg->get_mml();
 
@@ -238,52 +264,88 @@ reg_t pmpcfg_csr_t::read() const noexcept {
   return cfg_res;
 }
 
+void pmpcfg_csr_t::update_pmpcfg_entry(const size_t index, const uint8_t cfg_in, const bool E) {
+  const bool locked = (state->pmpaddr[index]->cfg & PMP_L);
+  const bool rlb = state->mseccfg->get_rlb();
+  const bool mml = state->mseccfg->get_mml();
+  uint8_t cfg = cfg_in;
+  if (rlb || !locked) {
+    // Drop R=0 W=1 when MML = 0
+    // Remove the restriction when MML = 1 or, when E=1
+    if (!mml && !E) {
+      cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0);
+    }
+    // Disallow A=NA4 when granularity > 4
+    if (proc->lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
+      cfg |= PMP_NAPOT;
+    // MT value 0x3 is reserved
+    if (get_field(cfg, PMP_MT) == 0x3)
+      cfg = set_field(cfg, PMP_MT, 0);
+    /*
+     * Adding a rule with executable privileges that either is M-mode-only or a locked Shared-Region
+     * is not possible and such pmpcfg writes are ignored, leaving pmpcfg unchanged.
+     * This restriction can be temporarily lifted e.g. during the boot process, by setting mseccfg.RLB.
+     */
+    const bool cfgx = cfg & PMP_X;
+    const bool cfgw = cfg & PMP_W;
+    const bool cfgr = cfg & PMP_R;
+    if (rlb || !(mml && ((cfg & PMP_L)      // M-mode-only or a locked Shared-Region
+            && !(cfgx && cfgw && cfgr)      // RWX = 111 is allowed
+            && (cfgx || (cfgw && !cfgr))    // X=1 or RW=01 is not allowed
+            && !E                           // Only apply this restruction when E=0
+    ))) {
+      state->pmpaddr[index]->cfg = cfg;
+      state->pmpaddr[index]->E = E;
+    }
+  }
+  return;
+}
+
 bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->n_pmp == 0)
     return false;
 
   bool write_success = false;
-  const bool rlb = state->mseccfg->get_rlb();
-  const bool mml = state->mseccfg->get_mml();
   for (size_t i0 = (address - CSR_PMPCFG0) * 4, i = i0; i < i0 + proc->get_xlen() / 8; i++) {
     if (i < proc->n_pmp) {
-      const bool locked = (state->pmpaddr[i]->cfg & PMP_L);
-      if (rlb || !locked) {
-        uint8_t all_cfg_fields = (PMP_R | PMP_W | PMP_X | PMP_A |
-            (proc->extension_enabled(EXT_SMPMPMT) ? PMP_MT : 0) |
+      uint8_t all_cfg_fields = (PMP_R | PMP_W | PMP_X | PMP_A |
+           (proc->extension_enabled(EXT_SMPMPMT) ? PMP_MT : 0) |
             PMP_L);
-        uint8_t cfg = (val >> (8 * (i - i0))) & all_cfg_fields;
-        // Drop R=0 W=1 when MML = 0
-        // Remove the restriction when MML = 1
-        if (!mml) {
-          cfg &= ~PMP_W | ((cfg & PMP_R) ? PMP_W : 0);
-        }
-        // Disallow A=NA4 when granularity > 4
-        if (proc->lg_pmp_granularity != PMP_SHIFT && (cfg & PMP_A) == PMP_NA4)
-          cfg |= PMP_NAPOT;
-        // MT value 0x3 is reserved
-        if (get_field(cfg, PMP_MT) == 0x3)
-          cfg = set_field(cfg, PMP_MT, 0);
-        /*
-         * Adding a rule with executable privileges that either is M-mode-only or a locked Shared-Region
-         * is not possible and such pmpcfg writes are ignored, leaving pmpcfg unchanged.
-         * This restriction can be temporarily lifted e.g. during the boot process, by setting mseccfg.RLB.
-         */
-        const bool cfgx = cfg & PMP_X;
-        const bool cfgw = cfg & PMP_W;
-        const bool cfgr = cfg & PMP_R;
-        if (rlb || !(mml && ((cfg & PMP_L)      // M-mode-only or a locked Shared-Region
-                && !(cfgx && cfgw && cfgr)      // RWX = 111 is allowed
-                && (cfgx || (cfgw && !cfgr))    // X=1 or RW=01 is not allowed
-        ))) {
-          state->pmpaddr[i]->cfg = cfg;
-        }
-      }
+      uint8_t cfg = (val >> (8 * (i - i0))) & all_cfg_fields;
+      update_pmpcfg_entry(i, cfg, 0);
       write_success = true;
     }
   }
   proc->get_mmu()->flush_tlb();
   return write_success;
+}
+
+ind_pmpcfg_csr_t::ind_pmpcfg_csr_t(processor_t* const proc, const reg_t addr):
+  pmpcfg_csr_t(proc, addr) {
+}
+
+reg_t ind_pmpcfg_csr_t::read() const noexcept {
+  // Bit MXLEN-1 of the pmpcfg register is the extended-attributes (E) field.
+  // The address member of this object holds the PMP entry index.
+  return state->pmpaddr[address]->cfg |
+         ((proc->get_const_xlen() == 32)
+              ? (state->pmpaddr[address]->E ? PMPCFG32_E : 0)
+              : (state->pmpaddr[address]->E ? PMPCFG64_E : 0));
+}
+
+bool ind_pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
+  const bool E = (proc->get_const_xlen() == 32)
+                     ? ((val & PMPCFG32_E) ? 1 : 0)
+                     : ((val & PMPCFG64_E) ? 1 : 0);
+  // The low 8 bits of the indirect pmpcfg register alias to the
+  // PMP configurations accessible via the direct CSRs
+  const uint8_t cfg = val & 0xFF;
+
+  // The address member of this object holds the PMP entry index.
+  update_pmpcfg_entry(address, cfg, E);
+
+  proc->get_mmu()->flush_tlb();
+  return true;
 }
 
 // implement class mseccfg_csr_t
@@ -319,6 +381,9 @@ bool mseccfg_csr_t::get_useed() const noexcept {
 bool mseccfg_csr_t::get_sseed() const noexcept {
   return (read() & MSECCFG_SSEED);
 }
+bool mseccfg_csr_t::get_msse() const noexcept {
+  return (read() & MSECCFG_MSSE);
+}
 
 bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   reg_t new_val = read();
@@ -349,6 +414,11 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->extension_enabled(EXT_ZICFILP)) {
     new_val &= ~MSECCFG_MLPE;
     new_val |= (val & MSECCFG_MLPE);
+  }
+
+  if (proc->extension_enabled(EXT_SMCFISS)) {
+    new_val &= ~MSECCFG_MSSE;
+    new_val |= (val & MSECCFG_MSSE);
   }
 
   if (proc->extension_enabled(EXT_SMMPM)) {

@@ -102,7 +102,7 @@ class pmpaddr_csr_t: public csr_t {
   bool subset_match(reg_t addr, reg_t len) const noexcept;
 
   // Is the specified access allowed given the pmpcfg privileges?
-  bool access_ok(access_type type, reg_t mode, bool hlvx) const noexcept;
+  bool access_ok(access_type type, reg_t mode, bool hlvx, bool ss_access) const noexcept;
 
   // To check lock bit status from outside like mseccfg
   bool is_locked() const noexcept {
@@ -127,8 +127,10 @@ class pmpaddr_csr_t: public csr_t {
 
   bool next_locked_and_tor() const noexcept;
   reg_t val;
-  friend class pmpcfg_csr_t;  // so he can access cfg
+  friend class pmpcfg_csr_t;      // so he can access cfg
+  friend class ind_pmpcfg_csr_t;  // so he can access cfg
   uint8_t cfg;
+  bool    E;                      // Extended attribute (E)
   const size_t pmpidx;
 };
 
@@ -141,6 +143,7 @@ class pmpcfg_csr_t: public csr_t {
   virtual reg_t read() const noexcept override;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
+  virtual void update_pmpcfg_entry(const size_t index, const uint8_t cfg_in, const bool E);
 };
 
 class mseccfg_csr_t: public basic_csr_t {
@@ -152,6 +155,7 @@ class mseccfg_csr_t: public basic_csr_t {
   bool get_rlb() const noexcept;
   bool get_useed() const noexcept;
   bool get_sseed() const noexcept;
+  bool get_msse() const noexcept;
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
 };
@@ -875,6 +879,14 @@ class sscsrind_reg_csr_t : public csr_t {
   csr_t_p iselect;
   std::unordered_map<reg_t, csr_t_p> ireg_proxy;
   csr_t_p get_reg() const noexcept;
+};
+
+class ind_pmpcfg_csr_t: public pmpcfg_csr_t {
+ public:
+  ind_pmpcfg_csr_t(processor_t* const proc, const reg_t addr);
+  reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 
 // smcntrpmf_csr_t caches the previous state of the CSR in case a CSRW instruction
