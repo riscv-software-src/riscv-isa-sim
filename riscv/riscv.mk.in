@@ -865,21 +865,21 @@ riscv_insn_ext_v_ctrl = \
 	vsetvli \
 	vsetvl \
 
-riscv_insn_ext_zvqdotq = \
-	vqdot_vv \
-	vqdot_vx \
-	vqdotu_vv \
-	vqdotu_vx \
-	vqdotsu_vv \
-	vqdotsu_vx \
-	vqdotus_vx \
+riscv_insn_ext_zvdot4a8i = \
+	vdot4a_vv \
+	vdot4a_vx \
+	vdot4au_vv \
+	vdot4au_vx \
+	vdot4asu_vv \
+	vdot4asu_vx \
+	vdot4aus_vx \
 
 riscv_insn_ext_v = \
 	$(riscv_insn_ext_v_alu_fp) \
 	$(riscv_insn_ext_v_alu_int) \
 	$(riscv_insn_ext_v_ctrl) \
 	$(riscv_insn_ext_v_ldst) \
-	$(riscv_insn_ext_zvqdotq) \
+	$(riscv_insn_ext_zvdot4a8i) \
 
 riscv_insn_ext_h = \
 	hfence_gvma \
