@@ -98,10 +98,11 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   require_align(insn.rs2(), vemul); \
   require((nf * flmul) <= (NVPR / 4) && \
           (insn.rd() + nf * flmul) <= NVPR); \
+  dirty_vs_state;
 
 #define VI_CHECK_LD_INDEX(elt_width) \
-  VI_CHECK_ST_INDEX(elt_width); \
   for (reg_t idx = 0; idx < nf; ++idx) { \
+    float vemul = ((float)elt_width / P.VU.vsew * P.VU.vflmul); \
     reg_t flmul = P.VU.vflmul < 1 ? 1 : P.VU.vflmul; \
     reg_t seg_vd = insn.rd() + flmul * idx; \
     if (elt_width > P.VU.vsew) { \
@@ -119,6 +120,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     } \
   } \
   require_vm; \
+  VI_CHECK_ST_INDEX(elt_width); \
 
 #define VI_CHECK_MSS(is_vs1) \
   if (insn.rd() != insn.rs2()) \
@@ -150,10 +152,11 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   require((nf * emul) <= (NVPR / 4) && \
           (insn.rd() + nf * emul) <= NVPR); \
   require(veew <= P.VU.ELEN); \
+  dirty_vs_state;
 
 #define VI_CHECK_LOAD(elt_width, is_mask_ldst) \
-  VI_CHECK_STORE(elt_width, is_mask_ldst); \
   require_vm; \
+  VI_CHECK_STORE(elt_width, is_mask_ldst); \
 
 #define VI_CHECK_DSS(is_vs1) \
   VI_WIDE_CHECK_COMMON; \
@@ -233,16 +236,20 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 #define VI_LOOP_END_BASE \
  }
 
+#define VECTOR_END \
+  dirty_vs_state; \
+  P.VU.vstart->write(0)
+
 #define VI_LOOP_END \
   VI_LOOP_END_BASE \
-  P.VU.vstart->write(0);
+  VECTOR_END;
 
 #define VI_LOOP_REDUCTION_END(x) \
   } \
   if (vl > 0) { \
     vd_0_des = vd_0_res; \
   } \
-  P.VU.vstart->write(0);
+  VECTOR_END;
 
 #define VI_LOOP_CARRY_BASE \
   VI_GENERAL_LOOP_BASE \
@@ -253,7 +260,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 #define VI_LOOP_CARRY_END \
     P.VU.set_mask_elt(insn.rd(), i, res); \
   } \
-  P.VU.vstart->write(0);
+  VECTOR_END;
 #define VI_LOOP_WITH_CARRY_BASE \
   VI_GENERAL_LOOP_BASE \
   const uint128_t op_mask = (UINT64_MAX >> (64 - sew)); \
@@ -274,7 +281,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 #define VI_LOOP_CMP_END \
     P.VU.set_mask_elt(insn.rd(), i, res); \
   } \
-  P.VU.vstart->write(0);
+  VECTOR_END;
 
 #define VI_LOOP_MASK(op) \
   require(P.VU.vsew <= e64); \
@@ -285,7 +292,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     bool vs1 = P.VU.mask_elt(insn.rs1(), i); \
     P.VU.set_mask_elt(insn.rd(), i, (op)); \
   } \
-  P.VU.vstart->write(0);
+  VECTOR_END;
 
 #define VI_LOOP_NSHIFT_BASE \
   VI_GENERAL_LOOP_BASE; \
@@ -1185,10 +1192,10 @@ VI_VX_ULOOP({ \
 
 #define VI_LD(stride, offset, elt_width, is_mask_ldst) \
   const reg_t nf = insn.v_nf() + 1; \
-  VI_CHECK_LOAD(elt_width, is_mask_ldst); \
   const reg_t vl = is_mask_ldst ? ((P.VU.vl->read() + 7) / 8) : P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
+  VI_CHECK_LOAD(elt_width, is_mask_ldst); \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_ELEMENT_SKIP; \
     VI_STRIP(i); \
@@ -1199,7 +1206,7 @@ VI_VX_ULOOP({ \
       P.VU.elt<elt_width##_t>(vd + fn * emul, vreg_inx, true) = val; \
     } \
   } \
-  P.VU.vstart->write(0);
+  VECTOR_END;
 
 #define VI_LDST_GET_INDEX(elt_width) \
   reg_t index; \
@@ -1220,12 +1227,12 @@ VI_VX_ULOOP({ \
 
 #define VI_LD_INDEX(elt_width, is_seg) \
   const reg_t nf = insn.v_nf() + 1; \
-  VI_CHECK_LD_INDEX(elt_width); \
   const reg_t vl = P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
   if (!is_seg) \
     require(nf == 1); \
+  VI_CHECK_LD_INDEX(elt_width); \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_LDST_GET_INDEX(elt_width); \
     VI_ELEMENT_SKIP; \
@@ -1252,14 +1259,14 @@ VI_VX_ULOOP({ \
       } \
     } \
   } \
-  P.VU.vstart->write(0);
+  VECTOR_END;
 
 #define VI_ST(stride, offset, elt_width, is_mask_ldst) \
   const reg_t nf = insn.v_nf() + 1; \
-  VI_CHECK_STORE(elt_width, is_mask_ldst); \
   const reg_t vl = is_mask_ldst ? ((P.VU.vl->read() + 7) / 8) : P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
+  VI_CHECK_STORE(elt_width, is_mask_ldst); \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_STRIP(i) \
     VI_ELEMENT_SKIP; \
@@ -1270,16 +1277,16 @@ VI_VX_ULOOP({ \
         baseAddr + (stride) + (offset) * sizeof(elt_width##_t), val); \
     } \
   } \
-  P.VU.vstart->write(0);
+  VECTOR_END;
 
 #define VI_ST_INDEX(elt_width, is_seg) \
   const reg_t nf = insn.v_nf() + 1; \
-  VI_CHECK_ST_INDEX(elt_width); \
   const reg_t vl = P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
   if (!is_seg) \
     require(nf == 1); \
+  VI_CHECK_ST_INDEX(elt_width); \
   for (reg_t i = 0; i < vl; ++i) { \
     VI_LDST_GET_INDEX(elt_width); \
     VI_STRIP(i) \
@@ -1306,15 +1313,15 @@ VI_VX_ULOOP({ \
       } \
     } \
   } \
-  P.VU.vstart->write(0);
+  VECTOR_END;
 
 #define VI_LDST_FF(elt_width) \
   const reg_t nf = insn.v_nf() + 1; \
-  VI_CHECK_LOAD(elt_width, false); \
   const reg_t vl = p->VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t rd_num = insn.rd(); \
   bool early_stop = false; \
+  VI_CHECK_LOAD(elt_width, false); \
   for (reg_t i = p->VU.vstart->read(); i < vl; ++i) { \
     VI_STRIP(i); \
     VI_ELEMENT_SKIP; \
@@ -1339,17 +1346,18 @@ VI_VX_ULOOP({ \
       break; \
     } \
   } \
-  p->VU.vstart->write(0);
+  VECTOR_END;
 
 #define VI_LD_WHOLE(elt_width) \
-  require_vector_novtype(true); \
-  require(sizeof(elt_width ## _t) * 8 <= P.VU.ELEN); \
   const reg_t baseAddr = RS1; \
   const reg_t vd = insn.rd(); \
   const reg_t len = insn.v_nf() + 1; \
-  require_align(vd, len); \
   const reg_t elt_per_reg = P.VU.vlenb / sizeof(elt_width ## _t); \
   const reg_t size = len * elt_per_reg; \
+  require_vector_novtype(true); \
+  require(sizeof(elt_width ## _t) * 8 <= P.VU.ELEN); \
+  require_align(vd, len); \
+  dirty_vs_state; \
   if (P.VU.vstart->read() < size) { \
     reg_t i = P.VU.vstart->read() / elt_per_reg; \
     reg_t off = P.VU.vstart->read() % elt_per_reg; \
@@ -1371,15 +1379,16 @@ VI_VX_ULOOP({ \
       } \
     } \
   } \
-  P.VU.vstart->write(0);
+  VECTOR_END;
 
 #define VI_ST_WHOLE \
-  require_vector_novtype(true); \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
   const reg_t len = insn.v_nf() + 1; \
-  require_align(vs3, len); \
   const reg_t size = len * P.VU.vlenb; \
+  require_vector_novtype(true); \
+  require_align(vs3, len); \
+  dirty_vs_state; \
   \
   if (P.VU.vstart->read() < size) { \
     reg_t i = P.VU.vstart->read() / P.VU.vlenb; \
@@ -1400,7 +1409,7 @@ VI_VX_ULOOP({ \
       } \
     } \
   } \
-  P.VU.vstart->write(0);
+  VECTOR_END;
 
 #define VI_EXT_CHECK(div) \
   require(insn.rd() != insn.rs2()); \
@@ -1509,11 +1518,11 @@ VI_VX_ULOOP({ \
 
 #define VI_VFP_LOOP_END \
   } \
-  P.VU.vstart->write(0); \
+  VECTOR_END; \
 
 #define VI_VFP_LOOP_REDUCTION_END(x) \
   } \
-  P.VU.vstart->write(0); \
+  VECTOR_END; \
   if (vl > 0) { \
     if (is_propagate && !is_active) { \
       switch (x) { \
@@ -1575,7 +1584,7 @@ VI_VX_ULOOP({ \
       break; \
     }; \
   } \
-  P.VU.vstart->write(0);
+  VECTOR_END;
 
 #define VI_VFP_VV_LOOP(BODY16, BODY32, BODY64) \
   VI_CHECK_SSS(true); \

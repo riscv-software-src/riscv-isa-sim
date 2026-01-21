@@ -45,3 +45,4 @@ for (reg_t i = 0; i < vl; ++i) {
   }
 }
 
+VECTOR_END;
