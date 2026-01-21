@@ -130,7 +130,19 @@ void plic_t::context_update(const plic_context_t *c)
   uint32_t best_id = context_best_pending(c);
   reg_t mask = c->mmode ? MIP_MEIP : MIP_SEIP;
 
-  c->proc->state.mip->backdoor_write_with_mask(mask, best_id ? mask : 0);
+  // Determine SEIP pending status from PLIC
+  reg_t pending = best_id ? mask : 0;
+
+  // Access mip CSR object
+  auto mip = c->proc->state.mip;
+
+  // If mvien.SEIP == 0 → SEIP is aliased to mvip (virtual interrupt)
+  if (!(c->proc->state.mvien->read() & MIP_SEIP)) {
+    c->proc->state.mvip->write_with_mask(MIP_SEIP, pending);
+  } else {
+    // Otherwise SEIP is physical → update hardware latch, not mip.val
+    mip->set_seip_hw_latch((pending & MIP_SEIP) ? MIP_SEIP : 0);
+  }
 }
 
 uint32_t plic_t::context_claim(plic_context_t *c)

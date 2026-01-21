@@ -821,10 +821,29 @@ void mip_csr_t::write_with_mask(const reg_t mask, const reg_t val) noexcept {
 }
 
 reg_t mip_csr_t::read() const noexcept {
-  return val | state->hvip->basic_csr_t::read() | ((state->mvien->read() & MIP_SEIP) ? 0 : (state->mvip->basic_csr_t::read() & MIP_SEIP));
+  reg_t result = val;
+
+  // Merge hypervisor virtual interrupts (unchanged behavior)
+  result |= state->hvip->basic_csr_t::read();
+
+  // Merge hardware SEIP latch (external interrupt pending)
+  result |= seip_hw_latch & MIP_SEIP;
+
+  // Merge mvip alias when mvien.SEIP == 0
+  if (!(state->mvien->read() & MIP_SEIP)) {
+    result |= (state->mvip->basic_csr_t::read() & MIP_SEIP);
+  }
+
+  return result;
 }
 
 void mip_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept {
+  // Handle SEIP: hardware sources must update the latch, not overwrite CSRs
+  if (mask & MIP_SEIP) {
+    seip_hw_latch = (val & MIP_SEIP) ? MIP_SEIP : 0;
+  }
+
+  // For all other bits, perform the normal backdoor write
   this->val = (this->val & ~mask) | (val & mask);
 }
 
