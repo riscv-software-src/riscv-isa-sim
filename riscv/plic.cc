@@ -127,10 +127,20 @@ uint32_t plic_t::context_best_pending(const plic_context_t *c)
 
 void plic_t::context_update(const plic_context_t *c)
 {
-  uint32_t best_id = context_best_pending(c);
-  reg_t mask = c->mmode ? MIP_MEIP : MIP_SEIP;
+  // Machine-mode external interrupt (MEIP) must bypass SEIP/vien/vip logic
+  if (c->mmode) {
+    uint32_t best_id = context_best_pending(c);
+    reg_t pending = best_id ? MIP_MEIP : 0;
+    // Directly update mip.MEIP without touching SEIP or mvip
+    c->proc->state.mip->backdoor_write_with_mask(MIP_MEIP, pending);
+    return;
+  }
 
-  // Determine SEIP pending status from PLIC
+  // Supervisor-mode external interrupt (SEIP) handling
+  uint32_t best_id = context_best_pending(c);
+  reg_t mask = MIP_SEIP;
+
+  // Determine external interrupt status from PLIC (MEIP for machine mode, SEIP for supervisor mode)
   reg_t pending = best_id ? mask : 0;
 
   // Access mip CSR object

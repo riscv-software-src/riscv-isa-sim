@@ -843,8 +843,9 @@ void mip_csr_t::backdoor_write_with_mask(const reg_t mask, const reg_t val) noex
     seip_hw_latch = (val & MIP_SEIP) ? MIP_SEIP : 0;
   }
 
-  // For all other bits, perform the normal backdoor write
-  this->val = (this->val & ~mask) | (val & mask);
+  // Write all bits except SEIP into val; SEIP must only go into seip_hw_latch
+  reg_t non_seip_mask = mask & ~MIP_SEIP;
+  this->val = (this->val & ~non_seip_mask) | (val & non_seip_mask);
 }
 
 reg_t mip_csr_t::write_mask() const noexcept {
