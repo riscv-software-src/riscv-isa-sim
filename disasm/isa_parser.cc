@@ -395,6 +395,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str == "zicfiss") {
       extension_table[EXT_ZICFISS] = true;
       extension_table[EXT_ZAAMO] = true;
+      extension_table[EXT_ZIMOP] = true;
     } else if (ext_str == "smmpm") {
       extension_table[EXT_SMMPM] = true;
     } else if (ext_str == "smnpm") {
@@ -485,6 +486,9 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZCD] = true;
   }
 
+  if (extension_table[EXT_ZICFISS] && extension_table[EXT_ZCA])
+    extension_table[EXT_ZCMOP] = true;
+
   if (extension_table[EXT_ZCLSD] && extension_table[EXT_ZCF]) {
     bad_isa_string(str, "'Zclsd' extension conflicts with 'Zcf' extensions");
   }
@@ -552,16 +556,6 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
 
   if (extension_table[EXT_ZAWRS] && !extension_table[EXT_ZALRSC]) {
     bad_isa_string(str, "'Zawrs' extension requires either the 'A' or the 'Zalrsc' extension");
-  }
-
-  // When SSE is 0, Zicfiss behavior is defined by Zicmop
-  if (extension_table[EXT_ZICFISS] && !extension_table[EXT_ZIMOP]) {
-    bad_isa_string(str, "'Zicfiss' extension requires 'Zimop' extension");
-  }
-
-  if (extension_table[EXT_ZICFISS] && extension_table[EXT_ZCA] &&
-      !extension_table[EXT_ZCMOP]) {
-    bad_isa_string(str, "'Zicfiss' extension requires 'Zcmop' extension when `Zca` is supported");
   }
 #ifdef WORDS_BIGENDIAN
   // Access to the vector registers as element groups is unimplemented on big-endian setups.
