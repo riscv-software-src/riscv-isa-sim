@@ -394,6 +394,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       extension_table[EXT_ZICFILP] = true;
     } else if (ext_str == "zicfiss") {
       extension_table[EXT_ZICFISS] = true;
+      extension_table[EXT_ZAAMO] = true;
     } else if (ext_str == "smmpm") {
       extension_table[EXT_SMMPM] = true;
     } else if (ext_str == "smnpm") {
