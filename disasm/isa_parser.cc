@@ -287,11 +287,14 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str == "zihpm") {
       extension_table[EXT_ZIHPM] = true;
     } else if (ext_str == "zilsd") {
+      zilsd:
       if (max_xlen != 32)
-        bad_isa_string(str, "'Zilsd' requires RV32");
+        bad_isa_string(str, ("'" + ext_str + "' requires RV32").c_str());
       extension_table[EXT_ZILSD] = true;
     } else if (ext_str == "zclsd") {
       extension_table[EXT_ZCLSD] = true;
+      extension_table[EXT_ZCA] = true;
+      goto zilsd;
     } else if (ext_str == "zvkb") {
       extension_table[EXT_ZVKB] = true;
     } else if (ext_str == "zvbb") {
@@ -489,16 +492,12 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   if (extension_table[EXT_ZICFISS] && extension_table[EXT_ZCA])
     extension_table[EXT_ZCMOP] = true;
 
-  if (extension_table[EXT_ZCLSD] && extension_table[EXT_ZCF]) {
-    bad_isa_string(str, "'Zclsd' extension conflicts with 'Zcf' extensions");
-  }
-
-  if (extension_table[EXT_ZCLSD] && (!extension_table[EXT_ZCA] || !extension_table[EXT_ZILSD])) {
-    bad_isa_string(str, "'Zclsd' extension requires 'Zca' and 'Zilsd' extensions");
-  }
-
   if (extension_table[EXT_ZFBFMIN] || extension_table[EXT_ZFHMIN]) {
     extension_table[EXT_INTERNAL_ZFH_MOVE] = true;
+  }
+
+  if (extension_table[EXT_ZCLSD] && extension_table[EXT_ZCF]) {
+    bad_isa_string(str, "'Zclsd' extension conflicts with 'Zcf' extensions");
   }
 
   if (extension_table[EXT_ZFBFMIN] && (!extension_table['F'])) {
