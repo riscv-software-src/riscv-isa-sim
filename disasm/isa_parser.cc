@@ -116,20 +116,19 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     auto end = p;
     do ++end; while (*end && *end != '_');
     auto ext_str = std::string(p, end);
-    if (ext_str == "zfh" || ext_str == "zfhmin") {
-      if (!extension_table['F'])
-        bad_isa_string(str, ("'" + ext_str + "' extension requires 'F'").c_str());
+    if (ext_str == "zfh") {
+      extension_table[EXT_ZFH] = true;
+      goto zfhmin;
+    } else if (ext_str == "zfhmin") {
+      zfhmin:
+      extension_table['F'] = true;
       extension_table[EXT_ZFHMIN] = true;
-      if (ext_str == "zfh")
-        extension_table[EXT_ZFH] = true;
-    } else if (ext_str == "zvfh" || ext_str == "zvfhmin") {
+    } else if (ext_str == "zvfh") {
+      extension_table[EXT_ZVFH] = true;
       extension_table[EXT_ZVFHMIN] = true;
-
-      if (ext_str == "zvfh") {
-        extension_table[EXT_ZVFH] = true;
-        // Zvfh implies Zfhmin
-        extension_table[EXT_ZFHMIN] = true;
-      }
+      goto zfhmin;
+    } else if (ext_str == "zvfhmin") {
+      extension_table[EXT_ZVFHMIN] = true;
     } else if (ext_str == "zvfbfa") {
       extension_table[EXT_ZVFBFA] = true;
     } else if (ext_str == "zvfofp4min") {
