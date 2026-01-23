@@ -65,6 +65,8 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
     add_extension("zve32f", str);
   } else if (ext_str == "zvfbfa") {
     extension_table[EXT_ZVFBFA] = true;
+    add_extension("zve32f", str);
+    add_extension("zfbfmin", str);
   } else if (ext_str == "zvfofp4min") {
     extension_table[EXT_ZVFOFP4MIN] = true;
   } else if (ext_str == "zvfofp8min") {
@@ -113,6 +115,7 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
     extension_table[EXT_ZFINX] = true;
     extension_table[EXT_ZDINX] = true;
   } else if (ext_str == "zfbfmin") {
+    extension_table['F'] = true;
     extension_table[EXT_ZFBFMIN] = true;
   } else if (ext_str == "zfinx") {
     extension_table[EXT_ZFINX] = true;
@@ -238,8 +241,11 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
     extension_table[EXT_ZVBC] = true;
   } else if (ext_str == "zvfbfmin") {
     extension_table[EXT_ZVFBFMIN] = true;
+    add_extension("zve32f", str);
   } else if (ext_str == "zvfbfwma") {
     extension_table[EXT_ZVFBFWMA] = true;
+    add_extension("zfbfmin", str);
+    add_extension("zvfbfmin", str);
   } else if (ext_str == "zvkg") {
     extension_table[EXT_ZVKG] = true;
   } else if (ext_str == "zvkn") {
@@ -503,22 +509,6 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
 
   if (extension_table[EXT_ZCLSD] && extension_table[EXT_ZCF]) {
     bad_isa_string(str, "'Zclsd' extension conflicts with 'Zcf' extensions");
-  }
-
-  if (extension_table[EXT_ZFBFMIN] && (!extension_table['F'])) {
-    bad_isa_string(str, "'Zfbfmin' extension requires 'F' extension");
-  }
-
-  if (extension_table[EXT_ZVFBFMIN] && (vlen == 0 || !zvf)) {
-    bad_isa_string(str, "'Zvfbfmin' extension requires 'Zve32f' extension");
-  }
-
-  if (extension_table[EXT_ZVFBFA] && (!has_any_vector() || !extension_table[EXT_ZFBFMIN] || !get_zvf())) {
-    bad_isa_string(str, "'zvfbfa' extension requires at least 'Zve32f', and 'Zfbfmin'");
-  }
-
-  if (extension_table[EXT_ZVFBFWMA] && (!extension_table[EXT_ZFBFMIN] || !extension_table[EXT_ZVFBFMIN])) {
-    bad_isa_string(str, "'Zvfbfwma' extension requires 'Zfbfmin' and 'Zvfbfmin' extensions");
   }
 
   if (extension_table[EXT_ZVFOFP4MIN] && (!has_any_vector() || !get_zvf())) {
