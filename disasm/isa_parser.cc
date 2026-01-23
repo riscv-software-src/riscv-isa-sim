@@ -69,8 +69,10 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
     add_extension("zfbfmin", str);
   } else if (ext_str == "zvfofp4min") {
     extension_table[EXT_ZVFOFP4MIN] = true;
+    add_extension("zve32f", str);
   } else if (ext_str == "zvfofp8min") {
     extension_table[EXT_ZVFOFP8MIN] = true;
+    add_extension("zve32f", str);
   } else if (ext_str == "zicsr") {
     // Spike necessarily has Zicsr, because
     // Zicsr is implied by the privileged architecture
@@ -518,14 +520,6 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
 
   if (extension_table[EXT_ZCLSD] && extension_table[EXT_ZCF]) {
     bad_isa_string(str, "'Zclsd' extension conflicts with 'Zcf' extensions");
-  }
-
-  if (extension_table[EXT_ZVFOFP4MIN] && (!has_any_vector() || !get_zvf())) {
-    bad_isa_string(str, "'Zvfofp4min' extension requires either 'V' or 'Zve32f' extension");
-  }
-
-  if (extension_table[EXT_ZVFOFP8MIN] && (!has_any_vector() || !get_zvf())) {
-    bad_isa_string(str, "'Zvfofp8min' extension requires either 'V' or 'Zve32f' extension");
   }
 
   if (extension_table[EXT_ZFINX] && extension_table['F']) {
