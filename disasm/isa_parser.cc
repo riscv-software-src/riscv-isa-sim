@@ -366,9 +366,13 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
       new_elen = 0;
     }
     if (ext_str.substr(5) == "d") {
-      zvd |= true; zvf |= true;
+      zvd |= true;
+      zvf |= true;
+      extension_table['F'] = true;
+      extension_table['D'] = true;
     } else if (ext_str.substr(5) == "f") {
       zvf |= true;
+      extension_table['F'] = true;
     } else if (ext_str.substr(5) == "x") {
       /* do nothing */
     } else {
@@ -451,7 +455,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     }
 
     switch (*p) {
-      case 'v': vlen = 128; elen = 64; zvf = true; zvd = true;
+      case 'v': add_extension("zve64d", str); vlen = 128;
                 [[fallthrough]];
       case 'q': extension_table['D'] = true;
                 [[fallthrough]];
@@ -563,14 +567,6 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
 
   if (vlen > 4096) {
     bad_isa_string(str, "Spike does not support VLEN > 4096");
-  }
-
-  if (zvd && !extension_table['D'] && elen < 64) {
-    bad_isa_string(str, "'ZveXXd' extension requires D");
-  }
-
-  if (zvf && !extension_table['F']) {
-    bad_isa_string(str, "'ZveXXf' extension requires F");
   }
 
   std::string lowercase = strtolower(priv);
