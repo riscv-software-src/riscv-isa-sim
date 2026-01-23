@@ -79,7 +79,8 @@ reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
   reg_t mode = (reg_t) access_info.effective_priv;
 
   reg_t paddr = walk(access_info) | (addr & (PGSIZE-1));
-  if (!pmp_ok(paddr, len, access_info.flags.ss_access ? STORE : type, mode, access_info.flags.hlvx))
+  if (!pmp_ok(paddr, len, access_info.flags.ss_access ? STORE : type, mode,
+              access_info.flags.hlvx, access_info.flags.ss_access))
     throw_access_exception(virt, addr, access_info.flags.ss_access ? STORE : type);
   return paddr;
 }
@@ -484,8 +485,7 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
   return entry;
 }
 
-bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlvx)
-{
+bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlvx, bool ss_access) {
   if (!proc || proc->n_pmp == 0)
     return true;
 
@@ -508,7 +508,7 @@ bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlv
       if (!all_match)
         return false;
 
-      return proc->state.pmpaddr[i]->access_ok(type, mode, hlvx);
+      return proc->state.pmpaddr[i]->access_ok(type, mode, hlvx, ss_access);
     }
   }
 
@@ -671,7 +671,10 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
 
   bool ss_access = access_info.flags.ss_access;
 
-  if (ss_access) {
+  if (ss_access &&
+      ((virt == 1) || (mode == PRV_S) ||
+       (mode == PRV_M && !proc->extension_enabled(EXT_SMCFISS)) ||
+       (mode == PRV_U && !proc->extension_enabled(EXT_SMUCFISS)))) {
     if (vm.levels == 0)
       throw trap_store_access_fault(virt, addr, 0, 0);
     type = STORE;

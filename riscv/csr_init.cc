@@ -441,13 +441,29 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     csr_t_p miselect = std::make_shared<basic_csr_t>(proc, CSR_MISELECT, 0);
     add_csr(CSR_MISELECT, miselect);
 
-    sscsrind_reg_csr_t::sscsrind_reg_csr_t_p mireg;
+    sscsrind_reg_csr_t::sscsrind_reg_csr_t_p mireg, mireg2;
     add_csr(CSR_MIREG, mireg = std::make_shared<sscsrind_reg_csr_t>(proc, CSR_MIREG, miselect));
     if (proc->extension_enabled_const(EXT_SMAIA))
       add_iprio_proxy(proc, mireg);
-    const reg_t mireg_csrs[] = { CSR_MIREG2, CSR_MIREG3, CSR_MIREG4, CSR_MIREG5, CSR_MIREG6 };
+    add_csr(CSR_MIREG2, mireg2 = std::make_shared<sscsrind_reg_csr_t>(proc, CSR_MIREG2, miselect));
+    const reg_t mireg_csrs[] = { CSR_MIREG3, CSR_MIREG4, CSR_MIREG5, CSR_MIREG6 };
     for (auto csr : mireg_csrs)
       add_csr(csr, std::make_shared<sscsrind_reg_csr_t>(proc, csr, miselect));
+
+    if (proc->extension_enabled_const(EXT_SMPMPIND)) {
+      // For indirect access to PMP registers, `miselect` selects the target PMP
+      // entry; `mireg` accesses its `pmpaddr` register, and `mireg2` accesses its
+      // `pmpcfg` register. Attempts to access `mireg3` through `mireg6` raise an
+      // illegal instruction exception.
+      // The mireg2 (mireg_csrs[0]) proxies to ind_pmpcfg_csr_t objects as there
+      // is no direct proxy for these registers. In the ind_pmpcfg_csr_t object,
+      // the address member holds the entry number (i).
+      for (int i = 0; i < max_pmp; ++i) {
+        mireg->add_ireg_proxy(MISELECT_PMPIND_START + i, pmpaddr[i]);
+        auto ind_pmpcfg = std::make_shared<ind_pmpcfg_csr_t>(proc, i);
+        mireg2->add_ireg_proxy(MISELECT_PMPIND_START + i, ind_pmpcfg);
+      }
+    }
   }
 
   if (proc->extension_enabled_const(EXT_SSCSRIND)) {

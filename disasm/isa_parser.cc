@@ -247,14 +247,20 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     } else if (ext_str == "zkr") {
       extension_table[EXT_ZKR] = true;
     } else if (ext_str == "zkt") {
+    } else if (ext_str == "smcfiss") {
+      extension_table[EXT_SMCFISS] = true;
     } else if (ext_str == "smepmp") {
       extension_table[EXT_SMEPMP] = true;
     } else if (ext_str == "smstateen") {
       extension_table[EXT_SMSTATEEN] = true;
+    } else if (ext_str == "smpmpind") {
+      extension_table[EXT_SMPMPIND] = true;
     } else if (ext_str == "smpmpmt") {
       extension_table[EXT_SMPMPMT] = true;
     } else if (ext_str == "smrnmi") {
       extension_table[EXT_SMRNMI] = true;
+    } else if (ext_str == "smucfiss") {
+      extension_table[EXT_SMUCFISS] = true;
     } else if (ext_str == "sscofpmf") {
       extension_table[EXT_SSCOFPMF] = true;
     } else if (ext_str == "svadu") {
@@ -562,6 +568,15 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
       !extension_table[EXT_ZCMOP]) {
     bad_isa_string(str, "'Zicfiss' extension requires 'Zcmop' extension when `Zca` is supported");
   }
+  if (extension_table[EXT_SMCFISS] && !extension_table[EXT_ZICFISS]) {
+    bad_isa_string(str, "'Smcfiss' extension requires 'Zicfiss'");
+  }
+  if (extension_table[EXT_SMCFISS] && !extension_table[EXT_SMPMPIND]) {
+    bad_isa_string(str, "'Smcfiss' extension requires 'Smpmpind'");
+  }
+  if (extension_table[EXT_SMUCFISS] && !extension_table[EXT_SMCFISS]) {
+    bad_isa_string(str, "'Smucfiss' extension requires 'Smcfiss'");
+  }
 #ifdef WORDS_BIGENDIAN
   // Access to the vector registers as element groups is unimplemented on big-endian setups.
   if (extension_table[EXT_ZVKG] || extension_table[EXT_ZVKNHA] || extension_table[EXT_ZVKNHB] ||
@@ -606,6 +621,10 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
 
   extension_table['U'] = user;
   extension_table['S'] = supervisor;
+
+  if (extension_table[EXT_SMUCFISS] && (extension_table['S'] || !extension_table['U'])) {
+    bad_isa_string(str, "'Smucfiss' extension is only supported for M+U systems");
+  }
 
   if (extension_table['H'] && !supervisor)
     bad_isa_string(str, "'H' extension requires S mode");
