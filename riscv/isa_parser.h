@@ -22,6 +22,7 @@ typedef enum {
   EXT_ZCA,
   EXT_ZCB,
   EXT_ZCD,
+  EXT_ZCE,
   EXT_ZCF,
   EXT_ZCLSD,
   EXT_ZCMP,
