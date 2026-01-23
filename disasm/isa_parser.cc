@@ -58,10 +58,11 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
     extension_table[EXT_ZFHMIN] = true;
   } else if (ext_str == "zvfh") {
     extension_table[EXT_ZVFH] = true;
-    extension_table[EXT_ZVFHMIN] = true;
+    add_extension("zvfhmin", str);
     add_extension("zfhmin", str);
   } else if (ext_str == "zvfhmin") {
     extension_table[EXT_ZVFHMIN] = true;
+    add_extension("zve32f", str);
   } else if (ext_str == "zvfbfa") {
     extension_table[EXT_ZVFBFA] = true;
   } else if (ext_str == "zvfofp4min") {
@@ -572,14 +573,6 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
 
   if (vlen > 4096) {
     bad_isa_string(str, "Spike does not support VLEN > 4096");
-  }
-
-  if (extension_table[EXT_ZVFHMIN] && (vlen == 0 || elen == 0 || !zvf)) {
-    bad_isa_string(str, "'Zvfhmin' extension requires Zve32f");
-  }
-
-  if (extension_table[EXT_ZVFH] && (vlen == 0 || elen == 0 || !zvf || !extension_table[EXT_ZVFHMIN])) {
-    bad_isa_string(str, "'Zvfh' extension requires Zve32f and 'Zvfhmin'");
   }
 
   if (zvd && !extension_table['D'] && elen < 64) {
