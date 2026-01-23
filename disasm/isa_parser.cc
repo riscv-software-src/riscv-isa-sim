@@ -140,17 +140,22 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
     if (max_xlen != 32)
       bad_isa_string(str, "'Zcf' requires RV32");
     extension_table['F'] = true;
+    extension_table[EXT_ZCA] = true;
     extension_table[EXT_ZCF] = true;
   } else if (ext_str == "zcb") {
     extension_table[EXT_ZCB] = true;
+    extension_table[EXT_ZCA] = true;
   } else if (ext_str == "zcd") {
     extension_table[EXT_ZCD] = true;
+    extension_table[EXT_ZCA] = true;
     extension_table['F'] = true;
     extension_table['D'] = true;
   } else if (ext_str == "zcmp") {
     extension_table[EXT_ZCMP] = true;
+    extension_table[EXT_ZCA] = true;
   } else if (ext_str == "zcmt") {
     extension_table[EXT_ZCMT] = true;
+    extension_table[EXT_ZCA] = true;
   } else if (ext_str == "zibi") {
     extension_table[EXT_ZIBI] = true;
   } else if (ext_str == "zk") {
@@ -528,11 +533,6 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
 
   if ((extension_table[EXT_ZCMP] || extension_table[EXT_ZCMT]) && extension_table[EXT_ZCD]) {
     bad_isa_string(str, "Zcmp' and 'Zcmt' extensions are incompatible with 'Zcd' extension");
-  }
-
-  if ((extension_table[EXT_ZCF] || extension_table[EXT_ZCD] || extension_table[EXT_ZCB] ||
-       extension_table[EXT_ZCMP] || extension_table[EXT_ZCMT]) && !extension_table[EXT_ZCA]) {
-    bad_isa_string(str, "'Zcf/Zcd/Zcb/Zcmp/Zcmt' extensions require 'Zca' extension");
   }
 
   if (extension_table[EXT_ZACAS] && !extension_table[EXT_ZAAMO]) {
