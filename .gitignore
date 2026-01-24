@@ -8,3 +8,9 @@ autom4te.cache/
 .#*
 *~
 config.log
+
+tests/*.txt
+tests/*.out
+tests/*.log
+tests/*.elf
+tests/*.bin
