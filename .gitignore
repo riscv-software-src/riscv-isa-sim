@@ -8,3 +8,6 @@ autom4te.cache/
 .#*
 *~
 config.log
+env
+tests/*.txt
+tests/*.elftests/*.bin

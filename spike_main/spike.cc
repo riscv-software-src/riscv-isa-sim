@@ -21,6 +21,7 @@
 #include <cinttypes>
 #include <sstream>
 #include "../VERSION"
+#include "extension_cswprof.h"
 
 static void help(int exit_code = 1)
 {

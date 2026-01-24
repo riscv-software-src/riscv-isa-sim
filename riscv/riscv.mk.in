@@ -76,6 +76,7 @@ riscv_srcs = \
 	vector_unit.cc \
 	socketif.cc \
 	cfg.cc \
+	extension_cswprof.cc \
 	$(riscv_gen_srcs) \
 
 riscv_test_srcs = \
