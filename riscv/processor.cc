@@ -22,6 +22,7 @@
 #include <stdexcept>
 #include <string>
 #include <algorithm>
+#include "extension_cswprof.h"
 
 #ifdef __GNUC__
 # pragma GCC diagnostic ignored "-Wunused-variable"
@@ -513,6 +514,30 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     state.mtval->write(t.get_tval());
     state.mtval2->write(supv_double_trap ? t.cause() : t.get_tval2());
     state.mtinst->write(t.get_tinst());
+// ---- CSW PROFILER HOOK ----
+auto* csw = dynamic_cast<cswprof_extension_t*>(get_extension("cswprof"));
+if (csw) {
+  auto& csrmap = state.csrmap;
+
+  auto it_cnt = csrmap.find(CSR_CSW_COUNT);
+  auto it_cause = csrmap.find(CSR_CSW_LASTCAUSE);
+  auto it_cycles = csrmap.find(CSR_CSW_CYCLES);
+
+  if (it_cnt != csrmap.end() && it_cnt->second)
+    it_cnt->second->write(it_cnt->second->read() + 1);
+
+  if (it_cause != csrmap.end() && it_cause->second)
+    it_cause->second->write(state.mcause->read());
+
+  // Milestone 2: cycle-accurate accumulation
+  if (it_cycles != csrmap.end() && it_cycles->second) {
+    reg_t now = state.mcycle->read();
+    reg_t delta = (csw->last_cycle == 0) ? 0 : (now - csw->last_cycle);
+    it_cycles->second->write(it_cycles->second->read() + delta);
+    csw->last_cycle = now;
+  }
+}
+// --------------------------
 
     s = set_field(s, MSTATUS_MPIE, get_field(s, MSTATUS_MIE));
     s = set_field(s, MSTATUS_MPP, state.prv);
@@ -711,6 +736,14 @@ void processor_t::register_extension(extension_t *x) {
     fprintf(stderr, "extensions must have unique names (got two named \"%s\"!)\n", x->name());
     abort();
   }
+
+    for (auto &csr : x->get_csrs(*this)) {
+    state.add_csr(csr->address, csr);
+  }
+
+  // optional but good: reset extension state once
+  x->reset(*this);
+
 }
 
 void processor_t::register_base_instructions()

@@ -4,6 +4,7 @@
 #include <string>
 #include <map>
 #include <dlfcn.h>
+#include "extension_cswprof.h"
 
 static std::map<std::string, std::function<extension_t*()>>& extensions()
 {
@@ -18,6 +19,9 @@ void register_extension(const char* name, std::function<extension_t*()> f)
 
 std::function<extension_t*()> find_extension(const char* name)
 {
+  if (!strcmp(name, "cswprof"))
+    return []() { return new cswprof_extension_t; };
+
   if (!extensions().count(name)) {
     // try to find extension xyz by loading libxyz.so
     std::string libname = std::string("lib") + name + ".so";
@@ -34,7 +38,6 @@ std::function<extension_t*()> find_extension(const char* name)
 
       is_default = true;
     }
-
     if (!extensions().count(name)) {
       fprintf(stderr, "couldn't find extension '%s' in shared library '%s'\n",
               name, is_default ? libdefault.c_str() : libname.c_str());
