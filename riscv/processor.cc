@@ -19,6 +19,7 @@
 #include <iomanip>
 #include <assert.h>
 #include <limits.h>
+#include <limits>
 #include <stdexcept>
 #include <string>
 #include <algorithm>
@@ -70,6 +71,8 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
   set_max_vaddr_bits(0);
   set_impl(IMPL_MMU_ASID, true);
   set_impl(IMPL_MMU_VMID, true);
+
+  reset_context_counters();
 
   reset();
 
@@ -153,6 +156,7 @@ void processor_t::reset()
   if (any_vector_extensions())
     VU.reset();
   in_wfi = false;
+  reset_context_counters();
 
   if (n_pmp > 0) {
     // For backwards compatibility with software that is unaware of PMP,
@@ -608,8 +612,216 @@ void processor_t::disasm(insn_t insn)
   }
 }
 
+void processor_t::reset_context_counters()
+{
+  ctx_switch_count = 0;
+  ctx_total_cycles = 0;
+  ctx_last_cycles = 0;
+  ctx_min_cycles = std::numeric_limits<reg_t>::max();
+  ctx_max_cycles = 0;
+  ctx_last_out_cycle = 0;
+  ctx_outstanding = false;
+  ctx_print_on_read = false;
+}
+
+reg_t processor_t::ctx_cycles() const
+{
+  return state.mcycle ? state.mcycle->read() : 0;
+}
+
+void processor_t::ctx_mark_out(reg_t cycle)
+{
+  ctx_last_out_cycle = cycle;
+  ctx_outstanding = true;
+}
+
+void processor_t::ctx_mark_in(reg_t cycle)
+{
+  if (!ctx_outstanding) {
+    ctx_last_cycles = 0;
+    return;
+  }
+
+  reg_t delta = cycle - ctx_last_out_cycle;
+  ctx_last_cycles = delta;
+  ctx_total_cycles += delta;
+  ctx_switch_count++;
+  ctx_max_cycles = std::max(ctx_max_cycles, delta);
+  ctx_min_cycles = std::min(ctx_min_cycles, delta);
+  ctx_outstanding = false;
+}
+
+bool processor_t::ctx_is_stat_csr(reg_t which) const
+{
+  switch (which) {
+    case CSR_UCTX_OUT: case CSR_UCTX_IN: case CSR_UCTX_COUNT: case CSR_UCTX_TOTAL:
+    case CSR_UCTX_LAST: case CSR_UCTX_MIN: case CSR_UCTX_MAX: case CSR_UCTX_AVG:
+    case CSR_MCTX_OUT: case CSR_MCTX_IN: case CSR_MCTX_COUNT: case CSR_MCTX_TOTAL:
+    case CSR_MCTX_LAST: case CSR_MCTX_MIN: case CSR_MCTX_MAX: case CSR_MCTX_AVG:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool processor_t::ctx_is_control_csr(reg_t which) const
+{
+  switch (which) {
+    case CSR_UCTX_CTRL:
+    case CSR_MCTX_CTRL:
+      return true;
+    default:
+      return false;
+  }
+}
+
+bool processor_t::ctx_is_csr(reg_t which) const
+{
+  return ctx_is_stat_csr(which) || ctx_is_control_csr(which);
+}
+
+reg_t processor_t::ctx_read(reg_t which) const
+{
+  const bool have_data = ctx_switch_count != 0;
+  const reg_t min_cycles = have_data ? ctx_min_cycles : 0;
+  const reg_t avg_cycles = ctx_switch_count ? ctx_total_cycles / ctx_switch_count : 0;
+
+  switch (which) {
+    case CSR_UCTX_OUT:
+    case CSR_MCTX_OUT:
+      return ctx_last_out_cycle;
+    case CSR_UCTX_IN:
+    case CSR_MCTX_IN:
+      return ctx_last_cycles;
+    case CSR_UCTX_COUNT:
+    case CSR_MCTX_COUNT:
+      return ctx_switch_count;
+    case CSR_UCTX_TOTAL:
+    case CSR_MCTX_TOTAL:
+      return ctx_total_cycles;
+    case CSR_UCTX_LAST:
+    case CSR_MCTX_LAST:
+      return ctx_last_cycles;
+    case CSR_UCTX_MIN:
+    case CSR_MCTX_MIN:
+      return min_cycles;
+    case CSR_UCTX_MAX:
+    case CSR_MCTX_MAX:
+      return ctx_max_cycles;
+    case CSR_UCTX_AVG:
+    case CSR_MCTX_AVG:
+      return avg_cycles;
+    case CSR_UCTX_CTRL:
+    case CSR_MCTX_CTRL:
+      return (ctx_print_on_read ? 1 : 0) | (ctx_outstanding ? 2 : 0);
+    default:
+      return 0;
+  }
+}
+
+void processor_t::ctx_write(reg_t which, reg_t val, bool peek)
+{
+  if (peek)
+    return;
+
+  if (ctx_is_control_csr(which)) {
+    const bool reset = val & 0x2;
+    const bool print_on_read = val & 0x1;
+    if (reset)
+      reset_context_counters();
+    ctx_print_on_read = print_on_read;
+    return;
+  }
+
+  switch (which) {
+    case CSR_UCTX_OUT:
+    case CSR_MCTX_OUT:
+      ctx_mark_out(ctx_cycles());
+      break;
+    case CSR_UCTX_IN:
+    case CSR_MCTX_IN:
+      ctx_mark_in(ctx_cycles());
+      break;
+    case CSR_UCTX_COUNT:
+    case CSR_MCTX_COUNT:
+      ctx_switch_count = val;
+      break;
+    case CSR_UCTX_TOTAL:
+    case CSR_MCTX_TOTAL:
+      ctx_total_cycles = val;
+      break;
+    case CSR_UCTX_LAST:
+    case CSR_MCTX_LAST:
+      ctx_last_cycles = val;
+      break;
+    case CSR_UCTX_MIN:
+    case CSR_MCTX_MIN:
+      ctx_min_cycles = val ? val : std::numeric_limits<reg_t>::max();
+      break;
+    case CSR_UCTX_MAX:
+    case CSR_MCTX_MAX:
+      ctx_max_cycles = val;
+      break;
+    case CSR_UCTX_AVG:
+    case CSR_MCTX_AVG:
+      // Average is derived; allow write to seed total/count: avg -> total = avg*count
+      if (ctx_switch_count)
+        ctx_total_cycles = val * ctx_switch_count;
+      break;
+    default:
+      break;
+  }
+}
+
+void processor_t::ctx_verify_permissions(reg_t which, bool write, insn_t insn, bool peek) const
+{
+  if (peek)
+    return;
+
+  const unsigned csr_priv = get_field(which, 0x300);
+  const bool csr_read_only = get_field(which, 0xC00) == 3;
+  unsigned priv = state.prv == PRV_S && !state.v ? PRV_HS : state.prv;
+
+  if (write && csr_read_only)
+    throw trap_illegal_instruction(insn.bits());
+  if (csr_priv == PRV_S && !extension_enabled('S'))
+    throw trap_illegal_instruction(insn.bits());
+  if (csr_priv == PRV_HS && !extension_enabled('H'))
+    throw trap_illegal_instruction(insn.bits());
+  if (priv < csr_priv) {
+    if (state.v && csr_priv <= PRV_HS)
+      throw trap_virtual_instruction(insn.bits());
+    throw trap_illegal_instruction(insn.bits());
+  }
+}
+
+void processor_t::ctx_maybe_print(reg_t which)
+{
+  if (!ctx_print_on_read || !ctx_is_stat_csr(which))
+    return;
+
+  const reg_t avg_cycles = ctx_switch_count ? ctx_total_cycles / ctx_switch_count : 0;
+  const reg_t min_cycles = ctx_switch_count ? ctx_min_cycles : 0;
+
+  FILE* out = log_file ? log_file : stderr;
+  fprintf(out,
+          "[ctxsw] count=%llu total=%llu last=%llu min=%llu max=%llu avg=%llu pending=%d\n",
+          (unsigned long long)ctx_switch_count,
+          (unsigned long long)ctx_total_cycles,
+          (unsigned long long)ctx_last_cycles,
+          (unsigned long long)min_cycles,
+          (unsigned long long)ctx_max_cycles,
+          (unsigned long long)avg_cycles,
+          ctx_outstanding ? 1 : 0);
+  fflush(out);
+}
+
 void processor_t::put_csr(int which, reg_t val)
 {
+  if (ctx_is_csr(which)) {
+    ctx_write(which, val, false);
+    return;
+  }
   val = zext_xlen(val);
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
@@ -623,6 +835,13 @@ void processor_t::put_csr(int which, reg_t val)
 // side effects on reads.
 reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 {
+  if (ctx_is_csr(which)) {
+    ctx_verify_permissions(which, write, insn, peek);
+    reg_t value = ctx_read(which);
+    if (!write && !peek)
+      ctx_maybe_print(which);
+    return value;
+  }
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
     if (!peek)

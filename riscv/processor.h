@@ -374,6 +374,15 @@ private:
   bool halt_on_reset;
   bool in_wfi;
   bool check_triggers_icount;
+  // Context-switch instrumentation state
+  reg_t ctx_switch_count;
+  reg_t ctx_total_cycles;
+  reg_t ctx_last_cycles;
+  reg_t ctx_min_cycles;
+  reg_t ctx_max_cycles;
+  reg_t ctx_last_out_cycle;
+  bool ctx_outstanding;
+  bool ctx_print_on_read;
   std::vector<bool> impl_table;
 
   // Note: does not include single-letter extensions in misa
@@ -392,6 +401,19 @@ private:
   void take_trigger_action(triggers::action_t action, reg_t breakpoint_tval, reg_t epc, bool virt);
   void disasm(insn_t insn); // disassemble and print an instruction
   void register_insn(insn_desc_t, std::vector<insn_desc_t>& pool);
+
+  // Context-switch CSR helpers
+  void reset_context_counters();
+  reg_t ctx_cycles() const;
+  void ctx_mark_out(reg_t cycle);
+  void ctx_mark_in(reg_t cycle);
+  reg_t ctx_read(reg_t which) const;
+  void ctx_write(reg_t which, reg_t val, bool peek);
+  bool ctx_is_csr(reg_t which) const;
+  bool ctx_is_stat_csr(reg_t which) const;
+  bool ctx_is_control_csr(reg_t which) const;
+  void ctx_verify_permissions(reg_t which, bool write, insn_t insn, bool peek) const;
+  void ctx_maybe_print(reg_t which);
 
   void enter_debug_mode(uint8_t cause, uint8_t ext_cause);
 
