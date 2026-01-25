@@ -26,6 +26,7 @@ riscv64-linux-gnu-gcc -static -O2 -o hello $CI/hello.c
 riscv64-linux-gnu-gcc -static -O2 -o dummy-slliuw $CI/dummy-slliuw.c
 riscv64-linux-gnu-gcc -static -O2 -o customcsr $CI/customcsr.c
 riscv64-linux-gnu-gcc -static -O2 -o atomics $CI/atomics.c
+riscv64-linux-gnu-gcc -static -O2 -march=rv64gcv -o vector-sum $CI/vector-sum.c
 
 # run snippy-based tests
 wget https://github.com/syntacore/snippy/releases/download/snippy-2.1/snippy-x86_64-linux.tar.xz
@@ -45,6 +46,7 @@ g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o /dev/
 
 # run tests
 time $INSTALL/bin/spike --isa=rv64gc $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
+time $INSTALL/bin/spike --isa=rv64gcv $BUILD/pk/pk vector-sum | grep "The sum of the first 1000 positive integers is 500500."
 $INSTALL/bin/spike --log-commits --isa=rv64gc $BUILD/pk/pk atomics 2> /dev/null | grep "First atomic counter is 1000, second is 100"
 LD_LIBRARY_PATH=$INSTALL/lib ./test-libriscv $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 LD_LIBRARY_PATH=$INSTALL/lib ./test-customext $BUILD/pk/pk dummy-slliuw | grep "Executed successfully"
