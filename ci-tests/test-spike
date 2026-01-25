@@ -1,5 +1,6 @@
 #!/bin/bash
 set -e
+set -x
 
 ROOT=`git rev-parse --show-toplevel`
 NPROCS="$(nproc 2> /dev/null || sysctl -n hw.ncpu)"
