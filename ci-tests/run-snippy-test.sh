@@ -27,7 +27,7 @@ llvm-snippy "$CONFIG" -o "$tmpelf" --seed 1 -riscv-disable-misaligned-access --l
 riscv64-linux-gnu-gcc -O0 -march="$ARCH" -mabi="$ABI" -T "$tmpelf".ld -T "$CONFIGDIR"/linker-entry.ld "$tmpelf" "$BOOTCODE" -nostdlib -static -o "$testfile" -Wl,--build-id=none
 
 error=0
-if ! timeout --foreground 60s "$SPIKE_PATH" -l --log-commits --isa "$ARCH" "$testfile"
+if ! timeout --foreground 60s "$SPIKE_PATH" -l --isa "$ARCH" "$testfile"
 then
   echo "TIMEOUT: $testfile"
   error=1
