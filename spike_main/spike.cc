@@ -393,7 +393,7 @@ int main(int argc, char** argv)
     std::string pair;
     while (std::getline(ss, pair, ',')) {
       size_t delim = pair.find(':');
-      if(delim == std::string::npos) {
+      if (delim == std::string::npos) {
         fprintf(stderr, "Error: --pcs format is hartid:addr,hartid:addr\n");
         exit(1);
       }
