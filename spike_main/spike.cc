@@ -47,8 +47,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --pmpgranularity=<n>  PMP Granularity in bytes [default 4]\n");
   fprintf(stderr, "  --priv=<m|mu|msu>     RISC-V privilege modes supported [default %s]\n", DEFAULT_PRIV);
   fprintf(stderr, "  --pc=<address>        Override ELF entry point\n");
-  fprintf(stderr, "  --pcs=<H:A,...>  Override start PC for specific harts\n"
-                  "                          (e.g. 0:0x2000,1:0x4000)\n");
+  fprintf(stderr, "  --pcs=<H:A,...>       Override start PC for specific harts\n");
   fprintf(stderr, "  --hartids=<a,b,...>   Explicitly specify hartids, default is 0,1,...\n");
   fprintf(stderr, "  --ic=<S>:<W>:<B>      Instantiate a cache model with S sets,\n");
   fprintf(stderr, "  --dc=<S>:<W>:<B>        W ways, and B-byte blocks (with S and\n");
