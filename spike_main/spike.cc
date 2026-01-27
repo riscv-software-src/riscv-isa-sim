@@ -391,7 +391,7 @@ int main(int argc, char** argv)
     std::string arg(s);
     std::stringstream ss(arg);
     std::string pair;
-    while(std::getline(ss, pair, ',')) {
+    while (std::getline(ss, pair, ',')) {
       size_t delim = pair.find(':');
       if(delim == std::string::npos) {
         fprintf(stderr, "Error: --pcs format is hartid:addr,hartid:addr\n");
