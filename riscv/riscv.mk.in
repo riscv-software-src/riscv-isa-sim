@@ -1587,6 +1587,8 @@ riscv_insn_ext_p = \
 	pm2wsuba_h \
 	pm2wsub_hx \
 	pm2wsuba_hx \
+	pli_w \
+	plui_w \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
