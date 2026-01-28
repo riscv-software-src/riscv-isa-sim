@@ -1641,6 +1641,8 @@ riscv_insn_ext_p = \
 	zip16p \
 	zip8hp \
 	zip8p \
+	absw \
+	clsw \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
