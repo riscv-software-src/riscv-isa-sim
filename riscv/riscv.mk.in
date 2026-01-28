@@ -1643,6 +1643,34 @@ riscv_insn_ext_p = \
 	zip8p \
 	absw \
 	clsw \
+	mul_w00 \
+	mul_w01 \
+	mul_w11 \
+	mulsu_w00 \
+	mulsu_w11 \
+	mulu_w00 \
+	mulu_w01 \
+	mulu_w11 \
+	pmul_w_h00 \
+	pmul_w_h01 \
+	pmul_w_h11 \
+	pmulh_w \
+	pmulh_w_h0 \
+	pmulh_w_h1 \
+	pmulhr_w \
+	pmulhrsu_w \
+	pmulhru_w \
+	pmulhsu_w \
+	pmulhsu_w_h0 \
+	pmulhsu_w_h1 \
+	pmulhu_w \
+	pmulq_w \
+	pmulqr_w \
+	pmulsu_w_h00 \
+	pmulsu_w_h11 \
+	pmulu_w_h00 \
+	pmulu_w_h01 \
+	pmulu_w_h11 \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
