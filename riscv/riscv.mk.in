@@ -1610,6 +1610,10 @@ riscv_insn_ext_p = \
 	pssa_wx \
 	predsum_ws \
 	predsumu_ws \
+	psati_w \
+	psext_w_b \
+	psext_w_h \
+	pusati_w \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
