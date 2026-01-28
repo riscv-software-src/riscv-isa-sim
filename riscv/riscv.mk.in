@@ -1608,6 +1608,8 @@ riscv_insn_ext_p = \
 	psa_wx \
 	psas_wx \
 	pssa_wx \
+	predsum_ws \
+	predsumu_ws \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
