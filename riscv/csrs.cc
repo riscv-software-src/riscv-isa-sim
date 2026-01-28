@@ -1852,6 +1852,10 @@ sscsrind_reg_csr_t::sscsrind_reg_csr_t(processor_t* const proc, const reg_t addr
 }
 
 void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
+  if (state->v && state->prv == PRV_U) {
+     throw trap_virtual_instruction(insn.bits());
+  }
+
   if (proc->extension_enabled(EXT_SMSTATEEN)) {
     if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_CSRIND))
       throw trap_illegal_instruction(insn.bits());
