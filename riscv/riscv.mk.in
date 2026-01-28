@@ -1640,6 +1640,14 @@ riscv_insn_ext_p = \
 	rev \
 	rev16 \
 	rev_rv32 \
+	unzip16hp \
+	unzip16p \
+	unzip8hp \
+	unzip8p \
+	zip16hp \
+	zip16p \
+	zip8hp \
+	zip8p \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
