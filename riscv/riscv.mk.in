@@ -1573,6 +1573,9 @@ riscv_insn_ext_p = \
 	pm2wsuba_h \
 	pm2wsub_hx \
 	pm2wsuba_hx \
+	rev \
+	rev16 \
+	rev_rv32 \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
