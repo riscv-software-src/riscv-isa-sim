@@ -1630,6 +1630,9 @@ riscv_insn_ext_p = \
 	ppaireo_w \
 	ppairo_w \
 	ppairoe_w \
+	rev \
+	rev16 \
+	rev_rv32 \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
