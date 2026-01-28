@@ -1143,6 +1143,11 @@ riscv_insn_ext_zvabd = \
 	vwabda_vv \
 	vwabdau_vv \
 
+riscv_insn_ext_p = \
+	pli_b \
+	pli_h \
+	plui_h \
+
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
 	$(riscv_insn_ext_c) \
@@ -1158,6 +1163,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_cmo) \
 	$(riscv_insn_ext_d_zfa) \
 	$(riscv_insn_ext_f_zfa) \
+	$(riscv_insn_ext_p) \
 	$(riscv_insn_ext_h) \
 	$(riscv_insn_ext_k) \
 	$(if $(HAVE_INT128),$(riscv_insn_ext_q),) \
