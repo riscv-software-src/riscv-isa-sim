@@ -1602,6 +1602,12 @@ riscv_insn_ext_p = \
 	pssub_w \
 	pssubu_w \
 	psub_w \
+	paas_wx \
+	pas_wx \
+	pasa_wx \
+	psa_wx \
+	psas_wx \
+	pssa_wx \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
