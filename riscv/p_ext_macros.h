@@ -43,6 +43,9 @@
 #define P_RS1_ODD_UPARAMS(BIT) \
   auto p_rs1 = P_UFIELD(rs1, i * 2 + 1, BIT);
 
+#define P_RS1_ZIP_PARAMS(BIT) \
+  auto p_rs1 = P_UFIELD(rs1, i / 2 + pos, BIT);
+
 #define P_RS2_PARAMS(BIT) \
   auto p_rs2 = P_FIELD(rs2, i, BIT);  
 
@@ -75,6 +78,9 @@
 
 #define P_RS2_ODD_UPARAMS(BIT) \
   auto p_rs2 = P_UFIELD(rs2, i * 2 + 1, BIT);
+
+#define P_RS2_ZIP_PARAMS(BIT) \
+  auto p_rs2 = P_UFIELD(rs2, i / 2 + pos, BIT);
 
 // Loop base
 #define P_RD_LOOP_BASE(BIT) \
@@ -227,6 +233,17 @@
   reg_t rd_tmp = RD; \
   reg_t rs1 = P_RS1_PAIR; \
   sreg_t len = xlen / (BIT); \
+  for (sreg_t i = len - 1; i >= 0; --i) {
+
+#define P_RD_RS1_RS2_ZIP_LOOP_BASE(BIT, POS) \
+  require_rv64; \
+  require_extension('P'); \
+  require((BIT) == e8 || (BIT) == e16 || (BIT) == e32); \
+  reg_t rd_tmp = RD; \
+  reg_t rs1 = RS1; \
+  reg_t rs2 = RS2; \
+  sreg_t len = xlen / (BIT); \
+  sreg_t pos = POS * len / 2; \
   for (sreg_t i = len - 1; i >= 0; --i) {
 
 // Loop body
@@ -404,6 +421,14 @@
   WRITE_P_RD(); \
 }
 
+#define P_RD_RS1_RS2_ZIP_LOOP_BODY(BIT_RD, BIT_RS1, BIT_RS2, BODY) { \
+  P_RD_PARAMS(BIT_RD) \
+  P_RS1_ZIP_PARAMS(BIT_RS1) \
+  P_RS2_ZIP_PARAMS(BIT_RS2) \
+  BODY \
+  WRITE_P_RD(); \
+}
+
 // Loop end
 #define P_RD_LOOP_END() \
   } \
@@ -488,6 +513,24 @@
     P_CROSS_ULOOP_BODY(BIT, BODY2) \
   } \
   P_RD_LOOP_END()
+
+#define P_RD_RS1_RS2_ZIP_LOOP(BIT_RD, BIT_RS1, BIT_RS2, POS, BODY) \
+  P_RD_RS1_RS2_ZIP_LOOP_BASE(BIT_RD, POS) \
+  P_RD_RS1_RS2_ZIP_LOOP_BODY(BIT_RD, BIT_RS1, BIT_RS2, BODY) \
+  P_RD_LOOP_END()
+
+#define P_UNZIP(BIT, HIGH) \
+  require_rv64; \
+  require_extension('P'); \
+  require(BIT == e8 || BIT == e16); \
+  reg_t rd_tmp = 0; \
+  for (sreg_t i = 0; i < xlen / BIT / 2; i++) { \
+    rd_tmp = set_field(rd_tmp, make_mask64(i * BIT, BIT), \
+      P_UFIELD(RS1, i * 2 + HIGH, BIT)); \
+    rd_tmp = set_field(rd_tmp, make_mask64(i * BIT + xlen / 2, BIT), \
+      P_UFIELD(RS2, i * 2 + HIGH, BIT)); \
+  } \
+  WRITE_RD(sext_xlen(rd_tmp));
 
 #define P_RD_RS1_RS2_EE_LOOP(BIT_RD, BIT_RS1, BIT_RS2, BODY) \
   P_RD_RS1_RS2_LOOP_BASE(BIT_RD) \
