@@ -1589,6 +1589,19 @@ riscv_insn_ext_p = \
 	pm2wsuba_hx \
 	pli_w \
 	plui_w \
+	paadd_w \
+	paaddu_w \
+	padd_w \
+	padd_ws \
+	pasub_w \
+	pasubu_w \
+	psadd_w \
+	psaddu_w \
+	psh1add_w \
+	pssh1sadd_w \
+	pssub_w \
+	pssubu_w \
+	psub_w \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
