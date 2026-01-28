@@ -1633,6 +1633,10 @@ riscv_insn_ext_p = \
 	pmseq_w \
 	pmslt_w \
 	pmsltu_w \
+	ppaire_h \
+	ppaireo_w \
+	ppairo_w \
+	ppairoe_w \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
