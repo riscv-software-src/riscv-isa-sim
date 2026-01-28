@@ -1619,6 +1619,13 @@ riscv_insn_ext_p = \
 	psslai_w \
 	sha \
 	shar \
+	pmax_w \
+	pmaxu_w \
+	pmin_w \
+	pminu_w \
+	pmseq_w \
+	pmslt_w \
+	pmsltu_w \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
