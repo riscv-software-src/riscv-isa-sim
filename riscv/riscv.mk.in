@@ -1207,8 +1207,10 @@ riscv_insn_ext_p = \
 	pabdsumau_b \
 	psext_h_b \
 	psati_h \
+	sati \
 	sati_rv32 \
 	pusati_h \
+	usati \
 	usati_rv32 \
 	pslli_b \
 	pslli_h \
@@ -1227,6 +1229,7 @@ riscv_insn_ext_p = \
 	pssha_hs \
 	psshar_hs \
 	sslai \
+	srari \
 	srari_rv32 \
 	ssha \
 	sshar \
@@ -1640,6 +1643,104 @@ riscv_insn_ext_p = \
 	rev \
 	rev16 \
 	rev_rv32 \
+	unzip16hp \
+	unzip16p \
+	unzip8hp \
+	unzip8p \
+	zip16hp \
+	zip16p \
+	zip8hp \
+	zip8p \
+	absw \
+	clsw \
+	mul_w00 \
+	mul_w01 \
+	mul_w11 \
+	mulsu_w00 \
+	mulsu_w11 \
+	mulu_w00 \
+	mulu_w01 \
+	mulu_w11 \
+	pmul_w_h00 \
+	pmul_w_h01 \
+	pmul_w_h11 \
+	pmulh_w \
+	pmulh_w_h0 \
+	pmulh_w_h1 \
+	pmulhr_w \
+	pmulhrsu_w \
+	pmulhru_w \
+	pmulhsu_w \
+	pmulhsu_w_h0 \
+	pmulhsu_w_h1 \
+	pmulhu_w \
+	pmulq_w \
+	pmulqr_w \
+	pmulsu_w_h00 \
+	pmulsu_w_h11 \
+	pmulu_w_h00 \
+	pmulu_w_h01 \
+	pmulu_w_h11 \
+	macc_w00 \
+	macc_w01 \
+	macc_w11 \
+	maccsu_w00 \
+	maccsu_w11 \
+	maccu_w00 \
+	maccu_w01 \
+	maccu_w11 \
+	mqacc_w00 \
+	mqacc_w01 \
+	mqacc_w11 \
+	mqracc_w00 \
+	mqracc_w01 \
+	mqracc_w11 \
+	pmacc_w_h00 \
+	pmacc_w_h01 \
+	pmacc_w_h11 \
+	pmaccsu_w_h00 \
+	pmaccsu_w_h11 \
+	pmaccu_w_h00 \
+	pmaccu_w_h01 \
+	pmaccu_w_h11 \
+	pmhacc_w \
+	pmhacc_w_h0 \
+	pmhacc_w_h1 \
+	pmhaccsu_w \
+	pmhaccsu_w_h0 \
+	pmhaccsu_w_h1 \
+	pmhaccu_w \
+	pmhracc_w \
+	pmhraccsu_w \
+	pmhraccu_w \
+	pmqacc_w_h00 \
+	pmqacc_w_h01 \
+	pmqacc_w_h11 \
+	pmqracc_w_h00 \
+	pmqracc_w_h01 \
+	pmqracc_w_h11 \
+	pm2add_w \
+	pm2add_wx \
+	pm2adda_w \
+	pm2adda_wx \
+	pm2addasu_w \
+	pm2addau_w \
+	pm2addsu_w \
+	pm2addu_w \
+	pm2sub_w \
+	pm2sub_wx \
+	pm2suba_w \
+	pm2suba_wx \
+	pm4add_h \
+	pm4adda_h \
+	pm4addasu_h \
+	pm4addau_h \
+	pm4addsu_h \
+	pm4addu_h \
+	pmq2add_w \
+	pmq2adda_w \
+	pmqr2add_w \
+	pmqr2adda_w \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
