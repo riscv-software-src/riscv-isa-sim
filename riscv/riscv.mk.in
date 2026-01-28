@@ -1607,6 +1607,18 @@ riscv_insn_ext_p = \
 	psext_w_b \
 	psext_w_h \
 	pusati_w \
+	psll_ws \
+	pslli_w \
+	psra_ws \
+	psrai_w \
+	psrari_w \
+	psrl_ws \
+	psrli_w \
+	pssha_ws \
+	psshar_ws \
+	psslai_w \
+	sha \
+	shar \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
