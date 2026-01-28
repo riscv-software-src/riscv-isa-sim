@@ -1198,6 +1198,11 @@ riscv_insn_ext_p = \
 	predsumu_hs \
 	pabdsumu_b \
 	pabdsumau_b \
+	psext_h_b \
+	psati_h \
+	sati_rv32 \
+	pusati_h \
+	usati_rv32 \
 
 
 riscv_insn_list = \
