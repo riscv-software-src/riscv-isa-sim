@@ -53,6 +53,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --big-endian          Use a big-endian memory system.\n");
   fprintf(stderr, "  --device=<name>       Attach MMIO plugin device from an --extlib library,\n");
   fprintf(stderr, "                          specify --device=<name>,<args> to pass down extra args.\n");
+  fprintf(stderr, "  --dtb-discovery       Enable direct device discovery from device tree blob. Requires --dtb and usage of special \"spike_plugin_params\" dts field.\n");
   fprintf(stderr, "  --log-cache-miss      Generate a log of cache miss\n");
   fprintf(stderr, "  --log-commits         Generate a log of commits info\n");
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
@@ -324,6 +325,7 @@ int main(int argc, char** argv)
   bool UNUSED socket = false;  // command line option -s
   bool dump_dts = false;
   bool dtb_enabled = true;
+  bool dtb_discovery = false;
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
   std::vector<device_factory_sargs_t> plugin_device_factories;
@@ -395,6 +397,7 @@ int main(int argc, char** argv)
   parser.option(0, "pmpgranularity", 1, [&](const char* s){cfg.pmpgranularity = atoul_safe(s);});
   parser.option(0, "priv", 1, [&](const char* s){cfg.priv = s;});
   parser.option(0, "device", 1, device_parser);
+  parser.option(0, "dtb-discovery", 0, [&](const char UNUSED *s){ dtb_discovery = true;} );
   parser.option(0, "extension", 1, [&](const char* s){extensions.push_back(find_extension(s));});
   parser.option(0, "dump-dts", 0, [&](const char UNUSED *s){dump_dts = true;});
   parser.option(0, "disable-dtb", 0, [&](const char UNUSED *s){dtb_enabled = false;});
@@ -518,8 +521,18 @@ int main(int argc, char** argv)
     cfg.hartids = default_hartids;
   }
 
+  if (dtb_discovery && !plugin_device_factories.empty()) {
+      std::cerr << "--dtb-discovery option is not compatible with --device option.\n";
+      exit(1);
+  }
+
+  if (dtb_discovery && dtb_file==NULL) {
+      std::cerr << "--dtb-discovery option required a dtb_file. Use --dtb option.\n";
+      exit(1);
+  }
+
   sim_t s(&cfg, halted,
-      mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
+      mems, plugin_device_factories, dtb_discovery,  htif_args, dm_config, log_path, dtb_enabled, dtb_file,
       socket,
       cmd_file,
       instructions);
