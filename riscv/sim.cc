@@ -360,7 +360,7 @@ void sim_t::set_rom()
 {
   const int reset_vec_size = 8;
 
-  reg_t start_pc = cfg->start_pc.value_or(get_entry_point());
+  reg_t start_pc = cfg->start_pc.get(0).value_or(get_entry_point());
 
   uint32_t reset_vec[reset_vec_size] = {
     0x297,                                      // auipc  t0,0x0
@@ -479,4 +479,5 @@ endianness_t sim_t::get_target_endianness() const
 void sim_t::proc_reset(unsigned id)
 {
   debug_module.proc_reset(id);
+  procs[id] -> get_state() -> pc = cfg->start_pc.get(id).value_or(get_entry_point());
 }

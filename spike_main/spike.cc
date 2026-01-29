@@ -384,7 +384,7 @@ int main(int argc, char** argv)
   parser.option('m', 0, 1, [&](const char* s){cfg.mem_layout = parse_mem_layout(s);});
   parser.option(0, "halted", 0, [&](const char UNUSED *s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
-  parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc = strtoull(s, 0, 0);});
+  parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc.set_global(strtoull(s, 0, 0));});
 
   parser.option(0, "pcs", 1, [&](const char* s){
     std::string arg(s);
@@ -398,7 +398,7 @@ int main(int argc, char** argv)
       }
       size_t hartid = std::stoul(pair.substr(0, delim));
       reg_t addr = std::strtoull(pair.substr(delim+1).c_str(), NULL, 0);
-      hart_start_pcs[hartid] = addr;
+      cfg.start_pc.set_override(hartid, addr);
     }
   });
 
@@ -576,7 +576,7 @@ int main(int argc, char** argv)
   for (size_t i = 0; i < cfg.nprocs(); i++) {
     size_t hartid = cfg.hartids[i];
 
-    if (hart_start_pcs.count(hartid)){
+    if (hart_start_pcs.count(hartid)) {
       s.get_core(i)->get_state()->pc = hart_start_pcs[hartid];
     }
   }
