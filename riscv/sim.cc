@@ -479,5 +479,6 @@ endianness_t sim_t::get_target_endianness() const
 void sim_t::proc_reset(unsigned id)
 {
   debug_module.proc_reset(id);
-  procs[id] -> get_state() -> pc = cfg->start_pc.get(id).value_or(get_entry_point());
+  if(id < procs.size())
+    procs[id] -> get_state() -> pc = cfg->start_pc.get(id).value_or(get_entry_point());
 }

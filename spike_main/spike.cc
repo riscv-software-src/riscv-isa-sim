@@ -348,7 +348,6 @@ int main(int argc, char** argv)
 
   cfg_t cfg;
 
-  std::map<size_t, reg_t> hart_start_pcs;
 
   auto const device_parser = [&plugin_device_factories](const char *s) {
     const std::string device_args(s);
@@ -539,6 +538,7 @@ int main(int argc, char** argv)
     cfg.hartids = default_hartids;
   }
 
+  fprintf(stderr, "DEBUG: Constructing sim_t\n");
   sim_t s(&cfg, halted,
       mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
       socket,
@@ -573,14 +573,8 @@ int main(int argc, char** argv)
   s.configure_log(log, log_commits);
   s.set_histogram(histogram);
 
-  for (size_t i = 0; i < cfg.nprocs(); i++) {
-    size_t hartid = cfg.hartids[i];
 
-    if (hart_start_pcs.count(hartid)) {
-      s.get_core(i)->get_state()->pc = hart_start_pcs[hartid];
-    }
-  }
-
+  fprintf(stderr, "DEBUG: Starting simulation\n");
   auto return_code = s.run();
 
   for (auto& mem : mems)
