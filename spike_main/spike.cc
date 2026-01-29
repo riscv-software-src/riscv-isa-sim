@@ -348,7 +348,6 @@ int main(int argc, char** argv)
 
   cfg_t cfg;
 
-
   auto const device_parser = [&plugin_device_factories](const char *s) {
     const std::string device_args(s);
     std::vector<std::string> parsed_args;
@@ -571,7 +570,6 @@ int main(int argc, char** argv)
   s.set_debug(debug);
   s.configure_log(log, log_commits);
   s.set_histogram(histogram);
-
 
   auto return_code = s.run();
 
