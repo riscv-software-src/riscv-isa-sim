@@ -167,8 +167,9 @@ void processor_t::reset()
     e.second->reset(*this);
   }
 
-  if (sim)
+  if (sim) {
     sim->proc_reset(id);
+  }
 }
 
 extension_t* processor_t::get_extension()
