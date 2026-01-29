@@ -164,6 +164,9 @@ struct state_t
   static const int max_pmp = 64;
   pmpaddr_csr_t_p pmpaddr[max_pmp];
 
+  static const int max_spmp = 64;
+  spmpaddr_csr_t_p spmpaddr[max_spmp];
+
   float_csr_t_p fflags;
   float_csr_t_p frm;
 
@@ -414,6 +417,12 @@ public:
   reg_t n_pmp;
   reg_t lg_pmp_granularity;
   reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }
+
+  reg_t n_spmp;
+  reg_t lg_spmp_granularity;
+  reg_t spmp_tor_mask() { return -(reg_t(1) << (lg_spmp_granularity - PMP_SHIFT)); }
+  void set_spmp_num(reg_t n);
+  void set_spmp_granularity(reg_t lg);
 
   vectorUnit_t VU;
   triggers::module_t TM;

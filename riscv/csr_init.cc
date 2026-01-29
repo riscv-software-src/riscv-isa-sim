@@ -476,6 +476,10 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
       }
     }
 
+    // Save sireg for SPMP spmpaddr access
+    sscsrind_reg_csr_t::sscsrind_reg_csr_t_p sireg_for_spmp = sireg;
+    sscsrind_reg_csr_t::sscsrind_reg_csr_t_p sireg2_for_spmp = nullptr;
+
     const reg_t vsireg_csrs[] = { CSR_VSIREG2, CSR_VSIREG3, CSR_VSIREG4, CSR_VSIREG5, CSR_VSIREG6 };
     const reg_t sireg_csrs[] = { CSR_SIREG2, CSR_SIREG3, CSR_SIREG4, CSR_SIREG5, CSR_SIREG6 };
     for (size_t i = 0; i < std::size(vsireg_csrs); i++) {
@@ -484,6 +488,10 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
 
       auto sireg = std::make_shared<sscsrind_reg_csr_t>(proc, sireg_csrs[i], siselect);
       add_supervisor_csr(sireg_csrs[i], std::make_shared<virtualized_indirect_csr_t>(proc, sireg, vsireg));
+
+      // Save sireg2 for SPMP spmpcfg access
+      if (sireg_csrs[i] == CSR_SIREG2)
+        sireg2_for_spmp = sireg;
 
       // Smcdeleg
       if (proc->extension_enabled(EXT_SSCCFG) || proc->extension_enabled(EXT_SMCDELEG)) {
@@ -528,6 +536,26 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
           default:
             break;
         }
+      }
+    }
+
+    // SPMP (Sspmp extension) - indirect access via sireg (spmpaddr) and sireg2 (spmpcfg)
+    // siselect = 0x100 + i selects SPMP entry i (i = 0..63)
+    if (proc->extension_enabled_const(EXT_SSPMP) && proc->n_spmp > 0) {
+      for (size_t i = 0; i < proc->n_spmp; i++) {
+        // Create spmpaddr CSR for indirect access via sireg
+        proc->get_state()->spmpaddr[i] = std::make_shared<spmpaddr_csr_t>(proc, SISELECT_SPMP_START + i, i);
+
+        // Create spmpcfg CSR for indirect access via sireg2
+        auto spmpcfg = std::make_shared<spmpcfg_csr_t>(proc, SISELECT_SPMP_START + i, proc->get_state()->spmpaddr[i]);
+
+        // Register spmpaddr proxy on sireg
+        if (sireg_for_spmp)
+          sireg_for_spmp->add_ireg_proxy(SISELECT_SPMP_START + i, proc->get_state()->spmpaddr[i]);
+
+        // Register spmpcfg proxy on sireg2
+        if (sireg2_for_spmp)
+          sireg2_for_spmp->add_ireg_proxy(SISELECT_SPMP_START + i, spmpcfg);
       }
     }
   }

@@ -2257,3 +2257,192 @@ void aia_csr_t::verify_permissions(insn_t insn, bool write) const {
 
   basic_csr_t::verify_permissions(insn, write);
 }
+
+// SPMP (S-level Physical Memory Protection) CSR implementations
+
+// SPMP configuration bits (each spmpcfg is SXLEN bits, one per entry)
+// Note: SPMP_U and SPMP_SHARED are defined in encoding.h
+#define SPMP_R      0x01
+#define SPMP_W      0x02
+#define SPMP_X      0x04
+#define SPMP_A      0x18  // bits [4:3]
+#define SPMP_L      0x80
+
+// SPMP address matching modes (in A field)
+#define SPMP_A_OFF   0x00
+#define SPMP_A_TOR   0x08
+#define SPMP_A_NA4   0x10
+#define SPMP_A_NAPOT 0x18
+
+spmpaddr_csr_t::spmpaddr_csr_t(processor_t* const proc, const reg_t addr, const size_t spmpidx):
+  csr_t(proc, addr),
+  val(0),
+  cfg(0),
+  spmpidx(spmpidx) {
+}
+
+void spmpaddr_csr_t::verify_permissions(insn_t insn, bool write) const {
+  csr_t::verify_permissions(insn, write);
+}
+
+reg_t spmpaddr_csr_t::read() const noexcept {
+  return val;
+}
+
+bool spmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
+  // If locked, writes are ignored
+  if (is_locked())
+    return false;
+
+  // Also ignore writes if next entry is locked and TOR
+  if (next_locked_and_tor())
+    return false;
+
+  this->val = val & proc->spmp_tor_mask();
+  return true;
+}
+
+reg_t spmpaddr_csr_t::tor_paddr() const noexcept {
+  return (val & proc->spmp_tor_mask()) << PMP_SHIFT;
+}
+
+reg_t spmpaddr_csr_t::tor_base_paddr() const noexcept {
+  if (spmpidx == 0)
+    return 0;
+  return proc->get_state()->spmpaddr[spmpidx - 1]->tor_paddr();
+}
+
+reg_t spmpaddr_csr_t::napot_mask() const noexcept {
+  bool is_na4 = (cfg & SPMP_A) == SPMP_A_NA4;
+  reg_t mask = (val << 1) | (!is_na4);
+  return ~(mask & ~(mask + 1)) << PMP_SHIFT;
+}
+
+bool spmpaddr_csr_t::match4(reg_t addr) const noexcept {
+  uint8_t a_field = (cfg & SPMP_A) >> 3;
+  if (a_field == 0)  // OFF
+    return false;
+
+  bool is_tor = a_field == 1;
+  bool is_na4 = a_field == 2;
+
+  reg_t base, size;
+  if (is_tor) {
+    base = tor_base_paddr();
+    size = tor_paddr() - base;
+  } else if (is_na4) {
+    base = tor_paddr();
+    size = 4;
+  } else {  // NAPOT
+    base = tor_paddr() & napot_mask();
+    size = (napot_mask() ^ (napot_mask() + 1)) + 1;
+  }
+
+  return addr >= base && addr + 4 <= base + size;
+}
+
+bool spmpaddr_csr_t::subset_match(reg_t addr, reg_t len) const noexcept {
+  uint8_t a_field = (cfg & SPMP_A) >> 3;
+  if (a_field == 0)  // OFF
+    return false;
+
+  bool is_tor = a_field == 1;
+  reg_t base, size;
+  if (is_tor) {
+    base = tor_base_paddr();
+    size = tor_paddr() - base;
+  } else {  // NA4 or NAPOT
+    base = tor_paddr() & napot_mask();
+    size = (napot_mask() ^ (napot_mask() + 1)) + 1;
+  }
+
+  reg_t addr_end = addr + len;
+  reg_t region_end = base + size;
+
+  // Check if [addr, addr+len) overlaps with [base, base+size)
+  // but is not fully contained
+  bool starts_inside = addr >= base && addr < region_end;
+  bool ends_inside = addr_end > base && addr_end <= region_end;
+  bool fully_contains = addr <= base && addr_end >= region_end;
+
+  return (starts_inside || ends_inside || fully_contains) &&
+         !(addr >= base && addr_end <= region_end);
+}
+
+bool spmpaddr_csr_t::access_ok(access_type type, reg_t mode) const noexcept {
+  // Check if access is allowed based on spmpcfg permissions
+  // SPMP applies to S-mode and U-mode only
+  if (mode != PRV_S && mode != PRV_U)
+    return true;  // M-mode bypasses SPMP
+
+  uint8_t a_field = (cfg & SPMP_A) >> 3;
+  if (a_field == 0)  // OFF - entry disabled
+    return true;
+
+  bool u_bit = (cfg & SPMP_U) != 0;
+  bool is_user_mode = (mode == PRV_U);
+
+  // Check U bit: if U=0, only S-mode can access; if U=1, only U-mode can access
+  // (unless SHARED is set)
+  bool shared = (cfg & SPMP_SHARED) != 0;
+  if (!shared) {
+    if (u_bit && !is_user_mode)
+      return false;
+    if (!u_bit && is_user_mode)
+      return false;
+  }
+
+  bool r = (cfg & SPMP_R) != 0;
+  bool w = (cfg & SPMP_W) != 0;
+  bool x = (cfg & SPMP_X) != 0;
+
+  switch (type) {
+    case LOAD:
+      return r;
+    case STORE:
+      return w;
+    case FETCH:
+      return x;
+    default:
+      return false;
+  }
+}
+
+bool spmpaddr_csr_t::next_locked_and_tor() const noexcept {
+  if (spmpidx + 1 >= proc->n_spmp)
+    return false;
+
+  const auto& next = proc->get_state()->spmpaddr[spmpidx + 1];
+  return next->is_locked() && ((next->cfg & SPMP_A) == SPMP_A_TOR);
+}
+
+// spmpcfg CSR implementation
+spmpcfg_csr_t::spmpcfg_csr_t(processor_t* const proc, const reg_t addr, spmpaddr_csr_t_p spmpaddr):
+  csr_t(proc, addr),
+  spmpaddr(spmpaddr) {
+}
+
+void spmpcfg_csr_t::verify_permissions(insn_t insn, bool write) const {
+  csr_t::verify_permissions(insn, write);
+}
+
+reg_t spmpcfg_csr_t::read() const noexcept {
+  return spmpaddr->cfg;
+}
+
+bool spmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
+  // If locked, writes are ignored
+  if (spmpaddr->is_locked())
+    return false;
+
+  // Mask valid bits: R, W, X, A[4:3], L, U, SHARED
+  // Reserved bits are WPRI
+  const reg_t mask = SPMP_R | SPMP_W | SPMP_X | SPMP_A | SPMP_L | SPMP_U | SPMP_SHARED;
+  reg_t new_cfg = val & mask;
+
+  // A=OFF (0) requires R=W=X=0 according to some interpretations
+  // But we allow any combination for flexibility
+  spmpaddr->cfg = new_cfg;
+
+  return true;
+}

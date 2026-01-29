@@ -357,6 +357,9 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
     extension_table[EXT_SMNPM] = true;
   } else if (ext_str == "ssnpm") {
     extension_table[EXT_SSNPM] = true;
+  } else if (ext_str == "sspmp") {
+    extension_table[EXT_SSPMP] = true;
+    extension_table[EXT_SSCSRIND] = true;  // SPMP requires Sscsrind for indirect access
   } else if (ext_str.substr(0, 3) == "zvl") {
     reg_t new_vlen;
     try {
