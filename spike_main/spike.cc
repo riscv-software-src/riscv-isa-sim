@@ -538,7 +538,6 @@ int main(int argc, char** argv)
     cfg.hartids = default_hartids;
   }
 
-  fprintf(stderr, "DEBUG: Constructing sim_t\n");
   sim_t s(&cfg, halted,
       mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
       socket,
@@ -574,7 +573,6 @@ int main(int argc, char** argv)
   s.set_histogram(histogram);
 
 
-  fprintf(stderr, "DEBUG: Starting simulation\n");
   auto return_code = s.run();
 
   for (auto& mem : mems)
