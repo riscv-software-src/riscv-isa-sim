@@ -2017,8 +2017,9 @@ reg_t hvip_csr_t::read() const noexcept {
 }
 
 bool hvip_csr_t::unlogged_write(const reg_t val) noexcept {
+  basic_csr_t::unlogged_write(val & (MIP_VSEIP | MIP_VSTIP));
   state->mip->write_with_mask(MIP_VSSIP, val); // hvip.VSSIP is an alias of mip.VSSIP
-  return basic_csr_t::unlogged_write(val & (MIP_VSEIP | MIP_VSTIP));
+  return true;
 }
 
 ssp_csr_t::ssp_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
