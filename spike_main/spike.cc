@@ -47,8 +47,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --pmpgranularity=<n>  PMP Granularity in bytes [default 4]\n");
   fprintf(stderr, "  --priv=<m|mu|msu>     RISC-V privilege modes supported [default %s]\n", DEFAULT_PRIV);
   fprintf(stderr, "  --pc=<address>        Override ELF entry point\n");
-  fprintf(stderr, "  --pc-harts=<H:A,...>  Override start PC for specific harts\n"
-                  "                          (e.g. 0:0x2000,1:0x4000)\n");
+  fprintf(stderr, "  --pcs=<H:A,...>       Override start PC for specific harts\n");
   fprintf(stderr, "  --hartids=<a,b,...>   Explicitly specify hartids, default is 0,1,...\n");
   fprintf(stderr, "  --ic=<S>:<W>:<B>      Instantiate a cache model with S sets,\n");
   fprintf(stderr, "  --dc=<S>:<W>:<B>        W ways, and B-byte blocks (with S and\n");
@@ -349,9 +348,6 @@ int main(int argc, char** argv)
 
   cfg_t cfg;
 
-  //Map to store <hart_id, start_pc>
-  std::map<size_t, reg_t> hart_start_pcs;
-
   auto const device_parser = [&plugin_device_factories](const char *s) {
     const std::string device_args(s);
     std::vector<std::string> parsed_args;
@@ -386,21 +382,21 @@ int main(int argc, char** argv)
   parser.option('m', 0, 1, [&](const char* s){cfg.mem_layout = parse_mem_layout(s);});
   parser.option(0, "halted", 0, [&](const char UNUSED *s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
-  parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc = strtoull(s, 0, 0);});
+  parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc.set_global(strtoull(s, 0, 0));});
 
-  parser.option(0, "pc-harts", 1, [&](const char* s){
+  parser.option(0, "pcs", 1, [&](const char* s){
     std::string arg(s);
     std::stringstream ss(arg);
     std::string pair;
-    while(std::getline(ss, pair, ',')) {
+    while (std::getline(ss, pair, ',')) {
       size_t delim = pair.find(':');
-      if(delim == std::string::npos) {
-        fprintf(stderr, "Error: --pc-harts format is hartid:addr,hartid:addr\n");
+      if (delim == std::string::npos) {
+        fprintf(stderr, "Error: --pcs format is hartid:addr,hartid:addr\n");
         exit(1);
       }
       size_t hartid = std::stoul(pair.substr(0, delim));
       reg_t addr = std::strtoull(pair.substr(delim+1).c_str(), NULL, 0);
-      hart_start_pcs[hartid] = addr;
+      cfg.start_pc.set_override(hartid, addr);
     }
   });
 
@@ -574,14 +570,6 @@ int main(int argc, char** argv)
   s.set_debug(debug);
   s.configure_log(log, log_commits);
   s.set_histogram(histogram);
-
-  for(size_t i = 0; i < cfg.nprocs(); i++) {
-    size_t hartid = cfg.hartids[i];
-
-    if(hart_start_pcs.count(hartid)){
-      s.get_core(i)->get_state()->pc = hart_start_pcs[hartid];
-    }
-  }
 
   auto return_code = s.run();
 
