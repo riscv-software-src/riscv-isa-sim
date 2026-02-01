@@ -63,23 +63,11 @@ private:
 class start_pc_t
 {
 public:
-  void set_global(reg_t pc) {
-    global_pc = pc;
-  }
+  void set_global(reg_t pc);
 
-  void set_override(size_t hart_id, reg_t pc) {
-    hart_pcs[hart_id] = pc;
-  }
+  void set_override(size_t hart_id, reg_t pc);
 
-  std::optional<reg_t> get(size_t hart_id) const {
-    auto it = hart_pcs.find(hart_id);
-
-    if (it != hart_pcs.end()) {
-      return it->second;
-    } else {
-      return global_pc;
-    }
-  }
+  std::optional<reg_t> get(size_t hart_id) const;
 
 private:
   std::optional<reg_t>    global_pc;
