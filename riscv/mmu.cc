@@ -144,28 +144,12 @@ mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
 
 static reg_t reg_from_bytes(size_t len, const uint8_t* bytes)
 {
-  switch (len) {
-    case 1:
-      return bytes[0];
-    case 2:
-      return bytes[0] |
-        (((reg_t) bytes[1]) << 8);
-    case 4:
-      return bytes[0] |
-        (((reg_t) bytes[1]) << 8) |
-        (((reg_t) bytes[2]) << 16) |
-        (((reg_t) bytes[3]) << 24);
-    case 8:
-      return bytes[0] |
-        (((reg_t) bytes[1]) << 8) |
-        (((reg_t) bytes[2]) << 16) |
-        (((reg_t) bytes[3]) << 24) |
-        (((reg_t) bytes[4]) << 32) |
-        (((reg_t) bytes[5]) << 40) |
-        (((reg_t) bytes[6]) << 48) |
-        (((reg_t) bytes[7]) << 56);
-  }
-  abort();
+  assert(len <= sizeof(reg_t));
+
+  size_t res = 0;
+  for (size_t i = 0; i < len; i++)
+    res = (res << 8) | bytes[len - 1 - i];
+  return res;
 }
 
 bool mmu_t::mmio_ok(reg_t paddr, access_type UNUSED type)
@@ -223,9 +207,8 @@ void mmu_t::check_triggers(triggers::operation_t operation,
   reg_t addr, bool virt, std::size_t data_size, const std::uint8_t* bytes)
 {
   assert(data_size > 0);
-  assert(data_size <= sizeof(reg_t));
-  check_triggers(operation, addr, virt,
-    data_size, reg_from_bytes(data_size, bytes));
+
+  check_triggers(operation, addr, virt, data_size, reg_from_bytes(std::min(data_size, sizeof(reg_t)), bytes));
 }
 
 void mmu_t::check_triggers(triggers::operation_t operation,
@@ -428,16 +411,11 @@ void mmu_t::store_slow_path(reg_t original_addr, std::size_t len,
   }
 
   if (actually_store && proc && unlikely(proc->get_log_commits_enabled())) {
-    // amocas.q sends len == 16, reg_from_bytes only supports up to 8
-    // bytes per conversion.  Make multiple entries in the log
-    reg_t offset = 0;
-    const auto reg_size = sizeof(reg_t);
-    while (unlikely(len > reg_size)) {
-      proc->state.log_mem_write.push_back(std::make_tuple(original_addr + offset, reg_from_bytes(reg_size, bytes + offset), reg_size));
-      offset += reg_size;
-      len -= reg_size;
+    for (size_t offset = 0; offset < len; offset += sizeof(reg_t)) {
+      auto this_size = std::min(len - offset, sizeof(reg_t));
+      auto this_data = reg_from_bytes(this_size, bytes + offset);
+      proc->state.log_mem_write.push_back(std::make_tuple(original_addr + offset, this_data, this_size));
     }
-    proc->state.log_mem_write.push_back(std::make_tuple(original_addr + offset, reg_from_bytes(len, bytes + offset), len));
   }
 }
 

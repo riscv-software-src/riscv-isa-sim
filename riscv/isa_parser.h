@@ -22,6 +22,7 @@ typedef enum {
   EXT_ZCA,
   EXT_ZCB,
   EXT_ZCD,
+  EXT_ZCE,
   EXT_ZCF,
   EXT_ZCLSD,
   EXT_ZCMP,
@@ -152,6 +153,9 @@ protected:
   std::bitset<NUM_ISA_EXTENSIONS> extension_table;
   std::string isa_string;
   std::set<std::string> extensions;
+
+private:
+  void add_extension(const std::string&, const char*);
 };
 
 #endif
