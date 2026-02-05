@@ -5,7 +5,7 @@ P_RD_RS1_DW_ULOOP(32, 32, {
   p_rd = p_rs1;
   if (s < 0) {
     p_rd = 0;
-  } else if (s > uint_max) {
+  } else if ((uint64_t)s > uint_max) {
     p_rd = uint_max;
   }
 })
