@@ -321,18 +321,12 @@
 
 #define P_REDUCTION_LOOP_END(BIT, IS_SAT) \
     } \
-    if (IS_SAT) { \
-      p_res = P_SAT(BIT, p_res); \
-    } \
     type_usew_t<BIT>::type p_rd = p_res; \
     WRITE_P_RD(); \
   } \
   WRITE_RD(sext_xlen(rd_tmp));
   
 #define P_REDUCTION_ULOOP_END(BIT, IS_SAT) \
-    } \
-    if (IS_SAT) { \
-      P_USAT(BIT, p_res); \
     } \
     type_usew_t<BIT>::type p_rd = p_res; \
     WRITE_P_RD(); \
@@ -403,7 +397,7 @@
   require_rv64; \
   require_extension('P'); \
   require(BIT == e8 || BIT == e16); \
-  reg_t rd_tmp = 0, rs1 = RS1, rs2 = RS2; \
+  reg_t rd_tmp = 0; \
   for (sreg_t i = 0; i < xlen / BIT / 2; i++) { \
     rd_tmp = set_field(rd_tmp, make_mask64(i * BIT, BIT), \
       P_UFIELD(RS1, i * 2 + HIGH, BIT)); \
@@ -518,7 +512,7 @@
 #define P_PACK(BIT, X, Y) \
   require_extension('P'); \
   require(BIT == e8 || BIT == e16 || BIT == e32); \
-  reg_t rd_tmp = 0, rs1 = RS1, rs2 = RS2; \
+  reg_t rd_tmp = 0; \
   for (sreg_t i = 0; i < xlen / BIT / 2; i++) { \
     rd_tmp = set_field(rd_tmp, make_mask64((i * 2 + 1) * BIT, BIT), \
       P_UFIELD(RS2, i * 2 + Y, BIT)); \
