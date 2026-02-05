@@ -236,8 +236,8 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define zext(x, pos) (((reg_t)(x) << (64 - (pos))) >> (64 - (pos)))
 #define sext_xlen(x) sext(x, xlen)
 #define zext_xlen(x) zext(x, xlen)
-#define sext_xlen_pair(x) sext(x, xlen * 2)
-#define zext_xlen_pair(x) zext(x, xlen * 2)
+#define sext_xlen_pair(x) (xlen == 32 ? sext(x, 64) : (sreg_t)(x))
+#define zext_xlen_pair(x) (xlen == 32 ? zext(x, 64) : (reg_t)(x))
 
 #define set_pc(x) \
   do { if (unlikely((x) & ~p->pc_alignment_mask())) \
