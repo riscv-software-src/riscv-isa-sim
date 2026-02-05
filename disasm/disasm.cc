@@ -121,6 +121,26 @@ struct : public arg_t {
   }
 } xrs3;
 
+// RV32 P-extension register pair arguments (4-bit encoded, represents even registers)
+// The 4-bit field encodes register number / 2, so we multiply by 2 to get actual register
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return xpr_name[insn.rd_p() * 2];
+  }
+} xrd_p;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return xpr_name[insn.rs1_p() * 2];
+  }
+} xrs1_p;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return xpr_name[insn.rs2_p() * 2];
+  }
+} xrs2_p;
+
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
     return frm_name(insn.rm());
@@ -635,6 +655,44 @@ static void NOINLINE add_r3type_insn(disassembler_t* d, const char* name, uint32
   d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &xrs1, &xrs2, &xrs3}));
 }
 
+// RV32 P-extension register pair instruction types
+// Type 1: rdp only (widening: result is pair, sources are normal regs)
+static void NOINLINE add_rtype_rdp_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd_p, &xrs1, &xrs2}));
+}
+
+// Type 1 variant: rdp + rs1 only (for unary widening ops)
+static void NOINLINE add_r1type_rdp_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd_p, &xrs1}));
+}
+
+// Type 1 variant: rdp + rs1 + imm (for widening immediate ops)
+// Type 2: rs1p only (narrowing: source is pair, result is normal reg)
+static void NOINLINE add_rtype_rs1p_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &xrs1_p, &xrs2}));
+}
+
+// Type 3: rdp + rs1p (both pairs, with scalar rs2)
+static void NOINLINE add_rtype_rdp_rs1p_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd_p, &xrs1_p, &xrs2}));
+}
+
+// Type 3 variant: rdp + rs1p only (for unary doubleword ops)
+static void NOINLINE add_r1type_rdp_rs1p_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd_p, &xrs1_p}));
+}
+
+// Type 4: rdp + rs1p + rs2p (all three are register pairs)
+static void NOINLINE add_rtype_pair_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd_p, &xrs1_p, &xrs2_p}));
+}
+
 static void NOINLINE add_itype_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &xrs1, &imm}));
@@ -877,6 +935,19 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   #define DEFINE_R3TYPE(code) add_r3type_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_ITYPE(code) add_itype_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_ITYPE_SHIFT(code) add_itype_shift_insn(this, #code, match_##code, mask_##code);
+  // RV32 P-extension register pair macros
+  #define DEFINE_RTYPE_RDP(code) add_rtype_rdp_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_R1TYPE_RDP(code) add_r1type_rdp_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_ITYPE_RDP(code) add_itype_rdp_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_ITYPE_SHIFT_RDP(code) add_itype_shift_rdp_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_RTYPE_RS1P(code) add_rtype_rs1p_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_ITYPE_RS1P(code) add_itype_rs1p_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_ITYPE_SHIFT_RS1P(code) add_itype_shift_rs1p_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_RTYPE_RDP_RS1P(code) add_rtype_rdp_rs1p_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_R1TYPE_RDP_RS1P(code) add_r1type_rdp_rs1p_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_ITYPE_RDP_RS1P(code) add_itype_rdp_rs1p_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_ITYPE_SHIFT_RDP_RS1P(code) add_itype_shift_rdp_rs1p_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_RTYPE_PAIR(code) add_rtype_pair_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_I0TYPE(name, code) DISASM_INSN(name, code, mask_rs1, {&xrd, &imm})
   #define DEFINE_I1TYPE(name, code) DISASM_INSN(name, code, mask_imm, {&xrd, &xrs1})
   #define DEFINE_I2TYPE(name, code) DISASM_INSN(name, code, mask_rd | mask_imm, {&xrs1})
@@ -2307,6 +2378,671 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
       DISASM_INSN("c.sspopchk", c_sspopchk_x5, 0, {&rvc_t0});
     }
   }
+
+  // P-extension (Packed SIMD) instructions
+  if (ext_enabled('P')) {
+    // R-type instructions (rd, rs1, rs2) - RV32 only (share opcode with RV64 packed-word)
+    if (xlen_eq(32)) {
+      DEFINE_RTYPE(aadd);
+      DEFINE_RTYPE(aaddu);
+      DEFINE_RTYPE(asub);
+      DEFINE_RTYPE(asubu);
+      DEFINE_RTYPE(mseq);
+      DEFINE_RTYPE(mslt);
+      DEFINE_RTYPE(msltu);
+    }
+    // RV32/RV64 common instructions
+    DEFINE_RTYPE_PAIR(addd);
+    DEFINE_RTYPE_PAIR(subd);
+    DEFINE_RTYPE(merge);
+    DEFINE_RTYPE(mvm);
+    DEFINE_RTYPE(mvmn);
+    // Type 2: rs1p - Narrowing instructions (rd normal, rs1p is pair, rs2 normal/scalar)
+    DEFINE_RTYPE_RS1P(nclip);
+    DEFINE_RTYPE_RS1P(nclipr);
+    DEFINE_RTYPE_RS1P(nclipu);
+    DEFINE_RTYPE_RS1P(nclipru);
+    DEFINE_RTYPE_RS1P(nsra);
+    DEFINE_RTYPE_RS1P(nsrar);
+    DEFINE_RTYPE_RS1P(nsrl);
+    // RV32-only instructions (share opcode with RV64 packed-word)
+    if (xlen_eq(32)) {
+      DEFINE_RTYPE(sadd);
+      DEFINE_RTYPE(saddu);
+      DEFINE_RTYPE(ssub);
+      DEFINE_RTYPE(ssubu);
+      DEFINE_RTYPE(ssh1sadd);
+      DEFINE_RTYPE(ssha);
+      DEFINE_RTYPE(sshar);
+    }
+    DEFINE_RTYPE_PAIR(sha);
+    DEFINE_RTYPE_PAIR(shar);
+    DEFINE_RTYPE(slx);
+    DEFINE_RTYPE(srx);
+    // Type 1: rdp - Widening instructions (rdp is pair, rs1/rs2 normal)
+    DEFINE_RTYPE_RDP(wadd);
+    DEFINE_RTYPE_RDP(wadda);
+    DEFINE_RTYPE_RDP(waddu);
+    DEFINE_RTYPE_RDP(waddau);
+    DEFINE_RTYPE_RDP(wsub);
+    DEFINE_RTYPE_RDP(wsuba);
+    DEFINE_RTYPE_RDP(wsubu);
+    DEFINE_RTYPE_RDP(wsubau);
+    DEFINE_RTYPE_RDP(wsll);
+    DEFINE_RTYPE_RDP(wsla);
+    DEFINE_RTYPE_RDP(wmul);
+    DEFINE_RTYPE_RDP(wmulu);
+    DEFINE_RTYPE_RDP(wmulsu);
+    DEFINE_RTYPE_RDP(wmacc);
+    DEFINE_RTYPE_RDP(wmaccu);
+    DEFINE_RTYPE_RDP(wmaccsu);
+
+    // R-type mac/mul instructions with element selection (RV32 only - share opcode with RV64 packed-word)
+    if (xlen_eq(32)) {
+      DEFINE_RTYPE(macc_h00);
+      DEFINE_RTYPE(macc_h01);
+      DEFINE_RTYPE(macc_h11);
+      DEFINE_RTYPE(maccu_h00);
+      DEFINE_RTYPE(maccu_h01);
+      DEFINE_RTYPE(maccu_h11);
+      DEFINE_RTYPE(maccsu_h00);
+      DEFINE_RTYPE(maccsu_h11);
+      DEFINE_RTYPE(mul_h00);
+      DEFINE_RTYPE(mul_h01);
+      DEFINE_RTYPE(mul_h11);
+      DEFINE_RTYPE(mulu_h00);
+      DEFINE_RTYPE(mulu_h01);
+      DEFINE_RTYPE(mulu_h11);
+      DEFINE_RTYPE(mulsu_h00);
+      DEFINE_RTYPE(mulsu_h11);
+      DEFINE_RTYPE(mulh_h0);
+      DEFINE_RTYPE(mulh_h1);
+      DEFINE_RTYPE(mulhsu_h0);
+      DEFINE_RTYPE(mulhsu_h1);
+      DEFINE_RTYPE(mulhr);
+      DEFINE_RTYPE(mulhru);
+      DEFINE_RTYPE(mulhrsu);
+      DEFINE_RTYPE(mulq);
+      DEFINE_RTYPE(mulqr);
+      DEFINE_RTYPE(mhacc);
+      DEFINE_RTYPE(mhaccu);
+      DEFINE_RTYPE(mhaccsu);
+      DEFINE_RTYPE(mhacc_h0);
+      DEFINE_RTYPE(mhacc_h1);
+      DEFINE_RTYPE(mhaccsu_h0);
+      DEFINE_RTYPE(mhaccsu_h1);
+      DEFINE_RTYPE(mhracc);
+      DEFINE_RTYPE(mhraccu);
+      DEFINE_RTYPE(mhraccsu);
+    }
+    DEFINE_RTYPE(mqacc_h00);
+    DEFINE_RTYPE(mqacc_h01);
+    DEFINE_RTYPE(mqacc_h11);
+    DEFINE_RTYPE(mqracc_h00);
+    DEFINE_RTYPE(mqracc_h01);
+    DEFINE_RTYPE(mqracc_h11);
+
+    // R1-type instructions (rd, rs1) - unary ops
+    DEFINE_R1TYPE(abs);
+    DEFINE_R1TYPE(cls);
+
+    // I-type shift instructions (rd, rs1, shamt)
+    DISASM_INSN("nclipi", nclipi, 0, {&xrd, &xrs1, &shamtd});
+    DISASM_INSN("nclipiu", nclipiu, 0, {&xrd, &xrs1, &shamtd});
+    DISASM_INSN("nclipri", nclipri, 0, {&xrd, &xrs1, &shamtd});
+    DISASM_INSN("nclipriu", nclipriu, 0, {&xrd, &xrs1, &shamtd});
+    DISASM_INSN("nsrai", nsrai, 0, {&xrd, &xrs1, &shamtd});
+    DISASM_INSN("nsrari", nsrari, 0, {&xrd, &xrs1, &shamtd});
+    DISASM_INSN("nsrli", nsrli, 0, {&xrd, &xrs1, &shamtd});
+    // sslai shares opcode with psslai_w on RV64
+    if (xlen_eq(32)) {
+      DISASM_INSN("sslai", sslai, 0, {&xrd, &xrs1, &shamt});
+    }
+    DISASM_INSN("wslli", wslli, 0, {&xrd, &xrs1, &shamt});
+    DISASM_INSN("wslai", wslai, 0, {&xrd, &xrs1, &shamt});
+    if (xlen_eq(64)) {
+      DISASM_INSN("sati", sati, 0, {&xrd, &xrs1, &shamt});
+      DISASM_INSN("usati", usati, 0, {&xrd, &xrs1, &shamt});
+      DISASM_INSN("srari", srari, 0, {&xrd, &xrs1, &shamt});
+    } else {
+      DISASM_INSN("sati", sati_rv32, 0, {&xrd, &xrs1, &shamt});
+      DISASM_INSN("usati", usati_rv32, 0, {&xrd, &xrs1, &shamt});
+      DISASM_INSN("srari", srari_rv32, 0, {&xrd, &xrs1, &shamt});
+    }
+
+    // Packed R-type instructions (rd, rs1, rs2) - RV32/RV64 common
+    DEFINE_RTYPE(paadd_b);
+    DEFINE_RTYPE(paadd_h);
+    // Type 4: rdp + rs1p + rs2p - Doubleword pair-to-pair ops
+    DEFINE_RTYPE_PAIR(paadd_db);
+    DEFINE_RTYPE_PAIR(paadd_dh);
+    DEFINE_RTYPE_PAIR(paadd_dw);
+    DEFINE_RTYPE(paaddu_b);
+    DEFINE_RTYPE(paaddu_h);
+    DEFINE_RTYPE_PAIR(paaddu_db);
+    DEFINE_RTYPE_PAIR(paaddu_dh);
+    DEFINE_RTYPE_PAIR(paaddu_dw);
+    DEFINE_RTYPE(paas_hx);
+    DEFINE_RTYPE_PAIR(paas_dhx);
+    DEFINE_RTYPE(pabd_b);
+    DEFINE_RTYPE(pabd_h);
+    DEFINE_RTYPE_PAIR(pabd_db);
+    DEFINE_RTYPE_PAIR(pabd_dh);
+    DEFINE_RTYPE(pabdu_b);
+    DEFINE_RTYPE(pabdu_h);
+    DEFINE_RTYPE_PAIR(pabdu_db);
+    DEFINE_RTYPE_PAIR(pabdu_dh);
+    DEFINE_RTYPE(pabdsumu_b);
+    DEFINE_RTYPE(pabdsumau_b);
+    DEFINE_RTYPE(padd_b);
+    DEFINE_RTYPE(padd_h);
+    DEFINE_RTYPE(padd_bs);
+    DEFINE_RTYPE(padd_hs);
+    DEFINE_RTYPE_PAIR(padd_db);
+    DEFINE_RTYPE_PAIR(padd_dh);
+    DEFINE_RTYPE_PAIR(padd_dw);
+    // Type 3: rdp + rs1p - Doubleword with scalar rs2
+    DEFINE_RTYPE_RDP_RS1P(padd_dbs);
+    DEFINE_RTYPE_RDP_RS1P(padd_dhs);
+    DEFINE_RTYPE_RDP_RS1P(padd_dws);
+    DEFINE_RTYPE(pasub_b);
+    DEFINE_RTYPE(pasub_h);
+    DEFINE_RTYPE_PAIR(pasub_db);
+    DEFINE_RTYPE_PAIR(pasub_dh);
+    DEFINE_RTYPE_PAIR(pasub_dw);
+    DEFINE_RTYPE(pasubu_b);
+    DEFINE_RTYPE(pasubu_h);
+    DEFINE_RTYPE_PAIR(pasubu_db);
+    DEFINE_RTYPE_PAIR(pasubu_dh);
+    DEFINE_RTYPE_PAIR(pasubu_dw);
+    DEFINE_RTYPE(pasa_hx);
+    DEFINE_RTYPE_PAIR(pasa_dhx);
+    DEFINE_RTYPE(pas_hx);
+    DEFINE_RTYPE_PAIR(pas_dhx);
+    DEFINE_RTYPE(psadd_b);
+    DEFINE_RTYPE(psadd_h);
+    DEFINE_RTYPE_PAIR(psadd_db);
+    DEFINE_RTYPE_PAIR(psadd_dh);
+    DEFINE_RTYPE_PAIR(psadd_dw);
+    DEFINE_RTYPE(psaddu_b);
+    DEFINE_RTYPE(psaddu_h);
+    DEFINE_RTYPE_PAIR(psaddu_db);
+    DEFINE_RTYPE_PAIR(psaddu_dh);
+    DEFINE_RTYPE_PAIR(psaddu_dw);
+    DEFINE_RTYPE(psub_b);
+    DEFINE_RTYPE(psub_h);
+    DEFINE_RTYPE_PAIR(psub_db);
+    DEFINE_RTYPE_PAIR(psub_dh);
+    DEFINE_RTYPE_PAIR(psub_dw);
+    DEFINE_RTYPE(pssub_b);
+    DEFINE_RTYPE(pssub_h);
+    DEFINE_RTYPE_PAIR(pssub_db);
+    DEFINE_RTYPE_PAIR(pssub_dh);
+    DEFINE_RTYPE_PAIR(pssub_dw);
+    DEFINE_RTYPE(pssubu_b);
+    DEFINE_RTYPE(pssubu_h);
+    DEFINE_RTYPE_PAIR(pssubu_db);
+    DEFINE_RTYPE_PAIR(pssubu_dh);
+    DEFINE_RTYPE_PAIR(pssubu_dw);
+    DEFINE_RTYPE(psa_hx);
+    DEFINE_RTYPE_PAIR(psa_dhx);
+    DEFINE_RTYPE(psas_hx);
+    DEFINE_RTYPE_PAIR(psas_dhx);
+    DEFINE_RTYPE(pssa_hx);
+    DEFINE_RTYPE_PAIR(pssa_dhx);
+    DEFINE_RTYPE(pmax_b);
+    DEFINE_RTYPE(pmax_h);
+    DEFINE_RTYPE_PAIR(pmax_db);
+    DEFINE_RTYPE_PAIR(pmax_dh);
+    DEFINE_RTYPE_PAIR(pmax_dw);
+    DEFINE_RTYPE(pmaxu_b);
+    DEFINE_RTYPE(pmaxu_h);
+    DEFINE_RTYPE_PAIR(pmaxu_db);
+    DEFINE_RTYPE_PAIR(pmaxu_dh);
+    DEFINE_RTYPE_PAIR(pmaxu_dw);
+    DEFINE_RTYPE(pmin_b);
+    DEFINE_RTYPE(pmin_h);
+    DEFINE_RTYPE_PAIR(pmin_db);
+    DEFINE_RTYPE_PAIR(pmin_dh);
+    DEFINE_RTYPE_PAIR(pmin_dw);
+    DEFINE_RTYPE(pminu_b);
+    DEFINE_RTYPE(pminu_h);
+    DEFINE_RTYPE_PAIR(pminu_db);
+    DEFINE_RTYPE_PAIR(pminu_dh);
+    DEFINE_RTYPE_PAIR(pminu_dw);
+    DEFINE_RTYPE(pmseq_b);
+    DEFINE_RTYPE(pmseq_h);
+    DEFINE_RTYPE_PAIR(pmseq_db);
+    DEFINE_RTYPE_PAIR(pmseq_dh);
+    DEFINE_RTYPE_PAIR(pmseq_dw);
+    DEFINE_RTYPE(pmslt_b);
+    DEFINE_RTYPE(pmslt_h);
+    DEFINE_RTYPE_PAIR(pmslt_db);
+    DEFINE_RTYPE_PAIR(pmslt_dh);
+    DEFINE_RTYPE_PAIR(pmslt_dw);
+    DEFINE_RTYPE(pmsltu_b);
+    DEFINE_RTYPE(pmsltu_h);
+    DEFINE_RTYPE_PAIR(pmsltu_db);
+    DEFINE_RTYPE_PAIR(pmsltu_dh);
+    DEFINE_RTYPE_PAIR(pmsltu_dw);
+    DEFINE_RTYPE(psll_bs);
+    DEFINE_RTYPE(psll_hs);
+    // Type 3: rdp + rs1p - Doubleword shift with scalar rs2
+    DEFINE_RTYPE_RDP_RS1P(psll_dbs);
+    DEFINE_RTYPE_RDP_RS1P(psll_dhs);
+    DEFINE_RTYPE_RDP_RS1P(psll_dws);
+    DEFINE_RTYPE(psra_bs);
+    DEFINE_RTYPE(psra_hs);
+    DEFINE_RTYPE_RDP_RS1P(psra_dbs);
+    DEFINE_RTYPE_RDP_RS1P(psra_dhs);
+    DEFINE_RTYPE_RDP_RS1P(psra_dws);
+    DEFINE_RTYPE(psrl_bs);
+    DEFINE_RTYPE(psrl_hs);
+    DEFINE_RTYPE_RDP_RS1P(psrl_dbs);
+    DEFINE_RTYPE_RDP_RS1P(psrl_dhs);
+    DEFINE_RTYPE_RDP_RS1P(psrl_dws);
+    DEFINE_RTYPE(pssha_hs);
+    DEFINE_RTYPE_RDP_RS1P(pssha_dhs);
+    DEFINE_RTYPE_RDP_RS1P(pssha_dws);
+    DEFINE_RTYPE(psshar_hs);
+    DEFINE_RTYPE_RDP_RS1P(psshar_dhs);
+    DEFINE_RTYPE_RDP_RS1P(psshar_dws);
+    DEFINE_RTYPE(psh1add_h);
+    DEFINE_RTYPE_PAIR(psh1add_dh);
+    DEFINE_RTYPE_PAIR(psh1add_dw);
+    DEFINE_RTYPE(pssh1sadd_h);
+    DEFINE_RTYPE_PAIR(pssh1sadd_dh);
+    DEFINE_RTYPE_PAIR(pssh1sadd_dw);
+    // Type 2: rs1p - Narrowing with scalar rs2
+    DEFINE_RTYPE_RS1P(pnclip_bs);
+    DEFINE_RTYPE_RS1P(pnclip_hs);
+    DEFINE_RTYPE_RS1P(pnclipr_bs);
+    DEFINE_RTYPE_RS1P(pnclipr_hs);
+    DEFINE_RTYPE_RS1P(pnclipu_bs);
+    DEFINE_RTYPE_RS1P(pnclipu_hs);
+    DEFINE_RTYPE_RS1P(pnclipru_bs);
+    DEFINE_RTYPE_RS1P(pnclipru_hs);
+    DEFINE_RTYPE_RS1P(pnsra_bs);
+    DEFINE_RTYPE_RS1P(pnsra_hs);
+    DEFINE_RTYPE_RS1P(pnsrar_bs);
+    DEFINE_RTYPE_RS1P(pnsrar_hs);
+    DEFINE_RTYPE_RS1P(pnsrl_bs);
+    DEFINE_RTYPE_RS1P(pnsrl_hs);
+    // Type 1: rdp - Widening with scalar rs2
+    DEFINE_RTYPE_RDP(pwsll_bs);
+    DEFINE_RTYPE_RDP(pwsll_hs);
+    DEFINE_RTYPE_RDP(pwsla_bs);
+    DEFINE_RTYPE_RDP(pwsla_hs);
+    DEFINE_RTYPE(ppaire_b);
+    DEFINE_RTYPE(ppaire_h);
+    DEFINE_RTYPE_PAIR(ppaire_db);
+    DEFINE_RTYPE_PAIR(ppaire_dh);
+    DEFINE_RTYPE(ppaireo_b);
+    DEFINE_RTYPE(ppaireo_h);
+    DEFINE_RTYPE_PAIR(ppaireo_db);
+    DEFINE_RTYPE_PAIR(ppaireo_dh);
+    DEFINE_RTYPE(ppairo_b);
+    DEFINE_RTYPE(ppairo_h);
+    DEFINE_RTYPE_PAIR(ppairo_db);
+    DEFINE_RTYPE_PAIR(ppairo_dh);
+    DEFINE_RTYPE(ppairoe_b);
+    DEFINE_RTYPE(ppairoe_h);
+    DEFINE_RTYPE_PAIR(ppairoe_db);
+    DEFINE_RTYPE_PAIR(ppairoe_dh);
+    DEFINE_RTYPE(predsum_bs);
+    DEFINE_RTYPE(predsum_hs);
+    // Type 2: rs1p - Reduction sum (rd normal, rs1p is pair)
+    DEFINE_RTYPE_RS1P(predsum_dbs);
+    DEFINE_RTYPE_RS1P(predsum_dhs);
+    DEFINE_RTYPE(predsumu_bs);
+    DEFINE_RTYPE(predsumu_hs);
+    DEFINE_RTYPE_RS1P(predsumu_dbs);
+    DEFINE_RTYPE_RS1P(predsumu_dhs);
+
+    // Packed R1-type instructions (rd, rs1) - unary
+    DEFINE_R1TYPE(psabs_b);
+    DEFINE_R1TYPE(psabs_h);
+    // Type 3: rdp + rs1p - Doubleword unary ops
+    DEFINE_R1TYPE_RDP_RS1P(psabs_db);
+    DEFINE_R1TYPE_RDP_RS1P(psabs_dh);
+    DEFINE_R1TYPE(psext_h_b);
+    DEFINE_R1TYPE_RDP_RS1P(psext_dh_b);
+    DEFINE_R1TYPE_RDP_RS1P(psext_dw_b);
+    DEFINE_R1TYPE_RDP_RS1P(psext_dw_h);
+
+    // Packed I-type with shamt
+    DISASM_INSN("pslli.b", pslli_b, 0, {&xrd, &xrs1, &shamtb});
+    DISASM_INSN("pslli.h", pslli_h, 0, {&xrd, &xrs1, &shamth});
+    // Type 3: rdp + rs1p - Doubleword immediate shift
+    DISASM_INSN("pslli.db", pslli_db, 0, {&xrd_p, &xrs1_p, &shamtb});
+    DISASM_INSN("pslli.dh", pslli_dh, 0, {&xrd_p, &xrs1_p, &shamth});
+    DISASM_INSN("pslli.dw", pslli_dw, 0, {&xrd_p, &xrs1_p, &shamtw});
+    DISASM_INSN("psrai.b", psrai_b, 0, {&xrd, &xrs1, &shamtb});
+    DISASM_INSN("psrai.h", psrai_h, 0, {&xrd, &xrs1, &shamth});
+    DISASM_INSN("psrai.db", psrai_db, 0, {&xrd_p, &xrs1_p, &shamtb});
+    DISASM_INSN("psrai.dh", psrai_dh, 0, {&xrd_p, &xrs1_p, &shamth});
+    DISASM_INSN("psrai.dw", psrai_dw, 0, {&xrd_p, &xrs1_p, &shamtw});
+    DISASM_INSN("psrli.b", psrli_b, 0, {&xrd, &xrs1, &shamtb});
+    DISASM_INSN("psrli.h", psrli_h, 0, {&xrd, &xrs1, &shamth});
+    DISASM_INSN("psrli.db", psrli_db, 0, {&xrd_p, &xrs1_p, &shamtb});
+    DISASM_INSN("psrli.dh", psrli_dh, 0, {&xrd_p, &xrs1_p, &shamth});
+    DISASM_INSN("psrli.dw", psrli_dw, 0, {&xrd_p, &xrs1_p, &shamtw});
+    DISASM_INSN("psrari.h", psrari_h, 0, {&xrd, &xrs1, &shamth});
+    DISASM_INSN("psrari.dh", psrari_dh, 0, {&xrd_p, &xrs1_p, &shamth});
+    DISASM_INSN("psrari.dw", psrari_dw, 0, {&xrd_p, &xrs1_p, &shamtw});
+    DISASM_INSN("psati.h", psati_h, 0, {&xrd, &xrs1, &shamth});
+    DISASM_INSN("psati.dh", psati_dh, 0, {&xrd_p, &xrs1_p, &shamth});
+    DISASM_INSN("psati.dw", psati_dw, 0, {&xrd_p, &xrs1_p, &shamtw});
+    DISASM_INSN("pusati.h", pusati_h, 0, {&xrd, &xrs1, &shamth});
+    DISASM_INSN("pusati.dh", pusati_dh, 0, {&xrd_p, &xrs1_p, &shamth});
+    DISASM_INSN("pusati.dw", pusati_dw, 0, {&xrd_p, &xrs1_p, &shamtw});
+    DISASM_INSN("psslai.h", psslai_h, 0, {&xrd, &xrs1, &shamth});
+    DISASM_INSN("psslai.dh", psslai_dh, 0, {&xrd_p, &xrs1_p, &shamth});
+    DISASM_INSN("psslai.dw", psslai_dw, 0, {&xrd_p, &xrs1_p, &shamtw});
+    // Type 2: rs1p - Narrowing immediate (rd normal, rs1p is pair)
+    DISASM_INSN("pnclipi.b", pnclipi_b, 0, {&xrd, &xrs1_p, &shamth});
+    DISASM_INSN("pnclipi.h", pnclipi_h, 0, {&xrd, &xrs1_p, &shamtw});
+    DISASM_INSN("pnclipiu.b", pnclipiu_b, 0, {&xrd, &xrs1_p, &shamth});
+    DISASM_INSN("pnclipiu.h", pnclipiu_h, 0, {&xrd, &xrs1_p, &shamtw});
+    DISASM_INSN("pnclipri.b", pnclipri_b, 0, {&xrd, &xrs1_p, &shamth});
+    DISASM_INSN("pnclipri.h", pnclipri_h, 0, {&xrd, &xrs1_p, &shamtw});
+    DISASM_INSN("pnclipriu.b", pnclipriu_b, 0, {&xrd, &xrs1_p, &shamth});
+    DISASM_INSN("pnclipriu.h", pnclipriu_h, 0, {&xrd, &xrs1_p, &shamtw});
+    DISASM_INSN("pnsrai.b", pnsrai_b, 0, {&xrd, &xrs1_p, &shamth});
+    DISASM_INSN("pnsrai.h", pnsrai_h, 0, {&xrd, &xrs1_p, &shamtw});
+    DISASM_INSN("pnsrari.b", pnsrari_b, 0, {&xrd, &xrs1_p, &shamth});
+    DISASM_INSN("pnsrari.h", pnsrari_h, 0, {&xrd, &xrs1_p, &shamtw});
+    DISASM_INSN("pnsrli.b", pnsrli_b, 0, {&xrd, &xrs1_p, &shamth});
+    DISASM_INSN("pnsrli.h", pnsrli_h, 0, {&xrd, &xrs1_p, &shamtw});
+    // Type 1: rdp - Widening immediate (rdp is pair, rs1 normal)
+    DISASM_INSN("pwslli.b", pwslli_b, 0, {&xrd_p, &xrs1, &shamtb});
+    DISASM_INSN("pwslli.h", pwslli_h, 0, {&xrd_p, &xrs1, &shamth});
+    DISASM_INSN("pwslai.b", pwslai_b, 0, {&xrd_p, &xrs1, &shamtb});
+    DISASM_INSN("pwslai.h", pwslai_h, 0, {&xrd_p, &xrs1, &shamth});
+
+    // Packed load-immediate instructions (rd, imm) - Type 1: rdp for _db, _dh
+    DISASM_INSN("pli.b", pli_b, 0, {&xrd, &p_imm8});
+    DISASM_INSN("pli.h", pli_h, 0, {&xrd, &p_imm10csl});
+    DISASM_INSN("pli.db", pli_db, 0, {&xrd_p, &p_imm8});
+    DISASM_INSN("pli.dh", pli_dh, 0, {&xrd_p, &p_imm10csl});
+    DISASM_INSN("plui.h", plui_h, 0, {&xrd, &p_imm10csr});
+    DISASM_INSN("plui.dh", plui_dh, 0, {&xrd_p, &p_imm10csr});
+
+    // Packed multiply/mac instructions
+    DEFINE_RTYPE(pmul_h_b00);
+    DEFINE_RTYPE(pmul_h_b01);
+    DEFINE_RTYPE(pmul_h_b11);
+    DEFINE_RTYPE(pmulu_h_b00);
+    DEFINE_RTYPE(pmulu_h_b01);
+    DEFINE_RTYPE(pmulu_h_b11);
+    DEFINE_RTYPE(pmulsu_h_b00);
+    DEFINE_RTYPE(pmulsu_h_b11);
+    DEFINE_RTYPE(pmulh_h);
+    DEFINE_RTYPE(pmulhu_h);
+    DEFINE_RTYPE(pmulhsu_h);
+    DEFINE_RTYPE(pmulh_h_b0);
+    DEFINE_RTYPE(pmulh_h_b1);
+    DEFINE_RTYPE(pmulhsu_h_b0);
+    DEFINE_RTYPE(pmulhsu_h_b1);
+    DEFINE_RTYPE(pmulhr_h);
+    DEFINE_RTYPE(pmulhru_h);
+    DEFINE_RTYPE(pmulhrsu_h);
+    DEFINE_RTYPE(pmulq_h);
+    DEFINE_RTYPE(pmulqr_h);
+    DEFINE_RTYPE(pmhacc_h);
+    DEFINE_RTYPE(pmhaccu_h);
+    DEFINE_RTYPE(pmhaccsu_h);
+    DEFINE_RTYPE(pmhacc_h_b0);
+    DEFINE_RTYPE(pmhacc_h_b1);
+    DEFINE_RTYPE(pmhaccsu_h_b0);
+    DEFINE_RTYPE(pmhaccsu_h_b1);
+    DEFINE_RTYPE(pmhracc_h);
+    DEFINE_RTYPE(pmhraccu_h);
+    DEFINE_RTYPE(pmhraccsu_h);
+    DEFINE_RTYPE(pmq2add_h);
+    DEFINE_RTYPE(pmq2adda_h);
+    DEFINE_RTYPE(pmqr2add_h);
+    DEFINE_RTYPE(pmqr2adda_h);
+
+    // Packed widening instructions - Type 1: rdp (pair result, normal sources)
+    DEFINE_RTYPE_RDP(pwadd_b);
+    DEFINE_RTYPE_RDP(pwadd_h);
+    DEFINE_RTYPE_RDP(pwaddu_b);
+    DEFINE_RTYPE_RDP(pwaddu_h);
+    DEFINE_RTYPE_RDP(pwadda_b);
+    DEFINE_RTYPE_RDP(pwadda_h);
+    DEFINE_RTYPE_RDP(pwaddau_b);
+    DEFINE_RTYPE_RDP(pwaddau_h);
+    DEFINE_RTYPE_RDP(pwsub_b);
+    DEFINE_RTYPE_RDP(pwsub_h);
+    DEFINE_RTYPE_RDP(pwsubu_b);
+    DEFINE_RTYPE_RDP(pwsubu_h);
+    DEFINE_RTYPE_RDP(pwsuba_b);
+    DEFINE_RTYPE_RDP(pwsuba_h);
+    DEFINE_RTYPE_RDP(pwsubau_b);
+    DEFINE_RTYPE_RDP(pwsubau_h);
+    DEFINE_RTYPE_RDP(pwmul_b);
+    DEFINE_RTYPE_RDP(pwmul_h);
+    DEFINE_RTYPE_RDP(pwmulu_b);
+    DEFINE_RTYPE_RDP(pwmulu_h);
+    DEFINE_RTYPE_RDP(pwmulsu_b);
+    DEFINE_RTYPE_RDP(pwmulsu_h);
+    DEFINE_RTYPE_RDP(pwmacc_h);
+    DEFINE_RTYPE_RDP(pwmaccu_h);
+    DEFINE_RTYPE_RDP(pwmaccsu_h);
+
+    // Packed multi-add instructions
+    DEFINE_RTYPE(pm2add_h);
+    DEFINE_RTYPE(pm2add_hx);
+    DEFINE_RTYPE(pm2addu_h);
+    DEFINE_RTYPE(pm2addsu_h);
+    DEFINE_RTYPE(pm2adda_h);
+    DEFINE_RTYPE(pm2adda_hx);
+    DEFINE_RTYPE(pm2addau_h);
+    DEFINE_RTYPE(pm2addasu_h);
+    DEFINE_RTYPE(pm2sub_h);
+    DEFINE_RTYPE(pm2sub_hx);
+    DEFINE_RTYPE(pm2suba_h);
+    DEFINE_RTYPE(pm2suba_hx);
+    DEFINE_RTYPE(pm2sadd_h);
+    DEFINE_RTYPE(pm2sadd_hx);
+    // pm2wadd produces widened result - Type 1: rdp
+    DEFINE_RTYPE_RDP(pm2wadd_h);
+    DEFINE_RTYPE_RDP(pm2wadd_hx);
+    DEFINE_RTYPE_RDP(pm2waddu_h);
+    DEFINE_RTYPE_RDP(pm2waddsu_h);
+    DEFINE_RTYPE_RDP(pm2wadda_h);
+    DEFINE_RTYPE_RDP(pm2wadda_hx);
+    DEFINE_RTYPE_RDP(pm2waddau_h);
+    DEFINE_RTYPE_RDP(pm2waddasu_h);
+    DEFINE_RTYPE_RDP(pm2wsub_h);
+    DEFINE_RTYPE_RDP(pm2wsub_hx);
+    DEFINE_RTYPE_RDP(pm2wsuba_h);
+    DEFINE_RTYPE_RDP(pm2wsuba_hx);
+    DEFINE_RTYPE(pm4add_b);
+    DEFINE_RTYPE(pm4addu_b);
+    DEFINE_RTYPE(pm4addsu_b);
+    DEFINE_RTYPE(pm4adda_b);
+    DEFINE_RTYPE(pm4addau_b);
+    DEFINE_RTYPE(pm4addasu_b);
+
+    // Zip/Unzip instructions
+    DEFINE_R1TYPE(zip8p);
+    DEFINE_R1TYPE(zip8hp);
+    DEFINE_R1TYPE(unzip8p);
+    DEFINE_R1TYPE(unzip8hp);
+    DEFINE_R1TYPE(unzip16p);
+    DEFINE_R1TYPE(unzip16hp);
+    // Type 1: rdp - Widening zip (pair result)
+    DEFINE_R1TYPE_RDP(wzip8p);
+    DEFINE_R1TYPE_RDP(wzip16p);
+
+    // mqwacc instructions - Type 1: rdp (widened 64-bit result)
+    DEFINE_RTYPE_RDP(mqwacc);
+    DEFINE_RTYPE_RDP(mqrwacc);
+    DEFINE_RTYPE_RDP(pmqwacc_h);
+    DEFINE_RTYPE_RDP(pmqrwacc_h);
+
+    // RV64 P-extension instructions (word-sized operations)
+    // These share opcodes with RV32 scalar instructions
+    if (xlen_eq(64)) {
+      // R1-type unary instructions
+      DEFINE_R1TYPE(absw);
+      DEFINE_R1TYPE(clsw);
+
+      // R-type scalar MAC/MUL instructions (word-sized)
+      DEFINE_RTYPE(macc_w00);
+      DEFINE_RTYPE(macc_w01);
+      DEFINE_RTYPE(macc_w11);
+      DEFINE_RTYPE(maccu_w00);
+      DEFINE_RTYPE(maccu_w01);
+      DEFINE_RTYPE(maccu_w11);
+      DEFINE_RTYPE(maccsu_w00);
+      DEFINE_RTYPE(maccsu_w11);
+      DEFINE_RTYPE(mul_w00);
+      DEFINE_RTYPE(mul_w01);
+      DEFINE_RTYPE(mul_w11);
+      DEFINE_RTYPE(mulu_w00);
+      DEFINE_RTYPE(mulu_w01);
+      DEFINE_RTYPE(mulu_w11);
+      DEFINE_RTYPE(mulsu_w00);
+      DEFINE_RTYPE(mulsu_w11);
+      DEFINE_RTYPE(mqacc_w00);
+      DEFINE_RTYPE(mqacc_w01);
+      DEFINE_RTYPE(mqacc_w11);
+      DEFINE_RTYPE(mqracc_w00);
+      DEFINE_RTYPE(mqracc_w01);
+      DEFINE_RTYPE(mqracc_w11);
+
+      // R-type packed word-sized instructions (share opcode with RV32 scalar)
+      DEFINE_RTYPE(paadd_w);
+      DEFINE_RTYPE(paaddu_w);
+      DEFINE_RTYPE(paas_wx);
+      DEFINE_RTYPE(padd_w);
+      DEFINE_RTYPE(padd_ws);
+      DEFINE_RTYPE(pasa_wx);
+      DEFINE_RTYPE(pasub_w);
+      DEFINE_RTYPE(pasubu_w);
+      DEFINE_RTYPE(pas_wx);
+      DEFINE_RTYPE(pmax_w);
+      DEFINE_RTYPE(pmaxu_w);
+      DEFINE_RTYPE(pmin_w);
+      DEFINE_RTYPE(pminu_w);
+      DEFINE_RTYPE(pmseq_w);
+      DEFINE_RTYPE(pmslt_w);
+      DEFINE_RTYPE(pmsltu_w);
+      DEFINE_RTYPE(psadd_w);
+      DEFINE_RTYPE(psaddu_w);
+      DEFINE_RTYPE(psa_wx);
+      DEFINE_RTYPE(psas_wx);
+      DEFINE_RTYPE(pssa_wx);
+      DEFINE_RTYPE(pssub_w);
+      DEFINE_RTYPE(pssubu_w);
+      DEFINE_RTYPE(psub_w);
+      DEFINE_RTYPE(psh1add_w);
+      DEFINE_RTYPE(pssh1sadd_w);
+      DEFINE_RTYPE(psll_ws);
+      DEFINE_RTYPE(psra_ws);
+      DEFINE_RTYPE(psrl_ws);
+      DEFINE_RTYPE(pssha_ws);
+      DEFINE_RTYPE(psshar_ws);
+      DEFINE_RTYPE(ppaireo_w);
+      DEFINE_RTYPE(ppairoe_w);
+      DEFINE_RTYPE(ppairo_w);
+      DEFINE_RTYPE(predsum_ws);
+      DEFINE_RTYPE(predsumu_ws);
+
+      // Packed multiply/mac word-sized instructions (share opcode with RV32 scalar)
+      DEFINE_RTYPE(pmul_w_h00);
+      DEFINE_RTYPE(pmul_w_h01);
+      DEFINE_RTYPE(pmul_w_h11);
+      DEFINE_RTYPE(pmulu_w_h00);
+      DEFINE_RTYPE(pmulu_w_h01);
+      DEFINE_RTYPE(pmulu_w_h11);
+      DEFINE_RTYPE(pmulsu_w_h00);
+      DEFINE_RTYPE(pmulsu_w_h11);
+      DEFINE_RTYPE(pmulh_w);
+      DEFINE_RTYPE(pmulhu_w);
+      DEFINE_RTYPE(pmulhsu_w);
+      DEFINE_RTYPE(pmulh_w_h0);
+      DEFINE_RTYPE(pmulh_w_h1);
+      DEFINE_RTYPE(pmulhsu_w_h0);
+      DEFINE_RTYPE(pmulhsu_w_h1);
+      DEFINE_RTYPE(pmulhr_w);
+      DEFINE_RTYPE(pmulhru_w);
+      DEFINE_RTYPE(pmulhrsu_w);
+      DEFINE_RTYPE(pmulq_w);
+      DEFINE_RTYPE(pmulqr_w);
+      DEFINE_RTYPE(pmacc_w_h00);
+      DEFINE_RTYPE(pmacc_w_h01);
+      DEFINE_RTYPE(pmacc_w_h11);
+      DEFINE_RTYPE(pmaccu_w_h00);
+      DEFINE_RTYPE(pmaccu_w_h01);
+      DEFINE_RTYPE(pmaccu_w_h11);
+      DEFINE_RTYPE(pmaccsu_w_h00);
+      DEFINE_RTYPE(pmaccsu_w_h11);
+      DEFINE_RTYPE(pmhacc_w);
+      DEFINE_RTYPE(pmhaccu_w);
+      DEFINE_RTYPE(pmhaccsu_w);
+      DEFINE_RTYPE(pmhacc_w_h0);
+      DEFINE_RTYPE(pmhacc_w_h1);
+      DEFINE_RTYPE(pmhaccsu_w_h0);
+      DEFINE_RTYPE(pmhaccsu_w_h1);
+      DEFINE_RTYPE(pmhracc_w);
+      DEFINE_RTYPE(pmhraccu_w);
+      DEFINE_RTYPE(pmhraccsu_w);
+      DEFINE_RTYPE(pmqacc_w_h00);
+      DEFINE_RTYPE(pmqacc_w_h01);
+      DEFINE_RTYPE(pmqacc_w_h11);
+      DEFINE_RTYPE(pmqracc_w_h00);
+      DEFINE_RTYPE(pmqracc_w_h01);
+      DEFINE_RTYPE(pmqracc_w_h11);
+      DEFINE_RTYPE(pmq2add_w);
+      DEFINE_RTYPE(pmq2adda_w);
+      DEFINE_RTYPE(pmqr2add_w);
+      DEFINE_RTYPE(pmqr2adda_w);
+
+      // Packed multi-add word-sized instructions
+      DEFINE_RTYPE(pm2add_w);
+      DEFINE_RTYPE(pm2add_wx);
+      DEFINE_RTYPE(pm2addu_w);
+      DEFINE_RTYPE(pm2addsu_w);
+      DEFINE_RTYPE(pm2adda_w);
+      DEFINE_RTYPE(pm2adda_wx);
+      DEFINE_RTYPE(pm2addau_w);
+      DEFINE_RTYPE(pm2addasu_w);
+      DEFINE_RTYPE(pm2sub_w);
+      DEFINE_RTYPE(pm2sub_wx);
+      DEFINE_RTYPE(pm2suba_w);
+      DEFINE_RTYPE(pm2suba_wx);
+      DEFINE_RTYPE(pm4add_h);
+      DEFINE_RTYPE(pm4addu_h);
+      DEFINE_RTYPE(pm4addsu_h);
+      DEFINE_RTYPE(pm4adda_h);
+      DEFINE_RTYPE(pm4addau_h);
+      DEFINE_RTYPE(pm4addasu_h);
+
+      // R1-type packed word-sized unary instructions
+      DEFINE_R1TYPE(psext_w_b);
+      DEFINE_R1TYPE(psext_w_h);
+      DEFINE_R1TYPE(zip16p);
+      DEFINE_R1TYPE(zip16hp);
+
+      // Packed I-type with shamt (word-sized) - share opcode with RV32 scalar
+      DISASM_INSN("pslli.w", pslli_w, 0, {&xrd, &xrs1, &shamtw});
+      DISASM_INSN("psrai.w", psrai_w, 0, {&xrd, &xrs1, &shamtw});
+      DISASM_INSN("psrli.w", psrli_w, 0, {&xrd, &xrs1, &shamtw});
+      DISASM_INSN("psrari.w", psrari_w, 0, {&xrd, &xrs1, &shamtw});
+      DISASM_INSN("psati.w", psati_w, 0, {&xrd, &xrs1, &shamtw});
+      DISASM_INSN("pusati.w", pusati_w, 0, {&xrd, &xrs1, &shamtw});
+      DISASM_INSN("psslai.w", psslai_w, 0, {&xrd, &xrs1, &shamtw});
+
+      // Packed load-immediate word-sized instructions
+      DISASM_INSN("pli.w", pli_w, 0, {&xrd, &p_imm10csl});
+      DISASM_INSN("plui.w", plui_w, 0, {&xrd, &p_imm10csr});
+    }
+  }
+
 }
 
 disassembler_t::disassembler_t(const isa_parser_t *isa, bool strict)
