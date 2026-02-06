@@ -28,6 +28,7 @@ riscv_install_hdrs = \
 	debug_rom_defines.h \
 	decode.h \
 	devices.h \
+	dtb_discovery.cc \
 	disasm.h \
 	dts.h \
 	encoding.h \
