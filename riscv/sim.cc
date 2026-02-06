@@ -242,8 +242,11 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   if (dtb_discovery)
   {
     //Add dtb discovered devices
-    plugin_device_factories.clear();
-    dtb_discovery::discover_devices_from_dtb(fdt, plugin_device_factories);
+    std::vector<device_factory_sargs_t> dtb_discovery_plugin_device_factories;
+    dtb_discovery::discover_devices_from_dtb(fdt, dtb_discovery_plugin_device_factories);
+    device_factories.insert(device_factories.end(),
+                          dtb_discovery_plugin_device_factories.begin(),
+                          dtb_discovery_plugin_device_factories.end());
 
     //Remove default memories and use dtb discovered memories
     mems.clear();
@@ -254,10 +257,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   {
       bus.add_device(x.first, x.second);
   }
-
-  device_factories.insert(device_factories.end(),
-                          plugin_device_factories.begin(),
-                          plugin_device_factories.end());
 
   // must be located after procs/harts are set (devices might use sim_t get_* member functions)
   for (size_t i = 0; i < device_factories.size(); i++) {

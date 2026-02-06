@@ -524,9 +524,10 @@ int main(int argc, char** argv)
   }
 
   if (dtb_discovery){
-   if(!plugin_device_factories.empty()) {   std::cerr << "--dtb-discovery option is not compatible with --device option.\n";    exit(1);}
-   if (dtb_file==NULL) {    std::cerr << "--dtb-discovery option required a dtb_file. Use --dtb option.\n";     exit(1);}
-   if (dtb_enabled==false) {    std::cerr << "--dtb-discovery option is not compatible with --disable-dtb \n";     exit(1);}
+   if(!cfg.mem_layout.empty()) {   std::cerr << "--dtb-discovery option is not compatible with --memory/-m;."<<std::endl; exit(1);}
+   if(!plugin_device_factories.empty()) {   std::cerr << "--dtb-discovery option is not compatible with --device option."<<std::endl; exit(1);}
+   if (dtb_file==NULL) {    std::cerr << "--dtb-discovery option required a dtb_file. Use --dtb option."<<std::endl; exit(1);}
+   if (dtb_enabled==false) {    std::cerr << "--dtb-discovery option is not compatible with --disable-dtb"<<std::endl;  exit(1);}
   }
 
 

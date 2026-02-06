@@ -44,7 +44,7 @@ void discover_devices_from_dtb(const void* fdt,
       auto parsed_args = get_device_params(fdt, offset);
 
       fprintf(stdout, "DTB discovered device: %s - compatible with device type: %s - params: %s\n",
-      node_name.c_str(),
+      node_name,
       device_name.c_str(),
       (parsed_args.empty() ? "" : join_csv(parsed_args).c_str()));
 
@@ -53,29 +53,63 @@ void discover_devices_from_dtb(const void* fdt,
   }
 }
 
-void discover_memory_from_dtb(const void* fdt, std::vector<std::pair<reg_t, abstract_mem_t*>>& mems) {
+void discover_memory_from_dtb(const void* fdt,
+                              std::vector<std::pair<reg_t, abstract_mem_t*>>& mems)
+{
   int offset = -1;
-  while ((offset = fdt_node_offset_by_compatible(fdt, offset, "memory")) >= 0) {
-    const char* node_name = fdt_get_name(fdt, offset, NULL);
-    auto parsed_args = get_device_params(fdt, offset);
 
-    reg_t base, size;
-    try {
-        base = std::stoull(parsed_args[0], nullptr, 0);
-        size = std::stoull(parsed_args[1], nullptr, 0);
-    } catch (const std::exception& e) {
-        fprintf(stderr, "Error parsing memory params: %s\n", e.what());
-        continue;
-    } 
+  while ((offset = fdt_node_offset_by_prop_value(
+              fdt, offset,
+              "device_type", "memory", sizeof("memory"))) >= 0)
+  {
+    const char* node_name = fdt_get_name(fdt, offset, nullptr);
 
-    fprintf(stdout, "DTB memory device: %s - compatible with device type: memory - params: %s - Memory initialized at [%" PRIx64 ", %" PRIx64 ")\n",
-      node_name.c_str(),
-      (parsed_args.empty() ? "" : join_csv(parsed_args).c_str()),
-      base,
-      base + size);
+    int len = 0;
+    const fdt32_t* reg_prop = (const fdt32_t*)fdt_getprop(fdt, offset, "reg", &len);
+    if (!reg_prop) {
+      fprintf(stderr, "DTB memory node '%s' missing 'reg' property\n", node_name);
+      continue;
+    }
 
-    auto mem=std::make_pair(base, new mem_t(size));
-    mems.push_back(mem);
+    // Default per DT spec if not specified at root
+    int addr_cells = fdt_address_cells(fdt, 0);
+    int size_cells = fdt_size_cells(fdt, 0);
+
+    if (addr_cells < 1 || size_cells < 1) {
+      fprintf(stderr, "Invalid #address-cells or #size-cells for memory node '%s'\n", node_name);
+      continue;
+    }
+
+    int entry_cells = addr_cells + size_cells;
+    int entry_size = entry_cells * sizeof(fdt32_t);
+
+    if ((len % entry_size)!=0) {
+      fprintf(stderr, "DTB memory node '%s' has malformed 'reg'\n", node_name);
+      continue;
+    }
+
+    const fdt32_t* p = reg_prop;
+
+    uint64_t base = 0;
+    uint64_t size = 0;
+
+    // Parse base
+    for (int i = 0; i < addr_cells; ++i)
+      base = (base << 32) | fdt32_to_cpu(p[i]);
+
+    // Parse size
+    for (int i = 0; i < size_cells; ++i)
+      size = (size << 32) | fdt32_to_cpu(p[addr_cells + i]);
+
+    fprintf(stdout,
+            "DTB memory device: %s - Memory initialized at [0x%016" PRIx64 ", 0x%016" PRIx64 ")\n",
+            node_name,
+            base,
+            base + size);
+
+    mems.emplace_back(base, new mem_t(size));
   }
 }
+
+
 } // namespace dtb_discovery
