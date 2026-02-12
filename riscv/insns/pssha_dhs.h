@@ -1,5 +1,4 @@
 require_rv32;
-sreg_t sshamt = P_FIELD(RS2, 0, 16);
 P_RD_RS1_DW_LOOP(16, 16, {
   uint64_t bits_SMIN = (uint64_t{1} << (16 - 1));
   uint64_t bits_SMAX = ((uint64_t{1} << (16 - 1)) - 1);
@@ -10,7 +9,7 @@ P_RD_RS1_DW_LOOP(16, 16, {
   uint64_t mask = ((uint64_t{1} << 16) - 1);
   p_rs1 &= mask;
   if(m < 0){
-    unsigned sh = (rev > 255u) ? 255u : rev;
+    unsigned sh = (rev < 0) ? 0u : (unsigned)rev;
     uint64_t sign = (p_rs1 >> (16 - 1)) & 1u;
 
     if(sh >= 16) p_rd = (uint16_t)(sign ? mask : 0u);
