@@ -996,7 +996,7 @@ void medeleg_csr_t::verify_permissions(insn_t insn, bool write) const {
 
 bool medeleg_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t mask = 0
-    | (1 << CAUSE_MISALIGNED_FETCH)
+    | (proc->extension_enabled(EXT_ZCA) ? 0 : 1 << CAUSE_MISALIGNED_FETCH)
     | (1 << CAUSE_FETCH_ACCESS)
     | (1 << CAUSE_ILLEGAL_INSTRUCTION)
     | (1 << CAUSE_BREAKPOINT)
