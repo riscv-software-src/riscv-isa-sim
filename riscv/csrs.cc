@@ -556,7 +556,8 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t mask = adj_write_mask
                    | MSTATUS_MIE | MSTATUS_MPIE
                    | (proc->extension_enabled('U') ? MSTATUS_MPRV : 0)
-                   | MSTATUS_MPP | MSTATUS_TW
+                   | MSTATUS_MPP
+                   | (proc->extension_enabled('U') ? MSTATUS_TW : 0)
                    | (proc->extension_enabled('S') ? MSTATUS_TSR : 0)
                    | (has_page ? MSTATUS_TVM : 0)
                    | (has_gva ? MSTATUS_GVA : 0)
@@ -1857,6 +1858,10 @@ void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
 
     if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_CSRIND))
       throw trap_virtual_instruction(insn.bits());
+  }
+
+  if (state->v && state->prv == PRV_U) {
+     throw trap_virtual_instruction(insn.bits());
   }
 
   // Don't call base verify_permission for VS registers remapped to S-mode
