@@ -52,3 +52,18 @@ $INSTALL/bin/spike --log-commits --isa=rv64gc $BUILD/pk/pk atomics 2> /dev/null 
 LD_LIBRARY_PATH=$INSTALL/lib ./test-libriscv $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 LD_LIBRARY_PATH=$INSTALL/lib ./test-customext $BUILD/pk/pk dummy-slliuw | grep "Executed successfully"
 LD_LIBRARY_PATH=$INSTALL/lib ./test-custom-csr $BUILD/pk/pk customcsr | grep "Executed successfully"
+
+echo "DTB discovery tests"
+g++ -std=c++2a -I$INSTALL/include -I$CI/dtb-discovery/devices-sample -L$INSTALL/lib  $CI/dtb-discovery/test-dtb-discovery.cc $CI/dtb-discovery/devices-sample/led-device.cc -lriscv -lfdt -o test-dtb-discovery
+#compile sample dts
+DTS_DIR="$CI/dtb-discovery/dts-samples"
+TMP_DTB_DIR="/tmp/dtb-tests"
+mkdir -p "$TMP_DTB_DIR"
+DTB_LIST=()
+#For each dts execute the test
+for dts in "$DTS_DIR"/*.dts; do
+    name=$(basename "$dts" .dts)
+    dtb="$TMP_DTB_DIR/$name.dtb"
+    dtc -I dts -O dtb "$dts" -o "$dtb"
+    LD_LIBRARY_PATH=$INSTALL/lib ./test-dtb-discovery  --dtb="$dtb"  $BUILD/pk/pk  hello 
+done

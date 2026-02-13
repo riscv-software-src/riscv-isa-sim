@@ -1,0 +1,28 @@
+/dts-v1/;
+/ {
+    #address-cells = <2>;
+    #size-cells = <2>;
+
+    cpus {  // Container for all CPU cores
+      #address-cells = <1>;  // CPU children use 1 cell for hartid
+      #size-cells = <0>;     // CPU children don't specify size
+      timebase-frequency = <10000000>;  // Timer ticks at 10 MHz (for OS timing)
+      
+      CPU0: cpu@0 {  // First CPU core (label: CPU0, unit address: 0)
+        device_type = "cpu";  // Identifies this as a CPU device
+        reg = <0>;            // Hartid = 0 (hardware thread ID)
+        riscv,isa = "rv64imafdc";  // ISA: RV64 with I,M,A,F,D,C extensions
+      };
+    };
+
+
+    memory@80000000 {
+        device_type = "memory";
+        reg = <0x0 0x80000000 0x0 0x20000000>;
+    };
+
+    memory@A0000000 {
+        device_type = "memory";
+        reg = <0x0 0xA0000000 0x0 0x20000000>;
+    };
+};

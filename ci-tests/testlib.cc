@@ -25,9 +25,11 @@ int main(int argc, char **argv) {
   debug_module_config_t dm_config;
   std::vector<std::pair<reg_t, abstract_mem_t*>> mems =
       make_mems(cfg.mem_layout);
+  bool dtb_discovery=false;
   sim_t sim(&cfg, false,
             mems,
             plugin_devices,
+            dtb_discovery,
             htif_args,
             dm_config,
             nullptr,

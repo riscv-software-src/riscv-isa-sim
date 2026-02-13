@@ -53,6 +53,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --big-endian          Use a big-endian memory system.\n");
   fprintf(stderr, "  --device=<name>       Attach MMIO plugin device from an --extlib library,\n");
   fprintf(stderr, "                          specify --device=<name>,<args> to pass down extra args.\n");
+  fprintf(stderr, "  --dtb-discovery       Enable direct device discovery from device tree blob. Requires --dtb and usage of special \"spike_plugin_params\" dts field.\n");
   fprintf(stderr, "  --log-cache-miss      Generate a log of cache miss\n");
   fprintf(stderr, "  --log-commits         Generate a log of commits info\n");
   fprintf(stderr, "  --extension=<name>    Specify RoCC Extension\n");
@@ -324,6 +325,9 @@ int main(int argc, char** argv)
   bool UNUSED socket = false;  // command line option -s
   bool dump_dts = false;
   bool dtb_enabled = true;
+  bool dtb_discovery = false;
+  bool explicit_memory = false;
+  bool explicit_nprocs = false;
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
   std::vector<device_factory_sargs_t> plugin_device_factories;
@@ -376,8 +380,8 @@ int main(int argc, char** argv)
 #ifdef HAVE_BOOST_ASIO
   parser.option('s', 0, 0, [&](const char UNUSED *s){socket = true;});
 #endif
-  parser.option('p', 0, 1, [&](const char* s){nprocs = atoul_nonzero_safe(s);});
-  parser.option('m', 0, 1, [&](const char* s){cfg.mem_layout = parse_mem_layout(s);});
+  parser.option('p', 0, 1, [&](const char* s){nprocs = atoul_nonzero_safe(s);  explicit_nprocs=true;});
+  parser.option('m', 0, 1, [&](const char* s){cfg.mem_layout = parse_mem_layout(s); explicit_memory=true; });
   parser.option(0, "halted", 0, [&](const char UNUSED *s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
   parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc = strtoull(s, 0, 0);});
@@ -395,6 +399,7 @@ int main(int argc, char** argv)
   parser.option(0, "pmpgranularity", 1, [&](const char* s){cfg.pmpgranularity = atoul_safe(s);});
   parser.option(0, "priv", 1, [&](const char* s){cfg.priv = s;});
   parser.option(0, "device", 1, device_parser);
+  parser.option(0, "dtb-discovery", 0, [&](const char UNUSED *s){ dtb_discovery = true;} );
   parser.option(0, "extension", 1, [&](const char* s){extensions.push_back(find_extension(s));});
   parser.option(0, "dump-dts", 0, [&](const char UNUSED *s){dump_dts = true;});
   parser.option(0, "disable-dtb", 0, [&](const char UNUSED *s){dtb_enabled = false;});
@@ -518,8 +523,17 @@ int main(int argc, char** argv)
     cfg.hartids = default_hartids;
   }
 
+  if (dtb_discovery){
+   if (explicit_memory) {   std::cerr << "--dtb-discovery option is not compatible with -m;."<<std::endl; exit(1);}
+   if (explicit_nprocs) {   std::cerr << "--dtb-discovery option is not compatible with -p;."<<std::endl; exit(1);}
+   if (!plugin_device_factories.empty()) {   std::cerr << "--dtb-discovery option is not compatible with --device option."<<std::endl; exit(1);}
+   if (dtb_file==NULL) {    std::cerr << "--dtb-discovery option required a dtb_file. Use --dtb option."<<std::endl; exit(1);}
+   if (dtb_enabled==false) {    std::cerr << "--dtb-discovery option is not compatible with --disable-dtb"<<std::endl;  exit(1);}
+  }
+
+
   sim_t s(&cfg, halted,
-      mems, plugin_device_factories, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
+      mems, plugin_device_factories, dtb_discovery, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
       socket,
       cmd_file,
       instructions);

@@ -96,6 +96,10 @@ std::pair<reg_t, abstract_device_t*> bus_t::find_device(reg_t addr, size_t len)
   return std::make_pair(0, fallback);
 }
 
+const std::map<reg_t, abstract_device_t*>& bus_t::get_devices() const {
+    return devices;
+}
+
 mem_t::mem_t(reg_t size)
   : sz(size)
 {

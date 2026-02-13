@@ -1,0 +1,52 @@
+/dts-v1/;
+/ {
+    #address-cells = <2>;
+    #size-cells = <2>;
+    
+    cpus {
+        #address-cells = <1>;
+        #size-cells = <0>;
+        timebase-frequency = <10000000>;
+        
+        CPU0: cpu@0 {
+            device_type = "cpu";
+            reg = <0>;
+            riscv,isa = "rv64imafdc";
+            
+            CPU0_intc: interrupt-controller {
+                #interrupt-cells = <1>;
+                interrupt-controller;
+                compatible = "riscv,cpu-intc";
+            };
+        };
+    };
+    
+    memory@90000000 {
+        device_type = "memory";
+        reg = <0x00000000 0x90000000 0x00000000 0x10000000>;  
+    };
+
+    clint@2000000 {
+        compatible = "riscv,clint0";
+        reg = <0x0 0x2000000 0x0 0xc0000>;
+    };
+    
+    PLIC: plic@c000000 {
+        compatible = "riscv,plic0";
+        reg = <0x0 0xc000000 0x0 0x1000000>;
+        riscv,ndev = <0x1f>;
+        riscv,max-priority = <0xf>;
+        #interrupt-cells = <1>;
+        interrupt-controller;
+    };
+
+    uart0: serial@10000000 {
+        compatible = "ns16550a";
+        reg = <0x0 0x10000000 0x0 0x100>;
+        clock-frequency = <10000000>;
+        interrupts = <10>;
+        reg-shift = <0>;
+        reg-io-width = <1>;
+    };
+    
+};
