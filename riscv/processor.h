@@ -404,7 +404,17 @@ private:
 
   void parse_priv_string(const char*);
   void register_base_instructions();
-  insn_func_t decode_insn(insn_t insn);
+
+  insn_func_t ALWAYS_INLINE decode_insn(insn_t insn)
+  {
+    const auto& pool = opcode_map[insn.bits() % std::size(opcode_map)];
+
+    for (auto p = pool.begin(); ; ++p) {
+      if ((insn.bits() & p->mask) == p->match) {
+        return p->func;
+      }
+    }
+  }
 
   // Track repeated executions for processor_t::disasm()
   uint64_t last_pc, last_bits, executions;

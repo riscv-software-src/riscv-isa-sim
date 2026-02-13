@@ -653,17 +653,6 @@ reg_t processor_t::throw_instruction_address_misaligned(reg_t pc)
   throw trap_instruction_address_misaligned(state.v, pc, 0, 0);
 }
 
-insn_func_t processor_t::decode_insn(insn_t insn)
-{
-  const auto& pool = opcode_map[insn.bits() % std::size(opcode_map)];
-
-  for (auto p = pool.begin(); ; ++p) {
-    if ((insn.bits() & p->mask) == p->match) {
-      return p->func;
-    }
-  }
-}
-
 void processor_t::register_insn(insn_desc_t desc, std::vector<insn_desc_t>& pool) {
   assert(desc.fast_rv32i && desc.fast_rv64i && desc.fast_rv32e && desc.fast_rv64e &&
          desc.logged_rv32i && desc.logged_rv64i && desc.logged_rv32e && desc.logged_rv64e);

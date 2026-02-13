@@ -293,7 +293,7 @@ public:
     return target_big_endian ? to_be(res) : res;
   }
 
-  inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
+  icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
   {
     insn_bits_t insn = fetch_insn_parcel(addr);
     unsigned length = insn_length(insn);
@@ -319,13 +319,36 @@ public:
     return entry;
   }
 
-  inline icache_entry_t* access_icache(reg_t addr)
+  icache_entry_t* ALWAYS_INLINE access_icache(reg_t addr)
   {
     icache_entry_t* entry = &icache[icache_index(addr)];
     if (likely(entry->tag == addr)){
       MMU_OBSERVE_FETCH(addr, entry->data.insn, insn_length(entry->data.insn.bits()));
       return entry;
     }
+
+    // As a special case, optimize for short instructions that don't span pages
+    uint32_t insn;
+    bool might_span_page = addr % PGSIZE + sizeof(insn) > PGSIZE;
+    auto [tlb_hit, host_addr, _] = access_tlb(tlb_insn, addr);
+
+    if (likely(tlb_hit && !might_span_page)) {
+      memcpy(&insn, (const void*)host_addr, sizeof(insn));
+      static_assert(sizeof(insn) == 2 * sizeof(insn_parcel_t));
+      if (insn_length(insn) == sizeof(insn_parcel_t))
+        insn = (insn_parcel_t)insn;
+
+      if (likely(insn_length(insn) <= sizeof(insn))) {
+        insn_fetch_t fetch = {proc->decode_insn(insn), insn};
+        entry->tag = addr;
+        entry->next = &icache[icache_index(addr + insn_length(insn))];
+        entry->data = fetch;
+
+        MMU_OBSERVE_FETCH(addr, insn, length);
+        return entry;
+      }
+    }
+
     return refill_icache(addr, entry);
   }
 
