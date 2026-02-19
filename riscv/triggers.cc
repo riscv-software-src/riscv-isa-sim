@@ -236,8 +236,25 @@ bool mcontrol_common_t::simple_match(unsigned xlen, reg_t value) const {
         reg_t value_high = value >> (xlen/2);
         return (value_high & tdata2_high) == tdata2_low;
       }
+    case MATCH_NOT_EQUAL:
+      return value != tdata2;
+    case MATCH_NOT_NAPOT:
+      {
+        reg_t mask = ~((1 << (cto(tdata2)+1)) - 1);
+        return (value & mask) != (tdata2 & mask);
+      }
+    case MATCH_NOT_MASK_LOW:
+      {
+        reg_t mask = tdata2 >> (xlen/2);
+        return (value & mask) != (tdata2 & mask);
+      }
+    case MATCH_NOT_MASK_HIGH:
+      {
+        reg_t mask = tdata2 >> (xlen/2);
+        return ((value >> (xlen/2)) & mask) != (tdata2 & mask);
+      }
+    default: assert(false);
   }
-  assert(0);
 }
 
 std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(
@@ -290,6 +307,10 @@ mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val, reg_t ma
     case MATCH_LT:
     case MATCH_MASK_LOW:
     case MATCH_MASK_HIGH:
+    case MATCH_NOT_EQUAL:
+    case MATCH_NOT_NAPOT:
+    case MATCH_NOT_MASK_LOW:
+    case MATCH_NOT_MASK_HIGH:
       return (match_t)val;
     default:
       return MATCH_EQUAL;
