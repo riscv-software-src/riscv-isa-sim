@@ -38,7 +38,7 @@ static unsigned field_width(unsigned n)
 
 static bool region_descriptor_comparator(const region_descriptor &lhs,
                                   const region_descriptor &rhs) {
-  return lhs.addr < rhs.addr;
+  return lhs.addr < rhs.addr || (lhs.addr == rhs.addr && lhs.len < rhs.len);
 }
 
 template <typename It>
