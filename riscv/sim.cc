@@ -1,6 +1,7 @@
 // See LICENSE for license details.
 
 #include "config.h"
+#include "dtb_discovery.h"
 #include "sim.h"
 #include "mmu.h"
 #include "dts.h"
@@ -40,6 +41,10 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
              std::vector<std::pair<reg_t, abstract_mem_t *>> mems,
              const std::vector<device_factory_sargs_t> &plugin_device_factories,
              const std::vector<std::string> &args,
+             std::vector<std::pair<reg_t, abstract_mem_t*>> mems,
+             const std::vector<device_factory_sargs_t>& plugin_device_factories,
+             const bool dtb_discovery,
+             const std::vector<std::string>& args,
              const debug_module_config_t &dm_config,
              const char *log_path,
              bool dtb_enabled, const char *dtb_file,
@@ -61,6 +66,22 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       log(false),
       remote_bitbang(NULL),
       debug_module(this, dm_config)
+  : htif_t(args),
+    cfg(cfg),
+    mems(mems),
+    dtb_discovery(dtb_discovery),
+    dtb_enabled(dtb_enabled),
+    log_file(log_path),
+    cmd_file(cmd_file),
+    instruction_limit(instruction_limit),
+    sout_(nullptr),
+    current_step(0),
+    current_proc(0),
+    debug(false),
+    histogram_enabled(false),
+    log(false),
+    remote_bitbang(NULL),
+    debug_module(this, dm_config)
 {
   signal(SIGINT, &handle_signal);
 
@@ -129,6 +150,9 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   device_factories.insert(device_factories.end(),
                           plugin_device_factories.begin(),
                           plugin_device_factories.end());
+    {clint_factory, {}},
+    {plic_factory, {}},
+    {ns16550_factory, {}}};
 
   // Load dtb_file if provided, otherwise self-generate a dts/dtb
   if (dtb_file)
@@ -268,6 +292,29 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     procs[cpu_idx]->reset();
 
     cpu_idx++;
+  }
+
+  if (dtb_discovery)
+  {
+    //Add dtb discovered devices
+    std::vector<device_factory_sargs_t> dtb_discovery_plugin_device_factories;
+    dtb_discovery::discover_devices_from_dtb(fdt, dtb_discovery_plugin_device_factories);
+    device_factories.insert(device_factories.end(),
+                          dtb_discovery_plugin_device_factories.begin(),
+                          dtb_discovery_plugin_device_factories.end());
+
+    //Remove default memories and use dtb discovered memories
+    mems.clear();
+    dtb_discovery::discover_memory_from_dtb(fdt, mems);
+  }
+  //clint, plic, ns16550 are always discovered via dtb, independently from the --dtb_discovery flag
+  device_factories.insert(device_factories.end(),
+                          plugin_device_factories.begin(),
+                          plugin_device_factories.end());
+
+  for (auto& x : mems)
+  {
+      bus.add_device(x.first, x.second);
   }
 
   // must be located after procs/harts are set (devices might use sim_t get_* member functions)

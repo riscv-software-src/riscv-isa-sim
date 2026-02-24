@@ -218,12 +218,12 @@ Debugging With Gdb
 ------------------
 
 An alternative to interactive debug mode is to attach using gdb. Because spike
-tries to be like real hardware, you also need OpenOCD to do that. OpenOCD
-doesn't currently know about address translation, so it's not possible to
-easily debug programs that are run under `pk`. We'll use the following test
-program:
+tries to be like real hardware, you also need OpenOCD to do that.
+We'll use the following test program:
+
 ```
-$ cat rot13.c 
+$ cat rot13.c
+#include <stdio.h>
 char text[] = "Vafgehpgvba frgf jnag gb or serr!";
 
 // Don't use the stack, because sp isn't set up.
@@ -231,10 +231,6 @@ volatile int wait = 1;
 
 int main()
 {
-    while (wait)
-        ;
-
-    // Doesn't actually go on the stack, because there are lots of GPRs.
     int i = 0;
     while (text[i]) {
         char lower = text[i] | 32;
@@ -244,28 +240,17 @@ int main()
             text[i] -= 13;
         i++;
     }
-
 done:
-    while (!wait)
-        ;
+    printf("decoded text: %s\n", text);
 }
-$ cat spike.lds 
-OUTPUT_ARCH( "riscv" )
-
-SECTIONS
-{
-  . = 0x10110000;
-  .text : { *(.text) }
-  .data : { *(.data) }
-}
-$ riscv64-unknown-elf-gcc -g -Og -o rot13-64.o -c rot13.c
-$ riscv64-unknown-elf-gcc -g -Og -T spike.lds -nostartfiles -o rot13-64 rot13-64.o
+$ riscv64-unknown-elf-gcc -g -Og --specs=semihost.specs -o rot13 rot13.c
 ```
 
 To debug this program, first run spike telling it to listen for OpenOCD:
 ```
-$ spike --rbb-port=9824 -m0x10100000:0x20000 rot13-64
+$ spike --rbb-port=9824 -m0x10000:0x20000 rot13
 Listening for remote bitbang connection on port 9824.
+...
 ```
 
 In a separate shell run OpenOCD with the appropriate configuration file:
@@ -281,54 +266,59 @@ jtag newtap $_CHIPNAME cpu -irlen 5 -expected-id 0xdeadbeef
 set _TARGETNAME $_CHIPNAME.cpu
 target create $_TARGETNAME riscv -chain-position $_TARGETNAME
 
-gdb_report_data_abort enable
+gdb report_data_abort enable
 
 init
+arm semihosting enable
 halt
 $ openocd -f spike.cfg
-Open On-Chip Debugger 0.10.0-dev-00002-gc3b344d (2017-06-08-12:14)
+Open On-Chip Debugger 0.12.0
+...
+Info : starting gdb server for riscv.cpu on 3333
+Info : Listening on port 3333 for gdb connections
+riscv.cpu halted due to debug-request. Semihosting is active.
 ...
 riscv.cpu: target state: halted
 ```
 
 In yet another shell, start your gdb debug session:
 ```
-tnewsome@compy-vm:~/SiFive/spike-test$ riscv64-unknown-elf-gdb rot13-64
-GNU gdb (GDB) 8.0.50.20170724-git
-Copyright (C) 2017 Free Software Foundation, Inc.
-License GPLv3+: GNU GPL version 3 or later <http://gnu.org/licenses/gpl.html>
-This is free software: you are free to change and redistribute it.
-There is NO WARRANTY, to the extent permitted by law.  Type "show copying"
-and "show warranty" for details.
-This GDB was configured as "--host=x86_64-pc-linux-gnu --target=riscv64-unknown-elf".
-Type "show configuration" for configuration details.
-For bug reporting instructions, please see:
-<http://www.gnu.org/software/gdb/bugs/>.
-Find the GDB manual and other documentation resources online at:
-<http://www.gnu.org/software/gdb/documentation/>.
-For help, type "help".
-Type "apropos word" to search for commands related to "word"...
-Reading symbols from rot13-64...done.
-(gdb) target remote localhost:3333
-Remote debugging using localhost:3333
-0x0000000010010004 in main () at rot13.c:8
-8	    while (wait)
-(gdb) print wait
-$1 = 1
-(gdb) print wait=0
-$2 = 0
-(gdb) print text
-$3 = "Vafgehpgvba frgf jnag gb or serr!"
-(gdb) b done 
-Breakpoint 1 at 0x10110064: file rot13.c, line 22.
+$ riscv64-unknown-elf-gdb rot13
+...
+Reading symbols from rot13...
+(gdb) target extended-remote localhost:3333
+...
+(gdb) load
+...
+(gdb) set $sp=0x2fff0
+(gdb) b main
+Breakpoint 1 at 0x10202: file rot13.c, line 5.
 (gdb) c
 Continuing.
 Disabling abstract command writes to CSRs.
 
-Breakpoint 1, main () at rot13.c:23
-23	    while (!wait)
-(gdb) print wait
-$4 = 0
+Breakpoint 1, main () at rot13.c:5
+5       {
 (gdb) print text
+$1 = "Vafgehpgvba frgf jnag gb or serr!"
+(gdb) until done
+[riscv.cpu] Found 4 triggers
+main () at rot13.c:16
+16          printf("decoded text: %s\n", text);
+(gdb) c
+Continuing.
+
+Program received signal SIGTRAP, Trace/breakpoint trap.
+0x00019ff8 in _exit ()
+(gdb) 
 ...
+```
+
+On the OpenOCD terminal you will have:
+
+```
+...
+decoded text: Instruction sets want to be free!
+semihosting: *** application exited with 0 ***
+riscv.cpu halted due to breakpoint. Semihosting is active.
 ```
