@@ -595,15 +595,15 @@ mnstatus_csr_t::mnstatus_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 bool mnstatus_csr_t::unlogged_write(const reg_t val) noexcept {
-  // NMIE can be set but not cleared
-  const reg_t mask = (~read() & MNSTATUS_NMIE)
+  const reg_t mask = MNSTATUS_NMIE
                    | (proc->extension_enabled('H') ? MNSTATUS_MNPV : 0)
                    | (proc->extension_enabled(EXT_ZICFILP) ? MNSTATUS_MNPELP : 0)
                    | MNSTATUS_MNPP;
 
   const reg_t requested_mnpp = proc->legalize_privilege(get_field(val, MNSTATUS_MNPP));
   const reg_t adjusted_val = set_field(val, MNSTATUS_MNPP, requested_mnpp);
-  const reg_t new_mnstatus = (read() & ~mask) | (adjusted_val & mask);
+  // NMIE can be set but not cleared
+  const reg_t new_mnstatus = (read() & MNSTATUS_NMIE) | (adjusted_val & mask);
 
   return basic_csr_t::unlogged_write(new_mnstatus);
 }
@@ -760,7 +760,7 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   // update the hypervisor-only bits in MEDELEG and other CSRs
   if (!new_h && prev_h) {
     state->medeleg->write(state->medeleg->read());
-    if (state->mnstatus) state->mnstatus->write(state->mnstatus->read() & ~MNSTATUS_MNPV);
+    if (state->mnstatus) state->mnstatus->write(state->mnstatus->read());
     const reg_t new_mstatus = state->mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV);
     state->mstatus->write(new_mstatus);
     if (state->mstatush) state->mstatush->write(new_mstatus >> 32);  // log mstatush change
