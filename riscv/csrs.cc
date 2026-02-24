@@ -755,6 +755,8 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   proc->set_extension_enable(EXT_ZBB, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
   proc->set_extension_enable(EXT_ZBS, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
 
+  basic_csr_t::unlogged_write(new_misa);
+
   // update the hypervisor-only bits in MEDELEG and other CSRs
   if (!new_h && prev_h) {
     reg_t hypervisor_exceptions = 0
@@ -777,12 +779,14 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
       const reg_t new_mevent = state->mevent[i]->read() & ~(MHPMEVENT_VUINH | MHPMEVENT_VSINH);
       state->mevent[i]->write(new_mevent);
     }
+    state->mcyclecfg->write(state->mcyclecfg->read());
+    state->minstretcfg->write(state->minstretcfg->read());
   }
 
   proc->get_mmu()->flush_tlb();
   proc->build_opcode_map();
 
-  return basic_csr_t::unlogged_write(new_misa);
+  return true;
 }
 
 bool misa_csr_t::extension_enabled_const(unsigned char ext) const noexcept {
@@ -1970,7 +1974,7 @@ void sscsrind_reg_csr_t::add_ireg_proxy(const reg_t iselect_value, csr_t_p csr) 
   ireg_proxy[iselect_value] = csr;
 }
 
-smcntrpmf_csr_t::smcntrpmf_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init) : masked_csr_t(proc, addr, mask, init) {
+smcntrpmf_csr_t::smcntrpmf_csr_t(processor_t* const proc, const reg_t addr) : basic_csr_t(proc, addr, 0) {
 }
 
 reg_t smcntrpmf_csr_t::read_prev() const noexcept {
@@ -1984,7 +1988,14 @@ void smcntrpmf_csr_t::reset_prev() noexcept {
 
 bool smcntrpmf_csr_t::unlogged_write(const reg_t val) noexcept {
   prev_val = read();
-  return masked_csr_t::unlogged_write(val);
+
+  const reg_t mask = !proc->extension_enabled_const(EXT_SMCNTRPMF) ? 0 :
+    MHPMEVENT_MINH |
+    (proc->extension_enabled_const('S') ? MHPMEVENT_SINH : 0) |
+    (proc->extension_enabled_const('U') ? MHPMEVENT_UINH : 0) |
+    (proc->extension_enabled('H') ? MHPMEVENT_VSINH | MHPMEVENT_VUINH : 0);
+
+  return basic_csr_t::unlogged_write(val & mask);
 }
 
 srmcfg_csr_t::srmcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):

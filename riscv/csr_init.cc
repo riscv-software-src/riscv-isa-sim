@@ -51,10 +51,8 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   add_csr(CSR_MTVEC, mtvec = std::make_shared<tvec_csr_t>(proc, CSR_MTVEC));
   add_csr(CSR_MCAUSE, mcause = std::make_shared<cause_csr_t>(proc, CSR_MCAUSE));
 
-  const reg_t minstretcfg_mask = !proc->extension_enabled_const(EXT_SMCNTRPMF) ? 0 :
-    MHPMEVENT_MINH | MHPMEVENT_SINH | MHPMEVENT_UINH | MHPMEVENT_VSINH | MHPMEVENT_VUINH;
-  auto minstretcfg = std::make_shared<smcntrpmf_csr_t>(proc, CSR_MINSTRETCFG, minstretcfg_mask, 0);
-  auto mcyclecfg = std::make_shared<smcntrpmf_csr_t>(proc, CSR_MCYCLECFG, minstretcfg_mask, 0);
+  minstretcfg = std::make_shared<smcntrpmf_csr_t>(proc, CSR_MINSTRETCFG);
+  mcyclecfg = std::make_shared<smcntrpmf_csr_t>(proc, CSR_MCYCLECFG);
 
   minstret = std::make_shared<wide_counter_csr_t>(proc, CSR_MINSTRET, minstretcfg);
   mcycle = std::make_shared<wide_counter_csr_t>(proc, CSR_MCYCLE, mcyclecfg);
