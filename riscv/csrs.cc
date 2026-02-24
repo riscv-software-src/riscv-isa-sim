@@ -776,8 +776,7 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
     state->mip->write_with_mask(MIP_HS_MASK, 0);  // also takes care of hip, sip, hvip
     state->hstatus->write(0);
     for (reg_t i = 0; i < N_HPMCOUNTERS; ++i) {
-      const reg_t new_mevent = state->mevent[i]->read() & ~(MHPMEVENT_VUINH | MHPMEVENT_VSINH);
-      state->mevent[i]->write(new_mevent);
+      state->mevent[i]->write(state->mevent[i]->read());
     }
     state->mcyclecfg->write(state->mcyclecfg->read());
     state->minstretcfg->write(state->minstretcfg->read());
@@ -1305,7 +1304,7 @@ bool mevent_csr_t::unlogged_write(const reg_t val) noexcept {
     | (proc->extension_enabled_const('U') ? MHPMEVENT_UINH : 0)
     | (proc->extension_enabled_const('S') ? MHPMEVENT_SINH : 0)
     | (proc->extension_enabled('H') ? MHPMEVENT_VUINH | MHPMEVENT_VSINH : 0) : 0;
-  return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
+  return basic_csr_t::unlogged_write(val & mask);
 }
 
 hypervisor_csr_t::hypervisor_csr_t(processor_t* const proc, const reg_t addr):
