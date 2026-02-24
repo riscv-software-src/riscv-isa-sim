@@ -759,15 +759,7 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
 
   // update the hypervisor-only bits in MEDELEG and other CSRs
   if (!new_h && prev_h) {
-    reg_t hypervisor_exceptions = 0
-      | (1 << CAUSE_VIRTUAL_SUPERVISOR_ECALL)
-      | (1 << CAUSE_FETCH_GUEST_PAGE_FAULT)
-      | (1 << CAUSE_LOAD_GUEST_PAGE_FAULT)
-      | (1 << CAUSE_VIRTUAL_INSTRUCTION)
-      | (1 << CAUSE_STORE_GUEST_PAGE_FAULT)
-      ;
-
-    state->medeleg->write(state->medeleg->read() & ~hypervisor_exceptions);
+    state->medeleg->write(state->medeleg->read());
     if (state->mnstatus) state->mnstatus->write(state->mnstatus->read() & ~MNSTATUS_MNPV);
     const reg_t new_mstatus = state->mstatus->read() & ~(MSTATUS_GVA | MSTATUS_MPV);
     state->mstatus->write(new_mstatus);
@@ -1014,7 +1006,7 @@ bool medeleg_csr_t::unlogged_write(const reg_t val) noexcept {
     | (1 << CAUSE_SOFTWARE_CHECK_FAULT)
     | (1 << CAUSE_HARDWARE_ERROR_FAULT)
     ;
-  return basic_csr_t::unlogged_write((read() & ~mask) | (val & mask));
+  return basic_csr_t::unlogged_write(val & mask);
 }
 
 sip_csr_t::sip_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr):
