@@ -1350,26 +1350,10 @@ VI_VX_ULOOP({ \
   require_align(vd, len); \
   const reg_t elt_per_reg = P.VU.vlenb / sizeof(elt_width ## _t); \
   const reg_t size = len * elt_per_reg; \
-  if (P.VU.vstart->read() < size) { \
-    reg_t i = P.VU.vstart->read() / elt_per_reg; \
-    reg_t off = P.VU.vstart->read() % elt_per_reg; \
-    if (off) { \
-      for (reg_t pos = off; pos < elt_per_reg; ++pos) { \
-        auto val = MMU.load<elt_width##_t>(baseAddr + \
-          P.VU.vstart->read() * sizeof(elt_width ## _t)); \
-        P.VU.elt<elt_width ## _t>(vd + i, pos, true) = val; \
-        P.VU.vstart->write(P.VU.vstart->read() + 1); \
-      } \
-      ++i; \
-    } \
-    for (; i < len; ++i) { \
-      for (reg_t pos = 0; pos < elt_per_reg; ++pos) { \
-        auto val = MMU.load<elt_width##_t>(baseAddr + \
-          P.VU.vstart->read() * sizeof(elt_width ## _t)); \
-        P.VU.elt<elt_width ## _t>(vd + i, pos, true) = val; \
-        P.VU.vstart->write(P.VU.vstart->read() + 1); \
-      } \
-    } \
+  for (reg_t i = P.VU.vstart->read(); i < size; i++) { \
+    P.VU.vstart->write(i); \
+    auto val = MMU.load<elt_width##_t>(baseAddr + i * sizeof(elt_width ## _t)); \
+    P.VU.elt<elt_width ## _t>(vd, i, true) = val; \
   } \
   P.VU.vstart->write(0);
 
@@ -1380,25 +1364,10 @@ VI_VX_ULOOP({ \
   const reg_t len = insn.v_nf() + 1; \
   require_align(vs3, len); \
   const reg_t size = len * P.VU.vlenb; \
-  \
-  if (P.VU.vstart->read() < size) { \
-    reg_t i = P.VU.vstart->read() / P.VU.vlenb; \
-    reg_t off = P.VU.vstart->read() % P.VU.vlenb; \
-    if (off) { \
-      for (reg_t pos = off; pos < P.VU.vlenb; ++pos) { \
-        auto val = P.VU.elt<uint8_t>(vs3 + i, pos); \
-        MMU.store<uint8_t>(baseAddr + P.VU.vstart->read(), val); \
-        P.VU.vstart->write(P.VU.vstart->read() + 1); \
-      } \
-      i++; \
-    } \
-    for (; i < len; ++i) { \
-      for (reg_t pos = 0; pos < P.VU.vlenb; ++pos) { \
-        auto val = P.VU.elt<uint8_t>(vs3 + i, pos); \
-        MMU.store<uint8_t>(baseAddr + P.VU.vstart->read(), val); \
-        P.VU.vstart->write(P.VU.vstart->read() + 1); \
-      } \
-    } \
+  for (reg_t i = P.VU.vstart->read(); i < size; i++) { \
+    P.VU.vstart->write(i); \
+    auto val = P.VU.elt<uint8_t>(vs3, i); \
+    MMU.store<uint8_t>(baseAddr + i, val); \
   } \
   P.VU.vstart->write(0);
 
