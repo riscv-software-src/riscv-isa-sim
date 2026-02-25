@@ -1328,8 +1328,10 @@ VI_VX_ULOOP({ \
         val = MMU.load<elt_width##_t>( \
           baseAddr + (i * nf + fn) * sizeof(elt_width##_t)); \
       } catch (trap_t& t) { \
-        if (i == 0) \
+        if (i == 0) { \
+          P.VU.vstart->write(0); /* dirty VS */ \
           throw; /* Only take exception on zeroth element */ \
+        } \
         /* Reduce VL if an exception occurs on a later element */ \
         early_stop = true; \
         P.VU.vl->write_raw(i); \
@@ -1342,7 +1344,7 @@ VI_VX_ULOOP({ \
       break; \
     } \
   } \
-  p->VU.vstart->write(0);
+  VECTOR_END;
 
 #define VI_LD_WHOLE(elt_width) \
   require_vector_novtype(true); \
