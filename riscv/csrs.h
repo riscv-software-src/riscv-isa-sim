@@ -879,9 +879,9 @@ class sscsrind_reg_csr_t : public csr_t {
 
 // smcntrpmf_csr_t caches the previous state of the CSR in case a CSRW instruction
 // modifies the state that should not be immediately visible to bump()
-class smcntrpmf_csr_t : public masked_csr_t {
+class smcntrpmf_csr_t : public basic_csr_t {
  public:
-  smcntrpmf_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  smcntrpmf_csr_t(processor_t* const proc, const reg_t addr);
   reg_t read_prev() const noexcept;
   void reset_prev() noexcept;
  protected:

@@ -100,6 +100,8 @@ struct state_t
   csr_t_p mtval;
   csr_t_p mtvec;
   csr_t_p mcause;
+  smcntrpmf_csr_t_p minstretcfg;
+  smcntrpmf_csr_t_p mcyclecfg;
   wide_counter_csr_t_p minstret;
   wide_counter_csr_t_p mcycle;
   mie_csr_t_p mie;
