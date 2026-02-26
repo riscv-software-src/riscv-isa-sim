@@ -89,7 +89,6 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
     vl->write_raw(std::min(reqVL, vlmax));
   }
 
-  vstart->write_raw(0);
   return vl->read();
 }
 
