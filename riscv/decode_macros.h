@@ -110,7 +110,6 @@
 #define FRS3_D READ_FREG_D(insn.rs3())
 #define dirty_fp_state  STATE.sstatus->dirty(SSTATUS_FS)
 #define dirty_ext_state STATE.sstatus->dirty(SSTATUS_XS)
-#define dirty_vs_state  STATE.sstatus->dirty(SSTATUS_VS)
 #define DO_WRITE_FREG(reg, value) (STATE.FPR.write(reg, value), dirty_fp_state)
 #define WRITE_FRD(value) WRITE_FREG(insn.rd(), value)
 #define WRITE_FRD_H(value) \
