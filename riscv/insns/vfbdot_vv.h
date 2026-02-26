@@ -14,3 +14,5 @@ switch (P.VU.vsew) {
   }
   default: require(false);
 }
+
+VECTOR_END;

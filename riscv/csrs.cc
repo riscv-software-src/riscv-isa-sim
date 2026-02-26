@@ -1598,7 +1598,7 @@ void vector_csr_t::write_raw(const reg_t val) noexcept {
 
 bool vector_csr_t::unlogged_write(const reg_t val) noexcept {
   if (mask == 0) return false;
-  dirty_vs_state;
+  STATE.sstatus->dirty(SSTATUS_VS);
   return basic_csr_t::unlogged_write(val & mask);
 }
 
@@ -1612,7 +1612,7 @@ void vxsat_csr_t::verify_permissions(insn_t insn, bool write) const {
 }
 
 bool vxsat_csr_t::unlogged_write(const reg_t val) noexcept {
-  dirty_vs_state;
+  STATE.sstatus->dirty(SSTATUS_VS);
   return masked_csr_t::unlogged_write(val);
 }
 
