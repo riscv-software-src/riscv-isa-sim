@@ -48,3 +48,24 @@ cfg_t::cfg_t()
   trigger_count    = 4;
   cache_blocksz    = 64;
 }
+
+void start_pc_t::set_global(reg_t pc)
+{
+  global_pc = pc;
+}
+
+void start_pc_t::set_override(size_t hart_id, reg_t pc)
+{
+  hart_pcs[hart_id] = pc;
+}
+
+std::optional<reg_t> start_pc_t::get(size_t hart_id) const
+{
+  auto it = hart_pcs.find(hart_id);
+
+  if (it != hart_pcs.end()) {
+    return it->second;
+  } else {
+    return global_pc;
+  }
+}

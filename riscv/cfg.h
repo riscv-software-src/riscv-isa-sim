@@ -6,6 +6,7 @@
 #include <vector>
 #include "decode.h"
 #include <cassert>
+#include <map>
 class abstract_sim_if_t;
 
 typedef enum {
@@ -59,6 +60,20 @@ private:
   reg_t size;
 };
 
+class start_pc_t
+{
+public:
+  void set_global(reg_t pc);
+
+  void set_override(size_t hart_id, reg_t pc);
+
+  std::optional<reg_t> get(size_t hart_id) const;
+
+private:
+  std::optional<reg_t>    global_pc;
+  std::map<size_t, reg_t> hart_pcs;
+};
+
 class cfg_t
 {
 public:
@@ -72,7 +87,7 @@ public:
   reg_t                   pmpregions;
   reg_t                   pmpgranularity;
   std::vector<mem_cfg_t>  mem_layout;
-  std::optional<reg_t>    start_pc;
+  start_pc_t              start_pc;
   std::vector<size_t>     hartids;
   bool                    explicit_hartids;
   bool                    real_time_clint;

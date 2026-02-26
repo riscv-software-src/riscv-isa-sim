@@ -20,6 +20,7 @@
 #include <limits>
 #include <cinttypes>
 #include <sstream>
+#include <map>
 #include "../VERSION"
 
 static void help(int exit_code = 1)
@@ -46,6 +47,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --pmpgranularity=<n>  PMP Granularity in bytes [default 4]\n");
   fprintf(stderr, "  --priv=<m|mu|msu>     RISC-V privilege modes supported [default %s]\n", DEFAULT_PRIV);
   fprintf(stderr, "  --pc=<address>        Override ELF entry point\n");
+  fprintf(stderr, "  --pcs=<H:A,...>       Override start PC for specific harts\n");
   fprintf(stderr, "  --hartids=<a,b,...>   Explicitly specify hartids, default is 0,1,...\n");
   fprintf(stderr, "  --ic=<S>:<W>:<B>      Instantiate a cache model with S sets,\n");
   fprintf(stderr, "  --dc=<S>:<W>:<B>        W ways, and B-byte blocks (with S and\n");
@@ -383,7 +385,24 @@ int main(int argc, char** argv)
   parser.option('m', 0, 1, [&](const char* s){cfg.mem_layout = parse_mem_layout(s); memory_option=true; });
   parser.option(0, "halted", 0, [&](const char UNUSED *s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
-  parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc = strtoull(s, 0, 0);});
+  parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc.set_global(strtoull(s, 0, 0));});
+
+  parser.option(0, "pcs", 1, [&](const char* s){
+    std::string arg(s);
+    std::stringstream ss(arg);
+    std::string pair;
+    while (std::getline(ss, pair, ',')) {
+      size_t delim = pair.find(':');
+      if (delim == std::string::npos) {
+        fprintf(stderr, "Error: --pcs format is hartid:addr,hartid:addr\n");
+        exit(1);
+      }
+      size_t hartid = std::stoul(pair.substr(0, delim));
+      reg_t addr = std::strtoull(pair.substr(delim+1).c_str(), NULL, 0);
+      cfg.start_pc.set_override(hartid, addr);
+    }
+  });
+
   parser.option(0, "hartids", 1, [&](const char* s){
     cfg.hartids = parse_hartids(s);
     cfg.explicit_hartids = true;
