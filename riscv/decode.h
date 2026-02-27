@@ -148,11 +148,14 @@ public:
   uint64_t v_mew() { return x(28, 1); }
   uint64_t v_zimm6() { return x(15, 5) + (x(26, 1) << 5); }
 
-  uint64_t p_imm2() { return x(20, 2); }
-  uint64_t p_imm3() { return x(20, 3); }
-  uint64_t p_imm4() { return x(20, 4); }
-  uint64_t p_imm5() { return x(20, 5); }
-  uint64_t p_imm6() { return x(20, 6); }
+  uint64_t p_imm8() { return x(16, 8); }
+  uint64_t p_imm10csl() { return x(16, 9) + (x(15, 1) << 9); }
+  uint64_t p_imm10csr() { return (x(24, 1) << 6) + (x(15, 9) << 7); }
+  uint64_t p_imm10csrw() { return (x(24, 1) << 22) + (x(15, 9) << 23); }
+  uint64_t shamtd() { return x(20, 6); }
+  uint64_t shamtw() { return x(20, 5); }
+  uint64_t shamth() { return x(20, 4); }
+  uint64_t shamtb() { return x(20, 3); }
 
   uint64_t b_imm5() { return (x(20, 5) == 0) ? -1ul : x(20, 5); }
 
