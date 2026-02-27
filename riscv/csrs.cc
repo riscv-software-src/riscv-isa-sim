@@ -2029,6 +2029,7 @@ ssp_csr_t::ssp_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask
 void ssp_csr_t::verify_permissions(insn_t insn, bool write) const {
   masked_csr_t::verify_permissions(insn, write);
   DECLARE_XENVCFG_VARS(SSE);
+  auto p = proc; // To match macro usage
   require_envcfg(SSE);
 }
 
