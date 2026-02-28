@@ -344,15 +344,20 @@ void sim_t::set_histogram(bool value)
   }
 }
 
-void sim_t::configure_log(bool enable_log, bool enable_commitlog)
+void sim_t::configure_log(bool enable_log, bool enable_commitlog, bool trace)
 {
   log = enable_log;
 
-  if (!enable_commitlog)
-    return;
+  if (enable_commitlog) {
+    for (processor_t *proc : procs) {
+      proc->enable_log_commits();
+    }
+  }
 
-  for (processor_t *proc : procs) {
-    proc->enable_log_commits();
+  if (trace) {
+    for (processor_t *proc : procs) {
+      proc->enable_trace();
+    }
   }
 }
 
