@@ -9,8 +9,8 @@ if(xlen == 64){
 }else{
     int shamt = (uint32_t)RS2 & 31;
     if (shamt == 0) {
-        WRITE_RD((uint32_t)RD);
+        WRITE_RD(sext_xlen((uint32_t)RD));
     } else {
-        WRITE_RD(((uint32_t)RS1 << (32 - shamt)) | ((uint32_t)RD >> shamt));
+        WRITE_RD(sext_xlen(((uint32_t)RS1 << (32 - shamt)) | ((uint32_t)RD >> shamt)));
     }
 }
