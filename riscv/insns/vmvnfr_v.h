@@ -5,7 +5,8 @@ const reg_t vs2 = insn.rs2();
 const reg_t len = insn.rs1() + 1;
 require_align(vd, len);
 require_align(vs2, len);
-const reg_t size = len * P.VU.vlenb;
+const reg_t evl = len * P.VU.VLEN / P.VU.vsew;
+const reg_t size = evl * (P.VU.vsew >> 3);
 const reg_t start = P.VU.vstart->read() * (P.VU.vsew >> 3);
 
 //register needs one-by-one copy to keep commitlog correct
