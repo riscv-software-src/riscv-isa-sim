@@ -1790,9 +1790,11 @@ reg_t scountovf_csr_t::read() const noexcept {
   /* In M and S modes, scountovf bit X is readable when mcounteren bit X is set, */
   /* and otherwise reads as zero. Similarly, in VS mode, scountovf bit X is readable */
   /* when mcounteren bit X and hcounteren bit X are both set, and otherwise reads as zero. */
-  val &= state->mcounteren->read();
-  if (state->v)
-    val &= state->hcounteren->read();
+  if (state->prv != PRV_M) {
+     val &= state->mcounteren->read();
+     if (state->v)
+        val &= state->hcounteren->read();
+   }
   return val;
 }
 
