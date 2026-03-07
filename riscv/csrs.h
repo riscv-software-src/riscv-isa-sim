@@ -158,6 +158,66 @@ class mseccfg_csr_t: public basic_csr_t {
 
 typedef std::shared_ptr<mseccfg_csr_t> mseccfg_csr_t_p;
 
+// SPMP (S-level Physical Memory Protection) CSRs
+// SPMP uses indirect access via Sscsrind (siselect/sireg/sireg2)
+// siselect range 0x100-0x13F maps to SPMP entries 0-63
+// sireg accesses spmpaddr[siselect - 0x100]
+// sireg2 accesses spmpcfg[siselect - 0x100]
+
+class spmpaddr_csr_t: public csr_t {
+ public:
+  spmpaddr_csr_t(processor_t* const proc, const reg_t addr, const size_t spmpidx);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  virtual reg_t read() const noexcept override;
+
+  // Does a 4-byte access at the specified address match this SPMP entry?
+  bool match4(reg_t addr) const noexcept;
+
+  // Does the specified range match only a proper subset of this page?
+  bool subset_match(reg_t addr, reg_t len) const noexcept;
+
+  // Is the specified access allowed given the spmpcfg privileges?
+  bool access_ok(access_type type, reg_t mode) const noexcept;
+
+  // To check lock bit status
+  bool is_locked() const noexcept {
+    return cfg & 0x80;  // SPMP_L bit
+  }
+
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  // Assuming this is configured as TOR, return address for top of range
+  reg_t tor_paddr() const noexcept;
+
+  // Assuming this is configured as TOR, return address for bottom of range
+  reg_t tor_base_paddr() const noexcept;
+
+  // Assuming this is configured as NAPOT or NA4, return mask for paddr
+  reg_t napot_mask() const noexcept;
+
+  bool next_locked_and_tor() const noexcept;
+  reg_t val;
+  reg_t cfg;  // SXLEN-bit configuration (R, W, X, A, L, U, SHARED)
+  const size_t spmpidx;
+  friend class spmpcfg_csr_t;  // Allow spmpcfg_csr_t to access cfg
+};
+
+typedef std::shared_ptr<spmpaddr_csr_t> spmpaddr_csr_t_p;
+
+// spmpcfg is accessed via sireg2 when siselect is in SPMP range
+// Each spmpcfg[i] is SXLEN bits (not packed like PMP!)
+class spmpcfg_csr_t: public csr_t {
+ public:
+  spmpcfg_csr_t(processor_t* const proc, const reg_t addr, spmpaddr_csr_t_p spmpaddr);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  spmpaddr_csr_t_p spmpaddr;
+};
+
 // For CSRs that have a virtualized copy under another name. Each
 // instance of virtualized_csr_t will read/write one of two CSRs,
 // based on state.v. E.g. sscratch, stval, etc.

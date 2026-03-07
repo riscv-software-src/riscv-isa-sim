@@ -67,6 +67,15 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
   set_pmp_granularity(cfg->pmpgranularity);
   set_pmp_num(cfg->pmpregions);
 
+  // Initialize SPMP with 64 entries if extension enabled, using same granularity as PMP
+  if (extension_enabled_const(EXT_SSPMP)) {
+    set_spmp_granularity(cfg->pmpgranularity);
+    set_spmp_num(state.max_spmp);
+  } else {
+    n_spmp = 0;
+    lg_spmp_granularity = PMP_SHIFT;
+  }
+
   set_max_vaddr_bits(0);
   set_impl(IMPL_MMU_ASID, true);
   set_impl(IMPL_MMU_VMID, true);
@@ -211,6 +220,28 @@ void processor_t::set_pmp_granularity(reg_t gran)
   }
 
   lg_pmp_granularity = ctz(gran);
+}
+
+void processor_t::set_spmp_num(reg_t n)
+{
+  // check the number of spmp is in a reasonable range
+  if (n > state.max_spmp) {
+    fprintf(stderr, "error: number of SPMP regions requested (%" PRIu64 ") exceeds maximum (%d)\n", n, state.max_spmp);
+    abort();
+  }
+  n_spmp = n;
+}
+
+void processor_t::set_spmp_granularity(reg_t gran)
+{
+  // check the spmp granularity is set from dtb(!=0) and is power of 2
+  unsigned min = 1 << PMP_SHIFT;
+  if (gran < min || (gran & (gran - 1)) != 0) {
+    fprintf(stderr, "error: SPMP granularity (%" PRIu64 ") must be a power of two and at least %u\n", gran, min);
+    abort();
+  }
+
+  lg_spmp_granularity = ctz(gran);
 }
 
 void processor_t::set_max_vaddr_bits(unsigned n)

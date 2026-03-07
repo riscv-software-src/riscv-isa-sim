@@ -519,6 +519,41 @@ bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlv
           && (!mseccfg_mml || ((type == LOAD) || (type == STORE))));
 }
 
+bool mmu_t::spmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
+{
+  // SPMP only applies to S-mode and U-mode accesses
+  if (!proc || proc->n_spmp == 0 || mode == PRV_M)
+    return true;
+
+  reg_t gran = reg_t(1) << proc->lg_spmp_granularity;
+  reg_t addr_aligned = addr & -gran;
+  reg_t len_aligned = ((addr + len + gran - 1) & -gran) - addr_aligned;
+
+  for (size_t i = 0; i < proc->n_spmp; i++) {
+    // Check each SPMP-granularity sector of the access
+    bool any_match = false;
+    bool all_match = true;
+    for (reg_t offset = 0; offset < len_aligned; offset += gran) {
+      bool match = proc->state.spmpaddr[i]->match4(addr_aligned + offset);
+      any_match |= match;
+      all_match &= match;
+    }
+
+    if (any_match) {
+      // If the SPMP matches only a strict subset of the access, fail it
+      if (!all_match)
+        return false;
+
+      return proc->state.spmpaddr[i]->access_ok(type, mode);
+    }
+  }
+
+  // No matching SPMP entry found
+  // Default behavior: deny access for S/U mode when no entry matches
+  // (This is different from PMP which allows M-mode by default)
+  return false;
+}
+
 reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
 {
   if ((addr | len) & (len - 1))
