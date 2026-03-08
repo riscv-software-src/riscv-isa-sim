@@ -141,6 +141,8 @@ Now you can simulate the program atop the proxy kernel:
 
     $ spike pk hello
 
+Spike won't search `PATH` for the proxy kernel: you either have to supply `pk` in the working directory (e.g., as a symbolic link), or pass its absolute path. 
+
 Simulating a New Instruction
 ------------------------------------
 
