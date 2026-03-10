@@ -1207,8 +1207,10 @@ riscv_insn_ext_p = \
 	pabdsumau_b \
 	psext_h_b \
 	psati_h \
+	sati \
 	sati_rv32 \
 	pusati_h \
+	usati \
 	usati_rv32 \
 	pslli_b \
 	pslli_h \
@@ -1227,6 +1229,7 @@ riscv_insn_ext_p = \
 	pssha_hs \
 	psshar_hs \
 	sslai \
+	srari \
 	srari_rv32 \
 	ssha \
 	sshar \
