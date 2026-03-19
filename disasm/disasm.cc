@@ -2175,6 +2175,14 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     DEFINE_R1TYPE(sm3p1);
   }
 
+  if (ext_enabled(EXT_ZVABD)) {
+    DEFINE_VECTOR_V(vabs_v);
+    DEFINE_VECTOR_VV(vabd_vv);
+    DEFINE_VECTOR_VV(vabdu_vv);
+    DEFINE_VECTOR_MULTIPLYADD_VV(vwabda_vv);
+    DEFINE_VECTOR_MULTIPLYADD_VV(vwabdau_vv);
+  }
+
   if (ext_enabled(EXT_ZVBB)) {
 #define DEFINE_VECTOR_VIU_ZIMM6(code) \
   add_vector_viu_z6_insn(this, #code, match_##code, mask_##code)

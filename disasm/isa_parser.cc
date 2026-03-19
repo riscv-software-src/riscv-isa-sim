@@ -244,6 +244,8 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
     extension_table[EXT_ZCLSD] = true;
     extension_table[EXT_ZCA] = true;
     extension_table[EXT_ZILSD] = true;
+  } else if (ext_str == "zvabd") {
+    extension_table[EXT_ZVABD] = true;
   } else if (ext_str == "zvkb") {
     extension_table[EXT_ZVKB] = true;
   } else if (ext_str == "zvbb") {
