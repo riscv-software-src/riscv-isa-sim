@@ -538,8 +538,7 @@ private:
   }
 
   reg_t pmp_homogeneous(reg_t addr, reg_t len);
-  static const int NO_IDX = -1;
-  bool pmp_search(reg_t addr, reg_t len, base_pmpaddr_csr_t_p* pmpaddr, size_t pmp_num, int &index);
+  std::optional<int> pmp_search(reg_t addr, reg_t len, size_t start, size_t pmp_num);
   bool pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlvx);
   bool spmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode);
 

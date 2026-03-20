@@ -77,7 +77,7 @@ typedef std::vector<std::tuple<reg_t, uint64_t, uint8_t>> commit_log_mem_t;
 // architectural state of a RISC-V hart
 struct state_t
 {
-  void add_iprio_proxy(processor_t* const proc, sscsrind_reg_csr_t::sscsrind_reg_csr_t_p ireg);
+  void add_iprio_proxy(processor_t* const proc, sscsrind_reg_csr_t_p ireg);
   void reset(processor_t* const proc, reg_t max_isa);
   void add_csr(reg_t addr, const csr_t_p& csr);
 
@@ -165,8 +165,7 @@ struct state_t
 
   static const int max_pmp = 64;
   csr_t_p mpmpdeleg;
-  base_pmpaddr_csr_t_p mpmpaddr[max_pmp];
-  base_pmpaddr_csr_t_p spmpaddr[max_pmp];
+  base_pmpaddr_csr_t_p pmpaddr[max_pmp];
   csr_t_p spmpen;
 
   float_csr_t_p fflags;
@@ -194,6 +193,10 @@ struct state_t
   csr_t_p vstimecmp;
 
   csr_t_p ssp;
+
+  sscsrind_reg_csr_t_p mireg[6];
+  sscsrind_reg_csr_t_p vsireg[6];
+  sscsrind_reg_csr_t_p nonvirtual_sireg[6];
 
   csr_t_p mvien;
   mvip_csr_t_p mvip;
@@ -349,6 +352,7 @@ public:
 
   void set_pmp_num(reg_t pmp_num);
   void set_pmp_granularity(reg_t pmp_granularity);
+  void set_spmp_addr_entry();
 
   const char* get_symbol(uint64_t addr);
 

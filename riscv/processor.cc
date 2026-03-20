@@ -213,6 +213,20 @@ void processor_t::set_pmp_granularity(reg_t gran)
   lg_pmp_granularity = ctz(gran);
 }
 
+void processor_t::set_spmp_addr_entry()
+{
+  for (size_t i = 0; i < state.max_pmp; ++i) {
+    state.mireg[0]->add_ireg_proxy(0x100+i, std::make_shared<const_csr_t>(this, 0x100+i, 0));
+    state.nonvirtual_sireg[0]->add_ireg_proxy(0x100+i, std::make_shared<const_csr_t>(this, 0x100+i, 0));
+  }
+
+  for (size_t i = 0; i < (state.max_pmp - n_pmp); ++i) {
+    state.pmpaddr[n_pmp+i] = std::make_shared<spmpaddr_csr_t>(this, i);
+    state.mireg[0]->add_ireg_proxy(0x100+i, state.pmpaddr[n_pmp+i]);
+    state.nonvirtual_sireg[0]->add_ireg_proxy(0x100+i, state.pmpaddr[n_pmp+i]);
+  }
+}
+
 void processor_t::set_max_vaddr_bits(unsigned n)
 {
   switch (n) {
