@@ -497,9 +497,8 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
   return entry;
 }
 
-bool mmu_t::pmp_search(reg_t addr, reg_t len, base_pmpaddr_csr_t_p* pmpaddr, size_t pmp_num, int &index)
+std::optional<int> mmu_t::pmp_search(reg_t addr, reg_t len, size_t start, size_t pmp_num)
 {
-  index = NO_IDX;
   reg_t gran = reg_t(1) << proc->lg_pmp_granularity;
   reg_t addr_aligned = addr & -gran;
   reg_t len_aligned = ((addr + len + gran - 1) & -gran) - addr_aligned;
@@ -509,7 +508,7 @@ bool mmu_t::pmp_search(reg_t addr, reg_t len, base_pmpaddr_csr_t_p* pmpaddr, siz
     bool any_match = false;
     bool all_match = true;
     for (reg_t offset = 0; offset < len_aligned; offset += gran) {
-      bool match = pmpaddr[i]->match4(addr_aligned + offset);
+      bool match = proc->state.pmpaddr[start + i]->match4(addr_aligned + offset);
       any_match |= match;
       all_match &= match;
     }
@@ -517,14 +516,13 @@ bool mmu_t::pmp_search(reg_t addr, reg_t len, base_pmpaddr_csr_t_p* pmpaddr, siz
     if (any_match) {
       // If the PMP matches only a strict subset of the access, fail it
       if (!all_match)
-        return false;
+        return std::nullopt;
 
-      index = i;
-      return true;
+      return i;
     }
   }
 
-  return true;
+  return -1;
 }
 
 bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlvx)
@@ -532,13 +530,10 @@ bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlv
   if (!proc || proc->n_pmp == 0)
     return true;
 
-  int pmp_idx = NO_IDX;
-  if (pmp_search(addr, len, proc->state.mpmpaddr, proc->n_pmp, pmp_idx)) {
-    if (pmp_idx != NO_IDX)
-      return proc->state.mpmpaddr[pmp_idx]->access_ok(type, mode, hlvx);
-  } else {
-    return false;
-  }
+  if (auto idx = pmp_search(addr, len, 0, proc->n_pmp); idx.has_value()) {
+    if (*idx != -1)
+      return dynamic_cast<pmpaddr_csr_t*>(proc->state.pmpaddr[*idx].get())->access_ok(type, mode, hlvx);
+  } else return false;
 
   // in case matching region is not found
   const bool mseccfg_mml = proc->state.mseccfg->get_mml();
@@ -552,13 +547,10 @@ bool mmu_t::spmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
   if (!proc)
     return true;
 
-  int pmp_idx = NO_IDX;
-  if (pmp_search(addr, len, proc->state.spmpaddr, proc->state.max_pmp - proc->n_pmp, pmp_idx)) {
-    if (pmp_idx != NO_IDX)
-      return proc->state.spmpaddr[pmp_idx]->access_ok(type, mode, false);
-  } else {
-    return false;
-  }
+  if (auto idx = pmp_search(addr, len, proc->n_pmp, proc->state.max_pmp - proc->n_pmp); idx.has_value()) {
+    if (*idx != -1)
+      return dynamic_cast<spmpaddr_csr_t*>(proc->state.pmpaddr[proc->n_pmp + *idx].get())->access_ok(type, mode, false);
+  } else return false;
 
   return true;
 }
@@ -572,7 +564,7 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
     return true;
 
   for (size_t i = 0; i < proc->n_pmp; i++)
-    if (proc->state.mpmpaddr[i]->subset_match(addr, len))
+    if (proc->state.pmpaddr[i]->subset_match(addr, len))
       return false;
 
   return true;
