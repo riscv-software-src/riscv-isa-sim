@@ -119,7 +119,7 @@ reg_t base_pmpaddr_csr_t::napot_mask() const noexcept {
 
 bool base_pmpaddr_csr_t::match4(reg_t addr) const noexcept {
   if (proc->extension_enabled_const(EXT_SSPMPEN) && is_spmp) {
-    if (!((state->sspmpswitch->read() >> pmpidx) & 1))
+    if (!((state->spmpen->read() >> pmpidx) & 1))
       return false;
   }
 
@@ -132,7 +132,7 @@ bool base_pmpaddr_csr_t::match4(reg_t addr) const noexcept {
 
 bool base_pmpaddr_csr_t::subset_match(reg_t addr, reg_t len) const noexcept {
   if (proc->extension_enabled_const(EXT_SSPMPEN) && is_spmp) {
-    if (!((state->sspmpswitch->read() >> pmpidx) & 1))
+    if (!((state->spmpen->read() >> pmpidx) & 1))
       return false;
   }
 

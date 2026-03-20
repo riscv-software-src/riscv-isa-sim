@@ -167,7 +167,7 @@ struct state_t
   csr_t_p mpmpdeleg;
   base_pmpaddr_csr_t_p mpmpaddr[max_pmp];
   base_pmpaddr_csr_t_p spmpaddr[max_pmp];
-  csr_t_p sspmpswitch;
+  csr_t_p spmpen;
 
   float_csr_t_p fflags;
   float_csr_t_p frm;

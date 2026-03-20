@@ -591,12 +591,12 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     }
 
     if (proc->extension_enabled_const(EXT_SSPMPEN)) {
-      sspmpswitch = std::make_shared<spmpen_csr_t>(proc, CSR_SPMPEN, 0);
+      spmpen = std::make_shared<spmpen_csr_t>(proc, CSR_SPMPEN, 0);
       if (xlen == 32) {
-        add_supervisor_csr(CSR_SPMPEN, std::make_shared<rv32_low_csr_t>(proc, CSR_SPMPEN, sspmpswitch));
-        add_supervisor_csr(CSR_SPMPENH, std::make_shared<rv32_high_csr_t>(proc, CSR_SPMPENH, sspmpswitch));
+        add_supervisor_csr(CSR_SPMPEN, std::make_shared<rv32_low_csr_t>(proc, CSR_SPMPEN, spmpen));
+        add_supervisor_csr(CSR_SPMPENH, std::make_shared<rv32_high_csr_t>(proc, CSR_SPMPENH, spmpen));
       } else {
-        add_supervisor_csr(CSR_SPMPEN, sspmpswitch);
+        add_supervisor_csr(CSR_SPMPEN, spmpen);
       }
     }
   }
