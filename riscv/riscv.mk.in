@@ -1734,6 +1734,24 @@ riscv_insn_ext_p = \
 	pmq2adda_w \
 	pmqr2add_w \
 	pmqr2adda_w \
+	sshl \
+	sshlr \
+	shl \
+	shlr \
+	psshl_hs \
+	psshlr_hs \
+	psshl_ws \
+	psshlr_ws \
+	psshl_dhs \
+	psshlr_dhs \
+	psshl_dws \
+	psshlr_dws \
+	pnclipp_b \
+	pnclipp_h \
+	pnclipp_w \
+	pnclipup_b \
+	pnclipup_h \
+	pnclipup_w \
 
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
