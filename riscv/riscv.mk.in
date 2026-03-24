@@ -1143,6 +1143,13 @@ riscv_insn_ext_zvabd = \
 	vwabda_vv \
 	vwabdau_vv \
 
+riscv_insn_ext_zvzip = \
+	vzip_vv \
+	vunzipe_v \
+	vunzipo_v \
+	vpaire_vv \
+	vpairo_vv \
+
 riscv_insn_list = \
 	$(riscv_insn_ext_i) \
 	$(riscv_insn_ext_c) \
@@ -1174,6 +1181,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_zvbdot) \
 	$(riscv_insn_ext_zvldot) \
 	$(riscv_insn_ext_zvabd) \
+	$(riscv_insn_ext_zvzip) \
 	$(riscv_insn_priv) \
 	$(riscv_insn_smrnmi) \
 	$(riscv_insn_svinval) \
