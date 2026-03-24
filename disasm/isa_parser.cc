@@ -408,6 +408,7 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
   } else if (ext_str == "ssaia") {
     extension_table[EXT_SSAIA] = true;
     extension_table[EXT_SSCSRIND] = true;
+  } else if (ext_str == "svvptc") {
   } else if (ext_str[0] == 'x') {
     extension_table['X'] = true;
     if (ext_str.size() == 1) {
