@@ -197,6 +197,13 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
   } else if (ext_str == "zkt") {
   } else if (ext_str == "smepmp") {
     extension_table[EXT_SMEPMP] = true;
+  } else if (ext_str == "sspmp") {
+    extension_table[EXT_SSPMP] = true;
+    extension_table[EXT_SMPMPDELEG] = true;
+    extension_table[EXT_SMCSRIND] = true;
+    extension_table[EXT_SSCSRIND] = true;
+  } else if (ext_str == "sspmpen") {
+    extension_table[EXT_SSPMPEN] = true;
   } else if (ext_str == "smstateen") {
     extension_table[EXT_SMSTATEEN] = true;
   } else if (ext_str == "smpmpmt") {
@@ -577,4 +584,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     if (extension_table[ch])
       max_isa |= 1UL << (ch - 'A');
   }
+
+  if (extension_table[EXT_SSPMP] && !supervisor)
+    bad_isa_string(str, "'SPMP' extension requires S mode");
 }
