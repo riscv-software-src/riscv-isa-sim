@@ -115,6 +115,8 @@ static const extension_info_t extension_infos[] = {
   {"zacas", {EXT_ZACAS, EXT_ZAAMO}},
   {"zabha", {EXT_ZABHA, EXT_ZAAMO}},
   {"zawrs", {EXT_ZAWRS, EXT_ZALRSC}},
+  {"za64rs", {EXT_ZA64RS}, {"zalrsc"}},
+  {"za128rs", {EXT_ZA128RS}, {"zalrsc"}},
   {"zama16b", {EXT_ZAMA16B}},
   {"zmmul", {EXT_ZMMUL}},
   {"zba", {EXT_ZBA}},
