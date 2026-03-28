@@ -244,6 +244,7 @@ public:
   inline void yield_load_reservation()
   {
     load_reservation_address = (reg_t)-1;
+    load_reservation_size = 0;
   }
 
   inline bool check_load_reservation(reg_t vaddr, size_t size)
@@ -257,9 +258,13 @@ public:
     if (!tlb_hit)
       paddr = translate(generate_access_info(vaddr, STORE, {}), 1);
 
-    if (sim->reservable(paddr))
+    if (sim->reservable(paddr)) {
+      // Check za64rs/za128rs constraints
+      if (load_reservation_size > 0) {
+        return (paddr & ~(load_reservation_size - 1)) == load_reservation_address;
+      }
       return load_reservation_address == paddr;
-    else
+    } else
       throw trap_store_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0);
   }
 
@@ -375,6 +380,7 @@ private:
   processor_t* proc;
   memtracer_list_t tracer;
   reg_t load_reservation_address;
+  reg_t load_reservation_size;
   reg_t blocksz;
 
   // implement an instruction cache for simulator performance

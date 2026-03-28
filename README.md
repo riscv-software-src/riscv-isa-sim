@@ -55,6 +55,7 @@ Spike supports the following RISC-V ISA features:
   - Zabha extension, v1.0
   - Zacas extension, v1.0
   - Zawrs extension, v1.0
+  - Za64rs, Za128rs extension, v1.0
   - Zicfiss extension, v1.0
   - Zicfilp extension, v1.0
   - Zca extension, v1.0

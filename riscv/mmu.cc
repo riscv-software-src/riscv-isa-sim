@@ -275,7 +275,16 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
   perform_intrapage_load(vaddr, host_addr, paddr, len, bytes, access_info.flags);
 
   if (access_info.flags.lr) {
-    load_reservation_address = paddr;
+    if (proc && proc->extension_enabled(EXT_ZA64RS)) {
+      load_reservation_size = 64;
+      load_reservation_address = paddr & ~(load_reservation_size - 1);
+    } else if (proc && proc->extension_enabled(EXT_ZA128RS)) {
+      load_reservation_size = 128;
+      load_reservation_address = paddr & ~(load_reservation_size - 1);
+    } else {
+      load_reservation_size = 0;
+      load_reservation_address = paddr;
+    }
   }
 }
 
