@@ -100,6 +100,12 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
   } else if (ext_str == "zawrs") {
     extension_table[EXT_ZAWRS] = true;
     extension_table[EXT_ZALRSC] = true;
+  } else if (ext_str == "za64rs") {
+    extension_table[EXT_ZA64RS] = true;
+    extension_table[EXT_ZALRSC] = true;
+  } else if (ext_str == "za128rs") {
+    extension_table[EXT_ZA128RS] = true;
+    extension_table[EXT_ZALRSC] = true;
   } else if (ext_str == "zmmul") {
     extension_table[EXT_ZMMUL] = true;
   } else if (ext_str == "zba") {
