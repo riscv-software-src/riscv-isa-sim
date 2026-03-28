@@ -17,6 +17,7 @@
 #include "triggers.h"
 #include "../fesvr/memif.h"
 #include "vector_unit.h"
+#include "trace_encoder_n.h"
 
 #define FIRST_HPMCOUNTER 3
 #define N_HPMCOUNTERS 29
@@ -238,7 +239,9 @@ public:
   void set_debug(bool value);
   void set_histogram(bool value);
   void enable_log_commits();
+  void enable_trace();
   bool get_log_commits_enabled() const { return log_commits_enabled; }
+  bool get_trace_enabled() const { return trace_enabled; }
   void reset();
   void step(size_t n); // run for n cycles
   void put_csr(int which, reg_t val);
@@ -357,6 +360,8 @@ public:
 
   reg_t select_an_interrupt_with_default_priority(reg_t enabled_interrupts) const;
 
+  trace_encoder_n* get_trace_encoder() { return &trace_encoder; }
+
 private:
   const isa_parser_t isa;
   const cfg_t * const cfg;
@@ -371,6 +376,7 @@ private:
   unsigned max_vaddr_bits;
   bool histogram_enabled;
   bool log_commits_enabled;
+  bool trace_enabled; // whether core needs to trace instructions - does not mean the encoder itself is enabled!
   FILE *log_file;
   std::ostream sout_; // needed for socket command interface -s, also used for -d and -l, but not for --log
   bool halt_on_reset;
@@ -419,6 +425,7 @@ public:
 
   vectorUnit_t VU;
   triggers::module_t TM;
+  trace_encoder_n trace_encoder;
 };
 
 #endif
