@@ -30,6 +30,8 @@
 #undef STATE
 #define STATE state
 
+static constexpr reg_t CHECKPOINT_TRIGGER_CSR = 0x800;
+
 processor_t::processor_t(const char* isa_str, const char* priv_str,
                          const cfg_t *cfg,
                          simif_t* sim, uint32_t id, bool halt_on_reset,
@@ -611,6 +613,11 @@ void processor_t::disasm(insn_t insn)
 void processor_t::put_csr(int which, reg_t val)
 {
   val = zext_xlen(val);
+  if (which == CHECKPOINT_TRIGGER_CSR) {
+    if (sim)
+      sim->request_checkpoint_save();
+    return;
+  }
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
     search->second->write(val);
@@ -623,6 +630,9 @@ void processor_t::put_csr(int which, reg_t val)
 // side effects on reads.
 reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
 {
+  if (which == CHECKPOINT_TRIGGER_CSR)
+    return 0;
+
   auto search = state.csrmap.find(which);
   if (search != state.csrmap.end()) {
     if (!peek)

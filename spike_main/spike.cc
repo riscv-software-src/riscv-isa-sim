@@ -8,6 +8,7 @@
 #include "remote_bitbang.h"
 #include "cachesim.h"
 #include "extension.h"
+#include "checkpoint.h"
 #include <dlfcn.h>
 #include <fesvr/option_parser.h>
 #include <stdexcept>
@@ -87,6 +88,10 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --dm-no-abstractauto  Debug module won't support the abstractauto register\n");
   fprintf(stderr, "  --blocksz=<size>      Cache block size (B) for CMO operations(powers of 2) [default 64]\n");
   fprintf(stderr, "  --instructions=<n>    Stop after n instructions\n");
+  fprintf(stderr, "  --save=<name>         Save a checkpoint upon exit or guest CSR 0x800 write\n");
+  fprintf(stderr, "  --load=<name>         Resume from a previously saved checkpoint\n");
+  fprintf(stderr, "  --compress            Use zip compression for checkpoint memory\n");
+  fprintf(stderr, "  --compress-zstd       Use zstd compression for checkpoint memory\n");
 
   exit(exit_code);
 }
@@ -327,6 +332,7 @@ int main(int argc, char** argv)
   bool dtb_enabled = true;
   bool dtb_discovery = false;
   bool memory_option = false;
+  checkpoint_config_t ckpt_config;
   const char* kernel = NULL;
   reg_t kernel_offset, kernel_size;
   std::vector<device_factory_sargs_t> plugin_device_factories;
@@ -464,12 +470,46 @@ int main(int argc, char** argv)
   parser.option(0, "instructions", 1, [&](const char* s){
     instructions = strtoull(s, 0, 0);
   });
+  parser.option(0, "save", 1, [&](const char* s){
+    ckpt_config.snapshot_save_name = s;
+  });
+  parser.option(0, "load", 1, [&](const char* s){
+    ckpt_config.snapshot_load_name = s;
+    cfg.start_pc = CHECKPOINT_BOOTROM_BASE;
+  });
+  parser.option(0, "compress", 0, [&](const char UNUSED *s){
+    ckpt_config.snapshot_compress = true;
+  });
+  parser.option(0, "compress-zstd", 0, [&](const char UNUSED *s){
+    ckpt_config.snapshot_compress_zstd = true;
+  });
 
   auto argv1 = parser.parse(argv);
   std::vector<std::string> htif_args(argv1, (const char*const*)argv + argc);
 
-  if (!*argv1)
+  if (ckpt_config.snapshot_load_name) {
+    // When loading checkpoint, no ELF is needed; use "none" as placeholder
+    if (!*argv1) {
+      htif_args.insert(htif_args.begin(), "none");
+    }
+    // Auto-detect compression format
+    std::string mainram_base_name = std::string(ckpt_config.snapshot_load_name) + ".mainram";
+    if (check_file_exists(mainram_base_name.c_str())) {
+      ckpt_config.snapshot_compress = false;
+      ckpt_config.snapshot_compress_zstd = false;
+    } else if (check_file_exists((mainram_base_name + ".zip").c_str())) {
+      ckpt_config.snapshot_compress = true;
+      ckpt_config.snapshot_compress_zstd = false;
+    } else if (check_file_exists((mainram_base_name + ".zst").c_str())) {
+      ckpt_config.snapshot_compress = false;
+      ckpt_config.snapshot_compress_zstd = true;
+    } else {
+      std::cerr << "can't find mainram: " << mainram_base_name << std::endl;
+      exit(-1);
+    }
+  } else if (!*argv1) {
     help();
+  }
 
   std::vector<std::pair<reg_t, abstract_mem_t*>> mems =
       make_mems(cfg.mem_layout);
@@ -535,6 +575,31 @@ int main(int argc, char** argv)
       socket,
       cmd_file,
       instructions);
+
+  // Checkpoint setup
+  bool has_elf = *argv1 != nullptr;
+  std::unique_ptr<checkpoint_t> ckpt;
+  if (ckpt_config.snapshot_load_name || ckpt_config.snapshot_save_name) {
+    reg_t mem_base = mems.empty() ? DRAM_BASE : mems[0].first;
+    ckpt = std::make_unique<checkpoint_t>(
+        ckpt_config, &s, &s.get_bus_rw(), s.get_clint(),
+        s.get_dtb(), mem_base, /*need_trampoline=*/!has_elf);
+    if (ckpt_config.snapshot_load_name) {
+      // Always load CPU state (bootrom + debug mode) before run
+      ckpt->load_cpu();
+      if (has_elf) {
+        // When ELF is provided, htif loads it into memory first, then calls
+        // reset(). We delay RAM loading to after reset so checkpoint memory
+        // overwrites the ELF content with the correct saved state.
+        auto* ckpt_ptr = ckpt.get();
+        s.set_post_reset_callback([ckpt_ptr]() { ckpt_ptr->load_ram(); });
+      } else {
+        // No ELF: load RAM directly (no conflict)
+        ckpt->load_ram();
+      }
+    }
+  }
+
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));
@@ -563,8 +628,13 @@ int main(int argc, char** argv)
   s.set_debug(debug);
   s.configure_log(log, log_commits);
   s.set_histogram(histogram);
+  s.set_checkpoint_save_on_trigger(ckpt_config.snapshot_save_name != nullptr);
 
   auto return_code = s.run();
+
+  if (ckpt && ckpt_config.snapshot_save_name) {
+    ckpt->save();
+  }
 
   for (auto& mem : mems)
     delete mem.second;

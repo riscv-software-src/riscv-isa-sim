@@ -311,6 +311,7 @@ public:
   reg_t throw_instruction_address_misaligned(reg_t pc);
   reg_t legalize_privilege(reg_t);
   void set_privilege(reg_t, bool);
+  void set_debug_boot() { state.debug_mode = true; set_privilege(PRV_M, false); }
   const char* get_privilege_string() const;
   void update_histogram(reg_t pc);
   const disassembler_t* get_disassembler() { return disassembler; }

@@ -23,6 +23,9 @@ public:
   virtual bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes) = 0;
   // Callback for processors to let the simulation know they were reset.
   virtual void proc_reset(unsigned id) = 0;
+  // Request that the simulator exit so the existing checkpoint-on-exit path
+  // can persist state after a guest-visible trigger.
+  virtual void request_checkpoint_save() {}
 
   virtual const cfg_t &get_cfg() const = 0;
   virtual const std::map<size_t, processor_t*>& get_harts() const = 0;

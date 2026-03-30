@@ -362,6 +362,15 @@ void sim_t::set_procs_debug(bool value)
     procs[i]->set_debug(value);
 }
 
+void sim_t::request_checkpoint_save()
+{
+  if (!checkpoint_save_on_trigger || checkpoint_save_requested)
+    return;
+
+  checkpoint_save_requested = true;
+  htif_exit(0);
+}
+
 bool sim_t::mmio_load(reg_t paddr, size_t len, uint8_t* bytes)
 {
   if (paddr + len < paddr)
@@ -449,6 +458,8 @@ void sim_t::reset()
 {
   if (dtb_enabled)
     set_rom();
+  if (post_reset_cb)
+    post_reset_cb();
 }
 
 void sim_t::idle()
