@@ -321,6 +321,8 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
   } else if (ext_str == "zvfwldot16bf") {
     extension_table[EXT_ZVFWLDOT16BF] = true;
   } else if (ext_str == "zvkt") {
+  } else if (ext_str == "zvzip") {
+    extension_table[EXT_ZVZIP] = true;
   } else if (ext_str == "sstc") {
       extension_table[EXT_SSTC] = true;
   } else if (ext_str == "smcsrind") {
