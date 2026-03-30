@@ -180,6 +180,7 @@ void checkpoint_t::ram_deserialize(const char *load_name) {
   uint8_t found_mainram = 0;
 
   std::list<std::string> mainram_types = {MAINRAM_BASE, MAINRAM_ZIP, MAINRAM_ZST};
+  std::list<std::string> missing_mainram_names;
   std::string mainram_load_name;
   std::ifstream main_fin;
 
@@ -194,12 +195,16 @@ void checkpoint_t::ram_deserialize(const char *load_name) {
       if (type == MAINRAM_ZST)
         mainram_zst_file_exist = true;
     } else {
-      std::cerr << "not found mainram: " << mainram_load_name << std::endl;
+      missing_mainram_names.push_back(mainram_load_name);
     }
     main_fin.close();
   }
 
   if (found_mainram != 1) {
+    if (found_mainram == 0) {
+      for (const auto& missing_name : missing_mainram_names)
+        std::cerr << "not found mainram: " << missing_name << std::endl;
+    }
     std::cerr << "found " << (int)found_mainram << " mainram files" << std::endl;
     exit(-1);
   }
