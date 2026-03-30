@@ -3,7 +3,9 @@
 #include "dts.h"
 #include "libfdt.h"
 #include "processor.h"
+#include <fesvr/htif.h>
 
+#include <cstdlib>
 #include <fcntl.h>
 #include <iomanip>
 #include <list>
@@ -116,11 +118,49 @@ static inline void remove_directory(const std::string &directory) {
   }
 }
 
+static bool parse_hex_field_value(const std::string &line, const char *key,
+                                  addr_t *value) {
+  std::string prefix = std::string(key) + ":";
+  if (line.rfind(prefix, 0) != 0)
+    return false;
+
+  auto parsed = std::strtoull(line.c_str() + prefix.size(), nullptr, 0);
+  *value = static_cast<addr_t>(parsed);
+  return true;
+}
+
 // ---------------------------------------------------------------------------
 // Deserialize (load)
 // ---------------------------------------------------------------------------
 
 void checkpoint_t::cpu_deserialize(const char *load_name) {
+  std::string regs_load_name(load_name);
+  regs_load_name.append(".re_regs");
+
+  std::ifstream regs_fin(regs_load_name);
+  if (!regs_fin.good()) {
+    std::cerr << "can't find regs file: " << regs_load_name << std::endl;
+    exit(-1);
+  }
+
+  addr_t tohost_addr = 0;
+  addr_t fromhost_addr = 0;
+  std::string line;
+  while (std::getline(regs_fin, line)) {
+    addr_t parsed_value = 0;
+    if (parse_hex_field_value(line, "tohost_addr", &parsed_value)) {
+      tohost_addr = parsed_value;
+      continue;
+    }
+    if (parse_hex_field_value(line, "fromhost_addr", &parsed_value))
+      fromhost_addr = parsed_value;
+  }
+
+  if (auto *htif = dynamic_cast<htif_t *>(sim);
+      htif && (tohost_addr != 0 || fromhost_addr != 0)) {
+    htif->set_tohost_addrs(tohost_addr, fromhost_addr);
+  }
+
   // Put processor in debug mode so checkpoint bootrom can write debug CSRs
   proc->get_state()->debug_mode = true;
   proc->set_privilege(PRV_M, false);
@@ -267,6 +307,13 @@ void checkpoint_t::save_regs_file(const char *save_name) {
 
   regs_save_fout << "# spike serialization file" << std::endl;
   regs_save_fout << "pc:0x" << std::hex << state->pc << std::endl;
+
+  if (auto *htif = dynamic_cast<htif_t *>(sim)) {
+    regs_save_fout << "tohost_addr:0x" << std::hex << htif->get_tohost_addr()
+                   << std::endl;
+    regs_save_fout << "fromhost_addr:0x" << std::hex
+                   << htif->get_fromhost_addr() << std::endl;
+  }
 
   for (int i = 0; i < 32; i++) {
     regs_save_fout << "reg_x" << std::dec << i << ":" << std::hex
