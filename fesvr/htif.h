@@ -32,10 +32,6 @@ class htif_t : public chunked_memif_t
   int exit_code();
   void set_expected_xlen(unsigned int m) { expected_xlen = m; }
   virtual memif_t& memif() { return mem; }
-  void set_tohost_addrs(addr_t tohost, addr_t fromhost) {
-    tohost_addr = tohost;
-    fromhost_addr = fromhost;
-  }
 
   template<typename T> inline T from_target(target_endian<T> n) const
   {
