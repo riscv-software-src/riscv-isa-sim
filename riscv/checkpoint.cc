@@ -11,7 +11,6 @@
 #include <list>
 #include <memory>
 #include <sstream>
-#include <stdexcept>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <utility>
@@ -43,14 +42,12 @@ void checkpoint_t::load_cpu() {
 void checkpoint_t::load_ram() {
   if (!config.snapshot_load_name) return;
   ram_deserialize(config.snapshot_load_name);
-  host_deserialize(config.snapshot_load_name);
 }
 
 void checkpoint_t::save() {
   if (!config.snapshot_save_name) return;
   cpu_serialize(config.snapshot_save_name);
   ram_serialize(config.snapshot_save_name);
-  host_serialize(config.snapshot_save_name);
 }
 
 // ---------------------------------------------------------------------------
@@ -216,7 +213,6 @@ void checkpoint_t::cpu_deserialize(const char *load_name) {
 #define MAINRAM_BASE   ".mainram"
 #define MAINRAM_ZIP    ".mainram.zip"
 #define MAINRAM_ZST    ".mainram.zst"
-#define HOSTSTATE_EXT  ".hoststate"
 
 void checkpoint_t::ram_deserialize(const char *load_name) {
   bool mainram_zip_file_exist = false;
@@ -290,35 +286,6 @@ void checkpoint_t::ram_deserialize(const char *load_name) {
     remove_file(mainram_load_name);
     remove_directory(temp_directory_name);
   }
-}
-
-void checkpoint_t::host_deserialize(const char *load_name) {
-  auto *htif = dynamic_cast<htif_t *>(sim);
-  if (!htif)
-    return;
-
-  std::string hoststate_load_name(load_name);
-  hoststate_load_name.append(HOSTSTATE_EXT);
-
-  std::ifstream hoststate_fin(hoststate_load_name);
-  if (hoststate_fin.good()) {
-    try {
-      htif->load_checkpoint_host_state(hoststate_fin);
-    } catch (const std::runtime_error &err) {
-      std::cerr << "failed to restore host checkpoint state from "
-                << hoststate_load_name << ": " << err.what() << std::endl;
-      exit(-1);
-    }
-    return;
-  }
-
-  if (htif->restore_legacy_checkpoint_host_state())
-    return;
-
-  std::cerr << "warning: checkpoint host state file not found: "
-            << hoststate_load_name
-            << "; continuing without restoring host-side syscall state"
-            << std::endl;
 }
 
 // ---------------------------------------------------------------------------
@@ -474,24 +441,6 @@ void checkpoint_t::save_regs_file(const char *save_name) {
   std::cerr << "NOTE: creating a new regs file: " << regs_save_name
             << std::endl;
   regs_save_fout.close();
-}
-
-void checkpoint_t::host_serialize(const char *save_name) {
-  auto *htif = dynamic_cast<htif_t *>(sim);
-  if (!htif)
-    return;
-
-  std::string hoststate_save_name(save_name);
-  hoststate_save_name.append(HOSTSTATE_EXT);
-
-  std::ofstream hoststate_fout(hoststate_save_name);
-  if (!hoststate_fout.is_open()) {
-    std::cerr << "error: create host state file " << hoststate_save_name
-              << " failed" << std::endl;
-    exit(-1);
-  }
-
-  htif->save_checkpoint_host_state(hoststate_fout);
 }
 
 // ---------------------------------------------------------------------------

@@ -5,7 +5,6 @@
 
 #include "device.h"
 #include "memif.h"
-#include <iosfwd>
 #include <vector>
 #include <string>
 
@@ -18,29 +17,11 @@ class memif_t;
 class fds_t
 {
  public:
-  enum class fd_kind_t {
-    generic,
-    stdio,
-  };
-
-  struct fd_entry_t {
-    int host_fd = -1;
-    fd_kind_t kind = fd_kind_t::generic;
-    int stdio_fd = -1;
-  };
-
   reg_t alloc(int fd);
-  reg_t alloc_stdio(int fd, int stdio_fd);
-  void alloc_at(reg_t fd, fd_entry_t entry);
-  void close_all();
   void dealloc(reg_t fd);
-  int lookup(reg_t fd) const;
-  const std::vector<fd_entry_t>& entries() const { return fds; }
+  int lookup(reg_t fd);
  private:
-  reg_t alloc_entry(fd_entry_t entry);
-  void ensure_size(reg_t fd);
-
-  std::vector<fd_entry_t> fds;
+  std::vector<int> fds;
 };
 
 class syscall_t : public device_t
@@ -50,9 +31,6 @@ class syscall_t : public device_t
   ~syscall_t();
 
   void set_chroot(const char* where);
-  void save_checkpoint_state(std::ostream& out) const;
-  void load_checkpoint_state(std::istream& in);
-  bool restore_legacy_pk_checkpoint_state();
   
  private:
   const char* identity() { return "syscall_proxy"; }
@@ -61,6 +39,7 @@ class syscall_t : public device_t
   memif_t* memif;
   std::vector<syscall_func_t> table;
   fds_t fds;
+  std::vector<reg_t> fds_index;
 
   void handle_syscall(command_t cmd);
   void dispatch(addr_t mm);

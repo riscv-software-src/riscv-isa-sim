@@ -48,10 +48,8 @@ private:
 
   void cpu_serialize(const char *save_name);
   void ram_serialize(const char *save_name);
-  void host_serialize(const char *save_name);
   void cpu_deserialize(const char *load_name);
   void ram_deserialize(const char *load_name);
-  void host_deserialize(const char *load_name);
 
   void compress_file(const std::string &source_file, const std::string &dest_file);
   void decompress_file(const std::string &source_file, const std::string &output_dir);

@@ -214,21 +214,6 @@ const char* htif_t::get_symbol(uint64_t addr)
   return it->second.c_str();
 }
 
-void htif_t::save_checkpoint_host_state(std::ostream& out) const
-{
-  syscall_proxy.save_checkpoint_state(out);
-}
-
-void htif_t::load_checkpoint_host_state(std::istream& in)
-{
-  syscall_proxy.load_checkpoint_state(in);
-}
-
-bool htif_t::restore_legacy_checkpoint_host_state()
-{
-  return syscall_proxy.restore_legacy_pk_checkpoint_state();
-}
-
 bool htif_t::should_exit() const {
   return signal_exit || exitcode.has_value();
 }
