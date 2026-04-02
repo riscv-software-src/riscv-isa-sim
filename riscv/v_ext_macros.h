@@ -2245,9 +2245,9 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
 }
 
 #define ZVLDOT_LOOP(a_t, b_t, c_t, dot) \
-  std::vector<a_t> a(P.VU.vl->read(), a_t()); \
-  std::vector<b_t> b(P.VU.vl->read(), b_t()); \
-  for (reg_t i = 0; i < a.size(); i++) { \
+  std::vector<a_t> a(P.VU.vlmax, a_t()); \
+  std::vector<b_t> b(P.VU.vlmax, b_t()); \
+  for (reg_t i = 0, vl = P.VU.vl->read(); i < vl; i++) { \
     VI_LOOP_ELEMENT_SKIP(); \
     a[i] = P.VU.elt<a_t>(insn.rs1(), i); \
     b[i] = P.VU.elt<b_t>(insn.rs2(), i); \
@@ -2267,9 +2267,9 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
   for (reg_t idx = 0; idx < 8; idx++) { \
     reg_t i = ci + idx; \
     VI_LOOP_ELEMENT_SKIP(); \
-    std::vector<a_t> a(P.VU.vl->read(), a_t()); \
-    std::vector<b_t> b(P.VU.vl->read(), b_t()); \
-    for (reg_t k = 0; k < a.size(); k++) { \
+    std::vector<a_t> a(P.VU.vlmax, a_t()); \
+    std::vector<b_t> b(P.VU.vlmax, b_t()); \
+    for (reg_t k = 0, vl = P.VU.vl->read(); k < vl; k++) { \
       a[k] = P.VU.elt<a_t>(insn.rs1(), k); \
       b[k] = P.VU.elt<b_t>(vs2 + idx, k); \
     } \
