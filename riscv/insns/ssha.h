@@ -3,8 +3,10 @@ require_rv32;
 sreg_t sshamt = P_FIELD(RS2, 0, 8);
 if (RS1 == 0)
   WRITE_RD(0);
-else if (sshamt >= 32)
+else if (sshamt >= 32) {
   WRITE_RD((RS1 & 0x80000000) ? 0x80000000 : 0x7fffffff);
+  P.VU.vxsat->write(1);
+}
 else if (sshamt <= -32)
   WRITE_RD((RS1 & 0x80000000) ? 0xffffffff : 0);
 else
