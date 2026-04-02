@@ -51,6 +51,8 @@ class htif_t : public chunked_memif_t
 
   addr_t get_tohost_addr() { return tohost_addr; }
   addr_t get_fromhost_addr() { return fromhost_addr; }
+  void set_tohost_addr(addr_t addr) { tohost_addr = addr; }
+  void set_fromhost_addr(addr_t addr) { fromhost_addr = addr; }
 
  protected:
   virtual void reset() = 0;

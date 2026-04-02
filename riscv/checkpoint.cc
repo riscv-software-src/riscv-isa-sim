@@ -3,6 +3,7 @@
 #include "dts.h"
 #include "libfdt.h"
 #include "processor.h"
+#include "sim.h"
 
 #include <fcntl.h>
 #include <iomanip>
@@ -168,6 +169,29 @@ void checkpoint_t::cpu_deserialize(const char *load_name) {
   std::vector<char> tramp_rom((char*)trampoline, (char*)trampoline + sizeof(trampoline));
   trampoline_rom = std::make_shared<rom_device_t>(tramp_rom);
   bus->add_device(DEFAULT_RSTVEC, trampoline_rom.get());
+
+  // Restore HTIF tohost/fromhost addresses from .re_regs file
+  std::string regs_load_name(load_name);
+  regs_load_name.append(".re_regs");
+  std::ifstream regs_fin(regs_load_name);
+  if (regs_fin.good()) {
+    auto *sim_ptr = static_cast<sim_t*>(sim);
+    std::string line;
+    while (std::getline(regs_fin, line)) {
+      auto pos = line.find(':');
+      if (pos == std::string::npos) continue;
+      std::string key = line.substr(0, pos);
+      std::string val = line.substr(pos + 1);
+      if (key == "tohost_addr")
+        sim_ptr->set_tohost_addr(strtoull(val.c_str(), nullptr, 16));
+      else if (key == "fromhost_addr")
+        sim_ptr->set_fromhost_addr(strtoull(val.c_str(), nullptr, 16));
+    }
+    regs_fin.close();
+    std::cerr << "NOTE: restored HTIF addresses: tohost=0x" << std::hex
+              << sim_ptr->get_tohost_addr() << " fromhost=0x"
+              << sim_ptr->get_fromhost_addr() << std::endl;
+  }
 }
 
 #define MAINRAM_BASE   ".mainram"
@@ -390,6 +414,11 @@ void checkpoint_t::save_regs_file(const char *save_name) {
     regs_save_fout << "pmpaddr" << std::dec << i << ":" << std::hex
                    << state->csrmap[CSR_PMPADDR0 + i]->read() << std::endl;
   }
+
+  // Save HTIF tohost/fromhost addresses for checkpoint restore
+  auto *sim_ptr = static_cast<sim_t*>(sim);
+  regs_save_fout << "tohost_addr:0x" << std::hex << sim_ptr->get_tohost_addr() << std::endl;
+  regs_save_fout << "fromhost_addr:0x" << std::hex << sim_ptr->get_fromhost_addr() << std::endl;
 
   std::cerr << "NOTE: creating a new regs file: " << regs_save_name
             << std::endl;
