@@ -60,4 +60,5 @@ P_RD_RS1_DW_LOOP(32, 32, {
                 p_rd =  (uint32_t)((p_rs1 << rev) & mask);
         }
     }
+  if (ov) P.VU.vxsat->write(1);
 })
