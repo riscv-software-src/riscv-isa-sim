@@ -138,18 +138,6 @@
     sreg_t p_res = P_UFIELD(rd_tmp, i, BIT); \
     for (sreg_t j = i * len_inner; j < (i + 1) * len_inner; ++j) {
 
-#define P_REDUCTION_ULOOP_BASE(BIT, BIT_INNER, USE_RD) \
-  require_extension('P'); \
-  require(BIT == e16 || BIT == e32 || BIT == e64); \
-  reg_t rd_tmp = USE_RD ? zext_xlen(RD) : 0; \
-  reg_t rs1 = zext_xlen(RS1); \
-  reg_t rs2 = zext_xlen(RS2); \
-  sreg_t len = 64 / BIT; \
-  sreg_t len_inner = BIT / BIT_INNER; \
-  for (sreg_t i = len - 1; i >= 0; --i) { \
-    sreg_t p_res = P_UFIELD(rd_tmp, i, BIT); \
-    for (sreg_t j = i * len_inner; j < (i + 1) * len_inner; ++j) {
-
 #define P_WIDEN_REDUCTION_LOOP_BASE(BIT, BIT_INNER, USE_RD) \
   require_extension('P'); \
   require(BIT == e16 || BIT == e32 || BIT == e64); \
@@ -756,26 +744,38 @@
   P_RD_DW_LOOP_END()
 
 // Misc
-#define P_SAT(BIT, R) ( \
-  ((BIT) == 64) ? (R) : \
-  ((R) > ((1LL << ((BIT) - 1)) - 1)) ? ((1LL << ((BIT) - 1)) - 1) : \
-  ((R) < -(1LL << ((BIT) - 1))) ? -(1LL << ((BIT) - 1)) : \
-  (R) \
-)
+#define P_SAT(BIT, R) ({ \
+  sreg_t _psat_in = (R); \
+  sreg_t _psat_out; \
+  if ((BIT) == 64) _psat_out = _psat_in; \
+  else if (_psat_in > (sreg_t)((reg_t(1) << ((BIT) - 1)) - 1)) _psat_out = (sreg_t)((reg_t(1) << ((BIT) - 1)) - 1); \
+  else if (_psat_in < (sreg_t)(reg_t(-1) << ((BIT) - 1))) _psat_out = (sreg_t)(reg_t(-1) << ((BIT) - 1)); \
+  else _psat_out = _psat_in; \
+  if (_psat_out != _psat_in) P.VU.vxsat->write(1); \
+  _psat_out; \
+})
 
-#define P_USAT(BIT, R) ( \
-  ((R) < 0) ? 0 : \
-  ((BIT) == 64) ? (R) : \
-  ((R) > ((1LL << ((BIT) - 1)) - 1)) ? ((1LL << ((BIT) - 1)) - 1) : \
-  (R) \
-)
+#define P_USAT(BIT, R) ({ \
+  sreg_t _pusat_in = (R); \
+  sreg_t _pusat_out; \
+  if (_pusat_in < 0) _pusat_out = 0; \
+  else if ((BIT) == 64) _pusat_out = _pusat_in; \
+  else if (_pusat_in > (sreg_t)((reg_t(1) << ((BIT) - 1)) - 1)) _pusat_out = (sreg_t)((reg_t(1) << ((BIT) - 1)) - 1); \
+  else _pusat_out = _pusat_in; \
+  if (_pusat_out != _pusat_in) P.VU.vxsat->write(1); \
+  _pusat_out; \
+})
 
-#define P_USAT_FULL(BIT, R) ( \
-  ((R) < 0) ? 0 : \
-  ((BIT) >= 64) ? (R) : \
-  ((R) > ((1LL << (BIT)) - 1)) ? ((1LL << (BIT)) - 1) : \
-  (R) \
-)
+#define P_USAT_FULL(BIT, R) ({ \
+  sreg_t _pusatf_in = (R); \
+  sreg_t _pusatf_out; \
+  if (_pusatf_in < 0) _pusatf_out = 0; \
+  else if ((BIT) >= 64) _pusatf_out = _pusatf_in; \
+  else if (_pusatf_in > (sreg_t)((reg_t(1) << (BIT)) - 1)) _pusatf_out = (sreg_t)((reg_t(1) << (BIT)) - 1); \
+  else _pusatf_out = _pusatf_in; \
+  if (_pusatf_out != _pusatf_in) P.VU.vxsat->write(1); \
+  _pusatf_out; \
+})
 
 #define P_PACK(BIT, X, Y) \
   require_extension('P'); \

@@ -5,7 +5,9 @@ P_RD_RS1_DW_ULOOP(32, 32, {
   p_rd = p_rs1;
   if (s < 0) {
     p_rd = 0;
+    P.VU.vxsat->write(1);
   } else if ((uint64_t)s > uint_max) {
     p_rd = uint_max;
+    P.VU.vxsat->write(1);
   }
 })
