@@ -72,6 +72,12 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 #define require_zvfbfa_or_zvfhmin \
  require_extension(P.VU.altfmt ? EXT_ZVFBFA : EXT_ZVFHMIN); \
 
+#define require_zvabd \
+  do { \
+    require_vector(true); \
+    require_extension(EXT_ZVABD); \
+  } while (0)
+
 #define VI_NARROW_CHECK_COMMON(factor) \
   require_vector(true); \
   require(P.VU.vflmul <= (8 / factor)); \
@@ -352,6 +358,10 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   type_sew_t<x>::type UNUSED &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
   type_sew_t<x>::type vs1 = P.VU.elt<type_sew_t<x>::type>(rs1_num, i); \
   type_sew_t<x>::type UNUSED vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
+
+#define V_PARAMS(x) \
+  type_sew_t<x>::type &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
+  type_sew_t<x>::type vs2 = P.VU.elt<type_sew_t<x>::type>(rs2_num, i);
 
 #define VX_PARAMS(x) \
   type_sew_t<x>::type UNUSED &vd = P.VU.elt<type_sew_t<x>::type>(rd_num, i, true); \
@@ -723,6 +733,24 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   } \
   VI_LOOP_END
 
+#define VI_V_LOOP(BODY) \
+  VI_CHECK_SSS(false) \
+  VI_LOOP_BASE \
+  if (sew == e8) { \
+    V_PARAMS(e8); \
+    BODY; \
+  } else if (sew == e16) { \
+    V_PARAMS(e16); \
+    BODY; \
+  } else if (sew == e32) { \
+    V_PARAMS(e32); \
+    BODY; \
+  } else if (sew == e64) { \
+    V_PARAMS(e64); \
+    BODY; \
+  } \
+  VI_LOOP_END
+
 #define VI_VX_ULOOP(BODY) \
   VI_CHECK_SSS(false) \
   VI_LOOP_BASE \
@@ -970,6 +998,28 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     sign##64_t UNUSED vd_w = P.VU.elt<sign##64_t>(rd_num, i); \
     P.VU.elt<uint64_t>(rd_num, i, true) = \
       op1((sign##64_t)(sign##32_t)var0 op0 (sign##64_t)(sign##32_t)var1) + var2; \
+    } \
+    break; \
+  }
+
+#define VI_WIDE_OP_MACRO_AND_ASSIGN(var0, var1, var2, op, sign) \
+  switch (P.VU.vsew) { \
+  case e8: { \
+    sign##16_t UNUSED vd_w = P.VU.elt<sign##16_t>(rd_num, i); \
+    P.VU.elt<uint16_t>(rd_num, i, true) = \
+      op((sign##16_t)(sign##8_t)var0, (sign##16_t)(sign##8_t)var1) + var2; \
+    } \
+    break; \
+  case e16: { \
+    sign##32_t UNUSED vd_w = P.VU.elt<sign##32_t>(rd_num, i); \
+    P.VU.elt<uint32_t>(rd_num, i, true) = \
+      op((sign##32_t)(sign##16_t)var0, (sign##32_t)(sign##16_t)var1) + var2; \
+    } \
+    break; \
+  default: { \
+    sign##64_t UNUSED vd_w = P.VU.elt<sign##64_t>(rd_num, i); \
+    P.VU.elt<uint64_t>(rd_num, i, true) = \
+      op((sign##64_t)(sign##32_t)var0, (sign##64_t)(sign##32_t)var1) + var2; \
     } \
     break; \
   }
@@ -2195,9 +2245,9 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
 }
 
 #define ZVLDOT_LOOP(a_t, b_t, c_t, dot) \
-  std::vector<a_t> a(P.VU.vl->read(), a_t()); \
-  std::vector<b_t> b(P.VU.vl->read(), b_t()); \
-  for (reg_t i = 0; i < a.size(); i++) { \
+  std::vector<a_t> a(P.VU.vlmax, a_t()); \
+  std::vector<b_t> b(P.VU.vlmax, b_t()); \
+  for (reg_t i = 0, vl = P.VU.vl->read(); i < vl; i++) { \
     VI_LOOP_ELEMENT_SKIP(); \
     a[i] = P.VU.elt<a_t>(insn.rs1(), i); \
     b[i] = P.VU.elt<b_t>(insn.rs2(), i); \
@@ -2217,9 +2267,9 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
   for (reg_t idx = 0; idx < 8; idx++) { \
     reg_t i = ci + idx; \
     VI_LOOP_ELEMENT_SKIP(); \
-    std::vector<a_t> a(P.VU.vl->read(), a_t()); \
-    std::vector<b_t> b(P.VU.vl->read(), b_t()); \
-    for (reg_t k = 0; k < a.size(); k++) { \
+    std::vector<a_t> a(P.VU.vlmax, a_t()); \
+    std::vector<b_t> b(P.VU.vlmax, b_t()); \
+    for (reg_t k = 0, vl = P.VU.vl->read(); k < vl; k++) { \
       a[k] = P.VU.elt<a_t>(insn.rs1(), k); \
       b[k] = P.VU.elt<b_t>(vs2 + idx, k); \
     } \
@@ -2237,5 +2287,7 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
 
 #define P_SET_OV(ov) \
   if (ov) P.VU.vxsat->write(1);
+
+#define DO_ABD(N, M)  ((N) > (M) ? (N) - (M) : (M) - (N))
 
 #endif

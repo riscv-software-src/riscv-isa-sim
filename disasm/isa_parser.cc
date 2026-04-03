@@ -244,6 +244,8 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
     extension_table[EXT_ZCLSD] = true;
     extension_table[EXT_ZCA] = true;
     extension_table[EXT_ZILSD] = true;
+  } else if (ext_str == "zvabd") {
+    extension_table[EXT_ZVABD] = true;
   } else if (ext_str == "zvkb") {
     extension_table[EXT_ZVKB] = true;
   } else if (ext_str == "zvbb") {
@@ -262,18 +264,15 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
     extension_table[EXT_ZVKG] = true;
   } else if (ext_str == "zvkn") {
     extension_table[EXT_ZVKB] = true;
-    extension_table[EXT_ZVBB] = true;
     extension_table[EXT_ZVKNED] = true;
     extension_table[EXT_ZVKNHB] = true;
   } else if (ext_str == "zvknc") {
     extension_table[EXT_ZVKB] = true;
-    extension_table[EXT_ZVBB] = true;
     extension_table[EXT_ZVBC] = true;
     extension_table[EXT_ZVKNED] = true;
     extension_table[EXT_ZVKNHB] = true;
   } else if (ext_str == "zvkng") {
     extension_table[EXT_ZVKB] = true;
-    extension_table[EXT_ZVBB] = true;
     extension_table[EXT_ZVKG] = true;
     extension_table[EXT_ZVKNED] = true;
     extension_table[EXT_ZVKNHB] = true;
@@ -285,18 +284,15 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
     extension_table[EXT_ZVKNHB] = true;
   } else if (ext_str == "zvks") {
     extension_table[EXT_ZVKB] = true;
-    extension_table[EXT_ZVBB] = true;
     extension_table[EXT_ZVKSED] = true;
     extension_table[EXT_ZVKSH] = true;
   } else if (ext_str == "zvksc") {
     extension_table[EXT_ZVKB] = true;
-    extension_table[EXT_ZVBB] = true;
     extension_table[EXT_ZVBC] = true;
     extension_table[EXT_ZVKSED] = true;
     extension_table[EXT_ZVKSH] = true;
   } else if (ext_str == "zvksg") {
     extension_table[EXT_ZVKB] = true;
-    extension_table[EXT_ZVBB] = true;
     extension_table[EXT_ZVKG] = true;
     extension_table[EXT_ZVKSED] = true;
     extension_table[EXT_ZVKSH] = true;
@@ -325,6 +321,8 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
   } else if (ext_str == "zvfwldot16bf") {
     extension_table[EXT_ZVFWLDOT16BF] = true;
   } else if (ext_str == "zvkt") {
+  } else if (ext_str == "zvzip") {
+    extension_table[EXT_ZVZIP] = true;
   } else if (ext_str == "sstc") {
       extension_table[EXT_SSTC] = true;
   } else if (ext_str == "smcsrind") {
@@ -406,6 +404,7 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
   } else if (ext_str == "ssaia") {
     extension_table[EXT_SSAIA] = true;
     extension_table[EXT_SSCSRIND] = true;
+  } else if (ext_str == "svvptc") {
   } else if (ext_str[0] == 'x') {
     extension_table['X'] = true;
     if (ext_str.size() == 1) {

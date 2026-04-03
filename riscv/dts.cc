@@ -122,11 +122,11 @@ static std::string dtc_compile(const std::string& dtc_input, bool compile)
       step = write(dtc_input_pipe[1], buf+done, len-done);
       if (step == -1) {
         std::cerr << "Failed to write dtc_input: " << strerror(errno) << std::endl;
-        exit(1);
+        _exit(1);
       }
     }
     close(dtc_input_pipe[1]);
-    exit(0);
+    _exit(0);
   }
 
   pid_t dtc_output_pid;
@@ -146,7 +146,7 @@ static std::string dtc_compile(const std::string& dtc_input, bool compile)
     close(dtc_output_pipe[1]);
     execlp(DTC, DTC, "-O", output_type, "-I", input_type, nullptr);
     std::cerr << "Failed to run " DTC ": " << strerror(errno) << std::endl;
-    exit(1);
+    _exit(1);
   }
 
   close(dtc_input_pipe[1]);
