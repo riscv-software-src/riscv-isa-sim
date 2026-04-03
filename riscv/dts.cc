@@ -158,9 +158,11 @@ static std::string dtc_compile(const std::string& dtc_input, bool compile)
 
   int got;
   char buf[4096];
-  while ((got = read(dtc_output_pipe[0], buf, sizeof(buf))) > 0) {
-    dtc_output.write(buf, got);
-  }
+  do {
+    while ((got = read(dtc_output_pipe[0], buf, sizeof(buf))) > 0) {
+      dtc_output.write(buf, got);
+    }
+  } while (got == -1 && errno == EINTR); // Retry the read() if it was interrupted by a signal
   if (got == -1) {
     std::cerr << "Failed to read dtc_output: " << strerror(errno) << std::endl;
     exit(1);
