@@ -370,7 +370,7 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
 
 void mmu_t::store_slow_path(reg_t original_addr, std::size_t len,
     const std::uint8_t* bytes, xlate_flags_t xlate_flags,
-    bool actually_store, bool UNUSED require_alignment)
+    bool actually_store, bool require_alignment)
 {
   if (likely(!xlate_flags.is_special_access())) {
     // Fast path for simple cases
