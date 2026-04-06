@@ -370,15 +370,16 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
 
 void mmu_t::store_slow_path(reg_t original_addr, std::size_t len,
     const std::uint8_t* bytes, xlate_flags_t xlate_flags,
-    bool actually_store, bool UNUSED require_alignment)
+    bool actually_store, bool require_alignment)
 {
   if (likely(!xlate_flags.is_special_access())) {
     // Fast path for simple cases
     auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_store, original_addr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS);
     bool intrapage = (original_addr % PGSIZE) + len <= PGSIZE;
     bool aligned = (original_addr & (len - 1)) == 0;
+    bool misaligned_ok = !require_alignment && intrapage && is_misaligned_enabled();
 
-    if (likely(tlb_hit && (aligned || (intrapage && is_misaligned_enabled())))) {
+    if (likely(tlb_hit && (aligned || misaligned_ok))) {
       if (actually_store)
         perform_intrapage_store(original_addr, host_addr, paddr, len, bytes, xlate_flags);
       return;
@@ -388,9 +389,15 @@ void mmu_t::store_slow_path(reg_t original_addr, std::size_t len,
   auto access_info = generate_access_info(original_addr, STORE, xlate_flags);
   reg_t transformed_addr = access_info.transformed_vaddr;
 
-  if (actually_store && check_triggers_store)
-    check_triggers(triggers::OPERATION_STORE,
-      transformed_addr, access_info.effective_virt, len, bytes);
+  if (check_triggers_store) {
+    if (actually_store) {
+      check_triggers(triggers::OPERATION_STORE,
+        transformed_addr, access_info.effective_virt, len, bytes);
+    } else {
+      check_triggers(triggers::OPERATION_STORE,
+        transformed_addr, access_info.effective_virt, len);
+    }
+  }
 
   if (transformed_addr & (len - 1)) {
     bool gva = access_info.effective_virt;
