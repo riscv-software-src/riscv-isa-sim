@@ -173,7 +173,6 @@ public:
     try { \
       BODY \
     } catch (trap_load_address_misaligned& t) { \
-      /* Misaligned fault will not be triggered by Zicbom */ \
       throw trap_store_address_misaligned(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
     } catch (trap_load_page_fault& t) { \
       throw trap_store_page_fault(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
