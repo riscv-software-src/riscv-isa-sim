@@ -182,11 +182,19 @@ public:
       throw trap_store_guest_page_fault(t.get_tval(), t.get_tval2(), t.get_tinst()); \
     }
 
+  inline bool enforce_amo_alignment(reg_t addr, size_t size)
+  {
+    if (proc->extension_enabled(EXT_ZAMA16B))
+      return (addr / 16) != ((addr + size - 1) / 16);
+
+    return true;
+  }
+
   // template for functions that perform an atomic memory operation
   template<typename T, typename op>
   T amo(reg_t addr, op f) {
     convert_load_traps_to_store_traps({
-      store_slow_path(addr, sizeof(T), nullptr, {}, false, true);
+      store_slow_path(addr, sizeof(T), nullptr, {}, false, enforce_amo_alignment(addr, sizeof(T)));
       auto lhs = load<T>(addr);
       store<T>(addr, f(lhs));
       return lhs;
@@ -207,7 +215,7 @@ public:
   template<typename T>
   T amo_compare_and_swap(reg_t addr, T comp, T swap) {
     convert_load_traps_to_store_traps({
-      store_slow_path(addr, sizeof(T), nullptr, {}, false, true);
+      store_slow_path(addr, sizeof(T), nullptr, {}, false, enforce_amo_alignment(addr, sizeof(T)));
       auto lhs = load<T>(addr);
       if (lhs == comp)
         store<T>(addr, swap);
