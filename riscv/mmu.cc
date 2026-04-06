@@ -377,8 +377,9 @@ void mmu_t::store_slow_path(reg_t original_addr, std::size_t len,
     auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_store, original_addr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS);
     bool intrapage = (original_addr % PGSIZE) + len <= PGSIZE;
     bool aligned = (original_addr & (len - 1)) == 0;
+    bool misaligned_ok = !require_alignment && intrapage && is_misaligned_enabled();
 
-    if (likely(tlb_hit && (aligned || (intrapage && is_misaligned_enabled())))) {
+    if (likely(tlb_hit && (aligned || misaligned_ok))) {
       if (actually_store)
         perform_intrapage_store(original_addr, host_addr, paddr, len, bytes, xlate_flags);
       return;
