@@ -389,9 +389,15 @@ void mmu_t::store_slow_path(reg_t original_addr, std::size_t len,
   auto access_info = generate_access_info(original_addr, STORE, xlate_flags);
   reg_t transformed_addr = access_info.transformed_vaddr;
 
-  if (actually_store && check_triggers_store)
-    check_triggers(triggers::OPERATION_STORE,
-      transformed_addr, access_info.effective_virt, len, bytes);
+  if (check_triggers_store) {
+    if (actually_store) {
+      check_triggers(triggers::OPERATION_STORE,
+        transformed_addr, access_info.effective_virt, len, bytes);
+    } else {
+      check_triggers(triggers::OPERATION_STORE,
+        transformed_addr, access_info.effective_virt, len);
+    }
+  }
 
   if (transformed_addr & (len - 1)) {
     bool gva = access_info.effective_virt;
