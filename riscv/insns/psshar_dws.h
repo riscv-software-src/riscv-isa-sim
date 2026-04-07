@@ -12,30 +12,30 @@ P_RD_RS1_DW_LOOP(32, 32, {
         if ((rev & 0xFFu) == 0u) 
             p_rd = (uint32_t)p_rs1;
         else{  
-            __int128 v_sext;
+            int128_t v_sext;
             bool neg = ((p_rs1 >> (32 - 1)) & 1u);
-            if(!neg) v_sext = static_cast<__int128>(p_rs1);
-            else v_sext = (static_cast<__int128>(-1) << 32) | static_cast<__int128>(p_rs1);
-            __int128 v_cat0 = v_sext << 1;
+            if(!neg) v_sext = static_cast<int128_t>(p_rs1);
+            else v_sext = (static_cast<int128_t>(-1) << 32) | static_cast<int128_t>(p_rs1);
+            int128_t v_cat0 = v_sext << 1;
 
             unsigned sh = ((unsigned)(uint8_t)rev > 255u) ? 255u : (unsigned)(uint8_t)rev;
 
-            __int128 sra_val;
-            if(sh == 0) 
+            int128_t sra_val;
+            if(sh == 0)
                 sra_val = v_cat0;
-            else if(sh >=127) 
-                sra_val = (v_cat0 < 0) ? static_cast<__int128>(-1) : static_cast<__int128>(0);
+            else if(sh >=127)
+                sra_val = (v_cat0 < 0) ? static_cast<int128_t>(-1) : static_cast<int128_t>(0);
             else{
-                __int128 ux = static_cast<unsigned __int128>(v_cat0);
-                __int128 shifted = ux >> sh;
+                int128_t ux = static_cast<uint128_t>(v_cat0);
+                int128_t shifted = ux >> sh;
                 if(v_cat0 < 0)
-                    shifted |= (~static_cast<unsigned __int128>(0)) << (128 - sh);
-                sra_val = static_cast<__int128>(shifted);
+                    shifted |= (~static_cast<uint128_t>(0)) << (128 - sh);
+                sra_val = static_cast<int128_t>(shifted);
             }
 
-            __int128 plus1 = sra_val + static_cast<__int128>(1);
-            unsigned __int128 ures = static_cast<unsigned __int128>(plus1);
-            p_rd = (uint32_t)(static_cast<uint64_t>((ures >> 1) & static_cast<unsigned __int128>(mask)));
+            int128_t plus1 = sra_val + static_cast<int128_t>(1);
+            uint128_t ures = static_cast<uint128_t>(plus1);
+            p_rd = (uint32_t)(static_cast<uint64_t>((ures >> 1) & static_cast<uint128_t>(mask)));
         }
     }
     else{
