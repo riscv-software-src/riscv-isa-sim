@@ -106,6 +106,14 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
                                       log_file.get(), sout_));
       harts[cfg->hartids[i]] = procs[i];
     }
+    for (auto& x : mems) {
+      bus.add_device(x.first, x.second);
+    }
+    for (auto& pair : harts) {
+      if (auto pc = cfg->start_pc.get(pair.first)) {
+        pair.second->get_state()->pc = *pc;
+      }
+    }
     return;
   } // otherwise, generate the procs by parsing the DTS
 
@@ -281,6 +289,12 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       }
     }
   }
+
+  for (auto& pair : harts) {
+    if (auto pc = cfg->start_pc.get(pair.first)) {
+      pair.second->get_state()->pc = *pc;
+    }
+  }
 }
 
 sim_t::~sim_t()
@@ -380,7 +394,7 @@ void sim_t::set_rom()
 {
   const int reset_vec_size = 8;
 
-  reg_t start_pc = cfg->start_pc.value_or(get_entry_point());
+  reg_t start_pc = cfg->start_pc.get(0).value_or(get_entry_point());
 
   uint32_t reset_vec[reset_vec_size] = {
     0x297,                                      // auipc  t0,0x0
@@ -499,4 +513,9 @@ endianness_t sim_t::get_target_endianness() const
 void sim_t::proc_reset(unsigned id)
 {
   debug_module.proc_reset(id);
+  if (harts.count(id)) {
+    if (auto pc = cfg->start_pc.get(id)) {
+      harts[id]->get_state()->pc = *pc;
+    }
+  }
 }
