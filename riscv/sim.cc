@@ -106,7 +106,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
                                       log_file.get(), sout_));
       harts[cfg->hartids[i]] = procs[i];
     }
-    for (auto& x : this->mems) {
+    for (auto& x : mems) {
       bus.add_device(x.first, x.second);
     }
     for (auto& pair : harts) {
@@ -254,15 +254,15 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
                           dtb_discovery_plugin_device_factories.end());
 
     //Remove default memories and use dtb discovered memories
-    this->mems.clear();
-    dtb_discovery::discover_memory_from_dtb(fdt, this->mems);
+    mems.clear();
+    dtb_discovery::discover_memory_from_dtb(fdt, mems);
   }
   //clint, plic, ns16550 are always discovered via dtb, independently from the --dtb_discovery flag
   device_factories.insert(device_factories.end(),
                           plugin_device_factories.begin(),
                           plugin_device_factories.end());
 
-  for (auto& x : this->mems)
+  for (auto& x : mems)
   {
       bus.add_device(x.first, x.second);
   }
