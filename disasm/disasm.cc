@@ -2086,7 +2086,6 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     DEFINE_RTYPE(mop_rr_4);
     DEFINE_RTYPE(mop_rr_5);
     DEFINE_RTYPE(mop_rr_6);
-    DEFINE_RTYPE(mop_rr_7);
     if (!ext_enabled_strict(EXT_ZICFISS)) {
       DEFINE_RTYPE(mop_rr_7);
     } else {

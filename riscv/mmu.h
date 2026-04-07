@@ -173,7 +173,6 @@ public:
     try { \
       BODY \
     } catch (trap_load_address_misaligned& t) { \
-      /* Misaligned fault will not be triggered by Zicbom */ \
       throw trap_store_address_misaligned(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
     } catch (trap_load_page_fault& t) { \
       throw trap_store_page_fault(t.has_gva(), t.get_tval(), t.get_tval2(), t.get_tinst()); \
@@ -183,11 +182,19 @@ public:
       throw trap_store_guest_page_fault(t.get_tval(), t.get_tval2(), t.get_tinst()); \
     }
 
+  inline bool enforce_amo_alignment(reg_t addr, size_t size)
+  {
+    if (proc->extension_enabled(EXT_ZAMA16B))
+      return (addr / 16) != ((addr + size - 1) / 16);
+
+    return true;
+  }
+
   // template for functions that perform an atomic memory operation
   template<typename T, typename op>
   T amo(reg_t addr, op f) {
     convert_load_traps_to_store_traps({
-      store_slow_path(addr, sizeof(T), nullptr, {}, false, true);
+      store_slow_path(addr, sizeof(T), nullptr, {}, false, enforce_amo_alignment(addr, sizeof(T)));
       auto lhs = load<T>(addr);
       store<T>(addr, f(lhs));
       return lhs;
@@ -197,16 +204,18 @@ public:
   // for shadow stack amoswap
   template<typename T>
   T ssamoswap(reg_t addr, reg_t value) {
+    convert_load_traps_to_store_traps({
       store_slow_path(addr, sizeof(T), nullptr, {.ss_access=true}, false, true);
       auto data = load<T>(addr, {.ss_access=true});
       store<T>(addr, value, {.ss_access=true});
       return data;
+    })
   }
 
   template<typename T>
   T amo_compare_and_swap(reg_t addr, T comp, T swap) {
     convert_load_traps_to_store_traps({
-      store_slow_path(addr, sizeof(T), nullptr, {}, false, true);
+      store_slow_path(addr, sizeof(T), nullptr, {}, false, enforce_amo_alignment(addr, sizeof(T)));
       auto lhs = load<T>(addr);
       if (lhs == comp)
         store<T>(addr, swap);
@@ -253,7 +262,7 @@ public:
       store_slow_path(vaddr, size, nullptr, {}, false, true);
     }
 
-    auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_store, vaddr);
+    auto [tlb_hit, _, paddr] = access_tlb(tlb_store, vaddr);
     if (!tlb_hit)
       paddr = translate(generate_access_info(vaddr, STORE, {}), 1);
 
