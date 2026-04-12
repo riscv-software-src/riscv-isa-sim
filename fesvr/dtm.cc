@@ -213,11 +213,6 @@ uint32_t dtm_t::run_abstract_command(uint32_t command,
 
 }
 
-size_t dtm_t::chunk_align()
-{
-  return xlen / 8;
-}
-
 void dtm_t::read_chunk(uint64_t taddr, size_t len, void* dst)
 {
   uint32_t prog[MAX_PROG_WORDS];
@@ -468,12 +463,6 @@ uint64_t dtm_t::modify_csr(unsigned which, uint64_t data, uint32_t type)
   return res;  
 }
 
-size_t dtm_t::chunk_max_size()
-{
-  // Arbitrary choice. 4k Page size seems reasonable.
-  return 4096;
-}
-
 uint32_t dtm_t::get_xlen()
 {
   // Attempt to read S0 to find out what size it is.
@@ -601,9 +590,13 @@ void dtm_t::start_host_thread()
 }
 
 dtm_t::dtm_t(int argc, char** argv)
-  : htif_t(argc, argv), running(false)
+  // Arbitrary choice. 4k Page size seems reasonable.
+  : htif_t(argc, argv, /*chunk_max_size=*/4096, /*chunk_align=*/8), running(false)
 {
   start_host_thread();
+  // Here we reset chunk_align because we can't call get_xlen in the
+  // base class constructor
+  chunk_align = get_xlen() / 8;
 }
 
 dtm_t::~dtm_t()

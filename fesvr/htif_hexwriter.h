@@ -11,7 +11,8 @@
 class htif_hexwriter_t : public chunked_memif_t
 {
 public:
-  htif_hexwriter_t(size_t b, size_t w, size_t d);
+  htif_hexwriter_t(size_t b, size_t w, size_t d)
+  : chunked_memif_t(w, w),  base(b), width(w), depth(d) {}
 
 protected:
   size_t base;
@@ -22,9 +23,6 @@ protected:
   void read_chunk(addr_t taddr, size_t len, void* dst);
   void write_chunk(addr_t taddr, size_t len, const void* src);
   void clear_chunk(addr_t, size_t) {}
-
-  size_t chunk_max_size() { return width; }
-  size_t chunk_align() { return width; }
 
   friend std::ostream& operator<< (std::ostream&, const htif_hexwriter_t&);
 };

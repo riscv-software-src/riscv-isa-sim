@@ -13,14 +13,10 @@ void tsi_t::host_thread(void *arg)
     tsi->target->switch_to();
 }
 
-tsi_t::tsi_t(int argc, char** argv) : htif_t(argc, argv)
+tsi_t::tsi_t(int argc, char** argv) : htif_t(argc, argv, /*chunk_max_size=*/1024, /*chunk_align=*/4)
 {
   target = context_t::current();
   host.init(host_thread, this);
-}
-
-tsi_t::~tsi_t(void)
-{
 }
 
 #define MSIP_BASE 0x2000000

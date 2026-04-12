@@ -15,13 +15,17 @@ typedef reg_t addr_t;
 
 class chunked_memif_t
 {
+  size_t chunk_max_size = 0;
+protected:
+  size_t chunk_align = 0;
+  chunked_memif_t(size_t chunk_max_sz, size_t chunk_al) : chunk_max_size(chunk_max_sz), chunk_align(chunk_al) {}
 public:
   virtual void read_chunk(addr_t taddr, size_t len, void* dst) = 0;
   virtual void write_chunk(addr_t taddr, size_t len, const void* src) = 0;
   virtual void clear_chunk(addr_t taddr, size_t len) = 0;
 
-  virtual size_t chunk_align() = 0;
-  virtual size_t chunk_max_size() = 0;
+  size_t get_chunk_max_size() const {return chunk_max_size;}
+  size_t get_chunk_align() const {return chunk_align;}
 
   virtual endianness_t get_target_endianness() const {
     return endianness_little;

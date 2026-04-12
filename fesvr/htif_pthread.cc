@@ -13,7 +13,7 @@ void htif_pthread_t::thread_main(void* arg)
 }
 
 htif_pthread_t::htif_pthread_t(int argc, char** argv)
-    : htif_t(argc, argv)
+    : htif_t(argc, argv, /*max_sz=*/1024, /*chunk_align=*/64)
 {
   target = context_t::current();
   host.init(thread_main, this);

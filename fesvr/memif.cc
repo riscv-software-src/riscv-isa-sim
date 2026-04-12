@@ -8,7 +8,7 @@
 
 void memif_t::read(addr_t addr, size_t len, void* bytes)
 {
-  size_t align = cmemif->chunk_align();
+  size_t align = cmemif->get_chunk_align();
   if (len && (addr & (align-1)))
   {
     size_t this_len = std::min(len, align - size_t(addr & (align-1)));
@@ -35,13 +35,13 @@ void memif_t::read(addr_t addr, size_t len, void* bytes)
   }
 
   // now we're aligned
-  for (size_t pos = 0; pos < len; pos += cmemif->chunk_max_size())
-    cmemif->read_chunk(addr + pos, std::min(cmemif->chunk_max_size(), len - pos), (char*)bytes + pos);
+  for (size_t pos = 0; pos < len; pos += cmemif->get_chunk_max_size())
+    cmemif->read_chunk(addr + pos, std::min(cmemif->get_chunk_max_size(), len - pos), (char*)bytes + pos);
 }
 
 void memif_t::write(addr_t addr, size_t len, const void* bytes)
 {
-  size_t align = cmemif->chunk_align();
+  size_t align = cmemif->get_chunk_align();
   if (len && (addr & (align-1)))
   {
     size_t this_len = std::min(len, align - size_t(addr & (align-1)));
@@ -77,7 +77,7 @@ void memif_t::write(addr_t addr, size_t len, const void* bytes)
   if (all_zero) {
     cmemif->clear_chunk(addr, len);
   } else {
-    size_t max_chunk = cmemif->chunk_max_size();
+    size_t max_chunk = cmemif->get_chunk_max_size();
     for (size_t pos = 0; pos < len; pos += max_chunk)
       cmemif->write_chunk(addr + pos, std::min(max_chunk, len - pos), (char*)bytes + pos);
   }

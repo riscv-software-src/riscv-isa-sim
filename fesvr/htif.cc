@@ -53,8 +53,8 @@ static void handle_signal(int sig)
   signal(sig, &handle_signal);
 }
 
-htif_t::htif_t()
-  : mem(this), entry(DRAM_BASE), sig_addr(0), sig_len(0),
+htif_t::htif_t(size_t chunk_max_sz, size_t chunk_al)
+  : chunked_memif_t(chunk_max_sz, chunk_al), mem(this), entry(DRAM_BASE), sig_addr(0), sig_len(0),
     tohost_addr(0), fromhost_addr(0), stopped(false),
     syscall_proxy(this)
 {
@@ -63,7 +63,7 @@ htif_t::htif_t()
   signal(SIGABRT, &handle_signal); // we still want to call static destructors
 }
 
-htif_t::htif_t(int argc, char** argv) : htif_t()
+htif_t::htif_t(int argc, char** argv, size_t chunk_max_sz, size_t chunk_al) : htif_t(chunk_max_sz, chunk_al)
 {
   //Set line size as 16 by default.
   line_size = 16;
@@ -71,7 +71,7 @@ htif_t::htif_t(int argc, char** argv) : htif_t()
   register_devices();
 }
 
-htif_t::htif_t(const std::vector<std::string>& args) : htif_t()
+htif_t::htif_t(const std::vector<std::string>& args, size_t chunk_max_sz, size_t chunk_al) : htif_t(chunk_max_sz, chunk_al)
 {
   int argc = args.size() + 1;
   std::vector<char*>argv(argc);
@@ -275,10 +275,10 @@ void htif_t::stop()
 
 void htif_t::clear_chunk(addr_t taddr, size_t len)
 {
-  std::vector<uint8_t> zeros(chunk_max_size(), 0);
+  std::vector<uint8_t> zeros(get_chunk_max_size(), 0);
 
-  for (size_t pos = 0; pos < len; pos += chunk_max_size())
-    write_chunk(taddr + pos, std::min(len - pos, chunk_max_size()), &zeros[0]);
+  for (size_t pos = 0; pos < len; pos += get_chunk_max_size())
+    write_chunk(taddr + pos, std::min(len - pos, get_chunk_max_size()), &zeros[0]);
 }
 
 int htif_t::run()

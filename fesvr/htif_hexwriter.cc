@@ -4,16 +4,11 @@
 #include <assert.h>
 #include "htif_hexwriter.h"
 
-htif_hexwriter_t::htif_hexwriter_t(size_t b, size_t w, size_t d)
-  : base(b), width(w), depth(d)
-{
-}
-
 void htif_hexwriter_t::read_chunk(addr_t taddr, size_t len, void* vdst)
 {
   taddr -= base;
 
-  assert(len % chunk_align() == 0);
+  assert(len % get_chunk_align() == 0);
   assert(taddr < width*depth);
   assert(taddr+len <= width*depth);
 
@@ -36,7 +31,7 @@ void htif_hexwriter_t::write_chunk(addr_t taddr, size_t len, const void* vsrc)
 {
   taddr -= base;
 
-  assert(len % chunk_align() == 0);
+  assert(len % get_chunk_align() == 0);
   assert(taddr < width*depth);
   assert(taddr+len <= width*depth);
 
