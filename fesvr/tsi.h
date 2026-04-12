@@ -19,7 +19,6 @@ class tsi_t : public htif_t
 {
  public:
   tsi_t(int argc, char** argv);
-  virtual ~tsi_t();
 
   bool data_available();
   void send_word(uint32_t word);
@@ -36,9 +35,6 @@ class tsi_t : public htif_t
   void read_chunk(addr_t taddr, size_t nbytes, void* dst) override;
   void write_chunk(addr_t taddr, size_t nbytes, const void* src) override;
   void switch_to_target();
-
-  size_t chunk_align() override { return 4; }
-  size_t chunk_max_size() override { return 1024; }
 
   int get_ipi_addrs(addr_t *addrs);
 

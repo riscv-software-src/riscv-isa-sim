@@ -16,9 +16,9 @@
 class htif_t : public chunked_memif_t
 {
  public:
-  htif_t();
-  htif_t(int argc, char** argv);
-  htif_t(const std::vector<std::string>& args);
+  htif_t(size_t chunk_max_sz, size_t chunk_al);
+  htif_t(int argc, char** argv, size_t chunk_max_sz, size_t chunk_al);
+  htif_t(const std::vector<std::string>& argsm, size_t chunk_max_sz, size_t chunk_al);
   virtual ~htif_t();
 
   virtual void start();
@@ -58,9 +58,6 @@ class htif_t : public chunked_memif_t
   virtual void read_chunk(addr_t taddr, size_t len, void* dst) = 0;
   virtual void write_chunk(addr_t taddr, size_t len, const void* src) = 0;
   virtual void clear_chunk(addr_t taddr, size_t len);
-
-  virtual size_t chunk_align() = 0;
-  virtual size_t chunk_max_size() = 0;
 
   virtual std::map<std::string, uint64_t> load_payload(const std::string& payload, reg_t* entry,
                                                        reg_t load_addr);

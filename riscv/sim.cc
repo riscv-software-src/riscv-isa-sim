@@ -48,7 +48,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
              bool socket_enabled,
              FILE *cmd_file, // needed for command line option --cmd
              std::optional<unsigned long long> instruction_limit)
-  : htif_t(args),
+  : htif_t(args, /*chunk_max_size=*/8, /*chunk_align=*/8),
     cfg(cfg),
     mems(mems),
     dtb_discovery(dtb_discovery),
