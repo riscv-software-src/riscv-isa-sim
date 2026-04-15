@@ -203,13 +203,18 @@ template<typename ValueTypeLHS, typename ValueTypeRHS, typename SigProdType> bul
                          a[i].isZero() || b[i].isZero() ? (f32_exp_bias - (lhs_bias + rhs_bias)) : // minimalize exp of zero product
                          a[i].expSubFixed() + b[i].expSubFixed() + (f32_exp_bias - (lhs_bias + rhs_bias));
 
+    bool a_is_zero = (a[i].subOrZero() && cfg.flushSub) || a[i].isZero(); 
+    bool b_is_zero = (b[i].subOrZero() && cfg.flushSub) || b[i].isZero(); 
+
     bool either_inf = a[i].inf() || b[i].inf();
-    any_pos_inf |= either_inf && a[i].sign() == b[i].sign();
-    any_neg_inf |= either_inf && a[i].sign() != b[i].sign();
+    bool either_nan = a[i].nan() || b[i].nan();
+    bool either_zero = a_is_zero || b_is_zero; 
+    any_pos_inf |= either_inf && !either_nan && !either_zero && a[i].sign() == b[i].sign();
+    any_neg_inf |= either_inf && !either_nan && !either_zero && a[i].sign() != b[i].sign();
 
     any_invalid_nan |=
-      (a[i].inf() && ((b[i].subOrZero() && cfg.flushSub) || b[i].isZero())) ||
-      (b[i].inf() && ((a[i].subOrZero() && cfg.flushSub) || a[i].isZero()));
+      (a[i].inf() && b_is_zero) ||
+      (b[i].inf() && a_is_zero);
 
     any_nan |= any_invalid_nan || a[i].nan() || b[i].nan();
 
