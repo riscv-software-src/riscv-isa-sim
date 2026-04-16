@@ -277,8 +277,8 @@ void htif_t::clear_chunk(addr_t taddr, size_t len)
 {
   std::vector<uint8_t> zeros(chunk_max_size(), 0);
 
-  for (size_t pos = 0; pos < len; pos += chunk_max_size())
-    write_chunk(taddr + pos, std::min(len - pos, chunk_max_size()), &zeros[0]);
+  for (size_t pos = 0; pos < len; pos += zeros.size())
+    write_chunk(taddr + pos, std::min(len - pos, zeros.size()), &zeros[0]);
 }
 
 int htif_t::run()
