@@ -379,8 +379,13 @@ class mip_csr_t: public mip_or_mie_csr_t {
 
   // Does not log. Used by external things (clint) that wiggle bits in mip.
   void backdoor_write_with_mask(const reg_t mask, const reg_t val) noexcept;
+
+  // Setter for hardware SEIP latch
+  void set_seip_hw_latch(reg_t v) noexcept { seip_hw_latch = v; }
  private:
   virtual reg_t write_mask() const noexcept override;
+  // Hardware-pending SEIP latch (for external interrupts)
+  reg_t seip_hw_latch = 0;
 };
 
 typedef std::shared_ptr<mip_csr_t> mip_csr_t_p;
