@@ -15,6 +15,9 @@ public:
   // Do a bit of work.
   void tick();
 
+  // Check if any client is connected
+  bool is_client_connected() const;
+
 private:
   jtag_dtm_t *tap;
 
