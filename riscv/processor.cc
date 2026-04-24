@@ -497,8 +497,8 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
 
     reg_t s = state.mstatus->read();
     if ( extension_enabled(EXT_SMDBLTRP)) {
-      if (get_field(s, MSTATUS_MDT) || !nmie) {
-        // Critical error - Double trap in M-mode or trap when nmie is 0
+      if (get_field(s, MSTATUS_MDT) && (!state.mnstatus || !nmie)) {
+        // Critical error - Double trap in M-mode when Smrnmi not implemented or nmie is 0
         // RNMI is not modeled else double trap in M-mode would trap to
         // RNMI handler instead of leading to a critical error
         state.critical_error = 1;
