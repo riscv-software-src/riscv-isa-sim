@@ -188,7 +188,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define require_envcfg(field) \
   do { \
     if (((STATE.prv != PRV_M) && (m##field == 0)) || \
-        ((STATE.prv == PRV_U && !STATE.v) && (s##field == 0))) \
+        (p->extension_enabled('S') && (STATE.prv == PRV_U && !STATE.v) && (s##field == 0))) \
       throw trap_illegal_instruction(insn.bits()); \
     else if (STATE.v && ((h##field == 0) || \
                         ((STATE.prv == PRV_U) && (s##field == 0)))) \
