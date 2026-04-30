@@ -1,6 +1,10 @@
 #include "isa_parser.h"
 #include <cstring>
+#include <initializer_list>
 #include <stdexcept>
+#include <vector>
+
+namespace {
 
 static std::string strtolower(const char* str)
 {
@@ -48,315 +52,250 @@ static void bad_priv_string(const char* priv)
   abort();
 }
 
+struct extension_info_t {
+  const char* name;
+  std::vector<unsigned> enables;
+  std::vector<const char*> implies;
+  unsigned required_xlen = 0;
+  const char* required_xlen_msg = nullptr;
+
+  extension_info_t(const char* name,
+                   std::initializer_list<unsigned> enables = {},
+                   std::initializer_list<const char*> implies = {},
+                   unsigned required_xlen = 0,
+                   const char* required_xlen_msg = nullptr)
+    : name(name), enables(enables), implies(implies),
+      required_xlen(required_xlen), required_xlen_msg(required_xlen_msg) {}
+};
+
+struct extension_combination_t {
+  unsigned enable;
+  std::vector<unsigned> components;
+
+  extension_combination_t(unsigned enable,
+                          std::initializer_list<unsigned> components = {})
+    : enable(enable), components(components) {}
+};
+
+// Entries without enables are accepted ISA names whose behavior is always present
+// in Spike, currently unmodeled, or handled by later parser checks.
+static const extension_info_t extension_infos[] = {
+  {"i", {'I'}},
+  {"e", {'E'}},
+  {"m", {'M'}},
+  {"a", {'A'}, {"zaamo", "zalrsc"}},
+  {"f", {'F'}},
+  {"d", {'D', 'F'}},
+  {"q", {'Q', 'D', 'F'}},
+  {"c", {'C'}, {"zca"}},
+  {"b", {'B'}, {"zba", "zbb", "zbs"}},
+  {"p", {'P'}},
+  {"v", {'V'}, {"zve64d", "zvl128b"}},
+  {"h", {'H'}},
+  {"zfh", {EXT_ZFH}, {"zfhmin"}},
+  {"zfhmin", {'F', EXT_ZFHMIN}},
+  {"zvfh", {EXT_ZVFH}, {"zvfhmin", "zfhmin"}},
+  {"zvfhmin", {EXT_ZVFHMIN}, {"zve32f"}},
+  {"zvfbfa", {EXT_ZVFBFA}, {"zve32f", "zfbfmin"}},
+  {"zvfofp4min", {EXT_ZVFOFP4MIN}, {"zve32f"}},
+  {"zvfofp8min", {EXT_ZVFOFP8MIN}, {"zve32f"}},
+  {"zicsr"},
+  {"zifencei"},
+  {"zihintpause"},
+  {"zihintntl"},
+  {"ziccid", {EXT_ZICCID}},
+  {"ziccif"},
+  {"zve32x", {}, {"zicsr", "zvl32b"}},
+  {"zve32f", {}, {"zve32x", "f"}},
+  {"zve64x", {}, {"zve32x", "zvl64b"}},
+  {"zve64f", {}, {"zve32f", "zve64x"}},
+  {"zve64d", {}, {"zve64f", "d"}},
+  {"zaamo", {EXT_ZAAMO}},
+  {"zalrsc", {EXT_ZALRSC}},
+  {"zacas", {EXT_ZACAS, EXT_ZAAMO}},
+  {"zabha", {EXT_ZABHA, EXT_ZAAMO}},
+  {"zawrs", {EXT_ZAWRS, EXT_ZALRSC}},
+  {"zama16b", {EXT_ZAMA16B}},
+  {"zmmul", {EXT_ZMMUL}},
+  {"zba", {EXT_ZBA}},
+  {"zbb", {EXT_ZBB}},
+  {"zbc", {EXT_ZBC}},
+  {"zbs", {EXT_ZBS}},
+  {"zbkb", {EXT_ZBKB}},
+  {"zbkc", {EXT_ZBKC}},
+  {"zbkx", {EXT_ZBKX}},
+  {"zdinx", {EXT_ZFINX, EXT_ZDINX}},
+  {"zfbfmin", {'F', EXT_ZFBFMIN}},
+  {"zfinx", {EXT_ZFINX}},
+  {"zhinx", {EXT_ZFINX, EXT_ZHINX, EXT_ZHINXMIN}},
+  {"zhinxmin", {EXT_ZFINX, EXT_ZHINXMIN}},
+  {"zce", {EXT_ZCE}, {"zcb", "zcmp", "zcmt"}},
+  {"zca", {EXT_ZCA}},
+  {"zcf", {'F', EXT_ZCF}, {"zca"}, 32, "'Zcf' requires RV32"},
+  {"zcb", {EXT_ZCB}, {"zca"}},
+  {"zcd", {EXT_ZCD, 'F', 'D'}, {"zca"}},
+  {"zcmp", {EXT_ZCMP}, {"zca"}},
+  {"zcmt", {EXT_ZCMT}, {"zca", "zicsr"}},
+  {"zibi", {EXT_ZIBI}},
+  {"zk", {EXT_ZBKB, EXT_ZBKC, EXT_ZBKX, EXT_ZKND, EXT_ZKNE, EXT_ZKNH, EXT_ZKR}},
+  {"zkn", {EXT_ZBKB, EXT_ZBKC, EXT_ZBKX, EXT_ZKND, EXT_ZKNE, EXT_ZKNH}},
+  {"zknd", {EXT_ZKND}},
+  {"zkne", {EXT_ZKNE}},
+  {"zknh", {EXT_ZKNH}},
+  {"zks", {EXT_ZBKB, EXT_ZBKC, EXT_ZBKX, EXT_ZKSED, EXT_ZKSH}},
+  {"zksed", {EXT_ZKSED}},
+  {"zksh", {EXT_ZKSH}},
+  {"zkr", {EXT_ZKR}},
+  {"zkt"},
+  {"smepmp", {EXT_SMEPMP}},
+  {"smstateen", {EXT_SMSTATEEN}},
+  {"smpmpmt", {EXT_SMPMPMT}},
+  {"smrnmi", {EXT_SMRNMI}},
+  {"sscofpmf", {EXT_SSCOFPMF}},
+  {"svadu", {EXT_SVADU}},
+  {"svade", {EXT_SVADE}},
+  {"svnapot", {EXT_SVNAPOT}},
+  {"svpbmt", {EXT_SVPBMT}},
+  {"svinval", {EXT_SVINVAL}},
+  {"svukte", {EXT_SVUKTE}, {}, 64, "'svukte' requires RV64"},
+  {"zfa", {EXT_ZFA}},
+  {"zicbom", {EXT_ZICBOM}},
+  {"zicboz", {EXT_ZICBOZ}},
+  {"zicbop"},
+  {"zicclsm", {EXT_ZICCLSM}},
+  {"zicntr", {EXT_ZICNTR}},
+  {"zicond", {EXT_ZICOND}},
+  {"zihpm", {EXT_ZIHPM}},
+  {"zilsd", {EXT_ZILSD}, {}, 32, "'Zilsd' requires RV32"},
+  {"zclsd", {EXT_ZCLSD}, {"zilsd", "zca"}, 32, "'Zclsd' requires RV32"},
+  {"zvabd", {EXT_ZVABD}},
+  {"zvkb", {EXT_ZVKB}},
+  {"zvbb", {EXT_ZVKB, EXT_ZVBB}},
+  {"zvbc", {EXT_ZVBC}},
+  {"zvfbfmin", {EXT_ZVFBFMIN}, {"zve32f"}},
+  {"zvfbfwma", {EXT_ZVFBFWMA}, {"zfbfmin", "zvfbfmin"}},
+  {"zvkg", {EXT_ZVKG}},
+  {"zvkn", {EXT_ZVKB, EXT_ZVKNED, EXT_ZVKNHB}},
+  {"zvknc", {EXT_ZVKB, EXT_ZVBC, EXT_ZVKNED, EXT_ZVKNHB}},
+  {"zvkng", {EXT_ZVKB, EXT_ZVKG, EXT_ZVKNED, EXT_ZVKNHB}},
+  {"zvkned", {EXT_ZVKNED}},
+  {"zvknha", {EXT_ZVKNHA}},
+  {"zvknhb", {EXT_ZVKNHB}},
+  {"zvks", {EXT_ZVKB, EXT_ZVKSED, EXT_ZVKSH}},
+  {"zvksc", {EXT_ZVKB, EXT_ZVBC, EXT_ZVKSED, EXT_ZVKSH}},
+  {"zvksg", {EXT_ZVKB, EXT_ZVKG, EXT_ZVKSED, EXT_ZVKSH}},
+  {"zvksed", {EXT_ZVKSED}},
+  {"zvksh", {EXT_ZVKSH}},
+  {"zvqdotq", {EXT_ZVQDOTQ}},
+  {"zvqbdot8i", {EXT_ZVQBDOT8I}},
+  {"zvqbdot16i", {EXT_ZVQBDOT16I}},
+  {"zvfqbdot8f", {EXT_ZVFQBDOT8F}},
+  {"zvfwbdot16bf", {EXT_ZVFWBDOT16BF}},
+  {"zvfbdot32f", {EXT_ZVFBDOT32F}},
+  {"zvqldot8i", {EXT_ZVQLDOT8I}},
+  {"zvqldot16i", {EXT_ZVQLDOT16I}},
+  {"zvfqldot8f", {EXT_ZVFQLDOT8F}},
+  {"zvfwldot16bf", {EXT_ZVFWLDOT16BF}},
+  {"zvkt"},
+  {"zvzip", {EXT_ZVZIP}},
+  {"sstc", {EXT_SSTC}},
+  {"smcsrind", {EXT_SMCSRIND}},
+  {"sscsrind", {EXT_SSCSRIND}},
+  {"smcntrpmf", {EXT_SMCNTRPMF}},
+  {"smcdeleg", {EXT_SMCDELEG}},
+  {"ssccfg", {EXT_SSCCFG}},
+  {"zimop", {EXT_ZIMOP}},
+  {"zcmop", {EXT_ZCMOP}, {"zca"}},
+  {"zalasr", {EXT_ZALASR}},
+  {"ssqosid", {EXT_SSQOSID}},
+  {"zicfilp", {EXT_ZICFILP}},
+  {"zicfiss", {EXT_ZICFISS}, {"zaamo", "zimop"}},
+  {"smmpm", {EXT_SMMPM}},
+  {"smnpm", {EXT_SMNPM}},
+  {"ssnpm", {EXT_SSNPM}},
+  {"ssdbltrp", {EXT_SSDBLTRP}},
+  {"smdbltrp", {EXT_SMDBLTRP}},
+  {"smaia", {EXT_SMAIA, EXT_SSAIA, EXT_SMCSRIND, EXT_SSCSRIND}},
+  {"ssaia", {EXT_SSAIA, EXT_SSCSRIND}},
+  {"svvptc"},
+};
+
+static const extension_combination_t extension_combinations[] = {
+  {'A', {EXT_ZAAMO, EXT_ZALRSC}},
+  {'B', {EXT_ZBA, EXT_ZBB, EXT_ZBS}},
+  {EXT_ZCD, {'C', 'D'}},
+  {EXT_ZCMOP, {EXT_ZICFISS, EXT_ZCA}},
+};
+
+static const extension_info_t* find_extension_info(const std::string& ext)
+{
+  for (const auto& info : extension_infos)
+    if (ext == info.name)
+      return &info;
+  return nullptr;
+}
+
+static void apply_extension_combinations(std::bitset<NUM_ISA_EXTENSIONS>& extension_table)
+{
+  for (const auto& combination : extension_combinations) {
+    if (combination.components.empty())
+      continue;
+    bool has_all_components = true;
+    for (const auto component : combination.components) {
+      has_all_components &= extension_table[component];
+    }
+    if (has_all_components)
+      extension_table[combination.enable] = true;
+  }
+}
+
+} // namespace
+
+void isa_parser_t::apply_zve_properties(const std::string& ext_str, const char* str)
+{
+  if (ext_str.size() != 6)
+    bad_isa_string(str, ("Invalid Zve string: " + ext_str).c_str());
+
+  reg_t new_elen;
+  try {
+    new_elen = safe_stoul(ext_str.substr(3, ext_str.size() - 4));
+  } catch (std::logic_error& e) {
+    new_elen = 0;
+  }
+
+  switch (ext_str.back()) {
+    case 'd':
+      zvd |= true;
+      [[fallthrough]];
+    case 'f':
+      zvf |= true;
+      break;
+    case 'x':
+      break;
+    default:
+      new_elen = 0;
+  }
+
+  if (new_elen != 32 && new_elen != 64)
+    bad_isa_string(str, ("Invalid Zve string: " + ext_str).c_str());
+
+  elen = std::max(elen, new_elen);
+  vlen = std::max(vlen, new_elen);
+}
+
 void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
 {
-  if (ext_str == "zfh") {
-    extension_table[EXT_ZFH] = true;
-    add_extension("zfhmin", str);
-  } else if (ext_str == "zfhmin") {
-    extension_table['F'] = true;
-    extension_table[EXT_ZFHMIN] = true;
-  } else if (ext_str == "zvfh") {
-    extension_table[EXT_ZVFH] = true;
-    add_extension("zvfhmin", str);
-    add_extension("zfhmin", str);
-  } else if (ext_str == "zvfhmin") {
-    extension_table[EXT_ZVFHMIN] = true;
-    add_extension("zve32f", str);
-  } else if (ext_str == "zvfbfa") {
-    extension_table[EXT_ZVFBFA] = true;
-    add_extension("zve32f", str);
-    add_extension("zfbfmin", str);
-  } else if (ext_str == "zvfofp4min") {
-    extension_table[EXT_ZVFOFP4MIN] = true;
-    add_extension("zve32f", str);
-  } else if (ext_str == "zvfofp8min") {
-    extension_table[EXT_ZVFOFP8MIN] = true;
-    add_extension("zve32f", str);
-  } else if (ext_str == "zicsr") {
-    // Spike necessarily has Zicsr, because
-    // Zicsr is implied by the privileged architecture
-  } else if (ext_str == "zifencei") {
-    // For compatibility with version 2.0 of the base ISAs, we
-    // unconditionally include FENCE.I, so Zifencei adds nothing more.
-  } else if (ext_str == "zihintpause") {
-    // HINTs encoded in base-ISA instructions are always present.
-  } else if (ext_str == "zihintntl") {
-    // HINTs encoded in base-ISA instructions are always present.
-  } else if (ext_str == "ziccid") {
-    extension_table[EXT_ZICCID] = true;
-  } else if (ext_str == "ziccif") {
-    // aligned instruction fetch is always atomic in Spike
-  } else if (ext_str == "zaamo") {
-    extension_table[EXT_ZAAMO] = true;
-  } else if (ext_str == "zalrsc") {
-    extension_table[EXT_ZALRSC] = true;
-  } else if (ext_str == "zacas") {
-    extension_table[EXT_ZACAS] = true;
-    extension_table[EXT_ZAAMO] = true;
-  } else if (ext_str == "zabha") {
-    extension_table[EXT_ZABHA] = true;
-    extension_table[EXT_ZAAMO] = true;
-  } else if (ext_str == "zawrs") {
-    extension_table[EXT_ZAWRS] = true;
-    extension_table[EXT_ZALRSC] = true;
-  } else if (ext_str == "zama16b") {
-    extension_table[EXT_ZAMA16B] = true;
-  } else if (ext_str == "zmmul") {
-    extension_table[EXT_ZMMUL] = true;
-  } else if (ext_str == "zba") {
-    extension_table[EXT_ZBA] = true;
-  } else if (ext_str == "zbb") {
-    extension_table[EXT_ZBB] = true;
-  } else if (ext_str == "zbc") {
-    extension_table[EXT_ZBC] = true;
-  } else if (ext_str == "zbs") {
-    extension_table[EXT_ZBS] = true;
-  } else if (ext_str == "zbkb") {
-    extension_table[EXT_ZBKB] = true;
-  } else if (ext_str == "zbkc") {
-    extension_table[EXT_ZBKC] = true;
-  } else if (ext_str == "zbkx") {
-    extension_table[EXT_ZBKX] = true;
-  } else if (ext_str == "zdinx") {
-    extension_table[EXT_ZFINX] = true;
-    extension_table[EXT_ZDINX] = true;
-  } else if (ext_str == "zfbfmin") {
-    extension_table['F'] = true;
-    extension_table[EXT_ZFBFMIN] = true;
-  } else if (ext_str == "zfinx") {
-    extension_table[EXT_ZFINX] = true;
-  } else if (ext_str == "zhinx") {
-    extension_table[EXT_ZFINX] = true;
-    extension_table[EXT_ZHINX] = true;
-    extension_table[EXT_ZHINXMIN] = true;
-  } else if (ext_str == "zhinxmin") {
-    extension_table[EXT_ZFINX] = true;
-    extension_table[EXT_ZHINXMIN] = true;
-  } else if (ext_str == "zce") {
-    extension_table[EXT_ZCA] = true;
-    extension_table[EXT_ZCB] = true;
-    extension_table[EXT_ZCMT] = true;
-    extension_table[EXT_ZCMP] = true;
-    extension_table[EXT_ZCE] = true;
-  } else if (ext_str == "zca") {
-    extension_table[EXT_ZCA] = true;
-  } else if (ext_str == "zcf") {
-    if (max_xlen != 32)
-      bad_isa_string(str, "'Zcf' requires RV32");
-    extension_table['F'] = true;
-    extension_table[EXT_ZCA] = true;
-    extension_table[EXT_ZCF] = true;
-  } else if (ext_str == "zcb") {
-    extension_table[EXT_ZCB] = true;
-    extension_table[EXT_ZCA] = true;
-  } else if (ext_str == "zcd") {
-    extension_table[EXT_ZCD] = true;
-    extension_table[EXT_ZCA] = true;
-    extension_table['F'] = true;
-    extension_table['D'] = true;
-  } else if (ext_str == "zcmp") {
-    extension_table[EXT_ZCMP] = true;
-    extension_table[EXT_ZCA] = true;
-  } else if (ext_str == "zcmt") {
-    extension_table[EXT_ZCMT] = true;
-    extension_table[EXT_ZCA] = true;
-  } else if (ext_str == "zibi") {
-    extension_table[EXT_ZIBI] = true;
-  } else if (ext_str == "zk") {
-    extension_table[EXT_ZBKB] = true;
-    extension_table[EXT_ZBKC] = true;
-    extension_table[EXT_ZBKX] = true;
-    extension_table[EXT_ZKND] = true;
-    extension_table[EXT_ZKNE] = true;
-    extension_table[EXT_ZKNH] = true;
-    extension_table[EXT_ZKR] = true;
-  } else if (ext_str == "zkn") {
-    extension_table[EXT_ZBKB] = true;
-    extension_table[EXT_ZBKC] = true;
-    extension_table[EXT_ZBKX] = true;
-    extension_table[EXT_ZKND] = true;
-    extension_table[EXT_ZKNE] = true;
-    extension_table[EXT_ZKNH] = true;
-  } else if (ext_str == "zknd") {
-    extension_table[EXT_ZKND] = true;
-  } else if (ext_str == "zkne") {
-    extension_table[EXT_ZKNE] = true;
-  } else if (ext_str == "zknh") {
-    extension_table[EXT_ZKNH] = true;
-  } else if (ext_str == "zks") {
-    extension_table[EXT_ZBKB] = true;
-    extension_table[EXT_ZBKC] = true;
-    extension_table[EXT_ZBKX] = true;
-    extension_table[EXT_ZKSED] = true;
-    extension_table[EXT_ZKSH] = true;
-  } else if (ext_str == "zksed") {
-    extension_table[EXT_ZKSED] = true;
-  } else if (ext_str == "zksh") {
-    extension_table[EXT_ZKSH] = true;
-  } else if (ext_str == "zkr") {
-    extension_table[EXT_ZKR] = true;
-  } else if (ext_str == "zkt") {
-  } else if (ext_str == "smepmp") {
-    extension_table[EXT_SMEPMP] = true;
-  } else if (ext_str == "smstateen") {
-    extension_table[EXT_SMSTATEEN] = true;
-  } else if (ext_str == "smpmpmt") {
-    extension_table[EXT_SMPMPMT] = true;
-  } else if (ext_str == "smrnmi") {
-    extension_table[EXT_SMRNMI] = true;
-  } else if (ext_str == "sscofpmf") {
-    extension_table[EXT_SSCOFPMF] = true;
-  } else if (ext_str == "svadu") {
-    extension_table[EXT_SVADU] = true;
-  } else if (ext_str == "svade") {
-    extension_table[EXT_SVADE] = true;
-  } else if (ext_str == "svnapot") {
-    extension_table[EXT_SVNAPOT] = true;
-  } else if (ext_str == "svpbmt") {
-    extension_table[EXT_SVPBMT] = true;
-  } else if (ext_str == "svinval") {
-    extension_table[EXT_SVINVAL] = true;
-  } else if (ext_str == "svukte") {
-    if (max_xlen != 64)
-      bad_isa_string(str, "'svukte' requires RV64");
-    extension_table[EXT_SVUKTE] = true;
-  } else if (ext_str == "zfa") {
-    extension_table[EXT_ZFA] = true;
-  } else if (ext_str == "zicbom") {
-    extension_table[EXT_ZICBOM] = true;
-  } else if (ext_str == "zicboz") {
-    extension_table[EXT_ZICBOZ] = true;
-  } else if (ext_str == "zicbop") {
-  } else if (ext_str == "zicclsm") {
-    extension_table[EXT_ZICCLSM] = true;
-  } else if (ext_str == "zicntr") {
-    extension_table[EXT_ZICNTR] = true;
-  } else if (ext_str == "zicond") {
-    extension_table[EXT_ZICOND] = true;
-  } else if (ext_str == "zihpm") {
-    extension_table[EXT_ZIHPM] = true;
-  } else if (ext_str == "zilsd") {
-    if (max_xlen != 32)
-      bad_isa_string(str, "'Zilsd' requires RV32");
-    extension_table[EXT_ZILSD] = true;
-  } else if (ext_str == "zclsd") {
-    if (max_xlen != 32)
-      bad_isa_string(str, "'Zclsd' requires RV32");
-    extension_table[EXT_ZCLSD] = true;
-    extension_table[EXT_ZCA] = true;
-    extension_table[EXT_ZILSD] = true;
-  } else if (ext_str == "zvabd") {
-    extension_table[EXT_ZVABD] = true;
-  } else if (ext_str == "zvkb") {
-    extension_table[EXT_ZVKB] = true;
-  } else if (ext_str == "zvbb") {
-    extension_table[EXT_ZVKB] = true;
-    extension_table[EXT_ZVBB] = true;
-  } else if (ext_str == "zvbc") {
-    extension_table[EXT_ZVBC] = true;
-  } else if (ext_str == "zvfbfmin") {
-    extension_table[EXT_ZVFBFMIN] = true;
-    add_extension("zve32f", str);
-  } else if (ext_str == "zvfbfwma") {
-    extension_table[EXT_ZVFBFWMA] = true;
-    add_extension("zfbfmin", str);
-    add_extension("zvfbfmin", str);
-  } else if (ext_str == "zvkg") {
-    extension_table[EXT_ZVKG] = true;
-  } else if (ext_str == "zvkn") {
-    extension_table[EXT_ZVKB] = true;
-    extension_table[EXT_ZVKNED] = true;
-    extension_table[EXT_ZVKNHB] = true;
-  } else if (ext_str == "zvknc") {
-    extension_table[EXT_ZVKB] = true;
-    extension_table[EXT_ZVBC] = true;
-    extension_table[EXT_ZVKNED] = true;
-    extension_table[EXT_ZVKNHB] = true;
-  } else if (ext_str == "zvkng") {
-    extension_table[EXT_ZVKB] = true;
-    extension_table[EXT_ZVKG] = true;
-    extension_table[EXT_ZVKNED] = true;
-    extension_table[EXT_ZVKNHB] = true;
-  } else if (ext_str == "zvkned") {
-    extension_table[EXT_ZVKNED] = true;
-  } else if (ext_str == "zvknha") {
-    extension_table[EXT_ZVKNHA] = true;
-  } else if (ext_str == "zvknhb") {
-    extension_table[EXT_ZVKNHB] = true;
-  } else if (ext_str == "zvks") {
-    extension_table[EXT_ZVKB] = true;
-    extension_table[EXT_ZVKSED] = true;
-    extension_table[EXT_ZVKSH] = true;
-  } else if (ext_str == "zvksc") {
-    extension_table[EXT_ZVKB] = true;
-    extension_table[EXT_ZVBC] = true;
-    extension_table[EXT_ZVKSED] = true;
-    extension_table[EXT_ZVKSH] = true;
-  } else if (ext_str == "zvksg") {
-    extension_table[EXT_ZVKB] = true;
-    extension_table[EXT_ZVKG] = true;
-    extension_table[EXT_ZVKSED] = true;
-    extension_table[EXT_ZVKSH] = true;
-  } else if (ext_str == "zvksed") {
-    extension_table[EXT_ZVKSED] = true;
-  } else if (ext_str == "zvksh") {
-    extension_table[EXT_ZVKSH] = true;
-  } else if (ext_str == "zvqdotq") {
-    extension_table[EXT_ZVQDOTQ] = true;
-  } else if (ext_str == "zvqbdot8i") {
-    extension_table[EXT_ZVQBDOT8I] = true;
-  } else if (ext_str == "zvqbdot16i") {
-    extension_table[EXT_ZVQBDOT16I] = true;
-  } else if (ext_str == "zvfqbdot8f") {
-    extension_table[EXT_ZVFQBDOT8F] = true;
-  } else if (ext_str == "zvfwbdot16bf") {
-    extension_table[EXT_ZVFWBDOT16BF] = true;
-  } else if (ext_str == "zvfbdot32f") {
-    extension_table[EXT_ZVFBDOT32F] = true;
-  } else if (ext_str == "zvqldot8i") {
-    extension_table[EXT_ZVQLDOT8I] = true;
-  } else if (ext_str == "zvqldot16i") {
-    extension_table[EXT_ZVQLDOT16I] = true;
-  } else if (ext_str == "zvfqldot8f") {
-    extension_table[EXT_ZVFQLDOT8F] = true;
-  } else if (ext_str == "zvfwldot16bf") {
-    extension_table[EXT_ZVFWLDOT16BF] = true;
-  } else if (ext_str == "zvkt") {
-  } else if (ext_str == "zvzip") {
-    extension_table[EXT_ZVZIP] = true;
-  } else if (ext_str == "sstc") {
-      extension_table[EXT_SSTC] = true;
-  } else if (ext_str == "smcsrind") {
-    extension_table[EXT_SMCSRIND] = true;
-  } else if (ext_str == "sscsrind") {
-    extension_table[EXT_SSCSRIND] = true;
-  } else if (ext_str == "smcntrpmf") {
-    extension_table[EXT_SMCNTRPMF] = true;
-  } else if (ext_str == "smcdeleg") {
-    extension_table[EXT_SMCDELEG] = true;
-  } else if (ext_str == "ssccfg") {
-    extension_table[EXT_SSCCFG] = true;
-  } else if (ext_str == "zimop") {
-    extension_table[EXT_ZIMOP] = true;
-  } else if (ext_str == "zcmop") {
-    extension_table[EXT_ZCMOP] = true;
-  } else if (ext_str == "zalasr") {
-    extension_table[EXT_ZALASR] = true;
-  } else if (ext_str == "ssqosid") {
-    extension_table[EXT_SSQOSID] = true;
-  } else if (ext_str == "zicfilp") {
-    extension_table[EXT_ZICFILP] = true;
-  } else if (ext_str == "zicfiss") {
-    extension_table[EXT_ZICFISS] = true;
-    extension_table[EXT_ZAAMO] = true;
-    extension_table[EXT_ZIMOP] = true;
-  } else if (ext_str == "smmpm") {
-    extension_table[EXT_SMMPM] = true;
-  } else if (ext_str == "smnpm") {
-    extension_table[EXT_SMNPM] = true;
-  } else if (ext_str == "ssnpm") {
-    extension_table[EXT_SSNPM] = true;
+  if (const auto* info = find_extension_info(ext_str)) {
+    if (info->required_xlen && max_xlen != info->required_xlen)
+      bad_isa_string(str, info->required_xlen_msg);
+    for (const auto ext : info->enables) {
+      extension_table[ext] = true;
+    }
+    for (const auto implied : info->implies) {
+      add_extension(implied, str);
+    }
+    if (ext_str.substr(0, 3) == "zve")
+      apply_zve_properties(ext_str, str);
   } else if (ext_str.substr(0, 3) == "zvl") {
     reg_t new_vlen;
     try {
@@ -367,47 +306,7 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
     if ((new_vlen & (new_vlen - 1)) != 0 || new_vlen < 32 || ext_str.back() != 'b')
       bad_isa_string(str, ("Invalid Zvl string: " + ext_str).c_str());
     vlen = std::max(vlen, new_vlen);
-  } else if (ext_str.substr(0, 3) == "zve") {
-    if (ext_str.size() != 6) {
-      bad_isa_string(str, ("Invalid Zve string: " + ext_str).c_str());
-    }
-    reg_t new_elen;
-    try {
-      new_elen = safe_stoul(ext_str.substr(3, ext_str.size() - 4));
-    } catch (std::logic_error& e) {
-      new_elen = 0;
-    }
-    if (ext_str.substr(5) == "d") {
-      zvd |= true;
-      zvf |= true;
-      extension_table['F'] = true;
-      extension_table['D'] = true;
-    } else if (ext_str.substr(5) == "f") {
-      zvf |= true;
-      extension_table['F'] = true;
-    } else if (ext_str.substr(5) == "x") {
-      /* do nothing */
-    } else {
-      new_elen = 0;
-    }
-    if (new_elen != 32 && new_elen != 64)
-      bad_isa_string(str, ("Invalid Zve string: " + ext_str).c_str());
-    elen = std::max(elen, new_elen);
-    vlen = std::max(vlen, new_elen);
-  } else if (ext_str == "ssdbltrp") {
-    extension_table[EXT_SSDBLTRP] = true;
-  } else if (ext_str == "smdbltrp") {
-    extension_table[EXT_SMDBLTRP] = true;
-  } else if (ext_str == "smaia") {
-    extension_table[EXT_SMAIA] = true;
-    extension_table[EXT_SSAIA] = true;
-    extension_table[EXT_SMCSRIND] = true;
-    extension_table[EXT_SSCSRIND] = true;
-  } else if (ext_str == "ssaia") {
-    extension_table[EXT_SSAIA] = true;
-    extension_table[EXT_SSCSRIND] = true;
-  } else if (ext_str == "svvptc") {
-  } else if (ext_str[0] == 'x') {
+  } else if (!ext_str.empty() && ext_str[0] == 'x') {
     extension_table['X'] = true;
     if (ext_str.size() == 1) {
       bad_isa_string(str, "single 'X' is not a proper name");
@@ -436,23 +335,14 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   zvf = false;
   zvd = false;
 
-  switch (isa_string[4]) {
-    case 'g':
-      // G = IMAFD_Zicsr_Zifencei, but Spike includes the latter two
-      // unconditionally, so they need not be explicitly added here.
-      isa_string = isa_string.substr(0, 4) + "imafd" + isa_string.substr(5);
-      [[fallthrough]];
-    case 'i':
-      extension_table['I'] = true;
-      break;
-
-    case 'e':
-      extension_table['E'] = true;
-      break;
-
-    default:
-      bad_isa_string(str, ("'" + isa_string.substr(0, 4) + "' must be followed by I, E, or G").c_str());
+  if (isa_string[4] == 'g') {
+    // G = IMAFD_Zicsr_Zifencei, but Spike includes the latter two
+    // unconditionally, so they need not be explicitly added here.
+    isa_string = isa_string.substr(0, 4) + "imafd" + isa_string.substr(5);
+  } else if (isa_string[4] != 'i' && isa_string[4] != 'e') {
+    bad_isa_string(str, ("'" + isa_string.substr(0, 4) + "' must be followed by I, E, or G").c_str());
   }
+  add_extension(std::string(1, isa_string[4]), str);
 
   const char* isa_str = isa_string.c_str();
   auto p = isa_str, subset = all_subsets;
@@ -467,14 +357,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
         bad_isa_string(str, ("Unsupported extension '" + std::string(1, *p) + "'").c_str());
     }
 
-    switch (*p) {
-      case 'v': add_extension("zve64d", str); vlen = 128;
-                [[fallthrough]];
-      case 'q': extension_table['D'] = true;
-                [[fallthrough]];
-      case 'd': extension_table['F'] = true;
-    }
-    extension_table[toupper(*p)] = true;
+    add_extension(std::string(1, *p), str);
     while (isdigit(*(p + 1))) {
       ++p; // skip major version, point, and minor version if presented
       if (*(p + 1) == 'p') ++p;
@@ -494,37 +377,15 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     bad_isa_string(str, ("can't parse: " + std::string(p)).c_str());
   }
 
-  if (extension_table['A']) {
-    extension_table[EXT_ZAAMO] = true;
-    extension_table[EXT_ZALRSC] = true;
-  } else if (extension_table[EXT_ZAAMO] && extension_table[EXT_ZALRSC]) {
-    extension_table['A'] = true;
-  }
+  apply_extension_combinations(extension_table);
 
-  if (extension_table['B']) {
-    extension_table[EXT_ZBA] = true;
-    extension_table[EXT_ZBB] = true;
-    extension_table[EXT_ZBS] = true;
-  } else if (extension_table[EXT_ZBA] && extension_table[EXT_ZBB] && extension_table[EXT_ZBS]) {
-    extension_table['B'] = true;
-  }
-
-  if (extension_table['C']) {
-    extension_table[EXT_ZCA] = true;
-    if (extension_table['D'])
-      extension_table[EXT_ZCD] = true;
+  if (extension_table[EXT_ZFBFMIN] || extension_table[EXT_ZFHMIN]) {
+    extension_table[EXT_INTERNAL_ZFH_MOVE] = true;
   }
 
   if (extension_table['C'] || extension_table[EXT_ZCE]) {
     if (extension_table['F'] && max_xlen == 32)
       extension_table[EXT_ZCF] = true;
-  }
-
-  if (extension_table[EXT_ZICFISS] && extension_table[EXT_ZCA])
-    extension_table[EXT_ZCMOP] = true;
-
-  if (extension_table[EXT_ZFBFMIN] || extension_table[EXT_ZFHMIN]) {
-    extension_table[EXT_INTERNAL_ZFH_MOVE] = true;
   }
 
   if (extension_table[EXT_ZCLSD] && extension_table[EXT_ZCF]) {
