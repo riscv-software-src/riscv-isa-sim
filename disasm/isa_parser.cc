@@ -56,16 +56,11 @@ struct extension_info_t {
   const char* name;
   std::vector<unsigned> enables;
   std::vector<const char*> implies;
-  unsigned required_xlen = 0;
-  const char* required_xlen_msg = nullptr;
 
   extension_info_t(const char* name,
                    std::initializer_list<unsigned> enables = {},
-                   std::initializer_list<const char*> implies = {},
-                   unsigned required_xlen = 0,
-                   const char* required_xlen_msg = nullptr)
-    : name(name), enables(enables), implies(implies),
-      required_xlen(required_xlen), required_xlen_msg(required_xlen_msg) {}
+                   std::initializer_list<const char*> implies = {})
+    : name(name), enables(enables), implies(implies) {}
 };
 
 struct extension_combination_t {
@@ -131,7 +126,7 @@ static const extension_info_t extension_infos[] = {
   {"zhinxmin", {EXT_ZFINX, EXT_ZHINXMIN}},
   {"zce", {EXT_ZCE}, {"zcb", "zcmp", "zcmt"}},
   {"zca", {EXT_ZCA}},
-  {"zcf", {'F', EXT_ZCF}, {"zca"}, 32, "'Zcf' requires RV32"},
+  {"zcf", {'F', EXT_ZCF}, {"zca"}},
   {"zcb", {EXT_ZCB}, {"zca"}},
   {"zcd", {EXT_ZCD, 'F', 'D'}, {"zca"}},
   {"zcmp", {EXT_ZCMP}, {"zca"}},
@@ -157,7 +152,7 @@ static const extension_info_t extension_infos[] = {
   {"svnapot", {EXT_SVNAPOT}},
   {"svpbmt", {EXT_SVPBMT}},
   {"svinval", {EXT_SVINVAL}},
-  {"svukte", {EXT_SVUKTE}, {}, 64, "'svukte' requires RV64"},
+  {"svukte", {EXT_SVUKTE}},
   {"zfa", {EXT_ZFA}},
   {"zicbom", {EXT_ZICBOM}},
   {"zicboz", {EXT_ZICBOZ}},
@@ -166,8 +161,8 @@ static const extension_info_t extension_infos[] = {
   {"zicntr", {EXT_ZICNTR}},
   {"zicond", {EXT_ZICOND}},
   {"zihpm", {EXT_ZIHPM}},
-  {"zilsd", {EXT_ZILSD}, {}, 32, "'Zilsd' requires RV32"},
-  {"zclsd", {EXT_ZCLSD}, {"zilsd", "zca"}, 32, "'Zclsd' requires RV32"},
+  {"zilsd", {EXT_ZILSD}},
+  {"zclsd", {EXT_ZCLSD}, {"zilsd", "zca"}},
   {"zvabd", {EXT_ZVABD}},
   {"zvkb", {EXT_ZVKB}},
   {"zvbb", {EXT_ZVKB, EXT_ZVBB}},
@@ -286,8 +281,6 @@ void isa_parser_t::apply_zve_properties(const std::string& ext_str, const char* 
 void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
 {
   if (const auto* info = find_extension_info(ext_str)) {
-    if (info->required_xlen && max_xlen != info->required_xlen)
-      bad_isa_string(str, info->required_xlen_msg);
     for (const auto ext : info->enables) {
       extension_table[ext] = true;
     }
@@ -386,6 +379,22 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   if (extension_table['C'] || extension_table[EXT_ZCE]) {
     if (extension_table['F'] && max_xlen == 32)
       extension_table[EXT_ZCF] = true;
+  }
+
+  if (extension_table[EXT_ZCF] && max_xlen != 32) {
+    bad_isa_string(str, "'Zcf' requires RV32");
+  }
+
+  if (extension_table[EXT_ZCLSD] && max_xlen != 32) {
+    bad_isa_string(str, "'Zclsd' requires RV32");
+  }
+
+  if (extension_table[EXT_ZILSD] && max_xlen != 32) {
+    bad_isa_string(str, "'Zilsd' requires RV32");
+  }
+
+  if (extension_table[EXT_SVUKTE] && max_xlen != 64) {
+    bad_isa_string(str, "'svukte' requires RV64");
   }
 
   if (extension_table[EXT_ZCLSD] && extension_table[EXT_ZCF]) {
