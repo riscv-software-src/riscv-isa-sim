@@ -219,11 +219,11 @@ $(2)_deps := $$(patsubst %.o, %.d, $$($(2)_objs))
 $(2)_deps += $$(patsubst %.o, %.d, $$($(2)_c_objs))
 $(2)_deps += $$(patsubst %.h, %.h.d, $$($(2)_precompiled_hdrs))
 $$($(2)_pch) : %.h.gch : %.h
-	$(COMPILE) -x c++-header $$< -c -o $$@
+	$(COMPILE) -x c++-header $$< -c -o $$@ -MF $$(patsubst %.gch,%.d,$$@)
 $$($(2)_objs) : %.o : %.cc $$($(2)_gen_hdrs) $$($(2)_pch)
-	$(COMPILE) $(if $(HAVE_CLANG_PCH), $$(if $$($(2)_pch), -include-pch $$($(2)_pch))) $$($(2)_CFLAGS) -c $$<
+	$(COMPILE) $(if $(HAVE_CLANG_PCH), $$(if $$($(2)_pch), -include-pch $$($(2)_pch))) $$($(2)_CFLAGS) -c $$< -o $$@ -MF $$(patsubst %.o,%.d,$$@)
 $$($(2)_c_objs) : %.o : %.c $$($(2)_gen_hdrs)
-	$(COMPILE_C) $$($(2)_CFLAGS) -c $$<
+	$(COMPILE_C) $$($(2)_CFLAGS) -c $$< -o $$@ -MF $$(patsubst %.o,%.d,$$@)
 
 $(2)_junk += $$($(2)_pch) $$($(2)_objs) $$($(2)_c_objs) $$($(2)_deps) \
   $$($(2)_gen_hdrs)
@@ -261,7 +261,7 @@ $(2)_test_libnames  := $$(patsubst %, lib%.a, $$($(2)_test_libs))
 $(2)_test_libarg    := $$(patsubst %, -l%, $$($(2)_test_libs))
 
 $$($(2)_test_objs) : %.o : %.cc
-	$(COMPILE) -c $$<
+	$(COMPILE) -c $$< -o $$@ -MF $$(patsubst %.o,%.d,$$@)
 
 $$($(2)_test_exes) : %-utst : %.t.o $$($(2)_test_libnames)
 	$(LINK) $$($(2)_LDFLAGS) -o $$@ $$< $$($(2)_test_libnames) $(LIBS)
@@ -289,7 +289,7 @@ $(2)_prog_libnames  := $$(patsubst %, lib%.a, $$($(2)_prog_libs))
 $(2)_prog_libarg    := $$(patsubst %, -l%, $$($(2)_prog_libs))
 
 $$($(2)_prog_objs) : %.o : %.cc
-	$(COMPILE) -c $$<
+	$(COMPILE) -c $$< -o $$@ -MF $$(patsubst %.o,%.d,$$@)
 
 $$($(2)_prog_exes) : % : %.o $$($(2)_prog_libnames)
 	$(LINK) $$($(2)_LDFLAGS) -o $$@ $$< $$($(2)_prog_libnames) $(LIBS)
@@ -304,7 +304,7 @@ $(2)_install_prog_deps := $$(patsubst %.o, %.d, $$($(2)_install_prog_objs))
 $(2)_install_prog_exes := $$(patsubst %.cc, %, $$($(2)_install_prog_srcs))
 
 $$($(2)_install_prog_objs) : %.o : %.cc $$($(2)_gen_hdrs)
-	$(COMPILE) -c $$<
+	$(COMPILE) -c $$< -o $$@ -MF $$(patsubst %.o,%.d,$$@)
 
 $$($(2)_install_prog_exes) : % : %.o $$($(2)_prog_libnames)
 	$(LINK) $$($(2)_LDFLAGS) -o $$@ $$< $$($(2)_prog_libnames) $(LIBS)
