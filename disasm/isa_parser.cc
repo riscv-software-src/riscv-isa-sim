@@ -57,12 +57,15 @@ struct extension_info_t {
   std::vector<unsigned> enables;
   std::vector<const char*> implies;
 
+  // `enables` sets extension_table bits directly
+  // `implies` recursively parses and applies other named extensions
   extension_info_t(const char* name,
                    std::initializer_list<unsigned> enables = {},
                    std::initializer_list<const char*> implies = {})
     : name(name), enables(enables), implies(implies) {}
 };
 
+// if every extension in components is set, also set the enable
 struct extension_combination_t {
   unsigned enable;
   std::vector<unsigned> components;
@@ -72,8 +75,10 @@ struct extension_combination_t {
     : enable(enable), components(components) {}
 };
 
-// Entries without enables are accepted ISA names whose behavior is always present
-// in Spike, currently unmodeled, or handled by later parser checks.
+// Entries without enables set no extension_table bits directly. This is either
+// because no dedicated EXT_* bit exists for them (their full effect is expressed
+// through their implies chain), or because their behavior is always present in
+// Spike, is currently unmodeled, or is handled by later parser checks.
 static const extension_info_t extension_infos[] = {
   {"i", {'I'}},
   {"e", {'E'}},
