@@ -58,9 +58,9 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "    #size-cells = <0>;\n"
          "    timebase-frequency = <" << (cpu_hz/insns_per_rtc_tick) << ">;\n";
     for (size_t i = 0; i < cfg->nprocs(); i++) {
-    s << "    CPU" << i << ": cpu@" << i << " {\n"
+    s << "    CPU" << i << ": cpu@" << std::hex << cfg->hartids[i] << std::dec << " {\n"
          "      device_type = \"cpu\";\n"
-         "      reg = <" << cfg->hartids[i] << ">;\n"
+         "      reg = <0x" << std::hex << cfg->hartids[i] << std::dec << ">;\n"
          "      status = \"okay\";\n"
          "      compatible = \"riscv\";\n"
          "      riscv,isa = \"" << isa.get_isa_string() << "\";\n"
