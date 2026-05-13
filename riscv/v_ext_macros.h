@@ -2253,7 +2253,8 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
     b[i] = P.VU.elt<b_t>(insn.rs2(), i); \
   } \
   auto& acc = P.VU.elt<c_t>(insn.rd(), 0, true); \
-  acc = dot(a, b, acc)
+  acc = dot(a, b, acc); \
+  set_fp_exceptions;
 
 #define ZVLDOT_GENERIC_LOOP(a_t, b_t, c_t, macc) \
   auto dot = std::bind(generic_dot_product<a_t, b_t, c_t>, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, macc); \
@@ -2275,6 +2276,7 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
     } \
     auto& acc = P.VU.elt<c_t>(insn.rd(), i, true); \
     acc = dot(a, b, acc); \
+    set_fp_exceptions; \
   }
 
 #define ZVBDOT_GENERIC_LOOP(a_t, b_t, c_t, macc) \
