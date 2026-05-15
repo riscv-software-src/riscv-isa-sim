@@ -229,11 +229,11 @@ public:
 
     check_triggers(triggers::OPERATION_STORE, transformed_addr, false, blocksz);
 
-    reg_t paddr = translate(access_info, 1);
+    reg_t paddr = translate(access_info, 1) - (transformed_addr & (blocksz - 1));
     if (auto host_addr = sim->addr_to_mem(paddr)) {
-      if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
-        tracer.trace(paddr - (transformed_addr & (blocksz - 1)), blocksz, STORE);
-      memset(host_addr - (transformed_addr & (blocksz - 1)), 0, blocksz);
+      if (tracer.interested_in_range(paddr, paddr + blocksz, STORE))
+        tracer.trace(paddr, blocksz, STORE);
+      memset(host_addr, 0, blocksz);
     } else {
       throw trap_store_access_fault((proc) ? proc->state.v : false, transformed_addr, 0, 0);
     }
@@ -245,9 +245,9 @@ public:
 
     check_triggers(triggers::OPERATION_STORE, transformed_addr, false, blocksz);
     convert_load_traps_to_store_traps({
-      const reg_t paddr = translate(access_info, 1);
+      const reg_t paddr = translate(access_info, 1) - (transformed_addr & (blocksz - 1));
       if (sim->reservable(paddr)) {
-        if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
+        if (tracer.interested_in_range(paddr, paddr + blocksz, LOAD))
           tracer.clean_invalidate(paddr, blocksz, clean, inval);
       } else {
         throw trap_store_access_fault((proc) ? proc->state.v : false, transformed_addr, 0, 0);
