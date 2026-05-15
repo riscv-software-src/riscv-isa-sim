@@ -227,10 +227,16 @@ public:
     auto access_info = generate_access_info(addr, STORE, {});
     reg_t transformed_addr = access_info.transformed_vaddr;
 
-    auto base = transformed_addr & ~(blocksz - 1);
     check_triggers(triggers::OPERATION_STORE, transformed_addr, false, blocksz);
-    for (size_t offset = 0; offset < blocksz; offset += 1)
-      store<uint8_t>(base + offset, 0);
+
+    reg_t paddr = translate(access_info, 1);
+    if (auto host_addr = sim->addr_to_mem(paddr)) {
+      if (tracer.interested_in_range(paddr, paddr + PGSIZE, STORE))
+        tracer.trace(paddr - (transformed_addr & (blocksz - 1)), blocksz, STORE);
+      memset(host_addr - (transformed_addr & (blocksz - 1)), 0, blocksz);
+    } else {
+      throw trap_store_access_fault((proc) ? proc->state.v : false, transformed_addr, 0, 0);
+    }
   }
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
