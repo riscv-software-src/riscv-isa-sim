@@ -497,7 +497,14 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
   return entry;
 }
 
-std::optional<int> mmu_t::pmp_search(reg_t addr, reg_t len, size_t start, size_t pmp_num)
+class always_fail_pmp_t : public base_pmpaddr_csr_t {
+ public:
+  always_fail_pmp_t() : base_pmpaddr_csr_t(nullptr, 0, 0) {}
+  bool access_ok(access_type UNUSED type, reg_t UNUSED mode, bool UNUSED hlvx) const noexcept override { return false; }
+  reg_t read() const noexcept override { abort(); }
+} always_fail_pmp;
+
+std::optional<base_pmpaddr_csr_t*> mmu_t::pmp_lookup(reg_t addr, reg_t len, size_t start, size_t pmp_num)
 {
   reg_t gran = reg_t(1) << proc->lg_pmp_granularity;
   reg_t addr_aligned = addr & -gran;
@@ -516,13 +523,13 @@ std::optional<int> mmu_t::pmp_search(reg_t addr, reg_t len, size_t start, size_t
     if (any_match) {
       // If the PMP matches only a strict subset of the access, fail it
       if (!all_match)
-        return std::nullopt;
+        return &always_fail_pmp;
 
-      return i;
+      return proc->state.pmpaddr[start + i].get();
     }
   }
 
-  return -1;
+  return std::nullopt;
 }
 
 bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlvx)
@@ -530,10 +537,8 @@ bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlv
   if (!proc || proc->n_pmp == 0)
     return true;
 
-  if (auto idx = pmp_search(addr, len, 0, proc->n_pmp); idx.has_value()) {
-    if (*idx != -1)
-      return dynamic_cast<pmpaddr_csr_t*>(proc->state.pmpaddr[*idx].get())->access_ok(type, mode, hlvx);
-  } else return false;
+  if (auto pmp = pmp_lookup(addr, len, 0, proc->n_pmp); pmp.has_value())
+    return (*pmp)->access_ok(type, mode, hlvx);
 
   // in case matching region is not found
   const bool mseccfg_mml = proc->state.mseccfg->get_mml();
@@ -547,10 +552,8 @@ bool mmu_t::spmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
   if (!proc)
     return true;
 
-  if (auto idx = pmp_search(addr, len, proc->n_pmp, proc->state.max_pmp - proc->n_pmp); idx.has_value()) {
-    if (*idx != -1)
-      return dynamic_cast<spmpaddr_csr_t*>(proc->state.pmpaddr[proc->n_pmp + *idx].get())->access_ok(type, mode, false);
-  } else return false;
+  if (auto pmp = pmp_lookup(addr, len, proc->n_pmp, proc->state.max_pmp - proc->n_pmp); pmp.has_value())
+    return (*pmp)->access_ok(type, mode, false);
 
   return true;
 }
