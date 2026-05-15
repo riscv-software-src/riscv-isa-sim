@@ -228,7 +228,7 @@ public:
     reg_t transformed_addr = access_info.transformed_vaddr;
 
     auto base = transformed_addr & ~(blocksz - 1);
-    check_triggers(triggers::OPERATION_STORE, base, false, blocksz);
+    check_triggers(triggers::OPERATION_STORE, transformed_addr, false, blocksz);
     for (size_t offset = 0; offset < blocksz; offset += 1)
       store<uint8_t>(base + offset, 0);
   }
@@ -237,8 +237,7 @@ public:
     auto access_info = generate_access_info(addr, LOAD, {.clean_inval = true});
     reg_t transformed_addr = access_info.transformed_vaddr;
 
-    auto base = transformed_addr & ~(blocksz - 1);
-    check_triggers(triggers::OPERATION_STORE, base, false, blocksz);
+    check_triggers(triggers::OPERATION_STORE, transformed_addr, false, blocksz);
     convert_load_traps_to_store_traps({
       const reg_t paddr = translate(access_info, 1);
       if (sim->reservable(paddr)) {
