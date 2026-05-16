@@ -227,22 +227,27 @@ public:
     auto access_info = generate_access_info(addr, STORE, {});
     reg_t transformed_addr = access_info.transformed_vaddr;
 
-    auto base = transformed_addr & ~(blocksz - 1);
-    check_triggers(triggers::OPERATION_STORE, base, false, blocksz);
-    for (size_t offset = 0; offset < blocksz; offset += 1)
-      store<uint8_t>(base + offset, 0);
+    check_triggers(triggers::OPERATION_STORE, transformed_addr, false, blocksz);
+
+    reg_t paddr = translate(access_info, 1) - (transformed_addr & (blocksz - 1));
+    if (auto host_addr = sim->addr_to_mem(paddr)) {
+      if (tracer.interested_in_range(paddr, paddr + blocksz, STORE))
+        tracer.trace(paddr, blocksz, STORE);
+      memset(host_addr, 0, blocksz);
+    } else {
+      throw trap_store_access_fault((proc) ? proc->state.v : false, transformed_addr, 0, 0);
+    }
   }
 
   void clean_inval(reg_t addr, bool clean, bool inval) {
     auto access_info = generate_access_info(addr, LOAD, {.clean_inval = true});
     reg_t transformed_addr = access_info.transformed_vaddr;
 
-    auto base = transformed_addr & ~(blocksz - 1);
-    check_triggers(triggers::OPERATION_STORE, base, false, blocksz);
+    check_triggers(triggers::OPERATION_STORE, transformed_addr, false, blocksz);
     convert_load_traps_to_store_traps({
-      const reg_t paddr = translate(access_info, 1);
+      const reg_t paddr = translate(access_info, 1) - (transformed_addr & (blocksz - 1));
       if (sim->reservable(paddr)) {
-        if (tracer.interested_in_range(paddr, paddr + PGSIZE, LOAD))
+        if (tracer.interested_in_range(paddr, paddr + blocksz, LOAD))
           tracer.clean_invalidate(paddr, blocksz, clean, inval);
       } else {
         throw trap_store_access_fault((proc) ? proc->state.v : false, transformed_addr, 0, 0);
