@@ -84,52 +84,15 @@ bool basic_csr_t::unlogged_write(const reg_t val) noexcept {
   return true;
 }
 
-// implement class pmpaddr_csr_t
-pmpaddr_csr_t::pmpaddr_csr_t(processor_t* const proc, const reg_t addr):
+// implement class base_pmpaddr_csr_t
+base_pmpaddr_csr_t::base_pmpaddr_csr_t(processor_t* const proc, const reg_t addr, const size_t idx):
   csr_t(proc, addr),
   val(0),
   cfg(0),
-  pmpidx(address - CSR_PMPADDR0) {
+  pmpidx(idx) {
 }
 
-void pmpaddr_csr_t::verify_permissions(insn_t insn, bool write) const {
-  csr_t::verify_permissions(insn, write);
-  // If n_pmp is zero, that means pmp is not implemented hence raise
-  // trap if it tries to access the csr. I would prefer to implement
-  // this by not instantiating any pmpaddr_csr_t for these regs, but
-  // n_pmp can change after reset() is run.
-  if (proc->n_pmp == 0)
-    throw trap_illegal_instruction(insn.bits());
-}
-
-reg_t pmpaddr_csr_t::read() const noexcept {
-  if ((cfg & PMP_A) >= PMP_NAPOT)
-    return val | (~proc->pmp_tor_mask() >> 1);
-  return val & proc->pmp_tor_mask();
-}
-
-bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
-  // If no PMPs are configured, disallow access to all. Otherwise,
-  // allow access to all, but unimplemented ones are hardwired to
-  // zero. Note that n_pmp can change after reset(); otherwise I would
-  // implement this in state_t::reset() by instantiating the correct
-  // number of pmpaddr_csr_t.
-  if (proc->n_pmp == 0)
-    return false;
-
-  const bool lock_bypass = state->mseccfg->get_rlb();
-  const bool locked = !lock_bypass && (cfg & PMP_L);
-
-  if (pmpidx < proc->n_pmp && !locked && !next_locked_and_tor()) {
-    this->val = val & ((reg_t(1) << (proc->paddr_bits() - PMP_SHIFT)) - 1);
-  }
-  else
-    return false;
-  proc->get_mmu()->flush_tlb();
-  return true;
-}
-
-bool pmpaddr_csr_t::next_locked_and_tor() const noexcept {
+bool base_pmpaddr_csr_t::next_locked_and_tor() const noexcept {
   if (pmpidx+1 >= state->max_pmp) return false;  // this is the last entry
   const bool lock_bypass = state->mseccfg->get_rlb();
   const bool next_locked = !lock_bypass && (state->pmpaddr[pmpidx+1]->cfg & PMP_L);
@@ -137,22 +100,27 @@ bool pmpaddr_csr_t::next_locked_and_tor() const noexcept {
   return next_locked && next_tor;
 }
 
-reg_t pmpaddr_csr_t::tor_paddr() const noexcept {
+reg_t base_pmpaddr_csr_t::tor_paddr() const noexcept {
   return (val & proc->pmp_tor_mask()) << PMP_SHIFT;
 }
 
-reg_t pmpaddr_csr_t::tor_base_paddr() const noexcept {
+reg_t base_pmpaddr_csr_t::tor_base_paddr() const noexcept {
   if (pmpidx == 0) return 0;  // entry 0 always uses 0 as base
   return state->pmpaddr[pmpidx-1]->tor_paddr();
 }
 
-reg_t pmpaddr_csr_t::napot_mask() const noexcept {
+reg_t base_pmpaddr_csr_t::napot_mask() const noexcept {
   bool is_na4 = (cfg & PMP_A) == PMP_NA4;
   reg_t mask = (val << 1) | (!is_na4) | ~proc->pmp_tor_mask();
   return ~(mask & ~(mask + 1)) << PMP_SHIFT;
 }
 
-bool pmpaddr_csr_t::match4(reg_t addr) const noexcept {
+bool base_pmpaddr_csr_t::match4(reg_t addr) const noexcept {
+  if (proc->extension_enabled_const(EXT_SSPMPEN) && (pmpidx+1 >= proc->n_pmp)) {
+    if (!((state->spmpen->read() >> pmpidx) & 1))
+      return false;
+  }
+
   if ((cfg & PMP_A) == 0) return false;
   bool is_tor = (cfg & PMP_A) == PMP_TOR;
   if (is_tor) return tor_base_paddr() <= addr && addr < tor_paddr();
@@ -160,7 +128,12 @@ bool pmpaddr_csr_t::match4(reg_t addr) const noexcept {
   return ((addr ^ tor_paddr()) & napot_mask()) == 0;
 }
 
-bool pmpaddr_csr_t::subset_match(reg_t addr, reg_t len) const noexcept {
+bool base_pmpaddr_csr_t::subset_match(reg_t addr, reg_t len) const noexcept {
+  if (proc->extension_enabled_const(EXT_SSPMPEN) && (pmpidx+1 >= proc->n_pmp)) {
+    if (!((state->spmpen->read() >> pmpidx) & 1))
+      return false;
+  }
+
   if ((addr | len) & (len - 1))
     abort();
   reg_t base = tor_base_paddr();
@@ -180,6 +153,52 @@ bool pmpaddr_csr_t::subset_match(reg_t addr, reg_t len) const noexcept {
   bool napot_homogeneous = mask_homogeneous || ((addr ^ tor) / len) != 0;
 
   return !(is_tor ? tor_homogeneous : napot_homogeneous);
+}
+
+pmpaddr_csr_t::pmpaddr_csr_t(processor_t* const proc, const reg_t addr, const size_t idx):
+  base_pmpaddr_csr_t(proc, addr, idx) {
+}
+
+void pmpaddr_csr_t::verify_permissions(insn_t insn, bool write) const {
+  csr_t::verify_permissions(insn, write);
+  // If n_pmp is zero, that means pmp is not implemented hence raise
+  // trap if it tries to access the csr. I would prefer to implement
+  // this by not instantiating any base_pmpaddr_csr_t for these regs, but
+  // n_pmp can change after reset() is run.
+  if (proc->n_pmp == 0)
+    throw trap_illegal_instruction(insn.bits());
+}
+
+reg_t pmpaddr_csr_t::read() const noexcept {
+  if (pmpidx >= proc->n_pmp)
+    return 0;
+
+  if ((cfg & PMP_A) >= PMP_NAPOT)
+    return val | (~proc->pmp_tor_mask() >> 1);
+  return val & proc->pmp_tor_mask();
+}
+
+bool pmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
+  // If no PMPs are configured, disallow access to all. Otherwise,
+  // allow access to all, but unimplemented ones are hardwired to
+  // zero. Note that n_pmp can change after reset(); otherwise I would
+  // implement this in state_t::reset() by instantiating the correct
+  // number of base_pmpaddr_csr_t.
+  if (proc->n_pmp == 0)
+    return false;
+
+  if (pmpidx >= proc->n_pmp)
+    return true;
+
+  const bool lock_bypass = state->mseccfg->get_rlb();
+  const bool locked = !lock_bypass && (cfg & PMP_L);
+
+  if (pmpidx >= proc->n_pmp || locked || next_locked_and_tor())
+    return false;
+
+  this->val = val & ((reg_t(1) << (proc->paddr_bits() - PMP_SHIFT)) - 1);
+  proc->get_mmu()->flush_tlb();
+  return true;
 }
 
 bool pmpaddr_csr_t::access_ok(access_type type, reg_t mode, bool hlvx) const noexcept {
@@ -286,6 +305,132 @@ bool pmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
   return write_success;
 }
 
+mpmpdeleg_csr_t::mpmpdeleg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  masked_csr_t(proc, addr, mask, init) {
+}
+
+bool mpmpdeleg_csr_t::unlogged_write(const reg_t val) noexcept {
+  int max_locked_pmp_index = -1;
+  for(reg_t i = 0; i < proc->n_pmp; ++i) {
+    if (state->pmpaddr[i]->is_locked())
+      max_locked_pmp_index = i;
+  }
+
+  reg_t new_val = val & MPMPDELEG_PMPNUM;
+  if (new_val > state->max_pmp)
+    new_val = state->max_pmp;
+
+  bool write_success = false;
+  if (max_locked_pmp_index < (int)new_val) {
+    for (size_t i = 0; i < proc->n_pmp; ++i)
+      state->csrmap.erase(CSR_PMPADDR0 + i);
+
+    proc->n_pmp = new_val;
+    for (size_t i = 0; i < proc->n_pmp; ++i) {
+      state->add_csr(CSR_PMPADDR0 + i, state->pmpaddr[i] = std::make_shared<pmpaddr_csr_t>(proc, CSR_PMPADDR0 + i, i));
+    }
+    proc->set_spmp_addr_entry();
+    write_success = masked_csr_t::unlogged_write(new_val);
+  }
+
+  return write_success;
+}
+
+spmpaddr_csr_t::spmpaddr_csr_t(processor_t* const proc, const reg_t addr):
+  base_pmpaddr_csr_t(proc, addr, addr) {
+}
+
+reg_t spmpaddr_csr_t::read() const noexcept {
+  if ((cfg & PMP_A) >= PMP_NAPOT)
+    return val | (~proc->pmp_tor_mask() >> 1);
+  return val & proc->pmp_tor_mask();
+}
+
+bool spmpaddr_csr_t::unlogged_write(const reg_t val) noexcept {
+  if ((state->prv != PRV_M && (cfg & PMP_L)) || next_locked_and_tor())
+    return false;
+
+  this->val = val & ((reg_t(1) << (proc->paddr_bits() - PMP_SHIFT)) - 1);
+  proc->get_mmu()->flush_tlb();
+  return true;
+}
+
+bool spmpaddr_csr_t::access_ok(access_type type, reg_t mode, bool) const noexcept {
+  const bool cfgx = cfg & PMP_X;
+  const bool cfgw = cfg & PMP_W;
+  const bool cfgr = cfg & PMP_R;
+  const bool cfgu = cfg & SPMP_U;
+  const bool cfgs = cfg & SPMP_SHARED;
+
+  const bool prvs = mode == PRV_S;
+  const bool prvu = mode == PRV_U;
+
+  const bool typer = type == LOAD;
+  const bool typex = type == FETCH;
+  const bool typew = type == STORE;
+
+  const bool sum = STATE.sstatus->read() & SSTATUS_SUM;
+
+  const bool reserved = !cfgr && cfgw;
+  const bool deny = !cfgs && ((cfgu && prvs && !sum) || (!cfgu && prvu));
+
+  bool enforce_no_x(false), share_read_only(false), share_exec_only(false);
+  if (cfgu) {
+    if (!cfgs) {
+      if (prvs && sum) enforce_no_x = true;
+    } else if (cfgr && cfgw) {
+      if (cfgx) share_exec_only = true;
+      else share_read_only = true;
+    }
+  }
+
+  const bool normal_rwx = (typer && cfgr && !share_exec_only) ||
+                          (typew && cfgw && !share_read_only && !share_exec_only) ||
+                          (typex && cfgx && !share_read_only && !enforce_no_x);
+
+  return !reserved && !deny && normal_rwx;
+}
+
+spmpcfg_csr_t::spmpcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  masked_csr_t(proc, addr, mask, init) {
+}
+
+reg_t spmpcfg_csr_t::read() const noexcept {
+  const size_t idx = proc->n_pmp + address;
+  if (idx >= state->max_pmp) return 0;
+  else return masked_csr_t::read();
+}
+
+bool spmpcfg_csr_t::unlogged_write(const reg_t val) noexcept {
+  const size_t idx = proc->n_pmp + address;
+  if (idx >= state->max_pmp) return false;
+
+  const bool locked = (state->pmpaddr[idx]->cfg & PMP_L);
+
+  bool write_success = false;
+  if (!locked) {
+    state->pmpaddr[idx]->cfg = val;
+    write_success = masked_csr_t::unlogged_write(val);
+  }
+  proc->get_mmu()->flush_tlb();
+
+  return write_success;
+}
+
+spmpen_csr_t::spmpen_csr_t(processor_t* const proc, const reg_t addr, const reg_t init):
+  basic_csr_t(proc, addr, init) {
+}
+
+bool spmpen_csr_t::unlogged_write(const reg_t val) noexcept {
+  reg_t write_val = 0;
+  for (reg_t i = proc->n_pmp-1; i < state->max_pmp; ++i) {
+    if (!state->pmpaddr[i]->is_locked() && ((val >> i) & 1))
+      write_val |= reg_t(1) << i;
+  }
+
+  return basic_csr_t::unlogged_write(write_val);
+}
+
 // implement class mseccfg_csr_t
 mseccfg_csr_t::mseccfg_csr_t(processor_t* const proc, const reg_t addr):
     basic_csr_t(proc, addr, 0) {
@@ -326,7 +471,7 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   if (proc->n_pmp != 0) {
     // pmpcfg.L is 1 in any rule or entry (including disabled entries)
     const bool pmplock_recorded = std::any_of(state->pmpaddr, state->pmpaddr + proc->n_pmp,
-        [](const pmpaddr_csr_t_p & c) { return c->is_locked(); } );
+        [](const base_pmpaddr_csr_t_p & c) { return c->is_locked(); } );
 
     // When RLB is 0 and pmplock_recorded, RLB is locked to 0.
     // Otherwise set the RLB bit according val

@@ -150,6 +150,8 @@ static const extension_info_t extension_infos[] = {
   {"zkr", {EXT_ZKR}},
   {"zkt"},
   {"smepmp", {EXT_SMEPMP}},
+  {"sspmp", {EXT_SSPMP, EXT_SMPMPDELEG, EXT_SMCSRIND, EXT_SSCSRIND}},
+  {"sspmpen", {EXT_SSPMPEN}},
   {"smstateen", {EXT_SMSTATEEN}},
   {"smpmpmt", {EXT_SMPMPMT}},
   {"smrnmi", {EXT_SMRNMI}},
@@ -452,4 +454,7 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     if (extension_table[ch])
       max_isa |= 1UL << (ch - 'A');
   }
+
+  if (extension_table[EXT_SSPMP] && !supervisor)
+    bad_isa_string(str, "'SPMP' extension requires S mode");
 }

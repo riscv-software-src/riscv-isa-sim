@@ -89,11 +89,9 @@ class basic_csr_t: public csr_t {
   reg_t val;
 };
 
-class pmpaddr_csr_t: public csr_t {
+class base_pmpaddr_csr_t: public csr_t {
  public:
-  pmpaddr_csr_t(processor_t* const proc, const reg_t addr);
-  virtual void verify_permissions(insn_t insn, bool write) const override;
-  virtual reg_t read() const noexcept override;
+  base_pmpaddr_csr_t(processor_t* const proc, const reg_t addr, const size_t idx);
 
   // Does a 4-byte access at the specified address match this PMP entry?
   bool match4(reg_t addr) const noexcept;
@@ -102,7 +100,9 @@ class pmpaddr_csr_t: public csr_t {
   bool subset_match(reg_t addr, reg_t len) const noexcept;
 
   // Is the specified access allowed given the pmpcfg privileges?
-  bool access_ok(access_type type, reg_t mode, bool hlvx) const noexcept;
+  virtual bool access_ok(access_type UNUSED type, reg_t UNUSED mode, bool UNUSED hlvx) const noexcept {
+    return false;
+  }
 
   // To check lock bit status from outside like mseccfg
   bool is_locked() const noexcept {
@@ -110,7 +110,8 @@ class pmpaddr_csr_t: public csr_t {
   }
 
  protected:
-  virtual bool unlogged_write(const reg_t val) noexcept override;
+  virtual bool unlogged_write(const reg_t UNUSED val) noexcept override { return false; }
+
  private:
   // Assuming this is configured as TOR, return address for top of
   // range. Also forms bottom-of-range for next-highest pmpaddr
@@ -126,13 +127,27 @@ class pmpaddr_csr_t: public csr_t {
   reg_t napot_mask() const noexcept;
 
   bool next_locked_and_tor() const noexcept;
-  reg_t val;
   friend class pmpcfg_csr_t;  // so he can access cfg
-  uint8_t cfg;
+  friend class spmpcfg_csr_t;
+  friend class pmpaddr_csr_t;
+  friend class spmpaddr_csr_t;
+  reg_t val;
+  uint16_t cfg;
   const size_t pmpidx;
 };
 
-typedef std::shared_ptr<pmpaddr_csr_t> pmpaddr_csr_t_p;
+typedef std::shared_ptr<base_pmpaddr_csr_t> base_pmpaddr_csr_t_p;
+
+class pmpaddr_csr_t: public base_pmpaddr_csr_t {
+ public:
+  pmpaddr_csr_t(processor_t* const proc, const reg_t addr, const size_t idx);
+  virtual void verify_permissions(insn_t insn, bool write) const override;
+  virtual reg_t read() const noexcept override;
+  virtual bool access_ok(access_type type, reg_t mode, bool hlvx) const noexcept override;
+
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
 
 class pmpcfg_csr_t: public csr_t {
  public:
@@ -864,7 +879,6 @@ class virtualized_indirect_csr_t: public virtualized_csr_t {
 
 class sscsrind_reg_csr_t : public csr_t {
  public:
-  typedef std::shared_ptr<sscsrind_reg_csr_t> sscsrind_reg_csr_t_p;
   sscsrind_reg_csr_t(processor_t* const proc, const reg_t addr, csr_t_p iselect);
   reg_t read() const noexcept override;
   virtual void verify_permissions(insn_t insn, bool write) const override;
@@ -876,6 +890,8 @@ class sscsrind_reg_csr_t : public csr_t {
   std::unordered_map<reg_t, csr_t_p> ireg_proxy;
   csr_t_p get_reg() const noexcept;
 };
+
+typedef std::shared_ptr<sscsrind_reg_csr_t> sscsrind_reg_csr_t_p;
 
 // smcntrpmf_csr_t caches the previous state of the CSR in case a CSRW instruction
 // modifies the state that should not be immediately visible to bump()
@@ -995,5 +1011,38 @@ class aia_csr_t: public masked_csr_t {
  public:
   aia_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
   virtual void verify_permissions(insn_t insn, bool write) const override;
+};
+
+class mpmpdeleg_csr_t: public masked_csr_t {
+ public:
+  mpmpdeleg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class spmpaddr_csr_t: public base_pmpaddr_csr_t {
+ public:
+  spmpaddr_csr_t(processor_t* const proc, const reg_t addr);
+  virtual void verify_permissions(insn_t, bool) const override {}
+  virtual reg_t read() const noexcept override;
+  virtual bool access_ok(access_type type, reg_t mode, bool) const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class spmpcfg_csr_t: public masked_csr_t {
+ public:
+  spmpcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  virtual void verify_permissions(insn_t, bool) const override {}
+  virtual reg_t read() const noexcept override;
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class spmpen_csr_t: public basic_csr_t {
+ public:
+  spmpen_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
 };
 #endif

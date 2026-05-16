@@ -86,7 +86,7 @@ struct mem_access_info_t {
   const access_type type;
 };
 
-void throw_access_exception(bool virt, reg_t addr, access_type type);
+[[noreturn]] void throw_access_exception(bool virt, reg_t addr, access_type type);
 [[noreturn]] void throw_page_fault_exception(bool virt, reg_t addr, access_type type);
 
 // this class implements a processor's port into the virtual memory system.
@@ -538,7 +538,9 @@ private:
   }
 
   reg_t pmp_homogeneous(reg_t addr, reg_t len);
+  std::optional<base_pmpaddr_csr_t*> pmp_lookup(reg_t addr, reg_t len, size_t start, size_t pmp_num);
   bool pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlvx);
+  bool spmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode);
 
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
   bool target_big_endian;
