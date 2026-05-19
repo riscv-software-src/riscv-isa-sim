@@ -265,8 +265,10 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     (1 << CAUSE_FETCH_PAGE_FAULT) |
     (1 << CAUSE_LOAD_PAGE_FAULT) |
     (1 << CAUSE_STORE_PAGE_FAULT) |
-    (1 << CAUSE_SOFTWARE_CHECK_FAULT) |
-    (1 << CAUSE_HARDWARE_ERROR_FAULT);
+    ((proc->extension_enabled(EXT_ZICFISS) || proc->extension_enabled(EXT_ZICFILP))?
+     (1 << CAUSE_SOFTWARE_CHECK_FAULT) : 0) |
+    (proc->extension_enabled(EXT_ZICNTR)?
+     (1 << CAUSE_HARDWARE_ERROR_FAULT) : 0);
   add_hypervisor_csr(CSR_HEDELEG, hedeleg = std::make_shared<masked_csr_t>(proc, CSR_HEDELEG, hedeleg_mask, 0));
   add_hypervisor_csr(CSR_HCOUNTEREN, hcounteren = std::make_shared<masked_csr_t>(proc, CSR_HCOUNTEREN, counteren_mask, 0));
   htimedelta = std::make_shared<basic_csr_t>(proc, CSR_HTIMEDELTA, 0);
