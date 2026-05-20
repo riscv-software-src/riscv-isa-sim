@@ -23,6 +23,9 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
   reg_t pmpregions = cfg->pmpregions;
   reg_t pmpgranularity = cfg->pmpgranularity;
   isa_parser_t isa(cfg->isa, cfg->priv);
+  auto emit_addr = [](std::stringstream& s, reg_t addr) {
+    s << "0x" << std::hex << (addr >> 32) << " 0x" << (addr & (uint32_t)-1) << std::dec;
+  };
 
   std::stringstream s;
   s << std::dec <<
@@ -36,8 +39,12 @@ std::string make_dts(size_t insns_per_rtc_tick, size_t cpu_hz,
          "  chosen {\n"
          "    stdout-path = &SERIAL0;\n";
   if (initrd_start < initrd_end) {
-    s << "    linux,initrd-start = <" << (size_t)initrd_start << ">;\n"
-         "    linux,initrd-end = <" << (size_t)initrd_end << ">;\n";
+    s << "    linux,initrd-start = <";
+    emit_addr(s, initrd_start);
+    s << ">;\n"
+         "    linux,initrd-end = <";
+    emit_addr(s, initrd_end);
+    s << ">;\n";
     if (!bootargs)
       bootargs = "root=/dev/ram " DEFAULT_KERNEL_BOOTARGS;
   } else {
