@@ -42,21 +42,21 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
 
     bool ill_altfmt = true;
     if (altfmt) {
-      if (p->extension_enabled(EXT_ZVQBDOT8I) && vsew == 8)
+      if (p->extension_enabled(EXT_ZVQWBDOTA8I) && vsew == 8)
         ill_altfmt = false;
-      else if (p->extension_enabled(EXT_ZVQBDOT16I) && vsew == 16)
+      else if (p->extension_enabled(EXT_ZVQWBDOTA16I) && vsew == 16)
         ill_altfmt = false;
-      else if (p->extension_enabled(EXT_ZVFQBDOT8F) && vsew == 8)
+      else if (p->extension_enabled(EXT_ZVFQWBDOTA8F) && vsew == 8)
         ill_altfmt = false;
-      else if (p->extension_enabled(EXT_ZVFWBDOT16BF) && vsew == 16)
+      else if (p->extension_enabled(EXT_ZVFWBDOTA16BF) && vsew == 16)
         ill_altfmt = false;
-      else if (p->extension_enabled(EXT_ZVQLDOT8I) && vsew == 8)
+      else if (p->extension_enabled(EXT_ZVQWDOTA8I) && vsew == 8)
         ill_altfmt = false;
-      else if (p->extension_enabled(EXT_ZVQLDOT16I) && vsew == 16)
+      else if (p->extension_enabled(EXT_ZVQWDOTA16I) && vsew == 16)
         ill_altfmt = false;
-      else if (p->extension_enabled(EXT_ZVFQLDOT8F) && vsew == 8)
+      else if (p->extension_enabled(EXT_ZVFQWDOTA8F) && vsew == 8)
         ill_altfmt = false;
-      else if (p->extension_enabled(EXT_ZVFWLDOT16BF) && vsew == 16)
+      else if (p->extension_enabled(EXT_ZVFWDOTA16BF) && vsew == 16)
         ill_altfmt = false;
       else if (p->extension_enabled(EXT_ZVFBFA) && (vsew == 16 || vsew == 8))
         ill_altfmt = false;

@@ -2,7 +2,7 @@ ZVBDOT_INIT(4);
 
 switch (P.VU.vsew) {
   case 8: {
-    require_extension(EXT_ZVQBDOT8I);
+    require_extension(EXT_ZVQWBDOTA8I);
     if (P.VU.altfmt) {
       ZVBDOT_SIMPLE_LOOP(int8_t, int8_t, uint32_t);
     } else {
@@ -11,7 +11,7 @@ switch (P.VU.vsew) {
     break;
   }
   case 16: {
-    require_extension(EXT_ZVQBDOT16I);
+    require_extension(EXT_ZVQWBDOTA16I);
     if (P.VU.altfmt) {
       ZVBDOT_SIMPLE_LOOP(int16_t, int16_t, uint64_t);
     } else {
