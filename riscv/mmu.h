@@ -268,8 +268,10 @@ public:
 
     if (sim->reservable(paddr))
       return load_reservation_address == paddr;
-    else
-      throw trap_store_access_fault((proc) ? proc->state.v : false, vaddr, 0, 0);
+
+    // SC to non-reservable region: report the PMM-masked effective vaddr.
+    auto access_info = generate_access_info(vaddr, STORE, {});
+    throw trap_store_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
   }
 
   template<typename T>
