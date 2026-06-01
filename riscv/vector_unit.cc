@@ -14,14 +14,13 @@ void vectorUnit_t::vectorUnit_t::reset()
   memset(reg_file, 0, NVPR * vlenb);
 
   auto state = p->get_state();
-  state->add_csr(CSR_VXSAT, vxsat = std::make_shared<vxsat_csr_t>(p, CSR_VXSAT));
   state->add_csr(CSR_VSTART, vstart = std::make_shared<vector_csr_t>(p, CSR_VSTART, /*mask*/ VLEN - 1));
   state->add_csr(CSR_VXRM, vxrm = std::make_shared<vector_csr_t>(p, CSR_VXRM, /*mask*/ 0x3ul));
   state->add_csr(CSR_VL, vl = std::make_shared<vector_csr_t>(p, CSR_VL, /*mask*/ 0));
   state->add_csr(CSR_VTYPE, vtype = std::make_shared<vector_csr_t>(p, CSR_VTYPE, /*mask*/ 0));
   state->add_csr(CSR_VLENB, std::make_shared<vector_csr_t>(p, CSR_VLENB, /*mask*/ 0, /*init*/ vlenb));
   assert(VCSR_VXSAT_SHIFT == 0);  // composite_csr_t assumes vxsat begins at bit 0
-  state->add_csr(CSR_VCSR, std::make_shared<composite_csr_t>(p, CSR_VCSR, vxrm, vxsat, VCSR_VXRM_SHIFT));
+  state->add_csr(CSR_VCSR, std::make_shared<composite_csr_t>(p, CSR_VCSR, vxrm, state->vxsat, VCSR_VXRM_SHIFT));
 
   vtype->write_raw(0);
   set_vl(0, 0, 0, -1); // default to illegal configuration

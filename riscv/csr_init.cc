@@ -342,6 +342,10 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   assert(FSR_AEXC_SHIFT == 0);  // composite_csr_t assumes fflags begins at bit 0
   add_csr(CSR_FCSR, std::make_shared<composite_csr_t>(proc, CSR_FCSR, frm, fflags, FSR_RD_SHIFT));
 
+  if (proc->extension_enabled('P') || proc->any_vector_extensions()) {
+    add_csr(CSR_VXSAT, vxsat = std::make_shared<vxsat_csr_t>(proc, CSR_VXSAT));
+  }
+
   add_ext_csr(EXT_ZKR, CSR_SEED, std::make_shared<seed_csr_t>(proc, CSR_SEED));
 
   add_csr(CSR_MARCHID, std::make_shared<const_csr_t>(proc, CSR_MARCHID, 5));

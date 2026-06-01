@@ -92,7 +92,6 @@ public:
   int setvl_count = 0;
   reg_t vlmax = 0;
   reg_t vlenb = 0;
-  csr_t_p vxsat = 0;
   vector_csr_t_p vxrm = 0, vstart = 0, vl = 0, vtype = 0;
   reg_t vma = 0, vta = 0;
   reg_t vsew = 0;
