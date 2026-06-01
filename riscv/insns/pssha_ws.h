@@ -5,7 +5,7 @@ P_RD_RS1_LOOP(32, 32, {
     p_rd = 0;
   else if (sshamt >= 32) {
     p_rd = (p_rs1 & 0x80000000) ? 0x80000000 : 0x7fffffff;
-    P.VU.vxsat->write(1);
+    P.set_vxsat();
   }
   else if (sshamt <= -32)
     p_rd = (p_rs1 & 0x80000000) ? 0xffffffff : 0;

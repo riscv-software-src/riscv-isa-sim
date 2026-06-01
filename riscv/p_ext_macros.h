@@ -751,7 +751,7 @@
   else if (_psat_in > (sreg_t)((reg_t(1) << ((BIT) - 1)) - 1)) _psat_out = (sreg_t)((reg_t(1) << ((BIT) - 1)) - 1); \
   else if (_psat_in < (sreg_t)(reg_t(-1) << ((BIT) - 1))) _psat_out = (sreg_t)(reg_t(-1) << ((BIT) - 1)); \
   else _psat_out = _psat_in; \
-  if (_psat_out != _psat_in) P.VU.vxsat->write(1); \
+  if (_psat_out != _psat_in) P.set_vxsat(); \
   _psat_out; \
 })
 
@@ -762,7 +762,7 @@
   else if ((BIT) == 64) _pusat_out = _pusat_in; \
   else if (_pusat_in > (sreg_t)((reg_t(1) << ((BIT) - 1)) - 1)) _pusat_out = (sreg_t)((reg_t(1) << ((BIT) - 1)) - 1); \
   else _pusat_out = _pusat_in; \
-  if (_pusat_out != _pusat_in) P.VU.vxsat->write(1); \
+  if (_pusat_out != _pusat_in) P.set_vxsat(); \
   _pusat_out; \
 })
 
@@ -773,7 +773,7 @@
   else if ((BIT) >= 64) _pusatf_out = _pusatf_in; \
   else if (_pusatf_in > (sreg_t)((reg_t(1) << (BIT)) - 1)) _pusatf_out = (sreg_t)((reg_t(1) << (BIT)) - 1); \
   else _pusatf_out = _pusatf_in; \
-  if (_pusatf_out != _pusatf_in) P.VU.vxsat->write(1); \
+  if (_pusatf_out != _pusatf_in) P.set_vxsat(); \
   _pusatf_out; \
 })
 

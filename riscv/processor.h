@@ -314,6 +314,9 @@ public:
     const int ialign = extension_enabled(EXT_ZCA) ? 16 : 32;
     return ~(reg_t)(ialign == 16 ? 0 : 2);
   }
+  void set_vxsat() {
+    VU.vxsat->write(1);
+  }
   reg_t throw_instruction_address_misaligned(reg_t pc);
   reg_t legalize_privilege(reg_t);
   void set_privilege(reg_t, bool);

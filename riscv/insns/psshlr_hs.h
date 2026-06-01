@@ -12,7 +12,7 @@ P_RD_RS1_LOOP(16, 16, {
   } else {
     uint32_t shx = (sshamt >= 16) ? ((uint32_t)(uint16_t)p_rs1 << 16) : ((uint32_t)(uint16_t)p_rs1 << sshamt);
     if (shx > 0xFFFF) {
-      P.VU.vxsat->write(1);
+      P.set_vxsat();
       p_rd = 0xFFFF;
     } else {
       p_rd = (uint16_t)shx;

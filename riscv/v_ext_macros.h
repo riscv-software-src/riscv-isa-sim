@@ -2288,7 +2288,7 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
   ZVBDOT_GENERIC_LOOP(a_t, b_t, c_t, macc)
 
 #define P_SET_OV(ov) \
-  if (ov) P.VU.vxsat->write(1);
+  if (ov) P.set_vxsat();
 
 #define DO_ABD(N, M)  ((N) > (M) ? (N) - (M) : (M) - (N))
 
