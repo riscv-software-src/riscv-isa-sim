@@ -9,7 +9,7 @@ P_RD_RS1_LOOP(32, 32, {
   } else {
     uint64_t shx = (sshamt >= 32) ? ((uint64_t)(uint32_t)p_rs1 << 32) : ((uint64_t)(uint32_t)p_rs1 << sshamt);
     if (shx > 0xFFFFFFFFULL) {
-      P.VU.vxsat->write(1);
+      P.set_vxsat();
       p_rd = 0xFFFFFFFF;
     } else {
       p_rd = (uint32_t)shx;

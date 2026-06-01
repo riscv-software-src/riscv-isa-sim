@@ -5,7 +5,7 @@ if (RS1 == 0)
   WRITE_RD(0);
 else if (sshamt >= 32) {
   WRITE_RD((RS1 & 0x80000000) ? 0x80000000 : 0x7fffffff);
-  P.VU.vxsat->write(1);
+  P.set_vxsat();
 }
 else if (sshamt <= -32)
   WRITE_RD((RS1 & 0x80000000) ? 0xffffffff : 0);

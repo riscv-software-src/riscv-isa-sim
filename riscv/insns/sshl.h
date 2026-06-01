@@ -9,7 +9,7 @@ if (sshamt < 0) {
 } else {
   uint64_t shx = (sshamt >= 32) ? ((uint64_t)RS1 << 32) : ((uint64_t)RS1 << sshamt);
   if (shx > 0xFFFFFFFFULL) {
-    P.VU.vxsat->write(1);
+    P.set_vxsat();
     WRITE_RD(0xFFFFFFFF);
   } else {
     WRITE_RD((uint32_t)shx);

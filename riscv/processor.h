@@ -171,6 +171,8 @@ struct state_t
   float_csr_t_p fflags;
   float_csr_t_p frm;
 
+  csr_t_p vxsat;
+
   csr_t_p menvcfg;
   csr_t_p senvcfg;
   csr_t_p henvcfg;
@@ -313,6 +315,9 @@ public:
   reg_t pc_alignment_mask() {
     const int ialign = extension_enabled(EXT_ZCA) ? 16 : 32;
     return ~(reg_t)(ialign == 16 ? 0 : 2);
+  }
+  void set_vxsat() {
+    state.vxsat->write(1);
   }
   reg_t throw_instruction_address_misaligned(reg_t pc);
   reg_t legalize_privilege(reg_t);

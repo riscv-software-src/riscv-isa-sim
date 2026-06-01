@@ -1752,12 +1752,13 @@ vxsat_csr_t::vxsat_csr_t(processor_t* const proc, const reg_t addr):
 }
 
 void vxsat_csr_t::verify_permissions(insn_t insn, bool write) const {
-  require(proc->any_vector_extensions() && STATE.sstatus->enabled(SSTATUS_VS));
+  require(!proc->any_vector_extensions() || STATE.sstatus->enabled(SSTATUS_VS));
   masked_csr_t::verify_permissions(insn, write);
 }
 
 bool vxsat_csr_t::unlogged_write(const reg_t val) noexcept {
-  STATE.sstatus->dirty(SSTATUS_VS);
+  if (proc->any_vector_extensions())
+    STATE.sstatus->dirty(SSTATUS_VS);
   return masked_csr_t::unlogged_write(val);
 }
 
