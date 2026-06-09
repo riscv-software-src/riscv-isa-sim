@@ -33,8 +33,11 @@ int main()
   std::unordered_map<std::string, bool> overlap_list;
   #define DECLARE_OVERLAP_INSN(name, ext) \
     overlap_list[std::string(#name)] = false;
+  #define DECLARE_OVERLAP_INSN_RV64(name, ext) \
+    overlap_list[std::string(#name)] = false;
     #include "overlap_list.h"
   #undef DECLARE_OVERLAP_INSN
+  #undef DECLARE_OVERLAP_INSN_RV64
 
   std::vector<const opcode*> list;
   for (size_t i = 0; i < std::size(static_list); i++) {

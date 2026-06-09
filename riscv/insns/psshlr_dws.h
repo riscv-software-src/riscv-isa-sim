@@ -1,20 +1,14 @@
 require_rv32;
-sreg_t sshamt = P_FIELD(RS2, 0, 8);
+int sshamt = P_FIELD(RS2, 0, 8);
 P_RD_RS1_DW_LOOP(32, 32, {
   if (sshamt < 0) {
-    uint64_t shx;
-    if (sshamt < -32)
-      shx = 0;
-    else if (sshamt == -32)
-      shx = ((uint32_t)p_rs1 >> 31) & 1;
-    else
-      shx = ((uint64_t)(uint32_t)p_rs1 << 1) >> (-sshamt);
+    uint64_t shx = ((uint64_t)(uint32_t)p_rs1 << 1) >> std::min(-sshamt, 32);
     p_rd = (uint32_t)((shx + 1) >> 1);
   } else {
-    uint64_t shx = (sshamt >= 32) ? ((uint64_t)(uint32_t)p_rs1 << 32) : ((uint64_t)(uint32_t)p_rs1 << sshamt);
-    if (shx > 0xFFFFFFFFULL) {
+    uint64_t shx = (uint64_t)(uint32_t)p_rs1 << std::min(sshamt, 32);
+    if (shx > UINT32_MAX) {
       P.set_vxsat();
-      p_rd = 0xFFFFFFFF;
+      p_rd = UINT32_MAX;
     } else {
       p_rd = (uint32_t)shx;
     }
