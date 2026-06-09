@@ -1560,7 +1560,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   // ext-c
   if (ext_enabled(EXT_ZCA)) {
     DISASM_INSN("c.ebreak", c_add, mask_rd | mask_rvc_rs2, {});
-    add_insn(new disasm_insn_t("ret", match_c_jr | match_rd_ra, mask_c_jr | mask_rd | mask_rvc_imm, {}));
+    add_insn(new disasm_insn_t("c.ret", match_c_jr | match_rd_ra, mask_c_jr | mask_rd | mask_rvc_imm, {}));
     DISASM_INSN("c.jr", c_jr, mask_rvc_imm, {&rvc_rs1});
     DISASM_INSN("c.jalr", c_jalr, mask_rvc_imm, {&rvc_rs1});
     DISASM_INSN("c.nop", c_addi, mask_rd | mask_rvc_imm, {});
