@@ -88,17 +88,6 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
       add_csr(CSR_MCYCLECFG, mcyclecfg);
       add_csr(CSR_MINSTRETCFG, minstretcfg);
     }
-    if (proc->extension_enabled_const(EXT_SMCDELEG)) {
-      if (xlen == 32) {
-        cyclecfg = std::make_shared<counter_proxy_csr_t>(proc, CSR_MCYCLECFG, csrmap[CSR_MCYCLECFG]);
-        cyclecfgh = std::make_shared<counter_proxy_csr_t>(proc, CSR_MCYCLECFGH, csrmap[CSR_MCYCLECFGH]);
-        instretcfg = std::make_shared<counter_proxy_csr_t>(proc, CSR_MINSTRETCFG, csrmap[CSR_MINSTRETCFG]);
-        instretcfgh = std::make_shared<counter_proxy_csr_t>(proc, CSR_MINSTRETCFGH, csrmap[CSR_MINSTRETCFGH]);
-      } else {
-        instretcfg = std::make_shared<counter_proxy_csr_t>(proc, CSR_MINSTRETCFG, csrmap[CSR_MINSTRETCFG]);
-        cyclecfg = std::make_shared<counter_proxy_csr_t>(proc, CSR_MCYCLECFG, csrmap[CSR_MCYCLECFG]);
-      }
-    }
   }
   for (reg_t i = 0; i < N_HPMCOUNTERS; ++i) {
     const reg_t which_mevent = CSR_MHPMEVENT3 + i;
@@ -502,25 +491,37 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
           break;
           case CSR_SIREG2:
             if (proc->extension_enabled_const(EXT_ZICNTR)) {
-                sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, cyclecfg);
-                sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRETCFG, instretcfg);
+              // describe address as that of CYCLE rather than MCYCLECFG,
+              // so that perm checks and mcounteren checks do the right thing
+              auto cyclecfg_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, csrmap[CSR_MCYCLECFG]);
+              sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, cyclecfg_proxy);
+
+              auto instretcfg_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRET, csrmap[CSR_MINSTRETCFG]);
+              sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRETCFG, instretcfg_proxy);
             }
             if (proc->extension_enabled_const(EXT_ZIHPM)) {
-              for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3 + 1); j++)
-                sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMEVENT_3 + j, csrmap[CSR_MHPMEVENT3 + j]);
+              for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3 + 1); j++) {
+                auto proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_HPMCOUNTER3 + j, csrmap[CSR_MHPMEVENT3 + j]);
+                sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMEVENT_3 + j, proxy);
+              }
             }
             break;
           case CSR_SIREG5:
             if (xlen == 32) {
               // cyclecfgh/instretcfgh
               if (proc->extension_enabled_const(EXT_ZICNTR) && proc->extension_enabled_const(EXT_SMCNTRPMF)) {
-                sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, cyclecfgh);
-                sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, instretcfgh);
+                auto cyclecfgh_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, csrmap[CSR_MCYCLECFGH]);
+                sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, cyclecfgh_proxy);
+
+                auto instretcfgh_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRETH, csrmap[CSR_MINSTRETCFGH]);
+                sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, instretcfgh_proxy);
               }
               // hpmevent3h-hpmevent31h
               if (proc->extension_enabled_const(EXT_ZIHPM) && proc->extension_enabled_const(EXT_SSCOFPMF)) {
-                for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3); j++)
-                  sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMEVENT_3 + j, csrmap[CSR_MHPMEVENT3H + j]);
+                for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3); j++) {
+                  auto proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_HPMCOUNTER3H + j, csrmap[CSR_MHPMEVENT3H + j]);
+                  sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMEVENT_3 + j, proxy);
+                }
               }
             }
           case CSR_SIREG3:
