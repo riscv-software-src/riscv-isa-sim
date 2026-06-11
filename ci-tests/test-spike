@@ -42,6 +42,7 @@ PATH="$PATH:$RUN/bin" "$ROOT"/ci-tests/run-snippy-tests.sh "$RUN" "$ROOT"/ci-tes
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o test-libriscv
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-customext.cc -lriscv -o test-customext
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/custom-csr.cc -lriscv -o test-custom-csr
+g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-dcsr-cause.cc -lriscv -o test-dcsr-cause
 
 # check that all installed headers are functional
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o /dev/null -include $BUILD/spike/install-hdrs-list.h
@@ -53,6 +54,7 @@ $INSTALL/bin/spike --log-commits --isa=rv64gc $BUILD/pk/pk atomics 2> /dev/null 
 LD_LIBRARY_PATH=$INSTALL/lib ./test-libriscv $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 LD_LIBRARY_PATH=$INSTALL/lib ./test-customext $BUILD/pk/pk dummy-slliuw | grep "Executed successfully"
 LD_LIBRARY_PATH=$INSTALL/lib ./test-custom-csr $BUILD/pk/pk customcsr | grep "Executed successfully"
+LD_LIBRARY_PATH=$INSTALL/lib ./test-dcsr-cause | grep "Executed successfully"
 
 echo "DTB discovery tests"
 g++ -std=c++2a -I$INSTALL/include -I$CI/dtb-discovery/devices-sample -L$INSTALL/lib  $CI/dtb-discovery/test-dtb-discovery.cc $CI/dtb-discovery/devices-sample/led-device.cc -lriscv -o test-dtb-discovery
