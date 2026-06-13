@@ -12,6 +12,7 @@
 #include "platform.h"
 #include "vector_unit.h"
 #include "debug_defines.h"
+#include "trace_encoder_n.h"
 #include <cinttypes>
 #include <cmath>
 #include <cstdlib>
@@ -146,6 +147,11 @@ void processor_t::enable_log_commits()
   build_opcode_map();
 }
 
+void processor_t::enable_trace()
+{
+  trace_enabled = true;
+}
+
 void processor_t::reset()
 {
   xlen = isa.get_max_xlen();
@@ -169,6 +175,8 @@ void processor_t::reset()
 
   if (sim)
     sim->proc_reset(id);
+
+  trace_encoder.reset();
 }
 
 extension_t* processor_t::get_extension()
