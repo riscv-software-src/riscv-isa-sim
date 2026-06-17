@@ -221,7 +221,7 @@ void processor_t::set_spmp_addr_entry()
   }
 
   for (size_t i = 0; i < (state.max_pmp - n_pmp); ++i) {
-    state.pmpaddr[n_pmp+i] = std::make_shared<spmpaddr_csr_t>(this, i);
+    state.pmpaddr[n_pmp+i] = std::make_shared<spmpaddr_csr_t>(this, n_pmp+i);
     state.mireg[0]->add_ireg_proxy(0x100+i, state.pmpaddr[n_pmp+i]);
     state.nonvirtual_sireg[0]->add_ireg_proxy(0x100+i, state.pmpaddr[n_pmp+i]);
   }
