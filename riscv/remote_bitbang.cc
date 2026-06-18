@@ -186,5 +186,5 @@ void remote_bitbang_t::execute_commands()
 }
 
 bool remote_bitbang_t::is_client_connected() const{
-    return client_fd != 0;
+    return client_fd > 0;
 }
