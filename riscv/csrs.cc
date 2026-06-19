@@ -1981,6 +1981,17 @@ virtualized_indirect_csr_t::virtualized_indirect_csr_t(processor_t* const proc, 
 }
 
 void virtualized_indirect_csr_t::verify_permissions(insn_t insn, bool write) const {
+  // Check Smstateen.CSRIND before the wrapper's base priv check so a
+  // below-M access with mstateen0.CSRIND=0 raises illegal-instruction
+  // (per the Smstateen spec) rather than being converted to virtual
+  // by the H-ext priv-class rule. The same check exists in
+  // sscsrind_reg_csr_t::verify_permissions for the M-priv mireg path
+  // that doesn't go through this wrapper; leaving both is idempotent.
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_CSRIND))
+      throw trap_illegal_instruction(insn.bits());
+  }
+
   virtualized_csr_t::verify_permissions(insn, write);
   if (state->v)
     virt_csr->verify_permissions(insn, write);
@@ -1994,6 +2005,12 @@ sscsrind_reg_csr_t::sscsrind_reg_csr_t(processor_t* const proc, const reg_t addr
 }
 
 void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
+  // This class includes mireg / mireg2..6, for which access from
+  // below M always gives illegal not virtual instruction exception.
+  if (((address >> 8) & 3) > PRV_HS && state->prv < PRV_M) {
+    throw trap_illegal_instruction(insn.bits());
+  }
+
   if (proc->extension_enabled(EXT_SMSTATEEN)) {
     if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_CSRIND))
       throw trap_illegal_instruction(insn.bits());
