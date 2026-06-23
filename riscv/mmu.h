@@ -444,7 +444,7 @@ private:
   bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes);
   bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes);
   bool mmio(reg_t paddr, size_t len, uint8_t* bytes, access_type type);
-  bool mmio_ok(reg_t paddr, access_type type);
+  bool mmio_ok(reg_t paddr, size_t len, access_type type);
 
   void check_triggers(triggers::operation_t operation,
     reg_t addr, bool virt, std::size_t data_size, const std::uint8_t* bytes);
