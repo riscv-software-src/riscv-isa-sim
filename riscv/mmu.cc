@@ -158,11 +158,10 @@ static reg_t reg_from_bytes(size_t len, const uint8_t* bytes)
   return res;
 }
 
-bool mmu_t::mmio_ok(reg_t paddr, access_type UNUSED type)
+bool mmu_t::mmio_ok(reg_t paddr, size_t len, access_type UNUSED type)
 {
   // Disallow access to debug region when not in debug mode
-  reg_t debug_start = DEBUG_START; // suppress -Wtype-limits
-  if (paddr >= debug_start && paddr - debug_start < DEBUG_SIZE && proc && !proc->state.debug_mode)
+  if (proc && sim && sim->is_debug_module_access(paddr, len) && !proc->state.debug_mode)
     return false;
 
   return true;
@@ -170,7 +169,7 @@ bool mmu_t::mmio_ok(reg_t paddr, access_type UNUSED type)
 
 bool mmu_t::mmio_fetch(reg_t paddr, size_t len, uint8_t* bytes)
 {
-  if (!mmio_ok(paddr, FETCH))
+  if (!mmio_ok(paddr, len, FETCH))
     return false;
 
   return sim->mmio_fetch(paddr, len, bytes);
@@ -192,7 +191,7 @@ bool mmu_t::mmio(reg_t paddr, size_t len, uint8_t* bytes, access_type type)
   bool naturally_aligned = (paddr & (len - 1)) == 0;
 
   if (power_of_2 && naturally_aligned) {
-    if (!mmio_ok(paddr, type))
+    if (!mmio_ok(paddr, len, type))
       return false;
 
     if (type == STORE)
@@ -535,6 +534,12 @@ std::optional<base_pmpaddr_csr_t*> mmu_t::pmp_lookup(reg_t addr, reg_t len, size
 bool mmu_t::pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlvx)
 {
   if (!proc || proc->n_pmp == 0)
+    return true;
+
+  // The debug module implementation relies on firmware (ROM) owned by spike.
+  // When executing code from this firmware we keep target PMP rules from
+  // blocking the simulator-owned debug firmware.
+  if (proc->state.debug_mode && sim && sim->is_debug_module_access(addr, len))
     return true;
 
   if (auto pmp = pmp_lookup(addr, len, 0, proc->n_pmp); pmp.has_value())

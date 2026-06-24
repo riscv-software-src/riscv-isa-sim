@@ -376,6 +376,11 @@ void sim_t::set_procs_debug(bool value)
     procs[i]->set_debug(value);
 }
 
+bool sim_t::is_debug_module_access(reg_t paddr, size_t len)
+{
+  return bus.find_device(paddr, len).second == &debug_module;
+}
+
 bool sim_t::mmio_load(reg_t paddr, size_t len, uint8_t* bytes)
 {
   if (paddr + len < paddr)

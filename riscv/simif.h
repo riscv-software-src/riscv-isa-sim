@@ -21,6 +21,7 @@ public:
   virtual bool mmio_fetch(reg_t paddr, size_t len, uint8_t* bytes) { return mmio_load(paddr, len, bytes); }
   virtual bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes) = 0;
   virtual bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes) = 0;
+  virtual bool is_debug_module_access(reg_t, size_t) { return false; }
   // Callback for processors to let the simulation know they were reset.
   virtual void proc_reset(unsigned id) = 0;
 
