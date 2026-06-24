@@ -1,64 +1,27 @@
 require_rv32;
 P_RD_RS1_DW_LOOP(16, 16, {
-    uint64_t bits_SMIN = (uint64_t{1} << (16 - 1));
-    uint64_t bits_SMAX = ((uint64_t{1} << (16 - 1)) - 1);
-    bool ov = false;
-    int8_t m = P_FIELD(RS2, 0, 8);
-    int8_t  rev = static_cast<int8_t>(m);
-    rev = (m < 0) ? static_cast<uint8_t>(~m + 1u) : m;
-    uint64_t mask = ((uint64_t{1} << 16) - 1);
-    p_rs1 &= mask;
-    if(m < 0){
-        if ((rev & 0xFFu) == 0u) 
-            p_rd = (uint16_t)p_rs1;
-        else{  
-            int128_t v_sext;
-            bool neg = ((p_rs1 >> (16 - 1)) & 1u);
-            if(!neg) v_sext = static_cast<int128_t>(p_rs1);
-            else v_sext = static_cast<int128_t>((~static_cast<uint128_t>(0) << 16) | static_cast<uint128_t>(p_rs1));
-            int128_t v_cat0 = v_sext << 1;
-
-            unsigned sh = ((unsigned)(uint8_t)rev > 255u) ? 255u : (unsigned)(uint8_t)rev;
-
-            int128_t sra_val;
-            if(sh == 0)
-                sra_val = v_cat0;
-            else if(sh >=127)
-                sra_val = (v_cat0 < 0) ? static_cast<int128_t>(-1) : static_cast<int128_t>(0);
-            else{
-                int128_t ux = static_cast<uint128_t>(v_cat0);
-                int128_t shifted = ux >> sh;
-                if(v_cat0 < 0)
-                    shifted |= (~static_cast<uint128_t>(0)) << (128 - sh);
-                sra_val = static_cast<int128_t>(shifted);
-            }
-
-            int128_t plus1 = sra_val + static_cast<int128_t>(1);
-            uint128_t ures = static_cast<uint128_t>(plus1);
-            p_rd = (uint16_t)(static_cast<uint64_t>((ures >> 1) & static_cast<uint128_t>(mask)));
-        }
+  bool ov = false;
+  int8_t sshamt = P_FIELD(RS2, 0, 8);
+  int32_t val = p_rs1;
+  if (sshamt < 0) {
+    val = (val << 1) >> std::min(-sshamt, 16);
+    val = (int16_t)((val + 1) >> 1);
+  } else if (sshamt >= 16 && val != 0){
+    val = val > 0 ? INT16_MAX : INT16_MIN;
+    ov = true;
+  } else if (val != 0) {
+    int32_t tmp = (int32_t)val << sshamt;
+    if (tmp > INT16_MAX) {
+      val = INT16_MAX;
+      ov = true;
+    } else if (tmp < INT16_MIN) {
+      val = INT16_MIN;
+      ov = true;
+    } else {
+      val = tmp;
     }
-    else{
-        if(rev==0) p_rd = (uint16_t)p_rs1;
-        else if(rev >= 16){
-            if(p_rs1==0) 
-                p_rd = 0;
-            else{
-                ov = true;
-                uint64_t sign = (p_rs1 >> (16 - 1)) & 1u;
-                p_rd = (uint16_t)(sign ? bits_SMIN : bits_SMAX);
-            }
-        }
-        else{
-            uint64_t sign = (p_rs1 >> (16 - 1)) & 1u;
-            uint64_t top  = (p_rs1 >> (16 - rev));
-            uint64_t need = sign ? ((uint64_t{1} << rev) - 1) : 0u;
-            ov = (top != need);
-            if(ov)
-                p_rd = (uint16_t)(sign ? bits_SMIN : bits_SMAX);
-            else
-                p_rd =  (uint16_t)((p_rs1 << rev) & mask);
-        }
-    }
+  }
+  p_rd = val;
+
   if (ov) P.set_vxsat();
 })
