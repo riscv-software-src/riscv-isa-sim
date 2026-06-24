@@ -167,6 +167,7 @@ static const extension_info_t extension_infos[] = {
   {"zicbom", {EXT_ZICBOM}},
   {"zicboz", {EXT_ZICBOZ}},
   {"zicbop"},
+  {"ziccamoa"},
   {"zicclsm", {EXT_ZICCLSM}},
   {"zicntr", {EXT_ZICNTR}},
   {"zicond", {EXT_ZICOND}},
