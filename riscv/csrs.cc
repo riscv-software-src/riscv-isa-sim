@@ -116,8 +116,8 @@ reg_t base_pmpaddr_csr_t::napot_mask() const noexcept {
 }
 
 bool base_pmpaddr_csr_t::match4(reg_t addr) const noexcept {
-  if (proc->extension_enabled_const(EXT_SSPMPEN) && (pmpidx+1 >= proc->n_pmp)) {
-    if (!((state->spmpen->read() >> pmpidx) & 1))
+  if (proc->extension_enabled_const(EXT_SSPMPEN) && (pmpidx >= proc->n_pmp)) {
+    if (!((state->spmpen->read() >> (pmpidx - proc->n_pmp)) & 1))
       return false;
   }
 
@@ -129,8 +129,8 @@ bool base_pmpaddr_csr_t::match4(reg_t addr) const noexcept {
 }
 
 bool base_pmpaddr_csr_t::subset_match(reg_t addr, reg_t len) const noexcept {
-  if (proc->extension_enabled_const(EXT_SSPMPEN) && (pmpidx+1 >= proc->n_pmp)) {
-    if (!((state->spmpen->read() >> pmpidx) & 1))
+  if (proc->extension_enabled_const(EXT_SSPMPEN) && (pmpidx >= proc->n_pmp)) {
+    if (!((state->spmpen->read() >> (pmpidx - proc->n_pmp)) & 1))
       return false;
   }
 
@@ -590,7 +590,7 @@ reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
   const bool has_vs = proc->any_vector_extensions();
   return 0
     | (proc->extension_enabled('S') ? (SSTATUS_SIE | SSTATUS_SPIE | SSTATUS_SPP) : 0)
-    | (has_page ? (SSTATUS_SUM | SSTATUS_MXR) : 0)
+    | (has_page || proc->extension_enabled_const(EXT_SSPMP)? (SSTATUS_SUM | SSTATUS_MXR) : 0)
     | (has_fs ? SSTATUS_FS : 0)
     | (proc->any_custom_extensions() ? SSTATUS_XS : 0)
     | (has_vs ? SSTATUS_VS : 0)
