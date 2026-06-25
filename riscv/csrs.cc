@@ -1147,8 +1147,10 @@ bool medeleg_csr_t::unlogged_write(const reg_t val) noexcept {
     | (1 << CAUSE_SUPERVISOR_ECALL)
     | (proc->has_mmu() ? mmu_exceptions : 0)
     | (proc->extension_enabled('H') ? hypervisor_exceptions : 0)
-    | (1 << CAUSE_SOFTWARE_CHECK_FAULT)
-    | (1 << CAUSE_HARDWARE_ERROR_FAULT)
+    | ((proc->extension_enabled(EXT_ZICFISS) || proc->extension_enabled(EXT_ZICFILP))?
+        (1 << CAUSE_SOFTWARE_CHECK_FAULT) : 0)
+    | (proc->extension_enabled(EXT_ZICNTR)?
+        (1 << CAUSE_HARDWARE_ERROR_FAULT) : 0)
     ;
   return basic_csr_t::unlogged_write(val & mask);
 }
