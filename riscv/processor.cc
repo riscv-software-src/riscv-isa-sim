@@ -770,8 +770,13 @@ void processor_t::register_base_instructions()
     name##_overlapping = true; \
     if (isa.extension_enabled(ext)) \
       DEFINE_INSN_UNCOND(name);
+  #define DECLARE_OVERLAP_INSN_RV64(name, ext) \
+    name##_overlapping = true; \
+    if (isa.extension_enabled(ext) && xlen == 64) \
+      DEFINE_INSN_UNCOND(name);
   #include "overlap_list.h"
   #undef DECLARE_OVERLAP_INSN
+  #undef DECLARE_OVERLAP_INSN_RV64
 
   // add all other instructions.  since they are non-overlapping, the order
   // does not affect correctness, but more frequent instructions should
