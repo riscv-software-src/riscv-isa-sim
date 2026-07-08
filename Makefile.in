@@ -361,7 +361,7 @@ deps : $(deps)
 #-------------------------------------------------------------------------
 
 check : $(test_outs)
-	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segementation' $^ < /dev/null; echo
+	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segmentation' $^ < /dev/null; echo
 
 .PHONY : check
 
