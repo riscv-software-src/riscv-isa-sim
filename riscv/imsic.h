@@ -7,6 +7,8 @@
 #include "csrs.h"
 #include "abstract_device.h"
 
+#define IMSIC_FILE_LEVEL_NUM 2
+
 // EIP/EIE0 to 63 but internally there are only 32 64b registers
 #define IMSIC_NUM_EI_REGS 32
 #define IMSIC_MMIO_PAGE_SIZE 0x1000
