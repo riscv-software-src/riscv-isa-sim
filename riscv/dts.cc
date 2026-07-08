@@ -455,10 +455,10 @@ int fdt_parse_imsics(const void *fdt, reg_t *imsic_m_addr, reg_t *imsic_s_addr, 
   const fdt32_t *p;
   int val;
 
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < IMSIC_FILE_LEVEL_NUM; i++) {
     nodeoffset = fdt_node_offset_by_compatible(fdt, nodeoffset, compatible);
     if (nodeoffset < 0)
-      return nodeoffset;
+      continue;
 
     reg_t addr = 0;
     rc = fdt_get_node_addr_size(fdt, nodeoffset, &addr, NULL, "reg");
@@ -483,7 +483,7 @@ int fdt_parse_aplic(const void *fdt, reg_t *aplic_m_addr, reg_t *aplic_s_addr, c
   int nodeoffset = -1, len, rc;
   const fdt32_t *p;
 
-  for (int i = 0; i < 2; i++) {
+  for (int i = 0; i < IMSIC_FILE_LEVEL_NUM; i++) {
     nodeoffset = fdt_node_offset_by_compatible(fdt, nodeoffset, compatible);
     if (nodeoffset < 0)
       return nodeoffset;

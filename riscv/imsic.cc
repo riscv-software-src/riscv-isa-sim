@@ -121,7 +121,7 @@ imsic_t::imsic_t(processor_t *proc, unsigned geilen) {
     m = std::make_shared<imsic_file_t>(proc, MIP_MEIP, IMSIC_M_FILE_REGS);
   if (proc->extension_enabled_const(EXT_SSAIA)) {
     s = std::make_shared<imsic_file_t>(proc, MIP_SEIP, IMSIC_S_FILE_REGS);
-    assert(geilen <= 63);
+    assert(geilen < 64);
     for (size_t j = 1; j <= geilen; j++) {
       vs[j] = std::make_shared<imsic_file_t>(proc, MIP_VSEIP, IMSIC_VS_FILE_REGS, true, j);
     }
