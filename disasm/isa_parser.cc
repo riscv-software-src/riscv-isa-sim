@@ -218,6 +218,8 @@ static const extension_info_t extension_infos[] = {
   {"zicfilp", {EXT_ZICFILP}},
   {"zicfiss", {EXT_ZICFISS}, {"zaamo", "zimop"}},
   {"smmpm", {EXT_SMMPM}},
+  {"smmpt", {EXT_SMMPT}},
+  {"smmpt43", {EXT_SMMPT}},
   {"smnpm", {EXT_SMNPM}},
   {"ssnpm", {EXT_SSNPM}},
   {"ssdbltrp", {EXT_SSDBLTRP}},

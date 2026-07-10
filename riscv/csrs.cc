@@ -505,6 +505,25 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write(new_val);
 }
 
+// implement class mmpt_csr_t
+mmpt_csr_t::mmpt_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, 0) {
+}
+
+bool mmpt_csr_t::unlogged_write(const reg_t val) noexcept {
+  reg_t mode = get_field(val, MMPT_MODE);
+  reg_t newval = 0;
+
+  if (proc->get_xlen() == 64 && mode == MMPT_MODE_43) {
+    reg_t ppn_mask = MMPT_PPN & ((reg_t(1) << (proc->paddr_bits() - PGSHIFT)) - 1);
+    newval = (reg_t(MMPT_MODE_43) << 60) | (val & ppn_mask);
+  }
+
+  if (newval != read())
+    proc->get_mmu()->flush_tlb();
+  return basic_csr_t::unlogged_write(newval);
+}
+
 // implement class virtualized_csr_t
 virtualized_csr_t::virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
   csr_t(proc, orig->address),

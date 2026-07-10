@@ -82,6 +82,7 @@ riscv_srcs = \
 
 riscv_test_srcs = \
   check-opcode-overlap.t.cc \
+  smmpt43.t.cc \
 
 riscv_gen_hdrs = \
 	insn_list.h \
@@ -139,6 +140,8 @@ riscv_insn_ext_i = \
 	xori \
 	fence \
 	fence_i \
+	mfence \
+	minval_pa \
 
 riscv_insn_ext_a = \
 	amoadd_d \

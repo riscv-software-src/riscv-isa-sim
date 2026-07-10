@@ -1151,6 +1151,8 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   DEFINE_NOARG(wfi);
   add_insn(new disasm_insn_t("fence", match_fence, mask_fence, {&iorw}));
   DEFINE_NOARG(fence_i);
+  DEFINE_SFENCE_TYPE(mfence);
+  add_sfence_insn(this, "minval.pa", match_minval_pa, mask_minval_pa);
 
   add_insn(new disasm_insn_t("csrr", match_csrrs, mask_csrrs | mask_rs1, {&xrd, &csr}));
   add_insn(new disasm_insn_t("csrw", match_csrrw, mask_csrrw | mask_rd, {&csr, &xrs1}));

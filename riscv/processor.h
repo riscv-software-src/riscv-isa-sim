@@ -162,6 +162,7 @@ struct state_t
 
   mseccfg_csr_t_p mseccfg;
   csr_t_p mseccfgh;
+  csr_t_p mmpt;
 
   static const int max_pmp = 64;
   csr_t_p mpmpdeleg;
