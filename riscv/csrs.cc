@@ -1747,6 +1747,10 @@ void vector_csr_t::write_raw(const reg_t val) noexcept {
     log_write();
 }
 
+void vector_csr_t::write_without_logging(const reg_t val) noexcept {
+  vector_csr_t::unlogged_write(val);
+}
+
 bool vector_csr_t::unlogged_write(const reg_t val) noexcept {
   if (mask == 0) return false;
   STATE.sstatus->dirty(SSTATUS_VS);
