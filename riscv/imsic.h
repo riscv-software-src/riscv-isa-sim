@@ -7,6 +7,8 @@
 #include "csrs.h"
 #include "abstract_device.h"
 
+#define IMSIC_FILE_LEVEL_NUM 2
+
 // EIP/EIE0 to 63 but internally there are only 32 64b registers
 #define IMSIC_NUM_EI_REGS 32
 #define IMSIC_MMIO_PAGE_SIZE 0x1000
@@ -40,11 +42,11 @@ class imsic_file_t {
  friend imsic_mmio_t;
  public:
   imsic_file_t(processor_t* const proc, reg_t mip_mask, size_t num_regs, bool v = false, reg_t vgein = 0);
-  reg_t topei();
-  void claimei(reg_t intr);
-  void pendei(reg_t intr);
-  void update_mip();
-  bool delivery() { return eidelivery->read(); }
+  reg_t topei() const;
+  void claimei (reg_t intr) const;
+  void pendei (reg_t intr) const;
+  void update_mip () const;
+  bool delivery() const { return eidelivery->read(); }
   csr_t_p get_reg(reg_t reg) { return csrmap.count(reg) ? csrmap[reg] : nullptr; }
   csrmap_t csrmap;
 
@@ -65,7 +67,7 @@ struct imsic_t {
   imsic_file_t_p s;
   std::map<reg_t, imsic_file_t_p> vs;
   imsic_t(processor_t *proc, unsigned geilen);
-  bool vgein_valid(unsigned vgein) { return vs.count(vgein); }
+  bool vgein_valid(unsigned vgein) const { return vs.count(vgein); }
   csr_t_p get_vs_reg(unsigned vgein, reg_t reg) { return vs.count(vgein) ? vs[vgein]->get_reg(reg) : nullptr; }
   csrmap_t_p get_vs_csrmap(reg_t vgein) {
     return vs.count(vgein) ? &vs[vgein]->csrmap : nullptr;

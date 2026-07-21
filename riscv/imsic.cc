@@ -47,7 +47,7 @@ imsic_file_t::imsic_file_t(processor_t* const proc, reg_t mip_mask, size_t num_r
   }
 }
 
-reg_t imsic_file_t::topei() {
+reg_t imsic_file_t::topei() const {
   reg_t thd = eithreshold->read();
   for (size_t i = 0; i < IMSIC_NUM_EI_REGS; i++) {
     reg_t ints = eip[i]->read() & eie[i]->read();
@@ -62,7 +62,7 @@ reg_t imsic_file_t::topei() {
   return 0;
 }
 
-void imsic_file_t::claimei(reg_t intr) {
+void imsic_file_t::claimei(reg_t intr) const {
   if (intr > 0 && intr < 64 * IMSIC_NUM_EI_REGS) {
     size_t reg = intr / 64;
     size_t idx = intr % 64;
@@ -70,7 +70,7 @@ void imsic_file_t::claimei(reg_t intr) {
   }
 }
 
-void imsic_file_t::pendei(reg_t intr) {
+void imsic_file_t::pendei(reg_t intr) const {
   if (intr > 0 && intr < 64 * IMSIC_NUM_EI_REGS) {
     size_t reg = intr / 64;
     size_t idx = intr % 64;
@@ -78,7 +78,7 @@ void imsic_file_t::pendei(reg_t intr) {
   }
 }
 
-void imsic_file_t::update_mip() {
+void imsic_file_t::update_mip() const {
   reg_t iid = eidelivery->read() ? topei() : 0;
   if (v) {
     // Privileged 9.2.4: Register hgeie selects the subset of guest external interrupts that cause a supervisor-level (HS-level) guest external interrupt.
@@ -121,7 +121,7 @@ imsic_t::imsic_t(processor_t *proc, unsigned geilen) {
     m = std::make_shared<imsic_file_t>(proc, MIP_MEIP, IMSIC_M_FILE_REGS);
   if (proc->extension_enabled_const(EXT_SSAIA)) {
     s = std::make_shared<imsic_file_t>(proc, MIP_SEIP, IMSIC_S_FILE_REGS);
-    assert(geilen <= 63);
+    assert(geilen < 64);
     for (size_t j = 1; j <= geilen; j++) {
       vs[j] = std::make_shared<imsic_file_t>(proc, MIP_VSEIP, IMSIC_VS_FILE_REGS, true, j);
     }

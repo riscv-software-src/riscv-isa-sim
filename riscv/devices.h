@@ -164,18 +164,18 @@ class plic_t : public abstract_device_t, public abstract_interrupt_controller_t 
 class aplic_t : public abstract_device_t, public abstract_interrupt_controller_t {
  public:
   aplic_t(const simif_t*, aplic_t *parent);
-  bool load(reg_t addr, size_t len, uint8_t* bytes);
-  bool store(reg_t addr, size_t len, const uint8_t* bytes);
-  void set_interrupt_level(uint32_t id, int lvl);
-  reg_t size() { return APLIC_SIZE; }
+  bool load(reg_t addr, size_t len, uint8_t* bytes) override;
+  bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
+  void set_interrupt_level(uint32_t id, int lvl) override;
+  reg_t size() override { return APLIC_SIZE; }
   void set_child(aplic_t *c) { child = c; }
   void delegate(uint32_t id, bool dm);
   bool delegated(uint32_t id);
   uint32_t get_deleg_mask(uint32_t idx);
  private:
   const simif_t *simif;
-  class aplic_t *parent;
-  class aplic_t *child;
+  aplic_t *parent;
+  aplic_t *child;
   uint32_t domaincfg;
   uint32_t sourcecfg[APLIC_MAX_DEVICES];
   uint32_t mmsiaddrcfgh;
@@ -186,8 +186,8 @@ class aplic_t : public abstract_device_t, public abstract_interrupt_controller_t
   // deleg_mask can be directly applied to other packed registers
   uint32_t deleg_mask[APLIC_MAX_DEVICES / 32];
 
-  bool interrupt_enabled(uint32_t id);
-  bool accessible(uint32_t id);
+  bool interrupt_enabled(uint32_t id) const;
+  bool accessible(uint32_t id) const;
   void send_msi(uint32_t proc_id, uint32_t guest, uint32_t eiid);
   void send_msi(uint32_t id);
   void update_interrupt(uint32_t id);

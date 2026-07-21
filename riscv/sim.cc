@@ -262,20 +262,18 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       auto proc = procs[id];
       if (proc->extension_enabled_const(EXT_SMAIA) && imsic_m_addr) {
         reg_t mmio_base = IMSIC_M_BASE + proc->get_id() * IMSIC_MMIO_PAGE_SIZE;
-        auto imsic = new imsic_mmio_t(proc->imsic->m);
-        bus.add_device(mmio_base, imsic);
+        bus.add_device(mmio_base, new imsic_mmio_t(proc->imsic->m));
       }
       if (proc->extension_enabled_const(EXT_SSAIA) && imsic_s_addr) {
         // There are 1 S-mode and up to 63 VS-mode pages per core as defined by riscv,guest-index-bits in DTS
         assert(proc->geilen <= 63);
         reg_t mmio_base = IMSIC_S_BASE + proc->get_id() * IMSIC_MMIO_PAGE_SIZE * 64;
-        auto imsic = new imsic_mmio_t(proc->imsic->s);
-        bus.add_device(mmio_base, imsic);
+        bus.add_device(mmio_base, new imsic_mmio_t(proc->imsic->s));
         // S+VS files are laid out as S, G1, G2, G3,...
         if (proc->extension_enabled('H')) {
           for (size_t j = 1; j <= proc->geilen; j++) {
-            auto imsic = new imsic_mmio_t(proc->imsic->vs[j]);
-            bus.add_device(mmio_base + IMSIC_MMIO_PAGE_SIZE * j, imsic);
+            bus.add_device(mmio_base + IMSIC_MMIO_PAGE_SIZE * j,
+                new imsic_mmio_t(proc->imsic->vs[j]));
           }
         }
       }

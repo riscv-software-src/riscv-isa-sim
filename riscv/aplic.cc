@@ -4,6 +4,7 @@
 #include "arith.h"
 #include "sim.h"
 #include "dts.h"
+#include <cassert>
 
 #define DOMAINCFG       0x0
 #define SOURCECFG_BASE  0x4
@@ -40,6 +41,8 @@
 #define TARGET_GUEST_MASK       0x3f000
 #define TARGET_EIID_MASK        0x7ff
 
+#define APLIC_MMIO_REG_SIZE     4
+
 aplic_t::aplic_t(const simif_t *simif, aplic_t *parent) : simif(simif), parent(parent), child(nullptr), domaincfg((0x80 << 24) | DOMAINCFG_DM_MASK), sourcecfg(), mmsiaddrcfgh(MMSIADDRCFGH_L_MASK), ie(), target(), level(), genmsi(0), deleg_mask()
 {
 }
@@ -54,9 +57,7 @@ void aplic_t::delegate(uint32_t id, bool dm)
     if (!parent->delegated(id) && dm)
       sourcecfg[id] = 0;
   } else {
-    uint32_t mask = (1 << (id % 32));
-    deleg_mask[id / 32] &= ~mask;
-    deleg_mask[id / 32] |= dm ? mask : 0;
+    deleg_mask[id / 32] = set_field((uint32_t)deleg_mask[id / 32], 1 << (id % 32), dm);
     child->delegate(id, dm);
   }
 }
@@ -76,17 +77,17 @@ uint32_t aplic_t::get_deleg_mask(uint32_t idx) {
     return deleg_mask[idx];
   }
 
-bool aplic_t::interrupt_enabled(uint32_t id)
+bool aplic_t::interrupt_enabled(uint32_t id) const
 {
   if (!id || id >= APLIC_MAX_DEVICES)
     return false;
   if (parent && !parent->delegated(id))
     return false;
   // Domain interrupt enabled, source IE and source mode != inactive (0)
-  return (domaincfg & DOMAINCFG_IE_MASK) && (ie[id / 32] & (1 << (id % 32))) && (sourcecfg[id] & SOURCECFG_SM_MASK);
+  return (domaincfg & DOMAINCFG_IE_MASK) && ((ie[id / 32] >> (id % 32)) & 1) && (sourcecfg[id] & SOURCECFG_SM_MASK);
 }
 
-bool aplic_t::accessible(uint32_t id)
+bool aplic_t::accessible(uint32_t id) const
 {
   if (!id || id >= APLIC_MAX_DEVICES)
     return false;
@@ -105,9 +106,7 @@ void aplic_t::set_interrupt_level(uint32_t id, int lvl)
   if (!accessible(id))
     return;
 
-  uint32_t mask = 1 << (id % 32);
-  level[id / 32] &= ~mask;
-  level[id / 32] |= lvl ? mask : 0;
+  level[id / 32] = set_field((uint32_t)level[id / 32], 1 << (id % 32), lvl);
 
   update_interrupt(id);
 }
@@ -116,8 +115,8 @@ void aplic_t::send_msi(uint32_t proc_id, uint32_t guest, uint32_t eiid)
 {
   auto &procs = simif->get_harts();
   auto it = procs.find(proc_id);
-  if (!eiid || it == procs.end())
-    return;
+
+  assert((eiid != 0) && (it != procs.end()));
 
   processor_t *proc = it->second;
   if (!parent) {
@@ -143,7 +142,7 @@ void aplic_t::update_interrupt(uint32_t id)
   // check level and if interrupt enabled, send MSI if necessary
   if (id >= APLIC_MAX_DEVICES)
     return;
-  bool lvl = level[id / 32] & (1 << (id % 32));
+  bool lvl = (level[id / 32] >> (id % 32)) & 1;
   if (lvl && interrupt_enabled(id))
     send_msi(id);
 }
@@ -172,26 +171,26 @@ bool aplic_t::load(reg_t addr, size_t len, uint8_t* bytes)
   if (addr == DOMAINCFG) {
     val = domaincfg;
   } else if (addr >= SOURCECFG_BASE && addr < MMSIADDRCFG) {
-    auto idx = (addr - SOURCECFG_BASE) / 4 + 1;
+    auto idx = (addr - SOURCECFG_BASE) / APLIC_MMIO_REG_SIZE + 1;
     if (accessible(idx))
       val = sourcecfg[idx];
   } else if (addr == MMSIADDRCFGH) {
     val = mmsiaddrcfgh;
   } else if (addr >= IN_CLRIP_BASE && addr < CLRIPNUM) {
-    auto idx = (addr - IN_CLRIP_BASE) / 4;
+    auto idx = (addr - IN_CLRIP_BASE) / APLIC_MMIO_REG_SIZE;
     val = level[idx];
   } else if (addr >= SETIE_BASE && addr < SETIENUM) {
-    auto idx = (addr - SETIE_BASE) / 4;
+    auto idx = (addr - SETIE_BASE) / APLIC_MMIO_REG_SIZE;
     val = ie[idx];
   } else if (addr == GENMSI) {
     val = genmsi;
   } else if (addr >= TARGET_BASE && addr < IDC) {
-    auto idx = (addr - TARGET_BASE) / 4 + 1;
+    auto idx = (addr - TARGET_BASE) / APLIC_MMIO_REG_SIZE + 1;
     if (accessible(idx))
       val = target[idx];
   }
 
-  memcpy(bytes, (uint8_t *)&val, len);
+  memcpy(bytes, &val, len);
 
   return true;
 }
@@ -205,13 +204,13 @@ bool aplic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   }
 
   addr &= ~reg_t(3);
-  memcpy((uint8_t *)&val, bytes, len);
+  memcpy(&val, bytes, len);
 
   if (addr == DOMAINCFG) {
     domaincfg &= ~DOMAINCFG_IE_MASK;
     domaincfg |= val & DOMAINCFG_IE_MASK;
   } else if (addr >= SOURCECFG_BASE && addr < MMSIADDRCFG) {
-    auto idx = (addr - SOURCECFG_BASE) / 4 + 1;
+    auto idx = (addr - SOURCECFG_BASE) / APLIC_MMIO_REG_SIZE + 1;
     // write to D bit sets child's sourcecfg to 0
     // SM = inactive (0) or Level1 (6)
     if (accessible(idx)) {
@@ -227,20 +226,20 @@ bool aplic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
       sourcecfg[idx] = val;
     }
   } else if (addr >= SETIP_BASE && addr < SETIPNUM) {
-    auto idx = (addr - SETIP_BASE) / 4;
+    auto idx = (addr - SETIP_BASE) / APLIC_MMIO_REG_SIZE;
     val &= get_deleg_mask(idx);
     update_interrupt_masked(idx, val);
   } else if (addr == SETIPNUM) {
     update_interrupt(val);
   } else if (addr >= SETIE_BASE && addr < SETIENUM) {
-    auto idx = (addr - SETIE_BASE) / 4;
+    auto idx = (addr - SETIE_BASE) / APLIC_MMIO_REG_SIZE;
     val &= get_deleg_mask(idx);
     ie[idx] |= val;
   } else if (addr == SETIENUM) {
     if (accessible(val))
       ie[val / 32] |= 1 << (val % 32);
   } else if (addr >= CLRIE_BASE && addr < CLRIENUM) {
-    auto idx = (addr - CLRIE_BASE) / 4;
+    auto idx = (addr - CLRIE_BASE) / APLIC_MMIO_REG_SIZE;
     val &= get_deleg_mask(idx);
     ie[idx] &= ~val;
   } else if (addr == CLRIENUM) {
@@ -250,7 +249,7 @@ bool aplic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     genmsi = val & (GENMSI_HART_MASK | GENMSI_EIID_MASK);
     send_msi(get_field(genmsi, GENMSI_HART_MASK), 0, get_field(genmsi, GENMSI_EIID_MASK));
   } else if (addr >= TARGET_BASE && addr < IDC) {
-    auto idx = (addr - TARGET_BASE) / 4 + 1;
+    auto idx = (addr - TARGET_BASE) / APLIC_MMIO_REG_SIZE + 1;
     if (accessible(val))
       target[idx] = val;
   }

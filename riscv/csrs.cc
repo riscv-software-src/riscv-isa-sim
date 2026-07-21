@@ -2222,8 +2222,8 @@ bool hstatus_csr_t::unlogged_write(const reg_t val) noexcept {
     reg_t new_vgein = get_field((reg_t)val, HSTATUS_VGEIN);
     if (new_vgein && !proc->imsic->vgein_valid(new_vgein)) {
       new_vgein = old_vgein;
-      new_hstatus = set_field(new_hstatus, HSTATUS_VGEIN, old_vgein);
     }
+    new_hstatus = set_field(new_hstatus, HSTATUS_VGEIN, new_vgein);
     // update_mip() needs the new VGEIN, so hstatus must be updated first
     bool ret =  basic_csr_t::unlogged_write(new_hstatus);
     // if vgein = 0, HS controls VSEIP; otherwise IMSIC controls it
