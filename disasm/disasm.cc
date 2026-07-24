@@ -474,6 +474,19 @@ struct : public arg_t {
 } vm;
 
 struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    return vr_name[insn.rs2() & -8];
+  }
+} bdota_vs2;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
+    int ci = 8 * (insn.rs2() % 8);
+    return std::to_string(ci);
+  }
+} bdota_ci;
+
+struct : public arg_t {
   std::string to_string(insn_t UNUSED insn) const {
     return "v0";
   }
@@ -821,6 +834,11 @@ static void NOINLINE add_vector_v_insn(disassembler_t* d, const char* name, uint
 static void NOINLINE add_vector_vv_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &vs2, &vs1, opt, &vm}));
+}
+
+static void NOINLINE add_vector_bdota_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  d->add_insn(new disasm_insn_t(name, match, mask, {&vd, &bdota_vs2, &vs1, &bdota_ci, opt, &vm}));
 }
 
 static void NOINLINE add_vector_multiplyadd_vv_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
@@ -1749,6 +1767,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     #define DEFINE_VECTOR_MULTIPLYADD_VF(code) add_vector_multiplyadd_vf_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VI(code) add_vector_vi_insn(this, #code, match_##code, mask_##code)
     #define DEFINE_VECTOR_VIU(code) add_vector_viu_insn(this, #code, match_##code, mask_##code)
+    #define DEFINE_VECTOR_BDOTA(code) add_vector_bdota_insn(this, #code, match_##code, mask_##code)
 
     #define DISASM_OPIV_VXI_INSN(name, sign, suf) \
       DEFINE_VECTOR_VV(name##_##suf##v); \
@@ -1960,21 +1979,21 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     }
 
     if (ext_enabled(EXT_ZVQWBDOTA8I) || ext_enabled(EXT_ZVQWBDOTA16I)) {
-      DEFINE_VECTOR_VV(vqwbdotau_vv);
-      DEFINE_VECTOR_VV(vqwbdotas_vv);
+      DEFINE_VECTOR_BDOTA(vqwbdotau_vv);
+      DEFINE_VECTOR_BDOTA(vqwbdotas_vv);
     }
 
     if (ext_enabled(EXT_ZVFQWBDOTA8F)) {
-      DEFINE_VECTOR_VV(vfqwbdota_vv);
-      DEFINE_VECTOR_VV(vfqwbdota_alt_vv);
+      DEFINE_VECTOR_BDOTA(vfqwbdota_vv);
+      DEFINE_VECTOR_BDOTA(vfqwbdota_alt_vv);
     }
 
     if (ext_enabled(EXT_ZVFWBDOTA16BF)) {
-      DEFINE_VECTOR_VV(vfwbdota_vv);
+      DEFINE_VECTOR_BDOTA(vfwbdota_vv);
     }
 
     if (ext_enabled(EXT_ZVFBDOTA32F)) {
-      DEFINE_VECTOR_VV(vfbdota_vv);
+      DEFINE_VECTOR_BDOTA(vfbdota_vv);
     }
 
     if (ext_enabled(EXT_ZVQWDOTA8I) || ext_enabled(EXT_ZVQWDOTA16I)) {
