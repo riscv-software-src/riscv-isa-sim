@@ -6,8 +6,8 @@
 #include "sim.h"
 #include "dts.h"
 
-clint_t::clint_t(const simif_t* sim, uint64_t freq_hz, bool real_time)
-  : sim(sim), freq_hz(freq_hz), real_time(real_time), mtime(0)
+clint_t::clint_t(const simif_t* sim, uint64_t freq_hz, bool real_time, reg_t size)
+  : sim(sim), freq_hz(freq_hz), real_time(real_time), sz(size), mtime(0)
 {
   struct timeval base;
 
@@ -56,7 +56,7 @@ bool clint_t::load(reg_t addr, size_t len, uint8_t* bytes)
     read_little_endian_reg(res, addr, len, bytes);
   } else if (addr >= MTIME_BASE && addr < MTIME_BASE + sizeof(mtime_t)) {
     read_little_endian_reg(mtime, addr, len, bytes);
-  } else if (addr + len <= CLINT_SIZE) {
+  } else if (addr + len <= sz) {
     memset(bytes, 0, len);
   } else {
     return false;
@@ -90,7 +90,7 @@ bool clint_t::store(reg_t addr, size_t len, const uint8_t* bytes)
       write_little_endian_reg(&mtimecmp[hart_id], addr, len, bytes);
   } else if (addr >= MTIME_BASE && addr < MTIME_BASE + sizeof(mtime_t)) {
     write_little_endian_reg(&mtime, addr, len, bytes);
-  } else if (addr + len <= CLINT_SIZE) {
+  } else if (addr + len <= sz) {
     // Do nothing
   } else {
     return false;
@@ -120,10 +120,12 @@ void clint_t::tick(reg_t rtc_ticks)
 
 clint_t* clint_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base,
     const std::vector<std::string>& sargs UNUSED) {
-  if (fdt_parse_clint(fdt, base, "riscv,clint0") == 0 || fdt_parse_clint(fdt, base, "sifive,clint0") == 0)
+  unsigned long size;
+  if (fdt_parse_clint(fdt, base, &size, "riscv,clint0") == 0 || fdt_parse_clint(fdt, base, &size, "sifive,clint0") == 0)
     return new clint_t(sim,
                        sim->CPU_HZ / sim->INSNS_PER_RTC_TICK,
-                       sim->get_cfg().real_time_clint);
+                       sim->get_cfg().real_time_clint,
+                       size);
   else
     return nullptr;
 }
@@ -137,7 +139,7 @@ std::string clint_generate_dts(const sim_t* sim, const std::vector<std::string>&
   for (size_t i = 0; i < sim->get_cfg().nprocs(); i++)
     s << "&CPU" << i << "_intc 3 &CPU" << i << "_intc 7 ";
   reg_t clintbs = CLINT_BASE;
-  reg_t clintsz = CLINT_SIZE;
+  reg_t clintsz = sim->get_cfg().clint_size;
   s << std::hex << ">;\n"
     "      reg = <0x" << (clintbs >> 32) << " 0x" << (clintbs & (uint32_t)-1) <<
     " 0x" << (clintsz >> 32) << " 0x" << (clintsz & (uint32_t)-1) << ">;\n"

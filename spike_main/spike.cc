@@ -71,6 +71,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --bootargs=<args>     Provide custom bootargs for kernel [default: %s]\n",
           DEFAULT_KERNEL_BOOTARGS);
   fprintf(stderr, "  --real-time-clint     Increment clint time at real-time rate\n");
+  fprintf(stderr, "  --clint-size=<n>      Set clint MMIO region size [default 0xc0000]\n");
   fprintf(stderr, "  --triggers=<n>        Number of supported triggers [default 4]\n");
   fprintf(stderr, "  --dm-progsize=<words> Progsize for the debug module [default 2]\n");
   fprintf(stderr, "  --dm-datacount=<n>    Number of data registers available for the debug module [default 2]\n");
@@ -426,6 +427,7 @@ int main(int argc, char** argv)
   parser.option(0, "initrd", 1, [&](const char* s){initrd = s;});
   parser.option(0, "bootargs", 1, [&](const char* s){cfg.bootargs = s;});
   parser.option(0, "real-time-clint", 0, [&](const char UNUSED *s){cfg.real_time_clint = true;});
+  parser.option(0, "clint-size", 1, [&](const char *s){cfg.clint_size = strtoull(s, nullptr, 0);});
   parser.option(0, "triggers", 1, [&](const char *s){cfg.trigger_count = atoul_safe(s);});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);

@@ -91,6 +91,7 @@ public:
   std::vector<size_t>     hartids;
   bool                    explicit_hartids;
   bool                    real_time_clint;
+  reg_t                   clint_size;
   reg_t                   trigger_count;
   reg_t                   cache_blocksz;
   std::optional<abstract_sim_if_t*> external_simulator;

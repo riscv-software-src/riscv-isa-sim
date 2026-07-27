@@ -277,7 +277,7 @@ int fdt_get_next_subnode(const void *fdt, int node)
 }
 
 int fdt_parse_clint(const void *fdt, reg_t *clint_addr,
-                    const char *compatible)
+                    unsigned long *clint_size, const char *compatible)
 {
   int nodeoffset, rc;
 
@@ -285,7 +285,7 @@ int fdt_parse_clint(const void *fdt, reg_t *clint_addr,
   if (nodeoffset < 0)
     return nodeoffset;
 
-  rc = fdt_get_node_addr_size(fdt, nodeoffset, clint_addr, NULL, "reg");
+  rc = fdt_get_node_addr_size(fdt, nodeoffset, clint_addr, clint_size, "reg");
   if (rc < 0 || !clint_addr)
     return -ENODEV;
 

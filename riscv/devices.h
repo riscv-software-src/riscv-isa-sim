@@ -93,10 +93,10 @@ private:
 
 class clint_t : public abstract_device_t {
  public:
-  clint_t(const simif_t*, uint64_t freq_hz, bool real_time);
+  clint_t(const simif_t*, uint64_t freq_hz, bool real_time, reg_t size);
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
-  reg_t size() override { return CLINT_SIZE; }
+  reg_t size() override { return sz; }
   void tick(reg_t rtc_ticks) override;
   uint64_t get_mtimecmp(reg_t hartid) { return mtimecmp[hartid]; }
   uint64_t get_mtime() { return mtime; }
@@ -107,6 +107,7 @@ class clint_t : public abstract_device_t {
   const simif_t* sim;
   uint64_t freq_hz;
   bool real_time;
+  reg_t sz;
   uint64_t real_time_ref_secs;
   uint64_t real_time_ref_usecs;
   mtime_t mtime;
