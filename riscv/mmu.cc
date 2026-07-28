@@ -137,15 +137,7 @@ mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
     refill_tlb(vaddr, paddr, (char*)host_addr, FETCH);
   }
 
-  auto res = perform_intrapage_fetch(vaddr, host_addr, paddr);
-
-  if (!check_triggers_fetch)
-    return res;
-
-  check_triggers(triggers::OPERATION_EXECUTE, vaddr,
-    access_info.effective_virt, sizeof(insn_parcel_t), res);
-
-  return res;
+  return perform_intrapage_fetch(vaddr, host_addr, paddr);
 }
 
 static reg_t reg_from_bytes(size_t len, const uint8_t* bytes)

@@ -545,6 +545,12 @@ private:
       length = insn_length(insn);
     }
 
+    if (check_triggers_fetch) {
+      auto access_info = generate_access_info(addr, FETCH, {});
+      check_triggers(triggers::OPERATION_EXECUTE, addr,
+        access_info.effective_virt, length, insn);
+    }
+
     return std::make_tuple(insn, length);
   }
 
