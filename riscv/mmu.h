@@ -303,7 +303,7 @@ public:
   T ALWAYS_INLINE fetch_jump_table(reg_t addr) {
     T res = 0;
     for (size_t i = 0; i < sizeof(T) / sizeof(insn_parcel_t); i++)
-      res |= (T)fetch_insn_parcel(addr + i * sizeof(insn_parcel_t)) << (i * sizeof(insn_parcel_t) * 8);
+      res |= (T)fetch_slow_path(addr + i * sizeof(insn_parcel_t)) << (i * sizeof(insn_parcel_t) * 8);
 
     // table accesses use data endianness, not instruction (little) endianness
     return target_big_endian ? to_be(res) : res;
@@ -311,13 +311,7 @@ public:
 
   inline icache_entry_t* refill_icache(reg_t addr, icache_entry_t* entry)
   {
-    insn_bits_t insn = fetch_insn_parcel(addr);
-    unsigned length = insn_length(insn);
-
-    for (unsigned pos = sizeof(insn_parcel_t); pos < length; pos += sizeof(insn_parcel_t)) {
-      insn |= (insn_bits_t)fetch_insn_parcel(addr + pos) << (8 * pos);
-      length = insn_length(insn);
-    }
+    auto [insn, length] = fetch_insn(addr);
 
     insn_fetch_t fetch = {proc->decode_insn(insn), insn};
     entry->tag = addr;
@@ -528,11 +522,36 @@ private:
       pte_cache[key % PTE_CACHE_ENTRIES] = {key, value};
   }
 
-  inline insn_parcel_t fetch_insn_parcel(reg_t addr) {
-    if (auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, addr); tlb_hit)
-      return from_le(*(insn_parcel_t*)host_addr);
+  std::tuple<insn_bits_t, size_t> ALWAYS_INLINE fetch_insn(reg_t addr)
+  {
+    bool intrapage = addr % PGSIZE + sizeof(insn_bits_t) <= PGSIZE;
+    if (auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, addr); tlb_hit && intrapage) {
+      insn_bits_t insn = from_le(*(insn_parcel_t*)host_addr);
+      size_t length = insn_length(insn);
 
-    return from_le(fetch_slow_path(addr));
+      for (size_t pos = sizeof(insn_parcel_t); pos < length; pos += sizeof(insn_parcel_t)) {
+        insn |= insn_bits_t(from_le(*(insn_parcel_t*)(host_addr + pos))) << (8 * pos);
+        length = insn_length(insn);
+      }
+
+      return std::make_tuple(insn, length);
+    }
+
+    insn_bits_t insn = fetch_slow_path(addr);
+    size_t length = insn_length(insn);
+
+    for (size_t pos = sizeof(insn_parcel_t); pos < length; pos += sizeof(insn_parcel_t)) {
+      insn |= insn_bits_t(fetch_slow_path(addr + pos)) << (8 * pos);
+      length = insn_length(insn);
+    }
+
+    if (check_triggers_fetch) {
+      auto access_info = generate_access_info(addr, FETCH, {});
+      check_triggers(triggers::OPERATION_EXECUTE, addr,
+        access_info.effective_virt, length, insn);
+    }
+
+    return std::make_tuple(insn, length);
   }
 
   inline bool in_mprv() const
