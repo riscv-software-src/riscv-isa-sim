@@ -53,6 +53,12 @@ struct : public arg_t {
 
 struct : public arg_t {
   std::string to_string(insn_t insn) const {
+    return std::string("(") + xpr_name[insn.rs2()] + ')';
+  }
+} base_rs2_address;
+
+struct : public arg_t {
+  std::string to_string(insn_t insn) const {
     return xpr_name[insn.rd()];
   }
 } xrd;
@@ -755,6 +761,12 @@ static void NOINLINE add_xlr_insn(disassembler_t* d, const char* name, uint32_t 
   d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &base_only_address}));
 }
 
+static void NOINLINE add_zilx_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  // Zilx assembly syntax: mnemonic rd, (rs2), rs1  (rs2 is base, rs1 is index)
+  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &base_rs2_address, &xrs1}));
+}
+
 static void NOINLINE add_xst_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&xrs2, &base_only_address}));
@@ -978,6 +990,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   #define DEFINE_XAMO(code) add_xamo_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_XLOAD_BASE(code) add_xlr_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_XSTORE_BASE(code) add_xst_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_ZILX(code) add_zilx_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FLOAD(code) add_fload_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FSTORE(code) add_fstore_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FRTYPE(code) add_frtype_insn(this, #code, match_##code, mask_##code);
@@ -1087,6 +1100,44 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   if (ext_enabled(EXT_ZAWRS)) {
     DEFINE_NOARG(wrs_sto);
     DEFINE_NOARG(wrs_nto);
+  }
+
+  if (ext_enabled(EXT_ZILX)) {
+    // `lxb`/`lxbu` are assembler pseudoinstructions for `lxsb`/`lxsbu`; add
+    // them first so they win when disassembling the shared encoding.
+    add_zilx_insn(this, "lxb", match_lxsb, mask_lxsb);
+    add_zilx_insn(this, "lxbu", match_lxsbu, mask_lxsbu);
+
+    // unscaled indexed loads
+    DEFINE_ZILX(lxh)
+    DEFINE_ZILX(lxw)
+    DEFINE_ZILX(lxhu)
+
+    // scaled indexed loads
+    DEFINE_ZILX(lxsb)
+    DEFINE_ZILX(lxsh)
+    DEFINE_ZILX(lxsw)
+    DEFINE_ZILX(lxsbu)
+    DEFINE_ZILX(lxshu)
+
+    if (xlen_eq(64)) {
+      // unscaled indexed loads (RV64-only widths)
+      DEFINE_ZILX(lxd)
+      DEFINE_ZILX(lxwu)
+
+      // scaled indexed loads (RV64-only widths)
+      DEFINE_ZILX(lxsd)
+      DEFINE_ZILX(lxswu)
+
+      // scaled indexed loads with zero-extended 32-bit index (RV64-only)
+      DEFINE_ZILX(lxsuwb)
+      DEFINE_ZILX(lxsuwh)
+      DEFINE_ZILX(lxsuww)
+      DEFINE_ZILX(lxsuwd)
+      DEFINE_ZILX(lxsuwbu)
+      DEFINE_ZILX(lxsuwhu)
+      DEFINE_ZILX(lxsuwwu)
+    }
   }
 
   if (ext_enabled(EXT_ZICFILP)) {

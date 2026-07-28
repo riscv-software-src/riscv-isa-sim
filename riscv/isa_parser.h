@@ -120,6 +120,7 @@ typedef enum {
   EXT_SSAIA,
   EXT_ZA64RS,
   EXT_ZA128RS,
+  EXT_ZILX,
   NUM_ISA_EXTENSIONS
 } isa_extension_t;
 
