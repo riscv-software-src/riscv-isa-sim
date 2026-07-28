@@ -99,7 +99,7 @@ inline mmu_t::insn_parcel_t mmu_t::perform_intrapage_fetch(reg_t vaddr, uintptr_
   else if (!mmio_fetch(paddr, sizeof(res), (uint8_t*)&res))
     throw trap_instruction_access_fault(proc->state.v, vaddr, 0, 0);
 
-  return res;
+  return from_le(res);
 }
 
 mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
@@ -143,7 +143,7 @@ mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
     return res;
 
   check_triggers(triggers::OPERATION_EXECUTE, vaddr,
-    access_info.effective_virt, sizeof(insn_parcel_t), from_le(res));
+    access_info.effective_virt, sizeof(insn_parcel_t), res);
 
   return res;
 }
