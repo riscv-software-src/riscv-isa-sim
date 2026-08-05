@@ -346,6 +346,10 @@ void processor_t::step(size_t n)
     catch (triggers::matched_t& t)
     {
       take_trigger_action(t.action, t.address, pc, t.gva);
+      // End this step at the trigger boundary.  In particular, a timing-before
+      // trigger retires no instruction, so continuing would immediately execute
+      // from the debug ROM or trap vector to consume the remaining step count.
+      n = instret;
     }
     catch(trap_debug_mode&)
     {

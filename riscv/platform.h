@@ -7,7 +7,7 @@
 #define DEFAULT_ISA        "rv64imafdc_zicntr_zihpm"
 #define DEFAULT_PRIV       "MSU"
 #define CLINT_BASE         0x02000000
-#define CLINT_SIZE         0x000c0000
+#define CLINT_SIZE         0x0000c000
 #define PLIC_BASE          0x0c000000
 #define PLIC_SIZE          0x01000000
 #define PLIC_NDEV          31
