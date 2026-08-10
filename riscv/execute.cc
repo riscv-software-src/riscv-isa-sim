@@ -2,9 +2,12 @@
 
 #include "config.h"
 #include "processor.h"
+#include "trace_ingress.h"
+#include "trace_encoder_n.h"
 #include "mmu.h"
 #include "disasm.h"
 #include "decode_macros.h"
+#include "trace_ingress.h"
 #include <cassert>
 
 static void commit_log_reset(processor_t* p)
@@ -161,6 +164,7 @@ inline void processor_t::update_histogram(reg_t pc)
 static inline reg_t execute_insn_fast(processor_t* p, reg_t pc, insn_fetch_t fetch) {
   return fetch.func(p, fetch.insn, pc);
 }
+
 static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
   if (p->get_log_commits_enabled()) {
@@ -172,6 +176,21 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
 
   try {
     npc = fetch.func(p, fetch.insn, pc);
+
+    if (p->get_trace_enabled()) {
+      hart_to_encoder_ingress_t packet {
+        .i_type = _get_insn_type(&fetch.insn, npc != p->get_state()->pc + insn_length(fetch.insn.bits())),
+        .exc_cause = 0,
+        .tval = 0,
+        .priv = P_M, // TODO: check for processor privilege level
+        .i_addr = pc,
+        .iretire = 1,
+        .ilastsize = insn_length(fetch.insn.bits())/2,
+        .i_timestamp = p->get_state()->mcycle->read(),
+      };
+      p->trace_encoder.push_commit(packet);
+    }
+
     if (npc != PC_SERIALIZE_BEFORE) {
       if (p->get_log_commits_enabled()) {
         commit_log_print_insn(p, pc, fetch.insn);
@@ -204,7 +223,7 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
 bool processor_t::slow_path() const
 {
   return debug || state.single_step != state.STEP_NONE || state.debug_mode ||
-         log_commits_enabled || histogram_enabled || in_wfi || check_triggers_icount;
+         log_commits_enabled || histogram_enabled || in_wfi || check_triggers_icount || trace_enabled;
 }
 
 // fetch/decode/execute loop
