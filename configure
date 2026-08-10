@@ -722,11 +722,11 @@ ac_subst_files=''
 ac_user_opts='
 enable_option_checking
 enable_stow
-enable_optional_subprojects
 with_boost
 with_boost_libdir
 with_boost_asio
 with_boost_regex
+enable_optional_subprojects
 with_target
 enable_dual_endian
 '
@@ -5506,136 +5506,6 @@ else case e in #(
 esac
 fi
 
-#-------------------------------------------------------------------------
-# MCPPBS subproject list
-#-------------------------------------------------------------------------
-# Order list so that subprojects only depend on those listed earlier.
-# The '*' suffix indicates an optional subproject. The '**' suffix
-# indicates an optional subproject which is also the name of a group.
-
-
-
-  # Add command line argument to enable all optional subprojects
-
-  # Check whether --enable-optional-subprojects was given.
-if test ${enable_optional_subprojects+y}
-then :
-  enableval=$enable_optional_subprojects;
-fi
-
-
-  # Loop through the subprojects given in the macro argument
-
-
-
-    # Determine if this is a required or an optional subproject
-
-
-
-    # Determine if there is a group with the same name
-
-
-
-    # Create variations of the subproject name suitable for use as a CPP
-    # enabled define, a shell enabled variable, and a shell function
-
-
-
-
-
-
-
-
-
-
-
-    # Add subproject to our running list
-
-    subprojects="$subprojects fesvr"
-
-    # Process the subproject appropriately. If enabled add it to the
-    # $enabled_subprojects running shell variable, set a
-    # SUBPROJECT_ENABLED C define, and include the appropriate
-    # 'subproject.ac'.
-
-
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: configuring default subproject : fesvr" >&5
-printf "%s\n" "$as_me: configuring default subproject : fesvr" >&6;}
-      ac_config_files="$ac_config_files fesvr.mk:fesvr/fesvr.mk.in"
-
-      enable_fesvr_sproj="yes"
-      subprojects_enabled="$subprojects_enabled fesvr"
-
-printf "%s\n" "#define FESVR_ENABLED /**/" >>confdefs.h
-
-ac_fn_cxx_check_member "$LINENO" "struct statx" "stx_ino" "ac_cv_member_struct_statx_stx_ino" "$ac_includes_default"
-if test "x$ac_cv_member_struct_statx_stx_ino" = xyes
-then :
-
-printf "%s\n" "#define HAVE_STATX 1" >>confdefs.h
-
-fi
-
-
-ac_fn_cxx_check_member "$LINENO" "struct statx" "stx_mnt_id" "ac_cv_member_struct_statx_stx_mnt_id" "$ac_includes_default"
-if test "x$ac_cv_member_struct_statx_stx_mnt_id" = xyes
-then :
-
-printf "%s\n" "#define HAVE_STATX_MNT_ID 1" >>confdefs.h
-
-fi
-
-
-
-
-
-
-    # Determine if this is a required or an optional subproject
-
-
-
-    # Determine if there is a group with the same name
-
-
-
-    # Create variations of the subproject name suitable for use as a CPP
-    # enabled define, a shell enabled variable, and a shell function
-
-
-
-
-
-
-
-
-
-
-
-    # Add subproject to our running list
-
-    subprojects="$subprojects riscv"
-
-    # Process the subproject appropriately. If enabled add it to the
-    # $enabled_subprojects running shell variable, set a
-    # SUBPROJECT_ENABLED C define, and include the appropriate
-    # 'subproject.ac'.
-
-
-      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: configuring default subproject : riscv" >&5
-printf "%s\n" "$as_me: configuring default subproject : riscv" >&6;}
-      ac_config_files="$ac_config_files riscv.mk:riscv/riscv.mk.in"
-
-      enable_riscv_sproj="yes"
-      subprojects_enabled="$subprojects_enabled riscv"
-
-printf "%s\n" "#define RISCV_ENABLED /**/" >>confdefs.h
-
-      ac_ext=cpp
-ac_cpp='$CXXCPP $CPPFLAGS'
-ac_compile='$CXX -c $CXXFLAGS $CPPFLAGS conftest.$ac_ext >&5'
-ac_link='$CXX -o conftest$ac_exeext $CXXFLAGS $CPPFLAGS $LDFLAGS conftest.$ac_ext $LIBS >&5'
-ac_compiler_gnu=$ac_cv_cxx_compiler_gnu
-
 
 
 
@@ -6443,95 +6313,129 @@ fi
 	fi
 
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for main in -lboost_system" >&5
-printf %s "checking for main in -lboost_system... " >&6; }
-if test ${ac_cv_lib_boost_system_main+y}
-then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) ac_check_lib_save_LIBS=$LIBS
-LIBS="-lboost_system  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
+#-------------------------------------------------------------------------
+# MCPPBS subproject list
+#-------------------------------------------------------------------------
+# Order list so that subprojects only depend on those listed earlier.
+# The '*' suffix indicates an optional subproject. The '**' suffix
+# indicates an optional subproject which is also the name of a group.
 
-namespace conftest {
-  extern "C" int main ();
-}
-int
-main (void)
-{
-return conftest::main ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"
-then :
-  ac_cv_lib_boost_system_main=yes
-else case e in #(
-  e) ac_cv_lib_boost_system_main=no ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS ;;
-esac
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_boost_system_main" >&5
-printf "%s\n" "$ac_cv_lib_boost_system_main" >&6; }
-if test "x$ac_cv_lib_boost_system_main" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBBOOST_SYSTEM 1" >>confdefs.h
 
-  LIBS="-lboost_system $LIBS"
 
+  # Add command line argument to enable all optional subprojects
+
+  # Check whether --enable-optional-subprojects was given.
+if test ${enable_optional_subprojects+y}
+then :
+  enableval=$enable_optional_subprojects;
 fi
 
 
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking for main in -lboost_regex" >&5
-printf %s "checking for main in -lboost_regex... " >&6; }
-if test ${ac_cv_lib_boost_regex_main+y}
+  # Loop through the subprojects given in the macro argument
+
+
+
+    # Determine if this is a required or an optional subproject
+
+
+
+    # Determine if there is a group with the same name
+
+
+
+    # Create variations of the subproject name suitable for use as a CPP
+    # enabled define, a shell enabled variable, and a shell function
+
+
+
+
+
+
+
+
+
+
+
+    # Add subproject to our running list
+
+    subprojects="$subprojects fesvr"
+
+    # Process the subproject appropriately. If enabled add it to the
+    # $enabled_subprojects running shell variable, set a
+    # SUBPROJECT_ENABLED C define, and include the appropriate
+    # 'subproject.ac'.
+
+
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: configuring default subproject : fesvr" >&5
+printf "%s\n" "$as_me: configuring default subproject : fesvr" >&6;}
+      ac_config_files="$ac_config_files fesvr.mk:fesvr/fesvr.mk.in"
+
+      enable_fesvr_sproj="yes"
+      subprojects_enabled="$subprojects_enabled fesvr"
+
+printf "%s\n" "#define FESVR_ENABLED /**/" >>confdefs.h
+
+      ac_fn_cxx_check_member "$LINENO" "struct statx" "stx_ino" "ac_cv_member_struct_statx_stx_ino" "$ac_includes_default"
+if test "x$ac_cv_member_struct_statx_stx_ino" = xyes
 then :
-  printf %s "(cached) " >&6
-else case e in #(
-  e) ac_check_lib_save_LIBS=$LIBS
-LIBS="-lboost_regex  $LIBS"
-cat confdefs.h - <<_ACEOF >conftest.$ac_ext
-/* end confdefs.h.  */
 
-namespace conftest {
-  extern "C" int main ();
-}
-int
-main (void)
-{
-return conftest::main ();
-  ;
-  return 0;
-}
-_ACEOF
-if ac_fn_cxx_try_link "$LINENO"
+printf "%s\n" "#define HAVE_STATX 1" >>confdefs.h
+
+fi
+
+
+ac_fn_cxx_check_member "$LINENO" "struct statx" "stx_mnt_id" "ac_cv_member_struct_statx_stx_mnt_id" "$ac_includes_default"
+if test "x$ac_cv_member_struct_statx_stx_mnt_id" = xyes
 then :
-  ac_cv_lib_boost_regex_main=yes
-else case e in #(
-  e) ac_cv_lib_boost_regex_main=no ;;
-esac
-fi
-rm -f core conftest.err conftest.$ac_objext conftest.beam \
-    conftest$ac_exeext conftest.$ac_ext
-LIBS=$ac_check_lib_save_LIBS ;;
-esac
-fi
-{ printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $ac_cv_lib_boost_regex_main" >&5
-printf "%s\n" "$ac_cv_lib_boost_regex_main" >&6; }
-if test "x$ac_cv_lib_boost_regex_main" = xyes
-then :
-  printf "%s\n" "#define HAVE_LIBBOOST_REGEX 1" >>confdefs.h
 
-  LIBS="-lboost_regex $LIBS"
+printf "%s\n" "#define HAVE_STATX_MNT_ID 1" >>confdefs.h
 
 fi
 
+
+
+
+
+
+    # Determine if this is a required or an optional subproject
+
+
+
+    # Determine if there is a group with the same name
+
+
+
+    # Create variations of the subproject name suitable for use as a CPP
+    # enabled define, a shell enabled variable, and a shell function
+
+
+
+
+
+
+
+
+
+
+
+    # Add subproject to our running list
+
+    subprojects="$subprojects riscv"
+
+    # Process the subproject appropriately. If enabled add it to the
+    # $enabled_subprojects running shell variable, set a
+    # SUBPROJECT_ENABLED C define, and include the appropriate
+    # 'subproject.ac'.
+
+
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: configuring default subproject : riscv" >&5
+printf "%s\n" "$as_me: configuring default subproject : riscv" >&6;}
+      ac_config_files="$ac_config_files riscv.mk:riscv/riscv.mk.in"
+
+      enable_riscv_sproj="yes"
+      subprojects_enabled="$subprojects_enabled riscv"
+
+printf "%s\n" "#define RISCV_ENABLED /**/" >>confdefs.h
 
 
 # Check whether --with-target was given.

@@ -98,6 +98,10 @@ AX_CHECK_COMPILE_FLAG([-relocatable-pch], AC_SUBST([HAVE_CLANG_PCH],[yes]))
 AC_CHECK_LIB([pthread], [pthread_create], [],
   [AC_MSG_ERROR([libpthread is required])])
 
+AX_BOOST_BASE([1.53])
+AX_BOOST_ASIO
+AX_BOOST_REGEX
+
 #-------------------------------------------------------------------------
 # MCPPBS subproject list
 #-------------------------------------------------------------------------
