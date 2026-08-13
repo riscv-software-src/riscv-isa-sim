@@ -937,6 +937,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   const uint32_t mask_amoop = 0x1fUl << 27;
   const uint32_t mask_width = 0x7Ul << 12;
   const uint32_t mask_shamt_msb = 0x1Ul << 25;
+  const uint32_t mask_rvc_shamt_msb = 0x1Ul << 12;
 
   #define DECLARE_INSN(code, match, mask) \
    const uint32_t match_##code = match; \
@@ -1593,9 +1594,11 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     DISASM_INSN("c.li", c_li, 0, {&xrd, &rvc_imm});
     DISASM_INSN("c.lui", c_lui, 0, {&xrd, &rvc_uimm});
     DISASM_INSN("c.addi", c_addi, 0, {&xrd, &rvc_imm});
-    DISASM_INSN("c.slli", c_slli, 0, {&rvc_rs1, &rvc_shamt});
-    DISASM_INSN("c.srli", c_srli, 0, {&rvc_rs1s, &rvc_shamt});
-    DISASM_INSN("c.srai", c_srai, 0, {&rvc_rs1s, &rvc_shamt});
+    // On RV32 the shift amount is 5 bits, so bit 12 is reserved.
+    const uint32_t rvc_shamt_msb = xlen_eq(64) ? 0 : mask_rvc_shamt_msb;
+    DISASM_INSN("c.slli", c_slli, rvc_shamt_msb, {&rvc_rs1, &rvc_shamt});
+    DISASM_INSN("c.srli", c_srli, rvc_shamt_msb, {&rvc_rs1s, &rvc_shamt});
+    DISASM_INSN("c.srai", c_srai, rvc_shamt_msb, {&rvc_rs1s, &rvc_shamt});
     DISASM_INSN("c.andi", c_andi, 0, {&rvc_rs1s, &rvc_imm});
     DISASM_INSN("c.mv", c_mv, 0, {&xrd, &rvc_rs2});
     DISASM_INSN("c.add", c_add, 0, {&xrd, &rvc_rs2});
