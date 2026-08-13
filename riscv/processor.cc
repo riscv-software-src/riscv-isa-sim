@@ -447,7 +447,7 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
       vsdeleg = hsdeleg = 0;
   }
   bool vti = false;
-  if (extension_enabled_const(EXT_SSAIA)) {
+  if (extension_enabled_const(EXT_SSAIA) && extension_enabled('H')) {
     const reg_t hvictl = state.csrmap[CSR_HVICTL]->read();
     const reg_t iid = get_field(hvictl, HVICTL_IID);
     // It is possible that hvictl is injecting VSEIP (10) and hvictl.DPR is causing mip.VSEIP to be picked over VTI.
