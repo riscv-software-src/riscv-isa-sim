@@ -34,10 +34,10 @@ customX(3)
 std::vector<insn_desc_t> rocc_t::get_instructions(const processor_t &)
 {
   std::vector<insn_desc_t> insns = {
-    {0x0b, 0x7f, &::illegal_instruction, c0, &::illegal_instruction, c0, &::illegal_instruction, c0, &::illegal_instruction, c0},
-    {0x2b, 0x7f, &::illegal_instruction, c1, &::illegal_instruction, c1, &::illegal_instruction, c1, &::illegal_instruction, c1},
-    {0x5b, 0x7f, &::illegal_instruction, c2, &::illegal_instruction, c2, &::illegal_instruction, c2, &::illegal_instruction, c2},
-    {0x7b, 0x7f, &::illegal_instruction, c3, &::illegal_instruction, c3, &::illegal_instruction, c0, &::illegal_instruction, c3}};
+    {0x0b, 0x7f, c0, c0, c0, c0, c0, c0, c0, c0},
+    {0x2b, 0x7f, c1, c1, c1, c1, c1, c1, c1, c1},
+    {0x5b, 0x7f, c2, c2, c2, c2, c2, c2, c2, c2},
+    {0x7b, 0x7f, c3, c3, c3, c3, c3, c3, c3, c3}};
   return insns;
 }
 
