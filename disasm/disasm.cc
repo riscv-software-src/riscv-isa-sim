@@ -948,6 +948,8 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   const uint32_t mask_vldst = 0x7Ul << 12 | 0x1UL << 28;
   const uint32_t mask_amoop = 0x1fUl << 27;
   const uint32_t mask_width = 0x7Ul << 12;
+  const uint32_t mask_shamt_msb = 0x1Ul << 25;
+  const uint32_t mask_rvc_shamt_msb = 0x1Ul << 12;
 
   #define DECLARE_INSN(code, match, mask) \
    const uint32_t match_##code = match; \
@@ -963,7 +965,12 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   #define DEFINE_R1TYPE(code) add_r1type_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_R3TYPE(code) add_r3type_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_ITYPE(code) add_itype_insn(this, #code, match_##code, mask_##code);
-  #define DEFINE_ITYPE_SHIFT(code) add_itype_shift_insn(this, #code, match_##code, mask_##code);
+  // A shift-immediate instruction with a 5-bit shift amount, where instruction
+  // bit 25 is reserved. This is the *w instructions, which always shift a
+  // 32-bit value, and on RV32 every shift-immediate instruction.
+  #define DEFINE_ITYPE_SHIFTW(code) add_itype_shift_insn(this, #code, match_##code, mask_##code | mask_shamt_msb);
+  // A shift-immediate instruction whose shift amount is XLEN wide.
+  #define DEFINE_ITYPE_SHIFT(code) if (xlen_eq(64)) { add_itype_shift_insn(this, #code, match_##code, mask_##code); } else { DEFINE_ITYPE_SHIFTW(code) }
   // RV32 P-extension register pair macros
   #define DEFINE_RTYPE_RDP(code) add_rtype_rdp_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_R1TYPE_RDP(code) add_r1type_rdp_insn(this, #code, match_##code, mask_##code);
@@ -1190,9 +1197,9 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     DEFINE_I1TYPE("sext.w", addiw);
     DEFINE_ITYPE(addiw);
 
-    DEFINE_ITYPE_SHIFT(slliw);
-    DEFINE_ITYPE_SHIFT(srliw);
-    DEFINE_ITYPE_SHIFT(sraiw);
+    DEFINE_ITYPE_SHIFTW(slliw);
+    DEFINE_ITYPE_SHIFTW(srliw);
+    DEFINE_ITYPE_SHIFTW(sraiw);
 
     DEFINE_RTYPE(addw);
     DEFINE_RTYPE(subw);
@@ -1295,7 +1302,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     if (xlen_eq(64)) {
       DEFINE_RTYPE(rorw);
       DEFINE_RTYPE(rolw);
-      DEFINE_ITYPE_SHIFT(roriw);
+      DEFINE_ITYPE_SHIFTW(roriw);
       DEFINE_R1TYPE(ctzw);
       DEFINE_R1TYPE(clzw);
       DEFINE_R1TYPE(cpopw);
@@ -1638,9 +1645,11 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     DISASM_INSN("c.li", c_li, 0, {&xrd, &rvc_imm});
     DISASM_INSN("c.lui", c_lui, 0, {&xrd, &rvc_uimm});
     DISASM_INSN("c.addi", c_addi, 0, {&xrd, &rvc_imm});
-    DISASM_INSN("c.slli", c_slli, 0, {&rvc_rs1, &rvc_shamt});
-    DISASM_INSN("c.srli", c_srli, 0, {&rvc_rs1s, &rvc_shamt});
-    DISASM_INSN("c.srai", c_srai, 0, {&rvc_rs1s, &rvc_shamt});
+    // On RV32 the shift amount is 5 bits, so bit 12 is reserved.
+    const uint32_t rvc_shamt_msb = xlen_eq(64) ? 0 : mask_rvc_shamt_msb;
+    DISASM_INSN("c.slli", c_slli, rvc_shamt_msb, {&rvc_rs1, &rvc_shamt});
+    DISASM_INSN("c.srli", c_srli, rvc_shamt_msb, {&rvc_rs1s, &rvc_shamt});
+    DISASM_INSN("c.srai", c_srai, rvc_shamt_msb, {&rvc_rs1s, &rvc_shamt});
     DISASM_INSN("c.andi", c_andi, 0, {&rvc_rs1s, &rvc_imm});
     DISASM_INSN("c.mv", c_mv, 0, {&xrd, &rvc_rs2});
     DISASM_INSN("c.add", c_add, 0, {&xrd, &rvc_rs2});
