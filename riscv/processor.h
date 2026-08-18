@@ -93,6 +93,7 @@ struct state_t
   bool v_changed;
   bool v;
   bool prev_v;
+  bool in_wfi;
   misa_csr_t_p misa;
   mstatus_csr_t_p mstatus;
   csr_t_p mstatush;
@@ -355,8 +356,8 @@ public:
 
   const char* get_symbol(uint64_t addr);
 
-  void clear_waiting_for_interrupt() { in_wfi = false; };
-  bool is_waiting_for_interrupt() { return in_wfi; };
+  void clear_waiting_for_interrupt() { state.in_wfi = false; };
+  bool is_waiting_for_interrupt() const { return state.in_wfi; };
 
   void check_if_lpad_required();
   reg_t set_lpad_expected(reg_t pc);
@@ -380,7 +381,6 @@ private:
   FILE *log_file;
   std::ostream sout_; // needed for socket command interface -s, also used for -d and -l, but not for --log
   bool halt_on_reset;
-  bool in_wfi;
   bool check_triggers_icount;
   std::vector<bool> impl_table;
 

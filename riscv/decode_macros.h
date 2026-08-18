@@ -251,13 +251,6 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
        STATE.pc = __npc; \
      } while (0)
 
-class wait_for_interrupt_t {};
-
-#define wfi() \
-  do { set_pc_and_serialize(npc); \
-       throw wait_for_interrupt_t(); \
-     } while (0)
-
 #define serialize() set_pc_and_serialize(npc)
 
 /* Sentinel PC values to serialize simulator pipeline */
