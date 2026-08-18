@@ -38,7 +38,7 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
   sim(sim), id(id), xlen(isa.get_max_xlen()),
   histogram_enabled(false), log_commits_enabled(false),
   log_file(log_file), sout_(sout_.rdbuf()), halt_on_reset(halt_on_reset),
-  in_wfi(false), check_triggers_icount(false),
+  check_triggers_icount(false),
   impl_table(256, false), extension_enable_table(isa.get_extension_table()),
   last_pc(1), executions(1), TM(cfg->trigger_count)
 {
@@ -108,6 +108,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
   prv_changed = false;
   v_changed = false;
 
+  in_wfi = false;
   serialized = false;
   debug_mode = false;
   single_step = STEP_NONE;
@@ -153,7 +154,6 @@ void processor_t::reset()
   mmu->flush_tlb();
   if (any_vector_extensions())
     VU.reset();
-  in_wfi = false;
 
   if (n_pmp > 0) {
     // For backwards compatibility with software that is unaware of PMP,
@@ -301,7 +301,7 @@ void processor_t::take_interrupt(reg_t pending_interrupts)
   }
 
   // Exit WFI if there are any pending interrupts
-  in_wfi = false;
+  clear_waiting_for_interrupt();
 
   // M-ints have higher priority over HS-ints and VS-ints
   const reg_t mie = get_field(state.mstatus->read(), MSTATUS_MIE);
@@ -382,7 +382,7 @@ void processor_t::enter_debug_mode(uint8_t cause, uint8_t extcause)
   set_privilege(PRV_M, false);
   state.dpc->write(state.pc);
   state.pc = DEBUG_ROM_ENTRY;
-  in_wfi = false;
+  clear_waiting_for_interrupt();
 }
 
 void processor_t::debug_output_log(std::stringstream *s)
