@@ -642,7 +642,7 @@ bool vsstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t adj_write_mask = sstatus_write_mask & ~(hDTE ? 0 : SSTATUS_SDT);
   reg_t newval = (this->val & ~adj_write_mask) | (val & adj_write_mask);
 
-  newval = (newval & SSTATUS_SDT) ? (newval & ~SSTATUS_SIE) : newval;
+  newval = hDTE && (newval & SSTATUS_SDT) ? (newval & ~SSTATUS_SIE) : newval;
 
   if (state->v) maybe_flush_tlb(newval);
   this->val = adjust_sd(newval);
@@ -666,7 +666,7 @@ bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t adj_write_mask = sstatus_write_mask & ~(mDTE ? 0 : SSTATUS_SDT);
   reg_t new_mstatus = (mstatus->read() & ~adj_write_mask) | (val & adj_write_mask);
 
-  new_mstatus = (new_mstatus & SSTATUS_SDT) ? (new_mstatus & ~SSTATUS_SIE) : new_mstatus;
+  new_mstatus = mDTE && (new_mstatus & SSTATUS_SDT) ? (new_mstatus & ~SSTATUS_SIE) : new_mstatus;
 
   // On RV32 this will only log the low 32 bits, so make sure we're
   // not modifying anything in the upper 32 bits.
