@@ -223,6 +223,7 @@ void processor_t::step(size_t n)
     reg_t pc = state.pc;
     state.prv_changed = false;
     state.v_changed = false;
+    reg_t mcountinhibit = state.mcountinhibit->read();
 
     #define advance_pc() { \
       if (unlikely(invalid_pc(pc))) { \
@@ -349,10 +350,10 @@ void processor_t::step(size_t n)
     }
 
 serialize:
-    state.minstret->bump((state.mcountinhibit->read() & MCOUNTINHIBIT_IR) ? 0 : instret);
+    state.minstret->bump((mcountinhibit & MCOUNTINHIBIT_IR) ? 0 : instret);
 
     // Model a hart whose CPI is 1.
-    state.mcycle->bump((state.mcountinhibit->read() & MCOUNTINHIBIT_CY) ? 0 : instret);
+    state.mcycle->bump((mcountinhibit & MCOUNTINHIBIT_CY) ? 0 : instret);
 
     n -= instret;
   }
