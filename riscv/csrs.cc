@@ -594,6 +594,7 @@ reg_t base_status_csr_t::compute_sstatus_write_mask() const noexcept {
     | (has_fs ? SSTATUS_FS : 0)
     | (proc->any_custom_extensions() ? SSTATUS_XS : 0)
     | (has_vs ? SSTATUS_VS : 0)
+    | (proc->extension_enabled(EXT_ZVTBASE) ? SSTATUS_MS : 0)
     | (proc->extension_enabled('S') && proc->extension_enabled(EXT_ZICFILP) ? SSTATUS_SPELP : 0)
     | (proc->extension_enabled(EXT_SSDBLTRP) ? SSTATUS_SDT : 0)
     ;
@@ -607,6 +608,7 @@ reg_t base_status_csr_t::adjust_sd(const reg_t val) const noexcept {
   const reg_t sd_bit = proc->get_const_xlen() == 64 ? SSTATUS64_SD : SSTATUS32_SD;
   if (((val & SSTATUS_FS) == SSTATUS_FS) ||
       ((val & SSTATUS_VS) == SSTATUS_VS) ||
+      ((val & SSTATUS_MS) == SSTATUS_MS) ||
       ((val & SSTATUS_XS) == SSTATUS_XS)) {
     return val | sd_bit;
   }

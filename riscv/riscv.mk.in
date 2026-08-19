@@ -1143,6 +1143,29 @@ riscv_insn_ext_zvabd = \
 	vwabda_vv \
 	vwabdau_vv \
 
+riscv_insn_ext_zvt = \
+	msettn \
+	msettm \
+	msettk \
+	msetmtype \
+	msetmtypei \
+	vtle8 \
+	vtse8 \
+	vtle16 \
+	vtse16 \
+	vtle32 \
+	vtse32 \
+	vtle64 \
+	vtse64 \
+	vtmv_t_v \
+	vtmv_v_t \
+	vtzero \
+	vtdiscard \
+	vtmmu_tvv \
+	vtmms_tvv \
+	vtfmm_tvv \
+	vtfmm_alt_tvv \
+
 riscv_insn_ext_zvzip = \
 	vzip_vv \
 	vunzipe_v \
@@ -1813,6 +1836,7 @@ riscv_insn_list = \
 	$(riscv_insn_ext_zvbdota) \
 	$(riscv_insn_ext_zvdota) \
 	$(riscv_insn_ext_zvabd) \
+	$(riscv_insn_ext_zvt) \
 	$(riscv_insn_ext_zvzip) \
 	$(riscv_insn_ext_zilx) \
 	$(riscv_insn_priv) \

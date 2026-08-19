@@ -2296,4 +2296,58 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
 
 #define DO_ABD(N, M)  ((N) > (M) ? (N) - (M) : (M) - (N))
 
+#define ZVT_LDST_BASE \
+  require_extension(EXT_ZVTBASE); \
+  require_vector(false); \
+  require(P.VU.widen > 0); \
+  require(STATE.sstatus->enabled(SSTATUS_MS))
+
+#define ZVT_END \
+  STATE.sstatus->dirty(SSTATUS_MS); \
+  VECTOR_END
+
+#define ZVT_LDST(type, is_store) \
+  ZVT_LDST_BASE; \
+  reg_t base = RS1; \
+  reg_t tss = RS2; \
+  reg_t idx = P.VU.vstart->read(); \
+  reg_t tn = P.VU.tn(8 * sizeof(type)); \
+  STATE.sstatus->dirty(SSTATUS_MS); \
+  for ( ; idx < tn; idx++) { \
+    P.VU.vstart->write(idx); \
+    reg_t addr = base + idx * sizeof(type); \
+    if (is_store) { \
+      MMU.store<type>(addr, P.VU.tss_elt<type>(tss, idx)); \
+    } else { \
+      P.VU.tss_elt<type>(tss, idx) = MMU.load<type>(addr); \
+    } \
+  } \
+  VECTOR_END;
+
+#define ZVT_BASE \
+  ZVT_LDST_BASE; \
+  require(P.VU.vstart->read() == 0);
+
+#define ZVT_MTD(n_tiles) \
+  ZVT_BASE; \
+  const reg_t td = (insn.rd() >> 1) & (16 - 16 / (n_tiles)); \
+  require((td & (P.VU.mt_align(P.VU.tew()) - 1)) == 0)
+
+#define ZVT_MN_LOOP(BODY) \
+  const reg_t UNUSED tm = P.VU.tm, tn = P.VU.tn(), tk = P.VU.tk; \
+  const reg_t sew = P.VU.vsew, widen = P.VU.widen; \
+  const reg_t UNUSED tew = sew * widen; \
+  for (size_t m = 0; m < tm; m++) { \
+    for (size_t n = 0; n < tn; n++) { \
+      BODY; \
+    } \
+  } \
+  ZVT_END;
+
+#define ZVT_CHECK_ALIGN_RS1 require_align(insn.rs1(), P.VU.vflmul)
+#define ZVT_CHECK_ALIGN_RS2 require_align(insn.rs2(), P.VU.vflmul)
+#define ZVT_CHECK_ALIGN_RD require_align(insn.rd(), P.VU.vflmul)
+#define ZVT_CHECK_RS1_EMUL require((insn.rs1()) % 8 < 8/P.VU.kmax())
+#define ZVT_CHECK_RS2_EMUL require((insn.rs2()) % 8 < 8/P.VU.kmax())
+
 #endif
