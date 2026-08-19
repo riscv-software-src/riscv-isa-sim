@@ -59,6 +59,7 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
 
   VU.VLEN = isa.get_vlen();
   VU.ELEN = isa.get_elen();
+  VU.TE = isa.get_te();
   VU.vlenb = isa.get_vlen() / 8;
   VU.vstart_alu = 0;
 

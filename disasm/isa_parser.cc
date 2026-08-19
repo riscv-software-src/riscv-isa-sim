@@ -204,6 +204,22 @@ static const extension_info_t extension_infos[] = {
   {"zvfqwdota8f", {EXT_ZVFQWDOTA8F}},
   {"zvfwdota16bf", {EXT_ZVFWDOTA16BF}},
   {"zvkt"},
+  {"zvtbase", {EXT_ZVTBASE}, {"zve32x"}},
+  {"zvt8t", {EXT_ZVT8T}, {"zvtbase"}},
+  {"zvt16t", {EXT_ZVT16T}, {"zvt8t"}},
+  {"zvt32t", {EXT_ZVT32T}, {"zvt16t"}},
+  {"zvt64t", {EXT_ZVT64T}, {"zvt32t"}},
+  {"zvt128t", {EXT_ZVT128T}, {"zvt64t"}},
+  {"zvt256t", {EXT_ZVT256T}, {"zvt128t"}},
+  {"zvt8e", {EXT_ZVT8E}, {"zvtbase"}},
+  {"zvt16e", {EXT_ZVT16E}, {"zvtbase"}},
+  {"zvt64e", {EXT_ZVT64E}, {"zvtbase", "zve64x"}},
+  {"zvti8i32mm", {EXT_ZVTI8I32MM}, {"zvt8e"}},
+  {"zvtofp8fmm", {EXT_ZVTOFP8FMM}, {"zvt8e", "zve32f"}},
+  {"zvtfp16fmm", {EXT_ZVTFP16FMM}, {"zvt16e", "zve32f"}},
+  {"zvtbf16fmm", {EXT_ZVTBF16FMM}, {"zvt16e", "zve32f"}},
+  {"zvtfmm", {EXT_ZVTFMM}, {"zvtbase", "zve32f"}},
+  {"zvtdmm", {EXT_ZVTDMM}, {"zvt64e", "zve64d"}},
   {"zvzip", {EXT_ZVZIP}},
   {"zilx", {EXT_ZILX}},
   {"sstc", {EXT_SSTC}},
@@ -461,4 +477,16 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
 
   if (extension_table[EXT_SSPMP] && !supervisor)
     bad_isa_string(str, "'SPMP' extension requires S mode");
+}
+
+reg_t isa_parser_t::get_te() const
+{
+  return
+    extension_enabled(EXT_ZVT256T) ? 256 :
+    extension_enabled(EXT_ZVT128T) ? 128 :
+    extension_enabled(EXT_ZVT64T) ? 64 :
+    extension_enabled(EXT_ZVT32T) ? 32 :
+    extension_enabled(EXT_ZVT16T) ? 16 :
+    extension_enabled(EXT_ZVT8T) ? 8 :
+    extension_enabled(EXT_ZVTBASE) ? 4 : 0;
 }

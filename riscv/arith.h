@@ -242,4 +242,13 @@ static inline T rotate_left(T x, std::size_t shiftamt) {
   return (x << lshift) | (x >> rshift);
 }
 
+template<typename out_t, typename in1_t, typename in2_t>
+static inline out_t dot_product(const in1_t* a, const in2_t* b, size_t n)
+{
+  out_t res = 0;
+  for (size_t i = 0; i < n; i++)
+    res += (out_t)a[i] * (out_t)b[i];
+  return res;
+}
+
 #endif
