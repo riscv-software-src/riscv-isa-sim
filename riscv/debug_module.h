@@ -205,6 +205,14 @@ class debug_module_t : public abstract_device_t
 
     bool perform_abstract_command();
     bool perform_abstract_register_access();
+    bool aar_handle_register_transfer(unsigned regno, unsigned size, bool write, unsigned &offset);
+    bool aar_emit_csr_transfer(unsigned regno, unsigned size, bool write, unsigned &offset);
+    bool aar_emit_gpr_transfer(unsigned regno, unsigned size, bool write, unsigned &offset);
+    bool aar_emit_fpr_transfer(unsigned regno, unsigned size, bool write, unsigned &offset);
+    bool aar_handle_custom_register(unsigned regno, bool write);
+    void aar_emit_prologue(unsigned &offset);
+    void aar_emit_epilogue(unsigned &offset);
+
     bool perform_abstract_memory_access();
 
     unsigned arg(unsigned xlen, unsigned i);

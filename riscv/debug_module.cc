@@ -685,6 +685,25 @@ static bool is_fpu_reg(unsigned regno)
     regno == CSR_FRM || regno == CSR_FCSR;
 }
 
+using handle_memory_func = std::uint32_t (*)(std::uint32_t src, std::uint32_t base, std::int32_t offset);
+using handle_mstatus_func = std::uint32_t (*)(std::uint32_t rd, std::uint32_t rs1, std::uint32_t csr);
+
+static bool reg_size_supported(unsigned size)
+{
+  return (size >= 2 && size <= 3);
+}
+
+static unsigned size2index(unsigned size)
+{
+  assert(reg_size_supported(size));
+  return size - 2;
+}
+
+static constexpr std::array<handle_memory_func, 2> aar_lx = {&lw, &ld};
+static constexpr std::array<handle_memory_func, 2> aar_sx = {&sw, &sd};
+static constexpr std::array<handle_memory_func, 2> aar_flx = {&flw, &fld};
+static constexpr std::array<handle_memory_func, 2> aar_fsx = {&fsw, &fsd};
+
 bool debug_module_t::perform_abstract_command()
 {
   if (abstractcs.cmderr != CMDERR_NONE)
@@ -714,180 +733,179 @@ bool debug_module_t::perform_abstract_command()
 
 bool debug_module_t::perform_abstract_register_access()
 {
-  // register access
-  unsigned size = get_field(command, AC_ACCESS_REGISTER_AARSIZE);
   bool write = get_field(command, AC_ACCESS_REGISTER_WRITE);
+  bool transfer = get_field(command, AC_ACCESS_REGISTER_TRANSFER);
+  bool postexec = get_field(command, AC_ACCESS_REGISTER_POSTEXEC);
+  unsigned size = get_field(command, AC_ACCESS_REGISTER_AARSIZE);
   unsigned regno = get_field(command, AC_ACCESS_REGISTER_REGNO);
 
-    if (!selected_hart_state().halted) {
-      abstractcs.cmderr = CMDERR_HALTRESUME;
-      return true;
-    }
-
-    assert(size < 8);
-    // Check if register fit in dmdata
-    if ((1U << size) > dmdata.size()) {
-      abstractcs.cmderr = CMDERR_NOTSUP;
-      return true;
-    }
-
-  unsigned i = 0;
-  if (get_field(command, AC_ACCESS_REGISTER_TRANSFER)) {
-
-    if (is_fpu_reg(regno)) {
-      // Save S0
-      write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH0));
-      // Save mstatus
-      write32(debug_abstract, i++, csrr(S0, CSR_MSTATUS));
-      write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH1));
-      // Set mstatus.fs
-      assert((MSTATUS_FS & 0xfff) == 0);
-      write32(debug_abstract, i++, lui(S0, MSTATUS_FS >> 12));
-      write32(debug_abstract, i++, csrrs(ZERO, S0, CSR_MSTATUS));
-    }
-
-    if (regno < 0x1000 && config.support_abstract_csr_access) {
-      if (!is_fpu_reg(regno)) {
-        write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH0));
-      }
-
-      if (write) {
-        switch (size) {
-          case 2:
-            write32(debug_abstract, i++, lw(S0, ZERO, debug_data_start));
-            break;
-          case 3:
-            write32(debug_abstract, i++, ld(S0, ZERO, debug_data_start));
-            break;
-          default:
-            abstractcs.cmderr = CMDERR_NOTSUP;
-            return true;
-        }
-        write32(debug_abstract, i++, csrw(S0, regno));
-
-      } else {
-        write32(debug_abstract, i++, csrr(S0, regno));
-        switch (size) {
-          case 2:
-            write32(debug_abstract, i++, sw(S0, ZERO, debug_data_start));
-            break;
-          case 3:
-            write32(debug_abstract, i++, sd(S0, ZERO, debug_data_start));
-            break;
-          default:
-            abstractcs.cmderr = CMDERR_NOTSUP;
-            return true;
-        }
-      }
-      if (!is_fpu_reg(regno)) {
-        write32(debug_abstract, i++, csrr(S0, CSR_DSCRATCH0));
-      }
-
-    } else if (regno >= 0x1000 && regno < 0x1020) {
-      unsigned regnum = regno - 0x1000;
-
-      switch (size) {
-        case 2:
-          if (write)
-            write32(debug_abstract, i++, lw(regnum, ZERO, debug_data_start));
-          else
-            write32(debug_abstract, i++, sw(regnum, ZERO, debug_data_start));
-          break;
-        case 3:
-          if (write)
-            write32(debug_abstract, i++, ld(regnum, ZERO, debug_data_start));
-          else
-            write32(debug_abstract, i++, sd(regnum, ZERO, debug_data_start));
-          break;
-        default:
-          abstractcs.cmderr = CMDERR_NOTSUP;
-          return true;
-      }
-
-      if (regno == 0x1000 + S0 && write) {
-        /*
-         * The exception handler starts out be restoring dscratch to s0,
-         * which was saved before executing the abstract memory region. Since
-         * we just wrote s0, also make sure to write that same value to
-         * dscratch in case an exception occurs in a program buffer that
-         * might be executed later.
-         */
-        write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH0));
-      }
-
-    } else if (regno >= 0x1020 && regno < 0x1040 && config.support_abstract_fpr_access) {
-      unsigned fprnum = regno - 0x1020;
-
-      if (write) {
-        switch (size) {
-          case 2:
-            write32(debug_abstract, i++, flw(fprnum, ZERO, debug_data_start));
-            break;
-          case 3:
-            write32(debug_abstract, i++, fld(fprnum, ZERO, debug_data_start));
-            break;
-          default:
-            abstractcs.cmderr = CMDERR_NOTSUP;
-            return true;
-        }
-
-      } else {
-        switch (size) {
-          case 2:
-            write32(debug_abstract, i++, fsw(fprnum, ZERO, debug_data_start));
-            break;
-          case 3:
-            write32(debug_abstract, i++, fsd(fprnum, ZERO, debug_data_start));
-            break;
-          default:
-            abstractcs.cmderr = CMDERR_NOTSUP;
-            return true;
-        }
-      }
-
-      } else if (regno >= 0xc000 && (regno & 1) == 1) {
-        // Support odd-numbered custom registers, to allow for debugger testing.
-        unsigned custom_number = regno - 0xc000;
-        abstractcs.cmderr = CMDERR_NONE;
-        if (write) {
-          // Writing V to custom register N will cause future reads of N to
-          // return V, reads of N-1 will return V-1, etc.
-          assert(dmdata.size() >= 4);
-          custom_base = read32(get_dmdata_checked(1), 0) - custom_number;
-        } else {
-          write32(get_dmdata_checked(1), 0, custom_number + custom_base);
-          write32(get_dmdata_checked(2), 1, 0);
-        }
-        return true;
-
-    } else {
-      abstractcs.cmderr = CMDERR_NOTSUP;
-      return true;
-    }
-
-    if (is_fpu_reg(regno)) {
-      // restore mstatus
-      write32(debug_abstract, i++, csrr(S0, CSR_DSCRATCH1));
-      write32(debug_abstract, i++, csrw(S0, CSR_MSTATUS));
-      // restore s0
-      write32(debug_abstract, i++, csrr(S0, CSR_DSCRATCH0));
-    }
+  if (!selected_hart_state().halted) {
+    abstractcs.cmderr = CMDERR_HALTRESUME;
+    return true;
   }
 
-  if (get_field(command, AC_ACCESS_REGISTER_POSTEXEC)) {
-    write32(debug_abstract, i,
-        jal(ZERO, debug_progbuf_start - debug_abstract_start - 4 * i));
-    i++;
+  assert(size < 8);
+  if ((1U << size) > dmdata.size()) {
+    abstractcs.cmderr = CMDERR_NOTSUP;
+    return true;
+  }
+
+  // Support odd-numbered custom registers, to allow for debugger testing.
+  if (transfer && regno >= 0xc000 && (regno & 1))
+    return aar_handle_custom_register(regno, write);
+
+  unsigned offset = 0;
+  bool fpu_reg = transfer && is_fpu_reg(regno);
+
+  if (fpu_reg)
+    aar_emit_prologue(offset);
+
+  if (transfer && !aar_handle_register_transfer(regno, size, write, offset))
+    return true;
+
+  if (fpu_reg)
+    aar_emit_epilogue(offset);
+
+  if (postexec) {
+    write32(debug_abstract, offset,
+        jal(ZERO, debug_progbuf_start - debug_abstract_start - 4 * offset));
+    offset++;
   } else {
-    write32(debug_abstract, i++, ebreak());
+    write32(debug_abstract, offset++, ebreak());
   }
 
-  debug_rom_flags[selected_hart_id()] |= 1 << DEBUG_ROM_FLAG_GO;
-  rti_remaining = config.abstract_rti;
-  abstract_command_completed = false;
+  assert(offset <= debug_abstract_size);
+  start_command_execution();
 
-  abstractcs.busy = true;
+  abstractcs.cmderr = CMDERR_NONE;
   return true;
+}
+
+bool debug_module_t::aar_handle_register_transfer(unsigned regno,
+    unsigned size, bool write, unsigned &offset)
+{
+  if (!reg_size_supported(size)) {
+    abstractcs.cmderr = CMDERR_NOTSUP;
+    return false;
+  }
+
+  if (regno < 0x1000) {
+    if (!config.support_abstract_csr_access) {
+      abstractcs.cmderr = CMDERR_NOTSUP;
+      return false;
+    }
+    return aar_emit_csr_transfer(regno, size, write, offset);
+  }
+
+  if (regno < 0x1020)
+    return aar_emit_gpr_transfer(regno, size, write, offset);
+
+  if (regno < 0x1040)
+    return aar_emit_fpr_transfer(regno, size, write, offset);
+
+  abstractcs.cmderr = CMDERR_NOTSUP;
+  return false;
+}
+
+bool debug_module_t::aar_emit_csr_transfer(unsigned regno, unsigned size, bool write, unsigned &offset)
+{
+  // For the FPU CSRs aar_emit_prologue has already saved s0.
+  bool save_s0 = !is_fpu_reg(regno);
+  auto size_index = size2index(size);
+
+  if (save_s0)
+    write32(debug_abstract, offset++, csrw(S0, CSR_DSCRATCH0));
+
+  if (write) {
+    write32(debug_abstract, offset++, aar_lx[size_index](S0, ZERO, debug_data_start));
+    write32(debug_abstract, offset++, csrw(S0, regno));
+  } else {
+    write32(debug_abstract, offset++, csrr(S0, regno));
+    write32(debug_abstract, offset++, aar_sx[size_index](S0, ZERO, debug_data_start));
+  }
+
+  if (save_s0)
+    write32(debug_abstract, offset++, csrr(S0, CSR_DSCRATCH0));
+
+  return true;
+}
+
+bool debug_module_t::aar_emit_gpr_transfer(unsigned regno, unsigned size, bool write,
+    unsigned &offset)
+{
+  auto regnum = regno - 0x1000;
+  auto size_index = size2index(size);
+  auto op = write ? aar_lx[size_index] : aar_sx[size_index];
+  write32(debug_abstract, offset++, op(regnum, ZERO, debug_data_start));
+
+  if (regnum == S0 && write) {
+    /*
+     * The exception handler starts out be restoring dscratch to s0,
+     * which was saved before executing the abstract memory region. Since
+     * we just wrote s0, also make sure to write that same value to
+     * dscratch in case an exception occurs in a program buffer that
+     * might be executed later.
+     */
+    write32(debug_abstract, offset++, csrw(S0, CSR_DSCRATCH0));
+  }
+
+  return true;
+}
+
+bool debug_module_t::aar_emit_fpr_transfer(unsigned regno,
+    unsigned size, bool write, unsigned &offset)
+{
+  if (!config.support_abstract_fpr_access) {
+    abstractcs.cmderr = CMDERR_NOTSUP;
+    return false;
+  }
+
+  auto fprnum = regno - 0x1020;
+  auto size_index = size2index(size);
+  auto op = write ? aar_flx[size_index] : aar_fsx[size_index];
+  write32(debug_abstract, offset++, op(fprnum, ZERO, debug_data_start));
+
+  return true;
+}
+
+bool debug_module_t::aar_handle_custom_register(unsigned regno, bool write)
+{
+  unsigned custom_number = regno - 0xc000;
+  abstractcs.cmderr = CMDERR_NONE;
+  if (write) {
+    // Writing V to custom register N will cause future reads of N to
+    // return V, reads of N-1 will return V-1, etc.
+    assert(dmdata.size() >= 4);
+    custom_base = read32(get_dmdata_checked(1), 0) - custom_number;
+  } else {
+    write32(get_dmdata_checked(1), 0, custom_number + custom_base);
+    write32(get_dmdata_checked(2), 1, 0);
+  }
+  return true;
+}
+
+/*
+ * An FPR transfer traps when mstatus.FS is off, so the sequence forces it
+ * dirty. Park the old mstatus in dscratch1 and put it back afterwards.
+ */
+void debug_module_t::aar_emit_prologue(unsigned &offset)
+{
+  write32(debug_abstract, offset++, csrw(S0, CSR_DSCRATCH0));
+
+  write32(debug_abstract, offset++, csrr(S0, CSR_MSTATUS));
+  write32(debug_abstract, offset++, csrw(S0, CSR_DSCRATCH1));
+
+  assert((MSTATUS_FS & 0xfff) == 0);
+  write32(debug_abstract, offset++, lui(S0, MSTATUS_FS >> 12));
+  write32(debug_abstract, offset++, csrrs(ZERO, S0, CSR_MSTATUS));
+}
+
+void debug_module_t::aar_emit_epilogue(unsigned &offset)
+{
+  write32(debug_abstract, offset++, csrr(S0, CSR_DSCRATCH1));
+  write32(debug_abstract, offset++, csrw(S0, CSR_MSTATUS));
+
+  write32(debug_abstract, offset++, csrr(S0, CSR_DSCRATCH0));
 }
 
 static unsigned idx(unsigned xlen)
@@ -927,8 +945,6 @@ bool debug_module_t::perform_abstract_memory_access() {
   return true;
 }
 
-using handle_memory_func = std::uint32_t (*)(std::uint32_t src, std::uint32_t base, std::int32_t offset);
-using handle_mstatus_func = std::uint32_t (*)(std::uint32_t rd, std::uint32_t rs1, std::uint32_t csr);
 static constexpr std::array<handle_memory_func, 4> lx = {&lb, &lh, &lw, &ld};
 static constexpr std::array<handle_memory_func, 4> sx = {&sb, &sh, &sw, &sd};
 static constexpr std::array<handle_mstatus_func, 2> csrrx = {&csrrc, &csrrs};
