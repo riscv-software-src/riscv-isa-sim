@@ -1137,11 +1137,14 @@ riscv_insn_ext_zvk = \
 	$(riscv_insn_ext_zvksh) \
 
 riscv_insn_ext_zvabd = \
-	vabs_v \
 	vabd_vv \
+	vabd_vx \
 	vabdu_vv \
+	vabdu_vx \
 	vwabda_vv \
+	vwabda_vx \
 	vwabdau_vv \
+	vwabdau_vx \
 
 riscv_insn_ext_zvt = \
 	msettn \
