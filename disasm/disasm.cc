@@ -2374,11 +2374,14 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   }
 
   if (ext_enabled(EXT_ZVABD)) {
-    DEFINE_VECTOR_V(vabs_v);
     DEFINE_VECTOR_VV(vabd_vv);
+    DEFINE_VECTOR_VX(vabd_vx);
     DEFINE_VECTOR_VV(vabdu_vv);
-    DEFINE_VECTOR_MULTIPLYADD_VV(vwabda_vv);
-    DEFINE_VECTOR_MULTIPLYADD_VV(vwabdau_vv);
+    DEFINE_VECTOR_VX(vabdu_vx);
+    DEFINE_VECTOR_VV(vwabda_vv);
+    DEFINE_VECTOR_VX(vwabda_vx);
+    DEFINE_VECTOR_VV(vwabdau_vv);
+    DEFINE_VECTOR_VX(vwabdau_vx);
   }
 
   if (ext_enabled(EXT_ZVZIP)) {

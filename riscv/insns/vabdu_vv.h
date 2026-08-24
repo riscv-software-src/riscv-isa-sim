@@ -1,9 +1,8 @@
-// vabdu.vv vd, vs1, vs2, vm
+// vabdu.vv vd, vs2, vs1, vm
 
 require_zvabd;
-require(P.VU.vsew <= e16);
 
 VI_VV_ULOOP
 ({
-  vd = DO_ABD(vs1, vs2);
+  vd = DO_ABDU(vs2, vs1);
 })

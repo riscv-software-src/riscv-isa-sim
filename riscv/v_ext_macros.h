@@ -2294,7 +2294,19 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
 #define P_SET_OV(ov) \
   if (ov) P.set_vxsat();
 
-#define DO_ABD(N, M)  ((N) > (M) ? (N) - (M) : (M) - (N))
+#define DO_ABD_WITH_TYPE(N, M, WT, RT) ({ \
+  WT n = (WT)(N); \
+  WT m = (WT)(M); \
+  (RT)(n > m ? n - m : m - n); \
+})
+
+#define DO_ABD(N, M) \
+  (sizeof(N) == 1 ? DO_ABD_WITH_TYPE(N, M, int16_t, uint8_t) : \
+   sizeof(N) == 2 ? DO_ABD_WITH_TYPE(N, M, int32_t, uint16_t) : \
+   sizeof(N) == 4 ? DO_ABD_WITH_TYPE(N, M, int64_t, uint32_t) : \
+                    DO_ABD_WITH_TYPE(N, M, int128_t, uint64_t))
+
+#define DO_ABDU(N, M)  ((N) > (M) ? (N) - (M) : (M) - (N))
 
 #define ZVT_LDST_BASE \
   require_extension(EXT_ZVTBASE); \
