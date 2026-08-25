@@ -141,7 +141,7 @@ do { \
 #define WRITE_FRD_F(value) \
 do { \
   if (p->extension_enabled(EXT_ZFINX)) \
-    WRITE_REG(insn.rd(), sext_xlen((int32_t)((value).v))); \
+    WRITE_REG(insn.rd(), sext32((value).v)); \
   else { \
     WRITE_FRD(value); \
   } \
