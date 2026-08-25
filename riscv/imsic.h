@@ -47,8 +47,8 @@ class imsic_file_t {
   void pendei (reg_t intr) const;
   void update_mip () const;
   bool delivery() const { return eidelivery->read(); }
-  csr_t_p get_reg(reg_t reg) { return csrmap.count(reg) ? csrmap[reg] : nullptr; }
-  csrmap_t csrmap;
+  csr_t_p get_reg(reg_t reg) { return regmap.count(reg) ? regmap[reg] : nullptr; }
+  csrmap_t regmap;
 
  private:
   processor_t* const proc;
@@ -67,10 +67,11 @@ struct imsic_t {
   imsic_file_t_p s;
   std::map<reg_t, imsic_file_t_p> vs;
   imsic_t(processor_t *proc, unsigned geilen);
+  csrmap_t_p register_iprio(processor_t *proc, const reg_t type);
   bool vgein_valid(unsigned vgein) const { return vs.count(vgein); }
   csr_t_p get_vs_reg(unsigned vgein, reg_t reg) { return vs.count(vgein) ? vs[vgein]->get_reg(reg) : nullptr; }
-  csrmap_t_p get_vs_csrmap(reg_t vgein) {
-    return vs.count(vgein) ? &vs[vgein]->csrmap : nullptr;
+  csrmap_t_p get_vs_regmap(reg_t vgein) {
+    return vs.count(vgein) ? &vs[vgein]->regmap : nullptr;
   }
 };
 typedef std::shared_ptr<imsic_t> imsic_t_p;

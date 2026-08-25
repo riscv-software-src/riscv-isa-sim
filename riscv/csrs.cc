@@ -2462,43 +2462,13 @@ bool hgeie_csr_t::unlogged_write(const reg_t val) noexcept {
   return masked_csr_t::unlogged_write(val);
 }
 
-aia_ireg_proxy_csr_t::aia_ireg_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p iselect) : csr_t(proc, addr), iselect(iselect), vs(false), csrmap(nullptr) {
-  auto xlen = proc->get_xlen();
+aia_ireg_proxy_csr_t::aia_ireg_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p iselect) : csr_t(proc, addr), iselect(iselect), vs(false), ireg_map(nullptr) {
   switch (address) {
-    case CSR_MIREG:
-    {
-      csrmap = &proc->imsic->m->csrmap;
-      // IMSIC registers are defined to be 32-bit and odd ones drop out when xlen is 64
-      const unsigned num_iprio_regs = (MISELECT_IPRIO_TOP - MISELECT_IPRIO + 1) / 2;
-      for (size_t i = 0; i < num_iprio_regs; i++) {
-        auto iprio = std::make_shared<const_csr_t>(proc, MISELECT_IPRIO + i * 2, 0);
-        if (xlen == 64) {
-          (*csrmap)[MISELECT_IPRIO + i * 2] = iprio;
-        } else {
-          (*csrmap)[MISELECT_IPRIO + i * 2] = std::make_shared<rv32_low_csr_t>(proc, MISELECT_IPRIO + i * 2, iprio);
-          (*csrmap)[MISELECT_IPRIO + i * 2 + 1] = std::make_shared<rv32_high_csr_t>(proc, MISELECT_IPRIO + i * 2 + 1, iprio);
-        }
-      }
+    case CSR_MIREG: case CSR_SIREG:
+      ireg_map = proc->imsic->register_iprio(proc, address);
       break;
-    }
-    case CSR_SIREG:
-    {
-      csrmap = &proc->imsic->s->csrmap;
-      // IMSIC registers are defined to be 32-bit and odd ones drop out when xlen is 64
-      const unsigned num_iprio_regs = (SISELECT_IPRIO_TOP - SISELECT_IPRIO + 1) / 2;
-      for (size_t i = 0; i < num_iprio_regs; i++) {
-        auto iprio = std::make_shared<const_csr_t>(proc, SISELECT_IPRIO + i * 2, 0);
-        if (xlen == 64) {
-          (*csrmap)[SISELECT_IPRIO + i * 2] = iprio;
-        } else {
-          (*csrmap)[SISELECT_IPRIO + i * 2] = std::make_shared<rv32_low_csr_t>(proc, SISELECT_IPRIO + i * 2, iprio);
-          (*csrmap)[SISELECT_IPRIO + i * 2 + 1] = std::make_shared<rv32_high_csr_t>(proc, SISELECT_IPRIO + i * 2 + 1, iprio);
-        }
-      }
-      break;
-    }
     case CSR_VSIREG:
-      // Virtualized ireg (vsireg) does not have a csrmap ecause it changes based on hstatus.vgein
+      // Virtualized ireg (vsireg) does not have a ireg_map because it changes based on hstatus.vgein
       vs = true;
       break;
     default:
@@ -2515,7 +2485,7 @@ csr_t_p aia_ireg_proxy_csr_t::get_reg() const noexcept {
     return vgein ? proc->imsic->get_vs_reg(vgein, reg) : nullptr;
   }
   // !vsireg
-  return csrmap->count(reg) ? (*csrmap)[reg] : nullptr;
+  return ireg_map->count(reg) ? (*ireg_map)[reg] : nullptr;
 }
 
 reg_t aia_ireg_proxy_csr_t::read() const noexcept {
@@ -2563,10 +2533,10 @@ bool aia_ireg_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
   return true;
 }
 
-csrmap_t_p aia_ireg_proxy_csr_t::get_csrmap(reg_t vgein) {
+csrmap_t_p aia_ireg_proxy_csr_t::get_regmap(reg_t vgein) {
   if (!vs)
-    return csrmap;
-  return proc->imsic->get_vs_csrmap(vgein ? vgein : get_field(state->hstatus->read(), HSTATUS_VGEIN));
+    return ireg_map;
+  return proc->imsic->get_vs_regmap(vgein ? vgein : get_field(state->hstatus->read(), HSTATUS_VGEIN));
 }
 
 topei_csr_t::topei_csr_t(processor_t* const proc, const reg_t addr, imsic_file_t_p const imsic) : csr_t(proc, addr), imsic(imsic) {

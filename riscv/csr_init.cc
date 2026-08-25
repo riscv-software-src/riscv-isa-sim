@@ -447,7 +447,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
       // *ireg needs to be a proxy of *iselect and a CSR map keyed by the value in *iselect
       // If address not in CSR map, throw illegal or virtual instruction trap
       auto aia_mireg = std::make_shared<aia_ireg_proxy_csr_t>(proc, CSR_MIREG, miselect);
-      for (auto &csr : *aia_mireg->get_csrmap())
+      for (auto &csr : *aia_mireg->get_regmap())
         mireg[0]->add_ireg_proxy(csr.first, aia_mireg);
       add_ireg_proxy(mireg[0], aia_mireg);
     }
@@ -546,7 +546,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     if (proc->extension_enabled_const(EXT_SSAIA)) {
       auto aia_vsireg = std::make_shared<aia_ireg_proxy_csr_t>(proc, CSR_VSIREG, vsiselect);
       // csrmaps of vs files are the same as vgein = 1
-      auto *csrmap = aia_vsireg->get_csrmap(1);
+      auto *csrmap = aia_vsireg->get_regmap(1);
       if (csrmap) {
         for (auto &csr : *csrmap)
           vsireg[0]->add_ireg_proxy(csr.first, aia_vsireg);
@@ -554,7 +554,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
       }
 
       auto aia_sireg = std::make_shared<aia_ireg_proxy_csr_t>(proc, CSR_SIREG, siselect);
-      for (auto &csr : *aia_sireg->get_csrmap())
+      for (auto &csr : *aia_sireg->get_regmap())
         sireg->add_ireg_proxy(csr.first, aia_sireg);
       add_ireg_proxy(sireg, aia_sireg);
     }

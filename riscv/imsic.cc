@@ -22,8 +22,8 @@ class imsic_csr_t : public masked_csr_t {
 
 imsic_file_t::imsic_file_t(processor_t* const proc, reg_t mip_mask, size_t num_regs, bool v, reg_t vgein) : proc(proc), state(proc->get_state()), mip_mask(mip_mask), v(v), vgein(vgein) {
   auto xlen = proc->get_isa().get_max_xlen();
-  csrmap[IMSIC_EIDELIVERY] = eidelivery = std::make_shared<imsic_csr_t>(proc, IMSIC_EIDELIVERY, this, 1, 0);
-  csrmap[IMSIC_EITHRESHOLD] = eithreshold = std::make_shared<imsic_csr_t>(proc, IMSIC_EITHRESHOLD, this);
+  regmap[IMSIC_EIDELIVERY] = eidelivery = std::make_shared<imsic_csr_t>(proc, IMSIC_EIDELIVERY, this, 1, 0);
+  regmap[IMSIC_EITHRESHOLD] = eithreshold = std::make_shared<imsic_csr_t>(proc, IMSIC_EITHRESHOLD, this);
   for (size_t i = 0; i < IMSIC_NUM_EI_REGS; i++) {
     if (i < num_regs) {
       // 1st bits of eip/eie are hard-wired to 0
@@ -36,13 +36,13 @@ imsic_file_t::imsic_file_t(processor_t* const proc, reg_t mip_mask, size_t num_r
       eie.emplace_back(std::make_shared<const_csr_t>(proc, IMSIC_EIP(i * 2), 0));
     }
     if (xlen == 32) {
-      csrmap[IMSIC_EIP(i * 2)] = std::make_shared<rv32_low_csr_t>(proc, IMSIC_EIP(i * 2), eip[i]);
-      csrmap[IMSIC_EIP(i * 2 + 1)] = std::make_shared<rv32_high_csr_t>(proc, IMSIC_EIP(i * 2 + 1), eip[i]);
-      csrmap[IMSIC_EIE(i * 2)] = std::make_shared<rv32_low_csr_t>(proc, IMSIC_EIE(i * 2), eie[i]);
-      csrmap[IMSIC_EIE(i * 2 + 1)] = std::make_shared<rv32_high_csr_t>(proc, IMSIC_EIE(i * 2 + 1), eie[i]);
+      regmap[IMSIC_EIP(i * 2)] = std::make_shared<rv32_low_csr_t>(proc, IMSIC_EIP(i * 2), eip[i]);
+      regmap[IMSIC_EIP(i * 2 + 1)] = std::make_shared<rv32_high_csr_t>(proc, IMSIC_EIP(i * 2 + 1), eip[i]);
+      regmap[IMSIC_EIE(i * 2)] = std::make_shared<rv32_low_csr_t>(proc, IMSIC_EIE(i * 2), eie[i]);
+      regmap[IMSIC_EIE(i * 2 + 1)] = std::make_shared<rv32_high_csr_t>(proc, IMSIC_EIE(i * 2 + 1), eie[i]);
     } else {
-      csrmap[IMSIC_EIP(i * 2)] = eip[i];
-      csrmap[IMSIC_EIE(i * 2)] = eie[i];
+      regmap[IMSIC_EIP(i * 2)] = eip[i];
+      regmap[IMSIC_EIE(i * 2)] = eie[i];
     }
   }
 }
@@ -126,6 +126,27 @@ imsic_t::imsic_t(processor_t *proc, unsigned geilen) {
       vs[j] = std::make_shared<imsic_file_t>(proc, MIP_VSEIP, IMSIC_VS_FILE_REGS, true, j);
     }
   }
+}
+
+csrmap_t_p imsic_t::register_iprio(processor_t *proc, const reg_t type)
+{
+  auto xlen = proc->get_xlen();
+  csrmap_t_p regmap = (type == CSR_MIREG)? &m->regmap : &s->regmap;
+  auto iprio_base = (type == CSR_MIREG)? MISELECT_IPRIO : SISELECT_IPRIO;
+  auto iprio_top = (type == CSR_MIREG)? MISELECT_IPRIO_TOP : SISELECT_IPRIO_TOP;
+
+  const unsigned num_iprio_regs = (iprio_top - iprio_base + 1) / 2;
+  for (size_t i = 0; i < num_iprio_regs; i++) {
+    auto iprio = std::make_shared<const_csr_t>(proc, iprio_base + i * 2, 0);
+    if (xlen == 64) {
+      (*regmap)[iprio_base + i * 2] = iprio;
+    } else {
+      (*regmap)[iprio_base + i * 2] = std::make_shared<rv32_low_csr_t>(proc, iprio_base + i * 2, iprio);
+      (*regmap)[iprio_base + i * 2 + 1] = std::make_shared<rv32_high_csr_t>(proc, iprio_base + i * 2 + 1, iprio);
+    }
+  }
+
+  return regmap;
 }
 
 std::string imsic_mmio_generate_dts(const sim_t* sim, const std::vector<std::string>& sargs UNUSED)

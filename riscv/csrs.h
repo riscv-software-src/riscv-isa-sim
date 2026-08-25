@@ -1068,14 +1068,14 @@ class aia_ireg_proxy_csr_t: public csr_t {
   aia_ireg_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p iselect);
   virtual reg_t read() const noexcept override;
   virtual void verify_permissions(insn_t insn, bool write) const override;
-  csrmap_t_p get_csrmap(reg_t vgein = 0);
+  csrmap_t_p get_regmap(reg_t vgein = 0);
  protected:
   virtual bool unlogged_write(const reg_t val) noexcept override;
  private:
   csr_t_p get_reg() const noexcept;
   csr_t_p iselect;
   bool vs;
-  csrmap_t_p csrmap;
+  csrmap_t_p ireg_map;
 };
 typedef std::shared_ptr<aia_ireg_proxy_csr_t> aia_ireg_proxy_csr_t_p;
 
