@@ -144,9 +144,8 @@ public:
 
   template<typename T>
   T load_strict(reg_t addr) {
-    if ((addr & (sizeof(T) - 1)) != 0)
-      throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
-    return load<T>(addr);
+    bool misaligned = addr % sizeof(T);
+    return load<T>(addr, {.require_alignment=misaligned});
   }
 
   template<typename T>
@@ -177,9 +176,8 @@ public:
 
   template<typename T>
   void store_strict(reg_t addr, T val) {
-    if ((addr & (sizeof(T) - 1)) != 0)
-      throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
-    store<T>(addr, val);
+    bool misaligned = addr % sizeof(T);
+    store<T>(addr, val, {.require_alignment=misaligned});
   }
 
   // AMO/Zicbom faults should be reported as store faults
