@@ -142,6 +142,13 @@ public:
   }
 
   template<typename T>
+  T load_strict(reg_t addr) {
+    if ((addr & (sizeof(T) - 1)) != 0)
+      throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+    return load<T>(addr);
+  }
+
+  template<typename T>
   void ALWAYS_INLINE store(reg_t addr, T val, xlate_flags_t xlate_flags = {}) {
     MMU_OBSERVE_STORE(addr, val, sizeof(T));
     bool aligned = (addr & (sizeof(T) - 1)) == 0;
@@ -166,6 +173,13 @@ public:
     if ((addr & (sizeof(T) - 1)) != 0)
       throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
     store<T>(addr, val, {.ss_access=true});
+  }
+
+  template<typename T>
+  void store_strict(reg_t addr, T val) {
+    if ((addr & (sizeof(T) - 1)) != 0)
+      throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
+    store<T>(addr, val);
   }
 
   // AMO/Zicbom faults should be reported as store faults
