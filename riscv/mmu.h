@@ -71,9 +71,10 @@ struct xlate_flags_t {
   const bool lr : 1 {false};
   const bool ss_access : 1 {false};
   const bool clean_inval : 1 {false};
+  const bool access_fault : 1 {false};
 
   bool is_special_access() const {
-    return forced_virt || hlvx || lr || ss_access || clean_inval;
+    return forced_virt || hlvx || lr || ss_access || clean_inval || access_fault;
   }
 };
 
@@ -136,9 +137,8 @@ public:
   // shadow stack load
   template<typename T>
   T ss_load(reg_t addr) {
-    if ((addr & (sizeof(T) - 1)) != 0)
-      throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
-    return load<T>(addr, {.ss_access=true});
+    bool misaligned = addr % sizeof(T);
+    return load<T>(addr, {.ss_access=true, .access_fault=misaligned});
   }
 
   template<typename T>
@@ -170,9 +170,8 @@ public:
   // shadow stack store
   template<typename T>
   void ss_store(reg_t addr, T val) {
-    if ((addr & (sizeof(T) - 1)) != 0)
-      throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
-    store<T>(addr, val, {.ss_access=true});
+    bool misaligned = addr % sizeof(T);
+    store<T>(addr, val, {.ss_access=true, .access_fault=misaligned});
   }
 
   template<typename T>
@@ -219,7 +218,8 @@ public:
   template<typename T>
   T ssamoswap(reg_t addr, reg_t value) {
     convert_load_traps_to_store_traps({
-      store_slow_path(addr, sizeof(T), nullptr, {.ss_access=true}, false, true);
+      bool misaligned = addr % sizeof(T);
+      store_slow_path(addr, sizeof(T), nullptr, {.ss_access=true, .access_fault=misaligned}, false, false);
       auto data = load<T>(addr, {.ss_access=true});
       store<T>(addr, value, {.ss_access=true});
       return data;
