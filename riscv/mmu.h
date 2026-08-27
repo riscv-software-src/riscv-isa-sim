@@ -143,7 +143,7 @@ public:
   }
 
   template<typename T>
-  T load_strict(reg_t addr) {
+  T load_acquire(reg_t addr) {
     bool misaligned = addr % sizeof(T);
     return load<T>(addr, {.require_alignment=misaligned});
   }
@@ -175,7 +175,7 @@ public:
   }
 
   template<typename T>
-  void store_strict(reg_t addr, T val) {
+  void store_release(reg_t addr, T val) {
     bool misaligned = addr % sizeof(T);
     store<T>(addr, val, {.require_alignment=misaligned});
   }
