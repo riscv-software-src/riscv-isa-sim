@@ -144,8 +144,7 @@ public:
 
   template<typename T>
   T load_acquire(reg_t addr) {
-    bool misaligned = addr % sizeof(T);
-    return load<T>(addr, {.require_alignment=misaligned});
+    return load<T>(addr, {.require_alignment=enforce_amo_alignment(addr, sizeof(T))});
   }
 
   template<typename T>
@@ -176,8 +175,7 @@ public:
 
   template<typename T>
   void store_release(reg_t addr, T val) {
-    bool misaligned = addr % sizeof(T);
-    store<T>(addr, val, {.require_alignment=misaligned});
+    store<T>(addr, val, {.require_alignment=enforce_amo_alignment(addr, sizeof(T))});
   }
 
   // AMO/Zicbom faults should be reported as store faults
