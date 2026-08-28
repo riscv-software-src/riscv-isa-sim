@@ -284,20 +284,22 @@ void mmu_t::load_slow_path(reg_t original_addr, std::size_t len,
     check_triggers(triggers::OPERATION_LOAD,
       transformed_addr, access_info.effective_virt, len);
 
+  if (access_info.flags.access_fault)
+    throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
+
   if ((transformed_addr & (len - 1)) == 0) {
     load_slow_path_intrapage(len, bytes, access_info);
   } else {
-    bool gva = access_info.effective_virt;
     if (!is_misaligned_enabled())
-      throw trap_load_address_misaligned(gva, transformed_addr, 0, 0);
+      throw trap_load_address_misaligned(access_info.effective_virt, transformed_addr, 0, 0);
 
-    if (access_info.flags.lr)
-      throw trap_load_access_fault(gva, transformed_addr, 0, 0);
+    if (access_info.flags.require_alignment)
+      throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
 
     reg_t len_page0 = std::min<reg_t>(len, PGSIZE - transformed_addr % PGSIZE);
     load_slow_path_intrapage(len_page0, bytes, access_info);
     if (len_page0 != len) {
-      auto tail_access_info = generate_access_info(original_addr + len_page0, LOAD, xlate_flags);
+      auto tail_access_info = generate_access_info(original_addr + len_page0, LOAD, access_info.flags);
       load_slow_path_intrapage(len - len_page0, bytes + len_page0, tail_access_info);
     }
   }
@@ -352,14 +354,14 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
 
 void mmu_t::store_slow_path(reg_t original_addr, std::size_t len,
     const std::uint8_t* bytes, xlate_flags_t xlate_flags,
-    bool actually_store, bool require_alignment)
+    bool actually_store)
 {
   if (likely(!xlate_flags.is_special_access())) {
     // Fast path for simple cases
     auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_store, original_addr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS);
     bool intrapage = (original_addr % PGSIZE) + len <= PGSIZE;
     bool aligned = (original_addr & (len - 1)) == 0;
-    bool misaligned_ok = !require_alignment && intrapage && is_misaligned_enabled();
+    bool misaligned_ok = intrapage && is_misaligned_enabled();
 
     if (likely(tlb_hit && (aligned || misaligned_ok))) {
       if (actually_store)
@@ -381,18 +383,20 @@ void mmu_t::store_slow_path(reg_t original_addr, std::size_t len,
     }
   }
 
-  if (transformed_addr & (len - 1)) {
-    bool gva = access_info.effective_virt;
-    if (!is_misaligned_enabled())
-      throw trap_store_address_misaligned(gva, transformed_addr, 0, 0);
+  if (access_info.flags.access_fault)
+    throw trap_store_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
 
-    if (require_alignment)
-      throw trap_store_access_fault(gva, transformed_addr, 0, 0);
+  if (transformed_addr & (len - 1)) {
+    if (!is_misaligned_enabled())
+      throw trap_store_address_misaligned(access_info.effective_virt, transformed_addr, 0, 0);
+
+    if (access_info.flags.require_alignment)
+      throw trap_store_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
 
     reg_t len_page0 = std::min<reg_t>(len, PGSIZE - transformed_addr % PGSIZE);
     store_slow_path_intrapage(len_page0, bytes, access_info, actually_store);
     if (len_page0 != len) {
-      auto tail_access_info = generate_access_info(original_addr + len_page0, STORE, xlate_flags);
+      auto tail_access_info = generate_access_info(original_addr + len_page0, STORE, access_info.flags);
       store_slow_path_intrapage(len - len_page0, bytes + len_page0, tail_access_info, actually_store);
     }
   } else {

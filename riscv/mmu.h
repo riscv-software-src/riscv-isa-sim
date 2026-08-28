@@ -71,9 +71,11 @@ struct xlate_flags_t {
   const bool lr : 1 {false};
   const bool ss_access : 1 {false};
   const bool clean_inval : 1 {false};
+  const bool access_fault : 1 {false};
+  const bool require_alignment : 1 {false};
 
   bool is_special_access() const {
-    return forced_virt || hlvx || lr || ss_access || clean_inval;
+    return forced_virt || hlvx || lr || ss_access || clean_inval || access_fault || require_alignment;
   }
 };
 
@@ -120,7 +122,7 @@ public:
 
   template<typename T>
   T load_reserved(reg_t addr) {
-    return load<T>(addr, {.lr = true});
+    return load<T>(addr, {.lr=true, .require_alignment=true});
   }
 
   template<typename T>
@@ -136,16 +138,13 @@ public:
   // shadow stack load
   template<typename T>
   T ss_load(reg_t addr) {
-    if ((addr & (sizeof(T) - 1)) != 0)
-      throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
-    return load<T>(addr, {.ss_access=true});
+    bool misaligned = addr % sizeof(T);
+    return load<T>(addr, {.ss_access=true, .access_fault=misaligned});
   }
 
   template<typename T>
-  T load_strict(reg_t addr) {
-    if ((addr & (sizeof(T) - 1)) != 0)
-      throw trap_load_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
-    return load<T>(addr);
+  T load_acquire(reg_t addr) {
+    return load<T>(addr, {.require_alignment=enforce_amo_alignment(addr, sizeof(T))});
   }
 
   template<typename T>
@@ -158,7 +157,7 @@ public:
       *(target_endian<T>*)host_addr = to_target(val);
     } else {
       target_endian<T> target_val = to_target(val);
-      store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true, false);
+      store_slow_path(addr, sizeof(T), (const uint8_t*)&target_val, xlate_flags, true);
     }
   }
 
@@ -170,16 +169,13 @@ public:
   // shadow stack store
   template<typename T>
   void ss_store(reg_t addr, T val) {
-    if ((addr & (sizeof(T) - 1)) != 0)
-      throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
-    store<T>(addr, val, {.ss_access=true});
+    bool misaligned = addr % sizeof(T);
+    store<T>(addr, val, {.ss_access=true, .access_fault=misaligned});
   }
 
   template<typename T>
-  void store_strict(reg_t addr, T val) {
-    if ((addr & (sizeof(T) - 1)) != 0)
-      throw trap_store_access_fault((proc) ? proc->state.v : false, addr, 0, 0);
-    store<T>(addr, val);
+  void store_release(reg_t addr, T val) {
+    store<T>(addr, val, {.require_alignment=enforce_amo_alignment(addr, sizeof(T))});
   }
 
   // AMO/Zicbom faults should be reported as store faults
@@ -201,14 +197,14 @@ public:
     if (proc->extension_enabled(EXT_ZAMA16B))
       return (addr / 16) != ((addr + size - 1) / 16);
 
-    return true;
+    return addr & (size - 1);
   }
 
   // template for functions that perform an atomic memory operation
   template<typename T, typename op>
   T amo(reg_t addr, op f) {
     convert_load_traps_to_store_traps({
-      store_slow_path(addr, sizeof(T), nullptr, {}, false, enforce_amo_alignment(addr, sizeof(T)));
+      store_slow_path(addr, sizeof(T), nullptr, {.require_alignment=enforce_amo_alignment(addr, sizeof(T))}, false);
       auto lhs = load<T>(addr);
       store<T>(addr, f(lhs));
       return lhs;
@@ -219,7 +215,8 @@ public:
   template<typename T>
   T ssamoswap(reg_t addr, reg_t value) {
     convert_load_traps_to_store_traps({
-      store_slow_path(addr, sizeof(T), nullptr, {.ss_access=true}, false, true);
+      bool misaligned = addr % sizeof(T);
+      store_slow_path(addr, sizeof(T), nullptr, {.ss_access=true, .access_fault=misaligned}, false);
       auto data = load<T>(addr, {.ss_access=true});
       store<T>(addr, value, {.ss_access=true});
       return data;
@@ -229,7 +226,7 @@ public:
   template<typename T>
   T amo_compare_and_swap(reg_t addr, T comp, T swap) {
     convert_load_traps_to_store_traps({
-      store_slow_path(addr, sizeof(T), nullptr, {}, false, enforce_amo_alignment(addr, sizeof(T)));
+      store_slow_path(addr, sizeof(T), nullptr, {.require_alignment=enforce_amo_alignment(addr, sizeof(T))}, false);
       auto lhs = load<T>(addr);
       if (lhs == comp)
         store<T>(addr, swap);
@@ -278,7 +275,7 @@ public:
   {
     if (vaddr & (size-1)) {
       // Raise either access fault or misaligned exception
-      store_slow_path(vaddr, size, nullptr, {}, false, true);
+      store_slow_path(vaddr, size, nullptr, {.require_alignment=true}, false);
     }
 
     auto [tlb_hit, _, paddr] = access_tlb(tlb_store, vaddr);
@@ -449,7 +446,7 @@ private:
   void perform_intrapage_load(reg_t vaddr, uintptr_t host_addr, reg_t paddr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
 
   void store_slow_path(reg_t original_addr, std::size_t len, const std::uint8_t* bytes,
-    xlate_flags_t xlate_flags, bool actually_store, bool require_alignment);
+    xlate_flags_t xlate_flags, bool actually_store);
   void store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_access_info_t access_info, bool actually_store);
   void perform_intrapage_store(reg_t vaddr, uintptr_t host_addr, reg_t paddr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags);
 
