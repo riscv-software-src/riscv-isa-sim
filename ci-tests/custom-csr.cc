@@ -68,7 +68,8 @@ int main(int argc, char **argv) {
                                      .support_abstract_csr_access = true,
                                      .support_abstract_fpr_access = true,
                                      .support_haltgroups = true,
-                                     .support_impebreak = true};
+                                     .support_impebreak = true,
+                                     .debug_start = 0x0};
   std::vector<std::pair<reg_t, abstract_mem_t *>> mems =
       make_mems(cfg.mem_layout);
   bool dtb_discovery=false;
