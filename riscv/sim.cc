@@ -73,8 +73,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 
   sout_.rdbuf(std::cerr.rdbuf()); // debug output goes to stderr by default
 
-  bus.add_device(DEBUG_START, &debug_module);
-
   socketif = NULL;
 #ifdef HAVE_BOOST_ASIO
   if (socket_enabled) {
