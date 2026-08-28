@@ -388,7 +388,7 @@ void processor_t::enter_debug_mode(uint8_t cause, uint8_t extcause)
   state.elp = elp_t::NO_LP_EXPECTED;
   set_privilege(PRV_M, false);
   state.dpc->write(state.pc);
-  state.pc = DEBUG_ROM_ENTRY;
+  state.pc = sim->get_debug_module_base() + DEBUG_ROM_ENTRY;
   clear_waiting_for_interrupt();
 }
 
@@ -420,9 +420,9 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
 
   if (state.debug_mode) {
     if (t.cause() == CAUSE_BREAKPOINT) {
-      state.pc = DEBUG_ROM_ENTRY;
+      state.pc = sim->get_debug_module_base() + DEBUG_ROM_ENTRY;
     } else {
-      state.pc = DEBUG_ROM_TVEC;
+      state.pc = sim->get_debug_module_base() + DEBUG_ROM_TVEC;
     }
     return;
   }

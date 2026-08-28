@@ -67,6 +67,7 @@ public:
   }
   virtual const cfg_t &get_cfg() const override { return *cfg; }
   virtual bool is_debug_module_access(reg_t paddr, size_t len) override;
+  virtual reg_t get_debug_module_base() const override { return debug_module.get_base(); }
 
   virtual const std::map<size_t, processor_t*>& get_harts() const override { return harts; }
   const bus_t& get_bus() const {  return bus;}

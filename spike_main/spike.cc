@@ -72,6 +72,7 @@ static void help(int exit_code = 1)
           DEFAULT_KERNEL_BOOTARGS);
   fprintf(stderr, "  --real-time-clint     Increment clint time at real-time rate\n");
   fprintf(stderr, "  --triggers=<n>        Number of supported triggers [default 4]\n");
+  fprintf(stderr, "  --dm-base=<addr>      Base address of the debug module\n");
   fprintf(stderr, "  --dm-progsize=<words> Progsize for the debug module [default 2]\n");
   fprintf(stderr, "  --dm-datacount=<n>    Number of data registers available for the debug module [default 2]\n");
   fprintf(stderr, "  --dm-sba=<bits>       Debug system bus access supports up to "
@@ -434,6 +435,8 @@ int main(int argc, char** argv)
       exit(-1);
     }
   });
+  parser.option(0, "dm-base", 1,
+      [&](const char* s){dm_config.debug_start = strtoull(s, 0, 0);});
   parser.option(0, "dm-progsize", 1,
       [&](const char* s){dm_config.progbufsize = atoul_safe(s);});
   parser.option(0, "dm-datacount", 1,
