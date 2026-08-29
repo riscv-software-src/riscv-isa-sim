@@ -7,7 +7,13 @@ reg_t prev_virt = get_field(s, MNSTATUS_MNPV);
 if (prev_prv != PRV_M) {
   reg_t mstatus = STATE.mstatus->read();
   mstatus = set_field(mstatus, MSTATUS_MPRV, 0);
+  mstatus = set_field(mstatus, MSTATUS_MDT, 0);
+  if (prev_prv == PRV_U || prev_virt)
+    mstatus = set_field(mstatus, MSTATUS_SDT, 0);
+  if (prev_virt && prev_prv == PRV_U)
+    STATE.vsstatus->write(STATE.vsstatus->read() & ~SSTATUS_SDT);
   STATE.mstatus->write(mstatus);
+  if (STATE.mstatush) STATE.mstatush->write(mstatus >> 32);
 }
 s = set_field(s, MNSTATUS_NMIE, 1);
 if (ZICFILP_xLPE(prev_virt, prev_prv)) {

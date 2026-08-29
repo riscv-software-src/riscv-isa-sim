@@ -50,6 +50,7 @@ g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o /dev/
 time $INSTALL/bin/spike --isa=rv64gc $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 time $INSTALL/bin/spike --isa=rv64gcv $BUILD/pk/pk vector-sum | grep "The sum of the first 1000 positive integers is 500500."
 $INSTALL/bin/spike --log-commits --isa=rv64gc $BUILD/pk/pk atomics 2> /dev/null | grep "First atomic counter is 1000, second is 100"
+bash $CI/test-mnret-double-trap $INSTALL/bin/spike $RUN/mnret-double-trap
 LD_LIBRARY_PATH=$INSTALL/lib ./test-libriscv $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 LD_LIBRARY_PATH=$INSTALL/lib ./test-customext $BUILD/pk/pk dummy-slliuw | grep "Executed successfully"
 LD_LIBRARY_PATH=$INSTALL/lib ./test-custom-csr $BUILD/pk/pk customcsr | grep "Executed successfully"
