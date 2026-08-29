@@ -38,6 +38,11 @@ class csr_t {
   // checking needed or allowed. Side effects not allowed.
   virtual reg_t read() const noexcept = 0;
 
+  // Value used as the old value in a CSR read-modify-write operation.
+  // Most CSRs use their ordinary read value, but a CSR with an externally
+  // driven read value can override this to exclude that external input.
+  virtual reg_t read_for_write() const noexcept { return read(); }
+
   // write() updates the architectural value of this CSR. No
   // permission checking needed or allowed.
   // Child classes must implement unlogged_write()
@@ -389,6 +394,7 @@ class mip_csr_t: public mip_or_mie_csr_t {
  public:
   mip_csr_t(processor_t* const proc, const reg_t addr);
   virtual reg_t read() const noexcept override final;
+  virtual reg_t read_for_write() const noexcept override final;
 
   void write_with_mask(const reg_t mask, const reg_t val) noexcept override;
 
