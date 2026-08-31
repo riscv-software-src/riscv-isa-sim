@@ -216,9 +216,7 @@ bool mcontrol_common_t::simple_match(unsigned xlen, reg_t value) const {
     case MATCH_NAPOT:
       {
         const unsigned trailing_ones = cto(tdata2) + 1;
-        reg_t mask = 0;
-        if (trailing_ones < xlen)
-          mask = ~((reg_t(1) << trailing_ones) - 1);
+        reg_t mask = trailing_ones < xlen ? ~((reg_t(1) << trailing_ones) - 1) : 0;
         return (value & mask) == (tdata2 & mask);
       }
     case MATCH_GE:
