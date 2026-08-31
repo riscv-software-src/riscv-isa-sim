@@ -954,6 +954,7 @@ void debug_module_t::handle_memory_write(size_t xlen, unsigned aamsize, unsigned
   write32(debug_abstract, offset++, sx[aamsize](S0, S1, 0));
 
   write32(debug_abstract, offset++, lx[idx(xlen)](S0, ZERO, arg(xlen, 1))); // Restore S0
+  write32(debug_abstract, offset++, sx[idx(xlen)](S1, ZERO, arg(xlen, 1))); // Restore Arg1
 }
 
 void debug_module_t::handle_post_increment(size_t xlen, unsigned aamsize, unsigned &offset)
