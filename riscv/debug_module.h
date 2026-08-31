@@ -183,7 +183,7 @@ class debug_module_t : public abstract_device_t
 
     unsigned sb_access_bits();
 
-    uint8_t *get_dmdata_checked(size_t required_size);
+    uint8_t *get_dmdata_checked(size_t required_registers);
 
     dmcontrol_t dmcontrol;
     dmstatus_t dmstatus;

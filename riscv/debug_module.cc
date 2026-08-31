@@ -320,11 +320,12 @@ unsigned debug_module_t::sb_access_bits()
   return 8 << sbcs.sbaccess;
 }
 
-uint8_t *debug_module_t::get_dmdata_checked(size_t required_size)
+uint8_t *debug_module_t::get_dmdata_checked(size_t required_registers)
 {
-  if(dmdata.size() < required_size) {
-    fprintf(stderr, "dmdata size (%ld) less then required (%ld)\n",
-            dmdata.size(), required_size);
+  const size_t register_count = dmdata.size() / dmdata_reg_size;
+  if (register_count < required_registers) {
+    fprintf(stderr, "dmdata register count (%zu) less than required (%zu)\n",
+            register_count, required_registers);
     exit(1);
   }
   return dmdata.data();
@@ -1002,7 +1003,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
   if (address >= DM_DATA0 && address < DM_DATA0 + abstractcs.datacount) {
     unsigned i = address - DM_DATA0;
     if (!abstractcs.busy)
-      write32(get_dmdata_checked(address - DM_DATA0), address - DM_DATA0, value);
+      write32(get_dmdata_checked(i + 1), i, value);
 
     if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
       abstractcs.cmderr = CMDERR_BUSY;
