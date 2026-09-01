@@ -17,8 +17,8 @@
 #include <cstdlib>
 #include <iostream>
 #include <iomanip>
-#include <assert.h>
-#include <limits.h>
+#include <cassert>
+#include <climits>
 #include <stdexcept>
 #include <string>
 #include <algorithm>

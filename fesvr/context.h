@@ -10,7 +10,7 @@
 # define USE_UCONTEXT
 # include <ucontext.h>
 # include <memory>
-#include <limits.h>
+#include <climits>
 
 #if (ULONG_MAX > UINT_MAX) // 64-bit systems only
 #if (100*GLIB_MAJOR_VERSION+GLIB_MINOR_VERSION < 208)

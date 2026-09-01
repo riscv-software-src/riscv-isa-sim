@@ -9,11 +9,11 @@
 #include <sys/stat.h>
 #include <fcntl.h>
 #include <sys/mman.h>
-#include <assert.h>
+#include <cassert>
 #include <unistd.h>
 #include <stdexcept>
-#include <stdlib.h>
-#include <stdio.h>
+#include <cstdlib>
+#include <cstdio>
 #include <vector>
 #include <map>
 #include <cerrno>

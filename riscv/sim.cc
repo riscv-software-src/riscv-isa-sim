@@ -17,7 +17,7 @@
 #include <climits>
 #include <cstdlib>
 #include <cassert>
-#include <signal.h>
+#include <csignal>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/types.h>

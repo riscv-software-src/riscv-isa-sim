@@ -8,7 +8,7 @@
 #include <semaphore.h>
 #include <vector>
 #include <string>
-#include <stdlib.h>
+#include <cstdlib>
 
 // abstract debug transport module
 class dtm_t : public htif_t

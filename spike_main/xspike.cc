@@ -6,7 +6,7 @@
 #include "common.h"
 #include <unistd.h>
 #include <fcntl.h>
-#include <signal.h>
+#include <csignal>
 #include <sys/wait.h>
 #include <cstdio>
 #include <climits>

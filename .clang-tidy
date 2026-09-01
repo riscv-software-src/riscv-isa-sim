@@ -1,0 +1,5 @@
+Checks: 'modernize-deprecated-headers'
+WarningsAsErrors: 'modernize-deprecated-headers'
+
+HeaderFilterRegex: '.*'
+ExcludeHeaderFilterRegex: 'softfloat/.*'

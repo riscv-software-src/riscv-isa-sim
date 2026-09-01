@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <stdlib.h>
+#include <cstdlib>
 
 // virtual memory configuration
 #define PGSHIFT 12
