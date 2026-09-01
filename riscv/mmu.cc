@@ -552,7 +552,10 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
   if (!proc)
     return true;
 
-  for (size_t i = 0; i < proc->n_pmp; i++)
+  const size_t pmp_num = proc->extension_enabled_const(EXT_SSPMP)
+                           ? proc->state.max_pmp : proc->n_pmp;
+
+  for (size_t i = 0; i < pmp_num; i++)
     if (proc->state.pmpaddr[i]->subset_match(addr, len))
       return false;
 
