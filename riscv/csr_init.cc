@@ -321,6 +321,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   } else {
     add_csr(CSR_MSECCFG, mseccfg);
   }
+  add_const_ext_csr(EXT_SMMPT, CSR_MMPT, mmpt = std::make_shared<mmpt_csr_t>(proc, CSR_MMPT));
 
   for (int i = 0; i < max_pmp; ++i) {
     add_csr(CSR_PMPADDR0 + i, pmpaddr[i] = std::make_shared<pmpaddr_csr_t>(proc, CSR_PMPADDR0 + i, i));

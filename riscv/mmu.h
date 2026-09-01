@@ -17,6 +17,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
+#include <functional>
 #include <stdlib.h>
 
 // virtual memory configuration
@@ -87,6 +88,16 @@ struct mem_access_info_t {
   const xlate_flags_t flags;
   const access_type type;
 };
+
+enum class smmpt_status_t {
+  OFF,
+  PASS,
+  FAULT,
+};
+
+using smmpt43_mpte_loader_t = std::function<bool(reg_t, reg_t*)>;
+smmpt_status_t smmpt43_check(reg_t mmpt, reg_t paddr, reg_t len, access_type type,
+                             reg_t mode, const smmpt43_mpte_loader_t& load_mpte);
 
 [[noreturn]] void throw_access_exception(bool virt, reg_t addr, access_type type);
 [[noreturn]] void throw_page_fault_exception(bool virt, reg_t addr, access_type type);
@@ -381,6 +392,12 @@ public:
     return target_big_endian;
   }
 
+#ifdef RISCV_ENABLE_SMMPT_TEST_HOOKS
+  smmpt_status_t test_smmpt43_check(reg_t paddr, reg_t len, access_type type, reg_t mode) {
+    return smmpt_check(paddr, len, type, mode);
+  }
+#endif
+
   template<typename T> inline T from_target(target_endian<T> n) const
   {
     return target_big_endian? n.from_be() : n.from_le();
@@ -425,7 +442,7 @@ private:
   void flush_stlb_ppn(reg_t ppn);
 
   // finish translation on a TLB miss and update the TLB
-  tlb_entry_t refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type);
+  tlb_entry_t refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type, reg_t mode);
   const char* fill_from_mmio(reg_t vaddr, reg_t paddr);
 
   // perform a stage2 translation for a given guest address
@@ -577,6 +594,8 @@ private:
   std::optional<base_pmpaddr_csr_t*> pmp_lookup(reg_t addr, reg_t len, size_t start, size_t pmp_num);
   bool pmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode, bool hlvx);
   bool spmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode);
+  smmpt_status_t smmpt_check(reg_t addr, reg_t len, access_type type, reg_t mode);
+  bool smmpt43_load_mpte(reg_t mpte_paddr, reg_t* mpte);
 
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
   bool target_big_endian;

@@ -87,6 +87,8 @@ reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
   }
   if (!pmp_ok(paddr, len, access_info.flags.ss_access ? STORE : type, mode, access_info.flags.hlvx))
     throw_access_exception(virt, addr, access_info.flags.ss_access ? STORE : type);
+  if (smmpt_check(paddr, len, access_info.flags.ss_access ? STORE : type, mode) == smmpt_status_t::FAULT)
+    throw_access_exception(virt, addr, access_info.flags.ss_access ? STORE : type);
   return paddr;
 }
 
@@ -134,7 +136,7 @@ mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
       tlb_insn_reverse_tags.insert(paddr >> PGSHIFT);
     }
 
-    refill_tlb(vaddr, paddr, (char*)host_addr, FETCH);
+    refill_tlb(vaddr, paddr, (char*)host_addr, FETCH, access_info.effective_priv);
   }
 
   return perform_intrapage_fetch(vaddr, host_addr, paddr);
@@ -247,7 +249,7 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
     host_addr = (uintptr_t)sim->addr_to_mem(paddr);
 
     if (!special)
-      refill_tlb(vaddr, paddr, (char*)host_addr, LOAD);
+      refill_tlb(vaddr, paddr, (char*)host_addr, LOAD, access_info.effective_priv);
   }
 
   if (access_info.flags.lr && !sim->reservable(paddr)) {
@@ -345,7 +347,7 @@ void mmu_t::store_slow_path_intrapage(reg_t len, const uint8_t* bytes, mem_acces
     }
 
     if (!access_info.flags.is_special_access())
-      refill_tlb(vaddr, paddr, (char*)host_addr, STORE);
+      refill_tlb(vaddr, paddr, (char*)host_addr, STORE, access_info.effective_priv);
   }
 
   if (actually_store)
@@ -441,7 +443,7 @@ void mmu_t::flush_itlb_ppn(reg_t ppn)
     flush_icache();
 }
 
-tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type)
+tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_type type, reg_t mode)
 {
   reg_t idx = (vaddr >> PGSHIFT) % TLB_ENTRIES;
   reg_t expected_tag = vaddr >> PGSHIFT;
@@ -451,6 +453,7 @@ tlb_entry_t mmu_t::refill_tlb(reg_t vaddr, reg_t paddr, char* host_addr, access_
 
   if (in_mprv()
       || !pmp_homogeneous(base_paddr, PGSIZE)
+      || smmpt_check(base_paddr, PGSIZE, type, mode) != smmpt_status_t::OFF
       || (proc && proc->get_log_commits_enabled()))
     return entry;
 
@@ -541,6 +544,106 @@ bool mmu_t::spmp_ok(reg_t addr, reg_t len, access_type type, reg_t mode)
   if (auto pmp = pmp_lookup(addr, len, proc->n_pmp, proc->state.max_pmp - proc->n_pmp); pmp.has_value())
     return (*pmp)->access_ok(type, mode, false);
 
+  return true;
+}
+
+smmpt_status_t smmpt43_check(reg_t mmpt, reg_t addr, reg_t len, access_type type,
+                             reg_t mode, const smmpt43_mpte_loader_t& load_mpte)
+{
+  if (mode == PRV_M)
+    return smmpt_status_t::OFF;
+
+  if (get_field(mmpt, MMPT_MODE) != MMPT_MODE_43)
+    return smmpt_status_t::OFF;
+
+  if (len == 0)
+    return smmpt_status_t::PASS;
+
+  const reg_t max_smmpt43_paddr = (reg_t(1) << 43) - 1;
+  if ((addr | (addr + len - 1)) > max_smmpt43_paddr || addr + len - 1 < addr)
+    return smmpt_status_t::FAULT;
+
+  const reg_t first_page = addr & -PGSIZE;
+  const reg_t last_page = (addr + len - 1) & -PGSIZE;
+  for (reg_t page = first_page;; page += PGSIZE) {
+    reg_t base = (mmpt & MMPT_PPN) << PGSHIFT;
+    bool pass = false;
+    for (int level = 2; level >= 0; --level) {
+      reg_t idx = (page >> (16 + level * 9)) & 0x1ff;
+      reg_t mpte_paddr = base + idx * sizeof(uint64_t);
+      reg_t mpte = 0;
+      if (!load_mpte(mpte_paddr, &mpte))
+        break;
+
+      if (!(mpte & MPTE_V) || (!(mpte & MPTE_L) && (mpte & MPTE_N)))
+        break;
+
+      if (!(mpte & MPTE_L)) {
+        if (mpte & MPTE_NONLEAF_RSVD)
+          break;
+        base = (mpte >> MPTE_PPN_SHIFT) << PGSHIFT;
+        continue;
+      }
+
+      reg_t xwr;
+      if (mpte & MPTE_N) {
+        const reg_t g = get_field(mpte, MPTE_NAPOT_G);
+        if ((mpte & MPTE_NAPOT_RSVD) || g != 4)
+          break;
+        xwr = (mpte >> MPTE_XWR_SHIFT) & MPTE_XWR_MASK;
+      } else {
+        if (mpte & MPTE_LEAF_RSVD)
+          break;
+        reg_t pi = level > 0 ? ((page >> (12 + (level - 1) * 9 + 5)) & 0xf)
+                             : ((page >> 12) & 0xf);
+        xwr = (mpte >> (MPTE_XWR_SHIFT + pi * 3)) & MPTE_XWR_MASK;
+      }
+
+      if (xwr == MPTE_XWR_W || xwr == (MPTE_XWR_X | MPTE_XWR_W))
+        break;
+      switch (type) {
+        case FETCH: pass = xwr & MPTE_XWR_X; break;
+        case LOAD: pass = xwr & MPTE_XWR_R; break;
+        case STORE: pass = xwr & MPTE_XWR_W; break;
+        default: abort();
+      }
+      break;
+    }
+
+    if (!pass)
+      return smmpt_status_t::FAULT;
+    if (page == last_page)
+      break;
+  }
+
+  return smmpt_status_t::PASS;
+}
+
+smmpt_status_t mmu_t::smmpt_check(reg_t addr, reg_t len, access_type type, reg_t mode)
+{
+  if (!proc || !proc->extension_enabled_const(EXT_SMMPT) || !proc->state.mmpt)
+    return smmpt_status_t::OFF;
+
+  return smmpt43_check(proc->state.mmpt->read(), addr, len, type, mode,
+      [this](reg_t mpte_paddr, reg_t* mpte) {
+        return smmpt43_load_mpte(mpte_paddr, mpte);
+      });
+}
+
+bool mmu_t::smmpt43_load_mpte(reg_t mpte_paddr, reg_t* mpte)
+{
+  if (!pmp_ok(mpte_paddr, sizeof(uint64_t), LOAD, PRV_M, false))
+    return false;
+
+  void* host_pte_addr = sim->addr_to_mem(mpte_paddr);
+  target_endian<uint64_t> target_mpte;
+  if (host_pte_addr) {
+    memcpy(&target_mpte, host_pte_addr, sizeof(target_mpte));
+  } else if (!mmio_load(mpte_paddr, sizeof(target_mpte), (uint8_t*)&target_mpte)) {
+    return false;
+  }
+
+  *mpte = from_target(target_mpte);
   return true;
 }
 

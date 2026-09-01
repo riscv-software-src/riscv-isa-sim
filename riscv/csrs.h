@@ -173,6 +173,13 @@ class mseccfg_csr_t: public basic_csr_t {
 
 typedef std::shared_ptr<mseccfg_csr_t> mseccfg_csr_t_p;
 
+class mmpt_csr_t final: public basic_csr_t {
+ public:
+  mmpt_csr_t(processor_t* const proc, const reg_t addr);
+ protected:
+  virtual bool unlogged_write(const reg_t val) noexcept override;
+};
+
 // For CSRs that have a virtualized copy under another name. Each
 // instance of virtualized_csr_t will read/write one of two CSRs,
 // based on state.v. E.g. sscratch, stval, etc.
