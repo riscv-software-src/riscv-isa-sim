@@ -9,8 +9,9 @@
 
 #include "../softfloat/softfloat_types.h"
 #include <algorithm>
+#include <array>
 #include <cstdint>
-#include <string.h>
+#include <cstring>
 #include <strings.h>
 #include <cinttypes>
 #include <type_traits>

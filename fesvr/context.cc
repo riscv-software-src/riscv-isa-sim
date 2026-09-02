@@ -1,7 +1,7 @@
 #include "context.h"
-#include <assert.h>
+#include <cassert>
 #include <sched.h>
-#include <stdlib.h>
+#include <cstdlib>
 
 static __thread context_t* cur;
 

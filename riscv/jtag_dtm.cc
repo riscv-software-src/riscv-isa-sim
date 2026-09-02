@@ -1,4 +1,4 @@
-#include <stdio.h>
+#include <cstdio>
 
 #include "decode.h"
 #include "jtag_dtm.h"

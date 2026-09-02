@@ -5,7 +5,7 @@
 
 #include <map>
 #include <vector>
-#include <stdlib.h>
+#include <cstdlib>
 #include "memif.h"
 
 class htif_hexwriter_t : public chunked_memif_t
