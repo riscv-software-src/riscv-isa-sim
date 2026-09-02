@@ -1,0 +1,26 @@
+Checks: 'modernize-*, 
+         portability-*, 
+         concurrency-*, 
+         performance-*, 
+         -concurrency-mt-unsafe, 
+         -performance-avoid-endl, 
+         -performance-enum-size, 
+         -performance-no-int-to-ptr, 
+         -modernize-use-trailing-return-type, 
+         -modernize-use-nodiscard, 
+         -modernize-avoid-c-style-cast, 
+         -modernize-use-designated-initializers, 
+         -modernize-use-trailing-return-type, 
+         -modernize-macro-to-enum, 
+         -modernize-use-auto, 
+         -modernize-type-traits, 
+         -modernize-use-using,
+         -modernize-avoid-c-arrays,
+         -modernize-use-default-member-init,
+         -modernize-use-integer-sign-comparison,
+         -modernize-use-ranges
+         '
+WarningsAsErrors: '* '
+
+HeaderFilterRegex: '.*'
+ExcludeHeaderFilterRegex: 'softfloat/.*'

@@ -400,45 +400,45 @@ void htif_t::parse_arguments(int argc, char ** argv)
           c = HTIF_LONG_OPTIONS_OPTIND;
           optarg = nullptr;
         }
-        else if (arg.find("+rfb=") == 0) {
+        else if (arg.starts_with("+rfb=")) {
           c = HTIF_LONG_OPTIONS_OPTIND;
           optarg = optarg + 5;
         }
-        else if (arg.find("+disk=") == 0) {
+        else if (arg.starts_with("+disk=")) {
           c = HTIF_LONG_OPTIONS_OPTIND + 1;
           optarg = optarg + 6;
         }
-        else if (arg.find("+signature=") == 0) {
+        else if (arg.starts_with("+signature=")) {
           c = HTIF_LONG_OPTIONS_OPTIND + 2;
           optarg = optarg + 11;
         }
-        else if (arg.find("+chroot=") == 0) {
+        else if (arg.starts_with("+chroot=")) {
           c = HTIF_LONG_OPTIONS_OPTIND + 3;
           optarg = optarg + 8;
         }
-        else if (arg.find("+payload=") == 0) {
+        else if (arg.starts_with("+payload=")) {
           c = HTIF_LONG_OPTIONS_OPTIND + 4;
           optarg = optarg + 9;
         }
-        else if (arg.find("+signature-granularity=") == 0) {
+        else if (arg.starts_with("+signature-granularity=")) {
           c = HTIF_LONG_OPTIONS_OPTIND + 5;
           optarg = optarg + 23;
         }
-	else if (arg.find("+target-argument=") == 0) {
+	else if (arg.starts_with("+target-argument=")) {
 	  c = HTIF_LONG_OPTIONS_OPTIND + 6;
 	  optarg = optarg + 17;
 	}
-        else if (arg.find("+symbol-elf=") == 0) {
+        else if (arg.starts_with("+symbol-elf=")) {
           c = HTIF_LONG_OPTIONS_OPTIND + 7;
           optarg = optarg + 12;
         }
-        else if (arg.find("+permissive-off") == 0) {
+        else if (arg.starts_with("+permissive-off")) {
           if (opterr)
             throw std::invalid_argument("Found +permissive-off when not parsing permissively");
           opterr = 1;
           break;
         }
-        else if (arg.find("+permissive") == 0) {
+        else if (arg.starts_with("+permissive")) {
           if (!opterr)
             throw std::invalid_argument("Found +permissive when already parsing permissively");
           opterr = 0;
