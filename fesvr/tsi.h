@@ -19,7 +19,7 @@ class tsi_t : public htif_t
 {
  public:
   tsi_t(int argc, char** argv);
-  virtual ~tsi_t();
+  ~tsi_t() override;
 
   bool data_available();
   void send_word(uint32_t word);

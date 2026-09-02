@@ -19,12 +19,12 @@ protected:
   size_t depth;
   std::map<addr_t,std::vector<char> > mem;
 
-  void read_chunk(addr_t taddr, size_t len, void* dst);
-  void write_chunk(addr_t taddr, size_t len, const void* src);
-  void clear_chunk(addr_t, size_t) {}
+  void read_chunk(addr_t taddr, size_t len, void* dst) override;
+  void write_chunk(addr_t taddr, size_t len, const void* src) override;
+  void clear_chunk(addr_t, size_t) override {}
 
-  size_t chunk_max_size() { return width; }
-  size_t chunk_align() { return width; }
+  size_t chunk_max_size() override { return width; }
+  size_t chunk_align() override { return width; }
 
   friend std::ostream& operator<< (std::ostream&, const htif_hexwriter_t&);
 };

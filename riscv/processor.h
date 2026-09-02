@@ -238,7 +238,7 @@ public:
               const cfg_t* cfg,
               simif_t* sim, uint32_t id, bool halt_on_reset,
               FILE *log_file, std::ostream& sout_); // because of command line option --log and -s we need both
-  ~processor_t();
+  ~processor_t() override;
 
   const isa_parser_t &get_isa() const & { return isa; }
   const cfg_t &get_cfg() const & { return *cfg; }

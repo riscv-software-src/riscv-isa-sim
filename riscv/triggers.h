@@ -149,10 +149,10 @@ private:
 
 class disabled_trigger_t : public trigger_t {
 public:
-  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
-  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
+  reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
-  virtual bool get_dmode() const override { return dmode; }
+  bool get_dmode() const override { return dmode; }
 
 private:
   bool dmode;
@@ -161,9 +161,9 @@ private:
 class trap_common_t : public trigger_t {
 public:
   bool get_dmode() const override { return dmode; }
-  virtual action_t get_action() const override { return action; }
+  action_t get_action() const override { return action; }
 
-  virtual std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
+  std::optional<match_result_t> detect_trap_match(processor_t * const proc, const trap_t& t) noexcept override;
 
 private:
   virtual bool simple_match(bool interrupt, reg_t bit) const = 0;
@@ -176,21 +176,21 @@ protected:
 
 class itrigger_t : public trap_common_t {
 public:
-  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
-  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
+  reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
 private:
-  virtual bool simple_match(bool interrupt, reg_t bit) const override;
+  bool simple_match(bool interrupt, reg_t bit) const override;
   bool nmi;
 };
 
 class etrigger_t : public trap_common_t {
 public:
-  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
-  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
+  reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
 private:
-  virtual bool simple_match(bool interrupt, reg_t bit) const override;
+  bool simple_match(bool interrupt, reg_t bit) const override;
 };
 
 class mcontrol_common_t : public trigger_t {
@@ -205,15 +205,15 @@ public:
     MATCH_MASK_HIGH = MCONTROL_MATCH_MASK_HIGH
   } match_t;
 
-  virtual bool get_dmode() const override { return dmode; }
-  virtual bool get_chain() const override { return chain; }
-  virtual bool get_execute() const override { return execute; }
-  virtual bool get_store() const override { return store; }
-  virtual bool get_load() const override { return load; }
-  virtual action_t get_action() const override { return action; }
+  bool get_dmode() const override { return dmode; }
+  bool get_chain() const override { return chain; }
+  bool get_execute() const override { return execute; }
+  bool get_store() const override { return store; }
+  bool get_load() const override { return load; }
+  action_t get_action() const override { return action; }
   virtual void set_hit(hit_t val) = 0;
 
-  virtual std::optional<match_result_t> detect_memory_access_match(processor_t * const proc,
+  std::optional<match_result_t> detect_memory_access_match(processor_t * const proc,
       operation_t operation, reg_t address, std::size_t len, std::optional<reg_t> data) noexcept override;
 
 private:
@@ -235,10 +235,10 @@ protected:
 
 class mcontrol_t : public mcontrol_common_t {
 public:
-  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
-  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
+  reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
-  virtual void set_hit(hit_t val) override { hit = val != HIT_FALSE; }
+  void set_hit(hit_t val) override { hit = val != HIT_FALSE; }
 
 private:
   bool hit = false;
@@ -247,10 +247,10 @@ private:
 
 class mcontrol6_t : public mcontrol_common_t {
 public:
-  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
-  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
+  reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
-  virtual void set_hit(hit_t val) override { hit = val; }
+  void set_hit(hit_t val) override { hit = val; }
 
 private:
   hit_t hit = HIT_FALSE;
@@ -258,16 +258,16 @@ private:
 
 class icount_t : public trigger_t {
 public:
-  virtual reg_t tdata1_read(const processor_t * const proc) const noexcept override;
-  virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
+  reg_t tdata1_read(const processor_t * const proc) const noexcept override;
+  void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
 
   bool get_dmode() const override { return dmode; }
-  virtual action_t get_action() const override { return action; }
-  virtual bool icount_check_needed() const override { return count > 0 || pending; }
-  virtual void stash_read_values() override;
+  action_t get_action() const override { return action; }
+  bool icount_check_needed() const override { return count > 0 || pending; }
+  void stash_read_values() override;
 
-  virtual std::optional<match_result_t> detect_icount_fire(processor_t * const proc) noexcept override;
-  virtual void detect_icount_decrement(processor_t * const proc) noexcept override;
+  std::optional<match_result_t> detect_icount_fire(processor_t * const proc) noexcept override;
+  void detect_icount_decrement(processor_t * const proc) noexcept override;
 
 private:
   bool dmode = false;

@@ -47,7 +47,7 @@ class rom_device_t : public abstract_device_t {
 
 class abstract_mem_t : public abstract_device_t {
  public:
-  virtual ~abstract_mem_t() = default;
+  ~abstract_mem_t() override = default;
 
   virtual char* contents(reg_t addr) = 0;
   virtual void dump(std::ostream& o) = 0;

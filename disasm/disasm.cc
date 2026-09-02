@@ -22,61 +22,61 @@
 static const arg_t* opt = nullptr;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.i_imm()) + '(' + xpr_name[insn.rs1()] + ')';
   }
 } load_address;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.rvc_lbimm()) + '(' + xpr_name[insn.rvc_rs1s()] + ')';
   }
 } rvb_b_address;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.rvc_lhimm()) + '(' + xpr_name[insn.rvc_rs1s()] + ')';
   }
 } rvb_h_address;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.s_imm()) + '(' + xpr_name[insn.rs1()] + ')';
   }
 } store_address;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::string("(") + xpr_name[insn.rs1()] + ')';
   }
 } base_only_address;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::string("(") + xpr_name[insn.rs2()] + ')';
   }
 } base_rs2_address;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return xpr_name[insn.rd()];
   }
 } xrd;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return xpr_name[insn.rs1()];
   }
 } xrs1;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((uint32_t)insn.rvc_index());
   }
 } rvcm_jt_index;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     int rlist = insn.rvc_rlist();
     if (rlist >= 4) {
       switch(rlist) {
@@ -92,92 +92,92 @@ struct : public arg_t {
 } rvcm_pushpop_rlist;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return '-' + std::to_string(insn.zcmp_stack_adjustment(32));
   }
 } rvcm_push_stack_adj_32;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return '-' + std::to_string(insn.zcmp_stack_adjustment(64));
   }
 } rvcm_push_stack_adj_64;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string(insn.zcmp_stack_adjustment(32));
   }
 } rvcm_pop_stack_adj_32;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string(insn.zcmp_stack_adjustment(64));
   }
 } rvcm_pop_stack_adj_64;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return xpr_name[insn.rs2()];
   }
 } xrs2;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return xpr_name[insn.rs3()];
   }
 } xrs3;
 
 // RV32 P-extension register pair arguments (even register number)
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return xpr_name[insn.rd_p()];
   }
 } xrd_p;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return xpr_name[insn.rs1_p()];
   }
 } xrs1_p;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return xpr_name[insn.rs2_p()];
   }
 } xrs2_p;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return frm_name(insn.rm());
   }
 } rm;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return fpr_name[insn.rd()];
   }
 } frd;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return fpr_name[insn.rs1()];
   }
 } frs1;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return fpr_name[insn.rs2()];
   }
 } frs2;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return fpr_name[insn.rs3()];
   }
 } frs3;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     switch (insn.csr())
     {
       #define DECLARE_CSR(name, num) case num: return #name;
@@ -194,19 +194,19 @@ struct : public arg_t {
 } csr;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.i_imm());
   }
 } imm;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.shamt());
   }
 } shamt;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     std::stringstream s;
     s << std::hex << "0x" << ((uint32_t)insn.u_imm() >> 12);
     return s.str();
@@ -214,19 +214,19 @@ struct : public arg_t {
 } bigimm;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string(insn.rs1());
   }
 } zimm5;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string(insn.v_zimm6());
   }
 } v_zimm6;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     static const char* table[32] = {
       "-1.0",
       "min",
@@ -267,7 +267,7 @@ struct : public arg_t {
 } fli_imm;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     int32_t target = insn.sb_imm();
     std::string s = target >= 0 ? "pc + " : "pc - ";
     s += std::to_string(abs(target));
@@ -276,7 +276,7 @@ struct : public arg_t {
 } branch_target;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     std::stringstream s;
     int32_t target = insn.uj_imm();
     char sign = target >= 0 ? '+' : '-';
@@ -286,103 +286,103 @@ struct : public arg_t {
 } jump_target;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return xpr_name[insn.rvc_rs1()];
   }
 } rvc_rs1;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return xpr_name[insn.rvc_rs2()];
   }
 } rvc_rs2;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return fpr_name[insn.rvc_rs2()];
   }
 } rvc_fp_rs2;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return xpr_name[insn.rvc_rs1s()];
   }
 } rvc_rs1s;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return xpr_name[insn.rvc_rs2s()];
   }
 } rvc_rs2s;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return xpr_name[RVC_R1S];
   }
 } rvc_r1s;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return xpr_name[RVC_R2S];
   }
 } rvc_r2s;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return fpr_name[insn.rvc_rs2s()];
   }
 } rvc_fp_rs2s;
 
 struct : public arg_t {
-  std::string to_string(insn_t UNUSED insn) const {
+  std::string to_string(insn_t UNUSED insn) const override {
     return xpr_name[X_SP];
   }
 } rvc_sp;
 
 struct : public arg_t {
-  std::string to_string(insn_t UNUSED insn) const {
+  std::string to_string(insn_t UNUSED insn) const override {
     return xpr_name[X_RA];
   }
 } rvc_ra;
 
 struct : public arg_t {
-  std::string to_string(insn_t UNUSED insn) const {
+  std::string to_string(insn_t UNUSED insn) const override {
     return xpr_name[X_T0];
   }
 } rvc_t0;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.rvc_imm());
   }
 } rvc_imm;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.rvc_addi4spn_imm());
   }
 } rvc_addi4spn_imm;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.rvc_addi16sp_imm());
   }
 } rvc_addi16sp_imm;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.rvc_lwsp_imm());
   }
 } rvc_lwsp_imm;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)(insn.rvc_imm() & 0x3f));
   }
 } rvc_shamt;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     std::stringstream s;
     s << std::hex << "0x" << ((uint32_t)insn.rvc_imm() << 12 >> 12);
     return s.str();
@@ -390,43 +390,43 @@ struct : public arg_t {
 } rvc_uimm;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.rvc_lwsp_imm()) + '(' + xpr_name[X_SP] + ')';
   }
 } rvc_lwsp_address;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.rvc_ldsp_imm()) + '(' + xpr_name[X_SP] + ')';
   }
 } rvc_ldsp_address;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.rvc_swsp_imm()) + '(' + xpr_name[X_SP] + ')';
   }
 } rvc_swsp_address;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.rvc_sdsp_imm()) + '(' + xpr_name[X_SP] + ')';
   }
 } rvc_sdsp_address;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.rvc_lw_imm()) + '(' + xpr_name[insn.rvc_rs1s()] + ')';
   }
 } rvc_lw_address;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.rvc_ld_imm()) + '(' + xpr_name[insn.rvc_rs1s()] + ')';
   }
 } rvc_ld_address;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     int32_t target = insn.rvc_b_imm();
     std::string s = target >= 0 ? "pc + " : "pc - ";
     s += std::to_string(abs(target));
@@ -435,7 +435,7 @@ struct : public arg_t {
 } rvc_branch_target;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     int32_t target = insn.rvc_j_imm();
     std::string s = target >= 0 ? "pc + " : "pc - ";
     s += std::to_string(abs(target));
@@ -444,68 +444,68 @@ struct : public arg_t {
 } rvc_jump_target;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::string("(") + xpr_name[insn.rs1()] + ')';
   }
 } v_address;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return vr_name[insn.rd()];
   }
 } vd;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return vr_name[insn.rs1()];
   }
 } vs1;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return vr_name[insn.rs2()];
   }
 } vs2;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return vr_name[insn.rd()];
   }
 } vs3;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return insn.v_vm() ? "" : "v0.t";
   }
 } vm;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return vr_name[insn.rs2() & -8];
   }
 } bdota_vs2;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     int ci = 8 * (insn.rs2() % 8);
     return std::to_string(ci);
   }
 } bdota_ci;
 
 struct : public arg_t {
-  std::string to_string(insn_t UNUSED insn) const {
+  std::string to_string(insn_t UNUSED insn) const override {
     return "v0";
   }
 } v0;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.v_simm5());
   }
 } v_simm5;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     std::stringstream s;
     int sew = insn.v_sew();
     int lmul = insn.v_lmul();
@@ -545,13 +545,13 @@ struct : public arg_t {
 } v_vtype;
 
 struct : public arg_t {
-  std::string to_string(insn_t UNUSED insn) const {
+  std::string to_string(insn_t UNUSED insn) const override {
     return "x0";
   }
 } x0;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     std::string s;
     auto iorw = insn.iorw();
     bool has_pre = false;
@@ -575,67 +575,67 @@ struct : public arg_t {
 } iorw;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.p_imm8());
   }
 } p_imm8;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.p_imm10csl());
   }
 } p_imm10csl;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.p_imm10csr());
   }
 } p_imm10csr;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.p_imm10csrw());
   }
 } p_imm10csrw;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.shamtd());
   }
 } shamtd;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.shamtw());
   }
 } shamtw;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.shamth());
   }
 } shamth;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.shamtb());
   }
 } shamtb;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.b_imm5());
   }
 } b_imm5;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.bs());
   }
 } bs;
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return std::to_string((int)insn.rcon());
   }
 } rcon;

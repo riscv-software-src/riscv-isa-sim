@@ -11,7 +11,7 @@ class htif_pthread_t : public htif_t
 {
  public:
   htif_pthread_t(int argc, char** argv);
-  virtual ~htif_pthread_t();
+  ~htif_pthread_t() override;
 
   // target interface
   void send(const void* buf, size_t size);
@@ -23,8 +23,8 @@ class htif_pthread_t : public htif_t
   virtual ssize_t read(void* buf, size_t max_size);
   virtual ssize_t write(const void* buf, size_t size);
 
-  virtual size_t chunk_align() { return 64; }
-  virtual size_t chunk_max_size() { return 1024; }
+  size_t chunk_align() override { return 64; }
+  size_t chunk_max_size() override { return 1024; }
 
  private:
   context_t host;

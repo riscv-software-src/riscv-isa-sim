@@ -5,9 +5,9 @@
 class dummy_rocc_t : public rocc_t
 {
  public:
-  const char* name() const { return "dummy_rocc"; }
+  const char* name() const override { return "dummy_rocc"; }
 
-  reg_t custom0(processor_t *p, rocc_insn_t insn, reg_t xs1, reg_t UNUSED xs2)
+  reg_t custom0(processor_t *p, rocc_insn_t insn, reg_t xs1, reg_t UNUSED xs2) override
   {
     reg_t prev_acc = acc[insn.rs2];
 

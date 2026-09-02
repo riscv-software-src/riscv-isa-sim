@@ -62,8 +62,8 @@ class bcd_t : public device_t
 {
  public:
   bcd_t();
-  const char* identity() { return "bcd"; }
-  void tick();
+  const char* identity() override { return "bcd"; }
+  void tick() override;
 
  private:
   void handle_read(command_t cmd);
@@ -76,8 +76,8 @@ class disk_t : public device_t
 {
  public:
   disk_t(const char* fn);
-  ~disk_t();
-  const char* identity() { return id.c_str(); }
+  ~disk_t() override;
+  const char* identity() override { return id.c_str(); }
 
  private:
   struct request_t
@@ -99,7 +99,7 @@ class disk_t : public device_t
 class null_device_t : public device_t
 {
  public:
-  const char* identity() { return ""; }
+  const char* identity() override { return ""; }
 };
 
 class device_list_t

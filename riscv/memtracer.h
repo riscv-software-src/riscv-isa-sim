@@ -28,19 +28,19 @@ class memtracer_list_t : public memtracer_t
 {
  public:
   bool empty() { return list.empty(); }
-  bool interested_in_range(uint64_t begin, uint64_t end, access_type type)
+  bool interested_in_range(uint64_t begin, uint64_t end, access_type type) override
   {
     for (auto it: list)
       if (it->interested_in_range(begin, end, type))
         return true;
     return false;
   }
-  void trace(uint64_t addr, size_t bytes, access_type type)
+  void trace(uint64_t addr, size_t bytes, access_type type) override
   {
     for (auto it: list)
       it->trace(addr, bytes, type);
   }
-  void clean_invalidate(uint64_t addr, size_t bytes, bool clean, bool inval)
+  void clean_invalidate(uint64_t addr, size_t bytes, bool clean, bool inval) override
   {
     for (auto it: list)
       it->clean_invalidate(addr, bytes, clean, inval);

@@ -30,9 +30,9 @@ typedef std::shared_ptr<imsic_file_t> imsic_file_t_p;
 class imsic_mmio_t : public abstract_device_t {
  public:
   imsic_mmio_t(imsic_file_t_p const imsic);
-  bool load(reg_t addr, size_t len, uint8_t* bytes);
-  bool store(reg_t addr, size_t len, const uint8_t* bytes);
-  reg_t size() { return IMSIC_MMIO_PAGE_SIZE; }
+  bool load(reg_t addr, size_t len, uint8_t* bytes) override;
+  bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
+  reg_t size() override { return IMSIC_MMIO_PAGE_SIZE; }
 
  private:
   imsic_file_t_p const imsic;
