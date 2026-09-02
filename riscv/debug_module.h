@@ -121,7 +121,7 @@ class debug_module_t : public abstract_device_t
      * takes to execute. Useful for testing OpenOCD.
      */
     debug_module_t(simif_t *sim, const debug_module_config_t &config);
-    ~debug_module_t();
+    ~debug_module_t() override;
 
     bool load(reg_t addr, size_t len, uint8_t* bytes) override;
     bool store(reg_t addr, size_t len, const uint8_t* bytes) override;

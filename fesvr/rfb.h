@@ -10,10 +10,10 @@ class rfb_t : public device_t
 {
  public:
   rfb_t(int display = 0);
-  ~rfb_t();
-  void tick();
+  ~rfb_t() override;
+  void tick() override;
   std::string name() { return "RISC-V"; }
-  const char* identity() { return "rfb"; }
+  const char* identity() override { return "rfb"; }
 
  private:
   template <typename T>

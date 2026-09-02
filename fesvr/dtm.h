@@ -15,7 +15,7 @@ class dtm_t : public htif_t
 {
  public:
   dtm_t(int argc, char**argv);
-  ~dtm_t();
+  ~dtm_t() override;
 
   struct req {
     uint32_t addr;
@@ -62,13 +62,13 @@ class dtm_t : public htif_t
   }
 
  protected:
-  virtual void read_chunk(addr_t taddr, size_t len, void* dst) override;
-  virtual void write_chunk(addr_t taddr, size_t len, const void* src) override;
-  virtual void clear_chunk(addr_t taddr, size_t len) override;
-  virtual size_t chunk_align() override;
-  virtual size_t chunk_max_size() override;
-  virtual void reset() override;
-  virtual void idle() override;
+  void read_chunk(addr_t taddr, size_t len, void* dst) override;
+  void write_chunk(addr_t taddr, size_t len, const void* src) override;
+  void clear_chunk(addr_t taddr, size_t len) override;
+  size_t chunk_align() override;
+  size_t chunk_max_size() override;
+  void reset() override;
+  void idle() override;
 
   uint32_t run_abstract_command(uint32_t command, const uint32_t program[], size_t program_n,
                                 uint32_t data[], size_t data_n);
