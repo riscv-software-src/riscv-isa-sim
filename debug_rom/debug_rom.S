@@ -65,16 +65,39 @@ entry_loop:
         jal  zero, entry_loop
 
 _exception:
-        // Restore S0, which we always save to dscratch.
+        // Report the exception and pick up the state an interrupted sequence
+        // recorded. Invalidate the word: the next trap must not see it.
+        MEMORY_ACCESS_WITH_MPRV(
+          lw   s0, DEBUG_ROM_SAVED_STATE(zero);
+          sw   zero, DEBUG_ROM_SAVED_STATE(zero);
+          sw   zero, DEBUG_ROM_EXCEPTION(zero);
+        )
+
+        // Zero means the sequence recorded nothing, so it did not save s1
+        // either. Skipping leaves s1 alone, which a program buffer program
+        // that trapped after its epilogue needs.
+        beqz s0, _exception_restore_s0
+
+        // Put back what the abstract command epilogue would have restored
+        andi   s1, s0, DCSR_MPRVEN
+        csrrci zero, CSR_DCSR, DCSR_MPRVEN
+        csrrs  zero, CSR_DCSR, s1
+
+        andi s1, s0, DEBUG_ROM_SAVED_STATE_MSTATUS
+        beqz s1, _exception_restore_s1
+        lui    s1, %hi(MSTATUS_MPRV | MSTATUS_FS)
+        csrrc  zero, CSR_MSTATUS, s1
+        and    s1, s0, s1
+        csrrs  zero, CSR_MSTATUS, s1
+
+_exception_restore_s1:
+        csrr s1, CSR_DSCRATCH1
+
+_exception_restore_s0:
+        // Restore S0, which every sequence saves to dscratch0.
         // We need this in case the user tried an abstract write to a
         // non-existent CSR.
-
-
-        // Let debug module know you got an exception.
-        MEMORY_ACCESS_WITH_MPRV(
-          csrr s0, CSR_DSCRATCH0; 
-          sw zero, DEBUG_ROM_EXCEPTION(zero);
-        )
+        csrr s0, CSR_DSCRATCH0
 
         ebreak
 
