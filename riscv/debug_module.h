@@ -225,8 +225,8 @@ class debug_module_t : public abstract_device_t
     unsigned arg(unsigned xlen, unsigned i);
 
     void handle_post_increment(size_t xlen, unsigned aamsize, unsigned &offset);
-    void handle_memory_read(size_t xlen, unsigned aamsize, unsigned &offset);
-    void handle_memory_write(size_t xlen, unsigned aamsize, unsigned &offset);
+    void aam_emit_memory_read(size_t xlen, unsigned aamsize, unsigned &offset);
+    void aam_emit_memory_write(size_t xlen, unsigned aamsize, unsigned &offset);
 
     void generate_initial_sequence(bool aamvirtual, unsigned &offset);
     void generate_termination_sequence(unsigned &offset);

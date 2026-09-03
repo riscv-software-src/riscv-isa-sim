@@ -1001,8 +1001,8 @@ bool debug_module_t::perform_abstract_memory_access() {
 
   unsigned offset = 0;
   generate_initial_sequence(aamvirtual, offset);
-  is_write ? handle_memory_write(xlen, aamsize, offset)
-           : handle_memory_read(xlen, aamsize, offset);
+  is_write ? aam_emit_memory_write(xlen, aamsize, offset)
+           : aam_emit_memory_read(xlen, aamsize, offset);
 
   if (aampostincrement)
     handle_post_increment(xlen, aamsize, offset);
@@ -1014,40 +1014,40 @@ bool debug_module_t::perform_abstract_memory_access() {
   return true;
 }
 
-static constexpr std::array<handle_memory_func, 4> lx = {&lb, &lh, &lw, &ld};
-static constexpr std::array<handle_memory_func, 4> sx = {&sb, &sh, &sw, &sd};
-static constexpr std::array<handle_mstatus_func, 2> csrrx = {&csrrc, &csrrs};
+static constexpr std::array<handle_memory_func, 4> aam_lx = {&lb, &lh, &lw, &ld};
+static constexpr std::array<handle_memory_func, 4> aam_sx = {&sb, &sh, &sw, &sd};
+static constexpr std::array<handle_mstatus_func, 2> aam_csrrx = {&csrrc, &csrrs};
 
 unsigned debug_module_t::arg(unsigned xlen, unsigned idx)
 {
   return debug_data_start + idx * xlen / 8;
 }
 
-void debug_module_t::handle_memory_read(size_t xlen, unsigned aamsize, unsigned &offset)
+void debug_module_t::aam_emit_memory_read(size_t xlen, unsigned aamsize, unsigned &offset)
 {
-  write32(debug_abstract, offset++, lx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
-  write32(debug_abstract, offset++, lx[aamsize](S1, S1, 0));
-  write32(debug_abstract, offset++, sx[idx(xlen)](S1, ZERO, arg(xlen, 0)));
+  write32(debug_abstract, offset++, aam_lx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
+  write32(debug_abstract, offset++, aam_lx[aamsize](S1, S1, 0));
+  write32(debug_abstract, offset++, aam_sx[idx(xlen)](S1, ZERO, arg(xlen, 0)));
 }
 
-void debug_module_t::handle_memory_write(size_t xlen, unsigned aamsize, unsigned &offset)
+void debug_module_t::aam_emit_memory_write(size_t xlen, unsigned aamsize, unsigned &offset)
 {
   // Use Arg1 as temporary storage for old mstatus value
-  write32(debug_abstract, offset++, lx[idx(xlen)](S1, ZERO, arg(xlen, 1))); // Arg1 -> S1
-  write32(debug_abstract, offset++, sx[idx(xlen)](S0, ZERO, arg(xlen, 1))); // S0 -> Arg1
-  write32(debug_abstract, offset++, lx[idx(xlen)](S0, ZERO, arg(xlen, 0))); // Arg0 -> S0
+  write32(debug_abstract, offset++, aam_lx[idx(xlen)](S1, ZERO, arg(xlen, 1))); // Arg1 -> S1
+  write32(debug_abstract, offset++, aam_sx[idx(xlen)](S0, ZERO, arg(xlen, 1))); // S0 -> Arg1
+  write32(debug_abstract, offset++, aam_lx[idx(xlen)](S0, ZERO, arg(xlen, 0))); // Arg0 -> S0
 
-  write32(debug_abstract, offset++, sx[aamsize](S0, S1, 0));
+  write32(debug_abstract, offset++, aam_sx[aamsize](S0, S1, 0));
 
-  write32(debug_abstract, offset++, lx[idx(xlen)](S0, ZERO, arg(xlen, 1))); // Restore S0
-  write32(debug_abstract, offset++, sx[idx(xlen)](S1, ZERO, arg(xlen, 1))); // Restore Arg1
+  write32(debug_abstract, offset++, aam_lx[idx(xlen)](S0, ZERO, arg(xlen, 1))); // Restore S0
+  write32(debug_abstract, offset++, aam_sx[idx(xlen)](S1, ZERO, arg(xlen, 1))); // Restore Arg1
 }
 
 void debug_module_t::handle_post_increment(size_t xlen, unsigned aamsize, unsigned &offset)
 {
-  write32(debug_abstract, offset++, lx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
+  write32(debug_abstract, offset++, aam_lx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
   write32(debug_abstract, offset++, addi(S1, S1, 1U << aamsize));
-  write32(debug_abstract, offset++, sx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
+  write32(debug_abstract, offset++, aam_sx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
 }
 
 void debug_module_t::generate_initial_sequence(bool aamvirtual, unsigned &offset)
@@ -1057,7 +1057,7 @@ void debug_module_t::generate_initial_sequence(bool aamvirtual, unsigned &offset
 
   // Modify mstatus.mprv and save old mstatus
   write32(debug_abstract, offset++, lui(S0, MSTATUS_MPRV >> 12));
-  write32(debug_abstract, offset++, csrrx[aamvirtual](S0, S0, CSR_MSTATUS));
+  write32(debug_abstract, offset++, aam_csrrx[aamvirtual](S0, S0, CSR_MSTATUS));
 }
 
 void debug_module_t::generate_termination_sequence(unsigned &offset)
