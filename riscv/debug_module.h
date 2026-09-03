@@ -144,10 +144,10 @@ class debug_module_t : public abstract_device_t
     // Actual size of the program buffer, which is 1 word bigger than we let on
     // to implement the implicit ebreak at the end.
     unsigned program_buffer_bytes;
-    static const unsigned debug_data_start = 0x390;
+    static const unsigned debug_data_start = 0x3a0;
     unsigned debug_progbuf_start;
 
-    static const unsigned debug_abstract_size = 28;
+    static const unsigned debug_abstract_size = 32;
     unsigned debug_abstract_start;
     // R/W this through custom registers, to allow debuggers to test that
     // functionality.
@@ -224,12 +224,10 @@ class debug_module_t : public abstract_device_t
 
     unsigned arg(unsigned xlen, unsigned i);
 
-    void handle_post_increment(size_t xlen, unsigned aamsize, unsigned &offset);
-    void aam_emit_memory_read(size_t xlen, unsigned aamsize, unsigned &offset);
-    void aam_emit_memory_write(size_t xlen, unsigned aamsize, unsigned &offset);
+    void aam_emit_memory_read(size_t xlen, unsigned aamsize, bool aampostincrement, unsigned &offset);
+    void aam_emit_memory_write(size_t xlen, unsigned aamsize, bool aampostincrement, unsigned &offset);
 
-    void generate_initial_sequence(bool aamvirtual, unsigned &offset);
-    void generate_termination_sequence(unsigned &offset);
+    void aam_emit_prologue(bool aamvirtual, unsigned &offset);
     void start_command_execution();
 
     bool abstract_command_completed;

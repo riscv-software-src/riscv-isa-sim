@@ -1000,14 +1000,13 @@ bool debug_module_t::perform_abstract_memory_access() {
   }
 
   unsigned offset = 0;
-  generate_initial_sequence(aamvirtual, offset);
-  is_write ? aam_emit_memory_write(xlen, aamsize, offset)
-           : aam_emit_memory_read(xlen, aamsize, offset);
+  aam_emit_prologue(aamvirtual, offset);
+  is_write ? aam_emit_memory_write(xlen, aamsize, aampostincrement, offset)
+           : aam_emit_memory_read(xlen, aamsize, aampostincrement, offset);
 
-  if (aampostincrement)
-    handle_post_increment(xlen, aamsize, offset);
-
-  generate_termination_sequence(offset);
+  emit_epilogue(offset, /* restore_mstatus */ true);
+  emit_terminator(offset, /* postexec */ false);
+  assert(offset <= debug_abstract_size);
   start_command_execution();
 
   abstractcs.cmderr = CMDERR_NONE;
@@ -1023,51 +1022,45 @@ unsigned debug_module_t::arg(unsigned xlen, unsigned idx)
   return debug_data_start + idx * xlen / 8;
 }
 
-void debug_module_t::aam_emit_memory_read(size_t xlen, unsigned aamsize, unsigned &offset)
+void debug_module_t::aam_emit_memory_read(size_t xlen,
+    unsigned aamsize, bool aampostincrement, unsigned &offset)
 {
   write32(debug_abstract, offset++, aam_lx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
   write32(debug_abstract, offset++, aam_lx[aamsize](S1, S1, 0));
   write32(debug_abstract, offset++, aam_sx[idx(xlen)](S1, ZERO, arg(xlen, 0)));
-}
 
-void debug_module_t::aam_emit_memory_write(size_t xlen, unsigned aamsize, unsigned &offset)
-{
-  // Use Arg1 as temporary storage for old mstatus value
-  write32(debug_abstract, offset++, aam_lx[idx(xlen)](S1, ZERO, arg(xlen, 1))); // Arg1 -> S1
-  write32(debug_abstract, offset++, aam_sx[idx(xlen)](S0, ZERO, arg(xlen, 1))); // S0 -> Arg1
-  write32(debug_abstract, offset++, aam_lx[idx(xlen)](S0, ZERO, arg(xlen, 0))); // Arg0 -> S0
+  if (!aampostincrement)
+    return;
 
-  write32(debug_abstract, offset++, aam_sx[aamsize](S0, S1, 0));
-
-  write32(debug_abstract, offset++, aam_lx[idx(xlen)](S0, ZERO, arg(xlen, 1))); // Restore S0
-  write32(debug_abstract, offset++, aam_sx[idx(xlen)](S1, ZERO, arg(xlen, 1))); // Restore Arg1
-}
-
-void debug_module_t::handle_post_increment(size_t xlen, unsigned aamsize, unsigned &offset)
-{
+  // Increment after the access: a fault leaves arg1 as the debugger set it.
   write32(debug_abstract, offset++, aam_lx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
   write32(debug_abstract, offset++, addi(S1, S1, 1U << aamsize));
   write32(debug_abstract, offset++, aam_sx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
 }
 
-void debug_module_t::generate_initial_sequence(bool aamvirtual, unsigned &offset)
+void debug_module_t::aam_emit_memory_write(size_t xlen,
+    unsigned aamsize, bool aampostincrement, unsigned &offset)
 {
-  write32(debug_abstract, offset++, csrw(S0, CSR_DSCRATCH0));
-  write32(debug_abstract, offset++, csrw(S1, CSR_DSCRATCH1));
+  write32(debug_abstract, offset++, aam_lx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
+  write32(debug_abstract, offset++, aam_lx[idx(xlen)](S0, ZERO, arg(xlen, 0)));
 
-  // Modify mstatus.mprv and save old mstatus
-  write32(debug_abstract, offset++, lui(S0, MSTATUS_MPRV >> 12));
-  write32(debug_abstract, offset++, aam_csrrx[aamvirtual](S0, S0, CSR_MSTATUS));
+  write32(debug_abstract, offset++, aam_sx[aamsize](S0, S1, 0));
+
+  if (!aampostincrement)
+    return;
+
+  write32(debug_abstract, offset++, addi(S1, S1, 1U << aamsize));
+  write32(debug_abstract, offset++, aam_sx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
 }
 
-void debug_module_t::generate_termination_sequence(unsigned &offset)
+void debug_module_t::aam_emit_prologue(bool aamvirtual, unsigned &offset)
 {
-  // Restore mstatus
-  write32(debug_abstract, offset++, csrw(S0, CSR_MSTATUS));
+  // The sequence moves mstatus.MPRV around the access.
+  emit_prologue(offset, /* save_mstatus */ true);
 
-  write32(debug_abstract, offset++, csrr(S0, CSR_DSCRATCH0));
-  write32(debug_abstract, offset++, csrr(S1, CSR_DSCRATCH1));
-  write32(debug_abstract, offset++, ebreak());
+  // Set MPRV for a virtual access, clear it for a physical one.
+  write32(debug_abstract, offset++, lui(S0, MSTATUS_MPRV >> 12));
+  write32(debug_abstract, offset++, aam_csrrx[aamvirtual](ZERO, S0, CSR_MSTATUS));
 }
 
 void debug_module_t::start_command_execution()
