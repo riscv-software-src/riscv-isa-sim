@@ -91,6 +91,7 @@ debug_module_t::debug_module_t(simif_t *sim, const debug_module_config_t &config
   program_buffer = new uint8_t[program_buffer_bytes];
 
   memset(debug_rom_flags, 0, sizeof(debug_rom_flags));
+  memset(debug_rom_saved_state, 0, sizeof(debug_rom_saved_state));
   memset(program_buffer, 0, program_buffer_bytes);
 
   if (config.support_impebreak) {
@@ -112,6 +113,7 @@ debug_module_t::debug_module_t(simif_t *sim, const debug_module_config_t &config
       region_descriptor{DEBUG_ROM_ENTRY, debug_rom_raw_len, debug_rom_raw},
       region_descriptor{DEBUG_ROM_WHERETO, sizeof(debug_rom_whereto), debug_rom_whereto},
       region_descriptor{DEBUG_ROM_FLAGS, sizeof(debug_rom_flags), debug_rom_flags},
+      region_descriptor{DEBUG_ROM_SAVED_STATE, sizeof(debug_rom_saved_state), debug_rom_saved_state},
       region_descriptor{debug_data_start, dmdata.size(), dmdata.data()},
       region_descriptor{debug_abstract_start, sizeof(debug_abstract), debug_abstract},
       region_descriptor{debug_progbuf_start, program_buffer_bytes, program_buffer},
@@ -234,6 +236,10 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     return true;
 
   if (handle_range_store(addr, len, bytes, debug_progbuf_start, program_buffer_bytes, program_buffer))
+    return true;
+
+  if (handle_range_store(addr, len, bytes, DEBUG_ROM_SAVED_STATE,
+                         sizeof(debug_rom_saved_state), debug_rom_saved_state))
     return true;
 
   if (addr == DEBUG_ROM_HALTED) {

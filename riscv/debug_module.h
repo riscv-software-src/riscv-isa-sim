@@ -156,6 +156,8 @@ class debug_module_t : public abstract_device_t
     simif_t *sim;
 
     uint8_t debug_rom_whereto[4];
+    // Stores hart state for abstract commands.
+    uint8_t debug_rom_saved_state[4];
     uint8_t debug_abstract[debug_abstract_size * 4];
     uint8_t *program_buffer;
     static constexpr unsigned dmdata_reg_size = 4;
@@ -240,7 +242,7 @@ class debug_module_t : public abstract_device_t
 
     unsigned sb_read_wait, sb_write_wait;
 
-    std::array<region_descriptor, 6> debug_memory_regions;
+    std::array<region_descriptor, 7> debug_memory_regions;
 };
 
 #endif
