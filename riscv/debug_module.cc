@@ -1026,7 +1026,11 @@ void debug_module_t::aam_emit_memory_read(size_t xlen,
     unsigned aamsize, bool aampostincrement, unsigned &offset)
 {
   write32(debug_abstract, offset++, aam_lx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
+
+  write32(debug_abstract, offset++, csrrsi(ZERO, DCSR_MPRVEN, CSR_DCSR));
   write32(debug_abstract, offset++, aam_lx[aamsize](S1, S1, 0));
+  write32(debug_abstract, offset++, csrrci(ZERO, DCSR_MPRVEN, CSR_DCSR));
+
   write32(debug_abstract, offset++, aam_sx[idx(xlen)](S1, ZERO, arg(xlen, 0)));
 
   if (!aampostincrement)
@@ -1044,7 +1048,9 @@ void debug_module_t::aam_emit_memory_write(size_t xlen,
   write32(debug_abstract, offset++, aam_lx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
   write32(debug_abstract, offset++, aam_lx[idx(xlen)](S0, ZERO, arg(xlen, 0)));
 
+  write32(debug_abstract, offset++, csrrsi(ZERO, DCSR_MPRVEN, CSR_DCSR));
   write32(debug_abstract, offset++, aam_sx[aamsize](S0, S1, 0));
+  write32(debug_abstract, offset++, csrrci(ZERO, DCSR_MPRVEN, CSR_DCSR));
 
   if (!aampostincrement)
     return;
