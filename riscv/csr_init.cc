@@ -236,7 +236,11 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     add_hypervisor_csr(CSR_HIDELEG, hideleg);
   }
 
-  const reg_t menvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE : 0) |
+  // The spec allows FIOM to read as zero only where there is no S-mode or no
+  // paging, so it is writable exactly when neither holds.
+  const bool fiom_writable = proc->extension_enabled('S') && proc->get_max_vaddr_bits() > 0;
+  const reg_t menvcfg_mask = (fiom_writable ? MENVCFG_FIOM : 0) |
+                            (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE : 0) |
                             (proc->extension_enabled(EXT_ZICBOZ) ? MENVCFG_CBZE : 0) |
                             (proc->extension_enabled(EXT_SMNPM) ? MENVCFG_PMM : 0) |
                             (proc->extension_enabled(EXT_SVADU) ? MENVCFG_ADUE: 0) |
@@ -346,14 +350,16 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   add_csr(CSR_MVENDORID, std::make_shared<const_csr_t>(proc, CSR_MVENDORID, 0));
   add_csr(CSR_MHARTID, std::make_shared<const_csr_t>(proc, CSR_MHARTID, proc->get_id()));
   add_csr(CSR_MCONFIGPTR, std::make_shared<const_csr_t>(proc, CSR_MCONFIGPTR, 0));
-  const reg_t senvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? SENVCFG_CBCFE | SENVCFG_CBIE : 0) |
+  const reg_t senvcfg_mask = (fiom_writable ? SENVCFG_FIOM : 0) |
+                            (proc->extension_enabled(EXT_ZICBOM) ? SENVCFG_CBCFE | SENVCFG_CBIE : 0) |
                             (proc->extension_enabled(EXT_ZICBOZ) ? SENVCFG_CBZE : 0) |
                             (proc->extension_enabled(EXT_SVUKTE) ? SENVCFG_UKTE : 0) |
                             (proc->extension_enabled(EXT_SSNPM) ? SENVCFG_PMM : 0) |
                             (proc->extension_enabled(EXT_ZICFILP) ? SENVCFG_LPE : 0) |
                             (proc->extension_enabled(EXT_ZICFISS) ? SENVCFG_SSE : 0);
   add_supervisor_csr(CSR_SENVCFG, senvcfg = std::make_shared<senvcfg_csr_t>(proc, CSR_SENVCFG, senvcfg_mask, 0));
-  const reg_t henvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? HENVCFG_CBCFE | HENVCFG_CBIE : 0) |
+  const reg_t henvcfg_mask = HENVCFG_FIOM |
+                            (proc->extension_enabled(EXT_ZICBOM) ? HENVCFG_CBCFE | HENVCFG_CBIE : 0) |
                             (proc->extension_enabled(EXT_ZICBOZ) ? HENVCFG_CBZE : 0) |
                             (proc->extension_enabled(EXT_SSNPM) ? HENVCFG_PMM : 0) |
                             (proc->extension_enabled(EXT_SVADU) ? HENVCFG_ADUE: 0) |

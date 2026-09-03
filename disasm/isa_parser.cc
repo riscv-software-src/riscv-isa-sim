@@ -316,9 +316,9 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
     for (const auto implied : info->implies) {
       add_extension(implied, str);
     }
-    if (ext_str.substr(0, 3) == "zve")
+    if (ext_str.starts_with("zve"))
       apply_zve_properties(ext_str, str);
-  } else if (ext_str.substr(0, 3) == "zvl") {
+  } else if (ext_str.starts_with("zvl")) {
     reg_t new_vlen;
     try {
       new_vlen = safe_stoul(ext_str.substr(3, ext_str.size() - 4));
@@ -345,9 +345,9 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   isa_string = strtolower(str);
   const char* all_subsets = "mafdqcbpvh";
 
-  if (isa_string.compare(0, 4, "rv32") == 0)
+  if (isa_string.starts_with("rv32"))
     max_xlen = 32;
-  else if (isa_string.compare(0, 4, "rv64") == 0)
+  else if (isa_string.starts_with("rv64"))
     max_xlen = 64;
   else
     bad_isa_string(str, "ISA strings must begin with RV32 or RV64");
