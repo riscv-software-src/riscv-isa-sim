@@ -688,9 +688,12 @@ static bool is_fpu_reg(unsigned regno)
 using handle_memory_func = std::uint32_t (*)(std::uint32_t src, std::uint32_t base, std::int32_t offset);
 using handle_mstatus_func = std::uint32_t (*)(std::uint32_t rd, std::uint32_t rs1, std::uint32_t csr);
 
+// Access Register aarsize: 2 and 3 are the 32- and 64-bit accesses. The only
+// other defined value is 128-bit, and nothing here is a register that wide.
 static bool reg_size_supported(unsigned size)
 {
-  return (size >= 2 && size <= 3);
+  return size >= AC_ACCESS_REGISTER_AARSIZE_32BIT &&
+         size <= AC_ACCESS_REGISTER_AARSIZE_64BIT;
 }
 
 static unsigned size2index(unsigned size)
@@ -754,14 +757,19 @@ bool debug_module_t::perform_abstract_register_access()
   if (transfer && regno >= 0xc000 && (regno & 1))
     return aar_handle_custom_register(regno, write);
 
+  if (transfer && !aar_transfer_supported(regno, size)) {
+    abstractcs.cmderr = CMDERR_NOTSUP;
+    return true;
+  }
+
   unsigned offset = 0;
   bool fpu_reg = transfer && is_fpu_reg(regno);
 
   if (fpu_reg)
     aar_emit_prologue(offset);
 
-  if (transfer && !aar_handle_register_transfer(regno, size, write, offset))
-    return true;
+  if (transfer)
+    aar_handle_register_transfer(regno, size, write, offset);
 
   if (fpu_reg)
     aar_emit_epilogue(offset);
@@ -781,33 +789,39 @@ bool debug_module_t::perform_abstract_register_access()
   return true;
 }
 
-bool debug_module_t::aar_handle_register_transfer(unsigned regno,
-    unsigned size, bool write, unsigned &offset)
+// Everything a transfer can reject, so that nothing is emitted for a command
+// that is going to fail.
+bool debug_module_t::aar_transfer_supported(unsigned regno, unsigned size) const
 {
-  if (!reg_size_supported(size)) {
-    abstractcs.cmderr = CMDERR_NOTSUP;
+  if (!reg_size_supported(size))
     return false;
-  }
 
-  if (regno < 0x1000) {
-    if (!config.support_abstract_csr_access) {
-      abstractcs.cmderr = CMDERR_NOTSUP;
-      return false;
-    }
-    return aar_emit_csr_transfer(regno, size, write, offset);
-  }
+  if (regno < 0x1000)
+    return config.support_abstract_csr_access;
 
   if (regno < 0x1020)
-    return aar_emit_gpr_transfer(regno, size, write, offset);
+    return true;
 
   if (regno < 0x1040)
-    return aar_emit_fpr_transfer(regno, size, write, offset);
+    return config.support_abstract_fpr_access;
 
-  abstractcs.cmderr = CMDERR_NOTSUP;
   return false;
 }
 
-bool debug_module_t::aar_emit_csr_transfer(unsigned regno, unsigned size, bool write, unsigned &offset)
+void debug_module_t::aar_handle_register_transfer(unsigned regno,
+    unsigned size, bool write, unsigned &offset)
+{
+  assert(aar_transfer_supported(regno, size));
+
+  if (regno < 0x1000)
+    aar_emit_csr_transfer(regno, size, write, offset);
+  else if (regno < 0x1020)
+    aar_emit_gpr_transfer(regno, size, write, offset);
+  else
+    aar_emit_fpr_transfer(regno, size, write, offset);
+}
+
+void debug_module_t::aar_emit_csr_transfer(unsigned regno, unsigned size, bool write, unsigned &offset)
 {
   // For the FPU CSRs aar_emit_prologue has already saved s0.
   bool save_s0 = !is_fpu_reg(regno);
@@ -826,11 +840,9 @@ bool debug_module_t::aar_emit_csr_transfer(unsigned regno, unsigned size, bool w
 
   if (save_s0)
     write32(debug_abstract, offset++, csrr(S0, CSR_DSCRATCH0));
-
-  return true;
 }
 
-bool debug_module_t::aar_emit_gpr_transfer(unsigned regno, unsigned size, bool write,
+void debug_module_t::aar_emit_gpr_transfer(unsigned regno, unsigned size, bool write,
     unsigned &offset)
 {
   auto regnum = regno - 0x1000;
@@ -848,24 +860,15 @@ bool debug_module_t::aar_emit_gpr_transfer(unsigned regno, unsigned size, bool w
      */
     write32(debug_abstract, offset++, csrw(S0, CSR_DSCRATCH0));
   }
-
-  return true;
 }
 
-bool debug_module_t::aar_emit_fpr_transfer(unsigned regno,
+void debug_module_t::aar_emit_fpr_transfer(unsigned regno,
     unsigned size, bool write, unsigned &offset)
 {
-  if (!config.support_abstract_fpr_access) {
-    abstractcs.cmderr = CMDERR_NOTSUP;
-    return false;
-  }
-
   auto fprnum = regno - 0x1020;
   auto size_index = size2index(size);
   auto op = write ? aar_flx[size_index] : aar_fsx[size_index];
   write32(debug_abstract, offset++, op(fprnum, ZERO, debug_data_start));
-
-  return true;
 }
 
 bool debug_module_t::aar_handle_custom_register(unsigned regno, bool write)
