@@ -656,6 +656,15 @@ reg_t processor_t::get_csr(int which, insn_t insn, bool write, bool peek)
   throw trap_illegal_instruction(insn.bits());
 }
 
+reg_t processor_t::get_csr_for_write(int which)
+{
+  auto search = state.csrmap.find(which);
+  if (search != state.csrmap.end())
+    return search->second->read_for_write();
+
+  abort(); // The preceding permission-checked CSR read found this CSR.
+}
+
 const insn_desc_t insn_desc_t::illegal_instruction = {
   0, 0,
   &::illegal_instruction, &::illegal_instruction, &::illegal_instruction, &::illegal_instruction,
