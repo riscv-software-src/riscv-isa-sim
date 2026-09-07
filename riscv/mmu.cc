@@ -585,8 +585,10 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
   tinst |= ((type == STORE) && (is_for_vs_pt_addr == true)) ? 0x0020 : 0;
 
   reg_t base = vm.ptbase;
+  int i = vm.levels - 1;
+retry:
   if ((gpa & ~maxgpa) == 0) {
-    for (int i = vm.levels - 1; i >= 0; i--) {
+    for (; i >= 0; i--) {
       int ptshift = i * vm.idxbits;
       int idxbits = (i == (vm.levels - 1)) ? vm.idxbits + vm.widenbits : vm.idxbits;
       reg_t idx = (gpa >> (PGSHIFT + ptshift)) & ((reg_t(1) << idxbits) - 1);
@@ -630,8 +632,9 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
 
         if ((pte & ad) != ad) {
           if (hade) {
-            // set accessed and possibly dirty bits
-            pte_store(pte_paddr, pte | ad, gva, virt, trap_type, vm.ptesize);
+            // A failed atomic update requires retrying the current page-table level.
+            if (!pte_compare_exchange(pte_paddr, pte, pte | ad, gva, virt, trap_type, vm.ptesize))
+              goto retry;
           } else {
             // take exception if access or possibly dirty bit is not set.
             break;
@@ -724,7 +727,9 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     vm.levels = 0;
 
   reg_t base = vm.ptbase;
-  for (int i = vm.levels - 1; i >= 0; i--) {
+  int i = vm.levels - 1;
+retry:
+  for (; i >= 0; i--) {
     int ptshift = i * vm.idxbits;
     reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
 
@@ -785,8 +790,9 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
           // Check for write permission to the first-stage PT in second-stage
           // PTE and set the D bit in the second-stage PTE if needed
           s2xlate(addr, base + idx * vm.ptesize, STORE, type, virt, false, true);
-          // set accessed and possibly dirty bits.
-          pte_store(pte_paddr, pte | ad, addr, virt, type, vm.ptesize);
+          // A failed atomic update requires retrying the current page-table level.
+          if (!pte_compare_exchange(pte_paddr, pte, pte | ad, addr, virt, type, vm.ptesize))
+            goto retry;
         } else {
           // take exception if access or possibly dirty bit is not set.
           break;

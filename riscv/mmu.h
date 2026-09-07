@@ -473,11 +473,11 @@ private:
       return pte_load<uint64_t>(pte_paddr, addr, virt, trap_type);
   }
 
-  void pte_store(reg_t pte_paddr, reg_t new_pte, reg_t addr, bool virt, access_type trap_type, size_t ptesize) {
+  bool pte_compare_exchange(reg_t pte_paddr, reg_t expected_pte, reg_t new_pte, reg_t addr, bool virt, access_type trap_type, size_t ptesize) {
     if (ptesize == 4)
-      return pte_store<uint32_t>(pte_paddr, new_pte, addr, virt, trap_type);
+      return pte_compare_exchange<uint32_t>(pte_paddr, expected_pte, new_pte, addr, virt, trap_type);
     else
-      return pte_store<uint64_t>(pte_paddr, new_pte, addr, virt, trap_type);
+      return pte_compare_exchange<uint64_t>(pte_paddr, expected_pte, new_pte, addr, virt, trap_type);
   }
 
   template<typename T> inline reg_t pte_load(reg_t pte_paddr, reg_t addr, bool virt, access_type trap_type)
@@ -503,7 +503,7 @@ private:
     return res;
   }
 
-  template<typename T> inline void pte_store(reg_t pte_paddr, reg_t new_pte, reg_t addr, bool virt, access_type trap_type)
+  template<typename T> inline bool pte_compare_exchange(reg_t pte_paddr, reg_t expected_pte, reg_t new_pte, reg_t addr, bool virt, access_type trap_type)
   {
     const size_t ptesize = sizeof(T);
 
@@ -511,6 +511,20 @@ private:
       throw_access_exception(virt, addr, trap_type);
 
     void* host_pte_addr = sim->addr_to_mem(pte_paddr);
+    target_endian<T> original_pte;
+    if (host_pte_addr) {
+      memcpy(&original_pte, host_pte_addr, ptesize);
+    } else if (!mmio_load(pte_paddr, ptesize, (uint8_t*)&original_pte)) {
+      throw_access_exception(virt, addr, trap_type);
+    }
+
+    // Spike serializes hart execution, so the comparison and conditional store form one atomic operation in the target memory model.
+    // The comparison must bypass the PTE cache and cover the complete PTE.
+    if (from_target(original_pte) != (T)expected_pte) {
+      pte_cache_invalidate(pte_paddr);
+      return false;
+    }
+
     target_endian<T> target_pte = to_target((T)new_pte);
     if (host_pte_addr) {
       memcpy(host_pte_addr, &target_pte, ptesize);
@@ -519,6 +533,7 @@ private:
     }
 
     pte_cache_insert(pte_paddr, new_pte);
+    return true;
   }
 
   std::tuple<bool, reg_t> pte_cache_access(reg_t key)
@@ -531,6 +546,13 @@ private:
   {
     if (value & PTE_V)
       pte_cache[key % PTE_CACHE_ENTRIES] = {key, value};
+  }
+
+  void pte_cache_invalidate(reg_t key)
+  {
+    auto& entry = pte_cache[key % PTE_CACHE_ENTRIES];
+    if (entry.paddr == key)
+      entry.paddr = reg_t(-1);
   }
 
   std::tuple<insn_bits_t, size_t> ALWAYS_INLINE fetch_insn(reg_t addr)
