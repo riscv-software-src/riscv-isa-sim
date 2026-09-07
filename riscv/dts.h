@@ -22,6 +22,8 @@ int fdt_get_next_subnode(const void *fdt, int node);
 
 int fdt_parse_clint(const void *fdt, reg_t *clint_addr,
                     const char *compatible);
+int fdt_parse_debug_controller(const void *fdt, reg_t *dm_addr,
+                               const char *compatible);
 int fdt_parse_plic(const void *fdt, reg_t *plic_addr, uint32_t *ndev,
                    const char *compatible);
 int fdt_parse_ns16550(const void *fdt, reg_t *ns16550_addr,

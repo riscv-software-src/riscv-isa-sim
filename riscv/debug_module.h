@@ -25,6 +25,7 @@ struct debug_module_config_t {
   bool support_haltgroups = true;
   bool support_impebreak = true;
   bool support_abstractauto = true;
+  reg_t debug_start = 0;
 };
 
 struct dmcontrol_t {
@@ -126,6 +127,8 @@ class debug_module_t : public abstract_device_t
     bool load(reg_t addr, size_t len, uint8_t* bytes) override;
     bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
     reg_t size() override;
+    reg_t get_base() const { return dm_start; }
+    void set_base(reg_t base);
 
     // Debug Module Interface that the debugger (in our case through JTAG DTM)
     // uses to access the DM.
@@ -141,6 +144,7 @@ class debug_module_t : public abstract_device_t
 
   private:
     debug_module_config_t config;
+    reg_t dm_start = 0;
     // Actual size of the program buffer, which is 1 word bigger than we let on
     // to implement the implicit ebreak at the end.
     unsigned program_buffer_bytes;

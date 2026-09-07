@@ -73,8 +73,6 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 
   sout_.rdbuf(std::cerr.rdbuf()); // debug output goes to stderr by default
 
-  bus.add_device(DEBUG_START, &debug_module);
-
   socketif = NULL;
 #ifdef HAVE_BOOST_ASIO
   if (socket_enabled) {
@@ -104,6 +102,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
 
   // When running without using a dtb, skip the fdt-based configuration steps
   if (!dtb_enabled) {
+    debug_module.set_base(dm_config.debug_start);
+    bus.add_device(debug_module.get_base(), &debug_module);
     for (size_t i = 0; i < cfg->nprocs(); i++) {
       procs.push_back(new processor_t(cfg->isa, cfg->priv,
                                       cfg, this, cfg->hartids[i], halted,
@@ -175,6 +175,21 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
   }
 
   void *fdt = (void *)dtb.c_str();
+
+  reg_t dts_dm_start;
+  const bool dts_has_dm =
+      fdt_parse_debug_controller(fdt, &dts_dm_start, "riscv,debug-013") == 0;
+
+  if (dts_has_dm && dtb_file && dm_config.debug_start != 0) {
+    std::cerr << "Debug Module base specified twice: --dm-base=0x" << std::hex
+              << dm_config.debug_start << " and a debug-controller node at 0x"
+              << dts_dm_start << std::dec << " in `" << dtb_file
+              << "'. Pass only one." << std::endl;
+    exit(1);
+  }
+
+  debug_module.set_base(dts_has_dm ? dts_dm_start : dm_config.debug_start);
+  bus.add_device(debug_module.get_base(), &debug_module);
 
   // per core attribute
   int cpu_offset = 0, cpu_map_offset, rc;

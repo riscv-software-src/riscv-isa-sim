@@ -125,6 +125,17 @@ debug_module_t::debug_module_t(simif_t *sim, const debug_module_config_t &config
   reset();
 }
 
+void debug_module_t::set_base(reg_t base)
+{
+  if (base % PGSIZE) {
+    fprintf(stderr, "Debug Module base 0x%" PRIx64 " must be 0x%" PRIx64
+            "-byte aligned\n", base, (reg_t)PGSIZE);
+    exit(1);
+  }
+
+  dm_start = base;
+}
+
 debug_module_t::~debug_module_t()
 {
   delete[] program_buffer;
@@ -177,8 +188,6 @@ static bool belongs_to_range(reg_t access_addr, size_t access_len,
 
 bool debug_module_t::load(reg_t addr, size_t len, uint8_t* bytes)
 {
-  addr = DEBUG_START + addr;
-
   const auto interval_ptr =
       std::find_if(debug_memory_regions.begin(), debug_memory_regions.end(),
                    [addr, len](const auto &range) {
@@ -227,8 +236,6 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     memcpy(id_bytes, bytes, 4);
     id = read32(id_bytes, 0);
   }
-
-  addr = DEBUG_START + addr;
 
   if (handle_range_store(addr, len, bytes, debug_data_start, dmdata.size(), dmdata.data()))
     return true;
