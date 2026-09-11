@@ -1,5 +1,6 @@
-Checks: 'modernize-use-starts-ends-with'
-WarningsAsErrors: '* '
+Checks: 'modernize-use-starts-ends-with, modernize-use-override'
+
+WarningsAsErrors: '*'
 
 HeaderFilterRegex: '.*'
 ExcludeHeaderFilterRegex: 'softfloat/.*'

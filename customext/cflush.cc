@@ -4,7 +4,7 @@
 #include <cstring>
 
 struct : public arg_t {
-  std::string to_string(insn_t insn) const {
+  std::string to_string(insn_t insn) const override {
     return xpr_name[insn.rs1()];
   }
 } xrs1;
