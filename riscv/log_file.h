@@ -2,7 +2,7 @@
 #ifndef _RISCV_LOGFILE_H
 #define _RISCV_LOGFILE_H
 
-#include <stdio.h>
+#include <cstdio>
 #include <memory>
 #include <sstream>
 #include <stdexcept>

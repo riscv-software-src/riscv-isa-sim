@@ -8,10 +8,10 @@
 #include "device.h"
 #include "byteorder.h"
 #include "../riscv/platform.h"
-#include <string.h>
+#include <cstring>
 #include <map>
 #include <vector>
-#include <assert.h>
+#include <cassert>
 
 class htif_t : public chunked_memif_t
 {

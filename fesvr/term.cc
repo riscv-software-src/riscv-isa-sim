@@ -3,9 +3,9 @@
 #include <termios.h>
 #include <unistd.h>
 #include <poll.h>
-#include <signal.h>
-#include <stdlib.h>
-#include <string.h>
+#include <csignal>
+#include <cstdlib>
+#include <cstring>
 
 static int tcsetattr_ttou(int fd, int optional_actions, const struct termios *p);
 

@@ -8,7 +8,7 @@
 #include <vector>
 #include <cstdarg>
 #include <sstream>
-#include <stdlib.h>
+#include <cstdlib>
 // For std::reverse:
 #include <algorithm>
 

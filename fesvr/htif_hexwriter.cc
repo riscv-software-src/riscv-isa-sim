@@ -1,7 +1,7 @@
 // See LICENSE for license details.
 
 #include <iostream>
-#include <assert.h>
+#include <cassert>
 #include "htif_hexwriter.h"
 
 htif_hexwriter_t::htif_hexwriter_t(size_t b, size_t w, size_t d)

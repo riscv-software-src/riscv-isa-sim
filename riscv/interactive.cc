@@ -15,14 +15,14 @@
 #include <iomanip>
 #include <climits>
 #include <cinttypes>
-#include <assert.h>
-#include <stdlib.h>
+#include <cassert>
+#include <cstdlib>
 #include <unistd.h>
 #include <sstream>
 #include <string>
 #include <vector>
 #include <algorithm>
-#include <math.h>
+#include <cmath>
 
 #ifdef __GNUC__
 # pragma GCC diagnostic ignored "-Wunused-parameter"
