@@ -285,10 +285,9 @@ int htif_t::run()
 {
   start();
 
-  auto enq_func = [](std::queue<reg_t>* q, uint64_t x) { q->push(x); };
   std::queue<reg_t> fromhost_queue;
   std::function<void(reg_t)> fromhost_callback =
-    std::bind(enq_func, &fromhost_queue, std::placeholders::_1);
+    [&fromhost_queue](reg_t x) { fromhost_queue.push(x); };
 
   if (tohost_addr == 0) {
     while (!should_exit())

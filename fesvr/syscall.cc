@@ -14,8 +14,6 @@
 #include <termios.h>
 #include <sstream>
 #include <iostream>
-using namespace std::placeholders;
-
 #define RISCV_AT_FDCWD -100
 
 #ifdef __GNUC__
@@ -173,7 +171,7 @@ syscall_t::syscall_t(htif_t* htif)
   table[1039] = &syscall_t::sys_lstat;
   table[2011] = &syscall_t::sys_getmainvars;
 
-  register_command(0, std::bind(&syscall_t::handle_syscall, this, _1), "syscall");
+  register_command(0, [this](command_t command) { handle_syscall(command); }, "syscall");
 
   int stdin_fd = dup(0), stdout_fd0 = dup(1), stdout_fd1 = dup(1);
   if (stdin_fd < 0 || stdout_fd0 < 0 || stdout_fd1 < 0)
