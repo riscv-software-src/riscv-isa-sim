@@ -1,4 +1,4 @@
-Checks: 'modernize-use-starts-ends-with, modernize-use-override'
+Checks: 'modernize-use-starts-ends-with, modernize-use-override, modernize-pass-by-value, -clang-diagnostic-unused-private-field'
 
 WarningsAsErrors: '*'
 
