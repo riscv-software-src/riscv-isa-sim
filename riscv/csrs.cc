@@ -509,7 +509,7 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
 virtualized_csr_t::virtualized_csr_t(processor_t* const proc, csr_t_p orig, csr_t_p virt):
   csr_t(proc, orig->address),
   orig_csr(orig),
-  virt_csr(virt) {
+  virt_csr(std::move(virt)) {
 }
 
 reg_t virtualized_csr_t::read() const noexcept {
@@ -660,7 +660,7 @@ reg_t vsstatus_csr_t::read() const noexcept {
 // implement class sstatus_proxy_csr_t
 sstatus_proxy_csr_t::sstatus_proxy_csr_t(processor_t* const proc, const reg_t addr, mstatus_csr_t_p mstatus):
   base_status_csr_t(proc, addr),
-  mstatus(mstatus) {
+  mstatus(std::move(mstatus)) {
 }
 
 bool sstatus_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
@@ -757,7 +757,7 @@ bool mnstatus_csr_t::unlogged_write(const reg_t val) noexcept {
 // implement class rv32_low_csr_t
 rv32_low_csr_t::rv32_low_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig):
   csr_t(proc, addr),
-  orig(orig) {
+  orig(std::move(orig)) {
 }
 
 reg_t rv32_low_csr_t::read() const noexcept {
@@ -779,7 +779,7 @@ reg_t rv32_low_csr_t::written_value() const noexcept {
 // implement class rv32_high_csr_t
 rv32_high_csr_t::rv32_high_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig):
   csr_t(proc, addr),
-  orig(orig) {
+  orig(std::move(orig)) {
 }
 
 reg_t rv32_high_csr_t::read() const noexcept {
@@ -1043,7 +1043,7 @@ reg_t generic_int_accessor_t::deleg_mask() const {
 // implement class mip_proxy_csr_t
 mip_proxy_csr_t::mip_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr):
   csr_t(proc, addr),
-  accr(accr) {
+  accr(std::move(accr)) {
 }
 
 void mip_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
@@ -1067,7 +1067,7 @@ bool mip_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
 // implement class mie_proxy_csr_t
 mie_proxy_csr_t::mie_proxy_csr_t(processor_t* const proc, const reg_t addr, generic_int_accessor_t_p accr):
   csr_t(proc, addr),
-  accr(accr) {
+  accr(std::move(accr)) {
 }
 
 void mie_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
@@ -1225,7 +1225,7 @@ bool envcfg_csr_t::unlogged_write(const reg_t val) noexcept {
 // implement class henvcfg_csr_t
 henvcfg_csr_t::henvcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init, csr_t_p menvcfg):
   envcfg_csr_t(proc, addr, mask, init),
-  menvcfg(menvcfg) {
+  menvcfg(std::move(menvcfg)) {
 }
 
 // implement class base_atp_csr_t and family
@@ -1311,7 +1311,7 @@ wide_counter_csr_t::wide_counter_csr_t(processor_t* const proc, const reg_t addr
   csr_t(proc, addr),
   val(0),
   written(false),
-  config_csr(config_csr) {
+  config_csr(std::move(config_csr)) {
 }
 
 reg_t wide_counter_csr_t::read() const noexcept {
@@ -1385,7 +1385,7 @@ void time_counter_csr_t::sync(const reg_t val) noexcept {
 
 proxy_csr_t::proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate):
   csr_t(proc, addr),
-  delegate(delegate) {
+  delegate(std::move(delegate)) {
 }
 
 reg_t proxy_csr_t::read() const noexcept {
@@ -1461,7 +1461,7 @@ void hypervisor_csr_t::verify_permissions(insn_t insn, bool write) const {
 
 hideleg_csr_t::hideleg_csr_t(processor_t* const proc, const reg_t addr, csr_t_p mideleg):
   masked_csr_t(proc, addr, MIP_VS_MASK, 0),
-  mideleg(mideleg) {
+  mideleg(std::move(mideleg)) {
 }
 
 reg_t hideleg_csr_t::read() const noexcept {
@@ -1679,8 +1679,8 @@ bool float_csr_t::unlogged_write(const reg_t val) noexcept {
 
 composite_csr_t::composite_csr_t(processor_t* const proc, const reg_t addr, csr_t_p upper_csr, csr_t_p lower_csr, const unsigned upper_lsb):
   csr_t(proc, addr),
-  upper_csr(upper_csr),
-  lower_csr(lower_csr),
+  upper_csr(std::move(upper_csr)),
+  lower_csr(std::move(lower_csr)),
   upper_lsb(upper_lsb) {
 }
 
@@ -1996,7 +1996,7 @@ void virtualized_indirect_csr_t::verify_permissions(insn_t insn, bool write) con
 
 sscsrind_reg_csr_t::sscsrind_reg_csr_t(processor_t* const proc, const reg_t addr, csr_t_p iselect) :
   csr_t(proc, addr),
-  iselect(iselect) {
+  iselect(std::move(iselect)) {
 }
 
 void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
@@ -2462,7 +2462,7 @@ bool hgeie_csr_t::unlogged_write(const reg_t val) noexcept {
   return masked_csr_t::unlogged_write(val);
 }
 
-aia_ireg_proxy_csr_t::aia_ireg_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p iselect) : csr_t(proc, addr), iselect(iselect), vs(false), ireg_map(nullptr) {
+aia_ireg_proxy_csr_t::aia_ireg_proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p iselect) : csr_t(proc, addr), iselect(std::move(iselect)), vs(false), ireg_map(nullptr) {
   switch (address) {
     case CSR_MIREG: case CSR_SIREG:
       ireg_map = proc->imsic->register_iprio(proc, address);
