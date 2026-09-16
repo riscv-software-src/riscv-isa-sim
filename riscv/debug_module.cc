@@ -927,8 +927,8 @@ bool debug_module_t::perform_abstract_memory_access() {
   return true;
 }
 
-using handle_memory_func = uint32_t (*)(unsigned rd_src, unsigned base, uint16_t offset);
-using handle_mstatus_func = uint32_t(*)(unsigned rd, unsigned rs1, unsigned csr);
+using handle_memory_func = std::uint32_t (*)(std::uint32_t src, std::uint32_t base, std::int32_t offset);
+using handle_mstatus_func = std::uint32_t (*)(std::uint32_t rd, std::uint32_t rs1, std::uint32_t csr);
 static constexpr std::array<handle_memory_func, 4> lx = {&lb, &lh, &lw, &ld};
 static constexpr std::array<handle_memory_func, 4> sx = {&sb, &sh, &sw, &sd};
 static constexpr std::array<handle_mstatus_func, 2> csrrx = {&csrrc, &csrrs};
