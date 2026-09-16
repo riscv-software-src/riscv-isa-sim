@@ -2259,7 +2259,7 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
   }
 
 #define ZVLDOT_GENERIC_LOOP(a_t, b_t, c_t, macc) \
-  auto dot = std::bind(generic_dot_product<a_t, b_t, c_t>, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, macc); \
+  auto dot = [&](const std::vector<a_t>& a, const std::vector<b_t>& b, c_t c) { return generic_dot_product<a_t, b_t, c_t>(a, b, c, macc); }; \
   ZVLDOT_LOOP(a_t, b_t, c_t, dot)
 
 #define ZVLDOT_SIMPLE_LOOP(a_t, b_t, c_t) \
@@ -2284,7 +2284,7 @@ c_t generic_dot_product(const std::vector<a_t>& a, const std::vector<b_t>& b, c_
   }
 
 #define ZVBDOT_GENERIC_LOOP(a_t, b_t, c_t, macc) \
-  auto dot = std::bind(generic_dot_product<a_t, b_t, c_t>, std::placeholders::_1, std::placeholders::_2, std::placeholders::_3, macc); \
+  auto dot = [&](const std::vector<a_t>& a, const std::vector<b_t>& b, c_t c) { return generic_dot_product<a_t, b_t, c_t>(a, b, c, macc); }; \
   ZVBDOT_LOOP(a_t, b_t, c_t, dot)
 
 #define ZVBDOT_SIMPLE_LOOP(a_t, b_t, c_t) \
