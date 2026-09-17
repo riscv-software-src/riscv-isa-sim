@@ -97,8 +97,8 @@ default-CFLAGS   := -DPREFIX=\"$(prefix)\" -Wall -Wno-nonportable-include-path -
 default-CXXFLAGS := $(default-CFLAGS) -std=c++2a
 
 mcppbs-CPPFLAGS := @CPPFLAGS@
-mcppbs-CFLAGS   := $(default-CFLAGS) @CFLAGS@
-mcppbs-CXXFLAGS := $(default-CXXFLAGS) @CXXFLAGS@
+mcppbs-CFLAGS   := $(default-CFLAGS) @CFLAGS@ @SPIKE_OPT_CFLAGS@
+mcppbs-CXXFLAGS := $(default-CXXFLAGS) @CXXFLAGS@ @SPIKE_OPT_CFLAGS@
 
 CC            := @CC@
 CXX           := @CXX@
@@ -118,7 +118,7 @@ COMPILE_C     := $(CC) -MMD -MP $(all-c-flags) $(sprojs_include)
 #  - LDFLAGS : Flags for the linker (eg. -L)
 #  - LIBS    : Library flags (eg. -l)
 
-mcppbs-LDFLAGS := @LDFLAGS@ @BOOST_LDFLAGS@
+mcppbs-LDFLAGS := @SPIKE_OPT_LDFLAGS@ @LDFLAGS@ @BOOST_LDFLAGS@
 all-link-flags := $(mcppbs-LDFLAGS) $(LDFLAGS)
 
 comma := ,

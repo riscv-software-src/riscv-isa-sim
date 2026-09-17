@@ -658,6 +658,8 @@ INSTALL_PROGRAM
 STOW_PREFIX
 STOW_ROOT
 enable_stow
+SPIKE_OPT_LDFLAGS
+SPIKE_OPT_CFLAGS
 DTC
 RANLIB
 AR
@@ -721,6 +723,7 @@ SHELL'
 ac_subst_files=''
 ac_user_opts='
 enable_option_checking
+enable_clang_lto
 enable_stow
 with_boost
 with_boost_libdir
@@ -1365,6 +1368,10 @@ Optional Features:
   --disable-option-checking  ignore unrecognized --enable/--with options
   --disable-FEATURE       do not include FEATURE (same as --enable-FEATURE=no)
   --enable-FEATURE[=ARG]  include FEATURE [ARG=yes]
+  --enable-clang-lto[=VERSION]
+                          prefer an optimized host-native Clang ThinLTO build;
+                          VERSION selects LLVM tools (default: auto-detect
+                          version 21)
   --enable-stow           Enable stow-based install
   --enable-optional-subprojects
                           Enable all optional subprojects
@@ -3220,6 +3227,218 @@ case $host_os in *\ *) host_os=`echo "$host_os" | sed 's/ /-/g'`;; esac
 
 
 
+
+#-------------------------------------------------------------------------
+# Build profiles
+#-------------------------------------------------------------------------
+
+# Check whether --enable-clang-lto was given.
+if test ${enable_clang_lto+y}
+then :
+  enableval=$enable_clang_lto; enable_clang_lto=$enableval
+else case e in #(
+  e) enable_clang_lto=auto ;;
+esac
+fi
+
+
+case "$enable_clang_lto" in
+  auto)
+    spike_llvm_suffix=-21
+    spike_clang_lto_required=no
+    ;;
+  yes)
+    spike_llvm_suffix=-21
+    spike_clang_lto_required=yes
+    ;;
+  no)
+    spike_clang_lto_required=no
+    ;;
+  *[!0-9]*|'')
+    as_fn_error $? "--enable-clang-lto accepts only a numeric LLVM version" "$LINENO" 5
+    ;;
+  *)
+    spike_llvm_suffix="-$enable_clang_lto"
+    spike_clang_lto_required=yes
+    ;;
+esac
+
+spike_use_clang_lto=no
+
+if test "x$enable_clang_lto" != xno
+then :
+
+  spike_clang_cc=clang$spike_llvm_suffix
+  spike_clang_cxx=clang++$spike_llvm_suffix
+  spike_clang_ar=llvm-ar$spike_llvm_suffix
+  spike_clang_ranlib=llvm-ranlib$spike_llvm_suffix
+  spike_clang_ld=ld.lld$spike_llvm_suffix
+
+  if test "x$enable_clang_lto" = xauto && test "x$build" != "x$host"
+then :
+
+    { printf "%s\n" "$as_me:${as_lineno-$LINENO}: cross-compiling; skipping automatic Clang ThinLTO selection" >&5
+printf "%s\n" "$as_me: cross-compiling; skipping automatic Clang ThinLTO selection" >&6;}
+
+else case e in #(
+  e)
+    if test "x$enable_clang_lto" = xauto &&
+           { test -n "${CC-}" || test -n "${CXX-}" ||
+             test -n "${AR-}" || test -n "${RANLIB-}"; }
+then :
+
+      { printf "%s\n" "$as_me:${as_lineno-$LINENO}: compiler tools were supplied; skipping automatic Clang ThinLTO selection" >&5
+printf "%s\n" "$as_me: compiler tools were supplied; skipping automatic Clang ThinLTO selection" >&6;}
+
+else case e in #(
+  e)
+      CC=${CC:-$spike_clang_cc}
+      CXX=${CXX:-$spike_clang_cxx}
+      AR=${AR:-$spike_clang_ar}
+      RANLIB=${RANLIB:-$spike_clang_ranlib}
+
+      spike_missing_llvm_tools=
+      for spike_llvm_tool in "$CC" "$CXX" "$AR" "$RANLIB" \
+                             "$spike_clang_ld"; do
+        if command -v "$spike_llvm_tool" >/dev/null 2>&1 &&
+           "$spike_llvm_tool" --version >/dev/null 2>&1; then
+          :
+        else
+          spike_missing_llvm_tools="$spike_missing_llvm_tools $spike_llvm_tool"
+        fi
+      done
+
+      if test -z "$spike_missing_llvm_tools"
+then :
+
+        spike_clang_ld_path=`command -v "$spike_clang_ld"`
+        spike_clang_ld_flag="--ld-path=$spike_clang_ld_path"
+
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: checking whether the Clang ThinLTO toolchain can build a C++ program" >&5
+printf %s "checking whether the Clang ThinLTO toolchain can build a C++ program... " >&6; }
+        cat > conftest.c <<'_ACEOF'
+int spike_lto_probe(void) { return 0; }
+_ACEOF
+        cat > conftest.cpp <<'_ACEOF'
+#include <thread>
+extern "C" int spike_lto_probe(void);
+static void spike_thread_probe(void) {}
+int main(void) {
+  std::thread thread(spike_thread_probe);
+  thread.join();
+  return spike_lto_probe();
+}
+_ACEOF
+        spike_try_clang_lto ()
+        {
+          rm -f conftest conftest.o conftest.a
+          if test -n "$spike_clang_gcc_flag"; then
+            "$CC" "$spike_clang_gcc_flag" -O3 -march=native -flto=thin \
+              -c conftest.c -o conftest.o >/dev/null 2>&1 &&
+            "$AR" cr conftest.a conftest.o >/dev/null 2>&1 &&
+            "$RANLIB" conftest.a >/dev/null 2>&1 &&
+            "$CXX" "$spike_clang_gcc_flag" -O3 -march=native -flto=thin \
+              "$spike_clang_ld_flag" -pthread conftest.cpp conftest.a \
+              -o conftest >/dev/null 2>&1
+          else
+            "$CC" -O3 -march=native -flto=thin \
+              -c conftest.c -o conftest.o >/dev/null 2>&1 &&
+            "$AR" cr conftest.a conftest.o >/dev/null 2>&1 &&
+            "$RANLIB" conftest.a >/dev/null 2>&1 &&
+            "$CXX" -O3 -march=native -flto=thin "$spike_clang_ld_flag" \
+              -pthread conftest.cpp conftest.a -o conftest >/dev/null 2>&1
+          fi
+        }
+
+        spike_clang_gcc_flag=
+        spike_clang_probe_ok=no
+        if spike_try_clang_lto
+then :
+
+          spike_clang_probe_ok=yes
+
+fi
+
+        if test "x$spike_clang_probe_ok" = xno && command -v g++ >/dev/null 2>&1
+then :
+
+          spike_system_libstdcxx=`g++ -print-file-name=libstdc++.so 2>/dev/null`
+          if test -f "$spike_system_libstdcxx"
+then :
+
+            spike_system_gcc_dir=${spike_system_libstdcxx%/*}
+            spike_clang_gcc_flag="--gcc-install-dir=$spike_system_gcc_dir"
+            if spike_try_clang_lto
+then :
+
+              spike_clang_probe_ok="yes, using $spike_system_gcc_dir"
+
+fi
+
+fi
+
+fi
+        rm -f conftest conftest.c conftest.cpp conftest.o conftest.a
+        { printf "%s\n" "$as_me:${as_lineno-$LINENO}: result: $spike_clang_probe_ok" >&5
+printf "%s\n" "$spike_clang_probe_ok" >&6; }
+
+        if test "x$spike_clang_probe_ok" != xno
+then :
+
+          if test -n "$spike_clang_gcc_flag"
+then :
+
+            CC="$CC $spike_clang_gcc_flag"
+            CXX="$CXX $spike_clang_gcc_flag"
+
+fi
+          spike_use_clang_lto=yes
+
+else case e in #(
+  e)
+          if test "x$spike_clang_lto_required" = xyes
+then :
+
+            as_fn_error $? "the requested Clang ThinLTO toolchain cannot build and link a C++ program" "$LINENO" 5
+
+else case e in #(
+  e)
+            { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Clang ThinLTO toolchain is unusable; falling back to the default toolchain" >&5
+printf "%s\n" "$as_me: WARNING: Clang ThinLTO toolchain is unusable; falling back to the default toolchain" >&2;}
+            unset CC CXX AR RANLIB
+           ;;
+esac
+fi
+         ;;
+esac
+fi
+
+else case e in #(
+  e)
+        if test "x$spike_clang_lto_required" = xyes
+then :
+
+          as_fn_error $? "required Clang ThinLTO tools unavailable:$spike_missing_llvm_tools" "$LINENO" 5
+
+else case e in #(
+  e)
+          { printf "%s\n" "$as_me:${as_lineno-$LINENO}: WARNING: Clang ThinLTO tools unavailable:$spike_missing_llvm_tools; falling back to the default toolchain" >&5
+printf "%s\n" "$as_me: WARNING: Clang ThinLTO tools unavailable:$spike_missing_llvm_tools; falling back to the default toolchain" >&2;}
+          unset CC CXX AR RANLIB
+         ;;
+esac
+fi
+       ;;
+esac
+fi
+     ;;
+esac
+fi
+   ;;
+esac
+fi
+
+fi
 
 #-------------------------------------------------------------------------
 # Checks for programs
@@ -5170,6 +5389,20 @@ printf "%s\n" "#define AC_APPLE_UNIVERSAL_BUILD 1" >>confdefs.h
      as_fn_error $? "unknown endianness
  presetting ac_cv_c_bigendian=no (or yes) will help" "$LINENO" 5 ;;
  esac
+
+
+SPIKE_OPT_CFLAGS=
+SPIKE_OPT_LDFLAGS=
+
+if test "x$spike_use_clang_lto" = xyes
+then :
+
+  SPIKE_OPT_CFLAGS="-O3 -march=native -flto=thin"
+  SPIKE_OPT_LDFLAGS="-flto=thin $spike_clang_ld_flag"
+
+fi
+
+
 
 
 #-------------------------------------------------------------------------
