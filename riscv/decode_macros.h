@@ -357,7 +357,7 @@ inline long double to_f(float128_t f) { long double r; memcpy(&r, &f, sizeof(r))
   do { \
     DECLARE_XENVCFG_VARS(field); \
     if ((STATE.prv != PRV_M && m##field == 0) || \
-        (STATE.prv == PRV_U && !STATE.v && s##field == 0)) \
+        (p->extension_enabled('S') && STATE.prv == PRV_U && !STATE.v && s##field == 0)) \
       throw trap_illegal_instruction(insn.bits()); \
     else if (STATE.v && (h##field == 0 || \
                         (STATE.prv == PRV_U && s##field == 0))) \
