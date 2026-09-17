@@ -338,6 +338,7 @@ void processor_t::step(size_t n)
     }
     catch (triggers::matched_t& t)
     {
+      n = instret;
       take_trigger_action(t.action, t.address, pc, t.gva);
       // End this step at the trigger boundary.  In particular, a timing-before
       // trigger retires no instruction, so continuing would immediately execute
@@ -346,6 +347,7 @@ void processor_t::step(size_t n)
     }
     catch(trap_debug_mode&)
     {
+      n = instret;
       enter_debug_mode(DCSR_CAUSE_SWBP, 0);
     }
 
