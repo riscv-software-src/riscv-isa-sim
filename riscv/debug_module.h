@@ -144,10 +144,10 @@ class debug_module_t : public abstract_device_t
     // Actual size of the program buffer, which is 1 word bigger than we let on
     // to implement the implicit ebreak at the end.
     unsigned program_buffer_bytes;
-    static const unsigned debug_data_start = 0x380;
+    static const unsigned debug_data_start = 0x390;
     unsigned debug_progbuf_start;
 
-    static const unsigned debug_abstract_size = 24;
+    static const unsigned debug_abstract_size = 28;
     unsigned debug_abstract_start;
     // R/W this through custom registers, to allow debuggers to test that
     // functionality.
@@ -156,6 +156,8 @@ class debug_module_t : public abstract_device_t
     simif_t *sim;
 
     uint8_t debug_rom_whereto[4];
+    // Stores hart state for abstract commands.
+    uint8_t debug_rom_saved_state[4];
     uint8_t debug_abstract[debug_abstract_size * 4];
     uint8_t *program_buffer;
     static constexpr unsigned dmdata_reg_size = 4;
@@ -204,14 +206,19 @@ class debug_module_t : public abstract_device_t
     void reset();
 
     bool perform_abstract_command();
+    void emit_save_state(unsigned &offset, bool save_mstatus);
+    void emit_prologue(unsigned &offset, bool save_mstatus);
+    void emit_restore_state(unsigned &offset, bool restore_mstatus);
+    void emit_epilogue(unsigned &offset, bool restore_mstatus);
+    void emit_terminator(unsigned &offset, bool postexec);
     bool perform_abstract_register_access();
-    bool aar_handle_register_transfer(unsigned regno, unsigned size, bool write, unsigned &offset);
-    bool aar_emit_csr_transfer(unsigned regno, unsigned size, bool write, unsigned &offset);
-    bool aar_emit_gpr_transfer(unsigned regno, unsigned size, bool write, unsigned &offset);
-    bool aar_emit_fpr_transfer(unsigned regno, unsigned size, bool write, unsigned &offset);
+    bool aar_transfer_supported(unsigned regno, unsigned size) const;
+    void aar_handle_register_transfer(unsigned regno, unsigned size, bool write, unsigned &offset);
+    void aar_emit_csr_transfer(unsigned regno, unsigned size, bool write, unsigned &offset);
+    void aar_emit_gpr_transfer(unsigned regno, unsigned size, bool write, unsigned &offset);
+    void aar_emit_fpr_transfer(unsigned regno, unsigned size, bool write, unsigned &offset);
     bool aar_handle_custom_register(unsigned regno, bool write);
-    void aar_emit_prologue(unsigned &offset);
-    void aar_emit_epilogue(unsigned &offset);
+    void aar_emit_prologue(unsigned &offset, bool fpu_reg);
 
     bool perform_abstract_memory_access();
 
@@ -239,7 +246,7 @@ class debug_module_t : public abstract_device_t
 
     unsigned sb_read_wait, sb_write_wait;
 
-    std::array<region_descriptor, 6> debug_memory_regions;
+    std::array<region_descriptor, 7> debug_memory_regions;
 };
 
 #endif
