@@ -1,6 +1,8 @@
 require_extension(EXT_ZICBOM);
-DECLARE_XENVCFG_VARS(CBIE);
 require_envcfg(CBIE);
+
+DECLARE_XENVCFG_VARS(CBIE);
+
 if ((STATE.prv != PRV_M && mCBIE) ||
     (!STATE.v && STATE.prv == PRV_U && sCBIE) ||
     (STATE.v && (hCBIE || (STATE.prv == PRV_U && sCBIE))))
