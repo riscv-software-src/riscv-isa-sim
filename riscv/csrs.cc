@@ -487,7 +487,9 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   }
 
   if (proc->extension_enabled(EXT_ZKR)) {
-    uint64_t mask = MSECCFG_USEED | MSECCFG_SSEED;
+    reg_t mask =
+      (proc->extension_enabled('U') ? MSECCFG_USEED : 0) |
+      (proc->extension_enabled('S') ? MSECCFG_SSEED : 0);
     new_val = (new_val & ~mask) | (val & mask);
   }
 
