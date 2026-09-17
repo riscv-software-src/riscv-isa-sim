@@ -362,8 +362,6 @@ inline long double to_f(float128_t f) { long double r; memcpy(&r, &f, sizeof(r))
   reg_t s##field = get_field(STATE.senvcfg->read(), SENVCFG_##field); \
   reg_t h##field = get_field(STATE.henvcfg->read(), HENVCFG_##field)
 
-#endif
-
 #define software_check(x, tval) (unlikely(!(x)) ? throw trap_software_check(tval) : (void) 0)
 #define ZICFILP_xLPE(v, prv) \
   ({ \
@@ -390,3 +388,5 @@ inline long double to_f(float128_t f) { long double r; memcpy(&r, &f, sizeof(r))
       return p->set_lpad_expected(npc); \
     } \
   }
+
+#endif
