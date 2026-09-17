@@ -204,11 +204,11 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 #define require_vm do { if (insn.v_vm() == 0) require(insn.rd() != 0); } while (0);
 #define require_envcfg(field) \
   do { \
-    if (((STATE.prv != PRV_M) && (m##field == 0)) || \
-        ((STATE.prv == PRV_U && !STATE.v) && (s##field == 0))) \
+    if ((STATE.prv != PRV_M && m##field == 0) || \
+        (STATE.prv == PRV_U && !STATE.v && s##field == 0)) \
       throw trap_illegal_instruction(insn.bits()); \
-    else if (STATE.v && ((h##field == 0) || \
-                        ((STATE.prv == PRV_U) && (s##field == 0)))) \
+    else if (STATE.v && (h##field == 0 || \
+                        (STATE.prv == PRV_U && s##field == 0))) \
       throw trap_virtual_instruction(insn.bits()); \
   } while (0);
 
