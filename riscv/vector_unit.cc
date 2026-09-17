@@ -149,7 +149,8 @@ reg_t vectorUnit_t::vectorUnit_t::set_vl(int rd, int rs1, reg_t reqVL, reg_t new
   widen = 0;
   tm = 0;
   tk = 0;
-  mtype->write_raw(read_mtype());
+  if (p->extension_enabled(EXT_ZVTBASE))
+    mtype->write_raw(read_mtype());
 
   // set vl
   if (vlmax == 0) {
