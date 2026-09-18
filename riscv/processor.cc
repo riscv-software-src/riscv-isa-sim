@@ -382,6 +382,11 @@ const char* processor_t::get_privilege_string() const
 
 void processor_t::enter_debug_mode(uint8_t cause, uint8_t extcause)
 {
+  // Keep the cause from the first debug entry;
+  // a later entry must not overwrite it.
+  if (state.debug_mode)
+    return;
+
   const bool has_zicfilp = extension_enabled(EXT_ZICFILP);
   state.debug_mode = true;
   state.dcsr->update_fields(cause, extcause, state.prv, state.v, state.elp);
