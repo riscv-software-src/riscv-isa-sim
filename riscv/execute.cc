@@ -223,18 +223,23 @@ void processor_t::step(size_t n)
     state.prv_changed = false;
     state.v_changed = false;
     reg_t mcountinhibit = state.mcountinhibit->read();
+    _mmu->reset_triggers();
+
+    #define retire_one() { \
+      ++instret; \
+      _mmu->check_triggers_after(); \
+    }
 
     #define advance_pc(npc) { \
       if (unlikely(invalid_pc(npc))) { \
         switch (npc) { \
-          case PC_SERIALIZE_BEFORE: state.serialized = true; break; \
-          case PC_SERIALIZE_AFTER: ++instret; break; \
+          case PC_SERIALIZE_BEFORE: state.serialized = true; goto serialize; \
+          case PC_SERIALIZE_AFTER: retire_one(); goto serialize; \
           default: abort(); \
         } \
-        goto serialize; \
       } else { \
         state.pc = npc; \
-        instret++; \
+        retire_one(); \
       }}
 
     try
