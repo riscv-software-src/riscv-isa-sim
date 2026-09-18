@@ -9,15 +9,13 @@
 #include <fcntl.h>
 #include <unistd.h>
 #include <sys/stat.h>
-using namespace std::placeholders;
-
 device_t::device_t()
   : command_handlers(command_t::MAX_COMMANDS),
     command_names(command_t::MAX_COMMANDS)
 {
   for (size_t cmd = 0; cmd < command_t::MAX_COMMANDS; cmd++)
-    register_command(cmd, std::bind(&device_t::handle_null_command, this, _1), "");
-  register_command(command_t::MAX_COMMANDS-1, std::bind(&device_t::handle_identify, this, _1), "identity");
+    register_command(cmd, [this](command_t command) { handle_null_command(command); }, "");
+  register_command(command_t::MAX_COMMANDS-1, [this](command_t command) { handle_identify(command); }, "identity");
 }
 
 void device_t::register_command(size_t cmd, command_func_t handler, const char* name)
@@ -57,8 +55,8 @@ void device_t::handle_identify(command_t cmd)
 
 bcd_t::bcd_t()
 {
-  register_command(0, std::bind(&bcd_t::handle_read, this, _1), "read");
-  register_command(1, std::bind(&bcd_t::handle_write, this, _1), "write");
+  register_command(0, [this](command_t command) { handle_read(command); }, "read");
+  register_command(1, [this](command_t command) { handle_write(command); }, "write");
 }
 
 void bcd_t::handle_read(command_t cmd)
@@ -87,8 +85,8 @@ disk_t::disk_t(const char* fn)
   if (fd < 0)
     throw std::runtime_error("could not open " + std::string(fn));
 
-  register_command(0, std::bind(&disk_t::handle_read, this, _1), "read");
-  register_command(1, std::bind(&disk_t::handle_write, this, _1), "write");
+  register_command(0, [this](command_t command) { handle_read(command); }, "read");
+  register_command(1, [this](command_t command) { handle_write(command); }, "write");
 
   struct stat st;
   if (fstat(fd, &st) < 0)

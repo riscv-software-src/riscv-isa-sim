@@ -15,7 +15,7 @@ class command_t
  public:
   typedef std::function<void(uint64_t)> callback_t;
   command_t(memif_t& memif, uint64_t tohost, callback_t cb)
-    : _memif(memif), tohost(tohost), cb(cb) {}
+    : _memif(memif), tohost(tohost), cb(std::move(cb)) {}
 
   memif_t& memif() { return _memif; }
   uint8_t device() { return tohost >> 56; }

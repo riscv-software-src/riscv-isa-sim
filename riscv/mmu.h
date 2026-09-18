@@ -565,6 +565,17 @@ private:
     return std::make_tuple(insn, length);
   }
 
+  void reset_triggers()
+  {
+    matched_trigger.reset();
+  }
+
+  void check_triggers_after()
+  {
+    if (matched_trigger)
+      throw matched_trigger.value();
+  }
+
   inline bool in_mprv() const
   {
     return proc != nullptr

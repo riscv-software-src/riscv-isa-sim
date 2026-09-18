@@ -21,7 +21,7 @@ class option_parser_t
     int arg;
     std::function<void(const char*)> func;
     option_t(char chr, const char* str, int arg, std::function<void(const char*)> func)
-     : chr(chr), str(str), arg(arg), func(func) {}
+     : chr(chr), str(str), arg(arg), func(std::move(func)) {}
   };
   std::vector<option_t> opts;
   void (*helpmsg)(void);

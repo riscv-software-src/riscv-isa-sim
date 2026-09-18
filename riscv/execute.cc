@@ -220,23 +220,26 @@ void processor_t::step(size_t n)
 
   while (n > 0) {
     size_t instret = 0;
-    reg_t pc = state.pc;
     state.prv_changed = false;
     state.v_changed = false;
     reg_t mcountinhibit = state.mcountinhibit->read();
+    _mmu->reset_triggers();
 
-    #define advance_pc() { \
-      if (unlikely(invalid_pc(pc))) { \
-        switch (pc) { \
-          case PC_SERIALIZE_BEFORE: state.serialized = true; break; \
-          case PC_SERIALIZE_AFTER: ++instret; break; \
+    #define retire_one() { \
+      ++instret; \
+      _mmu->check_triggers_after(); \
+    }
+
+    #define advance_pc(npc) { \
+      if (unlikely(invalid_pc(npc))) { \
+        switch (npc) { \
+          case PC_SERIALIZE_BEFORE: state.serialized = true; goto serialize; \
+          case PC_SERIALIZE_AFTER: retire_one(); goto serialize; \
           default: abort(); \
         } \
-        pc = state.pc; \
-        goto serialize; \
       } else { \
-        state.pc = pc; \
-        instret++; \
+        state.pc = npc; \
+        retire_one(); \
       }}
 
     try
@@ -254,8 +257,7 @@ void processor_t::step(size_t n)
             state.single_step = state.STEP_NONE;
             if (!state.debug_mode) {
               enter_debug_mode(DCSR_CAUSE_STEP, 0);
-              // enter_debug_mode changed state.pc, so we can't just continue.
-              break;
+              goto serialize;
             }
           }
 
@@ -274,11 +276,11 @@ void processor_t::step(size_t n)
           if (unlikely(is_waiting_for_interrupt()))
             return;
 
-          insn_fetch_t fetch = mmu->load_insn(pc);
+          insn_fetch_t fetch = mmu->load_insn(state.pc);
           if (debug && !state.serialized)
             disasm(fetch.insn);
-          pc = execute_insn_logged(this, pc, fetch);
-          advance_pc();
+          auto new_pc = execute_insn_logged(this, state.pc, fetch);
+          advance_pc(new_pc);
 
           // Resume from debug mode in critical error
           if (state.critical_error && !state.debug_mode) {
@@ -295,26 +297,25 @@ void processor_t::step(size_t n)
       else while (instret < n)
       {
         // Main simulation loop, fast path.
-        for (auto ic_entry = _mmu->access_icache(pc); instret < n; instret++) {
+        for (auto ic_entry = _mmu->access_icache(state.pc); instret < n; instret++) {
           auto fetch = ic_entry->data;
           ic_entry = ic_entry->next;
-          auto new_pc = execute_insn_fast(this, pc, fetch);
+          auto new_pc = execute_insn_fast(this, state.pc, fetch);
           if (unlikely(ic_entry->tag != new_pc)) {
             ic_entry = &_mmu->icache[_mmu->icache_index(new_pc)];
-            _mmu->icache[_mmu->icache_index(pc)].next = ic_entry;
+            _mmu->icache[_mmu->icache_index(state.pc)].next = ic_entry;
             if (ic_entry->tag != new_pc) {
-              pc = new_pc;
-              advance_pc();
+              advance_pc(new_pc);
               break;
             }
           }
-          state.pc = pc = ic_entry->tag;
+          state.pc = ic_entry->tag;
         }
       }
     }
     catch(trap_t& t)
     {
-      take_trap(t, pc);
+      take_trap(t, state.pc);
       n = instret;
 
       // If critical error then enter debug mode critical error trigger enabled
@@ -338,7 +339,7 @@ void processor_t::step(size_t n)
     }
     catch (triggers::matched_t& t)
     {
-      take_trigger_action(t.action, t.address, pc, t.gva);
+      take_trigger_action(t.action, t.address, state.pc, t.gva);
       // End this step at the trigger boundary.  In particular, a timing-before
       // trigger retires no instruction, so continuing would immediately execute
       // from the debug ROM or trap vector to consume the remaining step count.
