@@ -1,4 +1,4 @@
-Checks: 'modernize-avoid-bind, modernize-use-starts-ends-with, modernize-use-override, modernize-pass-by-value, -clang-diagnostic-unused-private-field'
+Checks: 'modernize-avoid-bind, modernize-use-starts-ends-with, modernize-use-override, modernize-pass-by-value, modernize-deprecated-headers, -clang-diagnostic-unused-private-field'
 
 WarningsAsErrors: '*'
 

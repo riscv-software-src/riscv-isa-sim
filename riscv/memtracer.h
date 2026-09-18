@@ -4,7 +4,7 @@
 #define _MEMTRACER_H
 
 #include <cstdint>
-#include <string.h>
+#include <cstring>
 #include <vector>
 
 enum access_type {

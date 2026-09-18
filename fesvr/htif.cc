@@ -9,19 +9,19 @@
 #include "trap.h"
 #include "../riscv/common.h"
 #include <algorithm>
-#include <assert.h>
+#include <cassert>
 #include <vector>
 #include <queue>
 #include <iostream>
 #include <fstream>
 #include <sstream>
 #include <iomanip>
-#include <stdio.h>
+#include <cstdio>
 #include <unistd.h>
-#include <signal.h>
+#include <csignal>
 #include <getopt.h>
 #include <libgen.h>
-#include <limits.h>
+#include <climits>
 #ifdef __APPLE__
 #include <mach-o/dyld.h>
 #endif

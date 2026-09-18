@@ -7,10 +7,10 @@
 #include <unistd.h>
 #include <fcntl.h>
 #include <sys/stat.h>
-#include <limits.h>
-#include <errno.h>
-#include <stdlib.h>
-#include <assert.h>
+#include <climits>
+#include <cerrno>
+#include <cstdlib>
+#include <cassert>
 #include <termios.h>
 #include <sstream>
 #include <iostream>
