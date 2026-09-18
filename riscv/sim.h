@@ -114,6 +114,7 @@ private:
   remote_bitbang_t* remote_bitbang;
   std::optional<std::function<void()>> next_interactive_action;
 
+ public:
   // If padd corresponds to memory (as opposed to an I/O device), return a
   // host pointer corresponding to paddr.
   // For these purposes, only memories that include the entire base page
@@ -125,8 +126,10 @@ private:
   bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes) override;
   void set_rom();
 
+ public:
   const char* get_symbol(uint64_t paddr) override;
 
+private:
   // presents a prompt for introspection into the simulation
   void interactive();
 
@@ -163,15 +166,18 @@ private:
   friend class mmu_t;
 
   // htif
+protected:
   void reset() override;
+public:
   void idle() override;
   void read_chunk(addr_t taddr, size_t len, void* dst) override;
   void write_chunk(addr_t taddr, size_t len, const void* src) override;
   size_t chunk_align() override { return 8; }
   size_t chunk_max_size() override { return 8; }
-  endianness_t get_target_endianness() const override;
 
 public:
+  endianness_t get_target_endianness() const override;
+
   // Initialize this after procs, because in debug_module_t::reset() we
   // enumerate processors, which segfaults if procs hasn't been initialized
   // yet.

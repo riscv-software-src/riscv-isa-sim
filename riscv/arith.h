@@ -7,9 +7,11 @@
 #include <cstdint>
 #include <climits>
 #include <cstddef>
-#include <type_traits>
+#include <concepts>
+#include <utility>
+#include <bit>
 
-inline uint64_t mulhu(uint64_t a, uint64_t b)
+static inline uint64_t mulhu(uint64_t a, uint64_t b)
 {
   uint64_t t;
   uint32_t y1, y2, y3;
@@ -29,14 +31,14 @@ inline uint64_t mulhu(uint64_t a, uint64_t b)
   return ((uint64_t)y3 << 32) | y2;
 }
 
-inline int64_t mulh(int64_t a, int64_t b)
+static inline int64_t mulh(int64_t a, int64_t b)
 {
   int negate = (a < 0) != (b < 0);
   uint64_t res = mulhu(a < 0 ? -(uint64_t)a : a, b < 0 ? -(uint64_t)b : b);
   return negate ? ~res + ((uint64_t)a * (uint64_t)b == 0) : res;
 }
 
-inline int64_t mulhsu(int64_t a, uint64_t b)
+static inline int64_t mulhsu(int64_t a, uint64_t b)
 {
   int negate = a < 0;
   uint64_t res = mulhu(a < 0 ? -(uint64_t)a : a, b);
@@ -44,13 +46,13 @@ inline int64_t mulhsu(int64_t a, uint64_t b)
 }
 
 //ref:  https://locklessinc.com/articles/sat_arithmetic/
-template<typename T, typename UT>
-static inline T sat_add(T x, T y, bool &sat)
+template<std::integral T, std::integral UT>
+static inline std::pair<T, bool> sat_add(T x, T y)
 {
   UT ux = x;
   UT uy = y;
   UT res = ux + uy;
-  sat = false;
+  bool sat = false;
   int sh = sizeof(T) * 8 - 1;
 
   /* Calculate overflowed result. (Don't change the sign bit of ux) */
@@ -62,16 +64,14 @@ static inline T sat_add(T x, T y, bool &sat)
     sat = true;
   }
 
-  return res;
+  return {res, sat};
 }
 
-template<typename T, typename UT>
-static inline T sat_add(T x, T y, T z, bool &sat)
+template<std::integral T, std::integral UT>
+static inline std::pair<T, bool> sat_add(T x, T y, T z)
 {
-  bool sat1, sat2;
   T a = y;
   T b = z;
-  T res;
 
   /* Force compiler to use cmovs instruction */
   if (((y ^ z) & (x ^ z)) < 0) {
@@ -79,21 +79,20 @@ static inline T sat_add(T x, T y, T z, bool &sat)
     b = y;
   }
 
-  res = sat_add<T, UT>(x, a, sat1);
-  res = sat_add<T, UT>(res, b, sat2);
-  sat = sat1 || sat2;
+  auto [res1, sat1] = sat_add<T, UT>(x, a);
+  auto [res2, sat2] = sat_add<T, UT>(res1, b);
 
-  return res;
+  return {res2, sat1 || sat2};
 }
 
-template<typename T, typename UT>
-static inline T sat_sub(T x, T y, bool &sat)
+template<std::integral T, std::integral UT>
+static inline std::pair<T, bool> sat_sub(T x, T y)
 {
   UT ux = x;
   UT uy = y;
   UT res = ux - uy;
-  sat = false;
-  int sh = sizeof(T) * 8 - 1;
+  bool sat = false;
+  const int sh = sizeof(T) * 8 - 1;
 
   /* Calculate overflowed result. (Don't change the sign bit of ux) */
   ux = (ux >> sh) + (((UT)0x1 << sh) - 1);
@@ -104,31 +103,27 @@ static inline T sat_sub(T x, T y, bool &sat)
     sat = true;
   }
 
-  return res;
+  return {res, sat};
 }
 
-template<typename T>
-T sat_addu(T x, T y, bool &sat)
+template<std::integral T>
+static inline std::pair<T, bool> sat_addu(T x, T y)
 {
   T res = x + y;
-  sat = false;
-
-  sat = res < x;
+  bool sat = res < x;
   res |= -(res < x);
 
-  return res;
+  return {res, sat};
 }
 
-template<typename T>
-T sat_subu(T x, T y, bool &sat)
+template<std::integral T>
+static inline std::pair<T, bool> sat_subu(T x, T y)
 {
   T res = x - y;
-  sat = false;
-
-  sat = !(res <= x);
+  bool sat = !(res <= x);
   res &= -(res <= x);
 
-  return res;
+  return {res, sat};
 }
 
 static inline uint64_t extract64(uint64_t val, int pos, int len)
@@ -145,64 +140,28 @@ static inline uint64_t make_mask64(int pos, int len)
 
 static inline int popcount(uint64_t val)
 {
-  val = (val & 0x5555555555555555U) + ((val >>  1) & 0x5555555555555555U);
-  val = (val & 0x3333333333333333U) + ((val >>  2) & 0x3333333333333333U);
-  val = (val & 0x0f0f0f0f0f0f0f0fU) + ((val >>  4) & 0x0f0f0f0f0f0f0f0fU);
-  val = (val & 0x00ff00ff00ff00ffU) + ((val >>  8) & 0x00ff00ff00ff00ffU);
-  val = (val & 0x0000ffff0000ffffU) + ((val >> 16) & 0x0000ffff0000ffffU);
-  val = (val & 0x00000000ffffffffU) + ((val >> 32) & 0x00000000ffffffffU);
-  return val;
+  return std::popcount(val);
 }
 
 static inline int ctz(uint64_t val)
 {
-  if (!val)
-    return 0;
-
-  int res = 0;
-
-  if ((val << 32) == 0) res += 32, val >>= 32;
-  if ((val << 48) == 0) res += 16, val >>= 16;
-  if ((val << 56) == 0) res += 8, val >>= 8;
-  if ((val << 60) == 0) res += 4, val >>= 4;
-  if ((val << 62) == 0) res += 2, val >>= 2;
-  if ((val << 63) == 0) res += 1, val >>= 1;
-
-  return res;
+    return val ? std::countr_zero(val) : 0;
 }
 
 static inline int clz(uint64_t val)
 {
-  if (!val)
-    return 0;
-
-  int res = 0;
-
-  if ((val >> 32) == 0) res += 32, val <<= 32;
-  if ((val >> 48) == 0) res += 16, val <<= 16;
-  if ((val >> 56) == 0) res += 8, val <<= 8;
-  if ((val >> 60) == 0) res += 4, val <<= 4;
-  if ((val >> 62) == 0) res += 2, val <<= 2;
-  if ((val >> 63) == 0) res += 1, val <<= 1;
-
-  return res;
+    return val ? std::countl_zero(val) : 0;
 }
 
 // Count number of contiguous 1 bits starting from the LSB.
 static inline int cto(uint64_t val)
 {
-  int res = 0;
-  while ((val & 1) == 1)
-    val >>= 1, res++;
-  return res;
+  return std::countr_one(val);
 }
 
 static inline int log2(uint64_t val)
 {
-  if (!val)
-    return 0;
-
-  return 63 - clz(val);
+  return val ? sizeof(uint64_t) * 8 - std::countl_zero(val) - 1 : 0;
 }
 
 static inline uint64_t xperm(uint64_t rs1, uint64_t rs2, size_t sz_log2, size_t len)
@@ -223,23 +182,15 @@ static inline uint64_t xperm(uint64_t rs1, uint64_t rs2, size_t sz_log2, size_t 
 }
 
 // Rotates right an unsigned integer by the given number of bits.
-template <typename T>
+template <std::unsigned_integral T>
 static inline T rotate_right(T x, std::size_t shiftamt) {
-  static_assert(std::is_unsigned<T>::value);
-  static constexpr T mask = (8 * sizeof(T)) - 1;
-  const std::size_t rshift = shiftamt & mask;
-  const std::size_t lshift = (-rshift) & mask;
-  return (x << lshift) | (x >> rshift);
+  return std::rotr(x, shiftamt);
 }
 
 // Rotates right an unsigned integer by the given number of bits.
-template <typename T>
+template <std::unsigned_integral T>
 static inline T rotate_left(T x, std::size_t shiftamt) {
-  static_assert(std::is_unsigned<T>::value);
-  static constexpr T mask = (8 * sizeof(T)) - 1;
-  const std::size_t lshift = shiftamt & mask;
-  const std::size_t rshift = (-lshift) & mask;
-  return (x << lshift) | (x >> rshift);
+  return std::rotl(x, shiftamt);
 }
 
 template<typename out_t, typename in1_t, typename in2_t>
