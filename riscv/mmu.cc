@@ -194,7 +194,7 @@ void mmu_t::check_triggers(triggers::operation_t operation,
 }
 
 void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool virt,
-  std::size_t size, std::optional<reg_t> data, std::optional<reg_t> tval)
+  std::size_t size, std::optional<reg_t> data)
 {
   if (matched_trigger || !proc)
     return;
@@ -203,19 +203,16 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool 
   if (!match.has_value())
     return;
 
-  // CBOs compare the aligned block but report the effective address on a trap.
-  const reg_t trap_address = tval.value_or(address);
-
   switch (match->timing) {
     case triggers::TIMING_BEFORE:
-      throw triggers::matched_t(operation, trap_address, match->action, virt);
+      throw triggers::matched_t(operation, match->breakpoint_tval, match->action, virt);
 
     case triggers::TIMING_AFTER:
       // We want to take this exception on the next instruction.  We check
       // whether to do so outside of the main simulation loop, which we can
       // force by flushing the I$.
       flush_icache();
-      matched_trigger = triggers::matched_t(operation, trap_address, match->action, virt);
+      matched_trigger = triggers::matched_t(operation, match->breakpoint_tval, match->action, virt);
   }
 }
 

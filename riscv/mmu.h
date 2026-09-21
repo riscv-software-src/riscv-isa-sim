@@ -239,7 +239,7 @@ public:
     reg_t transformed_addr = access_info.transformed_vaddr;
 
     check_triggers(triggers::OPERATION_STORE, transformed_addr & ~(blocksz - 1),
-      /*virt*/ false, blocksz, /*data*/ std::nullopt, transformed_addr);
+      /*virt*/ false, blocksz);
 
     reg_t paddr = translate(access_info, 1) - (transformed_addr & (blocksz - 1));
     if (auto host_addr = sim->addr_to_mem(paddr)) {
@@ -256,7 +256,7 @@ public:
     reg_t transformed_addr = access_info.transformed_vaddr;
 
     check_triggers(triggers::OPERATION_STORE, transformed_addr & ~(blocksz - 1),
-      /*virt*/ false, blocksz, /*data*/ std::nullopt, transformed_addr);
+      /*virt*/ false, blocksz);
     convert_load_traps_to_store_traps({
       const reg_t paddr = translate(access_info, 1) - (transformed_addr & (blocksz - 1));
       if (sim->reservable(paddr)) {
@@ -462,8 +462,7 @@ private:
   void check_triggers(triggers::operation_t operation,
     reg_t addr, bool virt, std::size_t access_len);
   void check_triggers(triggers::operation_t operation, reg_t address,
-    bool virt, std::size_t size, std::optional<reg_t> data,
-    std::optional<reg_t> tval = std::nullopt);
+    bool virt, std::size_t size, std::optional<reg_t> data);
 
   bool svukte_qualified(mem_access_info_t access_info);
   bool svukte_fault(reg_t addr, mem_access_info_t access_info);

@@ -43,12 +43,15 @@ typedef enum {
 } mhselect_mode_t;
 
 struct match_result_t {
-  match_result_t(const timing_t t=TIMING_BEFORE, const action_t a=ACTION_DEBUG_EXCEPTION) {
+  match_result_t(const timing_t t=TIMING_BEFORE, const action_t a=ACTION_DEBUG_EXCEPTION,
+      const reg_t v=0) {
     timing = t;
     action = a;
+    breakpoint_tval = v;
   }
   timing_t timing;
   action_t action;
+  reg_t breakpoint_tval;
 };
 
 typedef enum {
