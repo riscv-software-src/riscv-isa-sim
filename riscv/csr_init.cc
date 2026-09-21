@@ -284,7 +284,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   }
 
   add_hypervisor_csr(CSR_HCOUNTEREN, hcounteren = std::make_shared<masked_csr_t>(proc, CSR_HCOUNTEREN, counteren_mask, 0));
-  htimedelta = std::make_shared<basic_csr_t>(proc, CSR_HTIMEDELTA, 0);
+  htimedelta = std::make_shared<time_sync_csr_t>(proc, CSR_HTIMEDELTA, 0);
   if (xlen == 32) {
     add_hypervisor_csr(CSR_HTIMEDELTA, std::make_shared<rv32_low_csr_t>(proc, CSR_HTIMEDELTA, htimedelta));
     add_hypervisor_csr(CSR_HTIMEDELTAH, std::make_shared<rv32_high_csr_t>(proc, CSR_HTIMEDELTAH, htimedelta));
