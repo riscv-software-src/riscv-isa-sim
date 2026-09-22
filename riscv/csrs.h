@@ -605,6 +605,7 @@ class time_counter_csr_t: public csr_t {
   reg_t read() const noexcept override;
 
   void sync(const reg_t val) noexcept;
+  void sync() noexcept;
 
  protected:
   bool unlogged_write(const reg_t UNUSED val) noexcept override { return false; };
@@ -844,12 +845,17 @@ class senvcfg_csr_t final: public envcfg_csr_t {
   bool unlogged_write(const reg_t val) noexcept override;
 };
 
-class stimecmp_csr_t: public basic_csr_t {
+class time_sync_csr_t: public basic_csr_t {
+ public:
+  time_sync_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class stimecmp_csr_t: public time_sync_csr_t {
  public:
   stimecmp_csr_t(processor_t* const proc, const reg_t addr, const reg_t imask);
   void verify_permissions(insn_t insn, bool write) const override;
- protected:
-  bool unlogged_write(const reg_t val) noexcept override;
  private:
   reg_t intr_mask;
 };

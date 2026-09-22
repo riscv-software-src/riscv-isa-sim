@@ -1235,7 +1235,9 @@ bool envcfg_csr_t::unlogged_write(const reg_t val) noexcept {
   if (get_field(adjusted_val, MENVCFG_PMM) != get_field(read(), MENVCFG_PMM))
     proc->get_mmu()->flush_tlb();
 
-  return masked_csr_t::unlogged_write(adjusted_val);
+  bool ret = masked_csr_t::unlogged_write(adjusted_val);
+  state->time->sync();
+  return ret;
 }
 
 // implement class henvcfg_csr_t
@@ -1389,14 +1391,18 @@ reg_t time_counter_csr_t::read() const noexcept {
     return shadow_val;
 }
 
-void time_counter_csr_t::sync(const reg_t val) noexcept {
-  shadow_val = val;
+void time_counter_csr_t::sync() noexcept {
   if (proc->extension_enabled(EXT_SSTC)) {
     const reg_t mip_val = (shadow_val >= state->stimecmp->read() ? MIP_STIP : 0) |
       (shadow_val + state->htimedelta->read() >= state->vstimecmp->read() ? MIP_VSTIP : 0);
     const reg_t mask = ((state->menvcfg->read() & MENVCFG_STCE) ? MIP_STIP : 0) | ((state->henvcfg->read() & HENVCFG_STCE) ? MIP_VSTIP : 0);
     state->mip->backdoor_write_with_mask(mask, mip_val);
   }
+}
+
+void time_counter_csr_t::sync(const reg_t val) noexcept {
+  shadow_val = val;
+  sync();
 }
 
 proxy_csr_t::proxy_csr_t(processor_t* const proc, const reg_t addr, csr_t_p delegate):
@@ -1890,14 +1896,18 @@ bool henvcfg_csr_t::unlogged_write(const reg_t val) noexcept {
   return envcfg_csr_t::unlogged_write((masked_csr_t::read() & ~mask) | (val & mask));
 }
 
-stimecmp_csr_t::stimecmp_csr_t(processor_t* const proc, const reg_t addr, const reg_t imask):
-  basic_csr_t(proc, addr, 0), intr_mask(imask) {
+time_sync_csr_t::time_sync_csr_t(processor_t* const proc, const reg_t addr, const reg_t init):
+  basic_csr_t(proc, addr, init) {
 }
 
-bool stimecmp_csr_t::unlogged_write(const reg_t val) noexcept {
-  const reg_t mask = ((state->menvcfg->read() & MENVCFG_STCE) ? MIP_STIP : 0) | ((state->henvcfg->read() & HENVCFG_STCE) ? MIP_VSTIP : 0);
-  state->mip->backdoor_write_with_mask(mask, state->time->read() >= val ? intr_mask : 0);
-  return basic_csr_t::unlogged_write(val);
+bool time_sync_csr_t::unlogged_write(const reg_t val) noexcept {
+  bool ret = basic_csr_t::unlogged_write(val);
+  state->time->sync();
+  return ret;
+}
+
+stimecmp_csr_t::stimecmp_csr_t(processor_t* const proc, const reg_t addr, const reg_t imask):
+  time_sync_csr_t(proc, addr, 0), intr_mask(imask) {
 }
 
 void stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
