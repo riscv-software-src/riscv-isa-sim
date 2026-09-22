@@ -9,4 +9,4 @@ if (get_field(STATE.mstatus->read(), MSTATUS_TW)) {
   require_privilege(PRV_S);
 }
 STATE.in_wfi = !STATE.debug_mode && !p->get_cfg().wfi_as_nop;
-serialize();
+yield();
