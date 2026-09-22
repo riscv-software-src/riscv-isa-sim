@@ -31,6 +31,8 @@ riscv64-linux-gnu-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie \
   -Wl,--build-id=none -Wl,-Ttext-segment=0x80000000 \
   -Wl,--section-start=.tohost=0x81000000 -o seip-rmw $CI/seip-rmw.S
 riscv64-linux-gnu-gcc -static -O2 -march=rv64gcv -o vector-sum $CI/vector-sum.c
+riscv64-linux-gnu-gcc -nostdlib -static -march=rv64i_zicsr -mabi=lp64 \
+  -T "$ROOT/arch_test_target/spike/link.ld" -Wl,--build-id=none -o wfi-as-nop "$CI/wfi-as-nop.S"
 
 # run snippy-based tests
 wget https://github.com/syntacore/snippy/releases/download/snippy-2.1/snippy-x86_64-linux.tar.xz
@@ -45,18 +47,22 @@ PATH="$PATH:$RUN/bin" "$ROOT"/ci-tests/run-snippy-tests.sh "$RUN" "$ROOT"/ci-tes
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o test-libriscv
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-customext.cc -lriscv -o test-customext
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/custom-csr.cc -lriscv -o test-custom-csr
+g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-dcsr-cause.cc -lriscv -o test-dcsr-cause
 
 # check that all installed headers are functional
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o /dev/null -include $BUILD/spike/install-hdrs-list.h
 
 # run tests
+timeout 10 "$INSTALL/bin/spike" --isa=rv64i_zicsr --wfi-as-nop wfi-as-nop
 time $INSTALL/bin/spike --isa=rv64gc $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 time $INSTALL/bin/spike --isa=rv64gcv $BUILD/pk/pk vector-sum | grep "The sum of the first 1000 positive integers is 500500."
 $INSTALL/bin/spike --log-commits --isa=rv64gc $BUILD/pk/pk atomics 2> /dev/null | grep "First atomic counter is 1000, second is 100"
 time $INSTALL/bin/spike --isa=rv64gc seip-rmw
+bash $CI/test-mnret-double-trap $INSTALL/bin/spike $RUN/mnret-double-trap
 LD_LIBRARY_PATH=$INSTALL/lib ./test-libriscv $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 LD_LIBRARY_PATH=$INSTALL/lib ./test-customext $BUILD/pk/pk dummy-slliuw | grep "Executed successfully"
 LD_LIBRARY_PATH=$INSTALL/lib ./test-custom-csr $BUILD/pk/pk customcsr | grep "Executed successfully"
+LD_LIBRARY_PATH=$INSTALL/lib ./test-dcsr-cause | grep "Executed successfully"
 
 echo "DTB discovery tests"
 g++ -std=c++2a -I$INSTALL/include -I$CI/dtb-discovery/devices-sample -L$INSTALL/lib  $CI/dtb-discovery/test-dtb-discovery.cc $CI/dtb-discovery/devices-sample/led-device.cc -lriscv -o test-dtb-discovery

@@ -45,6 +45,7 @@ cfg_t::cfg_t()
   hartids          = std::vector<size_t>({0});
   explicit_hartids = false;
   real_time_clint  = false;
+  wfi_as_nop       = false;
   trigger_count    = 4;
   cache_blocksz    = 64;
 }

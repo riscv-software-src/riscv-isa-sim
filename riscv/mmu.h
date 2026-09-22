@@ -17,7 +17,7 @@
 #include <algorithm>
 #include <cassert>
 #include <cstddef>
-#include <stdlib.h>
+#include <cstdlib>
 
 // virtual memory configuration
 #define PGSHIFT 12
@@ -563,6 +563,17 @@ private:
     }
 
     return std::make_tuple(insn, length);
+  }
+
+  void reset_triggers()
+  {
+    matched_trigger.reset();
+  }
+
+  void check_triggers_after()
+  {
+    if (matched_trigger)
+      throw matched_trigger.value();
   }
 
   inline bool in_mprv() const

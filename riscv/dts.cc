@@ -7,7 +7,7 @@
 #include <cassert>
 #include <iostream>
 #include <sstream>
-#include <signal.h>
+#include <csignal>
 #include <unistd.h>
 #include <sys/wait.h>
 #include <sys/types.h>

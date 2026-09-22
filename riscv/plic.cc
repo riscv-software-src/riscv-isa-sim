@@ -430,10 +430,13 @@ plic_t* plic_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, cons
 {
   uint32_t plic_ndev;
   if (fdt_parse_plic(fdt, base, &plic_ndev, "riscv,plic0") == 0 ||
-      fdt_parse_plic(fdt, base, &plic_ndev, "sifive,plic-1.0.0") == 0)
+      fdt_parse_plic(fdt, base, &plic_ndev, "sifive,plic-1.0.0") == 0) {
+    if (plic_ndev >= PLIC_MAX_DEVICES)
+      return nullptr;
     return new plic_t(sim, plic_ndev);
-  else
-    return nullptr;
+  }
+
+  return nullptr;
 }
 
 REGISTER_BUILTIN_DEVICE(plic, plic_parse_from_fdt, plic_generate_dts)

@@ -104,12 +104,6 @@ inline mmu_t::insn_parcel_t mmu_t::perform_intrapage_fetch(reg_t vaddr, uintptr_
 
 mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
-  if (matched_trigger) {
-    auto trig = matched_trigger.value();
-    matched_trigger.reset();
-    throw trig;
-  }
-
   if  (auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS); tlb_hit) {
     // Fast path for simple cases
     return perform_intrapage_fetch(vaddr, host_addr, paddr);
@@ -214,9 +208,9 @@ void mmu_t::check_triggers(triggers::operation_t operation, reg_t address, bool 
 
     case triggers::TIMING_AFTER:
       // We want to take this exception on the next instruction.  We check
-      // whether to do so in the I$ refill slow path, which we can force by
-      // flushing the TLB.
-      flush_tlb();
+      // whether to do so outside of the main simulation loop, which we can
+      // force by flushing the I$.
+      flush_icache();
       matched_trigger = triggers::matched_t(operation, address, match->action, virt);
   }
 }
@@ -552,7 +546,10 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
   if (!proc)
     return true;
 
-  for (size_t i = 0; i < proc->n_pmp; i++)
+  const size_t pmp_num = proc->extension_enabled_const(EXT_SSPMP)
+                           ? proc->state.max_pmp : proc->n_pmp;
+
+  for (size_t i = 0; i < pmp_num; i++)
     if (proc->state.pmpaddr[i]->subset_match(addr, len))
       return false;
 

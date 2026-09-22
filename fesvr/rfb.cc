@@ -10,16 +10,14 @@
 #include <string>
 #include <cstring>
 #include <cinttypes>
-using namespace std::placeholders;
-
 rfb_t::rfb_t(int display)
   : sockfd(-1), afd(-1),
     memif(0), addr(0), width(0), height(0), bpp(0), display(display),
     thread(pthread_self()), fb1(0), fb2(0), read_pos(0),
     lock(PTHREAD_MUTEX_INITIALIZER)
 {
-  register_command(0, std::bind(&rfb_t::handle_configure, this, _1), "configure");
-  register_command(1, std::bind(&rfb_t::handle_set_address, this, _1), "set_address");
+  register_command(0, [this](command_t command) { handle_configure(command); }, "configure");
+  register_command(1, [this](command_t command) { handle_set_address(command); }, "set_address");
 }
 
 void* rfb_thread_main(void* arg)

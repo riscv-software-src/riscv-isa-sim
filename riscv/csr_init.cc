@@ -236,7 +236,11 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     add_hypervisor_csr(CSR_HIDELEG, hideleg);
   }
 
-  const reg_t menvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE : 0) |
+  // The spec allows FIOM to read as zero only where there is no S-mode or no
+  // paging, so it is writable exactly when neither holds.
+  const bool fiom_writable = proc->extension_enabled('S') && proc->get_max_vaddr_bits() > 0;
+  const reg_t menvcfg_mask = (fiom_writable ? MENVCFG_FIOM : 0) |
+                            (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE : 0) |
                             (proc->extension_enabled(EXT_ZICBOZ) ? MENVCFG_CBZE : 0) |
                             (proc->extension_enabled(EXT_SMNPM) ? MENVCFG_PMM : 0) |
                             (proc->extension_enabled(EXT_SVADU) ? MENVCFG_ADUE: 0) |
@@ -271,7 +275,14 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
      (1 << CAUSE_SOFTWARE_CHECK_FAULT) : 0) |
     (proc->extension_enabled(EXT_ZICNTR)?
      (1 << CAUSE_HARDWARE_ERROR_FAULT) : 0);
-  add_hypervisor_csr(CSR_HEDELEG, hedeleg = std::make_shared<masked_csr_t>(proc, CSR_HEDELEG, hedeleg_mask, 0));
+  hedeleg = std::make_shared<masked_csr_t>(proc, CSR_HEDELEG, hedeleg_mask, 0);
+  if (xlen == 32) {
+    add_hypervisor_csr(CSR_HEDELEG, std::make_shared<rv32_low_csr_t>(proc, CSR_HEDELEG, hedeleg));
+    add_hypervisor_csr(CSR_HEDELEGH, std::make_shared<hedelegh_csr_t>(proc, CSR_HEDELEGH, hedeleg));
+  } else {
+    add_hypervisor_csr(CSR_HEDELEG, hedeleg);
+  }
+
   add_hypervisor_csr(CSR_HCOUNTEREN, hcounteren = std::make_shared<masked_csr_t>(proc, CSR_HCOUNTEREN, counteren_mask, 0));
   htimedelta = std::make_shared<basic_csr_t>(proc, CSR_HTIMEDELTA, 0);
   if (xlen == 32) {
@@ -346,14 +357,16 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   add_csr(CSR_MVENDORID, std::make_shared<const_csr_t>(proc, CSR_MVENDORID, 0));
   add_csr(CSR_MHARTID, std::make_shared<const_csr_t>(proc, CSR_MHARTID, proc->get_id()));
   add_csr(CSR_MCONFIGPTR, std::make_shared<const_csr_t>(proc, CSR_MCONFIGPTR, 0));
-  const reg_t senvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? SENVCFG_CBCFE | SENVCFG_CBIE : 0) |
+  const reg_t senvcfg_mask = (fiom_writable ? SENVCFG_FIOM : 0) |
+                            (proc->extension_enabled(EXT_ZICBOM) ? SENVCFG_CBCFE | SENVCFG_CBIE : 0) |
                             (proc->extension_enabled(EXT_ZICBOZ) ? SENVCFG_CBZE : 0) |
                             (proc->extension_enabled(EXT_SVUKTE) ? SENVCFG_UKTE : 0) |
                             (proc->extension_enabled(EXT_SSNPM) ? SENVCFG_PMM : 0) |
                             (proc->extension_enabled(EXT_ZICFILP) ? SENVCFG_LPE : 0) |
                             (proc->extension_enabled(EXT_ZICFISS) ? SENVCFG_SSE : 0);
   add_supervisor_csr(CSR_SENVCFG, senvcfg = std::make_shared<senvcfg_csr_t>(proc, CSR_SENVCFG, senvcfg_mask, 0));
-  const reg_t henvcfg_mask = (proc->extension_enabled(EXT_ZICBOM) ? HENVCFG_CBCFE | HENVCFG_CBIE : 0) |
+  const reg_t henvcfg_mask = HENVCFG_FIOM |
+                            (proc->extension_enabled(EXT_ZICBOM) ? HENVCFG_CBCFE | HENVCFG_CBIE : 0) |
                             (proc->extension_enabled(EXT_ZICBOZ) ? HENVCFG_CBZE : 0) |
                             (proc->extension_enabled(EXT_SSNPM) ? HENVCFG_PMM : 0) |
                             (proc->extension_enabled(EXT_SVADU) ? HENVCFG_ADUE: 0) |
@@ -376,7 +389,9 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN |
                                  (proc->extension_enabled_const(EXT_SSCSRIND) ? HSTATEEN0_CSRIND : 0) |
                                  (proc->extension_enabled_const(EXT_SSAIA) ? HSTATEEN0_IMSIC | HSTATEEN0_AIA : 0);
-    const reg_t mstateen0_mask = hstateen0_mask | (proc->extension_enabled(EXT_SSQOSID) ?  MSTATEEN0_PRIV114 : 0);
+    const reg_t mstateen0_mask = hstateen0_mask |
+                                 (proc->extension_enabled('H') ? MSTATEEN0_PRIV113 : 0) |
+                                 (proc->extension_enabled(EXT_SSQOSID) ? MSTATEEN0_PRIV114 : 0);
     for (int i = 0; i < 4; i++) {
       const reg_t mstateen_mask = i == 0 ? mstateen0_mask : MSTATEEN_HSTATEEN;
       mstateen[i] = std::make_shared<masked_csr_t>(proc, CSR_MSTATEEN0 + i, mstateen_mask, 0);

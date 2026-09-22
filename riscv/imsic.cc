@@ -9,7 +9,7 @@ class imsic_csr_t : public masked_csr_t {
   imsic_csr_t(processor_t* const proc, const reg_t addr, imsic_file_t *imsic_file, const reg_t mask = -1, const reg_t init = 0) : masked_csr_t(proc, addr, mask, init), imsic_file(*imsic_file) {
   }
  protected:
-  virtual bool unlogged_write(const reg_t val) noexcept override {
+  bool unlogged_write(const reg_t val) noexcept override {
     masked_csr_t::unlogged_write(val);
     // update MIP after write
     imsic_file.update_mip();

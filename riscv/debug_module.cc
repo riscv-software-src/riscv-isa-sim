@@ -4,6 +4,7 @@
 #include <iterator>
 #include <limits>
 
+#include "decode.h"
 #include "simif.h"
 #include "devices.h"
 #include "debug_module.h"
@@ -91,6 +92,7 @@ debug_module_t::debug_module_t(simif_t *sim, const debug_module_config_t &config
   program_buffer = new uint8_t[program_buffer_bytes];
 
   memset(debug_rom_flags, 0, sizeof(debug_rom_flags));
+  memset(debug_rom_saved_state, 0, sizeof(debug_rom_saved_state));
   memset(program_buffer, 0, program_buffer_bytes);
 
   if (config.support_impebreak) {
@@ -112,6 +114,7 @@ debug_module_t::debug_module_t(simif_t *sim, const debug_module_config_t &config
       region_descriptor{DEBUG_ROM_ENTRY, debug_rom_raw_len, debug_rom_raw},
       region_descriptor{DEBUG_ROM_WHERETO, sizeof(debug_rom_whereto), debug_rom_whereto},
       region_descriptor{DEBUG_ROM_FLAGS, sizeof(debug_rom_flags), debug_rom_flags},
+      region_descriptor{DEBUG_ROM_SAVED_STATE, sizeof(debug_rom_saved_state), debug_rom_saved_state},
       region_descriptor{debug_data_start, dmdata.size(), dmdata.data()},
       region_descriptor{debug_abstract_start, sizeof(debug_abstract), debug_abstract},
       region_descriptor{debug_progbuf_start, program_buffer_bytes, program_buffer},
@@ -236,6 +239,10 @@ bool debug_module_t::store(reg_t addr, size_t len, const uint8_t* bytes)
   if (handle_range_store(addr, len, bytes, debug_progbuf_start, program_buffer_bytes, program_buffer))
     return true;
 
+  if (handle_range_store(addr, len, bytes, DEBUG_ROM_SAVED_STATE,
+                         sizeof(debug_rom_saved_state), debug_rom_saved_state))
+    return true;
+
   if (addr == DEBUG_ROM_HALTED) {
     assert (len == 4);
     if (!hart_state[id].halted) {
@@ -320,11 +327,12 @@ unsigned debug_module_t::sb_access_bits()
   return 8 << sbcs.sbaccess;
 }
 
-uint8_t *debug_module_t::get_dmdata_checked(size_t required_size)
+uint8_t *debug_module_t::get_dmdata_checked(size_t required_registers)
 {
-  if(dmdata.size() < required_size) {
-    fprintf(stderr, "dmdata size (%ld) less then required (%ld)\n",
-            dmdata.size(), required_size);
+  const size_t register_count = dmdata.size() / dmdata_reg_size;
+  if (register_count < required_registers) {
+    fprintf(stderr, "dmdata register count (%zu) less than required (%zu)\n",
+            register_count, required_registers);
     exit(1);
   }
   return dmdata.data();
@@ -684,6 +692,31 @@ static bool is_fpu_reg(unsigned regno)
     regno == CSR_FRM || regno == CSR_FCSR;
 }
 
+using handle_memory_func = std::uint32_t (*)(std::uint32_t src, std::uint32_t base, std::int32_t offset);
+using handle_mstatus_func = std::uint32_t (*)(std::uint32_t rd, std::uint32_t rs1, std::uint32_t csr);
+
+// Access Register aarsize: 2 and 3 are the 32- and 64-bit accesses. The only
+// other defined value is 128-bit, and nothing here is a register that wide.
+static bool reg_size_supported(unsigned size)
+{
+  return size >= AC_ACCESS_REGISTER_AARSIZE_32BIT &&
+         size <= AC_ACCESS_REGISTER_AARSIZE_64BIT;
+}
+
+static unsigned size2index(unsigned size)
+{
+  assert(reg_size_supported(size));
+  return size - 2;
+}
+
+// Both fields must sit above bit 12: lui only carries the upper 20 bits.
+static constexpr std::uint32_t saved_mstatus_mask = MSTATUS_MPRV | MSTATUS_FS;
+
+static constexpr std::array<handle_memory_func, 2> aar_lx = {&lw, &ld};
+static constexpr std::array<handle_memory_func, 2> aar_sx = {&sw, &sd};
+static constexpr std::array<handle_memory_func, 2> aar_flx = {&flw, &fld};
+static constexpr std::array<handle_memory_func, 2> aar_fsx = {&fsw, &fsd};
+
 bool debug_module_t::perform_abstract_command()
 {
   if (abstractcs.cmderr != CMDERR_NONE)
@@ -713,180 +746,235 @@ bool debug_module_t::perform_abstract_command()
 
 bool debug_module_t::perform_abstract_register_access()
 {
-  // register access
-  unsigned size = get_field(command, AC_ACCESS_REGISTER_AARSIZE);
   bool write = get_field(command, AC_ACCESS_REGISTER_WRITE);
+  bool transfer = get_field(command, AC_ACCESS_REGISTER_TRANSFER);
+  bool postexec = get_field(command, AC_ACCESS_REGISTER_POSTEXEC);
+  unsigned size = get_field(command, AC_ACCESS_REGISTER_AARSIZE);
   unsigned regno = get_field(command, AC_ACCESS_REGISTER_REGNO);
 
-    if (!selected_hart_state().halted) {
-      abstractcs.cmderr = CMDERR_HALTRESUME;
-      return true;
-    }
-
-    assert(size < 8);
-    // Check if register fit in dmdata
-    if ((1U << size) > dmdata.size()) {
-      abstractcs.cmderr = CMDERR_NOTSUP;
-      return true;
-    }
-
-  unsigned i = 0;
-  if (get_field(command, AC_ACCESS_REGISTER_TRANSFER)) {
-
-    if (is_fpu_reg(regno)) {
-      // Save S0
-      write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH0));
-      // Save mstatus
-      write32(debug_abstract, i++, csrr(S0, CSR_MSTATUS));
-      write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH1));
-      // Set mstatus.fs
-      assert((MSTATUS_FS & 0xfff) == 0);
-      write32(debug_abstract, i++, lui(S0, MSTATUS_FS >> 12));
-      write32(debug_abstract, i++, csrrs(ZERO, S0, CSR_MSTATUS));
-    }
-
-    if (regno < 0x1000 && config.support_abstract_csr_access) {
-      if (!is_fpu_reg(regno)) {
-        write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH0));
-      }
-
-      if (write) {
-        switch (size) {
-          case 2:
-            write32(debug_abstract, i++, lw(S0, ZERO, debug_data_start));
-            break;
-          case 3:
-            write32(debug_abstract, i++, ld(S0, ZERO, debug_data_start));
-            break;
-          default:
-            abstractcs.cmderr = CMDERR_NOTSUP;
-            return true;
-        }
-        write32(debug_abstract, i++, csrw(S0, regno));
-
-      } else {
-        write32(debug_abstract, i++, csrr(S0, regno));
-        switch (size) {
-          case 2:
-            write32(debug_abstract, i++, sw(S0, ZERO, debug_data_start));
-            break;
-          case 3:
-            write32(debug_abstract, i++, sd(S0, ZERO, debug_data_start));
-            break;
-          default:
-            abstractcs.cmderr = CMDERR_NOTSUP;
-            return true;
-        }
-      }
-      if (!is_fpu_reg(regno)) {
-        write32(debug_abstract, i++, csrr(S0, CSR_DSCRATCH0));
-      }
-
-    } else if (regno >= 0x1000 && regno < 0x1020) {
-      unsigned regnum = regno - 0x1000;
-
-      switch (size) {
-        case 2:
-          if (write)
-            write32(debug_abstract, i++, lw(regnum, ZERO, debug_data_start));
-          else
-            write32(debug_abstract, i++, sw(regnum, ZERO, debug_data_start));
-          break;
-        case 3:
-          if (write)
-            write32(debug_abstract, i++, ld(regnum, ZERO, debug_data_start));
-          else
-            write32(debug_abstract, i++, sd(regnum, ZERO, debug_data_start));
-          break;
-        default:
-          abstractcs.cmderr = CMDERR_NOTSUP;
-          return true;
-      }
-
-      if (regno == 0x1000 + S0 && write) {
-        /*
-         * The exception handler starts out be restoring dscratch to s0,
-         * which was saved before executing the abstract memory region. Since
-         * we just wrote s0, also make sure to write that same value to
-         * dscratch in case an exception occurs in a program buffer that
-         * might be executed later.
-         */
-        write32(debug_abstract, i++, csrw(S0, CSR_DSCRATCH0));
-      }
-
-    } else if (regno >= 0x1020 && regno < 0x1040 && config.support_abstract_fpr_access) {
-      unsigned fprnum = regno - 0x1020;
-
-      if (write) {
-        switch (size) {
-          case 2:
-            write32(debug_abstract, i++, flw(fprnum, ZERO, debug_data_start));
-            break;
-          case 3:
-            write32(debug_abstract, i++, fld(fprnum, ZERO, debug_data_start));
-            break;
-          default:
-            abstractcs.cmderr = CMDERR_NOTSUP;
-            return true;
-        }
-
-      } else {
-        switch (size) {
-          case 2:
-            write32(debug_abstract, i++, fsw(fprnum, ZERO, debug_data_start));
-            break;
-          case 3:
-            write32(debug_abstract, i++, fsd(fprnum, ZERO, debug_data_start));
-            break;
-          default:
-            abstractcs.cmderr = CMDERR_NOTSUP;
-            return true;
-        }
-      }
-
-      } else if (regno >= 0xc000 && (regno & 1) == 1) {
-        // Support odd-numbered custom registers, to allow for debugger testing.
-        unsigned custom_number = regno - 0xc000;
-        abstractcs.cmderr = CMDERR_NONE;
-        if (write) {
-          // Writing V to custom register N will cause future reads of N to
-          // return V, reads of N-1 will return V-1, etc.
-          assert(dmdata.size() >= 4);
-          custom_base = read32(get_dmdata_checked(1), 0) - custom_number;
-        } else {
-          write32(get_dmdata_checked(1), 0, custom_number + custom_base);
-          write32(get_dmdata_checked(2), 1, 0);
-        }
-        return true;
-
-    } else {
-      abstractcs.cmderr = CMDERR_NOTSUP;
-      return true;
-    }
-
-    if (is_fpu_reg(regno)) {
-      // restore mstatus
-      write32(debug_abstract, i++, csrr(S0, CSR_DSCRATCH1));
-      write32(debug_abstract, i++, csrw(S0, CSR_MSTATUS));
-      // restore s0
-      write32(debug_abstract, i++, csrr(S0, CSR_DSCRATCH0));
-    }
+  if (!selected_hart_state().halted) {
+    abstractcs.cmderr = CMDERR_HALTRESUME;
+    return true;
   }
 
-  if (get_field(command, AC_ACCESS_REGISTER_POSTEXEC)) {
-    write32(debug_abstract, i,
-        jal(ZERO, debug_progbuf_start - debug_abstract_start - 4 * i));
-    i++;
-  } else {
-    write32(debug_abstract, i++, ebreak());
+  assert(size < 8);
+  if ((1U << size) > dmdata.size()) {
+    abstractcs.cmderr = CMDERR_NOTSUP;
+    return true;
   }
 
-  debug_rom_flags[selected_hart_id()] |= 1 << DEBUG_ROM_FLAG_GO;
-  rti_remaining = config.abstract_rti;
-  abstract_command_completed = false;
+  // Support odd-numbered custom registers, to allow for debugger testing.
+  if (transfer && regno >= 0xc000 && (regno & 1))
+    return aar_handle_custom_register(regno, write);
 
-  abstractcs.busy = true;
+  if (transfer && !aar_transfer_supported(regno, size)) {
+    abstractcs.cmderr = CMDERR_NOTSUP;
+    return true;
+  }
+
+  // Nothing is emitted without a transfer.
+  bool fpu_reg = transfer && is_fpu_reg(regno);
+  unsigned offset = 0;
+
+  if (transfer) {
+    aar_emit_prologue(offset, fpu_reg);
+    aar_handle_register_transfer(regno, size, write, offset);
+    emit_epilogue(offset, fpu_reg);
+  }
+
+  emit_terminator(offset, postexec);
+
+  assert(offset <= debug_abstract_size);
+  start_command_execution();
+
+  abstractcs.cmderr = CMDERR_NONE;
   return true;
+}
+
+// Everything a transfer can reject, so that nothing is emitted for a command
+// that is going to fail.
+bool debug_module_t::aar_transfer_supported(unsigned regno, unsigned size) const
+{
+  if (!reg_size_supported(size))
+    return false;
+
+  if (regno < 0x1000)
+    return config.support_abstract_csr_access;
+
+  if (regno < 0x1020)
+    return true;
+
+  if (regno < 0x1040)
+    return config.support_abstract_fpr_access;
+
+  return false;
+}
+
+void debug_module_t::aar_handle_register_transfer(unsigned regno,
+    unsigned size, bool write, unsigned &offset)
+{
+  assert(aar_transfer_supported(regno, size));
+
+  if (regno < 0x1000)
+    aar_emit_csr_transfer(regno, size, write, offset);
+  else if (regno < 0x1020)
+    aar_emit_gpr_transfer(regno, size, write, offset);
+  else
+    aar_emit_fpr_transfer(regno, size, write, offset);
+}
+
+void debug_module_t::aar_emit_csr_transfer(unsigned regno, unsigned size, bool write, unsigned &offset)
+{
+  auto size_index = size2index(size);
+
+  if (write) {
+    write32(debug_abstract, offset++, aar_lx[size_index](S0, ZERO, debug_data_start));
+    if (regno == CSR_DCSR) {
+      // Update the saved dcsr value.
+      write32(debug_abstract, offset++, andi(S1, S0, DCSR_MPRVEN));
+      write32(debug_abstract, offset++, ori(S1, S1, DEBUG_ROM_SAVED_STATE_VALID));
+      write32(debug_abstract, offset++, sw(S1, ZERO, DEBUG_ROM_SAVED_STATE));
+      // Keep mprven clear for the rest of the sequence: the epilogue puts the
+      // requested value back from the record.
+      write32(debug_abstract, offset++, andi(S0, S0, ~DCSR_MPRVEN));
+    }
+    write32(debug_abstract, offset++, csrw(S0, regno));
+    return;
+  }
+
+  write32(debug_abstract, offset++, csrr(S0, regno));
+  if (regno == CSR_DCSR) {
+    // The prologue has already cleared mprven, so report what it recorded.
+    write32(debug_abstract, offset++, lw(S1, ZERO, DEBUG_ROM_SAVED_STATE));
+    write32(debug_abstract, offset++, andi(S1, S1, DCSR_MPRVEN));
+    write32(debug_abstract, offset++, or_(S0, S0, S1));
+  }
+  write32(debug_abstract, offset++, aar_sx[size_index](S0, ZERO, debug_data_start));
+}
+
+void debug_module_t::aar_emit_gpr_transfer(unsigned regno, unsigned size, bool write,
+    unsigned &offset)
+{
+  auto regnum = regno - 0x1000;
+  auto size_index = size2index(size);
+  auto op = write ? aar_lx[size_index] : aar_sx[size_index];
+
+  if (regnum != S0 && regnum != S1) {
+    write32(debug_abstract, offset++, op(regnum, ZERO, debug_data_start));
+    return;
+  }
+
+  // s0 and s1 are scratch registers.
+  auto dscratchx = (regnum == S0) ? CSR_DSCRATCH0 : CSR_DSCRATCH1;
+  aar_emit_csr_transfer(dscratchx, size, write, offset);
+}
+
+void debug_module_t::aar_emit_fpr_transfer(unsigned regno,
+    unsigned size, bool write, unsigned &offset)
+{
+  auto fprnum = regno - 0x1020;
+  auto size_index = size2index(size);
+  auto op = write ? aar_flx[size_index] : aar_fsx[size_index];
+  write32(debug_abstract, offset++, op(fprnum, ZERO, debug_data_start));
+}
+
+bool debug_module_t::aar_handle_custom_register(unsigned regno, bool write)
+{
+  unsigned custom_number = regno - 0xc000;
+  abstractcs.cmderr = CMDERR_NONE;
+  if (write) {
+    // Writing V to custom register N will cause future reads of N to
+    // return V, reads of N-1 will return V-1, etc.
+    assert(dmdata.size() >= 4);
+    custom_base = read32(get_dmdata_checked(1), 0) - custom_number;
+  } else {
+    write32(get_dmdata_checked(1), 0, custom_number + custom_base);
+    write32(get_dmdata_checked(2), 1, 0);
+  }
+  return true;
+}
+
+void debug_module_t::emit_save_state(unsigned &offset, bool save_mstatus)
+{
+  const std::uint32_t flags = DEBUG_ROM_SAVED_STATE_VALID |
+    (save_mstatus ? DEBUG_ROM_SAVED_STATE_MSTATUS : 0);
+
+  if (save_mstatus) {
+    // s0 takes the masked mstatus, so s1 serves twice: first as the temporary
+    // for the mask, then as the destination of the dcsr read.
+    write32(debug_abstract, offset++, lui(S1, saved_mstatus_mask >> 12));
+    write32(debug_abstract, offset++, csrr(S0, CSR_MSTATUS));
+    write32(debug_abstract, offset++, and_(S0, S0, S1));
+    write32(debug_abstract, offset++, csrrci(S1, DCSR_MPRVEN, CSR_DCSR));
+    write32(debug_abstract, offset++, andi(S1, S1, DCSR_MPRVEN));
+    write32(debug_abstract, offset++, or_(S1, S1, S0));
+  } else {
+    write32(debug_abstract, offset++, csrrci(S1, DCSR_MPRVEN, CSR_DCSR));
+    write32(debug_abstract, offset++, andi(S1, S1, DCSR_MPRVEN));
+  }
+
+  write32(debug_abstract, offset++, ori(S1, S1, flags));
+  write32(debug_abstract, offset++, sw(S1, ZERO, DEBUG_ROM_SAVED_STATE));
+}
+
+void debug_module_t::emit_prologue(unsigned &offset, bool save_mstatus)
+{
+  write32(debug_abstract, offset++, csrw(S0, CSR_DSCRATCH0));
+  write32(debug_abstract, offset++, csrw(S1, CSR_DSCRATCH1));
+
+  emit_save_state(offset, save_mstatus);
+}
+
+// Undo emit_save_state and drop the record. The Debug ROM exception handler
+// does the same for a sequence that trapped earlier.
+void debug_module_t::emit_restore_state(unsigned &offset, bool restore_mstatus)
+{
+  write32(debug_abstract, offset++, lw(S0, ZERO, DEBUG_ROM_SAVED_STATE));
+  write32(debug_abstract, offset++, sw(ZERO, ZERO, DEBUG_ROM_SAVED_STATE));
+
+  // s0 keeps the record for the mstatus part below.
+  write32(debug_abstract, offset++, andi(S1, S0, DCSR_MPRVEN));
+  write32(debug_abstract, offset++, csrrci(ZERO, DCSR_MPRVEN, CSR_DCSR));
+  write32(debug_abstract, offset++, csrrs(ZERO, S1, CSR_DCSR));
+
+  if (restore_mstatus) {
+    write32(debug_abstract, offset++, lui(S1, saved_mstatus_mask >> 12));
+    write32(debug_abstract, offset++, csrrc(ZERO, S1, CSR_MSTATUS));
+    write32(debug_abstract, offset++, and_(S1, S0, S1));
+    write32(debug_abstract, offset++, csrrs(ZERO, S1, CSR_MSTATUS));
+  }
+}
+
+void debug_module_t::emit_epilogue(unsigned &offset, bool restore_mstatus)
+{
+  emit_restore_state(offset, restore_mstatus);
+
+  write32(debug_abstract, offset++, csrr(S0, CSR_DSCRATCH0));
+  write32(debug_abstract, offset++, csrr(S1, CSR_DSCRATCH1));
+}
+
+void debug_module_t::aar_emit_prologue(unsigned &offset, bool fpu_reg)
+{
+  emit_prologue(offset, fpu_reg);
+
+  if (!fpu_reg)
+    return;
+
+  // Force MSTATUS.FS dirty so that the transfer does not trap.
+  write32(debug_abstract, offset++, lui(S1, MSTATUS_FS >> 12));
+  write32(debug_abstract, offset++, csrrs(ZERO, S1, CSR_MSTATUS));
+}
+
+void debug_module_t::emit_terminator(unsigned &offset, bool postexec)
+{
+  if (!postexec) {
+    write32(debug_abstract, offset++, ebreak());
+    return;
+  }
+
+  write32(debug_abstract, offset,
+      jal(ZERO, debug_progbuf_start - debug_abstract_start - 4 * offset));
+  offset++;
 }
 
 static unsigned idx(unsigned xlen)
@@ -912,75 +1000,73 @@ bool debug_module_t::perform_abstract_memory_access() {
   }
 
   unsigned offset = 0;
-  generate_initial_sequence(aamvirtual, offset);
-  is_write ? handle_memory_write(xlen, aamsize, offset)
-           : handle_memory_read(xlen, aamsize, offset);
+  aam_emit_prologue(aamvirtual, offset);
+  is_write ? aam_emit_memory_write(xlen, aamsize, aampostincrement, offset)
+           : aam_emit_memory_read(xlen, aamsize, aampostincrement, offset);
 
-  if (aampostincrement)
-    handle_post_increment(xlen, aamsize, offset);
-
-  generate_termination_sequence(offset);
+  emit_epilogue(offset, /* restore_mstatus */ true);
+  emit_terminator(offset, /* postexec */ false);
+  assert(offset <= debug_abstract_size);
   start_command_execution();
 
   abstractcs.cmderr = CMDERR_NONE;
   return true;
 }
 
-using handle_memory_func = uint32_t (*)(unsigned rd_src, unsigned base, uint16_t offset);
-using handle_mstatus_func = uint32_t(*)(unsigned rd, unsigned rs1, unsigned csr);
-static constexpr std::array<handle_memory_func, 4> lx = {&lb, &lh, &lw, &ld};
-static constexpr std::array<handle_memory_func, 4> sx = {&sb, &sh, &sw, &sd};
-static constexpr std::array<handle_mstatus_func, 2> csrrx = {&csrrc, &csrrs};
+static constexpr std::array<handle_memory_func, 4> aam_lx = {&lb, &lh, &lw, &ld};
+static constexpr std::array<handle_memory_func, 4> aam_sx = {&sb, &sh, &sw, &sd};
+static constexpr std::array<handle_mstatus_func, 2> aam_csrrx = {&csrrc, &csrrs};
 
 unsigned debug_module_t::arg(unsigned xlen, unsigned idx)
 {
   return debug_data_start + idx * xlen / 8;
 }
 
-void debug_module_t::handle_memory_read(size_t xlen, unsigned aamsize, unsigned &offset)
+void debug_module_t::aam_emit_memory_read(size_t xlen,
+    unsigned aamsize, bool aampostincrement, unsigned &offset)
 {
-  write32(debug_abstract, offset++, lx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
-  write32(debug_abstract, offset++, lx[aamsize](S1, S1, 0));
-  write32(debug_abstract, offset++, sx[idx(xlen)](S1, ZERO, arg(xlen, 0)));
-}
+  write32(debug_abstract, offset++, aam_lx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
 
-void debug_module_t::handle_memory_write(size_t xlen, unsigned aamsize, unsigned &offset)
-{
-  // Use Arg1 as temporary storage for old mstatus value
-  write32(debug_abstract, offset++, lx[idx(xlen)](S1, ZERO, arg(xlen, 1))); // Arg1 -> S1
-  write32(debug_abstract, offset++, sx[idx(xlen)](S0, ZERO, arg(xlen, 1))); // S0 -> Arg1
-  write32(debug_abstract, offset++, lx[idx(xlen)](S0, ZERO, arg(xlen, 0))); // Arg0 -> S0
+  write32(debug_abstract, offset++, csrrsi(ZERO, DCSR_MPRVEN, CSR_DCSR));
+  write32(debug_abstract, offset++, aam_lx[aamsize](S1, S1, 0));
+  write32(debug_abstract, offset++, csrrci(ZERO, DCSR_MPRVEN, CSR_DCSR));
 
-  write32(debug_abstract, offset++, sx[aamsize](S0, S1, 0));
+  write32(debug_abstract, offset++, aam_sx[idx(xlen)](S1, ZERO, arg(xlen, 0)));
 
-  write32(debug_abstract, offset++, lx[idx(xlen)](S0, ZERO, arg(xlen, 1))); // Restore S0
-}
+  if (!aampostincrement)
+    return;
 
-void debug_module_t::handle_post_increment(size_t xlen, unsigned aamsize, unsigned &offset)
-{
-  write32(debug_abstract, offset++, lx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
+  // Increment after the access: a fault leaves arg1 as the debugger set it.
+  write32(debug_abstract, offset++, aam_lx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
   write32(debug_abstract, offset++, addi(S1, S1, 1U << aamsize));
-  write32(debug_abstract, offset++, sx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
+  write32(debug_abstract, offset++, aam_sx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
 }
 
-void debug_module_t::generate_initial_sequence(bool aamvirtual, unsigned &offset)
+void debug_module_t::aam_emit_memory_write(size_t xlen,
+    unsigned aamsize, bool aampostincrement, unsigned &offset)
 {
-  write32(debug_abstract, offset++, csrw(S0, CSR_DSCRATCH0));
-  write32(debug_abstract, offset++, csrw(S1, CSR_DSCRATCH1));
+  write32(debug_abstract, offset++, aam_lx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
+  write32(debug_abstract, offset++, aam_lx[idx(xlen)](S0, ZERO, arg(xlen, 0)));
 
-  // Modify mstatus.mprv and save old mstatus
+  write32(debug_abstract, offset++, csrrsi(ZERO, DCSR_MPRVEN, CSR_DCSR));
+  write32(debug_abstract, offset++, aam_sx[aamsize](S0, S1, 0));
+  write32(debug_abstract, offset++, csrrci(ZERO, DCSR_MPRVEN, CSR_DCSR));
+
+  if (!aampostincrement)
+    return;
+
+  write32(debug_abstract, offset++, addi(S1, S1, 1U << aamsize));
+  write32(debug_abstract, offset++, aam_sx[idx(xlen)](S1, ZERO, arg(xlen, 1)));
+}
+
+void debug_module_t::aam_emit_prologue(bool aamvirtual, unsigned &offset)
+{
+  // The sequence moves mstatus.MPRV around the access.
+  emit_prologue(offset, /* save_mstatus */ true);
+
+  // Set MPRV for a virtual access, clear it for a physical one.
   write32(debug_abstract, offset++, lui(S0, MSTATUS_MPRV >> 12));
-  write32(debug_abstract, offset++, csrrx[aamvirtual](S0, S0, CSR_MSTATUS));
-}
-
-void debug_module_t::generate_termination_sequence(unsigned &offset)
-{
-  // Restore mstatus
-  write32(debug_abstract, offset++, csrw(S0, CSR_MSTATUS));
-
-  write32(debug_abstract, offset++, csrr(S0, CSR_DSCRATCH0));
-  write32(debug_abstract, offset++, csrr(S1, CSR_DSCRATCH1));
-  write32(debug_abstract, offset++, ebreak());
+  write32(debug_abstract, offset++, aam_csrrx[aamvirtual](ZERO, S0, CSR_MSTATUS));
 }
 
 void debug_module_t::start_command_execution()
@@ -1002,7 +1088,7 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
   if (address >= DM_DATA0 && address < DM_DATA0 + abstractcs.datacount) {
     unsigned i = address - DM_DATA0;
     if (!abstractcs.busy)
-      write32(get_dmdata_checked(address - DM_DATA0), address - DM_DATA0, value);
+      write32(get_dmdata_checked(i + 1), i, value);
 
     if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
       abstractcs.cmderr = CMDERR_BUSY;

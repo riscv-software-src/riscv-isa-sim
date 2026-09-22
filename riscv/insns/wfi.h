@@ -8,5 +8,5 @@ if (get_field(STATE.mstatus->read(), MSTATUS_TW)) {
   // U-mode causes an illegal instruction exception.
   require_privilege(PRV_S);
 }
-STATE.in_wfi = !STATE.debug_mode; // WFI is a nop in debug mode
+STATE.in_wfi = !STATE.debug_mode && !p->get_cfg().wfi_as_nop;
 serialize();
