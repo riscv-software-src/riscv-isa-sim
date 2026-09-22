@@ -48,6 +48,7 @@ g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o test-
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-customext.cc -lriscv -o test-customext
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/custom-csr.cc -lriscv -o test-custom-csr
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-dcsr-cause.cc -lriscv -o test-dcsr-cause
+g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-debug-wfi.cc -lriscv -o test-debug-wfi
 
 # check that all installed headers are functional
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o /dev/null -include $BUILD/spike/install-hdrs-list.h
@@ -63,6 +64,7 @@ LD_LIBRARY_PATH=$INSTALL/lib ./test-libriscv $BUILD/pk/pk hello | grep "Hello, w
 LD_LIBRARY_PATH=$INSTALL/lib ./test-customext $BUILD/pk/pk dummy-slliuw | grep "Executed successfully"
 LD_LIBRARY_PATH=$INSTALL/lib ./test-custom-csr $BUILD/pk/pk customcsr | grep "Executed successfully"
 LD_LIBRARY_PATH=$INSTALL/lib ./test-dcsr-cause | grep "Executed successfully"
+LD_LIBRARY_PATH=$INSTALL/lib ./test-debug-wfi | grep "Executed successfully"
 
 echo "DTB discovery tests"
 g++ -std=c++2a -I$INSTALL/include -I$CI/dtb-discovery/devices-sample -L$INSTALL/lib  $CI/dtb-discovery/test-dtb-discovery.cc $CI/dtb-discovery/devices-sample/led-device.cc -lriscv -o test-dtb-discovery
