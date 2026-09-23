@@ -83,21 +83,21 @@ bool trigger_t::common_match(processor_t * const proc, bool use_prev_prv) const 
       // VS-mode and while SIE in vstatus is 0.
 
       const bool mstatus_mie = state->mstatus->read() & MSTATUS_MIE;
-      if (prv == PRV_M && !mstatus_mie)
+      if (state->prv == PRV_M && !mstatus_mie)
         return false;
 
       const bool sstatus_sie = state->sstatus->read() & MSTATUS_SIE;
       const bool medeleg_breakpoint = (state->medeleg->read() >> CAUSE_BREAKPOINT) & 1;
-      if (prv == PRV_S && !v && medeleg_breakpoint && !sstatus_sie)
+      if (state->prv == PRV_S && !state->v && medeleg_breakpoint && !sstatus_sie)
         return false;
 
       const bool vsstatus_sie = state->vsstatus->read() & MSTATUS_SIE;
       const bool hedeleg_breakpoint = (state->hedeleg->read() >> CAUSE_BREAKPOINT) & 1;
-      if (prv == PRV_S && v && medeleg_breakpoint && hedeleg_breakpoint && !vsstatus_sie)
+       if (state->prv == PRV_S && state->v && medeleg_breakpoint && hedeleg_breakpoint && !vsstatus_sie)
         return false;
     } else {
       // mte and mpte in tcontrol is implemented. medeleg [3] is hard-wired to 0.
-      if (prv == PRV_M && !(tcontrol_value(state) & CSR_TCONTROL_MTE))
+      if (state->prv == PRV_M && !(tcontrol_value(state) & CSR_TCONTROL_MTE))
         return false;
     }
   }
