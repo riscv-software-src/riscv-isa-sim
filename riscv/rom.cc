@@ -2,7 +2,7 @@
 #include "devices.h"
 
 rom_device_t::rom_device_t(std::vector<char> data)
-  : data(data)
+  : data(std::move(data))
 {
 }
 

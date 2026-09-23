@@ -1,5 +1,6 @@
-Checks: 'modernize-use-starts-ends-with'
-WarningsAsErrors: '* '
+Checks: 'modernize-avoid-bind, modernize-use-starts-ends-with, modernize-use-override, modernize-pass-by-value, modernize-deprecated-headers, -clang-diagnostic-unused-private-field'
+
+WarningsAsErrors: '*'
 
 HeaderFilterRegex: '.*'
 ExcludeHeaderFilterRegex: 'softfloat/.*'

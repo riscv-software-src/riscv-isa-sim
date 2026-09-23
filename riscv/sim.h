@@ -40,7 +40,7 @@ public:
         bool socket_enabled,
         FILE *cmd_file, // needed for command line option --cmd
         std::optional<unsigned long long> instruction_limit);
-  ~sim_t();
+  ~sim_t() override;
 
   int run();
   void set_debug(bool value);
@@ -65,14 +65,14 @@ public:
     assert(plic.get());
     return plic.get();
   }
-  virtual const cfg_t &get_cfg() const override { return *cfg; }
-  virtual bool is_debug_module_access(reg_t paddr, size_t len) override;
+  const cfg_t &get_cfg() const override { return *cfg; }
+  bool is_debug_module_access(reg_t paddr, size_t len) override;
 
-  virtual const std::map<size_t, processor_t*>& get_harts() const override { return harts; }
+  const std::map<size_t, processor_t*>& get_harts() const override { return harts; }
   const bus_t& get_bus() const {  return bus;}
 
   // Callback for processors to let the simulation know they were reset.
-  virtual void proc_reset(unsigned id) override;
+  void proc_reset(unsigned id) override;
 
   static const size_t INTERLEAVE = 5000;
   static const size_t INSNS_PER_RTC_TICK = 100; // 10 MHz clock for 1 BIPS core
@@ -118,14 +118,14 @@ private:
   // host pointer corresponding to paddr.
   // For these purposes, only memories that include the entire base page
   // surrounding paddr are considered; smaller memories are treated as I/O.
-  virtual char* addr_to_mem(reg_t paddr) override;
+  char* addr_to_mem(reg_t paddr) override;
 
   // memory-mapped I/O routines
-  virtual bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes) override;
-  virtual bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes) override;
+  bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes) override;
+  bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes) override;
   void set_rom();
 
-  virtual const char* get_symbol(uint64_t paddr) override;
+  const char* get_symbol(uint64_t paddr) override;
 
   // presents a prompt for introspection into the simulation
   void interactive();
@@ -163,13 +163,13 @@ private:
   friend class mmu_t;
 
   // htif
-  virtual void reset() override;
-  virtual void idle() override;
-  virtual void read_chunk(addr_t taddr, size_t len, void* dst) override;
-  virtual void write_chunk(addr_t taddr, size_t len, const void* src) override;
-  virtual size_t chunk_align() override { return 8; }
-  virtual size_t chunk_max_size() override { return 8; }
-  virtual endianness_t get_target_endianness() const override;
+  void reset() override;
+  void idle() override;
+  void read_chunk(addr_t taddr, size_t len, void* dst) override;
+  void write_chunk(addr_t taddr, size_t len, const void* src) override;
+  size_t chunk_align() override { return 8; }
+  size_t chunk_max_size() override { return 8; }
+  endianness_t get_target_endianness() const override;
 
 public:
   // Initialize this after procs, because in debug_module_t::reset() we

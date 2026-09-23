@@ -2,7 +2,7 @@
 
 #include "htif_pthread.h"
 #include <algorithm>
-#include <stdio.h>
+#include <cstdio>
 
 void htif_pthread_t::thread_main(void* arg)
 {

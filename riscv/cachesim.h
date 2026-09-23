@@ -70,8 +70,8 @@ class fa_cache_sim_t : public cache_sim_t
 {
  public:
   fa_cache_sim_t(size_t ways, size_t linesz, const char* name);
-  uint64_t* check_tag(uint64_t addr);
-  uint64_t victimize(uint64_t addr);
+  uint64_t* check_tag(uint64_t addr) override;
+  uint64_t victimize(uint64_t addr) override;
  private:
   static bool cmp(uint64_t a, uint64_t b);
   std::map<uint64_t, uint64_t> tags;
@@ -84,7 +84,7 @@ class cache_memtracer_t : public memtracer_t
   {
     cache = cache_sim_t::construct(config, name);
   }
-  ~cache_memtracer_t()
+  ~cache_memtracer_t() override
   {
     delete cache;
   }
@@ -92,7 +92,7 @@ class cache_memtracer_t : public memtracer_t
   {
     cache->set_miss_handler(mh);
   }
-  void clean_invalidate(uint64_t addr, size_t bytes, bool clean, bool inval)
+  void clean_invalidate(uint64_t addr, size_t bytes, bool clean, bool inval) override
   {
     cache->clean_invalidate(addr, bytes, clean, inval);
   }
@@ -114,11 +114,11 @@ class icache_sim_t : public cache_memtracer_t
  public:
   icache_sim_t(const char* config, const char* name = "I$")
 	  : cache_memtracer_t(config, name) {}
-  bool interested_in_range(uint64_t UNUSED begin, uint64_t UNUSED end, access_type type)
+  bool interested_in_range(uint64_t UNUSED begin, uint64_t UNUSED end, access_type type) override
   {
     return type == FETCH;
   }
-  void trace(uint64_t addr, size_t bytes, access_type type)
+  void trace(uint64_t addr, size_t bytes, access_type type) override
   {
     if (type == FETCH) cache->access(addr, bytes, false);
   }
@@ -129,11 +129,11 @@ class dcache_sim_t : public cache_memtracer_t
  public:
   dcache_sim_t(const char* config, const char* name = "D$")
 	  : cache_memtracer_t(config, name) {}
-  bool interested_in_range(uint64_t UNUSED begin, uint64_t UNUSED end, access_type type)
+  bool interested_in_range(uint64_t UNUSED begin, uint64_t UNUSED end, access_type type) override
   {
     return type == LOAD || type == STORE;
   }
-  void trace(uint64_t addr, size_t bytes, access_type type)
+  void trace(uint64_t addr, size_t bytes, access_type type) override
   {
     if (type == LOAD || type == STORE) cache->access(addr, bytes, type == STORE);
   }

@@ -9,6 +9,12 @@
 #define DEBUG_ROM_RESUMING  0x108
 #define DEBUG_ROM_EXCEPTION 0x10C
 
+// Saved hart state. Zero means there is nothing to restore;
+// the mstatus bit means the mstatus fields are in there too.
+#define DEBUG_ROM_SAVED_STATE 0x110
+#define DEBUG_ROM_SAVED_STATE_VALID 0b1
+#define DEBUG_ROM_SAVED_STATE_MSTATUS 0b10
+
 // Region of memory where each hart has 1
 // byte to read.
 #define DEBUG_ROM_FLAGS 0x400
