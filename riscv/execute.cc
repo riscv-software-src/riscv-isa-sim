@@ -235,6 +235,7 @@ void processor_t::step(size_t n)
         switch (npc) { \
           case PC_SERIALIZE_BEFORE: state.serialized = true; goto serialize; \
           case PC_SERIALIZE_AFTER: retire_one(); goto serialize; \
+          case PC_YIELD: retire_one(); n = instret; goto serialize; \
           default: abort(); \
         } \
       } else { \
