@@ -275,9 +275,16 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
      (1 << CAUSE_SOFTWARE_CHECK_FAULT) : 0) |
     (proc->extension_enabled(EXT_ZICNTR)?
      (1 << CAUSE_HARDWARE_ERROR_FAULT) : 0);
-  add_hypervisor_csr(CSR_HEDELEG, hedeleg = std::make_shared<masked_csr_t>(proc, CSR_HEDELEG, hedeleg_mask, 0));
+  hedeleg = std::make_shared<masked_csr_t>(proc, CSR_HEDELEG, hedeleg_mask, 0);
+  if (xlen == 32) {
+    add_hypervisor_csr(CSR_HEDELEG, std::make_shared<rv32_low_csr_t>(proc, CSR_HEDELEG, hedeleg));
+    add_hypervisor_csr(CSR_HEDELEGH, std::make_shared<hedelegh_csr_t>(proc, CSR_HEDELEGH, hedeleg));
+  } else {
+    add_hypervisor_csr(CSR_HEDELEG, hedeleg);
+  }
+
   add_hypervisor_csr(CSR_HCOUNTEREN, hcounteren = std::make_shared<masked_csr_t>(proc, CSR_HCOUNTEREN, counteren_mask, 0));
-  htimedelta = std::make_shared<basic_csr_t>(proc, CSR_HTIMEDELTA, 0);
+  htimedelta = std::make_shared<time_sync_csr_t>(proc, CSR_HTIMEDELTA, 0);
   if (xlen == 32) {
     add_hypervisor_csr(CSR_HTIMEDELTA, std::make_shared<rv32_low_csr_t>(proc, CSR_HTIMEDELTA, htimedelta));
     add_hypervisor_csr(CSR_HTIMEDELTAH, std::make_shared<rv32_high_csr_t>(proc, CSR_HTIMEDELTAH, htimedelta));
@@ -382,7 +389,9 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN0_SENVCFG | HSTATEEN_SSTATEEN |
                                  (proc->extension_enabled_const(EXT_SSCSRIND) ? HSTATEEN0_CSRIND : 0) |
                                  (proc->extension_enabled_const(EXT_SSAIA) ? HSTATEEN0_IMSIC | HSTATEEN0_AIA : 0);
-    const reg_t mstateen0_mask = hstateen0_mask | (proc->extension_enabled(EXT_SSQOSID) ?  MSTATEEN0_PRIV114 : 0);
+    const reg_t mstateen0_mask = hstateen0_mask |
+                                 (proc->extension_enabled('H') ? MSTATEEN0_PRIV113 : 0) |
+                                 (proc->extension_enabled(EXT_SSQOSID) ? MSTATEEN0_PRIV114 : 0);
     for (int i = 0; i < 4; i++) {
       const reg_t mstateen_mask = i == 0 ? mstateen0_mask : MSTATEEN_HSTATEEN;
       mstateen[i] = std::make_shared<masked_csr_t>(proc, CSR_MSTATEEN0 + i, mstateen_mask, 0);

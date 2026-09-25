@@ -38,6 +38,11 @@ class csr_t {
   // checking needed or allowed. Side effects not allowed.
   virtual reg_t read() const noexcept = 0;
 
+  // Value used as the old value in a CSR read-modify-write operation.
+  // Most CSRs use their ordinary read value, but a CSR with an externally
+  // driven read value can override this to exclude that external input.
+  virtual reg_t read_for_write() const noexcept { return read(); }
+
   // write() updates the architectural value of this CSR. No
   // permission checking needed or allowed.
   // Child classes must implement unlogged_write()
@@ -320,6 +325,12 @@ class aia_rv32_high_csr_t: public rv32_high_csr_t {
   void verify_permissions(insn_t insn, bool write) const override;
 };
 
+class hedelegh_csr_t: public rv32_high_csr_t {
+ public:
+  hedelegh_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig);
+  void verify_permissions(insn_t insn, bool write) const override;
+};
+
 // sstatus.sdt is read_only 0 when menvcfg.dte = 0
 class sstatus_proxy_csr_t final: public base_status_csr_t {
  public:
@@ -389,6 +400,7 @@ class mip_csr_t: public mip_or_mie_csr_t {
  public:
   mip_csr_t(processor_t* const proc, const reg_t addr);
   reg_t read() const noexcept final;
+  reg_t read_for_write() const noexcept final;
 
   void write_with_mask(const reg_t mask, const reg_t val) noexcept override;
 
@@ -599,6 +611,7 @@ class time_counter_csr_t: public csr_t {
   reg_t read() const noexcept override;
 
   void sync(const reg_t val) noexcept;
+  void sync() noexcept;
 
  protected:
   bool unlogged_write(const reg_t UNUSED val) noexcept override { return false; };
@@ -838,12 +851,17 @@ class senvcfg_csr_t final: public envcfg_csr_t {
   bool unlogged_write(const reg_t val) noexcept override;
 };
 
-class stimecmp_csr_t: public basic_csr_t {
+class time_sync_csr_t: public basic_csr_t {
+ public:
+  time_sync_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class stimecmp_csr_t: public time_sync_csr_t {
  public:
   stimecmp_csr_t(processor_t* const proc, const reg_t addr, const reg_t imask);
   void verify_permissions(insn_t insn, bool write) const override;
- protected:
-  bool unlogged_write(const reg_t val) noexcept override;
  private:
   reg_t intr_mask;
 };

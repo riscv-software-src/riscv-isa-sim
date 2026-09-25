@@ -1,0 +1,76 @@
+#!/bin/bash
+set -e
+
+SPIKE=$1
+RUN=$2
+CI="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+mkdir -p "$RUN"
+cd "$RUN"
+
+for xlen in 32 64; do
+  for mode in s u vs vu; do
+    case $mode in
+      s)  mnpp=1; mnpv=0 ;;
+      u)  mnpp=0; mnpv=0 ;;
+      vs) mnpp=1; mnpv=1 ;;
+      vu) mnpp=0; mnpv=1 ;;
+    esac
+    riscv64-linux-gnu-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie \
+      -march=rv${xlen}gc -mabi=$(test $xlen -eq 64 && echo lp64d || echo ilp32d) \
+      -Wl,--build-id=none -Wl,-Ttext-segment=0x80000000 \
+      -Wl,--section-start=.mnret_target=0x81000000 \
+      -DMNRET_MNPP=$mnpp -DMNRET_MNPV=$mnpv \
+      -o mnret-double-trap-rv${xlen}-$mode "$CI/mnret-double-trap.S"
+  done
+done
+
+for xlen in 32 64; do
+  for mode in s u vs vu; do
+    debug_cmd="$CI/mnret-double-trap.cmd"
+    if test $xlen -eq 32; then
+      debug_cmd="$CI/mnret-double-trap-rv32.cmd"
+    fi
+    output=$(
+      "$SPIKE" -d --isa=rv${xlen}gch_smrnmi_smdbltrp_ssdbltrp \
+        --debug-cmd="$debug_cmd" mnret-double-trap-rv${xlen}-$mode 2>&1
+    )
+    mapfile -t status < <(sed -n 's/^0x//p' <<< "$output")
+    expected_status_count=$((xlen == 32 ? 3 : 2))
+    if test ${#status[@]} -ne $expected_status_count; then
+      echo "Failed to read RV$xlen MNRET status for $mode mode" >&2
+      echo "$output" >&2
+      exit 1
+    fi
+
+    mstatus=$((16#${status[0]}))
+    if test $xlen -eq 32; then
+      mstatush=$((16#${status[1]}))
+      vsstatus=$((16#${status[2]}))
+      mdt=$((mstatush & (1 << 10)))
+    else
+      vsstatus=$((16#${status[1]}))
+      mdt=$((mstatus & (1 << 42)))
+    fi
+
+    if test $mdt -ne 0; then
+      echo "RV$xlen MNRET left mstatus.MDT set when returning to $mode mode" >&2
+      exit 1
+    fi
+
+    case $mode in
+      s)
+        test $((mstatus & (1 << 24))) -ne 0
+        test $((vsstatus & (1 << 24))) -ne 0
+        ;;
+      u|vs)
+        test $((mstatus & (1 << 24))) -eq 0
+        test $((vsstatus & (1 << 24))) -ne 0
+        ;;
+      vu)
+        test $((mstatus & (1 << 24))) -eq 0
+        test $((vsstatus & (1 << 24))) -eq 0
+        ;;
+    esac
+  done
+done

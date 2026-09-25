@@ -235,6 +235,7 @@ void processor_t::step(size_t n)
         switch (npc) { \
           case PC_SERIALIZE_BEFORE: state.serialized = true; goto serialize; \
           case PC_SERIALIZE_AFTER: retire_one(); goto serialize; \
+          case PC_YIELD: retire_one(); n = instret; goto serialize; \
           default: abort(); \
         } \
       } else { \
@@ -319,7 +320,7 @@ void processor_t::step(size_t n)
       n = instret;
 
       // If critical error then enter debug mode critical error trigger enabled
-      if (state.critical_error) {
+      if (state.critical_error && !state.debug_mode) {
         if (state.dcsr->read() & DCSR_CETRIG) {
           enter_debug_mode(DCSR_CAUSE_EXTCAUSE, DCSR_EXTCAUSE_CRITERR);
         } else {
@@ -334,7 +335,8 @@ void processor_t::step(size_t n)
         take_trigger_action(match->action, 0, state.pc, 0);
       else if (unlikely(state.single_step == state.STEP_STEPPED)) {
         state.single_step = state.STEP_NONE;
-        enter_debug_mode(DCSR_CAUSE_STEP, 0);
+        if (!state.debug_mode)
+          enter_debug_mode(DCSR_CAUSE_STEP, 0);
       }
     }
     catch (triggers::matched_t& t)
