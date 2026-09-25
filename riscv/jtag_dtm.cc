@@ -84,9 +84,13 @@ void jtag_dtm_t::set_pins(bool tck, bool tms, bool tdi) {
         dr >>= 1;
         dr |= (uint64_t) _tdi << (dr_length-1);
         break;
+      case CAPTURE_IR:
+        // The two least significant bits of the captured IR must be 01.
+        ir_shift = 1;
+        break;
       case SHIFT_IR:
-        ir >>= 1;
-        ir |= _tdi << (ir_length-1);
+        ir_shift >>= 1;
+        ir_shift |= _tdi << (ir_length-1);
         break;
       default:
         break;
@@ -114,7 +118,10 @@ void jtag_dtm_t::set_pins(bool tck, bool tms, bool tdi) {
         update_dr();
         break;
       case SHIFT_IR:
-        _tdo = ir & 1;
+        _tdo = ir_shift & 1;
+        break;
+      case UPDATE_IR:
+        ir = ir_shift;
         break;
       default:
         break;
