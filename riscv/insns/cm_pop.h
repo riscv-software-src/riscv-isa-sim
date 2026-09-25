@@ -14,4 +14,4 @@ for (int i = Sn(11); i >= 0; i--) {
   }
 }
 
-WRITE_REG(X_SP, new_sp);
+WRITE_REG(X_SP, sext_xlen(new_sp));
