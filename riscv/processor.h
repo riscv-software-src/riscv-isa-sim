@@ -256,7 +256,7 @@ public:
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
   unsigned get_xlen() const { return xlen; }
-  unsigned paddr_bits() { return isa.get_max_xlen() == 64 ? 56 : 34; }
+  unsigned paddr_bits() { return cfg->paddr_bits.value_or(isa.get_max_xlen() == 64 ? 56 : 34); } // default to 56 for RV64 and 34 for RV32 if not specified
   unsigned get_const_xlen() const {
     // Any code that assumes a const xlen should use this method to
     // document that assumption. If Spike ever changes to allow

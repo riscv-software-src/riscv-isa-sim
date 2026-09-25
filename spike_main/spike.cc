@@ -46,6 +46,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
   fprintf(stderr, "  --pmpregions=<n>      Number of PMP regions [default 16]\n");
   fprintf(stderr, "  --pmpgranularity=<n>  PMP Granularity in bytes [default 4]\n");
+  fprintf(stderr, "  --paddr-bits=<n>      Physical address width in bits [default: 34 for RV32, 56 for RV64]\n");
   fprintf(stderr, "  --priv=<m|mu|msu>     RISC-V privilege modes supported [default %s]\n", DEFAULT_PRIV);
   fprintf(stderr, "  --pc=<address>        Override ELF entry point\n");
   fprintf(stderr, "  --pcs=<H:A,...>       Override start PC for specific hart\n"); //This will bypass the built-in boot ROM
@@ -416,6 +417,7 @@ int main(int argc, char** argv)
   parser.option(0, "isa", 1, [&](const char* s){cfg.isa = s;});
   parser.option(0, "pmpregions", 1, [&](const char* s){cfg.pmpregions = atoul_safe(s);});
   parser.option(0, "pmpgranularity", 1, [&](const char* s){cfg.pmpgranularity = atoul_safe(s);});
+  parser.option(0, "paddr-bits", 1, [&](const char* s){cfg.paddr_bits = atoul_safe(s);});
   parser.option(0, "priv", 1, [&](const char* s){cfg.priv = s;});
   parser.option(0, "device", 1, device_parser);
   parser.option(0, "dtb-discovery", 0, [&](const char UNUSED *s){ dtb_discovery = true;} );

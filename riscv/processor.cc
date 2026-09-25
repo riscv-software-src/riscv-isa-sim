@@ -42,6 +42,16 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
   impl_table(256, false), extension_enable_table(isa.get_extension_table()),
   last_pc(1), executions(1), TM(cfg->trigger_count), geilen(GEILEN)
 {
+  if (cfg->paddr_bits) {
+    unsigned max = isa.get_max_xlen() == 64 ? 56 : 34;
+    reg_t n = *cfg->paddr_bits;
+    if (n > max || n < 12) {
+      fprintf(stderr,
+              "error: --paddr-bits=%" PRIu64 " must be between 12 and %u\n", n, max);
+      abort();
+    }
+  }
+
   VU.p = this;
   TM.proc = this;
 
