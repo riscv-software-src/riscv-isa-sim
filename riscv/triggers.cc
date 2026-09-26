@@ -260,7 +260,7 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(
         /* This is OK because this function is only called if the trigger was
          * not inhibited by the previous trigger in the chain. */
         set_hit(timing ? HIT_IMMEDIATELY_AFTER : HIT_BEFORE);
-        return match_result_t(timing_t(timing), action);
+        return match_result_t(timing_t(timing), action, address + i);
       }
 
     return std::nullopt;
@@ -273,7 +273,7 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(
     /* This is OK because this function is only called if the trigger was
       * not inhibited by the previous trigger in the chain. */
     set_hit(timing ? HIT_IMMEDIATELY_AFTER : HIT_BEFORE);
-    return match_result_t(timing_t(timing), action);
+    return match_result_t(timing_t(timing), action, address);
   }
 
   return std::nullopt;

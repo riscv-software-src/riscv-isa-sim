@@ -44,7 +44,8 @@ class jtag_dtm_t
     // complete.
     unsigned required_rti_cycles;
     bool _tck, _tms, _tdi, _tdo;
-    uint32_t ir;
+    uint32_t ir; // Active instruction, latched in Update-IR.
+    uint32_t ir_shift;
     const unsigned ir_length = 5;
     uint64_t dr;
     unsigned dr_length;
