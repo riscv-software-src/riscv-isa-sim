@@ -244,7 +244,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
 
 #define set_pc_and_serialize(x) set_special_pc(x, PC_SERIALIZE_AFTER)
 
-#define yield() set_special_pc(npc, PC_YIELD)
+#define yield_hart() set_special_pc(npc, PC_YIELD)
 
 #define serialize() set_pc_and_serialize(npc)
 
