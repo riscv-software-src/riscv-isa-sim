@@ -51,7 +51,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
              bool dtb_enabled, const char *dtb_file,
              bool socket_enabled,
              FILE *cmd_file, // needed for command line option --cmd
-             std::optional<unsigned long long> instruction_limit)
+             std::optional<unsigned long long> instruction_limit,
+             bool dm_enabled)
   : htif_t(args),
     cfg(cfg),
     mems(mems),
@@ -67,13 +68,16 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     histogram_enabled(false),
     log(false),
     remote_bitbang(NULL),
+    dm_enabled(dm_enabled),
     debug_module(this, dm_config)
 {
   signal(SIGINT, &handle_signal);
 
   sout_.rdbuf(std::cerr.rdbuf()); // debug output goes to stderr by default
 
-  bus.add_device(DEBUG_START, &debug_module);
+  if (dm_enabled) {
+    bus.add_device(DEBUG_START, &debug_module);
+  }
 
   socketif = NULL;
 #ifdef HAVE_BOOST_ASIO
@@ -562,7 +566,9 @@ endianness_t sim_t::get_target_endianness() const
 
 void sim_t::proc_reset(unsigned id)
 {
-  debug_module.proc_reset(id);
+  if (dm_enabled) {
+    debug_module.proc_reset(id);
+  }
   if (harts.count(id)) {
     if (auto pc = cfg->start_pc.get(id)) {
       harts[id]->get_state()->pc = *pc;

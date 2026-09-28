@@ -73,6 +73,7 @@ static void help(int exit_code = 1)
           DEFAULT_KERNEL_BOOTARGS);
   fprintf(stderr, "  --real-time-clint     Increment clint time at real-time rate\n");
   fprintf(stderr, "  --wfi-as-nop          Do not wait on WFI; retain privilege checks\n");
+  fprintf(stderr, "  --no-dm               Don't attach the debug module to the internal bus\n");
   fprintf(stderr, "  --triggers=<n>        Number of supported triggers [default 4]\n");
   fprintf(stderr, "  --dm-progsize=<words> Progsize for the debug module [default 2]\n");
   fprintf(stderr, "  --dm-datacount=<n>    Number of data registers available for the debug module [default 2]\n");
@@ -349,6 +350,7 @@ int main(int argc, char** argv)
   reg_t blocksz = 64;
   std::optional<unsigned long long> instructions;
   debug_module_config_t dm_config;
+  bool dm_enabled = true;
   cfg_arg_t<size_t> nprocs(1);
 
   cfg_t cfg;
@@ -437,6 +439,7 @@ int main(int argc, char** argv)
       exit(-1);
     }
   });
+  parser.option(0, "no-dm", 0, [&](const char UNUSED *s){dm_enabled = false;});
   parser.option(0, "dm-progsize", 1,
       [&](const char* s){dm_config.progbufsize = atoul_safe(s);});
   parser.option(0, "dm-datacount", 1,
@@ -556,7 +559,8 @@ int main(int argc, char** argv)
       mems, plugin_device_factories, dtb_discovery, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
       socket,
       cmd_file,
-      instructions);
+      instructions,
+      dm_enabled);
   std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
   std::unique_ptr<jtag_dtm_t> jtag_dtm(
       new jtag_dtm_t(&s.debug_module, dmi_rti));
