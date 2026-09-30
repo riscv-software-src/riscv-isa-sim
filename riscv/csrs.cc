@@ -865,7 +865,6 @@ bool sstatus_csr_t::enabled(const reg_t which) {
 // implement class misa_csr_t
 misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t max_isa):
   basic_csr_t(proc, addr, max_isa),
-  max_isa(max_isa),
   write_mask(max_isa & (0  // allow MABFDQCHV bits in MISA to be modified
                         | (1L << ('M' - 'A'))
                         | (1L << ('A' - 'A'))
@@ -1910,8 +1909,8 @@ bool time_sync_csr_t::unlogged_write(const reg_t val) noexcept {
   return ret;
 }
 
-stimecmp_csr_t::stimecmp_csr_t(processor_t* const proc, const reg_t addr, const reg_t imask):
-  time_sync_csr_t(proc, addr, 0), intr_mask(imask) {
+stimecmp_csr_t::stimecmp_csr_t(processor_t* const proc, const reg_t addr, const reg_t UNUSED imask):
+  time_sync_csr_t(proc, addr, 0) {
 }
 
 void stimecmp_csr_t::verify_permissions(insn_t insn, bool write) const {
