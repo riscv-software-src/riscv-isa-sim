@@ -41,7 +41,9 @@
     if (DECODE_MACRO_USAGE_LOGGED) STATE.log_reg_write[((reg) << 4) | 1] = wdata; \
     DO_WRITE_FREG(reg, wdata); \
   })
-#define WRITE_VSTATUS STATE.log_reg_write[3] = {0, 0};
+#define WRITE_VSTATUS do { \
+    if (DECODE_MACRO_USAGE_LOGGED) STATE.log_reg_write[3] = {0, 0}; \
+  } while (0)
 
 /* the value parameter needs to be evaluated before writing to the registers */
 #define WRITE_REG_PAIR(reg, value) \
