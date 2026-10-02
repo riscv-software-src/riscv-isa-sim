@@ -1,4 +1,23 @@
-Checks: 'modernize-avoid-bind, modernize-use-starts-ends-with, modernize-use-override, modernize-pass-by-value, modernize-deprecated-headers, -clang-diagnostic-unused-private-field'
+Checks: 'misc-explicit-constructor,
+         misc-misplaced-const,
+         misc-predictable-rand,
+         misc-redundant-expression,
+         misc-static-assert,
+         misc-static-initialization-cycle,
+         misc-throw-by-value-catch-by-reference,
+         misc-unconventional-assign-operator,
+         misc-uniqueptr-reset-release,
+         misc-unused-alias-decls, 
+         misc-override-with-different-visibility,
+         modernize-avoid-bind, 
+         modernize-deprecated-headers,
+         modernize-use-transparent-functors,
+         modernize-use-emplace,
+         modernize-use-structured-binding, 
+         modernize-use-starts-ends-with, 
+         modernize-use-override, 
+         modernize-pass-by-value, 
+         -clang-diagnostic-unused-private-field'
 
 WarningsAsErrors: '*'
 

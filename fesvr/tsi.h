@@ -33,6 +33,7 @@ class tsi_t : public htif_t
 
  protected:
   void reset() override;
+public:
   void read_chunk(addr_t taddr, size_t nbytes, void* dst) override;
   void write_chunk(addr_t taddr, size_t nbytes, const void* src) override;
   void switch_to_target();

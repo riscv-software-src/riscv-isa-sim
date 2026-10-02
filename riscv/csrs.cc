@@ -867,7 +867,7 @@ misa_csr_t::misa_csr_t(processor_t* const proc, const reg_t addr, const reg_t ma
   basic_csr_t(proc, addr, max_isa),
   write_mask(max_isa & (0  // allow MABFDQCHV bits in MISA to be modified
                         | (1L << ('M' - 'A'))
-                        | (1L << ('A' - 'A'))
+                        | (1L << ('A' - 'A')) // NOLINT
                         | (1L << ('B' - 'A'))
                         | (1L << ('F' - 'A'))
                         | (1L << ('D' - 'A'))
@@ -910,10 +910,10 @@ bool misa_csr_t::unlogged_write(const reg_t val) noexcept {
   proc->set_extension_enable(EXT_ZFHMIN, new_misa & (1L << ('F' - 'A')));
   proc->set_extension_enable(EXT_ZVFH, new_v && proc->get_isa().get_zvf() && proc->extension_enabled(EXT_ZFHMIN));
   proc->set_extension_enable(EXT_ZVFHMIN, new_v && proc->get_isa().get_zvf());
-  proc->set_extension_enable(EXT_ZAAMO, (new_misa & (1L << ('A' - 'A'))) || !proc->get_isa().extension_enabled('A'));
-  proc->set_extension_enable(EXT_ZALRSC, (new_misa & (1L << ('A' - 'A'))) || !proc->get_isa().extension_enabled('A'));
-  proc->set_extension_enable(EXT_ZABHA, (new_misa & (1L << ('A' - 'A'))) || !proc->get_isa().extension_enabled('A'));
-  proc->set_extension_enable(EXT_ZACAS, (new_misa & (1L << ('A' - 'A'))) || !proc->get_isa().extension_enabled('A'));
+  proc->set_extension_enable(EXT_ZAAMO, (new_misa & (1L << ('A' - 'A'))) || !proc->get_isa().extension_enabled('A')); // NOLINT
+  proc->set_extension_enable(EXT_ZALRSC, (new_misa & (1L << ('A' - 'A'))) || !proc->get_isa().extension_enabled('A')); // NOLINT
+  proc->set_extension_enable(EXT_ZABHA, (new_misa & (1L << ('A' - 'A'))) || !proc->get_isa().extension_enabled('A')); // NOLINT
+  proc->set_extension_enable(EXT_ZACAS, (new_misa & (1L << ('A' - 'A'))) || !proc->get_isa().extension_enabled('A')); // NOLINT
   proc->set_extension_enable(EXT_ZBA, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
   proc->set_extension_enable(EXT_ZBB, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
   proc->set_extension_enable(EXT_ZBS, (new_misa & (1L << ('B' - 'A'))) || !proc->get_isa().extension_enabled('B'));
@@ -1224,7 +1224,7 @@ envcfg_csr_t::envcfg_csr_t(processor_t* const proc, const reg_t addr, const reg_
                              const reg_t init):
   masked_csr_t(proc, addr, mask, init) {
   // In unlogged_write() we WARLize this field for all three of [msh]envcfg
-  assert(MENVCFG_CBIE == SENVCFG_CBIE && MENVCFG_CBIE == HENVCFG_CBIE);
+  static_assert((MENVCFG_CBIE == SENVCFG_CBIE) && (MENVCFG_CBIE == HENVCFG_CBIE));
 }
 
 bool envcfg_csr_t::unlogged_write(const reg_t val) noexcept {

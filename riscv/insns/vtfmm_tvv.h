@@ -53,8 +53,8 @@ if (P.VU.vsew == 64 && P.VU.widen == 1 && !P.VU.altfmt) {
       fp16_norm_t in_b[kmax];
 
       for (size_t ki = 0; ki < P.VU.tk; ki++) {
-        in_a[ki].n = a[ki].v;
-        in_b[ki].n = b[ki].v;
+        in_a[ki].setRaw(a[ki].v);
+        in_b[ki].setRaw(b[ki].v);
       }
       auto out = bulk_norm_dot_fp16(cfg, in_a, in_b);
 
@@ -79,8 +79,8 @@ if (P.VU.vsew == 64 && P.VU.widen == 1 && !P.VU.altfmt) {
       ofp8_e4m3 in_b[kmax];
 
       for (size_t ki = 0; ki < P.VU.tk; ki++) {
-        in_a[ki].n = a[ki].v;
-        in_b[ki].n = b[ki].v;
+        in_a[ki].setRaw(a[ki].v);
+        in_b[ki].setRaw(b[ki].v);
       }
       auto out = bulk_norm_dot_ofp8(cfg, in_a, in_b);
 
@@ -105,8 +105,8 @@ if (P.VU.vsew == 64 && P.VU.widen == 1 && !P.VU.altfmt) {
       ofp8_e5m2 in_b[kmax];
 
       for (size_t ki = 0; ki < P.VU.tk; ki++) {
-        in_a[ki].n = a[ki].v;
-        in_b[ki].n = b[ki].v;
+        in_a[ki].setRaw(a[ki].v);
+        in_b[ki].setRaw(b[ki].v);
       }
       auto out = bulk_norm_dot_ofp8(cfg, in_a, in_b);
 

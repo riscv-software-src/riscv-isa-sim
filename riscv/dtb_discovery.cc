@@ -114,7 +114,7 @@ void discover_devices_from_dtb(const void* fdt,
               node_name, device_name.c_str(), base, size,
               (parsed_args.empty() ? "" : join_csv(parsed_args).c_str()));
 
-      factories.push_back({factory, full_args});
+      factories.emplace_back(factory, full_args);
     }
   }
 }

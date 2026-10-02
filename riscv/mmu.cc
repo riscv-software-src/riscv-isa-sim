@@ -104,6 +104,12 @@ inline mmu_t::insn_parcel_t mmu_t::perform_intrapage_fetch(reg_t vaddr, uintptr_
 
 mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
+  if (matched_trigger) {
+    auto trig = matched_trigger.value();
+    matched_trigger.reset();
+    throw std::move(trig);
+  }
+
   if  (auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS); tlb_hit) {
     // Fast path for simple cases
     return perform_intrapage_fetch(vaddr, host_addr, paddr);
@@ -307,7 +313,7 @@ void mmu_t::load_slow_path(reg_t original_addr, std::size_t len,
       transformed_addr, access_info.effective_virt, len, bytes);
 
   if (unlikely(proc->get_log_commits_enabled()))
-    proc->state.log_mem_read.push_back(std::make_tuple(original_addr, 0, len));
+    proc->state.log_mem_read.emplace_back(original_addr, 0, len);
 }
 
 inline void mmu_t::perform_intrapage_store(reg_t vaddr, uintptr_t host_addr, reg_t paddr, reg_t len, const uint8_t* bytes, xlate_flags_t xlate_flags)
@@ -402,7 +408,7 @@ void mmu_t::store_slow_path(reg_t original_addr, std::size_t len,
     for (size_t offset = 0; offset < len; offset += sizeof(reg_t)) {
       auto this_size = std::min(len - offset, sizeof(reg_t));
       auto this_data = reg_from_bytes(this_size, bytes + offset);
-      proc->state.log_mem_write.push_back(std::make_tuple(original_addr + offset, this_data, this_size));
+      proc->state.log_mem_write.emplace_back(original_addr + offset, this_data, this_size);
     }
   }
 }

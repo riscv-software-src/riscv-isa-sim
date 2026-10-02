@@ -1,7 +1,6 @@
 require_extension('P');
 require_rv32;
-bool sat = false;
-reg_t tmp = sat_addu<uint32_t>(RS1, RS2, sat);
+auto [tmp, sat] = (sat_addu<uint32_t>(RS1, RS2));
 if (sat)
   P.set_vxsat();
  

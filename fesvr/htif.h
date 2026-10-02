@@ -55,6 +55,7 @@ class htif_t : public chunked_memif_t
  protected:
   virtual void reset() = 0;
 
+public:
   void read_chunk(addr_t taddr, size_t len, void* dst) override = 0;
   void write_chunk(addr_t taddr, size_t len, const void* src) override = 0;
   void clear_chunk(addr_t taddr, size_t len) override;

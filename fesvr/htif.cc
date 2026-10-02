@@ -374,16 +374,16 @@ void htif_t::parse_arguments(int argc, char ** argv)
         syscall_proxy.set_chroot(optarg);
         break;
       case HTIF_LONG_OPTIONS_OPTIND + 4:
-        payloads.push_back(optarg);
+        payloads.emplace_back(optarg);
         break;
       case HTIF_LONG_OPTIONS_OPTIND + 5:
         line_size = atoi(optarg);
         break;
       case HTIF_LONG_OPTIONS_OPTIND + 6:
-        targs.push_back(optarg);
+        targs.emplace_back(optarg);
         break;
       case HTIF_LONG_OPTIONS_OPTIND + 7:
-        symbol_elfs.push_back(optarg);
+        symbol_elfs.emplace_back(optarg);
         break;
       case '?':
         if (!opterr)
@@ -458,7 +458,7 @@ void htif_t::parse_arguments(int argc, char ** argv)
 
 done_processing:
   while (optind < argc)
-    targs.push_back(argv[optind++]);
+    targs.emplace_back(argv[optind++]);
   if (!targs.size()) {
     usage(argv[0]);
     throw std::invalid_argument("No binary specified (Did you forget it? Did you forget '+permissive-off' if running with +permissive?)");
