@@ -23,6 +23,11 @@
 #define PGSHIFT 12
 const reg_t PGSIZE = 1 << PGSHIFT;
 
+#define PBMT_PMA 0
+#define PBMT_NC  1
+#define PBMT_IO  2
+#define PBMT_RES 3
+
 // observability hooks for load, store and fetch
 // intentionally empty not to cause runtime overhead
 // can be redefined if needed 
