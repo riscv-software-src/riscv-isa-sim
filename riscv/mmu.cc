@@ -12,8 +12,12 @@
 
 #include <cassert>
 
-mmu_t::mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc, reg_t cache_blocksz)
- : sim(sim), proc(proc), blocksz(cache_blocksz),
+mmu_t::mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc, reg_t cache_blocksz,
+             reg_t reservation_set_size_exp)
+ : sim(sim), proc(proc), load_reservation_address((reg_t)-1),
+   // reservation_set_size_exp == 0 means exact match
+   load_reservation_set_mask(~(((reg_t)1 << reservation_set_size_exp) - (reg_t)1)),
+   blocksz(cache_blocksz),
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
   target_big_endian(endianness == endianness_big),
 #endif
