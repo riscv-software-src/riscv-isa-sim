@@ -2614,7 +2614,8 @@ void nonvirtual_stopei_csr_t::verify_permissions(insn_t insn, bool write) const 
 
   // If the hart has an IMSIC, then when bit 9 of mvien is one, attempts from S-mode to explicitly
   // access the supervisor-level interrupt file raise an illegal instruction exception.
-  if (state->prv < PRV_M && (state->mvien->read() & MIP_SEIP))
+  // From VS-mode, stopei is really vstopei, a guest interrupt file, which mvien does not affect.
+  if (state->prv < PRV_M && !state->v && (state->mvien->read() & MIP_SEIP))
     throw trap_illegal_instruction(insn.bits());
 
   csr_t::verify_permissions(insn, write);
