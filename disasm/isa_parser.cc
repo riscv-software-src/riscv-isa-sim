@@ -451,6 +451,15 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     bad_isa_string(str, "Spike does not support VLEN > 4096");
   }
 
+  if (extension_table[EXT_ZA64RS]) {
+    reservation_size = 64;
+  } else if (extension_table[EXT_ZA128RS]) {
+    reservation_size = 128;
+  } else {
+    // sets to cache line size later
+    reservation_size = 0;
+  }
+
   std::string lowercase = strtolower(priv);
   bool user = false, supervisor = false;
 

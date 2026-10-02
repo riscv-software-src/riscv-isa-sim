@@ -100,7 +100,8 @@ private:
   mem_access_info_t generate_access_info(reg_t addr, access_type type, xlate_flags_t xlate_flags);
 
 public:
-  mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc, reg_t cache_blocksz);
+  mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc, reg_t cache_blocksz,
+        reg_t load_reservation_size_exp = 0);
   ~mmu_t();
 
   template<typename T>
@@ -285,7 +286,8 @@ public:
       paddr = translate(generate_access_info(vaddr, STORE, {}), 1);
 
     if (sim->reservable(paddr))
-      return load_reservation_address == paddr;
+      // Checked reservation set subsumes paddr
+      return !((load_reservation_address ^ paddr) & load_reservation_set_mask);
 
     // SC to non-reservable region: report the PMM-masked effective vaddr.
     auto access_info = generate_access_info(vaddr, STORE, {});
@@ -398,6 +400,7 @@ private:
   processor_t* proc;
   memtracer_list_t tracer;
   reg_t load_reservation_address;
+  reg_t load_reservation_set_mask;
   reg_t blocksz;
 
   // implement an instruction cache for simulator performance

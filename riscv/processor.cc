@@ -63,7 +63,13 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
   VU.vlenb = isa.get_vlen() / 8;
   VU.vstart_alu = 0;
 
-  mmu = new mmu_t(sim, cfg->endianness, this, cfg->cache_blocksz);
+  reg_t reservation_size = cfg->cache_blocksz;
+  if (isa.get_reservation_size())
+    reservation_size = isa.get_reservation_size();
+  assert((reservation_size & (reservation_size -1)) == 0);
+  reg_t reservation_size_exp = std::countr_zero(reservation_size);
+
+  mmu = new mmu_t(sim, cfg->endianness, this, cfg->cache_blocksz, reservation_size_exp);
 
   set_pmp_granularity(cfg->pmpgranularity);
   set_pmp_num(cfg->pmpregions);

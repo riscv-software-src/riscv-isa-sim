@@ -154,6 +154,7 @@ public:
   std::string get_isa_string() const { return isa_string; }
   reg_t get_vlen() const { return vlen; }
   reg_t get_elen() const { return elen; }
+  reg_t get_reservation_size() const { return reservation_size; }
   reg_t get_te() const;
   bool get_zvf() const { return zvf; }
   bool get_zvd() const { return zvd; }
@@ -174,6 +175,7 @@ protected:
   reg_t max_isa;
   reg_t vlen;
   reg_t elen;
+  reg_t reservation_size;
   bool zvf;
   bool zvd;
   std::bitset<NUM_ISA_EXTENSIONS> extension_table;
