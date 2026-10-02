@@ -595,6 +595,7 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
       reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
       bool pbmte = proc->get_state()->menvcfg->read() & MENVCFG_PBMTE;
       bool hade = proc->get_state()->menvcfg->read() & MENVCFG_ADUE;
+      auto pte_pbmt = get_field(pte, PTE_PBMT);
       int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
 
       if (pte & PTE_RSVD) {
@@ -603,9 +604,9 @@ reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_ty
         break;
       } else if (!proc->extension_enabled(EXT_SVNAPOT) && (pte & PTE_N)) {
         break;
-      } else if (!pbmte && (pte & PTE_PBMT)) {
+      } else if (!pbmte && pte_pbmt) {
         break;
-      } else if ((pte & PTE_PBMT) == PTE_PBMT) {
+      } else if (pte_pbmt == PBMT_RES) {
         break;
       } else if (PTE_TABLE(pte)) { // next level of page table
         if (pte & (PTE_D | PTE_A | PTE_U | PTE_N | PTE_PBMT))
@@ -734,6 +735,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     bool hade = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_ADUE) : (proc->get_state()->menvcfg->read() & MENVCFG_ADUE);
     bool sse = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_SSE) : (proc->get_state()->menvcfg->read() & MENVCFG_SSE);
     bool ss_page = !(pte & PTE_R) && (pte & PTE_W) && !(pte & PTE_X);
+    auto pte_pbmt = get_field(pte, PTE_PBMT);
     int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
 
     if (pte & PTE_RSVD) {
@@ -742,9 +744,9 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
         break;
     } else if (!proc->extension_enabled(EXT_SVNAPOT) && (pte & PTE_N)) {
       break;
-    } else if (!pbmte && (pte & PTE_PBMT)) {
+    } else if (!pbmte && pte_pbmt) {
       break;
-    } else if ((pte & PTE_PBMT) == PTE_PBMT) {
+    } else if (pte_pbmt == PBMT_RES) {
       break;
     } else if (PTE_TABLE(pte)) { // next level of page table
       if (pte & (PTE_D | PTE_A | PTE_U | PTE_N | PTE_PBMT))
