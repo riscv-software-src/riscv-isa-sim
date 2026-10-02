@@ -374,7 +374,6 @@ class misa_csr_t final: public basic_csr_t {
  protected:
   bool unlogged_write(const reg_t val) noexcept override;
  private:
-  const reg_t max_isa;
   const reg_t write_mask;
   reg_t dependency(const reg_t val, const char feature, const char depends_on) const noexcept;
 };
@@ -860,10 +859,9 @@ class time_sync_csr_t: public basic_csr_t {
 
 class stimecmp_csr_t: public time_sync_csr_t {
  public:
-  stimecmp_csr_t(processor_t* const proc, const reg_t addr, const reg_t imask);
-  void verify_permissions(insn_t insn, bool write) const override;
- private:
-  reg_t intr_mask;
+   stimecmp_csr_t(processor_t *const proc, const reg_t addr,
+                  const reg_t imask);
+   void verify_permissions(insn_t insn, bool write) const override;
 };
 
 class virtualized_with_special_permission_csr_t: public virtualized_csr_t {

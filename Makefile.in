@@ -131,6 +131,11 @@ LINK          := $(LD) -L. $(all-link-flags) -Wl,-rpath,$(install_libs_dir) $(pa
 AR            := @AR@
 RANLIB        := @RANLIB@
 
+# Static analysis
+
+CLANG_TIDY    ?= clang-tidy
+TIDY_FLAGS    := -MMD -MP $(all-cxx-flags) $(sprojs_include) -I/usr/include @BOOST_CPPFLAGS@
+
 # Host simulator
 
 RUN           := @RUN@
@@ -214,6 +219,7 @@ _$(1).cc :
 
 $(2)_pch := $$(patsubst %.h, %.h.gch, $$($(2)_precompiled_hdrs))
 $(2)_objs := $$(patsubst %.cc, %.o, $$($(2)_srcs))
+$(2)_tidys := $$(patsubst %.cc, %.tidy, $$($(2)_srcs))
 $(2)_c_objs := $$(patsubst %.c, %.o, $$($(2)_c_srcs))
 $(2)_deps := $$(patsubst %.o, %.d, $$($(2)_objs))
 $(2)_deps += $$(patsubst %.o, %.d, $$($(2)_c_objs))
@@ -222,11 +228,13 @@ $$($(2)_pch) : %.h.gch : %.h
 	$(COMPILE) -x c++-header $$< -c -o $$@ -MF $$(patsubst %.gch,%.d,$$@)
 $$($(2)_objs) : %.o : %.cc $$($(2)_gen_hdrs) $$($(2)_pch)
 	$(COMPILE) $(if $(HAVE_CLANG_PCH), $$(if $$($(2)_pch), -include-pch $$($(2)_pch))) $$($(2)_CFLAGS) -c $$< -o $$@ -MF $$(patsubst %.o,%.d,$$@)
+$$($(2)_tidys) : %.tidy : %.cc $$($(2)_gen_hdrs) $$($(2)_pch)
+	$(CLANG_TIDY) $$< -- $(TIDY_FLAGS)
 $$($(2)_c_objs) : %.o : %.c $$($(2)_gen_hdrs)
 	$(COMPILE_C) $$($(2)_CFLAGS) -c $$< -o $$@ -MF $$(patsubst %.o,%.d,$$@)
 
 $(2)_junk += $$($(2)_pch) $$($(2)_objs) $$($(2)_c_objs) $$($(2)_deps) \
-  $$($(2)_gen_hdrs)
+  $$($(2)_gen_hdrs) $$($(2)_tidys)
 
 # Reverse the dependency list so that a given subproject only depends on
 # subprojects listed to its right. This is the correct order for linking
@@ -323,7 +331,9 @@ check-$(1) : $$($(2)_test_outs)
 clean-$(1) :
 	rm -rf $$($(2)_junk)
 
-.PHONY : all-$(1) check-$(1) clean-$(1)
+tidy-$(1) : $$($(2)_tidys)
+
+.PHONY : all-$(1) check-$(1) clean-$(1) tidy-$(1) $$($(2)_tidys)
 
 # Update running variables
 
@@ -338,6 +348,8 @@ install_libs += $$(if $$($(2)_install_lib),lib$(1).a,)
 install_libs += $$(if $$($(2)_install_shared_lib),lib$(1).so,)
 install_exes += $$($(2)_install_prog_exes)
 install_pcs  += $$(if $$($(2)_install_pcs),riscv-$(1).pc,)
+
+tidy_targets += $$($(2)_tidys)
 
 endef
 
@@ -363,6 +375,14 @@ check : $(test_outs)
 	echo; grep -h -e'Unit Tests' -e'FAILED' -e'Segementation' $^ < /dev/null; echo
 
 .PHONY : check
+
+#-------------------------------------------------------------------------
+# Static analysis
+#-------------------------------------------------------------------------
+
+tidy : $(tidy_targets)
+
+.PHONY : tidy
 
 #-------------------------------------------------------------------------
 # Installation
