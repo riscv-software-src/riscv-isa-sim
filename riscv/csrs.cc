@@ -2603,6 +2603,12 @@ bool topei_csr_t::unlogged_write(const reg_t UNUSED val) noexcept {
   return true;
 }
 
+// Whether hstatus.VGEIN names an implemented guest interrupt file.
+static bool hstatus_vgein_valid(const state_t* state, const processor_t* proc) {
+  reg_t vgein = get_field(state->hstatus->read(), HSTATUS_VGEIN);
+  return vgein && proc->imsic->vgein_valid(vgein);
+}
+
 void nonvirtual_stopei_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (proc->extension_enabled(EXT_SMSTATEEN)) {
     if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_IMSIC))
@@ -2618,6 +2624,10 @@ void nonvirtual_stopei_csr_t::verify_permissions(insn_t insn, bool write) const 
     throw trap_illegal_instruction(insn.bits());
 
   csr_t::verify_permissions(insn, write);
+
+  // From VS-mode, stopei is really vstopei, so VGEIN must be valid
+  if (state->v && !hstatus_vgein_valid(state, proc))
+    throw trap_virtual_instruction(insn.bits());
 }
 
 void vstopei_csr_t::verify_permissions(insn_t insn, bool write) const {
@@ -2632,8 +2642,7 @@ void vstopei_csr_t::verify_permissions(insn_t insn, bool write) const {
   csr_t::verify_permissions(insn, write);
 
   // VGEIN must be valid
-  reg_t vgein = get_field(state->hstatus->read(), HSTATUS_VGEIN);
-  if (!vgein || !proc->imsic->vgein_valid(vgein)) {
+  if (!hstatus_vgein_valid(state, proc)) {
     if (state->v)
       throw trap_virtual_instruction(insn.bits());
     else
