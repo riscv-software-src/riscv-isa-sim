@@ -770,7 +770,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     } else if (ss_page && type == FETCH) {
       // fetch from shadow stack pages cause instruction access-fault
       throw trap_instruction_access_fault(virt, addr, 0, 0);
-    } else if ((((pte & PTE_R) && (pte & PTE_W)) || (pte & PTE_X)) && ss_access) {
+    } else if ((((pte & PTE_R) && (pte & PTE_W)) || (pte & PTE_X) || pte_pbmt == PBMT_IO) && ss_access) {
       // shadow stack access cause store access fault if xwr!=010 and xwr!=001
       throw trap_store_access_fault(virt, addr, 0, 0);
     } else if (type == FETCH || hlvx ? !(pte & PTE_X) :
