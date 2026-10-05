@@ -1965,7 +1965,7 @@ reg_t scountovf_csr_t::read() const noexcept {
   reg_t val = 0;
   for (reg_t i = 0; i < N_HPMCOUNTERS; ++i) {
     bool of = state->mevent[i]->read() & MHPMEVENT_OF;
-    val |= of << (i + FIRST_HPMCOUNTER);
+    val |= reg_t(of) << (i + FIRST_HPMCOUNTER);
   }
 
   /* In M-mode, scountovf bit X is always readable. */
