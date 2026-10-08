@@ -287,7 +287,7 @@ public:
 
     auto [tlb_hit, _, paddr] = access_tlb(tlb_store, vaddr);
     if (!tlb_hit)
-      paddr = translate(generate_access_info(vaddr, STORE, {}), 1);
+      paddr = translate(generate_access_info(vaddr, STORE, {}), size);
 
     if (sim->reservable(paddr))
       return load_reservation_address == paddr;
