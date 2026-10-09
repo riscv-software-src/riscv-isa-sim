@@ -39,7 +39,8 @@ public:
         bool dtb_enabled, const char *dtb_file,
         bool socket_enabled,
         FILE *cmd_file, // needed for command line option --cmd
-        std::optional<unsigned long long> instruction_limit);
+        std::optional<unsigned long long> instruction_limit,
+        bool dm_enabled = true);
   ~sim_t() override;
 
   int run();
@@ -112,6 +113,7 @@ private:
   bool histogram_enabled; // provide a histogram of PCs
   bool log;
   remote_bitbang_t* remote_bitbang;
+  bool dm_enabled;
   std::optional<std::function<void()>> next_interactive_action;
 
   // If padd corresponds to memory (as opposed to an I/O device), return a
