@@ -319,9 +319,9 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     add_csr(CSR_TINFO, std::make_shared<const_csr_t>(proc, CSR_TINFO, 0));
   }
   unsigned scontext_length = (xlen == 32 ? 16 : 32); // debug spec suggests 16-bit for RV32 and 32-bit for RV64
-  add_supervisor_csr(CSR_SCONTEXT, scontext = std::make_shared<masked_csr_t>(proc, CSR_SCONTEXT, (reg_t(1) << scontext_length) - 1, 0));
+  add_supervisor_csr(CSR_SCONTEXT, scontext = std::make_shared<context_csr_t>(proc, CSR_SCONTEXT, (reg_t(1) << scontext_length) - 1, 0));
   unsigned hcontext_length = (xlen == 32 ? 6 : 13) + (proc->extension_enabled('H') ? 1 : 0); // debug spec suggest 7-bit (6-bit) for RV32 and 14-bit (13-bit) for RV64 with (without) H extension
-  auto hcontext = std::make_shared<masked_csr_t>(proc, CSR_HCONTEXT, (reg_t(1) << hcontext_length) - 1, 0);
+  auto hcontext = std::make_shared<context_csr_t>(proc, CSR_HCONTEXT, (reg_t(1) << hcontext_length) - 1, 0);
   add_hypervisor_csr(CSR_HCONTEXT, hcontext);
   add_csr(CSR_MCONTEXT, mcontext = std::make_shared<proxy_csr_t>(proc, CSR_MCONTEXT, hcontext));
 
@@ -387,7 +387,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
                                  (proc->extension_enabled(EXT_ZCMT) ? SSTATEEN0_JVT : 0) |
                                  SSTATEEN0_CS;
     const reg_t hstateen0_mask = sstateen0_mask | HSTATEEN_SSTATEEN |
-                                 (proc->extension_enabled('S') ? HSTATEEN0_SENVCFG : 0) |
+                                 (proc->extension_enabled('S') ? HSTATEEN0_SENVCFG | HSTATEEN0_SCONTEXT : 0) |
                                  (proc->extension_enabled_const(EXT_SSCSRIND) ? HSTATEEN0_CSRIND : 0) |
                                  (proc->extension_enabled_const(EXT_SSAIA) ? HSTATEEN0_IMSIC | HSTATEEN0_AIA : 0);
     const reg_t mstateen0_mask = hstateen0_mask |
