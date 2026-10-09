@@ -220,11 +220,9 @@ inline void mmu_t::perform_intrapage_load(reg_t vaddr, uintptr_t host_addr, reg_
   if (host_addr) {
     memcpy(bytes, (char*)host_addr, len);
   } else if (!mmio_load(paddr, len, bytes)) {
-    auto access_info = generate_access_info(vaddr, LOAD, xlate_flags);
-    if (access_info.flags.ss_access)
-      throw trap_store_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
-    else
-      throw trap_load_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
+    auto trap_type = xlate_flags.ss_access ? STORE : LOAD;
+    auto access_info = generate_access_info(vaddr, trap_type, xlate_flags);
+    throw_access_exception(access_info.effective_virt, access_info.transformed_vaddr, trap_type);
   }
 
   if (tracer.interested_in_range(paddr, paddr + len, LOAD))
