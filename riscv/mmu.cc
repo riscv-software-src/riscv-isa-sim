@@ -688,20 +688,20 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
   reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
   reg_t satp = proc->get_state()->satp->readvirt(virt);
   vm_info vm = decode_vm_info(proc->get_const_xlen(), false, mode, satp);
-
+  access_type trap_type = type;
   bool ss_access = access_info.flags.ss_access;
 
   if (ss_access) {
     if (vm.levels == 0)
       throw trap_store_access_fault(virt, addr, 0, 0);
-    type = STORE;
+    trap_type = STORE;
   }
 
   if (vm.levels == 0)
-    return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, type, virt, hlvx, false) & ~page_mask; // zero-extend from xlen
+    return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, trap_type, virt, hlvx, false) & ~page_mask; // zero-extend from xlen
 
   if (svukte_fault(addr, access_info)) {
-    throw_page_fault_exception(virt, addr, type);
+    throw_page_fault_exception(virt, addr, trap_type);
   }
 
   bool s_mode = mode == PRV_S;
@@ -721,8 +721,8 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
 
     // check that physical address of PTE is legal
-    auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, type, virt, false, true);
-    reg_t pte = pte_load(pte_paddr, addr, virt, type, vm.ptesize);
+    auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, trap_type, virt, false, true);
+    reg_t pte = pte_load(pte_paddr, addr, virt, trap_type, vm.ptesize);
     reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
     bool pbmte = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_PBMTE) : (proc->get_state()->menvcfg->read() & MENVCFG_PBMTE);
     bool hade = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_ADUE) : (proc->get_state()->menvcfg->read() & MENVCFG_ADUE);
@@ -765,9 +765,9 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     } else if ((((pte & PTE_R) && (pte & PTE_W)) || (pte & PTE_X)) && ss_access) {
       // shadow stack access cause store access fault if xwr!=010 and xwr!=001
       throw trap_store_access_fault(virt, addr, 0, 0);
-    } else if (type == FETCH || hlvx ? !(pte & PTE_X) :
-               type == LOAD          ? !(sse && ss_page) && !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
-                                       !(pte & PTE_W)) {
+    } else if (type == FETCH || hlvx      ? !(pte & PTE_X) :
+               type == LOAD && !ss_access ? !(sse && ss_page) && !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
+                                            !(pte & PTE_W)) {
       break;
     } else {
       reg_t ad = PTE_A | ((type == STORE) * PTE_D);
@@ -776,9 +776,9 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
         if (hade) {
           // Check for write permission to the first-stage PT in second-stage
           // PTE and set the D bit in the second-stage PTE if needed
-          s2xlate(addr, base + idx * vm.ptesize, STORE, type, virt, false, true);
+          s2xlate(addr, base + idx * vm.ptesize, STORE, trap_type, virt, false, true);
           // set accessed and possibly dirty bits.
-          pte_store(pte_paddr, pte | ad, addr, virt, type, vm.ptesize);
+          pte_store(pte_paddr, pte | ad, addr, virt, trap_type, vm.ptesize);
         } else {
           // take exception if access or possibly dirty bit is not set.
           break;
@@ -792,11 +792,11 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
                         | (vpn & ((reg_t(1) << napot_bits) - 1))
                         | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
       reg_t phys = page_base | (addr & page_mask);
-      return s2xlate(addr, phys, type, type, virt, hlvx, false) & ~page_mask;
+      return s2xlate(addr, phys, type, trap_type, virt, hlvx, false) & ~page_mask;
     }
   }
 
-  throw_page_fault_exception(virt, addr, type);
+  throw_page_fault_exception(virt, addr, trap_type);
 }
 
 void mmu_t::register_memtracer(memtracer_t* t)
