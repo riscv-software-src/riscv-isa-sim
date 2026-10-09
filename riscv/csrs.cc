@@ -2185,11 +2185,25 @@ void srmcfg_csr_t::verify_permissions(insn_t insn, bool write UNUSED) const {
   }
 
   if (state->v)
-      throw trap_virtual_instruction(insn.bits());
+    throw trap_virtual_instruction(insn.bits());
 
-  if (state->prv < PRV_S) {
-    throw trap_illegal_instruction(insn.bits());
+  masked_csr_t::verify_permissions(insn, write);
+}
+
+context_csr_t::context_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  masked_csr_t(proc, addr, mask, init) {
+}
+
+void context_csr_t::verify_permissions(insn_t insn, bool write UNUSED) const {
+  if (proc->extension_enabled(EXT_SMSTATEEN)) {
+    if ((state->prv < PRV_M) && !(state->mstateen[0]->read() & MSTATEEN0_HCONTEXT))
+      throw trap_illegal_instruction(insn.bits());
+
+    if (state->v && !(state->hstateen[0]->read() & HSTATEEN0_SCONTEXT))
+      throw trap_virtual_instruction(insn.bits());
   }
+
+  masked_csr_t::verify_permissions(insn, write);
 }
 
 hvip_csr_t::hvip_csr_t(processor_t* const proc, const reg_t addr, const reg_t init):

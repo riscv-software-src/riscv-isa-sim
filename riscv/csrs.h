@@ -929,6 +929,12 @@ class srmcfg_csr_t: public masked_csr_t {
   void verify_permissions(insn_t insn, bool write) const override;
 };
 
+class context_csr_t: public masked_csr_t {
+ public:
+  context_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+  void verify_permissions(insn_t insn, bool write) const override;
+};
+
 class hvip_csr_t : public basic_csr_t {
  public:
   hvip_csr_t(processor_t* const proc, const reg_t addr, const reg_t init);
