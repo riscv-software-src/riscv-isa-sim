@@ -94,6 +94,7 @@ public:
   bool                    wfi_as_nop;
   reg_t                   trigger_count;
   reg_t                   cache_blocksz;
+  reg_t                   load_reservation_size;
   std::optional<abstract_sim_if_t*> external_simulator;
 
   size_t nprocs() const { return hartids.size(); }
