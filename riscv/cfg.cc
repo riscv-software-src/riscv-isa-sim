@@ -48,6 +48,7 @@ cfg_t::cfg_t()
   wfi_as_nop       = false;
   trigger_count    = 4;
   cache_blocksz    = 64;
+  load_reservation_size = 1; // exact match
 }
 
 void start_pc_t::set_global(reg_t pc)
