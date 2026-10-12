@@ -124,6 +124,7 @@ private:
   bool mmio_load(reg_t paddr, size_t len, uint8_t* bytes) override;
   bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes) override;
   void set_rom();
+  void set_pc_to_entry_point();
 
   const char* get_symbol(uint64_t paddr) override;
 
