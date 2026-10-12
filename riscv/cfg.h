@@ -86,6 +86,7 @@ public:
   endianness_t            endianness;
   reg_t                   pmpregions;
   reg_t                   pmpgranularity;
+  std::optional<reg_t>    paddr_bits;
   std::vector<mem_cfg_t>  mem_layout;
   start_pc_t              start_pc;
   std::vector<size_t>     hartids;
