@@ -485,6 +485,15 @@ void sim_t::set_rom()
   add_device(DEFAULT_RSTVEC, boot_rom);
 }
 
+void sim_t::set_pc_to_entry_point()
+{
+  for (auto& pair : harts) {
+    if (!cfg->start_pc.get(pair.first).has_value()) {
+      pair.second->get_state()->pc = get_entry_point();
+    }
+  }
+}
+
 char* sim_t::addr_to_mem(reg_t paddr) {
   auto page_offset = paddr % PGSIZE;
   auto page_addr = paddr - page_offset;
@@ -513,6 +522,8 @@ void sim_t::reset()
 {
   if (dtb_enabled)
     set_rom();
+  else
+    set_pc_to_entry_point();
 }
 
 void sim_t::idle()
