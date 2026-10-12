@@ -24,15 +24,16 @@ jobs:
 
       - name: Download OpenOCD
         run: |
-          git clone --recurse-submodules https://github.com/riscv/riscv-openocd.git
+          git clone https://github.com/riscv/riscv-openocd.git
           cd riscv-openocd
           git checkout d4c5d2657074613d429f57f60e939ca151ed4f32
+          git submodule update --init --recursive tools/git2cl jimtcl
 
       - name: Build OpenOCD
         run: |
           cd riscv-openocd
           ./bootstrap
-          ./configure
+          ./configure --disable-libjaylink
           make -j"$(nproc 2> /dev/null || sysctl -n hw.ncpu)"
 
       - name: Download Toolchain
