@@ -422,10 +422,13 @@ spmpen_csr_t::spmpen_csr_t(processor_t* const proc, const reg_t addr, const reg_
 }
 
 bool spmpen_csr_t::unlogged_write(const reg_t val) noexcept {
+  // Bit k of spmpen enables pmpaddr[n_pmp + k]: that is the numbering
+  // base_pmpaddr_csr_t::match4() and subset_match() read, and the lock that
+  // gates bit k is that same entry's.
   reg_t write_val = 0;
-  for (reg_t i = proc->n_pmp-1; i < state->max_pmp; ++i) {
-    if (!state->pmpaddr[i]->is_locked() && ((val >> i) & 1))
-      write_val |= reg_t(1) << i;
+  for (reg_t k = 0; proc->n_pmp + k < state->max_pmp; ++k) {
+    if (!state->pmpaddr[proc->n_pmp + k]->is_locked() && ((val >> k) & 1))
+      write_val |= reg_t(1) << k;
   }
 
   return basic_csr_t::unlogged_write(write_val);

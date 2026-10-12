@@ -221,6 +221,13 @@ void processor_t::set_pmp_granularity(reg_t gran)
 
 void processor_t::set_spmp_addr_entry()
 {
+  // The SPMP entries are reached through the indirect CSR interface, which
+  // only exists when Sscsrind/Smcsrind are implemented.  Smpmpdeleg can be
+  // enabled on its own, in which case mireg/sireg are never allocated and
+  // writing mpmpdeleg from the guest dereferences a null pointer.
+  if (!extension_enabled_const(EXT_SSPMP))
+    return;
+
   for (size_t i = 0; i < state.max_pmp; ++i) {
     state.mireg[0]->add_ireg_proxy(0x100+i, std::make_shared<const_csr_t>(this, 0x100+i, 0));
     state.nonvirtual_sireg[0]->add_ireg_proxy(0x100+i, std::make_shared<const_csr_t>(this, 0x100+i, 0));
