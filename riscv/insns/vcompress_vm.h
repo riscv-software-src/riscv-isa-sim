@@ -3,7 +3,7 @@ require(P.any_vector_extensions());
 require(P.VU.vstart->read() == 0);
 require_align(insn.rd(), P.VU.vflmul);
 require_align(insn.rs2(), P.VU.vflmul);
-require(insn.rd() != insn.rs2());
+require(insn.rd() != insn.rs2() && insn.rs1() != insn.rs2());
 require_noover(insn.rd(), P.VU.vflmul, insn.rs1(), 1);
 
 reg_t pos = 0;
