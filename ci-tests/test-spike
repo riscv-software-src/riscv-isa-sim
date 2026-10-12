@@ -80,3 +80,13 @@ for dts in "$DTS_DIR"/*.dts; do
     dtc -I dts -O dtb "$dts" -o "$dtb"
     LD_LIBRARY_PATH=$INSTALL/lib ./test-dtb-discovery  --dtb="$dtb"  $BUILD/pk/pk  hello 
 done
+
+# tests for #2472
+$INSTALL/bin/spike -d --debug-cmd=$CI/show-init-pc.cmd wfi-as-nop 2>&1 \
+    | grep 0x0000000000001000 # DEFAULT_RSTVEC
+$INSTALL/bin/spike -d --debug-cmd=$CI/show-init-pc.cmd --disable-dtb wfi-as-nop 2>&1 \
+    | grep 0x0000000080000000 # entry point address
+$INSTALL/bin/spike -d --debug-cmd=$CI/show-init-pc.cmd --disable-dtb --pc=0x1234 wfi-as-nop 2>&1 \
+    | grep 0x0000000000001234 # custom PC value
+$INSTALL/bin/spike -d --debug-cmd=$CI/show-init-pc.cmd --disable-dtb --pcs=0:0x12345678 wfi-as-nop 2>&1 \
+    | grep 0x0000000012345678 # custom PC value
