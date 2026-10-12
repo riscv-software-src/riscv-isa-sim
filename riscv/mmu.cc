@@ -12,6 +12,19 @@
 
 #include <cassert>
 
+static reg_t compute_reservation_set_mask(const processor_t *proc) {
+  reg_t reservation_size = 1;
+  // explicit extensions overwrite the argument
+  if (proc) {
+    if (proc->extension_enabled(EXT_ZA64RS)) {
+      reservation_size = 64;
+    } else if (proc->extension_enabled(EXT_ZA128RS)) {
+      reservation_size = 128;
+    }
+  }
+  return ~(reservation_size - (reg_t)1);
+}
+
 mmu_t::mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc, reg_t cache_blocksz)
  : sim(sim), proc(proc), blocksz(cache_blocksz),
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
@@ -26,6 +39,8 @@ mmu_t::mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc, reg_t cac
 #endif
   flush_tlb();
   yield_load_reservation();
+
+  load_reservation_set_mask = compute_reservation_set_mask(proc);
 }
 
 mmu_t::~mmu_t()
