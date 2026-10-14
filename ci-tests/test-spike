@@ -46,6 +46,11 @@ riscv64-linux-gnu-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie \
   -Wl,--build-id=none -Wl,-Ttext-segment=0x80000000 \
   -Wl,--section-start=.tohost=0x81000000 \
   -o lrsc-reservation-set-big "$CI/lrsc-reservation-set.S"
+# reuse wfi-as-nop for low memory address tests
+riscv64-linux-gnu-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie \
+  -march=rv64gc -mabi=lp64d \
+  -Wl,--build-id=none,-Ttext-segment=0x0,--section-start=.tohost=0x1000 \
+  -o lowaddr "$CI/wfi-as-nop.S"
 
 # run snippy-based tests
 wget https://github.com/syntacore/snippy/releases/download/snippy-2.1/snippy-x86_64-linux.tar.xz
@@ -97,6 +102,15 @@ for dts in "$DTS_DIR"/*.dts; do
     dtc -I dts -O dtb "$dts" -o "$dtb"
     LD_LIBRARY_PATH=$INSTALL/lib ./test-dtb-discovery  --dtb="$dtb"  $BUILD/pk/pk  hello 
 done
+
+# tests for #2462
+$INSTALL/bin/spike -m0x0:0x2000 lowaddr |& grep -F "devices at [0, 1000) and [0, 2000) overlap"
+# free [0, 1000) used by the debug module
+$INSTALL/bin/spike -m0x0:0x2000 --no-dm lowaddr |& grep -F "devices at [0, 2000) and [1000, 2000) overlap"
+# free [1000, 2000) used by the boot ROM
+$INSTALL/bin/spike -m0x0:0x2000 --no-dm --disable-dtb --wfi-as-nop lowaddr
+# now we can use any memory range
+$INSTALL/bin/spike -m0x0:0x100000000 --no-dm --disable-dtb --wfi-as-nop lowaddr
 
 # tests for #2472
 $INSTALL/bin/spike -d --debug-cmd=$CI/show-init-pc.cmd wfi-as-nop 2>&1 \
