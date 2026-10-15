@@ -32,7 +32,7 @@ jobs:
       - name: Build OpenOCD
         run: |
           cd riscv-openocd
-          ./bootstrap
+          ./bootstrap nosubmodule
           ./configure --disable-libjaylink
           make -j"$(nproc 2> /dev/null || sysctl -n hw.ncpu)"
 
