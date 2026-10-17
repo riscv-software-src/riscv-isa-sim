@@ -73,6 +73,7 @@ static void help(int exit_code = 1)
           DEFAULT_KERNEL_BOOTARGS);
   fprintf(stderr, "  --real-time-clint     Increment clint time at real-time rate\n");
   fprintf(stderr, "  --wfi-as-nop          Do not wait on WFI; retain privilege checks\n");
+  fprintf(stderr, "  --no-dm               Don't attach the debug module to the internal bus\n");
   fprintf(stderr, "  --triggers=<n>        Number of supported triggers [default 4]\n");
   fprintf(stderr, "  --dm-progsize=<words> Progsize for the debug module [default 2]\n");
   fprintf(stderr, "  --dm-datacount=<n>    Number of data registers available for the debug module [default 2]\n");
@@ -348,7 +349,8 @@ int main(int argc, char** argv)
   unsigned dmi_rti = 0;
   reg_t blocksz = 64;
   std::optional<unsigned long long> instructions;
-  debug_module_config_t dm_config;
+  std::optional<debug_module_config_t> dm_config = debug_module_config_t();
+  bool dm_enabled = true;
   cfg_arg_t<size_t> nprocs(1);
 
   cfg_t cfg;
@@ -437,30 +439,31 @@ int main(int argc, char** argv)
       exit(-1);
     }
   });
+  parser.option(0, "no-dm", 0, [&](const char UNUSED *s){dm_enabled = false;});
   parser.option(0, "dm-progsize", 1,
-      [&](const char* s){dm_config.progbufsize = atoul_safe(s);});
+      [&](const char* s){dm_config.value().progbufsize = atoul_safe(s);});
   parser.option(0, "dm-datacount", 1,
-      [&](const char* s){dm_config.datacount = atoul_safe(s);});
+      [&](const char* s){dm_config.value().datacount = atoul_safe(s);});
   parser.option(0, "dm-no-impebreak", 0,
-      [&](const char UNUSED *s){dm_config.support_impebreak = false;});
+      [&](const char UNUSED *s){dm_config.value().support_impebreak = false;});
   parser.option(0, "dm-sba", 1,
-      [&](const char* s){dm_config.max_sba_data_width = atoul_safe(s);});
+      [&](const char* s){dm_config.value().max_sba_data_width = atoul_safe(s);});
   parser.option(0, "dm-auth", 0,
-      [&](const char UNUSED *s){dm_config.require_authentication = true;});
+      [&](const char UNUSED *s){dm_config.value().require_authentication = true;});
   parser.option(0, "dmi-rti", 1,
       [&](const char* s){dmi_rti = atoul_safe(s);});
   parser.option(0, "dm-abstract-rti", 1,
-      [&](const char* s){dm_config.abstract_rti = atoul_safe(s);});
+      [&](const char* s){dm_config.value().abstract_rti = atoul_safe(s);});
   parser.option(0, "dm-no-hasel", 0,
-      [&](const char UNUSED *s){dm_config.support_hasel = false;});
+      [&](const char UNUSED *s){dm_config.value().support_hasel = false;});
   parser.option(0, "dm-no-abstract-csr", 0,
-      [&](const char UNUSED *s){dm_config.support_abstract_csr_access = false;});
+      [&](const char UNUSED *s){dm_config.value().support_abstract_csr_access = false;});
   parser.option(0, "dm-no-abstract-fpr", 0,
-      [&](const char UNUSED *s){dm_config.support_abstract_fpr_access = false;});
+      [&](const char UNUSED *s){dm_config.value().support_abstract_fpr_access = false;});
   parser.option(0, "dm-no-halt-groups", 0,
-      [&](const char UNUSED *s){dm_config.support_haltgroups = false;});
+      [&](const char UNUSED *s){dm_config.value().support_haltgroups = false;});
   parser.option(0, "dm-no-abstractauto", 0,
-      [&](const char UNUSED *s){dm_config.support_abstractauto = false;});
+      [&](const char UNUSED *s){dm_config.value().support_abstractauto = false;});
   parser.option(0, "log-commits", 0,
                 [&](const char UNUSED *s){log_commits = true;});
   parser.option(0, "log", 1,
@@ -551,18 +554,25 @@ int main(int argc, char** argv)
    if (dtb_enabled==false) {    std::cerr << "--dtb-discovery option is not compatible with --disable-dtb"<<std::endl;  exit(1);}
   }
 
+  if (!dm_enabled)
+    dm_config.reset();
 
   sim_t s(&cfg, halted,
       mems, plugin_device_factories, dtb_discovery, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
       socket,
       cmd_file,
       instructions);
-  std::unique_ptr<remote_bitbang_t> remote_bitbang((remote_bitbang_t *) NULL);
-  std::unique_ptr<jtag_dtm_t> jtag_dtm(
-      new jtag_dtm_t(&s.debug_module, dmi_rti));
-  if (use_rbb) {
-    remote_bitbang.reset(new remote_bitbang_t(rbb_port, &(*jtag_dtm)));
-    s.set_remote_bitbang(&(*remote_bitbang));
+
+  std::unique_ptr<jtag_dtm_t> jtag_dtm;
+  std::unique_ptr<remote_bitbang_t> remote_bitbang;
+  if (dm_enabled) {
+    jtag_dtm = std::make_unique<jtag_dtm_t>(
+        &s.debug_module.value(), dmi_rti);
+    if (use_rbb) {
+      remote_bitbang = std::make_unique<remote_bitbang_t>(
+        rbb_port, jtag_dtm.get());
+      s.set_remote_bitbang(remote_bitbang.get());
+    }
   }
 
   if (dump_dts) {

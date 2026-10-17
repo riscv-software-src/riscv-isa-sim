@@ -46,7 +46,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
              const std::vector<device_factory_sargs_t>& plugin_device_factories,
              const bool dtb_discovery,
              const std::vector<std::string>& args,
-             const debug_module_config_t &dm_config,
+             const std::optional<debug_module_config_t> &dm_config,
              const char *log_path,
              bool dtb_enabled, const char *dtb_file,
              bool socket_enabled,
@@ -67,13 +67,15 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     histogram_enabled(false),
     log(false),
     remote_bitbang(NULL),
-    debug_module(this, dm_config)
+    debug_module(dm_config ? std::optional<debug_module_t>(std::in_place, this, *dm_config) : std::nullopt)
 {
   signal(SIGINT, &handle_signal);
 
   sout_.rdbuf(std::cerr.rdbuf()); // debug output goes to stderr by default
 
-  bus.add_device(DEBUG_START, &debug_module);
+  if (debug_module) {
+    bus.add_device(DEBUG_START, &debug_module.value());
+  }
 
   socketif = NULL;
 #ifdef HAVE_BOOST_ASIO
@@ -423,7 +425,7 @@ void sim_t::set_procs_debug(bool value)
 
 bool sim_t::is_debug_module_access(reg_t paddr, size_t len)
 {
-  return bus.find_device(paddr, len).second == &debug_module;
+  return debug_module && bus.find_device(paddr, len).second == &debug_module.value();
 }
 
 bool sim_t::mmio_load(reg_t paddr, size_t len, uint8_t* bytes)
@@ -573,7 +575,9 @@ endianness_t sim_t::get_target_endianness() const
 
 void sim_t::proc_reset(unsigned id)
 {
-  debug_module.proc_reset(id);
+  if (debug_module) {
+    debug_module->proc_reset(id);
+  }
   if (harts.count(id)) {
     if (auto pc = cfg->start_pc.get(id)) {
       harts[id]->get_state()->pc = *pc;
