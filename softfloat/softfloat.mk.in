@@ -263,4 +263,4 @@ softfloat_install_hdrs = \
 	softfloat.h \
 	softfloat_types.h \
 
-softfloat_CFLAGS = -Wno-sign-compare -Wno-implicit-fallthrough
+softfloat_CFLAGS = -Wno-sign-compare -Wno-implicit-fallthrough -Wno-unused-variable
