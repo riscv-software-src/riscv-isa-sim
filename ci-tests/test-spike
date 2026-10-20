@@ -77,6 +77,7 @@ time $INSTALL/bin/spike --isa=rv64gc_za64rs lrsc-reservation-set
 # success with explicit za128rs
 time $INSTALL/bin/spike --isa=rv64gc_za128rs lrsc-reservation-set-big
 bash $CI/test-mnret-double-trap $INSTALL/bin/spike $RUN/mnret-double-trap
+bash $CI/test-mcontrol6-napot-maskmax $INSTALL/bin/spike $RUN/mcontrol6-napot-maskmax
 LD_LIBRARY_PATH=$INSTALL/lib ./test-libriscv $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 LD_LIBRARY_PATH=$INSTALL/lib ./test-customext $BUILD/pk/pk dummy-slliuw | grep "Executed successfully"
 LD_LIBRARY_PATH=$INSTALL/lib ./test-custom-csr $BUILD/pk/pk customcsr | grep "Executed successfully"

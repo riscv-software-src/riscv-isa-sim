@@ -339,7 +339,7 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   auto xlen = proc->get_const_xlen();
   assert(get_field(val, CSR_MCONTROL6_TYPE(xlen)) == CSR_TDATA1_TYPE_MCONTROL6);
   dmode = get_field(val, CSR_MCONTROL6_DMODE(xlen));
-  const reg_t maskmax6 = xlen - 1;
+  maskmax6 = xlen - 1;
   vs = get_field(val, CSR_MCONTROL6_VS);
   vu = get_field(val, CSR_MCONTROL6_VU);
   hit = hit_t(2 * get_field(val, CSR_MCONTROL6_HIT1) + get_field(val, CSR_MCONTROL6_HIT0)); // 2-bit field {hit1,hit0}
@@ -358,6 +358,18 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
    * with an address trigger to trigger on a load of a value at a given address.
    * The default timing legalization on mcontrol6 assumes no such trigger setting. */
   timing = legalize_timing(val, 0, CSR_MCONTROL6_SELECT, CSR_MCONTROL6_EXECUTE, CSR_MCONTROL6_LOAD);
+}
+
+void mcontrol6_t::tdata2_write(processor_t UNUSED * const proc, const reg_t val) noexcept {
+  tdata2 = val;
+  if (match != MATCH_NAPOT)
+    return;
+
+  assert(maskmax6 < 8 * sizeof(reg_t));
+  const reg_t top_bit = reg_t{1} << (maskmax6 - 1);
+  const reg_t low_bits = (top_bit << 1) - 1;
+  if ((val & low_bits) == low_bits)
+    tdata2 &= ~top_bit;
 }
 
 std::optional<match_result_t> icount_t::detect_icount_fire(processor_t * const proc) noexcept
