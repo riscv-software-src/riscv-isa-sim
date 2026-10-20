@@ -208,13 +208,14 @@ void processor_t::step(size_t n)
   mmu_t* _mmu = mmu;
 
   if (!state.debug_mode) {
-    if (halt_request == HR_REGULAR) {
+    // resethaltreq outranks haltreq in the Debug Spec priority table.
+    if (halt_on_reset) {
+      halt_on_reset = false;
+      enter_debug_mode(DCSR_CAUSE_HALT, 0);
+    } else if (halt_request == HR_REGULAR) {
       enter_debug_mode(DCSR_CAUSE_DEBUGINT, 0);
     } else if (halt_request == HR_GROUP) {
       enter_debug_mode(DCSR_CAUSE_GROUP, 0);
-    } else if (halt_on_reset) {
-      halt_on_reset = false;
-      enter_debug_mode(DCSR_CAUSE_HALT, 0);
     }
   }
 
