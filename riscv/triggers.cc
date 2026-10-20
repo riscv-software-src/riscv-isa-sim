@@ -339,7 +339,10 @@ void mcontrol6_t::tdata1_write(processor_t * const proc, const reg_t val, const 
   auto xlen = proc->get_const_xlen();
   assert(get_field(val, CSR_MCONTROL6_TYPE(xlen)) == CSR_TDATA1_TYPE_MCONTROL6);
   dmode = get_field(val, CSR_MCONTROL6_DMODE(xlen));
-  maskmax6 = xlen - 1;
+  maskmax6 = proc->get_cfg().mcontrol6_napot_maskmax;
+  if (maskmax6 == 0)
+    maskmax6 = xlen - 1;
+  assert(maskmax6 >= 1 && maskmax6 < xlen);
   vs = get_field(val, CSR_MCONTROL6_VS);
   vu = get_field(val, CSR_MCONTROL6_VU);
   hit = hit_t(2 * get_field(val, CSR_MCONTROL6_HIT1) + get_field(val, CSR_MCONTROL6_HIT0)); // 2-bit field {hit1,hit0}

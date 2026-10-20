@@ -47,6 +47,7 @@ cfg_t::cfg_t()
   real_time_clint  = false;
   wfi_as_nop       = false;
   trigger_count    = 4;
+  mcontrol6_napot_maskmax = 0;
   cache_blocksz    = 64;
 }
 

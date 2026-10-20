@@ -27,18 +27,21 @@ for xlen in 32 64; do
     -o mcontrol6-napot-maskmax-rv$xlen "$CI/mcontrol6-napot-maskmax.S"
 
   all_ones=$((xlen == 64 ? -1 : (1 << 32) - 1))
-  maskmax6=$((xlen - 1))
-  # Expected a0 and a1 after the all-ones probe: bit maskmax6-1 cleared.
-  probe=$((all_ones & ~(1 << (maskmax6 - 1))))
-  want=$(printf '0x%x\n' $probe $probe $all_ones)
-  output=$(
-    "$SPIKE" -d --isa=rv${xlen}gc \
-      --debug-cmd="$debug_cmd" \
-      mcontrol6-napot-maskmax-rv$xlen 2>&1
-  )
-  if test "$(grep '^0x' <<< "$output")" != "$want"; then
-    echo "RV$xlen maskmax6=$maskmax6: unexpected tdata2" >&2
-    echo "$output" >&2
-    exit 1
-  fi
+  # An empty maskmax keeps the default, maskmax6 = XLEN-1.
+  for maskmax in "" 1 12 $((xlen - 1)); do
+    effective=${maskmax:-$((xlen - 1))}
+    # Expected a0 and a1 after the all-ones probe: bit maskmax6-1 cleared.
+    probe=$((all_ones & ~(1 << (effective - 1))))
+    want=$(printf '0x%x\n' $probe $probe $all_ones)
+    output=$(
+      "$SPIKE" -d --isa=rv${xlen}gc ${maskmax:+--mcontrol6-napot-maskmax=$maskmax} \
+        --debug-cmd="$debug_cmd" \
+        mcontrol6-napot-maskmax-rv$xlen 2>&1
+    )
+    if test "$(grep '^0x' <<< "$output")" != "$want"; then
+      echo "RV$xlen maskmax6=$effective: unexpected tdata2" >&2
+      echo "$output" >&2
+      exit 1
+    fi
+  done
 done

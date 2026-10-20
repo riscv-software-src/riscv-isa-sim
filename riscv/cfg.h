@@ -93,6 +93,7 @@ public:
   bool                    real_time_clint;
   bool                    wfi_as_nop;
   reg_t                   trigger_count;
+  reg_t                   mcontrol6_napot_maskmax;
   reg_t                   cache_blocksz;
   std::optional<abstract_sim_if_t*> external_simulator;
 
