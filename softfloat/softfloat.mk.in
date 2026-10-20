@@ -145,7 +145,6 @@ softfloat_c_srcs = \
 	f64_to_ui64_r_minMag.c \
 	fall_maxmin.c \
 	fall_reciprocal.c \
-	fall_sign.c \
 	i32_to_f128.c \
 	i32_to_bf16.c \
 	i32_to_f16.c \
@@ -211,8 +210,6 @@ softfloat_c_srcs = \
 	s_remStepMBy32.c \
 	s_roundMToI64.c \
 	s_roundMToUI64.c \
-	s_roundPackMToI64.c \
-	s_roundPackMToUI64.c \
 	s_roundPackToE4M3.c \
 	s_roundPackToE5M2.c \
 	s_roundPackToBF16.c \
@@ -220,10 +217,6 @@ softfloat_c_srcs = \
 	s_roundPackToF16.c \
 	s_roundPackToF32.c \
 	s_roundPackToF64.c \
-	s_roundPackToI32.c \
-	s_roundPackToI64.c \
-	s_roundPackToUI32.c \
-	s_roundPackToUI64.c \
 	s_roundToI32.c \
 	s_roundToI64.c \
 	s_roundToUI32.c \
@@ -269,4 +262,4 @@ softfloat_install_hdrs = \
 	softfloat.h \
 	softfloat_types.h \
 
-softfloat_CFLAGS = -Wno-sign-compare -Wno-implicit-fallthrough
+softfloat_CFLAGS = -Wno-sign-compare -Wno-implicit-fallthrough -Wno-unused-variable
