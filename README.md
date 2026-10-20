@@ -107,6 +107,7 @@ Build Steps
 We assume that the RISCV environment variable is set to the RISC-V tools
 install path.
 
+    $ git submodule update --init --recursive
     $ apt-get install device-tree-compiler
     $ apt-get install libboost-regex-dev libboost-system-dev
     $ mkdir build
@@ -126,6 +127,7 @@ Build Steps on OpenBSD
 
 Install bash, gmake, dtc, and use clang.
 
+    $ git submodule update --init --recursive
     $ pkg_add bash gmake dtc
     $ exec bash
     $ export CC=cc; export CXX=c++
