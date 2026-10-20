@@ -293,14 +293,14 @@ public:
         major_offset = (row / 4) * (TE / 4) + (col / 4);
         break;
       case 4:
-        ptile = tile + (row & 2) + ((col & 2) >> 1);
+        ptile = tile + 2 * (row / (TE / 2)) + ((col & 2) >> 1);
         minor_offset = (row % 2) * 8 + (col % 2) * 4;
-        major_offset = (row / 4) * (TE / 4) + (col / 4);
+        major_offset = ((row / 2) % (TE / 4)) * (TE / 4) + (col / 4);
         break;
       case 8:
-        ptile = tile + (row & 1);
+        ptile = tile + (row / (TE / 4));
         minor_offset = (col % 2) * 8;
-        major_offset = (row / 2) * (TE / 4) + (col / 2);
+        major_offset = (row % (TE / 4)) * (TE / 4) + (col / 2);
         break;
       default:
         abort();
