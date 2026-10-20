@@ -211,8 +211,6 @@ softfloat_c_srcs = \
 	s_remStepMBy32.c \
 	s_roundMToI64.c \
 	s_roundMToUI64.c \
-	s_roundPackMToI64.c \
-	s_roundPackMToUI64.c \
 	s_roundPackToE4M3.c \
 	s_roundPackToE5M2.c \
 	s_roundPackToBF16.c \
@@ -220,10 +218,6 @@ softfloat_c_srcs = \
 	s_roundPackToF16.c \
 	s_roundPackToF32.c \
 	s_roundPackToF64.c \
-	s_roundPackToI32.c \
-	s_roundPackToI64.c \
-	s_roundPackToUI32.c \
-	s_roundPackToUI64.c \
 	s_roundToI32.c \
 	s_roundToI64.c \
 	s_roundToUI32.c \
