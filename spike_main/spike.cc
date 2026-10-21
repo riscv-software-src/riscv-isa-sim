@@ -74,6 +74,8 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --real-time-clint     Increment clint time at real-time rate\n");
   fprintf(stderr, "  --wfi-as-nop          Do not wait on WFI; retain privilege checks\n");
   fprintf(stderr, "  --triggers=<n>        Number of supported triggers [default 4]\n");
+  fprintf(stderr, "  --mcontrol6-napot-maskmax=<n>\n");
+  fprintf(stderr, "                        Max programmable NAPOT bits in mcontrol6 tdata2 [default XLEN-1]\n");
   fprintf(stderr, "  --dm-progsize=<words> Progsize for the debug module [default 2]\n");
   fprintf(stderr, "  --dm-datacount=<n>    Number of data registers available for the debug module [default 2]\n");
   fprintf(stderr, "  --dm-sba=<bits>       Debug system bus access supports up to "
@@ -430,6 +432,7 @@ int main(int argc, char** argv)
   parser.option(0, "real-time-clint", 0, [&](const char UNUSED *s){cfg.real_time_clint = true;});
   parser.option(0, "wfi-as-nop", 0, [&](const char UNUSED *s){cfg.wfi_as_nop = true;});
   parser.option(0, "triggers", 1, [&](const char *s){cfg.trigger_count = atoul_safe(s);});
+  parser.option(0, "mcontrol6-napot-maskmax", 1, [&](const char *s){cfg.mcontrol6_napot_maskmax = atoul_nonzero_safe(s);});
   parser.option(0, "extlib", 1, [&](const char *s){
     void *lib = dlopen(s, RTLD_NOW | RTLD_GLOBAL);
     if (lib == NULL) {
@@ -492,6 +495,14 @@ int main(int argc, char** argv)
 
   if (!*argv1)
     help();
+
+  if (cfg.mcontrol6_napot_maskmax) {
+    const unsigned max_xlen = isa_parser_t(cfg.isa, cfg.priv).get_max_xlen();
+    if (cfg.mcontrol6_napot_maskmax >= max_xlen) {
+      std::cerr << "--mcontrol6-napot-maskmax must be in [1, " << max_xlen - 1 << "]\n";
+      exit(1);
+    }
+  }
 
   std::vector<std::pair<reg_t, abstract_mem_t*>> mems =
       make_mems(cfg.mem_layout);

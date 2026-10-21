@@ -1,0 +1,47 @@
+#!/bin/bash
+set -e
+
+SPIKE=$1
+RUN=$2
+CI="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+
+mkdir -p "$RUN"
+cd "$RUN"
+
+# Run until the test reaches stop, then print a0, a1, a2.
+debug_cmd=$(mktemp)
+trap 'rm -f "$debug_cmd"' EXIT
+cat > "$debug_cmd" <<CMD
+until pc 0 81000000
+reg 0 a0
+reg 0 a1
+reg 0 a2
+quit
+CMD
+
+for xlen in 32 64; do
+  riscv64-linux-gnu-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie \
+    -march=rv${xlen}gc -mabi=$(test $xlen -eq 64 && echo lp64d || echo ilp32d) \
+    -Wl,--build-id=none -Wl,-Ttext-segment=0x80000000 \
+    -Wl,--section-start=.stop=0x81000000 \
+    -o mcontrol6-napot-maskmax-rv$xlen "$CI/mcontrol6-napot-maskmax.S"
+
+  all_ones=$((xlen == 64 ? -1 : (1 << 32) - 1))
+  # An empty maskmax keeps the default, maskmax6 = XLEN-1.
+  for maskmax in "" 1 12 $((xlen - 1)); do
+    effective=${maskmax:-$((xlen - 1))}
+    # Expected a0 and a1 after the all-ones probe: bit maskmax6-1 cleared.
+    probe=$((all_ones & ~(1 << (effective - 1))))
+    want=$(printf '0x%x\n' $probe $probe $all_ones)
+    output=$(
+      "$SPIKE" -d --isa=rv${xlen}gc ${maskmax:+--mcontrol6-napot-maskmax=$maskmax} \
+        --debug-cmd="$debug_cmd" \
+        mcontrol6-napot-maskmax-rv$xlen 2>&1
+    )
+    if test "$(grep '^0x' <<< "$output")" != "$want"; then
+      echo "RV$xlen maskmax6=$effective: unexpected tdata2" >&2
+      echo "$output" >&2
+      exit 1
+    fi
+  done
+done

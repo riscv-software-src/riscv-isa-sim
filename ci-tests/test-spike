@@ -70,6 +70,7 @@ g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o /dev/
 
 # run tests
 timeout 10 "$INSTALL/bin/spike" --isa=rv64i_zicsr --wfi-as-nop wfi-as-nop
+"$INSTALL/bin/spike" --isa=rv64gc --mcontrol6-napot-maskmax=64 hello 2>&1 | grep "must be in \[1, 63\]"
 time $INSTALL/bin/spike --isa=rv64gc $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 time $INSTALL/bin/spike --isa=rv64gcv $BUILD/pk/pk vector-sum | grep "The sum of the first 1000 positive integers is 500500."
 $INSTALL/bin/spike --log-commits --isa=rv64gc $BUILD/pk/pk atomics 2> /dev/null | grep "First atomic counter is 1000, second is 100"
@@ -79,6 +80,7 @@ time $INSTALL/bin/spike --isa=rv64gc_za64rs lrsc-reservation-set
 # success with explicit za128rs
 time $INSTALL/bin/spike --isa=rv64gc_za128rs lrsc-reservation-set-big
 bash $CI/test-mnret-double-trap $INSTALL/bin/spike $RUN/mnret-double-trap
+bash $CI/test-mcontrol6-napot-maskmax $INSTALL/bin/spike $RUN/mcontrol6-napot-maskmax
 LD_LIBRARY_PATH=$INSTALL/lib ./test-libriscv $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 LD_LIBRARY_PATH=$INSTALL/lib ./test-customext $BUILD/pk/pk dummy-slliuw | grep "Executed successfully"
 LD_LIBRARY_PATH=$INSTALL/lib ./test-custom-csr $BUILD/pk/pk customcsr | grep "Executed successfully"

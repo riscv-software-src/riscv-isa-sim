@@ -80,7 +80,7 @@ public:
   virtual reg_t tdata1_read(const processor_t * const proc) const noexcept = 0;
   virtual void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept = 0;
   reg_t tdata2_read(const processor_t * const proc) const noexcept;
-  void tdata2_write(processor_t * const proc, const reg_t val) noexcept;
+  virtual void tdata2_write(processor_t * const proc, const reg_t val) noexcept;
   reg_t tdata3_read(const processor_t * const proc) const noexcept;
   void tdata3_write(processor_t * const proc, const reg_t val) noexcept;
 
@@ -252,11 +252,13 @@ class mcontrol6_t : public mcontrol_common_t {
 public:
   reg_t tdata1_read(const processor_t * const proc) const noexcept override;
   void tdata1_write(processor_t * const proc, const reg_t val, const bool allow_chain) noexcept override;
+  void tdata2_write(processor_t * const proc, const reg_t val) noexcept override;
 
   void set_hit(hit_t val) override { hit = val; }
 
 private:
   hit_t hit = HIT_FALSE;
+  reg_t maskmax6 = 0;
 };
 
 class icount_t : public trigger_t {
