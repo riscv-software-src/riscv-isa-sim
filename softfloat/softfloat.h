@@ -26,11 +26,8 @@ float16_t f16_max( float16_t, float16_t );
 float16_t f16_min( float16_t, float16_t );
 
 uint_fast8_t bf16_to_ui8( bfloat16_t, uint_fast8_t, bool );
-uint_fast32_t bf16_to_ui32( bfloat16_t, uint_fast8_t, bool );
-int_fast8_t bf16_to_i8( bfloat16_t, uint_fast8_t, bool );
-int_fast32_t bf16_to_i32( bfloat16_t, uint_fast8_t, bool );
 float32_t bf16_to_f32( bfloat16_t );
-float64_t bf16_to_f64( bfloat16_t );
+int_fast8_t bf16_to_i8( bfloat16_t, uint_fast8_t, bool );
 e4m3_t bf16_to_e4m3( bfloat16_t, bool );
 e5m2_t bf16_to_e5m2( bfloat16_t, bool );
 uint_fast16_t bf16_classify( bfloat16_t );
@@ -38,15 +35,6 @@ bfloat16_t bf16_rsqrte7( bfloat16_t );
 bfloat16_t bf16_recip7( bfloat16_t );
 bfloat16_t bf16_max( bfloat16_t, bfloat16_t );
 bfloat16_t bf16_min( bfloat16_t, bfloat16_t );
-bfloat16_t bf16_add( bfloat16_t, bfloat16_t );
-bfloat16_t bf16_sub( bfloat16_t, bfloat16_t );
-bfloat16_t bf16_mul( bfloat16_t, bfloat16_t );
-bfloat16_t bf16_mulAdd( bfloat16_t, bfloat16_t, bfloat16_t );
-bfloat16_t bf16_div( bfloat16_t, bfloat16_t );
-bfloat16_t bf16_sqrt( bfloat16_t );
-bool bf16_eq( bfloat16_t, bfloat16_t );
-bool bf16_le( bfloat16_t, bfloat16_t );
-bool bf16_lt( bfloat16_t, bfloat16_t );
 
 e4m3_t f32_to_e4m3( float32_t, bool );
 e5m2_t f32_to_e5m2( float32_t, bool );
