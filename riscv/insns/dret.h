@@ -3,6 +3,7 @@ set_pc_and_serialize(STATE.dpc->read());
 if (ZICFILP_xLPE(STATE.dcsr->v, STATE.dcsr->prv)) {
   STATE.elp = STATE.dcsr->pelp;
 }
+STATE.dcsr->pelp = elp_t::NO_LP_EXPECTED;
 p->set_privilege(STATE.dcsr->prv, STATE.dcsr->v);
 if (STATE.prv < PRV_M) {
   STATE.mstatus->write(STATE.mstatus->read() & ~MSTATUS_MPRV);
