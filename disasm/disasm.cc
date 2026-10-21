@@ -830,7 +830,7 @@ static void NOINLINE add_fxrtype_insn(disassembler_t* d, const char* name, uint3
 
 static void NOINLINE add_flitype_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
-  d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &fli_imm}));
+  d->add_insn(new disasm_insn_t(name, match, mask, {&frd, &fli_imm}));
 }
 
 static void NOINLINE add_sfence_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
