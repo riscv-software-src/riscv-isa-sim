@@ -18,6 +18,7 @@
 #include <string>
 #include <memory>
 #include <sys/types.h>
+#include <optional>
 
 class mmu_t;
 class remote_bitbang_t;
@@ -35,7 +36,7 @@ public:
         const std::vector<device_factory_sargs_t>& plugin_device_factories,
         const bool dtb_discovery,
         const std::vector<std::string>& args,
-        const debug_module_config_t &dm_config, const char *log_path,
+        const std::optional<debug_module_config_t> &dm_config, const char *log_path,
         bool dtb_enabled, const char *dtb_file,
         bool socket_enabled,
         FILE *cmd_file, // needed for command line option --cmd
@@ -176,7 +177,7 @@ public:
   // Initialize this after procs, because in debug_module_t::reset() we
   // enumerate processors, which segfaults if procs hasn't been initialized
   // yet.
-  debug_module_t debug_module;
+  std::optional<debug_module_t> debug_module;
 };
 
 extern volatile bool ctrlc_pressed;
