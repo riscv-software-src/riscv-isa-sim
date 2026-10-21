@@ -317,11 +317,6 @@ inline freg_t f128_negate(freg_t a)
   /* permissions check occurs in get_csr */ \
   (which); })
 
-/* For debug only. This will fail if the native machine's float types are not IEEE */
-inline float to_f(float32_t f) { float r; memcpy(&r, &f, sizeof(r)); return r; }
-inline double to_f(float64_t f) { double r; memcpy(&r, &f, sizeof(r)); return r; }
-inline long double to_f(float128_t f) { long double r; memcpy(&r, &f, sizeof(r)); return r; }
-
 // Vector macros
 #define e8 8      // 8b elements
 #define e16 16    // 16b elements
@@ -334,24 +329,6 @@ inline long double to_f(float128_t f) { long double r; memcpy(&r, &f, sizeof(r))
 
 #define vsext(x, sew) (((sreg_t)(x) << (64 - sew)) >> (64 - sew))
 #define vzext(x, sew) (((reg_t)(x) << (64 - sew)) >> (64 - sew))
-
-#define DEBUG_RVV 0
-
-#if DEBUG_RVV
-#define DEBUG_RVV_FP_VV \
-  printf("vfp(%lu) vd=%f vs1=%f vs2=%f\n", i, to_f(vd), to_f(vs1), to_f(vs2));
-#define DEBUG_RVV_FP_VF \
-  printf("vfp(%lu) vd=%f vs1=%f vs2=%f\n", i, to_f(vd), to_f(rs1), to_f(vs2));
-#define DEBUG_RVV_FMA_VV \
-  printf("vfma(%lu) vd=%f vs1=%f vs2=%f vd_old=%f\n", i, to_f(vd), to_f(vs1), to_f(vs2), to_f(vd_old));
-#define DEBUG_RVV_FMA_VF \
-  printf("vfma(%lu) vd=%f vs1=%f vs2=%f vd_old=%f\n", i, to_f(vd), to_f(rs1), to_f(vs2), to_f(vd_old));
-#else
-#define DEBUG_RVV_FP_VV (void) 0
-#define DEBUG_RVV_FP_VF (void) 0
-#define DEBUG_RVV_FMA_VV (void) 0
-#define DEBUG_RVV_FMA_VF (void) 0
-#endif
 
 #define DECLARE_XENVCFG_VARS(field) \
   reg_t m##field = get_field(STATE.menvcfg->read(), MENVCFG_##field); \
