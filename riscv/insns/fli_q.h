@@ -39,10 +39,5 @@ require_fp;
     defaultNaNF128UI64     /* 0b11111: canonical NaN */
   };
 
-  static_assert(defaultNaNF128UI0 == 0, "LSBs of quad-precision NaN must be zero");
-
-  ui128_f128 ui;
-  ui.ui.v64 = bits[insn.rs1()];
-  ui.ui.v0 = 0;
-  WRITE_FRD(f128(ui.f));
+  WRITE_FRD(f128({0, bits[insn.rs1()]}));
 }
