@@ -3,10 +3,6 @@
 #ifndef _RISCV_DECODE_H
 #define _RISCV_DECODE_H
 
-#if (-1 != ~0) || ((-1 >> 1) != -1)
-# error spike requires a two''s-complement c++ implementation
-#endif
-
 #include "../softfloat/softfloat_types.h"
 #include <algorithm>
 #include <array>

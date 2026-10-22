@@ -1627,7 +1627,6 @@ VI_VX_ULOOP({ \
       require(0); \
       break; \
   }; \
-  DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
 
 #define VI_VFP_V_LOOP(BODY16, BODY32, BODY64) \
@@ -1754,7 +1753,6 @@ VI_VX_ULOOP({ \
       require(0); \
       break; \
   }; \
-  DEBUG_RVV_FP_VF; \
   VI_VFP_LOOP_END
 
 #define VI_VFP_VV_LOOP_CMP(BODY16, BODY32, BODY64) \
@@ -1848,7 +1846,6 @@ VI_VX_ULOOP({ \
       require(0); \
       break; \
   }; \
-  DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
 
 #define VI_VFP_BF16_VF_LOOP_WIDE(BODY) \
@@ -1867,7 +1864,6 @@ VI_VX_ULOOP({ \
       require(0); \
       break; \
   }; \
-  DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
 
 #define VI_VFP_VV_LOOP_WIDE(BODY16, BODY32) \
@@ -1898,7 +1894,6 @@ VI_VX_ULOOP({ \
       require(0); \
       break; \
   }; \
-  DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
 
 #define VI_VFP_BF16_VV_LOOP_WIDE(BODY) \
@@ -1917,7 +1912,6 @@ VI_VX_ULOOP({ \
       require(0); \
       break; \
   }; \
-  DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
 
 #define VI_VFP_WF_LOOP_WIDE(BODY16, BODY32) \
@@ -1946,7 +1940,6 @@ VI_VX_ULOOP({ \
     default: \
       require(0); \
   }; \
-  DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
 
 #define VI_VFP_WV_LOOP_WIDE(BODY16, BODY32) \
@@ -1974,7 +1967,6 @@ VI_VX_ULOOP({ \
     default: \
       require(0); \
   }; \
-  DEBUG_RVV_FP_VV; \
   VI_VFP_LOOP_END
 
 #define VI_VFP_LOOP_SCALE_BASE \
