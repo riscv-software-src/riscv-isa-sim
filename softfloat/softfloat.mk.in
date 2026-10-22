@@ -19,9 +19,7 @@ softfloat_c_srcs = \
 	bf16_to_e5m2.c \
 	bf16_to_f32.c \
 	bf16_to_f64.c \
-	bf16_to_i8.c \
 	bf16_to_i32.c \
-	bf16_to_ui8.c \
 	bf16_to_ui32.c \
 	f128_add.c \
 	f128_classify.c \
@@ -71,14 +69,10 @@ softfloat_c_srcs = \
 	f16_to_f64.c \
 	f16_to_e4m3.c \
 	f16_to_e5m2.c \
-	f16_to_i8.c \
-	f16_to_i16.c \
 	f16_to_i32.c \
 	f16_to_i32_r_minMag.c \
 	f16_to_i64.c \
 	f16_to_i64_r_minMag.c \
-	f16_to_ui8.c \
-	f16_to_ui16.c \
 	f16_to_ui32.c \
 	f16_to_ui32_r_minMag.c \
 	f16_to_ui64.c \
@@ -105,18 +99,14 @@ softfloat_c_srcs = \
 	f32_to_f128.c \
 	f32_to_f16.c \
 	f32_to_f64.c \
-	f32_to_i16.c \
 	f32_to_i32.c \
 	f32_to_i32_r_minMag.c \
 	f32_to_i64.c \
 	f32_to_i64_r_minMag.c \
-	f32_to_ui16.c \
 	f32_to_ui32.c \
 	f32_to_ui32_r_minMag.c \
 	f32_to_ui64.c \
 	f32_to_ui64_r_minMag.c \
-	f32_to_i8.c \
-	f32_to_ui8.c \
 	f64_add.c \
 	f64_classify.c \
 	f64_div.c \

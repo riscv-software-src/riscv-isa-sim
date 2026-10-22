@@ -15,19 +15,13 @@ extern "C" {
 
 #include "softfloat_upstream.h"
 
-uint_fast8_t f16_to_ui8( float16_t, uint_fast8_t, bool );
-uint_fast16_t f16_to_ui16( float16_t, uint_fast8_t, bool );
-int_fast8_t f16_to_i8( float16_t, uint_fast8_t, bool );
-int_fast16_t f16_to_i16( float16_t, uint_fast8_t, bool );
 uint_fast16_t f16_classify( float16_t );
 float16_t f16_rsqrte7( float16_t );
 float16_t f16_recip7( float16_t );
 float16_t f16_max( float16_t, float16_t );
 float16_t f16_min( float16_t, float16_t );
 
-uint_fast8_t bf16_to_ui8( bfloat16_t, uint_fast8_t, bool );
 float32_t bf16_to_f32( bfloat16_t );
-int_fast8_t bf16_to_i8( bfloat16_t, uint_fast8_t, bool );
 e4m3_t bf16_to_e4m3( bfloat16_t, bool );
 e5m2_t bf16_to_e5m2( bfloat16_t, bool );
 uint_fast16_t bf16_classify( bfloat16_t );
@@ -38,10 +32,6 @@ bfloat16_t bf16_min( bfloat16_t, bfloat16_t );
 
 e4m3_t f32_to_e4m3( float32_t, bool );
 e5m2_t f32_to_e5m2( float32_t, bool );
-uint_fast8_t f32_to_ui8( float32_t, uint_fast8_t, bool );
-uint_fast16_t f32_to_ui16( float32_t, uint_fast8_t, bool );
-int_fast8_t f32_to_i8( float32_t, uint_fast8_t, bool );
-int_fast16_t f32_to_i16( float32_t, uint_fast8_t, bool );
 uint_fast16_t f32_classify( float32_t );
 float32_t f32_rsqrte7( float32_t );
 float32_t f32_recip7( float32_t );
