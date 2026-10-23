@@ -34,6 +34,11 @@ void vectorUnit_t::vectorUnit_t::reset()
 
 void vectorUnit_t::msetmtype(reg_t newMType, reg_t newVType)
 {
+  // Validate the incoming vtype and use its SEW to derive the matrix LMUL.
+  set_vl(0, 1, 0, newVType);
+  if (vill)
+    return;
+
   reg_t twiden = widen = (1 << extract64(newMType, 0, 2)) >> 1;
 
   if (twiden) {
@@ -58,7 +63,7 @@ void vectorUnit_t::msetmtype(reg_t newMType, reg_t newVType)
 reg_t vectorUnit_t::read_mtype() const
 {
   return
-    widen |
+    (widen ? log2(widen) + 1 : 0) |
     (tk << 5) |
     (tm << 10);
 }
