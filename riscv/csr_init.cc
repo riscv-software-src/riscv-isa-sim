@@ -456,8 +456,8 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
 
     add_csr(CSR_MIREG, mireg[0] = std::make_shared<sscsrind_reg_csr_t>(proc, CSR_MIREG, miselect));
     const reg_t mireg_csrs[] = { CSR_MIREG2, CSR_MIREG3, CSR_MIREG4, CSR_MIREG5, CSR_MIREG6 };
-    for (auto csr : mireg_csrs)
-      add_csr(csr, mireg[csr - CSR_MIREG] = std::make_shared<sscsrind_reg_csr_t>(proc, csr, miselect));
+    for (size_t i = 0; i < std::size(mireg_csrs); i++)
+      add_csr(mireg_csrs[i], mireg[1 + i] = std::make_shared<sscsrind_reg_csr_t>(proc, mireg_csrs[i], miselect));
 
     if (proc->extension_enabled_const(EXT_SMAIA)) {
       // *ireg needs to be a proxy of *iselect and a CSR map keyed by the value in *iselect
@@ -497,7 +497,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
 
     const reg_t sireg_csrs[] = { CSR_SIREG2, CSR_SIREG3, CSR_SIREG4, CSR_SIREG5, CSR_SIREG6 };
     for (size_t i = 0; i < std::size(sireg_csrs); i++) {
-      auto ireg_idx = sireg_csrs[i] - CSR_SIREG;
+      auto ireg_idx = 1 + i;
       auto sireg = nonvirtual_sireg[ireg_idx] = std::make_shared<sscsrind_reg_csr_t>(proc, sireg_csrs[i], siselect);
       add_supervisor_csr(sireg_csrs[i], std::make_shared<virtualized_indirect_csr_t>(proc, nonvirtual_sireg[ireg_idx], vsireg[ireg_idx]));
 
