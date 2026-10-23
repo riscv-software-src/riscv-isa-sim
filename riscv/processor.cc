@@ -69,6 +69,7 @@ processor_t::processor_t(const char* isa_str, const char* priv_str,
   set_pmp_num(cfg->pmpregions);
 
   set_max_vaddr_bits(0);
+  paddr_width = max_paddr_bits();
   set_impl(IMPL_MMU_ASID, true);
   set_impl(IMPL_MMU_VMID, true);
 
@@ -260,6 +261,12 @@ void processor_t::set_max_vaddr_bits(unsigned n)
   }
 
   max_vaddr_bits = n;
+}
+
+void processor_t::set_paddr_bits(unsigned n)
+{
+  assert(n >= PGSHIFT && n <= max_paddr_bits());
+  paddr_width = n;
 }
 
 reg_t processor_t::select_an_interrupt_with_default_priority(reg_t enabled_interrupts) const

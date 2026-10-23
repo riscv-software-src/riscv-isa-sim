@@ -257,7 +257,9 @@ public:
   mmu_t* get_mmu() { return mmu; }
   state_t* get_state() { return &state; }
   unsigned get_xlen() const { return xlen; }
-  unsigned paddr_bits() { return isa.get_max_xlen() == 64 ? 56 : 34; }
+  unsigned paddr_bits() const { return paddr_width; }
+  unsigned max_paddr_bits() const { return isa.get_max_xlen() == 64 ? 56 : 34; }
+  void set_paddr_bits(unsigned n);
   unsigned get_const_xlen() const {
     // Any code that assumes a const xlen should use this method to
     // document that assumption. If Spike ever changes to allow
@@ -382,6 +384,7 @@ private:
   uint32_t id;
   unsigned xlen;
   unsigned max_vaddr_bits;
+  unsigned paddr_width;
   bool histogram_enabled;
   bool log_commits_enabled;
   FILE *log_file;

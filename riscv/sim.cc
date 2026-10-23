@@ -10,6 +10,7 @@
 #include "platform.h"
 #include "libfdt.h"
 #include "socketif.h"
+#include <algorithm>
 #include <fstream>
 #include <map>
 #include <iostream>
@@ -120,6 +121,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
         pair.second->get_state()->pc = *pc;
       }
     }
+    update_paddr_bits();
     return;
   } // otherwise, generate the procs by parsing the DTS
 
@@ -342,6 +344,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
       pair.second->get_state()->pc = *pc;
     }
   }
+
+  update_paddr_bits();
 }
 
 sim_t::~sim_t()
@@ -390,6 +394,23 @@ const char* sim_t::get_dts() {
 void sim_t::add_device(reg_t addr, std::shared_ptr<abstract_device_t> dev) {
   bus.add_device(addr, dev.get());
   devices.push_back(dev);
+  update_paddr_bits();
+}
+
+// An implementation needs no more physical-address bits than it takes
+// to reach the highest address in the memory map.
+void sim_t::update_paddr_bits()
+{
+  reg_t max_addr = 0;
+  for (auto& [base, dev] : bus.get_devices())
+    max_addr = std::max(max_addr, base + dev->size() - 1);
+
+  unsigned bits = 0;
+  while (bits < 64 && (max_addr >> bits) != 0)
+    bits++;
+
+  for (auto proc : procs)
+    proc->set_paddr_bits(std::clamp<unsigned>(bits, PGSHIFT, proc->max_paddr_bits()));
 }
 
 void sim_t::set_debug(bool value)
