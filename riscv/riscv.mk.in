@@ -81,6 +81,7 @@ riscv_srcs = \
 	socketif.cc \
 	cfg.cc \
 	aplic.cc \
+	semihosting.cc \
 	$(riscv_gen_srcs) \
 
 riscv_test_srcs = \
