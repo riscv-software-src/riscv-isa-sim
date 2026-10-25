@@ -151,6 +151,11 @@ Now you can simulate the program atop the proxy kernel:
 
     $ spike pk hello
 
+Alternatively, you can simulate a program without the proxy kernel using semihosting:
+
+    $ riscv64-unknown-elf-gcc --specs=semihost.specs -o hello hello.c
+    $ spike --disable-dtb --no-dm -m0:0x100000000,0xffffffffffff0000:0x10000 hello
+
 Simulating a New Instruction
 ------------------------------------
 
