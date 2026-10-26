@@ -686,6 +686,17 @@ void debug_module_t::run_test_idle()
   }
 }
 
+bool debug_module_t::harts_parked() const
+{
+  if (abstractcs.busy && !abstract_command_completed)
+    return false;
+  for (const auto& [hart_id, _] : sim->get_harts()) {
+    if (!hart_state[hart_id].halted || debug_rom_flags[hart_id])
+      return false;
+  }
+  return true;
+}
+
 static bool is_fpu_reg(unsigned regno)
 {
   return (regno >= 0x1020 && regno <= 0x103f) || regno == CSR_FFLAGS ||

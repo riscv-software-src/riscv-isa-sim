@@ -18,6 +18,8 @@ public:
   // Check if any client is connected
   bool is_client_connected() const;
 
+  void wait(int timeout_ms);
+
 private:
   jtag_dtm_t *tap;
 

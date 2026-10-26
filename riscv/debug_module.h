@@ -136,6 +136,8 @@ class debug_module_t : public abstract_device_t
     // Called for every cycle the JTAG TAP spends in Run-Test/Idle.
     void run_test_idle();
 
+    bool harts_parked() const;
+
     // Called when one of the attached harts was reset.
     void proc_reset(unsigned id);
 

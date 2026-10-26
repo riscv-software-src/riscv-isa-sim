@@ -549,8 +549,13 @@ void sim_t::idle()
     step(INTERLEAVE);
   }
 
-  if (remote_bitbang)
+  if (remote_bitbang) {
     remote_bitbang->tick();
+    if (!debug && !instruction_limit && debug_module && debug_module->harts_parked()) {
+      remote_bitbang->wait(RBB_PARKED_WAIT_MS);
+      remote_bitbang->tick();
+    }
+  }
 }
 
 void sim_t::read_chunk(addr_t taddr, size_t len, void* dst)

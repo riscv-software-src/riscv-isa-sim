@@ -78,6 +78,7 @@ public:
   static const size_t INTERLEAVE = 5000;
   static const size_t INSNS_PER_RTC_TICK = 100; // 10 MHz clock for 1 BIPS core
   static const size_t CPU_HZ = 1000000000; // 1GHz CPU
+  static const int RBB_PARKED_WAIT_MS = 10;
 
   std::shared_ptr<aplic_m_t> aplic_m;
   std::shared_ptr<aplic_s_t> aplic_s;
