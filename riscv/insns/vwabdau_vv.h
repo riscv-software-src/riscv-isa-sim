@@ -3,6 +3,7 @@
 require_zvabd;
 require(P.VU.vsew <= e16);
 VI_CHECK_DSS(true);
+VI_CHECK_WIDE_ACC(true);
 
 VI_VV_LOOP_WIDEN
 ({

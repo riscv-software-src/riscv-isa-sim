@@ -178,6 +178,16 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     } \
   }
 
+// Widening multiply-add and accumulate instructions also read vd as a
+// 2*SEW-wide source, and a register cannot be read with two different EEWs.
+// So, unlike other widening instructions, their SEW-wide sources may not
+// overlap vd at all.
+#define VI_CHECK_WIDE_ACC(is_vs1) \
+  require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs2(), P.VU.vflmul); \
+  if (is_vs1) { \
+    require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs1(), P.VU.vflmul); \
+  }
+
 #define VI_CHECK_DDS(is_rs) \
   VI_WIDE_CHECK_COMMON; \
   require_align(insn.rs2(), P.VU.vflmul * 2); \

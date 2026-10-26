@@ -1,4 +1,5 @@
 // vfwmacc.vf vd, vs2, rs1
+VI_CHECK_WIDE_ACC(false);
 VI_VFP_VF_LOOP_WIDE
 ({
   vd = f32_mulAdd(rs1, vs2, vd);
