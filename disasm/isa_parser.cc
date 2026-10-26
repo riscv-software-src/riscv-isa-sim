@@ -110,7 +110,7 @@ static const extension_info_t extension_infos[] = {
   {"sstvecd", 32 | 64, {}, {"s"}},
   {"sstvala", 32 | 64, {}, {"s"}},
   {"sscounterenw", 32 | 64, {}, {"s"}},
-  {"ssu64xl", 32 | 64, {}, {"s"}},
+  {"ssu64xl", 64, {}, {"s"}},
   {"ssstrict", 32 | 64, {}, {"s"}},
   {"zfh", 32 | 64, {EXT_ZFH}, {"zfhmin"}},
   {"zfhmin", 32 | 64, {'F', EXT_ZFHMIN}},
@@ -153,7 +153,7 @@ static const extension_info_t extension_infos[] = {
   {"zhinxmin", 32 | 64, {EXT_ZFINX, EXT_ZHINXMIN}},
   {"zce", 32 | 64, {EXT_ZCE}, {"zcb", "zcmp", "zcmt"}},
   {"zca", 32 | 64, {EXT_ZCA}},
-  {"zcf", 32 | 64, {'F', EXT_ZCF}, {"zca"}},
+  {"zcf", 32, {'F', EXT_ZCF}, {"zca"}},
   {"zcb", 32 | 64, {EXT_ZCB}, {"zca"}},
   {"zcd", 32 | 64, {EXT_ZCD, 'F', 'D'}, {"zca"}},
   {"zcmp", 32 | 64, {EXT_ZCMP}, {"zca"}},
@@ -184,7 +184,7 @@ static const extension_info_t extension_infos[] = {
   {"svnapot", 32 | 64, {EXT_SVNAPOT}, {"s"}},
   {"svpbmt", 32 | 64, {EXT_SVPBMT}, {"s"}},
   {"svinval", 32 | 64, {EXT_SVINVAL}, {"s"}},
-  {"svukte", 32 | 64, {EXT_SVUKTE}, {"s"}},
+  {"svukte", 64, {EXT_SVUKTE}, {"s"}},
   {"zfa", 32 | 64, {EXT_ZFA}},
   {"zicbom", 32 | 64, {EXT_ZICBOM}},
   {"zicboz", 32 | 64, {EXT_ZICBOZ}},
@@ -197,8 +197,8 @@ static const extension_info_t extension_infos[] = {
   {"zicntr", 32 | 64, {EXT_ZICNTR}},
   {"zicond", 32 | 64, {EXT_ZICOND}},
   {"zihpm", 32 | 64, {EXT_ZIHPM}},
-  {"zilsd", 32 | 64, {EXT_ZILSD}},
-  {"zclsd", 32 | 64, {EXT_ZCLSD}, {"zilsd", "zca"}},
+  {"zilsd", 32, {EXT_ZILSD}},
+  {"zclsd", 32, {EXT_ZCLSD}, {"zilsd", "zca"}},
   {"zvabd", 32 | 64, {EXT_ZVABD}},
   {"zvkb", 32 | 64, {EXT_ZVKB}},
   {"zvbb", 32 | 64, {EXT_ZVKB, EXT_ZVBB}},
@@ -338,9 +338,6 @@ void isa_parser_t::add_extension(const std::string& ext_str, const char* str)
   if (const auto* info = find_extension_info(ext_str)) {
     if (!(info->xlens & max_xlen))
       bad_isa_string(str, ("'" + ext_str + "' is incompatible with XLEN=" + std::to_string(max_xlen)).c_str());
-    // Spike fixes UXLEN to XLEN; RV32 cannot provide sstatus.UXL=2.
-    if (ext_str == "ssu64xl" && max_xlen != 64)
-      bad_isa_string(str, "'Ssu64xl' requires RV64");
     for (const auto ext : info->enables) {
       extension_table[ext] = true;
     }
@@ -439,22 +436,6 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
   if (extension_table['C'] || extension_table[EXT_ZCE]) {
     if (extension_table['F'] && max_xlen == 32)
       extension_table[EXT_ZCF] = true;
-  }
-
-  if (extension_table[EXT_ZCF] && max_xlen != 32) {
-    bad_isa_string(str, "'Zcf' requires RV32");
-  }
-
-  if (extension_table[EXT_ZCLSD] && max_xlen != 32) {
-    bad_isa_string(str, "'Zclsd' requires RV32");
-  }
-
-  if (extension_table[EXT_ZILSD] && max_xlen != 32) {
-    bad_isa_string(str, "'Zilsd' requires RV32");
-  }
-
-  if (extension_table[EXT_SVUKTE] && max_xlen != 64) {
-    bad_isa_string(str, "'svukte' requires RV64");
   }
 
   if (extension_table[EXT_ZCLSD] && extension_table[EXT_ZCF]) {
