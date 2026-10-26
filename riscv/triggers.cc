@@ -247,36 +247,30 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(
 {
   if ((operation == triggers::OPERATION_EXECUTE && !execute) ||
       (operation == triggers::OPERATION_STORE && !store) ||
-      (operation == triggers::OPERATION_LOAD && !load) ||
-      !common_match(proc)) {
+      (operation == triggers::OPERATION_LOAD && !load)) {
     return std::nullopt;
   }
 
   auto xlen = proc->get_xlen();
 
+  std::optional<reg_t> match_address;
   if (!select) {
     for (std::size_t i = 0; i < len; ++i)
       if (simple_match(xlen, address + i)) {
-        /* This is OK because this function is only called if the trigger was
-         * not inhibited by the previous trigger in the chain. */
-        set_hit(timing ? HIT_IMMEDIATELY_AFTER : HIT_BEFORE);
-        return match_result_t(timing_t(timing), action, address + i);
+        match_address = address + i;
+        break;
       }
-
-    return std::nullopt;
+  } else if (len * 8 <= xlen && data.has_value() && simple_match(xlen, data.value())) {
+    match_address = address;
   }
 
-  if (len * 8 > proc->get_xlen())
+  if (!match_address || !common_match(proc))
     return std::nullopt;
 
-  if (data.has_value() && simple_match(xlen, data.value())) {
-    /* This is OK because this function is only called if the trigger was
-      * not inhibited by the previous trigger in the chain. */
-    set_hit(timing ? HIT_IMMEDIATELY_AFTER : HIT_BEFORE);
-    return match_result_t(timing_t(timing), action, address);
-  }
-
-  return std::nullopt;
+  /* This is OK because this function is only called if the trigger was
+   * not inhibited by the previous trigger in the chain. */
+  set_hit(timing ? HIT_IMMEDIATELY_AFTER : HIT_BEFORE);
+  return match_result_t(timing_t(timing), action, *match_address);
 }
 
 mcontrol_common_t::match_t mcontrol_common_t::legalize_match(reg_t val, reg_t maskmax) noexcept
