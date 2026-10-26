@@ -1,6 +1,7 @@
 #include <arpa/inet.h>
 #include <cerrno>
 #include <fcntl.h>
+#include <poll.h>
 #include <cstdlib>
 #include <cstring>
 #include <unistd.h>
@@ -187,4 +188,15 @@ void remote_bitbang_t::execute_commands()
 
 bool remote_bitbang_t::is_client_connected() const{
     return client_fd > 0;
+}
+
+void remote_bitbang_t::wait(int timeout_ms)
+{
+  if (recv_start < recv_end)
+    return;
+
+  struct pollfd fd = {socket_fd, POLLIN, 0};
+  if (is_client_connected())
+    fd.fd = client_fd;
+  poll(&fd, 1, timeout_ms);
 }
