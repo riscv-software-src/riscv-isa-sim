@@ -409,7 +409,7 @@ install-hdrs-list.h: $(install_hdrs)
 	for file in $(subst $(src_dir)/,,$^); \
 	do \
 		$(MKINSTALLDIRS) $(install_hdrs_dir)/`dirname $$file`; \
-		echo "#include <$(src_dir)/$$file>" >> $@.tmp; \
+		echo "#include <$$file>" >> $@.tmp; \
 	done
 	mv $@.tmp $@
 
