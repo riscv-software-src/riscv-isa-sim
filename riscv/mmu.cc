@@ -16,10 +16,15 @@ static reg_t compute_reservation_set_mask(const processor_t *proc) {
   reg_t reservation_size = 1;
   // explicit extensions overwrite the argument
   if (proc) {
-    if (proc->extension_enabled(EXT_ZA64RS)) {
-      reservation_size = 64;
-    } else if (proc->extension_enabled(EXT_ZA128RS)) {
-      reservation_size = 128;
+    // EXT_ZA4RS..EXT_ZA512RS are consecutive in the isa_parser.h, that means
+    // EXT_ZA4RS + i is Za(2^(i+2))rs. If several are enabled, the smallest
+    // (most restrictive) one wins.
+    static_assert(EXT_ZA512RS - EXT_ZA4RS == 7, "ZaNrs extensions must be consecutive");
+    for (unsigned i = 0; i <= EXT_ZA512RS - EXT_ZA4RS; i++) {
+      if (proc->extension_enabled(isa_extension_t(EXT_ZA4RS + i))) {
+        reservation_size = reg_t(1) << (i + 2);
+        break;
+      }
     }
   }
   return ~(reservation_size - (reg_t)1);

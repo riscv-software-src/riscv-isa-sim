@@ -2,6 +2,8 @@
 #define RDWORD     0x80210000
 #define RBLOCK     0x80220000
 
+#define RS_LAST    (RSSIZE - 4)
+
 .section .text.init
 .globl _start
 _start:
@@ -29,19 +31,35 @@ _start:
   sc.d     t0, a2, (a0)
   bnez     t0, fail
 
-  # lr.w at the start of an aligned block, sc.w to the word
-  # 4 bytes further on (still inside the block).  Out of the box (exp=0) this
-  # must fail; with an enlarged reservation set it must succeed.
+  # Reservation set boundary checks.  RSSIZE is the expected reservation set
+  # size in bytes (the N of ZaNrs).
+
+  # lr.w at the start of an aligned block, sc.w to the last word that is
+  # still inside the reservation set must succeed.
   li       a0, RBLOCK
   lr.w     a1, (a0)
-  addi     a3, a0, 64
+  li       a3, RBLOCK + RS_LAST
   li       a2, 0x00007777
   sc.w     t0, a2, (a3)
-#ifdef RSNEIGHBOR_SUCCESS
   bnez     t0, fail
-#else
+
+  # lr.w to the last word of the set, sc.w to the first one must succeed too:
+  # the reservation set is aligned to its size.
+  li       a0, RBLOCK + RS_LAST
+  lr.w     a1, (a0)
+  li       a3, RBLOCK
+  li       a2, 0x00008888
+  sc.w     t0, a2, (a3)
+  bnez     t0, fail
+
+  # lr.w at the start of an aligned block, sc.w to the first word past the
+  # reservation set must fail.
+  li       a0, RBLOCK
+  lr.w     a1, (a0)
+  li       a3, RBLOCK + RSSIZE
+  li       a2, 0x00009999
+  sc.w     t0, a2, (a3)
   beqz     t0, fail
-#endif
 
   # Pass.
   li       t1, 1
