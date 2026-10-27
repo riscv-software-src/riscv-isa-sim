@@ -53,7 +53,7 @@ riscv64-linux-gnu-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie \
   -o lowaddr "$CI/wfi-as-nop.S"
 
 # run snippy-based tests
-wget https://github.com/syntacore/snippy/releases/download/snippy-2.1/snippy-x86_64-linux.tar.xz
+wget -nv https://github.com/syntacore/snippy/releases/download/snippy-2.1/snippy-x86_64-linux.tar.xz
 tar xf snippy-x86_64-linux.tar.xz
 
 # test that snippy runs
