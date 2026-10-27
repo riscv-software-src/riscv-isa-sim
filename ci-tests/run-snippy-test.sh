@@ -27,9 +27,12 @@ llvm-snippy "$CONFIG" -o "$tmpelf" --seed 1 -riscv-disable-misaligned-access --l
 riscv64-linux-gnu-gcc -O0 -march="$ARCH" -mabi="$ABI" -T "$tmpelf".ld -T "$CONFIGDIR"/linker-entry.ld "$tmpelf" "$BOOTCODE" -nostdlib -static -o "$testfile" -Wl,--build-id=none
 
 error=0
-if ! timeout --foreground 60s "$SPIKE_PATH" -l --isa "$ARCH" "$testfile"
+# the execution trace is huge, so keep it in a file and only show its tail on failure
+logfile="$base".log
+if ! timeout --foreground 60s "$SPIKE_PATH" -l --log="$logfile" --isa "$ARCH" "$testfile"
 then
-  echo "TIMEOUT: $testfile"
+  echo "TIMEOUT: $testfile, last 100 lines of $logfile:"
+  tail -n 100 "$logfile"
   error=1
 else
   echo "SUCCESS: $testfile"

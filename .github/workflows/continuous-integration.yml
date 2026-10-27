@@ -39,6 +39,15 @@ jobs:
             ci-tests/test-spike
           done
 
+      # snippy test traces are too big for the console; keep them for failures
+      - name: Upload snippy test traces
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: snippy-test-traces
+          path: run/*.log
+          if-no-files-found: ignore
+
   test-macos:
     name: Test Spike build (MacOS)
     runs-on: macos-15
