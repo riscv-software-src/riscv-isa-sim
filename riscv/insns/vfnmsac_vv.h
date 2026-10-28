@@ -4,8 +4,7 @@ require_zvfbfa
 
 VI_VFP_VV_LOOP
 ({
-  vd = P.VU.altfmt ? bf16_mulAdd(bf16(vs1.v ^ BF16_SIGN), vs2, vd)
-                   :  f16_mulAdd( f16(vs1.v ^  F16_SIGN), vs2, vd);
+  vd = VFP_MULADD_16(f16(vs1.v ^ F16_SIGN), vs2, vd);
 },
 {
   vd = f32_mulAdd(f32(vs1.v ^ F32_SIGN), vs2, vd);

@@ -1,8 +1,7 @@
 // vfsgnx
 VI_VFP_VF_LOOP
 ({
-  vd = P.VU.altfmt ? bfsgnj16(vs2.v, rs1.v, false, true)
-                   :  fsgnj16(vs2.v, rs1.v, false, true);
+  vd = fsgnj16(vs2.v, rs1.v, false, true);
 },
 {
   vd = fsgnj32(vs2.v, rs1.v, false, true);

@@ -8,7 +8,7 @@
 
 uint_fast16_t bf16_classify( bfloat16_t a )
 {
-    union ui16_f16 uA;
+    union ui16_bf16 uA;
     uint_fast16_t uiA;
 
     uA.f = a;
