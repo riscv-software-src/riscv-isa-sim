@@ -1732,7 +1732,7 @@ VI_VX_ULOOP({ \
   (P.VU.altfmt ? bf16_##op(bf16(rs1), bf16(vs2)) : f16_##op(rs1, vs2))
 
 #define VFP_16_TOINT(fmt, vs2, rm, exact) \
-  (P.VU.altfmt ? bf16_to_##fmt(bf16(vs2), rm, exact) : f16_to_##fmt(vs2, rm, exact))
+  (P.VU.altfmt ? float_to_int<fmt>(bf16(vs2), rm, exact) : float_to_int<fmt>(vs2, rm, exact))
 
 #define VFP_MULADD_16(rs1, vs2, vd) \
   (P.VU.altfmt ? f16(bf16_mulAdd(bf16(rs1), bf16(vs2), bf16(vd))) : f16_mulAdd(rs1, vs2, vd))
