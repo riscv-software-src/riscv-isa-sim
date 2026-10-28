@@ -3,8 +3,7 @@ if (p->extension_enabled(EXT_ZVFBFA) && P.VU.vsew >= 16 && P.VU.altfmt)
   require(false);
 
 VI_VFP_NCVT_FP_TO_INT(
-  { vd = P.VU.altfmt ? bf16_to_i8(vs2, softfloat_round_minMag, true)
-                       :  f16_to_i8(vs2, softfloat_round_minMag, true); },  // BODY16
+  { vd = VFP_16_TOINT(i8, vs2, softfloat_round_minMag, true); },  // BODY16
   { vd = f32_to_i16(vs2, softfloat_round_minMag, true); }, // BODY32
   { vd = f64_to_i32(vs2, softfloat_round_minMag, true); }, // BODY64
   { require_zvfbfa_or_zvfh; },                             // CHECK16

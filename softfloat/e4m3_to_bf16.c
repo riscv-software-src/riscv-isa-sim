@@ -41,7 +41,7 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 #include "specialize.h"
 #include "softfloat.h"
 
-float16_t e4m3_to_bf16( float8_t a )
+bfloat16_t e4m3_to_bf16( float8_t a )
 {
     union ui8_f8 uA;
     uint_fast8_t uiA;
@@ -51,7 +51,7 @@ float16_t e4m3_to_bf16( float8_t a )
     struct commonNaN commonNaN;
     uint_fast16_t uiZ;
     struct exp8_sig8 normExpSig;
-    union ui16_f16 uZ;
+    union ui16_bf16 uZ;
 
     /*------------------------------------------------------------------------
     *------------------------------------------------------------------------*/

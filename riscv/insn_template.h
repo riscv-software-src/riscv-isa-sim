@@ -2,6 +2,7 @@
 
 #include "decode_macros.h"
 #include "arith.h"
+#include "fp_arith.h"
 #include "mmu.h"
 #include "softfloat.h"
 #include "internals.h"

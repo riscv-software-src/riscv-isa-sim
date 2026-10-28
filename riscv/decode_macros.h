@@ -137,7 +137,7 @@ do { \
     WRITE_FRD(value); \
   } \
 } while (0)
-#define WRITE_FRD_BF WRITE_FRD_H
+#define WRITE_FRD_BF(val) WRITE_FRD_H(f16(val))
 #define WRITE_FRD_F(value) \
 do { \
   if (p->extension_enabled(EXT_ZFINX)) \
@@ -269,10 +269,12 @@ inline float32_t f32(uint32_t v) { return { v }; }
 inline float64_t f64(uint64_t v) { return { v }; }
 inline float16_t f16(freg_t r) { return f16(unboxF16(r)); }
 inline bfloat16_t bf16(freg_t r) { return bf16(unboxBF16(r)); }
+inline bfloat16_t bf16(float16_t r) { return { .v = r.v }; }
+inline float16_t f16(bfloat16_t r) { return { .v = r.v }; }
 inline float32_t f32(freg_t r) { return f32(unboxF32(r)); }
 inline float64_t f64(freg_t r) { return f64(unboxF64(r)); }
 inline float128_t f128(freg_t r) { return r; }
-inline float16_t f16(freg_t r, reg_t altfmt) { return altfmt ? bf16(r) : f16(r); }
+inline float16_t f16(freg_t r, reg_t altfmt) { return altfmt ? f16(bf16(r)) : f16(r); }
 inline float32_t f32(freg_t r, UNUSED reg_t altfmt) { return f32(r); }
 inline float64_t f64(freg_t r, UNUSED reg_t altfmt) { return f64(r); }
 inline freg_t freg(float16_t f) { return { ((uint64_t)-1 << 16) | f.v, (uint64_t)-1 }; }
