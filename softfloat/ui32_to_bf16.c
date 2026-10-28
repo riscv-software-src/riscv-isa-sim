@@ -2,7 +2,7 @@
 /*============================================================================
 
 This C source file is part of the SoftFloat IEEE Floating-Point Arithmetic
-Package, Release 3d, by John R. Hauser.
+Package, Release 3e, by John R. Hauser.
 
 Copyright 2011, 2012, 2013, 2014, 2015, 2016 The Regents of the University of
 California.  All Rights Reserved.
@@ -41,11 +41,13 @@ SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 
 bfloat16_t ui32_to_bf16( uint32_t a )
 {
-    uint_fast8_t origin_rounding_mode = softfloat_roundingMode;
+    uint_fast8_t roundingMode = softfloat_roundingMode;
     softfloat_roundingMode = softfloat_round_odd;
-    float32_t tmp_val = ui32_to_f32(a);
 
-    softfloat_roundingMode = origin_rounding_mode;
-    return f32_to_bf16(tmp_val);
+    float32_t f32A = ui32_to_f32(a);
+
+    softfloat_roundingMode = roundingMode;
+
+    return f32_to_bf16(f32A);
 }
 
