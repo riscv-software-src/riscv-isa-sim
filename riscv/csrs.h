@@ -68,7 +68,7 @@ class csr_t {
   state_t* const state;
  public:
   const reg_t address;
- private:
+ protected:
   const unsigned csr_priv;
   const bool csr_read_only;
 
