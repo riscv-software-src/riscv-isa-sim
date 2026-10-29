@@ -5,6 +5,7 @@
 #include "mmu.h"
 #include "disasm.h"
 #include "decode_macros.h"
+#include "platform.h"
 #include <cassert>
 
 static void commit_log_reset(processor_t* p)
@@ -278,7 +279,11 @@ void processor_t::step(size_t n)
           if (unlikely(is_waiting_for_interrupt()))
             return;
 
-          insn_fetch_t fetch = mmu->load_insn(state.pc);
+          bool fetch_from_debug_rom = state.debug_mode &&
+              state.pc >= DEBUG_ROM_ENTRY && state.pc < DEBUG_START + DEBUG_SIZE;
+          insn_fetch_t fetch = fetch_from_debug_rom
+              ? mmu->access_icache(state.pc)->data
+              : mmu->load_insn(state.pc);
           if (debug && !state.serialized)
             disasm(fetch.insn);
           auto new_pc = execute_insn_logged(this, state.pc, fetch);
