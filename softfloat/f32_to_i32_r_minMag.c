@@ -1,1 +1,0 @@
-../berkeley-softfloat-3/source/f32_to_i32_r_minMag.c

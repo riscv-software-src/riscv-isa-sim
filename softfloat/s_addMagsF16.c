@@ -1,1 +1,0 @@
-../berkeley-softfloat-3/source/s_addMagsF16.c

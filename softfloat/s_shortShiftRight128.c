@@ -1,1 +1,0 @@
-../berkeley-softfloat-3/source/s_shortShiftRight128.c

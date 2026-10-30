@@ -1,1 +1,0 @@
-../berkeley-softfloat-3/source/s_approxRecip32_1.c

@@ -1,1 +1,0 @@
-../berkeley-softfloat-3/source/s_roundPackToF64.c

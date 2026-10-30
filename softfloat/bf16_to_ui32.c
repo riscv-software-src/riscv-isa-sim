@@ -1,1 +1,0 @@
-../berkeley-softfloat-3/source/bf16_to_ui32.c

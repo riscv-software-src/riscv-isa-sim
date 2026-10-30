@@ -1,6 +1,8 @@
 // See LICENSE for license details.
 
-#include "internals_upstream.h"
+#include "platform.h"
+#include "softfloat_types.h"
+#include "../berkeley-softfloat-3/source/include/internals.h"
 
 #ifndef _SPIKE_SOFTFLOAT_INTERNALS_H
 #define _SPIKE_SOFTFLOAT_INTERNALS_H

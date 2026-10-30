@@ -1,1 +1,0 @@
-../berkeley-softfloat-3/source/f16_to_f64.c

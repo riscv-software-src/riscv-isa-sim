@@ -112,7 +112,7 @@ all-c-flags := \
   $(mcppbs-CPPFLAGS) $(mcppbs-CFLAGS) $(CPPFLAGS) $(CFLAGS)
 
 COMPILE       := $(CXX) -MMD -MP $(all-cxx-flags) $(sprojs_include) @BOOST_CPPFLAGS@
-COMPILE_C     := $(CC) -MMD -MP $(all-c-flags) $(sprojs_include)
+COMPILE_C     := $(CC) -MMD -MP $(all-c-flags)
 
 # Linker
 #  - LDFLAGS : Flags for the linker (eg. -L)
@@ -230,8 +230,9 @@ $$($(2)_objs) : %.o : %.cc $$($(2)_gen_hdrs) $$($(2)_pch)
 	$(COMPILE) $(if $(HAVE_CLANG_PCH), $$(if $$($(2)_pch), -include-pch $$($(2)_pch))) $$($(2)_CFLAGS) -c $$< -o $$@ -MF $$(patsubst %.o,%.d,$$@)
 $$($(2)_tidys) : %.tidy : %.cc $$($(2)_gen_hdrs) $$($(2)_pch)
 	$(CLANG_TIDY) $$< -- $(TIDY_FLAGS)
+# C sources may live outside $(1) (found via VPATH), so search $(1) first
 $$($(2)_c_objs) : %.o : %.c $$($(2)_gen_hdrs)
-	$(COMPILE_C) $$($(2)_CFLAGS) -c $$< -o $$@ -MF $$(patsubst %.o,%.d,$$@)
+	$(COMPILE_C) -iquote $(src_dir)/$(1) $(sprojs_include) $$($(2)_CFLAGS) -c $$< -o $$@ -MF $$(patsubst %.o,%.d,$$@)
 
 $(2)_junk += $$($(2)_pch) $$($(2)_objs) $$($(2)_c_objs) $$($(2)_deps) \
   $$($(2)_gen_hdrs) $$($(2)_tidys)

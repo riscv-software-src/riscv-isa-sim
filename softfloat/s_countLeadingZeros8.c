@@ -1,1 +1,0 @@
-../berkeley-softfloat-3/source/s_countLeadingZeros8.c

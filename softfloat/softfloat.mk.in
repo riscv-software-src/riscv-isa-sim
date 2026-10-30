@@ -1,3 +1,8 @@
+softfloat_upstream_dir = $(src_dir)/berkeley-softfloat-3/source
+
+# Sources not in softfloat/ come from the upstream submodule
+VPATH += $(softfloat_upstream_dir) $(softfloat_upstream_dir)/RISCV
+
 softfloat_subproject_deps =
 
 softfloat_c_srcs = \
@@ -262,8 +267,8 @@ softfloat_test_srcs =
 
 softfloat_install_hdrs = \
 	softfloat.h \
-	softfloat_upstream.h \
 	softfloat_types.h \
-	softfloat_types_upstream.h \
+	../berkeley-softfloat-3/source/include/softfloat.h \
+	../berkeley-softfloat-3/source/include/softfloat_types.h \
 
-softfloat_CFLAGS = -Wno-sign-compare -Wno-implicit-fallthrough -Wno-unused-variable
+softfloat_CFLAGS = -iquote $(softfloat_upstream_dir)/include -Wno-unused-parameter -Wno-sign-compare -Wno-implicit-fallthrough -Wno-unused-variable

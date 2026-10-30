@@ -1,1 +1,0 @@
-../berkeley-softfloat-3/source/s_shortShiftRightJam128Extra.c

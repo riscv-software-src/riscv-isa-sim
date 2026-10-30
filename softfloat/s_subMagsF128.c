@@ -1,1 +1,0 @@
-../berkeley-softfloat-3/source/s_subMagsF128.c

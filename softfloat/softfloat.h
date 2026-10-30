@@ -13,7 +13,8 @@ extern "C" {
 # define THREAD_LOCAL _Thread_local
 #endif
 
-#include "softfloat_upstream.h"
+#include "softfloat_types.h"
+#include "../berkeley-softfloat-3/source/include/softfloat.h"
 
 uint_fast8_t f16_to_ui8( float16_t, uint_fast8_t, bool );
 uint_fast16_t f16_to_ui16( float16_t, uint_fast8_t, bool );

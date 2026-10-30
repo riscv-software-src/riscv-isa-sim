@@ -1,1 +1,0 @@
-../berkeley-softfloat-3/source/f32_isSignalingNaN.c
