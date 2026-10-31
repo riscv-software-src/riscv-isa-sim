@@ -189,6 +189,7 @@ static const extension_info_t extension_infos[] = {
   {"svbare", 32 | 64, {}, {"s"}},
   {"svnapot", 32 | 64, {EXT_SVNAPOT}, {"s"}},
   {"svpbmt", 32 | 64, {EXT_SVPBMT}, {"s"}},
+  {"svrsw60t59b", 64, {EXT_SVRSW60T59B}, {"s"}},
   {"svinval", 32 | 64, {EXT_SVINVAL}, {"s"}},
   {"svukte", 64, {EXT_SVUKTE}, {"s"}},
   {"zfa", 32 | 64, {EXT_ZFA}},
