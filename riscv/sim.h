@@ -127,6 +127,7 @@ private:
   bool mmio_store(reg_t paddr, size_t len, const uint8_t* bytes) override;
   void set_rom();
   void set_pc_to_entry_point();
+  void update_paddr_bits();
 
   const char* get_symbol(uint64_t paddr) override;
 

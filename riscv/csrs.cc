@@ -1283,7 +1283,8 @@ bool base_atp_csr_t::satp_valid(reg_t val) const noexcept {
 }
 
 reg_t base_atp_csr_t::compute_new_satp(reg_t val) const noexcept {
-  reg_t rv64_ppn_mask = (reg_t(1) << (proc->paddr_bits() - PGSHIFT)) - 1;
+  unsigned pa_bits = address == CSR_VSATP ? proc->max_paddr_bits() : proc->paddr_bits();
+  reg_t rv64_ppn_mask = (reg_t(1) << (pa_bits - PGSHIFT)) - 1;
 
   reg_t mode_mask = proc->get_xlen() == 32 ? SATP32_MODE : SATP64_MODE;
   reg_t asid_mask_if_enabled = proc->get_xlen() == 32 ? SATP32_ASID : SATP64_ASID;
