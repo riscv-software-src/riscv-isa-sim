@@ -929,7 +929,15 @@ class srmcfg_csr_t: public masked_csr_t {
   void verify_permissions(insn_t insn, bool write) const override;
 };
 
-class context_csr_t: public masked_csr_t {
+// CSRs that execute triggers read when deciding whether to fire
+class trigger_masked_csr_t: public masked_csr_t {
+ public:
+  trigger_masked_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override;
+};
+
+class context_csr_t: public trigger_masked_csr_t {
  public:
   context_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init);
   void verify_permissions(insn_t insn, bool write) const override;

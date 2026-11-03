@@ -376,6 +376,7 @@ public:
 
   void flush_tlb();
   void flush_icache();
+  void flush_icache_for_triggers() { if (check_triggers_fetch) flush_icache(); }
 
   void register_memtracer(memtracer_t*);
 
