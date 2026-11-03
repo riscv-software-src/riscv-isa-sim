@@ -24,6 +24,11 @@
   require_align(insn.rs2(), P.VU.vflmul); \
   require_align(insn.rs1(), P.VU.vflmul); \
   require_vm; \
+  /* vzip is masked (vm=0): data sources vs1/vs2 (EEW=SEW) must not overlap */ \
+  /* the v0 mask (EEW=1) */ \
+  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
+                          insn.rs1(), P.VU.vflmul, P.VU.vsew, \
+                          insn.rs2(), P.VU.vflmul, P.VU.vsew, 1); \
   if (P.VU.vflmul < 1) { \
     require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs2(), P.VU.vflmul); \
     require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs1(), P.VU.vflmul); \
@@ -66,6 +71,11 @@
   require_align(insn.rs2(), P.VU.vflmul * 2); \
   require_align(insn.rd(), P.VU.vflmul); \
   require_vm; \
+  /* vunzip is masked (vm=0): the single data source vs2 (EEW=SEW, 2*vflmul */ \
+  /* group) must not overlap the v0 mask */ \
+  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
+                          insn.rs2(), P.VU.vflmul * 2, P.VU.vsew, \
+                          0, 0, 0, 0); \
   if (insn.rd() != insn.rs2()) { \
     require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vflmul * 2); \
   }
@@ -90,6 +100,11 @@
   require_align(insn.rs2(), P.VU.vflmul); \
   require_align(insn.rs1(), P.VU.vflmul); \
   require_vm; \
+  /* vpair is masked (vm=0): data sources vs1/vs2 (EEW=SEW) must not overlap */ \
+  /* the v0 mask (EEW=1) */ \
+  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
+                          insn.rs1(), P.VU.vflmul, P.VU.vsew, \
+                          insn.rs2(), P.VU.vflmul, P.VU.vsew, 1); \
   require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vflmul); \
   require_noover(insn.rd(), P.VU.vflmul, insn.rs1(), P.VU.vflmul);
 

@@ -3,6 +3,11 @@ require_align(insn.rd(), P.VU.vflmul);
 require_align(insn.rs2(), P.VU.vflmul);
 require(insn.rd() != insn.rs2());
 require_vm;
+// vs2 is a data source (EEW=SEW) and must not overlap the v0 mask (EEW=1)
+// when masked
+VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
+                        insn.rs2(), P.VU.vflmul, P.VU.vsew, \
+                        0, 1, 1, 0);
 
 reg_t zimm5 = insn.v_zimm5();
 

@@ -1,5 +1,5 @@
 // vfwmaccbf16.vv vd, vs2, vs1
-VI_VFP_BF16_VV_LOOP_WIDE
-({
+VI_VFP_BF16_VV_LOOP_WIDE_MACC(
+{
   vd = f32_mulAdd(vs1, vs2, vd);
 })

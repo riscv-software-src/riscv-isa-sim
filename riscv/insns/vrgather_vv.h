@@ -4,6 +4,11 @@ require_align(insn.rs2(), P.VU.vflmul);
 require_align(insn.rs1(), P.VU.vflmul);
 require(insn.rd() != insn.rs2() && insn.rd() != insn.rs1());
 require_vm;
+// vs2 and vs1 are data sources (EEW=SEW); they must not overlap the v0 mask
+// (EEW=1) when masked, nor each other unless their EEWs are equal
+VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
+                        insn.rs2(), P.VU.vflmul, P.VU.vsew, \
+                        insn.rs1(), P.VU.vflmul, P.VU.vsew, 1);
 
 VI_LOOP_BASE
   switch (sew) {

@@ -5,6 +5,10 @@ require_align(insn.rd(), P.VU.vflmul);
 require_align(insn.rs2(), P.VU.vflmul);
 require(insn.rd() != insn.rs2());
 require_noover(insn.rd(), P.VU.vflmul, insn.rs1(), 1);
+// vs2 (EEW=SEW) is a src reg and shouln't overlap the mask source vs1 (EEW=1)
+VI_CHECK_SOURCE_OVERLAP(insn.rs1(), 1, \
+                        insn.rs2(), P.VU.vflmul, P.VU.vsew, \
+                        0, 1, 1, 0);
 
 reg_t pos = 0;
 
