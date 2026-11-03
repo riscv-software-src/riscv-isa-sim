@@ -1,1 +1,0 @@
-../berkeley-softfloat-3/source/f64_to_ui64.c
