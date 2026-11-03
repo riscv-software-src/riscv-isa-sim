@@ -1401,8 +1401,11 @@ void time_counter_csr_t::sync() noexcept {
   if (proc->extension_enabled(EXT_SSTC)) {
     const reg_t mip_val = (shadow_val >= state->stimecmp->read() ? MIP_STIP : 0) |
       (shadow_val + state->htimedelta->read() >= state->vstimecmp->read() ? MIP_VSTIP : 0);
-    const reg_t mask = ((state->menvcfg->read() & MENVCFG_STCE) ? MIP_STIP : 0) | ((state->henvcfg->read() & HENVCFG_STCE) ? MIP_VSTIP : 0);
-    state->mip->backdoor_write_with_mask(mask, mip_val);
+    // STIP is software-writable when menvcfg.STCE = 0, so leave it alone then.
+    // VSTIP is not (hvip.VSTIP is ORed in on read), so clear it when henvcfg.STCE = 0.
+    const reg_t mask = ((state->menvcfg->read() & MENVCFG_STCE) ? MIP_STIP : 0) | MIP_VSTIP;
+    const reg_t vstip = (state->henvcfg->read() & HENVCFG_STCE) ? (mip_val & MIP_VSTIP) : 0;
+    state->mip->backdoor_write_with_mask(mask, (mip_val & MIP_STIP) | vstip);
   }
 }
 
