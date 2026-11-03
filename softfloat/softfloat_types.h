@@ -3,7 +3,7 @@
 #ifndef _SPIKE_SOFTFLOAT_TYPES_H
 #define _SPIKE_SOFTFLOAT_TYPES_H
 
-#include "softfloat_types_upstream.h"
+#include "../berkeley-softfloat-3/source/include/softfloat_types.h"
 
 /*----------------------------------------------------------------------------
 | OCP 8-bit floating-point (OFP8) types.

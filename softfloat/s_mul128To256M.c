@@ -1,1 +1,0 @@
-../berkeley-softfloat-3/source/s_mul128To256M.c

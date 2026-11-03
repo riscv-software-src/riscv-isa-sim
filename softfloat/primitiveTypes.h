@@ -2,4 +2,4 @@
 
 #include "platform.h"
 
-#include "primitiveTypes_upstream.h"
+#include "../berkeley-softfloat-3/source/include/primitiveTypes.h"

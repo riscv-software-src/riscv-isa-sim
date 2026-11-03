@@ -6,7 +6,7 @@
 #pragma GCC diagnostic ignored "-Wunused-variable"
 #endif
 
-#include "specialize_upstream.h"
+#include "../berkeley-softfloat-3/source/RISCV/specialize.h"
 
 #ifdef __GNUC__
 #pragma GCC diagnostic pop

@@ -1,1 +1,0 @@
-../berkeley-softfloat-3/source/RISCV/s_commonNaNToF32UI.c
