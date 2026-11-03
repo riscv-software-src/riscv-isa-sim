@@ -21,7 +21,6 @@ float16_t f16_recip7( float16_t );
 float16_t f16_max( float16_t, float16_t );
 float16_t f16_min( float16_t, float16_t );
 
-float32_t bf16_to_f32( bfloat16_t );
 e4m3_t bf16_to_e4m3( bfloat16_t, bool );
 e5m2_t bf16_to_e5m2( bfloat16_t, bool );
 uint_fast16_t bf16_classify( bfloat16_t );
@@ -46,10 +45,6 @@ float64_t f64_max( float64_t, float64_t );
 float64_t f64_min( float64_t, float64_t );
 
 uint_fast16_t f128_classify( float128_t );
-
-bfloat16_t ui32_to_bf16( uint32_t );
-
-bfloat16_t i32_to_bf16( int32_t );
 
 float16_t e4m3_to_f16( e4m3_t );
 bfloat16_t e4m3_to_bf16( e4m3_t );
