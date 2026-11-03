@@ -82,13 +82,13 @@ for n in 8 16 64 128 512; do
 done
 bash $CI/test-mnret-double-trap $INSTALL/bin/spike $RUN/mnret-double-trap
 bash $CI/test-mcontrol6-napot-maskmax $INSTALL/bin/spike $RUN/mcontrol6-napot-maskmax
-LD_LIBRARY_PATH=$INSTALL/lib ./test-libriscv $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
-LD_LIBRARY_PATH=$INSTALL/lib ./test-customext $BUILD/pk/pk dummy-slliuw | grep "Executed successfully"
-LD_LIBRARY_PATH=$INSTALL/lib ./test-custom-csr $BUILD/pk/pk customcsr | grep "Executed successfully"
-LD_LIBRARY_PATH=$INSTALL/lib ./test-dcsr-cause | grep "Executed successfully"
-LD_LIBRARY_PATH=$INSTALL/lib ./test-debug-wfi | grep "Executed successfully"
-LD_LIBRARY_PATH=$INSTALL/lib ./test-resethaltreq-priority | grep "Executed successfully"
-LD_LIBRARY_PATH=$INSTALL/lib ./test-dret-pelp | grep "Executed successfully"
+LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-libriscv $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
+LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-customext $BUILD/pk/pk dummy-slliuw | grep "Executed successfully"
+LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-custom-csr $BUILD/pk/pk customcsr | grep "Executed successfully"
+LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-dcsr-cause | grep "Executed successfully"
+LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-debug-wfi | grep "Executed successfully"
+LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-resethaltreq-priority | grep "Executed successfully"
+LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-dret-pelp | grep "Executed successfully"
 
 echo "DTB discovery tests"
 g++ -std=c++2a -I$INSTALL/include -I$CI/dtb-discovery/devices-sample -L$INSTALL/lib  $CI/dtb-discovery/test-dtb-discovery.cc $CI/dtb-discovery/devices-sample/led-device.cc -lriscv -o test-dtb-discovery
@@ -102,7 +102,7 @@ for dts in "$DTS_DIR"/*.dts; do
     name=$(basename "$dts" .dts)
     dtb="$TMP_DTB_DIR/$name.dtb"
     dtc -I dts -O dtb "$dts" -o "$dtb"
-    LD_LIBRARY_PATH=$INSTALL/lib ./test-dtb-discovery  --dtb="$dtb"  $BUILD/pk/pk  hello 
+    LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-dtb-discovery  --dtb="$dtb"  $BUILD/pk/pk  hello
 done
 
 # tests for #2462
