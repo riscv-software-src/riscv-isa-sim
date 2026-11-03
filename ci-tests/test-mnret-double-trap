@@ -4,6 +4,7 @@ set -e
 SPIKE=$1
 RUN=$2
 CI="$(cd "$(dirname "${BASH_SOURCE[0]}")" >/dev/null 2>&1 && pwd)"
+command -v riscv64-linux-gnu-gcc > /dev/null && HOST=riscv64-linux-gnu || HOST=riscv64-unknown-elf
 
 mkdir -p "$RUN"
 cd "$RUN"
@@ -16,7 +17,7 @@ for xlen in 32 64; do
       vs) mnpp=1; mnpv=1 ;;
       vu) mnpp=0; mnpv=1 ;;
     esac
-    riscv64-linux-gnu-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie \
+    $HOST-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie \
       -march=rv${xlen}gc -mabi=$(test $xlen -eq 64 && echo lp64d || echo ilp32d) \
       -Wl,--build-id=none -Wl,-Ttext-segment=0x80000000 \
       -Wl,--section-start=.mnret_target=0x81000000 \

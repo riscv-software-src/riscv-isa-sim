@@ -12,6 +12,8 @@ EXTENSIONS="$6"
 ABI="$7"
 SPIKE_PATH="$8"
 
+command -v riscv64-linux-gnu-gcc > /dev/null && HOST=riscv64-linux-gnu || HOST=riscv64-unknown-elf
+
 CONFIGDIR="$ROOT"/ci-tests/snippy-tests
 
 CONFIG="test-$ARCH-$ABI.yaml"
@@ -24,7 +26,7 @@ tmpelf="$base".tmp.elf
 # exclude lr.rl and sc.aq as they don't make sense
 "$CONFIGDIR"/generate-snippy-test.sh --march "$ARCH" --mtriple "$TRIPLE" --extensions "$EXTENSIONS" --num-instrs $NUMINSTRS --ignore-opcode-regex "C_JR|C_JALR|EBREAK|ECALL|C_.*(SP|HINT|UNIMP).*|LR_.*_RL|SC_.*_AQ" > "$CONFIG"
 llvm-snippy "$CONFIG" -o "$tmpelf" --seed 1 -riscv-disable-misaligned-access --layout-include-dir "$ROOT"/ci-tests/snippy-tests
-riscv64-linux-gnu-gcc -O0 -march="$ARCH" -mabi="$ABI" -T "$tmpelf".ld -T "$CONFIGDIR"/linker-entry.ld "$tmpelf" "$BOOTCODE" -nostdlib -static -o "$testfile" -Wl,--build-id=none
+$HOST-gcc -O0 -march="$ARCH" -mabi="$ABI" -T "$tmpelf".ld -T "$CONFIGDIR"/linker-entry.ld "$tmpelf" "$BOOTCODE" -nostdlib -static -o "$testfile" -Wl,--build-id=none
 
 error=0
 # the execution trace is huge, so keep it in a file and only show its tail on failure
