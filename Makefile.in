@@ -399,7 +399,7 @@ install-config-hdrs : config.h
 
 install-hdrs : $(install_hdrs)
 	$(MKINSTALLDIRS) $(install_hdrs_dir)
-	for file in $(subst $(src_dir)/,,$^); \
+	for file in $(patsubst $(src_dir)/%,%,$^); \
   do \
 		$(MKINSTALLDIRS) $(install_hdrs_dir)/`dirname $$file`; \
     $(INSTALL_HDR) $(src_dir)/$$file $(install_hdrs_dir)/`dirname $$file`; \
