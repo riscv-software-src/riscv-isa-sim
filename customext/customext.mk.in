@@ -5,7 +5,5 @@ customext_subproject_deps = \
 	softfloat \
 
 customext_srcs = \
-	dummy_rocc.cc \
-	cflush.cc \
 
 customext_install_shared_lib = yes

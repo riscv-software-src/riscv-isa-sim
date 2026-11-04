@@ -54,7 +54,7 @@ mmu_t::~mmu_t()
 
 void mmu_t::flush_icache()
 {
-  for (size_t i = 0; i < ICACHE_ENTRIES; i++)
+  for (size_t i = 0; i < std::size(icache); i++)
     icache[i].tag = -1;
 }
 
@@ -110,7 +110,7 @@ reg_t mmu_t::translate(mem_access_info_t access_info, reg_t len)
   return paddr;
 }
 
-inline mmu_t::insn_parcel_t mmu_t::perform_intrapage_fetch(reg_t vaddr, uintptr_t host_addr, reg_t paddr)
+inline insn_parcel_t mmu_t::perform_intrapage_fetch(reg_t vaddr, uintptr_t host_addr, reg_t paddr)
 {
   insn_parcel_t res;
 
@@ -122,7 +122,7 @@ inline mmu_t::insn_parcel_t mmu_t::perform_intrapage_fetch(reg_t vaddr, uintptr_
   return from_le(res);
 }
 
-mmu_t::insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
+insn_parcel_t mmu_t::fetch_slow_path(reg_t vaddr)
 {
   if  (auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, vaddr, TLB_FLAGS & ~TLB_CHECK_TRIGGERS); tlb_hit) {
     // Fast path for simple cases

@@ -24,13 +24,14 @@
 
 class processor_t;
 class mmu_t;
-typedef reg_t (*insn_func_t)(processor_t*, insn_t, reg_t);
+struct icache_entry_t;
+typedef std::tuple<reg_t, icache_entry_t*> (*insn_func_t)(processor_t*, icache_entry_t*, insn_t, reg_t);
 class simif_t;
 class trap_t;
 class extension_t;
 class disassembler_t;
 
-reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t pc);
+std::tuple<reg_t, icache_entry_t*> illegal_instruction(processor_t* p, icache_entry_t*, insn_t insn, reg_t pc);
 
 struct insn_desc_t
 {
@@ -320,7 +321,7 @@ public:
   void set_vxsat() {
     state.vxsat->write(1);
   }
-  reg_t throw_instruction_address_misaligned(reg_t pc);
+  std::tuple<reg_t, icache_entry_t*> throw_instruction_address_misaligned(reg_t pc);
   reg_t legalize_privilege(reg_t);
   void set_privilege(reg_t, bool);
   const char* get_privilege_string() const;
@@ -366,7 +367,7 @@ public:
   bool is_waiting_for_interrupt() const { return state.in_wfi; };
 
   void check_if_lpad_required();
-  reg_t set_lpad_expected(reg_t pc);
+  std::tuple<reg_t, icache_entry_t*> set_lpad_expected(reg_t pc);
 
   reg_t select_an_interrupt_with_default_priority(reg_t enabled_interrupts) const;
 

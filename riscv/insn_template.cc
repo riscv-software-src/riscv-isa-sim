@@ -7,13 +7,14 @@
 
 #define PROLOGUE \
   reg_t npc = sext_xlen(pc + insn_length(OPCODE)); \
+  icache_entry_t* next_icache_entry = icache_entry + insn_length(OPCODE) / sizeof(insn_parcel_t); \
   if (!p->extension_enabled(EXT_ZCA)) assume(insn_length(OPCODE) % 4 == 0)
 
 #define EPILOGUE \
   trace_opcode(p, OPCODE, insn); \
-  return npc
+  return std::make_tuple(npc, next_icache_entry)
 
-reg_t fast_rv32i_NAME(processor_t* p, insn_t insn, reg_t pc)
+std::tuple<reg_t, icache_entry_t*> fast_rv32i_NAME(processor_t* p, icache_entry_t* icache_entry, insn_t insn, reg_t pc)
 {
   #define xlen 32
   PROLOGUE;
@@ -22,7 +23,7 @@ reg_t fast_rv32i_NAME(processor_t* p, insn_t insn, reg_t pc)
   #undef xlen
 }
 
-reg_t fast_rv64i_NAME(processor_t* p, insn_t insn, reg_t pc)
+std::tuple<reg_t, icache_entry_t*> fast_rv64i_NAME(processor_t* p, icache_entry_t* icache_entry, insn_t insn, reg_t pc)
 {
   #define xlen 64
   PROLOGUE;
@@ -34,7 +35,7 @@ reg_t fast_rv64i_NAME(processor_t* p, insn_t insn, reg_t pc)
 #undef DECODE_MACRO_USAGE_LOGGED
 #define DECODE_MACRO_USAGE_LOGGED 1
 
-reg_t logged_rv32i_NAME(processor_t* p, insn_t insn, reg_t pc)
+std::tuple<reg_t, icache_entry_t*> logged_rv32i_NAME(processor_t* p, icache_entry_t* icache_entry, insn_t insn, reg_t pc)
 {
   #define xlen 32
   PROLOGUE;
@@ -43,7 +44,7 @@ reg_t logged_rv32i_NAME(processor_t* p, insn_t insn, reg_t pc)
   #undef xlen
 }
 
-reg_t logged_rv64i_NAME(processor_t* p, insn_t insn, reg_t pc)
+std::tuple<reg_t, icache_entry_t*> logged_rv64i_NAME(processor_t* p, icache_entry_t* icache_entry, insn_t insn, reg_t pc)
 {
   #define xlen 64
   PROLOGUE;
@@ -58,7 +59,7 @@ reg_t logged_rv64i_NAME(processor_t* p, insn_t insn, reg_t pc)
 #undef DECODE_MACRO_USAGE_LOGGED
 #define DECODE_MACRO_USAGE_LOGGED 0
 
-reg_t fast_rv32e_NAME(processor_t* p, insn_t insn, reg_t pc)
+std::tuple<reg_t, icache_entry_t*> fast_rv32e_NAME(processor_t* p, icache_entry_t* icache_entry, insn_t insn, reg_t pc)
 {
   #define xlen 32
   PROLOGUE;
@@ -67,7 +68,7 @@ reg_t fast_rv32e_NAME(processor_t* p, insn_t insn, reg_t pc)
   #undef xlen
 }
 
-reg_t fast_rv64e_NAME(processor_t* p, insn_t insn, reg_t pc)
+std::tuple<reg_t, icache_entry_t*> fast_rv64e_NAME(processor_t* p, icache_entry_t* icache_entry, insn_t insn, reg_t pc)
 {
   #define xlen 64
   PROLOGUE;
@@ -79,7 +80,7 @@ reg_t fast_rv64e_NAME(processor_t* p, insn_t insn, reg_t pc)
 #undef DECODE_MACRO_USAGE_LOGGED
 #define DECODE_MACRO_USAGE_LOGGED 1
 
-reg_t logged_rv32e_NAME(processor_t* p, insn_t insn, reg_t pc)
+std::tuple<reg_t, icache_entry_t*> logged_rv32e_NAME(processor_t* p, icache_entry_t* icache_entry, insn_t insn, reg_t pc)
 {
   #define xlen 32
   PROLOGUE;
@@ -88,7 +89,7 @@ reg_t logged_rv32e_NAME(processor_t* p, insn_t insn, reg_t pc)
   #undef xlen
 }
 
-reg_t logged_rv64e_NAME(processor_t* p, insn_t insn, reg_t pc)
+std::tuple<reg_t, icache_entry_t*> logged_rv64e_NAME(processor_t* p, icache_entry_t* icache_entry, insn_t insn, reg_t pc)
 {
   #define xlen 64
   PROLOGUE;

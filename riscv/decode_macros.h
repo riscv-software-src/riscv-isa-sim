@@ -234,6 +234,7 @@ static inline bool is_aligned(const unsigned val, const unsigned pos)
   do { if (unlikely((x) & ~p->pc_alignment_mask())) \
         return p->throw_instruction_address_misaligned(x); \
        npc = sext_xlen(x); \
+       next_icache_entry = icache_entry - MMU.icache_index(pc) + MMU.icache_index(npc); \
      } while (0)
 
 #define set_special_pc(x, special) \
@@ -314,7 +315,7 @@ inline freg_t f128_negate(freg_t a)
 }
 
 #define validate_csr(which, write) ({ \
-  if (!STATE.serialized) return PC_SERIALIZE_BEFORE; \
+  if (!STATE.serialized) return std::make_tuple(PC_SERIALIZE_BEFORE, next_icache_entry); \
   STATE.serialized = false; \
   /* permissions check occurs in get_csr */ \
   (which); })

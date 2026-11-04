@@ -156,11 +156,6 @@ inline void processor_t::update_histogram(reg_t pc)
     pc_histogram[pc]++;
 }
 
-// These two functions are expected to be inlined by the compiler separately in
-// the processor_t::step() loop. The logged variant is used in the slow path
-static inline reg_t execute_insn_fast(processor_t* p, reg_t pc, insn_fetch_t fetch) {
-  return fetch.func(p, fetch.insn, pc);
-}
 static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t fetch)
 {
   if (p->get_log_commits_enabled()) {
@@ -168,15 +163,16 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
     commit_log_stash_privilege(p);
   }
 
-  reg_t npc;
-
   try {
-    npc = fetch.func(p, fetch.insn, pc);
+    auto [npc, _] = fetch.func(p, nullptr, fetch.insn, pc);
     if (npc != PC_SERIALIZE_BEFORE) {
       if (p->get_log_commits_enabled()) {
         commit_log_print_insn(p, pc, fetch.insn);
       }
-     }
+    }
+    p->update_histogram(pc);
+
+    return npc;
   } catch(mem_trap_t& t) {
       //handle segfault in midlle of vector load/store
       if (p->get_log_commits_enabled()) {
@@ -191,9 +187,6 @@ static inline reg_t execute_insn_logged(processor_t* p, reg_t pc, insn_fetch_t f
   } catch(...) {
     throw;
   }
-  p->update_histogram(pc);
-
-  return npc;
 }
 
 bool processor_t::slow_path() const
@@ -301,17 +294,13 @@ void processor_t::step(size_t n)
         // Main simulation loop, fast path.
         for (auto ic_entry = _mmu->access_icache(state.pc); instret < n; instret++) {
           auto fetch = ic_entry->data;
-          ic_entry = ic_entry->next;
-          auto new_pc = execute_insn_fast(this, state.pc, fetch);
-          if (unlikely(ic_entry->tag != new_pc)) {
-            ic_entry = &_mmu->icache[_mmu->icache_index(new_pc)];
-            _mmu->icache[_mmu->icache_index(state.pc)].next = ic_entry;
-            if (ic_entry->tag != new_pc) {
-              advance_pc(new_pc);
-              break;
-            }
+          auto [new_pc, new_ic_entry] = fetch.func(this, ic_entry, fetch.insn, state.pc);
+          if (unlikely(new_ic_entry->tag != new_pc)) {
+            advance_pc(new_pc);
+            break;
           }
-          state.pc = ic_entry->tag;
+          ic_entry = new_ic_entry;
+          state.pc = new_pc;
         }
       }
     }

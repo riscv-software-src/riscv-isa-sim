@@ -594,12 +594,12 @@ void processor_t::check_if_lpad_required()
   }
 }
 
-reg_t processor_t::set_lpad_expected(reg_t pc)
+std::tuple<reg_t, icache_entry_t*> processor_t::set_lpad_expected(reg_t pc)
 {
   auto p = this;
   if (ZICFILP_xLPE(state.v, state.prv))
     state.elp = elp_t::LP_EXPECTED;
-  return pc;
+  return std::make_tuple(pc, mmu->icache_entry(pc));
 }
 
 void processor_t::disasm(insn_t insn)
@@ -678,7 +678,7 @@ const insn_desc_t insn_desc_t::illegal_instruction = {
   &::illegal_instruction, &::illegal_instruction, &::illegal_instruction, &::illegal_instruction
 };
 
-reg_t illegal_instruction(processor_t UNUSED *p, insn_t insn, reg_t UNUSED pc)
+std::tuple<reg_t, icache_entry_t*> illegal_instruction(processor_t UNUSED *p, icache_entry_t UNUSED *icache_entry, insn_t insn, reg_t UNUSED pc)
 {
   // The illegal instruction can be longer than ILEN bits, where the tval will
   // contain the first ILEN bits of the faulting instruction. We hard-code the
@@ -686,7 +686,7 @@ reg_t illegal_instruction(processor_t UNUSED *p, insn_t insn, reg_t UNUSED pc)
   throw trap_illegal_instruction(insn.bits() & 0xffffffffULL);
 }
 
-reg_t processor_t::throw_instruction_address_misaligned(reg_t pc)
+std::tuple<reg_t, icache_entry_t*> processor_t::throw_instruction_address_misaligned(reg_t pc)
 {
   throw trap_instruction_address_misaligned(state.v, pc, 0, 0);
 }
@@ -762,14 +762,14 @@ void processor_t::register_base_instructions()
   #undef DECLARE_INSN
 
   #define DEFINE_INSN(name) \
-    extern reg_t fast_rv32i_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t fast_rv64i_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t fast_rv32e_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t fast_rv64e_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t logged_rv32i_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t logged_rv64i_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t logged_rv32e_##name(processor_t*, insn_t, reg_t); \
-    extern reg_t logged_rv64e_##name(processor_t*, insn_t, reg_t);
+    extern std::tuple<reg_t, icache_entry_t*> fast_rv32i_##name(processor_t*, icache_entry_t*, insn_t, reg_t); \
+    extern std::tuple<reg_t, icache_entry_t*> fast_rv64i_##name(processor_t*, icache_entry_t*, insn_t, reg_t); \
+    extern std::tuple<reg_t, icache_entry_t*> fast_rv32e_##name(processor_t*, icache_entry_t*, insn_t, reg_t); \
+    extern std::tuple<reg_t, icache_entry_t*> fast_rv64e_##name(processor_t*, icache_entry_t*, insn_t, reg_t); \
+    extern std::tuple<reg_t, icache_entry_t*> logged_rv32i_##name(processor_t*, icache_entry_t*, insn_t, reg_t); \
+    extern std::tuple<reg_t, icache_entry_t*> logged_rv64i_##name(processor_t*, icache_entry_t*, insn_t, reg_t); \
+    extern std::tuple<reg_t, icache_entry_t*> logged_rv32e_##name(processor_t*, icache_entry_t*, insn_t, reg_t); \
+    extern std::tuple<reg_t, icache_entry_t*> logged_rv64e_##name(processor_t*, icache_entry_t*, insn_t, reg_t);
   #include "insn_list.h"
   #undef DEFINE_INSN
 

@@ -43,6 +43,8 @@ const reg_t PGSIZE = 1 << PGSHIFT;
 #define MMU_OBSERVE_STORE(addr, data, length)
 #endif
 
+typedef uint16_t insn_parcel_t;
+
 struct insn_fetch_t
 {
   insn_func_t func;
@@ -51,7 +53,6 @@ struct insn_fetch_t
 
 struct icache_entry_t {
   reg_t tag;
-  icache_entry_t* next;
   insn_fetch_t data;
 };
 
@@ -318,6 +319,11 @@ public:
     return (addr / PC_ALIGN) % ICACHE_ENTRIES;
   }
 
+  inline icache_entry_t* icache_entry(reg_t addr)
+  {
+    return &icache[icache_index(addr)];
+  }
+
   template<typename T>
   T ALWAYS_INLINE fetch_jump_table(reg_t addr) {
     T res = 0;
@@ -334,7 +340,6 @@ public:
 
     insn_fetch_t fetch = {proc->decode_insn(insn), insn};
     entry->tag = addr;
-    entry->next = &icache[icache_index(addr + length)];
     entry->data = fetch;
 
     auto [check_tracer, _, paddr] = access_tlb(tlb_insn, addr, TLB_FLAGS, TLB_CHECK_TRACER);
@@ -408,7 +413,7 @@ private:
   reg_t blocksz;
 
   // implement an instruction cache for simulator performance
-  icache_entry_t icache[ICACHE_ENTRIES];
+  icache_entry_t icache[ICACHE_ENTRIES + sizeof(insn_bits_t) / sizeof(insn_parcel_t)];
 
   // implement a TLB for simulator performance
   static const reg_t TLB_ENTRIES = 256;
@@ -444,8 +449,6 @@ private:
   reg_t walk(mem_access_info_t access_info);
 
   // handle uncommon cases: TLB misses, page faults, MMIO
-  typedef uint16_t insn_parcel_t;
-
   insn_parcel_t fetch_slow_path(reg_t addr);
   insn_parcel_t perform_intrapage_fetch(reg_t vaddr, uintptr_t host_addr, reg_t paddr);
 
