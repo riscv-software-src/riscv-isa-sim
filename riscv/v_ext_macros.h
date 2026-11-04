@@ -7,6 +7,7 @@
 #include "fp_arith.h"
 #include "zvbdot.h"
 #include <functional>
+#include <initializer_list>
 
 //
 // vector: masking skip helper
@@ -61,6 +62,35 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   }
 }
 
+struct vector_source_t {
+  reg_t reg;
+  float emul;
+  reg_t eew;
+};
+
+// Vector Operands (norm:vreg_source_eew_rsv): overlapping source groups
+// must have the same EEW. Fractional groups still occupy a whole register.
+// EMUL=0 denotes an absent operand, not a fractional register group.
+static inline bool is_overlapped_sources(std::initializer_list<vector_source_t> sources)
+{
+  for (auto a = sources.begin(); a != sources.end(); ++a) {
+    if (a->emul == 0)
+      continue;
+    for (auto b = a + 1; b != sources.end(); ++b)
+      if (b->emul != 0 && a->eew != b->eew &&
+          is_overlapped(a->reg, a->emul, b->reg, b->emul))
+        return true;
+  }
+  return false;
+}
+
+// Treat the implicit mask (also used by merge and carry instructions) as
+// another source with EEW=1. Explicit masks and accumulators are described
+// just like other sources. This check is independent of vl and vstart.
+#define VI_CHECK_SOURCES(...) \
+  require(!is_overlapped_sources({ \
+    {0, insn.v_vm() ? 0.0f : 1.0f, 1}, __VA_ARGS__}))
+
 #define VI_NON_ALTFMT_INSN \
   require(P.VU.altfmt == 0); \
 
@@ -105,11 +135,7 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   require_align(insn.rs2(), vemul); \
   require((nf * flmul) <= (NVPR / 4) && \
           (insn.rd() + nf * flmul) <= NVPR); \
-  /* ST basis vs2 is a data source (EEW=elt_width); masked stores (vm=0) shall */ \
-  /* not overlap v0 mask */ \
-  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
-                          insn.rs2(), vemul, elt_width, \
-                          insn.rs2(), vemul, elt_width, 0); \
+  VI_CHECK_SOURCES({insn.rs2(), vemul, elt_width}); \
 
 #define VI_CHECK_LD_INDEX(elt_width) \
   VI_CHECK_ST_INDEX(elt_width); \
@@ -136,11 +162,8 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   if (insn.rd() != insn.rs2()) \
     require_noover(insn.rd(), 1, insn.rs2(), P.VU.vflmul); \
   require_align(insn.rs2(), P.VU.vflmul); \
-  /* Data sources vs2/vs1 (EEW=SEW) and v0 mask (EEW=1); masked ops must keep */ \
-  /* each source clear of v0, and the sources disjoint only if EEW differs */ \
-  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
-                          insn.rs2(), P.VU.vflmul, P.VU.vsew, \
-                          insn.rs1(), P.VU.vflmul, P.VU.vsew, is_vs1); \
+  VI_CHECK_SOURCES({insn.rs2(), P.VU.vflmul, P.VU.vsew}, \
+                   {insn.rs1(), (is_vs1) ? P.VU.vflmul : 0, P.VU.vsew}); \
   if (is_vs1) { \
     if (insn.rd() != insn.rs1()) \
       require_noover(insn.rd(), 1, insn.rs1(), P.VU.vflmul); \
@@ -149,11 +172,8 @@ static inline bool is_overlapped_widen(const int astart, int asize,
 
 #define VI_CHECK_SSS(is_vs1) \
   require_vm; \
-  /* Data sources vs2/vs1 (EEW=SEW) and v0 mask (EEW=1); masked ops must keep */ \
-  /* each source clear of v0, and the sources disjoint only if EEW differs */ \
-  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
-                          insn.rs2(), P.VU.vflmul, P.VU.vsew, \
-                          insn.rs1(), P.VU.vflmul, P.VU.vsew, is_vs1); \
+  VI_CHECK_SOURCES({insn.rs2(), P.VU.vflmul, P.VU.vsew}, \
+                   {insn.rs1(), (is_vs1) ? P.VU.vflmul : 0, P.VU.vsew}); \
   if (P.VU.vflmul > 1) { \
     require_align(insn.rd(), P.VU.vflmul); \
     require_align(insn.rs2(), P.VU.vflmul); \
@@ -177,55 +197,12 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   VI_CHECK_STORE(elt_width, is_mask_ldst); \
   require_vm; \
 
-// Sentinel: use the implicit v0 (vm) mask rather than an explicit mask operand.
-// -1 is never a valid vector register number (0..31) and fits the `int`
-// operands of is_overlapped(), so it produces no sign/overflow warnings.
-#define MASK_IS_V0 (-1)
-
-// Enforce the RVV spec "Vector Operands" source-overlap rules:
-//   * A mask register source has EEW=1 (occupies exactly register 0), so in a
-//     masked (vm=0) instruction a DATA source (eew != 1) that overlaps the
-//     implicit v0 mask (or an explicit mask operand) is a reserved encoding
-//     and must trap.
-//   * Two source register groups that overlap with different EEWs are reserved.
-//     When their EEWs are equal the overlap is allowed.
-// A source descriptor whose eew == 1 is itself a mask and is skipped by the
-// v0/data rule (mask-on-mask overlap is legal).
-//   mask_reg   - explicit mask operand register (non-negative, e.g. the vs1 of
-//                vcompress.vm), or MASK_IS_V0 for the implicit v0 (vm) mask.
-//   mask_emul  - EMUL of the explicit mask operand (ignored when mask is v0).
-//   a_reg/a_emul/a_eew  - source A register group, EMUL, EEW.
-//   b_*         - optional source B descriptor (unused when b_present == 0).
-//   b_present  - 1 if a second data source exists, else 0.
-#define VI_CHECK_SOURCE_OVERLAP(mask_reg, mask_emul, \
-                                a_reg, a_emul, a_eew, \
-                                b_reg, b_emul, b_eew, b_present) \
-  if ((reg_t)(mask_reg) != (reg_t)MASK_IS_V0) { \
-    /* explicit mask operand (EEW=1, always active) must not overlap */ \
-    /* any data source */ \
-    if ((a_eew) != 1) \
-      require_noover((mask_reg), (mask_emul), (a_reg), (a_emul)); \
-    if ((b_present) && (b_eew) != 1) \
-      require_noover((mask_reg), (mask_emul), (b_reg), (b_emul)); \
-  } else if (insn.v_vm() == 0) { \
-    /* implicit v0 (vm) mask (EEW=1) must not overlap any data source */ \
-    if ((a_eew) != 1) \
-      require_noover(0, 1, (a_reg), (a_emul)); \
-    if ((b_present) && (b_eew) != 1) \
-      require_noover(0, 1, (b_reg), (b_emul)); \
-  } \
-  /* cross-source differing-EEW overlap */ \
-  if ((b_present) && (a_eew) != (b_eew)) \
-    require_noover((a_reg), (a_emul), (b_reg), (b_emul))
-
-#define VI_CHECK_DSS(is_vs1) \
+#define VI_CHECK_DSS_IMPL(is_vs1, is_acc) \
   VI_WIDE_CHECK_COMMON; \
   require_align(insn.rs2(), P.VU.vflmul); \
-  /* Data sources vs2/vs1 (EEW=SEW) and v0 mask (EEW=1); masked ops must keep */ \
-  /* each source clear of v0, and the sources disjoint only if EEW differs */ \
-  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
-                          insn.rs2(), P.VU.vflmul, P.VU.vsew, \
-                          insn.rs1(), P.VU.vflmul, P.VU.vsew, is_vs1); \
+  VI_CHECK_SOURCES({insn.rs2(), P.VU.vflmul, P.VU.vsew}, \
+                   {insn.rs1(), (is_vs1) ? P.VU.vflmul : 0, P.VU.vsew}, \
+                   {insn.rd(), (is_acc) ? P.VU.vflmul * 2 : 0, P.VU.vsew * 2}); \
   if (P.VU.vflmul < 1) { \
     require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs2(), P.VU.vflmul); \
   } else { \
@@ -240,33 +217,19 @@ static inline bool is_overlapped_widen(const int astart, int asize,
     } \
   }
 
-// VI_CHECK_DSS_MACC: like VI_CHECK_DSS but for widening instructions that READ
-// vd back (accumulate/negate-accumulate, e.g. vfwmacc/vfwnmacc/vfwnmsac and the
-// integer vwmacc* family). For these the whole widened vd group is read at
-// EEW=2*SEW, so ANY vd overlap with a SEW source reads a register at two EEWs,
-// which is reserved. Unlike VI_CHECK_DSS it therefore uses a strict
-// require_noover for the dest-vs-source checks in all cases instead
-// of the write-only widening exemption
+#define VI_CHECK_DSS(is_vs1) \
+  VI_CHECK_DSS_IMPL(is_vs1, false)
+
+// An accumulator is also a source, with EEW=2*SEW. Ordinary widening
+// instructions retain the legal overlap with the high part of vd.
 #define VI_CHECK_DSS_MACC(is_vs1) \
-  VI_WIDE_CHECK_COMMON; \
-  require_align(insn.rs2(), P.VU.vflmul); \
-  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
-                          insn.rs2(), P.VU.vflmul, P.VU.vsew, \
-                          insn.rs1(), P.VU.vflmul, P.VU.vsew, is_vs1); \
-  require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs2(), P.VU.vflmul); \
-  if (is_vs1) { \
-    require_align(insn.rs1(), P.VU.vflmul); \
-    require_noover(insn.rd(), P.VU.vflmul * 2, insn.rs1(), P.VU.vflmul); \
-  }
+  VI_CHECK_DSS_IMPL(is_vs1, true)
 
 #define VI_CHECK_DDS(is_rs) \
   VI_WIDE_CHECK_COMMON; \
   require_align(insn.rs2(), P.VU.vflmul * 2); \
-  /* DDS: vs2 read at EEW=2*SEW, vs1 at EEW=SEW; check picks up the differing- */ \
-  /* EEW cross-source case plus the v0-mask rule */ \
-  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
-                          insn.rs2(), P.VU.vflmul * 2, P.VU.vsew * 2, \
-                          insn.rs1(), P.VU.vflmul, P.VU.vsew, is_rs); \
+  VI_CHECK_SOURCES({insn.rs2(), P.VU.vflmul * 2, P.VU.vsew * 2}, \
+                   {insn.rs1(), (is_rs) ? P.VU.vflmul : 0, P.VU.vsew}); \
   if (is_rs) { \
      require_align(insn.rs1(), P.VU.vflmul); \
     if (P.VU.vflmul < 1) { \
@@ -280,25 +243,19 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   VI_NARROW_CHECK_COMMON(2); \
   if (insn.rd() != insn.rs2()) \
     require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vflmul * 2); \
-  /* SDS narrow: vs2 (EEW=2*SEW) vs. vs1 (EEW=SEW) and the v0 mask */ \
-  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
-                          insn.rs2(), P.VU.vflmul * 2, P.VU.vsew * 2, \
-                          insn.rs1(), P.VU.vflmul, P.VU.vsew, is_vs1); \
-  if (is_vs1) { \
+  VI_CHECK_SOURCES({insn.rs2(), P.VU.vflmul * 2, P.VU.vsew * 2}, \
+                   {insn.rs1(), (is_vs1) ? P.VU.vflmul : 0, P.VU.vsew}); \
+  if (is_vs1) \
     require_align(insn.rs1(), P.VU.vflmul); \
-  }
 
 #define VI_CHECK_SQS(is_vs1) \
   VI_NARROW_CHECK_COMMON(4); \
   if (insn.rd() != insn.rs2()) \
     require_noover(insn.rd(), P.VU.vflmul, insn.rs2(), P.VU.vflmul * 4); \
-  /* SQS narrow: vs2 (EEW=4*SEW) vs. vs1 (EEW=SEW) and the v0 mask */ \
-  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
-                          insn.rs2(), P.VU.vflmul * 4, P.VU.vsew * 4, \
-                          insn.rs1(), P.VU.vflmul, P.VU.vsew, is_vs1); \
-  if (is_vs1) { \
+  VI_CHECK_SOURCES({insn.rs2(), P.VU.vflmul * 4, P.VU.vsew * 4}, \
+                   {insn.rs1(), (is_vs1) ? P.VU.vflmul : 0, P.VU.vsew}); \
+  if (is_vs1) \
     require_align(insn.rs1(), P.VU.vflmul); \
-  }
 
 #define VI_CHECK_REDUCTION(is_wide) \
   require_vector(true); \
@@ -307,31 +264,15 @@ static inline bool is_overlapped_widen(const int astart, int asize,
   } \
   require_align(insn.rs2(), P.VU.vflmul); \
   require(P.VU.vstart->read() == 0); \
-  /* Scalar accumulator lives in element 0 of a group with */ \
-  /* EMUL = ceil(EEW/VLEN), regardless of LMUL */ \
   const reg_t src_eew = P.VU.vsew * ((is_wide) ? 2 : 1); \
-  const reg_t src_emul = std::max(1U, (unsigned)(src_eew / P.VU.VLEN)); \
-  if (insn.v_vm() == 0) { \
-    /* Only the destination may overlap the mask */ \
-    /* A source register in the mask is reserved: the same register would */ \
-    /* be read at two EEWs (mask EEW=1 vs source EEW). */ \
-    if (P.VU.vsew != 1) \
-      require_noover(0, 1, insn.rs2(), P.VU.vflmul); \
-    if (src_eew != 1) \
-      require_noover(0, 1, insn.rs1(), src_emul); \
-  } \
-  /* Differing-EEW cross-source overlap among data sources stays illegal. */ \
-  if (P.VU.vsew != src_eew) \
-    require_noover(insn.rs2(), P.VU.vflmul, insn.rs1(), src_emul); \
+  const float src_emul = (src_eew + P.VU.VLEN - 1) / P.VU.VLEN; \
+  VI_CHECK_SOURCES({insn.rs2(), P.VU.vflmul, P.VU.vsew}, \
+                   {insn.rs1(), src_emul, src_eew}); \
 
 #define VI_CHECK_SLIDE(is_over) \
   require_align(insn.rs2(), P.VU.vflmul); \
   require_align(insn.rd(), P.VU.vflmul); \
-  /* Slide: single data source vs2 (EEW=SEW); slot forms are masked (vm=0), so */ \
-  /* vs2 must not overlap v0 mask */ \
-  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
-                          insn.rs2(), P.VU.vflmul, P.VU.vsew, \
-                          insn.rs2(), P.VU.vflmul, P.VU.vsew, 0); \
+  VI_CHECK_SOURCES({insn.rs2(), P.VU.vflmul, P.VU.vsew}); \
   require_vm; \
   if (is_over) \
     require(insn.rd() != insn.rs2()); \
@@ -1427,11 +1368,7 @@ VI_VX_ULOOP({ \
 #define VI_ST(stride, offset, elt_width, is_mask_ldst) \
   const reg_t nf = insn.v_nf() + 1; \
   VI_CHECK_STORE(elt_width, is_mask_ldst); \
-  /* Store data vs3 (EEW=veew) is a data source and masked stores (vm=0) must */ \
-  /* not have it intersecting v0 mask */ \
-  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
-                          insn.rd(), vemul, veew, \
-                          insn.rd(), vemul, veew, 0); \
+  VI_CHECK_SOURCES({insn.rd(), float(nf * emul), veew}); \
   const reg_t vl = is_mask_ldst ? ((P.VU.vl->read() + 7) / 8) : P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
@@ -1450,22 +1387,9 @@ VI_VX_ULOOP({ \
 #define VI_ST_INDEX(elt_width, is_seg) \
   const reg_t nf = insn.v_nf() + 1; \
   VI_CHECK_ST_INDEX(elt_width); \
-  /* Data vs3 (EEW=SEW) and index vs2 (EEW=elt_width) are both */ \
-  /* data sources; enforce v0-mask + different-EEW rules */ \
-  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
-                          insn.rd(), P.VU.vflmul, P.VU.vsew, \
-                          insn.rs2(), vemul, elt_width, 1); \
-  /* Every data source group (EEW=SEW) must be disjoint from the index source */ \
-  /* group (EEW=elt_width) whenever the EEWs differ: a register read as both */ \
-  /* data and index is read with two EEWs in one instruction, which is reserved */ \
-  /* (norm:vreg_source_eew_rsv). VI_CHECK_SOURCE_OVERLAP above only covers the */ \
-  /* first data group, so loop over all NFIELDS groups (segment stores). */ \
-  /* Equal-EEW source overlap (elt_width == vsew) is a single-EEW read; legal. */ \
-  for (reg_t idx = 1; idx < nf; ++idx) { \
-    reg_t seg_data = insn.rd() + flmul * idx; \
-    if (elt_width != P.VU.vsew) \
-      require_noover(seg_data, P.VU.vflmul, insn.rs2(), vemul); \
-  } \
+  /* Segment fields occupy consecutive groups, even for fractional LMUL. */ \
+  VI_CHECK_SOURCES({insn.rd(), float(nf * flmul), P.VU.vsew}, \
+                   {insn.rs2(), vemul, elt_width}); \
   const reg_t vl = P.VU.vl->read(); \
   const reg_t baseAddr = RS1; \
   const reg_t vs3 = insn.rd(); \
@@ -1565,11 +1489,7 @@ VI_VX_ULOOP({ \
   VECTOR_END;
 
 #define VI_EXT_CHECK(div) \
-  /* Single data source vs2 read at EEW=SEW/div; later require_vm */ \
-  /* (vm=0) must keep it clear of the v0 mask */ \
-  VI_CHECK_SOURCE_OVERLAP( \
-      MASK_IS_V0, 1, insn.rs2(), P.VU.vflmul / div, P.VU.vsew / div, \
-      insn.rs2(), P.VU.vflmul / div, P.VU.vsew / div, 0); \
+  VI_CHECK_SOURCES({insn.rs2(), P.VU.vflmul / (div), P.VU.vsew / (div)}); \
   require(insn.rd() != insn.rs2()); \
   require_vm; \
   require(((float)P.VU.vflmul / div) >= 0.125 && ((float)P.VU.vflmul / div) <= 8 ); \
@@ -2001,9 +1921,6 @@ VI_VX_ULOOP({ \
 #define VI_VFP_VF_LOOP_WIDE(BODY16, BODY32) \
   VI_VFP_VF_LOOP_WIDE_IMPL(VI_CHECK_DSS(false), BODY16, BODY32)
 
-// Accumulate (multiply-accumulate) widening reads vd back at EEW=2*SEW, so it
-// must use the strict dest-overlap checker (VI_CHECK_DSS_MACC) rather than the
-// write-only widening exemption used by VI_VFP_*_LOOP_WIDE.
 #define VI_VFP_VF_LOOP_WIDE_MACC(BODY16, BODY32) \
   VI_VFP_VF_LOOP_WIDE_IMPL(VI_CHECK_DSS_MACC(false), BODY16, BODY32)
 
@@ -2384,11 +2301,8 @@ default: \
   require_align(insn.rs1(), P.VU.vflmul); \
   require_align(insn.rs2(), P.VU.vflmul); \
   require_vm; \
-  /* Data sources rs1/rs2 (EEW=vsew) are masked (vm=0), so each must */ \
-  /* not overlap with v0 mask */ \
-  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
-                          insn.rs1(), P.VU.vflmul, P.VU.vsew, \
-                          insn.rs2(), P.VU.vflmul, P.VU.vsew, 1); \
+  VI_CHECK_SOURCES({insn.rs1(), P.VU.vflmul, P.VU.vsew}, \
+                   {insn.rs2(), P.VU.vflmul, P.VU.vsew}); \
   require_noover(insn.rd(), 1, insn.rs1(), P.VU.vflmul); \
   require_noover(insn.rd(), 1, insn.rs2(), P.VU.vflmul)
 
@@ -2403,11 +2317,8 @@ default: \
   require(ci * vd_eew < P.VU.VLEN); \
   require_align(insn.rd(), vd_emul); \
   require_vm; \
-  /* Data sources rs1 (EEW=vsew) and the 8-reg vs2 group (EEW=vsew) */ \
-  /* are masked (vm=0) and shall not overlap v0; vs2 group base = rs2 & ~7. */ \
-  VI_CHECK_SOURCE_OVERLAP(MASK_IS_V0, 1, \
-                          insn.rs1(), 1, P.VU.vsew, \
-                          insn.rs2() & ~7, 8, P.VU.vsew, 1); \
+  VI_CHECK_SOURCES({insn.rs1(), 1, P.VU.vsew}, \
+                   {vs2, 8, P.VU.vsew}); \
   require_noover(insn.rd(), vd_emul, insn.rs1(), 1); \
   require_noover(insn.rd(), vd_emul, vs2, 8)
 
