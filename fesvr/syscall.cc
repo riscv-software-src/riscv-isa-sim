@@ -432,14 +432,13 @@ reg_t syscall_t::sys_getmainvars(reg_t pbuf, reg_t limit, reg_t a2, reg_t a3, re
     words[i+1] = htif->to_target<uint64_t>(sz + pbuf);
     sz += args[i].length() + 1;
   }
+  if (sz > limit)
+    return -ENOMEM;
 
   std::vector<char> bytes(sz);
   memcpy(bytes.data(), words.data(), sizeof(words[0]) * words.size());
   for (size_t i = 0; i < args.size(); i++)
     strcpy(&bytes[htif->from_target(words[i+1]) - pbuf], args[i].c_str());
-
-  if (bytes.size() > limit)
-    return -ENOMEM;
 
   memif->write(pbuf, bytes.size(), bytes.data());
   return 0;
