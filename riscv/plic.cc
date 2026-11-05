@@ -79,10 +79,10 @@ plic_t::plic_t(const simif_t* sim, uint32_t ndev)
 {
   // PLIC contexts are contiguous in memory even if harts are discontiguous.
   for (const auto& [hart_id, hart] : sim->get_harts()) {
-    contexts.push_back(plic_context_t(hart, true));
+    contexts.emplace_back(hart, true);
 
     if (hart->extension_enabled_const('S')) {
-      contexts.push_back(plic_context_t(hart, false));
+      contexts.emplace_back(hart, false);
     }
   }
 }

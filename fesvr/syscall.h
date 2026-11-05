@@ -32,8 +32,9 @@ class syscall_t : public device_t
 
   void set_chroot(const char* where);
   
- private:
   const char* identity() override { return "syscall_proxy"; }
+
+ private:
 
   htif_t* htif;
   memif_t* memif;

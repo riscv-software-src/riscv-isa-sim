@@ -17,7 +17,7 @@ class abstract_device_t {
   virtual bool load(reg_t addr, size_t len, uint8_t* bytes) = 0;
   virtual bool store(reg_t addr, size_t len, const uint8_t* bytes) = 0;
   virtual reg_t size() = 0;
-  virtual ~abstract_device_t() {}
+  virtual ~abstract_device_t() = default;
   virtual void tick(reg_t UNUSED rtc_ticks) {}
 };
 
@@ -27,7 +27,7 @@ class device_factory_t {
 public:
   virtual abstract_device_t* parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base, const std::vector<std::string>& sargs) const = 0;
   virtual std::string generate_dts(const sim_t* sim, const std::vector<std::string>& sargs) const = 0;
-  virtual ~device_factory_t() {}
+  virtual ~device_factory_t() = default;
 };
 
 // Type for holding all registered MMIO plugins by name.
