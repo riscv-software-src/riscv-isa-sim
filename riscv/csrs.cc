@@ -626,6 +626,8 @@ void base_status_csr_t::maybe_flush_tlb(const reg_t newval) noexcept {
        | (has_page ? (MSTATUS_MXR | MSTATUS_SUM) : 0)
       ))
     proc->get_mmu()->flush_tlb();
+  else if ((newval ^ read()) & (MSTATUS_MIE | MSTATUS_SIE))
+    proc->get_mmu()->flush_icache_for_triggers();
 }
 
 namespace {
@@ -1178,6 +1180,7 @@ bool medeleg_csr_t::unlogged_write(const reg_t val) noexcept {
     | (proc->extension_enabled(EXT_ZICNTR)?
         (1 << CAUSE_HARDWARE_ERROR_FAULT) : 0)
     ;
+  proc->get_mmu()->flush_icache_for_triggers();
   return basic_csr_t::unlogged_write(val & mask);
 }
 
@@ -2199,8 +2202,17 @@ void srmcfg_csr_t::verify_permissions(insn_t insn, bool write UNUSED) const {
   masked_csr_t::verify_permissions(insn, write);
 }
 
-context_csr_t::context_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+trigger_masked_csr_t::trigger_masked_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
   masked_csr_t(proc, addr, mask, init) {
+}
+
+bool trigger_masked_csr_t::unlogged_write(const reg_t val) noexcept {
+  proc->get_mmu()->flush_icache_for_triggers();
+  return masked_csr_t::unlogged_write(val);
+}
+
+context_csr_t::context_csr_t(processor_t* const proc, const reg_t addr, const reg_t mask, const reg_t init):
+  trigger_masked_csr_t(proc, addr, mask, init) {
 }
 
 void context_csr_t::verify_permissions(insn_t insn, bool write UNUSED) const {

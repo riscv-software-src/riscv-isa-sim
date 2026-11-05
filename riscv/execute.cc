@@ -278,7 +278,7 @@ void processor_t::step(size_t n)
           if (unlikely(is_waiting_for_interrupt()))
             return;
 
-          insn_fetch_t fetch = mmu->load_insn(state.pc);
+          insn_fetch_t fetch = mmu->access_icache(state.pc)->data;
           if (debug && !state.serialized)
             disasm(fetch.insn);
           auto new_pc = execute_insn_logged(this, state.pc, fetch);

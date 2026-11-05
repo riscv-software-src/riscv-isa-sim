@@ -275,7 +275,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
      (1 << CAUSE_SOFTWARE_CHECK_FAULT) : 0) |
     (proc->extension_enabled(EXT_ZICNTR)?
      (1 << CAUSE_HARDWARE_ERROR_FAULT) : 0);
-  hedeleg = std::make_shared<masked_csr_t>(proc, CSR_HEDELEG, hedeleg_mask, 0);
+  hedeleg = std::make_shared<trigger_masked_csr_t>(proc, CSR_HEDELEG, hedeleg_mask, 0);
   if (xlen == 32) {
     add_hypervisor_csr(CSR_HEDELEG, std::make_shared<rv32_low_csr_t>(proc, CSR_HEDELEG, hedeleg));
     add_hypervisor_csr(CSR_HEDELEGH, std::make_shared<hedelegh_csr_t>(proc, CSR_HEDELEGH, hedeleg));
@@ -310,7 +310,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     add_csr(CSR_TDATA3, std::make_shared<tdata3_csr_t>(proc, CSR_TDATA3));
     add_csr(CSR_TINFO, std::make_shared<tinfo_csr_t>(proc, CSR_TINFO));
     if (!proc->extension_enabled_const('S')) {
-      add_csr(CSR_TCONTROL, tcontrol = std::make_shared<masked_csr_t>(proc, CSR_TCONTROL, CSR_TCONTROL_MPTE | CSR_TCONTROL_MTE, 0));
+      add_csr(CSR_TCONTROL, tcontrol = std::make_shared<trigger_masked_csr_t>(proc, CSR_TCONTROL, CSR_TCONTROL_MPTE | CSR_TCONTROL_MTE, 0));
     }
   } else {
     add_csr(CSR_TDATA1, std::make_shared<const_csr_t>(proc, CSR_TDATA1, 0));
