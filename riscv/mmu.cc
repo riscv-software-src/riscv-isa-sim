@@ -596,10 +596,8 @@ reg_t mmu_t::s2xlate(mem_access_info_t access_info, reg_t gpa, access_type type,
   // VS-stage address translation (for spike HSXLEN == VSXLEN always) else
   // tinst is set to 0x2000/0x2020 - for RV32 read/write respectively for
   // VS-stage address translation else set to 0
-  int tinst = 0;
-  tinst |= (is_for_vs_pt_addr == true) ? 0x2000 : 0;
-  tinst |= ((proc->get_const_xlen() == 64) && (is_for_vs_pt_addr == true)) ? 0x1000 : 0;
-  tinst |= ((type == STORE) && (is_for_vs_pt_addr == true)) ? 0x0020 : 0;
+  const int tinst = !is_for_vs_pt_addr ? 0 :
+    (proc->get_const_xlen() == 64 ? 0x3000 : 0x2000) + (type == STORE ? 0x20 : 0);
 
   reg_t base = vm.ptbase;
   if ((gpa & ~maxgpa) == 0) {
