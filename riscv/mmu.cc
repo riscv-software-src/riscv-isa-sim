@@ -585,14 +585,14 @@ reg_t mmu_t::s2xlate(mem_access_info_t access_info, reg_t gpa, access_type type,
   if (!virt)
     return gpa;
 
-  vm_info vm = decode_vm_info(proc->get_const_xlen(), true, 0, proc->get_state()->hgatp->read());
+  const vm_info vm = decode_vm_info(proc->get_const_xlen(), true, 0, proc->get_state()->hgatp->read());
   if (vm.levels == 0)
     return gpa;
 
-  int maxgpabits = vm.levels * vm.idxbits + vm.widenbits + PGSHIFT;
-  reg_t maxgpa = (1ULL << maxgpabits) - 1;
+  const int maxgpabits = vm.levels * vm.idxbits + vm.widenbits + PGSHIFT;
+  const reg_t maxgpa = (1ULL << maxgpabits) - 1;
 
-  bool mxr = !is_for_vs_pt_addr && (proc->state.sstatus->readvirt(false) & MSTATUS_MXR);
+  const bool mxr = !is_for_vs_pt_addr && (proc->state.sstatus->readvirt(false) & MSTATUS_MXR);
   // tinst is set to 0x3000/0x3020 - for RV64 read/write respectively for
   // VS-stage address translation (for spike HSXLEN == VSXLEN always) else
   // tinst is set to 0x2000/0x2020 - for RV32 read/write respectively for
