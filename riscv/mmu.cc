@@ -580,6 +580,7 @@ reg_t mmu_t::s2xlate(mem_access_info_t access_info, reg_t gpa, access_type type,
   const reg_t gva = access_info.transformed_vaddr;
   const bool virt = access_info.effective_virt;
   const bool hlvx = access_info.flags.hlvx && !is_for_vs_pt_addr;
+  const bool ss_access = access_info.flags.ss_access && !is_for_vs_pt_addr;
 
   if (!virt)
     return gpa;
@@ -635,9 +636,9 @@ reg_t mmu_t::s2xlate(mem_access_info_t access_info, reg_t gpa, access_type type,
         break;
       } else if (!(pte & PTE_U)) {
         break;
-      } else if (type == FETCH || hlvx ? !(pte & PTE_X) :
-                 type == LOAD          ? !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
-                                         !((pte & PTE_R) && (pte & PTE_W))) {
+      } else if (type == FETCH || hlvx      ? !(pte & PTE_X) :
+                 type == LOAD && !ss_access ? !(pte & PTE_R) && !(mxr && (pte & PTE_X)) :
+                                              !((pte & PTE_R) && (pte & PTE_W))) {
         break;
       } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
         break;
