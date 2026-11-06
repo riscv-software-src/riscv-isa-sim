@@ -575,8 +575,12 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
   return true;
 }
 
-reg_t mmu_t::s2xlate(reg_t gva, reg_t gpa, access_type type, access_type trap_type, bool virt, bool hlvx, bool is_for_vs_pt_addr)
+reg_t mmu_t::s2xlate(mem_access_info_t access_info, reg_t gpa, access_type type, access_type trap_type, bool is_for_vs_pt_addr)
 {
+  const reg_t gva = access_info.transformed_vaddr;
+  const bool virt = access_info.effective_virt;
+  const bool hlvx = access_info.flags.hlvx && !is_for_vs_pt_addr;
+
   if (!virt)
     return gpa;
 
@@ -717,7 +721,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     throw trap_store_access_fault(virt, addr, 0, 0);
 
   if (vm.levels == 0)
-    return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, trap_type, virt, hlvx, false) & ~page_mask; // zero-extend from xlen
+    return s2xlate(access_info, addr & ((reg_t(2) << (proc->xlen-1))-1), type, trap_type, false) & ~page_mask; // zero-extend from xlen
 
   if (svukte_fault(addr, access_info)) {
     throw_page_fault_exception(virt, addr, trap_type);
@@ -740,7 +744,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     const reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
 
     // check that physical address of PTE is legal
-    const auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, trap_type, virt, false, true);
+    const auto pte_paddr = s2xlate(access_info, base + idx * vm.ptesize, LOAD, trap_type, true);
     const reg_t pte = pte_load(pte_paddr, addr, virt, trap_type, vm.ptesize);
     const reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
     const bool pbmte = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_PBMTE) : (proc->get_state()->menvcfg->read() & MENVCFG_PBMTE);
@@ -796,7 +800,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
         if (hade) {
           // Check for write permission to the first-stage PT in second-stage
           // PTE and set the D bit in the second-stage PTE if needed
-          s2xlate(addr, base + idx * vm.ptesize, STORE, trap_type, virt, false, true);
+          s2xlate(access_info, base + idx * vm.ptesize, STORE, trap_type, true);
           // set accessed and possibly dirty bits.
           pte_store(pte_paddr, pte | ad, addr, virt, trap_type, vm.ptesize);
         } else {
@@ -812,7 +816,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
                             | (vpn & ((reg_t(1) << napot_bits) - 1))
                             | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
       const reg_t phys = page_base | (addr & page_mask);
-      return s2xlate(addr, phys, type, trap_type, virt, hlvx, false) & ~page_mask;
+      return s2xlate(access_info, phys, type, trap_type, false) & ~page_mask;
     }
   }
 
