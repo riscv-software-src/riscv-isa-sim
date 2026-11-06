@@ -702,22 +702,19 @@ bool mmu_t::svukte_fault(reg_t addr, mem_access_info_t access_info)
 
 reg_t mmu_t::walk(mem_access_info_t access_info)
 {
-  access_type type = access_info.type;
-  reg_t addr = access_info.transformed_vaddr;
-  bool virt = access_info.effective_virt;
-  bool hlvx = access_info.flags.hlvx;
-  reg_t mode = access_info.effective_priv;
-  reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
-  reg_t satp = proc->get_state()->satp->readvirt(virt);
-  vm_info vm = decode_vm_info(proc->get_const_xlen(), false, mode, satp);
-  access_type trap_type = type;
-  bool ss_access = access_info.flags.ss_access;
+  const access_type type = access_info.type;
+  const reg_t addr = access_info.transformed_vaddr;
+  const bool virt = access_info.effective_virt;
+  const bool hlvx = access_info.flags.hlvx;
+  const reg_t mode = access_info.effective_priv;
+  const reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
+  const reg_t satp = proc->get_state()->satp->readvirt(virt);
+  const vm_info vm = decode_vm_info(proc->get_const_xlen(), false, mode, satp);
+  const bool ss_access = access_info.flags.ss_access;
+  const access_type trap_type = ss_access ? STORE : type;
 
-  if (ss_access) {
-    if (vm.levels == 0)
-      throw trap_store_access_fault(virt, addr, 0, 0);
-    trap_type = STORE;
-  }
+  if (ss_access && vm.levels == 0)
+    throw trap_store_access_fault(virt, addr, 0, 0);
 
   if (vm.levels == 0)
     return s2xlate(addr, addr & ((reg_t(2) << (proc->xlen-1))-1), type, trap_type, virt, hlvx, false) & ~page_mask; // zero-extend from xlen
@@ -726,32 +723,32 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     throw_page_fault_exception(virt, addr, trap_type);
   }
 
-  bool s_mode = mode == PRV_S;
-  bool sum = proc->state.sstatus->readvirt(virt) & MSTATUS_SUM;
-  bool mxr = (proc->state.sstatus->readvirt(false) | proc->state.sstatus->readvirt(virt)) & MSTATUS_MXR;
+  const bool s_mode = mode == PRV_S;
+  const bool sum = proc->state.sstatus->readvirt(virt) & MSTATUS_SUM;
+  const bool mxr = (proc->state.sstatus->readvirt(false) | proc->state.sstatus->readvirt(virt)) & MSTATUS_MXR;
 
   // verify bits xlen-1:va_bits-1 are all equal
-  int va_bits = PGSHIFT + vm.levels * vm.idxbits;
-  reg_t mask = (reg_t(1) << (proc->xlen - (va_bits-1))) - 1;
-  reg_t masked_msbs = (addr >> (va_bits-1)) & mask;
+  const int va_bits = PGSHIFT + vm.levels * vm.idxbits;
+  const reg_t mask = (reg_t(1) << (proc->xlen - (va_bits-1))) - 1;
+  const reg_t masked_msbs = (addr >> (va_bits-1)) & mask;
   if (masked_msbs != 0 && masked_msbs != mask)
-    vm.levels = 0;
+    throw_page_fault_exception(virt, addr, trap_type);
 
   reg_t base = vm.ptbase;
   for (int i = vm.levels - 1; i >= 0; i--) {
-    int ptshift = i * vm.idxbits;
-    reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
+    const int ptshift = i * vm.idxbits;
+    const reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
 
     // check that physical address of PTE is legal
-    auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, trap_type, virt, false, true);
-    reg_t pte = pte_load(pte_paddr, addr, virt, trap_type, vm.ptesize);
-    reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
-    bool pbmte = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_PBMTE) : (proc->get_state()->menvcfg->read() & MENVCFG_PBMTE);
-    bool hade = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_ADUE) : (proc->get_state()->menvcfg->read() & MENVCFG_ADUE);
-    bool sse = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_SSE) : (proc->get_state()->menvcfg->read() & MENVCFG_SSE);
-    bool ss_page = !(pte & PTE_R) && (pte & PTE_W) && !(pte & PTE_X);
-    auto pte_pbmt = get_field(pte, PTE_PBMT);
-    int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
+    const auto pte_paddr = s2xlate(addr, base + idx * vm.ptesize, LOAD, trap_type, virt, false, true);
+    const reg_t pte = pte_load(pte_paddr, addr, virt, trap_type, vm.ptesize);
+    const reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
+    const bool pbmte = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_PBMTE) : (proc->get_state()->menvcfg->read() & MENVCFG_PBMTE);
+    const bool hade = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_ADUE) : (proc->get_state()->menvcfg->read() & MENVCFG_ADUE);
+    const bool sse = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_SSE) : (proc->get_state()->menvcfg->read() & MENVCFG_SSE);
+    const bool ss_page = !(pte & PTE_R) && (pte & PTE_W) && !(pte & PTE_X);
+    const auto pte_pbmt = get_field(pte, PTE_PBMT);
+    const int napot_bits = ((pte & PTE_N) ? (ctz(ppn) + 1) : 0);
 
     if (pte & PTE_RSVD) {
       break;
@@ -793,7 +790,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
                                             !(pte & PTE_W)) {
       break;
     } else {
-      reg_t ad = PTE_A | ((type == STORE) * PTE_D);
+      const reg_t ad = PTE_A | ((type == STORE) * PTE_D);
 
       if ((pte & ad) != ad) {
         if (hade) {
@@ -809,12 +806,12 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
       }
 
       // for superpage or Svnapot NAPOT mappings, make a fake leaf PTE for the TLB's benefit.
-      reg_t vpn = addr >> PGSHIFT;
+      const reg_t vpn = addr >> PGSHIFT;
 
-      reg_t page_base = ((ppn & ~((reg_t(1) << napot_bits) - 1))
-                        | (vpn & ((reg_t(1) << napot_bits) - 1))
-                        | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
-      reg_t phys = page_base | (addr & page_mask);
+      const reg_t page_base = ((ppn & ~((reg_t(1) << napot_bits) - 1))
+                            | (vpn & ((reg_t(1) << napot_bits) - 1))
+                            | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
+      const reg_t phys = page_base | (addr & page_mask);
       return s2xlate(addr, phys, type, trap_type, virt, hlvx, false) & ~page_mask;
     }
   }
