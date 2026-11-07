@@ -642,6 +642,8 @@ reg_t mmu_t::s2xlate(mem_access_info_t access_info, reg_t gpa, access_type type,
         break;
       } else if ((ppn & ((reg_t(1) << ptshift) - 1)) != 0) {
         break;
+      } else if (ss_access && pte_pbmt == PBMT_IO) {
+        throw trap_store_access_fault(virt, gva, 0, 0);
       } else {
         reg_t ad = PTE_A | ((type == STORE) * PTE_D);
 
