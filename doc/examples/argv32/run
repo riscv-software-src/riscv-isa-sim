@@ -1,0 +1,6 @@
+#!/bin/bash -ex
+riscv64-linux-gnu-as -mabi=ilp32 -march=rv32i start.S -o start.o
+riscv64-linux-gnu-gcc -mabi=ilp32 -march=rv32i -c rt.c
+riscv64-linux-gnu-gcc -mabi=ilp32 -march=rv32i -c argv.c
+riscv64-linux-gnu-ld -m elf32lriscv_ilp32 --image-base 0x80000000 start.o rt.o argv.o -o argv
+spike -d --isa=RV32I --priv=M argv firstarg secondarg thirdarg
