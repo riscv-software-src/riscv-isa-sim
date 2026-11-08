@@ -677,6 +677,20 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
           sbcs.sbbusyerror = true;
         }
         break;
+      case DM_HALTSUM0:
+      case DM_HALTSUM1:
+        {
+          // Each haltsum0 bit is one hart; each haltsum1 bit is a group of 32
+          unsigned shift = address == DM_HALTSUM1 ? 5 : 0;
+          unsigned span = 32U << shift;
+          unsigned base = dmcontrol.hartsel & ~(span - 1);
+          for (unsigned n = base; n < base + span && n < sim->get_cfg().nprocs(); n++) {
+            size_t hart_id = sim->get_cfg().hartids[n];
+            if (hart_available(hart_id) && hart_state[hart_id].halted)
+              result |= 1U << ((n - base) >> shift);
+          }
+        }
+        break;
       case DM_AUTHDATA:
         result = challenge;
         break;
