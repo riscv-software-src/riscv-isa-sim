@@ -492,6 +492,9 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
       result = -1;
       D(fprintf(stderr, "\ndmi_read(0x%02x (progbuf[%d]) -> -1 because abstractcs.busy==true\n", address, i));
     }
+    if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
+      abstractcs.cmderr = CMDERR_BUSY;
+    }
     if (!abstractcs.busy && ((abstractauto.autoexecprogbuf >> i) & 1)) {
       perform_abstract_command();
     }
@@ -1147,6 +1150,10 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
     if (!abstractcs.busy)
       write32(program_buffer, i, value);
 
+    if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
+      abstractcs.cmderr = CMDERR_BUSY;
+    }
+
     if (!abstractcs.busy && ((abstractauto.autoexecprogbuf >> i) & 1)) {
       perform_abstract_command();
     }
@@ -1226,10 +1233,20 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         return true;
 
       case DM_ABSTRACTCS:
+        if (abstractcs.busy) {
+          if (abstractcs.cmderr == CMDERR_NONE)
+            abstractcs.cmderr = CMDERR_BUSY;
+          return true;
+        }
         abstractcs.cmderr = (cmderr_t) (((uint32_t) (abstractcs.cmderr)) & (~(uint32_t)(get_field(value, DM_ABSTRACTCS_CMDERR))));
         return true;
 
       case DM_ABSTRACTAUTO:
+        if (abstractcs.busy) {
+          if (abstractcs.cmderr == CMDERR_NONE)
+            abstractcs.cmderr = CMDERR_BUSY;
+          return true;
+        }
         if (config.support_abstractauto) {
           abstractauto.autoexecprogbuf = get_field(value,
               DM_ABSTRACTAUTO_AUTOEXECPROGBUF);
