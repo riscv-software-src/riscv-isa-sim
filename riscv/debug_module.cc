@@ -1266,10 +1266,11 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
           return true;
         }
         if (config.support_abstractauto) {
+          // Bits for data and progbuf registers that don't exist are 0.
           abstractauto.autoexecprogbuf = get_field(value,
-              DM_ABSTRACTAUTO_AUTOEXECPROGBUF);
+              DM_ABSTRACTAUTO_AUTOEXECPROGBUF) & ((1U << config.progbufsize) - 1);
           abstractauto.autoexecdata = get_field(value,
-              DM_ABSTRACTAUTO_AUTOEXECDATA);
+              DM_ABSTRACTAUTO_AUTOEXECDATA) & ((1U << config.datacount) - 1);
         }
         return true;
       case DM_SBCS:
