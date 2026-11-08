@@ -1205,7 +1205,8 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
             return true;
 
           dmcontrol.haltreq = get_field(value, DM_DMCONTROL_HALTREQ);
-          dmcontrol.resumereq = get_field(value, DM_DMCONTROL_RESUMEREQ);
+          // resumereq is ignored if haltreq is set
+          dmcontrol.resumereq = get_field(value, DM_DMCONTROL_RESUMEREQ) && !dmcontrol.haltreq;
           dmcontrol.hartreset = get_field(value, DM_DMCONTROL_HARTRESET);
           dmcontrol.ndmreset = get_field(value, DM_DMCONTROL_NDMRESET);
           if (config.support_hasel)
