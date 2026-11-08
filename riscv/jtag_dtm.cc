@@ -44,13 +44,15 @@ jtag_dtm_t::jtag_dtm_t(debug_module_t *dm, unsigned required_rti_cycles) :
   _tck(false), _tms(false), _tdi(false), _tdo(false),
   dtmcontrol((abits << DTM_DTMCS_ABITS_OFFSET) | 1),
   dmi(DMI_OP_STATUS_SUCCESS << DTM_DMI_OP_OFFSET),
+  rti_remaining(0),
+  dmistat(DMI_OP_STATUS_SUCCESS),
   _state(TEST_LOGIC_RESET)
 {
 }
 
 void jtag_dtm_t::reset() {
   _state = TEST_LOGIC_RESET;
-  busy_stuck = false;
+  dmistat = DMI_OP_STATUS_SUCCESS;
   rti_remaining = 0;
   dmi = 0;
 }
@@ -144,16 +146,13 @@ void jtag_dtm_t::capture_dr()
       dr_length = 32;
       break;
     case IR_DTMCONTROL:
-      dr = dtmcontrol;
+      dr = set_field(dtmcontrol, DTMCONTROL_DMISTAT, dmistat);
       dr_length = 32;
       break;
     case IR_DBUS:
-      if (rti_remaining > 0 || busy_stuck) {
-        dr = DMI_OP_STATUS_BUSY;
-        busy_stuck = true;
-      } else {
-        dr = dmi;
-      }
+      if (rti_remaining > 0 && dmistat == DMI_OP_STATUS_SUCCESS)
+        dmistat = DMI_OP_STATUS_BUSY;
+      dr = set_field(dmi, DMI_OP, dmistat);
       dr_length = abits + 34;
       break;
     case IR_BYPASS:
@@ -173,10 +172,10 @@ void jtag_dtm_t::update_dr()
         ir, dr, dr_length));
   if (ir == IR_DTMCONTROL) {
     if (dr & DTMCONTROL_DMIRESET)
-      busy_stuck = false;
+      dmistat = DMI_OP_STATUS_SUCCESS;
     if (dr & DTMCONTROL_DMIHARDRESET)
       reset();
-  } else if (ir == IR_DBUS && !busy_stuck) {
+  } else if (ir == IR_DBUS && dmistat == DMI_OP_STATUS_SUCCESS) {
     unsigned op = get_field(dr, DMI_OP);
     uint32_t data = get_field(dr, DMI_DATA);
     unsigned address = get_field(dr, DMI_ADDRESS);
@@ -195,11 +194,8 @@ void jtag_dtm_t::update_dr()
       success = dm->dmi_write(address, data);
     }
 
-    if (success) {
-      dmi = set_field(dmi, DMI_OP, DMI_OP_STATUS_SUCCESS);
-    } else {
-      dmi = set_field(dmi, DMI_OP, DMI_OP_STATUS_FAILED);
-    }
+    if (!success)
+      dmistat = DMI_OP_STATUS_FAILED;
     D(fprintf(stderr, "dmi=0x%lx\n", dmi));
 
     rti_remaining = op == DMI_OP_NOP ? 0 : required_rti_cycles;

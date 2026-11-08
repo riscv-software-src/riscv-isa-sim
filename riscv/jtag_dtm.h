@@ -60,7 +60,8 @@ class jtag_dtm_t
     // Number of Run-Test/Idle cycles needed before we call this access
     // complete.
     unsigned rti_remaining;
-    bool busy_stuck;
+    // Sticky DMI status (dmi.op, read through dtmcs.dmistat) until dmireset.
+    unsigned dmistat;
 
     jtag_state_t _state;
 
