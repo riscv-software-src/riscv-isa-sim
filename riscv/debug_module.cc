@@ -370,6 +370,23 @@ bool debug_module_t::sb_busy() const
   return sb_read_wait > 0 || sb_write_wait > 0;
 }
 
+bool debug_module_t::sb_register_present(unsigned address) const
+{
+  switch (address) {
+    case DM_SBADDRESS0: return sbcs.asize > 0;
+    case DM_SBADDRESS1: return sbcs.asize > 32;
+    case DM_SBADDRESS2: return sbcs.asize > 64;
+    case DM_SBADDRESS3: return sbcs.asize > 96;
+    case DM_SBDATA0:
+      return sbcs.access8 || sbcs.access16 || sbcs.access32 ||
+             sbcs.access64 || sbcs.access128;
+    case DM_SBDATA1: return sbcs.access64 || sbcs.access128;
+    case DM_SBDATA2:
+    case DM_SBDATA3: return sbcs.access128;
+    default: return true;
+  }
+}
+
 void debug_module_t::sb_read_start()
 {
   if (sb_busy() || sbcs.sbbusyerror) {
@@ -479,6 +496,8 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
       perform_abstract_command();
     }
 
+  } else if (!sb_register_present(address)) {
+    // Absent System Bus registers read 0.
   } else {
     switch (address) {
       case DM_DMCONTROL:
@@ -1127,6 +1146,9 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
     }
     return true;
 
+  } else if (!sb_register_present(address)) {
+    // Writes to absent System Bus registers have no effect.
+    return true;
   } else {
     switch (address) {
       case DM_DMCONTROL:

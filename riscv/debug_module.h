@@ -185,6 +185,9 @@ class debug_module_t : public abstract_device_t
     /* Return true iff a system bus access is in progress. */
     bool sb_busy() const;
 
+    /* Return false for a System Bus register that sbcs says is not present. */
+    bool sb_register_present(unsigned address) const;
+
     unsigned sb_access_bits();
 
     uint8_t *get_dmdata_checked(size_t required_registers);
