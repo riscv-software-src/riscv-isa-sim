@@ -152,6 +152,13 @@ void debug_module_t::reset()
 
   memset(&abstractauto, 0, sizeof(abstractauto));
 
+  std::fill(dmdata.begin(), dmdata.end(), 0);
+  memset(program_buffer, 0, 4 * config.progbufsize); // keep the impebreak
+  memset(sbaddress, 0, sizeof(sbaddress));
+  memset(sbdata, 0, sizeof(sbdata));
+  hawindowsel = 0;
+  std::fill(hart_array_mask.begin(), hart_array_mask.end(), false);
+
   memset(&sbcs, 0, sizeof(sbcs));
   if (config.max_sba_data_width > 0) {
     sbcs.version = 1;
