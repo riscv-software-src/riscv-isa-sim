@@ -786,10 +786,14 @@ bool debug_module_t::perform_abstract_command()
   constexpr decltype(cmdtype) CMDTYPE_ACCESS_REGISTER = 0ULL;
   constexpr decltype(cmdtype) CMDTYPE_ACCESS_MEMORY = 2ULL;
 
-  if (cmdtype == CMDTYPE_ACCESS_REGISTER)
+  // Command bits that are defined as 0
+  constexpr uint32_t ACCESS_REGISTER_ZERO = 1U << 23;
+  constexpr uint32_t ACCESS_MEMORY_ZERO = (3U << 17) | 0x3fffU;
+
+  if (cmdtype == CMDTYPE_ACCESS_REGISTER && !(command & ACCESS_REGISTER_ZERO))
     return perform_abstract_register_access();
 
-  if (cmdtype == CMDTYPE_ACCESS_MEMORY)
+  if (cmdtype == CMDTYPE_ACCESS_MEMORY && !(command & ACCESS_MEMORY_ZERO))
     return perform_abstract_memory_access();
 
   abstractcs.cmderr = CMDERR_NOTSUP;
