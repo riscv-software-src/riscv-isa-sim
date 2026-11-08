@@ -469,6 +469,19 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 {
   uint32_t result = 0;
   D(fprintf(stderr, "dmi_read(0x%x) -> ", address));
+  if (!dmstatus.authenticated) {
+    // Until the debugger authenticates, everything reads 0 except these fields.
+    if (address == DM_DMSTATUS) {
+      result = set_field(result, DM_DMSTATUS_AUTHBUSY, dmstatus.authbusy);
+      result = set_field(result, DM_DMSTATUS_VERSION, dmstatus.version);
+    } else if (address == DM_DMCONTROL) {
+      result = set_field(result, DM_DMCONTROL_DMACTIVE, dmcontrol.dmactive);
+    } else if (address == DM_AUTHDATA) {
+      result = challenge;
+    }
+    *value = result;
+    return true;
+  }
   if (address >= DM_DATA0 && address < DM_DATA0 + abstractcs.datacount) {
     unsigned i = address - DM_DATA0;
     assert(dmdata.size() >= 4);
@@ -1126,9 +1139,10 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
 {
   D(fprintf(stderr, "dmi_write(0x%x, 0x%x)\n", address, value));
 
+  // Until the debugger authenticates, writes to other registers are ignored.
   if (!dmstatus.authenticated && address != DM_AUTHDATA &&
       address != DM_DMCONTROL)
-    return false;
+    return true;
 
   if (address >= DM_DATA0 && address < DM_DATA0 + abstractcs.datacount) {
     unsigned i = address - DM_DATA0;
