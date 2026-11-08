@@ -793,6 +793,12 @@ bool debug_module_t::perform_abstract_register_access()
     return true;
   }
 
+  if (get_field(command, AC_ACCESS_REGISTER_AARPOSTINCREMENT) ||
+      (postexec && config.progbufsize == 0)) {
+    abstractcs.cmderr = CMDERR_NOTSUP;
+    return true;
+  }
+
   assert(size < 8);
   if (transfer && (1U << size) > dmdata.size()) {
     abstractcs.cmderr = CMDERR_NOTSUP;
