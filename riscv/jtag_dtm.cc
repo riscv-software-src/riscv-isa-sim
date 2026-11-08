@@ -44,7 +44,6 @@ jtag_dtm_t::jtag_dtm_t(debug_module_t *dm, unsigned required_rti_cycles) :
   _tck(false), _tms(false), _tdi(false), _tdo(false),
   dtmcontrol((abits << DTM_DTMCS_ABITS_OFFSET) | 1),
   dmi(DMI_OP_STATUS_SUCCESS << DTM_DMI_OP_OFFSET),
-  bypass(0),
   _state(TEST_LOGIC_RESET)
 {
 }
@@ -158,11 +157,10 @@ void jtag_dtm_t::capture_dr()
       dr_length = abits + 34;
       break;
     case IR_BYPASS:
-      dr = bypass;
-      dr_length = 1;
-      break;
     default:
-      fprintf(stderr, "Unsupported IR: 0x%x\n", ir);
+      // Unimplemented instructions select BYPASS, which captures 0.
+      dr = 0;
+      dr_length = 1;
       break;
   }
   D(fprintf(stderr, "Capture DR; IR=0x%x, DR=0x%lx (%d bits)\n",
@@ -178,8 +176,6 @@ void jtag_dtm_t::update_dr()
       busy_stuck = false;
     if (dr & DTMCONTROL_DMIHARDRESET)
       reset();
-  } else if (ir == IR_BYPASS) {
-    bypass = dr;
   } else if (ir == IR_DBUS && !busy_stuck) {
     unsigned op = get_field(dr, DMI_OP);
     uint32_t data = get_field(dr, DMI_DATA);
