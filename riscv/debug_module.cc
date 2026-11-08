@@ -794,7 +794,7 @@ bool debug_module_t::perform_abstract_register_access()
   }
 
   assert(size < 8);
-  if ((1U << size) > dmdata.size()) {
+  if (transfer && (1U << size) > dmdata.size()) {
     abstractcs.cmderr = CMDERR_NOTSUP;
     return true;
   }
