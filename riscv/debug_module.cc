@@ -647,9 +647,9 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
         }
         break;
       default:
+        // Unimplemented DM registers read 0
         result = 0;
-        D(fprintf(stderr, "Unexpected. Returning Error."));
-        return false;
+        break;
     }
   }
   D(fprintf(stderr, "0x%x\n", result));
@@ -1283,7 +1283,8 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         return true;
     }
   }
-  return false;
+  // Writes to unimplemented or read-only DM registers have no effect
+  return true;
 }
 
 void debug_module_t::proc_reset(unsigned id)
