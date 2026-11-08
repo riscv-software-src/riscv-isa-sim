@@ -1226,8 +1226,10 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
                 hart->halt_request = hart->HR_NONE;
               }
               if (dmcontrol.resumereq && hart_available(hart_id)) {
-                D(fprintf(stderr, "resume hart %d\n", hart_id));
-                debug_rom_flags[hart_id] |= (1 << DEBUG_ROM_FLAG_RESUME);
+                if (hart_state[hart_id].halted) {
+                  D(fprintf(stderr, "resume hart %d\n", hart_id));
+                  debug_rom_flags[hart_id] |= (1 << DEBUG_ROM_FLAG_RESUME);
+                }
                 hart_state[hart_id].resumeack = false;
               }
               if (dmcontrol.hartreset && hart_available(hart_id)) {
