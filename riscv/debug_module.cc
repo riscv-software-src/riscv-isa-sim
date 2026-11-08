@@ -476,7 +476,6 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
     switch (address) {
       case DM_DMCONTROL:
         {
-          result = set_field(result, DM_DMCONTROL_HALTREQ, dmcontrol.haltreq);
           result = set_field(result, DM_DMCONTROL_RESUMEREQ, dmcontrol.resumereq);
           result = set_field(result, DM_DMCONTROL_HARTSELHI,
               dmcontrol.hartsel >> DM_DMCONTROL_HARTSELLO_LENGTH);
