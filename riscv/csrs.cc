@@ -471,7 +471,7 @@ bool mseccfg_csr_t::get_sseed() const noexcept {
 bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   reg_t new_val = read();
 
-  if (proc->n_pmp != 0) {
+  if (proc->n_pmp != 0 && proc->extension_enabled(EXT_SMEPMP)) {
     // pmpcfg.L is 1 in any rule or entry (including disabled entries)
     const bool pmplock_recorded = std::any_of(state->pmpaddr, state->pmpaddr + proc->n_pmp,
         [](const base_pmpaddr_csr_t_p & c) { return c->is_locked(); } );
@@ -505,6 +505,8 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
     const reg_t pmm_reserved = 1; // Reserved value of mseccfg.PMM
     reg_t pmm = get_field(val, MSECCFG_PMM);
     new_val = set_field(new_val, MSECCFG_PMM, pmm != pmm_reserved ? pmm : 0);
+    if (get_field(new_val, MSECCFG_PMM) != get_field(read(), MSECCFG_PMM))
+      proc->get_mmu()->flush_tlb();
   }
 
   return basic_csr_t::unlogged_write(new_val);
