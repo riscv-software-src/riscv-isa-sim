@@ -270,9 +270,6 @@ std::optional<match_result_t> mcontrol_common_t::detect_memory_access_match(
   if (!match_address || !common_match(proc))
     return std::nullopt;
 
-  /* This is OK because this function is only called if the trigger was
-   * not inhibited by the previous trigger in the chain. */
-  set_hit(timing ? HIT_IMMEDIATELY_AFTER : HIT_BEFORE);
   return match_result_t(timing_t(timing), action, *match_address);
 }
 
@@ -631,25 +628,30 @@ std::optional<match_result_t> module_t::detect_memory_access_match(
     return std::nullopt;
 
   bool chain_ok = true;
+  std::size_t chain_start = 0; // index of the first trigger of the current chain
 
   std::optional<match_result_t> ret = std::nullopt;
-  for (auto trigger: triggers) {
+  for (std::size_t i = 0; i < triggers.size(); i++) {
+    auto trigger = triggers[i];
     if (!chain_ok) {
       chain_ok = !trigger->get_chain();
+      chain_start = i + 1;
       continue;
     }
 
-    /* Note: We call detect_memory_access_match for each trigger in a chain as long as
-     * the triggers are matching. This results in "temperature coding" so that
-     * `hit` is set on each of the consecutive triggers that matched, even if the
-     * entire chain did not match. This is allowed by the spec, because the final
-     * trigger in the chain will never get `hit` set unless the entire chain
-     * matches. */
     auto result = trigger->detect_memory_access_match(proc, operation, address, len, data);
-    if (result.has_value() && !trigger->get_chain() && (!ret.has_value() || ret->action < result->action))
-      ret = result;
+    if (result.has_value() && !trigger->get_chain()) {
+      // The whole chain matched, so all of its triggers fire. The triggers
+      // of a chain that matched only partly don't fire and keep their hit.
+      for (std::size_t j = chain_start; j <= i; j++)
+        triggers[j]->set_hit(result->timing == TIMING_BEFORE ? HIT_BEFORE : HIT_IMMEDIATELY_AFTER);
+      if (!ret.has_value() || ret->action < result->action)
+        ret = result;
+    }
 
     chain_ok = result.has_value() || !trigger->get_chain();
+    if (!trigger->get_chain())
+      chain_start = i + 1;
   }
   return ret;
 }

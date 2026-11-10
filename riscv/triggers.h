@@ -91,6 +91,7 @@ public:
   virtual action_t get_action() const { return ACTION_DEBUG_EXCEPTION; }
   virtual bool icount_check_needed() const { return false; }
   virtual void stash_read_values() {}
+  virtual void set_hit(hit_t UNUSED val) {}
 
   virtual std::optional<match_result_t> detect_memory_access_match(processor_t UNUSED * const proc,
       operation_t UNUSED operation, reg_t UNUSED address, std::size_t UNUSED len, std::optional<reg_t> UNUSED data) noexcept { return std::nullopt; }
@@ -213,7 +214,6 @@ public:
   bool get_store() const override { return store; }
   bool get_load() const override { return load; }
   action_t get_action() const override { return action; }
-  virtual void set_hit(hit_t val) = 0;
 
   std::optional<match_result_t> detect_memory_access_match(processor_t * const proc,
       operation_t operation, reg_t address, std::size_t len, std::optional<reg_t> data) noexcept override;
