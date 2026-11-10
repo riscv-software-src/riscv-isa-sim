@@ -27,7 +27,8 @@ void trigger_t::tdata2_write(processor_t UNUSED * const proc, const reg_t UNUSED
 
 action_t trigger_t::legalize_action(reg_t val, reg_t action_mask, reg_t dmode_mask) noexcept {
   reg_t act = get_field(val, action_mask);
-  return (act > ACTION_MAXVAL || (act == ACTION_DEBUG_MODE && get_field(val, dmode_mask) == 0)) ? ACTION_DEBUG_EXCEPTION : (action_t)act;
+  // There is no trace encoder, so the trace actions (2-4) are not supported.
+  return (act > ACTION_DEBUG_MODE || (act == ACTION_DEBUG_MODE && get_field(val, dmode_mask) == 0)) ? ACTION_DEBUG_EXCEPTION : (action_t)act;
 }
 
 unsigned trigger_t::legalize_mhselect(bool h_enabled) const noexcept {
