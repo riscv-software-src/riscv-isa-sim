@@ -2318,7 +2318,9 @@ void scntinhibit_csr_t::verify_permissions(insn_t insn, bool write) const {
 }
 
 bool scntinhibit_csr_t::unlogged_write(const reg_t val) noexcept {
-  state->mcountinhibit->write(state->mcounteren->read() & val);
+  // Only the bits of delegated counters are writable; leave the others alone
+  const reg_t mask = state->mcounteren->read();
+  state->mcountinhibit->write((state->mcountinhibit->read() & ~mask) | (val & mask));
   return true;
 }
 
