@@ -2580,7 +2580,7 @@ void aia_ireg_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
     if (state->prv < PRV_M && isel >= SISELECT_IPRIO && isel <= SISELECT_IPRIO_TOP && !(state->mstateen[0]->read() & MSTATEEN0_AIA))
       throw trap_illegal_instruction(insn.bits());
     // if iselect >= IMSIC and xSTATEEN_IMSIC not set
-    if (!state->v && state->prv < PRV_M && isel >= SISELECT_IMSIC && isel <= SISELECT_IMSIC_TOP && !(state->mstateen[0]->read() & MSTATEEN0_IMSIC))
+    if (state->prv < PRV_M && isel >= SISELECT_IMSIC && isel <= SISELECT_IMSIC_TOP && !(state->mstateen[0]->read() & MSTATEEN0_IMSIC))
       throw trap_illegal_instruction(insn.bits());
     if (state->v && isel >= VSISELECT_IMSIC && isel <= VSISELECT_IMSIC_TOP && !(state->hstateen[0]->read() & HSTATEEN0_IMSIC))
       throw trap_virtual_instruction(insn.bits());
