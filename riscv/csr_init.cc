@@ -522,7 +522,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
           }
           break;
           case CSR_SIREG2:
-            if (proc->extension_enabled_const(EXT_ZICNTR)) {
+            if (proc->extension_enabled_const(EXT_ZICNTR) && proc->extension_enabled_const(EXT_SMCNTRPMF)) {
               // describe address as that of CYCLE rather than MCYCLECFG,
               // so that perm checks and mcounteren checks do the right thing
               auto cyclecfg_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, csrmap[CSR_MCYCLECFG]);
