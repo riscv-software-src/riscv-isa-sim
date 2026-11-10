@@ -306,10 +306,16 @@ void mmu_t::load_slow_path(reg_t original_addr, std::size_t len,
     if (!is_misaligned_enabled())
       throw trap_load_address_misaligned(access_info.effective_virt, transformed_addr, 0, 0);
 
-    if (access_info.flags.require_alignment)
-      throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
-
     reg_t len_page0 = std::min<reg_t>(len, PGSIZE - transformed_addr % PGSIZE);
+
+    if (access_info.flags.require_alignment) {
+      // Faults found by address translation take priority over this access fault
+      translate(access_info, len_page0);
+      if (len_page0 != len)
+        translate(generate_access_info(original_addr + len_page0, LOAD, access_info.flags), len - len_page0);
+      throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
+    }
+
     load_slow_path_intrapage(len_page0, bytes, access_info);
     if (len_page0 != len) {
       auto tail_access_info = generate_access_info(original_addr + len_page0, LOAD, access_info.flags);
@@ -400,13 +406,20 @@ void mmu_t::store_slow_path(reg_t original_addr, std::size_t len,
     throw trap_store_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
 
   if (transformed_addr & (len - 1)) {
-    if (!is_misaligned_enabled())
+    // Misaligned shadow-stack AMOs raise access faults, not address-misaligned exceptions
+    if (!is_misaligned_enabled() && !access_info.flags.ss_access)
       throw trap_store_address_misaligned(access_info.effective_virt, transformed_addr, 0, 0);
 
-    if (access_info.flags.require_alignment)
-      throw trap_store_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
-
     reg_t len_page0 = std::min<reg_t>(len, PGSIZE - transformed_addr % PGSIZE);
+
+    if (access_info.flags.require_alignment) {
+      // Faults found by address translation take priority over this access fault
+      translate(access_info, len_page0);
+      if (len_page0 != len)
+        translate(generate_access_info(original_addr + len_page0, STORE, access_info.flags), len - len_page0);
+      throw trap_store_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
+    }
+
     store_slow_path_intrapage(len_page0, bytes, access_info, actually_store);
     if (len_page0 != len) {
       auto tail_access_info = generate_access_info(original_addr + len_page0, STORE, access_info.flags);
