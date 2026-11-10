@@ -477,6 +477,10 @@ std::optional<match_result_t> trap_common_t::detect_trap_match(processor_t * con
   auto xlen = proc->get_xlen();
   bool interrupt = (t.cause() & ((reg_t)1 << (xlen - 1))) != 0;
   reg_t bit = t.cause() & ~((reg_t)1 << (xlen - 1));
+  // The interrupt number is interpreted in the mode that the trap handler
+  // executes in: for a trap taken into VS-mode, the number written to vscause
+  if (interrupt && proc->get_state()->v)
+    bit = proc->get_state()->vscause->read() & ~((reg_t)1 << (xlen - 1));
   assert(bit < xlen);
   if (simple_match(interrupt, bit)) {
     hit = true;
