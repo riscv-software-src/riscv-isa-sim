@@ -63,7 +63,6 @@ void mmu_t::flush_tlb()
   memset(tlb_insn, -1, sizeof(tlb_insn));
   memset(tlb_load, -1, sizeof(tlb_load));
   memset(tlb_store, -1, sizeof(tlb_store));
-  memset(pte_cache, -1, sizeof(pte_cache));
 
   flush_icache();
 }
