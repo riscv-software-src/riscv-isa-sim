@@ -151,11 +151,22 @@ void debug_module_t::reset()
   abstractcs.progbufsize = config.progbufsize;
 
   memset(&abstractauto, 0, sizeof(abstractauto));
+  command = 0;
+  abstract_command_completed = false;
+  rti_remaining = 0;
+  memset(debug_rom_flags, 0, sizeof(debug_rom_flags));
+  for (auto& state : hart_state) {
+    // Preserve the hart's actual halted state and sticky reset history.
+    state.resumeack = false;
+    state.haltgroup = 0;
+  }
 
   std::fill(dmdata.begin(), dmdata.end(), 0);
   memset(program_buffer, 0, 4 * config.progbufsize); // keep the impebreak
   memset(sbaddress, 0, sizeof(sbaddress));
   memset(sbdata, 0, sizeof(sbdata));
+  sb_read_wait = 0;
+  sb_write_wait = 0;
   hawindowsel = 0;
   std::fill(hart_array_mask.begin(), hart_array_mask.end(), false);
 
@@ -163,6 +174,7 @@ void debug_module_t::reset()
   if (config.max_sba_data_width > 0) {
     sbcs.version = 1;
     sbcs.asize = sizeof(reg_t) * 8;
+    sbcs.sbaccess = 2;
   }
   if (config.max_sba_data_width >= 64)
     sbcs.access64 = true;
@@ -469,6 +481,10 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 {
   uint32_t result = 0;
   D(fprintf(stderr, "dmi_read(0x%x) -> ", address));
+  if (!dmcontrol.dmactive) {
+    *value = 0;
+    return true;
+  }
   if (!dmstatus.authenticated) {
     // Until the debugger authenticates, everything reads 0 except these fields.
     if (address == DM_DMSTATUS) {
@@ -1157,6 +1173,10 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
 {
   D(fprintf(stderr, "dmi_write(0x%x, 0x%x)\n", address, value));
 
+  // Only dmactive can be changed while the DM is held in reset.
+  if (!dmcontrol.dmactive && address != DM_DMCONTROL)
+    return true;
+
   // Until the debugger authenticates, writes to other registers are ignored.
   if (!dmstatus.authenticated && address != DM_AUTHDATA &&
       address != DM_DMCONTROL)
@@ -1198,9 +1218,12 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
     switch (address) {
       case DM_DMCONTROL:
         {
-          if (!dmcontrol.dmactive && get_field(value, DM_DMCONTROL_DMACTIVE))
+          bool dmactive = get_field(value, DM_DMCONTROL_DMACTIVE);
+          // Reset on deactivation, and discard any late hart writes when
+          // reactivating. The debug ROM can keep running while inactive.
+          if (!dmactive || !dmcontrol.dmactive)
             reset();
-          dmcontrol.dmactive = get_field(value, DM_DMCONTROL_DMACTIVE);
+          dmcontrol.dmactive = dmactive;
           if (!dmstatus.authenticated || !dmcontrol.dmactive)
             return true;
 
@@ -1277,18 +1300,18 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         return true;
 
       case DM_ABSTRACTAUTO:
+        if (!config.support_abstractauto)
+          return true;
         if (abstractcs.busy) {
           if (abstractcs.cmderr == CMDERR_NONE)
             abstractcs.cmderr = CMDERR_BUSY;
           return true;
         }
-        if (config.support_abstractauto) {
-          // Bits for data and progbuf registers that don't exist are 0.
-          abstractauto.autoexecprogbuf = get_field(value,
-              DM_ABSTRACTAUTO_AUTOEXECPROGBUF) & ((1U << config.progbufsize) - 1);
-          abstractauto.autoexecdata = get_field(value,
-              DM_ABSTRACTAUTO_AUTOEXECDATA) & ((1U << config.datacount) - 1);
-        }
+        // Bits for data and progbuf registers that don't exist are 0.
+        abstractauto.autoexecprogbuf = get_field(value,
+            DM_ABSTRACTAUTO_AUTOEXECPROGBUF) & ((1U << config.progbufsize) - 1);
+        abstractauto.autoexecdata = get_field(value,
+            DM_ABSTRACTAUTO_AUTOEXECDATA) & ((1U << config.datacount) - 1);
         return true;
       case DM_SBCS:
         sbcs.readonaddr = get_field(value, DM_SBCS_SBREADONADDR);
