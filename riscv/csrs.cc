@@ -2308,12 +2308,18 @@ scntinhibit_csr_t::scntinhibit_csr_t(processor_t* const proc, const reg_t addr, 
 }
 
 void scntinhibit_csr_t::verify_permissions(insn_t insn, bool write) const {
-  if (insn.csr() == address) {
-    csr_t::verify_permissions(insn, write);
-  }
-
+  // With menvcfg.CDE = 0, scountinhibit is inaccessible even from HS-mode,
+  // so accesses from VS-mode and VU-mode are illegal, not virtual
   if ((state->menvcfg->read() & MENVCFG_CDE) != MENVCFG_CDE) {
     throw trap_illegal_instruction(insn.bits());
+  }
+
+  if (state->v) {
+    throw trap_virtual_instruction(insn.bits());
+  }
+
+  if (insn.csr() == address) {
+    csr_t::verify_permissions(insn, write);
   }
 }
 
