@@ -234,11 +234,12 @@ public:
   }
   regfile_t()
   {
-    reset();
-  }
-  void reset()
-  {
     memset(data, 0, sizeof(data));
+  }
+  void reset(T value = 0)
+  {
+    for (size_t i = 0; i < N; i++)
+      data[i] = value;
   }
 private:
   T data[N];

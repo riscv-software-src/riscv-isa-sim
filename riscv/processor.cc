@@ -106,7 +106,7 @@ void state_t::reset(processor_t* const proc, reg_t max_isa)
 {
   pc = DEFAULT_RSTVEC;
   XPR.reset();
-  FPR.reset();
+  FPR.reset(freg(f32(-1)));
 
   prv = prev_prv = PRV_M;
   v = prev_v = false;
