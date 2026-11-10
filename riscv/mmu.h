@@ -578,12 +578,15 @@ private:
   void reset_triggers()
   {
     matched_trigger.reset();
+    proc->TM.clear_pending_hits();
   }
 
   void check_triggers_after()
   {
-    if (matched_trigger)
+    if (matched_trigger) {
+      proc->TM.set_pending_hits();
       throw matched_trigger.value();
+    }
   }
 
   inline bool in_mprv() const

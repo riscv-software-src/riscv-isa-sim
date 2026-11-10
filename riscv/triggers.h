@@ -297,12 +297,17 @@ public:
   unsigned count() const { return triggers.size(); }
 
   std::optional<match_result_t> detect_memory_access_match(operation_t operation, reg_t address, std::size_t len, std::optional<reg_t> data) noexcept;
+  void set_pending_hits() noexcept;
+  void clear_pending_hits() noexcept { pending_hits.clear(); }
   std::optional<match_result_t> detect_icount_match() noexcept;
   std::optional<match_result_t> detect_trap_match(const trap_t& t) noexcept;
 
   processor_t *proc;
 private:
   std::vector<trigger_t *> triggers;
+  // Triggers with timing after that fire if the instruction retires; cleared
+  // together with mmu_t::matched_trigger
+  std::vector<trigger_t *> pending_hits;
 };
 
 }

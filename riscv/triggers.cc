@@ -643,8 +643,13 @@ std::optional<match_result_t> module_t::detect_memory_access_match(
     if (result.has_value() && !trigger->get_chain()) {
       // The whole chain matched, so all of its triggers fire. The triggers
       // of a chain that matched only partly don't fire and keep their hit.
-      for (std::size_t j = chain_start; j <= i; j++)
-        triggers[j]->set_hit(result->timing == TIMING_BEFORE ? HIT_BEFORE : HIT_IMMEDIATELY_AFTER);
+      // With timing after, they fire only once the instruction retires.
+      for (std::size_t j = chain_start; j <= i; j++) {
+        if (result->timing == TIMING_BEFORE)
+          triggers[j]->set_hit(HIT_BEFORE);
+        else
+          pending_hits.push_back(triggers[j]);
+      }
       if (!ret.has_value() || ret->action < result->action)
         ret = result;
     }
@@ -654,6 +659,12 @@ std::optional<match_result_t> module_t::detect_memory_access_match(
       chain_start = i + 1;
   }
   return ret;
+}
+
+void module_t::set_pending_hits() noexcept
+{
+  for (auto trigger: pending_hits)
+    trigger->set_hit(HIT_IMMEDIATELY_AFTER);
 }
 
 std::optional<match_result_t> module_t::detect_icount_match() noexcept
