@@ -629,6 +629,7 @@ std::optional<match_result_t> module_t::detect_memory_access_match(
 
   bool chain_ok = true;
   std::size_t chain_start = 0; // index of the first trigger of the current chain
+  std::optional<timing_t> chain_timing; // timing of the mcontrol triggers of the current chain
 
   std::optional<match_result_t> ret = std::nullopt;
   for (std::size_t i = 0; i < triggers.size(); i++) {
@@ -636,10 +637,21 @@ std::optional<match_result_t> module_t::detect_memory_access_match(
     if (!chain_ok) {
       chain_ok = !trigger->get_chain();
       chain_start = i + 1;
+      chain_timing.reset();
       continue;
     }
 
     auto result = trigger->detect_memory_access_match(proc, operation, address, len, data);
+
+    // A chain of mcontrol triggers that don't all have the same timing never
+    // fires.  (mcontrol6 has no timing field.)
+    if (result.has_value() && dynamic_cast<mcontrol_t *>(trigger)) {
+      if (chain_timing.has_value() && *chain_timing != result->timing)
+        result = std::nullopt;
+      else
+        chain_timing = result->timing;
+    }
+
     if (result.has_value() && !trigger->get_chain()) {
       // The whole chain matched, so all of its triggers fire. The triggers
       // of a chain that matched only partly don't fire and keep their hit.
@@ -655,8 +667,10 @@ std::optional<match_result_t> module_t::detect_memory_access_match(
     }
 
     chain_ok = result.has_value() || !trigger->get_chain();
-    if (!trigger->get_chain())
+    if (!trigger->get_chain()) {
       chain_start = i + 1;
+      chain_timing.reset();
+    }
   }
   return ret;
 }
