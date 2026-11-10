@@ -581,7 +581,9 @@ bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
   }
 
   triggers[index]->tdata1_write(proc, tdata1, allow_chain);
-  triggers[index]->tdata2_write(proc, tdata2);
+  // A tdata1 write must not modify tdata2, even if tdata2 is not legal for the
+  // new tdata1, so restore it without the type-specific legalization.
+  triggers[index]->trigger_t::tdata2_write(proc, tdata2);
   triggers[index]->tdata3_write(proc, tdata3);
   proc->trigger_updated(triggers);
   return true;
