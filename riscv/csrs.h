@@ -289,9 +289,13 @@ typedef std::shared_ptr<mstatus_csr_t> mstatus_csr_t_p;
 class mnstatus_csr_t final: public basic_csr_t {
  public:
   mnstatus_csr_t(processor_t* const proc, const reg_t addr);
+  // Entry to the RNMI handler clears NMIE, which software cannot do
+  void clear_nmie() noexcept;
  protected:
   bool unlogged_write(const reg_t val) noexcept override;
 };
+
+typedef std::shared_ptr<mnstatus_csr_t> mnstatus_csr_t_p;
 
 // For RV32 CSRs that are split into two, e.g. mstatus/mstatush
 // CSRW should only modify the lower half

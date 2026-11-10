@@ -519,8 +519,9 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     // Handle the trap in M-mode
     const reg_t vector = (state.mtvec->read() & 1) && interrupt ? 4 * bit : 0;
     const reg_t trap_handler_address = (state.mtvec->read() & ~(reg_t)1) + vector;
-    // RNMI sources, the feature isn't very useful, so pick an invalid address.
-    // RNMI exception vector is implementation-defined.  Since we don't model
+    // The RNMI interrupt and exception trap handler addresses are
+    // implementation-defined.  Since we don't model RNMI sources, the
+    // feature isn't very useful, so pick an invalid address for both.
     const reg_t rnmi_trap_handler_address = 0;
     const bool nmie = !(state.mnstatus && !get_field(state.mnstatus->read(), MNSTATUS_NMIE));
 
@@ -528,9 +529,25 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     if ( extension_enabled(EXT_SMDBLTRP)) {
       if (get_field(s, MSTATUS_MDT) && (!state.mnstatus || !nmie)) {
         // Critical error - Double trap in M-mode when Smrnmi not implemented or nmie is 0
-        // RNMI is not modeled else double trap in M-mode would trap to
-        // RNMI handler instead of leading to a critical error
         state.critical_error = 1;
+        return;
+      }
+      if (get_field(s, MSTATUS_MDT)) {
+        // With Smrnmi and NMIE = 1, the unexpected trap goes to the RNMI
+        // handler: mnepc and mncause get the values mepc and mcause would
+        // have, mnstatus records M-mode and clears NMIE, and mstatus, mepc,
+        // mcause and mtval are left alone
+        state.pc = rnmi_trap_handler_address;
+        state.mnepc->write(epc);
+        state.mncause->write(supv_double_trap ? CAUSE_DOUBLE_TRAP : t.cause());
+        reg_t ns = state.mnstatus->read();
+        ns = set_field(ns, MNSTATUS_MNPP, PRV_M);
+        ns = set_field(ns, MNSTATUS_MNPV, 0);
+        ns = set_field(ns, MNSTATUS_MNPELP, state.elp);
+        state.elp = elp_t::NO_LP_EXPECTED;
+        state.mnstatus->write(ns);
+        state.mnstatus->clear_nmie();
+        set_privilege(PRV_M, false);
         return;
       }
       s = set_field(s, MSTATUS_MDT, 1);

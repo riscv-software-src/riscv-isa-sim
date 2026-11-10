@@ -115,8 +115,9 @@ struct state_t
   csr_t_p mcounteren;
   csr_t_p mcountinhibit;
   csr_t_p mevent[N_HPMCOUNTERS];
-  csr_t_p mnstatus;
+  mnstatus_csr_t_p mnstatus;
   csr_t_p mnepc;
+  csr_t_p mncause;
   csr_t_p scounteren;
   csr_t_p sepc;
   csr_t_p stval;
