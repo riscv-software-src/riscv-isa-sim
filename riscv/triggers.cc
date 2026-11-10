@@ -141,7 +141,9 @@ bool trigger_t::textra_match(processor_t * const proc) const noexcept
   const auto mhselect_interp = interpret_mhselect(proc->extension_enabled('H'));
   const mhselect_mode_t mode = mhselect_interp.mode;
   if (mode == MHSELECT_MODE_MCONTEXT) { // 4, 1, and 5 are mcontext
-    reg_t mask = (1 << (CSR_TEXTRA_MHVALUE_LENGTH(xlen) + 1)) - 1;
+    // 1 and 5 compare {mhvalue, mhselect[2]}, 4 compares only mhvalue
+    const unsigned length = CSR_TEXTRA_MHVALUE_LENGTH(xlen) + (mhselect_interp.shift_mhvalue.value() ? 1 : 0);
+    reg_t mask = (1 << length) - 1;
     if ((state->mcontext->read() & mask) != mhselect_interp.compare_val(mhvalue))
       return false;
   } else if (mode == MHSELECT_MODE_VMID) { // 2 and 6 are vmid
