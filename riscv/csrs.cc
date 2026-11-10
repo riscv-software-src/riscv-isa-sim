@@ -1471,6 +1471,25 @@ void counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
   }
 }
 
+masked_proxy_csr_t::masked_proxy_csr_t(processor_t* const proc, csr_t_p delegate, const reg_t hidden_mask):
+  csr_t(proc, delegate->address),
+  delegate(delegate),
+  hidden_mask(hidden_mask) {
+}
+
+void masked_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
+  delegate->verify_permissions(insn, write);
+}
+
+reg_t masked_proxy_csr_t::read() const noexcept {
+  return delegate->read() & ~hidden_mask;
+}
+
+bool masked_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
+  delegate->write((delegate->read() & hidden_mask) | (val & ~hidden_mask));  // log only under the delegate's name
+  return false;
+}
+
 mevent_csr_t::mevent_csr_t(processor_t* const proc, const reg_t addr):
   basic_csr_t(proc, addr, 0) {
 }
