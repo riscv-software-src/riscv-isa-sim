@@ -550,7 +550,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
               }
               // hpmevent3h-hpmevent31h
               if (proc->extension_enabled_const(EXT_ZIHPM) && proc->extension_enabled_const(EXT_SSCOFPMF)) {
-                for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3); j++) {
+                for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3 + 1); j++) {
                   auto proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_HPMCOUNTER3H + j, csrmap[CSR_MHPMEVENT3H + j]);
                   sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMEVENT_3 + j, proxy);
                 }
