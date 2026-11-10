@@ -552,9 +552,6 @@ bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
 
   reg_t tdata1 = val;
 
-  // hardware must zero chain in writes that set dmode to 0 if the next trigger has dmode of 1
-  const bool allow_chain = !(index+1 < triggers.size() && triggers[index+1]->get_dmode() && !get_field(val, CSR_TDATA1_DMODE(xlen)));
-
   // dmode only writable from debug mode
   if (!proc->get_state()->debug_mode) {
     assert(CSR_TDATA1_DMODE(xlen) == CSR_MCONTROL_DMODE(xlen));
@@ -562,6 +559,9 @@ bool module_t::tdata1_write(unsigned index, const reg_t val) noexcept
     assert(CSR_TDATA1_DMODE(xlen) == CSR_ETRIGGER_DMODE(xlen));
     tdata1 = set_field(tdata1, CSR_TDATA1_DMODE(xlen), 0);
   }
+
+  // hardware must zero chain in writes that set dmode to 0 if the next trigger has dmode of 1
+  const bool allow_chain = !(index+1 < triggers.size() && triggers[index+1]->get_dmode() && !get_field(tdata1, CSR_TDATA1_DMODE(xlen)));
 
   // hardware should ignore writes that set dmode to 1 if the previous trigger has both dmode of 0 and chain of 1
   if (index > 0 && !triggers[index-1]->get_dmode() && triggers[index-1]->get_chain() && get_field(tdata1, CSR_TDATA1_DMODE(xlen)))
