@@ -2365,6 +2365,7 @@ reg_t mvip_csr_t::read() const noexcept {
     | (val & MIP_SEIP)
     | ((menvcfg & MENVCFG_STCE) ? 0 : (mip & MIP_STIP))
     | (((mvien & MIP_SSIP) ? val : mip) & MIP_SSIP)
+    | (val & MIP_LCOFIP)  // a separate bit, not an alias of mip.LCOFIP
     ;
 }
 
@@ -2374,7 +2375,9 @@ bool mvip_csr_t::unlogged_write(const reg_t val) noexcept {
   if (!(state->mvien->read() & MIP_SSIP))
     state->mip->write_with_mask(MIP_SSIP, val); // mvip.SSIP is an alias of mip.SSIP when mvien.SSIP=0
 
-  const reg_t new_val = (val & MIP_SEIP) | (((state->mvien->read() & MIP_SSIP) ? val : basic_csr_t::read()) & MIP_SSIP);
+  // With Smcdeleg and Sscofpmf, LCOFI is writable (and mvien.LCOFI too)
+  const reg_t lcofi = proc->extension_enabled_const(EXT_SMCDELEG) && proc->extension_enabled_const(EXT_SSCOFPMF) ? MIP_LCOFIP : 0;
+  const reg_t new_val = (val & (MIP_SEIP | lcofi)) | (((state->mvien->read() & MIP_SSIP) ? val : basic_csr_t::read()) & MIP_SSIP);
   return basic_csr_t::unlogged_write(new_val);
 }
 
