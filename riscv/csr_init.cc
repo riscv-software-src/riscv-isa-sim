@@ -486,8 +486,13 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     if (proc->extension_enabled(EXT_SSCCFG) || proc->extension_enabled(EXT_SMCDELEG)) {
       // case CSR_SIREG
       if (proc->extension_enabled_const(EXT_ZICNTR)) {
-        sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, csrmap[CSR_CYCLE]);
-        sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, csrmap[CSR_INSTRET]);
+        // alias mcycle and minstret rather than cycle and instret, which on
+        // RV32 cover all 64 bits, so that writes change only the low half
+        auto cycle_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, csrmap[CSR_MCYCLE]);
+        sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, cycle_proxy);
+
+        auto instret_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRET, csrmap[CSR_MINSTRET]);
+        sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, instret_proxy);
       }
       if (proc->extension_enabled_const(EXT_ZIHPM)) {
         for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMCOUNTER_3 + 1); j++)

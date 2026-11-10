@@ -2057,7 +2057,7 @@ void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (insn.csr() == address)
     csr_t::verify_permissions(insn, write);
 
-  if (proc->extension_enabled(EXT_SMCDELEG)) {
+  if (proc->extension_enabled(EXT_SMCDELEG) || proc->extension_enabled(EXT_SSCCFG)) {
     auto iselect_val = iselect->read();
     if (iselect_val >= SISELECT_SMCDELEG_START && iselect_val <= SISELECT_SMCDELEG_END) {
       if (address >= CSR_VSIREG && address <= CSR_VSIREG6) {
@@ -2127,7 +2127,12 @@ void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
       throw trap_illegal_instruction(insn.bits());
     }
   }
-  proxy_csr->verify_permissions(insn, write);
+  // The aliases of delegated counters (Smcdeleg) borrow the numbers of the
+  // read-only user-level counters, so that the mcounteren checks use the
+  // right bit, but they are writable through sireg*
+  const reg_t isel = iselect->read();
+  const bool counter = isel >= SISELECT_SMCDELEG_START && isel <= SISELECT_SMCDELEG_END;
+  proxy_csr->verify_permissions(insn, write && !counter);
 }
 
 
