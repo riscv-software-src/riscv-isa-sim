@@ -2,8 +2,9 @@
 require_zvfbfa
 
 VI_VFP_COMMON;
+require(FLEN >= P.VU.vsew);
 
-if (vl > 0 && P.VU.vstart->read() < vl) {
+if (P.VU.vstart->read() < vl) {
   reg_t rd_num = insn.rd();
 
   switch (P.VU.vsew) {
@@ -14,10 +15,7 @@ if (vl > 0 && P.VU.vstart->read() < vl) {
       P.VU.elt<uint32_t>(rd_num, 0, true) = f32(FRS1).v;
       break;
     case e64:
-      if (FLEN == 64)
-        P.VU.elt<uint64_t>(rd_num, 0, true) = f64(FRS1).v;
-      else
-        P.VU.elt<uint64_t>(rd_num, 0, true) = f32(FRS1).v;
+      P.VU.elt<uint64_t>(rd_num, 0, true) = f64(FRS1).v;
       break;
   }
 }

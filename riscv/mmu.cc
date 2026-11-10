@@ -63,7 +63,6 @@ void mmu_t::flush_tlb()
   memset(tlb_insn, -1, sizeof(tlb_insn));
   memset(tlb_load, -1, sizeof(tlb_load));
   memset(tlb_store, -1, sizeof(tlb_store));
-  memset(pte_cache, -1, sizeof(pte_cache));
 
   flush_icache();
 }
@@ -575,7 +574,7 @@ reg_t mmu_t::pmp_homogeneous(reg_t addr, reg_t len)
   return true;
 }
 
-reg_t mmu_t::s2xlate(mem_access_info_t access_info, reg_t gpa, access_type type, access_type trap_type, bool is_for_vs_pt_addr)
+std::tuple<reg_t, reg_t> mmu_t::s2xlate(mem_access_info_t access_info, reg_t gpa, access_type type, access_type trap_type, bool is_for_vs_pt_addr)
 {
   const reg_t gva = access_info.transformed_vaddr;
   const bool virt = access_info.effective_virt;
@@ -583,11 +582,11 @@ reg_t mmu_t::s2xlate(mem_access_info_t access_info, reg_t gpa, access_type type,
   const bool ss_access = access_info.flags.ss_access && !is_for_vs_pt_addr;
 
   if (!virt)
-    return gpa;
+    return std::make_tuple(gpa, 0);
 
   const vm_info vm = decode_vm_info(proc->get_const_xlen(), true, 0, proc->get_state()->hgatp->read());
   if (vm.levels == 0)
-    return gpa;
+    return std::make_tuple(gpa, 0);
 
   const int maxgpabits = vm.levels * vm.idxbits + vm.widenbits + PGSHIFT;
   const reg_t maxgpa = (1ULL << maxgpabits) - 1;
@@ -648,15 +647,13 @@ reg_t mmu_t::s2xlate(mem_access_info_t access_info, reg_t gpa, access_type type,
         if ((pte & ad) != ad) {
           if (hade) {
             // set accessed and possibly dirty bits
-            pte_store(pte_paddr, pte | ad, gva, virt, trap_type, vm.ptesize);
+            pte |= ad;
+            pte_store(pte_paddr, pte, gva, virt, trap_type, vm.ptesize);
           } else {
             // take exception if access or possibly dirty bit is not set.
             break;
           }
         }
-
-        if (ss_access && pte_pbmt == PBMT_IO)
-          throw trap_store_access_fault(virt, gva, 0, 0);
 
         reg_t vpn = gpa >> PGSHIFT;
         reg_t page_mask = (reg_t(1) << PGSHIFT) - 1;
@@ -664,7 +661,7 @@ reg_t mmu_t::s2xlate(mem_access_info_t access_info, reg_t gpa, access_type type,
         reg_t page_base = ((ppn & ~((reg_t(1) << napot_bits) - 1))
                           | (vpn & ((reg_t(1) << napot_bits) - 1))
                           | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
-        return page_base | (gpa & page_mask);
+        return std::make_tuple(page_base | (gpa & page_mask), pte);
       }
     }
   }
@@ -722,8 +719,10 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
   if (ss_access && vm.levels == 0)
     throw trap_store_access_fault(virt, addr, 0, 0);
 
-  if (vm.levels == 0)
-    return s2xlate(access_info, addr & ((reg_t(2) << (proc->xlen-1))-1), type, trap_type, false) & ~page_mask; // zero-extend from xlen
+  if (vm.levels == 0) {
+    auto [gpa, _] = s2xlate(access_info, addr & ((reg_t(2) << (proc->xlen-1))-1), type, trap_type, false);
+    return gpa & ~page_mask; // zero-extend from xlen
+  }
 
   if (svukte_fault(addr, access_info)) {
     throw_page_fault_exception(virt, addr, trap_type);
@@ -746,7 +745,7 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
     const reg_t idx = (addr >> (PGSHIFT + ptshift)) & ((1 << vm.idxbits) - 1);
 
     // check that physical address of PTE is legal
-    const auto pte_paddr = s2xlate(access_info, base + idx * vm.ptesize, LOAD, trap_type, true);
+    const auto [pte_paddr, _] = s2xlate(access_info, base + idx * vm.ptesize, LOAD, trap_type, true);
     const reg_t pte = pte_load(pte_paddr, addr, virt, trap_type, vm.ptesize);
     const reg_t ppn = (pte & ~reg_t(PTE_ATTR)) >> PTE_PPN_SHIFT;
     const bool pbmte = virt ? (proc->get_state()->henvcfg->read() & HENVCFG_PBMTE) : (proc->get_state()->menvcfg->read() & MENVCFG_PBMTE);
@@ -818,12 +817,13 @@ reg_t mmu_t::walk(mem_access_info_t access_info)
                             | (vpn & ((reg_t(1) << napot_bits) - 1))
                             | (vpn & ((reg_t(1) << ptshift) - 1))) << PGSHIFT;
       const reg_t phys = page_base | (addr & page_mask);
-      const auto gpa = s2xlate(access_info, phys, type, trap_type, false) & ~page_mask;
+      const auto [gpa, g_pte] = s2xlate(access_info, phys, type, trap_type, false);
 
-      if (ss_access && pte_pbmt == PBMT_IO)
+      auto combined_pbmt = pte_pbmt != PBMT_PMA ? pte_pbmt : get_field(g_pte, PTE_PBMT);
+      if (ss_access && combined_pbmt == PBMT_IO)
         throw trap_store_access_fault(virt, addr, 0, 0);
 
-      return gpa;
+      return gpa & ~page_mask;
     }
   }
 
