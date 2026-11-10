@@ -723,7 +723,12 @@ bool mstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   const reg_t adjusted_val = set_field(val, MSTATUS_MPP, requested_mpp);
   reg_t new_mstatus = (this->val & ~mask) | (adjusted_val & mask);
   new_mstatus = (new_mstatus & MSTATUS_MDT) ? (new_mstatus & ~MSTATUS_MIE) : new_mstatus;
-  new_mstatus = (new_mstatus & MSTATUS_SDT) ? (new_mstatus & ~MSTATUS_SIE) : new_mstatus;
+  // Setting SDT, or setting SIE while SDT = 1, clears SIE.  With menvcfg.DTE = 0,
+  // SDT is read-only zero below M-mode, so it doesn't keep S-mode from setting SIE.
+  const bool sdt_active = (state->menvcfg->read() & MENVCFG_DTE) || state->prv == PRV_M;
+  const reg_t newly_set = new_mstatus & ~this->val;
+  if (sdt_active && (new_mstatus & MSTATUS_SDT) && (newly_set & (MSTATUS_SDT | MSTATUS_SIE)))
+    new_mstatus &= ~MSTATUS_SIE;
   maybe_flush_tlb(new_mstatus);
   this->val = adjust_sd(new_mstatus);
   return true;
