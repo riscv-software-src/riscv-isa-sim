@@ -249,7 +249,7 @@ inline void mmu_t::perform_intrapage_load(reg_t vaddr, uintptr_t host_addr, reg_
     tracer.trace(paddr, len, LOAD);
 }
 
-void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info)
+void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info, bool actually_load)
 {
   reg_t vaddr = access_info.vaddr;
   auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_load, vaddr, TLB_FLAGS);
@@ -266,10 +266,12 @@ void mmu_t::load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_
     throw trap_load_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
   }
 
-  perform_intrapage_load(vaddr, host_addr, paddr, len, bytes, access_info.flags);
+  if (actually_load) {
+    perform_intrapage_load(vaddr, host_addr, paddr, len, bytes, access_info.flags);
 
-  if (access_info.flags.lr) {
-    load_reservation_address = paddr;
+    if (access_info.flags.lr) {
+      load_reservation_address = paddr;
+    }
   }
 }
 
@@ -300,20 +302,20 @@ void mmu_t::load_slow_path(reg_t original_addr, std::size_t len,
     throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
 
   if ((transformed_addr & (len - 1)) == 0) {
-    load_slow_path_intrapage(len, bytes, access_info);
+    load_slow_path_intrapage(len, bytes, access_info, true);
   } else {
     if (!is_misaligned_enabled())
       throw trap_load_address_misaligned(access_info.effective_virt, transformed_addr, 0, 0);
 
-    if (access_info.flags.require_alignment)
-      throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
-
     reg_t len_page0 = std::min<reg_t>(len, PGSIZE - transformed_addr % PGSIZE);
-    load_slow_path_intrapage(len_page0, bytes, access_info);
+    load_slow_path_intrapage(len_page0, bytes, access_info, !access_info.flags.require_alignment);
     if (len_page0 != len) {
       auto tail_access_info = generate_access_info(original_addr + len_page0, LOAD, access_info.flags);
-      load_slow_path_intrapage(len - len_page0, bytes + len_page0, tail_access_info);
+      load_slow_path_intrapage(len - len_page0, bytes + len_page0, tail_access_info, !access_info.flags.require_alignment);
     }
+
+    if (access_info.flags.require_alignment)
+      throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
   }
 
   if (!proc)
@@ -403,7 +405,7 @@ void mmu_t::store_slow_path(reg_t original_addr, std::size_t len,
       throw trap_store_address_misaligned(access_info.effective_virt, transformed_addr, 0, 0);
 
     if (access_info.flags.require_alignment)
-      throw trap_store_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
+      actually_store = false;
 
     reg_t len_page0 = std::min<reg_t>(len, PGSIZE - transformed_addr % PGSIZE);
     store_slow_path_intrapage(len_page0, bytes, access_info, actually_store);
@@ -411,6 +413,9 @@ void mmu_t::store_slow_path(reg_t original_addr, std::size_t len,
       auto tail_access_info = generate_access_info(original_addr + len_page0, STORE, access_info.flags);
       store_slow_path_intrapage(len - len_page0, bytes + len_page0, tail_access_info, actually_store);
     }
+
+    if (access_info.flags.require_alignment)
+      throw trap_store_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
   } else {
     store_slow_path_intrapage(len, bytes, access_info, actually_store);
   }

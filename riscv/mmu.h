@@ -443,7 +443,7 @@ private:
 
   void load_slow_path(reg_t original_addr, std::size_t len,
     std::uint8_t* bytes, xlate_flags_t xlate_flags);
-  void load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info);
+  void load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info, bool actually_load);
   void perform_intrapage_load(reg_t vaddr, uintptr_t host_addr, reg_t paddr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
 
   void store_slow_path(reg_t original_addr, std::size_t len, const std::uint8_t* bytes,
