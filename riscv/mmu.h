@@ -215,8 +215,7 @@ public:
   template<typename T>
   T ssamoswap(reg_t addr, reg_t value) {
     convert_load_traps_to_store_traps({
-      bool misaligned = addr % sizeof(T);
-      store_slow_path(addr, sizeof(T), nullptr, {.ss_access=true, .access_fault=misaligned}, false);
+      store_slow_path(addr, sizeof(T), nullptr, {.ss_access=true, .require_alignment=true}, false);
       auto data = load<T>(addr, {.ss_access=true});
       store<T>(addr, value, {.ss_access=true});
       return data;
