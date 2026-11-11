@@ -2292,9 +2292,14 @@ bool hstatus_csr_t::unlogged_write(const reg_t val) noexcept {
     new_hstatus = set_field(new_hstatus, HSTATUS_VGEIN, new_vgein);
     // update_mip() needs the new VGEIN, so hstatus must be updated first
     bool ret =  basic_csr_t::unlogged_write(new_hstatus);
-    // if vgein = 0, HS controls VSEIP; otherwise IMSIC controls it
-    if (new_vgein && new_vgein != old_vgein)
-      proc->imsic->vs[new_vgein]->update_mip();
+    // if vgein = 0, no guest interrupt file drives VSEIP (HS controls it through hvip);
+    // otherwise the selected IMSIC guest file controls it
+    if (new_vgein != old_vgein) {
+      if (new_vgein)
+        proc->imsic->vs[new_vgein]->update_mip();
+      else
+        state->mip->backdoor_write_with_mask(MIP_VSEIP, 0);
+    }
     return ret;
   }
   return basic_csr_t::unlogged_write(new_hstatus);
