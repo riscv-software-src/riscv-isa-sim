@@ -471,7 +471,7 @@ bool mseccfg_csr_t::get_sseed() const noexcept {
 bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
   reg_t new_val = read();
 
-  if (proc->n_pmp != 0) {
+  if (proc->n_pmp != 0 && proc->extension_enabled(EXT_SMEPMP)) {
     // pmpcfg.L is 1 in any rule or entry (including disabled entries)
     const bool pmplock_recorded = std::any_of(state->pmpaddr, state->pmpaddr + proc->n_pmp,
         [](const base_pmpaddr_csr_t_p & c) { return c->is_locked(); } );
@@ -505,6 +505,8 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
     const reg_t pmm_reserved = 1; // Reserved value of mseccfg.PMM
     reg_t pmm = get_field(val, MSECCFG_PMM);
     new_val = set_field(new_val, MSECCFG_PMM, pmm != pmm_reserved ? pmm : 0);
+    if (get_field(new_val, MSECCFG_PMM) != get_field(read(), MSECCFG_PMM))
+      proc->get_mmu()->flush_tlb();
   }
 
   return basic_csr_t::unlogged_write(new_val);
@@ -2578,7 +2580,7 @@ void aia_ireg_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
     if (state->prv < PRV_M && isel >= SISELECT_IPRIO && isel <= SISELECT_IPRIO_TOP && !(state->mstateen[0]->read() & MSTATEEN0_AIA))
       throw trap_illegal_instruction(insn.bits());
     // if iselect >= IMSIC and xSTATEEN_IMSIC not set
-    if (!state->v && state->prv < PRV_M && isel >= SISELECT_IMSIC && isel <= SISELECT_IMSIC_TOP && !(state->mstateen[0]->read() & MSTATEEN0_IMSIC))
+    if (state->prv < PRV_M && isel >= SISELECT_IMSIC && isel <= SISELECT_IMSIC_TOP && !(state->mstateen[0]->read() & MSTATEEN0_IMSIC))
       throw trap_illegal_instruction(insn.bits());
     if (state->v && isel >= VSISELECT_IMSIC && isel <= VSISELECT_IMSIC_TOP && !(state->hstateen[0]->read() & HSTATEEN0_IMSIC))
       throw trap_virtual_instruction(insn.bits());

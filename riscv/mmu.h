@@ -247,7 +247,7 @@ public:
         tracer.trace(paddr, blocksz, STORE);
       memset(host_addr, 0, blocksz);
     } else {
-      throw trap_store_access_fault((proc) ? proc->state.v : false, transformed_addr, 0, 0);
+      throw trap_store_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
     }
   }
 
@@ -263,7 +263,7 @@ public:
         if (tracer.interested_in_range(paddr, paddr + blocksz, LOAD))
           tracer.clean_invalidate(paddr, blocksz, clean, inval);
       } else {
-        throw trap_store_access_fault((proc) ? proc->state.v : false, transformed_addr, 0, 0);
+        throw trap_store_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
       }
     })
   }
