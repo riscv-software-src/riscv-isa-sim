@@ -1473,6 +1473,25 @@ void counter_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
   }
 }
 
+masked_proxy_csr_t::masked_proxy_csr_t(processor_t* const proc, csr_t_p delegate, const reg_t hidden_mask):
+  csr_t(proc, delegate->address),
+  delegate(delegate),
+  hidden_mask(hidden_mask) {
+}
+
+void masked_proxy_csr_t::verify_permissions(insn_t insn, bool write) const {
+  delegate->verify_permissions(insn, write);
+}
+
+reg_t masked_proxy_csr_t::read() const noexcept {
+  return delegate->read() & ~hidden_mask;
+}
+
+bool masked_proxy_csr_t::unlogged_write(const reg_t val) noexcept {
+  delegate->write((delegate->read() & hidden_mask) | (val & ~hidden_mask));  // log only under the delegate's name
+  return false;
+}
+
 mevent_csr_t::mevent_csr_t(processor_t* const proc, const reg_t addr):
   basic_csr_t(proc, addr, 0) {
 }
@@ -2059,7 +2078,7 @@ void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
   if (insn.csr() == address)
     csr_t::verify_permissions(insn, write);
 
-  if (proc->extension_enabled(EXT_SMCDELEG)) {
+  if (proc->extension_enabled(EXT_SMCDELEG) || proc->extension_enabled(EXT_SSCCFG)) {
     auto iselect_val = iselect->read();
     if (iselect_val >= SISELECT_SMCDELEG_START && iselect_val <= SISELECT_SMCDELEG_END) {
       if (address >= CSR_VSIREG && address <= CSR_VSIREG6) {
@@ -2129,7 +2148,12 @@ void sscsrind_reg_csr_t::verify_permissions(insn_t insn, bool write) const {
       throw trap_illegal_instruction(insn.bits());
     }
   }
-  proxy_csr->verify_permissions(insn, write);
+  // The aliases of delegated counters (Smcdeleg) borrow the numbers of the
+  // read-only user-level counters, so that the mcounteren checks use the
+  // right bit, but they are writable through sireg*
+  const reg_t isel = iselect->read();
+  const bool counter = isel >= SISELECT_SMCDELEG_START && isel <= SISELECT_SMCDELEG_END;
+  proxy_csr->verify_permissions(insn, write && !counter);
 }
 
 
@@ -2310,17 +2334,25 @@ scntinhibit_csr_t::scntinhibit_csr_t(processor_t* const proc, const reg_t addr, 
 }
 
 void scntinhibit_csr_t::verify_permissions(insn_t insn, bool write) const {
-  if (insn.csr() == address) {
-    csr_t::verify_permissions(insn, write);
-  }
-
+  // With menvcfg.CDE = 0, scountinhibit is inaccessible even from HS-mode,
+  // so accesses from VS-mode and VU-mode are illegal, not virtual
   if ((state->menvcfg->read() & MENVCFG_CDE) != MENVCFG_CDE) {
     throw trap_illegal_instruction(insn.bits());
+  }
+
+  if (state->v) {
+    throw trap_virtual_instruction(insn.bits());
+  }
+
+  if (insn.csr() == address) {
+    csr_t::verify_permissions(insn, write);
   }
 }
 
 bool scntinhibit_csr_t::unlogged_write(const reg_t val) noexcept {
-  state->mcountinhibit->write(state->mcounteren->read() & val);
+  // Only the bits of delegated counters are writable; leave the others alone
+  const reg_t mask = state->mcounteren->read();
+  state->mcountinhibit->write((state->mcountinhibit->read() & ~mask) | (val & mask));
   return true;
 }
 
@@ -2359,6 +2391,7 @@ reg_t mvip_csr_t::read() const noexcept {
     | (val & MIP_SEIP)
     | ((menvcfg & MENVCFG_STCE) ? 0 : (mip & MIP_STIP))
     | (((mvien & MIP_SSIP) ? val : mip) & MIP_SSIP)
+    | (val & MIP_LCOFIP)  // a separate bit, not an alias of mip.LCOFIP
     ;
 }
 
@@ -2368,7 +2401,9 @@ bool mvip_csr_t::unlogged_write(const reg_t val) noexcept {
   if (!(state->mvien->read() & MIP_SSIP))
     state->mip->write_with_mask(MIP_SSIP, val); // mvip.SSIP is an alias of mip.SSIP when mvien.SSIP=0
 
-  const reg_t new_val = (val & MIP_SEIP) | (((state->mvien->read() & MIP_SSIP) ? val : basic_csr_t::read()) & MIP_SSIP);
+  // With Smcdeleg and Sscofpmf, LCOFI is writable (and mvien.LCOFI too)
+  const reg_t lcofi = proc->extension_enabled_const(EXT_SMCDELEG) && proc->extension_enabled_const(EXT_SSCOFPMF) ? MIP_LCOFIP : 0;
+  const reg_t new_val = (val & (MIP_SEIP | lcofi)) | (((state->mvien->read() & MIP_SSIP) ? val : basic_csr_t::read()) & MIP_SSIP);
   return basic_csr_t::unlogged_write(new_val);
 }
 

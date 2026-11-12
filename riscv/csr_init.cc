@@ -486,8 +486,13 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
     if (proc->extension_enabled(EXT_SSCCFG) || proc->extension_enabled(EXT_SMCDELEG)) {
       // case CSR_SIREG
       if (proc->extension_enabled_const(EXT_ZICNTR)) {
-        sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, csrmap[CSR_CYCLE]);
-        sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, csrmap[CSR_INSTRET]);
+        // alias mcycle and minstret rather than cycle and instret, which on
+        // RV32 cover all 64 bits, so that writes change only the low half
+        auto cycle_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, csrmap[CSR_MCYCLE]);
+        sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, cycle_proxy);
+
+        auto instret_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRET, csrmap[CSR_MINSTRET]);
+        sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, instret_proxy);
       }
       if (proc->extension_enabled_const(EXT_ZIHPM)) {
         for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMCOUNTER_3 + 1); j++)
@@ -517,19 +522,21 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
           }
           break;
           case CSR_SIREG2:
-            if (proc->extension_enabled_const(EXT_ZICNTR)) {
+            if (proc->extension_enabled_const(EXT_ZICNTR) && proc->extension_enabled_const(EXT_SMCNTRPMF)) {
               // describe address as that of CYCLE rather than MCYCLECFG,
-              // so that perm checks and mcounteren checks do the right thing
+              // so that perm checks and mcounteren checks do the right thing.
+              // Bit 62 (MINH) of these and of hpmevent* reads as zero and is not
+              // writable through sireg* (on RV32, it is in the sireg5 half).
               auto cyclecfg_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLE, csrmap[CSR_MCYCLECFG]);
-              sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, cyclecfg_proxy);
+              sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, std::make_shared<masked_proxy_csr_t>(proc, cyclecfg_proxy, MHPMEVENT_MINH));
 
               auto instretcfg_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRET, csrmap[CSR_MINSTRETCFG]);
-              sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRETCFG, instretcfg_proxy);
+              sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRETCFG, std::make_shared<masked_proxy_csr_t>(proc, instretcfg_proxy, MHPMEVENT_MINH));
             }
             if (proc->extension_enabled_const(EXT_ZIHPM)) {
               for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3 + 1); j++) {
                 auto proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_HPMCOUNTER3 + j, csrmap[CSR_MHPMEVENT3 + j]);
-                sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMEVENT_3 + j, proxy);
+                sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMEVENT_3 + j, std::make_shared<masked_proxy_csr_t>(proc, proxy, MHPMEVENT_MINH));
               }
             }
             break;
@@ -538,16 +545,16 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
               // cyclecfgh/instretcfgh
               if (proc->extension_enabled_const(EXT_ZICNTR) && proc->extension_enabled_const(EXT_SMCNTRPMF)) {
                 auto cyclecfgh_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_CYCLEH, csrmap[CSR_MCYCLECFGH]);
-                sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, cyclecfgh_proxy);
+                sireg->add_ireg_proxy(SISELECT_SMCDELEG_START, std::make_shared<masked_proxy_csr_t>(proc, cyclecfgh_proxy, MHPMEVENT_MINH >> 32));
 
                 auto instretcfgh_proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_INSTRETH, csrmap[CSR_MINSTRETCFGH]);
-                sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, instretcfgh_proxy);
+                sireg->add_ireg_proxy(SISELECT_SMCDELEG_INSTRET, std::make_shared<masked_proxy_csr_t>(proc, instretcfgh_proxy, MHPMEVENT_MINH >> 32));
               }
               // hpmevent3h-hpmevent31h
               if (proc->extension_enabled_const(EXT_ZIHPM) && proc->extension_enabled_const(EXT_SSCOFPMF)) {
-                for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3); j++) {
+                for (size_t j = 0; j < (SISELECT_SMCDELEG_END - SISELECT_SMCDELEG_HPMEVENT_3 + 1); j++) {
                   auto proxy = std::make_shared<counter_proxy_csr_t>(proc, CSR_HPMCOUNTER3H + j, csrmap[CSR_MHPMEVENT3H + j]);
-                  sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMEVENT_3 + j, proxy);
+                  sireg->add_ireg_proxy(SISELECT_SMCDELEG_HPMEVENT_3 + j, std::make_shared<masked_proxy_csr_t>(proc, proxy, MHPMEVENT_MINH >> 32));
                 }
               }
             }
@@ -579,7 +586,9 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   const reg_t srmcfg_mask = SRMCFG_MCID | SRMCFG_RCID;
   add_const_ext_csr(EXT_SSQOSID, CSR_SRMCFG, std::make_shared<srmcfg_csr_t>(proc, CSR_SRMCFG, srmcfg_mask, 0));
 
-  mvien = std::make_shared<masked_csr_t>(proc, CSR_MVIEN, MIP_SEIP | MIP_SSIP, 0);
+  // Smcdeleg requires LCOFI to be writable in mvien and mvip if Sscofpmf is implemented
+  const reg_t mvien_lcofi = proc->extension_enabled_const(EXT_SMCDELEG) && proc->extension_enabled_const(EXT_SSCOFPMF) ? MIP_LCOFIP : 0;
+  mvien = std::make_shared<masked_csr_t>(proc, CSR_MVIEN, MIP_SEIP | MIP_SSIP | mvien_lcofi, 0);
   mvip = std::make_shared<mvip_csr_t>(proc, CSR_MVIP, 0);
   if (proc->extension_enabled_const(EXT_SMAIA)) {
     add_csr(CSR_MTOPI, std::make_shared<mtopi_csr_t>(proc, CSR_MTOPI));
