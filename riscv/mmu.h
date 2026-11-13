@@ -215,8 +215,7 @@ public:
   template<typename T>
   T ssamoswap(reg_t addr, reg_t value) {
     convert_load_traps_to_store_traps({
-      bool misaligned = addr % sizeof(T);
-      store_slow_path(addr, sizeof(T), nullptr, {.ss_access=true, .access_fault=misaligned}, false);
+      store_slow_path(addr, sizeof(T), nullptr, {.ss_access=true, .require_alignment=true}, false);
       auto data = load<T>(addr, {.ss_access=true});
       store<T>(addr, value, {.ss_access=true});
       return data;
@@ -444,7 +443,7 @@ private:
 
   void load_slow_path(reg_t original_addr, std::size_t len,
     std::uint8_t* bytes, xlate_flags_t xlate_flags);
-  void load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info);
+  void load_slow_path_intrapage(reg_t len, uint8_t* bytes, mem_access_info_t access_info, bool actually_load);
   void perform_intrapage_load(reg_t vaddr, uintptr_t host_addr, reg_t paddr, reg_t len, uint8_t* bytes, xlate_flags_t xlate_flags);
 
   void store_slow_path(reg_t original_addr, std::size_t len, const std::uint8_t* bytes,
