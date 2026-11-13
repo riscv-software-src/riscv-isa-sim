@@ -20,8 +20,7 @@ typedef enum
   ACTION_DEBUG_MODE = MCONTROL_ACTION_DEBUG_MODE,
   ACTION_TRACE_START = MCONTROL_ACTION_TRACE_START,
   ACTION_TRACE_STOP = MCONTROL_ACTION_TRACE_STOP,
-  ACTION_TRACE_EMIT = MCONTROL_ACTION_TRACE_EMIT,
-  ACTION_MAXVAL = MCONTROL_ACTION_TRACE_EMIT
+  ACTION_TRACE_EMIT = MCONTROL_ACTION_TRACE_EMIT
 } action_t;
 
 typedef enum {
@@ -92,6 +91,7 @@ public:
   virtual action_t get_action() const { return ACTION_DEBUG_EXCEPTION; }
   virtual bool icount_check_needed() const { return false; }
   virtual void stash_read_values() {}
+  virtual void set_hit(hit_t UNUSED val) {}
 
   virtual std::optional<match_result_t> detect_memory_access_match(processor_t UNUSED * const proc,
       operation_t UNUSED operation, reg_t UNUSED address, std::size_t UNUSED len, std::optional<reg_t> UNUSED data) noexcept { return std::nullopt; }
@@ -214,7 +214,6 @@ public:
   bool get_store() const override { return store; }
   bool get_load() const override { return load; }
   action_t get_action() const override { return action; }
-  virtual void set_hit(hit_t val) = 0;
 
   std::optional<match_result_t> detect_memory_access_match(processor_t * const proc,
       operation_t operation, reg_t address, std::size_t len, std::optional<reg_t> data) noexcept override;
@@ -298,12 +297,17 @@ public:
   unsigned count() const { return triggers.size(); }
 
   std::optional<match_result_t> detect_memory_access_match(operation_t operation, reg_t address, std::size_t len, std::optional<reg_t> data) noexcept;
+  void set_pending_hits() noexcept;
+  void clear_pending_hits() noexcept { pending_hits.clear(); }
   std::optional<match_result_t> detect_icount_match() noexcept;
   std::optional<match_result_t> detect_trap_match(const trap_t& t) noexcept;
 
   processor_t *proc;
 private:
   std::vector<trigger_t *> triggers;
+  // Triggers with timing after that fire if the instruction retires; cleared
+  // together with mmu_t::matched_trigger
+  std::vector<trigger_t *> pending_hits;
 };
 
 }
