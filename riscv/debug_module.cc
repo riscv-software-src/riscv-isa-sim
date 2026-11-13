@@ -144,18 +144,37 @@ void debug_module_t::reset()
   memset(&dmstatus, 0, sizeof(dmstatus));
   dmstatus.impebreak = config.support_impebreak;
   dmstatus.authenticated = !config.require_authentication;
-  dmstatus.version = 2;
+  dmstatus.version = 3; // Debug Spec 1.0
 
   memset(&abstractcs, 0, sizeof(abstractcs));
   abstractcs.datacount = config.datacount;
   abstractcs.progbufsize = config.progbufsize;
 
   memset(&abstractauto, 0, sizeof(abstractauto));
+  command = 0;
+  abstract_command_completed = false;
+  rti_remaining = 0;
+  memset(debug_rom_flags, 0, sizeof(debug_rom_flags));
+  for (auto& state : hart_state) {
+    // Preserve the hart's actual halted state and sticky reset history.
+    state.resumeack = false;
+    state.haltgroup = 0;
+  }
+
+  std::fill(dmdata.begin(), dmdata.end(), 0);
+  memset(program_buffer, 0, 4 * config.progbufsize); // keep the impebreak
+  memset(sbaddress, 0, sizeof(sbaddress));
+  memset(sbdata, 0, sizeof(sbdata));
+  sb_read_wait = 0;
+  sb_write_wait = 0;
+  hawindowsel = 0;
+  std::fill(hart_array_mask.begin(), hart_array_mask.end(), false);
 
   memset(&sbcs, 0, sizeof(sbcs));
   if (config.max_sba_data_width > 0) {
     sbcs.version = 1;
     sbcs.asize = sizeof(reg_t) * 8;
+    sbcs.sbaccess = 2;
   }
   if (config.max_sba_data_width >= 64)
     sbcs.access64 = true;
@@ -363,6 +382,23 @@ bool debug_module_t::sb_busy() const
   return sb_read_wait > 0 || sb_write_wait > 0;
 }
 
+bool debug_module_t::sb_register_present(unsigned address) const
+{
+  switch (address) {
+    case DM_SBADDRESS0: return sbcs.asize > 0;
+    case DM_SBADDRESS1: return sbcs.asize > 32;
+    case DM_SBADDRESS2: return sbcs.asize > 64;
+    case DM_SBADDRESS3: return sbcs.asize > 96;
+    case DM_SBDATA0:
+      return sbcs.access8 || sbcs.access16 || sbcs.access32 ||
+             sbcs.access64 || sbcs.access128;
+    case DM_SBDATA1: return sbcs.access64 || sbcs.access128;
+    case DM_SBDATA2:
+    case DM_SBDATA3: return sbcs.access128;
+    default: return true;
+  }
+}
+
 void debug_module_t::sb_read_start()
 {
   if (sb_busy() || sbcs.sbbusyerror) {
@@ -445,6 +481,23 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
 {
   uint32_t result = 0;
   D(fprintf(stderr, "dmi_read(0x%x) -> ", address));
+  if (!dmcontrol.dmactive) {
+    *value = 0;
+    return true;
+  }
+  if (!dmstatus.authenticated) {
+    // Until the debugger authenticates, everything reads 0 except these fields.
+    if (address == DM_DMSTATUS) {
+      result = set_field(result, DM_DMSTATUS_AUTHBUSY, dmstatus.authbusy);
+      result = set_field(result, DM_DMSTATUS_VERSION, dmstatus.version);
+    } else if (address == DM_DMCONTROL) {
+      result = set_field(result, DM_DMCONTROL_DMACTIVE, dmcontrol.dmactive);
+    } else if (address == DM_AUTHDATA) {
+      result = challenge;
+    }
+    *value = result;
+    return true;
+  }
   if (address >= DM_DATA0 && address < DM_DATA0 + abstractcs.datacount) {
     unsigned i = address - DM_DATA0;
     assert(dmdata.size() >= 4);
@@ -468,15 +521,19 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
       result = -1;
       D(fprintf(stderr, "\ndmi_read(0x%02x (progbuf[%d]) -> -1 because abstractcs.busy==true\n", address, i));
     }
+    if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
+      abstractcs.cmderr = CMDERR_BUSY;
+    }
     if (!abstractcs.busy && ((abstractauto.autoexecprogbuf >> i) & 1)) {
       perform_abstract_command();
     }
 
+  } else if (!sb_register_present(address)) {
+    // Absent System Bus registers read 0.
   } else {
     switch (address) {
       case DM_DMCONTROL:
         {
-          result = set_field(result, DM_DMCONTROL_HALTREQ, dmcontrol.haltreq);
           result = set_field(result, DM_DMCONTROL_RESUMEREQ, dmcontrol.resumereq);
           result = set_field(result, DM_DMCONTROL_HARTSELHI,
               dmcontrol.hartsel >> DM_DMCONTROL_HARTSELLO_LENGTH);
@@ -636,6 +693,20 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
           sbcs.sbbusyerror = true;
         }
         break;
+      case DM_HALTSUM0:
+      case DM_HALTSUM1:
+        {
+          // Each haltsum0 bit is one hart; each haltsum1 bit is a group of 32
+          unsigned shift = address == DM_HALTSUM1 ? 5 : 0;
+          unsigned span = 32U << shift;
+          unsigned base = dmcontrol.hartsel & ~(span - 1);
+          for (unsigned n = base; n < base + span && n < sim->get_cfg().nprocs(); n++) {
+            size_t hart_id = sim->get_cfg().hartids[n];
+            if (hart_available(hart_id) && hart_state[hart_id].halted)
+              result |= 1U << ((n - base) >> shift);
+          }
+        }
+        break;
       case DM_AUTHDATA:
         result = challenge;
         break;
@@ -648,9 +719,9 @@ bool debug_module_t::dmi_read(unsigned address, uint32_t *value)
         }
         break;
       default:
+        // Unimplemented DM registers read 0
         result = 0;
-        D(fprintf(stderr, "Unexpected. Returning Error."));
-        return false;
+        break;
     }
   }
   D(fprintf(stderr, "0x%x\n", result));
@@ -745,10 +816,14 @@ bool debug_module_t::perform_abstract_command()
   constexpr decltype(cmdtype) CMDTYPE_ACCESS_REGISTER = 0ULL;
   constexpr decltype(cmdtype) CMDTYPE_ACCESS_MEMORY = 2ULL;
 
-  if (cmdtype == CMDTYPE_ACCESS_REGISTER)
+  // Command bits that are defined as 0
+  constexpr uint32_t ACCESS_REGISTER_ZERO = 1U << 23;
+  constexpr uint32_t ACCESS_MEMORY_ZERO = (3U << 17) | 0x3fffU;
+
+  if (cmdtype == CMDTYPE_ACCESS_REGISTER && !(command & ACCESS_REGISTER_ZERO))
     return perform_abstract_register_access();
 
-  if (cmdtype == CMDTYPE_ACCESS_MEMORY)
+  if (cmdtype == CMDTYPE_ACCESS_MEMORY && !(command & ACCESS_MEMORY_ZERO))
     return perform_abstract_memory_access();
 
   abstractcs.cmderr = CMDERR_NOTSUP;
@@ -768,8 +843,14 @@ bool debug_module_t::perform_abstract_register_access()
     return true;
   }
 
+  if (get_field(command, AC_ACCESS_REGISTER_AARPOSTINCREMENT) ||
+      (postexec && config.progbufsize == 0)) {
+    abstractcs.cmderr = CMDERR_NOTSUP;
+    return true;
+  }
+
   assert(size < 8);
-  if ((1U << size) > dmdata.size()) {
+  if (transfer && (1U << size) > dmdata.size()) {
     abstractcs.cmderr = CMDERR_NOTSUP;
     return true;
   }
@@ -1092,9 +1173,14 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
 {
   D(fprintf(stderr, "dmi_write(0x%x, 0x%x)\n", address, value));
 
+  // Only dmactive can be changed while the DM is held in reset.
+  if (!dmcontrol.dmactive && address != DM_DMCONTROL)
+    return true;
+
+  // Until the debugger authenticates, writes to other registers are ignored.
   if (!dmstatus.authenticated && address != DM_AUTHDATA &&
       address != DM_DMCONTROL)
-    return false;
+    return true;
 
   if (address >= DM_DATA0 && address < DM_DATA0 + abstractcs.datacount) {
     unsigned i = address - DM_DATA0;
@@ -1116,23 +1202,34 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
     if (!abstractcs.busy)
       write32(program_buffer, i, value);
 
+    if (abstractcs.busy && abstractcs.cmderr == CMDERR_NONE) {
+      abstractcs.cmderr = CMDERR_BUSY;
+    }
+
     if (!abstractcs.busy && ((abstractauto.autoexecprogbuf >> i) & 1)) {
       perform_abstract_command();
     }
     return true;
 
+  } else if (!sb_register_present(address)) {
+    // Writes to absent System Bus registers have no effect.
+    return true;
   } else {
     switch (address) {
       case DM_DMCONTROL:
         {
-          if (!dmcontrol.dmactive && get_field(value, DM_DMCONTROL_DMACTIVE))
+          bool dmactive = get_field(value, DM_DMCONTROL_DMACTIVE);
+          // Reset on deactivation, and discard any late hart writes when
+          // reactivating. The debug ROM can keep running while inactive.
+          if (!dmactive || !dmcontrol.dmactive)
             reset();
-          dmcontrol.dmactive = get_field(value, DM_DMCONTROL_DMACTIVE);
+          dmcontrol.dmactive = dmactive;
           if (!dmstatus.authenticated || !dmcontrol.dmactive)
             return true;
 
           dmcontrol.haltreq = get_field(value, DM_DMCONTROL_HALTREQ);
-          dmcontrol.resumereq = get_field(value, DM_DMCONTROL_RESUMEREQ);
+          // resumereq is ignored if haltreq is set
+          dmcontrol.resumereq = get_field(value, DM_DMCONTROL_RESUMEREQ) && !dmcontrol.haltreq;
           dmcontrol.hartreset = get_field(value, DM_DMCONTROL_HARTRESET);
           dmcontrol.ndmreset = get_field(value, DM_DMCONTROL_NDMRESET);
           if (config.support_hasel)
@@ -1153,8 +1250,10 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
                 hart->halt_request = hart->HR_NONE;
               }
               if (dmcontrol.resumereq && hart_available(hart_id)) {
-                D(fprintf(stderr, "resume hart %d\n", hart_id));
-                debug_rom_flags[hart_id] |= (1 << DEBUG_ROM_FLAG_RESUME);
+                if (hart_state[hart_id].halted) {
+                  D(fprintf(stderr, "resume hart %d\n", hart_id));
+                  debug_rom_flags[hart_id] |= (1 << DEBUG_ROM_FLAG_RESUME);
+                }
                 hart_state[hart_id].resumeack = false;
               }
               if (dmcontrol.hartreset && hart_available(hart_id)) {
@@ -1192,16 +1291,27 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         return true;
 
       case DM_ABSTRACTCS:
+        if (abstractcs.busy) {
+          if (abstractcs.cmderr == CMDERR_NONE)
+            abstractcs.cmderr = CMDERR_BUSY;
+          return true;
+        }
         abstractcs.cmderr = (cmderr_t) (((uint32_t) (abstractcs.cmderr)) & (~(uint32_t)(get_field(value, DM_ABSTRACTCS_CMDERR))));
         return true;
 
       case DM_ABSTRACTAUTO:
-        if (config.support_abstractauto) {
-          abstractauto.autoexecprogbuf = get_field(value,
-              DM_ABSTRACTAUTO_AUTOEXECPROGBUF);
-          abstractauto.autoexecdata = get_field(value,
-              DM_ABSTRACTAUTO_AUTOEXECDATA);
+        if (!config.support_abstractauto)
+          return true;
+        if (abstractcs.busy) {
+          if (abstractcs.cmderr == CMDERR_NONE)
+            abstractcs.cmderr = CMDERR_BUSY;
+          return true;
         }
+        // Bits for data and progbuf registers that don't exist are 0.
+        abstractauto.autoexecprogbuf = get_field(value,
+            DM_ABSTRACTAUTO_AUTOEXECPROGBUF) & ((1U << config.progbufsize) - 1);
+        abstractauto.autoexecdata = get_field(value,
+            DM_ABSTRACTAUTO_AUTOEXECDATA) & ((1U << config.datacount) - 1);
         return true;
       case DM_SBCS:
         sbcs.readonaddr = get_field(value, DM_SBCS_SBREADONADDR);
@@ -1284,7 +1394,8 @@ bool debug_module_t::dmi_write(unsigned address, uint32_t value)
         return true;
     }
   }
-  return false;
+  // Writes to unimplemented or read-only DM registers have no effect
+  return true;
 }
 
 void debug_module_t::proc_reset(unsigned id)
