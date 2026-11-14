@@ -763,6 +763,11 @@ bool mnstatus_csr_t::unlogged_write(const reg_t val) noexcept {
   return basic_csr_t::unlogged_write(new_mnstatus);
 }
 
+void mnstatus_csr_t::clear_nmie() noexcept {
+  basic_csr_t::unlogged_write(read() & ~MNSTATUS_NMIE);
+  log_write();
+}
+
 // implement class rv32_low_csr_t
 rv32_low_csr_t::rv32_low_csr_t(processor_t* const proc, const reg_t addr, csr_t_p orig):
   csr_t(proc, addr),

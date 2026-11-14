@@ -115,8 +115,9 @@ struct state_t
   csr_t_p mcounteren;
   csr_t_p mcountinhibit;
   csr_t_p mevent[N_HPMCOUNTERS];
-  csr_t_p mnstatus;
+  mnstatus_csr_t_p mnstatus;
   csr_t_p mnepc;
+  csr_t_p mncause;
   csr_t_p scounteren;
   csr_t_p sepc;
   csr_t_p stval;
@@ -408,6 +409,7 @@ private:
   void register_insn(insn_desc_t, std::vector<insn_desc_t>& pool);
 
   void enter_debug_mode(uint8_t cause, uint8_t ext_cause);
+  void enter_critical_error_state();
 
   void debug_output_log(std::stringstream *s); // either output to interactive user or write to log file
 
