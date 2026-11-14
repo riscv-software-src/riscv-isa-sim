@@ -248,8 +248,6 @@ void processor_t::step(size_t n)
     {
       take_pending_interrupt();
 
-      check_if_lpad_required();
-
       if (unlikely(slow_path()))
       {
         // Main simulation loop, slow path.
@@ -271,12 +269,16 @@ void processor_t::step(size_t n)
             auto match = TM.detect_icount_match();
             if (match.has_value()) {
               assert(match->timing == triggers::TIMING_BEFORE);
-              throw triggers::matched_t((triggers::operation_t)0, 0, match->action, state.v);
+              throw triggers::matched_t((triggers::operation_t)0, 0, match->action, false);
             }
           }
 
           if (unlikely(is_waiting_for_interrupt()))
             return;
+
+          // A completed single step and a pending icount trigger come before
+          // the landing-pad check of the next instruction
+          check_if_lpad_required();
 
           insn_fetch_t fetch = mmu->access_icache(state.pc)->data;
           if (debug && !state.serialized)
@@ -299,6 +301,7 @@ void processor_t::step(size_t n)
       else while (instret < n)
       {
         // Main simulation loop, fast path.
+        check_if_lpad_required();
         for (auto ic_entry = _mmu->access_icache(state.pc); instret < n; instret++) {
           auto fetch = ic_entry->data;
           ic_entry = ic_entry->next;
