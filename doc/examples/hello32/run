@@ -1,0 +1,4 @@
+#!/bin/bash -ex
+riscv64-linux-gnu-as -mabi=ilp32 -march=rv32i hello.S -o hello.o
+riscv64-linux-gnu-ld -m elf32lriscv_ilp32 --image-base 0x80000000 -o hello hello.o
+spike -d --isa=RV32I --priv=M hello

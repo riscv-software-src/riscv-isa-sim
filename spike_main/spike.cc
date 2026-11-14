@@ -33,14 +33,14 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  -m<n>                 Provide <n> MiB of target memory [default 2048]\n");
   fprintf(stderr, "  -m<a:m,b:n,...>       Provide memory regions of size m and n bytes\n");
   fprintf(stderr, "                          at base addresses a and b (with 4 KiB alignment)\n");
-  fprintf(stderr, "  -d                    Interactive debug mode\n");
+  fprintf(stderr, "  -d                    Start halted, in interactive debug mode using the internal debugger\n");
   fprintf(stderr, "  -g                    Track histogram of PCs\n");
   fprintf(stderr, "  -l                    Generate a log of execution\n");
 #ifdef HAVE_BOOST_ASIO
   fprintf(stderr, "  -s                    Command I/O via socket (use with -d)\n");
 #endif
   fprintf(stderr, "  -h, --help            Print this help message\n");
-  fprintf(stderr, "  --halted              Start halted, allowing a debugger to connect\n");
+  fprintf(stderr, "  --halted              Start halted, allowing an external debugger to connect\n");
   fprintf(stderr, "  --log=<name>          File name for option -l\n");
   fprintf(stderr, "  --debug-cmd=<name>    Read commands from file (use with -d)\n");
   fprintf(stderr, "  --isa=<name>          RISC-V ISA string [default %s]\n", DEFAULT_ISA);
