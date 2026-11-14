@@ -135,3 +135,9 @@ $INSTALL/bin/spike -d --debug-cmd=$CI/show-init-pc.cmd --disable-dtb --pc=0x1234
     | grep 0x0000000000001234 # custom PC value
 $INSTALL/bin/spike -d --debug-cmd=$CI/show-init-pc.cmd --disable-dtb --pcs=0:0x12345678 wfi-as-nop 2>&1 \
     | grep 0x0000000012345678 # custom PC value
+
+# return to the original directory
+cd $HERE
+
+# commented out because it requires riscv64-unknown-elf
+# $CI/semihosting/run.sh $INSTALL/bin/spike
