@@ -31,7 +31,7 @@ $HOST-gcc -static -O2 -o atomics $CI/atomics.c
 $HOST-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie \
   -Wl,--build-id=none -Wl,-Ttext-segment=0x80000000 \
   -Wl,--section-start=.tohost=0x81000000 -o seip-rmw $CI/seip-rmw.S
-$HOST-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie -march=rv64gch_zicsr \
+$HOST-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie -march=rv64gc -mabi=lp64d \
   -Wl,--build-id=none -Wl,-Ttext-segment=0x80000000 \
   -Wl,--section-start=.tohost=0x81000000 -o vstopi-priority $CI/vstopi-priority.S
 $HOST-gcc -static -O2 -march=rv64gcv -o vector-sum $CI/vector-sum.c

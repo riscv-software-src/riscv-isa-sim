@@ -2459,7 +2459,7 @@ reg_t vstopi_csr_t::read() const noexcept {
   reg_t vstopei = (vgein && proc->imsic->vgein_valid(vgein)) ? proc->imsic->vs[vgein]->topei() : 0;
   reg_t sei_priority = vstopei ? vstopei : (vgein == 0 && iid == IRQ_S_EXT && iprio != 0) ? iprio : 256;
 
-  reg_t identity, priority; // priority number; 256 stands for 0 with default order below VSEI
+  reg_t identity, priority; // priority number; 256 = lowest, clamped to 255 on output
   if (vti) {
     if (!sei && iid == IRQ_S_EXT)
       return 0;
