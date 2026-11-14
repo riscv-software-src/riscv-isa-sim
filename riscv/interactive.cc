@@ -127,7 +127,7 @@ static std::string readline(int fd)
   size_t cursor_pos = s.size();
   const size_t initial_s_len = cursor_pos;
   std::cerr << s << std::flush;
-  for (char ch; read(fd, &ch, 1) == 1; )
+  for (char ch; read(STDIN_FILENO, &ch, 1) == 1; )
   {
     uint32_t keycode = key_buffer << BITS_PER_CHAR | ch;
     switch (keycode)
