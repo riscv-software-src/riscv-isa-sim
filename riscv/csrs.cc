@@ -2699,3 +2699,91 @@ void vstopei_csr_t::verify_permissions(insn_t insn, bool write) const {
       throw trap_illegal_instruction(insn.bits());
   }
 }
+
+// RISC-V Worlds (World-ID) CSRs
+
+mwid_csr_t::mwid_csr_t(processor_t* const proc, const reg_t addr):
+  basic_csr_t(proc, addr, (proc->get_cfg().pmwid & proc->wid_field_mask()) |
+                          (proc->get_cfg().pmwid_locked ? proc->mwid_lock_bit() : 0)) {
+}
+
+bool mwid_csr_t::is_locked() const noexcept {
+  return read() & proc->mwid_lock_bit();
+}
+
+reg_t mwid_csr_t::get_wid() const noexcept {
+  return read() & proc->wid_field_mask();
+}
+
+bool mwid_csr_t::unlogged_write(const reg_t val) noexcept {
+  // "Once the mwid CSR is locked (by setting L to 1), any attempt to
+  // write to the CSR is ignored."
+  if (is_locked())
+    return false;
+  // The WID field is WARL and the remaining bits are reserved
+  // (read-only zero); the lock bit is sticky.
+  const reg_t new_val = (val & proc->wid_field_mask()) | (val & proc->mwid_lock_bit());
+  // The WID of M-mode may have changed, so cached translations (which
+  // have already passed the WID authorization check) must be dropped.
+  proc->get_mmu()->flush_tlb();
+  return basic_csr_t::unlogged_write(new_val);
+}
+
+lower_wid_csr_t::lower_wid_csr_t(processor_t* const proc, const reg_t addr):
+  masked_csr_t(proc, addr, proc->wid_field_mask(), 0) {
+}
+
+bool lower_wid_csr_t::unlogged_write(const reg_t val) noexcept {
+  // "A simple implementation can flush address-translation caches on
+  // any mlwid write."  Flushing is also required to re-run the WID
+  // authorization check on the next access from a lower privilege mode.
+  proc->get_mmu()->flush_tlb();
+  return masked_csr_t::unlogged_write(val);
+}
+
+slwid_csr_t::slwid_csr_t(processor_t* const proc, const reg_t addr):
+  lower_wid_csr_t(proc, addr) {
+}
+
+void slwid_csr_t::verify_permissions(insn_t insn, bool write) const {
+  lower_wid_csr_t::verify_permissions(insn, write);
+  // "If mwiddeleg is zero, the Sswid extension is disabled, in which case
+  // any accesses to the slwid CSR raise an illegal instruction exception."
+  if (state->mwiddeleg->read() == 0)
+    throw trap_illegal_instruction(insn.bits());
+  // "The Sswid extension is not available to a guest OS."
+  if (state->v)
+    throw trap_virtual_instruction(insn.bits());
+}
+
+mlwidlist_csr_t::mlwidlist_csr_t(processor_t* const proc, const reg_t addr):
+  masked_csr_t(proc, addr, proc->pmlwidlist(), proc->pmlwidlist()) {
+}
+
+bool mlwidlist_csr_t::unlogged_write(const reg_t val) noexcept {
+  // "The mlwidlist CSR is locked (read-only) whenever mwid is locked."
+  if (state->mwid->is_locked())
+    return false;
+  const bool success = masked_csr_t::unlogged_write(val);
+  // "if mlwidlist is updated, any WIDs that are de-authorized (set to
+  // zero) will be implicitly de-authorized in mwiddeleg also."
+  if (success && state->mwiddeleg)
+    state->mwiddeleg->write(state->mwiddeleg->read() & read());
+  proc->get_mmu()->flush_tlb();
+  return success;
+}
+
+mwiddeleg_csr_t::mwiddeleg_csr_t(processor_t* const proc, const reg_t addr):
+  masked_csr_t(proc, addr, proc->pmwiddeleg() & proc->pmlwidlist(), 0) {
+}
+
+bool mwiddeleg_csr_t::unlogged_write(const reg_t val) noexcept {
+  // "mwiddeleg is always a subset of mlwidlist (if Smlwidlist is enabled)
+  // and pmlwidlist (if implemented by the platform)."  The latter, and the
+  // platform-specific set of delegatable WIDs, are handled by the mask.
+  const reg_t mlwidlist = state->mlwidlist ? state->mlwidlist->read() : ~reg_t(0);
+  // "A simple implementation can flush address-translation caches on any
+  // write to mwiddeleg or slwid."
+  proc->get_mmu()->flush_tlb();
+  return masked_csr_t::unlogged_write(val & mlwidlist);
+}

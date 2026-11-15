@@ -174,6 +174,13 @@ struct state_t
   base_pmpaddr_csr_t_p pmpaddr[max_pmp];
   csr_t_p spmpen;
 
+  // RISC-V Worlds (World-ID) CSRs
+  mwid_csr_t_p mwid;
+  csr_t_p mlwid;
+  csr_t_p mlwidlist;
+  csr_t_p mwiddeleg;
+  csr_t_p slwid;
+
   float_csr_t_p fflags;
   float_csr_t_p frm;
 
@@ -428,6 +435,23 @@ public:
   reg_t n_pmp;
   reg_t lg_pmp_granularity;
   reg_t pmp_tor_mask() { return -(reg_t(1) << (lg_pmp_granularity - PMP_SHIFT)); }
+
+  // RISC-V Worlds (World-ID) support.
+  // Bit vector with a bit set for each of the NWorlds WIDs.
+  reg_t worlds_mask() const { return cfg->nworlds >= 8 * sizeof(reg_t) ? ~reg_t(0) : (reg_t(1) << cfg->nworlds) - 1; }
+  // Mask of the ceil(log2(NWorlds))-bit WID field of mwid/mlwid/slwid.
+  reg_t wid_field_mask() const;
+  reg_t mwid_lock_bit() const { return reg_t(1) << (isa.get_max_xlen() - 1); }
+  reg_t pmwidlist() const { return cfg->pmwidlist & worlds_mask(); }
+  reg_t pmlwidlist() const { return cfg->pmlwidlist & worlds_mask(); }
+  reg_t pmwiddeleg() const { return cfg->pmwiddeleg & worlds_mask(); }
+  // The WID associated with memory accesses made at the given effective
+  // privilege mode, and whether that WID is authorized.
+  reg_t get_wid(reg_t priv, bool virt) const;
+  bool wid_authorized(reg_t priv, bool virt) const;
+  // Raise a software-check exception (illegal world fault) if the WID of
+  // accesses at the given effective privilege mode is not authorized.
+  void check_wid_authorized(reg_t priv, bool virt) const;
 
   vectorUnit_t VU;
   triggers::module_t TM;
