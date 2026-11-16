@@ -1,11 +1,16 @@
-// RISC-V semihosting sequence
-//      slli x0, x0, 0x1f    # 0x01f01013 Entry NOP
-//      ebreak               # 0x00100073 Break to debugger
-//      srai x0, x0, 7       # 0x40705013 Exit NOP
-auto prev = MMU.load_insn(pc - 4);
-auto next = MMU.load_insn(pc + 4);
-
-if (!STATE.debug_mode && prev.insn.bits() == 0x01f01013 && next.insn.bits() == 0x40705013) {
+bool do_semihosting = false;
+if (p->get_semihosting() && !STATE.debug_mode) {
+  // RISC-V semihosting sequence
+  //      slli x0, x0, 0x1f    # 0x01f01013 Entry NOP
+  //      ebreak               # 0x00100073 Break to debugger
+  //      srai x0, x0, 7       # 0x40705013 Exit NOP
+  auto prev = MMU.load_insn(pc - 4);
+  auto next = MMU.load_insn(pc + 4);
+  if (prev.insn.bits() == 0x01f01013 && next.insn.bits() == 0x40705013) {
+    do_semihosting = true;
+  }
+}
+if (do_semihosting) {
   // a0: the semihosting operation code
   // a1: the pointer to the semihosting operation arguments
   reg_t ret = p->semihosting(xlen, READ_REG(10), READ_REG(11));

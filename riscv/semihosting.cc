@@ -602,6 +602,11 @@ static reg_t sys_clock(processor_t* p)
   return elapsed(p) / (sys_tickfreq() / 100);
 }
 
+bool processor_t::get_semihosting() const
+{
+  return sim->get_semihosting();
+}
+
 // RISC-V semihosting entry point
 // Parameters:
 //   xlen - the XLEN of the target (32 or 64)

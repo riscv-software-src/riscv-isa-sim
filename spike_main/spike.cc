@@ -94,6 +94,7 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --dm-no-abstractauto  Debug module won't support the abstractauto register\n");
   fprintf(stderr, "  --blocksz=<size>      Cache block size (B) for CMO operations(powers of 2) [default 64]\n");
   fprintf(stderr, "  --instructions=<n>    Stop after n instructions\n");
+  fprintf(stderr, "  --semihosting         Enable semihosting support\n");
 
   exit(exit_code);
 }
@@ -353,6 +354,7 @@ int main(int argc, char** argv)
   std::optional<unsigned long long> instructions;
   std::optional<debug_module_config_t> dm_config = debug_module_config_t();
   bool dm_enabled = true;
+  bool semihosting = false;
   cfg_arg_t<size_t> nprocs(1);
 
   cfg_t cfg;
@@ -392,6 +394,7 @@ int main(int argc, char** argv)
   parser.option(0, "halted", 0, [&](const char UNUSED *s){halted = true;});
   parser.option(0, "rbb-port", 1, [&](const char* s){use_rbb = true; rbb_port = atoul_safe(s);});
   parser.option(0, "pc", 1, [&](const char* s){cfg.start_pc.set_global(strtoull(s, 0, 0));});
+  parser.option(0, "semihosting", 0, [&](const char UNUSED *s){semihosting = true;});
 
   parser.option(0, "pcs", 1, [&](const char* s){
     std::string arg(s);
@@ -572,7 +575,7 @@ int main(int argc, char** argv)
       mems, plugin_device_factories, dtb_discovery, htif_args, dm_config, log_path, dtb_enabled, dtb_file,
       socket,
       cmd_file,
-      instructions);
+      instructions, semihosting);
 
   std::unique_ptr<jtag_dtm_t> jtag_dtm;
   std::unique_ptr<remote_bitbang_t> remote_bitbang;

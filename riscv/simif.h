@@ -28,6 +28,7 @@ public:
   virtual void proc_reset(unsigned id) = 0;
   virtual void sim_exit(int code) = 0;
   virtual const std::vector<std::string>& get_target_args() = 0;
+  virtual bool get_semihosting() const { return false; }
 
   virtual const cfg_t &get_cfg() const = 0;
   virtual const std::map<size_t, processor_t*>& get_harts() const = 0;
