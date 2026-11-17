@@ -40,7 +40,8 @@ public:
         bool dtb_enabled, const char *dtb_file,
         bool socket_enabled,
         FILE *cmd_file, // needed for command line option --cmd
-        std::optional<unsigned long long> instruction_limit);
+        std::optional<unsigned long long> instruction_limit,
+        bool semihosting = false);
   ~sim_t() override;
 
   int run();
@@ -55,6 +56,11 @@ public:
   void configure_log(bool enable_log, bool enable_commitlog);
 
   void set_procs_debug(bool value);
+  void sim_exit(int code) override { htif_exit(code << 1 | 1); }
+  const std::vector<std::string>& get_target_args() override {
+    return target_args();
+  }
+  bool get_semihosting() const override { return semihosting; }
   void set_remote_bitbang(remote_bitbang_t* remote_bitbang) {
     this->remote_bitbang = remote_bitbang;
   }
@@ -102,6 +108,7 @@ private:
   FILE *cmd_file; // pointer to debug command input file
 
   std::optional<unsigned long long> instruction_limit;
+  bool semihosting;
 
   socketif_t *socketif;
   std::ostream sout_; // used for socket and terminal interface

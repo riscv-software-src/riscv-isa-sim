@@ -51,7 +51,8 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
              bool dtb_enabled, const char *dtb_file,
              bool socket_enabled,
              FILE *cmd_file, // needed for command line option --cmd
-             std::optional<unsigned long long> instruction_limit)
+             std::optional<unsigned long long> instruction_limit,
+             bool semihosting)
   : htif_t(args),
     cfg(cfg),
     mems(mems),
@@ -60,6 +61,7 @@ sim_t::sim_t(const cfg_t *cfg, bool halted,
     log_file(log_path),
     cmd_file(cmd_file),
     instruction_limit(instruction_limit),
+    semihosting(semihosting),
     sout_(nullptr),
     current_step(0),
     current_proc(0),
