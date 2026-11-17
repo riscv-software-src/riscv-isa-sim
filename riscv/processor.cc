@@ -678,12 +678,13 @@ const insn_desc_t insn_desc_t::illegal_instruction = {
   &::illegal_instruction, &::illegal_instruction, &::illegal_instruction, &::illegal_instruction
 };
 
-reg_t illegal_instruction(processor_t UNUSED *p, insn_t insn, reg_t UNUSED pc)
+reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t UNUSED pc)
 {
-  // The illegal instruction can be longer than ILEN bits, where the tval will
-  // contain the first ILEN bits of the faulting instruction. We hard-code the
-  // ILEN to 32 bits since all official instructions have at most 32 bits.
-  throw trap_illegal_instruction(insn.bits() & 0xffffffffULL);
+  const auto tentative_insn_len = (8 * insn_length(insn.bits()) + p->ialign() - 1) & -p->ialign();
+  const auto insn_len = std::min(tentative_insn_len, p->ilen());
+  const auto tval_insn_len = std::min(insn_len, p->get_isa().get_max_xlen());
+  const auto mask = reg_t(-1) >> (8 * sizeof(insn.bits()) - tval_insn_len);
+  throw trap_illegal_instruction(insn.bits() & mask);
 }
 
 reg_t processor_t::throw_instruction_address_misaligned(reg_t pc)
