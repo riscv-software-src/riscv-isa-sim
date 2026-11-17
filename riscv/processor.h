@@ -313,9 +313,11 @@ public:
   bool supports_impl(uint8_t impl) const {
     return impl_table[impl];
   }
-  reg_t pc_alignment_mask() {
-    const int ialign = extension_enabled(EXT_ZCA) ? 16 : 32;
-    return ~(reg_t)(ialign == 16 ? 0 : 2);
+  unsigned ialign() const {
+    return extension_enabled(EXT_ZCA) ? 16 : 32;
+  }
+  reg_t pc_alignment_mask() const {
+    return ~(reg_t)(ialign() == 16 ? 0 : 2);
   }
   void set_vxsat() {
     state.vxsat->write(1);
