@@ -313,6 +313,9 @@ public:
   bool supports_impl(uint8_t impl) const {
     return impl_table[impl];
   }
+  unsigned ilen() const {
+    return 32;
+  }
   unsigned ialign() const {
     return extension_enabled(EXT_ZCA) ? 16 : 32;
   }
