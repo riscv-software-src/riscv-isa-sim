@@ -271,7 +271,8 @@ void processor_t::step(size_t n)
             auto match = TM.detect_icount_match();
             if (match.has_value()) {
               assert(match->timing == triggers::TIMING_BEFORE);
-              throw triggers::matched_t((triggers::operation_t)0, 0, match->action, state.v);
+              // Icount supplies no guest virtual address in xtval.
+              throw triggers::matched_t((triggers::operation_t)0, 0, match->action, false);
             }
           }
 
