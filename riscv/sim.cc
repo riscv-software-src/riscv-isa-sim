@@ -457,8 +457,8 @@ void sim_t::set_rom()
       0x0182b283u,                              // ld     t0,24(t0)
     0x28067,                                    // jr     t0
     0,
-    (uint32_t) (start_pc & 0xffffffff),
-    (uint32_t) (start_pc >> 32)
+    uint32_t(start_pc),
+    uint32_t(start_pc >> 32)
   };
   if (get_target_endianness() == endianness_big) {
     int i;
