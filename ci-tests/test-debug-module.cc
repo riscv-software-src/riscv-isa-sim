@@ -194,6 +194,26 @@ static void test_autoexec_busy(const char *isa, bool supported)
   check(f.read(DM_ABSTRACTAUTO) == 0, "busy write does not change abstractauto");
 }
 
+static void test_unavailable_resume(const char *isa)
+{
+  fixture_t f(isa);
+  f.halt();
+  f.write(DM_DMCONTROL, DM_DMCONTROL_DMACTIVE | DM_DMCONTROL_RESUMEREQ);
+  for (unsigned i = 0; i < 100 && !(f.read(DM_DMSTATUS) & DM_DMSTATUS_ALLRESUMEACK); i++)
+    f.sim->get_core(size_t(0))->step(10);
+  check(f.read(DM_DMSTATUS) & DM_DMSTATUS_ALLRESUMEACK, "hart resumed");
+  f.halt();
+  check(f.read(DM_DMSTATUS) & DM_DMSTATUS_ALLRESUMEACK, "halting keeps resume ack");
+  f.write(DM_CUSTOM, 0); // Make the selected hart unavailable.
+  check(f.read(DM_DMSTATUS) & DM_DMSTATUS_ALLUNAVAIL, "hart unavailable");
+  f.write(DM_DMCONTROL, DM_DMCONTROL_DMACTIVE | DM_DMCONTROL_RESUMEREQ);
+  check(!(f.read(DM_DMSTATUS) & DM_DMSTATUS_ANYRESUMEACK),
+        "resumereq clears resume ack of an unavailable hart");
+  f.write(DM_CUSTOM, 3);
+  f.sim->get_core(size_t(0))->step(10);
+  check(f.read(DM_DMSTATUS) & DM_DMSTATUS_ALLHALTED, "unavailable hart is not resumed");
+}
+
 static void test_auth_reset(const char *isa)
 {
   fixture_t f(isa, true, true);
@@ -220,6 +240,7 @@ int main()
     test_command_reset(isa);
     test_autoexec_busy(isa, false);
     test_autoexec_busy(isa, true);
+    test_unavailable_resume(isa);
     test_auth_reset(isa);
   }
   printf("Executed successfully\n");
