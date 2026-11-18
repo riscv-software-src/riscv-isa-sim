@@ -34,9 +34,8 @@ $HOST-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie \
 $HOST-gcc -static -O2 -march=rv64gcv -o vector-sum $CI/vector-sum.c
 $HOST-gcc -nostdlib -static -march=rv64i_zicsr -mabi=lp64 \
   -T "$ROOT/arch_test_target/spike/link.ld" -Wl,--build-id=none -o wfi-as-nop "$CI/wfi-as-nop.S"
-# reservation-set size tests: the same source is built once per expected
-# RSSIZE and run with the matching ZaNrs extension
-for n in 8 16 64 128 512; do
+# Build the reservation-set test for each expected size.
+for n in 4 8 16 64 128 512 1024; do
   $HOST-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie \
     -march=rv64gc -mabi=lp64d -DRSSIZE=$n \
     -Wl,--build-id=none -Wl,-Ttext-segment=0x80000000 \
@@ -88,6 +87,10 @@ time $INSTALL/bin/spike --isa=rv64gc seip-rmw
 for n in 8 16 64 128 512; do
   time $INSTALL/bin/spike --isa=rv64gc_za${n}rs lrsc-reservation-set-$n
 done
+# Exact-address matching lets SC.W reach only the original word by default.
+time $INSTALL/bin/spike --isa=rv64gc lrsc-reservation-set-4
+time $INSTALL/bin/spike --isa=rv64gc --reservation-size=1024 lrsc-reservation-set-1024
+time $INSTALL/bin/spike --isa=rv64gc_za64rs --reservation-size=16 lrsc-reservation-set-16
 for xlen in 32 64; do
   $INSTALL/bin/spike --isa=rv${xlen}gc execute-trigger-icache-rv$xlen
   $INSTALL/bin/spike --isa=rv${xlen}gc --log-commits execute-trigger-icache-rv$xlen 2> /dev/null

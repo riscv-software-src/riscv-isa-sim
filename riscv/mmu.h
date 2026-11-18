@@ -284,7 +284,7 @@ public:
       paddr = translate(generate_access_info(vaddr, STORE, {}), size);
 
     if (sim->reservable(paddr))
-      // Checked reservation set subsumes paddr
+      // Compare the physical address bits above the reservation block offset.
       return !((load_reservation_address ^ paddr) & load_reservation_set_mask);
 
     // SC to non-reservable region: report the PMM-masked effective vaddr.
@@ -399,7 +399,7 @@ private:
   processor_t* proc;
   memtracer_list_t tracer;
   reg_t load_reservation_address;
-  reg_t load_reservation_set_mask;
+  const reg_t load_reservation_set_mask;
   reg_t blocksz;
 
   // implement an instruction cache for simulator performance

@@ -95,6 +95,7 @@ public:
   reg_t                   trigger_count;
   reg_t                   mcontrol6_napot_maskmax;
   reg_t                   cache_blocksz;
+  std::optional<reg_t>    reservation_size;
   std::optional<abstract_sim_if_t*> external_simulator;
 
   size_t nprocs() const { return hartids.size(); }

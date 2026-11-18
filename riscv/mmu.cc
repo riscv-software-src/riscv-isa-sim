@@ -12,26 +12,39 @@
 
 #include <cassert>
 
-static reg_t compute_reservation_set_mask(const processor_t *proc) {
-  reg_t reservation_size = 1;
-  // explicit extensions overwrite the argument
-  if (proc) {
-    // EXT_ZA4RS..EXT_ZA512RS are consecutive in the isa_parser.h, that means
-    // EXT_ZA4RS + i is Za(2^(i+2))rs. If several are enabled, the smallest
-    // (most restrictive) one wins.
-    static_assert(EXT_ZA512RS - EXT_ZA4RS == 7, "ZaNrs extensions must be consecutive");
-    for (unsigned i = 0; i <= EXT_ZA512RS - EXT_ZA4RS; i++) {
-      if (proc->extension_enabled(isa_extension_t(EXT_ZA4RS + i))) {
-        reservation_size = reg_t(1) << (i + 2);
-        break;
+static reg_t compute_reservation_set_mask(const processor_t* proc)
+{
+  if (!proc)
+    return ~reg_t(0);
+
+  const auto configured_size = proc->get_cfg().reservation_size;
+  const unsigned xlen = proc->get_isa().get_max_xlen();
+  if (configured_size && *configured_size < xlen / 8) {
+    fprintf(stderr, "--reservation-size must be at least %u bytes on RV%u\n", xlen / 8, xlen);
+    exit(1);
+  }
+
+  // A size of 1 produces an all-ones mask for legacy exact-address matching.
+  reg_t reservation_size = configured_size.value_or(1);
+  // EXT_ZA4RS + i represents Za(2^(i+2))rs. Check the smallest limit first.
+  static_assert(EXT_ZA512RS - EXT_ZA4RS == 7, "ZaNrs extensions must be consecutive");
+  for (unsigned i = 0; i <= EXT_ZA512RS - EXT_ZA4RS; i++) {
+    if (proc->extension_enabled(isa_extension_t(EXT_ZA4RS + i))) {
+      const unsigned isa_size = 1u << (i + 2);
+      if (configured_size && *configured_size > isa_size) {
+        fprintf(stderr, "--reservation-size exceeds the %u-byte limit of Za%urs\n", isa_size, isa_size);
+        exit(1);
       }
+      reservation_size = configured_size.value_or(isa_size);
+      break;
     }
   }
-  return ~(reservation_size - (reg_t)1);
+  return ~(reservation_size - 1);
 }
 
 mmu_t::mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc, reg_t cache_blocksz)
- : sim(sim), proc(proc), blocksz(cache_blocksz),
+ : sim(sim), proc(proc), load_reservation_set_mask(compute_reservation_set_mask(proc)),
+  blocksz(cache_blocksz),
 #ifdef RISCV_ENABLE_DUAL_ENDIAN
   target_big_endian(endianness == endianness_big),
 #endif
@@ -44,8 +57,6 @@ mmu_t::mmu_t(simif_t* sim, endianness_t endianness, processor_t* proc, reg_t cac
 #endif
   flush_tlb();
   yield_load_reservation();
-
-  load_reservation_set_mask = compute_reservation_set_mask(proc);
 }
 
 mmu_t::~mmu_t()

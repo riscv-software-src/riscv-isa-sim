@@ -93,6 +93,11 @@ static void help(int exit_code = 1)
   fprintf(stderr, "  --dm-no-impebreak     Debug module won't support implicit ebreak in program buffer\n");
   fprintf(stderr, "  --dm-no-abstractauto  Debug module won't support the abstractauto register\n");
   fprintf(stderr, "  --blocksz=<size>      Cache block size (B) for CMO operations(powers of 2) [default 64]\n");
+  fprintf(stderr, "  --reservation-size=<size>\n"
+                  "                        LR/SC reservation size in bytes, power of 2,\n"
+                  "                        4 or more on RV32, 8 or more on RV64, up to %u\n"
+                  "                        and within any ZaNrs limit [default: ISA size or exact address]\n",
+          unsigned(PGSIZE));
   fprintf(stderr, "  --instructions=<n>    Stop after n instructions\n");
 
   exit(exit_code);
@@ -488,6 +493,15 @@ int main(int argc, char** argv)
       exit(-1);
     }
     cfg.cache_blocksz = blocksz;
+  });
+  parser.option(0, "reservation-size", 1, [&](const char* s){
+    char* end;
+    const reg_t size = strtoull(s, &end, 0);
+    if (*s < '0' || *s > '9' || *end || size < 4 || size > PGSIZE || (size & (size - 1))) {
+      fprintf(stderr, "--reservation-size must be a power of 2 from 4 to %u bytes\n", unsigned(PGSIZE));
+      exit(1);
+    }
+    cfg.reservation_size = size;
   });
   parser.option(0, "instructions", 1, [&](const char* s){
     instructions = strtoull(s, 0, 0);
