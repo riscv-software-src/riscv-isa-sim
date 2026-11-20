@@ -531,7 +531,7 @@ struct : public arg_t {
             lmul_str = "f8";
             break;
           default:
-            assert(true && "unsupport fractional LMUL");
+            assert(false && "unsupport fractional LMUL");
         }
         s << ", m" << lmul_str;
       } else {

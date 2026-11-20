@@ -10,19 +10,16 @@ struct bulk_norm_out_t {
   uint8_t flags;
 };
 
-template<typename T>
-static int int_log2(T n)
+template<std::unsigned_integral T>
+static inline unsigned int_log2(T n)
 {
-  int res = 0;
-  while (n >>= 1)
-    res++;
-  return res;
+  return n ? sizeof(T) * 8 - std::countl_zero(n) - 1 : 0;
 }
 
-template<typename T>
-static T shift_right_jam(T n, int amt)
+template<std::unsigned_integral T>
+static inline T shift_right_jam(T n, unsigned amt)
 {
-  int width = 8 * sizeof(T);
+  unsigned width = 8 * sizeof(T);
   T shifted = amt >= width ? 0 : n >> amt;
   T jam_mask = amt >= width ? T(-1) : (T(1) << amt) - 1;
   bool jam = (n & jam_mask) != 0;
@@ -45,7 +42,9 @@ const static int f32_exp_mask = (uint32_t(1) << f32_exp_bits) - 1;
 const static uint32_t f32_mant_mask = (uint32_t(1) << f32_mant_bits) - 1;
 
 /** Template for a floating-point format class */
-template <typename U, typename M, typename E> class FloatFormat {
+template <std::unsigned_integral U, std::unsigned_integral M, std::unsigned_integral E> 
+class FloatFormat {
+public:
   virtual M mant() const = 0;
   virtual M sig() const = 0;
   virtual E exp() const = 0;
@@ -57,21 +56,21 @@ template <typename U, typename M, typename E> class FloatFormat {
   virtual bool sigNan() const = 0;
   virtual bool special() const = 0;
 
-public:
   virtual ~FloatFormat() = default;
 };
 
 /** Template for an IEEE-754 floating-point format class */
-template <typename U, typename M, typename E, unsigned expWidth, unsigned mantWidth> class IEEEFloatFormat : FloatFormat<U, M, E> {
-public:
+template <std::unsigned_integral U, std::unsigned_integral M, std::unsigned_integral E, unsigned expWidth, unsigned mantWidth>
+class IEEEFloatFormat : public FloatFormat<U, M, E> {
+protected:
   U n;
-  IEEEFloatFormat(U _n) : n(_n) {}
-  IEEEFloatFormat() {}
+  IEEEFloatFormat(U _n = 0) : n(_n) {}
 
-  int bias = (1 << (expWidth - 1)) - 1;
-  int sigBits = mantWidth + 1;
-  int mant_bits = mantWidth;
 public:
+  static const int bias = (1 << (expWidth - 1)) - 1;
+  static const int sigBits = mantWidth + 1;
+  static const int mant_bits = mantWidth;
+
   /* raw exponent field */
   E exp() const override { return (n >> mantWidth) & ((1 << expWidth) - 1); }
 
@@ -108,14 +107,14 @@ public:
   bool sigNan() const override { return nan() && !inf() && ( ( mant() >> (mantWidth - 1)) == 0); }
 
   bool isZero() const { return exp() == 0 && mant() == 0; }
+
+  U raw() const { return n; }
+  IEEEFloatFormat& setRaw(U _n) { n = _n; return *this; }
 };
 
 class bf16_t final : public IEEEFloatFormat<uint16_t, uint8_t, uint8_t, 8, 7> {
  public:
-  operator uint16_t() const { return n; }
-
-  bf16_t() : IEEEFloatFormat(0) {}
-  bf16_t(uint16_t _n) : IEEEFloatFormat(_n) {}
+  bf16_t(uint16_t _n = 0) : IEEEFloatFormat(_n) {}
 
   bf16_t flushed() const
   {
@@ -125,12 +124,9 @@ class bf16_t final : public IEEEFloatFormat<uint16_t, uint8_t, uint8_t, 8, 7> {
   }
 };
 
-class fp16_norm_t : public IEEEFloatFormat<uint16_t, uint16_t, uint8_t, 5, 10> {
+class fp16_norm_t final : public IEEEFloatFormat<uint16_t, uint16_t, uint8_t, 5, 10> {
  public:
-  operator uint16_t() const { return n; }
-
-  fp16_norm_t() : IEEEFloatFormat(0) {}
-  fp16_norm_t(uint16_t _n) : IEEEFloatFormat(_n) {}
+  fp16_norm_t(uint16_t _n = 0) : IEEEFloatFormat(_n) {}
 
   fp16_norm_t flushed() const
   {
@@ -143,9 +139,7 @@ class fp16_norm_t : public IEEEFloatFormat<uint16_t, uint16_t, uint8_t, 5, 10> {
 /** OpenCompute 8-bit Floating-point E5M2 (5-bit exponent, 2-bit mantissa) */
 class ofp8_e5m2 final : public IEEEFloatFormat<uint8_t, uint8_t, uint8_t, 5, 2> {
  public:
-  operator uint8_t() const { return n; }
-  ofp8_e5m2() : IEEEFloatFormat(0) {}
-  ofp8_e5m2(uint8_t _n) : IEEEFloatFormat(_n) {}
+  ofp8_e5m2(uint8_t _n = 0) : IEEEFloatFormat(_n) {}
 
   // OFP8 does not have signaling NaNs
   bool sigNan() const override { return false; }
@@ -161,9 +155,7 @@ class ofp8_e5m2 final : public IEEEFloatFormat<uint8_t, uint8_t, uint8_t, 5, 2> 
 /** OpenCompute 8-bit Floating-point E4M3 (4-bit exponent, 3-bit mantissa) */
 class ofp8_e4m3 final : public IEEEFloatFormat<uint8_t, uint8_t, uint8_t, 4, 3>  {
  public:
-  operator uint8_t() const { return n; }
-  ofp8_e4m3() : IEEEFloatFormat(0) {}
-  ofp8_e4m3(uint8_t _n) : IEEEFloatFormat(_n) {}
+   ofp8_e4m3(uint8_t _n = 0) : IEEEFloatFormat(_n) {}
 
   // E4M3 does not have infinities
   bool inf() const override { return false; }

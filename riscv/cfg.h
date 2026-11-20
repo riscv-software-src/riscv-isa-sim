@@ -24,10 +24,10 @@ public:
 
   T operator()() const { return value; }
 
-  T operator=(const T v) {
+  cfg_arg_t& operator=(const T v) {
     value = v;
     was_set = true;
-    return value;
+    return *this;
   }
 
 private:

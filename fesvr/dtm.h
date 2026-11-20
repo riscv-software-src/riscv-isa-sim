@@ -61,13 +61,15 @@ class dtm_t : public htif_t
     host.switch_to();
   }
 
- protected:
+ public:
   void read_chunk(addr_t taddr, size_t len, void* dst) override;
   void write_chunk(addr_t taddr, size_t len, const void* src) override;
   void clear_chunk(addr_t taddr, size_t len) override;
   size_t chunk_align() override;
   size_t chunk_max_size() override;
+protected:
   void reset() override;
+public:
   void idle() override;
 
   uint32_t run_abstract_command(uint32_t command, const uint32_t program[], size_t program_n,

@@ -8,7 +8,7 @@
 
 void option_parser_t::option(char c, const char* s, int arg, std::function<void(const char*)> action)
 {
-  opts.push_back(option_t(c, s, arg, action));
+  opts.emplace_back(c, s, arg, action);
 }
 
 const char* const* option_parser_t::parse(const char* const* argv0)

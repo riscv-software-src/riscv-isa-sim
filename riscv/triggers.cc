@@ -124,7 +124,7 @@ bool trigger_t::textra_match(processor_t * const proc) const noexcept
   assert(sselect <= SSELECT_MAXVAL);
   if (sselect == SSELECT_SCONTEXT) {
     reg_t mask = (reg_t(1) << ((xlen == 32) ? CSR_TEXTRA32_SVALUE_LENGTH : CSR_TEXTRA64_SVALUE_LENGTH)) - 1;
-    assert(CSR_TEXTRA32_SBYTEMASK_LENGTH < CSR_TEXTRA64_SBYTEMASK_LENGTH);
+    static_assert(CSR_TEXTRA32_SBYTEMASK_LENGTH < CSR_TEXTRA64_SBYTEMASK_LENGTH);
     for (unsigned i = 0; i < CSR_TEXTRA64_SBYTEMASK_LENGTH; i++)
       if (sbytemask & (1 << i))
         mask &= ~(reg_t(0xff) << (i * 8));

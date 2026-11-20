@@ -19,6 +19,7 @@ protected:
   size_t depth;
   std::map<addr_t,std::vector<char> > mem;
 
+public:
   void read_chunk(addr_t taddr, size_t len, void* dst) override;
   void write_chunk(addr_t taddr, size_t len, const void* src) override;
   void clear_chunk(addr_t, size_t) override {}

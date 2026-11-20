@@ -70,6 +70,7 @@ class fa_cache_sim_t : public cache_sim_t
 {
  public:
   fa_cache_sim_t(size_t ways, size_t linesz, const char* name);
+protected:
   uint64_t* check_tag(uint64_t addr) override;
   uint64_t victimize(uint64_t addr) override;
  private:
