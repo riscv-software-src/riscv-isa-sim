@@ -275,6 +275,13 @@ static const extension_info_t extension_infos[] = {
   {"smaia", 32 | 64, {EXT_SMAIA, EXT_SSAIA, EXT_SMCSRIND, EXT_SSCSRIND}},
   {"ssaia", 32 | 64, {EXT_SSAIA, EXT_SSCSRIND}, {"s"}},
   {"svvptc", 32 | 64, {}, {"s"}},
+  // RISC-V Worlds (World-ID) extensions.  Smlwid requires at least two
+  // privilege modes; Smwiddeleg/Sswid require S mode.
+  {"smwid", 32 | 64, {EXT_SMWID}},
+  {"smlwid", 32 | 64, {EXT_SMLWID}, {"u"}},
+  {"smlwidlist", 32 | 64, {EXT_SMLWIDLIST}, {"smwid", "smlwid"}},
+  {"smwiddeleg", 32 | 64, {EXT_SMWIDDELEG}, {"smlwid", "s"}},
+  {"sswid", 32 | 64, {EXT_SSWID}, {"smwiddeleg", "s"}},
 };
 
 static const extension_combination_t extension_combinations[] = {

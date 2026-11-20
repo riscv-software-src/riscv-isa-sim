@@ -95,6 +95,14 @@ public:
   reg_t                   trigger_count;
   reg_t                   mcontrol6_napot_maskmax;
   reg_t                   cache_blocksz;
+  // RISC-V Worlds platform parameters.  The masks are bit vectors
+  // indexed by WID and are truncated to `nworlds` bits.
+  reg_t                   nworlds;        // NWorlds, in [1, XLEN]
+  reg_t                   pmwid;          // WID of M-mode; reset value of mwid
+  reg_t                   pmwidlist;      // WIDs permitted in mwid (Smwid)
+  reg_t                   pmlwidlist;     // WIDs permitted in mlwid (Smlwid)
+  reg_t                   pmwiddeleg;     // WIDs delegatable via mwiddeleg (Smwiddeleg)
+  bool                    pmwid_locked;   // whether mwid is locked out of reset
   std::optional<abstract_sim_if_t*> external_simulator;
 
   size_t nprocs() const { return hartids.size(); }

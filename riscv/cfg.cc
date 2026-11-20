@@ -49,6 +49,12 @@ cfg_t::cfg_t()
   trigger_count    = 4;
   mcontrol6_napot_maskmax = 0;
   cache_blocksz    = 64;
+  nworlds          = 4;
+  pmwid            = 0;
+  pmwidlist        = ~reg_t(0);
+  pmlwidlist       = ~reg_t(0);
+  pmwiddeleg       = ~reg_t(0);
+  pmwid_locked     = false;
 }
 
 void start_pc_t::set_global(reg_t pc)
