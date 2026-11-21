@@ -76,7 +76,7 @@ static void commit_log_print_insn(processor_t *p, reg_t pc, insn_t insn)
   fprintf(log_file, "%1d ", priv);
   commit_log_print_value(log_file, xlen, pc);
   fprintf(log_file, " (");
-  commit_log_print_value(log_file, insn.length() * 8, insn.bits());
+  commit_log_print_value(log_file, p->insn_length(insn.bits()) * 8, insn.bits());
   fprintf(log_file, ")");
   bool show_vec = false;
 

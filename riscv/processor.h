@@ -319,6 +319,9 @@ public:
   unsigned ialign() const {
     return extension_enabled(EXT_ZCA) ? 16 : 32;
   }
+  unsigned insn_length(insn_bits_t b) const {
+    return INSN_LENGTH(b, ialign() == 16);
+  }
   reg_t pc_alignment_mask() const {
     return ~(reg_t)(ialign() == 16 ? 0 : 2);
   }

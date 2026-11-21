@@ -680,8 +680,7 @@ const insn_desc_t insn_desc_t::illegal_instruction = {
 
 reg_t illegal_instruction(processor_t* p, insn_t insn, reg_t UNUSED pc)
 {
-  const auto tentative_insn_len = (8 * insn_length(insn.bits()) + p->ialign() - 1) & -p->ialign();
-  const auto insn_len = std::min(tentative_insn_len, p->ilen());
+  const auto insn_len = std::min(p->insn_length(insn.bits()), p->ilen());
   const auto tval_insn_len = std::min(insn_len, p->get_isa().get_max_xlen());
   const auto mask = reg_t(-1) >> (8 * sizeof(insn.bits()) - tval_insn_len);
   throw trap_illegal_instruction(insn.bits() & mask);
@@ -718,7 +717,7 @@ void processor_t::build_opcode_map()
 
   auto build_one = [&](const insn_desc_t& desc) {
     auto func = desc.func(xlen, rve, log_commits_enabled);
-    if (!zca && insn_length(desc.match) % 4)
+    if (!zca && INSN_LENGTH(desc.match, true) % 4)
       func = &::illegal_instruction;
 
     auto stride = std::min(N, size_t(1) << ctz(~desc.mask));

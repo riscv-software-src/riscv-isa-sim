@@ -346,7 +346,7 @@ public:
   {
     icache_entry_t* entry = &icache[icache_index(addr)];
     if (likely(entry->tag == addr)){
-      MMU_OBSERVE_FETCH(addr, entry->data.insn, insn_length(entry->data.insn.bits()));
+      MMU_OBSERVE_FETCH(addr, entry->data.insn, proc->insn_length(entry->data.insn.bits()));
       return entry;
     }
     return refill_icache(addr, entry);
@@ -520,22 +520,22 @@ private:
     bool intrapage = addr % PGSIZE + sizeof(insn_bits_t) <= PGSIZE;
     if (auto [tlb_hit, host_addr, paddr] = access_tlb(tlb_insn, addr); tlb_hit && intrapage) {
       insn_bits_t insn = from_le(*(insn_parcel_t*)host_addr);
-      size_t length = insn_length(insn);
+      size_t length = proc->insn_length(insn);
 
       for (size_t pos = sizeof(insn_parcel_t); pos < length; pos += sizeof(insn_parcel_t)) {
         insn |= insn_bits_t(from_le(*(insn_parcel_t*)(host_addr + pos))) << (8 * pos);
-        length = insn_length(insn);
+        length = proc->insn_length(insn);
       }
 
       return std::make_tuple(insn, length);
     }
 
     insn_bits_t insn = fetch_slow_path(addr);
-    size_t length = insn_length(insn);
+    size_t length = proc->insn_length(insn);
 
     for (size_t pos = sizeof(insn_parcel_t); pos < length; pos += sizeof(insn_parcel_t)) {
       insn |= insn_bits_t(fetch_slow_path(addr + pos)) << (8 * pos);
-      length = insn_length(insn);
+      length = proc->insn_length(insn);
     }
 
     if (check_triggers_fetch) {
