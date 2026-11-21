@@ -57,11 +57,11 @@ class jtag_dtm_t
     const unsigned abits = 7;
     uint32_t dtmcontrol;
     uint64_t dmi;
-    unsigned bypass;
     // Number of Run-Test/Idle cycles needed before we call this access
     // complete.
     unsigned rti_remaining;
-    bool busy_stuck;
+    // Sticky DMI status (dmi.op, read through dtmcs.dmistat) until dmireset.
+    unsigned dmistat;
 
     jtag_state_t _state;
 
