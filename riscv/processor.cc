@@ -399,6 +399,16 @@ void processor_t::enter_debug_mode(uint8_t cause, uint8_t extcause)
   clear_waiting_for_interrupt();
 }
 
+void processor_t::enter_critical_error_state()
+{
+  // Handling of critical error is implementation defined
+  // For now just enter debug mode
+  if (state.dcsr->read() & DCSR_CETRIG)
+    enter_debug_mode(DCSR_CAUSE_EXTCAUSE, DCSR_EXTCAUSE_CRITERR);
+  else
+    enter_debug_mode(DCSR_CAUSE_HALT, 0);
+}
+
 void processor_t::debug_output_log(std::stringstream *s)
 {
   if (log_file == stderr) {
@@ -519,24 +529,48 @@ void processor_t::take_trap(trap_t& t, reg_t epc)
     // Handle the trap in M-mode
     const reg_t vector = (state.mtvec->read() & 1) && interrupt ? 4 * bit : 0;
     const reg_t trap_handler_address = (state.mtvec->read() & ~(reg_t)1) + vector;
-    // RNMI sources, the feature isn't very useful, so pick an invalid address.
-    // RNMI exception vector is implementation-defined.  Since we don't model
+    // The RNMI interrupt and exception trap handler addresses are
+    // implementation-defined.  Since we don't model RNMI sources, the
+    // feature isn't very useful, so pick an invalid address for both.
     const reg_t rnmi_trap_handler_address = 0;
     const bool nmie = !(state.mnstatus && !get_field(state.mnstatus->read(), MNSTATUS_NMIE));
 
     reg_t s = state.mstatus->read();
     if ( extension_enabled(EXT_SMDBLTRP)) {
-      if (get_field(s, MSTATUS_MDT) && (!state.mnstatus || !nmie)) {
-        // Critical error - Double trap in M-mode when Smrnmi not implemented or nmie is 0
-        // RNMI is not modeled else double trap in M-mode would trap to
-        // RNMI handler instead of leading to a critical error
+      // A trap with MDT = 1, or one that occurs in M-mode with NMIE = 0, is
+      // unexpected.  Without Smrnmi, or with NMIE = 0, an unexpected trap
+      // enters the critical-error state without changing any other state.
+      // Enter it here, so that every caller (including trigger actions) does.
+      const bool unexpected = get_field(s, MSTATUS_MDT) || (state.prv == PRV_M && !nmie);
+      if (unexpected && (!state.mnstatus || !nmie)) {
         state.critical_error = 1;
+        enter_critical_error_state();
+        return;
+      }
+      if (unexpected) {
+        // With Smrnmi and NMIE = 1, the unexpected trap goes to the RNMI
+        // handler: mnepc and mncause get the values mepc and mcause would
+        // have, mnstatus records M-mode and clears NMIE, and mstatus, mepc,
+        // mcause and mtval are left alone
+        state.pc = rnmi_trap_handler_address;
+        state.mnepc->write(epc);
+        state.mncause->write(supv_double_trap ? CAUSE_DOUBLE_TRAP : t.cause());
+        reg_t ns = state.mnstatus->read();
+        ns = set_field(ns, MNSTATUS_MNPP, PRV_M);
+        ns = set_field(ns, MNSTATUS_MNPV, 0);
+        ns = set_field(ns, MNSTATUS_MNPELP, state.elp);
+        state.elp = elp_t::NO_LP_EXPECTED;
+        state.mnstatus->write(ns);
+        state.mnstatus->clear_nmie();
+        set_privilege(PRV_M, false);
         return;
       }
       s = set_field(s, MSTATUS_MDT, 1);
     }
 
-    state.pc = !nmie ? rnmi_trap_handler_address : trap_handler_address;
+    // The RNMI exception vector is for exceptions in M-mode with NMIE = 0,
+    // which with Smdbltrp are unexpected traps (above)
+    state.pc = !nmie && state.prv == PRV_M ? rnmi_trap_handler_address : trap_handler_address;
     state.mepc->write(epc);
     state.mcause->write(supv_double_trap ? CAUSE_DOUBLE_TRAP : t.cause());
     state.mtval->write(t.get_tval());
