@@ -298,8 +298,9 @@ void mmu_t::load_slow_path(reg_t original_addr, std::size_t len,
     check_triggers(triggers::OPERATION_LOAD,
       transformed_addr, access_info.effective_virt, len);
 
+  const auto trap_type = xlate_flags.ss_access ? STORE : LOAD;
   if (access_info.flags.access_fault)
-    throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
+    throw_access_exception(access_info.effective_virt, transformed_addr, trap_type);
 
   if ((transformed_addr & (len - 1)) == 0) {
     load_slow_path_intrapage(len, bytes, access_info, true);
@@ -315,7 +316,7 @@ void mmu_t::load_slow_path(reg_t original_addr, std::size_t len,
     }
 
     if (access_info.flags.require_alignment)
-      throw trap_load_access_fault(access_info.effective_virt, transformed_addr, 0, 0);
+      throw_access_exception(access_info.effective_virt, transformed_addr, trap_type);
   }
 
   if (!proc)
