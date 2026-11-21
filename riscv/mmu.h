@@ -238,7 +238,7 @@ public:
     reg_t transformed_addr = access_info.transformed_vaddr;
 
     check_triggers(triggers::OPERATION_STORE, transformed_addr & ~(blocksz - 1),
-      /*virt*/ false, blocksz);
+      access_info.effective_virt, blocksz);
 
     reg_t paddr = translate(access_info, 1) - (transformed_addr & (blocksz - 1));
     if (auto host_addr = sim->addr_to_mem(paddr)) {
@@ -255,7 +255,7 @@ public:
     reg_t transformed_addr = access_info.transformed_vaddr;
 
     check_triggers(triggers::OPERATION_STORE, transformed_addr & ~(blocksz - 1),
-      /*virt*/ false, blocksz);
+      access_info.effective_virt, blocksz);
     convert_load_traps_to_store_traps({
       const reg_t paddr = translate(access_info, 1) - (transformed_addr & (blocksz - 1));
       if (sim->reservable(paddr)) {
