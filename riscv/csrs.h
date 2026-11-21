@@ -651,6 +651,20 @@ class counter_proxy_csr_t: public proxy_csr_t {
   bool myenable(csr_t_p counteren) const noexcept;
 };
 
+// For an alias of another CSR through which some of its bits read as zero
+// and cannot be written
+class masked_proxy_csr_t: public csr_t {
+ public:
+  masked_proxy_csr_t(processor_t* const proc, csr_t_p delegate, const reg_t hidden_mask);
+  void verify_permissions(insn_t insn, bool write) const override;
+  reg_t read() const noexcept override;
+ protected:
+  bool unlogged_write(const reg_t val) noexcept override;
+ private:
+  csr_t_p delegate;
+  const reg_t hidden_mask;
+};
+
 class mevent_csr_t: public basic_csr_t {
  public:
   mevent_csr_t(processor_t* const proc, const reg_t addr);
