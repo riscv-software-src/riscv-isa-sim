@@ -2392,7 +2392,6 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
     DEFINE_VECTOR_VV(vpairo_vv);
   }
 
-  if (ext_enabled(EXT_ZVBB)) {
 #define DEFINE_VECTOR_VIU_ZIMM6(code) \
   add_vector_viu_z6_insn(this, #code, match_##code, mask_##code)
 #define DISASM_VECTOR_VV_VX(name) \
@@ -2407,22 +2406,26 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   DEFINE_VECTOR_VX(name##_vx); \
   DEFINE_VECTOR_VIU_ZIMM6(name##_vi)
 
+  if (ext_enabled(EXT_ZVKB)) {
     DISASM_VECTOR_VV_VX(vandn);
-    DEFINE_VECTOR_V(vbrev_v);
     DEFINE_VECTOR_V(vbrev8_v);
     DEFINE_VECTOR_V(vrev8_v);
+    DISASM_VECTOR_VV_VX(vrol);
+    DISASM_VECTOR_VV_VX_VIU_ZIMM6(vror);
+  }
+
+  if (ext_enabled(EXT_ZVBB)) {
+    DEFINE_VECTOR_V(vbrev_v);
     DEFINE_VECTOR_V(vclz_v);
     DEFINE_VECTOR_V(vctz_v);
     DEFINE_VECTOR_V(vcpop_v);
-    DISASM_VECTOR_VV_VX(vrol);
-    DISASM_VECTOR_VV_VX_VIU_ZIMM6(vror);
     DISASM_VECTOR_VV_VX_VIU(vwsll);
+  }
 
 #undef DEFINE_VECTOR_VIU_ZIMM6
 #undef DISASM_VECTOR_VV_VX
 #undef DISASM_VECTOR_VV_VX_VIU
 #undef DISASM_VECTOR_VV_VX_VIU_ZIMM6
-    }
 
   if (ext_enabled(EXT_ZVBC)) {
 #define DISASM_VECTOR_VV_VX(name) \
