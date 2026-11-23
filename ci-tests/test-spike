@@ -70,6 +70,7 @@ g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/testlib.cc -lriscv -o test-
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-customext.cc -lriscv -o test-customext
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/custom-csr.cc -lriscv -o test-custom-csr
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-dcsr-cause.cc -lriscv -o test-dcsr-cause
+g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-critical-error.cc -lriscv -o test-critical-error
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-debug-wfi.cc -lriscv -o test-debug-wfi
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-resethaltreq-priority.cc -lriscv -o test-resethaltreq-priority
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-dret-pelp.cc -lriscv -o test-dret-pelp
@@ -93,11 +94,13 @@ for xlen in 32 64; do
   $INSTALL/bin/spike --isa=rv${xlen}gc --log-commits execute-trigger-icache-rv$xlen 2> /dev/null
 done
 bash $CI/test-mnret-double-trap $INSTALL/bin/spike $RUN/mnret-double-trap
+bash $CI/test-critical-error $INSTALL/bin/spike $RUN/critical-error
 bash $CI/test-mcontrol6-napot-maskmax $INSTALL/bin/spike $RUN/mcontrol6-napot-maskmax
 LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-libriscv $BUILD/pk/pk hello | grep "Hello, world!  Pi is approximately 3.141588."
 LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-customext $BUILD/pk/pk dummy-slliuw | grep "Executed successfully"
 LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-custom-csr $BUILD/pk/pk customcsr | grep "Executed successfully"
 LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-dcsr-cause | grep "Executed successfully"
+LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-critical-error | grep "Executed successfully"
 LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-debug-wfi | grep "Executed successfully"
 LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-resethaltreq-priority | grep "Executed successfully"
 LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-dret-pelp | grep "Executed successfully"
