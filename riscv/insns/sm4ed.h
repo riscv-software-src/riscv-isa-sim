@@ -14,7 +14,7 @@ uint32_t linear = sb_out ^  (sb_out         <<  8) ^
                            ((sb_out & 0x3f) << 26) ^
                            ((sb_out & 0xC0) << 10) ;
 
-uint32_t rotl   = (linear << (8*bs)) | (linear >> (32-8*bs));
+uint32_t rotl   = (linear << (8*bs)) | (linear >> (((32-8*bs) & 31)));
 
 uint32_t result = rotl ^ RS1;
 

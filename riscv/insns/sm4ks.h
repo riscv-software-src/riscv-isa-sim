@@ -12,7 +12,7 @@ uint32_t x      = sb_out ^
     ((sb_out & 0x07) << 29) ^ ((sb_out & 0xFE) <<  7) ^
     ((sb_out & 0x01) << 23) ^ ((sb_out & 0xF8) << 13) ;
 
-uint32_t rotl   = (x << (8*bs)) | (x >> (32-8*bs));
+uint32_t rotl   = (x << (8*bs)) | (x >> (((32-8*bs) & 31)));
 
 uint32_t result = rotl ^ RS1;
 
