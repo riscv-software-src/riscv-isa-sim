@@ -761,6 +761,18 @@ static void NOINLINE add_xlr_insn(disassembler_t* d, const char* name, uint32_t 
   d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &base_only_address}));
 }
 
+static void NOINLINE add_xlr_aqrl_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
+{
+  const char *suffix[] = {"", ".rl", ".aq", ".aqrl"};
+  char new_name[128];
+  uint32_t new_mask = mask | (0x3 << 25);
+
+  for (uint32_t idx = 0; idx < sizeof(suffix) / sizeof(suffix[0]); ++idx) {
+    snprintf(new_name, sizeof(new_name), "%s%s", name, suffix[idx]);
+    d->add_insn(new disasm_insn_t(new_name, match | (idx << 25), new_mask, {&xrd, &base_only_address}));
+  }
+}
+
 static void NOINLINE add_zilx_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   // Zilx assembly syntax: mnemonic rd, (rs2), rs1  (rs2 is base, rs1 is index)
@@ -996,6 +1008,7 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   #define DEFINE_XSTORE(code) add_xstore_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_XAMO(code) add_xamo_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_XLOAD_BASE(code) add_xlr_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_LR_AQRL(code) add_xlr_aqrl_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_XSTORE_BASE(code) add_xst_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_ZILX(code) add_zilx_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FLOAD(code) add_fload_insn(this, #code, match_##code, mask_##code);
@@ -1064,11 +1077,11 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   }
 
   if (ext_enabled(EXT_ZALRSC)) {
-    DEFINE_XLOAD_BASE(lr_w)
+    DEFINE_LR_AQRL(lr_w)
     DEFINE_XAMO(sc_w)
 
     if (xlen_eq(64)) {
-      DEFINE_XLOAD_BASE(lr_d)
+      DEFINE_LR_AQRL(lr_d)
       DEFINE_XAMO(sc_d)
     }
   }
