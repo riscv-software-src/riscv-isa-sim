@@ -470,6 +470,12 @@ isa_parser_t::isa_parser_t(const char* str, const char *priv)
     bad_isa_string(str, "Spike does not support VLEN > 4096");
   }
 
+  if (reg_t te = get_te(); te > vlen / 4) {
+    bad_isa_string(str, ("'Zvt" + std::to_string(te) + "t' requires VLEN >= " +
+                         std::to_string(4 * te) + ", but VLEN is " +
+                         std::to_string(vlen)).c_str());
+  }
+
   std::string lowercase = strtolower(priv);
   bool user = false, supervisor = false;
 
