@@ -45,12 +45,14 @@
 
 /* the value parameter needs to be evaluated before writing to the registers */
 #define WRITE_REG_PAIR(reg, value) \
-  if (reg != 0) { \
+  do { \
     require((reg) % 2 == 0); \
     uint64_t val = (value); \
-    WRITE_REG(reg, sext32(val)); \
-    WRITE_REG((reg) + 1, (sreg_t(val)) >> 32); \
-  }
+    if (reg != 0) { \
+      WRITE_REG(reg, sext32(val)); \
+      WRITE_REG((reg) + 1, (sreg_t(val)) >> 32); \
+    } \
+  } while (0)
 
 // RVP macros
 #define WRITE_P_REG_PAIR(reg, value) \
