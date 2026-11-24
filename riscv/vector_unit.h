@@ -284,13 +284,13 @@ public:
     switch (sizeof(T)) {
       case 1:
         ptile = tile;
-        minor_offset = (row % 4) * 4 + (col % 4);
-        major_offset = (row / 4) * (TE / 4) + (col / 4);
+        minor_offset = (2 * (row / (TE / 2)) + (row % 2)) * 4 + (col % 4);
+        major_offset = ((row / 2) % (TE / 4)) * (TE / 4) + (col / 4);
         break;
       case 2:
-        ptile = tile + ((row & 2) >> 1);
+        ptile = tile + (row / (TE / 2));
         minor_offset = (row % 2) * 4 + (col % 2) * 2 + ((col / 2) % 2) * 8;
-        major_offset = (row / 4) * (TE / 4) + (col / 4);
+        major_offset = ((row / 2) % (TE / 4)) * (TE / 4) + (col / 4);
         break;
       case 4:
         ptile = tile + 2 * (row / (TE / 2)) + ((col & 2) >> 1);
