@@ -501,7 +501,7 @@ bool mseccfg_csr_t::unlogged_write(const reg_t val) noexcept {
     new_val |= (val & MSECCFG_MLPE);
   }
 
-  if (proc->extension_enabled(EXT_SMMPM)) {
+  if (proc->extension_enabled(EXT_SMMPM) && proc->get_isa().get_max_xlen() == 64) {
     const reg_t pmm_reserved = 1; // Reserved value of mseccfg.PMM
     reg_t pmm = get_field(val, MSECCFG_PMM);
     new_val = set_field(new_val, MSECCFG_PMM, pmm != pmm_reserved ? pmm : 0);
