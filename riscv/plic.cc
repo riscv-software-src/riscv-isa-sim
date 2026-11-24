@@ -319,7 +319,6 @@ void plic_t::set_interrupt_level(uint32_t id, int lvl)
       } else {
         c->pending[id_word] &= ~id_mask;
         c->pending_priority[id] = 0;
-        c->claimed[id_word] &= ~id_mask;
       }
       context_update(c);
       break;
