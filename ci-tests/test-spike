@@ -135,3 +135,13 @@ $INSTALL/bin/spike -d --debug-cmd=$CI/show-init-pc.cmd --disable-dtb --pc=0x1234
     | grep 0x0000000000001234 # custom PC value
 $INSTALL/bin/spike -d --debug-cmd=$CI/show-init-pc.cmd --disable-dtb --pcs=0:0x12345678 wfi-as-nop 2>&1 \
     | grep 0x0000000012345678 # custom PC value
+
+# Standalone Zvl must not enable vector instructions without V or Zve.
+$HOST-gcc -nostdlib -nostartfiles -static -no-pie -fno-pie \
+  -march=rv64i_zicsr -mabi=lp64 -Wl,-Ttext-segment=0x80000000 \
+  -Wl,--section-start=.tohost=0x80010000 -Wl,--build-id=none \
+  -Wl,-z,noexecstack -Wl,--no-relax -Wl,-e,_start \
+  -o "$RUN/zvl-standalone.elf" "$CI/zvl-standalone.S"
+bash "$CI/test-zvl-standalone" "$INSTALL/bin/spike" \
+  "$INSTALL/bin/spike-dasm" "$RUN/zvl-standalone.elf" \
+  "$RUN/zvl-standalone"

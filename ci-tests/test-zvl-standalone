@@ -1,0 +1,47 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+if [[ $# -ne 4 ]]; then
+  echo "usage: $0 <spike> <spike-dasm> <elf> <output-dir>" >&2
+  exit 2
+fi
+
+SPIKE=$1
+SPIKE_DASM=$2
+ELF=$3
+OUT=$4
+ENTRY_PC=$(readelf -h "$ELF" | awk '/Entry point address:/ {print $4}')
+VSET_PC=$(readelf -Ws "$ELF" | awk '$8 == "zvl_trigger_instruction" {print "0x" $2}')
+[[ -n $ENTRY_PC && -n $VSET_PC ]]
+mkdir -p "$OUT"
+
+check_runtime() {
+  local isa=$1 expect_trap=$2 expected_marker=$3 log="$OUT/runtime-$1.log"
+  timeout 10 "$SPIKE" --disable-dtb --isa="$isa" --pc="$ENTRY_PC" \
+    -m0x80000000:0x20000 -l --log-commits "$ELF" >"$log" 2>&1
+
+  if [[ $expect_trap == yes ]]; then
+    grep -Fq "exception trap_illegal_instruction, epc $VSET_PC" "$log"
+  else
+    ! grep -Fq 'exception trap_illegal_instruction' "$log"
+  fi
+  grep -Fq "x5  0x00000000000000$expected_marker" "$log"
+}
+
+check_disasm() {
+  local isa=$1 expected=$2 log="$OUT/disasm-$1.log"
+  printf 'DASM(0xcc00f357)\n' | "$SPIKE_DASM" --strict --isa="$isa" >"$log" 2>&1
+  [[ $(awk 'NR == 1 {print $1}' "$log") == "$expected" ]]
+}
+
+check_runtime rv64i_zvl128b yes 22
+check_runtime rv64i_zve32x_zvl128b no 11
+check_runtime rv64iv_zvl128b no 11
+check_runtime rv64i yes 22
+
+check_disasm rv64i_zvl128b unknown
+check_disasm rv64i_zve32x_zvl128b vsetivli
+check_disasm rv64iv_zvl128b vsetivli
+check_disasm rv64i unknown
+
+echo "standalone Zvl regression passed"
