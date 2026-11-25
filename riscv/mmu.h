@@ -200,11 +200,30 @@ public:
     return addr & (size - 1);
   }
 
+  // AMOs to a device that does not support them raise a store/AMO access fault
+  inline void check_amo_supported(reg_t vaddr, size_t size, xlate_flags_t xlate_flags)
+  {
+    auto [tlb_hit, _, paddr] = access_tlb(tlb_store, vaddr, TLB_FLAGS & ~TLB_MMIO);
+    if (likely(tlb_hit))
+      return; // a TLB hit without TLB_MMIO is main memory
+
+    auto access_info = generate_access_info(vaddr, STORE, xlate_flags);
+    paddr = translate(access_info, size);
+    if (!sim->amo_supported(paddr, size)) {
+      // address triggers on the AMO's load have priority over the access fault
+      if (check_triggers_load)
+        check_triggers(triggers::OPERATION_LOAD, access_info.transformed_vaddr, access_info.effective_virt, size);
+      throw trap_store_access_fault(access_info.effective_virt, access_info.transformed_vaddr, 0, 0);
+    }
+  }
+
   // template for functions that perform an atomic memory operation
   template<typename T, typename op>
   T amo(reg_t addr, op f) {
     convert_load_traps_to_store_traps({
-      store_slow_path(addr, sizeof(T), nullptr, {.require_alignment=enforce_amo_alignment(addr, sizeof(T))}, false);
+      const xlate_flags_t xlate_flags = {.require_alignment=enforce_amo_alignment(addr, sizeof(T))};
+      store_slow_path(addr, sizeof(T), nullptr, xlate_flags, false);
+      check_amo_supported(addr, sizeof(T), xlate_flags);
       auto lhs = load<T>(addr);
       store<T>(addr, f(lhs));
       return lhs;
@@ -216,6 +235,7 @@ public:
   T ssamoswap(reg_t addr, reg_t value) {
     convert_load_traps_to_store_traps({
       store_slow_path(addr, sizeof(T), nullptr, {.ss_access=true, .require_alignment=true}, false);
+      check_amo_supported(addr, sizeof(T), {.ss_access=true, .require_alignment=true});
       auto data = load<T>(addr, {.ss_access=true});
       store<T>(addr, value, {.ss_access=true});
       return data;
@@ -225,7 +245,9 @@ public:
   template<typename T>
   T amo_compare_and_swap(reg_t addr, T comp, T swap) {
     convert_load_traps_to_store_traps({
-      store_slow_path(addr, sizeof(T), nullptr, {.require_alignment=enforce_amo_alignment(addr, sizeof(T))}, false);
+      const xlate_flags_t xlate_flags = {.require_alignment=enforce_amo_alignment(addr, sizeof(T))};
+      store_slow_path(addr, sizeof(T), nullptr, xlate_flags, false);
+      check_amo_supported(addr, sizeof(T), xlate_flags);
       auto lhs = load<T>(addr);
       if (lhs == comp)
         store<T>(addr, swap);

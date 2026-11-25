@@ -168,6 +168,8 @@ class aplic_t : public abstract_device_t, public abstract_interrupt_controller_t
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
   void set_interrupt_level(uint32_t id, int lvl) override;
   reg_t size() override { return APLIC_SIZE; }
+  // AMOs should preferably report an access fault (AIA, APLIC control region)
+  bool supports_amo() override { return false; }
   void set_child(aplic_t *c) { child = c; }
   void delegate(uint32_t id, bool dm);
   bool delegated(uint32_t id);
