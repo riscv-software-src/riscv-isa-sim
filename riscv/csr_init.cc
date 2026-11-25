@@ -242,7 +242,7 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
   const reg_t menvcfg_mask = (fiom_writable ? MENVCFG_FIOM : 0) |
                             (proc->extension_enabled(EXT_ZICBOM) ? MENVCFG_CBCFE | MENVCFG_CBIE : 0) |
                             (proc->extension_enabled(EXT_ZICBOZ) ? MENVCFG_CBZE : 0) |
-                            (proc->extension_enabled(EXT_SMNPM) && xlen == 64 ? MENVCFG_PMM : 0) |
+                            (proc->extension_enabled(EXT_SMNPM) ? MENVCFG_PMM : 0) |
                             (proc->extension_enabled(EXT_SVADU) ? MENVCFG_ADUE: 0) |
                             (proc->extension_enabled(EXT_SVPBMT) ? MENVCFG_PBMTE : 0) |
                             (proc->extension_enabled(EXT_SSTC) ? MENVCFG_STCE : 0) |
@@ -359,14 +359,14 @@ void state_t::csr_init(processor_t* const proc, reg_t max_isa)
                             (proc->extension_enabled(EXT_ZICBOM) ? SENVCFG_CBCFE | SENVCFG_CBIE : 0) |
                             (proc->extension_enabled(EXT_ZICBOZ) ? SENVCFG_CBZE : 0) |
                             (proc->extension_enabled(EXT_SVUKTE) ? SENVCFG_UKTE : 0) |
-                            (proc->extension_enabled(EXT_SSNPM) && xlen == 64 ? SENVCFG_PMM : 0) |
+                            (proc->extension_enabled(EXT_SSNPM) ? SENVCFG_PMM : 0) |
                             (proc->extension_enabled(EXT_ZICFILP) ? SENVCFG_LPE : 0) |
                             (proc->extension_enabled(EXT_ZICFISS) ? SENVCFG_SSE : 0);
   add_supervisor_csr(CSR_SENVCFG, senvcfg = std::make_shared<senvcfg_csr_t>(proc, CSR_SENVCFG, senvcfg_mask, 0));
   const reg_t henvcfg_mask = HENVCFG_FIOM |
                             (proc->extension_enabled(EXT_ZICBOM) ? HENVCFG_CBCFE | HENVCFG_CBIE : 0) |
                             (proc->extension_enabled(EXT_ZICBOZ) ? HENVCFG_CBZE : 0) |
-                            (proc->extension_enabled(EXT_SSNPM) && xlen == 64 ? HENVCFG_PMM : 0) |
+                            (proc->extension_enabled(EXT_SSNPM) ? HENVCFG_PMM : 0) |
                             (proc->extension_enabled(EXT_SVADU) ? HENVCFG_ADUE: 0) |
                             (proc->extension_enabled(EXT_SVPBMT) ? HENVCFG_PBMTE : 0) |
                             (proc->extension_enabled(EXT_SSTC) ? HENVCFG_STCE : 0) |
