@@ -24,6 +24,11 @@ imsic_file_t::imsic_file_t(processor_t* const proc, reg_t mip_mask, size_t num_r
   auto xlen = proc->get_isa().get_max_xlen();
   regmap[IMSIC_EIDELIVERY] = eidelivery = std::make_shared<imsic_csr_t>(proc, IMSIC_EIDELIVERY, this, 1, 0);
   regmap[IMSIC_EITHRESHOLD] = eithreshold = std::make_shared<imsic_csr_t>(proc, IMSIC_EITHRESHOLD, this);
+  // reserved register numbers 0x71 and 0x73-0x7F read as zero and ignore writes
+  for (reg_t i = IMSIC_EIDELIVERY + 1; i < IMSIC_EIP(0); i++) {
+    if (i != IMSIC_EITHRESHOLD)
+      regmap[i] = std::make_shared<const_csr_t>(proc, i, 0);
+  }
   for (size_t i = 0; i < IMSIC_NUM_EI_REGS; i++) {
     if (i < num_regs) {
       // 1st bits of eip/eie are hard-wired to 0
