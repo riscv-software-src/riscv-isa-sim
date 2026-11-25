@@ -42,8 +42,11 @@
 #define TARGET_EIID_MASK        0x7ff
 
 #define APLIC_MMIO_REG_SIZE     4
+// setip, in_clrip, setie and clrie: 32 registers of one bit per source
+#define APLIC_BITS_SIZE         (APLIC_MAX_DEVICES / 8)
 
-aplic_t::aplic_t(const simif_t *simif, aplic_t *parent) : simif(simif), parent(parent), child(nullptr), domaincfg((0x80 << 24) | DOMAINCFG_DM_MASK), sourcecfg(), mmsiaddrcfgh(MMSIADDRCFGH_L_MASK), ie(), target(), level(), genmsi(0), deleg_mask()
+aplic_t::aplic_t(const simif_t *simif, aplic_t *parent, bool guest_index) : simif(simif),
+  target_mask(TARGET_HART_MASK | (guest_index ? TARGET_GUEST_MASK : 0) | TARGET_EIID_MASK), parent(parent), child(nullptr), domaincfg((0x80 << 24) | DOMAINCFG_DM_MASK), sourcecfg(), mmsiaddrcfgh(MMSIADDRCFGH_L_MASK), ie(), target(), level(), genmsi(0)
 {
 }
 
@@ -57,7 +60,6 @@ void aplic_t::delegate(uint32_t id, bool dm)
     if (!parent->delegated(id) && dm)
       sourcecfg[id] = 0;
   } else {
-    deleg_mask[id / 32] = set_field((uint32_t)deleg_mask[id / 32], 1 << (id % 32), dm);
     child->delegate(id, dm);
   }
 }
@@ -69,22 +71,10 @@ bool aplic_t::delegated(uint32_t id)
   return (sourcecfg[id] & SOURCECFG_D_MASK);
 }
 
-uint32_t aplic_t::get_deleg_mask(uint32_t idx) {
-    if (idx >= APLIC_MAX_DEVICES / 32)
-      return 0;
-    if (parent)
-      return parent->get_deleg_mask(idx);
-    return deleg_mask[idx];
-  }
-
 bool aplic_t::interrupt_enabled(uint32_t id) const
 {
-  if (!id || id >= APLIC_MAX_DEVICES)
-    return false;
-  if (parent && !parent->delegated(id))
-    return false;
-  // Domain interrupt enabled, source IE and source mode != inactive (0)
-  return (domaincfg & DOMAINCFG_IE_MASK) && ((ie[id / 32] >> (id % 32)) & 1) && (sourcecfg[id] & SOURCECFG_SM_MASK);
+  // Domain interrupt enabled, source active and source IE
+  return active(id) && (domaincfg & DOMAINCFG_IE_MASK) && ((ie[id / 32] >> (id % 32)) & 1);
 }
 
 bool aplic_t::accessible(uint32_t id) const
@@ -94,6 +84,22 @@ bool aplic_t::accessible(uint32_t id) const
   if (!parent)
     return true;
   return parent->delegated(id);
+}
+
+bool aplic_t::active(uint32_t id) const
+{
+  // A source is inactive if it is not implemented in this domain,
+  // is delegated to a child domain (D = 1), or has SM = Inactive (0)
+  return accessible(id) && !(sourcecfg[id] & SOURCECFG_D_MASK) && (sourcecfg[id] & SOURCECFG_SM_MASK);
+}
+
+uint32_t aplic_t::active_mask(uint32_t idx) const
+{
+  uint32_t mask = 0;
+  for (uint32_t i = 0; i < 32; i++)
+    if (active(idx * 32 + i))
+      mask |= 1u << i;
+  return mask;
 }
 
 void aplic_t::set_interrupt_level(uint32_t id, int lvl)
@@ -176,17 +182,18 @@ bool aplic_t::load(reg_t addr, size_t len, uint8_t* bytes)
       val = sourcecfg[idx];
   } else if (addr == MMSIADDRCFGH) {
     val = mmsiaddrcfgh;
-  } else if (addr >= IN_CLRIP_BASE && addr < CLRIPNUM) {
+  } else if (addr >= IN_CLRIP_BASE && addr < IN_CLRIP_BASE + APLIC_BITS_SIZE) {
     auto idx = (addr - IN_CLRIP_BASE) / APLIC_MMIO_REG_SIZE;
-    val = level[idx];
-  } else if (addr >= SETIE_BASE && addr < SETIENUM) {
+    // rectified input: zero for an inactive source
+    val = level[idx] & active_mask(idx);
+  } else if (addr >= SETIE_BASE && addr < SETIE_BASE + APLIC_BITS_SIZE) {
     auto idx = (addr - SETIE_BASE) / APLIC_MMIO_REG_SIZE;
-    val = ie[idx];
+    val = ie[idx] & active_mask(idx);
   } else if (addr == GENMSI) {
     val = genmsi;
   } else if (addr >= TARGET_BASE && addr < IDC) {
     auto idx = (addr - TARGET_BASE) / APLIC_MMIO_REG_SIZE + 1;
-    if (accessible(idx))
+    if (active(idx))
       val = target[idx];
   }
 
@@ -214,6 +221,7 @@ bool aplic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     // write to D bit sets child's sourcecfg to 0
     // SM = inactive (0) or Level1 (6)
     if (accessible(idx)) {
+      bool was_active = active(idx);
       if (!child && (val & SOURCECFG_D_MASK))
         val = 0;
       else if (child)
@@ -224,34 +232,36 @@ bool aplic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
         val = set_field(val, SOURCECFG_SM_MASK, 6);
 
       sourcecfg[idx] = val;
+
+      // enable bit remains zero when a source becomes active
+      if (!was_active)
+        ie[idx / 32] &= ~(1u << (idx % 32));
     }
-  } else if (addr >= SETIP_BASE && addr < SETIPNUM) {
+  } else if (addr >= SETIP_BASE && addr < SETIP_BASE + APLIC_BITS_SIZE) {
     auto idx = (addr - SETIP_BASE) / APLIC_MMIO_REG_SIZE;
-    val &= get_deleg_mask(idx);
+    val &= active_mask(idx);
     update_interrupt_masked(idx, val);
   } else if (addr == SETIPNUM) {
     update_interrupt(val);
-  } else if (addr >= SETIE_BASE && addr < SETIENUM) {
+  } else if (addr >= SETIE_BASE && addr < SETIE_BASE + APLIC_BITS_SIZE) {
     auto idx = (addr - SETIE_BASE) / APLIC_MMIO_REG_SIZE;
-    val &= get_deleg_mask(idx);
-    ie[idx] |= val;
+    ie[idx] |= val & active_mask(idx);
   } else if (addr == SETIENUM) {
-    if (accessible(val))
+    if (active(val))
       ie[val / 32] |= 1 << (val % 32);
-  } else if (addr >= CLRIE_BASE && addr < CLRIENUM) {
+  } else if (addr >= CLRIE_BASE && addr < CLRIE_BASE + APLIC_BITS_SIZE) {
     auto idx = (addr - CLRIE_BASE) / APLIC_MMIO_REG_SIZE;
-    val &= get_deleg_mask(idx);
     ie[idx] &= ~val;
   } else if (addr == CLRIENUM) {
-    if (accessible(val))
+    if (active(val))
       ie[val / 32] &= ~(1 << (val % 32));
   } else if (addr == GENMSI) {
     genmsi = val & (GENMSI_HART_MASK | GENMSI_EIID_MASK);
     send_msi(get_field(genmsi, GENMSI_HART_MASK), 0, get_field(genmsi, GENMSI_EIID_MASK));
   } else if (addr >= TARGET_BASE && addr < IDC) {
     auto idx = (addr - TARGET_BASE) / APLIC_MMIO_REG_SIZE + 1;
-    if (accessible(val))
-      target[idx] = val;
+    if (active(idx))
+      target[idx] = val & target_mask;
   }
 
   return true;
@@ -315,7 +325,9 @@ aplic_s_t* aplic_s_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base
   if (fdt_parse_aplic(fdt, &aplic_m_base, &aplic_s_base, "riscv,aplic") == 0) {
     if (aplic_s_base) {
       *base = aplic_s_base;
-      auto *ptr = new aplic_s_t(sim, sim->aplic_m.get());
+      // Guest Index is writable only in a supervisor-level domain whose harts implement H
+      isa_parser_t isa(sim->get_cfg().isa, sim->get_cfg().priv);
+      auto *ptr = new aplic_s_t(sim, sim->aplic_m.get(), isa.extension_enabled('H'));
       if (sim->aplic_m)
         sim->aplic_m->set_child(ptr);
       return ptr;
