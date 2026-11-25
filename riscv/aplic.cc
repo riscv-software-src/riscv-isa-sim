@@ -43,7 +43,8 @@
 
 #define APLIC_MMIO_REG_SIZE     4
 
-aplic_t::aplic_t(const simif_t *simif, aplic_t *parent) : simif(simif), parent(parent), child(nullptr), domaincfg((0x80 << 24) | DOMAINCFG_DM_MASK), sourcecfg(), mmsiaddrcfgh(MMSIADDRCFGH_L_MASK), ie(), target(), level(), genmsi(0)
+aplic_t::aplic_t(const simif_t *simif, aplic_t *parent, bool guest_index) : simif(simif),
+  target_mask(TARGET_HART_MASK | (guest_index ? TARGET_GUEST_MASK : 0) | TARGET_EIID_MASK), parent(parent), child(nullptr), domaincfg((0x80 << 24) | DOMAINCFG_DM_MASK), sourcecfg(), mmsiaddrcfgh(MMSIADDRCFGH_L_MASK), ie(), target(), level(), genmsi(0)
 {
 }
 
@@ -66,12 +67,6 @@ bool aplic_t::delegated(uint32_t id)
   if (!id || id >= APLIC_MAX_DEVICES)
     return false;
   return (sourcecfg[id] & SOURCECFG_D_MASK);
-}
-
-static bool harts_implement_h(const simif_t *simif)
-{
-  auto &harts = simif->get_harts();
-  return !harts.empty() && harts.begin()->second->get_isa().extension_enabled('H');
 }
 
 bool aplic_t::interrupt_enabled(uint32_t id) const
@@ -267,10 +262,8 @@ bool aplic_t::store(reg_t addr, size_t len, const uint8_t* bytes)
     send_msi(get_field(genmsi, GENMSI_HART_MASK), 0, get_field(genmsi, GENMSI_EIID_MASK));
   } else if (addr >= TARGET_BASE && addr < IDC) {
     auto idx = (addr - TARGET_BASE) / APLIC_MMIO_REG_SIZE + 1;
-    // Guest Index is writable only in a supervisor-level domain whose harts implement H
-    bool guest = parent && harts_implement_h(simif);
     if (active(idx))
-      target[idx] = val & (TARGET_HART_MASK | (guest ? TARGET_GUEST_MASK : 0) | TARGET_EIID_MASK);
+      target[idx] = val & target_mask;
   }
 
   return true;
@@ -334,7 +327,9 @@ aplic_s_t* aplic_s_parse_from_fdt(const void* fdt, const sim_t* sim, reg_t* base
   if (fdt_parse_aplic(fdt, &aplic_m_base, &aplic_s_base, "riscv,aplic") == 0) {
     if (aplic_s_base) {
       *base = aplic_s_base;
-      auto *ptr = new aplic_s_t(sim, sim->aplic_m.get());
+      // Guest Index is writable only in a supervisor-level domain whose harts implement H
+      isa_parser_t isa(sim->get_cfg().isa, sim->get_cfg().priv);
+      auto *ptr = new aplic_s_t(sim, sim->aplic_m.get(), isa.extension_enabled('H'));
       if (sim->aplic_m)
         sim->aplic_m->set_child(ptr);
       return ptr;

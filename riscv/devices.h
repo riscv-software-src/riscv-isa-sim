@@ -163,7 +163,7 @@ class plic_t : public abstract_device_t, public abstract_interrupt_controller_t 
 #define APLIC_MAX_DEVICES 1024
 class aplic_t : public abstract_device_t, public abstract_interrupt_controller_t {
  public:
-  aplic_t(const simif_t*, aplic_t *parent);
+  aplic_t(const simif_t*, aplic_t *parent, bool guest_index = false);
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
   void set_interrupt_level(uint32_t id, int lvl) override;
@@ -173,6 +173,7 @@ class aplic_t : public abstract_device_t, public abstract_interrupt_controller_t
   bool delegated(uint32_t id);
  private:
   const simif_t *simif;
+  const uint32_t target_mask;
   aplic_t *parent;
   aplic_t *child;
   uint32_t domaincfg;
@@ -198,7 +199,7 @@ class aplic_m_t : public aplic_t {
 };
 class aplic_s_t : public aplic_t {
  public:
-  aplic_s_t(const simif_t* simif, aplic_t *parent) : aplic_t(simif, parent) {}
+  aplic_s_t(const simif_t* simif, aplic_t *parent, bool guest_index) : aplic_t(simif, parent, guest_index) {}
 };
 
 class ns16550_t : public abstract_device_t {
