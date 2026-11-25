@@ -71,6 +71,7 @@ g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-customext.cc -lriscv -
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/custom-csr.cc -lriscv -o test-custom-csr
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-dcsr-cause.cc -lriscv -o test-dcsr-cause
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-debug-wfi.cc -lriscv -o test-debug-wfi
+g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-debug-module.cc -lriscv -o test-debug-module
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-resethaltreq-priority.cc -lriscv -o test-resethaltreq-priority
 g++ -std=c++2a -I$INSTALL/include -L$INSTALL/lib $CI/test-dret-pelp.cc -lriscv -o test-dret-pelp
 
@@ -99,6 +100,7 @@ LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-customext $BUILD/pk/pk du
 LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-custom-csr $BUILD/pk/pk customcsr | grep "Executed successfully"
 LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-dcsr-cause | grep "Executed successfully"
 LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-debug-wfi | grep "Executed successfully"
+LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-debug-module | grep "Executed successfully"
 LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-resethaltreq-priority | grep "Executed successfully"
 LD_LIBRARY_PATH="$INSTALL/lib:$LD_LIBRARY_PATH" ./test-dret-pelp | grep "Executed successfully"
 
