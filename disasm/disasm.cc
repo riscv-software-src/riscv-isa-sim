@@ -805,6 +805,27 @@ static void NOINLINE add_frtype_insn(disassembler_t* d, const char* name, uint32
   d->add_insn(new disasm_insn_t(name, match, mask, {&frd, &frs1, &frs2}));
 }
 
+static void NOINLINE add_fr1type_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask);
+static void NOINLINE add_fr3type_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask);
+
+static void NOINLINE add_f_or_x_rtype_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask, bool x)
+{
+  if (x) add_rtype_insn(d, name, match, mask);
+  else add_frtype_insn(d, name, match, mask);
+}
+
+static void NOINLINE add_f_or_x_r1type_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask, bool x)
+{
+  if (x) add_r1type_insn(d, name, match, mask);
+  else add_fr1type_insn(d, name, match, mask);
+}
+
+static void NOINLINE add_f_or_x_r3type_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask, bool x)
+{
+  if (x) add_r3type_insn(d, name, match, mask);
+  else add_fr3type_insn(d, name, match, mask);
+}
+
 static void NOINLINE add_fr1type_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&frd, &frs1}));
@@ -820,9 +841,21 @@ static void NOINLINE add_fxtype_insn(disassembler_t* d, const char* name, uint32
   d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &frs1}));
 }
 
+static void NOINLINE add_f_or_x_fxtype_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask, bool x)
+{
+  if (x) add_r1type_insn(d, name, match, mask);
+  else add_fxtype_insn(d, name, match, mask);
+}
+
 static void NOINLINE add_xftype_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&frd, &xrs1}));
+}
+
+static void NOINLINE add_f_or_x_xftype_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask, bool x)
+{
+  if (x) add_r1type_insn(d, name, match, mask);
+  else add_xftype_insn(d, name, match, mask);
 }
 
 static void NOINLINE add_xf2type_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
@@ -833,6 +866,12 @@ static void NOINLINE add_xf2type_insn(disassembler_t* d, const char* name, uint3
 static void NOINLINE add_fx2type_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
 {
   d->add_insn(new disasm_insn_t(name, match, mask, {&xrd, &frs1, &frs2}));
+}
+
+static void NOINLINE add_f_or_x_fx2type_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask, bool x)
+{
+  if (x) add_rtype_insn(d, name, match, mask);
+  else add_fx2type_insn(d, name, match, mask);
 }
 
 static void NOINLINE add_fxrtype_insn(disassembler_t* d, const char* name, uint32_t match, uint32_t mask)
@@ -1013,14 +1052,14 @@ void disassembler_t::add_instructions(const isa_parser_t* isa, bool strict)
   #define DEFINE_ZILX(code) add_zilx_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FLOAD(code) add_fload_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FSTORE(code) add_fstore_insn(this, #code, match_##code, mask_##code);
-  #define DEFINE_FRTYPE(code) add_frtype_insn(this, #code, match_##code, mask_##code);
-  #define DEFINE_FR1TYPE(code) add_fr1type_insn(this, #code, match_##code, mask_##code);
-  #define DEFINE_FR3TYPE(code) add_fr3type_insn(this, #code, match_##code, mask_##code);
-  #define DEFINE_FXTYPE(code) add_fxtype_insn(this, #code, match_##code, mask_##code);
-  #define DEFINE_FX2TYPE(code) add_fx2type_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_FRTYPE(code) add_f_or_x_rtype_insn(this, #code, match_##code, mask_##code, ext_enabled_strict(EXT_ZFINX));
+  #define DEFINE_FR1TYPE(code) add_f_or_x_r1type_insn(this, #code, match_##code, mask_##code, ext_enabled_strict(EXT_ZFINX));
+  #define DEFINE_FR3TYPE(code) add_f_or_x_r3type_insn(this, #code, match_##code, mask_##code, ext_enabled_strict(EXT_ZFINX));
+  #define DEFINE_FXTYPE(code) add_f_or_x_fxtype_insn(this, #code, match_##code, mask_##code, ext_enabled_strict(EXT_ZFINX));
+  #define DEFINE_FX2TYPE(code) add_f_or_x_fx2type_insn(this, #code, match_##code, mask_##code, ext_enabled_strict(EXT_ZFINX));
   #define DEFINE_FXRTYPE(code) add_fxrtype_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_FLITYPE(code) add_flitype_insn(this, #code, match_##code, mask_##code);
-  #define DEFINE_XFTYPE(code) add_xftype_insn(this, #code, match_##code, mask_##code);
+  #define DEFINE_XFTYPE(code) add_f_or_x_xftype_insn(this, #code, match_##code, mask_##code, ext_enabled_strict(EXT_ZFINX));
   #define DEFINE_XF2TYPE(code) add_xf2type_insn(this, #code, match_##code, mask_##code);
   #define DEFINE_SFENCE_TYPE(code) add_sfence_insn(this, #code, match_##code, mask_##code);
 
