@@ -68,6 +68,7 @@ public:
   }
   const cfg_t &get_cfg() const override { return *cfg; }
   bool is_debug_module_access(reg_t paddr, size_t len) override;
+  bool amo_supported(reg_t paddr, size_t len) override;
 
   const std::map<size_t, processor_t*>& get_harts() const override { return harts; }
   const bus_t& get_bus() const {  return bus;}

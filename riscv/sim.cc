@@ -428,6 +428,12 @@ bool sim_t::is_debug_module_access(reg_t paddr, size_t len)
   return debug_module && bus.find_device(paddr, len).second == &debug_module.value();
 }
 
+bool sim_t::amo_supported(reg_t paddr, size_t len)
+{
+  auto dev = bus.find_device(paddr, len).second;
+  return !dev || dev->supports_amo();
+}
+
 bool sim_t::mmio_load(reg_t paddr, size_t len, uint8_t* bytes)
 {
   if (paddr + len < paddr)

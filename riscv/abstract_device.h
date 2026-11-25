@@ -19,6 +19,8 @@ class abstract_device_t {
   virtual reg_t size() = 0;
   virtual ~abstract_device_t() {}
   virtual void tick(reg_t UNUSED rtc_ticks) {}
+  // whether AMOs may access this device (they are performed as a load and a store)
+  virtual bool supports_amo() { return true; }
 };
 
 // factory for devices which should show up in the DTS, and can be

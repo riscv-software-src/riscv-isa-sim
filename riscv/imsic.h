@@ -33,6 +33,8 @@ class imsic_mmio_t : public abstract_device_t {
   bool load(reg_t addr, size_t len, uint8_t* bytes) override;
   bool store(reg_t addr, size_t len, const uint8_t* bytes) override;
   reg_t size() override { return IMSIC_MMIO_PAGE_SIZE; }
+  // AMOs should preferably report an access fault (AIA, IMSIC memory region)
+  bool supports_amo() override { return false; }
 
  private:
   imsic_file_t_p const imsic;
